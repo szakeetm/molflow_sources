@@ -1566,7 +1566,7 @@ void GLList::UpdateAllRows() {//Fetch non-visible values too
 			Facet *f =NULL;
 			try {
 				 f = geom->GetFacet(index);
-			} catch (Error &e) {
+			} catch (...) {
 #ifdef _DEBUG
 				__debugbreak();
 #endif

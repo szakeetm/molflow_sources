@@ -904,7 +904,7 @@ void GLDataView::Add(double x, double y) {
  */
 void GLDataView::Add(double x, double y,BOOL updateFilter) {
 
-  DataList *newData = (DataList *)malloc(sizeof(DataList));
+  _ASSERTE(DataList *newData = (DataList *)malloc(sizeof(DataList)));
   newData->x = x;
   newData->y = y;
   newData->next = NULL;

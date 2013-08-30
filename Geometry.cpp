@@ -4260,7 +4260,7 @@ void Geometry::RemoveLinkFacet() { //unused
 
 	if(nb==0) return;
 
-	Facet   **f = (Facet **)malloc((sh.nbFacet-nb) * sizeof(Facet *));
+	Facet **f = (Facet **)malloc((sh.nbFacet-nb) * sizeof(Facet *));
 
 	nb=0;
 	for(int i=0;i<sh.nbFacet;i++) {
@@ -4351,7 +4351,7 @@ void  Geometry::DeleteIsolatedVertices(BOOL selectedOnly) {
 
 
 
-	VERTEX3D *nVert = (VERTEX3D *)malloc(nbVert*sizeof(VERTEX3D));
+	_ASSERTE(VERTEX3D *nVert = (VERTEX3D *)malloc(nbVert*sizeof(VERTEX3D)));
 
 	for(int i=0,n=0;i<sh.nbVertex;i++) {
 		if(check[i] || (selectedOnly && !vertices3[i].selected)) {
@@ -4502,12 +4502,12 @@ void Geometry::RemoveSelectedVertex() {
 	for (size_t c=0;c<facetsToChange.size();c++) {
 		Facet* f=facets[facetsToChange[c]];
 		int nbRemove=0;
-		for (size_t i=0;i<f->sh.nbIndex;i++) //count how many to remove			
+		for (size_t i=0;(int)i<f->sh.nbIndex;i++) //count how many to remove			
 			if (vertices3[f->indices[i]].selected)
 				nbRemove++;
 		int *newIndices = (int *)malloc((f->sh.nbIndex-nbRemove)*sizeof(int));
 		int nb=0;
-		for (size_t i=0;i<f->sh.nbIndex;i++)
+		for (size_t i=0;(int)i<f->sh.nbIndex;i++)
 			if (!vertices3[f->indices[i]].selected) newIndices[nb++]=f->indices[i];
 
 		SAFE_FREE(f->indices);f->indices=newIndices;
@@ -4516,7 +4516,7 @@ void Geometry::RemoveSelectedVertex() {
 		f->sh.nbIndex -= nbRemove;
 		f->vertices2 = (VERTEX2D *)malloc(f->sh.nbIndex*sizeof(VERTEX2D));
 		memset(f->vertices2,0,f->sh.nbIndex * sizeof(VERTEX2D));
-		f->visible = (BOOL *)malloc(f->sh.nbIndex*sizeof(BOOL));
+		_ASSERTE(f->visible = (BOOL *)malloc(f->sh.nbIndex*sizeof(BOOL)));
 		memset(f->visible,0xFF,f->sh.nbIndex*sizeof(BOOL));
 	}
 	
@@ -4524,7 +4524,7 @@ void Geometry::RemoveSelectedVertex() {
 		Facet   **newFacets = (Facet **)malloc((sh.nbFacet-facetsToRemove.size()) * sizeof(Facet *));
 		size_t nextToRemove=0;
 		size_t nextToAdd=0;
-		for (size_t f=0;f<sh.nbFacet;f++) {
+		for (size_t f=0;(int)f<sh.nbFacet;f++) {
 			if (nextToRemove<facetsToRemove.size() && f==facetsToRemove[nextToRemove]) {
 				delete facets[f];
 				mApp->RenumberSelections(f);
