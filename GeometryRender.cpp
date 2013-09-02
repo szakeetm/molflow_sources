@@ -630,6 +630,7 @@ void Geometry::PaintSelectedVertices(BOOL hiddenVertex) {
     GLToolkit::DrawStringInit();
         if (!whiteBg) GLToolkit::GetDialogFont()->SetTextColor(1.0f,0.9f,0.2f);
 	else GLToolkit::GetDialogFont()->SetTextColor(1.0f,0.2f,0.0f);
+	
 
     // Draw Labels
 	glEnable(GL_BLEND);
@@ -1009,7 +1010,7 @@ void Geometry::Render(GLfloat *matView,BOOL renderVolume,BOOL renderTexture,int 
     Facet *f = facets[i];
     f->RenderSelectedElem();
   }
-
+  
 }
 
 void Geometry::DeleteGLLists(BOOL deletePoly,BOOL deleteLine) {

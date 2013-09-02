@@ -36,6 +36,7 @@ public:
   
   // Draw a 2D text (in viewport coordinates)
   void DrawText(int x,int y,char *text,BOOL loadMatrix=TRUE);
+  void DrawLargeText(int x,int y,char *text,float sizeFactor,BOOL loadMatrix=TRUE);
   void DrawTextFast(int cx,int cy,char *text);
   void DrawTextV(int x,int y,char *text,BOOL loadMatrix=TRUE);
 

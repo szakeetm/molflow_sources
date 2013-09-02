@@ -38,7 +38,7 @@ public:
   void Paint();
   void RestoreDeviceObjects();
 
-private:
+protected:
 
   char *mText;
   char *lines[64];
@@ -52,4 +52,17 @@ private:
 
 };
 
+class GLOverlayLabel : public GLLabel {
+public:
+	GLOverlayLabel(char *text);
+	void SetBackgroundColor(float r,float g,float b);
+	void Paint();
+	void SetTextSize(float s);
+	BOOL paintBg;
+private:
+	float rBack;
+	float gBack;
+	float bBack;
+	float sizeFactor;
+};
 #endif /* _GLLABELH_ */

@@ -176,6 +176,7 @@ FacetMesh::FacetMesh():GLWindow() {
 
 //-----------------------------------------------------------------------------
 
+
 void FacetMesh::UpdateSize() {
 	
 	char tmp[64];
@@ -247,7 +248,7 @@ void FacetMesh::UpdateSizeForRatio() {
 
 		for(int i=0;i<nbFacet;i++) {
 			Facet *f = geom->GetFacet(i);
-			if(f->sh.opacity==1.0) {
+			//if(f->sh.opacity==1.0) {
 				if(f->selected) {
 					cell += (llong)f->GetNbCellForRatio(ratio);
 					ram += (llong)f->GetTexRamSizeForRatio(ratio,boundMap,FALSE,1+worker->moments.size());
@@ -255,7 +256,7 @@ void FacetMesh::UpdateSizeForRatio() {
 					cell += (llong)f->GetNbCell();
 					ram += (llong)f->GetTexRamSize(1+worker->moments.size());
 				}
-			}
+			//}
 		}
 		ram += (((cell-1)*cell)/2 + 8*cell)*((llong)sizeof(ACFLOAT));
 
@@ -437,7 +438,9 @@ BOOL FacetMesh::Apply() {
 				nbPerformed+=1.0;
 				progressDlg->SetProgress(nbPerformed/nbSelected);
 			}
+
 		}
+
 	} else {
 		// Disable texture
 		progressDlg = new GLProgress("Applying mesh settings","Please wait");
@@ -462,6 +465,7 @@ BOOL FacetMesh::Apply() {
 	// Send to sub process
 	try {
 		worker->Reload();
+
 	} catch(Error &e) {
 		GLMessageBox::Display((char *)e.GetMsg(),"Error",GLDLG_OK,GLDLG_ICONERROR);
 	}

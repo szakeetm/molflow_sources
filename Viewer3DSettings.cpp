@@ -25,12 +25,12 @@
 Viewer3DSettings::Viewer3DSettings():GLWindow() {
 
   int wD = 215;
-  int hD = 400;
+  int hD = 425;
 
   SetTitle("3D Viewer Settings");
 
   panel = new GLTitledPanel("3D Viewer settings");
-  panel->SetBounds(5,5,wD-10,245);
+  panel->SetBounds(5,5,wD-10,270);
   Add(panel);
 
   GLLabel *l4 = new GLLabel("Show facet");
@@ -96,28 +96,32 @@ Viewer3DSettings::Viewer3DSettings():GLWindow() {
   bigDots->SetBounds(10,225,50,18);
   Add(bigDots);
 
+  showTimeToggle =  new GLToggle(0,"Show time overlay");
+  showTimeToggle->SetBounds(10,250,50,18);
+  Add(showTimeToggle);
+
   showDirection = new GLToggle(0,"Show direction");
-  showDirection->SetBounds(10,255,190,18);
+  showDirection->SetBounds(10,280,190,18);
   Add(showDirection);
 
   GLTitledPanel *panel2 = new GLTitledPanel("Direction field");
-  panel2->SetBounds(5,280,wD-10,70);
+  panel2->SetBounds(5,305,wD-10,70);
   Add(panel2);
 
   GLLabel *l7 = new GLLabel("Norme ratio");
-  l7->SetBounds(10,300,90,18);
+  l7->SetBounds(10,325,90,18);
   Add(l7);
 
   normeText = new GLTextField(0,"");
-  normeText->SetBounds(100,300,100,18);
+  normeText->SetBounds(100,325,100,18);
   Add(normeText);
 
   autoNorme = new GLToggle(0,"Normalize");
-  autoNorme->SetBounds(10,325,100,18);
+  autoNorme->SetBounds(10,350,100,18);
   Add(autoNorme);
 
   centerNorme = new GLToggle(0,"Center");
-  centerNorme->SetBounds(110,325,90,18);
+  centerNorme->SetBounds(110,350,90,18);
   Add(centerNorme);
 
   applyButton = new GLButton(0,"Apply");
@@ -153,6 +157,7 @@ void Viewer3DSettings::Display(Geometry *s,GeometryViewer *v) {
   hiddenEdge->SetCheck(viewer->showHidden);
   hiddenVertex->SetCheck(viewer->showHiddenVertex);
   showMesh->SetCheck(viewer->showMesh);
+  showTimeToggle->SetCheck(viewer->showTime);
 
   bigDots->SetCheck(viewer->bigDots);
   showDirection->SetCheck(viewer->showDir);
@@ -218,6 +223,7 @@ void Viewer3DSettings::ProcessMessage(GLComponent *src,int message) {
 
 	  viewer->bigDots=bigDots->IsChecked();
       viewer->showDir=showDirection->IsChecked();
+	  viewer->showTime=showTimeToggle->IsChecked();
 
       if( !normeText->GetNumber(&nratio) ) {
         GLMessageBox::Display("Invalid norme ratio value","Error",GLDLG_OK,GLDLG_ICONERROR);

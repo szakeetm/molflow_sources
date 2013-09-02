@@ -95,6 +95,7 @@ GeometryViewer::GeometryViewer(int id):GLComponent(id) {
 	showBack = SHOW_FRONTANDBACK;
 	showFilter = FALSE;
 	showColormap = TRUE;
+	showTime=FALSE;
 	camDistInc = 1.0;
 	transStep = 1.0;
 	angleStep = 0.005;
@@ -148,6 +149,10 @@ GeometryViewer::GeometryViewer(int id):GLComponent(id) {
 	capsLockLabel = new GLLabel("CAPS LOCK On: select facets only with selected vertex");
 	capsLockLabel->SetTextColor(255,0,0);
 	Add(capsLockLabel);
+
+	timeLabel = new GLOverlayLabel("TIME");
+	timeLabel->SetTextColor(255,255,255);
+	Add(timeLabel);
 
 	zoomBtn = new GLButton(0,"");
 	zoomBtn->SetIcon("images/icon_zoom.png");
@@ -226,6 +231,7 @@ void GeometryViewer::SetBounds(int x,int y,int width,int height) {
 		capsLockLabel->SetBounds(posX+165,posY+height-22,0,19);
 		coordLab->SetBounds(posX+162,posY+height-20,100,18);
 		facetSearchState->SetBounds(posX+10,posY+10,90,19);
+		timeLabel->SetBounds(posX+width-175,posY+height-100,100,50);
 
 		autoBtn->SetBounds(posX+width-122,posY+height-22,19,19);
 		selBtn->SetBounds(posX+width-102,posY+height-22,19,19);
@@ -917,6 +923,8 @@ void GeometryViewer::DrawLineAndHit() {
 
 }
 
+
+
 // ---------------------------------------------------------------------
 
 /*
@@ -1202,6 +1210,7 @@ void GeometryViewer::Zoom() {
 
 // ---------------------------------------------------------------------
 
+
 void GeometryViewer::Paint() {
 
 	char tmp[256];
@@ -1365,6 +1374,12 @@ void GeometryViewer::Paint() {
 	PaintCompAndBorder();
 
 	capsLockLabel->SetVisible(GetWindow()->IsCapsLockOn());
+	if (work->displayedMoment)
+		sprintf(tmp,"t=%g",work->moments[work->displayedMoment]);
+	else
+		sprintf(tmp,"Const. flow");
+	timeLabel->SetText(tmp);
+	timeLabel->SetVisible(showTime);
 }
 
 

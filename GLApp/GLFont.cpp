@@ -264,6 +264,68 @@ void GLFont2D::DrawText(int cx,int cy,char *text,BOOL loadMatrix) {
 
 }
 
+void GLFont2D::DrawLargeText(int cx,int cy,char *text,float sizeFactor,BOOL loadMatrix) {
+
+  int lgth = (int)strlen(text);
+  if( lgth==0 ) return;
+  int x = cx;
+  int y = cy+1;
+
+  glEnable(GL_TEXTURE_2D);
+  glBindTexture(GL_TEXTURE_2D,texId);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glColor3f(rC,gC,bC);
+
+  if( loadMatrix ) {
+    glMatrixMode( GL_PROJECTION );
+    glLoadMatrixf(pMatrix);
+    glMatrixMode( GL_MODELVIEW );
+    glLoadIdentity();
+  }
+
+  int xcPos=x;
+  float cH   = (float)cHeight / (float)fWidth;
+  //float factor=1.1f;
+	//glScalef(factor,factor,factor);
+  glBegin(GL_QUADS);
+  for(int i=0;i<lgth;i++ ) {
+
+    unsigned char  c = (unsigned char)text[i];
+    float xPos = (float)((c % 16) * 16 + 1)/ (float)fWidth;
+    float yPos = (float)((c / 16) * 16 )/ (float)fHeight;
+
+    if(!isVariable) {
+
+      float cW   = (float)cWidth / (float)fWidth;
+      glTexCoord2f(xPos   ,yPos   );glVertex2i(xcPos       ,y   );
+      glTexCoord2f(xPos+cW,yPos   );glVertex2i(xcPos+cWidth,y   );
+      glTexCoord2f(xPos+cW,yPos+cH);glVertex2i(xcPos+cWidth,y+cHeight);
+      glTexCoord2f(xPos   ,yPos+cH);glVertex2i(xcPos       ,y+cHeight);
+      xcPos += cWidth;
+
+    } else {
+      float cW   = (float)cVarWidth[c] / (float)fWidth;
+      glTexCoord2f(xPos   ,yPos   );glVertex2f(xcPos             ,y   );
+      glTexCoord2f(xPos+cW,yPos   );glVertex2f(xcPos+cVarWidth[c]*sizeFactor,y   );
+      glTexCoord2f(xPos+cW,yPos+cH);glVertex2f(xcPos+cVarWidth[c]*sizeFactor,y+cHeight*sizeFactor);
+      glTexCoord2f(xPos   ,yPos+cH);glVertex2f(xcPos             ,y+cHeight*sizeFactor);
+      xcPos += cVarWidth[c]*sizeFactor;
+
+    }
+
+  }
+  
+  glEnd();
+  //glScalef(1.0f/factor,1.0f/factor,1.0f/factor);
+#ifdef _DEBUG
+  theApp->nbPoly+=lgth;
+#endif
+
+}
+
 // -------------------------------------------
 
 void GLFont2D::DrawTextFast(int cx,int cy,char *text) {

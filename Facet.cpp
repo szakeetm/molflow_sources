@@ -664,10 +664,10 @@ BOOL Facet::SetTexture(double width,double height,BOOL useMesh) {
     if( useMesh ) 
 		if (!BuildMesh()) return FALSE;
     if( sh.countDirection ) {
-      int dirSize = sh.texWidth*sh.texHeight*sizeof(VHIT);
-      dirCache = (VHIT *)malloc(dirSize);
+      //int dirSize = sh.texWidth*sh.texHeight*sizeof(VHIT);
+      dirCache = (VHIT *)calloc(sh.texWidth*sh.texHeight,sizeof(VHIT));
 	  if (!dirCache) return FALSE;
-      memset(dirCache,0,dirSize);
+      //memset(dirCache,0,dirSize);
     }
 
   }
@@ -713,8 +713,9 @@ BOOL Facet::BuildMesh() {
   double *vList;
   double fA = iw*ih;
   int    nbv;
-
+  
   P1.pts = (VERTEX2D *)malloc(4*sizeof(VERTEX2D));
+  _ASSERTE(P1.pts);
   P1.nbPts = 4;
   P1.sign = 1.0;
   P2.nbPts = sh.nbIndex;
@@ -782,11 +783,12 @@ BOOL Facet::BuildMesh() {
             // Mesh coordinates
             meshPts[nbElem].nbPts = nbv;
             meshPts[nbElem].pts = (VERTEX2D *)malloc(nbv * sizeof(VERTEX2D));
-            for(int n=0;n<nbv;n++) {
-              meshPts[nbElem].pts[n].u = vList[2*n];
-              meshPts[nbElem].pts[n].v = vList[2*n+1];
-            }
-            nbElem++;
+			_ASSERTE(meshPts[nbElem].pts);
+			for(int n=0;n<nbv;n++) {
+				meshPts[nbElem].pts[n].u = vList[2*n];
+				meshPts[nbElem].pts[n].v = vList[2*n+1];
+			}
+			nbElem++;
 
           }
 
@@ -804,6 +806,7 @@ BOOL Facet::BuildMesh() {
         // Mesh coordinates
         meshPts[nbElem].nbPts = 4;
         meshPts[nbElem].pts = (VERTEX2D *)malloc(4 * sizeof(VERTEX2D));
+		_ASSERTE(meshPts[nbElem].pts);
         meshPts[nbElem].pts[0].u = u0;
         meshPts[nbElem].pts[0].v = v0;
         meshPts[nbElem].pts[1].u = u1;

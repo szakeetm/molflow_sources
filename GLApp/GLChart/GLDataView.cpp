@@ -904,27 +904,28 @@ void GLDataView::Add(double x, double y) {
  */
 void GLDataView::Add(double x, double y,BOOL updateFilter) {
 
-  _ASSERTE(DataList *newData = (DataList *)malloc(sizeof(DataList)));
-  newData->x = x;
-  newData->y = y;
-  newData->next = NULL;
+	DataList *newData = (DataList *)malloc(sizeof(DataList));
+	_ASSERTE(newData);
+	newData->x = x;
+	newData->y = y;
+	newData->next = NULL;
 
-  if (theData == NULL) {
-    theData = newData;
-    theDataEnd = theData;
-  } else {
-    theDataEnd->next = newData;
-    theDataEnd = theDataEnd->next;
-  }
+	if (theData == NULL) {
+		theData = newData;
+		theDataEnd = theData;
+	} else {
+		theDataEnd->next = newData;
+		theDataEnd = theDataEnd->next;
+	}
 
-  if (y < min) min = y;
-  if (y > max) max = y;
+	if (y < min) min = y;
+	if (y > max) max = y;
 
-  if (x < minXValue) minXValue = x;
-  if (x > maxXValue) maxXValue = x;
+	if (x < minXValue) minXValue = x;
+	if (x > maxXValue) maxXValue = x;
 
-  dataLength++;
-  if(updateFilter) updateFilters();
+	dataLength++;
+	if(updateFilter) updateFilters();
 
 }
 

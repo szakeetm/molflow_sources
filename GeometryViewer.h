@@ -138,6 +138,7 @@ public:
   BOOL showHidden;
   BOOL showHiddenVertex;
   BOOL showMesh;
+  BOOL showTime;
   BOOL bigDots;
   BOOL showDir;
   BOOL autoScaleOn;
@@ -179,6 +180,7 @@ private:
   GLButton      *sideBtn;
   GLCombo       *projCombo;
   GLLabel       *capsLockLabel;
+  GLOverlayLabel *timeLabel;
   GLButton      *zoomBtn;
   GLButton      *autoBtn;
   GLButton      *selBtn;

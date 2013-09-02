@@ -4351,8 +4351,8 @@ void  Geometry::DeleteIsolatedVertices(BOOL selectedOnly) {
 
 
 
-	_ASSERTE(VERTEX3D *nVert = (VERTEX3D *)malloc(nbVert*sizeof(VERTEX3D)));
-
+	VERTEX3D *nVert = (VERTEX3D *)malloc(nbVert*sizeof(VERTEX3D));
+	_ASSERTE(nVert);
 	for(int i=0,n=0;i<sh.nbVertex;i++) {
 		if(check[i] || (selectedOnly && !vertices3[i].selected)) {
 			nVert[n]=vertices3[i];
@@ -4516,7 +4516,8 @@ void Geometry::RemoveSelectedVertex() {
 		f->sh.nbIndex -= nbRemove;
 		f->vertices2 = (VERTEX2D *)malloc(f->sh.nbIndex*sizeof(VERTEX2D));
 		memset(f->vertices2,0,f->sh.nbIndex * sizeof(VERTEX2D));
-		_ASSERTE(f->visible = (BOOL *)malloc(f->sh.nbIndex*sizeof(BOOL)));
+		f->visible = (BOOL *)malloc(f->sh.nbIndex*sizeof(BOOL));
+		_ASSERTE(f->visible);
 		memset(f->visible,0xFF,f->sh.nbIndex*sizeof(BOOL));
 	}
 	

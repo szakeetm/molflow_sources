@@ -131,3 +131,34 @@ void GLLabel::Paint() {
     font->DrawText(posX,posY+14*i+2,lines[i],FALSE);
   GLToolkit::CheckGLErrors("GLLabel::Paint()");
 }
+
+GLOverlayLabel::GLOverlayLabel(char *text):GLLabel(text) {
+
+  sizeFactor=3.0f;
+  paintBg=FALSE;
+}
+
+void GLOverlayLabel::SetBackgroundColor(float r,float g,float b) {
+	rBack =r;
+	gBack=g;
+	bBack=b;
+}
+
+void GLOverlayLabel::Paint() {
+	if(!parent) return;
+
+	if (paintBg) GLComponent::Paint();
+	//GLComponent::Paint();
+
+	//Message
+	font->SetTextColor(rText,gText,bText);
+	//font->SetTextSize((int)(size*0.6),size);
+	for(int i=0;i<nbLine;i++)
+		font->DrawLargeText(posX,posY+14*i+2,lines[i],sizeFactor,FALSE);
+	//font->SetTextSize(9,15);
+	GLToolkit::CheckGLErrors("GLOverlayLabel::Paint()");
+}
+
+void GLOverlayLabel::SetTextSize(float s) {
+	sizeFactor=s;
+}

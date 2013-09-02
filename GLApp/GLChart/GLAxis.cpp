@@ -167,7 +167,8 @@ GLuint GLAxis::initMarker(char *name) {
     // Make 32 Bit RGBA buffer
     int fWidth  = img.Width();
     int fHeight = img.Height();
-    _ASSERTE(BYTE *buff32 = (BYTE *)malloc(fWidth*fHeight*4));
+    BYTE *buff32 = (BYTE *)malloc(fWidth*fHeight*4);
+	_ASSERTE(buff32);
     BYTE *data   = img.GetData();
     for(int y=0;y<fHeight;y++) {
       for(int x=0;x<fWidth;x++) {
