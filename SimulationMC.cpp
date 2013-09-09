@@ -732,5 +732,6 @@ void UpdateVelocity(FACET *collidedFacet) {
 }
 
 double GenerateRandomVelocity(int CDFId){
-	return sHandle->CDFs[CDFId].InterpolateX(rnd());
+	//return InterpolateY(rnd(),sHandle->CDFs[CDFId],TRUE);
+	return FastLookupY(rnd(),sHandle->CDFs[CDFId],TRUE);
 }

@@ -1,6 +1,6 @@
 #ifndef _DISTRIBUTIONS_
 #define _DISTRIBUTIONS_
-#define NUMBER_OF_DISTRO_VALUES 100
+/*#define NUMBER_OF_DISTRO_VALUES 100
 #define NUMBER_OF_INTEGR_VALUES 250
 #define VERY_SMALL 1.0E-30
 #define UPPER_LIMIT 100.0
@@ -10,21 +10,25 @@
 #define INTEGRAL_MODE_SR_POWER  2
 
 #define SYNGEN_MODE_FLUXWISE  0
-#define SYNGEN_MODE_POWERWISE 1
+#define SYNGEN_MODE_POWERWISE 1*/
 
-#include "File.h" //FileReader for LoadCSV
+//#include "File.h" //FileReader for LoadCSV
 #include <vector>
+#include "Simulation.h" //for BOOL and FALSE macros
 
 double erf(double x);
+double InterpolateY(double x,const std::vector<std::pair<double,double>>& table,BOOL limitToBounds=FALSE);
+double InterpolateX(double y,const std::vector<std::pair<double,double>>& table,BOOL limitToBounds=FALSE);
+double FastLookupY(double x,const std::vector<std::pair<double,double>>& table,BOOL limitToBounds=FALSE);
 
-class Averages {
+/*class Averages {
 public:
 	double average;
 	double average1;
 	double average_;
-};
+};*/
 
-class Distribution2D {
+/*class Distribution2D {
 public:
 	Distribution2D(int size);
 	Distribution2D::Distribution2D(const Distribution2D &copy_src); //copy constructor
@@ -44,7 +48,7 @@ public:
 	double inferior_flux,inferior_power;
 	double superior_flux,superior_power;
 	int i1;
-};
+};*/
 
 /*
 double g0ki(double x, double order, int kind);
@@ -62,6 +66,6 @@ Distribution2D Generate_LN_Distribution(); //precalculated ln(x) values for the 
 Distribution2D Generate_Polarization_Distribution(bool calculate_parallel_polarization, bool calculate_orthogonal_polarization);
 Distribution2D Generate_Integral(double x1,double x2,int mode);*/
 
-Distribution2D Generate_CDF(double gasTempKelvins,double gasMassGramsPerMol,int size);
+std::vector<std::pair<double,double>> Generate_CDF(double gasTempKelvins,double gasMassGramsPerMol,size_t size);
 
 #endif

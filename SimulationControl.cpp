@@ -82,7 +82,7 @@ void ClearSimulation() {
   int i,j;
 
   // Free old stuff
-  sHandle->CDFs=std::vector<Distribution2D>(); //clear CDF distributions
+  sHandle->CDFs=std::vector<std::vector<std::pair<double,double>>>(); //clear CDF distributions
   SAFE_FREE(sHandle->vertices3);
   for(j=0;j<sHandle->nbSuper;j++) {
     for(i=0;i<sHandle->str[j].nbFacet;i++) {
@@ -265,7 +265,7 @@ BOOL LoadSimulation(Dataport *loader) {
     memcpy(&(f->sh),shFacet,sizeof(SHFACET));
 
 	//Generate speed distribution functions
-	int id=GetCDFId(f->sh.temperature);
+	size_t id=GetCDFId(f->sh.temperature);
 	if (id>=0)
 		f->CDFid=id; //we've already generated a CDF for this temperature
 	else
@@ -658,9 +658,10 @@ double GetTick() {
 }
 
 int GetCDFId(double temperature) {
-	int i;
-	for (i=0;i<(int)sHandle->temperatures.size()&&(abs(temperature-sHandle->temperatures[i])>1E-5);i++); //check if we already had this temperature
-	if (i>=(int)sHandle->temperatures.size()) i=-1; //not found
+	size_t i;
+	for (i=0;i<sHandle->temperatures.size()&&(abs(temperature-sHandle->temperatures[i])>1E-5);i++); //check if we already had this temperature
+	if (i>=sHandle->temperatures.size()) i=-1; //not found
+	_ASSERTE(i!=-1);
 	return i;
 }
 int GenerateNewCDF(double temperature){

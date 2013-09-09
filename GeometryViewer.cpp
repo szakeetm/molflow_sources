@@ -150,7 +150,7 @@ GeometryViewer::GeometryViewer(int id):GLComponent(id) {
 	capsLockLabel->SetTextColor(255,0,0);
 	Add(capsLockLabel);
 
-	timeLabel = new GLOverlayLabel("TIME");
+	timeLabel = new GLOverlayLabel("");
 	timeLabel->SetTextColor(255,255,255);
 	Add(timeLabel);
 
@@ -231,7 +231,7 @@ void GeometryViewer::SetBounds(int x,int y,int width,int height) {
 		capsLockLabel->SetBounds(posX+165,posY+height-22,0,19);
 		coordLab->SetBounds(posX+162,posY+height-20,100,18);
 		facetSearchState->SetBounds(posX+10,posY+10,90,19);
-		timeLabel->SetBounds(posX+width-175,posY+height-100,100,50);
+		timeLabel->SetBounds(posX+width-200,posY+height-100,100,50);
 
 		autoBtn->SetBounds(posX+width-122,posY+height-22,19,19);
 		selBtn->SetBounds(posX+width-102,posY+height-22,19,19);
@@ -1375,7 +1375,7 @@ void GeometryViewer::Paint() {
 
 	capsLockLabel->SetVisible(GetWindow()->IsCapsLockOn());
 	if (work->displayedMoment)
-		sprintf(tmp,"t=%g",work->moments[work->displayedMoment]);
+		sprintf(tmp,"t= %g s",work->moments[work->displayedMoment-1]);
 	else
 		sprintf(tmp,"Const. flow");
 	timeLabel->SetText(tmp);
@@ -1639,7 +1639,7 @@ void GeometryViewer::ManageEvent(SDL_Event *evt)
 				TranslateScale(2.0); //Zoom slower when SHIFT is pressed
 			}
 			else if (GetWindow()->IsCtrlDown()) {
-				TranslateScale(75.0); //Zoom slower when SHIFT is pressed
+				TranslateScale(75.0); //Zoom faster when SHIFT is pressed
 			} else {
 				TranslateScale(20.0);
 			}

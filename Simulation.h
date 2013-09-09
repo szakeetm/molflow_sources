@@ -24,6 +24,7 @@ typedef int BOOL;
 #define MIN(x,y) (((x)<(y))?(x):(y))
 #define TRUE  1
 #define FALSE 0
+#define INFINITY 1.e100
 #define SAFE_FREE(x) if(x) { free(x);x=NULL; }
 #define SATURATE(x,min,max) {if(x<(min)) x=(min); if(x>(max)) x=(max);}
 #define MAX_STRUCT 512
@@ -116,7 +117,7 @@ typedef struct {
   //llong  wallHits[BOUNCEMAX]; // 'Wall collision count before absoprtion' density histogram
 
   //Maxwellian cumulative distribution functions
-  std::vector<Distribution2D> CDFs; //cumulative distribution function for each temperature
+  std::vector<std::vector<std::pair<double,double>>> CDFs; //cumulative distribution function for each temperature
   std::vector<double> temperatures; //keeping track of all temperatures that have a CDF already generated
   std::vector<double> moments;      //time values (seconds) when a simulation state is measured
   double latestMoment;

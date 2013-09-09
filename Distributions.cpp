@@ -1,12 +1,11 @@
-#include <malloc.h>
-#include <cstring>
-#include <math.h>
+//#include <malloc.h>
+//#include <cstring>
 #include "Distributions.h"
-#include "Simulation.h"
-#include "Random.h"
+#include <algorithm>
+//#include "Random.h"
 //#include "GLApp\GLTypes.h"
 
-Distribution2D::Distribution2D(int N){
+/*Distribution2D::Distribution2D(int N){
 	if (!(N>0) && (N<10000000)) N=1; //don't create 0 size distributions
 	valuesX=(double*)malloc(N*sizeof(double));
 	valuesY=(double*)malloc(N*sizeof(double));
@@ -83,38 +82,38 @@ int Distribution2D::findXindex(double x) {
 	for (superior_index=0;valuesX[superior_index]<x && superior_index<size;superior_index++);
 	return superior_index;
 }
-
-Distribution2D Generate_CDF(double gasTempKelvins,double gasMassGramsPerMol,int size){
-	
+*/
+std::vector<std::pair<double,double>> Generate_CDF(double gasTempKelvins,double gasMassGramsPerMol,size_t size){
+	std::vector<std::pair<double,double>> cdf;
 	double Kb=1.38E-23;
 	double R=8.3144621;
 	double a=sqrt(Kb*gasTempKelvins/(gasMassGramsPerMol*1.67E-27)); //distribution a parameter. Converting molar mass to atomic mass
 
 	//Generate cumulative distribution function
-	Distribution2D CDF(size);
+	cdf.reserve(size);
 	double mostProbableSpeed=sqrt(2*R*gasTempKelvins/(gasMassGramsPerMol/1000.0));
 	double binSize=4.0*mostProbableSpeed/(double)size; //distribution generated between 0 and 3*V_prob
 	double coeff1=1.0/sqrt(2.0)/a;
 	double coeff2=sqrt(2.0/PI)/a;
 	double coeff3=1.0/(2.0*pow(a,2));
 
-	for (int i=0;i<size;i++) {
+	for (size_t i=0;i<size;i++) {
 		double x=(double)i*binSize;
-		CDF.valuesX[i]=x;
-		CDF.valuesY[i]=erf(x*coeff1)-coeff2*x*exp(-pow(x,2)*coeff3);
+		cdf.push_back(std::make_pair(x,erf(x*coeff1)-coeff2*x*exp(-pow(x,2)*coeff3)));
 	}
 
-	/*
+	
 	//CDF created, let's generate its inverse
-	Distribution2D inverseCDF(size);
+	std::vector<std::pair<double,double>> inverseCDF(size);
 	binSize=1.0/(double)size; //Divide probability to bins
-	for (int i=0;i<size;i++) {
+	for (size_t i=0;i<size;i++) {
 		double p=(double)i*binSize;
-		inverseCDF.valuesX[i]=p;
-		inverseCDF.valuesY[i]=CDF.InterpolateX(p);
-	}*/
-	return CDF;
+		inverseCDF.push_back(std::make_pair(p,InterpolateX(p,cdf,TRUE)));
+	}
+	return cdf;
 }
+
+
 
 double erf(double x)
 {
@@ -137,4 +136,115 @@ double erf(double x)
     double y = 1.0 - (((((a5*t + a4)*t) + a3)*t + a2)*t + a1)*t*exp(-x*x);
 
     return sign*y;
+}
+
+double InterpolateY(double x,const std::vector<std::pair<double,double>>& table,BOOL limitToBounds){
+	//Function inspired by http://stackoverflow.com/questions/11396860/better-way-than-if-else-if-else-for-linear-interpolation
+	_ASSERTE(table.size());
+	if (table.size()==1) return table[0].second; //constant value
+
+	// Assumes that "table" is sorted by .first
+    // Check if x is out of bound
+    std::vector<std::pair<double, double> >::const_iterator lower, upper;
+	BOOL outOfLimits = FALSE;
+
+	if (x >= table.back().first) {
+		if (limitToBounds) return table.back().second;
+		else {
+			outOfLimits = TRUE;
+			lower = upper = table.begin();
+			upper++;
+		}
+	} else if (x < table[0].first) {
+		if (limitToBounds) return table[0].second;
+		else {
+			outOfLimits = TRUE;
+			lower = upper = table.end();
+			lower--;
+		}
+	} 
+
+	// INFINITY is defined in math.h in the glibc implementation
+	if (!outOfLimits) {
+		lower = upper = std::lower_bound(table.begin(), table.end(), std::make_pair(x, -INFINITY));
+		// Corner case
+		if (upper == table.begin()) return upper->second;
+		lower--;
+	}
+	return lower->second + (upper->second - lower->second)*(x - lower->first)/(upper->first - lower->first);
+	
+}
+
+double InterpolateX(double y,const std::vector<std::pair<double,double>>& table,BOOL limitToBounds){
+	//Function inspired by http://stackoverflow.com/questions/11396860/better-way-than-if-else-if-else-for-linear-interpolation
+	_ASSERTE(table.size());
+	if (table.size()==1) return table[0].second; //constant value
+
+	// Assumes that "table" is sorted by .second
+    // Check if y is out of bound
+    std::vector<std::pair<double, double> >::const_iterator lower, upper;
+	BOOL outOfLimits = FALSE;
+	
+	if (y >= table.back().second) {
+		if (limitToBounds) return table.back().first;
+		else {
+			outOfLimits = TRUE;
+			lower = upper = table.begin();
+			upper++;
+		}
+	} else if (y < table[0].second) {
+		if (limitToBounds) return table[0].first;
+		else {
+			outOfLimits = TRUE;
+			lower = upper = table.end();
+			lower--;
+		}
+	}
+
+	// INFINITY is defined in math.h in the glibc implementation
+	if (!outOfLimits) {
+		lower = upper = std::lower_bound(table.begin(), table.end(), std::make_pair(-INFINITY, y));
+		// Corner case
+		if (upper == table.begin()) return upper->first;
+		lower--;
+	}
+	return lower->first + (upper->first - lower->first)*(y - lower->second)/(upper->second - lower->second);	
+}
+
+double FastLookupY(double x,const std::vector<std::pair<double,double>>& table,BOOL limitToBounds){
+	//Function inspired by http://stackoverflow.com/questions/11396860/better-way-than-if-else-if-else-for-linear-interpolation
+	_ASSERTE(table.size());
+	if (table.size()==1) return table[0].second; //constant value
+
+	// Assumes that table .first is SORTED AND EQUIDISTANT
+    // Check if x is out of bound
+    std::vector<std::pair<double, double> >::const_iterator lower, upper;
+	BOOL outOfLimits = FALSE;
+
+	if (x >= table.back().first) {
+		if (limitToBounds) return table.back().second;
+		else {
+			outOfLimits = TRUE;
+			lower = upper = table.begin();
+			upper++;
+		}
+	} else if (x < table[0].first) {
+		if (limitToBounds) return table[0].second;
+		else {
+			outOfLimits = TRUE;
+			lower = upper = table.end();
+			lower--;
+		}
+	} 
+
+	if (!outOfLimits) {
+		double distanceX = table[1].first-table[0].first;
+		size_t lowerIndex = (int)((x-table[0].first)/distanceX);
+		lower = upper = table.begin()+(lowerIndex+1);
+		// Corner case
+		if (upper == table.begin()) return upper->second;
+		lower--;
+	}
+	return lower->second + (upper->second - lower->second)*(x - lower->first)/(upper->first - lower->first);
+	
 }
