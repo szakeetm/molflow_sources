@@ -265,7 +265,7 @@ BOOL LoadSimulation(Dataport *loader) {
     memcpy(&(f->sh),shFacet,sizeof(SHFACET));
 
 	//Generate speed distribution functions
-	size_t id=GetCDFId(f->sh.temperature);
+	int id=GetCDFId(f->sh.temperature);
 	if (id>=0)
 		f->CDFid=id; //we've already generated a CDF for this temperature
 	else
@@ -661,7 +661,6 @@ int GetCDFId(double temperature) {
 	size_t i;
 	for (i=0;i<sHandle->temperatures.size()&&(abs(temperature-sHandle->temperatures[i])>1E-5);i++); //check if we already had this temperature
 	if (i>=sHandle->temperatures.size()) i=-1; //not found
-	_ASSERTE(i!=-1);
 	return i;
 }
 int GenerateNewCDF(double temperature){

@@ -84,13 +84,13 @@ int Distribution2D::findXindex(double x) {
 }
 */
 std::vector<std::pair<double,double>> Generate_CDF(double gasTempKelvins,double gasMassGramsPerMol,size_t size){
-	std::vector<std::pair<double,double>> cdf;
+	std::vector<std::pair<double,double>> cdf;cdf.reserve(size);
 	double Kb=1.38E-23;
 	double R=8.3144621;
 	double a=sqrt(Kb*gasTempKelvins/(gasMassGramsPerMol*1.67E-27)); //distribution a parameter. Converting molar mass to atomic mass
 
 	//Generate cumulative distribution function
-	cdf.reserve(size);
+	//cdf.reserve(size);
 	double mostProbableSpeed=sqrt(2*R*gasTempKelvins/(gasMassGramsPerMol/1000.0));
 	double binSize=4.0*mostProbableSpeed/(double)size; //distribution generated between 0 and 3*V_prob
 	double coeff1=1.0/sqrt(2.0)/a;
@@ -104,13 +104,13 @@ std::vector<std::pair<double,double>> Generate_CDF(double gasTempKelvins,double 
 
 	
 	//CDF created, let's generate its inverse
-	std::vector<std::pair<double,double>> inverseCDF(size);
+	std::vector<std::pair<double,double>> inverseCDF;inverseCDF.reserve(size);
 	binSize=1.0/(double)size; //Divide probability to bins
 	for (size_t i=0;i<size;i++) {
 		double p=(double)i*binSize;
 		inverseCDF.push_back(std::make_pair(p,InterpolateX(p,cdf,TRUE)));
 	}
-	return cdf;
+	return inverseCDF;
 }
 
 
@@ -136,6 +136,10 @@ double erf(double x)
     double y = 1.0 - (((((a5*t + a4)*t) + a3)*t + a2)*t + a1)*t*exp(-x*x);
 
     return sign*y;
+}
+
+BOOL compare_second(const std::pair<double,double>& lhs, const std::pair<double,double>& rhs) {
+	return (lhs.second<rhs.second);
 }
 
 double InterpolateY(double x,const std::vector<std::pair<double,double>>& table,BOOL limitToBounds){
@@ -203,7 +207,7 @@ double InterpolateX(double y,const std::vector<std::pair<double,double>>& table,
 
 	// INFINITY is defined in math.h in the glibc implementation
 	if (!outOfLimits) {
-		lower = upper = std::lower_bound(table.begin(), table.end(), std::make_pair(-INFINITY, y));
+		lower = upper = std::lower_bound(table.begin(), table.end(), std::make_pair(INFINITY, y),compare_second);
 		// Corner case
 		if (upper == table.begin()) return upper->first;
 		lower--;
