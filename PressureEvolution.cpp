@@ -183,7 +183,14 @@ void PressureEvolution::Refresh() {
 			nbProf++;
 		}
 	}
-
+	//Remove profiles that aren't present anymore
+	for (int v=0;v<nbView;v++) 
+		if (views[v]->userData>=geom->GetNbFacet() || !geom->GetFacet(views[v]->userData)->sh.isProfile) {
+			chart->GetY1Axis()->RemoveDataView(views[v]);
+			SAFE_DELETE(views[v]);
+			for(int j=v;j<nbView-1;j++) views[j] = views[j+1];
+			nbView--;
+	}
 	refreshViews();
 
 }

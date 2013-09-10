@@ -53,7 +53,7 @@ static COLUMN allColumn[] = {
   {"Memory"        , 80 , ALIGN_CENTER} ,
   {"Planarity"      , 80 , ALIGN_CENTER} ,
   {"Profile"       , 80 , ALIGN_CENTER} ,
-  {"Avg.Pressure"      , 80 , ALIGN_CENTER} ,
+  {"Avg.Press.(C.F.)"      , 80 , ALIGN_CENTER} ,
   {"Hits"        , 80 , ALIGN_CENTER} ,
   {"Des."        , 80 , ALIGN_CENTER} ,
   {"Abs."        , 80 , ALIGN_CENTER} ,
@@ -166,7 +166,7 @@ FacetDetails::FacetDetails():GLWindow() {
   show[16] = new GLToggle(16,"Profile");
   show[16]->SetCheck(TRUE);
   sPanel->Add(show[16]);
-  show[17] = new GLToggle(17,"Avg.Pressure");
+  show[17] = new GLToggle(17,"Avg.Press(C.F.)");
   show[17]->SetCheck(TRUE);
   sPanel->Add(show[17]);
   show[18] = new GLToggle(18,"Hits");

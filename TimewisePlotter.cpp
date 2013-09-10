@@ -150,7 +150,7 @@ void TimewisePlotter::SetBounds(int x,int y,int w,int h) {
 }
 
 void TimewisePlotter::Refresh() {
-
+	Reset();
 	if(!worker) return;
 
 	Geometry *geom = worker->GetGeometry();
@@ -172,6 +172,11 @@ void TimewisePlotter::Refresh() {
 		}
 	}
 	if (nbProf>0 && nbView==0) addView(profCombo->GetUserValueAt(0));
+	//Remove profiles that aren't present anymore
+	if (nbView>0) 
+		if (views[0]->userData>=geom->GetNbFacet() || !geom->GetFacet(views[0]->userData)->sh.isProfile) {
+			Reset();
+		}
 	refreshViews();
 
 }
