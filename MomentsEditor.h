@@ -44,6 +44,7 @@ private:
   GLTextField *desStartText;
   GLTextField *desStopText;
   GLTextField *windowSizeText;
+  GLTextField *valveText;
   GLToggle    *useMaxwellToggle;
   GLToggle    *calcConstantFlow;
   GLTitledPanel *panel1;

@@ -120,8 +120,7 @@ typedef struct {
   std::vector<std::vector<std::pair<double,double>>> CDFs; //cumulative distribution function for each temperature
   std::vector<double> temperatures; //keeping track of all temperatures that have a CDF already generated
   std::vector<double> moments;      //time values (seconds) when a simulation state is measured
-  double latestMoment;
-  BOOL calcConstantFlow;
+  
 
   // Geometry
   char        name[64];         // Global name
@@ -196,6 +195,9 @@ typedef struct {
   double desorptionStopTime;
   double timeWindowSize;
   BOOL useMaxwellDistribution; //TRUE: Maxwell-Boltzmann distribution, FALSE: All molecules have the same (V_avg) speed
+  double latestMoment;
+  BOOL calcConstantFlow;
+  double valveOpenMoment;
   
 #ifdef JACOBI_ITERATION
   ACFLOAT *acDensityTmp;

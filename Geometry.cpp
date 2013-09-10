@@ -967,7 +967,7 @@ DWORD Geometry::GetGeometrySize(std::vector<double> *moments) {
 	for(int i=0;i<sh.nbFacet;i++) 
 		memoryUsage += facets[i]->GetGeometrySize();
 	memoryUsage+=sizeof(double)*(int)(*moments).size(); //time values
-	memoryUsage+=4*sizeof(double)+2*sizeof(BOOL); //gas pulse parameters
+	memoryUsage+=3*sizeof(double)+2*sizeof(BOOL)+sizeof(double); //gas pulse parameters
 	return memoryUsage;
 }
 
@@ -1058,9 +1058,9 @@ void Geometry::CopyGeometryBuffer(BYTE *buffer,std::vector<double> *moments) {
 	*((double *)buffer)=mApp->worker.desorptionStartTime; buffer+=sizeof(double);
 	*((double *)buffer)=mApp->worker.desorptionStopTime;   buffer+=sizeof(double);
 	*((double *)buffer)=mApp->worker.timeWindowSize;      buffer+=sizeof(double);
-	*((double *)buffer)=mApp->worker.latestMoment;      buffer+=sizeof(double);
 	*((BOOL *)buffer)=mApp->worker.useMaxwellDistribution;   buffer+=sizeof(BOOL);
 	*((BOOL *)buffer)=mApp->worker.calcConstantFlow;   buffer+=sizeof(BOOL);
+	*((double *)buffer)=mApp->worker.valveOpenMoment;      buffer+=sizeof(double);
 }
 
 // -----------------------------------------------------------

@@ -545,7 +545,10 @@ void IntersectTree(struct AABBNODE *node) {
 
                   if( f->sh.isOpaque ) {
 
-                    if( (f->sh.opacity == 1.0) || (rnd()<f->sh.opacity) ) {
+                    //if( (f->sh.opacity == 1.0) || (rnd()<f->sh.opacity) ) {
+					  double time=sHandle->flightTimeCurrentParticle+d/100.0/sHandle->velocityCurrentParticle;
+					  if( (f->globalId>1 || time<sHandle->valveOpenMoment) && ((f->sh.opacity == 1.0) || (rnd()<f->sh.opacity)) ) {
+
 
                       // Hard hit
                       if( d < intMinLgth ) {

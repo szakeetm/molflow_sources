@@ -170,8 +170,8 @@ typedef struct {
   double     desorptionStop;
   double     timeWindowSize;
   BOOL       useMaxwellDistribution;
-  double     latestMoment;
   BOOL       calcConstantFlow;
+  double     valveOpenMoment;
 } SHGEOM;
 
 typedef struct {

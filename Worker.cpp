@@ -54,9 +54,9 @@ Worker::Worker() {
 	desorptionStartTime=0.0;
 	desorptionStopTime=1;
 	timeWindowSize=0.1;
-	latestMoment=0.0;
 	useMaxwellDistribution=TRUE;
 	calcConstantFlow=TRUE;
+	valveOpenMoment=99999.0;
 
 	pid = _getpid();
 	sprintf(ctrlDpName,"MFLWCTRL%d",pid);

@@ -172,6 +172,8 @@ BOOL LoadSimulation(Dataport *loader) {
   sHandle->loadOK = FALSE;
   ClearSimulation();
 
+
+
   // Connect the dataport
   if( !AccessDataport(loader) ) {
     SetErrorSub("Failed to connect to DP");
@@ -200,7 +202,6 @@ BOOL LoadSimulation(Dataport *loader) {
   sHandle->gasMass = shGeom->gasMass;
   sHandle->nonIsothermal = shGeom->nonIsothermal;
   sHandle->nbMoments = shGeom->nbMoments;
-  sHandle->latestMoment = shGeom->latestMoment;
 
   /*//Test cube
   sHandle->testCubeCount=0;
@@ -413,19 +414,22 @@ BOOL LoadSimulation(Dataport *loader) {
   }
 
   //copy time moments
+  sHandle->latestMoment=0.0;
+
   for (i=0;i<sHandle->nbMoments;i++) {
 	  double new_moment = *((double *) incBuff);
 		incBuff += sizeof(double);
 		sHandle->moments.push_back(new_moment);
+		if (new_moment>sHandle->latestMoment) sHandle->latestMoment=new_moment;
   }
 
   //gas pulse parameters
   sHandle->desorptionStartTime=*((double *) incBuff);incBuff += sizeof(double);
   sHandle->desorptionStopTime=*((double *) incBuff);incBuff += sizeof(double);
-  sHandle->timeWindowSize=*((double *) incBuff);incBuff += sizeof(double);
-  sHandle->latestMoment=*((double *) incBuff);incBuff += sizeof(double);
+  sHandle->timeWindowSize=*((double *) incBuff);incBuff += sizeof(double);sHandle->latestMoment+=sHandle->timeWindowSize/2.0;
   sHandle->useMaxwellDistribution=*((BOOL *) incBuff);incBuff += sizeof(BOOL);
   sHandle->calcConstantFlow=*((BOOL *) incBuff);incBuff += sizeof(BOOL);
+  sHandle->valveOpenMoment=*((double *) incBuff);incBuff += sizeof(double);
 
   ReleaseDataport(loader);
 

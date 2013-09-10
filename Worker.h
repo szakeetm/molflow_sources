@@ -149,7 +149,6 @@ public:
   
   std::vector<double> moments;             //moments when a time-dependent simulation state is recorded
   std::vector<std::string> userMoments;    //user-defined text values for defining time moments (can be time or time series)
-  double latestMoment;                     //time (in s) of the latest user-defined moment. Calculation can be stopped here
   std::vector<unsigned int> testStructures; //structures which are test-cubes
   int displayedMoment;
 
@@ -159,6 +158,7 @@ public:
   double timeWindowSize;
   BOOL useMaxwellDistribution;
   BOOL calcConstantFlow;
+  double valveOpenMoment;
 
 	// Current loaded file
   char fullFileName[512];

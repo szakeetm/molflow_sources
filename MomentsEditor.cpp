@@ -32,7 +32,7 @@ extern MolFlow *theApp;
 MomentsEditor::MomentsEditor(Worker *w):GLWindow() {
 
   int wD = 220;
-  int hD = 451;
+  int hD = 476;
 
   work=w;
 
@@ -60,7 +60,7 @@ MomentsEditor::MomentsEditor(Worker *w):GLWindow() {
   //char tmp[128];
 
   panel2=new GLTitledPanel("Time parameters");
-  panel2->SetBounds(5,260,wD-10,140);
+  panel2->SetBounds(5,260,wD-10,170);
   Add(panel2);
 
   GLLabel *startLabel = new GLLabel("Desorption starts at:                   s");
@@ -101,6 +101,15 @@ MomentsEditor::MomentsEditor(Worker *w):GLWindow() {
   //useMaxwellToggle->SetCheck(work->useMaxwellDistribution);
   Add(calcConstantFlow);
 
+  GLLabel *valveLabel = new GLLabel("Facets 1,2 open at:                   s");
+  valveLabel->SetBounds(15,400,170,25);
+  Add(valveLabel);
+  
+  //sprintf(tmp,"%g",work->desorptionStopTime);
+  valveText = new GLTextField(0,"");
+  valveText->SetBounds(120,400,60,20);
+  Add(valveText);
+
   //RebuildList();
 
   setButton = new GLButton(0,"Apply");
@@ -137,7 +146,7 @@ void MomentsEditor::ProcessMessage(GLComponent *src,int message) {
 
 		} else if (src==setButton) {
 			//validate user input
-			double start,stop,window;
+			double start,stop,window,valve;
 			if (!(desStartText->GetNumber(&start))) {
 				GLMessageBox::Display("Invalid desorption start","Error",GLDLG_OK,GLDLG_ICONERROR);
 				return;
@@ -148,6 +157,11 @@ void MomentsEditor::ProcessMessage(GLComponent *src,int message) {
 			}
 			if (!(windowSizeText->GetNumber(&window))) {
 				GLMessageBox::Display("Invalid window length","Error",GLDLG_OK,GLDLG_ICONERROR);
+				return;
+			}
+			
+			if (!(valveText->GetNumber(&valve))) {
+				GLMessageBox::Display("Invalid valve open time","Error",GLDLG_OK,GLDLG_ICONERROR);
 				return;
 			}
 
@@ -178,9 +192,9 @@ void MomentsEditor::ProcessMessage(GLComponent *src,int message) {
 				work->desorptionStartTime=start;
 				work->desorptionStopTime=stop;
 				work->timeWindowSize=window;
-				work->latestMoment=latest+window/2;
 				work->useMaxwellDistribution=useMaxwellToggle->IsChecked();
 				work->calcConstantFlow=calcConstantFlow->IsChecked();
+				work->valveOpenMoment=valve;
 
 				work->Reload();
 				if (mApp->timeSettings) mApp->timeSettings->RefreshMoments();
@@ -263,6 +277,8 @@ void MomentsEditor::Refresh() {
 	desStopText->SetText(tmp);
 	sprintf(tmp,"%g",work->timeWindowSize);
 	windowSizeText->SetText(tmp);
+	sprintf(tmp,"%g",work->valveOpenMoment);
+	valveText->SetText(tmp);
 	useMaxwellToggle->SetCheck(work->useMaxwellDistribution);
 	calcConstantFlow->SetCheck(work->calcConstantFlow);
 	RebuildList();
