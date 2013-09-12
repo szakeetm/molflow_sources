@@ -302,6 +302,16 @@ void ProfileFacet(FACET *f,double time) {
 			  }
 		  }
       break;
+
+	case REC_VELOCITY_DISTRIBUTION:
+		pos = (int)(sHandle->velocityCurrentParticle/f->sh.maxSpeed*(double)PROFILE_SIZE );
+		SATURATE(pos,0,PROFILE_SIZE-1);
+		for (int m=0;m<=nbMoments;m++) {
+			if (m==0||abs(time-sHandle->moments[m-1])<sHandle->timeWindowSize/2.0) {
+				f->profile[m][pos]++;
+			}
+		}
+		break;
   }
 }
 

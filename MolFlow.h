@@ -108,7 +108,8 @@ public:
 	float lastAppTime;
 
     float    lastMeasTime; // Last measurement time (for hps and dps)
-	double tolerance; //Select coplanar toelrance
+	double tolerance; //Select coplanar tolerance
+	double largeArea; //Selection filter
 
     // Util functions
 	//void SendHeartBeat(BOOL forced=FALSE);

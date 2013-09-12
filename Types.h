@@ -51,6 +51,7 @@ typedef float ACFLOAT;
 #define REC_PRESSUREU  1  // Pressure profile (U direction)
 #define REC_PRESSUREV  2  // Pressure profile (V direction)
 #define REC_ANGULAR    3  // Angular profile
+#define REC_VELOCITY_DISTRIBUTION 4 //Velocity distribution
 
 #define PROFILE_SIZE  100 // Size of profile
 

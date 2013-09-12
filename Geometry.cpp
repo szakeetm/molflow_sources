@@ -257,6 +257,7 @@ void Geometry::CalculateFacetParam(int facet) {
 	f->d = D;
 	f->err = max;
 
+	f->sh.maxSpeed = 4.0 * sqrt(2.0*8.31*f->sh.temperature/0.001/gasMass);
 }
 
 // -----------------------------------------------------------

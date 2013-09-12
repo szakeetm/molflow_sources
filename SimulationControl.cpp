@@ -272,6 +272,8 @@ BOOL LoadSimulation(Dataport *loader) {
 	else
 		f->CDFid=GenerateNewCDF(f->sh.temperature);
 
+	f->sh.maxSpeed = 4.0 * sqrt(2.0*8.31*f->sh.temperature/0.001/sHandle->gasMass);
+
     sHandle->hasVolatile |= f->sh.isVolatile;
     sHandle->hasDirection |= f->sh.countDirection;
 
@@ -410,8 +412,7 @@ BOOL LoadSimulation(Dataport *loader) {
 		}
 		sHandle->dirTotalSize += f->directionSize*(1+sHandle->nbMoments);
 	}
-
-  }
+	}
 
   //copy time moments
   sHandle->latestMoment=0.0;

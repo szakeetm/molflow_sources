@@ -288,7 +288,7 @@ int GLList::GetUserValueAt(int col,int row) {
 // ---------------------------------------------------------------
 
 char *GLList::GetValueAt(int col,int row) {
-	_ASSERTE(col<nbCol);_ASSERTE(row<nbRow);
+	_ASSERTE(!values || col<nbCol);_ASSERTE(!values || row<nbRow);
 	if(values)
 		return values[row*nbCol+col];
 	else

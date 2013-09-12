@@ -522,6 +522,7 @@ BOOL StartFromSource() {
 	sHandle->flightTimeCurrentParticle=sHandle->desorptionStartTime+(sHandle->desorptionStopTime-sHandle->desorptionStartTime)*rnd();
 
 	if (sHandle->useMaxwellDistribution) sHandle->velocityCurrentParticle=GenerateRandomVelocity(src->CDFid);
+	
 	else sHandle->velocityCurrentParticle=145.469*sqrt(src->sh.temperature/sHandle->gasMass);  //sqrt(8*R/PI/1000)=145.47
 	sHandle->temperature = src->sh.temperature; //Thermalize particle
 
@@ -729,9 +730,18 @@ void UpdateVelocity(FACET *collidedFacet) {
 	//thermalize perfectly
 	if (sHandle->useMaxwellDistribution) sHandle->velocityCurrentParticle=GenerateRandomVelocity(collidedFacet->CDFid);
 	else sHandle->velocityCurrentParticle=145.469*sqrt(collidedFacet->sh.temperature/sHandle->gasMass);
+	/*//DEBUG!!!!
+	std::vector<llong> count(301,0);
+	for (int i=0;i<5000000;i++) {
+		size_t index=(int)(GenerateRandomVelocity(0)*0.1);
+		if (index>300) {
+			index=300;
+		}
+		count[index]++;
+	}*/
 }
 
 double GenerateRandomVelocity(int CDFId){
 	//return InterpolateY(rnd(),sHandle->CDFs[CDFId],TRUE);
-	return FastLookupY(rnd(),sHandle->CDFs[CDFId],TRUE);
+	return FastLookupY(rnd(),sHandle->CDFs[CDFId],FALSE);
 }

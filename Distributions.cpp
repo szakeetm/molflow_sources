@@ -92,7 +92,7 @@ std::vector<std::pair<double,double>> Generate_CDF(double gasTempKelvins,double 
 	//Generate cumulative distribution function
 	//cdf.reserve(size);
 	double mostProbableSpeed=sqrt(2*R*gasTempKelvins/(gasMassGramsPerMol/1000.0));
-	double binSize=4.0*mostProbableSpeed/(double)size; //distribution generated between 0 and 3*V_prob
+	double binSize=3.0*mostProbableSpeed/(double)size; //distribution generated between 0 and 3*V_prob
 	double coeff1=1.0/sqrt(2.0)/a;
 	double coeff2=sqrt(2.0/PI)/a;
 	double coeff3=1.0/(2.0*pow(a,2));
@@ -156,15 +156,15 @@ double InterpolateY(double x,const std::vector<std::pair<double,double>>& table,
 		if (limitToBounds) return table.back().second;
 		else {
 			outOfLimits = TRUE;
-			lower = upper = table.begin();
-			upper++;
+			lower = upper = table.end()-1;
+			lower--;
 		}
 	} else if (x < table[0].first) {
 		if (limitToBounds) return table[0].second;
 		else {
 			outOfLimits = TRUE;
-			lower = upper = table.end();
-			lower--;
+			lower = upper = table.begin();
+			upper++;
 		}
 	} 
 
@@ -193,15 +193,15 @@ double InterpolateX(double y,const std::vector<std::pair<double,double>>& table,
 		if (limitToBounds) return table.back().first;
 		else {
 			outOfLimits = TRUE;
-			lower = upper = table.begin();
-			upper++;
+			lower = upper = table.end()-1;
+			lower--;
 		}
 	} else if (y < table[0].second) {
 		if (limitToBounds) return table[0].first;
 		else {
 			outOfLimits = TRUE;
-			lower = upper = table.end();
-			lower--;
+			lower = upper = table.begin();
+			upper++;
 		}
 	}
 
@@ -229,15 +229,15 @@ double FastLookupY(double x,const std::vector<std::pair<double,double>>& table,B
 		if (limitToBounds) return table.back().second;
 		else {
 			outOfLimits = TRUE;
-			lower = upper = table.begin();
-			upper++;
+			lower = upper = table.end()-1;
+			lower--;
 		}
 	} else if (x < table[0].first) {
 		if (limitToBounds) return table[0].second;
 		else {
 			outOfLimits = TRUE;
-			lower = upper = table.end();
-			lower--;
+			lower = upper = table.begin();
+			upper++;
 		}
 	} 
 
@@ -249,6 +249,6 @@ double FastLookupY(double x,const std::vector<std::pair<double,double>>& table,B
 		if (upper == table.begin()) return upper->second;
 		lower--;
 	}
-	return lower->second + (upper->second - lower->second)*(x - lower->first)/(upper->first - lower->first);
-	
+	double result= lower->second + (upper->second - lower->second)*(x - lower->first)/(upper->first - lower->first);
+	return result;
 }

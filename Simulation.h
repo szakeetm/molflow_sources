@@ -55,6 +55,7 @@ typedef struct {
   VHIT     **direction; // Direction field recording (average)
   char     *fullElem;  // Direction field recording (only on full element)
   llong    **profile;   // Distribution and hit recording
+  llong    **velocityHistogram; //Velocity distribution
 
   // Temporary var (used in Intersect for collision)
   double colDist;

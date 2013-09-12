@@ -28,7 +28,7 @@ extern GLApplication *theApp;
 extern double gasMass;
 extern double totalOutgassing;
 
-static const char*profType[] = {"None","Pressure \201","Pressure \202","Angle"};
+static const char*profType[] = {"None","Pressure \201","Pressure \202","Angle","Velocity"};
 
 ProfilePlotter::ProfilePlotter():GLWindow() {
 
@@ -79,16 +79,19 @@ ProfilePlotter::ProfilePlotter():GLWindow() {
 
 	normCombo = new GLCombo(0);
 	normCombo->SetEditable(TRUE);
-	normCombo->SetSize(8);
+	normCombo->SetSize(4);
 	normCombo->SetValueAt(0,"None");
-	normCombo->SetValueAt(1,"Absorption (total)");
+	normCombo->SetValueAt(1,"Pressure");
+	normCombo->SetValueAt(2,"Velocity");
+	normCombo->SetValueAt(3,"Angle(deg)");
+	/*normCombo->SetValueAt(1,"Absorption (total)");
 	normCombo->SetValueAt(2,"Desorption (total)");
 	normCombo->SetValueAt(3,"Hit           (total)");
 	normCombo->SetValueAt(4,"Absorption (local)");
 	normCombo->SetValueAt(5,"Desorption (local)");
-	normCombo->SetValueAt(6,"Hit           (local)");
-	normCombo->SetValueAt(7,"Pressure");
-	normCombo->SetSelectedIndex(7);
+	normCombo->SetValueAt(6,"Hit           (local)");*/
+
+	normCombo->SetSelectedIndex(1);
 	Add(normCombo);
 
 	logYToggle = new GLToggle(0,"Log Y");
@@ -318,11 +321,11 @@ void ProfilePlotter::refreshViews() {
 			llong *profilePtr = (llong *)(buffer + f->sh.hitOffset + sizeof(SHHITS)+worker->displayedMoment*sizeof(llong)*PROFILE_SIZE);
 
 			switch(normalize) {
-			case 0:
+			case 0: //None
 				for(int j=0;j<PROFILE_SIZE;j++)
 					v->Add((double)j,(double)profilePtr[j],FALSE);
 				break;
-			case 1:
+			/*case 1: 
 				for(int j=0;j<PROFILE_SIZE && nbAbs!=0.0;j++)
 					v->Add((double)j,(double)profilePtr[j]/nbAbs,FALSE);
 				break;
@@ -345,8 +348,8 @@ void ProfilePlotter::refreshViews() {
 			case 6:
 				for(int j=0;j<PROFILE_SIZE && fnbHit!=0.0;j++)
 					v->Add((double)j,(double)profilePtr[j]/fnbHit,FALSE);
-				break;
-			case 7: //Pressure
+				break;*/
+			case 1: //Pressure
 				scale = 40.0*totalOutgassing*((worker->displayedMoment==0)?1.0:((worker->desorptionStopTime-worker->desorptionStartTime)
 					/worker->timeWindowSize))/(145.469*sqrt(f->sh.temperature
 					/gasMass)*(f->sh.area/PROFILE_SIZE)*nbDes);
@@ -354,6 +357,16 @@ void ProfilePlotter::refreshViews() {
 				if(f->sh.opacity>0.0) scale = scale * f->sh.opacity;
 				for(int j=0;j<PROFILE_SIZE && fnbHit!=0.0;j++)
 					v->Add((double)j,(double)profilePtr[j]*scale,FALSE);
+				break;
+			case 2: //Velocity
+				scale = f->sh.maxSpeed/(double)PROFILE_SIZE;
+				for(int j=0;j<PROFILE_SIZE && fnbHit!=0.0;j++)
+					v->Add((double)j*scale,(double)profilePtr[j],FALSE);
+				break;
+			case 3: //Angle (deg)
+				scale = 90.0/(double)PROFILE_SIZE;
+				for(int j=0;j<PROFILE_SIZE && fnbHit!=0.0;j++)
+					v->Add((double)j*scale,(double)profilePtr[j],FALSE);
 				break;
 			}
 			v->CommitChange();

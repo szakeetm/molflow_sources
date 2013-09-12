@@ -196,6 +196,7 @@ typedef struct {
   BOOL   countTrans;     // Count transparent (MC texture)
   BOOL   countACD;       // Angular coefficient (AC texture)
   BOOL   countDirection; // Record avergare direction (MC texture)
+  double maxSpeed;       // Max expected particle velocity (for velocity histogram)
 
   // Flags
   BOOL   is2sided;     // 2 sided

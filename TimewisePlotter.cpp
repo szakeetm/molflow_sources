@@ -28,7 +28,7 @@ extern GLApplication *theApp;
 extern double gasMass;
 extern double totalOutgassing;
 
-static const char*profType[] = {"None","Pressure \201","Pressure \202","Angle"};
+static const char*profType[] = {"None","Pressure \201","Pressure \202","Angle","Velocity"};
 
 TimewisePlotter::TimewisePlotter():GLWindow() {
 
