@@ -178,7 +178,6 @@ void TimewisePlotter::Refresh() {
 			Reset();
 		}
 	refreshViews();
-
 }
 
 void TimewisePlotter::Display(Worker *w) {

@@ -7,7 +7,7 @@
 #include "GLApp/GLButton.h"
 #include "GLApp/GLTextField.h"
 #include "GLApp/GLLabel.h"
-//
+
 #include "Geometry.h"
 #include "Worker.h"
 
@@ -39,7 +39,7 @@ private:
   GLTextField *yOffset;
   GLTextField *zOffset;
 
-  BOOL whatever;
+
 
   int nbVertexS;
 

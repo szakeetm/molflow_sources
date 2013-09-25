@@ -93,7 +93,7 @@ void ClearSimulation() {
 		SAFE_FREE(f->fullElem);
         SAFE_FREE(f->inc);
 		SAFE_FREE(f->largeEnough);
-		for (size_t m=0;m<(sHandle->nbMoments+1);m++) {
+		for (int m=0;m<(sHandle->nbMoments+1);m++) {
 			if (f->hits) SAFE_FREE(f->hits[m]);
 			if (f->profile) SAFE_FREE(f->profile[m]);
 			if (f->direction) SAFE_FREE(f->direction[m]);
@@ -245,7 +245,7 @@ BOOL LoadSimulation(Dataport *loader) {
   // Vertex
   sHandle->vertices3 = (VERTEX3D *)malloc(sHandle->nbVertex*sizeof(VERTEX3D));
   if (!sHandle->vertices3) {
-	  SetErrorSub("Not enough memory to load");
+	  SetErrorSub("Not enough memory to load vertices");
 	  return FALSE;
   }
   buffer+=sizeof(SHGEOM);
@@ -259,7 +259,7 @@ BOOL LoadSimulation(Dataport *loader) {
     SHFACET *shFacet = (SHFACET *)buffer;
     FACET *f = (FACET *)malloc(sizeof(FACET));
 	if (!f) {
-		SetErrorSub("Not enough memory to load");
+		SetErrorSub("Not enough memory to load facets");
 		return FALSE;
 	}
     memset(f,0,sizeof(FACET));
@@ -272,7 +272,7 @@ BOOL LoadSimulation(Dataport *loader) {
 	else
 		f->CDFid=GenerateNewCDF(f->sh.temperature);
 
-	f->sh.maxSpeed = 4.0 * sqrt(2.0*8.31*f->sh.temperature/0.001/sHandle->gasMass);
+	//f->sh.maxSpeed = 4.0 * sqrt(2.0*8.31*f->sh.temperature/0.001/sHandle->gasMass);
 
     sHandle->hasVolatile |= f->sh.isVolatile;
     sHandle->hasDirection |= f->sh.countDirection;
@@ -310,7 +310,7 @@ BOOL LoadSimulation(Dataport *loader) {
     buffer+=f->sh.nbIndex*sizeof(int);
     f->vertices2 = (VERTEX2D *)malloc(f->sh.nbIndex * sizeof(VERTEX2D));
 	if (!f->vertices2) {
-		SetErrorSub("Not enough memory to load");
+		SetErrorSub("Not enough memory to load vertices");
 		return FALSE;
 	}
     memcpy(f->vertices2,buffer,f->sh.nbIndex * sizeof(VERTEX2D));
@@ -318,7 +318,7 @@ BOOL LoadSimulation(Dataport *loader) {
 	if (f->sh.useOutgassingFile) {
 		f->outgassingMap=(double*)malloc(sizeof(double)*f->sh.outgassingMapWidth*f->sh.outgassingMapHeight);
 		if (!f->outgassingMap) {
-			SetErrorSub("Not enough memory to load");
+			SetErrorSub("Not enough memory to load outgassing map");
 			return FALSE;
 		}
 		memcpy(f->outgassingMap,buffer,sizeof(double)*f->sh.outgassingMapWidth*f->sh.outgassingMapHeight);
@@ -412,6 +412,7 @@ BOOL LoadSimulation(Dataport *loader) {
 		}
 		sHandle->dirTotalSize += f->directionSize*(1+sHandle->nbMoments);
 	}
+
 	}
 
   //copy time moments
@@ -663,6 +664,7 @@ double GetTick() {
 }
 
 int GetCDFId(double temperature) {
+
 	size_t i;
 	for (i=0;i<sHandle->temperatures.size()&&(abs(temperature-sHandle->temperatures[i])>1E-5);i++); //check if we already had this temperature
 	if (i>=sHandle->temperatures.size()) i=-1; //not found

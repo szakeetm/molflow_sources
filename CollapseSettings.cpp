@@ -151,6 +151,9 @@ void CollapseSettings::ProcessMessage(GLComponent *src,int message) {
 			mApp->UpdateModelParams();
 			if (mApp->vertexCoordinates) mApp->vertexCoordinates->Update();
 			if (mApp->facetCoordinates) mApp->facetCoordinates->UpdateFromSelection();
+			if (mApp->profilePlotter) mApp->profilePlotter->Refresh();
+			if (mApp->pressureEvolution) mApp->pressureEvolution->Refresh();
+			if (mApp->timewisePlotter) mApp->timewisePlotter->Refresh();
 			// Send to sub process
 			try { work->Reload(); } catch(Error &e) {
 				GLMessageBox::Display((char *)e.GetMsg(),"Error reloading worker",GLDLG_OK,GLDLG_ICONERROR);

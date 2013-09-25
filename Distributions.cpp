@@ -112,9 +112,6 @@ std::vector<std::pair<double,double>> Generate_CDF(double gasTempKelvins,double 
 	}
 	return inverseCDF;
 }
-
-
-
 double erf(double x)
 {
     // constants

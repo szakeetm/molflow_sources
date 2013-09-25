@@ -720,7 +720,6 @@ void DHIT_FACET(FACET *f,double time) {
 			f->direction[m][add].dir.z += sHandle->pDir.z*sHandle->velocityCurrentParticle;
 			f->direction[m][add].sumSpeed += sHandle->velocityCurrentParticle;
 			f->direction[m][add].count++;
-
 		}
 	}
 
@@ -744,4 +743,5 @@ void UpdateVelocity(FACET *collidedFacet) {
 double GenerateRandomVelocity(int CDFId){
 	//return InterpolateY(rnd(),sHandle->CDFs[CDFId],TRUE);
 	return FastLookupY(rnd(),sHandle->CDFs[CDFId],FALSE);
+	//return 100.0+rnd()*400.0;
 }
