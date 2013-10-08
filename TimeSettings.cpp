@@ -139,7 +139,11 @@ void TimeSettings::ProcessMessage(GLComponent *src,int message) {
 			sprintf(tmp,"t=%gs",work->moments[id-1]);
 			timeLabel->SetText(tmp);
 		}
-		work->Update(0.0f); //update displayed profiles and textures
+		try {
+		  work->Update(0.0f);//update displayed profiles and textures
+	  } catch(Error &e) {
+		  GLMessageBox::Display((char *)e.GetMsg(),"Error (Worker::Update)",GLDLG_OK,GLDLG_ICONERROR);
+	  } 
 		if(mApp->profilePlotter) mApp->profilePlotter->Update(0.0f,TRUE);
 		//if(mApp->pressureEvolution) mApp->pressureEvolution->Update(0.0f,TRUE);
 		if(mApp->timewisePlotter) mApp->timewisePlotter->UpdateMoment();

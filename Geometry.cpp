@@ -3079,11 +3079,11 @@ void Geometry::LoadGEO(FileReader *file,GLProgress *prg,LEAK *pleak,int *nbleak,
 	prg->SetMessage("Reading GEO file header...");
 	file->ReadKeyword("version");file->ReadKeyword(":");
 	*version = file->ReadInt();
-	if( *version>GEOVERSION ) {
+	/*if( *version>GEOVERSION ) {
 		char errMsg[512];
 		sprintf(errMsg,"Unsupported GEO version V%d",*version);
 		throw Error(errMsg);
-	}
+	}*/
 
 	file->ReadKeyword("totalHit");file->ReadKeyword(":");
 	tNbHit = file->ReadLLong();
@@ -3228,6 +3228,7 @@ void Geometry::LoadGEO(FileReader *file,GLProgress *prg,LEAK *pleak,int *nbleak,
 		vertices3[i].x = file->ReadDouble();
 		vertices3[i].y = file->ReadDouble();
 		vertices3[i].z = file->ReadDouble();
+		vertices3[i].selected = FALSE;
 	}
 	file->ReadKeyword("}");
 
@@ -4123,8 +4124,10 @@ void Geometry::ImportDesorption(FileReader *file,Dataport *dpHit) {
 		}
 		double nU = Norme(&(f->sh.U));
 		double nV = Norme(&(f->sh.V));
-		int w = f->sh.outgassingMapWidth = (int)ceil(nU*ratio*0.999999); //double precision written to file
-		int h = f->sh.outgassingMapHeight= (int)ceil(nV*ratio*0.999999); //double precision written to file
+		//int w = f->sh.outgassingMapWidth = (int)ceil(nU*ratio*0.999999); //double precision written to file
+		//int h = f->sh.outgassingMapHeight= (int)ceil(nV*ratio*0.999999); //double precision written to file
+		int w = f->sh.outgassingMapWidth = (int)ceil(nU*ratio); //double precision written to file
+		int h = f->sh.outgassingMapHeight= (int)ceil(nV*ratio); //double precision written to file
 		f->outgassingMap=(double*)malloc(w*h*sizeof(double));
 		for(int i=0;i<w;i++) {
 			for(int j=0;j<h;j++) {

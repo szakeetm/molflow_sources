@@ -340,8 +340,12 @@ void PerformTeleport(FACET *iFacet) {
 			}
 		}
 	}
-	if (!found) printf("Global Id %d not found",iFacet->sh.teleportDest-1);
-
+	if (!found) {
+		char err[128];
+		sprintf(err,"Teleport destination of facet %d not found (facet %d does not exist)",iFacet->globalId+1,iFacet->sh.teleportDest-1);
+		SetErrorSub(err);
+		return;
+	}
 	// Count this hit as a transparent pass
 	RecordHit(HIT_TELEPORT);
 	if( iFacet->hits && iFacet->sh.countTrans ) AHIT_FACET(iFacet,sHandle->flightTimeCurrentParticle);

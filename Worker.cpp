@@ -1052,16 +1052,16 @@ void Worker::StartStop(float appTime,int mode) {
 			calcAC = FALSE;
 			this->mode = mode;
 			Start();
+			
+			// Particular case when simulation ends before getting RUN state
+			if(allDone) {
+				Update(appTime);
+				GLMessageBox::Display("Max desorption reached","Information (Start)",GLDLG_OK,GLDLG_ICONINFO);
+			}
 		} catch(Error &e) {
 			running = FALSE;
 			GLMessageBox::Display((char *)e.GetMsg(),"Error (Start)",GLDLG_OK,GLDLG_ICONERROR);
 			return;
-		}
-
-		// Particular case when simulation ends before getting RUN state
-		if(allDone) {
-			Update(appTime);
-			GLMessageBox::Display("Max desorption reached","Information (Start)",GLDLG_OK,GLDLG_ICONINFO);
 		}
 
 	}
@@ -1089,8 +1089,10 @@ void Worker::Update(float appTime) {
 		}
 
 		// End of simulation reached (Stop GUI)
-		if( (error || done) && running && appTime!=0.0f )
+		if( (error || done) && running && appTime!=0.0f ) {
 			InnerStop(appTime);
+			if (error) ThrowSubProcError();
+		}
 
 		// Retrieve hit count recording from the shared memory
 		if( dpHit ) {

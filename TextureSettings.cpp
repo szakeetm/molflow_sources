@@ -233,7 +233,11 @@ void TextureSettings::ProcessMessage(GLComponent *src,int message) {
       geom->texMax = (AHIT)max;
       geom->texAutoScale = texAutoScale->IsChecked();
 	  geom->texAutoScaleIncludeConstantFlow = includeConstantFlow->IsChecked();
-      worker->Update(0.0f);
+      try {
+		  worker->Update(0.0f);
+	  } catch(Error &e) {
+		  GLMessageBox::Display((char *)e.GetMsg(),"Error (Worker::Update)",GLDLG_OK,GLDLG_ICONERROR);
+	  }
       Update();
 
     } else if (src==setCurrentButton) {
@@ -244,7 +248,11 @@ void TextureSettings::ProcessMessage(GLComponent *src,int message) {
 		texAutoScale->SetCheck(FALSE);
 		includeConstantFlow->SetVisible(FALSE);
 		geom->texAutoScale=false;
-		worker->Update(0.0f);
+		try {
+		  worker->Update(0.0f);
+	  } catch(Error &e) {
+		  GLMessageBox::Display((char *)e.GetMsg(),"Error (Worker::Update)",GLDLG_OK,GLDLG_ICONERROR);
+	  }
 		Update();
 	}
     break;

@@ -15,6 +15,7 @@
 */
 
 #include "GLWindowManager.h"
+#include "GLMessageBox.h"
 #include "GLApp.h"
 #include "GLToolkit.h"
 #include "GLApp.h"
@@ -420,7 +421,11 @@ void GLWindowManager::Resize() {
   for(int i=1;i<nbWindow;i++) 
     allWin[i]->UpdateOnResize();
   MolFlow *mApp = (MolFlow *)theApp;
-  mApp->worker.Update(0.0f);
+  try {
+		  mApp->worker.Update(0.0f);
+  } catch(Error &e) {
+	  GLMessageBox::Display((char *)e.GetMsg(),"Error (Worker::Update)",GLDLG_OK,GLDLG_ICONERROR);
+  }
 }
 
 // ---------------------------------------------------------------
