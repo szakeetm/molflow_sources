@@ -85,7 +85,9 @@ char *FileUtils::GetPath(char *fileName) {
 FileReader::FileReader(char *fileName) {
 
   file = fopen(fileName,"r");
-  if(!file) throw Error("Cannot open file for reading");
+  char tmp[512];
+  sprintf(tmp,"Cannot open file for reading (%s)",fileName);
+  if(!file) throw Error(tmp);
   curLine = 1;
   strcpy(this->fileName,fileName);
   isEof = 0;
