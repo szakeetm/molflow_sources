@@ -385,8 +385,8 @@ void UpdateACHits(Dataport *dpHit,int prIdx,DWORD timeout) {
   if( !AccessDataportTimed(dpHit,timeout) ) return;
 
   gHits = (SHGHITS *)dpHit->buff;
-  gHits->maxHit = 0.0f;
-  gHits->minHit = 0.0f;
+  gHits->texture_limits[0].max.all = 0.0;
+  gHits->texture_limits[0].min.all = 0.0;
   gHits->mode = AC_MODE;
   gHits->total.hit.nbDesorbed = sHandle->nbDesorbed;
 
@@ -402,9 +402,9 @@ void UpdateACHits(Dataport *dpHit,int prIdx,DWORD timeout) {
     shTexture = (AHIT *)((char *)dpHit->buff + (f->sh.hitOffset + sizeof(SHHITS) + f->profileSize));
     for(j=0;j<f->sh.texHeight && f->sh.opacity==1.0f;j++) {
       for(i=0;i<f->sh.texWidth;i++) {
-        AHIT val = (AHIT)(sHandle->acDensity[idx]);
-        shTexture[i + j*f->sh.texWidth] = val;
-        if( val > gHits->maxHit ) gHits->maxHit = val;
+        ACFLOAT val = (ACFLOAT)(sHandle->acDensity[idx]);
+        shTexture[i + j*f->sh.texWidth].count = val;
+        if( val > gHits->texture_limits[0].max.all ) gHits->texture_limits[0].max.all = val;
         // Normalize over facet area
         sumVal += (double)(sHandle->acDensity[idx]*sHandle->acArea[idx]/f->sh.area);
         sumAbs += (double)(sHandle->acAbsorb[idx]*sHandle->acArea[idx]/f->sh.area);

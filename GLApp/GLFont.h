@@ -35,7 +35,7 @@ public:
   int RestoreDeviceObjects(int srcWidth,int scrHeight);
   
   // Draw a 2D text (in viewport coordinates)
-  void DrawText(int x,int y,char *text,BOOL loadMatrix=TRUE);
+  void DrawText(const int &x,const int &y,char *text,const BOOL &loadMatrix=TRUE);
   void DrawLargeText(int x,int y,char *text,float sizeFactor,BOOL loadMatrix=TRUE);
   void DrawTextFast(int cx,int cy,char *text);
   void DrawTextV(int x,int y,char *text,BOOL loadMatrix=TRUE);
@@ -44,7 +44,7 @@ public:
   void InvalidateDeviceObjects();
 
   // Set text color
-  void SetTextColor(float r,float g,float b);
+  void SetTextColor(const float &r,const float &g,const float &b);
 
   // Set default character size (Default 9,15)
   void SetTextSize(int width,int height);

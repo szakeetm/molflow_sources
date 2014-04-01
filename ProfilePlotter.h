@@ -70,9 +70,12 @@ private:
   //GLTextField *qText;
   GLButton    *formulaBtn;
   GLToggle    *logYToggle;
+  GLToggle    *correctForGas;
 
   GLDataView  *views[32];
+  GLCColor    *colors[8];
 
+  int          nbColors;
   int          nbView;
   float        lastUpdate;
 

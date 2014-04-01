@@ -90,7 +90,7 @@ GLParser::~GLParser() {
 
 // -------------------------------------------------------
 
-void GLParser::SetName(char *name) {
+void GLParser::SetName(const char *name) {
   strncpy(this->name,name,256);
 }
 
@@ -102,7 +102,7 @@ char *GLParser::GetName() {
 
 // -------------------------------------------------------
 
-void GLParser::SetExpression(char *expr) {
+void GLParser::SetExpression(const char *expr) {
   strncpy(this->expr,expr,4096);
 }
 

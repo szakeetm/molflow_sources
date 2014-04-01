@@ -31,6 +31,7 @@ public:
 
   // Construction
   GlobalSettings();
+  void UpdateOutgassing();
   void SMPUpdate(float appTime);
 
   // Implementation
@@ -54,7 +55,7 @@ private:
 
   GLToggle      *chkAntiAliasing;
   GLToggle      *chkWhiteBg;
-  GLToggle      *chkNonIsothermal;
+  //GLToggle      *chkNonIsothermal;
   GLToggle      *chkSimuOnly;
   GLToggle      *chkCheckForUpdates;
   GLToggle      *chkCompressSavedFiles;
@@ -62,6 +63,7 @@ private:
   GLButton    *cancelButton;
 
   GLTextField *outgassingText;
+  GLTextField *influxText;
   GLTextField *gasmassText;
 
 };

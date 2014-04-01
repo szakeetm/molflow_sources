@@ -16,8 +16,8 @@
 #include <vector>
 #include "Simulation.h" //for BOOL and FALSE macros
 
-double erf(double x);
-double InterpolateY(double x,const std::vector<std::pair<double,double>>& table,BOOL limitToBounds=FALSE);
+double my_erf(double x);
+double InterpolateY(double x,const std::vector<std::pair<double,double>>& table,BOOL limitToBounds=FALSE,BOOL logarithmic=FALSE);
 double InterpolateX(double y,const std::vector<std::pair<double,double>>& table,BOOL limitToBounds=FALSE);
 double FastLookupY(double x,const std::vector<std::pair<double,double>>& table,BOOL limitToBounds=FALSE);
 

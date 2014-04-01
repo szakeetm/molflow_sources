@@ -453,6 +453,14 @@ BOOL FacetMesh::Apply() {
 			Facet *f = geom->GetFacet(i);
 			if( f->selected ) {
 				geom->SetFacetTexture(i,0.0,FALSE);
+
+				f->sh.countDes = 
+				f->sh.countAbs = 
+				f->sh.countRefl = 
+				f->sh.countTrans = 
+				f->sh.countACD = 
+				f->sh.countDirection = FALSE;
+
 				f->textureVisible = showTexture->IsChecked();
 				f->volumeVisible = showVolume->IsChecked();
 				nbPerformed+=1.0;

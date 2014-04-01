@@ -31,13 +31,15 @@ static const int   plAligns[] = { ALIGN_LEFT,ALIGN_CENTER,ALIGN_CENTER,ALIGN_CEN
 int antiAliasing=true;
 int whiteBg=false;
 int needsReload=false;
-int nonIsothermal=false;
+//int nonIsothermal=false;
 int checkForUpdates=false;
 int compressSavedFiles=true;
 double gasMass=28;
-double totalOutgassing=1.0;
-double autoSaveFrequency=10.0f; //in minutes
+double totalOutgassing=0.0; //total outgassing in Pa*m3/sec (internally everything is in SI units)
+double totalInFlux = 0.0; //total incoming molecules per second. For anisothermal system, it is (totalOutgassing / Kb / T)
+double autoSaveFrequency=10.0; //in minutes
 int autoSaveSimuOnly=false;
+int numCPU = 0;
 HANDLE compressProcessHandle;
 //HANDLE molflowHandle;
 
@@ -46,13 +48,13 @@ HANDLE compressProcessHandle;
 GlobalSettings::GlobalSettings():GLWindow() {
 
   int wD = 610;
-  int hD = 500;
+  int hD = 550;
 
   SetTitle("Global Settings");
   SetIconfiable(TRUE);
 
   GLTitledPanel *panel = new GLTitledPanel("View settings");
-  panel->SetBounds(5,2,300,78);
+  panel->SetBounds(5,2,300,103);
   Add(panel);
   
   chkAntiAliasing = new GLToggle(0,"Anti-Aliasing");
@@ -64,7 +66,7 @@ GlobalSettings::GlobalSettings():GLWindow() {
   panel->Add(chkWhiteBg);
 
   GLTitledPanel *panel2 = new GLTitledPanel("Gas settings");
-  panel2->SetBounds(310,2,295,78);
+  panel2->SetBounds(310,2,295,103);
   Add(panel2);
 
   GLLabel *massLabel = new GLLabel("Gas molecular mass (g/mol):");
@@ -72,48 +74,57 @@ GlobalSettings::GlobalSettings():GLWindow() {
   panel2->Add(massLabel);
 
   gasmassText = new GLTextField(0,"");
-  gasmassText->SetBounds(460,20,70,19);
+  gasmassText->SetBounds(500,20,90,19);
   panel2->Add(gasmassText);
 
-  GLLabel *outgassingLabel = new GLLabel("Total outgassing (unit * l/sec):");
+  GLLabel *outgassingLabel = new GLLabel("Total outgassing (mbar*l/sec):");
   outgassingLabel->SetBounds(315,50,150,19);
   panel2->Add(outgassingLabel);
 
   outgassingText = new GLTextField(0,"");
-  outgassingText->SetBounds(460,50,70,19);
+  outgassingText->SetBounds(500,50,90,19);
   outgassingText->SetEditable(FALSE);
   panel2->Add(outgassingText);
 
+  GLLabel *influxLabel = new GLLabel("Total gas flux (molecules/sec):");
+  influxLabel->SetBounds(315, 75, 150, 19);
+  panel2->Add(influxLabel);
+
+  influxText = new GLTextField(0, "");
+  influxText->SetBounds(500, 75, 90, 19);
+  influxText->SetEditable(FALSE);
+  panel2->Add(influxText);
+
   GLTitledPanel *panel4 = new GLTitledPanel("Program settings");
-  panel4->SetBounds(5,85,600,90);
+  panel4->SetBounds(5,110,600,90);
   Add(panel4);
 
   GLLabel *asLabel = new GLLabel("Autosave frequency (minutes):");
-  asLabel->SetBounds(15,100,160,19);
+  asLabel->SetBounds(15,125,160,19);
   panel4->Add(asLabel);
 
   autoSaveText = new GLTextField(0,"");
-  autoSaveText->SetBounds(170,100,30,19);
+  autoSaveText->SetBounds(170,125,30,19);
   panel4->Add(autoSaveText);
 
   chkSimuOnly = new GLToggle(0,"Autosave only when simulation is running");
-  chkSimuOnly->SetBounds(10,125,160,19);
+  chkSimuOnly->SetBounds(10,150,160,19);
   panel4->Add(chkSimuOnly);
 
   chkCheckForUpdates = new GLToggle(0,"Check for updates at startup");
-  chkCheckForUpdates->SetBounds(315,100,100,19);
+  chkCheckForUpdates->SetBounds(315,125,100,19);
   Add(chkCheckForUpdates);
 
   chkCompressSavedFiles = new GLToggle(0,"Compress saved files (use .GEO7Z format)");
-  chkCompressSavedFiles->SetBounds(10,150,100,19);
+  chkCompressSavedFiles->SetBounds(10,175,100,19);
   Add(chkCompressSavedFiles);
 
-  chkNonIsothermal = new GLToggle(0,"Non-isothermal system (textures only, experimental)");
+  /*chkNonIsothermal = new GLToggle(0,"Non-isothermal system (textures only, experimental)");
   chkNonIsothermal->SetBounds(315,125,100,19);
-  Add(chkNonIsothermal);
+  Add(chkNonIsothermal);*/
 
   GLTitledPanel *panel3 = new GLTitledPanel("Subprocess control");
-  panel3->SetBounds(5,180,wD-10,hD-225);
+  panel3->SetBounds(5,205,wD-10,hD-250);
   Add(panel3);
 
 
@@ -124,9 +135,14 @@ GlobalSettings::GlobalSettings():GLWindow() {
   processList->SetColumnLabels((char **)plName);
   processList->SetColumnAligns((int *)plAligns);
   processList->SetColumnLabelVisible(TRUE);
-  processList->SetBounds(10,195,wD-20,hD-280);
+  processList->SetBounds(10,220,wD-20,hD-330);
   panel3->Add(processList);
 
+	char tmp[128];
+	sprintf(tmp,"Number of CPU cores:     %d",numCPU);
+	GLLabel *coreLabel = new GLLabel(tmp);
+	coreLabel->SetBounds(10,hD-99,120,19);
+	panel3->Add(coreLabel);
   GLLabel *l1 = new GLLabel("Number of subprocesses:");
   l1->SetBounds(10,hD-74,120,19);
   panel3->Add(l1);
@@ -175,9 +191,8 @@ void GlobalSettings::Display(Worker *w) {
 	char tmp[256];
 	chkAntiAliasing->SetCheck(antiAliasing);
 	chkWhiteBg->SetCheck(whiteBg);
-	chkNonIsothermal->SetCheck(nonIsothermal);
-	sprintf(tmp,"%.3E",totalOutgassing);
-	outgassingText->SetText(tmp);
+	//chkNonIsothermal->SetCheck(nonIsothermal);
+	UpdateOutgassing();
 	sprintf(tmp,"%g",gasMass);
 	gasmassText->SetText(tmp);
 	sprintf(tmp,"%g",autoSaveFrequency);
@@ -260,8 +275,7 @@ void GlobalSettings::SMPUpdate(float appTime) {
 void GlobalSettings::RestartProc() {
 	
   MolFlow *mApp = (MolFlow *)theApp;
-  
- int nbProc;
+  int nbProc;
  if( sscanf(nbProcText->GetText(),"%d",&nbProc)==0 ) {
    GLMessageBox::Display("Invalid process number","Error",GLDLG_OK,GLDLG_ICONERROR);
  } else {
@@ -319,12 +333,12 @@ void GlobalSettings::ProcessMessage(GLComponent *src,int message) {
 	    whiteBg=chkWhiteBg->IsChecked();
 		checkForUpdates=chkCheckForUpdates->IsChecked();
 		compressSavedFiles=chkCompressSavedFiles->IsChecked();
-		if (nonIsothermal!=chkNonIsothermal->IsChecked()) {
+		/*if (nonIsothermal!=chkNonIsothermal->IsChecked()) {
 			if (mApp->AskToReset()) {
 				needsReload=TRUE;
 				nonIsothermal=chkNonIsothermal->IsChecked();
 			}
-		}
+		}*/
 		autoSaveSimuOnly=chkSimuOnly->IsChecked();
 		/* 
 		if( !outgassingText->GetNumber(&totalOutgassing) || !(totalOutgassing>0.0) ) {
@@ -369,4 +383,12 @@ void GlobalSettings::ProcessMessage(GLComponent *src,int message) {
   }
 
   GLWindow::ProcessMessage(src,message);
+}
+
+void GlobalSettings::UpdateOutgassing() {
+	char tmp[128];
+	sprintf(tmp, "%g", totalOutgassing*10.00); //10: conversion Pa*m3/sec -> mbar*l/s
+	outgassingText->SetText(tmp);
+	sprintf(tmp, "%.3E", totalInFlux);
+	influxText->SetText(tmp);
 }

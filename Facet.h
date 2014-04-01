@@ -68,7 +68,7 @@ public:
   BOOL	volumeVisible;	//Draw volume?
   SHELEM *mesh;        // Element mesh
   BOOL    hasMesh;     // Temporary flag (loading)
-  VHIT   *dirCache;    // Direction field cache
+  
   double *outgassingMap; //outgassing map cell values (loaded from file)
   BOOL textureError;   // Disable rendering if the texture has an error
   BOOL hasOutgassingMap; //true if a desorption file was loaded and had info about this facet
@@ -81,6 +81,7 @@ public:
   GLint  glSelElem;       // Selected surface elements boundaries
   GLint  glList;          // Geometry with texture
   GLuint glTex;           // Handle to OpenGL texture
+  VHIT   *dirCache;       // Direction field cache (for rendering)
 
   //Facet methods
 
@@ -109,13 +110,13 @@ public:
   DWORD GetNbCellForRatio(double ratio);
   DWORD GetNbCell();
   void  UpdateFlags();
-  void  BuildTexture(AHIT *texBuffer,AHIT min,AHIT max,BOOL useColorMap,float dCoeff,BOOL doLog,AHIT correctionFactor);
+  void  BuildTexture(AHIT *texBuffer,int textureMode,double min,double max,BOOL useColorMap,double dCoeff1,double dCoeff2,double dCoeff3,BOOL doLog);
   BOOL  BuildMesh();
   void  BuildSelElemList();
   int   RestoreDeviceObjects();
   int   InvalidateDeviceObjects();
   void  DetectOrientation();
-  float GetSmooth(int i,int j,AHIT *texBuffer,float scaleF);
+  double GetSmooth(int i,int j,AHIT *texBuffer,int textureMode,double scaleF);
   void  glVertex2u(double u,double v);
   void  ShiftVertex();
   void  RenderSelectedElem();

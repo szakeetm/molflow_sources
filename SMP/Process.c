@@ -32,6 +32,7 @@ static BOOL EnablePrivilege() {
   HANDLE  hToken;
   LUID    DebugValue;
   TOKEN_PRIVILEGES tkp;
+  DWORD err_code;
 
   if( !privilegeEnabled ) {
 
@@ -61,10 +62,12 @@ static BOOL EnablePrivilege() {
         (PTOKEN_PRIVILEGES) NULL,
         (PDWORD) NULL);
 
-    if (GetLastError() != ERROR_SUCCESS) {
+	err_code=GetLastError();
+
+    /*if (err_code != ERROR_SUCCESS) {
       CloseHandle(hToken);
   	  return FALSE;
-    }
+    }*/ //Caused privilege error codes when didn't run as administrator
 
     privilegeEnabled = TRUE;
 
@@ -387,7 +390,6 @@ BOOL GetProcInfo(DWORD pID,PROCESS_INFO *pInfo) {
 
 DWORD StartProc(char *pname) { //minimized in Debug mode, hidden in Release mode
 
-	DWORD procId;
 	PROCESS_INFORMATION pi;
 	STARTUPINFO si;
 
@@ -438,16 +440,12 @@ DWORD StartProc(char *pname) { //minimized in Debug mode, hidden in Release mode
 
 	}
 
-	procId=pi.dwProcessId;
-	CloseHandle(pi.hProcess);
-	CloseHandle(pi.hThread);
-	return procId;
+	return pi.dwProcessId;
 
 }
 
 DWORD StartProc_background(char *pname) { //always starts minimized
 
-	DWORD procId;
 	PROCESS_INFORMATION pi;
 	STARTUPINFO si;
 
@@ -479,16 +477,12 @@ DWORD StartProc_background(char *pname) { //always starts minimized
 
 	}
 
-	procId=pi.dwProcessId;
-	CloseHandle(pi.hProcess);
-	CloseHandle(pi.hThread);
-	return procId;
+	return pi.dwProcessId;
 
 }
 
 DWORD StartProc_foreground(char *pname) { //always starts minimized
 
-	DWORD procId;
 	PROCESS_INFORMATION pi;
 	STARTUPINFO si;
 
@@ -520,9 +514,6 @@ DWORD StartProc_foreground(char *pname) { //always starts minimized
 
 	}
 
-	procId=pi.dwProcessId;
-	CloseHandle(pi.hProcess);
-	CloseHandle(pi.hThread);
-	return procId;
+	return pi.dwProcessId;
 
 }

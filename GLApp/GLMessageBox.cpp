@@ -21,7 +21,7 @@
 #include "GLToolkit.h"
 
 // Construct a message dialog box
-GLMessageBox::GLMessageBox(char *message,char *title,int mode,int icon):GLWindow() {
+GLMessageBox::GLMessageBox(const char *message,char *title,int mode,int icon):GLWindow() {
 
   int xD,yD,wD,hD,iW,txtWidth,txtHeight;
   int nbButton=0;
@@ -108,7 +108,7 @@ void GLMessageBox::ProcessMessage(GLComponent *src,int message) {
 
 // -------------------------------------------------
 
-int GLMessageBox::Display(char *message,char *title,int mode,int icon) {
+int GLMessageBox::Display(const char *message, char *title,int mode,int icon) {
 
   GLfloat old_mView[16];
   GLfloat old_mProj[16];

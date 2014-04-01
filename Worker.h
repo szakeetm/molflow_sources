@@ -51,7 +51,15 @@ public:
   void ExportTextures(char *fileName,int mode,BOOL askConfirm=TRUE,BOOL saveSelected=FALSE);
 
   //Import desorption map
-  void ImportDesorption(char *fileName);
+  void ImportDesorption_DES(char *fileName);
+  void ImportDesorption_SYN(char *fileName, const size_t &source, const double &time,
+	  const size_t &mode, const double &eta0, const double &alpha,
+	  const std::vector<std::pair<double, double>> &convDistr,
+	  GLProgress *prg);
+  void AnalyzeSYNfile(char *fileName, int *nbFacet, int *nbTextured, int *nbDifferent);
+
+  //Import desorption map
+  //void ImportDesorption(char *fileName);
 
   // Save a geometry using the current file name (throws Error)
   void SaveGeometry(GLProgress *prg);

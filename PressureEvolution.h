@@ -81,8 +81,9 @@ private:
   GLToggle *logXToggle,*logYToggle;
 
   GLDataView  *views[32];
-
+  GLCColor    *colors[8];
   int          nbView;
+  int          nbColors;
   int selectedSlice;
   float        lastUpdate;
 

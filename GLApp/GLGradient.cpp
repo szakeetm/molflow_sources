@@ -29,6 +29,17 @@ COLORREF rainbowCol[] = { 0x000000,   //Black
                           0x800090,   //Purple 1
                           0xF00080};  //Purple 2
 
+/*COLORREF rainbowCol[] = { 0x000000,   //Black
+	                        0x0000B0,   //Dark Blue
+							0x0040FF,   //Light Blue
+							0x28FF28,   //Green
+							0xF8F800,   //Yellow
+	                        0xFF8030,   //Orange
+							0xFF0000};   //Red*/
+							/*0x800090,   //Purple 1
+							0xF00080};  //Purple 2*/
+						  
+                          
 
 
 // ---------------------------------------------------------------------
@@ -119,7 +130,8 @@ void GLGradient::RestoreDeviceObjects() {
  
     double r1,g1,b1;
     double r2,g2,b2;
-		int colId = i/64;
+	int colId = i/64;
+	//int colId = i/85;
 
     r1 = (double) ((rainbowCol[colId] >> 16) & 0xFF);
     g1 = (double) ((rainbowCol[colId] >>  8) & 0xFF);
@@ -130,6 +142,7 @@ void GLGradient::RestoreDeviceObjects() {
     b2 = (double) ((rainbowCol[colId+1] >>  0) & 0xFF);
   
     double rr = (double)(i-colId*64) / 64.0;
+	//double rr = (double)(i-colId*85) / 85.0;
     SATURATE(rr,0.0,1.0);
     COLORREF c = (COLORREF)((int)( r1 + (r2-r1)*rr )+
                             (int)( g1 + (g2-g1)*rr )* 256 +

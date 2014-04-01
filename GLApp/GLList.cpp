@@ -455,7 +455,7 @@ void GLList::AutoSizeColumn() {
 			int maxWidth = 10;
 			for(int j=0;j<nbRow;j++) {
 				char *v = GetValueAt(i,j);
-				int w = fnt->GetTextWidth(v);
+				if (v) w = fnt->GetTextWidth(v);
 				if( w>maxWidth ) maxWidth = w;
 			}
 			if (cNames && cNames[i] && (w=fnt->GetTextWidth(cNames[i]))>maxWidth)
@@ -1803,7 +1803,7 @@ void GLList::ManageEvent(SDL_Event *evt) {
 
 		if(mx>=labW && mx<=width-sbWidth && my>=0 && my<labHeight) {
 
-				if( Sortable && evt->type == SDL_MOUSEBUTTONDOWN && evt->button.button == SDL_BUTTON_LEFT &&  nbRow>1  && !(GetColumnEdge(mx-labW,my)>=0)) {
+			if( Sortable && evt->type == SDL_MOUSEBUTTONDOWN && evt->button.button == SDL_BUTTON_LEFT &&  nbRow>1  && !(GetColumnEdge(mx-labW,my)>=0)) {
 				GLToolkit::SetCursor(CURSOR_BUSY);
 				menu->Clear();
 				int sCol = GetColForLocation(mx,my);
@@ -1827,7 +1827,7 @@ void GLList::ManageEvent(SDL_Event *evt) {
 								table[i][j] = GetValueInt(i,j);
 						}
 
-						
+
 
 						int *selFacets=new int[nbSelectedRow];
 						for (int i=0;i<nbSelectedRow;i++)
@@ -1842,8 +1842,8 @@ void GLList::ManageEvent(SDL_Event *evt) {
 						char tmp[256];
 						for (int i = 0; i < nbRow; i++) {
 							//for (int j = 0; j < nbCol; j++) { //enough to set facet index
-								sprintf(tmp,"%d",table[i][0]);
-								SetValueAt(0,i,tmp);
+							sprintf(tmp,"%d",table[i][0]);
+							SetValueAt(0,i,tmp);
 							//}
 						}
 
@@ -1880,8 +1880,8 @@ void GLList::ManageEvent(SDL_Event *evt) {
 						// Select column
 						selectedCol = sCol;
 						lastColSel = sCol;
+						SetSelectedRow(0);
 						lastRowSel = nbRow - 1;
-						SetSelectedRow( 0 );
 					}
 					parent->ProcessMessage(this,MSG_LIST);
 				}

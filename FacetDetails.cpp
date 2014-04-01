@@ -23,6 +23,7 @@
 #include "MolFlow.h"
 
 extern double gasMass;
+extern double totalInFlux;
 extern double totalOutgassing;
 
 extern MolFlow *theApp;
@@ -109,6 +110,7 @@ FacetDetails::FacetDetails():GLWindow() {
   facetListD = new GLList(0);
   facetListD->SetColumnLabelVisible(TRUE);
   facetListD->SetGrid(TRUE);
+  //facetListD->Sortable=TRUE;
   Add(facetListD);
 
   sPanel = new GLTitledPanel("Show column");
@@ -304,7 +306,7 @@ char *FacetDetails::FormatCell(int idx,Facet *f,int mode) {
 		break;
 	case 17: //avg.pressure
 		opacity=(f->sh.opacity>0.0)?f->sh.opacity:1.0; //to prevent division by 0 for transparent facets
-		sprintf(ret,"%g",totalOutgassing*f->sh.counter.hit.nbHit/f->sh.area
+		sprintf(ret,"%g",totalInFlux*f->sh.temperature*f->sh.counter.hit.nbHit/f->sh.area
 							/(145.469*sqrt(f->sh.temperature/gasMass))*40.0/worker->nbDesorption/opacity/(f->sh.is2sided?2:1));
 		//11.77=sqrt(8*8.31*293.15/3.14/0.028)/4/10
 		break;

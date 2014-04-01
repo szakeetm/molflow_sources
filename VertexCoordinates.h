@@ -54,7 +54,7 @@ private:
   //GLButton     *insert2Button;
   //GLButton     *removeButton;
   //GLTextField  *insertPosText;
-
+  GLButton      *setXbutton, *setYbutton, *setZbutton;
 };
 
 #endif /* _VertexCoordinatesH_ */

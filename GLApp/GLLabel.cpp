@@ -21,7 +21,7 @@
 
 // ---------------------------------------------------------------------
 
-GLLabel::GLLabel(char *text):GLComponent(0) {
+GLLabel::GLLabel(const char *text):GLComponent(0) {
 
   mText = NULL;
   nbLine=0;
@@ -50,7 +50,7 @@ char* GLLabel::GetText() {
 
 // ---------------------------------------------------------------------
 
-void GLLabel::SetText(char *text) {
+void GLLabel::SetText(const char *text) {
 
 
   if( !text ) {

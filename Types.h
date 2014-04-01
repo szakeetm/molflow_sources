@@ -51,7 +51,8 @@ typedef float ACFLOAT;
 #define REC_PRESSUREU  1  // Pressure profile (U direction)
 #define REC_PRESSUREV  2  // Pressure profile (V direction)
 #define REC_ANGULAR    3  // Angular profile
-#define REC_VELOCITY_DISTRIBUTION 4 //Velocity distribution
+#define REC_VELOCITY   4 //Velocity distribution
+#define REC_ORT_VELOCITY 5 //Orthogonal velocity component
 
 #define PROFILE_SIZE  100 // Size of profile
 
@@ -74,11 +75,11 @@ typedef struct {
 
 } VERTEX3D;
 
-typedef struct {
+/*typedef struct {
 	VERTEX3D v1;
 	VERTEX3D v2;
 	VERTEX3D v3;
-} MATRIX;
+} MATRIX;*/
 
 typedef struct {
 
@@ -116,15 +117,47 @@ typedef struct {
 } MESH;
 
 // Density/Hit field stuff
-#define HITMAX 1E38f
-typedef float AHIT;
+#define HITMAX 1E38
+
+typedef struct {
+	llong count;
+	double sum_v_ort;
+	double sum_1_per_speed;
+} APROFILE;
+
+typedef struct {
+	llong count;
+	double sum_v_ort_per_area;
+	double sum_1_per_speed;
+} AHIT;
 
 // Velocity field
 typedef struct {
-  VERTEX3D dir;
-  double sumSpeed;
-  llong count;
+	VERTEX3D sumDir;
+	llong count;
 } VHIT;
+
+//Texture limit types
+typedef struct {
+	double all;
+	double moments_only;
+} TEXTURE_MOMENT_TYPE;
+
+typedef struct {
+	TEXTURE_MOMENT_TYPE min;
+	TEXTURE_MOMENT_TYPE max;
+} TEXTURE_MIN_MAX;
+
+typedef struct {
+	TEXTURE_MIN_MAX manual;
+	TEXTURE_MIN_MAX autoscale;
+} TEXTURE_SCALE_TYPE;
+
+/*typedef struct {
+	TEXTURE_SCALE_TYPE pressure;
+	TEXTURE_SCALE_TYPE impingement;
+	TEXTURE_SCALE_TYPE density;
+} TEXTURE_LIMITS;*/
 
 #define IS_ZERO(x) (fabs((x))<1e-10)
 

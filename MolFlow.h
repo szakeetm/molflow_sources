@@ -1,7 +1,7 @@
 /*
   File:        MolFlow.cpp
   Description: Main application class (GUI management)
-  Program:     MolFlow
+  Program:     MolFlow+
   Author:      R. KERSEVAN / J-L PONS / M ADY
   Copyright:   E.S.R.F / CERN
 
@@ -33,6 +33,7 @@
 #include "GeometryViewer.h"
 #include "FormulaSettings.h"
 #include "CollapseSettings.h"
+#include "ImportDesorption.h"
 #include "MoveVertex.h"
 #include "TimeSettings.h"
 #include "ScaleVertex.h"
@@ -66,8 +67,8 @@
 #ifdef _DEBUG
 #define APP_NAME "MolFlow+ development version (Compiled "__DATE__" "__TIME__") DEBUG MODE"
 #else
-#define APP_NAME "Molflow+ development version ("__DATE__")"
-//#define APP_NAME "Molflow+ 2.4.0.2 ("__DATE__")"
+//#define APP_NAME "Molflow+ development version ("__DATE__")"
+#define APP_NAME "Molflow+ 2.5.1 BETA ("__DATE__")"
 #endif
 
 extern int changedSinceSave;
@@ -127,7 +128,7 @@ public:
 	void SaveFile();
     void SaveFileAs();
     void ExportSelection();
-	void ImportDesorption();
+	void ImportDesorption_DES();
 	void ExportTextures(int mode);
     void ClearFacetParams();
     void UpdateFacetParams(BOOL updateSelection=FALSE);
@@ -161,11 +162,16 @@ public:
 	void RenumberSelections(int startFacetId);
 
     // Formula management
-    void ProcessFormulaButtons(GLComponent *src);
+    int nbFormula;
+	FORMULA formulas[MAX_FORMULA];
+	void ProcessFormulaButtons(GLComponent *src);
     void UpdateFormula();
 	void OffsetFormula(char* expression,int offset,int filter=0);
 	void RenumberFormulas(int startId);
     void AddFormula(GLParser *f,BOOL doUpdate=TRUE);
+	void AddFormula(const char *fName, const char *formula);
+	void ClearFormula();
+	
 
 	//Flow/sticking coeff. conversion
 	void calcFlow();
@@ -212,6 +218,7 @@ public:
     GLTextField   *facetSuperDest;
     GLTextField   *facetOpacity;
     GLTextField   *facetTemperature;
+	GLTextField   *facetAccFactor;
     GLTextField   *facetFlow;
 	GLTextField   *facetFlowArea;
     //GLTextField   *facetMass;
@@ -266,12 +273,6 @@ public:
 	GLTitledPanel *inputPanel;
 	GLTitledPanel *outputPanel;
 
-    // Formulas
-    FORMULA formulas[MAX_FORMULA];
-    int nbFormula;
-    void ClearFormula();
-    void AddFormula(char *fName,char *formula);
-
     // Views
     void SelectView(int v);
 	void AddView(char *selectionName,AVIEW v);
@@ -308,6 +309,7 @@ public:
     //Dialog
     FormulaSettings  *formulaSettings;
     CollapseSettings *collapseSettings;
+	ImportDesorption *importDesorption;
 	MoveVertex		 *moveVertex;
 	TimeSettings     *timeSettings;
 	ScaleFacet       *scaleFacet;

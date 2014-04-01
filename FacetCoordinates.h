@@ -64,6 +64,7 @@ private:
   GLButton     *insertBeforeButton;
   GLButton     *removePosButton;
   GLTextField  *insertIdText;
+  GLButton      *setXbutton, *setYbutton, *setZbutton;
 
   std::vector<line> lines;
 

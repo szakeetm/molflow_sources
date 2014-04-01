@@ -24,10 +24,8 @@ GNU General Public License for more details.
 #include <math.h>
 #include <malloc.h>
 
-#define DOWN_MARGIN 25
 
-//static const GLfloat position[]  = { -100000.0f, 100000.0f, -120000.0f, 1.0f }; //light1
-//static const GLfloat positionI[] = {  100000.0f,-100000.0f,  120000.0f, 1.0f }; //light2
+#define DOWN_MARGIN 25
 
 static const GLfloat position[]  = { -0.3f, 0.3f, -1.0f, 0.0f }; //light1
 static const GLfloat positionI[] = {  1.0f,-0.5f,  -0.2f, 0.0f }; //light2
@@ -109,6 +107,7 @@ GeometryViewer::GeometryViewer(int id):GLComponent(id) {
 	dispNumHits = 2048;
 	dispNumLeaks = 2048;
 
+
 	// GL Component default
 	SetBorder(BORDER_NONE);
 	int bgCol=(false)?255:0; //not necessary?
@@ -171,6 +170,9 @@ GeometryViewer::GeometryViewer(int id):GLComponent(id) {
 	selVxBtn = new GLButton(0,"");
 	selVxBtn->SetIcon("images/icon_vertex_select.png");
 	Add(selVxBtn);
+
+
+
 	autoBtn = new GLButton(0,"");
 	autoBtn->SetIcon("images/icon_autoscale.png");
 	autoBtn->SetToggle(TRUE);
@@ -235,6 +237,7 @@ void GeometryViewer::SetBounds(int x,int y,int width,int height) {
 
 		autoBtn->SetBounds(posX+width-122,posY+height-22,19,19);
 		selBtn->SetBounds(posX+width-102,posY+height-22,19,19);
+
 		selVxBtn->SetBounds(posX+width-82,posY+height-22,19,19);
 		zoomBtn->SetBounds(posX+width-62,posY+height-22,19,19);
 		handBtn->SetBounds(posX+width-42,posY+height-22,19,19);
@@ -284,7 +287,7 @@ void GeometryViewer::UpdateMouseCursor(int mode) { //Sets mouse cursor to action
 				}
 				/*else if (GetWindow()->IsAltDown()) {
 					SetCursor(CURSOR_HAND);
-				}*/
+				}*/ //Disabling ALT-zoom for circular selection
 				else {
 					SetCursor(CURSOR_DEFAULT);
 				}
@@ -300,12 +303,23 @@ void GeometryViewer::UpdateMouseCursor(int mode) { //Sets mouse cursor to action
 				}
 				/*else if (GetWindow()->IsAltDown()) {
 					SetCursor(CURSOR_HAND);
-				}*/
+				}*/ //Disabling ALT-zoom for circular selection
+
 				else {
 					SetCursor(CURSOR_VERTEX);
 				}
 
 				break;
+
+
+
+
+
+
+
+
+
+
 
 			case MODE_ZOOM:
 				SetCursor(CURSOR_ZOOM);
@@ -383,6 +397,7 @@ void GeometryViewer::UpdateLight() {
 	}
 
 	//ratio*=1.4;
+
 
 	GLfloat d0[4],d1[4];
 	d0[0] = 0.8f * ratio;
@@ -792,14 +807,41 @@ void GeometryViewer::DrawLineAndHit() {
 				}
 				else {
 					glColor3f(0.5f,1.0f,0.5f);
+
+
+
+
+
+
+
+
+
 				}
 
 				int count=0;
+
+
+
 				while(count<dispNumHits && pHits[count].type!=0) {
 					//if (count>0&&pHits[count].type==HIT_DES&&pHits[count-1].type!=HIT_ABS) __debugbreak(); //desorbed without being absorbed first
 
+
+
+
+
+
+
+
+
+
+
+
 					if (antiAliasing) {glEnable(GL_BLEND);glEnable(GL_LINE_SMOOTH);}glBegin(GL_LINE_STRIP);
 					while(count<dispNumHits && pHits[count].type!=HIT_ABS) {
+
+
+
+
 
 						//teleport routine
 						if (pHits[count].type==HIT_TELEPORT) {
@@ -822,15 +864,19 @@ void GeometryViewer::DrawLineAndHit() {
 							glPopAttrib();
 
 							if (whiteBg) { //whitebg
-								glColor3f(0.3f,0.9f,0.3f);
+
+								glColor3f(0.2f,0.7f,0.2f);
+
 							} else {
-								glColor3f(0.6f,1.0f,0.6f);
+
+
+								glColor3f(0.5f,1.0f,0.5f);
 							}
 							glBegin(GL_LINE_STRIP);
 						}
-						/*if (pHits[count].type==HIT_DES) {
-						glEnd();glBegin(GL_LINE_STRIP); //pen up pen down for leaks
-						}*/
+
+
+
 						glVertex3d(pHits[count].pos.x , pHits[count].pos.y , pHits[count].pos.z);
 						count++;
 						if (pHits[count].type==LASTHIT) { //pen up at cache refresh border
@@ -1059,6 +1105,17 @@ void GeometryViewer::ComputeBB(BOOL getAll) {
 			TRANSFORMVERTEX(p->x,p->y,p->z);
 		}
 
+
+
+
+
+
+
+
+
+
+
+
 	} else {
 
 		int *refIdx = (int *)malloc( nbV * sizeof(int) );
@@ -1250,7 +1307,7 @@ void GeometryViewer::Paint() {
 		case XYZ_TOP: // TopView
 			x = -view.vLeft - (1.0-(double)mXOrg/(double)width) * (view.vRight-view.vLeft) + (org.x+view.camOffset.x)*view.camDist;
 			z = -view.vTop - ((double)mYOrg/(double)(height-DOWN_MARGIN)) * (view.vBottom-view.vTop) + (org.z+view.camOffset.z)*view.camDist;
-			sprintf(tmp,"X=%g, Z=%g",x/view.camDist,z/view.camDist);
+			sprintf(tmp,"X=%g, Z=%g",-x/view.camDist,z/view.camDist);
 			topBtn->SetCheck(TRUE);
 			break;
 		case XYZ_SIDE: // Side View
@@ -1312,7 +1369,10 @@ void GeometryViewer::Paint() {
 	SetBackgroundColor(bgCol,bgCol,bgCol);
 
 	DrawLineAndHit();
+
 	geom->Render((GLfloat *)matView,showVolume,showTexture,showBack,showFilter,showHidden,showMesh,showDir);
+
+
 
 	DrawIndex();
 	DrawNormal();
@@ -1328,7 +1388,7 @@ void GeometryViewer::Paint() {
 	glLoadIdentity();
 	GLWindowManager::SetDefault();
 
-	// Draw selection rectangle
+	// Draw selection rectangle or circle
 	if( (draggMode==DRAGG_SELECT || draggMode==DRAGG_SELECTVERTEX ) && (mode==MODE_SELECT || mode==MODE_SELECTVERTEX || mode==MODE_ZOOM) ) {
 		BOOL circleMode=GetWindow()->IsAltDown();
 		GLushort dashPattern = 0xCCCC;
@@ -1610,7 +1670,9 @@ void GeometryViewer::ManageEvent(SDL_Event *evt)
 			selY1 = selY2 = mY;
 			if (mode==MODE_SELECT) draggMode=DRAGG_SELECT;
 			else if (mode==MODE_SELECTVERTEX) draggMode=DRAGG_SELECTVERTEX;
+
 			else if (mode==MODE_MOVE) draggMode=DRAGG_MOVE;
+
 		}
 		if( evt->button.button == SDL_BUTTON_MIDDLE ) {
 			// Camera translational dragging
@@ -1639,7 +1701,7 @@ void GeometryViewer::ManageEvent(SDL_Event *evt)
 				TranslateScale(2.0); //Zoom slower when SHIFT is pressed
 			}
 			else if (GetWindow()->IsCtrlDown()) {
-				TranslateScale(75.0); //Zoom faster when SHIFT is pressed
+				TranslateScale(75.0); //Zoom faster when CTRL is pressed
 			} else {
 				TranslateScale(20.0);
 			}
@@ -1654,6 +1716,8 @@ void GeometryViewer::ManageEvent(SDL_Event *evt)
 
 		case DRAGG_SELECT:
 		case DRAGG_SELECTVERTEX:
+
+
 			switch(mode) {
 			case MODE_ZOOM:
 				Zoom();
@@ -1696,6 +1760,15 @@ void GeometryViewer::ManageEvent(SDL_Event *evt)
 						GetWindow()->IsShiftDown(),GetWindow()->IsCtrlDown(),GetWindow()->IsAltDown());
 				}
 				break;
+
+
+
+
+
+
+
+
+
 			}
 			break;
 
@@ -1724,6 +1797,7 @@ void GeometryViewer::ManageEvent(SDL_Event *evt)
 
 		case DRAGG_SELECTVERTEX:
 		case DRAGG_SELECT:
+
 			// Selection rectangle
 			/*if( GetWindow()->IsAltDown() ) {
 				draggMode=DRAGG_MOVE;
@@ -1782,6 +1856,8 @@ void GeometryViewer::ManageEvent(SDL_Event *evt)
 					zoomBtn->SetEnabled(FALSE);
 					UpdateMatrix();
 					if (autoScaleOn) (AutoScale(FALSE));
+
+
 				}
 			}
 			//UpdateMatrix();
@@ -1824,6 +1900,8 @@ void GeometryViewer::ProcessMessage(GLComponent *src,int message) {
 			UpdateMouseCursor(MODE_SELECT);
 		} else if (src==selVxBtn) {
 			UpdateMouseCursor(MODE_SELECTVERTEX);
+
+
 		} else if (src==autoBtn) {
 			autoScaleOn=!autoScaleOn;
 			//autoBtn->SetCheck(autoScaleOn);

@@ -47,7 +47,7 @@ const char *Error::GetMsg() {
 // FileUtils class
 // -------------------------------------------------
 
-int FileUtils::Exist(char *fileName) {
+int FileUtils::Exist(const char *fileName) {
 
 #ifdef WIN32
   struct _finddata_t seqfile;

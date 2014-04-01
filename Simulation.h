@@ -24,11 +24,11 @@ typedef int BOOL;
 #define MIN(x,y) (((x)<(y))?(x):(y))
 #define TRUE  1
 #define FALSE 0
-#define INFINITY 1.e100
+#define MY_INFINITY 1.e100
 #define SAFE_FREE(x) if(x) { free(x);x=NULL; }
 #define SATURATE(x,min,max) {if(x<(min)) x=(min); if(x>(max)) x=(max);}
 #define MAX_STRUCT 512
-#define CDF_SIZE 500 //points in a cumulative distribution function
+#define CDF_SIZE 100 //points in a cumulative distribution function
 #define TIMELIMIT 0.01
 
 #include "Shared.h"
@@ -48,14 +48,12 @@ typedef struct {
   int      *indices;   // Indices (Reference to geometry vertex)
   VERTEX2D *vertices2; // Vertices (2D plane space, UV coordinates)
   AHIT     **hits;      // Texture hit recording (taking area, temperature, mass into account)
-  llong    *hits_count;     // Integer values, for real counting of hits
-  AHIT     *inc;       // Texure increment
+  double     *inc;       // Texure increment
   BOOL     *largeEnough; //cells that are NOT too small for autoscaling
-  AHIT	   fullSizeInc; //Texture increment of a full texture element
+  double	   fullSizeInc; //Texture increment of a full texture element
   VHIT     **direction; // Direction field recording (average)
-  char     *fullElem;  // Direction field recording (only on full element)
-  llong    **profile;   // Distribution and hit recording
-  llong    **velocityHistogram; //Velocity distribution
+  BOOL     *fullElem;  // Direction field recording (only on full element)
+  APROFILE    **profile;   // Distribution and hit recording
 
   // Temporary var (used in Intersect for collision)
   double colDist;
@@ -148,7 +146,7 @@ typedef struct {
 
   //double totalOutgassing;
   double gasMass;
-  int    nonIsothermal;
+  //int    nonIsothermal;
   //HANDLE molflowHandle;
 
   // Particle coordinates (MC)
@@ -159,7 +157,7 @@ typedef struct {
   double   distTraveledSinceUpdate;
   double   velocityCurrentParticle;
   double   flightTimeCurrentParticle;
-  double   temperature;  //Temeperature of the particle (=temp. of last facet hit)
+  //double   temperature;  //Temeperature of the particle (=temp. of last facet hit)
 
   // Angular coefficient (opaque facets)
   int     nbAC;
@@ -216,8 +214,9 @@ extern SIMULATION *sHandle;
 
 // -- Methods ---------------------------------------------------
 
-void AHIT_FACET(FACET *f,double time);
-void DHIT_FACET(FACET *f,double time);
+void AHIT_FACET(FACET *f, double time, BOOL countHit, double velocity_factor, double ortSpeedFactor);
+void DHIT_FACET(FACET *f, double time);
+void ProfileFacet(FACET *f, double time, BOOL countHit, double velocity_factor, double ortSpeedFactor);
 void InitSimulation();
 void ClearSimulation();
 void ClearACMatrix();
@@ -228,6 +227,7 @@ BOOL SimulationRun();
 BOOL SimulationMCStep(int nbStep);
 BOOL SimulationACStep(int nbStep);
 void RecordHit(int type);
+void RecordLeakPos();
 BOOL StartFromSource();
 void ComputeSourceArea();
 void PerformBounce(FACET *iFacet);
@@ -245,7 +245,6 @@ void DestroyAABB(struct AABBNODE *node);
 void IntersectTree(struct AABBNODE *node);
 BOOL Intersect(VERTEX3D *rayPos,VERTEX3D *rayDir,double *dist,FACET **iFact,FACET *last);
 BOOL Visible(VERTEX3D *c1,VERTEX3D *c2,FACET *f1,FACET *f2);
-void ProfileFacet(FACET *f,double time);
 BOOL IsInFacet(FACET *f,double u,double v);
 double GetTick();
 long   GetHitsSize();

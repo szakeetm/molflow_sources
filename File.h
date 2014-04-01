@@ -43,7 +43,7 @@ class FileUtils {
 
 public:
   // Utils functions
-  static int Exist(char *fileName);
+  static int Exist(const char *fileName);
   static char *GetPath(char *fileName);
 
 };

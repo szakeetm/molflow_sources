@@ -52,9 +52,11 @@ typedef union {
   
   struct {
     // Counts
-    llong nbDesorbed;      // Number of desorbed molec
-    llong nbHit;           // Number of hits
-    llong nbAbsorbed;      // Number of absorbed molec
+    llong nbDesorbed;          // Number of desorbed molec
+    llong nbHit;               // Number of hits
+	llong nbAbsorbed;          // Number of absorbed molec
+	double sum_1_per_speed;    // sum of reciprocials of velocities, used to determine the average speed of molecules in the gas (and not of the hits)
+	double sum_v_ort;          // sum of orthogonal speeds of incident velocities, used to determine the pressure
   } hit;
 
   struct {
@@ -75,11 +77,12 @@ typedef struct {
   int    nbHHit;              // Last hits
   HIT    pHits[NBHHIT];       // Hit cache
   LEAK   pLeak[NBHLEAK];      // Leak cache
-  AHIT   minHit;              // Minimum on texture
+  TEXTURE_MIN_MAX texture_limits[3]; //Min-max on texture
+ /* AHIT   minHit;              // Minimum on texture
   AHIT   maxHit;              // Maximum on texture
   AHIT   minHitMomentsOnly;   // Minimum, not counting constant flow
-  AHIT   maxHitMomentsOnly;   // Maximum, not counting constant flow
-  llong  wallHits[BOUNCEMAX]; // 'Wall collision count before absoprtion' density histogram
+  AHIT   maxHitMomentsOnly;   // Maximum, not counting constant flow*/
+  //llong  wallHits[BOUNCEMAX]; // 'Wall collision count before absoprtion' density histogram
   double distTraveledTotal;
   
 } SHGHITS;
@@ -163,7 +166,7 @@ typedef struct {
   char       name[64];  // (Short file name)
   //double     totalOutgassing;
   double     gasMass;
-  int        nonIsothermal;
+  //int        nonIsothermal;
   int        nbMoments; //number of time moments when textures are calculated
   //HANDLE     molflowHandle;
   double     desorptionStart;
@@ -197,6 +200,7 @@ typedef struct {
   BOOL   countACD;       // Angular coefficient (AC texture)
   BOOL   countDirection; // Record avergare direction (MC texture)
   double maxSpeed;       // Max expected particle velocity (for velocity histogram)
+  double accomodationFactor; // Thermal accomodation factor [0..1]
 
   // Flags
   BOOL   is2sided;     // 2 sided

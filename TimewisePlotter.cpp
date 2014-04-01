@@ -27,8 +27,9 @@ extern GLApplication *theApp;
 
 extern double gasMass;
 extern double totalOutgassing;
+extern double totalInFlux;
 
-static const char*profType[] = {"None","Pressure \201","Pressure \202","Angle","Velocity"};
+static const char*profType[] = {"None","Pressure \201 [mbar]","Pressure \202 [mbar]","Angle","Velocity"};
 
 TimewisePlotter::TimewisePlotter():GLWindow() {
 
@@ -87,7 +88,7 @@ TimewisePlotter::TimewisePlotter():GLWindow() {
 	normCombo->SetValueAt(4,"Absorption (local)");
 	normCombo->SetValueAt(5,"Desorption (local)");
 	normCombo->SetValueAt(6,"Hit           (local)");
-	normCombo->SetValueAt(7,"Pressure");
+	normCombo->SetValueAt(7,"Pressure [mbar]");
 	normCombo->SetSelectedIndex(7);
 	Add(normCombo);
 
@@ -322,45 +323,45 @@ void TimewisePlotter::refreshViews() {
 			int momentIndex;
 			if (m==(nbView-1) && constantFlowToggle->IsChecked()) momentIndex=0; //Constant flow
 			else momentIndex=m+1; //any other 'normal' moment
-			llong *profilePtr = (llong *)(buffer + f->sh.hitOffset + sizeof(SHHITS)+momentIndex*sizeof(llong)*PROFILE_SIZE);
+			APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + sizeof(SHHITS)+momentIndex*sizeof(APROFILE)*PROFILE_SIZE);
 
 			switch(normalize) {
 			case 0:
 				for(int j=0;j<PROFILE_SIZE;j++)
-					v->Add((double)j,(double)profilePtr[j],FALSE);
+					v->Add((double)j,(double)profilePtr[j].count,FALSE);
 				break;
 			case 1:
 				for(int j=0;j<PROFILE_SIZE && nbAbs!=0.0;j++)
-					v->Add((double)j,(double)profilePtr[j]/nbAbs,FALSE);
+					v->Add((double)j, (double)profilePtr[j].count / nbAbs, FALSE);
 				break;
 			case 2:
 				for(int j=0;j<PROFILE_SIZE && nbDes!=0.0;j++)
-					v->Add((double)j,(double)profilePtr[j]/nbDes,FALSE);
+					v->Add((double)j, (double)profilePtr[j].count / nbDes, FALSE);
 				break;
 			case 3:
 				for(int j=0;j<PROFILE_SIZE && nbHit!=0.0;j++)
-					v->Add((double)j,(double)profilePtr[j]/nbHit,FALSE);
+					v->Add((double)j, (double)profilePtr[j].count / nbHit, FALSE);
 				break;
 			case 4:
 				for(int j=0;j<PROFILE_SIZE && fnbAbs!=0.0;j++)
-					v->Add((double)j,(double)profilePtr[j]/fnbAbs,FALSE);
+					v->Add((double)j, (double)profilePtr[j].count / fnbAbs, FALSE);
 				break;
 			case 5:
 				for(int j=0;j<PROFILE_SIZE && fnbDes!=0.0;j++)
-					v->Add((double)j,(double)profilePtr[j]/fnbDes,FALSE);
+					v->Add((double)j, (double)profilePtr[j].count / fnbDes, FALSE);
 				break;
 			case 6:
 				for(int j=0;j<PROFILE_SIZE && fnbHit!=0.0;j++)
-					v->Add((double)j,(double)profilePtr[j]/fnbHit,FALSE);
+					v->Add((double)j, (double)profilePtr[j].count / fnbHit, FALSE);
 				break;
 			case 7: //Pressure
-				scale = 40.0*totalOutgassing*((momentIndex==0)?1.0:((worker->desorptionStopTime-worker->desorptionStartTime)
-					/worker->timeWindowSize))/(145.469*sqrt(f->sh.temperature
-					/gasMass)*(f->sh.area/PROFILE_SIZE)*nbDes);
-				if(f->sh.is2sided) scale = scale / 2.0;
-				if(f->sh.opacity>0.0) scale = scale * f->sh.opacity;
+				scale = totalInFlux / nbDes / (f->sh.area / (double)PROFILE_SIZE*1E-4)* gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
+				scale *= ((momentIndex == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
+					/ worker->timeWindowSize)); //correction for time window length
+				if (f->sh.is2sided) scale *= 0.5;
+				//if (f->sh.opacity>0.0) scale *= f->sh.opacity;
 				for(int j=0;j<PROFILE_SIZE && fnbHit!=0.0;j++)
-					v->Add((double)j,(double)profilePtr[j]*scale,FALSE);
+					v->Add((double)j,(double)profilePtr[j].sum_v_ort*scale,FALSE);
 				break;
 			}
 			v->CommitChange();
@@ -412,7 +413,7 @@ void TimewisePlotter::refreshViews() {
 			if(!found) i++;
 		}
 		if( found ) {
-			GLMessageBox::Display("Profile already plotted","Error",GLDLG_OK,GLDLG_ICONERROR);
+			GLMessageBox::Display("Profile already plotted","Error",GLDLG_OK,GLDLG_ICONWARNING);
 			return;
 		}
 		

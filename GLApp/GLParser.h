@@ -114,11 +114,11 @@ public:
   GLParser();
   ~GLParser();
 
-  void SetName(char *name);
+  void SetName(const char *name);
   char *GetName();
 
   // Expression management
-  void SetExpression(char *expr);  // Set formula expression
+  void SetExpression(const char *expr);  // Set formula expression
   char *GetExpression();           // Get the expression
   BOOL Parse();                    // Compile expression
   char *GetErrorMsg();             // Return error message

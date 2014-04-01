@@ -24,6 +24,7 @@
 #include "GLApp/GLMessageBox.h"
 #include "Utils.h"
 #include "MolFlow.h"
+#include "GLApp/GLInputBox.h"
 
 //extern GLApplication *theApp;
 extern MolFlow *theApp;
@@ -69,6 +70,16 @@ FacetCoordinates::FacetCoordinates():GLWindow() {
   updateButton = new GLButton(0,"Apply");
   updateButton->SetBounds(wD-195,hD-43,90,19);
   Add(updateButton);
+
+  setXbutton = new GLButton(0, "X");
+  setXbutton->SetBounds(5, hD - 43, 16, 19);
+  Add(setXbutton);
+  setYbutton = new GLButton(0, "Y");
+  setYbutton->SetBounds(27, hD - 43, 16, 19);
+  Add(setYbutton);
+  setZbutton = new GLButton(0, "Z");
+  setZbutton->SetBounds(49, hD - 43, 16, 19);
+  Add(setZbutton);
 
   dismissButton = new GLButton(0,"Dismiss");
   dismissButton->SetBounds(wD-95,hD-43,90,19);
@@ -171,6 +182,45 @@ void FacetCoordinates::ProcessMessage(GLComponent *src,int message) {
 	  } else if(src==updateButton) {
 		  ApplyChanges();
 		  break;
+	  }
+	  else if (src == setXbutton) {
+		  double coordValue;
+		  char *coord = GLInputBox::GetInput("0", "New coordinate:", "Set all X coordinates to:");
+		  if (!coord) return;
+		  if (!sscanf(coord, "%lf", &coordValue)) {
+			  GLMessageBox::Display("Invalid number", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			  return;
+		  }
+		  for (int row=0;row<(int)lines.size();row++) {
+			  lines[row].coord.x=coordValue;
+		  }
+		  RebuildList();
+	  }
+	  else if (src == setYbutton) {
+		  double coordValue;
+		  char *coord = GLInputBox::GetInput("0", "New coordinate:", "Set all Y coordinates to:");
+		  if (!coord) return;
+		  if (!sscanf(coord, "%lf", &coordValue)) {
+			  GLMessageBox::Display("Invalid number", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			  return;
+		  }
+		  for (int row = 0; row<(int)lines.size(); row++) {
+			  lines[row].coord.y = coordValue;
+		  }
+		  RebuildList();
+	  }
+	  else if (src == setZbutton) {
+		  double coordValue;
+		  char *coord = GLInputBox::GetInput("0", "New coordinate:", "Set all Z coordinates to:");
+		  if (!coord) return;
+		  if (!sscanf(coord, "%lf", &coordValue)) {
+			  GLMessageBox::Display("Invalid number", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			  return;
+		  }
+		  for (int row = 0; row<(int)lines.size(); row++) {
+			  lines[row].coord.z = coordValue;
+		  }
+		  RebuildList();
 	  }
     case MSG_LIST:
       if(src==facetListC) {

@@ -53,7 +53,7 @@ private:
   Worker       *worker;
   Facet        *selFacet;
   float        lastUpdate;
-  float			maxValue;
+  double    	maxValue;
   int			maxX,maxY;
   char         currentDir[512];
 

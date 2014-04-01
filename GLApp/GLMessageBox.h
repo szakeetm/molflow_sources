@@ -35,12 +35,12 @@ class GLMessageBox : private GLWindow {
 
 public:
   // Display a modal dialog and return the code of the pressed button
-  static int Display(char *message,char *title=NULL,int mode=GLDLG_OK,int icon=GLDLG_ICONNONE);
+  static int Display(const char *message, char *title=NULL,int mode=GLDLG_OK,int icon=GLDLG_ICONNONE);
 
   int  rCode;
 
 private:
-  GLMessageBox(char *message,char *title,int mode,int icon);
+  GLMessageBox(const char *message,char *title,int mode,int icon);
   void ProcessMessage(GLComponent *src,int message);
 
 };

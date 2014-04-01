@@ -90,29 +90,36 @@ std::vector<std::pair<double,double>> Generate_CDF(double gasTempKelvins,double 
 	double a=sqrt(Kb*gasTempKelvins/(gasMassGramsPerMol*1.67E-27)); //distribution a parameter. Converting molar mass to atomic mass
 
 	//Generate cumulative distribution function
-	//cdf.reserve(size);
 	double mostProbableSpeed=sqrt(2*R*gasTempKelvins/(gasMassGramsPerMol/1000.0));
-	double binSize=3.0*mostProbableSpeed/(double)size; //distribution generated between 0 and 3*V_prob
-	double coeff1=1.0/sqrt(2.0)/a;
+	double binSize=4.0*mostProbableSpeed/(double)size; //distribution generated between 0 and 4*V_prob
+	/*double coeff1=1.0/sqrt(2.0)/a;
 	double coeff2=sqrt(2.0/PI)/a;
 	double coeff3=1.0/(2.0*pow(a,2));
 
 	for (size_t i=0;i<size;i++) {
 		double x=(double)i*binSize;
 		cdf.push_back(std::make_pair(x,erf(x*coeff1)-coeff2*x*exp(-pow(x,2)*coeff3)));
+	}*/
+	for (size_t i = 0; i<size; i++) {
+		double x = (double)i*binSize;
+		double x_square_per_2_a_square = pow(x, 2) / (2 * pow(a, 2));
+		cdf.push_back(std::make_pair(x, 1 - exp(-x_square_per_2_a_square)*(x_square_per_2_a_square + 1)));
 	}
 
-	
+	/* //not generating inverse since it was introducing sampling problems at the large tail for high speeds
 	//CDF created, let's generate its inverse
 	std::vector<std::pair<double,double>> inverseCDF;inverseCDF.reserve(size);
 	binSize=1.0/(double)size; //Divide probability to bins
 	for (size_t i=0;i<size;i++) {
 		double p=(double)i*binSize;
-		inverseCDF.push_back(std::make_pair(p,InterpolateX(p,cdf,TRUE)));
+		//inverseCDF.push_back(std::make_pair(p,InterpolateX(p,cdf,TRUE)));
+		inverseCDF.push_back(std::make_pair(p, InterpolateX(p, cdf, FALSE)));
 	}
 	return inverseCDF;
+	*/
+	return cdf;
 }
-double erf(double x)
+double my_erf(double x)
 {
     // constants
     double a1 =  0.254829592;
@@ -139,41 +146,45 @@ BOOL compare_second(const std::pair<double,double>& lhs, const std::pair<double,
 	return (lhs.second<rhs.second);
 }
 
-double InterpolateY(double x,const std::vector<std::pair<double,double>>& table,BOOL limitToBounds){
+
+double InterpolateY(double x, const std::vector<std::pair<double, double>>& table, BOOL limitToBounds, BOOL logarithmic){
 	//Function inspired by http://stackoverflow.com/questions/11396860/better-way-than-if-else-if-else-for-linear-interpolation
 	_ASSERTE(table.size());
-	if (table.size()==1) return table[0].second; //constant value
+	if (table.size() == 1) return table[0].second; //constant value
 
 	// Assumes that "table" is sorted by .first
-    // Check if x is out of bound
-    std::vector<std::pair<double, double> >::const_iterator lower, upper;
-	BOOL outOfLimits = FALSE;
+	// Check if x is out of bound
+	std::vector<std::pair<double, double> >::const_iterator lower, upper;
+	bool outOfLimits = false;
 
 	if (x >= table.back().first) {
 		if (limitToBounds) return table.back().second;
 		else {
-			outOfLimits = TRUE;
-			lower = upper = table.end()-1;
+			outOfLimits = true;
+			lower = upper = table.end() - 1;
 			lower--;
 		}
-	} else if (x < table[0].first) {
+	}
+	else if (x < table[0].first) {
 		if (limitToBounds) return table[0].second;
 		else {
-			outOfLimits = TRUE;
+			outOfLimits = true;
 			lower = upper = table.begin();
 			upper++;
 		}
-	} 
+	}
 
 	// INFINITY is defined in math.h in the glibc implementation
 	if (!outOfLimits) {
-		lower = upper = std::lower_bound(table.begin(), table.end(), std::make_pair(x, -INFINITY));
+		lower = upper = std::lower_bound(table.begin(), table.end(), std::make_pair(x, -MY_INFINITY));
 		// Corner case
 		if (upper == table.begin()) return upper->second;
 		lower--;
 	}
-	return lower->second + (upper->second - lower->second)*(x - lower->first)/(upper->first - lower->first);
-	
+	if (logarithmic) return exp(log(lower->second) + (log(upper->second) - log(lower->second))
+		*(log(x) - log(lower->first)) / (log(upper->first) - log(lower->first)));
+	else return lower->second + (upper->second - lower->second)*(x - lower->first) / (upper->first - lower->first);
+
 }
 
 double InterpolateX(double y,const std::vector<std::pair<double,double>>& table,BOOL limitToBounds){
@@ -204,7 +215,7 @@ double InterpolateX(double y,const std::vector<std::pair<double,double>>& table,
 
 	// INFINITY is defined in math.h in the glibc implementation
 	if (!outOfLimits) {
-		lower = upper = std::lower_bound(table.begin(), table.end(), std::make_pair(INFINITY, y),compare_second);
+		lower = upper = std::lower_bound(table.begin(), table.end(), std::make_pair(MY_INFINITY, y),compare_second);
 		// Corner case
 		if (upper == table.begin()) return upper->first;
 		lower--;

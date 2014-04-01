@@ -24,11 +24,11 @@ class GLLabel : public GLComponent {
 public:
 
   // Construction
-  GLLabel(char *text);
+  GLLabel(const char *text);
   ~GLLabel();
 
   // Component method
-  void SetText(char *text);
+  void SetText(const char *text);
   void SetTextColor(int r,int g,int b);
   void GetTextBounds(int *w,int *h);
   void Clear();

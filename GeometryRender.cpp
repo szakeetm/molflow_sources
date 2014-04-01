@@ -28,6 +28,7 @@
 #include "GLApp/GLMessageBox.h"
 
 extern double totalOutgassing;
+extern double totalInFlux;
 extern double gasMass;
 
 extern MolFlow *theApp;
@@ -722,37 +723,43 @@ void Geometry::SetCullMode(int mode) {
 void Geometry::BuildTexture(BYTE *hits) {
 
 	SHGHITS *shGHit = (SHGHITS *)hits;
-	float dCoef = 1.0f;
 	MolFlow *mApp = (MolFlow *)theApp;
+	double dCoef = 1.0;
+	double timeCorrection = (mApp->worker.displayedMoment == 0) ? 1.0 : (mApp->worker.desorptionStopTime - mApp->worker.desorptionStartTime) / mApp->worker.timeWindowSize;
+	double dCoef_custom[]={1.0,1.0,1.0}; //Three coefficients for pressure, imp.rate, density
+	
 	int nbMoments=(int)mApp->worker.moments.size();
-	AHIT correctionFactor = (float)((mApp->worker.displayedMoment==0)?1.0:((mApp->worker.desorptionStopTime-mApp->worker.desorptionStartTime)/mApp->worker.timeWindowSize));
 	switch(shGHit->mode) {
 
 	case MC_MODE:
 		if( shGHit->total.hit.nbDesorbed>0 ) {
-			dCoef = (float)totalOutgassing / (float)shGHit->total.hit.nbDesorbed; //* correctionFactor;
-			texMinAutoscale = shGHit->minHit * dCoef;
-			texMaxAutoscale = shGHit->maxHit * dCoef;
-			texMinAutoscaleMomentsOnly = shGHit->minHitMomentsOnly * dCoef;
-			texMaxAutoscaleMomentsOnly = shGHit->maxHitMomentsOnly * dCoef;
-		} else {
-			texMinAutoscale = shGHit->minHit;
-			texMaxAutoscale = shGHit->maxHit;
-			texMinAutoscaleMomentsOnly = shGHit->minHitMomentsOnly;
-			texMaxAutoscaleMomentsOnly = shGHit->maxHitMomentsOnly;
+			dCoef = totalInFlux / shGHit->total.hit.nbDesorbed * 1E4; //1E4: conversion between m2 and cm2
 		}
+
+		dCoef_custom[0]=dCoef*gasMass/1000/6E23*0.0100; //pressure
+		dCoef_custom[1]=dCoef;
+		dCoef_custom[2] = dCoef;
+
+		for (int i=0;i<3;i++) {
+			//texture limits already corrected by timeFactor in UpdateMCHits()
+			texture_limits[i].autoscale.min.moments_only = shGHit->texture_limits[i].min.moments_only*dCoef_custom[i];
+			texture_limits[i].autoscale.max.moments_only = shGHit->texture_limits[i].max.moments_only*dCoef_custom[i];
+			texture_limits[i].autoscale.min.all = shGHit->texture_limits[i].min.all*dCoef_custom[i];
+			texture_limits[i].autoscale.max.all = shGHit->texture_limits[i].max.all*dCoef_custom[i];
+		}
+		
 		break;
 
 	case AC_MODE:
-		texMinAutoscale = shGHit->minHit;
-		texMaxAutoscale = shGHit->maxHit;
+		texture_limits[0].autoscale.min.all = shGHit->texture_limits[0].min.all;
+		texture_limits[0].autoscale.max.all = shGHit->texture_limits[0].max.all;
 		break;
 
 	}
 
-	double iDesorbed = 0.0;
+	//double iDesorbed = 0.0;
 	if( shGHit->total.hit.nbDesorbed ) 
-    iDesorbed = 1.0 / (double)shGHit->total.hit.nbDesorbed;
+    //iDesorbed = 1.0 / (double)shGHit->total.hit.nbDesorbed;
 		for(int i=0;i<sh.nbFacet;i++) {
 			Facet *f = facets[i];
 			GLint max_t;
@@ -773,38 +780,38 @@ void Geometry::BuildTexture(BYTE *hits) {
 				f->textureError=FALSE;
 			}
 
-			int profSize = (f->sh.isProfile)?(PROFILE_SIZE*sizeof(llong)):0;
+			int profSize = (f->sh.isProfile)?(PROFILE_SIZE*sizeof(APROFILE)):0;
 			int nbElem = f->sh.texWidth*f->sh.texHeight;
 			int tSize = nbElem*sizeof(AHIT);
 			int dSize = nbElem*sizeof(VHIT);
 
-			if( f->sh.isTextured && f->textureVisible ) {
+			if( f->sh.isTextured ) {
 
 				// Retrieve texture from shared memory (every seconds)
 				AHIT *hits_local = (AHIT *)((BYTE *)shGHit + (f->sh.hitOffset + sizeof(SHHITS) + profSize*(1+nbMoments) + tSize*mApp->worker.displayedMoment));
 				
 				double min,max;
 				if (!texAutoScale) { //manual values
-					min=texMin;
-					max=texMax;
+					min=texture_limits[textureMode].manual.min.all;
+					max=texture_limits[textureMode].manual.max.all;
 				} else { //autoscale
-					if (texAutoScaleIncludeConstantFlow) {
-						min=texMinAutoscale;
-						max=texMaxAutoscale;
-					} else {
-						min=texMinAutoscaleMomentsOnly;
-						max=texMaxAutoscaleMomentsOnly;
-					}
+					min=texAutoScaleIncludeConstantFlow?
+						texture_limits[textureMode].autoscale.min.all
+						:texture_limits[textureMode].autoscale.min.moments_only;
+					max=texAutoScaleIncludeConstantFlow?
+						texture_limits[textureMode].autoscale.max.all
+						:texture_limits[textureMode].autoscale.max.moments_only;
 				}
-				f->BuildTexture(hits_local,(AHIT)min,(AHIT)max,texColormap,dCoef,texLogScale,correctionFactor);
+				f->BuildTexture(hits_local, textureMode, min, max, texColormap, 
+					dCoef_custom[0] * timeCorrection, dCoef_custom[1] * timeCorrection, dCoef_custom[2] * timeCorrection, texLogScale);
 			}
 			if( f->sh.countDirection && f->dirCache ) {
 				VHIT *dirs = (VHIT *)((BYTE *)shGHit + (f->sh.hitOffset + sizeof(SHHITS) + profSize*(1+nbMoments) + tSize*(1+nbMoments) + dSize*mApp->worker.displayedMoment));
 				for(int j=0;j<nbElem;j++) {
-					f->dirCache[j].dir.x = dirs[j].dir.x; 
-					f->dirCache[j].dir.y = dirs[j].dir.y; 
-					f->dirCache[j].dir.z = dirs[j].dir.z; 
-					f->dirCache[j].sumSpeed = dirs[j].sumSpeed;
+					f->dirCache[j].sumDir.x = dirs[j].sumDir.x; 
+					f->dirCache[j].sumDir.y = dirs[j].sumDir.y; 
+					f->dirCache[j].sumDir.z = dirs[j].sumDir.z; 
+					//f->dirCache[j].sumSpeed = dirs[j].sumSpeed;
 					f->dirCache[j].count = dirs[j].count;
 				}
 			}
@@ -964,10 +971,11 @@ void Geometry::Render(GLfloat *matView,BOOL renderVolume,BOOL renderTexture,int 
                float xc = (float)( f->sh.O.x + f->sh.U.x*uC + f->sh.V.x*vC );
                float yc = (float)( f->sh.O.y + f->sh.U.y*uC + f->sh.V.y*vC );
                float zc = (float)( f->sh.O.z + f->sh.U.z*uC + f->sh.V.z*vC );
-               RenderArrow(matView,
-                           (float)f->dirCache[add].dir.x,
-                           (float)f->dirCache[add].dir.y,
-                           (float)f->dirCache[add].dir.z,
+               float coeff = 100.0f/(float)f->dirCache[add].count/(float)rw;  //convert to cm/sec, then divide by number of vectors (average), and normalize to cell side
+			   RenderArrow(matView,
+                           (float)f->dirCache[add].sumDir.x*coeff,
+                           (float)f->dirCache[add].sumDir.y*coeff,
+                           (float)f->dirCache[add].sumDir.z*coeff,
                            xc,yc,zc,(float)rw);
              }
           }

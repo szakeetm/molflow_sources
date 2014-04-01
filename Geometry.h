@@ -35,8 +35,12 @@ class Worker;
 
 #define SEL_HISTORY  100
 #define MAX_SUPERSTR 256
-#define GEOVERSION   12
-#define SYNVERSION 4
+#define GEOVERSION   13
+#define SYNVERSION 6
+
+#define TEXTURE_MODE_PRESSURE 0
+#define TEXTURE_MODE_IMPINGEMENT 1
+#define TEXTURE_MODE_DENSITY 2
 
 class Geometry {
 
@@ -57,7 +61,13 @@ public:
   void LoadGEO(FileReader *file,GLProgress *prg,LEAK *pleak,int *nbleakLoad,HIT *pHits,int *nbHHitLoad,int *version,Worker *worker);
   void LoadSYN(FileReader *file,GLProgress *prg,LEAK *pleak,int *nbleakLoad,HIT *pHits,int *nbHHitLoad,int *version);
   bool LoadTextures(FileReader *file,GLProgress *prg,Dataport *dpHit,int version);
-  void ImportDesorption(FileReader *file,Dataport *dhHit);
+  void ImportDesorption_DES(FileReader *file);
+  void ImportDesorption_SYN(FileReader *synFile, const size_t &source, const double &time,
+	  const size_t &mode, const double &eta0, const double &alpha,
+	  const std::vector<std::pair<double, double>> &convDistr,
+	  GLProgress *prg);
+  void AnalyzeSYNfile(FileReader *f, GLProgress *progressDlg, int *nbFacet,
+	  int *nbTextured, int *nbDifferent, GLProgress *prg);
   BOOL IsLoaded();
 
   // Insert
@@ -165,17 +175,12 @@ public:
   void     LoadProfile(FileReader *file,Dataport *dpHit,int version);
  
   // Texture scaling
-  AHIT  texMin;                           // User min
-  AHIT  texMax;                           // User max
-  AHIT  texMinAutoscale;                  // Current minimum
-  AHIT  texMaxAutoscale;                  // Current maximum
-  AHIT  texMinAutoscaleMomentsOnly;       // Current minimum, ignoring constant flow
-  AHIT  texMaxAutoscaleMomentsOnly;       // Current maximum, ignoring constant flow
+  int textureMode;                        // Pressure / Impingement rate / Density
+  TEXTURE_SCALE_TYPE texture_limits[3];   // Min/max values for texture scaling: Pressure/Impingement rate/Density
   BOOL  texAutoScale;                     // Autoscale flag
   BOOL  texAutoScaleIncludeConstantFlow;  // Include constant flow when calculating autoscale values
   BOOL  texColormap;                      // Colormap flag
-  BOOL  ignoreSmall;                      // Autoscale: Ignore very small mesh elements
-  BOOL  texLogScale;                      // Texture im log scale
+  BOOL  texLogScale;                      // Texture in LOG scale
 
   // Structure viewing (-1 => all)
   int viewStruct;
