@@ -350,18 +350,18 @@ void PerformTeleport(FACET *iFacet) {
 	sHandle->lastHit = destination;
 
 	//Count hits on teleport facets
-	iFacet->sh.counter.hit.nbAbsorbed++;
-	destination->sh.counter.hit.nbDesorbed++;
+	/*iFacet->sh.counter.hit.nbAbsorbed++;
+	destination->sh.counter.hit.nbDesorbed++;*/
 
-	iFacet->sh.counter.hit.nbHit++; destination->sh.counter.hit.nbHit++;
+	iFacet->sh.counter.hit.nbHit++; /*destination->sh.counter.hit.nbHit++;*/
 	iFacet->sh.counter.hit.sum_1_per_speed += 2.0 / sHandle->velocityCurrentParticle;
 	iFacet->sh.counter.hit.sum_v_ort += sHandle->velocityCurrentParticle*abs(DOT3(
 		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
 		iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z));
-	destination->sh.counter.hit.sum_1_per_speed += 2.0 / sHandle->velocityCurrentParticle;
+	/*destination->sh.counter.hit.sum_1_per_speed += 2.0 / sHandle->velocityCurrentParticle;
 	destination->sh.counter.hit.sum_v_ort += sHandle->velocityCurrentParticle*abs(DOT3(
 		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
-		destination->sh.N.x, destination->sh.N.y, destination->sh.N.z));
+		destination->sh.N.x, destination->sh.N.y, destination->sh.N.z));*/
 }
 
 // -------------------------------------------------------------
@@ -594,9 +594,11 @@ BOOL StartFromSource() {
 	sHandle->nbDesorbed++;
 	sHandle->tmpCount.hit.nbDesorbed++;
 	sHandle->nbPHit = 0;
-	ProfileFacet(src, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0);
+	
+	//Desorption doesn't contribute to angular profiles
+	ProfileFacet(src, sHandle->flightTimeCurrentParticle, FALSE, 2.0, 1.0);
 	if (src->hits && src->sh.countDes) AHIT_FACET(src, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0);
-	if (src->direction && src->sh.countDirection) DHIT_FACET(src, sHandle->flightTimeCurrentParticle);
+	//if (src->direction && src->sh.countDirection) DHIT_FACET(src, sHandle->flightTimeCurrentParticle);
 
 	// Reset volatile state
 	if (sHandle->hasVolatile) {
@@ -683,6 +685,7 @@ void PerformBounce(FACET *iFacet) {
 	//Texture/Profile outgoing particle
 	if (iFacet->hits && iFacet->sh.countRefl) AHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle, FALSE, 1.0, 1.0); //count again for outward velocity
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, FALSE, 1.0, 1.0);
+	//no direction count on outgoing
 
 	RecordHit(HIT_REF);
 	sHandle->lastHit = iFacet;

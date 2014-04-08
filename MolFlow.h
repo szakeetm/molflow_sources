@@ -68,7 +68,7 @@
 #define APP_NAME "MolFlow+ development version (Compiled "__DATE__" "__TIME__") DEBUG MODE"
 #else
 //#define APP_NAME "Molflow+ development version ("__DATE__")"
-#define APP_NAME "Molflow+ 2.5.1 BETA ("__DATE__")"
+#define APP_NAME "Molflow+ 2.5.2 BETA ("__DATE__")"
 #endif
 
 extern int changedSinceSave;
