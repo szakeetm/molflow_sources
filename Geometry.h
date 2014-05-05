@@ -36,7 +36,7 @@ class Worker;
 #define SEL_HISTORY  100
 #define MAX_SUPERSTR 256
 #define GEOVERSION   13
-#define SYNVERSION 6
+#define SYNVERSION 7
 
 #define TEXTURE_MODE_PRESSURE 0
 #define TEXTURE_MODE_IMPINGEMENT 1

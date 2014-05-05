@@ -757,9 +757,9 @@ void Geometry::BuildTexture(BYTE *hits) {
 
 	}
 
-	//double iDesorbed = 0.0;
+	double iDesorbed = 0.0;
 	if( shGHit->total.hit.nbDesorbed ) 
-    //iDesorbed = 1.0 / (double)shGHit->total.hit.nbDesorbed;
+    iDesorbed = 1.0 / (double)shGHit->total.hit.nbDesorbed;
 		for(int i=0;i<sh.nbFacet;i++) {
 			Facet *f = facets[i];
 			GLint max_t;

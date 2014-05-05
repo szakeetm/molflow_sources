@@ -26,7 +26,7 @@
 #ifndef _FACETDETAILSH_
 #define _FACETDETAILSH_
 
-#define NB_FDCOLUMN 21
+#define NB_FDCOLUMN 26
 
 class FacetDetails : public GLWindow {
 

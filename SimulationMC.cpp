@@ -390,64 +390,29 @@ BOOL SimulationMCStep(int nbStep) {
 			sHandle->flightTimeCurrentParticle += d / 100.0 / sHandle->velocityCurrentParticle; //conversion from cm to m
 
 			if (!sHandle->calcConstantFlow && sHandle->flightTimeCurrentParticle > sHandle->latestMoment) {
+				//hit time over the measured period - we create a new particle
 				RecordHit(LASTHIT);
 				sHandle->distTraveledSinceUpdate += sHandle->distTraveledCurrentParticle;
 				if (!StartFromSource())
 					// maxDesorption reached
 					return FALSE;
-				RecordHit(HIT_DES);
-			}
-			else {
-
+			} else { //hit within measured time
 				if (collidedFacet->sh.teleportDest) {
 					PerformTeleport(collidedFacet);
-				}
-				else if (collidedFacet->sh.sticking > 0.0) {
-
-					//if( collidedFacet->sh.sticking>0.0 && rnd()<(1000*PI/collidedFacet->sh.area/sHandle->velocityCurrentParticle/100.0) ) { //if absorbed
-					if (collidedFacet->sh.sticking == 1.0 || rnd() < (collidedFacet->sh.sticking)) { //if absorbed
-						//if( collidedFacet->sh.sticking==1.0 || rnd()<(collidedFacet->sh.sticking*145.469*sqrt(sHandle->temperature/sHandle->gasMass)/sHandle->velocityCurrentParticle) ) { //if absorbed
-						collidedFacet->sh.counter.hit.nbAbsorbed++;
-						sHandle->tmpCount.hit.nbAbsorbed++;
-						sHandle->distTraveledSinceUpdate += sHandle->distTraveledCurrentParticle;
-						RecordHit(HIT_ABS);
-						ProfileFacet(collidedFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0);
-						if (collidedFacet->hits && collidedFacet->sh.countAbs) AHIT_FACET(collidedFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0);
-						if (collidedFacet->direction && collidedFacet->sh.countDirection) DHIT_FACET(collidedFacet, sHandle->flightTimeCurrentParticle);
-
-						if (!StartFromSource())
-							// maxDesorption reached
-							return FALSE;
-						RecordHit(HIT_DES);
-					}
-					else {
-						PerformBounce(collidedFacet);
-						collidedFacet->sh.counter.hit.sum_1_per_speed += 1.0 / sHandle->velocityCurrentParticle;
-						collidedFacet->sh.counter.hit.sum_v_ort += sHandle->velocityCurrentParticle*abs(DOT3(
-							sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
-							collidedFacet->sh.N.x, collidedFacet->sh.N.y, collidedFacet->sh.N.z));
-					}
-
-				}
-				else {
+				} else if (collidedFacet->sh.sticking == 1.0 || ((collidedFacet->sh.sticking > 0.0) && (rnd() < (collidedFacet->sh.sticking)))) {
+					//absorbed
+					PerformAbsorb(collidedFacet);
+					sHandle->distTraveledSinceUpdate += sHandle->distTraveledCurrentParticle;
+					if (!StartFromSource())
+						// maxDesorption reached
+						return FALSE;
+				} else {
+					//reflected
 					PerformBounce(collidedFacet);
 				}
-
-				if (!collidedFacet->sh.teleportDest){
-					// Hit count
-					sHandle->tmpCount.hit.nbHit++;
-
-					//sHandle->counter.hit.nbHit++;
-					collidedFacet->sh.counter.hit.nbHit++;
-					collidedFacet->sh.counter.hit.sum_1_per_speed += 1.0 / sHandle->velocityCurrentParticle;
-					collidedFacet->sh.counter.hit.sum_v_ort += sHandle->velocityCurrentParticle*abs(DOT3(
-						sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
-						collidedFacet->sh.N.x, collidedFacet->sh.N.y, collidedFacet->sh.N.z));
-				}
-			}
-		}
+			} //end hit within measured time
+		} //end intersection found
 		else {
-
 			// Leak (simulation error)
 			RecordLeakPos();
 			sHandle->nbLeakTotal++;
@@ -571,6 +536,8 @@ BOOL StartFromSource() {
 		sHandle->pPos = sHandle->str[j].facets[i]->sh.center;
 	}
 
+	RecordHit(HIT_DES); //create blue hit point for created particle
+
 	//See docs/theta_gen.png for further details on angular distribution generation
 	switch (src->sh.desorbType) {
 	case DES_UNIFORM:
@@ -595,6 +562,10 @@ BOOL StartFromSource() {
 	sHandle->tmpCount.hit.nbDesorbed++;
 	sHandle->nbPHit = 0;
 	
+	src->sh.counter.hit.sum_1_per_speed += 2.0 / sHandle->velocityCurrentParticle;
+	src->sh.counter.hit.sum_v_ort += sHandle->velocityCurrentParticle*abs(DOT3(
+		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
+		src->sh.N.x, src->sh.N.y, src->sh.N.z));
 	//Desorption doesn't contribute to angular profiles
 	ProfileFacet(src, sHandle->flightTimeCurrentParticle, FALSE, 2.0, 1.0);
 	if (src->hits && src->sh.countDes) AHIT_FACET(src, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0);
@@ -656,6 +627,13 @@ void PerformBounce(FACET *iFacet) {
 	}
 
 	//Texture/Profile incoming hit
+	sHandle->tmpCount.hit.nbHit++; //global
+	iFacet->sh.counter.hit.nbHit++; //hit facet
+	//Register (orthogonal) velocity
+	iFacet->sh.counter.hit.sum_1_per_speed += 1.0 / sHandle->velocityCurrentParticle;
+	iFacet->sh.counter.hit.sum_v_ort += sHandle->velocityCurrentParticle*abs(DOT3(
+		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
+		iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z));
 	if (iFacet->hits && iFacet->sh.countRefl) AHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 1.0, 1.0);
 	if (iFacet->direction && iFacet->sh.countDirection) DHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle);
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 1.0, 1.0);
@@ -683,6 +661,11 @@ void PerformBounce(FACET *iFacet) {
 	}
 
 	//Texture/Profile outgoing particle
+	//Register outgoing velocity
+	iFacet->sh.counter.hit.sum_1_per_speed += 1.0 / sHandle->velocityCurrentParticle;
+	iFacet->sh.counter.hit.sum_v_ort += sHandle->velocityCurrentParticle*abs(DOT3(
+		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
+		iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z));
 	if (iFacet->hits && iFacet->sh.countRefl) AHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle, FALSE, 1.0, 1.0); //count again for outward velocity
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, FALSE, 1.0, 1.0);
 	//no direction count on outgoing
@@ -694,12 +677,27 @@ void PerformBounce(FACET *iFacet) {
 
 }
 
+void PerformAbsorb(FACET *iFacet) {
+	sHandle->tmpCount.hit.nbHit++; //global	
+	sHandle->tmpCount.hit.nbAbsorbed++;
+	iFacet->sh.counter.hit.nbHit++;
+	iFacet->sh.counter.hit.nbAbsorbed++;
+	RecordHit(HIT_ABS);
+	iFacet->sh.counter.hit.sum_1_per_speed += 2.0 / sHandle->velocityCurrentParticle;
+	iFacet->sh.counter.hit.sum_v_ort += sHandle->velocityCurrentParticle*abs(DOT3(
+		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
+		iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z));
+	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0);
+	if (iFacet->hits && iFacet->sh.countAbs) AHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0);
+	if (iFacet->direction && iFacet->sh.countDirection) DHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle);
+}
+
 void AHIT_FACET(FACET *f, double time, BOOL countHit, double velocity_factor, double ortSpeedFactor) {
 
 	int tu = (int)(f->colU * f->sh.texWidthD);
 	int tv = (int)(f->colV * f->sh.texHeightD);
 	int add = tu + tv*(f->sh.texWidth);
-	float directionFactor = sHandle->velocityCurrentParticle*abs(DOT3(sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
+	double directionFactor = sHandle->velocityCurrentParticle*abs(DOT3(sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
 		f->sh.N.x, f->sh.N.y, f->sh.N.z)); //surface-orthogonal velocity component
 
 	for (int m = 0; m <= sHandle->nbMoments; m++)

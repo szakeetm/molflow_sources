@@ -93,14 +93,6 @@ extern int numCPU;
 #define MENU_FILE_INSERTGEO_NEWSTR  141
 #define MENU_FILE_EXPORTMESH      16
 
-
-
-
-
-
-
-
-
 #define MENU_FILE_EXPORTTEXTURE_AREA 150
 #define MENU_FILE_EXPORTTEXTURE_MCHITS 151
 #define MENU_FILE_EXPORTTEXTURE_IMPINGEMENT 152
@@ -113,14 +105,6 @@ extern int numCPU;
 
 #define MENU_FILE_LOADRECENT 110
 #define MENU_FILE_EXIT       17
-
-
-
-
-
-
-
-
 
 #define MENU_EDIT_3DSETTINGS   21
 #define MENU_EDIT_TSCALING     22
@@ -151,6 +135,7 @@ extern int numCPU;
 
 #define MENU_FACET_SELECTVOL   321
 #define MENU_FACET_SELECTERR   322
+#define MENU_FACET_SELECTNONPLANAR 323
 #define MENU_FACET_SELECTHITS        3230
 #define MENU_FACET_SELECTNOHITS_AREA 3231
 #define MENU_FACET_SAVESEL     324
@@ -330,6 +315,7 @@ MolFlow::MolFlow()
 	m_minScreenHeight = 600;
 	tolerance=1e-8;
 	largeArea=1.0;
+	planarityThreshold = 1e-5;
 	totalOutgassing=0.0;
 	totalInFlux = 0.0;
 	gasMass=28;
@@ -354,11 +340,6 @@ int MolFlow::OneTimeSceneInit()
 	//nbSt = 0;
 
 	LoadConfig();
-
-
-
-
-
 
 	menu = new GLMenuBar(0);
 	wnd->SetMenuBar(menu);
@@ -389,10 +370,6 @@ int MolFlow::OneTimeSceneInit()
 
 	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->Add("# of velocity vectors",MENU_FILE_EXPORTTEXTURE_N_VECTORS);
 
-
-
-
-
 	menu->GetSubMenu("File")->Add(NULL); // Separator
 	menu->GetSubMenu("File")->Add("Load recent");
 	for(int i=nbRecent-1;i>=0;i--)
@@ -403,21 +380,6 @@ int MolFlow::OneTimeSceneInit()
 	menu->GetSubMenu("File")->SetIcon(MENU_FILE_LOAD,65,24);
 	menu->GetSubMenu("File")->SetIcon(MENU_FILE_SAVE,83,24);
 	menu->GetSubMenu("File")->SetIcon(MENU_FILE_SAVEAS,101,24);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 	menu->Add("Selection");
 	menu->GetSubMenu("Selection")->Add("Select All Facets",MENU_FACET_SELECTALL,SDLK_a,CTRL_MODIFIER);
@@ -437,9 +399,10 @@ int MolFlow::OneTimeSceneInit()
 	menu->GetSubMenu("Selection")->Add("Select large with no hits",MENU_FACET_SELECTNOHITS_AREA);
 	menu->GetSubMenu("Selection")->Add(NULL); // Separator
 
-	menu->GetSubMenu("Selection")->Add("Select link facet",MENU_FACET_SELECTDEST);
-	menu->GetSubMenu("Selection")->Add("Select volatile facet",MENU_FACET_SELECTVOL);
-	menu->GetSubMenu("Selection")->Add("Select non simple",MENU_FACET_SELECTERR);
+	menu->GetSubMenu("Selection")->Add("Select link facets",MENU_FACET_SELECTDEST);
+	menu->GetSubMenu("Selection")->Add("Select volatile facets", MENU_FACET_SELECTVOL);
+	menu->GetSubMenu("Selection")->Add("Select non planar facets", MENU_FACET_SELECTNONPLANAR);
+	menu->GetSubMenu("Selection")->Add("Select non simple facets",MENU_FACET_SELECTERR);
 	//menu->GetSubMenu("Selection")->Add(NULL); // Separator
 	//menu->GetSubMenu("Selection")->Add("Load selection",MENU_FACET_LOADSEL);
 	//menu->GetSubMenu("Selection")->Add("Save selection",MENU_FACET_SAVESEL);
@@ -675,13 +638,6 @@ int MolFlow::OneTimeSceneInit()
 	leakNumber->SetEditable(FALSE);
 	simuPanel->Add(leakNumber);
 
-
-
-
-
-
-
-
 	sTimeLabel = new GLLabel("Time");
 	simuPanel->Add(sTimeLabel);
 
@@ -689,16 +645,12 @@ int MolFlow::OneTimeSceneInit()
 	sTime->SetEditable(FALSE);
 	simuPanel->Add(sTime);
 
-
-
 	facetPanel = new GLTitledPanel("Selected Facet");
 	facetPanel->SetClosable(TRUE);
 	Add(facetPanel);
 
 	inputPanel = new GLTitledPanel("Particles in");
 	facetPanel->Add(inputPanel);
-
-
 
 	facetDLabel = new GLLabel("Desorption");
 	facetPanel->Add(facetDLabel);
@@ -744,13 +696,9 @@ int MolFlow::OneTimeSceneInit()
 	facetSticking = new GLTextField(0,NULL);
 	outputPanel->Add(facetSticking);
 
-
-
-
 	facetPumpingLabel = new GLLabel("Pumping Speed (l/s):");
 	outputPanel->Add(facetPumpingLabel);
 	facetPumping = new GLTextField(0,NULL);
-
 
 	outputPanel->Add(facetPumping);
 
@@ -773,7 +721,6 @@ int MolFlow::OneTimeSceneInit()
 	facetReflType = new GLCombo(0);
 	facetReflType->SetSize(2);
 	facetReflType->SetValueAt(0,"Diffuse");
-
 
 	facetReflType->SetValueAt(1,"Specular");
 
@@ -812,13 +759,10 @@ int MolFlow::OneTimeSceneInit()
 	facetSuperDest = new GLTextField(0,NULL);
 	facetPanel->Add(facetSuperDest);
 
-
 	//facetMass = new GLTextField(0,NULL);
 	//facetPanel->Add(facetMass);
 	//facetMLabel = new GLLabel("Mass(g)");
 	//facetPanel->Add(facetMLabel);
-
-
 
 	facetReLabel = new GLLabel("Profile:");
 	facetPanel->Add(facetReLabel);
@@ -832,18 +776,9 @@ int MolFlow::OneTimeSceneInit()
 	facetRecType->SetValueAt(5,"Orthogonal velocity");
 	facetPanel->Add(facetRecType);
 
-
-
-
-
-
-
-
-
 	facetTexBtn = new GLButton(0,"Mesh...");
 	facetTexBtn->SetEnabled(FALSE);
 	facetPanel->Add(facetTexBtn);
-
 
 	facetMoreBtn = new GLButton(0,"Details...");
 	facetPanel->Add(facetMoreBtn);
@@ -854,8 +789,6 @@ int MolFlow::OneTimeSceneInit()
 	facetApplyBtn = new GLButton(0,"Apply");
 	facetApplyBtn->SetEnabled(FALSE);
 	facetPanel->Add(facetApplyBtn);
-
-
 
 	facetList = new GLList(0);
 	facetList->SetWorker(&worker);
@@ -874,14 +807,6 @@ int MolFlow::OneTimeSceneInit()
 
 	//LoadFile();
 	try {
-
-
-
-
-
-
-
-
 
 		worker.SetProcNumber(nbProc);
 
@@ -2251,14 +2176,6 @@ int MolFlow::FrameMove()
 		leakNumber->SetText("None");
 	}
 
-
-
-
-
-
-
-
-
 	resetSimu->SetEnabled(!worker.running&&worker.nbDesorption>0);
 
 	if (worker.running) {
@@ -3291,7 +3208,7 @@ void MolFlow::ProcessMessage(GLComponent *src,int message)
 {
 	Geometry *geom = worker.GetGeometry();
 	char *input;
-
+	char tmp[128];
 	switch(message) {
 
 		//MENU --------------------------------------------------------------------
@@ -3304,18 +3221,6 @@ void MolFlow::ProcessMessage(GLComponent *src,int message)
 			}
 			break;
 		case MENU_FILE_IMPORTDES_SYN:
-
-
-
-
-
-
-
-
-
-
-
-
 
 			if (geom->IsLoaded()) {
 				Geometry *geom = worker.GetGeometry();
@@ -3528,14 +3433,6 @@ void MolFlow::ProcessMessage(GLComponent *src,int message)
 			facetDetails->Display(&worker);
 			break;
 
-
-
-
-
-
-
-
-
 		case MENU_FACET_SELECTALL:
 			geom->SelectAll();
 			UpdateFacetParams(TRUE);
@@ -3599,6 +3496,25 @@ void MolFlow::ProcessMessage(GLComponent *src,int message)
 			UpdateFacetParams(TRUE);
 			break;
 
+		case MENU_FACET_SELECTNONPLANAR:
+		
+		sprintf(tmp, "%g", planarityThreshold);
+		//sprintf(title,"Pipe L/R = %g",L/R);
+		input = GLInputBox::GetInput(tmp, "Planarity larger than:", "Select non planar facets");
+		if (!input) return;
+		if (!sscanf(input, "%lf", &planarityThreshold)) {
+			GLMessageBox::Display("Invalid number", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			return;
+		}
+		geom->Unselect();
+		for (int i = 0; i < geom->GetNbFacet(); i++)
+			if (geom->GetFacet(i)->err >= planarityThreshold)
+				geom->Select(i);
+		geom->UpdateSelection();
+		UpdateFacetParams(TRUE); 
+			break;
+
+
 		case MENU_FACET_SELECTERR:
 			geom->Unselect();
 			for(int i=0;i<geom->GetNbFacet();i++)
@@ -3639,21 +3555,21 @@ void MolFlow::ProcessMessage(GLComponent *src,int message)
 			break;
 
 		case MENU_FACET_SELECTNOHITS_AREA:
-			char tmp[128];
-			sprintf(tmp,"%g",largeArea);
-			//sprintf(title,"Pipe L/R = %g",L/R);
-			input = GLInputBox::GetInput(tmp,"Min.area (cm)","Select large facets without hits");
-			if( !input ) return;	
-			if(( sscanf(input,"%lf",&largeArea)<=0 )||(largeArea<=0.0)) {
-				GLMessageBox::Display("Invalid number","Error",GLDLG_OK,GLDLG_ICONERROR);
-				return;
-			}
-			geom->Unselect();
-			for(int i=0;i<geom->GetNbFacet();i++)
-				if( geom->GetFacet(i)->sh.counter.hit.nbHit == 0 && geom->GetFacet(i)->sh.area>=largeArea)
-					geom->Select(i);
-			geom->UpdateSelection();
-			UpdateFacetParams(TRUE);
+		
+		sprintf(tmp, "%g", largeArea);
+		//sprintf(title,"Pipe L/R = %g",L/R);
+		input = GLInputBox::GetInput(tmp, "Min.area (cm)", "Select large facets without hits");
+		if (!input) return;
+		if ((sscanf(input, "%lf", &largeArea) <= 0) || (largeArea <= 0.0)) {
+			GLMessageBox::Display("Invalid number", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			return;
+		}
+		geom->Unselect();
+		for (int i = 0; i < geom->GetNbFacet(); i++)
+			if (geom->GetFacet(i)->sh.counter.hit.nbHit == 0 && geom->GetFacet(i)->sh.area >= largeArea)
+				geom->Select(i);
+		geom->UpdateSelection();
+		UpdateFacetParams(TRUE); 
 			break;
 
 		case MENU_FACET_SELECTDES:

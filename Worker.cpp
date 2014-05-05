@@ -994,6 +994,7 @@ void Worker::Update(float appTime) {
 				for(int i=0;i<nbFacet;i++) {    
 					Facet *f = geom->GetFacet(i);
 					memcpy(&(f->sh.counter),buffer+f->sh.hitOffset,sizeof(SHHITS));
+					//f = f;
 				}
 				try {
 					geom->BuildTexture(buffer);

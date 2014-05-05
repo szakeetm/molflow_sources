@@ -66,7 +66,7 @@ TexturePlotter::TexturePlotter() :GLWindow() {
 	viewCombo->SetValueAt(3, "Particle density [1/m3]");
 	viewCombo->SetValueAt(4, "Gas density [kg/m3]");
 	viewCombo->SetValueAt(5, "Pressure [mbar]");
-	viewCombo->SetValueAt(6, "Avg. incident speed (m/s)");
+	viewCombo->SetValueAt(6, "Avg. mol. speed (m/s)");
 	viewCombo->SetValueAt(7, "Incident velocity vector (m/s)");
 	viewCombo->SetValueAt(8, "# of velocity vectors");
 
@@ -250,7 +250,7 @@ void TexturePlotter::UpdateTable() {
 							 int profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
 							 AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + sizeof(SHHITS)+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
 							 double dCoef = totalInFlux / shGHit->total.hit.nbDesorbed * 1E4; //1E4: conversion m2->cm2
-							 if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0f : ((worker->desorptionStopTime - worker->desorptionStartTime)
+							 if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
 								 / worker->timeWindowSize));
 							 for (int i = 0; i < w; i++) {
 								 for (int j = 0; j<h; j++) {
@@ -283,7 +283,7 @@ void TexturePlotter::UpdateTable() {
 							 AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + sizeof(SHHITS)+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
 							 //float dCoef = (float)totalOutgassing / 8.31 * gasMass / 100 * MAGIC_CORRECTION_FACTOR;
 							 double dCoef = totalInFlux / shGHit->total.hit.nbDesorbed*1E4;   //1E4 m2 -> cm2
-							 if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0f : ((worker->desorptionStopTime - worker->desorptionStartTime)
+							 if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
 								 / worker->timeWindowSize));
 							 for (int i = 0; i < w; i++) {
 								 for (int j = 0; j<h; j++) {
@@ -321,7 +321,7 @@ void TexturePlotter::UpdateTable() {
 							 AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + sizeof(SHHITS)+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
 							 //float dCoef = (float)totalOutgassing / 8.31 * gasMass / 100 * MAGIC_CORRECTION_FACTOR;
 							 double dCoef = (float)totalInFlux / (float)shGHit->total.hit.nbDesorbed *1E4;
-							 if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0f : (((float)worker->desorptionStopTime - (float)worker->desorptionStartTime)
+							 if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : (((float)worker->desorptionStopTime - (float)worker->desorptionStartTime)
 								 / (float)worker->timeWindowSize));
 							 for (int i = 0; i < w; i++) {
 								 for (int j = 0; j<h; j++) {
@@ -359,7 +359,7 @@ void TexturePlotter::UpdateTable() {
 							 int profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
 							 AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + sizeof(SHHITS)+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
 							 double dCoef = totalInFlux / shGHit->total.hit.nbDesorbed * 1E4 * (gasMass / 1000 / 6E23) * 0.0100;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
-							 if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0f : ((worker->desorptionStopTime - worker->desorptionStartTime)
+							 if (shGHit->mode == MC_MODE) dCoef *= ((worker->displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
 								 / worker->timeWindowSize));
 							 for (int i = 0; i < w; i++) {
 								 for (int j = 0; j<h; j++) {

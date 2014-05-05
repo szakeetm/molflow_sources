@@ -68,7 +68,7 @@
 #define APP_NAME "MolFlow+ development version (Compiled "__DATE__" "__TIME__") DEBUG MODE"
 #else
 //#define APP_NAME "Molflow+ development version ("__DATE__")"
-#define APP_NAME "Molflow+ 2.5.2 BETA ("__DATE__")"
+#define APP_NAME "Molflow+ 2.5.3 BETA ("__DATE__")"
 #endif
 
 extern int changedSinceSave;
@@ -111,6 +111,7 @@ public:
     float    lastMeasTime; // Last measurement time (for hps and dps)
 	double tolerance; //Select coplanar tolerance
 	double largeArea; //Selection filter
+	double planarityThreshold; //Planarity threshold
 
     // Util functions
 	//void SendHeartBeat(BOOL forced=FALSE);

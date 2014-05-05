@@ -231,6 +231,7 @@ void RecordLeakPos();
 BOOL StartFromSource();
 void ComputeSourceArea();
 void PerformBounce(FACET *iFacet);
+void PerformAbsorb(FACET *iFacet);
 void PerformTeleport(FACET *iFacet);
 void PolarToCartesian(FACET *iFacet,double theta,double phi,BOOL reverse);
 void CartesianToPolar(FACET *iFacet,double *theta,double *phi);

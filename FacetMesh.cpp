@@ -102,7 +102,7 @@ FacetMesh::FacetMesh():GLWindow() {
 	recordACBtn->SetCheck(FALSE);
 	Add(recordACBtn);
 
-	GLLabel *l5 = new GLLabel("Resolution (Sample/Unit)");
+	GLLabel *l5 = new GLLabel("Resolution (samples/cm)");
 	l5->SetBounds(140,80,110,18);
 	Add(l5);
 

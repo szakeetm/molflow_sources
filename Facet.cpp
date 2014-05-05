@@ -51,9 +51,11 @@ Facet::Facet(int nbIndex) {
 	memset(vertices2, 0, nbIndex * sizeof(VERTEX2D));
 
 	sh.nbIndex = nbIndex;
-	sh.counter.hit.nbDesorbed = 0;
+	memset(&sh.counter, 0, sizeof(sh.counter));
+	/*sh.counter.hit.nbDesorbed = 0;
 	sh.counter.hit.nbAbsorbed = 0;
-	sh.counter.hit.nbHit = 0;
+	sh.counter.hit.nbHit = 0;*/
+
 	sh.sticking = 0.0;
 	sh.opacity = 1.0;
 	sh.temperature = 293.15; // 20degC
@@ -1461,7 +1463,8 @@ BOOL Facet::IsCoplanar(Facet *f, double threshold) {
 		(sh.flow == f->sh.flow) &&
 		(sh.opacity == f->sh.opacity) &&
 		(sh.is2sided == f->sh.is2sided) &&
-		(sh.reflectType == f->sh.reflectType);
+		(sh.reflectType == f->sh.reflectType) &&
+		(sh.temperature == f->sh.temperature);
 	//TODO: Add other properties!
 
 }

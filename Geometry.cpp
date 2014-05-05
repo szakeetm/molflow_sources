@@ -3068,7 +3068,7 @@ void Geometry::SaveProfile(FileWriter *file, Dataport *dpHit, int super, BOOL sa
 			for (int i = 0; i<nbProfile; i++) {
 				Facet *f = GetFacet(profileFacet[i]);
 				APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + sizeof(SHHITS)+m*sizeof(APROFILE)*PROFILE_SIZE);
-				char tmp2[128];
+				//char tmp2[128];
 				file->WriteLLong(profilePtr[j].count, "\t");
 				if (!txtFormat) file->WriteDouble(profilePtr[j].sum_1_per_speed, "\t");
 				if (!txtFormat) file->WriteDouble(profilePtr[j].sum_v_ort);
@@ -3629,7 +3629,7 @@ bool Geometry::LoadTextures(FileReader *file, GLProgress *prg, Dataport *dpHit, 
 		// Block dpHit during the whole disc reading
 
 		AccessDataport(dpHit);
-		AHIT readVal;
+		//AHIT readVal;
 
 		// Globals
 		BYTE *buffer = (BYTE *)dpHit->buff;
@@ -5609,6 +5609,9 @@ void Geometry::ImportDesorption_SYN(
 					int index = iy*width + ix;
 					//Read original values
 					llong MC = file->ReadLLong();
+					double cellArea = 1.0;
+					if (version2 >= 7) cellArea = file->ReadDouble();
+					if (cellArea<1E-10) cellArea = 1.0; //to avoid division by zero
 					double flux = file->ReadDouble() / no_scans;
 					double power = file->ReadDouble() / no_scans;
 
@@ -5616,8 +5619,8 @@ void Geometry::ImportDesorption_SYN(
 						//Calculate dose
 						double dose;
 						if (source == 0) dose = (double)MC*time;
-						else if (source == 1) dose = flux*time;
-						else if (source == 2) dose = power*time;
+						else if (source == 1) dose = flux*time/cellArea;
+						else if (source == 2) dose = power*time/cellArea;
 
 						double outgassing;
 						if (dose == 0) outgassing = 0; //to avoid division by zero later
@@ -5661,7 +5664,7 @@ void Geometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, int *nb
 	*nbDifferent = 0;
 	MolFlow *mApp = (MolFlow *)theApp;
 	UnSelectAll();
-	char tmp[512];
+	//char tmp[512];
 
 	file->ReadKeyword("version"); file->ReadKeyword(":");
 	int version2;

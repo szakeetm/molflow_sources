@@ -47,17 +47,22 @@ static COLUMN allColumn[] = {
   {"2 Sided"       , 60 , ALIGN_CENTER} ,
   {"Vertex"        , 80 , ALIGN_CENTER} ,
   {"Area"          , 80 , ALIGN_CENTER} ,
+  {"Temperature (K)",80 , ALIGN_CENTER} ,
   {"Facet 2D Box"  , 100, ALIGN_CENTER} ,
   {"Texture (u,v)" , 120, ALIGN_CENTER} ,
-  {"Sample/unit"   , 80 , ALIGN_CENTER} ,
+  {"Mesh sample/cm", 80 , ALIGN_CENTER} ,
   {"Count"         , 80 , ALIGN_CENTER} ,
   {"Memory"        , 80 , ALIGN_CENTER} ,
-  {"Planarity"      , 80 , ALIGN_CENTER} ,
+  {"Planarity"     , 80 , ALIGN_CENTER} ,
   {"Profile"       , 80 , ALIGN_CENTER} ,
-  {"Avg.Press.(C.F.)"      , 80 , ALIGN_CENTER} ,
-  {"Hits"        , 80 , ALIGN_CENTER} ,
-  {"Des."        , 80 , ALIGN_CENTER} ,
-  {"Abs."        , 80 , ALIGN_CENTER} ,
+  {"Imping.rate"   , 80, ALIGN_CENTER },
+  {"Density [1/m3]", 80, ALIGN_CENTER },
+  {"Density [kg/m3]",80, ALIGN_CENTER },
+  {"Pressure [mbar]",80 , ALIGN_CENTER} ,
+  {"Av.mol.speed[m/s]",80, ALIGN_CENTER },
+  {"Hits"           , 80 , ALIGN_CENTER} ,
+  {"Des."           , 80 , ALIGN_CENTER} ,
+  {"Abs."           , 80 , ALIGN_CENTER} ,
 };
 
 static const char *desStr[] = {
@@ -147,39 +152,54 @@ FacetDetails::FacetDetails():GLWindow() {
   show[9] = new GLToggle(9,"Area");
   show[9]->SetCheck(TRUE);
   sPanel->Add(show[9]);
-  show[10] = new GLToggle(10,"2D Box");
+  show[10] = new GLToggle(10, "Temperature");
   show[10]->SetCheck(TRUE);
   sPanel->Add(show[10]);
-  show[11] = new GLToggle(11,"Texture UV");
+  show[11] = new GLToggle(11,"2D Box");
   show[11]->SetCheck(TRUE);
   sPanel->Add(show[11]);
-  show[12] = new GLToggle(12,"Sample/Unit");
+  show[12] = new GLToggle(12,"Texture UV");
   show[12]->SetCheck(TRUE);
   sPanel->Add(show[12]);
-  show[13] = new GLToggle(13,"Count mode");
+  show[13] = new GLToggle(13,"Mesh sample/cm");
   show[13]->SetCheck(TRUE);
   sPanel->Add(show[13]);
-  show[14] = new GLToggle(14,"Memory");
+  show[14] = new GLToggle(14,"Count mode");
   show[14]->SetCheck(TRUE);
   sPanel->Add(show[14]);
-  show[15] = new GLToggle(15,"Planarity");
+  show[15] = new GLToggle(15,"Memory");
   show[15]->SetCheck(TRUE);
   sPanel->Add(show[15]);
-  show[16] = new GLToggle(16,"Profile");
+  show[16] = new GLToggle(16,"Planarity");
   show[16]->SetCheck(TRUE);
   sPanel->Add(show[16]);
-  show[17] = new GLToggle(17,"Avg.Press(C.F.)");
+  show[17] = new GLToggle(17,"Profile");
   show[17]->SetCheck(TRUE);
   sPanel->Add(show[17]);
-  show[18] = new GLToggle(18,"Hits");
+  show[18] = new GLToggle(18, "Imping.rate");
   show[18]->SetCheck(TRUE);
   sPanel->Add(show[18]);
-  show[19] = new GLToggle(19,"Des.");
+  show[19] = new GLToggle(19, "Density[1/m3]");
   show[19]->SetCheck(TRUE);
   sPanel->Add(show[19]);
-  show[20] = new GLToggle(20,"Abs.");
+  show[20] = new GLToggle(20, "Density[kg/m3]");
   show[20]->SetCheck(TRUE);
   sPanel->Add(show[20]);
+  show[21] = new GLToggle(21, "Pressure");
+  show[21]->SetCheck(TRUE);
+  sPanel->Add(show[21]);
+  show[22] = new GLToggle(22, "Mol.speed");
+  show[22]->SetCheck(TRUE);
+  sPanel->Add(show[22]);
+  show[23] = new GLToggle(23,"Hits");
+  show[23]->SetCheck(TRUE);
+  sPanel->Add(show[23]);
+  show[24] = new GLToggle(24,"Des.");
+  show[24]->SetCheck(TRUE);
+  sPanel->Add(show[24]);
+  show[25] = new GLToggle(25,"Abs.");
+  show[25]->SetCheck(TRUE);
+  sPanel->Add(show[25]);
 
   // Center dialog
   int wS,hS;
@@ -279,44 +299,76 @@ char *FacetDetails::FormatCell(int idx,Facet *f,int mode) {
 		if (f->sh.is2sided) sprintf(ret,"2*%g",f->sh.area);
 		else sprintf(ret,"%g",f->sh.area);
       break;
-    case 10:
+	case 10:
+		sprintf(ret, "%g", f->sh.temperature);
+		break;
+    case 11:
       sprintf(ret,"%g x %g",Norme(&f->sh.U),Norme(&f->sh.V));
       break;
-    case 11:
+    case 12:
       if( f->sh.isTextured ) {
         sprintf(ret,"%dx%d (%g x %g)",f->sh.texWidth,f->sh.texHeight,f->sh.texWidthD,f->sh.texHeightD);
       } else {
         sprintf(ret,"None");
       }
       break;
-    case 12:
+    case 13:
       sprintf(ret,"%g",f->tRatio);
       break;
-    case 13:
+    case 14:
       sprintf(ret,"%s",GetCountStr(f));
       break;
-    case 14:
+    case 15:
 		sprintf(ret,"%s",FormatMemory(f->GetTexRamSize(1+worker->moments.size())));
       break;
-    case 15:
+    case 16:
       sprintf(ret,"%f",f->err);
       break;
-    case 16:
+    case 17:
 		sprintf(ret,"%s",profStr[f->sh.profileType]);
 		break;
-	case 17: //avg.pressure
-		opacity=(f->sh.opacity>0.0)?f->sh.opacity:1.0; //to prevent division by 0 for transparent facets
-		sprintf(ret,"%g",totalInFlux*f->sh.temperature*f->sh.counter.hit.nbHit/f->sh.area
-							/(145.469*sqrt(f->sh.temperature/gasMass))*40.0/worker->nbDesorption/opacity/(f->sh.is2sided?2:1));
-		//11.77=sqrt(8*8.31*293.15/3.14/0.028)/4/10
+	case 18: //imp.rate
+	{opacity = (f->sh.opacity > 0.0) ? f->sh.opacity : 1.0; //to prevent division by 0 for transparent facets
+	double dCoef = totalInFlux / worker->nbDesorption * 1E4;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
+	dCoef *= ((worker->displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
+		/ worker->timeWindowSize));
+	sprintf(ret, "%g", f->sh.counter.hit.nbHit / f->sh.area*(f->sh.is2sided ? 2.0 : 1.0)*dCoef);
+	//11.77=sqrt(8*8.31*293.15/3.14/0.028)/4/10
+	break; }
+	case 19: //particle density
+	{opacity = (f->sh.opacity > 0.0) ? f->sh.opacity : 1.0; //to prevent division by 0 for transparent facets
+	double dCoef = totalInFlux / worker->nbDesorption * 1E4;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
+	dCoef *= ((worker->displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
+		/ worker->timeWindowSize));
+	sprintf(ret, "%g", 2.0*f->sh.counter.hit.sum_1_per_speed / (f->sh.area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef);
+	//11.77=sqrt(8*8.31*293.15/3.14/0.028)/4/10
+	break; }
+	case 20: //gas density
+	{opacity = (f->sh.opacity > 0.0) ? f->sh.opacity : 1.0; //to prevent division by 0 for transparent facets
+	double dCoef = totalInFlux / worker->nbDesorption * 1E4;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
+	dCoef *= ((worker->displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
+		/ worker->timeWindowSize));
+	sprintf(ret, "%g", 2.0*f->sh.counter.hit.sum_1_per_speed / (f->sh.area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef*gasMass / 1000.0 / 6E23);
+	//11.77=sqrt(8*8.31*293.15/3.14/0.028)/4/10
+	break; }
+	case 21: //avg.pressure
+	{opacity = (f->sh.opacity > 0.0) ? f->sh.opacity : 1.0; //to prevent division by 0 for transparent facets
+	double dCoef = totalInFlux / worker->nbDesorption * 1E4 * (gasMass / 1000 / 6E23) * 0.0100;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
+	dCoef *= ((worker->displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
+		/ worker->timeWindowSize));
+	sprintf(ret, "%g", f->sh.counter.hit.sum_v_ort*dCoef / f->sh.area);
+	//11.77=sqrt(8*8.31*293.15/3.14/0.028)/4/10
+	break; }
+	case 22: //avg. gas speed
+		sprintf(ret, "%g", 2.0*(double)(f->sh.counter.hit.nbHit+f->sh.counter.hit.nbDesorbed) / f->sh.counter.hit.sum_1_per_speed);
 		break;
-	case 18:
+	case 23:
 		sprintf(ret,"%I64d",f->sh.counter.hit.nbHit);
 		break;
-	case 19:
+	case 24:
 		sprintf(ret,"%I64d",f->sh.counter.hit.nbDesorbed);
 		break;
-	case 20:
+	case 25:
 		sprintf(ret,"%I64d",f->sh.counter.hit.nbAbsorbed);
 		break;
   }
