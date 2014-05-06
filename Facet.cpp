@@ -1479,7 +1479,12 @@ void Facet::Copy(Facet *f, BOOL copyMesh) {
 	sh.desorbType = f->sh.desorbType;
 	sh.desorbTypeN = f->sh.desorbTypeN;
 	sh.reflectType = f->sh.reflectType;
-	sh.profileType = f->sh.profileType;
+	if (copyMesh) {
+		sh.profileType = f->sh.profileType;
+	}
+	else {
+		sh.profileType = REC_NONE;
+	}
 	sh.is2sided = f->sh.is2sided;
 	//sh.bb = f->sh.bb;
 	//sh.center = f->sh.center;
@@ -1514,6 +1519,7 @@ void Facet::Copy(Facet *f, BOOL copyMesh) {
 		hasMesh = f->hasMesh;
 		tRatio = f->tRatio;
 	}
+	this->UpdateFlags();
 	//nbElem = f->nbElem;
 	//texDimH = f->texDimH;
 	//texDimW = f->texDimW;

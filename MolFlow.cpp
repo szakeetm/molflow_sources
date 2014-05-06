@@ -31,6 +31,13 @@ GNU General Public License for more details.
 #include <vector>
 #include <string>
 
+#ifdef _DEBUG
+#define APP_NAME "MolFlow+ development version (Compiled "__DATE__" "__TIME__") DEBUG MODE"
+#else
+//#define APP_NAME "Molflow+ development version ("__DATE__")"
+#define APP_NAME "Molflow+ 2.5.4 BETA ("__DATE__")"
+#endif
+
 /*
 //Leak detection
 #ifdef _DEBUG
@@ -248,7 +255,12 @@ MolFlow::MolFlow()
 	//Get number of cores
 	SYSTEM_INFO sysinfo;
 	GetSystemInfo( &sysinfo );
+	
+#ifdef _DEBUG
+	numCPU = 1;
+#else
 	numCPU = (int) sysinfo.dwNumberOfProcessors;
+#endif
 
 	/*
 	//Enable memory check at EVERY malloc/free operation:
@@ -569,8 +581,7 @@ int MolFlow::OneTimeSceneInit()
 	togglePanel->Add(showTexture);
 
 	showFilter = new GLToggle(0,"Filtering");
-	showFilter->SetEnabled(FALSE);
-	togglePanel->Add(showFilter);
+	//togglePanel->Add(showFilter);
 
 	showIndex = new GLToggle(0,"Indices");
 	togglePanel->Add(showIndex);
@@ -1147,25 +1158,6 @@ void MolFlow::ApplyFacetParams() {
 		}
 	}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	// teleport
 	int teleport;
 	BOOL doTeleport = FALSE;
@@ -1231,7 +1223,7 @@ void MolFlow::ApplyFacetParams() {
 		}
 	}
 
-		// acc.factor
+	// temp.accomodation factor
 	double accfactor;
 	BOOL doAccfactor = FALSE;
 	if( facetAccFactor->GetNumber(&accfactor) ) {
@@ -1249,29 +1241,6 @@ void MolFlow::ApplyFacetParams() {
 			return;
 		}
 	}
-
-
-	// Mass
-	//double mass;
-	BOOL doMass = FALSE;
-	/*
-	if( facetMass->GetNumber(&mass) ) {
-	if( mass<0.0 ) {
-	GLMessageBox::Display("Mass must be positive","Error",GLDLG_OK,GLDLG_ICONERROR);
-	UpdateFacetParams();
-	return;
-	}
-	doMass = TRUE;
-	} else {
-	if( strcmp(facetMass->GetText(),"..." )==0 ) doMass = FALSE;
-	else {
-	GLMessageBox::Display("Invalid mass number","Error",GLDLG_OK,GLDLG_ICONERROR);
-	UpdateFacetParams();
-	return;
-	}
-	}
-	*/
-
 
 	// Outgassing
 	double flow=0.0;
@@ -1347,8 +1316,6 @@ void MolFlow::ApplyFacetParams() {
 		doUseMapA = TRUE;
 	}
 
-
-
 	// Superstructure
 	int superStruct;
 	BOOL doSuperStruct = FALSE;
@@ -1410,27 +1377,23 @@ void MolFlow::ApplyFacetParams() {
 	// Reflection type
 	int reflType = facetReflType->GetSelectedIndex();
 
-	// Record type
-	int rType = facetRecType->GetSelectedIndex();
-
-
-
+	// Record (profile) type
+	int rType = facetRecType->GetSelectedIndex(); // -1 if "..."
 
 	// 2sided
 	int is2Sided = facetSideType->GetSelectedIndex();
 
 	BOOL structChanged=FALSE; //if a facet gets into a new structure, we have to re-render the geometry
+	
 	// Update facets (local)
 	for(int i=0;i<nbFacet;i++) {
 		Facet *f = geom->GetFacet(i);
 		if( f->selected ) {
 			if(doSticking) f->sh.sticking = sticking;
-
 			if(doTeleport) f->sh.teleportDest = teleport;
 			if(doOpacity) f->sh.opacity = opacity;
 			if(doTemperature) f->sh.temperature = temperature;
 			if(doAccfactor) f->sh.accomodationFactor = accfactor;
-			//if(doMass) f->sh.mass = mass;
 			if(doFlow && !useMapA) f->sh.flow = flow*0.100; //0.1: mbar*l/s -> Pa*m3/s
 			if(doFlowA && !useMapA) f->sh.flow = flowA*f->sh.area*(f->sh.is2sided?2.0:1.0)*0.100;
 			if(desorbType>=0) {
@@ -1443,13 +1406,7 @@ void MolFlow::ApplyFacetParams() {
 			if(reflType>=0) f->sh.reflectType = reflType;
 			if(rType>=0) {
 				f->sh.profileType = rType;
-				f->sh.isProfile = (rType!=REC_NONE);
-
-
-
-
-
-
+				//f->sh.isProfile = (rType!=REC_NONE); //included below by f->UpdateFlags();
 			}
 			if(is2Sided>=0) f->sh.is2sided = is2Sided;
 			if(doSuperStruct) {
@@ -1589,8 +1546,7 @@ void MolFlow::UpdateFacetParams(BOOL updateSelection) {
 			desorbTypeE = desorbTypeE && (f0->sh.desorbType == f->sh.desorbType);
 			desorbTypeNE = desorbTypeNE && (abs(f0->sh.desorbTypeN - f->sh.desorbTypeN)<1e-7);
 			reflectTypeE = reflectTypeE && (f0->sh.reflectType == f->sh.reflectType);
-			recordE = recordE && (f0->sh.profileType == f->sh.profileType);
-
+			recordE = recordE && (f0->sh.profileType == f->sh.profileType);  //profiles
 			hasOutgMapE = hasOutgMapE && (f0->hasOutgassingMap == f->hasOutgassingMap);
 			useOutgMapE = useOutgMapE && (f0->sh.useOutgassingFile == f->sh.useOutgassingFile);
 			if (f->sh.area>0) area+=f->sh.area*(f->sh.is2sided?2.0:1.0);
@@ -2603,8 +2559,9 @@ void MolFlow::ExportSelection() {
 
 		try {
 			worker.SaveGeometry(fn->fullName,progressDlg2,TRUE,TRUE);
-			UpdateCurrentDir(fn->fullName);
-			UpdateTitle();
+			AddRecent(fn->fullName);
+			//UpdateCurrentDir(fn->fullName);
+			//UpdateTitle();
 		} catch (Error &e) {
 			char errMsg[512];
 			sprintf(errMsg,"%s\nFile:%s",e.GetMsg(),fn->fullName);

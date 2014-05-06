@@ -173,7 +173,7 @@ void TexturePlotter::UpdateTable() {
 	MolFlow *mApp = (MolFlow *)theApp;
 	int nbMoments = (int)mApp->worker.moments.size();
 	maxValue = 0.0f;
-	double scale;
+	//double scale;
 	GetSelected();
 	if (!selFacet) {
 		mapList->Clear();
@@ -221,9 +221,9 @@ void TexturePlotter::UpdateTable() {
 								 for (int j = 0; j<h; j++) {
 									 //int tSize = selFacet->sh.texWidth*selFacet->sh.texHeight;
 
-									 double val = hits[i + j*w].count;
+									 llong val = hits[i + j*w].count;
 									 if (val>maxValue) {
-										 maxValue = val;
+										 maxValue = (double)val;
 										 maxX = i; maxY = j;
 									 }
 									 sprintf(tmp, "%g", val);
@@ -446,7 +446,7 @@ void TexturePlotter::UpdateTable() {
 							if (selFacet->dirCache) {
 								llong val = selFacet->dirCache[i + j*w].count;
 								if (val>maxValue) {
-									maxValue = val;
+									maxValue = (double)val;
 									maxX = i; maxY = j;
 								}
 								sprintf(tmp, "%I64d", val);

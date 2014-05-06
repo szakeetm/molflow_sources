@@ -176,14 +176,15 @@ void Geometry::CalcTotalOutGassing() {
 	totalOutgassing = 0.0;
 	totalInFlux = 0.0;
 	for (int i = 0; i<sh.nbFacet; i++) {
-		if (facets[i]->sh.desorbType>0) {
-			totalOutgassing += facets[i]->sh.flow;
-			totalInFlux += facets[i]->sh.flow / (1.38E-23*facets[i]->sh.temperature);
-		}
-		if (facets[i]->sh.useOutgassingFile) {
-			for (int l = 0; l < (facets[i]->sh.outgassingMapWidth*facets[i]->sh.outgassingMapHeight); l++) {
-				totalOutgassing += facets[i]->outgassingMap[l];
-				totalInFlux += facets[i]->outgassingMap[l] / (1.38E-23*facets[i]->sh.temperature);
+		if (facets[i]->sh.desorbType>0) { //has desorption
+			if (facets[i]->sh.useOutgassingFile) { //uses outgassing file values
+				for (int l = 0; l < (facets[i]->sh.outgassingMapWidth*facets[i]->sh.outgassingMapHeight); l++) {
+					totalOutgassing += facets[i]->outgassingMap[l];
+					totalInFlux += facets[i]->outgassingMap[l] / (1.38E-23*facets[i]->sh.temperature);
+				}
+			} else { //uses absolute outgassing values
+				totalOutgassing += facets[i]->sh.flow;
+				totalInFlux += facets[i]->sh.flow / (1.38E-23*facets[i]->sh.temperature);
 			}
 		}
 	}
@@ -3041,45 +3042,49 @@ void Geometry::InsertSTLGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 
 }
 
-// -----------------------------------------------------------
+void Geometry::SaveProfileTXT(FileWriter *file) {
+	// Profiles
+	for (int j = 0; j<PROFILE_SIZE; j++)
+		file->Write("\n");
+}
 
-void Geometry::SaveProfile(FileWriter *file, Dataport *dpHit, int super, BOOL saveSelected, BOOL txtFormat) {
+void Geometry::SaveProfileGEO(FileWriter *file, Dataport *dpHit, int super, BOOL saveSelected, BOOL crashSave) {
 	MolFlow *mApp = (MolFlow *)theApp;
-	BYTE *buffer = (BYTE *)dpHit->buff;
-	if (!txtFormat) file->Write("profiles {\n");
+	BYTE *buffer;
+	if (!crashSave && !saveSelected) buffer = (BYTE *)dpHit->buff;
+	file->Write("profiles {\n");
 	// Profiles
 	int nbProfile = 0;
 	int *profileFacet = (int *)malloc((sh.nbFacet)*sizeof(int));
 	for (int i = 0; i < sh.nbFacet; i++)
-		if (((!saveSelected) || (facets[i]->selected)) && facets[i]->sh.isProfile)
+		if ((!saveSelected && !crashSave) && facets[i]->sh.isProfile)
 			profileFacet[nbProfile++] = i;
-	if (!txtFormat) {
-		file->Write(" number: "); file->WriteInt(nbProfile, "\n");
-		file->Write(" facets: ");
-		for (int i = 0; i < nbProfile; i++)
-			file->WriteInt(profileFacet[i], "\t");
-	}
+	
+	file->Write(" number: "); file->WriteInt(nbProfile, "\n");
+	file->Write(" facets: ");
+	for (int i = 0; i < nbProfile; i++) //doesn't execute when crashSave or saveSelected...
+		file->WriteInt(profileFacet[i], "\t");
+	
 	file->Write("\n");
-	for (size_t m = 0; (m <= mApp->worker.moments.size()) || (m == 0 && !txtFormat); m++){
+	for (size_t m = 0; (m <= mApp->worker.moments.size()) || (m == 0); m++){
 		char tmp[128];
 		sprintf(tmp, " moment %d {\n", m);
-		if (!txtFormat) file->Write(tmp);
+		file->Write(tmp);
 		for (int j = 0; j < PROFILE_SIZE; j++) {
-			for (int i = 0; i<nbProfile; i++) {
+			for (int i = 0; i<nbProfile; i++) { //doesn't execute when crashSave or saveSelected...
 				Facet *f = GetFacet(profileFacet[i]);
 				APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + sizeof(SHHITS)+m*sizeof(APROFILE)*PROFILE_SIZE);
 				//char tmp2[128];
 				file->WriteLLong(profilePtr[j].count, "\t");
-				if (!txtFormat) file->WriteDouble(profilePtr[j].sum_1_per_speed, "\t");
-				if (!txtFormat) file->WriteDouble(profilePtr[j].sum_v_ort);
-				if (!txtFormat) file->Write("\t"); else file->Write(" ");
+				file->WriteDouble(profilePtr[j].sum_1_per_speed, "\t");
+				file->WriteDouble(profilePtr[j].sum_v_ort);
+				file->Write("\t");
 			}
 			if (nbProfile>0) file->Write("\n");
 		}
-		if (!txtFormat) file->Write(" }\n");
+		file->Write(" }\n");
 	}
-
-	if (!txtFormat) file->Write("}\n");
+	file->Write("}\n");
 	SAFE_FREE(profileFacet);
 }
 
@@ -3742,14 +3747,15 @@ void Geometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, std::
 
 
 	// Block dpHit during the whole disc writing
-	AccessDataport(dpHit);
+	if (!crashSave && !saveSelected) AccessDataport(dpHit);
 
 	// Globals
-	BYTE *buffer = (BYTE *)dpHit->buff;
-	SHGHITS *gHits = (SHGHITS *)buffer;
+	BYTE *buffer;
+	if (!crashSave && !saveSelected) buffer = (BYTE *)dpHit->buff;
+	SHGHITS *gHits;
+	if (!crashSave && !saveSelected) gHits = (SHGHITS *)buffer;
 
-
-	float dCoef = 1.0f;
+	double dCoef = 1.0;
 	int ix, iy;
 
 	/*switch(gHits->mode) {
@@ -3774,18 +3780,18 @@ void Geometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, std::
 
 	prg->SetMessage("Writing geometry details...");
 	file->Write("version:"); file->WriteInt(GEOVERSION, "\n");
-	file->Write("totalHit:"); file->WriteLLong(gHits->total.hit.nbHit, "\n");
-	file->Write("totalDes:"); file->WriteLLong(gHits->total.hit.nbDesorbed, "\n");
-	file->Write("totalLeak:"); file->WriteLLong(gHits->nbLeakTotal, "\n");
-	file->Write("totalAbs:"); file->WriteLLong(gHits->total.hit.nbAbsorbed, "\n");
-	file->Write("totalDist:"); file->WriteDouble(gHits->distTraveledTotal, "\n");
-	file->Write("maxDes:"); file->WriteLLong(tNbDesorptionMax, "\n");
+	file->Write("totalHit:"); file->WriteLLong((!crashSave && !saveSelected)?gHits->total.hit.nbHit:0, "\n");
+	file->Write("totalDes:"); file->WriteLLong((!crashSave && !saveSelected) ? gHits->total.hit.nbDesorbed:0, "\n");
+	file->Write("totalLeak:"); file->WriteLLong((!crashSave && !saveSelected) ? gHits->nbLeakTotal:0, "\n");
+	file->Write("totalAbs:"); file->WriteLLong((!crashSave && !saveSelected) ? gHits->total.hit.nbAbsorbed:0, "\n");
+	file->Write("totalDist:"); file->WriteDouble((!crashSave && !saveSelected) ? gHits->distTraveledTotal:0, "\n");
+	file->Write("maxDes:"); file->WriteLLong((!crashSave && !saveSelected) ? tNbDesorptionMax:0, "\n");
 	file->Write("nbVertex:"); file->WriteInt(sh.nbVertex, "\n");
 	file->Write("nbFacet:"); file->WriteInt(saveSelected ? nbSelected : sh.nbFacet, "\n");
 	file->Write("nbSuper:"); file->WriteInt(sh.nbSuper, "\n");
-	file->Write("nbFormula:"); file->WriteInt(mApp->nbFormula, "\n");
+	file->Write("nbFormula:"); file->WriteInt((!saveSelected)?mApp->nbFormula:0, "\n");
 	file->Write("nbView:"); file->WriteInt(mApp->nbView, "\n");
-	file->Write("nbSelection:"); file->WriteInt(mApp->nbSelection, "\n");
+	file->Write("nbSelection:"); file->WriteInt((!saveSelected)?mApp->nbSelection:0, "\n");
 	file->Write("gasMass:"); file->WriteDouble(gasMass, "\n");
 
 	file->Write("userMoments {\n");
@@ -3804,12 +3810,14 @@ void Geometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, std::
 	file->Write("calcConstantFlow:"); file->WriteInt(worker->calcConstantFlow, "\n");
 
 	file->Write("formulas {\n");
-	for (int i = 0; i < mApp->nbFormula; i++) {
-		file->Write("  \"");
-		file->Write(mApp->formulas[i].parser->GetName());
-		file->Write("\" \"");
-		file->Write(mApp->formulas[i].parser->GetExpression());
-		file->Write("\"\n");
+	if (!saveSelected){
+		for (int i = 0; i < mApp->nbFormula; i++) {
+			file->Write("  \"");
+			file->Write(mApp->formulas[i].parser->GetName());
+			file->Write("\" \"");
+			file->Write(mApp->formulas[i].parser->GetExpression());
+			file->Write("\"\n");
+		}
 	}
 	file->Write("}\n");
 
@@ -3834,7 +3842,7 @@ void Geometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, std::
 	file->Write("}\n");
 
 	file->Write("selections {\n");
-	for (int i = 0; i < mApp->nbSelection; i++) {
+	for (int i = 0; (i < mApp->nbSelection) && !saveSelected; i++) { //don't save selections when exporting part of the geometry (saveSelected)
 		file->Write("  \"");
 		file->Write(mApp->selections[i].name);
 		file->Write("\"\n ");
@@ -3870,8 +3878,8 @@ void Geometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, std::
 	//leaks
 	prg->SetMessage("Writing leaks...");
 	file->Write("leaks {\n");
-	file->Write("  nbLeak:"); file->WriteInt(*nbleakSave, "\n");
-	for (int i = 0; i < *nbleakSave; i++) {
+	file->Write("  nbLeak:"); file->WriteInt((!crashSave && !saveSelected) ? *nbleakSave : 0, "\n");
+	for (int i = 0; (i < *nbleakSave) && (!crashSave && !saveSelected); i++) {
 
 		file->Write("  ");
 		file->WriteInt(i, " ");
@@ -3888,8 +3896,8 @@ void Geometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, std::
 	//hit cache (lines and dots)
 	prg->SetMessage("Writing hit cache...");
 	file->Write("hits {\n");
-	file->Write("  nbHHit:"); file->WriteInt(*nbHHitSave, "\n");
-	for (int i = 0; i < *nbHHitSave; i++) {
+	file->Write("  nbHHit:"); file->WriteInt((!crashSave && !saveSelected) ? *nbHHitSave : 0, "\n");
+	for (int i = 0; (i < *nbHHitSave) && (!crashSave && !saveSelected); i++) {
 
 		file->Write("  ");
 		file->WriteInt(i, " ");
@@ -3907,35 +3915,42 @@ void Geometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, std::
 
 	for (int i = 0, k = 0; i < sh.nbFacet; i++) {
 		prg->SetProgress(0.33 + ((double)i / (double)sh.nbFacet) *0.33);
-		if (saveSelected) {
-			if (facets[i]->selected) { facets[i]->SaveGEO(file, k); k++; }
-		}
-		else {
-			facets[i]->SaveGEO(file, i);
-		}
+		if (!saveSelected || facets[i]->selected) facets[i]->SaveGEO(file, k++);
 	}
 
 	prg->SetMessage("Writing profiles...");
-	SaveProfile(file, dpHit, -1, saveSelected);
+	SaveProfileGEO(file, dpHit, -1, saveSelected,crashSave);
 
-	///Save textures, for GEO file version 3
+	///Save textures, for GEO file version 3+
 	char tmp[256];
 	file->Write("{textures}\n");
 
-	file->Write("min_pressure_all:"); file->WriteDouble(gHits->texture_limits[0].min.all, "\n");
-	file->Write("min_pressure_moments_only:"); file->WriteDouble(gHits->texture_limits[0].min.moments_only, "\n");
-	file->Write("max_pressure_all:"); file->WriteDouble(gHits->texture_limits[0].max.all, "\n");
-	file->Write("max_pressure_moments_only:"); file->WriteDouble(gHits->texture_limits[0].max.moments_only, "\n");
+	file->Write("min_pressure_all:"); file->WriteDouble(
+		(!crashSave && !saveSelected) ? gHits->texture_limits[0].min.all:0, "\n");
+	file->Write("min_pressure_moments_only:"); file->WriteDouble(
+		(!crashSave && !saveSelected) ? gHits->texture_limits[0].min.moments_only:0, "\n");
+	file->Write("max_pressure_all:"); file->WriteDouble(
+		(!crashSave && !saveSelected) ? gHits->texture_limits[0].max.all:1, "\n");
+	file->Write("max_pressure_moments_only:"); file->WriteDouble(
+		(!crashSave && !saveSelected) ? gHits->texture_limits[0].max.moments_only:1, "\n");
 
-	file->Write("min_impingement_all:"); file->WriteDouble(gHits->texture_limits[1].min.all, "\n");
-	file->Write("min_impingement_moments_only:"); file->WriteDouble(gHits->texture_limits[1].min.moments_only, "\n");
-	file->Write("max_impingement_all:"); file->WriteDouble(gHits->texture_limits[1].max.all, "\n");
-	file->Write("max_impingement_moments_only:"); file->WriteDouble(gHits->texture_limits[1].max.moments_only, "\n");
+	file->Write("min_impingement_all:"); file->WriteDouble(
+		(!crashSave && !saveSelected) ? gHits->texture_limits[1].min.all:0, "\n");
+	file->Write("min_impingement_moments_only:"); file->WriteDouble(
+		(!crashSave && !saveSelected) ? gHits->texture_limits[1].min.moments_only:0, "\n");
+	file->Write("max_impingement_all:"); file->WriteDouble(
+		(!crashSave && !saveSelected) ? gHits->texture_limits[1].max.all:1, "\n");
+	file->Write("max_impingement_moments_only:"); file->WriteDouble(
+		(!crashSave && !saveSelected) ? gHits->texture_limits[1].max.moments_only:1, "\n");
 
-	file->Write("min_density_all:"); file->WriteDouble(gHits->texture_limits[2].min.all, "\n");
-	file->Write("min_density_moments_only:"); file->WriteDouble(gHits->texture_limits[2].min.moments_only, "\n");
-	file->Write("max_density_all:"); file->WriteDouble(gHits->texture_limits[2].max.all, "\n");
-	file->Write("max_density_moments_only:"); file->WriteDouble(gHits->texture_limits[2].max.moments_only, "\n");
+	file->Write("min_density_all:"); file->WriteDouble(
+		(!crashSave && !saveSelected) ? gHits->texture_limits[2].min.all:0, "\n");
+	file->Write("min_density_moments_only:"); file->WriteDouble(
+		(!crashSave && !saveSelected) ? gHits->texture_limits[2].min.moments_only:0, "\n");
+	file->Write("max_density_all:"); file->WriteDouble(
+		(!crashSave && !saveSelected) ? gHits->texture_limits[2].max.all:1, "\n");
+	file->Write("max_density_moments_only:"); file->WriteDouble(
+		(!crashSave && !saveSelected) ? gHits->texture_limits[2].max.moments_only:1, "\n");
 
 	//Selections
 	//SaveSelections();
@@ -3951,7 +3966,8 @@ void Geometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, std::
 				int h = (f->sh.texHeight);
 				int w = (f->sh.texWidth);
 				int profSize = (f->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + (int)mApp->worker.moments.size())) : 0;
-				AHIT *hits = (AHIT *)((BYTE *)gHits + (f->sh.hitOffset + sizeof(SHHITS)+profSize + m*w*h*sizeof(AHIT)));
+				AHIT *hits;
+				if (!crashSave && !saveSelected) hits = (AHIT *)((BYTE *)gHits + (f->sh.hitOffset + sizeof(SHHITS)+profSize + m*w*h*sizeof(AHIT)));
 
 				//char tmp[256];
 				sprintf(tmp, " texture_facet %d {\n", i + 1);
@@ -3959,9 +3975,9 @@ void Geometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, std::
 
 				for (iy = 0; iy < h; iy++) {
 					for (ix = 0; ix < w; ix++) {
-						file->WriteLLong(hits[iy*f->sh.texWidth + ix].count, "\t");
-						file->WriteDouble(hits[iy*f->sh.texWidth + ix].sum_1_per_speed, "\t");
-						file->WriteDouble(hits[iy*f->sh.texWidth + ix].sum_v_ort_per_area, "\t");
+						file->WriteLLong((!crashSave && !saveSelected) ? hits[iy*f->sh.texWidth + ix].count:0, "\t");
+						file->WriteDouble((!crashSave && !saveSelected) ? hits[iy*f->sh.texWidth + ix].sum_1_per_speed:0, "\t");
+						file->WriteDouble((!crashSave && !saveSelected) ? hits[iy*f->sh.texWidth + ix].sum_v_ort_per_area:0, "\t");
 					}
 					file->Write("\n");
 				}
@@ -3971,11 +3987,8 @@ void Geometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, std::
 		file->Write("}\n");
 	}
 
-	ReleaseDataport(dpHit);
+	if (!crashSave && !saveSelected) ReleaseDataport(dpHit);
 
-	//Debug memory check
-	//_ASSERTE (!_CrtDumpMemoryLeaks());;
-	_ASSERTE(_CrtCheckMemory());
 }
 
 // -----------------------------------------------------------
@@ -4046,7 +4059,7 @@ void Geometry::SaveTXT(FileWriter *file, Dataport *dpHit, BOOL saveSelected) {
 
 	}
 
-	SaveProfile(file, dpHit, -1, saveSelected, TRUE);
+	SaveProfileTXT(file);
 
 	ReleaseDataport(dpHit);
 
@@ -4083,7 +4096,7 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 
 				if (f->mesh || f->sh.countDirection) {
 					char tmp[256];
-					float dCoef = 1.0f;
+					double dCoef = 1.0;
 					if (!buffer) return;
 					SHGHITS *shGHit = (SHGHITS *)buffer;
 					int nbMoments = (int)mApp->worker.moments.size();
@@ -4397,7 +4410,7 @@ void Geometry::SaveSuper(Dataport *dpHit, int s) {
 
 	}
 
-	SaveProfile(file, dpHit, s);
+	SaveProfileTXT(file);
 
 	SAFE_DELETE(file);
 	free(refIdx);
@@ -5289,7 +5302,7 @@ void Geometry::CloneSelectedFacets() { //create clone of selected facets
 		if (facets[i]->selected) {
 			nb2++;
 			facets[nb2] = new Facet(facets[i]->sh.nbIndex);
-			facets[nb2]->Copy(facets[i], TRUE);
+			facets[nb2]->Copy(facets[i], FALSE);
 			//copy indices
 			for (int j = 0; j < facets[i]->sh.nbIndex; j++) {
 				facets[nb2]->indices[j] = facets[i]->indices[j];
@@ -5541,7 +5554,7 @@ void Geometry::ImportDesorption_SYN(
 	ydims.reserve(nbNewFacet);
 
 	//now go for the facets to get their texture ratio
-	for (size_t i = 0; i < nbNewFacet && i < GetNbFacet(); i++) {
+	for (int i = 0; i < nbNewFacet && i < GetNbFacet(); i++) {
 		prg->SetProgress(0.5*(double)i / (double)MIN(nbNewFacet, GetNbFacet()));
 		file->JumpSection("facet");
 		// Check idx
@@ -5572,7 +5585,7 @@ void Geometry::ImportDesorption_SYN(
 	file->ReadDouble();
 
 	//read texture values
-	for (size_t i = 0; i < nbNewFacet && i < GetNbFacet(); i++) {
+	for (int i = 0; i < nbNewFacet && i < GetNbFacet(); i++) {
 		prg->SetProgress(0.5 + 0.5*(double)i / (double)MIN(nbNewFacet, GetNbFacet()));
 		if (!IS_ZERO(xdims[i])) { //has texture
 			Facet *f = GetFacet(i);
@@ -5700,7 +5713,7 @@ void Geometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, int *nb
 	*nbNewFacet = file->ReadInt(); //gotcha! :)
 
 	//now go for the facets to get their texture ratio, etc.
-	for (size_t i = 0; i < *nbNewFacet && i < GetNbFacet(); i++) {
+	for (int i = 0; i < *nbNewFacet && i < GetNbFacet(); i++) {
 		prg->SetProgress((double)i / (double)MIN(*nbNewFacet, GetNbFacet()));
 		file->JumpSection("facet");
 		// Check idx

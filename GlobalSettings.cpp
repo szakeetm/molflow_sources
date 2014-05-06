@@ -387,6 +387,8 @@ void GlobalSettings::ProcessMessage(GLComponent *src,int message) {
 
 void GlobalSettings::UpdateOutgassing() {
 	char tmp[128];
+	sprintf(tmp, "%g", gasMass); //10: conversion Pa*m3/sec -> mbar*l/s
+	gasmassText->SetText(tmp);
 	sprintf(tmp, "%g", totalOutgassing*10.00); //10: conversion Pa*m3/sec -> mbar*l/s
 	outgassingText->SetText(tmp);
 	sprintf(tmp, "%.3E", totalInFlux);

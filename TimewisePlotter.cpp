@@ -487,8 +487,8 @@ void TimewisePlotter::refreshViews() {
 				int idx = profCombo->GetSelectedIndex();
 				geom->UnSelectAll();
 				geom->GetFacet(profCombo->GetUserValueAt(idx))->selected = TRUE;
-				mApp->UpdateFacetParams(TRUE);
 				geom->UpdateSelection();
+				mApp->UpdateFacetParams(TRUE);
 				mApp->facetList->SetSelectedRow(profCombo->GetUserValueAt(idx));
 				mApp->facetList->ScrollToVisible(profCombo->GetUserValueAt(idx),1,TRUE);
 			} /*else if(src==addButton) {

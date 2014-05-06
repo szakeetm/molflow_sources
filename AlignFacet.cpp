@@ -110,7 +110,6 @@ AlignFacet::AlignFacet(Geometry *g,Worker *w):GLWindow() {
 
 void AlignFacet::ProcessMessage(GLComponent *src,int message) {
 	MolFlow *mApp = (MolFlow *)theApp;
-
 	switch(message) {
 	case MSG_BUTTON:
 
@@ -205,7 +204,7 @@ void AlignFacet::ProcessMessage(GLComponent *src,int message) {
 					invertNormal->IsChecked(),invertDir1->IsChecked(),invertDir2->IsChecked(),src==copyButton,work);
 				//theApp->UpdateModelParams();
 				work->Reload(); 
-
+				changedSinceSave = TRUE;
 				theApp->UpdateFacetlistSelected();	
 				mApp->UpdateViewers();
 				//GLWindowManager::FullRepaint();
@@ -223,6 +222,7 @@ void AlignFacet::ProcessMessage(GLComponent *src,int message) {
 				try {
 					geom->SetFacetTexture(selection[i],geom->GetFacet(selection[i])->tRatio,geom->GetFacet(selection[i])->hasMesh);
 					work->Reload();
+					changedSinceSave = TRUE;
 				} catch (Error &e) {
 					GLMessageBox::Display((char *)e.GetMsg(),"Error",GLDLG_OK,GLDLG_ICONERROR);
 					return;

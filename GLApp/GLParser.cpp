@@ -395,23 +395,29 @@ void GLParser::ReadTerm(ETREE **node,VLIST **var_list)
 							  AddNode( OPER_PLUS , elem , &l_t , l_t , r_t );
 						  }
 						  
-				  } else {
+				  }
+				  else {
 					  i1--; //selection indexes start from 0
 					  //SUM of a selection Group
 					  MolFlow *mApp = (MolFlow *)theApp;
-					  if (i1<0 || i1>=mApp->nbSelection) {
-						  SetError("invalid selection group",current);
+					  if (i1 < 0 || i1 >= mApp->nbSelection) {
+						  SetError("invalid selection group", current);
 						  break;
 					  }
-					  for (int j=0;j<mApp->selections[i1].nbSel;j++) {
-						  sprintf(tmpVName,"%s%d",v_name,mApp->selections[i1].selection[j]+1);
-						  elem.variable = AddVar(tmpVName,var_list);
-						  if (j==0) AddNode( TVARIABLE , elem , &l_t , NULL , NULL);
-						  else {
-							  AddNode( TVARIABLE , elem , &r_t , NULL , NULL);
-							  AddNode( OPER_PLUS , elem , &l_t , l_t , r_t );
+					  for (int j = 0; j < mApp->selections[i1].nbSel; j++) {
+						  if (mApp->selections[i1].selection[j] >= mApp->worker.GetGeometry()->GetNbFacet()) { //if invalid facet
+							  SetError("invalid facet", current);
+							  break;
 						  }
-					  }
+							  sprintf(tmpVName, "%s%d", v_name, mApp->selections[i1].selection[j] + 1);
+							  elem.variable = AddVar(tmpVName, var_list);
+							  if (j == 0) AddNode(TVARIABLE, elem, &l_t, NULL, NULL);
+							  else {
+								  AddNode(TVARIABLE, elem, &r_t, NULL, NULL);
+								  AddNode(OPER_PLUS, elem, &l_t, l_t, r_t);
+							  }
+						  }
+					  
 				  }
 				  if (!error) *node = l_t;
                 } else {

@@ -103,7 +103,8 @@ void AddVertex::ProcessMessage(GLComponent *src,int message) {
       }
 		if (work->running) work->Stop_Public();
       geom->AddVertex(X,Y,Z);
-	  work->Reload();      
+	  work->Reload();    
+	  changedSinceSave = TRUE;
       GLWindowManager::FullRepaint();
 
     }

@@ -128,7 +128,7 @@ void Worker::SetFileName(char *fileName) {
 
 void Worker::SaveGeometry(char *fileName,GLProgress *prg,BOOL askConfirm,BOOL saveSelected,BOOL autoSave,BOOL crashSave) {
 
-	if (needsReload&&(!crashSave)) RealReload();
+	if (needsReload&&(!crashSave && !saveSelected)) RealReload();
 	char tmp[1024];
 	char fileNameWithGeo[1024]; //file name with .geo extension (instead of .geo7z)
 	char fileNameWithGeo7z[1024]; //file name with .geo extension (instead of .geo7z)
@@ -141,7 +141,7 @@ void Worker::SaveGeometry(char *fileName,GLProgress *prg,BOOL askConfirm,BOOL sa
 	ext = strrchr(fileName,'.');
 
 	if(!(ext) || !(*ext=='.') || ((dir)&&(dir>ext)) ) { 
-		sprintf(fileName,"%s.geo7z",fileName); //set to default GEO7Z format
+		sprintf(fileName, compressSavedFiles ? "%s.geo7z" : "%s.geo", fileName); //set to default GEO/GEO7Z format
 		ext = strrchr(fileName,'.');
 	}
 
@@ -174,7 +174,7 @@ void Worker::SaveGeometry(char *fileName,GLProgress *prg,BOOL askConfirm,BOOL sa
 				sprintf(fileNameWithGeo7z,"%s7z",fileName);
 				memcpy(fileNameWithGeo,fileName,(strlen(fileName)+1)*sizeof(char));
 
-				if(!autoSave && FileUtils::Exist(fileNameWithGeo7z) && compressSavedFiles) {
+				if(!autoSave && FileUtils::Exist(fileNameWithGeo7z) && isGEO7Z) {
 					sprintf(tmp,"A .geo7z file of the same name exists. Overwrite that file ?\n%s",fileNameWithGeo7z);
 					ok = ( GLMessageBox::Display(tmp,"Question",GLDLG_OK|GLDLG_CANCEL,GLDLG_ICONWARNING)==GLDLG_OK );
 				}
@@ -188,7 +188,7 @@ void Worker::SaveGeometry(char *fileName,GLProgress *prg,BOOL askConfirm,BOOL sa
 					ok = ( GLMessageBox::Display(tmp,"Question",GLDLG_OK|GLDLG_CANCEL,GLDLG_ICONWARNING)==GLDLG_OK );
 				}
 			} 
-			if(!autoSave && FileUtils::Exist(fileName) ) {
+			if(!autoSave && ok && FileUtils::Exist(fileName) ) {
 				sprintf(tmp,"Overwrite existing file ?\n%s",fileName);
 				if (askConfirm) ok = ( GLMessageBox::Display(tmp,"Question",GLDLG_OK|GLDLG_CANCEL,GLDLG_ICONWARNING)==GLDLG_OK );
 			}
@@ -215,15 +215,15 @@ void Worker::SaveGeometry(char *fileName,GLProgress *prg,BOOL askConfirm,BOOL sa
 					// Retrieve leak cache
 					int nbLeakSave,nbHHitSave;
 					LEAK pLeak[NBHLEAK];
-					if (!crashSave) GetLeak(pLeak,&nbLeakSave);
+					if (!crashSave&& !saveSelected) GetLeak(pLeak, &nbLeakSave);
 					// Retrieve hit cache (lines and dots)
 					HIT pHits[NBHHIT];
-					if (!crashSave) GetHHit(pHits,&nbHHitSave);
+					if (!crashSave&& !saveSelected) GetHHit(pHits, &nbHHitSave);
 					geom->SaveGEO(f,prg,dpHit,this->userMoments,this,saveSelected,pLeak,&nbLeakSave,pHits,&nbHHitSave,crashSave);
 				}
 			}
-			if (!autoSave) strcpy(fullFileName,fileName);
-			if (!autoSave) {
+			if (!autoSave && !saveSelected) strcpy(fullFileName, fileName);
+			if (!autoSave && !saveSelected) {
 				remove("Molflow_AutoSave.geo");
 				remove("Molflow_AutoSave.geo7z");
 			}
@@ -234,9 +234,9 @@ void Worker::SaveGeometry(char *fileName,GLProgress *prg,BOOL askConfirm,BOOL sa
 	}
 
 	SAFE_DELETE(f);
-	if (ok && isGEO || isGEO7Z) {
+	
 
-		if (compressSavedFiles) {
+		if (isGEO7Z) {
 			if (FileUtils::Exist("compress.exe")) { //compress GEO file to GEO7Z using 7-zip launcher "compress.exe"
 				sprintf(tmp,"compress.exe \"%s\"",fileNameWithGeo);
 				int procId = StartProc_background(tmp);
@@ -247,11 +247,11 @@ void Worker::SaveGeometry(char *fileName,GLProgress *prg,BOOL askConfirm,BOOL sa
 				fileName=fileNameWithGeo;
 			}
 		} else fileName=fileNameWithGeo;
-		if (!autoSave) {
+		if (!autoSave && !saveSelected) {
 			SetFileName(fileName);
 			mApp->UpdateTitle();
 		}
-	}
+	
 	//Debug memory check
 	 //_ASSERTE (!_CrtDumpMemoryLeaks());;
 	 _ASSERTE(_CrtCheckMemory());

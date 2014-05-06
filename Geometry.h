@@ -231,7 +231,8 @@ private:
   void InsertSTLGeom(FileReader *file,int *nbV,int *nbF,VERTEX3D **V,Facet ***F,int strIdx=0,double scaleFactor=1.0,BOOL newStruct=FALSE);
   void RemoveLinkFacet();
   void UpdateName(FileReader *file);
-  void SaveProfile(FileWriter *file,Dataport *dpHit,int super=-1,BOOL saveSelected=FALSE,BOOL txtFormat=FALSE);
+  void SaveProfileGEO(FileWriter *file, Dataport *dpHit, int super = -1, BOOL saveSelected = FALSE, BOOL crashSave=FALSE);
+  void SaveProfileTXT(FileWriter *file);
   void AdjustProfile();
   void SaveSuper(Dataport *dpHit,int s);
 

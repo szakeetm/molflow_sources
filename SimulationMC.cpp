@@ -35,7 +35,7 @@ void ComputeSourceArea() {
 	int i, j, k, l, tSize;
 	FACET *f;
 	double scale;
-	float scale_precomputed;
+	//float scale_precomputed;
 
 	// Compute the outgassing of all source facet
 	sHandle->sourceArea = 0.0;
@@ -43,12 +43,16 @@ void ComputeSourceArea() {
 	for (j = 0; j < sHandle->nbSuper; j++) {
 		for (i = 0; i < sHandle->str[j].nbFacet; i++) {
 			f = sHandle->str[j].facets[i];
-			if (f->sh.useOutgassingFile) {
-				for (l = 0; l < (f->sh.outgassingMapWidth*f->sh.outgassingMapHeight); l++)
-					//sHandle->sourceArea+=f->outgassingMap[l]/f->sh.temperature;
-					sHandle->sourceArea += f->outgassingMap[l] / (1.38E-23*f->sh.temperature);
+			if (f->sh.desorbType != DES_NONE) { //there is a kind of desorption
+				if (f->sh.useOutgassingFile) { //outgassing file
+					for (l = 0; l < (f->sh.outgassingMapWidth*f->sh.outgassingMapHeight); l++) {
+						sHandle->sourceArea += f->outgassingMap[l] / (1.38E-23*f->sh.temperature);
+					}
+				}
+				else { //regular outgassing
+					sHandle->sourceArea += f->sh.flow / (1.38E-23*f->sh.temperature);  //Outgassing molecules/sec
+				}
 			}
-			else if (f->sh.desorbType != DES_NONE) sHandle->sourceArea += f->sh.flow / (1.38E-23*f->sh.temperature);  //Outgassing molecules/sec
 		}
 	}
 
@@ -360,8 +364,8 @@ void PerformTeleport(FACET *iFacet) {
 		iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z));
 	/*destination->sh.counter.hit.sum_1_per_speed += 2.0 / sHandle->velocityCurrentParticle;
 	destination->sh.counter.hit.sum_v_ort += sHandle->velocityCurrentParticle*abs(DOT3(
-		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
-		destination->sh.N.x, destination->sh.N.y, destination->sh.N.z));*/
+	sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
+	destination->sh.N.x, destination->sh.N.y, destination->sh.N.z));*/
 }
 
 // -------------------------------------------------------------
@@ -396,17 +400,20 @@ BOOL SimulationMCStep(int nbStep) {
 				if (!StartFromSource())
 					// maxDesorption reached
 					return FALSE;
-			} else { //hit within measured time
+			}
+			else { //hit within measured time
 				if (collidedFacet->sh.teleportDest) {
 					PerformTeleport(collidedFacet);
-				} else if (collidedFacet->sh.sticking == 1.0 || ((collidedFacet->sh.sticking > 0.0) && (rnd() < (collidedFacet->sh.sticking)))) {
+				}
+				else if (collidedFacet->sh.sticking == 1.0 || ((collidedFacet->sh.sticking > 0.0) && (rnd() < (collidedFacet->sh.sticking)))) {
 					//absorbed
 					PerformAbsorb(collidedFacet);
 					sHandle->distTraveledSinceUpdate += sHandle->distTraveledCurrentParticle;
 					if (!StartFromSource())
 						// maxDesorption reached
 						return FALSE;
-				} else {
+				}
+				else {
 					//reflected
 					PerformBounce(collidedFacet);
 				}
@@ -457,28 +464,30 @@ BOOL StartFromSource() {
 		i = 0;
 		while (!found_side1 && !found_side2 && i < sHandle->str[j].nbFacet) {
 			FACET *f = sHandle->str[j].facets[i];
-			if (f->sh.useOutgassingFile) { //Using SynRad-generated outgassing map
-				for (w = 0; w < f->sh.outgassingMapWidth && !found_side1 && !found_side2; w++)
-					for (h = 0; h<f->sh.outgassingMapHeight && !found_side1 && !found_side2; h++) {
-						double flow = f->outgassingMap[h*f->sh.outgassingMapWidth + w] / (1.38E-23*f->sh.temperature);
-						if (flow>0.0) {
-							foundInMap = found_side1 = (srcRnd >= A) && (srcRnd < (A + flow*((f->sh.is2sided) ? 0.5 : 1.0))); //2-sided facets have half outgassing on each side
-							if (foundInMap) { mapPositionW = w; mapPositionH = h; }
-							A += flow*((f->sh.is2sided) ? 0.5 : 1.0);
-							if (f->sh.is2sided) { //check the other side
-								foundInMap = found_side2 = (srcRnd >= A) && (srcRnd < A + flow*0.5);
+			if (f->sh.desorbType != DES_NONE) { //there is some kind of outgassing
+				if (f->sh.useOutgassingFile) { //Using SynRad-generated outgassing map
+					for (w = 0; w < f->sh.outgassingMapWidth && !found_side1 && !found_side2; w++)
+						for (h = 0; h<f->sh.outgassingMapHeight && !found_side1 && !found_side2; h++) {
+							double flow = f->outgassingMap[h*f->sh.outgassingMapWidth + w] / (1.38E-23*f->sh.temperature);
+							if (flow>0.0) {
+								foundInMap = found_side1 = (srcRnd >= A) && (srcRnd < (A + flow*((f->sh.is2sided) ? 0.5 : 1.0))); //2-sided facets have half outgassing on each side
 								if (foundInMap) { mapPositionW = w; mapPositionH = h; }
-								A += flow*0.5;
+								A += flow*((f->sh.is2sided) ? 0.5 : 1.0);
+								if (f->sh.is2sided) { //check the other side
+									foundInMap = found_side2 = (srcRnd >= A) && (srcRnd < A + flow*0.5);
+									if (foundInMap) { mapPositionW = w; mapPositionH = h; }
+									A += flow*0.5;
+								}
 							}
 						}
+				}
+				else  { //regular outgassing
+					found_side1 = (srcRnd >= A) && (srcRnd < (A + f->sh.flow / (1.38E-23*f->sh.temperature)*((f->sh.is2sided) ? 0.5 : 1.0))); //2-sided facets have half outgassing on each side
+					A += f->sh.flow / (1.38E-23*f->sh.temperature)*((f->sh.is2sided) ? 0.5 : 1.0);
+					if (f->sh.is2sided) { //check the other side
+						found_side2 = (srcRnd >= A) && (srcRnd < A + f->sh.flow / (1.38E-23*f->sh.temperature)*0.5);
+						A += f->sh.flow / (1.38E-23*f->sh.temperature)*0.5;
 					}
-			}
-			else if (f->sh.desorbType != DES_NONE) {
-				found_side1 = (srcRnd >= A) && (srcRnd < (A + f->sh.flow / (1.38E-23*f->sh.temperature)*((f->sh.is2sided) ? 0.5 : 1.0))); //2-sided facets have half outgassing on each side
-				A += f->sh.flow / (1.38E-23*f->sh.temperature)*((f->sh.is2sided) ? 0.5 : 1.0);
-				if (f->sh.is2sided) { //check the other side
-					found_side2 = (srcRnd >= A) && (srcRnd < A + f->sh.flow / (1.38E-23*f->sh.temperature)*0.5);
-					A += f->sh.flow / (1.38E-23*f->sh.temperature)*0.5;
 				}
 			}
 			if (!found_side1 && !found_side2) i++;
@@ -561,7 +570,7 @@ BOOL StartFromSource() {
 	sHandle->nbDesorbed++;
 	sHandle->tmpCount.hit.nbDesorbed++;
 	sHandle->nbPHit = 0;
-	
+
 	src->sh.counter.hit.sum_1_per_speed += 2.0 / sHandle->velocityCurrentParticle;
 	src->sh.counter.hit.sum_v_ort += sHandle->velocityCurrentParticle*abs(DOT3(
 		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,

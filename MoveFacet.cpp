@@ -114,7 +114,7 @@ void MoveFacet::ProcessMessage(GLComponent *src,int message) {
 				geom->MoveSelectedFacets(dX,dY,dZ,src==copyButton,work);
 				//theApp->UpdateModelParams();
 				work->Reload(); 
-
+				changedSinceSave = TRUE;
 				theApp->UpdateFacetlistSelected();	
 				mApp->UpdateViewers();
 
