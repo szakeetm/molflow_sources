@@ -226,7 +226,7 @@ void TexturePlotter::UpdateTable() {
 										 maxValue = (double)val;
 										 maxX = i; maxY = j;
 									 }
-									 sprintf(tmp, "%g", val);
+									 sprintf(tmp, "%Lu", val);
 									 mapList->SetValueAt(i, j, tmp);
 								 }
 							 }

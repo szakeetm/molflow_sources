@@ -433,8 +433,6 @@ void Facet::LoadTXT(FileReader *file) {
 
 }
 
-// -----------------------------------------------------------
-
 void Facet::SaveTXT(FileWriter *file) {
 
 	if (!sh.superDest)
@@ -444,47 +442,21 @@ void Facet::SaveTXT(FileWriter *file) {
 		sh.opacity = 0.0;
 	}
 
-	switch (sh.profileType) {
-	case REC_PRESSUREU:
-	case REC_PRESSUREV:
-		if (!sh.is2sided)
-			file->WriteDouble(-4.0, "\n");
-		else
-			file->WriteDouble(-1.0, "\n");
-		break;
-	case REC_ANGULAR:
-		file->WriteDouble(-2.0, "\n");
-		break;
-	default:
-		if (sh.is2sided)
-			file->WriteDouble(sh.opacity + 1.0, "\n");
-		else
-			file->WriteDouble(sh.opacity, "\n");
-	}
+	if (sh.is2sided)
+		file->WriteDouble(sh.opacity + 1.0, "\n");
+	else
+		file->WriteDouble(sh.opacity, "\n");
 
 	file->WriteDouble(sh.area, "\n");
 
-	if (sh.counter.hit.nbDesorbed == 0 && sh.desorbType != DES_NONE)
+	if (sh.desorbType != DES_NONE)
 		file->WriteDouble(1.0, "\n");
 	else
-		file->WriteDouble((double)sh.counter.hit.nbDesorbed, "\n");
-
-	file->WriteDouble((double)sh.counter.hit.nbHit, "\n");
-	file->WriteDouble((double)sh.counter.hit.nbAbsorbed, "\n");
-
-	// Convert desorbType
-	switch (sh.desorbType) {
-	case DES_COSINE:
-	case DES_COSINE_N: //convert cosine^N desorption type to cosine
-	case DES_NONE:
 		file->WriteDouble(0.0, "\n");
-		break;
-	case DES_UNIFORM:
-		file->WriteDouble(1.0, "\n");
-		break;
-	default:
-		file->WriteDouble((double)(sh.desorbType - 1), "\n");
-	}
+	file->WriteDouble(0.0, "\n"); //nbHit
+	file->WriteDouble(0.0, "\n"); //nbAbsorbed
+
+	file->WriteDouble(0.0, "\n"); //no desorption
 
 	switch (sh.reflectType) {
 	case REF_DIFFUSE:
@@ -496,14 +468,10 @@ void Facet::SaveTXT(FileWriter *file) {
 	default:
 		file->WriteDouble((double)(sh.reflectType), "\n");
 		break;
-
 	}
 
 	file->WriteDouble(0.0, "\n"); // Unused
-
 }
-
-// -----------------------------------------------------------
 
 void Facet::SaveGEO(FileWriter *file, int idx) {
 

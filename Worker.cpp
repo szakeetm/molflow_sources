@@ -128,11 +128,18 @@ void Worker::SetFileName(char *fileName) {
 
 void Worker::SaveGeometry(char *fileName,GLProgress *prg,BOOL askConfirm,BOOL saveSelected,BOOL autoSave,BOOL crashSave) {
 
-	if (needsReload&&(!crashSave && !saveSelected)) RealReload();
-	char tmp[1024];
-	char fileNameWithGeo[1024]; //file name with .geo extension (instead of .geo7z)
-	char fileNameWithGeo7z[1024]; //file name with .geo extension (instead of .geo7z)
-	char fileNameWithoutExtension[1024]; //file name without extension
+	try {
+		if (needsReload&&(!crashSave && !saveSelected)) RealReload();
+	} catch (Error &e) {
+		char errMsg[512];
+		sprintf(errMsg,"Error reloading worker. Trying crash save:\n%s",e.GetMsg());
+		GLMessageBox::Display(errMsg,"Error",GLDLG_OK,GLDLG_ICONERROR);
+		crashSave=TRUE;
+	} 
+	char tmp[10000]; //compress.exe command line
+	char fileNameWithGeo[2048]; //file name with .geo extension (instead of .geo7z)
+	char fileNameWithGeo7z[2048];
+	char fileNameWithoutExtension[2048]; //file name without extension
 	//char *ext = fileName+strlen(fileName)-4;
 	char *ext,*dir;
 	MolFlow *mApp = (MolFlow *)theApp;
@@ -165,45 +172,36 @@ void Worker::SaveGeometry(char *fileName,GLProgress *prg,BOOL askConfirm,BOOL sa
 		if (isGEO) {
 			memcpy(fileNameWithoutExtension,fileName,sizeof(char)*(strlen(fileName)-4));
 			fileNameWithoutExtension[strlen(fileName)-4]='\0';
-		} else if (isGEO7Z) { //geo7z
+			sprintf(fileNameWithGeo7z,"%s7z",fileName);
+			memcpy(fileNameWithGeo,fileName,(strlen(fileName)+1)*sizeof(char));
+		} else if (isGEO7Z) {
 			memcpy(fileNameWithoutExtension,fileName,sizeof(char)*(strlen(fileName)-6));
 			fileNameWithoutExtension[strlen(fileName)-6]='\0';
+			memcpy(fileNameWithGeo,fileName,sizeof(char)*(strlen(fileName)-2));
+			fileNameWithGeo[strlen(fileName)-2]='\0';
+			memcpy(fileNameWithGeo7z,fileName,(1+strlen(fileName))*sizeof(char));
+			sprintf(tmp,"A .geo file of the same name exists. Overwrite that file ?\n%s",fileNameWithGeo);
+			if(!autoSave && FileUtils::Exist(fileNameWithGeo) ) {
+				ok = ( GLMessageBox::Display(tmp,"Question",GLDLG_OK|GLDLG_CANCEL,GLDLG_ICONWARNING)==GLDLG_OK );
+			}
 		}		
 		
-			if (isGEO) {
-				sprintf(fileNameWithGeo7z,"%s7z",fileName);
-				memcpy(fileNameWithGeo,fileName,(strlen(fileName)+1)*sizeof(char));
-
-				if(!autoSave && FileUtils::Exist(fileNameWithGeo7z) && isGEO7Z) {
-					sprintf(tmp,"A .geo7z file of the same name exists. Overwrite that file ?\n%s",fileNameWithGeo7z);
-					ok = ( GLMessageBox::Display(tmp,"Question",GLDLG_OK|GLDLG_CANCEL,GLDLG_ICONWARNING)==GLDLG_OK );
-				}
-			} 
-			if (isGEO7Z) {
-				memcpy(fileNameWithGeo,fileName,sizeof(char)*(strlen(fileName)-2));
-				fileNameWithGeo[strlen(fileName)-2]='\0';
-				memcpy(fileNameWithGeo7z,fileName,(1+strlen(fileName))*sizeof(char));
-				sprintf(tmp,"A .geo file of the same name exists. Overwrite that file ?\n%s",fileNameWithGeo);
-				if(!autoSave && FileUtils::Exist(fileNameWithGeo) ) {
-					ok = ( GLMessageBox::Display(tmp,"Question",GLDLG_OK|GLDLG_CANCEL,GLDLG_ICONWARNING)==GLDLG_OK );
-				}
-			} 
-			if(!autoSave && ok && FileUtils::Exist(fileName) ) {
-				sprintf(tmp,"Overwrite existing file ?\n%s",fileName);
-				if (askConfirm) ok = ( GLMessageBox::Display(tmp,"Question",GLDLG_OK|GLDLG_CANCEL,GLDLG_ICONWARNING)==GLDLG_OK );
-			}
+		if(!autoSave && ok && FileUtils::Exist(fileName) ) {
+			sprintf(tmp,"Overwrite existing file ?\n%s",fileName);
+			if (askConfirm) ok = ( GLMessageBox::Display(tmp,"Question",GLDLG_OK|GLDLG_CANCEL,GLDLG_ICONWARNING)==GLDLG_OK );
+		}
 		
 		if( ok ) {
 			if( isSTR ) {
 				geom->SaveSTR(dpHit,saveSelected);
 			} else {
 				try {
-				if (isGEO7Z) {
-					memcpy(fileNameWithGeo,fileName,sizeof(char)*(strlen(fileName)-2));
-					fileNameWithGeo[strlen(fileName)-2]='\0';
-					f = new FileWriter(fileNameWithGeo);
-				} else
-					f = new FileWriter(fileName);
+					if (isGEO7Z) {
+						/*memcpy(fileNameWithGeo,fileName,sizeof(char)*(strlen(fileName)-2));
+						fileNameWithGeo[strlen(fileName)-2]='\0';*/
+						f = new FileWriter(fileNameWithGeo); //We first write a GEO file, then compress it to GEO7Z later
+					} else
+						f = new FileWriter(fileName);
 				} catch(Error &e) {
 					SAFE_DELETE(f);
 					GLMessageBox::Display((char*)e.GetMsg(),"Error in Worker::SaveGeometry()",GLDLG_OK,GLDLG_ICONERROR);
@@ -215,15 +213,15 @@ void Worker::SaveGeometry(char *fileName,GLProgress *prg,BOOL askConfirm,BOOL sa
 					// Retrieve leak cache
 					int nbLeakSave,nbHHitSave;
 					LEAK pLeak[NBHLEAK];
-					if (!crashSave&& !saveSelected) GetLeak(pLeak, &nbLeakSave);
+					if (!crashSave && !saveSelected) GetLeak(pLeak, &nbLeakSave);
 					// Retrieve hit cache (lines and dots)
 					HIT pHits[NBHHIT];
-					if (!crashSave&& !saveSelected) GetHHit(pHits, &nbHHitSave);
+					if (!crashSave && !saveSelected) GetHHit(pHits, &nbHHitSave);
 					geom->SaveGEO(f,prg,dpHit,this->userMoments,this,saveSelected,pLeak,&nbLeakSave,pHits,&nbHHitSave,crashSave);
 				}
 			}
-			if (!autoSave && !saveSelected) strcpy(fullFileName, fileName);
 			if (!autoSave && !saveSelected) {
+				strcpy(fullFileName, fileName);
 				remove("Molflow_AutoSave.geo");
 				remove("Molflow_AutoSave.geo7z");
 			}
@@ -235,22 +233,22 @@ void Worker::SaveGeometry(char *fileName,GLProgress *prg,BOOL askConfirm,BOOL sa
 
 	SAFE_DELETE(f);
 	
-
-		if (isGEO7Z) {
-			if (FileUtils::Exist("compress.exe")) { //compress GEO file to GEO7Z using 7-zip launcher "compress.exe"
-				sprintf(tmp,"compress.exe \"%s\"",fileNameWithGeo);
-				int procId = StartProc_background(tmp);
-				compressProcessHandle=OpenProcess(PROCESS_ALL_ACCESS, TRUE, procId);
-				fileName=fileNameWithGeo7z;
-			} else {
-				GLMessageBox::Display("compress.exe (part of Molfow) not found.\n Will save as uncompressed GEO file.","Compressor not found",GLDLG_OK,GLDLG_ICONERROR);
-				fileName=fileNameWithGeo;
-			}
-		} else fileName=fileNameWithGeo;
-		if (!autoSave && !saveSelected) {
-			SetFileName(fileName);
-			mApp->UpdateTitle();
+	//File written, compress it if the user wanted to
+	if (ok && isGEO7Z) {
+		if (FileUtils::Exist("compress.exe")) { //compress GEO file to GEO7Z using 7-zip launcher "compress.exe"
+			sprintf(tmp,"compress.exe \"%s\"",fileNameWithGeo);
+			int procId = StartProc_background(tmp);
+			compressProcessHandle=OpenProcess(PROCESS_ALL_ACCESS, TRUE, procId);
+			fileName=fileNameWithGeo7z;
+		} else {
+			GLMessageBox::Display("compress.exe (part of Molfow) not found.\n Will save as uncompressed GEO file.","Compressor not found",GLDLG_OK,GLDLG_ICONERROR);
+			fileName=fileNameWithGeo;
 		}
+	} else if (ok && isGEO) fileName=fileNameWithGeo;
+	if (!autoSave && !saveSelected) {
+		SetFileName(fileName);
+		mApp->UpdateTitle();
+	}
 	
 	//Debug memory check
 	 //_ASSERTE (!_CrtDumpMemoryLeaks());;

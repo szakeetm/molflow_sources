@@ -116,7 +116,8 @@ extern int numCPU;
 #define MENU_EDIT_3DSETTINGS   21
 #define MENU_EDIT_TSCALING     22
 #define MENU_EDIT_ADDFORMULA   23
-#define MENU_EDIT_GLOBALSETTINGS 24
+#define MENU_EDIT_UPDATEFORMULAS 24
+#define MENU_EDIT_GLOBALSETTINGS 25
 
 #define MENU_FACET_COLLAPSE    300
 #define MENU_FACET_SWAPNORMAL  301
@@ -177,7 +178,6 @@ extern int numCPU;
 #define MENU_VERTEX_REMOVE 709
 #define MENU_VERTEX_COORDINATES 710
 
-
 #define MENU_VIEW_STRUCTURE       4000
 #define MENU_VIEW_STRUCTURE_P     40
 #define MENU_VIEW_NEWSTRUCT       401
@@ -186,8 +186,8 @@ extern int numCPU;
 #define MENU_VIEW_NEXTSTRUCT	  404
 #define MENU_VIEW_FULLSCREEN      41
 
-#define MENU_VIEW_ADDNEW             431
-#define MENU_VIEW_CLEARALL           432
+#define MENU_VIEW_ADDNEW          431
+#define MENU_VIEW_CLEARALL        432
 
 #define MENU_VIEW_MEMORIZEVIEWS   4300
 #define MENU_VIEW_VIEWS           4400
@@ -196,11 +196,7 @@ extern int numCPU;
 #define MENU_TIME_SETTINGS          50
 #define MENU_TIMEWISE_PLOTTER       51
 #define MENU_TIME_PRESSUREEVOLUTION 52
-
-
-
 #define MENU_TIME_MOMENTS_EDITOR    53
-
 
 #define MENU_TEST_PIPE0001        60
 #define MENU_TEST_PIPE1           61
@@ -446,6 +442,7 @@ int MolFlow::OneTimeSceneInit()
 	menu->GetSubMenu("Tools")->Add("3D Settings ..."   ,MENU_EDIT_3DSETTINGS,SDLK_b,CTRL_MODIFIER);
 	menu->GetSubMenu("Tools")->Add("Texture scaling...",MENU_EDIT_TSCALING,SDLK_d,CTRL_MODIFIER);
 	menu->GetSubMenu("Tools")->Add("Add formula ..."   ,MENU_EDIT_ADDFORMULA);
+	menu->GetSubMenu("Tools")->Add("Update formulas now!",MENU_EDIT_UPDATEFORMULAS,SDLK_f,ALT_MODIFIER);
 	menu->GetSubMenu("Tools")->Add("Global Settings ..."   ,MENU_EDIT_GLOBALSETTINGS);
 	menu->GetSubMenu("Tools")->Add(NULL); // Separator
 	menu->GetSubMenu("Tools")->Add("Texture Plotter ...",MENU_FACET_TEXPLOTTER,SDLK_t,ALT_MODIFIER);
@@ -2153,7 +2150,7 @@ int MolFlow::FrameMove()
 	UpdateFacetHits();
 
 	// Formulas
-	UpdateFormula();
+	//UpdateFormula(); The user has to ask explicitly
 
 	/*
 	if(worker.running) {
@@ -3259,6 +3256,9 @@ void MolFlow::ProcessMessage(GLComponent *src,int message)
 		case MENU_EDIT_ADDFORMULA:
 			if( !formulaSettings ) formulaSettings = new FormulaSettings();
 			AddFormula(formulaSettings->NewFormula());
+			break;
+		case MENU_EDIT_UPDATEFORMULAS:
+			UpdateFormula();
 			break;
 		case MENU_EDIT_GLOBALSETTINGS:
 			if( !globalSettings ) globalSettings = new GlobalSettings();
