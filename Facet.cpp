@@ -215,7 +215,7 @@ void Facet::LoadGEO(FileReader *file, int version, int nbVertex) {
 	hasMesh = file->ReadInt();
 	if (version >= 7) {
 		file->ReadKeyword("outgassing"); file->ReadKeyword(":");
-		sh.flow = file->ReadDouble();
+		sh.flow = file->ReadDouble()*0.100; //mbar*l/s -> Pa*m3/s
 	}
 	file->ReadKeyword("texDimX"); file->ReadKeyword(":");
 	sh.texWidthD = file->ReadDouble();
@@ -497,7 +497,7 @@ void Facet::SaveGEO(FileWriter *file, int idx) {
 	file->Write("  is2sided:"); file->WriteInt(sh.is2sided, "\n");
 	//file->Write("  area:");file->WriteDouble(sh.area,"\n");
 	file->Write("  mesh:"); file->WriteInt((mesh != NULL), "\n");
-	file->Write("  outgassing:"); file->WriteDouble(sh.flow, "\n");
+	file->Write("  outgassing:"); file->WriteDouble(sh.flow*10.00, "\n"); //Pa*m3/s -> mbar*l/s for compatibility with old versions
 	file->Write("  texDimX:"); file->WriteDouble(sh.texWidthD, "\n");
 	file->Write("  texDimY:"); file->WriteDouble(sh.texHeightD, "\n");
 	file->Write("  countDes:"); file->WriteInt(sh.countDes, "\n");

@@ -35,7 +35,7 @@ GNU General Public License for more details.
 #define APP_NAME "MolFlow+ development version (Compiled "__DATE__" "__TIME__") DEBUG MODE"
 #else
 //#define APP_NAME "Molflow+ development version ("__DATE__")"
-#define APP_NAME "Molflow+ 2.5.4 BETA ("__DATE__")"
+#define APP_NAME "Molflow+ 2.5.4 beta ("__DATE__")"
 #endif
 
 /*
@@ -86,6 +86,7 @@ extern double totalOutgassing;
 extern double totalInFlux;
 extern double autoSaveFrequency;
 extern int checkForUpdates;
+extern int autoUpdateFormulas;
 extern int compressSavedFiles;
 //extern HANDLE molflowHandle;
 extern int autoSaveSimuOnly;
@@ -100,15 +101,16 @@ extern int numCPU;
 #define MENU_FILE_INSERTGEO_NEWSTR  141
 #define MENU_FILE_EXPORTMESH      16
 
-#define MENU_FILE_EXPORTTEXTURE_AREA 150
-#define MENU_FILE_EXPORTTEXTURE_MCHITS 151
-#define MENU_FILE_EXPORTTEXTURE_IMPINGEMENT 152
-#define MENU_FILE_EXPORTTEXTURE_PART_DENSITY 153
-#define MENU_FILE_EXPORTTEXTURE_GAS_DENSITY 154
-#define MENU_FILE_EXPORTTEXTURE_PRESSURE 155
-#define MENU_FILE_EXPORTTEXTURE_AVG_V 156
-#define MENU_FILE_EXPORTTEXTURE_V_VECTOR 157
-#define MENU_FILE_EXPORTTEXTURE_N_VECTORS 158
+#define MENU_FILE_EXPORTTEXTURES 150
+#define MENU_FILE_EXPORTTEXTURE_AREA 151
+#define MENU_FILE_EXPORTTEXTURE_MCHITS 152
+#define MENU_FILE_EXPORTTEXTURE_IMPINGEMENT 153
+#define MENU_FILE_EXPORTTEXTURE_PART_DENSITY 154
+#define MENU_FILE_EXPORTTEXTURE_GAS_DENSITY 155
+#define MENU_FILE_EXPORTTEXTURE_PRESSURE 156
+#define MENU_FILE_EXPORTTEXTURE_AVG_V 157
+#define MENU_FILE_EXPORTTEXTURE_V_VECTOR 158
+#define MENU_FILE_EXPORTTEXTURE_N_VECTORS 159
 
 #define MENU_FILE_LOADRECENT 110
 #define MENU_FILE_EXIT       17
@@ -365,7 +367,8 @@ int MolFlow::OneTimeSceneInit()
 	menu->GetSubMenu("File")->GetSubMenu("Insert geometry")->Add("&To new structure",MENU_FILE_INSERTGEO_NEWSTR);
 	menu->GetSubMenu("File")->Add("Export selected facets",MENU_FILE_EXPORTMESH);
 
-	menu->GetSubMenu("File")->Add("Export selected textures");
+	menu->GetSubMenu("File")->Add("Export selected textures",MENU_FILE_EXPORTTEXTURES);
+
 	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->Add("Cell Area (cm\262)",MENU_FILE_EXPORTTEXTURE_AREA);
 	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->Add("# of MC Hits",MENU_FILE_EXPORTTEXTURE_MCHITS);
 	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->Add("Impingement rate (1/s/m\262)", MENU_FILE_EXPORTTEXTURE_IMPINGEMENT);
@@ -380,14 +383,19 @@ int MolFlow::OneTimeSceneInit()
 
 	menu->GetSubMenu("File")->Add(NULL); // Separator
 	menu->GetSubMenu("File")->Add("Load recent");
+	
 	for(int i=nbRecent-1;i>=0;i--)
 		menu->GetSubMenu("File")->GetSubMenu("Load recent")->Add(recents[i],MENU_FILE_LOADRECENT+i);
+	
 	menu->GetSubMenu("File")->Add(NULL); // Separator
 	menu->GetSubMenu("File")->Add("E&xit",MENU_FILE_EXIT);
 
-	menu->GetSubMenu("File")->SetIcon(MENU_FILE_LOAD,65,24);
+	menu->GetSubMenu("File")->SetIcon(MENU_FILE_EXPORTMESH,126,77);//126,77
+	menu->GetSubMenu("File")->SetIcon(MENU_FILE_EXPORTTEXTURES,126,77);//126,77
 	menu->GetSubMenu("File")->SetIcon(MENU_FILE_SAVE,83,24);
 	menu->GetSubMenu("File")->SetIcon(MENU_FILE_SAVEAS,101,24);
+	menu->GetSubMenu("File")->SetIcon(MENU_FILE_LOAD,65,24);//65,24
+	//menu->GetSubMenu("File")->SetIcon(MENU_FILE_LOADRECENT,83,24);//83,24
 
 	menu->Add("Selection");
 	menu->GetSubMenu("Selection")->Add("Select All Facets",MENU_FACET_SELECTALL,SDLK_a,CTRL_MODIFIER);
@@ -439,20 +447,21 @@ int MolFlow::OneTimeSceneInit()
 
 
 	menu->Add("Tools");
-	menu->GetSubMenu("Tools")->Add("3D Settings ..."   ,MENU_EDIT_3DSETTINGS,SDLK_b,CTRL_MODIFIER);
-	menu->GetSubMenu("Tools")->Add("Texture scaling...",MENU_EDIT_TSCALING,SDLK_d,CTRL_MODIFIER);
+	
 	menu->GetSubMenu("Tools")->Add("Add formula ..."   ,MENU_EDIT_ADDFORMULA);
 	menu->GetSubMenu("Tools")->Add("Update formulas now!",MENU_EDIT_UPDATEFORMULAS,SDLK_f,ALT_MODIFIER);
-	menu->GetSubMenu("Tools")->Add("Global Settings ..."   ,MENU_EDIT_GLOBALSETTINGS);
 	menu->GetSubMenu("Tools")->Add(NULL); // Separator
 	menu->GetSubMenu("Tools")->Add("Texture Plotter ...",MENU_FACET_TEXPLOTTER,SDLK_t,ALT_MODIFIER);
 	menu->GetSubMenu("Tools")->Add("Profile Plotter ...",MENU_FACET_PROFPLOTTER,SDLK_p,ALT_MODIFIER);
-
-
+	menu->GetSubMenu("Tools")->Add(NULL); // Separator
+	menu->GetSubMenu("Tools")->Add("3D Settings ..."   ,MENU_EDIT_3DSETTINGS,SDLK_b,CTRL_MODIFIER);
+	menu->GetSubMenu("Tools")->Add("Texture scaling...",MENU_EDIT_TSCALING,SDLK_d,CTRL_MODIFIER);
+	menu->GetSubMenu("Tools")->Add("Global Settings ..."   ,MENU_EDIT_GLOBALSETTINGS);
 
 	menu->GetSubMenu("Tools")->SetIcon(MENU_EDIT_3DSETTINGS,119,24);
 	menu->GetSubMenu("Tools")->SetIcon(MENU_EDIT_TSCALING,137,24);
 	menu->GetSubMenu("Tools")->SetIcon(MENU_EDIT_ADDFORMULA,155,24);
+	menu->GetSubMenu("Tools")->SetIcon(MENU_EDIT_GLOBALSETTINGS,0,77);
 
 	menu->Add("Facet");
 	menu->GetSubMenu("Facet")->Add("Collapse ...",MENU_FACET_COLLAPSE);
@@ -517,7 +526,7 @@ int MolFlow::OneTimeSceneInit()
 	clearViewsMenu = menu->GetSubMenu("View")->GetSubMenu("Clear memorized");
 	clearViewsMenu->Add("Clear All",MENU_VIEW_CLEARALL);
 
-	menu->GetSubMenu("View")->SetIcon(MENU_VIEW_STRUCTURE_P,0,77);
+	//menu->GetSubMenu("View")->SetIcon(MENU_VIEW_STRUCTURE_P,0,77);
 	menu->GetSubMenu("View")->SetIcon(MENU_VIEW_FULLSCREEN,18,77);
 	//menu->GetSubMenu("View")->SetIcon(MENU_VIEW_ADD,36,77);
 
@@ -2150,7 +2159,7 @@ int MolFlow::FrameMove()
 	UpdateFacetHits();
 
 	// Formulas
-	//UpdateFormula(); The user has to ask explicitly
+	if (autoUpdateFormulas) UpdateFormula();
 
 	/*
 	if(worker.running) {
@@ -4916,6 +4925,8 @@ void MolFlow::LoadConfig() {
 		autoSaveSimuOnly = f->ReadInt();
 		f->ReadKeyword("checkForUpdates");f->ReadKeyword(":");
 		checkForUpdates = f->ReadInt();
+		f->ReadKeyword("autoUpdateFormulas");f->ReadKeyword(":");
+		autoUpdateFormulas = f->ReadInt();
 		f->ReadKeyword("compressSavedFiles");f->ReadKeyword(":");
 		compressSavedFiles = f->ReadInt();
 		f->ReadKeyword("gasMass");f->ReadKeyword(":");
@@ -5039,12 +5050,6 @@ void MolFlow::SaveConfig() {
 		}
 		f->Write("}\n");
 
-
-
-
-
-
-
 		f->Write("cdir:\"");f->Write(currentDir);f->Write("\"\n");
 		f->Write("cseldir:\"");f->Write(currentSelDir);f->Write("\"\n");
 		f->Write("autonorme:");f->WriteInt(geom->GetAutoNorme(),"\n");
@@ -5052,10 +5057,10 @@ void MolFlow::SaveConfig() {
 		f->Write("normeratio:");f->WriteDouble((double)(geom->GetNormeRatio()),"\n");
 		WRITEI("showDirection",showDir);f->Write("\n");
 
-
 		f->Write("autoSaveFrequency:");f->WriteDouble(autoSaveFrequency,"\n");
 		f->Write("autoSaveSimuOnly:");f->WriteInt(autoSaveSimuOnly,"\n");
 		f->Write("checkForUpdates:");f->WriteInt(checkForUpdates,"\n");
+		f->Write("autoUpdateFormulas:");f->WriteInt(autoUpdateFormulas,"\n");
 		f->Write("compressSavedFiles:");f->WriteInt(compressSavedFiles,"\n");
 		f->Write("gasMass:");f->WriteDouble(gasMass,"\n");
 

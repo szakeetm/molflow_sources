@@ -55,9 +55,9 @@ private:
 
   GLToggle      *chkAntiAliasing;
   GLToggle      *chkWhiteBg;
-  //GLToggle      *chkNonIsothermal;
   GLToggle      *chkSimuOnly;
   GLToggle      *chkCheckForUpdates;
+  GLToggle      *chkAutoUpdateFormulas;
   GLToggle      *chkCompressSavedFiles;
   GLButton    *applyButton;
   GLButton    *cancelButton;

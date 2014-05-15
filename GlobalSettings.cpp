@@ -33,6 +33,7 @@ int whiteBg=false;
 int needsReload=false;
 //int nonIsothermal=false;
 int checkForUpdates=false;
+int autoUpdateFormulas=false;
 int compressSavedFiles=true;
 double gasMass=28;
 double totalOutgassing=0.0; //total outgassing in Pa*m3/sec (internally everything is in SI units)
@@ -58,11 +59,11 @@ GlobalSettings::GlobalSettings():GLWindow() {
   Add(panel);
   
   chkAntiAliasing = new GLToggle(0,"Anti-Aliasing");
-  chkAntiAliasing->SetBounds(10,20,80,19);
+  chkAntiAliasing->SetBounds(15,25,80,19);
   panel->Add(chkAntiAliasing);
 
     chkWhiteBg = new GLToggle(0,"White Background");
-  chkWhiteBg->SetBounds(10,50,80,19);
+  chkWhiteBg->SetBounds(15,50,80,19);
   panel->Add(chkWhiteBg);
 
   GLTitledPanel *panel2 = new GLTitledPanel("Gas settings");
@@ -70,7 +71,7 @@ GlobalSettings::GlobalSettings():GLWindow() {
   Add(panel2);
 
   GLLabel *massLabel = new GLLabel("Gas molecular mass (g/mol):");
-  massLabel->SetBounds(315,20,150,19);
+  massLabel->SetBounds(320,25,150,19);
   panel2->Add(massLabel);
 
   gasmassText = new GLTextField(0,"");
@@ -78,7 +79,7 @@ GlobalSettings::GlobalSettings():GLWindow() {
   panel2->Add(gasmassText);
 
   GLLabel *outgassingLabel = new GLLabel("Total outgassing (mbar*l/sec):");
-  outgassingLabel->SetBounds(315,50,150,19);
+  outgassingLabel->SetBounds(320,50,150,19);
   panel2->Add(outgassingLabel);
 
   outgassingText = new GLTextField(0,"");
@@ -87,7 +88,7 @@ GlobalSettings::GlobalSettings():GLWindow() {
   panel2->Add(outgassingText);
 
   GLLabel *influxLabel = new GLLabel("Total gas flux (molecules/sec):");
-  influxLabel->SetBounds(315, 75, 150, 19);
+  influxLabel->SetBounds(320, 75, 150, 19);
   panel2->Add(influxLabel);
 
   influxText = new GLTextField(0, "");
@@ -112,8 +113,12 @@ GlobalSettings::GlobalSettings():GLWindow() {
   panel4->Add(chkSimuOnly);
 
   chkCheckForUpdates = new GLToggle(0,"Check for updates at startup");
-  chkCheckForUpdates->SetBounds(315,125,100,19);
+  chkCheckForUpdates->SetBounds(315,125,160,19);
   Add(chkCheckForUpdates);
+
+  chkAutoUpdateFormulas = new GLToggle(0,"Auto update formulas");
+  chkAutoUpdateFormulas->SetBounds(315,150,160,19);
+  Add(chkAutoUpdateFormulas);
 
   chkCompressSavedFiles = new GLToggle(0,"Compress saved files (use .GEO7Z format)");
   chkCompressSavedFiles->SetBounds(10,175,100,19);
@@ -199,6 +204,7 @@ void GlobalSettings::Display(Worker *w) {
 	autoSaveText->SetText(tmp);
 	chkSimuOnly->SetCheck(autoSaveSimuOnly);
 	chkCheckForUpdates->SetCheck(checkForUpdates);
+	chkAutoUpdateFormulas->SetCheck(autoUpdateFormulas);
 	chkCompressSavedFiles->SetCheck(compressSavedFiles);
 	  worker = w;
   int nb = worker->GetProcNumber();
@@ -332,6 +338,7 @@ void GlobalSettings::ProcessMessage(GLComponent *src,int message) {
 		antiAliasing=chkAntiAliasing->IsChecked();
 	    whiteBg=chkWhiteBg->IsChecked();
 		checkForUpdates=chkCheckForUpdates->IsChecked();
+		autoUpdateFormulas=chkAutoUpdateFormulas->IsChecked();
 		compressSavedFiles=chkCompressSavedFiles->IsChecked();
 		/*if (nonIsothermal!=chkNonIsothermal->IsChecked()) {
 			if (mApp->AskToReset()) {
