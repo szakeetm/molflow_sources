@@ -79,9 +79,11 @@ static const char *refStr[] = {
 
 static const char *profStr[] = {
   "None",
-  "Pressure (u)",
-  "Pressure (v)",
-  "Angular"
+  "Pressure (\201)",
+  "Pressure (\202)",
+  "Angular",
+  "Speed distr.",
+  "Ort. velocity"
 };
 
 static const char *ynStr[] = {
@@ -277,7 +279,7 @@ char *FacetDetails::FormatCell(int idx,Facet *f,int mode) {
       sprintf(ret,"%g",f->sh.opacity);
       break;
     case 3:
-      sprintf(ret,"%d",f->sh.superIdx);
+      sprintf(ret,"%d",f->sh.superIdx+1);
       break;
     case 4:
       sprintf(ret,"%d",f->sh.superDest);

@@ -254,11 +254,7 @@ MolFlow::MolFlow()
 	SYSTEM_INFO sysinfo;
 	GetSystemInfo( &sysinfo );
 	
-#ifdef _DEBUG
-	numCPU = 1;
-#else
 	numCPU = (int) sysinfo.dwNumberOfProcessors;
-#endif
 
 	/*
 	//Enable memory check at EVERY malloc/free operation:
@@ -282,7 +278,13 @@ MolFlow::MolFlow()
 	nbSelection = 0;
 	idView = 0;
 	idSelection = 0;
+
+#ifdef _DEBUG
+	nbProc = 1;
+#else
 	nbProc = numCPU;
+#endif
+
 	curViewer = 0;
 	strcpy(currentDir,".");
 	strcpy(currentSelDir,".");
@@ -533,6 +535,7 @@ int MolFlow::OneTimeSceneInit()
 	menu->Add("Time");
 	menu->GetSubMenu("Time")->Add("Time settings...",MENU_TIME_SETTINGS,SDLK_i,ALT_MODIFIER);
 	menu->GetSubMenu("Time")->Add("Edit moments...",MENU_TIME_MOMENTS_EDITOR);
+	menu->GetSubMenu("Time")->Add(NULL);
 	menu->GetSubMenu("Time")->Add("Timewise plotter",MENU_TIMEWISE_PLOTTER);
 	menu->GetSubMenu("Time")->Add("Pressure evolution",MENU_TIME_PRESSUREEVOLUTION);
 
@@ -3243,7 +3246,7 @@ void MolFlow::ProcessMessage(GLComponent *src,int message)
 
 
 		case MENU_FILE_EXPORTTEXTURE_N_VECTORS:
-			ExportTextures(src->GetId()-150); // 0..7
+			ExportTextures(src->GetId()-150); // 1..9
 			break;
 
 		case MENU_FILE_SAVE:
@@ -3778,26 +3781,12 @@ void MolFlow::ProcessMessage(GLComponent *src,int message)
 			}
 		}
 
-
-
-
-
 		// Show structure menu
 		if( src->GetId()>=MENU_VIEW_STRUCTURE && src->GetId()<=MENU_VIEW_STRUCTURE+geom->GetNbStructure() ) {
 			geom->viewStruct = src->GetId()-MENU_VIEW_STRUCTURE-1;
 			if(src->GetId()>MENU_VIEW_STRUCTURE) geom->Unselect();
 			UpdateStructMenu();
 		}
-
-
-
-
-
-
-
-
-
-
 		if( src->GetId()==MENU_VIEW_NEWSTRUCT) {
 			AddStruct();
 			UpdateStructMenu();
@@ -3817,7 +3806,6 @@ void MolFlow::ProcessMessage(GLComponent *src,int message)
 			UpdateStructMenu();
 		}
 
-
 		// Select selection
 		if( src->GetId()>=MENU_SELECTION_SELECTIONS && src->GetId()<MENU_SELECTION_SELECTIONS+nbSelection ) {
 			SelectSelection( src->GetId() - MENU_SELECTION_SELECTIONS );
@@ -3830,6 +3818,7 @@ void MolFlow::ProcessMessage(GLComponent *src,int message)
 				ClearSelection( src->GetId() - MENU_SELECTION_CLEARSELECTIONS );
 			}
 		}
+
 		// Memorize selection
 		if( src->GetId()>=MENU_SELECTION_MEMORIZESELECTIONS && src->GetId()<MENU_SELECTION_MEMORIZESELECTIONS+nbSelection ) {
 			OverWriteSelection( src->GetId() - MENU_SELECTION_MEMORIZESELECTIONS );
@@ -4885,6 +4874,9 @@ void MolFlow::LoadConfig() {
 
 		f->ReadKeyword("processNum");f->ReadKeyword(":");
 		nbProc = f->ReadInt();
+#ifdef _DEBUG
+		nbProc=1;
+#endif
 		if(nbProc<=0) nbProc=1;
 		f->ReadKeyword("recents");f->ReadKeyword(":");f->ReadKeyword("{");
 		w = f->ReadString();
@@ -5041,7 +5033,11 @@ void MolFlow::SaveConfig() {
 		f->Write("textures_max_density_moments_only:");
 		f->WriteDouble(geom->texture_limits[2].autoscale.max.moments_only,"\n");
 
+#ifdef _DEBUG
+		f->Write("processNum:");f->WriteInt(numCPU,"\n");
+#else
 		f->Write("processNum:");f->WriteInt(worker.GetProcNumber(),"\n");
+#endif
 		f->Write("recents:{\n");
 		for(int i=0;i<nbRecent;i++) {
 			f->Write("\"");

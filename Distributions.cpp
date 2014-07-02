@@ -106,7 +106,7 @@ std::vector<std::pair<double,double>> Generate_CDF(double gasTempKelvins,double 
 		cdf.push_back(std::make_pair(x, 1 - exp(-x_square_per_2_a_square)*(x_square_per_2_a_square + 1)));
 	}
 
-	/* //not generating inverse since it was introducing sampling problems at the large tail for high speeds
+	/* //UPDATE: not generating inverse since it was introducing sampling problems at the large tail for high speeds
 	//CDF created, let's generate its inverse
 	std::vector<std::pair<double,double>> inverseCDF;inverseCDF.reserve(size);
 	binSize=1.0/(double)size; //Divide probability to bins

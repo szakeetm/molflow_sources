@@ -86,7 +86,7 @@ typedef struct {
   char    *name;       // Selection name
 
   int      nbSel;   
-  int      *selection; // Spheric coordinates
+  int      *selection; // List of facets
 
 } ASELECTION;
 

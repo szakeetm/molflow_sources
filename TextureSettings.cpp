@@ -22,109 +22,114 @@ GNU General Public License for more details.
 
 TextureSettings::TextureSettings():GLWindow() {
 
-	int wD = 450;
-	int hD = 230;
+	int wD = 500;
+	int hD = 225;
 
 	SetTitle("Texture Scaling");
 	SetIconfiable(TRUE);
 
 	GLTitledPanel *panel = new GLTitledPanel("Texture Range");
-	panel->SetBounds(5,2,315,98);
+	panel->SetBounds(5,2,365,98);
 	Add(panel);
 
 	GLLabel *l1 = new GLLabel("Min");
-	l1->SetBounds(10,20,50,18);
+	l1->SetBounds(10,20,30,18);
 	Add(l1);
 
 	texMinText = new GLTextField(0,"");
-	texMinText->SetBounds(60,20,85,19);
+	texMinText->SetBounds(40,20,85,19);
 	texMinText->SetEditable(TRUE);
 	Add(texMinText);
 
 	GLLabel *l2 = new GLLabel("Max");
-	l2->SetBounds(10,45,50,18);
+	l2->SetBounds(10,45,30,18);
 	Add(l2);
 
 	texMaxText = new GLTextField(0,"");
-	texMaxText->SetBounds(60,45,85,19);
+	texMaxText->SetBounds(40,45,85,19);
 	texMaxText->SetEditable(TRUE);
 	Add(texMaxText);
 
 	setCurrentButton = new GLButton(0,"Set to current");
-	setCurrentButton->SetBounds(105,70,90,19);
+	setCurrentButton->SetBounds(40,70,90,19);
 	Add(setCurrentButton);
-
+	
+	updateButton = new GLButton(0,"Apply");
+	updateButton->SetBounds(135,70,90,19);
+	Add(updateButton);
+	
 	texAutoScale = new GLToggle(0,"Autoscale");
-	texAutoScale->SetBounds(150,20,80,19);
+	texAutoScale->SetBounds(130,20,80,19);
 	Add(texAutoScale);
 
 	includeConstantFlow = new GLToggle(0,"Include constant flow");
-	includeConstantFlow->SetBounds(150,45,80,19);
+	includeConstantFlow->SetBounds(130,45,80,19);
 	Add(includeConstantFlow);
 
-	colormapBtn = new GLToggle(0,"Use colormap");
-	colormapBtn->SetBounds(230,20,85,19);
+	colormapBtn = new GLToggle(0,"Use colors");
+	colormapBtn->SetBounds(260,20,85,19);
 	Add(colormapBtn);
 
-	logBtn = new GLToggle(0,"Log scale");
-	logBtn->SetBounds(230,45,80,19);
+	logBtn = new GLToggle(0,"Logarithmic scale");
+	logBtn->SetBounds(260,45,80,19);
 	Add(logBtn);
 
 	GLLabel *l3 = new GLLabel("Swap");
-	l3->SetBounds(230,70,30,18);
+	l3->SetBounds(275,70,30,18);
 	Add(l3);
 
 	swapText = new GLTextField(0,"");
 	swapText->SetEditable(FALSE);
-	swapText->SetBounds(260,70,50,18);
+	swapText->SetBounds(305,70,55,18);
 	Add(swapText);
 
 	GLTitledPanel *panel2 = new GLTitledPanel("Current");
-	panel2->SetBounds(325,2,120,98);
+	panel2->SetBounds(375,2,120,98);
 	Add(panel2);
 
 	GLLabel *l4 = new GLLabel("Min:");
-	l4->SetBounds(340,30,20,19);
+	l4->SetBounds(390,30,20,19);
 	Add(l4);
 
 	texCMinText = new GLLabel("");
-	texCMinText->SetBounds(370,30,70,19);
+	texCMinText->SetBounds(420,30,70,19);
 	Add(texCMinText);
 
 	GLLabel *l5 = new GLLabel("Max:");
-	l5->SetBounds(340,65,20,19);
+	l5->SetBounds(390,65,20,19);
 	Add(l5);
 
 	texCMaxText = new GLLabel("");
-	texCMaxText->SetBounds(370,65,70,19);
+	texCMaxText->SetBounds(420,65,70,19);
 	Add(texCMaxText);
 
 	// ---------------------------------------------------
 
 	GLTitledPanel *panel3 = new GLTitledPanel("Gradient");
-	panel3->SetBounds(5,102,440,65);
+	panel3->SetBounds(5,102,490,65);
 	Add(panel3);
 
 	gradient = new GLGradient(0);
 	gradient->SetMouseCursor(TRUE);
-	gradient->SetBounds(10,117,420,40);
+	gradient->SetBounds(10,117,470,40);
 	Add(gradient);
 
+	GLLabel* displayLabel = new GLLabel("Show:");
+	displayLabel->SetBounds(160,179,35,20);
+	Add(displayLabel);
 
 	modeCombo = new GLCombo(0);
 	modeCombo->SetSize(3);
 	modeCombo->SetValueAt(0,"Pressure [mbar]");
 	modeCombo->SetValueAt(1,"Impingement rate [1/sec/m\262]");
 	modeCombo->SetValueAt(2,"Particle density [1/m3]");
-	modeCombo->SetBounds(10,180,150,25);
+	modeCombo->SetBounds(200,178,150,20);
 	modeCombo->SetSelectedIndex(0);
 	Add(modeCombo);
 
 	// ---------------------------------------------------
 
-	updateButton = new GLButton(0,"Apply");
-	updateButton->SetBounds(10,70,90,19);
-	Add(updateButton);
+	
 
 	// Center dialog
 	int wS,hS;

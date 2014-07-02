@@ -33,16 +33,10 @@ extern double gasMass;
 
 extern MolFlow *theApp;
 
-// OpenGL stuff ----------------------------------------------
-
-// -----------------------------------------------------------
-
 void Geometry::Select(Facet *f) {
   f->selected = (viewStruct==-1) || (viewStruct==f->sh.superIdx);
   if( !f->selected ) f->UnselectElem();
 }
-
-// -----------------------------------------------------------
 
 void Geometry::Select(int facet) {
   if(!isLoaded) return;
@@ -50,8 +44,6 @@ void Geometry::Select(int facet) {
   nbSelectedHist = 0;
   AddToSelectionHist(facet);
 }
-
-// -----------------------------------------------------------
 
 void Geometry::SelectArea(int x1,int y1,int x2,int y2,BOOL clear,BOOL unselect,BOOL vertexBound,BOOL circularSelection) {
 
@@ -137,8 +129,6 @@ void Geometry::SelectArea(int x1,int y1,int x2,int y2,BOOL clear,BOOL unselect,B
   mApp->SetFacetSearchPrg(FALSE,NULL);
   UpdateSelection();
 }
-
-// -----------------------------------------------------------
 
 void Geometry::Select(int x,int y,BOOL clear,BOOL unselect,BOOL vertexBound,int width,int height) {
   MolFlow *mApp = (MolFlow *)theApp;
@@ -259,8 +249,6 @@ void Geometry::Select(int x,int y,BOOL clear,BOOL unselect,BOOL vertexBound,int 
 
 }
 
-// ----------------------------------------------------------
-
 void Geometry::SelectVertex(int vertexId) {
   //isVertexSelected[vertexId] = (viewStruct==-1) || (viewStruct==f->sh.superIdx);
 	//here we should look through facets if vertex is member of any
@@ -270,9 +258,6 @@ void Geometry::SelectVertex(int vertexId) {
 	//nbSelectedHistVertex = 0;
 	//AddToSelectionHistVertex(vertexId);
 }
-
-
-// -----------------------------------------------------------
 
 void Geometry::SelectVertex(int x1,int y1,int x2,int y2,BOOL shiftDown,BOOL ctrlDown,BOOL circularSelection) {
 
@@ -354,8 +339,6 @@ void Geometry::SelectVertex(int x1,int y1,int x2,int y2,BOOL shiftDown,BOOL ctrl
   if (mApp->vertexCoordinates) mApp->vertexCoordinates->Update();
 }
 
-// -----------------------------------------------------------
-
 void Geometry::SelectVertex(int x,int y,BOOL shiftDown,BOOL ctrlDown) {
 	MolFlow *mApp = (MolFlow *)theApp;
   int i;
@@ -410,8 +393,6 @@ void Geometry::SelectVertex(int x,int y,BOOL shiftDown,BOOL ctrlDown) {
   if (mApp->vertexCoordinates) mApp->vertexCoordinates->Update();
 }
 
-// -----------------------------------------------------------
-
 void Geometry::AddToSelectionHist(int f) {
 
   if( nbSelectedHist<SEL_HISTORY ) {
@@ -420,8 +401,6 @@ void Geometry::AddToSelectionHist(int f) {
   }
 
 }
-
-// -----------------------------------------------------------
 
 BOOL Geometry::AlreadySelected(int f) {
   
@@ -436,15 +415,11 @@ BOOL Geometry::AlreadySelected(int f) {
 
 }
 
-// -----------------------------------------------------------
-
 void Geometry::SelectAll() {
   for(int i=0;i<sh.nbFacet;i++)
     Select(facets[i]);
   UpdateSelection();
 }
-
-// -----------------------------------------------------------
 
 void Geometry::UnSelectAll() {
   for(int i=0;i<sh.nbFacet;i++)
@@ -452,16 +427,9 @@ void Geometry::UnSelectAll() {
   UpdateSelection();
 }
 
-// -----------------------------------------------------------
-
 int Geometry::GetNbSelected() {
   return nbSelected;
 }
-
-
-// -----------------------------------------------------------
-
-// -----------------------------------------------------------
 
 void Geometry::AddToSelectionHistVertex(int f) {
 
@@ -471,8 +439,6 @@ void Geometry::AddToSelectionHistVertex(int f) {
   }
 
 }
-
-// -----------------------------------------------------------
 
 BOOL Geometry::AlreadySelectedVertex(int idx) {
   
@@ -487,17 +453,25 @@ BOOL Geometry::AlreadySelectedVertex(int idx) {
 
 }
 
-// -----------------------------------------------------------
+void Geometry::EmptySelectedVertexList(){
+	selectedVertexList = std::vector<int>();
+}
+
+void Geometry::RemoveFromSelectedVertexList(int vertexId){
+	for (size_t j = 0; j < selectedVertexList.size(); j++)
+		if (selectedVertexList[j] == vertexId)
+			selectedVertexList.erase(selectedVertexList.begin() + j);
+}
+
+void Geometry::AddToSelectedVertexList(int vertexId){
+	selectedVertexList.push_back(vertexId);
+}
 
 void Geometry::SelectAllVertex() {
   for(int i=0;i<sh.nbVertex;i++)
     SelectVertex(i);
   //UpdateSelectionVertex();
 }
-
-
-
-// -----------------------------------------------------------
 
 int Geometry::GetNbSelectedVertex() {
   nbSelectedVertex=0;
@@ -506,7 +480,6 @@ int Geometry::GetNbSelectedVertex() {
   }
   return nbSelectedVertex;
 }
-// -----------------------------------------------------------
 
 void Geometry::Unselect() {
   for(int i=0;i<sh.nbFacet;i++) {
@@ -516,8 +489,6 @@ void Geometry::Unselect() {
   UpdateSelection();
 }
 
-// -----------------------------------------------------------
-
 void Geometry::UnselectAllVertex() {
   for(int i=0;i<sh.nbVertex;i++) {
     vertices3[i].selected = FALSE;
@@ -525,8 +496,6 @@ void Geometry::UnselectAllVertex() {
   }
   //UpdateSelectionVertex();
 }
-
-// -----------------------------------------------------------
 
 void Geometry::DrawFacet(Facet *f,BOOL offset,BOOL showHidden,BOOL selOffset) {
 
@@ -590,8 +559,6 @@ void Geometry::DrawFacet(Facet *f,BOOL offset,BOOL showHidden,BOOL selOffset) {
 
 }
 
-// -----------------------------------------------------------
-
 void Geometry::PaintSelectedVertices(BOOL hiddenVertex) {
 
   nbSelectedVertex = 0;
@@ -649,8 +616,6 @@ void Geometry::PaintSelectedVertices(BOOL hiddenVertex) {
 
 }
 
-// -----------------------------------------------------------
-
 void Geometry::DrawPolys() {
 
   int *f3 = (int *)malloc(sh.nbFacet*sizeof(int));
@@ -699,8 +664,6 @@ void Geometry::DrawPolys() {
 
 }
 
-// -----------------------------------------------------------
-
 void Geometry::SetCullMode(int mode) {
 
   switch(mode) {
@@ -717,8 +680,6 @@ void Geometry::SetCullMode(int mode) {
   }
 
 }
-
-// -----------------------------------------------------------
 
 void Geometry::BuildTexture(BYTE *hits) {
 
@@ -818,8 +779,6 @@ void Geometry::BuildTexture(BYTE *hits) {
 		}
 	
 }
-
-// -----------------------------------------------------------
 
 void Geometry::Render(GLfloat *matView,BOOL renderVolume,BOOL renderTexture,int showMode,BOOL filter,BOOL showHidden,BOOL showMesh,BOOL showDir) {
 
@@ -1032,8 +991,6 @@ void Geometry::DeleteGLLists(BOOL deletePoly,BOOL deleteLine) {
 	DELETE_LIST(selectList3);
 }
 
-// ---------------------------------------------------------------
-
 void Geometry::RenderArrow(GLfloat *matView,float dx,float dy,float dz,float px,float py,float pz,float d) {
 
   if(!arrowList) BuildShapeList();
@@ -1162,8 +1119,6 @@ int Geometry::FindEar(POLYGON *p) {
 
 }
 
-// -----------------------------------------------------------
-
 void Geometry::AddTextureCoord(Facet *f,VERTEX2D *p) {
 
   // Add texture coord with a 1 texel border (for bilinear filtering)
@@ -1183,8 +1138,6 @@ void Geometry::AddTextureCoord(Facet *f,VERTEX2D *p) {
 
 }
 
-// -----------------------------------------------------------
-
 void Geometry::FillFacet(Facet *f,BOOL addTextureCoord) {
 	
   for(int i=0;i<f->sh.nbIndex;i++ ) {
@@ -1196,8 +1149,6 @@ void Geometry::FillFacet(Facet *f,BOOL addTextureCoord) {
   
 }
 
-
-// -----------------------------------------------------------
 void Geometry::DrawEar(Facet *f,POLYGON *p,int ear,BOOL addTextureCoord) {
 
   VERTEX3D  p3D;
@@ -1241,8 +1192,6 @@ void Geometry::DrawEar(Facet *f,POLYGON *p,int ear,BOOL addTextureCoord) {
   glVertex3d( p3D.x , p3D.y , p3D.z);
 
 }
-
-// -----------------------------------------------------------
 
 void Geometry::Triangulate(Facet *f,BOOL addTextureCoord) {
 

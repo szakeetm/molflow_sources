@@ -274,7 +274,7 @@ void GLGradient::Paint() {
   if( mouseCursor ) {
     mouseValue->SetBounds(posX+2,posY+8,60,19);
     mouseValue->Paint();
-    offX = 35;
+    offX = 50;
   }
 
   // Gradient texture

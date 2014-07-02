@@ -807,7 +807,9 @@ void UpdateVelocity(FACET *collidedFacet) {
 	double oldSpeed = sHandle->velocityCurrentParticle;
 	double newSpeed;
 	if (sHandle->useMaxwellDistribution) newSpeed = GenerateRandomVelocity(collidedFacet->CDFid);
-	else newSpeed = 145.469*sqrt(collidedFacet->sh.temperature / sHandle->gasMass);
+	else newSpeed = /*145.469*/ 171.3766*sqrt(collidedFacet->sh.temperature / sHandle->gasMass);
+	//171.3766= sqrt(8*R*1000/PI)*3PI/8, that is, the constant part of the v_avg=sqrt(8RT/PI/m/0.001)) found in literature, multiplied by
+	//the corrective factor of 3PI/8 that accounts for moving from volumetric speed distribution to wall collision speed distribution
 	sHandle->velocityCurrentParticle = oldSpeed + (newSpeed - oldSpeed)*collidedFacet->sh.accomodationFactor;
 }
 

@@ -32,8 +32,6 @@ static const GLfloat positionI[] = {  1.0f,-0.5f,  -0.2f, 0.0f }; //light2
 
 extern GLApplication *theApp;
 
-// ---------------------------------------------------------------------
-
 GeometryViewer::GeometryViewer(int id):GLComponent(id) {
 
 	work = NULL;
@@ -204,7 +202,6 @@ GeometryViewer::GeometryViewer(int id):GLComponent(id) {
 
 }
 
-//----------------------------------------------------------------------
 void GeometryViewer::ToOrigo() {
 	//view.projMode = PERSPECTIVE_PROJ;
 	view.camAngleOx = 0.0;
@@ -219,8 +216,6 @@ void GeometryViewer::ToOrigo() {
 	view.vTop = 0.0;
 	view.vBottom = 0.0;
 }
-
-// ---------------------------------------------------------------------
 
 void GeometryViewer::SetBounds(int x,int y,int width,int height) {
 	if( this->posX != x || this->posY != y || this->width != width || this->height != height ) {
@@ -248,8 +243,6 @@ void GeometryViewer::SetBounds(int x,int y,int width,int height) {
 	}
 }
 
-// ---------------------------------------------------------------------
-
 BOOL GeometryViewer::IsSelected() {
 	return selected;
 }
@@ -258,14 +251,10 @@ void GeometryViewer::SetSelected(BOOL s) {
 	selected = s;
 }
 
-// ---------------------------------------------------------------------
-
 void GeometryViewer::SetFocus(BOOL focus) {
 	if(focus && parent)  parent->ProcessMessage(this,MSG_GEOMVIEWER_SELECT);
 	GLComponent::SetFocus(focus);
 }
-
-// ---------------------------------------------------------------------
 
 void GeometryViewer::UpdateMouseCursor(int mode) { //Sets mouse cursor to action
 
@@ -336,13 +325,9 @@ void GeometryViewer::UpdateMouseCursor(int mode) { //Sets mouse cursor to action
 	}
 }
 
-// ---------------------------------------------------------------------
-
 BOOL GeometryViewer::IsDragging() {
 	return draggMode != DRAGG_NONE;
 }
-
-// ---------------------------------------------------------------------
 
 void GeometryViewer::ToTopView() {
 
@@ -374,8 +359,6 @@ void GeometryViewer::ToFrontView() {
 	AutoScale();
 
 }
-
-//-----------------------------------------------------------------------------
 
 void GeometryViewer::UpdateLight() {
 
@@ -428,8 +411,6 @@ void GeometryViewer::UpdateLight() {
 	}
 
 }
-
-//-----------------------------------------------------------------------------
 
 void GeometryViewer::UpdateMatrix() {
 
@@ -504,13 +485,9 @@ void GeometryViewer::UpdateMatrix() {
 
 }
 
-// ---------------------------------------------------------------------
-
 double GeometryViewer::ToDeg(double radians) {
 	return (radians/PI)*180.0f;
 }
-
-// ---------------------------------------------------------------------
 
 BOOL GeometryViewer::SelectionChanged() {
 	BOOL ret = selectionChange;
@@ -518,13 +495,9 @@ BOOL GeometryViewer::SelectionChanged() {
 	return ret;
 }
 
-// ---------------------------------------------------------------------
-
 AVIEW GeometryViewer::GetCurrentView() {
 	return view;
 }
-
-// ---------------------------------------------------------------------
 
 void GeometryViewer::SetCurrentView(AVIEW v) {
 
@@ -553,15 +526,11 @@ void GeometryViewer::SetCurrentView(AVIEW v) {
 
 }
 
-// ---------------------------------------------------------------------
-
 void GeometryViewer::SetProjection(int mode) {
 	view.projMode = mode;
 	projCombo->SetSelectedIndex(mode);
 	ToFrontView();
 }
-
-// ---------------------------------------------------------------------
 
 void GeometryViewer::SetWorker(Worker *w) {
 	work = w;
@@ -572,8 +541,6 @@ void GeometryViewer::SetWorker(Worker *w) {
 	vectorLength = MAX((bb.max.x-bb.min.x) , (bb.max.y-bb.min.y)) / 3.0;
 	arrowLength = 10.0 / vectorLength;//MAX((bb.max.z-bb.min.z),vectorLength);
 }
-
-// ---------------------------------------------------------------------
 
 void GeometryViewer::DrawIndex() {
 
@@ -646,8 +613,6 @@ void GeometryViewer::DrawIndex() {
 
 }
 
-// ---------------------------------------------------------------------
-
 void GeometryViewer::DrawRule() {
 
 	if( showRule ) {
@@ -673,8 +638,6 @@ void GeometryViewer::DrawRule() {
 
 }
 
-// ---------------------------------------------------------------------
-
 void GeometryViewer::DrawNormal() {
 
 	if(showNormal) {
@@ -697,8 +660,6 @@ void GeometryViewer::DrawNormal() {
 	}
 
 }
-
-// ---------------------------------------------------------------------
 
 void GeometryViewer::DrawUV() {
 
@@ -740,8 +701,6 @@ void GeometryViewer::DrawUV() {
 
 }
 
-// ---------------------------------------------------------------------
-
 void GeometryViewer::DrawLeak() {
 
 	// Draw leak
@@ -779,8 +738,6 @@ void GeometryViewer::DrawLeak() {
 	}
 
 }
-
-// ---------------------------------------------------------------------
 
 void GeometryViewer::DrawLineAndHit() {
 
@@ -969,10 +926,6 @@ void GeometryViewer::DrawLineAndHit() {
 
 }
 
-
-
-// ---------------------------------------------------------------------
-
 /*
 
 void GeometryViewer::DrawBB() {
@@ -1041,8 +994,6 @@ DrawBB(node->right);
 }
 */
 
-// ---------------------------------------------------------------------
-
 #define TRANSFORMBB( X,Y,Z )                                                \
 	mv.TransfomVec((float)bbO.X,(float)bbO.Y,(float)bbO.Z,1.0f,&rx,&ry,&rz,&rw);\
 	dx = (double)rx;                                                            \
@@ -1066,8 +1017,6 @@ DrawBB(node->right);
 	if( dx > xMax ) xMax = dx;                                        \
 	if( dy > yMax ) yMax = dy;                                        \
 	if( dz > zFar ) zFar = dz;
-
-// ---------------------------------------------------------------------
 
 void GeometryViewer::ComputeBB(BOOL getAll) {
 
@@ -1145,9 +1094,6 @@ void GeometryViewer::ComputeBB(BOOL getAll) {
 
 }
 
-
-// ---------------------------------------------------------------------
-
 void GeometryViewer::AutoScale(BOOL reUpdateMouseCursor) {
 
 	if(!work) return;
@@ -1207,8 +1153,6 @@ void GeometryViewer::AutoScale(BOOL reUpdateMouseCursor) {
 
 }
 
-// ---------------------------------------------------------------------
-
 void GeometryViewer::Zoom() {
 
 	if(abs(selX1-selX2)>=2 && abs(selY1-selY2)>=2 && work) {
@@ -1264,9 +1208,6 @@ void GeometryViewer::Zoom() {
 	}
 
 }
-
-// ---------------------------------------------------------------------
-
 
 void GeometryViewer::Paint() {
 
@@ -1442,10 +1383,6 @@ void GeometryViewer::Paint() {
 	timeLabel->SetVisible(showTime);
 }
 
-
-
-//-----------------------------------------------------------------------------
-
 void GeometryViewer::PaintCompAndBorder() {
 
 	// Components
@@ -1495,8 +1432,6 @@ void GeometryViewer::PaintCompAndBorder() {
 
 }
 
-//-----------------------------------------------------------------------------
-
 void GeometryViewer::TranslateScale(double diff) {
 
 	// Translate or Scale view according to the projection mode
@@ -1510,8 +1445,6 @@ void GeometryViewer::TranslateScale(double diff) {
 	UpdateMatrix();
 
 }
-
-//-----------------------------------------------------------------------------
 
 void GeometryViewer::ManageEvent(SDL_Event *evt)
 {
@@ -1867,7 +1800,6 @@ void GeometryViewer::ManageEvent(SDL_Event *evt)
 
 }
 
-// -------------------------------------------------------------
 void GeometryViewer::SelectCoplanar(double tolerance) {
 	if(!work) return;
 	Geometry *geom = work->GetGeometry();
@@ -1879,8 +1811,6 @@ void GeometryViewer::SelectCoplanar(double tolerance) {
 	selectionChange = TRUE;
 	geom->SelectCoplanar(this->width,this->height,tolerance);
 }
-
-// -------------------------------------------------------------
 
 void GeometryViewer::ProcessMessage(GLComponent *src,int message) {
 
