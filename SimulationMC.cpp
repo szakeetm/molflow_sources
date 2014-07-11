@@ -405,7 +405,7 @@ BOOL SimulationMCStep(int nbStep) {
 				if (collidedFacet->sh.teleportDest) {
 					PerformTeleport(collidedFacet);
 				}
-				else if (collidedFacet->sh.sticking == 1.0 || ((collidedFacet->sh.sticking > 0.0) && (rnd() < (collidedFacet->sh.sticking)))) {
+				else if (GetStickingAt(collidedFacet,sHandle->flightTimeCurrentParticle) == 1.0 || ((GetStickingAt(collidedFacet,sHandle->flightTimeCurrentParticle) > 0.0) && (rnd() < (GetStickingAt(collidedFacet,sHandle->flightTimeCurrentParticle))))) {
 					//absorbed
 					PerformAbsorb(collidedFacet);
 					sHandle->distTraveledSinceUpdate += sHandle->distTraveledCurrentParticle;
@@ -502,8 +502,8 @@ BOOL StartFromSource() {
 
 	sHandle->lastHit = src;
 	sHandle->distTraveledCurrentParticle = 0.0;  //for mean free path calculations
-	sHandle->flightTimeCurrentParticle = sHandle->desorptionStartTime + (sHandle->desorptionStopTime - sHandle->desorptionStartTime)*rnd();
-
+	//sHandle->flightTimeCurrentParticle = sHandle->desorptionStartTime + (sHandle->desorptionStopTime - sHandle->desorptionStartTime)*rnd();
+	sHandle->flightTimeCurrentParticle=GenerateDesorptionTime(src);
 	if (sHandle->useMaxwellDistribution) sHandle->velocityCurrentParticle = GenerateRandomVelocity(src->CDFid);
 
 	else sHandle->velocityCurrentParticle = 145.469*sqrt(src->sh.temperature / sHandle->gasMass);  //sqrt(8*R/PI/1000)=145.47
@@ -816,4 +816,113 @@ void UpdateVelocity(FACET *collidedFacet) {
 double GenerateRandomVelocity(int CDFId){
 	//return FastLookupY(rnd(),sHandle->CDFs[CDFId],FALSE);
 	return InterpolateX(rnd(), sHandle->CDFs[CDFId], TRUE);
+}
+
+double GenerateDesorptionTime(FACET *src){
+	if (src->sh.flow_paramId) { //time-dependent desorption
+		return InterpolateX(rnd()*sHandle->IDs[src->IDid].back().second,sHandle->IDs[src->IDid],TRUE);
+	} else {
+		return rnd()*sHandle->latestMoment; //continous desorption between 0 and latestMoment
+	}
+}
+
+std::vector<std::pair<double,double>> Generate_CDF(double gasTempKelvins,double gasMassGramsPerMol,size_t size){
+	std::vector<std::pair<double,double>> cdf;cdf.reserve(size);
+	double Kb=1.38E-23;
+	double R=8.3144621;
+	double a=sqrt(Kb*gasTempKelvins/(gasMassGramsPerMol*1.67E-27)); //distribution a parameter. Converting molar mass to atomic mass
+
+	//Generate cumulative distribution function
+	double mostProbableSpeed=sqrt(2*R*gasTempKelvins/(gasMassGramsPerMol/1000.0));
+	double binSize=4.0*mostProbableSpeed/(double)size; //distribution generated between 0 and 4*V_prob
+	/*double coeff1=1.0/sqrt(2.0)/a;
+	double coeff2=sqrt(2.0/PI)/a;
+	double coeff3=1.0/(2.0*pow(a,2));
+
+	for (size_t i=0;i<size;i++) {
+		double x=(double)i*binSize;
+		cdf.push_back(std::make_pair(x,erf(x*coeff1)-coeff2*x*exp(-pow(x,2)*coeff3)));
+	}*/
+	for (size_t i = 0; i<size; i++) {
+		double x = (double)i*binSize;
+		double x_square_per_2_a_square = pow(x, 2) / (2 * pow(a, 2));
+		cdf.push_back(std::make_pair(x, 1 - exp(-x_square_per_2_a_square)*(x_square_per_2_a_square + 1)));
+	}
+
+	/* //UPDATE: not generating inverse since it was introducing sampling problems at the large tail for high speeds
+	//CDF created, let's generate its inverse
+	std::vector<std::pair<double,double>> inverseCDF;inverseCDF.reserve(size);
+	binSize=1.0/(double)size; //Divide probability to bins
+	for (size_t i=0;i<size;i++) {
+		double p=(double)i*binSize;
+		//inverseCDF.push_back(std::make_pair(p,InterpolateX(p,cdf,TRUE)));
+		inverseCDF.push_back(std::make_pair(p, InterpolateX(p, cdf, FALSE)));
+	}
+	return inverseCDF;
+	*/
+	return cdf;
+}
+
+std::vector<std::pair<double,double>> Generate_ID(size_t paramId){
+	std::vector<std::pair<double,double>> ID;
+	//First, let's check at which index is the latest moment
+	size_t indexBeforeLastMoment;
+	for (indexBeforeLastMoment=0;indexBeforeLastMoment<sHandle->parameters[paramId].values.size()&&
+		(sHandle->parameters[paramId].values[indexBeforeLastMoment].first<sHandle->latestMoment);indexBeforeLastMoment++);
+	if (indexBeforeLastMoment>=sHandle->temperatures.size()) indexBeforeLastMoment=sHandle->parameters[paramId].values.size()-1; //not found, set as last moment
+	
+	//Construct integral from 0 to latest moment
+	
+	//First moment
+	ID.push_back(std::make_pair(sHandle->parameters[paramId].values[0].first,
+			sHandle->parameters[paramId].values[0].first*sHandle->parameters[paramId].values[0].second)); //for the first moment
+	
+	//Intermediate moments
+	for (size_t pos=1;pos<indexBeforeLastMoment;pos++) {
+		if (abs(sHandle->parameters[paramId].values.back().second-sHandle->parameters[paramId].values[pos-1].second)<1E-10) //two equal values follow, simple integration by multiplying
+			ID.push_back(std::make_pair(sHandle->parameters[paramId].values[pos].first,
+			ID.back().second+
+			(sHandle->parameters[paramId].values[pos].first-sHandle->parameters[paramId].values[pos-1].first)*sHandle->parameters[paramId].values[pos].second));
+		else { //difficult case, we'll integrate by dividing two 5equal sections
+			for (double delta=0.0;delta<1.01;delta+=0.2) {
+				double delta_t=sHandle->parameters[paramId].values[pos].first-sHandle->parameters[paramId].values[pos-1].first;
+				double time=sHandle->parameters[paramId].values[pos-1].first+delta*delta_t;
+				double avg_value=(sHandle->parameters[paramId].values[pos-1].second+InterpolateY(time,sHandle->parameters[paramId].values))/2.0;
+				ID.push_back(std::make_pair(time,
+					ID.back().second+
+					delta*delta_t*avg_value));
+			}
+		}
+	}
+
+	//latestMoment
+	double valueAtLatestMoment=InterpolateY(sHandle->latestMoment,sHandle->parameters[paramId].values);
+	if ((valueAtLatestMoment-sHandle->parameters[paramId].values[indexBeforeLastMoment].second)<1E-10) //two equal values follow, simple integration by multiplying
+			ID.push_back(std::make_pair(sHandle->latestMoment,
+			ID.back().second+
+			(sHandle->latestMoment-sHandle->parameters[paramId].values[indexBeforeLastMoment].first)*sHandle->parameters[paramId].values[indexBeforeLastMoment].second));
+		else { //difficult case, we'll integrate by dividing two 5equal sections
+			for (double delta=0.0;delta<1.01;delta+=0.2) {
+				double delta_t=sHandle->latestMoment-sHandle->parameters[paramId].values[indexBeforeLastMoment].first;
+				double time=sHandle->parameters[paramId].values[indexBeforeLastMoment].first+delta*delta_t;
+				double avg_value=(sHandle->parameters[paramId].values[indexBeforeLastMoment].second+InterpolateY(time,sHandle->parameters[paramId].values))/2.0;
+				ID.push_back(std::make_pair(time,
+					ID.back().second+
+					delta*delta_t*avg_value));
+			}
+		}
+
+	return ID;
+}
+
+double GetStickingAt(FACET *f,double time) {
+	if (!f->sh.sticking_paramId) //constant sticking
+		return f->sh.sticking;
+	else return InterpolateY(time,sHandle->parameters[f->sh.sticking_paramId].values,TRUE);
+}
+
+double GetOpacityAt(FACET *f,double time) {
+	if (!f->sh.opacity_paramId) //constant sticking
+		return f->sh.opacity;
+	else return InterpolateY(time,sHandle->parameters[f->sh.opacity_paramId].values,TRUE);
 }

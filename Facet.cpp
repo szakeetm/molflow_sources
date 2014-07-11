@@ -74,7 +74,7 @@ Facet::Facet(int nbIndex) {
 	sh.center.z = 0.0;
 	sh.is2sided = FALSE;
 	sh.isProfile = FALSE;
-	sh.isOpaque = TRUE;
+	//sh.isOpaque = TRUE;
 	sh.isTextured = FALSE;
 	sh.sign = 0.0;
 	sh.countDes = FALSE;
@@ -89,6 +89,10 @@ Facet::Facet(int nbIndex) {
 	sh.isVolatile = FALSE;
 	sh.useOutgassingFile = FALSE;
 	sh.accomodationFactor = 1.0;
+
+	sh.flow_paramId=0;
+	sh.opacity_paramId=0;
+	sh.sticking_paramId=0;
 
 	hasOutgassingMap = FALSE;
 	outgassingMap = NULL;
@@ -574,7 +578,7 @@ void Facet::DetectOrientation() {
 void Facet::UpdateFlags() {
 
 	sh.isProfile = (sh.profileType != REC_NONE);
-	sh.isOpaque = (sh.opacity != 0.0);
+	//sh.isOpaque = (sh.opacity != 0.0);
 	sh.isTextured = ((texDimW*texDimH) > 0);
 
 }

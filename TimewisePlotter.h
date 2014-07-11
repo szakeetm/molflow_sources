@@ -73,7 +73,7 @@ private:
   GLButton    *formulaBtn;
   GLToggle    *logYToggle,*constantFlowToggle;
 
-  GLDataView  *views[32];
+  GLDataView  *views[50];
 
   int          nbView;
   float        lastUpdate;

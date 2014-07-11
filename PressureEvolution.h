@@ -80,7 +80,7 @@ private:
 
   GLToggle *logXToggle,*logYToggle;
 
-  GLDataView  *views[32];
+  GLDataView  *views[50];
   GLCColor    *colors[8];
   int          nbView;
   int          nbColors;

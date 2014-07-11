@@ -66,6 +66,4 @@ Distribution2D Generate_LN_Distribution(); //precalculated ln(x) values for the 
 Distribution2D Generate_Polarization_Distribution(bool calculate_parallel_polarization, bool calculate_orthogonal_polarization);
 Distribution2D Generate_Integral(double x1,double x2,int mode);*/
 
-std::vector<std::pair<double,double>> Generate_CDF(double gasTempKelvins,double gasMassGramsPerMol,size_t size);
-
 #endif

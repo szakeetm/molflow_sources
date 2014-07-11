@@ -256,7 +256,7 @@ void ProfilePlotter::plot() {
 		v->SetName(formulaText->GetText());
 		v->Reset();
 	} else {
-		if(nbView<32) {
+		if(nbView<50) {
 			v = new GLDataView();
 			v->SetName(formulaText->GetText());
 			v->userData = -1;
@@ -408,7 +408,7 @@ void ProfilePlotter::refreshViews() {
 			GLMessageBox::Display("Profile already plotted","Error",GLDLG_OK,GLDLG_ICONERROR);
 			return;
 		}
-		if(nbView<32) {
+		if(nbView<50) {
 			Facet *f = geom->GetFacet(facet);
 			GLDataView *v = new GLDataView();
 			sprintf(tmp,"F#%d %s",facet+1,profType[f->sh.profileType]);

@@ -264,7 +264,7 @@ void TimewisePlotter::plot() {
 		v->SetName(formulaText->GetText());
 		v->Reset();
 	} else {
-		if(nbView<32) {
+		if(nbView<50) {
 			v = new GLDataView();
 			v->SetName(formulaText->GetText());
 			v->userData = -1;
@@ -419,7 +419,7 @@ void TimewisePlotter::refreshViews() {
 		
 		Facet *f = geom->GetFacet(facet);
 		
-		if(nbView<31) {
+		if(nbView<49) {
 			
 			for (size_t m=0;m<MIN(worker->moments.size(),30);m++) {
 				GLDataView *v = new GLDataView();

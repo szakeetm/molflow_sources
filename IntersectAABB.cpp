@@ -451,38 +451,21 @@ void IntersectTree(struct AABBNODE *node) {
 								// This check could be avoided on rectangular facet.
 								if( IsInFacet(f,u,v) ) {
 
-									if( f->sh.isOpaque ) {
+									double time=sHandle->flightTimeCurrentParticle+d/100.0/sHandle->velocityCurrentParticle;
+									if( (GetOpacityAt(f,time) == 1.0) || (rnd()<GetOpacityAt(f,time)) ) {
 
-										//if( (f->sh.opacity == 1.0) || (rnd()<f->sh.opacity) ) {
-										double time=sHandle->flightTimeCurrentParticle+d/100.0/sHandle->velocityCurrentParticle;
-										if( (f->globalId>1 || time<sHandle->valveOpenMoment) && ((f->sh.opacity > 0.999999) || (rnd()<f->sh.opacity)) ) {
-
-
-											// Hard hit
-											if( d < intMinLgth ) {
-												*iFacet = f;
-												intFound = TRUE;
-												intMinLgth = d;
-												f->colU = u;
-												f->colV = v;
-											}
-
-										} else {
-
-											// Pass on partial transparent facet
-											if( f->sh.isProfile || f->hits ) {
-												f->colDist = d;
-												f->colU = u;
-												f->colV = v;
-												if(intNbTHits<MAX_THIT)
-													THits[intNbTHits++]=f;
-											}
-
+										// Hard hit
+										if( d < intMinLgth ) {
+											*iFacet = f;
+											intFound = TRUE;
+											intMinLgth = d;
+											f->colU = u;
+											f->colV = v;
 										}
 
 									} else {
 
-										// Pass on full transparent facet
+										// Pass on partial transparent facet
 										if( f->sh.isProfile || f->hits ) {
 											f->colDist = d;
 											f->colU = u;
@@ -490,9 +473,7 @@ void IntersectTree(struct AABBNODE *node) {
 											if(intNbTHits<MAX_THIT)
 												THits[intNbTHits++]=f;
 										}
-
 									}
-
 								} // IsInFacet
 							} // d range
 						} // u range

@@ -224,7 +224,7 @@ private:
 
   void CalculateFacetParam(int facet); // Facet parameters
   void Merge(int nbV,int nbF,VERTEX3D *nV,Facet **nF); // Merge geometry
-   void LoadTXTGeom(FileReader *file,int *nbV,int *nbF,VERTEX3D **V,Facet ***F,int strIdx=0);
+  void LoadTXTGeom(FileReader *file,int *nbV,int *nbF,VERTEX3D **V,Facet ***F,int strIdx=0);
   void InsertTXTGeom(FileReader *file,int *nbV,int *nbF,VERTEX3D **V,Facet ***F,int strIdx=0,BOOL newStruct=FALSE);
   void InsertGEOGeom(FileReader *file,int *nbV,int *nbF,VERTEX3D **V,Facet ***F,int strIdx=0,BOOL newStruct=FALSE);
   void InsertSYNGeom(FileReader *file,int *nbV,int *nbF,VERTEX3D **V,Facet ***F,int strIdx=0,BOOL newStruct=FALSE);
@@ -294,6 +294,16 @@ private:
   void Triangulate(Facet *f,BOOL addTextureCoord);
   void DrawEar(Facet *f,POLYGON *p,int ear,BOOL addTextureCoord);
 
+};
+
+class PreviewVertex {
+public:
+	double x,y,z;  //3D coordinates
+};
+
+class PreviewFacet {
+public:
+	std::vector<PreviewVertex> indices;
 };
 
 #endif /* _GEOMETRYH_ */

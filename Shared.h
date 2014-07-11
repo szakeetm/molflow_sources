@@ -180,12 +180,17 @@ typedef struct {
 typedef struct {
 
   // Facet parameters
-  double sticking;       // Sticking        (0=>reflection  , 1=>absorption)
-  double opacity;        // opacity         (0=>transparent , 1=>opaque)
-  double area;           // Facet area (m^2)
-  double temperature;    // Facet temperature (Kelvin)
-  double flow;           // Desorbed flow (in unit *m^3/s) (outgassing)
+  double sticking;       // Sticking (0=>reflection  , 1=>absorption)   - can be overridden by time-dependent parameter
+  double opacity;        // opacity  (0=>transparent , 1=>opaque)       - can be overridden by time-dependent parameter
+  double temperature;    // Facet temperature (Kelvin)                  - can be overridden by time-dependent parameter
+  double flow;           // Desorbed flow (in unit *m^3/s) (outgassing) - can be overridden by time-dependent parameter
+
+  size_t sticking_paramId;    // 0 if use constant value, 1+ if referencing time-dependent parameter
+  size_t opacity_paramId;     // 0 if use constant value, 1+ if referencing time-dependent parameter
+  size_t flow_paramId;        // 0 if use constant value, 1+ if referencing time-dependent parameter
+  
   double mass;           // Molecule mass of desorbed flow (in u,u=1.660538782E-27 kg) [CURRENTLY UNUSED, gas mass is a global setting]
+  double area;           // Facet area (m^2)
   int    desorbType;     // Desorption type
   double desorbTypeN;    // Exponent in Cos^N desorption type
   int    reflectType;    // Reflection type
@@ -205,7 +210,7 @@ typedef struct {
   // Flags
   BOOL   is2sided;     // 2 sided
   BOOL   isProfile;    // Profile facet
-  BOOL   isOpaque;     // Opacity != 0
+  //BOOL   isOpaque;     // Opacity != 0
   BOOL   isTextured;   // texture
   BOOL   isVolatile;   // Volatile facet (absorbtion facet which does not affect particule trajectory)
 

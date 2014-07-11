@@ -35,6 +35,7 @@ typedef int BOOL;
 #include "smp/SMP.h"
 #include "Distributions.h"
 #include <vector>
+#include "Parameter.h"
 
 #ifndef _SIMULATIONH_
 #define _SIMULATIONH_
@@ -45,15 +46,15 @@ typedef struct {
 
   SHFACET sh;
 
-  int      *indices;   // Indices (Reference to geometry vertex)
-  VERTEX2D *vertices2; // Vertices (2D plane space, UV coordinates)
-  AHIT     **hits;      // Texture hit recording (taking area, temperature, mass into account)
-  double     *inc;       // Texure increment
-  BOOL     *largeEnough; //cells that are NOT too small for autoscaling
-  double	   fullSizeInc; //Texture increment of a full texture element
-  VHIT     **direction; // Direction field recording (average)
-  BOOL     *fullElem;  // Direction field recording (only on full element)
-  APROFILE    **profile;   // Distribution and hit recording
+  int      *indices;          // Indices (Reference to geometry vertex)
+  VERTEX2D *vertices2;        // Vertices (2D plane space, UV coordinates)
+  AHIT     **hits;            // Texture hit recording (taking area, temperature, mass into account)
+  double   *inc;              // Texure increment
+  BOOL     *largeEnough;      // cells that are NOT too small for autoscaling
+  double   fullSizeInc;       // Texture increment of a full texture element
+  VHIT     **direction;       // Direction field recording (average)
+  BOOL     *fullElem;         // Direction field recording (only on full element)
+  APROFILE **profile;         // Distribution and hit recording
 
   // Temporary var (used in Intersect for collision)
   double colDist;
@@ -72,6 +73,7 @@ typedef struct {
   int    directionSize; // direction field size (in bytes)
 
   int CDFid; //Which probability distribution it belongs to (one CDF per temperature)
+  int IDid;  //If time-dependent desorption, which is its ID
   int globalId; //Global index (to identify when superstructures are present)
   double *outgassingMap; //outgassing map when desorption is based on imported file
 
@@ -115,11 +117,11 @@ typedef struct {
   LEAK   pLeak[NBHLEAK];      // Leak history
   //llong  wallHits[BOUNCEMAX]; // 'Wall collision count before absoprtion' density histogram
 
-  //Maxwellian cumulative distribution functions
   std::vector<std::vector<std::pair<double,double>>> CDFs; //cumulative distribution function for each temperature
   std::vector<double> temperatures; //keeping track of all temperatures that have a CDF already generated
   std::vector<double> moments;      //time values (seconds) when a simulation state is measured
-  
+  std::vector<size_t> desorptionParameterIDs; //time-dependent parameters which are used as desorptions, therefore need to be integrated
+  std::vector<std::vector<std::pair<double,double>>> IDs; //integrated distribution function for each time-dependent desorption type
 
   // Geometry
   char        name[64];         // Global name
@@ -197,6 +199,8 @@ typedef struct {
   double latestMoment;
   BOOL calcConstantFlow;
   double valveOpenMoment;
+
+  std::vector<Parameter> parameters; //Time-dependent parameters
   
 #ifdef JACOBI_ITERATION
   ACFLOAT *acDensityTmp;
@@ -250,9 +254,17 @@ BOOL IsInFacet(FACET *f,double u,double v);
 double GetTick();
 long   GetHitsSize();
 BOOL ComputeACMatrix(SHELEM *mesh);
-int GetCDFId(double temperature);
-int GenerateNewCDF(double temperature);
+size_t GetCDFId(double temperature);
+size_t GetIDId(size_t paramId);
+size_t GenerateNewCDF(double temperature);
+size_t GenerateNewID(size_t paramId);
 void UpdateVelocity(FACET *collidedFacet);
 double GenerateRandomVelocity(int CDFId);
+double GenerateDesorptionTime(FACET* src);
+double GetStickingAt(FACET *src,double time);
+double GetOpacityAt(FACET *src,double time);
+
+std::vector<std::pair<double,double>> Generate_CDF(double gasTempKelvins,double gasMassGramsPerMol,size_t size);
+std::vector<std::pair<double,double>> Generate_ID(size_t paramId);
 
 #endif /* _SIMULATIONH_ */

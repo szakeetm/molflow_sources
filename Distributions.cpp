@@ -83,42 +83,7 @@ int Distribution2D::findXindex(double x) {
 	return superior_index;
 }
 */
-std::vector<std::pair<double,double>> Generate_CDF(double gasTempKelvins,double gasMassGramsPerMol,size_t size){
-	std::vector<std::pair<double,double>> cdf;cdf.reserve(size);
-	double Kb=1.38E-23;
-	double R=8.3144621;
-	double a=sqrt(Kb*gasTempKelvins/(gasMassGramsPerMol*1.67E-27)); //distribution a parameter. Converting molar mass to atomic mass
 
-	//Generate cumulative distribution function
-	double mostProbableSpeed=sqrt(2*R*gasTempKelvins/(gasMassGramsPerMol/1000.0));
-	double binSize=4.0*mostProbableSpeed/(double)size; //distribution generated between 0 and 4*V_prob
-	/*double coeff1=1.0/sqrt(2.0)/a;
-	double coeff2=sqrt(2.0/PI)/a;
-	double coeff3=1.0/(2.0*pow(a,2));
-
-	for (size_t i=0;i<size;i++) {
-		double x=(double)i*binSize;
-		cdf.push_back(std::make_pair(x,erf(x*coeff1)-coeff2*x*exp(-pow(x,2)*coeff3)));
-	}*/
-	for (size_t i = 0; i<size; i++) {
-		double x = (double)i*binSize;
-		double x_square_per_2_a_square = pow(x, 2) / (2 * pow(a, 2));
-		cdf.push_back(std::make_pair(x, 1 - exp(-x_square_per_2_a_square)*(x_square_per_2_a_square + 1)));
-	}
-
-	/* //UPDATE: not generating inverse since it was introducing sampling problems at the large tail for high speeds
-	//CDF created, let's generate its inverse
-	std::vector<std::pair<double,double>> inverseCDF;inverseCDF.reserve(size);
-	binSize=1.0/(double)size; //Divide probability to bins
-	for (size_t i=0;i<size;i++) {
-		double p=(double)i*binSize;
-		//inverseCDF.push_back(std::make_pair(p,InterpolateX(p,cdf,TRUE)));
-		inverseCDF.push_back(std::make_pair(p, InterpolateX(p, cdf, FALSE)));
-	}
-	return inverseCDF;
-	*/
-	return cdf;
-}
 double my_erf(double x)
 {
     // constants

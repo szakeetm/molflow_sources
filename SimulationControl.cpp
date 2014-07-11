@@ -274,6 +274,15 @@ BOOL LoadSimulation(Dataport *loader) {
 		else
 			f->CDFid=GenerateNewCDF(f->sh.temperature);
 
+		//Generate integrated desorption functions
+		if (f->sh.flow_paramId) { //if time-dependent desorption
+			id=GetIDId(f->sh.flow_paramId);
+			if (id>=0)
+				f->IDid=id; //we've already generated a CDF for this temperature
+			else
+				f->IDid=GenerateNewID(f->sh.flow_paramId);
+		}
+
 		//f->sh.maxSpeed = 4.0 * sqrt(2.0*8.31*f->sh.temperature/0.001/sHandle->gasMass);
 
 		sHandle->hasVolatile |= f->sh.isVolatile;
@@ -291,9 +300,11 @@ BOOL LoadSimulation(Dataport *loader) {
 			// Link or volatile facet, overides facet settings
 			// Must be full opaque and 0 sticking
 			// (see SimulationMC.c::PerformBounce)
-			f->sh.isOpaque = TRUE;
+			//f->sh.isOpaque = TRUE;
 			f->sh.opacity = 1.0;
+			f->sh.opacity_paramId=0;
 			f->sh.sticking = 0.0;
+			f->sh.sticking_paramId=0;
 			if( ((f->sh.superDest-1) >= sHandle->nbSuper || f->sh.superDest<0) ) {
 				// Geometry error
 				ClearSimulation();
@@ -423,7 +434,7 @@ BOOL LoadSimulation(Dataport *loader) {
 	}
 
 	//copy time moments
-	sHandle->latestMoment=0.0;
+	sHandle->latestMoment=1E-10;
 
 	for (i=0;i<sHandle->nbMoments;i++) {
 		double new_moment = *((double *) incBuff);
@@ -682,16 +693,32 @@ double GetTick() {
 
 }
 
-int GetCDFId(double temperature) {
+size_t GetCDFId(double temperature) {
 
 	size_t i;
 	for (i=0;i<sHandle->temperatures.size()&&(abs(temperature-sHandle->temperatures[i])>1E-5);i++); //check if we already had this temperature
 	if (i>=sHandle->temperatures.size()) i=-1; //not found
 	return i;
 }
-int GenerateNewCDF(double temperature){
-	int i=(int)sHandle->temperatures.size();
+
+size_t GetIDId(size_t paramId) {
+
+	size_t i;
+	for (i=0;i<sHandle->desorptionParameterIDs.size()&&(paramId!=sHandle->desorptionParameterIDs[i]);i++); //check if we already had this parameter Id
+	if (i>=sHandle->temperatures.size()) i=-1; //not found
+	return i;
+}
+
+size_t GenerateNewCDF(double temperature){
+	size_t i=sHandle->temperatures.size();
 	sHandle->temperatures.push_back(temperature);
 	sHandle->CDFs.push_back(Generate_CDF(temperature,sHandle->gasMass,CDF_SIZE));
+	return i;
+}
+
+size_t GenerateNewID(size_t paramId){
+	size_t i=sHandle->desorptionParameterIDs.size();
+	sHandle->desorptionParameterIDs.push_back(paramId);
+	sHandle->IDs.push_back(Generate_ID(paramId));
 	return i;
 }

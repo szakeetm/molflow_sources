@@ -20,6 +20,7 @@
 #define _WORKERH_
 
 #include "Geometry.h"
+#include "Parameter.h"
 #include <string>
 
 extern float m_fTime;
@@ -157,7 +158,8 @@ public:
   
   std::vector<double> moments;             //moments when a time-dependent simulation state is recorded
   std::vector<std::string> userMoments;    //user-defined text values for defining time moments (can be time or time series)
-  std::vector<unsigned int> testStructures; //structures which are test-cubes
+  //std::vector<unsigned int> testStructures; //structures which are test-cubes
+  std::vector<Parameter> parameters; //all parameters which are time-dependent
   int displayedMoment;
 
   //gas pulse parameters

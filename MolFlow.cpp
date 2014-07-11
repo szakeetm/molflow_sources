@@ -35,7 +35,7 @@ GNU General Public License for more details.
 #define APP_NAME "MolFlow+ development version (Compiled "__DATE__" "__TIME__") DEBUG MODE"
 #else
 //#define APP_NAME "Molflow+ development version ("__DATE__")"
-#define APP_NAME "Molflow+ 2.5.4 beta ("__DATE__")"
+#define APP_NAME "Molflow+ 2.5.5 beta ("__DATE__")"
 #endif
 
 /*
