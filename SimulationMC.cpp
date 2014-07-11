@@ -819,7 +819,7 @@ double GenerateRandomVelocity(int CDFId){
 }
 
 double GenerateDesorptionTime(FACET *src){
-	if (src->sh.flow_paramId) { //time-dependent desorption
+	if (src->sh.flow_paramId>=0) { //time-dependent desorption
 		return InterpolateX(rnd()*sHandle->IDs[src->IDid].back().second,sHandle->IDs[src->IDid],TRUE);
 	} else {
 		return rnd()*sHandle->latestMoment; //continous desorption between 0 and latestMoment
@@ -863,7 +863,7 @@ std::vector<std::pair<double,double>> Generate_CDF(double gasTempKelvins,double 
 	return cdf;
 }
 
-std::vector<std::pair<double,double>> Generate_ID(size_t paramId){
+std::vector<std::pair<double,double>> Generate_ID(int paramId){
 	std::vector<std::pair<double,double>> ID;
 	//First, let's check at which index is the latest moment
 	size_t indexBeforeLastMoment;
@@ -878,25 +878,25 @@ std::vector<std::pair<double,double>> Generate_ID(size_t paramId){
 			sHandle->parameters[paramId].values[0].first*sHandle->parameters[paramId].values[0].second)); //for the first moment
 	
 	//Intermediate moments
-	for (size_t pos=1;pos<indexBeforeLastMoment;pos++) {
-		if (abs(sHandle->parameters[paramId].values.back().second-sHandle->parameters[paramId].values[pos-1].second)<1E-10) //two equal values follow, simple integration by multiplying
+	for (size_t pos=1;pos<=indexBeforeLastMoment;pos++) {
+		if (abs(sHandle->parameters[paramId].values[pos].second-sHandle->parameters[paramId].values[pos-1].second)<1E-10) //two equal values follow, simple integration by multiplying
 			ID.push_back(std::make_pair(sHandle->parameters[paramId].values[pos].first,
 			ID.back().second+
 			(sHandle->parameters[paramId].values[pos].first-sHandle->parameters[paramId].values[pos-1].first)*sHandle->parameters[paramId].values[pos].second));
 		else { //difficult case, we'll integrate by dividing two 5equal sections
-			for (double delta=0.0;delta<1.01;delta+=0.2) {
+			for (double delta=0.2;delta<1.01;delta+=0.2) {
 				double delta_t=sHandle->parameters[paramId].values[pos].first-sHandle->parameters[paramId].values[pos-1].first;
 				double time=sHandle->parameters[paramId].values[pos-1].first+delta*delta_t;
-				double avg_value=(sHandle->parameters[paramId].values[pos-1].second+InterpolateY(time,sHandle->parameters[paramId].values))/2.0;
+				double avg_value=(InterpolateY(time-0.2*delta_t,sHandle->parameters[paramId].values)+InterpolateY(time,sHandle->parameters[paramId].values))/2.0;
 				ID.push_back(std::make_pair(time,
 					ID.back().second+
-					delta*delta_t*avg_value));
+					0.2*delta_t*avg_value));
 			}
 		}
 	}
 
 	//latestMoment
-	double valueAtLatestMoment=InterpolateY(sHandle->latestMoment,sHandle->parameters[paramId].values);
+	double valueAtLatestMoment=InterpolateY(sHandle->latestMoment,sHandle->parameters[paramId].values,TRUE);
 	if ((valueAtLatestMoment-sHandle->parameters[paramId].values[indexBeforeLastMoment].second)<1E-10) //two equal values follow, simple integration by multiplying
 			ID.push_back(std::make_pair(sHandle->latestMoment,
 			ID.back().second+
@@ -908,7 +908,7 @@ std::vector<std::pair<double,double>> Generate_ID(size_t paramId){
 				double avg_value=(sHandle->parameters[paramId].values[indexBeforeLastMoment].second+InterpolateY(time,sHandle->parameters[paramId].values))/2.0;
 				ID.push_back(std::make_pair(time,
 					ID.back().second+
-					delta*delta_t*avg_value));
+					0.2*delta_t*avg_value));
 			}
 		}
 
@@ -916,13 +916,13 @@ std::vector<std::pair<double,double>> Generate_ID(size_t paramId){
 }
 
 double GetStickingAt(FACET *f,double time) {
-	if (!f->sh.sticking_paramId) //constant sticking
+	if (f->sh.sticking_paramId==-1) //constant sticking
 		return f->sh.sticking;
 	else return InterpolateY(time,sHandle->parameters[f->sh.sticking_paramId].values,TRUE);
 }
 
 double GetOpacityAt(FACET *f,double time) {
-	if (!f->sh.opacity_paramId) //constant sticking
+	if (f->sh.opacity_paramId==-1) //constant sticking
 		return f->sh.opacity;
 	else return InterpolateY(time,sHandle->parameters[f->sh.opacity_paramId].values,TRUE);
 }

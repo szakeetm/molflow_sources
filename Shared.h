@@ -185,9 +185,9 @@ typedef struct {
   double temperature;    // Facet temperature (Kelvin)                  - can be overridden by time-dependent parameter
   double flow;           // Desorbed flow (in unit *m^3/s) (outgassing) - can be overridden by time-dependent parameter
 
-  size_t sticking_paramId;    // 0 if use constant value, 1+ if referencing time-dependent parameter
-  size_t opacity_paramId;     // 0 if use constant value, 1+ if referencing time-dependent parameter
-  size_t flow_paramId;        // 0 if use constant value, 1+ if referencing time-dependent parameter
+  int sticking_paramId;    // -1 if use constant value, 0 or more if referencing time-dependent parameter
+  int opacity_paramId;     // -1 if use constant value, 0 or more if referencing time-dependent parameter
+  int flow_paramId;        // -1 if use constant value, 0 or more if referencing time-dependent parameter
   
   double mass;           // Molecule mass of desorbed flow (in u,u=1.660538782E-27 kg) [CURRENTLY UNUSED, gas mass is a global setting]
   double area;           // Facet area (m^2)

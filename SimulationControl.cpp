@@ -274,14 +274,7 @@ BOOL LoadSimulation(Dataport *loader) {
 		else
 			f->CDFid=GenerateNewCDF(f->sh.temperature);
 
-		//Generate integrated desorption functions
-		if (f->sh.flow_paramId) { //if time-dependent desorption
-			id=GetIDId(f->sh.flow_paramId);
-			if (id>=0)
-				f->IDid=id; //we've already generated a CDF for this temperature
-			else
-				f->IDid=GenerateNewID(f->sh.flow_paramId);
-		}
+
 
 		//f->sh.maxSpeed = 4.0 * sqrt(2.0*8.31*f->sh.temperature/0.001/sHandle->gasMass);
 
@@ -302,9 +295,9 @@ BOOL LoadSimulation(Dataport *loader) {
 			// (see SimulationMC.c::PerformBounce)
 			//f->sh.isOpaque = TRUE;
 			f->sh.opacity = 1.0;
-			f->sh.opacity_paramId=0;
+			f->sh.opacity_paramId=-1;
 			f->sh.sticking = 0.0;
-			f->sh.sticking_paramId=0;
+			f->sh.sticking_paramId=-1;
 			if( ((f->sh.superDest-1) >= sHandle->nbSuper || f->sh.superDest<0) ) {
 				// Geometry error
 				ClearSimulation();
@@ -451,11 +444,38 @@ BOOL LoadSimulation(Dataport *loader) {
 	sHandle->calcConstantFlow=*((BOOL *) incBuff);incBuff += sizeof(BOOL);
 	sHandle->valveOpenMoment=*((double *) incBuff);incBuff += sizeof(double);
 
+	/*//DEBUG
+	
+		Parameter *param1=new Parameter();
+		param1->AddValue(0.5,0);
+		param1->AddValue(0.5001,0.001);
+		param1->AddValue(0.6,0.001);
+		param1->AddValue(0.8,0);
+		sHandle->parameters.push_back(*param1);
+
+		sHandle->str[0].facets[0]->sh.sticking_paramId=0; //set facet 1 as time-dependent desorption*/
+	
+
+	//Generate integrated desorption functions
+		for (j = 0; j < sHandle->nbSuper; j++) {
+			for (i = 0; i < sHandle->str[j].nbFacet; i++) {
+				FACET *f = sHandle->str[j].facets[i];
+				if (f->sh.flow_paramId>=0) { //if time-dependent desorption
+					int id=GetIDId(f->sh.flow_paramId);
+					if (id>=0)
+						f->IDid=id; //we've already generated a CDF for this temperature
+					else
+						f->IDid=GenerateNewID(f->sh.flow_paramId);
+				}
+			}
+		}
+
 	ReleaseDataport(loader);
 
 	// Build all AABBTrees
 	for(i=0;i<sHandle->nbSuper;i++)
 		sHandle->str[i].aabbTree = BuildAABBTree(sHandle->str[i].facets,sHandle->str[i].nbFacet,0);
+
 
 	// Initialise simulation
 	ComputeSourceArea();
@@ -693,30 +713,30 @@ double GetTick() {
 
 }
 
-size_t GetCDFId(double temperature) {
+int GetCDFId(double temperature) {
 
-	size_t i;
-	for (i=0;i<sHandle->temperatures.size()&&(abs(temperature-sHandle->temperatures[i])>1E-5);i++); //check if we already had this temperature
-	if (i>=sHandle->temperatures.size()) i=-1; //not found
+	int i;
+	for (i=0;i<(int)sHandle->temperatures.size()&&(abs(temperature-sHandle->temperatures[i])>1E-5);i++); //check if we already had this temperature
+	if (i>=(int)sHandle->temperatures.size()) i=-1; //not found
 	return i;
 }
 
-size_t GetIDId(size_t paramId) {
+int GetIDId(int paramId) {
 
-	size_t i;
-	for (i=0;i<sHandle->desorptionParameterIDs.size()&&(paramId!=sHandle->desorptionParameterIDs[i]);i++); //check if we already had this parameter Id
-	if (i>=sHandle->temperatures.size()) i=-1; //not found
+	int i;
+	for (i=0;i<(int)sHandle->desorptionParameterIDs.size()&&(paramId!=sHandle->desorptionParameterIDs[i]);i++); //check if we already had this parameter Id
+	if (i>=(int)sHandle->desorptionParameterIDs.size()) i=-1; //not found
 	return i;
 }
 
-size_t GenerateNewCDF(double temperature){
+int GenerateNewCDF(double temperature){
 	size_t i=sHandle->temperatures.size();
 	sHandle->temperatures.push_back(temperature);
 	sHandle->CDFs.push_back(Generate_CDF(temperature,sHandle->gasMass,CDF_SIZE));
 	return i;
 }
 
-size_t GenerateNewID(size_t paramId){
+int GenerateNewID(int paramId){
 	size_t i=sHandle->desorptionParameterIDs.size();
 	sHandle->desorptionParameterIDs.push_back(paramId);
 	sHandle->IDs.push_back(Generate_ID(paramId));

@@ -10,8 +10,12 @@ Parameter::Parameter() { //initialize with empty values
 void Parameter::AddValue(const std::pair<double,double> &value) {
 	//Assuming existing values are stored in order
 	size_t pos=0;
-	for (;pos<this->values.size() && value.first<this->values[pos].first;pos++); //find pos to insert
+	for (;pos<this->values.size() && value.first>this->values[pos].first;pos++); //find pos to insert
 	values.insert(this->values.begin()+pos,value); //inserts or appends, depending on pos
+}
+
+void Parameter::AddValue(const double &moment,const double &value){
+	AddValue(std::make_pair(moment,value));
 }
 
 void Parameter::RemoveValue(size_t pos) {

@@ -254,10 +254,10 @@ BOOL IsInFacet(FACET *f,double u,double v);
 double GetTick();
 long   GetHitsSize();
 BOOL ComputeACMatrix(SHELEM *mesh);
-size_t GetCDFId(double temperature);
-size_t GetIDId(size_t paramId);
-size_t GenerateNewCDF(double temperature);
-size_t GenerateNewID(size_t paramId);
+int GetCDFId(double temperature);
+int GetIDId(int paramId);
+int GenerateNewCDF(double temperature);
+int GenerateNewID(int paramId);
 void UpdateVelocity(FACET *collidedFacet);
 double GenerateRandomVelocity(int CDFId);
 double GenerateDesorptionTime(FACET* src);
@@ -265,6 +265,6 @@ double GetStickingAt(FACET *src,double time);
 double GetOpacityAt(FACET *src,double time);
 
 std::vector<std::pair<double,double>> Generate_CDF(double gasTempKelvins,double gasMassGramsPerMol,size_t size);
-std::vector<std::pair<double,double>> Generate_ID(size_t paramId);
+std::vector<std::pair<double,double>> Generate_ID(int paramId);
 
 #endif /* _SIMULATIONH_ */
