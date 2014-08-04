@@ -926,7 +926,7 @@ void Worker::StartStop(float appTime,int mode) {
 
 		// Start
 		try {
-			if (needsReload) RealReload();
+			if (needsReload) RealReload(); //Synchronize subprocesses to main process
 			startTime = appTime;
 			running = TRUE;
 			calcAC = FALSE;

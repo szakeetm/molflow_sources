@@ -408,9 +408,9 @@ BOOL LoadSimulation(Dataport *loader) {
 
 	//Inc values
 	buffer = incBuff;
-	for (j = 0; j < sHandle->nbSuper; j++) {
-		for (i = 0; i < sHandle->str[j].nbFacet; i++) {
-			FACET* f = sHandle->str[j].facets[i];
+	for (int k = 0; k < sHandle->nbSuper; k++) {
+		for (i = 0; i < sHandle->str[k].nbFacet; i++) {
+			FACET* f = sHandle->str[k].facets[i];
 			if (f->sh.isTextured) {
 				int nbE = f->sh.texWidth*f->sh.texHeight;
 				f->inc = (double *)malloc(nbE*sizeof(double));
@@ -767,8 +767,6 @@ double GetTick() {
 #endif
 
 }
-
-
 
 int GetIDId(int paramId) {
 

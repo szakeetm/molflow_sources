@@ -1432,7 +1432,7 @@ void MolFlow::ApplyFacetParams() {
 		}
 	}
 	if (structChanged) geom->RebuildLists();
-	// Send to sub process
+	// Mark "needsReload"
 	try { worker.Reload(); } catch(Error &e) {
 		GLMessageBox::Display((char *)e.GetMsg(),"Error",GLDLG_OK,GLDLG_ICONERROR);
 		return;
@@ -4017,7 +4017,7 @@ void MolFlow::ProcessMessage(GLComponent *src,int message)
 			changedSinceSave=TRUE;
 			ResetSimulation();
 		} else if ( src == facetApplyBtn ) {
-			changedSinceSave=TRUE;
+			//changedSinceSave=TRUE;
 			ApplyFacetParams();
 		} else if ( src == facetMoreBtn ) {
 			if( facetDetails==NULL ) facetDetails = new FacetDetails();

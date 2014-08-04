@@ -113,7 +113,7 @@ int compressSavedFiles;
 //extern HANDLE molflowHandle;
 int autoSaveSimuOnly;
 int numCPU;
-BOOL changedSinceSave;
+BOOL changedSinceSave; //For saving and autosaving
 //float m_fTime;
 
     // Util functions

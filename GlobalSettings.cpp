@@ -30,7 +30,7 @@ static const int   plAligns[] = { ALIGN_LEFT,ALIGN_CENTER,ALIGN_CENTER,ALIGN_CEN
 
 int antiAliasing=true;
 int whiteBg=false;
-int needsReload=false;
+int needsReload=false; //When main and subprocess have different geometries, needs to reload (synchronize)
 //int nonIsothermal=false;
 int checkForUpdates=false;
 int autoUpdateFormulas=false;
