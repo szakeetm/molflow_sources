@@ -41,10 +41,10 @@ private:
   GLLabel     *l1;
   //GLTextArea  *textArea;
   GLList      *momentsList;
-  GLTextField *desStartText;
-  GLTextField *desStopText;
+  /*GLTextField *desStartText;
+  GLTextField *desStopText;*/
   GLTextField *windowSizeText;
-  GLTextField *valveText;
+  /*GLTextField *valveText;*/
   GLToggle    *useMaxwellToggle;
   GLToggle    *calcConstantFlow;
   GLTitledPanel *panel1;

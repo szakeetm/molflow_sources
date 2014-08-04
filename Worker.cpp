@@ -25,6 +25,7 @@ GNU General Public License for more details.
 #include "GLApp/GLUnitDialog.h"
 #include "Molflow.h"
 #include <direct.h>
+#include "Distributions.h"
 
 /*
 //Leak detection
@@ -37,8 +38,8 @@ GNU General Public License for more details.
 
 extern GLApplication *theApp;
 extern HANDLE compressProcessHandle;
-extern double totalOutgassing;
-extern double totalInFlux;
+/*extern double totalOutgassing;
+extern double totalInFlux;*/
 extern int autoSaveSimuOnly;
 extern int needsReload;
 extern int compressSavedFiles;
@@ -47,18 +48,25 @@ extern int compressSavedFiles;
 
 Worker::Worker() {
 	//test
+	temperatures=std::vector<double>();
 	moments=std::vector<double>();
+	desorptionParameterIDs=std::vector<size_t>();
 	userMoments=std::vector<std::string>(); //strings describing moments, to be parsed
+	CDFs=std::vector<std::vector<std::pair<double,double>>>();
+	IDs=std::vector<std::vector<std::pair<double,double>>>();
+	parameters=std::vector<Parameter>();
 
 	displayedMoment=0; //By default, steady-state is displayed
 
-	desorptionStartTime=0.0;
-	desorptionStopTime=1;
+	//desorptionStartTime=0.0;
+	//desorptionStopTime=1;
 	timeWindowSize=0.1;
 	useMaxwellDistribution=TRUE;
 	calcConstantFlow=TRUE;
-	valveOpenMoment=99999.0;
+	//valveOpenMoment=99999.0;
 	distTraveledTotal=0.0;
+	gasMass=28.0;
+	finalOutgassingRate=totalDesorbedMolecules=0;
 
 	pid = _getpid();
 	sprintf(ctrlDpName,"MFLWCTRL%d",pid);
@@ -976,7 +984,7 @@ void Worker::Update(float appTime) {
 				// Globals
 				SHGHITS *gHits = (SHGHITS *)buffer;
 
-				// Global hits and leaks
+				// Copy Global hits and leaks
 				nbHit = gHits->total.hit.nbHit;
 				nbAbsorption = gHits->total.hit.nbAbsorbed;
 				distTraveledTotal = gHits->distTraveledTotal;
@@ -987,12 +995,11 @@ void Worker::Update(float appTime) {
 				memcpy(hhitCache,gHits->pHits,sizeof(HIT)*NBHHIT);
 				memcpy(leakCache,gHits->pLeak,sizeof(LEAK)*NBHHIT);
 
-				// Facets
+				// Copy facet hits
 				int nbFacet = geom->GetNbFacet();
 				for(int i=0;i<nbFacet;i++) {    
 					Facet *f = geom->GetFacet(i);
 					memcpy(&(f->sh.counter),buffer+f->sh.hitOffset,sizeof(SHHITS));
-					//f = f;
 				}
 				try {
 					geom->BuildTexture(buffer);
@@ -1119,6 +1126,9 @@ void Worker::Reload (){
 
 void Worker::RealReload() { //Sharing geometry with workers
 
+	//Do preliminary calculations
+	PrepareToRun();
+	
 	if(nbProcess==0) return;
 
 	// Clear geometry
@@ -1129,12 +1139,12 @@ void Worker::RealReload() { //Sharing geometry with workers
 	if(!geom->IsLoaded()) return;
 
 	// Create the temporary geometry shared structure
-	int loadSize = geom->GetGeometrySize(&moments);
+	int loadSize = geom->GetGeometrySize();
 	Dataport *loader = CreateDataport(loadDpName,loadSize);
 	if( !loader )
 		throw Error("Failed to create 'loader' dataport");
 	AccessDataportTimed(loader,3000+nbProcess*(int)((double)loadSize/10000.0));
-	geom->CopyGeometryBuffer((BYTE *)loader->buff,&moments);
+	geom->CopyGeometryBuffer((BYTE *)loader->buff);
 	ReleaseDataport(loader);
 
 	int hitSize = geom->GetHitsSize(&moments);
@@ -1384,7 +1394,7 @@ void Worker::Start() {
 	if( !found )
 		throw Error("No desorption facet found");
 
-	if(!(totalOutgassing>0.0))
+	if(!(totalDesorbedMolecules>0.0))
 		throw Error("Total outgassing is zero.");
 
 	if( nbProcess==0 )
@@ -1555,7 +1565,7 @@ void Worker::ResetMoments() {
 
 void Worker::ImportDesorption_DES(char *fileName) {
 	//if (needsReload) RealReload();
-
+	MolFlow *mApp = (MolFlow *)theApp;
 	// Read a file
 	FileReader *f = new FileReader(fileName);
 	geom->ImportDesorption_DES(f);
@@ -1681,4 +1691,191 @@ void Worker::AnalyzeSYNfile(char *fileName, int *nbFacet, int *nbTextured, int *
 		progressDlg->SetVisible(FALSE);
 		SAFE_DELETE(progressDlg);
 	}
+}
+
+void Worker::PrepareToRun() {
+	//determine latest moment
+	latestMoment=1E-10;
+	for (size_t i=0;i<moments.size();i++)
+		if (moments[i]>latestMoment) latestMoment=moments[i];
+	latestMoment+=timeWindowSize/2.0;
+
+	Geometry *g=GetGeometry();
+	//Generate integrated desorption functions
+	
+	temperatures=std::vector<double>();
+	desorptionParameterIDs=std::vector<size_t>();
+	CDFs = std::vector<std::vector<std::pair<double, double>>>();
+	IDs = std::vector<std::vector<std::pair<double, double>>>();
+
+	for (int i = 0; i < g->GetNbFacet(); i++) {
+		Facet *f = g->GetFacet(i);
+		if (f->sh.outgassing_paramId>=0) { //if time-dependent desorption
+			int id=GetIDId(f->sh.outgassing_paramId);
+			if (id>=0)
+				f->sh.IDid=id; //we've already generated a CDF for this temperature
+			else
+				f->sh.IDid=GenerateNewID(f->sh.outgassing_paramId);
+		}
+
+		//Generate speed distribution functions
+		int id=GetCDFId(f->sh.temperature);
+		if (id>=0)
+			f->sh.CDFid=id; //we've already generated a CDF for this temperature
+		else
+			f->sh.CDFid=GenerateNewCDF(f->sh.temperature);
+
+	}
+
+	CalcTotalOutgassing();
+}
+
+
+int Worker::GetCDFId(double temperature) {
+
+	int i;
+	for (i=0;i<(int)temperatures.size()&&(abs(temperature-temperatures[i])>1E-5);i++); //check if we already had this temperature
+	if (i>=(int)temperatures.size()) i=-1; //not found
+	return i;
+}
+
+int Worker::GenerateNewCDF(double temperature){
+	size_t i=temperatures.size();
+	temperatures.push_back(temperature);
+	CDFs.push_back(Generate_CDF(temperature,gasMass,CDF_SIZE));
+	return (int)i;
+}
+
+int Worker::GenerateNewID(int paramId){
+	size_t i=desorptionParameterIDs.size();
+	desorptionParameterIDs.push_back(paramId);
+	IDs.push_back(Generate_ID(paramId));
+	return (int)i;
+}
+
+int Worker::GetIDId(int paramId) {
+
+	int i;
+	for (i=0;i<(int)desorptionParameterIDs.size()&&(paramId!=desorptionParameterIDs[i]);i++); //check if we already had this parameter Id
+	if (i>=(int)desorptionParameterIDs.size()) i=-1; //not found
+	return i;
+}
+
+void Worker::CalcTotalOutgassing() {
+	// Compute the outgassing of all source facet
+	totalDesorbedMolecules=0.0;
+	finalOutgassingRate = 0.0;
+	Geometry *g=GetGeometry();
+
+	
+		for (int i = 0; i < g->GetNbFacet(); i++) {
+			Facet *f=g->GetFacet(i);
+			if (f->sh.desorbType != DES_NONE) { //there is a kind of desorption
+				if (f->sh.useOutgassingFile) { //outgassing file
+					for (int l = 0; l < (f->sh.outgassingMapWidth*f->sh.outgassingMapHeight); l++) {
+						totalDesorbedMolecules += latestMoment * f->outgassingMap[l] / (1.38E-23*f->sh.temperature);
+						finalOutgassingRate+=f->outgassingMap[l] / (1.38E-23*f->sh.temperature);
+					}
+				}	else { //regular outgassing
+					if (f->sh.outgassing_paramId==-1) { //constant outgassing
+						totalDesorbedMolecules += latestMoment * f->sh.flow / (1.38E-23*f->sh.temperature);
+						finalOutgassingRate += f->sh.flow / (1.38E-23*f->sh.temperature);  //Outgassing molecules/sec
+					} else { //time-dependent outgassing
+						totalDesorbedMolecules += IDs[f->sh.IDid].back().second;
+						finalOutgassingRate += parameters[f->sh.outgassing_paramId].values.back().second / (1.38E-23*f->sh.temperature);
+					}
+				}
+			}
+		}
+	
+}
+
+
+std::vector<std::pair<double,double>> Worker::Generate_CDF(double gasTempKelvins,double gasMassGramsPerMol,size_t size){
+ 	std::vector<std::pair<double,double>> cdf;cdf.reserve(size);
+	double Kb=1.38E-23;
+	double R=8.3144621;
+	double a=sqrt(Kb*gasTempKelvins/(gasMassGramsPerMol*1.67E-27)); //distribution a parameter. Converting molar mass to atomic mass
+
+	//Generate cumulative distribution function
+	double mostProbableSpeed=sqrt(2*R*gasTempKelvins/(gasMassGramsPerMol/1000.0));
+	double binSize=4.0*mostProbableSpeed/(double)size; //distribution generated between 0 and 4*V_prob
+	/*double coeff1=1.0/sqrt(2.0)/a;
+	double coeff2=sqrt(2.0/PI)/a;
+	double coeff3=1.0/(2.0*pow(a,2));
+
+	for (size_t i=0;i<size;i++) {
+		double x=(double)i*binSize;
+		cdf.push_back(std::make_pair(x,erf(x*coeff1)-coeff2*x*exp(-pow(x,2)*coeff3)));
+	}*/
+	for (size_t i = 0; i<size; i++) {
+		double x = (double)i*binSize;
+		double x_square_per_2_a_square = pow(x, 2) / (2 * pow(a, 2));
+		cdf.push_back(std::make_pair(x, 1 - exp(-x_square_per_2_a_square)*(x_square_per_2_a_square + 1)));
+	}
+
+	/* //UPDATE: not generating inverse since it was introducing sampling problems at the large tail for high speeds
+	//CDF created, let's generate its inverse
+	std::vector<std::pair<double,double>> inverseCDF;inverseCDF.reserve(size);
+	binSize=1.0/(double)size; //Divide probability to bins
+	for (size_t i=0;i<size;i++) {
+		double p=(double)i*binSize;
+		//inverseCDF.push_back(std::make_pair(p,InterpolateX(p,cdf,TRUE)));
+		inverseCDF.push_back(std::make_pair(p, InterpolateX(p, cdf, FALSE)));
+	}
+	return inverseCDF;
+	*/
+	return cdf;
+}
+
+std::vector<std::pair<double,double>> Worker::Generate_ID(int paramId){
+	std::vector<std::pair<double,double>> ID;
+	//First, let's check at which index is the latest moment
+	size_t indexBeforeLastMoment;
+	for (indexBeforeLastMoment=0;indexBeforeLastMoment<parameters[paramId].values.size()&&
+		(parameters[paramId].values[indexBeforeLastMoment].first<latestMoment);indexBeforeLastMoment++);
+	if (indexBeforeLastMoment>=temperatures.size()) indexBeforeLastMoment=parameters[paramId].values.size()-1; //not found, set as last moment
+	
+	//Construct integral from 0 to latest moment
+	
+	//First moment
+	ID.push_back(std::make_pair(parameters[paramId].values[0].first,
+			parameters[paramId].values[0].first*parameters[paramId].values[0].second)); //for the first moment
+	
+	//Intermediate moments
+	for (size_t pos=1;pos<=indexBeforeLastMoment;pos++) {
+		if (abs(parameters[paramId].values[pos].second-parameters[paramId].values[pos-1].second)<1E-10) //two equal values follow, simple integration by multiplying
+			ID.push_back(std::make_pair(parameters[paramId].values[pos].first,
+			ID.back().second+
+			(parameters[paramId].values[pos].first-parameters[paramId].values[pos-1].first)*parameters[paramId].values[pos].second));
+		else { //difficult case, we'll integrate by dividing two 5equal sections
+			for (double delta=0.2;delta<1.01;delta+=0.2) {
+				double delta_t=parameters[paramId].values[pos].first-parameters[paramId].values[pos-1].first;
+				double time=parameters[paramId].values[pos-1].first+delta*delta_t;
+				double avg_value=(InterpolateY(time-0.2*delta_t,parameters[paramId].values)+InterpolateY(time,parameters[paramId].values))/2.0;
+				ID.push_back(std::make_pair(time,
+					ID.back().second+
+					0.2*delta_t*avg_value));
+			}
+		}
+	}
+
+	//latestMoment
+	double valueAtLatestMoment=InterpolateY(latestMoment,parameters[paramId].values,TRUE);
+	if ((valueAtLatestMoment-parameters[paramId].values[indexBeforeLastMoment].second)<1E-10) //two equal values follow, simple integration by multiplying
+			ID.push_back(std::make_pair(latestMoment,
+			ID.back().second+
+			(latestMoment-parameters[paramId].values[indexBeforeLastMoment].first)*parameters[paramId].values[indexBeforeLastMoment].second));
+		else { //difficult case, we'll integrate by dividing two 5equal sections
+			for (double delta=0.0;delta<1.01;delta+=0.2) {
+				double delta_t=latestMoment-parameters[paramId].values[indexBeforeLastMoment].first;
+				double time=parameters[paramId].values[indexBeforeLastMoment].first+delta*delta_t;
+				double avg_value=(parameters[paramId].values[indexBeforeLastMoment].second+InterpolateY(time,parameters[paramId].values))/2.0;
+				ID.push_back(std::make_pair(time,
+					ID.back().second+
+					0.2*delta_t*avg_value));
+			}
+		}
+
+	return ID;
 }

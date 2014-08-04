@@ -35,9 +35,9 @@ int needsReload=false;
 int checkForUpdates=false;
 int autoUpdateFormulas=false;
 int compressSavedFiles=true;
-double gasMass=28;
+/*double gasMass=28;
 double totalOutgassing=0.0; //total outgassing in Pa*m3/sec (internally everything is in SI units)
-double totalInFlux = 0.0; //total incoming molecules per second. For anisothermal system, it is (totalOutgassing / Kb / T)
+double totalInFlux = 0.0; //total incoming molecules per second. For anisothermal system, it is (totalOutgassing / Kb / T)*/
 double autoSaveFrequency=10.0; //in minutes
 int autoSaveSimuOnly=false;
 int numCPU = 0;
@@ -193,12 +193,13 @@ GlobalSettings::GlobalSettings():GLWindow() {
 // --------------------------------------------------------------------
 
 void GlobalSettings::Display(Worker *w) {
+	worker = w;
 	char tmp[256];
 	chkAntiAliasing->SetCheck(antiAliasing);
 	chkWhiteBg->SetCheck(whiteBg);
 	//chkNonIsothermal->SetCheck(nonIsothermal);
 	UpdateOutgassing();
-	sprintf(tmp,"%g",gasMass);
+	sprintf(tmp,"%g",worker->gasMass);
 	gasmassText->SetText(tmp);
 	sprintf(tmp,"%g",autoSaveFrequency);
 	autoSaveText->SetText(tmp);
@@ -206,7 +207,7 @@ void GlobalSettings::Display(Worker *w) {
 	chkCheckForUpdates->SetCheck(checkForUpdates);
 	chkAutoUpdateFormulas->SetCheck(autoUpdateFormulas);
 	chkCompressSavedFiles->SetCheck(compressSavedFiles);
-	  worker = w;
+	  
   int nb = worker->GetProcNumber();
   sprintf(tmp,"%d",nb);
   nbProcText->SetText(tmp);
@@ -335,18 +336,18 @@ void GlobalSettings::ProcessMessage(GLComponent *src,int message) {
           GLMessageBox::Display("No geometry loaded.","No geometry",GLDLG_OK,GLDLG_ICONERROR);
         }
       } else if (src==applyButton) {
-		antiAliasing=chkAntiAliasing->IsChecked();
-	    whiteBg=chkWhiteBg->IsChecked();
-		checkForUpdates=chkCheckForUpdates->IsChecked();
-		autoUpdateFormulas=chkAutoUpdateFormulas->IsChecked();
-		compressSavedFiles=chkCompressSavedFiles->IsChecked();
+		mApp->antiAliasing=chkAntiAliasing->IsChecked();
+	    mApp->whiteBg=chkWhiteBg->IsChecked();
+		mApp->checkForUpdates=chkCheckForUpdates->IsChecked();
+		mApp->autoUpdateFormulas=chkAutoUpdateFormulas->IsChecked();
+		mApp->compressSavedFiles=chkCompressSavedFiles->IsChecked();
 		/*if (nonIsothermal!=chkNonIsothermal->IsChecked()) {
 			if (mApp->AskToReset()) {
 				needsReload=TRUE;
 				nonIsothermal=chkNonIsothermal->IsChecked();
 			}
 		}*/
-		autoSaveSimuOnly=chkSimuOnly->IsChecked();
+		mApp->autoSaveSimuOnly=chkSimuOnly->IsChecked();
 		/* 
 		if( !outgassingText->GetNumber(&totalOutgassing) || !(totalOutgassing>0.0) ) {
         GLMessageBox::Display("Invalid outgassing value","Error",GLDLG_OK,GLDLG_ICONERROR);
@@ -355,13 +356,13 @@ void GlobalSettings::ProcessMessage(GLComponent *src,int message) {
 		*/
 		double gm;
 		 if( !gasmassText->GetNumber(&gm) || !(gm>0.0) ) {
-        GLMessageBox::Display("Invalid gas mass value","Error",GLDLG_OK,GLDLG_ICONERROR);
-        return;
-		} 
-		if (abs(gm-gasMass)>1e-7) {
+			 GLMessageBox::Display("Invalid gas mass value","Error",GLDLG_OK,GLDLG_ICONERROR);
+			 return;
+		 } 
+		if (abs(gm-worker->gasMass)>1e-7) {
 			if (mApp->AskToReset()) {
 				needsReload=TRUE;
-				gasMass=gm;
+				worker->gasMass=gm;
 				if(worker->GetGeometry()->IsLoaded()) { //check if there are pumps
 					BOOL hasPump=FALSE;
 					int nbFacet=worker->GetGeometry()->GetNbFacet();
@@ -394,10 +395,10 @@ void GlobalSettings::ProcessMessage(GLComponent *src,int message) {
 
 void GlobalSettings::UpdateOutgassing() {
 	char tmp[128];
-	sprintf(tmp, "%g", gasMass); //10: conversion Pa*m3/sec -> mbar*l/s
+	sprintf(tmp, "%g", worker->gasMass); //10: conversion Pa*m3/sec -> mbar*l/s
 	gasmassText->SetText(tmp);
-	sprintf(tmp, "%g", totalOutgassing*10.00); //10: conversion Pa*m3/sec -> mbar*l/s
+	sprintf(tmp, "%g", worker->finalOutgassingRate); //10: conversion Pa*m3/sec -> mbar*l/s
 	outgassingText->SetText(tmp);
-	sprintf(tmp, "%.3E", totalInFlux);
+	sprintf(tmp, "%.3E", worker->totalDesorbedMolecules);
 	influxText->SetText(tmp);
 }

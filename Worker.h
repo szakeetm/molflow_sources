@@ -23,6 +23,8 @@
 #include "Parameter.h"
 #include <string>
 
+#define CDF_SIZE 100 //points in a cumulative distribution function
+
 extern float m_fTime;
 class Worker
 {
@@ -128,6 +130,9 @@ public:
   // Get process status
   void GetProcStatus(int *states,char **status);
 
+  //Do calculations necessary before launching simulation
+  void PrepareToRun();
+
   // Access to dataport (HIT)
   BYTE *GetHits();
   void  ReleaseHits();
@@ -138,6 +143,14 @@ public:
   int AddMoment(std::vector<double> newMoments); //Adds a time serie to moments and returns the number of elements
   std::vector<double> ParseMoment(std::string userInput); //Parses a user input and returns a vector of time moments
   void ResetMoments();
+
+  std::vector<std::pair<double,double>> Generate_ID(int paramId);
+  int GenerateNewID(int paramId);
+  std::vector<std::pair<double,double>> Generate_CDF(double gasTempKelvins,double gasMassGramsPerMol,size_t size);
+  int GenerateNewCDF(double temperature);
+  void CalcTotalOutgassing();
+  int GetCDFId(double temperature);
+int GetIDId(int paramId);
 
   // Global simulation parameters
   llong  nbAbsorption;      // Total number of molecules absorbed (64 bit integer)
@@ -156,20 +169,26 @@ public:
   BOOL   calcAC;            // Calculating AC matrix
   int    calcACprg;         // AC matrix progress
   
+  std::vector<std::vector<std::pair<double,double>>> CDFs; //cumulative distribution function for each temperature
+  std::vector<std::vector<std::pair<double,double>>> IDs; //integrated distribution function for each time-dependent desorption type
+  std::vector<double> temperatures; //keeping track of all temperatures that have a CDF already generated
   std::vector<double> moments;             //moments when a time-dependent simulation state is recorded
+  std::vector<size_t> desorptionParameterIDs; //time-dependent parameters which are used as desorptions, therefore need to be integrated
+  double latestMoment;
   std::vector<std::string> userMoments;    //user-defined text values for defining time moments (can be time or time series)
   //std::vector<unsigned int> testStructures; //structures which are test-cubes
-  std::vector<Parameter> parameters; //all parameters which are time-dependent
-  int displayedMoment;
-
-  //gas pulse parameters
-  double desorptionStartTime;
-  double desorptionStopTime;
+  
+  double totalDesorbedMolecules; //Number of molecules desorbed between t=0 and latest_moment
+  double finalOutgassingRate; //Number of outgassing molecules / second at latest_moment (constant flow)
+  double gasMass;
   double timeWindowSize;
-  BOOL useMaxwellDistribution;
+  BOOL useMaxwellDistribution; //TRUE: Maxwell-Boltzmann distribution, FALSE: All molecules have the same (V_avg) speed
   BOOL calcConstantFlow;
-  double valveOpenMoment;
 
+  std::vector<Parameter> parameters; //all parameters which are time-dependent
+  
+  int displayedMoment;
+  
 	// Current loaded file
   char fullFileName[512];
 

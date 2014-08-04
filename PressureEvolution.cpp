@@ -25,11 +25,11 @@ GNU General Public License for more details.
 
 extern GLApplication *theApp;
 
-extern double gasMass;
+/*extern double gasMass;
 extern double totalOutgassing;
-extern double totalInFlux;
+extern double totalInFlux;*/
 
-static const char*profType[] = { "None", "Pressure \201 [mbar]", "Pressure \202 [mbar]", "Angle", "Velocity" };
+static const char*profType[] = { "None", "Pressure \201 [mbar]", "Pressure \202 [mbar]", "Angle", "Velocity" , "Ort.velocity"};
 
 PressureEvolution::PressureEvolution() :GLWindow() {
 
@@ -363,9 +363,11 @@ void PressureEvolution::refreshViews() {
 					v->Add(worker->moments[m - 1], val / fnbHit, FALSE);
 					break;
 				case 7: //Pressure
-					scale = totalInFlux / nbDes / (f->sh.area / (double)PROFILE_SIZE*1E-4)* gasMass / 1000 / 6E23 *0.0100; //0.01: Pa->mbar
+					/*scale = totalInFlux / nbDes / (f->sh.area / (double)PROFILE_SIZE*1E-4)* gasMass / 1000 / 6E23 *0.0100; //0.01: Pa->mbar
 					scale *= (worker->desorptionStopTime - worker->desorptionStartTime)
-						/ worker->timeWindowSize; //correction for time window length
+						/ worker->timeWindowSize; //correction for time window length*/
+					scale = worker->totalDesorbedMolecules / worker->timeWindowSize / nbDes / (f->sh.area / (double)PROFILE_SIZE*1E-4)
+						* worker->gasMass / 1000 / 6E23 *0.0100; //0.01: Pa->mbar
 					if (f->sh.is2sided) scale *= 0.5;
 					v->Add(worker->moments[m - 1], val*scale, FALSE);
 					break;

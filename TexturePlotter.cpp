@@ -24,9 +24,9 @@ GNU General Public License for more details.
 
 extern MolFlow *theApp;
 
-extern double totalOutgassing;
+/*extern double totalOutgassing;
 extern double totalInFlux;
-extern double gasMass;
+extern double gasMass;*/
 
 static const char *fileFilters = "Text files\0*.txt";
 static const int   nbFilter = sizeof(fileFilters) / (2 * sizeof(char *));
@@ -249,9 +249,10 @@ void TexturePlotter::UpdateTable() {
 							 SHGHITS *shGHit = (SHGHITS *)buffer;
 							 int profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
 							 AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + sizeof(SHHITS)+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
-							 double dCoef = totalInFlux / shGHit->total.hit.nbDesorbed * 1E4; //1E4: conversion m2->cm2
-							 if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
-								 / worker->timeWindowSize));
+							 double dCoef = /*totalInFlux*/ 1.0 / shGHit->total.hit.nbDesorbed * 1E4; //1E4: conversion m2->cm2
+							 /*if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
+								 / worker->timeWindowSize));*/
+							 if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules	 / worker->timeWindowSize));
 							 for (int i = 0; i < w; i++) {
 								 for (int j = 0; j<h; j++) {
 									 double val = (double)hits[i + j*w].count / (selFacet->mesh[i + j*w].area*(selFacet->sh.is2sided?2.0:1.0))*dCoef;
@@ -282,9 +283,10 @@ void TexturePlotter::UpdateTable() {
 							 int profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
 							 AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + sizeof(SHHITS)+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
 							 //float dCoef = (float)totalOutgassing / 8.31 * gasMass / 100 * MAGIC_CORRECTION_FACTOR;
-							 double dCoef = totalInFlux / shGHit->total.hit.nbDesorbed*1E4;   //1E4 m2 -> cm2
-							 if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
-								 / worker->timeWindowSize));
+							 double dCoef = /*totalInFlux*/1.0 / shGHit->total.hit.nbDesorbed*1E4;   //1E4 m2 -> cm2
+							 /*if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
+								 / worker->timeWindowSize));*/
+							 if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules	 / worker->timeWindowSize));
 							 for (int i = 0; i < w; i++) {
 								 for (int j = 0; j<h; j++) {
 
@@ -320,9 +322,10 @@ void TexturePlotter::UpdateTable() {
 							 int profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
 							 AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + sizeof(SHHITS)+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
 							 //float dCoef = (float)totalOutgassing / 8.31 * gasMass / 100 * MAGIC_CORRECTION_FACTOR;
-							 double dCoef = (float)totalInFlux / (float)shGHit->total.hit.nbDesorbed *1E4;
-							 if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : (((float)worker->desorptionStopTime - (float)worker->desorptionStartTime)
-								 / (float)worker->timeWindowSize));
+							 double dCoef = /*(float)totalInFlux*/ 1.0 / (float)shGHit->total.hit.nbDesorbed *1E4;
+							 /*if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
+								 / worker->timeWindowSize));*/
+							 if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules	 / worker->timeWindowSize));
 							 for (int i = 0; i < w; i++) {
 								 for (int j = 0; j<h; j++) {
 
@@ -330,7 +333,7 @@ void TexturePlotter::UpdateTable() {
 									 double imp_rate = hits[i + j*w].count / (selFacet->mesh[i + j*w].area*(selFacet->sh.is2sided ? 2.0 : 1.0))*dCoef;
 									 double rho = 4.0*imp_rate / v_avg;*/
 									 double rho = 2.0 * hits[i + j*w].sum_1_per_speed / (selFacet->mesh[i + j*w].area*(selFacet->sh.is2sided ? 2.0 : 1.0))*dCoef;
-									 double rho_mass = rho*gasMass / 1000.0 / 6E23;
+									 double rho_mass = rho*worker->gasMass / 1000.0 / 6E23;
 									 if (rho_mass>maxValue) {
 										 maxValue = rho_mass;
 										 maxX = i; maxY = j;
@@ -358,9 +361,10 @@ void TexturePlotter::UpdateTable() {
 							 SHGHITS *shGHit = (SHGHITS *)buffer;
 							 int profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
 							 AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + sizeof(SHHITS)+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
-							 double dCoef = totalInFlux / shGHit->total.hit.nbDesorbed * 1E4 * (gasMass / 1000 / 6E23) * 0.0100;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
-							 if (shGHit->mode == MC_MODE) dCoef *= ((worker->displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
-								 / worker->timeWindowSize));
+							 double dCoef = /*totalInFlux*/ 1.0 / shGHit->total.hit.nbDesorbed * 1E4 * (worker->gasMass / 1000 / 6E23) * 0.0100;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
+							 /*if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
+								 / worker->timeWindowSize));*/
+							 if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules	 / worker->timeWindowSize));
 							 for (int i = 0; i < w; i++) {
 								 for (int j = 0; j<h; j++) {
 

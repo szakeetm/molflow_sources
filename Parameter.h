@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+
 class Parameter {
 	
 
@@ -16,7 +17,7 @@ public:
 	void AddValue(const double &moment,const double &value); //looks up correct insert position and adds the value
 
 	void RemoveValue(size_t index);
-	void SetValues(std::vector<std::pair<double,double>> values);
+	void SetValues(std::vector<std::pair<double,double>> values,int sort=1);
 
 	double GetValueAt(double time);
 };

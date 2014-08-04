@@ -100,11 +100,21 @@ public:
     int      nbProc;       // Temporary var (use Worker::GetProcNumber)
 	//float lastHeartBeat;   //last time a heartbeat was sent to the subprocesses
 	float lastAppTime;
-
+	BOOL     antiAliasing;
+	BOOL whiteBg;
     float    lastMeasTime; // Last measurement time (for hps and dps)
 	double tolerance; //Select coplanar tolerance
 	double largeArea; //Selection filter
 	double planarityThreshold; //Planarity threshold
+	double autoSaveFrequency; //autosave period, in minutes
+	int checkForUpdates;
+int autoUpdateFormulas;
+int compressSavedFiles;
+//extern HANDLE molflowHandle;
+int autoSaveSimuOnly;
+int numCPU;
+BOOL changedSinceSave;
+//float m_fTime;
 
     // Util functions
 	//void SendHeartBeat(BOOL forced=FALSE);

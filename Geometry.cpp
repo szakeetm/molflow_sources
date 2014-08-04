@@ -28,6 +28,8 @@ GNU General Public License for more details.
 #include "GLApp\GLWindowManager.h"
 #include "Distributions.h" //InterpolateY
 
+#define WRITEVAL(_value,_type) *((_type *)buffer)=_value;buffer += sizeof(_type)
+
 /*
 //Leak detection
 #ifdef _DEBUG
@@ -38,9 +40,9 @@ GNU General Public License for more details.
 */
 
 extern GLApplication *theApp;
-extern double totalInFlux;
+/*extern double totalInFlux;
 extern double totalOutgassing;
-extern double gasMass;
+extern double gasMass;*/
 //extern int nonIsothermal;
 //extern HANDLE molflowHandle;
 extern int needsReload;
@@ -166,7 +168,7 @@ void Geometry::Clear() {
 
 void Geometry::CalcTotalOutGassing() {
 	
-	totalOutgassing = 0.0;
+	/*totalOutgassing = 0.0;
 	totalInFlux = 0.0;
 	for (int i = 0; i<sh.nbFacet; i++) {
 		if (facets[i]->sh.desorbType>0) { //has desorption
@@ -183,11 +185,11 @@ void Geometry::CalcTotalOutGassing() {
 	}
 	//totalOutgassing*=0.001; //conversion from "unit*l/s" to "unit*m3/sec"
 	MolFlow *mApp = (MolFlow *)theApp;
-	if (mApp->globalSettings) mApp->globalSettings->UpdateOutgassing();
+	if (mApp->globalSettings) mApp->globalSettings->UpdateOutgassing();*/
 }
 
 void Geometry::CalculateFacetParam(int facet) {
-
+	MolFlow *mApp = (MolFlow *)theApp;
 	Facet *f = facets[facet];
 
 	// Calculate facet normal
@@ -256,7 +258,7 @@ void Geometry::CalculateFacetParam(int facet) {
 	f->d = D;
 	f->err = max;
 
-	f->sh.maxSpeed = 4.0 * sqrt(2.0*8.31*f->sh.temperature / 0.001 / gasMass);
+	f->sh.maxSpeed = 4.0 * sqrt(2.0*8.31*f->sh.temperature / 0.001 / mApp->worker.gasMass);
 }
 
 void Geometry::InitializeGeometry(int facet_number, BOOL noVertexShift) {
@@ -474,33 +476,83 @@ void Geometry::RebuildLists() {
 	BuildGLList();
 }
 
-DWORD Geometry::GetGeometrySize(std::vector<double> *moments) {
-
+DWORD Geometry::GetGeometrySize() {
+	MolFlow *mApp = (MolFlow *)theApp;
+	Worker  *work = &mApp->worker;
 	// Compute number of bytes allocated
 	DWORD memoryUsage = 0;
 	memoryUsage += sizeof(SHGEOM);
 	memoryUsage += sh.nbVertex * sizeof(VERTEX3D);
 	for (int i = 0; i < sh.nbFacet; i++)
 		memoryUsage += facets[i]->GetGeometrySize();
-	memoryUsage += sizeof(double)*(int)(*moments).size(); //time values
-	memoryUsage += 3 * sizeof(double)+2 * sizeof(BOOL)+sizeof(double); //gas pulse parameters
+	
+	//CDFs
+	for (size_t i=0;i<work->CDFs.size();i++)
+		memoryUsage+=work->CDFs[i].size()*2*sizeof(double);
+	
+	//IDs
+	for (size_t i=0;i<work->IDs.size();i++)
+		memoryUsage+=work->IDs[i].size()*2*sizeof(double);
+	
+	//Parameters
+	for (size_t i=0;i<work->parameters.size();i++)
+		memoryUsage+=work->parameters[i].values.size()*2*sizeof(double);
+
+	memoryUsage += sizeof(double)*(int)(work->temperatures).size(); //moments
+	memoryUsage += sizeof(double)*(int)(work->moments).size(); //moments
+	memoryUsage += sizeof(size_t)*(int)(work->desorptionParameterIDs).size(); //moments
 	return memoryUsage;
 }
 
-void Geometry::CopyGeometryBuffer(BYTE *buffer, std::vector<double> *moments) {
-	MolFlow *mApp = (MolFlow *)theApp;
+void Geometry::CopyGeometryBuffer(BYTE *buffer) {
+	
 	// Build shared buffer for geometry (see Shared.h)
+	// Basically we serialize all data and let the subprocesses read them
+
+	/*
+	Memory map:
+	
+	-->bufferStart
+	SHGEOM (nbFacets, time-dep parameters, gas mass, etc.)
+	vertices3 (nbVertex times VERTEX3D struct)
+	FOR EACH FACET
+       SHFACET
+	   indices (nbIndex times int)
+	   vertices2 (nbIndex times VERTEX2D struct)
+	   [outgassingMap (height*width*double)]
+	-->incBuff
+	[inc Map: for each facet with texture, height*width*double]
+	CDFs.size()
+	CDFs
+	IDs.size()
+	[IDs]
+	parameters.size()
+	[parameters]
+	temperatures.size()
+	temperatures
+
+	*/
+
+	MolFlow *mApp = (MolFlow *)theApp;
+	Worker *w=&mApp->worker;
 	int fOffset = sizeof(SHGHITS);
 	SHGEOM *shGeom = (SHGEOM *)buffer;
-	this->sh.nbMoments = (int)(*moments).size();
-	this->sh.gasMass = gasMass;
-	//this->sh.nonIsothermal=nonIsothermal;
-	//this->sh.molflowHandle=molflowHandle;
-	//this->sh.totalOutgassing=totalOutgassing;
+	
+	sh.nbMoments = w->moments.size();
+	sh.latestMoment=w->latestMoment;
+	sh.totalDesorbedMolecules=w->totalDesorbedMolecules;
+	sh.finalOutgassingRate=w->finalOutgassingRate;
+	sh.gasMass=w->gasMass;
+	sh.timeWindowSize=w->timeWindowSize;
+	sh.useMaxwellDistribution=w->useMaxwellDistribution;
+	sh.calcConstantFlow=w->calcConstantFlow;
+	
 	memcpy(shGeom, &(this->sh), sizeof(SHGEOM));
 	buffer += sizeof(SHGEOM);
+	
 	memcpy(buffer, vertices3, sizeof(VERTEX3D)*sh.nbVertex);
 	buffer += sizeof(VERTEX3D)*sh.nbVertex;
+	
 	for (int i = 0; i < sh.nbFacet; i++) {
 		Facet *f = facets[i];
 		f->sh.hitOffset = fOffset;
@@ -531,15 +583,18 @@ void Geometry::CopyGeometryBuffer(BYTE *buffer, std::vector<double> *moments) {
 						if (area>0.0) {
 							// Use the sign bit to store isFull flag
 							if (f->mesh[add].full)
-								*((double *)buffer) = -1.0 / area;
+							{
+								WRITEVAL(-1.0 / area, double);
+							}
 							else
-								*((double *)buffer) = 1.0 / area;
+							{
+								WRITEVAL(1.0 / area, double);
+							}
 						}
 						else {
-							*((double *)buffer) = 0.0;
+							WRITEVAL(0.0, double);
 						}
 						add++;
-						buffer += sizeof(double);
 					}
 				}
 
@@ -553,12 +608,11 @@ void Geometry::CopyGeometryBuffer(BYTE *buffer, std::vector<double> *moments) {
 				for (int j = 0; j < f->sh.texHeight; j++) {
 					for (int i = 0; i<f->sh.texWidth; i++) {
 						if (area>0.0) {
-							*((double *)buffer) = 1.0 / area;
+							WRITEVAL(1.0 / area, double);
 						}
 						else {
-							*((double *)buffer) = 0.0;
+							WRITEVAL(0.0, double);
 						}
-						buffer += sizeof(double);
 					}
 				}
 
@@ -566,18 +620,55 @@ void Geometry::CopyGeometryBuffer(BYTE *buffer, std::vector<double> *moments) {
 		}
 	}
 
-	//Time moments
-	for (int i = 0; i < (int)(*moments).size(); i++) {
-		*((double *)buffer) = (*moments)[i];
-		buffer += sizeof(double);
+	
+	//CDFs
+	WRITEVAL(w->CDFs.size(), size_t);
+	for (size_t i = 0; i < w->CDFs.size(); i++) {
+		WRITEVAL(w->CDFs[i].size(), size_t);
+		for (size_t j=0;j<w->CDFs[i].size();j++) {
+			WRITEVAL(w->CDFs[i][j].first, double);
+			WRITEVAL(w->CDFs[i][j].second, double);
+		}
 	}
-	//Gas pulse properties
-	*((double *)buffer) = mApp->worker.desorptionStartTime; buffer += sizeof(double);
-	*((double *)buffer) = mApp->worker.desorptionStopTime;   buffer += sizeof(double);
-	*((double *)buffer) = mApp->worker.timeWindowSize;      buffer += sizeof(double);
-	*((BOOL *)buffer) = mApp->worker.useMaxwellDistribution;   buffer += sizeof(BOOL);
-	*((BOOL *)buffer) = mApp->worker.calcConstantFlow;   buffer += sizeof(BOOL);
-	*((double *)buffer) = mApp->worker.valveOpenMoment;      buffer += sizeof(double);
+
+	//IDs
+	WRITEVAL(w->IDs.size(), size_t);
+	for (size_t i = 0; i < w->IDs.size(); i++) {
+		WRITEVAL(w->IDs[i].size(), size_t);
+		for (size_t j = 0; j<w->IDs[i].size(); j++) {
+			WRITEVAL(w->IDs[i][j].first, double);
+			WRITEVAL(w->IDs[i][j].second, double);
+		}
+	}
+
+	//Parameters
+	WRITEVAL(w->parameters.size(), size_t);
+	for (size_t i = 0; i < w->parameters.size(); i++) {
+		WRITEVAL(w->parameters[i].values.size(), size_t);
+		for (size_t j=0;j<w->CDFs[i].size();j++) {
+			WRITEVAL(w->parameters[i].values[j].first, double);
+			WRITEVAL(w->parameters[i].values[j].second, double);
+		}
+	}
+	
+	//Temperatures
+	WRITEVAL(w->temperatures.size(), size_t);
+	for (size_t i = 0; i < w->temperatures.size(); i++) {
+		WRITEVAL(w->temperatures[i], double);
+	}
+	
+	//Time moments
+	//WRITEVAL(w->moments.size(), size_t); //nbMoments already passed
+	for (size_t i = 0; i < w->moments.size(); i++) {
+		WRITEVAL(w->moments[i], double);
+	}
+
+	//Desorption parameter IDs
+	WRITEVAL(w->desorptionParameterIDs.size(), size_t);
+	for (size_t i = 0; i < w->desorptionParameterIDs.size(); i++) {
+		WRITEVAL(w->desorptionParameterIDs[i], size_t);
+	}
+	
 }
 
 void Geometry::SetAutoNorme(BOOL enable) {
@@ -1760,7 +1851,7 @@ void Geometry::InsertGEOGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 	}
 	if (version2 >= 7) {
 		file->ReadKeyword("gasMass"); file->ReadKeyword(":");
-		gasMass = file->ReadDouble();
+		/*gasMass = */file->ReadDouble();
 	}
 	if (version2 >= 10) { //time-dependent version
 		file->ReadKeyword("userMoments"); file->ReadKeyword("{");
@@ -2393,7 +2484,7 @@ void Geometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *pleak, int *nble
 	}
 	if (*version >= 7) {
 		file->ReadKeyword("gasMass"); file->ReadKeyword(":");
-		gasMass = file->ReadDouble();
+		worker->gasMass = file->ReadDouble();
 	}
 	if (*version >= 10) { //time-dependent version
 		file->ReadKeyword("userMoments"); file->ReadKeyword("{");
@@ -2410,9 +2501,9 @@ void Geometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *pleak, int *nble
 	}
 	if (*version >= 11) { //pulse version
 		file->ReadKeyword("desorptionStart"); file->ReadKeyword(":");
-		worker->desorptionStartTime = file->ReadDouble();
+		/*worker->desorptionStartTime =*/ file->ReadDouble();
 		file->ReadKeyword("desorptionStop"); file->ReadKeyword(":");
-		worker->desorptionStopTime = file->ReadDouble();
+		/*worker->desorptionStopTime =*/ file->ReadDouble();
 		file->ReadKeyword("timeWindow"); file->ReadKeyword(":");
 		worker->timeWindowSize = file->ReadDouble();
 		file->ReadKeyword("useMaxwellian"); file->ReadKeyword(":");
@@ -2987,7 +3078,7 @@ void Geometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, std::
 	file->Write("nbFormula:"); file->WriteInt((!saveSelected)?mApp->nbFormula:0, "\n");
 	file->Write("nbView:"); file->WriteInt(mApp->nbView, "\n");
 	file->Write("nbSelection:"); file->WriteInt((!saveSelected)?mApp->nbSelection:0, "\n");
-	file->Write("gasMass:"); file->WriteDouble(gasMass, "\n");
+	file->Write("gasMass:"); file->WriteDouble(worker->gasMass, "\n");
 
 	file->Write("userMoments {\n");
 	file->Write(" nb:"); file->WriteInt((int)userMoments.size());
@@ -2998,8 +3089,8 @@ void Geometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, std::
 	}
 	file->Write("\n}\n");
 
-	file->Write("desorptionStart:"); file->WriteDouble(worker->desorptionStartTime, "\n");
-	file->Write("desorptionStop:"); file->WriteDouble(worker->desorptionStopTime, "\n");
+	file->Write("desorptionStart:"); file->WriteDouble(/*worker->desorptionStartTime*/0.0, "\n");
+	file->Write("desorptionStop:"); file->WriteDouble(/*worker->desorptionStopTime*/1.0, "\n");
 	file->Write("timeWindow:"); file->WriteDouble(worker->timeWindowSize, "\n");
 	file->Write("useMaxwellian:"); file->WriteInt(worker->useMaxwellDistribution, "\n");
 	file->Write("calcConstantFlow:"); file->WriteInt(worker->calcConstantFlow, "\n");
@@ -3326,9 +3417,9 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 						break;
 
 					case 3: //Impingement rate
-						dCoef = totalInFlux / shGHit->total.hit.nbDesorbed * 1E4; //1E4: conversion m2->cm2
-						if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0f : ((mApp->worker.desorptionStopTime - mApp->worker.desorptionStartTime)
-							/ mApp->worker.timeWindowSize));
+						dCoef = /*totalInFlux*/ 1.0 / shGHit->total.hit.nbDesorbed * 1E4; //1E4: conversion m2->cm2
+						if (shGHit->mode == MC_MODE) dCoef *= (mApp->worker.displayedMoment == 0) 
+							? mApp->worker.finalOutgassingRate : (mApp->worker.totalDesorbedMolecules / mApp->worker.timeWindowSize);
 						for (int j = 0; j < h; j++) {
 							for (int i = 0; i < w; i++) {
 								fprintf(file, "%g", (double)hits[i + j*w].count / (f->mesh[i + j*w].area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef);
@@ -3340,9 +3431,9 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 
 					case 4: //Particle density
 					{
-						dCoef = totalInFlux / shGHit->total.hit.nbDesorbed * 1E4; //1E4: conversion m2->cm2
-						if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0f : ((mApp->worker.desorptionStopTime - mApp->worker.desorptionStartTime)
-							/ mApp->worker.timeWindowSize));
+						dCoef = /*totalInFlux*/ 1.0 / shGHit->total.hit.nbDesorbed * 1E4; //1E4: conversion m2->cm2
+						if (shGHit->mode == MC_MODE) dCoef *= (mApp->worker.displayedMoment == 0)
+							? mApp->worker.finalOutgassingRate : (mApp->worker.totalDesorbedMolecules / mApp->worker.timeWindowSize);
 						for (int j = 0; j < h; j++) {
 							for (int i = 0; i < w; i++) {
 								double v_avg = 2.0*(double)hits[i + j*w].count / hits[i + j*w].sum_1_per_speed;
@@ -3357,15 +3448,15 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 					}
 					case 5: //Gas density
 					{
-						dCoef = totalInFlux / shGHit->total.hit.nbDesorbed * 1E4; //1E4: conversion m2->cm2
-						if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0f : ((mApp->worker.desorptionStopTime - mApp->worker.desorptionStartTime)
-							/ mApp->worker.timeWindowSize));
+						dCoef = /*totalInFlux*/ 1.0 / shGHit->total.hit.nbDesorbed * 1E4; //1E4: conversion m2->cm2
+						if (shGHit->mode == MC_MODE) dCoef *= (mApp->worker.displayedMoment == 0)
+							? mApp->worker.finalOutgassingRate : (mApp->worker.totalDesorbedMolecules / mApp->worker.timeWindowSize);
 						for (int j = 0; j < h; j++) {
 							for (int i = 0; i < w; i++) {
 								double v_avg = 2.0*(double)hits[i + j*w].count / hits[i + j*w].sum_1_per_speed;
 								double imp_rate = hits[i + j*w].count / (f->mesh[i + j*w].area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef;
 								double rho = 4.0*imp_rate / v_avg;
-								double rho_mass = rho*gasMass / 1000.0 / 6E23;
+								double rho_mass = rho*mApp->worker.gasMass / 1000.0 / 6E23;
 								fprintf(file, "%g", rho_mass);
 								fprintf(file, "\t");
 							}
@@ -3376,9 +3467,9 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 					case 6:  // Pressure [mbar]
 
 						// Lock during update
-						dCoef = totalInFlux / shGHit->total.hit.nbDesorbed * 1E4 * (gasMass / 1000 / 6E23) *0.0100;  //1E4 is conversion from m2 to cm2, 0.01: Pa->mbar
-						if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0f : ((mApp->worker.desorptionStopTime - mApp->worker.desorptionStartTime)
-							/ mApp->worker.timeWindowSize));
+						dCoef = /*totalInFlux*/ 1.0 / shGHit->total.hit.nbDesorbed * 1E4 * (mApp->worker.gasMass / 1000 / 6E23) *0.0100;  //1E4 is conversion from m2 to cm2, 0.01: Pa->mbar
+						if (shGHit->mode == MC_MODE) dCoef *= (mApp->worker.displayedMoment == 0)
+							? mApp->worker.finalOutgassingRate : (mApp->worker.totalDesorbedMolecules / mApp->worker.timeWindowSize);
 						for (int j = 0; j < h; j++) {
 							for (int i = 0; i < w; i++) {
 								fprintf(file, "%g", hits[i + j*w].sum_v_ort_per_area*dCoef);

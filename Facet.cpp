@@ -90,7 +90,7 @@ Facet::Facet(int nbIndex) {
 	sh.useOutgassingFile = FALSE;
 	sh.accomodationFactor = 1.0;
 
-	sh.flow_paramId=-1;
+	sh.outgassing_paramId=-1;
 	sh.opacity_paramId=-1;
 	sh.sticking_paramId=-1;
 

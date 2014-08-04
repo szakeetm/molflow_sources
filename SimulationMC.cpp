@@ -31,30 +31,11 @@ extern void SetErrorSub(char *message);
 // Compute area of all the desorption facet
 // -------------------------------------------------------------
 
-void ComputeSourceArea() {
-	int i, j, k, l, tSize;
+void CalcTotalOutgassing() { 
+	int i, j, k, tSize;
 	FACET *f;
 	double scale;
 	//float scale_precomputed;
-
-	// Compute the outgassing of all source facet
-	sHandle->sourceArea = 0.0;
-	//sHandle->totalOutgassing = 0.0;  //calculated locally
-	for (j = 0; j < sHandle->nbSuper; j++) {
-		for (i = 0; i < sHandle->str[j].nbFacet; i++) {
-			f = sHandle->str[j].facets[i];
-			if (f->sh.desorbType != DES_NONE) { //there is a kind of desorption
-				if (f->sh.useOutgassingFile) { //outgassing file
-					for (l = 0; l < (f->sh.outgassingMapWidth*f->sh.outgassingMapHeight); l++) {
-						sHandle->sourceArea += f->outgassingMap[l] / (1.38E-23*f->sh.temperature);
-					}
-				}
-				else { //regular outgassing
-					sHandle->sourceArea += f->sh.flow / (1.38E-23*f->sh.temperature);  //Outgassing molecules/sec
-				}
-			}
-		}
-	}
 
 	// Update texture increment for MC
 	//scale_precomputed=(float)(40.0/(sqrt(8.0*8.31/(PI*sHandle->gasMass*0.001))));
@@ -230,8 +211,11 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, int nbMoments, DWORD timeout) {
 						AHIT *shTexture = (AHIT *)(buffer + (f->sh.hitOffset + sizeof(SHHITS)+f->profileSize*(1 + nbMoments) + m*f->textureSize));
 						//double dCoef = gHits->total.hit.nbDesorbed * 1E4 * sHandle->gasMass / 1000 / 6E23 * MAGIC_CORRECTION_FACTOR;  //1E4 is conversion from m2 to cm2
 						double timeCorrection = 1.0;
-						if (m != 0 && gHits->mode == MC_MODE) timeCorrection =
-							(sHandle->desorptionStopTime - sHandle->desorptionStartTime) / sHandle->timeWindowSize;
+						/*if (m != 0 && gHits->mode == MC_MODE) timeCorrection = 
+							(sHandle->desorptionStopTime - sHandle->desorptionStartTime) / sHandle->timeWindowSize;*/
+						//CHECK
+						if (m != 0 && gHits->mode == MC_MODE) timeCorrection = 
+							sHandle->totalDesorbedMolecules / sHandle->timeWindowSize;
 						for (y = 0; y < f->sh.texHeight; y++) {
 							for (x = 0; x < f->sh.texWidth; x++) {
 								int add = x + y*f->sh.texWidth;
@@ -432,8 +416,7 @@ BOOL SimulationMCStep(int nbStep) {
 }
 
 // -------------------------------------------------------------
-// Launch a ray from a source facet (starting point location with 
-// uniform distribution on the whole desoprtion surface !not anymmore! changed to outgassing). The ray 
+// Launch a ray from a source facet. The ray 
 // direction is choosen according to the desorption type.
 // -------------------------------------------------------------
 
@@ -458,7 +441,7 @@ BOOL StartFromSource() {
 	}
 
 	// Select source
-	srcRnd = rnd() * sHandle->sourceArea;
+	srcRnd = rnd() * sHandle->totalDesorbedMolecules;
 
 	while (!found_side1 && !found_side2 && j < sHandle->nbSuper) {
 		i = 0;
@@ -468,25 +451,29 @@ BOOL StartFromSource() {
 				if (f->sh.useOutgassingFile) { //Using SynRad-generated outgassing map
 					for (w = 0; w < f->sh.outgassingMapWidth && !found_side1 && !found_side2; w++)
 						for (h = 0; h<f->sh.outgassingMapHeight && !found_side1 && !found_side2; h++) {
-							double flow = f->outgassingMap[h*f->sh.outgassingMapWidth + w] / (1.38E-23*f->sh.temperature);
-							if (flow>0.0) {
-								foundInMap = found_side1 = (srcRnd >= A) && (srcRnd < (A + flow*((f->sh.is2sided) ? 0.5 : 1.0))); //2-sided facets have half outgassing on each side
+							double outgassing = sHandle->latestMoment * f->outgassingMap[h*f->sh.outgassingMapWidth + w] / (1.38E-23*f->sh.temperature);
+							if (outgassing>0.0) {
+								foundInMap = found_side1 = (srcRnd >= A) && (srcRnd < (A + outgassing*((f->sh.is2sided) ? 0.5 : 1.0))); //2-sided facets have half outgassing on each side
 								if (foundInMap) { mapPositionW = w; mapPositionH = h; }
-								A += flow*((f->sh.is2sided) ? 0.5 : 1.0);
+								A += outgassing*((f->sh.is2sided) ? 0.5 : 1.0);
 								if (f->sh.is2sided) { //check the other side
-									foundInMap = found_side2 = (srcRnd >= A) && (srcRnd < A + flow*0.5);
+									foundInMap = found_side2 = (srcRnd >= A) && (srcRnd < A + outgassing*0.5);
 									if (foundInMap) { mapPositionW = w; mapPositionH = h; }
-									A += flow*0.5;
+									A += outgassing*0.5;
 								}
 							}
 						}
 				}
-				else  { //regular outgassing
-					found_side1 = (srcRnd >= A) && (srcRnd < (A + f->sh.flow / (1.38E-23*f->sh.temperature)*((f->sh.is2sided) ? 0.5 : 1.0))); //2-sided facets have half outgassing on each side
-					A += f->sh.flow / (1.38E-23*f->sh.temperature)*((f->sh.is2sided) ? 0.5 : 1.0);
+				else  { //constant or time-dependent outgassing
+					double outgassing=
+						(f->sh.outgassing_paramId>=0)
+						?sHandle->IDs[f->IDid].back().second/ (1.38E-23*f->sh.temperature)
+						:sHandle->latestMoment*f->sh.flow / (1.38E-23*f->sh.temperature);
+					found_side1 = (srcRnd >= A) && (srcRnd < (A + outgassing *((f->sh.is2sided) ? 0.5 : 1.0))); //2-sided facets have half outgassing on each side
+					A += outgassing *((f->sh.is2sided) ? 0.5 : 1.0);
 					if (f->sh.is2sided) { //check the other side
-						found_side2 = (srcRnd >= A) && (srcRnd < A + f->sh.flow / (1.38E-23*f->sh.temperature)*0.5);
-						A += f->sh.flow / (1.38E-23*f->sh.temperature)*0.5;
+						found_side2 = (srcRnd >= A) && (srcRnd < A + outgassing*0.5);
+						A += outgassing*0.5;
 					}
 				}
 			}
@@ -709,7 +696,7 @@ void AHIT_FACET(FACET *f, double time, BOOL countHit, double velocity_factor, do
 	double directionFactor = sHandle->velocityCurrentParticle*abs(DOT3(sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
 		f->sh.N.x, f->sh.N.y, f->sh.N.z)); //surface-orthogonal velocity component
 
-	for (int m = 0; m <= sHandle->nbMoments; m++)
+	for (size_t m = 0; m <= sHandle->nbMoments; m++)
 		if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
 			if (countHit) f->hits[m][add].count++;
 			f->hits[m][add].sum_1_per_speed += velocity_factor / sHandle->velocityCurrentParticle;
@@ -819,100 +806,11 @@ double GenerateRandomVelocity(int CDFId){
 }
 
 double GenerateDesorptionTime(FACET *src){
-	if (src->sh.flow_paramId>=0) { //time-dependent desorption
+	if (src->sh.outgassing_paramId>=0) { //time-dependent desorption
 		return InterpolateX(rnd()*sHandle->IDs[src->IDid].back().second,sHandle->IDs[src->IDid],TRUE);
 	} else {
 		return rnd()*sHandle->latestMoment; //continous desorption between 0 and latestMoment
 	}
-}
-
-std::vector<std::pair<double,double>> Generate_CDF(double gasTempKelvins,double gasMassGramsPerMol,size_t size){
-	std::vector<std::pair<double,double>> cdf;cdf.reserve(size);
-	double Kb=1.38E-23;
-	double R=8.3144621;
-	double a=sqrt(Kb*gasTempKelvins/(gasMassGramsPerMol*1.67E-27)); //distribution a parameter. Converting molar mass to atomic mass
-
-	//Generate cumulative distribution function
-	double mostProbableSpeed=sqrt(2*R*gasTempKelvins/(gasMassGramsPerMol/1000.0));
-	double binSize=4.0*mostProbableSpeed/(double)size; //distribution generated between 0 and 4*V_prob
-	/*double coeff1=1.0/sqrt(2.0)/a;
-	double coeff2=sqrt(2.0/PI)/a;
-	double coeff3=1.0/(2.0*pow(a,2));
-
-	for (size_t i=0;i<size;i++) {
-		double x=(double)i*binSize;
-		cdf.push_back(std::make_pair(x,erf(x*coeff1)-coeff2*x*exp(-pow(x,2)*coeff3)));
-	}*/
-	for (size_t i = 0; i<size; i++) {
-		double x = (double)i*binSize;
-		double x_square_per_2_a_square = pow(x, 2) / (2 * pow(a, 2));
-		cdf.push_back(std::make_pair(x, 1 - exp(-x_square_per_2_a_square)*(x_square_per_2_a_square + 1)));
-	}
-
-	/* //UPDATE: not generating inverse since it was introducing sampling problems at the large tail for high speeds
-	//CDF created, let's generate its inverse
-	std::vector<std::pair<double,double>> inverseCDF;inverseCDF.reserve(size);
-	binSize=1.0/(double)size; //Divide probability to bins
-	for (size_t i=0;i<size;i++) {
-		double p=(double)i*binSize;
-		//inverseCDF.push_back(std::make_pair(p,InterpolateX(p,cdf,TRUE)));
-		inverseCDF.push_back(std::make_pair(p, InterpolateX(p, cdf, FALSE)));
-	}
-	return inverseCDF;
-	*/
-	return cdf;
-}
-
-std::vector<std::pair<double,double>> Generate_ID(int paramId){
-	std::vector<std::pair<double,double>> ID;
-	//First, let's check at which index is the latest moment
-	size_t indexBeforeLastMoment;
-	for (indexBeforeLastMoment=0;indexBeforeLastMoment<sHandle->parameters[paramId].values.size()&&
-		(sHandle->parameters[paramId].values[indexBeforeLastMoment].first<sHandle->latestMoment);indexBeforeLastMoment++);
-	if (indexBeforeLastMoment>=sHandle->temperatures.size()) indexBeforeLastMoment=sHandle->parameters[paramId].values.size()-1; //not found, set as last moment
-	
-	//Construct integral from 0 to latest moment
-	
-	//First moment
-	ID.push_back(std::make_pair(sHandle->parameters[paramId].values[0].first,
-			sHandle->parameters[paramId].values[0].first*sHandle->parameters[paramId].values[0].second)); //for the first moment
-	
-	//Intermediate moments
-	for (size_t pos=1;pos<=indexBeforeLastMoment;pos++) {
-		if (abs(sHandle->parameters[paramId].values[pos].second-sHandle->parameters[paramId].values[pos-1].second)<1E-10) //two equal values follow, simple integration by multiplying
-			ID.push_back(std::make_pair(sHandle->parameters[paramId].values[pos].first,
-			ID.back().second+
-			(sHandle->parameters[paramId].values[pos].first-sHandle->parameters[paramId].values[pos-1].first)*sHandle->parameters[paramId].values[pos].second));
-		else { //difficult case, we'll integrate by dividing two 5equal sections
-			for (double delta=0.2;delta<1.01;delta+=0.2) {
-				double delta_t=sHandle->parameters[paramId].values[pos].first-sHandle->parameters[paramId].values[pos-1].first;
-				double time=sHandle->parameters[paramId].values[pos-1].first+delta*delta_t;
-				double avg_value=(InterpolateY(time-0.2*delta_t,sHandle->parameters[paramId].values)+InterpolateY(time,sHandle->parameters[paramId].values))/2.0;
-				ID.push_back(std::make_pair(time,
-					ID.back().second+
-					0.2*delta_t*avg_value));
-			}
-		}
-	}
-
-	//latestMoment
-	double valueAtLatestMoment=InterpolateY(sHandle->latestMoment,sHandle->parameters[paramId].values,TRUE);
-	if ((valueAtLatestMoment-sHandle->parameters[paramId].values[indexBeforeLastMoment].second)<1E-10) //two equal values follow, simple integration by multiplying
-			ID.push_back(std::make_pair(sHandle->latestMoment,
-			ID.back().second+
-			(sHandle->latestMoment-sHandle->parameters[paramId].values[indexBeforeLastMoment].first)*sHandle->parameters[paramId].values[indexBeforeLastMoment].second));
-		else { //difficult case, we'll integrate by dividing two 5equal sections
-			for (double delta=0.0;delta<1.01;delta+=0.2) {
-				double delta_t=sHandle->latestMoment-sHandle->parameters[paramId].values[indexBeforeLastMoment].first;
-				double time=sHandle->parameters[paramId].values[indexBeforeLastMoment].first+delta*delta_t;
-				double avg_value=(sHandle->parameters[paramId].values[indexBeforeLastMoment].second+InterpolateY(time,sHandle->parameters[paramId].values))/2.0;
-				ID.push_back(std::make_pair(time,
-					ID.back().second+
-					0.2*delta_t*avg_value));
-			}
-		}
-
-	return ID;
 }
 
 double GetStickingAt(FACET *f,double time) {

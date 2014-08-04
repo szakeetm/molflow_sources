@@ -25,11 +25,11 @@ GNU General Public License for more details.
 
 extern GLApplication *theApp;
 
-extern double gasMass;
+/*extern double gasMass;
 extern double totalOutgassing;
-extern double totalInFlux;
+extern double totalInFlux;*/
 
-static const char*profType[] = {"None","Pressure \201 [mbar]","Pressure \202 [mbar]","Angle","Velocity"};
+static const char*profType[] = {"None","Pressure \201 [mbar]","Pressure \202 [mbar]","Angle","Velocity","Ort.velocity"};
 
 TimewisePlotter::TimewisePlotter():GLWindow() {
 
@@ -58,25 +58,12 @@ TimewisePlotter::TimewisePlotter():GLWindow() {
 	selButton = new GLButton(0,"Show Facet");
 	Add(selButton);
 
-	/*addButton = new GLButton(0,"Add curve");
-	Add(addButton);
-
-	removeButton = new GLButton(0,"Remove curve");
-	Add(removeButton);
-
-	resetButton = new GLButton(0,"Remove all");
-	Add(resetButton);*/
-
 	profCombo = new GLCombo(0);
 	profCombo->SetEditable(TRUE);
 	Add(profCombo);
 
 	normLabel = new GLLabel("Normalize");
 	Add(normLabel);
-	//qLabel = new GLLabel("Q=");
-	//Add(qLabel);
-	//unitLabel = new GLLabel("units*l/s");
-	//Add(unitLabel);
 
 	normCombo = new GLCombo(0);
 	normCombo->SetEditable(TRUE);
@@ -95,15 +82,9 @@ TimewisePlotter::TimewisePlotter():GLWindow() {
 	constantFlowToggle = new GLToggle(0,"Display constant flow");
 	Add(constantFlowToggle);
 
-	//showAllMoments = new GLToggle(0,"Show moments");
-	//Add(showAllMoments);
-
 	formulaText = new GLTextField(0,"");
 	formulaText->SetEditable(TRUE);
 	Add(formulaText);
-	//qText = new GLTextField(0,"1");
-	//qText->SetEditable(TRUE);
-	//Add(qText);
 
 	logYToggle = new GLToggle(0,"Log Y");
 	Add(logYToggle);
@@ -355,9 +336,11 @@ void TimewisePlotter::refreshViews() {
 					v->Add((double)j, (double)profilePtr[j].count / fnbHit, FALSE);
 				break;
 			case 7: //Pressure
-				scale = totalInFlux / nbDes / (f->sh.area / (double)PROFILE_SIZE*1E-4)* gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
-				scale *= ((momentIndex == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
-					/ worker->timeWindowSize)); //correction for time window length
+				scale = /*totalInFlux*/ 1.0 / nbDes / (f->sh.area / (double)PROFILE_SIZE*1E-4)* worker->gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
+				/*scale *= ((momentIndex == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
+					/ worker->timeWindowSize)); //correction for time window length*/
+				//CHECK
+				scale *= ((momentIndex == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules / worker->timeWindowSize));
 				if (f->sh.is2sided) scale *= 0.5;
 				//if (f->sh.opacity>0.0) scale *= f->sh.opacity;
 				for(int j=0;j<PROFILE_SIZE && fnbHit!=0.0;j++)

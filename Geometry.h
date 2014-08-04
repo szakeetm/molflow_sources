@@ -194,11 +194,11 @@ public:
   double distTraveledTotal;
 
   // Memory usage (in bytes)
-  DWORD GetGeometrySize(std::vector<double> *moments);
+  DWORD GetGeometrySize();
   DWORD GetHitsSize(std::vector<double> *moments);
 
   // Raw data buffer (geometry)
-  void CopyGeometryBuffer(BYTE *buffer,std::vector<double> *moments);
+  void CopyGeometryBuffer(BYTE *buffer);
 
   // AC matrix
   DWORD GetMaxElemNumber();

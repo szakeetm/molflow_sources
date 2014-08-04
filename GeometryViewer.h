@@ -66,6 +66,9 @@ typedef struct {
   int      projMode;   // Projection type
   double   camAngleOx; // Spheric coordinates
   double   camAngleOy; // Spheric coordinates
+
+  double   camAngleOz;
+
   double   camDist;    // Camera distance (or zoom in orthographic)
 
   double   lightAngleOx; //Light direction
@@ -135,6 +138,7 @@ public:
   int  showBack;
   BOOL showFilter;
   BOOL showColormap;
+  BOOL showTP;
   BOOL showHidden;
   BOOL showHiddenVertex;
   BOOL showMesh;
@@ -158,7 +162,7 @@ private:
   void DrawNormal();
   void DrawUV();
   void DrawLeak();
-  void DrawLineAndHit();
+  void DrawLinesAndHits();
   void Zoom();
   void UpdateMouseCursor(int mode);
   void TranslateScale(double diff);
@@ -191,7 +195,7 @@ private:
 
   // Viewer mode
   int      draggMode;
-  BOOL     mode;
+  int      mode;
   BOOL     selected;
 
   // View parameters

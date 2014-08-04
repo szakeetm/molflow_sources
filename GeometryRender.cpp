@@ -27,9 +27,9 @@
 #include "GLApp/GLWindowManager.h"
 #include "GLApp/GLMessageBox.h"
 
-extern double totalOutgassing;
+/*extern double totalOutgassing;
 extern double totalInFlux;
-extern double gasMass;
+extern double gasMass;*/
 
 extern MolFlow *theApp;
 
@@ -685,8 +685,9 @@ void Geometry::BuildTexture(BYTE *hits) {
 
 	SHGHITS *shGHit = (SHGHITS *)hits;
 	MolFlow *mApp = (MolFlow *)theApp;
+	Worker *w=&(mApp->worker);
 	double dCoef = 1.0;
-	double timeCorrection = (mApp->worker.displayedMoment == 0) ? 1.0 : (mApp->worker.desorptionStopTime - mApp->worker.desorptionStartTime) / mApp->worker.timeWindowSize;
+	double timeCorrection = (mApp->worker.displayedMoment == 0) ?  w->finalOutgassingRate : (w->totalDesorbedMolecules) / mApp->worker.timeWindowSize;
 	double dCoef_custom[]={1.0,1.0,1.0}; //Three coefficients for pressure, imp.rate, density
 	
 	int nbMoments=(int)mApp->worker.moments.size();
@@ -694,12 +695,12 @@ void Geometry::BuildTexture(BYTE *hits) {
 
 	case MC_MODE:
 		if( shGHit->total.hit.nbDesorbed>0 ) {
-			dCoef = totalInFlux / shGHit->total.hit.nbDesorbed * 1E4; //1E4: conversion between m2 and cm2
+			dCoef = /*totalInFlux*/ 1.0 / shGHit->total.hit.nbDesorbed * 1E4; //1E4: conversion between m2 and cm2
 		}
 
-		dCoef_custom[0]=dCoef*gasMass/1000/6E23*0.0100; //pressure
+		dCoef_custom[0]=dCoef*mApp->worker.gasMass/1000/6E23*0.0100; //pressure
 		dCoef_custom[1]=dCoef;
-		dCoef_custom[2] = dCoef;
+		dCoef_custom[2]=dCoef;
 
 		for (int i=0;i<3;i++) {
 			//texture limits already corrected by timeFactor in UpdateMCHits()

@@ -47,7 +47,7 @@ GNU General Public License for more details.
 #endif
 */
 
-float m_fTime;
+
 // Some contants
 /*
 static const char *fileLFilters[] = { "All files" , "*.*" , "Geometry files" , "*.geo" , "Text files" , "*.txt" , "STR files" , "*.str" , "STL files" , "*.stl" , "ASE files" , "*.ase"};
@@ -80,17 +80,13 @@ static const char *cName[] = {"#","Hits","Des","Abs"};
 
 
 BOOL changedSinceSave;
+float m_fTime;
 MolFlow *theApp;
-extern double gasMass;
+/*extern double gasMass;
 extern double totalOutgassing;
 extern double totalInFlux;
-extern double autoSaveFrequency;
-extern int checkForUpdates;
-extern int autoUpdateFormulas;
-extern int compressSavedFiles;
-//extern HANDLE molflowHandle;
-extern int autoSaveSimuOnly;
-extern int numCPU;
+extern double autoSaveFrequency;*/
+
 
 #define MENU_FILE_LOAD       11
 #define MENU_FILE_IMPORTDES_DES 120
@@ -263,7 +259,8 @@ MolFlow::MolFlow()
 	_CrtSetDbgFlag( tmpFlag );
 	*/
 
-
+	antiAliasing=TRUE;
+	whiteBg=FALSE;
 	lastSaveTime=0.0f;
 	lastSaveTimeSimu=0.0f;
 	changedSinceSave=FALSE;
@@ -328,9 +325,8 @@ MolFlow::MolFlow()
 	tolerance=1e-8;
 	largeArea=1.0;
 	planarityThreshold = 1e-5;
-	totalOutgassing=0.0;
-	totalInFlux = 0.0;
-	gasMass=28;
+	/*totalOutgassing=0.0;
+	totalInFlux = 0.0;*/
 	//molflowHandle=GetCurrentProcess();
 }
 
@@ -1431,7 +1427,7 @@ void MolFlow::ApplyFacetParams() {
 			if(doUseMapA) {
 				f->sh.useOutgassingFile=useMapA;
 			}
-			f->sh.maxSpeed = 4.0 * sqrt(2.0*8.31*f->sh.temperature / 0.001 / gasMass);
+			f->sh.maxSpeed = 4.0 * sqrt(2.0*8.31*f->sh.temperature / 0.001 / worker.gasMass);
 			f->UpdateFlags();
 		}
 	}
@@ -1824,10 +1820,10 @@ void MolFlow::UpdateFormula() {
 					if(f_tmp->sh.sticking>0.0) sumArea += f_tmp->sh.area*f_tmp->sh.opacity*(f_tmp->sh.is2sided?2.0:1.0);
 				}
 				v->value = sumArea;
-			} else if( _stricmp(v->name,"QTOT")==0 ) {
-				v->value = totalOutgassing*10.00; //10: Pa*m3/sec -> mbar*l/s
+			} else if( _stricmp(v->name,"QCONST")==0 ) {
+				v->value = worker.finalOutgassingRate*10.00; //10: Pa*m3/sec -> mbar*l/s
 			} else if( _stricmp(v->name,"NTOT")==0 ) {
-				v->value = totalInFlux;
+				v->value = worker.totalDesorbedMolecules;
 			}else if( _stricmp(v->name,"KB")==0 ) {
 				v->value = 1.3806504e-23;
 			} else if( _stricmp(v->name,"R")==0 ) {
@@ -4886,12 +4882,6 @@ void MolFlow::LoadConfig() {
 			w = f->ReadString();
 		}
 
-
-
-
-
-
-
 		f->ReadKeyword("cdir");f->ReadKeyword(":");
 		strcpy(currentDir,f->ReadString());
 		f->ReadKeyword("cseldir");f->ReadKeyword(":");
@@ -4922,7 +4912,7 @@ void MolFlow::LoadConfig() {
 		f->ReadKeyword("compressSavedFiles");f->ReadKeyword(":");
 		compressSavedFiles = f->ReadInt();
 		f->ReadKeyword("gasMass");f->ReadKeyword(":");
-		gasMass = f->ReadDouble();
+		worker.gasMass = f->ReadDouble();
 
 	} catch (Error &err) {
 		printf("Warning, load config file (one or more feature not supported) %s\n",err.GetMsg());
@@ -5058,7 +5048,7 @@ void MolFlow::SaveConfig() {
 		f->Write("checkForUpdates:");f->WriteInt(checkForUpdates,"\n");
 		f->Write("autoUpdateFormulas:");f->WriteInt(autoUpdateFormulas,"\n");
 		f->Write("compressSavedFiles:");f->WriteInt(compressSavedFiles,"\n");
-		f->Write("gasMass:");f->WriteDouble(gasMass,"\n");
+		f->Write("gasMass:");f->WriteDouble(worker.gasMass,"\n");
 
 	} catch (Error &err) {
 		printf("Warning, failed to save config file %s\n",err.GetMsg());
@@ -5080,7 +5070,7 @@ void MolFlow::calcFlow() {
 	facetTemperature->GetNumber(&temperature);
 	//facetMass->GetNumber(&mass);
 
-	flow=1*sticking*area/10.0/4.0*sqrt(8.0*8.31*temperature/PI/(gasMass*0.001));
+	flow=1*sticking*area/10.0/4.0*sqrt(8.0*8.31*temperature/PI/(worker.gasMass*0.001));
 	SetParam(facetPumping,flow);
 	return;
 }
@@ -5097,7 +5087,7 @@ void MolFlow::calcSticking() {
 	facetTemperature->GetNumber(&temperature);
 	//facetMass->GetNumber(&mass);
 
-	sticking=abs(flow/(area/10.0)*4.0*sqrt(1.0/8.0/8.31/(temperature)*PI*(gasMass*0.001)));
+	sticking=abs(flow/(area/10.0)*4.0*sqrt(1.0/8.0/8.31/(temperature)*PI*(worker.gasMass*0.001)));
 	//if (sticking<=1.0) {
 	SetParam(facetSticking,sticking);
 	//}

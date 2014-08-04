@@ -18,6 +18,7 @@
 
 #include "Types.h"
 #include <Windows.h>
+#include <vector>
 
 #ifndef SHAREDH
 
@@ -86,6 +87,8 @@ typedef struct {
   double distTraveledTotal;
   
 } SHGHITS;
+
+
 
 // -----------------------------------------------------------------
 // Master control shared memory block  (name: MFLWCTRL[masterPID])
@@ -164,17 +167,25 @@ typedef struct {
   int        nbVertex;  // Number of 3D vertices
   int        nbSuper;   // Number of superstructures
   char       name[64];  // (Short file name)
-  //double     totalOutgassing;
-  double     gasMass;
-  //int        nonIsothermal;
-  int        nbMoments; //number of time moments when textures are calculated
-  //HANDLE     molflowHandle;
-  double     desorptionStart;
-  double     desorptionStop;
-  double     timeWindowSize;
-  BOOL       useMaxwellDistribution;
-  BOOL       calcConstantFlow;
-  double     valveOpenMoment;
+  
+  size_t nbMoments; //To pass in advance for memory reservation
+  double latestMoment;  
+  double totalDesorbedMolecules; //Number of molecules desorbed between t=0 and latest_moment
+  double finalOutgassingRate; //Number of outgassing molecules / second at latest_moment (constant flow)
+  double gasMass;
+  double timeWindowSize;
+  BOOL useMaxwellDistribution; //TRUE: Maxwell-Boltzmann distribution, FALSE: All molecules have the same (V_avg) speed
+  BOOL calcConstantFlow;
+
+  /* //Vectors must be serialized
+  std::vector<std::vector<std::pair<double,double>>> CDFs; //cumulative distribution function for each temperature
+  std::vector<std::vector<std::pair<double,double>>> IDs; //integrated distribution function for each time-dependent desorption type
+  std::vector<Parameter> parameters; //all parameters which are time-dependent
+  std::vector<double> temperatures; //keeping track of all temperatures that have a CDF already generated
+  std::vector<double> moments;             //moments when a time-dependent simulation state is recorded
+  std::vector<size_t> desorptionParameterIDs; //time-dependent parameters which are used as desorptions, therefore need to be integrated
+  */
+
 } SHGEOM;
 
 typedef struct {
@@ -187,8 +198,11 @@ typedef struct {
 
   int sticking_paramId;    // -1 if use constant value, 0 or more if referencing time-dependent parameter
   int opacity_paramId;     // -1 if use constant value, 0 or more if referencing time-dependent parameter
-  int flow_paramId;        // -1 if use constant value, 0 or more if referencing time-dependent parameter
+  int outgassing_paramId;  // -1 if use constant value, 0 or more if referencing time-dependent parameter
   
+  int CDFid; //Which probability distribution it belongs to (one CDF per temperature)
+  int IDid;  //If time-dependent desorption, which is its ID
+
   double mass;           // Molecule mass of desorbed flow (in u,u=1.660538782E-27 kg) [CURRENTLY UNUSED, gas mass is a global setting]
   double area;           // Facet area (m^2)
   int    desorbType;     // Desorption type
@@ -216,7 +230,7 @@ typedef struct {
 
   //These don't have to be shared
   //BOOL   isVolumeVisible;    //Do we paint the volume on this facet?
-  //BOOL	 isTextureVisible;	 //Do we paint the texture on this facet?
+  //BOOL   isTextureVisible;	 //Do we paint the texture on this facet?
 
   // Global hit counters
   SHHITS counter;

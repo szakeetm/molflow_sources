@@ -28,8 +28,8 @@ struct myclass {
   }
 } sorter;
 
-void Parameter::SetValues(std::vector<std::pair<double,double>> insertValues) { //sort then set
-	std::sort(insertValues.begin(),insertValues.end(),sorter); //sort pairs by time first
+void Parameter::SetValues(std::vector<std::pair<double,double>> insertValues,BOOL sort) { //sort then set
+	if (sort) std::sort(insertValues.begin(),insertValues.end(),sorter); //sort pairs by time first
 	this->values=insertValues;
 }
 

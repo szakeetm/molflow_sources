@@ -28,7 +28,6 @@ typedef int BOOL;
 #define SAFE_FREE(x) if(x) { free(x);x=NULL; }
 #define SATURATE(x,min,max) {if(x<(min)) x=(min); if(x>(max)) x=(max);}
 #define MAX_STRUCT 512
-#define CDF_SIZE 100 //points in a cumulative distribution function
 #define TIMELIMIT 0.01
 
 #include "Shared.h"
@@ -118,10 +117,20 @@ typedef struct {
   //llong  wallHits[BOUNCEMAX]; // 'Wall collision count before absoprtion' density histogram
 
   std::vector<std::vector<std::pair<double,double>>> CDFs; //cumulative distribution function for each temperature
+  std::vector<std::vector<std::pair<double,double>>> IDs; //integrated distribution function for each time-dependent desorption type
   std::vector<double> temperatures; //keeping track of all temperatures that have a CDF already generated
   std::vector<double> moments;      //time values (seconds) when a simulation state is measured
   std::vector<size_t> desorptionParameterIDs; //time-dependent parameters which are used as desorptions, therefore need to be integrated
-  std::vector<std::vector<std::pair<double,double>>> IDs; //integrated distribution function for each time-dependent desorption type
+  double latestMoment;
+
+  double totalDesorbedMolecules;  // Number of desorbed molecules from t=0 to latest_moment
+  double finalOutgassingRate;     // Outgassing rate at latest_moment (for const. flow calculation)
+  double gasMass;
+  double timeWindowSize;
+  BOOL useMaxwellDistribution; //TRUE: Maxwell-Boltzmann distribution, FALSE: All molecules have the same (V_avg) speed
+  BOOL calcConstantFlow;
+
+  std::vector<Parameter> parameters; //Time-dependent parameters
 
   // Geometry
   char        name[64];         // Global name
@@ -130,11 +139,10 @@ typedef struct {
   VERTEX3D   *vertices3;        // Vertices
   int         nbSuper;          // Number of super structure
   int         curStruct;        // Current structure
-  int         nbMoments;        // Number of time moments
+  size_t      nbMoments;        // Number of time moments
   SUPERSTRUCT str[MAX_STRUCT];
 
   FACET *lastHit;     // Last hitted facet
-  double sourceArea;  // Full source area
   double stepPerSec;  // Avg number of step per sec
   int textTotalSize;  // Texture total size
   int profTotalSize;  // Profile total size
@@ -147,7 +155,7 @@ typedef struct {
   double calcACTime;  // AC matrix calculation time
 
   //double totalOutgassing;
-  double gasMass;
+  
   //int    nonIsothermal;
   //HANDLE molflowHandle;
 
@@ -190,17 +198,6 @@ typedef struct {
   double testCubeVelocity;
   double testSystemTime;
   llong  testCubeCount;*/
-
-  //pulse desorption properties
-  double desorptionStartTime;
-  double desorptionStopTime;
-  double timeWindowSize;
-  BOOL useMaxwellDistribution; //TRUE: Maxwell-Boltzmann distribution, FALSE: All molecules have the same (V_avg) speed
-  double latestMoment;
-  BOOL calcConstantFlow;
-  double valveOpenMoment;
-
-  std::vector<Parameter> parameters; //Time-dependent parameters
   
 #ifdef JACOBI_ITERATION
   ACFLOAT *acDensityTmp;
@@ -233,7 +230,6 @@ BOOL SimulationACStep(int nbStep);
 void RecordHit(int type);
 void RecordLeakPos();
 BOOL StartFromSource();
-void ComputeSourceArea();
 void PerformBounce(FACET *iFacet);
 void PerformAbsorb(FACET *iFacet);
 void PerformTeleport(FACET *iFacet);
@@ -254,17 +250,15 @@ BOOL IsInFacet(FACET *f,double u,double v);
 double GetTick();
 long   GetHitsSize();
 BOOL ComputeACMatrix(SHELEM *mesh);
-int GetCDFId(double temperature);
+
 int GetIDId(int paramId);
-int GenerateNewCDF(double temperature);
-int GenerateNewID(int paramId);
+
 void UpdateVelocity(FACET *collidedFacet);
 double GenerateRandomVelocity(int CDFId);
 double GenerateDesorptionTime(FACET* src);
 double GetStickingAt(FACET *src,double time);
 double GetOpacityAt(FACET *src,double time);
 
-std::vector<std::pair<double,double>> Generate_CDF(double gasTempKelvins,double gasMassGramsPerMol,size_t size);
-std::vector<std::pair<double,double>> Generate_ID(int paramId);
+
 
 #endif /* _SIMULATIONH_ */

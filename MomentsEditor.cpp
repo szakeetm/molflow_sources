@@ -69,18 +69,18 @@ MomentsEditor::MomentsEditor(Worker *w):GLWindow() {
 
 
   //sprintf(tmp,"%g",work->desorptionStartTime);
-  desStartText = new GLTextField(0,"");
+/*  desStartText = new GLTextField(0,"");
   desStartText->SetBounds(120,275,60,20);
-  Add(desStartText);
+  Add(desStartText);*/
 
   GLLabel *stopLabel = new GLLabel("Desorption stops at:                   s");
   stopLabel->SetBounds(15,300,170,25);
   Add(stopLabel);
   
   //sprintf(tmp,"%g",work->desorptionStopTime);
-  desStopText = new GLTextField(0,"");
+  /*desStopText = new GLTextField(0,"");
   desStopText->SetBounds(120,300,60,20);
-  Add(desStopText);
+  Add(desStopText);*/
 
   GLLabel *windowLabel = new GLLabel("Time window length:                  s");
   windowLabel->SetBounds(15,325,170,25);
@@ -106,9 +106,9 @@ MomentsEditor::MomentsEditor(Worker *w):GLWindow() {
   Add(valveLabel);
   
   //sprintf(tmp,"%g",work->desorptionStopTime);
-  valveText = new GLTextField(0,"");
+ /* valveText = new GLTextField(0,"");
   valveText->SetBounds(120,400,60,20);
-  Add(valveText);
+  Add(valveText);*/
 
   //RebuildList();
 
@@ -146,26 +146,26 @@ void MomentsEditor::ProcessMessage(GLComponent *src,int message) {
 
 		} else if (src==setButton) {
 			//validate user input
-			double start,stop,window,valve;
-			if (!(desStartText->GetNumber(&start))) {
+			double /*start,stop,*/window/*,valve*/;
+			/*if (!(desStartText->GetNumber(&start))) {
 				GLMessageBox::Display("Invalid desorption start","Error",GLDLG_OK,GLDLG_ICONERROR);
 				return;
-			}
-			if (!(desStopText->GetNumber(&stop))) {
+			}*/
+			/*if (!(desStopText->GetNumber(&stop))) {
 				GLMessageBox::Display("Invalid desorption stop","Error",GLDLG_OK,GLDLG_ICONERROR);
 				return;
-			}
+			}*/
 			if (!(windowSizeText->GetNumber(&window))) {
 				GLMessageBox::Display("Invalid window length","Error",GLDLG_OK,GLDLG_ICONERROR);
 				return;
 			}
 			
-			if (!(valveText->GetNumber(&valve))) {
+			/*if (!(valveText->GetNumber(&valve))) {
 				GLMessageBox::Display("Invalid valve open time","Error",GLDLG_OK,GLDLG_ICONERROR);
 				return;
-			}
+			}*/
 
-			if (!(start>=0)) {
+			/*if (!(start>=0)) {
 				GLMessageBox::Display("Start moment mustn't be negative","Error",GLDLG_OK,GLDLG_ICONERROR);
 				return;
 			}
@@ -173,7 +173,7 @@ void MomentsEditor::ProcessMessage(GLComponent *src,int message) {
 			if (!(stop>start)) {
 				GLMessageBox::Display("Desorption stop must be later than start","Error",GLDLG_OK,GLDLG_ICONERROR);
 				return;
-			}
+			}*/
 			
 			//apply settings
 			if (mApp->AskToReset()) {
@@ -189,12 +189,12 @@ void MomentsEditor::ProcessMessage(GLComponent *src,int message) {
 
 				work->moments=moments;
 				work->userMoments=userMoments;
-				work->desorptionStartTime=start;
-				work->desorptionStopTime=stop;
+				/*work->desorptionStartTime=start;
+				work->desorptionStopTime=stop;*/
 				work->timeWindowSize=window;
 				work->useMaxwellDistribution=useMaxwellToggle->IsChecked();
 				work->calcConstantFlow=calcConstantFlow->IsChecked();
-				work->valveOpenMoment=valve;
+				/*work->valveOpenMoment=valve;*/
 
 				work->Reload();
 				if (mApp->timeSettings) mApp->timeSettings->RefreshMoments();
@@ -271,14 +271,14 @@ void MomentsEditor::Refresh() {
 	userMoments=work->userMoments;
 	moments=work->moments;
 	char tmp[128];
-	sprintf(tmp,"%g",work->desorptionStartTime);
+	/*sprintf(tmp,"%g",work->desorptionStartTime);
 	desStartText->SetText(tmp);  
 	sprintf(tmp,"%g",work->desorptionStopTime);
-	desStopText->SetText(tmp);
+	desStopText->SetText(tmp);*/
 	sprintf(tmp,"%g",work->timeWindowSize);
 	windowSizeText->SetText(tmp);
-	sprintf(tmp,"%g",work->valveOpenMoment);
-	valveText->SetText(tmp);
+	/*sprintf(tmp,"%g",work->valveOpenMoment);
+	valveText->SetText(tmp);*/
 	useMaxwellToggle->SetCheck(work->useMaxwellDistribution);
 	calcConstantFlow->SetCheck(work->calcConstantFlow);
 	RebuildList();

@@ -22,9 +22,9 @@
 #include "Utils.h"
 #include "MolFlow.h"
 
-extern double gasMass;
+/*extern double gasMass;
 extern double totalInFlux;
-extern double totalOutgassing;
+extern double totalOutgassing;*/
 
 extern MolFlow *theApp;
 
@@ -263,7 +263,7 @@ char *FacetDetails::GetCountStr(Facet *f) {
 // -----------------------------------------------------------------
 
 char *FacetDetails::FormatCell(int idx,Facet *f,int mode) {
-	MolFlow *mApp = (MolFlow *)theApp;
+  MolFlow *mApp = (MolFlow *)theApp;
   static char ret[256];
   strcpy(ret,"");
   double opacity;
@@ -331,32 +331,32 @@ char *FacetDetails::FormatCell(int idx,Facet *f,int mode) {
 		break;
 	case 18: //imp.rate
 	{opacity = (f->sh.opacity > 0.0) ? f->sh.opacity : 1.0; //to prevent division by 0 for transparent facets
-	double dCoef = totalInFlux / worker->nbDesorption * 1E4;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
-	dCoef *= ((worker->displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
+	double dCoef = /*totalInFlux*/ 1.0 / worker->nbDesorption * 1E4;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
+	dCoef *= ((worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
 		/ worker->timeWindowSize));
 	sprintf(ret, "%g", f->sh.counter.hit.nbHit / f->sh.area*(f->sh.is2sided ? 2.0 : 1.0)*dCoef);
 	//11.77=sqrt(8*8.31*293.15/3.14/0.028)/4/10
 	break; }
 	case 19: //particle density
 	{opacity = (f->sh.opacity > 0.0) ? f->sh.opacity : 1.0; //to prevent division by 0 for transparent facets
-	double dCoef = totalInFlux / worker->nbDesorption * 1E4;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
-	dCoef *= ((worker->displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
+	double dCoef = /*totalInFlux*/ 1.0 / worker->nbDesorption * 1E4;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
+	dCoef *= ((worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
 		/ worker->timeWindowSize));
 	sprintf(ret, "%g", 2.0*f->sh.counter.hit.sum_1_per_speed / (f->sh.area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef);
 	//11.77=sqrt(8*8.31*293.15/3.14/0.028)/4/10
 	break; }
 	case 20: //gas density
 	{opacity = (f->sh.opacity > 0.0) ? f->sh.opacity : 1.0; //to prevent division by 0 for transparent facets
-	double dCoef = totalInFlux / worker->nbDesorption * 1E4;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
-	dCoef *= ((worker->displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
+	double dCoef = /*totalInFlux*/ 1.0 / worker->nbDesorption * 1E4;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
+	dCoef *= ((worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
 		/ worker->timeWindowSize));
-	sprintf(ret, "%g", 2.0*f->sh.counter.hit.sum_1_per_speed / (f->sh.area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef*gasMass / 1000.0 / 6E23);
+	sprintf(ret, "%g", 2.0*f->sh.counter.hit.sum_1_per_speed / (f->sh.area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef*mApp->worker.gasMass / 1000.0 / 6E23);
 	//11.77=sqrt(8*8.31*293.15/3.14/0.028)/4/10
 	break; }
 	case 21: //avg.pressure
 	{opacity = (f->sh.opacity > 0.0) ? f->sh.opacity : 1.0; //to prevent division by 0 for transparent facets
-	double dCoef = totalInFlux / worker->nbDesorption * 1E4 * (gasMass / 1000 / 6E23) * 0.0100;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
-	dCoef *= ((worker->displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
+	double dCoef = /*totalInFlux*/ 1.0 / worker->nbDesorption * 1E4;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
+	dCoef *= ((worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
 		/ worker->timeWindowSize));
 	sprintf(ret, "%g", f->sh.counter.hit.sum_v_ort*dCoef / f->sh.area);
 	//11.77=sqrt(8*8.31*293.15/3.14/0.028)/4/10
