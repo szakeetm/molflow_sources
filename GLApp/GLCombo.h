@@ -31,7 +31,7 @@ public:
   // Component methods
   void Clear();
   void SetSize(int nbRow);
-  void SetValueAt(int row,char *value,int userValue=0);
+  void SetValueAt(int row,const char *value,int userValue=0);
   int  GetUserValueAt(int row);
   void SetSelectedValue(char *value);
   void ScrollTextToEnd();

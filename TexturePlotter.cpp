@@ -175,7 +175,7 @@ void TexturePlotter::UpdateTable() {
 	maxValue = 0.0f;
 	//double scale;
 	GetSelected();
-	if (!selFacet) {
+	if (!selFacet || !selFacet->mesh) {
 		mapList->Clear();
 		return;
 	}

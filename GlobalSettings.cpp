@@ -78,7 +78,7 @@ GlobalSettings::GlobalSettings():GLWindow() {
   gasmassText->SetBounds(500,20,90,19);
   panel2->Add(gasmassText);
 
-  GLLabel *outgassingLabel = new GLLabel("Total outgassing (mbar*l/sec):");
+  GLLabel *outgassingLabel = new GLLabel("Final outgassing rate (mbar*l/sec):");
   outgassingLabel->SetBounds(320,50,150,19);
   panel2->Add(outgassingLabel);
 
@@ -87,7 +87,7 @@ GlobalSettings::GlobalSettings():GLWindow() {
   outgassingText->SetEditable(FALSE);
   panel2->Add(outgassingText);
 
-  GLLabel *influxLabel = new GLLabel("Total gas flux (molecules/sec):");
+  GLLabel *influxLabel = new GLLabel("Total desorbed molecules:");
   influxLabel->SetBounds(320, 75, 150, 19);
   panel2->Add(influxLabel);
 
@@ -395,9 +395,9 @@ void GlobalSettings::ProcessMessage(GLComponent *src,int message) {
 
 void GlobalSettings::UpdateOutgassing() {
 	char tmp[128];
-	sprintf(tmp, "%g", worker->gasMass); //10: conversion Pa*m3/sec -> mbar*l/s
+	sprintf(tmp, "%g", worker->gasMass);
 	gasmassText->SetText(tmp);
-	sprintf(tmp, "%g", worker->finalOutgassingRate); //10: conversion Pa*m3/sec -> mbar*l/s
+	sprintf(tmp, "%g", worker->finalOutgassingRate * 10.00); //10: conversion Pa*m3/sec -> mbar*l/s
 	outgassingText->SetText(tmp);
 	sprintf(tmp, "%.3E", worker->totalDesorbedMolecules);
 	influxText->SetText(tmp);

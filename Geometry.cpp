@@ -487,16 +487,16 @@ DWORD Geometry::GetGeometrySize() {
 		memoryUsage += facets[i]->GetGeometrySize();
 	
 	//CDFs
-	for (size_t i=0;i<work->CDFs.size();i++)
-		memoryUsage+=work->CDFs[i].size()*2*sizeof(double);
+	for (auto i:work->CDFs)
+		memoryUsage+=i.size()*2*sizeof(double);
 	
 	//IDs
-	for (size_t i=0;i<work->IDs.size();i++)
-		memoryUsage+=work->IDs[i].size()*2*sizeof(double);
+	for (auto i : work->IDs)
+		memoryUsage += i.size() * 2 * sizeof(double);
 	
 	//Parameters
-	for (size_t i=0;i<work->parameters.size();i++)
-		memoryUsage+=work->parameters[i].values.size()*2*sizeof(double);
+	for (auto i : work->parameters)
+		memoryUsage += i.values.size() * 2 * sizeof(double);
 
 	memoryUsage += sizeof(double)*(int)(work->temperatures).size(); //moments
 	memoryUsage += sizeof(double)*(int)(work->moments).size(); //moments
@@ -642,12 +642,20 @@ void Geometry::CopyGeometryBuffer(BYTE *buffer) {
 	}
 
 	//Parameters
-	WRITEVAL(w->parameters.size(), size_t);
-	for (size_t i = 0; i < w->parameters.size(); i++) {
+	/*WRITEVAL(w->parameters.size(), size_t);
+	  for (size_t i = 0; i < w->parameters.size(); i++) {
 		WRITEVAL(w->parameters[i].values.size(), size_t);
-		for (size_t j=0;j<w->CDFs[i].size();j++) {
+		for (size_t j=0;j<w->parameters[i].values.size();j++) {
 			WRITEVAL(w->parameters[i].values[j].first, double);
 			WRITEVAL(w->parameters[i].values[j].second, double);
+		}
+	}*/
+	WRITEVAL(w->parameters.size(), size_t);
+	for (auto i : w->parameters) {
+		WRITEVAL(i.values.size(), size_t);
+		for (auto j : i.values) {
+			WRITEVAL(j.first, double);
+			WRITEVAL(j.second, double);
 		}
 	}
 	

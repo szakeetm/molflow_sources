@@ -58,6 +58,7 @@
 #include "OutgassingMap.h"
 #include "SelectDialog.h"
 #include "MomentsEditor.h"
+#include "ParameterEditor.h"
 
 #define MAX_FORMULA 10
 #define MAX_VIEW    19
@@ -338,6 +339,7 @@ BOOL changedSinceSave; //For saving and autosaving
     TexturePlotter   *texturePlotter;
 	OutgassingMap    *outgassingMap;
 	MomentsEditor    *momentsEditor;
+	ParameterEditor  *parameterEditor;
 	char *nbF;
 
     // Testing

@@ -153,11 +153,13 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, int nbMoments, DWORD timeout) {
 	buffer = (BYTE*)dpHit->buff;
 	gHits = (SHGHITS *)buffer;
 
-	// Global hits and leaks
+	// Global hits and leaks: adding local hits to shared memory
 	gHits->total.hit.nbHit += sHandle->tmpCount.hit.nbHit;
 	gHits->total.hit.nbAbsorbed += sHandle->tmpCount.hit.nbAbsorbed;
 	gHits->total.hit.nbDesorbed += sHandle->tmpCount.hit.nbDesorbed;
 	gHits->distTraveledTotal += sHandle->distTraveledSinceUpdate;
+	
+	//Memorize current limits, then do a min/max search
 	for (i = 0; i < 3; i++) {
 		texture_limits_old[i] = gHits->texture_limits[i];
 		gHits->texture_limits[i].min.all = gHits->texture_limits[i].min.moments_only = HITMAX;

@@ -73,6 +73,10 @@ public:
   BOOL textureError;   // Disable rendering if the texture has an error
   BOOL hasOutgassingMap; //true if a desorption file was loaded and had info about this facet
 
+  std::string userOutgassing;
+  std::string userSticking;
+  std::string userOpacity;
+
   // GUI stuff
   BOOL  *visible;         // Edge visible flag
   BOOL   selected;        // Selected flag

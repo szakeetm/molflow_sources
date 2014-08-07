@@ -100,7 +100,7 @@ void GLCombo::SetSize(int nbRow) {
 
 // -----------------------------------------------------------------
 
-void GLCombo::SetValueAt(int row,char *value,int userValue) {
+void GLCombo::SetValueAt(int row,const char *value,int userValue) {
   list->SetValueAt(0,row,value,userValue);
 }
 
@@ -147,7 +147,12 @@ void GLCombo::ScrollTextToEnd() {
 // -----------------------------------------------------------------
 
 void GLCombo::SetSelectedIndex(int idx) {
-  text->SetText(list->GetValueAt(0,idx));
+	if (idx == -1) {
+		text->SetText("");
+	}
+	else {
+		text->SetText(list->GetValueAt(0, idx));
+	}
   selectedRow = idx;
 }
 

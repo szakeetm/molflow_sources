@@ -75,7 +75,7 @@ public:
 
     // Components management
     void Add(GLComponent *comp);
-    virtual void ProcessMessage(GLComponent *src,int message) {};
+    virtual void ProcessMessage(GLComponent *src,int message);
 
     // Variables for timing
     char              m_strFrameStats[64]; 

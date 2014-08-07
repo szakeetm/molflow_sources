@@ -5,7 +5,6 @@
 
 #include "GLApp/GLWindow.h"
 #include "GLApp/GLButton.h"
-#include "GLApp/GLTextArea.h"
 #include "GLApp/GLLabel.h"
 #include "GLApp\GLTextField.h"
 #include "GLApp\GLToggle.h"
@@ -39,7 +38,6 @@ private:
   GLButton    *clearButton;
   GLButton    *pasteButton;
   GLLabel     *l1;
-  //GLTextArea  *textArea;
   GLList      *momentsList;
   /*GLTextField *desStartText;
   GLTextField *desStopText;*/

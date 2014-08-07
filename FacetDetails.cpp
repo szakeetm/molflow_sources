@@ -355,7 +355,7 @@ char *FacetDetails::FormatCell(int idx,Facet *f,int mode) {
 	break; }
 	case 21: //avg.pressure
 	{opacity = (f->sh.opacity > 0.0) ? f->sh.opacity : 1.0; //to prevent division by 0 for transparent facets
-	double dCoef = /*totalInFlux*/ 1.0 / worker->nbDesorption * 1E4;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
+	double dCoef = /*totalInFlux*/ 1.0 / worker->nbDesorption * 1E4 * (worker->gasMass / 1000 / 6E23) * 0.0100;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 	dCoef *= ((worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
 		/ worker->timeWindowSize));
 	sprintf(ret, "%g", f->sh.counter.hit.sum_v_ort*dCoef / f->sh.area);

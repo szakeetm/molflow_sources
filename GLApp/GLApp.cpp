@@ -224,6 +224,11 @@ void GLApplication::Add(GLComponent *comp) {
   wnd->Add(comp);
 }
 
+void GLApplication::ProcessMessage(GLComponent *src, int message) {
+	if (message = MSG_CLOSE)
+		SAFE_DELETE(src);
+};
+
 // -------------------------------------------
 
 void GLApplication::Exit() {

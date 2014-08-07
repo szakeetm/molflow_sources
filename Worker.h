@@ -133,6 +133,9 @@ public:
   //Do calculations necessary before launching simulation
   void PrepareToRun();
 
+  //Get ID of parameter name
+  int GetParamId(const std::string); 
+
   // Access to dataport (HIT)
   BYTE *GetHits();
   void  ReleaseHits();
@@ -185,7 +188,7 @@ int GetIDId(int paramId);
   BOOL useMaxwellDistribution; //TRUE: Maxwell-Boltzmann distribution, FALSE: All molecules have the same (V_avg) speed
   BOOL calcConstantFlow;
 
-  std::vector<Parameter> parameters; //all parameters which are time-dependent
+  std::vector<Parameter> parameters;
   
   int displayedMoment;
   

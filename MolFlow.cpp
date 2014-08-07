@@ -195,6 +195,7 @@ extern double autoSaveFrequency;*/
 #define MENU_TIMEWISE_PLOTTER       51
 #define MENU_TIME_PRESSUREEVOLUTION 52
 #define MENU_TIME_MOMENTS_EDITOR    53
+#define MENU_TIME_PARAMETER_EDITOR  54
 
 #define MENU_TEST_PIPE0001        60
 #define MENU_TEST_PIPE1           61
@@ -317,6 +318,7 @@ MolFlow::MolFlow()
 	texturePlotter = NULL;
 	outgassingMap = NULL;
 	momentsEditor = NULL;
+	parameterEditor = NULL;
 	m_strWindowTitle = APP_NAME;
 	wnd->SetBackgroundColor(212,208,200);
 	m_bResizable = TRUE;
@@ -531,6 +533,7 @@ int MolFlow::OneTimeSceneInit()
 	menu->Add("Time");
 	menu->GetSubMenu("Time")->Add("Time settings...",MENU_TIME_SETTINGS,SDLK_i,ALT_MODIFIER);
 	menu->GetSubMenu("Time")->Add("Edit moments...",MENU_TIME_MOMENTS_EDITOR);
+	menu->GetSubMenu("Time")->Add("Edit parameters...", MENU_TIME_PARAMETER_EDITOR);
 	menu->GetSubMenu("Time")->Add(NULL);
 	menu->GetSubMenu("Time")->Add("Timewise plotter",MENU_TIMEWISE_PLOTTER);
 	menu->GetSubMenu("Time")->Add("Pressure evolution",MENU_TIME_PRESSUREEVOLUTION);
@@ -1146,6 +1149,7 @@ void MolFlow::ApplyFacetParams() {
 
 	// Sticking
 	double sticking;
+	BOOL stickingNotNumber;
 	BOOL doSticking = FALSE;
 	if( facetSticking->GetNumber(&sticking) ) {
 		if( sticking<0.0 || sticking>1.0 ) {
@@ -1154,12 +1158,15 @@ void MolFlow::ApplyFacetParams() {
 			return;
 		}
 		doSticking = TRUE;
+		stickingNotNumber = FALSE;
 	} else {
 		if( strcmp(facetSticking->GetText(),"..." )==0 ) doSticking = FALSE;
-		else {
+		else {/*
 			GLMessageBox::Display("Invalid sticking number","Error",GLDLG_OK,GLDLG_ICONERROR);
 			UpdateFacetParams();
-			return;
+			return;*/
+			doSticking = TRUE;
+			stickingNotNumber = TRUE;
 		}
 	}
 
@@ -1193,6 +1200,7 @@ void MolFlow::ApplyFacetParams() {
 	// opacity
 	double opacity;
 	BOOL doOpacity = FALSE;
+	BOOL opacityNotNumber;
 	if( facetOpacity->GetNumber(&opacity) ) {
 		if( opacity<0.0 || opacity>1.0 ) {
 			GLMessageBox::Display("Opacity must be in the range [0,1]","Error",GLDLG_OK,GLDLG_ICONERROR);
@@ -1200,12 +1208,15 @@ void MolFlow::ApplyFacetParams() {
 			return;
 		}
 		doOpacity = TRUE;
+		opacityNotNumber = FALSE;
 	} else {
 		if( strcmp(facetOpacity->GetText(),"..." )==0 ) doOpacity = FALSE;
-		else {
+		else {/*
 			GLMessageBox::Display("Invalid opacity number","Error",GLDLG_OK,GLDLG_ICONERROR);
 			UpdateFacetParams();
-			return;
+			return;*/
+			doOpacity = TRUE;
+			opacityNotNumber = TRUE;
 		}
 	}
 
@@ -1250,6 +1261,7 @@ void MolFlow::ApplyFacetParams() {
 	// Outgassing
 	double flow=0.0;
 	BOOL doFlow = FALSE;
+	BOOL outgassingNotNumber;
 	//Calculate flow
 	if( facetFlow->GetNumber(&flow) ) {
 		if( !facetFILabel->IsChecked() || strcmp(facetFlow->GetText(),"..." )==0 || facetDesType->GetSelectedIndex()==0 ||  strcmp(facetDesType->GetSelectedValue(),"..." )==0) doFlow = FALSE;
@@ -1260,13 +1272,16 @@ void MolFlow::ApplyFacetParams() {
 				return;
 			}
 			doFlow = TRUE;
+			outgassingNotNumber = FALSE;
 		}
 	} else {
 		if( strcmp(facetFlow->GetText(),"..." )==0 || facetDesType->GetSelectedIndex()==0 ) doFlow = FALSE;
 		else {
-			GLMessageBox::Display("Invalid outgassing number","Error",GLDLG_OK,GLDLG_ICONERROR);
+			/*GLMessageBox::Display("Invalid outgassing number","Error",GLDLG_OK,GLDLG_ICONERROR);
 			UpdateFacetParams();
-			return;
+			return;*/
+			doFlow = TRUE;
+			outgassingNotNumber = TRUE;
 		}
 
 	}
@@ -1394,12 +1409,36 @@ void MolFlow::ApplyFacetParams() {
 	for(int i=0;i<nbFacet;i++) {
 		Facet *f = geom->GetFacet(i);
 		if( f->selected ) {
-			if(doSticking) f->sh.sticking = sticking;
+			if (doSticking) {
+				if (!stickingNotNumber) {
+					f->sh.sticking = sticking;
+					f->userSticking = "";
+				}
+				else {
+					f->userSticking = facetSticking->GetText();
+				}
+			}
 			if(doTeleport) f->sh.teleportDest = teleport;
-			if(doOpacity) f->sh.opacity = opacity;
+			if (doOpacity) {
+				if (!opacityNotNumber) {
+					f->sh.opacity = opacity;
+					f->userOpacity = "";
+				}
+				else {
+					f->userOpacity = facetOpacity->GetText();
+				}
+			}
 			if(doTemperature) f->sh.temperature = temperature;
 			if(doAccfactor) f->sh.accomodationFactor = accfactor;
-			if(doFlow && !useMapA) f->sh.flow = flow*0.100; //0.1: mbar*l/s -> Pa*m3/s
+			if (doFlow && !useMapA) {
+				if (!outgassingNotNumber) {
+					f->sh.flow = flow*0.100; //0.1: mbar*l/s -> Pa*m3/s
+					f->userOutgassing = "";
+				}
+				else {
+					f->userOutgassing = facetFlow->GetText();
+				}
+			}
 			if(doFlowA && !useMapA) f->sh.flow = flowA*f->sh.area*(f->sh.is2sided?2.0:1.0)*0.100;
 			if(desorbType>=0) {
 				if(desorbType==0) f->sh.flow=0.0;
@@ -1495,13 +1534,15 @@ void MolFlow::UpdateFacetParams(BOOL updateSelection) {
 		f0 = geom->GetFacet(selection[0]);
 
 		double sticking = f0->sh.sticking;
-
+		std::string userSticking = f0->userSticking;
 		int    teleport = f0->sh.teleportDest;
 		double opacity = f0->sh.opacity;
+		std::string userOpacity = f0->userOpacity;
 		double temperature = f0->sh.temperature;
 		double accfactor = f0->sh.accomodationFactor;
 		//double mass = f0->sh.mass;
 		double flow = f0->sh.flow;
+		std::string userOutgassing = f0->userOutgassing;
 		double area = f0->sh.area*(f0->sh.is2sided?2.0:1.0);
 		int    superDest = f0->sh.superDest;
 		int    superIdx = f0->sh.superIdx;
@@ -1515,7 +1556,6 @@ void MolFlow::UpdateFacetParams(BOOL updateSelection) {
 		int    useOutgassingFile = f0->sh.useOutgassingFile;
 
 		BOOL stickingE = TRUE;
-
 		BOOL teleportE = TRUE;
 		BOOL opacityE = TRUE;
 		BOOL temperatureE = TRUE;
@@ -1535,15 +1575,13 @@ void MolFlow::UpdateFacetParams(BOOL updateSelection) {
 
 		for(int i=1;i<count;i++) {
 			f = geom->GetFacet(selection[i]);
-			stickingE = stickingE && (abs(f0->sh.sticking - f->sh.sticking)<1e-7);
-
-
+			stickingE = stickingE && (userSticking.compare(f->userSticking)==0 && abs(f0->sh.sticking - f->sh.sticking)<1e-7);
 			teleportE = teleportE && (f0->sh.teleportDest == f->sh.teleportDest);
-			opacityE = opacityE && (abs(f0->sh.opacity - f->sh.opacity)<1e-7);
+			opacityE = opacityE && (userOpacity.compare(f->userOpacity) == 0 && abs(f0->sh.opacity - f->sh.opacity)<1e-7);
 			temperatureE = temperatureE && (abs(f0->sh.temperature - f->sh.temperature)<1e-7);
 			accfactorE = accfactorE && (abs(f0->sh.accomodationFactor - f->sh.accomodationFactor)<1e-7);
 			//massE = massE && (f0->sh.mass == f->sh.mass);
-			flowE = flowE && (abs(f0->sh.flow - f->sh.flow)<1e-7);
+			flowE = flowE && (userOutgassing.compare(f->userOutgassing) == 0 && abs(f0->sh.flow - f->sh.flow)<1e-7);
 			flowAreaE = flowAreaE && (abs(f0->sh.flow/f0->sh.area/(f0->sh.is2sided?2.0:1.0) - f->sh.flow/f->sh.area/(f->sh.is2sided?2.0:1.0))<1e-20);
 			superDestE = superDestE && (f0->sh.superDest == f->sh.superDest);
 			superIdxE = superIdxE && (f0->sh.superIdx == f->sh.superIdx);
@@ -1570,12 +1608,20 @@ void MolFlow::UpdateFacetParams(BOOL updateSelection) {
 		else facetAreaLabel->SetText("Area (cm\262):");
 		sprintf(tmp,"%g",area);
 		facetArea->SetText(tmp);
-		if(stickingE) SetParam(facetSticking,sticking); else facetSticking->SetText("...");
-
+		if (stickingE) {
+			if (userSticking.length() == 0)
+				SetParam(facetSticking, sticking);
+			else facetSticking->SetText(userSticking.c_str());
+		} else facetSticking->SetText("...");
 		if(teleportE) SetParam(facetTeleport,teleport); else facetTeleport->SetText("...");
-		if(opacityE) SetParam(facetOpacity,opacity); else facetOpacity->SetText("...");
-		if(flowE) SetParam(facetFlow,flow*10.00); else facetFlow->SetText("..."); //10: Pa*m3/sec -> mbar*l/s
-		if(flowAreaE) SetParam(facetFlowArea,f0->sh.flow/f0->sh.area/(f0->sh.is2sided?2.0:1.0)*10.00); else facetFlowArea->SetText("...");
+		if (opacityE) {
+			if (userOpacity.length() == 0)
+				SetParam(facetOpacity, opacity);
+			else facetOpacity->SetText(userOpacity.c_str());
+		}
+		else facetOpacity->SetText("...");
+		
+		//if(flowAreaE) SetParam(facetFlowArea,f0->sh.flow/f0->sh.area/(f0->sh.is2sided?2.0:1.0)*10.00); else facetFlowArea->SetText("...");
 		if(temperatureE) SetParam(facetTemperature,temperature); else facetTemperature->SetText("...");
 		if(accfactorE) SetParam(facetAccFactor,accfactor); else facetAccFactor->SetText("...");
 		if(is2sidedE) facetSideType->SetSelectedIndex(f0->sh.is2sided); else facetSideType->SetSelectedValue("...");
@@ -1650,7 +1696,12 @@ void MolFlow::UpdateFacetParams(BOOL updateSelection) {
 			facetFILabel->SetEnabled(TRUE);
 			facetFILabel->SetTextColor(0,0,0);
 			facetFlow->SetEditable(TRUE);
-			if(flowE) SetParam(facetFlow,flow*10.00); else facetFlow->SetText("..."); //10: Pa*m3/s -> mbar*l/s
+			if (flowE) {
+				if (userOutgassing.length() == 0)
+					SetParam(facetFlow, flow*10.00); //10: Pa*m3/sec -> mbar*l/s
+				else facetFlow->SetText(userOutgassing.c_str());
+			}
+			else facetFlow->SetText("...");
 			if(flowAreaE) SetParam(facetFlowArea,f0->sh.flow/f0->sh.area/(f0->sh.is2sided?2.0:1.0)*10.00); else facetFlowArea->SetText("...");
 			//facetFlow->SetText("");
 			if (desorbType==3) {
@@ -2401,6 +2452,7 @@ int MolFlow::RestoreDeviceObjects()
 	RVALIDATE_DLG(viewEditor);
 	RVALIDATE_DLG(texturePlotter);
 	RVALIDATE_DLG(outgassingMap);
+	RVALIDATE_DLG(parameterEditor);
 
 	UpdateTitle();
 	return GL_OK;
@@ -2445,6 +2497,7 @@ int MolFlow::InvalidateDeviceObjects()
 	IVALIDATE_DLG(viewEditor);
 	IVALIDATE_DLG(texturePlotter);
 	IVALIDATE_DLG(outgassingMap);
+	IVALIDATE_DLG(parameterEditor);
 
 	return GL_OK;
 }
@@ -3089,10 +3142,6 @@ void MolFlow::ProcessFormulaButtons(GLComponent *src) {
 //-----------------------------------------------------------------------------
 
 void MolFlow::StartStopSimulation() {
-
-
-
-
 
 	//if(nbSt<=10) BuildPipeStick((double)nbSt/10);
 	//else         return;
@@ -3742,6 +3791,11 @@ void MolFlow::ProcessMessage(GLComponent *src,int message)
 			if( momentsEditor==NULL ) momentsEditor = new MomentsEditor(&worker);
 			momentsEditor->Refresh();
 			momentsEditor->SetVisible(TRUE);
+			break;
+		case MENU_TIME_PARAMETER_EDITOR:
+			if (parameterEditor == NULL) parameterEditor = new ParameterEditor(&worker);
+			parameterEditor->UpdateCombo();
+			parameterEditor->SetVisible(TRUE);
 			break;
 		case MENU_TIMEWISE_PLOTTER:
 			if(!timewisePlotter) timewisePlotter = new TimewisePlotter();

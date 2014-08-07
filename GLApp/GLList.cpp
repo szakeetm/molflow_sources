@@ -525,7 +525,7 @@ void GLList::SetRow(int row,char **vals) {
 
 // ---------------------------------------------------------------
 
-void GLList::SetValueAt(int col,int row,char *value,int userData,BOOL searchIndex) {
+void GLList::SetValueAt(int col,int row,const char *value,int userData,BOOL searchIndex) {
 	_ASSERTE(col<nbCol);_ASSERTE(row<nbRow);
 	if(this->values) {
 		if(col>=0 && col<this->nbCol && row>=0 && row<this->nbRow) {

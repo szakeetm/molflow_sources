@@ -116,6 +116,10 @@ Facet::Facet(int nbIndex) {
 	textureError = FALSE;
 	hasOutgassingMap = FALSE;
 
+	userOutgassing = "";
+	userOpacity = "";
+	userSticking = "";
+
 	// Init the colormap at the first facet construction
 	for (int i = 0; i < 65536 && !colorInited; i++) {
 

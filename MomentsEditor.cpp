@@ -32,7 +32,7 @@ extern MolFlow *theApp;
 MomentsEditor::MomentsEditor(Worker *w):GLWindow() {
 
   int wD = 220;
-  int hD = 476;
+  int hD = 401;
 
   work=w;
 
@@ -60,12 +60,12 @@ MomentsEditor::MomentsEditor(Worker *w):GLWindow() {
   //char tmp[128];
 
   panel2=new GLTitledPanel("Time parameters");
-  panel2->SetBounds(5,260,wD-10,170);
+  panel2->SetBounds(5,260,wD-10,95);
   Add(panel2);
 
-  GLLabel *startLabel = new GLLabel("Desorption starts at:                   s");
+  /*GLLabel *startLabel = new GLLabel("Desorption starts at:                   s");
   startLabel->SetBounds(15,275,170,25);
-  Add(startLabel);
+  Add(startLabel);*/
 
 
   //sprintf(tmp,"%g",work->desorptionStartTime);
@@ -73,9 +73,9 @@ MomentsEditor::MomentsEditor(Worker *w):GLWindow() {
   desStartText->SetBounds(120,275,60,20);
   Add(desStartText);*/
 
-  GLLabel *stopLabel = new GLLabel("Desorption stops at:                   s");
+  /*GLLabel *stopLabel = new GLLabel("Desorption stops at:                   s");
   stopLabel->SetBounds(15,300,170,25);
-  Add(stopLabel);
+  Add(stopLabel);*/
   
   //sprintf(tmp,"%g",work->desorptionStopTime);
   /*desStopText = new GLTextField(0,"");
@@ -83,27 +83,27 @@ MomentsEditor::MomentsEditor(Worker *w):GLWindow() {
   Add(desStopText);*/
 
   GLLabel *windowLabel = new GLLabel("Time window length:                  s");
-  windowLabel->SetBounds(15,325,170,25);
+  windowLabel->SetBounds(15,275,170,25);
   Add(windowLabel);
 
   //sprintf(tmp,"%g",work->timeWindowSize);
   windowSizeText = new GLTextField(0,"");
-  windowSizeText->SetBounds(120,325,60,20);
+  windowSizeText->SetBounds(120,275,60,20);
   Add(windowSizeText);
 
   useMaxwellToggle = new GLToggle(0,"Use Maxwell-B. speed distr.");
-  useMaxwellToggle->SetBounds(15,350,wD-25,20);
+  useMaxwellToggle->SetBounds(15,300,wD-25,20);
   //useMaxwellToggle->SetCheck(work->useMaxwellDistribution);
   Add(useMaxwellToggle);
 
   calcConstantFlow = new GLToggle(0,"Calculate constant flow");
-  calcConstantFlow->SetBounds(15,375,wD-25,20);
+  calcConstantFlow->SetBounds(15,325,wD-25,20);
   //useMaxwellToggle->SetCheck(work->useMaxwellDistribution);
   Add(calcConstantFlow);
 
-  GLLabel *valveLabel = new GLLabel("Facets 1,2 open at:                   s");
+  /*GLLabel *valveLabel = new GLLabel("Facets 1,2 open at:                   s");
   valveLabel->SetBounds(15,400,170,25);
-  Add(valveLabel);
+  Add(valveLabel);*/
   
   //sprintf(tmp,"%g",work->desorptionStopTime);
  /* valveText = new GLTextField(0,"");
@@ -129,11 +129,7 @@ MomentsEditor::MomentsEditor(Worker *w):GLWindow() {
 
   RestoreDeviceObjects();
 
-  
-
 }
-
-
 
 void MomentsEditor::ProcessMessage(GLComponent *src,int message) {
 	MolFlow *mApp = (MolFlow *)theApp;

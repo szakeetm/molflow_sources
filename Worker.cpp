@@ -543,6 +543,7 @@ void Worker::LoadGeometry(char *fileName) {
 	}
 	geom->CalcTotalOutGassing();
 	if (mApp->momentsEditor) mApp->momentsEditor->Refresh();
+	if (mApp->parameterEditor) mApp->parameterEditor->UpdateCombo();
 	if (mApp->timeSettings) mApp->timeSettings->RefreshMoments();
 	if (mApp->timewisePlotter) mApp->timewisePlotter->refreshViews();
 	progressDlg->SetVisible(FALSE);
@@ -920,6 +921,7 @@ void Worker::StartStop(float appTime,int mode) {
 			Update(appTime);
 		} catch(Error &e) {
 			GLMessageBox::Display((char *)e.GetMsg(),"Error (Stop)",GLDLG_OK,GLDLG_ICONERROR);
+			return;
 		}
 
 	} else {
@@ -1049,7 +1051,13 @@ void Worker::SendHits() {
 // -------------------------------------------------------------
 
 void Worker::ComputeAC(float appTime) {
-	if (needsReload) RealReload();
+	try {
+		if (needsReload) RealReload();
+	}
+	catch (Error &e) {
+		GLMessageBox::Display((char *)e.GetMsg(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
+		return;
+	}
 	if( running )
 		throw Error("Already running");
 
@@ -1096,7 +1104,12 @@ void  Worker::ReleaseHits() {
 // -------------------------------------------------------------
 
 BYTE *Worker::GetHits() {
-	if (needsReload) RealReload();
+	try {
+		if (needsReload) RealReload();
+	}
+	catch (Error &e) {
+		GLMessageBox::Display((char *)e.GetMsg(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
+	}
 	if( dpHit )
 		if( AccessDataport(dpHit) ) 
 			return (BYTE *)dpHit->buff;
@@ -1240,7 +1253,13 @@ char *Worker::GetErrorDetails() {
 // -------------------------------------------------------------
 
 void Worker::ClearHits() {
-	if (needsReload) RealReload();
+	try {
+		if (needsReload) RealReload();
+	}
+	catch (Error &e) {
+		GLMessageBox::Display((char *)e.GetMsg(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
+		return;
+	}
 	if(dpHit) {
 		AccessDataport(dpHit);
 		memset(dpHit->buff,0,geom->GetHitsSize(&moments));
@@ -1694,6 +1713,7 @@ void Worker::AnalyzeSYNfile(char *fileName, int *nbFacet, int *nbTextured, int *
 }
 
 void Worker::PrepareToRun() {
+	
 	//determine latest moment
 	latestMoment=1E-10;
 	for (size_t i=0;i<moments.size();i++)
@@ -1710,10 +1730,44 @@ void Worker::PrepareToRun() {
 
 	for (int i = 0; i < g->GetNbFacet(); i++) {
 		Facet *f = g->GetFacet(i);
+
+		//match parameters
+		if (f->userOutgassing.length()>0) {
+			int id = GetParamId(f->userOutgassing);
+			if (id==-1) { //parameter not found
+				char tmp[256];
+				sprintf(tmp, "Facet #%d: Outgassing parameter \"%s\" isn't defined.", i + 1, f->userOutgassing.c_str());
+				throw Error(tmp);
+			}
+			else f->sh.outgassing_paramId = id;
+		} else f->sh.outgassing_paramId = -1;
+
+		if (f->userOpacity.length()>0) {
+			int id = GetParamId(f->userOpacity);
+			if (id == -1) { //parameter not found
+				char tmp[256];
+				sprintf(tmp, "Facet #%d: Opacity parameter \"%s\" isn't defined.", i + 1, f->userOpacity.c_str());
+				throw Error(tmp);
+			}
+			else f->sh.opacity_paramId = id;
+		}
+		else f->sh.opacity_paramId = -1;
+
+		if (f->userSticking.length()>0) {
+			int id = GetParamId(f->userSticking);
+			if (id == -1) { //parameter not found
+				char tmp[256];
+				sprintf(tmp, "Facet #%d: Sticking parameter \"%s\" isn't defined.", i + 1, f->userSticking.c_str());
+				throw Error(tmp);
+			}
+			else f->sh.sticking_paramId = id;
+		}
+		else f->sh.sticking_paramId = -1;
+
 		if (f->sh.outgassing_paramId>=0) { //if time-dependent desorption
 			int id=GetIDId(f->sh.outgassing_paramId);
 			if (id>=0)
-				f->sh.IDid=id; //we've already generated a CDF for this temperature
+				f->sh.IDid=id; //we've already generated an ID for this temperature
 			else
 				f->sh.IDid=GenerateNewID(f->sh.outgassing_paramId);
 		}
@@ -1774,15 +1828,15 @@ void Worker::CalcTotalOutgassing() {
 				if (f->sh.useOutgassingFile) { //outgassing file
 					for (int l = 0; l < (f->sh.outgassingMapWidth*f->sh.outgassingMapHeight); l++) {
 						totalDesorbedMolecules += latestMoment * f->outgassingMap[l] / (1.38E-23*f->sh.temperature);
-						finalOutgassingRate+=f->outgassingMap[l] / (1.38E-23*f->sh.temperature);
+						finalOutgassingRate += f->outgassingMap[l] / (1.38E-23*f->sh.temperature);
 					}
 				}	else { //regular outgassing
 					if (f->sh.outgassing_paramId==-1) { //constant outgassing
 						totalDesorbedMolecules += latestMoment * f->sh.flow / (1.38E-23*f->sh.temperature);
 						finalOutgassingRate += f->sh.flow / (1.38E-23*f->sh.temperature);  //Outgassing molecules/sec
 					} else { //time-dependent outgassing
-						totalDesorbedMolecules += IDs[f->sh.IDid].back().second;
-						finalOutgassingRate += parameters[f->sh.outgassing_paramId].values.back().second / (1.38E-23*f->sh.temperature);
+						totalDesorbedMolecules += IDs[f->sh.IDid].back().second / (1.38E-23*f->sh.temperature);
+						finalOutgassingRate += parameters[f->sh.outgassing_paramId].values.back().second *0.100/ (1.38E-23*f->sh.temperature); //0.1: mbar*l/s->Pa*m3/s
 					}
 				}
 			}
@@ -1840,22 +1894,23 @@ std::vector<std::pair<double,double>> Worker::Generate_ID(int paramId){
 	
 	//First moment
 	ID.push_back(std::make_pair(parameters[paramId].values[0].first,
-			parameters[paramId].values[0].first*parameters[paramId].values[0].second)); //for the first moment
+			parameters[paramId].values[0].first*parameters[paramId].values[0].second*0.100)); //for the first moment (0.1: mbar*l/s -> Pa*m3/s)
 	
 	//Intermediate moments
 	for (size_t pos=1;pos<=indexBeforeLastMoment;pos++) {
 		if (abs(parameters[paramId].values[pos].second-parameters[paramId].values[pos-1].second)<1E-10) //two equal values follow, simple integration by multiplying
 			ID.push_back(std::make_pair(parameters[paramId].values[pos].first,
-			ID.back().second+
-			(parameters[paramId].values[pos].first-parameters[paramId].values[pos-1].first)*parameters[paramId].values[pos].second));
-		else { //difficult case, we'll integrate by dividing two 5equal sections
-			for (double delta=0.2;delta<1.01;delta+=0.2) {
+			ID.back().second +
+			(parameters[paramId].values[pos].first - parameters[paramId].values[pos - 1].first)*parameters[paramId].values[pos].second*0.100));
+		else { //difficult case, we'll integrate by dividing two 20equal sections
+			for (double delta=0.05;delta<1.0001;delta+=0.05) {
 				double delta_t=parameters[paramId].values[pos].first-parameters[paramId].values[pos-1].first;
 				double time=parameters[paramId].values[pos-1].first+delta*delta_t;
-				double avg_value=(InterpolateY(time-0.2*delta_t,parameters[paramId].values)+InterpolateY(time,parameters[paramId].values))/2.0;
+				double avg_value = (InterpolateY(time - 0.05*delta_t, parameters[paramId].values)*0.100
+					+ InterpolateY(time, parameters[paramId].values)*0.100) / 2.0;
 				ID.push_back(std::make_pair(time,
-					ID.back().second+
-					0.2*delta_t*avg_value));
+					ID.back().second +
+					0.05*delta_t*avg_value));
 			}
 		}
 	}
@@ -1864,18 +1919,25 @@ std::vector<std::pair<double,double>> Worker::Generate_ID(int paramId){
 	double valueAtLatestMoment=InterpolateY(latestMoment,parameters[paramId].values,TRUE);
 	if ((valueAtLatestMoment-parameters[paramId].values[indexBeforeLastMoment].second)<1E-10) //two equal values follow, simple integration by multiplying
 			ID.push_back(std::make_pair(latestMoment,
-			ID.back().second+
-			(latestMoment-parameters[paramId].values[indexBeforeLastMoment].first)*parameters[paramId].values[indexBeforeLastMoment].second));
+			ID.back().second +
+			(latestMoment - parameters[paramId].values[indexBeforeLastMoment].first)*parameters[paramId].values[indexBeforeLastMoment].second*0.100));
 		else { //difficult case, we'll integrate by dividing two 5equal sections
-			for (double delta=0.0;delta<1.01;delta+=0.2) {
+			for (double delta=0.0;delta<1.0001;delta+=0.05) {
 				double delta_t=latestMoment-parameters[paramId].values[indexBeforeLastMoment].first;
 				double time=parameters[paramId].values[indexBeforeLastMoment].first+delta*delta_t;
-				double avg_value=(parameters[paramId].values[indexBeforeLastMoment].second+InterpolateY(time,parameters[paramId].values))/2.0;
+				double avg_value = (parameters[paramId].values[indexBeforeLastMoment].second*0.100 + InterpolateY(time, parameters[paramId].values)*0.100) / 2.0;
 				ID.push_back(std::make_pair(time,
 					ID.back().second+
-					0.2*delta_t*avg_value));
+					0.05*delta_t*avg_value));
 			}
 		}
 
 	return ID;
+}
+
+int Worker::GetParamId(const std::string name) {
+	int foundId = -1;
+	for (int i = 0; foundId == -1 && i < (int)parameters.size(); i++)
+		if (name.compare(parameters[i].name) == 0) foundId = i;
+	return foundId;
 }

@@ -325,6 +325,7 @@ void TextureSettings::ProcessMessage(GLComponent *src,int message) {
 			Update();
 		}
 		break;
+		
 	}
 
 	GLWindow::ProcessMessage(src,message);

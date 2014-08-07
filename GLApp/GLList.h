@@ -81,7 +81,7 @@ public:
   void ScrollDown();
   char *GetValueAt(int col,int row);
   int  GetUserValueAt(int col,int row);
-  void SetValueAt(int col,int row,char *value,int userData=0,BOOL searchIndex=FALSE);
+  void SetValueAt(int col,int row,const char *value,int userData=0,BOOL searchIndex=FALSE);
   int  GetRowForLocation(int x,int y);
   int  GetColForLocation(int x,int y);
   void SetMotionSelection(BOOL enable);

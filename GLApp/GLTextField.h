@@ -28,7 +28,7 @@ public:
   GLTextField(int compId,char *text);
 
   // Component methods
-  void SetText(char *text);
+  void SetText(const char *text);
   char *GetText();
   void ScrollToVisible();
   void SetCursorPos(int pos);
@@ -61,7 +61,7 @@ private:
   void   RemoveSel();
   void   MoveSel(int newPos);
   void   DeleteSel();
-  void   UpdateText(char *text);
+  void   UpdateText(const char *text);
   void	 ProcessEnter();
   int    GetCursorLocation(int px);
 

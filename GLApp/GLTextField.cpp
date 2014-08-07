@@ -102,7 +102,7 @@ BOOL GLTextField::IsCaptured() {
 
 // ------------------------------------------------------
 
-void GLTextField::SetText(char *text) {
+void GLTextField::SetText(const char *text) {
   if(text && strcmp(text,m_Text)==0) return;
   UpdateText(text);
   m_Start=0;
@@ -114,7 +114,7 @@ void GLTextField::SetText(char *text) {
 
 // ------------------------------------------------------
 
-void GLTextField::UpdateText(char *text) {
+void GLTextField::UpdateText(const char *text) {
   if(text) {
     strncpy(m_Text,text,MAX_TEXT_SIZE);
     m_Text[MAX_TEXT_SIZE-1]=0;
