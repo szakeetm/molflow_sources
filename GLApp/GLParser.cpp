@@ -25,7 +25,7 @@
 #define TRUE  1
 #define FALSE 0
 
-extern GLApplication *theApp;
+extern MolFlow *mApp;
 
 // -------------------------------------------------------
 // Utils functions
@@ -399,7 +399,6 @@ void GLParser::ReadTerm(ETREE **node,VLIST **var_list)
 				  else {
 					  i1--; //selection indexes start from 0
 					  //SUM of a selection Group
-					  MolFlow *mApp = (MolFlow *)theApp;
 					  if (i1 < 0 || i1 >= mApp->nbSelection) {
 						  SetError("invalid selection group", current);
 						  break;

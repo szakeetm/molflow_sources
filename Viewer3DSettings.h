@@ -29,8 +29,6 @@
 #ifndef _VIEWER3DSETTINGSH_
 #define _VIEWER3DSETTINGSH_
 
-extern int whiteBg;
-
 class Viewer3DSettings : public GLWindow {
 
 public:

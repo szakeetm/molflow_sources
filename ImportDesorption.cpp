@@ -28,7 +28,7 @@ GNU General Public License for more details.
 #define MODE_EQUATION 1
 #define MODE_FILE 2
 
-extern GLApplication *theApp;
+extern MolFlow *mApp;
 
 ImportDesorption::ImportDesorption():GLWindow() {
 
@@ -162,7 +162,6 @@ void ImportDesorption::SetGeometry(Geometry *s,Worker *w) {
 }
 
 void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
-	MolFlow *mApp = (MolFlow *)theApp;
 
 	switch(message) {
 	case MSG_BUTTON:

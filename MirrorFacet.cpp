@@ -29,7 +29,7 @@
 #include "GLApp/GLMessageBox.h"
 #include "MolFlow.h"
 
-extern MolFlow *theApp;
+extern MolFlow *mApp;
 int    planeMode;
 
 MirrorFacet::MirrorFacet(Geometry *g,Worker *w):GLWindow() {
@@ -135,7 +135,6 @@ MirrorFacet::MirrorFacet(Geometry *g,Worker *w):GLWindow() {
 }
 
 void MirrorFacet::ProcessMessage(GLComponent *src,int message) {
-	MolFlow *mApp = (MolFlow *)theApp;
   double a,b,c,d;
   int facetNum;
 
@@ -255,9 +254,9 @@ void MirrorFacet::ProcessMessage(GLComponent *src,int message) {
 			SAFE_FREE(vIdx);
 			if (mApp->AskToReset()) {
 				geom->MirrorSelectedFacets(P0,N,src==copyButton,work);
-				//theApp->UpdateModelParams();
+				//mApp->UpdateModelParams();
 				work->Reload(); 
-				theApp->UpdateFacetlistSelected();
+				mApp->UpdateFacetlistSelected();
 				mApp->UpdateViewers();
 	       		//GLWindowManager::FullRepaint();
 			}

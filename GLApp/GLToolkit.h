@@ -14,8 +14,6 @@
   GNU General Public License for more details.
 */
 
-extern int antiAliasing;
-
 #include <SDL.h>
 #include <SDL_opengl.h>
 #include "GLTypes.h"

@@ -22,11 +22,7 @@ GNU General Public License for more details.
 #include "GLApp/GLFileBox.h"
 #include "MolFlow.h"
 
-extern MolFlow *theApp;
-
-/*extern double totalOutgassing;
-extern double totalInFlux;
-extern double gasMass;*/
+extern MolFlow *mApp;
 
 static const char *fileFilters = "Text files\0*.txt";
 static const int   nbFilter = sizeof(fileFilters) / (2 * sizeof(char *));
@@ -169,8 +165,6 @@ void TexturePlotter::Update(float appTime, BOOL force) {
 // --------------------------------------------------------------------
 
 void TexturePlotter::UpdateTable() {
-
-	MolFlow *mApp = (MolFlow *)theApp;
 	int nbMoments = (int)mApp->worker.moments.size();
 	maxValue = 0.0f;
 	//double scale;

@@ -20,6 +20,9 @@
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLWindowManager.h"
 #include "GLApp/GLMessageBox.h"
+#include "MolFlow.h"
+
+extern MolFlow *mApp;
 
 AddVertex::AddVertex(Geometry *g,Worker *w):GLWindow() {
 
@@ -104,7 +107,7 @@ void AddVertex::ProcessMessage(GLComponent *src,int message) {
 		if (work->running) work->Stop_Public();
       geom->AddVertex(X,Y,Z);
 	  work->Reload();    
-	  changedSinceSave = TRUE;
+	  mApp->changedSinceSave = TRUE;
       GLWindowManager::FullRepaint();
 
     }

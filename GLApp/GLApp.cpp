@@ -32,7 +32,7 @@ double perfTicksPerSec;      // Performance counter (number of tick per second)
 // -------------------------------------------
 
 GLApplication::GLApplication() {
-
+	theApp = this;
   m_bWindowed = true;
   m_strWindowTitle = "GL application";
   strcpy((char *)m_strFrameStats,"");
@@ -167,7 +167,6 @@ void GLApplication::SetTitle(char *title) {
 
 int GLApplication::Create(int width, int height, BOOL bFullScreen ) {
 
-  theApp=this;
   m_screenWidth = width;
   m_screenHeight = height;
   m_bWindowed = !bFullScreen;
@@ -353,7 +352,6 @@ void GLApplication::UpdateEventCount(SDL_Event *evt) {
 // -------------------------------------------
 
 void GLApplication::Run() {
-  MolFlow *mApp = (MolFlow *)theApp;
   SDL_Event sdlEvent;
 
   BOOL   quit = FALSE;
@@ -383,7 +381,7 @@ void GLApplication::Run() {
   //lastTick = lastFrTick = firstTick = SDL_GetTicks();
   lastTick  = firstTick = SDL_GetTicks();
 
-  mApp->CheckForRecovery();
+  ((MolFlow*)theApp)->CheckForRecovery();
 
   //Wait for user exit
   while( !quit )
@@ -396,7 +394,7 @@ void GLApplication::Run() {
        switch( sdlEvent.type ) {
 
          case SDL_QUIT:
-           if (mApp->AskToSave()) quit = TRUE;
+           if (((MolFlow*)theApp)->AskToSave()) quit = TRUE;
            break;
 
          case SDL_VIDEORESIZE:

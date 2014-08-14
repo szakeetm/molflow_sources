@@ -535,7 +535,6 @@ BOOL GLWindow::IsVisible() {
 // ---------------------------------------------------------------
 
 void GLWindow::DoModal() {
-	MolFlow *mApp = (MolFlow *)theApp;
   GLWindowManager::FullRepaint();
   SetVisible(TRUE);
   int nbRegistered = GLWindowManager::GetNbWindow();

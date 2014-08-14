@@ -4,7 +4,7 @@
 #include "GLApp\GLMessageBox.h"
 #include "Molflow.h"
 
-extern GLApplication *theApp;
+extern MolFlow *mApp;
 
 void Geometry::CheckCollinear() {
 	char tmp[256];
@@ -53,7 +53,7 @@ void Geometry::CheckIsolatedVertex() {
 }
 
 void Geometry::CorrectNonSimple(int *nonSimpleList, int nbNonSimple) {
-	changedSinceSave = TRUE;
+	mApp->changedSinceSave = TRUE;
 	Facet *f;
 	for (int i = 0; i < nbNonSimple; i++) {
 		f = GetFacet(nonSimpleList[i]);
@@ -61,7 +61,7 @@ void Geometry::CorrectNonSimple(int *nonSimpleList, int nbNonSimple) {
 			int j = 0;
 			while ((j < f->sh.nbIndex) && (f->sh.sign == 0.0)) {
 				f->ShiftVertex();
-				InitializeGeometry(nonSimpleList[i], TRUE);
+				InitializeGeometry(nonSimpleList[i]);
 				//f->DetectOrientation();
 				j++;
 			}
@@ -91,8 +91,7 @@ char *Geometry::GetStructureName(int idx) {
 void Geometry::CreatePolyFromVertices_Convex() {
 	//creates facet from selected vertices
 
-	MolFlow *mApp = (MolFlow *)theApp;
-	changedSinceSave = TRUE;
+	mApp->changedSinceSave = TRUE;
 	nbSelectedVertex = 0;
 
 	int *vIdx = (int *)malloc(sh.nbVertex*sizeof(int));
@@ -187,8 +186,7 @@ void Geometry::CreatePolyFromVertices_Convex() {
 void Geometry::CreatePolyFromVertices_Order() {
 	//creates facet from selected vertices
 
-	MolFlow *mApp = (MolFlow *)theApp;
-	changedSinceSave = TRUE;
+	mApp->changedSinceSave = TRUE;
 	/*nbSelectedVertex = 0;
 
 	int *vIdx = (int *)malloc(sh.nbVertex*sizeof(int));
@@ -283,8 +281,7 @@ void Geometry::CreatePolyFromVertices_Order() {
 void Geometry::CreateDifference() {
 	//creates facet from selected vertices
 
-	MolFlow *mApp = (MolFlow *)theApp;
-	changedSinceSave = TRUE;
+	mApp->changedSinceSave = TRUE;
 	nbSelectedVertex = 0;
 
 	if (nbSelected != 2) {
@@ -413,7 +410,6 @@ VERTEX3D *Geometry::GetVertex(int idx) {
 
 Facet *Geometry::GetFacet(int facet) {
 	if (facet >= sh.nbFacet || facet < 0) {
-		MolFlow *mApp = (MolFlow *)theApp;
 		char errMsg[512];
 		sprintf(errMsg, "Geometry::GetFacet()\nA process tried to access facet #%d that doesn't exist.\nAutoSaving and probably crashing...", facet + 1);
 		GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -521,7 +517,7 @@ int Geometry::AddRefVertex(VERTEX3D *p, VERTEX3D *refs, int *nbRef) {
 }
 
 void Geometry::CollapseVertex(GLProgress *prg, double totalWork) {
-	changedSinceSave = TRUE;
+	mApp->changedSinceSave = TRUE;
 	if (!isLoaded) return;
 	// Collapse neighbor vertices
 	VERTEX3D *refs = (VERTEX3D *)malloc(sh.nbVertex*sizeof(VERTEX3D));
@@ -629,10 +625,18 @@ void Geometry::SwapNormal() {
 		return;
 	}
 	if (GetNbSelected() <= 0) return;
-	changedSinceSave = TRUE;
+	mApp->changedSinceSave = TRUE;
 	for (int i = 0; i < sh.nbFacet; i++) {
 		Facet *f = facets[i];
-		if (f->selected) f->SwapNormal();
+		if (f->selected) {
+			f->SwapNormal();
+			InitializeGeometry(i);// Reinitialise geom
+			try {
+				SetFacetTexture(i, f->tRatio, f->hasMesh);
+			} catch (Error &e) {
+				GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
+			}
+		}
 	}
 
 	DeleteGLLists(TRUE, TRUE);
@@ -647,14 +651,19 @@ void Geometry::ShiftVertex() {
 		return;
 	}
 	if (GetNbSelected() <= 0) return;
-	changedSinceSave = TRUE;
+	mApp->changedSinceSave = TRUE;
 	DeleteGLLists(TRUE, TRUE);
 	for (int i = 0; i < sh.nbFacet; i++) {
 		Facet *f = facets[i];
 		if (f->selected) {
 			f->ShiftVertex();
-			InitializeGeometry(i, TRUE);// Reinitialise geom
-			SetFacetTexture(i, f->tRatio, f->hasMesh);
+			InitializeGeometry(i);// Reinitialise geom
+			try {
+				SetFacetTexture(i, f->tRatio, f->hasMesh);
+			}
+			catch (Error &e) {
+				GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
+			}
 		}
 	}
 	// Delete old resource
@@ -662,7 +671,7 @@ void Geometry::ShiftVertex() {
 }
 
 void Geometry::Merge(int nbV, int nbF, VERTEX3D *nV, Facet **nF) {
-	changedSinceSave = TRUE;
+	mApp->changedSinceSave = TRUE;
 	// Merge the current geometry with the specified one
 	if (!nbV || !nbF) return;
 
@@ -746,7 +755,7 @@ int Geometry::HasIsolatedVertices() {
 }
 
 void  Geometry::DeleteIsolatedVertices(BOOL selectedOnly) {
-	changedSinceSave = TRUE;
+	mApp->changedSinceSave = TRUE;
 	// Remove unused vertices
 	int *check = (int *)malloc(sh.nbVertex*sizeof(int));
 	memset(check, 0, sh.nbVertex*sizeof(int));
@@ -837,8 +846,7 @@ void  Geometry::SelectIsolatedVertices() {
 }
 
 void Geometry::RemoveCollinear() {
-	MolFlow *mApp = (MolFlow *)theApp;
-	changedSinceSave = TRUE;
+	mApp->changedSinceSave = TRUE;
 	int nb = 0;
 	for (int i = 0; i < sh.nbFacet; i++)
 		if (facets[i]->collinear) nb++;
@@ -879,8 +887,7 @@ void Geometry::RemoveCollinear() {
 }
 
 void Geometry::RemoveSelectedVertex() {
-	MolFlow *mApp = (MolFlow *)theApp;
-	changedSinceSave = TRUE;
+	mApp->changedSinceSave = TRUE;
 
 	//Analyze facets
 	std::vector<int> facetsToRemove, facetsToChange;
@@ -951,8 +958,7 @@ void Geometry::RemoveSelectedVertex() {
 }
 
 void Geometry::RemoveSelected() {
-	MolFlow *mApp = (MolFlow *)theApp;
-	changedSinceSave = TRUE;
+	mApp->changedSinceSave = TRUE;
 	int nb = 0;
 	for (int i = 0; i < sh.nbFacet; i++)
 		if (facets[i]->selected) nb++;
@@ -997,8 +1003,7 @@ void Geometry::RemoveSelected() {
 
 int Geometry::ExplodeSelected(BOOL toMap, int desType, double exponent, double *values) {
 
-	MolFlow *mApp = (MolFlow *)theApp;
-	changedSinceSave = TRUE;
+	mApp->changedSinceSave = TRUE;
 	if (nbSelected == 0) return -1;
 
 	// Check that all facet has a mesh
@@ -1109,7 +1114,6 @@ int Geometry::ExplodeSelected(BOOL toMap, int desType, double exponent, double *
 }
 
 void Geometry::RemoveNullFacet() {
-	MolFlow *mApp = (MolFlow *)theApp;
 	// Remove degenerated facet (area~0.0)
 	int nb = 0;
 	double areaMin = vThreshold*vThreshold;
@@ -1145,7 +1149,6 @@ void Geometry::RemoveNullFacet() {
 
 void Geometry::AlignFacets(int* selection, int nbSelected, int Facet_source, int Facet_dest, int Anchor_source, int Anchor_dest,
 	int Aligner_source, int Aligner_dest, BOOL invertNormal, BOOL invertDir1, BOOL invertDir2, BOOL copy, Worker *worker) {
-	MolFlow *mApp = (MolFlow *)theApp;
 	double counter = 0.0;
 	double selected = (double)GetNbSelected();
 	if (selected == 0.0) return;
@@ -1301,7 +1304,6 @@ void Geometry::AlignFacets(int* selection, int nbSelected, int Facet_source, int
 }
 
 void Geometry::MoveSelectedFacets(double dX, double dY, double dZ, BOOL copy, Worker *worker) {
-	MolFlow *mApp = (MolFlow *)theApp;
 	GLProgress *prgMove = new GLProgress("Moving selected facets...", "Please wait");
 	prgMove->SetProgress(0.0);
 	prgMove->SetVisible(TRUE);
@@ -1350,7 +1352,6 @@ void Geometry::MoveSelectedFacets(double dX, double dY, double dZ, BOOL copy, Wo
 }
 
 void Geometry::MirrorSelectedFacets(VERTEX3D P0, VERTEX3D N, BOOL copy, Worker *worker) {
-	MolFlow *mApp = (MolFlow *)theApp;
 	double selected = (double)GetNbSelected();
 	double counter = 0.0;
 	if (selected == 0.0) return;
@@ -1399,7 +1400,6 @@ void Geometry::MirrorSelectedFacets(VERTEX3D P0, VERTEX3D N, BOOL copy, Worker *
 }
 
 void Geometry::RotateSelectedFacets(VERTEX3D AXIS_P0, VERTEX3D AXIS_DIR, double theta, BOOL copy, Worker *worker) {
-	MolFlow *mApp = (MolFlow *)theApp;
 	double selected = (double)GetNbSelected();
 	double counter = 0.0;
 	if (selected == 0.0) return;
@@ -1512,11 +1512,9 @@ void Geometry::CloneSelectedFacets() { //create clone of selected facets
 }
 
 void Geometry::MoveSelectedVertex(double dX, double dY, double dZ, BOOL copy, Worker *worker) {
-
-	MolFlow *mApp = (MolFlow *)theApp;
 	if (!(dX == 0.0&&dY == 0.0&&dZ == 0.0)) {
 		if (!mApp->AskToReset(worker)) return;
-		changedSinceSave = TRUE;
+		mApp->changedSinceSave = TRUE;
 		if (!copy) { //move
 			for (int i = 0; i < sh.nbVertex; i++) {
 				if (vertices3[i].selected) {
@@ -1541,7 +1539,7 @@ void Geometry::MoveSelectedVertex(double dX, double dY, double dZ, BOOL copy, Wo
 
 void Geometry::AddVertex(double X, double Y, double Z) {
 
-	changedSinceSave = TRUE;
+	mApp->changedSinceSave = TRUE;
 
 	//a new vertex
 	sh.nbVertex++;
@@ -1568,7 +1566,6 @@ void Geometry::GetSelection(int **selection, int *nbSel){
 }
 
 void Geometry::SetSelection(int **selection, int *nbSel){
-	MolFlow *mApp = (MolFlow *)theApp;
 	UnSelectAll();
 	for (int i = 0; i < *nbSel; i++) {
 		int toSelect = (*selection)[i];
@@ -1585,7 +1582,6 @@ void Geometry::AddStruct(char *name) {
 }
 
 void Geometry::DelStruct(int numToDel) {
-	MolFlow *mApp = (MolFlow *)theApp;
 	RemoveFromStruct(numToDel);
 	CheckIsolatedVertex();
 	mApp->UpdateModelParams();
@@ -1608,10 +1604,8 @@ void Geometry::DelStruct(int numToDel) {
 
 void Geometry::ScaleSelectedVertices(VERTEX3D invariant, double factor, BOOL copy, Worker *worker) {
 
-	MolFlow *mApp = (MolFlow *)theApp;
-
 	if (!mApp->AskToReset(worker)) return;
-	changedSinceSave = TRUE;
+	mApp->changedSinceSave = TRUE;
 	if (!copy) { //scale
 		for (int i = 0; i < sh.nbVertex; i++) {
 			if (vertices3[i].selected) {
@@ -1635,8 +1629,6 @@ void Geometry::ScaleSelectedVertices(VERTEX3D invariant, double factor, BOOL cop
 }
 
 void Geometry::ScaleSelectedFacets(VERTEX3D invariant, double factorX, double factorY, double factorZ, BOOL copy, Worker *worker) {
-
-	MolFlow *mApp = (MolFlow *)theApp;
 	GLProgress *prgMove = new GLProgress("Scaling selected facets...", "Please wait");
 	prgMove->SetProgress(0.0);
 	prgMove->SetVisible(TRUE);

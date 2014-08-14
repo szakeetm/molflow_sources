@@ -212,12 +212,8 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, int nbMoments, DWORD timeout) {
 					for (int m = 0; m < (1 + nbMoments); m++) {
 						AHIT *shTexture = (AHIT *)(buffer + (f->sh.hitOffset + sizeof(SHHITS)+f->profileSize*(1 + nbMoments) + m*f->textureSize));
 						//double dCoef = gHits->total.hit.nbDesorbed * 1E4 * sHandle->gasMass / 1000 / 6E23 * MAGIC_CORRECTION_FACTOR;  //1E4 is conversion from m2 to cm2
-						double timeCorrection = 1.0;
-						/*if (m != 0 && gHits->mode == MC_MODE) timeCorrection = 
-							(sHandle->desorptionStopTime - sHandle->desorptionStartTime) / sHandle->timeWindowSize;*/
-						//CHECK
-						if (m != 0 && gHits->mode == MC_MODE) timeCorrection = 
-							sHandle->totalDesorbedMolecules / sHandle->timeWindowSize;
+						double timeCorrection = m == 0 ? sHandle->finalOutgassingRate : (sHandle->totalDesorbedMolecules) / sHandle->timeWindowSize;
+						
 						for (y = 0; y < f->sh.texHeight; y++) {
 							for (x = 0; x < f->sh.texWidth; x++) {
 								int add = x + y*f->sh.texWidth;

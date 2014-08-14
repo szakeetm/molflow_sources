@@ -29,7 +29,7 @@ GNU General Public License for more details.
 #include "GLApp/GLMessageBox.h"
 #include "MolFlow.h"
 
-extern MolFlow *theApp;
+extern MolFlow *mApp;
 
 ScaleFacet::ScaleFacet(Geometry *g,Worker *w):GLWindow() {
 
@@ -161,7 +161,6 @@ ScaleFacet::ScaleFacet(Geometry *g,Worker *w):GLWindow() {
 }
 
 void ScaleFacet::ProcessMessage(GLComponent *src,int message) {
-	MolFlow *mApp = (MolFlow *)theApp;
 	double x,y,z,factor,factorX,factorY,factorZ;
 	int facetNum;
 
@@ -251,10 +250,11 @@ void ScaleFacet::ProcessMessage(GLComponent *src,int message) {
 			if (mApp->AskToReset()) {
 				if (scaleMode==UNIFORMMODE) factorX=factorY=factorZ=factor;
 				geom->ScaleSelectedFacets(invariant,factorX,factorY,factorZ,src==copyButton,work);
-				theApp->UpdateModelParams();
+				mApp->UpdateModelParams();
 				work->Reload(); 
-				theApp->UpdateFacetlistSelected();
+				mApp->UpdateFacetlistSelected();
 				mApp->UpdateViewers();
+				mApp->changedSinceSave = TRUE;
 				//GLWindowManager::FullRepaint();
 			}
 		}

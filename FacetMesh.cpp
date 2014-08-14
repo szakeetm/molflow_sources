@@ -24,6 +24,7 @@ GNU General Public License for more details.
 #include "GLApp/GLMessageBox.h"
 #include "Utils.h" 
 #include "MolFlow.h"
+extern MolFlow *mApp;
 
 //-----------------------------------------------------------------------------
 
@@ -383,8 +384,6 @@ void FacetMesh::EditFacet(Worker *w) {
 //-----------------------------------------------------------------------------
 
 BOOL FacetMesh::Apply() {
-	extern GLApplication *theApp;
-	MolFlow *mApp = (MolFlow *)theApp;
 	if (!mApp->AskToReset(worker)) return FALSE;
 	BOOL boundMap = boundaryBtn->IsChecked();
 	double nbSelected = (double)geom->GetNbSelected();
@@ -473,7 +472,7 @@ BOOL FacetMesh::Apply() {
 	// Send to sub process
 	try {
 		worker->Reload();
-
+		mApp->changedSinceSave = TRUE;
 	} catch(Error &e) {
 		GLMessageBox::Display((char *)e.GetMsg(),"Error",GLDLG_OK,GLDLG_ICONERROR);
 	}

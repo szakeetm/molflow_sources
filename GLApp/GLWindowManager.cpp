@@ -153,8 +153,7 @@ void GLWindowManager::DrawStats() {
     GLToolkit::GetDialogFont()->DrawTextFast(7,h-83,polys);
     GLToolkit::GetDialogFont()->DrawTextFast(7,h-65,theApp->m_strEventStats);
     GLToolkit::GetDialogFont()->DrawTextFast(7,h-48,theApp->m_strFrameStats);
-	MolFlow *mApp = (MolFlow *)theApp;
-	sprintf(polys,"m_fTime:%4.2f lastSaveTime:%4.2f lastSaveTimeSimu:%4.2g",m_fTime,mApp->lastSaveTime,mApp->lastSaveTimeSimu);
+	sprintf(polys,"m_fTime:%4.2f",m_fTime);
 	GLToolkit::GetDialogFont()->DrawTextFast(150,h-48,polys);
   }
   

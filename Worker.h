@@ -21,6 +21,7 @@
 
 #include "Geometry.h"
 #include "Parameter.h"
+#include "TinyXML/tinyxml.h" //Opensource XML save/load (http://www.grinninglizard.com/tinyxml2/index.html)
 #include <string>
 
 #define CDF_SIZE 100 //points in a cumulative distribution function
@@ -70,6 +71,7 @@ public:
   // Return/Set the current filename
   char *GetFileName();
   char *GetShortFileName();
+  char *GetShortFileName(char* longFileName);
   void  SetFileName(char *fileName);
 
   // Set number of processes [1..16] (throws Error)
@@ -187,6 +189,8 @@ int GetIDId(int paramId);
   double timeWindowSize;
   BOOL useMaxwellDistribution; //TRUE: Maxwell-Boltzmann distribution, FALSE: All molecules have the same (V_avg) speed
   BOOL calcConstantFlow;
+
+  BOOL needsReload;
 
   std::vector<Parameter> parameters;
   

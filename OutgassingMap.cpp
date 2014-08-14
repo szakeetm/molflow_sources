@@ -21,7 +21,7 @@
 #include "GLApp/GLMessageBox.h"
 #include "GLApp/GLFileBox.h"
 #include "MolFlow.h"
-extern GLApplication *theApp;
+extern MolFlow *mApp;
 
 //static const char *fileFilters = "Text files\0*.txt";
 //static const int   nbFilter = sizeof(fileFilters) / (2*sizeof(char *));
@@ -332,11 +332,9 @@ void OutgassingMap::ProcessMessage(GLComponent *src,int message) {
 				  }
 			  
 		  }
-		  if( GLMessageBox::Display("Explode selected facet?","Question",GLDLG_OK|GLDLG_CANCEL,GLDLG_ICONINFO)==GLDLG_OK ) {
-				MolFlow *mApp = (MolFlow *)theApp;
-	
+		  if( GLMessageBox::Display("Explode selected facet?","Question",GLDLG_OK|GLDLG_CANCEL,GLDLG_ICONINFO)==GLDLG_OK ) {	
 			  if (mApp->AskToReset()) {
-				  changedSinceSave=TRUE;
+				  mApp->changedSinceSave=TRUE;
 				  try { 
 					  worker->GetGeometry()->ExplodeSelected(TRUE,desCombo->GetSelectedIndex(),desorbTypeN,values);
 					  SAFE_FREE(values);

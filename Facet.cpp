@@ -503,7 +503,6 @@ void Facet::SaveGEO(FileWriter *file, int idx) {
 	file->Write("  superDest:"); file->WriteInt(sh.superDest, "\n");
 	file->Write("  superIdx:"); file->WriteInt(sh.superIdx, "\n");
 	file->Write("  is2sided:"); file->WriteInt(sh.is2sided, "\n");
-	//file->Write("  area:");file->WriteDouble(sh.area,"\n");
 	file->Write("  mesh:"); file->WriteInt((mesh != NULL), "\n");
 	file->Write("  outgassing:"); file->WriteDouble(sh.flow*10.00, "\n"); //Pa*m3/s -> mbar*l/s for compatibility with old versions
 	file->Write("  texDimX:"); file->WriteDouble(sh.texWidthD, "\n");
@@ -1373,10 +1372,11 @@ void Facet::SwapNormal() {
 	free(indices);
 	indices = tmp;
 
+	/* normal recalculated at reinitialize
 	// Invert normal
 	sh.N.x = -sh.N.x;
 	sh.N.y = -sh.N.y;
-	sh.N.z = -sh.N.z;
+	sh.N.z = -sh.N.z;*/
 
 }
 
@@ -1529,5 +1529,98 @@ void Facet::ConvertOldDesorbType() {
 	if (sh.desorbType >= 3 && sh.desorbType <= 5) {
 		sh.desorbTypeN = (double)(sh.desorbType - 1);
 		sh.desorbType = DES_COSINE_N;
+	}
+}
+
+void  Facet::SaveXML_geom(TiXmlElement *f){
+	TiXmlElement *e = new TiXmlElement("Sticking");
+	e->SetAttribute("constValue", sh.sticking);
+	e->SetAttribute("parameterId", sh.sticking_paramId);
+	f->LinkEndChild(e);
+
+	e = new TiXmlElement("Opacity");
+	e->SetAttribute("constValue", sh.opacity);
+	e->SetAttribute("parameterId", sh.opacity_paramId);
+	e->SetAttribute("is2sided", sh.is2sided);
+	f->LinkEndChild(e);
+
+	e = new TiXmlElement("Outgassing");
+	e->SetAttribute("constValue", sh.flow);
+	e->SetAttribute("parameterId", sh.outgassing_paramId);
+	e->SetAttribute("desType", sh.desorbType);
+	e->SetAttribute("desExponent", sh.desorbTypeN);
+	e->SetAttribute("dynamicFromFile", sh.useOutgassingFile);
+	f->LinkEndChild(e);
+
+	e = new TiXmlElement("Temperature");
+	e->SetAttribute("value", sh.temperature);
+	e->SetDoubleAttribute("accFactor", sh.accomodationFactor);
+	f->LinkEndChild(e);
+
+	e = new TiXmlElement("Reflection");
+	e->SetAttribute("type", sh.reflectType);
+	f->LinkEndChild(e);
+
+	e = new TiXmlElement("Structure");
+	e->SetAttribute("inStructure", sh.superIdx);
+	e->SetAttribute("linksTo", sh.superDest);
+	f->LinkEndChild(e);
+
+	e = new TiXmlElement("Teleport");
+	e->SetAttribute("target", sh.teleportDest);
+	f->LinkEndChild(e);
+
+	e = new TiXmlElement("Recordings");
+	TiXmlElement *t = new TiXmlElement("Profile");
+	t->SetAttribute("type", sh.profileType);
+	switch (sh.profileType) {
+	case 0:
+		t->SetAttribute("name", "none");
+		break;
+	case 1:
+		t->SetAttribute("name", "pressure u");
+		break;
+	case 2:
+		t->SetAttribute("name", "pressure v");
+		break;
+	case 3:
+		t->SetAttribute("name", "angular");
+		break;
+	case 4:
+		t->SetAttribute("name", "speed");
+		break;
+	case 5:
+		t->SetAttribute("name", "ortho.v");
+		break;
+	default:
+		t->SetAttribute("name", "unknown");
+		break;
+	}
+	e->LinkEndChild(t);
+	t = new TiXmlElement("Texture");
+	e->LinkEndChild(t);
+	t->SetAttribute("hasMesh", mesh != NULL);
+	t->SetDoubleAttribute("texDimX", sh.texWidthD);
+	t->SetDoubleAttribute("texDimY", sh.texHeightD);
+	t->SetAttribute("countDes", sh.countDes);
+	t->SetAttribute("countAbs", sh.countAbs);
+	t->SetAttribute("countRefl", sh.countRefl);
+	t->SetAttribute("countTrans", sh.countTrans);
+	t->SetAttribute("countDir", sh.countDirection);
+	t->SetAttribute("countAC", sh.countACD);
+	f->LinkEndChild(e);
+	
+	e = new TiXmlElement("ViewSettings");
+	e->SetAttribute("textureVisible", textureVisible);
+	e->SetAttribute("volumeVisible", volumeVisible);
+	f->LinkEndChild(e);
+
+	f->LinkEndChild(new TiXmlElement("Indices"));
+	f->FirstChildElement("Indices")->SetAttribute("nb", sh.nbIndex);
+	for (size_t i = 0; i < sh.nbIndex; i++) {
+		TiXmlElement *indice = new TiXmlElement("Indice");
+		indice->SetAttribute("id", i);
+		indice->SetAttribute("vertex", indices[i]);
+		f->FirstChildElement("Indices")->LinkEndChild(indice);
 	}
 }

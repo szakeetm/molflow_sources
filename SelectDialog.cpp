@@ -18,7 +18,7 @@
 #include "GLApp/GLWindowManager.h"
 #include "GLApp/GLMessageBox.h"
 #include "MolFlow.h"
-extern MolFlow *theApp;
+extern MolFlow *mApp;
 
 // Construct a message dialog box
 SelectDialog::SelectDialog(Worker *w):GLWindow() {
@@ -81,7 +81,6 @@ SelectDialog::SelectDialog(Worker *w):GLWindow() {
 
 void SelectDialog::ProcessMessage(GLComponent *src,int message) {
   if(message==MSG_BUTTON) {
-		MolFlow *mApp = (MolFlow *)theApp;
 		rCode = src->GetId();
 		  int facetnumber;
 		  numText->GetNumberInt(&facetnumber);

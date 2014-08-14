@@ -19,7 +19,6 @@
 
 #ifndef _GLFONT2DH_
 #define _GLFONT2DH_
-extern int whiteBg;
 class GLFont2D {
 
 public:

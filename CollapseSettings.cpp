@@ -23,7 +23,7 @@ GNU General Public License for more details.
 #include "GLApp/GLMessageBox.h"
 #include "Molflow.h"
 
-extern GLApplication *theApp;
+extern MolFlow *mApp;
 
 CollapseSettings::CollapseSettings():GLWindow() {
 
@@ -110,7 +110,6 @@ void CollapseSettings::SetGeometry(Geometry *s,Worker *w) {
 }
 
 void CollapseSettings::ProcessMessage(GLComponent *src,int message) {
-	MolFlow *mApp = (MolFlow *)theApp;
 	double vT,fT,lT;
 
 	switch(message) {

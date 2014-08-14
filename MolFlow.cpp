@@ -78,15 +78,8 @@ static const int   nbDesFilter = 2;
 static const int   cWidth[] = {30,56,50,50};
 static const char *cName[] = {"#","Hits","Des","Abs"};
 
-
-BOOL changedSinceSave;
 float m_fTime;
-MolFlow *theApp;
-/*extern double gasMass;
-extern double totalOutgassing;
-extern double totalInFlux;
-extern double autoSaveFrequency;*/
-
+MolFlow *mApp;
 
 #define MENU_FILE_LOAD       11
 #define MENU_FILE_IMPORTDES_DES 120
@@ -214,8 +207,9 @@ extern double autoSaveFrequency;*/
 
 INT WINAPI WinMain( HINSTANCE hInst, HINSTANCE, LPSTR, INT )
 {
-	theApp = new MolFlow();
-	if( !theApp->Create( 1024 , 768 , FALSE ) ) {
+	MolFlow *mApp = new MolFlow();
+	
+	if( !mApp->Create( 1024 , 768 , FALSE ) ) {
 		char *logs = GLToolkit::GetLogs();
 #ifdef WIN32
 		if(logs) MessageBox(NULL,logs,"Molflow [Fatal error]",MB_OK);
@@ -226,15 +220,15 @@ INT WINAPI WinMain( HINSTANCE hInst, HINSTANCE, LPSTR, INT )
 		}
 #endif
 		SAFE_FREE(logs);
-		delete theApp;
+		delete mApp;
 		return -1;
 	}
 	try {
-		theApp->Run();
+		mApp->Run();
 	} catch(Error &e) {
-		theApp->CrashHandler(&e);
+		((MolFlow*)mApp)->CrashHandler(&e);
 	}
-	delete theApp;
+	delete mApp;
 	return 0;
 }
 
@@ -247,27 +241,26 @@ INT WINAPI WinMain( HINSTANCE hInst, HINSTANCE, LPSTR, INT )
 
 MolFlow::MolFlow()
 {
-	//Get number of cores
-	SYSTEM_INFO sysinfo;
-	GetSystemInfo( &sysinfo );
-	
-	numCPU = (int) sysinfo.dwNumberOfProcessors;
+	mApp = this; //to refer to the app as extern variable
+	antiAliasing = TRUE;
+	whiteBg = FALSE;
+	checkForUpdates = FALSE;
+	autoUpdateFormulas = FALSE;
+	compressSavedFiles = TRUE;
+	/*double gasMass=28;
+	double totalOutgassing=0.0; //total outgassing in Pa*m3/sec (internally everything is in SI units)
+	double totalInFlux = 0.0; //total incoming molecules per second. For anisothermal system, it is (totalOutgassing / Kb / T)*/
+	autoSaveFrequency = 10.0; //in minutes
+	autoSaveSimuOnly = FALSE;
+	compressProcessHandle = NULL;
 
-	/*
-	//Enable memory check at EVERY malloc/free operation:
-	int tmpFlag = _CrtSetDbgFlag( _CRTDBG_REPORT_FLAG );
-	tmpFlag |= _CRTDBG_LEAK_CHECK_DF;
-	_CrtSetDbgFlag( tmpFlag );
-	*/
-
-	antiAliasing=TRUE;
-	whiteBg=FALSE;
-	lastSaveTime=0.0f;
-	lastSaveTimeSimu=0.0f;
-	changedSinceSave=FALSE;
+	lastSaveTime = 0.0f;
+	lastSaveTimeSimu = 0.0f;
+	changedSinceSave = FALSE;
 	//lastHeartBeat=0.0f;
-	nbDesStart=0;
-	nbHitStart=0;
+	nbDesStart = 0;
+	nbHitStart = 0;
+
 	lastUpdate=0.0;
 	nbFormula = 0;
 	nbRecent = 0;
@@ -339,6 +332,19 @@ MolFlow::MolFlow()
 //-----------------------------------------------------------------------------
 int MolFlow::OneTimeSceneInit()
 {
+
+	//Get number of cores
+	SYSTEM_INFO sysinfo;
+	GetSystemInfo(&sysinfo);
+
+	numCPU = (int)sysinfo.dwNumberOfProcessors;
+
+	/*
+	//Enable memory check at EVERY malloc/free operation:
+	int tmpFlag = _CrtSetDbgFlag( _CRTDBG_REPORT_FLAG );
+	tmpFlag |= _CRTDBG_LEAK_CHECK_DF;
+	_CrtSetDbgFlag( tmpFlag );
+	*/
 
 	GLToolkit::SetIcon32x32("images/app_icon.png");
 
@@ -4319,7 +4325,6 @@ BOOL MolFlow::AskToSave() {
 
 // ---------------------------------------------------------------------------
 BOOL MolFlow::AskToReset(Worker *work) {
-	MolFlow *mApp = (MolFlow *)theApp;
 	if (work==NULL) work=&worker;
 	if (work->nbHit>0) {
 		int rep = GLMessageBox::Display("This will reset simulation data.","Geometry change",GLDLG_OK|GLDLG_CANCEL,GLDLG_ICONWARNING);
@@ -4353,6 +4358,7 @@ void MolFlow::QuickPipe() {
 
 	geom->BuildPipe(L,R,0,step);
 	worker.nbDesorption = 0;
+	worker.needsReload = TRUE;
 	sprintf(tmp,"L|R %g",L/R);
 	//worker.SetFileName(tmp);
 	nbDesStart = 0;
@@ -4412,6 +4418,7 @@ void MolFlow::BuildPipe(double ratio) {
 		return;
 	}
 	worker.nbDesorption = 0;
+	worker.needsReload = TRUE;
 	sprintf(tmp,"L|R %g",L/R);
 	//worker.SetFileName(tmp);
 	nbDesStart = 0;
@@ -4950,11 +4957,6 @@ void MolFlow::LoadConfig() {
 		for(int i=0;i<MAX_VIEWER;i++)
 			viewer[i]->showDir = f->ReadInt();
 
-
-
-
-
-
 		f->ReadKeyword("autoSaveFrequency");f->ReadKeyword(":");
 		autoSaveFrequency = f->ReadDouble();
 		f->ReadKeyword("autoSaveSimuOnly");f->ReadKeyword(":");
@@ -5157,7 +5159,7 @@ void MolFlow::CrashHandler(Error *e) {
 	sprintf(tmp,"Well, that's emberassing. Molflow crashed and will exit now.\nBefore that, an autosave will be attempted.\nHere is the error info:\n\n%s",(char *)e->GetMsg());
 	GLMessageBox::Display(tmp,"Main crash handler",GLDLG_OK,GLDGL_ICONDEAD);
 	try {
-		if (theApp->AutoSave(TRUE))
+		if (AutoSave(TRUE))
 			GLMessageBox::Display("Good news, autosave worked!","Main crash handler",GLDLG_OK,GLDGL_ICONDEAD);
 		else 
 			GLMessageBox::Display("Sorry, I couldn't even autosave.","Main crash handler",GLDLG_OK,GLDGL_ICONDEAD);

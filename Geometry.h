@@ -28,14 +28,15 @@
 #include "smp/SMP.h"
 #include "Utils.h"
 #include "GrahamScan.h"
+#include "TinyXML/tinyxml.h" //Opensource XML save/load (http://www.grinninglizard.com/tinyxml2/index.html)
 #include <vector>
 
-extern int changedSinceSave;
 class Worker;
 
 #define SEL_HISTORY  100
 #define MAX_SUPERSTR 256
 #define GEOVERSION   13
+#define XMLVERSION 1
 #define SYNVERSION 7
 
 #define TEXTURE_MODE_PRESSURE 0
@@ -82,7 +83,8 @@ public:
   void SaveGEO(FileWriter *file,GLProgress *prg,Dataport *dpHit,std::vector<std::string> userMoments,Worker *worker,
 	  BOOL saveSelected,LEAK *pleak,int *nbleakSave,HIT *pHits,int *nbHHitSave,BOOL crashSave=FALSE);
   void SaveSTR(Dataport *dhHit,BOOL saveSelected);
-
+  void SaveXML_geometry(TiXmlDocument *saveDoc, Worker *work, GLProgress *prg, BOOL saveSelected);
+  BOOL SaveXML_simustate(TiXmlDocument *saveDoc, Worker *work, GLProgress *prg, BOOL saveSelected);
 
   // Selection (drawing stuff)
   void SelectAll();
@@ -171,7 +173,7 @@ public:
   BOOL     GetCenterNorme();
   void	   RebuildLists();
   void	   CalcTotalOutGassing();
-  void     InitializeGeometry(int facet_number=-1,BOOL noVertexShift=FALSE);           // Initialiase all geometry related variable
+  void     InitializeGeometry(int facet_number=-1);           // Initialiase all geometry related variable
   void     LoadProfile(FileReader *file,Dataport *dpHit,int version);
  
   // Texture scaling

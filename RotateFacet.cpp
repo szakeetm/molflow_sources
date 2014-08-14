@@ -31,7 +31,7 @@ GNU General Public License for more details.
 #include "GLApp/GLMessageBox.h"
 #include "MolFlow.h"
 
-extern MolFlow *theApp;
+extern MolFlow *mApp;
 int    axisMode;
 
 RotateFacet::RotateFacet(Geometry *g,Worker *w):GLWindow() {
@@ -181,7 +181,6 @@ RotateFacet::RotateFacet(Geometry *g,Worker *w):GLWindow() {
 }
 
 void RotateFacet::ProcessMessage(GLComponent *src,int message) {
-	MolFlow *mApp = (MolFlow *)theApp;
 	double a,b,c,u,v,w,deg;
 	int facetNum;
 
@@ -315,11 +314,12 @@ void RotateFacet::ProcessMessage(GLComponent *src,int message) {
 			SAFE_FREE(vIdx);
 			if (mApp->AskToReset()) {
 				geom->RotateSelectedFacets(AXIS_P0,AXIS_DIR,deg,src==copyButton,work);
-				//theApp->UpdateModelParams();
+				//mApp->UpdateModelParams();
 				work->Reload(); 
-				theApp->UpdateFacetlistSelected();
+				mApp->UpdateFacetlistSelected();
 				mApp->UpdateViewers();
 				//GLWindowManager::FullRepaint();
+				mApp->changedSinceSave = TRUE;
 			}
 		}
 		break;

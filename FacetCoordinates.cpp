@@ -27,7 +27,7 @@
 #include "GLApp/GLInputBox.h"
 
 //extern GLApplication *theApp;
-extern MolFlow *theApp;
+extern MolFlow *mApp;
 
 static const int   flWidth[] = {35,40,100,100,100};
 static const char *flName[] = {"#","Vertex","X","Y","Z"};
@@ -156,7 +156,6 @@ void FacetCoordinates::Display(Worker *w) {
 void FacetCoordinates::ProcessMessage(GLComponent *src,int message) {
 
   Geometry *geom = worker->GetGeometry();
-  //MolFlow *mApp = (MolFlow *)theApp;
   switch(message) {
     case MSG_BUTTON:
       if(src==dismissButton) {
@@ -307,7 +306,6 @@ void FacetCoordinates::InsertVertex(int rowId,int vertexId){
 void FacetCoordinates::ApplyChanges(){
 	
 	Geometry *geom = worker->GetGeometry();
-	MolFlow *mApp = (MolFlow *)theApp;
 	
 	if (facetListC->GetNbRow()<3) {
 		GLMessageBox::Display("A facet must have at least 3 vertices","Not enough vertices",GLDLG_OK,GLDLG_ICONWARNING);
@@ -335,7 +333,7 @@ void FacetCoordinates::ApplyChanges(){
 	//if( rep == GLDLG_OK ) {
 
 		if (mApp->AskToReset(worker)) {
-			changedSinceSave=TRUE;
+			mApp->changedSinceSave=TRUE;
 
 			//Change number of vertices
 			SAFE_FREE(selFacet->indices);

@@ -412,3 +412,4 @@ void FileWriter::Write(const char *s) {
   if( !fprintf(file,"%s",s) )
     throw Error("Error while writing to file");
 }
+

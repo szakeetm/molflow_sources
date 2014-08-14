@@ -26,8 +26,7 @@
 #include "MolFlow.h"
 #include "GLApp/GLInputBox.h"
 
-//extern GLApplication *theApp;
-extern MolFlow *theApp;
+extern MolFlow *mApp;
 
 static const int   flWidth[] = {40,100,100,100};
 static const char *flName[] = {"Vertex#","X","Y","Z"};
@@ -171,7 +170,6 @@ void VertexCoordinates::Display(Worker *w) {
 void VertexCoordinates::ProcessMessage(GLComponent *src,int message) {
 
   Geometry *geom = worker->GetGeometry();
-  MolFlow *mApp = (MolFlow *)theApp;
   switch(message) {
     case MSG_BUTTON:
       if(src==dismissButton) {
@@ -218,7 +216,7 @@ void VertexCoordinates::ProcessMessage(GLComponent *src,int message) {
         if( rep == GLDLG_OK ) {
 			if (mApp->AskToReset(worker)) {
 			//if (worker->running) worker->Stop_Public();
-			changedSinceSave=TRUE;
+			mApp->changedSinceSave=TRUE;
 			for(int i=0;i<vertexListC->GetNbRow();i++) {
 				double x,y,z;
 				int id;

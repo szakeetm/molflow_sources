@@ -22,7 +22,7 @@
 #include "GLApp/GLMessageBox.h"
 #include "MolFlow.h"
 
-extern MolFlow *theApp;
+extern MolFlow *mApp;
 
 TimeSettings::TimeSettings(Worker *w):GLWindow() {
 
@@ -96,7 +96,6 @@ TimeSettings::TimeSettings(Worker *w):GLWindow() {
 
 
 void TimeSettings::ProcessMessage(GLComponent *src,int message) {
-	MolFlow *mApp = (MolFlow *)theApp;
   int id;
   int nbMoments=(int)work->moments.size();
 

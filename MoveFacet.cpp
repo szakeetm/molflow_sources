@@ -22,7 +22,7 @@ GNU General Public License for more details.
 #include "GLApp/GLMessageBox.h"
 #include "MolFlow.h"
 
-extern MolFlow *theApp;
+extern MolFlow *mApp;
 
 MoveFacet::MoveFacet(Geometry *g,Worker *w):GLWindow() {
 
@@ -82,7 +82,6 @@ MoveFacet::MoveFacet(Geometry *g,Worker *w):GLWindow() {
 }
 
 void MoveFacet::ProcessMessage(GLComponent *src,int message) {
-	MolFlow *mApp = (MolFlow *)theApp;
 	double dX,dY,dZ;
 
 	switch(message) {
@@ -112,10 +111,10 @@ void MoveFacet::ProcessMessage(GLComponent *src,int message) {
 			if (mApp->AskToReset()){
 
 				geom->MoveSelectedFacets(dX,dY,dZ,src==copyButton,work);
-				//theApp->UpdateModelParams();
+				//mApp->UpdateModelParams();
 				work->Reload(); 
-				changedSinceSave = TRUE;
-				theApp->UpdateFacetlistSelected();	
+				mApp->changedSinceSave = TRUE;
+				mApp->UpdateFacetlistSelected();	
 				mApp->UpdateViewers();
 
 				//GLWindowManager::FullRepaint();

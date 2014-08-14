@@ -22,11 +22,7 @@
 #include "Utils.h"
 #include "MolFlow.h"
 
-/*extern double gasMass;
-extern double totalInFlux;
-extern double totalOutgassing;*/
-
-extern MolFlow *theApp;
+extern MolFlow *mApp;
 
 typedef struct {
 
@@ -263,7 +259,6 @@ char *FacetDetails::GetCountStr(Facet *f) {
 // -----------------------------------------------------------------
 
 char *FacetDetails::FormatCell(int idx,Facet *f,int mode) {
-  MolFlow *mApp = (MolFlow *)theApp;
   static char ret[256];
   strcpy(ret,"");
   double opacity;

@@ -17,9 +17,6 @@
 */
 
 
-extern int antiAliasing;
-
-
 #ifndef _UTILSH_
 #define _UTILSH_
 

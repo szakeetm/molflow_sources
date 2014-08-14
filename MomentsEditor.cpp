@@ -22,7 +22,7 @@
 #include "GLApp/GLMessageBox.h"
 #include "MolFlow.h"
 
-extern MolFlow *theApp;
+extern MolFlow *mApp;
 
   static const int   flWidth[] = {35,100,35};
   static const char *flName[] = {"#","Time (s)","Nb"};
@@ -132,7 +132,6 @@ MomentsEditor::MomentsEditor(Worker *w):GLWindow() {
 }
 
 void MomentsEditor::ProcessMessage(GLComponent *src,int message) {
-	MolFlow *mApp = (MolFlow *)theApp;
   switch(message) {
     case MSG_BUTTON:
 

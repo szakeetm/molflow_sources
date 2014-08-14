@@ -65,8 +65,6 @@
 #define MAX_SELECTION 19
 #define MAX_RECENT  10
 
-extern int changedSinceSave;
-
 typedef struct {
   GLLabel     *name;
   GLTextField *value;
@@ -99,23 +97,26 @@ public:
     llong    nbDesStart;   // measurement
     llong    nbHitStart;   // measurement
     int      nbProc;       // Temporary var (use Worker::GetProcNumber)
-	//float lastHeartBeat;   //last time a heartbeat was sent to the subprocesses
-	float lastAppTime;
+
+	float    lastAppTime;
 	BOOL     antiAliasing;
-	BOOL whiteBg;
-    float    lastMeasTime; // Last measurement time (for hps and dps)
-	double tolerance; //Select coplanar tolerance
-	double largeArea; //Selection filter
-	double planarityThreshold; //Planarity threshold
-	double autoSaveFrequency; //autosave period, in minutes
-	int checkForUpdates;
-int autoUpdateFormulas;
-int compressSavedFiles;
-//extern HANDLE molflowHandle;
-int autoSaveSimuOnly;
-int numCPU;
-BOOL changedSinceSave; //For saving and autosaving
-//float m_fTime;
+	BOOL     whiteBg;
+	float    lastMeasTime; // Last measurement time (for hps and dps)
+	double   tolerance; //Select coplanar tolerance
+	double   largeArea; //Selection filter
+	double   planarityThreshold; //Planarity threshold
+	double   autoSaveFrequency; //autosave period, in minutes
+	int      checkForUpdates;
+	int      autoUpdateFormulas;
+	int      compressSavedFiles;
+	int      autoSaveSimuOnly;
+	int      numCPU;
+	BOOL     changedSinceSave; //For saving and autosaving
+	float    lastSaveTime;
+	float    lastSaveTimeSimu;
+
+	HANDLE compressProcessHandle;
+	//float m_fTime;
 
     // Util functions
 	//void SendHeartBeat(BOOL forced=FALSE);
@@ -183,8 +184,6 @@ BOOL changedSinceSave; //For saving and autosaving
 	void calcSticking();
 
     // Recent files
-	float lastSaveTime;
-	float lastSaveTimeSimu;
     char *recents[MAX_RECENT];
     int  nbRecent;
     void AddRecent(char *fileName);

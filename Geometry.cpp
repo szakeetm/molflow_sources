@@ -39,13 +39,7 @@ GNU General Public License for more details.
 #endif
 */
 
-extern GLApplication *theApp;
-/*extern double totalInFlux;
-extern double totalOutgassing;
-extern double gasMass;*/
-//extern int nonIsothermal;
-//extern HANDLE molflowHandle;
-extern int needsReload;
+extern MolFlow *mApp;
 
 Geometry::Geometry() {
 
@@ -184,12 +178,12 @@ void Geometry::CalcTotalOutGassing() {
 		}
 	}
 	//totalOutgassing*=0.001; //conversion from "unit*l/s" to "unit*m3/sec"
-	MolFlow *mApp = (MolFlow *)theApp;
+	
 	if (mApp->globalSettings) mApp->globalSettings->UpdateOutgassing();*/
 }
 
 void Geometry::CalculateFacetParam(int facet) {
-	MolFlow *mApp = (MolFlow *)theApp;
+	
 	Facet *f = facets[facet];
 
 	// Calculate facet normal
@@ -261,9 +255,9 @@ void Geometry::CalculateFacetParam(int facet) {
 	f->sh.maxSpeed = 4.0 * sqrt(2.0*8.31*f->sh.temperature / 0.001 / mApp->worker.gasMass);
 }
 
-void Geometry::InitializeGeometry(int facet_number, BOOL noVertexShift) {
+void Geometry::InitializeGeometry(int facet_number) {
 
-	MolFlow *mApp = (MolFlow *)theApp;
+	
 	// Perform various precalculation here for a faster simulation.
 
 	//GLProgress *initGeoPrg = new GLProgress("Initializing geometry...","Please wait");
@@ -477,7 +471,7 @@ void Geometry::RebuildLists() {
 }
 
 DWORD Geometry::GetGeometrySize() {
-	MolFlow *mApp = (MolFlow *)theApp;
+	
 	Worker  *work = &mApp->worker;
 	// Compute number of bytes allocated
 	DWORD memoryUsage = 0;
@@ -533,7 +527,7 @@ void Geometry::CopyGeometryBuffer(BYTE *buffer) {
 
 	*/
 
-	MolFlow *mApp = (MolFlow *)theApp;
+	
 	Worker *w=&mApp->worker;
 	int fOffset = sizeof(SHGHITS);
 	SHGEOM *shGeom = (SHGEOM *)buffer;
@@ -704,7 +698,7 @@ float Geometry::GetNormeRatio() {
 }
 
 DWORD Geometry::GetHitsSize(std::vector<double> *moments) {
-	MolFlow *mApp = (MolFlow *)theApp;
+	
 	// Compute number of bytes allocated
 	DWORD memoryUsage = 0;
 	memoryUsage += sizeof(SHGHITS);
@@ -944,7 +938,7 @@ void Geometry::BuildSelectList() {
 	glDisable(GL_LIGHTING);
 	glDisable(GL_TEXTURE_2D);
 	glDisable(GL_BLEND);
-	if (antiAliasing){
+	if (mApp->antiAliasing){
 		glEnable(GL_LINE_SMOOTH);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);	//glHint(GL_LINE_SMOOTH_HINT,GL_NICEST);
@@ -960,7 +954,7 @@ void Geometry::BuildSelectList() {
 		}
 	}
 	glLineWidth(1.0f);
-	if (antiAliasing) {
+	if (mApp->antiAliasing) {
 		glDisable(GL_BLEND);
 		glDisable(GL_LINE_SMOOTH);
 	}
@@ -1003,7 +997,7 @@ void Geometry::BuildGLList() {
 // -----------------------------------------------------------
 
 Facet *Geometry::MergeFacet(Facet *f1, Facet *f2) {
-	changedSinceSave = TRUE;
+	mApp->changedSinceSave = TRUE;
 	// Merge 2 facets into 1 when possible and create a new facet
 	// otherwise return NULL.
 	int  c1;
@@ -1059,10 +1053,10 @@ Facet *Geometry::MergeFacet(Facet *f1, Facet *f2) {
 }
 
 void Geometry::Collapse(double vT, double fT, double lT, BOOL doSelectedOnly, GLProgress *prg) {
-	changedSinceSave = TRUE;
+	mApp->changedSinceSave = TRUE;
 	Facet *fi, *fj;
 	Facet *merged;
-	MolFlow *mApp = (MolFlow *)theApp;
+	
 
 	vThreshold = vT;
 	double totalWork = (1.0 + (double)(fT > 0.0) + (double)(lT > 0.0)); //for progress indicator
@@ -1154,7 +1148,7 @@ void Geometry::Collapse(double vT, double fT, double lT, BOOL doSelectedOnly, GL
 }
 
 void Geometry::MergecollinearSides(Facet *f, double lT) {
-	changedSinceSave = TRUE;
+	mApp->changedSinceSave = TRUE;
 	BOOL collinear;
 	double linTreshold = cos(lT*PI / 180);
 	// Merge collinear sides
@@ -1274,10 +1268,9 @@ void Geometry::SetFacetTexture(int facet, double ratio, BOOL mesh) {
 // Testing purpose function, construct a PIPE
 // -----------------------------------------------------------
 void  Geometry::BuildPipe(double L, double R, double s, int step) {
-	needsReload = TRUE;
 	Clear();
 
-	MolFlow *mApp = (MolFlow *)theApp;
+	
 	mApp->ClearAllSelections();
 	mApp->ClearAllViews();
 	sprintf(sh.name, "PIPE%g", L / R);
@@ -1422,7 +1415,7 @@ void Geometry::LoadASE(FileReader *file, GLProgress *prg) {
 
 	Clear();
 
-	MolFlow *mApp = (MolFlow *)theApp;
+	
 	mApp->ClearAllSelections();
 	mApp->ClearAllViews();
 	ASELoader ase(file);
@@ -1480,7 +1473,7 @@ void Geometry::LoadSTR(FileReader *file, GLProgress *prg) {
 
 	Clear();
 
-	MolFlow *mApp = (MolFlow *)theApp;
+	
 	mApp->ClearAllSelections();
 	mApp->ClearAllViews();
 	// Load multiple structure file
@@ -1536,7 +1529,7 @@ void Geometry::LoadSTR(FileReader *file, GLProgress *prg) {
 
 void Geometry::LoadSTL(FileReader *file, GLProgress *prg, double scaleFactor) {
 
-	MolFlow *mApp = (MolFlow *)theApp;
+	
 	mApp->ClearAllSelections();
 	mApp->ClearAllViews();
 	char *w;
@@ -1620,7 +1613,7 @@ void Geometry::LoadSTL(FileReader *file, GLProgress *prg, double scaleFactor) {
 
 void Geometry::LoadTXT(FileReader *file, GLProgress *prg) {
 
-	MolFlow *mApp = (MolFlow *)theApp;
+	
 	mApp->ClearAllSelections();
 	mApp->ClearAllViews();
 	Clear();
@@ -1811,7 +1804,7 @@ void Geometry::InsertTXTGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 
 void Geometry::InsertGEOGeom(FileReader *file, int *nbVertex, int *nbFacet, VERTEX3D **vertices3, Facet ***facets, int strIdx, BOOL newStruct) {
 
-	MolFlow *mApp = (MolFlow *)theApp;
+	
 	UnSelectAll();
 	char tmp[512];
 
@@ -2048,7 +2041,7 @@ void Geometry::InsertGEOGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 
 void Geometry::InsertSYNGeom(FileReader *file, int *nbVertex, int *nbFacet, VERTEX3D **vertices3, Facet ***facets, int strIdx, BOOL newStruct) {
 
-	MolFlow *mApp = (MolFlow *)theApp;
+	
 	UnSelectAll();
 	char tmp[512];
 
@@ -2352,7 +2345,7 @@ void Geometry::SaveProfileTXT(FileWriter *file) {
 }
 
 void Geometry::SaveProfileGEO(FileWriter *file, Dataport *dpHit, int super, BOOL saveSelected, BOOL crashSave) {
-	MolFlow *mApp = (MolFlow *)theApp;
+	
 	BYTE *buffer;
 	if (!crashSave && !saveSelected) buffer = (BYTE *)dpHit->buff;
 	file->Write("profiles {\n");
@@ -2392,7 +2385,7 @@ void Geometry::SaveProfileGEO(FileWriter *file, Dataport *dpHit, int super, BOOL
 }
 
 void Geometry::LoadProfile(FileReader *file, Dataport *dpHit, int version) {
-	MolFlow *mApp = (MolFlow *)theApp;
+	
 	AccessDataport(dpHit);
 	BYTE *buffer = (BYTE *)dpHit->buff;
 	file->ReadKeyword("profiles"); file->ReadKeyword("{");
@@ -2430,11 +2423,9 @@ void Geometry::LoadProfile(FileReader *file, Dataport *dpHit, int version) {
 	SAFE_FREE(profileFacet);
 }
 
-extern GLApplication *theApp;
-
 void Geometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *pleak, int *nbleak, HIT *pHits, int *nbHHit, int *version, Worker *worker) {
 
-	MolFlow *mApp = (MolFlow *)theApp;
+	
 	mApp->ClearAllSelections();
 	mApp->ClearAllViews();
 	prg->SetMessage("Clearing current geometry...");
@@ -2692,7 +2683,7 @@ void Geometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *pleak, int *nble
 void Geometry::LoadSYN(FileReader *file, GLProgress *prg, LEAK *pleak, int *nbleak, HIT *pHits, int *nbHHit, int *version) {
 
 
-	MolFlow *mApp = (MolFlow *)theApp;
+	
 	mApp->ClearAllSelections();
 	mApp->ClearAllViews();
 	prg->SetMessage("Clearing current geometry...");
@@ -2923,7 +2914,7 @@ void Geometry::LoadSYN(FileReader *file, GLProgress *prg, LEAK *pleak, int *nble
 }
 
 bool Geometry::LoadTextures(FileReader *file, GLProgress *prg, Dataport *dpHit, int version) {
-	MolFlow *mApp = (MolFlow *)theApp;
+	
 	if (file->SeekFor("{textures}")) {
 		char tmp[256];
 		//versions 3+
@@ -3035,7 +3026,7 @@ bool Geometry::LoadTextures(FileReader *file, GLProgress *prg, Dataport *dpHit, 
 void Geometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, std::vector<std::string> userMoments, Worker *worker,
 	BOOL saveSelected, LEAK *pleak, int *nbleakSave, HIT *pHits, int *nbHHitSave, BOOL crashSave) {
 
-	MolFlow *mApp = (MolFlow *)theApp;
+	
 	prg->SetMessage("Counting hits...");
 	if (!IsLoaded()) throw Error("Nothing to save !");
 
@@ -3358,7 +3349,7 @@ void Geometry::SaveTXT(FileWriter *file, Dataport *dpHit, BOOL saveSelected) {
 }
 
 void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSelected) {
-	MolFlow *mApp = (MolFlow *)theApp;
+	
 	//if(!IsLoaded()) throw Error("Nothing to save !");
 
 	// Block dpHit during the whole disc writing
@@ -3704,8 +3695,7 @@ void Geometry::SaveSuper(Dataport *dpHit, int s) {
 }
 
 void Geometry::RemoveFromStruct(int numToDel) {
-	MolFlow *mApp = (MolFlow *)theApp;
-	changedSinceSave = TRUE;
+	mApp->changedSinceSave = TRUE;
 	int nb = 0;
 	for (int i = 0; i < sh.nbFacet; i++)
 		if (facets[i]->sh.superIdx == numToDel) nb++;
@@ -3741,7 +3731,7 @@ void Geometry::RemoveFromStruct(int numToDel) {
 }
 
 /*BOOL AskToReset_Geom(Worker *work) {
-MolFlow *mApp = (MolFlow *)theApp;
+
 if (work->nbHit>0) {
 int rep = GLMessageBox::Display("This will reset simulation data.","Geometry change",GLDLG_OK|GLDLG_CANCEL,GLDLG_ICONWARNING);
 if( rep != GLDLG_OK ) {
@@ -3768,7 +3758,7 @@ void Geometry::ImportDesorption_SYN(
 	const std::vector<std::pair<double, double>> &convDistr,
 	GLProgress *prg){
 
-	MolFlow *mApp = (MolFlow *)theApp;
+	
 	//UnSelectAll();
 	char tmp[512];
 	std::vector<double> xdims, ydims;
@@ -3932,7 +3922,7 @@ void Geometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, int *nb
 	*nbTextured = 0;
 	*nbNewFacet = 0;
 	*nbDifferent = 0;
-	MolFlow *mApp = (MolFlow *)theApp;
+	
 	UnSelectAll();
 	//char tmp[512];
 
@@ -3995,3 +3985,128 @@ void Geometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, int *nb
 	UpdateSelection();
 }
 
+void Geometry::SaveXML_geometry(TiXmlDocument *saveDoc, Worker *work, GLProgress *prg, BOOL saveSelected){
+	//TiXmlDeclaration* decl = new TiXmlDeclaration("1.0", "", "");
+	//saveDoc->LinkEndChild(decl);
+	
+	TiXmlElement *geomNode = new TiXmlElement("Geometry");
+	saveDoc->LinkEndChild(geomNode);
+
+	geomNode->LinkEndChild(new TiXmlElement("Vertices"));
+	geomNode->FirstChildElement("Vertices")->SetAttribute("nb", sh.nbVertex);
+	for (int i = 0; i < sh.nbVertex; i++) {
+		prg->SetProgress(0.33*((double)i / (double)sh.nbVertex));
+		TiXmlElement *v = new TiXmlElement("Vertex");
+		v->SetAttribute("id", i);
+		v->SetDoubleAttribute("x", vertices3[i].x);
+		v->SetDoubleAttribute("y", vertices3[i].y);
+		v->SetDoubleAttribute("z", vertices3[i].z);
+		geomNode->FirstChildElement("Vertices")->LinkEndChild(v);
+	}
+
+	geomNode->LinkEndChild(new TiXmlElement("Facets"));
+	geomNode->FirstChildElement("Facets")->SetAttribute("nb", sh.nbFacet);
+	for (int i = 0, k = 0; i < sh.nbFacet; i++) {
+		prg->SetProgress(0.33 + ((double)i / (double)sh.nbFacet) *0.33);
+		if (!saveSelected || facets[i]->selected) {
+			TiXmlElement *f = new TiXmlElement("Facet");
+			f->SetAttribute("id", i);
+			facets[i]->SaveXML_geom(f);
+			geomNode->FirstChildElement("Facets")->LinkEndChild(f);
+		}
+	}
+
+	geomNode->LinkEndChild(new TiXmlElement("Structures"));
+	geomNode->FirstChildElement("Structures")->SetAttribute("nb", sh.nbSuper);
+	for (int i = 0, k = 0; i < sh.nbSuper; i++) {
+		TiXmlElement *s = new TiXmlElement("Structure");
+		geomNode->FirstChildElement("Structures")->LinkEndChild(s);
+		s->SetAttribute("id", i);
+		s->SetAttribute("name", strName[i]);
+	}
+
+	TiXmlElement *interfNode = new TiXmlElement("Interface");
+	saveDoc->LinkEndChild(interfNode);
+
+	TiXmlElement *selNode = new TiXmlElement("Selections");
+	interfNode->LinkEndChild(selNode);
+	selNode->SetAttribute("nb", (!saveSelected)*(mApp->nbSelection));
+	for (int i = 0; (i < mApp->nbSelection) && !saveSelected; i++) { //don't save selections when exporting part of the geometry (saveSelected)
+		TiXmlElement *newSel = new TiXmlElement("Selection");
+		selNode->LinkEndChild(newSel);
+		newSel->SetAttribute("id", i);
+		newSel->SetAttribute("name", mApp->selections[i].name);
+		newSel->SetAttribute("nb", mApp->selections[i].nbSel);
+		for (int j = 0; j < mApp->selections[i].nbSel; j++) {
+			TiXmlElement *newItem = new TiXmlElement("selItem");
+			newItem->SetAttribute("id", j);
+			newItem->SetAttribute("facet", mApp->selections[i].selection[j]);
+			newSel->LinkEndChild(newItem);
+		}
+	}
+
+	TiXmlElement *viewNode = new TiXmlElement("Views");
+	interfNode->LinkEndChild(viewNode);
+	viewNode->SetAttribute("nb", (!saveSelected)*(mApp->nbView));
+	for (int i = 0; (i < mApp->nbView) && !saveSelected; i++) { //don't save views when exporting part of the geometry (saveSelected)
+		TiXmlElement *newView = new TiXmlElement("View");
+		viewNode->LinkEndChild(newView);
+		newView->SetAttribute("id", i);
+		newView->SetAttribute("name", mApp->views[i].name);
+		newView->SetAttribute("projMode",mApp->views[i].projMode);
+		newView->SetAttribute("camAngleOx",mApp->views[i].camAngleOx);
+		newView->SetAttribute("camAngleOy", mApp->views[i].camAngleOy);
+		newView->SetAttribute("camDist", mApp->views[i].camDist);
+		newView->SetAttribute("camOffset.x", mApp->views[i].camOffset.x);
+		newView->SetAttribute("camOffset.y", mApp->views[i].camOffset.y);
+		newView->SetAttribute("camOffset.z",mApp->views[i].camOffset.z);
+		newView->SetAttribute("performXY",mApp->views[i].performXY);
+		newView->SetAttribute("vLeft", mApp->views[i].vLeft);
+		newView->SetAttribute("vRight", mApp->views[i].vRight);
+		newView->SetAttribute("vTop", mApp->views[i].vTop);
+		newView->SetAttribute("vBottom", mApp->views[i].vBottom);
+	}
+
+	TiXmlElement *formulaNode = new TiXmlElement("Formulas");
+	interfNode->LinkEndChild(formulaNode);
+	formulaNode->SetAttribute("nb", (!saveSelected)*(mApp->nbFormula));
+	for (int i = 0; (i < mApp->nbFormula) && !saveSelected; i++) { //don't save formulas when exporting part of the geometry (saveSelected)
+		TiXmlElement *newFormula = new TiXmlElement("Formula");
+		formulaNode->LinkEndChild(newFormula);
+		newFormula->SetAttribute("id", i);
+		newFormula->SetAttribute("name", mApp->formulas[i].parser->GetName());
+		newFormula->SetAttribute("expression", mApp->formulas[i].parser->GetExpression());
+	}
+
+	TiXmlElement *simuParamNode = new TiXmlElement("MolflowSimuSettings");
+	saveDoc->LinkEndChild(simuParamNode);
+
+	TiXmlElement *gasMassNode = new TiXmlElement("Gas");
+	gasMassNode->SetAttribute("mass", work->gasMass);
+	simuParamNode->LinkEndChild(gasMassNode);
+
+	TiXmlElement *timeSettingsNode = new TiXmlElement("TimeSettings");
+
+	TiXmlElement *userMomentsNode = new TiXmlElement("UserMoments");
+	userMomentsNode->SetAttribute("nb", work->userMoments.size());
+	for (size_t i = 0; i < work->userMoments.size(); i++) {
+		TiXmlElement *newUserEntry = new TiXmlElement("UserEntry");
+		userMomentsNode->LinkEndChild(newUserEntry);
+		newUserEntry->SetAttribute("id", i);
+		newUserEntry->SetAttribute("content", work->userMoments[i].c_str());
+	}
+	timeSettingsNode->LinkEndChild(userMomentsNode);
+
+	timeSettingsNode->SetAttribute("timeWindow", work->timeWindowSize);
+	timeSettingsNode->SetAttribute("useMaxwellDistr", work->useMaxwellDistribution);
+	timeSettingsNode->SetAttribute("calcConstFlow", work->calcConstantFlow);
+	simuParamNode->LinkEndChild(timeSettingsNode);
+
+	TiXmlElement *paramNode = new TiXmlElement("Parameters");
+	paramNode->SetAttribute("nb", work->parameters.size());
+	simuParamNode->LinkEndChild(paramNode);
+}
+
+BOOL Geometry::SaveXML_simustate(TiXmlDocument *saveDoc, Worker *work, GLProgress *prg, BOOL saveSelected){
+	return TRUE;
+}

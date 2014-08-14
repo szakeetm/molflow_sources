@@ -623,7 +623,7 @@ void ResetCounter() {
 
 void ResetSimulation() {
 
-	printf("ResetSimulation called.");
+	//printf("ResetSimulation called.");
 	sHandle->nbHHit = 0;
 	memset(sHandle->pHits, 0, sizeof(HIT)*NBHHIT);
 	sHandle->lastHit = NULL;

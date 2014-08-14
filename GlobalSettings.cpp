@@ -22,31 +22,16 @@
 #include "Utils.h"
 #include "Molflow.h"
 
-extern GLApplication *theApp;
+extern MolFlow *mApp;
 
 static const int   plWidth[] = {15,40,70,70,50,330};
 static const char *plName[] = {"#","PID","Mem Usage","Mem Peak","CPU","Status"};
 static const int   plAligns[] = { ALIGN_LEFT,ALIGN_CENTER,ALIGN_CENTER,ALIGN_CENTER,ALIGN_CENTER,ALIGN_LEFT };
 
-int antiAliasing=true;
-int whiteBg=false;
-int needsReload=false; //When main and subprocess have different geometries, needs to reload (synchronize)
-//int nonIsothermal=false;
-int checkForUpdates=false;
-int autoUpdateFormulas=false;
-int compressSavedFiles=true;
-/*double gasMass=28;
-double totalOutgassing=0.0; //total outgassing in Pa*m3/sec (internally everything is in SI units)
-double totalInFlux = 0.0; //total incoming molecules per second. For anisothermal system, it is (totalOutgassing / Kb / T)*/
-double autoSaveFrequency=10.0; //in minutes
-int autoSaveSimuOnly=false;
-int numCPU = 0;
-HANDLE compressProcessHandle;
-//HANDLE molflowHandle;
-
 // --------------------------------------------------------------------
 
 GlobalSettings::GlobalSettings():GLWindow() {
+	
 
   int wD = 610;
   int hD = 550;
@@ -144,7 +129,7 @@ GlobalSettings::GlobalSettings():GLWindow() {
   panel3->Add(processList);
 
 	char tmp[128];
-	sprintf(tmp,"Number of CPU cores:     %d",numCPU);
+	sprintf(tmp,"Number of CPU cores:     %d",mApp->numCPU);
 	GLLabel *coreLabel = new GLLabel(tmp);
 	coreLabel->SetBounds(10,hD-99,120,19);
 	panel3->Add(coreLabel);
@@ -193,20 +178,21 @@ GlobalSettings::GlobalSettings():GLWindow() {
 // --------------------------------------------------------------------
 
 void GlobalSettings::Display(Worker *w) {
+	
 	worker = w;
 	char tmp[256];
-	chkAntiAliasing->SetCheck(antiAliasing);
-	chkWhiteBg->SetCheck(whiteBg);
+	chkAntiAliasing->SetCheck(mApp->antiAliasing);
+	chkWhiteBg->SetCheck(mApp->whiteBg);
 	//chkNonIsothermal->SetCheck(nonIsothermal);
 	UpdateOutgassing();
 	sprintf(tmp,"%g",worker->gasMass);
 	gasmassText->SetText(tmp);
-	sprintf(tmp,"%g",autoSaveFrequency);
+	sprintf(tmp,"%g",mApp->autoSaveFrequency);
 	autoSaveText->SetText(tmp);
-	chkSimuOnly->SetCheck(autoSaveSimuOnly);
-	chkCheckForUpdates->SetCheck(checkForUpdates);
-	chkAutoUpdateFormulas->SetCheck(autoUpdateFormulas);
-	chkCompressSavedFiles->SetCheck(compressSavedFiles);
+	chkSimuOnly->SetCheck(mApp->autoSaveSimuOnly);
+	chkCheckForUpdates->SetCheck(mApp->checkForUpdates);
+	chkAutoUpdateFormulas->SetCheck(mApp->autoUpdateFormulas);
+	chkCompressSavedFiles->SetCheck(mApp->compressSavedFiles);
 	  
   int nb = worker->GetProcNumber();
   sprintf(tmp,"%d",nb);
@@ -281,7 +267,7 @@ void GlobalSettings::SMPUpdate(float appTime) {
 
 void GlobalSettings::RestartProc() {
 	
-  MolFlow *mApp = (MolFlow *)theApp;
+  
   int nbProc;
  if( sscanf(nbProcText->GetText(),"%d",&nbProc)==0 ) {
    GLMessageBox::Display("Invalid process number","Error",GLDLG_OK,GLDLG_ICONERROR);
@@ -309,7 +295,7 @@ void GlobalSettings::RestartProc() {
 // --------------------------------------------------------------------
 
 void GlobalSettings::ProcessMessage(GLComponent *src,int message) {
-	MolFlow *mApp = (MolFlow *)theApp;
+	
   switch(message) {
     case MSG_BUTTON:
 
@@ -361,7 +347,7 @@ void GlobalSettings::ProcessMessage(GLComponent *src,int message) {
 		 } 
 		if (abs(gm-worker->gasMass)>1e-7) {
 			if (mApp->AskToReset()) {
-				needsReload=TRUE;
+				worker->needsReload=TRUE;
 				worker->gasMass=gm;
 				if(worker->GetGeometry()->IsLoaded()) { //check if there are pumps
 					BOOL hasPump=FALSE;
@@ -375,7 +361,7 @@ void GlobalSettings::ProcessMessage(GLComponent *src,int message) {
 				}
 			}
 		}
-		if( !autoSaveText->GetNumber(&autoSaveFrequency) || !(autoSaveFrequency>0.0) ) {
+		if( !autoSaveText->GetNumber(&mApp->autoSaveFrequency) || !(mApp->autoSaveFrequency>0.0) ) {
         GLMessageBox::Display("Invalid autosave frequency","Error",GLDLG_OK,GLDLG_ICONERROR);
         return;
 		}

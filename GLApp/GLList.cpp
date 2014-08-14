@@ -33,7 +33,7 @@ GNU General Public License for more details.
 int cmp_column(const void *lhs_, const void *rhs_);
 int clickedCol;
 BOOL sortDescending;
-extern GLApplication *theApp;
+extern MolFlow *mApp;
 
 // ---------------------------------------------------------------
 
@@ -1553,7 +1553,7 @@ void GLList::CopyToClipboard(int row,int col,int rowLght,int colLgth) {
 
 // --------------------------------------------------------------
 void GLList::UpdateAllRows() {//Fetch non-visible values too
-	MolFlow *mApp = (MolFlow *)theApp;
+	
 	if (this==mApp->facetList) {
 	if (worker) {
 		char tmp[256];

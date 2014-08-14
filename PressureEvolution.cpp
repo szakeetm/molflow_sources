@@ -23,11 +23,7 @@ GNU General Public License for more details.
 #include <math.h>
 #include "Molflow.h"
 
-extern GLApplication *theApp;
-
-/*extern double gasMass;
-extern double totalOutgassing;
-extern double totalInFlux;*/
+extern MolFlow *mApp;
 
 static const char*profType[] = { "None", "Pressure \201 [mbar]", "Pressure \202 [mbar]", "Angle", "Velocity" , "Ort.velocity"};
 
@@ -477,7 +473,6 @@ void PressureEvolution::Reset() {
 
 void PressureEvolution::ProcessMessage(GLComponent *src, int message) {
 	Geometry *geom = worker->GetGeometry();
-	MolFlow *mApp = (MolFlow *)theApp;
 	switch (message) {
 	case MSG_BUTTON:
 		if (src == dismissButton) {

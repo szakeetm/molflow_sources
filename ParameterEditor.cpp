@@ -24,7 +24,7 @@
 #include <sstream>
 #include "GLApp/GLMessageBox.h"
 
-extern MolFlow *theApp;
+extern MolFlow *mApp;
 
   static const int   flWidth[] = {107,107};
   static const char *flName[] = {"Time (s)","Value"};
@@ -109,6 +109,7 @@ ParameterEditor::ParameterEditor(Worker *w):GLWindow() {
   list->SetBounds(cursorX, cursorY, col2-col1-hSpace, listHeight);
   list->SetColumnLabelVisible(TRUE);
   list->SetGrid(TRUE);
+  //list->SetSelectionMode(BOX_CELL);
   Add(list);
 
   cursorX = col1;
@@ -153,7 +154,6 @@ ParameterEditor::ParameterEditor(Worker *w):GLWindow() {
 
 
 void ParameterEditor::ProcessMessage(GLComponent *src,int message) {
-	MolFlow *mApp = (MolFlow *)theApp;
   switch(message) {
     case MSG_BUTTON:
 		if (src==applyButton) {
@@ -329,7 +329,7 @@ BOOL ParameterEditor::ValidateInput() {
 void ParameterEditor::UpdateUserValues() {
 	userValues = std::vector<std::pair<std::string, std::string>>();
 	nameField->SetText("");
-	if (selectorCombo->GetSelectedIndex() <work->parameters.size()) {
+	if (selectorCombo->GetSelectedIndex() <(int)work->parameters.size()) {
 		Parameter *getParam = &work->parameters[selectorCombo->GetSelectedIndex()];
 
 		for (int row = 0; row < (int)getParam->values.size(); row++) {
