@@ -4054,17 +4054,17 @@ void Geometry::SaveXML_geometry(TiXmlDocument *saveDoc, Worker *work, GLProgress
 		newView->SetAttribute("id", i);
 		newView->SetAttribute("name", mApp->views[i].name);
 		newView->SetAttribute("projMode",mApp->views[i].projMode);
-		newView->SetAttribute("camAngleOx",mApp->views[i].camAngleOx);
-		newView->SetAttribute("camAngleOy", mApp->views[i].camAngleOy);
-		newView->SetAttribute("camDist", mApp->views[i].camDist);
-		newView->SetAttribute("camOffset.x", mApp->views[i].camOffset.x);
-		newView->SetAttribute("camOffset.y", mApp->views[i].camOffset.y);
-		newView->SetAttribute("camOffset.z",mApp->views[i].camOffset.z);
+		newView->SetDoubleAttribute("camAngleOx",mApp->views[i].camAngleOx);
+		newView->SetDoubleAttribute("camAngleOy", mApp->views[i].camAngleOy);
+		newView->SetDoubleAttribute("camDist", mApp->views[i].camDist);
+		newView->SetDoubleAttribute("camOffset.x", mApp->views[i].camOffset.x);
+		newView->SetDoubleAttribute("camOffset.y", mApp->views[i].camOffset.y);
+		newView->SetDoubleAttribute("camOffset.z", mApp->views[i].camOffset.z);
 		newView->SetAttribute("performXY",mApp->views[i].performXY);
-		newView->SetAttribute("vLeft", mApp->views[i].vLeft);
-		newView->SetAttribute("vRight", mApp->views[i].vRight);
-		newView->SetAttribute("vTop", mApp->views[i].vTop);
-		newView->SetAttribute("vBottom", mApp->views[i].vBottom);
+		newView->SetDoubleAttribute("vLeft", mApp->views[i].vLeft);
+		newView->SetDoubleAttribute("vRight", mApp->views[i].vRight);
+		newView->SetDoubleAttribute("vTop", mApp->views[i].vTop);
+		newView->SetDoubleAttribute("vBottom", mApp->views[i].vBottom);
 	}
 
 	TiXmlElement *formulaNode = new TiXmlElement("Formulas");
@@ -4082,7 +4082,7 @@ void Geometry::SaveXML_geometry(TiXmlDocument *saveDoc, Worker *work, GLProgress
 	saveDoc->LinkEndChild(simuParamNode);
 
 	TiXmlElement *gasMassNode = new TiXmlElement("Gas");
-	gasMassNode->SetAttribute("mass", work->gasMass);
+	gasMassNode->SetDoubleAttribute("mass", work->gasMass);
 	simuParamNode->LinkEndChild(gasMassNode);
 
 	TiXmlElement *timeSettingsNode = new TiXmlElement("TimeSettings");
@@ -4097,16 +4097,192 @@ void Geometry::SaveXML_geometry(TiXmlDocument *saveDoc, Worker *work, GLProgress
 	}
 	timeSettingsNode->LinkEndChild(userMomentsNode);
 
-	timeSettingsNode->SetAttribute("timeWindow", work->timeWindowSize);
+	timeSettingsNode->SetDoubleAttribute("timeWindow", work->timeWindowSize);
 	timeSettingsNode->SetAttribute("useMaxwellDistr", work->useMaxwellDistribution);
 	timeSettingsNode->SetAttribute("calcConstFlow", work->calcConstantFlow);
 	simuParamNode->LinkEndChild(timeSettingsNode);
 
 	TiXmlElement *paramNode = new TiXmlElement("Parameters");
 	paramNode->SetAttribute("nb", work->parameters.size());
+	for (size_t i = 0; i < work->parameters.size(); i++) {
+		TiXmlElement *newParameter = new TiXmlElement("Parameter");
+		paramNode->LinkEndChild(newParameter);
+		newParameter->SetAttribute("id", i);
+		newParameter->SetAttribute("name", work->parameters[i].name.c_str());
+		newParameter->SetAttribute("nbMoments", (int)work->parameters[i].values.size());
+		for (size_t m = 0; m < work->parameters[i].values.size(); m++) {
+			TiXmlElement *newMoment = new TiXmlElement("Moment");
+			newParameter->LinkEndChild(newMoment);
+			newMoment->SetAttribute("id", m);
+			newMoment->SetDoubleAttribute("t", work->parameters[i].values[m].first);
+			newMoment->SetDoubleAttribute("value", work->parameters[i].values[m].second);
+		}
+	}
 	simuParamNode->LinkEndChild(paramNode);
 }
 
-BOOL Geometry::SaveXML_simustate(TiXmlDocument *saveDoc, Worker *work, GLProgress *prg, BOOL saveSelected){
+BOOL Geometry::SaveXML_simustate(TiXmlDocument *saveDoc, Worker *work,BYTE *buffer, SHGHITS *gHits, int nbLeakSave, int nbHHitSave,
+	LEAK *pLeak, HIT *pHits, GLProgress *prg, BOOL saveSelected){
+	TiXmlElement *resultNode = new TiXmlElement("MolflowResults");
+	saveDoc->LinkEndChild(resultNode);
+	TiXmlElement *momentsNode = new TiXmlElement("Moments");
+	resultNode->LinkEndChild(momentsNode);
+	momentsNode->SetAttribute("nb", work->moments.size()+1);
+	for (size_t m = 0; m <= mApp->worker.moments.size(); m++){
+		TiXmlElement *newMoment = new TiXmlElement("Moment");
+		momentsNode->LinkEndChild(newMoment);
+		newMoment->SetAttribute("id", m);
+		if (m == 0)
+			newMoment->SetAttribute("time", "Constant flow");
+		else
+			newMoment->SetDoubleAttribute("time", work->moments[m - 1]);
+
+		if (m == 0) { //Write global results. Later these results will probably be time-dependent as well.
+			TiXmlElement *globalNode = new TiXmlElement("Global");
+			newMoment->LinkEndChild(globalNode);
+
+			TiXmlElement *hitsNode = new TiXmlElement("Hits");
+			globalNode->LinkEndChild(hitsNode);
+			hitsNode->SetAttribute("totalHit", gHits->total.hit.nbHit);
+			hitsNode->SetAttribute("totalDes", gHits->total.hit.nbDesorbed);
+			hitsNode->SetAttribute("totalAbs", gHits->total.hit.nbAbsorbed);
+			hitsNode->SetDoubleAttribute("totalDist", gHits->distTraveledTotal);
+
+			TiXmlElement *hitCacheNode = new TiXmlElement("Hit_Cache");
+			globalNode->LinkEndChild(hitCacheNode);
+			hitCacheNode->SetAttribute("nb", nbHHitSave);
+			for (int i = 0; i < nbHHitSave; i++) {
+				TiXmlElement *newHit = new TiXmlElement("Hit");
+				hitCacheNode->LinkEndChild(newHit);
+				newHit->SetAttribute("id", i);
+				newHit->SetDoubleAttribute("posX", pHits[i].pos.x);
+				newHit->SetDoubleAttribute("posY", pHits[i].pos.y);
+				newHit->SetDoubleAttribute("posZ", pHits[i].pos.z);
+				newHit->SetAttribute("type", pHits[i].type);
+			}
+
+			TiXmlElement *leakCacheNode = new TiXmlElement("Leak_Cache");
+			globalNode->LinkEndChild(leakCacheNode);
+			leakCacheNode->SetAttribute("nb", nbLeakSave);
+			for (int i = 0; i < nbLeakSave; i++) {
+				TiXmlElement *newLeak = new TiXmlElement("Leak");
+				leakCacheNode->LinkEndChild(newLeak);
+				newLeak->SetAttribute("id", i);
+				newLeak->SetDoubleAttribute("posX", pLeak[i].pos.x);
+				newLeak->SetDoubleAttribute("posY", pLeak[i].pos.y);
+				newLeak->SetDoubleAttribute("posZ", pLeak[i].pos.z);
+				newLeak->SetDoubleAttribute("dirX", pLeak[i].dir.x);
+				newLeak->SetDoubleAttribute("dirY", pLeak[i].dir.y);
+				newLeak->SetDoubleAttribute("dirZ", pLeak[i].dir.z);
+			}
+		} //end global node
+		
+		TiXmlElement *facetResultsNode = new TiXmlElement("FacetResults");
+		newMoment->LinkEndChild(facetResultsNode);
+
+		prg->SetMessage("Writing facets...");
+
+		for (int i = 0; i < sh.nbFacet; i++) {
+			prg->SetProgress(0.33 + ((double)i / (double)sh.nbFacet) *0.33);
+			
+				Facet *f = GetFacet(i);
+				TiXmlElement *newFacetResult = new TiXmlElement("Facet");
+				newFacetResult->SetAttribute("id", i);
+				facetResultsNode->LinkEndChild(newFacetResult);
+				if (m == 0) { //Now it's a global value, will soon become time-dependent
+					TiXmlElement *facetHitNode = new TiXmlElement("Hits");
+					newFacetResult->LinkEndChild(facetHitNode);
+					facetHitNode->SetAttribute("nbHit", f->sh.counter.hit.nbHit);
+					facetHitNode->SetAttribute("nbDes", f->sh.counter.hit.nbDesorbed);
+					facetHitNode->SetAttribute("nbAbs", f->sh.counter.hit.nbAbsorbed);
+					facetHitNode->SetDoubleAttribute("sum_v_ort", f->sh.counter.hit.sum_v_ort);
+					facetHitNode->SetDoubleAttribute("sum_1_per_v", f->sh.counter.hit.sum_1_per_speed);
+				}
+
+				if (f->sh.isProfile){
+					TiXmlElement *profileNode = new TiXmlElement("Profile");
+					profileNode->SetAttribute("size", PROFILE_SIZE);
+					newFacetResult->LinkEndChild(profileNode);
+					APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + sizeof(SHHITS)+m*sizeof(APROFILE)*PROFILE_SIZE);
+					for (int p = 0; p < PROFILE_SIZE; p++){
+						TiXmlElement *slice = new TiXmlElement("Slice");
+						profileNode->LinkEndChild(slice);
+						slice->SetAttribute("id", p);
+						slice->SetAttribute("count", profilePtr[p].count);
+						slice->SetDoubleAttribute("sum_1_per_v", profilePtr[p].sum_1_per_speed);
+						slice->SetDoubleAttribute("sum_v_ort", profilePtr[p].sum_v_ort);
+					}
+				}
+
+				if (f->hasMesh){
+					TiXmlElement *textureNode = new TiXmlElement("Texture");
+					textureNode->SetAttribute("width", f->sh.texWidth);
+					textureNode->SetAttribute("height", f->sh.texHeight);
+					newFacetResult->LinkEndChild(textureNode);
+					int h = (f->sh.texHeight);
+					int w = (f->sh.texWidth);
+					int profSize = (f->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + (int)mApp->worker.moments.size())) : 0;
+					AHIT *hits = (AHIT *)((BYTE *)gHits + (f->sh.hitOffset + sizeof(SHHITS)+profSize + m*w*h*sizeof(AHIT)));
+					std::stringstream countText,sum1perText,sumvortText;
+					countText << '\n'; //better readability in file
+					sum1perText << '\n';
+					sumvortText << '\n';
+					for (int iy = 0; iy < h; iy++) {
+						for (int ix = 0; ix < w; ix++) {
+							countText << hits[iy*f->sh.texWidth + ix].count << '\t';
+							sum1perText << hits[iy*f->sh.texWidth + ix].sum_1_per_speed << '\t';
+							sumvortText << hits[iy*f->sh.texWidth + ix].sum_v_ort_per_area << '\t';
+						}
+						countText << '\n';
+						sum1perText << '\n';
+						sumvortText << '\n';
+					}
+					TiXmlText *tex1 = new TiXmlText(countText.str().c_str());
+					textureNode->LinkEndChild(new TiXmlElement("count"));
+					textureNode->FirstChildElement("count")->LinkEndChild(tex1);
+					tex1->SetCDATA(true);
+
+					TiXmlText *tex2 = new TiXmlText(sum1perText.str().c_str());
+					textureNode->LinkEndChild(new TiXmlElement("sum_1_per_v"));
+					textureNode->FirstChildElement("sum_1_per_v")->LinkEndChild(tex2);
+					tex2->SetCDATA(true);
+
+					TiXmlText *tex3 = new TiXmlText(sumvortText.str().c_str());
+					textureNode->LinkEndChild(new TiXmlElement("sum_v_ort"));
+					textureNode->FirstChildElement("sum_v_ort")->LinkEndChild(tex3);
+					tex3->SetCDATA(true);
+					
+				}
+			
+		}
+
+	}
+
+	//Texture Min/Max
+	TiXmlElement *minMaxNode = new TiXmlElement("TextureMinMax");
+	resultNode->LinkEndChild(minMaxNode);
+	minMaxNode->LinkEndChild(new TiXmlElement("With_constant_flow"));
+	minMaxNode->FirstChildElement("With_constant_flow")->LinkEndChild(new TiXmlElement("Pressure"));
+	minMaxNode->FirstChildElement("With_constant_flow")->LinkEndChild(new TiXmlElement("Density"));
+	minMaxNode->FirstChildElement("With_constant_flow")->LinkEndChild(new TiXmlElement("Imp.rate"));
+	minMaxNode->LinkEndChild(new TiXmlElement("Moments_only"));
+	minMaxNode->FirstChildElement("Moments_only")->LinkEndChild(new TiXmlElement("Pressure"));
+	minMaxNode->FirstChildElement("Moments_only")->LinkEndChild(new TiXmlElement("Density"));
+	minMaxNode->FirstChildElement("Moments_only")->LinkEndChild(new TiXmlElement("Imp.rate"));
+
+	minMaxNode->FirstChildElement("With_constant_flow")->FirstChildElement("Pressure")->SetDoubleAttribute("min", gHits->texture_limits[0].min.all);
+	minMaxNode->FirstChildElement("With_constant_flow")->FirstChildElement("Pressure")->SetDoubleAttribute("max", gHits->texture_limits[0].max.all);
+	minMaxNode->FirstChildElement("With_constant_flow")->FirstChildElement("Density")->SetDoubleAttribute("min", gHits->texture_limits[1].min.all);
+	minMaxNode->FirstChildElement("With_constant_flow")->FirstChildElement("Density")->SetDoubleAttribute("max", gHits->texture_limits[1].max.all);
+	minMaxNode->FirstChildElement("With_constant_flow")->FirstChildElement("Imp.rate")->SetDoubleAttribute("min", gHits->texture_limits[2].min.all);
+	minMaxNode->FirstChildElement("With_constant_flow")->FirstChildElement("Imp.rate")->SetDoubleAttribute("max", gHits->texture_limits[2].max.all);
+
+	minMaxNode->FirstChildElement("Moments_only")->FirstChildElement("Pressure")->SetDoubleAttribute("min", gHits->texture_limits[0].min.moments_only);
+	minMaxNode->FirstChildElement("Moments_only")->FirstChildElement("Pressure")->SetDoubleAttribute("max", gHits->texture_limits[0].max.moments_only);
+	minMaxNode->FirstChildElement("Moments_only")->FirstChildElement("Density")->SetDoubleAttribute("min", gHits->texture_limits[1].min.moments_only);
+	minMaxNode->FirstChildElement("Moments_only")->FirstChildElement("Density")->SetDoubleAttribute("max", gHits->texture_limits[1].max.moments_only);
+	minMaxNode->FirstChildElement("Moments_only")->FirstChildElement("Imp.rate")->SetDoubleAttribute("min", gHits->texture_limits[2].min.moments_only);
+	minMaxNode->FirstChildElement("Moments_only")->FirstChildElement("Imp.rate")->SetDoubleAttribute("max", gHits->texture_limits[2].max.moments_only);
+
 	return TRUE;
 }

@@ -263,18 +263,37 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 					TiXmlDocument geom_only = saveDoc;
 					if (!crashSave && !saveSelected) {
 						try {
-							if (geom->SaveXML_simustate(&saveDoc, this, prg, saveSelected))
+							AccessDataport(dpHit);
+							BYTE *buffer;
+							buffer = (BYTE *)dpHit->buff;
+							SHGHITS *gHits;
+							gHits = (SHGHITS *)buffer;
+							int nbLeakSave, nbHHitSave;
+							LEAK pLeak[NBHLEAK];
+							GetLeak(pLeak, &nbLeakSave);
+							HIT pHits[NBHHIT];
+							GetHHit(pHits, &nbHHitSave);
+
+							BOOL success = geom->SaveXML_simustate(&saveDoc, this, buffer, gHits, nbLeakSave, nbHHitSave, pLeak, pHits, prg, saveSelected);
+							ReleaseDataport(dpHit);
+							
+							if (success) {
 								if (!saveDoc.SaveFile(fileNameWithXML)) throw Error("Error writing XML file."); //successful save
-							else
+							} else {
 								if (!geom_only.SaveFile(fileNameWithXML)) throw Error("Error writing XML file."); //simu state error
+							}
+							
+
 							if (isXMLzip) {
 								HZIP hz = CreateZip(fileNameWithXMLzip, 0);
 								if (!ZipAdd(hz, GetShortFileName(fileNameWithXML),fileNameWithXML)) remove(fileNameWithXML);
+								else throw Error("Error in writing ZIP file.");
 								CloseZip(hz);
 							}
 						} catch (Error &e) {
 							SAFE_DELETE(f);
-							GLMessageBox::Display((char*)e.GetMsg(), "Error writing file.", GLDLG_OK, GLDLG_ICONERROR);
+							ReleaseDataport(dpHit);
+							GLMessageBox::Display((char*)e.GetMsg(), "Error saving simulation state.", GLDLG_OK, GLDLG_ICONERROR);
 							return;
 						}
 					}

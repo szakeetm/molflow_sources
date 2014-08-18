@@ -60,12 +60,12 @@ static const char *fileTexFilters[] = { "Text files" , "*.txt" , "Texture files"
 static const int   nbTexFilter = sizeof(fileTexFilters) / (2*sizeof(char *));
 */
 
-static const char *fileLFilters = "All MolFlow supported files\0*.txt;*.geo;*.geo7z;*.syn;*.syn7z;*.str;*.stl;*.ase\0GEO files\0*.geo;*.geo7z;\0SYN files\0*.syn;*.syn7z;\0TXT files\0*.txt\0STR files\0*.str\0STL files\0*.stl\0ASE files\0*.ase\0";
-static const int   nbLFilter = 7;
+static const char *fileLFilters = "All MolFlow supported files\0*.txt;*.xml;*.zip;*.geo;*.geo7z;*.syn;*.syn7z;*.str;*.stl;*.ase\0XML files\0*.xml;*.zip;GEO files\0*.geo;*.geo7z;\0SYN files\0*.syn;*.syn7z;\0TXT files\0*.txt\0STR files\0*.str\0STL files\0*.stl\0ASE files\0*.ase\0";
+static const int   nbLFilter = 9;
 static const char *fileInsFilters = "\0GEO files\0*.geo;*.geo7z;SYN files\0*.syn;*.syn7z;\0Text files\0*.txt\0STL files\0*.stl\0";
 static const int   nbInsFilter = 4;
-static const char *fileSFilters = "GEO files\0*.geo;*.geo7z;\0Text files\0*.txt\0All files\0*.*\0";
-static const int   nbSFilter = 3;
+static const char *fileSFilters = "All files\0*.*\0";
+static const int   nbSFilter = 1;
 static const char *fileSelFilters = "Selection files\0*.sel\0All files\0*.*\0";
 static const int   nbSelFilter = 2;
 static const char *fileTexFilters = "Text files\0*.txt\0Texture files\0*.tex\0All files\0*.*\0";

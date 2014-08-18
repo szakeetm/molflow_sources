@@ -30,6 +30,7 @@
 #include "GrahamScan.h"
 #include "TinyXML/tinyxml.h" //Opensource XML save/load (http://www.grinninglizard.com/tinyxml2/index.html)
 #include <vector>
+#include <sstream>
 
 class Worker;
 
@@ -84,7 +85,8 @@ public:
 	  BOOL saveSelected,LEAK *pleak,int *nbleakSave,HIT *pHits,int *nbHHitSave,BOOL crashSave=FALSE);
   void SaveSTR(Dataport *dhHit,BOOL saveSelected);
   void SaveXML_geometry(TiXmlDocument *saveDoc, Worker *work, GLProgress *prg, BOOL saveSelected);
-  BOOL SaveXML_simustate(TiXmlDocument *saveDoc, Worker *work, GLProgress *prg, BOOL saveSelected);
+  BOOL SaveXML_simustate(TiXmlDocument *saveDoc, Worker *work,BYTE *buffer, SHGHITS *gHits, int nbLeakSave, int nbHHitSave,
+	  LEAK *pLeak, HIT *pHits, GLProgress *prg, BOOL saveSelected);
 
   // Selection (drawing stuff)
   void SelectAll();
