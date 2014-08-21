@@ -71,8 +71,8 @@ typedef struct {
   int    profileSize;   // profile size (in bytes)
   int    directionSize; // direction field size (in bytes)
 
-  int CDFid; //Which probability distribution it belongs to (one CDF per temperature)
-  int IDid;  //If time-dependent desorption, which is its ID
+  /*int CDFid; //Which probability distribution it belongs to (one CDF per temperature)
+  int IDid;  //If time-dependent desorption, which is its ID*/
   int globalId; //Global index (to identify when superstructures are present)
   double *outgassingMap; //outgassing map when desorption is based on imported file
 

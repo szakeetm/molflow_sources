@@ -465,7 +465,7 @@ BOOL StartFromSource() {
 				else  { //constant or time-dependent outgassing
 					double outgassing=
 						(f->sh.outgassing_paramId>=0)
-						?sHandle->IDs[f->IDid].back().second/ (1.38E-23*f->sh.temperature)
+						?sHandle->IDs[f->sh.IDid].back().second/ (1.38E-23*f->sh.temperature)
 						:sHandle->latestMoment*f->sh.flow / (1.38E-23*f->sh.temperature);
 					found_side1 = (srcRnd >= A) && (srcRnd < (A + outgassing *((f->sh.is2sided) ? 0.5 : 1.0))); //2-sided facets have half outgassing on each side
 					A += outgassing *((f->sh.is2sided) ? 0.5 : 1.0);
@@ -489,7 +489,7 @@ BOOL StartFromSource() {
 	sHandle->distTraveledCurrentParticle = 0.0;  //for mean free path calculations
 	//sHandle->flightTimeCurrentParticle = sHandle->desorptionStartTime + (sHandle->desorptionStopTime - sHandle->desorptionStartTime)*rnd();
 	sHandle->flightTimeCurrentParticle=GenerateDesorptionTime(src);
-	if (sHandle->useMaxwellDistribution) sHandle->velocityCurrentParticle = GenerateRandomVelocity(src->CDFid);
+	if (sHandle->useMaxwellDistribution) sHandle->velocityCurrentParticle = GenerateRandomVelocity(src->sh.CDFid);
 
 	else sHandle->velocityCurrentParticle = 145.469*sqrt(src->sh.temperature / sHandle->gasMass);  //sqrt(8*R/PI/1000)=145.47
 	//sHandle->temperature = src->sh.temperature; //Thermalize particle
@@ -791,7 +791,7 @@ void UpdateVelocity(FACET *collidedFacet) {
 	//thermalize perfectly
 	double oldSpeed = sHandle->velocityCurrentParticle;
 	double newSpeed;
-	if (sHandle->useMaxwellDistribution) newSpeed = GenerateRandomVelocity(collidedFacet->CDFid);
+	if (sHandle->useMaxwellDistribution) newSpeed = GenerateRandomVelocity(collidedFacet->sh.CDFid);
 	else newSpeed = /*145.469*/ 171.3766*sqrt(collidedFacet->sh.temperature / sHandle->gasMass);
 	//171.3766= sqrt(8*R*1000/PI)*3PI/8, that is, the constant part of the v_avg=sqrt(8RT/PI/m/0.001)) found in literature, multiplied by
 	//the corrective factor of 3PI/8 that accounts for moving from volumetric speed distribution to wall collision speed distribution
@@ -805,7 +805,7 @@ double GenerateRandomVelocity(int CDFId){
 
 double GenerateDesorptionTime(FACET *src){
 	if (src->sh.outgassing_paramId>=0) { //time-dependent desorption
-		return InterpolateX(rnd()*sHandle->IDs[src->IDid].back().second,sHandle->IDs[src->IDid],TRUE);
+		return InterpolateX(rnd()*sHandle->IDs[src->sh.IDid].back().second,sHandle->IDs[src->sh.IDid],TRUE);
 	} else {
 		return rnd()*sHandle->latestMoment; //continous desorption between 0 and latestMoment
 	}

@@ -37,7 +37,7 @@ GNU General Public License for more details.
 #define new DEBUG_NEW
 #endif
 */
-
+using namespace pugi;
 extern MolFlow *mApp;
 
 Worker::Worker() {
@@ -256,11 +256,9 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 					geom->SaveGEO(f, prg, dpHit, this->userMoments, this, saveSelected, pLeak, &nbLeakSave, pHits, &nbHHitSave, crashSave);
 				}
 				else if (isXML || isXMLzip) {
-					TiXmlDocument saveDoc;
-					TiXmlDeclaration * decl = new TiXmlDeclaration("1.0", "", "");
-					saveDoc.LinkEndChild(decl);
-					geom->SaveXML_geometry(&saveDoc, this, prg, saveSelected);
-					TiXmlDocument geom_only = saveDoc;
+					xml_document saveDoc;
+					geom->SaveXML_geometry(saveDoc, this, prg, saveSelected);
+					xml_document geom_only; geom_only.reset(saveDoc);
 					if (!crashSave && !saveSelected) {
 						try {
 							AccessDataport(dpHit);
@@ -274,13 +272,13 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 							HIT pHits[NBHHIT];
 							GetHHit(pHits, &nbHHitSave);
 
-							BOOL success = geom->SaveXML_simustate(&saveDoc, this, buffer, gHits, nbLeakSave, nbHHitSave, pLeak, pHits, prg, saveSelected);
+							BOOL success = geom->SaveXML_simustate(saveDoc, this, buffer, gHits, nbLeakSave, nbHHitSave, pLeak, pHits, prg, saveSelected);
 							ReleaseDataport(dpHit);
 							
 							if (success) {
-								if (!saveDoc.SaveFile(fileNameWithXML)) throw Error("Error writing XML file."); //successful save
+								if (!saveDoc.save_file(fileNameWithXML)) throw Error("Error writing XML file."); //successful save
 							} else {
-								if (!geom_only.SaveFile(fileNameWithXML)) throw Error("Error writing XML file."); //simu state error
+								if (!geom_only.save_file(fileNameWithXML)) throw Error("Error writing XML file."); //simu state error
 							}
 							
 
@@ -603,7 +601,7 @@ void Worker::LoadGeometry(char *fileName) {
 
 	}
 	else if (isXML || isXMLzip) {
-		TiXmlDocument loadXML;
+		xml_document loadXML;
 		progressDlg->SetVisible(TRUE);
 		try {
 			if (isXMLzip) {
@@ -620,12 +618,12 @@ void Worker::LoadGeometry(char *fileName) {
 						notFoundYet = FALSE;
 						std::string tmpFileName = "tmp/" + fileName;
 						UnzipItem(hz, i, tmpFileName.c_str()); //unzip it to tmp directory
-						loadXML.LoadFile(tmpFileName.c_str()); //parse it
+						loadXML.load_file(tmpFileName.c_str()); //parse it
 					}
 				}
 			}
 			ResetWorkerStats();
-			if (!isXMLzip) loadXML.LoadFile(fileName); //parse it
+			if (!isXMLzip) loadXML.load_file(fileName); //parse it
 
 			//parse loadXML :)
 

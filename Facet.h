@@ -22,7 +22,7 @@
 #include "GLApp/GLApp.h"
 #include "Shared.h"
 #include "File.h"
-#include "TinyXML/tinyxml.h" //Opensource XML save/load (http://www.grinninglizard.com/tinyxml2/index.html)
+#include "PugiXML/pugixml.hpp"
 
 class Facet {
 
@@ -97,7 +97,7 @@ public:
   void  LoadGEO(FileReader *file,int version,int nbVertex);
   void  LoadSYN(FileReader *file,int version,int nbVertex);
   void  SaveGEO(FileWriter *file,int idx);
-  void  SaveXML_geom(TiXmlElement *f);
+  void  SaveXML_geom(pugi::xml_node f);
   BOOL  IsCoplanar(Facet *f,double threshold);
   int   GetIndex(int idx);
   void  Copy(Facet *f,BOOL copyMesh=FALSE);

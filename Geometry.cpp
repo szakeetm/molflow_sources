@@ -39,6 +39,7 @@ GNU General Public License for more details.
 #endif
 */
 
+using namespace pugi;
 extern MolFlow *mApp;
 
 Geometry::Geometry() {
@@ -1256,7 +1257,7 @@ void Geometry::SetFacetTexture(int facet, double ratio, BOOL mesh) {
 	double nV = Norme(&(f->sh.V));
 	if (!f->SetTexture(nU*ratio, nV*ratio, mesh)) {
 		char errMsg[512];
-		sprintf(errMsg, "Not enough memory to build mesh on Facet %d. ", facet + 1);
+		sprintf(errMsg, "Not enough memory to build mesh on Facet %d. ",facet + 1);
 		throw Error(errMsg);
 	}
 	f->tRatio = ratio;
@@ -1273,7 +1274,7 @@ void  Geometry::BuildPipe(double L, double R, double s, int step) {
 	
 	mApp->ClearAllSelections();
 	mApp->ClearAllViews();
-	sprintf(sh.name, "PIPE%g", L / R);
+	sprintf(sh.name, "PIPE%g",L / R);
 
 	int nbDecade = 0;
 	int nbTF = 9 * nbDecade;
@@ -1492,13 +1493,13 @@ void Geometry::LoadSTR(FileReader *file, GLProgress *prg) {
 		char *e = strrchr(strName[n], '.');
 		if (e) *e = 0;
 
-		sprintf(fName, "%s\\%s", nPath, sName);
+		sprintf(fName, "%s\\%s",nPath, sName);
 		if (FileUtils::Exist(fName)) {
 			fr = new FileReader(fName);
 			strcpy(strPath, nPath);
 		}
 		else {
-			sprintf(fName, "%s\\%s", fPath, sName);
+			sprintf(fName, "%s\\%s",fPath, sName);
 			if (FileUtils::Exist(fName)) {
 				fr = new FileReader(fName);
 				strcpy(strPath, fPath);
@@ -1507,7 +1508,7 @@ void Geometry::LoadSTR(FileReader *file, GLProgress *prg) {
 
 		if (!fr) {
 			char errMsg[512];
-			sprintf(errMsg, "Cannot find %s", sName);
+			sprintf(errMsg, "Cannot find %s",sName);
 			throw Error(errMsg);
 		}
 
@@ -1813,7 +1814,7 @@ void Geometry::InsertGEOGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 	version2 = file->ReadInt();
 	if (version2 > GEOVERSION) {
 		char errMsg[512];
-		sprintf(errMsg, "Unsupported GEO version V%d", version2);
+		sprintf(errMsg, "Unsupported GEO version V%d",version2);
 		throw Error(errMsg);
 	}
 
@@ -1936,7 +1937,7 @@ void Geometry::InsertGEOGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 	for (int i = 0; i < nbNewSuper; i++) {
 		strName[i] = _strdup(file->ReadString());
 		// For backward compatibilty with STR
-		sprintf(tmp, "%s.txt", strName[i]);
+		sprintf(tmp, "%s.txt",strName[i]);
 		strFileName[i] = _strdup(tmp);
 	}
 	file->ReadKeyword("}");
@@ -2011,7 +2012,7 @@ void Geometry::InsertGEOGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 
 		if (nb < 3) {
 			char errMsg[512];
-			sprintf(errMsg, "Facet %d has only %d vertices. ", i, nb);
+			sprintf(errMsg, "Facet %d has only %d vertices. ",i, nb);
 			throw Error(errMsg);
 		}
 
@@ -2050,7 +2051,7 @@ void Geometry::InsertSYNGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 	version2 = file->ReadInt();
 	if (version2 > SYNVERSION) {
 		char errMsg[512];
-		sprintf(errMsg, "Unsupported SYN version V%d", version2);
+		sprintf(errMsg, "Unsupported SYN version V%d",version2);
 		throw Error(errMsg);
 	}
 
@@ -2157,7 +2158,7 @@ void Geometry::InsertSYNGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 	for (int i = 0; i < nbNewSuper; i++) {
 		strName[i] = _strdup(file->ReadString());
 		// For backward compatibilty with STR
-		sprintf(tmp, "%s.txt", strName[i]);
+		sprintf(tmp, "%s.txt",strName[i]);
 		strFileName[i] = _strdup(tmp);
 	}
 	file->ReadKeyword("}");
@@ -2233,7 +2234,7 @@ void Geometry::InsertSYNGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 
 		if (nb < 3) {
 			char errMsg[512];
-			sprintf(errMsg, "Facet %d has only %d vertices. ", i, nb);
+			sprintf(errMsg, "Facet %d has only %d vertices. ",i, nb);
 			throw Error(errMsg);
 		}
 
@@ -2364,7 +2365,7 @@ void Geometry::SaveProfileGEO(FileWriter *file, Dataport *dpHit, int super, BOOL
 	file->Write("\n");
 	for (size_t m = 0; (m <= mApp->worker.moments.size()) || (m == 0); m++){
 		char tmp[128];
-		sprintf(tmp, " moment %d {\n", m);
+		sprintf(tmp, " moment %d {\n",m);
 		file->Write(tmp);
 		for (int j = 0; j < PROFILE_SIZE; j++) {
 			for (int i = 0; i<nbProfile; i++) { //doesn't execute when crashSave or saveSelected...
@@ -2440,7 +2441,7 @@ void Geometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *pleak, int *nble
 	*version = file->ReadInt();
 	if (*version > GEOVERSION) {
 		char errMsg[512];
-		sprintf(errMsg, "Unsupported GEO version V%d", *version);
+		sprintf(errMsg, "Unsupported GEO version V%d",*version);
 		throw Error(errMsg);
 	}
 
@@ -2576,7 +2577,7 @@ void Geometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *pleak, int *nble
 	for (int i = 0; i < sh.nbSuper; i++) {
 		strName[i] = _strdup(file->ReadString());
 		// For backward compatibilty with STR
-		sprintf(tmp, "%s.txt", strName[i]);
+		sprintf(tmp, "%s.txt",strName[i]);
 		strFileName[i] = _strdup(tmp);
 	}
 	file->ReadKeyword("}");
@@ -2648,7 +2649,7 @@ void Geometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *pleak, int *nble
 		int nbI = file->ReadInt();
 		if (nbI < 3) {
 			char errMsg[512];
-			sprintf(errMsg, "Facet %d has only %d vertices. ", i + 1, nbI);
+			sprintf(errMsg, "Facet %d has only %d vertices. ",i + 1, nbI);
 			throw Error(errMsg);
 		}
 		prg->SetProgress((float)i / sh.nbFacet);
@@ -2670,7 +2671,7 @@ void Geometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *pleak, int *nble
 		Facet *f = facets[i];
 		if (!f->SetTexture(f->sh.texWidthD, f->sh.texHeightD, f->hasMesh)) {
 			char errMsg[512];
-			sprintf(errMsg, "Not enough memory to build mesh on Facet %d. ", i + 1);
+			sprintf(errMsg, "Not enough memory to build mesh on Facet %d. ",i + 1);
 			throw Error(errMsg);
 		}
 		BuildFacetList(f);
@@ -2697,7 +2698,7 @@ void Geometry::LoadSYN(FileReader *file, GLProgress *prg, LEAK *pleak, int *nble
 	*version = file->ReadInt();
 	if (*version > SYNVERSION) {
 		char errMsg[512];
-		sprintf(errMsg, "Unsupported SYN version V%d", *version);
+		sprintf(errMsg, "Unsupported SYN version V%d",*version);
 		throw Error(errMsg);
 	}
 	file->ReadKeyword("totalHit"); file->ReadKeyword(":");
@@ -2801,7 +2802,7 @@ void Geometry::LoadSYN(FileReader *file, GLProgress *prg, LEAK *pleak, int *nble
 	for (int i = 0; i < sh.nbSuper; i++) {
 		strName[i] = _strdup(file->ReadString());
 		// For backward compatibilty with STR
-		sprintf(tmp, "%s.txt", strName[i]);
+		sprintf(tmp, "%s.txt",strName[i]);
 		strFileName[i] = _strdup(tmp);
 	}
 	file->ReadKeyword("}");
@@ -2884,7 +2885,7 @@ void Geometry::LoadSYN(FileReader *file, GLProgress *prg, LEAK *pleak, int *nble
 		int nbI = file->ReadInt();
 		if (nbI < 3) {
 			char errMsg[512];
-			sprintf(errMsg, "Facet %d has only %d vertices. ", i, nbI);
+			sprintf(errMsg, "Facet %d has only %d vertices. ",i, nbI);
 			throw Error(errMsg);
 		}
 		prg->SetProgress((float)i / sh.nbFacet);
@@ -2981,7 +2982,7 @@ bool Geometry::LoadTextures(FileReader *file, GLProgress *prg, Dataport *dpHit, 
 						int idx = file->ReadInt();
 
 						if (idx != i + 1) {
-							sprintf(tmp, "Wrong facet index. Expected %d, read %d.", i + 1, idx);
+							sprintf(tmp, "Wrong facet index. Expected %d, read %d.",i + 1, idx);
 							throw Error(file->MakeError(tmp));
 						}
 						file->ReadKeyword("{");
@@ -3242,7 +3243,7 @@ void Geometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, std::
 
 	prg->SetMessage("Writing textures...");
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++){
-		sprintf(tmp, "moment %d {\n", m);
+		sprintf(tmp, "moment %d {\n",m);
 		file->Write(tmp);
 		for (int i = 0; i < sh.nbFacet; i++) {
 			prg->SetProgress((double)(i + m*sh.nbFacet) / (double)(mApp->worker.moments.size()*sh.nbFacet)*0.33 + 0.66);
@@ -3255,7 +3256,7 @@ void Geometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, std::
 				if (!crashSave && !saveSelected) hits = (AHIT *)((BYTE *)gHits + (f->sh.hitOffset + sizeof(SHHITS)+profSize + m*w*h*sizeof(AHIT)));
 
 				//char tmp[256];
-				sprintf(tmp, " texture_facet %d {\n", i + 1);
+				sprintf(tmp, " texture_facet %d {\n",i + 1);
 				file->Write(tmp);
 
 				for (iy = 0; iy < h; iy++) {
@@ -3364,7 +3365,7 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++){
 		if (m == 0) fprintf(file, " moment 0 (Constant Flow){\n");
-		else fprintf(file, " moment %d (%g s){\n", m, mApp->worker.moments[m - 1]);
+		else fprintf(file, " moment %d (%g s){\n",m, mApp->worker.moments[m - 1]);
 		// Facets
 
 		for (int i = 0; i < sh.nbFacet; i++) {
@@ -3374,7 +3375,7 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 			if (f->selected) {
 				AHIT *hits = NULL;
 				VHIT *dirs = NULL;
-				fprintf(file, "FACET%d\n", i + 1);
+				fprintf(file, "FACET%d\n",i + 1);
 
 				if (f->mesh || f->sh.countDirection) {
 					char tmp[256];
@@ -3396,8 +3397,8 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 					case 1: // Element area
 						for (int j = 0; j < h; j++) {
 							for (int i = 0; i < w; i++) {
-								sprintf(tmp, "%g", f->mesh[i + j*w].area);
-								if (tmp) fprintf(file, "%s", tmp);
+								sprintf(tmp, "%g",f->mesh[i + j*w].area);
+								if (tmp) fprintf(file, "%s",tmp);
 								if (j < w - 1)
 									fprintf(file, "\t");
 							}
@@ -3408,7 +3409,7 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 					case 2: //MC Hits
 						for (int j = 0; j < h; j++) {
 							for (int i = 0; i < w; i++) {
-								fprintf(file, "%g", (double)hits[i + j*w].count);
+								fprintf(file, "%g",(double)hits[i + j*w].count);
 								fprintf(file, "\t");
 							}
 							fprintf(file, "\n");
@@ -3421,7 +3422,7 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 							? mApp->worker.finalOutgassingRate : (mApp->worker.totalDesorbedMolecules / mApp->worker.timeWindowSize);
 						for (int j = 0; j < h; j++) {
 							for (int i = 0; i < w; i++) {
-								fprintf(file, "%g", (double)hits[i + j*w].count / (f->mesh[i + j*w].area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef);
+								fprintf(file, "%g",(double)hits[i + j*w].count / (f->mesh[i + j*w].area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef);
 								fprintf(file, "\t");
 							}
 							fprintf(file, "\n");
@@ -3438,7 +3439,7 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 								double v_avg = 2.0*(double)hits[i + j*w].count / hits[i + j*w].sum_1_per_speed;
 								double imp_rate = hits[i + j*w].count / (f->mesh[i + j*w].area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef;
 								double rho = 4.0*imp_rate / v_avg;
-								fprintf(file, "%g", rho);
+								fprintf(file, "%g",rho);
 								fprintf(file, "\t");
 							}
 							fprintf(file, "\n");
@@ -3456,7 +3457,7 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 								double imp_rate = hits[i + j*w].count / (f->mesh[i + j*w].area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef;
 								double rho = 4.0*imp_rate / v_avg;
 								double rho_mass = rho*mApp->worker.gasMass / 1000.0 / 6E23;
-								fprintf(file, "%g", rho_mass);
+								fprintf(file, "%g",rho_mass);
 								fprintf(file, "\t");
 							}
 							fprintf(file, "\n");
@@ -3471,7 +3472,7 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 							? mApp->worker.finalOutgassingRate : (mApp->worker.totalDesorbedMolecules / mApp->worker.timeWindowSize);
 						for (int j = 0; j < h; j++) {
 							for (int i = 0; i < w; i++) {
-								fprintf(file, "%g", hits[i + j*w].sum_v_ort_per_area*dCoef);
+								fprintf(file, "%g",hits[i + j*w].sum_v_ort_per_area*dCoef);
 								fprintf(file, "\t");
 							}
 							fprintf(file, "\n");
@@ -3482,7 +3483,7 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 					case 7: // Average velocity
 						for (int j = 0; j < h; j++) {
 							for (int i = 0; i < w; i++) {
-								fprintf(file, "%g", 2.0*(double)hits[i + j*w].count / hits[i + j*w].sum_1_per_speed);
+								fprintf(file, "%g",2.0*(double)hits[i + j*w].count / hits[i + j*w].sum_1_per_speed);
 								fprintf(file, "\t");
 							}
 							fprintf(file, "\n");
@@ -3501,7 +3502,7 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 								else {
 									sprintf(tmp, "Direction not recorded");
 								}
-								fprintf(file, "%s", tmp);
+								fprintf(file, "%s",tmp);
 								fprintf(file, "\t");
 							}
 							fprintf(file, "\n");
@@ -3512,12 +3513,12 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 						for (int j = 0; j < h; j++) {
 							for (int i = 0; i < w; i++) {
 								if (f->sh.countDirection) {
-									sprintf(tmp, "%I64d", dirs[i + j*w].count);
+									sprintf(tmp, "%I64d",dirs[i + j*w].count);
 								}
 								else {
 									sprintf(tmp, "None");
 								}
-								fprintf(file, "%s", tmp);
+								fprintf(file, "%s",tmp);
 								fprintf(file, "\t");
 							}
 							fprintf(file, "\n");
@@ -3607,7 +3608,7 @@ void Geometry::SaveSTR(Dataport *dpHit, BOOL saveSelected) {
 void Geometry::SaveSuper(Dataport *dpHit, int s) {
 
 	char fName[512];
-	sprintf(fName, "%s/%s", strPath, strFileName[s]);
+	sprintf(fName, "%s/%s",strPath, strFileName[s]);
 	FileWriter *file = new FileWriter(fName);
 
 	// Unused
@@ -3769,7 +3770,7 @@ void Geometry::ImportDesorption_SYN(
 	version2 = file->ReadInt();
 	if (version2 > SYNVERSION) {
 		char errMsg[512];
-		sprintf(errMsg, "Unsupported SYN version V%d", version2);
+		sprintf(errMsg, "Unsupported SYN version V%d",version2);
 		throw Error(errMsg);
 	}
 
@@ -3846,7 +3847,7 @@ void Geometry::ImportDesorption_SYN(
 			int idx = file->ReadInt();
 
 			if (idx != i + 1) {
-				sprintf(tmp, "Wrong facet index. Expected %d, read %d.", i + 1, idx);
+				sprintf(tmp, "Wrong facet index. Expected %d, read %d.",i + 1, idx);
 				throw Error(file->MakeError(tmp));
 			}
 
@@ -3931,7 +3932,7 @@ void Geometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, int *nb
 	version2 = file->ReadInt();
 	if (version2 > SYNVERSION) {
 		char errMsg[512];
-		sprintf(errMsg, "Unsupported SYN version V%d", version2);
+		sprintf(errMsg, "Unsupported SYN version V%d",version2);
 		throw Error(errMsg);
 	}
 
@@ -3985,200 +3986,168 @@ void Geometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, int *nb
 	UpdateSelection();
 }
 
-void Geometry::SaveXML_geometry(TiXmlDocument *saveDoc, Worker *work, GLProgress *prg, BOOL saveSelected){
-	//TiXmlDeclaration* decl = new TiXmlDeclaration("1.0", "", "");
+void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress *prg, BOOL saveSelected){
+	//TiXmlDeclaration* decl = new TiXmlDeclaration("1.0")="")="");
 	//saveDoc->LinkEndChild(decl);
 	
-	TiXmlElement *geomNode = new TiXmlElement("Geometry");
-	saveDoc->LinkEndChild(geomNode);
+	xml_node geomNode = saveDoc.append_child("Geometry");
 
-	geomNode->LinkEndChild(new TiXmlElement("Vertices"));
-	geomNode->FirstChildElement("Vertices")->SetAttribute("nb", sh.nbVertex);
+	geomNode.append_child("Vertices").append_attribute("nb") = sh.nbVertex; //creates Vertices node, adds nb attribute and sets its value to sh.nbVertex
 	for (int i = 0; i < sh.nbVertex; i++) {
 		prg->SetProgress(0.33*((double)i / (double)sh.nbVertex));
-		TiXmlElement *v = new TiXmlElement("Vertex");
-		v->SetAttribute("id", i);
-		v->SetDoubleAttribute("x", vertices3[i].x);
-		v->SetDoubleAttribute("y", vertices3[i].y);
-		v->SetDoubleAttribute("z", vertices3[i].z);
-		geomNode->FirstChildElement("Vertices")->LinkEndChild(v);
+		xml_node v = geomNode.child("Vertices").append_child("Vertex");
+		v.append_attribute("id")= i;
+		v.append_attribute("x")= vertices3[i].x;
+		v.append_attribute("y")= vertices3[i].y;
+		v.append_attribute("z")= vertices3[i].z;
 	}
 
-	geomNode->LinkEndChild(new TiXmlElement("Facets"));
-	geomNode->FirstChildElement("Facets")->SetAttribute("nb", sh.nbFacet);
+	geomNode.append_child("Facets");
+	geomNode.child("Facets").append_attribute("nb")= sh.nbFacet;
 	for (int i = 0, k = 0; i < sh.nbFacet; i++) {
 		prg->SetProgress(0.33 + ((double)i / (double)sh.nbFacet) *0.33);
 		if (!saveSelected || facets[i]->selected) {
-			TiXmlElement *f = new TiXmlElement("Facet");
-			f->SetAttribute("id", i);
+			xml_node f = geomNode.child("Facets").append_child("Facet");
+			f.append_attribute("id") = i;
 			facets[i]->SaveXML_geom(f);
-			geomNode->FirstChildElement("Facets")->LinkEndChild(f);
 		}
 	}
 
-	geomNode->LinkEndChild(new TiXmlElement("Structures"));
-	geomNode->FirstChildElement("Structures")->SetAttribute("nb", sh.nbSuper);
+	geomNode.append_child("Structures").append_attribute("nb") = sh.nbSuper;
 	for (int i = 0, k = 0; i < sh.nbSuper; i++) {
-		TiXmlElement *s = new TiXmlElement("Structure");
-		geomNode->FirstChildElement("Structures")->LinkEndChild(s);
-		s->SetAttribute("id", i);
-		s->SetAttribute("name", strName[i]);
+		xml_node s=geomNode.child("Structures").append_child("Structure");
+		s.append_attribute("id") = i;
+		s.append_attribute("name") = strName[i];
 	}
 
-	TiXmlElement *interfNode = new TiXmlElement("Interface");
-	saveDoc->LinkEndChild(interfNode);
+	xml_node interfNode = saveDoc.append_child("Interface");
 
-	TiXmlElement *selNode = new TiXmlElement("Selections");
-	interfNode->LinkEndChild(selNode);
-	selNode->SetAttribute("nb", (!saveSelected)*(mApp->nbSelection));
+	xml_node selNode = interfNode.append_child("Selections");
+	selNode.append_attribute("nb") = (!saveSelected)*(mApp->nbSelection);
 	for (int i = 0; (i < mApp->nbSelection) && !saveSelected; i++) { //don't save selections when exporting part of the geometry (saveSelected)
-		TiXmlElement *newSel = new TiXmlElement("Selection");
-		selNode->LinkEndChild(newSel);
-		newSel->SetAttribute("id", i);
-		newSel->SetAttribute("name", mApp->selections[i].name);
-		newSel->SetAttribute("nb", mApp->selections[i].nbSel);
+		xml_node newSel=selNode.append_child("Selection");
+		newSel.append_attribute("id") = i;
+		newSel.append_attribute("name") = mApp->selections[i].name;
+		newSel.append_attribute("nb") = mApp->selections[i].nbSel;
 		for (int j = 0; j < mApp->selections[i].nbSel; j++) {
-			TiXmlElement *newItem = new TiXmlElement("selItem");
-			newItem->SetAttribute("id", j);
-			newItem->SetAttribute("facet", mApp->selections[i].selection[j]);
-			newSel->LinkEndChild(newItem);
+			xml_node newItem = newSel.append_child("selItem");
+			newItem.append_attribute("id") = j;
+			newItem.append_attribute("facet") = mApp->selections[i].selection[j];
 		}
 	}
 
-	TiXmlElement *viewNode = new TiXmlElement("Views");
-	interfNode->LinkEndChild(viewNode);
-	viewNode->SetAttribute("nb", (!saveSelected)*(mApp->nbView));
+	xml_node viewNode = interfNode.append_child("Views");
+	viewNode.append_attribute("nb") = (!saveSelected)*(mApp->nbView);
 	for (int i = 0; (i < mApp->nbView) && !saveSelected; i++) { //don't save views when exporting part of the geometry (saveSelected)
-		TiXmlElement *newView = new TiXmlElement("View");
-		viewNode->LinkEndChild(newView);
-		newView->SetAttribute("id", i);
-		newView->SetAttribute("name", mApp->views[i].name);
-		newView->SetAttribute("projMode",mApp->views[i].projMode);
-		newView->SetDoubleAttribute("camAngleOx",mApp->views[i].camAngleOx);
-		newView->SetDoubleAttribute("camAngleOy", mApp->views[i].camAngleOy);
-		newView->SetDoubleAttribute("camDist", mApp->views[i].camDist);
-		newView->SetDoubleAttribute("camOffset.x", mApp->views[i].camOffset.x);
-		newView->SetDoubleAttribute("camOffset.y", mApp->views[i].camOffset.y);
-		newView->SetDoubleAttribute("camOffset.z", mApp->views[i].camOffset.z);
-		newView->SetAttribute("performXY",mApp->views[i].performXY);
-		newView->SetDoubleAttribute("vLeft", mApp->views[i].vLeft);
-		newView->SetDoubleAttribute("vRight", mApp->views[i].vRight);
-		newView->SetDoubleAttribute("vTop", mApp->views[i].vTop);
-		newView->SetDoubleAttribute("vBottom", mApp->views[i].vBottom);
+		xml_node newView = viewNode.append_child("View");
+		newView.append_attribute("id")=i;
+		newView.append_attribute("name") = mApp->views[i].name;
+		newView.append_attribute("projMode") = mApp->views[i].projMode;
+		newView.append_attribute("camAngleOx") = mApp->views[i].camAngleOx;
+		newView.append_attribute("camAngleOy") = mApp->views[i].camAngleOy;
+		newView.append_attribute("camDist") = mApp->views[i].camDist;
+		newView.append_attribute("camOffset.x") = mApp->views[i].camOffset.x;
+		newView.append_attribute("camOffset.y") = mApp->views[i].camOffset.y;
+		newView.append_attribute("camOffset.z") = mApp->views[i].camOffset.z;
+		newView.append_attribute("performXY") = mApp->views[i].performXY;
+		newView.append_attribute("vLeft") = mApp->views[i].vLeft;
+		newView.append_attribute("vRight") = mApp->views[i].vRight;
+		newView.append_attribute("vTop") = mApp->views[i].vTop;
+		newView.append_attribute("vBottom") = mApp->views[i].vBottom;
 	}
 
-	TiXmlElement *formulaNode = new TiXmlElement("Formulas");
-	interfNode->LinkEndChild(formulaNode);
-	formulaNode->SetAttribute("nb", (!saveSelected)*(mApp->nbFormula));
+	xml_node formulaNode = interfNode.append_child("Formulas");
+	formulaNode.append_attribute("nb")= (!saveSelected)*(mApp->nbFormula);
 	for (int i = 0; (i < mApp->nbFormula) && !saveSelected; i++) { //don't save formulas when exporting part of the geometry (saveSelected)
-		TiXmlElement *newFormula = new TiXmlElement("Formula");
-		formulaNode->LinkEndChild(newFormula);
-		newFormula->SetAttribute("id", i);
-		newFormula->SetAttribute("name", mApp->formulas[i].parser->GetName());
-		newFormula->SetAttribute("expression", mApp->formulas[i].parser->GetExpression());
+		xml_node newFormula = formulaNode.append_child("Formula");
+		newFormula.append_attribute("id")=i;
+		newFormula.append_attribute("name")=mApp->formulas[i].parser->GetName();
+		newFormula.append_attribute("expression")=mApp->formulas[i].parser->GetExpression();
 	}
 
-	TiXmlElement *simuParamNode = new TiXmlElement("MolflowSimuSettings");
-	saveDoc->LinkEndChild(simuParamNode);
+	xml_node simuParamNode = saveDoc.append_child("MolflowSimuSettings");
 
-	TiXmlElement *gasMassNode = new TiXmlElement("Gas");
-	gasMassNode->SetDoubleAttribute("mass", work->gasMass);
-	simuParamNode->LinkEndChild(gasMassNode);
+	simuParamNode.append_child("Gas").append_attribute("mass") = work->gasMass;
 
-	TiXmlElement *timeSettingsNode = new TiXmlElement("TimeSettings");
+	xml_node timeSettingsNode = simuParamNode.append_child("TimeSettings");
 
-	TiXmlElement *userMomentsNode = new TiXmlElement("UserMoments");
-	userMomentsNode->SetAttribute("nb", work->userMoments.size());
+	xml_node userMomentsNode = timeSettingsNode.append_child("UserMoments");
+	userMomentsNode.append_attribute("nb")=work->userMoments.size();
 	for (size_t i = 0; i < work->userMoments.size(); i++) {
-		TiXmlElement *newUserEntry = new TiXmlElement("UserEntry");
-		userMomentsNode->LinkEndChild(newUserEntry);
-		newUserEntry->SetAttribute("id", i);
-		newUserEntry->SetAttribute("content", work->userMoments[i].c_str());
+		xml_node newUserEntry = userMomentsNode.append_child("UserEntry");
+		newUserEntry.append_attribute("id")=i;
+		newUserEntry.append_attribute("content")=work->userMoments[i].c_str();
 	}
-	timeSettingsNode->LinkEndChild(userMomentsNode);
 
-	timeSettingsNode->SetDoubleAttribute("timeWindow", work->timeWindowSize);
-	timeSettingsNode->SetAttribute("useMaxwellDistr", work->useMaxwellDistribution);
-	timeSettingsNode->SetAttribute("calcConstFlow", work->calcConstantFlow);
-	simuParamNode->LinkEndChild(timeSettingsNode);
+	timeSettingsNode.append_attribute("timeWindow")=work->timeWindowSize;
+	timeSettingsNode.append_attribute("useMaxwellDistr")=work->useMaxwellDistribution;
+	timeSettingsNode.append_attribute("calcConstFlow")=work->calcConstantFlow;
 
-	TiXmlElement *paramNode = new TiXmlElement("Parameters");
-	paramNode->SetAttribute("nb", work->parameters.size());
+	xml_node paramNode = simuParamNode.append_child("Parameters");
+	paramNode.append_attribute("nb")= work->parameters.size();
 	for (size_t i = 0; i < work->parameters.size(); i++) {
-		TiXmlElement *newParameter = new TiXmlElement("Parameter");
-		paramNode->LinkEndChild(newParameter);
-		newParameter->SetAttribute("id", i);
-		newParameter->SetAttribute("name", work->parameters[i].name.c_str());
-		newParameter->SetAttribute("nbMoments", (int)work->parameters[i].values.size());
+		xml_node newParameter = paramNode.append_child("Parameter");
+		newParameter.append_attribute("id")= i;
+		newParameter.append_attribute("name")=work->parameters[i].name.c_str();
+		newParameter.append_attribute("nbMoments")=(int)work->parameters[i].values.size();
 		for (size_t m = 0; m < work->parameters[i].values.size(); m++) {
-			TiXmlElement *newMoment = new TiXmlElement("Moment");
-			newParameter->LinkEndChild(newMoment);
-			newMoment->SetAttribute("id", m);
-			newMoment->SetDoubleAttribute("t", work->parameters[i].values[m].first);
-			newMoment->SetDoubleAttribute("value", work->parameters[i].values[m].second);
+			xml_node newMoment = newParameter.append_child("Moment");
+			newMoment.append_attribute("id")= m;
+			newMoment.append_attribute("t")=work->parameters[i].values[m].first;
+			newMoment.append_attribute("value")=work->parameters[i].values[m].second;
 		}
 	}
-	simuParamNode->LinkEndChild(paramNode);
 }
 
-BOOL Geometry::SaveXML_simustate(TiXmlDocument *saveDoc, Worker *work,BYTE *buffer, SHGHITS *gHits, int nbLeakSave, int nbHHitSave,
+BOOL Geometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, SHGHITS *gHits, int nbLeakSave, int nbHHitSave,
 	LEAK *pLeak, HIT *pHits, GLProgress *prg, BOOL saveSelected){
-	TiXmlElement *resultNode = new TiXmlElement("MolflowResults");
-	saveDoc->LinkEndChild(resultNode);
-	TiXmlElement *momentsNode = new TiXmlElement("Moments");
-	resultNode->LinkEndChild(momentsNode);
-	momentsNode->SetAttribute("nb", work->moments.size()+1);
+	xml_node resultNode=saveDoc.append_child("MolflowResults");
+	
+	xml_node momentsNode = resultNode.append_child("Moments");
+	momentsNode.append_attribute("nb")= work->moments.size()+1;
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++){
-		TiXmlElement *newMoment = new TiXmlElement("Moment");
-		momentsNode->LinkEndChild(newMoment);
-		newMoment->SetAttribute("id", m);
+		xml_node newMoment = momentsNode.append_child("Moment");
+		newMoment.append_attribute("id")=m;
 		if (m == 0)
-			newMoment->SetAttribute("time", "Constant flow");
+			newMoment.append_attribute("time")="Constant flow";
 		else
-			newMoment->SetDoubleAttribute("time", work->moments[m - 1]);
+			newMoment.append_attribute("time")=work->moments[m - 1];
 
 		if (m == 0) { //Write global results. Later these results will probably be time-dependent as well.
-			TiXmlElement *globalNode = new TiXmlElement("Global");
-			newMoment->LinkEndChild(globalNode);
+			xml_node globalNode = newMoment.append_child("Global");
 
-			TiXmlElement *hitsNode = new TiXmlElement("Hits");
-			globalNode->LinkEndChild(hitsNode);
-			hitsNode->SetAttribute("totalHit", gHits->total.hit.nbHit);
-			hitsNode->SetAttribute("totalDes", gHits->total.hit.nbDesorbed);
-			hitsNode->SetAttribute("totalAbs", gHits->total.hit.nbAbsorbed);
-			hitsNode->SetDoubleAttribute("totalDist", gHits->distTraveledTotal);
+			xml_node hitsNode = globalNode.append_child("Hits");
+			hitsNode.append_attribute("totalHit")=gHits->total.hit.nbHit;
+			hitsNode.append_attribute("totalDes")=gHits->total.hit.nbDesorbed;
+			hitsNode.append_attribute("totalAbs")=gHits->total.hit.nbAbsorbed;
+			hitsNode.append_attribute("totalDist")=gHits->distTraveledTotal;
 
-			TiXmlElement *hitCacheNode = new TiXmlElement("Hit_Cache");
-			globalNode->LinkEndChild(hitCacheNode);
-			hitCacheNode->SetAttribute("nb", nbHHitSave);
+			xml_node hitCacheNode = globalNode.append_child("Hit_Cache");
+			hitCacheNode.append_attribute("nb")=nbHHitSave;
 			for (int i = 0; i < nbHHitSave; i++) {
-				TiXmlElement *newHit = new TiXmlElement("Hit");
-				hitCacheNode->LinkEndChild(newHit);
-				newHit->SetAttribute("id", i);
-				newHit->SetDoubleAttribute("posX", pHits[i].pos.x);
-				newHit->SetDoubleAttribute("posY", pHits[i].pos.y);
-				newHit->SetDoubleAttribute("posZ", pHits[i].pos.z);
-				newHit->SetAttribute("type", pHits[i].type);
+				xml_node newHit = hitCacheNode.append_child("Hit");
+				newHit.append_attribute("id")=i;
+				newHit.append_attribute("posX")=pHits[i].pos.x;
+				newHit.append_attribute("posY")=pHits[i].pos.y;
+				newHit.append_attribute("posZ")=pHits[i].pos.z;
+				newHit.append_attribute("type")=pHits[i].type;
 			}
 
-			TiXmlElement *leakCacheNode = new TiXmlElement("Leak_Cache");
-			globalNode->LinkEndChild(leakCacheNode);
-			leakCacheNode->SetAttribute("nb", nbLeakSave);
+			xml_node leakCacheNode = globalNode.append_child("Leak_Cache");
+			leakCacheNode.append_attribute("nb")=nbLeakSave;
 			for (int i = 0; i < nbLeakSave; i++) {
-				TiXmlElement *newLeak = new TiXmlElement("Leak");
-				leakCacheNode->LinkEndChild(newLeak);
-				newLeak->SetAttribute("id", i);
-				newLeak->SetDoubleAttribute("posX", pLeak[i].pos.x);
-				newLeak->SetDoubleAttribute("posY", pLeak[i].pos.y);
-				newLeak->SetDoubleAttribute("posZ", pLeak[i].pos.z);
-				newLeak->SetDoubleAttribute("dirX", pLeak[i].dir.x);
-				newLeak->SetDoubleAttribute("dirY", pLeak[i].dir.y);
-				newLeak->SetDoubleAttribute("dirZ", pLeak[i].dir.z);
+				xml_node newLeak = leakCacheNode.append_child("Leak");
+				newLeak.append_attribute("id")=i;
+				newLeak.append_attribute("posX")=pLeak[i].pos.x;
+				newLeak.append_attribute("posY")=pLeak[i].pos.y;
+				newLeak.append_attribute("posZ")=pLeak[i].pos.z;
+				newLeak.append_attribute("dirX")=pLeak[i].dir.x;
+				newLeak.append_attribute("dirY")=pLeak[i].dir.y;
+				newLeak.append_attribute("dirZ")=pLeak[i].dir.z;
 			}
 		} //end global node
 		
-		TiXmlElement *facetResultsNode = new TiXmlElement("FacetResults");
-		newMoment->LinkEndChild(facetResultsNode);
+		xml_node facetResultsNode = newMoment.append_child("FacetResults");
 
 		prg->SetMessage("Writing facets...");
 
@@ -4186,42 +4155,39 @@ BOOL Geometry::SaveXML_simustate(TiXmlDocument *saveDoc, Worker *work,BYTE *buff
 			prg->SetProgress(0.33 + ((double)i / (double)sh.nbFacet) *0.33);
 			
 				Facet *f = GetFacet(i);
-				TiXmlElement *newFacetResult = new TiXmlElement("Facet");
-				newFacetResult->SetAttribute("id", i);
-				facetResultsNode->LinkEndChild(newFacetResult);
+				xml_node newFacetResult = facetResultsNode.append_child("Facet");
+				newFacetResult.append_attribute("id")=i;
 				if (m == 0) { //Now it's a global value, will soon become time-dependent
-					TiXmlElement *facetHitNode = new TiXmlElement("Hits");
-					newFacetResult->LinkEndChild(facetHitNode);
-					facetHitNode->SetAttribute("nbHit", f->sh.counter.hit.nbHit);
-					facetHitNode->SetAttribute("nbDes", f->sh.counter.hit.nbDesorbed);
-					facetHitNode->SetAttribute("nbAbs", f->sh.counter.hit.nbAbsorbed);
-					facetHitNode->SetDoubleAttribute("sum_v_ort", f->sh.counter.hit.sum_v_ort);
-					facetHitNode->SetDoubleAttribute("sum_1_per_v", f->sh.counter.hit.sum_1_per_speed);
+					xml_node facetHitNode = newFacetResult.append_child("Hits");
+					facetHitNode.append_attribute("nbHit")=f->sh.counter.hit.nbHit;
+					facetHitNode.append_attribute("nbDes")=f->sh.counter.hit.nbDesorbed;
+					facetHitNode.append_attribute("nbAbs")=f->sh.counter.hit.nbAbsorbed;
+					facetHitNode.append_attribute("sum_v_ort")=f->sh.counter.hit.sum_v_ort;
+					facetHitNode.append_attribute("sum_1_per_v")=f->sh.counter.hit.sum_1_per_speed;
 				}
 
 				if (f->sh.isProfile){
-					TiXmlElement *profileNode = new TiXmlElement("Profile");
-					profileNode->SetAttribute("size", PROFILE_SIZE);
-					newFacetResult->LinkEndChild(profileNode);
+					xml_node profileNode = newFacetResult.append_child("Profile");
+					profileNode.append_attribute("size")=PROFILE_SIZE;
 					APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + sizeof(SHHITS)+m*sizeof(APROFILE)*PROFILE_SIZE);
 					for (int p = 0; p < PROFILE_SIZE; p++){
-						TiXmlElement *slice = new TiXmlElement("Slice");
-						profileNode->LinkEndChild(slice);
-						slice->SetAttribute("id", p);
-						slice->SetAttribute("count", profilePtr[p].count);
-						slice->SetDoubleAttribute("sum_1_per_v", profilePtr[p].sum_1_per_speed);
-						slice->SetDoubleAttribute("sum_v_ort", profilePtr[p].sum_v_ort);
+						xml_node slice = profileNode.append_child("Slice");
+						slice.append_attribute("id")=p;
+						slice.append_attribute("count")=profilePtr[p].count;
+						slice.append_attribute("sum_1_per_v")=profilePtr[p].sum_1_per_speed;
+						slice.append_attribute("sum_v_ort")=profilePtr[p].sum_v_ort;
 					}
 				}
+				
+				int profSize = (f->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + (int)mApp->worker.moments.size())) : 0;
+				int h = (f->sh.texHeight);
+				int w = (f->sh.texWidth);
 
 				if (f->hasMesh){
-					TiXmlElement *textureNode = new TiXmlElement("Texture");
-					textureNode->SetAttribute("width", f->sh.texWidth);
-					textureNode->SetAttribute("height", f->sh.texHeight);
-					newFacetResult->LinkEndChild(textureNode);
-					int h = (f->sh.texHeight);
-					int w = (f->sh.texWidth);
-					int profSize = (f->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + (int)mApp->worker.moments.size())) : 0;
+					xml_node textureNode = newFacetResult.append_child("Texture");
+					textureNode.append_attribute("width")=f->sh.texWidth;
+					textureNode.append_attribute("height")=f->sh.texHeight;
+					
 					AHIT *hits = (AHIT *)((BYTE *)gHits + (f->sh.hitOffset + sizeof(SHHITS)+profSize + m*w*h*sizeof(AHIT)));
 					std::stringstream countText,sum1perText,sumvortText;
 					countText << '\n'; //better readability in file
@@ -4237,52 +4203,56 @@ BOOL Geometry::SaveXML_simustate(TiXmlDocument *saveDoc, Worker *work,BYTE *buff
 						sum1perText << '\n';
 						sumvortText << '\n';
 					}
-					TiXmlText *tex1 = new TiXmlText(countText.str().c_str());
-					textureNode->LinkEndChild(new TiXmlElement("count"));
-					textureNode->FirstChildElement("count")->LinkEndChild(tex1);
-					tex1->SetCDATA(true);
-
-					TiXmlText *tex2 = new TiXmlText(sum1perText.str().c_str());
-					textureNode->LinkEndChild(new TiXmlElement("sum_1_per_v"));
-					textureNode->FirstChildElement("sum_1_per_v")->LinkEndChild(tex2);
-					tex2->SetCDATA(true);
-
-					TiXmlText *tex3 = new TiXmlText(sumvortText.str().c_str());
-					textureNode->LinkEndChild(new TiXmlElement("sum_v_ort"));
-					textureNode->FirstChildElement("sum_v_ort")->LinkEndChild(tex3);
-					tex3->SetCDATA(true);
+					textureNode.append_child("count").append_child(node_cdata).set_value(countText.str().c_str());
+					textureNode.append_child("sum_1_per_v").append_child(node_cdata).set_value(sum1perText.str().c_str());
+					textureNode.append_child("sum_v_ort").append_child(node_cdata).set_value(sumvortText.str().c_str());
 					
-				}
+				} //end texture
+
+				if (f->sh.countDirection && f->dirCache) {
+					xml_node dirNode = newFacetResult.append_child("Directions");
+					dirNode.append_attribute("width")=f->sh.texWidth;
+					dirNode.append_attribute("height")=f->sh.texHeight;
+
+					VHIT *dirs = (VHIT *)((BYTE *)gHits + f->sh.hitOffset + sizeof(SHHITS)+profSize+(1+(int)work->moments.size())*w*h*sizeof(AHIT)+m*w*h*sizeof(VHIT));
+
+					std::stringstream dirText, dirCountText;
+					dirText << '\n'; //better readability in file
+					dirCountText << '\n';
+
+					for (int iy = 0; iy < h; iy++) {
+						for (int ix = 0; ix < w; ix++) {
+							dirText<< dirs[iy*f->sh.texWidth + ix].sumDir.x<<",";
+							dirText<< dirs[iy*f->sh.texWidth + ix].sumDir.y<<",";
+							dirText<< dirs[iy*f->sh.texWidth + ix].sumDir.z<<"\t";
+							dirCountText<< dirs[iy*f->sh.texWidth + ix].count<<"\t";
+						}
+						dirText << "\n";
+						dirCountText << "\n";
+					}
+					dirNode.append_child("vel.vectors").append_child(node_cdata).set_value(dirText.str().c_str());
+					dirNode.append_child("count").append_child(node_cdata).set_value(dirCountText.str().c_str());
+				} //end directions
 			
 		}
 
 	}
 
 	//Texture Min/Max
-	TiXmlElement *minMaxNode = new TiXmlElement("TextureMinMax");
-	resultNode->LinkEndChild(minMaxNode);
-	minMaxNode->LinkEndChild(new TiXmlElement("With_constant_flow"));
-	minMaxNode->FirstChildElement("With_constant_flow")->LinkEndChild(new TiXmlElement("Pressure"));
-	minMaxNode->FirstChildElement("With_constant_flow")->LinkEndChild(new TiXmlElement("Density"));
-	minMaxNode->FirstChildElement("With_constant_flow")->LinkEndChild(new TiXmlElement("Imp.rate"));
-	minMaxNode->LinkEndChild(new TiXmlElement("Moments_only"));
-	minMaxNode->FirstChildElement("Moments_only")->LinkEndChild(new TiXmlElement("Pressure"));
-	minMaxNode->FirstChildElement("Moments_only")->LinkEndChild(new TiXmlElement("Density"));
-	minMaxNode->FirstChildElement("Moments_only")->LinkEndChild(new TiXmlElement("Imp.rate"));
+	xml_node minMaxNode = resultNode.append_child("TextureMinMax");
+	minMaxNode.append_child("With_constant_flow").append_child("Pressure").append_attribute("min")=gHits->texture_limits[0].min.all;
+	minMaxNode.child("With_constant_flow").child("Pressure").append_attribute("max") = gHits->texture_limits[0].max.all;
+	minMaxNode.child("With_constant_flow").append_child("Density").append_attribute("min") = gHits->texture_limits[1].min.all;
+	minMaxNode.child("With_constant_flow").child("Density").append_attribute("max") = gHits->texture_limits[1].max.all;
+	minMaxNode.child("With_constant_flow").append_child("Imp.rate").append_attribute("min") = gHits->texture_limits[2].min.all;
+	minMaxNode.child("With_constant_flow").child("Imp.rate").append_attribute("max") = gHits->texture_limits[2].max.all;
 
-	minMaxNode->FirstChildElement("With_constant_flow")->FirstChildElement("Pressure")->SetDoubleAttribute("min", gHits->texture_limits[0].min.all);
-	minMaxNode->FirstChildElement("With_constant_flow")->FirstChildElement("Pressure")->SetDoubleAttribute("max", gHits->texture_limits[0].max.all);
-	minMaxNode->FirstChildElement("With_constant_flow")->FirstChildElement("Density")->SetDoubleAttribute("min", gHits->texture_limits[1].min.all);
-	minMaxNode->FirstChildElement("With_constant_flow")->FirstChildElement("Density")->SetDoubleAttribute("max", gHits->texture_limits[1].max.all);
-	minMaxNode->FirstChildElement("With_constant_flow")->FirstChildElement("Imp.rate")->SetDoubleAttribute("min", gHits->texture_limits[2].min.all);
-	minMaxNode->FirstChildElement("With_constant_flow")->FirstChildElement("Imp.rate")->SetDoubleAttribute("max", gHits->texture_limits[2].max.all);
-
-	minMaxNode->FirstChildElement("Moments_only")->FirstChildElement("Pressure")->SetDoubleAttribute("min", gHits->texture_limits[0].min.moments_only);
-	minMaxNode->FirstChildElement("Moments_only")->FirstChildElement("Pressure")->SetDoubleAttribute("max", gHits->texture_limits[0].max.moments_only);
-	minMaxNode->FirstChildElement("Moments_only")->FirstChildElement("Density")->SetDoubleAttribute("min", gHits->texture_limits[1].min.moments_only);
-	minMaxNode->FirstChildElement("Moments_only")->FirstChildElement("Density")->SetDoubleAttribute("max", gHits->texture_limits[1].max.moments_only);
-	minMaxNode->FirstChildElement("Moments_only")->FirstChildElement("Imp.rate")->SetDoubleAttribute("min", gHits->texture_limits[2].min.moments_only);
-	minMaxNode->FirstChildElement("Moments_only")->FirstChildElement("Imp.rate")->SetDoubleAttribute("max", gHits->texture_limits[2].max.moments_only);
+	minMaxNode.append_child("Moments_only").append_child("Pressure").append_attribute("min") = gHits->texture_limits[0].min.moments_only;
+	minMaxNode.child("Moments_only").child("Pressure").append_attribute("max") = gHits->texture_limits[0].max.moments_only;
+	minMaxNode.child("Moments_only").append_child("Density").append_attribute("min") = gHits->texture_limits[1].min.moments_only;
+	minMaxNode.child("Moments_only").child("Density").append_attribute("max") = gHits->texture_limits[1].max.moments_only;
+	minMaxNode.child("Moments_only").append_child("Imp.rate").append_attribute("min") = gHits->texture_limits[2].min.moments_only;
+	minMaxNode.child("Moments_only").child("Imp.rate").append_attribute("max") = gHits->texture_limits[2].max.moments_only;
 
 	return TRUE;
 }

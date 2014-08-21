@@ -24,6 +24,8 @@
 #include <math.h>
 #include "GLToolkit.h"
 
+
+using namespace pugi;
 /*
 //Leak detection
 #ifdef _DEBUG
@@ -1532,95 +1534,79 @@ void Facet::ConvertOldDesorbType() {
 	}
 }
 
-void  Facet::SaveXML_geom(TiXmlElement *f){
-	TiXmlElement *e = new TiXmlElement("Sticking");
-	e->SetAttribute("constValue", sh.sticking);
-	e->SetAttribute("parameterId", sh.sticking_paramId);
-	f->LinkEndChild(e);
+void  Facet::SaveXML_geom(pugi::xml_node f){
+	xml_node e=f.append_child("Sticking");
+	e.append_attribute("constValue")= sh.sticking;
+	e.append_attribute("parameterId")= sh.sticking_paramId;
 
-	e = new TiXmlElement("Opacity");
-	e->SetAttribute("constValue", sh.opacity);
-	e->SetAttribute("parameterId", sh.opacity_paramId);
-	e->SetAttribute("is2sided", sh.is2sided);
-	f->LinkEndChild(e);
+	e = f.append_child("Opacity");
+	e.append_attribute("constValue")= sh.opacity;
+	e.append_attribute("parameterId")= sh.opacity_paramId;
+	e.append_attribute("is2sided")= sh.is2sided;
 
-	e = new TiXmlElement("Outgassing");
-	e->SetAttribute("constValue", sh.flow);
-	e->SetAttribute("parameterId", sh.outgassing_paramId);
-	e->SetAttribute("desType", sh.desorbType);
-	e->SetAttribute("desExponent", sh.desorbTypeN);
-	e->SetAttribute("dynamicFromFile", sh.useOutgassingFile);
-	f->LinkEndChild(e);
+	e = f.append_child("Outgassing");
+	e.append_attribute("constValue") = sh.flow;
+	e.append_attribute("parameterId") = sh.outgassing_paramId;
+	e.append_attribute("desType") = sh.desorbType;
+	e.append_attribute("desExponent") = sh.desorbTypeN;
+	e.append_attribute("dynamicFromFile") = sh.useOutgassingFile;
 
-	e = new TiXmlElement("Temperature");
-	e->SetAttribute("value", sh.temperature);
-	e->SetDoubleAttribute("accFactor", sh.accomodationFactor);
-	f->LinkEndChild(e);
+	e = f.append_child("Temperature");
+	e.append_attribute("value") = sh.temperature;
+	e.append_attribute("accFactor") = sh.accomodationFactor;
 
-	e = new TiXmlElement("Reflection");
-	e->SetAttribute("type", sh.reflectType);
-	f->LinkEndChild(e);
+	e = f.append_child("Reflection");
+	e.append_attribute("type") = sh.reflectType;
 
-	e = new TiXmlElement("Structure");
-	e->SetAttribute("inStructure", sh.superIdx);
-	e->SetAttribute("linksTo", sh.superDest);
-	f->LinkEndChild(e);
+	e = f.append_child("Structure");
+	e.append_attribute("inStructure") = sh.superIdx;
+	e.append_attribute("linksTo") = sh.superDest;
 
-	e = new TiXmlElement("Teleport");
-	e->SetAttribute("target", sh.teleportDest);
-	f->LinkEndChild(e);
+	e = f.append_child("Teleport");
+	e.append_attribute("target") = sh.teleportDest;
 
-	e = new TiXmlElement("Recordings");
-	TiXmlElement *t = new TiXmlElement("Profile");
-	t->SetAttribute("type", sh.profileType);
+	e = f.append_child("Recordings");
+	xml_node t = e.append_child("Profile");
+	t.append_attribute("type") = sh.profileType;
 	switch (sh.profileType) {
 	case 0:
-		t->SetAttribute("name", "none");
+		t.append_attribute("name") = "none";
 		break;
 	case 1:
-		t->SetAttribute("name", "pressure u");
+		t.append_attribute("name") = "pressure u";
 		break;
 	case 2:
-		t->SetAttribute("name", "pressure v");
+		t.append_attribute("name") = "pressure v";
 		break;
 	case 3:
-		t->SetAttribute("name", "angular");
+		t.append_attribute("name") = "angular";
 		break;
 	case 4:
-		t->SetAttribute("name", "speed");
+		t.append_attribute("name") = "speed";
 		break;
 	case 5:
-		t->SetAttribute("name", "ortho.v");
-		break;
-	default:
-		t->SetAttribute("name", "unknown");
+		t.append_attribute("name") = "ortho.v";
 		break;
 	}
-	e->LinkEndChild(t);
-	t = new TiXmlElement("Texture");
-	e->LinkEndChild(t);
-	t->SetAttribute("hasMesh", mesh != NULL);
-	t->SetDoubleAttribute("texDimX", sh.texWidthD);
-	t->SetDoubleAttribute("texDimY", sh.texHeightD);
-	t->SetAttribute("countDes", sh.countDes);
-	t->SetAttribute("countAbs", sh.countAbs);
-	t->SetAttribute("countRefl", sh.countRefl);
-	t->SetAttribute("countTrans", sh.countTrans);
-	t->SetAttribute("countDir", sh.countDirection);
-	t->SetAttribute("countAC", sh.countACD);
-	f->LinkEndChild(e);
+	t = e.append_child("Texture");
+	t.append_attribute("hasMesh") = mesh != NULL;
+	t.append_attribute("texDimX") = sh.texWidthD;
+	t.append_attribute("texDimY") = sh.texHeightD;
+	t.append_attribute("countDes") = sh.countDes;
+	t.append_attribute("countAbs") = sh.countAbs;
+	t.append_attribute("countRefl") = sh.countRefl;
+	t.append_attribute("countTrans") = sh.countTrans;
+	t.append_attribute("countDir") = sh.countDirection;
+	t.append_attribute("countAC") = sh.countACD;
 	
-	e = new TiXmlElement("ViewSettings");
-	e->SetAttribute("textureVisible", textureVisible);
-	e->SetAttribute("volumeVisible", volumeVisible);
-	f->LinkEndChild(e);
+	e = f.append_child("ViewSettings");
+	e.append_attribute("textureVisible") = textureVisible;
+	e.append_attribute("volumeVisible") = volumeVisible;
 
-	f->LinkEndChild(new TiXmlElement("Indices"));
-	f->FirstChildElement("Indices")->SetAttribute("nb", sh.nbIndex);
+	f.append_child("Indices").append_attribute("nb") = sh.nbIndex;
 	for (size_t i = 0; i < sh.nbIndex; i++) {
-		TiXmlElement *indice = new TiXmlElement("Indice");
-		indice->SetAttribute("id", i);
-		indice->SetAttribute("vertex", indices[i]);
-		f->FirstChildElement("Indices")->LinkEndChild(indice);
+		xml_node indice = f.child("Indices").append_child("Indice");
+		indice.append_attribute("id") = i;
+		indice.append_attribute("vertex") = indices[i];
 	}
 }

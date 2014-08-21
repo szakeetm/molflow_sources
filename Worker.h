@@ -21,7 +21,7 @@
 
 #include "Geometry.h"
 #include "Parameter.h"
-#include "TinyXML/tinyxml.h" //Opensource XML save/load (http://www.grinninglizard.com/tinyxml2/index.html)
+#include "PugiXML/pugixml.hpp"
 #include <string>
 
 #define CDF_SIZE 100 //points in a cumulative distribution function

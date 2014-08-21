@@ -28,7 +28,7 @@
 #include "smp/SMP.h"
 #include "Utils.h"
 #include "GrahamScan.h"
-#include "TinyXML/tinyxml.h" //Opensource XML save/load (http://www.grinninglizard.com/tinyxml2/index.html)
+#include "PugiXML/pugixml.hpp"
 #include <vector>
 #include <sstream>
 
@@ -84,8 +84,8 @@ public:
   void SaveGEO(FileWriter *file,GLProgress *prg,Dataport *dpHit,std::vector<std::string> userMoments,Worker *worker,
 	  BOOL saveSelected,LEAK *pleak,int *nbleakSave,HIT *pHits,int *nbHHitSave,BOOL crashSave=FALSE);
   void SaveSTR(Dataport *dhHit,BOOL saveSelected);
-  void SaveXML_geometry(TiXmlDocument *saveDoc, Worker *work, GLProgress *prg, BOOL saveSelected);
-  BOOL SaveXML_simustate(TiXmlDocument *saveDoc, Worker *work,BYTE *buffer, SHGHITS *gHits, int nbLeakSave, int nbHHitSave,
+  void SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress *prg, BOOL saveSelected);
+  BOOL SaveXML_simustate(pugi::xml_node saveDoc, Worker *work, BYTE *buffer, SHGHITS *gHits, int nbLeakSave, int nbHHitSave,
 	  LEAK *pLeak, HIT *pHits, GLProgress *prg, BOOL saveSelected);
 
   // Selection (drawing stuff)
