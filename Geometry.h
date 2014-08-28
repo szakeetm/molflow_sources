@@ -35,7 +35,7 @@
 class Worker;
 
 #define SEL_HISTORY  100
-#define MAX_SUPERSTR 256
+#define MAX_SUPERSTR 128
 #define GEOVERSION   13
 #define XMLVERSION 1
 #define SYNVERSION 7
@@ -87,6 +87,8 @@ public:
   void SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress *prg, BOOL saveSelected);
   BOOL SaveXML_simustate(pugi::xml_node saveDoc, Worker *work, BYTE *buffer, SHGHITS *gHits, int nbLeakSave, int nbHHitSave,
 	  LEAK *pLeak, HIT *pHits, GLProgress *prg, BOOL saveSelected);
+  void LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg);
+  BOOL LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker *work, GLProgress *progressDlg);
 
   // Selection (drawing stuff)
   void SelectAll();
@@ -177,7 +179,9 @@ public:
   void	   CalcTotalOutGassing();
   void     InitializeGeometry(int facet_number=-1);           // Initialiase all geometry related variable
   void     LoadProfile(FileReader *file,Dataport *dpHit,int version);
- 
+  void UpdateName(FileReader *file);
+  void UpdateName(char *fileName);
+
   // Texture scaling
   int textureMode;                        // Pressure / Impingement rate / Density
   TEXTURE_SCALE_TYPE texture_limits[3];   // Min/max values for texture scaling: Pressure/Impingement rate/Density
@@ -234,7 +238,6 @@ private:
   void InsertSYNGeom(FileReader *file,int *nbV,int *nbF,VERTEX3D **V,Facet ***F,int strIdx=0,BOOL newStruct=FALSE);
   void InsertSTLGeom(FileReader *file,int *nbV,int *nbF,VERTEX3D **V,Facet ***F,int strIdx=0,double scaleFactor=1.0,BOOL newStruct=FALSE);
   void RemoveLinkFacet();
-  void UpdateName(FileReader *file);
   void SaveProfileGEO(FileWriter *file, Dataport *dpHit, int super = -1, BOOL saveSelected = FALSE, BOOL crashSave=FALSE);
   void SaveProfileTXT(FileWriter *file);
   void AdjustProfile();

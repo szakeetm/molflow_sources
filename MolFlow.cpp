@@ -2840,7 +2840,10 @@ void MolFlow::LoadFile(char *fName) {
 	else strcpy(shortName,fullName);
 
 	try {
-
+		ClearFormula();
+		ClearParameters();
+		ClearAllSelections();
+		ClearAllViews();
 		worker.LoadGeometry(fullName);
 
 		Geometry *geom = worker.GetGeometry();
@@ -3107,6 +3110,10 @@ void MolFlow::AddFormula(const char *fName,const char *formula) {
 
 }
 
+void MolFlow::ClearParameters() {
+	worker.parameters = std::vector<Parameter>();
+	if (parameterEditor) parameterEditor->UpdateCombo();
+}
 //-----------------------------------------------------------------------------
 // Name: ProcessFormulaButtons()
 // Desc: Handle forumla button event
@@ -4349,65 +4356,28 @@ BOOL MolFlow::AskToReset(Worker *work) {
 
 void MolFlow::QuickPipe() {
 
-	Geometry *geom = worker.GetGeometry();
-	char tmp[256];
-	double R = 1.0;
-	double L = 5.0;
-	int    step=5;
-	ResetSimulation(FALSE);
-
-	geom->BuildPipe(L,R,0,step);
-	worker.nbDesorption = 0;
-	worker.needsReload = TRUE;
-	sprintf(tmp,"L|R %g",L/R);
-	//worker.SetFileName(tmp);
-	nbDesStart = 0;
-	nbHitStart = 0;
-	for(int i=0;i<MAX_VIEWER;i++)
-		viewer[i]->SetWorker(&worker);
-	//UpdateModelParams();
-	startSimu->SetEnabled(TRUE);
-	compACBtn->SetEnabled(modeCombo->GetSelectedIndex()==1);
-	//resetSimu->SetEnabled(TRUE);
-	ClearFacetParams();
-	if( nbFormula==0 ) {
-		GLParser *f = new GLParser();
-		f->SetExpression("A2/SUMDES");
-		f->SetName("Trans. Prob.");
-		f->Parse();
-		AddFormula(f);
-	}
-	UpdateStructMenu();
-	// Send to sub process
-	try { worker.Reload(); } catch(Error &e) {
-		GLMessageBox::Display((char *)e.GetMsg(),"Error",GLDLG_OK,GLDLG_ICONERROR);
-		return;
-	}
-
-	UpdateTitle();
-	changedSinceSave=FALSE;
-	ResetAutoSaveTimer();
+	BuildPipe(5.0, 5);
 }
 
-void MolFlow::BuildPipe(double ratio) {
+void MolFlow::BuildPipe(double ratio,int steps) {
 
-	char tmp[128];
-	//char title[128];
+	char tmp[256];
 	Geometry *geom = worker.GetGeometry();
 
 	double R = 1.0;
 	double L = ratio * R;
 	int    step;
-
-	sprintf(tmp,"100");
-	//sprintf(title,"Pipe L/R = %g",L/R);
-	char *nbF = GLInputBox::GetInput(tmp,"Number of facet","Build Pipe");
-	if( !nbF ) return;
-	if(( sscanf(nbF,"%d",&step)<=0 )||(step<3)) {
-		GLMessageBox::Display("Invalid number","Error",GLDLG_OK,GLDLG_ICONERROR);
-		return;
+	if (steps) step = 5; //Quick Pipe
+	else {
+		sprintf(tmp, "100");
+		//sprintf(title,"Pipe L/R = %g",L/R);
+		char *nbF = GLInputBox::GetInput(tmp, "Number of facet", "Build Pipe");
+		if (!nbF) return;
+		if ((sscanf(nbF, "%d", &step) <= 0) || (step < 3)) {
+			GLMessageBox::Display("Invalid number", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			return;
+		}
 	}
-
 	ResetSimulation(FALSE);
 
 	try{
@@ -4430,14 +4400,17 @@ void MolFlow::BuildPipe(double ratio) {
 	compACBtn->SetEnabled(modeCombo->GetSelectedIndex()==1);
 	//resetSimu->SetEnabled(TRUE);
 	ClearFacetParams();
+	ClearFormula();
+	ClearParameters();
+	ClearAllSelections();
+	ClearAllViews();
 
-	if( nbFormula==0 ) {
-		GLParser *f = new GLParser();
-		f->SetExpression("A2/SUMDES");
-		f->SetName("Trans. Prob.");
-		f->Parse();
-		AddFormula(f);
-	}
+	GLParser *f = new GLParser();
+	f->SetExpression("A2/SUMDES");
+	f->SetName("Trans. Prob.");
+	f->Parse();
+	AddFormula(f);
+
 	UpdateStructMenu();
 	// Send to sub process
 	try { worker.Reload(); } catch(Error &e) {

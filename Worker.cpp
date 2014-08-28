@@ -284,8 +284,14 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 
 							if (isXMLzip) {
 								HZIP hz = CreateZip(fileNameWithXMLzip, 0);
+								if (!hz) {
+									throw Error("Error creating ZIP file");
+								}
 								if (!ZipAdd(hz, GetShortFileName(fileNameWithXML),fileNameWithXML)) remove(fileNameWithXML);
-								else throw Error("Error in writing ZIP file.");
+								else {
+									CloseZip(hz);
+									throw Error("Error compressing ZIP file.");
+								}
 								CloseZip(hz);
 							}
 						} catch (Error &e) {
@@ -602,6 +608,7 @@ void Worker::LoadGeometry(char *fileName) {
 	}
 	else if (isXML || isXMLzip) {
 		xml_document loadXML;
+		xml_parse_result parseResult;
 		progressDlg->SetVisible(TRUE);
 		try {
 			if (isXMLzip) {
@@ -609,6 +616,9 @@ void Worker::LoadGeometry(char *fileName) {
 				progressDlg->SetMessage("Decompressing file...");
 
 				HZIP hz = OpenZip(fileName, 0);
+				if (!hz) {
+					throw Error("Can't open ZIP file");
+				}
 				ZIPENTRY ze; GetZipItem(hz, -1, &ze); int numitems = ze.index;
 				BOOL notFoundYet = TRUE;
 				for (int i = 0; i < numitems && notFoundYet; i++) { //extract first XML file found in ZIP archive
@@ -618,41 +628,42 @@ void Worker::LoadGeometry(char *fileName) {
 						notFoundYet = FALSE;
 						std::string tmpFileName = "tmp/" + fileName;
 						UnzipItem(hz, i, tmpFileName.c_str()); //unzip it to tmp directory
-						loadXML.load_file(tmpFileName.c_str()); //parse it
+						progressDlg->SetMessage("Reading and parsing XML file...");
+						parseResult= loadXML.load_file(tmpFileName.c_str()); //parse it
 					}
+				}
+				if (notFoundYet) {
+					throw Error("No XML file in the ZIP file.");
 				}
 			}
 			ResetWorkerStats();
-			if (!isXMLzip) loadXML.load_file(fileName); //parse it
-
-			//parse loadXML :)
-
-			/*
-			//leaks
-			LEAK pLeak[NBHLEAK];
-			//hits
-			HIT pHits[NBHHIT];
-
-			geom->LoadGEO(f, progressDlg, pLeak, &nbLastLeaks, pHits, &nbHHit, &version, this);
-			//copy temp values from geom to worker:
-			nbLeakTotal = geom->tNbLeak;
-			nbHit = geom->tNbHit;
-			nbDesorption = geom->tNbDesorption;
-			maxDesorption = geom->tNbDesorptionMax;
-			nbAbsorption = geom->tNbAbsorption;
-			distTraveledTotal = geom->distTraveledTotal;
+			progressDlg->SetMessage("Reading and parsing XML file...");
+			if (!isXMLzip) parseResult=loadXML.load_file(fileName); //parse it
+			if (!parseResult) {
+				//Parse error
+				std::stringstream err;
+				err << "XML parsed with errors.\n";
+				err << "Error description: " << parseResult.description() << "\n";
+				err << "Error offset: " << parseResult.offset<<"\n";
+				throw Error(err.str().c_str());
+			}
+			
+			progressDlg->SetMessage("Building geometry...");
+			geom->LoadXML_geom(loadXML, this, progressDlg);
+			geom->UpdateName(fileName);
 
 			progressDlg->SetMessage("Reloading worker with new geometry...");
-			RealReload(); //for the loading of textures
-			if (version >= 8) geom->LoadProfile(f, dpHit, version);
-			SHGHITS *gHits = (SHGHITS *)dpHit->buff;
-			SetLeak(pLeak, &nbLastLeaks, gHits);
-			SetHHit(pHits, &nbHHit, gHits);
-			SAFE_DELETE(f);
-			progressDlg->SetMessage("Loading textures...");
-			LoadTextures((isGEO7Z) ? tmp2 : fileName, version);
+			RealReload(); //for the loading of textures, profiles, etc...
 			strcpy(fullFileName, fileName);
-			//if (isGEO7Z) remove(tmp2);*/
+
+			progressDlg->SetMessage("Restoring simulation state...");
+			try {
+				geom->LoadXML_simustate(loadXML, dpHit, this, progressDlg);
+				RebuildTextures();
+			}
+			catch (Error &e) {
+				GLMessageBox::Display(e.GetMsg(), "Error while loading simulation state", GLDLG_CANCEL, GLDLG_ICONWARNING);
+			}
 		}
 		catch (Error &e) {
 			geom->Clear();
@@ -954,15 +965,7 @@ void Worker::LoadTextures(char *fileName, int version) {
 			f = new FileReader(fileName);
 			progressDlg->SetVisible(TRUE);
 			geom->LoadTextures(f, progressDlg, dpHit, version);
-			if (AccessDataport(dpHit)) {
-				BYTE *buffer = (BYTE *)dpHit->buff;
-				try{ geom->BuildTexture(buffer); }
-				catch (Error &e) {
-					ReleaseDataport(dpHit);
-					throw e;
-				}
-				ReleaseDataport(dpHit);
-			}
+			RebuildTextures();
 			progressDlg->SetVisible(FALSE);
 			SAFE_DELETE(progressDlg);
 
@@ -2113,4 +2116,16 @@ int Worker::GetParamId(const std::string name) {
 	for (int i = 0; foundId == -1 && i < (int)parameters.size(); i++)
 		if (name.compare(parameters[i].name) == 0) foundId = i;
 	return foundId;
+}
+
+void Worker::RebuildTextures() {
+	if (AccessDataport(dpHit)) {
+		BYTE *buffer = (BYTE *)dpHit->buff;
+		try{ geom->BuildTexture(buffer); }
+		catch (Error &e) {
+			ReleaseDataport(dpHit);
+			throw e;
+		}
+		ReleaseDataport(dpHit);
+	}
 }

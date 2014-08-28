@@ -96,6 +96,7 @@ public:
   void  SaveTXT(FileWriter *file);
   void  LoadGEO(FileReader *file,int version,int nbVertex);
   void  LoadSYN(FileReader *file,int version,int nbVertex);
+  void  LoadXML(pugi::xml_node f,int nbVertex);
   void  SaveGEO(FileWriter *file,int idx);
   void  SaveXML_geom(pugi::xml_node f);
   BOOL  IsCoplanar(Facet *f,double threshold);

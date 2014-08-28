@@ -32,7 +32,7 @@
 // Error class
 // -------------------------------------------------
 
-Error::Error(char *message) {
+Error::Error(const char *message) {
   strncpy(msg,message,255);
   msg[255]=0;
 }

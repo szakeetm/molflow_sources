@@ -29,7 +29,7 @@
 class Error {
 
 public:
-  Error(char *message);
+  Error(const char *message);
   const char *GetMsg();
 
 private:

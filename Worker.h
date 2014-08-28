@@ -47,6 +47,7 @@ public:
 
   // Load a textures(throws Error)
   void LoadTextures(char *fileName,int version);
+  void RebuildTextures();
 
   // Save a geometry (throws Error)
   void SaveGeometry(char *fileName,GLProgress *prg,BOOL askConfirm=TRUE,BOOL saveSelected=FALSE,BOOL autoSave=FALSE,BOOL crashSave=FALSE);

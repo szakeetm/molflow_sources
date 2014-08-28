@@ -244,7 +244,7 @@ void ParameterEditor::UpdateCombo() {
 	for (size_t i = 0; i < work->parameters.size(); i++)
 		selectorCombo->SetValueAt((int)i, work->parameters[i].name.c_str());
 	selectorCombo->SetValueAt((int)work->parameters.size(), "New...");
-	if (selectorCombo->GetSelectedIndex() == -1) selectorCombo->SetSelectedIndex(selectorCombo->GetNbRow() - 1);
+	if (selectorCombo->GetSelectedIndex() == -1 || selectorCombo->GetSelectedIndex() == (selectorCombo->GetNbRow() - 1)) selectorCombo->SetSelectedIndex(selectorCombo->GetNbRow() - 1);
 }
 
 void ParameterEditor::PasteFromClipboard() {
@@ -294,14 +294,17 @@ BOOL ParameterEditor::ValidateInput() {
 			}
 		}
 	}
+	if (!((tempName[0] >= 65 && tempName[0] <= 90) || (tempName[0] >= 97 && tempName[0] <= 122))) {
+		GLMessageBox::Display("Parameter name must begin with a letter", "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
+		return FALSE;
+	}
 	tempParam = Parameter();
 	tempParam.name = tempName;
 
 	//TODO check:
-	//at least one value
 	//no two values for the same moment
-	//name doesn't begin with a number
 
+	BOOL atLeastOne = FALSE;
 	for (size_t row = 0; row < userValues.size(); row++) {
 		double valueX, valueY;
 		try {
@@ -322,7 +325,24 @@ BOOL ParameterEditor::ValidateInput() {
 			return FALSE;
 		}
 		tempParam.AddValue(std::make_pair(valueX, valueY));
+		atLeastOne = TRUE;
 	}
+	if (!atLeastOne) {
+		GLMessageBox::Display("At least one value is required", "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
+		return FALSE;
+	}
+
+	for (int i = 0; i < tempParam.values.size();i++) {
+		for (int j = i+1; j < tempParam.values.size(); j++) {
+			if (abs(tempParam.values[i].first - tempParam.values[j].first) < 1E-8) {
+				std::stringstream msg;
+				msg << "There are two values for t=" << tempParam.values[i].first << "s.";
+				GLMessageBox::Display(msg.str().c_str(), "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
+				return FALSE;
+			}
+		}
+	}
+
 	return TRUE;
 }
 

@@ -177,7 +177,7 @@ public:
     void AddFormula(GLParser *f,BOOL doUpdate=TRUE);
 	void AddFormula(const char *fName, const char *formula);
 	void ClearFormula();
-	
+	void ClearParameters();
 
 	//Flow/sticking coeff. conversion
 	void calcFlow();
@@ -344,7 +344,7 @@ public:
     // Testing
     //int     nbSt;
     //void LogProfile();
-    void BuildPipe(double ratio);
+    void BuildPipe(double ratio,int steps=0);
     //void BuildPipeStick(double s);
 	
 	void CrashHandler(Error *e);

@@ -278,6 +278,52 @@ void Facet::LoadGEO(FileReader *file, int version, int nbVertex) {
 
 }
 
+void Facet::LoadXML(xml_node f,int nbVertex) {
+	int idx = 0;
+	for (xml_node indice : f.child("Indices").children("Indice")) {
+		indices[idx] = indice.attribute("vertex").as_int();
+		if (indices[idx] >= nbVertex) {
+			char err[128];
+			sprintf(err, "Facet %d refers to vertex %d which doesn't exist", f.attribute("id").as_int() + 1, idx + 1);
+			throw Error(err);
+		}
+		idx++;
+	}
+	sh.sticking = f.child("Sticking").attribute("constValue").as_double();
+	sh.sticking_paramId = f.child("Sticking").attribute("parameterId").as_int();
+	sh.opacity = f.child("Opacity").attribute("constValue").as_double();
+	sh.opacity_paramId = f.child("Opacity").attribute("parameterId").as_int();
+	sh.is2sided = f.child("Opacity").attribute("is2sided").as_int();
+	sh.flow = f.child("Outgassing").attribute("constValue").as_double();
+	sh.desorbType = f.child("Outgassing").attribute("desType").as_int();
+	sh.desorbTypeN = f.child("Outgassing").attribute("desExponent").as_double();
+	sh.outgassing_paramId = f.child("Outgassing").attribute("parameterId").as_int();
+	//TO DO: store dynamic outgassing
+	sh.temperature = f.child("Temperature").attribute("value").as_double();
+	sh.accomodationFactor = f.child("Temperature").attribute("accFactor").as_double();
+	sh.reflectType = f.child("Reflection").attribute("type").as_int();
+	sh.superIdx = f.child("Structure").attribute("inStructure").as_int();
+	sh.superDest = f.child("Structure").attribute("linksTo").as_int();
+	sh.teleportDest = f.child("Teleport").attribute("target").as_int();
+	xml_node recNode = f.child("Recordings");
+	sh.profileType = recNode.child("Profile").attribute("type").as_int();
+	xml_node texNode = recNode.child("Texture");
+	hasMesh = texNode.attribute("hasMesh").as_bool();
+	sh.texWidthD = texNode.attribute("texDimX").as_double();
+	sh.texHeightD = texNode.attribute("texDimY").as_double();
+	sh.countDes = texNode.attribute("countDes").as_int();
+	sh.countAbs = texNode.attribute("countAbs").as_int();
+	sh.countRefl = texNode.attribute("countRefl").as_int();
+	sh.countTrans = texNode.attribute("countTrans").as_int();
+	sh.countDirection = texNode.attribute("countDir").as_int();
+	sh.countACD = texNode.attribute("countAC").as_int();
+
+	textureVisible = f.child("ViewSettings").attribute("textureVisible").as_int();
+	volumeVisible = f.child("ViewSettings").attribute("volumeVisible").as_int();
+	
+	UpdateFlags();
+}
+
 
 void Facet::LoadSYN(FileReader *file, int version, int nbVertex) {
 
