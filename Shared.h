@@ -173,6 +173,7 @@ typedef struct {
   double totalDesorbedMolecules; //Number of molecules desorbed between t=0 and latest_moment
   double finalOutgassingRate; //Number of outgassing molecules / second at latest_moment (constant flow)
   double gasMass;
+  double halfLife;
   double timeWindowSize;
   BOOL useMaxwellDistribution; //TRUE: Maxwell-Boltzmann distribution, FALSE: All molecules have the same (V_avg) speed
   BOOL calcConstantFlow;

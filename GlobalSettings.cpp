@@ -34,13 +34,13 @@ GlobalSettings::GlobalSettings():GLWindow() {
 	
 
   int wD = 610;
-  int hD = 550;
+  int hD = 575;
 
   SetTitle("Global Settings");
   SetIconfiable(TRUE);
 
   GLTitledPanel *panel = new GLTitledPanel("View settings");
-  panel->SetBounds(5,2,300,103);
+  panel->SetBounds(5,2,300,128);
   Add(panel);
   
   chkAntiAliasing = new GLToggle(0,"Anti-Aliasing");
@@ -52,7 +52,7 @@ GlobalSettings::GlobalSettings():GLWindow() {
   panel->Add(chkWhiteBg);
 
   GLTitledPanel *panel2 = new GLTitledPanel("Gas settings");
-  panel2->SetBounds(310,2,295,103);
+  panel2->SetBounds(310,2,295,128);
   Add(panel2);
 
   GLLabel *massLabel = new GLLabel("Gas molecular mass (g/mol):");
@@ -81,32 +81,40 @@ GlobalSettings::GlobalSettings():GLWindow() {
   influxText->SetEditable(FALSE);
   panel2->Add(influxText);
 
+  GLLabel *halfLifeLabel = new GLLabel("Gas half life (s):");
+  halfLifeLabel->SetBounds(320, 100, 150, 19);
+  panel2->Add(halfLifeLabel);
+
+  halfLifeText = new GLTextField(0, "");
+  halfLifeText->SetBounds(500, 100, 90, 19);
+  panel2->Add(halfLifeText);
+
   GLTitledPanel *panel4 = new GLTitledPanel("Program settings");
-  panel4->SetBounds(5,110,600,90);
+  panel4->SetBounds(5,135,600,90);
   Add(panel4);
 
   GLLabel *asLabel = new GLLabel("Autosave frequency (minutes):");
-  asLabel->SetBounds(15,125,160,19);
+  asLabel->SetBounds(15,150,160,19);
   panel4->Add(asLabel);
 
   autoSaveText = new GLTextField(0,"");
-  autoSaveText->SetBounds(170,125,30,19);
+  autoSaveText->SetBounds(170,150,30,19);
   panel4->Add(autoSaveText);
 
   chkSimuOnly = new GLToggle(0,"Autosave only when simulation is running");
-  chkSimuOnly->SetBounds(10,150,160,19);
+  chkSimuOnly->SetBounds(10,175,160,19);
   panel4->Add(chkSimuOnly);
 
   chkCheckForUpdates = new GLToggle(0,"Check for updates at startup");
-  chkCheckForUpdates->SetBounds(315,125,160,19);
+  chkCheckForUpdates->SetBounds(315,150,160,19);
   Add(chkCheckForUpdates);
 
   chkAutoUpdateFormulas = new GLToggle(0,"Auto update formulas");
-  chkAutoUpdateFormulas->SetBounds(315,150,160,19);
+  chkAutoUpdateFormulas->SetBounds(315,175,160,19);
   Add(chkAutoUpdateFormulas);
 
   chkCompressSavedFiles = new GLToggle(0,"Compress saved files (use .GEO7Z format)");
-  chkCompressSavedFiles->SetBounds(10,175,100,19);
+  chkCompressSavedFiles->SetBounds(10,200,100,19);
   Add(chkCompressSavedFiles);
 
   /*chkNonIsothermal = new GLToggle(0,"Non-isothermal system (textures only, experimental)");
@@ -114,7 +122,7 @@ GlobalSettings::GlobalSettings():GLWindow() {
   Add(chkNonIsothermal);*/
 
   GLTitledPanel *panel3 = new GLTitledPanel("Subprocess control");
-  panel3->SetBounds(5,205,wD-10,hD-250);
+  panel3->SetBounds(5,230,wD-10,hD-275);
   Add(panel3);
 
 
@@ -125,7 +133,7 @@ GlobalSettings::GlobalSettings():GLWindow() {
   processList->SetColumnLabels((char **)plName);
   processList->SetColumnAligns((int *)plAligns);
   processList->SetColumnLabelVisible(TRUE);
-  processList->SetBounds(10,220,wD-20,hD-330);
+  processList->SetBounds(10,245,wD-20,hD-355);
   panel3->Add(processList);
 
 	char tmp[128];
@@ -187,6 +195,8 @@ void GlobalSettings::Display(Worker *w) {
 	UpdateOutgassing();
 	sprintf(tmp,"%g",worker->gasMass);
 	gasmassText->SetText(tmp);
+	sprintf(tmp, "%g", worker->halfLife);
+	halfLifeText->SetText(tmp);
 	sprintf(tmp,"%g",mApp->autoSaveFrequency);
 	autoSaveText->SetText(tmp);
 	chkSimuOnly->SetCheck(mApp->autoSaveSimuOnly);
@@ -342,7 +352,7 @@ void GlobalSettings::ProcessMessage(GLComponent *src,int message) {
 		*/
 		double gm;
 		 if( !gasmassText->GetNumber(&gm) || !(gm>0.0) ) {
-			 GLMessageBox::Display("Invalid gas mass value","Error",GLDLG_OK,GLDLG_ICONERROR);
+			 GLMessageBox::Display("Invalid gas mass","Error",GLDLG_OK,GLDLG_ICONERROR);
 			 return;
 		 } 
 		if (abs(gm-worker->gasMass)>1e-7) {
@@ -361,6 +371,19 @@ void GlobalSettings::ProcessMessage(GLComponent *src,int message) {
 				}
 			}
 		}
+
+		double hl;
+		if (!halfLifeText->GetNumber(&hl) || !(hl>0.0)) {
+			GLMessageBox::Display("Invalid half life", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			return;
+		}
+		if (abs(hl - worker->halfLife)>1e-7) {
+			if (mApp->AskToReset()) {
+				worker->needsReload = TRUE;
+				worker->halfLife = hl;
+			}
+		}
+
 		if( !autoSaveText->GetNumber(&mApp->autoSaveFrequency) || !(mApp->autoSaveFrequency>0.0) ) {
         GLMessageBox::Display("Invalid autosave frequency","Error",GLDLG_OK,GLDLG_ICONERROR);
         return;
@@ -383,7 +406,7 @@ void GlobalSettings::UpdateOutgassing() {
 	char tmp[128];
 	sprintf(tmp, "%g", worker->gasMass);
 	gasmassText->SetText(tmp);
-	sprintf(tmp, "%g", worker->finalOutgassingRate * 10.00); //10: conversion Pa*m3/sec -> mbar*l/s
+	sprintf(tmp, "%g", worker->finalOutgassingRate_Pa_m3_sec * 10.00); //10: conversion Pa*m3/sec -> mbar*l/s
 	outgassingText->SetText(tmp);
 	sprintf(tmp, "%.3E", worker->totalDesorbedMolecules);
 	influxText->SetText(tmp);

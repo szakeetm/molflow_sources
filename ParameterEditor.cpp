@@ -332,8 +332,8 @@ BOOL ParameterEditor::ValidateInput() {
 		return FALSE;
 	}
 
-	for (int i = 0; i < tempParam.values.size();i++) {
-		for (int j = i+1; j < tempParam.values.size(); j++) {
+	for (size_t i = 0; i < tempParam.values.size();i++) {
+		for (size_t j = i+1; j < tempParam.values.size(); j++) {
 			if (abs(tempParam.values[i].first - tempParam.values[j].first) < 1E-8) {
 				std::stringstream msg;
 				msg << "There are two values for t=" << tempParam.values[i].first << "s.";

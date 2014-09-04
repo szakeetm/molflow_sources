@@ -65,7 +65,7 @@ private:
   GLTextField *outgassingText;
   GLTextField *influxText;
   GLTextField *gasmassText;
-
+  GLTextField *halfLifeText;
 };
 
 #endif /* _GLOBALSETTINGSH_ */

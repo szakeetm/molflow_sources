@@ -375,15 +375,17 @@ BOOL SimulationMCStep(int nbStep) {
 			sHandle->distTraveledCurrentParticle += d;
 			sHandle->flightTimeCurrentParticle += d / 100.0 / sHandle->velocityCurrentParticle; //conversion from cm to m
 
-			if (!sHandle->calcConstantFlow && sHandle->flightTimeCurrentParticle > sHandle->latestMoment) {
+			if ((!sHandle->calcConstantFlow && sHandle->flightTimeCurrentParticle > sHandle->latestMoment)
+				|| sHandle->lifeTimeCurrentParticle<sHandle->flightTimeCurrentParticle) {
 				//hit time over the measured period - we create a new particle
+				//OR particle has decayed
 				RecordHit(LASTHIT);
 				sHandle->distTraveledSinceUpdate += sHandle->distTraveledCurrentParticle;
 				if (!StartFromSource())
 					// maxDesorption reached
 					return FALSE;
 			}
-			else { //hit within measured time
+			else { //hit within measured time, particle still alive
 				if (collidedFacet->sh.teleportDest) {
 					PerformTeleport(collidedFacet);
 				}
@@ -490,8 +492,13 @@ BOOL StartFromSource() {
 	//sHandle->flightTimeCurrentParticle = sHandle->desorptionStartTime + (sHandle->desorptionStopTime - sHandle->desorptionStartTime)*rnd();
 	sHandle->flightTimeCurrentParticle=GenerateDesorptionTime(src);
 	if (sHandle->useMaxwellDistribution) sHandle->velocityCurrentParticle = GenerateRandomVelocity(src->sh.CDFid);
-
 	else sHandle->velocityCurrentParticle = 145.469*sqrt(src->sh.temperature / sHandle->gasMass);  //sqrt(8*R/PI/1000)=145.47
+	if (sHandle->halfLife < 9e99) { //decaying gas
+		sHandle->lifeTimeCurrentParticle = pow(sHandle->halfLife, 2)*-log(rnd());
+	}
+	else {
+		sHandle->lifeTimeCurrentParticle = 1e100;
+	}
 	//sHandle->temperature = src->sh.temperature; //Thermalize particle
 
 	found = FALSE;
@@ -786,16 +793,15 @@ void ProfileFacet(FACET *f, double time, BOOL countHit, double velocity_factor, 
 	}
 }
 
-
 void UpdateVelocity(FACET *collidedFacet) {
 	//thermalize perfectly
-	double oldSpeed = sHandle->velocityCurrentParticle;
-	double newSpeed;
-	if (sHandle->useMaxwellDistribution) newSpeed = GenerateRandomVelocity(collidedFacet->sh.CDFid);
-	else newSpeed = /*145.469*/ 171.3766*sqrt(collidedFacet->sh.temperature / sHandle->gasMass);
-	//171.3766= sqrt(8*R*1000/PI)*3PI/8, that is, the constant part of the v_avg=sqrt(8RT/PI/m/0.001)) found in literature, multiplied by
+	double oldSpeed2 = pow(sHandle->velocityCurrentParticle,2);
+	double newSpeed2;
+	if (sHandle->useMaxwellDistribution) newSpeed2 = pow(GenerateRandomVelocity(collidedFacet->sh.CDFid),2);
+	else newSpeed2 = /*145.469*/ 29369.939*(collidedFacet->sh.temperature / sHandle->gasMass);
+	//sqrt(29369)=171.3766= sqrt(8*R*1000/PI)*3PI/8, that is, the constant part of the v_avg=sqrt(8RT/PI/m/0.001)) found in literature, multiplied by
 	//the corrective factor of 3PI/8 that accounts for moving from volumetric speed distribution to wall collision speed distribution
-	sHandle->velocityCurrentParticle = oldSpeed + (newSpeed - oldSpeed)*collidedFacet->sh.accomodationFactor;
+	sHandle->velocityCurrentParticle = sqrt(oldSpeed2 + (newSpeed2 - oldSpeed2)*collidedFacet->sh.accomodationFactor);
 }
 
 double GenerateRandomVelocity(int CDFId){

@@ -538,6 +538,7 @@ void Geometry::CopyGeometryBuffer(BYTE *buffer) {
 	sh.totalDesorbedMolecules=w->totalDesorbedMolecules;
 	sh.finalOutgassingRate=w->finalOutgassingRate;
 	sh.gasMass=w->gasMass;
+	sh.halfLife = w->halfLife;
 	sh.timeWindowSize=w->timeWindowSize;
 	sh.useMaxwellDistribution=w->useMaxwellDistribution;
 	sh.calcConstantFlow=w->calcConstantFlow;
@@ -1283,6 +1284,7 @@ void  Geometry::BuildPipe(double L, double R, double s, int step) {
 	sh.nbVertex = 2 * step + nbTV;
 	if (!(vertices3 = (VERTEX3D *)malloc(sh.nbVertex * sizeof(VERTEX3D))))
 		throw Error("Couldn't allocate memory for vertices");
+	memset(vertices3, 0, sh.nbVertex * sizeof(VERTEX3D));
 
 	sh.nbFacet = step + 2 + nbTF;
 	sh.nbSuper = 1;
@@ -1604,7 +1606,7 @@ void Geometry::LoadSTL(FileReader *file, GLProgress *prg, double scaleFactor) {
 		try {
 			facets[i] = new Facet(3);
 		}
-		catch (std::bad_alloc& ba) {
+		catch (std::bad_alloc& badalloc) {
 			
 			throw Error("Out of memory");
 
@@ -4081,6 +4083,7 @@ void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress
 	xml_node simuParamNode = saveDoc.append_child("MolflowSimuSettings");
 
 	simuParamNode.append_child("Gas").append_attribute("mass") = work->gasMass;
+	simuParamNode.child("Gas").append_attribute("halfLife") = work->halfLife;
 
 	xml_node timeSettingsNode = simuParamNode.append_child("TimeSettings");
 
@@ -4369,6 +4372,7 @@ void Geometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *pr
 	//Gas Mass
 	xml_node simuParamNode = loadXML.child("MolflowSimuSettings");
 	work->gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
+	work->halfLife = simuParamNode.child("Gas").attribute("halfLife").as_double();
 
 	xml_node timeSettingsNode = simuParamNode.child("TimeSettings");
 
@@ -4427,14 +4431,11 @@ BOOL Geometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker
 			xml_node globalNode = newMoment.child("Global");
 
 			xml_node hitsNode = globalNode.child("Hits");
-			
-			
-			gHits->total.hit.nbHit = hitsNode.attribute("totalHit").as_llong();
-			gHits->total.hit.nbDesorbed = hitsNode.attribute("totalDes").as_llong();
-			gHits->total.hit.nbAbsorbed = hitsNode.attribute("totalAbs").as_llong();
-			gHits->distTraveledTotal = hitsNode.attribute("totalDist").as_double();
-			gHits->nbLeakTotal = hitsNode.attribute("totalLeak").as_llong();
-			//load max desorption?
+			work->nbHit = hitsNode.attribute("totalHit").as_llong();
+			work->nbDesorption = hitsNode.attribute("totalDes").as_llong();
+			work->nbAbsorption = hitsNode.attribute("totalAbs").as_llong();
+			work->distTraveledTotal = hitsNode.attribute("totalDist").as_double();
+			work->nbLeakTotal = hitsNode.attribute("totalLeak").as_llong();
 			//work->maxDesorption=hitsNode.attribute("maxDesorption").as_llong();
 			
 			HIT pHits[NBHHIT]; //hits temp storage for loading

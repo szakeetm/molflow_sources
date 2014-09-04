@@ -126,6 +126,7 @@ typedef struct {
   double totalDesorbedMolecules;  // Number of desorbed molecules from t=0 to latest_moment
   double finalOutgassingRate;     // Outgassing rate at latest_moment (for const. flow calculation)
   double gasMass;
+  double halfLife;
   double timeWindowSize;
   BOOL useMaxwellDistribution; //TRUE: Maxwell-Boltzmann distribution, FALSE: All molecules have the same (V_avg) speed
   BOOL calcConstantFlow;
@@ -167,6 +168,7 @@ typedef struct {
   double   distTraveledSinceUpdate;
   double   velocityCurrentParticle;
   double   flightTimeCurrentParticle;
+  double   lifeTimeCurrentParticle; //for radioactive gases
   //double   temperature;  //Temeperature of the particle (=temp. of last facet hit)
 
   // Angular coefficient (opaque facets)

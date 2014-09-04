@@ -16,6 +16,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 */
 
+#include <Windows.h>
 #include "Worker.h"
 #include "GLApp/GLApp.h"
 #include "GLApp/GLMessageBox.h"
@@ -60,7 +61,8 @@ Worker::Worker() {
 	//valveOpenMoment=99999.0;
 	distTraveledTotal = 0.0;
 	gasMass = 28.0;
-	finalOutgassingRate = totalDesorbedMolecules = 0;
+	halfLife = 1e100;
+	finalOutgassingRate = finalOutgassingRate_Pa_m3_sec = totalDesorbedMolecules = 0.0;
 
 	pid = _getpid();
 	sprintf(ctrlDpName, "MFLWCTRL%d", pid);
@@ -283,11 +285,12 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 							
 
 							if (isXMLzip) {
+								//mApp->compressProcessHandle=CreateThread(0, 0, ZipThreadProc, 0, 0, 0);
 								HZIP hz = CreateZip(fileNameWithXMLzip, 0);
 								if (!hz) {
 									throw Error("Error creating ZIP file");
 								}
-								if (!ZipAdd(hz, GetShortFileName(fileNameWithXML),fileNameWithXML)) remove(fileNameWithXML);
+								if (!ZipAdd(hz, GetShortFileName(fileNameWithXML), fileNameWithXML)) remove(fileNameWithXML);
 								else {
 									CloseZip(hz);
 									throw Error("Error compressing ZIP file.");
@@ -628,6 +631,7 @@ void Worker::LoadGeometry(char *fileName) {
 						notFoundYet = FALSE;
 						std::string tmpFileName = "tmp/" + fileName;
 						UnzipItem(hz, i, tmpFileName.c_str()); //unzip it to tmp directory
+						CloseZip(hz);
 						progressDlg->SetMessage("Reading and parsing XML file...");
 						parseResult= loadXML.load_file(tmpFileName.c_str()); //parse it
 					}
@@ -660,6 +664,7 @@ void Worker::LoadGeometry(char *fileName) {
 			try {
 				geom->LoadXML_simustate(loadXML, dpHit, this, progressDlg);
 				RebuildTextures();
+				SendHits();
 			}
 			catch (Error &e) {
 				GLMessageBox::Display(e.GetMsg(), "Error while loading simulation state", GLDLG_CANCEL, GLDLG_ICONWARNING);
@@ -1991,8 +1996,7 @@ int Worker::GetIDId(int paramId) {
 
 void Worker::CalcTotalOutgassing() {
 	// Compute the outgassing of all source facet
-	totalDesorbedMolecules = 0.0;
-	finalOutgassingRate = 0.0;
+	totalDesorbedMolecules = finalOutgassingRate_Pa_m3_sec = finalOutgassingRate = 0.0;
 	Geometry *g = GetGeometry();
 
 
@@ -2003,21 +2007,24 @@ void Worker::CalcTotalOutgassing() {
 				for (int l = 0; l < (f->sh.outgassingMapWidth*f->sh.outgassingMapHeight); l++) {
 					totalDesorbedMolecules += latestMoment * f->outgassingMap[l] / (1.38E-23*f->sh.temperature);
 					finalOutgassingRate += f->outgassingMap[l] / (1.38E-23*f->sh.temperature);
+					finalOutgassingRate_Pa_m3_sec += f->outgassingMap[l];
 				}
 			}
 			else { //regular outgassing
 				if (f->sh.outgassing_paramId == -1) { //constant outgassing
 					totalDesorbedMolecules += latestMoment * f->sh.flow / (1.38E-23*f->sh.temperature);
 					finalOutgassingRate += f->sh.flow / (1.38E-23*f->sh.temperature);  //Outgassing molecules/sec
+					finalOutgassingRate_Pa_m3_sec += f->sh.flow;
 				}
 				else { //time-dependent outgassing
 					totalDesorbedMolecules += IDs[f->sh.IDid].back().second / (1.38E-23*f->sh.temperature);
 					finalOutgassingRate += parameters[f->sh.outgassing_paramId].values.back().second *0.100 / (1.38E-23*f->sh.temperature); //0.1: mbar*l/s->Pa*m3/s
+					finalOutgassingRate_Pa_m3_sec += parameters[f->sh.outgassing_paramId].values.back().second *0.100;
 				}
 			}
 		}
 	}
-
+	if (mApp->globalSettings) mApp->globalSettings->UpdateOutgassing();
 }
 
 
@@ -2129,3 +2136,19 @@ void Worker::RebuildTextures() {
 		ReleaseDataport(dpHit);
 	}
 }
+
+
+/*DWORD Worker::ZipThreadProc(char* fileNameWithXML, char* fileNameWithXMLzip)
+{
+	HZIP hz = CreateZip(fileNameWithXMLzip, 0);
+	if (!hz) {
+		throw Error("Error creating ZIP file");
+	}
+	if (!ZipAdd(hz, GetShortFileName(fileNameWithXML), fileNameWithXML)) remove(fileNameWithXML);
+	else {
+		CloseZip(hz);
+		throw Error("Error compressing ZIP file.");
+	}
+	CloseZip(hz);
+	return 0;
+}*/

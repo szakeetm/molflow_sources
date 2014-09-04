@@ -47,6 +47,7 @@ FormulaSettings::FormulaSettings():GLWindow() {
     "AC Variables: _An (Absorption on facet n), _Dn (Desorption on facet n), _Hn (Density on facet n)\n\n"
     "Area variables: ARn (Area of facet n), DESAR (total desorption area), ABSAR (total absorption area)\n\n"
 	"Final (constant) outgassing rate [mbar*l/s]: QCONST\n"
+	"Final (constant) outgassing rate [molecules/s]: QCONST_N\n"
 	"Total desorbed molecules until last moment: [molecules]: NTOT\n\n"
 	"Mean Pumping Path: MPP (average path of molecules in the system before absorption)\n"
 	"Mean Free Path:      MFP (average path of molecules between two wall hits)\n\n"

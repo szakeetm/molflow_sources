@@ -35,7 +35,7 @@ GNU General Public License for more details.
 #define APP_NAME "MolFlow+ development version (Compiled "__DATE__" "__TIME__") DEBUG MODE"
 #else
 //#define APP_NAME "Molflow+ development version ("__DATE__")"
-#define APP_NAME "Molflow+ 2.5.5 beta ("__DATE__")"
+#define APP_NAME "Molflow+ 2.6 ("__DATE__")"
 #endif
 
 /*
@@ -1269,51 +1269,42 @@ void MolFlow::ApplyFacetParams() {
 	BOOL doFlow = FALSE;
 	BOOL outgassingNotNumber;
 	//Calculate flow
-	if( facetFlow->GetNumber(&flow) ) {
-		if( !facetFILabel->IsChecked() || strcmp(facetFlow->GetText(),"..." )==0 || facetDesType->GetSelectedIndex()==0 ||  strcmp(facetDesType->GetSelectedValue(),"..." )==0) doFlow = FALSE;
-		else{
-			if( !(flow>0.0) && !(facetUseDesFile->GetSelectedIndex()==1)) {
-				GLMessageBox::Display("Outgassing must be positive","Error",GLDLG_OK,GLDLG_ICONERROR);
+	if (facetFILabel->IsChecked() && strcmp(facetFlow->GetText(), "...") != 0 && facetDesType->GetSelectedIndex() != 0
+		&& strcmp(facetDesType->GetSelectedValue(), "...") != 0) {  //We want outgassing
+		if (facetFlow->GetNumber(&flow)) { //If we can parse the number
+			if (!(flow > 0.0) && !(facetUseDesFile->GetSelectedIndex() == 1)) {
+				GLMessageBox::Display("Outgassing must be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				UpdateFacetParams();
 				return;
 			}
 			doFlow = TRUE;
 			outgassingNotNumber = FALSE;
 		}
-	} else {
-		if( strcmp(facetFlow->GetText(),"..." )==0 || facetDesType->GetSelectedIndex()==0 ) doFlow = FALSE;
-		else {
-			/*GLMessageBox::Display("Invalid outgassing number","Error",GLDLG_OK,GLDLG_ICONERROR);
-			UpdateFacetParams();
-			return;*/
+		else { //could not parse as number
 			doFlow = TRUE;
 			outgassingNotNumber = TRUE;
 		}
-
 	}
+
 
 	// Outgassing per area
 	double flowA=0;
 	BOOL doFlowA = FALSE;
 	//Calculate flow
-	if( facetFlowArea->GetNumber(&flowA) ) {
-		if( !facetFIAreaLabel->IsChecked() || strcmp(facetFlowArea->GetText(),"..." )==0 || facetDesType->GetSelectedIndex()==0 ||  strcmp(facetDesType->GetSelectedValue(),"..." )==0) doFlowA = FALSE;
-		else{
+	if( facetFIAreaLabel->IsChecked() && strcmp(facetFlowArea->GetText(),"..." )!=0
+		&& facetDesType->GetSelectedIndex()!=0 && strcmp(facetDesType->GetSelectedValue(),"..." )!=0) { //We want outgassing per area
+		if (facetFlowArea->GetNumber(&flowA)) { //Can be parsed as number
 			if( !(flowA>0.0) ) {
 				GLMessageBox::Display("Outgassing per area must be positive","Error",GLDLG_OK,GLDLG_ICONERROR);
 				UpdateFacetParams();
 				return;
 			}
 			doFlowA = TRUE;
-		}
-	} else {
-		if( strcmp(facetFlowArea->GetText(),"..." )==0 || facetDesType->GetSelectedIndex()==0 ) doFlowA = FALSE;
-		else {
+		} else {
 			GLMessageBox::Display("Invalid outgassing per area number","Error",GLDLG_OK,GLDLG_ICONERROR);
 			UpdateFacetParams();
 			return;
 		}
-
 	}
 
 	// Use desorption map
@@ -1356,7 +1347,7 @@ void MolFlow::ApplyFacetParams() {
 	}
 
 
-	// Super structure destination
+	// Super structure destination (link)
 	int superDest;
 	BOOL doSuper = FALSE;
 	if( strcmp(facetSuperDest->GetText(),"none")==0 || strcmp(facetSuperDest->GetText(),"no")==0 || strcmp(facetSuperDest->GetText(),"0")==0 ) {
@@ -1878,8 +1869,10 @@ void MolFlow::UpdateFormula() {
 				}
 				v->value = sumArea;
 			} else if( _stricmp(v->name,"QCONST")==0 ) {
-				v->value = worker.finalOutgassingRate*10.00; //10: Pa*m3/sec -> mbar*l/s
-			} else if( _stricmp(v->name,"NTOT")==0 ) {
+				v->value = worker.finalOutgassingRate_Pa_m3_sec*10.00; //10: Pa*m3/sec -> mbar*l/s
+			} else if (_stricmp(v->name, "QCONST_N") == 0) {
+				v->value = worker.finalOutgassingRate;
+			} else if (_stricmp(v->name, "NTOT") == 0) {
 				v->value = worker.totalDesorbedMolecules;
 			}else if( _stricmp(v->name,"KB")==0 ) {
 				v->value = 1.3806504e-23;
@@ -4010,15 +4003,7 @@ void MolFlow::ProcessMessage(GLComponent *src,int message)
 			facetApplyBtn->SetEnabled(TRUE);
 		} else if ( src == modeCombo ) {
 
-
-
-
-
 			compACBtn->SetEnabled(modeCombo->GetSelectedIndex()==1);
-
-
-
-
 
 			singleACBtn->SetEnabled(modeCombo->GetSelectedIndex()==1);
 			UpdateFacetHits();
