@@ -169,7 +169,7 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 	ext = strrchr(fileName, '.');
 
 	if (!(ext) || !(*ext == '.') || ((dir) && (dir > ext))) {
-		sprintf(fileName, mApp->compressSavedFiles ? "%s.geo7z" : "%s.geo", fileName); //set to default GEO/GEO7Z format
+		sprintf(fileName, mApp->compressSavedFiles ? "%s.zip" : "%s.xml", fileName); //set to default XML/ZIP format
 		ext = strrchr(fileName, '.');
 	}
 
@@ -277,6 +277,7 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 							BOOL success = geom->SaveXML_simustate(saveDoc, this, buffer, gHits, nbLeakSave, nbHHitSave, pLeak, pHits, prg, saveSelected);
 							ReleaseDataport(dpHit);
 							
+							prg->SetMessage("Writing xml file...");
 							if (success) {
 								if (!saveDoc.save_file(fileNameWithXML)) throw Error("Error writing XML file."); //successful save
 							} else {
@@ -285,6 +286,7 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 							
 
 							if (isXMLzip) {
+								prg->SetMessage("Compressing xml to zip...");
 								//mApp->compressProcessHandle=CreateThread(0, 0, ZipThreadProc, 0, 0, 0);
 								HZIP hz = CreateZip(fileNameWithXMLzip, 0);
 								if (!hz) {
@@ -308,8 +310,7 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 			}
 			if (!autoSave && !saveSelected) {
 				strcpy(fullFileName, fileName);
-				remove("Molflow_AutoSave.geo");
-				remove("Molflow_AutoSave.geo7z");
+				remove("Molflow_AutoSave.zip");
 			}
 		}
 	}
@@ -663,8 +664,8 @@ void Worker::LoadGeometry(char *fileName) {
 			progressDlg->SetMessage("Restoring simulation state...");
 			try {
 				geom->LoadXML_simustate(loadXML, dpHit, this, progressDlg);
-				RebuildTextures();
-				SendHits();
+				SendHits(TRUE); //Send hits without resetting simu state
+				RebuildTextures();				
 			}
 			catch (Error &e) {
 				GLMessageBox::Display(e.GetMsg(), "Error while loading simulation state", GLDLG_CANCEL, GLDLG_ICONWARNING);
@@ -705,7 +706,8 @@ void Worker::LoadGeometry(char *fileName) {
 		throw Error("LoadGeometry(): Invalid file extension [Only txt,geo,geo7z,ase,stl or str]");
 
 	}
-	geom->CalcTotalOutGassing();
+	//geom->CalcTotalOutGassing();
+	CalcTotalOutgassing();
 	if (mApp->momentsEditor) mApp->momentsEditor->Refresh();
 	if (mApp->parameterEditor) mApp->parameterEditor->UpdateCombo();
 	if (mApp->timeSettings) mApp->timeSettings->RefreshMoments();
@@ -742,6 +744,8 @@ void Worker::InsertGeometry(BOOL newStr, char *fileName) {
 	progressDlg->SetVisible(TRUE);
 	BOOL isGEO7Z = (_stricmp(ext, "geo7z") == 0);
 	BOOL isSYN7Z = (_stricmp(ext, "syn7z") == 0);
+	BOOL isXML = (_stricmp(ext, "xml") == 0);
+	BOOL isXMLzip = (_stricmp(ext, "zip") == 0);
 
 	if (_stricmp(ext, "txt") == 0) {
 
@@ -903,6 +907,66 @@ void Worker::InsertGeometry(BOOL newStr, char *fileName) {
 			SAFE_DELETE(progressDlg);
 			throw e;
 		}
+	}
+	else if (isXML || isXMLzip) {
+		xml_document loadXML;
+		xml_parse_result parseResult;
+		progressDlg->SetVisible(TRUE);
+		try {
+			if (isXMLzip) {
+				//decompress file
+				progressDlg->SetMessage("Decompressing file...");
+
+				HZIP hz = OpenZip(fileName, 0);
+				if (!hz) {
+					throw Error("Can't open ZIP file");
+				}
+				ZIPENTRY ze; GetZipItem(hz, -1, &ze); int numitems = ze.index;
+				BOOL notFoundYet = TRUE;
+				for (int i = 0; i < numitems && notFoundYet; i++) { //extract first XML file found in ZIP archive
+					GetZipItem(hz, i, &ze);
+					std::string fileName = ze.name;
+					if (fileName.length() >= 4 && !fileName.substr(fileName.length() - 4, 4).compare(".xml")) { //if it's an .xml file
+						notFoundYet = FALSE;
+						std::string tmpFileName = "tmp/" + fileName;
+						UnzipItem(hz, i, tmpFileName.c_str()); //unzip it to tmp directory
+						CloseZip(hz);
+						progressDlg->SetMessage("Reading and parsing XML file...");
+						parseResult = loadXML.load_file(tmpFileName.c_str()); //parse it
+					}
+				}
+				if (notFoundYet) {
+					throw Error("No XML file in the ZIP file.");
+				}
+			}
+			ResetWorkerStats();
+			progressDlg->SetMessage("Reading and parsing XML file...");
+			if (!isXMLzip) parseResult = loadXML.load_file(fileName); //parse it
+			if (!parseResult) {
+				//Parse error
+				std::stringstream err;
+				err << "XML parsed with errors.\n";
+				err << "Error description: " << parseResult.description() << "\n";
+				err << "Error offset: " << parseResult.offset << "\n";
+				throw Error(err.str().c_str());
+			}
+
+			progressDlg->SetMessage("Building geometry...");
+			geom->InsertXML(loadXML, this, progressDlg, newStr);
+			mApp->changedSinceSave = TRUE;
+			nbHit = 0;
+			nbDesorption = 0;
+			maxDesorption = 0;
+			nbLeakTotal = 0;
+			Reload();
+		}
+		catch (Error &e) {
+			//geom->Clear();
+			progressDlg->SetVisible(FALSE);
+			SAFE_DELETE(progressDlg);
+			throw e;
+		}
+
 	}
 	else if (_stricmp(ext, "ase") == 0) {
 		throw Error("ASE file inserting is not supported.");
@@ -1193,14 +1257,14 @@ void Worker::Update(float appTime) {
 
 // -------------------------------------------------------------
 
-void Worker::SendHits() {
+void Worker::SendHits(BOOL noReset) {
 	//if (!needsReload) {
 	if (dpHit) {
 		if (AccessDataport(dpHit)) {
 
 			// Store initial hit counts in the shared memory
 			BYTE *pBuff = (BYTE *)dpHit->buff;
-			memset(pBuff, 0, geom->GetHitsSize(&moments));
+			if (!noReset) memset(pBuff, 0, geom->GetHitsSize(&moments));
 
 			SHGHITS *gHits = (SHGHITS *)pBuff;
 			gHits->total.hit.nbHit = nbHit;

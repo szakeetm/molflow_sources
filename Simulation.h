@@ -168,7 +168,7 @@ typedef struct {
   double   distTraveledSinceUpdate;
   double   velocityCurrentParticle;
   double   flightTimeCurrentParticle;
-  double   lifeTimeCurrentParticle; //for radioactive gases
+  double   particleDecayMoment; //for radioactive gases
   //double   temperature;  //Temeperature of the particle (=temp. of last facet hit)
 
   // Angular coefficient (opaque facets)

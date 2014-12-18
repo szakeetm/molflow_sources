@@ -113,7 +113,7 @@ GlobalSettings::GlobalSettings():GLWindow() {
   chkAutoUpdateFormulas->SetBounds(315,175,160,19);
   Add(chkAutoUpdateFormulas);
 
-  chkCompressSavedFiles = new GLToggle(0,"Compress saved files (use .GEO7Z format)");
+  chkCompressSavedFiles = new GLToggle(0,"Compress saved files (use ZIP format)");
   chkCompressSavedFiles->SetBounds(10,200,100,19);
   Add(chkCompressSavedFiles);
 

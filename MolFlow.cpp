@@ -35,7 +35,7 @@ GNU General Public License for more details.
 #define APP_NAME "MolFlow+ development version (Compiled "__DATE__" "__TIME__") DEBUG MODE"
 #else
 //#define APP_NAME "Molflow+ development version ("__DATE__")"
-#define APP_NAME "Molflow+ 2.6 ("__DATE__")"
+#define APP_NAME "Molflow+ 2.6.1.3 ("__DATE__")"
 #endif
 
 /*
@@ -744,10 +744,10 @@ int MolFlow::OneTimeSceneInit()
 	facetRLabel = new GLLabel("Reflection:");
 	facetPanel->Add(facetRLabel);
 	facetReflType = new GLCombo(0);
-	facetReflType->SetSize(2);
+	facetReflType->SetSize(3);
 	facetReflType->SetValueAt(0,"Diffuse");
-
 	facetReflType->SetValueAt(1,"Specular");
+	facetReflType->SetValueAt(2,"Uniform");
 
 	facetPanel->Add(facetReflType);
 
@@ -2038,16 +2038,17 @@ BOOL MolFlow::AutoSave(BOOL crashSave) {
 	char CWD [MAX_PATH];
 	_getcwd( CWD, MAX_PATH );
 	char filename[1024];
-	sprintf(filename,"%s\\Molflow_AutoSave.geo7z",CWD);
+	sprintf(filename,"%s\\Molflow_AutoSave.zip",CWD);
 	try {
-		ResetAutoSaveTimer();
 		worker.SaveGeometry(filename,progressDlg2,FALSE,FALSE,TRUE,crashSave);
+		ResetAutoSaveTimer(); //deduct saving time from interval
 	} catch (Error &e) {
 		char errMsg[512];
 		sprintf(errMsg,"%s\nFile:%s",e.GetMsg(),worker.GetFileName());
 		GLMessageBox::Display(errMsg,"Error",GLDLG_OK,GLDLG_ICONERROR);
 		progressDlg2->SetVisible(FALSE);
 		SAFE_DELETE(progressDlg2);
+		ResetAutoSaveTimer();
 		return FALSE;
 	}
 	//lastSaveTime=(worker.simuTime+(m_fTime-worker.startTime));
@@ -2061,7 +2062,7 @@ void MolFlow::CheckForRecovery() {
 	char CWD [MAX_PATH];
 	_getcwd( CWD, MAX_PATH );
 	char filename[1024];
-	sprintf(filename,"%s\\Molflow_AutoSave.geo7z",CWD);
+	sprintf(filename,"%s\\Molflow_AutoSave.zip",CWD);
 	if (FileUtils::Exist(filename)) {
 		int rep = GLMessageBox::Display("Autosave file found. Load it now?\nIf you click CANCEL the file will be discarded.","Autosave recovery",GLDLG_OK|GLDLG_CANCEL,GLDLG_ICONWARNING);
 		if( rep == GLDLG_OK ) {
@@ -2070,7 +2071,7 @@ void MolFlow::CheckForRecovery() {
 		}
 		return;
 	}
-	sprintf(filename,"%s\\Molflow_AutoSave.geo",CWD);
+	sprintf(filename,"%s\\Molflow_AutoSave.xml",CWD);
 	if (FileUtils::Exist(filename)) {
 		int rep = GLMessageBox::Display("Autosave file found. Load it now?\nIf you click CANCEL the file will be discarded.","Autosave recovery",GLDLG_OK|GLDLG_CANCEL,GLDLG_ICONWARNING);
 		if( rep == GLDLG_OK ) {
@@ -4374,8 +4375,8 @@ void MolFlow::BuildPipe(double ratio,int steps) {
 	}
 	worker.nbDesorption = 0;
 	worker.needsReload = TRUE;
-	sprintf(tmp,"L|R %g",L/R);
-	//worker.SetFileName(tmp);
+	//sprintf(tmp,"L|R %g",L/R);
+	worker.SetFileName("");
 	nbDesStart = 0;
 	nbHitStart = 0;
 	for(int i=0;i<MAX_VIEWER;i++)

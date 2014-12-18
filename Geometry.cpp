@@ -575,7 +575,7 @@ void Geometry::CopyGeometryBuffer(BYTE *buffer) {
 
 				for (int j = 0; j < f->sh.texHeight; j++) {
 					for (int i = 0; i<f->sh.texWidth; i++) {
-						double area = f->mesh[add].area;
+						double area = f->mesh[add].area*(f->sh.is2sided?2.0:1.0);
 						if (area>0.0) {
 							// Use the sign bit to store isFull flag
 							if (f->mesh[add].full)
@@ -4007,9 +4007,10 @@ void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress
 	
 	xml_node geomNode = saveDoc.append_child("Geometry");
 
+	prg->SetMessage("Writing vertices...");
 	geomNode.append_child("Vertices").append_attribute("nb") = sh.nbVertex; //creates Vertices node, adds nb attribute and sets its value to sh.nbVertex
 	for (int i = 0; i < sh.nbVertex; i++) {
-		prg->SetProgress(0.33*((double)i / (double)sh.nbVertex));
+		prg->SetProgress(0.166*((double)i / (double)sh.nbVertex));
 		xml_node v = geomNode.child("Vertices").append_child("Vertex");
 		v.append_attribute("id")= i;
 		v.append_attribute("x")= vertices3[i].x;
@@ -4017,10 +4018,11 @@ void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress
 		v.append_attribute("z")= vertices3[i].z;
 	}
 
+	prg->SetMessage("Writing facets...");
 	geomNode.append_child("Facets");
 	geomNode.child("Facets").append_attribute("nb")= sh.nbFacet;
 	for (int i = 0, k = 0; i < sh.nbFacet; i++) {
-		prg->SetProgress(0.33 + ((double)i / (double)sh.nbFacet) *0.33);
+		prg->SetProgress(0.166 + ((double)i / (double)sh.nbFacet) *0.166);
 		if (!saveSelected || facets[i]->selected) {
 			xml_node f = geomNode.child("Facets").append_child("Facet");
 			f.append_attribute("id") = i;
@@ -4028,6 +4030,7 @@ void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress
 		}
 	}
 
+	prg->SetMessage("Writing model details...");
 	geomNode.append_child("Structures").append_attribute("nb") = sh.nbSuper;
 	for (int i = 0, k = 0; i < sh.nbSuper; i++) {
 		xml_node s=geomNode.child("Structures").append_child("Structure");
@@ -4118,10 +4121,11 @@ void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress
 BOOL Geometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, SHGHITS *gHits, int nbLeakSave, int nbHHitSave,
 	LEAK *pLeak, HIT *pHits, GLProgress *prg, BOOL saveSelected){
 	xml_node resultNode=saveDoc.append_child("MolflowResults");
-	
+	prg->SetMessage("Writing simulation results...");
 	xml_node momentsNode = resultNode.append_child("Moments");
 	momentsNode.append_attribute("nb")= work->moments.size()+1;
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++){
+		prg->SetProgress(0.5 + (double)m / (double)mApp->worker.moments.size());
 		xml_node newMoment = momentsNode.append_child("Moment");
 		newMoment.append_attribute("id")=m;
 		if (m == 0)
@@ -4167,11 +4171,7 @@ BOOL Geometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, S
 		
 		xml_node facetResultsNode = newMoment.append_child("FacetResults");
 
-		prg->SetMessage("Writing facets...");
-
 		for (int i = 0; i < sh.nbFacet; i++) {
-			prg->SetProgress(0.33 + ((double)i / (double)sh.nbFacet) *0.33);
-			
 				Facet *f = GetFacet(i);
 				xml_node newFacetResult = facetResultsNode.append_child("Facet");
 				newFacetResult.append_attribute("id")=i;
@@ -4307,6 +4307,19 @@ void Geometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *pr
 		idx++;
 	}
 
+	//Parameters (needs to precede facets)
+	xml_node simuParamNode = loadXML.child("MolflowSimuSettings");
+	xml_node paramNode = simuParamNode.child("Parameters");
+	for (xml_node newParameter : paramNode.children("Parameter")){
+		Parameter newPar;
+		newPar.name = newParameter.attribute("name").as_string();
+		for (xml_node newMoment : newParameter.children("Moment")) {
+			newPar.AddValue(std::make_pair(newMoment.attribute("t").as_double(),
+				newMoment.attribute("value").as_double()));
+		}
+		work->parameters.push_back(newPar);
+	}
+
 	//Facets
 	sh.nbFacet = geomNode.child("Facets").select_nodes("Facet").size();
 	facets = (Facet **)malloc(sh.nbFacet * sizeof(Facet *));
@@ -4322,6 +4335,11 @@ void Geometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *pr
 
 		facets[idx] = new Facet(nbIndex);
 		facets[idx]->LoadXML(facetNode,sh.nbVertex);
+
+		//Set param names for interface
+		if (facets[idx]->sh.sticking_paramId>-1) facets[idx]->userSticking = work->parameters[facets[idx]->sh.sticking_paramId].name;
+		if (facets[idx]->sh.opacity_paramId>-1) facets[idx]->userOpacity = work->parameters[facets[idx]->sh.opacity_paramId].name;
+		if (facets[idx]->sh.outgassing_paramId>-1) facets[idx]->userOutgassing = work->parameters[facets[idx]->sh.outgassing_paramId].name;
 
 		idx++;
 	}
@@ -4368,9 +4386,7 @@ void Geometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *pr
 		mApp->AddFormula(newFormula.attribute("name").as_string(),
 			newFormula.attribute("expression").as_string());
 	}
-
-	//Gas Mass
-	xml_node simuParamNode = loadXML.child("MolflowSimuSettings");
+	
 	work->gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
 	work->halfLife = simuParamNode.child("Gas").attribute("halfLife").as_double();
 
@@ -4387,16 +4403,7 @@ void Geometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *pr
 	work->useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_int();
 	work->calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_int();
 
-	xml_node paramNode = simuParamNode.child("Parameters");
-	for (xml_node newParameter : paramNode.children("Parameter")){
-		Parameter newPar;
-		newPar.name = newParameter.attribute("name").as_string();
-		for (xml_node newMoment : newParameter.children("Moment")) {
-			newPar.AddValue(std::make_pair(newMoment.attribute("t").as_double(),
-				newMoment.attribute("value").as_double()));
-		}
-		work->parameters.push_back(newPar);
-	}
+
 
 	InitializeGeometry();
 	//AdjustProfile();
@@ -4419,14 +4426,174 @@ void Geometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *pr
 	}
 }
 
+void Geometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg, BOOL newStr){
+	//mApp->ClearAllSelections();
+	//mApp->ClearAllViews();
+	//mApp->ClearFormula();
+	//Clear();
+	int structId = viewStruct;
+	if (structId == -1) structId = 0;
+	UnSelectAll();
+
+	xml_node geomNode = loadXML.child("Geometry");
+
+	//Vertices
+	sh.nbVertex = geomNode.child("Vertices").select_nodes("Vertex").size();
+	vertices3 = (VERTEX3D *)malloc(sh.nbVertex * sizeof(VERTEX3D));
+	int idx = 0;
+	for (xml_node vertex : geomNode.child("Vertices").children("Vertex")) {
+		vertices3[idx].x = vertex.attribute("x").as_double();
+		vertices3[idx].y = vertex.attribute("y").as_double();
+		vertices3[idx].z = vertex.attribute("z").as_double();
+		vertices3[idx].selected = FALSE;
+		idx++;
+	}
+
+	//Structures
+	sh.nbSuper = geomNode.child("Structures").select_nodes("Structure").size();
+	idx = 0;
+	for (xml_node structure : geomNode.child("Structures").children("Structure")) {
+		strName[idx] = _strdup(structure.attribute("name").value());
+		// For backward compatibilty with STR
+		char tmp[256];
+		sprintf(tmp, "%s.txt", strName[idx]);
+		strFileName[idx] = _strdup(tmp);
+		idx++;
+	}
+
+	//Parameters (needs to precede facets)
+	xml_node simuParamNode = loadXML.child("MolflowSimuSettings");
+	xml_node paramNode = simuParamNode.child("Parameters");
+	for (xml_node newParameter : paramNode.children("Parameter")){
+		Parameter newPar;
+		newPar.name = newParameter.attribute("name").as_string();
+		for (xml_node newMoment : newParameter.children("Moment")) {
+			newPar.AddValue(std::make_pair(newMoment.attribute("t").as_double(),
+				newMoment.attribute("value").as_double()));
+		}
+		work->parameters.push_back(newPar);
+	}
+
+	//Facets
+	sh.nbFacet = geomNode.child("Facets").select_nodes("Facet").size();
+	facets = (Facet **)malloc(sh.nbFacet * sizeof(Facet *));
+	memset(facets, 0, sh.nbFacet * sizeof(Facet *));
+	idx = 0;
+	for (xml_node facetNode : geomNode.child("Facets").children("Facet")) {
+		int nbIndex = facetNode.child("Indices").select_nodes("Indice").size();
+		if (nbIndex < 3) {
+			char errMsg[128];
+			sprintf(errMsg, "Facet %d has only %d vertices. ", idx + 1, nbIndex);
+			throw Error(errMsg);
+		}
+
+		facets[idx] = new Facet(nbIndex);
+		facets[idx]->LoadXML(facetNode, sh.nbVertex);
+
+		//Set param names for interface
+		if (facets[idx]->sh.sticking_paramId>-1) facets[idx]->userSticking = work->parameters[facets[idx]->sh.sticking_paramId].name;
+		if (facets[idx]->sh.opacity_paramId>-1) facets[idx]->userOpacity = work->parameters[facets[idx]->sh.opacity_paramId].name;
+		if (facets[idx]->sh.outgassing_paramId>-1) facets[idx]->userOutgassing = work->parameters[facets[idx]->sh.outgassing_paramId].name;
+
+		idx++;
+	}
+
+	xml_node interfNode = loadXML.child("Interface");
+
+	xml_node selNode = interfNode.child("Selections");
+	//int nbS = selNode.select_nodes("Selection").size();
+
+	for (xml_node sNode : selNode.children("Selection")) {
+		ASELECTION s;
+		s.name = _strdup(sNode.attribute("name").as_string());
+		s.nbSel = sNode.select_nodes("selItem").size();
+		s.selection = (int *)malloc((s.nbSel)*sizeof(int));
+		idx = 0;
+		for (xml_node iNode : sNode.children("selItem"))
+			s.selection[idx++] = iNode.attribute("facet").as_int();
+		mApp->AddSelection(s.name, s);
+	}
+
+
+	xml_node viewNode = interfNode.child("Views");
+	for (xml_node newView : selNode.children("View")) {
+		AVIEW v;
+		v.name = _strdup(newView.attribute("name").as_string());
+		v.projMode = newView.attribute("projMode").as_int();
+		v.camAngleOx = newView.attribute("camAngleOx").as_double();
+		v.camAngleOy = newView.attribute("camAngleOy").as_double();
+		v.camDist = newView.attribute("camDist").as_double();
+		v.camOffset.x = newView.attribute("camOffset.x").as_double();
+		v.camOffset.y = newView.attribute("camOffset.y").as_double();
+		v.camOffset.z = newView.attribute("camOffset.z").as_double();
+		v.performXY = newView.attribute("performXY").as_int();
+		v.vLeft = newView.attribute("vLeft").as_double();
+		v.vRight = newView.attribute("vRight").as_double();
+		v.vTop = newView.attribute("vTop").as_double();
+		v.vBottom = newView.attribute("vBottom").as_double();
+
+		mApp->AddView(v.name, v);
+	}
+
+	xml_node formulaNode = interfNode.child("Formulas");
+	for (xml_node newFormula : formulaNode.children("Formula")) {
+		mApp->AddFormula(newFormula.attribute("name").as_string(),
+			newFormula.attribute("expression").as_string());
+	}
+
+	work->gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
+	work->halfLife = simuParamNode.child("Gas").attribute("halfLife").as_double();
+
+	xml_node timeSettingsNode = simuParamNode.child("TimeSettings");
+
+	xml_node userMomentsNode = timeSettingsNode.child("UserMoments");
+	for (xml_node newUserEntry : userMomentsNode.children("UserEntry")) {
+		char tmpExpr[512];
+		strcpy(tmpExpr, newUserEntry.attribute("content").as_string());
+		work->userMoments.push_back(tmpExpr);
+		work->AddMoment(mApp->worker.ParseMoment(tmpExpr));
+	}
+	work->timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();
+	work->useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_int();
+	work->calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_int();
+
+
+
+	InitializeGeometry();
+	//AdjustProfile();
+	isLoaded = TRUE;
+
+	/*
+	// Update mesh
+	progressDlg->SetMessage("Building mesh...");
+	for (int i = 0; i < sh.nbFacet; i++) {
+		double p = (double)i / (double)sh.nbFacet;
+		progressDlg->SetProgress(p);
+		Facet *f = facets[i];
+		if (!f->SetTexture(f->sh.texWidthD, f->sh.texHeightD, f->hasMesh)) {
+			char errMsg[512];
+			sprintf(errMsg, "Not enough memory to build mesh on Facet %d. ", i + 1);
+			throw Error(errMsg);
+		}
+		BuildFacetList(f);
+		double nU = Norme(&(f->sh.U));
+		f->tRatio = f->sh.texWidthD / nU;
+	}
+	*/
+}
+
+
 BOOL Geometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker *work, GLProgress *progressDlg){
 	if (!loadXML.child("MolflowResults")) return FALSE; //simu state not saved with file
+	AccessDataport(dpHit);
 	BYTE* buffer = (BYTE*)dpHit->buff;
 	SHGHITS *gHits = (SHGHITS *)buffer;
 	xml_node resultNode = loadXML.child("MolflowResults");
 	xml_node momentsNode = resultNode.child("Moments");
+	double nbMoments= (double)momentsNode.select_nodes("Moment").size();
 	size_t m = 0;
 	for (xml_node newMoment : momentsNode.children("Moment")) {
+		progressDlg->SetProgress((double)m / nbMoments);
 		if (m == 0) { //read global results
 			xml_node globalNode = newMoment.child("Global");
 
@@ -4505,7 +4672,7 @@ BOOL Geometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker
 						<< "In file: " << textureNode.attribute("width").as_int() << "x" << textureNode.attribute("height").as_int();
 					throw Error(msg.str().c_str());
 				}
-				
+
 				AHIT *hits = (AHIT *)((BYTE *)gHits + (f->sh.hitOffset + sizeof(SHHITS)+profSize + m*w*h*sizeof(AHIT)));
 				std::stringstream countText, sum1perText, sumvortText;
 				countText<<textureNode.child_value("count");
@@ -4569,5 +4736,6 @@ BOOL Geometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker
 	gHits->texture_limits[2].min.moments_only=minMaxNode.child("Moments_only").child("Imp.rate").attribute("min").as_double() ;
 	gHits->texture_limits[2].max.moments_only=minMaxNode.child("Moments_only").child("Imp.rate").attribute("max").as_double() ;
 
+	ReleaseDataport(dpHit);
 	return true;
 }

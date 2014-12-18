@@ -301,14 +301,11 @@ BOOL ParameterEditor::ValidateInput() {
 	tempParam = Parameter();
 	tempParam.name = tempName;
 
-	//TODO check:
-	//no two values for the same moment
-
 	BOOL atLeastOne = FALSE;
 	for (size_t row = 0; row < userValues.size(); row++) {
 		double valueX, valueY;
 		try {
-			valueX = std::stod(userValues[row].first);
+			valueX = ::atof(userValues[row].first.c_str());
 		} catch (std::exception err){
 			char tmp[256];
 			sprintf(tmp, "Can't parse value \"%s\" in row %d, first column:\n%s", userValues[row].first.c_str(), row+1, err.what());
@@ -316,7 +313,7 @@ BOOL ParameterEditor::ValidateInput() {
 			return FALSE;
 		}
 		try {
-			valueY = std::stod(userValues[row].second);
+			valueY = ::atof(userValues[row].second.c_str());
 		}
 		catch (std::exception err){
 			char tmp[256];
@@ -334,7 +331,7 @@ BOOL ParameterEditor::ValidateInput() {
 
 	for (size_t i = 0; i < tempParam.values.size();i++) {
 		for (size_t j = i+1; j < tempParam.values.size(); j++) {
-			if (abs(tempParam.values[i].first - tempParam.values[j].first) < 1E-8) {
+			if (abs(tempParam.values[i].first - tempParam.values[j].first) < 1E-10) {
 				std::stringstream msg;
 				msg << "There are two values for t=" << tempParam.values[i].first << "s.";
 				GLMessageBox::Display(msg.str().c_str(), "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
@@ -353,10 +350,17 @@ void ParameterEditor::UpdateUserValues() {
 		Parameter *getParam = &work->parameters[selectorCombo->GetSelectedIndex()];
 
 		for (int row = 0; row < (int)getParam->values.size(); row++) {
-			std::ostringstream str1, str2;
+			/*std::ostringstream str1, str2;
+			//Make it more precise!
 			str1 << getParam->values[row].first;
 			str2 << getParam->values[row].second;
-			userValues.push_back(std::make_pair(str1.str(), str2.str()));
+			userValues.push_back(std::make_pair(str1.str(), str2.str()));*/
+			//userValues.push_back(std::make_pair(std::to_string(getParam->values[row].first), std::to_string(getParam->values[row].second)));
+			char tmp1[32];
+			char tmp2[32];
+			sprintf(tmp1, "%.10g", getParam->values[row].first);
+			sprintf(tmp2, "%.10g", getParam->values[row].second);
+			userValues.push_back(std::make_pair(tmp1,tmp2));
 		}
 		nameField->SetText(getParam->name.c_str());
 	}

@@ -113,7 +113,7 @@ public:
   void Update(float appTime);
 
   // Send total and facet hit counts to subprocesses
-  void SendHits();
+  void SendHits(BOOL noReset=FALSE);
 
   // Send heartbeat to subprocesses, otherwise they close
   //void SendHeartBeat();

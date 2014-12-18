@@ -376,7 +376,7 @@ BOOL SimulationMCStep(int nbStep) {
 			sHandle->flightTimeCurrentParticle += d / 100.0 / sHandle->velocityCurrentParticle; //conversion from cm to m
 
 			if ((!sHandle->calcConstantFlow && sHandle->flightTimeCurrentParticle > sHandle->latestMoment)
-				|| sHandle->lifeTimeCurrentParticle<sHandle->flightTimeCurrentParticle) {
+				|| sHandle->particleDecayMoment<sHandle->flightTimeCurrentParticle) {
 				//hit time over the measured period - we create a new particle
 				//OR particle has decayed
 				RecordHit(LASTHIT);
@@ -494,10 +494,10 @@ BOOL StartFromSource() {
 	if (sHandle->useMaxwellDistribution) sHandle->velocityCurrentParticle = GenerateRandomVelocity(src->sh.CDFid);
 	else sHandle->velocityCurrentParticle = 145.469*sqrt(src->sh.temperature / sHandle->gasMass);  //sqrt(8*R/PI/1000)=145.47
 	if (sHandle->halfLife < 9e99) { //decaying gas
-		sHandle->lifeTimeCurrentParticle = pow(sHandle->halfLife, 2)*-log(rnd());
+		sHandle->particleDecayMoment = sHandle->flightTimeCurrentParticle + pow(sHandle->halfLife*1.44269, 1)*-log(rnd()); //1.44269=1/ln2
 	}
 	else {
-		sHandle->lifeTimeCurrentParticle = 1e100;
+		sHandle->particleDecayMoment = 1e100;
 	}
 	//sHandle->temperature = src->sh.temperature; //Thermalize particle
 
@@ -653,6 +653,9 @@ void PerformBounce(FACET *iFacet) {
 		//See docs/theta_gen.png for further details on angular distribution generation
 		PolarToCartesian(iFacet, acos(sqrt(rnd())), rnd()*2.0*PI, FALSE);
 		break;
+	case REF_UNIFORM:
+		PolarToCartesian(iFacet, acos(rnd()), rnd()*2.0*PI, FALSE);
+		break;
 	}
 
 	if (revert) {
@@ -794,14 +797,19 @@ void ProfileFacet(FACET *f, double time, BOOL countHit, double velocity_factor, 
 }
 
 void UpdateVelocity(FACET *collidedFacet) {
-	//thermalize perfectly
-	double oldSpeed2 = pow(sHandle->velocityCurrentParticle,2);
-	double newSpeed2;
-	if (sHandle->useMaxwellDistribution) newSpeed2 = pow(GenerateRandomVelocity(collidedFacet->sh.CDFid),2);
-	else newSpeed2 = /*145.469*/ 29369.939*(collidedFacet->sh.temperature / sHandle->gasMass);
-	//sqrt(29369)=171.3766= sqrt(8*R*1000/PI)*3PI/8, that is, the constant part of the v_avg=sqrt(8RT/PI/m/0.001)) found in literature, multiplied by
-	//the corrective factor of 3PI/8 that accounts for moving from volumetric speed distribution to wall collision speed distribution
-	sHandle->velocityCurrentParticle = sqrt(oldSpeed2 + (newSpeed2 - oldSpeed2)*collidedFacet->sh.accomodationFactor);
+	if (collidedFacet->sh.accomodationFactor>0.9999) { //speedup for the most common case: perfect thermalization
+		if (sHandle->useMaxwellDistribution) sHandle->velocityCurrentParticle = GenerateRandomVelocity(collidedFacet->sh.CDFid);
+		else sHandle->velocityCurrentParticle = 171.3766*sqrt(collidedFacet->sh.temperature / sHandle->gasMass);
+	}
+	else {
+		double oldSpeed2 = pow(sHandle->velocityCurrentParticle, 2);
+		double newSpeed2;
+		if (sHandle->useMaxwellDistribution) newSpeed2 = pow(GenerateRandomVelocity(collidedFacet->sh.CDFid), 2);
+		else newSpeed2 = /*145.469*/ 29369.939*(collidedFacet->sh.temperature / sHandle->gasMass);
+		//sqrt(29369)=171.3766= sqrt(8*R*1000/PI)*3PI/8, that is, the constant part of the v_avg=sqrt(8RT/PI/m/0.001)) found in literature, multiplied by
+		//the corrective factor of 3PI/8 that accounts for moving from volumetric speed distribution to wall collision speed distribution
+		sHandle->velocityCurrentParticle = sqrt(oldSpeed2 + (newSpeed2 - oldSpeed2)*collidedFacet->sh.accomodationFactor);
+	}
 }
 
 double GenerateRandomVelocity(int CDFId){

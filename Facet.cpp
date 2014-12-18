@@ -521,6 +521,8 @@ void Facet::SaveTXT(FileWriter *file) {
 	case REF_MIRROR:
 		file->WriteDouble(1.0, "\n");
 		break;
+	case REF_UNIFORM:
+		file->WriteDouble(2.0, "\n");
 	default:
 		file->WriteDouble((double)(sh.reflectType), "\n");
 		break;

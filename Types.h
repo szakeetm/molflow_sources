@@ -44,6 +44,7 @@ typedef float ACFLOAT;
 // Reflection type
 #define REF_DIFFUSE 0   // Diffuse (cosine law)
 #define REF_MIRROR  1   // Mirror
+#define REF_UNIFORM 2   // Uniform (for testing)
 
   // Profile type
 
