@@ -171,6 +171,10 @@ typedef struct {
   double   particleDecayMoment; //for radioactive gases
   //double   temperature;  //Temeperature of the particle (=temp. of last facet hit)
 
+  int motionType;
+  VERTEX3D motionVector1; //base point for rotation
+  VERTEX3D motionVector2; //rotation vector or velocity vector
+
   // Angular coefficient (opaque facets)
   int     nbAC;
   ACFLOAT *acMatrix;
@@ -261,6 +265,6 @@ double GenerateDesorptionTime(FACET* src);
 double GetStickingAt(FACET *src,double time);
 double GetOpacityAt(FACET *src,double time);
 
-
+void TreatMovingFacet();
 
 #endif /* _SIMULATIONH_ */

@@ -193,6 +193,10 @@ int GetIDId(int paramId);
   BOOL useMaxwellDistribution; //TRUE: Maxwell-Boltzmann distribution, FALSE: All molecules have the same (V_avg) speed
   BOOL calcConstantFlow;
 
+  int motionType;
+  VERTEX3D motionVector1; //base point for rotation
+  VERTEX3D motionVector2; //rotation vector or velocity vector
+
   BOOL needsReload;
 
   std::vector<Parameter> parameters;

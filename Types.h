@@ -64,7 +64,8 @@ typedef float ACFLOAT;
 #define HIT_REF   3
 #define HIT_TRANS 4
 #define HIT_TELEPORT 5
-#define LASTHIT 6
+#define HIT_MOVING 6
+#define LASTHIT 7
 
 // Geometry structure definitions
 typedef struct {

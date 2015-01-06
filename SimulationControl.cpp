@@ -29,6 +29,7 @@ GNU General Public License for more details.
 #include <stdlib.h>
 #include "Simulation.h"
 #include "Random.h"
+#include "Utils.h"
 
 #define READVAL(_type) *(_type*)buffer;buffer+=sizeof(_type)
 
@@ -161,12 +162,6 @@ DWORD GetSeed() {
 
 // -------------------------------------------------------
 
-double Norme(VERTEX3D *v) {
-	return sqrt(v->x*v->x + v->y*v->y + v->z*v->z);
-}
-
-// -------------------------------------------------------
-
 BOOL LoadSimulation(Dataport *loader) {
 
 	int i, j, idx;
@@ -219,6 +214,10 @@ BOOL LoadSimulation(Dataport *loader) {
 	sHandle->timeWindowSize = shGeom->timeWindowSize;
 	sHandle->useMaxwellDistribution = shGeom->useMaxwellDistribution;
 	sHandle->calcConstantFlow = shGeom->calcConstantFlow;
+
+	sHandle->motionType = shGeom->motionType;
+	sHandle->motionVector1 = shGeom->motionVector1;
+	sHandle->motionVector2 = shGeom->motionVector2;
 
 	/*//Test cube
 	sHandle->testCubeCount=0;

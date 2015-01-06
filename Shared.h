@@ -178,6 +178,10 @@ typedef struct {
   BOOL useMaxwellDistribution; //TRUE: Maxwell-Boltzmann distribution, FALSE: All molecules have the same (V_avg) speed
   BOOL calcConstantFlow;
 
+  int motionType;
+  VERTEX3D motionVector1; //base point for rotation
+  VERTEX3D motionVector2; //rotation vector or velocity vector
+
   /* //Vectors must be serialized
   std::vector<std::vector<std::pair<double,double>>> CDFs; //cumulative distribution function for each temperature
   std::vector<std::vector<std::pair<double,double>>> IDs; //integrated distribution function for each time-dependent desorption type
@@ -243,6 +247,9 @@ typedef struct {
   // Axis Aligned Bounding Box (AABB)
   AABB       bb;
   VERTEX3D   center;
+
+  // Moving facets
+  BOOL isMoving;
 
   // Geometry
   int    nbIndex;   // Number of index/vertex

@@ -542,6 +542,10 @@ void Geometry::CopyGeometryBuffer(BYTE *buffer) {
 	sh.timeWindowSize=w->timeWindowSize;
 	sh.useMaxwellDistribution=w->useMaxwellDistribution;
 	sh.calcConstantFlow=w->calcConstantFlow;
+
+	sh.motionType = w->motionType;
+	sh.motionVector1 = w->motionVector1;
+	sh.motionVector2 = w->motionVector2;
 	
 	memcpy(shGeom, &(this->sh), sizeof(SHGEOM));
 	buffer += sizeof(SHGEOM);
@@ -4102,6 +4106,25 @@ void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress
 	timeSettingsNode.append_attribute("useMaxwellDistr")=work->useMaxwellDistribution;
 	timeSettingsNode.append_attribute("calcConstFlow")=work->calcConstantFlow;
 
+	xml_node motionNode = simuParamNode.append_child("Motion");
+	motionNode.append_attribute("type") = work->motionType;
+	if (work->motionType == 1) { //fixed motion
+		xml_node v = motionNode.append_child("VelocityVector");
+		v.append_attribute("vx") = work->motionVector2.x;
+		v.append_attribute("vy") = work->motionVector2.y;
+		v.append_attribute("vz") = work->motionVector2.z;
+	}
+	else if (work->motionType == 2) { //rotation
+		xml_node v = motionNode.append_child("AxisBasePoint");
+		v.append_attribute("x") = work->motionVector1.x;
+		v.append_attribute("y") = work->motionVector1.y;
+		v.append_attribute("z") = work->motionVector1.z;
+		xml_node v2 = motionNode.append_child("RotationVector");
+		v2.append_attribute("x") = work->motionVector2.x;
+		v2.append_attribute("y") = work->motionVector2.y;
+		v2.append_attribute("z") = work->motionVector2.z;
+	}
+
 	xml_node paramNode = simuParamNode.append_child("Parameters");
 	paramNode.append_attribute("nb")= work->parameters.size();
 	for (size_t i = 0; i < work->parameters.size(); i++) {
@@ -4403,7 +4426,24 @@ void Geometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *pr
 	work->useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_int();
 	work->calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_int();
 
-
+	xml_node motionNode = simuParamNode.child("Motion");
+	work->motionType = motionNode.attribute("type").as_int();
+	if (work->motionType == 1) { //fixed motion
+		xml_node v = motionNode.child("VelocityVector");
+		work->motionVector2.x = v.attribute("vx").as_double();
+		work->motionVector2.y = v.attribute("vy").as_double();
+		work->motionVector2.z = v.attribute("vz").as_double();
+	}
+	else if (work->motionType == 2) { //rotation
+		xml_node v = motionNode.child("AxisBasePoint");
+		work->motionVector1.x = v.attribute("x").as_double();
+		work->motionVector1.y = v.attribute("y").as_double();
+		work->motionVector1.z = v.attribute("z").as_double();
+		xml_node v2 = motionNode.child("RotationVector");
+		work->motionVector2.x = v.attribute("x").as_double();
+		work->motionVector2.y = v.attribute("y").as_double();
+		work->motionVector2.z = v.attribute("z").as_double();
+	}
 
 	InitializeGeometry();
 	//AdjustProfile();

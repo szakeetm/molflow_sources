@@ -96,6 +96,8 @@ Facet::Facet(int nbIndex) {
 	sh.opacity_paramId=-1;
 	sh.sticking_paramId=-1;
 
+	sh.isMoving = FALSE;
+
 	hasOutgassingMap = FALSE;
 	outgassingMap = NULL;
 
@@ -1612,6 +1614,9 @@ void  Facet::SaveXML_geom(pugi::xml_node f){
 
 	e = f.append_child("Teleport");
 	e.append_attribute("target") = sh.teleportDest;
+
+	e = f.append_child("Motion");
+	e.append_attribute("isMoving") = sh.isMoving;
 
 	e = f.append_child("Recordings");
 	xml_node t = e.append_child("Profile");

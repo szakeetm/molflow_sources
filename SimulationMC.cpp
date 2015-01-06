@@ -23,6 +23,7 @@ GNU General Public License for more details.
 #include <stdlib.h>
 #include "Simulation.h"
 #include "Random.h"
+#include "Utils.h"
 
 extern SIMULATION *sHandle;
 extern void SetErrorSub(char *message);
@@ -537,7 +538,8 @@ BOOL StartFromSource() {
 		sHandle->pPos = sHandle->str[j].facets[i]->sh.center;
 	}
 
-	RecordHit(HIT_DES); //create blue hit point for created particle
+	if (src->sh.isMoving && sHandle->motionType) RecordHit(HIT_MOVING);
+	else RecordHit(HIT_DES); //create blue hit point for created particle
 
 	//See docs/theta_gen.png for further details on angular distribution generation
 	switch (src->sh.desorbType) {
@@ -562,6 +564,10 @@ BOOL StartFromSource() {
 	sHandle->nbDesorbed++;
 	sHandle->tmpCount.hit.nbDesorbed++;
 	sHandle->nbPHit = 0;
+
+	if (src->sh.isMoving) {
+		TreatMovingFacet();
+	}
 
 	src->sh.counter.hit.sum_1_per_speed += 2.0 / sHandle->velocityCurrentParticle;
 	src->sh.counter.hit.sum_v_ort += sHandle->velocityCurrentParticle*abs(DOT3(
@@ -664,6 +670,10 @@ void PerformBounce(FACET *iFacet) {
 		sHandle->pDir.z = -sHandle->pDir.z;
 	}
 
+	if (iFacet->sh.isMoving) {
+		TreatMovingFacet();
+	}
+
 	//Texture/Profile outgoing particle
 	//Register outgoing velocity
 	iFacet->sh.counter.hit.sum_1_per_speed += 1.0 / sHandle->velocityCurrentParticle;
@@ -674,7 +684,8 @@ void PerformBounce(FACET *iFacet) {
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, FALSE, 1.0, 1.0);
 	//no direction count on outgoing
 
-	RecordHit(HIT_REF);
+	if (iFacet->sh.isMoving && sHandle->motionType) RecordHit(HIT_MOVING);
+	else RecordHit(HIT_REF);
 	sHandle->lastHit = iFacet;
 	sHandle->nbPHit++;
 
@@ -835,4 +846,21 @@ double GetOpacityAt(FACET *f,double time) {
 	if (f->sh.opacity_paramId==-1) //constant sticking
 		return f->sh.opacity;
 	else return InterpolateY(time,sHandle->parameters[f->sh.opacity_paramId].values,TRUE);
+}
+
+void TreatMovingFacet() {
+	VERTEX3D localVelocityToAdd;
+	if (sHandle->motionType == 1) {
+		localVelocityToAdd = sHandle->motionVector2;
+	}
+	else if (sHandle->motionType == 2) {
+		VERTEX3D distanceVector;
+		Sub(&distanceVector, &sHandle->pPos, &sHandle->motionVector1);
+		Cross(&localVelocityToAdd, &sHandle->motionVector2, &distanceVector);
+	}
+	VERTEX3D oldVelocity, newVelocity;
+	oldVelocity = sHandle->pDir;
+	ScalarMult(&oldVelocity, sHandle->velocityCurrentParticle);
+	Add(&newVelocity, &oldVelocity, &localVelocityToAdd);
+	sHandle->velocityCurrentParticle = Norme(&newVelocity);
 }

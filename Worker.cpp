@@ -64,6 +64,8 @@ Worker::Worker() {
 	halfLife = 1e100;
 	finalOutgassingRate = finalOutgassingRate_Pa_m3_sec = totalDesorbedMolecules = 0.0;
 
+	motionType = 0;
+
 	pid = _getpid();
 	sprintf(ctrlDpName, "MFLWCTRL%d", pid);
 	sprintf(loadDpName, "MFLWLOAD%d", pid);
