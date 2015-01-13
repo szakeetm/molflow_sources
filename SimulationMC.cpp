@@ -72,7 +72,7 @@ void PolarToCartesian(FACET *iFacet, double theta, double phi, BOOL reverse) {
 	// (nU,nV,N) and (x,y,z) are both left handed
 
 	//This should be a speed-up routine, but I didn't experience any speed difference so I commented it out. Marton
-	/*#ifdef WIN32
+	/*#ifdef WIN64
 	_asm {                    // FPU stack
 	fld qword ptr [theta]
 	fsincos                 // cos(t)        sin(t)
@@ -862,5 +862,7 @@ void TreatMovingFacet() {
 	oldVelocity = sHandle->pDir;
 	ScalarMult(&oldVelocity, sHandle->velocityCurrentParticle);
 	Add(&newVelocity, &oldVelocity, &localVelocityToAdd);
+	sHandle->pDir = newVelocity;
+	Normalize(&sHandle->pDir);
 	sHandle->velocityCurrentParticle = Norme(&newVelocity);
 }

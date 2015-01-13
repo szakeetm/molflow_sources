@@ -34,7 +34,7 @@ CollapseSettings::CollapseSettings():GLWindow() {
 
 	l1 = new GLToggle(0,"Vertices closer than (cm):");
 	l1->SetBounds(5,5,170,18);
-	l1->SetCheck(TRUE);
+	l1->SetState(TRUE);
 	Add(l1);
 
 	vThreshold = new GLTextField(0,"1E-5");
@@ -43,7 +43,7 @@ CollapseSettings::CollapseSettings():GLWindow() {
 
 	l2 = new GLToggle(0,"Facets more coplanar than:");
 	l2->SetBounds(5,30,170,18);
-	l2->SetCheck(TRUE);
+	l2->SetState(TRUE);
 	Add(l2);
 
 	pThreshold = new GLTextField(0,"1E-5");
@@ -52,7 +52,7 @@ CollapseSettings::CollapseSettings():GLWindow() {
 
 	l3 = new GLToggle(0,"Sides more collinear than (degrees):");
 	l3->SetBounds(5,55,170,18);
-	l3->SetCheck(TRUE);
+	l3->SetState(TRUE);
 	Add(l3);
 
 	lThreshold = new GLTextField(0,"1E-3");
@@ -137,9 +137,9 @@ void CollapseSettings::ProcessMessage(GLComponent *src,int message) {
 			GLProgress *progressDlg = new GLProgress("Collapse","Please wait");
 			progressDlg->SetProgress(0.0);
 			progressDlg->SetVisible(TRUE);
-			if (!l1->IsChecked()) vT=0.0;
-			if (!l2->IsChecked()) fT=0.0;
-			if (!l3->IsChecked()) lT=0.0;
+			if (!l1->GetState()) vT=0.0;
+			if (!l2->GetState()) fT=0.0;
+			if (!l3->GetState()) lT=0.0;
 
 			geom->Collapse(vT,fT,lT,(src==goSelectedButton),progressDlg);
 			

@@ -4385,7 +4385,7 @@ void Geometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *pr
 
 
 	xml_node viewNode = interfNode.child("Views");
-	for (xml_node newView : selNode.children("View")) {
+	for (xml_node newView : viewNode.children("View")) {
 		AVIEW v;
 		v.name = _strdup(newView.attribute("name").as_string());
 		v.projMode = newView.attribute("projMode").as_int();
@@ -4440,9 +4440,9 @@ void Geometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *pr
 		work->motionVector1.y = v.attribute("y").as_double();
 		work->motionVector1.z = v.attribute("z").as_double();
 		xml_node v2 = motionNode.child("RotationVector");
-		work->motionVector2.x = v.attribute("x").as_double();
-		work->motionVector2.y = v.attribute("y").as_double();
-		work->motionVector2.z = v.attribute("z").as_double();
+		work->motionVector2.x = v2.attribute("x").as_double();
+		work->motionVector2.y = v2.attribute("y").as_double();
+		work->motionVector2.z = v2.attribute("z").as_double();
 	}
 
 	InitializeGeometry();

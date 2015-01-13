@@ -538,10 +538,10 @@ void PressureEvolution::ProcessMessage(GLComponent *src, int message) {
 		break;
 	case MSG_TOGGLE:
 		if (src == logXToggle) {
-			chart->GetXAxis()->SetScale(logXToggle->IsChecked());
+			chart->GetXAxis()->SetScale(logXToggle->GetState());
 		}
 		else if (src == logYToggle) {
-			chart->GetY1Axis()->SetScale(logYToggle->IsChecked());
+			chart->GetY1Axis()->SetScale(logYToggle->GetState());
 		}
 		break;
 	}

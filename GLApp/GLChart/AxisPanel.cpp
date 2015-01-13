@@ -64,7 +64,7 @@ AxisPanel::AxisPanel(GLAxis *a,int axisType,GLChart *parentChart)  {
 
     AutoScaleCheck = new GLToggle(0,"Auto scale");
     AutoScaleCheck->SetTextColor(textCR,textCG,textCB);
-    AutoScaleCheck->SetCheck(a->IsAutoScale());
+    AutoScaleCheck->SetState(a->IsAutoScale());
 
     ScaleLabel = new GLLabel("Mode");
     ScaleLabel->SetTextColor(textCR,textCG,textCB);
@@ -76,15 +76,15 @@ AxisPanel::AxisPanel(GLAxis *a,int axisType,GLChart *parentChart)  {
 
     SubGridCheck = new GLToggle(0,"Show sub grid");
     SubGridCheck->SetTextColor(textCR,textCG,textCB);
-    SubGridCheck->SetCheck(a->IsSubGridVisible());
+    SubGridCheck->SetState(a->IsSubGridVisible());
 
     VisibleCheck = new GLToggle(0,"Visible");
     VisibleCheck->SetTextColor(textCR,textCG,textCB);
-    VisibleCheck->SetCheck(a->IsVisible());
+    VisibleCheck->SetState(a->IsVisible());
 
     OppositeCheck = new GLToggle(0,"Draw opposite");
     OppositeCheck->SetTextColor(textCR,textCG,textCB);
-    OppositeCheck->SetCheck(a->IsDrawOpposite());
+    OppositeCheck->SetState(a->IsDrawOpposite());
 
     FormatCombo = new GLCombo(0);
     FormatCombo->SetSize(8);
@@ -201,7 +201,7 @@ void AxisPanel::ProcessMessage(GLComponent *src,int message) {
 
     if (src == AutoScaleCheck) {
 
-      BOOL b = AutoScaleCheck->IsChecked();
+      BOOL b = AutoScaleCheck->GetState();
 
       pAxis->SetAutoScale(b);
 
@@ -274,17 +274,17 @@ void AxisPanel::ProcessMessage(GLComponent *src,int message) {
       // ------------------------------------------------------------
     } else if (src == SubGridCheck) {
 
-      pAxis->SetSubGridVisible(SubGridCheck->IsChecked());
+      pAxis->SetSubGridVisible(SubGridCheck->GetState());
       commit();
 
     } else if (src == OppositeCheck) {
 
-      pAxis->SetDrawOpposite(OppositeCheck->IsChecked());
+      pAxis->SetDrawOpposite(OppositeCheck->GetState());
       commit();
 
     } else if (src == VisibleCheck) {
 
-      pAxis->SetVisible(VisibleCheck->IsChecked());
+      pAxis->SetVisible(VisibleCheck->GetState());
       commit();
 
     } else if (src == ColorBtn) {

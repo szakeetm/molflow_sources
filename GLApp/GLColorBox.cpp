@@ -19,7 +19,7 @@
 #include "GLToolkit.h"
 #include "GLApp.h"
 #include <malloc.h>
-#include <Cimage.h>
+#include <cimage.h>
 
 const DWORD sColors[] = {
   0xFFFFFF,0xCCFFFF,0xCCCCFF,0xCCCCFF,0xCCCCFF,0xCCCCFF,0xCCCCFF,0xCCCCFF,0xCCCCFF,0xCCCCFF,0xCCCCFF,0xFFCCFF,0xFFCCCC,0xFFCCCC,0xFFCCCC,0xFFCCCC,0xFFCCCC,0xFFCCCC,0xFFCCCC,0xFFCCCC,0xFFCCCC,0xFFFFCC,0xCCFFCC,0xCCFFCC,0xCCFFCC,0xCCFFCC,0xCCFFCC,0xCCFFCC,0xCCFFCC,0xCCFFCC,0xCCFFCC,
@@ -190,7 +190,7 @@ void GLColorBox::RestoreDeviceObjects() {
 
   // Slider texture  
   CImage img;
-  if( img.LoadImage("images/icon_slider.png") ) {
+  if( img.LoadCImage("images/icon_slider.png") ) {
 
     BYTE *buff32 = (BYTE *)malloc(16*16*4);
     BYTE *data   = img.GetData();

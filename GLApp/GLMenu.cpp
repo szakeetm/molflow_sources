@@ -86,7 +86,7 @@ int GLMenu::GetNbItem() {
 
 // -----------------------------------------------------------
 
-void GLMenu::SetCheck(int itemId,BOOL checked) {
+void GLMenu::SetState(int itemId,BOOL checked) {
 
   int i = GetMenu(itemId);
   if( i>=0 ) items[i].checked = checked;

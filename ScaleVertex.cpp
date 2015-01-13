@@ -42,7 +42,7 @@ ScaleVertex::ScaleVertex(Geometry *g,Worker *w):GLWindow() {
 
 	l1 = new GLToggle(0,"");
 	l1->SetBounds(10,20,20,18);
-	l1->SetCheck(TRUE);
+	l1->SetState(TRUE);
 	iPanel->Add(l1);
 
 	GLLabel *xLabel = new GLLabel("X=");
@@ -210,12 +210,12 @@ void ScaleVertex::ProcessMessage(GLComponent *src,int message) {
 }
 
 void ScaleVertex::UpdateToggle(GLComponent *src) {
-	l1->SetCheck(FALSE);
-	l2->SetCheck(FALSE);
-	l3->SetCheck(FALSE);
+	l1->SetState(FALSE);
+	l2->SetState(FALSE);
+	l3->SetState(FALSE);
 
 	GLToggle *toggle=(GLToggle*)src;
-	toggle->SetCheck(TRUE);
+	toggle->SetState(TRUE);
 
 	facetNumber->SetEditable(src==l3);
 	vertexNumber->SetEditable(src==l2);

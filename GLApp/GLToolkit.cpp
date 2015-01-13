@@ -21,7 +21,7 @@
 #include "GLSprite.h"
 #include <math.h>
 #include <malloc.h>
-#include <CImage.h>
+#include <cimage.h>
 #include "../MolFlow.h"
 
 static GLFont2D *dlgFont  = NULL;
@@ -179,7 +179,7 @@ SDL_Cursor *InitCursor(char *pngName,const int &tx,const int &ty) {
   memset(mask,0,4*32);
 
   CImage img;
-  if( img.LoadImage(pngName) ) {
+  if( img.LoadCImage(pngName) ) {
 
     i = -1;
     BYTE *image = img.GetData();
@@ -217,7 +217,7 @@ SDL_Cursor *InitCursor(char *pngName,const int &tx,const int &ty) {
 void GLToolkit::SetIcon32x32(char *pngName) {
 
   CImage img;
-  if( img.LoadImage(pngName) ) {
+  if( img.LoadCImage(pngName) ) {
     SDL_Surface *s = SDL_CreateRGBSurface(SDL_SWSURFACE,32,32,24,0,0,0,0);
     SDL_LockSurface(s);
     memcpy(s->pixels , img.GetData() , 3*32*32);

@@ -58,7 +58,7 @@ GLChartOptions::GLChartOptions(GLChart *chart) : GLTabWindow() {
 
     generalLabelVisibleCheck = new GLToggle(0,"Visible");
     generalLabelVisibleCheck->SetTextColor(textCR,textCG,textCB);
-    generalLabelVisibleCheck->SetCheck(chart->IsLabelVisible());
+    generalLabelVisibleCheck->SetState(chart->IsLabelVisible());
 
     generalBackColorLabel = new GLLabel("Chart background");
     generalBackColorLabel->SetTextColor(textCR,textCG,textCB);
@@ -283,7 +283,7 @@ GLChartOptions::GLChartOptions(GLChart *chart) : GLTabWindow() {
       */
     } else if (src == generalLabelVisibleCheck) {
 
-      chart->SetLabelVisible(generalLabelVisibleCheck->IsChecked());
+      chart->SetLabelVisible(generalLabelVisibleCheck->GetState());
       commit();
 
       // ------------------------------------------------------------

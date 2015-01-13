@@ -48,7 +48,9 @@ int Remainder(int param, int bound) {
 }
 
 void Normalize(VERTEX3D *v) {
-	ScalarMult(v, 1.0 / Norme(v));
+	double length = Norme(v);
+	if (length>0.0)
+		ScalarMult(v, 1.0 / length);
 }
 
 double Norme(VERTEX2D *v1, VERTEX2D *v2) {

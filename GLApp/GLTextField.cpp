@@ -112,6 +112,18 @@ void GLTextField::SetText(const char *text) {
   m_Zero=0;
 }
 
+void GLTextField::SetText(const double &val) {
+	char tmp[256];
+	sprintf(tmp, "%g", val);
+	SetText(tmp);
+}
+
+void GLTextField::SetText(const int &val) {
+	char tmp[256];
+	sprintf(tmp, "%d", val);
+	SetText(tmp);
+}
+
 // ------------------------------------------------------
 
 void GLTextField::UpdateText(const char *text) {
@@ -350,7 +362,7 @@ void  GLTextField::CopyClipboardText() {
  strcpy(tmp,&(m_Text[min]));
  tmp[max-min]=0;
 
-#ifdef WIN32
+#ifdef WIN64
 
  if( !OpenClipboard(NULL) )
    return;
@@ -384,7 +396,7 @@ void  GLTextField::CopyClipboardText() {
 
 void GLTextField::PasteClipboardText() {
 
-#ifdef WIN32
+#ifdef WIN64
 
   if( OpenClipboard(NULL) ) {
     HGLOBAL hMem;

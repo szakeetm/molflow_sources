@@ -307,6 +307,7 @@ void Facet::LoadXML(xml_node f,int nbVertex) {
 	sh.superIdx = f.child("Structure").attribute("inStructure").as_int();
 	sh.superDest = f.child("Structure").attribute("linksTo").as_int();
 	sh.teleportDest = f.child("Teleport").attribute("target").as_int();
+	sh.isMoving = f.child("Motion").attribute("isMoving").as_bool();
 	xml_node recNode = f.child("Recordings");
 	sh.profileType = recNode.child("Profile").attribute("type").as_int();
 	xml_node texNode = recNode.child("Texture");

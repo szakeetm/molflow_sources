@@ -21,7 +21,7 @@
 
 // 64 bit integer declaration
 
-#ifdef WIN32
+#ifdef WIN64
   typedef __int64 llong;
 #else
   typedef long long llong;

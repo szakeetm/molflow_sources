@@ -82,7 +82,7 @@ TexturePlotter::TexturePlotter() :GLWindow() {
 	Add(cancelButton);
 
 	autoSizeOnUpdate = new GLToggle(0, "Autosize on every update");
-	autoSizeOnUpdate->SetCheck(TRUE);
+	autoSizeOnUpdate->SetState(TRUE);
 	Add(autoSizeOnUpdate);
 
 	// Center dialog
@@ -459,7 +459,7 @@ void TexturePlotter::UpdateTable() {
 		}
 
 	}
-	if (autoSizeOnUpdate->IsChecked()) mapList->AutoSizeColumn();
+	if (autoSizeOnUpdate->GetState()) mapList->AutoSizeColumn();
 }
 
 // --------------------------------------------------------------------

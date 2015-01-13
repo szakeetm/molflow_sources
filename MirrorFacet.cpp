@@ -268,15 +268,15 @@ void MirrorFacet::ProcessMessage(GLComponent *src,int message) {
 }
 
 void MirrorFacet::UpdateToggle(GLComponent *src) {
-	l1->SetCheck(FALSE);
-	l2->SetCheck(FALSE);
-	l3->SetCheck(FALSE);
-	l4->SetCheck(FALSE);
-	l5->SetCheck(FALSE);
-	l6->SetCheck(FALSE);
+	l1->SetState(FALSE);
+	l2->SetState(FALSE);
+	l3->SetState(FALSE);
+	l4->SetState(FALSE);
+	l5->SetState(FALSE);
+	l6->SetState(FALSE);
 
 	GLToggle *toggle=(GLToggle*)src;
-	toggle->SetCheck(TRUE);
+	toggle->SetState(TRUE);
 
 	facetNumber->SetEditable(src==l4);
 	aText->SetEditable(src==l6);

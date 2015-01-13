@@ -62,7 +62,7 @@ public:
   void    Add(char *itemName,int itemId=0,int accKeyCode=0,int accKeyModifier=0);
   int     GetNbItem();
   GLMenu *GetSubMenu(char *itemName);
-  void    SetCheck(int itemId,BOOL checked);
+  void    SetState(int itemId,BOOL checked);
   BOOL    GetCheck(int itemId);
   void    SetEnabled(int itemId,BOOL enabled);
   void    SetIcon(int itemId,int x,int y);

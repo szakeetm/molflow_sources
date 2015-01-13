@@ -122,82 +122,82 @@ FacetDetails::FacetDetails():GLWindow() {
   Add(sPanel);
 
   show[0] = new GLToggle(0,"#");
-  show[0]->SetCheck(TRUE);  // Always visible (not displayed)
+  show[0]->SetState(TRUE);  // Always visible (not displayed)
 
   show[1] = new GLToggle(1,"Sticking");
-  show[1]->SetCheck(TRUE);
+  show[1]->SetState(TRUE);
   sPanel->Add(show[1]);
   show[2] = new GLToggle(2,"Opacity");
-  show[2]->SetCheck(TRUE);
+  show[2]->SetState(TRUE);
   sPanel->Add(show[2]);
   show[3] = new GLToggle(3,"Structure");
-  show[3]->SetCheck(TRUE);
+  show[3]->SetState(TRUE);
   sPanel->Add(show[3]);
   show[4] = new GLToggle(4,"Link");
-  show[4]->SetCheck(TRUE);
+  show[4]->SetState(TRUE);
   sPanel->Add(show[4]);
   show[5] = new GLToggle(5,"Desorption");
-  show[5]->SetCheck(TRUE);
+  show[5]->SetState(TRUE);
   sPanel->Add(show[5]);
   show[6] = new GLToggle(6,"Reflection");
-  show[6]->SetCheck(TRUE);
+  show[6]->SetState(TRUE);
   sPanel->Add(show[6]);
   show[7] = new GLToggle(7,"2 Sided");
-  show[7]->SetCheck(TRUE);
+  show[7]->SetState(TRUE);
   sPanel->Add(show[7]);
   show[8] = new GLToggle(8,"Vertex nb");
-  show[8]->SetCheck(TRUE);
+  show[8]->SetState(TRUE);
   sPanel->Add(show[8]);
   show[9] = new GLToggle(9,"Area");
-  show[9]->SetCheck(TRUE);
+  show[9]->SetState(TRUE);
   sPanel->Add(show[9]);
   show[10] = new GLToggle(10, "Temperature");
-  show[10]->SetCheck(TRUE);
+  show[10]->SetState(TRUE);
   sPanel->Add(show[10]);
   show[11] = new GLToggle(11,"2D Box");
-  show[11]->SetCheck(TRUE);
+  show[11]->SetState(TRUE);
   sPanel->Add(show[11]);
   show[12] = new GLToggle(12,"Texture UV");
-  show[12]->SetCheck(TRUE);
+  show[12]->SetState(TRUE);
   sPanel->Add(show[12]);
   show[13] = new GLToggle(13,"Mesh sample/cm");
-  show[13]->SetCheck(TRUE);
+  show[13]->SetState(TRUE);
   sPanel->Add(show[13]);
   show[14] = new GLToggle(14,"Count mode");
-  show[14]->SetCheck(TRUE);
+  show[14]->SetState(TRUE);
   sPanel->Add(show[14]);
   show[15] = new GLToggle(15,"Memory");
-  show[15]->SetCheck(TRUE);
+  show[15]->SetState(TRUE);
   sPanel->Add(show[15]);
   show[16] = new GLToggle(16,"Planarity");
-  show[16]->SetCheck(TRUE);
+  show[16]->SetState(TRUE);
   sPanel->Add(show[16]);
   show[17] = new GLToggle(17,"Profile");
-  show[17]->SetCheck(TRUE);
+  show[17]->SetState(TRUE);
   sPanel->Add(show[17]);
   show[18] = new GLToggle(18, "Imping.rate");
-  show[18]->SetCheck(TRUE);
+  show[18]->SetState(TRUE);
   sPanel->Add(show[18]);
   show[19] = new GLToggle(19, "Density[1/m3]");
-  show[19]->SetCheck(TRUE);
+  show[19]->SetState(TRUE);
   sPanel->Add(show[19]);
   show[20] = new GLToggle(20, "Density[kg/m3]");
-  show[20]->SetCheck(TRUE);
+  show[20]->SetState(TRUE);
   sPanel->Add(show[20]);
   show[21] = new GLToggle(21, "Pressure");
-  show[21]->SetCheck(TRUE);
+  show[21]->SetState(TRUE);
   sPanel->Add(show[21]);
   show[22] = new GLToggle(22, "Mol.speed");
-  show[22]->SetCheck(TRUE);
+  show[22]->SetState(TRUE);
   sPanel->Add(show[22]);
   show[23] = new GLToggle(23,"Hits");
-  show[23]->SetCheck(TRUE);
+  show[23]->SetState(TRUE);
   sPanel->Add(show[23]);
   show[24] = new GLToggle(24,"Des.");
-  show[24]->SetCheck(TRUE);
+  show[24]->SetState(TRUE);
   sPanel->Add(show[24]);
   show[25] = new GLToggle(25,"Abs.");
-  show[25]->SetCheck(TRUE);
+  show[25]->SetState(TRUE);
   sPanel->Add(show[25]);
 
   // Center dialog
@@ -407,7 +407,7 @@ void FacetDetails::UpdateTable() {
   shown[0] = 0;
 
   for(int i=1;i<NB_FDCOLUMN;i++) {
-    if(show[i]->IsChecked()) {
+    if(show[i]->GetState()) {
       tmpName[nbCol]  = allColumn[i].name;
       tmpWidth[nbCol] = allColumn[i].width;
       tmpAlign[nbCol] = allColumn[i].align;
@@ -498,10 +498,10 @@ void FacetDetails::ProcessMessage(GLComponent *src,int message) {
       if(src==dismissButton) {
         SetVisible(FALSE);
       } else if (src==checkAllButton) {
-        for(int i=0;i<NB_FDCOLUMN;i++) show[i]->SetCheck(TRUE);
+        for(int i=0;i<NB_FDCOLUMN;i++) show[i]->SetState(TRUE);
         UpdateTable();
       } else if (src==uncheckAllButton) {
-        for(int i=0;i<NB_FDCOLUMN;i++) show[i]->SetCheck(FALSE);
+        for(int i=0;i<NB_FDCOLUMN;i++) show[i]->SetState(FALSE);
         UpdateTable();
 	  }	else if (src==updateButton) {
         UpdateTable();

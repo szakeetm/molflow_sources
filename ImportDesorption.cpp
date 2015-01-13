@@ -96,7 +96,7 @@ ImportDesorption::ImportDesorption():GLWindow() {
 
 	r2=new GLToggle(0,"Molecules/Photon=");
 	r2->SetBounds(15,225,100,21);
-	r2->SetCheck(TRUE);mode=MODE_EQUATION; //Set default mode
+	r2->SetState(TRUE);mode=MODE_EQUATION; //Set default mode
 	Add(r2);
 
 	eta0label=new GLTextField(0,"1");
@@ -333,12 +333,12 @@ void ImportDesorption::LoadConvFile(char* fileName) {
 }
 
 void ImportDesorption::EnableDisableComponents(){
-	r1->SetCheck(mode==MODE_NOCONV);
-		r2->SetCheck(mode==MODE_EQUATION);
+	r1->SetState(mode==MODE_NOCONV);
+		r2->SetState(mode==MODE_EQUATION);
 		eta0label->SetEditable(mode==MODE_EQUATION);
 		alphaLabel->SetEditable(mode==MODE_EQUATION);
 		
-		r3->SetCheck(mode==MODE_FILE);
+		r3->SetState(mode==MODE_FILE);
 		convFileName->SetEditable(mode==MODE_FILE);
 		loadConvButton->SetEnabled(mode==MODE_FILE);
 };

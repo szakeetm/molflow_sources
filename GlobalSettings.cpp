@@ -189,9 +189,9 @@ void GlobalSettings::Display(Worker *w) {
 	
 	worker = w;
 	char tmp[256];
-	chkAntiAliasing->SetCheck(mApp->antiAliasing);
-	chkWhiteBg->SetCheck(mApp->whiteBg);
-	//chkNonIsothermal->SetCheck(nonIsothermal);
+	chkAntiAliasing->SetState(mApp->antiAliasing);
+	chkWhiteBg->SetState(mApp->whiteBg);
+	//chkNonIsothermal->SetState(nonIsothermal);
 	UpdateOutgassing();
 	sprintf(tmp,"%g",worker->gasMass);
 	gasmassText->SetText(tmp);
@@ -199,10 +199,10 @@ void GlobalSettings::Display(Worker *w) {
 	halfLifeText->SetText(tmp);
 	sprintf(tmp,"%g",mApp->autoSaveFrequency);
 	autoSaveText->SetText(tmp);
-	chkSimuOnly->SetCheck(mApp->autoSaveSimuOnly);
-	chkCheckForUpdates->SetCheck(mApp->checkForUpdates);
-	chkAutoUpdateFormulas->SetCheck(mApp->autoUpdateFormulas);
-	chkCompressSavedFiles->SetCheck(mApp->compressSavedFiles);
+	chkSimuOnly->SetState(mApp->autoSaveSimuOnly);
+	chkCheckForUpdates->SetState(mApp->checkForUpdates);
+	chkAutoUpdateFormulas->SetState(mApp->autoUpdateFormulas);
+	chkCompressSavedFiles->SetState(mApp->compressSavedFiles);
 	  
   int nb = worker->GetProcNumber();
   sprintf(tmp,"%d",nb);
@@ -332,18 +332,18 @@ void GlobalSettings::ProcessMessage(GLComponent *src,int message) {
           GLMessageBox::Display("No geometry loaded.","No geometry",GLDLG_OK,GLDLG_ICONERROR);
         }
       } else if (src==applyButton) {
-		mApp->antiAliasing=chkAntiAliasing->IsChecked();
-	    mApp->whiteBg=chkWhiteBg->IsChecked();
-		mApp->checkForUpdates=chkCheckForUpdates->IsChecked();
-		mApp->autoUpdateFormulas=chkAutoUpdateFormulas->IsChecked();
-		mApp->compressSavedFiles=chkCompressSavedFiles->IsChecked();
-		/*if (nonIsothermal!=chkNonIsothermal->IsChecked()) {
+		mApp->antiAliasing=chkAntiAliasing->GetState();
+	    mApp->whiteBg=chkWhiteBg->GetState();
+		mApp->checkForUpdates=chkCheckForUpdates->GetState();
+		mApp->autoUpdateFormulas=chkAutoUpdateFormulas->GetState();
+		mApp->compressSavedFiles=chkCompressSavedFiles->GetState();
+		/*if (nonIsothermal!=chkNonIsothermal->GetState()) {
 			if (mApp->AskToReset()) {
 				needsReload=TRUE;
-				nonIsothermal=chkNonIsothermal->IsChecked();
+				nonIsothermal=chkNonIsothermal->GetState();
 			}
 		}*/
-		mApp->autoSaveSimuOnly=chkSimuOnly->IsChecked();
+		mApp->autoSaveSimuOnly=chkSimuOnly->GetState();
 		/* 
 		if( !outgassingText->GetNumber(&totalOutgassing) || !(totalOutgassing>0.0) ) {
         GLMessageBox::Display("Invalid outgassing value","Error",GLDLG_OK,GLDLG_ICONERROR);

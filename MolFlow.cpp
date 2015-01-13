@@ -32,10 +32,10 @@ GNU General Public License for more details.
 #include <string>
 
 #ifdef _DEBUG
-#define APP_NAME "MolFlow+ development version (Compiled "__DATE__" "__TIME__") DEBUG MODE"
+#define APP_NAME "MolFlow+ development version 64-bit (Compiled "__DATE__" "__TIME__") DEBUG MODE"
 #else
 //#define APP_NAME "Molflow+ development version ("__DATE__")"
-#define APP_NAME "Molflow+ 2.6.1.3 ("__DATE__")"
+#define APP_NAME "Molflow+ 2.6.2 64-bit ("__DATE__")"
 #endif
 
 /*
@@ -109,6 +109,7 @@ MolFlow *mApp;
 #define MENU_EDIT_ADDFORMULA   23
 #define MENU_EDIT_UPDATEFORMULAS 24
 #define MENU_EDIT_GLOBALSETTINGS 25
+#define MENU_EDIT_MOVINGPARTS 26
 
 #define MENU_FACET_COLLAPSE    300
 #define MENU_FACET_SWAPNORMAL  301
@@ -211,7 +212,7 @@ INT WINAPI WinMain( HINSTANCE hInst, HINSTANCE, LPSTR, INT )
 	
 	if( !mApp->Create( 1024 , 768 , FALSE ) ) {
 		char *logs = GLToolkit::GetLogs();
-#ifdef WIN32
+#ifdef WIN64
 		if(logs) MessageBox(NULL,logs,"Molflow [Fatal error]",MB_OK);
 #else
 		if( logs ) {
@@ -293,6 +294,7 @@ MolFlow::MolFlow()
 
 	mirrorFacet = NULL;
 	rotateFacet = NULL;
+	movement = NULL;
 	alignFacet = NULL;
 	addVertex = NULL;
 	facetMesh = NULL;
@@ -456,6 +458,7 @@ int MolFlow::OneTimeSceneInit()
 	
 	menu->GetSubMenu("Tools")->Add("Add formula ..."   ,MENU_EDIT_ADDFORMULA);
 	menu->GetSubMenu("Tools")->Add("Update formulas now!",MENU_EDIT_UPDATEFORMULAS,SDLK_f,ALT_MODIFIER);
+	menu->GetSubMenu("Tools")->Add("Moving parts...", MENU_EDIT_MOVINGPARTS);
 	menu->GetSubMenu("Tools")->Add(NULL); // Separator
 	menu->GetSubMenu("Tools")->Add("Texture Plotter ...",MENU_FACET_TEXPLOTTER,SDLK_t,ALT_MODIFIER);
 	menu->GetSubMenu("Tools")->Add("Profile Plotter ...",MENU_FACET_PROFPLOTTER,SDLK_p,ALT_MODIFIER);
@@ -693,7 +696,7 @@ int MolFlow::OneTimeSceneInit()
 
 	facetFILabel = new GLToggle(0,"Outgassing (mbar*l/s):");
 	facetFILabel->SetEnabled(FALSE);
-	facetFILabel->SetCheck(TRUE);
+	facetFILabel->SetState(TRUE);
 	facetFILabel->SetTextColor(110,110,110);
 	inputPanel->Add(facetFILabel);
 	facetFlow = new GLTextField(0,NULL);
@@ -769,7 +772,7 @@ int MolFlow::OneTimeSceneInit()
 	facetTeleport = new GLTextField(0,NULL);
 	facetPanel->Add(facetTeleport);
 
-	facetLinkLabel = new GLLabel("Link:");
+	facetLinkLabel = new GLLabel("Lnk:");
 	facetPanel->Add(facetLinkLabel);
 	facetSILabel = new GLTextField(0,"");
 	facetSILabel->SetEditable(TRUE);
@@ -779,10 +782,13 @@ int MolFlow::OneTimeSceneInit()
 	//facetSILabel->SetBackgroundColor(212,208,200);
 	facetPanel->Add(facetSILabel);
 
-	facetStrLabel = new GLLabel("Structure:");
+	facetStrLabel = new GLLabel("Struct:");
 	facetPanel->Add(facetStrLabel);
 	facetSuperDest = new GLTextField(0,NULL);
 	facetPanel->Add(facetSuperDest);
+
+	facetMovingToggle = new GLToggle(0, "Moving");
+	facetPanel->Add(facetMovingToggle);
 
 	//facetMass = new GLTextField(0,NULL);
 	//facetPanel->Add(facetMass);
@@ -942,10 +948,6 @@ void MolFlow::PlaceComponents() {
 	outputPanel->SetCompBounds(facetSLabel     ,7  ,15 ,100 ,18);
 	outputPanel->SetCompBounds(facetSticking   ,140 ,15 ,45,18);
 
-
-
-
-
 	outputPanel->SetCompBounds(facetPumpingLabel,7  ,40 ,100 ,18);
 	outputPanel->SetCompBounds(facetPumping,140 ,40 ,45,18);
 
@@ -968,10 +970,11 @@ void MolFlow::PlaceComponents() {
 	facetPanel->SetCompBounds(facetTPLabel     ,7,330,100,18);
 	facetPanel->SetCompBounds(facetTeleport   ,110,330,82,18);
 
-	facetPanel->SetCompBounds(facetStrLabel   ,7  ,355,55 ,18); //Structure:
-	facetPanel->SetCompBounds(facetSILabel    ,65 ,355,42 ,18); //Editable Textfield
-	facetPanel->SetCompBounds(facetLinkLabel  ,115,355,18 ,18); //Link
-	facetPanel->SetCompBounds(facetSuperDest  ,148,355,42 ,18); //Textfield
+	facetPanel->SetCompBounds(facetStrLabel   ,7  ,355,35 ,18); //Structure:
+	facetPanel->SetCompBounds(facetSILabel    ,43 ,355,30 ,18); //Editable Textfield
+	facetPanel->SetCompBounds(facetLinkLabel  ,85,355,18 ,18); //Link
+	facetPanel->SetCompBounds(facetSuperDest  ,107,355,30 ,18); //Textfield
+	facetPanel->SetCompBounds(facetMovingToggle, 140, 355, 60, 18);
 
 	facetPanel->SetCompBounds(facetReLabel    ,7  ,380,60 ,18);
 	facetPanel->SetCompBounds(facetRecType    ,65 ,380,130,18);
@@ -1064,17 +1067,17 @@ void MolFlow::SetFacetSearchPrg(BOOL visible,char *text) {
 
 void MolFlow::UpdateViewerParams() {
 
-	showNormal->SetCheck(viewer[curViewer]->showNormal);
-	showRule->SetCheck(viewer[curViewer]->showRule);
-	showUV->SetCheck(viewer[curViewer]->showUV);
-	showLeak->SetCheck(viewer[curViewer]->showLeak);
-	showHit->SetCheck(viewer[curViewer]->showHit);
-	showVolume->SetCheck(viewer[curViewer]->showVolume);
-	showLine->SetCheck(viewer[curViewer]->showLine);
-	showTexture->SetCheck(viewer[curViewer]->showTexture);
-	showFilter->SetCheck(viewer[curViewer]->showFilter);
-	showVertex->SetCheck(viewer[curViewer]->showVertex);
-	showIndex->SetCheck(viewer[curViewer]->showIndex);
+	showNormal->SetState(viewer[curViewer]->showNormal);
+	showRule->SetState(viewer[curViewer]->showRule);
+	showUV->SetState(viewer[curViewer]->showUV);
+	showLeak->SetState(viewer[curViewer]->showLeak);
+	showHit->SetState(viewer[curViewer]->showHit);
+	showVolume->SetState(viewer[curViewer]->showVolume);
+	showLine->SetState(viewer[curViewer]->showLine);
+	showTexture->SetState(viewer[curViewer]->showTexture);
+	showFilter->SetState(viewer[curViewer]->showFilter);
+	showVertex->SetState(viewer[curViewer]->showVertex);
+	showIndex->SetState(viewer[curViewer]->showIndex);
 
 	// Force all views to have the same showColormap
 	viewer[1]->showColormap = viewer[0]->showColormap;
@@ -1116,6 +1119,7 @@ void MolFlow::ClearFacetParams() {
 	facetPumping->Clear();
 	facetSuperDest->Clear();
 	facetSuperDest->SetEditable(FALSE);
+	facetMovingToggle->SetState(0); facetMovingToggle->SetEnabled(FALSE);
 	//facetSILabel->SetText("...");
 	facetSILabel->Clear();
 	facetSILabel->SetEditable(FALSE);
@@ -1269,7 +1273,7 @@ void MolFlow::ApplyFacetParams() {
 	BOOL doFlow = FALSE;
 	BOOL outgassingNotNumber;
 	//Calculate flow
-	if (facetFILabel->IsChecked() && strcmp(facetFlow->GetText(), "...") != 0 && facetDesType->GetSelectedIndex() != 0
+	if (facetFILabel->GetState() && strcmp(facetFlow->GetText(), "...") != 0 && facetDesType->GetSelectedIndex() != 0
 		&& strcmp(facetDesType->GetSelectedValue(), "...") != 0) {  //We want outgassing
 		if (facetFlow->GetNumber(&flow)) { //If we can parse the number
 			if (!(flow > 0.0) && !(facetUseDesFile->GetSelectedIndex() == 1)) {
@@ -1291,7 +1295,7 @@ void MolFlow::ApplyFacetParams() {
 	double flowA=0;
 	BOOL doFlowA = FALSE;
 	//Calculate flow
-	if( facetFIAreaLabel->IsChecked() && strcmp(facetFlowArea->GetText(),"..." )!=0
+	if( facetFIAreaLabel->GetState() && strcmp(facetFlowArea->GetText(),"..." )!=0
 		&& facetDesType->GetSelectedIndex()!=0 && strcmp(facetDesType->GetSelectedValue(),"..." )!=0) { //We want outgassing per area
 		if (facetFlowArea->GetNumber(&flowA)) { //Can be parsed as number
 			if( !(flowA>0.0) ) {
@@ -1460,6 +1464,9 @@ void MolFlow::ApplyFacetParams() {
 				f->sh.superDest = superDest;
 				if(superDest) f->sh.opacity = 1.0; // Force opacity for link facet
 			}
+			//Moving or not
+			if (facetMovingToggle->GetState() < 2) f->sh.isMoving = facetMovingToggle->GetState();
+
 			if(doUseMapA) {
 				f->sh.useOutgassingFile=useMapA;
 			}
@@ -1551,6 +1558,7 @@ void MolFlow::UpdateFacetParams(BOOL updateSelection) {
 
 		int    hasOutgassingMap = f0->hasOutgassingMap;
 		int    useOutgassingFile = f0->sh.useOutgassingFile;
+		BOOL isMoving = f0->sh.isMoving;
 
 		BOOL stickingE = TRUE;
 		BOOL teleportE = TRUE;
@@ -1569,6 +1577,7 @@ void MolFlow::UpdateFacetParams(BOOL updateSelection) {
 		BOOL is2sidedE = TRUE;
 		BOOL hasOutgMapE = TRUE;
 		BOOL useOutgMapE = TRUE;
+		BOOL isMovingE = TRUE;
 
 		for(int i=1;i<count;i++) {
 			f = geom->GetFacet(selection[i]);
@@ -1589,6 +1598,7 @@ void MolFlow::UpdateFacetParams(BOOL updateSelection) {
 			recordE = recordE && (f0->sh.profileType == f->sh.profileType);  //profiles
 			hasOutgMapE = hasOutgMapE && (f0->hasOutgassingMap == f->hasOutgassingMap);
 			useOutgMapE = useOutgMapE && (f0->sh.useOutgassingFile == f->sh.useOutgassingFile);
+			isMovingE = isMovingE && (f0->sh.isMoving == f->sh.isMoving);
 			if (f->sh.area>0) area+=f->sh.area*(f->sh.is2sided?2.0:1.0);
 		}
 
@@ -1673,6 +1683,15 @@ void MolFlow::UpdateFacetParams(BOOL updateSelection) {
 			facetSILabel->SetText("...");
 		}
 
+		if (isMovingE) {
+			facetMovingToggle->SetState(isMoving);
+			facetMovingToggle->AllowMultipleState(FALSE);
+		}
+		else {
+			facetMovingToggle->SetState(2);
+			facetMovingToggle->AllowMultipleState(TRUE);
+		}
+
 		if (count==1) {
 			facetPumping->SetEditable(TRUE);
 			calcFlow();
@@ -1733,13 +1752,6 @@ void MolFlow::UpdateFacetParams(BOOL updateSelection) {
 
 		free(selection);
 
-
-
-
-
-
-
-
 		//Enabled->Editable
 		facetSticking->SetEditable(TRUE);
 		facetTeleport->SetEditable(TRUE);
@@ -1747,6 +1759,7 @@ void MolFlow::UpdateFacetParams(BOOL updateSelection) {
 		facetTemperature->SetEditable(TRUE);
 		facetAccFactor->SetEditable(TRUE);
 		facetSuperDest->SetEditable(TRUE);
+		facetMovingToggle->SetEnabled(TRUE);
 		facetSILabel->SetEditable(TRUE);
 		facetSideType->SetEditable(TRUE);
 		facetDesType->SetEditable(TRUE);
@@ -2436,6 +2449,7 @@ int MolFlow::RestoreDeviceObjects()
 
 	RVALIDATE_DLG(mirrorFacet);
 	RVALIDATE_DLG(rotateFacet);
+	RVALIDATE_DLG(movement);
 	RVALIDATE_DLG(alignFacet);
 	RVALIDATE_DLG(addVertex);
 	RVALIDATE_DLG(facetMesh);
@@ -2509,8 +2523,8 @@ int MolFlow::InvalidateDeviceObjects()
 int MolFlow::OnExit() {
 	SaveConfig();
 	worker.Exit();
-	remove("Molflow_AutoSave.geo");
-	remove("Molflow_AutoSave.geo7z");
+	remove("Molflow_AutoSave.xml");
+	remove("Molflow_AutoSave.zip");
 	//empty TMP directory
 	char tmp[1024];
 	char CWD [MAX_PATH];
@@ -2893,6 +2907,7 @@ void MolFlow::LoadFile(char *fName) {
 		if(facetDetails) facetDetails->Update();
 		if(facetCoordinates) facetCoordinates->UpdateFromSelection();
 		if(vertexCoordinates) vertexCoordinates->Update();
+		if(movement) movement->Update();
 
 	} catch (Error &e) {
 
@@ -3323,6 +3338,11 @@ void MolFlow::ProcessMessage(GLComponent *src,int message)
 			break;
 		case MENU_EDIT_UPDATEFORMULAS:
 			UpdateFormula();
+			break;
+		case MENU_EDIT_MOVINGPARTS:
+			if (!movement) movement = new Movement(geom, &worker);
+			movement->Update();
+			movement->SetVisible(TRUE);
 			break;
 		case MENU_EDIT_GLOBALSETTINGS:
 			if( !globalSettings ) globalSettings = new GlobalSettings();
@@ -3777,7 +3797,7 @@ void MolFlow::ProcessMessage(GLComponent *src,int message)
 			} else {
 				Resize(1024,768,TRUE);
 			}
-			menu->GetSubMenu("View")->SetCheck(MENU_VIEW_FULLSCREEN,!m_bWindowed);
+			menu->GetSubMenu("View")->SetState(MENU_VIEW_FULLSCREEN,!m_bWindowed);
 			break;
 
 		case MENU_VIEW_ADDNEW:
@@ -3902,8 +3922,6 @@ void MolFlow::ProcessMessage(GLComponent *src,int message)
 		//TEXT --------------------------------------------------------------------
 	case MSG_TEXT_UPD:
 		if( src == facetSticking ) {
-
-
 			calcFlow();
 			facetApplyBtn->SetEnabled(TRUE);
 		} else if ( src == facetTeleport ) {
@@ -3925,8 +3943,8 @@ void MolFlow::ProcessMessage(GLComponent *src,int message)
 			if (area==0) facetFlowArea->SetText("#DIV0");
 			else SetParam(facetFlowArea,flow/area);
 			facetApplyBtn->SetEnabled(TRUE);
-			facetFILabel->SetCheck(TRUE);
-			facetFIAreaLabel->SetCheck(FALSE);
+			facetFILabel->SetState(TRUE);
+			facetFIAreaLabel->SetState(FALSE);
 			// //else if ( src == facetMass ) {
 			//  facetApplyBtn->SetEnabled(TRUE);
 		} else if ( src == facetFlowArea ) {
@@ -3936,8 +3954,8 @@ void MolFlow::ProcessMessage(GLComponent *src,int message)
 			facetArea->GetNumber(&area);
 			SetParam(facetFlow,flowPerArea*area);
 			facetApplyBtn->SetEnabled(TRUE);
-			facetFIAreaLabel->SetCheck(TRUE);
-			facetFILabel->SetCheck(FALSE);
+			facetFIAreaLabel->SetState(TRUE);
+			facetFILabel->SetState(FALSE);
 			// //else if ( src == facetMass ) {
 			//  facetApplyBtn->SetEnabled(TRUE);
 		} else if ( src == facetPumping ) {
@@ -4016,12 +4034,16 @@ void MolFlow::ProcessMessage(GLComponent *src,int message)
 		//TOGGLE ------------------------------------------------------------------
 	case MSG_TOGGLE:
 		if (src==facetFILabel) {
-			facetFILabel->SetCheck(TRUE);
-			facetFIAreaLabel->SetCheck(FALSE);
+			facetFILabel->SetState(TRUE);
+			facetFIAreaLabel->SetState(FALSE);
 		} else if (src==facetFIAreaLabel) {
-			facetFILabel->SetCheck(FALSE);
-			facetFIAreaLabel->SetCheck(TRUE);
-		} else {
+			facetFILabel->SetState(FALSE);
+			facetFIAreaLabel->SetState(TRUE);
+		}
+		else if (src == facetMovingToggle) {
+			facetApplyBtn->SetEnabled(TRUE);
+		}
+		else {
 			// Update viewer flags
 			UpdateViewerFlags();
 		}
@@ -4433,7 +4455,7 @@ void MolFlow::UpdateStructMenu() {
 			structMenu->Add(tmp,MENU_VIEW_STRUCTURE+(i+1));
 	}
 
-	structMenu->SetCheck(MENU_VIEW_STRUCTURE+geom->viewStruct+1,TRUE);
+	structMenu->SetState(MENU_VIEW_STRUCTURE+geom->viewStruct+1,TRUE);
 
 	UpdateTitle();
 }
@@ -4958,17 +4980,17 @@ void MolFlow::LoadConfig() {
 
 //----------------------------------------------------------------------------
 void MolFlow::UpdateViewerFlags() {
-	viewer[curViewer]->showNormal=showNormal->IsChecked();
-	viewer[curViewer]->showRule=showRule->IsChecked();
-	viewer[curViewer]->showUV=showUV->IsChecked();
-	viewer[curViewer]->showLeak=showLeak->IsChecked();
-	viewer[curViewer]->showHit=showHit->IsChecked();
-	viewer[curViewer]->showLine=showLine->IsChecked();
-	viewer[curViewer]->showVolume=showVolume->IsChecked();
-	viewer[curViewer]->showTexture=showTexture->IsChecked();
-	viewer[curViewer]->showFilter=showFilter->IsChecked();
-	viewer[curViewer]->showVertex=showVertex->IsChecked();
-	viewer[curViewer]->showIndex=showIndex->IsChecked();
+	viewer[curViewer]->showNormal=showNormal->GetState();
+	viewer[curViewer]->showRule=showRule->GetState();
+	viewer[curViewer]->showUV=showUV->GetState();
+	viewer[curViewer]->showLeak=showLeak->GetState();
+	viewer[curViewer]->showHit=showHit->GetState();
+	viewer[curViewer]->showLine=showLine->GetState();
+	viewer[curViewer]->showVolume=showVolume->GetState();
+	viewer[curViewer]->showTexture=showTexture->GetState();
+	viewer[curViewer]->showFilter=showFilter->GetState();
+	viewer[curViewer]->showVertex=showVertex->GetState();
+	viewer[curViewer]->showIndex=showIndex->GetState();
 	//worker.Update(0.0);
 }
 

@@ -322,7 +322,7 @@ void ProfilePlotter::refreshViews() {
 				case 2: //Velocity
 					scaleX = f->sh.maxSpeed / (double)PROFILE_SIZE;
 					for (int j = 0; j < PROFILE_SIZE; j++) {
-						if (!correctForGas->IsChecked()) {
+						if (!correctForGas->GetState()) {
 							v->Add((double)j*scaleX, (double)profilePtr[j].count / fnbHit, FALSE);
 						}
 						else {
@@ -333,7 +333,7 @@ void ProfilePlotter::refreshViews() {
 				case 3: //Angle (deg)
 					scaleX = 90.0 / (double)PROFILE_SIZE;
 					for (int j = 0; j < PROFILE_SIZE ; j++) {
-						if (!correctForGas->IsChecked()) {
+						if (!correctForGas->GetState()) {
 							v->Add((double)j*scaleX, (double)profilePtr[j].count / fnbHit, FALSE);
 						}
 						else {
@@ -488,7 +488,7 @@ void ProfilePlotter::refreshViews() {
 			break;
 		case MSG_TOGGLE:
 			if (src==logYToggle) {
-				chart->GetY1Axis()->SetScale(logYToggle->IsChecked());
+				chart->GetY1Axis()->SetScale(logYToggle->GetState());
 			}
 			else if (src == correctForGas) {
 				refreshViews();

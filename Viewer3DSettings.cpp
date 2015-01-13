@@ -154,13 +154,13 @@ void Viewer3DSettings::Display(Geometry *s,GeometryViewer *v) {
   geom = s;
   viewer = v;
   showMode->SetSelectedIndex(viewer->showBack);
-  hiddenEdge->SetCheck(viewer->showHidden);
-  hiddenVertex->SetCheck(viewer->showHiddenVertex);
-  showMesh->SetCheck(viewer->showMesh);
-  showTimeToggle->SetCheck(viewer->showTime);
+  hiddenEdge->SetState(viewer->showHidden);
+  hiddenVertex->SetState(viewer->showHiddenVertex);
+  showMesh->SetState(viewer->showMesh);
+  showTimeToggle->SetState(viewer->showTime);
 
-  bigDots->SetCheck(viewer->bigDots);
-  showDirection->SetCheck(viewer->showDir);
+  bigDots->SetState(viewer->bigDots);
+  showDirection->SetState(viewer->showDir);
   sprintf(tmp,"%g",viewer->transStep);
   traStepText->SetText(tmp);
   sprintf(tmp,"%g",viewer->angleStep);
@@ -173,8 +173,8 @@ void Viewer3DSettings::Display(Geometry *s,GeometryViewer *v) {
   panel->SetTitle(tmp);
   sprintf(tmp,"%g",geom->GetNormeRatio());
   normeText->SetText(tmp);
-  autoNorme->SetCheck( geom->GetAutoNorme() );
-  centerNorme->SetCheck( geom->GetCenterNorme() );
+  autoNorme->SetState( geom->GetAutoNorme() );
+  centerNorme->SetState( geom->GetCenterNorme() );
   DoModal();
 
 }
@@ -217,21 +217,21 @@ void Viewer3DSettings::ProcessMessage(GLComponent *src,int message) {
       viewer->angleStep = astep;
 	  viewer->dispNumHits = dnh;
       viewer->dispNumLeaks = dnl;
-      viewer->showHidden=hiddenEdge->IsChecked();
-	  viewer->showHiddenVertex=hiddenVertex->IsChecked();
-      viewer->showMesh=showMesh->IsChecked();
+      viewer->showHidden=hiddenEdge->GetState();
+	  viewer->showHiddenVertex=hiddenVertex->GetState();
+      viewer->showMesh=showMesh->GetState();
 
-	  viewer->bigDots=bigDots->IsChecked();
-      viewer->showDir=showDirection->IsChecked();
-	  viewer->showTime=showTimeToggle->IsChecked();
+	  viewer->bigDots=bigDots->GetState();
+      viewer->showDir=showDirection->GetState();
+	  viewer->showTime=showTimeToggle->GetState();
 
       if( !normeText->GetNumber(&nratio) ) {
         GLMessageBox::Display("Invalid norme ratio value","Error",GLDLG_OK,GLDLG_ICONERROR);
         return;
       }
       geom->SetNormeRatio((float)nratio);
-      geom->SetAutoNorme(autoNorme->IsChecked());
-      geom->SetCenterNorme(centerNorme->IsChecked());
+      geom->SetAutoNorme(autoNorme->GetState());
+      geom->SetCenterNorme(centerNorme->GetState());
 
       GLWindow::ProcessMessage(NULL,MSG_CLOSE);
 

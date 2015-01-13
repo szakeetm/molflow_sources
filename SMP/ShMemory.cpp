@@ -16,7 +16,7 @@
   GNU General Public License for more details.
 */
 
-#ifdef WIN32
+#ifdef WIN64
 
 #include <windows.h>
 #include <stdio.h>

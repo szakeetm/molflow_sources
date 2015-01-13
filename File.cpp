@@ -19,7 +19,7 @@
 #include "File.h"
 #include <string.h>
 
-#ifdef WIN32
+#ifdef WIN64
 #include <direct.h>
 #include <io.h>
 #include <iostream>
@@ -49,7 +49,7 @@ const char *Error::GetMsg() {
 
 int FileUtils::Exist(const char *fileName) {
 
-#ifdef WIN32
+#ifdef WIN64
   struct _finddata_t seqfile;
   intptr_t h;
 
@@ -392,7 +392,7 @@ void FileWriter::WriteInt(int v,char *sep) {
 }
 
 void FileWriter::WriteLLong(llong v,char *sep) {
-#ifdef WIN32
+#ifdef WIN64
   if( !fprintf(file,"%I64d",v) )
     throw Error("Error while writing to file");
 #else

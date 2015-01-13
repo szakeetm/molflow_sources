@@ -27,7 +27,7 @@
 #include <time.h>
 
 #include "Simulation.h"
-#ifdef WIN32
+#ifdef WIN64
 #include <Process.h> // For _getpid()
 #endif
 

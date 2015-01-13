@@ -21,7 +21,7 @@
 #include <float.h>
 #include <math.h>
 #include <time.h>
-#include <CImage.h>
+#include <cimage.h>
 
 // Static handle to marker texture
 GLuint dotTex = 0;
@@ -162,7 +162,7 @@ GLuint GLAxis::initMarker(char *name) {
   GLuint tex = 0;
 
   CImage img;
-  if( img.LoadImage(name) ) {
+  if( img.LoadCImage(name) ) {
 
     // Make 32 Bit RGBA buffer
     int fWidth  = img.Width();

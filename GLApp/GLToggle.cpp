@@ -25,20 +25,25 @@ GLToggle::GLToggle(int compId,char *text):GLComponent(compId) {
   else
     strcpy(this->text,"");
   state=0;
+  allowMultipleState = FALSE;
   SetBorder(BORDER_NONE);
   SetTextColor(0,0,0);
 }
 
 // ---------------------------------------------------------------------
 
-BOOL GLToggle::IsChecked() {
+BOOL GLToggle::GetState() {
   return state;
+}
+
+void GLToggle::AllowMultipleState(BOOL setAllow) {
+	allowMultipleState = setAllow;
 }
 
 // ---------------------------------------------------------------------
 
-void GLToggle::SetCheck(BOOL checked) {
-  state=checked;
+void GLToggle::SetState(int setState) {
+  state=setState;
 }
 
 // ---------------------------------------------------------------------
@@ -50,14 +55,17 @@ void GLToggle::Paint() {
 
   GLComponent::Paint();
 
-
   font->SetTextColor(rText,gText,bText);
   font->DrawText(posX+16,posY+2,text,FALSE);
 
   GLToolkit::DrawToggle(posX+2,posY+3);
-  if(state) {
+  if(state==1) {
     font->SetTextColor(0.0f,0.0f,0.0f);
     font->DrawText(posX+5,posY+1,"\215",FALSE);
+  }
+  else if (state == 2) {
+	  font->SetTextColor(0.7f, 0.7f, 0.7f);
+	  font->DrawText(posX + 5, posY + 1, "\215", FALSE);
   }
 
 }
@@ -81,7 +89,8 @@ void GLToggle::ManageEvent(SDL_Event *evt) {
 
   if( evt->type == SDL_MOUSEBUTTONDOWN ) {
     if( evt->button.button == SDL_BUTTON_LEFT ) {
-      state = !state;
+      if (!allowMultipleState) state = !state; //inverse state
+	  else state = (state + 2) % 3; //cycle states
       parent->ProcessMessage(this,MSG_TOGGLE);
     }
   }

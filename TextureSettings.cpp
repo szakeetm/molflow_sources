@@ -153,7 +153,7 @@ void TextureSettings::UpdateSize() {
 	for(int i=0;i<nbFacet;i++) {
 		Facet *f = geom->GetFacet(i);
 		if(f->sh.isTextured) {
-			swap += f->GetTexSwapSize(colormapBtn->IsChecked());
+			swap += f->GetTexSwapSize(colormapBtn->GetState());
 		}
 	}
 	swapText->SetText(FormatMemory(swap));
@@ -177,10 +177,10 @@ void TextureSettings::Update() {
 		geom->texture_limits[geom->textureMode].autoscale.max.all
 		:geom->texture_limits[geom->textureMode].autoscale.max.moments_only));
 	texCMaxText->SetText(tmp);
-	texAutoScale->SetCheck(geom->texAutoScale);
+	texAutoScale->SetState(geom->texAutoScale);
 	includeConstantFlow->SetVisible(geom->texAutoScale);
-	includeConstantFlow->SetCheck(geom->texAutoScaleIncludeConstantFlow);
-	logBtn->SetCheck(geom->texLogScale);
+	includeConstantFlow->SetState(geom->texAutoScaleIncludeConstantFlow);
+	logBtn->SetState(geom->texLogScale);
 	gradient->SetScale(geom->texLogScale?LOG_SCALE:LINEAR_SCALE);
 	if( !geom->texAutoScale ) { // Set manual texture scaling
 		gradient->SetMinMax(
@@ -197,7 +197,7 @@ void TextureSettings::Update() {
 			:geom->texture_limits[geom->textureMode].autoscale.max.moments_only
 			);
 	}
-	colormapBtn->SetCheck(viewers[0]->showColormap);
+	colormapBtn->SetState(viewers[0]->showColormap);
 	gradient->SetType( viewers[0]->showColormap?GRADIENT_COLOR:GRADIENT_BW );
 	UpdateSize();
 
@@ -251,8 +251,8 @@ void TextureSettings::ProcessMessage(GLComponent *src,int message) {
 			}
 			geom->texture_limits[geom->textureMode].manual.min.all = min;
 			geom->texture_limits[geom->textureMode].manual.max.all = max;
-			geom->texAutoScale = texAutoScale->IsChecked();
-			geom->texAutoScaleIncludeConstantFlow = includeConstantFlow->IsChecked();
+			geom->texAutoScale = texAutoScale->GetState();
+			geom->texAutoScaleIncludeConstantFlow = includeConstantFlow->GetState();
 			try {
 				worker->Update(0.0f);
 			} catch(Error &e) {
@@ -271,7 +271,7 @@ void TextureSettings::ProcessMessage(GLComponent *src,int message) {
 				:geom->texture_limits[geom->textureMode].autoscale.max.moments_only;texMinText->SetText(texCMinText->GetText());
 			texMinText->SetText(texCMinText->GetText());
 			texMaxText->SetText(texCMaxText->GetText());
-			texAutoScale->SetCheck(FALSE);
+			texAutoScale->SetState(FALSE);
 			includeConstantFlow->SetVisible(FALSE);
 			geom->texAutoScale=false;
 			try {
@@ -285,20 +285,20 @@ void TextureSettings::ProcessMessage(GLComponent *src,int message) {
 
 	case MSG_TOGGLE:
 		if (src==colormapBtn) {
-			for(int i=0;i<MAX_VIEWER;i++) viewers[i]->showColormap = colormapBtn->IsChecked();
-			geom->texColormap = colormapBtn->IsChecked();
+			for(int i=0;i<MAX_VIEWER;i++) viewers[i]->showColormap = colormapBtn->GetState();
+			geom->texColormap = colormapBtn->GetState();
 			worker->Update(0.0f);
 			Update();
 		} else if (src==texAutoScale) {
-			geom->texAutoScale = texAutoScale->IsChecked();
+			geom->texAutoScale = texAutoScale->GetState();
 			worker->Update(0.0f);
 			Update();
 		} else if (src==this->includeConstantFlow) {
-			geom->texAutoScaleIncludeConstantFlow = includeConstantFlow->IsChecked();
+			geom->texAutoScaleIncludeConstantFlow = includeConstantFlow->GetState();
 			worker->Update(0.0f);
 			Update();
 		} else if (src==logBtn) {
-			geom->texLogScale = logBtn->IsChecked();
+			geom->texLogScale = logBtn->GetState();
 			gradient->SetScale(geom->texLogScale?LOG_SCALE:LINEAR_SCALE);
 			worker->Update(0.0f);
 			Update();

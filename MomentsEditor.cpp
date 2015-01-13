@@ -93,12 +93,12 @@ MomentsEditor::MomentsEditor(Worker *w):GLWindow() {
 
   useMaxwellToggle = new GLToggle(0,"Use Maxwell-B. speed distr.");
   useMaxwellToggle->SetBounds(15,300,wD-25,20);
-  //useMaxwellToggle->SetCheck(work->useMaxwellDistribution);
+  //useMaxwellToggle->SetState(work->useMaxwellDistribution);
   Add(useMaxwellToggle);
 
   calcConstantFlow = new GLToggle(0,"Calculate constant flow");
   calcConstantFlow->SetBounds(15,325,wD-25,20);
-  //useMaxwellToggle->SetCheck(work->useMaxwellDistribution);
+  //useMaxwellToggle->SetState(work->useMaxwellDistribution);
   Add(calcConstantFlow);
 
   /*GLLabel *valveLabel = new GLLabel("Facets 1,2 open at:                   s");
@@ -187,8 +187,8 @@ void MomentsEditor::ProcessMessage(GLComponent *src,int message) {
 				/*work->desorptionStartTime=start;
 				work->desorptionStopTime=stop;*/
 				work->timeWindowSize=window;
-				work->useMaxwellDistribution=useMaxwellToggle->IsChecked();
-				work->calcConstantFlow=calcConstantFlow->IsChecked();
+				work->useMaxwellDistribution=useMaxwellToggle->GetState();
+				work->calcConstantFlow=calcConstantFlow->GetState();
 				/*work->valveOpenMoment=valve;*/
 
 				work->Reload();
@@ -274,8 +274,8 @@ void MomentsEditor::Refresh() {
 	windowSizeText->SetText(tmp);
 	/*sprintf(tmp,"%g",work->valveOpenMoment);
 	valveText->SetText(tmp);*/
-	useMaxwellToggle->SetCheck(work->useMaxwellDistribution);
-	calcConstantFlow->SetCheck(work->calcConstantFlow);
+	useMaxwellToggle->SetState(work->useMaxwellDistribution);
+	calcConstantFlow->SetState(work->calcConstantFlow);
 	RebuildList();
 }
 

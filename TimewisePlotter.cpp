@@ -298,7 +298,7 @@ void TimewisePlotter::refreshViews() {
 			//double q;
 			v->Reset();
 			int momentIndex;
-			if (m==(nbView-1) && constantFlowToggle->IsChecked()) momentIndex=0; //Constant flow
+			if (m==(nbView-1) && constantFlowToggle->GetState()) momentIndex=0; //Constant flow
 			else momentIndex=m+1; //any other 'normal' moment
 			APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + sizeof(SHHITS)+momentIndex*sizeof(APROFILE)*PROFILE_SIZE);
 
@@ -412,7 +412,7 @@ void TimewisePlotter::refreshViews() {
 			}
 		}
 
-		if (constantFlowToggle->IsChecked()) { //add constant flow
+		if (constantFlowToggle->GetState()) { //add constant flow
 			GLDataView *v = new GLDataView();
 			sprintf(tmp,"F#%d %s - Constant Flow",facet+1,profType[f->sh.profileType]);
 			v->SetName(tmp);
@@ -502,7 +502,7 @@ void TimewisePlotter::refreshViews() {
 			*/
 		case MSG_TOGGLE:
 			if (src==logYToggle) {
-				chart->GetY1Axis()->SetScale(logYToggle->IsChecked());
+				chart->GetY1Axis()->SetScale(logYToggle->GetState());
 			} else if (src==constantFlowToggle) {
 				Reset();
 				int idx = profCombo->GetSelectedIndex();
@@ -523,7 +523,7 @@ void TimewisePlotter::UpdateMoment() {
 	for(int i=0;i<nbView;i++) {
 
 		GLDataView *v = views[i];
-		if ((i==(nbView-1) && constantFlowToggle->IsChecked() && worker->displayedMoment==0) || i==(worker->displayedMoment-1)) {
+		if ((i==(nbView-1) && constantFlowToggle->GetState() && worker->displayedMoment==0) || i==(worker->displayedMoment-1)) {
 			v->SetStyle(STYLE_SOLID);
 			v->SetLineWidth(2);
 		} else {

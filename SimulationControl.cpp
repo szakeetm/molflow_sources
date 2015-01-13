@@ -16,7 +16,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 */
 
-#ifdef WIN32
+#ifdef WIN64
 #include <windows.h> // For GetTickCount()
 #include <Process.h> // For _getpid()
 #else
@@ -46,7 +46,7 @@ SIMULATION *sHandle;
 // Timing stuff
 // -------------------------------------------------------
 
-#ifdef WIN32
+#ifdef WIN64
 BOOL usePerfCounter;         // Performance counter usage
 LARGE_INTEGER perfTickStart; // First tick
 double perfTicksPerSec;      // Performance counter (number of tick per second)
@@ -62,7 +62,7 @@ void InitSimulation() {
 	memset(sHandle, 0, sizeof(SIMULATION));
 	THits = (FACET **)malloc(MAX_THIT*sizeof(FACET *)); // Transparent hit cache
 
-#ifdef WIN32
+#ifdef WIN64
 	{
 		LARGE_INTEGER qwTicksPerSec;
 		usePerfCounter = QueryPerformanceFrequency(&qwTicksPerSec);
@@ -147,7 +147,7 @@ DWORD RevertBit(DWORD dw) {
 
 DWORD GetSeed() {
 
-	/*#ifdef WIN32
+	/*#ifdef WIN64
 	DWORD r;
 	_asm {
 	rdtsc
@@ -739,7 +739,7 @@ double GetTick() {
 
 	// Number of sec since the application startup
 
-#ifdef WIN32
+#ifdef WIN64
 
 	if (usePerfCounter) {
 

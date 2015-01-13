@@ -29,6 +29,8 @@ public:
 
   // Component methods
   void SetText(const char *text);
+  void SetText(const double &val);
+  void SetText(const int &val);
   char *GetText();
   void ScrollToVisible();
   void SetCursorPos(int pos);

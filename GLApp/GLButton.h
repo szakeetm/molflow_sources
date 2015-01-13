@@ -31,8 +31,8 @@ public:
   void SetIcon(char *fileName);
   void SetDisabledIcon(char *fileName);
   void SetToggle(BOOL toggle);
-  BOOL IsChecked();
-  void SetCheck(BOOL checked);
+  BOOL GetState();
+  void SetState(BOOL checked);
 
   // Implementation
   void Paint();

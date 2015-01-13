@@ -82,13 +82,13 @@ void GLButton::SetToggle(BOOL toggle) {
 
 // ---------------------------------------------------------------------
 
-BOOL GLButton::IsChecked() {
+BOOL GLButton::GetState() {
   return toggleState;
 }
 
 // ---------------------------------------------------------------------
 
-void GLButton::SetCheck(BOOL checked) {
+void GLButton::SetState(BOOL checked) {
   toggleState = checked;
   toggle = TRUE;
 }

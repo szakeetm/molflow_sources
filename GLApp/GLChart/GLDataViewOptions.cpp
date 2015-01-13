@@ -471,7 +471,7 @@ GLDataViewOptions::GLDataViewOptions(GLChart *chart) : GLTabWindow() {
     fillMethodCombo->SetSelectedIndex(dataView->GetFillMethod());
     markerSizeSpinner->SetValue(dataView->GetMarkerSize());
     markerStyleCombo->SetSelectedIndex(dataView->GetMarker());
-    labelVisibleCheck->SetCheck(dataView->IsLabelVisible());
+    labelVisibleCheck->SetState(dataView->IsLabelVisible());
 
     sprintf(tmp,"%g",dataView->GetA0());
     transformA0Text->SetText(tmp);
@@ -481,87 +481,87 @@ GLDataViewOptions::GLDataViewOptions(GLChart *chart) : GLTabWindow() {
     transformA2Text->SetText(tmp);
     stepSpinner->SetValue(dataView->GetInterpolationStep());
 
-    noInterpBtn->SetCheck(FALSE);
-    linearBtn->SetCheck(FALSE);
-    cubicBtn->SetCheck(FALSE);
-    cosineBtn->SetCheck(FALSE);
-    hermiteBtn->SetCheck(FALSE);
+    noInterpBtn->SetState(FALSE);
+    linearBtn->SetState(FALSE);
+    cubicBtn->SetState(FALSE);
+    cosineBtn->SetState(FALSE);
+    hermiteBtn->SetState(FALSE);
 
     switch(dataView->GetInterpolationMethod()) {
       case INTERPOLATE_NONE:
-        noInterpBtn->SetCheck(TRUE);
+        noInterpBtn->SetState(TRUE);
         break;
       case INTERPOLATE_LINEAR:
-        linearBtn->SetCheck(TRUE);
+        linearBtn->SetState(TRUE);
         break;
       case INTERPOLATE_CUBIC:
-        cubicBtn->SetCheck(TRUE);
+        cubicBtn->SetState(TRUE);
         break;
       case INTERPOLATE_COSINE:
-        cosineBtn->SetCheck(TRUE);
+        cosineBtn->SetState(TRUE);
         break;
       case INTERPOLATE_HERMITE:
-        hermiteBtn->SetCheck(TRUE);
+        hermiteBtn->SetState(TRUE);
         break;
     }
 
-    noExtBtn->SetCheck(FALSE);
-    flatExtBtn->SetCheck(FALSE);
-    linearExtBtn->SetCheck(FALSE);
+    noExtBtn->SetState(FALSE);
+    flatExtBtn->SetState(FALSE);
+    linearExtBtn->SetState(FALSE);
 
     switch(dataView->GetSmoothingExtrapolation()) {
       case SMOOTH_EXT_NONE:
-        noExtBtn->SetCheck(TRUE);
+        noExtBtn->SetState(TRUE);
         break;
       case SMOOTH_EXT_FLAT:
-        flatExtBtn->SetCheck(TRUE);
+        flatExtBtn->SetState(TRUE);
         break;
       case SMOOTH_EXT_LINEAR:
-        linearExtBtn->SetCheck(TRUE);
+        linearExtBtn->SetState(TRUE);
         break;
     }
 
-    noSmoothBtn->SetCheck(FALSE);
-    flatSmoothBtn->SetCheck(FALSE);
-    triangularSmoothBtn->SetCheck(FALSE);
-    gaussianSmoothBtn->SetCheck(FALSE);
+    noSmoothBtn->SetState(FALSE);
+    flatSmoothBtn->SetState(FALSE);
+    triangularSmoothBtn->SetState(FALSE);
+    gaussianSmoothBtn->SetState(FALSE);
 
     switch(dataView->GetSmoothingMethod()) {
       case SMOOTH_NONE:
-        noSmoothBtn->SetCheck(TRUE);
+        noSmoothBtn->SetState(TRUE);
         break;
       case SMOOTH_FLAT:
-        flatSmoothBtn->SetCheck(TRUE);
+        flatSmoothBtn->SetState(TRUE);
         break;
       case SMOOTH_TRIANGULAR:
-        triangularSmoothBtn->SetCheck(TRUE);
+        triangularSmoothBtn->SetState(TRUE);
         break;
       case SMOOTH_GAUSSIAN:
-        gaussianSmoothBtn->SetCheck(TRUE);
+        gaussianSmoothBtn->SetState(TRUE);
         break;
     }
 
-    noMathBtn->SetCheck(FALSE);
-    derivativeBtn->SetCheck(FALSE);
-    integralBtn->SetCheck(FALSE);
-    fftModBtn->SetCheck(FALSE);
-    fftPhaseBtn->SetCheck(FALSE);
+    noMathBtn->SetState(FALSE);
+    derivativeBtn->SetState(FALSE);
+    integralBtn->SetState(FALSE);
+    fftModBtn->SetState(FALSE);
+    fftPhaseBtn->SetState(FALSE);
 
     switch(dataView->GetMathFunction()) {
       case MATH_NONE:
-        noMathBtn->SetCheck(TRUE);
+        noMathBtn->SetState(TRUE);
         break;
       case MATH_DERIVATIVE:
-        derivativeBtn->SetCheck(TRUE);
+        derivativeBtn->SetState(TRUE);
         break;
       case MATH_INTEGRAL:
-        integralBtn->SetCheck(TRUE);
+        integralBtn->SetState(TRUE);
         break;
       case MATH_FFT_MODULUS:
-        fftModBtn->SetCheck(TRUE);
+        fftModBtn->SetState(TRUE);
         break;
       case MATH_FFT_PHASE:
-        fftPhaseBtn->SetCheck(TRUE);
+        fftPhaseBtn->SetState(TRUE);
         break;
     }
 
@@ -652,7 +652,7 @@ GLDataViewOptions::GLDataViewOptions(GLChart *chart) : GLTabWindow() {
       dataView->SetMarker(markerStyleCombo->GetSelectedIndex());
       commit();
     } else if (src == labelVisibleCheck) {
-      dataView->SetLabelVisible(labelVisibleCheck->IsChecked());
+      dataView->SetLabelVisible(labelVisibleCheck->GetState());
       commit();
     } else if (src == lineWidthSpinner) {
       v = (int) lineWidthSpinner->GetValue();
@@ -675,71 +675,71 @@ GLDataViewOptions::GLDataViewOptions(GLChart *chart) : GLTabWindow() {
       dataView->SetSmoothingNeighbors(v);
       commit();
     } else if (src == noInterpBtn) {
-      if(noInterpBtn->IsChecked())
+      if(noInterpBtn->GetState())
         dataView->SetInterpolationMethod(INTERPOLATE_NONE);
       commit();
     } else if (src == linearBtn) {
-      if(linearBtn->IsChecked())
+      if(linearBtn->GetState())
         dataView->SetInterpolationMethod(INTERPOLATE_LINEAR);
       commit();
     } else if (src == cosineBtn) {
-      if(cosineBtn->IsChecked())
+      if(cosineBtn->GetState())
         dataView->SetInterpolationMethod(INTERPOLATE_COSINE);
       commit();
     } else if (src == cubicBtn) {
-      if(cubicBtn->IsChecked())
+      if(cubicBtn->GetState())
         dataView->SetInterpolationMethod(INTERPOLATE_CUBIC);
       commit();
     } else if (src == hermiteBtn) {
-      if(hermiteBtn->IsChecked())
+      if(hermiteBtn->GetState())
         dataView->SetInterpolationMethod(INTERPOLATE_HERMITE);
       commit();
     } else if (src == noSmoothBtn) {
-      if(noSmoothBtn->IsChecked())
+      if(noSmoothBtn->GetState())
         dataView->SetSmoothingMethod(SMOOTH_NONE);
       commit();
     } else if (src == flatSmoothBtn) {
-      if(flatSmoothBtn->IsChecked())
+      if(flatSmoothBtn->GetState())
         dataView->SetSmoothingMethod(SMOOTH_FLAT);
       commit();
     } else if (src == triangularSmoothBtn) {
-      if(triangularSmoothBtn->IsChecked())
+      if(triangularSmoothBtn->GetState())
         dataView->SetSmoothingMethod(SMOOTH_TRIANGULAR);
       commit();
     } else if (src == gaussianSmoothBtn) {
-      if(gaussianSmoothBtn->IsChecked())
+      if(gaussianSmoothBtn->GetState())
         dataView->SetSmoothingMethod(SMOOTH_GAUSSIAN);
       commit();
     } else if (src == noExtBtn) {
-      if(noExtBtn->IsChecked())
+      if(noExtBtn->GetState())
         dataView->SetSmoothingExtrapolation(SMOOTH_EXT_NONE);
       commit();
     } else if (src == flatExtBtn) {
-      if(flatExtBtn->IsChecked())
+      if(flatExtBtn->GetState())
         dataView->SetSmoothingExtrapolation(SMOOTH_EXT_FLAT);
       commit();
     } else if (src == linearExtBtn) {
-      if(linearExtBtn->IsChecked())
+      if(linearExtBtn->GetState())
         dataView->SetSmoothingExtrapolation(SMOOTH_EXT_LINEAR);
       commit();
     } else if (src == noMathBtn) {
-      if(noMathBtn->IsChecked())
+      if(noMathBtn->GetState())
         dataView->SetMathFunction(MATH_NONE);
       commit();
     } else if (src == derivativeBtn) {
-      if(derivativeBtn->IsChecked())
+      if(derivativeBtn->GetState())
         dataView->SetMathFunction(MATH_DERIVATIVE);
       commit();
     } else if (src == integralBtn) {
-      if(integralBtn->IsChecked())
+      if(integralBtn->GetState())
         dataView->SetMathFunction(MATH_INTEGRAL);
       commit();
     } else if (src == fftModBtn) {
-      if(fftModBtn->IsChecked())
+      if(fftModBtn->GetState())
         dataView->SetMathFunction(MATH_FFT_MODULUS);
       commit();
     } else if (src == fftPhaseBtn) {
-      if(fftPhaseBtn->IsChecked())
+      if(fftPhaseBtn->GetState())
         dataView->SetMathFunction(MATH_FFT_PHASE);
       commit();
     } else if (src == transformA0Text && message==MSG_TEXT) {

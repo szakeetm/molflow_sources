@@ -41,6 +41,7 @@
 #include "MoveFacet.h"
 #include "MirrorFacet.h"
 #include "RotateFacet.h"
+#include "Movement.h"
 #include "AlignFacet.h"
 #include "AddVertex.h"
 #include "FacetMesh.h"
@@ -258,7 +259,8 @@ public:
 	GLLabel       *facetSideLabel;
     GLLabel       *facetLinkLabel;
     GLLabel       *facetStrLabel;
-    GLTextField   *facetSILabel;
+	GLTextField   *facetSILabel;
+	GLToggle      *facetMovingToggle;
     GLLabel       *facetTLabel;
     GLLabel       *facetTempLabel;
     GLLabel       *facetDLabel;
@@ -322,6 +324,7 @@ public:
 	MoveFacet		 *moveFacet;
 	MirrorFacet	     *mirrorFacet;
 	RotateFacet      *rotateFacet;
+	Movement         *movement;
 	AlignFacet       *alignFacet;
 	AddVertex		 *addVertex;
     FacetMesh        *facetMesh;
