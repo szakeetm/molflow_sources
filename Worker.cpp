@@ -288,6 +288,7 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 							
 
 							if (isXMLzip) {
+								prg->SetProgress(0.75);
 								prg->SetMessage("Compressing xml to zip...");
 								//mApp->compressProcessHandle=CreateThread(0, 0, ZipThreadProc, 0, 0, 0);
 								HZIP hz = CreateZip(fileNameWithXMLzip, 0);

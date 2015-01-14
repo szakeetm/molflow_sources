@@ -4148,7 +4148,7 @@ BOOL Geometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, S
 	xml_node momentsNode = resultNode.append_child("Moments");
 	momentsNode.append_attribute("nb")= work->moments.size()+1;
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++){
-		prg->SetProgress(0.5 + (double)m / (double)mApp->worker.moments.size());
+		prg->SetProgress(0.5 + (double)m / (1.0+(double)mApp->worker.moments.size()));
 		xml_node newMoment = momentsNode.append_child("Moment");
 		newMoment.append_attribute("id")=m;
 		if (m == 0)

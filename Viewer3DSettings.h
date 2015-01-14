@@ -56,13 +56,13 @@ private:
   GLToggle      *hiddenEdge;
   GLToggle      *hiddenVertex;
   GLToggle      *showMesh;
-  GLToggle      *showDirection;
+  GLToggle      *dirShowdirToggle;
   GLToggle      *showTimeToggle;
-  GLToggle      *autoNorme;
-  GLToggle      *centerNorme;
+  GLToggle      *dirNormalizeToggle;
+  GLToggle      *dirCenterToggle;
   GLToggle		*antiAliasing;
   GLToggle		*bigDots;
-  GLTextField   *normeText;
+  GLTextField   *dirNormeText;
 
   GLButton    *applyButton;
   GLButton    *cancelButton;

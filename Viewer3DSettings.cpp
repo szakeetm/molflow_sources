@@ -100,9 +100,9 @@ Viewer3DSettings::Viewer3DSettings():GLWindow() {
   showTimeToggle->SetBounds(10,250,50,18);
   Add(showTimeToggle);
 
-  showDirection = new GLToggle(0,"Show direction");
-  showDirection->SetBounds(10,280,190,18);
-  Add(showDirection);
+  dirShowdirToggle = new GLToggle(0,"Show direction");
+  dirShowdirToggle->SetBounds(10,280,190,18);
+  Add(dirShowdirToggle);
 
   GLTitledPanel *panel2 = new GLTitledPanel("Direction field");
   panel2->SetBounds(5,305,wD-10,70);
@@ -112,17 +112,17 @@ Viewer3DSettings::Viewer3DSettings():GLWindow() {
   l7->SetBounds(10,325,90,18);
   Add(l7);
 
-  normeText = new GLTextField(0,"");
-  normeText->SetBounds(100,325,100,18);
-  Add(normeText);
+  dirNormeText = new GLTextField(0,"");
+  dirNormeText->SetBounds(100,325,100,18);
+  Add(dirNormeText);
 
-  autoNorme = new GLToggle(0,"Normalize");
-  autoNorme->SetBounds(10,350,100,18);
-  Add(autoNorme);
+  dirNormalizeToggle = new GLToggle(0,"Normalize");
+  dirNormalizeToggle->SetBounds(10,350,100,18);
+  Add(dirNormalizeToggle);
 
-  centerNorme = new GLToggle(0,"Center");
-  centerNorme->SetBounds(110,350,90,18);
-  Add(centerNorme);
+  dirCenterToggle = new GLToggle(0,"Center");
+  dirCenterToggle->SetBounds(110,350,90,18);
+  Add(dirCenterToggle);
 
   applyButton = new GLButton(0,"Apply");
   applyButton->SetBounds(wD-170,hD-43,80,19);
@@ -160,7 +160,7 @@ void Viewer3DSettings::Display(Geometry *s,GeometryViewer *v) {
   showTimeToggle->SetState(viewer->showTime);
 
   bigDots->SetState(viewer->bigDots);
-  showDirection->SetState(viewer->showDir);
+  dirShowdirToggle->SetState(viewer->showDir);
   sprintf(tmp,"%g",viewer->transStep);
   traStepText->SetText(tmp);
   sprintf(tmp,"%g",viewer->angleStep);
@@ -172,9 +172,9 @@ void Viewer3DSettings::Display(Geometry *s,GeometryViewer *v) {
   sprintf(tmp,"Viewer #%d",viewer->GetId()+1);
   panel->SetTitle(tmp);
   sprintf(tmp,"%g",geom->GetNormeRatio());
-  normeText->SetText(tmp);
-  autoNorme->SetState( geom->GetAutoNorme() );
-  centerNorme->SetState( geom->GetCenterNorme() );
+  dirNormeText->SetText(tmp);
+  dirNormalizeToggle->SetState( geom->GetAutoNorme() );
+  dirCenterToggle->SetState( geom->GetCenterNorme() );
   DoModal();
 
 }
@@ -222,16 +222,16 @@ void Viewer3DSettings::ProcessMessage(GLComponent *src,int message) {
       viewer->showMesh=showMesh->GetState();
 
 	  viewer->bigDots=bigDots->GetState();
-      viewer->showDir=showDirection->GetState();
+      viewer->showDir=dirShowdirToggle->GetState();
 	  viewer->showTime=showTimeToggle->GetState();
 
-      if( !normeText->GetNumber(&nratio) ) {
+      if( !dirNormeText->GetNumber(&nratio) ) {
         GLMessageBox::Display("Invalid norme ratio value","Error",GLDLG_OK,GLDLG_ICONERROR);
         return;
       }
       geom->SetNormeRatio((float)nratio);
-      geom->SetAutoNorme(autoNorme->GetState());
-      geom->SetCenterNorme(centerNorme->GetState());
+      geom->SetAutoNorme(dirNormalizeToggle->GetState());
+      geom->SetCenterNorme(dirCenterToggle->GetState());
 
       GLWindow::ProcessMessage(NULL,MSG_CLOSE);
 

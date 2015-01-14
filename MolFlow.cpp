@@ -4727,78 +4727,6 @@ void MolFlow::AddRecent(char *fileName) {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//-----------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 void MolFlow::LoadConfig() {
 
 	FileReader *f = NULL;
@@ -4872,9 +4800,15 @@ void MolFlow::LoadConfig() {
 		f->ReadKeyword("dispNumLeaks");f->ReadKeyword(":");
 		for(int i=0;i<MAX_VIEWER;i++)
 			viewer[i]->dispNumLeaks = f->ReadInt();
-
-
-
+		f->ReadKeyword("dirShow"); f->ReadKeyword(":");
+		for (int i = 0; i<MAX_VIEWER; i++)
+			viewer[i]->showDir = f->ReadInt();
+		f->ReadKeyword("dirNorme"); f->ReadKeyword(":");
+		geom->SetNormeRatio(f->ReadDouble());
+		f->ReadKeyword("dirAutoNormalize"); f->ReadKeyword(":");
+		geom->SetAutoNorme(f->ReadDouble());
+		f->ReadKeyword("dirCenter"); f->ReadKeyword(":");
+		geom->SetCenterNorme(f->ReadDouble());
 		f->ReadKeyword("angle");f->ReadKeyword(":");
 		for(int i=0;i<MAX_VIEWER;i++)
 			viewer[i]->angleStep = f->ReadDouble();
@@ -5026,6 +4960,10 @@ void MolFlow::SaveConfig() {
 		WRITED("translation",transStep);
 		WRITEI("dispNumLines",dispNumHits);
 		WRITEI("dispNumLeaks",dispNumLeaks);
+		WRITEI("dirShow", showDir);
+		f->Write("dirNorme:");f->WriteDouble(geom->GetNormeRatio(), "\n");
+		f->Write("dirAutoNormalize:"); f->WriteDouble(geom->GetAutoNorme(), "\n");
+		f->Write("dirCenter:"); f->WriteDouble(geom->GetCenterNorme(), "\n");
 
 		WRITED("angle",angleStep);
 		f->Write("autoScale:");f->WriteInt(geom->texAutoScale,"\n");
