@@ -29,8 +29,18 @@ GLButton::GLButton(int compId,char *text):GLComponent(compId) {
   strcpy(iconName,"");
   strcpy(iconNameDisa,"");
   font = GLToolkit::GetDialogFont();
+  r = g = b = 0.0f; //default color: black
 }
 
+void GLButton::SetFontColor(int red, int green, int blue){
+	SetFontColor((float)red / 255.0f, (float)green / 255.0f, (float)blue / 255.0f);
+}
+
+void GLButton::SetFontColor(float red, float green, float blue){
+	r=red;
+	g = green;
+	b = blue;
+}
 
 // ----------------------------------------------------------
 
@@ -133,7 +143,7 @@ void GLButton::Paint() {
 
     } else {
 
-      font->SetTextColor(0.0f,0.0f,0.0f);
+      font->SetTextColor(r,g,b);
       if(state || toggleState)
         font->DrawText(sw+1,posY+4,text,FALSE);
       else

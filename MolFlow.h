@@ -106,15 +106,16 @@ public:
 	double   tolerance; //Select coplanar tolerance
 	double   largeArea; //Selection filter
 	double   planarityThreshold; //Planarity threshold
-	double   autoSaveFrequency; //autosave period, in minutes
 	int      checkForUpdates;
 	int      autoUpdateFormulas;
 	int      compressSavedFiles;
 	int      autoSaveSimuOnly;
 	int      numCPU;
 	BOOL     changedSinceSave; //For saving and autosaving
+	double   autoSaveFrequency; //autosave period, in minutes
 	float    lastSaveTime;
 	float    lastSaveTimeSimu;
+	std::string autosaveFilename; //only delete files that this instance saved
 
 	HANDLE compressProcessHandle;
 	//float m_fTime;

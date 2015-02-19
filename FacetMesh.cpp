@@ -577,14 +577,12 @@ BOOL FacetMesh::Apply() {
 			!recordReflBtn->GetState() && !recordTransBtn->GetState() &&
 			!recordACBtn->GetState() && !recordDirBtn->GetState()) {
 			GLMessageBox::Display("Please select counting mode", "Error", GLDLG_OK, GLDLG_ICONINFO);
-			Refresh(nbSelected, selection);
 			return FALSE;
 		}
 
 		// Resolution
 		if (!resolutionText->GetNumber(&ratio) || ratio<=0.0) {
 			GLMessageBox::Display("Invalid texture resolution", "Error", GLDLG_OK, GLDLG_ICONERROR);
-			Refresh(nbSelected, selection);
 			return FALSE;
 		}
 
@@ -601,7 +599,6 @@ BOOL FacetMesh::Apply() {
 		if (strcmp(facetStructure->GetText(), "...") == 0) doSuperStruct = FALSE;
 		else{
 			GLMessageBox::Display("Invalid superstructre number", "Error", GLDLG_OK, GLDLG_ICONERROR);
-			Refresh(nbSelected, selection);
 			return FALSE;
 		}
 	}
@@ -617,7 +614,6 @@ BOOL FacetMesh::Apply() {
 	else if (sscanf(facetSuperDest->GetText(), "%d", &superDest)>0) {
 		if (superDest == superStruct) {
 			GLMessageBox::Display("Link and superstructure can't be the same", "Error", GLDLG_OK, GLDLG_ICONERROR);
-			Refresh(nbSelected, selection);
 			return FALSE;
 		}
 		else if (superDest>0 && superDest <= geom->GetNbStructure()) doSuper = TRUE;
@@ -627,7 +623,6 @@ BOOL FacetMesh::Apply() {
 	else {
 
 		GLMessageBox::Display("Invalid superstructure destination", "Error", GLDLG_OK, GLDLG_ICONERROR);
-		Refresh(nbSelected, selection);
 		return FALSE;
 	}
 
@@ -638,14 +633,12 @@ BOOL FacetMesh::Apply() {
 	if (facetTeleport->GetNumberInt(&teleport)) {
 		if (teleport<0 || teleport>geom->GetNbFacet()) {
 			GLMessageBox::Display("Invalid teleport destination\n(If no teleport: set number to 0)", "Error", GLDLG_OK, GLDLG_ICONERROR);
-			Refresh(nbSelected, selection);
 			return FALSE;
 		}
 		else if (teleport>0 && geom->GetFacet(teleport - 1)->selected) {
 			char tmp[256];
 			sprintf(tmp, "The teleport destination of facet #%d can't be itself!", teleport);
 			GLMessageBox::Display(tmp, "Error", GLDLG_OK, GLDLG_ICONERROR);
-			Refresh(nbSelected, selection);
 			return FALSE;
 		}
 		doTeleport = TRUE;
@@ -654,7 +647,6 @@ BOOL FacetMesh::Apply() {
 		if (strcmp(facetTeleport->GetText(), "...") == 0) doTeleport = FALSE;
 		else {
 			GLMessageBox::Display("Invalid teleport destination\n(If no teleport: set number to 0)", "Error", GLDLG_OK, GLDLG_ICONERROR);
-			Refresh(nbSelected, selection);
 			return FALSE;
 		}
 	}
@@ -665,7 +657,6 @@ BOOL FacetMesh::Apply() {
 	if (facetAccFactor->GetNumber(&accfactor)) {
 		if (accfactor<0.0 || accfactor>1.0) {
 			GLMessageBox::Display("Facet accomodation factor must be between 0 and 1", "Error", GLDLG_OK, GLDLG_ICONERROR);
-			Refresh(nbSelected, selection);
 			return FALSE;
 		}
 		doAccfactor = TRUE;
@@ -674,7 +665,6 @@ BOOL FacetMesh::Apply() {
 		if (strcmp(facetAccFactor->GetText(), "...") == 0) doAccfactor = FALSE;
 		else {
 			GLMessageBox::Display("Invalid accomodation factor number", "Error", GLDLG_OK, GLDLG_ICONERROR);
-			Refresh(nbSelected, selection);
 			return FALSE;
 		}
 	}
@@ -699,7 +689,6 @@ BOOL FacetMesh::Apply() {
 			char tmp[256];
 			sprintf(tmp, "%d is selected but doesn't have any outgassing map loaded.", missingMapId + 1);
 			GLMessageBox::Display(tmp, "Can't use map on all facets", GLDLG_OK, GLDLG_ICONERROR);
-			Refresh(nbSelected, selection);
 			return FALSE;
 		}
 		doUseMapA = TRUE;
@@ -707,12 +696,6 @@ BOOL FacetMesh::Apply() {
 
 	// Reflection type
 	int reflType = facetReflType->GetSelectedIndex();
-
-
-
-
-
-
 
 	//Check complete, let's apply
 	progressDlg = new GLProgress("Applying mesh settings","Please wait");
@@ -853,18 +836,7 @@ void FacetMesh::ProcessMessage(GLComponent *src,int message) {
 
 		// -------------------------------------------------------------
 	case MSG_BUTTON:
-		/*if(src==cancelButton) {
-
-			GLWindow::ProcessMessage(NULL,MSG_CLOSE);
-
-		} else if (src==applyButton) {
-
-
-			//if (worker->running) worker->Stop_Public();
-			if( Apply() )
-				GLWindow::ProcessMessage(NULL,MSG_CLOSE);
-
-		} else */if (src==quickApply) {
+		if (src==quickApply) {
 
 			progressDlg = new GLProgress("Applying view settings","Please wait");
 			progressDlg->SetVisible(TRUE);

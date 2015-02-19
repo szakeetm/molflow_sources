@@ -26,10 +26,12 @@ GNU General Public License for more details.
 #include "GLApp/GLFileBox.h"
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLWindowManager.h"
+#include "RecoveryDialog.h"
 #include "Utils.h" //for Remainder
 #include "direct.h"
 #include <vector>
 #include <string>
+#include <io.h>
 
 #ifdef _DEBUG
 #define APP_NAME "MolFlow+ development version 64-bit (Compiled "__DATE__" "__TIME__") DEBUG MODE"
@@ -261,6 +263,7 @@ MolFlow::MolFlow()
 	double totalInFlux = 0.0; //total incoming molecules per second. For anisothermal system, it is (totalOutgassing / Kb / T)*/
 	autoSaveFrequency = 10.0; //in minutes
 	autoSaveSimuOnly = FALSE;
+	autosaveFilename = "";
 	compressProcessHandle = NULL;
 
 	lastSaveTime = 0.0f;
@@ -389,8 +392,6 @@ int MolFlow::OneTimeSceneInit()
 	menu->GetSubMenu("File")->Add(NULL); // Separator
 	menu->GetSubMenu("File")->Add("Load recent");
 	
-	for(int i=nbRecent-1;i>=0;i--)
-		menu->GetSubMenu("File")->GetSubMenu("Load recent")->Add(recents[i],MENU_FILE_LOADRECENT+i);
 	
 	menu->GetSubMenu("File")->Add(NULL); // Separator
 	menu->GetSubMenu("File")->Add("E&xit",MENU_FILE_EXIT);
@@ -606,6 +607,7 @@ int MolFlow::OneTimeSceneInit()
 
 	shortcutPanel = new GLTitledPanel("Shortcuts");
 	shortcutPanel->SetClosable(TRUE);
+	shortcutPanel->Close();
 	Add(shortcutPanel);
 
 	profilePlotterBtn = new GLButton(0, "Profile pl.");
@@ -625,11 +627,11 @@ int MolFlow::OneTimeSceneInit()
 	simuPanel->Add(globalSettingsBtn);
 
 	startSimu = new GLButton(0,"Start/Stop");
+	//startSimu->SetFontColor(0, 140, 0);
 	//startSimu->SetEnabled(FALSE);
 	simuPanel->Add(startSimu);
 
 	resetSimu = new GLButton(0,"Reset");
-	//resetSimu->SetEnabled(FALSE);
 	simuPanel->Add(resetSimu);
 
 	/*
@@ -768,9 +770,9 @@ int MolFlow::OneTimeSceneInit()
 	facetRecType = new GLCombo(0);
 	facetRecType->SetSize(6);
 	facetRecType->SetValueAt(0,"None");
-	facetRecType->SetValueAt(1,"Pressure (along \201)");
-	facetRecType->SetValueAt(2,"Pressure (along \202)");
-	facetRecType->SetValueAt(3,"Angular");
+	facetRecType->SetValueAt(1,"Pressure, density (\201)");
+	facetRecType->SetValueAt(2,"Pressure, density (\202)");
+	facetRecType->SetValueAt(3,"Incident angle");
 	facetRecType->SetValueAt(4,"Speed distribution");
 	facetRecType->SetValueAt(5,"Orthogonal velocity");
 	facetPanel->Add(facetRecType);
@@ -879,7 +881,7 @@ void MolFlow::PlaceComponents() {
 	togglePanel->SetCompBounds(showTexture,70,64,60,18);
 	togglePanel->SetCompBounds(showFilter,135,64,60,18);
 
-	togglePanel->SetCompBounds(showMoreBtn,5,86,55,19);
+	togglePanel->SetCompBounds(showMoreBtn,5,86,55,18);
 	togglePanel->SetCompBounds(showVertex,70,86,60,18);
 	togglePanel->SetCompBounds(showIndex,137,86,60,18);
 
@@ -1097,7 +1099,6 @@ void MolFlow::ApplyFacetParams() {
 	if( facetSticking->GetNumber(&sticking) ) {
 		if( sticking<0.0 || sticking>1.0 ) {
 			GLMessageBox::Display("Sticking must be in the range [0,1]","Error",GLDLG_OK,GLDLG_ICONERROR);
-			UpdateFacetParams();
 			return;
 		}
 		doSticking = TRUE;
@@ -1120,7 +1121,6 @@ void MolFlow::ApplyFacetParams() {
 	if( facetOpacity->GetNumber(&opacity) ) {
 		if( opacity<0.0 || opacity>1.0 ) {
 			GLMessageBox::Display("Opacity must be in the range [0,1]","Error",GLDLG_OK,GLDLG_ICONERROR);
-			UpdateFacetParams();
 			return;
 		}
 		doOpacity = TRUE;
@@ -1142,7 +1142,6 @@ void MolFlow::ApplyFacetParams() {
 	if( facetTemperature->GetNumber(&temperature) ) {
 		if( temperature<0.0 ) {
 			GLMessageBox::Display("Temperature must be positive","Error",GLDLG_OK,GLDLG_ICONERROR);
-			UpdateFacetParams();
 			return;
 		}
 		doTemperature = TRUE;
@@ -1150,7 +1149,6 @@ void MolFlow::ApplyFacetParams() {
 		if( strcmp(facetTemperature->GetText(),"..." )==0 ) doTemperature = FALSE;
 		else {
 			GLMessageBox::Display("Invalid temperature number","Error",GLDLG_OK,GLDLG_ICONERROR);
-			UpdateFacetParams();
 			return;
 		}
 	}
@@ -1165,7 +1163,6 @@ void MolFlow::ApplyFacetParams() {
 		if (facetFlow->GetNumber(&flow)) { //If we can parse the number
 			if (!(flow > 0.0) && !(facetMesh && facetMesh->facetUseDesFile->GetSelectedIndex() == 1)) {
 				GLMessageBox::Display("Outgassing must be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
-				UpdateFacetParams();
 				return;
 			}
 			doFlow = TRUE;
@@ -1187,13 +1184,11 @@ void MolFlow::ApplyFacetParams() {
 		if (facetFlowArea->GetNumber(&flowA)) { //Can be parsed as number
 			if( !(flowA>0.0) ) {
 				GLMessageBox::Display("Outgassing per area must be positive","Error",GLDLG_OK,GLDLG_ICONERROR);
-				UpdateFacetParams();
 				return;
 			}
 			doFlowA = TRUE;
 		} else {
 			GLMessageBox::Display("Invalid outgassing per area number","Error",GLDLG_OK,GLDLG_ICONERROR);
-			UpdateFacetParams();
 			return;
 		}
 	}
@@ -1215,7 +1210,6 @@ void MolFlow::ApplyFacetParams() {
 			if( strcmp(facetDesTypeN->GetText(),"..." )==0 ) doDesorbTypeN = FALSE;
 			else {
 				GLMessageBox::Display("Invalid desorption type exponent","Error",GLDLG_OK,GLDLG_ICONERROR);
-				UpdateFacetParams();
 				return;
 			}
 		}
@@ -1252,7 +1246,15 @@ void MolFlow::ApplyFacetParams() {
 				}
 			}
 			if(doTemperature) f->sh.temperature = temperature;
-			
+			if (doFlow) {
+				if (!outgassingNotNumber) {
+					f->sh.flow = flow*0.100; //0.1: mbar*l/s -> Pa*m3/s
+					f->userOutgassing = "";
+				}
+				else {
+					f->userOutgassing = facetFlow->GetText();
+				}
+			}
 			if(doFlowA/* && !useMapA*/) f->sh.flow = flowA*f->sh.area*(f->sh.is2sided?2.0:1.0)*0.100;
 			if(desorbType>=0) {
 				if(desorbType==0) f->sh.flow=0.0;
@@ -1274,7 +1276,6 @@ void MolFlow::ApplyFacetParams() {
 	}
 	if (facetMesh && facetMesh->IsVisible()) {
 		if (!facetMesh->Apply()) {
-			UpdateFacetParams();
 			return;
 		}
 	}
@@ -1744,12 +1745,21 @@ BOOL MolFlow::AutoSave(BOOL crashSave) {
 	//GLWindowManager::Repaint();
 	char CWD [MAX_PATH];
 	_getcwd( CWD, MAX_PATH );
-	char filename[1024];
-	sprintf(filename,"%s\\Molflow_AutoSave.zip",CWD);
+
+	std::string shortFn(worker.GetShortFileName());
+	std::string newAutosaveFilename = "Molflow_Autosave";
+	if (shortFn != "") newAutosaveFilename += "("+shortFn+")";
+	newAutosaveFilename+=".zip";
+	char fn[1024];
+	strcpy(fn, newAutosaveFilename.c_str());
 	try {
-		worker.SaveGeometry(filename,progressDlg2,FALSE,FALSE,TRUE,crashSave);
+		worker.SaveGeometry(fn,progressDlg2,FALSE,FALSE,TRUE,crashSave);
+		//Success:
+		if (autosaveFilename != "" && autosaveFilename != newAutosaveFilename) remove(autosaveFilename.c_str());
+		autosaveFilename = newAutosaveFilename;
 		ResetAutoSaveTimer(); //deduct saving time from interval
 	} catch (Error &e) {
+		//delete fn;
 		char errMsg[512];
 		sprintf(errMsg,"%s\nFile:%s",e.GetMsg(),worker.GetFileName());
 		GLMessageBox::Display(errMsg,"Error",GLDLG_OK,GLDLG_ICONERROR);
@@ -1766,25 +1776,27 @@ BOOL MolFlow::AutoSave(BOOL crashSave) {
 
 //-------------------------------------------------------------------------------
 void MolFlow::CheckForRecovery() {
-	char CWD [MAX_PATH];
-	_getcwd( CWD, MAX_PATH );
-	char filename[1024];
-	sprintf(filename,"%s\\Molflow_AutoSave.zip",CWD);
-	if (FileUtils::Exist(filename)) {
-		int rep = GLMessageBox::Display("Autosave file found. Load it now?\nIf you click CANCEL the file will be discarded.","Autosave recovery",GLDLG_OK|GLDLG_CANCEL,GLDLG_ICONWARNING);
-		if( rep == GLDLG_OK ) {
-			LoadFile(filename);
-			RemoveRecent(filename);
-		}
-		return;
+	// Check for autosave files in current dir.
+	intptr_t file;
+	_finddata_t filedata;
+	file = _findfirst("Molflow_Autosave*.zip", &filedata);
+	if (file != -1)
+	{
+		do
+		{
+			std::ostringstream msg;
+			msg << "Autosave file found:\n" << filedata.name << "\n";
+			int rep = RecoveryDialog::Display(msg.str().c_str(), "Autosave recovery", GLDLG_LOAD | GLDLG_SKIP, GLDLG_DELETE);
+			if (rep == GLDLG_LOAD) {
+				LoadFile(filedata.name);
+				RemoveRecent(filedata.name);
+			}
+			else if (rep == GLDLG_CANCEL) return;
+			else if (rep == GLDLG_SKIP) continue;
+			else if (rep == GLDLG_DELETE) remove(filedata.name);
+		} while (_findnext(file, &filedata) == 0);
 	}
-	sprintf(filename,"%s\\Molflow_AutoSave.xml",CWD);
-	if (FileUtils::Exist(filename)) {
-		int rep = GLMessageBox::Display("Autosave file found. Load it now?\nIf you click CANCEL the file will be discarded.","Autosave recovery",GLDLG_OK|GLDLG_CANCEL,GLDLG_ICONWARNING);
-		if( rep == GLDLG_OK ) {
-			LoadFile(filename);
-		}
-	}
+	_findclose(file);
 }
 
 
@@ -1899,10 +1911,13 @@ int MolFlow::FrameMove()
 
 	if (worker.running) {
 		startSimu->SetText("Pause");
+		//startSimu->SetFontColor(255, 204, 0);
 	} else if (worker.nbHit>0) {
 		startSimu->SetText("Resume");
+		//startSimu->SetFontColor(0, 140, 0);
 	} else {
 		startSimu->SetText("Begin");
+		//startSimu->SetFontColor(0, 140, 0);
 	}
 
 	// Facet parameters and hits
@@ -2206,15 +2221,13 @@ int MolFlow::InvalidateDeviceObjects()
 int MolFlow::OnExit() {
 	SaveConfig();
 	worker.Exit();
-	remove("Molflow_AutoSave.xml");
-	remove("Molflow_AutoSave.zip");
+	remove(autosaveFilename.c_str());
 	//empty TMP directory
 	char tmp[1024];
 	char CWD [MAX_PATH];
 	_getcwd( CWD, MAX_PATH );
 	sprintf(tmp,"del /Q \"%s\\tmp\\*.*\"",CWD);
 	system(tmp);
-
 	return GL_OK;
 }
 
@@ -4585,6 +4598,8 @@ void MolFlow::LoadConfig() {
 			nbRecent++;
 			w = f->ReadString();
 		}
+		for (int i = nbRecent - 1; i >= 0; i--)
+			menu->GetSubMenu("File")->GetSubMenu("Load recent")->Add(recents[i], MENU_FILE_LOADRECENT + i);
 
 		f->ReadKeyword("cdir");f->ReadKeyword(":");
 		strcpy(currentDir,f->ReadString());

@@ -40,7 +40,8 @@ public:
   void SetBounds(int x,int y,int width,int height);
   void InvalidateDeviceObjects();
   void RestoreDeviceObjects();
-
+  void SetFontColor(float red, float green, float blue);
+  void SetFontColor(int red, int green, int blue);
 private:
 
   char text[256];
@@ -52,7 +53,7 @@ private:
   BOOL toggle;
   BOOL toggleState;
   GLFont2D *font;
-
+  float r, g, b;
 };
 
 #endif /* _GLBUTTONH_ */

@@ -388,7 +388,7 @@ void GlobalSettings::ProcessMessage(GLComponent *src,int message) {
         GLMessageBox::Display("Invalid autosave frequency","Error",GLDLG_OK,GLDLG_ICONERROR);
         return;
 		}
-	    GLWindow::ProcessMessage(NULL,MSG_CLOSE); 
+	    
 		return;
 
     }
