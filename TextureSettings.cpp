@@ -127,16 +127,7 @@ TextureSettings::TextureSettings():GLWindow() {
 	modeCombo->SetSelectedIndex(0);
 	Add(modeCombo);
 
-	// ---------------------------------------------------
-
-	
-
-	// Center dialog
-	int wS,hS;
-	GLToolkit::GetScreenSize(&wS,&hS);
-	int xD = (wS-wD)/2;
-	int yD = (hS-hD)/2;
-	SetBounds(xD,yD,wD,hD);
+	SetBounds(8,30,wD,hD);
 
 	RestoreDeviceObjects();
 

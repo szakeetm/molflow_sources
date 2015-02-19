@@ -22,6 +22,7 @@
 #include "GLApp/GLTextField.h"
 #include "GLApp/GLTitledPanel.h"
 #include "GLApp/GLProgress.h"
+#include "GLApp/GLCombo.h"
 #include "Worker.h"
 
 #ifndef _FACETMESHH_
@@ -32,17 +33,20 @@ class FacetMesh : public GLWindow {
 public:
 
   // Construction
-  FacetMesh();
+	FacetMesh(Worker *w);
 
   // Component method
-  void EditFacet(Worker *w);
+  void Refresh(int nbSel,int* selection);
 
   // Implementation
   void ProcessMessage(GLComponent *src,int message);
+  BOOL Apply();
+
+
+  GLCombo	*facetUseDesFile;
 
 private:
 
-  BOOL Apply();
   void UpdateSize();
   void UpdateSizeForRatio();
   void UpdateToggle(GLComponent *src);
@@ -52,30 +56,50 @@ private:
   Geometry *geom;
   int       fIdx;
 
-  GLTitledPanel *iPanel;
-  GLTitledPanel *vPanel;
-  GLTextField   *uLength;
-  GLTextField   *vLength;
-
-  GLToggle      *enableBtn;
-  GLToggle      *boundaryBtn;
-  GLToggle      *recordDesBtn;
-  GLToggle      *recordAbsBtn;
-  GLToggle      *recordReflBtn;
-  GLToggle      *recordTransBtn;
-  GLToggle      *recordACBtn;
-  GLToggle      *recordDirBtn;
-  GLToggle      *showTexture;
-  GLToggle      *showVolume;
-  GLTextField   *resolutionText;
-
-  GLTextField   *ramText;
-  GLTextField   *cellText;
-  GLButton      *updateButton;
-
-  GLButton    *applyButton;
-  GLButton	  *quickApply; //Apply View Settings without stopping the simulation
-  GLButton    *cancelButton;
+  GLTitledPanel	*iPanel;
+  GLLabel	*l1;
+  GLLabel	*l2;
+  GLTextField	*vLength;
+  GLTextField	*uLength;
+  GLTitledPanel	*aPanel;
+  GLTextField	*lengthText;
+  GLLabel	*perCm;
+  GLTextField	*resolutionText;
+  GLLabel	*l5;
+  GLToggle	*enableBtn;
+  GLToggle	*recordDesBtn;
+  GLLabel	*perCell;
+  GLToggle	*recordDirBtn;
+  GLToggle	*recordTransBtn;
+  GLToggle	*recordReflBtn;
+  GLToggle	*recordACBtn;
+  GLToggle	*recordAbsBtn;
+  GLTitledPanel	*mPanel;
+  GLToggle	*showTexture;
+  GLToggle	*showVolume;
+  GLTextField	*cellText;
+  GLLabel	*l8;
+  GLTextField	*ramText;
+  GLLabel	*l7;
+  GLTitledPanel	*vPanel;
+  GLButton	*quickApply;
+  GLTitledPanel	*desPanel;
+  GLTextField	*fileDesText;
+  GLLabel	*label3;
+  GLLabel	*label1;
+  GLLabel	*label2;
+  GLTitledPanel	*paramPanel;
+  GLToggle	*facetMovingToggle;
+  GLTextField	*facetSuperDest;
+  GLLabel	*label8;
+  GLTextField	*facetStructure;
+  GLLabel	*label7;
+  GLTextField	*facetTeleport;
+  GLLabel	*label4;
+  GLLabel	*label5;
+  GLLabel	*label6;
+  GLCombo	*facetReflType;
+  GLTextField	*facetAccFactor;
 
   GLProgress  *progressDlg;
 

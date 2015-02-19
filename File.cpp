@@ -47,21 +47,14 @@ const char *Error::GetMsg() {
 // FileUtils class
 // -------------------------------------------------
 
-int FileUtils::Exist(const char *fileName) {
+BOOL FileUtils::Exist(const char *fileName) {
 
-#ifdef WIN64
-  struct _finddata_t seqfile;
-  intptr_t h;
-
-  if( (h=_findfirst( fileName , &seqfile )) != -1L ) {
-	  _findclose(h);
+	if (FILE *file = fopen(fileName, "r")) {
+		fclose(file);
+		return TRUE;
+	} else {
+		return FALSE;
 	}
-
-  return (h != -1L);
-#else
- // TODO
- return FALSE;
-#endif
 }
 
 // -------------------------------------------------

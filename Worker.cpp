@@ -348,6 +348,11 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 	_ASSERTE(_CrtCheckMemory());
 }
 
+BOOL Worker::IsDpInitialized(){
+
+	return (dpHit != NULL);
+}
+
 void Worker::ExportTextures(char *fileName, int mode, BOOL askConfirm, BOOL saveSelected) {
 
 	char tmp[512];
@@ -355,19 +360,63 @@ void Worker::ExportTextures(char *fileName, int mode, BOOL askConfirm, BOOL save
 	// Read a file
 	FILE *f = NULL;
 
+	
 
+		BOOL ok = TRUE;
+		if (askConfirm) {
+			if (FileUtils::Exist(fileName)) {
+				sprintf(tmp, "Overwrite existing file ?\n%s", fileName);
+				ok = (GLMessageBox::Display(tmp, "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK);
+			}
+		}
+		if (ok) {
+			f = fopen(fileName, "w");
+			if (!f) {
+				char tmp[256];
+				sprintf(tmp, "Cannot open file for writing %s", fileName);
+				throw Error(tmp);
+			}
+			geom->ExportTextures(f, mode, dpHit, saveSelected);
+			fclose(f);
+		}
+	
+}
+
+void Worker::ExportProfiles(char *fileName) {
+
+	char tmp[512];
+
+	// Read a file
+	FILE *f = NULL;
+
+	char *ext, *dir;
+
+	dir = strrchr(fileName, '\\');
+	ext = strrchr(fileName, '.');
+
+	if (!(ext) || !(*ext == '.') || ((dir) && (dir > ext))) {
+		sprintf(fileName, "%s.csv", fileName); //set to default CSV format
+		ext = strrchr(fileName, '.');
+	}
+	ext++;
+	BOOL isTXT = _stricmp(ext, "txt") == 0;
 
 	BOOL ok = TRUE;
-	if (askConfirm) {
+	
 		if (FileUtils::Exist(fileName)) {
 			sprintf(tmp, "Overwrite existing file ?\n%s", fileName);
 			ok = (GLMessageBox::Display(tmp, "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK);
 		}
-	}
+	
 	if (ok) {
-		f = fopen(fileName, "w");
-		geom->ExportTextures(f, mode, dpHit, saveSelected);
-		fclose(f);
+			f = fopen(fileName, "w");
+			if (!f) {
+				char tmp[256];
+				sprintf(tmp, "Cannot open file for writing %s", fileName);
+				throw Error(tmp);
+			}
+			geom->ExportProfiles(f, isTXT, dpHit, this);
+			fclose(f);
 	}
 }
 
@@ -1812,12 +1861,12 @@ std::vector<double> Worker::ParseMoment(std::string userInput) {
 	double begin, interval, end;
 
 	int nb = sscanf(userInput.c_str(), "%lf,%lf,%lf", &begin, &interval, &end);
-	if (nb == 1 && (begin>0.0)) {
+	if (nb == 1 && (begin>=0.0)) {
 		//One moment
 		parsedResult.push_back(begin);
 		//} else if (nb==3 && (begin>0.0) && (end>begin) && (interval<(end-begin)) && ((end-begin)/interval<300.0)) {
 	}
-	else if (nb == 3 && (begin > 0.0) && (end > begin) && (interval < (end - begin))) {
+	else if (nb == 3 && (begin >= 0.0) && (end > begin) && (interval < (end - begin))) {
 		//Range
 		for (double time = begin; time <= end; time += interval)
 			parsedResult.push_back(time);
@@ -2138,9 +2187,11 @@ std::vector<std::pair<double, double>> Worker::Generate_ID(int paramId){
 	size_t indexBeforeLastMoment;
 	for (indexBeforeLastMoment = 0; indexBeforeLastMoment < parameters[paramId].values.size() &&
 		(parameters[paramId].values[indexBeforeLastMoment].first < latestMoment); indexBeforeLastMoment++);
-		if (indexBeforeLastMoment >= temperatures.size()) indexBeforeLastMoment = parameters[paramId].values.size() - 1; //not found, set as last moment
+		if (indexBeforeLastMoment >= parameters[paramId].values.size()) indexBeforeLastMoment = parameters[paramId].values.size() - 1; //not found, set as last moment
 
 	//Construct integral from 0 to latest moment
+	//Zero
+	ID.push_back(std::make_pair(0.0, 0.0));
 
 	//First moment
 	ID.push_back(std::make_pair(parameters[paramId].values[0].first,

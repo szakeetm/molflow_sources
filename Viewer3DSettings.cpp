@@ -19,7 +19,8 @@
 #include "Viewer3DSettings.h"
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
-
+#include "Molflow.h"
+extern MolFlow *mApp;
 // --------------------------------------------------------------------
 
 Viewer3DSettings::Viewer3DSettings():GLWindow() {
@@ -132,12 +133,10 @@ Viewer3DSettings::Viewer3DSettings():GLWindow() {
   cancelButton->SetBounds(wD-85,hD-43,80,19);
   Add(cancelButton);
 
-  // Center dialog
-  int wS,hS;
-  GLToolkit::GetScreenSize(&wS,&hS);
-  int xD = (wS-wD)/2;
-  int yD = (hS-hD)/2;
-  SetBounds(xD,yD,wD,hD);
+  // Position dialog next to Viewer parameters
+  int toggleX, toggleY, toggleW, toggleH;
+  mApp->togglePanel->GetBounds(&toggleX, &toggleY, &toggleW, &toggleH);
+  SetBounds(toggleX - wD - 10, toggleY + 20, wD, hD);
 
   RestoreDeviceObjects();
 
@@ -147,7 +146,7 @@ Viewer3DSettings::Viewer3DSettings():GLWindow() {
 
 // --------------------------------------------------------------------
 
-void Viewer3DSettings::Display(Geometry *s,GeometryViewer *v) {
+void Viewer3DSettings::Refresh(Geometry *s,GeometryViewer *v) {
 
   char tmp[128];
 
@@ -175,7 +174,6 @@ void Viewer3DSettings::Display(Geometry *s,GeometryViewer *v) {
   dirNormeText->SetText(tmp);
   dirNormalizeToggle->SetState( geom->GetAutoNorme() );
   dirCenterToggle->SetState( geom->GetCenterNorme() );
-  DoModal();
 
 }
 

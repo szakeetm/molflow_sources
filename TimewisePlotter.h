@@ -49,29 +49,23 @@ public:
   void refreshViews();
 
 private:
-
+  BOOL ParseMoments();
+  void ParseToken(std::string token);
   void addView(int facet);
   void remView(int facet);
   
-  void plot();
-
   Worker      *worker;
   GLButton    *dismissButton;
   GLChart     *chart;
   GLCombo     *profCombo;
   GLLabel     *normLabel;
-  GLLabel	  *qLabel;
-  GLLabel     *unitLabel;
   GLCombo     *normCombo;
-  //GLToggle    *showAllMoments;
   GLButton    *selButton;
-  //GLButton    *addButton;
-  //GLButton    *removeButton;
-  //GLButton    *resetButton;
-  GLTextField *formulaText;
-  //GLTextField *qText;
-  GLButton    *formulaBtn;
-  GLToggle    *logYToggle,*constantFlowToggle;
+  GLTextField *momentsText;
+  GLLabel     *momLabel,*momentsLabel;
+  GLToggle    *logYToggle,*constantFlowToggle,*correctForGas;
+
+  std::vector<size_t> displayedMoments;
 
   GLDataView  *views[50];
 

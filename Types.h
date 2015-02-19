@@ -49,8 +49,8 @@ typedef float ACFLOAT;
   // Profile type
 
 #define REC_NONE       0  // No recording
-#define REC_PRESSUREU  1  // Pressure profile (U direction)
-#define REC_PRESSUREV  2  // Pressure profile (V direction)
+#define REC_PRESSUREU  1  // Pressure and density profile (U direction)
+#define REC_PRESSUREV  2  // Pressure and density profile (V direction)
 #define REC_ANGULAR    3  // Angular profile
 #define REC_VELOCITY   4 //Velocity distribution
 #define REC_ORT_VELOCITY 5 //Orthogonal velocity component
@@ -124,13 +124,13 @@ typedef struct {
 typedef struct {
 	llong count;
 	double sum_v_ort;
-	double sum_1_per_speed;
+	double sum_1_per_ort_velocity;
 } APROFILE;
 
 typedef struct {
 	llong count;
 	double sum_v_ort_per_area;
-	double sum_1_per_speed;
+	double sum_1_per_ort_velocity;
 } AHIT;
 
 // Velocity field

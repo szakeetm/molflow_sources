@@ -28,151 +28,209 @@ extern MolFlow *mApp;
 
 //-----------------------------------------------------------------------------
 
-FacetMesh::FacetMesh():GLWindow() {
+FacetMesh::FacetMesh(Worker *w):GLWindow() {
 
-	int wD = 275;
-	int hD = 365;
+	worker = w;
+	geom = w->GetGeometry();
 
-	SetTitle("Facet Mesh");
+	SetIconfiable(TRUE);
 
-	iPanel = new GLTitledPanel("Facet Dimension");
-	iPanel->SetBounds(5,10,wD-10,45);
+	int wD = 320;
+	int hD = 487;
+	iPanel = new GLTitledPanel("Facet Dimesion");
+	iPanel->SetBounds(3, 1, 309, 45);
 	Add(iPanel);
-
-	GLLabel *l1 = new GLLabel("\201 length");
-	l1->SetBounds(10,30,50,18);
-	Add(l1);
-
-	uLength = new GLTextField(0,"");
-	uLength->SetBounds(60,30,70,18);
-	uLength->SetEditable(FALSE);
-	Add(uLength);
-
-	GLLabel *l2 = new GLLabel("\202 length");
-	l2->SetBounds(140,30,50,18);
-	Add(l2);
-
-	vLength = new GLTextField(0,"");
-	vLength->SetBounds(190,30,70,18);
-	vLength->SetEditable(FALSE);
-	Add(vLength);
-
-	GLTitledPanel *aPanel = new GLTitledPanel("Mesh properties");
-	aPanel->SetBounds(5,60,wD-10,130);
+	aPanel = new GLTitledPanel("Texture properties");
+	aPanel->SetBounds(3, 52, 309, 119);
 	Add(aPanel);
-
-	enableBtn = new GLToggle(0,"Enable");
-	enableBtn->SetBounds(10,80,55,18);
-	enableBtn->SetState(FALSE);
-	Add(enableBtn);
-
-	boundaryBtn = new GLToggle(0,"Boundary correction");
-	boundaryBtn->SetBounds(10,100,100,18);
-	boundaryBtn->SetEnabled(FALSE);
-	boundaryBtn->SetTextColor(110,110,110);
-	boundaryBtn->SetState(TRUE);
-	Add(boundaryBtn);
-
-	recordDesBtn = new GLToggle(0,"Count desorption");
-	recordDesBtn->SetBounds(10,130,100,18);
-	recordDesBtn->SetState(FALSE);
-	Add(recordDesBtn);
-
-	recordAbsBtn = new GLToggle(0,"Count absorption");
-	recordAbsBtn->SetBounds(10,150,100,18);
-	recordAbsBtn->SetState(FALSE);
-	Add(recordAbsBtn);
-
-	recordReflBtn = new GLToggle(0,"Count reflection");
-	recordReflBtn->SetBounds(120,130,110,18);
-	recordReflBtn->SetState(FALSE);
-	Add(recordReflBtn);
-
-	recordTransBtn = new GLToggle(0,"Count transparent pass");
-	recordTransBtn->SetBounds(120,150,110,18);
-	recordTransBtn->SetState(FALSE);
-	Add(recordTransBtn);
-
-	recordDirBtn = new GLToggle(0,"Record direction");
-	recordDirBtn->SetBounds(120,170,110,18);
-	recordDirBtn->SetState(FALSE);
-	Add(recordDirBtn);
-
-	recordACBtn = new GLToggle(0,"Angular coefficient");
-	recordACBtn->SetBounds(10,170,110,18);
-	recordACBtn->SetState(FALSE);
-	Add(recordACBtn);
-
-	GLLabel *l5 = new GLLabel("Resolution (samples/cm)");
-	l5->SetBounds(140,80,110,18);
-	Add(l5);
-
-	resolutionText = new GLTextField(0,"");
-	resolutionText->SetBounds(140,100,50,18);
-	Add(resolutionText);
-
-	vPanel = new GLTitledPanel("View Settings");
-	vPanel->SetBounds(5,195,wD-10,45);
-	Add(vPanel);
-
-	showTexture = new GLToggle(0,"Show texture");
-	showTexture->SetBounds(10,215,55,18);
-	showTexture->SetState(TRUE);
-	Add(showTexture);
-
-	showVolume = new GLToggle(0,"Show volume");
-	showVolume->SetBounds(100,215,55,18);
-	showVolume->SetState(TRUE);
-	showVolume->SetVisible(TRUE); //not working yet
-	Add(showVolume);
-
-	quickApply = new GLButton(0,"Apply View");  //Apply View Settings without stopping the simulation
-	quickApply->SetBounds(190,215,72,19);
-	Add(quickApply);
-
-	GLTitledPanel *mPanel = new GLTitledPanel("Memory/Cell");
-	mPanel->SetBounds(5,245,wD-10,72);
+	mPanel = new GLTitledPanel("Texture cell / memory");
+	mPanel->SetBounds(3, 177, 309, 44);
 	Add(mPanel);
+	vPanel = new GLTitledPanel("View settings");
+	vPanel->SetBounds(3, 227, 309, 44);
+	Add(vPanel);
+	desPanel = new GLTitledPanel("Dynamic desorption");
+	desPanel->SetBounds(3, 415, 309, 44);
+	Add(desPanel);
+	paramPanel = new GLTitledPanel("Additional parameters");
+	paramPanel->SetBounds(3, 277, 309, 132);
+	Add(paramPanel);
+	l1 = new GLLabel("\201 length:");
+	iPanel->SetCompBounds(l1, 19, 18, 40, 12);
+	iPanel->Add(l1);
 
-	GLLabel *l7 = new GLLabel("Memory");
-	l7->SetBounds(10,265,70,18);
-	Add(l7);
+	l2 = new GLLabel("\202 length:");
+	iPanel->SetCompBounds(l2, 153, 18, 41, 12);
+	iPanel->Add(l2);
 
-	ramText = new GLTextField(0,"");
-	ramText->SetBounds(80,265,100,18);
-	Add(ramText);
+	vLength = new GLTextField(0, "");
+	vLength->SetEditable(FALSE);
+	iPanel->SetCompBounds(vLength, 196, 17, 72, 18);
+	iPanel->Add(vLength);
 
-	GLLabel *l8 = new GLLabel("Cells");
-	l8->SetBounds(10,290,70,18);
-	Add(l8);
+	uLength = new GLTextField(0, "");
+	uLength->SetEditable(FALSE);
+	iPanel->SetCompBounds(uLength, 65, 17, 72, 18);
+	iPanel->Add(uLength);
 
-	cellText = new GLTextField(0,"");
-	cellText->SetBounds(80,290,100,18);
-	Add(cellText);
+	lengthText = new GLTextField(0, "");
+	aPanel->SetCompBounds(lengthText, 196, 35, 72, 18);
+	aPanel->Add(lengthText);
 
-	/*
-	updateButton = new GLButton(0,"Recalculate");
-	updateButton->SetBounds(190,265,72,19);
-	Add(updateButton);
-	*/
+	perCm = new GLLabel("cells/cm");
+	aPanel->SetCompBounds(perCm, 139, 38, 40, 12);
+	aPanel->Add(perCm);
 
-	applyButton = new GLButton(0,"Apply mesh");
-	applyButton->SetBounds(wD-200,hD-43,95,19);
-	Add(applyButton);
+	resolutionText = new GLTextField(0, "");
+	aPanel->SetCompBounds(resolutionText, 75, 35, 62, 18);
+	aPanel->Add(resolutionText);
 
-	cancelButton = new GLButton(0,"Cancel");
-	cancelButton->SetBounds(wD-100,hD-43,95,19);
-	Add(cancelButton);
+	l5 = new GLLabel("Resolution:");
+	aPanel->SetCompBounds(l5, 13, 38, 52, 12);
+	aPanel->Add(l5);
 
-	// Center dialog
-	int wS,hS;
-	GLToolkit::GetScreenSize(&wS,&hS);
-	int xD = (wS-wD)/2;
-	int yD = (hS-hD)/2;
-	SetBounds(xD,yD,wD,hD);
+	enableBtn = new GLToggle(0, "Enable texture");
+	aPanel->SetCompBounds(enableBtn, 9, 18, 83, 16);
+	aPanel->Add(enableBtn);
+
+	recordDesBtn = new GLToggle(0, "Count desorption");
+	aPanel->SetCompBounds(recordDesBtn, 8, 62, 94, 16);
+	aPanel->Add(recordDesBtn);
+
+	perCell = new GLLabel("cm/cell");
+	aPanel->SetCompBounds(perCell, 268, 38, 35, 12);
+	aPanel->Add(perCell);
+
+	recordDirBtn = new GLToggle(0, "Record direction vectors");
+	aPanel->SetCompBounds(recordDirBtn, 166, 100, 125, 16);
+	aPanel->Add(recordDirBtn);
+
+	recordTransBtn = new GLToggle(0, "Count transparent pass");
+	aPanel->SetCompBounds(recordTransBtn, 166, 81, 120, 16);
+	aPanel->Add(recordTransBtn);
+
+	recordReflBtn = new GLToggle(0, "Count reflection");
+	aPanel->SetCompBounds(recordReflBtn, 166, 62, 89, 16);
+	aPanel->Add(recordReflBtn);
+
+	recordACBtn = new GLToggle(0, "Angular coefficient");
+	aPanel->SetCompBounds(recordACBtn, 8, 100, 101, 16);
+	aPanel->Add(recordACBtn);
+
+	recordAbsBtn = new GLToggle(0, "Count absorption");
+	aPanel->SetCompBounds(recordAbsBtn, 8, 81, 94, 16);
+	aPanel->Add(recordAbsBtn);
+
+	showTexture = new GLToggle(0, "Draw Texture");
+	vPanel->SetCompBounds(showTexture, 9, 19, 80, 16);
+	vPanel->Add(showTexture);
+
+	showVolume = new GLToggle(0, "Draw Volume");
+	vPanel->SetCompBounds(showVolume, 113, 19, 81, 16);
+	vPanel->Add(showVolume);
+
+	cellText = new GLTextField(0, "");
+	mPanel->SetCompBounds(cellText, 195, 19, 107, 18);
+	cellText->SetEditable(FALSE);
+	mPanel->Add(cellText);
+
+	l8 = new GLLabel("Cells:");
+	mPanel->SetCompBounds(l8, 166, 22, 29, 12);
+	mPanel->Add(l8);
+
+	ramText = new GLTextField(0, "");
+	ramText->SetEditable(FALSE);
+	mPanel->SetCompBounds(ramText, 58, 19, 100, 18);
+	mPanel->Add(ramText);
+
+	l7 = new GLLabel("Memory:");
+	mPanel->SetCompBounds(l7, 10, 22, 43, 12);
+	mPanel->Add(l7);
+
+	quickApply = new GLButton(0, "Quick Apply");
+	vPanel->SetCompBounds(quickApply, 203, 16, 99, 20);
+	vPanel->Add(quickApply);
+
+	fileDesText = new GLTextField(0, "");
+	desPanel->SetCompBounds(fileDesText, 200, 19, 63, 18);
+	fileDesText->SetEditable(FALSE);
+	desPanel->Add(fileDesText);
+
+	label3 = new GLLabel("mbar.l/s");
+	desPanel->SetCompBounds(label3, 264, 22, 39, 12);
+	desPanel->Add(label3);
+
+	label1 = new GLLabel("Desorption:");
+	desPanel->SetCompBounds(label1, 142, 22, 53, 12);
+	desPanel->Add(label1);
+
+	label2 = new GLLabel("Use file:");
+	desPanel->SetCompBounds(label2, 10, 22, 39, 12);
+	desPanel->Add(label2);
+
+	facetMovingToggle = new GLToggle(0, "Moving part");
+	paramPanel->SetCompBounds(facetMovingToggle, 10, 109, 74, 16);
+	paramPanel->Add(facetMovingToggle);
+
+	facetSuperDest = new GLTextField(0, "");
+	paramPanel->SetCompBounds(facetSuperDest, 182, 88, 81, 18);
+	paramPanel->Add(facetSuperDest);
+
+	label8 = new GLLabel("Link to:");
+	paramPanel->SetCompBounds(label8, 142, 90, 35, 12);
+	paramPanel->Add(label8);
+
+	facetStructure = new GLTextField(0, "");
+	paramPanel->SetCompBounds(facetStructure, 60, 88, 76, 18);
+	paramPanel->Add(facetStructure);
+
+	label7 = new GLLabel("Structure:");
+	paramPanel->SetCompBounds(label7, 10, 90, 46, 12);
+	paramPanel->Add(label7);
+
+	facetTeleport = new GLTextField(0, "");
+	paramPanel->SetCompBounds(facetTeleport, 141, 66, 122, 18);
+	paramPanel->Add(facetTeleport);
+
+	label4 = new GLLabel("Teleport to facet:");
+	paramPanel->SetCompBounds(label4, 10, 68, 74, 12);
+	paramPanel->Add(label4);
+
+	label5 = new GLLabel("Temp.accom. coefficient:");
+	paramPanel->SetCompBounds(label5, 10, 46, 126, 13);
+	paramPanel->Add(label5);
+
+	label6 = new GLLabel("Reflection:");
+	paramPanel->SetCompBounds(label6, 10, 21, 50, 12);
+	paramPanel->Add(label6);
+
+	facetReflType = new GLCombo(0);
+	paramPanel->SetCompBounds(facetReflType, 141, 19, 122, 20);
+	paramPanel->Add(facetReflType);
+	facetReflType->SetSize(3);
+	facetReflType->SetValueAt(0, "Diffuse");
+	facetReflType->SetValueAt(1, "Mirror");
+	facetReflType->SetValueAt(2, "Uniform");
+
+	facetUseDesFile = new GLCombo(0);
+	desPanel->SetCompBounds(facetUseDesFile, 55, 18, 82, 20);
+	desPanel->Add(facetUseDesFile);
+	facetUseDesFile->SetSize(1);
+	facetUseDesFile->SetValueAt(0, "No file imported");
+
+	facetAccFactor = new GLTextField(0, "");
+	paramPanel->SetCompBounds(facetAccFactor, 141, 44, 122, 18);
+	paramPanel->Add(facetAccFactor);
+
+	SetTitle("Advanced facet parameters");
+
+	Refresh(0, NULL);
+	// Position dialog next to Facet parameters
+	int facetX, facetY, facetW, facetH;
+	mApp->facetPanel->GetBounds(&facetX, &facetY, &facetW, &facetH);
+	SetBounds(facetX - wD - 10, facetY + 20, wD, hD);
 
 	RestoreDeviceObjects();
-
 }
 
 //-----------------------------------------------------------------------------
@@ -224,10 +282,10 @@ void FacetMesh::UpdateSize() {
 //-----------------------------------------------------------------------------
 
 void FacetMesh::UpdateSizeForRatio() {
-
+	if (!geom->IsLoaded()) return;
 	double ratio;
 	char tmp[64];
-	BOOL boundMap = boundaryBtn->GetState();
+	BOOL boundMap = TRUE;// boundaryBtn->GetState();
 	BOOL recordDir = recordDirBtn->GetState();
 
 	if( !enableBtn->GetState() ) {
@@ -284,100 +342,220 @@ void FacetMesh::UpdateSizeForRatio() {
 
 //-----------------------------------------------------------------------------
 
-void FacetMesh::EditFacet(Worker *w) {
+void FacetMesh::Refresh(int nbSel, int* selection) {
 
 	char tmp[128];
 	double maxU=0.0;
 	double maxV=0.0;
 	double minU=1.0e100;
-	double minV=1.0e100;
+	double minV=1.0e100;	
 
-	worker = w;
-	geom   = w->GetGeometry();
+	BOOL somethingSelected = nbSel>0;
+	enableBtn->SetEnabled(somethingSelected);
+	recordDesBtn->SetEnabled(somethingSelected);
+	recordAbsBtn->SetEnabled(somethingSelected);
+	recordReflBtn->SetEnabled(somethingSelected);
+	recordTransBtn->SetEnabled(somethingSelected);
+	recordACBtn->SetEnabled(somethingSelected);
+	recordDirBtn->SetEnabled(somethingSelected);
+	showTexture->SetEnabled(somethingSelected);
+	showVolume->SetEnabled(somethingSelected);
+	resolutionText->SetEditable(somethingSelected);
+	lengthText->SetEditable(somethingSelected);
+	facetReflType->SetEditable(somethingSelected);
+	facetAccFactor->SetEditable(somethingSelected);
+	facetTeleport->SetEditable(somethingSelected);
+	facetStructure->SetEditable(somethingSelected);
+	facetSuperDest->SetEditable(somethingSelected);
+	facetUseDesFile->SetEditable(somethingSelected);
+	facetMovingToggle->SetEnabled(somethingSelected);
 
-	int nbS=0;
-	int nbF=geom->GetNbFacet();
-	int sel=0;
-	BOOL allEnabled = TRUE;
-	BOOL allBound = TRUE;
+	if (!geom->IsLoaded()) return;
+
+	if (!somethingSelected) { //Empty selection, clear
+		enableBtn->SetState(0);
+		resolutionText->SetText("");
+		lengthText->SetText("");
+		recordDesBtn->SetState(0);
+		recordAbsBtn->SetState(0);
+		recordReflBtn->SetState(0);
+		recordTransBtn->SetState(0);
+		recordACBtn->SetState(0);
+		recordDirBtn->SetState(0);
+		showTexture->SetState(0);
+		showVolume->SetState(0);
+		facetUseDesFile->SetSelectedValue("");
+		facetReflType->SetSelectedValue("");
+		facetAccFactor->Clear();
+		facetSuperDest->Clear();
+		facetMovingToggle->SetState(0);
+		facetStructure->Clear();
+		facetTeleport->Clear();
+		return;
+	}
+
+	Facet* f0 = geom->GetFacet(selection[0]);
+
+	BOOL isEnabledE = TRUE;
+	BOOL isBoundE = TRUE;
+	BOOL CountDesE = TRUE;
+	BOOL CountAbsE = TRUE;
+	BOOL CountReflE = TRUE;
+	BOOL CountTransE = TRUE;
+	BOOL CountACE = TRUE;
+	BOOL CountDirE = TRUE;
+	BOOL TexVisibleE = TRUE;
+	BOOL VolVisibleE = TRUE;
 	BOOL ratioE = TRUE;
-	BOOL allCountDes = TRUE;
-	BOOL allCountAbs = TRUE;
-	BOOL allCountRefl = TRUE;
-	BOOL allCountTrans = TRUE;
-	BOOL allCountAC = TRUE;
-	BOOL allCountDir = TRUE;
-	BOOL allTexVisible = TRUE;
-	BOOL allVolVisible = TRUE;
-	double tRatio = 1e100;
+	BOOL teleportE = TRUE;
+	BOOL accFactorE = TRUE;
+	BOOL superDestE = TRUE;
+	BOOL superIdxE = TRUE;
+	BOOL reflectTypeE = TRUE;
+	BOOL hasOutgMapE = TRUE;
+	BOOL useOutgMapE = TRUE;
+	BOOL isMovingE = TRUE;
 
-	for(int i=0;i<nbF;i++) {
+	for(int i=1;i<nbSel;i++) {
 
-		Facet *f = geom->GetFacet(i);
-		if( f->selected ) {
+		Facet *f = geom->GetFacet(selection[i]);
+		//if( f->selected ) {
 			double nU = Norme(&(f->sh.U));
 			double nV = Norme(&(f->sh.V));
 			maxU = MAX(maxU,nU);
 			maxV = MAX(maxV,nV);
 			minU = MIN(minU,nU);
 			minV = MIN(minV,nV);
-			sel = i;
-			allEnabled = allEnabled && f->sh.isTextured;
-			allBound = allBound && (f->mesh!=NULL);
-			allCountDes = allCountDes && f->sh.countDes;
-			allCountAbs = allCountAbs && f->sh.countAbs;
-			allCountRefl = allCountRefl && f->sh.countRefl;
-			allCountTrans = allCountTrans && f->sh.countTrans;
-			allCountAC = allCountAC && f->sh.countACD;
-			allCountDir = allCountDir && f->sh.countDirection;
-			allTexVisible = allTexVisible && f->textureVisible;
-			allVolVisible = allVolVisible && f->volumeVisible;
-			if( tRatio == 1e100 ) tRatio = f->tRatio;
-			ratioE = ratioE & (tRatio == f->tRatio);
-			nbS++;
-		}
-
+			isEnabledE=isEnabledE && (f0->sh.isTextured == f->sh.isTextured);
+			isBoundE = isBoundE && (f0->hasMesh == f->hasMesh);
+			CountDesE = CountDesE && f0->sh.countDes==f->sh.countDes;
+			CountAbsE = CountAbsE && f0->sh.countAbs == f->sh.countAbs;
+			CountReflE = CountReflE && f0->sh.countRefl == f->sh.countRefl;
+			CountTransE = CountTransE && f0->sh.countTrans == f->sh.countTrans;
+			CountACE = CountACE && f0->sh.countACD == f->sh.countACD;
+			CountDirE = CountDirE && f0->sh.countDirection == f->sh.countDirection;
+			TexVisibleE = TexVisibleE && f0->textureVisible == f->textureVisible;
+			VolVisibleE = VolVisibleE && f0->volumeVisible == f->volumeVisible;
+			ratioE = ratioE && abs(f0->tRatio - f->tRatio) < 1E-8;
+			teleportE = teleportE && (f0->sh.teleportDest == f->sh.teleportDest);
+			accFactorE = accFactorE && (abs(f0->sh.accomodationFactor - f->sh.accomodationFactor)<1e-7);
+			superDestE = superDestE && (f0->sh.superDest == f->sh.superDest);
+			superIdxE = superIdxE && (f0->sh.superIdx == f->sh.superIdx);
+			reflectTypeE = reflectTypeE && (f0->sh.reflectType == f->sh.reflectType);
+			hasOutgMapE = hasOutgMapE && (f0->hasOutgassingMap == f->hasOutgassingMap);
+			useOutgMapE = useOutgMapE && (f0->sh.useOutgassingFile == f->sh.useOutgassingFile);
+			isMovingE = isMovingE && (f0->sh.isMoving == f->sh.isMoving);
 	}
 
-	if( nbS==1 ) {
-		Facet *f = geom->GetFacet(sel);
-		sprintf(tmp,"Facet Info (#%d)",sel+1);
-		iPanel->SetTitle(tmp);
+	if( nbSel==1 ) {
+		Facet *f = f0;
+		sprintf(tmp,"Advanced parameters (Facet #%d)",selection[0]+1);
+		SetTitle(tmp);
 		sprintf(tmp,"%g",maxU);
 		uLength->SetText(tmp);
 		sprintf(tmp,"%g",maxV);
 		vLength->SetText(tmp);
 	} else {
-		sprintf(tmp,"Facet Info (%d selected)",nbS);
-		iPanel->SetTitle(tmp);
+		sprintf(tmp,"Advanced parameters (%d selected)",nbSel);
+		SetTitle(tmp);
 		sprintf(tmp,"%g (MAX)",maxU);
 		uLength->SetText(tmp);
 		sprintf(tmp,"%g (MAX)",maxV);
 		vLength->SetText(tmp);
 	}
 
-	enableBtn->SetState(allEnabled);
-	//boundaryBtn->SetState(allBound);
-	boundaryBtn->SetState(TRUE);
-	recordDesBtn->SetState(allCountDes);
-	recordAbsBtn->SetState(allCountAbs);
-	recordReflBtn->SetState(allCountRefl);
-	recordTransBtn->SetState(allCountTrans);
-	recordACBtn->SetState(allCountAC);
-	recordDirBtn->SetState(allCountDir);
-	showTexture->SetState(allTexVisible);
-	showVolume->SetState(allVolVisible);
+	enableBtn->AllowMixedState(!isEnabledE); enableBtn->SetState(isEnabledE ? f0->sh.isTextured : 2);
+	recordDesBtn->AllowMixedState(!CountDesE); recordACBtn->SetState(CountDesE ? f0->sh.countDes : 2);
+	recordAbsBtn->AllowMixedState(!CountAbsE); recordAbsBtn->SetState(CountAbsE ? f0->sh.countAbs : 2);
+	recordReflBtn->AllowMixedState(!CountReflE); recordReflBtn->SetState(CountReflE ? f0->sh.countRefl : 2);
+	recordTransBtn->AllowMixedState(!CountTransE); recordTransBtn->SetState(CountTransE ? f0->sh.countTrans : 2);
+	recordACBtn->AllowMixedState(!CountACE); recordACBtn->SetState(CountACE ? f0->sh.countACD : 2);
+	recordDirBtn->AllowMixedState(!CountDirE); recordDirBtn->SetState(CountDirE ? f0->sh.countDirection : 2);
+	showTexture->AllowMixedState(!TexVisibleE); showTexture->SetState(TexVisibleE ? f0->textureVisible : 2);
+	showVolume->AllowMixedState(!VolVisibleE); showVolume->SetState(VolVisibleE ? f0->volumeVisible : 2);
+	facetMovingToggle->AllowMixedState(!isMovingE); facetMovingToggle->SetState(isMovingE ? f0->sh.isMoving : 2);
 
-	if( allEnabled && ratioE ) {
-		sprintf(tmp,"%g",tRatio);
-		resolutionText->SetText(tmp);
-	} else {
-		resolutionText->SetText("...");
+	if( isEnabledE) {
+		if (f0->sh.isTextured) { //All facets have textures
+			if (ratioE) { //All facets have textures with same resolution
+				resolutionText->SetText(f0->tRatio);
+				lengthText->SetText(1.0 / f0->tRatio);
+			}
+			else { //Mixed resolution
+				resolutionText->SetText(isEnabledE ? "..." : "");
+				lengthText->SetText(isEnabledE ? "..." : "");
+			}
+		} else { //None of the facets have textures
+				resolutionText->SetText("");
+				lengthText->SetText("");
+			}
+	}
+	else { //Mixed state
+		resolutionText->SetText("");
+		lengthText->SetText("");
+	}
+
+	if (teleportE) facetTeleport->SetText(f0->sh.teleportDest); else facetTeleport->SetText("...");
+	if (accFactorE) facetAccFactor->SetText(f0->sh.accomodationFactor); else facetAccFactor->SetText("...");
+	if (reflectTypeE) facetReflType->SetSelectedIndex(f0->sh.reflectType); else facetReflType->SetSelectedValue("...");
+	if (hasOutgMapE) { //all selected equally HAVE or equally DON'T HAVE outgassing maps
+
+		if (!f0->hasOutgassingMap) { //All selected DON'T HAVE outgassing maps
+			facetUseDesFile->SetSize(1);
+			facetUseDesFile->SetSelectedIndex(0); //no map
+			facetUseDesFile->SetSelectedValue("No map loaded");
+			facetUseDesFile->SetEditable(FALSE);
+		}
+		else { //All selected HAVE outgassing maps
+
+			facetUseDesFile->SetSize(2);
+			facetUseDesFile->SetValueAt(0, "Use user VALUES");
+			facetUseDesFile->SetValueAt(1, "Use desorption FILE");
+			facetUseDesFile->SetEditable(TRUE);
+			if (useOutgMapE) {
+				facetUseDesFile->SetSelectedIndex(f0->sh.useOutgassingFile);
+			}
+			else {
+				facetUseDesFile->SetSelectedValue("...");
+			}
+		}
+	} else { //Mixed: some have it, some don't
+		facetUseDesFile->SetSelectedIndex(0);
+		facetUseDesFile->SetSize(1);
+		facetUseDesFile->SetSelectedValue("...");
+		facetUseDesFile->SetEditable(FALSE);
+	}
+
+	if (superDestE) {
+		if (f0->sh.superDest == 0) {
+			facetSuperDest->SetText("no");
+		}
+		else {
+			sprintf(tmp, "%d", f0->sh.superDest);
+			facetSuperDest->SetText(tmp);
+		}
+	}
+	else {
+		facetSuperDest->SetText("...");
+	}
+	if (superIdxE) {
+		sprintf(tmp, "%d", f0->sh.superIdx + 1);
+		facetStructure->SetText(tmp);
+	}
+	else {
+		facetStructure->SetText("...");
+	}
+
+	if (isMovingE) {
+		facetMovingToggle->SetState(f0->sh.isMoving);
+		facetMovingToggle->AllowMixedState(FALSE);
+	}
+	else {
+		facetMovingToggle->SetState(2);
+		facetMovingToggle->AllowMixedState(TRUE);
 	}
 
 	UpdateSize();
-	DoModal();
-
 }
 
 
@@ -385,98 +563,214 @@ void FacetMesh::EditFacet(Worker *w) {
 
 BOOL FacetMesh::Apply() {
 	if (!mApp->AskToReset(worker)) return FALSE;
-	BOOL boundMap = boundaryBtn->GetState();
-	double nbSelected = (double)geom->GetNbSelected();
-	double nbPerformed = 0.0;
+	BOOL boundMap = TRUE; // boundaryBtn->GetState();
+	int nbSelected;
+	int* selection;
+	double ratio;
+	geom->GetSelection(&selection, &nbSelected);
+	int nbPerformed = 0.0;
 
-	if( enableBtn->GetState() ) {
+	if (enableBtn->GetState() == 1) {
 
 		// Check counting mode
-		if( !recordDesBtn->GetState() && !recordAbsBtn->GetState() && 
-			!recordReflBtn->GetState() && !recordTransBtn->GetState() && 
-			!recordACBtn->GetState() && !recordDirBtn->GetState() ) {
-				GLMessageBox::Display("Please select counting mode","Error",GLDLG_OK,GLDLG_ICONERROR);
-				return FALSE;
-		}
-
-		// Auto resolution
-		double ratio;
-		if( sscanf(resolutionText->GetText(),"%lf",&ratio)==0 ) {
-			GLMessageBox::Display("Invalid number format for sample/unit","Error",GLDLG_OK,GLDLG_ICONERROR);
+		if (!recordDesBtn->GetState() && !recordAbsBtn->GetState() &&
+			!recordReflBtn->GetState() && !recordTransBtn->GetState() &&
+			!recordACBtn->GetState() && !recordDirBtn->GetState()) {
+			GLMessageBox::Display("Please select counting mode", "Error", GLDLG_OK, GLDLG_ICONINFO);
+			Refresh(nbSelected, selection);
 			return FALSE;
 		}
 
-		progressDlg = new GLProgress("Applying mesh settings","Please wait");
-		progressDlg->SetVisible(TRUE);
-		progressDlg->SetProgress(0.0);
-		int count=0;
-		for(int i=0;i<geom->GetNbFacet();i++) {
-			Facet *f = geom->GetFacet(i);
-			if( f->selected ) {
-				f->sh.countDes = recordDesBtn->GetState();
-				f->sh.countAbs = recordAbsBtn->GetState();
-				f->sh.countRefl = recordReflBtn->GetState();
-				f->sh.countTrans = recordTransBtn->GetState();
-				f->sh.countACD = recordACBtn->GetState();
-				f->sh.countDirection = recordDirBtn->GetState();
-				f->textureVisible = showTexture->GetState();
-				f->volumeVisible = showVolume->GetState();
-				try {
-					geom->SetFacetTexture(i,ratio,boundMap);
-				} catch (Error &e) {
-					GLMessageBox::Display((char *)e.GetMsg(),"Error",GLDLG_OK,GLDLG_ICONWARNING);
-					progressDlg->SetVisible(FALSE);
-					SAFE_DELETE(progressDlg);
-					return FALSE;
-				} catch (...) {
-					GLMessageBox::Display("Unexpected error while setting textures","Error",GLDLG_OK,GLDLG_ICONWARNING);
-					progressDlg->SetVisible(FALSE);
-					SAFE_DELETE(progressDlg);
-					return FALSE;
+		// Resolution
+		if (!resolutionText->GetNumber(&ratio) || ratio<=0.0) {
+			GLMessageBox::Display("Invalid texture resolution", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			Refresh(nbSelected, selection);
+			return FALSE;
+		}
+
+	}
+
+	// Superstructure
+
+	BOOL structChanged = FALSE; //if a facet gets into a new structure, we have to re-render the geometry
+
+	int superStruct;
+	BOOL doSuperStruct = FALSE;
+	if (sscanf(facetStructure->GetText(), "%d", &superStruct)>0 && superStruct>0 && superStruct <= geom->GetNbStructure()) doSuperStruct = TRUE;
+	else {
+		if (strcmp(facetStructure->GetText(), "...") == 0) doSuperStruct = FALSE;
+		else{
+			GLMessageBox::Display("Invalid superstructre number", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			Refresh(nbSelected, selection);
+			return FALSE;
+		}
+	}
+
+
+	// Super structure destination (link)
+	int superDest;
+	BOOL doSuper = FALSE;
+	if (strcmp(facetSuperDest->GetText(), "none") == 0 || strcmp(facetSuperDest->GetText(), "no") == 0 || strcmp(facetSuperDest->GetText(), "0") == 0) {
+		doSuper = TRUE;
+		superDest = 0;
+	}
+	else if (sscanf(facetSuperDest->GetText(), "%d", &superDest)>0) {
+		if (superDest == superStruct) {
+			GLMessageBox::Display("Link and superstructure can't be the same", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			Refresh(nbSelected, selection);
+			return FALSE;
+		}
+		else if (superDest>0 && superDest <= geom->GetNbStructure()) doSuper = TRUE;
+	}
+	else if (strcmp(facetSuperDest->GetText(), "...") == 0) doSuper = FALSE;
+
+	else {
+
+		GLMessageBox::Display("Invalid superstructure destination", "Error", GLDLG_OK, GLDLG_ICONERROR);
+		Refresh(nbSelected, selection);
+		return FALSE;
+	}
+
+	// teleport
+	int teleport;
+	BOOL doTeleport = FALSE;
+
+	if (facetTeleport->GetNumberInt(&teleport)) {
+		if (teleport<0 || teleport>geom->GetNbFacet()) {
+			GLMessageBox::Display("Invalid teleport destination\n(If no teleport: set number to 0)", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			Refresh(nbSelected, selection);
+			return FALSE;
+		}
+		else if (teleport>0 && geom->GetFacet(teleport - 1)->selected) {
+			char tmp[256];
+			sprintf(tmp, "The teleport destination of facet #%d can't be itself!", teleport);
+			GLMessageBox::Display(tmp, "Error", GLDLG_OK, GLDLG_ICONERROR);
+			Refresh(nbSelected, selection);
+			return FALSE;
+		}
+		doTeleport = TRUE;
+	}
+	else {
+		if (strcmp(facetTeleport->GetText(), "...") == 0) doTeleport = FALSE;
+		else {
+			GLMessageBox::Display("Invalid teleport destination\n(If no teleport: set number to 0)", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			Refresh(nbSelected, selection);
+			return FALSE;
+		}
+	}
+
+	// temp.accomodation factor
+	double accfactor;
+	BOOL doAccfactor = FALSE;
+	if (facetAccFactor->GetNumber(&accfactor)) {
+		if (accfactor<0.0 || accfactor>1.0) {
+			GLMessageBox::Display("Facet accomodation factor must be between 0 and 1", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			Refresh(nbSelected, selection);
+			return FALSE;
+		}
+		doAccfactor = TRUE;
+	}
+	else {
+		if (strcmp(facetAccFactor->GetText(), "...") == 0) doAccfactor = FALSE;
+		else {
+			GLMessageBox::Display("Invalid accomodation factor number", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			Refresh(nbSelected, selection);
+			return FALSE;
+		}
+	}
+
+	// Use desorption map
+	int useMapA = 0;
+	BOOL doUseMapA = FALSE;
+	if (strcmp(facetUseDesFile->GetSelectedValue(), "...") == 0) doUseMapA = FALSE;
+	else {
+		useMapA = (facetUseDesFile->GetSelectedIndex() == 1);
+		BOOL missingMap = FALSE;
+		int missingMapId;
+		if (useMapA) {
+			for (int i = 0; i<geom->GetNbFacet(); i++) {
+				if (geom->GetFacet(i)->selected && !geom->GetFacet(i)->hasOutgassingMap) {
+					missingMap = TRUE;
+					missingMapId = i;
 				}
-				nbPerformed+=1.0;
-				progressDlg->SetProgress(nbPerformed/nbSelected);
-			}
-
-		}
-
-	} else {
-		// Disable texture
-		progressDlg = new GLProgress("Applying mesh settings","Please wait");
-		progressDlg->SetVisible(TRUE);
-		progressDlg->SetProgress(0.0);
-
-
-		for(int i=0;i<geom->GetNbFacet();i++) {
-
-			Facet *f = geom->GetFacet(i);
-			if( f->selected ) {
-				geom->SetFacetTexture(i,0.0,FALSE);
-
-				f->sh.countDes = 
-				f->sh.countAbs = 
-				f->sh.countRefl = 
-				f->sh.countTrans = 
-				f->sh.countACD = 
-				f->sh.countDirection = FALSE;
-
-				f->textureVisible = showTexture->GetState();
-				f->volumeVisible = showVolume->GetState();
-				nbPerformed+=1.0;
-				progressDlg->SetProgress(nbPerformed/nbSelected);
 			}
 		}
-
+		if (missingMap) {
+			char tmp[256];
+			sprintf(tmp, "%d is selected but doesn't have any outgassing map loaded.", missingMapId + 1);
+			GLMessageBox::Display(tmp, "Can't use map on all facets", GLDLG_OK, GLDLG_ICONERROR);
+			Refresh(nbSelected, selection);
+			return FALSE;
+		}
+		doUseMapA = TRUE;
 	}
 
-	// Send to sub process
-	try {
-		worker->Reload();
-		mApp->changedSinceSave = TRUE;
-	} catch(Error &e) {
-		GLMessageBox::Display((char *)e.GetMsg(),"Error",GLDLG_OK,GLDLG_ICONERROR);
-	}
-	progressDlg->SetVisible(FALSE);
+	// Reflection type
+	int reflType = facetReflType->GetSelectedIndex();
+
+
+
+
+
+
+
+	//Check complete, let's apply
+	progressDlg = new GLProgress("Applying mesh settings","Please wait");
+	progressDlg->SetVisible(TRUE);
+	progressDlg->SetProgress(0.0);
+	int count=0;
+	for(int i=0;i<nbSelected;i++) {
+		Facet *f = geom->GetFacet(selection[i]);
+		if (recordDesBtn->GetState()<2) f->sh.countDes = recordDesBtn->GetState()*enableBtn->GetState();
+		if (recordAbsBtn->GetState()<2) f->sh.countAbs = recordAbsBtn->GetState()*enableBtn->GetState();
+		if (recordReflBtn->GetState()<2) f->sh.countRefl = recordReflBtn->GetState()*enableBtn->GetState();
+		if (recordTransBtn->GetState()<2) f->sh.countTrans = recordTransBtn->GetState()*enableBtn->GetState();
+		if (recordACBtn->GetState()<2) f->sh.countACD = recordACBtn->GetState()*enableBtn->GetState();
+		if (recordDirBtn->GetState()<2) f->sh.countDirection = recordDirBtn->GetState()*enableBtn->GetState();
+		BOOL hasAnyTexture = f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD || f->sh.countDirection;
+		if (doTeleport) f->sh.teleportDest = teleport;
+		if (doAccfactor) f->sh.accomodationFactor = accfactor;
+		if (reflType >= 0) f->sh.reflectType = reflType;
+		if (doSuperStruct) {
+			if (f->sh.superIdx != (superStruct - 1)) {
+				f->sh.superIdx = superStruct - 1;
+				structChanged = TRUE;
+			}
+		}
+		if (doSuper) {
+			f->sh.superDest = superDest;
+			if (superDest) f->sh.opacity = 1.0; // Force opacity for link facet
+		}
+		//Moving or not
+		if (facetMovingToggle->GetState() < 2) f->sh.isMoving = facetMovingToggle->GetState();
+
+		if (doUseMapA) {
+			f->sh.useOutgassingFile = useMapA;
+		}
+
+		//set textures
+		try {
+			if (structChanged) geom->RebuildLists();
+			geom->SetFacetTexture(selection[i], hasAnyTexture ? ratio : 0.0, hasAnyTexture ? boundMap : 0.0);
+		} catch (Error &e) {
+			GLMessageBox::Display((char *)e.GetMsg(),"Error",GLDLG_OK,GLDLG_ICONWARNING);
+			progressDlg->SetVisible(FALSE);
+			SAFE_DELETE(progressDlg);
+			return FALSE;
+		} catch (...) {
+			GLMessageBox::Display("Unexpected error while setting textures","Error",GLDLG_OK,GLDLG_ICONWARNING);
+			progressDlg->SetVisible(FALSE);
+			SAFE_DELETE(progressDlg);
+			return FALSE;
+		}
+		if (showTexture->GetState()<2) f->textureVisible = showTexture->GetState();
+		if (showVolume->GetState()<2) f->volumeVisible = showVolume->GetState();
+		nbPerformed++;
+		progressDlg->SetProgress((double)nbPerformed/(double)nbSelected);
+	} //main cycle end
+
+
+	if (progressDlg) progressDlg->SetVisible(FALSE);
 	SAFE_DELETE(progressDlg);
 	return TRUE;
 
@@ -495,8 +789,8 @@ void FacetMesh::QuickApply() {
 		Facet *f = geom->GetFacet(i);
 		if( f->selected ) {
 
-			f->textureVisible = showTexture->GetState();
-			f->volumeVisible = showVolume->GetState();
+			if (showTexture->GetState()<2) f->textureVisible = showTexture->GetState();
+			if (showVolume->GetState()<2) f->volumeVisible = showVolume->GetState();
 
 			nbPerformed+=1.0;
 			progressDlg->SetProgress(nbPerformed/nbSelected);
@@ -510,34 +804,36 @@ void FacetMesh::QuickApply() {
 
 void FacetMesh::UpdateToggle(GLComponent *src) {
 
-	if (src==boundaryBtn) {
+	/*if (src==boundaryBtn) {
 		recordACBtn->SetState(FALSE);
 	} else if(src==enableBtn) {
 		//boundaryBtn->SetState(enableBtn->GetState());
-	} else if(src==recordDesBtn ) {
+	} else */
+
+	if(src==recordDesBtn ) {
 		enableBtn->SetState(TRUE);
-		boundaryBtn->SetState(TRUE);
+		//boundaryBtn->SetState(TRUE);
 		recordACBtn->SetState(FALSE);
 	} else if(src==recordAbsBtn ) {
 		enableBtn->SetState(TRUE);
-		boundaryBtn->SetState(TRUE);
+		//boundaryBtn->SetState(TRUE);
 		recordACBtn->SetState(FALSE);
 	} else if(src==recordReflBtn ) {
 		enableBtn->SetState(TRUE);
-		boundaryBtn->SetState(TRUE);
+		//boundaryBtn->SetState(TRUE);
 		recordACBtn->SetState(FALSE);
 	} else if(src==recordTransBtn ) {
 		enableBtn->SetState(TRUE);
-		boundaryBtn->SetState(TRUE);
+		//boundaryBtn->SetState(TRUE);
 		recordACBtn->SetState(FALSE);
 	} else if(src==recordDirBtn ) {
 		enableBtn->SetState(TRUE);
-		boundaryBtn->SetState(TRUE);
+		//boundaryBtn->SetState(TRUE);
 		recordACBtn->SetState(FALSE);
 	} else if(src==recordACBtn) {
 		if( recordACBtn->GetState() ) {
 			enableBtn->SetState(TRUE);
-			boundaryBtn->SetState(TRUE);
+			//boundaryBtn->SetState(TRUE);
 			recordDesBtn->SetState(FALSE);
 			recordAbsBtn->SetState(FALSE);
 			recordReflBtn->SetState(FALSE);
@@ -557,7 +853,7 @@ void FacetMesh::ProcessMessage(GLComponent *src,int message) {
 
 		// -------------------------------------------------------------
 	case MSG_BUTTON:
-		if(src==cancelButton) {
+		/*if(src==cancelButton) {
 
 			GLWindow::ProcessMessage(NULL,MSG_CLOSE);
 
@@ -568,14 +864,13 @@ void FacetMesh::ProcessMessage(GLComponent *src,int message) {
 			if( Apply() )
 				GLWindow::ProcessMessage(NULL,MSG_CLOSE);
 
-		} else if (src==quickApply) {
+		} else */if (src==quickApply) {
 
 			progressDlg = new GLProgress("Applying view settings","Please wait");
 			progressDlg->SetVisible(TRUE);
 			progressDlg->SetProgress(0.5);
 
 			QuickApply();
-			GLWindow::ProcessMessage(NULL,MSG_CLOSE);
 
 			progressDlg->SetVisible(FALSE);
 			SAFE_DELETE(progressDlg);
@@ -593,12 +888,60 @@ void FacetMesh::ProcessMessage(GLComponent *src,int message) {
 		// -------------------------------------------------------------
 	case MSG_TEXT_UPD:
 		enableBtn->SetState(TRUE);
-		UpdateSizeForRatio();
+		
+		if (src == resolutionText) {
+			UpdateSizeForRatio();
+			mApp->facetApplyBtn->SetEnabled(TRUE);
+			double res;
+			if (resolutionText->GetNumber(&res) && res != 0.0)
+				lengthText->SetText(1.0 / res);
+			else
+				lengthText->SetText("");
+		}
+		else if (src == lengthText) {
+			double length;
+			if (lengthText->GetNumber(&length) && length != 0.0) {
+				resolutionText->SetText(1.0 / length);
+				UpdateSizeForRatio();
+				mApp->facetApplyBtn->SetEnabled(TRUE);
+			} else
+				resolutionText->SetText("");
+		}
+		else if (src == facetTeleport) {
+			mApp->facetApplyBtn->SetEnabled(TRUE);
+		}
+		else if (src == facetAccFactor) {
+			mApp->facetApplyBtn->SetEnabled(TRUE);
+		}
+		else if (src == facetSuperDest || src == facetStructure) {
+			mApp->facetApplyBtn->SetEnabled(TRUE);
+		}
+		
 		break;
 
 		// -------------------------------------------------------------
 	case MSG_TOGGLE:
 		UpdateToggle(src);
+		mApp->facetApplyBtn->SetEnabled(TRUE);
+		break;
+	case MSG_TEXT:
+		if (src == facetTeleport) {
+			mApp->ApplyFacetParams();
+		}
+		else if (src == facetAccFactor) {
+			mApp->ApplyFacetParams();
+		}
+		else if (src == facetSuperDest || src == facetStructure) {
+			mApp->ApplyFacetParams();
+		}
+		break;
+	case MSG_COMBO:
+		if (src == facetReflType) {
+			mApp->facetApplyBtn->SetEnabled(TRUE);
+		}
+		else if (src == facetUseDesFile) {
+			mApp->facetApplyBtn->SetEnabled(TRUE);
+		}
 		break;
 	}
 

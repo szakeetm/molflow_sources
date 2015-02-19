@@ -18,7 +18,7 @@
 #ifndef _GLCHARTCONSTH_
 #define _GLCHARTCONSTH_
 
-#define MAX_VIEWS 32
+#define MAX_VIEWS 50
 
 #define MAX_VALUE 1e100
 extern double NaN;

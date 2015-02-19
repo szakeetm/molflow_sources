@@ -89,6 +89,8 @@ public:
   virtual void SetBounds(int x,int y,int w,int h);
   virtual void CancelDrag(SDL_Event *evt);
 
+  int  closeState;
+
 protected:
 
   // Coordinates (absolute)
@@ -109,7 +111,6 @@ private:
   int  mYOrg;
   char title[128];
   char iconTitle[64];
-  int  closeState;
   int  maxState;
   int  iconState;
   BOOL iconifiable;

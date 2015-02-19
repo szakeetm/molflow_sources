@@ -30,14 +30,14 @@ private:
   Worker	   *work;
 
   GLButton    *setButton;
-  GLButton    *previousButton;
-  GLButton    *nextButton;
+  GLButton    *previousButton,*ffBackButton;
+  GLButton    *nextButton,*ffForwardButton;
   //GLButton    *cancelButton;
   GLButton    *editButton;
   GLLabel     *l1;
   GLLabel     *timeLabel;
   //GLLabel     *l3;
-  GLTextField *timeId;
+  GLTextField *timeId,*ffStep;
   //GLTextField *yOffset;
   //GLTextField *zOffset;
 

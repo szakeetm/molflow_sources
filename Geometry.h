@@ -81,6 +81,7 @@ public:
   // Save
   void SaveTXT(FileWriter *file,Dataport *dhHit,BOOL saveSelected);
   void ExportTextures(FILE *file,int mode,Dataport *dhHit,BOOL saveSelected);
+  void ExportProfiles(FILE *file, int isTXT, Dataport *dhHit, Worker *worker);
   void SaveGEO(FileWriter *file,GLProgress *prg,Dataport *dpHit,std::vector<std::string> userMoments,Worker *worker,
 	  BOOL saveSelected,LEAK *pleak,int *nbleakSave,HIT *pHits,int *nbHHitSave,BOOL crashSave=FALSE);
   void SaveSTR(Dataport *dhHit,BOOL saveSelected);

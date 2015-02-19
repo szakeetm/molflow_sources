@@ -290,12 +290,12 @@ std::vector<double> MomentsEditor::ParseMoment(std::string userInput) {
 	std::vector<double> parsedResult;
 	double begin,interval,end;
 
-	int nb=sscanf(userInput.c_str(),"%lf,%lf,%lf",&begin,&interval,&end);
-	if (nb==1 && (begin>0.0)) {
+	int nb = sscanf(userInput.c_str(), "%lf,%lf,%lf", &begin, &interval, &end);
+	if (nb==1 && (begin>=0.0)) {
 		//One moment
 		parsedResult.push_back(begin);
 	//} else if (nb==3 && (begin>0.0) && (end>begin) && (interval<(end-begin)) && ((end-begin)/interval<300.0)) {
-	} else if (nb==3 && (begin>0.0) && (end>begin) && (interval<(end-begin))) {
+	} else if (nb==3 && (begin>=0.0) && (end>begin) && (interval<(end-begin))) {
 		//Range
 		for (double time=begin;time<=end;time+=interval)
 			parsedResult.push_back(time);

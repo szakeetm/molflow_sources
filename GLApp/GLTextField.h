@@ -14,6 +14,7 @@
   GNU General Public License for more details.
 */
 #include "GLComponent.h"
+#include <string>
 
 #ifndef _GLTEXTFIELDH_
 #define _GLTEXTFIELDH_
@@ -29,6 +30,7 @@ public:
 
   // Component methods
   void SetText(const char *text);
+  void SetText(std::string string);
   void SetText(const double &val);
   void SetText(const int &val);
   char *GetText();

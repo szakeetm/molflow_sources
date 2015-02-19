@@ -112,6 +112,10 @@ void GLTextField::SetText(const char *text) {
   m_Zero=0;
 }
 
+void GLTextField::SetText(std::string string) {
+	SetText(string.c_str());
+}
+
 void GLTextField::SetText(const double &val) {
 	char tmp[256];
 	sprintf(tmp, "%g", val);

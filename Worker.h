@@ -41,6 +41,7 @@ public:
 
   // Load a geometry (throws Error)
   void LoadGeometry(char *fileName);
+  BOOL IsDpInitialized();
 
   // Inserts a new geometry (throws Error)
   void InsertGeometry(BOOL newStr,char *fileName);
@@ -54,6 +55,7 @@ public:
 
   // Save textures (throws Error)
   void ExportTextures(char *fileName,int mode,BOOL askConfirm=TRUE,BOOL saveSelected=FALSE);
+  void ExportProfiles(char *fileName);
 
   //Import desorption map
   void ImportDesorption_DES(char *fileName);

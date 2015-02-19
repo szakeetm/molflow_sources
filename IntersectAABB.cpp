@@ -368,15 +368,16 @@ BOOL Intersect(VERTEX3D *rPos,VERTEX3D *rDir,  // Source ray (rayDir vector must
 
 						   f = THits[i];
 						   if( f->colDist < intMinLgth ) {
+							   double directionFactor = abs(DOT3(
+								   sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
+								   f->sh.N.x, f->sh.N.y, f->sh.N.z));
 							   f->sh.counter.hit.nbHit++;
-							   f->sh.counter.hit.sum_1_per_speed+=2.0/sHandle->velocityCurrentParticle;
-							   f->sh.counter.hit.sum_v_ort+=2.0*sHandle->velocityCurrentParticle*abs(DOT3(
-								   sHandle->pDir.x,sHandle->pDir.y,sHandle->pDir.z,
-								   f->sh.N.x,f->sh.N.y,f->sh.N.z));
+							   f->sh.counter.hit.sum_1_per_ort_velocity += 2.0 / (sHandle->velocityCurrentParticle*directionFactor);
+							   f->sh.counter.hit.sum_v_ort += 2.0*(sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*sHandle->velocityCurrentParticle*directionFactor;
 							   f->hitted = TRUE;
 							   if( f->hits && f->sh.countTrans ) AHIT_FACET(f,sHandle->flightTimeCurrentParticle+f->colDist/100.0/sHandle->velocityCurrentParticle,
 								   TRUE,2.0,2.0);
-							   if( f->direction && f->sh.countDirection ) DHIT_FACET(f,sHandle->flightTimeCurrentParticle+f->colDist/100.0/sHandle->velocityCurrentParticle);
+							   if (f->direction && f->sh.countDirection) DHIT_FACET(f, sHandle->flightTimeCurrentParticle + f->colDist / 100.0 / sHandle->velocityCurrentParticle);
 							   ProfileFacet(f, sHandle->flightTimeCurrentParticle + f->colDist / 100.0 / sHandle->velocityCurrentParticle,
 								   TRUE, 2.0, 2.0);
 						   }
@@ -451,7 +452,7 @@ void IntersectTree(struct AABBNODE *node) {
 								// This check could be avoided on rectangular facet.
 								if( IsInFacet(f,u,v) ) {
 
-									double time=sHandle->flightTimeCurrentParticle+d/100.0/sHandle->velocityCurrentParticle;
+									double time = sHandle->flightTimeCurrentParticle + d / 100.0 / sHandle->velocityCurrentParticle;
 									if( (GetOpacityAt(f,time) == 1.0) || (rnd()<GetOpacityAt(f,time)) ) {
 
 										// Hard hit

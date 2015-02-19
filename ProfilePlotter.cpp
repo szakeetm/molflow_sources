@@ -85,20 +85,16 @@ ProfilePlotter::ProfilePlotter():GLWindow() {
 
 	normLabel = new GLLabel("Normalize:");
 	Add(normLabel);
-	//qLabel = new GLLabel("Q=");
-	//Add(qLabel);
-	//unitLabel = new GLLabel("units*l/s");
-	//Add(unitLabel);
 
 	normCombo = new GLCombo(0);
 	normCombo->SetEditable(TRUE);
-	normCombo->SetSize(5);
+	normCombo->SetSize(6);
 	normCombo->SetValueAt(0,"None (raw data)");
 	normCombo->SetValueAt(1,"Pressure (mbar)");
-	normCombo->SetValueAt(2,"Speed (m/s)");
-	normCombo->SetValueAt(3,"Angle (deg)");
-	normCombo->SetValueAt(4,"Normalize to 1");
-
+	normCombo->SetValueAt(2,"Density (1/m3)");
+	normCombo->SetValueAt(3,"Speed (m/s)");
+	normCombo->SetValueAt(4,"Angle (deg)");
+	normCombo->SetValueAt(5,"Normalize to 1");
 	normCombo->SetSelectedIndex(1);
 	Add(normCombo);
 
@@ -287,7 +283,7 @@ void ProfilePlotter::refreshViews() {
 	SHGHITS *gHits = (SHGHITS *)buffer;
 	double nbDes = (double)gHits->total.hit.nbDesorbed;
 
-	double scaleX,scaleY;
+	double scaleY;
 
 	for(int i=0;i<nbView;i++) {
 
@@ -308,41 +304,55 @@ void ProfilePlotter::refreshViews() {
 
 				case 1: //Pressure
 					scaleY = 1.0 / nbDes / (f->sh.area / (double)PROFILE_SIZE*1E-4)* worker->gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
-					/*scaleY *= ((worker->displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
-						/ worker->timeWindowSize)); //correction for time window length*/
 					scaleY *= ((worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
 						/ worker->timeWindowSize));
 					if (f->sh.is2sided) scaleY *= 0.5;
-					//if(f->sh.opacity>0.0) scaleY *= f->sh.opacity;
-					//if(IS_ZERO(f->sh.opacity)) scaleY*=2; //transparent profiles are profiled only once...
-
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j, profilePtr[j].sum_v_ort*scaleY, FALSE);
 					break;
-				case 2: //Velocity
-					scaleX = f->sh.maxSpeed / (double)PROFILE_SIZE;
-					for (int j = 0; j < PROFILE_SIZE; j++) {
-						if (!correctForGas->GetState()) {
-							v->Add((double)j*scaleX, (double)profilePtr[j].count / fnbHit, FALSE);
-						}
-						else {
-							v->Add((double)j*scaleX, (double)profilePtr[j].count / (((double)j+0.5)*scaleX) / fnbHit, FALSE);
-						}
-					}
+				case 2: //Particle density
+					scaleY = 1.0 / nbDes / (f->sh.area / (double)PROFILE_SIZE*1E-4);
+					scaleY *= ((worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
+						/ worker->timeWindowSize));
+					if (f->sh.is2sided) scaleY *= 0.5;
+					for (int j = 0; j < PROFILE_SIZE; j++)
+						v->Add((double)j, profilePtr[j].sum_1_per_ort_velocity*scaleY, FALSE);
 					break;
-				case 3: //Angle (deg)
-					scaleX = 90.0 / (double)PROFILE_SIZE;
-					for (int j = 0; j < PROFILE_SIZE ; j++) {
-						if (!correctForGas->GetState()) {
-							v->Add((double)j*scaleX, (double)profilePtr[j].count / fnbHit, FALSE);
-						}
-						else {
-							v->Add((double)j*scaleX, (double)profilePtr[j].count / fnbHit / sin(((double)j + 0.5)*PI / 2.0 / (double)PROFILE_SIZE), FALSE);
-						}
+				case 3: {//Velocity
+					double sum = 0.0;
+					double val;
+					double scaleX = f->sh.maxSpeed / (double)PROFILE_SIZE;
+					std::vector<double> values;
+					values.reserve(PROFILE_SIZE);
+					for (int j = 0; j < PROFILE_SIZE; j++) {//count distribution sum
+						if (!correctForGas->GetState())
+							val = (double)profilePtr[j].count;
+						else
+							val = (double)profilePtr[j].count / (((double)j + 0.5)*scaleX); //fnbhit not needed, sum will take care of normalization
+						sum += val;
+						values.push_back(val);
 					}
-
-					break;
-				case 4: //To 1 (max value)
+					for (int j = 0; j < PROFILE_SIZE; j++)
+						v->Add((double)j*scaleX, values[j] / sum, FALSE);
+					break; }
+				case 4: {//Angle
+					double sum = 0.0;
+					double val;
+					double scaleX = 90.0 / (double)PROFILE_SIZE;
+					std::vector<double> values;
+					values.reserve(PROFILE_SIZE);
+					for (int j = 0; j < PROFILE_SIZE; j++) {//count distribution sum
+						if (!correctForGas->GetState())
+							val = (double)profilePtr[j].count;
+						else
+							val = (double)profilePtr[j].count / sin(((double)j + 0.5)*PI / 2.0 / (double)PROFILE_SIZE); //fnbhit not needed, sum will take care of normalization
+						sum += val;
+						values.push_back(val);
+					}
+					for (int j = 0; j < PROFILE_SIZE; j++)
+						v->Add((double)j*scaleX, values[j] / sum, FALSE);
+					break; }
+				case 5: //To 1 (max value)
 					llong max = 1;
 					for (int j = 0; j<PROFILE_SIZE; j++)
 					{
@@ -403,10 +413,10 @@ void ProfilePlotter::refreshViews() {
 			if(!found) i++;
 		}
 		if( found ) {
-			GLMessageBox::Display("Profile already plotted","Error",GLDLG_OK,GLDLG_ICONERROR);
+			GLMessageBox::Display("Profile already plotted","Info",GLDLG_OK,GLDLG_ICONINFO);
 			return;
 		}
-		if(nbView<50) {
+		if (nbView<MAX_VIEWS) {
 			Facet *f = geom->GetFacet(facet);
 			GLDataView *v = new GLDataView();
 			sprintf(tmp,"F#%d %s",facet+1,profType[f->sh.profileType]);
@@ -482,7 +492,7 @@ void ProfilePlotter::refreshViews() {
 		case MSG_COMBO:
 			if( src==normCombo ) {
 				int normMode=normCombo->GetSelectedIndex();
-				correctForGas->SetVisible(normMode == 2 || normMode == 3);
+				correctForGas->SetVisible(normMode == 3 || normMode == 4);
 				refreshViews();
 			}
 			break;

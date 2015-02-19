@@ -27,12 +27,10 @@ extern MolFlow *mApp;
 TimeSettings::TimeSettings(Worker *w):GLWindow() {
 
   int wD = 170;
-  int hD = 70;
+  int hD = 90;
 
   SetTitle("Time Settings");
 
-  
-  
   GLLabel *l1 = new GLLabel("Moment #");
   l1->SetBounds(5,5,50,18);
   Add(l1);
@@ -41,51 +39,40 @@ TimeSettings::TimeSettings(Worker *w):GLWindow() {
   timeId->SetBounds(55,4,30,18);
   Add(timeId);  
 
-
   timeLabel = new GLLabel("Constant Flow");
   timeLabel->SetBounds(95,5,70,18);
   Add(timeLabel);
 
-  /*yOffset = new GLTextField(0,"0");
-  yOffset->SetBounds(100,30,80,18);
-  Add(yOffset);
-  
-  GLLabel *l3 = new GLLabel("dZ");
-  l3->SetBounds(10,55,170,18);
-  Add(l3);
-
-  zOffset = new GLTextField(0,"0");
-  zOffset->SetBounds(100,55,80,18);
-  Add(zOffset);*/
-
-  /*setButton = new GLButton(0,"Go");
-  setButton->SetBounds(100,5,25,21);
-  Add(setButton);*/
-
-  /*cancelButton = new GLButton(0,"Dismiss");
-  cancelButton->SetBounds(150,hD-44,65,21);
-  Add(cancelButton);*/
-
   previousButton = new GLButton(0,"<");
-  previousButton->SetBounds(5,hD-43,25,18);
+  previousButton->SetBounds(5,25,25,18);
   Add(previousButton);
 
   char tmp[128];
   sprintf(tmp,"%d moments",w->moments.size());
   editButton = new GLButton(0,tmp);
-  editButton->SetBounds(35,hD-43,100,18);
+  editButton->SetBounds(35,25,100,18);
   Add(editButton);
   
   nextButton = new GLButton(0,">");
-  nextButton->SetBounds(140,hD-43,20,18);
+  nextButton->SetBounds(140,25,25,18);
   Add(nextButton);
 
+  ffBackButton= new GLButton(0, "<<");
+  ffBackButton->SetBounds(5, 48, 25, 18);
+  Add(ffBackButton);
 
-  // Center dialog
-  /*int wS,hS;
-  GLToolkit::GetScreenSize(&wS,&hS);
-  int xD = (wS-wD)/2;
-  int yD = (hS-hD)/2;*/
+  GLLabel *stepLabel = new GLLabel("Fast step:");
+  stepLabel->SetBounds(45,48,40,18);
+  Add(stepLabel);
+
+  ffStep = new GLTextField(0, "10");
+  ffStep->SetBounds(95, 48, 30, 18);
+  Add(ffStep);
+
+  ffForwardButton = new GLButton(0, ">>");
+  ffForwardButton->SetBounds(140, 48, 25, 18);
+  Add(ffForwardButton);
+
   SetBounds(8,30,wD,hD);
 
   RestoreDeviceObjects();
@@ -93,11 +80,10 @@ TimeSettings::TimeSettings(Worker *w):GLWindow() {
 
 }
 
-
-
 void TimeSettings::ProcessMessage(GLComponent *src,int message) {
   int id;
   int nbMoments=(int)work->moments.size();
+  int stepSize;
 
   switch(message) {
   case MSG_TEXT:  
@@ -107,10 +93,10 @@ void TimeSettings::ProcessMessage(GLComponent *src,int message) {
 
       GLWindow::ProcessMessage(NULL,MSG_CLOSE);
 
-    } else */if (src==timeId || src==setButton || src==nextButton || src==previousButton) {
+	  } else */if (src == timeId || src == setButton || src == nextButton || src == previousButton || src == ffBackButton || src == ffForwardButton ) {
 
 		if( !timeId->GetNumberInt(&id) ) {
-        GLMessageBox::Display("Can't interpret time Id","Error",GLDLG_OK,GLDLG_ICONERROR);
+        GLMessageBox::Display("Can't interpret time Id","Error",GLDLG_OK,GLDLG_ICONWARNING);
         return;
       }
 		if( id>nbMoments || id<0 ) {
@@ -121,11 +107,24 @@ void TimeSettings::ProcessMessage(GLComponent *src,int message) {
 		if (src==nextButton) {
 			id++;
 			if (id>nbMoments) id=0;
-		}
-
-		if (src==previousButton) {
+		} else if (src==previousButton) {
 			id--;
 			if (id<0) id=nbMoments;
+		}
+		else if (src == ffForwardButton) {
+			if (!ffStep->GetNumberInt(&stepSize) || id<0) {
+				GLMessageBox::Display("Can't interpret step size", "Error", GLDLG_OK, GLDLG_ICONWARNING);
+				return;
+			}
+			id=(id+stepSize)%(nbMoments+1);
+		}
+		else if (src == ffBackButton) {
+			if ((!ffStep->GetNumberInt(&stepSize)) || !(id>0)) {
+				GLMessageBox::Display("Can't interpret step size", "Error", GLDLG_OK, GLDLG_ICONWARNING);
+				return;
+			}
+			id=(id-stepSize)%(nbMoments+1);
+			if (id < 0) id = nbMoments + 1 + id; //To correct for the modulo operator implementation for negative dividends in C++
 		}
 
 		work->displayedMoment=id;

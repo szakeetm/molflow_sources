@@ -121,7 +121,6 @@ public:
 
     // Util functions
 	//void SendHeartBeat(BOOL forced=FALSE);
-    void SetParam(GLTextField *txt,double value);
     char *FormatInt(llong v,char *unit);
     char *FormatPS(double v,char *unit);
     char *FormatSize(DWORD size);
@@ -137,6 +136,7 @@ public:
     void ExportSelection();
 	void ImportDesorption_DES();
 	void ExportTextures(int mode);
+	void ExportProfiles();
     void ClearFacetParams();
     void UpdateFacetParams(BOOL updateSelection=FALSE);
     void ApplyFacetParams();
@@ -144,7 +144,6 @@ public:
 	void UpdateViewerFlags();
     void StartStopSimulation();
     void ResetSimulation(BOOL askConfirm=TRUE);
-    void EditFacet();
     void SaveConfig();
     void LoadConfig();
     void UpdateStructMenu();
@@ -218,27 +217,20 @@ public:
     GLTextField   *leakNumber;
     GLTextField   *sTime;
     GLMenu        *facetMenu;
-	GLTextField   *facetTeleport;
     GLTextField   *facetSticking;
-    GLTextField   *facetSuperDest;
     GLTextField   *facetOpacity;
     GLTextField   *facetTemperature;
-	GLTextField   *facetAccFactor;
     GLTextField   *facetFlow;
 	GLTextField   *facetFlowArea;
-    //GLTextField   *facetMass;
-    GLTextField   *facetM;
 	GLTextField   *facetArea;
-	GLCombo       *facetUseDesFile;
 	GLCombo       *facetSideType;
     GLCombo       *facetDesType;
 	GLTextField   *facetDesTypeN;
-    GLCombo       *facetReflType;
     GLCombo       *facetRecType;
     GLButton      *facetApplyBtn;
-    GLButton      *facetMoreBtn;
+    GLButton      *facetDetailsBtn;
     GLButton      *facetCoordBtn;
-    GLButton      *facetTexBtn;
+    GLButton      *facetMoreBtn;
     GLTitledPanel *facetPanel;
     GLList        *facetList;
     GLTitledPanel *togglePanel;
@@ -253,18 +245,17 @@ public:
     GLLabel       *desLabel;
     GLLabel       *leakLabel;
     GLLabel       *sTimeLabel;
-    GLTitledPanel *simuPanel;
-	GLLabel       *facetTPLabel;
+	GLTitledPanel *shortcutPanel;
+	GLButton      *profilePlotterBtn;
+	GLButton      *texturePlotterBtn;
+	GLButton      *textureScalingBtn;
+	GLButton      *globalSettingsBtn;
+	GLTitledPanel *simuPanel;
     GLLabel       *facetSLabel;
 	GLLabel       *facetSideLabel;
-    GLLabel       *facetLinkLabel;
-    GLLabel       *facetStrLabel;
-	GLTextField   *facetSILabel;
-	GLToggle      *facetMovingToggle;
     GLLabel       *facetTLabel;
     GLLabel       *facetTempLabel;
     GLLabel       *facetDLabel;
-    GLLabel       *facetRLabel;
     GLLabel       *facetReLabel;
     GLToggle       *facetFILabel;
 	GLToggle      *facetFIAreaLabel;

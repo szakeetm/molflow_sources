@@ -1833,7 +1833,7 @@ void GLList::ManageEvent(SDL_Event *evt) {
 						for (int i=0;i<nbSelectedRow;i++)
 							selFacets[i] = GetValueInt(selectedRows[i],0)-1;
 
-						std::qsort(table, nbRow,sizeof(int), cmp_column);
+						std::qsort(table, nbRow,sizeof(int*), cmp_column);
 
 
 						lastRowSel=-1;

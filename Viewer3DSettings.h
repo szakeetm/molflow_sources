@@ -37,7 +37,7 @@ public:
   Viewer3DSettings();
 
   // Component methods
-  void Display(Geometry *s,GeometryViewer *v);
+  void Refresh(Geometry *s,GeometryViewer *v);
 
   // Implementation
   void ProcessMessage(GLComponent *src,int message);

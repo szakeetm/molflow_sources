@@ -78,7 +78,7 @@ private:
   GLCombo *modeCombo;
   GLTextField *selectedSliceText;
 
-  GLToggle *logXToggle,*logYToggle;
+  GLToggle *logXToggle,*logYToggle,*correctForGas;
 
   GLDataView  *views[50];
   GLCColor    *colors[8];

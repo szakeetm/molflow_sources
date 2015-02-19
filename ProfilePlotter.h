@@ -72,7 +72,7 @@ private:
   GLToggle    *logYToggle;
   GLToggle    *correctForGas;
 
-  GLDataView  *views[50];
+  GLDataView  *views[MAX_VIEWS];
   GLCColor    *colors[8];
 
   int          nbColors;

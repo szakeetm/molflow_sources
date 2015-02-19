@@ -1188,7 +1188,7 @@ DWORD Facet::GetTexRamSizeForRatio(double ratio, BOOL useMesh, BOOL countDir, si
 	add = (i)+(j)*sh.texWidth;                    \
 	if( mesh[add].area>0.0 ) {                   \
 	if (textureMode==0) sum += we*(texBuffer[add].count*scaleF);          \
-	  else if (textureMode==1) sum += we*(texBuffer[add].sum_1_per_speed*scaleF);          \
+	  else if (textureMode==1) sum += we*(texBuffer[add].sum_1_per_ort_velocity*scaleF);          \
 	  else if (textureMode==2) sum += we*(texBuffer[add].sum_v_ort_per_area*scaleF);          \
 	  W=W+we;                                     \
 	}                                             \
@@ -1269,7 +1269,7 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 					physicalValue = (double)texBuffer[idx].count / (this->mesh[idx].area*(sh.is2sided ? 2.0 : 1.0))*dCoeff2;
 					break;
 				case 2: //particle density
-					physicalValue = 2.0 * texBuffer[idx].sum_1_per_speed / (this->mesh[idx].area*(sh.is2sided ? 2.0 : 1.0))*dCoeff3;
+					physicalValue = 2.0 * texBuffer[idx].sum_1_per_ort_velocity / (this->mesh[idx].area*(sh.is2sided ? 2.0 : 1.0))*dCoeff3;
 					break;
 				}
 				if (doLog) {
@@ -1360,7 +1360,7 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 					physicalValue = (double)texBuffer[idx].count / (this->mesh[idx].area*(sh.is2sided ? 2.0 : 1.0))*dCoeff2;
 					break;
 				case 2: //particle density
-					physicalValue = 2.0 * texBuffer[idx].sum_1_per_speed / (this->mesh[idx].area*(sh.is2sided ? 2.0 : 1.0))*dCoeff2;
+					physicalValue = 2.0 * texBuffer[idx].sum_1_per_ort_velocity / (this->mesh[idx].area*(sh.is2sided ? 2.0 : 1.0))*dCoeff2;
 					break;
 				}
 				if (doLog) {

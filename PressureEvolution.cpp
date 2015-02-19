@@ -25,7 +25,7 @@ GNU General Public License for more details.
 
 extern MolFlow *mApp;
 
-static const char*profType[] = { "None", "Pressure \201 [mbar]", "Pressure \202 [mbar]", "Angle", "Velocity" , "Ort.velocity"};
+static const char*profType[] = { "None", "Pressure \201 [mbar]", "Pressure \202 [mbar]", "Angle", "Velocity", "Ort.velocity" };
 
 PressureEvolution::PressureEvolution() :GLWindow() {
 
@@ -88,23 +88,16 @@ PressureEvolution::PressureEvolution() :GLWindow() {
 
 	normLabel = new GLLabel("Normalize");
 	Add(normLabel);
-	//qLabel = new GLLabel("Q=");
-	//Add(qLabel);
-	//unitLabel = new GLLabel("units*l/s");
-	//Add(unitLabel);
 
 	normCombo = new GLCombo(0);
 	normCombo->SetEditable(TRUE);
-	normCombo->SetSize(8);
-	normCombo->SetValueAt(0, "None");
-	normCombo->SetValueAt(1, "Absorption (total)");
-	normCombo->SetValueAt(2, "Desorption (total)");
-	normCombo->SetValueAt(3, "Hit           (total)");
-	normCombo->SetValueAt(4, "Absorption (local)");
-	normCombo->SetValueAt(5, "Desorption (local)");
-	normCombo->SetValueAt(6, "Hit           (local)");
-	normCombo->SetValueAt(7, "Pressure [mbar]");
-	normCombo->SetSelectedIndex(7);
+	normCombo->SetSize(5);
+	normCombo->SetValueAt(0, "None (raw data)");
+	normCombo->SetValueAt(1, "Pressure (mbar)");
+	normCombo->SetValueAt(2, "Density (1/m3)");
+	normCombo->SetValueAt(3, "Speed (m/s)");
+	normCombo->SetValueAt(4, "Angle (deg)");
+	normCombo->SetSelectedIndex(1);
 	Add(normCombo);
 
 	modeCombo = new GLCombo(0);
@@ -121,6 +114,10 @@ PressureEvolution::PressureEvolution() :GLWindow() {
 
 	label1 = new GLLabel("Show evolution of:");
 	Add(label1);
+
+	correctForGas = new GLToggle(0, "Surface->Volume conversion");
+	correctForGas->SetVisible(FALSE);
+	Add(correctForGas);
 
 	formulaText = new GLTextField(0, "");
 	formulaText->SetEditable(TRUE);
@@ -156,7 +153,7 @@ void PressureEvolution::SetBounds(int x, int y, int w, int h) {
 	label1->SetBounds(w - 265, h - 70, 90, 19);
 	normLabel->SetBounds(7, h - 68, 50, 19);
 	normCombo->SetBounds(60, h - 70, 105, 19);
-
+	correctForGas->SetBounds(240, h - 70, 80, 19);
 	modeCombo->SetBounds(w - 170, h - 70, 105, 19);
 	selectedSliceText->SetBounds(w - 60, h - 70, 50, 19);
 
@@ -176,7 +173,7 @@ void PressureEvolution::Refresh() {
 	int nb = geom->GetNbFacet();
 	int nbProf = 0;
 	for (int i = 0; i < nb; i++)
-	if (geom->GetFacet(i)->sh.isProfile) nbProf++;
+		if (geom->GetFacet(i)->sh.isProfile) nbProf++;
 	profCombo->Clear();
 	if (nbProf) profCombo->SetSize(nbProf);
 	nbProf = 0;
@@ -192,12 +189,12 @@ void PressureEvolution::Refresh() {
 	}
 	//Remove profiles that aren't present anymore
 	for (int v = 0; v < nbView; v++)
-	if (views[v]->userData >= geom->GetNbFacet() || !geom->GetFacet(views[v]->userData)->sh.isProfile) {
-		chart->GetY1Axis()->RemoveDataView(views[v]);
-		SAFE_DELETE(views[v]);
-		for (int j = v; j < nbView - 1; j++) views[j] = views[j + 1];
-		nbView--;
-	}
+		if (views[v]->userData >= geom->GetNbFacet() || !geom->GetFacet(views[v]->userData)->sh.isProfile) {
+			chart->GetY1Axis()->RemoveDataView(views[v]);
+			SAFE_DELETE(views[v]);
+			for (int j = v; j < nbView - 1; j++) views[j] = views[j + 1];
+			nbView--;
+		}
 	refreshViews();
 
 }
@@ -300,73 +297,100 @@ void PressureEvolution::refreshViews() {
 
 	// Lock during update
 	BYTE *buffer = worker->GetHits();
-	int normalize = normCombo->GetSelectedIndex();
+	int displayMode = normCombo->GetSelectedIndex();
 	if (!buffer) return;
 
 	Geometry *geom = worker->GetGeometry();
 	SHGHITS *gHits = (SHGHITS *)buffer;
-	double nbAbs = (double)gHits->total.hit.nbAbsorbed;
 	double nbDes = (double)gHits->total.hit.nbDesorbed;
-	double nbHit = (double)gHits->total.hit.nbHit;
-
-	double scale;
-
+	double scaleY;
 	for (int i = 0; i < nbView; i++) {
 
 		GLDataView *v = views[i];
 		if (v->userData >= 0 && v->userData < geom->GetNbFacet()) {
 			Facet *f = geom->GetFacet(v->userData);
 			SHHITS *fCount = (SHHITS *)(buffer + f->sh.hitOffset);
-			double fnbAbs = (double)fCount->hit.nbAbsorbed;
 			double fnbDes = (double)fCount->hit.nbDesorbed;
 			double fnbHit = (double)fCount->hit.nbHit;
-			//double q;
 			v->Reset();
 			for (int m = 1; m <= MIN((int)worker->moments.size(), 10000); m++) { //max 10000 points
-				APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + sizeof(SHHITS)+m*sizeof(APROFILE)*PROFILE_SIZE);
-				double val;
-				if (modeCombo->GetSelectedIndex() == 1) //plot one slice
-					val = (double)profilePtr[selectedSlice].sum_v_ort;
-				else { //plot sum/average
-					double valLLong = 0.0;
-					for (int j = 0; j < PROFILE_SIZE; j++)
-						valLLong += profilePtr[j].sum_v_ort;
-					val = (double)valLLong;
-					if (normCombo->GetSelectedIndex() == 7) //pressure, calculate average instead of sum
-						val /= (double)PROFILE_SIZE;
-				}
+				APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + sizeof(SHHITS) + m*sizeof(APROFILE)*PROFILE_SIZE);
 
-				switch (normalize) {
-				case 0:
+				switch (displayMode) {
+				case 0: { //Raw data 
+					llong val_MC = 0;
+					if (modeCombo->GetSelectedIndex() == 1) //plot one slice
+						val_MC = profilePtr[selectedSlice].count;
+					else //plot sum
+						for (int j = 0; j < PROFILE_SIZE; j++)
+							val_MC += profilePtr[j].count;
+					v->Add(worker->moments[m - 1], (double)val_MC, FALSE);
+					break;
+				}
+				case 1: {//Pressure
+					scaleY = 1.0 / nbDes / (f->sh.area / (double)PROFILE_SIZE*1E-4)* worker->gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
+					scaleY *= ((worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
+						/ worker->timeWindowSize));
+					if (f->sh.is2sided) scaleY *= 0.5;
+					double val = 0.0;
+					if (modeCombo->GetSelectedIndex() == 1) //plot one slice
+						val = profilePtr[selectedSlice].sum_v_ort*scaleY;
+					else {//plot avg
+						for (int j = 0; j < PROFILE_SIZE; j++)
+							val += profilePtr[j].sum_v_ort;
+						val *= scaleY / (double)PROFILE_SIZE;
+					}
 					v->Add(worker->moments[m - 1], val, FALSE);
 					break;
-				case 1:
-					v->Add(worker->moments[m - 1], val / nbAbs, FALSE);
+				}
+				case 2: {//Particle density
+					scaleY = 1.0 / nbDes / (f->sh.area / (double)PROFILE_SIZE*1E-4);
+					scaleY *= ((worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
+						/ worker->timeWindowSize));
+					if (f->sh.is2sided) scaleY *= 0.5;
+					double val = 0.0;
+					if (modeCombo->GetSelectedIndex() == 1) //plot one slice
+						val = profilePtr[selectedSlice].sum_1_per_ort_velocity*scaleY;
+					else {//plot avg
+						for (int j = 0; j < PROFILE_SIZE; j++)
+							val += profilePtr[j].sum_1_per_ort_velocity;
+						val *= scaleY / (double)PROFILE_SIZE;
+					}
+					v->Add(worker->moments[m - 1], val, FALSE);
 					break;
-				case 2:
-					v->Add(worker->moments[m - 1], val / nbDes, FALSE);
-					break;
-				case 3:
-					v->Add(worker->moments[m - 1], val / nbHit, FALSE);
-					break;
-				case 4:
-					v->Add(worker->moments[m - 1], val / fnbAbs, FALSE);
-					break;
-				case 5:
-					v->Add(worker->moments[m - 1], val / fnbDes, FALSE);
-					break;
-				case 6:
-					v->Add(worker->moments[m - 1], val / fnbHit, FALSE);
-					break;
-				case 7: //Pressure
-					/*scale = totalInFlux / nbDes / (f->sh.area / (double)PROFILE_SIZE*1E-4)* gasMass / 1000 / 6E23 *0.0100; //0.01: Pa->mbar
-					scale *= (worker->desorptionStopTime - worker->desorptionStartTime)
-						/ worker->timeWindowSize; //correction for time window length*/
-					scale = worker->totalDesorbedMolecules / worker->timeWindowSize / nbDes / (f->sh.area / (double)PROFILE_SIZE*1E-4)
-						* worker->gasMass / 1000 / 6E23 *0.0100; //0.01: Pa->mbar
-					if (f->sh.is2sided) scale *= 0.5;
-					v->Add(worker->moments[m - 1], val*scale, FALSE);
-					break;
+				}
+				case 3: {//Velocity
+					double scaleX = f->sh.maxSpeed / (double)PROFILE_SIZE;
+					double sum = 0.0;
+					double weighedSum = 0.0;
+					double val;
+					for (int j = 0; j < PROFILE_SIZE; j++) {
+						if (!correctForGas->GetState())
+							val = (double)profilePtr[j].count; //weighed sum
+						else
+							val = (double)profilePtr[j].count / (((double)j + 0.5));
+						sum += val;
+						weighedSum += ((double)j+0.5)*val;
+					}
+					weighedSum *= scaleX / sum;
+					v->Add(worker->moments[m - 1], weighedSum, FALSE);
+					break; }
+				case 4: {//Angle (deg)
+					double scaleX = 90.0 / (double)PROFILE_SIZE;
+					double sum = 0.0;
+					double weighedSum = 0.0;
+					double val;
+					for (int j = 0; j < PROFILE_SIZE; j++) {
+						if (!correctForGas->GetState())
+							val = (double)profilePtr[j].count; //weighed sum
+						else
+							val = (double)profilePtr[j].count / sin(((double)j + 0.5)*PI / 2.0 / (double)PROFILE_SIZE);
+						sum += val;
+						weighedSum += ((double)j+0.5)*val;
+					}
+					weighedSum *= scaleX / sum;
+					v->Add(worker->moments[m - 1], weighedSum, FALSE);
+					break; }
 				}
 			}
 			v->CommitChange();
@@ -414,11 +438,11 @@ void PressureEvolution::addView(int facet) {
 	// Check that view is not already added
 	BOOL found = FALSE;
 	int i = 0;
-	while (i<nbView && !found) {
+	while (i < nbView && !found) {
 		found = (views[i]->userData == facet);
 		if (!found) i++;
 	}
-	if (worker->moments.size()>10000) {
+	if (worker->moments.size() > 10000) {
 		GLMessageBox::Display("Only the first 10000 moments will be plotted", "Error", GLDLG_OK, GLDLG_ICONWARNING);
 	}
 	if (found) {
@@ -506,14 +530,18 @@ void PressureEvolution::ProcessMessage(GLComponent *src, int message) {
 		break;
 	case MSG_COMBO:
 		if (src == normCombo) {
-			if (normCombo->GetSelectedIndex() == 7) {//pressure selected
-				modeCombo->SetValueAt(0, "Average");
-				if (modeCombo->GetSelectedIndex() == 0) modeCombo->SetSelectedIndex(0); //re-select to update text
-			}
-			else { //something else selected
+			int normMode = normCombo->GetSelectedIndex();
+			correctForGas->SetVisible(normMode == 3 || normMode == 4);
+			refreshViews();
+			if (normCombo->GetSelectedIndex() == 0) {//pressure selected
 				modeCombo->SetValueAt(0, "Sum");
 				if (modeCombo->GetSelectedIndex() == 0) modeCombo->SetSelectedIndex(0); //re-select to update text
 			}
+			else { //something else selected
+				modeCombo->SetValueAt(0, "Average");
+				if (modeCombo->GetSelectedIndex() == 0) modeCombo->SetSelectedIndex(0); //re-select to update text
+			}
+			modeCombo->SetEditable(!(normMode == 3 || normMode == 4));
 		}
 		else if (src == modeCombo) {
 			selectedSliceText->SetEditable(modeCombo->GetSelectedIndex() == 1);
@@ -542,6 +570,9 @@ void PressureEvolution::ProcessMessage(GLComponent *src, int message) {
 		}
 		else if (src == logYToggle) {
 			chart->GetY1Axis()->SetScale(logYToggle->GetState());
+		}
+		else if (src == correctForGas) {
+			refreshViews();
 		}
 		break;
 	}

@@ -25,7 +25,7 @@ GLToggle::GLToggle(int compId,char *text):GLComponent(compId) {
   else
     strcpy(this->text,"");
   state=0;
-  allowMultipleState = FALSE;
+  allowMixedState = FALSE;
   SetBorder(BORDER_NONE);
   SetTextColor(0,0,0);
 }
@@ -36,8 +36,8 @@ BOOL GLToggle::GetState() {
   return state;
 }
 
-void GLToggle::AllowMultipleState(BOOL setAllow) {
-	allowMultipleState = setAllow;
+void GLToggle::AllowMixedState(BOOL setAllow) {
+	allowMixedState = setAllow;
 }
 
 // ---------------------------------------------------------------------
@@ -78,6 +78,12 @@ void GLToggle::SetTextColor(int r,int g,int b) {
   bText = b/255.0f;
 }
 
+void GLToggle::SetEnabled(BOOL enable) { //GLComponent override
+	enabled = enable;
+	int color = enable ? 0 : 120;
+	SetTextColor(color, color, color);
+}
+
 // ---------------------------------------------------------------------
 
 void GLToggle::ManageEvent(SDL_Event *evt) {
@@ -89,7 +95,7 @@ void GLToggle::ManageEvent(SDL_Event *evt) {
 
   if( evt->type == SDL_MOUSEBUTTONDOWN ) {
     if( evt->button.button == SDL_BUTTON_LEFT ) {
-      if (!allowMultipleState) state = !state; //inverse state
+      if (!allowMixedState) state = !state; //inverse state
 	  else state = (state + 2) % 3; //cycle states
       parent->ProcessMessage(this,MSG_TOGGLE);
     }

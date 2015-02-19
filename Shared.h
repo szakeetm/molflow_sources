@@ -56,7 +56,7 @@ typedef union {
     llong nbDesorbed;          // Number of desorbed molec
     llong nbHit;               // Number of hits
 	llong nbAbsorbed;          // Number of absorbed molec
-	double sum_1_per_speed;    // sum of reciprocials of velocities, used to determine the average speed of molecules in the gas (and not of the hits)
+	double sum_1_per_ort_velocity;    // sum of reciprocials of orthogonal velocity components, used to determine the density, regardless of facet orientation
 	double sum_v_ort;          // sum of orthogonal speeds of incident velocities, used to determine the pressure
   } hit;
 

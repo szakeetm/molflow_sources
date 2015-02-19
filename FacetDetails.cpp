@@ -340,7 +340,7 @@ char *FacetDetails::FormatCell(int idx,Facet *f,int mode) {
 	/*dCoef *= ((worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
 	/ worker->timeWindowSize));*/
 	dCoef *= worker->finalOutgassingRate;
-	sprintf(ret, "%g", 2.0*f->sh.counter.hit.sum_1_per_speed / (f->sh.area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef);
+	sprintf(ret, "%g", f->sh.counter.hit.sum_1_per_ort_velocity / (f->sh.area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef);
 	//11.77=sqrt(8*8.31*293.15/3.14/0.028)/4/10
 	break; }
 	case 20: //gas density
@@ -349,7 +349,7 @@ char *FacetDetails::FormatCell(int idx,Facet *f,int mode) {
 	/*dCoef *= ((worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
 	/ worker->timeWindowSize));*/
 	dCoef *= worker->finalOutgassingRate;
-	sprintf(ret, "%g", 2.0*f->sh.counter.hit.sum_1_per_speed / (f->sh.area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef*mApp->worker.gasMass / 1000.0 / 6E23);
+	sprintf(ret, "%g", f->sh.counter.hit.sum_1_per_ort_velocity / (f->sh.area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef*mApp->worker.gasMass / 1000.0 / 6E23);
 	//11.77=sqrt(8*8.31*293.15/3.14/0.028)/4/10
 	break; }
 	case 21: //avg.pressure
@@ -361,8 +361,10 @@ char *FacetDetails::FormatCell(int idx,Facet *f,int mode) {
 	sprintf(ret, "%g", f->sh.counter.hit.sum_v_ort*dCoef / (f->sh.area*(f->sh.is2sided ? 2.0 : 1.0)));
 	//11.77=sqrt(8*8.31*293.15/3.14/0.028)/4/10
 	break; }
-	case 22: //avg. gas speed
-		sprintf(ret, "%g", 2.0*(double)(f->sh.counter.hit.nbHit+f->sh.counter.hit.nbDesorbed) / f->sh.counter.hit.sum_1_per_speed);
+	case 22: //avg. ort. gas speed (estimate)
+		sprintf(ret, "%g", 4.0*(double)(f->sh.counter.hit.nbHit+f->sh.counter.hit.nbDesorbed) / f->sh.counter.hit.sum_1_per_ort_velocity);
+		//<v_surf>=2*<v_surf_ort>
+		//<v_gas>=1/<1/v_surf>
 		break;
 	case 23:
 		sprintf(ret,"%I64d",f->sh.counter.hit.nbHit);
