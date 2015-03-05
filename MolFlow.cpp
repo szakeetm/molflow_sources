@@ -37,7 +37,7 @@ GNU General Public License for more details.
 #define APP_NAME "MolFlow+ development version 64-bit (Compiled "__DATE__" "__TIME__") DEBUG MODE"
 #else
 //#define APP_NAME "Molflow+ development version ("__DATE__")"
-#define APP_NAME "Molflow+ 2.6.4 64-bit ("__DATE__")"
+#define APP_NAME "Molflow+ 2.6.5 64-bit ("__DATE__")"
 #endif
 
 /*
@@ -801,9 +801,11 @@ int MolFlow::OneTimeSceneInit()
 	facetList->Sortable = TRUE;
 	Add(facetList);
 
+	
+
 	ClearFacetParams();
 	UpdateViewerParams();
-	PlaceComponents();
+	PlaceComponents();facetMesh = new FacetMesh(&worker);
 	LoadConfig();
 	//LoadFile();
 	try {
@@ -1161,7 +1163,7 @@ void MolFlow::ApplyFacetParams() {
 	if (facetFILabel->GetState() && strcmp(facetFlow->GetText(), "...") != 0 && facetDesType->GetSelectedIndex() != 0
 		&& strcmp(facetDesType->GetSelectedValue(), "...") != 0) {  //We want outgassing
 		if (facetFlow->GetNumber(&flow)) { //If we can parse the number
-			if (!(flow > 0.0) && !(facetMesh && facetMesh->facetUseDesFile->GetSelectedIndex() == 1)) {
+			if (facetFlow->IsEditable() && !(flow > 0.0) ) {
 				GLMessageBox::Display("Outgassing must be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
@@ -1341,7 +1343,8 @@ void MolFlow::UpdateFacetParams(BOOL updateSelection) {
 
 		f0 = geom->GetFacet(selection[0]);
 
-		double area = f0->sh.area*(f0->sh.is2sided?2.0:1.0);
+		double f0Area=f0->sh.area*(f0->sh.is2sided?2.0:1.0);
+		double area = f0Area; //sum facet area
 
 		BOOL stickingE = TRUE;
 		BOOL opacityE = TRUE;
@@ -1355,16 +1358,17 @@ void MolFlow::UpdateFacetParams(BOOL updateSelection) {
 
 		for(int i=1;i<count;i++) {
 			f = geom->GetFacet(selection[i]);
-			stickingE = stickingE && (f0->userSticking.compare(f->userSticking)==0 && abs(f0->sh.sticking - f->sh.sticking)<1e-7);
-			opacityE = opacityE && (f0->userOpacity.compare(f->userOpacity) == 0 && abs(f0->sh.opacity - f->sh.opacity)<1e-7);
-			temperatureE = temperatureE && (abs(f0->sh.temperature - f->sh.temperature)<1e-7);
-			flowE = flowE && (f0->userOutgassing.compare(f->userOutgassing) == 0 && abs(f0->sh.flow - f->sh.flow)<1e-7);
-			flowAreaE = flowAreaE && (abs(f0->sh.flow/f0->sh.area/(f0->sh.is2sided?2.0:1.0) - f->sh.flow/f->sh.area/(f->sh.is2sided?2.0:1.0))<1e-20);
+			double fArea = f->sh.area*(f->sh.is2sided ? 2.0 : 1.0);
+			stickingE = stickingE && (f0->userSticking.compare(f->userSticking)==0) && IsEqual(f0->sh.sticking , f->sh.sticking);
+			opacityE = opacityE && (f0->userOpacity.compare(f->userOpacity) == 0) && IsEqual(f0->sh.opacity, f->sh.opacity);
+			temperatureE = temperatureE && IsEqual(f0->sh.temperature , f->sh.temperature);
+			flowE = flowE && f0->userOutgassing.compare(f->userOutgassing) == 0 && IsEqual(f0->sh.flow , f->sh.flow);
+			flowAreaE = flowAreaE && IsEqual(f0->sh.flow / f0Area , f->sh.flow / fArea,1e-20);
 			is2sidedE = is2sidedE && (f0->sh.is2sided == f->sh.is2sided);
 			desorbTypeE = desorbTypeE && (f0->sh.desorbType == f->sh.desorbType);
-			desorbTypeNE = desorbTypeNE && (abs(f0->sh.desorbTypeN - f->sh.desorbTypeN)<1e-7);
+			desorbTypeNE = desorbTypeNE && IsEqual(f0->sh.desorbTypeN , f->sh.desorbTypeN);
 			recordE = recordE && (f0->sh.profileType == f->sh.profileType);  //profiles
-			if (f->sh.area>0) area+=f->sh.area*(f->sh.is2sided?2.0:1.0);
+			area+=fArea;
 		}
 
 		if( nbSel==1 )
@@ -1391,11 +1395,9 @@ void MolFlow::UpdateFacetParams(BOOL updateSelection) {
 			else facetOpacity->SetText(f0->userOpacity.c_str());
 		}
 		else facetOpacity->SetText("...");
-		
-		if(flowAreaE) facetFlowArea->SetText(f0->sh.flow/f0->sh.area/(f0->sh.is2sided?2.0:1.0)*10.00); else facetFlowArea->SetText("...");
+
 		if(temperatureE) facetTemperature->SetText(f0->sh.temperature); else facetTemperature->SetText("...");
 		if(is2sidedE) facetSideType->SetSelectedIndex(f0->sh.is2sided); else facetSideType->SetSelectedValue("...");
-		if(desorbTypeE) facetDesType->SetSelectedIndex(f0->sh.desorbType); else facetDesType->SetSelectedValue("...");
 		if (desorbTypeNE) facetDesTypeN->SetText(f0->sh.desorbTypeN); else facetDesTypeN->SetText("...");
 		if(recordE) facetRecType->SetSelectedIndex(f0->sh.profileType); else facetRecType->SetSelectedValue("...");
 
@@ -1408,40 +1410,58 @@ void MolFlow::UpdateFacetParams(BOOL updateSelection) {
 			facetPumping->SetText("...");
 		}
 
-		if( desorbTypeE && f0->sh.desorbType>0 ) {
+		if (desorbTypeE) {
+			facetDesType->SetSelectedIndex(f0->sh.desorbType);
+			if (f0->sh.desorbType > DES_NONE) { //There is some desorption
 
-			//facetFlow->SetEnabled(TRUE);
-			facetFIAreaLabel->SetEnabled(TRUE);
-			facetFlowArea->SetEditable(TRUE);
-			facetFILabel->SetEnabled(TRUE);
-			facetFlow->SetEditable(TRUE);
-			if (flowE) {
-				if (f0->userOutgassing.length() == 0)
-					facetFlow->SetText(f0->sh.flow*10.00); //10: Pa*m3/sec -> mbar*l/s
-				else facetFlow->SetText(f0->userOutgassing);
+				//facetFlow->SetEnabled(TRUE);
+				facetFIAreaLabel->SetEnabled(TRUE);
+				facetFlowArea->SetEditable(TRUE);
+				facetFILabel->SetEnabled(TRUE);
+				facetFlow->SetEditable(TRUE);
+				if (flowE) {
+					if (f0->userOutgassing.length() == 0)
+						facetFlow->SetText(f0->sh.flow*10.00); //10: Pa*m3/sec -> mbar*l/s
+					else facetFlow->SetText(f0->userOutgassing);
+				}
+				else facetFlow->SetText("...");
+				if (flowAreaE) facetFlowArea->SetText(f0->sh.flow / f0Area*10.00); else facetFlowArea->SetText("...");
+				if (f0->sh.desorbType == 3) {
+					facetDesTypeN->SetEditable(TRUE);
+					if (desorbTypeNE) facetDesTypeN->SetText(f0->sh.desorbTypeN); else facetDesTypeN->SetText("...");
+				}
+				else {
+					facetDesTypeN->SetText("");
+					facetDesTypeN->SetEditable(FALSE);
+				};
+
 			}
-			else facetFlow->SetText("...");
-			if(flowAreaE) facetFlowArea->SetText(f0->sh.flow/f0->sh.area/(f0->sh.is2sided?2.0:1.0)*10.00); else facetFlowArea->SetText("...");
-			if (f0->sh.desorbType==3) {
-				facetDesTypeN->SetEditable(TRUE);
-				if(desorbTypeNE) facetDesTypeN->SetText(f0->sh.desorbTypeN); else facetDesTypeN->SetText("...");
-			} else {
+			else { //No desorption
+				facetFILabel->SetEnabled(FALSE);
+				facetFlow->SetEditable(FALSE);
+				facetFIAreaLabel->SetEnabled(FALSE);
+				facetFlowArea->SetEditable(FALSE);
 				facetDesTypeN->SetText("");
 				facetDesTypeN->SetEditable(FALSE);
-			};
-
-		} else {
+				facetFlow->SetText("");
+				facetFlowArea->SetText("");
+			}
+		}
+		else { //Mixed state
+			facetDesType->SetSelectedValue("...");
 			facetFILabel->SetEnabled(FALSE);
 			facetFlow->SetEditable(FALSE);
 			facetFIAreaLabel->SetEnabled(FALSE);
 			facetFlowArea->SetEditable(FALSE);
 			facetDesTypeN->SetText("");
 			facetDesTypeN->SetEditable(FALSE);
-			//facetFlow->SetText("");
+			facetFlow->SetText("");
+			facetFlowArea->SetText("");
 		}
-
+		
+		if (facetMesh) facetMesh->Refresh(count, selection);
 		if( updateSelection ) {
-			if (facetMesh) facetMesh->Refresh(count, selection);
+			
 			if (nbSel>1000 || geom->GetNbFacet()>50000) { //If it would take too much time to look up every selected facet in the list
 				facetList->ReOrder();
 				facetList->SetSelectedRows(selection,nbSel,FALSE);

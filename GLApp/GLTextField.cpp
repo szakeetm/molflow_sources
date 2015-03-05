@@ -82,6 +82,10 @@ void GLTextField::SetEditable(BOOL editable) {
   }
 }
 
+BOOL GLTextField::IsEditable() {
+	return m_Editable;
+}
+
 // ------------------------------------------------------
 
 void GLTextField::SetEditable_NoBG(BOOL editable) { //for combo boxes

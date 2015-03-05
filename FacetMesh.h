@@ -42,8 +42,7 @@ public:
   void ProcessMessage(GLComponent *src,int message);
   BOOL Apply();
 
-
-  GLCombo	*facetUseDesFile;
+  
 
 private:
 
@@ -55,12 +54,9 @@ private:
   Worker   *worker;
   Geometry *geom;
   int       fIdx;
+  double sumArea, sumOutgassing;
 
-  GLTitledPanel	*iPanel;
-  GLLabel	*l1;
-  GLLabel	*l2;
-  GLTextField	*vLength;
-  GLTextField	*uLength;
+  GLCombo	*facetUseDesFile;
   GLTitledPanel	*aPanel;
   GLTextField	*lengthText;
   GLLabel	*perCm;
@@ -84,7 +80,7 @@ private:
   GLTitledPanel	*vPanel;
   GLButton	*quickApply;
   GLTitledPanel	*desPanel;
-  GLTextField	*fileDesText;
+  GLTextField	*fileYieldText;
   GLLabel	*label3;
   GLLabel	*label1;
   GLLabel	*label2;
@@ -100,6 +96,12 @@ private:
   GLLabel	*label6;
   GLCombo	*facetReflType;
   GLTextField	*facetAccFactor;
+  GLTextField	*fileDoseText;
+  GLTextField	*fileFluxText;
+  GLLabel	*label11;
+  GLLabel	*label9;
+  GLLabel	*label12;
+  GLLabel	*label10;
 
   GLProgress  *progressDlg;
 

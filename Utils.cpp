@@ -136,6 +136,10 @@ void Rotate(VERTEX3D *P, VERTEX3D AXIS_P0, VERTEX3D AXIS_DIR, double theta) {
 	P->z = (c*(u*u + v*v) - w*(a*u + b*v + precalc1))*(1 - costh) + z*costh + (-b*u + a*v - v*x + u*y)*sinth;
 }
 
+int IsEqual(const double &a, const double &b, double tolerance) {
+	return abs(a - b) < tolerance;
+}
+
 // ---------------------------------------------------------------
 // Polygon geometry stuff
 // ---------------------------------------------------------------

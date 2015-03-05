@@ -276,7 +276,7 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 				sprintf(errMsg,"%s\nFile:%s",e.GetMsg(),synFile.c_str());
 				GLMessageBox::Display(errMsg,"Error",GLDLG_OK,GLDLG_ICONERROR);
 			}
-			work->GetGeometry()->CalcTotalOutGassing();
+			geom->CalcTotalOutGassing();
 			mApp->UpdateFacetParams();
 			// Send to sub process
 			try { work->Reload(); } catch(Error &e) {
@@ -289,7 +289,7 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 		} else if (src==convInfoButton) {
 			GLMessageBox::Display("A conversion file should contain several lines for interpolation\n"
 				"Each line should contain two numbers separated by a space or tab:\n"
-				"First number: DOSE VALUE (number of photons)\n"
+				"First number: Photon Dose (in photons/cm\262)\n"
 				"Second number: Molecules/Photon (at that dose value).\n"
 				"Good luck!","Conversion file info",GLDLG_OK,GLDLG_ICONINFO);
 		}

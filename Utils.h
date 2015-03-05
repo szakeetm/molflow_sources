@@ -16,7 +16,6 @@
   GNU General Public License for more details.
 */
 
-
 #ifndef _UTILSH_
 #define _UTILSH_
 
@@ -73,7 +72,7 @@ void   Add(VERTEX3D *result,VERTEX3D *v1,VERTEX3D *v2);
 void   ProjectVertex(VERTEX3D *v,VERTEX2D *projected,VERTEX3D U,VERTEX3D V,VERTEX3D origin);
 void   Mirror(VERTEX3D *P, VERTEX3D P0, VERTEX3D N);
 void   Rotate(VERTEX3D *P, VERTEX3D AXIS_P0, VERTEX3D AXIS_DIR,double theta);
-
+int   IsEqual(const double &a, const double &b, double tolerance=1E-8);
 
 int    SolveIASM(double *u ,double *v,double *w,
                  VERTEX3D *nuv,VERTEX3D *U,VERTEX3D *V,VERTEX3D *W,VERTEX3D *Z);

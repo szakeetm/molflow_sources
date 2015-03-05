@@ -21,12 +21,12 @@
 #define _GLUNITDIALGOH_
 
 // Buttons
-#define GLDLG_MM		0x0001
-#define GLDLG_CM		0x0002
-#define GLDLG_M			0x0003
-#define GLDLG_INCH		0x0004
-#define GLDLG_FOOT		0x0005
-#define GLDLG_CANCEL_U  0x0006
+#define GLDLG_MM		1
+#define GLDLG_CM		2
+#define GLDLG_M			4
+#define GLDLG_INCH		8
+#define GLDLG_FOOT		16
+#define GLDLG_CANCEL_U  32
 
 // Icons
 #define GLDLG_ICONNONE    0

@@ -3990,6 +3990,7 @@ void Geometry::ImportDesorption_SYN(
 				f->sh.outgassingFileRatio = xdims[i] / Norme(&(f->sh.U));
 				f->outgassingMap = (double*)malloc(width*height*sizeof(double));
 				if (!f->outgassingMap) throw Error("Not enough memory to store outgassing map.");
+				f->totalDose = f->totalOutgassing = f->totalFlux = 0.0;
 			}
 
 			for (iy = 0; iy < height; iy++) {
@@ -4032,6 +4033,11 @@ void Geometry::ImportDesorption_SYN(
 						//Apply outgassing
 						//f->outgassingMap[index] = outgassing *0.100; //0.1: mbar*l/s->Pa*m3/s
 						f->outgassingMap[index] = outgassing * 1.38E-23 * f->sh.temperature; //1[Pa*m3/s] = kT [particles/sec]
+
+						//Facet diagnostic info
+						f->totalDose += dose;
+						f->totalFlux += flux;
+						f->totalOutgassing += f->outgassingMap[index];
 					}
 				}
 			}
@@ -4194,6 +4200,16 @@ void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress
 		newFormula.append_attribute("id")=i;
 		newFormula.append_attribute("name")=mApp->formulas[i].parser->GetName();
 		newFormula.append_attribute("expression")=mApp->formulas[i].parser->GetExpression();
+	}
+
+	if (mApp->profilePlotter) {
+		std::vector<int> ppViews = mApp->profilePlotter->GetViews();
+		xml_node profilePlotterNode = interfNode.append_child("ProfilePlotter");
+		xml_node viewsNode = profilePlotterNode.append_child("Views");
+		for (int v : ppViews) {
+			xml_node view = viewsNode.append_child("View");
+			view.append_attribute("facetId") = v;
+		}
 	}
 
 	xml_node simuParamNode = saveDoc.append_child("MolflowSimuSettings");

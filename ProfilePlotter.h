@@ -45,10 +45,11 @@ public:
   // Implementation
   void ProcessMessage(GLComponent *src,int message);
   void SetBounds(int x,int y,int w,int h);
-
-private:
-
   void addView(int facet);
+  std::vector<int> GetViews();
+  void SetViews(std::vector<int> views);
+
+private:  
   void remView(int facet);
   void refreshViews();
   void plot();

@@ -60,7 +60,7 @@ private:
   GLToggle      *chkAutoUpdateFormulas;
   GLToggle      *chkCompressSavedFiles;
   GLButton    *applyButton;
-  GLButton    *cancelButton;
+  GLButton    *recalcButton;
 
   GLTextField *outgassingText;
   GLTextField *influxText;

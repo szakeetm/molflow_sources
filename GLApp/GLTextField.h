@@ -39,6 +39,7 @@ public:
   int  GetCursorPos();
   int  GetTextLength();
   void SetEditable(BOOL editable);
+  BOOL IsEditable();
   void SetEditable_NoBG(BOOL editable);
   void Clear();
   // ------------------------------------------------------

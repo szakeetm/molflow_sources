@@ -263,6 +263,7 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 					xml_document saveDoc;
 					geom->SaveXML_geometry(saveDoc, this, prg, saveSelected);
 					xml_document geom_only; geom_only.reset(saveDoc);
+					BOOL success = FALSE; //success: simulation state could be saved
 					if (!crashSave && !saveSelected) {
 						try {
 							AccessDataport(dpHit);
@@ -276,45 +277,49 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 							HIT pHits[NBHHIT];
 							GetHHit(pHits, &nbHHitSave);
 
-							BOOL success = geom->SaveXML_simustate(saveDoc, this, buffer, gHits, nbLeakSave, nbHHitSave, pLeak, pHits, prg, saveSelected);
+							success = geom->SaveXML_simustate(saveDoc, this, buffer, gHits, nbLeakSave, nbHHitSave, pLeak, pHits, prg, saveSelected);
 							ReleaseDataport(dpHit);
-							
-							prg->SetMessage("Writing xml file...");
-							if (success) {
-								if (!saveDoc.save_file(fileNameWithXML)) throw Error("Error writing XML file."); //successful save
-							} else {
-								if (!geom_only.save_file(fileNameWithXML)) throw Error("Error writing XML file."); //simu state error
-							}
-							
-
-							if (isXMLzip) {
-								prg->SetProgress(0.75);
-								prg->SetMessage("Compressing xml to zip...");
-								//mApp->compressProcessHandle=CreateThread(0, 0, ZipThreadProc, 0, 0, 0);
-								HZIP hz = CreateZip(fileNameWithXMLzip, 0);
-								if (!hz) {
-									throw Error("Error creating ZIP file");
-								}
-								if (!ZipAdd(hz, GetShortFileName(fileNameWithXML), fileNameWithXML)) remove(fileNameWithXML);
-								else {
-									CloseZip(hz);
-									throw Error("Error compressing ZIP file.");
-								}
-								CloseZip(hz);
-							}
-						} catch (Error &e) {
+						}
+						catch (Error &e) {
 							SAFE_DELETE(f);
 							ReleaseDataport(dpHit);
 							GLMessageBox::Display((char*)e.GetMsg(), "Error saving simulation state.", GLDLG_OK, GLDLG_ICONERROR);
 							return;
 						}
 					}
+
+					prg->SetMessage("Writing xml file...");
+					if (success) {
+						if (!saveDoc.save_file(fileNameWithXML)) throw Error("Error writing XML file."); //successful save
+					}
+					else {
+						if (!geom_only.save_file(fileNameWithXML)) throw Error("Error writing XML file."); //simu state error
+					}
+
+
+					if (isXMLzip) {
+						prg->SetProgress(0.75);
+						prg->SetMessage("Compressing xml to zip...");
+						//mApp->compressProcessHandle=CreateThread(0, 0, ZipThreadProc, 0, 0, 0);
+						HZIP hz = CreateZip(fileNameWithXMLzip, 0);
+						if (!hz) {
+							throw Error("Error creating ZIP file");
+						}
+						if (!ZipAdd(hz, GetShortFileName(fileNameWithXML), fileNameWithXML)) remove(fileNameWithXML);
+						else {
+							CloseZip(hz);
+							throw Error("Error compressing ZIP file.");
+						}
+						CloseZip(hz);
+					}
+
+
 				}
 			}
-			if (!autoSave && !saveSelected) {
+			/*if (!autoSave && !saveSelected) {
 				strcpy(fullFileName, fileName);
 				remove("Molflow_AutoSave.zip");
-			}
+				}*/
 		}
 	}
 	else {
@@ -360,26 +365,26 @@ void Worker::ExportTextures(char *fileName, int mode, BOOL askConfirm, BOOL save
 	// Read a file
 	FILE *f = NULL;
 
-	
 
-		BOOL ok = TRUE;
-		if (askConfirm) {
-			if (FileUtils::Exist(fileName)) {
-				sprintf(tmp, "Overwrite existing file ?\n%s", fileName);
-				ok = (GLMessageBox::Display(tmp, "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK);
-			}
+
+	BOOL ok = TRUE;
+	if (askConfirm) {
+		if (FileUtils::Exist(fileName)) {
+			sprintf(tmp, "Overwrite existing file ?\n%s", fileName);
+			ok = (GLMessageBox::Display(tmp, "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK);
 		}
-		if (ok) {
-			f = fopen(fileName, "w");
-			if (!f) {
-				char tmp[256];
-				sprintf(tmp, "Cannot open file for writing %s", fileName);
-				throw Error(tmp);
-			}
-			geom->ExportTextures(f, mode, dpHit, saveSelected);
-			fclose(f);
+	}
+	if (ok) {
+		f = fopen(fileName, "w");
+		if (!f) {
+			char tmp[256];
+			sprintf(tmp, "Cannot open file for writing %s", fileName);
+			throw Error(tmp);
 		}
-	
+		geom->ExportTextures(f, mode, dpHit, saveSelected);
+		fclose(f);
+	}
+
 }
 
 void Worker::ExportProfiles(char *fileName) {
@@ -402,21 +407,21 @@ void Worker::ExportProfiles(char *fileName) {
 	BOOL isTXT = _stricmp(ext, "txt") == 0;
 
 	BOOL ok = TRUE;
-	
-		if (FileUtils::Exist(fileName)) {
-			sprintf(tmp, "Overwrite existing file ?\n%s", fileName);
-			ok = (GLMessageBox::Display(tmp, "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK);
-		}
-	
+
+	if (FileUtils::Exist(fileName)) {
+		sprintf(tmp, "Overwrite existing file ?\n%s", fileName);
+		ok = (GLMessageBox::Display(tmp, "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK);
+	}
+
 	if (ok) {
-			f = fopen(fileName, "w");
-			if (!f) {
-				char tmp[256];
-				sprintf(tmp, "Cannot open file for writing %s", fileName);
-				throw Error(tmp);
-			}
-			geom->ExportProfiles(f, isTXT, dpHit, this);
-			fclose(f);
+		f = fopen(fileName, "w");
+		if (!f) {
+			char tmp[256];
+			sprintf(tmp, "Cannot open file for writing %s", fileName);
+			throw Error(tmp);
+		}
+		geom->ExportProfiles(f, isTXT, dpHit, this);
+		fclose(f);
 	}
 }
 
@@ -686,7 +691,7 @@ void Worker::LoadGeometry(char *fileName) {
 						UnzipItem(hz, i, tmpFileName.c_str()); //unzip it to tmp directory
 						CloseZip(hz);
 						progressDlg->SetMessage("Reading and parsing XML file...");
-						parseResult= loadXML.load_file(tmpFileName.c_str()); //parse it
+						parseResult = loadXML.load_file(tmpFileName.c_str()); //parse it
 					}
 				}
 				if (notFoundYet) {
@@ -695,16 +700,16 @@ void Worker::LoadGeometry(char *fileName) {
 			}
 			ResetWorkerStats();
 			progressDlg->SetMessage("Reading and parsing XML file...");
-			if (!isXMLzip) parseResult=loadXML.load_file(fileName); //parse it
+			if (!isXMLzip) parseResult = loadXML.load_file(fileName); //parse it
 			if (!parseResult) {
 				//Parse error
 				std::stringstream err;
 				err << "XML parsed with errors.\n";
 				err << "Error description: " << parseResult.description() << "\n";
-				err << "Error offset: " << parseResult.offset<<"\n";
+				err << "Error offset: " << parseResult.offset << "\n";
 				throw Error(err.str().c_str());
 			}
-			
+
 			progressDlg->SetMessage("Building geometry...");
 			geom->LoadXML_geom(loadXML, this, progressDlg);
 			geom->UpdateName(fileName);
@@ -717,7 +722,7 @@ void Worker::LoadGeometry(char *fileName) {
 			try {
 				geom->LoadXML_simustate(loadXML, dpHit, this, progressDlg);
 				SendHits(TRUE); //Send hits without resetting simu state
-				RebuildTextures();				
+				RebuildTextures();
 			}
 			catch (Error &e) {
 				GLMessageBox::Display(e.GetMsg(), "Error while loading simulation state", GLDLG_CANCEL, GLDLG_ICONWARNING);
@@ -1851,7 +1856,7 @@ return result;
 
 int Worker::AddMoment(std::vector<double> newMoments) {
 	int nb = (int)newMoments.size();
-	for (int i = 0; i<nb; i++)
+	for (int i = 0; i < nb; i++)
 		moments.push_back(newMoments[i]);
 	return nb;
 }
@@ -1861,7 +1866,7 @@ std::vector<double> Worker::ParseMoment(std::string userInput) {
 	double begin, interval, end;
 
 	int nb = sscanf(userInput.c_str(), "%lf,%lf,%lf", &begin, &interval, &end);
-	if (nb == 1 && (begin>=0.0)) {
+	if (nb == 1 && (begin >= 0.0)) {
 		//One moment
 		parsedResult.push_back(begin);
 		//} else if (nb==3 && (begin>0.0) && (end>begin) && (interval<(end-begin)) && ((end-begin)/interval<300.0)) {
@@ -1934,7 +1939,7 @@ void Worker::ImportDesorption_SYN(char *fileName, const size_t &source, const do
 			if (!isSYN7Z) f = new FileReader(fileName);  //original file opened
 
 			geom->ImportDesorption_SYN(f, source, time, mode, eta0, alpha, convDistr, prg);
-
+			CalcTotalOutgassing();
 			SAFE_DELETE(f);
 
 		}
@@ -2026,7 +2031,7 @@ void Worker::PrepareToRun() {
 		Facet *f = g->GetFacet(i);
 
 		//match parameters
-		if (f->userOutgassing.length()>0) {
+		if (f->userOutgassing.length() > 0) {
 			int id = GetParamId(f->userOutgassing);
 			if (id == -1) { //parameter not found
 				char tmp[256];
@@ -2258,15 +2263,15 @@ void Worker::RebuildTextures() {
 
 /*DWORD Worker::ZipThreadProc(char* fileNameWithXML, char* fileNameWithXMLzip)
 {
-	HZIP hz = CreateZip(fileNameWithXMLzip, 0);
-	if (!hz) {
-		throw Error("Error creating ZIP file");
-	}
-	if (!ZipAdd(hz, GetShortFileName(fileNameWithXML), fileNameWithXML)) remove(fileNameWithXML);
-	else {
-		CloseZip(hz);
-		throw Error("Error compressing ZIP file.");
-	}
-	CloseZip(hz);
-	return 0;
+HZIP hz = CreateZip(fileNameWithXMLzip, 0);
+if (!hz) {
+throw Error("Error creating ZIP file");
+}
+if (!ZipAdd(hz, GetShortFileName(fileNameWithXML), fileNameWithXML)) remove(fileNameWithXML);
+else {
+CloseZip(hz);
+throw Error("Error compressing ZIP file.");
+}
+CloseZip(hz);
+return 0;
 }*/

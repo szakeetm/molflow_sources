@@ -81,7 +81,7 @@ TexturePlotter::TexturePlotter() :GLWindow() {
 	cancelButton = new GLButton(0, "Dismiss");
 	Add(cancelButton);
 
-	autoSizeOnUpdate = new GLToggle(0, "Autosize on every update");
+	autoSizeOnUpdate = new GLToggle(0, "Autosize on every update (disable for smooth scrolling)");
 	autoSizeOnUpdate->SetState(TRUE);
 	Add(autoSizeOnUpdate);
 
@@ -395,7 +395,7 @@ void TexturePlotter::UpdateTable() {
 							for (int i = 0; i < w; i++) {
 								for (int j = 0; j<h; j++) {
 									int tSize = selFacet->sh.texWidth*selFacet->sh.texHeight;
-									double val = 2.0*(double)hits[i + j*w].count / hits[i + j*w].sum_1_per_ort_velocity;
+									double val = 4.0*(double)hits[i + j*w].count / hits[i + j*w].sum_1_per_ort_velocity;
 									if (val>maxValue) {
 										maxValue = val;
 										maxX = i; maxY = j;

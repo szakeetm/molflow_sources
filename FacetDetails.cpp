@@ -55,7 +55,7 @@ static COLUMN allColumn[] = {
   {"Density [1/m3]", 80, ALIGN_CENTER },
   {"Density [kg/m3]",80, ALIGN_CENTER },
   {"Pressure [mbar]",80 , ALIGN_CENTER} ,
-  {"Av.mol.speed[m/s]",80, ALIGN_CENTER },
+  {"Av.mol.speed[m/s]",80, ALIGN_CENTER},
   {"Hits"           , 80 , ALIGN_CENTER} ,
   {"Des."           , 80 , ALIGN_CENTER} ,
   {"Abs."           , 80 , ALIGN_CENTER} ,
@@ -70,7 +70,7 @@ static const char *desStr[] = {
 
 static const char *refStr[] = {
   "Diffuse",
-  "Mirror"
+  "Mirror",
   "Uniform"
 };
 

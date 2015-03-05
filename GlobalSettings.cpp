@@ -117,12 +117,20 @@ GlobalSettings::GlobalSettings():GLWindow() {
   chkCompressSavedFiles->SetBounds(10,200,100,19);
   Add(chkCompressSavedFiles);
 
+  recalcButton = new GLButton(0, "Recalculate outgassing");
+  recalcButton->SetBounds(wD/2 - 145, 235, 130, 19);
+  Add(recalcButton);
+
+  applyButton = new GLButton(0, "Apply above settings");
+  applyButton->SetBounds(wD/2+5, 235, 130, 19);
+  Add(applyButton);
+
   /*chkNonIsothermal = new GLToggle(0,"Non-isothermal system (textures only, experimental)");
   chkNonIsothermal->SetBounds(315,125,100,19);
   Add(chkNonIsothermal);*/
 
   GLTitledPanel *panel3 = new GLTitledPanel("Subprocess control");
-  panel3->SetBounds(5,230,wD-10,hD-275);
+  panel3->SetBounds(5,255,wD-10,hD-277);
   Add(panel3);
 
 
@@ -133,40 +141,34 @@ GlobalSettings::GlobalSettings():GLWindow() {
   processList->SetColumnLabels((char **)plName);
   processList->SetColumnAligns((int *)plAligns);
   processList->SetColumnLabelVisible(TRUE);
-  processList->SetBounds(10,245,wD-20,hD-355);
+  processList->SetBounds(10,270,wD-20,hD-355);
   panel3->Add(processList);
 
 	char tmp[128];
 	sprintf(tmp,"Number of CPU cores:     %d",mApp->numCPU);
 	GLLabel *coreLabel = new GLLabel(tmp);
-	coreLabel->SetBounds(10,hD-99,120,19);
+	coreLabel->SetBounds(10,hD-74,120,19);
 	panel3->Add(coreLabel);
   GLLabel *l1 = new GLLabel("Number of subprocesses:");
-  l1->SetBounds(10,hD-74,120,19);
+  l1->SetBounds(10,hD-49,120,19);
   panel3->Add(l1);
 
   nbProcText = new GLTextField(0,"");
   nbProcText->SetEditable(TRUE);
-  nbProcText->SetBounds(135,hD-76,30,19);
+  nbProcText->SetBounds(135,hD-51,30,19);
   panel3->Add(nbProcText);
 
-  restartButton = new GLButton(0,"Restart");
-  restartButton->SetBounds(170,hD-76,90,19);
+  restartButton = new GLButton(0,"Restart processes / Apply");
+  restartButton->SetBounds(170,hD-51,140,19);
   panel3->Add(restartButton);
 
   maxButton = new GLButton(0,"Change MAX desorbed molecules");
-  maxButton->SetBounds(wD-195,hD-76,180,19);
+  maxButton->SetBounds(wD-195,hD-51,180,19);
   panel3->Add(maxButton);
 
   // ---------------------------------------------------
 
-  applyButton = new GLButton(0,"Apply");
-  applyButton->SetBounds(wD-175,hD-43,80,19);
-  Add(applyButton);
 
-  cancelButton = new GLButton(0,"Dismiss");
-  cancelButton->SetBounds(wD-90,hD-43,80,19);
-  Add(cancelButton);
 
   // Center dialog
   int wS,hS;
@@ -309,9 +311,13 @@ void GlobalSettings::ProcessMessage(GLComponent *src,int message) {
   switch(message) {
     case MSG_BUTTON:
 
-    if(src==cancelButton) {
-
-      GLWindow::ProcessMessage(NULL,MSG_CLOSE);
+    if(src==recalcButton) {
+		try {
+			worker->RealReload();
+		}
+		catch (Error &e) {
+			GLMessageBox::Display(e.GetMsg(), "Recalculation failed: Couldn't reload Worker", GLDLG_OK, GLDLG_ICONWARNING);
+		}
 
     } else if (src==restartButton) {
         RestartProc();

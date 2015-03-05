@@ -100,6 +100,7 @@ Facet::Facet(int nbIndex) {
 
 	hasOutgassingMap = FALSE;
 	outgassingMap = NULL;
+	totalFlux = totalOutgassing = totalDose = 0.0;
 
 	textureVisible = TRUE;
 	volumeVisible = TRUE;
@@ -1269,7 +1270,7 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 					physicalValue = (double)texBuffer[idx].count / (this->mesh[idx].area*(sh.is2sided ? 2.0 : 1.0))*dCoeff2;
 					break;
 				case 2: //particle density
-					physicalValue = 2.0 * texBuffer[idx].sum_1_per_ort_velocity / (this->mesh[idx].area*(sh.is2sided ? 2.0 : 1.0))*dCoeff3;
+					physicalValue = texBuffer[idx].sum_1_per_ort_velocity / (this->mesh[idx].area*(sh.is2sided ? 2.0 : 1.0))*dCoeff3;
 					break;
 				}
 				if (doLog) {
@@ -1360,7 +1361,7 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 					physicalValue = (double)texBuffer[idx].count / (this->mesh[idx].area*(sh.is2sided ? 2.0 : 1.0))*dCoeff2;
 					break;
 				case 2: //particle density
-					physicalValue = 2.0 * texBuffer[idx].sum_1_per_ort_velocity / (this->mesh[idx].area*(sh.is2sided ? 2.0 : 1.0))*dCoeff2;
+					physicalValue = texBuffer[idx].sum_1_per_ort_velocity / (this->mesh[idx].area*(sh.is2sided ? 2.0 : 1.0))*dCoeff2;
 					break;
 				}
 				if (doLog) {

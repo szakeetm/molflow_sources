@@ -87,7 +87,7 @@ RecoveryDialog::RecoveryDialog(const char *message, char *title, int mode, int i
   // Create objects
   RestoreDeviceObjects();
 
-  rCode = GLDLG_CANCEL;
+  rCode = GLDLG_CANCEL_R;
 
 }
 

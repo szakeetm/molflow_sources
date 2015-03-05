@@ -117,6 +117,10 @@ public:
 	float    lastSaveTimeSimu;
 	std::string autosaveFilename; //only delete files that this instance saved
 
+	//Public textfields so we can disable them from "Advanced facet parameters":
+	GLTextField   *facetFlow;
+	GLTextField   *facetFlowArea;
+
 	HANDLE compressProcessHandle;
 	//float m_fTime;
 
@@ -221,8 +225,6 @@ public:
     GLTextField   *facetSticking;
     GLTextField   *facetOpacity;
     GLTextField   *facetTemperature;
-    GLTextField   *facetFlow;
-	GLTextField   *facetFlowArea;
 	GLTextField   *facetArea;
 	GLCombo       *facetSideType;
     GLCombo       *facetDesType;

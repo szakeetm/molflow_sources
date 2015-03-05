@@ -36,43 +36,22 @@ FacetMesh::FacetMesh(Worker *w):GLWindow() {
 	SetIconfiable(TRUE);
 
 	int wD = 320;
-	int hD = 487;
-	iPanel = new GLTitledPanel("Facet Dimesion");
-	iPanel->SetBounds(3, 1, 309, 45);
-	Add(iPanel);
+	int hD = 450;
 	aPanel = new GLTitledPanel("Texture properties");
-	aPanel->SetBounds(3, 52, 309, 119);
+	aPanel->SetBounds(5, 3, 309, 119);
 	Add(aPanel);
 	mPanel = new GLTitledPanel("Texture cell / memory");
-	mPanel->SetBounds(3, 177, 309, 44);
+	mPanel->SetBounds(5, 126, 309, 44);
 	Add(mPanel);
 	vPanel = new GLTitledPanel("View settings");
-	vPanel->SetBounds(3, 227, 309, 44);
+	vPanel->SetBounds(5, 309, 309, 44);
 	Add(vPanel);
 	desPanel = new GLTitledPanel("Dynamic desorption");
-	desPanel->SetBounds(3, 415, 309, 44);
+	desPanel->SetBounds(5, 357, 309, 69);
 	Add(desPanel);
 	paramPanel = new GLTitledPanel("Additional parameters");
-	paramPanel->SetBounds(3, 277, 309, 132);
+	paramPanel->SetBounds(5, 174, 309, 132);
 	Add(paramPanel);
-	l1 = new GLLabel("\201 length:");
-	iPanel->SetCompBounds(l1, 19, 18, 40, 12);
-	iPanel->Add(l1);
-
-	l2 = new GLLabel("\202 length:");
-	iPanel->SetCompBounds(l2, 153, 18, 41, 12);
-	iPanel->Add(l2);
-
-	vLength = new GLTextField(0, "");
-	vLength->SetEditable(FALSE);
-	iPanel->SetCompBounds(vLength, 196, 17, 72, 18);
-	iPanel->Add(vLength);
-
-	uLength = new GLTextField(0, "");
-	uLength->SetEditable(FALSE);
-	iPanel->SetCompBounds(uLength, 65, 17, 72, 18);
-	iPanel->Add(uLength);
-
 	lengthText = new GLTextField(0, "");
 	aPanel->SetCompBounds(lengthText, 196, 35, 72, 18);
 	aPanel->Add(lengthText);
@@ -90,7 +69,7 @@ FacetMesh::FacetMesh(Worker *w):GLWindow() {
 	aPanel->Add(l5);
 
 	enableBtn = new GLToggle(0, "Enable texture");
-	aPanel->SetCompBounds(enableBtn, 9, 18, 83, 16);
+	aPanel->SetCompBounds(enableBtn, 9, 19, 83, 16);
 	aPanel->Add(enableBtn);
 
 	recordDesBtn = new GLToggle(0, "Count desorption");
@@ -122,16 +101,15 @@ FacetMesh::FacetMesh(Worker *w):GLWindow() {
 	aPanel->Add(recordAbsBtn);
 
 	showTexture = new GLToggle(0, "Draw Texture");
-	vPanel->SetCompBounds(showTexture, 9, 19, 80, 16);
+	vPanel->SetCompBounds(showTexture, 10, 18, 80, 16);
 	vPanel->Add(showTexture);
 
 	showVolume = new GLToggle(0, "Draw Volume");
-	vPanel->SetCompBounds(showVolume, 113, 19, 81, 16);
+	vPanel->SetCompBounds(showVolume, 110, 18, 81, 16);
 	vPanel->Add(showVolume);
 
 	cellText = new GLTextField(0, "");
 	mPanel->SetCompBounds(cellText, 195, 19, 107, 18);
-	cellText->SetEditable(FALSE);
 	mPanel->Add(cellText);
 
 	l8 = new GLLabel("Cells:");
@@ -139,7 +117,6 @@ FacetMesh::FacetMesh(Worker *w):GLWindow() {
 	mPanel->Add(l8);
 
 	ramText = new GLTextField(0, "");
-	ramText->SetEditable(FALSE);
 	mPanel->SetCompBounds(ramText, 58, 19, 100, 18);
 	mPanel->Add(ramText);
 
@@ -147,21 +124,20 @@ FacetMesh::FacetMesh(Worker *w):GLWindow() {
 	mPanel->SetCompBounds(l7, 10, 22, 43, 12);
 	mPanel->Add(l7);
 
-	quickApply = new GLButton(0, "Quick Apply");
-	vPanel->SetCompBounds(quickApply, 203, 16, 99, 20);
+	quickApply = new GLButton(0, "<- Quick Apply");
+	vPanel->SetCompBounds(quickApply, 200, 15, 99, 20);
 	vPanel->Add(quickApply);
 
-	fileDesText = new GLTextField(0, "");
-	desPanel->SetCompBounds(fileDesText, 200, 19, 63, 18);
-	fileDesText->SetEditable(FALSE);
-	desPanel->Add(fileDesText);
+	fileYieldText = new GLTextField(0, "");
+	desPanel->SetCompBounds(fileYieldText, 210, 18, 58, 18);
+	desPanel->Add(fileYieldText);
 
-	label3 = new GLLabel("mbar.l/s");
-	desPanel->SetCompBounds(label3, 264, 22, 39, 12);
+	label3 = new GLLabel("mol/ph");
+	desPanel->SetCompBounds(label3, 270, 21, 33, 12);
 	desPanel->Add(label3);
 
-	label1 = new GLLabel("Desorption:");
-	desPanel->SetCompBounds(label1, 142, 22, 53, 12);
+	label1 = new GLLabel("Avg.yield:");
+	desPanel->SetCompBounds(label1, 160, 21, 48, 12);
 	desPanel->Add(label1);
 
 	label2 = new GLLabel("Use file:");
@@ -169,7 +145,7 @@ FacetMesh::FacetMesh(Worker *w):GLWindow() {
 	desPanel->Add(label2);
 
 	facetMovingToggle = new GLToggle(0, "Moving part");
-	paramPanel->SetCompBounds(facetMovingToggle, 10, 109, 74, 16);
+	paramPanel->SetCompBounds(facetMovingToggle, 10, 108, 74, 16);
 	paramPanel->Add(facetMovingToggle);
 
 	facetSuperDest = new GLTextField(0, "");
@@ -177,7 +153,7 @@ FacetMesh::FacetMesh(Worker *w):GLWindow() {
 	paramPanel->Add(facetSuperDest);
 
 	label8 = new GLLabel("Link to:");
-	paramPanel->SetCompBounds(label8, 142, 90, 35, 12);
+	paramPanel->SetCompBounds(label8, 142, 91, 35, 12);
 	paramPanel->Add(label8);
 
 	facetStructure = new GLTextField(0, "");
@@ -185,7 +161,7 @@ FacetMesh::FacetMesh(Worker *w):GLWindow() {
 	paramPanel->Add(facetStructure);
 
 	label7 = new GLLabel("Structure:");
-	paramPanel->SetCompBounds(label7, 10, 90, 46, 12);
+	paramPanel->SetCompBounds(label7, 10, 91, 46, 12);
 	paramPanel->Add(label7);
 
 	facetTeleport = new GLTextField(0, "");
@@ -193,15 +169,15 @@ FacetMesh::FacetMesh(Worker *w):GLWindow() {
 	paramPanel->Add(facetTeleport);
 
 	label4 = new GLLabel("Teleport to facet:");
-	paramPanel->SetCompBounds(label4, 10, 68, 74, 12);
+	paramPanel->SetCompBounds(label4, 10, 69, 74, 12);
 	paramPanel->Add(label4);
 
-	label5 = new GLLabel("Temp.accom. coefficient:");
-	paramPanel->SetCompBounds(label5, 10, 46, 126, 13);
+	label5 = new GLLabel("Accomodation coefficient:");
+	paramPanel->SetCompBounds(label5, 10, 47, 126, 13);
 	paramPanel->Add(label5);
 
 	label6 = new GLLabel("Reflection:");
-	paramPanel->SetCompBounds(label6, 10, 21, 50, 12);
+	paramPanel->SetCompBounds(label6, 10, 22, 50, 12);
 	paramPanel->Add(label6);
 
 	facetReflType = new GLCombo(0);
@@ -213,7 +189,7 @@ FacetMesh::FacetMesh(Worker *w):GLWindow() {
 	facetReflType->SetValueAt(2, "Uniform");
 
 	facetUseDesFile = new GLCombo(0);
-	desPanel->SetCompBounds(facetUseDesFile, 55, 18, 82, 20);
+	desPanel->SetCompBounds(facetUseDesFile, 55, 18, 95, 20);
 	desPanel->Add(facetUseDesFile);
 	facetUseDesFile->SetSize(1);
 	facetUseDesFile->SetValueAt(0, "No file imported");
@@ -221,6 +197,38 @@ FacetMesh::FacetMesh(Worker *w):GLWindow() {
 	facetAccFactor = new GLTextField(0, "");
 	paramPanel->SetCompBounds(facetAccFactor, 141, 44, 122, 18);
 	paramPanel->Add(facetAccFactor);
+
+	fileDoseText = new GLTextField(0, "");
+	desPanel->SetCompBounds(fileDoseText, 210, 42, 58, 18);
+	desPanel->Add(fileDoseText);
+
+	fileFluxText = new GLTextField(0, "");
+	desPanel->SetCompBounds(fileFluxText, 55, 42, 55, 18);
+	desPanel->Add(fileFluxText);
+
+	label11 = new GLLabel("ph/cm\262");
+	desPanel->SetCompBounds(label11, 270, 45, 36, 12);
+	desPanel->Add(label11);
+
+	label9 = new GLLabel("ph/s/cm\262");
+	desPanel->SetCompBounds(label9, 110, 45, 44, 12);
+	desPanel->Add(label9);
+
+	label12 = new GLLabel("Avg.dose:");
+	desPanel->SetCompBounds(label12, 160, 45, 49, 12);
+	desPanel->Add(label12);
+
+	label10 = new GLLabel("Avg.flux:");
+	desPanel->SetCompBounds(label10, 10, 45, 44, 12);
+	desPanel->Add(label10);
+
+
+
+	cellText->SetEditable(FALSE);
+	ramText->SetEditable(FALSE);
+	fileDoseText->SetEditable(FALSE);
+	fileYieldText->SetEditable(FALSE);
+	fileFluxText->SetEditable(FALSE);
 
 	SetTitle("Advanced facet parameters");
 
@@ -344,11 +352,7 @@ void FacetMesh::UpdateSizeForRatio() {
 
 void FacetMesh::Refresh(int nbSel, int* selection) {
 
-	char tmp[128];
-	double maxU=0.0;
-	double maxV=0.0;
-	double minU=1.0e100;
-	double minV=1.0e100;	
+	sumArea = sumOutgassing = 0;
 
 	BOOL somethingSelected = nbSel>0;
 	enableBtn->SetEnabled(somethingSelected);
@@ -414,39 +418,48 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 	BOOL reflectTypeE = TRUE;
 	BOOL hasOutgMapE = TRUE;
 	BOOL useOutgMapE = TRUE;
+	BOOL yieldEqual = TRUE;
+	BOOL fluxAEqual = TRUE;
+	BOOL doseAEqual = TRUE;
 	BOOL isMovingE = TRUE;
-
-	for(int i=1;i<nbSel;i++) {
-
+	BOOL dynOutgEqual = TRUE;
+	BOOL dynOutgAEqual = TRUE;
+	
+	double f0Area = f0->sh.area * (f0->sh.is2sided ? 2.0 : 1.0);
+	sumArea = f0Area;
+	sumOutgassing = f0->totalOutgassing;
+	for (int i = 1; i < nbSel; i++) {
 		Facet *f = geom->GetFacet(selection[i]);
-		//if( f->selected ) {
-			double nU = Norme(&(f->sh.U));
-			double nV = Norme(&(f->sh.V));
-			maxU = MAX(maxU,nU);
-			maxV = MAX(maxV,nV);
-			minU = MIN(minU,nU);
-			minV = MIN(minV,nV);
-			isEnabledE=isEnabledE && (f0->sh.isTextured == f->sh.isTextured);
-			isBoundE = isBoundE && (f0->hasMesh == f->hasMesh);
-			CountDesE = CountDesE && f0->sh.countDes==f->sh.countDes;
-			CountAbsE = CountAbsE && f0->sh.countAbs == f->sh.countAbs;
-			CountReflE = CountReflE && f0->sh.countRefl == f->sh.countRefl;
-			CountTransE = CountTransE && f0->sh.countTrans == f->sh.countTrans;
-			CountACE = CountACE && f0->sh.countACD == f->sh.countACD;
-			CountDirE = CountDirE && f0->sh.countDirection == f->sh.countDirection;
-			TexVisibleE = TexVisibleE && f0->textureVisible == f->textureVisible;
-			VolVisibleE = VolVisibleE && f0->volumeVisible == f->volumeVisible;
-			ratioE = ratioE && abs(f0->tRatio - f->tRatio) < 1E-8;
-			teleportE = teleportE && (f0->sh.teleportDest == f->sh.teleportDest);
-			accFactorE = accFactorE && (abs(f0->sh.accomodationFactor - f->sh.accomodationFactor)<1e-7);
-			superDestE = superDestE && (f0->sh.superDest == f->sh.superDest);
-			superIdxE = superIdxE && (f0->sh.superIdx == f->sh.superIdx);
-			reflectTypeE = reflectTypeE && (f0->sh.reflectType == f->sh.reflectType);
-			hasOutgMapE = hasOutgMapE && (f0->hasOutgassingMap == f->hasOutgassingMap);
-			useOutgMapE = useOutgMapE && (f0->sh.useOutgassingFile == f->sh.useOutgassingFile);
-			isMovingE = isMovingE && (f0->sh.isMoving == f->sh.isMoving);
+		double fArea = f->sh.area * (f->sh.is2sided ? 2.0 : 1.0);
+		sumArea += fArea;
+		sumOutgassing += f->totalOutgassing;
+		isEnabledE = isEnabledE && (f0->sh.isTextured == f->sh.isTextured);
+		isBoundE = isBoundE && (f0->hasMesh == f->hasMesh);
+		CountDesE = CountDesE && f0->sh.countDes == f->sh.countDes;
+		CountAbsE = CountAbsE && f0->sh.countAbs == f->sh.countAbs;
+		CountReflE = CountReflE && f0->sh.countRefl == f->sh.countRefl;
+		CountTransE = CountTransE && f0->sh.countTrans == f->sh.countTrans;
+		CountACE = CountACE && f0->sh.countACD == f->sh.countACD;
+		CountDirE = CountDirE && f0->sh.countDirection == f->sh.countDirection;
+		TexVisibleE = TexVisibleE && f0->textureVisible == f->textureVisible;
+		VolVisibleE = VolVisibleE && f0->volumeVisible == f->volumeVisible;
+		ratioE = ratioE && abs(f0->tRatio - f->tRatio) < 1E-8;
+		teleportE = teleportE && (f0->sh.teleportDest == f->sh.teleportDest);
+		accFactorE = accFactorE && IsEqual(f0->sh.accomodationFactor , f->sh.accomodationFactor);
+		superDestE = superDestE && (f0->sh.superDest == f->sh.superDest);
+		superIdxE = superIdxE && (f0->sh.superIdx == f->sh.superIdx);
+		reflectTypeE = reflectTypeE && (f0->sh.reflectType == f->sh.reflectType);
+		hasOutgMapE = hasOutgMapE && (f0->hasOutgassingMap == f->hasOutgassingMap);
+		useOutgMapE = useOutgMapE && (f0->sh.useOutgassingFile == f->sh.useOutgassingFile);
+		dynOutgEqual = dynOutgEqual && IsEqual(f0->totalOutgassing, f->totalOutgassing,1E-20);
+		dynOutgAEqual = dynOutgAEqual && IsEqual(f0->totalOutgassing / f0Area , f->totalOutgassing / fArea,1E-20);
+		yieldEqual = yieldEqual && IsEqual(f0->totalOutgassing / f0->sh.temperature / f0->totalFlux, f->totalOutgassing / f->sh.temperature / f->totalFlux,1E-30); //less tolerance, expecting small yields
+		fluxAEqual = fluxAEqual && IsEqual(f0->totalFlux / f0Area, f->totalFlux / fArea);
+		doseAEqual = doseAEqual && IsEqual(f0->totalDose / f0Area , f->totalDose / fArea);
+		isMovingE = isMovingE && (f0->sh.isMoving == f->sh.isMoving); 
 	}
 
+	/*
 	if( nbSel==1 ) {
 		Facet *f = f0;
 		sprintf(tmp,"Advanced parameters (Facet #%d)",selection[0]+1);
@@ -462,7 +475,7 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 		uLength->SetText(tmp);
 		sprintf(tmp,"%g (MAX)",maxV);
 		vLength->SetText(tmp);
-	}
+	}*/
 
 	enableBtn->AllowMixedState(!isEnabledE); enableBtn->SetState(isEnabledE ? f0->sh.isTextured : 2);
 	recordDesBtn->AllowMixedState(!CountDesE); recordACBtn->SetState(CountDesE ? f0->sh.countDes : 2);
@@ -499,18 +512,22 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 	if (accFactorE) facetAccFactor->SetText(f0->sh.accomodationFactor); else facetAccFactor->SetText("...");
 	if (reflectTypeE) facetReflType->SetSelectedIndex(f0->sh.reflectType); else facetReflType->SetSelectedValue("...");
 	if (hasOutgMapE) { //all selected equally HAVE or equally DON'T HAVE outgassing maps
-
+		//mApp->facetFlow->SetEditable(!f0->hasOutgassingMap);
+		//mApp->facetFlowArea->SetEditable(!f0->hasOutgassingMap);
 		if (!f0->hasOutgassingMap) { //All selected DON'T HAVE outgassing maps
 			facetUseDesFile->SetSize(1);
 			facetUseDesFile->SetSelectedIndex(0); //no map
 			facetUseDesFile->SetSelectedValue("No map loaded");
 			facetUseDesFile->SetEditable(FALSE);
+			fileFluxText->SetText("");
+			fileDoseText->SetText("");
+			fileYieldText->SetText("");
 		}
 		else { //All selected HAVE outgassing maps
 
 			facetUseDesFile->SetSize(2);
-			facetUseDesFile->SetValueAt(0, "Use user VALUES");
-			facetUseDesFile->SetValueAt(1, "Use desorption FILE");
+			facetUseDesFile->SetValueAt(0, "Use user values");
+			facetUseDesFile->SetValueAt(1, "Use des. file");
 			facetUseDesFile->SetEditable(TRUE);
 			if (useOutgMapE) {
 				facetUseDesFile->SetSelectedIndex(f0->sh.useOutgassingFile);
@@ -518,12 +535,40 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 			else {
 				facetUseDesFile->SetSelectedValue("...");
 			}
+			char tmp[64];
+			if (fluxAEqual) sprintf(tmp, "%.3E", f0->totalFlux / f0->sh.area); else sprintf(tmp, "...");
+			fileFluxText->SetText(tmp);
+			if (doseAEqual) sprintf(tmp, "%.3E", f0->totalDose / f0->sh.area); else sprintf(tmp, "...");
+			fileDoseText->SetText(tmp);
+			if (yieldEqual) sprintf(tmp, "%.3E", f0->totalOutgassing / (1.38E-23*f0->sh.temperature) / f0->totalFlux); else sprintf(tmp, "...");
+			fileYieldText->SetText(tmp);
+			if (useOutgMapE) {
+				mApp->facetFlow->SetEditable(!f0->sh.useOutgassingFile);
+				mApp->facetFlowArea->SetEditable(!f0->sh.useOutgassingFile);
+				if (f0->sh.useOutgassingFile) {
+					sprintf(tmp, "%.2E", sumOutgassing);
+					mApp->facetFlow->SetText(tmp);
+					sprintf(tmp, "%.2E", sumOutgassing / sumArea);
+					mApp->facetFlowArea->SetText(tmp);
+				}
+				else {
+					//Let the main program handle this
+				}
+			}
+			else { //some use it, some not
+				facetUseDesFile->SetSelectedValue("...");
+				mApp->facetFlow->SetEditable(FALSE);
+				mApp->facetFlowArea->SetEditable(FALSE);
+			}
 		}
 	} else { //Mixed: some have it, some don't
 		facetUseDesFile->SetSelectedIndex(0);
 		facetUseDesFile->SetSize(1);
 		facetUseDesFile->SetSelectedValue("...");
 		facetUseDesFile->SetEditable(FALSE);
+		fileFluxText->SetText("");
+		fileDoseText->SetText("");
+		fileYieldText->SetText("");
 	}
 
 	if (superDestE) {
@@ -531,16 +576,14 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 			facetSuperDest->SetText("no");
 		}
 		else {
-			sprintf(tmp, "%d", f0->sh.superDest);
-			facetSuperDest->SetText(tmp);
+			facetSuperDest->SetText(f0->sh.superDest);
 		}
 	}
 	else {
 		facetSuperDest->SetText("...");
 	}
 	if (superIdxE) {
-		sprintf(tmp, "%d", f0->sh.superIdx + 1);
-		facetStructure->SetText(tmp);
+		facetStructure->SetText(f0->sh.superIdx + 1);
 	}
 	else {
 		facetStructure->SetText("...");
@@ -859,9 +902,9 @@ void FacetMesh::ProcessMessage(GLComponent *src,int message) {
 
 		// -------------------------------------------------------------
 	case MSG_TEXT_UPD:
-		enableBtn->SetState(TRUE);
 		
 		if (src == resolutionText) {
+			enableBtn->SetState(TRUE);
 			UpdateSizeForRatio();
 			mApp->facetApplyBtn->SetEnabled(TRUE);
 			double res;
@@ -871,6 +914,7 @@ void FacetMesh::ProcessMessage(GLComponent *src,int message) {
 				lengthText->SetText("");
 		}
 		else if (src == lengthText) {
+			enableBtn->SetState(TRUE);
 			double length;
 			if (lengthText->GetNumber(&length) && length != 0.0) {
 				resolutionText->SetText(1.0 / length);
@@ -913,6 +957,22 @@ void FacetMesh::ProcessMessage(GLComponent *src,int message) {
 		}
 		else if (src == facetUseDesFile) {
 			mApp->facetApplyBtn->SetEnabled(TRUE);
+			if (facetUseDesFile->GetSelectedIndex() == 0) {
+				//User values
+				mApp->facetFlow->SetEditable(TRUE);
+				mApp->facetFlowArea->SetEditable(TRUE);
+
+			}
+			else { //use desorption file
+				mApp->facetFlow->SetEditable(FALSE);
+				mApp->facetFlowArea->SetEditable(FALSE);
+				//Values from last Refresh();
+				char tmp[64];
+				sprintf(tmp, "%.2E", sumOutgassing);
+				mApp->facetFlow->SetText(tmp);
+				sprintf(tmp, "%.2E", sumOutgassing / sumArea);
+				mApp->facetFlowArea->SetText(tmp);
+			}
 		}
 		break;
 	}

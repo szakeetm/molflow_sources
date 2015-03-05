@@ -23,7 +23,7 @@
 // Buttons
 #define GLDLG_SAVE		  0x0001
 #define GLDLG_DISCARD	  0x0002
-#define GLDLG_CANCEL_S    0x0003
+#define GLDLG_CANCEL_S    0x0004
 
 // Icons
 #define GLDLG_ICONNONE    0

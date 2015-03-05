@@ -71,9 +71,15 @@ public:
   BOOL    hasMesh;     // Temporary flag (loading)
   
   double *outgassingMap; //outgassing map cell values (loaded from file)
+
+  //Dynamic outgassing stuff
   BOOL textureError;   // Disable rendering if the texture has an error
   BOOL hasOutgassingMap; //true if a desorption file was loaded and had info about this facet
+  double totalFlux;
+  double totalOutgassing;
+  double totalDose;
 
+  //Parametric stuff
   std::string userOutgassing;
   std::string userSticking;
   std::string userOpacity;
