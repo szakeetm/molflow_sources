@@ -312,13 +312,14 @@ void GlobalSettings::ProcessMessage(GLComponent *src,int message) {
     case MSG_BUTTON:
 
     if(src==recalcButton) {
-		try {
-			worker->RealReload();
+		if (mApp->AskToReset()) {
+			try {
+				worker->RealReload();
+			}
+			catch (Error &e) {
+				GLMessageBox::Display(e.GetMsg(), "Recalculation failed: Couldn't reload Worker", GLDLG_OK, GLDLG_ICONWARNING);
+			}
 		}
-		catch (Error &e) {
-			GLMessageBox::Display(e.GetMsg(), "Recalculation failed: Couldn't reload Worker", GLDLG_OK, GLDLG_ICONWARNING);
-		}
-
     } else if (src==restartButton) {
         RestartProc();
       } else if (src==maxButton) {

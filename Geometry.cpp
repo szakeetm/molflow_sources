@@ -4001,8 +4001,8 @@ void Geometry::ImportDesorption_SYN(
 					double cellArea = 1.0;
 					if (version2 >= 7) cellArea = file->ReadDouble();
 					if (cellArea<1E-10) cellArea = 1.0; //to avoid division by zero
-					double flux = file->ReadDouble() / no_scans;
-					double power = file->ReadDouble() / no_scans;
+					double flux = file->ReadDouble() / no_scans; //not normalized by cell area
+					double power = file->ReadDouble() / no_scans; //not normalized by cell area
 
 					if (f->selected) {
 						//Calculate dose
@@ -4035,7 +4035,7 @@ void Geometry::ImportDesorption_SYN(
 						f->outgassingMap[index] = outgassing * 1.38E-23 * f->sh.temperature; //1[Pa*m3/s] = kT [particles/sec]
 
 						//Facet diagnostic info
-						f->totalDose += dose;
+						f->totalDose += flux*time;
 						f->totalFlux += flux;
 						f->totalOutgassing += f->outgassingMap[index];
 					}
