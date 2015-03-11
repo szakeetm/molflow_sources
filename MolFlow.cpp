@@ -37,7 +37,7 @@ GNU General Public License for more details.
 #define APP_NAME "MolFlow+ development version 64-bit (Compiled "__DATE__" "__TIME__") DEBUG MODE"
 #else
 //#define APP_NAME "Molflow+ development version ("__DATE__")"
-#define APP_NAME "Molflow+ 2.6.5 64-bit ("__DATE__")"
+#define APP_NAME "Molflow+ 2.6.6 64-bit ("__DATE__")"
 #endif
 
 /*
@@ -805,7 +805,8 @@ int MolFlow::OneTimeSceneInit()
 
 	ClearFacetParams();
 	UpdateViewerParams();
-	PlaceComponents();facetMesh = new FacetMesh(&worker);
+	PlaceComponents();
+	facetMesh = new FacetMesh(&worker); //To use its UpdatefacetParams() routines
 	LoadConfig();
 	//LoadFile();
 	try {
@@ -3823,17 +3824,15 @@ void MolFlow::ProcessMessage(GLComponent *src,int message)
 				int *selection;
 				int nbSel;
 				worker.GetGeometry()->GetSelection(&selection, &nbSel);
-				facetMesh->Refresh(nbSel,selection);
+				facetMesh->Refresh(nbSel, selection);
 				SAFE_FREE(selection);
 			}
-			/*// Position dialog next to Facet parameters
-			int facetX, facetY, facetW, facetH;
-			facetPanel->GetBounds(&facetX, &facetY, &facetW, &facetH);
-			facetMesh->SetPosition(facetX - facetMesh->GetWidth() - 10, facetY + 20);*/
 			facetMesh->SetVisible(!facetMesh->IsVisible());
+			facetMesh->Reposition();
 		} else if ( src == showMoreBtn ) {
 			if (!viewer3DSettings)	viewer3DSettings = new Viewer3DSettings();
 			viewer3DSettings->SetVisible(!viewer3DSettings->IsVisible());
+			viewer3DSettings->Reposition();
 			viewer3DSettings->Refresh(geom, viewer[curViewer]);
 			
 		} else if ( src==compACBtn ) {

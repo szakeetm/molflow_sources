@@ -38,6 +38,7 @@ public:
 
   // Component methods
   void Refresh(Geometry *s,GeometryViewer *v);
+  void Reposition(int wD = 0, int hD = 0);
 
   // Implementation
   void ProcessMessage(GLComponent *src,int message);

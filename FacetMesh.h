@@ -37,6 +37,7 @@ public:
 
   // Component method
   void Refresh(int nbSel,int* selection);
+  void Reposition(int wD = 0, int hD = 0);
 
   // Implementation
   void ProcessMessage(GLComponent *src,int message);

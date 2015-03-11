@@ -129,7 +129,7 @@ void Geometry::Clear() {
 	memset(strFileName, 0, sizeof(strFileName));
 
 	// Init OpenGL material
-	memset(&whiteMaterial, 0, sizeof (GLMATERIAL));
+	memset(&whiteMaterial, 0, sizeof(GLMATERIAL));
 	whiteMaterial.Diffuse.r = 0.9f;
 	whiteMaterial.Diffuse.g = 0.9f;
 	whiteMaterial.Diffuse.b = 0.9f;
@@ -137,7 +137,7 @@ void Geometry::Clear() {
 	whiteMaterial.Ambient.g = 0.9f;
 	whiteMaterial.Ambient.b = 0.9f;
 
-	memset(&fillMaterial, 0, sizeof (GLMATERIAL));
+	memset(&fillMaterial, 0, sizeof(GLMATERIAL));
 	fillMaterial.Diffuse.r = 0.6f;
 	fillMaterial.Diffuse.g = 0.65f;
 	fillMaterial.Diffuse.b = 0.65f;
@@ -145,7 +145,7 @@ void Geometry::Clear() {
 	fillMaterial.Ambient.g = 0.41f;
 	fillMaterial.Ambient.b = 0.41f;
 
-	memset(&arrowMaterial, 0, sizeof (GLMATERIAL));
+	memset(&arrowMaterial, 0, sizeof(GLMATERIAL));
 	arrowMaterial.Diffuse.r = 0.4f;
 	arrowMaterial.Diffuse.g = 0.2f;
 	arrowMaterial.Diffuse.b = 0.0f;
@@ -162,29 +162,29 @@ void Geometry::Clear() {
 }
 
 void Geometry::CalcTotalOutGassing() {
-	
+
 	/*totalOutgassing = 0.0;
 	totalInFlux = 0.0;
 	for (int i = 0; i<sh.nbFacet; i++) {
-		if (facets[i]->sh.desorbType>0) { //has desorption
-			if (facets[i]->sh.useOutgassingFile) { //uses outgassing file values
-				for (int l = 0; l < (facets[i]->sh.outgassingMapWidth*facets[i]->sh.outgassingMapHeight); l++) {
-					totalOutgassing += facets[i]->outgassingMap[l];
-					totalInFlux += facets[i]->outgassingMap[l] / (1.38E-23*facets[i]->sh.temperature);
-				}
-			} else { //uses absolute outgassing values
-				totalOutgassing += facets[i]->sh.flow;
-				totalInFlux += facets[i]->sh.flow / (1.38E-23*facets[i]->sh.temperature);
-			}
-		}
+	if (facets[i]->sh.desorbType>0) { //has desorption
+	if (facets[i]->sh.useOutgassingFile) { //uses outgassing file values
+	for (int l = 0; l < (facets[i]->sh.outgassingMapWidth*facets[i]->sh.outgassingMapHeight); l++) {
+	totalOutgassing += facets[i]->outgassingMap[l];
+	totalInFlux += facets[i]->outgassingMap[l] / (1.38E-23*facets[i]->sh.temperature);
+	}
+	} else { //uses absolute outgassing values
+	totalOutgassing += facets[i]->sh.flow;
+	totalInFlux += facets[i]->sh.flow / (1.38E-23*facets[i]->sh.temperature);
+	}
+	}
 	}
 	//totalOutgassing*=0.001; //conversion from "unit*l/s" to "unit*m3/sec"
-	
+
 	if (mApp->globalSettings) mApp->globalSettings->UpdateOutgassing();*/
 }
 
 void Geometry::CalculateFacetParam(int facet) {
-	
+
 	Facet *f = facets[facet];
 
 	// Calculate facet normal
@@ -258,7 +258,7 @@ void Geometry::CalculateFacetParam(int facet) {
 
 void Geometry::InitializeGeometry(int facet_number) {
 
-	
+
 	// Perform various precalculation here for a faster simulation.
 
 	//GLProgress *initGeoPrg = new GLProgress("Initializing geometry...","Please wait");
@@ -388,7 +388,7 @@ void Geometry::InitializeGeometry(int facet_number) {
 			VERTEX2D min; min.u = 0.0; min.v = 0.0;
 			VERTEX2D max; max.u = 0.0; max.v = 0.0;
 
-			for (int j = 1; j<f->sh.nbIndex; j++) {
+			for (int j = 1; j < f->sh.nbIndex; j++) {
 
 				VERTEX3D p = vertices3[f->indices[j]];
 				VERTEX3D v;
@@ -472,7 +472,7 @@ void Geometry::RebuildLists() {
 }
 
 DWORD Geometry::GetGeometrySize() {
-	
+
 	Worker  *work = &mApp->worker;
 	// Compute number of bytes allocated
 	DWORD memoryUsage = 0;
@@ -480,21 +480,21 @@ DWORD Geometry::GetGeometrySize() {
 	memoryUsage += sh.nbVertex * sizeof(VERTEX3D);
 	for (int i = 0; i < sh.nbFacet; i++)
 		memoryUsage += facets[i]->GetGeometrySize();
-	
+
 	//CDFs
 	memoryUsage += sizeof(size_t); //number of CDFs
 	for (auto i : work->CDFs) {
 		memoryUsage += sizeof(size_t); //CDF size
 		memoryUsage += i.size() * 2 * sizeof(double);
 	}
-	
+
 	//IDs
 	memoryUsage += sizeof(size_t); //number of IDs
 	for (auto i : work->IDs) {
 		memoryUsage += sizeof(size_t); //ID size
 		memoryUsage += i.size() * 2 * sizeof(double);
 	}
-	
+
 	//Parameters
 	memoryUsage += sizeof(size_t); //number of parameters
 	for (auto i : work->parameters) {
@@ -503,7 +503,7 @@ DWORD Geometry::GetGeometrySize() {
 	}
 	memoryUsage += sizeof(size_t); //number of temperatures
 	memoryUsage += sizeof(double)*(int)(work->temperatures).size(); //temperatures
-	
+
 	//moments size already passed
 	memoryUsage += sizeof(double)*(int)(work->moments).size(); //moments
 
@@ -513,21 +513,21 @@ DWORD Geometry::GetGeometrySize() {
 }
 
 void Geometry::CopyGeometryBuffer(BYTE *buffer) {
-	
+
 	// Build shared buffer for geometry (see Shared.h)
 	// Basically we serialize all data and let the subprocesses read them
 
 	/*
 	Memory map:
-	
+
 	-->bufferStart
 	SHGEOM (nbFacets, time-dep parameters, gas mass, etc.)
 	vertices3 (nbVertex times VERTEX3D struct)
 	FOR EACH FACET
-       SHFACET
-	   indices (nbIndex times int)
-	   vertices2 (nbIndex times VERTEX2D struct)
-	   [outgassingMap (height*width*double)]
+	SHFACET
+	indices (nbIndex times int)
+	vertices2 (nbIndex times VERTEX2D struct)
+	[outgassingMap (height*width*double)]
 	-->incBuff
 	[inc Map: for each facet with texture, height*width*double]
 	CDFs.size()
@@ -541,31 +541,31 @@ void Geometry::CopyGeometryBuffer(BYTE *buffer) {
 
 	*/
 
-	
-	Worker *w=&mApp->worker;
+
+	Worker *w = &mApp->worker;
 	int fOffset = sizeof(SHGHITS);
 	SHGEOM *shGeom = (SHGEOM *)buffer;
-	
+
 	sh.nbMoments = w->moments.size();
-	sh.latestMoment=w->latestMoment;
-	sh.totalDesorbedMolecules=w->totalDesorbedMolecules;
-	sh.finalOutgassingRate=w->finalOutgassingRate;
-	sh.gasMass=w->gasMass;
+	sh.latestMoment = w->latestMoment;
+	sh.totalDesorbedMolecules = w->totalDesorbedMolecules;
+	sh.finalOutgassingRate = w->finalOutgassingRate;
+	sh.gasMass = w->gasMass;
 	sh.halfLife = w->halfLife;
-	sh.timeWindowSize=w->timeWindowSize;
-	sh.useMaxwellDistribution=w->useMaxwellDistribution;
-	sh.calcConstantFlow=w->calcConstantFlow;
+	sh.timeWindowSize = w->timeWindowSize;
+	sh.useMaxwellDistribution = w->useMaxwellDistribution;
+	sh.calcConstantFlow = w->calcConstantFlow;
 
 	sh.motionType = w->motionType;
 	sh.motionVector1 = w->motionVector1;
 	sh.motionVector2 = w->motionVector2;
-	
+
 	memcpy(shGeom, &(this->sh), sizeof(SHGEOM));
 	buffer += sizeof(SHGEOM);
-	
+
 	memcpy(buffer, vertices3, sizeof(VERTEX3D)*sh.nbVertex);
 	buffer += sizeof(VERTEX3D)*sh.nbVertex;
-	
+
 	for (int i = 0; i < sh.nbFacet; i++) {
 		Facet *f = facets[i];
 		f->sh.hitOffset = fOffset;
@@ -591,9 +591,9 @@ void Geometry::CopyGeometryBuffer(BYTE *buffer) {
 			if (f->mesh) {
 
 				for (int j = 0; j < f->sh.texHeight; j++) {
-					for (int i = 0; i<f->sh.texWidth; i++) {
-						double area = f->mesh[add].area*(f->sh.is2sided?2.0:1.0);
-						if (area>0.0) {
+					for (int i = 0; i < f->sh.texWidth; i++) {
+						double area = f->mesh[add].area*(f->sh.is2sided ? 2.0 : 1.0);
+						if (area > 0.0) {
 							// Use the sign bit to store isFull flag
 							if (f->mesh[add].full)
 							{
@@ -619,8 +619,8 @@ void Geometry::CopyGeometryBuffer(BYTE *buffer) {
 				double area = rw*rh;
 
 				for (int j = 0; j < f->sh.texHeight; j++) {
-					for (int i = 0; i<f->sh.texWidth; i++) {
-						if (area>0.0) {
+					for (int i = 0; i < f->sh.texWidth; i++) {
+						if (area > 0.0) {
 							WRITEVAL(1.0 / area, double);
 						}
 						else {
@@ -633,12 +633,12 @@ void Geometry::CopyGeometryBuffer(BYTE *buffer) {
 		}
 	}
 
-	
+
 	//CDFs
 	WRITEVAL(w->CDFs.size(), size_t);
 	for (size_t i = 0; i < w->CDFs.size(); i++) {
 		WRITEVAL(w->CDFs[i].size(), size_t);
-		for (size_t j=0;j<w->CDFs[i].size();j++) {
+		for (size_t j = 0; j < w->CDFs[i].size(); j++) {
 			WRITEVAL(w->CDFs[i][j].first, double);
 			WRITEVAL(w->CDFs[i][j].second, double);
 		}
@@ -648,7 +648,7 @@ void Geometry::CopyGeometryBuffer(BYTE *buffer) {
 	WRITEVAL(w->IDs.size(), size_t);
 	for (size_t i = 0; i < w->IDs.size(); i++) {
 		WRITEVAL(w->IDs[i].size(), size_t);
-		for (size_t j = 0; j<w->IDs[i].size(); j++) {
+		for (size_t j = 0; j < w->IDs[i].size(); j++) {
 			WRITEVAL(w->IDs[i][j].first, double);
 			WRITEVAL(w->IDs[i][j].second, double);
 		}
@@ -657,12 +657,12 @@ void Geometry::CopyGeometryBuffer(BYTE *buffer) {
 	//Parameters
 	/*WRITEVAL(w->parameters.size(), size_t);
 	  for (size_t i = 0; i < w->parameters.size(); i++) {
-		WRITEVAL(w->parameters[i].values.size(), size_t);
-		for (size_t j=0;j<w->parameters[i].values.size();j++) {
-			WRITEVAL(w->parameters[i].values[j].first, double);
-			WRITEVAL(w->parameters[i].values[j].second, double);
-		}
-	}*/
+	  WRITEVAL(w->parameters[i].values.size(), size_t);
+	  for (size_t j=0;j<w->parameters[i].values.size();j++) {
+	  WRITEVAL(w->parameters[i].values[j].first, double);
+	  WRITEVAL(w->parameters[i].values[j].second, double);
+	  }
+	  }*/
 	WRITEVAL(w->parameters.size(), size_t);
 	for (auto i : w->parameters) {
 		WRITEVAL(i.values.size(), size_t);
@@ -671,13 +671,13 @@ void Geometry::CopyGeometryBuffer(BYTE *buffer) {
 			WRITEVAL(j.second, double);
 		}
 	}
-	
+
 	//Temperatures
 	WRITEVAL(w->temperatures.size(), size_t);
 	for (size_t i = 0; i < w->temperatures.size(); i++) {
 		WRITEVAL(w->temperatures[i], double);
 	}
-	
+
 	//Time moments
 	//WRITEVAL(w->moments.size(), size_t); //nbMoments already passed
 	for (size_t i = 0; i < w->moments.size(); i++) {
@@ -689,7 +689,7 @@ void Geometry::CopyGeometryBuffer(BYTE *buffer) {
 	for (size_t i = 0; i < w->desorptionParameterIDs.size(); i++) {
 		WRITEVAL(w->desorptionParameterIDs[i], size_t);
 	}
-	
+
 }
 
 void Geometry::SetAutoNorme(BOOL enable) {
@@ -717,7 +717,7 @@ float Geometry::GetNormeRatio() {
 }
 
 DWORD Geometry::GetHitsSize(std::vector<double> *moments) {
-	
+
 	// Compute number of bytes allocated
 	DWORD memoryUsage = 0;
 	memoryUsage += sizeof(SHGHITS);
@@ -852,7 +852,7 @@ void Geometry::BuildShapeList() {
 			v4.y = sin(dtetha*(double)i)*sin(dphi*(double)(j + 1));
 			v4.z = cos(dtetha*(double)i);
 
-			if (i<nbTetha) {
+			if (i < nbTetha) {
 				glNormal3d(v1.x, v1.y, v1.z);
 				glVertex3d(v1.x, v1.y, v1.z);
 				glNormal3d(v2.x, v2.y, v2.z);
@@ -861,7 +861,7 @@ void Geometry::BuildShapeList() {
 				glVertex3d(v3.x, v3.y, v3.z);
 			}
 
-			if (i>0) {
+			if (i > 0) {
 				glNormal3d(v1.x, v1.y, v1.z);
 				glVertex3d(v1.x, v1.y, v1.z);
 				glNormal3d(v3.x, v3.y, v3.z);
@@ -1075,7 +1075,7 @@ void Geometry::Collapse(double vT, double fT, double lT, BOOL doSelectedOnly, GL
 	mApp->changedSinceSave = TRUE;
 	Facet *fi, *fj;
 	Facet *merged;
-	
+
 
 	vThreshold = vT;
 	double totalWork = (1.0 + (double)(fT > 0.0) + (double)(lT > 0.0)); //for progress indicator
@@ -1128,8 +1128,8 @@ void Geometry::Collapse(double vT, double fT, double lT, BOOL doSelectedOnly, GL
 	//Collapse collinear sides. Takes some time, so only if threshold>0
 	prg->SetMessage("Collapsing collinear sides...");
 	if (lT > 0.0) {
-		for (int i = 0; i<sh.nbFacet; i++) {
-			prg->SetProgress((1.0 + (double)(fT>0.0) + ((double)i / (double)sh.nbFacet)) / totalWork);
+		for (int i = 0; i < sh.nbFacet; i++) {
+			prg->SetProgress((1.0 + (double)(fT > 0.0) + ((double)i / (double)sh.nbFacet)) / totalWork);
 			if (!doSelectedOnly || facets[i]->selected)
 				MergecollinearSides(facets[i], lT);
 		}
@@ -1171,7 +1171,7 @@ void Geometry::MergecollinearSides(Facet *f, double lT) {
 	BOOL collinear;
 	double linTreshold = cos(lT*PI / 180);
 	// Merge collinear sides
-	for (int k = 0; (k<f->sh.nbIndex&&f->sh.nbIndex>3); k++){
+	for (int k = 0; (k < f->sh.nbIndex&&f->sh.nbIndex>3); k++){
 		k = k;
 		do {
 			collinear = FALSE;
@@ -1186,12 +1186,12 @@ void Geometry::MergecollinearSides(Facet *f, double lT) {
 			Normalize(&p0p2);
 			collinear = (Dot(&p0p1, &p0p2) >= linTreshold);
 			if (collinear&&f->sh.nbIndex > 3) { //collinear
-				for (int l = (k + 1) % f->sh.nbIndex; l<f->sh.nbIndex - 1; l++){
+				for (int l = (k + 1) % f->sh.nbIndex; l < f->sh.nbIndex - 1; l++){
 					f->indices[l] = f->indices[l + 1];
 				}
 				f->sh.nbIndex--;
 			}
-		} while (collinear&&f->sh.nbIndex>3);
+		} while (collinear&&f->sh.nbIndex > 3);
 	}
 }
 
@@ -1275,7 +1275,7 @@ void Geometry::SetFacetTexture(int facet, double ratio, BOOL mesh) {
 	double nV = Norme(&(f->sh.V));
 	if (!f->SetTexture(nU*ratio, nV*ratio, mesh)) {
 		char errMsg[512];
-		sprintf(errMsg, "Not enough memory to build mesh on Facet %d. ",facet + 1);
+		sprintf(errMsg, "Not enough memory to build mesh on Facet %d. ", facet + 1);
 		throw Error(errMsg);
 	}
 	f->tRatio = ratio;
@@ -1289,10 +1289,10 @@ void Geometry::SetFacetTexture(int facet, double ratio, BOOL mesh) {
 void  Geometry::BuildPipe(double L, double R, double s, int step) {
 	Clear();
 
-	
+
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
-	sprintf(sh.name, "PIPE%g",L / R);
+	sprintf(sh.name, "PIPE%g", L / R);
 
 	int nbDecade = 0;
 	int nbTF = 9 * nbDecade;
@@ -1520,13 +1520,13 @@ void Geometry::LoadSTR(FileReader *file, GLProgress *prg) {
 		char *e = strrchr(strName[n], '.');
 		if (e) *e = 0;
 
-		sprintf(fName, "%s\\%s",nPath, sName);
+		sprintf(fName, "%s\\%s", nPath, sName);
 		if (FileUtils::Exist(fName)) {
 			fr = new FileReader(fName);
 			strcpy(strPath, nPath);
 		}
 		else {
-			sprintf(fName, "%s\\%s",fPath, sName);
+			sprintf(fName, "%s\\%s", fPath, sName);
 			if (FileUtils::Exist(fName)) {
 				fr = new FileReader(fName);
 				strcpy(strPath, fPath);
@@ -1535,7 +1535,7 @@ void Geometry::LoadSTR(FileReader *file, GLProgress *prg) {
 
 		if (!fr) {
 			char errMsg[512];
-			sprintf(errMsg, "Cannot find %s",sName);
+			sprintf(errMsg, "Cannot find %s", sName);
 			throw Error(errMsg);
 		}
 
@@ -1557,7 +1557,7 @@ void Geometry::LoadSTR(FileReader *file, GLProgress *prg) {
 
 void Geometry::LoadSTL(FileReader *file, GLProgress *prg, double scaleFactor) {
 
-	
+
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
 	char *w;
@@ -1624,7 +1624,7 @@ void Geometry::LoadSTL(FileReader *file, GLProgress *prg, double scaleFactor) {
 			facets[i] = new Facet(3);
 		}
 		catch (std::bad_alloc& badalloc) {
-			
+
 			throw Error("Out of memory");
 
 		}
@@ -1648,7 +1648,7 @@ void Geometry::LoadSTL(FileReader *file, GLProgress *prg, double scaleFactor) {
 
 void Geometry::LoadTXT(FileReader *file, GLProgress *prg) {
 
-	
+
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
 	Clear();
@@ -1839,7 +1839,7 @@ void Geometry::InsertTXTGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 
 void Geometry::InsertGEOGeom(FileReader *file, int *nbVertex, int *nbFacet, VERTEX3D **vertices3, Facet ***facets, int strIdx, BOOL newStruct) {
 
-	
+
 	UnSelectAll();
 	char tmp[512];
 
@@ -1848,7 +1848,7 @@ void Geometry::InsertGEOGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 	version2 = file->ReadInt();
 	if (version2 > GEOVERSION) {
 		char errMsg[512];
-		sprintf(errMsg, "Unsupported GEO version V%d",version2);
+		sprintf(errMsg, "Unsupported GEO version V%d", version2);
 		throw Error(errMsg);
 	}
 
@@ -1971,7 +1971,7 @@ void Geometry::InsertGEOGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 	for (int i = 0; i < nbNewSuper; i++) {
 		strName[i] = _strdup(file->ReadString());
 		// For backward compatibilty with STR
-		sprintf(tmp, "%s.txt",strName[i]);
+		sprintf(tmp, "%s.txt", strName[i]);
 		strFileName[i] = _strdup(tmp);
 	}
 	file->ReadKeyword("}");
@@ -2046,19 +2046,19 @@ void Geometry::InsertGEOGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 
 		if (nb < 3) {
 			char errMsg[512];
-			sprintf(errMsg, "Facet %d has only %d vertices. ",i, nb);
+			sprintf(errMsg, "Facet %d has only %d vertices. ", i, nb);
 			throw Error(errMsg);
 		}
 
 		*(*facets + i) = new Facet(nb);
 		(*facets)[i]->LoadGEO(file, version2, nbNewVertex);
 		(*facets)[i]->selected = TRUE;
-		for (int j = 0; j<nb; j++)
+		for (int j = 0; j < nb; j++)
 			(*facets)[i]->indices[j] += *nbVertex;
 		file->ReadKeyword("}");
 		if (newStruct) {
 			(*facets)[i]->sh.superIdx += sh.nbSuper;
-			if ((*facets)[i]->sh.superDest>0) (*facets)[i]->sh.superDest += sh.nbSuper;
+			if ((*facets)[i]->sh.superDest > 0) (*facets)[i]->sh.superDest += sh.nbSuper;
 		}
 		else {
 			(*facets)[i]->sh.superIdx += strIdx;
@@ -2076,7 +2076,7 @@ void Geometry::InsertGEOGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 
 void Geometry::InsertSYNGeom(FileReader *file, int *nbVertex, int *nbFacet, VERTEX3D **vertices3, Facet ***facets, int strIdx, BOOL newStruct) {
 
-	
+
 	UnSelectAll();
 	char tmp[512];
 
@@ -2085,7 +2085,7 @@ void Geometry::InsertSYNGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 	version2 = file->ReadInt();
 	if (version2 > SYNVERSION) {
 		char errMsg[512];
-		sprintf(errMsg, "Unsupported SYN version V%d",version2);
+		sprintf(errMsg, "Unsupported SYN version V%d", version2);
 		throw Error(errMsg);
 	}
 
@@ -2192,7 +2192,7 @@ void Geometry::InsertSYNGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 	for (int i = 0; i < nbNewSuper; i++) {
 		strName[i] = _strdup(file->ReadString());
 		// For backward compatibilty with STR
-		sprintf(tmp, "%s.txt",strName[i]);
+		sprintf(tmp, "%s.txt", strName[i]);
 		strFileName[i] = _strdup(tmp);
 	}
 	file->ReadKeyword("}");
@@ -2268,7 +2268,7 @@ void Geometry::InsertSYNGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 
 		if (nb < 3) {
 			char errMsg[512];
-			sprintf(errMsg, "Facet %d has only %d vertices. ",i, nb);
+			sprintf(errMsg, "Facet %d has only %d vertices. ", i, nb);
 			throw Error(errMsg);
 		}
 
@@ -2375,12 +2375,12 @@ void Geometry::InsertSTLGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 
 void Geometry::SaveProfileTXT(FileWriter *file) {
 	// Profiles
-	for (int j = 0; j<PROFILE_SIZE; j++)
+	for (int j = 0; j < PROFILE_SIZE; j++)
 		file->Write("\n");
 }
 
 void Geometry::SaveProfileGEO(FileWriter *file, Dataport *dpHit, int super, BOOL saveSelected, BOOL crashSave) {
-	
+
 	BYTE *buffer;
 	if (!crashSave && !saveSelected) buffer = (BYTE *)dpHit->buff;
 	file->Write("profiles {\n");
@@ -2390,21 +2390,21 @@ void Geometry::SaveProfileGEO(FileWriter *file, Dataport *dpHit, int super, BOOL
 	for (int i = 0; i < sh.nbFacet; i++)
 		if ((!saveSelected && !crashSave) && facets[i]->sh.isProfile)
 			profileFacet[nbProfile++] = i;
-	
+
 	file->Write(" number: "); file->WriteInt(nbProfile, "\n");
 	file->Write(" facets: ");
 	for (int i = 0; i < nbProfile; i++) //doesn't execute when crashSave or saveSelected...
 		file->WriteInt(profileFacet[i], "\t");
-	
+
 	file->Write("\n");
 	for (size_t m = 0; (m <= mApp->worker.moments.size()) || (m == 0); m++){
 		char tmp[128];
-		sprintf(tmp, " moment %d {\n",m);
+		sprintf(tmp, " moment %d {\n", m);
 		file->Write(tmp);
 		for (int j = 0; j < PROFILE_SIZE; j++) {
-			for (int i = 0; i<nbProfile; i++) { //doesn't execute when crashSave or saveSelected...
+			for (int i = 0; i < nbProfile; i++) { //doesn't execute when crashSave or saveSelected...
 				Facet *f = GetFacet(profileFacet[i]);
-				APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + sizeof(SHHITS)+m*sizeof(APROFILE)*PROFILE_SIZE);
+				APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + sizeof(SHHITS) + m*sizeof(APROFILE)*PROFILE_SIZE);
 				//char tmp2[128];
 				file->WriteLLong(profilePtr[j].count, "\t");
 				file->WriteDouble(profilePtr[j].sum_1_per_ort_velocity, "\t");
@@ -2420,7 +2420,7 @@ void Geometry::SaveProfileGEO(FileWriter *file, Dataport *dpHit, int super, BOOL
 }
 
 void Geometry::LoadProfile(FileReader *file, Dataport *dpHit, int version) {
-	
+
 	AccessDataport(dpHit);
 	BYTE *buffer = (BYTE *)dpHit->buff;
 	file->ReadKeyword("profiles"); file->ReadKeyword("{");
@@ -2446,7 +2446,7 @@ void Geometry::LoadProfile(FileReader *file, Dataport *dpHit, int version) {
 		for (int j = 0; j < PROFILE_SIZE; j++) {
 			for (int i = 0; i < nbProfile; i++) {
 				Facet *f = GetFacet(profileFacet[i]);
-				APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + sizeof(SHHITS)+m*PROFILE_SIZE*sizeof(APROFILE));
+				APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + sizeof(SHHITS) + m*PROFILE_SIZE*sizeof(APROFILE));
 				profilePtr[j].count = file->ReadLLong();
 				if (version >= 13) profilePtr[j].sum_1_per_ort_velocity = file->ReadDouble();
 				if (version >= 13) profilePtr[j].sum_v_ort = file->ReadDouble();
@@ -2459,7 +2459,7 @@ void Geometry::LoadProfile(FileReader *file, Dataport *dpHit, int version) {
 }
 
 void Geometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *pleak, int *nbleak, HIT *pHits, int *nbHHit, int *version, Worker *worker) {
-	
+
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
 	prg->SetMessage("Clearing current geometry...");
@@ -2473,7 +2473,7 @@ void Geometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *pleak, int *nble
 	*version = file->ReadInt();
 	if (*version > GEOVERSION) {
 		char errMsg[512];
-		sprintf(errMsg, "Unsupported GEO version V%d",*version);
+		sprintf(errMsg, "Unsupported GEO version V%d", *version);
 		throw Error(errMsg);
 	}
 
@@ -2609,7 +2609,7 @@ void Geometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *pleak, int *nble
 	for (int i = 0; i < sh.nbSuper; i++) {
 		strName[i] = _strdup(file->ReadString());
 		// For backward compatibilty with STR
-		sprintf(tmp, "%s.txt",strName[i]);
+		sprintf(tmp, "%s.txt", strName[i]);
 		strFileName[i] = _strdup(tmp);
 	}
 	file->ReadKeyword("}");
@@ -2681,7 +2681,7 @@ void Geometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *pleak, int *nble
 		int nbI = file->ReadInt();
 		if (nbI < 3) {
 			char errMsg[512];
-			sprintf(errMsg, "Facet %d has only %d vertices. ",i + 1, nbI);
+			sprintf(errMsg, "Facet %d has only %d vertices. ", i + 1, nbI);
 			throw Error(errMsg);
 		}
 		prg->SetProgress((float)i / sh.nbFacet);
@@ -2703,7 +2703,7 @@ void Geometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *pleak, int *nble
 		Facet *f = facets[i];
 		if (!f->SetTexture(f->sh.texWidthD, f->sh.texHeightD, f->hasMesh)) {
 			char errMsg[512];
-			sprintf(errMsg, "Not enough memory to build mesh on Facet %d. ",i + 1);
+			sprintf(errMsg, "Not enough memory to build mesh on Facet %d. ", i + 1);
 			throw Error(errMsg);
 		}
 		BuildFacetList(f);
@@ -2716,7 +2716,7 @@ void Geometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *pleak, int *nble
 void Geometry::LoadSYN(FileReader *file, GLProgress *prg, LEAK *pleak, int *nbleak, HIT *pHits, int *nbHHit, int *version) {
 
 
-	
+
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
 	prg->SetMessage("Clearing current geometry...");
@@ -2730,7 +2730,7 @@ void Geometry::LoadSYN(FileReader *file, GLProgress *prg, LEAK *pleak, int *nble
 	*version = file->ReadInt();
 	if (*version > SYNVERSION) {
 		char errMsg[512];
-		sprintf(errMsg, "Unsupported SYN version V%d",*version);
+		sprintf(errMsg, "Unsupported SYN version V%d", *version);
 		throw Error(errMsg);
 	}
 	file->ReadKeyword("totalHit"); file->ReadKeyword(":");
@@ -2834,7 +2834,7 @@ void Geometry::LoadSYN(FileReader *file, GLProgress *prg, LEAK *pleak, int *nble
 	for (int i = 0; i < sh.nbSuper; i++) {
 		strName[i] = _strdup(file->ReadString());
 		// For backward compatibilty with STR
-		sprintf(tmp, "%s.txt",strName[i]);
+		sprintf(tmp, "%s.txt", strName[i]);
 		strFileName[i] = _strdup(tmp);
 	}
 	file->ReadKeyword("}");
@@ -2917,7 +2917,7 @@ void Geometry::LoadSYN(FileReader *file, GLProgress *prg, LEAK *pleak, int *nble
 		int nbI = file->ReadInt();
 		if (nbI < 3) {
 			char errMsg[512];
-			sprintf(errMsg, "Facet %d has only %d vertices. ",i, nbI);
+			sprintf(errMsg, "Facet %d has only %d vertices. ", i, nbI);
 			throw Error(errMsg);
 		}
 		prg->SetProgress((float)i / sh.nbFacet);
@@ -2947,7 +2947,7 @@ void Geometry::LoadSYN(FileReader *file, GLProgress *prg, LEAK *pleak, int *nble
 }
 
 bool Geometry::LoadTextures(FileReader *file, GLProgress *prg, Dataport *dpHit, int version) {
-	
+
 	if (file->SeekFor("{textures}")) {
 		char tmp[256];
 		//versions 3+
@@ -3014,7 +3014,7 @@ bool Geometry::LoadTextures(FileReader *file, GLProgress *prg, Dataport *dpHit, 
 						int idx = file->ReadInt();
 
 						if (idx != i + 1) {
-							sprintf(tmp, "Wrong facet index. Expected %d, read %d.",i + 1, idx);
+							sprintf(tmp, "Wrong facet index. Expected %d, read %d.", i + 1, idx);
 							throw Error(file->MakeError(tmp));
 						}
 						file->ReadKeyword("{");
@@ -3026,7 +3026,7 @@ bool Geometry::LoadTextures(FileReader *file, GLProgress *prg, Dataport *dpHit, 
 						int profSize = (f->sh.isProfile) ? ((1 + (int)mApp->worker.moments.size())*(PROFILE_SIZE*sizeof(APROFILE))) : 0;
 						int h = (f->sh.texHeight);
 						int w = (f->sh.texWidth);
-						AHIT *hits = (AHIT *)((BYTE *)gHits + (f->sh.hitOffset + sizeof(SHHITS)+profSize + m*w*h*sizeof(AHIT)));
+						AHIT *hits = (AHIT *)((BYTE *)gHits + (f->sh.hitOffset + sizeof(SHHITS) + profSize + m*w*h*sizeof(AHIT)));
 
 						for (iy = 0; iy < h; iy++) {
 							for (ix = 0; ix < w; ix++) {
@@ -3059,7 +3059,7 @@ bool Geometry::LoadTextures(FileReader *file, GLProgress *prg, Dataport *dpHit, 
 void Geometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, std::vector<std::string> userMoments, Worker *worker,
 	BOOL saveSelected, LEAK *pleak, int *nbleakSave, HIT *pHits, int *nbHHitSave, BOOL crashSave) {
 
-	
+
 	prg->SetMessage("Counting hits...");
 	if (!IsLoaded()) throw Error("Nothing to save !");
 
@@ -3098,18 +3098,18 @@ void Geometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, std::
 
 	prg->SetMessage("Writing geometry details...");
 	file->Write("version:"); file->WriteInt(GEOVERSION, "\n");
-	file->Write("totalHit:"); file->WriteLLong((!crashSave && !saveSelected)?gHits->total.hit.nbHit:0, "\n");
-	file->Write("totalDes:"); file->WriteLLong((!crashSave && !saveSelected) ? gHits->total.hit.nbDesorbed:0, "\n");
-	file->Write("totalLeak:"); file->WriteLLong((!crashSave && !saveSelected) ? gHits->nbLeakTotal:0, "\n");
-	file->Write("totalAbs:"); file->WriteLLong((!crashSave && !saveSelected) ? gHits->total.hit.nbAbsorbed:0, "\n");
-	file->Write("totalDist:"); file->WriteDouble((!crashSave && !saveSelected) ? gHits->distTraveledTotal:0, "\n");
-	file->Write("maxDes:"); file->WriteLLong((!crashSave && !saveSelected) ? tNbDesorptionMax:0, "\n");
+	file->Write("totalHit:"); file->WriteLLong((!crashSave && !saveSelected) ? gHits->total.hit.nbHit : 0, "\n");
+	file->Write("totalDes:"); file->WriteLLong((!crashSave && !saveSelected) ? gHits->total.hit.nbDesorbed : 0, "\n");
+	file->Write("totalLeak:"); file->WriteLLong((!crashSave && !saveSelected) ? gHits->nbLeakTotal : 0, "\n");
+	file->Write("totalAbs:"); file->WriteLLong((!crashSave && !saveSelected) ? gHits->total.hit.nbAbsorbed : 0, "\n");
+	file->Write("totalDist:"); file->WriteDouble((!crashSave && !saveSelected) ? gHits->distTraveledTotal : 0, "\n");
+	file->Write("maxDes:"); file->WriteLLong((!crashSave && !saveSelected) ? tNbDesorptionMax : 0, "\n");
 	file->Write("nbVertex:"); file->WriteInt(sh.nbVertex, "\n");
 	file->Write("nbFacet:"); file->WriteInt(saveSelected ? nbSelected : sh.nbFacet, "\n");
 	file->Write("nbSuper:"); file->WriteInt(sh.nbSuper, "\n");
-	file->Write("nbFormula:"); file->WriteInt((!saveSelected)?mApp->nbFormula:0, "\n");
+	file->Write("nbFormula:"); file->WriteInt((!saveSelected) ? mApp->nbFormula : 0, "\n");
 	file->Write("nbView:"); file->WriteInt(mApp->nbView, "\n");
-	file->Write("nbSelection:"); file->WriteInt((!saveSelected)?mApp->nbSelection:0, "\n");
+	file->Write("nbSelection:"); file->WriteInt((!saveSelected) ? mApp->nbSelection : 0, "\n");
 	file->Write("gasMass:"); file->WriteDouble(worker->gasMass, "\n");
 
 	file->Write("userMoments {\n");
@@ -3237,45 +3237,45 @@ void Geometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, std::
 	}
 
 	prg->SetMessage("Writing profiles...");
-	SaveProfileGEO(file, dpHit, -1, saveSelected,crashSave);
+	SaveProfileGEO(file, dpHit, -1, saveSelected, crashSave);
 
 	///Save textures, for GEO file version 3+
 	char tmp[256];
 	file->Write("{textures}\n");
 
 	file->Write("min_pressure_all:"); file->WriteDouble(
-		(!crashSave && !saveSelected) ? gHits->texture_limits[0].min.all:0, "\n");
+		(!crashSave && !saveSelected) ? gHits->texture_limits[0].min.all : 0, "\n");
 	file->Write("min_pressure_moments_only:"); file->WriteDouble(
-		(!crashSave && !saveSelected) ? gHits->texture_limits[0].min.moments_only:0, "\n");
+		(!crashSave && !saveSelected) ? gHits->texture_limits[0].min.moments_only : 0, "\n");
 	file->Write("max_pressure_all:"); file->WriteDouble(
-		(!crashSave && !saveSelected) ? gHits->texture_limits[0].max.all:1, "\n");
+		(!crashSave && !saveSelected) ? gHits->texture_limits[0].max.all : 1, "\n");
 	file->Write("max_pressure_moments_only:"); file->WriteDouble(
-		(!crashSave && !saveSelected) ? gHits->texture_limits[0].max.moments_only:1, "\n");
+		(!crashSave && !saveSelected) ? gHits->texture_limits[0].max.moments_only : 1, "\n");
 
 	file->Write("min_impingement_all:"); file->WriteDouble(
-		(!crashSave && !saveSelected) ? gHits->texture_limits[1].min.all:0, "\n");
+		(!crashSave && !saveSelected) ? gHits->texture_limits[1].min.all : 0, "\n");
 	file->Write("min_impingement_moments_only:"); file->WriteDouble(
-		(!crashSave && !saveSelected) ? gHits->texture_limits[1].min.moments_only:0, "\n");
+		(!crashSave && !saveSelected) ? gHits->texture_limits[1].min.moments_only : 0, "\n");
 	file->Write("max_impingement_all:"); file->WriteDouble(
-		(!crashSave && !saveSelected) ? gHits->texture_limits[1].max.all:1, "\n");
+		(!crashSave && !saveSelected) ? gHits->texture_limits[1].max.all : 1, "\n");
 	file->Write("max_impingement_moments_only:"); file->WriteDouble(
-		(!crashSave && !saveSelected) ? gHits->texture_limits[1].max.moments_only:1, "\n");
+		(!crashSave && !saveSelected) ? gHits->texture_limits[1].max.moments_only : 1, "\n");
 
 	file->Write("min_density_all:"); file->WriteDouble(
-		(!crashSave && !saveSelected) ? gHits->texture_limits[2].min.all:0, "\n");
+		(!crashSave && !saveSelected) ? gHits->texture_limits[2].min.all : 0, "\n");
 	file->Write("min_density_moments_only:"); file->WriteDouble(
-		(!crashSave && !saveSelected) ? gHits->texture_limits[2].min.moments_only:0, "\n");
+		(!crashSave && !saveSelected) ? gHits->texture_limits[2].min.moments_only : 0, "\n");
 	file->Write("max_density_all:"); file->WriteDouble(
-		(!crashSave && !saveSelected) ? gHits->texture_limits[2].max.all:1, "\n");
+		(!crashSave && !saveSelected) ? gHits->texture_limits[2].max.all : 1, "\n");
 	file->Write("max_density_moments_only:"); file->WriteDouble(
-		(!crashSave && !saveSelected) ? gHits->texture_limits[2].max.moments_only:1, "\n");
+		(!crashSave && !saveSelected) ? gHits->texture_limits[2].max.moments_only : 1, "\n");
 
 	//Selections
 	//SaveSelections();
 
 	prg->SetMessage("Writing textures...");
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++){
-		sprintf(tmp, "moment %d {\n",m);
+		sprintf(tmp, "moment %d {\n", m);
 		file->Write(tmp);
 		for (int i = 0; i < sh.nbFacet; i++) {
 			prg->SetProgress((double)(i + m*sh.nbFacet) / (double)(mApp->worker.moments.size()*sh.nbFacet)*0.33 + 0.66);
@@ -3285,17 +3285,17 @@ void Geometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, std::
 				int w = (f->sh.texWidth);
 				int profSize = (f->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + (int)mApp->worker.moments.size())) : 0;
 				AHIT *hits;
-				if (!crashSave && !saveSelected) hits = (AHIT *)((BYTE *)gHits + (f->sh.hitOffset + sizeof(SHHITS)+profSize + m*w*h*sizeof(AHIT)));
+				if (!crashSave && !saveSelected) hits = (AHIT *)((BYTE *)gHits + (f->sh.hitOffset + sizeof(SHHITS) + profSize + m*w*h*sizeof(AHIT)));
 
 				//char tmp[256];
-				sprintf(tmp, " texture_facet %d {\n",i + 1);
+				sprintf(tmp, " texture_facet %d {\n", i + 1);
 				file->Write(tmp);
 
 				for (iy = 0; iy < h; iy++) {
 					for (ix = 0; ix < w; ix++) {
-						file->WriteLLong((!crashSave && !saveSelected) ? hits[iy*f->sh.texWidth + ix].count:0, "\t");
-						file->WriteDouble((!crashSave && !saveSelected) ? hits[iy*f->sh.texWidth + ix].sum_1_per_ort_velocity:0, "\t");
-						file->WriteDouble((!crashSave && !saveSelected) ? hits[iy*f->sh.texWidth + ix].sum_v_ort_per_area:0, "\t");
+						file->WriteLLong((!crashSave && !saveSelected) ? hits[iy*f->sh.texWidth + ix].count : 0, "\t");
+						file->WriteDouble((!crashSave && !saveSelected) ? hits[iy*f->sh.texWidth + ix].sum_1_per_ort_velocity : 0, "\t");
+						file->WriteDouble((!crashSave && !saveSelected) ? hits[iy*f->sh.texWidth + ix].sum_v_ort_per_area : 0, "\t");
 					}
 					file->Write("\n");
 				}
@@ -3382,7 +3382,7 @@ void Geometry::SaveTXT(FileWriter *file, Dataport *dpHit, BOOL saveSelected) {
 }
 
 void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSelected) {
-	
+
 	//if(!IsLoaded()) throw Error("Nothing to save !");
 
 	// Block dpHit during the whole disc writing
@@ -3397,7 +3397,7 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++){
 		if (m == 0) fprintf(file, " moment 0 (Constant Flow){\n");
-		else fprintf(file, " moment %d (%g s){\n",m, mApp->worker.moments[m - 1]);
+		else fprintf(file, " moment %d (%g s){\n", m, mApp->worker.moments[m - 1]);
 		// Facets
 
 		for (int i = 0; i < sh.nbFacet; i++) {
@@ -3407,7 +3407,7 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 			if (f->selected) {
 				AHIT *hits = NULL;
 				VHIT *dirs = NULL;
-				fprintf(file, "FACET%d\n",i + 1);
+				fprintf(file, "FACET%d\n", i + 1);
 
 				if (f->mesh || f->sh.countDirection) {
 					char tmp[256];
@@ -3420,8 +3420,8 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 					int h = f->sh.texHeight;
 					int tSize = w*h*sizeof(AHIT);
 					int dSize = w*h*sizeof(VHIT);
-					if (f->mesh) hits = (AHIT *)((BYTE *)buffer + (f->sh.hitOffset + sizeof(SHHITS)+profSize + m*tSize));
-					if (f->sh.countDirection) dirs = (VHIT *)((BYTE *)buffer + (f->sh.hitOffset + sizeof(SHHITS)+profSize*(1 + nbMoments) + tSize*(1 + nbMoments) + m*dSize));
+					if (f->mesh) hits = (AHIT *)((BYTE *)buffer + (f->sh.hitOffset + sizeof(SHHITS) + profSize + m*tSize));
+					if (f->sh.countDirection) dirs = (VHIT *)((BYTE *)buffer + (f->sh.hitOffset + sizeof(SHHITS) + profSize*(1 + nbMoments) + tSize*(1 + nbMoments) + m*dSize));
 
 
 					switch (mode) {
@@ -3429,8 +3429,8 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 					case 1: // Element area
 						for (int j = 0; j < h; j++) {
 							for (int i = 0; i < w; i++) {
-								sprintf(tmp, "%g",f->mesh[i + j*w].area);
-								if (tmp) fprintf(file, "%s",tmp);
+								sprintf(tmp, "%g", f->mesh[i + j*w].area);
+								if (tmp) fprintf(file, "%s", tmp);
 								if (j < w - 1)
 									fprintf(file, "\t");
 							}
@@ -3441,7 +3441,7 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 					case 2: //MC Hits
 						for (int j = 0; j < h; j++) {
 							for (int i = 0; i < w; i++) {
-								fprintf(file, "%g",(double)hits[i + j*w].count);
+								fprintf(file, "%g", (double)hits[i + j*w].count);
 								fprintf(file, "\t");
 							}
 							fprintf(file, "\n");
@@ -3450,11 +3450,11 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 
 					case 3: //Impingement rate
 						dCoef = /*totalInFlux*/ 1.0 / shGHit->total.hit.nbDesorbed * 1E4; //1E4: conversion m2->cm2
-						if (shGHit->mode == MC_MODE) dCoef *= (mApp->worker.displayedMoment == 0) 
+						if (shGHit->mode == MC_MODE) dCoef *= (mApp->worker.displayedMoment == 0)
 							? mApp->worker.finalOutgassingRate : (mApp->worker.totalDesorbedMolecules / mApp->worker.timeWindowSize);
 						for (int j = 0; j < h; j++) {
 							for (int i = 0; i < w; i++) {
-								fprintf(file, "%g",(double)hits[i + j*w].count / (f->mesh[i + j*w].area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef);
+								fprintf(file, "%g", (double)hits[i + j*w].count / (f->mesh[i + j*w].area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef);
 								fprintf(file, "\t");
 							}
 							fprintf(file, "\n");
@@ -3471,7 +3471,7 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 								double v_ort_avg = 2.0*(double)hits[i + j*w].count / hits[i + j*w].sum_1_per_ort_velocity;
 								double imp_rate = hits[i + j*w].count / (f->mesh[i + j*w].area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef;
 								double rho = 2.0*imp_rate / v_ort_avg;
-								fprintf(file, "%g",rho);
+								fprintf(file, "%g", rho);
 								fprintf(file, "\t");
 							}
 							fprintf(file, "\n");
@@ -3489,7 +3489,7 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 								double imp_rate = hits[i + j*w].count / (f->mesh[i + j*w].area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef;
 								double rho = 2.0*imp_rate / v_ort_avg;
 								double rho_mass = rho*mApp->worker.gasMass / 1000.0 / 6E23;
-								fprintf(file, "%g",rho_mass);
+								fprintf(file, "%g", rho_mass);
 								fprintf(file, "\t");
 							}
 							fprintf(file, "\n");
@@ -3504,7 +3504,7 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 							? mApp->worker.finalOutgassingRate : (mApp->worker.totalDesorbedMolecules / mApp->worker.timeWindowSize);
 						for (int j = 0; j < h; j++) {
 							for (int i = 0; i < w; i++) {
-								fprintf(file, "%g",hits[i + j*w].sum_v_ort_per_area*dCoef);
+								fprintf(file, "%g", hits[i + j*w].sum_v_ort_per_area*dCoef);
 								fprintf(file, "\t");
 							}
 							fprintf(file, "\n");
@@ -3515,7 +3515,7 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 					case 7: // Average velocity
 						for (int j = 0; j < h; j++) {
 							for (int i = 0; i < w; i++) {
-								fprintf(file, "%g",2.0*(double)hits[i + j*w].count / hits[i + j*w].sum_1_per_ort_velocity);
+								fprintf(file, "%g", 2.0*(double)hits[i + j*w].count / hits[i + j*w].sum_1_per_ort_velocity);
 								fprintf(file, "\t");
 							}
 							fprintf(file, "\n");
@@ -3534,7 +3534,7 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 								else {
 									sprintf(tmp, "Direction not recorded");
 								}
-								fprintf(file, "%s",tmp);
+								fprintf(file, "%s", tmp);
 								fprintf(file, "\t");
 							}
 							fprintf(file, "\n");
@@ -3545,12 +3545,12 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 						for (int j = 0; j < h; j++) {
 							for (int i = 0; i < w; i++) {
 								if (f->sh.countDirection) {
-									sprintf(tmp, "%I64d",dirs[i + j*w].count);
+									sprintf(tmp, "%I64d", dirs[i + j*w].count);
 								}
 								else {
 									sprintf(tmp, "None");
 								}
-								fprintf(file, "%s",tmp);
+								fprintf(file, "%s", tmp);
 								fprintf(file, "\t");
 							}
 							fprintf(file, "\n");
@@ -3593,15 +3593,15 @@ void Geometry::ExportProfiles(FILE *file, int isTXT, Dataport *dpHit, Worker *wo
 	//SHGHITS *gHits = (SHGHITS *)buffer;
 	std::ostringstream header;
 	header << "Facet number" << sep << "Profile_type" << sep << "O_x" << sep << "O_y" << sep << "O_z" << sep << "U_x" << sep << "U_y" << sep << "U_z" << sep;
-	header << "V_x" << sep << "V_y" << sep << "V_z" << sep << "U_length" << sep << "V_length" << sep << "Center_x" << sep << "Center_y" << sep << "Center_z" << sep <<"V_max" << sep << "Hits" << sep;
+	header << "V_x" << sep << "V_y" << sep << "V_z" << sep << "U_length" << sep << "V_length" << sep << "Center_x" << sep << "Center_y" << sep << "Center_z" << sep << "V_max" << sep << "Hits" << sep;
 	for (int i = 0; i < PROFILE_SIZE; i++)
-		header << i+1 << sep;
+		header << i + 1 << sep;
 	header << '\n';
 
 	fputs(header.str().c_str(), file);
 
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++){
-		if (m == 0) fputs(" moment 0 (Constant Flow){\n",file);
+		if (m == 0) fputs(" moment 0 (Constant Flow){\n", file);
 		else fprintf(file, " moment %d (%g s){\n", m, mApp->worker.moments[m - 1]);
 		// Facets
 
@@ -3614,53 +3614,53 @@ void Geometry::ExportProfiles(FILE *file, int isTXT, Dataport *dpHit, Worker *wo
 				std::ostringstream line;
 
 				line << i + 1 << sep << profType[f->sh.profileType] << sep << f->sh.O.x << sep << f->sh.O.y << sep << f->sh.O.z << sep << f->sh.U.x << sep << f->sh.U.y << sep << f->sh.U.z << sep;
-				line << f->sh.V.x << sep << f->sh.V.y << sep << f->sh.V.z << sep << Norme(&f->sh.U) << sep << Norme(&f->sh.V) << sep << f->sh.center.x << sep << f->sh.center.y << sep << f->sh.center.z << sep << f->sh.maxSpeed<<sep<< f->sh.counter.hit.nbHit << sep;
-				
+				line << f->sh.V.x << sep << f->sh.V.y << sep << f->sh.V.z << sep << Norme(&f->sh.U) << sep << Norme(&f->sh.V) << sep << f->sh.center.x << sep << f->sh.center.y << sep << f->sh.center.z << sep << f->sh.maxSpeed << sep << f->sh.counter.hit.nbHit << sep;
+
 
 				if (f->sh.isProfile) {
 					double dCoef = 1.0;
 					if (!buffer) return;
 					SHGHITS *shGHit = (SHGHITS *)buffer;
-					double nbDes = (shGHit->total.hit.nbDesorbed>0)?(double)shGHit->total.hit.nbDesorbed:1.0;
+					double nbDes = (shGHit->total.hit.nbDesorbed > 0) ? (double)shGHit->total.hit.nbDesorbed : 1.0;
 					int profOffset = PROFILE_SIZE*sizeof(APROFILE)*m;
-					prof = (APROFILE*)((BYTE *)buffer + (f->sh.hitOffset + sizeof(SHHITS)+profOffset));
-					double scaleX,scaleY;
+					prof = (APROFILE*)((BYTE *)buffer + (f->sh.hitOffset + sizeof(SHHITS) + profOffset));
+					double scaleX, scaleY;
 					switch (f->sh.profileType) {
-						case REC_PRESSUREU:
-						case REC_PRESSUREV:
-							scaleY = 1.0 / nbDes / (f->sh.area / (double)PROFILE_SIZE*1E-4)* worker->gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
-							/*scaleY *= ((worker->displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
-							/ worker->timeWindowSize)); //correction for time window length*/
-							scaleY *= ((worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
-								/ worker->timeWindowSize));
-							if (f->sh.is2sided) scaleY *= 0.5;
-							//if(f->sh.opacity>0.0) scaleY *= f->sh.opacity;
-							//if(IS_ZERO(f->sh.opacity)) scaleY*=2; //transparent profiles are profiled only once...
+					case REC_PRESSUREU:
+					case REC_PRESSUREV:
+						scaleY = 1.0 / nbDes / (f->sh.area / (double)PROFILE_SIZE*1E-4)* worker->gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
+						/*scaleY *= ((worker->displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
+						/ worker->timeWindowSize)); //correction for time window length*/
+						scaleY *= ((worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
+							/ worker->timeWindowSize));
+						if (f->sh.is2sided) scaleY *= 0.5;
+						//if(f->sh.opacity>0.0) scaleY *= f->sh.opacity;
+						//if(IS_ZERO(f->sh.opacity)) scaleY*=2; //transparent profiles are profiled only once...
 
-							for (int j = 0; j < PROFILE_SIZE; j++)
-								line << prof[j].sum_v_ort*scaleY << sep;
-							break;
-						case REC_VELOCITY:
-						case REC_ORT_VELOCITY:
-							scaleX = f->sh.maxSpeed / (double)PROFILE_SIZE;
-							for (int j = 0; j < PROFILE_SIZE; j++) 
-									line<<(double)prof[j].count / f->sh.counter.hit.nbHit<<sep;
-							break;
-						case REC_ANGULAR:
-							scaleX = 90.0 / (double)PROFILE_SIZE;
-							for (int j = 0; j < PROFILE_SIZE; j++) 
-									line<<(double)prof[j].count / f->sh.counter.hit.nbHit<<sep;
-							break;
-						}
+						for (int j = 0; j < PROFILE_SIZE; j++)
+							line << prof[j].sum_v_ort*scaleY << sep;
+						break;
+					case REC_VELOCITY:
+					case REC_ORT_VELOCITY:
+						scaleX = f->sh.maxSpeed / (double)PROFILE_SIZE;
+						for (int j = 0; j < PROFILE_SIZE; j++)
+							line << (double)prof[j].count / f->sh.counter.hit.nbHit << sep;
+						break;
+					case REC_ANGULAR:
+						scaleX = 90.0 / (double)PROFILE_SIZE;
+						for (int j = 0; j < PROFILE_SIZE; j++)
+							line << (double)prof[j].count / f->sh.counter.hit.nbHit << sep;
+						break;
 					}
+				}
 				else {
 					line << "No profile.";
 				}
 				line << '\n';
-				fputs(line.str().c_str(),file);
+				fputs(line.str().c_str(), file);
 			}
 		}
-		fputs(" }\n",file);
+		fputs(" }\n", file);
 	}
 	ReleaseDataport(dpHit);
 }
@@ -3736,7 +3736,7 @@ void Geometry::SaveSTR(Dataport *dpHit, BOOL saveSelected) {
 void Geometry::SaveSuper(Dataport *dpHit, int s) {
 
 	char fName[512];
-	sprintf(fName, "%s/%s",strPath, strFileName[s]);
+	sprintf(fName, "%s/%s", strPath, strFileName[s]);
 	FileWriter *file = new FileWriter(fName);
 
 	// Unused
@@ -3887,7 +3887,7 @@ void Geometry::ImportDesorption_SYN(
 	const std::vector<std::pair<double, double>> &convDistr,
 	GLProgress *prg){
 
-	
+
 	//UnSelectAll();
 	char tmp[512];
 	std::vector<double> xdims, ydims;
@@ -3898,7 +3898,7 @@ void Geometry::ImportDesorption_SYN(
 	version2 = file->ReadInt();
 	if (version2 > SYNVERSION) {
 		char errMsg[512];
-		sprintf(errMsg, "Unsupported SYN version V%d",version2);
+		sprintf(errMsg, "Unsupported SYN version V%d", version2);
 		throw Error(errMsg);
 	}
 
@@ -3975,7 +3975,7 @@ void Geometry::ImportDesorption_SYN(
 			int idx = file->ReadInt();
 
 			if (idx != i + 1) {
-				sprintf(tmp, "Wrong facet index. Expected %d, read %d.",i + 1, idx);
+				sprintf(tmp, "Wrong facet index. Expected %d, read %d.", i + 1, idx);
 				throw Error(file->MakeError(tmp));
 			}
 
@@ -3991,25 +3991,25 @@ void Geometry::ImportDesorption_SYN(
 				f->outgassingMap = (double*)malloc(width*height*sizeof(double));
 				if (!f->outgassingMap) throw Error("Not enough memory to store outgassing map.");
 				f->totalDose = f->totalOutgassing = f->totalFlux = 0.0;
-			}
 
-			for (iy = 0; iy < height; iy++) {
-				for (ix = 0; ix < width; ix++) {
-					int index = iy*width + ix;
-					//Read original values
-					llong MC = file->ReadLLong();
-					double cellArea = 1.0;
-					if (version2 >= 7) cellArea = file->ReadDouble();
-					if (cellArea<1E-10) cellArea = 1.0; //to avoid division by zero
-					double flux = file->ReadDouble() / no_scans; //not normalized by cell area
-					double power = file->ReadDouble() / no_scans; //not normalized by cell area
 
-					if (f->selected) {
+				for (iy = 0; iy < height; iy++) {
+					for (ix = 0; ix < width; ix++) {
+						int index = iy*width + ix;
+						//Read original values
+						llong MC = file->ReadLLong();
+						double cellArea = 1.0;
+						if (version2 >= 7) cellArea = file->ReadDouble();
+						if (cellArea < 1E-10) cellArea = 1.0; //to avoid division by zero
+						double flux = file->ReadDouble() / no_scans; //not normalized by cell area
+						double power = file->ReadDouble() / no_scans; //not normalized by cell area
+
+
 						//Calculate dose
 						double dose;
 						if (source == 0) dose = (double)MC*time;
-						else if (source == 1) dose = flux*time/cellArea;
-						else if (source == 2) dose = power*time/cellArea;
+						else if (source == 1) dose = flux*time / cellArea;
+						else if (source == 2) dose = power*time / cellArea;
 
 						double outgassing;
 						if (dose == 0) outgassing = 0; //to avoid division by zero later
@@ -4018,8 +4018,8 @@ void Geometry::ImportDesorption_SYN(
 
 							if (mode == 0) {
 								if (source == 0) outgassing = (double)MC;
-								else if (source == 1) outgassing = flux;
-								else if (source == 2) outgassing = power;
+								else if (source == 1) outgassing = flux * 0.100; //Division by 10 because the user will want to see the same outgassing in mbar*l/s
+								else if (source == 2) outgassing = power * 0.100; //(Outgassing is stored internally in Pa*m3/s, for consistent SI unit calculations)
 							}
 							else if (mode == 1) {
 								double moleculePerPhoton = eta0*pow(dose, alpha);
@@ -4038,6 +4038,7 @@ void Geometry::ImportDesorption_SYN(
 						f->totalDose += flux*time;
 						f->totalFlux += flux;
 						f->totalOutgassing += f->outgassingMap[index];
+
 					}
 				}
 			}
@@ -4057,7 +4058,7 @@ void Geometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, int *nb
 	*nbTextured = 0;
 	*nbNewFacet = 0;
 	*nbDifferent = 0;
-	
+
 	UnSelectAll();
 	//char tmp[512];
 
@@ -4066,7 +4067,7 @@ void Geometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, int *nb
 	version2 = file->ReadInt();
 	if (version2 > SYNVERSION) {
 		char errMsg[512];
-		sprintf(errMsg, "Unsupported SYN version V%d",version2);
+		sprintf(errMsg, "Unsupported SYN version V%d", version2);
 		throw Error(errMsg);
 	}
 
@@ -4123,7 +4124,7 @@ void Geometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, int *nb
 void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress *prg, BOOL saveSelected){
 	//TiXmlDeclaration* decl = new TiXmlDeclaration("1.0")="")="");
 	//saveDoc->LinkEndChild(decl);
-	
+
 	xml_node geomNode = saveDoc.append_child("Geometry");
 
 	prg->SetMessage("Writing vertices...");
@@ -4131,15 +4132,15 @@ void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress
 	for (int i = 0; i < sh.nbVertex; i++) {
 		prg->SetProgress(0.166*((double)i / (double)sh.nbVertex));
 		xml_node v = geomNode.child("Vertices").append_child("Vertex");
-		v.append_attribute("id")= i;
-		v.append_attribute("x")= vertices3[i].x;
-		v.append_attribute("y")= vertices3[i].y;
-		v.append_attribute("z")= vertices3[i].z;
+		v.append_attribute("id") = i;
+		v.append_attribute("x") = vertices3[i].x;
+		v.append_attribute("y") = vertices3[i].y;
+		v.append_attribute("z") = vertices3[i].z;
 	}
 
 	prg->SetMessage("Writing facets...");
 	geomNode.append_child("Facets");
-	geomNode.child("Facets").append_attribute("nb")= sh.nbFacet;
+	geomNode.child("Facets").append_attribute("nb") = sh.nbFacet;
 	for (int i = 0, k = 0; i < sh.nbFacet; i++) {
 		prg->SetProgress(0.166 + ((double)i / (double)sh.nbFacet) *0.166);
 		if (!saveSelected || facets[i]->selected) {
@@ -4152,7 +4153,7 @@ void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress
 	prg->SetMessage("Writing model details...");
 	geomNode.append_child("Structures").append_attribute("nb") = sh.nbSuper;
 	for (int i = 0, k = 0; i < sh.nbSuper; i++) {
-		xml_node s=geomNode.child("Structures").append_child("Structure");
+		xml_node s = geomNode.child("Structures").append_child("Structure");
 		s.append_attribute("id") = i;
 		s.append_attribute("name") = strName[i];
 	}
@@ -4162,7 +4163,7 @@ void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress
 	xml_node selNode = interfNode.append_child("Selections");
 	selNode.append_attribute("nb") = (!saveSelected)*(mApp->nbSelection);
 	for (int i = 0; (i < mApp->nbSelection) && !saveSelected; i++) { //don't save selections when exporting part of the geometry (saveSelected)
-		xml_node newSel=selNode.append_child("Selection");
+		xml_node newSel = selNode.append_child("Selection");
 		newSel.append_attribute("id") = i;
 		newSel.append_attribute("name") = mApp->selections[i].name;
 		newSel.append_attribute("nb") = mApp->selections[i].nbSel;
@@ -4177,7 +4178,7 @@ void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress
 	viewNode.append_attribute("nb") = (!saveSelected)*(mApp->nbView);
 	for (int i = 0; (i < mApp->nbView) && !saveSelected; i++) { //don't save views when exporting part of the geometry (saveSelected)
 		xml_node newView = viewNode.append_child("View");
-		newView.append_attribute("id")=i;
+		newView.append_attribute("id") = i;
 		newView.append_attribute("name") = mApp->views[i].name;
 		newView.append_attribute("projMode") = mApp->views[i].projMode;
 		newView.append_attribute("camAngleOx") = mApp->views[i].camAngleOx;
@@ -4194,12 +4195,12 @@ void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress
 	}
 
 	xml_node formulaNode = interfNode.append_child("Formulas");
-	formulaNode.append_attribute("nb")= (!saveSelected)*(mApp->nbFormula);
+	formulaNode.append_attribute("nb") = (!saveSelected)*(mApp->nbFormula);
 	for (int i = 0; (i < mApp->nbFormula) && !saveSelected; i++) { //don't save formulas when exporting part of the geometry (saveSelected)
 		xml_node newFormula = formulaNode.append_child("Formula");
-		newFormula.append_attribute("id")=i;
-		newFormula.append_attribute("name")=mApp->formulas[i].parser->GetName();
-		newFormula.append_attribute("expression")=mApp->formulas[i].parser->GetExpression();
+		newFormula.append_attribute("id") = i;
+		newFormula.append_attribute("name") = mApp->formulas[i].parser->GetName();
+		newFormula.append_attribute("expression") = mApp->formulas[i].parser->GetExpression();
 	}
 
 	if (mApp->profilePlotter) {
@@ -4220,16 +4221,16 @@ void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress
 	xml_node timeSettingsNode = simuParamNode.append_child("TimeSettings");
 
 	xml_node userMomentsNode = timeSettingsNode.append_child("UserMoments");
-	userMomentsNode.append_attribute("nb")=work->userMoments.size();
+	userMomentsNode.append_attribute("nb") = work->userMoments.size();
 	for (size_t i = 0; i < work->userMoments.size(); i++) {
 		xml_node newUserEntry = userMomentsNode.append_child("UserEntry");
-		newUserEntry.append_attribute("id")=i;
-		newUserEntry.append_attribute("content")=work->userMoments[i].c_str();
+		newUserEntry.append_attribute("id") = i;
+		newUserEntry.append_attribute("content") = work->userMoments[i].c_str();
 	}
 
-	timeSettingsNode.append_attribute("timeWindow")=work->timeWindowSize;
-	timeSettingsNode.append_attribute("useMaxwellDistr")=work->useMaxwellDistribution;
-	timeSettingsNode.append_attribute("calcConstFlow")=work->calcConstantFlow;
+	timeSettingsNode.append_attribute("timeWindow") = work->timeWindowSize;
+	timeSettingsNode.append_attribute("useMaxwellDistr") = work->useMaxwellDistribution;
+	timeSettingsNode.append_attribute("calcConstFlow") = work->calcConstantFlow;
 
 	xml_node motionNode = simuParamNode.append_child("Motion");
 	motionNode.append_attribute("type") = work->motionType;
@@ -4251,162 +4252,162 @@ void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress
 	}
 
 	xml_node paramNode = simuParamNode.append_child("Parameters");
-	paramNode.append_attribute("nb")= work->parameters.size();
+	paramNode.append_attribute("nb") = work->parameters.size();
 	for (size_t i = 0; i < work->parameters.size(); i++) {
 		xml_node newParameter = paramNode.append_child("Parameter");
-		newParameter.append_attribute("id")= i;
-		newParameter.append_attribute("name")=work->parameters[i].name.c_str();
-		newParameter.append_attribute("nbMoments")=(int)work->parameters[i].values.size();
+		newParameter.append_attribute("id") = i;
+		newParameter.append_attribute("name") = work->parameters[i].name.c_str();
+		newParameter.append_attribute("nbMoments") = (int)work->parameters[i].values.size();
 		for (size_t m = 0; m < work->parameters[i].values.size(); m++) {
 			xml_node newMoment = newParameter.append_child("Moment");
-			newMoment.append_attribute("id")= m;
-			newMoment.append_attribute("t")=work->parameters[i].values[m].first;
-			newMoment.append_attribute("value")=work->parameters[i].values[m].second;
+			newMoment.append_attribute("id") = m;
+			newMoment.append_attribute("t") = work->parameters[i].values[m].first;
+			newMoment.append_attribute("value") = work->parameters[i].values[m].second;
 		}
 	}
 }
 
 BOOL Geometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, SHGHITS *gHits, int nbLeakSave, int nbHHitSave,
 	LEAK *pLeak, HIT *pHits, GLProgress *prg, BOOL saveSelected){
-	xml_node resultNode=saveDoc.append_child("MolflowResults");
+	xml_node resultNode = saveDoc.append_child("MolflowResults");
 	prg->SetMessage("Writing simulation results...");
 	xml_node momentsNode = resultNode.append_child("Moments");
-	momentsNode.append_attribute("nb")= work->moments.size()+1;
+	momentsNode.append_attribute("nb") = work->moments.size() + 1;
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++){
-		prg->SetProgress(0.5 + (double)m / (1.0+(double)mApp->worker.moments.size()));
+		prg->SetProgress(0.5 + (double)m / (1.0 + (double)mApp->worker.moments.size()));
 		xml_node newMoment = momentsNode.append_child("Moment");
-		newMoment.append_attribute("id")=m;
+		newMoment.append_attribute("id") = m;
 		if (m == 0)
-			newMoment.append_attribute("time")="Constant flow";
+			newMoment.append_attribute("time") = "Constant flow";
 		else
-			newMoment.append_attribute("time")=work->moments[m - 1];
+			newMoment.append_attribute("time") = work->moments[m - 1];
 
 		if (m == 0) { //Write global results. Later these results will probably be time-dependent as well.
 			xml_node globalNode = newMoment.append_child("Global");
 
 			xml_node hitsNode = globalNode.append_child("Hits");
-			hitsNode.append_attribute("totalHit")=gHits->total.hit.nbHit;
-			hitsNode.append_attribute("totalDes")=gHits->total.hit.nbDesorbed;
-			hitsNode.append_attribute("totalAbs")=gHits->total.hit.nbAbsorbed;
-			hitsNode.append_attribute("totalDist")=gHits->distTraveledTotal;
+			hitsNode.append_attribute("totalHit") = gHits->total.hit.nbHit;
+			hitsNode.append_attribute("totalDes") = gHits->total.hit.nbDesorbed;
+			hitsNode.append_attribute("totalAbs") = gHits->total.hit.nbAbsorbed;
+			hitsNode.append_attribute("totalDist") = gHits->distTraveledTotal;
 			hitsNode.append_attribute("totalLeak") = gHits->nbLeakTotal;
 			hitsNode.append_attribute("maxDesorption") = work->maxDesorption;
 
 			xml_node hitCacheNode = globalNode.append_child("Hit_Cache");
-			hitCacheNode.append_attribute("nb")=nbHHitSave;
+			hitCacheNode.append_attribute("nb") = nbHHitSave;
 			for (int i = 0; i < nbHHitSave; i++) {
 				xml_node newHit = hitCacheNode.append_child("Hit");
-				newHit.append_attribute("id")=i;
-				newHit.append_attribute("posX")=pHits[i].pos.x;
-				newHit.append_attribute("posY")=pHits[i].pos.y;
-				newHit.append_attribute("posZ")=pHits[i].pos.z;
-				newHit.append_attribute("type")=pHits[i].type;
+				newHit.append_attribute("id") = i;
+				newHit.append_attribute("posX") = pHits[i].pos.x;
+				newHit.append_attribute("posY") = pHits[i].pos.y;
+				newHit.append_attribute("posZ") = pHits[i].pos.z;
+				newHit.append_attribute("type") = pHits[i].type;
 			}
 
 			xml_node leakCacheNode = globalNode.append_child("Leak_Cache");
-			leakCacheNode.append_attribute("nb")=nbLeakSave;
+			leakCacheNode.append_attribute("nb") = nbLeakSave;
 			for (int i = 0; i < nbLeakSave; i++) {
 				xml_node newLeak = leakCacheNode.append_child("Leak");
-				newLeak.append_attribute("id")=i;
-				newLeak.append_attribute("posX")=pLeak[i].pos.x;
-				newLeak.append_attribute("posY")=pLeak[i].pos.y;
-				newLeak.append_attribute("posZ")=pLeak[i].pos.z;
-				newLeak.append_attribute("dirX")=pLeak[i].dir.x;
-				newLeak.append_attribute("dirY")=pLeak[i].dir.y;
-				newLeak.append_attribute("dirZ")=pLeak[i].dir.z;
+				newLeak.append_attribute("id") = i;
+				newLeak.append_attribute("posX") = pLeak[i].pos.x;
+				newLeak.append_attribute("posY") = pLeak[i].pos.y;
+				newLeak.append_attribute("posZ") = pLeak[i].pos.z;
+				newLeak.append_attribute("dirX") = pLeak[i].dir.x;
+				newLeak.append_attribute("dirY") = pLeak[i].dir.y;
+				newLeak.append_attribute("dirZ") = pLeak[i].dir.z;
 			}
 		} //end global node
-		
+
 		xml_node facetResultsNode = newMoment.append_child("FacetResults");
 
 		for (int i = 0; i < sh.nbFacet; i++) {
-				Facet *f = GetFacet(i);
-				xml_node newFacetResult = facetResultsNode.append_child("Facet");
-				newFacetResult.append_attribute("id")=i;
-				if (m == 0) { //Now it's a global value, will soon become time-dependent
-					xml_node facetHitNode = newFacetResult.append_child("Hits");
-					facetHitNode.append_attribute("nbHit")=f->sh.counter.hit.nbHit;
-					facetHitNode.append_attribute("nbDes")=f->sh.counter.hit.nbDesorbed;
-					facetHitNode.append_attribute("nbAbs")=f->sh.counter.hit.nbAbsorbed;
-					facetHitNode.append_attribute("sum_v_ort")=f->sh.counter.hit.sum_v_ort;
-					facetHitNode.append_attribute("sum_1_per_v")=f->sh.counter.hit.sum_1_per_ort_velocity;
-				}
+			Facet *f = GetFacet(i);
+			xml_node newFacetResult = facetResultsNode.append_child("Facet");
+			newFacetResult.append_attribute("id") = i;
+			if (m == 0) { //Now it's a global value, will soon become time-dependent
+				xml_node facetHitNode = newFacetResult.append_child("Hits");
+				facetHitNode.append_attribute("nbHit") = f->sh.counter.hit.nbHit;
+				facetHitNode.append_attribute("nbDes") = f->sh.counter.hit.nbDesorbed;
+				facetHitNode.append_attribute("nbAbs") = f->sh.counter.hit.nbAbsorbed;
+				facetHitNode.append_attribute("sum_v_ort") = f->sh.counter.hit.sum_v_ort;
+				facetHitNode.append_attribute("sum_1_per_v") = f->sh.counter.hit.sum_1_per_ort_velocity;
+			}
 
-				if (f->sh.isProfile){
-					xml_node profileNode = newFacetResult.append_child("Profile");
-					profileNode.append_attribute("size")=PROFILE_SIZE;
-					APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + sizeof(SHHITS)+m*sizeof(APROFILE)*PROFILE_SIZE);
-					for (int p = 0; p < PROFILE_SIZE; p++){
-						xml_node slice = profileNode.append_child("Slice");
-						slice.append_attribute("id")=p;
-						slice.append_attribute("count")=profilePtr[p].count;
-						slice.append_attribute("sum_1_per_v")=profilePtr[p].sum_1_per_ort_velocity;
-						slice.append_attribute("sum_v_ort")=profilePtr[p].sum_v_ort;
+			if (f->sh.isProfile){
+				xml_node profileNode = newFacetResult.append_child("Profile");
+				profileNode.append_attribute("size") = PROFILE_SIZE;
+				APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + sizeof(SHHITS) + m*sizeof(APROFILE)*PROFILE_SIZE);
+				for (int p = 0; p < PROFILE_SIZE; p++){
+					xml_node slice = profileNode.append_child("Slice");
+					slice.append_attribute("id") = p;
+					slice.append_attribute("count") = profilePtr[p].count;
+					slice.append_attribute("sum_1_per_v") = profilePtr[p].sum_1_per_ort_velocity;
+					slice.append_attribute("sum_v_ort") = profilePtr[p].sum_v_ort;
+				}
+			}
+
+			int profSize = (f->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + (int)mApp->worker.moments.size())) : 0;
+			int h = (f->sh.texHeight);
+			int w = (f->sh.texWidth);
+
+			if (f->hasMesh){
+				xml_node textureNode = newFacetResult.append_child("Texture");
+				textureNode.append_attribute("width") = f->sh.texWidth;
+				textureNode.append_attribute("height") = f->sh.texHeight;
+
+				AHIT *hits = (AHIT *)((BYTE *)gHits + (f->sh.hitOffset + sizeof(SHHITS) + profSize + m*w*h*sizeof(AHIT)));
+				std::stringstream countText, sum1perText, sumvortText;
+				countText << '\n'; //better readability in file
+				sum1perText << '\n';
+				sumvortText << '\n';
+				for (int iy = 0; iy < h; iy++) {
+					for (int ix = 0; ix < w; ix++) {
+						countText << hits[iy*f->sh.texWidth + ix].count << '\t';
+						sum1perText << hits[iy*f->sh.texWidth + ix].sum_1_per_ort_velocity << '\t';
+						sumvortText << hits[iy*f->sh.texWidth + ix].sum_v_ort_per_area << '\t';
 					}
-				}
-				
-				int profSize = (f->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + (int)mApp->worker.moments.size())) : 0;
-				int h = (f->sh.texHeight);
-				int w = (f->sh.texWidth);
-
-				if (f->hasMesh){
-					xml_node textureNode = newFacetResult.append_child("Texture");
-					textureNode.append_attribute("width")=f->sh.texWidth;
-					textureNode.append_attribute("height")=f->sh.texHeight;
-					
-					AHIT *hits = (AHIT *)((BYTE *)gHits + (f->sh.hitOffset + sizeof(SHHITS)+profSize + m*w*h*sizeof(AHIT)));
-					std::stringstream countText,sum1perText,sumvortText;
-					countText << '\n'; //better readability in file
+					countText << '\n';
 					sum1perText << '\n';
 					sumvortText << '\n';
-					for (int iy = 0; iy < h; iy++) {
-						for (int ix = 0; ix < w; ix++) {
-							countText << hits[iy*f->sh.texWidth + ix].count << '\t';
-							sum1perText << hits[iy*f->sh.texWidth + ix].sum_1_per_ort_velocity << '\t';
-							sumvortText << hits[iy*f->sh.texWidth + ix].sum_v_ort_per_area << '\t';
-						}
-						countText << '\n';
-						sum1perText << '\n';
-						sumvortText << '\n';
+				}
+				textureNode.append_child("count").append_child(node_cdata).set_value(countText.str().c_str());
+				textureNode.append_child("sum_1_per_v").append_child(node_cdata).set_value(sum1perText.str().c_str());
+				textureNode.append_child("sum_v_ort").append_child(node_cdata).set_value(sumvortText.str().c_str());
+
+			} //end texture
+
+			if (f->sh.countDirection && f->dirCache) {
+				xml_node dirNode = newFacetResult.append_child("Directions");
+				dirNode.append_attribute("width") = f->sh.texWidth;
+				dirNode.append_attribute("height") = f->sh.texHeight;
+
+				VHIT *dirs = (VHIT *)((BYTE *)gHits + f->sh.hitOffset + sizeof(SHHITS) + profSize + (1 + (int)work->moments.size())*w*h*sizeof(AHIT) + m*w*h*sizeof(VHIT));
+
+				std::stringstream dirText, dirCountText;
+				dirText << '\n'; //better readability in file
+				dirCountText << '\n';
+
+				for (int iy = 0; iy < h; iy++) {
+					for (int ix = 0; ix < w; ix++) {
+						dirText << dirs[iy*f->sh.texWidth + ix].sumDir.x << ",";
+						dirText << dirs[iy*f->sh.texWidth + ix].sumDir.y << ",";
+						dirText << dirs[iy*f->sh.texWidth + ix].sumDir.z << "\t";
+						dirCountText << dirs[iy*f->sh.texWidth + ix].count << "\t";
 					}
-					textureNode.append_child("count").append_child(node_cdata).set_value(countText.str().c_str());
-					textureNode.append_child("sum_1_per_v").append_child(node_cdata).set_value(sum1perText.str().c_str());
-					textureNode.append_child("sum_v_ort").append_child(node_cdata).set_value(sumvortText.str().c_str());
-					
-				} //end texture
+					dirText << "\n";
+					dirCountText << "\n";
+				}
+				dirNode.append_child("vel.vectors").append_child(node_cdata).set_value(dirText.str().c_str());
+				dirNode.append_child("count").append_child(node_cdata).set_value(dirCountText.str().c_str());
+			} //end directions
 
-				if (f->sh.countDirection && f->dirCache) {
-					xml_node dirNode = newFacetResult.append_child("Directions");
-					dirNode.append_attribute("width")=f->sh.texWidth;
-					dirNode.append_attribute("height")=f->sh.texHeight;
-
-					VHIT *dirs = (VHIT *)((BYTE *)gHits + f->sh.hitOffset + sizeof(SHHITS)+profSize+(1+(int)work->moments.size())*w*h*sizeof(AHIT)+m*w*h*sizeof(VHIT));
-
-					std::stringstream dirText, dirCountText;
-					dirText << '\n'; //better readability in file
-					dirCountText << '\n';
-
-					for (int iy = 0; iy < h; iy++) {
-						for (int ix = 0; ix < w; ix++) {
-							dirText<< dirs[iy*f->sh.texWidth + ix].sumDir.x<<",";
-							dirText<< dirs[iy*f->sh.texWidth + ix].sumDir.y<<",";
-							dirText<< dirs[iy*f->sh.texWidth + ix].sumDir.z<<"\t";
-							dirCountText<< dirs[iy*f->sh.texWidth + ix].count<<"\t";
-						}
-						dirText << "\n";
-						dirCountText << "\n";
-					}
-					dirNode.append_child("vel.vectors").append_child(node_cdata).set_value(dirText.str().c_str());
-					dirNode.append_child("count").append_child(node_cdata).set_value(dirCountText.str().c_str());
-				} //end directions
-			
 		}
 
 	}
 
 	//Texture Min/Max
 	xml_node minMaxNode = resultNode.append_child("TextureMinMax");
-	minMaxNode.append_child("With_constant_flow").append_child("Pressure").append_attribute("min")=gHits->texture_limits[0].min.all;
+	minMaxNode.append_child("With_constant_flow").append_child("Pressure").append_attribute("min") = gHits->texture_limits[0].min.all;
 	minMaxNode.child("With_constant_flow").child("Pressure").append_attribute("max") = gHits->texture_limits[0].max.all;
 	minMaxNode.child("With_constant_flow").append_child("Density").append_attribute("min") = gHits->texture_limits[1].min.all;
 	minMaxNode.child("With_constant_flow").child("Density").append_attribute("max") = gHits->texture_limits[1].max.all;
@@ -4439,7 +4440,7 @@ void Geometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *pr
 		vertices3[idx].x = vertex.attribute("x").as_double();
 		vertices3[idx].y = vertex.attribute("y").as_double();
 		vertices3[idx].z = vertex.attribute("z").as_double();
-		vertices3[idx].selected= FALSE;
+		vertices3[idx].selected = FALSE;
 		idx++;
 	}
 
@@ -4482,12 +4483,12 @@ void Geometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *pr
 		}
 
 		facets[idx] = new Facet(nbIndex);
-		facets[idx]->LoadXML(facetNode,sh.nbVertex);
+		facets[idx]->LoadXML(facetNode, sh.nbVertex);
 
 		//Set param names for interface
-		if (facets[idx]->sh.sticking_paramId>-1) facets[idx]->userSticking = work->parameters[facets[idx]->sh.sticking_paramId].name;
-		if (facets[idx]->sh.opacity_paramId>-1) facets[idx]->userOpacity = work->parameters[facets[idx]->sh.opacity_paramId].name;
-		if (facets[idx]->sh.outgassing_paramId>-1) facets[idx]->userOutgassing = work->parameters[facets[idx]->sh.outgassing_paramId].name;
+		if (facets[idx]->sh.sticking_paramId > -1) facets[idx]->userSticking = work->parameters[facets[idx]->sh.sticking_paramId].name;
+		if (facets[idx]->sh.opacity_paramId > -1) facets[idx]->userOpacity = work->parameters[facets[idx]->sh.opacity_paramId].name;
+		if (facets[idx]->sh.outgassing_paramId > -1) facets[idx]->userOutgassing = work->parameters[facets[idx]->sh.outgassing_paramId].name;
 
 		idx++;
 	}
@@ -4496,7 +4497,7 @@ void Geometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *pr
 
 	xml_node selNode = interfNode.child("Selections");
 	//int nbS = selNode.select_nodes("Selection").size();
-	
+
 	for (xml_node sNode : selNode.children("Selection")) {
 		ASELECTION s;
 		s.name = _strdup(sNode.attribute("name").as_string());
@@ -4530,11 +4531,11 @@ void Geometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *pr
 	}
 
 	xml_node formulaNode = interfNode.child("Formulas");
-	for (xml_node newFormula:formulaNode.children("Formula")) {
+	for (xml_node newFormula : formulaNode.children("Formula")) {
 		mApp->AddFormula(newFormula.attribute("name").as_string(),
 			newFormula.attribute("expression").as_string());
 	}
-	
+
 	work->gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
 	work->halfLife = simuParamNode.child("Gas").attribute("halfLife").as_double();
 
@@ -4656,9 +4657,9 @@ void Geometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progr
 		facets[idx]->LoadXML(facetNode, sh.nbVertex);
 
 		//Set param names for interface
-		if (facets[idx]->sh.sticking_paramId>-1) facets[idx]->userSticking = work->parameters[facets[idx]->sh.sticking_paramId].name;
-		if (facets[idx]->sh.opacity_paramId>-1) facets[idx]->userOpacity = work->parameters[facets[idx]->sh.opacity_paramId].name;
-		if (facets[idx]->sh.outgassing_paramId>-1) facets[idx]->userOutgassing = work->parameters[facets[idx]->sh.outgassing_paramId].name;
+		if (facets[idx]->sh.sticking_paramId > -1) facets[idx]->userSticking = work->parameters[facets[idx]->sh.sticking_paramId].name;
+		if (facets[idx]->sh.opacity_paramId > -1) facets[idx]->userOpacity = work->parameters[facets[idx]->sh.opacity_paramId].name;
+		if (facets[idx]->sh.outgassing_paramId > -1) facets[idx]->userOutgassing = work->parameters[facets[idx]->sh.outgassing_paramId].name;
 
 		idx++;
 	}
@@ -4732,17 +4733,17 @@ void Geometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progr
 	// Update mesh
 	progressDlg->SetMessage("Building mesh...");
 	for (int i = 0; i < sh.nbFacet; i++) {
-		double p = (double)i / (double)sh.nbFacet;
-		progressDlg->SetProgress(p);
-		Facet *f = facets[i];
-		if (!f->SetTexture(f->sh.texWidthD, f->sh.texHeightD, f->hasMesh)) {
-			char errMsg[512];
-			sprintf(errMsg, "Not enough memory to build mesh on Facet %d. ", i + 1);
-			throw Error(errMsg);
-		}
-		BuildFacetList(f);
-		double nU = Norme(&(f->sh.U));
-		f->tRatio = f->sh.texWidthD / nU;
+	double p = (double)i / (double)sh.nbFacet;
+	progressDlg->SetProgress(p);
+	Facet *f = facets[i];
+	if (!f->SetTexture(f->sh.texWidthD, f->sh.texHeightD, f->hasMesh)) {
+	char errMsg[512];
+	sprintf(errMsg, "Not enough memory to build mesh on Facet %d. ", i + 1);
+	throw Error(errMsg);
+	}
+	BuildFacetList(f);
+	double nU = Norme(&(f->sh.U));
+	f->tRatio = f->sh.texWidthD / nU;
 	}
 	*/
 }
@@ -4755,7 +4756,7 @@ BOOL Geometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker
 	SHGHITS *gHits = (SHGHITS *)buffer;
 	xml_node resultNode = loadXML.child("MolflowResults");
 	xml_node momentsNode = resultNode.child("Moments");
-	double nbMoments= (double)momentsNode.select_nodes("Moment").size();
+	double nbMoments = (double)momentsNode.select_nodes("Moment").size();
 	size_t m = 0;
 	for (xml_node newMoment : momentsNode.children("Moment")) {
 		progressDlg->SetProgress((double)m / nbMoments);
@@ -4769,7 +4770,7 @@ BOOL Geometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker
 			work->distTraveledTotal = hitsNode.attribute("totalDist").as_double();
 			work->nbLeakTotal = hitsNode.attribute("totalLeak").as_llong();
 			//work->maxDesorption=hitsNode.attribute("maxDesorption").as_llong();
-			
+
 			HIT pHits[NBHHIT]; //hits temp storage for loading
 			work->nbHHit = 0;
 			xml_node hitCacheNode = globalNode.child("Hit_Cache");
@@ -4796,29 +4797,29 @@ BOOL Geometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker
 			}
 			work->SetLeak(pLeak, &work->nbLastLeaks, gHits);
 		} //end global node
-		
+
 		xml_node facetResultsNode = newMoment.child("FacetResults");
 		for (xml_node newFacetResult : facetResultsNode.children("Facet")) {
 			int facetId = newFacetResult.attribute("id").as_int();
 			Facet* f = GetFacet(facetId);
 			if (m == 0) { //Now it's a global value, will soon become time-dependent
 				xml_node facetHitNode = newFacetResult.child("Hits");
-				f->sh.counter.hit.nbHit=facetHitNode.attribute("nbHit").as_llong();
-				f->sh.counter.hit.nbDesorbed=facetHitNode.attribute("nbDes").as_llong();
-				f->sh.counter.hit.nbAbsorbed=facetHitNode.attribute("nbAbs").as_llong();
-				f->sh.counter.hit.sum_v_ort=facetHitNode.attribute("sum_v_ort").as_double();
-				f->sh.counter.hit.sum_1_per_ort_velocity=facetHitNode.attribute("sum_1_per_v").as_double();
+				f->sh.counter.hit.nbHit = facetHitNode.attribute("nbHit").as_llong();
+				f->sh.counter.hit.nbDesorbed = facetHitNode.attribute("nbDes").as_llong();
+				f->sh.counter.hit.nbAbsorbed = facetHitNode.attribute("nbAbs").as_llong();
+				f->sh.counter.hit.sum_v_ort = facetHitNode.attribute("sum_v_ort").as_double();
+				f->sh.counter.hit.sum_1_per_ort_velocity = facetHitNode.attribute("sum_1_per_v").as_double();
 			}
 
 			//Profiles
 			if (f->sh.isProfile){
 				xml_node profileNode = newFacetResult.child("Profile");
-				APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + sizeof(SHHITS)+m*sizeof(APROFILE)*PROFILE_SIZE);
+				APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + sizeof(SHHITS) + m*sizeof(APROFILE)*PROFILE_SIZE);
 				size_t id = 0;
 				for (xml_node slice : profileNode.children("Slice")){
-					profilePtr[id].count=slice.attribute("count").as_llong();
-					profilePtr[id].sum_1_per_ort_velocity=slice.attribute("sum_1_per_v").as_double();
-					profilePtr[id].sum_v_ort=slice.attribute("sum_v_ort").as_double();
+					profilePtr[id].count = slice.attribute("count").as_llong();
+					profilePtr[id].sum_1_per_ort_velocity = slice.attribute("sum_1_per_v").as_double();
+					profilePtr[id].sum_v_ort = slice.attribute("sum_v_ort").as_double();
 					id++;
 				}
 			}
@@ -4831,19 +4832,19 @@ BOOL Geometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker
 			if (f->hasMesh){
 				xml_node textureNode = newFacetResult.child("Texture");
 				if (textureNode.attribute("width").as_int() != f->sh.texWidth ||
-					 textureNode.attribute("height").as_int() != f->sh.texHeight) {
+					textureNode.attribute("height").as_int() != f->sh.texHeight) {
 					std::stringstream msg;
-					msg << "Texture size mismatch on facet " << facetId+1 << ".\nExpected: " << f->sh.texWidth << "x" << f->sh.texHeight << "\n"
+					msg << "Texture size mismatch on facet " << facetId + 1 << ".\nExpected: " << f->sh.texWidth << "x" << f->sh.texHeight << "\n"
 						<< "In file: " << textureNode.attribute("width").as_int() << "x" << textureNode.attribute("height").as_int();
 					throw Error(msg.str().c_str());
 				}
 
-				AHIT *hits = (AHIT *)((BYTE *)gHits + (f->sh.hitOffset + sizeof(SHHITS)+profSize + m*w*h*sizeof(AHIT)));
+				AHIT *hits = (AHIT *)((BYTE *)gHits + (f->sh.hitOffset + sizeof(SHHITS) + profSize + m*w*h*sizeof(AHIT)));
 				std::stringstream countText, sum1perText, sumvortText;
-				countText<<textureNode.child_value("count");
-				sum1perText<<textureNode.child_value("sum_1_per_v");
-				sumvortText<<textureNode.child_value("sum_v_ort");
-				
+				countText << textureNode.child_value("count");
+				sum1perText << textureNode.child_value("sum_1_per_v");
+				sumvortText << textureNode.child_value("sum_v_ort");
+
 				for (int iy = 0; iy < h; iy++) {
 					for (int ix = 0; ix < w; ix++) {
 						countText >> hits[iy*f->sh.texWidth + ix].count;
@@ -4858,12 +4859,12 @@ BOOL Geometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker
 				if (dirNode.attribute("width").as_int() != f->sh.texWidth ||
 					dirNode.attribute("height").as_int() != f->sh.texHeight) {
 					std::stringstream msg;
-					msg << "Direction texture size mismatch on facet " << facetId+1 << ".\nExpected: " << f->sh.texWidth << "x" << f->sh.texHeight << "\n"
+					msg << "Direction texture size mismatch on facet " << facetId + 1 << ".\nExpected: " << f->sh.texWidth << "x" << f->sh.texHeight << "\n"
 						<< "In file: " << dirNode.attribute("width").as_int() << "x" << dirNode.attribute("height").as_int();
 					throw Error(msg.str().c_str());
 				}
 
-				VHIT *dirs = (VHIT *)((BYTE *)gHits + f->sh.hitOffset + sizeof(SHHITS)+profSize + (1 + (int)work->moments.size())*w*h*sizeof(AHIT)+m*w*h*sizeof(VHIT));
+				VHIT *dirs = (VHIT *)((BYTE *)gHits + f->sh.hitOffset + sizeof(SHHITS) + profSize + (1 + (int)work->moments.size())*w*h*sizeof(AHIT) + m*w*h*sizeof(VHIT));
 
 				std::stringstream dirText, dirCountText;
 				dirText << dirNode.child_value("vel.vectors");
@@ -4873,7 +4874,7 @@ BOOL Geometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker
 					for (int ix = 0; ix < w; ix++) {
 						std::string component;
 						std::getline(dirText, component, ',');
-						dirs[iy*f->sh.texWidth + ix].sumDir.x =std::stod(component);
+						dirs[iy*f->sh.texWidth + ix].sumDir.x = std::stod(component);
 						std::getline(dirText, component, ',');
 						dirs[iy*f->sh.texWidth + ix].sumDir.y = std::stod(component);
 						dirText >> dirs[iy*f->sh.texWidth + ix].sumDir.z;
@@ -4887,19 +4888,19 @@ BOOL Geometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker
 	} //end moment
 
 	xml_node minMaxNode = resultNode.child("TextureMinMax");
-	gHits->texture_limits[0].min.all=minMaxNode.child("With_constant_flow").child("Pressure").attribute("min").as_double();
-	gHits->texture_limits[0].max.all=minMaxNode.child("With_constant_flow").child("Pressure").attribute("max").as_double();
-	gHits->texture_limits[1].min.all=minMaxNode.child("With_constant_flow").child("Density").attribute("min").as_double();
-	gHits->texture_limits[1].max.all=minMaxNode.child("With_constant_flow").child("Density").attribute("max").as_double();
-	gHits->texture_limits[2].min.all=minMaxNode.child("With_constant_flow").child("Imp.rate").attribute("min").as_double();
-	gHits->texture_limits[2].max.all=minMaxNode.child("With_constant_flow").child("Imp.rate").attribute("max").as_double();
+	gHits->texture_limits[0].min.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("min").as_double();
+	gHits->texture_limits[0].max.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("max").as_double();
+	gHits->texture_limits[1].min.all = minMaxNode.child("With_constant_flow").child("Density").attribute("min").as_double();
+	gHits->texture_limits[1].max.all = minMaxNode.child("With_constant_flow").child("Density").attribute("max").as_double();
+	gHits->texture_limits[2].min.all = minMaxNode.child("With_constant_flow").child("Imp.rate").attribute("min").as_double();
+	gHits->texture_limits[2].max.all = minMaxNode.child("With_constant_flow").child("Imp.rate").attribute("max").as_double();
 
-	gHits->texture_limits[0].min.moments_only=minMaxNode.child("Moments_only").child("Pressure").attribute("min").as_double() ;
-	gHits->texture_limits[0].max.moments_only=minMaxNode.child("Moments_only").child("Pressure").attribute("max").as_double() ;
-	gHits->texture_limits[1].min.moments_only=minMaxNode.child("Moments_only").child("Density").attribute("min").as_double() ;
-	gHits->texture_limits[1].max.moments_only=minMaxNode.child("Moments_only").child("Density").attribute("max").as_double() ;
-	gHits->texture_limits[2].min.moments_only=minMaxNode.child("Moments_only").child("Imp.rate").attribute("min").as_double() ;
-	gHits->texture_limits[2].max.moments_only=minMaxNode.child("Moments_only").child("Imp.rate").attribute("max").as_double() ;
+	gHits->texture_limits[0].min.moments_only = minMaxNode.child("Moments_only").child("Pressure").attribute("min").as_double();
+	gHits->texture_limits[0].max.moments_only = minMaxNode.child("Moments_only").child("Pressure").attribute("max").as_double();
+	gHits->texture_limits[1].min.moments_only = minMaxNode.child("Moments_only").child("Density").attribute("min").as_double();
+	gHits->texture_limits[1].max.moments_only = minMaxNode.child("Moments_only").child("Density").attribute("max").as_double();
+	gHits->texture_limits[2].min.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("min").as_double();
+	gHits->texture_limits[2].max.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("max").as_double();
 
 	ReleaseDataport(dpHit);
 	return true;

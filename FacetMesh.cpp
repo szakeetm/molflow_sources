@@ -233,10 +233,7 @@ FacetMesh::FacetMesh(Worker *w):GLWindow() {
 	SetTitle("Advanced facet parameters");
 
 	Refresh(0, NULL);
-	// Position dialog next to Facet parameters
-	int facetX, facetY, facetW, facetH;
-	mApp->facetPanel->GetBounds(&facetX, &facetY, &facetW, &facetH);
-	SetBounds(facetX - wD - 10, facetY + 20, wD, hD);
+	Reposition(wD, hD);
 
 	RestoreDeviceObjects();
 }
@@ -536,19 +533,19 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 				facetUseDesFile->SetSelectedValue("...");
 			}
 			char tmp[64];
-			if (fluxAEqual) sprintf(tmp, "%.3E", f0->totalFlux / f0->sh.area); else sprintf(tmp, "...");
+			if (fluxAEqual) sprintf(tmp, "%.2E", f0->totalFlux / f0->sh.area); else sprintf(tmp, "...");
 			fileFluxText->SetText(tmp);
-			if (doseAEqual) sprintf(tmp, "%.3E", f0->totalDose / f0->sh.area); else sprintf(tmp, "...");
+			if (doseAEqual) sprintf(tmp, "%.2E", f0->totalDose / f0->sh.area); else sprintf(tmp, "...");
 			fileDoseText->SetText(tmp);
-			if (yieldEqual) sprintf(tmp, "%.3E", f0->totalOutgassing / (1.38E-23*f0->sh.temperature) / f0->totalFlux); else sprintf(tmp, "...");
+			if (yieldEqual) sprintf(tmp, "%.2E", f0->totalOutgassing / (1.38E-23*f0->sh.temperature) / f0->totalFlux); else sprintf(tmp, "...");
 			fileYieldText->SetText(tmp);
 			if (useOutgMapE) {
 				mApp->facetFlow->SetEditable(!f0->sh.useOutgassingFile);
 				mApp->facetFlowArea->SetEditable(!f0->sh.useOutgassingFile);
 				if (f0->sh.useOutgassingFile) {
-					sprintf(tmp, "%.2E", sumOutgassing);
+					sprintf(tmp, "%.1E", sumOutgassing * 10.00); //10.00: Pa*m3/s -> mbar*l/s
 					mApp->facetFlow->SetText(tmp);
-					sprintf(tmp, "%.2E", sumOutgassing / sumArea);
+					sprintf(tmp, "%.1E", sumOutgassing * 10.00/ sumArea);
 					mApp->facetFlowArea->SetText(tmp);
 				}
 				else {
@@ -599,6 +596,15 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 	}
 
 	UpdateSize();
+}
+
+void FacetMesh::Reposition(int wD, int hD) {
+	if (wD == 0) wD = this->GetWidth();
+	if (hD == 0) hD = this->GetHeight();
+	// Position dialog next to Facet parameters
+	int facetX, facetY, facetW, facetH;
+	mApp->facetPanel->GetBounds(&facetX, &facetY, &facetW, &facetH);
+	SetBounds(facetX - wD - 10, facetY + 20, wD, hD);
 }
 
 

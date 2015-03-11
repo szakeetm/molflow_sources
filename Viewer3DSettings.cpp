@@ -133,10 +133,7 @@ Viewer3DSettings::Viewer3DSettings():GLWindow() {
   cancelButton->SetBounds(wD-85,hD-43,80,19);
   Add(cancelButton);
 
-  // Position dialog next to Viewer parameters
-  int toggleX, toggleY, toggleW, toggleH;
-  mApp->togglePanel->GetBounds(&toggleX, &toggleY, &toggleW, &toggleH);
-  SetBounds(toggleX - wD - 10, toggleY + 20, wD, hD);
+  Reposition(wD,hD);
 
   RestoreDeviceObjects();
 
@@ -145,6 +142,15 @@ Viewer3DSettings::Viewer3DSettings():GLWindow() {
 }
 
 // --------------------------------------------------------------------
+
+void Viewer3DSettings :: Reposition(int wD, int hD) {
+	// Position dialog next to Viewer parameters
+	if (wD == 0) wD= this->GetWidth();
+	if (hD == 0) hD= this->GetHeight();
+	int toggleX, toggleY, toggleW, toggleH;
+	mApp->togglePanel->GetBounds(&toggleX, &toggleY, &toggleW, &toggleH);
+	SetBounds(toggleX - wD - 10, toggleY + 20, wD, hD);
+}
 
 void Viewer3DSettings::Refresh(Geometry *s,GeometryViewer *v) {
 
