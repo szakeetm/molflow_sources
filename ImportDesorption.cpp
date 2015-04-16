@@ -90,7 +90,7 @@ ImportDesorption::ImportDesorption():GLWindow() {
 	l4->SetBounds(190,152,10,21);
 	Add(l4);
 
-	r1=new GLToggle(0,"Use texture values without conversion");
+	r1=new GLToggle(0,"Outgassing [mbar.l/s] equals original texture values");
 	r1->SetBounds(15,200,150,21);
 	Add(r1);
 
@@ -111,7 +111,7 @@ ImportDesorption::ImportDesorption():GLWindow() {
 	alphaLabel->SetBounds(232,224,60,19);
 	Add(alphaLabel);
 
-	r3=new GLToggle(0,"Use conversion file:");
+	r3=new GLToggle(0,"Use molecule yield file:");
 	r3->SetBounds(15,250,100,21);
 	Add(r3);
 
@@ -227,7 +227,7 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 				"%d with textures that can be imported\n"
 				,nbFacet,nbTextured);
 			analysisResultLabel->SetText(tmp);
-			
+			mApp->UpdateFacetParams(TRUE); //Update selection
 		} else if (src==setButton) {
 
 			//validate user input

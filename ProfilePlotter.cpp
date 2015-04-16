@@ -33,7 +33,7 @@ static const char* profType[] = {
 	"Speed [m/s]",
 	"Ort. velocity [m/s]" };
 
-ProfilePlotter::ProfilePlotter() :GLWindow() {
+ProfilePlotter::ProfilePlotter(Worker* w) :GLWindow() {
 
 	int wD = 650;
 	int hD = 400;
@@ -41,7 +41,7 @@ ProfilePlotter::ProfilePlotter() :GLWindow() {
 	SetTitle("Profile plotter");
 	SetIconfiable(TRUE);
 	nbView = 0;
-	worker = NULL;
+	worker = w;
 	lastUpdate = 0.0f;
 
 	nbColors = 8;
@@ -181,9 +181,9 @@ void ProfilePlotter::Refresh() {
 
 }
 
-void ProfilePlotter::Display(Worker *w) {
+void ProfilePlotter::Display() {
 
-	worker = w;
+	
 	Refresh();
 	SetVisible(TRUE);
 
@@ -532,4 +532,12 @@ std::vector<int> ProfilePlotter::GetViews() {
 	for (size_t i = 0; i < nbView; i++)
 		v.push_back(views[i]->userData);
 	return v;
+}
+
+BOOL ProfilePlotter::IsLogScaled() {
+	return chart->GetY1Axis()->GetScale();
+}
+void ProfilePlotter::SetLogScaled(BOOL logScale){
+	chart->GetY1Axis()->SetScale(logScale);
+	logYToggle->SetState(logScale);
 }

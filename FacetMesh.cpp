@@ -124,7 +124,7 @@ FacetMesh::FacetMesh(Worker *w):GLWindow() {
 	mPanel->SetCompBounds(l7, 10, 22, 43, 12);
 	mPanel->Add(l7);
 
-	quickApply = new GLButton(0, "<- Quick Apply");
+	quickApply = new GLButton(0, "<- Apply view");
 	vPanel->SetCompBounds(quickApply, 200, 15, 99, 20);
 	vPanel->Add(quickApply);
 
@@ -446,7 +446,7 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 		superDestE = superDestE && (f0->sh.superDest == f->sh.superDest);
 		superIdxE = superIdxE && (f0->sh.superIdx == f->sh.superIdx);
 		reflectTypeE = reflectTypeE && (f0->sh.reflectType == f->sh.reflectType);
-		hasOutgMapE = hasOutgMapE && (f0->hasOutgassingMap == f->hasOutgassingMap);
+		hasOutgMapE = hasOutgMapE && (f0->hasOutgassingFile == f->hasOutgassingFile);
 		useOutgMapE = useOutgMapE && (f0->sh.useOutgassingFile == f->sh.useOutgassingFile);
 		dynOutgEqual = dynOutgEqual && IsEqual(f0->totalOutgassing, f->totalOutgassing,1E-20);
 		dynOutgAEqual = dynOutgAEqual && IsEqual(f0->totalOutgassing / f0Area , f->totalOutgassing / fArea,1E-20);
@@ -509,9 +509,9 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 	if (accFactorE) facetAccFactor->SetText(f0->sh.accomodationFactor); else facetAccFactor->SetText("...");
 	if (reflectTypeE) facetReflType->SetSelectedIndex(f0->sh.reflectType); else facetReflType->SetSelectedValue("...");
 	if (hasOutgMapE) { //all selected equally HAVE or equally DON'T HAVE outgassing maps
-		//mApp->facetFlow->SetEditable(!f0->hasOutgassingMap);
-		//mApp->facetFlowArea->SetEditable(!f0->hasOutgassingMap);
-		if (!f0->hasOutgassingMap) { //All selected DON'T HAVE outgassing maps
+		//mApp->facetFlow->SetEditable(!f0->hasOutgassingFile);
+		//mApp->facetFlowArea->SetEditable(!f0->hasOutgassingFile);
+		if (!f0->hasOutgassingFile) { //All selected DON'T HAVE outgassing maps
 			facetUseDesFile->SetSize(1);
 			facetUseDesFile->SetSelectedIndex(0); //no map
 			facetUseDesFile->SetSelectedValue("No map loaded");
@@ -728,7 +728,7 @@ BOOL FacetMesh::Apply() {
 		int missingMapId;
 		if (useMapA) {
 			for (int i = 0; i<geom->GetNbFacet(); i++) {
-				if (geom->GetFacet(i)->selected && !geom->GetFacet(i)->hasOutgassingMap) {
+				if (geom->GetFacet(i)->selected && !geom->GetFacet(i)->hasOutgassingFile) {
 					missingMap = TRUE;
 					missingMapId = i;
 				}
@@ -967,7 +967,6 @@ void FacetMesh::ProcessMessage(GLComponent *src,int message) {
 				//User values
 				mApp->facetFlow->SetEditable(TRUE);
 				mApp->facetFlowArea->SetEditable(TRUE);
-
 			}
 			else { //use desorption file
 				mApp->facetFlow->SetEditable(FALSE);

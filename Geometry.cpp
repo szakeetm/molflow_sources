@@ -3672,7 +3672,7 @@ void Geometry::ImportDesorption_DES(FileReader *file) {
 	// Block dpHit during the whole disc writing
 
 	for (int i = 0; i < sh.nbFacet; i++) { //clear previous desorption maps
-		facets[i]->hasOutgassingMap = FALSE;
+		facets[i]->hasOutgassingFile = FALSE;
 		facets[i]->sh.useOutgassingFile = FALSE;
 		facets[i]->sh.desorbType = DES_NONE; //clear previously set desorptions
 		facets[i]->selected = FALSE;
@@ -3689,7 +3689,7 @@ void Geometry::ImportDesorption_DES(FileReader *file) {
 		}
 
 		Facet *f = facets[facetId];
-		f->hasOutgassingMap = TRUE;
+		f->hasOutgassingFile = TRUE;
 		f->sh.useOutgassingFile = TRUE; //turn on file usage by default
 		f->sh.desorbType = DES_COSINE; //auto-set to cosine
 		Select(f);
@@ -3965,7 +3965,7 @@ void Geometry::ImportDesorption_SYN(
 		if (!IS_ZERO(xdims[i])) { //has texture
 			Facet *f = GetFacet(i);
 			if (f->selected) {
-				f->hasOutgassingMap = TRUE;
+				f->hasOutgassingFile = TRUE;
 				f->sh.useOutgassingFile = TRUE; //turn on file usage by default
 				f->sh.desorbType = DES_COSINE; //auto-set to cosine
 			}
@@ -3991,20 +3991,20 @@ void Geometry::ImportDesorption_SYN(
 				f->outgassingMap = (double*)malloc(width*height*sizeof(double));
 				if (!f->outgassingMap) throw Error("Not enough memory to store outgassing map.");
 				f->totalDose = f->totalOutgassing = f->totalFlux = 0.0;
+			}
 
+			for (iy = 0; iy < height; iy++) {
+				for (ix = 0; ix < width; ix++) {
+					int index = iy*width + ix;
+					//Read original values
+					llong MC = file->ReadLLong();
+					double cellArea = 1.0;
+					if (version2 >= 7) cellArea = file->ReadDouble();
+					if (cellArea < 1E-10) cellArea = 1.0; //to avoid division by zero
+					double flux = file->ReadDouble() / no_scans; //not normalized by cell area
+					double power = file->ReadDouble() / no_scans; //not normalized by cell area
 
-				for (iy = 0; iy < height; iy++) {
-					for (ix = 0; ix < width; ix++) {
-						int index = iy*width + ix;
-						//Read original values
-						llong MC = file->ReadLLong();
-						double cellArea = 1.0;
-						if (version2 >= 7) cellArea = file->ReadDouble();
-						if (cellArea < 1E-10) cellArea = 1.0; //to avoid division by zero
-						double flux = file->ReadDouble() / no_scans; //not normalized by cell area
-						double power = file->ReadDouble() / no_scans; //not normalized by cell area
-
-
+					if (f->selected) {
 						//Calculate dose
 						double dose;
 						if (source == 0) dose = (double)MC*time;
@@ -4017,9 +4017,9 @@ void Geometry::ImportDesorption_SYN(
 							//Convert to outgassing
 
 							if (mode == 0) {
-								if (source == 0) outgassing = (double)MC;
-								else if (source == 1) outgassing = flux * 0.100; //Division by 10 because the user will want to see the same outgassing in mbar*l/s
-								else if (source == 2) outgassing = power * 0.100; //(Outgassing is stored internally in Pa*m3/s, for consistent SI unit calculations)
+								if (source == 0) outgassing = (double)MC * 0.100 / 1.38E-23 / f->sh.temperature;
+								else if (source == 1) outgassing = flux * 0.100 / 1.38E-23 / f->sh.temperature; //Division by 10 because the user will want to see the same outgassing in mbar*l/s
+								else if (source == 2) outgassing = power * 0.100 / 1.38E-23 / f->sh.temperature; //(Outgassing is stored internally in Pa*m3/s, for consistent SI unit calculations)
 							}
 							else if (mode == 1) {
 								double moleculePerPhoton = eta0*pow(dose, alpha);
@@ -4038,11 +4038,11 @@ void Geometry::ImportDesorption_SYN(
 						f->totalDose += flux*time;
 						f->totalFlux += flux;
 						f->totalOutgassing += f->outgassingMap[index];
-
-					}
+					} //if selected
 				}
 			}
 			file->ReadKeyword("}");
+
 
 		}
 	}
@@ -4206,6 +4206,7 @@ void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress
 	if (mApp->profilePlotter) {
 		std::vector<int> ppViews = mApp->profilePlotter->GetViews();
 		xml_node profilePlotterNode = interfNode.append_child("ProfilePlotter");
+		profilePlotterNode.append_child("Parameters").append_attribute("logScale") = mApp->profilePlotter->IsLogScaled();
 		xml_node viewsNode = profilePlotterNode.append_child("Views");
 		for (int v : ppViews) {
 			xml_node view = viewsNode.append_child("View");
@@ -4534,6 +4535,21 @@ void Geometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *pr
 	for (xml_node newFormula : formulaNode.children("Formula")) {
 		mApp->AddFormula(newFormula.attribute("name").as_string(),
 			newFormula.attribute("expression").as_string());
+	}
+
+	xml_node ppNode = interfNode.child("ProfilePlotter");
+	if (ppNode) {
+		if (!mApp->profilePlotter) mApp->profilePlotter = new ProfilePlotter(&mApp->worker);
+		xml_node paramsNode = ppNode.child("Parameters");
+		if (paramsNode && paramsNode.attribute("logScale"))
+			mApp->profilePlotter->SetLogScaled(paramsNode.attribute("logScale").as_bool());
+		xml_node viewsNode = ppNode.child("Views");
+		if (viewsNode) {
+			std::vector<int> views;
+			for (xml_node view : viewsNode.children("View"))
+				views.push_back(view.attribute("facetId").as_int());
+			mApp->profilePlotter->SetViews(views);
+		}
 	}
 
 	work->gasMass = simuParamNode.child("Gas").attribute("mass").as_double();

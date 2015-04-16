@@ -74,7 +74,7 @@ public:
 
   //Dynamic outgassing stuff
   BOOL textureError;   // Disable rendering if the texture has an error
-  BOOL hasOutgassingMap; //true if a desorption file was loaded and had info about this facet
+  BOOL hasOutgassingFile; //true if a desorption file was loaded and had info about this facet
   double totalFlux;
   double totalOutgassing;
   double totalDose;

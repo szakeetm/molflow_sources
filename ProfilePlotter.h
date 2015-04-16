@@ -34,10 +34,10 @@ class ProfilePlotter : public GLWindow {
 public:
 
   // Construction
-  ProfilePlotter();
+  ProfilePlotter(Worker *w);
 
   // Component method
-  void Display(Worker *w);
+  void Display();
   void Refresh();
   void Update(float appTime,BOOL force=FALSE);
   void Reset();
@@ -48,6 +48,8 @@ public:
   void addView(int facet);
   std::vector<int> GetViews();
   void SetViews(std::vector<int> views);
+  BOOL IsLogScaled();
+  void SetLogScaled(BOOL logScale);
 
 private:  
   void remView(int facet);

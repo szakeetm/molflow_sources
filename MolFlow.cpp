@@ -37,7 +37,7 @@ GNU General Public License for more details.
 #define APP_NAME "MolFlow+ development version 64-bit (Compiled "__DATE__" "__TIME__") DEBUG MODE"
 #else
 //#define APP_NAME "Molflow+ development version ("__DATE__")"
-#define APP_NAME "Molflow+ 2.6.6 64-bit ("__DATE__")"
+#define APP_NAME "Molflow+ 2.6.8 64-bit ("__DATE__")"
 #endif
 
 /*
@@ -1168,9 +1168,9 @@ void MolFlow::ApplyFacetParams() {
 	BOOL outgassingNotNumber;
 	//Calculate flow
 	if (facetFILabel->GetState() && strcmp(facetFlow->GetText(), "...") != 0 && facetDesType->GetSelectedIndex() != 0
-		&& strcmp(facetDesType->GetSelectedValue(), "...") != 0) {  //We want outgassing
+		&& strcmp(facetDesType->GetSelectedValue(), "...") != 0 && facetFlow->IsEditable()) {  //We want outgassing
 		if (facetFlow->GetNumber(&flow)) { //If we can parse the number
-			if (facetFlow->IsEditable() && !(flow > 0.0)) {
+			if (!(flow > 0.0)) {
 				GLMessageBox::Display("Outgassing must be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
@@ -1189,7 +1189,7 @@ void MolFlow::ApplyFacetParams() {
 	//Calculate flow
 
 	if (facetFIAreaLabel->GetState() && strcmp(facetFlowArea->GetText(), "...") != 0
-		&& facetDesType->GetSelectedIndex() != 0 && strcmp(facetDesType->GetSelectedValue(), "...") != 0) { //We want outgassing per area
+		&& facetDesType->GetSelectedIndex() != 0 && strcmp(facetDesType->GetSelectedValue(), "...") != 0 && facetFlowArea->IsEditable()) { //We want outgassing per area
 		if (facetFlowArea->GetNumber(&flowA)) { //Can be parsed as number
 			if (!(flowA > 0.0)) {
 				GLMessageBox::Display("Outgassing per area must be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1333,7 +1333,7 @@ void MolFlow::UpdateFacetlistSelected() {
 // Desc: Update selected facet parameters.
 //-----------------------------------------------------------------------------
 
-void MolFlow::UpdateFacetParams(BOOL updateSelection) {
+void MolFlow::UpdateFacetParams(BOOL updateSelection) { //Calls facetMesh->Refresh()
 
 	char tmp[256];
 
@@ -1471,7 +1471,7 @@ void MolFlow::UpdateFacetParams(BOOL updateSelection) {
 			facetFlowArea->SetText("");
 		}
 
-		if (facetMesh) facetMesh->Refresh(count, selection);
+		if (facetMesh) facetMesh->Refresh(count, selection); //Refresh advanced facet parameters panel
 		if (updateSelection) {
 
 			if (nbSel > 1000 || geom->GetNbFacet() > 50000) { //If it would take too much time to look up every selected facet in the list
@@ -2673,6 +2673,11 @@ void MolFlow::LoadFile(char *fName) {
 		ClearParameters();
 		ClearAllSelections();
 		ClearAllViews();
+		if (profilePlotter) profilePlotter->Reset();
+		if (timewisePlotter) timewisePlotter->Refresh();
+		if (pressureEvolution) pressureEvolution->Reset();
+		if (timewisePlotter) timewisePlotter->Reset();
+
 		worker.LoadGeometry(fullName);
 
 		Geometry *geom = worker.GetGeometry();
@@ -2695,10 +2700,6 @@ void MolFlow::LoadFile(char *fName) {
 
 
 		UpdateStructMenu();
-		if (profilePlotter) profilePlotter->Reset();
-		if (timewisePlotter) timewisePlotter->Refresh();
-		if (pressureEvolution) pressureEvolution->Reset();
-		if (timewisePlotter) timewisePlotter->Reset();
 		UpdateCurrentDir(fullName);
 
 		// Check non simple polygon
@@ -3223,8 +3224,8 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			alignFacet->SetVisible(TRUE);
 			break;
 		case MENU_FACET_PROFPLOTTER:
-			if (!profilePlotter) profilePlotter = new ProfilePlotter();
-			profilePlotter->Display(&worker);
+			if (!profilePlotter) profilePlotter = new ProfilePlotter(&worker);
+			profilePlotter->Display();
 			break;
 
 
@@ -3449,7 +3450,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		case MENU_SELECT_HASDESFILE:
 			geom->Unselect();
 			for (int i = 0; i < geom->GetNbFacet(); i++)
-				if (geom->GetFacet(i)->hasOutgassingMap)
+				if (geom->GetFacet(i)->hasOutgassingFile)
 					geom->Select(i);
 			geom->UpdateSelection();
 			UpdateFacetParams(TRUE);
@@ -3991,8 +3992,8 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			}
 		}
 		else if (src == profilePlotterBtn) {
-			if (!profilePlotter) profilePlotter = new ProfilePlotter();
-			if (!profilePlotter->IsVisible()) profilePlotter->Display(&worker);
+			if (!profilePlotter) profilePlotter = new ProfilePlotter(&worker);
+			if (!profilePlotter->IsVisible()) profilePlotter->Display();
 			else profilePlotter->SetVisible(FALSE);
 		}
 		else if (src == texturePlotterBtn) {
@@ -4284,6 +4285,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 
 	try{
 		geom->BuildPipe(L, R, 0, step);
+		worker.CalcTotalOutgassing();
 	}
 	catch (Error &e) {
 		GLMessageBox::Display((char *)e.GetMsg(), "Error building pipe", GLDLG_OK, GLDLG_ICONERROR);

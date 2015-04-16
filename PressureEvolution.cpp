@@ -329,8 +329,7 @@ void PressureEvolution::refreshViews() {
 				}
 				case 1: {//Pressure
 					scaleY = 1.0 / nbDes / (f->sh.area / (double)PROFILE_SIZE*1E-4)* worker->gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
-					scaleY *= ((worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
-						/ worker->timeWindowSize));
+					scaleY *= worker->totalDesorbedMolecules / worker->timeWindowSize;
 					if (f->sh.is2sided) scaleY *= 0.5;
 					double val = 0.0;
 					if (modeCombo->GetSelectedIndex() == 1) //plot one slice
@@ -345,8 +344,7 @@ void PressureEvolution::refreshViews() {
 				}
 				case 2: {//Particle density
 					scaleY = 1.0 / nbDes / (f->sh.area / (double)PROFILE_SIZE*1E-4);
-					scaleY *= ((worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
-						/ worker->timeWindowSize));
+					scaleY *= worker->totalDesorbedMolecules / worker->timeWindowSize;
 					if (f->sh.is2sided) scaleY *= 0.5;
 					double val = 0.0;
 					if (modeCombo->GetSelectedIndex() == 1) //plot one slice

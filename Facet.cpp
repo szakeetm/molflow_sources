@@ -23,7 +23,7 @@
 #include <string.h>
 #include <math.h>
 #include "GLToolkit.h"
-
+#include <sstream>
 
 using namespace pugi;
 /*
@@ -98,7 +98,7 @@ Facet::Facet(int nbIndex) {
 
 	sh.isMoving = FALSE;
 
-	hasOutgassingMap = FALSE;
+	hasOutgassingFile = FALSE;
 	outgassingMap = NULL;
 	totalFlux = totalOutgassing = totalDose = 0.0;
 
@@ -119,7 +119,7 @@ Facet::Facet(int nbIndex) {
 	selectedElem.height = 0;
 	dirCache = NULL;
 	textureError = FALSE;
-	hasOutgassingMap = FALSE;
+	hasOutgassingFile = FALSE;
 
 	userOutgassing = "";
 	userOpacity = "";
@@ -301,7 +301,8 @@ void Facet::LoadXML(xml_node f,int nbVertex) {
 	sh.desorbType = f.child("Outgassing").attribute("desType").as_int();
 	sh.desorbTypeN = f.child("Outgassing").attribute("desExponent").as_double();
 	sh.outgassing_paramId = f.child("Outgassing").attribute("parameterId").as_int();
-	//TO DO: store dynamic outgassing
+	hasOutgassingFile=f.child("Outgassing").attribute("hasOutgassingFile").as_int();
+	sh.useOutgassingFile = f.child("Outgassing").attribute("useOutgassingFile").as_int();
 	sh.temperature = f.child("Temperature").attribute("value").as_double();
 	sh.accomodationFactor = f.child("Temperature").attribute("accFactor").as_double();
 	sh.reflectType = f.child("Reflection").attribute("type").as_int();
@@ -324,7 +325,29 @@ void Facet::LoadXML(xml_node f,int nbVertex) {
 
 	textureVisible = f.child("ViewSettings").attribute("textureVisible").as_int();
 	volumeVisible = f.child("ViewSettings").attribute("volumeVisible").as_int();
-	
+
+	xml_node outgNode = f.child("DynamicOutgassing");
+	if ((hasOutgassingFile) && outgNode && outgNode.child("map")) {
+		sh.outgassingMapWidth = outgNode.attribute("width").as_int();
+		sh.outgassingMapHeight = outgNode.attribute("height").as_int();
+		sh.outgassingFileRatio = outgNode.attribute("ratio").as_double();
+		totalDose = outgNode.attribute("totalDose").as_double();
+		totalOutgassing = outgNode.attribute("totalOutgassing").as_double();
+		totalFlux = outgNode.attribute("totalFlux").as_double();
+
+		std::stringstream outgText;
+		outgText << outgNode.child_value("map");
+		outgassingMap = (double*)malloc(sh.outgassingMapWidth*sh.outgassingMapHeight*sizeof(double));
+
+		for (int iy = 0; iy < sh.outgassingMapHeight; iy++) {
+			for (int ix = 0; ix < sh.outgassingMapWidth; ix++) {
+				outgText >> outgassingMap[iy*sh.outgassingMapWidth + ix];
+			}
+		}
+
+	}
+	else hasOutgassingFile = sh.useOutgassingFile = 0; //if outgassing map was incorrect, don't use it
+
 	UpdateFlags();
 }
 
@@ -1601,7 +1624,8 @@ void  Facet::SaveXML_geom(pugi::xml_node f){
 	e.append_attribute("parameterId") = sh.outgassing_paramId;
 	e.append_attribute("desType") = sh.desorbType;
 	e.append_attribute("desExponent") = sh.desorbTypeN;
-	e.append_attribute("dynamicFromFile") = sh.useOutgassingFile;
+	e.append_attribute("hasOutgassingFile") = hasOutgassingFile;
+	e.append_attribute("useOutgassingFile") = sh.useOutgassingFile;
 
 	e = f.append_child("Temperature");
 	e.append_attribute("value") = sh.temperature;
@@ -1664,4 +1688,26 @@ void  Facet::SaveXML_geom(pugi::xml_node f){
 		indice.append_attribute("id") = i;
 		indice.append_attribute("vertex") = indices[i];
 	}
+
+	if (hasOutgassingFile){
+		xml_node textureNode = f.append_child("DynamicOutgassing");
+		textureNode.append_attribute("width") = sh.outgassingMapWidth;
+		textureNode.append_attribute("height") = sh.outgassingMapHeight;
+		textureNode.append_attribute("ratio") = sh.outgassingFileRatio;
+		textureNode.append_attribute("totalDose") = totalDose;
+		textureNode.append_attribute("totalOutgassing") = totalOutgassing;
+		textureNode.append_attribute("totalFlux") = totalFlux;
+
+		std::stringstream outgText;
+		outgText << '\n'; //better readability in file
+		for (int iy = 0; iy < sh.outgassingMapHeight; iy++) {
+			for (int ix = 0; ix < sh.outgassingMapWidth; ix++) {
+				outgText << outgassingMap[iy*sh.outgassingMapWidth + ix] << '\t';
+			}
+			outgText << '\n';
+		}
+		textureNode.append_child("map").append_child(node_cdata).set_value(outgText.str().c_str());
+
+	} //end texture
+
 }
