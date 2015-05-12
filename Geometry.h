@@ -106,6 +106,7 @@ public:
   int  GetNbSelected();
   void UpdateSelection();
   void SwapNormal();
+  void Extrude(VERTEX3D offset, double distance=1.0);
   void RemoveSelected();
   void RemoveSelectedVertex();
   void RemoveFromStruct(int numToDel);
@@ -115,6 +116,7 @@ public:
   void MoveSelectedVertex(double dX,double dY,double dZ,BOOL copy,Worker *worker);
   void ScaleSelectedVertices(VERTEX3D invariant,double factor,BOOL copy,Worker *worker);
   void ScaleSelectedFacets(VERTEX3D invariant,double factorX,double factorY,double factorZ,BOOL copy,Worker *worker);
+  void SplitSelectedFacets(VERTEX3D base, VERTEX3D normal, Worker *worker);
   void MoveSelectedFacets(double dX,double dY,double dZ,BOOL copy,Worker *worker);
   void MirrorSelectedFacets(VERTEX3D P0,VERTEX3D N,BOOL copy,Worker *worker);
   void RotateSelectedFacets(VERTEX3D AXIS_P0,VERTEX3D AXIS_DIR,double theta,BOOL copy,Worker *worker);

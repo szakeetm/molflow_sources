@@ -4044,7 +4044,7 @@ void Geometry::ImportDesorption_SYN(
 			file->ReadKeyword("}");
 
 
-		}
+		} //if has texture
 	}
 
 	//end

@@ -403,7 +403,7 @@ void UpdateACHits(Dataport *dpHit,int prIdx,DWORD timeout) {
     for(j=0;j<f->sh.texHeight && f->sh.opacity==1.0f;j++) {
       for(i=0;i<f->sh.texWidth;i++) {
         ACFLOAT val = (ACFLOAT)(sHandle->acDensity[idx]);
-        shTexture[i + j*f->sh.texWidth].count = val;
+        shTexture[i + j*f->sh.texWidth].sum_v_ort_per_area = val; //was .count
         if( val > gHits->texture_limits[0].max.all ) gHits->texture_limits[0].max.all = val;
         // Normalize over facet area
         sumVal += (double)(sHandle->acDensity[idx]*sHandle->acArea[idx]/f->sh.area);

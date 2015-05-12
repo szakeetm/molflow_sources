@@ -161,7 +161,7 @@ typedef struct {
 	TEXTURE_SCALE_TYPE density;
 } TEXTURE_LIMITS;*/
 
-#define IS_ZERO(x) (fabs((x))<1e-20)
+#define IS_ZERO(x) (fabs((x))<1e-10)
 
 #define DOT2(x1,y1,x2,y2) ((x1)*(x2) + (y1)*(y2))
 #define DOT3(x1,y1,z1,x2,y2,z2) ((x1)*(x2) + (y1)*(y2) + (z1)*(z2))

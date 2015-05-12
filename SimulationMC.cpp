@@ -137,7 +137,7 @@ void CartesianToPolar(FACET *iFacet, double *theta, double *phi) {
 
 // -------------------------------------------------------
 
-void UpdateMCHits(Dataport *dpHit, int prIdx, int nbMoments, DWORD timeout) {
+void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 
 	BYTE *buffer;
 	SHGHITS *gHits;

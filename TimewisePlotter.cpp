@@ -77,11 +77,11 @@ TimewisePlotter::TimewisePlotter() :GLWindow() {
 	momLabel = new GLLabel("Displayed moments:");
 	Add(momLabel);
 
-	momentsText = new GLTextField(0, "1;2;3;4,1,30;31;32");
+	momentsText = new GLTextField(0, "1,1,32");
 	momentsText->SetEditable(TRUE);
 	Add(momentsText);
 
-	momentsLabel = new GLLabel("X moments");
+	momentsLabel = new GLLabel("32 moments");
 	Add(momentsLabel);
 
 	correctForGas = new GLToggle(0, "Surface->Volume conversion");
@@ -330,9 +330,10 @@ void TimewisePlotter::addView(int facet) {
 		nbView++;
 	}
 
-	if (nbView < 49) {
 
-		for (size_t index : displayedMoments) {
+
+	for (size_t index : displayedMoments) {
+		if (nbView < 49) {
 			GLDataView *v = new GLDataView();
 			if (index<1 || (index) > worker->moments.size()) continue; //invalid moment
 			sprintf(tmp, "Moment%d (t=%gs)", (int)index, worker->moments[index - 1]);
@@ -435,6 +436,7 @@ void TimewisePlotter::ProcessMessage(GLComponent *src, int message) {
 			if (idx >= 0) {
 				addView(profCombo->GetUserValueAt(idx));
 			}
+			FormatParseText();
 			refreshViews();
 		}
 		else if (src == correctForGas) {
@@ -449,6 +451,7 @@ void TimewisePlotter::ProcessMessage(GLComponent *src, int message) {
 			if (idx >= 0) {
 				addView(profCombo->GetUserValueAt(idx));
 			}
+			FormatParseText();
 			refreshViews();
 		}
 		break;
@@ -488,9 +491,6 @@ BOOL TimewisePlotter::ParseMoments(){
 	}
 	//last token
 	ParseToken(s);
-	std::ostringstream tmp;
-	tmp << (int)displayedMoments.size() << " moments";
-	momentsLabel->SetText(tmp.str().c_str());
 	return TRUE;
 }
 
@@ -506,4 +506,18 @@ void TimewisePlotter::ParseToken(std::string token) {
 		for (int time = begin; time <= end; time += interval)
 			displayedMoments.push_back(time);
 	}
+}
+
+void TimewisePlotter::FormatParseText() {
+	std::ostringstream tmp;
+	int dispNum = (int)displayedMoments.size() + constantFlowToggle->GetState();
+	tmp << dispNum << " moments";
+	if (dispNum > 50) {
+		tmp << ", displaying first 50";
+		momentsLabel->SetTextColor(255, 0, 0);
+	}
+	else {
+		momentsLabel->SetTextColor(0, 0, 0);
+	}
+	momentsLabel->SetText(tmp.str().c_str());
 }

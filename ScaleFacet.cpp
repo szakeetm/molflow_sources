@@ -38,7 +38,7 @@ ScaleFacet::ScaleFacet(Geometry *g,Worker *w):GLWindow() {
 	invariantMode=XYZMODE;
 	scaleMode=UNIFORMMODE;
 
-	SetTitle("Scale selected vertices");
+	SetTitle("Scale selected facets");
 
 	iPanel = new GLTitledPanel("Invariant point definiton mode");
 	iPanel->SetBounds(5,3,wD-10,97);
@@ -222,7 +222,7 @@ void ScaleFacet::ProcessMessage(GLComponent *src,int message) {
 				}
 				break;
 			default:
-				GLMessageBox::Display("Select a plane definition mode.","Error",GLDLG_OK,GLDLG_ICONERROR);
+				GLMessageBox::Display("Select an invariant definition mode.","Error",GLDLG_OK,GLDLG_ICONERROR);
 				return;
 			}
 

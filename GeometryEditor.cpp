@@ -644,6 +644,78 @@ void Geometry::SwapNormal() {
 
 }
 
+void Geometry::Extrude(VERTEX3D offset,double distance) {
+
+	//creates facet from selected vertices
+
+	mApp->changedSinceSave = TRUE;
+
+	int oldNbFacet = sh.nbFacet;
+	for (int i = 0; i < oldNbFacet; i++)
+	{
+		if (facets[i]->selected) {
+			int firstFacet = i;
+			facets[firstFacet]->selected = FALSE;
+			//Update direction if necessary
+			VERTEX3D dir2;
+
+			if (IS_ZERO(offset.x) && IS_ZERO(offset.y) && IS_ZERO(offset.z)) { //Use facet normal to determine offset
+				dir2.x = facets[firstFacet]->sh.N.x*distance;
+				dir2.y = facets[firstFacet]->sh.N.y*distance;
+				dir2.z = facets[firstFacet]->sh.N.z*distance;
+			}
+			else { //Use provided offset
+				dir2.x = offset.x;
+				dir2.y = offset.y;
+				dir2.z = offset.z;
+			}
+
+			//Copy facet
+			VERTEX3D *tmp_vertices3 = (VERTEX3D *)malloc((sh.nbVertex + facets[firstFacet]->sh.nbIndex) * sizeof(VERTEX3D)); //create new, extended vertex array
+			memmove(tmp_vertices3, vertices3, (sh.nbVertex)*sizeof(VERTEX3D)); //copy old vertices
+			SAFE_FREE(vertices3); //delete old array
+			vertices3 = tmp_vertices3; //make new array the official vertex holder
+
+
+			for (int j = 0; j < facets[firstFacet]->sh.nbIndex; j++) { //copy vertex coordinates
+				vertices3[sh.nbVertex + j].x = vertices3[facets[firstFacet]->indices[j]].x + dir2.x;
+				vertices3[sh.nbVertex + j].y = vertices3[facets[firstFacet]->indices[j]].y + dir2.y;
+				vertices3[sh.nbVertex + j].z = vertices3[facets[firstFacet]->indices[j]].z + dir2.z;
+				vertices3[sh.nbVertex + j].selected = FALSE;
+			}
+
+			//Copy facet
+			int secondFacet = sh.nbFacet; //last facet
+			facets = (Facet **)realloc(facets, (sh.nbFacet+1+facets[firstFacet]->sh.nbIndex) * sizeof(Facet *));
+			facets[secondFacet] = new Facet(facets[firstFacet]->sh.nbIndex);
+			facets[secondFacet]->selected = TRUE;
+			for (int j = 0; j < facets[firstFacet]->sh.nbIndex; j++)
+				facets[secondFacet]->indices[facets[firstFacet]->sh.nbIndex-1-j] = sh.nbVertex + j; //assign new vertices to new facet in inverse order
+
+			int direction=1;
+			if (Dot(&dir2, &facets[firstFacet]->sh.N) *distance< 0.0) direction *= -1; //extrusion towards normal or opposite?
+			for (int j = 0; j < facets[firstFacet]->sh.nbIndex; j++) {
+				facets[secondFacet + 1 + j] = new Facet(4);
+				facets[secondFacet + 1 + j]->indices[0] = facets[firstFacet]->indices[j%facets[firstFacet]->sh.nbIndex];
+				facets[secondFacet + 1 + j]->indices[1] = facets[secondFacet]->indices[(2*facets[firstFacet]->sh.nbIndex - 1 - j) %facets[firstFacet]->sh.nbIndex];
+				facets[secondFacet + 1 + j]->indices[2] = facets[secondFacet]->indices[(2*facets[firstFacet]->sh.nbIndex - 2 - j) % facets[firstFacet]->sh.nbIndex];
+				facets[secondFacet + 1 + j]->indices[3] = facets[firstFacet]->indices[(j + 1)%facets[firstFacet]->sh.nbIndex];
+				facets[secondFacet + 1 + j]->selected = TRUE;
+			}
+			sh.nbVertex += facets[firstFacet]->sh.nbIndex; //update number of vertices
+			sh.nbFacet += facets[firstFacet]->sh.nbIndex + 1;
+		}
+	}
+
+	
+	InitializeGeometry();
+	mApp->UpdateFacetParams(TRUE);
+	UpdateSelection();
+	mApp->facetList->SetSelectedRow(sh.nbFacet - 1);
+	mApp->facetList->ScrollToVisible(sh.nbFacet - 1, 1, FALSE);
+
+}
+
 void Geometry::ShiftVertex() {
 
 	if (!IsLoaded()) {
@@ -666,7 +738,7 @@ void Geometry::ShiftVertex() {
 			}
 		}
 	}
-	// Delete old resource
+	
 	BuildGLList();
 }
 
@@ -1470,11 +1542,12 @@ void Geometry::CloneSelectedFacets() { //create clone of selected facets
 	SAFE_FREE(vertices3);
 	*/
 	//vertices3=(VERTEX3D *)realloc(vertices3,(nb+1)*sizeof(VERTEX3D));
-	VERTEX3D *tmp_vertices3 = (VERTEX3D *)malloc((nb + 1) * sizeof(VERTEX3D));
-	memmove(tmp_vertices3, vertices3, (sh.nbVertex)*sizeof(VERTEX3D));
-	memset(tmp_vertices3 + sh.nbVertex, 0, (nb + 1 - sh.nbVertex) * sizeof(VERTEX3D));
-	SAFE_FREE(vertices3);
-	vertices3 = tmp_vertices3;
+	VERTEX3D *tmp_vertices3 = (VERTEX3D *)malloc((nb + 1) * sizeof(VERTEX3D)); //create new, extended vertex array
+	memmove(tmp_vertices3, vertices3, (sh.nbVertex)*sizeof(VERTEX3D)); //copy old vertices
+	memset(tmp_vertices3 + sh.nbVertex, 0, (nb + 1 - sh.nbVertex) * sizeof(VERTEX3D));  //zero out remaining bits (not necessary, will be overwritten anyway)
+	SAFE_FREE(vertices3); //delete old array
+	vertices3 = tmp_vertices3; //make new array the official vertex holder
+	sh.nbVertex = nb + 1; //update number of vertices
 	for (int i = 0; i < sh.nbVertex; i++) {
 		if (copyId[i] != -1) {
 			vertices3[copyId[i]].x = vertices3[i].x;
@@ -1483,7 +1556,7 @@ void Geometry::CloneSelectedFacets() { //create clone of selected facets
 			vertices3[copyId[i]].selected = vertices3[i].selected;
 		}
 	}
-	sh.nbVertex = nb + 1;
+	
 	sh.nbFacet += (int)selected;
 	facets = (Facet **)realloc(facets, sh.nbFacet * sizeof(Facet *));
 	int nb2 = sh.nbFacet - (int)selected - 1; //copy new facets
@@ -1668,4 +1741,117 @@ void Geometry::ScaleSelectedFacets(VERTEX3D invariant, double factorX, double fa
 
 	prgMove->SetVisible(FALSE);
 	SAFE_DELETE(prgMove);
+}
+
+
+void Geometry::SplitSelectedFacets(VERTEX3D base, VERTEX3D normal, Worker *worker) {
+	/*
+	mApp->changedSinceSave = TRUE;
+	if (nbSelected == 0) return -1;
+
+	// Check that all facet has a mesh
+	BOOL ok = TRUE;
+	int idx = 0;
+	while (ok && idx < sh.nbFacet) {
+		if (facets[idx]->selected)
+			ok = facets[idx]->hasMesh;
+		idx++;
+	}
+	if (!ok) return -2;
+
+	int nb = 0;
+	int FtoAdd = 0;
+	int VtoAdd = 0;
+	Facet::FACETGROUP *blocks = (Facet::FACETGROUP *)malloc(nbSelected * sizeof(Facet::FACETGROUP));
+
+	for (int i = 0; i < sh.nbFacet; i++) {
+		if (facets[i]->selected) {
+			facets[i]->Explode(blocks + nb);
+			FtoAdd += blocks[nb].nbF;
+			VtoAdd += blocks[nb].nbV;
+			nb++;
+		}
+	}
+
+	// Update vertex array
+	VERTEX3D *ptrVert;
+	int       vIdx;
+	VERTEX3D *nVert = (VERTEX3D *)malloc((sh.nbVertex + VtoAdd)*sizeof(VERTEX3D));
+	memcpy(nVert, vertices3, sh.nbVertex*sizeof(VERTEX3D));
+
+	ptrVert = nVert + sh.nbVertex;
+	vIdx = sh.nbVertex;
+	nb = 0;
+	for (int i = 0; i < sh.nbFacet; i++) {
+		if (facets[i]->selected) {
+			facets[i]->FillVertexArray(ptrVert);
+			for (int j = 0; j < blocks[nb].nbF; j++) {
+				for (int k = 0; k < blocks[nb].facets[j]->sh.nbIndex; k++) {
+					blocks[nb].facets[j]->indices[k] = vIdx + k;
+				}
+				vIdx += blocks[nb].facets[j]->sh.nbIndex;
+			}
+			ptrVert += blocks[nb].nbV;
+			nb++;
+		}
+	}
+	SAFE_FREE(vertices3);
+	vertices3 = nVert;
+	for (int i = sh.nbVertex; i < sh.nbVertex + VtoAdd; i++)
+		vertices3[i].selected = FALSE;
+	sh.nbVertex += VtoAdd;
+
+	// Update facet
+	Facet   **f = (Facet **)malloc((sh.nbFacet + FtoAdd - nbSelected) * sizeof(Facet *));
+
+	// Delete selected
+	nb = 0;
+	for (int i = 0; i < sh.nbFacet; i++) {
+		if (facets[i]->selected) {
+			delete facets[i];
+			mApp->RenumberSelections(i);
+			mApp->RenumberFormulas(i);
+		}
+		else {
+			f[nb++] = facets[i];
+		}
+	}
+
+	// Add new facets
+	int count = 0;
+	for (int i = 0; i < nbSelected; i++) {
+		for (int j = 0; j<blocks[i].nbF; j++) {
+			f[nb++] = blocks[i].facets[j];
+			if (toMap) { //set outgassing values
+				f[nb - 1]->sh.flow = *(values + count++) *0.100; //0.1: mbar*l/s->Pa*m3/s
+				if (f[nb - 1]->sh.flow>0.0) {
+					f[nb - 1]->sh.desorbType = desType + 1;
+					f[nb - 1]->selected = TRUE;
+					if (f[nb - 1]->sh.desorbType == DES_COSINE_N) f[nb - 1]->sh.desorbTypeN = exponent;
+				}
+				else {
+					f[nb - 1]->sh.desorbType = DES_NONE;
+					f[nb - 1]->selected = FALSE;
+				}
+			}
+		}
+	}
+
+	// Free allocated memory
+	for (int i = 0; i < nbSelected; i++) {
+		SAFE_FREE(blocks[i].facets);
+	}
+	SAFE_FREE(blocks);
+
+	SAFE_FREE(facets);
+	facets = f;
+	sh.nbFacet = nb;
+
+	// Delete old resources
+	DeleteGLLists(TRUE, TRUE);
+
+	InitializeGeometry();
+
+	return 0;
+	*/
 }

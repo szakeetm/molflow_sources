@@ -475,7 +475,7 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 	}*/
 
 	enableBtn->AllowMixedState(!isEnabledE); enableBtn->SetState(isEnabledE ? f0->sh.isTextured : 2);
-	recordDesBtn->AllowMixedState(!CountDesE); recordACBtn->SetState(CountDesE ? f0->sh.countDes : 2);
+	recordDesBtn->AllowMixedState(!CountDesE); recordDesBtn->SetState(CountDesE ? f0->sh.countDes : 2);
 	recordAbsBtn->AllowMixedState(!CountAbsE); recordAbsBtn->SetState(CountAbsE ? f0->sh.countAbs : 2);
 	recordReflBtn->AllowMixedState(!CountReflE); recordReflBtn->SetState(CountReflE ? f0->sh.countRefl : 2);
 	recordTransBtn->AllowMixedState(!CountTransE); recordTransBtn->SetState(CountTransE ? f0->sh.countTrans : 2);
@@ -615,10 +615,10 @@ BOOL FacetMesh::Apply() {
 	BOOL boundMap = TRUE; // boundaryBtn->GetState();
 	int nbSelected;
 	int* selection;
-	double ratio;
+	double ratio=0.0;
 	geom->GetSelection(&selection, &nbSelected);
 	int nbPerformed = 0.0;
-
+	BOOL doRatio = TRUE;
 	if (enableBtn->GetState() == 1) {
 
 		// Check counting mode
@@ -630,9 +630,13 @@ BOOL FacetMesh::Apply() {
 		}
 
 		// Resolution
+		
 		if (!resolutionText->GetNumber(&ratio) || ratio<=0.0) {
-			GLMessageBox::Display("Invalid texture resolution", "Error", GLDLG_OK, GLDLG_ICONERROR);
-			return FALSE;
+			if (strcmp(resolutionText->GetText(), "...") == 0) doRatio = FALSE;
+			else {
+				GLMessageBox::Display("Invalid texture resolution", "Error", GLDLG_OK, GLDLG_ICONERROR);
+				return FALSE;
+			}
 		}
 
 	}
@@ -753,12 +757,12 @@ BOOL FacetMesh::Apply() {
 	int count=0;
 	for(int i=0;i<nbSelected;i++) {
 		Facet *f = geom->GetFacet(selection[i]);
-		if (recordDesBtn->GetState()<2) f->sh.countDes = recordDesBtn->GetState()*enableBtn->GetState();
-		if (recordAbsBtn->GetState()<2) f->sh.countAbs = recordAbsBtn->GetState()*enableBtn->GetState();
-		if (recordReflBtn->GetState()<2) f->sh.countRefl = recordReflBtn->GetState()*enableBtn->GetState();
-		if (recordTransBtn->GetState()<2) f->sh.countTrans = recordTransBtn->GetState()*enableBtn->GetState();
-		if (recordACBtn->GetState()<2) f->sh.countACD = recordACBtn->GetState()*enableBtn->GetState();
-		if (recordDirBtn->GetState()<2) f->sh.countDirection = recordDirBtn->GetState()*enableBtn->GetState();
+		if (recordDesBtn->GetState()<2) f->sh.countDes = recordDesBtn->GetState()*(enableBtn->GetState()==1);
+		if (recordAbsBtn->GetState()<2) f->sh.countAbs = recordAbsBtn->GetState()*(enableBtn->GetState()==1);
+		if (recordReflBtn->GetState()<2) f->sh.countRefl = recordReflBtn->GetState()*(enableBtn->GetState()==1);
+		if (recordTransBtn->GetState()<2) f->sh.countTrans = recordTransBtn->GetState()*(enableBtn->GetState()==1);
+		if (recordACBtn->GetState()<2) f->sh.countACD = recordACBtn->GetState()*(enableBtn->GetState()==1);
+		if (recordDirBtn->GetState()<2) f->sh.countDirection = recordDirBtn->GetState()*(enableBtn->GetState()==1);
 		BOOL hasAnyTexture = f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD || f->sh.countDirection;
 		if (doTeleport) f->sh.teleportDest = teleport;
 		if (doAccfactor) f->sh.accomodationFactor = accfactor;
@@ -782,8 +786,12 @@ BOOL FacetMesh::Apply() {
 
 		//set textures
 		try {
-			if (structChanged) geom->RebuildLists();
-			geom->SetFacetTexture(selection[i], hasAnyTexture ? ratio : 0.0, hasAnyTexture ? boundMap : 0.0);
+			if (enableBtn->GetState()<2 && recordDesBtn->GetState()<2 && recordAbsBtn->GetState()<2 && recordReflBtn->GetState()<2 &&
+				recordTransBtn->GetState()<2 && recordACBtn->GetState()<2 && recordDirBtn->GetState()<2 && doRatio) { //only remesh if all settings well-defined
+				if (structChanged) geom->RebuildLists();
+				double targetRatio = hasAnyTexture ? ratio : 0.0;
+				if (!IS_ZERO(geom->GetFacet(selection[i])->tRatio-targetRatio)) geom->SetFacetTexture(selection[i], targetRatio, hasAnyTexture ? boundMap : 0.0);
+			}
 		} catch (Error &e) {
 			GLMessageBox::Display((char *)e.GetMsg(),"Error",GLDLG_OK,GLDLG_ICONWARNING);
 			progressDlg->SetVisible(FALSE);

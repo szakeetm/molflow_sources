@@ -51,6 +51,7 @@ public:
 private:
   BOOL ParseMoments();
   void ParseToken(std::string token);
+  void FormatParseText();
   void addView(int facet);
   void remView(int facet);
   

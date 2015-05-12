@@ -222,7 +222,7 @@ void LoadAC() {
   loader = OpenDataport(loadDpName,prParam);
   if( !loader ) {
     char err[512];
-    sprintf(err,"Failed to connect to 'loader' dataport %s (%d Bytes)",loadDpName, prParam);
+    sprintf(err,"Failed to open 'loader' dataport %s (%d Bytes)",loadDpName, prParam);
     SetErrorSub(err);
     return;
   }
@@ -282,7 +282,9 @@ void Load() {
   hSize = GetHitsSize();
   dpHit = OpenDataport(hitsDpName,hSize);
   if( !dpHit ) {
-    SetErrorSub("Failed to connect to 'hits' dataport");
+	  char err[512];
+	  sprintf(err, "Failed to connect to 'hits' dataport (%Ld Bytes)", hSize);
+	  SetErrorSub(err);
 	sHandle->loadOK = FALSE;
     return;
   }
@@ -501,7 +503,7 @@ int FIND_PROC_BY_NAME(const char *szToFind)
 
     // Transfer Process name into "szToFindUpper" and
     // convert it to upper case
-    iLenP=strlen(szToFind);
+    iLenP=(int)strlen(szToFind);
     if(iLenP<1 || iLenP>MAX_PATH) return 632;
     for(indx=0;indx<iLenP;indx++)
         szToFindUpper[indx]=toupper(szToFind[indx]);

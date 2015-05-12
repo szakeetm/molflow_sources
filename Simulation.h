@@ -145,9 +145,9 @@ typedef struct {
 
   FACET *lastHit;     // Last hitted facet
   double stepPerSec;  // Avg number of step per sec
-  int textTotalSize;  // Texture total size
-  int profTotalSize;  // Profile total size
-  int dirTotalSize;   // Direction field total size
+  size_t textTotalSize;  // Texture total size
+  size_t profTotalSize;  // Profile total size
+  size_t dirTotalSize;   // Direction field total size
   BOOL loadOK;        // Load OK flag
   BOOL lastUpdateOK;  // Last hit update timeout
   BOOL hasVolatile;   // Contains volatile facet
@@ -242,7 +242,7 @@ void PerformTeleport(FACET *iFacet);
 void PolarToCartesian(FACET *iFacet,double theta,double phi,BOOL reverse);
 void CartesianToPolar(FACET *iFacet,double *theta,double *phi);
 void UpdateHits(Dataport *dpHit,int prIdx,DWORD timeout);
-void UpdateMCHits(Dataport *dpHit,int prIdx,int nbMoments,DWORD timeout);
+void UpdateMCHits(Dataport *dpHit,int prIdx,size_t nbMoments,DWORD timeout);
 void UpdateACHits(Dataport *dpHit,int prIdx,DWORD timeout);
 void ResetCounter();
 struct AABBNODE *BuildAABBTree(FACET **list,int nbFacet,int depth);

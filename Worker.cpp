@@ -148,13 +148,12 @@ void Worker::SetFileName(char *fileName) {
 }
 
 void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL saveSelected, BOOL autoSave, BOOL crashSave) {
-
 	try {
 		if (needsReload && (!crashSave && !saveSelected)) RealReload();
 	}
 	catch (Error &e) {
 		char errMsg[512];
-		sprintf(errMsg, "Error reloading worker. Trying crash save:\n%s", e.GetMsg());
+		sprintf(errMsg, "Error reloading worker. Trying safe save (geometry only):\n%s", e.GetMsg());
 		GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 		crashSave = TRUE;
 	}
@@ -715,11 +714,12 @@ void Worker::LoadGeometry(char *fileName) {
 			geom->UpdateName(fileName);
 
 			progressDlg->SetMessage("Reloading worker with new geometry...");
-			RealReload(); //for the loading of textures, profiles, etc...
-			strcpy(fullFileName, fileName);
-
-			progressDlg->SetMessage("Restoring simulation state...");
 			try {
+				RealReload(); //for the loading of textures, profiles, etc...
+				strcpy(fullFileName, fileName);
+
+				progressDlg->SetMessage("Restoring simulation state...");
+			
 				geom->LoadXML_simustate(loadXML, dpHit, this, progressDlg);
 				SendHits(TRUE); //Send hits without resetting simu state
 				RebuildTextures();
@@ -782,7 +782,8 @@ void Worker::LoadGeometry(char *fileName) {
 // -------------------------------------------------------------
 
 void Worker::InsertGeometry(BOOL newStr, char *fileName) {
-	if (needsReload) RealReload();
+	RealReload(); //Can throw Error
+	
 	char *ext, *filebegin;
 	char tmp2[1024];
 	ext = strrchr(fileName, '.');
@@ -1460,9 +1461,9 @@ void Worker::RealReload() { //Sharing geometry with workers
 	dpHit = CreateDataport(hitsDpName, hitSize);
 	if (!dpHit) {
 		CLOSEDP(loader);
-		GLMessageBox::Display("Failed to create 'hits' dataport: not enough memory.", "Warning (Load)", GLDLG_OK, GLDLG_ICONERROR);
-		return;
-		//throw Error("Failed to create 'hits' dataport. Probably out of memory.");
+		//GLMessageBox::Display("Failed to create 'hits' dataport: not enough memory.", "Warning (Load)", GLDLG_OK, GLDLG_ICONERROR);
+		//return FALSE;
+		throw Error("Failed to create 'hits' dataport: out of memory.");
 	}
 
 	// Compute number of max desorption per process
@@ -1482,8 +1483,9 @@ void Worker::RealReload() { //Sharing geometry with workers
 		CLOSEDP(loader);
 		char errMsg[1024];
 		sprintf(errMsg, "Failed to send geometry to sub process:\n%s", GetErrorDetails());
-		GLMessageBox::Display(errMsg, "Warning (Load)", GLDLG_OK, GLDLG_ICONWARNING);
-		return;
+		//GLMessageBox::Display(errMsg, "Warning (Load)", GLDLG_OK, GLDLG_ICONWARNING);
+		//return FALSE;
+		throw Error(errMsg);
 	}
 
 	//Send hit counts
@@ -1503,6 +1505,7 @@ void Worker::RealReload() { //Sharing geometry with workers
 	//Debug memory check
 	//_ASSERTE (!_CrtDumpMemoryLeaks());;
 	_ASSERTE(_CrtCheckMemory());
+	return;
 }
 
 // -------------------------------------------------------------

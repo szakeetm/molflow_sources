@@ -39,6 +39,7 @@
 #include "ScaleVertex.h"
 #include "ScaleFacet.h"
 #include "MoveFacet.h"
+#include "ExtrudeFacet.h"
 #include "MirrorFacet.h"
 #include "RotateFacet.h"
 #include "Movement.h"
@@ -315,6 +316,7 @@ public:
 	ScaleFacet       *scaleFacet;
 	ScaleVertex      *scaleVertex;
 	SelectDialog     *selectDialog;
+	ExtrudeFacet	 *extrudeFacet;
 	MoveFacet		 *moveFacet;
 	MirrorFacet	     *mirrorFacet;
 	RotateFacet      *rotateFacet;

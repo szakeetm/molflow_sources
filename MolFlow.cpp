@@ -37,7 +37,7 @@ GNU General Public License for more details.
 #define APP_NAME "MolFlow+ development version 64-bit (Compiled "__DATE__" "__TIME__") DEBUG MODE"
 #else
 //#define APP_NAME "Molflow+ development version ("__DATE__")"
-#define APP_NAME "Molflow+ 2.6.8 64-bit ("__DATE__")"
+#define APP_NAME "Molflow+ 2.6.10 64-bit ("__DATE__")"
 #endif
 
 /*
@@ -151,6 +151,7 @@ MolFlow *mApp;
 #define MENU_FACET_ALIGN       331
 #define MENU_FACET_OUTGASSINGMAP 332
 #define MENU_FACET_CREATE_DIFFERENCE 3321
+#define MENU_FACET_EXTRUDE 3322
 
 #define MENU_SELECTION_ADDNEW             333
 #define MENU_SELECTION_CLEARALL           334
@@ -302,6 +303,7 @@ MolFlow::MolFlow()
 	scaleFacet = NULL;
 	selectDialog = NULL;
 	moveFacet = NULL;
+	extrudeFacet = NULL;
 	mirrorFacet = NULL;
 	rotateFacet = NULL;
 	movement = NULL;
@@ -479,6 +481,7 @@ int MolFlow::OneTimeSceneInit()
 	menu->GetSubMenu("Facet")->Add("Mirror ...", MENU_FACET_MIRROR);
 	menu->GetSubMenu("Facet")->Add("Rotate ...", MENU_FACET_ROTATE);
 	menu->GetSubMenu("Facet")->Add("Align ...", MENU_FACET_ALIGN);
+	menu->GetSubMenu("Facet")->Add("Extrude...", MENU_FACET_EXTRUDE);
 	menu->GetSubMenu("Facet")->Add("Remove selected", MENU_FACET_REMOVESEL, SDLK_DELETE, CTRL_MODIFIER);
 	menu->GetSubMenu("Facet")->Add("Explode selected", MENU_FACET_EXPLODE);
 	menu->GetSubMenu("Facet")->Add("Create difference of 2", MENU_FACET_CREATE_DIFFERENCE);
@@ -2223,7 +2226,7 @@ int MolFlow::RestoreDeviceObjects()
 	RVALIDATE_DLG(scaleFacet);
 	RVALIDATE_DLG(selectDialog);
 	RVALIDATE_DLG(moveFacet);
-
+	RVALIDATE_DLG(extrudeFacet);
 	RVALIDATE_DLG(mirrorFacet);
 	RVALIDATE_DLG(rotateFacet);
 	RVALIDATE_DLG(movement);
@@ -2270,7 +2273,7 @@ int MolFlow::InvalidateDeviceObjects()
 	IVALIDATE_DLG(scaleFacet);
 	IVALIDATE_DLG(selectDialog);
 	IVALIDATE_DLG(moveFacet);
-
+	IVALIDATE_DLG(extrudeFacet);
 	IVALIDATE_DLG(mirrorFacet);
 	IVALIDATE_DLG(rotateFacet);
 	IVALIDATE_DLG(alignFacet);
@@ -3179,6 +3182,14 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 				}
 			}
 			break;
+		case MENU_FACET_EXTRUDE:
+			if (!extrudeFacet || !extrudeFacet->IsVisible()) {
+				SAFE_DELETE(extrudeFacet);
+				extrudeFacet = new ExtrudeFacet(geom, &worker);
+			}
+			extrudeFacet->SetVisible(TRUE);
+			break;
+			
 		case MENU_FACET_SHIFTVERTEX:
 			if (AskToReset()) {
 				geom->ShiftVertex();
@@ -4714,11 +4725,11 @@ void MolFlow::LoadConfig() {
 		for (int i = 0; i < MAX_VIEWER; i++)
 			viewer[i]->showDir = f->ReadInt();
 		f->ReadKeyword("dirNorme"); f->ReadKeyword(":");
-		geom->SetNormeRatio(f->ReadDouble());
+		geom->SetNormeRatio((float)f->ReadDouble());
 		f->ReadKeyword("dirAutoNormalize"); f->ReadKeyword(":");
-		geom->SetAutoNorme(f->ReadDouble());
+		geom->SetAutoNorme(f->ReadInt());
 		f->ReadKeyword("dirCenter"); f->ReadKeyword(":");
-		geom->SetCenterNorme(f->ReadDouble());
+		geom->SetCenterNorme(f->ReadInt());
 		f->ReadKeyword("angle"); f->ReadKeyword(":");
 		for (int i = 0; i < MAX_VIEWER; i++)
 			viewer[i]->angleStep = f->ReadDouble();
@@ -4882,8 +4893,8 @@ void MolFlow::SaveConfig() {
 		WRITEI("dispNumLeaks", dispNumLeaks);
 		WRITEI("dirShow", showDir);
 		f->Write("dirNorme:"); f->WriteDouble(geom->GetNormeRatio(), "\n");
-		f->Write("dirAutoNormalize:"); f->WriteDouble(geom->GetAutoNorme(), "\n");
-		f->Write("dirCenter:"); f->WriteDouble(geom->GetCenterNorme(), "\n");
+		f->Write("dirAutoNormalize:"); f->WriteInt(geom->GetAutoNorme(), "\n");
+		f->Write("dirCenter:"); f->WriteInt(geom->GetCenterNorme(), "\n");
 
 		WRITED("angle", angleStep);
 		f->Write("autoScale:"); f->WriteInt(geom->texAutoScale, "\n");
