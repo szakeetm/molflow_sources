@@ -65,7 +65,7 @@ public:
   bool LoadTextures(FileReader *file,GLProgress *prg,Dataport *dpHit,int version);
   void ImportDesorption_DES(FileReader *file);
   void ImportDesorption_SYN(FileReader *synFile, const size_t &source, const double &time,
-	  const size_t &mode, const double &eta0, const double &alpha,
+	  const size_t &mode, const double &eta0, const double &alpha, const double &cutoffdose,
 	  const std::vector<std::pair<double, double>> &convDistr,
 	  GLProgress *prg);
   void AnalyzeSYNfile(FileReader *f, GLProgress *progressDlg, int *nbFacet,

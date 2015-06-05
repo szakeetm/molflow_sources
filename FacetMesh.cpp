@@ -424,12 +424,12 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 	
 	double f0Area = f0->sh.area * (f0->sh.is2sided ? 2.0 : 1.0);
 	sumArea = f0Area;
-	sumOutgassing = f0->totalOutgassing;
+	sumOutgassing = f0->sh.totalOutgassing;
 	for (int i = 1; i < nbSel; i++) {
 		Facet *f = geom->GetFacet(selection[i]);
 		double fArea = f->sh.area * (f->sh.is2sided ? 2.0 : 1.0);
 		sumArea += fArea;
-		sumOutgassing += f->totalOutgassing;
+		sumOutgassing += f->sh.totalOutgassing;
 		isEnabledE = isEnabledE && (f0->sh.isTextured == f->sh.isTextured);
 		isBoundE = isBoundE && (f0->hasMesh == f->hasMesh);
 		CountDesE = CountDesE && f0->sh.countDes == f->sh.countDes;
@@ -448,9 +448,9 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 		reflectTypeE = reflectTypeE && (f0->sh.reflectType == f->sh.reflectType);
 		hasOutgMapE = hasOutgMapE && (f0->hasOutgassingFile == f->hasOutgassingFile);
 		useOutgMapE = useOutgMapE && (f0->sh.useOutgassingFile == f->sh.useOutgassingFile);
-		dynOutgEqual = dynOutgEqual && IsEqual(f0->totalOutgassing, f->totalOutgassing,1E-20);
-		dynOutgAEqual = dynOutgAEqual && IsEqual(f0->totalOutgassing / f0Area , f->totalOutgassing / fArea,1E-20);
-		yieldEqual = yieldEqual && IsEqual(f0->totalOutgassing / f0->sh.temperature / f0->totalFlux, f->totalOutgassing / f->sh.temperature / f->totalFlux,1E-30); //less tolerance, expecting small yields
+		dynOutgEqual = dynOutgEqual && IsEqual(f0->sh.totalOutgassing, f->sh.totalOutgassing,1E-20);
+		dynOutgAEqual = dynOutgAEqual && IsEqual(f0->sh.totalOutgassing / f0Area , f->sh.totalOutgassing / fArea,1E-20);
+		yieldEqual = yieldEqual && IsEqual(f0->sh.totalOutgassing / f0->sh.temperature / f0->totalFlux, f->sh.totalOutgassing / f->sh.temperature / f->totalFlux,1E-30); //less tolerance, expecting small yields
 		fluxAEqual = fluxAEqual && IsEqual(f0->totalFlux / f0Area, f->totalFlux / fArea);
 		doseAEqual = doseAEqual && IsEqual(f0->totalDose / f0Area , f->totalDose / fArea);
 		isMovingE = isMovingE && (f0->sh.isMoving == f->sh.isMoving); 
@@ -537,7 +537,7 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 			fileFluxText->SetText(tmp);
 			if (doseAEqual) sprintf(tmp, "%.2E", f0->totalDose / f0->sh.area); else sprintf(tmp, "...");
 			fileDoseText->SetText(tmp);
-			if (yieldEqual) sprintf(tmp, "%.2E", f0->totalOutgassing / (1.38E-23*f0->sh.temperature) / f0->totalFlux); else sprintf(tmp, "...");
+			if (yieldEqual) sprintf(tmp, "%.2E", f0->sh.totalOutgassing / (1.38E-23*f0->sh.temperature) / f0->totalFlux); else sprintf(tmp, "...");
 			fileYieldText->SetText(tmp);
 			if (useOutgMapE) {
 				mApp->facetFlow->SetEditable(!f0->sh.useOutgassingFile);
@@ -613,6 +613,7 @@ void FacetMesh::Reposition(int wD, int hD) {
 BOOL FacetMesh::Apply() {
 	if (!mApp->AskToReset(worker)) return FALSE;
 	BOOL boundMap = TRUE; // boundaryBtn->GetState();
+	BOOL dirCountingChanged = FALSE;
 	int nbSelected;
 	int* selection;
 	double ratio=0.0;
@@ -762,7 +763,11 @@ BOOL FacetMesh::Apply() {
 		if (recordReflBtn->GetState()<2) f->sh.countRefl = recordReflBtn->GetState()*(enableBtn->GetState()==1);
 		if (recordTransBtn->GetState()<2) f->sh.countTrans = recordTransBtn->GetState()*(enableBtn->GetState()==1);
 		if (recordACBtn->GetState()<2) f->sh.countACD = recordACBtn->GetState()*(enableBtn->GetState()==1);
-		if (recordDirBtn->GetState()<2) f->sh.countDirection = recordDirBtn->GetState()*(enableBtn->GetState()==1);
+		if (recordDirBtn->GetState() < 2) {
+			BOOL shouldCountDir= recordDirBtn->GetState()*(enableBtn->GetState() == 1);
+			dirCountingChanged=f->sh.countDirection!=shouldCountDir;
+			f->sh.countDirection = shouldCountDir;
+		}
 		BOOL hasAnyTexture = f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD || f->sh.countDirection;
 		if (doTeleport) f->sh.teleportDest = teleport;
 		if (doAccfactor) f->sh.accomodationFactor = accfactor;
@@ -790,7 +795,7 @@ BOOL FacetMesh::Apply() {
 				recordTransBtn->GetState()<2 && recordACBtn->GetState()<2 && recordDirBtn->GetState()<2 && doRatio) { //only remesh if all settings well-defined
 				if (structChanged) geom->RebuildLists();
 				double targetRatio = hasAnyTexture ? ratio : 0.0;
-				if (!IS_ZERO(geom->GetFacet(selection[i])->tRatio-targetRatio)) geom->SetFacetTexture(selection[i], targetRatio, hasAnyTexture ? boundMap : 0.0);
+				if (!IS_ZERO(geom->GetFacet(selection[i])->tRatio-targetRatio) || dirCountingChanged) geom->SetFacetTexture(selection[i], targetRatio, hasAnyTexture ? boundMap : 0.0);
 			}
 		} catch (Error &e) {
 			GLMessageBox::Display((char *)e.GetMsg(),"Error",GLDLG_OK,GLDLG_ICONWARNING);

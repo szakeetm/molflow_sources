@@ -370,7 +370,7 @@ void  GLTextField::CopyClipboardText() {
  strcpy(tmp,&(m_Text[min]));
  tmp[max-min]=0;
 
-#ifdef WIN64
+#ifdef WIN
 
  if( !OpenClipboard(NULL) )
    return;
@@ -404,7 +404,7 @@ void  GLTextField::CopyClipboardText() {
 
 void GLTextField::PasteClipboardText() {
 
-#ifdef WIN64
+#ifdef WIN
 
   if( OpenClipboard(NULL) ) {
     HGLOBAL hMem;

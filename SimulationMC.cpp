@@ -72,7 +72,7 @@ void PolarToCartesian(FACET *iFacet, double theta, double phi, BOOL reverse) {
 	// (nU,nV,N) and (x,y,z) are both left handed
 
 	//This should be a speed-up routine, but I didn't experience any speed difference so I commented it out. Marton
-	/*#ifdef WIN64
+	/*#ifdef WIN
 	_asm {                    // FPU stack
 	fld qword ptr [theta]
 	fsincos                 // cos(t)        sin(t)
@@ -445,14 +445,13 @@ BOOL SimulationMCStep(int nbStep) {
 // -------------------------------------------------------------
 
 BOOL StartFromSource() {
-	BOOL found_side1 = FALSE;
-	BOOL found_side2 = FALSE;
-	BOOL found;
+	BOOL found=FALSE;
 	BOOL foundInMap = FALSE;
+	BOOL reverse;
 	int mapPositionW, mapPositionH;
 	FACET *src = NULL;
 	double srcRnd;
-	double A = 0.0;
+	double sumA = 0.0;
 	int i = 0, j = 0, w, h;
 	int nbTry = 0;
 
@@ -467,45 +466,52 @@ BOOL StartFromSource() {
 	// Select source
 	srcRnd = rnd() * sHandle->totalDesorbedMolecules;
 
-	while (!found_side1 && !found_side2 && j < sHandle->nbSuper) {
+	while (!found && j < sHandle->nbSuper) { //Go through superstructures
 		i = 0;
-		while (!found_side1 && !found_side2 && i < sHandle->str[j].nbFacet) {
+		while (!found && i < sHandle->str[j].nbFacet) { //Go through facets in a structure
 			FACET *f = sHandle->str[j].facets[i];
 			if (f->sh.desorbType != DES_NONE) { //there is some kind of outgassing
 				if (f->sh.useOutgassingFile) { //Using SynRad-generated outgassing map
-					for (w = 0; w < f->sh.outgassingMapWidth && !found_side1 && !found_side2; w++)
-						for (h = 0; h<f->sh.outgassingMapHeight && !found_side1 && !found_side2; h++) {
-							double outgassing = sHandle->latestMoment * f->outgassingMap[h*f->sh.outgassingMapWidth + w] / (1.38E-23*f->sh.temperature);
-							if (outgassing>0.0) {
-								foundInMap = found_side1 = (srcRnd >= A) && (srcRnd < (A + outgassing*((f->sh.is2sided) ? 0.5 : 1.0))); //2-sided facets have half outgassing on each side
-								if (foundInMap) { mapPositionW = w; mapPositionH = h; }
-								A += outgassing*((f->sh.is2sided) ? 0.5 : 1.0);
-								if (f->sh.is2sided) { //check the other side
-									foundInMap = found_side2 = (srcRnd >= A) && (srcRnd < A + outgassing*0.5);
-									if (foundInMap) { mapPositionW = w; mapPositionH = h; }
-									A += outgassing*0.5;
+					if (f->sh.totalOutgassing>0.0) {
+						found = (srcRnd >= sumA) && (srcRnd < (sumA + sHandle->latestMoment * f->sh.totalOutgassing / (1.38E-23*f->sh.temperature)));
+						if (found) {
+							//look for exact position in map
+							double rndRemainder = (srcRnd - sumA)/sHandle->latestMoment*(1.38E-23*f->sh.temperature); //remainder, should be less than f->sh.totalOutgassing
+							double sumB = 0.0;
+							for (w = 0; w < f->sh.outgassingMapWidth && !foundInMap; w++) {
+								for (h = 0; h < f->sh.outgassingMapHeight && !foundInMap; h++) {
+									double cellOutgassing = f->outgassingMap[h*f->sh.outgassingMapWidth + w];
+									if (cellOutgassing > 0.0) {
+										foundInMap = (rndRemainder >= sumB) && (rndRemainder < (sumB + cellOutgassing));
+										if (foundInMap) mapPositionW = w; mapPositionH = h;
+										sumB += cellOutgassing;
+									}
 								}
 							}
+							if (!foundInMap) {
+								SetErrorSub("Starting point not found in imported desorption map");
+								return FALSE;
+							}
 						}
-				}
+						sumA += sHandle->latestMoment * f->sh.totalOutgassing / (1.38E-23*f->sh.temperature);
+					}
+				} //end outgassing file block
 				else  { //constant or time-dependent outgassing
-					double outgassing=
+					double facetOutgassing=
 						(f->sh.outgassing_paramId>=0)
 						?sHandle->IDs[f->sh.IDid].back().second/ (1.38E-23*f->sh.temperature)
 						:sHandle->latestMoment*f->sh.flow / (1.38E-23*f->sh.temperature);
-					found_side1 = (srcRnd >= A) && (srcRnd < (A + outgassing *((f->sh.is2sided) ? 0.5 : 1.0))); //2-sided facets have half outgassing on each side
-					A += outgassing *((f->sh.is2sided) ? 0.5 : 1.0);
-					if (f->sh.is2sided) { //check the other side
-						found_side2 = (srcRnd >= A) && (srcRnd < A + outgassing*0.5);
-						A += outgassing*0.5;
-					}
-				}
-			}
-			if (!found_side1 && !found_side2) i++;
+					found = (srcRnd >= sumA) && (srcRnd < (sumA + facetOutgassing));
+					sumA += facetOutgassing;
+				} //end constant or time-dependent outgassing block
+			} //end 'there is some kind of outgassing'
+			if (!found) i++;
+			if (f->sh.is2sided) reverse = rnd() > 0.5;
+			else reverse = FALSE;
 		}
-		if (!found_side1 && !found_side2) j++;
+		if (!found) j++;
 	}
-	if (!found_side1 && !found_side2) {
+	if (!found) {
 		SetErrorSub("No starting point, aborting");
 		return FALSE;
 	}
@@ -529,7 +535,7 @@ BOOL StartFromSource() {
 	}
 	//sHandle->temperature = src->sh.temperature; //Thermalize particle
 
-	found = FALSE;
+	found = FALSE; //Starting point within facet
 
 
 	// Choose a starting point
@@ -571,14 +577,14 @@ BOOL StartFromSource() {
 	//See docs/theta_gen.png for further details on angular distribution generation
 	switch (src->sh.desorbType) {
 	case DES_UNIFORM:
-		PolarToCartesian(src, acos(rnd()), rnd()*2.0*PI, found_side2);
+		PolarToCartesian(src, acos(rnd()), rnd()*2.0*PI, reverse);
 		break;
 	case DES_NONE: //for file-based
 	case DES_COSINE:
-		PolarToCartesian(src, acos(sqrt(rnd())), rnd()*2.0*PI, found_side2);
+		PolarToCartesian(src, acos(sqrt(rnd())), rnd()*2.0*PI, reverse);
 		break;
 	case DES_COSINE_N:
-		PolarToCartesian(src, acos(pow(rnd(), 1.0 / (src->sh.desorbTypeN + 1.0))), rnd()*2.0*PI, found_side2);
+		PolarToCartesian(src, acos(pow(rnd(), 1.0 / (src->sh.desorbTypeN + 1.0))), rnd()*2.0*PI, reverse);
 		break;
 	}
 
@@ -615,8 +621,7 @@ BOOL StartFromSource() {
 		}
 	}
 
-	found_side1 = FALSE;
-	found_side2 = FALSE;
+	found = FALSE;
 	return TRUE;
 }
 

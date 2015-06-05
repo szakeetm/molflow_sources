@@ -16,7 +16,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 */
 
-#ifdef WIN64
+#ifdef WIN
 #include <windows.h> // For GetTickCount()
 #include <Process.h> // For _getpid()
 #else
@@ -46,7 +46,7 @@ SIMULATION *sHandle;
 // Timing stuff
 // -------------------------------------------------------
 
-#ifdef WIN64
+#ifdef WIN
 BOOL usePerfCounter;         // Performance counter usage
 LARGE_INTEGER perfTickStart; // First tick
 double perfTicksPerSec;      // Performance counter (number of tick per second)
@@ -62,7 +62,7 @@ void InitSimulation() {
 	memset(sHandle, 0, sizeof(SIMULATION));
 	THits = (FACET **)malloc(MAX_THIT*sizeof(FACET *)); // Transparent hit cache
 
-#ifdef WIN64
+#ifdef WIN
 	{
 		LARGE_INTEGER qwTicksPerSec;
 		usePerfCounter = QueryPerformanceFrequency(&qwTicksPerSec);
@@ -147,7 +147,7 @@ DWORD RevertBit(DWORD dw) {
 
 DWORD GetSeed() {
 
-	/*#ifdef WIN64
+	/*#ifdef WIN
 	DWORD r;
 	_asm {
 	rdtsc
@@ -570,7 +570,7 @@ void UpdateHits(Dataport *dpHit, int prIdx, DWORD timeout) {
 
 // -------------------------------------------------------
 
-long GetHitsSize() {
+size_t GetHitsSize() {
 	return sHandle->textTotalSize + sHandle->profTotalSize + sHandle->dirTotalSize + sHandle->totalFacet*sizeof(SHHITS)+sizeof(SHGHITS);
 }
 
@@ -739,7 +739,7 @@ double GetTick() {
 
 	// Number of sec since the application startup
 
-#ifdef WIN64
+#ifdef WIN
 
 	if (usePerfCounter) {
 

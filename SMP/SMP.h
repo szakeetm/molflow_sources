@@ -27,11 +27,11 @@
 extern "C" {
 #endif
 
-#ifdef WIN64
+#ifdef WIN
 
  #include <windows.h>
 
- // Win32 shared memory
+ // WIN shared memory
  typedef struct {
 	 char              name[32];
 	 char              semaname[32];

@@ -60,7 +60,7 @@ public:
   //Import desorption map
   void ImportDesorption_DES(char *fileName);
   void ImportDesorption_SYN(char *fileName, const size_t &source, const double &time,
-	  const size_t &mode, const double &eta0, const double &alpha,
+	  const size_t &mode, const double &eta0, const double &alpha, const double &cutoffdose,
 	  const std::vector<std::pair<double, double>> &convDistr,
 	  GLProgress *prg);
   void AnalyzeSYNfile(char *fileName, int *nbFacet, int *nbTextured, int *nbDifferent);

@@ -54,7 +54,7 @@ private:
 
   GLTitledPanel *filePanel;
   GLTextField   *synFileName;
-  GLButton      *loadSynButton;
+  GLButton      *loadSynButton,*reloadButton;
   GLButton      *useCurrentButton;
   GLLabel       *analysisResultLabel;
 
@@ -63,7 +63,7 @@ private:
   GLTextField   *timeField;
 
   GLToggle      *r1,*r2,*r3;
-  GLTextField   *eta0label,*alphaLabel;
+  GLTextField   *eta0Text,*alphaText,*cutoffText;
   GLTextField   *convFileName;
   GLButton      *loadConvButton;
   GLButton      *convInfoButton;

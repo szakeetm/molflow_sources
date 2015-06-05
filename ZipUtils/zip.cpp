@@ -2594,7 +2594,7 @@ ZRESULT TZip::Add(const TCHAR *odstzn, void *src,unsigned int len, DWORD flags)
   zfi.mark = 1;
   zfi.dosflag = 0;
   zfi.att = (ush)BINARY;
-  zfi.vem = (ush)0xB17; // 0xB00 is win32 os-code. 0x17 is 23 in decimal: zip 2.3
+  zfi.vem = (ush)0xB17; // 0xB00 is WIN os-code. 0x17 is 23 in decimal: zip 2.3
   zfi.ver = (ush)20;    // Needs PKUNZIP 2.0 to unzip it
   zfi.tim = timestamp;
   // Even though we write the header now, it will have to be rewritten, since we don't know compressed size or crc.

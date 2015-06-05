@@ -38,7 +38,7 @@ ImportDesorption::ImportDesorption():GLWindow() {
 	SetTitle("Import SYN textures as desorption");
 
 	filePanel = new GLTitledPanel("Source file with textures");
-	filePanel->SetBounds(5,5,hD-10,120);
+	filePanel->SetBounds(5,5,wD-10,120);
 	Add(filePanel);
 
 	GLLabel *l1=new GLLabel("SYN file:");
@@ -57,12 +57,16 @@ ImportDesorption::ImportDesorption():GLWindow() {
 	analysisResultLabel->SetBounds(60,50,200,70);
 	Add(analysisResultLabel);
 
+	reloadButton = new GLButton(0, "Reanalyze");
+	reloadButton->SetBounds(wD - 90, 49, 80, 19);
+	Add(reloadButton);
+
 	useCurrentButton=new GLButton(0,"Use current file");
-	useCurrentButton->SetBounds(wD-90,49,80,19);
+	useCurrentButton->SetBounds(wD-90,74,80,19);
 	Add(useCurrentButton);
 
 	importPanel=new GLTitledPanel("Convert and Import");
-	importPanel->SetBounds(5,130,hD-10,220);
+	importPanel->SetBounds(5,130,wD-10,220);
 	Add(importPanel);
 
 	GLLabel *l2=new GLLabel("Dose=");
@@ -94,43 +98,63 @@ ImportDesorption::ImportDesorption():GLWindow() {
 	r1->SetBounds(15,200,150,21);
 	Add(r1);
 
-	r2=new GLToggle(0,"Molecules/Photon=");
-	r2->SetBounds(15,225,100,21);
+	r2=new GLToggle(0,"Yield=");
+	r2->SetBounds(15,225,50,21);
 	r2->SetState(TRUE);mode=MODE_EQUATION; //Set default mode
 	Add(r2);
 
-	eta0label=new GLTextField(0,"1");
-	eta0label->SetBounds(125,224,50,19);
-	Add(eta0label);
+	eta0Text=new GLTextField(0,"1E-2");
+	eta0Text->SetBounds(70,224,50,19);
+	Add(eta0Text);
 
-	GLLabel *l5=new GLLabel("* Dose ^");
-	l5->SetBounds(181,225,50,21);
+	GLLabel *l5=new GLLabel("molecules/photon until");
+	l5->SetBounds(120,225,100,21);
 	Add(l5);
 
-	alphaLabel=new GLTextField(0,"-0.66");
-	alphaLabel->SetBounds(232,224,60,19);
-	Add(alphaLabel);
+	cutoffText = new GLTextField(0, "1E20");
+	cutoffText->SetBounds(235, 225, 50, 19);
+	Add(cutoffText);
+
+	GLLabel *l6 = new GLLabel("photons/cm\262 dose...");
+	l6->SetBounds(285, 225, 50, 21);
+	Add(l6);
+
+	GLLabel *l7 = new GLLabel("...then power function with");
+	l7->SetBounds(70, 250, 100, 21);
+	Add(l7);
+
+	alphaText=new GLTextField(0,"-0.666");
+	alphaText->SetBounds(200,250,60,19);
+	Add(alphaText);
+
+	GLLabel *l8 = new GLLabel("/decade slope");
+	l8->SetBounds(260, 250, 100, 21);
+	Add(l8);
+
+	GLLabel *l9 = new GLLabel("(if dose>cutoff, eta=eta0*(dose/cutoff)^alpha, otherwise eta=eta0)");
+	l9->SetBounds(70, 275, 300, 21);
+	Add(l9);
 
 	r3=new GLToggle(0,"Use molecule yield file:");
-	r3->SetBounds(15,250,100,21);
+	r3->SetBounds(15,300,100,21);
 	Add(r3);
 
 	convFileName=new GLTextField(0,"");
-	convFileName->SetBounds(30,274,220,19);
+	convFileName->SetBounds(30,299,220,19);
 	convFileName->SetEditable(FALSE);
 	Add(convFileName);
 
 	loadConvButton=new GLButton(0,"Load...");
-	loadConvButton->SetBounds(260,275,80,19);
+	loadConvButton->SetBounds(260,300,80,19);
 	//loadConvButton->SetEnabled(FALSE);
 	Add(loadConvButton);
 
 	convInfoButton=new GLButton(0,"info");
-	convInfoButton->SetBounds(340,275,40,19);
+	convInfoButton->SetBounds(345,300,40,19);
 	Add(convInfoButton);
 
 	convAnalysisLabel=new GLLabel("");
-	convAnalysisLabel->SetBounds(30,300,150,21);
+	convAnalysisLabel->SetBounds(30,325,150,21);
 	Add(convAnalysisLabel);
 
 	setButton = new GLButton(0,"Import for selected facets");
@@ -195,16 +219,21 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 			}
 			mode=MODE_FILE;
 			EnableDisableComponents();
-		} else if (src==loadSynButton || src==useCurrentButton) {
+		} else if (src==loadSynButton || src==useCurrentButton || src==reloadButton) {
 			//load file dialog
 			FILENAME synFileTmp;
 			FILENAME *synFilePtr=NULL;
 			if (src==loadSynButton)
 				synFilePtr=GLFileBox::OpenFile(mApp->currentDir,NULL,"Open source SYN file",
 				"SynRad+ files\0*.syn;*.syn7z\0All files\0*.*\0",2);
-			else {
+			else if (src==useCurrentButton) {
 				strcpy(synFileTmp.fullName,work->fullFileName);
 				synFilePtr=&synFileTmp;
+			}
+			else if (src == reloadButton) {
+				std::string synFile = synFileName->GetText();
+				strcpy(synFileTmp.fullName, synFile.c_str());
+				synFilePtr = &synFileTmp;
 			}
 			if (!synFilePtr) return;
 			if (!synFilePtr->fullName) return;
@@ -233,7 +262,7 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 			//validate user input
 			std::string synFile=synFileName->GetText();
 			std::string convFile=convFileName->GetText();
-			double time,eta0,alpha;
+			double time,eta0,alpha,cutoffdose;
 
 			if( !FileUtils::Exist(synFile.c_str())) {
 				GLMessageBox::Display("Referenced SYN file doesn't exist","Error",GLDLG_OK,GLDLG_ICONERROR);
@@ -250,14 +279,20 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 				return;
 			}
 
-			if( !eta0label->GetNumber(&eta0) || !(eta0>=0.0)) {
+			if( mode==MODE_EQUATION && !eta0Text->GetNumber(&eta0) || !(eta0>=0.0)) {
 				GLMessageBox::Display("Invalid number in ETA0 (conversion coefficient) field.","Error",GLDLG_OK,GLDLG_ICONERROR);
 				return;
 			}
-			if( !alphaLabel->GetNumber(&alpha)) {
+			if (mode == MODE_EQUATION && !alphaText->GetNumber(&alpha)) {
 				GLMessageBox::Display("Invalid number in ALPHA (conversion exponent) field.","Error",GLDLG_OK,GLDLG_ICONERROR);
 				return;
 			}
+
+			if (mode == MODE_EQUATION && !cutoffText->GetNumber(&cutoffdose)) {
+				GLMessageBox::Display("Invalid cutoff dose number.", "Error", GLDLG_OK, GLDLG_ICONERROR);
+				return;
+			}
+
 			if ((mode==MODE_FILE)&&(!(convDistr.size()>0))) {
 				GLMessageBox::Display("No valid conversion file loaded","Error",GLDLG_OK,GLDLG_ICONERROR);
 				return;
@@ -270,7 +305,7 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 			progressDlg->SetVisible(TRUE);
 			
 			try{
-				work->ImportDesorption_SYN((char*)synFile.c_str(),doseSource,time,mode,eta0,alpha,convDistr,progressDlg);
+				work->ImportDesorption_SYN((char*)synFile.c_str(),doseSource,time,mode,eta0,alpha,cutoffdose,convDistr,progressDlg);
 			} catch (Error &e) {
 				char errMsg[512];
 				sprintf(errMsg,"%s\nFile:%s",e.GetMsg(),synFile.c_str());
@@ -335,9 +370,9 @@ void ImportDesorption::LoadConvFile(char* fileName) {
 void ImportDesorption::EnableDisableComponents(){
 	r1->SetState(mode==MODE_NOCONV);
 		r2->SetState(mode==MODE_EQUATION);
-		eta0label->SetEditable(mode==MODE_EQUATION);
-		alphaLabel->SetEditable(mode==MODE_EQUATION);
-		
+		eta0Text->SetEditable(mode==MODE_EQUATION);
+		alphaText->SetEditable(mode==MODE_EQUATION);
+		cutoffText->SetEditable(mode == MODE_EQUATION);
 		r3->SetState(mode==MODE_FILE);
 		convFileName->SetEditable(mode==MODE_FILE);
 		loadConvButton->SetEnabled(mode==MODE_FILE);

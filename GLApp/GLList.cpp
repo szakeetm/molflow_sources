@@ -1506,7 +1506,7 @@ void GLList::CopyToClipboard(int row,int col,int rowLght,int colLgth) {
 	}
 	if( !totalLength ) return;
 
-#ifdef WIN64
+#ifdef WIN
 
 	if( !OpenClipboard(NULL) )
 		return;
@@ -1602,7 +1602,7 @@ void GLList::CopyAllToClipboard() {
 	}
 	if( !totalLength ) return;
 
-#ifdef WIN64
+#ifdef WIN
 
 	if( !OpenClipboard(NULL) )
 		return;
@@ -1663,7 +1663,7 @@ void GLList::CopySelectionToClipboard() {
 	}
 	if( !totalLength ) return;
 
-#ifdef WIN64
+#ifdef WIN
 
 	if( !OpenClipboard(NULL) )
 		return;
@@ -2239,7 +2239,7 @@ void GLList::ReOrder(){
 
 void GLList::PasteClipboardText() {
 
-#ifdef WIN64
+#ifdef WIN
 
   if( OpenClipboard(NULL) ) {
     HGLOBAL hMem;

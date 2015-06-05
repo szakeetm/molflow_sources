@@ -100,7 +100,7 @@ Facet::Facet(int nbIndex) {
 
 	hasOutgassingFile = FALSE;
 	outgassingMap = NULL;
-	totalFlux = totalOutgassing = totalDose = 0.0;
+	totalFlux = sh.totalOutgassing = totalDose = 0.0;
 
 	textureVisible = TRUE;
 	volumeVisible = TRUE;
@@ -281,10 +281,10 @@ void Facet::LoadGEO(FileReader *file, int version, int nbVertex) {
 
 }
 
-void Facet::LoadXML(xml_node f,int nbVertex) {
+void Facet::LoadXML(xml_node f,int nbVertex,int vertexOffset) {
 	int idx = 0;
 	for (xml_node indice : f.child("Indices").children("Indice")) {
-		indices[idx] = indice.attribute("vertex").as_int();
+		indices[idx] = indice.attribute("vertex").as_int()+vertexOffset;
 		if (indices[idx] >= nbVertex) {
 			char err[128];
 			sprintf(err, "Facet %d refers to vertex %d which doesn't exist", f.attribute("id").as_int() + 1, idx + 1);
@@ -332,7 +332,7 @@ void Facet::LoadXML(xml_node f,int nbVertex) {
 		sh.outgassingMapHeight = outgNode.attribute("height").as_int();
 		sh.outgassingFileRatio = outgNode.attribute("ratio").as_double();
 		totalDose = outgNode.attribute("totalDose").as_double();
-		totalOutgassing = outgNode.attribute("totalOutgassing").as_double();
+		sh.totalOutgassing = outgNode.attribute("totalOutgassing").as_double();
 		totalFlux = outgNode.attribute("totalFlux").as_double();
 
 		std::stringstream outgText;
@@ -509,8 +509,10 @@ void Facet::LoadTXT(FileReader *file) {
 	if (sh.counter.hit.nbDesorbed == 0)
 		sh.desorbType = DES_NONE;
 
-	if (IsLinkFacet())
+	if (IsLinkFacet()) {
 		sh.superDest = (int)(sh.sticking + 0.5);
+		sh.sticking = 0;
+	}
 
 	UpdateFlags();
 
@@ -1695,7 +1697,7 @@ void  Facet::SaveXML_geom(pugi::xml_node f){
 		textureNode.append_attribute("height") = sh.outgassingMapHeight;
 		textureNode.append_attribute("ratio") = sh.outgassingFileRatio;
 		textureNode.append_attribute("totalDose") = totalDose;
-		textureNode.append_attribute("totalOutgassing") = totalOutgassing;
+		textureNode.append_attribute("totalOutgassing") = sh.totalOutgassing;
 		textureNode.append_attribute("totalFlux") = totalFlux;
 
 		std::stringstream outgText;

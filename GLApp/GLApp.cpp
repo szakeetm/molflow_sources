@@ -24,7 +24,7 @@
 
 GLApplication *theApp=NULL;
 
-#ifdef WIN64
+#ifdef WIN
 LARGE_INTEGER perfTickStart; // Fisrt tick
 double perfTicksPerSec;      // Performance counter (number of tick per second)
 #endif
@@ -55,7 +55,7 @@ GLApplication::GLApplication() {
   fMoveTime = 0.0;
 #endif
 
-#ifdef WIN64
+#ifdef WIN
   m_fscreenWidth = GetSystemMetrics(SM_CXSCREEN);
   m_fscreenHeight = GetSystemMetrics(SM_CYSCREEN);
 
@@ -76,7 +76,7 @@ GLApplication::GLApplication() {
 
 double GLApplication::GetTick() {
 
-#ifdef WIN64
+#ifdef WIN
 
   LARGE_INTEGER t,dt;
   QueryPerformanceCounter( &t );
@@ -233,7 +233,7 @@ void GLApplication::ProcessMessage(GLComponent *src, int message) {
 void GLApplication::Exit() {
 
   char *logs = GLToolkit::GetLogs();
-#ifdef WIN64
+#ifdef WIN
   if(logs) {
     strcat(logs,"\nDo you want to exit ?");
     if( MessageBox(NULL,logs,"[Unexpected error]",MB_YESNO)==IDNO ) {

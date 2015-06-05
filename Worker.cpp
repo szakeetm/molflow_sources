@@ -914,7 +914,7 @@ void Worker::InsertGeometry(BOOL newStr, char *fileName) {
 			progressDlg->SetMessage("Reloading worker with new geometry...");
 			RealReload();
 			SAFE_DELETE(f);
-			strcpy(fullFileName, fileName);
+			//strcpy(fullFileName, fileName);
 		}
 		catch (Error &e) {
 			//geom->Clear();
@@ -1898,7 +1898,7 @@ void Worker::ImportDesorption_DES(char *fileName) {
 }
 
 void Worker::ImportDesorption_SYN(char *fileName, const size_t &source, const double &time,
-	const size_t &mode, const double &eta0, const double &alpha,
+	const size_t &mode, const double &eta0, const double &alpha, const double &cutoffdose,
 	const std::vector<std::pair<double, double>> &convDistr,
 	GLProgress *prg) {
 	char *ext, *filebegin;
@@ -1941,7 +1941,7 @@ void Worker::ImportDesorption_SYN(char *fileName, const size_t &source, const do
 
 			if (!isSYN7Z) f = new FileReader(fileName);  //original file opened
 
-			geom->ImportDesorption_SYN(f, source, time, mode, eta0, alpha, convDistr, prg);
+			geom->ImportDesorption_SYN(f, source, time, mode, eta0, alpha, cutoffdose, convDistr, prg);
 			CalcTotalOutgassing();
 			SAFE_DELETE(f);
 
@@ -1964,7 +1964,7 @@ void Worker::AnalyzeSYNfile(char *fileName, int *nbFacet, int *nbTextured, int *
 	char CWD[MAX_PATH];
 	_getcwd(CWD, MAX_PATH);
 	if (ext == NULL || (!(_stricmp(ext, ".syn7z") == 0)) && (!(_stricmp(ext, ".syn") == 0)))
-		throw Error("InsertGeometry(): Invalid file extension [Only syn, syn7z]");
+		throw Error("AnalyzeSYNfile(): Invalid file extension [Only syn, syn7z]");
 	ext++;
 
 	// Read a file

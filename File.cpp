@@ -19,7 +19,7 @@
 #include "File.h"
 #include <string.h>
 
-#ifdef WIN64
+#ifdef WIN
 #include <direct.h>
 #include <io.h>
 #include <iostream>
@@ -385,7 +385,7 @@ void FileWriter::WriteInt(int v,char *sep) {
 }
 
 void FileWriter::WriteLLong(llong v,char *sep) {
-#ifdef WIN64
+#ifdef WIN
   if( !fprintf(file,"%I64d",v) )
     throw Error("Error while writing to file");
 #else

@@ -37,7 +37,7 @@ GNU General Public License for more details.
 #define APP_NAME "MolFlow+ development version 64-bit (Compiled "__DATE__" "__TIME__") DEBUG MODE"
 #else
 //#define APP_NAME "Molflow+ development version ("__DATE__")"
-#define APP_NAME "Molflow+ 2.6.10 64-bit ("__DATE__")"
+#define APP_NAME "Molflow+ 2.6.12 64-bit ("__DATE__")"
 #endif
 
 /*
@@ -216,7 +216,7 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, INT)
 
 	if (!mApp->Create(1024, 768, FALSE)) {
 		char *logs = GLToolkit::GetLogs();
-#ifdef WIN64
+#ifdef WIN
 		if (logs) MessageBox(NULL, logs, "Molflow [Fatal error]", MB_OK);
 #else
 		if( logs ) {
@@ -1391,7 +1391,7 @@ void MolFlow::UpdateFacetParams(BOOL updateSelection) { //Calls facetMesh->Refre
 			sprintf(tmp, "Selected Facet (%d selected)", count);
 
 		// Old STR compatibility
-		if (stickingE && f0->sh.superDest) stickingE = FALSE;
+		//if (stickingE && f0->sh.superDest) stickingE = FALSE;
 
 		facetPanel->SetTitle(tmp);
 		if (count > 1) facetAreaLabel->SetText("Sum Area (cm\262):");
@@ -4814,10 +4814,12 @@ void MolFlow::LoadConfig() {
 
 	}
 	catch (Error &err) {
-		std::ostringstream tmp;
+		/*std::ostringstream tmp;
 		tmp << err.GetMsg() << "\n\nThis is normal on the first launch and if you upgrade from an earlier version\n";
 		tmp << "MolFlow will use default program settings.\nWhen you quit, a correct config file will be written\n";
-		GLMessageBox::Display(tmp.str().c_str(), "Error loading config file", GLDLG_OK, GLDLG_ICONINFO);
+		GLMessageBox::Display(tmp.str().c_str(), "Error loading config file", GLDLG_OK, GLDLG_ICONINFO);*/
+		SAFE_DELETE(f);
+		return;
 	}
 
 	SAFE_DELETE(f);

@@ -276,6 +276,8 @@ typedef struct {
   int   outgassingMapWidth;
   int   outgassingMapHeight;
 
+  double totalOutgassing;
+
 } SHFACET;
 
 // -----------------------------------------------------------------

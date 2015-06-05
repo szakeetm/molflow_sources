@@ -1652,11 +1652,11 @@ void Geometry::LoadTXT(FileReader *file, GLProgress *prg) {
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
 	Clear();
-	LoadTXTGeom(file, &(sh.nbVertex), &(sh.nbFacet), &vertices3, &facets);
 	UpdateName(file);
 	sh.nbSuper = 1;
 	strName[0] = _strdup(sh.name);
 	strFileName[0] = _strdup(file->GetName());
+	LoadTXTGeom(file, &(sh.nbVertex), &(sh.nbFacet), &vertices3, &facets);
 	char *e = strrchr(strName[0], '.');
 	if (e) *e = 0;
 	InitializeGeometry();
@@ -1764,6 +1764,9 @@ void Geometry::LoadTXTGeom(FileReader *file, int *nbV, int *nbF, VERTEX3D **V, F
 	// Read facets params
 	for (int i = 0; i < nF; i++) {
 		f[i]->LoadTXT(file);
+		while ((f[i]->sh.superDest) > sh.nbSuper) { //If facet refers to a structure that doesn't exist, create it
+				AddStruct("TXT linked");
+		}
 		f[i]->sh.superIdx = strIdx;
 	}
 
@@ -1823,6 +1826,9 @@ void Geometry::InsertTXTGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 	// Read facets params
 	for (int i = *nbFacet; i < (*nbFacet + nbNewFacets); i++) {
 		(*facets)[i]->LoadTXT(file);
+		while (((*facets)[i]->sh.superDest) > sh.nbSuper) { //If facet refers to a structure that doesn't exist, create it
+			AddStruct("TXT linked");
+		}
 		if (newStruct) {
 			(*facets)[i]->sh.superIdx = sh.nbSuper;
 		}
@@ -1833,7 +1839,7 @@ void Geometry::InsertTXTGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 
 	*nbVertex += nbNewVertex;
 	*nbFacet += nbNewFacets;
-	if (newStruct) sh.nbSuper++;
+	if (newStruct) AddStruct("Inserted TXT file");
 
 }
 
@@ -1971,8 +1977,10 @@ void Geometry::InsertGEOGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 	for (int i = 0; i < nbNewSuper; i++) {
 		strName[i] = _strdup(file->ReadString());
 		// For backward compatibilty with STR
+		/* //Commented out for GEO
 		sprintf(tmp, "%s.txt", strName[i]);
 		strFileName[i] = _strdup(tmp);
+		*/
 	}
 	file->ReadKeyword("}");
 
@@ -2192,8 +2200,8 @@ void Geometry::InsertSYNGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 	for (int i = 0; i < nbNewSuper; i++) {
 		strName[i] = _strdup(file->ReadString());
 		// For backward compatibilty with STR
-		sprintf(tmp, "%s.txt", strName[i]);
-		strFileName[i] = _strdup(tmp);
+		/*sprintf(tmp, "%s.txt", strName[i]);
+		strFileName[i] = _strdup(tmp);*/
 	}
 	file->ReadKeyword("}");
 
@@ -2369,7 +2377,7 @@ void Geometry::InsertSTLGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 
 	*nbVertex += nbNewVertex;
 	*nbFacet += nbNewFacets;
-	if (newStruct) sh.nbSuper++;
+	if (newStruct) AddStruct("Inserted STL file");
 
 }
 
@@ -3883,7 +3891,7 @@ BOOL Geometry::IsLoaded() {
 
 void Geometry::ImportDesorption_SYN(
 	FileReader *file, const size_t &source, const double &time,
-	const size_t &mode, const double &eta0, const double &alpha,
+	const size_t &mode, const double &eta0, const double &alpha, const double &cutoffdose,
 	const std::vector<std::pair<double, double>> &convDistr,
 	GLProgress *prg){
 
@@ -3990,7 +3998,7 @@ void Geometry::ImportDesorption_SYN(
 				f->sh.outgassingFileRatio = xdims[i] / Norme(&(f->sh.U));
 				f->outgassingMap = (double*)malloc(width*height*sizeof(double));
 				if (!f->outgassingMap) throw Error("Not enough memory to store outgassing map.");
-				f->totalDose = f->totalOutgassing = f->totalFlux = 0.0;
+				f->totalDose = f->sh.totalOutgassing = f->totalFlux = 0.0;
 			}
 
 			for (iy = 0; iy < height; iy++) {
@@ -4022,7 +4030,7 @@ void Geometry::ImportDesorption_SYN(
 								else if (source == 2) outgassing = power * 0.100 / 1.38E-23 / f->sh.temperature; //(Outgassing is stored internally in Pa*m3/s, for consistent SI unit calculations)
 							}
 							else if (mode == 1) {
-								double moleculePerPhoton = eta0*pow(dose, alpha);
+								double moleculePerPhoton = eta0*pow(MAX(1.0,dose/cutoffdose),alpha);
 								outgassing = flux*moleculePerPhoton;
 							}
 							else if (mode == 2) {
@@ -4037,7 +4045,7 @@ void Geometry::ImportDesorption_SYN(
 						//Facet diagnostic info
 						f->totalDose += flux*time;
 						f->totalFlux += flux;
-						f->totalOutgassing += f->outgassingMap[index];
+						f->sh.totalOutgassing += f->outgassingMap[index];
 					} //if selected
 				}
 			}
@@ -4620,9 +4628,21 @@ void Geometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progr
 	xml_node geomNode = loadXML.child("Geometry");
 
 	//Vertices
-	sh.nbVertex = geomNode.child("Vertices").select_nodes("Vertex").size();
-	vertices3 = (VERTEX3D *)malloc(sh.nbVertex * sizeof(VERTEX3D));
-	int idx = 0;
+	
+	int nbNewVertex=geomNode.child("Vertices").select_nodes("Vertex").size();
+	int nbNewFacets = geomNode.child("Facets").select_nodes("Facet").size();
+	
+	// reallocate memory
+	facets = (Facet **)realloc(facets, (nbNewFacets + sh.nbFacet) * sizeof(Facet **));
+	memset(facets + sh.nbFacet, 0, nbNewFacets * sizeof(Facet *));
+	VERTEX3D *tmp_vertices3 = (VERTEX3D *)malloc((nbNewVertex + sh.nbVertex) * sizeof(VERTEX3D));
+	memmove(tmp_vertices3, vertices3, (sh.nbVertex)*sizeof(VERTEX3D));
+	memset(tmp_vertices3 + sh.nbVertex, 0, nbNewVertex * sizeof(VERTEX3D));
+	SAFE_FREE(vertices3);
+	vertices3 = tmp_vertices3;
+
+	// Read geometry vertices
+	int idx = sh.nbVertex;
 	for (xml_node vertex : geomNode.child("Vertices").children("Vertex")) {
 		vertices3[idx].x = vertex.attribute("x").as_double();
 		vertices3[idx].y = vertex.attribute("y").as_double();
@@ -4657,10 +4677,7 @@ void Geometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progr
 	}
 
 	//Facets
-	sh.nbFacet = geomNode.child("Facets").select_nodes("Facet").size();
-	facets = (Facet **)malloc(sh.nbFacet * sizeof(Facet *));
-	memset(facets, 0, sh.nbFacet * sizeof(Facet *));
-	idx = 0;
+	idx = sh.nbFacet;
 	for (xml_node facetNode : geomNode.child("Facets").children("Facet")) {
 		int nbIndex = facetNode.child("Indices").select_nodes("Indice").size();
 		if (nbIndex < 3) {
@@ -4670,7 +4687,8 @@ void Geometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progr
 		}
 
 		facets[idx] = new Facet(nbIndex);
-		facets[idx]->LoadXML(facetNode, sh.nbVertex);
+		facets[idx]->LoadXML(facetNode, sh.nbVertex+nbNewVertex, sh.nbVertex);
+		facets[idx]->selected = TRUE;
 
 		//Set param names for interface
 		if (facets[idx]->sh.sticking_paramId > -1) facets[idx]->userSticking = work->parameters[facets[idx]->sh.sticking_paramId].name;
@@ -4692,7 +4710,7 @@ void Geometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progr
 		s.selection = (int *)malloc((s.nbSel)*sizeof(int));
 		idx = 0;
 		for (xml_node iNode : sNode.children("selItem"))
-			s.selection[idx++] = iNode.attribute("facet").as_int();
+			s.selection[idx++] = iNode.attribute("facet").as_int()+sh.nbFacet; //offset selection numbers
 		mApp->AddSelection(s.name, s);
 	}
 
@@ -4717,15 +4735,22 @@ void Geometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progr
 		mApp->AddView(v.name, v);
 	}
 
+	sh.nbVertex += nbNewVertex;
+	sh.nbFacet += nbNewFacets; //formulas can refer to newly inserted facets
+
 	xml_node formulaNode = interfNode.child("Formulas");
 	for (xml_node newFormula : formulaNode.children("Formula")) {
+		char tmpExpr[512];
+		strcpy(tmpExpr,newFormula.attribute("expression").as_string());
+		mApp->OffsetFormula(tmpExpr, sh.nbFacet);
 		mApp->AddFormula(newFormula.attribute("name").as_string(),
-			newFormula.attribute("expression").as_string());
+			tmpExpr);
 	}
 
-	work->gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
-	work->halfLife = simuParamNode.child("Gas").attribute("halfLife").as_double();
+	/*work->gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
+	work->halfLife = simuParamNode.child("Gas").attribute("halfLife").as_double();*/
 
+	/*
 	xml_node timeSettingsNode = simuParamNode.child("TimeSettings");
 
 	xml_node userMomentsNode = timeSettingsNode.child("UserMoments");
@@ -4738,8 +4763,9 @@ void Geometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progr
 	work->timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();
 	work->useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_int();
 	work->calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_int();
-
-
+	*/
+	
+	if (newStr) AddStruct("Inserted ZIP/XML file");
 
 	InitializeGeometry();
 	//AdjustProfile();

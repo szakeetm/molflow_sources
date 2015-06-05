@@ -1092,7 +1092,7 @@ void GLChart::CopyAllToClipboard() {
 
 	if( !totalLength ) return;
 
-#ifdef WIN64
+#ifdef WIN
 
 	if( !OpenClipboard(NULL) )
 		return;

@@ -254,7 +254,7 @@ BOOL Intersect(VERTEX3D *rayPos,VERTEX3D *rayDir,double *dist,FACET **iFact,FACE
 BOOL Visible(VERTEX3D *c1,VERTEX3D *c2,FACET *f1,FACET *f2);
 BOOL IsInFacet(FACET *f,double u,double v);
 double GetTick();
-long   GetHitsSize();
+size_t   GetHitsSize();
 BOOL ComputeACMatrix(SHELEM *mesh);
 
 int GetIDId(int paramId);

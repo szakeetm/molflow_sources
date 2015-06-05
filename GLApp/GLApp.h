@@ -83,7 +83,7 @@ public:
   
     //float             m_fElapsedTime;      // Time elapsed since last frame
     float             m_fFPS;              // Instanteous frame rate
-    double            GetTick();           // Number of second since app startup (WIN64 only)
+    double            GetTick();           // Number of second since app startup (WIN only)
 
 #ifdef _DEBUG
     // Debugging stuff

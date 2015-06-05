@@ -76,7 +76,6 @@ public:
   BOOL textureError;   // Disable rendering if the texture has an error
   BOOL hasOutgassingFile; //true if a desorption file was loaded and had info about this facet
   double totalFlux;
-  double totalOutgassing;
   double totalDose;
 
   //Parametric stuff
@@ -102,7 +101,7 @@ public:
   void  SaveTXT(FileWriter *file);
   void  LoadGEO(FileReader *file,int version,int nbVertex);
   void  LoadSYN(FileReader *file,int version,int nbVertex);
-  void  LoadXML(pugi::xml_node f,int nbVertex);
+  void  LoadXML(pugi::xml_node f,int nbVertex,int vertexOffset=0);
   void  SaveGEO(FileWriter *file,int idx);
   void  SaveXML_geom(pugi::xml_node f);
   BOOL  IsCoplanar(Facet *f,double threshold);
