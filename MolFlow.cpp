@@ -135,26 +135,26 @@ MolFlow *mApp;
 #define MENU_FACET_SELECTTEXT  318
 #define MENU_FACET_SELECTPROF  319
 #define MENU_FACET_SELECTDEST  320
+#define MENU_FACET_SELECTTELEPORT  321
+#define MENU_FACET_SELECTVOL   322
+#define MENU_FACET_SELECTERR   323
+#define MENU_FACET_SELECTNONPLANAR 324
+#define MENU_FACET_SELECTHITS        325
+#define MENU_FACET_SELECTNOHITS_AREA 326
+#define MENU_FACET_SAVESEL     327
+#define MENU_FACET_LOADSEL     328
+#define MENU_FACET_INVERTSEL   329
+#define MENU_FACET_MOVE		   330
+#define MENU_FACET_SCALE       331
+#define MENU_FACET_MIRROR	   332
+#define MENU_FACET_ROTATE	   333
+#define MENU_FACET_ALIGN       334
+#define MENU_FACET_OUTGASSINGMAP 335
+#define MENU_FACET_CREATE_DIFFERENCE 336
+#define MENU_FACET_EXTRUDE 337
 
-#define MENU_FACET_SELECTVOL   321
-#define MENU_FACET_SELECTERR   322
-#define MENU_FACET_SELECTNONPLANAR 323
-#define MENU_FACET_SELECTHITS        3230
-#define MENU_FACET_SELECTNOHITS_AREA 3231
-#define MENU_FACET_SAVESEL     324
-#define MENU_FACET_LOADSEL     325
-#define MENU_FACET_INVERTSEL   326
-#define MENU_FACET_MOVE		   327
-#define MENU_FACET_SCALE       328
-#define MENU_FACET_MIRROR	   329
-#define MENU_FACET_ROTATE	   330
-#define MENU_FACET_ALIGN       331
-#define MENU_FACET_OUTGASSINGMAP 332
-#define MENU_FACET_CREATE_DIFFERENCE 3321
-#define MENU_FACET_EXTRUDE 3322
-
-#define MENU_SELECTION_ADDNEW             333
-#define MENU_SELECTION_CLEARALL           334
+#define MENU_SELECTION_ADDNEW             338
+#define MENU_SELECTION_CLEARALL           339
 
 #define MENU_SELECTION_MEMORIZESELECTIONS   3300
 #define MENU_SELECTION_SELECTIONS           3400
@@ -425,6 +425,7 @@ int MolFlow::OneTimeSceneInit()
 	menu->GetSubMenu("Selection")->Add(NULL); // Separator
 
 	menu->GetSubMenu("Selection")->Add("Select link facets", MENU_FACET_SELECTDEST);
+	menu->GetSubMenu("Selection")->Add("Select teleport facets", MENU_FACET_SELECTTELEPORT);
 	menu->GetSubMenu("Selection")->Add("Select volatile facets", MENU_FACET_SELECTVOL);
 	menu->GetSubMenu("Selection")->Add("Select non planar facets", MENU_FACET_SELECTNONPLANAR);
 	menu->GetSubMenu("Selection")->Add("Select non simple facets", MENU_FACET_SELECTERR);
@@ -1666,9 +1667,10 @@ void MolFlow::UpdateFormula() {
 
 }
 
-void MolFlow::OffsetFormula(char *expression, int offset, int filter) {
+BOOL MolFlow::OffsetFormula(char *expression, int offset, int filter) {
 	//will increase or decrease facet numbers in a formula
 	//only applies to facet numbers larger than "filter" parameter
+	BOOL changed = FALSE;
 
 	vector<string> prefixes;
 	prefixes.push_back("A");
@@ -1708,9 +1710,11 @@ void MolFlow::OffsetFormula(char *expression, int offset, int filter) {
 						char tmp[10];
 						sprintf(tmp, "%d", facetNumber += offset);
 						expr.replace(minPos + maxLength, digitsLength, tmp);
+						changed = TRUE;
 					}
 					else if ((facetNumber - 1) == filter) {
 						expr.replace(minPos + maxLength, digitsLength, "0");
+						changed = TRUE;
 					}
 				}
 			}
@@ -1719,15 +1723,20 @@ void MolFlow::OffsetFormula(char *expression, int offset, int filter) {
 		else pos = minPos;
 	}
 	strcpy(expression, expr.c_str());
+	return changed;
 }
 
 void MolFlow::RenumberFormulas(int startId) {
 	for (int i = 0; i < nbFormula; i++) {
 		char expression[1024];
 		strcpy(expression, this->formulas[i].parser->GetExpression());
-		OffsetFormula(expression, -1, startId);
-		this->formulas[i].parser->SetExpression(expression);
-		this->formulas[i].parser->Parse();
+		if (OffsetFormula(expression, -1, startId))	{
+			this->formulas[i].parser->SetExpression(expression);
+			this->formulas[i].parser->Parse();
+		std:string formulaName = formulas[i].parser->GetName();
+			if (formulaName.empty()) formulaName = expression;
+			formulas[i].name->SetText(formulaName.c_str());
+		}
 	}
 }
 
@@ -3412,6 +3421,16 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			for (int i = 0; i < geom->GetNbFacet(); i++)
 
 				if (geom->GetFacet(i)->sh.superDest != 0)
+					geom->Select(i);
+			geom->UpdateSelection();
+			UpdateFacetParams(TRUE);
+			break;
+
+		case MENU_FACET_SELECTTELEPORT:
+			geom->Unselect();
+			for (int i = 0; i < geom->GetNbFacet(); i++)
+
+				if (geom->GetFacet(i)->sh.teleportDest != 0)
 					geom->Select(i);
 			geom->UpdateSelection();
 			UpdateFacetParams(TRUE);

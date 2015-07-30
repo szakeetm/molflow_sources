@@ -3901,8 +3901,8 @@ void Geometry::RemoveFromStruct(int numToDel) {
 	for (int i = 0; i < sh.nbFacet; i++) {
 		if (facets[i]->sh.superIdx == numToDel) {
 			delete facets[i];
-			mApp->RenumberSelections(i);
-			mApp->RenumberFormulas(i);
+			mApp->RenumberSelections(nb);
+			mApp->RenumberFormulas(nb);
 		}
 		else {
 			f[nb++] = facets[i];

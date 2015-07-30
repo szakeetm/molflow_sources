@@ -178,7 +178,7 @@ public:
 	FORMULA formulas[MAX_FORMULA];
 	void ProcessFormulaButtons(GLComponent *src);
     void UpdateFormula();
-	void OffsetFormula(char* expression,int offset,int filter=0);
+	BOOL OffsetFormula(char* expression,int offset,int filter=0);
 	void RenumberFormulas(int startId);
     void AddFormula(GLParser *f,BOOL doUpdate=TRUE);
 	void AddFormula(const char *fName, const char *formula);

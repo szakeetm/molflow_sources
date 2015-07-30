@@ -704,8 +704,8 @@ BOOL Facet::SetTexture(double width, double height, BOOL useMesh) {
 	if (dimOK) {
 		sh.texWidthD = width;
 		sh.texHeightD = height;
-		sh.texWidth = (int)ceil(width - (double)1e-9); //double precision written to file
-		sh.texHeight = (int)ceil(height - (double)1e-9); //double precision written to file
+		sh.texWidth = (int)ceil(width *0.9999999); //0.9999999: cut the last few digits (convert rounding error 1.00000001 to 1, not 2)
+		sh.texHeight = (int)ceil(height *0.9999999);
 		dimOK = (sh.texWidth > 0 && sh.texHeight > 0);
 	}
 	else {
