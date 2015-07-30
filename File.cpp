@@ -402,7 +402,8 @@ void FileWriter::WriteDouble(double v,char *sep) {
 }
 
 void FileWriter::Write(const char *s) {
-  if( !fprintf(file,"%s",s) )
+	if (*s==NULL) return; //null expression: don't do anything (for example formulas without name)
+	if( !fprintf(file,"%s",s) )
     throw Error("Error while writing to file");
 }
 
