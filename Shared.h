@@ -84,7 +84,8 @@ typedef struct {
   AHIT   minHitMomentsOnly;   // Minimum, not counting constant flow
   AHIT   maxHitMomentsOnly;   // Maximum, not counting constant flow*/
   //llong  wallHits[BOUNCEMAX]; // 'Wall collision count before absoprtion' density histogram
-  double distTraveledTotal;
+  double distTraveledTotal_total;
+  double distTraveledTotal_fullHitsOnly;
   
 } SHGHITS;
 

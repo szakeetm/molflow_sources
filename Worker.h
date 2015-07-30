@@ -166,7 +166,8 @@ int GetIDId(int paramId);
   llong  nbHit;             // Total number of hit (64 bit integer)
   llong  maxDesorption;     // Number of desoprtion before halting
   llong  nbLeakTotal;       // Total number of leak
-  double distTraveledTotal; // Total distance traveled by particles (for mean free path calc.)
+  double distTraveledTotal_total; // Total distance traveled by particles (for mean pumping path calc.)
+  double distTraveledTotal_fullHitsOnly; // Total distance traveled by particles between full hits (for mean free path calc.)
   int    nbHHit;            // Last hits
   int    nbLastLeaks;       // Last leaks
   BOOL   running;           // Started/Stopped state

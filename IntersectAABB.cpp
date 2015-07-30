@@ -364,7 +364,7 @@ BOOL Intersect(VERTEX3D *rPos,VERTEX3D *rDir,  // Source ray (rayDir vector must
 					   f->hitted = TRUE;
 
 					   // Second pass for transparent hits
-					   for(i=0;i<intNbTHits;i++) {
+					   /*for(i=0;i<intNbTHits;i++) {
 
 						   f = THits[i];
 						   if( f->colDist < intMinLgth ) {
@@ -381,7 +381,7 @@ BOOL Intersect(VERTEX3D *rPos,VERTEX3D *rDir,  // Source ray (rayDir vector must
 							   ProfileFacet(f, sHandle->flightTimeCurrentParticle + f->colDist / 100.0 / sHandle->velocityCurrentParticle,
 								   TRUE, 2.0, 2.0);
 						   }
-					   }
+					   }*/ //We don't treat transparent passes here -> we put this to SimulationMCStep
 				   }
 
 				   return intFound;
@@ -452,19 +452,19 @@ void IntersectTree(struct AABBNODE *node) {
 								// This check could be avoided on rectangular facet.
 								if( IsInFacet(f,u,v) ) {
 
-									double time = sHandle->flightTimeCurrentParticle + d / 100.0 / sHandle->velocityCurrentParticle;
+									/*double time = sHandle->flightTimeCurrentParticle + d / 100.0 / sHandle->velocityCurrentParticle;
 									if( (GetOpacityAt(f,time) == 1.0) || (rnd()<GetOpacityAt(f,time)) ) {
 
 										// Hard hit
-										if( d < intMinLgth ) {
+										*/if( d < intMinLgth ) {
 											*iFacet = f;
 											intFound = TRUE;
 											intMinLgth = d;
 											f->colU = u;
 											f->colV = v;
-										}
+										}/*
 
-									} else {
+									}*/ /*else {
 
 										// Pass on partial transparent facet
 										if( f->sh.isProfile || f->hits ) {
@@ -474,7 +474,7 @@ void IntersectTree(struct AABBNODE *node) {
 											if(intNbTHits<MAX_THIT)
 												THits[intNbTHits++]=f;
 										}
-									}
+									}*/ //We remove this block since - in case of radioactive gases - even transparent passes can eliminate a particle (if its flight time is over its lifetime)
 								} // IsInFacet
 							} // d range
 						} // u range

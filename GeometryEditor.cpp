@@ -1547,7 +1547,6 @@ void Geometry::CloneSelectedFacets() { //create clone of selected facets
 	memset(tmp_vertices3 + sh.nbVertex, 0, (nb + 1 - sh.nbVertex) * sizeof(VERTEX3D));  //zero out remaining bits (not necessary, will be overwritten anyway)
 	SAFE_FREE(vertices3); //delete old array
 	vertices3 = tmp_vertices3; //make new array the official vertex holder
-	sh.nbVertex = nb + 1; //update number of vertices
 	for (int i = 0; i < sh.nbVertex; i++) {
 		if (copyId[i] != -1) {
 			vertices3[copyId[i]].x = vertices3[i].x;
@@ -1556,7 +1555,7 @@ void Geometry::CloneSelectedFacets() { //create clone of selected facets
 			vertices3[copyId[i]].selected = vertices3[i].selected;
 		}
 	}
-	
+	sh.nbVertex = nb + 1; //update number of vertices
 	sh.nbFacet += (int)selected;
 	facets = (Facet **)realloc(facets, sh.nbFacet * sizeof(Facet *));
 	int nb2 = sh.nbFacet - (int)selected - 1; //copy new facets

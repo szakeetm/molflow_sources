@@ -27,19 +27,19 @@ FormulaSettings::FormulaSettings():GLWindow() {
 
   SetTitle("Formula Editor");
 
-  nameL = new GLLabel("Name");
-  nameL->SetBounds(5,5,50,18);
-  Add(nameL);
-  nameT = new GLTextField(0,"Formula name");
-  nameT->SetBounds(60,5,wD-65,18);
-  Add(nameT);
-
   exprL = new GLLabel("Expression");
-  exprL->SetBounds(5,30,50,18);
+  exprL->SetBounds(5,5,75,18);
   Add(exprL);
   exprT = new GLTextField(0,"");
-  exprT->SetBounds(60,30,wD-65,18);
+  exprT->SetBounds(85,5,wD-65,18);
   Add(exprT);
+
+  nameL = new GLLabel("Name (optional)");
+  nameL->SetBounds(5,30,75,18);
+  Add(nameL);
+  nameT = new GLTextField(0,"");
+  nameT->SetBounds(85,30,wD-65,18);
+  Add(nameT);
 
   descL = new GLLabel(
     "MC Variables: An (Absorption on facet n), Dn (Desorption on facet n), Hn (Hit on facet n)\n"
@@ -115,7 +115,7 @@ GLParser *FormulaSettings::NewFormula() {
 
   createButton->SetText("Create");
   deleteButton->SetEnabled(FALSE);
-  nameT->SetText("Formula name");
+  nameT->SetText("");
   exprT->SetText("");
   rCode = 0;
   DoModal();

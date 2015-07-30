@@ -158,7 +158,8 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 	gHits->total.hit.nbHit += sHandle->tmpCount.hit.nbHit;
 	gHits->total.hit.nbAbsorbed += sHandle->tmpCount.hit.nbAbsorbed;
 	gHits->total.hit.nbDesorbed += sHandle->tmpCount.hit.nbDesorbed;
-	gHits->distTraveledTotal += sHandle->distTraveledSinceUpdate;
+	gHits->distTraveledTotal_total += sHandle->distTraveledSinceUpdate_total;
+	gHits->distTraveledTotal_fullHitsOnly += sHandle->distTraveledSinceUpdate_fullHitsOnly;
 	
 	//Memorize current limits, then do a min/max search
 	for (i = 0; i < 3; i++) {
@@ -364,7 +365,7 @@ void PerformTeleport(FACET *iFacet) {
 	double ortVelocity = sHandle->velocityCurrentParticle*abs(DOT3(
 		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
 		iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z));
-	iFacet->sh.counter.hit.nbHit++;
+	iFacet->sh.counter.hit.nbHit++; //We count a teleport as a local hit, but not as a global one since that would affect the MFP calculation
 	iFacet->sh.counter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity;
 	iFacet->sh.counter.hit.sum_v_ort += 2.0*(sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;
 	iFacet->hitted = TRUE;
@@ -396,39 +397,54 @@ BOOL SimulationMCStep(int nbStep) {
 			sHandle->pPos.x += d*sHandle->pDir.x;
 			sHandle->pPos.y += d*sHandle->pDir.y;
 			sHandle->pPos.z += d*sHandle->pDir.z;
-			sHandle->distTraveledCurrentParticle += d;
+			//sHandle->distTraveledCurrentParticle += d;
+			
+			double lastFLightTime = sHandle->flightTimeCurrentParticle; //memorize for partial hits
 			sHandle->flightTimeCurrentParticle += d / 100.0 / sHandle->velocityCurrentParticle; //conversion from cm to m
 
 			if ((!sHandle->calcConstantFlow && sHandle->flightTimeCurrentParticle > sHandle->latestMoment)
 				|| sHandle->particleDecayMoment<sHandle->flightTimeCurrentParticle) {
 				//hit time over the measured period - we create a new particle
 				//OR particle has decayed
+				double remainderFlightPath = sHandle->velocityCurrentParticle*100.0*
+					MIN(sHandle->latestMoment - lastFLightTime, sHandle->particleDecayMoment - lastFLightTime); //distance until the point in space where the particle decayed
+				sHandle->distTraveledSinceUpdate_total += remainderFlightPath;
 				RecordHit(LASTHIT);
-				sHandle->distTraveledSinceUpdate += sHandle->distTraveledCurrentParticle;
+				//sHandle->distTraveledSinceUpdate += sHandle->distTraveledCurrentParticle;
 				if (!StartFromSource())
 					// maxDesorption reached
 					return FALSE;
 			}
 			else { //hit within measured time, particle still alive
 				if (collidedFacet->sh.teleportDest) {
+					sHandle->distTraveledSinceUpdate_total += d;
 					PerformTeleport(collidedFacet);
 				}
+				else if ((GetOpacityAt(collidedFacet, sHandle->flightTimeCurrentParticle) < 1.0) && (rnd() > GetOpacityAt(collidedFacet, sHandle->flightTimeCurrentParticle))) {
+					//Transparent pass
+					sHandle->distTraveledSinceUpdate_total += d;
+					PerformTransparentPass(collidedFacet);
+				}
 				else if (GetStickingAt(collidedFacet,sHandle->flightTimeCurrentParticle) == 1.0 || ((GetStickingAt(collidedFacet,sHandle->flightTimeCurrentParticle) > 0.0) && (rnd() < (GetStickingAt(collidedFacet,sHandle->flightTimeCurrentParticle))))) {
-					//absorbed
+					//Absorbed
+					sHandle->distTraveledSinceUpdate_total += d;
+					sHandle->distTraveledSinceUpdate_fullHitsOnly += d;
 					PerformAbsorb(collidedFacet);
-					sHandle->distTraveledSinceUpdate += sHandle->distTraveledCurrentParticle;
+					//sHandle->distTraveledSinceUpdate += sHandle->distTraveledCurrentParticle;
 					if (!StartFromSource())
 						// maxDesorption reached
 						return FALSE;
 				}
 				else {
-					//reflected
+					//Reflected
+					sHandle->distTraveledSinceUpdate_total += d;
+					sHandle->distTraveledSinceUpdate_fullHitsOnly += d;
 					PerformBounce(collidedFacet);
 				}
 			} //end hit within measured time
 		} //end intersection found
 		else {
-			// Leak (simulation error)
+			// No intersection found: Leak
 			RecordLeakPos();
 			sHandle->nbLeakTotal++;
 			if (!StartFromSource())
@@ -518,7 +534,7 @@ BOOL StartFromSource() {
 	src = sHandle->str[j].facets[i];
 
 	sHandle->lastHit = src;
-	sHandle->distTraveledCurrentParticle = 0.0;  //for mean free path calculations
+	//sHandle->distTraveledCurrentParticle = 0.0;  //for mean free path calculations
 	//sHandle->flightTimeCurrentParticle = sHandle->desorptionStartTime + (sHandle->desorptionStopTime - sHandle->desorptionStartTime)*rnd();
 	sHandle->flightTimeCurrentParticle=GenerateDesorptionTime(src);
 	if (sHandle->useMaxwellDistribution) sHandle->velocityCurrentParticle = GenerateRandomVelocity(src->sh.CDFid);
@@ -596,7 +612,7 @@ BOOL StartFromSource() {
 	src->hitted = TRUE;
 	sHandle->nbDesorbed++;
 	sHandle->tmpCount.hit.nbDesorbed++;
-	sHandle->nbPHit = 0;
+	//sHandle->nbPHit = 0;
 
 	if (src->sh.isMoving) {
 		TreatMovingFacet();
@@ -698,7 +714,7 @@ void PerformBounce(FACET *iFacet) {
 		break;
 	}
 
-	if (revert) {
+	if (revert && iFacet->sh.reflectType!=REF_MIRROR) {
 		sHandle->pDir.x = -sHandle->pDir.x;
 		sHandle->pDir.y = -sHandle->pDir.y;
 		sHandle->pDir.z = -sHandle->pDir.z;
@@ -722,9 +738,24 @@ void PerformBounce(FACET *iFacet) {
 	if (iFacet->sh.isMoving && sHandle->motionType) RecordHit(HIT_MOVING);
 	else RecordHit(HIT_REF);
 	sHandle->lastHit = iFacet;
-	sHandle->nbPHit++;
+	//sHandle->nbPHit++;
+}
 
-
+void PerformTransparentPass(FACET *iFacet) {
+	double directionFactor = abs(DOT3(
+		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
+		iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z));
+	iFacet->sh.counter.hit.nbHit++;
+	iFacet->sh.counter.hit.sum_1_per_ort_velocity += 2.0 / (sHandle->velocityCurrentParticle*directionFactor);
+	iFacet->sh.counter.hit.sum_v_ort += 2.0*(sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*sHandle->velocityCurrentParticle*directionFactor;
+	iFacet->hitted = TRUE;
+	if (iFacet->hits && iFacet->sh.countTrans) AHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle + iFacet->colDist / 100.0 / sHandle->velocityCurrentParticle,
+		TRUE, 2.0, 2.0);
+	if (iFacet->direction && iFacet->sh.countDirection) DHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle + iFacet->colDist / 100.0 / sHandle->velocityCurrentParticle);
+	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle + iFacet->colDist / 100.0 / sHandle->velocityCurrentParticle,
+		TRUE, 2.0, 2.0);
+	RecordHit(HIT_TRANS);
+	sHandle->lastHit = iFacet;
 }
 
 void PerformAbsorb(FACET *iFacet) {

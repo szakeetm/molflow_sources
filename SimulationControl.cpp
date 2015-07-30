@@ -582,7 +582,8 @@ void ResetCounter() {
 	//printf("Resetcounter called.");
 	memset(&sHandle->tmpCount, 0, sizeof(SHHITS));
 
-	sHandle->distTraveledSinceUpdate = 0.0;
+	sHandle->distTraveledSinceUpdate_total = 0.0;
+	sHandle->distTraveledSinceUpdate_fullHitsOnly = 0.0;
 	sHandle->nbLeakTotal = 0;
 	//memset(sHandle->wallHits,0,BOUNCEMAX * sizeof(llong));
 
@@ -630,7 +631,8 @@ void ResetSimulation() {
 	//sHandle->counter.hit.nbHit = 0;
 	sHandle->nbDesorbed = 0;
 	//sHandle->counter.hit.nbAbsorbed = 0;
-	sHandle->distTraveledSinceUpdate = 0.0;
+	sHandle->distTraveledSinceUpdate_total = 0.0;
+	sHandle->distTraveledSinceUpdate_fullHitsOnly = 0.0;
 	/*sHandle->testCubeCount=0;
 	sHandle->testCubeDist=0.0;
 	sHandle->testCubeTemp=0.0;

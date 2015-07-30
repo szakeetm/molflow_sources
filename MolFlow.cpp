@@ -37,7 +37,7 @@ GNU General Public License for more details.
 #define APP_NAME "MolFlow+ development version 64-bit (Compiled "__DATE__" "__TIME__") DEBUG MODE"
 #else
 //#define APP_NAME "Molflow+ development version ("__DATE__")"
-#define APP_NAME "Molflow+ 2.6.12 64-bit ("__DATE__")"
+#define APP_NAME "Molflow+ 2.6.14 64-bit ("__DATE__")"
 #endif
 
 /*
@@ -1600,10 +1600,10 @@ void MolFlow::UpdateFormula() {
 				v->value = (double)worker.nbHit;
 			}
 			else if (_stricmp(v->name, "MPP") == 0) {
-				v->value = worker.distTraveledTotal / (double)worker.nbDesorption;
+				v->value = worker.distTraveledTotal_total / (double)worker.nbDesorption;
 			}
 			else if (_stricmp(v->name, "MFP") == 0) {
-				v->value = worker.distTraveledTotal / (double)worker.nbHit;
+				v->value = worker.distTraveledTotal_fullHitsOnly / (double)worker.nbHit;
 			}
 			else if (_stricmp(v->name, "DESAR") == 0) {
 				double sumArea = 0.0;
@@ -2905,7 +2905,9 @@ void MolFlow::AddFormula(GLParser *f, BOOL doUpdate) {
 	if (f) {
 		if (nbFormula < MAX_FORMULA) {
 			formulas[nbFormula].parser = f;
-			formulas[nbFormula].name = new GLLabel(f->GetName());
+			std:string formulaName = f->GetName();
+			if (formulaName.empty()) formulaName = f->GetExpression();
+			formulas[nbFormula].name = new GLLabel(formulaName.c_str());
 			Add(formulas[nbFormula].name);
 			formulas[nbFormula].value = new GLTextField(0, "");
 			formulas[nbFormula].value->SetEditable(FALSE);
@@ -2970,8 +2972,10 @@ void MolFlow::ProcessFormulaButtons(GLComponent *src) {
 		if (!formulaSettings) formulaSettings = new FormulaSettings();
 		if (formulaSettings->EditFormula(formulas[i].parser)) {
 			// Apply change
-			formulas[i].name->SetText(formulas[i].parser->GetName());
-			UpdateFormula();
+		std:string formulaName = formulas[i].parser->GetName();
+		if (formulaName.empty()) formulaName = formulas[i].parser->GetExpression();
+		formulas[i].name->SetText(formulaName.c_str());
+		UpdateFormula();
 		}
 		else {
 			// Delete

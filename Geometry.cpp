@@ -1867,8 +1867,18 @@ void Geometry::InsertGEOGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 	if (version2 >= 12) {
 		file->ReadKeyword("totalAbs"); file->ReadKeyword(":");
 		file->ReadLLong();
-		file->ReadKeyword("totalDist"); file->ReadKeyword(":");
+		if (version2 >= 15) {
+			file->ReadKeyword("totalDist_total");
+		}
+		else { //between versions 12 and 15
+			file->ReadKeyword("totalDist");
+		}
+		file->ReadKeyword(":");
 		file->ReadDouble();
+		if (version2 >= 15) {
+			file->ReadKeyword("totalDist_fullHitsOnly"); file->ReadKeyword(":");
+			file->ReadDouble();
+		}
 	}
 	file->ReadKeyword("maxDes"); file->ReadKeyword(":");
 	file->ReadLLong();
@@ -2494,12 +2504,23 @@ void Geometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *pleak, int *nble
 	if (*version >= 12) {
 		file->ReadKeyword("totalAbs"); file->ReadKeyword(":");
 		tNbAbsorption = file->ReadLLong();
-		file->ReadKeyword("totalDist"); file->ReadKeyword(":");
-		distTraveledTotal = file->ReadDouble();
+		if (*version >= 15) {
+			file->ReadKeyword("totalDist_total");
+		}
+		else { //between versions 12 and 15
+			file->ReadKeyword("totalDist");
+		}
+		file->ReadKeyword(":");
+		distTraveledTotal_total = file->ReadDouble();
+		if (*version >= 15) {
+			file->ReadKeyword("totalDist_fullHitsOnly"); file->ReadKeyword(":");
+			distTraveledTotal_fullHitsOnly = file->ReadDouble();
+		}
 	}
 	else {
 		tNbAbsorption = 0;
-		distTraveledTotal = 0.0;
+		distTraveledTotal_total = 0.0;
+		distTraveledTotal_fullHitsOnly = 0.0;
 	}
 	file->ReadKeyword("maxDes"); file->ReadKeyword(":");
 	tNbDesorptionMax = file->ReadLLong();
@@ -2940,7 +2961,7 @@ void Geometry::LoadSYN(FileReader *file, GLProgress *prg, LEAK *pleak, int *nble
 	isLoaded = TRUE;
 	UpdateName(file);
 
-	// Update mesh
+	// Update meshgHits->distTraveledTotal
 	prg->SetMessage("Drawing textures...");
 	for (int i = 0; i < sh.nbFacet; i++) {
 		double p = (double)i / (double)sh.nbFacet;
@@ -2972,7 +2993,8 @@ bool Geometry::LoadTextures(FileReader *file, GLProgress *prg, Dataport *dpHit, 
 		gHits->total.hit.nbDesorbed = tNbDesorption;
 		gHits->total.hit.nbAbsorbed = tNbAbsorption;
 		gHits->nbLeakTotal = tNbLeak;
-		gHits->distTraveledTotal = distTraveledTotal;
+		gHits->distTraveledTotal_total = distTraveledTotal_total;
+		gHits->distTraveledTotal_fullHitsOnly = distTraveledTotal_fullHitsOnly;
 
 		// Read facets
 		if (version >= 13) {
@@ -3036,11 +3058,37 @@ bool Geometry::LoadTextures(FileReader *file, GLProgress *prg, Dataport *dpHit, 
 						int w = (f->sh.texWidth);
 						AHIT *hits = (AHIT *)((BYTE *)gHits + (f->sh.hitOffset + sizeof(SHHITS) + profSize + m*w*h*sizeof(AHIT)));
 
-						for (iy = 0; iy < h; iy++) {
-							for (ix = 0; ix < w; ix++) {
+						int texWidth_file, texHeight_file;
+						//In case of rounding errors, the file might contain different texture dimensions than expected.
+						if (version >= 14) {
+							file->ReadKeyword("width"); file->ReadKeyword(":"); texWidth_file = file->ReadInt();
+							file->ReadKeyword("height"); file->ReadKeyword(":"); texHeight_file = file->ReadInt();
+						}
+						else {
+							texWidth_file = f->sh.texWidth;
+							texHeight_file = f->sh.texHeight;
+						}
+
+
+						for (iy = 0; iy<(MIN(f->sh.texHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
+							for (ix = 0; ix<(MIN(f->sh.texWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
 								hits[iy*f->sh.texWidth + ix].count = file->ReadLLong();
 								hits[iy*f->sh.texWidth + ix].sum_1_per_ort_velocity = file->ReadDouble();
 								hits[iy*f->sh.texWidth + ix].sum_v_ort_per_area = file->ReadDouble();
+							}
+							for (int ie = 0; ie < texWidth_file - f->sh.texWidth; ie++) {//Executed if file texture is bigger than expected texture
+								//Read extra cells from file without doing anything
+								file->ReadLLong();
+								file->ReadDouble();
+								file->ReadDouble();
+							}
+						}
+						for (int ie = 0; ie < texHeight_file - f->sh.texHeight; ie++) {//Executed if file texture is bigger than expected texture
+							//Read extra cells ffrom file without doing anything
+							for (int iw = 0; iw < texWidth_file; iw++) {
+								file->ReadLLong();
+								file->ReadDouble();
+								file->ReadDouble();
 							}
 						}
 						file->ReadKeyword("}");
@@ -3110,7 +3158,8 @@ void Geometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, std::
 	file->Write("totalDes:"); file->WriteLLong((!crashSave && !saveSelected) ? gHits->total.hit.nbDesorbed : 0, "\n");
 	file->Write("totalLeak:"); file->WriteLLong((!crashSave && !saveSelected) ? gHits->nbLeakTotal : 0, "\n");
 	file->Write("totalAbs:"); file->WriteLLong((!crashSave && !saveSelected) ? gHits->total.hit.nbAbsorbed : 0, "\n");
-	file->Write("totalDist:"); file->WriteDouble((!crashSave && !saveSelected) ? gHits->distTraveledTotal : 0, "\n");
+	file->Write("totalDist_total:"); file->WriteDouble((!crashSave && !saveSelected) ? gHits->distTraveledTotal_total : 0, "\n");
+	file->Write("totalDist_fullHitsOnly:"); file->WriteDouble((!crashSave && !saveSelected) ? gHits->distTraveledTotal_fullHitsOnly : 0, "\n");
 	file->Write("maxDes:"); file->WriteLLong((!crashSave && !saveSelected) ? tNbDesorptionMax : 0, "\n");
 	file->Write("nbVertex:"); file->WriteInt(sh.nbVertex, "\n");
 	file->Write("nbFacet:"); file->WriteInt(saveSelected ? nbSelected : sh.nbFacet, "\n");
@@ -3298,7 +3347,7 @@ void Geometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, std::
 				//char tmp[256];
 				sprintf(tmp, " texture_facet %d {\n", i + 1);
 				file->Write(tmp);
-
+				file->Write("width:"); file->WriteInt(f->sh.texWidth); file->Write(" height:"); file->WriteInt(f->sh.texHeight); file->Write("\n");
 				for (iy = 0; iy < h; iy++) {
 					for (ix = 0; ix < w; ix++) {
 						file->WriteLLong((!crashSave && !saveSelected) ? hits[iy*f->sh.texWidth + ix].count : 0, "\t");
@@ -3991,19 +4040,31 @@ void Geometry::ImportDesorption_SYN(
 			file->ReadKeyword("{");
 
 			int ix, iy;
-			int width = f->sh.outgassingMapWidth = (int)(xdims[i] - 1e-9) + 1;
-			int height = f->sh.outgassingMapHeight = (int)(ydims[i] - 1e-9) + 1;
+			f->sh.outgassingMapWidth = (int)(xdims[i] - 1e-9) + 1;
+			f->sh.outgassingMapHeight = (int)(ydims[i] - 1e-9) + 1;
 
 			if (f->selected) {
 				f->sh.outgassingFileRatio = xdims[i] / Norme(&(f->sh.U));
-				f->outgassingMap = (double*)malloc(width*height*sizeof(double));
+				f->outgassingMap = (double*)malloc(f->sh.outgassingMapWidth*f->sh.outgassingMapHeight*sizeof(double));
 				if (!f->outgassingMap) throw Error("Not enough memory to store outgassing map.");
+				memset(f->outgassingMap, 0, f->sh.outgassingMapWidth*f->sh.outgassingMapHeight*sizeof(double)); //set inital values to zero
 				f->totalDose = f->sh.totalOutgassing = f->totalFlux = 0.0;
 			}
 
-			for (iy = 0; iy < height; iy++) {
-				for (ix = 0; ix < width; ix++) {
-					int index = iy*width + ix;
+			int texWidth_file, texHeight_file;
+			//In case of rounding errors, the file might contain different texture dimensions than expected.
+			if (version2 >= 8) {
+				file->ReadKeyword("width"); file->ReadKeyword(":"); texWidth_file = file->ReadInt();
+				file->ReadKeyword("height"); file->ReadKeyword(":"); texHeight_file = file->ReadInt();
+			}
+			else {
+				texWidth_file = f->sh.outgassingMapWidth;
+				texHeight_file = f->sh.outgassingMapHeight;
+			}
+
+			for (iy = 0; iy<(MIN(f->sh.outgassingMapHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
+				for (ix = 0; ix<(MIN(f->sh.outgassingMapWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
+					int index = iy*f->sh.outgassingMapWidth + ix;
 					//Read original values
 					llong MC = file->ReadLLong();
 					double cellArea = 1.0;
@@ -4047,6 +4108,24 @@ void Geometry::ImportDesorption_SYN(
 						f->totalFlux += flux;
 						f->sh.totalOutgassing += f->outgassingMap[index];
 					} //if selected
+				}
+				for (int ie = 0; ie < texWidth_file - f->sh.outgassingMapWidth; ie++) {//Executed if file texture is bigger than expected texture
+					//Read extra cells from file without doing anything
+					//Read original values
+					file->ReadLLong(); //MC
+					if (version2 >= 7) file->ReadDouble(); //area
+					file->ReadDouble(); //flux
+					file->ReadDouble(); //power
+				}
+			}
+			for (int ie = 0; ie < texHeight_file - f->sh.outgassingMapHeight; ie++) {//Executed if file texture is bigger than expected texture
+				//Read extra cells ffrom file without doing anything
+				for (int iw = 0; iw < texWidth_file; iw++) {
+					//Read original values
+					file->ReadLLong(); //MC
+					if (version2 >= 7) file->ReadDouble(); //area
+					file->ReadDouble(); //flux
+					file->ReadDouble(); //power
 				}
 			}
 			file->ReadKeyword("}");
@@ -4298,7 +4377,8 @@ BOOL Geometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, S
 			hitsNode.append_attribute("totalHit") = gHits->total.hit.nbHit;
 			hitsNode.append_attribute("totalDes") = gHits->total.hit.nbDesorbed;
 			hitsNode.append_attribute("totalAbs") = gHits->total.hit.nbAbsorbed;
-			hitsNode.append_attribute("totalDist") = gHits->distTraveledTotal;
+			hitsNode.append_attribute("totalDist_total") = gHits->distTraveledTotal_total;
+			hitsNode.append_attribute("totalDist_fullHitsOnly") = gHits->distTraveledTotal_fullHitsOnly;
 			hitsNode.append_attribute("totalLeak") = gHits->nbLeakTotal;
 			hitsNode.append_attribute("maxDesorption") = work->maxDesorption;
 
@@ -4809,7 +4889,11 @@ BOOL Geometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker
 			work->nbHit = hitsNode.attribute("totalHit").as_llong();
 			work->nbDesorption = hitsNode.attribute("totalDes").as_llong();
 			work->nbAbsorption = hitsNode.attribute("totalAbs").as_llong();
-			work->distTraveledTotal = hitsNode.attribute("totalDist").as_double();
+			if (hitsNode.attribute("totalDist_total")) { //if it's in the new format where total/partial are separated
+				work->distTraveledTotal_total = hitsNode.attribute("totalDist_total").as_double();
+				work->distTraveledTotal_fullHitsOnly = hitsNode.attribute("totalDist_fullHitsOnly").as_double();
+			} else
+			work->distTraveledTotal_total = work->distTraveledTotal_fullHitsOnly = hitsNode.attribute("totalDist").as_double();
 			work->nbLeakTotal = hitsNode.attribute("totalLeak").as_llong();
 			//work->maxDesorption=hitsNode.attribute("maxDesorption").as_llong();
 
@@ -4867,31 +4951,53 @@ BOOL Geometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker
 			}
 
 			//Textures
+			int ix, iy;
 			int profSize = (f->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + (int)mApp->worker.moments.size())) : 0;
-			int h = (f->sh.texHeight);
-			int w = (f->sh.texWidth);
+			/*int h = (f->sh.texHeight);
+			int w = (f->sh.texWidth);*/
 
 			if (f->hasMesh){
 				xml_node textureNode = newFacetResult.child("Texture");
-				if (textureNode.attribute("width").as_int() != f->sh.texWidth ||
+				int texWidth_file = textureNode.attribute("width").as_int();
+				int texHeight_file = textureNode.attribute("height").as_int();
+				
+				/*if (textureNode.attribute("width").as_int() != f->sh.texWidth ||
 					textureNode.attribute("height").as_int() != f->sh.texHeight) {
 					std::stringstream msg;
 					msg << "Texture size mismatch on facet " << facetId + 1 << ".\nExpected: " << f->sh.texWidth << "x" << f->sh.texHeight << "\n"
 						<< "In file: " << textureNode.attribute("width").as_int() << "x" << textureNode.attribute("height").as_int();
 					throw Error(msg.str().c_str());
-				}
+				}*/ //We'll treat texture size mismatch, see below
 
-				AHIT *hits = (AHIT *)((BYTE *)gHits + (f->sh.hitOffset + sizeof(SHHITS) + profSize + m*w*h*sizeof(AHIT)));
+				AHIT *hits = (AHIT *)((BYTE *)gHits + (f->sh.hitOffset + sizeof(SHHITS) + profSize + m*f->sh.texWidth*f->sh.texHeight*sizeof(AHIT)));
 				std::stringstream countText, sum1perText, sumvortText;
 				countText << textureNode.child_value("count");
 				sum1perText << textureNode.child_value("sum_1_per_v");
 				sumvortText << textureNode.child_value("sum_v_ort");
 
-				for (int iy = 0; iy < h; iy++) {
-					for (int ix = 0; ix < w; ix++) {
+				for (iy = 0; iy<(MIN(f->sh.texHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
+					for (ix = 0; ix<(MIN(f->sh.texWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
 						countText >> hits[iy*f->sh.texWidth + ix].count;
 						sum1perText >> hits[iy*f->sh.texWidth + ix].sum_1_per_ort_velocity;
 						sumvortText >> hits[iy*f->sh.texWidth + ix].sum_v_ort_per_area;
+					}
+					for (int ie = 0; ie < texWidth_file - f->sh.texWidth; ie++) {//Executed if file texture is bigger than expected texture
+						//Read extra cells from file without doing anything
+						llong dummy_ll;
+						double dummy_d;
+						countText >> dummy_ll;
+						sum1perText >> dummy_d;
+						sumvortText >> dummy_d;
+					}
+				}
+				for (int ie = 0; ie < texHeight_file - f->sh.texHeight; ie++) {//Executed if file texture is bigger than expected texture
+					//Read extra cells ffrom file without doing anything
+					for (int iw = 0; iw < texWidth_file; iw++) {
+						llong dummy_ll;
+						double dummy_d;
+						countText >> dummy_ll;
+						sum1perText >> dummy_d;
+						sumvortText >> dummy_d;
 					}
 				}
 			} //end texture
@@ -4906,14 +5012,16 @@ BOOL Geometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker
 					throw Error(msg.str().c_str());
 				}
 
-				VHIT *dirs = (VHIT *)((BYTE *)gHits + f->sh.hitOffset + sizeof(SHHITS) + profSize + (1 + (int)work->moments.size())*w*h*sizeof(AHIT) + m*w*h*sizeof(VHIT));
+				VHIT *dirs = (VHIT *)((BYTE *)gHits + f->sh.hitOffset + sizeof(SHHITS) 
+					+ profSize + (1 + (int)work->moments.size())*f->sh.texWidth*f->sh.texHeight*sizeof(AHIT) 
+					+ m*f->sh.texWidth*f->sh.texHeight*sizeof(VHIT));
 
 				std::stringstream dirText, dirCountText;
 				dirText << dirNode.child_value("vel.vectors");
 				dirCountText << dirNode.child_value("count");
 
-				for (int iy = 0; iy < h; iy++) {
-					for (int ix = 0; ix < w; ix++) {
+				for (int iy = 0; iy < f->sh.texHeight; iy++) {
+					for (int ix = 0; ix < f->sh.texWidth; ix++) {
 						std::string component;
 						std::getline(dirText, component, ',');
 						dirs[iy*f->sh.texWidth + ix].sumDir.x = std::stod(component);

@@ -59,7 +59,8 @@ Worker::Worker() {
 	useMaxwellDistribution = TRUE;
 	calcConstantFlow = TRUE;
 	//valveOpenMoment=99999.0;
-	distTraveledTotal = 0.0;
+	distTraveledTotal_total = 0.0;
+	distTraveledTotal_fullHitsOnly = 0.0;
 	gasMass = 28.0;
 	halfLife = 1e100;
 	finalOutgassingRate = finalOutgassingRate_Pa_m3_sec = totalDesorbedMolecules = 0.0;
@@ -323,7 +324,7 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 	}
 	else {
 		SAFE_DELETE(f);
-		throw Error("SaveGeometry(): Invalid file extension [only geo,txt,str]");
+		throw Error("SaveGeometry(): Invalid file extension [only geo,geo7z,txt,str,xml,zip]");
 	}
 
 	SAFE_DELETE(f);
@@ -642,7 +643,8 @@ void Worker::LoadGeometry(char *fileName) {
 			nbDesorption = geom->tNbDesorption;
 			maxDesorption = geom->tNbDesorptionMax;
 			nbAbsorption = geom->tNbAbsorption;
-			distTraveledTotal = geom->distTraveledTotal;
+			distTraveledTotal_total = geom->distTraveledTotal_total;
+			distTraveledTotal_fullHitsOnly = geom->distTraveledTotal_fullHitsOnly;
 
 			progressDlg->SetMessage("Reloading worker with new geometry...");
 			RealReload(); //for the loading of textures
@@ -1098,11 +1100,14 @@ void Worker::LoadTextures(char *fileName, int version) {
 
 		}
 		catch (Error &e) {
-			geom->Clear();
-			SAFE_DELETE(f);
+			//geom->Clear();
+			//SAFE_DELETE(f);
+			char tmp[256];
+			sprintf(tmp, "Couldn't load some textures. It is recommended to reset the simulation.\n%s", e.GetMsg());
+			GLMessageBox::Display(tmp, "Error while loading textures.", GLDLG_OK, GLDLG_ICONWARNING);
 			progressDlg->SetVisible(FALSE);
 			SAFE_DELETE(progressDlg);
-			throw e;
+			//throw e;
 		}
 	}
 
@@ -1284,7 +1289,8 @@ void Worker::Update(float appTime) {
 				// Copy Global hits and leaks
 				nbHit = gHits->total.hit.nbHit;
 				nbAbsorption = gHits->total.hit.nbAbsorbed;
-				distTraveledTotal = gHits->distTraveledTotal;
+				distTraveledTotal_total = gHits->distTraveledTotal_total;
+				distTraveledTotal_fullHitsOnly = gHits->distTraveledTotal_fullHitsOnly;
 				nbDesorption = gHits->total.hit.nbDesorbed;
 				nbLeakTotal = gHits->nbLeakTotal;
 				nbHHit = gHits->nbHHit;
@@ -1329,7 +1335,8 @@ void Worker::SendHits(BOOL noReset) {
 			gHits->nbLeakTotal = nbLeakTotal;
 			gHits->total.hit.nbDesorbed = nbDesorption;
 			gHits->total.hit.nbAbsorbed = nbAbsorption;
-			gHits->distTraveledTotal = distTraveledTotal;
+			gHits->distTraveledTotal_total = distTraveledTotal_total;
+			gHits->distTraveledTotal_fullHitsOnly = distTraveledTotal_fullHitsOnly;
 
 			int nbFacet = geom->GetNbFacet();
 			for (int i = 0; i < nbFacet; i++) {
@@ -1664,7 +1671,8 @@ void Worker::ResetWorkerStats() {
 	nbDesorption = 0;
 	nbHit = 0;
 	nbLeakTotal = 0;
-	distTraveledTotal = 0.0;
+	distTraveledTotal_total = 0.0;
+	distTraveledTotal_fullHitsOnly = 0.0;
 
 }
 

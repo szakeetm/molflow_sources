@@ -163,9 +163,10 @@ typedef struct {
   // Particle coordinates (MC)
   VERTEX3D pPos;    // Position
   VERTEX3D pDir;    // Direction
-  int      nbPHit;  // Number of hit (current particle)
-  double   distTraveledCurrentParticle; //Distance traveled by particle before absorption
-  double   distTraveledSinceUpdate;
+  //int      nbPHit;  // Number of hit (current particle) //Uncommented as it had no function
+  //double   distTraveledCurrentParticle; //Distance traveled by particle before absorption
+  double   distTraveledSinceUpdate_total; //includes "half" hits, i.e. when particle decays mid-air
+  double   distTraveledSinceUpdate_fullHitsOnly; //partial distances not included (for MFP calculation)
   double   velocityCurrentParticle;
   double   flightTimeCurrentParticle;
   double   particleDecayMoment; //for radioactive gases
@@ -239,6 +240,7 @@ BOOL StartFromSource();
 void PerformBounce(FACET *iFacet);
 void PerformAbsorb(FACET *iFacet);
 void PerformTeleport(FACET *iFacet);
+void PerformTransparentPass(FACET *iFacet);
 void PolarToCartesian(FACET *iFacet,double theta,double phi,BOOL reverse);
 void CartesianToPolar(FACET *iFacet,double *theta,double *phi);
 void UpdateHits(Dataport *dpHit,int prIdx,DWORD timeout);

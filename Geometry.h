@@ -36,9 +36,9 @@ class Worker;
 
 #define SEL_HISTORY  100
 #define MAX_SUPERSTR 128
-#define GEOVERSION   13
+#define GEOVERSION   15
 #define XMLVERSION 1
-#define SYNVERSION 7
+#define SYNVERSION 8
 
 #define TEXTURE_MODE_PRESSURE 0
 #define TEXTURE_MODE_IMPINGEMENT 1
@@ -203,7 +203,8 @@ public:
   llong tNbDesorptionMax;
   llong tNbLeak;
   llong tNbAbsorption;
-  double distTraveledTotal;
+  double distTraveledTotal_total;
+  double distTraveledTotal_fullHitsOnly;
 
   // Memory usage (in bytes)
   DWORD GetGeometrySize();
