@@ -62,9 +62,15 @@ static const char *fileTexFilters[] = { "Text files" , "*.txt" , "Texture files"
 static const int   nbTexFilter = sizeof(fileTexFilters) / (2*sizeof(char *));
 */
 
-static const char *fileLFilters = "All MolFlow supported files\0*.txt;*.xml;*.zip;*.geo;*.geo7z;*.syn;*.syn7z;*.str;*.stl;*.ase\0XML files\0*.xml;*.zip;\0GEO files\0*.geo;*.geo7z;\0SYN files\0*.syn;*.syn7z;\0TXT files\0*.txt\0STR files\0*.str\0STL files\0*.stl\0ASE files\0*.ase\0";
-static const int   nbLFilter = 9;
-static const char *fileInsFilters = "\0GEO files\0*.geo;*.geo7z;SYN files\0*.syn;*.syn7z;\0Text files\0*.txt\0STL files\0*.stl\0";
+static const char *fileLFilters = "All MolFlow supported files\0*.txt;*.xml;*.geoxml;*.zip;*.geozip;*.synxml;*.synzip;*.geo;*.geo7z;*.syn;*.syn7z;*.str;*.stl;*.ase\0"
+"Molflow files\0*.xml;*.geoxml;*.zip;*.geozip;*.geo;*.geo7z;*.txt\0"
+"SynRad files\0*.syn;*.syn7z;*.synxml;*.synzip;*.txt\0"
+"All files\0*.*\0";
+static const int   nbLFilter = 4;
+static const char *fileInsFilters = "All insertable geometries\0*.txt;*.xml;*.geoxml;*.zip;*.geozip;*.synxml;*.synzip;*.geo;*.geo7z;*.syn;*.syn7z;*.str;*.stl\0"
+"Molflow files\0*.xml;*.geoxml;*.zip;*.geozip;*.geo;*.geo7z;*.txt\0"
+"SynRad files\0*.syn;*.syn7z;*.synxml;*.synzip;*.txt\0"
+"All files\0*.*\0";
 static const int   nbInsFilter = 4;
 static const char *fileSFilters = "All files\0*.*\0";
 static const int   nbSFilter = 1;
@@ -267,6 +273,7 @@ MolFlow::MolFlow()
 	autoSaveSimuOnly = FALSE;
 	autosaveFilename = "";
 	compressProcessHandle = NULL;
+	autoFrameMove = TRUE;
 
 	lastSaveTime = 0.0f;
 	lastSaveTimeSimu = 0.0f;
@@ -319,7 +326,6 @@ MolFlow::MolFlow()
 	profilePlotter = NULL;
 	pressureEvolution = NULL;
 	timewisePlotter = NULL;
-	viewEditor = NULL;
 	texturePlotter = NULL;
 	outgassingMap = NULL;
 	momentsEditor = NULL;
@@ -482,7 +488,7 @@ int MolFlow::OneTimeSceneInit()
 	menu->GetSubMenu("Facet")->Add("Mirror ...", MENU_FACET_MIRROR);
 	menu->GetSubMenu("Facet")->Add("Rotate ...", MENU_FACET_ROTATE);
 	menu->GetSubMenu("Facet")->Add("Align ...", MENU_FACET_ALIGN);
-	menu->GetSubMenu("Facet")->Add("Extrude...", MENU_FACET_EXTRUDE);
+	menu->GetSubMenu("Facet")->Add("Extrude ...", MENU_FACET_EXTRUDE);
 	menu->GetSubMenu("Facet")->Add("Remove selected", MENU_FACET_REMOVESEL, SDLK_DELETE, CTRL_MODIFIER);
 	menu->GetSubMenu("Facet")->Add("Explode selected", MENU_FACET_EXPLODE);
 	menu->GetSubMenu("Facet")->Add("Create difference of 2", MENU_FACET_CREATE_DIFFERENCE);
@@ -644,8 +650,16 @@ int MolFlow::OneTimeSceneInit()
 	simuPanel->Add(statusSimu);
 	*/
 
+	autoFrameMoveToggle = new GLToggle(0, "Auto update scene");
+	autoFrameMoveToggle->SetState(autoFrameMove);
+	simuPanel->Add(autoFrameMoveToggle);
+
+	forceFrameMoveButton = new GLButton(0, "Update");
+	forceFrameMoveButton->SetEnabled(!autoFrameMove);
+	simuPanel->Add(forceFrameMoveButton);
+
 	modeLabel = new GLLabel("Mode");
-	simuPanel->Add(modeLabel);
+	//simuPanel->Add(modeLabel);
 
 	modeCombo = new GLCombo(0);
 	modeCombo->SetEditable(TRUE);
@@ -653,11 +667,11 @@ int MolFlow::OneTimeSceneInit()
 	modeCombo->SetValueAt(0, "Monte Carlo");
 	modeCombo->SetValueAt(1, "Angular Coef");
 	modeCombo->SetSelectedIndex(0);
-	simuPanel->Add(modeCombo);
+	//simuPanel->Add(modeCombo);
 
 	compACBtn = new GLButton(0, "Calc AC");
 	compACBtn->SetEnabled(FALSE);
-	simuPanel->Add(compACBtn);
+	//simuPanel->Add(compACBtn);
 
 	singleACBtn = new GLButton(0, "1");
 	singleACBtn->SetEnabled(FALSE);
@@ -809,10 +823,10 @@ int MolFlow::OneTimeSceneInit()
 
 
 	ClearFacetParams();
-	UpdateViewerParams();
 	PlaceComponents();
 	facetMesh = new FacetMesh(&worker); //To use its UpdatefacetParams() routines
 	LoadConfig();
+	UpdateViewerParams();
 	//LoadFile();
 	try {
 
@@ -827,7 +841,7 @@ int MolFlow::OneTimeSceneInit()
 
 	//AnimateViewerChange(0,TRUE);
 
-	PlaceComponents();
+	//PlaceComponents(); //Why was it here?
 
 	//SelectViewer(0);
 
@@ -962,6 +976,9 @@ void MolFlow::PlaceComponents() {
 	simuPanel->SetCompBounds(modeLabel, 5, 45, 30, 18);
 	simuPanel->SetCompBounds(modeCombo, 40, 45, 85, 18);
 	simuPanel->SetCompBounds(compACBtn, 130, 45, 65, 19);
+	simuPanel->SetCompBounds(autoFrameMoveToggle, 5, 45, 65, 19);
+	simuPanel->SetCompBounds(forceFrameMoveButton, 128, 45, 66, 19);
+
 	//simuPanel->SetCompBounds(compACBtn,123,45,52,19);
 	//simuPanel->SetCompBounds(singleACBtn,178,45,20,19);
 	simuPanel->SetCompBounds(hitLabel, 5, 70, 30, 18);
@@ -1575,6 +1592,33 @@ void MolFlow::UpdateFormula() {
 				ok = (idx <= nbFacet);
 				if (ok) v->value = (double)geom->GetFacet(idx - 1)->sh.counter.hit.nbHit;
 			}
+			else if ((idx = getVariable(v->name, "P")) > 0) {
+				ok = (idx <= nbFacet);
+				if (ok) v->value = geom->GetFacet(idx - 1)->sh.counter.hit.sum_v_ort *
+					worker.finalOutgassingRate / worker.nbDesorption*1E4 / (geom->GetFacet(idx - 1)->sh.area/
+					(geom->GetFacet(idx - 1)->sh.is2sided ? 2.0 : 1.0)) * (worker.gasMass / 1000 / 6E23)*0.0100;
+			}
+			else if ((idx = getVariable(v->name, "DEN")) > 0) {
+				ok = (idx <= nbFacet);
+				if (ok) v->value = geom->GetFacet(idx - 1)->sh.counter.hit.sum_1_per_ort_velocity /
+					(geom->GetFacet(idx - 1)->sh.area*(geom->GetFacet(idx - 1)->sh.is2sided ? 2.0 : 1.0)) *
+					worker.finalOutgassingRate / worker.nbDesorption*1E4;
+			}
+			else if ((idx = getVariable(v->name, "Z")) > 0) {
+				ok = (idx <= nbFacet);
+				if (ok) v->value = geom->GetFacet(idx - 1)->sh.counter.hit.nbHit /
+					(geom->GetFacet(idx - 1)->sh.area*(geom->GetFacet(idx - 1)->sh.is2sided ? 2.0 : 1.0)) *
+					worker.finalOutgassingRate / worker.nbDesorption*1E4;
+			}
+			else if ((idx = getVariable(v->name, "V")) > 0) {
+				ok = (idx <= nbFacet);
+				if (ok) v->value = 4.0*(double)(geom->GetFacet(idx - 1)->sh.counter.hit.nbHit + geom->GetFacet(idx - 1)->sh.counter.hit.nbDesorbed)/
+					geom->GetFacet(idx - 1)->sh.counter.hit.sum_1_per_ort_velocity;
+			}
+			else if ((idx = getVariable(v->name, "T")) > 0) {
+				ok = (idx <= nbFacet);
+				if (ok) v->value = geom->GetFacet(idx - 1)->sh.temperature;
+			}
 			else if ((idx = getVariable(v->name, "_A")) > 0) {
 				ok = (idx <= nbFacet);
 				if (ok) v->value = (double)geom->GetFacet(idx - 1)->sh.counter.density.absorbed;
@@ -1631,6 +1675,9 @@ void MolFlow::UpdateFormula() {
 			}
 			else if (_stricmp(v->name, "NTOT") == 0) {
 				v->value = worker.totalDesorbedMolecules;
+			}
+			else if (_stricmp(v->name, "GASMASS") == 0) {
+				v->value =worker.gasMass;
 			}
 			else if (_stricmp(v->name, "KB") == 0) {
 				v->value = 1.3806504e-23;
@@ -1733,7 +1780,7 @@ void MolFlow::RenumberFormulas(int startId) {
 		if (OffsetFormula(expression, -1, startId))	{
 			this->formulas[i].parser->SetExpression(expression);
 			this->formulas[i].parser->Parse();
-		std:string formulaName = formulas[i].parser->GetName();
+		std::string formulaName = formulas[i].parser->GetName();
 			if (formulaName.empty()) formulaName = expression;
 			formulas[i].name->SetText(formulaName.c_str());
 		}
@@ -1818,7 +1865,7 @@ BOOL MolFlow::AutoSave(BOOL crashSave) {
 	std::string shortFn(worker.GetShortFileName());
 	std::string newAutosaveFilename = "Molflow_Autosave";
 	if (shortFn != "") newAutosaveFilename += "(" + shortFn + ")";
-	newAutosaveFilename += ".zip";
+	newAutosaveFilename += ".geozip";
 	char fn[1024];
 	strcpy(fn, newAutosaveFilename.c_str());
 	try {
@@ -1831,7 +1878,7 @@ BOOL MolFlow::AutoSave(BOOL crashSave) {
 	catch (Error &e) {
 		//delete fn;
 		char errMsg[512];
-		sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), worker.GetFileName());
+		sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), fn);
 		GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 		progressDlg2->SetVisible(FALSE);
 		SAFE_DELETE(progressDlg2);
@@ -1880,32 +1927,30 @@ int MolFlow::FrameMove()
 	char tmp[256];
 	Geometry *geom = worker.GetGeometry();
 
-	//Autosave routines	
+	//Autosave routines
+	BOOL timeForAutoSave = FALSE;
 	if (geom->IsLoaded()) {
 		if (autoSaveSimuOnly) {
 			if (worker.running) {
 				if (((worker.simuTime + (m_fTime - worker.startTime)) - lastSaveTimeSimu) >= (float)autoSaveFrequency*60.0f) {
-					AutoSave();
+					timeForAutoSave = TRUE;
 				}
 			}
 		}
 		else {
 			if ((m_fTime - lastSaveTime) >= (float)autoSaveFrequency*60.0f) {
-				AutoSave();
+				timeForAutoSave = TRUE;
 			}
 		}
 	}
 
-	// Simulation monitoring
-	if (globalSettings) globalSettings->SMPUpdate(m_fTime);
-	if (profilePlotter) profilePlotter->Update(m_fTime);
-
-	if (pressureEvolution) pressureEvolution->Update(m_fTime);
-	if (timewisePlotter) timewisePlotter->Update(m_fTime);
-	if (texturePlotter) texturePlotter->Update(m_fTime);
-	//if(facetDetails) facetDetails->Update();
 	if (worker.running) {
-		if (m_fTime - lastUpdate >= 1.0f) {
+		if (frameMoveRequested || autoFrameMove && (m_fTime - lastUpdate >= 1.0f)) {
+			forceFrameMoveButton->SetEnabled(FALSE);
+			forceFrameMoveButton->SetText("Updating...");
+			//forceFrameMoveButton->Paint();
+			GLWindowManager::Repaint();
+			frameMoveRequested = FALSE;
 
 			// Update hits
 			try {
@@ -1914,10 +1959,18 @@ int MolFlow::FrameMove()
 			catch (Error &e) {
 				GLMessageBox::Display((char *)e.GetMsg(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
 			}
+			// Simulation monitoring
+			if (profilePlotter) profilePlotter->Update(m_fTime);
+			if (pressureEvolution) pressureEvolution->Update(m_fTime);
+			if (timewisePlotter) timewisePlotter->Update(m_fTime);
+			//if(facetDetails) facetDetails->Update();
 			if (textureSettings) textureSettings->Update();
-			lastUpdate = m_fTime;
+			// Facet parameters and hits
 
+			// Formulas
+			if (autoUpdateFormulas) UpdateFormula();
 
+			lastUpdate = GetTick(); //changed from m_fTime: include update duration
 
 			// Update timing measurements
 			if (worker.nbHit != lastNbHit || worker.nbDesorption != lastNbDes) {
@@ -1944,6 +1997,9 @@ int MolFlow::FrameMove()
 			sprintf(tmp, "Running: %s", FormatTime(worker.simuTime + (m_fTime - worker.startTime)));
 		}
 		sTime->SetText(tmp);
+
+		forceFrameMoveButton->SetEnabled(!autoFrameMove);
+		forceFrameMoveButton->SetText("Update");
 	}
 	else {
 		if (worker.simuTime > 0.0) {
@@ -1957,6 +2013,18 @@ int MolFlow::FrameMove()
 		sprintf(tmp, "Stopped: %s", FormatTime(worker.simuTime));
 		sTime->SetText(tmp);
 	}
+	if (globalSettings) globalSettings->SMPUpdate(m_fTime);
+	if (texturePlotter) texturePlotter->Update(m_fTime);
+	if (viewer[0]->SelectionChanged() ||
+		viewer[1]->SelectionChanged() ||
+		viewer[2]->SelectionChanged() ||
+		viewer[3]->SelectionChanged()) {
+		UpdateFacetParams(TRUE);
+	}
+	UpdateFacetHits();
+
+	//Autosave
+	if (timeForAutoSave) AutoSave();
 
 	if ((m_fTime - worker.startTime <= 2.0f) && worker.running) {
 		hitNumber->SetText("Starting...");
@@ -1999,56 +2067,6 @@ int MolFlow::FrameMove()
 		startSimu->SetText("Begin");
 		//startSimu->SetFontColor(0, 140, 0);
 	}
-
-	// Facet parameters and hits
-	if (viewer[0]->SelectionChanged() ||
-		viewer[1]->SelectionChanged() ||
-		viewer[2]->SelectionChanged() ||
-		viewer[3]->SelectionChanged()) {
-		UpdateFacetParams(TRUE);
-	}
-
-	UpdateFacetHits();
-
-	// Formulas
-	if (autoUpdateFormulas) UpdateFormula();
-
-	/*
-	if(worker.running) {
-	if( m_fTime - lastWrite > 1.0 ) {
-	llong A = geom->GetFacet(73)->sh.counter.hit.nbAbsorbed;
-	llong D = geom->GetFacet(72)->sh.counter.hit.nbDesorbed;
-	double t = (double)A / (double)D;
-	//double t = geom->GetFacet(73)->sh.counter.density.absorbed;
-	sprintf(tmp,"%f %.16f",m_fTime-worker.startTime,t);
-	Log(tmp);
-	lastWrite=m_fTime;
-	}
-	}
-	*/
-
-	/*
-	if(worker.running) {
-	if( worker.nbDesorption != lastNbD ) {
-	double D = geom->GetFacet(1)->sh.counter.density.absorbed;
-	sprintf(tmp,"%I64d %.16f",worker.nbDesorption,D);
-	Log(tmp);
-	lastNbD=worker.nbDesorption;
-	}
-	}
-	*/
-
-	/*
-	if(!worker.running) {
-	if( worker.simuTime>0 ) {
-	if(nbSt<=10) {
-	LogProfile();
-	nbSt++;
-	StartStopSimulation();
-	}
-	}
-	}
-	*/
 
 	// Sleep a bit to avoid unwanted CPU load
 	if (viewer[0]->IsDragging() ||
@@ -2252,7 +2270,6 @@ int MolFlow::RestoreDeviceObjects()
 	RVALIDATE_DLG(profilePlotter);
 	RVALIDATE_DLG(pressureEvolution);
 	RVALIDATE_DLG(timewisePlotter);
-	RVALIDATE_DLG(viewEditor);
 	RVALIDATE_DLG(texturePlotter);
 	RVALIDATE_DLG(outgassingMap);
 	RVALIDATE_DLG(parameterEditor);
@@ -2297,7 +2314,6 @@ int MolFlow::InvalidateDeviceObjects()
 	IVALIDATE_DLG(profilePlotter);
 	IVALIDATE_DLG(pressureEvolution);
 	IVALIDATE_DLG(timewisePlotter);
-	IVALIDATE_DLG(viewEditor);
 	IVALIDATE_DLG(texturePlotter);
 	IVALIDATE_DLG(outgassingMap);
 	IVALIDATE_DLG(parameterEditor);
@@ -2914,7 +2930,7 @@ void MolFlow::AddFormula(GLParser *f, BOOL doUpdate) {
 	if (f) {
 		if (nbFormula < MAX_FORMULA) {
 			formulas[nbFormula].parser = f;
-			std:string formulaName = f->GetName();
+			std::string formulaName = f->GetName();
 			if (formulaName.empty()) formulaName = f->GetExpression();
 			formulas[nbFormula].name = new GLLabel(formulaName.c_str());
 			Add(formulas[nbFormula].name);
@@ -2981,7 +2997,7 @@ void MolFlow::ProcessFormulaButtons(GLComponent *src) {
 		if (!formulaSettings) formulaSettings = new FormulaSettings();
 		if (formulaSettings->EditFormula(formulas[i].parser)) {
 			// Apply change
-		std:string formulaName = formulas[i].parser->GetName();
+		std::string formulaName = formulas[i].parser->GetName();
 		if (formulaName.empty()) formulaName = formulas[i].parser->GetExpression();
 		formulas[i].name->SetText(formulaName.c_str());
 		UpdateFormula();
@@ -3248,8 +3264,8 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			alignFacet->SetVisible(TRUE);
 			break;
 		case MENU_FACET_PROFPLOTTER:
-			if (!profilePlotter) profilePlotter = new ProfilePlotter(&worker);
-			profilePlotter->Display();
+			if (!profilePlotter) profilePlotter = new ProfilePlotter();
+			profilePlotter->Display(&worker);
 			break;
 
 
@@ -3764,9 +3780,16 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		}
 
 		// Select selection
-		if (src->GetId() >= MENU_SELECTION_SELECTIONS && src->GetId() < MENU_SELECTION_SELECTIONS + nbSelection) {
+		if (MENU_SELECTION_SELECTIONS + nbSelection > src->GetId() >= MENU_SELECTION_SELECTIONS) { //Choose selection by number
 			SelectSelection(src->GetId() - MENU_SELECTION_SELECTIONS);
 		}
+		else if (src->GetId() == (MENU_SELECTION_SELECTIONS + nbSelection)){ //Previous selection
+			SelectSelection(Remainder(idSelection - 1, nbSelection));
+		}
+		else if (src->GetId() == (MENU_SELECTION_SELECTIONS + nbSelection + 1)){ //Next selection
+			SelectSelection(Remainder(idSelection + 1, nbSelection));
+		}
+
 		// Clear selection
 		if (src->GetId() >= MENU_SELECTION_CLEARSELECTIONS && src->GetId() < MENU_SELECTION_CLEARSELECTIONS + nbSelection) {
 			char tmpname[256];
@@ -3914,6 +3937,10 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			facetFILabel->SetState(FALSE);
 			facetFIAreaLabel->SetState(TRUE);
 		}
+		else if (src == autoFrameMoveToggle) {
+			autoFrameMove = autoFrameMoveToggle->GetState();
+			forceFrameMoveButton->SetEnabled(!autoFrameMove);
+		}
 
 		else {
 			// Update viewer flags
@@ -4026,8 +4053,8 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			}
 		}
 		else if (src == profilePlotterBtn) {
-			if (!profilePlotter) profilePlotter = new ProfilePlotter(&worker);
-			if (!profilePlotter->IsVisible()) profilePlotter->Display();
+			if (!profilePlotter) profilePlotter = new ProfilePlotter();
+			if (!profilePlotter->IsVisible()) profilePlotter->Display(&worker);
 			else profilePlotter->SetVisible(FALSE);
 		}
 		else if (src == texturePlotterBtn) {
@@ -4042,6 +4069,10 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			if (!globalSettings) globalSettings = new GlobalSettings();
 			if (!globalSettings->IsVisible()) globalSettings->Display(&worker);
 			else globalSettings->SetVisible(FALSE);
+		}
+		else if (src == forceFrameMoveButton) {
+			frameMoveRequested = TRUE;
+			FrameMove();
 		}
 		else {
 			ProcessFormulaButtons(src);
@@ -4411,6 +4442,7 @@ void MolFlow::SelectView(int v) {
 void MolFlow::SelectSelection(int v) {
 	Geometry *geom = worker.GetGeometry();
 	geom->SetSelection((&selections[v].selection), &(selections[v].nbSel));
+	idSelection = v;
 }
 
 //-----------------------------------------------------------------------------
@@ -4426,7 +4458,8 @@ void MolFlow::ClearSelectionMenus() {
 
 void MolFlow::RebuildSelectionMenus() {
 	ClearSelectionMenus();
-	for (int i = 0; i < nbSelection; i++){
+	int i;
+	for (i = 0; i < nbSelection; i++){
 		if (i <= 8) {
 			selectionsMenu->Add(selections[i].name, MENU_SELECTION_SELECTIONS + i, SDLK_1 + i, ALT_MODIFIER);
 		}
@@ -4436,6 +4469,9 @@ void MolFlow::RebuildSelectionMenus() {
 		clearSelectionsMenu->Add(selections[i].name, MENU_SELECTION_CLEARSELECTIONS + i);
 		memorizeSelectionsMenu->Add(selections[i].name, MENU_SELECTION_MEMORIZESELECTIONS + i);
 	}
+	selectionsMenu->Add(NULL); //Separator
+	selectionsMenu->Add("Select previous", MENU_SELECTION_SELECTIONS + i, SDLK_F11, ALT_MODIFIER);
+	selectionsMenu->Add("Select next", MENU_SELECTION_SELECTIONS + i+1, SDLK_F12, ALT_MODIFIER);
 }
 
 void MolFlow::AddSelection(char *selectionName, ASELECTION s) {
@@ -4525,18 +4561,6 @@ void MolFlow::RebuildViewMenus() {
 		memorizeViewsMenu->Add(views[i].name, MENU_VIEW_MEMORIZEVIEWS + i);
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 void MolFlow::AddView(char *viewName, AVIEW v) {

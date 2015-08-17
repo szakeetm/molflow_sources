@@ -27,7 +27,6 @@
 #include "GLApp/GLInputBox.h"
 
 extern MolFlow *mApp;
-
 static const int   flWidth[] = {40,100,100,100};
 static const char *flName[] = {"Vertex#","X","Y","Z"};
 static const int   flAligns[] = { ALIGN_LEFT,ALIGN_LEFT,ALIGN_LEFT,ALIGN_LEFT };

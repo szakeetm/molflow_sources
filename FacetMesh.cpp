@@ -618,7 +618,7 @@ BOOL FacetMesh::Apply() {
 	int* selection;
 	double ratio=0.0;
 	geom->GetSelection(&selection, &nbSelected);
-	int nbPerformed = 0.0;
+	int nbPerformed = 0;
 	BOOL doRatio = TRUE;
 	if (enableBtn->GetState() == 1) {
 
@@ -795,7 +795,7 @@ BOOL FacetMesh::Apply() {
 				recordTransBtn->GetState()<2 && recordACBtn->GetState()<2 && recordDirBtn->GetState()<2 && doRatio) { //only remesh if all settings well-defined
 				if (structChanged) geom->RebuildLists();
 				double targetRatio = hasAnyTexture ? ratio : 0.0;
-				if (!IS_ZERO(geom->GetFacet(selection[i])->tRatio-targetRatio) || dirCountingChanged) geom->SetFacetTexture(selection[i], targetRatio, hasAnyTexture ? boundMap : 0.0);
+				if (!IS_ZERO(geom->GetFacet(selection[i])->tRatio-targetRatio) || dirCountingChanged) geom->SetFacetTexture(selection[i], targetRatio, hasAnyTexture ? boundMap : FALSE);
 			}
 		} catch (Error &e) {
 			GLMessageBox::Display((char *)e.GetMsg(),"Error",GLDLG_OK,GLDLG_ICONWARNING);

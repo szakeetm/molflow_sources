@@ -21,7 +21,7 @@
 #include "GLApp/GLMessageBox.h"
 #include "Molflow.h"
 extern MolFlow *mApp;
-// --------------------------------------------------------------------
+
 
 Viewer3DSettings::Viewer3DSettings():GLWindow() {
 
@@ -81,6 +81,15 @@ Viewer3DSettings::Viewer3DSettings():GLWindow() {
   dispNumLeaks->SetBounds(100,125,100,18);
   Add(dispNumLeaks);
 
+
+
+
+
+
+
+
+
+
   hiddenEdge = new GLToggle(0,"Show hidden edges (selected facets)");
   hiddenEdge->SetBounds(10,150,50,18);
   Add(hiddenEdge);
@@ -101,9 +110,15 @@ Viewer3DSettings::Viewer3DSettings():GLWindow() {
   showTimeToggle->SetBounds(10,250,50,18);
   Add(showTimeToggle);
 
+
   dirShowdirToggle = new GLToggle(0,"Show direction");
   dirShowdirToggle->SetBounds(10,280,190,18);
   Add(dirShowdirToggle);
+
+
+
+
+
 
   GLTitledPanel *panel2 = new GLTitledPanel("Direction field");
   panel2->SetBounds(5,305,wD-10,70);
@@ -117,13 +132,16 @@ Viewer3DSettings::Viewer3DSettings():GLWindow() {
   dirNormeText->SetBounds(100,325,100,18);
   Add(dirNormeText);
 
+
   dirNormalizeToggle = new GLToggle(0,"Normalize");
   dirNormalizeToggle->SetBounds(10,350,100,18);
   Add(dirNormalizeToggle);
 
+
   dirCenterToggle = new GLToggle(0,"Center");
   dirCenterToggle->SetBounds(110,350,90,18);
   Add(dirCenterToggle);
+
 
   applyButton = new GLButton(0,"Apply");
   applyButton->SetBounds(wD-170,hD-43,80,19);
@@ -132,6 +150,11 @@ Viewer3DSettings::Viewer3DSettings():GLWindow() {
   cancelButton = new GLButton(0,"Dismiss");
   cancelButton->SetBounds(wD-85,hD-43,80,19);
   Add(cancelButton);
+
+
+
+
+
 
   Reposition(wD,hD);
 
@@ -166,6 +189,8 @@ void Viewer3DSettings::Refresh(Geometry *s,GeometryViewer *v) {
 
   bigDots->SetState(viewer->bigDots);
   dirShowdirToggle->SetState(viewer->showDir);
+
+
   sprintf(tmp,"%g",viewer->transStep);
   traStepText->SetText(tmp);
   sprintf(tmp,"%g",viewer->angleStep);
@@ -174,12 +199,15 @@ void Viewer3DSettings::Refresh(Geometry *s,GeometryViewer *v) {
   dispNumHits->SetText(tmp);
   sprintf(tmp,"%g",(double) viewer->dispNumLeaks);
   dispNumLeaks->SetText(tmp);
+
+
   sprintf(tmp,"Viewer #%d",viewer->GetId()+1);
   panel->SetTitle(tmp);
   sprintf(tmp,"%g",geom->GetNormeRatio());
   dirNormeText->SetText(tmp);
   dirNormalizeToggle->SetState( geom->GetAutoNorme() );
   dirCenterToggle->SetState( geom->GetCenterNorme() );
+
 
 }
 
@@ -216,6 +244,10 @@ void Viewer3DSettings::ProcessMessage(GLComponent *src,int message) {
         GLMessageBox::Display("Invalid number of displayed leaks.\nMust be between 1 and 2048.","Error",GLDLG_OK,GLDLG_ICONERROR);
         return;
       }
+
+
+
+
       viewer->showBack=showMode->GetSelectedIndex();
       viewer->transStep = tstep;
       viewer->angleStep = astep;
@@ -225,9 +257,17 @@ void Viewer3DSettings::ProcessMessage(GLComponent *src,int message) {
 	  viewer->showHiddenVertex=hiddenVertex->GetState();
       viewer->showMesh=showMesh->GetState();
 
+
 	  viewer->bigDots=bigDots->GetState();
       viewer->showDir=dirShowdirToggle->GetState();
 	  viewer->showTime=showTimeToggle->GetState();
+
+
+
+
+
+
+
 
       if( !dirNormeText->GetNumber(&nratio) ) {
         GLMessageBox::Display("Invalid norme ratio value","Error",GLDLG_OK,GLDLG_ICONERROR);

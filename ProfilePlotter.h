@@ -34,10 +34,10 @@ class ProfilePlotter : public GLWindow {
 public:
 
   // Construction
-  ProfilePlotter(Worker *w);
+  ProfilePlotter();
 
   // Component method
-  void Display();
+  void Display(Worker *w);
   void Refresh();
   void Update(float appTime,BOOL force=FALSE);
   void Reset();
@@ -50,6 +50,7 @@ public:
   void SetViews(std::vector<int> views);
   BOOL IsLogScaled();
   void SetLogScaled(BOOL logScale);
+  void SetWorker(Worker *w);
 
 private:  
   void remView(int facet);
@@ -65,12 +66,13 @@ private:
   GLLabel     *unitLabel;
   GLCombo     *normCombo;
   //GLToggle    *showAllMoments;
+
+
   GLButton    *selButton;
   GLButton    *addButton;
   GLButton    *removeButton;
   GLButton    *resetButton;
   GLTextField *formulaText;
-  //GLTextField *qText;
   GLButton    *formulaBtn;
   GLToggle    *logYToggle;
   GLToggle    *correctForGas;

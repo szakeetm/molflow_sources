@@ -40,7 +40,8 @@ public:
   Geometry *GetGeometry();
 
   // Load a geometry (throws Error)
-  void LoadGeometry(char *fileName);
+
+  void LoadGeometry(char *fileName);// Load a geometry (throws Error)
   BOOL IsDpInitialized();
 
   // Inserts a new geometry (throws Error)
@@ -54,6 +55,7 @@ public:
   void SaveGeometry(char *fileName,GLProgress *prg,BOOL askConfirm=TRUE,BOOL saveSelected=FALSE,BOOL autoSave=FALSE,BOOL crashSave=FALSE);
 
   // Save textures (throws Error)
+
   void ExportTextures(char *fileName,int mode,BOOL askConfirm=TRUE,BOOL saveSelected=FALSE);
   void ExportProfiles(char *fileName);
 
@@ -67,6 +69,7 @@ public:
 
   //Import desorption map
   //void ImportDesorption(char *fileName);
+
 
   // Save a geometry using the current file name (throws Error)
   void SaveGeometry(GLProgress *prg);
@@ -100,6 +103,7 @@ public:
   void StartStop(float appTime,int mode);
 
     // Switch running/stopped
+
   void Stop_Public();
 
   // AC iteration single step
@@ -148,6 +152,10 @@ public:
   // Send Compute AC matrix order
   void ComputeAC(float appTime);
 
+
+
+
+
   int AddMoment(std::vector<double> newMoments); //Adds a time serie to moments and returns the number of elements
   std::vector<double> ParseMoment(std::string userInput); //Parses a user input and returns a vector of time moments
   void ResetMoments();
@@ -164,12 +172,17 @@ int GetIDId(int paramId);
   llong  nbAbsorption;      // Total number of molecules absorbed (64 bit integer)
   llong  nbDesorption;      // Total number of molecules generated (64 bit integer)
   llong  nbHit;             // Total number of hit (64 bit integer)
+
+
   llong  maxDesorption;     // Number of desoprtion before halting
+
   llong  nbLeakTotal;       // Total number of leak
   double distTraveledTotal_total; // Total distance traveled by particles (for mean pumping path calc.)
   double distTraveledTotal_fullHitsOnly; // Total distance traveled by particles between full hits (for mean free path calc.)
   int    nbHHit;            // Last hits
   int    nbLastLeaks;       // Last leaks
+
+
   BOOL   running;           // Started/Stopped state
   float  startTime;         // Start time
   float  stopTime;          // Stop time
@@ -200,6 +213,14 @@ int GetIDId(int paramId);
   VERTEX3D motionVector1; //base point for rotation
   VERTEX3D motionVector2; //rotation vector or velocity vector
 
+
+
+
+
+
+
+
+
   BOOL needsReload;
 
   std::vector<Parameter> parameters;
@@ -229,13 +250,14 @@ private:
   char      loadDpName[32];
   char      hitsDpName[32];
 
+
   // Caches
   HIT  hhitCache[NBHHIT];
   LEAK leakCache[NBHHIT];
 
   // Methods
-  BOOL ExecuteAndWait(int command,int waitState,int param=0);
-  BOOL Wait(int waitState,int timeout);
+  BOOL ExecuteAndWait(int command,int waitState,int param=0,GLProgress *prg=NULL);
+  BOOL Wait(int waitState, int timeout, GLProgress *prg = NULL);
   void ResetWorkerStats();
   void ClearHits();
   char *GetErrorDetails();

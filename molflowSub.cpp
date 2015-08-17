@@ -259,7 +259,7 @@ void LoadAC() {
 void Load() {
 
   Dataport *loader;
-  long hSize;
+  size_t hSize;
 
   // Load geometry
   loader = OpenDataport(loadDpName,prParam);

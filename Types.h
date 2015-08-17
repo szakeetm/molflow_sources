@@ -22,7 +22,7 @@
 // 64 bit integer declaration
 
 #ifdef WIN
-  typedef __int64 llong;
+  typedef unsigned __int64 llong;
 #else
   typedef long long llong;
 #endif
@@ -46,6 +46,7 @@ typedef float ACFLOAT;
 #define REF_MIRROR  1   // Mirror
 #define REF_UNIFORM 2   // Uniform (for testing)
 
+
   // Profile type
 
 #define REC_NONE       0  // No recording
@@ -56,6 +57,7 @@ typedef float ACFLOAT;
 #define REC_ORT_VELOCITY 5 //Orthogonal velocity component
 
 #define PROFILE_SIZE  100 // Size of profile
+
 
 // Hit type
 
@@ -102,6 +104,8 @@ typedef struct {
   VERTEX3D pos;
   int      type;
 
+
+
 } HIT;
 
 typedef struct {
@@ -126,6 +130,7 @@ typedef struct {
 	double sum_v_ort;
 	double sum_1_per_ort_velocity;
 } APROFILE;
+
 
 typedef struct {
 	llong count;

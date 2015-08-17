@@ -92,7 +92,11 @@ void GLProgress::ProcessMessage(GLComponent *src,int message) {
 
 }
 
-// -------------------------------------------------
+double GLProgress::GetProgress() {
+
+	return (double)progress / 100.0;
+
+}
 
 void GLProgress::SetProgress(double value) {
 

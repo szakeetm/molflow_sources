@@ -407,3 +407,20 @@ void FileWriter::Write(const char *s) {
     throw Error("Error while writing to file");
 }
 
+std::string SplitFilename (const std::string& str)
+{
+  static std::string retval;
+  size_t found;
+  found=str.find_last_of("/\\");
+  retval=str.substr(found+1);
+  return retval;
+}
+
+std::string SplitPath (const std::string& str)
+{
+  static std::string retval;
+  size_t found;
+  found=str.find_last_of("/\\");
+  retval=str.substr(0,found);
+  return retval;
+}

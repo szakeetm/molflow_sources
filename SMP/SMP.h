@@ -64,10 +64,10 @@ typedef struct {
 } PROCESS_INFO;
 
 // Shared memory
-extern Dataport *CreateDataport(char *,long);
-extern Dataport *OpenDataport(char *,long);
+extern Dataport *CreateDataport(char *,size_t size);
+extern Dataport *OpenDataport(char *, size_t size);
 extern BOOL AccessDataport(Dataport *);
-extern BOOL AccessDataportTimed(Dataport *,DWORD);
+extern BOOL AccessDataportTimed(Dataport *, DWORD timeout);
 extern BOOL ReleaseDataport(Dataport *);
 extern BOOL CloseDataport(Dataport *);
 

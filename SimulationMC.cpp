@@ -420,11 +420,11 @@ BOOL SimulationMCStep(int nbStep) {
 					sHandle->distTraveledSinceUpdate_total += d;
 					PerformTeleport(collidedFacet);
 				}
-				else if ((GetOpacityAt(collidedFacet, sHandle->flightTimeCurrentParticle) < 1.0) && (rnd() > GetOpacityAt(collidedFacet, sHandle->flightTimeCurrentParticle))) {
+				/*else if ((GetOpacityAt(collidedFacet, sHandle->flightTimeCurrentParticle) < 1.0) && (rnd() > GetOpacityAt(collidedFacet, sHandle->flightTimeCurrentParticle))) {
 					//Transparent pass
 					sHandle->distTraveledSinceUpdate_total += d;
 					PerformTransparentPass(collidedFacet);
-				}
+				}*/
 				else if (GetStickingAt(collidedFacet,sHandle->flightTimeCurrentParticle) == 1.0 || ((GetStickingAt(collidedFacet,sHandle->flightTimeCurrentParticle) > 0.0) && (rnd() < (GetStickingAt(collidedFacet,sHandle->flightTimeCurrentParticle))))) {
 					//Absorbed
 					sHandle->distTraveledSinceUpdate_total += d;
@@ -742,7 +742,7 @@ void PerformBounce(FACET *iFacet) {
 }
 
 void PerformTransparentPass(FACET *iFacet) {
-	double directionFactor = abs(DOT3(
+	/*double directionFactor = abs(DOT3(
 		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
 		iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z));
 	iFacet->sh.counter.hit.nbHit++;
@@ -755,7 +755,7 @@ void PerformTransparentPass(FACET *iFacet) {
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle + iFacet->colDist / 100.0 / sHandle->velocityCurrentParticle,
 		TRUE, 2.0, 2.0);
 	RecordHit(HIT_TRANS);
-	sHandle->lastHit = iFacet;
+	sHandle->lastHit = iFacet;*/
 }
 
 void PerformAbsorb(FACET *iFacet) {

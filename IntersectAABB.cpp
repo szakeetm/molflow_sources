@@ -334,7 +334,7 @@ BOOL Intersect(VERTEX3D *rPos,VERTEX3D *rDir,  // Source ray (rayDir vector must
 			   double *dist,                   // Distance to collision point
 			   FACET **iFact,FACET *last) {    // Collided facet, previous collision
 
-				   int i;
+				   
 				   intMinLgth = 1e100;
 				   intFound = FALSE;
 				   intNbTHits=0;
@@ -364,10 +364,10 @@ BOOL Intersect(VERTEX3D *rPos,VERTEX3D *rDir,  // Source ray (rayDir vector must
 					   f->hitted = TRUE;
 
 					   // Second pass for transparent hits
-					   /*for(i=0;i<intNbTHits;i++) {
+					   for (int i = 0; i<intNbTHits; i++) {
 
 						   f = THits[i];
-						   if( f->colDist < intMinLgth ) {
+						   if (f->colDist < intMinLgth) {
 							   double directionFactor = abs(DOT3(
 								   sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
 								   f->sh.N.x, f->sh.N.y, f->sh.N.z));
@@ -375,13 +375,13 @@ BOOL Intersect(VERTEX3D *rPos,VERTEX3D *rDir,  // Source ray (rayDir vector must
 							   f->sh.counter.hit.sum_1_per_ort_velocity += 2.0 / (sHandle->velocityCurrentParticle*directionFactor);
 							   f->sh.counter.hit.sum_v_ort += 2.0*(sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*sHandle->velocityCurrentParticle*directionFactor;
 							   f->hitted = TRUE;
-							   if( f->hits && f->sh.countTrans ) AHIT_FACET(f,sHandle->flightTimeCurrentParticle+f->colDist/100.0/sHandle->velocityCurrentParticle,
-								   TRUE,2.0,2.0);
+							   if (f->hits && f->sh.countTrans) AHIT_FACET(f, sHandle->flightTimeCurrentParticle + f->colDist / 100.0 / sHandle->velocityCurrentParticle,
+								   TRUE, 2.0, 2.0);
 							   if (f->direction && f->sh.countDirection) DHIT_FACET(f, sHandle->flightTimeCurrentParticle + f->colDist / 100.0 / sHandle->velocityCurrentParticle);
 							   ProfileFacet(f, sHandle->flightTimeCurrentParticle + f->colDist / 100.0 / sHandle->velocityCurrentParticle,
 								   TRUE, 2.0, 2.0);
 						   }
-					   }*/ //We don't treat transparent passes here -> we put this to SimulationMCStep
+					   }
 				   }
 
 				   return intFound;
@@ -452,19 +452,19 @@ void IntersectTree(struct AABBNODE *node) {
 								// This check could be avoided on rectangular facet.
 								if( IsInFacet(f,u,v) ) {
 
-									/*double time = sHandle->flightTimeCurrentParticle + d / 100.0 / sHandle->velocityCurrentParticle;
+									double time = sHandle->flightTimeCurrentParticle + d / 100.0 / sHandle->velocityCurrentParticle;
 									if( (GetOpacityAt(f,time) == 1.0) || (rnd()<GetOpacityAt(f,time)) ) {
 
 										// Hard hit
-										*/if( d < intMinLgth ) {
+										if( d < intMinLgth ) {
 											*iFacet = f;
 											intFound = TRUE;
 											intMinLgth = d;
 											f->colU = u;
 											f->colV = v;
-										}/*
+										}
 
-									}*/ /*else {
+									} else {
 
 										// Pass on partial transparent facet
 										if( f->sh.isProfile || f->hits ) {
@@ -474,7 +474,7 @@ void IntersectTree(struct AABBNODE *node) {
 											if(intNbTHits<MAX_THIT)
 												THits[intNbTHits++]=f;
 										}
-									}*/ //We remove this block since - in case of radioactive gases - even transparent passes can eliminate a particle (if its flight time is over its lifetime)
+									}
 								} // IsInFacet
 							} // d range
 						} // u range

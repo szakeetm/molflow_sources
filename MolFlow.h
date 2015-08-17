@@ -55,7 +55,6 @@
 #include "ProfilePlotter.h"
 #include "PressureEvolution.h"
 #include "TimewisePlotter.h"
-#include "ViewEditor.h"
 #include "TexturePlotter.h"
 #include "OutgassingMap.h"
 #include "SelectDialog.h"
@@ -117,14 +116,15 @@ public:
 	float    lastSaveTime;
 	float    lastSaveTimeSimu;
 	std::string autosaveFilename; //only delete files that this instance saved
+	BOOL     autoFrameMove; //Refresh scene every 1 second
+	BOOL     frameMoveRequested; //Force frame move
 
+	HANDLE compressProcessHandle;
+	
 	//Public textfields so we can disable them from "Advanced facet parameters":
 	GLTextField   *facetFlow;
 	GLTextField   *facetFlowArea;
-
-	HANDLE compressProcessHandle;
-	//float m_fTime;
-
+	
     // Util functions
 	//void SendHeartBeat(BOOL forced=FALSE);
     char *FormatInt(llong v,char *unit);
@@ -243,7 +243,9 @@ public:
 	GLLabel       *facetAreaLabel;
 	GLLabel       *facetPumpingLabel;
 	GLTextField   *facetPumping;
-    GLButton      *compACBtn;
+	GLToggle      *autoFrameMoveToggle;
+	GLButton      *forceFrameMoveButton;
+	GLButton      *compACBtn;
     GLButton      *singleACBtn;
     GLLabel       *hitLabel;
     GLLabel       *desLabel;
@@ -333,7 +335,6 @@ public:
     ProfilePlotter   *profilePlotter;
 	PressureEvolution *pressureEvolution;
 	TimewisePlotter  *timewisePlotter;
-    ViewEditor       *viewEditor;
     TexturePlotter   *texturePlotter;
 	OutgassingMap    *outgassingMap;
 	MomentsEditor    *momentsEditor;

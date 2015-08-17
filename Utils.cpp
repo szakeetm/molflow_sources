@@ -983,7 +983,7 @@ int GetPower2(int n) {
 }
 
 // Format a number of byte in KB,MB,...
-char *FormatMemory(unsigned long size) {
+char *FormatMemory(size_t size) {
 	return FormatMemoryLL((llong)size);
 }
 

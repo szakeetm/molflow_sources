@@ -316,6 +316,9 @@ void RotateFacet::ProcessMessage(GLComponent *src,int message) {
 				geom->RotateSelectedFacets(AXIS_P0,AXIS_DIR,deg,src==copyButton,work);
 				//mApp->UpdateModelParams();
 				work->Reload(); 
+				try { work->Reload(); } catch(Error &e) {
+					GLMessageBox::Display((char *)e.GetMsg(),"Error reloading worker",GLDLG_OK,GLDLG_ICONERROR);
+				} 
 				mApp->UpdateFacetlistSelected();
 				mApp->UpdateViewers();
 				//GLWindowManager::FullRepaint();

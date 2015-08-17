@@ -333,6 +333,8 @@ void OutgassingMap::ProcessMessage(GLComponent *src,int message) {
 			  
 		  }
 		  if( GLMessageBox::Display("Explode selected facet?","Question",GLDLG_OK|GLDLG_CANCEL,GLDLG_ICONINFO)==GLDLG_OK ) {	
+
+
 			  if (mApp->AskToReset()) {
 				  mApp->changedSinceSave=TRUE;
 				  try { 

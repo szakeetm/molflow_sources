@@ -29,7 +29,7 @@ public:
 
   // Update progress bar (0 to 1)
   void SetProgress(double value);
-
+  double GetProgress();
   void SetMessage(char *msg);
 
 private:

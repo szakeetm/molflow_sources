@@ -2256,9 +2256,9 @@ void GLList::PasteClipboardText() {
 			col=colBegin=u;
 		}
 
-		int cursor = 0;
+		size_t cursor = 0;
 		
-		int length=strlen(content);
+		size_t length=strlen(content);
 
 		char tmp[MAX_TEXT_SIZE];
 		tmp[0]=NULL;
@@ -2276,7 +2276,7 @@ void GLList::PasteClipboardText() {
 				tmp[0]=NULL;
 				col=colBegin;
 			} else if (strlen(tmp)<(MAX_TEXT_SIZE-1)) {
-				        int len = strlen(tmp);
+				        size_t len = strlen(tmp);
 						tmp[len] = c;
 						tmp[len+1] = '\0';
 			}

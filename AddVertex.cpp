@@ -106,8 +106,13 @@ void AddVertex::ProcessMessage(GLComponent *src,int message) {
       }
 		if (work->running) work->Stop_Public();
       geom->AddVertex(X,Y,Z);
-	  work->Reload();    
+	  	  try { work->Reload(); } catch(Error &e) {
+
+				GLMessageBox::Display((char *)e.GetMsg(),"Error reloading worker",GLDLG_OK,GLDLG_ICONERROR);
+	  }    
 	  mApp->changedSinceSave = TRUE;
+
+
       GLWindowManager::FullRepaint();
 
     }

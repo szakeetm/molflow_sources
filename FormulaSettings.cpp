@@ -23,7 +23,7 @@
 FormulaSettings::FormulaSettings():GLWindow() {
 
   int wD = 500;
-  int hD = 425;
+  int hD = 500;
 
   SetTitle("Formula Editor");
 
@@ -43,9 +43,12 @@ FormulaSettings::FormulaSettings():GLWindow() {
 
   descL = new GLLabel(
     "MC Variables: An (Absorption on facet n), Dn (Desorption on facet n), Hn (Hit on facet n)\n"
-    "                 SUMABS (total absorbed), SUMDES (total desorbed), SUMHIT (total hit)\n\n"
+	"              Pn (Pressure [mbar] on facet n), DENn (Density [1/m3] on facet n)\n"
+	"              Zn (Imp. rate on facet n), Vn (avg. speed [m/s] on facet n), Tn (temp[K] of facet n)\n"
+    "              SUMABS (total absorbed), SUMDES (total desorbed), SUMHIT (total hit)\n\n"
     "AC Variables: _An (Absorption on facet n), _Dn (Desorption on facet n), _Hn (Density on facet n)\n\n"
     "Area variables: ARn (Area of facet n), DESAR (total desorption area), ABSAR (total absorption area)\n\n"
+	"Gas mass [g/mol]: GASMASS\n"
 	"Final (constant) outgassing rate [mbar*l/s]: QCONST\n"
 	"Final (constant) outgassing rate [molecules/s]: QCONST_N\n"
 	"Total desorbed molecules until last moment: [molecules]: NTOT\n\n"

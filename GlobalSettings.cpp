@@ -209,9 +209,7 @@ void GlobalSettings::Display(Worker *w) {
   int nb = worker->GetProcNumber();
   sprintf(tmp,"%d",nb);
   nbProcText->SetText(tmp);
-
   SetVisible(TRUE);
-
 }
 
 // ----------------------------------------------------------------
@@ -391,10 +389,12 @@ void GlobalSettings::ProcessMessage(GLComponent *src,int message) {
 			}
 		}
 
-		if( !autoSaveText->GetNumber(&mApp->autoSaveFrequency) || !(mApp->autoSaveFrequency>0.0) ) {
-        GLMessageBox::Display("Invalid autosave frequency","Error",GLDLG_OK,GLDLG_ICONERROR);
-        return;
+		double autosavefreq;
+		if (!autoSaveText->GetNumber(&autosavefreq) || !(autosavefreq>0.0)) {
+			GLMessageBox::Display("Invalid autosave frequency", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			return;
 		}
+		mApp->autoSaveFrequency = autosavefreq;
 	    
 		return;
 

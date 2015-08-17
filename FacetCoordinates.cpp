@@ -257,7 +257,7 @@ void FacetCoordinates::RebuildList() {
 	
 	char tmp[128];
 
-	for(size_t i=0;i<lines.size();i++) {
+	for(int i=0;i<(int)lines.size();i++) {
 		
 		sprintf(tmp,"%d",i+1);
 		facetListC->SetValueAt(0,i,tmp);

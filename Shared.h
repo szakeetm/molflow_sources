@@ -269,7 +269,7 @@ typedef struct {
   double texWidthD;   // Actual texture resolution (U)
   double texHeightD;  // Actual texture resolution (V)
 
-  int   hitOffset;      // Hit address offset for this facet
+  size_t   hitOffset;      // Hit address offset for this facet
   
   //Outgassing map
   BOOL   useOutgassingFile; //has desorption file for cell elements

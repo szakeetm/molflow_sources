@@ -36,9 +36,9 @@ class Worker;
 
 #define SEL_HISTORY  100
 #define MAX_SUPERSTR 128
+#define SYNVERSION 8
 #define GEOVERSION   15
 #define XMLVERSION 1
-#define SYNVERSION 8
 
 #define TEXTURE_MODE_PRESSURE 0
 #define TEXTURE_MODE_IMPINGEMENT 1
@@ -88,8 +88,8 @@ public:
   void SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress *prg, BOOL saveSelected);
   BOOL SaveXML_simustate(pugi::xml_node saveDoc, Worker *work, BYTE *buffer, SHGHITS *gHits, int nbLeakSave, int nbHHitSave,
 	  LEAK *pLeak, HIT *pHits, GLProgress *prg, BOOL saveSelected);
-  void LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg);
-  void InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg, BOOL newStr);
+  void LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg, BOOL isSynxml = FALSE);
+  void InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg, BOOL newStr, BOOL isSynxml = FALSE);
   BOOL LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker *work, GLProgress *progressDlg);
 
   // Selection (drawing stuff)
@@ -207,14 +207,14 @@ public:
   double distTraveledTotal_fullHitsOnly;
 
   // Memory usage (in bytes)
-  DWORD GetGeometrySize();
-  DWORD GetHitsSize(std::vector<double> *moments);
+  size_t GetGeometrySize();
+  size_t GetHitsSize(std::vector<double> *moments);
 
   // Raw data buffer (geometry)
   void CopyGeometryBuffer(BYTE *buffer);
 
   // AC matrix
-  DWORD GetMaxElemNumber();
+  size_t GetMaxElemNumber();
   void CopyElemBuffer(BYTE *buffer);
 
 private:

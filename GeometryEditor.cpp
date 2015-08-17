@@ -419,7 +419,6 @@ Facet *Geometry::GetFacet(int facet) {
 	return facets[facet];
 }
 
-
 int Geometry::GetNbFacet() {
 	return sh.nbFacet;
 }
@@ -459,6 +458,8 @@ AABB Geometry::GetBB() {
 			}
 		}
 
+
+
 		return sbb;
 	}
 
@@ -469,6 +470,7 @@ VERTEX3D Geometry::GetCenter() {
 	if (viewStruct < 0) {
 
 		return center;
+
 
 	}
 	else {
@@ -521,8 +523,10 @@ void Geometry::CollapseVertex(GLProgress *prg, double totalWork) {
 	if (!isLoaded) return;
 	// Collapse neighbor vertices
 	VERTEX3D *refs = (VERTEX3D *)malloc(sh.nbVertex*sizeof(VERTEX3D));
-	int      *idx = (int *)malloc(sh.nbVertex*sizeof(int));
-	int       nbRef = 0;
+	if (!refs) throw Error("Out of memory: CollapseVertex");
+	int      *idx  = (int *)malloc(sh.nbVertex*sizeof(int));
+	if (!idx) throw Error("Out of memory: CollapseVertex");
+	int       nbRef=0;
 
 	// Collapse
 	prg->SetMessage("Collapsing vertices...");
@@ -534,6 +538,7 @@ void Geometry::CollapseVertex(GLProgress *prg, double totalWork) {
 	// Create the new vertex array
 	SAFE_FREE(vertices3);
 	vertices3 = (VERTEX3D *)malloc(nbRef * sizeof(VERTEX3D));
+	if (!vertices3) throw Error("Out of memory: CollapseVertex");
 	//UnselectAllVertex();
 
 	memcpy(vertices3, refs, nbRef * sizeof(VERTEX3D));
@@ -616,6 +621,7 @@ void Geometry::MoveVertexTo(int idx, double x, double y, double z) {
 	vertices3[idx].x = x;
 	vertices3[idx].y = y;
 	vertices3[idx].z = z;
+
 }
 
 void Geometry::SwapNormal() {
@@ -736,6 +742,7 @@ void Geometry::ShiftVertex() {
 			catch (Error &e) {
 				GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 			}
+
 		}
 	}
 	
@@ -791,6 +798,7 @@ void Geometry::RemoveLinkFacet() { //unused
 	for (int i = 0; i < sh.nbFacet; i++) {
 		if (facets[i]->IsLinkFacet()) {
 			delete facets[i];
+
 		}
 		else {
 			f[nb++] = facets[i];
@@ -874,6 +882,7 @@ void  Geometry::DeleteIsolatedVertices(BOOL selectedOnly) {
 
 
 	VERTEX3D *nVert = (VERTEX3D *)malloc(nbVert*sizeof(VERTEX3D));
+
 	_ASSERTE(nVert);
 	for (int i = 0, n = 0; i < sh.nbVertex; i++) {
 		if (check[i] || (selectedOnly && !vertices3[i].selected)) {
@@ -918,6 +927,7 @@ void  Geometry::SelectIsolatedVertices() {
 }
 
 void Geometry::RemoveCollinear() {
+
 	mApp->changedSinceSave = TRUE;
 	int nb = 0;
 	for (int i = 0; i < sh.nbFacet; i++)
@@ -940,6 +950,7 @@ void Geometry::RemoveCollinear() {
 			delete facets[i];
 			mApp->RenumberSelections(nb);
 			mApp->RenumberFormulas(nb);
+
 		}
 		else {
 			f[nb++] = facets[i];
@@ -959,6 +970,7 @@ void Geometry::RemoveCollinear() {
 }
 
 void Geometry::RemoveSelectedVertex() {
+
 	mApp->changedSinceSave = TRUE;
 
 	//Analyze facets
@@ -1007,6 +1019,7 @@ void Geometry::RemoveSelectedVertex() {
 				mApp->RenumberSelections(nextToAdd);
 				mApp->RenumberFormulas(nextToAdd);
 				nextToRemove++;
+
 			}
 			else {
 				newFacets[nextToAdd++] = facets[f];
@@ -1030,6 +1043,7 @@ void Geometry::RemoveSelectedVertex() {
 }
 
 void Geometry::RemoveSelected() {
+
 	mApp->changedSinceSave = TRUE;
 	int nb = 0;
 	for (int i = 0; i < sh.nbFacet; i++)
@@ -1052,6 +1066,7 @@ void Geometry::RemoveSelected() {
 			delete facets[i];
 			mApp->RenumberSelections(nb);
 			mApp->RenumberFormulas(nb);
+
 		}
 		else {
 			f[nb++] = facets[i];
@@ -1074,6 +1089,7 @@ void Geometry::RemoveSelected() {
 }
 
 int Geometry::ExplodeSelected(BOOL toMap, int desType, double exponent, double *values) {
+
 
 	mApp->changedSinceSave = TRUE;
 	if (nbSelected == 0) return -1;
@@ -1140,6 +1156,7 @@ int Geometry::ExplodeSelected(BOOL toMap, int desType, double exponent, double *
 			delete facets[i];
 			mApp->RenumberSelections(nb);
 			mApp->RenumberFormulas(nb);
+
 		}
 		else {
 			f[nb++] = facets[i];
@@ -1186,6 +1203,7 @@ int Geometry::ExplodeSelected(BOOL toMap, int desType, double exponent, double *
 }
 
 void Geometry::RemoveNullFacet() {
+
 	// Remove degenerated facet (area~0.0)
 	int nb = 0;
 	double areaMin = vThreshold*vThreshold;
@@ -1200,8 +1218,10 @@ void Geometry::RemoveNullFacet() {
 	for (int i = 0; i < sh.nbFacet; i++) {
 		if (facets[i]->sh.area < areaMin) {
 			delete facets[i];
+
 			mApp->RenumberSelections(nb);
 			mApp->RenumberFormulas(nb);
+
 		}
 		else {
 			f[nb++] = facets[i];
@@ -1221,9 +1241,10 @@ void Geometry::RemoveNullFacet() {
 
 void Geometry::AlignFacets(int* selection, int nbSelected, int Facet_source, int Facet_dest, int Anchor_source, int Anchor_dest,
 	int Aligner_source, int Aligner_dest, BOOL invertNormal, BOOL invertDir1, BOOL invertDir2, BOOL copy, Worker *worker) {
+
 	double counter = 0.0;
 	double selected = (double)GetNbSelected();
-	if (selected == 0.0) return;
+	if (selected<1E-30) return;
 	GLProgress *prgAlign = new GLProgress("Aligning facets...", "Please wait");
 	prgAlign->SetProgress(0.0);
 	prgAlign->SetVisible(TRUE);
@@ -1277,12 +1298,14 @@ void Geometry::AlignFacets(int* selection, int nbSelected, int Facet_source, int
 			Axis.y = 0.0;
 			Axis.z = 0.0;
 			angle = 0.0;
+
 		}
 		else { //180deg rotation needed
 			Cross(&Axis, &(facets[Facet_source]->sh.U), &(facets[Facet_source]->sh.N));
 			Normalize(&Axis);
 			angle = 180.0;
 		}
+
 	}
 	else {
 		Normalize(&Axis);
@@ -1325,6 +1348,7 @@ void Geometry::AlignFacets(int* selection, int nbSelected, int Facet_source, int
 			Axis.y = 0.0;
 			Axis.z = 0.0;
 			angle = 0.0;
+
 		}
 		else { //180deg rotation needed
 			//construct a vector perpendicular to the normal
@@ -1332,6 +1356,7 @@ void Geometry::AlignFacets(int* selection, int nbSelected, int Facet_source, int
 			Normalize(&Axis);
 			angle = 180.0;
 		}
+
 	}
 	else {
 		Normalize(&Axis);
@@ -1363,19 +1388,20 @@ void Geometry::AlignFacets(int* selection, int nbSelected, int Facet_source, int
 
 	InitializeGeometry();
 	//update textures
-	try {
+	/*try {
 		for (int i = 0; i < nbSelected; i++)
 			SetFacetTexture(selection[i], facets[selection[i]]->tRatio, facets[selection[i]]->hasMesh);
 	}
 	catch (Error &e) {
 		GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
-	}
+	}*/
 	prgAlign->SetVisible(FALSE);
 	SAFE_DELETE(prgAlign);
 }
 
 void Geometry::MoveSelectedFacets(double dX, double dY, double dZ, BOOL copy, Worker *worker) {
+
 	GLProgress *prgMove = new GLProgress("Moving selected facets...", "Please wait");
 	prgMove->SetProgress(0.0);
 	prgMove->SetVisible(TRUE);
@@ -1411,19 +1437,20 @@ void Geometry::MoveSelectedFacets(double dX, double dY, double dZ, BOOL copy, Wo
 
 		InitializeGeometry();
 		//update textures
-		try {
+		/*try {
 			for (int i = 0; i < sh.nbFacet; i++) if (facets[i]->selected) SetFacetTexture(i, facets[i]->tRatio, facets[i]->hasMesh);
 		}
 		catch (Error &e) {
 			GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return;
-		}
+		}*/
 	}
 	prgMove->SetVisible(FALSE);
 	SAFE_DELETE(prgMove);
 }
 
 void Geometry::MirrorSelectedFacets(VERTEX3D P0, VERTEX3D N, BOOL copy, Worker *worker) {
+
 	double selected = (double)GetNbSelected();
 	double counter = 0.0;
 	if (selected == 0.0) return;
@@ -1459,25 +1486,27 @@ void Geometry::MirrorSelectedFacets(VERTEX3D P0, VERTEX3D N, BOOL copy, Worker *
 	SwapNormal();
 	InitializeGeometry();
 	//update textures
-	try {
+	/*try {
 		for (int i = 0; i < sh.nbFacet; i++) if (facets[i]->selected) SetFacetTexture(i, facets[i]->tRatio, facets[i]->hasMesh);
 	}
 	catch (Error &e) {
 		GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
-	}
+	}*/
 
 	prgMirror->SetVisible(FALSE);
 	SAFE_DELETE(prgMirror);
 }
 
 void Geometry::RotateSelectedFacets(VERTEX3D AXIS_P0, VERTEX3D AXIS_DIR, double theta, BOOL copy, Worker *worker) {
+
 	double selected = (double)GetNbSelected();
 	double counter = 0.0;
 	if (selected == 0.0) return;
 	GLProgress *prgRotate = new GLProgress("Rotating selected facets...", "Please wait");
 	prgRotate->SetProgress(0.0);
 	prgRotate->SetVisible(TRUE);
+
 	if (theta != 0.0) {
 		if (!mApp->AskToReset(worker)) return;
 		if (copy) CloneSelectedFacets(); //move
@@ -1503,13 +1532,14 @@ void Geometry::RotateSelectedFacets(VERTEX3D AXIS_P0, VERTEX3D AXIS_DIR, double 
 		SAFE_FREE(alreadyRotated);
 		InitializeGeometry();
 		//update textures
-		try {
+		/*try {
 			for (int i = 0; i < sh.nbFacet; i++) if (facets[i]->selected) SetFacetTexture(i, facets[i]->tRatio, facets[i]->hasMesh);
+
 		}
 		catch (Error &e) {
 			GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return;
-		}
+		}*/
 	}
 	prgRotate->SetVisible(FALSE);
 	SAFE_DELETE(prgRotate);
@@ -1545,6 +1575,7 @@ void Geometry::CloneSelectedFacets() { //create clone of selected facets
 	VERTEX3D *tmp_vertices3 = (VERTEX3D *)malloc((nb + 1) * sizeof(VERTEX3D)); //create new, extended vertex array
 	memmove(tmp_vertices3, vertices3, (sh.nbVertex)*sizeof(VERTEX3D)); //copy old vertices
 	memset(tmp_vertices3 + sh.nbVertex, 0, (nb + 1 - sh.nbVertex) * sizeof(VERTEX3D));  //zero out remaining bits (not necessary, will be overwritten anyway)
+
 	SAFE_FREE(vertices3); //delete old array
 	vertices3 = tmp_vertices3; //make new array the official vertex holder
 	for (int i = 0; i < sh.nbVertex; i++) {
@@ -1584,6 +1615,8 @@ void Geometry::CloneSelectedFacets() { //create clone of selected facets
 }
 
 void Geometry::MoveSelectedVertex(double dX, double dY, double dZ, BOOL copy, Worker *worker) {
+
+
 	if (!(dX == 0.0&&dY == 0.0&&dZ == 0.0)) {
 		if (!mApp->AskToReset(worker)) return;
 		mApp->changedSinceSave = TRUE;
@@ -1596,6 +1629,9 @@ void Geometry::MoveSelectedVertex(double dX, double dY, double dZ, BOOL copy, Wo
 				}
 			}
 			InitializeGeometry();
+
+
+
 		}
 		else { //copy
 			int nbVertexOri = sh.nbVertex;
@@ -1638,13 +1674,14 @@ void Geometry::GetSelection(int **selection, int *nbSel){
 }
 
 void Geometry::SetSelection(int **selection, int *nbSel){
+
 	UnSelectAll();
 	for (int i = 0; i < *nbSel; i++) {
 		int toSelect = (*selection)[i];
 		if (toSelect < sh.nbFacet) facets[toSelect]->selected = TRUE;
 	}
 	UpdateSelection();
-	mApp->facetList->ScrollToVisible((*selection)[*nbSel - 1], 0, TRUE); //in facet list, select the last facet of selection group
+	if (*nbSel>0) mApp->facetList->ScrollToVisible((*selection)[*nbSel - 1], 0, TRUE); //in facet list, select the last facet of selection group
 	mApp->UpdateFacetParams(TRUE);
 }
 
@@ -1654,6 +1691,7 @@ void Geometry::AddStruct(char *name) {
 }
 
 void Geometry::DelStruct(int numToDel) {
+
 	RemoveFromStruct(numToDel);
 	CheckIsolatedVertex();
 	mApp->UpdateModelParams();
@@ -1668,13 +1706,11 @@ void Geometry::DelStruct(int numToDel) {
 	}
 	sh.nbSuper--;
 	BuildGLList();
-
-	//Debug memory check
-	//_ASSERTE (!_CrtDumpMemoryLeaks());;
-	_ASSERTE(_CrtCheckMemory());
 }
 
 void Geometry::ScaleSelectedVertices(VERTEX3D invariant, double factor, BOOL copy, Worker *worker) {
+
+
 
 	if (!mApp->AskToReset(worker)) return;
 	mApp->changedSinceSave = TRUE;
@@ -1686,6 +1722,7 @@ void Geometry::ScaleSelectedVertices(VERTEX3D invariant, double factor, BOOL cop
 				vertices3[i].z = invariant.z + factor*(vertices3[i].z - invariant.z);
 			}
 		}
+
 	}
 	else { //scale and copy
 		int nbVertexOri = sh.nbVertex;
@@ -1701,6 +1738,8 @@ void Geometry::ScaleSelectedVertices(VERTEX3D invariant, double factor, BOOL cop
 }
 
 void Geometry::ScaleSelectedFacets(VERTEX3D invariant, double factorX, double factorY, double factorZ, BOOL copy, Worker *worker) {
+
+
 	GLProgress *prgMove = new GLProgress("Scaling selected facets...", "Please wait");
 	prgMove->SetProgress(0.0);
 	prgMove->SetVisible(TRUE);

@@ -80,7 +80,7 @@ int    SolveISSE2(double *u ,double *v,double *w,
                   VERTEX3D *nuv,VERTEX3D *U,VERTEX3D *V,VERTEX3D *W,VERTEX3D *Z);
 int    GetPower2(int n);
 int		Remainder(int param, int bound);
-char  *FormatMemory(unsigned long size);
+char  *FormatMemory(size_t size);
 char  *FormatMemoryLL(llong size);
 int   IsInsideTri(VERTEX2D *p,VERTEX2D *p1,VERTEX2D *p2,VERTEX2D *p3);
 int   IsConvex(POLYGON *p,int idx);

@@ -139,7 +139,7 @@ TextureSettings::TextureSettings():GLWindow() {
 
 void TextureSettings::UpdateSize() {
 
-	DWORD swap = 0;
+	size_t swap = 0;
 	int nbFacet = geom->GetNbFacet();
 	for(int i=0;i<nbFacet;i++) {
 		Facet *f = geom->GetFacet(i);

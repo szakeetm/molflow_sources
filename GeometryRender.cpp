@@ -29,10 +29,16 @@
 
 extern MolFlow *mApp;
 
+
+
+
+
 void Geometry::Select(Facet *f) {
 	f->selected = (viewStruct == -1) || (viewStruct == f->sh.superIdx);
 	if (!f->selected) f->UnselectElem();
 }
+
+
 
 void Geometry::Select(int facet) {
 	if (!isLoaded) return;
@@ -40,6 +46,8 @@ void Geometry::Select(int facet) {
 	nbSelectedHist = 0;
 	AddToSelectionHist(facet);
 }
+
+
 
 void Geometry::SelectArea(int x1, int y1, int x2, int y2, BOOL clear, BOOL unselect, BOOL vertexBound, BOOL circularSelection) {
 
@@ -107,6 +115,7 @@ void Geometry::SelectArea(int x1, int y1, int x2, int y2, BOOL clear, BOOL unsel
 					if (vertices3[idx].selected) hasSelectedVertex = TRUE;
 				}
 				else {
+
 					isInside = FALSE;
 				}
 				j++;
@@ -118,6 +127,7 @@ void Geometry::SelectArea(int x1, int y1, int x2, int y2, BOOL clear, BOOL unsel
 					f->selected = !unselect;
 				}
 				else {
+
 					f->selected = !unselect;
 				}
 			}
@@ -129,6 +139,8 @@ void Geometry::SelectArea(int x1, int y1, int x2, int y2, BOOL clear, BOOL unsel
 }
 
 void Geometry::Select(int x, int y, BOOL clear, BOOL unselect, BOOL vertexBound, int width, int height) {
+
+
 
 	int i;
 	if (!isLoaded) return;
@@ -185,6 +197,7 @@ void Geometry::Select(int x, int y, BOOL clear, BOOL unselect, BOOL vertexBound,
 					if (onScreen[idx]) hasVertexOnScreen = TRUE;
 				}
 				else {
+
 					clipped = TRUE;
 				}
 			}
@@ -232,12 +245,14 @@ void Geometry::Select(int x, int y, BOOL clear, BOOL unselect, BOOL vertexBound,
 		if (!unselect) mApp->facetList->ScrollToVisible(lastFound, 0, TRUE); //scroll to selected facet
 	}
 	else {
+
 		if (found) {
 			if (!unselect) AddToSelectionHist(i);
 			facets[i]->selected = !unselect;
 			if (!unselect) mApp->facetList->ScrollToVisible(i, 0, TRUE); //scroll to selected facet
 		}
 		else {
+
 			nbSelectedHist = 0;
 		}
 	}
@@ -250,6 +265,8 @@ void Geometry::Select(int x, int y, BOOL clear, BOOL unselect, BOOL vertexBound,
 
 }
 
+
+
 void Geometry::SelectVertex(int vertexId) {
 	//isVertexSelected[vertexId] = (viewStruct==-1) || (viewStruct==f->sh.superIdx);
 	//here we should look through facets if vertex is member of any
@@ -259,6 +276,9 @@ void Geometry::SelectVertex(int vertexId) {
 	//nbSelectedHistVertex = 0;
 	//AddToSelectionHistVertex(vertexId);
 }
+
+
+
 
 void Geometry::SelectVertex(int x1, int y1, int x2, int y2, BOOL shiftDown, BOOL ctrlDown, BOOL circularSelection) {
 
@@ -319,6 +339,7 @@ void Geometry::SelectVertex(int x1, int y1, int x2, int y2, BOOL shiftDown, BOOL
 					isInside = (pow((float)(xe - x1), 2) + pow((float)(ye - y1), 2)) <= r2;
 			}
 			else {
+
 				isInside = FALSE;
 			}
 
@@ -342,7 +363,6 @@ void Geometry::SelectVertex(int x1, int y1, int x2, int y2, BOOL shiftDown, BOOL
 }
 
 void Geometry::SelectVertex(int x, int y, BOOL shiftDown, BOOL ctrlDown) {
-
 	int i;
 	if (!isLoaded) return;
 
@@ -404,6 +424,7 @@ void Geometry::AddToSelectionHist(int f) {
 
 }
 
+
 BOOL Geometry::AlreadySelected(int f) {
 
 	// Check if the facet has already been selected
@@ -417,17 +438,23 @@ BOOL Geometry::AlreadySelected(int f) {
 
 }
 
+
+
 void Geometry::SelectAll() {
 	for (int i = 0; i < sh.nbFacet; i++)
 		Select(facets[i]);
 	UpdateSelection();
 }
 
+
+
 void Geometry::UnSelectAll() {
 	for (int i = 0; i < sh.nbFacet; i++)
 		facets[i]->selected = FALSE;
 	UpdateSelection();
 }
+
+
 
 int Geometry::GetNbSelected() {
 	return nbSelected;
@@ -442,7 +469,10 @@ void Geometry::AddToSelectionHistVertex(int f) {
 
 }
 
+
+
 BOOL Geometry::AlreadySelectedVertex(int idx) {
+
 
 	// Check if the vertex is in the selection history
 	BOOL found = FALSE;
@@ -469,11 +499,16 @@ void Geometry::AddToSelectedVertexList(int vertexId){
 	selectedVertexList.push_back(vertexId);
 }
 
+
 void Geometry::SelectAllVertex() {
 	for (int i = 0; i < sh.nbVertex; i++)
 		SelectVertex(i);
 	//UpdateSelectionVertex();
 }
+
+
+
+
 
 int Geometry::GetNbSelectedVertex() {
 	nbSelectedVertex = 0;
@@ -483,6 +518,7 @@ int Geometry::GetNbSelectedVertex() {
 	return nbSelectedVertex;
 }
 
+
 void Geometry::Unselect() {
 	for (int i = 0; i < sh.nbFacet; i++) {
 		facets[i]->selected = FALSE;
@@ -491,6 +527,8 @@ void Geometry::Unselect() {
 	UpdateSelection();
 }
 
+
+
 void Geometry::UnselectAllVertex() {
 	for (int i = 0; i < sh.nbVertex; i++) {
 		vertices3[i].selected = FALSE;
@@ -498,6 +536,8 @@ void Geometry::UnselectAllVertex() {
 	}
 	//UpdateSelectionVertex();
 }
+
+
 
 void Geometry::DrawFacet(Facet *f, BOOL offset, BOOL showHidden, BOOL selOffset) {
 
@@ -515,6 +555,7 @@ void Geometry::DrawFacet(Facet *f, BOOL offset, BOOL showHidden, BOOL selOffset)
 			glPolygonOffset(0.0f, 1.0f);
 		}
 		else {
+
 			glPolygonOffset(0.0f, 5.0f);
 		}
 		glBegin(GL_POLYGON);
@@ -530,6 +571,7 @@ void Geometry::DrawFacet(Facet *f, BOOL offset, BOOL showHidden, BOOL selOffset)
 	}
 	else {
 
+
 		if (nb < 8) {
 			// No hole possible
 			glBegin(GL_LINE_LOOP);
@@ -540,6 +582,7 @@ void Geometry::DrawFacet(Facet *f, BOOL offset, BOOL showHidden, BOOL selOffset)
 			glEnd();
 		}
 		else {
+
 			glBegin(GL_LINES);
 			int i1, i2, j;
 			for (j = 0; j < nb - 1; j++) {
@@ -563,6 +606,8 @@ void Geometry::DrawFacet(Facet *f, BOOL offset, BOOL showHidden, BOOL selOffset)
 	}
 
 }
+
+
 
 void Geometry::PaintSelectedVertices(BOOL hiddenVertex) {
 
@@ -621,6 +666,8 @@ void Geometry::PaintSelectedVertices(BOOL hiddenVertex) {
 
 }
 
+
+
 void Geometry::DrawPolys() {
 
 	int *f3 = (int *)malloc(sh.nbFacet*sizeof(int));
@@ -638,9 +685,11 @@ void Geometry::DrawPolys() {
 				f3[nbF3++] = i;
 			}
 			else if (nb == 4) {
+
 				f4[nbF4++] = i;
 			}
 			else {
+
 				fp[nbFP++] = i;
 			}
 		}
@@ -671,6 +720,8 @@ void Geometry::DrawPolys() {
 
 }
 
+
+
 void Geometry::SetCullMode(int mode) {
 
 	switch (mode) {
@@ -687,6 +738,8 @@ void Geometry::SetCullMode(int mode) {
 	}
 
 }
+
+
 
 void Geometry::BuildTexture(BYTE *hits) {
 
@@ -709,6 +762,7 @@ void Geometry::BuildTexture(BYTE *hits) {
 		dCoef_custom[1] = dCoef;
 		dCoef_custom[2] = dCoef;
 
+
 		for (int i = 0; i < 3; i++) {
 			//texture limits already corrected by timeFactor in UpdateMCHits()
 			texture_limits[i].autoscale.min.moments_only = shGHit->texture_limits[i].min.moments_only*dCoef_custom[i];
@@ -729,6 +783,7 @@ void Geometry::BuildTexture(BYTE *hits) {
 	double iDesorbed = 0.0;
 	if (shGHit->total.hit.nbDesorbed)
 		iDesorbed = 1.0 / (double)shGHit->total.hit.nbDesorbed;
+
 	for (int i = 0; i<sh.nbFacet; i++) {
 		Facet *f = facets[i];
 		GLint max_t;
@@ -747,10 +802,12 @@ void Geometry::BuildTexture(BYTE *hits) {
 			return;
 		}
 		else {
+
 			f->textureError = FALSE;
 		}
 
 		int profSize = (f->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)) : 0;
+
 		int nbElem = f->sh.texWidth*f->sh.texHeight;
 		int tSize = nbElem*sizeof(AHIT);
 		int dSize = nbElem*sizeof(VHIT);
@@ -759,6 +816,8 @@ void Geometry::BuildTexture(BYTE *hits) {
 
 			// Retrieve texture from shared memory (every seconds)
 			AHIT *hits_local = (AHIT *)((BYTE *)shGHit + (f->sh.hitOffset + sizeof(SHHITS)+profSize*(1 + nbMoments) + tSize*mApp->worker.displayedMoment));
+
+
 
 			double min, max;
 			if (!texAutoScale) { //manual values
@@ -772,6 +831,7 @@ void Geometry::BuildTexture(BYTE *hits) {
 				max = texAutoScaleIncludeConstantFlow ?
 					texture_limits[textureMode].autoscale.max.all
 					: texture_limits[textureMode].autoscale.max.moments_only;
+
 			}
 			f->BuildTexture(hits_local, textureMode, min, max, texColormap,
 				dCoef_custom[0] * timeCorrection, dCoef_custom[1] * timeCorrection, dCoef_custom[2] * timeCorrection, texLogScale);
@@ -786,9 +846,12 @@ void Geometry::BuildTexture(BYTE *hits) {
 				f->dirCache[j].count = dirs[j].count;
 			}
 		}
+
 	}
 
 }
+
+
 
 void Geometry::Render(GLfloat *matView, BOOL renderVolume, BOOL renderTexture, int showMode, BOOL filter, BOOL showHidden, BOOL showMesh, BOOL showDir) {
 
@@ -817,6 +880,7 @@ void Geometry::Render(GLfloat *matView, BOOL renderVolume, BOOL renderTexture, i
 	}
 	else {
 
+
 		// Default material
 		GLToolkit::SetMaterial(&whiteMaterial);
 
@@ -842,6 +906,7 @@ void Geometry::Render(GLfloat *matView, BOOL renderVolume, BOOL renderTexture, i
 			glColor3f(1.0f, 1.0f, 1.0f);
 		}
 		else {
+
 
 			// Draw non selectable facet in dark grey
 			glColor3f(0.2f, 0.2f, 0.2f);
@@ -886,6 +951,7 @@ void Geometry::Render(GLfloat *matView, BOOL renderVolume, BOOL renderTexture, i
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 				}
 				else {
+
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 				}
@@ -973,6 +1039,7 @@ void Geometry::Render(GLfloat *matView, BOOL renderVolume, BOOL renderTexture, i
 			glEnable(GL_DEPTH_TEST);
 		}
 		else {
+
 			//if( renderVolume || renderTexture ) {
 			glCallList(selectList3);
 			//} else {
@@ -1004,6 +1071,8 @@ void Geometry::DeleteGLLists(BOOL deletePoly, BOOL deleteLine) {
 	DELETE_LIST(selectList2);
 	DELETE_LIST(selectList3);
 }
+
+
 
 void Geometry::RenderArrow(GLfloat *matView, float dx, float dy, float dz, float px, float py, float pz, float d) {
 
@@ -1067,6 +1136,7 @@ void Geometry::RenderArrow(GLfloat *matView, float dx, float dy, float dz, float
 		v1z = 0.0;
 	}
 	else {
+
 		// Null vector -> isotropic
 	}
 
@@ -1090,6 +1160,7 @@ void Geometry::RenderArrow(GLfloat *matView, float dx, float dy, float dz, float
 		mScale._33 = (d / 4.0f);
 	}
 	else {
+
 		// Show only direction
 		mScale._11 = (d / 1.1f);
 		mScale._22 = (d / 4.0f);
@@ -1137,6 +1208,8 @@ int Geometry::FindEar(POLYGON *p) {
 
 }
 
+
+
 void Geometry::AddTextureCoord(Facet *f, VERTEX2D *p) {
 
 	// Add texture coord with a 1 texel border (for bilinear filtering)
@@ -1156,6 +1229,8 @@ void Geometry::AddTextureCoord(Facet *f, VERTEX2D *p) {
 
 }
 
+
+
 void Geometry::FillFacet(Facet *f, BOOL addTextureCoord) {
 
 	for (int i = 0; i < f->sh.nbIndex; i++) {
@@ -1166,6 +1241,8 @@ void Geometry::FillFacet(Facet *f, BOOL addTextureCoord) {
 	}
 
 }
+
+
 
 void Geometry::DrawEar(Facet *f, POLYGON *p, int ear, BOOL addTextureCoord) {
 
@@ -1181,6 +1258,7 @@ void Geometry::DrawEar(Facet *f, POLYGON *p, int ear, BOOL addTextureCoord) {
 		p3 = &(p->pts[IDX(ear, p->nbPts)]);
 	}
 	else {
+
 		p1 = &(p->pts[IDX(ear - 1, p->nbPts)]);
 		p2 = &(p->pts[IDX(ear, p->nbPts)]);
 		p3 = &(p->pts[IDX(ear + 1, p->nbPts)]);
@@ -1211,6 +1289,8 @@ void Geometry::DrawEar(Facet *f, POLYGON *p, int ear, BOOL addTextureCoord) {
 	glVertex3d(p3D.x, p3D.y, p3D.z);
 
 }
+
+
 
 void Geometry::Triangulate(Facet *f, BOOL addTextureCoord) {
 

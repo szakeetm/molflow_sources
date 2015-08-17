@@ -19,21 +19,13 @@
 #include "Facet.h"
 #include "Utils.h"
 #include <malloc.h>
-#include <crtdbg.h>
+
 #include <string.h>
 #include <math.h>
 #include "GLToolkit.h"
 #include <sstream>
 
 using namespace pugi;
-/*
-//Leak detection
-#ifdef _DEBUG
-#define _CRTDBG_MAP_ALLOC
-#define DEBUG_NEW new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#define new DEBUG_NEW
-#endif
-*/
 
 #define MAX(x,y) (((x)<(y))?(y):(x))
 #define MIN(x,y) (((x)<(y))?(x):(y))
@@ -58,6 +50,11 @@ Facet::Facet(int nbIndex) {
 	sh.counter.hit.nbAbsorbed = 0;
 	sh.counter.hit.nbHit = 0;*/
 
+
+
+
+
+
 	sh.sticking = 0.0;
 	sh.opacity = 1.0;
 	sh.temperature = 293.15; // 20degC
@@ -65,8 +62,10 @@ Facet::Facet(int nbIndex) {
 	sh.mass = 28.0;          // Nitrogen
 	sh.desorbType = DES_NONE;
 	sh.desorbTypeN = 0.0;
+
 	sh.reflectType = REF_DIFFUSE;
 	sh.profileType = REC_NONE;
+
 	sh.texWidth = 0;
 	sh.texHeight = 0;
 	sh.texWidthD = 0.0;
@@ -160,6 +159,7 @@ Facet::Facet(int nbIndex) {
 	visible = (BOOL *)malloc(nbIndex*sizeof(BOOL));
 	memset(visible, 0xFF, nbIndex*sizeof(BOOL));
 	//visible[5]=1; //Troll statement to corrupt heap (APPVERIF debug test)
+
 }
 
 // -----------------------------------------------------------
@@ -214,6 +214,8 @@ void Facet::LoadGEO(FileReader *file, int version, int nbVertex) {
 	sh.reflectType = file->ReadInt();
 	file->ReadKeyword("profileType"); file->ReadKeyword(":");
 	sh.profileType = file->ReadInt();
+
+
 	file->ReadKeyword("superDest"); file->ReadKeyword(":");
 	sh.superDest = file->ReadInt();
 	file->ReadKeyword("superIdx"); file->ReadKeyword(":");
@@ -229,26 +231,40 @@ void Facet::LoadGEO(FileReader *file, int version, int nbVertex) {
 	if (version >= 7) {
 		file->ReadKeyword("outgassing"); file->ReadKeyword(":");
 		sh.flow = file->ReadDouble()*0.100; //mbar*l/s -> Pa*m3/s
+
 	}
 	file->ReadKeyword("texDimX"); file->ReadKeyword(":");
 	sh.texWidthD = file->ReadDouble();
+
+
 	file->ReadKeyword("texDimY"); file->ReadKeyword(":");
 	sh.texHeightD = file->ReadDouble();
+
+
 	file->ReadKeyword("countDes"); file->ReadKeyword(":");
 	sh.countDes = file->ReadInt();
 	file->ReadKeyword("countAbs"); file->ReadKeyword(":");
 	sh.countAbs = file->ReadInt();
+
+
 	file->ReadKeyword("countRefl"); file->ReadKeyword(":");
 	sh.countRefl = file->ReadInt();
+
+
 	file->ReadKeyword("countTrans"); file->ReadKeyword(":");
 	sh.countTrans = file->ReadInt();
+
+
 	file->ReadKeyword("acMode"); file->ReadKeyword(":");
 	sh.countACD = file->ReadInt();
 	file->ReadKeyword("nbAbs"); file->ReadKeyword(":");
 	sh.counter.hit.nbAbsorbed = file->ReadLLong();
+
 	file->ReadKeyword("nbDes"); file->ReadKeyword(":");
 	sh.counter.hit.nbDesorbed = file->ReadLLong();
+
 	file->ReadKeyword("nbHit"); file->ReadKeyword(":");
+
 	sh.counter.hit.nbHit = file->ReadLLong();
 	if (version >= 2) {
 		// Added in GEO version 2
@@ -256,6 +272,8 @@ void Facet::LoadGEO(FileReader *file, int version, int nbVertex) {
 		sh.temperature = file->ReadDouble();
 		file->ReadKeyword("countDirection"); file->ReadKeyword(":");
 		sh.countDirection = file->ReadInt();
+
+
 	}
 	if (version >= 4) {
 		// Added in GEO version 4
@@ -281,7 +299,7 @@ void Facet::LoadGEO(FileReader *file, int version, int nbVertex) {
 
 }
 
-void Facet::LoadXML(xml_node f,int nbVertex,int vertexOffset) {
+void Facet::LoadXML(xml_node f,int nbVertex,int vertexOffset,BOOL isSynxml) {
 	int idx = 0;
 	for (xml_node indice : f.child("Indices").children("Indice")) {
 		indices[idx] = indice.attribute("vertex").as_int()+vertexOffset;
@@ -448,6 +466,7 @@ void Facet::LoadTXT(FileReader *file) {
 	sh.counter.hit.nbAbsorbed = (llong)(file->ReadDouble() + 0.5);
 	sh.desorbType = (int)(file->ReadDouble() + 0.5);
 
+
 	// Convert opacity
 	sh.profileType = REC_NONE;
 	if (o < 0.0) {
@@ -466,11 +485,13 @@ void Facet::LoadTXT(FileReader *file) {
 
 	}
 	else {
+
 		if (o >= 1.0000001) {
 			sh.opacity = o - 1.0;
 			sh.is2sided = TRUE;
 		}
 		else
+
 			sh.opacity = o;
 	}
 
@@ -518,6 +539,8 @@ void Facet::LoadTXT(FileReader *file) {
 
 }
 
+
+
 void Facet::SaveTXT(FileWriter *file) {
 
 	if (!sh.superDest)
@@ -560,6 +583,8 @@ void Facet::SaveTXT(FileWriter *file) {
 	file->WriteDouble(0.0, "\n"); // Unused
 }
 
+
+
 void Facet::SaveGEO(FileWriter *file, int idx) {
 
 	char tmp[256];
@@ -579,13 +604,18 @@ void Facet::SaveGEO(FileWriter *file, int idx) {
 	file->Write("  desorbTypeN:"); file->WriteDouble(sh.desorbTypeN, "\n");
 	file->Write("  reflectType:"); file->WriteInt(sh.reflectType, "\n");
 	file->Write("  profileType:"); file->WriteInt(sh.profileType, "\n");
+
 	file->Write("  superDest:"); file->WriteInt(sh.superDest, "\n");
 	file->Write("  superIdx:"); file->WriteInt(sh.superIdx, "\n");
 	file->Write("  is2sided:"); file->WriteInt(sh.is2sided, "\n");
 	file->Write("  mesh:"); file->WriteInt((mesh != NULL), "\n");
+
+
 	file->Write("  outgassing:"); file->WriteDouble(sh.flow*10.00, "\n"); //Pa*m3/s -> mbar*l/s for compatibility with old versions
 	file->Write("  texDimX:"); file->WriteDouble(sh.texWidthD, "\n");
 	file->Write("  texDimY:"); file->WriteDouble(sh.texHeightD, "\n");
+
+
 	file->Write("  countDes:"); file->WriteInt(sh.countDes, "\n");
 	file->Write("  countAbs:"); file->WriteInt(sh.countAbs, "\n");
 	file->Write("  countRefl:"); file->WriteInt(sh.countRefl, "\n");
@@ -611,6 +641,7 @@ void Facet::SaveGEO(FileWriter *file, int idx) {
 
 	file->Write("}\n");
 }
+
 
 // -----------------------------------------------------------
 
@@ -650,6 +681,7 @@ void Facet::DetectOrientation() {
 		sh.sign = 0.0;
 	}
 	else {
+
 		sh.sign = p.sign;
 	}
 
@@ -709,6 +741,7 @@ BOOL Facet::SetTexture(double width, double height, BOOL useMesh) {
 		dimOK = (sh.texWidth > 0 && sh.texHeight > 0);
 	}
 	else {
+
 		sh.texWidth = 0;
 		sh.texHeight = 0;
 		sh.texWidthD = 0.0;
@@ -723,8 +756,10 @@ BOOL Facet::SetTexture(double width, double height, BOOL useMesh) {
 	DELETE_TEX(glTex);
 	DELETE_LIST(glList);
 	DELETE_LIST(glElem);
+	if (meshPts) {
 	for (int i = 0; i < nbElem; i++)
 		SAFE_FREE(meshPts[i].pts);
+	}
 	SAFE_FREE(meshPts);
 	nbElem = 0;
 	UnselectElem();
@@ -741,7 +776,6 @@ BOOL Facet::SetTexture(double width, double height, BOOL useMesh) {
 		if (useMesh)
 			if (!BuildMesh()) return FALSE;
 		if (sh.countDirection) {
-			int dirSize = sh.texWidth*sh.texHeight*sizeof(VHIT);
 			dirCache = (VHIT *)calloc(sh.texWidth*sh.texHeight, sizeof(VHIT));
 			if (!dirCache) return FALSE;
 			//memset(dirCache,0,dirSize); //already done by calloc
@@ -751,6 +785,7 @@ BOOL Facet::SetTexture(double width, double height, BOOL useMesh) {
 
 	UpdateFlags();
 	return TRUE;
+
 }
 
 // -----------------------------------------------------------
@@ -776,6 +811,7 @@ BOOL Facet::BuildMesh() {
 	meshPts = (MESH *)malloc(sh.texWidth * sh.texHeight * sizeof(MESH));
 	if (!meshPts) {
 		return FALSE;
+
 	}
 	hasMesh = TRUE;
 	memset(mesh, 0, sh.texWidth * sh.texHeight * sizeof(SHELEM));
@@ -793,6 +829,9 @@ BOOL Facet::BuildMesh() {
 
 	P1.pts = (VERTEX2D *)malloc(4 * sizeof(VERTEX2D));
 	_ASSERTE(P1.pts);
+	if (!P1.pts) {
+		throw Error("Couldn't allocate memory for texture mesh points.");
+	}
 	P1.nbPts = 4;
 	P1.sign = 1.0;
 	P2.nbPts = sh.nbIndex;
@@ -851,6 +890,7 @@ BOOL Facet::BuildMesh() {
 					}
 					else {
 
+
 						// !! P1 and P2 are in u,v coordinates !!
 						mesh[i + j*sh.texWidth].area = (float)(A*(rw*rh) / (iw*ih));
 						mesh[i + j*sh.texWidth].uCenter = uC;
@@ -862,6 +902,9 @@ BOOL Facet::BuildMesh() {
 						meshPts[nbElem].nbPts = nbv;
 						meshPts[nbElem].pts = (VERTEX2D *)malloc(nbv * sizeof(VERTEX2D));
 						_ASSERTE(meshPts[nbElem].pts);
+						if (!meshPts[nbElem].pts) {
+							throw Error("Couldn't allocate memory for texture mesh points.");
+						}
 						for (int n = 0; n < nbv; n++) {
 							meshPts[nbElem].pts[n].u = vList[2 * n];
 							meshPts[nbElem].pts[n].v = vList[2 * n + 1];
@@ -876,6 +919,7 @@ BOOL Facet::BuildMesh() {
 			}
 			else {
 
+
 				mesh[i + j*sh.texWidth].area = (float)(rw*rh);
 				mesh[i + j*sh.texWidth].uCenter = (float)(u0 + u1) / 2.0f;
 				mesh[i + j*sh.texWidth].vCenter = (float)(v0 + v1) / 2.0f;
@@ -886,6 +930,9 @@ BOOL Facet::BuildMesh() {
 				meshPts[nbElem].nbPts = 4;
 				meshPts[nbElem].pts = (VERTEX2D *)malloc(4 * sizeof(VERTEX2D));
 				_ASSERTE(meshPts[nbElem].pts);
+				if (!meshPts[nbElem].pts) {
+					throw Error("Couldn't allocate memory for texture mesh points.");
+				}
 				meshPts[nbElem].pts[0].u = u0;
 				meshPts[nbElem].pts[0].v = v0;
 				meshPts[nbElem].pts[1].u = u1;
@@ -914,6 +961,7 @@ BOOL Facet::BuildMesh() {
 	free(P1.pts);
 	BuildMeshList();
 	return TRUE;
+
 }
 
 // -----------------------------------------------------------
@@ -1075,34 +1123,36 @@ void Facet::FillVertexArray(VERTEX3D *v) {
 
 // -----------------------------------------------------------
 
-DWORD Facet::GetGeometrySize() {
+size_t Facet::GetGeometrySize() {
 
-	DWORD s = sizeof(SHFACET)
+	size_t s = sizeof(SHFACET)
 		+(sh.nbIndex * sizeof(int))
 		+ (sh.nbIndex * sizeof(VERTEX2D));
 
-	// Size of the 'element area' array passed to the geomotry buffer
+	// Size of the 'element area' array passed to the geometry buffer
 	if (sh.isTextured) s += sizeof(AHIT)*sh.texWidth*sh.texHeight;
 	if (sh.useOutgassingFile == 1) s += sizeof(double)*sh.outgassingMapHeight*sh.outgassingMapWidth;
 	return s;
+
 }
 
 // -----------------------------------------------------------
 
-DWORD Facet::GetHitsSize(int nbMoments) {
+size_t Facet::GetHitsSize(size_t nbMoments) {
 
 	return   sizeof(SHHITS)
 		+(sh.texWidth*sh.texHeight*sizeof(AHIT))*(1 + nbMoments)
 		+ (sh.isProfile ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0)
 		+ (sh.countDirection ? (sh.texWidth*sh.texHeight*sizeof(VHIT)*(1 + nbMoments)) : 0);
 
+
 }
 
 // -----------------------------------------------------------
 
-DWORD Facet::GetTexSwapSize(BOOL useColormap) {
+size_t Facet::GetTexSwapSize(BOOL useColormap) {
 
-	DWORD tSize = texDimW*texDimH;
+	size_t tSize = texDimW*texDimH;
 	if (useColormap) tSize = tSize * 4;
 	return tSize;
 
@@ -1110,7 +1160,7 @@ DWORD Facet::GetTexSwapSize(BOOL useColormap) {
 
 // -----------------------------------------------------------
 
-DWORD Facet::GetTexSwapSizeForRatio(double ratio, BOOL useColor) {
+size_t Facet::GetTexSwapSizeForRatio(double ratio, BOOL useColor) {
 
 	double nU = Norme(&(sh.U));
 	double nV = Norme(&(sh.V));
@@ -1126,12 +1176,13 @@ DWORD Facet::GetTexSwapSizeForRatio(double ratio, BOOL useColor) {
 		int m = MAX(iwidth, iheight);
 		int tDim = GetPower2(m);
 		if (tDim < 16) tDim = 16;
-		DWORD tSize = tDim*tDim;
+		size_t tSize = tDim*tDim;
 		if (useColor) tSize = tSize * 4;
 		return tSize;
 
 	}
 	else {
+
 
 		return 0;
 
@@ -1141,13 +1192,13 @@ DWORD Facet::GetTexSwapSizeForRatio(double ratio, BOOL useColor) {
 
 // --------------------------------------------------------------------
 
-DWORD Facet::GetNbCell() {
+size_t Facet::GetNbCell() {
 	return sh.texHeight * sh.texWidth;
 }
 
 // --------------------------------------------------------------------
 
-DWORD Facet::GetNbCellForRatio(double ratio) {
+size_t Facet::GetNbCellForRatio(double ratio) {
 
 	double nU = Norme(&(sh.U));
 	double nV = Norme(&(sh.V));
@@ -1162,6 +1213,7 @@ DWORD Facet::GetNbCellForRatio(double ratio) {
 		return iwidth*iheight;
 	}
 	else {
+
 		return 0;
 	}
 
@@ -1169,18 +1221,20 @@ DWORD Facet::GetNbCellForRatio(double ratio) {
 
 // -----------------------------------------------------------
 
-DWORD Facet::GetTexRamSize(size_t nbMoments) {
+size_t Facet::GetTexRamSize(size_t nbMoments) {
 
 	size_t size = sizeof(AHIT)*nbMoments;
+
 	if (mesh) size += sizeof(SHELEM);
 	if (sh.countDirection) size += sizeof(VHIT)*nbMoments;
+
 	return (sh.texWidth*sh.texHeight*size);
 
 }
 
 // -----------------------------------------------------------
 
-DWORD Facet::GetTexRamSizeForRatio(double ratio, BOOL useMesh, BOOL countDir, size_t nbMoments) {
+size_t Facet::GetTexRamSizeForRatio(double ratio, BOOL useMesh, BOOL countDir, size_t nbMoments) {
 
 	double nU = Norme(&(sh.U));
 	double nV = Norme(&(sh.V));
@@ -1191,20 +1245,18 @@ DWORD Facet::GetTexRamSizeForRatio(double ratio, BOOL useMesh, BOOL countDir, si
 
 	if (dimOK) {
 
-		int iwidth = (int)ceil(width);
-		int iheight = (int)ceil(height);
-		int size = sizeof(AHIT)*nbMoments;
+		size_t iwidth = (size_t)ceil(width);
+		size_t iheight = (size_t)ceil(height);
+		size_t size = sizeof(AHIT)*nbMoments;
 		if (useMesh) size += sizeof(SHELEM);
 		if (countDir) size += sizeof(VHIT)*nbMoments;
+
 		return iwidth * iheight * size;
 
 	}
 	else {
-
 		return 0;
-
 	}
-
 }
 
 // -----------------------------------------------------------
@@ -1214,28 +1266,28 @@ DWORD Facet::GetTexRamSizeForRatio(double ratio, BOOL useMesh, BOOL countDir, si
 	add = (i)+(j)*sh.texWidth;                    \
 	if( mesh[add].area>0.0 ) {                   \
 	if (textureMode==0) sum += we*(texBuffer[add].count*scaleF);          \
-	  else if (textureMode==1) sum += we*(texBuffer[add].sum_1_per_ort_velocity*scaleF);          \
-	  else if (textureMode==2) sum += we*(texBuffer[add].sum_v_ort_per_area*scaleF);          \
-	  W=W+we;                                     \
-	}                                             \
-	}
+	  	  else if (textureMode==1) sum += we*(texBuffer[add].sum_1_per_ort_velocity*scaleF);          \
+	  	  else if (textureMode==2) sum += we*(texBuffer[add].sum_v_ort_per_area*scaleF);          \
+		  W=W+we;                                     \
+		}                                             \
+		}
 
 double Facet::GetSmooth(int i, int j, AHIT *texBuffer, int textureMode, double scaleF) {
 
-	float W = 0.0f;
-	float sum = 0.0;
+	double W = 0.0f;
+	double sum = 0.0;
 	int w = sh.texWidth - 1;
 	int h = sh.texHeight - 1;
 	int add;
 
-	SUM_NEIGHBOR(i - 1, j - 1, 1.0f);
-	SUM_NEIGHBOR(i - 1, j + 1, 1.0f);
-	SUM_NEIGHBOR(i + 1, j - 1, 1.0f);
-	SUM_NEIGHBOR(i + 1, j + 1, 1.0f);
-	SUM_NEIGHBOR(i, j - 1, 2.0f);
-	SUM_NEIGHBOR(i, j + 1, 2.0f);
-	SUM_NEIGHBOR(i - 1, j, 2.0f);
-	SUM_NEIGHBOR(i + 1, j, 2.0f);
+	SUM_NEIGHBOR(i - 1, j - 1, 1.0);
+	SUM_NEIGHBOR(i - 1, j + 1, 1.0);
+	SUM_NEIGHBOR(i + 1, j - 1, 1.0);
+	SUM_NEIGHBOR(i + 1, j + 1, 1.0);
+	SUM_NEIGHBOR(i, j - 1, 2.0);
+	SUM_NEIGHBOR(i, j + 1, 2.0);
+	SUM_NEIGHBOR(i - 1, j, 2.0);
+	SUM_NEIGHBOR(i + 1, j, 2.0);
 
 	if (W == 0.0f)
 		return 0.0f;
@@ -1250,6 +1302,8 @@ double Facet::GetSmooth(int i, int j, AHIT *texBuffer, int textureMode, double s
 
 void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double max, BOOL useColorMap,
 	double dCoeff1, double dCoeff2, double dCoeff3, BOOL doLog) {
+
+
 
 	int size = sh.texWidth*sh.texHeight;
 	int tSize = texDimW*texDimH;
@@ -1272,6 +1326,7 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 				scaleFactor = 65534.0 / (log10(max) - log10(min)); // -1 for saturation color
 			}
 			else {
+
 				scaleFactor = 65534.0 / (max - min); // -1 for saturation color
 			}
 		}
@@ -1296,12 +1351,17 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 					break;
 				case 2: //particle density
 					physicalValue = texBuffer[idx].sum_1_per_ort_velocity / (this->mesh[idx].area*(sh.is2sided ? 2.0 : 1.0))*dCoeff3;
+					//Correction for double-density effect (measuring density on desorbing/absorbing facets):
+					if (sh.counter.hit.nbHit>0 || sh.counter.hit.nbDesorbed>0)
+						if (sh.counter.hit.nbAbsorbed >0||sh.counter.hit.nbDesorbed>0) //otherwise save calculation time
+						physicalValue*= 1.0 - ((double)sh.counter.hit.nbAbsorbed + (double)sh.counter.hit.nbDesorbed) / ((double)sh.counter.hit.nbHit + (double)sh.counter.hit.nbDesorbed) / 2.0;
 					break;
 				}
 				if (doLog) {
 					val = (int)((log10(physicalValue) - log10(min))*scaleFactor + 0.5);
 				}
 				else {
+
 					val = (int)((physicalValue - min)*scaleFactor + 0.5);
 				}
 				SATURATE(val, 0, 65535);
@@ -1333,7 +1393,6 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 		*/
 
 
-
 		glTexImage2D(
 			GL_TEXTURE_2D,       // Type
 			0,                   // No Mipmap
@@ -1352,6 +1411,7 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 	}
 	else {
 
+
 		// -------------------------------------------------------
 		// 8 bit Luminance
 		// -------------------------------------------------------
@@ -1361,6 +1421,7 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 				scaleFactor = 255.0 / (log10(max) - log10(min)); // -1 for saturation color
 			}
 			else {
+
 				scaleFactor = 255.0 / (max - min); // -1 for saturation color
 			}
 		}
@@ -1386,20 +1447,29 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 					physicalValue = (double)texBuffer[idx].count / (this->mesh[idx].area*(sh.is2sided ? 2.0 : 1.0))*dCoeff2;
 					break;
 				case 2: //particle density
-					physicalValue = texBuffer[idx].sum_1_per_ort_velocity / (this->mesh[idx].area*(sh.is2sided ? 2.0 : 1.0))*dCoeff2;
+					physicalValue = texBuffer[idx].sum_1_per_ort_velocity / (this->mesh[idx].area*(sh.is2sided ? 2.0 : 1.0))*dCoeff3;
+					//Correction for double-density effect (measuring density on desorbing/absorbing facets):
+					if (sh.counter.hit.nbHit>0 || sh.counter.hit.nbDesorbed>0)
+						if (sh.counter.hit.nbAbsorbed >0 || sh.counter.hit.nbDesorbed>0) //otherwise save calculation time
+							physicalValue *= 1.0 - ((double)sh.counter.hit.nbAbsorbed + (double)sh.counter.hit.nbDesorbed) / ((double)sh.counter.hit.nbHit + (double)sh.counter.hit.nbDesorbed) / 2.0;
 					break;
 				}
 				if (doLog) {
 					val = (int)((log10(physicalValue) - log10(min))*scaleFactor + 0.5f);
+
+
 				}
 				else {
 					val = (int)((physicalValue - min)*scaleFactor + 0.5f);
+
+
+
 				}
+
 				SATURATE(val, 0, 255);
 				buff8[(i + 1) + (j + 1)*texDimW] = val;
 			}
 		}
-
 		/*
 		// Perform edge smoothing (only with mesh)
 		if( mesh ) {
@@ -1421,6 +1491,7 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 		}
 		}*/
 
+
 		glTexImage2D(
 			GL_TEXTURE_2D,       // Type
 			0,                   // No Mipmap
@@ -1438,6 +1509,7 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 	}
 	GLToolkit::CheckGLErrors("Facet::BuildTexture()");
 }
+
 
 // -----------------------------------------------------------
 
@@ -1589,6 +1661,7 @@ void Facet::Copy(Facet *f, BOOL copyMesh) {
 	err = f->err;
 	sh.N = f->sh.N;
 	selected = f->selected;
+
 }
 
 // -----------------------------------------------------------
@@ -1599,6 +1672,7 @@ int Facet::GetIndex(int idx) {
 		return indices[(sh.nbIndex + idx) % sh.nbIndex];
 	}
 	else {
+
 		return indices[idx % sh.nbIndex];
 	}
 
@@ -1643,8 +1717,10 @@ void  Facet::SaveXML_geom(pugi::xml_node f){
 	e = f.append_child("Teleport");
 	e.append_attribute("target") = sh.teleportDest;
 
+
 	e = f.append_child("Motion");
 	e.append_attribute("isMoving") = sh.isMoving;
+
 
 	e = f.append_child("Recordings");
 	xml_node t = e.append_child("Profile");
@@ -1668,6 +1744,13 @@ void  Facet::SaveXML_geom(pugi::xml_node f){
 	case 5:
 		t.append_attribute("name") = "ortho.v";
 		break;
+
+
+
+
+
+
+
 	}
 	t = e.append_child("Texture");
 	t.append_attribute("hasMesh") = mesh != NULL;
@@ -1675,21 +1758,42 @@ void  Facet::SaveXML_geom(pugi::xml_node f){
 	t.append_attribute("texDimY") = sh.texHeightD;
 	t.append_attribute("countDes") = sh.countDes;
 	t.append_attribute("countAbs") = sh.countAbs;
+
+
+
+
+
+
+
+
+
+
+
+
+
 	t.append_attribute("countRefl") = sh.countRefl;
 	t.append_attribute("countTrans") = sh.countTrans;
 	t.append_attribute("countDir") = sh.countDirection;
 	t.append_attribute("countAC") = sh.countACD;
 	
 	e = f.append_child("ViewSettings");
+
+
+
+
+
 	e.append_attribute("textureVisible") = textureVisible;
 	e.append_attribute("volumeVisible") = volumeVisible;
+
 
 	f.append_child("Indices").append_attribute("nb") = sh.nbIndex;
 	for (size_t i = 0; i < sh.nbIndex; i++) {
 		xml_node indice = f.child("Indices").append_child("Indice");
 		indice.append_attribute("id") = i;
 		indice.append_attribute("vertex") = indices[i];
+
 	}
+
 
 	if (hasOutgassingFile){
 		xml_node textureNode = f.append_child("DynamicOutgassing");
@@ -1700,16 +1804,81 @@ void  Facet::SaveXML_geom(pugi::xml_node f){
 		textureNode.append_attribute("totalOutgassing") = sh.totalOutgassing;
 		textureNode.append_attribute("totalFlux") = totalFlux;
 
+
+
+
+
+
+
 		std::stringstream outgText;
 		outgText << '\n'; //better readability in file
 		for (int iy = 0; iy < sh.outgassingMapHeight; iy++) {
 			for (int ix = 0; ix < sh.outgassingMapWidth; ix++) {
 				outgText << outgassingMap[iy*sh.outgassingMapWidth + ix] << '\t';
+
+
+
+
+
 			}
 			outgText << '\n';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 		}
 		textureNode.append_child("map").append_child(node_cdata).set_value(outgText.str().c_str());
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	} //end texture
 
+
 }
+
+

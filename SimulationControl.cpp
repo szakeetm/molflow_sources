@@ -33,6 +33,7 @@ GNU General Public License for more details.
 
 #define READVAL(_type) *(_type*)buffer;buffer+=sizeof(_type)
 
+
 extern void SetErrorSub(char *message);
 
 // -------------------------------------------------------
@@ -86,6 +87,10 @@ void ClearSimulation() {
 
 	// Free old stuff
 	sHandle->CDFs = std::vector<std::vector<std::pair<double, double>>>(); //clear CDF distributions
+
+
+
+
 	SAFE_FREE(sHandle->vertices3);
 	for (j = 0; j < sHandle->nbSuper; j++) {
 		for (i = 0; i < sHandle->str[j].nbFacet; i++) {
@@ -97,15 +102,22 @@ void ClearSimulation() {
 				SAFE_FREE(f->inc);
 				SAFE_FREE(f->largeEnough);
 				for (size_t m = 0; m < (sHandle->nbMoments + 1); m++) {
+
 					if (f->hits) SAFE_FREE(f->hits[m]);
 					if (f->profile) SAFE_FREE(f->profile[m]);
 					if (f->direction) SAFE_FREE(f->direction[m]);
 					//if (f->velocityHistogram) SAFE_FREE(f->velocityHistogram);
 				}
+
+
+
 				SAFE_FREE(f->hits);
 				SAFE_FREE(f->profile);
+
+
 				SAFE_FREE(f->direction);
 				//SAFE_FREE(f->velocityHistogram);
+
 
 			}
 			SAFE_FREE(f);
@@ -160,7 +172,13 @@ DWORD GetSeed() {
 
 }
 
-// -------------------------------------------------------
+
+
+/*double Norme(VERTEX3D *v) { //already defined
+	return sqrt(v->x*v->x + v->y*v->y + v->z*v->z);
+}*/
+
+
 
 BOOL LoadSimulation(Dataport *loader) {
 
@@ -181,12 +199,14 @@ BOOL LoadSimulation(Dataport *loader) {
 
 	// Connect the dataport
 	if (!AccessDataport(loader)) {
+
 		SetErrorSub("Failed to connect to DP");
 		return FALSE;
 	}
 
 	buffer = (BYTE *)loader->buff;
 	bufferStart = buffer; //memorize start for later
+
 
 	// Load new geom from the dataport
 
@@ -198,12 +218,25 @@ BOOL LoadSimulation(Dataport *loader) {
 	}
 	if (shGeom->nbSuper <= 0) {
 		ReleaseDataport(loader);
-		SetErrorSub("Invalid structure (null)");
+		SetErrorSub("No structures");
+
 		return FALSE;
 	}
+
+
+
 	sHandle->nbVertex = shGeom->nbVertex;
 	sHandle->nbSuper = shGeom->nbSuper;
+
 	sHandle->totalFacet = shGeom->nbFacet;
+
+
+
+
+
+
+
+
 
 	sHandle->nbMoments = shGeom->nbMoments;
 	sHandle->latestMoment = shGeom->latestMoment;
@@ -215,9 +248,25 @@ BOOL LoadSimulation(Dataport *loader) {
 	sHandle->useMaxwellDistribution = shGeom->useMaxwellDistribution;
 	sHandle->calcConstantFlow = shGeom->calcConstantFlow;
 
+
+
+
+
+
+
+
+
+
+
+
+
 	sHandle->motionType = shGeom->motionType;
 	sHandle->motionVector1 = shGeom->motionVector1;
 	sHandle->motionVector2 = shGeom->motionVector2;
+
+
+
+
 
 	/*//Test cube
 	sHandle->testCubeCount=0;
@@ -230,7 +279,81 @@ BOOL LoadSimulation(Dataport *loader) {
 	sHandle->testCubeVelocity=0.0;
 	sHandle->testSystemDist=0.0;*/
 
+
+
+
+
+
 	// Prepare super structure (allocate memory for facets)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	buffer += sizeof(SHGEOM)+sizeof(VERTEX3D)*sHandle->nbVertex;
 	for (i = 0; i < sHandle->totalFacet; i++) {
 		SHFACET *shFacet = (SHFACET *)buffer;
@@ -247,6 +370,7 @@ BOOL LoadSimulation(Dataport *loader) {
 			return FALSE;*/
 		}
 		else {
+
 			sHandle->str[i].facets = (FACET **)malloc(nbF*sizeof(FACET *));
 			memset(sHandle->str[i].facets, 0, nbF*sizeof(FACET *));
 			//sHandle->str[i].nbFacet = 0;
@@ -255,6 +379,7 @@ BOOL LoadSimulation(Dataport *loader) {
 	}
 
 	incBuff = buffer; //after facets and outgassing maps, with inc values
+
 	//buffer = (BYTE *)loader->buff;
 	buffer = bufferStart; //start from beginning again
 
@@ -262,12 +387,17 @@ BOOL LoadSimulation(Dataport *loader) {
 	memcpy(sHandle->name, shGeom->name, 64);
 
 	// Vertices
+
 	sHandle->vertices3 = (VERTEX3D *)malloc(sHandle->nbVertex*sizeof(VERTEX3D));
 	if (!sHandle->vertices3) {
 		SetErrorSub("Not enough memory to load vertices");
 		return FALSE;
 	}
 	buffer += sizeof(SHGEOM);
+
+
+
+
 	shVert = (VERTEX3D *)(buffer);
 	memcpy(sHandle->vertices3, shVert, sHandle->nbVertex*sizeof(VERTEX3D));
 	buffer += sizeof(VERTEX3D)*sHandle->nbVertex;
@@ -406,6 +536,12 @@ BOOL LoadSimulation(Dataport *loader) {
 
 	}
 
+
+
+
+
+
+
 	//Inc values
 	buffer = incBuff;
 	for (int k = 0; k < sHandle->nbSuper; k++) {
@@ -428,6 +564,7 @@ BOOL LoadSimulation(Dataport *loader) {
 						f->inc[j] = -incVal;
 					}
 					else {
+
 						f->fullElem[j] = 0;
 						f->inc[j] = incVal;
 					}
@@ -438,6 +575,7 @@ BOOL LoadSimulation(Dataport *loader) {
 				}
 				sHandle->textTotalSize += f->textureSize*(1 + sHandle->nbMoments);
 
+
 				f->iw = 1.0 / (double)f->sh.texWidthD;
 				f->ih = 1.0 / (double)f->sh.texHeightD;
 				f->rw = Norme(&(f->sh.U)) * f->iw;
@@ -445,6 +583,8 @@ BOOL LoadSimulation(Dataport *loader) {
 			}
 		}
 	}
+
+
 
 	//CDFs
 	size_t size1 = READVAL(size_t);
@@ -462,6 +602,10 @@ BOOL LoadSimulation(Dataport *loader) {
 	}
 
 
+
+
+
+
 	//IDs
 	size1 = READVAL(size_t);
 	sHandle->IDs.reserve(size1);
@@ -477,6 +621,8 @@ BOOL LoadSimulation(Dataport *loader) {
 		sHandle->IDs.push_back(newID);
 	}
 
+
+
 	//Parameters
 	size1 = READVAL(size_t);
 	sHandle->parameters.reserve(size1);
@@ -489,9 +635,15 @@ BOOL LoadSimulation(Dataport *loader) {
 			double valueX = READVAL(double);
 			double valueY = READVAL(double);
 			newValues.push_back(std::make_pair(valueX, valueY));
+
 		}
 		newParam.SetValues(newValues, FALSE);
 		sHandle->parameters.push_back(newParam);
+
+
+
+
+
 	}
 
 	//Temperatures
@@ -500,6 +652,15 @@ BOOL LoadSimulation(Dataport *loader) {
 	for (size_t i = 0; i < size1; i++) {
 		double valueX = READVAL(double);
 		sHandle->temperatures.push_back(valueX);
+
+
+
+
+
+
+
+
+
 	}
 
 	//Time moments
@@ -508,6 +669,9 @@ BOOL LoadSimulation(Dataport *loader) {
 	for (size_t i = 0; i < sHandle->nbMoments; i++) {
 		double valueX = READVAL(double);
 		sHandle->moments.push_back(valueX);
+
+
+
 	}
 
 	//Desorption parameter IDs
@@ -535,12 +699,14 @@ BOOL LoadSimulation(Dataport *loader) {
 		sHandle->str[i].aabbTree = BuildAABBTree(sHandle->str[i].facets, sHandle->str[i].nbFacet, 0);
 
 	// Initialise simulation
+
 	seed = GetSeed();
 	rseed(seed);
 	sHandle->loadOK = TRUE;
 	t1 = GetTick();
 	printf("  Load %s successful\n", sHandle->name);
 	printf("  Geometry: %d vertex %d facets\n", sHandle->nbVertex, sHandle->totalFacet);
+
 	printf("  Geom size: %d bytes\n", (int)(buffer - bufferStart));
 	printf("  Number of stucture: %d\n", sHandle->nbSuper);
 	printf("  Global Hit: %d bytes\n", sizeof(SHGHITS));
@@ -548,6 +714,7 @@ BOOL LoadSimulation(Dataport *loader) {
 	printf("  Texture   : %d bytes\n", sHandle->textTotalSize);
 	printf("  Profile   : %d bytes\n", sHandle->profTotalSize);
 	printf("  Direction : %d bytes\n", sHandle->dirTotalSize);
+
 	printf("  Total     : %d bytes\n", GetHitsSize());
 	printf("  Seed: %u\n", seed);
 	printf("  Loading time: %.3f ms\n", (t1 - t0)*1000.0);
@@ -563,15 +730,18 @@ void UpdateHits(Dataport *dpHit, int prIdx, DWORD timeout) {
 		UpdateMCHits(dpHit, prIdx, sHandle->nbMoments, timeout);
 		break;
 	case AC_MODE:
+
 		UpdateACHits(dpHit, prIdx, timeout);
 		break;
 	}
+
 }
 
 // -------------------------------------------------------
 
 size_t GetHitsSize() {
 	return sHandle->textTotalSize + sHandle->profTotalSize + sHandle->dirTotalSize + sHandle->totalFacet*sizeof(SHHITS)+sizeof(SHGHITS);
+
 }
 
 // -------------------------------------------------------
@@ -583,6 +753,10 @@ void ResetCounter() {
 	memset(&sHandle->tmpCount, 0, sizeof(SHHITS));
 
 	sHandle->distTraveledSinceUpdate_total = 0.0;
+
+
+
+
 	sHandle->distTraveledSinceUpdate_fullHitsOnly = 0.0;
 	sHandle->nbLeakTotal = 0;
 	//memset(sHandle->wallHits,0,BOUNCEMAX * sizeof(llong));
@@ -603,16 +777,23 @@ void ResetCounter() {
 			f->sh.counter.hit.sum_v_ort=0.0;*/
 			memset(&f->sh.counter, 0, sizeof(SHHITS));
 			f->hitted = FALSE;
+
 			if (f->hits) {
 				for (size_t m = 0; m < (sHandle->nbMoments + 1); m++)
 					memset(f->hits[m], 0, f->textureSize);
 			}
+
+
 			if (f->profile) {
 				for (size_t m = 0; m < (sHandle->nbMoments + 1); m++)
 					memset(f->profile[m], 0, f->profileSize);
 			}
 			if (f->direction) {
 				for (size_t m = 0; m < (sHandle->nbMoments + 1); m++)
+
+
+
+
 					memset(f->direction[m], 0, f->directionSize);
 			}
 		}
@@ -635,6 +816,7 @@ void ResetSimulation() {
 	sHandle->distTraveledSinceUpdate_fullHitsOnly = 0.0;
 	/*sHandle->testCubeCount=0;
 	sHandle->testCubeDist=0.0;
+
 	sHandle->testCubeTemp=0.0;
 	sHandle->testCubeTime=0.0;
 	sHandle->testSystemDist=0.0;
@@ -667,6 +849,9 @@ BOOL StartSimulation(int mode) {
 		}
 	}
 
+
+
+
 	SetErrorSub("Unknown simulation mode");
 	return FALSE;
 
@@ -678,6 +863,8 @@ void RecordHit(int type) {
 
 	sHandle->pHits[sHandle->nbHHit].pos = sHandle->pPos;
 	sHandle->pHits[sHandle->nbHHit].type = type;
+
+
 	sHandle->nbHHit++;
 	if ((sHandle->nbHHit) >= NBHHIT) sHandle->nbHHit = 0;
 	sHandle->pHits[sHandle->nbHHit].type = LASTHIT;
@@ -705,12 +892,14 @@ BOOL SimulationRun() {
 	if (sHandle->stepPerSec == 0.0) {
 		switch (sHandle->sMode) {
 		case MC_MODE:
+
 			nbStep = 250;
 			break;
 		case AC_MODE:
 			nbStep = 1;
 			break;
 		}
+
 	}
 
 	if (sHandle->stepPerSec != 0.0)
@@ -719,12 +908,15 @@ BOOL SimulationRun() {
 	t0 = GetTick();
 	switch (sHandle->sMode) {
 	case MC_MODE:
+
 		goOn = SimulationMCStep(nbStep);
 		break;
 	case AC_MODE:
 		goOn = SimulationACStep(nbStep);
 		break;
 	}
+
+
 	t1 = GetTick();
 	sHandle->stepPerSec = (double)(nbStep) / (t1 - t0);
 #ifdef _DEBUG
@@ -752,6 +944,7 @@ double GetTick() {
 
 	}
 	else {
+
 
 		return (double)((GetTickCount() - tickStart) / 1000.0);
 
