@@ -62,16 +62,12 @@ static const char *fileTexFilters[] = { "Text files" , "*.txt" , "Texture files"
 static const int   nbTexFilter = sizeof(fileTexFilters) / (2*sizeof(char *));
 */
 
-static const char *fileLFilters = "All MolFlow supported files\0*.txt;*.xml;*.geoxml;*.zip;*.geozip;*.synxml;*.synzip;*.geo;*.geo7z;*.syn;*.syn7z;*.str;*.stl;*.ase\0"
-"Molflow files\0*.xml;*.geoxml;*.zip;*.geozip;*.geo;*.geo7z;*.txt\0"
-"SynRad files\0*.syn;*.syn7z;*.synxml;*.synzip;*.txt\0"
+static const char *fileLFilters = "All MolFlow supported files\0*.txt;*.xml;*.zip;*.geo;*.geo7z;*.syn;*.syn7z;*.str;*.stl;*.ase\0"
 "All files\0*.*\0";
-static const int   nbLFilter = 4;
-static const char *fileInsFilters = "All insertable geometries\0*.txt;*.xml;*.geoxml;*.zip;*.geozip;*.synxml;*.synzip;*.geo;*.geo7z;*.syn;*.syn7z;*.str;*.stl\0"
-"Molflow files\0*.xml;*.geoxml;*.zip;*.geozip;*.geo;*.geo7z;*.txt\0"
-"SynRad files\0*.syn;*.syn7z;*.synxml;*.synzip;*.txt\0"
+static const int   nbLFilter = 2;
+static const char *fileInsFilters = "All insertable geometries\0*.txt;*.xml;*.zip;*.geo;*.geo7z;*.syn;*.syn7z;*.stl\0"
 "All files\0*.*\0";
-static const int   nbInsFilter = 4;
+static const int   nbInsFilter = 2;
 static const char *fileSFilters = "All files\0*.*\0";
 static const int   nbSFilter = 1;
 static const char *fileSelFilters = "Selection files\0*.sel\0All files\0*.*\0";
@@ -1865,7 +1861,7 @@ BOOL MolFlow::AutoSave(BOOL crashSave) {
 	std::string shortFn(worker.GetShortFileName());
 	std::string newAutosaveFilename = "Molflow_Autosave";
 	if (shortFn != "") newAutosaveFilename += "(" + shortFn + ")";
-	newAutosaveFilename += ".geozip";
+	newAutosaveFilename += ".zip";
 	char fn[1024];
 	strcpy(fn, newAutosaveFilename.c_str());
 	try {
@@ -2811,8 +2807,8 @@ void MolFlow::InsertGeometry(BOOL newStr, char *fName) {
 
 	try {
 
-		worker.InsertGeometry(newStr, fullName);
-
+		//worker.InsertGeometry(newStr, fullName);
+		worker.LoadGeometry(fullName, TRUE, newStr);
 
 		Geometry *geom = worker.GetGeometry();
 		geom->CalcTotalOutGassing();

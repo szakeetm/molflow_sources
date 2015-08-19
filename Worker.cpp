@@ -29,6 +29,7 @@ GNU General Public License for more details.
 #include "Distributions.h"
 #include "ZipUtils/zip.h"
 #include "ZipUtils/unzip.h"
+#include "File.h" //File utils (Get extension, etc)
 
 /*
 //Leak detection
@@ -165,8 +166,8 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 	char tmp[10000]; //compress.exe command line
 	char fileNameWithGeo[2048]; //file name with .geo extension (instead of .geo7z)
 	char fileNameWithGeo7z[2048];
-	char fileNameWithGeoxml[2048];
-	char fileNameWithGeozip[2048];
+	char fileNameWithXML[2048];
+	char fileNameWithZIP[2048];
 	char fileNameWithoutExtension[2048]; //file name without extension
 	//char *ext = fileName+strlen(fileName)-4;
 	char *ext, *dir;
@@ -175,7 +176,7 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 	ext = strrchr(fileName, '.');
 
 	if (!(ext) || !(*ext == '.') || ((dir) && (dir > ext))) {
-		sprintf(fileName, mApp->compressSavedFiles ? "%s.geozip" : "%s.geoxml", fileName); //set to default GeoXML/GeoZIP format
+		sprintf(fileName, mApp->compressSavedFiles ? "%s.zip" : "%s.xml", fileName); //set to default XML/ZIP format
 		ext = strrchr(fileName, '.');
 	}
 
@@ -190,30 +191,8 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 	BOOL isGEO7Z = _stricmp(ext, "geo7z") == 0;
 	BOOL isXML = _stricmp(ext, "xml") == 0;
 	BOOL isXMLzip = _stricmp(ext, "zip") == 0;
-	BOOL isGeoxml = _stricmp(ext, "geoxml") == 0;
-	BOOL isGeozip = _stricmp(ext, "geozip") == 0;
 
-	if (isXML) {
-		ok = (GLMessageBox::Display(".xml files are now saved as .geoxml to distinguish between Molflow and Synrad save files.\n"
-			"Is it okay to change the extension to .geoxml ?", "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONINFO) == GLDLG_OK);
-		if (ok) {
-			ext = "geoxml";
-			isXML = FALSE;
-			isGeoxml = TRUE;
-		}
-	}
-
-	if (isXMLzip) {
-		ok = (GLMessageBox::Display(".zip files are now saved as .geozip to distinguish between Molflow and Synrad save files.\n"
-			"Is it okay to change the extension to .geozip?", "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONINFO) == GLDLG_OK);
-		if (ok) {
-			ext = "geozip";
-			isXMLzip = FALSE;
-			isGeozip = TRUE;
-		}
-	}
-
-	if (isTXT || isGEO || isGEO7Z || isGeoxml || isGeozip || isSTR || isXML || isXMLzip) {
+	if (isTXT || isGEO || isGEO7Z || isSTR || isXML || isXMLzip) {
 		if ((isGEO7Z) && WAIT_TIMEOUT == WaitForSingleObject(mApp->compressProcessHandle, 0)) {
 			GLMessageBox::Display("Compressing a previous save file is in progress. Wait until that finishes"
 				"or close process \"compress.exe\"\nIf this was an autosave attempt,"
@@ -238,15 +217,15 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 			}
 		}
 
-		if (isGeoxml || isGeozip) {
-			memcpy(fileNameWithoutExtension, fileName, sizeof(char)*(strlen(fileName) - 7));
-			fileNameWithoutExtension[strlen(fileName) - 7] = '\0';
-			sprintf(fileNameWithGeoxml, "%s.geoxml", fileNameWithoutExtension);
-			sprintf(fileNameWithGeozip, "%s.geozip", fileNameWithoutExtension);
+		if (isXML || isXMLzip) {
+			memcpy(fileNameWithoutExtension, fileName, sizeof(char)*(strlen(fileName) - 4));
+			fileNameWithoutExtension[strlen(fileName) - 4] = '\0';
+			sprintf(fileNameWithXML, "%s.xml", fileNameWithoutExtension);
+			sprintf(fileNameWithZIP, "%s.zip", fileNameWithoutExtension);
 		}
-		if (isGeozip) {
-			sprintf(tmp, "A .geoxml file of the same name exists. Overwrite that file ?\n%s", fileNameWithGeoxml);
-			if (!autoSave && FileUtils::Exist(fileNameWithGeoxml)) {
+		if (isXMLzip) {
+			sprintf(tmp, "An .xml file of the same name exists. Overwrite that file ?\n%s", fileNameWithZIP);
+			if (!autoSave && FileUtils::Exist(fileNameWithZIP)) {
 				ok = (GLMessageBox::Display(tmp, "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK);
 			}
 		}
@@ -265,7 +244,7 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 					if (isGEO7Z) {
 						f = new FileWriter(fileNameWithGeo); //We first write a GEO file, then compress it to GEO7Z later
 					}
-					else if (!(isGeoxml || isGeozip || isXML || isXMLzip))
+					else if (!(isXML || isXMLzip))
 						f = new FileWriter(fileName);
 				}
 				catch (Error &e) {
@@ -285,7 +264,7 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 					if (!crashSave && !saveSelected) GetHHit(pHits, &nbHHitSave);
 					geom->SaveGEO(f, prg, dpHit, this->userMoments, this, saveSelected, pLeak, &nbLeakSave, pHits, &nbHHitSave, crashSave);
 				}
-				else if (isGeoxml || isGeozip || isXML || isXMLzip) {
+				else if (isXML || isXMLzip) {
 					xml_document saveDoc;
 					geom->SaveXML_geometry(saveDoc, this, prg, saveSelected);
 					xml_document geom_only; geom_only.reset(saveDoc);
@@ -316,21 +295,21 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 
 					prg->SetMessage("Writing xml file...");
 					if (success) {
-						if (!saveDoc.save_file(fileNameWithGeoxml)) throw Error("Error writing XML file."); //successful save
+						if (!saveDoc.save_file(fileNameWithXML)) throw Error("Error writing XML file."); //successful save
 					}
 					else {
-						if (!geom_only.save_file(fileNameWithGeoxml)) throw Error("Error writing XML file."); //simu state error
+						if (!geom_only.save_file(fileNameWithXML)) throw Error("Error writing XML file."); //simu state error
 					}
 
-					if (isGeozip || isXMLzip) {
+					if (isXMLzip) {
 						prg->SetProgress(0.75);
 						prg->SetMessage("Compressing xml to zip...");
 						//mApp->compressProcessHandle=CreateThread(0, 0, ZipThreadProc, 0, 0, 0);
-						HZIP hz = CreateZip(fileNameWithGeozip, 0);
+						HZIP hz = CreateZip(fileNameWithZIP, 0);
 						if (!hz) {
 							throw Error("Error creating ZIP file");
 						}
-						if (!ZipAdd(hz, GetShortFileName(fileNameWithGeoxml), fileNameWithGeoxml)) remove(fileNameWithGeoxml);
+						if (!ZipAdd(hz, GetShortFileName(fileNameWithXML), fileNameWithXML)) remove(fileNameWithXML);
 						else {
 							CloseZip(hz);
 							throw Error("Error compressing ZIP file.");
@@ -349,7 +328,7 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 	}
 	else {
 		SAFE_DELETE(f);
-		throw Error("SaveGeometry(): Invalid file extension [only geo,geo7z,txt,str,geoxml,geozip]");
+		throw Error("SaveGeometry(): Invalid file extension [only xml,zip,geo,geo7z,txt or str]");
 	}
 
 	SAFE_DELETE(f);
@@ -372,10 +351,6 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 		SetFileName(fileName);
 		mApp->UpdateTitle();
 	}
-
-	//Debug memory check
-	//_ASSERTE (!_CrtDumpMemoryLeaks());;
-	_ASSERTE(_CrtCheckMemory());
 }
 
 
@@ -460,17 +435,20 @@ void Worker::ExportProfiles(char *fileName) {
 
 // -------------------------------------------------------------
 
-void Worker::LoadGeometry(char *fileName) {
-	needsReload = TRUE;
-	char *ext, *filebegin;
+void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
+	if (!insert) {
+		needsReload = TRUE;
+	}
+	else {
+		RealReload();
+	}
 	char CWD[MAX_PATH];
 	_getcwd(CWD, MAX_PATH);
 
-	ext = strrchr(fileName, '.');
+	std::string ext=FileUtils::GetExtension(fileName);
 
-	if (ext == NULL)
+	if (ext == "")
 		throw Error("LoadGeometry(): No file extension, can't determine type");
-	ext++;
 
 	// Read a file
 	FileReader *f = NULL;
@@ -478,11 +456,14 @@ void Worker::LoadGeometry(char *fileName) {
 	progressDlg->SetVisible(TRUE);
 	progressDlg->SetProgress(0.0);
 
-	//Clear hits and leaks cache
-	memset(hhitCache, 0, sizeof(HIT)*NBHHIT);
-	memset(leakCache, 0, sizeof(LEAK)*NBHLEAK);
-	ResetMoments();
+	if (!insert) {
+		//Clear hits and leaks cache
+		memset(hhitCache, 0, sizeof(HIT)*NBHHIT);
+		memset(leakCache, 0, sizeof(LEAK)*NBHLEAK);
+		ResetMoments();
+	}
 
+	/*
 	BOOL isASE = (_stricmp(ext, "ase") == 0);
 	BOOL isSTR = (_stricmp(ext, "str") == 0);
 	BOOL isSTL = (_stricmp(ext, "stl") == 0);
@@ -493,25 +474,33 @@ void Worker::LoadGeometry(char *fileName) {
 	BOOL isSYN7Z = (_stricmp(ext, "syn7z") == 0);
 	BOOL isXML = (_stricmp(ext, "xml") == 0);
 	BOOL isXMLzip = (_stricmp(ext, "zip") == 0);
-	BOOL isGeoxml = (_stricmp(ext, "geoxml") == 0);
-	BOOL isGeozip = (_stricmp(ext, "geozip") == 0);
-	BOOL isSynxml = (_stricmp(ext, "synxml") == 0);
-	BOOL isSynzip = (_stricmp(ext, "synzip") == 0);
+	*/
 
-
-	if (isTXT) {
+	if (ext == "txt") {
 
 		try {
-			ResetWorkerStats();
+			if (!insert) ResetWorkerStats();
+			else mApp->changedSinceSave = TRUE;
+
 			f = new FileReader(fileName);
-			geom->LoadTXT(f, progressDlg);
-			nbHit = geom->tNbHit;
-			nbDesorption = geom->tNbDesorption;
-			nbAbsorption = geom->tNbAbsorption;
-			maxDesorption = geom->tNbDesorptionMax;
-			nbLeakTotal = geom->tNbLeak;
-			//RealReload();
-			strcpy(fullFileName, fileName);
+			
+			if (!insert) {
+				geom->LoadTXT(f, progressDlg);
+				nbHit = geom->tNbHit;
+				nbDesorption = geom->tNbDesorption;
+				nbAbsorption = geom->tNbAbsorption;
+				maxDesorption = geom->tNbDesorptionMax;
+				nbLeakTotal = geom->tNbLeak;
+				//RealReload();
+				strcpy(fullFileName, fileName);
+			}
+			else { //insert
+				nbHit = 0;
+				nbDesorption = 0;
+				maxDesorption = 0;
+				nbLeakTotal = 0;
+				Reload();
+			}
 		}
 		catch (Error &e) {
 			geom->Clear();
@@ -522,7 +511,7 @@ void Worker::LoadGeometry(char *fileName) {
 		}
 
 	}
-	else if (isSTL) {
+	else if (ext == "stl") {
 		try {
 			int ret = GLUnitDialog::Display("", "Choose STL file units:", GLDLG_MM | GLDLG_CM | GLDLG_M | GLDLG_INCH | GLDLG_FOOT | GLDLG_CANCEL_U, GLDLG_ICONNONE);
 			double scaleFactor = 1.0;
@@ -549,11 +538,20 @@ void Worker::LoadGeometry(char *fileName) {
 				f = new FileReader(fileName);
 				progressDlg->SetVisible(TRUE);
 				progressDlg->SetMessage("Reading geometry...");
-				geom->LoadSTL(f, progressDlg, scaleFactor);
-				//progressDlg->SetMessage("Reloading worker...");
-				//RealReload();
-				strcpy(fullFileName, fileName);
-				mApp->DisplayCollapseDialog();
+				if (!insert) {
+					geom->LoadSTL(f, progressDlg, scaleFactor);
+					strcpy(fullFileName, fileName);
+					mApp->DisplayCollapseDialog();
+				}
+				else { //insert
+					geom->InsertSTL(f, progressDlg, scaleFactor, newStr);
+					nbHit = 0;
+					nbLeakTotal = 0;
+					nbDesorption = 0;
+					maxDesorption = 0;
+					nbLeakTotal = 0;
+					Reload();
+				}
 			}
 		}
 		catch (Error &e) {
@@ -566,8 +564,8 @@ void Worker::LoadGeometry(char *fileName) {
 		}
 
 	}
-	else if (isSTR) {
-
+	else if (ext == "str") {
+		if (insert) throw Error("STR file inserting is not supported.");
 		try {
 			ResetWorkerStats();
 			f = new FileReader(fileName);
@@ -585,45 +583,52 @@ void Worker::LoadGeometry(char *fileName) {
 		}
 
 	}
-	else if (isSYN || isSYN7Z) {
-		char tmp2[1024];
+	else if (ext=="syn" || ext=="syn7z") { //Synrad file
 		int version;
 		progressDlg->SetVisible(TRUE);
 		try {
-			if (isSYN7Z) {
+			if (ext=="syn7z") {
 				//decompress file
 				progressDlg->SetMessage("Decompressing file...");
 				char tmp[1024];
-				char fileOnly[512];
+				//char fileOnly[512];
 				sprintf(tmp, "cmd /C \"pushd \"%s\"&&7za.exe x -t7z -aoa \"%s\" -otmp&&popd\"", CWD, fileName);
 				//execCMD(tmp);
 				system(tmp);
 
-				filebegin = strrchr(fileName, '\\');
+				/*filebegin = strrchr(fileName, '\\');
 				if (filebegin) filebegin++;
 				else filebegin = fileName;
 				memcpy(fileOnly, filebegin, sizeof(char)*(strlen(filebegin) - 2));
 				fileOnly[strlen(filebegin) - 2] = '\0';
-				sprintf(tmp2, "%s\\tmp\\Geometry.syn", CWD);
-				f = new FileReader(tmp2);
+				sprintf(tmp2, "%s\\tmp\\Geometry.syn", CWD);*/
+				f = new FileReader((std::string)CWD + "\\tmp\\Geometry.syn"); //Open extracted file
+			} else f = new FileReader(fileName); //syn file, open it directly
+			if (!insert) {
+				progressDlg->SetMessage("Resetting worker...");
+				ResetWorkerStats();
+
+				//leaks
+				LEAK pLeak[NBHLEAK];
+				//hits
+				HIT pHits[NBHHIT];
+			
+				geom->LoadSYN(f, progressDlg, pLeak, &nbLastLeaks, pHits, &nbHHit, &version);
+				maxDesorption = 0;
 			}
-			progressDlg->SetMessage("Resetting worker...");
-			ResetWorkerStats();
-			if (!isSYN7Z) f = new FileReader(fileName);
-
-			//leaks
-			LEAK pLeak[NBHLEAK];
-			//hits
-			HIT pHits[NBHHIT];
-
-			geom->LoadSYN(f, progressDlg, pLeak, &nbLastLeaks, pHits, &nbHHit, &version);
-			maxDesorption = 0;
+			else { //insert
+				geom->InsertSYN(f, progressDlg, newStr);
+				nbLeakTotal = 0;
+				nbHit = 0;
+				nbDesorption = 0;
+				maxDesorption = geom->tNbDesorptionMax;
+			}
 
 			progressDlg->SetMessage("Reloading worker with new geometry...");
 			RealReload(); //for the loading of textures
-			SHGHITS *gHits = (SHGHITS *)dpHit->buff;
+			//SHGHITS *gHits = (SHGHITS *)dpHit->buff;
 			SAFE_DELETE(f);
-			strcpy(fullFileName, fileName);
+			if (!insert) strcpy(fullFileName, fileName);
 		}
 		catch (Error &e) {
 			geom->Clear();
@@ -635,12 +640,13 @@ void Worker::LoadGeometry(char *fileName) {
 		}
 
 	}
-	else if (isGEO || isGEO7Z) {
-		char tmp2[1024];
+	else if (ext=="geo" || ext=="geo7z") {
+		//char tmp2[1024];
+		std::string toOpen;
 		int version;
 		progressDlg->SetVisible(TRUE);
 		try {
-			if (isGEO7Z) {
+			if (ext == "geo7z") {
 				//decompress file
 				progressDlg->SetMessage("Decompressing file...");
 				char tmp[1024];
@@ -648,46 +654,61 @@ void Worker::LoadGeometry(char *fileName) {
 				sprintf(tmp, "cmd /C \"pushd \"%s\"&&7za.exe x -t7z -aoa \"%s\" -otmp&&popd\"", CWD, fileName);
 				system(tmp);
 
-				filebegin = strrchr(fileName, '\\');
+				/*filebegin = strrchr(fileName, '\\');
 				if (filebegin) filebegin++;
 				else filebegin = fileName;
-				memcpy(fileOnly, filebegin, sizeof(char)*(strlen(filebegin) - 2));
+				memcpy(fileOnly, filebegin, sizeof(char)*(strlen(filebegin) - 2)); //geo7z->geo
 				fileOnly[strlen(filebegin) - 2] = '\0';
 				sprintf(tmp2, "%s\\tmp\\Geometry.geo", CWD);
 				if (!FileUtils::Exist(tmp2)) //fall back to old geo7z format
-					sprintf(tmp2, "%s\\tmp\\%s", CWD, fileOnly);
-				f = new FileReader(tmp2);
+				sprintf(tmp2, "%s\\tmp\\%s", CWD, fileOnly);*/
+				toOpen = (std::string)CWD + "\\tmp\\Geometry.geo"; //newer geo7z format: contain Geometry.geo
+				if (!FileUtils::Exist(toOpen)) toOpen = ((std::string)fileName).substr(0, strlen(fileName) - 2); //Inside the zip, try original filename with extension changed from geo7z to geo
+				f = new FileReader(toOpen);
+			}
+			else { //not geo7z
+				toOpen = fileName;
+				f = new FileReader(fileName); //geo file, open it directly
 			}
 			progressDlg->SetMessage("Resetting worker...");
 			ResetWorkerStats();
-			if (!isGEO7Z) f = new FileReader(fileName);
+			if (insert) mApp->changedSinceSave = TRUE;
 
-			//leaks
-			LEAK pLeak[NBHLEAK];
-			//hits
-			HIT pHits[NBHHIT];
+			if (!insert) {
+				//leaks
+				LEAK pLeak[NBHLEAK];
+				//hits
+				HIT pHits[NBHHIT];
 
-			geom->LoadGEO(f, progressDlg, pLeak, &nbLastLeaks, pHits, &nbHHit, &version, this);
-			//copy temp values from geom to worker:
-			nbLeakTotal = geom->tNbLeak;
-			nbHit = geom->tNbHit;
-			nbDesorption = geom->tNbDesorption;
-			maxDesorption = geom->tNbDesorptionMax;
-			nbAbsorption = geom->tNbAbsorption;
-			distTraveledTotal_total = geom->distTraveledTotal_total;
-			distTraveledTotal_fullHitsOnly = geom->distTraveledTotal_fullHitsOnly;
-
-			progressDlg->SetMessage("Reloading worker with new geometry...");
-			RealReload(); //for the loading of textures
-			if (version >= 8) geom->LoadProfile(f, dpHit, version);
-			SHGHITS *gHits = (SHGHITS *)dpHit->buff;
-			SetLeak(pLeak, &nbLastLeaks, gHits);
-			SetHHit(pHits, &nbHHit, gHits);
-			SAFE_DELETE(f);
-			progressDlg->SetMessage("Loading textures...");
-			LoadTextures((isGEO7Z) ? tmp2 : fileName, version);
-			strcpy(fullFileName, fileName);
-			//if (isGEO7Z) remove(tmp2);
+				geom->LoadGEO(f, progressDlg, pLeak, &nbLastLeaks, pHits, &nbHHit, &version, this);
+				//copy temp values from geom to worker:
+				nbLeakTotal = geom->tNbLeak;
+				nbHit = geom->tNbHit;
+				nbDesorption = geom->tNbDesorption;
+				maxDesorption = geom->tNbDesorptionMax;
+				nbAbsorption = geom->tNbAbsorption;
+				distTraveledTotal_total = geom->distTraveledTotal_total;
+				distTraveledTotal_fullHitsOnly = geom->distTraveledTotal_fullHitsOnly;
+				progressDlg->SetMessage("Reloading worker with new geometry...");
+				RealReload(); //for the loading of textures
+				if (version >= 8) geom->LoadProfile(f, dpHit, version);
+				SHGHITS *gHits = (SHGHITS *)dpHit->buff;
+				SetLeak(pLeak, &nbLastLeaks, gHits);
+				SetHHit(pHits, &nbHHit, gHits);
+				SAFE_DELETE(f);
+				progressDlg->SetMessage("Loading textures...");
+				LoadTexturesGEO(toOpen, version);
+				strcpy(fullFileName, fileName);
+				//if (isGEO7Z) remove(tmp2);
+			}
+			else { //insert
+				geom->InsertGEO(f, progressDlg, newStr);
+				nbHit = 0;
+				nbDesorption = 0;
+				maxDesorption = 0;
+				nbLeakTotal = 0;
+				Reload();
+			}
 		}
 		catch (Error &e) {
 			geom->Clear();
@@ -699,12 +720,12 @@ void Worker::LoadGeometry(char *fileName) {
 		}
 
 	}
-	else if (isXML || isXMLzip || isGeoxml || isGeozip || isSynxml || isSynzip) { //XML file, optionally in ZIP container
+	else if (ext == "isXML" || ext=="zip") { //XML file, optionally in ZIP container
 		xml_document loadXML;
 		xml_parse_result parseResult;
 		progressDlg->SetVisible(TRUE);
 		try {
-			if (isXMLzip || isGeozip || isSynzip) { //compressed in ZIP container
+			if (ext=="zip") { //compressed in ZIP container
 				//decompress file
 				progressDlg->SetMessage("Decompressing file...");
 
@@ -714,27 +735,25 @@ void Worker::LoadGeometry(char *fileName) {
 				}
 				ZIPENTRY ze; GetZipItem(hz, -1, &ze); int numitems = ze.index;
 				BOOL notFoundYet = TRUE;
-				for (int i = 0; i < numitems && notFoundYet; i++) { //extract first xml/geoxml/synxml file found in ZIP archive
+				for (int i = 0; i < numitems && notFoundYet; i++) { //extract first xml file found in ZIP archive
 					GetZipItem(hz, i, &ze);
-					std::string fileName = ze.name;
-					std::string ext = fileName.substr(fileName.find_last_of("."));
-					if (ext == ".xml" || ext == ".geoxml" || ext==".synxml") { //if it's an .xml file
+					std::string zipFileName = ze.name;
+
+					if (FileUtils::GetExtension(zipFileName) == "xml") { //if it's an .xml file
 						notFoundYet = FALSE;
-						std::string tmpFileName = "tmp/" + fileName;
+						std::string tmpFileName = "tmp/" + zipFileName;
 						UnzipItem(hz, i, tmpFileName.c_str()); //unzip it to tmp directory
 						CloseZip(hz);
 						progressDlg->SetMessage("Reading and parsing XML file...");
-						parseResult = loadXML.load_file(tmpFileName.c_str()); //parse it
+						parseResult = loadXML.load_file(tmpFileName.c_str()); //load and parse it
 					}
 				}
 				if (notFoundYet) {
 					CloseZip(hz);
-					throw Error("No XML file in the ZIP file.");
+					throw Error("Didn't find any XML file in the ZIP file.");
 				}
-			}
+			} else parseResult = loadXML.load_file(fileName); //parse xml file directly
 			ResetWorkerStats();
-			progressDlg->SetMessage("Reading and parsing XML file...");
-			if (isXML || isGeoxml || isSynxml) parseResult = loadXML.load_file(fileName); //parse it
 			if (!parseResult) {
 				//Parse error
 				std::stringstream err;
@@ -745,22 +764,33 @@ void Worker::LoadGeometry(char *fileName) {
 			}
 
 			progressDlg->SetMessage("Building geometry...");
-			geom->LoadXML_geom(loadXML, this, progressDlg, isSynzip || isSynxml);
-			geom->UpdateName(fileName);
+			if (!insert) {
+				geom->LoadXML_geom(loadXML, this, progressDlg);
+				geom->UpdateName(fileName);
 
-			progressDlg->SetMessage("Reloading worker with new geometry...");
-			try {
-				RealReload(); //for the loading of textures, profiles, etc...
-				strcpy(fullFileName, fileName);
+				progressDlg->SetMessage("Reloading worker with new geometry...");
+				try {
+					RealReload(); //for the loading of textures, profiles, etc...
+					strcpy(fullFileName, fileName);
 
-				if (isXML || isXMLzip || isGeoxml || isGeozip)
-				progressDlg->SetMessage("Restoring simulation state...");
-				geom->LoadXML_simustate(loadXML, dpHit, this, progressDlg);
-				SendHits(TRUE); //Send hits without resetting simu state
-				RebuildTextures();
+					if (ext == "xml" || ext == "zip")
+						progressDlg->SetMessage("Restoring simulation state...");
+					geom->LoadXML_simustate(loadXML, dpHit, this, progressDlg);
+					SendHits(TRUE); //Send hits without resetting simu state
+					RebuildTextures();
+				}
+				catch (Error &e) {
+					GLMessageBox::Display(e.GetMsg(), "Error while loading simulation state", GLDLG_CANCEL, GLDLG_ICONWARNING);
+				}
 			}
-			catch (Error &e) {
-				GLMessageBox::Display(e.GetMsg(), "Error while loading simulation state", GLDLG_CANCEL, GLDLG_ICONWARNING);
+			else { //insert
+				geom->InsertXML(loadXML, this, progressDlg, newStr);
+				mApp->changedSinceSave = TRUE;
+				nbHit = 0;
+				nbDesorption = 0;
+				maxDesorption = 0;
+				nbLeakTotal = 0;
+				Reload();
 			}
 		}
 		catch (Error &e) {
@@ -771,8 +801,8 @@ void Worker::LoadGeometry(char *fileName) {
 		}
 
 	}
-	else if (isASE) {
-
+	else if (ext=="ase") {
+		if (insert) throw Error("ASE file inserting is not supported.");
 		try {
 			ResetWorkerStats();
 			f = new FileReader(fileName);
@@ -795,45 +825,43 @@ void Worker::LoadGeometry(char *fileName) {
 		SAFE_DELETE(f);
 		progressDlg->SetVisible(FALSE);
 		SAFE_DELETE(progressDlg);
-		throw Error("LoadGeometry(): Invalid file extension [Only txt,geo,geo7z,ase,stl or str]");
-
+		throw Error("LoadGeometry(): Invalid file extension [Only xml,zip,geo,geo7z,syn.syn7z,txt,ase,stl or str]");
 	}
 	//geom->CalcTotalOutGassing();
-	CalcTotalOutgassing();
-	if (mApp->momentsEditor) mApp->momentsEditor->Refresh();
-	if (mApp->parameterEditor) mApp->parameterEditor->UpdateCombo();
-	if (mApp->timeSettings) mApp->timeSettings->RefreshMoments();
-	if (mApp->timewisePlotter) mApp->timewisePlotter->refreshViews();
+	if (!insert)
+	{
+		CalcTotalOutgassing();
+		if (mApp->momentsEditor) mApp->momentsEditor->Refresh();
+		if (mApp->parameterEditor) mApp->parameterEditor->UpdateCombo();
+		if (mApp->timeSettings) mApp->timeSettings->RefreshMoments();
+		if (mApp->timewisePlotter) mApp->timewisePlotter->refreshViews();
+	}
 	progressDlg->SetVisible(FALSE);
 	SAFE_DELETE(progressDlg);
 	SAFE_DELETE(f);
-
-	//Debug memory check
-	//_ASSERTE (!_CrtDumpMemoryLeaks());;
-	_ASSERTE(_CrtCheckMemory());
+	if (insert) {
+		mApp->UpdateFacetlistSelected();
+		mApp->UpdateViewers();
+	}
 }
 
-void Worker::InsertGeometry(BOOL newStr, char *fileName) {
+/*void Worker::InsertGeometry(BOOL newStr, char *fileName) {
 	RealReload(); //Can throw Error
-	
-	char *ext, *filebegin;
-	char tmp2[1024];
-	ext = strrchr(fileName, '.');
 	char CWD[MAX_PATH];
 	_getcwd(CWD, MAX_PATH);
 
-	if (ext == NULL)
-		//throw Error("InsertGeometry(): Invalid file extension [Only xml,zip,geoxml,geozip,synxml,synzip,txt,stl,geo,geo7z,syn,syn7z]");
+	std::string ext = FileUtils::GetExtension(fileName);
+
+	if (ext == "")
 		throw Error("LoadGeometry(): No file extension, can't determine type");
-	ext++;
 
 	// Read a file
 	FileReader *f = NULL;
-
 	GLProgress *progressDlg = new GLProgress("Loading file...", "Please wait");
 	progressDlg->SetProgress(0.0);
 	progressDlg->SetVisible(TRUE);
 
+	/*
 	BOOL isASE = (_stricmp(ext, "ase") == 0);
 	BOOL isSTR = (_stricmp(ext, "str") == 0);
 	BOOL isSTL = (_stricmp(ext, "stl") == 0);
@@ -844,12 +872,9 @@ void Worker::InsertGeometry(BOOL newStr, char *fileName) {
 	BOOL isSYN7Z = (_stricmp(ext, "syn7z") == 0);
 	BOOL isXML = (_stricmp(ext, "xml") == 0);
 	BOOL isXMLzip = (_stricmp(ext, "zip") == 0);
-	BOOL isGeoxml = (_stricmp(ext, "geoxml") == 0);
-	BOOL isGeozip = (_stricmp(ext, "geozip") == 0);
-	BOOL isSynxml = (_stricmp(ext, "synxml") == 0);
-	BOOL isSynzip = (_stricmp(ext, "synzip") == 0);
+	*//*
 
-	if (isTXT) {
+	if (ext == "txt") {
 
 		try {
 			f = new FileReader(fileName);
@@ -876,7 +901,7 @@ void Worker::InsertGeometry(BOOL newStr, char *fileName) {
 		}
 
 	}
-	else if (isSTL) {
+	else if (ext == "stl") {
 		try {
 			int ret = GLUnitDialog::Display("", "Choose STL file units:", GLDLG_MM | GLDLG_CM | GLDLG_M | GLDLG_INCH | GLDLG_FOOT | GLDLG_CANCEL_U, GLDLG_ICONNONE);
 			double scaleFactor = 1.0;
@@ -919,35 +944,33 @@ void Worker::InsertGeometry(BOOL newStr, char *fileName) {
 			throw e;
 		}
 	}
-	else if (isSTR) {
+	else if (ext == "str") {
 		throw Error("STR file inserting is not supported.");
 	}
-	else if (isSYN || isSYN7Z) {
-		//char tmp2[1024];
+	else if (ext == "syn" || ext == "syn7z") { //Synrad file
+		char tmp2[1024];
 
 		progressDlg->SetVisible(TRUE);
 		try {
-			if (isSYN7Z) {
+			if (ext == "syn7z") {
 				//decompress file
 				progressDlg->SetMessage("Decompressing file...");
 				char tmp[1024];
-				char fileOnly[512];
+				//char fileOnly[512];
 				sprintf(tmp, "cmd /C \"pushd \"%s\"&&7za.exe x -t7z -aoa \"%s\" -otmp&&popd\"", CWD, fileName);
 				//execCMD(tmp);
 				system(tmp);
 
-				filebegin = strrchr(fileName, '\\');
+				/*filebegin = strrchr(fileName, '\\');
 				if (filebegin) filebegin++;
 				else filebegin = fileName;
 				memcpy(fileOnly, filebegin, sizeof(char)*(strlen(filebegin) - 2));
 				fileOnly[strlen(filebegin) - 2] = '\0';
-				sprintf(tmp2, "%s\\tmp\\Geometry.syn", CWD);
-				f = new FileReader(tmp2);
-			}
+				sprintf(tmp2, "%s\\tmp\\Geometry.syn", CWD);*//*
+				f = new FileReader((std::string)CWD + "\\tmp\\Geometry.syn"); //Open extracted file
+			} else f = new FileReader(fileName); //syn file, open it directly
 			//progressDlg->SetMessage("Resetting worker...");
 			//ResetWorkerStats();
-			if (!isSYN7Z) f = new FileReader(fileName);
-
 
 			geom->InsertSYN(f, progressDlg, newStr);
 			nbLeakTotal = 0;
@@ -969,9 +992,9 @@ void Worker::InsertGeometry(BOOL newStr, char *fileName) {
 			throw e;
 		}
 	}
-	else if (isGEO || isGEO7Z) {
+	else if (ext == "geo" || ext == "geo7z") {
 		try {
-			if (isGEO7Z) {
+			if ((ext == "geo7z") {
 				//decompress file
 				progressDlg->SetMessage("Decompressing file...");
 				char tmp[1024];
@@ -1010,12 +1033,12 @@ void Worker::InsertGeometry(BOOL newStr, char *fileName) {
 			throw e;
 		}
 	}
-	else if (isXML || isXMLzip || isGeoxml || isGeozip || isSynxml || isSynzip) { //XML file, optionally in ZIP container
+	else if (ext == "isXML" || ext == "zip") { //XML file, optionally in ZIP container
 		xml_document loadXML;
 		xml_parse_result parseResult;
 		progressDlg->SetVisible(TRUE);
 		try {
-			if (isXMLzip || isGeozip || isSynzip) { //compressed in ZIP container
+			if (ext == "zip") { //compressed in ZIP container
 				//decompress file
 				progressDlg->SetMessage("Decompressing file...");
 
@@ -1028,8 +1051,8 @@ void Worker::InsertGeometry(BOOL newStr, char *fileName) {
 				for (int i = 0; i < numitems && notFoundYet; i++) { //extract first XML file found in ZIP archive
 					GetZipItem(hz, i, &ze);
 					std::string fileName = ze.name;
-					std::string ext = fileName.substr(fileName.find_last_of("."));
-					if (ext == ".xml" || ext == ".geoxml" || ext == ".synxml") { //if it's an .xml file
+					
+					if (FileUtils::GetExtension(fileName) == "xml") { //if it's an .xml file
 						notFoundYet = FALSE;
 						std::string tmpFileName = "tmp/" + fileName;
 						UnzipItem(hz, i, tmpFileName.c_str()); //unzip it to tmp directory
@@ -1039,12 +1062,12 @@ void Worker::InsertGeometry(BOOL newStr, char *fileName) {
 					}
 				}
 				if (notFoundYet) {
+					CloseZip(hz);
 					throw Error("No XML file in the ZIP file.");
 				}
-			}
+			} else parseResult = loadXML.load_file(fileName); //parse xml file directly
 			ResetWorkerStats();
 			progressDlg->SetMessage("Reading and parsing XML file...");
-			if (!isXMLzip) parseResult = loadXML.load_file(fileName); //parse it
 			if (!parseResult) {
 				//Parse error
 				std::stringstream err;
@@ -1055,7 +1078,7 @@ void Worker::InsertGeometry(BOOL newStr, char *fileName) {
 			}
 
 			progressDlg->SetMessage("Building geometry...");
-			geom->InsertXML(loadXML, this, progressDlg, newStr, isSynzip || isSynxml);
+			geom->InsertXML(loadXML, this, progressDlg, newStr);
 			mApp->changedSinceSave = TRUE;
 			nbHit = 0;
 			nbDesorption = 0;
@@ -1075,7 +1098,6 @@ void Worker::InsertGeometry(BOOL newStr, char *fileName) {
 		throw Error("ASE file inserting is not supported.");
 	}
 	else {
-
 		SAFE_DELETE(f);
 		progressDlg->SetVisible(FALSE);
 		SAFE_DELETE(progressDlg);
@@ -1092,7 +1114,7 @@ void Worker::InsertGeometry(BOOL newStr, char *fileName) {
 	//Debug memory check
 	//_ASSERTE (!_CrtDumpMemoryLeaks());;
 	_ASSERTE(_CrtCheckMemory());
-}
+}*/
 
 // -------------------------------------------------------------
 
@@ -1118,59 +1140,29 @@ void Worker::SetLeak(LEAK *buffer, int *nb, SHGHITS *gHits) { //When loading fro
 
 }
 
-// -------------------------------------------------------------
-void Worker::LoadTextures(char *fileName, int version) {
-	// Read a file
-	char *ext;
 
-	ext = strrchr(fileName, '.');
-	FileReader *f = NULL;
+void Worker::LoadTexturesGEO(std::string fileName, int version) {
 
-	GLProgress *progressDlg = new GLProgress("Loading textures", "Please wait");
-	progressDlg->SetProgress(0.0);
-
-
-	if (_stricmp(ext, ".geo") == 0) {
-
+	if (FileUtils::GetExtension(fileName) == "geo") {
+		GLProgress *progressDlg = new GLProgress("Loading textures", "Please wait");
+		progressDlg->SetProgress(0.0);
+		FileReader *f = NULL;
 		try {
-
 			f = new FileReader(fileName);
 			progressDlg->SetVisible(TRUE);
 			geom->LoadTextures(f, progressDlg, dpHit, version);
 			RebuildTextures();
-			progressDlg->SetVisible(FALSE);
-			SAFE_DELETE(progressDlg);
-
 		}
 		catch (Error &e) {
-			//geom->Clear();
-			//SAFE_DELETE(f);
 			char tmp[256];
-			sprintf(tmp, "Couldn't load some textures. It is recommended to reset the simulation.\n%s", e.GetMsg());
+			sprintf(tmp, "Couldn't load some textures. To avoid continuing a partially loaded state, it is recommended to reset the simulation.\n%s", e.GetMsg());
 			GLMessageBox::Display(tmp, "Error while loading textures.", GLDLG_OK, GLDLG_ICONWARNING);
-			progressDlg->SetVisible(FALSE);
-			SAFE_DELETE(progressDlg);
-			//throw e;
 		}
-	}
-
-	else {
-
-		SAFE_DELETE(f);
 		progressDlg->SetVisible(FALSE);
 		SAFE_DELETE(progressDlg);
+		SAFE_DELETE(f);
 	}
-
-	SAFE_DELETE(f);
-
-	//Debug memory check
-	//_ASSERTE (!_CrtDumpMemoryLeaks());;
-	_ASSERTE(_CrtCheckMemory());
 }
-
-
-
-// -------------------------------------------------------------
 
 void Worker::GetHHit(HIT *buffer, int *nb) {
 
@@ -1989,7 +1981,7 @@ void Worker::ImportDesorption_SYN(char *fileName, const size_t &source, const do
 	char CWD[MAX_PATH];
 	_getcwd(CWD, MAX_PATH);
 	if (ext == NULL || (!(_stricmp(ext, ".syn7z") == 0)) && (!(_stricmp(ext, ".syn") == 0)))
-		throw Error("InsertGeometry(): Invalid file extension [Only syn, syn7z]");
+		throw Error("ImportDesorption_SYN(): Invalid file extension [Only syn, syn7z]");
 	ext++;
 
 	// Read a file

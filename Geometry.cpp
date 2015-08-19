@@ -5248,7 +5248,7 @@ BOOL Geometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, S
 
 
 
-void Geometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg, BOOL isSynxml){
+void Geometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg){
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
 	//mApp->ClearFormula();
@@ -5283,15 +5283,19 @@ void Geometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *pr
 
 	//Parameters (needs to precede facets)
 	xml_node simuParamNode = loadXML.child("MolflowSimuSettings");
-	xml_node paramNode = simuParamNode.child("Parameters");
-	for (xml_node newParameter : paramNode.children("Parameter")){
-		Parameter newPar;
-		newPar.name = newParameter.attribute("name").as_string();
-		for (xml_node newMoment : newParameter.children("Moment")) {
-			newPar.AddValue(std::make_pair(newMoment.attribute("t").as_double(),
-				newMoment.attribute("value").as_double()));
+	BOOL isMolflowFile = (simuParamNode != NULL); //if no "MolflowSimuSettings" node, it's a Synrad file
+	
+	if (isMolflowFile) {
+		xml_node paramNode = simuParamNode.child("Parameters");
+		for (xml_node newParameter : paramNode.children("Parameter")){
+			Parameter newPar;
+			newPar.name = newParameter.attribute("name").as_string();
+			for (xml_node newMoment : newParameter.children("Moment")) {
+				newPar.AddValue(std::make_pair(newMoment.attribute("t").as_double(),
+					newMoment.attribute("value").as_double()));
+			}
+			work->parameters.push_back(newPar);
 		}
-		work->parameters.push_back(newPar);
 	}
 
 	//Facets
@@ -5308,12 +5312,14 @@ void Geometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *pr
 		}
 
 		facets[idx] = new Facet(nbIndex);
-		facets[idx]->LoadXML(facetNode, sh.nbVertex);
+		facets[idx]->LoadXML(facetNode, sh.nbVertex, isMolflowFile);
 
-		//Set param names for interface
-		if (facets[idx]->sh.sticking_paramId > -1) facets[idx]->userSticking = work->parameters[facets[idx]->sh.sticking_paramId].name;
-		if (facets[idx]->sh.opacity_paramId > -1) facets[idx]->userOpacity = work->parameters[facets[idx]->sh.opacity_paramId].name;
-		if (facets[idx]->sh.outgassing_paramId > -1) facets[idx]->userOutgassing = work->parameters[facets[idx]->sh.outgassing_paramId].name;
+		if (isMolflowFile) {
+			//Set param names for interface
+			if (facets[idx]->sh.sticking_paramId > -1) facets[idx]->userSticking = work->parameters[facets[idx]->sh.sticking_paramId].name;
+			if (facets[idx]->sh.opacity_paramId > -1) facets[idx]->userOpacity = work->parameters[facets[idx]->sh.opacity_paramId].name;
+			if (facets[idx]->sh.outgassing_paramId > -1) facets[idx]->userOutgassing = work->parameters[facets[idx]->sh.outgassing_paramId].name;
+		}
 		idx++;
 	}
 
@@ -5353,61 +5359,71 @@ void Geometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *pr
 
 	}
 
-	xml_node formulaNode = interfNode.child("Formulas");
-	for (xml_node newFormula : formulaNode.children("Formula")) {
-		mApp->AddFormula(newFormula.attribute("name").as_string(),
-			newFormula.attribute("expression").as_string());
-	}
+	if (isMolflowFile) {
+		xml_node formulaNode = interfNode.child("Formulas");
+		for (xml_node newFormula : formulaNode.children("Formula")) {
+			mApp->AddFormula(newFormula.attribute("name").as_string(),
+				newFormula.attribute("expression").as_string());
+		}
 
-	xml_node ppNode = interfNode.child("ProfilePlotter");
-	if (ppNode) {
-		if (!mApp->profilePlotter) mApp->profilePlotter = new ProfilePlotter(); mApp->profilePlotter->SetWorker(work);
-		xml_node paramsNode = ppNode.child("Parameters");
-		if (paramsNode && paramsNode.attribute("logScale"))
-			mApp->profilePlotter->SetLogScaled(paramsNode.attribute("logScale").as_bool());
-		xml_node viewsNode = ppNode.child("Views");
-		if (viewsNode) {
-			std::vector<int> views;
-			for (xml_node view : viewsNode.children("View"))
-				views.push_back(view.attribute("facetId").as_int());
-			mApp->profilePlotter->SetViews(views);
+		xml_node ppNode = interfNode.child("ProfilePlotter");
+		if (ppNode) {
+			if (!mApp->profilePlotter) mApp->profilePlotter = new ProfilePlotter(); mApp->profilePlotter->SetWorker(work);
+			xml_node paramsNode = ppNode.child("Parameters");
+			if (paramsNode && paramsNode.attribute("logScale"))
+				mApp->profilePlotter->SetLogScaled(paramsNode.attribute("logScale").as_bool());
+			xml_node viewsNode = ppNode.child("Views");
+			if (viewsNode) {
+				std::vector<int> views;
+				for (xml_node view : viewsNode.children("View"))
+					views.push_back(view.attribute("facetId").as_int());
+				mApp->profilePlotter->SetViews(views);
+			}
+		}
+
+		work->gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
+		work->halfLife = simuParamNode.child("Gas").attribute("halfLife").as_double();
+
+		xml_node timeSettingsNode = simuParamNode.child("TimeSettings");
+
+		xml_node userMomentsNode = timeSettingsNode.child("UserMoments");
+		for (xml_node newUserEntry : userMomentsNode.children("UserEntry")) {
+			char tmpExpr[512];
+			strcpy(tmpExpr, newUserEntry.attribute("content").as_string());
+			work->userMoments.push_back(tmpExpr);
+			work->AddMoment(mApp->worker.ParseMoment(tmpExpr));
+		}
+		work->timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();
+		work->useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_int();
+		work->calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_int();
+
+		xml_node motionNode = simuParamNode.child("Motion");
+		work->motionType = motionNode.attribute("type").as_int();
+		if (work->motionType == 1) { //fixed motion
+			xml_node v = motionNode.child("VelocityVector");
+			work->motionVector2.x = v.attribute("vx").as_double();
+			work->motionVector2.y = v.attribute("vy").as_double();
+			work->motionVector2.z = v.attribute("vz").as_double();
+		}
+		else if (work->motionType == 2) { //rotation
+			xml_node v = motionNode.child("AxisBasePoint");
+			work->motionVector1.x = v.attribute("x").as_double();
+			work->motionVector1.y = v.attribute("y").as_double();
+			work->motionVector1.z = v.attribute("z").as_double();
+			xml_node v2 = motionNode.child("RotationVector");
+			work->motionVector2.x = v2.attribute("x").as_double();
+			work->motionVector2.y = v2.attribute("y").as_double();
+			work->motionVector2.z = v2.attribute("z").as_double();
 		}
 	}
 
-	work->gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
-	work->halfLife = simuParamNode.child("Gas").attribute("halfLife").as_double();
+	
 
-	xml_node timeSettingsNode = simuParamNode.child("TimeSettings");
+	
 
-	xml_node userMomentsNode = timeSettingsNode.child("UserMoments");
-	for (xml_node newUserEntry : userMomentsNode.children("UserEntry")) {
-		char tmpExpr[512];
-		strcpy(tmpExpr, newUserEntry.attribute("content").as_string());
-		work->userMoments.push_back(tmpExpr);
-		work->AddMoment(mApp->worker.ParseMoment(tmpExpr));
-	}
-	work->timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();
-	work->useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_int();
-	work->calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_int();
 
-	xml_node motionNode = simuParamNode.child("Motion");
-	work->motionType = motionNode.attribute("type").as_int();
-	if (work->motionType == 1) { //fixed motion
-		xml_node v = motionNode.child("VelocityVector");
-		work->motionVector2.x = v.attribute("vx").as_double();
-		work->motionVector2.y = v.attribute("vy").as_double();
-		work->motionVector2.z = v.attribute("vz").as_double();
-	}
-	else if (work->motionType == 2) { //rotation
-		xml_node v = motionNode.child("AxisBasePoint");
-		work->motionVector1.x = v.attribute("x").as_double();
-		work->motionVector1.y = v.attribute("y").as_double();
-		work->motionVector1.z = v.attribute("z").as_double();
-		xml_node v2 = motionNode.child("RotationVector");
-		work->motionVector2.x = v2.attribute("x").as_double();
-		work->motionVector2.y = v2.attribute("y").as_double();
-		work->motionVector2.z = v2.attribute("z").as_double();
-	}
+
+
 	InitializeGeometry();
 	//AdjustProfile();
 	isLoaded = TRUE;
@@ -5432,7 +5448,7 @@ void Geometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *pr
 }
 
 
-void Geometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg, BOOL newStr, BOOL isSynxml){
+void Geometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg, BOOL newStr){
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
 	//mApp->ClearFormula();
@@ -5482,15 +5498,19 @@ void Geometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progr
 
 	//Parameters (needs to precede facets)
 	xml_node simuParamNode = loadXML.child("MolflowSimuSettings");
-	xml_node paramNode = simuParamNode.child("Parameters");
-	for (xml_node newParameter : paramNode.children("Parameter")){
-		Parameter newPar;
-		newPar.name = newParameter.attribute("name").as_string();
-		for (xml_node newMoment : newParameter.children("Moment")) {
-			newPar.AddValue(std::make_pair(newMoment.attribute("t").as_double(),
-				newMoment.attribute("value").as_double()));
+	BOOL isMolflowFile = (simuParamNode != NULL); //if no "MolflowSimuSettings" node, it's a Synrad file
+	
+	if (isMolflowFile) {
+		xml_node paramNode = simuParamNode.child("Parameters");
+		for (xml_node newParameter : paramNode.children("Parameter")){
+			Parameter newPar;
+			newPar.name = newParameter.attribute("name").as_string();
+			for (xml_node newMoment : newParameter.children("Moment")) {
+				newPar.AddValue(std::make_pair(newMoment.attribute("t").as_double(),
+					newMoment.attribute("value").as_double()));
+			}
+			work->parameters.push_back(newPar);
 		}
-		work->parameters.push_back(newPar);
 	}
 
 	//Facets
@@ -5503,12 +5523,14 @@ void Geometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progr
 			throw Error(errMsg);
 		}
 		facets[idx] = new Facet(nbIndex);
-		facets[idx]->LoadXML(facetNode, sh.nbVertex+nbNewVertex, sh.nbVertex);
+		facets[idx]->LoadXML(facetNode, sh.nbVertex+nbNewVertex, isMolflowFile, sh.nbVertex);
 		facets[idx]->selected = TRUE;
-		//Set param names for interface
-		if (facets[idx]->sh.sticking_paramId > -1) facets[idx]->userSticking = work->parameters[facets[idx]->sh.sticking_paramId].name;
-		if (facets[idx]->sh.opacity_paramId > -1) facets[idx]->userOpacity = work->parameters[facets[idx]->sh.opacity_paramId].name;
-		if (facets[idx]->sh.outgassing_paramId > -1) facets[idx]->userOutgassing = work->parameters[facets[idx]->sh.outgassing_paramId].name;
+		if (isMolflowFile) {
+			//Set param names for interface
+			if (facets[idx]->sh.sticking_paramId > -1) facets[idx]->userSticking = work->parameters[facets[idx]->sh.sticking_paramId].name;
+			if (facets[idx]->sh.opacity_paramId > -1) facets[idx]->userOpacity = work->parameters[facets[idx]->sh.opacity_paramId].name;
+			if (facets[idx]->sh.outgassing_paramId > -1) facets[idx]->userOutgassing = work->parameters[facets[idx]->sh.outgassing_paramId].name;
+		}
 		idx++;
 	}
 
@@ -5550,15 +5572,16 @@ void Geometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progr
 	sh.nbVertex += nbNewVertex;
 	sh.nbFacet += nbNewFacets; //formulas can refer to newly inserted facets
 
-	xml_node formulaNode = interfNode.child("Formulas");
-	for (xml_node newFormula : formulaNode.children("Formula")) {
-		char tmpExpr[512];
-		strcpy(tmpExpr,newFormula.attribute("expression").as_string());
-		mApp->OffsetFormula(tmpExpr, sh.nbFacet);
-		mApp->AddFormula(newFormula.attribute("name").as_string(),
-			tmpExpr);
+	if (isMolflowFile) {
+		xml_node formulaNode = interfNode.child("Formulas");
+		for (xml_node newFormula : formulaNode.children("Formula")) {
+			char tmpExpr[512];
+			strcpy(tmpExpr, newFormula.attribute("expression").as_string());
+			mApp->OffsetFormula(tmpExpr, sh.nbFacet);
+			mApp->AddFormula(newFormula.attribute("name").as_string(),
+				tmpExpr);
+		}
 	}
-
 
 	/*work->gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
 	work->halfLife = simuParamNode.child("Gas").attribute("halfLife").as_double();*/

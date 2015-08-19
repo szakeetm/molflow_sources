@@ -299,7 +299,7 @@ void Facet::LoadGEO(FileReader *file, int version, int nbVertex) {
 
 }
 
-void Facet::LoadXML(xml_node f,int nbVertex,int vertexOffset,BOOL isSynxml) {
+void Facet::LoadXML(xml_node f, int nbVertex, BOOL isMolflowFile,int vertexOffset) {
 	int idx = 0;
 	for (xml_node indice : f.child("Indices").children("Indice")) {
 		indices[idx] = indice.attribute("vertex").as_int()+vertexOffset;
@@ -310,61 +310,80 @@ void Facet::LoadXML(xml_node f,int nbVertex,int vertexOffset,BOOL isSynxml) {
 		}
 		idx++;
 	}
-	sh.sticking = f.child("Sticking").attribute("constValue").as_double();
-	sh.sticking_paramId = f.child("Sticking").attribute("parameterId").as_int();
 	sh.opacity = f.child("Opacity").attribute("constValue").as_double();
-	sh.opacity_paramId = f.child("Opacity").attribute("parameterId").as_int();
 	sh.is2sided = f.child("Opacity").attribute("is2sided").as_int();
-	sh.flow = f.child("Outgassing").attribute("constValue").as_double();
-	sh.desorbType = f.child("Outgassing").attribute("desType").as_int();
-	sh.desorbTypeN = f.child("Outgassing").attribute("desExponent").as_double();
-	sh.outgassing_paramId = f.child("Outgassing").attribute("parameterId").as_int();
-	hasOutgassingFile=f.child("Outgassing").attribute("hasOutgassingFile").as_int();
-	sh.useOutgassingFile = f.child("Outgassing").attribute("useOutgassingFile").as_int();
-	sh.temperature = f.child("Temperature").attribute("value").as_double();
-	sh.accomodationFactor = f.child("Temperature").attribute("accFactor").as_double();
-	sh.reflectType = f.child("Reflection").attribute("type").as_int();
 	sh.superIdx = f.child("Structure").attribute("inStructure").as_int();
 	sh.superDest = f.child("Structure").attribute("linksTo").as_int();
 	sh.teleportDest = f.child("Teleport").attribute("target").as_int();
-	sh.isMoving = f.child("Motion").attribute("isMoving").as_bool();
-	xml_node recNode = f.child("Recordings");
-	sh.profileType = recNode.child("Profile").attribute("type").as_int();
-	xml_node texNode = recNode.child("Texture");
-	hasMesh = texNode.attribute("hasMesh").as_bool();
-	sh.texWidthD = texNode.attribute("texDimX").as_double();
-	sh.texHeightD = texNode.attribute("texDimY").as_double();
-	sh.countDes = texNode.attribute("countDes").as_int();
-	sh.countAbs = texNode.attribute("countAbs").as_int();
-	sh.countRefl = texNode.attribute("countRefl").as_int();
-	sh.countTrans = texNode.attribute("countTrans").as_int();
-	sh.countDirection = texNode.attribute("countDir").as_int();
-	sh.countACD = texNode.attribute("countAC").as_int();
+	
+	if (isMolflowFile) {
+		sh.sticking = f.child("Sticking").attribute("constValue").as_double();
+		sh.sticking_paramId = f.child("Sticking").attribute("parameterId").as_int();
+		sh.opacity_paramId = f.child("Opacity").attribute("parameterId").as_int();
+		sh.flow = f.child("Outgassing").attribute("constValue").as_double();
+		sh.desorbType = f.child("Outgassing").attribute("desType").as_int();
+		sh.desorbTypeN = f.child("Outgassing").attribute("desExponent").as_double();
+		sh.outgassing_paramId = f.child("Outgassing").attribute("parameterId").as_int();
+		hasOutgassingFile = f.child("Outgassing").attribute("hasOutgassingFile").as_int();
+		sh.useOutgassingFile = f.child("Outgassing").attribute("useOutgassingFile").as_int();
+		sh.temperature = f.child("Temperature").attribute("value").as_double();
+		sh.accomodationFactor = f.child("Temperature").attribute("accFactor").as_double();
+		sh.reflectType = f.child("Reflection").attribute("type").as_int();
+		sh.isMoving = f.child("Motion").attribute("isMoving").as_bool();
+		xml_node recNode = f.child("Recordings");
+		sh.profileType = recNode.child("Profile").attribute("type").as_int();
+		xml_node texNode = recNode.child("Texture");
+		hasMesh = texNode.attribute("hasMesh").as_bool();
+		sh.texWidthD = texNode.attribute("texDimX").as_double();
+		sh.texHeightD = texNode.attribute("texDimY").as_double();
+		sh.countDes = texNode.attribute("countDes").as_int();
+		sh.countAbs = texNode.attribute("countAbs").as_int();
+		sh.countRefl = texNode.attribute("countRefl").as_int();
+		sh.countTrans = texNode.attribute("countTrans").as_int();
+		sh.countDirection = texNode.attribute("countDir").as_int();
+		sh.countACD = texNode.attribute("countAC").as_int();
+
+		xml_node outgNode = f.child("DynamicOutgassing");
+		if ((hasOutgassingFile) && outgNode && outgNode.child("map")) {
+			sh.outgassingMapWidth = outgNode.attribute("width").as_int();
+			sh.outgassingMapHeight = outgNode.attribute("height").as_int();
+			sh.outgassingFileRatio = outgNode.attribute("ratio").as_double();
+			totalDose = outgNode.attribute("totalDose").as_double();
+			sh.totalOutgassing = outgNode.attribute("totalOutgassing").as_double();
+			totalFlux = outgNode.attribute("totalFlux").as_double();
+
+			std::stringstream outgText;
+			outgText << outgNode.child_value("map");
+			outgassingMap = (double*)malloc(sh.outgassingMapWidth*sh.outgassingMapHeight*sizeof(double));
+
+			for (int iy = 0; iy < sh.outgassingMapHeight; iy++) {
+				for (int ix = 0; ix < sh.outgassingMapWidth; ix++) {
+					outgText >> outgassingMap[iy*sh.outgassingMapWidth + ix];
+				}
+			}
+
+		}
+		else hasOutgassingFile = sh.useOutgassingFile = 0; //if outgassing map was incorrect, don't use it
+	}
+	else { //SynRad file, use default values
+		sh.sticking = 0;
+		sh.flow = 0;
+		sh.opacity_paramId = -1;
+		sh.profileType = 0;
+		hasMesh = FALSE;
+		sh.texWidthD = 0;
+		sh.texHeightD = 0;
+		sh.countDes = FALSE;
+		sh.countAbs = FALSE;
+		sh.countRefl = FALSE;
+		sh.countTrans = FALSE;
+		sh.countDirection = FALSE;
+		sh.countACD = FALSE;
+		hasOutgassingFile = sh.useOutgassingFile = 0;
+	}
 
 	textureVisible = f.child("ViewSettings").attribute("textureVisible").as_int();
 	volumeVisible = f.child("ViewSettings").attribute("volumeVisible").as_int();
-
-	xml_node outgNode = f.child("DynamicOutgassing");
-	if ((hasOutgassingFile) && outgNode && outgNode.child("map")) {
-		sh.outgassingMapWidth = outgNode.attribute("width").as_int();
-		sh.outgassingMapHeight = outgNode.attribute("height").as_int();
-		sh.outgassingFileRatio = outgNode.attribute("ratio").as_double();
-		totalDose = outgNode.attribute("totalDose").as_double();
-		sh.totalOutgassing = outgNode.attribute("totalOutgassing").as_double();
-		totalFlux = outgNode.attribute("totalFlux").as_double();
-
-		std::stringstream outgText;
-		outgText << outgNode.child_value("map");
-		outgassingMap = (double*)malloc(sh.outgassingMapWidth*sh.outgassingMapHeight*sizeof(double));
-
-		for (int iy = 0; iy < sh.outgassingMapHeight; iy++) {
-			for (int ix = 0; ix < sh.outgassingMapWidth; ix++) {
-				outgText >> outgassingMap[iy*sh.outgassingMapWidth + ix];
-			}
-		}
-
-	}
-	else hasOutgassingFile = sh.useOutgassingFile = 0; //if outgassing map was incorrect, don't use it
 
 	UpdateFlags();
 }

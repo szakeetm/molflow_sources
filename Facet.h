@@ -101,7 +101,7 @@ public:
   void  SaveTXT(FileWriter *file);
   void  LoadGEO(FileReader *file,int version,int nbVertex);
   void  LoadSYN(FileReader *file,int version,int nbVertex);
-  void  LoadXML(pugi::xml_node f,int nbVertex,int vertexOffset=0,BOOL isSynxml=0);
+  void  LoadXML(pugi::xml_node f,int nbVertex,BOOL isMolflowFile,int vertexOffset=0);
   void  SaveGEO(FileWriter *file,int idx);
   void  SaveXML_geom(pugi::xml_node f);
   BOOL  IsCoplanar(Facet *f,double threshold);

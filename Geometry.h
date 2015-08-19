@@ -88,8 +88,8 @@ public:
   void SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress *prg, BOOL saveSelected);
   BOOL SaveXML_simustate(pugi::xml_node saveDoc, Worker *work, BYTE *buffer, SHGHITS *gHits, int nbLeakSave, int nbHHitSave,
 	  LEAK *pLeak, HIT *pHits, GLProgress *prg, BOOL saveSelected);
-  void LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg, BOOL isSynxml = FALSE);
-  void InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg, BOOL newStr, BOOL isSynxml = FALSE);
+  void LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg);
+  void InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg, BOOL newStr);
   BOOL LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker *work, GLProgress *progressDlg);
 
   // Selection (drawing stuff)

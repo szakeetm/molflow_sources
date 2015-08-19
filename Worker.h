@@ -41,14 +41,14 @@ public:
 
   // Load a geometry (throws Error)
 
-  void LoadGeometry(char *fileName);// Load a geometry (throws Error)
+  void LoadGeometry(char *fileName, BOOL insert=FALSE,BOOL newStr=FALSE); // Load or insert a geometry (throws Error)
   BOOL IsDpInitialized();
 
   // Inserts a new geometry (throws Error)
-  void InsertGeometry(BOOL newStr,char *fileName);
+  //void InsertGeometry(BOOL newStr,char *fileName);
 
   // Load a textures(throws Error)
-  void LoadTextures(char *fileName,int version);
+  void LoadTexturesGEO(std::string fileName,int version);
   void RebuildTextures();
 
   // Save a geometry (throws Error)

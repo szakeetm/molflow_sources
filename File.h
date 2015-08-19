@@ -20,6 +20,7 @@
 #define FILERWH
 
 #include <stdio.h>
+#include <string>
 #include "Types.h"
 
 #define READ_BUFFSIZE 4096
@@ -44,7 +45,11 @@ class FileUtils {
 public:
   // Utils functions
   static int Exist(const char *fileName);
+  static int Exist(std::string fileName);
   static char *GetPath(char *fileName);
+  static std::string GetPath(const std::string &str); //Extracts string up to to last "\"
+  static std::string GetFilename(const std::string &str); //Extracts string after the last "\"
+  static std::string GetExtension(const std::string &str); //Extracts string after the last "."
 
 };
 
@@ -55,6 +60,7 @@ class FileReader {
 public:
   // Constructor/Destructor
   FileReader(char *fileName);
+  FileReader(std::string fileName);
   ~FileReader();
 
   char *GetName();
