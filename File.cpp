@@ -47,11 +47,7 @@ const char *Error::GetMsg() {
 // FileReader class
 // -------------------------------------------------
 
-FileReader::FileReader(std::string fileName) {
-	FileReader(fileName.c_str());
-}
-
-FileReader::FileReader(char *fileName) {
+FileReader::FileReader(const char *fileName) {
 
   file = fopen(fileName,"r");
   char tmp[512];
@@ -398,18 +394,6 @@ BOOL FileUtils::Exist(const char *fileName) {
 	else {
 		return FALSE;
 	}
-}
-
-char *FileUtils::GetPath(char *fileName) {
-
-	static char tmp[512];
-	strncpy(tmp, fileName, 512);
-
-	char  *p = strrchr(tmp, '\\');
-	if (!p) p = strrchr(tmp, '/');
-	if (p)  *p = 0;
-	return tmp;
-
 }
 
 std::string FileUtils::GetFilename(const std::string& str)

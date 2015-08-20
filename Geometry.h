@@ -184,7 +184,7 @@ public:
   void     InitializeGeometry(int facet_number=-1);           // Initialiase all geometry related variable
   void     LoadProfile(FileReader *file,Dataport *dpHit,int version);
   void UpdateName(FileReader *file);
-  void UpdateName(char *fileName);
+  void UpdateName(const char *fileName);
 
   // Texture scaling
   int textureMode;                        // Pressure / Impingement rate / Density

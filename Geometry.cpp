@@ -101,7 +101,7 @@ Geometry::~Geometry() {
 
 
 void Geometry::Clear() {
-
+	viewStruct = -1; //otherwise a nonexistent structure could stay selected
 	// Free memory
 	if (facets) {
 		for (int i = 0; i < sh.nbFacet; i++)
@@ -1487,26 +1487,11 @@ void  Geometry::BuildPipe(double L, double R, double s, int step) {
 // -----------------------------------------------------------
 
 void Geometry::UpdateName(FileReader *file) {
-
-	char *p = strrchr(file->GetName(), '\\');
-	if (!p) p = strrchr(file->GetName(), '/');
-
-	if (!p)
-		strcpy(sh.name, file->GetName());
-	else
-		strcpy(sh.name, p + 1);
-
+	UpdateName(file->GetName());
 }
 
-void Geometry::UpdateName(char *fileName) {
-
-	char *p = strrchr(fileName, '\\');
-	if (!p) p = strrchr(fileName, '/');
-
-	if (!p)
-		strcpy(sh.name, fileName);
-	else
-		strcpy(sh.name, p + 1);
+void Geometry::UpdateName(const char *fileName) {
+	strcpy(sh.name, FileUtils::GetFilename(fileName).c_str());
 }
 
 void Geometry::AdjustProfile() {
@@ -1597,7 +1582,7 @@ void Geometry::LoadSTR(FileReader *file, GLProgress *prg) {
 	sh.nbSuper = file->ReadInt();
 
 	strcpy(fPath, file->ReadLine());
-	strcpy(nPath, FileUtils::GetPath(file->GetName()));
+	strcpy(nPath, FileUtils::GetPath(file->GetName()).c_str());
 
 	for (int n = 0; n < sh.nbSuper; n++) {
 
@@ -2094,7 +2079,7 @@ void Geometry::InsertGEOGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 
 	file->ReadKeyword("structures"); file->ReadKeyword("{");
 	for (int i = 0; i < nbNewSuper; i++) {
-		strName[i] = _strdup(file->ReadString());
+		strName[sh.nbSuper+i] = _strdup(file->ReadString());
 		// For backward compatibilty with STR
 		/* //Commented out for GEO
 		sprintf(tmp, "%s.txt", strName[i]);
@@ -2320,7 +2305,7 @@ void Geometry::InsertSYNGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 
 	file->ReadKeyword("structures"); file->ReadKeyword("{");
 	for (int i = 0; i < nbNewSuper; i++) {
-		strName[i] = _strdup(file->ReadString());
+		strName[sh.nbSuper+i] = _strdup(file->ReadString());
 		// For backward compatibilty with STR
 		/*sprintf(tmp, "%s.txt", strName[i]);
 		strFileName[i] = _strdup(tmp);*/
@@ -2410,10 +2395,12 @@ void Geometry::InsertSYNGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 		file->ReadKeyword("}");
 		if (newStruct) {
 			(*facets)[i]->sh.superIdx += sh.nbSuper;
+			if ((*facets)[i]->sh.superDest > 0) (*facets)[i]->sh.superDest += sh.nbSuper;
 		}
 		else {
 
-			(*facets)[i]->sh.superIdx = strIdx;
+			(*facets)[i]->sh.superIdx += strIdx;
+			if ((*facets)[i]->sh.superDest > 0) (*facets)[i]->sh.superDest += strIdx;
 		}
 	}
 
@@ -2421,6 +2408,7 @@ void Geometry::InsertSYNGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 	*nbVertex += nbNewVertex;
 	*nbFacet += nbNewFacets;
 	if (newStruct) sh.nbSuper += nbNewSuper;
+	else if (sh.nbSuper < strIdx + nbNewSuper) sh.nbSuper = strIdx + nbNewSuper;
 	//return result;
 }
 
@@ -2494,7 +2482,6 @@ void Geometry::InsertSTLGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 			(*facets)[i + *nbFacet]->sh.superIdx = sh.nbSuper;
 		}
 		else {
-
 			(*facets)[i + *nbFacet]->sh.superIdx = strIdx;
 		}
 	}
@@ -2502,7 +2489,6 @@ void Geometry::InsertSTLGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 	*nbVertex += nbNewVertex;
 	*nbFacet += nbNewFacets;
 	if (newStruct) AddStruct("Inserted STL file");
-
 }
 
 
@@ -5417,13 +5403,6 @@ void Geometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *pr
 		}
 	}
 
-	
-
-	
-
-
-
-
 	InitializeGeometry();
 	//AdjustProfile();
 	isLoaded = TRUE;
@@ -5485,20 +5464,20 @@ void Geometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progr
 	}
 
 	//Structures
-	sh.nbSuper = geomNode.child("Structures").select_nodes("Structure").size();
+	size_t nbNewSuper = geomNode.child("Structures").select_nodes("Structure").size();
 	idx = 0;
 	for (xml_node structure : geomNode.child("Structures").children("Structure")) {
 		strName[idx] = _strdup(structure.attribute("name").value());
 		// For backward compatibilty with STR
 		char tmp[256];
 		sprintf(tmp, "%s.txt", strName[idx]);
-		strFileName[idx] = _strdup(tmp);
+		strFileName[sh.nbSuper+idx] = _strdup(tmp);
 		idx++;
 	}
 
 	//Parameters (needs to precede facets)
 	xml_node simuParamNode = loadXML.child("MolflowSimuSettings");
-	BOOL isMolflowFile = (simuParamNode != NULL); //if no "MolflowSimuSettings" node, it's a Synrad file
+	BOOL isMolflowFile = (simuParamNode != NULL); //if no "MolflowSimuSettings" node, it's a Synrad XML file
 	
 	if (isMolflowFile) {
 		xml_node paramNode = simuParamNode.child("Parameters");
@@ -5525,6 +5504,8 @@ void Geometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progr
 		facets[idx] = new Facet(nbIndex);
 		facets[idx]->LoadXML(facetNode, sh.nbVertex+nbNewVertex, isMolflowFile, sh.nbVertex);
 		facets[idx]->selected = TRUE;
+		facets[idx]->sh.superIdx += structId; //offset structure
+		if (facets[idx]->sh.superDest>0) facets[idx]->sh.superDest += structId;
 		if (isMolflowFile) {
 			//Set param names for interface
 			if (facets[idx]->sh.sticking_paramId > -1) facets[idx]->userSticking = work->parameters[facets[idx]->sh.sticking_paramId].name;
@@ -5606,7 +5587,8 @@ void Geometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progr
 	work->calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_int();
 	*/
 	
-	if (newStr) AddStruct("Inserted ZIP/XML file");
+	if (newStr) sh.nbSuper += nbNewSuper;
+	else if (sh.nbSuper < structId + nbNewSuper) sh.nbSuper = structId + nbNewSuper;
 	InitializeGeometry();
 	//AdjustProfile();
 	isLoaded = TRUE;

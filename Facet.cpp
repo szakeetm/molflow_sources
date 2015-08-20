@@ -50,11 +50,6 @@ Facet::Facet(int nbIndex) {
 	sh.counter.hit.nbAbsorbed = 0;
 	sh.counter.hit.nbHit = 0;*/
 
-
-
-
-
-
 	sh.sticking = 0.0;
 	sh.opacity = 1.0;
 	sh.temperature = 293.15; // 20degC
@@ -364,23 +359,7 @@ void Facet::LoadXML(xml_node f, int nbVertex, BOOL isMolflowFile,int vertexOffse
 
 		}
 		else hasOutgassingFile = sh.useOutgassingFile = 0; //if outgassing map was incorrect, don't use it
-	}
-	else { //SynRad file, use default values
-		sh.sticking = 0;
-		sh.flow = 0;
-		sh.opacity_paramId = -1;
-		sh.profileType = 0;
-		hasMesh = FALSE;
-		sh.texWidthD = 0;
-		sh.texHeightD = 0;
-		sh.countDes = FALSE;
-		sh.countAbs = FALSE;
-		sh.countRefl = FALSE;
-		sh.countTrans = FALSE;
-		sh.countDirection = FALSE;
-		sh.countACD = FALSE;
-		hasOutgassingFile = sh.useOutgassingFile = 0;
-	}
+	} //else use default values at Facet() constructor
 
 	textureVisible = f.child("ViewSettings").attribute("textureVisible").as_int();
 	volumeVisible = f.child("ViewSettings").attribute("volumeVisible").as_int();

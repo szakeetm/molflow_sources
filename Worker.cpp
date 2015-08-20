@@ -503,7 +503,7 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 			}
 		}
 		catch (Error &e) {
-			geom->Clear();
+			if (!insert) geom->Clear();
 			SAFE_DELETE(f);
 			progressDlg->SetVisible(FALSE);
 			SAFE_DELETE(progressDlg);
@@ -534,28 +534,24 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 			}
 			if (ret != GLDLG_CANCEL_U) {
 				progressDlg->SetMessage("Resetting worker...");
-				ResetWorkerStats();
-				f = new FileReader(fileName);
 				progressDlg->SetVisible(TRUE);
+				ResetWorkerStats();				
 				progressDlg->SetMessage("Reading geometry...");
+				f = new FileReader(fileName);
 				if (!insert) {
 					geom->LoadSTL(f, progressDlg, scaleFactor);
 					strcpy(fullFileName, fileName);
 					mApp->DisplayCollapseDialog();
 				}
 				else { //insert
+					mApp->changedSinceSave = TRUE;
 					geom->InsertSTL(f, progressDlg, scaleFactor, newStr);
-					nbHit = 0;
-					nbLeakTotal = 0;
-					nbDesorption = 0;
-					maxDesorption = 0;
-					nbLeakTotal = 0;
 					Reload();
 				}
 			}
 		}
 		catch (Error &e) {
-			geom->Clear();
+			if (!insert) geom->Clear();
 			SAFE_DELETE(f);
 			progressDlg->SetVisible(FALSE);
 			SAFE_DELETE(progressDlg);
@@ -631,7 +627,7 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 			if (!insert) strcpy(fullFileName, fileName);
 		}
 		catch (Error &e) {
-			geom->Clear();
+			if (!insert) geom->Clear();
 			SAFE_DELETE(f);
 			//if (isSYN7Z) remove(tmp2);
 			progressDlg->SetVisible(FALSE);
@@ -702,16 +698,13 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 				//if (isGEO7Z) remove(tmp2);
 			}
 			else { //insert
+				mApp->changedSinceSave = TRUE;
 				geom->InsertGEO(f, progressDlg, newStr);
-				nbHit = 0;
-				nbDesorption = 0;
-				maxDesorption = 0;
-				nbLeakTotal = 0;
 				Reload();
 			}
 		}
 		catch (Error &e) {
-			geom->Clear();
+			if (!insert) geom->Clear();
 			SAFE_DELETE(f);
 			//if (isGEO7Z) remove(tmp2);
 			progressDlg->SetVisible(FALSE);
@@ -794,7 +787,7 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 			}
 		}
 		catch (Error &e) {
-			geom->Clear();
+			if (!insert) geom->Clear();
 			progressDlg->SetVisible(FALSE);
 			SAFE_DELETE(progressDlg);
 			throw e;
