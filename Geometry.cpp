@@ -5407,7 +5407,7 @@ void Geometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *pr
 	//AdjustProfile();
 	isLoaded = TRUE;
 
-
+	
 	// Update mesh
 	progressDlg->SetMessage("Building mesh...");
 	for (int i = 0; i < sh.nbFacet; i++) {
@@ -5467,7 +5467,7 @@ void Geometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progr
 	size_t nbNewSuper = geomNode.child("Structures").select_nodes("Structure").size();
 	idx = 0;
 	for (xml_node structure : geomNode.child("Structures").children("Structure")) {
-		strName[idx] = _strdup(structure.attribute("name").value());
+		strName[sh.nbSuper+idx] = _strdup(structure.attribute("name").value());
 		// For backward compatibilty with STR
 		char tmp[256];
 		sprintf(tmp, "%s.txt", strName[idx]);
