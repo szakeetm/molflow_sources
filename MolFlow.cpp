@@ -3776,7 +3776,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		}
 
 		// Select selection
-		if (MENU_SELECTION_SELECTIONS + nbSelection > src->GetId() >= MENU_SELECTION_SELECTIONS) { //Choose selection by number
+		if (MENU_SELECTION_SELECTIONS + nbSelection > src->GetId() && src->GetId() >= MENU_SELECTION_SELECTIONS) { //Choose selection by number
 			SelectSelection(src->GetId() - MENU_SELECTION_SELECTIONS);
 		}
 		else if (src->GetId() == (MENU_SELECTION_SELECTIONS + nbSelection)){ //Previous selection

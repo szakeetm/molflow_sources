@@ -239,7 +239,7 @@ void TimewisePlotter::refreshViews() {
 			scaleY = 1.0 / nbDes / (f->sh.area / (double)PROFILE_SIZE*1E-4)* worker->gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
 			/*scaleY *= ((worker->displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
 			/ worker->timeWindowSize)); //correction for time window length*/
-			scaleY *= ((worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
+			scaleY *= ((v->userData == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
 				/ worker->timeWindowSize));
 			if (f->sh.is2sided) scaleY *= 0.5;
 			//if(f->sh.opacity>0.0) scaleY *= f->sh.opacity;

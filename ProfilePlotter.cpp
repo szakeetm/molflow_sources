@@ -315,19 +315,9 @@ void ProfilePlotter::refreshViews() {
 			if (fnbHit == 0.0) fnbHit = 1.0;
 			if (nbDes > 0){
 
-
-
-
 				switch (displayMode) {
 				case 0: //Raw data
-
 					for (int j = 0; j < PROFILE_SIZE; j++)
-
-
-
-
-
-
 						v->Add((double)j, (double)profilePtr[j].count, FALSE);
 
 					break;

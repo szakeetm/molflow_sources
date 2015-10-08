@@ -225,7 +225,7 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 		}
 		if (isXMLzip) {
 			sprintf(tmp, "An .xml file of the same name exists. Overwrite that file ?\n%s", fileNameWithZIP);
-			if (!autoSave && FileUtils::Exist(fileNameWithZIP)) {
+			if (!autoSave && FileUtils::Exist(fileNameWithXML)) {
 				ok = (GLMessageBox::Display(tmp, "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK);
 			}
 		}
