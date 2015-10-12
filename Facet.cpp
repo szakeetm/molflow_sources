@@ -378,7 +378,7 @@ void Facet::LoadSYN(FileReader *file, int version, int nbVertex) {
 	}
 
 	file->ReadKeyword("sticking"); file->ReadKeyword(":");
-	sh.sticking = file->ReadDouble();
+	sh.sticking = 0; file->ReadDouble(); //Discard Synrad sticking
 	if (version >= 4) {
 		file->ReadKeyword("roughness"); file->ReadKeyword(":");
 		file->ReadDouble();
@@ -386,10 +386,10 @@ void Facet::LoadSYN(FileReader *file, int version, int nbVertex) {
 	file->ReadKeyword("opacity"); file->ReadKeyword(":");
 	sh.opacity = file->ReadDouble();
 	file->ReadKeyword("reflectType"); file->ReadKeyword(":");
-	sh.reflectType = file->ReadInt();
-	if (sh.reflectType > REF_MIRROR) sh.reflectType = REF_DIFFUSE; //treat material reflection
+	sh.reflectType = REF_DIFFUSE; file->ReadInt(); //Discard Synrad diffuse
+	/*if (sh.reflectType > REF_MIRROR) sh.reflectType = REF_DIFFUSE; //treat material reflection*/
 	file->ReadKeyword("profileType"); file->ReadKeyword(":");
-	sh.profileType = 0; file->ReadInt();
+	sh.profileType = 0; file->ReadInt(); //Discard Synrad profile
 	file->ReadKeyword("hasSpectrum"); file->ReadKeyword(":");
 	file->ReadInt();
 	file->ReadKeyword("superDest"); file->ReadKeyword(":");
@@ -399,7 +399,7 @@ void Facet::LoadSYN(FileReader *file, int version, int nbVertex) {
 	file->ReadKeyword("is2sided"); file->ReadKeyword(":");
 	sh.is2sided = file->ReadInt();
 	file->ReadKeyword("mesh"); file->ReadKeyword(":");
-	hasMesh = FALSE; file->ReadInt();
+	hasMesh = FALSE; file->ReadInt(); //Discard synrad texture
 	file->ReadKeyword("texDimX"); file->ReadKeyword(":");
 	sh.texWidthD = 0.0; file->ReadDouble();
 	file->ReadKeyword("texDimY"); file->ReadKeyword(":");
@@ -1349,10 +1349,12 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 					break;
 				case 2: //particle density
 					physicalValue = texBuffer[idx].sum_1_per_ort_velocity / (this->mesh[idx].area*(sh.is2sided ? 2.0 : 1.0))*dCoeff3;
+					/*
 					//Correction for double-density effect (measuring density on desorbing/absorbing facets):
 					if (sh.counter.hit.nbHit>0 || sh.counter.hit.nbDesorbed>0)
 						if (sh.counter.hit.nbAbsorbed >0||sh.counter.hit.nbDesorbed>0) //otherwise save calculation time
 						physicalValue*= 1.0 - ((double)sh.counter.hit.nbAbsorbed + (double)sh.counter.hit.nbDesorbed) / ((double)sh.counter.hit.nbHit + (double)sh.counter.hit.nbDesorbed) / 2.0;
+					*/
 					break;
 				}
 				if (doLog) {
@@ -1446,10 +1448,12 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 					break;
 				case 2: //particle density
 					physicalValue = texBuffer[idx].sum_1_per_ort_velocity / (this->mesh[idx].area*(sh.is2sided ? 2.0 : 1.0))*dCoeff3;
+					/*
 					//Correction for double-density effect (measuring density on desorbing/absorbing facets):
 					if (sh.counter.hit.nbHit>0 || sh.counter.hit.nbDesorbed>0)
 						if (sh.counter.hit.nbAbsorbed >0 || sh.counter.hit.nbDesorbed>0) //otherwise save calculation time
 							physicalValue *= 1.0 - ((double)sh.counter.hit.nbAbsorbed + (double)sh.counter.hit.nbDesorbed) / ((double)sh.counter.hit.nbHit + (double)sh.counter.hit.nbDesorbed) / 2.0;
+					*/
 					break;
 				}
 				if (doLog) {

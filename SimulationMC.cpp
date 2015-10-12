@@ -584,7 +584,23 @@ BOOL StartFromSource() {
 
 	if (!found) {
 		// Get the center, if the center is not included in the facet, a leak is generated.
-		sHandle->pPos = sHandle->str[j].facets[i]->sh.center;
+		if (foundInMap) {
+			double uLength = sqrt(pow(src->sh.U.x, 2) + pow(src->sh.U.y, 2) + pow(src->sh.U.z, 2));
+			double vLength = sqrt(pow(src->sh.V.x, 2) + pow(src->sh.V.y, 2) + pow(src->sh.V.z, 2));
+			double u = ((double)mapPositionW + 0.5) / src->sh.outgassingFileRatio / uLength;
+			double v = ((double)mapPositionH + 0.5) / src->sh.outgassingFileRatio / vLength;
+			sHandle->pPos.x = src->sh.O.x + u*src->sh.U.x + v*src->sh.V.x;
+			sHandle->pPos.y = src->sh.O.y + u*src->sh.U.y + v*src->sh.V.y;
+			sHandle->pPos.z = src->sh.O.z + u*src->sh.U.z + v*src->sh.V.z;
+			src->colU = u;
+			src->colV = v;
+		}
+		else {
+			src->colU = 0.5;
+			src->colV = 0.5;
+			sHandle->pPos = sHandle->str[j].facets[i]->sh.center;
+		}
+		
 	}
 
 	if (src->sh.isMoving && sHandle->motionType) RecordHit(HIT_MOVING);
@@ -621,11 +637,11 @@ BOOL StartFromSource() {
 	double ortVelocity = sHandle->velocityCurrentParticle*abs(DOT3(
 		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
 		src->sh.N.x, src->sh.N.y, src->sh.N.z));
-	src->sh.counter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity;
+	src->sh.counter.hit.sum_1_per_ort_velocity += 1.0 / ortVelocity; //was 2.0 / ortV
 	src->sh.counter.hit.sum_v_ort += (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;
 	//Desorption doesn't contribute to angular profiles
-	ProfileFacet(src, sHandle->flightTimeCurrentParticle, FALSE, 2.0, 1.0);
-	if (src->hits && src->sh.countDes) AHIT_FACET(src, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0);
+	ProfileFacet(src, sHandle->flightTimeCurrentParticle, FALSE, 1.0, 1.0); //was 2.0, 1.0
+	if (src->hits && src->sh.countDes) AHIT_FACET(src, sHandle->flightTimeCurrentParticle, TRUE, 1.0, 1.0); //was 2.0, 1.0
 	//if (src->direction && src->sh.countDirection) DHIT_FACET(src, sHandle->flightTimeCurrentParticle);
 
 	// Reset volatile state
@@ -767,10 +783,10 @@ void PerformAbsorb(FACET *iFacet) {
 	double ortVelocity = sHandle->velocityCurrentParticle*abs(DOT3(
 		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
 		iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z));
-	iFacet->sh.counter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity;
+	iFacet->sh.counter.hit.sum_1_per_ort_velocity += 1.0 / ortVelocity; //was 2.0 / ortV
 	iFacet->sh.counter.hit.sum_v_ort += (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;
-	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0);
-	if (iFacet->hits && iFacet->sh.countAbs) AHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0);
+	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 1.0, 1.0); //was 2.0, 1.0
+	if (iFacet->hits && iFacet->sh.countAbs) AHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 1.0, 1.0); //was 2.0, 1.0
 	if (iFacet->direction && iFacet->sh.countDirection) DHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle);
 }
 

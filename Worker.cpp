@@ -713,7 +713,7 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 		}
 
 	}
-	else if (ext == "isXML" || ext=="zip") { //XML file, optionally in ZIP container
+	else if (ext == "xml" || ext=="zip") { //XML file, optionally in ZIP container
 		xml_document loadXML;
 		xml_parse_result parseResult;
 		progressDlg->SetVisible(TRUE);

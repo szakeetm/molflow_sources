@@ -39,11 +39,8 @@ GNU General Public License for more details.
 #endif
 */
 
-
 using namespace pugi;
 extern MolFlow *mApp;
-
-
 
 Geometry::Geometry() {
 
@@ -69,12 +66,6 @@ Geometry::Geometry() {
 		texture_limits[2].manual.max.all = texture_limits[2].manual.max.moments_only = 1.0;
 	textureMode = 0;
 
-
-
-
-
-
-
 	autoNorme = TRUE;
 	centerNorme = TRUE;
 	normeRatio = 1.0f;
@@ -92,13 +83,9 @@ Geometry::Geometry() {
 	_ASSERTE(_CrtCheckMemory());
 }
 
-
-
 Geometry::~Geometry() {
 	Clear();
 }
-
-
 
 void Geometry::Clear() {
 	viewStruct = -1; //otherwise a nonexistent structure could stay selected
@@ -136,9 +123,6 @@ void Geometry::Clear() {
 		texture_limits[1].manual.max.all = texture_limits[1].manual.max.moments_only =
 		texture_limits[2].manual.max.all = texture_limits[2].manual.max.moments_only = 1.0;
 
-
-
-
 	sh.nbSuper = 0;          // Structure number
 	nbSelected = 0;          // Number of selected facet
 
@@ -156,7 +140,6 @@ void Geometry::Clear() {
 	whiteMaterial.Ambient.b = 0.9f;
 
 	memset(&fillMaterial, 0, sizeof(GLMATERIAL));
-
 
 	fillMaterial.Diffuse.r = 0.6f;
 	fillMaterial.Diffuse.g = 0.65f;
@@ -261,10 +244,10 @@ void Geometry::CalculateFacetParam(int facet) {
 	// Facet planeity
 	int nb = f->sh.nbIndex;
 	double max = 0.0;
-	for (int i = 1; i<nb; i++) {
+	for (int i = 1; i < nb; i++) {
 		VERTEX3D p = vertices3[f->indices[i]];
 		double d = A * p.x + B * p.y + C * p.z + D;
-		if (fabs(d)>fabs(max)) max = d;
+		if (fabs(d) > fabs(max)) max = d;
 	}
 
 	// Plane coef
@@ -322,9 +305,6 @@ void Geometry::InitializeGeometry(int facet_number) {
 	center.y = (bb.max.y + bb.min.y) / 2.0;
 	center.z = (bb.max.z + bb.min.z) / 2.0;
 
-
-
-
 	// Choose an orthogonal (U,V) 2D basis for each facet. (This method can be 
 	// improved. stub). The algorithm chooses the longest vedge for the U vector.
 	// then it computes V (orthogonal to U and N). Afterwards, U and V are rescaled 
@@ -336,8 +316,6 @@ void Geometry::InitializeGeometry(int facet_number) {
 	// and ref/abs/des hit recording and visualization. In order to ease some calculations, 
 	// nU et nV (normalized U et V) are also stored in the Facet structure.
 	// The local coordinates of facet vertex are stored in (U,V) coordinates (vertices2).
-
-
 
 	size_t fOffset = sizeof(SHGHITS);
 	for (int i = 0; i < sh.nbFacet; i++) {
@@ -479,12 +457,10 @@ void Geometry::InitializeGeometry(int facet_number) {
 			f->sh.hitOffset = fOffset;
 			fOffset += f->GetHitsSize(mApp->worker.moments.size());
 
-
-
 		}
 	}
 
-	isLoaded=TRUE;
+	isLoaded = TRUE;
 	if (facet_number == -1) {
 		BuildGLList();
 		mApp->UpdateModelParams();
@@ -505,9 +481,7 @@ void Geometry::RebuildLists() {
 
 size_t Geometry::GetGeometrySize() {
 
-
 	Worker  *work = &mApp->worker;
-
 
 	// Compute number of bytes allocated
 	size_t memoryUsage = 0;
@@ -524,25 +498,18 @@ size_t Geometry::GetGeometrySize() {
 	}
 
 	//IDs
-
 	memoryUsage += sizeof(size_t); //number of IDs
 	for (auto i : work->IDs) {
 
 		memoryUsage += sizeof(size_t); //ID size
 		memoryUsage += i.size() * 2 * sizeof(double);
-
-
-
 	}
 
 	//Parameters
-
 	memoryUsage += sizeof(size_t); //number of parameters
 	for (auto i : work->parameters) {
 
-
 		memoryUsage += sizeof(size_t); //parameter size
-
 
 		memoryUsage += i.values.size() * 2 * sizeof(double);
 	}
@@ -650,14 +617,10 @@ void Geometry::CopyGeometryBuffer(BYTE *buffer) {
 						else {
 							WRITEVAL(0.0, double);
 
-
-
 						}
 						add++;
-
 					}
 				}
-
 			}
 			else {
 
@@ -673,14 +636,9 @@ void Geometry::CopyGeometryBuffer(BYTE *buffer) {
 						}
 						else {
 							WRITEVAL(0.0, double);
-
-
-
 						}
-
 					}
 				}
-
 			}
 		}
 	}
@@ -770,7 +728,6 @@ float Geometry::GetNormeRatio() {
 }
 
 
-
 size_t Geometry::GetHitsSize(std::vector<double> *moments) {
 
 	// Compute number of bytes allocated
@@ -782,8 +739,6 @@ size_t Geometry::GetHitsSize(std::vector<double> *moments) {
 
 	return memoryUsage;
 }
-
-
 
 size_t Geometry::GetMaxElemNumber() {
 
@@ -797,8 +752,6 @@ size_t Geometry::GetMaxElemNumber() {
 
 }
 
-
-
 void Geometry::CopyElemBuffer(BYTE *buffer) {
 
 	int idx = 0;
@@ -810,8 +763,6 @@ void Geometry::CopyElemBuffer(BYTE *buffer) {
 	}
 
 }
-
-
 
 void Geometry::BuildShapeList() {
 
@@ -938,8 +889,6 @@ void Geometry::BuildShapeList() {
 
 }
 
-
-
 void Geometry::BuildSelectList() {
 
 	nbSelected = 0;
@@ -975,8 +924,6 @@ void Geometry::BuildSelectList() {
 	glDisable(GL_LINE_SMOOTH);
 	}*/
 	glEndList();
-
-
 
 	// Second list for usage with POLYGON_OFFSET
 	selectList2 = glGenLists(1);
@@ -1039,8 +986,6 @@ void Geometry::BuildSelectList() {
 		glDisable(GL_LINE_SMOOTH);
 	}
 	glEndList();
-
-
 }
 
 
@@ -1050,8 +995,6 @@ void Geometry::UpdateSelection() {
 	BuildSelectList();
 
 }
-
-
 
 void Geometry::BuildGLList() {
 
@@ -1122,21 +1065,16 @@ Facet *Geometry::MergeFacet(Facet *f1, Facet *f2) {
 
 		}
 		else {
-
-
 			// Copy indices from f1
 			for (int i = 0; i < f1->sh.nbIndex - (l - 1); i++)
 				nF->indices[nbI++] = f1->GetIndex(c1 + l + i);
 			// Copy indices from f2
 			for (int i = 0; i < f2->sh.nbIndex - (l + 1); i++)
 				nF->indices[nbI++] = f2->GetIndex(c2 + 2 + i);
-
 		}
-
 	}
 
 	return nF;
-
 }
 
 
@@ -1144,7 +1082,6 @@ void Geometry::Collapse(double vT, double fT, double lT, BOOL doSelectedOnly, GL
 	mApp->changedSinceSave = TRUE;
 	Facet *fi, *fj;
 	Facet *merged;
-
 
 	vThreshold = vT;
 	double totalWork = (1.0 + (double)(fT > 0.0) + (double)(lT > 0.0)); //for progress indicator
@@ -1155,7 +1092,6 @@ void Geometry::Collapse(double vT, double fT, double lT, BOOL doSelectedOnly, GL
 		RemoveNullFacet();
 		InitializeGeometry();
 	}
-
 
 	if (fT > 0.0) {
 
@@ -1222,10 +1158,7 @@ void Geometry::Collapse(double vT, double fT, double lT, BOOL doSelectedOnly, GL
 		Cross(&n, &v1, &v2);                      // Cross product
 		d = Dot(&n, &(f->sh.N));
 		if (d < 0.0) f->SwapNormal();
-
 	}
-
-
 
 	// Delete old resources
 	for (int i = 0; i < sh.nbSuper; i++)
@@ -1343,9 +1276,7 @@ void Geometry::BuildFacetList(Facet *f) {
 			glEnd();
 		}
 		glEndList();
-
 	}
-
 }
 
 
@@ -1655,10 +1586,10 @@ void Geometry::LoadSTL(FileReader *file, GLProgress *prg, double scaleFactor) {
 	// Allocate mem
 	sh.nbVertex = 3 * sh.nbFacet;
 	facets = (Facet **)malloc(sh.nbFacet * sizeof(Facet *));
-    if (!facets) throw Error("Out of memory: LoadSTL");
+	if (!facets) throw Error("Out of memory: LoadSTL");
 	memset(facets, 0, sh.nbFacet * sizeof(Facet *));
 	vertices3 = (VERTEX3D *)malloc(sh.nbVertex * sizeof(VERTEX3D));
-    if (!vertices3) throw Error("Out of memory: LoadSTL");
+	if (!vertices3) throw Error("Out of memory: LoadSTL");
 	memset(vertices3, 0, sh.nbVertex * sizeof(VERTEX3D));
 
 	// Second pass
@@ -1733,7 +1664,7 @@ void Geometry::LoadTXT(FileReader *file, GLProgress *prg) {
 	sh.nbSuper = 1;
 	strName[0] = _strdup(sh.name);
 	strFileName[0] = _strdup(file->GetName());
-	
+
 	char *e = strrchr(strName[0], '.');
 	if (e) *e = 0;
 	InitializeGeometry();
@@ -1829,7 +1760,7 @@ void Geometry::LoadTXTGeom(FileReader *file, int *nbV, int *nbF, VERTEX3D **V, F
 	Facet   **f = (Facet **)malloc(nF * sizeof(Facet *));
 	memset(f, 0, nF * sizeof(Facet *));
 	VERTEX3D *v = (VERTEX3D *)malloc(nV * sizeof(VERTEX3D));
-	memset(v,0,nV * sizeof(VERTEX3D)); //avoid selected flag
+	memset(v, 0, nV * sizeof(VERTEX3D)); //avoid selected flag
 
 	// Read geometry vertices
 	for (int i = 0; i < nV; i++) {
@@ -1850,7 +1781,7 @@ void Geometry::LoadTXTGeom(FileReader *file, int *nbV, int *nbF, VERTEX3D **V, F
 	for (int i = 0; i < nF; i++) {
 		f[i]->LoadTXT(file);
 		while ((f[i]->sh.superDest) > sh.nbSuper) { //If facet refers to a structure that doesn't exist, create it
-				AddStruct("TXT linked");
+			AddStruct("TXT linked");
 		}
 		f[i]->sh.superIdx = strIdx;
 	}
@@ -1864,9 +1795,6 @@ void Geometry::LoadTXTGeom(FileReader *file, int *nbV, int *nbF, VERTEX3D **V, F
 	*F = f;
 
 }
-
-// -----------------------------------------------------------
-// -----------------------------------------------------------
 
 void Geometry::InsertTXTGeom(FileReader *file, int *nbVertex, int *nbFacet, VERTEX3D **vertices3, Facet ***facets, int strIdx, BOOL newStruct) {
 
@@ -1928,7 +1856,6 @@ void Geometry::InsertTXTGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 	if (newStruct) AddStruct("Inserted TXT file");
 
 }
-
 
 void Geometry::InsertGEOGeom(FileReader *file, int *nbVertex, int *nbFacet, VERTEX3D **vertices3, Facet ***facets, int strIdx, BOOL newStruct) {
 
@@ -2079,7 +2006,7 @@ void Geometry::InsertGEOGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 
 	file->ReadKeyword("structures"); file->ReadKeyword("{");
 	for (int i = 0; i < nbNewSuper; i++) {
-		strName[sh.nbSuper+i] = _strdup(file->ReadString());
+		strName[sh.nbSuper + i] = _strdup(file->ReadString());
 		// For backward compatibilty with STR
 		/* //Commented out for GEO
 		sprintf(tmp, "%s.txt", strName[i]);
@@ -2093,7 +2020,7 @@ void Geometry::InsertGEOGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 	memset(*facets + *nbFacet, 0, nbNewFacets * sizeof(Facet *));
 	//*vertices3 = (VERTEX3D*)realloc(*vertices3,(nbNewVertex+*nbVertex) * sizeof(VERTEX3D));
 	VERTEX3D *tmp_vertices3 = (VERTEX3D *)malloc((nbNewVertex + *nbVertex) * sizeof(VERTEX3D));
-    if (!tmp_vertices3) throw Error("Out of memory: InsertGEOGeom");
+	if (!tmp_vertices3) throw Error("Out of memory: InsertGEOGeom");
 	memmove(tmp_vertices3, *vertices3, (*nbVertex)*sizeof(VERTEX3D));
 	memset(tmp_vertices3 + *nbVertex, 0, nbNewVertex * sizeof(VERTEX3D));
 	SAFE_FREE(*vertices3);
@@ -2305,7 +2232,7 @@ void Geometry::InsertSYNGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 
 	file->ReadKeyword("structures"); file->ReadKeyword("{");
 	for (int i = 0; i < nbNewSuper; i++) {
-		strName[sh.nbSuper+i] = _strdup(file->ReadString());
+		strName[sh.nbSuper + i] = _strdup(file->ReadString());
 		// For backward compatibilty with STR
 		/*sprintf(tmp, "%s.txt", strName[i]);
 		strFileName[i] = _strdup(tmp);*/
@@ -2531,7 +2458,7 @@ void Geometry::SaveProfileGEO(FileWriter *file, Dataport *dpHit, int super, BOOL
 				file->Write("\t");
 			}
 
-			if (nbProfile>0) file->Write("\n");
+			if (nbProfile > 0) file->Write("\n");
 		}
 		file->Write(" }\n");
 	}
@@ -2761,7 +2688,7 @@ void Geometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *pleak, int *nble
 	facets = (Facet **)malloc(sh.nbFacet * sizeof(Facet *));
 	memset(facets, 0, sh.nbFacet * sizeof(Facet *));
 	vertices3 = (VERTEX3D *)malloc(sh.nbVertex * sizeof(VERTEX3D));
-    memset(vertices3,0,sh.nbVertex * sizeof(VERTEX3D));
+	memset(vertices3, 0, sh.nbVertex * sizeof(VERTEX3D));
 
 	// Read vertices
 	prg->SetMessage("Reading vertices...");
@@ -3201,8 +3128,8 @@ bool Geometry::LoadTextures(FileReader *file, GLProgress *prg, Dataport *dpHit, 
 						}
 
 
-						for (iy = 0; iy<(MIN(f->sh.texHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
-							for (ix = 0; ix<(MIN(f->sh.texWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
+						for (iy = 0; iy < (MIN(f->sh.texHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
+							for (ix = 0; ix < (MIN(f->sh.texWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
 								hits[iy*f->sh.texWidth + ix].count = file->ReadLLong();
 								hits[iy*f->sh.texWidth + ix].sum_1_per_ort_velocity = file->ReadDouble();
 								hits[iy*f->sh.texWidth + ix].sum_v_ort_per_area = file->ReadDouble();
@@ -3659,17 +3586,6 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 					if (f->mesh) hits = (AHIT *)((BYTE *)buffer + (f->sh.hitOffset + sizeof(SHHITS) + profSize + m*tSize));
 					if (f->sh.countDirection) dirs = (VHIT *)((BYTE *)buffer + (f->sh.hitOffset + sizeof(SHHITS) + profSize*(1 + nbMoments) + tSize*(1 + nbMoments) + m*dSize));
 
-
-
-
-
-
-
-
-
-
-
-
 					switch (mode) {
 
 					case 1: // Element area
@@ -3804,11 +3720,6 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 								}
 								else {
 
-
-
-
-
-
 									sprintf(tmp, "None");
 								}
 
@@ -3854,8 +3765,6 @@ void Geometry::ExportProfiles(FILE *file, int isTXT, Dataport *dpHit, Worker *wo
 		"Speed [m/s]",
 		"Ort. velocity [m/s]" };
 
-
-
 	// Globals
 	//BYTE *buffer = (BYTE *)dpHit->buff;
 	//SHGHITS *gHits = (SHGHITS *)buffer;
@@ -3884,20 +3793,10 @@ void Geometry::ExportProfiles(FILE *file, int isTXT, Dataport *dpHit, Worker *wo
 				line << i + 1 << sep << profType[f->sh.profileType] << sep << f->sh.O.x << sep << f->sh.O.y << sep << f->sh.O.z << sep << f->sh.U.x << sep << f->sh.U.y << sep << f->sh.U.z << sep;
 				line << f->sh.V.x << sep << f->sh.V.y << sep << f->sh.V.z << sep << Norme(&f->sh.U) << sep << Norme(&f->sh.V) << sep << f->sh.center.x << sep << f->sh.center.y << sep << f->sh.center.z << sep << f->sh.maxSpeed << sep << f->sh.counter.hit.nbHit << sep;
 
-
-
 				if (f->sh.isProfile) {
-
-
-
-
 
 					double dCoef = 1.0;
 					if (!buffer) return;
-
-
-
-
 
 					SHGHITS *shGHit = (SHGHITS *)buffer;
 					double nbDes = (shGHit->total.hit.nbDesorbed > 0) ? (double)shGHit->total.hit.nbDesorbed : 1.0;
@@ -3916,9 +3815,6 @@ void Geometry::ExportProfiles(FILE *file, int isTXT, Dataport *dpHit, Worker *wo
 						//if(f->sh.opacity>0.0) scaleY *= f->sh.opacity;
 						//if(IS_ZERO(f->sh.opacity)) scaleY*=2; //transparent profiles are profiled only once...
 
-
-
-
 						for (int j = 0; j < PROFILE_SIZE; j++)
 							line << prof[j].sum_v_ort*scaleY << sep;
 						break;
@@ -3936,26 +3832,13 @@ void Geometry::ExportProfiles(FILE *file, int isTXT, Dataport *dpHit, Worker *wo
 					}
 				}
 
-
-
-
-
-
-
-
-
 				else {
 					line << "No profile.";
 				}
 				line << '\n';
 				fputs(line.str().c_str(), file);
 
-
 			}
-
-
-
-
 
 		}
 		fputs(" }\n", file);
@@ -4022,8 +3905,6 @@ void Geometry::ImportDesorption_DES(FileReader *file) {
 
 }
 
-
-
 void Geometry::SaveSTR(Dataport *dpHit, BOOL saveSelected) {
 
 	if (!IsLoaded()) throw Error("Nothing to save !");
@@ -4036,8 +3917,6 @@ void Geometry::SaveSTR(Dataport *dpHit, BOOL saveSelected) {
 	ReleaseDataport(dpHit);
 
 }
-
-
 
 
 void Geometry::SaveSuper(Dataport *dpHit, int s) {
@@ -4134,11 +4013,6 @@ void Geometry::SaveSuper(Dataport *dpHit, int s) {
 void Geometry::RemoveFromStruct(int numToDel) {
 	mApp->changedSinceSave = TRUE;
 
-
-
-
-
-
 	int nb = 0;
 	for (int i = 0; i < sh.nbFacet; i++)
 		if (facets[i]->sh.superIdx == numToDel) nb++;
@@ -4184,15 +4058,6 @@ int rep = GLMessageBox::Display("This will reset simulation data.","Geometry cha
 if( rep != GLDLG_OK ) {
 return FALSE;
 
-
-
-
-
-
-
-
-
-
 }
 }
 work->Reset(m_fTime);
@@ -4203,12 +4068,7 @@ if(mApp->profilePlotter) mApp->profilePlotter->Update(m_fTime,TRUE);
 if(mApp->texturePlotter) mApp->texturePlotter->Update(m_fTime,TRUE);
 return TRUE;
 
-
-
-
-
 }*/
-
 
 
 BOOL Geometry::IsLoaded() {
@@ -4221,17 +4081,10 @@ void Geometry::ImportDesorption_SYN(
 	const std::vector<std::pair<double, double>> &convDistr,
 	GLProgress *prg){
 
-
-
 	//UnSelectAll();
 	char tmp[512];
 	std::vector<double> xdims, ydims;
 	double no_scans = 1.0;
-
-
-
-
-
 
 	file->ReadKeyword("version"); file->ReadKeyword(":");
 	int version2;
@@ -4240,9 +4093,6 @@ void Geometry::ImportDesorption_SYN(
 		char errMsg[512];
 		sprintf(errMsg, "Unsupported SYN version V%d", version2);
 		throw Error(errMsg);
-
-
-
 
 	}
 
@@ -4263,9 +4113,6 @@ void Geometry::ImportDesorption_SYN(
 		file->ReadKeyword("totalPower"); file->ReadKeyword(":");
 		file->ReadDouble();
 
-
-
-
 	}
 	file->ReadKeyword("maxDes"); file->ReadKeyword(":");
 	file->ReadLLong();
@@ -4284,17 +4131,11 @@ void Geometry::ImportDesorption_SYN(
 		int idx = file->ReadInt();
 		if (idx != i + 1) throw Error(file->MakeError("Wrong facet index !"));
 
-
 		file->JumpSection("texDimX"); file->ReadKeyword(":");
 		xdims.push_back(file->ReadDouble());
 		//if (!IS_ZERO(xdims[i])) Select(GetFacet(i));
 		file->ReadKeyword("texDimY"); file->ReadKeyword(":");
 		ydims.push_back(file->ReadDouble());
-
-
-
-
-
 
 	}
 
@@ -4320,14 +4161,10 @@ void Geometry::ImportDesorption_SYN(
 		if (!IS_ZERO(xdims[i])) { //has texture
 			Facet *f = GetFacet(i);
 
-
-
-
 			if (f->selected) {
 				f->hasOutgassingFile = TRUE;
 				f->sh.useOutgassingFile = TRUE; //turn on file usage by default
 				f->sh.desorbType = DES_COSINE; //auto-set to cosine
-
 
 			}
 			//Select(f);
@@ -4368,8 +4205,8 @@ void Geometry::ImportDesorption_SYN(
 				texHeight_file = f->sh.outgassingMapHeight;
 			}
 
-			for (iy = 0; iy<(MIN(f->sh.outgassingMapHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
-				for (ix = 0; ix<(MIN(f->sh.outgassingMapWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
+			for (iy = 0; iy < (MIN(f->sh.outgassingMapHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
+				for (ix = 0; ix < (MIN(f->sh.outgassingMapWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
 					int index = iy*f->sh.outgassingMapWidth + ix;
 					//Read original values
 					llong MC = file->ReadLLong();
@@ -4379,9 +4216,6 @@ void Geometry::ImportDesorption_SYN(
 					double flux = file->ReadDouble() / no_scans; //not normalized by cell area
 					double power = file->ReadDouble() / no_scans; //not normalized by cell area
 
-
-
-
 					if (f->selected) {
 						//Calculate dose
 						double dose;
@@ -4389,14 +4223,10 @@ void Geometry::ImportDesorption_SYN(
 						else if (source == 1) dose = flux*time / cellArea;
 						else if (source == 2) dose = power*time / cellArea;
 
-
-
 						double outgassing;
 						if (dose == 0) outgassing = 0; //to avoid division by zero later
 						else {
 							//Convert to outgassing
-
-
 
 							if (mode == 0) {
 								if (source == 0) outgassing = (double)MC * 0.100 / 1.38E-23 / f->sh.temperature;
@@ -4404,7 +4234,7 @@ void Geometry::ImportDesorption_SYN(
 								else if (source == 2) outgassing = power * 0.100 / 1.38E-23 / f->sh.temperature; //(Outgassing is stored internally in Pa*m3/s, for consistent SI unit calculations)
 							}
 							else if (mode == 1) {
-								double moleculePerPhoton = eta0*pow(MAX(1.0,dose/cutoffdose),alpha);
+								double moleculePerPhoton = eta0*pow(MAX(1.0, dose / cutoffdose), alpha);
 								outgassing = flux*moleculePerPhoton;
 
 
@@ -4412,19 +4242,6 @@ void Geometry::ImportDesorption_SYN(
 							else if (mode == 2) {
 								double moleculePerPhoton = InterpolateY(dose, convDistr, FALSE, TRUE);
 								outgassing = flux*moleculePerPhoton;
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 							}
 						}
@@ -4447,24 +4264,7 @@ void Geometry::ImportDesorption_SYN(
 					file->ReadDouble(); //flux
 					file->ReadDouble(); //power
 
-
 				}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 			}
 			for (int ie = 0; ie < texHeight_file - f->sh.outgassingMapHeight; ie++) {//Executed if file texture is bigger than expected texture
@@ -4476,50 +4276,16 @@ void Geometry::ImportDesorption_SYN(
 					file->ReadDouble(); //flux
 					file->ReadDouble(); //power
 
-
-
-
-
-
-
-
-
-
-
-
 				}
 			}
 			file->ReadKeyword("}");
 
-
-
-
-
-
-
-
 		} //if has texture
-
-
 
 	}
 
 	//end
 	//UpdateSelection();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 }
 
@@ -4535,16 +4301,6 @@ void Geometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, int *nb
 	UnSelectAll();
 	//char tmp[512];
 
-
-
-
-
-
-
-
-
-
-
 	file->ReadKeyword("version"); file->ReadKeyword(":");
 	int version2;
 	version2 = file->ReadInt();
@@ -4552,10 +4308,6 @@ void Geometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, int *nb
 		char errMsg[512];
 		sprintf(errMsg, "Unsupported SYN version V%d", version2);
 		throw Error(errMsg);
-
-
-
-
 
 	}
 
@@ -4567,22 +4319,6 @@ void Geometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, int *nb
 	if (version2 >= 6) {
 		file->ReadKeyword("no_scans"); file->ReadKeyword(":");
 		/*no_scans = */file->ReadDouble();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 	}
 	file->ReadKeyword("totalLeak"); file->ReadKeyword(":");
@@ -4608,16 +4344,6 @@ void Geometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, int *nb
 		int idx = file->ReadInt();
 		if (idx != i + 1) throw Error(file->MakeError("Wrong facet index !"));
 
-
-
-
-
-
-
-
-
-
-
 		file->JumpSection("mesh"); file->ReadKeyword(":");
 		if (file->ReadInt()) { //has mesh
 			(*nbTextured)++;
@@ -4627,37 +4353,15 @@ void Geometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, int *nb
 			(*nbDifferent)++;
 			continue;
 
-
-
-
-
-
-
-
-
 			}
 			file->ReadKeyword("texDimY");file->ReadKeyword(":");
 			if ((this->GetFacet(i)->sh.texHeightD-file->ReadDouble())>1E-8) {
 			(*nbDifferent)++;
 			}*/
 
-
-
-
-
-
-
-
-
-
-
-
-
 		}
 	}
 	UpdateSelection();
-
-
 
 }
 
@@ -4665,9 +4369,7 @@ void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress
 	//TiXmlDeclaration* decl = new TiXmlDeclaration("1.0")="")="");
 	//saveDoc->LinkEndChild(decl);
 
-
 	xml_node geomNode = saveDoc.append_child("Geometry");
-
 
 	prg->SetMessage("Writing vertices...");
 	geomNode.append_child("Vertices").append_attribute("nb") = sh.nbVertex; //creates Vertices node, adds nb attribute and sets its value to sh.nbVertex
@@ -4680,8 +4382,6 @@ void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress
 		v.append_attribute("z") = vertices3[i].z;
 	}
 
-
-
 	prg->SetMessage("Writing facets...");
 	geomNode.append_child("Facets");
 	geomNode.child("Facets").append_attribute("nb") = sh.nbFacet;
@@ -4693,33 +4393,19 @@ void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress
 			facets[i]->SaveXML_geom(f);
 		}
 
-
-
 	}
 
 	prg->SetMessage("Writing model details...");
 	geomNode.append_child("Structures").append_attribute("nb") = sh.nbSuper;
-
-
-
 
 	for (int i = 0, k = 0; i < sh.nbSuper; i++) {
 		xml_node s = geomNode.child("Structures").append_child("Structure");
 		s.append_attribute("id") = i;
 		s.append_attribute("name") = strName[i];
 
-
-
-
-
-
-
-
 	}
 
-
 	xml_node interfNode = saveDoc.append_child("Interface");
-
 
 	xml_node selNode = interfNode.append_child("Selections");
 	selNode.append_attribute("nb") = (!saveSelected)*(mApp->nbSelection);
@@ -4732,13 +4418,6 @@ void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress
 			xml_node newItem = newSel.append_child("selItem");
 			newItem.append_attribute("id") = j;
 			newItem.append_attribute("facet") = mApp->selections[i].selection[j];
-
-
-
-
-
-
-
 
 		}
 	}
@@ -4763,9 +4442,6 @@ void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress
 		newView.append_attribute("vBottom") = mApp->views[i].vBottom;
 	}
 
-
-
-
 	xml_node formulaNode = interfNode.append_child("Formulas");
 	formulaNode.append_attribute("nb") = (!saveSelected)*(mApp->nbFormula);
 	for (int i = 0; (i < mApp->nbFormula) && !saveSelected; i++) { //don't save formulas when exporting part of the geometry (saveSelected)
@@ -4774,8 +4450,6 @@ void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress
 		newFormula.append_attribute("name") = mApp->formulas[i].parser->GetName();
 		newFormula.append_attribute("expression") = mApp->formulas[i].parser->GetExpression();
 	}
-
-
 
 	if (mApp->profilePlotter) {
 		std::vector<int> ppViews = mApp->profilePlotter->GetViews();
@@ -4787,21 +4461,14 @@ void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress
 			view.append_attribute("facetId") = v;
 		}
 
-
-
 	}
 
 	xml_node simuParamNode = saveDoc.append_child("MolflowSimuSettings");
 
-
 	simuParamNode.append_child("Gas").append_attribute("mass") = work->gasMass;
 	simuParamNode.child("Gas").append_attribute("halfLife") = work->halfLife;
 
-
 	xml_node timeSettingsNode = simuParamNode.append_child("TimeSettings");
-
-
-
 
 	xml_node userMomentsNode = timeSettingsNode.append_child("UserMoments");
 	userMomentsNode.append_attribute("nb") = work->userMoments.size();
@@ -4810,22 +4477,11 @@ void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress
 		newUserEntry.append_attribute("id") = i;
 		newUserEntry.append_attribute("content") = work->userMoments[i].c_str();
 
-
-
-
-
-
-
 	}
-
 
 	timeSettingsNode.append_attribute("timeWindow") = work->timeWindowSize;
 	timeSettingsNode.append_attribute("useMaxwellDistr") = work->useMaxwellDistribution;
 	timeSettingsNode.append_attribute("calcConstFlow") = work->calcConstantFlow;
-
-
-
-
 
 	xml_node motionNode = simuParamNode.append_child("Motion");
 	motionNode.append_attribute("type") = work->motionType;
@@ -4834,11 +4490,6 @@ void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress
 		v.append_attribute("vx") = work->motionVector2.x;
 		v.append_attribute("vy") = work->motionVector2.y;
 		v.append_attribute("vz") = work->motionVector2.z;
-
-
-
-
-
 
 	}
 	else if (work->motionType == 2) { //rotation
@@ -4865,32 +4516,10 @@ void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress
 			newMoment.append_attribute("t") = work->parameters[i].values[m].first;
 			newMoment.append_attribute("value") = work->parameters[i].values[m].second;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 		}
-
-
-
 
 	}
 }
-
-
-
-
-
 
 BOOL Geometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, SHGHITS *gHits, int nbLeakSave, int nbHHitSave,
 	LEAK *pLeak, HIT *pHits, GLProgress *prg, BOOL saveSelected){
@@ -4907,21 +4536,8 @@ BOOL Geometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, S
 		else
 			newMoment.append_attribute("time") = work->moments[m - 1];
 
-
-
 		if (m == 0) { //Write global results. Later these results will probably be time-dependent as well.
 			xml_node globalNode = newMoment.append_child("Global");
-
-
-
-
-
-
-
-
-
-
-
 
 			xml_node hitsNode = globalNode.append_child("Hits");
 			hitsNode.append_attribute("totalHit") = gHits->total.hit.nbHit;
@@ -4931,13 +4547,6 @@ BOOL Geometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, S
 			hitsNode.append_attribute("totalDist_fullHitsOnly") = gHits->distTraveledTotal_fullHitsOnly;
 			hitsNode.append_attribute("totalLeak") = gHits->nbLeakTotal;
 			hitsNode.append_attribute("maxDesorption") = work->maxDesorption;
-
-
-
-
-
-
-
 
 			xml_node hitCacheNode = globalNode.append_child("Hit_Cache");
 			hitCacheNode.append_attribute("nb") = nbHHitSave;
@@ -4952,7 +4561,6 @@ BOOL Geometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, S
 
 			}
 
-
 			xml_node leakCacheNode = globalNode.append_child("Leak_Cache");
 			leakCacheNode.append_attribute("nb") = nbLeakSave;
 			for (int i = 0; i < nbLeakSave; i++) {
@@ -4965,34 +4573,10 @@ BOOL Geometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, S
 				newLeak.append_attribute("dirY") = pLeak[i].dir.y;
 				newLeak.append_attribute("dirZ") = pLeak[i].dir.z;
 
-
-
-
-
-
-
-
-
-
-
 			}
 		} //end global node
 
 		xml_node facetResultsNode = newMoment.append_child("FacetResults");
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 		for (int i = 0; i < sh.nbFacet; i++) {
 			Facet *f = GetFacet(i);
@@ -5006,13 +4590,6 @@ BOOL Geometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, S
 				facetHitNode.append_attribute("sum_v_ort") = f->sh.counter.hit.sum_v_ort;
 				facetHitNode.append_attribute("sum_1_per_v") = f->sh.counter.hit.sum_1_per_ort_velocity;
 
-
-
-
-
-
-
-
 			}
 
 			if (f->sh.isProfile){
@@ -5025,20 +4602,7 @@ BOOL Geometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, S
 					slice.append_attribute("count") = profilePtr[p].count;
 					slice.append_attribute("sum_1_per_v") = profilePtr[p].sum_1_per_ort_velocity;
 					slice.append_attribute("sum_v_ort") = profilePtr[p].sum_v_ort;
-
-
-
-
-
-
-
-
-
 				}
-
-
-
-
 
 			}
 
@@ -5046,38 +4610,10 @@ BOOL Geometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, S
 			int h = (f->sh.texHeight);
 			int w = (f->sh.texWidth);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 			if (f->hasMesh){
 				xml_node textureNode = newFacetResult.append_child("Texture");
 				textureNode.append_attribute("width") = f->sh.texWidth;
 				textureNode.append_attribute("height") = f->sh.texHeight;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 				AHIT *hits = (AHIT *)((BYTE *)gHits + (f->sh.hitOffset + sizeof(SHHITS) + profSize + m*w*h*sizeof(AHIT)));
 				std::stringstream countText, sum1perText, sumvortText;
@@ -5092,10 +4628,6 @@ BOOL Geometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, S
 						countText << hits[iy*f->sh.texWidth + ix].count << '\t';
 						sum1perText << hits[iy*f->sh.texWidth + ix].sum_1_per_ort_velocity << '\t';
 						sumvortText << hits[iy*f->sh.texWidth + ix].sum_v_ort_per_area << '\t';
-
-
-
-
 
 					}
 					countText << '\n';
@@ -5115,54 +4647,19 @@ BOOL Geometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, S
 				dirNode.append_attribute("width") = f->sh.texWidth;
 				dirNode.append_attribute("height") = f->sh.texHeight;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 				VHIT *dirs = (VHIT *)((BYTE *)gHits + f->sh.hitOffset + sizeof(SHHITS) + profSize + (1 + (int)work->moments.size())*w*h*sizeof(AHIT) + m*w*h*sizeof(VHIT));
 
 				std::stringstream dirText, dirCountText;
 				dirText << '\n'; //better readability in file
 				dirCountText << '\n';
 
-
-
-
-
 				for (int iy = 0; iy < h; iy++) {
-
 
 					for (int ix = 0; ix < w; ix++) {
 						dirText << dirs[iy*f->sh.texWidth + ix].sumDir.x << ",";
 						dirText << dirs[iy*f->sh.texWidth + ix].sumDir.y << ",";
 						dirText << dirs[iy*f->sh.texWidth + ix].sumDir.z << "\t";
 						dirCountText << dirs[iy*f->sh.texWidth + ix].count << "\t";
-
-
-
 
 					}
 					dirText << "\n";
@@ -5173,33 +4670,6 @@ BOOL Geometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, S
 			} //end directions
 
 		}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 	}
 
@@ -5212,8 +4682,6 @@ BOOL Geometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, S
 	minMaxNode.child("With_constant_flow").append_child("Imp.rate").append_attribute("min") = gHits->texture_limits[2].min.all;
 	minMaxNode.child("With_constant_flow").child("Imp.rate").append_attribute("max") = gHits->texture_limits[2].max.all;
 
-
-
 	minMaxNode.append_child("Moments_only").append_child("Pressure").append_attribute("min") = gHits->texture_limits[0].min.moments_only;
 	minMaxNode.child("Moments_only").child("Pressure").append_attribute("max") = gHits->texture_limits[0].max.moments_only;
 	minMaxNode.child("Moments_only").append_child("Density").append_attribute("min") = gHits->texture_limits[1].min.moments_only;
@@ -5221,18 +4689,8 @@ BOOL Geometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, S
 	minMaxNode.child("Moments_only").append_child("Imp.rate").append_attribute("min") = gHits->texture_limits[2].min.moments_only;
 	minMaxNode.child("Moments_only").child("Imp.rate").append_attribute("max") = gHits->texture_limits[2].max.moments_only;
 
-
-
-
-
-
-
-
-
 	return TRUE;
 }
-
-
 
 void Geometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg){
 	//mApp->ClearAllSelections();
@@ -5270,7 +4728,7 @@ void Geometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *pr
 	//Parameters (needs to precede facets)
 	xml_node simuParamNode = loadXML.child("MolflowSimuSettings");
 	BOOL isMolflowFile = (simuParamNode != NULL); //if no "MolflowSimuSettings" node, it's a Synrad file
-	
+
 	if (isMolflowFile) {
 		xml_node paramNode = simuParamNode.child("Parameters");
 		for (xml_node newParameter : paramNode.children("Parameter")){
@@ -5407,7 +4865,7 @@ void Geometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *pr
 	//AdjustProfile();
 	isLoaded = TRUE;
 
-	
+
 	// Update mesh
 	progressDlg->SetMessage("Building mesh...");
 	for (int i = 0; i < sh.nbFacet; i++) {
@@ -5438,9 +4896,9 @@ void Geometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progr
 
 	xml_node geomNode = loadXML.child("Geometry");
 	//Vertices
-	int nbNewVertex=geomNode.child("Vertices").select_nodes("Vertex").size();
+	int nbNewVertex = geomNode.child("Vertices").select_nodes("Vertex").size();
 	int nbNewFacets = geomNode.child("Facets").select_nodes("Facet").size();
-	
+
 	// reallocate memory
 	facets = (Facet **)realloc(facets, (nbNewFacets + sh.nbFacet) * sizeof(Facet **));
 	memset(facets + sh.nbFacet, 0, nbNewFacets * sizeof(Facet *));
@@ -5460,25 +4918,24 @@ void Geometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progr
 		vertices3[idx].selected = FALSE;
 		idx++;
 
-
 	}
 
 	//Structures
 	size_t nbNewSuper = geomNode.child("Structures").select_nodes("Structure").size();
 	idx = 0;
 	for (xml_node structure : geomNode.child("Structures").children("Structure")) {
-		strName[sh.nbSuper+idx] = _strdup(structure.attribute("name").value());
+		strName[sh.nbSuper + idx] = _strdup(structure.attribute("name").value());
 		// For backward compatibilty with STR
 		char tmp[256];
 		sprintf(tmp, "%s.txt", strName[idx]);
-		strFileName[sh.nbSuper+idx] = _strdup(tmp);
+		strFileName[sh.nbSuper + idx] = _strdup(tmp);
 		idx++;
 	}
 
 	//Parameters (needs to precede facets)
 	xml_node simuParamNode = loadXML.child("MolflowSimuSettings");
 	BOOL isMolflowFile = (simuParamNode != NULL); //if no "MolflowSimuSettings" node, it's a Synrad XML file
-	
+
 	if (isMolflowFile) {
 		xml_node paramNode = simuParamNode.child("Parameters");
 		for (xml_node newParameter : paramNode.children("Parameter")){
@@ -5502,7 +4959,7 @@ void Geometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progr
 			throw Error(errMsg);
 		}
 		facets[idx] = new Facet(nbIndex);
-		facets[idx]->LoadXML(facetNode, sh.nbVertex+nbNewVertex, isMolflowFile, sh.nbVertex);
+		facets[idx]->LoadXML(facetNode, sh.nbVertex + nbNewVertex, isMolflowFile, sh.nbVertex);
 		facets[idx]->selected = TRUE;
 		facets[idx]->sh.superIdx += structId; //offset structure
 		if (facets[idx]->sh.superDest>0) facets[idx]->sh.superDest += structId;
@@ -5526,7 +4983,7 @@ void Geometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progr
 		s.selection = (int *)malloc((s.nbSel)*sizeof(int));
 		idx = 0;
 		for (xml_node iNode : sNode.children("selItem"))
-			s.selection[idx++] = iNode.attribute("facet").as_int()+sh.nbFacet; //offset selection numbers
+			s.selection[idx++] = iNode.attribute("facet").as_int() + sh.nbFacet; //offset selection numbers
 		mApp->AddSelection(s.name, s);
 	}
 
@@ -5574,10 +5031,10 @@ void Geometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progr
 
 	xml_node userMomentsNode = timeSettingsNode.child("UserMoments");
 	for (xml_node newUserEntry : userMomentsNode.children("UserEntry")) {
-		char tmpExpr[512];
-		strcpy(tmpExpr, newUserEntry.attribute("content").as_string());
-		work->userMoments.push_back(tmpExpr);
-		work->AddMoment(mApp->worker.ParseMoment(tmpExpr));
+	char tmpExpr[512];
+	strcpy(tmpExpr, newUserEntry.attribute("content").as_string());
+	work->userMoments.push_back(tmpExpr);
+	work->AddMoment(mApp->worker.ParseMoment(tmpExpr));
 
 
 
@@ -5586,7 +5043,7 @@ void Geometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progr
 	work->useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_int();
 	work->calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_int();
 	*/
-	
+
 	if (newStr) sh.nbSuper += nbNewSuper;
 	else if (sh.nbSuper < structId + nbNewSuper) sh.nbSuper = structId + nbNewSuper;
 	InitializeGeometry();
@@ -5635,8 +5092,9 @@ BOOL Geometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker
 			if (hitsNode.attribute("totalDist_total")) { //if it's in the new format where total/partial are separated
 				work->distTraveledTotal_total = hitsNode.attribute("totalDist_total").as_double();
 				work->distTraveledTotal_fullHitsOnly = hitsNode.attribute("totalDist_fullHitsOnly").as_double();
-			} else
-			work->distTraveledTotal_total = work->distTraveledTotal_fullHitsOnly = hitsNode.attribute("totalDist").as_double();
+			}
+			else
+				work->distTraveledTotal_total = work->distTraveledTotal_fullHitsOnly = hitsNode.attribute("totalDist").as_double();
 			work->nbLeakTotal = hitsNode.attribute("totalLeak").as_llong();
 			//work->maxDesorption=hitsNode.attribute("maxDesorption").as_llong();
 
@@ -5713,9 +5171,9 @@ BOOL Geometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker
 					textureNode.attribute("height").as_int() != f->sh.texHeight) {
 					std::stringstream msg;
 					msg << "Texture size mismatch on facet " << facetId + 1 << ".\nExpected: " << f->sh.texWidth << "x" << f->sh.texHeight << "\n"
-						<< "In file: " << textureNode.attribute("width").as_int() << "x" << textureNode.attribute("height").as_int();
+					<< "In file: " << textureNode.attribute("width").as_int() << "x" << textureNode.attribute("height").as_int();
 					throw Error(msg.str().c_str());
-				}*/ //We'll treat texture size mismatch, see below
+					}*/ //We'll treat texture size mismatch, see below
 
 				AHIT *hits = (AHIT *)((BYTE *)gHits + (f->sh.hitOffset + sizeof(SHHITS) + profSize + m*f->sh.texWidth*f->sh.texHeight*sizeof(AHIT)));
 				std::stringstream countText, sum1perText, sumvortText;
@@ -5723,8 +5181,8 @@ BOOL Geometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker
 				sum1perText << textureNode.child_value("sum_1_per_v");
 				sumvortText << textureNode.child_value("sum_v_ort");
 
-				for (iy = 0; iy<(MIN(f->sh.texHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
-					for (ix = 0; ix<(MIN(f->sh.texWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
+				for (iy = 0; iy < (MIN(f->sh.texHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
+					for (ix = 0; ix < (MIN(f->sh.texWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
 						countText >> hits[iy*f->sh.texWidth + ix].count;
 						sum1perText >> hits[iy*f->sh.texWidth + ix].sum_1_per_ort_velocity;
 						sumvortText >> hits[iy*f->sh.texWidth + ix].sum_v_ort_per_area;
@@ -5763,8 +5221,8 @@ BOOL Geometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker
 					throw Error(msg.str().c_str());
 
 				}
-				VHIT *dirs = (VHIT *)((BYTE *)gHits + f->sh.hitOffset + sizeof(SHHITS) 
-					+ profSize + (1 + (int)work->moments.size())*f->sh.texWidth*f->sh.texHeight*sizeof(AHIT) 
+				VHIT *dirs = (VHIT *)((BYTE *)gHits + f->sh.hitOffset + sizeof(SHHITS)
+					+ profSize + (1 + (int)work->moments.size())*f->sh.texWidth*f->sh.texHeight*sizeof(AHIT)
 					+ m*f->sh.texWidth*f->sh.texHeight*sizeof(VHIT));
 
 				std::stringstream dirText, dirCountText;
@@ -5786,8 +5244,6 @@ BOOL Geometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker
 		} //end facetResult
 		m++;
 	} //end moment
-
-
 
 	xml_node minMaxNode = resultNode.child("TextureMinMax");
 	gHits->texture_limits[0].min.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("min").as_double();

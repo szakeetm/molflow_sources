@@ -37,7 +37,7 @@ GNU General Public License for more details.
 #define APP_NAME "MolFlow+ development version 64-bit (Compiled "__DATE__" "__TIME__") DEBUG MODE"
 #else
 //#define APP_NAME "Molflow+ development version ("__DATE__")"
-#define APP_NAME "Molflow+ 2.6.15 64-bit ("__DATE__")"
+#define APP_NAME "Molflow+ 2.6.17 64-bit ("__DATE__")"
 #endif
 
 /*
@@ -2379,8 +2379,6 @@ void MolFlow::UpdateTitle() {
 	SetTitle(title);
 
 }
-
-//-----------------------------------------------------------------------------
 
 void MolFlow::SaveFileAs() {
 
