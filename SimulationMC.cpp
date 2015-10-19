@@ -637,11 +637,11 @@ BOOL StartFromSource() {
 	double ortVelocity = sHandle->velocityCurrentParticle*abs(DOT3(
 		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
 		src->sh.N.x, src->sh.N.y, src->sh.N.z));
-	src->sh.counter.hit.sum_1_per_ort_velocity += 1.0 / ortVelocity; //was 2.0 / ortV
+	src->sh.counter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity; //was 2.0 / ortV
 	src->sh.counter.hit.sum_v_ort += (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;
 	//Desorption doesn't contribute to angular profiles
-	ProfileFacet(src, sHandle->flightTimeCurrentParticle, FALSE, 1.0, 1.0); //was 2.0, 1.0
-	if (src->hits && src->sh.countDes) AHIT_FACET(src, sHandle->flightTimeCurrentParticle, TRUE, 1.0, 1.0); //was 2.0, 1.0
+	ProfileFacet(src, sHandle->flightTimeCurrentParticle, FALSE, 2.0, 1.0); //was 2.0, 1.0
+	if (src->hits && src->sh.countDes) AHIT_FACET(src, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0); //was 2.0, 1.0
 	//if (src->direction && src->sh.countDirection) DHIT_FACET(src, sHandle->flightTimeCurrentParticle);
 
 	// Reset volatile state
@@ -783,10 +783,10 @@ void PerformAbsorb(FACET *iFacet) {
 	double ortVelocity = sHandle->velocityCurrentParticle*abs(DOT3(
 		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
 		iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z));
-	iFacet->sh.counter.hit.sum_1_per_ort_velocity += 1.0 / ortVelocity; //was 2.0 / ortV
+	iFacet->sh.counter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity; //was 2.0 / ortV
 	iFacet->sh.counter.hit.sum_v_ort += (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;
-	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 1.0, 1.0); //was 2.0, 1.0
-	if (iFacet->hits && iFacet->sh.countAbs) AHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 1.0, 1.0); //was 2.0, 1.0
+	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0); //was 2.0, 1.0
+	if (iFacet->hits && iFacet->sh.countAbs) AHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0); //was 2.0, 1.0
 	if (iFacet->direction && iFacet->sh.countDirection) DHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle);
 }
 

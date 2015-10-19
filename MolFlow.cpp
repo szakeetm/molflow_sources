@@ -1596,9 +1596,16 @@ void MolFlow::UpdateFormula() {
 			}
 			else if ((idx = getVariable(v->name, "DEN")) > 0) {
 				ok = (idx <= nbFacet);
-				if (ok) v->value = geom->GetFacet(idx - 1)->sh.counter.hit.sum_1_per_ort_velocity /
-					(geom->GetFacet(idx - 1)->sh.area*(geom->GetFacet(idx - 1)->sh.is2sided ? 2.0 : 1.0)) *
-					worker.finalOutgassingRate / worker.nbDesorption*1E4;
+				if (ok) {
+					double dCoef = 1.0;
+					Facet *f = geom->GetFacet(idx - 1);
+					if (f->sh.counter.hit.nbHit>0 || f->sh.counter.hit.nbDesorbed>0)
+						if (f->sh.counter.hit.nbAbsorbed >0 || f->sh.counter.hit.nbDesorbed>0) //otherwise save calculation time
+							dCoef *= 1.0 - ((double)f->sh.counter.hit.nbAbsorbed + (double)f->sh.counter.hit.nbDesorbed) / ((double)f->sh.counter.hit.nbHit + (double)f->sh.counter.hit.nbDesorbed) / 2.0;
+					v->value = dCoef * f->sh.counter.hit.sum_1_per_ort_velocity /
+						(f->sh.area*(f->sh.is2sided ? 2.0 : 1.0)) *
+						worker.finalOutgassingRate / worker.nbDesorption*1E4;
+				}
 			}
 			else if ((idx = getVariable(v->name, "Z")) > 0) {
 				ok = (idx <= nbFacet);

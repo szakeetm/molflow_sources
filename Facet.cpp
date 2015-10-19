@@ -1151,7 +1151,7 @@ size_t Facet::GetHitsSize(size_t nbMoments) {
 size_t Facet::GetTexSwapSize(BOOL useColormap) {
 
 	size_t tSize = texDimW*texDimH;
-	if (useColormap) tSize = tSize * 4;
+	if (useColormap) tSize = tSize * (sizeof(llong)+2*sizeof(double));
 	return tSize;
 
 }
@@ -1175,7 +1175,7 @@ size_t Facet::GetTexSwapSizeForRatio(double ratio, BOOL useColor) {
 		int tDim = GetPower2(m);
 		if (tDim < 16) tDim = 16;
 		size_t tSize = tDim*tDim;
-		if (useColor) tSize = tSize * 4;
+		if (useColor) tSize = tSize * (sizeof(llong) + 2 * sizeof(double));
 		return tSize;
 
 	}
@@ -1217,47 +1217,35 @@ size_t Facet::GetNbCellForRatio(double ratio) {
 
 }
 
-// -----------------------------------------------------------
-
 size_t Facet::GetTexRamSize(size_t nbMoments) {
 
-	size_t size = sizeof(AHIT)*nbMoments;
-
-	if (mesh) size += sizeof(SHELEM);
-	if (sh.countDirection) size += sizeof(VHIT)*nbMoments;
-
-	return (sh.texWidth*sh.texHeight*size);
+	int sizePerCell = 220; //estimation
+	int sizePerFacet = 9000; //estimation
+	return (sh.texWidth*sh.texHeight*sizePerCell + sh.isTextured*sizePerFacet);
 
 }
 
-// -----------------------------------------------------------
-
 size_t Facet::GetTexRamSizeForRatio(double ratio, BOOL useMesh, BOOL countDir, size_t nbMoments) {
-
 	double nU = Norme(&(sh.U));
 	double nV = Norme(&(sh.V));
 	double width = nU*ratio;
 	double height = nV*ratio;
 
-	BOOL dimOK = (width*height > 0.0000001);
+	BOOL dimOK = (width*height>0.0000001);
 
 	if (dimOK) {
-
-		size_t iwidth = (size_t)ceil(width);
-		size_t iheight = (size_t)ceil(height);
-		size_t size = sizeof(AHIT)*nbMoments;
-		if (useMesh) size += sizeof(SHELEM);
-		if (countDir) size += sizeof(VHIT)*nbMoments;
-
-		return iwidth * iheight * size;
-
+		int iwidth = (int)ceil(width);
+		int iheight = (int)ceil(height);
+		/*int size = 2*sizeof(double)+sizeof(llong);
+		if(useMesh) size += sizeof(SHELEM)+sizeof(MESH);
+		if(countDir) size += sizeof(VHIT);*/
+		int size = 220; //estimation
+		return iwidth * iheight * size + 9000;
 	}
 	else {
 		return 0;
 	}
 }
-
-// -----------------------------------------------------------
 
 #define SUM_NEIGHBOR(i,j,we)                      \
 	if( (i)>=0 && (i)<=w && (j)>=0 && (j)<=h ) {    \
@@ -1349,12 +1337,12 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 					break;
 				case 2: //particle density
 					physicalValue = texBuffer[idx].sum_1_per_ort_velocity / (this->mesh[idx].area*(sh.is2sided ? 2.0 : 1.0))*dCoeff3;
-					/*
+					
 					//Correction for double-density effect (measuring density on desorbing/absorbing facets):
 					if (sh.counter.hit.nbHit>0 || sh.counter.hit.nbDesorbed>0)
 						if (sh.counter.hit.nbAbsorbed >0||sh.counter.hit.nbDesorbed>0) //otherwise save calculation time
 						physicalValue*= 1.0 - ((double)sh.counter.hit.nbAbsorbed + (double)sh.counter.hit.nbDesorbed) / ((double)sh.counter.hit.nbHit + (double)sh.counter.hit.nbDesorbed) / 2.0;
-					*/
+					
 					break;
 				}
 				if (doLog) {
@@ -1448,12 +1436,12 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 					break;
 				case 2: //particle density
 					physicalValue = texBuffer[idx].sum_1_per_ort_velocity / (this->mesh[idx].area*(sh.is2sided ? 2.0 : 1.0))*dCoeff3;
-					/*
+					
 					//Correction for double-density effect (measuring density on desorbing/absorbing facets):
 					if (sh.counter.hit.nbHit>0 || sh.counter.hit.nbDesorbed>0)
 						if (sh.counter.hit.nbAbsorbed >0 || sh.counter.hit.nbDesorbed>0) //otherwise save calculation time
 							physicalValue *= 1.0 - ((double)sh.counter.hit.nbAbsorbed + (double)sh.counter.hit.nbDesorbed) / ((double)sh.counter.hit.nbHit + (double)sh.counter.hit.nbDesorbed) / 2.0;
-					*/
+					
 					break;
 				}
 				if (doLog) {

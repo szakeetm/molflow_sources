@@ -337,12 +337,12 @@ void ProfilePlotter::refreshViews() {
 					scaleY *= ((worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
 						/ worker->timeWindowSize));
 					if (f->sh.is2sided) scaleY *= 0.5;
-					/*
+					
 					//Correction for double-density effect (measuring density on desorbing/absorbing facets):
 					if (f->sh.counter.hit.nbHit>0 || f->sh.counter.hit.nbDesorbed>0)
 						if (f->sh.counter.hit.nbAbsorbed >0 || f->sh.counter.hit.nbDesorbed>0) //otherwise save calculation time
 						scaleY *= 1.0 - ((double)f->sh.counter.hit.nbAbsorbed + (double)f->sh.counter.hit.nbDesorbed) / ((double)f->sh.counter.hit.nbHit + (double)f->sh.counter.hit.nbDesorbed) / 2.0;
-					*/
+					
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j, profilePtr[j].sum_1_per_ort_velocity*scaleY, FALSE);
 					break;

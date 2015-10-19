@@ -31,7 +31,7 @@ GNU General Public License for more details.
 #include "Random.h"
 #include "Utils.h"
 
-#define READVAL(_type) *(_type*)buffer;buffer+=sizeof(_type)
+#define READBUFFER(_type) *(_type*)buffer;buffer+=sizeof(_type)
 
 
 extern void SetErrorSub(char *message);
@@ -231,13 +231,6 @@ BOOL LoadSimulation(Dataport *loader) {
 	sHandle->totalFacet = shGeom->nbFacet;
 
 
-
-
-
-
-
-
-
 	sHandle->nbMoments = shGeom->nbMoments;
 	sHandle->latestMoment = shGeom->latestMoment;
 	sHandle->totalDesorbedMolecules = shGeom->totalDesorbedMolecules;
@@ -249,24 +242,9 @@ BOOL LoadSimulation(Dataport *loader) {
 	sHandle->calcConstantFlow = shGeom->calcConstantFlow;
 
 
-
-
-
-
-
-
-
-
-
-
-
 	sHandle->motionType = shGeom->motionType;
 	sHandle->motionVector1 = shGeom->motionVector1;
 	sHandle->motionVector2 = shGeom->motionVector2;
-
-
-
-
 
 	/*//Test cube
 	sHandle->testCubeCount=0;
@@ -279,81 +257,7 @@ BOOL LoadSimulation(Dataport *loader) {
 	sHandle->testCubeVelocity=0.0;
 	sHandle->testSystemDist=0.0;*/
 
-
-
-
-
-
 	// Prepare super structure (allocate memory for facets)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	buffer += sizeof(SHGEOM)+sizeof(VERTEX3D)*sHandle->nbVertex;
 	for (i = 0; i < sHandle->totalFacet; i++) {
 		SHFACET *shFacet = (SHFACET *)buffer;
@@ -394,9 +298,6 @@ BOOL LoadSimulation(Dataport *loader) {
 		return FALSE;
 	}
 	buffer += sizeof(SHGEOM);
-
-
-
 
 	shVert = (VERTEX3D *)(buffer);
 	memcpy(sHandle->vertices3, shVert, sHandle->nbVertex*sizeof(VERTEX3D));
@@ -537,11 +438,6 @@ BOOL LoadSimulation(Dataport *loader) {
 	}
 
 
-
-
-
-
-
 	//Inc values
 	buffer = incBuff;
 	for (int k = 0; k < sHandle->nbSuper; k++) {
@@ -558,7 +454,7 @@ BOOL LoadSimulation(Dataport *loader) {
 				}
 				f->fullSizeInc = 1E30;
 				for (j = 0; j < nbE; j++) {
-					double incVal = READVAL(double);
+					double incVal = READBUFFER(double);
 					if (incVal < 0) {
 						f->fullElem[j] = 1;
 						f->inc[j] = -incVal;
@@ -587,35 +483,30 @@ BOOL LoadSimulation(Dataport *loader) {
 
 
 	//CDFs
-	size_t size1 = READVAL(size_t);
+	size_t size1 = READBUFFER(size_t);
 	sHandle->CDFs.reserve(size1);
 	for (size_t i = 0; i < size1; i++) {
 		std::vector<std::pair<double, double>> newCDF;
-		size_t size2 = READVAL(size_t);
+		size_t size2 = READBUFFER(size_t);
 		newCDF.reserve(size2);
 		for (size_t j = 0; j < size2; j++) {
-			double valueX = READVAL(double);
-			double valueY = READVAL(double);
+			double valueX = READBUFFER(double);
+			double valueY = READBUFFER(double);
 			newCDF.push_back(std::make_pair(valueX, valueY));
 		}
 		sHandle->CDFs.push_back(newCDF);
 	}
 
-
-
-
-
-
 	//IDs
-	size1 = READVAL(size_t);
+	size1 = READBUFFER(size_t);
 	sHandle->IDs.reserve(size1);
 	for (size_t i = 0; i < size1; i++) {
 		std::vector<std::pair<double, double>> newID;
-		size_t size2 = READVAL(size_t);
+		size_t size2 = READBUFFER(size_t);
 		newID.reserve(size2);
 		for (size_t j = 0; j < size2; j++) {
-			double valueX = READVAL(double);
-			double valueY = READVAL(double);
+			double valueX = READBUFFER(double);
+			double valueY = READBUFFER(double);
 			newID.push_back(std::make_pair(valueX, valueY));
 		}
 		sHandle->IDs.push_back(newID);
@@ -624,61 +515,44 @@ BOOL LoadSimulation(Dataport *loader) {
 
 
 	//Parameters
-	size1 = READVAL(size_t);
+	size1 = READBUFFER(size_t);
 	sHandle->parameters.reserve(size1);
 	for (size_t i = 0; i < size1; i++) {
 		Parameter newParam = Parameter();
 		std::vector<std::pair<double, double>> newValues;
-		size_t size2 = READVAL(size_t);
+		size_t size2 = READBUFFER(size_t);
 		newValues.reserve(size2);
 		for (size_t j = 0; j < size2; j++) {
-			double valueX = READVAL(double);
-			double valueY = READVAL(double);
+			double valueX = READBUFFER(double);
+			double valueY = READBUFFER(double);
 			newValues.push_back(std::make_pair(valueX, valueY));
 
 		}
 		newParam.SetValues(newValues, FALSE);
 		sHandle->parameters.push_back(newParam);
-
-
-
-
-
 	}
 
 	//Temperatures
-	size1 = READVAL(size_t);
+	size1 = READBUFFER(size_t);
 	sHandle->temperatures.reserve(size1);
 	for (size_t i = 0; i < size1; i++) {
-		double valueX = READVAL(double);
+		double valueX = READBUFFER(double);
 		sHandle->temperatures.push_back(valueX);
-
-
-
-
-
-
-
-
-
 	}
 
 	//Time moments
-	//size1=READVAL(size_t);
+	//size1=READBUFFER(size_t);
 	sHandle->moments.reserve(sHandle->nbMoments); //nbMoments already passed
 	for (size_t i = 0; i < sHandle->nbMoments; i++) {
-		double valueX = READVAL(double);
+		double valueX = READBUFFER(double);
 		sHandle->moments.push_back(valueX);
-
-
-
 	}
 
 	//Desorption parameter IDs
-	size1 = READVAL(size_t);
+	size1 = READBUFFER(size_t);
 	sHandle->desorptionParameterIDs.reserve(size1);
 	for (size_t i = 0; i < size1; i++) {
-		size_t valueX = READVAL(size_t);
+		size_t valueX = READBUFFER(size_t);
 		sHandle->desorptionParameterIDs.push_back(valueX);
 	}
 

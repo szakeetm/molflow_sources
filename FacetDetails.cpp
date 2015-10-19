@@ -339,12 +339,12 @@ char *FacetDetails::FormatCell(int idx,Facet *f,int mode) {
 	/*dCoef *= ((worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
 	/ worker->timeWindowSize));*/
 	dCoef *= worker->finalOutgassingRate;
-	/*
+	
 	//Correction for double-density effect (measuring density on desorbing/absorbing facets):
 	if (f->sh.counter.hit.nbHit>0 || f->sh.counter.hit.nbDesorbed>0)
 		if (f->sh.counter.hit.nbAbsorbed >0 || f->sh.counter.hit.nbDesorbed>0) //otherwise save calculation time
 		dCoef *= 1.0 - ((double)f->sh.counter.hit.nbAbsorbed + (double)f->sh.counter.hit.nbDesorbed) / ((double)f->sh.counter.hit.nbHit+(double)f->sh.counter.hit.nbDesorbed) / 2.0;
-	*/
+	
 	sprintf(ret, "%g", f->sh.counter.hit.sum_1_per_ort_velocity / (f->sh.area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef);
 	//11.77=sqrt(8*8.31*293.15/3.14/0.028)/4/10
 	break; }
@@ -354,12 +354,12 @@ char *FacetDetails::FormatCell(int idx,Facet *f,int mode) {
 	/*dCoef *= ((worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
 	/ worker->timeWindowSize));*/
 	dCoef *= worker->finalOutgassingRate; //Moments not supported in face details window
-	/*
+	
 	//Correction for double-density effect (measuring density on desorbing/absorbing facets):
 	if (f->sh.counter.hit.nbHit>0 || f->sh.counter.hit.nbDesorbed>0)
 		if (f->sh.counter.hit.nbAbsorbed >0 || f->sh.counter.hit.nbDesorbed>0) //otherwise save calculation time
 		dCoef *= 1.0 - ((double)f->sh.counter.hit.nbAbsorbed + (double)f->sh.counter.hit.nbDesorbed) / ((double)f->sh.counter.hit.nbHit + (double)f->sh.counter.hit.nbDesorbed) / 2.0;
-	*/
+	
 	sprintf(ret, "%g", f->sh.counter.hit.sum_1_per_ort_velocity / (f->sh.area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef*mApp->worker.gasMass / 1000.0 / 6E23);
 	//11.77=sqrt(8*8.31*293.15/3.14/0.028)/4/10
 	break; }

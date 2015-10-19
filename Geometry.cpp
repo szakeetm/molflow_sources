@@ -28,7 +28,7 @@ GNU General Public License for more details.
 #include "GLApp\GLWindowManager.h"
 #include "Distributions.h" //InterpolateY
 
-#define WRITEVAL(_value,_type) *((_type *)buffer)=_value;buffer += sizeof(_type)
+#define WRITEBUFFER(_value,_type) *((_type *)buffer)=_value;buffer += sizeof(_type)
 
 /*
 //Leak detection
@@ -595,9 +595,7 @@ void Geometry::CopyGeometryBuffer(BYTE *buffer) {
 		Facet *f = facets[k];
 		size_t add = 0;
 		if (f->sh.isTextured) {
-
 			if (f->mesh) {
-
 				for (int j = 0; j < f->sh.texHeight; j++) {
 					for (int i = 0; i < f->sh.texWidth; i++) {
 						double area = f->mesh[add].area*(f->sh.is2sided ? 2.0 : 1.0);
@@ -606,17 +604,16 @@ void Geometry::CopyGeometryBuffer(BYTE *buffer) {
 							// Use the sign bit to store isFull flag
 							if (f->mesh[add].full)
 							{
-								WRITEVAL(-1.0 / area, double);
+								WRITEBUFFER(-1.0 / area, double);
 							}
 
 							else
 							{
-								WRITEVAL(1.0 / area, double);
+								WRITEBUFFER(1.0 / area, double);
 							}
 						}
 						else {
-							WRITEVAL(0.0, double);
-
+							WRITEBUFFER(0.0, double);
 						}
 						add++;
 					}
@@ -632,10 +629,10 @@ void Geometry::CopyGeometryBuffer(BYTE *buffer) {
 				for (int j = 0; j < f->sh.texHeight; j++) {
 					for (int i = 0; i < f->sh.texWidth; i++) {
 						if (area > 0.0) {
-							WRITEVAL(1.0 / area, double);
+							WRITEBUFFER(1.0 / area, double);
 						}
 						else {
-							WRITEVAL(0.0, double);
+							WRITEBUFFER(0.0, double);
 						}
 					}
 				}
@@ -645,61 +642,60 @@ void Geometry::CopyGeometryBuffer(BYTE *buffer) {
 
 
 	//CDFs
-	WRITEVAL(w->CDFs.size(), size_t);
+	WRITEBUFFER(w->CDFs.size(), size_t);
 	for (size_t i = 0; i < w->CDFs.size(); i++) {
-		WRITEVAL(w->CDFs[i].size(), size_t);
+		WRITEBUFFER(w->CDFs[i].size(), size_t);
 		for (size_t j = 0; j < w->CDFs[i].size(); j++) {
-			WRITEVAL(w->CDFs[i][j].first, double);
-			WRITEVAL(w->CDFs[i][j].second, double);
+			WRITEBUFFER(w->CDFs[i][j].first, double);
+			WRITEBUFFER(w->CDFs[i][j].second, double);
 		}
 	}
 
 	//IDs
-	WRITEVAL(w->IDs.size(), size_t);
+	WRITEBUFFER(w->IDs.size(), size_t);
 	for (size_t i = 0; i < w->IDs.size(); i++) {
-		WRITEVAL(w->IDs[i].size(), size_t);
+		WRITEBUFFER(w->IDs[i].size(), size_t);
 		for (size_t j = 0; j < w->IDs[i].size(); j++) {
-			WRITEVAL(w->IDs[i][j].first, double);
-			WRITEVAL(w->IDs[i][j].second, double);
+			WRITEBUFFER(w->IDs[i][j].first, double);
+			WRITEBUFFER(w->IDs[i][j].second, double);
 		}
 	}
 
 	//Parameters
-	/*WRITEVAL(w->parameters.size(), size_t);
+	/*WRITEBUFFER(w->parameters.size(), size_t);
 	  for (size_t i = 0; i < w->parameters.size(); i++) {
-	  WRITEVAL(w->parameters[i].values.size(), size_t);
+	  WRITEBUFFER(w->parameters[i].values.size(), size_t);
 	  for (size_t j=0;j<w->parameters[i].values.size();j++) {
-	  WRITEVAL(w->parameters[i].values[j].first, double);
-	  WRITEVAL(w->parameters[i].values[j].second, double);
+	  WRITEBUFFER(w->parameters[i].values[j].first, double);
+	  WRITEBUFFER(w->parameters[i].values[j].second, double);
 	  }
 	  }*/
-	WRITEVAL(w->parameters.size(), size_t);
+	WRITEBUFFER(w->parameters.size(), size_t);
 	for (auto i : w->parameters) {
-		WRITEVAL(i.values.size(), size_t);
+		WRITEBUFFER(i.values.size(), size_t);
 		for (auto j : i.values) {
-			WRITEVAL(j.first, double);
-			WRITEVAL(j.second, double);
+			WRITEBUFFER(j.first, double);
+			WRITEBUFFER(j.second, double);
 		}
 	}
 
 	//Temperatures
-	WRITEVAL(w->temperatures.size(), size_t);
+	WRITEBUFFER(w->temperatures.size(), size_t);
 	for (size_t i = 0; i < w->temperatures.size(); i++) {
-		WRITEVAL(w->temperatures[i], double);
+		WRITEBUFFER(w->temperatures[i], double);
 	}
 
 	//Time moments
-	//WRITEVAL(w->moments.size(), size_t); //nbMoments already passed
+	//WRITEBUFFER(w->moments.size(), size_t); //nbMoments already passed
 	for (size_t i = 0; i < w->moments.size(); i++) {
-		WRITEVAL(w->moments[i], double);
+		WRITEBUFFER(w->moments[i], double);
 	}
 
 	//Desorption parameter IDs
-	WRITEVAL(w->desorptionParameterIDs.size(), size_t);
+	WRITEBUFFER(w->desorptionParameterIDs.size(), size_t);
 	for (size_t i = 0; i < w->desorptionParameterIDs.size(); i++) {
-		WRITEVAL(w->desorptionParameterIDs[i], size_t);
+		WRITEBUFFER(w->desorptionParameterIDs[i], size_t);
 	}
-
 }
 
 

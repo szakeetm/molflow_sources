@@ -281,6 +281,12 @@ void TexturePlotter::UpdateTable() {
 							 double dCoef = /*totalInFlux*/1.0 / shGHit->total.hit.nbDesorbed*1E4 / (selFacet->sh.is2sided ? 2.0 : 1.0);   //1E4 m2 -> cm2
 							 /*if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
 								 / worker->timeWindowSize));*/
+
+							 //Correction for double-density effect (measuring density on desorbing/absorbing facets):
+							 if (selFacet->sh.counter.hit.nbHit>0 || selFacet->sh.counter.hit.nbDesorbed>0)
+								 if (selFacet->sh.counter.hit.nbAbsorbed >0 || selFacet->sh.counter.hit.nbDesorbed>0) //otherwise save calculation time
+									 dCoef *= 1.0 - ((double)selFacet->sh.counter.hit.nbAbsorbed + (double)selFacet->sh.counter.hit.nbDesorbed) / ((double)selFacet->sh.counter.hit.nbHit + (double)selFacet->sh.counter.hit.nbDesorbed) / 2.0;
+
 							 if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules	 / worker->timeWindowSize));
 							 for (int i = 0; i < w; i++) {
 								 for (int j = 0; j<h; j++) {
@@ -320,6 +326,13 @@ void TexturePlotter::UpdateTable() {
 							 double dCoef = /*(float)totalInFlux*/ 1.0 / (float)shGHit->total.hit.nbDesorbed *1E4/(selFacet->sh.is2sided ? 2.0 : 1.0);
 							 /*if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
 								 / worker->timeWindowSize));*/
+							
+							 //Correction for double-density effect (measuring density on desorbing/absorbing facets):
+							 if (selFacet->sh.counter.hit.nbHit>0 || selFacet->sh.counter.hit.nbDesorbed>0)
+								 if (selFacet->sh.counter.hit.nbAbsorbed >0 || selFacet->sh.counter.hit.nbDesorbed>0) //otherwise save calculation time
+									 dCoef *= 1.0 - ((double)selFacet->sh.counter.hit.nbAbsorbed + (double)selFacet->sh.counter.hit.nbDesorbed) / ((double)selFacet->sh.counter.hit.nbHit + (double)selFacet->sh.counter.hit.nbDesorbed) / 2.0;
+							 
+							 
 							 if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules	 / worker->timeWindowSize));
 							 for (int i = 0; i < w; i++) {
 								 for (int j = 0; j<h; j++) {
