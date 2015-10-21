@@ -140,6 +140,7 @@ typedef struct {
   VERTEX3D   *vertices3;        // Vertices
   int         nbSuper;          // Number of super structure
   int         curStruct;        // Current structure
+  int         teleportedFrom;   // We memorize where the particle came from: we can teleport back
   size_t      nbMoments;        // Number of time moments
   SUPERSTRUCT str[MAX_STRUCT];
 

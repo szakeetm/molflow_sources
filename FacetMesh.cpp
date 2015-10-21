@@ -684,7 +684,7 @@ BOOL FacetMesh::Apply() {
 	BOOL doTeleport = FALSE;
 
 	if (facetTeleport->GetNumberInt(&teleport)) {
-		if (teleport<0 || teleport>geom->GetNbFacet()) {
+		if (teleport<-1 || teleport>geom->GetNbFacet()) {
 			GLMessageBox::Display("Invalid teleport destination\n(If no teleport: set number to 0)", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return FALSE;
 		}
@@ -757,7 +757,7 @@ BOOL FacetMesh::Apply() {
 	int count=0;
 	for(int i=0;i<nbSelected;i++) {
 		Facet *f = geom->GetFacet(selection[i]);
-		BOOL hadAnyTexture =  f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD;
+		BOOL hadAnyTexture =  f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD || f->sh.countDirection;
 		BOOL hadDirCount = f->sh.countDirection;
 		if (recordDesBtn->GetState()<2) f->sh.countDes = recordDesBtn->GetState()*(enableBtn->GetState()!=0);
 		if (recordAbsBtn->GetState()<2) f->sh.countAbs = recordAbsBtn->GetState()*(enableBtn->GetState() != 0);
@@ -765,7 +765,9 @@ BOOL FacetMesh::Apply() {
 		if (recordTransBtn->GetState()<2) f->sh.countTrans = recordTransBtn->GetState()*(enableBtn->GetState() != 0);
 		if (recordACBtn->GetState()<2) f->sh.countACD = recordACBtn->GetState()*(enableBtn->GetState() != 0);
 		if (recordDirBtn->GetState() < 2) f->sh.countDirection= recordDirBtn->GetState()*(enableBtn->GetState() != 0);
-		BOOL hasAnyTexture = f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD;
+		//Let the user disable textures with the main switch
+		if (enableBtn->GetState() == 0) f->sh.countDes = f->sh.countAbs = f->sh.countRefl = f->sh.countTrans = f->sh.countACD = f->sh.countDirection = FALSE;
+		BOOL hasAnyTexture = f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD || f->sh.countDirection;
 
 		if (doTeleport) f->sh.teleportDest = teleport;
 		if (doAccfactor) f->sh.accomodationFactor = accfactor;

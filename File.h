@@ -113,6 +113,7 @@ public:
   void WriteInt(int v,char *sep=NULL);
   void WriteDouble(double v,char *sep=NULL);
   void Write(const char *s);
+  void Write(std::string str);
 
 private:
 

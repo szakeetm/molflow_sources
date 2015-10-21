@@ -939,10 +939,10 @@ void Geometry::Render(GLfloat *matView, BOOL renderVolume, BOOL renderTexture, i
 		glBlendFunc(GL_ONE, GL_ZERO);
 		glEnable(GL_POLYGON_OFFSET_FILL);
 		glPolygonOffset(1.0f, 3.0f);
-		for (int i = 0; i < sh.nbFacet && renderTexture; i++) {
+		for (int i = 0; i < sh.nbFacet; i++) {
 			Facet *f = facets[i];
 
-			if (f->sh.isTextured && f->textureVisible) {
+			if (f->sh.isTextured && f->textureVisible && (f->sh.countAbs || f->sh.countDes || f->sh.countACD || f->sh.countRefl || f->sh.countTrans)) {
 				if (f->sh.is2sided)   glDisable(GL_CULL_FACE);
 				else                   SetCullMode(showMode);
 				glBindTexture(GL_TEXTURE_2D, f->glTex);
@@ -1009,7 +1009,7 @@ void Geometry::Render(GLfloat *matView, BOOL renderVolume, BOOL renderTexture, i
 							float xc = (float)(f->sh.O.x + f->sh.U.x*uC + f->sh.V.x*vC);
 							float yc = (float)(f->sh.O.y + f->sh.U.y*uC + f->sh.V.y*vC);
 							float zc = (float)(f->sh.O.z + f->sh.U.z*uC + f->sh.V.z*vC);
-							float coeff = 100.0f / (float)f->dirCache[add].count / (float)rw;  //convert to cm/sec, then divide by number of vectors (average), and normalize to cell side
+							float coeff = (f->dirCache[add].count) ? 100.0f / (float)f->dirCache[add].count / (float)rw : 1.0;  //convert to cm/sec, then divide by number of vectors (average), and normalize to cell side
 							RenderArrow(matView,
 								(float)f->dirCache[add].sumDir.x*coeff,
 								(float)f->dirCache[add].sumDir.y*coeff,

@@ -217,7 +217,7 @@ typedef struct {
   int    profileType;    // Profile type
   int    superIdx;       // Super structure index (Indexed from 0)
   int    superDest;      // Super structure destination index (Indexed from 1, 0=>current)
-  int	 teleportDest;   // Teleport destination facet id (for periodic boundary condition) (Indexed from 1, 0=>none)
+  int	 teleportDest;   // Teleport destination facet id (for periodic boundary condition) (Indexed from 1, 0=>none, -1=>teleport to where it came from)
   BOOL   countDes;       // Count desoprtion (MC texture)
   BOOL   countAbs;       // Count absoprtion (MC texture)
   BOOL   countRefl;      // Count reflection (MC texture)

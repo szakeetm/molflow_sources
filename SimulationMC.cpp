@@ -304,22 +304,38 @@ void PerformTeleport(FACET *iFacet) {
 	FACET *destination;
 	BOOL found = FALSE;
 	BOOL revert = FALSE;
-	int i, j;
+	int destIndex;
+	if (iFacet->sh.teleportDest == -1) {
+		destIndex = sHandle->teleportedFrom;
+		if (destIndex == -1) {
+			/*char err[128];
+			sprintf(err, "Facet %d tried to teleport to the facet where the particle came from, but there is no such facet.", iFacet->globalId + 1);
+			SetErrorSub(err);*/
+			RecordHit(HIT_REF);
+			sHandle->lastHit = iFacet;
+			return; //LEAK
+		}
+	}
+	else destIndex = iFacet->sh.teleportDest - 1;
+		
 	//Look in which superstructure is the destination facet:
-	for (i = 0; i < sHandle->nbSuper && (!found); i++) {
-		for (j = 0; j < sHandle->str[i].nbFacet && (!found); j++) {
-			if ((iFacet->sh.teleportDest - 1) == sHandle->str[i].facets[j]->globalId) {
+	for (int i = 0; i < sHandle->nbSuper && (!found); i++) {
+		for (int j = 0; j < sHandle->str[i].nbFacet && (!found); j++) {
+			if (destIndex == sHandle->str[i].facets[j]->globalId) {
 				destination = sHandle->str[i].facets[j];
 				sHandle->curStruct = destination->sh.superIdx; //change current superstructure
+				sHandle->teleportedFrom = iFacet->globalId; //memorize where the particle came from
 				found = TRUE;
 			}
 		}
 	}
 	if (!found) {
-		char err[128];
+		/*char err[128];
 		sprintf(err, "Teleport destination of facet %d not found (facet %d does not exist)", iFacet->globalId + 1, iFacet->sh.teleportDest);
-		SetErrorSub(err);
-		return;
+		SetErrorSub(err);*/
+		RecordHit(HIT_REF);
+		sHandle->lastHit = iFacet;
+		return; //LEAK
 	}
 	// Count this hit as a transparent pass
 	RecordHit(HIT_TELEPORT);
@@ -416,7 +432,7 @@ BOOL SimulationMCStep(int nbStep) {
 					return FALSE;
 			}
 			else { //hit within measured time, particle still alive
-				if (collidedFacet->sh.teleportDest) {
+				if (collidedFacet->sh.teleportDest != 0) {
 					sHandle->distTraveledSinceUpdate_total += d;
 					PerformTeleport(collidedFacet);
 				}
@@ -622,6 +638,7 @@ BOOL StartFromSource() {
 
 	// Current structure
 	sHandle->curStruct = src->sh.superIdx;
+	sHandle->teleportedFrom = -1;
 
 	// Count
 	src->sh.counter.hit.nbDesorbed++;
