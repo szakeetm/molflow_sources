@@ -56,7 +56,7 @@ public:
 
   // Save textures (throws Error)
 
-  void ExportTextures(char *fileName,int mode,BOOL askConfirm=TRUE,BOOL saveSelected=FALSE);
+  void ExportTextures(char *fileName,int grouping,int mode,BOOL askConfirm=TRUE,BOOL saveSelected=FALSE);
   void ExportProfiles(char *fileName);
 
   //Import desorption map

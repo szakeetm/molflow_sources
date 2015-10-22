@@ -3536,7 +3536,7 @@ void Geometry::SaveTXT(FileWriter *file, Dataport *dpHit, BOOL saveSelected) {
 }
 
 
-void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSelected) {
+void Geometry::ExportTextures(FILE *file, int grouping, int mode, Dataport *dpHit, BOOL saveSelected) {
 
 	//if(!IsLoaded()) throw Error("Nothing to save !");
 
@@ -3550,6 +3550,8 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 	//BYTE *buffer = (BYTE *)dpHit->buff;
 	//SHGHITS *gHits = (SHGHITS *)buffer;
 
+	if (grouping == 1) fprintf(file, "X_coord_cm\tY_coord_cm\tZ_coord_cm\tValue\t\n"); //mode 10: special ANSYS export
+
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++){
 		if (m == 0) fprintf(file, " moment 0 (Constant Flow){\n");
 		else fprintf(file, " moment %d (%g s){\n", m, mApp->worker.moments[m - 1]);
@@ -3561,15 +3563,15 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 
 
 			if (f->selected) {
+				if (grouping == 0) fprintf(file, "FACET%d\n", i + 1); //mode 10: special ANSYS export
 				AHIT *hits = NULL;
 				VHIT *dirs = NULL;
-				fprintf(file, "FACET%d\n", i + 1);
 
 				if (f->mesh || f->sh.countDirection) {
 
 
 					char tmp[256];
-
+					char out[256];
 					double dCoef = 1.0;
 					if (!buffer) return;
 					SHGHITS *shGHit = (SHGHITS *)buffer;
@@ -3582,161 +3584,112 @@ void Geometry::ExportTextures(FILE *file, int mode, Dataport *dpHit, BOOL saveSe
 					if (f->mesh) hits = (AHIT *)((BYTE *)buffer + (f->sh.hitOffset + sizeof(SHHITS) + profSize + m*tSize));
 					if (f->sh.countDirection) dirs = (VHIT *)((BYTE *)buffer + (f->sh.hitOffset + sizeof(SHHITS) + profSize*(1 + nbMoments) + tSize*(1 + nbMoments) + m*dSize));
 
-					switch (mode) {
-
-					case 1: // Element area
+					for (int i = 0; i < w; i++) {
 						for (int j = 0; j < h; j++) {
-							for (int i = 0; i < w; i++) {
-								sprintf(tmp, "%g", f->mesh[i + j*w].area);
-								if (tmp) fprintf(file, "%s", tmp);
-								if (j < w - 1)
-									fprintf(file, "\t");
-							}
-							fprintf(file, "\n");
-						}
+							int index = i + j*w;
+							tmp[0] = out[0] = 0;
+							switch (mode) {
+
+					case 0: // Element area
+						sprintf(tmp, "%g", f->mesh[index].area);
 						break;
 
-					case 2: //MC Hits
-						for (int j = 0; j < h; j++) {
-							for (int i = 0; i < w; i++) {
-								fprintf(file, "%g", (double)hits[i + j*w].count);
-								fprintf(file, "\t");
-							}
-							fprintf(file, "\n");
-						}
-
+					case 1: //MC Hits
+						if (!grouping || hits[index].count) sprintf(tmp, "%I64d", hits[index].count);
 						break;
 
-					case 3: //Impingement rate
+					case 2: //Impingement rate
 						dCoef = /*totalInFlux*/ 1.0 / shGHit->total.hit.nbDesorbed * 1E4; //1E4: conversion m2->cm2
 						if (shGHit->mode == MC_MODE) dCoef *= (mApp->worker.displayedMoment == 0)
 							? mApp->worker.finalOutgassingRate : (mApp->worker.totalDesorbedMolecules / mApp->worker.timeWindowSize);
-						for (int j = 0; j < h; j++) {
-							for (int i = 0; i < w; i++) {
-								fprintf(file, "%g", (double)hits[i + j*w].count / (f->mesh[i + j*w].area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef);
-								fprintf(file, "\t");
-							}
-							fprintf(file, "\n");
-						}
-
-
+						if (!grouping || hits[index].count) sprintf(tmp, "%g", (double)hits[i + j*w].count / (f->mesh[i + j*w].area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef);
 						break;
 
-					case 4: //Particle density
+					case 3: //Particle density
 					{
 						dCoef = /*totalInFlux*/ 1.0 / shGHit->total.hit.nbDesorbed * 1E4; //1E4: conversion m2->cm2
 						if (shGHit->mode == MC_MODE) dCoef *= (mApp->worker.displayedMoment == 0)
 							? mApp->worker.finalOutgassingRate : (mApp->worker.totalDesorbedMolecules / mApp->worker.timeWindowSize);
-						for (int j = 0; j < h; j++) {
-							for (int i = 0; i < w; i++) {
-								double v_ort_avg = 2.0*(double)hits[i + j*w].count / hits[i + j*w].sum_1_per_ort_velocity;
-								double imp_rate = hits[i + j*w].count / (f->mesh[i + j*w].area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef;
+						double v_ort_avg = 2.0*(double)hits[index].count / hits[index].sum_1_per_ort_velocity;
+								double imp_rate = hits[index].count / (f->mesh[index].area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef;
 								double rho = 2.0*imp_rate / v_ort_avg;
-								fprintf(file, "%g", rho);
-								fprintf(file, "\t");
-							}
-							fprintf(file, "\n");
-						}
+								if (!grouping || hits[index].count) sprintf(tmp, "%g", rho);
 						break;
 					}
-					case 5: //Gas density
+					case 4: //Gas density
 					{
 						dCoef = /*totalInFlux*/ 1.0 / shGHit->total.hit.nbDesorbed * 1E4; //1E4: conversion m2->cm2
 						if (shGHit->mode == MC_MODE) dCoef *= (mApp->worker.displayedMoment == 0)
 							? mApp->worker.finalOutgassingRate : (mApp->worker.totalDesorbedMolecules / mApp->worker.timeWindowSize);
-						for (int j = 0; j < h; j++) {
-							for (int i = 0; i < w; i++) {
-								double v_ort_avg = 2.0*(double)hits[i + j*w].count / hits[i + j*w].sum_1_per_ort_velocity;
-								double imp_rate = hits[i + j*w].count / (f->mesh[i + j*w].area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef;
+								double v_ort_avg = 2.0*(double)hits[index].count / hits[index].sum_1_per_ort_velocity;
+								double imp_rate = hits[index].count / (f->mesh[index].area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef;
 								double rho = 2.0*imp_rate / v_ort_avg;
 								double rho_mass = rho*mApp->worker.gasMass / 1000.0 / 6E23;
-								fprintf(file, "%g", rho_mass);
-								fprintf(file, "\t");
-							}
-							fprintf(file, "\n");
-						}
-
-
+								if (!grouping || hits[index].count) sprintf(tmp, "%g", rho_mass);
 						break;
 					}
-					case 6:  // Pressure [mbar]
+					case 5:  // Pressure [mbar]
 
 						// Lock during update
 						dCoef = /*totalInFlux*/ 1.0 / shGHit->total.hit.nbDesorbed * 1E4 * (mApp->worker.gasMass / 1000 / 6E23) *0.0100;  //1E4 is conversion from m2 to cm2, 0.01: Pa->mbar
 						if (shGHit->mode == MC_MODE) dCoef *= (mApp->worker.displayedMoment == 0)
 							? mApp->worker.finalOutgassingRate : (mApp->worker.totalDesorbedMolecules / mApp->worker.timeWindowSize);
-						for (int j = 0; j < h; j++) {
-							for (int i = 0; i < w; i++) {
-								fprintf(file, "%g", hits[i + j*w].sum_v_ort_per_area*dCoef);
-								fprintf(file, "\t");
-							}
-							fprintf(file, "\n");
-						}
-
-
+						if (!grouping || hits[index].sum_v_ort_per_area) sprintf(tmp, "%g", hits[index].sum_v_ort_per_area*dCoef);
 						break;
 
 
-					case 7: // Average velocity
-						for (int j = 0; j < h; j++) {
-							for (int i = 0; i < w; i++) {
-								fprintf(file, "%g", 2.0*(double)hits[i + j*w].count / hits[i + j*w].sum_1_per_ort_velocity);
-								fprintf(file, "\t");
-							}
-							fprintf(file, "\n");
-						}
-
-
+					case 6: // Average velocity
+						if (!grouping || hits[index].count) sprintf(tmp, "%g", 2.0*(double)hits[i + j*w].count / hits[i + j*w].sum_1_per_ort_velocity);
 						break;
 
-					case 8: // Velocity vector
-						for (int j = 0; j < h; j++) {
-							for (int i = 0; i < w; i++) {
-								if (f->sh.countDirection) {
-									sprintf(tmp, "%g,%g,%g",
-										dirs[i + j*w].sumDir.x,
-										dirs[i + j*w].sumDir.y,
-										dirs[i + j*w].sumDir.z);
-								}
-								else {
-									sprintf(tmp, "Direction not recorded");
-								}
-								fprintf(file, "%s", tmp);
-								fprintf(file, "\t");
-							}
-							fprintf(file, "\n");
+					case 7: // Velocity vector
+						if (f->sh.countDirection) {
+							sprintf(tmp, "%g,%g,%g",
+								dirs[i + j*w].sumDir.x,
+								dirs[i + j*w].sumDir.y,
+								dirs[i + j*w].sumDir.z);
+						}
+						else {
+							sprintf(tmp, "Direction not recorded");
 						}
 						break;
 
-					case 9: // Velocity vector Count
-						for (int j = 0; j < h; j++) {
-							for (int i = 0; i < w; i++) {
-								if (f->sh.countDirection) {
-									sprintf(tmp, "%I64d", dirs[i + j*w].count);
-								}
-								else {
+					case 8: // Velocity vector Count
+						if (f->sh.countDirection) {
+							sprintf(tmp, "%I64d", dirs[i + j*w].count);
+						}
+						else {
 
-									sprintf(tmp, "None");
-								}
-
-								fprintf(file, "%s", tmp);
-
-								fprintf(file, "\t");
-							}
-							fprintf(file, "\n");
+							sprintf(tmp, "None");
 						}
 						break;
-					}
-				}
-				else {
-					fprintf(file, "No mesh.\n");
-				}
-				fprintf(file, "\n"); //Current facet exported.
+					} //end switch
+
+					if (grouping == 1 && tmp && tmp[0])
+						sprintf(out, "%g\t%g\t%g\t%s\t\n",
+						f->sh.O.x + f->mesh[index].uCenter*f->sh.U.x + f->mesh[index].vCenter*f->sh.V.x,
+						f->sh.O.y + f->mesh[index].uCenter*f->sh.U.y + f->mesh[index].vCenter*f->sh.V.y,
+						f->sh.O.z + f->mesh[index].uCenter*f->sh.U.z + f->mesh[index].vCenter*f->sh.V.z,
+						tmp);
+					else sprintf(out, "%s", tmp);
+
+					if (out) fprintf(file, "%s", out);
+					if (j < w - 1 && grouping == 0)
+						fprintf(file, "\t");
+					} //h
+					if (grouping == 0) fprintf(file, "\n");
+				} //w
+			} //if mesh
+			else {
+				fprintf(file, "No mesh.\n");
 			}
-		}
+			if (grouping == 0) fprintf(file, "\n"); //Current facet exported. 
+		} //if selected
+
+	} //end facet
 		fprintf(file, " }\n");
 
-	}
+	} //end moment
 
 	ReleaseDataport(dpHit);
 

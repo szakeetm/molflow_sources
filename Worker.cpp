@@ -355,7 +355,7 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 
 
 
-void Worker::ExportTextures(char *fileName, int mode, BOOL askConfirm, BOOL saveSelected) {
+void Worker::ExportTextures(char *fileName, int grouping, int mode, BOOL askConfirm, BOOL saveSelected) {
 
 	char tmp[512];
 
@@ -378,7 +378,7 @@ void Worker::ExportTextures(char *fileName, int mode, BOOL askConfirm, BOOL save
 			sprintf(tmp, "Cannot open file for writing %s", fileName);
 			throw Error(tmp);
 		}
-		geom->ExportTextures(f, mode, dpHit, saveSelected);
+		geom->ExportTextures(f, grouping, mode, dpHit, saveSelected);
 		fclose(f);
 	}
 

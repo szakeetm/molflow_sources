@@ -37,7 +37,7 @@ GNU General Public License for more details.
 #define APP_NAME "MolFlow+ development version 64-bit (Compiled "__DATE__" "__TIME__") DEBUG MODE"
 #else
 //#define APP_NAME "Molflow+ development version ("__DATE__")"
-#define APP_NAME "Molflow+ 2.6.18 64-bit ("__DATE__")"
+#define APP_NAME "Molflow+ 2.6.19 64-bit ("__DATE__")"
 #endif
 
 /*
@@ -93,9 +93,9 @@ MolFlow *mApp;
 #define MENU_FILE_SAVEAS     14
 #define MENU_FILE_INSERTGEO  140
 #define MENU_FILE_INSERTGEO_NEWSTR  141
-#define MENU_FILE_EXPORTMESH      16
+#define MENU_FILE_EXPORT_SELECTION     16
 
-#define MENU_FILE_EXPORTTEXTURES 150
+
 #define MENU_FILE_EXPORTTEXTURE_AREA 151
 #define MENU_FILE_EXPORTTEXTURE_MCHITS 152
 #define MENU_FILE_EXPORTTEXTURE_IMPINGEMENT 153
@@ -105,6 +105,17 @@ MolFlow *mApp;
 #define MENU_FILE_EXPORTTEXTURE_AVG_V 157
 #define MENU_FILE_EXPORTTEXTURE_V_VECTOR 158
 #define MENU_FILE_EXPORTTEXTURE_N_VECTORS 159
+
+#define MENU_FILE_EXPORTTEXTURE_AREA_COORD 1510
+#define MENU_FILE_EXPORTTEXTURE_MCHITS_COORD  1520
+#define MENU_FILE_EXPORTTEXTURE_IMPINGEMENT_COORD  1530
+#define MENU_FILE_EXPORTTEXTURE_PART_DENSITY_COORD  1540
+#define MENU_FILE_EXPORTTEXTURE_GAS_DENSITY_COORD  1550
+#define MENU_FILE_EXPORTTEXTURE_PRESSURE_COORD  1560
+#define MENU_FILE_EXPORTTEXTURE_AVG_V_COORD  1570
+#define MENU_FILE_EXPORTTEXTURE_V_VECTOR_COORD  1580
+#define MENU_FILE_EXPORTTEXTURE_N_VECTORS_COORD  1590
+
 #define MENU_FILE_EXPORTPROFILES 160
 
 #define MENU_FILE_LOADRECENT 110
@@ -376,22 +387,31 @@ int MolFlow::OneTimeSceneInit()
 	menu->GetSubMenu("File")->Add("&Insert geometry");
 	menu->GetSubMenu("File")->GetSubMenu("Insert geometry")->Add("&To current structure", MENU_FILE_INSERTGEO);
 	menu->GetSubMenu("File")->GetSubMenu("Insert geometry")->Add("&To new structure", MENU_FILE_INSERTGEO_NEWSTR);
-	menu->GetSubMenu("File")->Add("Export selected facets", MENU_FILE_EXPORTMESH);
+	menu->GetSubMenu("File")->Add("Export selected facets", MENU_FILE_EXPORT_SELECTION);
 
-	menu->GetSubMenu("File")->Add("Export selected textures", MENU_FILE_EXPORTTEXTURES);
+	menu->GetSubMenu("File")->Add("Export selected textures");
+	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->Add("Facet by facet");
+	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->GetSubMenu("Facet by facet")->Add("Cell Area (cm\262)", MENU_FILE_EXPORTTEXTURE_AREA);
+	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->GetSubMenu("Facet by facet")->Add("# of MC Hits", MENU_FILE_EXPORTTEXTURE_MCHITS);
+	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->GetSubMenu("Facet by facet")->Add("Impingement rate (1/s/m\262)", MENU_FILE_EXPORTTEXTURE_IMPINGEMENT);
+	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->GetSubMenu("Facet by facet")->Add("Particle density (1/m\263)", MENU_FILE_EXPORTTEXTURE_PART_DENSITY);
+	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->GetSubMenu("Facet by facet")->Add("Gas density (kg/m\263)", MENU_FILE_EXPORTTEXTURE_GAS_DENSITY);
+	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->GetSubMenu("Facet by facet")->Add("Pressure (mbar)", MENU_FILE_EXPORTTEXTURE_PRESSURE);
+	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->GetSubMenu("Facet by facet")->Add("Avg. Velocity (m/s)", MENU_FILE_EXPORTTEXTURE_AVG_V);
+	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->GetSubMenu("Facet by facet")->Add("Velocity vector (m/s)", MENU_FILE_EXPORTTEXTURE_V_VECTOR);
+	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->GetSubMenu("Facet by facet")->Add("# of velocity vectors", MENU_FILE_EXPORTTEXTURE_N_VECTORS);
 
-	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->Add("Cell Area (cm\262)", MENU_FILE_EXPORTTEXTURE_AREA);
-	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->Add("# of MC Hits", MENU_FILE_EXPORTTEXTURE_MCHITS);
-	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->Add("Impingement rate (1/s/m\262)", MENU_FILE_EXPORTTEXTURE_IMPINGEMENT);
-	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->Add("Particle density (1/m\263)", MENU_FILE_EXPORTTEXTURE_PART_DENSITY);
-	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->Add("Gas density (kg/m\263)", MENU_FILE_EXPORTTEXTURE_GAS_DENSITY);
-	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->Add("Pressure (mbar)", MENU_FILE_EXPORTTEXTURE_PRESSURE);
-
-	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->Add("Avg. Velocity (m/s)", MENU_FILE_EXPORTTEXTURE_AVG_V);
-	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->Add("Velocity vector (m/s)", MENU_FILE_EXPORTTEXTURE_V_VECTOR);
-
-	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->Add("# of velocity vectors", MENU_FILE_EXPORTTEXTURE_N_VECTORS);
-
+	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->Add("By X,Y,Z coordinates");
+	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->GetSubMenu("By X,Y,Z coordinates")->Add("Cell Area (cm\262)", MENU_FILE_EXPORTTEXTURE_AREA_COORD);
+	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->GetSubMenu("By X,Y,Z coordinates")->Add("# of MC Hits", MENU_FILE_EXPORTTEXTURE_MCHITS_COORD);
+	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->GetSubMenu("By X,Y,Z coordinates")->Add("Impingement rate (1/s/m\262)", MENU_FILE_EXPORTTEXTURE_IMPINGEMENT_COORD);
+	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->GetSubMenu("By X,Y,Z coordinates")->Add("Particle density (1/m\263)", MENU_FILE_EXPORTTEXTURE_PART_DENSITY_COORD);
+	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->GetSubMenu("By X,Y,Z coordinates")->Add("Gas density (kg/m\263)", MENU_FILE_EXPORTTEXTURE_GAS_DENSITY_COORD);
+	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->GetSubMenu("By X,Y,Z coordinates")->Add("Pressure (mbar)", MENU_FILE_EXPORTTEXTURE_PRESSURE_COORD);
+	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->GetSubMenu("By X,Y,Z coordinates")->Add("Avg. Velocity (m/s)", MENU_FILE_EXPORTTEXTURE_AVG_V_COORD);
+	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->GetSubMenu("By X,Y,Z coordinates")->Add("Velocity vector (m/s)", MENU_FILE_EXPORTTEXTURE_V_VECTOR_COORD);
+	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->GetSubMenu("By X,Y,Z coordinates")->Add("# of velocity vectors", MENU_FILE_EXPORTTEXTURE_N_VECTORS_COORD);
+	
 	menu->GetSubMenu("File")->Add("Export selected profiles", MENU_FILE_EXPORTPROFILES);
 
 	menu->GetSubMenu("File")->Add(NULL); // Separator
@@ -401,8 +421,6 @@ int MolFlow::OneTimeSceneInit()
 	menu->GetSubMenu("File")->Add(NULL); // Separator
 	menu->GetSubMenu("File")->Add("E&xit", MENU_FILE_EXIT);
 
-	menu->GetSubMenu("File")->SetIcon(MENU_FILE_EXPORTMESH, 126, 77);//126,77
-	menu->GetSubMenu("File")->SetIcon(MENU_FILE_EXPORTTEXTURES, 126, 77);//126,77
 	menu->GetSubMenu("File")->SetIcon(MENU_FILE_SAVE, 83, 24);
 	menu->GetSubMenu("File")->SetIcon(MENU_FILE_SAVEAS, 101, 24);
 	menu->GetSubMenu("File")->SetIcon(MENU_FILE_LOAD, 65, 24);//65,24
@@ -2456,7 +2474,7 @@ void MolFlow::ExportSelection() {
 
 //-----------------------------------------------------------------------------
 
-void MolFlow::ExportTextures(int mode) {
+void MolFlow::ExportTextures(int grouping, int mode) {
 
 	Geometry *geom = worker.GetGeometry();
 	if (geom->GetNbSelected() == 0) {
@@ -2473,7 +2491,7 @@ void MolFlow::ExportTextures(int mode) {
 	if (fn) {
 
 		try {
-			worker.ExportTextures(fn->fullName, mode, TRUE, TRUE);
+			worker.ExportTextures(fn->fullName, grouping, mode, TRUE, TRUE);
 			//UpdateCurrentDir(fn->fullName);
 			//UpdateTitle();
 		}
@@ -3147,20 +3165,46 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			}
 			else GLMessageBox::Display("No geometry loaded.", "No geometry", GLDLG_OK, GLDLG_ICONERROR);
 			break;
-		case MENU_FILE_EXPORTMESH:
+		case MENU_FILE_EXPORT_SELECTION:
 			ExportSelection();
 			break;
 
 		case MENU_FILE_EXPORTTEXTURE_AREA:
+			ExportTextures(0, 0); break;
 		case MENU_FILE_EXPORTTEXTURE_MCHITS:
+			ExportTextures(0, 1); break;
 		case MENU_FILE_EXPORTTEXTURE_IMPINGEMENT:
+			ExportTextures(0, 2); break;
 		case MENU_FILE_EXPORTTEXTURE_PART_DENSITY:
+			ExportTextures(0, 3); break;
 		case MENU_FILE_EXPORTTEXTURE_GAS_DENSITY:
+			ExportTextures(0, 4); break;
 		case MENU_FILE_EXPORTTEXTURE_PRESSURE:
+			ExportTextures(0, 5); break;
 		case MENU_FILE_EXPORTTEXTURE_AVG_V:
+			ExportTextures(0, 6); break;
+		case MENU_FILE_EXPORTTEXTURE_V_VECTOR:
+			ExportTextures(1, 7); break;
 		case MENU_FILE_EXPORTTEXTURE_N_VECTORS:
-			ExportTextures(src->GetId() - 150); // 1..9
-			break;
+			ExportTextures(0, 8); break;
+		case MENU_FILE_EXPORTTEXTURE_AREA_COORD:
+			ExportTextures(1, 0); break;
+		case MENU_FILE_EXPORTTEXTURE_MCHITS_COORD:
+			ExportTextures(1, 1); break;
+		case MENU_FILE_EXPORTTEXTURE_IMPINGEMENT_COORD:
+			ExportTextures(1, 2); break;
+		case MENU_FILE_EXPORTTEXTURE_PART_DENSITY_COORD:
+			ExportTextures(1, 3); break;
+		case MENU_FILE_EXPORTTEXTURE_GAS_DENSITY_COORD:
+			ExportTextures(1, 4); break;
+		case MENU_FILE_EXPORTTEXTURE_PRESSURE_COORD:
+			ExportTextures(1, 5); break;
+		case MENU_FILE_EXPORTTEXTURE_AVG_V_COORD:
+			ExportTextures(1, 6); break;
+		case MENU_FILE_EXPORTTEXTURE_V_VECTOR_COORD:
+			ExportTextures(1, 7); break;
+		case MENU_FILE_EXPORTTEXTURE_N_VECTORS_COORD:
+			ExportTextures(1, 8); break;
 
 		case MENU_FILE_EXPORTPROFILES:
 			ExportProfiles();

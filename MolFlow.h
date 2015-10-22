@@ -141,7 +141,7 @@ public:
     void SaveFileAs();
     void ExportSelection();
 	void ImportDesorption_DES();
-	void ExportTextures(int mode);
+	void ExportTextures(int grouping,int mode);
 	void ExportProfiles();
     void ClearFacetParams();
     void UpdateFacetParams(BOOL updateSelection=FALSE);
