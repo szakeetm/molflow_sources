@@ -476,7 +476,7 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 	BOOL isXMLzip = (_stricmp(ext, "zip") == 0);
 	*/
 
-	if (ext == "txt") {
+	if (ext == "txt" || ext == "TXT") {
 
 		try {
 			if (!insert) ResetWorkerStats();
@@ -495,6 +495,7 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 				strcpy(fullFileName, fileName);
 			}
 			else { //insert
+				geom->InsertTXT(f, progressDlg, newStr);
 				nbHit = 0;
 				nbDesorption = 0;
 				maxDesorption = 0;
@@ -511,7 +512,7 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 		}
 
 	}
-	else if (ext == "stl") {
+	else if (ext == "stl" || ext == "STL") {
 		try {
 			int ret = GLUnitDialog::Display("", "Choose STL file units:", GLDLG_MM | GLDLG_CM | GLDLG_M | GLDLG_INCH | GLDLG_FOOT | GLDLG_CANCEL_U, GLDLG_ICONNONE);
 			double scaleFactor = 1.0;
@@ -560,7 +561,7 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 		}
 
 	}
-	else if (ext == "str") {
+	else if (ext == "str" || ext == "STR") {
 		if (insert) throw Error("STR file inserting is not supported.");
 		try {
 			ResetWorkerStats();
@@ -713,7 +714,7 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 		}
 
 	}
-	else if (ext == "xml" || ext=="zip") { //XML file, optionally in ZIP container
+	else if (ext == "xml" || ext=="zip" ) { //XML file, optionally in ZIP container
 		xml_document loadXML;
 		xml_parse_result parseResult;
 		progressDlg->SetVisible(TRUE);
@@ -794,7 +795,7 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 		}
 
 	}
-	else if (ext=="ase") {
+	else if (ext=="ase" || ext=="ASE") {
 		if (insert) throw Error("ASE file inserting is not supported.");
 		try {
 			ResetWorkerStats();
