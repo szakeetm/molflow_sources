@@ -37,7 +37,7 @@ GNU General Public License for more details.
 #define APP_NAME "MolFlow+ development version 64-bit (Compiled "__DATE__" "__TIME__") DEBUG MODE"
 #else
 //#define APP_NAME "Molflow+ development version ("__DATE__")"
-#define APP_NAME "Molflow+ 2.6.21 64-bit ("__DATE__")"
+#define APP_NAME "Molflow+ 2.6.22 64-bit ("__DATE__")"
 #endif
 
 /*
@@ -2724,6 +2724,7 @@ void MolFlow::LoadFile(char *fName) {
 		if (timewisePlotter) timewisePlotter->Refresh();
 		if (pressureEvolution) pressureEvolution->Reset();
 		if (timewisePlotter) timewisePlotter->Reset();
+		
 
 		worker.LoadGeometry(fullName);
 
@@ -2769,7 +2770,6 @@ void MolFlow::LoadFile(char *fName) {
 
 		ResetAutoSaveTimer();
 		if (profilePlotter) profilePlotter->Refresh();
-
 		if (pressureEvolution) pressureEvolution->Refresh();
 		if (textureSettings) textureSettings->Update();
 		if (texturePlotter) texturePlotter->Update(m_fTime, TRUE);
@@ -2778,6 +2778,7 @@ void MolFlow::LoadFile(char *fName) {
 		if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 		if (vertexCoordinates) vertexCoordinates->Update();
 		if (movement) movement->Update();
+		if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 
 	}
 	catch (Error &e) {
@@ -3237,8 +3238,9 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			movement->SetVisible(TRUE);
 			break;
 		case MENU_EDIT_GLOBALSETTINGS:
-			if (!globalSettings) globalSettings = new GlobalSettings();
-			globalSettings->Display(&worker);
+			if (!globalSettings) globalSettings = new GlobalSettings(&worker);
+			globalSettings->Update();
+			globalSettings->SetVisible(TRUE);
 			break;
 		case MENU_FACET_COLLAPSE:
 			if (geom->IsLoaded()) {
@@ -4111,8 +4113,11 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			}
 		}
 		else if (src == globalSettingsBtn) {
-			if (!globalSettings) globalSettings = new GlobalSettings();
-			if (!globalSettings->IsVisible()) globalSettings->Display(&worker);
+			if (!globalSettings) globalSettings = new GlobalSettings(&worker);
+			if (!globalSettings->IsVisible()) {
+				globalSettings->Update();
+				globalSettings->SetVisible(TRUE);
+			}
 			else globalSettings->SetVisible(FALSE);
 		}
 		else if (src == forceFrameMoveButton) {
@@ -4396,6 +4401,14 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	try{
 		geom->BuildPipe(L, R, 0, step);
 		worker.CalcTotalOutgassing();
+		//default values
+		worker.enableDecay = FALSE;
+		worker.halfLife = 1;
+		worker.gasMass = 28;
+		worker.enableSojournTime = FALSE;
+		worker.sojournTheta0 = 1e-13;
+		worker.sojournE = 10;
+		worker.ResetMoments();
 	}
 	catch (Error &e) {
 		GLMessageBox::Display((char *)e.GetMsg(), "Error building pipe", GLDLG_OK, GLDLG_ICONERROR);
@@ -4433,6 +4446,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 		GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
 	}
+	if (profilePlotter) profilePlotter->Refresh();
 	if (pressureEvolution) pressureEvolution->Refresh();
 	if (textureSettings) textureSettings->Update();
 	if (texturePlotter) texturePlotter->Update(m_fTime, TRUE);
@@ -4441,6 +4455,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 	if (vertexCoordinates) vertexCoordinates->Update();
 	if (movement) movement->Update();
+	if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 	UpdateTitle();
 	changedSinceSave = FALSE;
 	ResetAutoSaveTimer();

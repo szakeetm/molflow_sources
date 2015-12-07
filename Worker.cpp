@@ -63,7 +63,11 @@ Worker::Worker() {
 	distTraveledTotal_total = 0.0;
 	distTraveledTotal_fullHitsOnly = 0.0;
 	gasMass = 28.0;
-	halfLife = 1e100;
+	enableDecay = FALSE;
+	halfLife = 1;
+	enableSojournTime = FALSE;
+	sojournTheta0 = 1E-13;
+	sojournE = 10;
 	finalOutgassingRate = finalOutgassingRate_Pa_m3_sec = totalDesorbedMolecules = 0.0;
 
 	motionType = 0;
@@ -461,6 +465,12 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 		memset(hhitCache, 0, sizeof(HIT)*NBHHIT);
 		memset(leakCache, 0, sizeof(LEAK)*NBHLEAK);
 		ResetMoments();
+		//default values
+		enableDecay = FALSE;
+		gasMass = 28;
+		enableSojournTime = FALSE;
+		sojournTheta0 = 1e-13;
+		sojournE = 10;
 	}
 
 	/*

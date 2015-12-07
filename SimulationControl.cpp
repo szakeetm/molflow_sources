@@ -236,7 +236,11 @@ BOOL LoadSimulation(Dataport *loader) {
 	sHandle->totalDesorbedMolecules = shGeom->totalDesorbedMolecules;
 	sHandle->finalOutgassingRate = shGeom->finalOutgassingRate;
 	sHandle->gasMass = shGeom->gasMass;
+	sHandle->enableDecay = shGeom->enableDecay;
 	sHandle->halfLife = shGeom->halfLife;
+	sHandle->enableSojournTime = shGeom->enableSojournTime;
+	sHandle->sojournE = shGeom->sojournE;
+	sHandle->sojournTheta0 = shGeom->sojournTheta0;
 	sHandle->timeWindowSize = shGeom->timeWindowSize;
 	sHandle->useMaxwellDistribution = shGeom->useMaxwellDistribution;
 	sHandle->calcConstantFlow = shGeom->calcConstantFlow;

@@ -418,8 +418,8 @@ BOOL SimulationMCStep(int nbStep) {
 			double lastFLightTime = sHandle->flightTimeCurrentParticle; //memorize for partial hits
 			sHandle->flightTimeCurrentParticle += d / 100.0 / sHandle->velocityCurrentParticle; //conversion from cm to m
 
-			if ((!sHandle->calcConstantFlow && sHandle->flightTimeCurrentParticle > sHandle->latestMoment)
-				|| sHandle->particleDecayMoment<sHandle->flightTimeCurrentParticle) {
+			if ((!sHandle->calcConstantFlow && (sHandle->flightTimeCurrentParticle > sHandle->latestMoment))
+				|| (sHandle->enableDecay && (sHandle->particleDecayMoment<sHandle->flightTimeCurrentParticle))) {
 				//hit time over the measured period - we create a new particle
 				//OR particle has decayed
 				double remainderFlightPath = sHandle->velocityCurrentParticle*100.0*
@@ -555,7 +555,7 @@ BOOL StartFromSource() {
 	sHandle->flightTimeCurrentParticle=GenerateDesorptionTime(src);
 	if (sHandle->useMaxwellDistribution) sHandle->velocityCurrentParticle = GenerateRandomVelocity(src->sh.CDFid);
 	else sHandle->velocityCurrentParticle = 145.469*sqrt(src->sh.temperature / sHandle->gasMass);  //sqrt(8*R/PI/1000)=145.47
-	if (sHandle->halfLife < 9e99) { //decaying gas
+	if (sHandle->enableDecay) { //decaying gas
 		sHandle->particleDecayMoment = sHandle->flightTimeCurrentParticle + sHandle->halfLife*1.44269*-log(rnd()); //1.44269=1/ln2
 		//Exponential distribution PDF: probability of 't' life = 1/TAU*exp(-t/TAU) where TAU = half_life/ln2
 		//Exponential distribution CDF: probability of life shorter than 't" = 1-exp(-t/TAU)
@@ -563,7 +563,7 @@ BOOL StartFromSource() {
 		//Solution: t=TAU*-log(1-rnd()) and 1-rnd()=rnd() therefore t=half_life/ln2*-log(rnd())
 	}
 	else {
-		sHandle->particleDecayMoment = 1e100;
+		sHandle->particleDecayMoment = 1e100; //never decay
 	}
 	//sHandle->temperature = src->sh.temperature; //Thermalize particle
 
@@ -730,6 +730,10 @@ void PerformBounce(FACET *iFacet) {
 
 	// Relaunch particle
 	UpdateVelocity(iFacet);
+	//Sojourn time
+	if (sHandle->enableSojournTime) {
+		sHandle->flightTimeCurrentParticle += sHandle->sojournTheta0*exp(-sHandle->sojournE / iFacet->sh.temperature);
+	}
 	//sHandle->temperature = iFacet->sh.temperature; //Thermalize particle
 
 

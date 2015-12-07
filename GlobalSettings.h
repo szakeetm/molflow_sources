@@ -30,13 +30,13 @@ class GlobalSettings : public GLWindow {
 public:
 
   // Construction
-  GlobalSettings();
+  GlobalSettings(Worker *w);
   void UpdateOutgassing();
   void SMPUpdate(float appTime);
 
   // Implementation
   void ProcessMessage(GLComponent *src,int message);
-  void Display(Worker *w);
+  void Update();
 
 private:
 
@@ -65,7 +65,11 @@ private:
   GLTextField *outgassingText;
   GLTextField *influxText;
   GLTextField *gasmassText;
+  GLToggle    *enableDecay;
   GLTextField *halfLifeText;
+  GLToggle    *enableSojournTime;
+  GLTextField *sojournTheta0;
+  GLTextField *sojournE;
 };
 
 #endif /* _GLOBALSETTINGSH_ */

@@ -410,8 +410,8 @@ std::string FileUtils::GetFilename(const std::string& str)
 std::string FileUtils::GetPath(const std::string& str)
 {
 	size_t found = str.find_last_of("/\\");
-	if (found == std::string::npos) return str; //not found
-	else return str.substr(0, found);
+	if (found == std::string::npos) return ""; //not found, return empty string
+	else return str.substr(0, found)+"\\";
 }
 
 std::string FileUtils::GetExtension(const std::string& str) {
