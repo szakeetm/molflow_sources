@@ -128,8 +128,6 @@ typedef struct {
   double gasMass;
   BOOL   enableDecay;
   double halfLife;
-  BOOL   enableSojournTime;
-  double sojournTheta0, sojournE;
   double timeWindowSize;
   BOOL useMaxwellDistribution; //TRUE: Maxwell-Boltzmann distribution, FALSE: All molecules have the same (V_avg) speed
   BOOL calcConstantFlow;

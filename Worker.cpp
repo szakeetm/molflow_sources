@@ -65,9 +65,6 @@ Worker::Worker() {
 	gasMass = 28.0;
 	enableDecay = FALSE;
 	halfLife = 1;
-	enableSojournTime = FALSE;
-	sojournTheta0 = 1E-13;
-	sojournE = 10;
 	finalOutgassingRate = finalOutgassingRate_Pa_m3_sec = totalDesorbedMolecules = 0.0;
 
 	motionType = 0;
@@ -468,9 +465,6 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 		//default values
 		enableDecay = FALSE;
 		gasMass = 28;
-		enableSojournTime = FALSE;
-		sojournTheta0 = 1e-13;
-		sojournE = 10;
 	}
 
 	/*

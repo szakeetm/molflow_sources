@@ -564,9 +564,6 @@ void Geometry::CopyGeometryBuffer(BYTE *buffer) {
 	sh.gasMass = w->gasMass;
 	sh.enableDecay = w->enableDecay;
 	sh.halfLife = w->halfLife;
-	sh.enableSojournTime = w->enableSojournTime;
-	sh.sojournE = w->sojournE;
-	sh.sojournTheta0 = w->sojournTheta0;
 	sh.timeWindowSize = w->timeWindowSize;
 	sh.useMaxwellDistribution = w->useMaxwellDistribution;
 	sh.calcConstantFlow = w->calcConstantFlow;
@@ -4421,9 +4418,6 @@ void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress
 	simuParamNode.append_child("Gas").append_attribute("mass") = work->gasMass;
 	simuParamNode.child("Gas").append_attribute("enableDecay") = work->enableDecay;
 	simuParamNode.child("Gas").append_attribute("halfLife") = work->halfLife;
-	simuParamNode.child("Gas").append_attribute("enableSojournTime") = work->enableSojournTime;
-	simuParamNode.child("Gas").append_attribute("sojournTheta0") = work->sojournTheta0;
-	simuParamNode.child("Gas").append_attribute("sojournE") = work->sojournE;
 
 	xml_node timeSettingsNode = simuParamNode.append_child("TimeSettings");
 
@@ -4789,14 +4783,6 @@ void Geometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *pr
 		}
 		else {
 			work->enableDecay = work->halfLife < 1e100;
-		}
-		if (simuParamNode.child("Gas").attribute("enableSojournTime")) {
-			work->enableSojournTime = simuParamNode.child("Gas").attribute("enableSojournTime").as_bool();
-			work->sojournTheta0=simuParamNode.child("Gas").attribute("sojournTheta0").as_double();
-			work->sojournE = simuParamNode.child("Gas").attribute("sojournE").as_double();
-		}
-		else {
-			//Already set to default when calling Molflow::LoadFile()
 		}
 
 		xml_node timeSettingsNode = simuParamNode.child("TimeSettings");

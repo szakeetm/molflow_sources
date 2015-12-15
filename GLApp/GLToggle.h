@@ -14,6 +14,7 @@
   GNU General Public License for more details.
 */
 #include "GLComponent.h"
+#include <string>
 
 #ifndef _GLTOGGLEH_
 #define _GLTOGGLEH_
@@ -27,6 +28,7 @@ public:
 
   // Component method
   int  GetState();
+  void SetText(std::string txt);
   void SetState(int setState);
   void SetTextColor(int r,int g,int b);
   void SetEnabled(BOOL enable); //override GLComponent for text color change

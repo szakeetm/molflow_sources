@@ -28,7 +28,7 @@ extern MolFlow *mApp;
 
 //-----------------------------------------------------------------------------
 
-FacetMesh::FacetMesh(Worker *w):GLWindow() {
+FacetMesh::FacetMesh(Worker *w) :GLWindow() {
 
 	worker = w;
 	geom = w->GetGeometry();
@@ -36,68 +36,68 @@ FacetMesh::FacetMesh(Worker *w):GLWindow() {
 	SetIconfiable(TRUE);
 
 	int wD = 320;
-	int hD = 450;
+	int hD = 497;
 	aPanel = new GLTitledPanel("Texture properties");
-	aPanel->SetBounds(5, 3, 309, 119);
+	aPanel->SetBounds(5, 3, 309, 123);
 	Add(aPanel);
 	mPanel = new GLTitledPanel("Texture cell / memory");
-	mPanel->SetBounds(5, 126, 309, 44);
+	mPanel->SetBounds(5, 129, 309, 44);
 	Add(mPanel);
 	vPanel = new GLTitledPanel("View settings");
-	vPanel->SetBounds(5, 309, 309, 44);
+	vPanel->SetBounds(5, 354, 309, 44);
 	Add(vPanel);
 	desPanel = new GLTitledPanel("Dynamic desorption");
-	desPanel->SetBounds(5, 357, 309, 69);
+	desPanel->SetBounds(5, 402, 309, 69);
 	Add(desPanel);
 	paramPanel = new GLTitledPanel("Additional parameters");
-	paramPanel->SetBounds(5, 174, 309, 132);
+	paramPanel->SetBounds(5, 177, 309, 174);
 	Add(paramPanel);
 	lengthText = new GLTextField(0, "");
-	aPanel->SetCompBounds(lengthText, 196, 35, 72, 18);
+	aPanel->SetCompBounds(lengthText, 180, 36, 72, 18);
 	aPanel->Add(lengthText);
 
 	perCm = new GLLabel("cells/cm");
-	aPanel->SetCompBounds(perCm, 139, 38, 40, 12);
+	aPanel->SetCompBounds(perCm, 125, 39, 40, 12);
 	aPanel->Add(perCm);
 
 	resolutionText = new GLTextField(0, "");
-	aPanel->SetCompBounds(resolutionText, 75, 35, 62, 18);
+	aPanel->SetCompBounds(resolutionText, 60, 36, 62, 18);
 	aPanel->Add(resolutionText);
 
 	l5 = new GLLabel("Resolution:");
-	aPanel->SetCompBounds(l5, 13, 38, 52, 12);
+	aPanel->SetCompBounds(l5, 5, 39, 52, 12);
 	aPanel->Add(l5);
 
 	enableBtn = new GLToggle(0, "Enable texture");
-	aPanel->SetCompBounds(enableBtn, 9, 19, 83, 16);
+	aPanel->SetCompBounds(enableBtn, 5, 18, 83, 16);
 	aPanel->Add(enableBtn);
 
 	recordDesBtn = new GLToggle(0, "Count desorption");
-	aPanel->SetCompBounds(recordDesBtn, 8, 62, 94, 16);
+	aPanel->SetCompBounds(recordDesBtn, 5, 60, 94, 16);
 	aPanel->Add(recordDesBtn);
 
 	perCell = new GLLabel("cm/cell");
-	aPanel->SetCompBounds(perCell, 268, 38, 35, 12);
+	aPanel->SetCompBounds(perCell, 260, 39, 35, 12);
 	aPanel->Add(perCell);
 
 	recordDirBtn = new GLToggle(0, "Record direction vectors");
-	aPanel->SetCompBounds(recordDirBtn, 166, 100, 125, 16);
+	aPanel->SetCompBounds(recordDirBtn, 165, 102, 125, 16);
 	aPanel->Add(recordDirBtn);
 
 	recordTransBtn = new GLToggle(0, "Count transparent pass");
-	aPanel->SetCompBounds(recordTransBtn, 166, 81, 120, 16);
+	aPanel->SetCompBounds(recordTransBtn, 165, 81, 120, 16);
 	aPanel->Add(recordTransBtn);
 
 	recordReflBtn = new GLToggle(0, "Count reflection");
-	aPanel->SetCompBounds(recordReflBtn, 166, 62, 89, 16);
+	aPanel->SetCompBounds(recordReflBtn, 165, 60, 89, 16);
 	aPanel->Add(recordReflBtn);
 
 	recordACBtn = new GLToggle(0, "Angular coefficient");
-	aPanel->SetCompBounds(recordACBtn, 8, 100, 101, 16);
+	aPanel->SetCompBounds(recordACBtn, 5, 102, 101, 16);
 	aPanel->Add(recordACBtn);
 
 	recordAbsBtn = new GLToggle(0, "Count absorption");
-	aPanel->SetCompBounds(recordAbsBtn, 8, 81, 94, 16);
+	aPanel->SetCompBounds(recordAbsBtn, 5, 81, 94, 16);
 	aPanel->Add(recordAbsBtn);
 
 	showTexture = new GLToggle(0, "Draw Texture");
@@ -124,40 +124,40 @@ FacetMesh::FacetMesh(Worker *w):GLWindow() {
 	mPanel->SetCompBounds(l7, 10, 22, 43, 12);
 	mPanel->Add(l7);
 
-	quickApply = new GLButton(0, "<- Apply view");
+	quickApply = new GLButton(0, "Quick Apply");
 	vPanel->SetCompBounds(quickApply, 200, 15, 99, 20);
 	vPanel->Add(quickApply);
 
 	fileYieldText = new GLTextField(0, "");
-	desPanel->SetCompBounds(fileYieldText, 210, 18, 58, 18);
+	desPanel->SetCompBounds(fileYieldText, 205, 18, 58, 18);
 	desPanel->Add(fileYieldText);
 
 	label3 = new GLLabel("mol/ph");
-	desPanel->SetCompBounds(label3, 270, 21, 33, 12);
+	desPanel->SetCompBounds(label3, 265, 21, 33, 12);
 	desPanel->Add(label3);
 
 	label1 = new GLLabel("Avg.yield:");
-	desPanel->SetCompBounds(label1, 160, 21, 48, 12);
+	desPanel->SetCompBounds(label1, 155, 21, 48, 12);
 	desPanel->Add(label1);
 
 	label2 = new GLLabel("Use file:");
-	desPanel->SetCompBounds(label2, 10, 22, 39, 12);
+	desPanel->SetCompBounds(label2, 5, 21, 39, 12);
 	desPanel->Add(label2);
 
 	facetMovingToggle = new GLToggle(0, "Moving part");
-	paramPanel->SetCompBounds(facetMovingToggle, 10, 108, 74, 16);
+	paramPanel->SetCompBounds(facetMovingToggle, 10, 111, 74, 16);
 	paramPanel->Add(facetMovingToggle);
 
 	facetSuperDest = new GLTextField(0, "");
-	paramPanel->SetCompBounds(facetSuperDest, 182, 88, 81, 18);
+	paramPanel->SetCompBounds(facetSuperDest, 195, 90, 101, 18);
 	paramPanel->Add(facetSuperDest);
 
 	label8 = new GLLabel("Link to:");
-	paramPanel->SetCompBounds(label8, 142, 91, 35, 12);
+	paramPanel->SetCompBounds(label8, 160, 96, 35, 12);
 	paramPanel->Add(label8);
 
 	facetStructure = new GLTextField(0, "");
-	paramPanel->SetCompBounds(facetStructure, 60, 88, 76, 18);
+	paramPanel->SetCompBounds(facetStructure, 60, 90, 91, 18);
 	paramPanel->Add(facetStructure);
 
 	label7 = new GLLabel("Structure:");
@@ -165,7 +165,7 @@ FacetMesh::FacetMesh(Worker *w):GLWindow() {
 	paramPanel->Add(label7);
 
 	facetTeleport = new GLTextField(0, "");
-	paramPanel->SetCompBounds(facetTeleport, 141, 66, 122, 18);
+	paramPanel->SetCompBounds(facetTeleport, 155, 66, 145, 18);
 	paramPanel->Add(facetTeleport);
 
 	label4 = new GLLabel("Teleport to facet:");
@@ -181,7 +181,7 @@ FacetMesh::FacetMesh(Worker *w):GLWindow() {
 	paramPanel->Add(label6);
 
 	facetReflType = new GLCombo(0);
-	paramPanel->SetCompBounds(facetReflType, 141, 19, 122, 20);
+	paramPanel->SetCompBounds(facetReflType, 155, 18, 147, 20);
 	paramPanel->Add(facetReflType);
 	facetReflType->SetSize(3);
 	facetReflType->SetValueAt(0, "Diffuse");
@@ -189,40 +189,70 @@ FacetMesh::FacetMesh(Worker *w):GLWindow() {
 	facetReflType->SetValueAt(2, "Uniform");
 
 	facetUseDesFile = new GLCombo(0);
-	desPanel->SetCompBounds(facetUseDesFile, 55, 18, 95, 20);
+	desPanel->SetCompBounds(facetUseDesFile, 50, 18, 95, 20);
 	desPanel->Add(facetUseDesFile);
 	facetUseDesFile->SetSize(1);
 	facetUseDesFile->SetValueAt(0, "No file imported");
 
 	facetAccFactor = new GLTextField(0, "");
-	paramPanel->SetCompBounds(facetAccFactor, 141, 44, 122, 18);
+	paramPanel->SetCompBounds(facetAccFactor, 155, 42, 145, 18);
 	paramPanel->Add(facetAccFactor);
 
 	fileDoseText = new GLTextField(0, "");
-	desPanel->SetCompBounds(fileDoseText, 210, 42, 58, 18);
+	desPanel->SetCompBounds(fileDoseText, 205, 42, 58, 18);
 	desPanel->Add(fileDoseText);
 
 	fileFluxText = new GLTextField(0, "");
-	desPanel->SetCompBounds(fileFluxText, 55, 42, 55, 18);
+	desPanel->SetCompBounds(fileFluxText, 50, 42, 55, 18);
 	desPanel->Add(fileFluxText);
 
-	label11 = new GLLabel("ph/cm\262");
-	desPanel->SetCompBounds(label11, 270, 45, 36, 12);
+	label11 = new GLLabel("ph/cm2");
+	desPanel->SetCompBounds(label11, 265, 45, 36, 12);
 	desPanel->Add(label11);
 
-	label9 = new GLLabel("ph/s/cm\262");
-	desPanel->SetCompBounds(label9, 110, 45, 44, 12);
+	label9 = new GLLabel("ph/s/cm2");
+	desPanel->SetCompBounds(label9, 105, 45, 44, 12);
 	desPanel->Add(label9);
 
 	label12 = new GLLabel("Avg.dose:");
-	desPanel->SetCompBounds(label12, 160, 45, 49, 12);
+	desPanel->SetCompBounds(label12, 155, 45, 49, 12);
 	desPanel->Add(label12);
 
 	label10 = new GLLabel("Avg.flux:");
-	desPanel->SetCompBounds(label10, 10, 45, 44, 12);
+	desPanel->SetCompBounds(label10, 5, 45, 44, 12);
 	desPanel->Add(label10);
 
+	enableSojournTime = new GLToggle(0, "Wall Sojourn time");
+	paramPanel->SetCompBounds(enableSojournTime, 10, 132, 95, 16);
+	paramPanel->Add(enableSojournTime);
 
+	sojournLabel3 = new GLLabel("/T_facet)");
+	paramPanel->SetCompBounds(sojournLabel3, 245, 153, 54, 12);
+	paramPanel->Add(sojournLabel3);
+
+	sojournE = new GLTextField(0, "");
+	paramPanel->SetCompBounds(sojournE, 175, 150, 70, 18);
+	paramPanel->Add(sojournE);
+
+	sojournLabel2 = new GLLabel("* exp( - ");
+	paramPanel->SetCompBounds(sojournLabel2, 130, 153, 36, 12);
+	paramPanel->Add(sojournLabel2);
+
+	sojournLabel1 = new GLLabel("time=");
+	paramPanel->SetCompBounds(sojournLabel1, 25, 153, 28, 12);
+	paramPanel->Add(sojournLabel1);
+
+	sojournTheta0 = new GLTextField(0, "");
+	paramPanel->SetCompBounds(sojournTheta0, 55, 150, 70, 18);
+	paramPanel->Add(sojournTheta0);
+
+	SetTitle("Advanced facet parameters");
+	// Center dialog
+	int wS, hS;
+	GLToolkit::GetScreenSize(&wS, &hS);
+	int xD = (wS - wD) / 2;
+	int yD = (hS - hD) / 2;
+	SetBounds(xD, yD, wD, hD);
 
 	cellText->SetEditable(FALSE);
 	ramText->SetEditable(FALSE);
@@ -230,7 +260,6 @@ FacetMesh::FacetMesh(Worker *w):GLWindow() {
 	fileYieldText->SetEditable(FALSE);
 	fileFluxText->SetEditable(FALSE);
 
-	SetTitle("Advanced facet parameters");
 
 	Refresh(0, NULL);
 	Reposition(wD, hD);
@@ -242,40 +271,42 @@ FacetMesh::FacetMesh(Worker *w):GLWindow() {
 
 
 void FacetMesh::UpdateSize() {
-	
+
 	char tmp[64];
 
-	if( enableBtn->GetState() ) {
+	if (enableBtn->GetState()) {
 
 		llong ram = 0;
 		llong cell = 0;
 		int nbFacet = geom->GetNbFacet();
 
-		if( recordACBtn->GetState() ) {
+		if (recordACBtn->GetState()) {
 
-			for(int i=0;i<nbFacet;i++) {
+			for (int i = 0; i < nbFacet; i++) {
 				Facet *f = geom->GetFacet(i);
-				if(f->sh.opacity==1.0) {
+				if (f->sh.opacity == 1.0) {
 					cell += (llong)f->GetNbCell();
-					ram += (llong)f->GetTexRamSize(1+worker->moments.size());
+					ram += (llong)f->GetTexRamSize(1 + worker->moments.size());
 				}
 			}
-			ram += (((cell-1)*cell)/2 + 8*cell)*((llong)sizeof(ACFLOAT));
+			ram += (((cell - 1)*cell) / 2 + 8 * cell)*((llong)sizeof(ACFLOAT));
 
-		} else {
+		}
+		else {
 
-			for(int i=0;i<nbFacet;i++) {
+			for (int i = 0; i < nbFacet; i++) {
 				Facet *f = geom->GetFacet(i);
 				cell += (llong)f->GetNbCell();
-				ram += (llong)f->GetTexRamSize(1+worker->moments.size());
+				ram += (llong)f->GetTexRamSize(1 + worker->moments.size());
 			}
 
 		}
 		ramText->SetText(FormatMemoryLL(ram));
-		sprintf(tmp,"%d",(int)cell);
+		sprintf(tmp, "%d", (int)cell);
 		cellText->SetText(tmp);
 
-	} else {
+	}
+	else {
 
 		ramText->SetText("0 bytes");
 		cellText->SetText("0");
@@ -293,13 +324,13 @@ void FacetMesh::UpdateSizeForRatio() {
 	BOOL boundMap = TRUE;// boundaryBtn->GetState();
 	BOOL recordDir = recordDirBtn->GetState();
 
-	if( !enableBtn->GetState() ) {
+	if (!enableBtn->GetState()) {
 		ramText->SetText(FormatMemory(0));
 		cellText->SetText("0");
 		return;
 	}
 
-	if( sscanf(resolutionText->GetText(),"%lf",&ratio)==0 ) {
+	if (sscanf(resolutionText->GetText(), "%lf", &ratio) == 0) {
 		ramText->SetText("");
 		cellText->SetText("");
 		return;
@@ -308,39 +339,42 @@ void FacetMesh::UpdateSizeForRatio() {
 	llong ram = 0;
 	llong cell = 0;
 	int nbFacet = geom->GetNbFacet();
-	if( recordACBtn->GetState() ) {
+	if (recordACBtn->GetState()) {
 
-		for(int i=0;i<nbFacet;i++) {
+		for (int i = 0; i < nbFacet; i++) {
 			Facet *f = geom->GetFacet(i);
 			//if(f->sh.opacity==1.0) {
-				if(f->selected) {
-					cell += (llong)f->GetNbCellForRatio(ratio);
-					ram += (llong)f->GetTexRamSizeForRatio(ratio,boundMap,FALSE,1+worker->moments.size());
-				} else {
-					cell += (llong)f->GetNbCell();
-					ram += (llong)f->GetTexRamSize(1+worker->moments.size());
-				}
+			if (f->selected) {
+				cell += (llong)f->GetNbCellForRatio(ratio);
+				ram += (llong)f->GetTexRamSizeForRatio(ratio, boundMap, FALSE, 1 + worker->moments.size());
+			}
+			else {
+				cell += (llong)f->GetNbCell();
+				ram += (llong)f->GetTexRamSize(1 + worker->moments.size());
+			}
 			//}
 		}
-		ram += (((cell-1)*cell)/2 + 8*cell)*((llong)sizeof(ACFLOAT));
+		ram += (((cell - 1)*cell) / 2 + 8 * cell)*((llong)sizeof(ACFLOAT));
 
-	} else {
+	}
+	else {
 
-		for(int i=0;i<nbFacet;i++) {
+		for (int i = 0; i < nbFacet; i++) {
 			Facet *f = geom->GetFacet(i);
-			if(f->selected) {
+			if (f->selected) {
 				cell += (llong)f->GetNbCellForRatio(ratio);
-				ram += (llong)f->GetTexRamSizeForRatio(ratio,boundMap,recordDir,1+worker->moments.size());
-			} else {
+				ram += (llong)f->GetTexRamSizeForRatio(ratio, boundMap, recordDir, 1 + worker->moments.size());
+			}
+			else {
 				cell += (llong)f->GetNbCell();
-				ram += (llong)f->GetTexRamSize(1+worker->moments.size());
+				ram += (llong)f->GetTexRamSize(1 + worker->moments.size());
 			}
 		}
 
 	}
 
 	ramText->SetText(FormatMemoryLL(ram));
-	sprintf(tmp,"%d",(int)cell);
+	sprintf(tmp, "%d", (int)cell);
 	cellText->SetText(tmp);
 
 }
@@ -351,7 +385,7 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 
 	sumArea = sumOutgassing = 0;
 
-	BOOL somethingSelected = nbSel>0;
+	BOOL somethingSelected = nbSel > 0;
 	enableBtn->SetEnabled(somethingSelected);
 	recordDesBtn->SetEnabled(somethingSelected);
 	recordAbsBtn->SetEnabled(somethingSelected);
@@ -370,6 +404,9 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 	facetSuperDest->SetEditable(somethingSelected);
 	facetUseDesFile->SetEditable(somethingSelected);
 	facetMovingToggle->SetEnabled(somethingSelected);
+	enableSojournTime->SetEnabled(somethingSelected);
+	sojournTheta0->SetEditable(somethingSelected);
+	sojournE->SetEditable(somethingSelected);
 
 	if (!geom->IsLoaded()) return;
 
@@ -392,6 +429,10 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 		facetMovingToggle->SetState(0);
 		facetStructure->Clear();
 		facetTeleport->Clear();
+		enableSojournTime->SetState(0);
+		enableSojournTime->SetText("Wall sojourn time");
+		sojournTheta0->SetText("");
+		sojournE->SetText("");
 		return;
 	}
 
@@ -421,7 +462,10 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 	BOOL isMovingE = TRUE;
 	BOOL dynOutgEqual = TRUE;
 	BOOL dynOutgAEqual = TRUE;
-	
+	BOOL hasSojournE = TRUE;
+	BOOL sojournThetaE = TRUE;
+	BOOL sojournEE = TRUE;
+
 	double f0Area = f0->sh.area * (f0->sh.is2sided ? 2.0 : 1.0);
 	sumArea = f0Area;
 	sumOutgassing = f0->sh.totalOutgassing;
@@ -442,36 +486,39 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 		VolVisibleE = VolVisibleE && f0->volumeVisible == f->volumeVisible;
 		ratioE = ratioE && abs(f0->tRatio - f->tRatio) < 1E-8;
 		teleportE = teleportE && (f0->sh.teleportDest == f->sh.teleportDest);
-		accFactorE = accFactorE && IsEqual(f0->sh.accomodationFactor , f->sh.accomodationFactor);
+		accFactorE = accFactorE && IsEqual(f0->sh.accomodationFactor, f->sh.accomodationFactor);
 		superDestE = superDestE && (f0->sh.superDest == f->sh.superDest);
 		superIdxE = superIdxE && (f0->sh.superIdx == f->sh.superIdx);
 		reflectTypeE = reflectTypeE && (f0->sh.reflectType == f->sh.reflectType);
 		hasOutgMapE = hasOutgMapE && (f0->hasOutgassingFile == f->hasOutgassingFile);
 		useOutgMapE = useOutgMapE && (f0->sh.useOutgassingFile == f->sh.useOutgassingFile);
-		dynOutgEqual = dynOutgEqual && IsEqual(f0->sh.totalOutgassing, f->sh.totalOutgassing,1E-20);
-		dynOutgAEqual = dynOutgAEqual && IsEqual(f0->sh.totalOutgassing / f0Area , f->sh.totalOutgassing / fArea,1E-20);
-		yieldEqual = yieldEqual && IsEqual(f0->sh.totalOutgassing / f0->sh.temperature / f0->totalFlux, f->sh.totalOutgassing / f->sh.temperature / f->totalFlux,1E-30); //less tolerance, expecting small yields
+		dynOutgEqual = dynOutgEqual && IsEqual(f0->sh.totalOutgassing, f->sh.totalOutgassing, 1E-20);
+		dynOutgAEqual = dynOutgAEqual && IsEqual(f0->sh.totalOutgassing / f0Area, f->sh.totalOutgassing / fArea, 1E-20);
+		yieldEqual = yieldEqual && IsEqual(f0->sh.totalOutgassing / f0->sh.temperature / f0->totalFlux, f->sh.totalOutgassing / f->sh.temperature / f->totalFlux, 1E-30); //less tolerance, expecting small yields
 		fluxAEqual = fluxAEqual && IsEqual(f0->totalFlux / f0Area, f->totalFlux / fArea);
-		doseAEqual = doseAEqual && IsEqual(f0->totalDose / f0Area , f->totalDose / fArea);
-		isMovingE = isMovingE && (f0->sh.isMoving == f->sh.isMoving); 
+		doseAEqual = doseAEqual && IsEqual(f0->totalDose / f0Area, f->totalDose / fArea);
+		isMovingE = isMovingE && (f0->sh.isMoving == f->sh.isMoving);
+		hasSojournE = hasSojournE && (f0->sh.enableSojournTime == f->sh.enableSojournTime);
+		sojournThetaE = sojournThetaE && IsEqual(f0->sh.sojournTheta0, f->sh.sojournTheta0);
+		sojournEE = sojournEE && IsEqual(f0->sh.sojournE, f->sh.sojournE);
 	}
 
 	/*
 	if( nbSel==1 ) {
-		Facet *f = f0;
-		sprintf(tmp,"Advanced parameters (Facet #%d)",selection[0]+1);
-		SetTitle(tmp);
-		sprintf(tmp,"%g",maxU);
-		uLength->SetText(tmp);
-		sprintf(tmp,"%g",maxV);
-		vLength->SetText(tmp);
+	Facet *f = f0;
+	sprintf(tmp,"Advanced parameters (Facet #%d)",selection[0]+1);
+	SetTitle(tmp);
+	sprintf(tmp,"%g",maxU);
+	uLength->SetText(tmp);
+	sprintf(tmp,"%g",maxV);
+	vLength->SetText(tmp);
 	} else {
-		sprintf(tmp,"Advanced parameters (%d selected)",nbSel);
-		SetTitle(tmp);
-		sprintf(tmp,"%g (MAX)",maxU);
-		uLength->SetText(tmp);
-		sprintf(tmp,"%g (MAX)",maxV);
-		vLength->SetText(tmp);
+	sprintf(tmp,"Advanced parameters (%d selected)",nbSel);
+	SetTitle(tmp);
+	sprintf(tmp,"%g (MAX)",maxU);
+	uLength->SetText(tmp);
+	sprintf(tmp,"%g (MAX)",maxV);
+	vLength->SetText(tmp);
 	}*/
 
 	enableBtn->AllowMixedState(!isEnabledE); enableBtn->SetState(isEnabledE ? f0->sh.isTextured : 2);
@@ -484,8 +531,9 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 	showTexture->AllowMixedState(!TexVisibleE); showTexture->SetState(TexVisibleE ? f0->textureVisible : 2);
 	showVolume->AllowMixedState(!VolVisibleE); showVolume->SetState(VolVisibleE ? f0->volumeVisible : 2);
 	facetMovingToggle->AllowMixedState(!isMovingE); facetMovingToggle->SetState(isMovingE ? f0->sh.isMoving : 2);
+	enableSojournTime->AllowMixedState(!hasSojournE); enableSojournTime->SetState(hasSojournE ? f0->sh.enableSojournTime : 2);
 
-	if( isEnabledE) {
+	if (isEnabledE) {
 		if (f0->sh.isTextured) { //All facets have textures
 			if (ratioE) { //All facets have textures with same resolution
 				resolutionText->SetText(f0->tRatio);
@@ -495,10 +543,11 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 				resolutionText->SetText(isEnabledE ? "..." : "");
 				lengthText->SetText(isEnabledE ? "..." : "");
 			}
-		} else { //None of the facets have textures
-				resolutionText->SetText("");
-				lengthText->SetText("");
-			}
+		}
+		else { //None of the facets have textures
+			resolutionText->SetText("");
+			lengthText->SetText("");
+		}
 	}
 	else { //Mixed state
 		resolutionText->SetText("");
@@ -545,7 +594,7 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 				if (f0->sh.useOutgassingFile) {
 					sprintf(tmp, "%.1E", sumOutgassing * 10.00); //10.00: Pa*m3/s -> mbar*l/s
 					mApp->facetFlow->SetText(tmp);
-					sprintf(tmp, "%.1E", sumOutgassing * 10.00/ sumArea);
+					sprintf(tmp, "%.1E", sumOutgassing * 10.00 / sumArea);
 					mApp->facetFlowArea->SetText(tmp);
 				}
 				else {
@@ -558,7 +607,8 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 				mApp->facetFlowArea->SetEditable(FALSE);
 			}
 		}
-	} else { //Mixed: some have it, some don't
+	}
+	else { //Mixed: some have it, some don't
 		facetUseDesFile->SetSelectedIndex(0);
 		facetUseDesFile->SetSize(1);
 		facetUseDesFile->SetSelectedValue("...");
@@ -595,6 +645,29 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 		facetMovingToggle->AllowMixedState(TRUE);
 	}
 
+	if (enableSojournTime->GetState() == 0) {
+		enableSojournTime->SetText("Wall sojourn time");
+		sojournTheta0->SetEditable(FALSE);
+		sojournE->SetEditable(FALSE);
+	}
+	else {
+		sojournTheta0->SetEditable(TRUE);
+		sojournE->SetEditable(TRUE);
+	}
+
+	if (sojournThetaE) {
+		sojournTheta0->SetText(f0->sh.sojournTheta0);
+	}
+	else {
+		sojournTheta0->SetText("...");
+	}
+	if (sojournEE) {
+		sojournE->SetText(f0->sh.sojournE);
+	}
+	else {
+		sojournE->SetText("...");
+	}
+	CalcSojournTime();
 	UpdateSize();
 }
 
@@ -615,7 +688,7 @@ BOOL FacetMesh::Apply() {
 	BOOL boundMap = TRUE; // boundaryBtn->GetState();
 	int nbSelected;
 	int* selection;
-	double ratio=0.0;
+	double ratio = 0.0;
 	geom->GetSelection(&selection, &nbSelected);
 	int nbPerformed = 0;
 	BOOL doRatio = FALSE;
@@ -633,10 +706,12 @@ BOOL FacetMesh::Apply() {
 		if (resolutionText->GetNumber(&ratio) || ratio > 0.0) {
 			//Got a valid number
 			doRatio = TRUE;
-		} else if (strcmp(resolutionText->GetText(), "...") != 0)  { //Not in mixed "..." state
-				GLMessageBox::Display("Invalid texture resolution", "Error", GLDLG_OK, GLDLG_ICONERROR);
-				return FALSE;
-		} else {
+		}
+		else if (strcmp(resolutionText->GetText(), "...") != 0)  { //Not in mixed "..." state
+			GLMessageBox::Display("Invalid texture resolution", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			return FALSE;
+		}
+		else {
 			//Mixed state: leave doRatio as FALSE
 		}
 	}
@@ -647,7 +722,7 @@ BOOL FacetMesh::Apply() {
 
 	int superStruct;
 	BOOL doSuperStruct = FALSE;
-	if (sscanf(facetStructure->GetText(), "%d", &superStruct)>0 && superStruct>0 && superStruct <= geom->GetNbStructure()) doSuperStruct = TRUE;
+	if (sscanf(facetStructure->GetText(), "%d", &superStruct) > 0 && superStruct > 0 && superStruct <= geom->GetNbStructure()) doSuperStruct = TRUE;
 	else {
 		if (strcmp(facetStructure->GetText(), "...") == 0) doSuperStruct = FALSE;
 		else{
@@ -664,12 +739,12 @@ BOOL FacetMesh::Apply() {
 		doSuper = TRUE;
 		superDest = 0;
 	}
-	else if (sscanf(facetSuperDest->GetText(), "%d", &superDest)>0) {
+	else if (sscanf(facetSuperDest->GetText(), "%d", &superDest) > 0) {
 		if (superDest == superStruct) {
 			GLMessageBox::Display("Link and superstructure can't be the same", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return FALSE;
 		}
-		else if (superDest>0 && superDest <= geom->GetNbStructure()) doSuper = TRUE;
+		else if (superDest > 0 && superDest <= geom->GetNbStructure()) doSuper = TRUE;
 	}
 	else if (strcmp(facetSuperDest->GetText(), "...") == 0) doSuper = FALSE;
 
@@ -688,7 +763,7 @@ BOOL FacetMesh::Apply() {
 			GLMessageBox::Display("Invalid teleport destination\n(If no teleport: set number to 0)", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return FALSE;
 		}
-		else if (teleport>0 && geom->GetFacet(teleport - 1)->selected) {
+		else if (teleport > 0 && geom->GetFacet(teleport - 1)->selected) {
 			char tmp[256];
 			sprintf(tmp, "The teleport destination of facet #%d can't be itself!", teleport);
 			GLMessageBox::Display(tmp, "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -731,7 +806,7 @@ BOOL FacetMesh::Apply() {
 		BOOL missingMap = FALSE;
 		int missingMapId;
 		if (useMapA) {
-			for (int i = 0; i<geom->GetNbFacet(); i++) {
+			for (int i = 0; i < geom->GetNbFacet(); i++) {
 				if (geom->GetFacet(i)->selected && !geom->GetFacet(i)->hasOutgassingFile) {
 					missingMap = TRUE;
 					missingMapId = i;
@@ -747,24 +822,62 @@ BOOL FacetMesh::Apply() {
 		doUseMapA = TRUE;
 	}
 
+	// sojourn time coefficient 1
+	double sojT0;
+	BOOL doSojT0 = FALSE;
+
+	if (sojournTheta0->GetNumber(&sojT0)) {
+		if (sojT0 <= 0.0) {
+			GLMessageBox::Display("Wall sojourn time first coefficient (Theta0) has to be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			return FALSE;
+		}
+		doSojT0 = TRUE;
+	}
+	else {
+		if (enableSojournTime->GetState() == 0 || strcmp(sojournTheta0->GetText(), "...") == 0) doSojT0 = FALSE;
+		else {
+			GLMessageBox::Display("Invalid wall sojourn time first coefficient (Theta0)", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			return FALSE;
+		}
+	}
+
+	// sojourn time coefficient 2
+	double sojE;
+	BOOL doSojE = FALSE;
+
+	if (sojournE->GetNumber(&sojE)) {
+		if (sojE <= 0.0) {
+			GLMessageBox::Display("Wall sojourn time second coefficient (Energy) has to be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			return FALSE;
+		}
+		doSojE = TRUE;
+	}
+	else {
+		if (enableSojournTime->GetState() == 0 || strcmp(sojournE->GetText(), "...") == 0) doSojE = FALSE;
+		else {
+			GLMessageBox::Display("Invalid wall sojourn time second coefficient (Energy)", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			return FALSE;
+		}
+	}
+
 	// Reflection type
 	int reflType = facetReflType->GetSelectedIndex();
 
 	//Check complete, let's apply
-	progressDlg = new GLProgress("Applying mesh settings","Please wait");
+	progressDlg = new GLProgress("Applying mesh settings", "Please wait");
 	progressDlg->SetVisible(TRUE);
 	progressDlg->SetProgress(0.0);
-	int count=0;
-	for(int i=0;i<nbSelected;i++) {
+	int count = 0;
+	for (int i = 0; i < nbSelected; i++) {
 		Facet *f = geom->GetFacet(selection[i]);
-		BOOL hadAnyTexture =  f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD || f->sh.countDirection;
+		BOOL hadAnyTexture = f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD || f->sh.countDirection;
 		BOOL hadDirCount = f->sh.countDirection;
-		if (recordDesBtn->GetState()<2) f->sh.countDes = recordDesBtn->GetState()*(enableBtn->GetState()!=0);
-		if (recordAbsBtn->GetState()<2) f->sh.countAbs = recordAbsBtn->GetState()*(enableBtn->GetState() != 0);
-		if (recordReflBtn->GetState()<2) f->sh.countRefl = recordReflBtn->GetState()*(enableBtn->GetState() != 0);
-		if (recordTransBtn->GetState()<2) f->sh.countTrans = recordTransBtn->GetState()*(enableBtn->GetState() != 0);
-		if (recordACBtn->GetState()<2) f->sh.countACD = recordACBtn->GetState()*(enableBtn->GetState() != 0);
-		if (recordDirBtn->GetState() < 2) f->sh.countDirection= recordDirBtn->GetState()*(enableBtn->GetState() != 0);
+		if (recordDesBtn->GetState() < 2) f->sh.countDes = recordDesBtn->GetState()*(enableBtn->GetState() != 0);
+		if (recordAbsBtn->GetState() < 2) f->sh.countAbs = recordAbsBtn->GetState()*(enableBtn->GetState() != 0);
+		if (recordReflBtn->GetState() < 2) f->sh.countRefl = recordReflBtn->GetState()*(enableBtn->GetState() != 0);
+		if (recordTransBtn->GetState() < 2) f->sh.countTrans = recordTransBtn->GetState()*(enableBtn->GetState() != 0);
+		if (recordACBtn->GetState() < 2) f->sh.countACD = recordACBtn->GetState()*(enableBtn->GetState() != 0);
+		if (recordDirBtn->GetState() < 2) f->sh.countDirection = recordDirBtn->GetState()*(enableBtn->GetState() != 0);
 		//Let the user disable textures with the main switch
 		if (enableBtn->GetState() == 0) f->sh.countDes = f->sh.countAbs = f->sh.countRefl = f->sh.countTrans = f->sh.countACD = f->sh.countDirection = FALSE;
 		BOOL hasAnyTexture = f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD || f->sh.countDirection;
@@ -784,6 +897,9 @@ BOOL FacetMesh::Apply() {
 		}
 		//Moving or not
 		if (facetMovingToggle->GetState() < 2) f->sh.isMoving = facetMovingToggle->GetState();
+		if (enableSojournTime->GetState() < 2) f->sh.enableSojournTime = enableSojournTime->GetState();
+		if (doSojT0) f->sh.sojournTheta0 = sojT0;
+		if (doSojE) f->sh.sojournE = sojE;
 
 		if (doUseMapA) {
 			f->sh.useOutgassingFile = useMapA;
@@ -793,27 +909,28 @@ BOOL FacetMesh::Apply() {
 		try {
 			/*if (enableBtn->GetState()<2 && recordDesBtn->GetState()<2 && recordAbsBtn->GetState()<2 && recordReflBtn->GetState()<2 &&
 				recordTransBtn->GetState()<2 && recordACBtn->GetState()<2 && recordDirBtn->GetState()<2 && doRatio) { //only remesh if all settings well-defined*/
-				if (structChanged) geom->RebuildLists();
-				BOOL needsRemeshing = (hadAnyTexture != hasAnyTexture) || (hadDirCount != f->sh.countDirection) || (doRatio && (!IS_ZERO(geom->GetFacet(selection[i])->tRatio - ratio)));
-				if (needsRemeshing) geom->SetFacetTexture(selection[i], hasAnyTexture ? ratio : 0.0, hasAnyTexture ? boundMap : FALSE);
+			BOOL needsRemeshing = (hadAnyTexture != hasAnyTexture) || (hadDirCount != f->sh.countDirection) || (doRatio && (!IS_ZERO(geom->GetFacet(selection[i])->tRatio - ratio)));
+			if (needsRemeshing) geom->SetFacetTexture(selection[i], hasAnyTexture ? ratio : 0.0, hasAnyTexture ? boundMap : FALSE);
 			//}
-		} catch (Error &e) {
-			GLMessageBox::Display((char *)e.GetMsg(),"Error",GLDLG_OK,GLDLG_ICONWARNING);
-			progressDlg->SetVisible(FALSE);
-			SAFE_DELETE(progressDlg);
-			return FALSE;
-		} catch (...) {
-			GLMessageBox::Display("Unexpected error while setting textures","Error",GLDLG_OK,GLDLG_ICONWARNING);
+		}
+		catch (Error &e) {
+			GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONWARNING);
 			progressDlg->SetVisible(FALSE);
 			SAFE_DELETE(progressDlg);
 			return FALSE;
 		}
-		if (showTexture->GetState()<2) f->textureVisible = showTexture->GetState();
-		if (showVolume->GetState()<2) f->volumeVisible = showVolume->GetState();
+		catch (...) {
+			GLMessageBox::Display("Unexpected error while setting textures", "Error", GLDLG_OK, GLDLG_ICONWARNING);
+			progressDlg->SetVisible(FALSE);
+			SAFE_DELETE(progressDlg);
+			return FALSE;
+		}
+		if (showTexture->GetState() < 2) f->textureVisible = showTexture->GetState();
+		if (showVolume->GetState() < 2) f->volumeVisible = showVolume->GetState();
 		nbPerformed++;
-		progressDlg->SetProgress((double)nbPerformed/(double)nbSelected);
+		progressDlg->SetProgress((double)nbPerformed / (double)nbSelected);
 	} //main cycle end
-
+	if (structChanged) geom->RebuildLists();
 
 	if (progressDlg) progressDlg->SetVisible(FALSE);
 	SAFE_DELETE(progressDlg);
@@ -829,16 +946,16 @@ void FacetMesh::QuickApply() {
 	double nbSelected = (double)geom->GetNbSelected();
 	double nbPerformed = 0.0;
 
-	for(int i=0;i<geom->GetNbFacet();i++) {
+	for (int i = 0; i < geom->GetNbFacet(); i++) {
 
 		Facet *f = geom->GetFacet(i);
-		if( f->selected ) {
+		if (f->selected) {
 
-			if (showTexture->GetState()<2) f->textureVisible = showTexture->GetState();
-			if (showVolume->GetState()<2) f->volumeVisible = showVolume->GetState();
+			if (showTexture->GetState() < 2) f->textureVisible = showTexture->GetState();
+			if (showVolume->GetState() < 2) f->volumeVisible = showVolume->GetState();
 
-			nbPerformed+=1.0;
-			progressDlg->SetProgress(nbPerformed/nbSelected);
+			nbPerformed += 1.0;
+			progressDlg->SetProgress(nbPerformed / nbSelected);
 		}
 
 	}
@@ -851,32 +968,37 @@ void FacetMesh::UpdateToggle(GLComponent *src) {
 
 	/*if (src==boundaryBtn) {
 		recordACBtn->SetState(FALSE);
-	} else if(src==enableBtn) {
+		} else if(src==enableBtn) {
 		//boundaryBtn->SetState(enableBtn->GetState());
-	} else */
+		} else */
 
-	if(src==recordDesBtn ) {
+	if (src == recordDesBtn) {
 		enableBtn->SetState(TRUE);
 		//boundaryBtn->SetState(TRUE);
 		recordACBtn->SetState(FALSE);
-	} else if(src==recordAbsBtn ) {
+	}
+	else if (src == recordAbsBtn) {
 		enableBtn->SetState(TRUE);
 		//boundaryBtn->SetState(TRUE);
 		recordACBtn->SetState(FALSE);
-	} else if(src==recordReflBtn ) {
+	}
+	else if (src == recordReflBtn) {
 		enableBtn->SetState(TRUE);
 		//boundaryBtn->SetState(TRUE);
 		recordACBtn->SetState(FALSE);
-	} else if(src==recordTransBtn ) {
+	}
+	else if (src == recordTransBtn) {
 		enableBtn->SetState(TRUE);
 		//boundaryBtn->SetState(TRUE);
 		recordACBtn->SetState(FALSE);
-	} else if(src==recordDirBtn ) {
+	}
+	else if (src == recordDirBtn) {
 		enableBtn->SetState(TRUE);
 		//boundaryBtn->SetState(TRUE);
 		recordACBtn->SetState(FALSE);
-	} else if(src==recordACBtn) {
-		if( recordACBtn->GetState() ) {
+	}
+	else if (src == recordACBtn) {
+		if (recordACBtn->GetState()) {
 			enableBtn->SetState(TRUE);
 			//boundaryBtn->SetState(TRUE);
 			recordDesBtn->SetState(FALSE);
@@ -886,21 +1008,31 @@ void FacetMesh::UpdateToggle(GLComponent *src) {
 			recordDirBtn->SetState(FALSE);
 		}
 	}
+	else if (src == enableSojournTime) {
+		sojournTheta0->SetEditable(enableSojournTime->GetState());
+		sojournE->SetEditable(enableSojournTime->GetState());
+		if (enableSojournTime->GetState() == 0) {
+			enableSojournTime->SetText("Wall sojourn time");
+		}
+		else {
+			CalcSojournTime();
+		}
+	}
 
-	UpdateSizeForRatio();
+	//UpdateSizeForRatio();
 }
 
 //-----------------------------------------------------------------------------
 
-void FacetMesh::ProcessMessage(GLComponent *src,int message) {
+void FacetMesh::ProcessMessage(GLComponent *src, int message) {
 
-	switch(message) {
+	switch (message) {
 
 		// -------------------------------------------------------------
 	case MSG_BUTTON:
-		if (src==quickApply) {
+		if (src == quickApply) {
 
-			progressDlg = new GLProgress("Applying view settings","Please wait");
+			progressDlg = new GLProgress("Applying view settings", "Please wait");
 			progressDlg->SetVisible(TRUE);
 			progressDlg->SetProgress(0.5);
 
@@ -909,7 +1041,7 @@ void FacetMesh::ProcessMessage(GLComponent *src,int message) {
 			progressDlg->SetVisible(FALSE);
 			SAFE_DELETE(progressDlg);
 
-		} 
+		}
 		/*
 		else if (src==updateButton) {
 
@@ -921,7 +1053,7 @@ void FacetMesh::ProcessMessage(GLComponent *src,int message) {
 
 		// -------------------------------------------------------------
 	case MSG_TEXT_UPD:
-		
+
 		if (src == resolutionText) {
 			enableBtn->SetState(TRUE);
 			UpdateSizeForRatio();
@@ -939,19 +1071,23 @@ void FacetMesh::ProcessMessage(GLComponent *src,int message) {
 				resolutionText->SetText(1.0 / length);
 				UpdateSizeForRatio();
 				mApp->facetApplyBtn->SetEnabled(TRUE);
-			} else
+			}
+			else
 				resolutionText->SetText("");
 		}
-		else if (src == facetTeleport) {
+		else if (
+			src == facetTeleport
+			|| src == facetAccFactor
+			|| src == facetSuperDest
+			|| src == facetStructure
+			) {
 			mApp->facetApplyBtn->SetEnabled(TRUE);
 		}
-		else if (src == facetAccFactor) {
+		else if (src == sojournTheta0|| src == sojournE) {
+			CalcSojournTime();
 			mApp->facetApplyBtn->SetEnabled(TRUE);
 		}
-		else if (src == facetSuperDest || src == facetStructure) {
-			mApp->facetApplyBtn->SetEnabled(TRUE);
-		}
-		
+
 		break;
 
 		// -------------------------------------------------------------
@@ -960,13 +1096,14 @@ void FacetMesh::ProcessMessage(GLComponent *src,int message) {
 		mApp->facetApplyBtn->SetEnabled(TRUE);
 		break;
 	case MSG_TEXT:
-		if (src == facetTeleport) {
-			mApp->ApplyFacetParams();
-		}
-		else if (src == facetAccFactor) {
-			mApp->ApplyFacetParams();
-		}
-		else if (src == facetSuperDest || src == facetStructure) {
+		if (
+			src == facetTeleport
+			|| src == facetAccFactor
+			|| src == facetSuperDest
+			|| src == facetStructure
+			|| src == sojournTheta0
+			|| src == sojournE
+			) {
 			mApp->ApplyFacetParams();
 		}
 		break;
@@ -995,6 +1132,19 @@ void FacetMesh::ProcessMessage(GLComponent *src,int message) {
 		break;
 	}
 
-	GLWindow::ProcessMessage(src,message);
+	GLWindow::ProcessMessage(src, message);
 }
 
+void FacetMesh::CalcSojournTime() {
+	double sojT0,sojE,facetT;
+	if (enableSojournTime->GetState() == 0
+		|| !(sojournTheta0->GetNumber(&sojT0))
+		|| !(sojournE->GetNumber(&sojE))
+		|| !(mApp->facetTemperature->GetNumber(&facetT))) {
+		enableSojournTime->SetText("Wall sojourn time");
+		return;
+	}
+	std::ostringstream tmp;
+	tmp<< "Wall sojourn time (" << sojT0*exp(-sojE / facetT) << " s)";
+	enableSojournTime->SetText(tmp.str());
+}

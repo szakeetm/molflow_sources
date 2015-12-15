@@ -731,8 +731,8 @@ void PerformBounce(FACET *iFacet) {
 	// Relaunch particle
 	UpdateVelocity(iFacet);
 	//Sojourn time
-	if (sHandle->enableSojournTime) {
-		sHandle->flightTimeCurrentParticle += sHandle->sojournTheta0*exp(-sHandle->sojournE / iFacet->sh.temperature);
+	if (iFacet->sh.enableSojournTime) {
+		sHandle->flightTimeCurrentParticle += iFacet->sh.sojournTheta0*exp(-iFacet->sh.sojournE / iFacet->sh.temperature);
 	}
 	//sHandle->temperature = iFacet->sh.temperature; //Thermalize particle
 

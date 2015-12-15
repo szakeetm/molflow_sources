@@ -55,7 +55,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	chkSimuOnly->SetBounds(15, 50, 160, 19);
 	settingsPanel->Add(chkSimuOnly);
 
-	chkCompressSavedFiles = new GLToggle(0, "Compress saved files (use ZIP format)");
+	chkCompressSavedFiles = new GLToggle(0, "Use .zip as default extension (otherwise .xml)");
 	chkCompressSavedFiles->SetBounds(15, 75, 100, 19);
 	settingsPanel->Add(chkCompressSavedFiles);
 
@@ -63,7 +63,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	chkCheckForUpdates->SetBounds(15, 100, 160, 19);
 	settingsPanel->Add(chkCheckForUpdates);
 
-	chkAutoUpdateFormulas = new GLToggle(0, "Auto update formulas");
+	chkAutoUpdateFormulas = new GLToggle(0, "Auto refresh formulas");
 	chkAutoUpdateFormulas->SetBounds(15, 125, 160, 19);
 	settingsPanel->Add(chkAutoUpdateFormulas);
 
@@ -87,59 +87,36 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	gasmassText->SetBounds(460, 20, 100, 19);
 	gasPanel->Add(gasmassText);
 
+		enableDecay = new GLToggle(0, "Gas half life (s):");
+	enableDecay->SetBounds(290, 75, 150, 19);
+	gasPanel->Add(enableDecay);
+
+	halfLifeText = new GLTextField(0, "");
+	halfLifeText->SetBounds(460, 80, 100, 19);
+	gasPanel->Add(halfLifeText);
+	
 	GLLabel *outgassingLabel = new GLLabel("Final outgassing rate (mbar*l/sec):");
-	outgassingLabel->SetBounds(290, 50, 150, 19);
+	outgassingLabel->SetBounds(290, 75, 150, 19);
 	gasPanel->Add(outgassingLabel);
 
 	outgassingText = new GLTextField(0, "");
-	outgassingText->SetBounds(460, 45, 100, 19);
+	outgassingText->SetBounds(460, 70, 100, 19);
 	outgassingText->SetEditable(FALSE);
 	gasPanel->Add(outgassingText);
 
 	GLLabel *influxLabel = new GLLabel("Total desorbed molecules:");
-	influxLabel->SetBounds(290, 75, 150, 19);
+	influxLabel->SetBounds(290, 100, 150, 19);
 	gasPanel->Add(influxLabel);
 
 	influxText = new GLTextField(0, "");
-	influxText->SetBounds(460, 70, 100, 19);
+	influxText->SetBounds(460, 95, 100, 19);
 	influxText->SetEditable(FALSE);
 	gasPanel->Add(influxText);
 
 	recalcButton = new GLButton(0, "Recalc. outgassing");
-	recalcButton->SetBounds(460, 98, 100, 19);
+	recalcButton->SetBounds(460, 123, 100, 19);
 	gasPanel->Add(recalcButton);
 
-	enableDecay = new GLToggle(0, "Gas half life (s):");
-	enableDecay->SetBounds(290, 130, 150, 19);
-	gasPanel->Add(enableDecay);
-
-	halfLifeText = new GLTextField(0, "");
-	halfLifeText->SetBounds(460, 130, 100, 19);
-	gasPanel->Add(halfLifeText);
-
-	enableSojournTime = new GLToggle(0, "Surface sojourn time (s):");
-	enableSojournTime->SetBounds(290, 155, 150, 19);
-	gasPanel->Add(enableSojournTime);
-
-	GLLabel *sojournLabel1 = new GLLabel("time=");
-	sojournLabel1->SetBounds(308, 175, 30, 19);
-	gasPanel->Add(sojournLabel1);
-
-	sojournTheta0 = new GLTextField(0, "");
-	sojournTheta0->SetBounds(343, 175, 60, 19);
-	gasPanel->Add(sojournTheta0);
-
-	GLLabel *sojournLabel2 = new GLLabel("*exp(-");
-	sojournLabel2->SetBounds(408, 175, 30, 19);
-	gasPanel->Add(sojournLabel2);
-
-	sojournE = new GLTextField(0, "");
-	sojournE->SetBounds(441, 175, 60, 19);
-	gasPanel->Add(sojournE);
-
-	GLLabel *sojournLabel3 = new GLLabel("/T_facet)");
-	sojournLabel3->SetBounds(506, 175, 35, 19);
-	gasPanel->Add(sojournLabel3);
 
 	applyButton = new GLButton(0, "Apply above settings");
 	applyButton->SetBounds(wD / 2 - 65, 210, 130, 19);
@@ -220,12 +197,6 @@ void GlobalSettings::Update() {
 	enableDecay->SetState(worker->enableDecay);
 	halfLifeText->SetText(worker->halfLife);
 	halfLifeText->SetEditable(worker->enableDecay);
-
-	enableSojournTime->SetState(worker->enableSojournTime);
-	sojournTheta0->SetText(worker->sojournTheta0);
-	sojournTheta0->SetEditable(worker->enableSojournTime);
-	sojournE->SetText(worker->sojournE);
-	sojournE->SetEditable(worker->enableSojournTime);
 
 	autoSaveText->SetText(mApp->autoSaveFrequency);
 	chkSimuOnly->SetState(mApp->autoSaveSimuOnly);
@@ -414,25 +385,7 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 				}
 			}
 
-			double t0,e;
-			if (enableSojournTime->GetState() && (!sojournTheta0->GetNumber(&t0) || !(t0 >= 0.0))) {
-				GLMessageBox::Display("Invalid sojourn time coefficient (Theta_0)", "Error", GLDLG_OK, GLDLG_ICONERROR);
-				return;
-			}
-			if (enableSojournTime->GetState() && (!sojournE->GetNumber(&e) || !(e >= 0.0))) {
-				GLMessageBox::Display("Invalid nominator in sojourn time exp. (Energy)", "Error", GLDLG_OK, GLDLG_ICONERROR);
-				return;
-			}
-			if ((enableSojournTime->GetState() != worker->enableSojournTime || abs(e - worker->sojournE) > 1e-7) || abs(t0 - worker->sojournTheta0)){
-				if (mApp->AskToReset()) {
-					worker->needsReload = TRUE;
-					worker->enableSojournTime = enableSojournTime->GetState();
-					if (worker->enableSojournTime) {
-						worker->sojournE = e;
-						worker->sojournTheta0 = t0;
-					}
-				}
-			}
+
 
 			double autosavefreq;
 			if (!autoSaveText->GetNumber(&autosavefreq) || !(autosavefreq > 0.0)) {
@@ -453,10 +406,6 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 	case MSG_TOGGLE:
 		if (src == enableDecay)
 			halfLifeText->SetEditable(enableDecay->GetState());
-		else if (src == enableSojournTime) {
-			sojournE->SetEditable(enableSojournTime->GetState());
-			sojournTheta0->SetEditable(enableSojournTime->GetState());
-		}
 		break;
 	}
 

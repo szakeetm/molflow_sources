@@ -46,6 +46,10 @@ void GLToggle::SetState(int setState) {
   state=setState;
 }
 
+void GLToggle::SetText(std::string text) {
+	strcpy(this->text, text.c_str());
+}
+
 // ---------------------------------------------------------------------
 
 void GLToggle::Paint() {

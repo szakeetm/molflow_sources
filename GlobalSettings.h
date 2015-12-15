@@ -67,9 +67,6 @@ private:
   GLTextField *gasmassText;
   GLToggle    *enableDecay;
   GLTextField *halfLifeText;
-  GLToggle    *enableSojournTime;
-  GLTextField *sojournTheta0;
-  GLTextField *sojournE;
 };
 
 #endif /* _GLOBALSETTINGSH_ */

@@ -37,7 +37,7 @@ GNU General Public License for more details.
 #define APP_NAME "MolFlow+ development version 64-bit (Compiled "__DATE__" "__TIME__") DEBUG MODE"
 #else
 //#define APP_NAME "Molflow+ development version ("__DATE__")"
-#define APP_NAME "Molflow+ 2.6.22 64-bit ("__DATE__")"
+#define APP_NAME "Molflow+ 2.6.23 64-bit ("__DATE__")"
 #endif
 
 /*
@@ -4405,9 +4405,6 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 		worker.enableDecay = FALSE;
 		worker.halfLife = 1;
 		worker.gasMass = 28;
-		worker.enableSojournTime = FALSE;
-		worker.sojournTheta0 = 1e-13;
-		worker.sojournE = 10;
 		worker.ResetMoments();
 	}
 	catch (Error &e) {

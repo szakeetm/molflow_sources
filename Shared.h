@@ -176,8 +176,6 @@ typedef struct {
   double gasMass;
   BOOL enableDecay;
   double halfLife;
-  BOOL enableSojournTime;
-  double sojournE, sojournTheta0;
   double timeWindowSize;
   BOOL useMaxwellDistribution; //TRUE: Maxwell-Boltzmann distribution, FALSE: All molecules have the same (V_avg) speed
   BOOL calcConstantFlow;
@@ -229,6 +227,8 @@ typedef struct {
   BOOL   countDirection; // Record avergare direction (MC texture)
   double maxSpeed;       // Max expected particle velocity (for velocity histogram)
   double accomodationFactor; // Thermal accomodation factor [0..1]
+  BOOL   enableSojournTime;
+  double sojournTheta0, sojournE;
 
   // Flags
   BOOL   is2sided;     // 2 sided

@@ -86,6 +86,10 @@ Facet::Facet(int nbIndex) {
 	sh.useOutgassingFile = FALSE;
 	sh.accomodationFactor = 1.0;
 
+	sh.enableSojournTime = FALSE;
+	sh.sojournTheta0 = 1E-6;
+	sh.sojournE = 100;
+
 	sh.outgassing_paramId = -1;
 	sh.opacity_paramId = -1;
 	sh.sticking_paramId = -1;
@@ -323,7 +327,16 @@ void Facet::LoadXML(xml_node f, int nbVertex, BOOL isMolflowFile, int vertexOffs
 		sh.useOutgassingFile = f.child("Outgassing").attribute("useOutgassingFile").as_int();
 		sh.temperature = f.child("Temperature").attribute("value").as_double();
 		sh.accomodationFactor = f.child("Temperature").attribute("accFactor").as_double();
-		sh.reflectType = f.child("Reflection").attribute("type").as_int();
+		xml_node reflNode = f.child("Reflection");
+		sh.reflectType = reflNode.attribute("type").as_int();
+		if (reflNode.attribute("enableSojournTime")) {
+			sh.enableSojournTime = reflNode.attribute("enableSojournTime").as_bool();
+			sh.sojournTheta0 = reflNode.attribute("sojournTheta0").as_double();
+			sh.sojournE = reflNode.attribute("sojournE").as_double();
+		}
+		else {
+			//Already set to default when calling Molflow::LoadFile()
+		}
 		sh.isMoving = f.child("Motion").attribute("isMoving").as_bool();
 		xml_node recNode = f.child("Recordings");
 		sh.profileType = recNode.child("Profile").attribute("type").as_int();
@@ -1719,6 +1732,9 @@ void  Facet::SaveXML_geom(pugi::xml_node f){
 
 	e = f.append_child("Reflection");
 	e.append_attribute("type") = sh.reflectType;
+	e.append_attribute("enableSojournTime") = sh.enableSojournTime;
+	e.append_attribute("sojournTheta0") = sh.sojournTheta0;
+	e.append_attribute("sojournE") = sh.sojournE;
 
 	e = f.append_child("Structure");
 	e.append_attribute("inStructure") = sh.superIdx;
