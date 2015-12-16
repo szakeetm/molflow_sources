@@ -2857,7 +2857,7 @@ void Geometry::LoadSYN(FileReader *file, GLProgress *prg, LEAK *pleak, int *nble
 		char tmpExpr[512];
 		strcpy(tmpName, file->ReadString());
 		strcpy(tmpExpr, file->ReadString());
-		mApp->AddFormula(tmpName, tmpExpr);
+		//mApp->AddFormula(tmpName, tmpExpr);
 	}
 	file->ReadKeyword("}");
 

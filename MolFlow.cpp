@@ -227,7 +227,7 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, INT)
 {
 	MolFlow *mApp = new MolFlow();
 
-	if (!mApp->Create(1024, 768, FALSE)) {
+	if (!mApp->Create(1024, 800, FALSE)) {
 		char *logs = GLToolkit::GetLogs();
 #ifdef WIN
 		if (logs) MessageBox(NULL, logs, "Molflow [Fatal error]", MB_OK);
