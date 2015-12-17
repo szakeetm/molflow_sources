@@ -287,8 +287,8 @@ void GlobalSettings::RestartProc() {
 		//int rep = GLMessageBox::Display(tmp,"Question",GLDLG_OK|GLDLG_CANCEL,GLDLG_ICONWARNING);
 
 		if (mApp->AskToReset()) {
-			if (nbProc <= 0 || nbProc > 16) {
-				GLMessageBox::Display("Invalid process number [1..16]", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			if (nbProc <= 0 || nbProc > MAX_PROCESS) {
+				GLMessageBox::Display("Invalid process number [1..32]", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			}
 			else {
 				try {

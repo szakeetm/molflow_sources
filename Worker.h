@@ -80,7 +80,7 @@ public:
   char *GetShortFileName(char* longFileName);
   void  SetFileName(char *fileName);
 
-  // Set number of processes [1..16] (throws Error)
+  // Set number of processes [1..32] (throws Error)
   void SetProcNumber(int n);
 
   // Get number of processes

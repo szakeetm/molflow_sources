@@ -301,6 +301,7 @@ MolFlow::MolFlow()
 #ifdef _DEBUG
 	nbProc = 1;
 #else
+	SATURATE(numCPU, 1, MIN(MAX_PROCESS,16)); //limit the auto-detected processes to the maximum available, at least one, and max 16 (above it speed improvement not obvious)
 	nbProc = numCPU;
 #endif
 
