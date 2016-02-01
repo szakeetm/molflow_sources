@@ -1610,7 +1610,7 @@ void MolFlow::UpdateFormula() {
 			else if ((idx = getVariable(v->name, "P")) > 0) {
 				ok = (idx <= nbFacet);
 				if (ok) v->value = geom->GetFacet(idx - 1)->sh.counter.hit.sum_v_ort *
-					worker.finalOutgassingRate / worker.nbDesorption*1E4 / (geom->GetFacet(idx - 1)->sh.area/
+					worker.finalOutgassingRate / worker.nbDesorption*1E4 / (geom->GetFacet(idx - 1)->sh.area*
 					(geom->GetFacet(idx - 1)->sh.is2sided ? 2.0 : 1.0)) * (worker.gasMass / 1000 / 6E23)*0.0100;
 			}
 			else if ((idx = getVariable(v->name, "DEN")) > 0) {

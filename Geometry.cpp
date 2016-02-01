@@ -1578,7 +1578,7 @@ void Geometry::LoadSTL(FileReader *file, GLProgress *prg, double scaleFactor) {
 		file->JumpSection("endfacet");
 		w = file->ReadWord();
 	}
-	if (strcmp(w, "endsolid") != 0) throw Error("Unexpected or not supported STL keyword, 'endsolid' required");
+	if (strcmp(w, "endsolid") != 0) throw Error("Unexpected or not supported STL keyword, 'endsolid' required\nMaybe the STL file was saved in binary instead of ASCII format?");
 
 	// Allocate mem
 	sh.nbVertex = 3 * sh.nbFacet;

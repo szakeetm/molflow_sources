@@ -87,12 +87,12 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	gasmassText->SetBounds(460, 20, 100, 19);
 	gasPanel->Add(gasmassText);
 
-		enableDecay = new GLToggle(0, "Gas half life (s):");
-	enableDecay->SetBounds(290, 75, 150, 19);
+	enableDecay = new GLToggle(0, "Gas half life (s):");
+	enableDecay->SetBounds(290, 50, 150, 19);
 	gasPanel->Add(enableDecay);
 
 	halfLifeText = new GLTextField(0, "");
-	halfLifeText->SetBounds(460, 80, 100, 19);
+	halfLifeText->SetBounds(460, 45, 100, 19);
 	gasPanel->Add(halfLifeText);
 	
 	GLLabel *outgassingLabel = new GLLabel("Final outgassing rate (mbar*l/sec):");
@@ -377,7 +377,7 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 				GLMessageBox::Display("Invalid half life", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
-			if (enableDecay->GetState()!=worker->enableDecay || abs(hl - worker->halfLife) > 1e-7) {
+			if (enableDecay->GetState() != worker->enableDecay || (enableDecay->GetState() && abs(hl - worker->halfLife) > 1e-7)) {
 				if (mApp->AskToReset()) {
 					worker->needsReload = TRUE;
 					worker->enableDecay = enableDecay->GetState();
