@@ -534,7 +534,7 @@ BOOL GLWindowManager::IsAltDown() {
 // ---------------------------------------------------------------
 
 BOOL GLWindowManager::IsCapsLockOn() {
-  return (modState & CAPSLOCK_MODIFIER)!=0;
+	return (modState & CAPSLOCK_MODIFIER)!=0;
 }
 
 // ---------------------------------------------------------------
@@ -579,7 +579,7 @@ BOOL GLWindowManager::ProcessKey(SDL_Event *evt,BOOL processAcc) {
     if( unicode == SDLK_RALT || unicode == SDLK_LALT )
       modState &= altMask;
 
-	if( unicode == SDLK_CAPSLOCK )
+	if (unicode == SDLK_CAPSLOCK)
       modState &= capsLockMask;
   }
 

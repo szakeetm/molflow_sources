@@ -315,7 +315,7 @@ void Movement::ProcessMessage(GLComponent *src,int message) {
 				mApp->UpdateViewers();
 				//GLWindowManager::FullRepaint();
 				mApp->changedSinceSave = TRUE;
-				GLWindow::ProcessMessage(NULL, MSG_CLOSE);
+				//GLWindow::ProcessMessage(NULL, MSG_CLOSE);
 				return;
 			}
 		}
