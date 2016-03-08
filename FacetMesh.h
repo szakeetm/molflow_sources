@@ -109,7 +109,8 @@ private:
 	GLTextField	*sojournE;
 	GLLabel	*sojournLabel2;
 	GLLabel	*sojournLabel1;
-	GLTextField	*sojournTheta0;
+	GLTextField	*sojournFreq;
+	GLButton	*SojournInfoButton;
 
 	GLProgress  *progressDlg;
 

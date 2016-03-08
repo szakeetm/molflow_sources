@@ -228,7 +228,7 @@ typedef struct {
   double maxSpeed;       // Max expected particle velocity (for velocity histogram)
   double accomodationFactor; // Thermal accomodation factor [0..1]
   BOOL   enableSojournTime;
-  double sojournTheta0, sojournE;
+  double sojournFreq, sojournE;
 
   // Flags
   BOOL   is2sided;     // 2 sided

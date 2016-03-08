@@ -226,25 +226,30 @@ FacetMesh::FacetMesh(Worker *w) :GLWindow() {
 	paramPanel->SetCompBounds(enableSojournTime, 10, 132, 95, 16);
 	paramPanel->Add(enableSojournTime);
 
-	sojournLabel3 = new GLLabel("/T_facet)");
-	paramPanel->SetCompBounds(sojournLabel3, 245, 153, 54, 12);
+	sojournLabel3 = new GLLabel("J/mole");
+	paramPanel->SetCompBounds(sojournLabel3, 253, 153, 53, 13);
 	paramPanel->Add(sojournLabel3);
 
 	sojournE = new GLTextField(0, "");
-	paramPanel->SetCompBounds(sojournE, 175, 150, 70, 18);
+	paramPanel->SetCompBounds(sojournE, 197, 150, 53, 18);
 	paramPanel->Add(sojournE);
 
-	sojournLabel2 = new GLLabel("* exp( - ");
-	paramPanel->SetCompBounds(sojournLabel2, 130, 153, 36, 12);
+	sojournLabel2 = new GLLabel("Hz; Binding E:");
+	paramPanel->SetCompBounds(sojournLabel2, 126, 153, 70, 13);
 	paramPanel->Add(sojournLabel2);
 
-	sojournLabel1 = new GLLabel("time=");
-	paramPanel->SetCompBounds(sojournLabel1, 25, 153, 28, 12);
+	sojournLabel1 = new GLLabel("Attempt freq:");
+	paramPanel->SetCompBounds(sojournLabel1, 11, 153, 66, 13);
 	paramPanel->Add(sojournLabel1);
 
-	sojournTheta0 = new GLTextField(0, "");
-	paramPanel->SetCompBounds(sojournTheta0, 55, 150, 70, 18);
-	paramPanel->Add(sojournTheta0);
+	sojournFreq = new GLTextField(0, "");
+	paramPanel->SetCompBounds(sojournFreq, 75, 150, 50, 18);
+	paramPanel->Add(sojournFreq);
+
+	SojournInfoButton = new GLButton(0, "Info");
+	paramPanel->SetCompBounds(SojournInfoButton, 235, 129, 69, 19);
+	paramPanel->Add(SojournInfoButton);
+
 
 	SetTitle("Advanced facet parameters");
 	// Center dialog
@@ -405,7 +410,7 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 	facetUseDesFile->SetEditable(somethingSelected);
 	facetMovingToggle->SetEnabled(somethingSelected);
 	enableSojournTime->SetEnabled(somethingSelected);
-	sojournTheta0->SetEditable(somethingSelected);
+	sojournFreq->SetEditable(somethingSelected);
 	sojournE->SetEditable(somethingSelected);
 
 	if (!geom->IsLoaded()) return;
@@ -431,7 +436,7 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 		facetTeleport->Clear();
 		enableSojournTime->SetState(0);
 		enableSojournTime->SetText("Wall sojourn time");
-		sojournTheta0->SetText("");
+		sojournFreq->SetText("");
 		sojournE->SetText("");
 		return;
 	}
@@ -463,7 +468,7 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 	BOOL dynOutgEqual = TRUE;
 	BOOL dynOutgAEqual = TRUE;
 	BOOL hasSojournE = TRUE;
-	BOOL sojournThetaE = TRUE;
+	BOOL sojournFreqE = TRUE;
 	BOOL sojournEE = TRUE;
 
 	double f0Area = f0->sh.area * (f0->sh.is2sided ? 2.0 : 1.0);
@@ -499,7 +504,7 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 		doseAEqual = doseAEqual && IsEqual(f0->totalDose / f0Area, f->totalDose / fArea);
 		isMovingE = isMovingE && (f0->sh.isMoving == f->sh.isMoving);
 		hasSojournE = hasSojournE && (f0->sh.enableSojournTime == f->sh.enableSojournTime);
-		sojournThetaE = sojournThetaE && IsEqual(f0->sh.sojournTheta0, f->sh.sojournTheta0);
+		sojournFreqE = sojournFreqE && IsEqual(f0->sh.sojournFreq, f->sh.sojournFreq);
 		sojournEE = sojournEE && IsEqual(f0->sh.sojournE, f->sh.sojournE);
 	}
 
@@ -647,19 +652,19 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 
 	if (enableSojournTime->GetState() == 0) {
 		enableSojournTime->SetText("Wall sojourn time");
-		sojournTheta0->SetEditable(FALSE);
+		sojournFreq->SetEditable(FALSE);
 		sojournE->SetEditable(FALSE);
 	}
 	else {
-		sojournTheta0->SetEditable(TRUE);
+		sojournFreq->SetEditable(TRUE);
 		sojournE->SetEditable(TRUE);
 	}
 
-	if (sojournThetaE) {
-		sojournTheta0->SetText(f0->sh.sojournTheta0);
+	if (sojournFreqE) {
+		sojournFreq->SetText(f0->sh.sojournFreq);
 	}
 	else {
-		sojournTheta0->SetText("...");
+		sojournFreq->SetText("...");
 	}
 	if (sojournEE) {
 		sojournE->SetText(f0->sh.sojournE);
@@ -823,20 +828,20 @@ BOOL FacetMesh::Apply() {
 	}
 
 	// sojourn time coefficient 1
-	double sojT0;
-	BOOL doSojT0 = FALSE;
+	double sojF;
+	BOOL doSojF = FALSE;
 
-	if (sojournTheta0->GetNumber(&sojT0)) {
-		if (sojT0 <= 0.0) {
-			GLMessageBox::Display("Wall sojourn time first coefficient (Theta0) has to be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
+	if (sojournFreq->GetNumber(&sojF)) {
+		if (sojF <= 0.0) {
+			GLMessageBox::Display("Wall sojourn time frequency has to be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return FALSE;
 		}
-		doSojT0 = TRUE;
+		doSojF = TRUE;
 	}
 	else {
-		if (enableSojournTime->GetState() == 0 || strcmp(sojournTheta0->GetText(), "...") == 0) doSojT0 = FALSE;
+		if (enableSojournTime->GetState() == 0 || strcmp(sojournFreq->GetText(), "...") == 0) doSojF = FALSE;
 		else {
-			GLMessageBox::Display("Invalid wall sojourn time first coefficient (Theta0)", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			GLMessageBox::Display("Invalid wall sojourn time frequency", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return FALSE;
 		}
 	}
@@ -898,7 +903,7 @@ BOOL FacetMesh::Apply() {
 		//Moving or not
 		if (facetMovingToggle->GetState() < 2) f->sh.isMoving = facetMovingToggle->GetState();
 		if (enableSojournTime->GetState() < 2) f->sh.enableSojournTime = enableSojournTime->GetState();
-		if (doSojT0) f->sh.sojournTheta0 = sojT0;
+		if (doSojF) f->sh.sojournFreq = sojF;
 		if (doSojE) f->sh.sojournE = sojE;
 
 		if (doUseMapA) {
@@ -1009,7 +1014,7 @@ void FacetMesh::UpdateToggle(GLComponent *src) {
 		}
 	}
 	else if (src == enableSojournTime) {
-		sojournTheta0->SetEditable(enableSojournTime->GetState());
+		sojournFreq->SetEditable(enableSojournTime->GetState());
 		sojournE->SetEditable(enableSojournTime->GetState());
 		if (enableSojournTime->GetState() == 0) {
 			enableSojournTime->SetText("Wall sojourn time");
@@ -1042,13 +1047,20 @@ void FacetMesh::ProcessMessage(GLComponent *src, int message) {
 			SAFE_DELETE(progressDlg);
 
 		}
-		/*
-		else if (src==updateButton) {
+		
+		else if (src==SojournInfoButton) {
 
-		UpdateSizeForRatio();
+			char tmp[] = "f: Attempt frequency [Hz]\n"
+				"E: Binding energy [J/mole]\n"
+				"A:= exp(-E/(R*T))\n\n"
+				"Probability of sojourn time t:\n"
+				"p(t)= A*f*exp(-A*f*t)\n\n"
+				"Mean sojourn time:\n"
+				"mean= 1/(A*f)\n";
+			GLMessageBox::Display(tmp, "Wall sojourn time", GLDLG_OK, GLDLG_ICONINFO);
 
 		}
-		*/
+		
 		break;
 
 		// -------------------------------------------------------------
@@ -1083,7 +1095,7 @@ void FacetMesh::ProcessMessage(GLComponent *src, int message) {
 			) {
 			mApp->facetApplyBtn->SetEnabled(TRUE);
 		}
-		else if (src == sojournTheta0|| src == sojournE) {
+		else if (src == sojournFreq || src == sojournE) {
 			CalcSojournTime();
 			mApp->facetApplyBtn->SetEnabled(TRUE);
 		}
@@ -1101,7 +1113,7 @@ void FacetMesh::ProcessMessage(GLComponent *src, int message) {
 			|| src == facetAccFactor
 			|| src == facetSuperDest
 			|| src == facetStructure
-			|| src == sojournTheta0
+			|| src == sojournFreq
 			|| src == sojournE
 			) {
 			mApp->ApplyFacetParams();
@@ -1136,15 +1148,15 @@ void FacetMesh::ProcessMessage(GLComponent *src, int message) {
 }
 
 void FacetMesh::CalcSojournTime() {
-	double sojT0,sojE,facetT;
+	double sojF,sojE,facetT;
 	if (enableSojournTime->GetState() == 0
-		|| !(sojournTheta0->GetNumber(&sojT0))
+		|| !(sojournFreq->GetNumber(&sojF))
 		|| !(sojournE->GetNumber(&sojE))
 		|| !(mApp->facetTemperature->GetNumber(&facetT))) {
 		enableSojournTime->SetText("Wall sojourn time");
 		return;
 	}
 	std::ostringstream tmp;
-	tmp<< "Wall sojourn time (" << sojT0*exp(-sojE / facetT) << " s)";
+	tmp<< "Wall sojourn time (mean=" << 1.0/(sojF*exp(-sojE /(8.31* facetT))) << " s)";
 	enableSojournTime->SetText(tmp.str());
 }

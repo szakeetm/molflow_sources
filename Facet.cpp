@@ -87,7 +87,7 @@ Facet::Facet(int nbIndex) {
 	sh.accomodationFactor = 1.0;
 
 	sh.enableSojournTime = FALSE;
-	sh.sojournTheta0 = 1E-6;
+	sh.sojournFreq = 1E13;
 	sh.sojournE = 100;
 
 	sh.outgassing_paramId = -1;
@@ -331,8 +331,14 @@ void Facet::LoadXML(xml_node f, int nbVertex, BOOL isMolflowFile, int vertexOffs
 		sh.reflectType = reflNode.attribute("type").as_int();
 		if (reflNode.attribute("enableSojournTime")) {
 			sh.enableSojournTime = reflNode.attribute("enableSojournTime").as_bool();
-			sh.sojournTheta0 = reflNode.attribute("sojournTheta0").as_double();
-			sh.sojournE = reflNode.attribute("sojournE").as_double();
+			if (!reflNode.attribute("sojournFreq")) {//Backward compatibility with ver. before 2.6.25
+				sh.sojournFreq = 1.0 / reflNode.attribute("sojournTheta0").as_double();
+				sh.sojournE = 8.31 * reflNode.attribute("sojournE").as_double();
+			}
+			else {
+				sh.sojournFreq = reflNode.attribute("sojournFreq").as_double();
+				sh.sojournE = reflNode.attribute("sojournE").as_double();
+			}
 		}
 		else {
 			//Already set to default when calling Molflow::LoadFile()
@@ -1733,7 +1739,7 @@ void  Facet::SaveXML_geom(pugi::xml_node f){
 	e = f.append_child("Reflection");
 	e.append_attribute("type") = sh.reflectType;
 	e.append_attribute("enableSojournTime") = sh.enableSojournTime;
-	e.append_attribute("sojournTheta0") = sh.sojournTheta0;
+	e.append_attribute("sojournFreq") = sh.sojournFreq;
 	e.append_attribute("sojournE") = sh.sojournE;
 
 	e = f.append_child("Structure");

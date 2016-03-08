@@ -37,7 +37,7 @@ GNU General Public License for more details.
 #define APP_NAME "MolFlow+ development version 64-bit (Compiled "__DATE__" "__TIME__") DEBUG MODE"
 #else
 //#define APP_NAME "Molflow+ development version ("__DATE__")"
-#define APP_NAME "Molflow+ 2.6.24 64-bit ("__DATE__")"
+#define APP_NAME "Molflow+ 2.6.25 64-bit ("__DATE__")"
 #endif
 
 /*
@@ -628,7 +628,7 @@ int MolFlow::OneTimeSceneInit()
 	showVertex = new GLToggle(0, "Vertices");
 	togglePanel->Add(showVertex);
 
-	showMoreBtn = new GLButton(0, "<< More");
+	showMoreBtn = new GLButton(0, "<< View");
 	togglePanel->Add(showMoreBtn);
 
 	shortcutPanel = new GLTitledPanel("Shortcuts");
@@ -649,7 +649,7 @@ int MolFlow::OneTimeSceneInit()
 	simuPanel->SetClosable(TRUE);
 	Add(simuPanel);
 
-	globalSettingsBtn = new GLButton(0, "<< More");
+	globalSettingsBtn = new GLButton(0, "<< Sim");
 	simuPanel->Add(globalSettingsBtn);
 
 	startSimu = new GLButton(0, "Start/Stop");
@@ -811,7 +811,7 @@ int MolFlow::OneTimeSceneInit()
 	facetRecType->SetValueAt(5, "Orthogonal velocity");
 	facetPanel->Add(facetRecType);
 
-	facetMoreBtn = new GLButton(0, "<< More");
+	facetMoreBtn = new GLButton(0, "<< Adv");
 	facetPanel->Add(facetMoreBtn);
 
 	facetDetailsBtn = new GLButton(0, "Details...");
