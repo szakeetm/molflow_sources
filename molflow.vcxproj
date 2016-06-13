@@ -1,0 +1,284 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{CE510208-53CA-4EEC-B674-1C8D0D02709F}</ProjectGuid>
+    <RootNamespace>molflow</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Debug\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</LinkIncremental>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Release\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Release\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
+    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">C:\Users\mszakacs\Dropbox\molflow.old latest\GLApp\GLChart;C:\Users\mszakacs\Dropbox\molflow.old latest\GLApp;$(IncludePath)</IncludePath>
+    <SourcePath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">C:\Users\mszakacs\Dropbox\molflow.old latest\GLApp\GLChart;C:\Users\mszakacs\Dropbox\molflow.old latest\GLApp;$(SourcePath)</SourcePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
+      <AdditionalIncludeDirectories>lib/include;lib/include/SDL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>sdl.lib;glu32.lib;opengl32.lib;imageLib.lib;Advapi32.lib;user32.lib;shell32.lib;kernel32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)molflow.exe</OutputFile>
+      <AdditionalLibraryDirectories>lib/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ProgramDatabaseFile>$(OutDir)molflow.pdb</ProgramDatabaseFile>
+      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+      <Profile>false</Profile>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <AdditionalIncludeDirectories>lib/include;lib/include/SDL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_WITHGL;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>sdl.lib;glu32.lib;opengl32.lib;imageLib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)molflow.exe</OutputFile>
+      <AdditionalLibraryDirectories>lib/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="AddVertex.cpp" />
+    <ClCompile Include="AlignFacet.cpp" />
+    <ClCompile Include="ASELoader.cpp" />
+    <ClCompile Include="CollapseSettings.cpp" />
+    <ClCompile Include="Facet.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="FacetCoordinates.cpp" />
+    <ClCompile Include="FacetDetails.cpp" />
+    <ClCompile Include="FacetMesh.cpp" />
+    <ClCompile Include="File.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="FormulaSettings.cpp" />
+    <ClCompile Include="Geometry.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="GeometryRender.cpp" />
+    <ClCompile Include="GeometryViewer.cpp" />
+    <ClCompile Include="GLApp\GLSaveDialog.cpp" />
+    <ClCompile Include="GLApp\GLUnitDialog.cpp" />
+    <ClCompile Include="GlobalSettings.cpp" />
+    <ClCompile Include="GrahamScan.cpp" />
+    <ClCompile Include="MirrorFacet.cpp" />
+    <ClCompile Include="MolFlow.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="MoveFacet.cpp" />
+    <ClCompile Include="MoveVertex.cpp" />
+    <ClCompile Include="ProfilePlotter.cpp" />
+    <ClCompile Include="RotateFacet.cpp" />
+    <ClCompile Include="TexturePlotter.cpp" />
+    <ClCompile Include="TextureSettings.cpp" />
+    <ClCompile Include="Utils.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="ViewEditor.cpp" />
+    <ClCompile Include="Viewer3DSettings.cpp" />
+    <ClCompile Include="Worker.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLApp.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLButton.cpp" />
+    <ClCompile Include="GLApp\GLColorBox.cpp" />
+    <ClCompile Include="GLApp\GLCombo.cpp" />
+    <ClCompile Include="GLApp\GLComponent.cpp" />
+    <ClCompile Include="GLApp\GLContainer.cpp" />
+    <ClCompile Include="GLApp\GLFileBox.cpp" />
+    <ClCompile Include="GLApp\GLFont.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLGradient.cpp" />
+    <ClCompile Include="GLApp\GLIcon.cpp" />
+    <ClCompile Include="GLApp\GLInputBox.cpp" />
+    <ClCompile Include="GLApp\GLLabel.cpp" />
+    <ClCompile Include="GLApp\GLList.cpp" />
+    <ClCompile Include="GLApp\GLMatrix.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLMenu.cpp" />
+    <ClCompile Include="GLApp\GLMenuBar.cpp" />
+    <ClCompile Include="GLApp\GLMessageBox.cpp" />
+    <ClCompile Include="GLApp\GLParser.cpp" />
+    <ClCompile Include="GLApp\GLProgress.cpp" />
+    <ClCompile Include="GLApp\GLScrollBar.cpp" />
+    <ClCompile Include="GLApp\GLSpinner.cpp" />
+    <ClCompile Include="GLApp\GLSprite.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLTabWindow.cpp" />
+    <ClCompile Include="GLApp\GLTextField.cpp" />
+    <ClCompile Include="GLApp\GLTitledPanel.cpp" />
+    <ClCompile Include="GLApp\GLToggle.cpp" />
+    <ClCompile Include="GLApp\GLToolkit.cpp" />
+    <ClCompile Include="GLApp\GLWindow.cpp" />
+    <ClCompile Include="GLApp\GLWindowManager.cpp" />
+    <ClCompile Include="GLApp\GLChart\AxisPanel.cpp" />
+    <ClCompile Include="GLApp\GLChart\GLAxis.cpp" />
+    <ClCompile Include="GLApp\GLChart\GLChart.cpp" />
+    <ClCompile Include="GLApp\GLChart\GLChartOptions.cpp" />
+    <ClCompile Include="GLApp\GLChart\GLDataView.cpp" />
+    <ClCompile Include="GLApp\GLChart\GLDataViewOptions.cpp" />
+    <ClCompile Include="smp\Process.c" />
+    <ClCompile Include="ShMemoryCPP.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="AddVertex.h" />
+    <ClInclude Include="AlignFacet.h" />
+    <ClInclude Include="GLApp\GLApp.h" />
+    <ClInclude Include="GLApp\GLButton.h" />
+    <ClInclude Include="GLApp\GLChart.h" />
+    <ClInclude Include="GLApp\GLColorBox.h" />
+    <ClInclude Include="GLApp\GLCombo.h" />
+    <ClInclude Include="GLApp\GLComponent.h" />
+    <ClInclude Include="GLApp\GLContainer.h" />
+    <ClInclude Include="GLApp\GLFileBox.h" />
+    <ClInclude Include="GLApp\GLFont.h" />
+    <ClInclude Include="GLApp\GLGradient.h" />
+    <ClInclude Include="GLApp\GLIcon.h" />
+    <ClInclude Include="GLApp\GLInputBox.h" />
+    <ClInclude Include="GLApp\GLLabel.h" />
+    <ClInclude Include="GLApp\GLList.h" />
+    <ClInclude Include="GLApp\GLMatrix.h" />
+    <ClInclude Include="GLApp\GLMenu.h" />
+    <ClInclude Include="GLApp\GLMenuBar.h" />
+    <ClInclude Include="GLApp\GLMessageBox.h" />
+    <ClInclude Include="GLApp\GLParser.h" />
+    <ClInclude Include="GLApp\GLProgress.h" />
+    <ClInclude Include="GLApp\GLSaveDialog.h" />
+    <ClInclude Include="GLApp\GLScrollBar.h" />
+    <ClInclude Include="GLApp\GLSpinner.h" />
+    <ClInclude Include="GLApp\GLSprite.h" />
+    <ClInclude Include="GLApp\GLTabWindow.h" />
+    <ClInclude Include="GLApp\GLTextField.h" />
+    <ClInclude Include="GLApp\GLTitledPanel.h" />
+    <ClInclude Include="GLApp\GLToggle.h" />
+    <ClInclude Include="GLApp\GLToolkit.h" />
+    <ClInclude Include="GLApp\GLTypes.h" />
+    <ClInclude Include="GLApp\GLUnitDialog.h" />
+    <ClInclude Include="GLApp\GLWindow.h" />
+    <ClInclude Include="GLApp\GLWindowManager.h" />
+    <ClInclude Include="GLApp\GLChart\AxisPanel.h" />
+    <ClInclude Include="GLApp\GLChart\DataList.h" />
+    <ClInclude Include="GLApp\GLChart\GLAxis.h" />
+    <ClInclude Include="GLApp\GLChart\GLChartConst.h" />
+    <ClInclude Include="GLApp\GLChart\GLChartOptions.h" />
+    <ClInclude Include="GLApp\GLChart\GLDataView.h" />
+    <ClInclude Include="GLApp\GLChart\GLDataViewOptions.h" />
+    <ClInclude Include="GLApp\GLChart\SearchInfo.h" />
+    <ClInclude Include="GlobalSettings.h" />
+    <ClInclude Include="GrahamScan.h" />
+    <ClInclude Include="MirrorFacet.h" />
+    <ClInclude Include="MoveFacet.h" />
+    <ClInclude Include="MoveVertex.h" />
+    <ClInclude Include="RotateFacet.h" />
+    <ClInclude Include="smp\SMP.h" />
+    <ClInclude Include="ASELoader.h" />
+    <ClInclude Include="CollapseSettings.h" />
+    <ClInclude Include="Facet.h" />
+    <ClInclude Include="FacetCoordinates.h" />
+    <ClInclude Include="FacetDetails.h" />
+    <ClInclude Include="FacetMesh.h" />
+    <ClInclude Include="File.h" />
+    <ClInclude Include="FormulaSettings.h" />
+    <ClInclude Include="Geometry.h" />
+    <ClInclude Include="GeometryViewer.h" />
+    <ClInclude Include="MolFlow.h" />
+    <ClInclude Include="ProfilePlotter.h" />
+    <ClInclude Include="Shared.h" />
+    <ClInclude Include="TexturePlotter.h" />
+    <ClInclude Include="TextureSettings.h" />
+    <ClInclude Include="Types.h" />
+    <ClInclude Include="Utils.h" />
+    <ClInclude Include="ViewEditor.h" />
+    <ClInclude Include="Viewer3DSettings.h" />
+    <ClInclude Include="windialog.h" />
+    <ClInclude Include="Worker.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

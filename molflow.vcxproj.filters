@@ -1,0 +1,437 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Source Files\GLApp">
+      <UniqueIdentifier>{9d30c1ae-fa8c-46d6-b3a5-8b86f8af2cf4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GLApp\GLChart">
+      <UniqueIdentifier>{9f51b105-52f6-4d6d-ba4b-d8fa82220828}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\SMP">
+      <UniqueIdentifier>{911189a4-c405-4fdf-bc49-c9f289fab612}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ASELoader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CollapseSettings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Facet.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FacetCoordinates.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FacetDetails.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FacetMesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="File.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FormulaSettings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeometryRender.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeometryViewer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MolFlow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProfilePlotter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TexturePlotter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureSettings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ViewEditor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Viewer3DSettings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Worker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLApp.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLButton.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLColorBox.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLCombo.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLComponent.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLContainer.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLFileBox.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLFont.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLGradient.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLIcon.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLInputBox.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLLabel.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLList.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLMatrix.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLMenu.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLMenuBar.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLMessageBox.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLParser.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLProgress.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLScrollBar.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLSpinner.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLSprite.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLTabWindow.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLTextField.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLTitledPanel.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLToggle.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLToolkit.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLWindow.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLWindowManager.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLChart\AxisPanel.cpp">
+      <Filter>Source Files\GLApp\GLChart</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLChart\GLAxis.cpp">
+      <Filter>Source Files\GLApp\GLChart</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLChart\GLChart.cpp">
+      <Filter>Source Files\GLApp\GLChart</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLChart\GLChartOptions.cpp">
+      <Filter>Source Files\GLApp\GLChart</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLChart\GLDataView.cpp">
+      <Filter>Source Files\GLApp\GLChart</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLChart\GLDataViewOptions.cpp">
+      <Filter>Source Files\GLApp\GLChart</Filter>
+    </ClCompile>
+    <ClCompile Include="smp\Process.c">
+      <Filter>Source Files\SMP</Filter>
+    </ClCompile>
+    <ClCompile Include="ShMemoryCPP.cpp">
+      <Filter>Source Files\SMP</Filter>
+    </ClCompile>
+    <ClCompile Include="GrahamScan.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MoveVertex.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GlobalSettings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLSaveDialog.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="AddVertex.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MoveFacet.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GLApp\GLUnitDialog.cpp">
+      <Filter>Source Files\GLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="MirrorFacet.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RotateFacet.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AlignFacet.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="GLApp\GLApp.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLButton.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLChart.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLColorBox.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLCombo.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLComponent.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLContainer.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLFileBox.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLFont.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLGradient.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLIcon.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLInputBox.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLLabel.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLList.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLMatrix.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLMenu.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLMenuBar.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLMessageBox.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLParser.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLProgress.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLScrollBar.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLSpinner.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLSprite.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLTabWindow.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLTextField.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLTitledPanel.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLToggle.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLToolkit.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLTypes.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLWindow.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLWindowManager.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLChart\AxisPanel.h">
+      <Filter>Source Files\GLApp\GLChart</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLChart\DataList.h">
+      <Filter>Source Files\GLApp\GLChart</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLChart\GLAxis.h">
+      <Filter>Source Files\GLApp\GLChart</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLChart\GLChartConst.h">
+      <Filter>Source Files\GLApp\GLChart</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLChart\GLChartOptions.h">
+      <Filter>Source Files\GLApp\GLChart</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLChart\GLDataView.h">
+      <Filter>Source Files\GLApp\GLChart</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLChart\GLDataViewOptions.h">
+      <Filter>Source Files\GLApp\GLChart</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLChart\SearchInfo.h">
+      <Filter>Source Files\GLApp\GLChart</Filter>
+    </ClInclude>
+    <ClInclude Include="smp\SMP.h">
+      <Filter>Source Files\SMP</Filter>
+    </ClInclude>
+    <ClInclude Include="ASELoader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CollapseSettings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Facet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FacetCoordinates.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FacetDetails.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FacetMesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="File.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FormulaSettings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Geometry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeometryViewer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MolFlow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ProfilePlotter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Shared.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TexturePlotter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureSettings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ViewEditor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Viewer3DSettings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Worker.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="windialog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GrahamScan.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MoveVertex.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GlobalSettings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLSaveDialog.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="AddVertex.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MoveFacet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GLApp\GLUnitDialog.h">
+      <Filter>Source Files\GLApp</Filter>
+    </ClInclude>
+    <ClInclude Include="MirrorFacet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RotateFacet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AlignFacet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

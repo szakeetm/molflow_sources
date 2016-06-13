@@ -1,0 +1,3 @@
+2400
+http://test-molflow.web.cern.ch/sites/test-molflow.web.cern.ch/files/molflow_2.4.zip
+molflow_2.4

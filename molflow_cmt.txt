@@ -1,0 +1,16 @@
+Salut Roberto,
+
+  Une nouvelle version de molflow dans T:
+(y'avait quelques bugs genant)
+
+- Fix: "Use colormap" wrong initialisation
+- Fix: chart bug on resize window
+- Fix: repaint bug (bold font which appears from time to time)
+- Fix: profile plotter not refreshed on Load geometry
+
+- Amelioration fenetrage
+- Ajout normalisation (profile plotter)
+- Ajout "save TAB separated text file" (profile plotter)
+
+
+A+
