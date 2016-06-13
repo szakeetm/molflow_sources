@@ -189,7 +189,7 @@ int GetIDId(int paramId);
   float  simuTime;          // Total simulation time
   int    mode;              // Simulation mode
   BOOL   calcAC;            // Calculating AC matrix
-  int    calcACprg;         // AC matrix progress
+  size_t    calcACprg;         // AC matrix progress
   
   std::vector<std::vector<std::pair<double,double>>> CDFs; //cumulative distribution function for each temperature
   std::vector<std::vector<std::pair<double,double>>> IDs; //integrated distribution function for each time-dependent desorption type
@@ -257,7 +257,7 @@ private:
   LEAK leakCache[NBHHIT];
 
   // Methods
-  BOOL ExecuteAndWait(int command,int waitState,int param=0,GLProgress *prg=NULL);
+  BOOL ExecuteAndWait(int command,int waitState,size_t param=0,GLProgress *prg=NULL);
   BOOL Wait(int waitState, int timeout, GLProgress *prg = NULL);
   void ResetWorkerStats();
   void ClearHits();

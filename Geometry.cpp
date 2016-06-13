@@ -2442,7 +2442,7 @@ void Geometry::SaveProfileGEO(FileWriter *file, Dataport *dpHit, int super, BOOL
 	file->Write("\n");
 	for (size_t m = 0; (m <= mApp->worker.moments.size()) || (m == 0); m++){
 		char tmp[128];
-		sprintf(tmp, " moment %d {\n", m);
+		sprintf(tmp, " moment %zd {\n", m);
 		file->Write(tmp);
 		for (int j = 0; j < PROFILE_SIZE; j++) {
 			for (int i = 0; i < nbProfile; i++) { //doesn't execute when crashSave or saveSelected...
@@ -3423,7 +3423,7 @@ void Geometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, std::
 
 	prg->SetMessage("Writing textures...");
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++){
-		sprintf(tmp, "moment %d {\n", m);
+		sprintf(tmp, "moment %zd {\n", m);
 		file->Write(tmp);
 		for (int i = 0; i < sh.nbFacet; i++) {
 			prg->SetProgress((double)(i + m*sh.nbFacet) / (double)(mApp->worker.moments.size()*sh.nbFacet)*0.33 + 0.66);
@@ -3555,7 +3555,7 @@ void Geometry::ExportTextures(FILE *file, int grouping, int mode, Dataport *dpHi
 
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++){
 		if (m == 0) fprintf(file, " moment 0 (Constant Flow){\n");
-		else fprintf(file, " moment %d (%g s){\n", m, mApp->worker.moments[m - 1]);
+		else fprintf(file, " moment %zd (%g s){\n", m, mApp->worker.moments[m - 1]);
 		// Facets
 
 
@@ -3729,7 +3729,7 @@ void Geometry::ExportProfiles(FILE *file, int isTXT, Dataport *dpHit, Worker *wo
 
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++){
 		if (m == 0) fputs(" moment 0 (Constant Flow){\n", file);
-		else fprintf(file, " moment %d (%g s){\n", m, mApp->worker.moments[m - 1]);
+		else fprintf(file, " moment %zd (%g s){\n", m, mApp->worker.moments[m - 1]);
 		// Facets
 
 		for (int i = 0; i < sh.nbFacet; i++) {

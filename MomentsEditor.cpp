@@ -248,16 +248,16 @@ void MomentsEditor::RebuildList() {
   size_t u;double latest=0.0;
 
   for (u=0;u<userMoments.size();u++){ 
-	  sprintf(tmp,"%d",u+1);
+	  sprintf(tmp,"%zd",u+1);
 	  momentsList->SetValueAt(0,u,tmp);
 	  sprintf(tmp,"%s",userMoments[u].c_str());
 	  momentsList->SetValueAt(1,u,tmp);
 	  std::vector<double> newMoments=ParseMoment(userMoments[u]);
-	  sprintf(tmp,"%d",newMoments.size());
+	  sprintf(tmp,"%zd",newMoments.size());
 	  momentsList->SetValueAt(2,u,tmp);
   }
   //last line, possibility to enter new value
-  sprintf(tmp,"%d",u+1);
+  sprintf(tmp,"%zd",u+1);
   momentsList->SetValueAt(0,u,tmp);
 
 }

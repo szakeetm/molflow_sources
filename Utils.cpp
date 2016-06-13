@@ -137,7 +137,7 @@ void Rotate(VERTEX3D *P, VERTEX3D AXIS_P0, VERTEX3D AXIS_DIR, double theta) {
 }
 
 int IsEqual(const double &a, const double &b, double tolerance) {
-	return abs(a - b) < tolerance;
+	return fabs(a - b) < tolerance;
 }
 
 // ---------------------------------------------------------------
