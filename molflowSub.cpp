@@ -42,7 +42,7 @@ static Dataport *dpHit=NULL;
 //static int       noHeartBeatSince;
 static int       prIdx;
 static int       prState;
-static int       prParam;
+static size_t       prParam;
 static llong     prParam2;
 //static float       heartBeat;
 static HANDLE    masterHandle;

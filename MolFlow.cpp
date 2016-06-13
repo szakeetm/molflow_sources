@@ -37,7 +37,7 @@ GNU General Public License for more details.
 #define APP_NAME "MolFlow+ development version 64-bit (Compiled "__DATE__" "__TIME__") DEBUG MODE"
 #else
 //#define APP_NAME "Molflow+ development version ("__DATE__")"
-#define APP_NAME "Molflow+ 2.6.25 64-bit ("__DATE__")"
+#define APP_NAME "Molflow+ 2.6.26 64-bit ("__DATE__")"
 #endif
 
 /*
@@ -3048,6 +3048,14 @@ void MolFlow::StartStopSimulation() {
 
 	//if(nbSt<=10) BuildPipeStick((double)nbSt/10);
 	//else         return;
+
+	if (!(worker.nbHit>0) && !worker.calcConstantFlow && worker.moments.size() == 0) {
+		BOOL ok = GLMessageBox::Display("Warning: in the Moments Editor, the option \"Calculate constant flow\" is disabled.\n"
+			"This is useful for time-dependent simulations.\n"
+			"However, you didn't define any moments, suggesting you're using steady-state mode.\n"
+			"\nDo you want to continue?\n", "Strange time settings", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK;
+		if (!ok) return;
+	}
 
 	worker.StartStop(m_fTime, modeCombo->GetSelectedIndex());
 	if (profilePlotter) profilePlotter->Update(m_fTime, TRUE);

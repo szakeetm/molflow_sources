@@ -187,7 +187,7 @@ typedef struct {
   ACFLOAT *acRho;
   ACFLOAT *acArea;
   double  *acLines;
-  int     prgAC;
+  size_t     prgAC;
 
   // Angular coefficient (transparent facets)
   int     nbACT; 

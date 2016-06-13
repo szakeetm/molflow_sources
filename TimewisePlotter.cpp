@@ -326,7 +326,7 @@ void TimewisePlotter::addView(int facet) {
 
 	if (constantFlowToggle->GetState()) { //add constant flow
 		GLDataView *v = new GLDataView();
-		sprintf(tmp, "Moment0 (Constant Flow)", facet + 1, profType[f->sh.profileType]);
+		sprintf(tmp, "Moment0 (Constant Flow)"/*, facet + 1, profType[f->sh.profileType]*/);
 		v->SetName(tmp);
 		v->userData = 0;
 		v->SetStyle(STYLE_DOT);

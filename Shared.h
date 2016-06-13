@@ -141,7 +141,7 @@ typedef struct {
   
   // Process control
   int    states[MAX_PROCESS];        // Process states/commands
-  int    cmdParam[MAX_PROCESS];      // Command param 1
+  size_t    cmdParam[MAX_PROCESS];      // Command param 1
   llong  cmdParam2[MAX_PROCESS];     // Command param 2
   char   statusStr[MAX_PROCESS][64]; // Status message
   //float  heartBeat; //a changing int number showing that molflow.exe is alive

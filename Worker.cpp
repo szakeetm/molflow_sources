@@ -651,7 +651,7 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 				//decompress file
 				progressDlg->SetMessage("Decompressing file...");
 				char tmp[1024];
-				char fileOnly[512];
+				//char fileOnly[512];
 				sprintf(tmp, "cmd /C \"pushd \"%s\"&&7za.exe x -t7z -aoa \"%s\" -otmp&&popd\"", CWD, fileName);
 				system(tmp);
 
@@ -1400,7 +1400,7 @@ void Worker::ComputeAC(float appTime) {
 
 	// Send correction map to sub process
 	// (correction map contains area a surface elements)
-	int maxElem = geom->GetMaxElemNumber();
+	size_t maxElem = geom->GetMaxElemNumber();
 	if (!maxElem)
 		throw Error("Mesh with boundary correction must be enabled on all polygons");
 	int dpSize = maxElem*sizeof(SHELEM);
@@ -1509,7 +1509,7 @@ void Worker::RealReload() { //Sharing geometry with workers
 	progressDlg->SetMessage("Releasing dataport...");
 	ReleaseDataport(loader);
 
-	int hitSize = geom->GetHitsSize(&moments);
+	size_t hitSize = geom->GetHitsSize(&moments);
 	dpHit = CreateDataport(hitsDpName, hitSize);
 	if (!dpHit) {
 		CLOSEDP(loader);
@@ -1676,7 +1676,7 @@ BOOL Worker::Wait(int waitState, int timeout,GLProgress *prg) {
 		sprintf(tmp,"Total workers : %d\n"
 			"%d are ready, %d reported errors\n"
 			"Do you want to wait a bit more?\n"
-			"(Loading continues while this dialog is visible)\n",nbProcess,nbReady,nbError,nbProcess);
+			"(Loading continues while this dialog is visible)\n",nbProcess,nbReady,nbError);
 		int waitmore = GLMessageBox::Display(tmp,"Info",GLDLG_OK|GLDLG_CANCEL,GLDLG_ICONINFO)==GLDLG_OK;
 		if (waitmore) {
 			t=0;
@@ -1688,7 +1688,7 @@ BOOL Worker::Wait(int waitState, int timeout,GLProgress *prg) {
 
 }
 
-BOOL Worker::ExecuteAndWait(int command, int waitState, int param,GLProgress *prg) {
+BOOL Worker::ExecuteAndWait(int command, int waitState, size_t param,GLProgress *prg) {
 	/*static BOOL alreadyreloading=FALSE;
 	if (needsReload && !alreadyreloading) {
 	alreadyreloading = TRUE;

@@ -102,7 +102,7 @@ BOOL ComputeACMatrix(SHELEM *mesh) {
   VERTEX3D c1,c2;
   double   r2,cos1,cos2,vf,pv;
   double   t0,t1;
-  int      p;
+  size_t      p;
 
   t0 = GetTick();
 
@@ -214,7 +214,7 @@ BOOL ComputeACMatrix(SHELEM *mesh) {
       if( idx2<idx1 ) {
 
         // Progress
-        p = (int)( ((double)idx * 99.0 /(double)nbElem) + 0.5);
+        p = (size_t)( ((double)idx * 99.0 /(double)nbElem) + 0.5);
         if( sHandle->prgAC!=p ) {
           sHandle->prgAC = p;
           GetState();
