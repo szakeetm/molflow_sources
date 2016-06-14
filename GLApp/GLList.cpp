@@ -49,6 +49,7 @@ GLList::GLList(int compId):GLComponent(compId) {
 	cWidths = NULL;
 	cEdits = NULL;
 	cAligns = NULL;
+	cColors = NULL;
 	cNames = NULL;
 	rNames = NULL;
 	values = NULL;
@@ -59,6 +60,7 @@ GLList::GLList(int compId):GLComponent(compId) {
 	gridVisible = FALSE;
 	SetBorder(BORDER_BEVEL_IN);
 	SetBackgroundColor(240,240,240);
+	SetFontColor(0, 0, 0);
 	sbH = new GLScrollBar(compId);
 	sbH->SetRange(10,10,1);
 	sbH->SetOrientation(SB_HORIZONTAL);
@@ -123,6 +125,7 @@ void GLList::Clear(BOOL showProgress) {
 	SAFE_FREE(rNames);
 	SAFE_FREE(cWidths);
 	SAFE_FREE(cAligns);
+	SAFE_FREE(cColors);
 	SAFE_FREE(values);
 	SAFE_FREE(uValues);
 	SAFE_FREE(cEdits);
@@ -328,6 +331,8 @@ void GLList::SetSize(int nbColumn,int nbRow,BOOL showProgress) {
 	for(int i=0;i<nbCol;i++) cWidths[i]=50;
 	cAligns = (int *)malloc(nbCol*sizeof(int));
 	memset(cAligns,0,nbCol*sizeof(int));
+	cColors = (int *)malloc(nbCol * sizeof(int));
+	memset(cColors, 0, nbCol * sizeof(int));
 	cNames = (char **)malloc(nbCol*sizeof(char *));
 	memset(cNames,0,nbCol*sizeof(char *));
 	if( nbRow ) {
@@ -472,9 +477,19 @@ void GLList::SetColumnAligns(int *aligns) {
 		for(int i=0;i<nbCol;i++) cAligns[i] = aligns[i];
 }
 
-void GLList::SetColumnAlign(int align) {
+void GLList::SetAllColumnAlign(int align) {
 	if(cAligns)
 		for(int i=0;i<nbCol;i++) cAligns[i] = align;
+}
+
+void GLList::SetColumnColors(int *colors) {
+	if (cColors)
+		for (int i = 0;i<nbCol;i++) cColors[i] = colors[i];
+}
+
+void GLList::SetAllColumnColors(int color) {
+	if (cColors)
+		for (int i = 0;i<nbCol;i++) cColors[i] = color;
 }
 
 // ---------------------------------------------------------------
@@ -499,7 +514,6 @@ void GLList::SetRowLabel(int rowId,char *name) {
 	}
 }
 
-// ---------------------------------------------------------------
 
 void GLList::SetColumnWidth(int colId,int width) {
 	if(cWidths && colId<nbCol ) {
@@ -508,22 +522,23 @@ void GLList::SetColumnWidth(int colId,int width) {
 	UpdateSBRange();
 }
 
-// ---------------------------------------------------------------
-
 void GLList::SetColumnAlign(int colId,int align) {
 	if(cAligns && colId<nbCol ) {
 		cAligns[colId] = align;
 	}
 }
 
-// ---------------------------------------------------------------
+void GLList::SetColumnColor(int colId,int color) {
+	if(cColors && colId<nbCol ) {
+		cColors[colId] = color;
+	}
+}
 
 void GLList::SetRow(int row,char **vals) {
 	for(int i=0;i<nbCol;i++) 
 		SetValueAt(i,row,vals[i]);
 }
 
-// ---------------------------------------------------------------
 
 void GLList::SetValueAt(int col,int row,const char *value,int userData,BOOL searchIndex) {
 	_ASSERTE(col<nbCol);_ASSERTE(row<nbRow);
@@ -949,31 +964,40 @@ void GLList::Paint() {
 					char *value = GetValueAt(i,j);
 					if( value ) {
 						int px = 1;int wT;
+						int offset;
+						GLFont2D* font;
 						if(ISBOLD(value)) {
-							switch(cAligns[i]) {
-							case ALIGN_CENTER:
-								wT = GLToolkit::GetDialogFontBold()->GetTextWidth(value);
-								px = (cWidths[i]-wT)/2;
-								break;
-							case ALIGN_RIGHT:
-								wT = GLToolkit::GetDialogFontBold()->GetTextWidth(value);
-								px = cWidths[i]-wT-2;
-								break;
-							}
-							GLToolkit::GetDialogFontBold()->DrawText(px+dx,j*cHeight-sY+(showCLabel?1:2),value+3,FALSE);
+							font = GLToolkit::GetDialogFontBold();
+							offset = 3;
 						} else {
-							switch(cAligns[i]) {
-							case ALIGN_CENTER:
-								wT = GLToolkit::GetDialogFont()->GetTextWidth(value);
-								px = (cWidths[i]-wT)/2;
-								break;
-							case ALIGN_RIGHT:
-								wT = GLToolkit::GetDialogFont()->GetTextWidth(value);
-								px = cWidths[i]-wT-2;
-								break;
-							}
-							GLToolkit::GetDialogFont()->DrawText(px+dx,j*cHeight-sY+(showCLabel?1:2),value,FALSE);
+							font = GLToolkit::GetDialogFont();
+							offset = 0;
 						}
+						switch (cAligns[i]) {
+						case ALIGN_CENTER:
+							wT = font->GetTextWidth(value);
+							px = (cWidths[i] - wT) / 2;
+							break;
+						case ALIGN_RIGHT:
+							wT = font->GetTextWidth(value);
+							px = cWidths[i] - wT - 2;
+							break;
+						}
+						switch (cColors[i]) {
+						case COLOR_RED:
+							font->SetTextColor(1.0f, 0.0f, 0.0f);
+							break;
+						case COLOR_GREEN:
+							font->SetTextColor(0.0f, 1.0f, 0.0f);
+							break;
+						case COLOR_BLUE:
+							font->SetTextColor(0.0f, 0.0f, 1.0f);
+							break;
+						default:
+							font->SetTextColor(0.0f, 0.0f, 0.0f);
+							break;
+						}
+						font->DrawText(px+dx,j*cHeight-sY+(showCLabel?1:2),value+offset,FALSE);
 					}
 				} // End if row visible
 			} // End row loop
@@ -2292,4 +2316,10 @@ void GLList::PasteClipboardText() {
 
 #endif
 
+}
+
+void GLList::SetFontColor(int r, int g, int b) {
+	FontColorR = r;
+	FontColorG = g;
+	FontColorB = b;
 }

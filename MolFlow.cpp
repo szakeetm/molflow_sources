@@ -2115,6 +2115,17 @@ void MolFlow::UpdateFacetHits() {
 			int sR, eR;
 			facetList->GetVisibleRows(&sR, &eR);
 
+			
+			if (worker.displayedMoment == 0) {
+				int colors[] = { COLOR_BLACK, COLOR_BLACK, COLOR_BLACK, COLOR_BLACK };
+				facetList->SetColumnColors(colors);
+			}
+			else
+			{
+				int colors[] = { COLOR_BLACK, COLOR_BLUE, COLOR_BLUE, COLOR_BLUE };
+				facetList->SetColumnColors(colors);
+			}
+			
 
 			for (int i = sR; i <= eR; i++) {
 				int facetId = facetList->GetValueInt(i, 0) - 1;

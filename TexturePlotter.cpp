@@ -181,7 +181,7 @@ void TexturePlotter::UpdateTable() {
 		int w = selFacet->sh.texWidth;
 		int h = selFacet->sh.texHeight;
 		mapList->SetSize(w, h);
-		mapList->SetColumnAlign(ALIGN_CENTER);
+		mapList->SetAllColumnAlign(ALIGN_CENTER);
 
 
 		int mode = viewCombo->GetSelectedIndex();

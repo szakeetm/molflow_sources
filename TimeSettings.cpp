@@ -144,6 +144,7 @@ void TimeSettings::ProcessMessage(GLComponent *src,int message) {
 	  } 
 		if(mApp->profilePlotter) mApp->profilePlotter->Update(0.0f,TRUE);
 		//if(mApp->pressureEvolution) mApp->pressureEvolution->Update(0.0f,TRUE);
+		if (mApp->facetDetails) mApp->facetDetails->Update();
 		if(mApp->timewisePlotter) mApp->timewisePlotter->UpdateMoment();
 		if(mApp->texturePlotter) mApp->texturePlotter->Update(0.0f,TRUE); 
     } else if (src==editButton) {

@@ -25,6 +25,12 @@
 #define ALIGN_CENTER 1
 #define ALIGN_RIGHT  2
 
+// Column colors
+#define COLOR_BLACK   0
+#define COLOR_RED 1
+#define COLOR_GREEN  2
+#define COLOR_BLUE 3
+
 // Editing cell format
 #define EDIT_STRING  1
 #define EDIT_NUMBER  2
@@ -62,7 +68,10 @@ public:
   void AutoSizeColumn();
   void SetColumnAligns(int *aligns);
   void SetColumnAlign(int colId,int align);
-  void SetColumnAlign(int align);
+  void SetAllColumnAlign(int align);
+  void SetColumnColors(int *aligns);
+  void SetColumnColor(int colId, int align);
+  void SetAllColumnColors(int align);
   void SetColumnEditable(int *editables);
   BOOL GetSelectionBox(int *row,int *col,int *rowLength,int *colLength);
   void SetVScrollVisible(BOOL visible);
@@ -106,6 +115,7 @@ public:
   void UpdateAllRows();
   void ReOrder();
   void PasteClipboardText();
+  void SetFontColor(int r, int g, int b);
 
   
   int   lastRowSel;
@@ -138,10 +148,12 @@ private:
   int  *cWidths;
   int   cHeight;
   int  *cAligns;
+  int  *cColors;
   char **cNames;
   char **rNames;
   char **values;
   int  *uValues;
+  
   int   sbDragged;
   BOOL  colDragged;
   BOOL  motionSelection;
@@ -168,6 +180,10 @@ private:
   BOOL  selDragged;
   int   labelRowMargin;
   char  *cornerLabel;
+
+  int FontColorR;
+  int FontColorG;
+  int FontColorB;
 
   int   lastColX;
   int   lastColY;

@@ -44,6 +44,7 @@
 static char *cNames[] = { "Name" , "Size" , "Modified" };
 static int  cWidths[] = { 220,89,115 };
 static int  cAligns[] = { ALIGN_LEFT,ALIGN_RIGHT,ALIGN_RIGHT };
+static int  cColors[] = { COLOR_BLACK,COLOR_RED,COLOR_GREEN,COLOR_BLUE };
 
 // Returned structure
 static FILENAME retFile;

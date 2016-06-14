@@ -186,7 +186,7 @@ void OutgassingMap::UpdateTable() {
     int w = selFacet->sh.texWidth;
     int h = selFacet->sh.texHeight;
     mapList->SetSize(w,h);
-    mapList->SetColumnAlign(ALIGN_CENTER);
+    mapList->SetAllColumnAlign(ALIGN_CENTER);
 	mapList->SetGrid(TRUE);
 	mapList->SetColumnLabelVisible(TRUE);
 	//mapList->SetSelectionMode(SINGLE_ROW);

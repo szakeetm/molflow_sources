@@ -29,36 +29,37 @@ typedef struct {
   char *name;
   int   width;
   int   align;
+  int   timeDepColor; //Can display time-dependent value, change color accordingly
 
 } COLUMN;
 
 static COLUMN allColumn[] = {
-  {"#"             , 40 , ALIGN_CENTER} ,
-  {"Sticking"      , 80 , ALIGN_CENTER} ,
-  {"Opacity"       , 80 , ALIGN_CENTER} ,
-  {"Structure"     , 80 , ALIGN_CENTER} ,
-  {"Link"          , 40 , ALIGN_CENTER} ,
-  {"Desorption"    , 80 , ALIGN_CENTER} ,
-  {"Reflection"    , 80 , ALIGN_CENTER} ,
-  {"2 Sided"       , 60 , ALIGN_CENTER} ,
-  {"Vertex"        , 80 , ALIGN_CENTER} ,
-  {"Area"          , 80 , ALIGN_CENTER} ,
-  {"Temperature (K)",80 , ALIGN_CENTER} ,
-  {"Facet 2D Box"  , 100, ALIGN_CENTER} ,
-  {"Texture (u,v)" , 120, ALIGN_CENTER} ,
-  {"Mesh sample/cm", 80 , ALIGN_CENTER} ,
-  {"Count"         , 80 , ALIGN_CENTER} ,
-  {"Memory"        , 80 , ALIGN_CENTER} ,
-  {"Planarity"     , 80 , ALIGN_CENTER} ,
-  {"Profile"       , 80 , ALIGN_CENTER} ,
-  {"Imping.rate"   , 80, ALIGN_CENTER },
-  {"Density [1/m3]", 80, ALIGN_CENTER },
-  {"Density [kg/m3]",80, ALIGN_CENTER },
-  {"Pressure [mbar]",80 , ALIGN_CENTER} ,
-  {"Av.mol.speed[m/s]",80, ALIGN_CENTER},
-  {"Hits"           , 80 , ALIGN_CENTER} ,
-  {"Des."           , 80 , ALIGN_CENTER} ,
-  {"Abs."           , 80 , ALIGN_CENTER} ,
+  {"#"             , 40 , ALIGN_CENTER, 0} ,
+  {"Sticking"      , 80 , ALIGN_CENTER, 0 } ,
+  {"Opacity"       , 80 , ALIGN_CENTER, 0 } ,
+  {"Structure"     , 80 , ALIGN_CENTER, 0 } ,
+  {"Link"          , 40 , ALIGN_CENTER, 0 } ,
+  {"Desorption"    , 80 , ALIGN_CENTER, 0 } ,
+  {"Reflection"    , 80 , ALIGN_CENTER, 0 } ,
+  {"2 Sided"       , 60 , ALIGN_CENTER, 0 } ,
+  {"Vertex"        , 80 , ALIGN_CENTER, 0 } ,
+  {"Area"          , 80 , ALIGN_CENTER, 0 } ,
+  {"Temperature (K)",80 , ALIGN_CENTER, 0 } ,
+  {"Facet 2D Box"  , 100, ALIGN_CENTER, 0 } ,
+  {"Texture (u,v)" , 120, ALIGN_CENTER, 0 } ,
+  {"Mesh sample/cm", 80 , ALIGN_CENTER, 0 } ,
+  {"Count"         , 80 , ALIGN_CENTER, 0 } ,
+  {"Memory"        , 80 , ALIGN_CENTER, 0 } ,
+  {"Planarity"     , 80 , ALIGN_CENTER, 0 } ,
+  {"Profile"       , 80 , ALIGN_CENTER, 0 } ,
+  {"Imping.rate"   , 80, ALIGN_CENTER, COLOR_BLUE },
+  {"Density [1/m3]", 80, ALIGN_CENTER, COLOR_BLUE },
+  {"Density [kg/m3]",80, ALIGN_CENTER, COLOR_BLUE },
+  {"Pressure [mbar]",80 , ALIGN_CENTER, COLOR_BLUE } ,
+  {"Av.mol.speed[m/s]",80, ALIGN_CENTER, COLOR_BLUE },
+  {"Hits"           , 80 , ALIGN_CENTER, COLOR_BLUE } ,
+  {"Des."           , 80 , ALIGN_CENTER, COLOR_BLUE } ,
+  {"Abs."           , 80 , ALIGN_CENTER, COLOR_BLUE } ,
 };
 
 static const char *desStr[] = {
@@ -411,19 +412,16 @@ void FacetDetails::UpdateTable() {
   char *tmpName[NB_FDCOLUMN];
   int  tmpWidth[NB_FDCOLUMN];
   int  tmpAlign[NB_FDCOLUMN];
+  int  tmpColor[NB_FDCOLUMN];
 
+  int nbCol = 0;
 
-  int  nbCol = 1;
-  tmpName[0]  = allColumn[0].name;
-  tmpWidth[0] = allColumn[0].width;
-  tmpAlign[0] = allColumn[0].align;
-  shown[0] = 0;
-
-  for(int i=1;i<NB_FDCOLUMN;i++) {
-    if(show[i]->GetState()) {
+  for(int i=0;i<NB_FDCOLUMN;i++) {
+    if(i==0 || show[i]->GetState()) {
       tmpName[nbCol]  = allColumn[i].name;
       tmpWidth[nbCol] = allColumn[i].width;
       tmpAlign[nbCol] = allColumn[i].align;
+	  tmpColor[nbCol] = allColumn[i].timeDepColor;
       shown[nbCol] = i;
       nbCol++;
     }
@@ -433,6 +431,10 @@ void FacetDetails::UpdateTable() {
   facetListD->SetColumnWidths(tmpWidth);
   facetListD->SetColumnLabels(tmpName);
   facetListD->SetColumnAligns(tmpAlign);
+  if (worker->displayedMoment == 0)
+	  facetListD->SetAllColumnColors(COLOR_BLACK);
+  else 
+	facetListD->SetColumnColors(tmpColor);
 
   nbS = 0;
   for(int i=0;i<nbFacet;i++) {
