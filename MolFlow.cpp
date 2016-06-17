@@ -2732,6 +2732,7 @@ void MolFlow::LoadFile(char *fName) {
 		ClearParameters();
 		ClearAllSelections();
 		ClearAllViews();
+		worker.displayedMoment = 0;
 		if (profilePlotter) profilePlotter->Reset();
 		if (timewisePlotter) timewisePlotter->Refresh();
 		if (pressureEvolution) pressureEvolution->Reset();
@@ -4449,6 +4450,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	ClearParameters();
 	ClearAllSelections();
 	ClearAllViews();
+	worker.displayedMoment = 0;
 
 	GLParser *f = new GLParser();
 	f->SetExpression("A2/SUMDES");
