@@ -1517,7 +1517,7 @@ void GLList::HandleWheel(SDL_Event *evt) {
 // ---------------------------------------------------------------
 
 void GLList::CopyToClipboard(int row,int col,int rowLght,int colLgth) {
-	UpdateAllRows();
+	if (this == mApp->facetList) mApp->UpdateFacetHits(TRUE);
 	// Compute data length
 	size_t totalLength = 0;
 	for(int i=row;i<row+rowLght;i++) {
@@ -1575,6 +1575,7 @@ void GLList::CopyToClipboard(int row,int col,int rowLght,int colLgth) {
 
 }
 
+/*
 // --------------------------------------------------------------
 void GLList::UpdateAllRows() {//Fetch non-visible values too
 	
@@ -1598,22 +1599,23 @@ void GLList::UpdateAllRows() {//Fetch non-visible values too
 			}
 			sprintf(tmp,"%d",index+1);
 			SetValueAt(0,i,tmp);
-			sprintf(tmp,"%I64d",f->sh.counter.hit.nbHit);
+			sprintf(tmp,"%I64d",f->sh.counter[worker->displayedMoment].hit.nbHit);
 			SetValueAt(1,i,tmp);
-			sprintf(tmp,"%I64d",f->sh.counter.hit.nbDesorbed);
+			sprintf(tmp,"%I64d",f->sh.counter[worker->displayedMoment].hit.nbDesorbed);
 			SetValueAt(2,i,tmp);
-			sprintf(tmp,"%I64d",f->sh.counter.hit.nbAbsorbed);
+			sprintf(tmp,"%I64d",f->sh.counter[worker->displayedMoment].hit.nbAbsorbed);
 			SetValueAt(3,i,tmp);
 		}
 		//geom=geom;
 	}
 	}
 }
+*/
 
 // ---------------------------------------------------------------
 
 void GLList::CopyAllToClipboard() {
-	UpdateAllRows();
+	if (this == mApp->facetList) mApp->UpdateFacetHits(TRUE);
 	// Compute data length
 	size_t totalLength = 0;
 	for(int i=0;i<nbRow;i++) {
@@ -1674,7 +1676,7 @@ void GLList::CopyAllToClipboard() {
 // ---------------------------------------------------------------
 
 void GLList::CopySelectionToClipboard() {
-	UpdateAllRows();
+	if (this==mApp->facetList) mApp->UpdateFacetHits(TRUE);
 	// Compute data length
 	size_t totalLength = 0;
 	for(int s=0;s<nbSelectedRow;s++) {
@@ -1837,7 +1839,7 @@ void GLList::ManageEvent(SDL_Event *evt) {
 						if (clickedColTmp == clickedCol)
 							sortDescending = !sortDescending;
 						clickedCol = clickedColTmp;
-						UpdateAllRows();
+						if (this == mApp->facetList) mApp->UpdateFacetHits(TRUE);
 						// Step 1) Allocate the rows
 						int **table = new int*[nbRow];
 
