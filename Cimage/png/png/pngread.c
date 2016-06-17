@@ -407,7 +407,7 @@ png_read_info(png_structp png_ptr, png_infop info_ptr)
       png_reset_crc(png_ptr);
       png_crc_read(png_ptr, png_ptr->chunk_name, 4);
 
-      png_debug2(0, "Reading %s chunk, length=%lu.\n", png_ptr->chunk_name,
+      png_debug2(0, "Reading %s chunk, length=%llu.\n", png_ptr->chunk_name,
          length);
 
       /* This should be a binary subdivision search or a hash for
@@ -566,7 +566,7 @@ png_read_row(png_structp png_ptr, png_bytep row, png_bytep dsp_row)
    const int png_pass_mask[7] = {0x80, 0x08, 0x88, 0x22, 0xaa, 0x55, 0xff};
 #endif
    int ret;
-   png_debug2(1, "in png_read_row (row %lu, pass %d)\n",
+   png_debug2(1, "in png_read_row (row %llu, pass %d)\n",
       png_ptr->row_number, png_ptr->pass);
    if (!(png_ptr->flags & PNG_FLAG_ROW_INIT))
       png_read_start_row(png_ptr);

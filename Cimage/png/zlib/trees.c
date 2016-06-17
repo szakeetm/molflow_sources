@@ -955,7 +955,7 @@ void _tr_flush_block(s, buf, stored_len, eof)
         opt_lenb = (s->opt_len+3+7)>>3;
         static_lenb = (s->static_len+3+7)>>3;
 
-        Tracev((stderr, "\nopt %lu(%lu) stat %lu(%lu) stored %lu lit %u ",
+        Tracev((stderr, "\nopt %llu(%llu) stat %llu(%llu) stored %llu lit %u ",
                 opt_lenb, s->opt_len, static_lenb, s->static_len, stored_len,
                 s->last_lit));
 
@@ -1011,7 +1011,7 @@ void _tr_flush_block(s, buf, stored_len, eof)
         s->compressed_len += 7;  /* align on byte boundary */
 #endif
     }
-    Tracev((stderr,"\ncomprlen %lu(%lu) ", s->compressed_len>>3,
+    Tracev((stderr,"\ncomprlen %llu(%llu) ", s->compressed_len>>3,
            s->compressed_len-7*eof));
 }
 

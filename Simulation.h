@@ -235,7 +235,7 @@ void InitSimulation();
 void ClearSimulation();
 void ClearACMatrix();
 BOOL LoadSimulation(Dataport *loader);
-BOOL StartSimulation(int mode);
+BOOL StartSimulation(size_t mode);
 void ResetSimulation();
 BOOL SimulationRun();
 BOOL SimulationMCStep(int nbStep);

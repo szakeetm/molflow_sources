@@ -1795,7 +1795,7 @@ BOOL MolFlow::OffsetFormula(char *expression, int offset, int filter) {
 	return changed;
 }
 
-void MolFlow::RenumberFormulas(int startId) {
+void MolFlow::RenumberFormulas(size_t startId) {
 	for (int i = 0; i < nbFormula; i++) {
 		char expression[1024];
 		strcpy(expression, this->formulas[i].parser->GetExpression());
@@ -2014,7 +2014,7 @@ int MolFlow::FrameMove()
 
 		}
 		if (worker.calcAC) {
-			sprintf(tmp, "Calc AC: %s (%d %%)", FormatTime(worker.simuTime + (m_fTime - worker.startTime)),
+			sprintf(tmp, "Calc AC: %s (%zd %%)", FormatTime(worker.simuTime + (m_fTime - worker.startTime)),
 				worker.calcACprg);
 		}
 		else {
@@ -2740,12 +2740,8 @@ void MolFlow::LoadFile(char *fName) {
 		ClearFormula();
 		ClearParameters();
 		ClearAllSelections();
-		ClearAllViews();
-		if (profilePlotter) profilePlotter->Reset();
-		if (timewisePlotter) timewisePlotter->Refresh();
-		if (pressureEvolution) pressureEvolution->Reset();
-		if (timewisePlotter) timewisePlotter->Reset();
-		
+		ClearAllViews();		
+		worker.displayedMoment = 0;
 
 		worker.LoadGeometry(fullName);
 
@@ -2800,6 +2796,10 @@ void MolFlow::LoadFile(char *fName) {
 		if (vertexCoordinates) vertexCoordinates->Update();
 		if (movement) movement->Update();
 		if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
+		if (timewisePlotter) timewisePlotter->Refresh();
+		if (timeSettings) mApp->timeSettings->RefreshMoments();
+		if (momentsEditor) mApp->momentsEditor->Refresh();
+		if (parameterEditor) mApp->parameterEditor->UpdateCombo();
 
 	}
 	catch (Error &e) {
@@ -3120,7 +3120,7 @@ void MolFlow::ResetSimulation(BOOL askConfirm) {
 		ok = GLMessageBox::Display("Reset simulation ?", "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONINFO) == GLDLG_OK;
 
 	if (ok) {
-		worker.Reset(m_fTime);
+		worker.ResetStatsAndHits(m_fTime);
 		nbDesStart = 0;
 		nbHitStart = 0;
 	}
@@ -4381,9 +4381,9 @@ BOOL MolFlow::AskToReset(Worker *work) {
 	if (work->nbHit > 0) {
 		int rep = GLMessageBox::Display("This will reset simulation data.", "Geometry change", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING);
 		if (rep == GLDLG_OK) {
-			work->Reset(m_fTime);
-			mApp->nbDesStart = 0;
-			mApp->nbHitStart = 0;
+			work->ResetStatsAndHits(m_fTime);
+			nbDesStart = 0;
+			nbHitStart = 0;
 
 			//resetSimu->SetEnabled(FALSE);
 			if (mApp->profilePlotter) mApp->profilePlotter->Update(m_fTime, TRUE);
@@ -4441,8 +4441,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 		geom->Clear();
 		return;
 	}
-	worker.nbDesorption = 0;
-	worker.needsReload = TRUE;
+	//worker.nbDesorption = 0; //Already done by ResetWorkerStats
 	//sprintf(tmp,"L|R %g",L/R);
 	worker.SetFileName("");
 	nbDesStart = 0;
@@ -4458,6 +4457,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	ClearParameters();
 	ClearAllSelections();
 	ClearAllViews();
+	worker.displayedMoment = 0;
 
 	GLParser *f = new GLParser();
 	f->SetExpression("A2/SUMDES");
@@ -4472,6 +4472,12 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 		GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
 	}
+
+	if (timeSettings) mApp->timeSettings->RefreshMoments();
+	if (momentsEditor) mApp->momentsEditor->Refresh();
+	if (parameterEditor) mApp->parameterEditor->UpdateCombo();
+	if (timeSettings) mApp->timeSettings->RefreshMoments();
+	if (timewisePlotter) mApp->timewisePlotter->refreshViews();
 	if (profilePlotter) profilePlotter->Refresh();
 	if (pressureEvolution) pressureEvolution->Refresh();
 	if (textureSettings) textureSettings->Update();
@@ -5213,7 +5219,7 @@ void MolFlow::DisplayCollapseDialog() {
 
 
 
-void MolFlow::RenumberSelections(int startFacetId){
+void MolFlow::RenumberSelections(size_t startFacetId){
 	for (int i = 0; i < nbSelection; i++) {
 		BOOL found = FALSE;
 		for (int j = 0; j < selections[i].nbSel && !found; j++) { //remove from selection

@@ -578,16 +578,16 @@ BOOL LoadSimulation(Dataport *loader) {
 	printf("  Load %s successful\n", sHandle->name);
 	printf("  Geometry: %d vertex %d facets\n", sHandle->nbVertex, sHandle->totalFacet);
 
-	printf("  Geom size: %d bytes\n", (int)(buffer - bufferStart));
+	printf("  Geom size: %zd bytes\n", (size_t)(buffer - bufferStart));
 	printf("  Number of stucture: %d\n", sHandle->nbSuper);
-	printf("  Global Hit: %d bytes\n", sizeof(SHGHITS));
-	printf("  Facet Hit : %d bytes\n", sHandle->totalFacet*sizeof(SHHITS));
-	printf("  Texture   : %d bytes\n", sHandle->textTotalSize);
-	printf("  Profile   : %d bytes\n", sHandle->profTotalSize);
-	printf("  Direction : %d bytes\n", sHandle->dirTotalSize);
+	printf("  Global Hit: %zd bytes\n", sizeof(SHGHITS));
+	printf("  Facet Hit : %zd bytes\n", sHandle->totalFacet*sizeof(SHHITS));
+	printf("  Texture   : %zd bytes\n", sHandle->textTotalSize);
+	printf("  Profile   : %zd bytes\n", sHandle->profTotalSize);
+	printf("  Direction : %zd bytes\n", sHandle->dirTotalSize);
 
-	printf("  Total     : %d bytes\n", GetHitsSize());
-	printf("  Seed: %u\n", seed);
+	printf("  Total     : %zd bytes\n", GetHitsSize());
+	printf("  Seed: %lu\n", seed);
 	printf("  Loading time: %.3f ms\n", (t1 - t0)*1000.0);
 	return TRUE;
 
@@ -693,7 +693,7 @@ void ResetSimulation() {
 
 // -------------------------------------------------------
 
-BOOL StartSimulation(int mode) {
+BOOL StartSimulation(size_t mode) {
 
 	sHandle->sMode = mode;
 	switch (mode) {

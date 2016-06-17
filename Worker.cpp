@@ -818,6 +818,8 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 	if (!insert)
 	{
 		CalcTotalOutgassing();
+		displayedMoment = 0;
+		if (mApp->timeSettings) mApp->timeSettings->RefreshMoments();
 		if (mApp->momentsEditor) mApp->momentsEditor->Refresh();
 		if (mApp->parameterEditor) mApp->parameterEditor->UpdateCombo();
 		if (mApp->timeSettings) mApp->timeSettings->RefreshMoments();
@@ -1003,7 +1005,7 @@ void Worker::Update(float appTime) {
 		if (dpControl) {
 			if (AccessDataport(dpControl)) {
 				int i = 0;
-				SHMASTER *master = (SHMASTER *)dpControl->buff;
+				SHCONTROL *master = (SHCONTROL *)dpControl->buff;
 				for (int proc = 0; proc < nbProcess && done; proc++) {
 					done = done && (master->states[proc] == PROCESS_DONE);
 					error = error && (master->states[proc] == PROCESS_ERROR);
@@ -1112,7 +1114,7 @@ void Worker::ComputeAC(float appTime) {
 	size_t maxElem = geom->GetMaxElemNumber();
 	if (!maxElem)
 		throw Error("Mesh with boundary correction must be enabled on all polygons");
-	int dpSize = maxElem*sizeof(SHELEM);
+	size_t dpSize = maxElem*sizeof(SHELEM);
 
 	Dataport *loader = CreateDataport(loadDpName, dpSize);
 	if (!loader)
@@ -1231,12 +1233,12 @@ void Worker::RealReload() { //Sharing geometry with workers
 
 	// Compute number of max desorption per process
 	if (AccessDataportTimed(dpControl, 3000 + nbProcess*(int)((double)loadSize / 10000.0))) {
-		SHMASTER *m = (SHMASTER *)dpControl->buff;
+		SHCONTROL *master = (SHCONTROL *)dpControl->buff;
 		llong common = maxDesorption / (llong)nbProcess;
 		int remain = (int)(maxDesorption % (llong)nbProcess);
 		for (int i = 0; i < nbProcess; i++) {
-			m->cmdParam2[i] = common;
-			if (i < remain) m->cmdParam2[i]++;
+			master->cmdParam2[i] = common;
+			if (i < remain) master->cmdParam2[i]++;
 		}
 		ReleaseDataport(dpControl);
 	}
@@ -1268,7 +1270,7 @@ void Worker::RealReload() { //Sharing geometry with workers
 void Worker::SetMaxDesorption(llong max) {
 
 	try {
-		Reset(0.0);
+		ResetStatsAndHits(0.0);
 		maxDesorption = max;
 		Reload();
 	}
@@ -1286,13 +1288,13 @@ char *Worker::GetErrorDetails() {
 	strcpy(err, "");
 
 	AccessDataport(dpControl);
-	SHMASTER *shMaster = (SHMASTER *)dpControl->buff;
+	SHCONTROL *master = (SHCONTROL *)dpControl->buff;
 	for (int i = 0; i < nbProcess; i++) {
 		char tmp[256];
 		if (pID[i] != 0) {
-			int st = shMaster->states[i];
+			int st = master->states[i];
 			if (st == PROCESS_ERROR) {
-				sprintf(tmp, "[#%d] Process [PID %d] %s: %s\n", i, pID[i], prStates[st], shMaster->statusStr[i]);
+				sprintf(tmp, "[#%d] Process [PID %d] %s: %s\n", i, pID[i], prStates[st], master->statusStr[i]);
 			}
 			else {
 				sprintf(tmp, "[#%d] Process [PID %d] %s\n", i, pID[i], prStates[st]);
@@ -1344,16 +1346,16 @@ BOOL Worker::Wait(int waitState, int timeout,GLProgress *prg) {
 
 		ok = TRUE;
 		AccessDataport(dpControl);
-		SHMASTER *shMaster = (SHMASTER *)dpControl->buff;
+		SHCONTROL *master = (SHCONTROL *)dpControl->buff;
 		nbReady=nbError=0;
 		for (int i = 0; i < nbProcess; i++) {
-			if (shMaster->states[i]==waitState) nbReady++;
-			ok = ok & (shMaster->states[i] == waitState || shMaster->states[i] == PROCESS_ERROR || shMaster->states[i] == PROCESS_DONE);
-			if( shMaster->states[i]==PROCESS_ERROR ) {
+			if (master->states[i]==waitState) nbReady++;
+			ok = ok & (master->states[i] == waitState || master->states[i] == PROCESS_ERROR || master->states[i] == PROCESS_DONE);
+			if( master->states[i]==PROCESS_ERROR ) {
 				error = TRUE;
 				nbError++;
 			}
-			allDone = allDone & (shMaster->states[i] == PROCESS_DONE);
+			allDone = allDone & (master->states[i] == PROCESS_DONE);
 		}
 		ReleaseDataport(dpControl);
 
@@ -1395,10 +1397,10 @@ BOOL Worker::ExecuteAndWait(int command, int waitState, size_t param,GLProgress 
 
 	// Send command
 	AccessDataport(dpControl);
-	SHMASTER *shMaster = (SHMASTER *)dpControl->buff;
+	SHCONTROL *master = (SHCONTROL *)dpControl->buff;
 	for (int i = 0; i < nbProcess; i++) {
-		shMaster->states[i] = command;
-		shMaster->cmdParam[i] = param;
+		master->states[i] = command;
+		master->cmdParam[i] = param;
 	}
 	ReleaseDataport(dpControl);
 
@@ -1414,11 +1416,11 @@ if(!dpControl) return;
 
 // Send command
 AccessDataport(dpControl);
-SHMASTER *shMaster = (SHMASTER *)dpControl->buff;
-//int hb = shMaster->heartBeat;
+SHCONTROL *master = (SHCONTROL *)dpControl->buff;
+//int hb = master->heartBeat;
 //hb++;
 //if (hb==1000) hb=0;
-shMaster->heartBeat = m_fTime;
+master->heartBeat = m_fTime;
 ReleaseDataport(dpControl);
 }
 */
@@ -1438,7 +1440,7 @@ void Worker::ResetWorkerStats() {
 
 // -------------------------------------------------------------
 
-void Worker::Reset(float appTime) {
+void Worker::ResetStatsAndHits(float appTime) {
 
 	if (calcAC) {
 		GLMessageBox::Display("Reset not allowed while calculating AC", "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1462,11 +1464,6 @@ void Worker::Reset(float appTime) {
 	catch (Error &e) {
 		GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 	}
-
-	//Debug memory check
-	//_ASSERTE (!_CrtDumpMemoryLeaks());;
-	_ASSERTE(_CrtCheckMemory());
-
 }
 
 // -------------------------------------------------------------
@@ -1523,9 +1520,9 @@ void Worker::KillAll() {
 	if (dpControl && nbProcess > 0) {
 		if (!ExecuteAndWait(COMMAND_EXIT, PROCESS_KILLED)) {
 			AccessDataport(dpControl);
-			SHMASTER *shMaster = (SHMASTER *)dpControl->buff;
+			SHCONTROL *master = (SHCONTROL *)dpControl->buff;
 			for (int i = 0; i < nbProcess; i++)
-				if (shMaster->states[i] == PROCESS_KILLED) pID[i] = 0;
+				if (master->states[i] == PROCESS_KILLED) pID[i] = 0;
 			ReleaseDataport(dpControl);
 			// Force kill
 			for (int i = 0; i < nbProcess; i++)
@@ -1555,9 +1552,9 @@ void Worker::GetProcStatus(int *states, char **status) {
 	if (nbProcess == 0) return;
 
 	AccessDataport(dpControl);
-	SHMASTER *shMaster = (SHMASTER *)dpControl->buff;
-	memcpy(states, shMaster->states, MAX_PROCESS*sizeof(int));
-	memcpy(status, shMaster->statusStr, MAX_PROCESS * 64);
+	SHCONTROL *master = (SHCONTROL *)dpControl->buff;
+	memcpy(states, master->states, MAX_PROCESS*sizeof(int));
+	memcpy(status, master->statusStr, MAX_PROCESS * 64);
 	ReleaseDataport(dpControl);
 
 }
@@ -1573,11 +1570,11 @@ void Worker::SetProcNumber(int n) {
 
 	// Create new control dataport
 	if (!dpControl)
-		dpControl = CreateDataport(ctrlDpName, sizeof(SHMASTER));
+		dpControl = CreateDataport(ctrlDpName, sizeof(SHCONTROL));
 	if (!dpControl)
 		throw Error("Failed to create 'control' dataport");
 	AccessDataport(dpControl);
-	memset(dpControl->buff, 0, sizeof(SHMASTER));
+	memset(dpControl->buff, 0, sizeof(SHCONTROL));
 	ReleaseDataport(dpControl);
 
 	// Launch n subprocess

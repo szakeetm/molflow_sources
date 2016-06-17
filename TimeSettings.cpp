@@ -48,7 +48,7 @@ TimeSettings::TimeSettings(Worker *w):GLWindow() {
   Add(previousButton);
 
   char tmp[128];
-  sprintf(tmp,"%d moments",w->moments.size());
+  sprintf(tmp,"%zd moments",w->moments.size());
   editButton = new GLButton(0,tmp);
   editButton->SetBounds(35,25,100,18);
   Add(editButton);

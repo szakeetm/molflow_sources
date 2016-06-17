@@ -93,11 +93,9 @@ public:
   DWORD GetPID(int prIdx);
 
   // Reset simulation
-  void Reset(float appTime);
-
-  // Reload simulation (throws Error)
-  void Reload();
-  void RealReload();
+  void ResetStatsAndHits(float appTime);
+  void Reload(); //Mark geometry as out of sync with subprocess
+  void RealReload(); // Send geometry to subprocess (throws Error)
 
   // Switch running/stopped
   void StartStop(float appTime,int mode);
@@ -213,14 +211,6 @@ int GetIDId(int paramId);
   int motionType;
   VERTEX3D motionVector1; //base point for rotation
   VERTEX3D motionVector2; //rotation vector or velocity vector
-
-
-
-
-
-
-
-
 
   BOOL needsReload;
 

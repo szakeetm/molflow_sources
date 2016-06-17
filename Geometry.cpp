@@ -1500,7 +1500,7 @@ void Geometry::LoadSTR(FileReader *file, GLProgress *prg) {
 	char fPath[512];
 	char fName[512];
 	char sName[512];
-	int nF, nV;
+	size_t nF, nV;
 	Facet **F;
 	VERTEX3D *V;
 	FileReader *fr;
@@ -1745,7 +1745,7 @@ void Geometry::InsertSYN(FileReader *file, GLProgress *prg, BOOL newStr) {
 
 
 
-void Geometry::LoadTXTGeom(FileReader *file, int *nbV, int *nbF, VERTEX3D **V, Facet ***F, int strIdx) {
+void Geometry::LoadTXTGeom(FileReader *file, size_t *nbV, size_t *nbF, VERTEX3D **V, Facet ***F, size_t strIdx) {
 
 	file->ReadInt(); // Unused
 	tNbHit = file->ReadLLong();
@@ -1796,7 +1796,7 @@ void Geometry::LoadTXTGeom(FileReader *file, int *nbV, int *nbF, VERTEX3D **V, F
 
 }
 
-void Geometry::InsertTXTGeom(FileReader *file, int *nbVertex, int *nbFacet, VERTEX3D **vertices3, Facet ***facets, int strIdx, BOOL newStruct) {
+void Geometry::InsertTXTGeom(FileReader *file, size_t *nbVertex, size_t *nbFacet, VERTEX3D **vertices3, Facet ***facets, size_t strIdx, BOOL newStruct) {
 
 	UnSelectAll();
 
@@ -1857,7 +1857,7 @@ void Geometry::InsertTXTGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 
 }
 
-void Geometry::InsertGEOGeom(FileReader *file, int *nbVertex, int *nbFacet, VERTEX3D **vertices3, Facet ***facets, int strIdx, BOOL newStruct) {
+void Geometry::InsertGEOGeom(FileReader *file, size_t *nbVertex, size_t *nbFacet, VERTEX3D **vertices3, Facet ***facets, size_t strIdx, BOOL newStruct) {
 
 	UnSelectAll();
 
@@ -2115,7 +2115,7 @@ void Geometry::InsertGEOGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 
 }
 
-void Geometry::InsertSYNGeom(FileReader *file, int *nbVertex, int *nbFacet, VERTEX3D **vertices3, Facet ***facets, int strIdx, BOOL newStruct) {
+void Geometry::InsertSYNGeom(FileReader *file, size_t *nbVertex, size_t *nbFacet, VERTEX3D **vertices3, Facet ***facets, size_t strIdx, BOOL newStruct) {
 
 
 	UnSelectAll();
@@ -2339,7 +2339,7 @@ void Geometry::InsertSYNGeom(FileReader *file, int *nbVertex, int *nbFacet, VERT
 	//return result;
 }
 
-void Geometry::InsertSTLGeom(FileReader *file, int *nbVertex, int *nbFacet, VERTEX3D **vertices3, Facet ***facets, int strIdx, double scaleFactor, BOOL newStruct) {
+void Geometry::InsertSTLGeom(FileReader *file, size_t *nbVertex, size_t *nbFacet, VERTEX3D **vertices3, Facet ***facets, size_t strIdx, double scaleFactor, BOOL newStruct) {
 
 	UnSelectAll();
 	char *w;
@@ -4493,7 +4493,7 @@ BOOL Geometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, S
 	momentsNode.append_attribute("nb") = work->moments.size() + 1;
 	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(SHHITS);
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++){
-		prg->SetProgress(0.5 + (double)m / (1.0 + (double)mApp->worker.moments.size()));
+		prg->SetProgress(0.5 + 0.5*(double)m / (1.0 + (double)mApp->worker.moments.size()));
 		xml_node newMoment = momentsNode.append_child("Moment");
 		newMoment.append_attribute("id") = m;
 		if (m == 0)

@@ -221,7 +221,7 @@ void TexturePlotter::UpdateTable() {
 										 maxValue = (double)val;
 										 maxX = i; maxY = j;
 									 }
-									 sprintf(tmp, "%Lu", val);
+									 sprintf(tmp, "%llu", val);
 									 mapList->SetValueAt(i, j, tmp);
 								 }
 							 }
@@ -321,7 +321,7 @@ void TexturePlotter::UpdateTable() {
 					 try {
 						 if (buffer) {
 							 SHGHITS *shGHit = (SHGHITS *)buffer;
-							 int profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
+							 size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
 							 AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
 							 //float dCoef = (float)totalOutgassing / 8.31 * gasMass / 100 * MAGIC_CORRECTION_FACTOR;
 							 double dCoef = /*(float)totalInFlux*/ 1.0 / (float)shGHit->total.hit.nbDesorbed *1E4/(selFacet->sh.is2sided ? 2.0 : 1.0);
@@ -368,7 +368,7 @@ void TexturePlotter::UpdateTable() {
 					 try {
 						 if (buffer) {
 							 SHGHITS *shGHit = (SHGHITS *)buffer;
-							 int profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
+							 size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
 							 AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
 							 double dCoef = /*totalInFlux*/ 1.0 / shGHit->total.hit.nbDesorbed * 1E4 * (worker->gasMass / 1000 / 6E23) * 0.0100;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 							 /*if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
@@ -405,7 +405,7 @@ void TexturePlotter::UpdateTable() {
 					try {
 						if (buffer) {
 							SHGHITS *shGHit = (SHGHITS *)buffer;
-							int profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
+							size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
 							AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
 							for (int i = 0; i < w; i++) {
 								for (int j = 0; j<h; j++) {

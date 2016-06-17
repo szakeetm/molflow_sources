@@ -52,6 +52,7 @@ Facet::Facet(int nbIndex) {
 	sh.counter.hit.nbDesorbed = 0;
 	sh.counter.hit.nbAbsorbed = 0;
 	sh.counter.hit.nbHit = 0;*/
+	memset(&counterCache, 0, sizeof(SHHITS));
 
 	sh.sticking = 0.0;
 	sh.opacity = 1.0;
