@@ -119,7 +119,7 @@ public:
   void Update(float appTime);
 
   // Send total and facet hit counts to subprocesses
-  void SendHits(BOOL noReset=FALSE);
+  void SendHits(BOOL skipFacetHits=FALSE);
 
   // Send heartbeat to subprocesses, otherwise they close
   //void SendHeartBeat();
@@ -260,7 +260,7 @@ private:
   BOOL ExecuteAndWait(int command,int waitState,size_t param=0,GLProgress *prg=NULL);
   BOOL Wait(int waitState, int timeout, GLProgress *prg = NULL);
   void ResetWorkerStats();
-  void ClearHits();
+  void ClearHits(BOOL noReload);
   char *GetErrorDetails();
   void ThrowSubProcError(char *message=NULL);
   void Start();

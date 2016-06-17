@@ -304,6 +304,7 @@ void PressureEvolution::refreshViews() {
 	SHGHITS *gHits = (SHGHITS *)buffer;
 	double nbDes = (double)gHits->total.hit.nbDesorbed;
 	double scaleY;
+	size_t facetHitsSize = (1 + worker->moments.size()) * sizeof(SHHITS);
 	for (int i = 0; i < nbView; i++) {
 
 		GLDataView *v = views[i];
@@ -314,7 +315,7 @@ void PressureEvolution::refreshViews() {
 			double fnbHit = (double)fCount->hit.nbHit;
 			v->Reset();
 			for (int m = 1; m <= MIN((int)worker->moments.size(), 10000); m++) { //max 10000 points
-				APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + sizeof(SHHITS) + m*sizeof(APROFILE)*PROFILE_SIZE);
+				APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + facetHitsSize + m*sizeof(APROFILE)*PROFILE_SIZE);
 
 				switch (displayMode) {
 				case 0: { //Raw data 
@@ -347,11 +348,13 @@ void PressureEvolution::refreshViews() {
 					scaleY *= worker->totalDesorbedMolecules / worker->timeWindowSize;
 					if (f->sh.is2sided) scaleY *= 0.5;
 					
+					/*
 					//Correction for double-density effect (measuring density on desorbing/absorbing facets):
-					if (f->sh.counter.hit.nbHit>0 || f->sh.counter.hit.nbDesorbed>0)
-						if (f->sh.counter.hit.nbAbsorbed >0 || f->sh.counter.hit.nbDesorbed>0) //otherwise save calculation time
-						scaleY *= 1.0 - ((double)f->sh.counter.hit.nbAbsorbed + (double)f->sh.counter.hit.nbDesorbed) / ((double)f->sh.counter.hit.nbHit + (double)f->sh.counter.hit.nbDesorbed) / 2.0;
-					
+					if (f->counterCache.hit.nbHit>0 || f->counterCache.hit.nbDesorbed>0)
+						if (f->counterCache.hit.nbAbsorbed >0 || f->counterCache.hit.nbDesorbed>0) //otherwise save calculation time
+						scaleY *= 1.0 - ((double)f->counterCache.hit.nbAbsorbed + (double)f->counterCache.hit.nbDesorbed) / ((double)f->counterCache.hit.nbHit + (double)f->counterCache.hit.nbDesorbed) / 2.0;
+					*/
+
 					double val = 0.0;
 					if (modeCombo->GetSelectedIndex() == 1) //plot one slice
 						val = profilePtr[selectedSlice].sum_1_per_ort_velocity*scaleY;

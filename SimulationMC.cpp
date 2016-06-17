@@ -183,7 +183,8 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 		gHits->nbHHit = sHandle->nbHHit;
 		memcpy(gHits->pHits, sHandle->pHits, NBHHIT*sizeof(HIT));
 	}
-
+	
+	size_t facetHitsSize = (1 + nbMoments) * sizeof(SHHITS);
 	// Facets
 	for (s = 0; s < sHandle->nbSuper; s++) {
 		for (i = 0; i < sHandle->str[s].nbFacet; i++) {
@@ -191,17 +192,19 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 			FACET *f = sHandle->str[s].facets[i];
 			if (f->hitted) {
 
-				SHHITS *fFit = (SHHITS *)(buffer + f->sh.hitOffset);
-				fFit->hit.nbAbsorbed += f->sh.counter.hit.nbAbsorbed;
-				//printf("\n%d %g + %g",i,(double)fFit->hit.nbHit,(double)f->sh.counter.hit.nbHit);
-				fFit->hit.nbDesorbed += f->sh.counter.hit.nbDesorbed;
-				fFit->hit.nbHit += f->sh.counter.hit.nbHit;
-				fFit->hit.sum_1_per_ort_velocity += f->sh.counter.hit.sum_1_per_ort_velocity;
-				fFit->hit.sum_v_ort += f->sh.counter.hit.sum_v_ort;
+				for (int m = 0; m < (1 + nbMoments); m++) {
+					SHHITS *fFit = (SHHITS *)(buffer + f->sh.hitOffset+m*sizeof(SHHITS));
+					fFit->hit.nbAbsorbed += f->counter[m].hit.nbAbsorbed;
+					//printf("\n%d %g + %g",i,(double)fFit->hit.nbHit,(double)f->sh.counter.hit.nbHit);
+					fFit->hit.nbDesorbed += f->counter[m].hit.nbDesorbed;
+					fFit->hit.nbHit += f->counter[m].hit.nbHit;
+					fFit->hit.sum_1_per_ort_velocity += f->counter[m].hit.sum_1_per_ort_velocity;
+					fFit->hit.sum_v_ort += f->counter[m].hit.sum_v_ort;
+				}
 
 				if (f->sh.isProfile) {
 					for (int m = 0; m < (1 + nbMoments); m++) {
-						APROFILE *shProfile = (APROFILE *)(buffer + (f->sh.hitOffset + sizeof(SHHITS)+m*f->profileSize));
+						APROFILE *shProfile = (APROFILE *)(buffer + (f->sh.hitOffset + facetHitsSize+m*f->profileSize));
 						for (j = 0; j < PROFILE_SIZE; j++) {
 							shProfile[j].count += f->profile[m][j].count;
 							shProfile[j].sum_1_per_ort_velocity += f->profile[m][j].sum_1_per_ort_velocity;
@@ -212,7 +215,7 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 
 				if (f->sh.isTextured) {
 					for (int m = 0; m < (1 + nbMoments); m++) {
-						AHIT *shTexture = (AHIT *)(buffer + (f->sh.hitOffset + sizeof(SHHITS)+f->profileSize*(1 + nbMoments) + m*f->textureSize));
+						AHIT *shTexture = (AHIT *)(buffer + (f->sh.hitOffset + facetHitsSize+f->profileSize*(1 + nbMoments) + m*f->textureSize));
 						//double dCoef = gHits->total.hit.nbDesorbed * 1E4 * sHandle->gasMass / 1000 / 6E23 * MAGIC_CORRECTION_FACTOR;  //1E4 is conversion from m2 to cm2
 						double timeCorrection = m == 0 ? sHandle->finalOutgassingRate : (sHandle->totalDesorbedMolecules) / sHandle->timeWindowSize;
 						
@@ -257,7 +260,7 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 
 				if (f->sh.countDirection) {
 					for (int m = 0; m < (1 + nbMoments); m++) {
-						VHIT *shDir = (VHIT *)(buffer + (f->sh.hitOffset + sizeof(SHHITS)+f->profileSize*(1 + nbMoments) + f->textureSize*(1 + nbMoments) + f->directionSize*m));
+						VHIT *shDir = (VHIT *)(buffer + (f->sh.hitOffset + facetHitsSize+f->profileSize*(1 + nbMoments) + f->textureSize*(1 + nbMoments) + f->directionSize*m));
 						for (y = 0; y < f->sh.texHeight; y++) {
 							for (x = 0; x < f->sh.texWidth; x++) {
 								int add = x + y*f->sh.texWidth;
@@ -381,9 +384,11 @@ void PerformTeleport(FACET *iFacet) {
 	double ortVelocity = sHandle->velocityCurrentParticle*abs(DOT3(
 		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
 		iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z));
-	iFacet->sh.counter.hit.nbHit++; //We count a teleport as a local hit, but not as a global one since that would affect the MFP calculation
+	//We count a teleport as a local hit, but not as a global one since that would affect the MFP calculation
+	/*iFacet->sh.counter.hit.nbHit++; 
 	iFacet->sh.counter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity;
-	iFacet->sh.counter.hit.sum_v_ort += 2.0*(sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;
+	iFacet->sh.counter.hit.sum_v_ort += 2.0*(sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
+	IncreaseFacetCounter(iFacet, sHandle->flightTimeCurrentParticle, 1,0,0, 2.0 / ortVelocity, 2.0*(sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity);
 	iFacet->hitted = TRUE;
 	/*destination->sh.counter.hit.sum_1_per_ort_velocity += 2.0 / sHandle->velocityCurrentParticle;
 	destination->sh.counter.hit.sum_v_ort += sHandle->velocityCurrentParticle*abs(DOT3(
@@ -641,7 +646,7 @@ BOOL StartFromSource() {
 	sHandle->teleportedFrom = -1;
 
 	// Count
-	src->sh.counter.hit.nbDesorbed++;
+	
 	src->hitted = TRUE;
 	sHandle->nbDesorbed++;
 	sHandle->tmpCount.hit.nbDesorbed++;
@@ -654,8 +659,10 @@ BOOL StartFromSource() {
 	double ortVelocity = sHandle->velocityCurrentParticle*abs(DOT3(
 		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
 		src->sh.N.x, src->sh.N.y, src->sh.N.z));
+	/*src->sh.counter.hit.nbDesorbed++;
 	src->sh.counter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity; //was 2.0 / ortV
-	src->sh.counter.hit.sum_v_ort += (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;
+	src->sh.counter.hit.sum_v_ort += (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
+	IncreaseFacetCounter(src, sHandle->flightTimeCurrentParticle, 0,1,0,2.0 / ortVelocity, (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity);
 	//Desorption doesn't contribute to angular profiles
 	ProfileFacet(src, sHandle->flightTimeCurrentParticle, FALSE, 2.0, 1.0); //was 2.0, 1.0
 	if (src->hits && src->sh.countDes) AHIT_FACET(src, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0); //was 2.0, 1.0
@@ -699,7 +706,7 @@ void PerformBounce(FACET *iFacet) {
 	if (iFacet->sh.isVolatile) {
 
 		if (iFacet->ready) {
-			iFacet->sh.counter.hit.nbAbsorbed++;
+			IncreaseFacetCounter(iFacet, sHandle->flightTimeCurrentParticle, 0, 0, 1, 0, 0);
 			iFacet->ready = FALSE;
 			ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0);
 			if (iFacet->hits && iFacet->sh.countAbs) AHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0);
@@ -717,13 +724,17 @@ void PerformBounce(FACET *iFacet) {
 
 	//Texture/Profile incoming hit
 	sHandle->tmpCount.hit.nbHit++; //global
-	iFacet->sh.counter.hit.nbHit++; //hit facet
+	
 	//Register (orthogonal) velocity
 	double ortVelocity = sHandle->velocityCurrentParticle*abs(DOT3(
 		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
 		iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z));
+	
+	/*iFacet->sh.counter.hit.nbHit++; //hit facet
 	iFacet->sh.counter.hit.sum_1_per_ort_velocity += 1.0 / ortVelocity;
-	iFacet->sh.counter.hit.sum_v_ort += (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;
+	iFacet->sh.counter.hit.sum_v_ort += (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
+
+	IncreaseFacetCounter(iFacet, sHandle->flightTimeCurrentParticle, 1, 0, 0, 1.0 / ortVelocity, (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity);
 	if (iFacet->hits && iFacet->sh.countRefl) AHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 1.0, 1.0);
 	if (iFacet->direction && iFacet->sh.countDirection) DHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle);
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 1.0, 1.0);
@@ -767,8 +778,10 @@ void PerformBounce(FACET *iFacet) {
 	ortVelocity = sHandle->velocityCurrentParticle*abs(DOT3(
 		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
 		iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z));
-	iFacet->sh.counter.hit.sum_1_per_ort_velocity += 1.0 / ortVelocity;
-	iFacet->sh.counter.hit.sum_v_ort += (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;
+
+	/*iFacet->sh.counter.hit.sum_1_per_ort_velocity += 1.0 / ortVelocity;
+	iFacet->sh.counter.hit.sum_v_ort += (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
+	IncreaseFacetCounter(iFacet, sHandle->flightTimeCurrentParticle, 0, 0, 0, 1.0 / ortVelocity, (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity);
 	if (iFacet->hits && iFacet->sh.countRefl) AHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle, FALSE, 1.0, 1.0); //count again for outward velocity
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, FALSE, 1.0, 1.0);
 	//no direction count on outgoing
@@ -779,7 +792,7 @@ void PerformBounce(FACET *iFacet) {
 	//sHandle->nbPHit++;
 }
 
-void PerformTransparentPass(FACET *iFacet) {
+void PerformTransparentPass(FACET *iFacet) { //disabled, caused finding hits with the same facet
 	/*double directionFactor = abs(DOT3(
 		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
 		iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z));
@@ -799,14 +812,11 @@ void PerformTransparentPass(FACET *iFacet) {
 void PerformAbsorb(FACET *iFacet) {
 	sHandle->tmpCount.hit.nbHit++; //global	
 	sHandle->tmpCount.hit.nbAbsorbed++;
-	iFacet->sh.counter.hit.nbHit++;
-	iFacet->sh.counter.hit.nbAbsorbed++;
 	RecordHit(HIT_ABS);
 	double ortVelocity = sHandle->velocityCurrentParticle*abs(DOT3(
 		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
 		iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z));
-	iFacet->sh.counter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity; //was 2.0 / ortV
-	iFacet->sh.counter.hit.sum_v_ort += (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;
+	IncreaseFacetCounter(iFacet, sHandle->flightTimeCurrentParticle, 1, 0, 1, 2.0 / ortVelocity, (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity);
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0); //was 2.0, 1.0
 	if (iFacet->hits && iFacet->sh.countAbs) AHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0); //was 2.0, 1.0
 	if (iFacet->direction && iFacet->sh.countDirection) DHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle);
@@ -848,7 +858,7 @@ void DHIT_FACET(FACET *f, double time) {
 void ProfileFacet(FACET *f, double time, BOOL countHit, double velocity_factor, double ortSpeedFactor) {
 
 	int pos;
-	int nbMoments = (int)sHandle->moments.size();
+	size_t nbMoments = sHandle->moments.size();
 	double dot = 1.0;
 
 	switch (f->sh.profileType) {
@@ -860,7 +870,7 @@ void ProfileFacet(FACET *f, double time, BOOL countHit, double velocity_factor, 
 			int pos = (int)(theta / (PI / 2)*((double)PROFILE_SIZE)); // To Grad
 			//int pos = (int)(cos(theta)*(double)PROFILE_SIZE); // COS(theta)
 			SATURATE(pos, 0, PROFILE_SIZE - 1);
-			for (int m = 0; m <= nbMoments; m++) {
+			for (size_t m = 0; m <= nbMoments; m++) {
 				if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
 					f->profile[m][pos].count++;
 				}
@@ -874,7 +884,7 @@ void ProfileFacet(FACET *f, double time, BOOL countHit, double velocity_factor, 
 
 		pos = (int)((f->sh.profileType == REC_PRESSUREU?f->colU:f->colV)*(double)PROFILE_SIZE);
 		SATURATE(pos, 0, PROFILE_SIZE - 1);
-		for (int m = 0; m <= nbMoments; m++) {
+		for (size_t m = 0; m <= nbMoments; m++) {
 			if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
 				if (countHit) f->profile[m][pos].count++;
 				double ortVelocity = sHandle->velocityCurrentParticle*abs(DOT3(f->sh.N.x, f->sh.N.y, f->sh.N.z,
@@ -891,7 +901,7 @@ void ProfileFacet(FACET *f, double time, BOOL countHit, double velocity_factor, 
 		if (countHit) {
 			pos = (int)(dot*sHandle->velocityCurrentParticle / f->sh.maxSpeed*(double)PROFILE_SIZE);
 			SATURATE(pos, 0, PROFILE_SIZE - 1);
-			for (int m = 0; m <= nbMoments; m++) {
+			for (size_t m = 0; m <= nbMoments; m++) {
 				if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
 					f->profile[m][pos].count++;
 				}
@@ -960,4 +970,28 @@ void TreatMovingFacet() {
 	sHandle->pDir = newVelocity;
 	Normalize(&sHandle->pDir);
 	sHandle->velocityCurrentParticle = Norme(&newVelocity);
+}
+
+void IncreaseFacetCounter(FACET *f,double time, size_t hit,size_t desorb,size_t absorb, double sum_1_per_v, double sum_v_ort) {
+	size_t nbMoments = sHandle->moments.size();
+	for (size_t m = 0; m <= nbMoments; m++) {
+		if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
+			f->counter[m].hit.nbHit += hit;
+			f->counter[m].hit.nbDesorbed += desorb;
+			f->counter[m].hit.nbAbsorbed += absorb;
+			f->counter[m].hit.sum_1_per_ort_velocity += sum_1_per_v;
+			f->counter[m].hit.sum_v_ort += sum_v_ort;
+		}
+	}
+}
+
+void FACET::ResetCounter() {
+	SHHITS zeroes;memset(&zeroes, 0, sizeof(zeroes)); //A new zero-value vector
+	std::fill(counter.begin(), counter.end(), zeroes); //Initialize each moment with 0 values
+}
+
+void FACET::ResizeCounter(size_t nbMoments) {
+	SHHITS zeroes;memset(&zeroes, 0, sizeof(zeroes)); //A new zero-value vector
+	counter = std::vector<SHHITS>(nbMoments + 1); //Reserve a counter for each moment, plus an extra for const. flow
+	std::fill(counter.begin(), counter.end(), zeroes); //Initialize each moment with 0 values
 }

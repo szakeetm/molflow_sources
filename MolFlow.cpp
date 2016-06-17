@@ -1597,19 +1597,19 @@ void MolFlow::UpdateFormula() {
 			VLIST *v = f->GetVariableAt(j);
 			if ((idx = getVariable(v->name, "A")) > 0) {
 				ok = (idx <= nbFacet);
-				if (ok) v->value = (double)geom->GetFacet(idx - 1)->sh.counter.hit.nbAbsorbed;
+				if (ok) v->value = (double)geom->GetFacet(idx - 1)->counterCache.hit.nbAbsorbed;
 			}
 			else if ((idx = getVariable(v->name, "D")) > 0) {
 				ok = (idx <= nbFacet);
-				if (ok) v->value = (double)geom->GetFacet(idx - 1)->sh.counter.hit.nbDesorbed;
+				if (ok) v->value = (double)geom->GetFacet(idx - 1)->counterCache.hit.nbDesorbed;
 			}
 			else if ((idx = getVariable(v->name, "H")) > 0) {
 				ok = (idx <= nbFacet);
-				if (ok) v->value = (double)geom->GetFacet(idx - 1)->sh.counter.hit.nbHit;
+				if (ok) v->value = (double)geom->GetFacet(idx - 1)->counterCache.hit.nbHit;
 			}
 			else if ((idx = getVariable(v->name, "P")) > 0) {
 				ok = (idx <= nbFacet);
-				if (ok) v->value = geom->GetFacet(idx - 1)->sh.counter.hit.sum_v_ort *
+				if (ok) v->value = geom->GetFacet(idx - 1)->counterCache.hit.sum_v_ort *
 					worker.finalOutgassingRate / worker.nbDesorption*1E4 / (geom->GetFacet(idx - 1)->sh.area*
 					(geom->GetFacet(idx - 1)->sh.is2sided ? 2.0 : 1.0)) * (worker.gasMass / 1000 / 6E23)*0.0100;
 			}
@@ -1618,24 +1618,24 @@ void MolFlow::UpdateFormula() {
 				if (ok) {
 					double dCoef = 1.0;
 					Facet *f = geom->GetFacet(idx - 1);
-					if (f->sh.counter.hit.nbHit>0 || f->sh.counter.hit.nbDesorbed>0)
-						if (f->sh.counter.hit.nbAbsorbed >0 || f->sh.counter.hit.nbDesorbed>0) //otherwise save calculation time
-							dCoef *= 1.0 - ((double)f->sh.counter.hit.nbAbsorbed + (double)f->sh.counter.hit.nbDesorbed) / ((double)f->sh.counter.hit.nbHit + (double)f->sh.counter.hit.nbDesorbed) / 2.0;
-					v->value = dCoef * f->sh.counter.hit.sum_1_per_ort_velocity /
+					if (f->counterCache.hit.nbHit>0 || f->counterCache.hit.nbDesorbed>0)
+						if (f->counterCache.hit.nbAbsorbed >0 || f->counterCache.hit.nbDesorbed>0) //otherwise save calculation time
+							dCoef *= 1.0 - ((double)f->counterCache.hit.nbAbsorbed + (double)f->counterCache.hit.nbDesorbed) / ((double)f->counterCache.hit.nbHit + (double)f->counterCache.hit.nbDesorbed) / 2.0;
+					v->value = dCoef * f->counterCache.hit.sum_1_per_ort_velocity /
 						(f->sh.area*(f->sh.is2sided ? 2.0 : 1.0)) *
 						worker.finalOutgassingRate / worker.nbDesorption*1E4;
 				}
 			}
 			else if ((idx = getVariable(v->name, "Z")) > 0) {
 				ok = (idx <= nbFacet);
-				if (ok) v->value = geom->GetFacet(idx - 1)->sh.counter.hit.nbHit /
+				if (ok) v->value = geom->GetFacet(idx - 1)->counterCache.hit.nbHit /
 					(geom->GetFacet(idx - 1)->sh.area*(geom->GetFacet(idx - 1)->sh.is2sided ? 2.0 : 1.0)) *
 					worker.finalOutgassingRate / worker.nbDesorption*1E4;
 			}
 			else if ((idx = getVariable(v->name, "V")) > 0) {
 				ok = (idx <= nbFacet);
-				if (ok) v->value = 4.0*(double)(geom->GetFacet(idx - 1)->sh.counter.hit.nbHit + geom->GetFacet(idx - 1)->sh.counter.hit.nbDesorbed)/
-					geom->GetFacet(idx - 1)->sh.counter.hit.sum_1_per_ort_velocity;
+				if (ok) v->value = 4.0*(double)(geom->GetFacet(idx - 1)->counterCache.hit.nbHit + geom->GetFacet(idx - 1)->counterCache.hit.nbDesorbed)/
+					geom->GetFacet(idx - 1)->counterCache.hit.sum_1_per_ort_velocity;
 			}
 			else if ((idx = getVariable(v->name, "T")) > 0) {
 				ok = (idx <= nbFacet);
@@ -1643,15 +1643,15 @@ void MolFlow::UpdateFormula() {
 			}
 			else if ((idx = getVariable(v->name, "_A")) > 0) {
 				ok = (idx <= nbFacet);
-				if (ok) v->value = (double)geom->GetFacet(idx - 1)->sh.counter.density.absorbed;
+				if (ok) v->value = (double)geom->GetFacet(idx - 1)->counterCache.density.absorbed;
 			}
 			else if ((idx = getVariable(v->name, "_D")) > 0) {
 				ok = (idx <= nbFacet);
-				if (ok) v->value = (double)geom->GetFacet(idx - 1)->sh.counter.density.desorbed;
+				if (ok) v->value = (double)geom->GetFacet(idx - 1)->counterCache.density.desorbed;
 			}
 			else if ((idx = getVariable(v->name, "_H")) > 0) {
 				ok = (idx <= nbFacet);
-				if (ok) v->value = (double)geom->GetFacet(idx - 1)->sh.counter.density.value;
+				if (ok) v->value = (double)geom->GetFacet(idx - 1)->counterCache.density.value;
 			}
 			else if ((idx = getVariable(v->name, "AR")) > 0) {
 				ok = (idx <= nbFacet);
@@ -1985,9 +1985,11 @@ int MolFlow::FrameMove()
 			if (profilePlotter) profilePlotter->Update(m_fTime);
 			if (pressureEvolution) pressureEvolution->Update(m_fTime);
 			if (timewisePlotter) timewisePlotter->Update(m_fTime);
+			if (texturePlotter) texturePlotter->Update(m_fTime);
 			//if(facetDetails) facetDetails->Update();
 			if (textureSettings) textureSettings->Update();
 			// Facet parameters and hits
+			if (globalSettings) globalSettings->SMPUpdate(m_fTime);
 
 			// Formulas
 			if (autoUpdateFormulas) UpdateFormula();
@@ -2035,8 +2037,7 @@ int MolFlow::FrameMove()
 		sprintf(tmp, "Stopped: %s", FormatTime(worker.simuTime));
 		sTime->SetText(tmp);
 	}
-	if (globalSettings) globalSettings->SMPUpdate(m_fTime);
-	if (texturePlotter) texturePlotter->Update(m_fTime);
+	
 	if (viewer[0]->SelectionChanged() ||
 		viewer[1]->SelectionChanged() ||
 		viewer[2]->SelectionChanged() ||
@@ -2104,7 +2105,7 @@ int MolFlow::FrameMove()
 
 // ----------------------------------------------------------------
 
-void MolFlow::UpdateFacetHits() {
+void MolFlow::UpdateFacetHits(BOOL allRows) {
 	char tmp[256];
 	Geometry *geom = worker.GetGeometry();
 
@@ -2113,7 +2114,15 @@ void MolFlow::UpdateFacetHits() {
 		if (geom->IsLoaded()) {
 
 			int sR, eR;
-			facetList->GetVisibleRows(&sR, &eR);
+			if (allRows)
+			{
+				sR = 0;
+				eR = facetList->GetNbRow() - 1;
+			}
+			else
+			{
+				facetList->GetVisibleRows(&sR, &eR);
+			}
 
 			
 			if (worker.displayedMoment == 0) {
@@ -2142,21 +2151,21 @@ void MolFlow::UpdateFacetHits() {
 				switch (modeCombo->GetSelectedIndex()) {
 				case MC_MODE:
 					facetList->SetColumnLabel(1, "Hits");
-					sprintf(tmp, "%I64d", f->sh.counter.hit.nbHit);
+					sprintf(tmp, "%I64d", f->counterCache.hit.nbHit);
 					facetList->SetValueAt(1, i, tmp);
-					sprintf(tmp, "%I64d", f->sh.counter.hit.nbDesorbed);
+					sprintf(tmp, "%I64d", f->counterCache.hit.nbDesorbed);
 					facetList->SetValueAt(2, i, tmp);
-					sprintf(tmp, "%I64d", f->sh.counter.hit.nbAbsorbed);
+					sprintf(tmp, "%I64d", f->counterCache.hit.nbAbsorbed);
 					facetList->SetValueAt(3, i, tmp);
 					break;
 				case AC_MODE:
 					facetList->SetColumnLabel(1, "Density");
-					sprintf(tmp, "%g", f->sh.counter.density.value);
+					sprintf(tmp, "%g", f->counterCache.density.value);
 					facetList->SetValueAt(1, i, tmp);
 
-					sprintf(tmp, "%g", f->sh.counter.density.desorbed);
+					sprintf(tmp, "%g", f->counterCache.density.desorbed);
 					facetList->SetValueAt(2, i, tmp);
-					sprintf(tmp, "%g", f->sh.counter.density.absorbed);
+					sprintf(tmp, "%g", f->counterCache.density.absorbed);
 					facetList->SetValueAt(3, i, tmp);
 					break;
 				}
@@ -2939,7 +2948,7 @@ void MolFlow::UpdateModelParams() {
 	facetList->SetColumnWidths((int*)cWidth);
 	facetList->SetColumnLabels((char **)cName);
 
-	facetList->UpdateAllRows();
+	UpdateFacetHits(TRUE);
 	AABB bb = geom->GetBB();
 
 	for (int i = 0; i < geom->GetNbFacet(); i++) {
@@ -3522,7 +3531,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		case MENU_FACET_SELECTABS:
 			geom->Unselect();
 			for (int i = 0; i < geom->GetNbFacet(); i++)
-				if (geom->GetFacet(i)->sh.counter.hit.nbAbsorbed > 0)
+				if (geom->GetFacet(i)->counterCache.hit.nbAbsorbed > 0)
 					geom->Select(i);
 			geom->UpdateSelection();
 			UpdateFacetParams(TRUE);
@@ -3532,7 +3541,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			geom->Unselect();
 			for (int i = 0; i < geom->GetNbFacet(); i++)
 
-				if (geom->GetFacet(i)->sh.counter.hit.nbHit > 0)
+				if (geom->GetFacet(i)->counterCache.hit.nbHit > 0)
 					geom->Select(i);
 			geom->UpdateSelection();
 			UpdateFacetParams(TRUE);
@@ -3550,7 +3559,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			}
 			geom->Unselect();
 			for (int i = 0; i < geom->GetNbFacet(); i++)
-				if (geom->GetFacet(i)->sh.counter.hit.nbHit == 0 && geom->GetFacet(i)->sh.area >= largeArea)
+				if (geom->GetFacet(i)->counterCache.hit.nbHit == 0 && geom->GetFacet(i)->sh.area >= largeArea)
 					geom->Select(i);
 			geom->UpdateSelection();
 			UpdateFacetParams(TRUE);

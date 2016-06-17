@@ -41,8 +41,8 @@ typedef int BOOL;
 
 // Local facet structure
 
-typedef struct {
-
+class FACET {
+public:
   SHFACET sh;
 
   int      *indices;          // Indices (Reference to geometry vertex)
@@ -76,7 +76,11 @@ typedef struct {
   int globalId; //Global index (to identify when superstructures are present)
   double *outgassingMap; //outgassing map when desorption is based on imported file
 
-} FACET;
+  // Facet hit counters
+  std::vector<SHHITS> counter;
+  void  ResetCounter();
+  void	ResizeCounter(size_t nbMoments);
+};
 
 // Temporary transparent hit
 #define MAX_THIT    16384
@@ -263,12 +267,12 @@ BOOL ComputeACMatrix(SHELEM *mesh);
 
 int GetIDId(int paramId);
 
-void UpdateVelocity(FACET *collidedFacet);
+void   UpdateVelocity(FACET *collidedFacet);
 double GenerateRandomVelocity(int CDFId);
 double GenerateDesorptionTime(FACET* src);
 double GetStickingAt(FACET *src,double time);
 double GetOpacityAt(FACET *src,double time);
-
-void TreatMovingFacet();
+void   IncreaseFacetCounter(FACET *f, double time, size_t hit,size_t desorb, size_t absorb, double sum_1_per_v, double sum_v_ort);
+void   TreatMovingFacet();
 
 #endif /* _SIMULATIONH_ */

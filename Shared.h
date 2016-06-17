@@ -241,8 +241,9 @@ typedef struct {
   //BOOL   isVolumeVisible;    //Do we paint the volume on this facet?
   //BOOL   isTextureVisible;	 //Do we paint the texture on this facet?
 
-  // Global hit counters
-  SHHITS counter;
+  
+  // Facet hit counters
+  // SHHITS counter; - removed as now it's time-dependent and part of the hits buffer
 
   // Normal vector
   VERTEX3D    N;    // normalized

@@ -327,65 +327,58 @@ char *FacetDetails::FormatCell(int idx,Facet *f,int mode) {
 		break;
 	case 18: //imp.rate
 	{
-	double dCoef = /*totalInFlux*/ 1.0 / worker->nbDesorption * 1E4;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
-	/*dCoef *= ((worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
-		/ worker->timeWindowSize));*/
+	double dCoef = 1.0 / worker->nbDesorption * 1E4;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
+
 	dCoef *= worker->finalOutgassingRate;
-	sprintf(ret, "%g", f->sh.counter.hit.nbHit / (f->sh.area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef);
+	sprintf(ret, "%g", f->counterCache.hit.nbHit / (f->sh.area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef);
 	//11.77=sqrt(8*8.31*293.15/3.14/0.028)/4/10
 	break; }
 	case 19: //particle density
 	{
 	double dCoef = /*totalInFlux*/ 1.0 / worker->nbDesorption * 1E4;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
-	/*dCoef *= ((worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
-	/ worker->timeWindowSize));*/
 	dCoef *= worker->finalOutgassingRate;
 	
 	//Correction for double-density effect (measuring density on desorbing/absorbing facets):
-	if (f->sh.counter.hit.nbHit>0 || f->sh.counter.hit.nbDesorbed>0)
-		if (f->sh.counter.hit.nbAbsorbed >0 || f->sh.counter.hit.nbDesorbed>0) //otherwise save calculation time
-		dCoef *= 1.0 - ((double)f->sh.counter.hit.nbAbsorbed + (double)f->sh.counter.hit.nbDesorbed) / ((double)f->sh.counter.hit.nbHit+(double)f->sh.counter.hit.nbDesorbed) / 2.0;
+	if (f->counterCache.hit.nbHit>0 || f->counterCache.hit.nbDesorbed>0)
+		if (f->counterCache.hit.nbAbsorbed >0 || f->counterCache.hit.nbDesorbed>0) //otherwise save calculation time
+		dCoef *= 1.0 - ((double)f->counterCache.hit.nbAbsorbed + (double)f->counterCache.hit.nbDesorbed) / ((double)f->counterCache.hit.nbHit+(double)f->counterCache.hit.nbDesorbed) / 2.0;
 	
-	sprintf(ret, "%g", f->sh.counter.hit.sum_1_per_ort_velocity / (f->sh.area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef);
-	//11.77=sqrt(8*8.31*293.15/3.14/0.028)/4/10
+	sprintf(ret, "%g", f->counterCache.hit.sum_1_per_ort_velocity / (f->sh.area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef);
+
 	break; }
 	case 20: //gas density
 	{
-	double dCoef = /*totalInFlux*/ 1.0 / worker->nbDesorption * 1E4;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
-	/*dCoef *= ((worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
-	/ worker->timeWindowSize));*/
+	double dCoef =  1.0 / worker->nbDesorption * 1E4;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
+
 	dCoef *= worker->finalOutgassingRate; //Moments not supported in face details window
 	
 	//Correction for double-density effect (measuring density on desorbing/absorbing facets):
-	if (f->sh.counter.hit.nbHit>0 || f->sh.counter.hit.nbDesorbed>0)
-		if (f->sh.counter.hit.nbAbsorbed >0 || f->sh.counter.hit.nbDesorbed>0) //otherwise save calculation time
-		dCoef *= 1.0 - ((double)f->sh.counter.hit.nbAbsorbed + (double)f->sh.counter.hit.nbDesorbed) / ((double)f->sh.counter.hit.nbHit + (double)f->sh.counter.hit.nbDesorbed) / 2.0;
+	if (f->counterCache.hit.nbHit>0 || f->counterCache.hit.nbDesorbed>0)
+		if (f->counterCache.hit.nbAbsorbed >0 || f->counterCache.hit.nbDesorbed>0) //otherwise save calculation time
+		dCoef *= 1.0 - ((double)f->counterCache.hit.nbAbsorbed + (double)f->counterCache.hit.nbDesorbed) / ((double)f->counterCache.hit.nbHit + (double)f->counterCache.hit.nbDesorbed) / 2.0;
 	
-	sprintf(ret, "%g", f->sh.counter.hit.sum_1_per_ort_velocity / (f->sh.area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef*mApp->worker.gasMass / 1000.0 / 6E23);
-	//11.77=sqrt(8*8.31*293.15/3.14/0.028)/4/10
+	sprintf(ret, "%g", f->counterCache.hit.sum_1_per_ort_velocity / (f->sh.area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef*mApp->worker.gasMass / 1000.0 / 6E23);
 	break; }
 	case 21: //avg.pressure
 	{
-	double dCoef = /*totalInFlux*/ 1.0 / worker->nbDesorption * 1E4 * (worker->gasMass / 1000 / 6E23) * 0.0100;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
-	/*dCoef *= ((worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
-	/ worker->timeWindowSize));*/
+	double dCoef = 1.0 / worker->nbDesorption * 1E4 * (worker->gasMass / 1000 / 6E23) * 0.0100;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
+
 	dCoef *= worker->finalOutgassingRate;
-	sprintf(ret, "%g", f->sh.counter.hit.sum_v_ort*dCoef / (f->sh.area*(f->sh.is2sided ? 2.0 : 1.0)));
-	//11.77=sqrt(8*8.31*293.15/3.14/0.028)/4/10
+	sprintf(ret, "%g", f->counterCache.hit.sum_v_ort*dCoef / (f->sh.area*(f->sh.is2sided ? 2.0 : 1.0)));
 	break; }
 	case 22: //avg. gas speed (estimate)
-		sprintf(ret, "%g", 4.0*(double)(f->sh.counter.hit.nbHit+f->sh.counter.hit.nbDesorbed) / f->sh.counter.hit.sum_1_per_ort_velocity);
+		sprintf(ret, "%g", 4.0*(double)(f->counterCache.hit.nbHit+f->counterCache.hit.nbDesorbed) / f->counterCache.hit.sum_1_per_ort_velocity);
 		//<v_surf>=2*<v_surf_ort>
 		//<v_gas>=1/<1/v_surf>
 		break;
 	case 23:
-		sprintf(ret,"%I64d",f->sh.counter.hit.nbHit);
+		sprintf(ret,"%I64d",f->counterCache.hit.nbHit);
 		break;
 	case 24:
-		sprintf(ret,"%I64d",f->sh.counter.hit.nbDesorbed);
+		sprintf(ret,"%I64d",f->counterCache.hit.nbDesorbed);
 		break;
 	case 25:
-		sprintf(ret,"%I64d",f->sh.counter.hit.nbAbsorbed);
+		sprintf(ret,"%I64d",f->counterCache.hit.nbAbsorbed);
 		break;
   }
 
@@ -431,10 +424,12 @@ void FacetDetails::UpdateTable() {
   facetListD->SetColumnWidths(tmpWidth);
   facetListD->SetColumnLabels(tmpName);
   facetListD->SetColumnAligns(tmpAlign);
+  
   if (worker->displayedMoment == 0)
 	  facetListD->SetAllColumnColors(COLOR_BLACK);
   else 
 	facetListD->SetColumnColors(tmpColor);
+  
 
   nbS = 0;
   for(int i=0;i<nbFacet;i++) {

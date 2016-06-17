@@ -154,7 +154,7 @@ public:
     void LoadConfig();
     void UpdateStructMenu();
     void UpdateTitle();
-    void UpdateFacetHits();
+    void UpdateFacetHits(BOOL allRows=FALSE);
     void AnimateViewerChange(int next,BOOL init=FALSE);
     void UpdateViewerParams();
     void SelectViewer(int s);

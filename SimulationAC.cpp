@@ -392,6 +392,7 @@ void UpdateACHits(Dataport *dpHit,int prIdx,DWORD timeout) {
 
   // Update texture
   idx = 0;
+  size_t facetHitsSize = (1 + sHandle->moments.size()) * sizeof(SHHITS);
   for(k=0;k<sHandle->str[0].nbFacet;k++) {
 
     f = sHandle->str[0].facets[k];
@@ -399,7 +400,7 @@ void UpdateACHits(Dataport *dpHit,int prIdx,DWORD timeout) {
     sumAbs = 0.0;
     sumVal = 0.0;
     nbE = 0;
-    shTexture = (AHIT *)((char *)dpHit->buff + (f->sh.hitOffset + sizeof(SHHITS) + f->profileSize));
+    shTexture = (AHIT *)((char *)dpHit->buff + (f->sh.hitOffset + facetHitsSize + f->profileSize));
     for(j=0;j<f->sh.texHeight && f->sh.opacity==1.0f;j++) {
       for(i=0;i<f->sh.texWidth;i++) {
         ACFLOAT val = (ACFLOAT)(sHandle->acDensity[idx]);
