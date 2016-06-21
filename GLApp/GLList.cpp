@@ -1676,18 +1676,32 @@ void GLList::CopyAllToClipboard() {
 // ---------------------------------------------------------------
 
 void GLList::CopySelectionToClipboard() {
-	if (this==mApp->facetList) mApp->UpdateFacetHits(TRUE);
-	// Compute data length
-	size_t totalLength = 0;
-	for(int s=0;s<nbSelectedRow;s++) {
-		for(int j=0;j<nbCol;j++) {
-			char *v = GetValueAt(j,selectedRows[s]);
-			if( v ) totalLength += strlen(v);
-			if( j<nbCol-1 ) totalLength++;
+	std::stringstream clipboardData;
+	if (selectionMode == MULTIPLE_ROW) { //Most probably facet hit list
+		if (this==mApp->facetList) mApp->UpdateFacetHits(TRUE);
+		// Compute data length
+		for(int s=0;s<nbSelectedRow;s++) {
+			for(int j=0;j<nbCol;j++) {
+				clipboardData << GetValueAt(j, selectedRows[s]);
+				if (j<nbCol - 1) clipboardData	<< '\t';
+			}
+			clipboardData << "\r\n";
 		}
-		totalLength+=2;
 	}
-	if( !totalLength ) return;
+	else if (selectionMode == BOX_CELL) {  //Texture plotter, for example
+		int rowStart, colStart, rowNb, colNb;
+		GetSelectionBox(&rowStart, &colStart, &rowNb, &colNb);
+		for (int r = rowStart; r < (rowStart + rowNb); r++) {
+			for (int c = colStart; c < (colStart + colNb); c++) {
+				clipboardData << GetValueAt(c,r);
+				if (c<(colStart + colNb - 1)) clipboardData	<< '\t';
+			}
+			clipboardData << "\r\n";
+		}
+		clipboardData << '\0';
+	}
+
+	if( clipboardData.str().empty() ) return;
 
 #ifdef WIN
 
@@ -1699,7 +1713,7 @@ void GLList::CopySelectionToClipboard() {
 	HGLOBAL hText = NULL;
 	char   *lpszText;
 
-	if(!(hText = GlobalAlloc(GMEM_ZEROINIT | GMEM_MOVEABLE, totalLength+1 ))) {
+	if(!(hText = GlobalAlloc(GMEM_ZEROINIT | GMEM_MOVEABLE, clipboardData.str().length()/*+1*/ ))) {
 		CloseClipboard();
 		return; 
 	}
@@ -1709,6 +1723,7 @@ void GLList::CopySelectionToClipboard() {
 		return;
 	}
 
+	/*
 	for(int s=0;s<nbSelectedRow;s++) {
 		for(int j=0;j<nbCol;j++) {
 			char *v = GetValueAt(j,selectedRows[s]);
@@ -1724,6 +1739,9 @@ void GLList::CopySelectionToClipboard() {
 		*lpszText++ = '\n';
 	}
 	*lpszText++ = 0;
+	*/
+	std::string tmp = clipboardData.str();
+	strcpy(lpszText,tmp.c_str());
 
 	SetClipboardData(CF_TEXT,hText);
 	GlobalUnlock (hText);

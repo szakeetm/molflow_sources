@@ -5057,8 +5057,8 @@ BOOL Geometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker
 	SHGHITS *gHits = (SHGHITS *)buffer;
 	xml_node resultNode = loadXML.child("MolflowResults");
 	xml_node momentsNode = resultNode.child("Moments");
-	size_t nbMoments = momentsNode.select_nodes("Moment").size();
-	size_t facetHitsSize = (1 + nbMoments) * sizeof(SHHITS);
+	size_t nbMoments = momentsNode.select_nodes("Moment").size(); //Contains constant flow!
+	size_t facetHitsSize = (nbMoments) * sizeof(SHHITS);
 	size_t m = 0;
 	for (xml_node newMoment : momentsNode.children("Moment")) {
 		progressDlg->SetProgress((double)m / (double)nbMoments);
