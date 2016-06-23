@@ -1730,6 +1730,7 @@ void MolFlow::UpdateFormula() {
 			else {
 				formulas[i].value->SetText(f->GetErrorMsg());
 			}
+			formulas[i].value->SetTextColor(0.0f,0.0f,worker.displayedMoment==0?0.0f:1.0f);
 		}
 
 	}
