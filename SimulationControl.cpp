@@ -118,9 +118,9 @@ void ClearSimulation() {
 				SAFE_FREE(f->direction);
 				//SAFE_FREE(f->velocityHistogram);
 
-
+				delete(f);f = NULL;
 			}
-			SAFE_FREE(f);
+			
 		}
 		SAFE_FREE(sHandle->str[j].facets);
 		if (sHandle->str[j].aabbTree) {
@@ -227,10 +227,7 @@ BOOL LoadSimulation(Dataport *loader) {
 
 	sHandle->nbVertex = shGeom->nbVertex;
 	sHandle->nbSuper = shGeom->nbSuper;
-
 	sHandle->totalFacet = shGeom->nbFacet;
-
-
 	sHandle->nbMoments = shGeom->nbMoments;
 	sHandle->latestMoment = shGeom->latestMoment;
 	sHandle->totalDesorbedMolecules = shGeom->totalDesorbedMolecules;
@@ -308,13 +305,14 @@ BOOL LoadSimulation(Dataport *loader) {
 	for (i = 0; i < sHandle->totalFacet; i++) {
 
 		SHFACET *shFacet = (SHFACET *)buffer;
-		FACET *f = (FACET *)malloc(sizeof(FACET));
+		FACET *f = new FACET;
 		if (!f) {
 			SetErrorSub("Not enough memory to load facets");
 			return FALSE;
 		}
 		memset(f, 0, sizeof(FACET));
 		memcpy(&(f->sh), shFacet, sizeof(SHFACET));
+		f->ResizeCounter(sHandle->nbMoments); //Initialize counter
 
 		//f->sh.maxSpeed = 4.0 * sqrt(2.0*8.31*f->sh.temperature/0.001/sHandle->gasMass);
 
@@ -324,8 +322,6 @@ BOOL LoadSimulation(Dataport *loader) {
 		idx = f->sh.superIdx;
 		sHandle->str[idx].facets[sHandle->str[idx].nbFacet] = f;
 		sHandle->str[idx].facets[sHandle->str[idx].nbFacet]->globalId = i;
-
-		//printf("sup%d fac%d %d hits\n",idx,sHandle->str[idx].nbFacet,f->sh.counter.hit.nbHit);
 		sHandle->str[idx].nbFacet++;
 
 
@@ -349,7 +345,7 @@ BOOL LoadSimulation(Dataport *loader) {
 		}
 
 		// Reset counter in local memory
-		memset(&(f->sh.counter), 0, sizeof(SHHITS));
+		//memset(&(f->sh.counter), 0, sizeof(SHHITS));
 		f->indices = (int *)malloc(f->sh.nbIndex*sizeof(int));
 		buffer += sizeof(SHFACET);
 		memcpy(f->indices, buffer, f->sh.nbIndex*sizeof(int));
@@ -582,16 +578,16 @@ BOOL LoadSimulation(Dataport *loader) {
 	printf("  Load %s successful\n", sHandle->name);
 	printf("  Geometry: %d vertex %d facets\n", sHandle->nbVertex, sHandle->totalFacet);
 
-	printf("  Geom size: %d bytes\n", (int)(buffer - bufferStart));
+	printf("  Geom size: %zd bytes\n", (size_t)(buffer - bufferStart));
 	printf("  Number of stucture: %d\n", sHandle->nbSuper);
-	printf("  Global Hit: %d bytes\n", sizeof(SHGHITS));
-	printf("  Facet Hit : %d bytes\n", sHandle->totalFacet*sizeof(SHHITS));
-	printf("  Texture   : %d bytes\n", sHandle->textTotalSize);
-	printf("  Profile   : %d bytes\n", sHandle->profTotalSize);
-	printf("  Direction : %d bytes\n", sHandle->dirTotalSize);
+	printf("  Global Hit: %zd bytes\n", sizeof(SHGHITS));
+	printf("  Facet Hit : %zd bytes\n", sHandle->totalFacet*sizeof(SHHITS));
+	printf("  Texture   : %zd bytes\n", sHandle->textTotalSize);
+	printf("  Profile   : %zd bytes\n", sHandle->profTotalSize);
+	printf("  Direction : %zd bytes\n", sHandle->dirTotalSize);
 
-	printf("  Total     : %d bytes\n", GetHitsSize());
-	printf("  Seed: %u\n", seed);
+	printf("  Total     : %zd bytes\n", GetHitsSize());
+	printf("  Seed: %lu\n", seed);
 	printf("  Loading time: %.3f ms\n", (t1 - t0)*1000.0);
 	return TRUE;
 
@@ -628,19 +624,9 @@ void ResetCounter() {
 	memset(&sHandle->tmpCount, 0, sizeof(SHHITS));
 
 	sHandle->distTraveledSinceUpdate_total = 0.0;
-
-
-
-
 	sHandle->distTraveledSinceUpdate_fullHitsOnly = 0.0;
 	sHandle->nbLeakTotal = 0;
 	//memset(sHandle->wallHits,0,BOUNCEMAX * sizeof(llong));
-
-	/*sHandle->testCubeCount=0;
-	sHandle->testCubeTemp=0.0;
-	sHandle->testCubeTime=0.0;
-	sHandle->testCubeEnterMoment=0.0;
-	sHandle->testCubeVelocity=0.0;*/
 
 	for (j = 0; j < sHandle->nbSuper; j++) {
 		for (i = 0; i < sHandle->str[j].nbFacet; i++) {
@@ -650,7 +636,8 @@ void ResetCounter() {
 			f->sh.counter.hit.nbAbsorbed=0;
 			f->sh.counter.hit.sumSpeed=0.0;
 			f->sh.counter.hit.sum_v_ort=0.0;*/
-			memset(&f->sh.counter, 0, sizeof(SHHITS));
+			//memset(&f->sh.counter, 0, sizeof(SHHITS));
+			f->ResetCounter();
 			f->hitted = FALSE;
 
 			if (f->hits) {
@@ -706,7 +693,7 @@ void ResetSimulation() {
 
 // -------------------------------------------------------
 
-BOOL StartSimulation(int mode) {
+BOOL StartSimulation(size_t mode) {
 
 	sHandle->sMode = mode;
 	switch (mode) {

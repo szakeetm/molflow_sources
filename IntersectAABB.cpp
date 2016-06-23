@@ -371,9 +371,8 @@ BOOL Intersect(VERTEX3D *rPos,VERTEX3D *rDir,  // Source ray (rayDir vector must
 							   double directionFactor = abs(DOT3(
 								   sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
 								   f->sh.N.x, f->sh.N.y, f->sh.N.z));
-							   f->sh.counter.hit.nbHit++;
-							   f->sh.counter.hit.sum_1_per_ort_velocity += 2.0 / (sHandle->velocityCurrentParticle*directionFactor);
-							   f->sh.counter.hit.sum_v_ort += 2.0*(sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*sHandle->velocityCurrentParticle*directionFactor;
+							   IncreaseFacetCounter(f, sHandle->flightTimeCurrentParticle + f->colDist / 100.0 / sHandle->velocityCurrentParticle,1,0,0, 2.0 / (sHandle->velocityCurrentParticle*directionFactor), 2.0*(sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*sHandle->velocityCurrentParticle*directionFactor);
+							   
 							   f->hitted = TRUE;
 							   if (f->hits && f->sh.countTrans) AHIT_FACET(f, sHandle->flightTimeCurrentParticle + f->colDist / 100.0 / sHandle->velocityCurrentParticle,
 								   TRUE, 2.0, 2.0);

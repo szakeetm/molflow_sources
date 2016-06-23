@@ -145,7 +145,7 @@ typedef struct {
   llong  cmdParam2[MAX_PROCESS];     // Command param 2
   char   statusStr[MAX_PROCESS][64]; // Status message
   //float  heartBeat; //a changing int number showing that molflow.exe is alive
-} SHMASTER;
+} SHCONTROL;
 
 // -----------------------------------------------------------------
 // Geometry shared structure        (name: MFLWLOAD[masterPID])
@@ -164,9 +164,9 @@ typedef struct {
 
 typedef struct {
 
-  int        nbFacet;   // Number of facets (total)
-  int        nbVertex;  // Number of 3D vertices
-  int        nbSuper;   // Number of superstructures
+  size_t        nbFacet;   // Number of facets (total)
+  size_t        nbVertex;  // Number of 3D vertices
+  size_t        nbSuper;   // Number of superstructures
   char       name[64];  // (Short file name)
   
   size_t nbMoments; //To pass in advance for memory reservation
@@ -241,8 +241,9 @@ typedef struct {
   //BOOL   isVolumeVisible;    //Do we paint the volume on this facet?
   //BOOL   isTextureVisible;	 //Do we paint the texture on this facet?
 
-  // Global hit counters
-  SHHITS counter;
+  
+  // Facet hit counters
+  // SHHITS counter; - removed as now it's time-dependent and part of the hits buffer
 
   // Normal vector
   VERTEX3D    N;    // normalized

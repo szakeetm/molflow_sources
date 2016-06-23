@@ -76,7 +76,7 @@ png_write_chunk_start(png_structp png_ptr, png_bytep chunk_name,
    png_uint_32 length)
 {
    png_byte buf[4];
-   png_debug2(0, "Writing %s chunk (%lu bytes)\n", chunk_name, length);
+   png_debug2(0, "Writing %s chunk (%llu bytes)\n", chunk_name, length);
 
    /* write the length */
    png_save_uint_32(buf, length);
@@ -1536,7 +1536,7 @@ png_write_pCAL(png_structp png_ptr, png_charp purpose, png_int_32 X0,
    for (i = 0; i < nparams; i++)
    {
       params_len[i] = png_strlen(params[i]) + (i == nparams - 1 ? 0 : 1);
-      png_debug2(3, "pCAL parameter %d length = %lu\n", i, params_len[i]);
+      png_debug2(3, "pCAL parameter %d length = %llu\n", i, params_len[i]);
       total_len += (png_size_t)params_len[i];
    }
 

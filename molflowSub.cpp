@@ -61,7 +61,7 @@ void GetState() {
   prParam = 0;
 
   if( AccessDataport(dpControl) ) {
-    SHMASTER *master = (SHMASTER *)dpControl->buff;
+    SHCONTROL *master = (SHCONTROL *)dpControl->buff;
     prState = master->states[prIdx];
     prParam = master->cmdParam[prIdx];
     prParam2 = master->cmdParam2[prIdx];
@@ -117,7 +117,7 @@ void SetState(int state,char *status) {
 	prState = state;
 	printf("\n setstate %d \n",state);
 	if( AccessDataport(dpControl) ) {
-		SHMASTER *master = (SHMASTER *)dpControl->buff;
+		SHCONTROL *master = (SHCONTROL *)dpControl->buff;
 		master->states[prIdx] = state;
 		strncpy(master->statusStr[prIdx],status,63);
 		master->statusStr[prIdx][63]=0;
@@ -163,7 +163,7 @@ char *GetSimuStatus() {
 
     case AC_MODE:
       if( sHandle->prgAC<100 ) {
-          sprintf(ret,"(%s) AC (%dx%d) (%d%%)",sHandle->name,
+          sprintf(ret,"(%s) AC (%dx%d) (%zd%%)",sHandle->name,
                       sHandle->nbAC,sHandle->nbAC,sHandle->prgAC);
       } else {
         if( max!=0 ) {
@@ -197,7 +197,7 @@ void SetReady() {
 void SetStatus(char *message) {
 
   if( AccessDataport(dpControl) ) {
-    SHMASTER *master = (SHMASTER *)dpControl->buff;
+    SHCONTROL *master = (SHCONTROL *)dpControl->buff;
     strcpy(master->statusStr[prIdx],message);
     ReleaseDataport(dpControl);
   }
@@ -222,7 +222,7 @@ void LoadAC() {
   loader = OpenDataport(loadDpName,prParam);
   if( !loader ) {
     char err[512];
-    sprintf(err,"Failed to open 'loader' dataport %s (%d Bytes)",loadDpName, prParam);
+    sprintf(err,"Failed to open 'loader' dataport %s (%zd Bytes)",loadDpName, prParam);
     SetErrorSub(err);
     return;
   }
@@ -265,7 +265,7 @@ void Load() {
   loader = OpenDataport(loadDpName,prParam);
   if( !loader ) {
     char err[512];
-    sprintf(err,"Failed to connect to 'loader' dataport %s (%d Bytes)",loadDpName, prParam);
+    sprintf(err,"Failed to connect to 'loader' dataport %s (%zd Bytes)",loadDpName, prParam);
     SetErrorSub(err);
     return;
   }
@@ -283,13 +283,13 @@ void Load() {
   dpHit = OpenDataport(hitsDpName,hSize);
   if( !dpHit ) {
 	  char err[512];
-	  sprintf(err, "Failed to connect to 'hits' dataport (%Ld Bytes)", hSize);
+	  sprintf(err, "Failed to connect to 'hits' dataport (%zd Bytes)", hSize);
 	  SetErrorSub(err);
 	sHandle->loadOK = FALSE;
     return;
   }
 
-  printf("Connected to %s (%d bytes)\n",hitsDpName,hSize);
+  printf("Connected to %s (%zd bytes)\n",hitsDpName,hSize);
 
 }
 
@@ -310,13 +310,13 @@ int main(int argc,char* argv[])
   sprintf(loadDpName,"MFLWLOAD%s",argv[1]);
   sprintf(hitsDpName,"MFLWHITS%s",argv[1]);
 
-  dpControl = OpenDataport(ctrlDpName,sizeof(SHMASTER));
+  dpControl = OpenDataport(ctrlDpName,sizeof(SHCONTROL));
   if( !dpControl ) {
     printf("Usage: Cannot connect to MFLWCTRL%s\n",argv[1]);
     return 1;
   }
 
-  printf("Connected to %s (%d bytes), molflowSub.exe #%d\n",ctrlDpName,sizeof(SHMASTER),prIdx);
+  printf("Connected to %s (%zd bytes), molflowSub.exe #%d\n",ctrlDpName,sizeof(SHCONTROL),prIdx);
 
   InitSimulation();
 
@@ -331,7 +331,7 @@ int main(int argc,char* argv[])
     switch(prState) {
 
       case COMMAND_LOAD:
-        printf("COMMAND: LOAD (%d,%I64d)\n",prParam,prParam2);
+        printf("COMMAND: LOAD (%zd,%llu)\n",prParam,prParam2);
         Load();
         if( sHandle->loadOK ) {
           sHandle->maxDesorption = prParam2; // 0 for endless
@@ -340,12 +340,12 @@ int main(int argc,char* argv[])
         break;
 
       case COMMAND_LOADAC:
-        printf("COMMAND: LOADAC (%d)\n",prParam);
+        printf("COMMAND: LOADAC (%zd)\n",prParam);
         LoadAC();
         break;
 
       case COMMAND_START:
-        printf("COMMAND: START (%d,%I64d)\n",prParam,prParam2);
+        printf("COMMAND: START (%zd,%llu)\n",prParam,prParam2);
         if( sHandle->loadOK ) {
           if( StartSimulation(prParam) )
             SetState(PROCESS_RUN,GetSimuStatus());
@@ -358,7 +358,7 @@ int main(int argc,char* argv[])
         break;
 
       case COMMAND_PAUSE:
-        printf("COMMAND: PAUSE (%d,%I64d)\n",prParam,prParam2);
+        printf("COMMAND: PAUSE (%zd,%llu)\n",prParam,prParam2);
         if( !sHandle->lastUpdateOK ) {
           // Last update not successful, retry with a longer tomeout
           if(dpHit) UpdateHits(dpHit,prIdx,8000);
@@ -367,18 +367,18 @@ int main(int argc,char* argv[])
         break;
 
       case COMMAND_RESET:
-        printf("COMMAND: RESET (%d,%I64d)\n",prParam,prParam2);
+        printf("COMMAND: RESET (%zd,%llu)\n",prParam,prParam2);
         ResetSimulation();
         SetReady();
         break;
 
       case COMMAND_EXIT:
-        printf("COMMAND: EXIT (%d,%I64d)\n",prParam,prParam2);
+        printf("COMMAND: EXIT (%zd,%llu)\n",prParam,prParam2);
         end = TRUE;
         break;
 
       case COMMAND_CLOSE:
-        printf("COMMAND: CLOSE (%d,%I64d)\n",prParam,prParam2);
+        printf("COMMAND: CLOSE (%zd,%llu)\n",prParam,prParam2);
         ClearSimulation();
         CLOSEDP(dpHit);
         SetReady();
@@ -386,7 +386,7 @@ int main(int argc,char* argv[])
 
       case COMMAND_STEPAC:
         // Debug command
-        printf("COMMAND: STEPAC (%d,%I64d)\n",prParam,prParam2);
+        printf("COMMAND: STEPAC (%zd,%llu)\n",prParam,prParam2);
         if( sHandle->loadOK ) {
           if( StartSimulation(prParam) ) {
             SetState(PROCESS_RUN,GetSimuStatus());

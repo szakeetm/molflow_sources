@@ -45,10 +45,14 @@ Facet::Facet(int nbIndex) {
 	memset(vertices2, 0, nbIndex * sizeof(VERTEX2D));
 
 	sh.nbIndex = nbIndex;
-	memset(&sh.counter, 0, sizeof(sh.counter));
-	/*sh.counter.hit.nbDesorbed = 0;
+
+	//ResizeCounter(nbMoments);
+
+	/*memset(&sh.counter, 0, sizeof(sh.counter));
+	sh.counter.hit.nbDesorbed = 0;
 	sh.counter.hit.nbAbsorbed = 0;
 	sh.counter.hit.nbHit = 0;*/
+	memset(&counterCache, 0, sizeof(SHHITS));
 
 	sh.sticking = 0.0;
 	sh.opacity = 1.0;
@@ -161,7 +165,7 @@ Facet::Facet(int nbIndex) {
 
 }
 
-// -----------------------------------------------------------
+
 
 Facet::~Facet() {
 	SAFE_FREE(indices);
@@ -179,7 +183,19 @@ Facet::~Facet() {
 	SAFE_FREE(outgassingMap);
 }
 
-// -----------------------------------------------------------
+
+/*
+void Facet::ResetCounter() {
+	SHHITS zeroes;memset(&zeroes, 0, sizeof(zeroes)); //A new zero-value vector
+	std::fill(counter.begin(), counter.end(), zeroes); //Initialize each moment with 0 values
+}
+
+void Facet::ResizeCounter(size_t nbMoments) {
+	SHHITS zeroes;memset(&zeroes, 0, sizeof(zeroes)); //A new zero-value vector
+	counter = std::vector<SHHITS>(nbMoments + 1); //Reserve a counter for each moment, plus an extra for const. flow
+	std::fill(counter.begin(), counter.end(), zeroes); //Initialize each moment with 0 values
+}
+*/
 
 BOOL Facet::IsLinkFacet() {
 	return ((sh.opacity == 0.0) && (sh.sticking >= 1.0));
@@ -257,14 +273,14 @@ void Facet::LoadGEO(FileReader *file, int version, int nbVertex) {
 	file->ReadKeyword("acMode"); file->ReadKeyword(":");
 	sh.countACD = file->ReadInt();
 	file->ReadKeyword("nbAbs"); file->ReadKeyword(":");
-	sh.counter.hit.nbAbsorbed = file->ReadLLong();
+	counterCache.hit.nbAbsorbed = file->ReadLLong();
 
 	file->ReadKeyword("nbDes"); file->ReadKeyword(":");
-	sh.counter.hit.nbDesorbed = file->ReadLLong();
+	counterCache.hit.nbDesorbed = file->ReadLLong();
 
 	file->ReadKeyword("nbHit"); file->ReadKeyword(":");
 
-	sh.counter.hit.nbHit = file->ReadLLong();
+	counterCache.hit.nbHit = file->ReadLLong();
 	if (version >= 2) {
 		// Added in GEO version 2
 		file->ReadKeyword("temperature"); file->ReadKeyword(":");
@@ -454,14 +470,14 @@ void Facet::LoadSYN(FileReader *file, int version, int nbVertex) {
 	file->ReadKeyword("countTrans"); file->ReadKeyword(":");
 	sh.countTrans = FALSE; file->ReadInt();
 	file->ReadKeyword("nbAbs"); file->ReadKeyword(":");
-	sh.counter.hit.nbAbsorbed = 0; file->ReadLLong();
+	counterCache.hit.nbAbsorbed = 0; file->ReadLLong();
 	if (version < 3) {
 		file->ReadKeyword("nbDes"); file->ReadKeyword(":");
-		sh.counter.hit.nbDesorbed = 0;
+		counterCache.hit.nbDesorbed = 0;
 		file->ReadLLong();
 	}
 	file->ReadKeyword("nbHit"); file->ReadKeyword(":");
-	sh.counter.hit.nbHit = 0; file->ReadLLong();
+	counterCache.hit.nbHit = 0; file->ReadLLong();
 	if (version >= 3) {
 		file->ReadKeyword("fluxAbs"); file->ReadKeyword(":");
 		file->ReadDouble();
@@ -498,9 +514,9 @@ void Facet::LoadTXT(FileReader *file) {
 	sh.sticking = file->ReadDouble();
 	double o = file->ReadDouble();
 	sh.area = file->ReadDouble();
-	sh.counter.hit.nbDesorbed = (llong)(file->ReadDouble() + 0.5);
-	sh.counter.hit.nbHit = (llong)(file->ReadDouble() + 0.5);
-	sh.counter.hit.nbAbsorbed = (llong)(file->ReadDouble() + 0.5);
+	counterCache.hit.nbDesorbed = (llong)(file->ReadDouble() + 0.5);
+	counterCache.hit.nbHit = (llong)(file->ReadDouble() + 0.5);
+	counterCache.hit.nbAbsorbed = (llong)(file->ReadDouble() + 0.5);
 	sh.desorbType = (int)(file->ReadDouble() + 0.5);
 
 
@@ -564,7 +580,7 @@ void Facet::LoadTXT(FileReader *file) {
 
 	file->ReadDouble(); // Unused
 
-	if (sh.counter.hit.nbDesorbed == 0)
+	if (counterCache.hit.nbDesorbed == 0)
 		sh.desorbType = DES_NONE;
 
 	if (IsLinkFacet()) {
@@ -658,9 +674,9 @@ void Facet::SaveGEO(FileWriter *file, int idx) {
 	file->Write("  countRefl:"); file->WriteInt(sh.countRefl, "\n");
 	file->Write("  countTrans:"); file->WriteInt(sh.countTrans, "\n");
 	file->Write("  acMode:"); file->WriteInt(sh.countACD, "\n");
-	file->Write("  nbAbs:"); file->WriteLLong(sh.counter.hit.nbAbsorbed, "\n");
-	file->Write("  nbDes:"); file->WriteLLong(sh.counter.hit.nbDesorbed, "\n");
-	file->Write("  nbHit:"); file->WriteLLong(sh.counter.hit.nbHit, "\n");
+	file->Write("  nbAbs:"); file->WriteLLong(0/*sh.counter.hit.nbAbsorbed*/, "\n");
+	file->Write("  nbDes:"); file->WriteLLong(0/*sh.counter.hit.nbDesorbed*/, "\n");
+	file->Write("  nbHit:"); file->WriteLLong(0/*sh.counter.hit.nbHit*/, "\n");
 
 	// Version 2
 	file->Write("  temperature:"); file->WriteDouble(sh.temperature, "\n");
@@ -1177,10 +1193,12 @@ size_t Facet::GetGeometrySize() {
 
 size_t Facet::GetHitsSize(size_t nbMoments) {
 
-	return   sizeof(SHHITS)
-		+ (sh.texWidth*sh.texHeight*sizeof(AHIT))*(1 + nbMoments)
-		+ (sh.isProfile ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0)
-		+ (sh.countDirection ? (sh.texWidth*sh.texHeight*sizeof(VHIT)*(1 + nbMoments)) : 0);
+	return   (1+nbMoments)*(
+		sizeof(SHHITS)+
+		+ (sh.texWidth*sh.texHeight*sizeof(AHIT))
+		+ (sh.isProfile ? (PROFILE_SIZE*sizeof(APROFILE)) : 0)
+		+ (sh.countDirection ? (sh.texWidth*sh.texHeight*sizeof(VHIT)) : 0)
+		);
 
 
 }
@@ -1326,7 +1344,7 @@ double Facet::GetSmooth(int i, int j, AHIT *texBuffer, int textureMode, double s
 #define LOG10(x) log10f((float)x)
 
 void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double max, BOOL useColorMap,
-	double dCoeff1, double dCoeff2, double dCoeff3, BOOL doLog) {
+	double dCoeff1, double dCoeff2, double dCoeff3, BOOL doLog, size_t m) {
 
 
 
@@ -1378,9 +1396,9 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 					physicalValue = texBuffer[idx].sum_1_per_ort_velocity / (this->mesh[idx].area*(sh.is2sided ? 2.0 : 1.0))*dCoeff3;
 
 					//Correction for double-density effect (measuring density on desorbing/absorbing facets):
-					if (sh.counter.hit.nbHit>0 || sh.counter.hit.nbDesorbed>0)
-						if (sh.counter.hit.nbAbsorbed > 0 || sh.counter.hit.nbDesorbed > 0) //otherwise save calculation time
-							physicalValue *= 1.0 - ((double)sh.counter.hit.nbAbsorbed + (double)sh.counter.hit.nbDesorbed) / ((double)sh.counter.hit.nbHit + (double)sh.counter.hit.nbDesorbed) / 2.0;
+					if (counterCache.hit.nbHit>0 || counterCache.hit.nbDesorbed>0)
+						if (counterCache.hit.nbAbsorbed > 0 || counterCache.hit.nbDesorbed > 0) //otherwise save calculation time
+							physicalValue *= 1.0 - ((double)counterCache.hit.nbAbsorbed + (double)counterCache.hit.nbDesorbed) / ((double)counterCache.hit.nbHit + (double)counterCache.hit.nbDesorbed) / 2.0;
 
 					break;
 				}
@@ -1477,9 +1495,9 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 					physicalValue = texBuffer[idx].sum_1_per_ort_velocity / (this->mesh[idx].area*(sh.is2sided ? 2.0 : 1.0))*dCoeff3;
 
 					//Correction for double-density effect (measuring density on desorbing/absorbing facets):
-					if (sh.counter.hit.nbHit>0 || sh.counter.hit.nbDesorbed>0)
-						if (sh.counter.hit.nbAbsorbed > 0 || sh.counter.hit.nbDesorbed > 0) //otherwise save calculation time
-							physicalValue *= 1.0 - ((double)sh.counter.hit.nbAbsorbed + (double)sh.counter.hit.nbDesorbed) / ((double)sh.counter.hit.nbHit + (double)sh.counter.hit.nbDesorbed) / 2.0;
+					if (counterCache.hit.nbHit>0 || counterCache.hit.nbDesorbed>0)
+						if (counterCache.hit.nbAbsorbed > 0 || counterCache.hit.nbDesorbed > 0) //otherwise save calculation time
+							physicalValue *= 1.0 - ((double)counterCache.hit.nbAbsorbed + (double)counterCache.hit.nbDesorbed) / ((double)counterCache.hit.nbHit + (double)counterCache.hit.nbDesorbed) / 2.0;
 
 					break;
 				}
@@ -1830,5 +1848,3 @@ void  Facet::SaveXML_geom(pugi::xml_node f){
 
 	} //end texture
 }
-
-

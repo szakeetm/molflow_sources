@@ -84,7 +84,7 @@ void *zmalloc(unsigned int len)
     buf[len+31-i]=i;
   }
   *((unsigned int*)buf) = len;
-  char c[1000]; wsprintf(c,"malloc 0x%lx  - %lu",buf+16,len);
+  char c[1000]; wsprintf(c,"malloc 0x%lx  - %llu",buf+16,len);
   OutputDebugString(c);
   return buf+16;
 }
@@ -1380,7 +1380,7 @@ int inflate_blocks(inflate_blocks_statef *s, z_streamp z, int r)
       q += t;  m -= t;
       if ((s->sub.left -= t) != 0)
         break;
-      LuTracev((stderr, "inflate:       stored end, %lu total out\n",
+      LuTracev((stderr, "inflate:       stored end, %llu total out\n",
               z->total_out + (q >= s->read ? q - s->read :
               (s->end - s->read) + (q - s->window))));
       s->mode = s->last ? IBM_DRY : IBM_TYPE;
@@ -1514,7 +1514,7 @@ int inflate_blocks(inflate_blocks_statef *s, z_streamp z, int r)
       r = Z_OK;
       inflate_codes_free(s->sub.decode.codes, z);
       LOAD
-      LuTracev((stderr, "inflate:       codes end, %lu total out\n",
+      LuTracev((stderr, "inflate:       codes end, %llu total out\n",
               z->total_out + (q >= s->read ? q - s->read :
               (s->end - s->read) + (q - s->window))));
       if (!s->last)

@@ -751,6 +751,7 @@ void Geometry::BuildTexture(BYTE *hits) {
 	double dCoef_custom[] = { 1.0, 1.0, 1.0 }; //Three coefficients for pressure, imp.rate, density
 
 	int nbMoments = (int)mApp->worker.moments.size();
+	size_t facetHitsSize = (1 + nbMoments) * sizeof(SHHITS);
 	switch (shGHit->mode) {
 
 	case MC_MODE:
@@ -815,7 +816,7 @@ void Geometry::BuildTexture(BYTE *hits) {
 		if (f->sh.isTextured) {
 
 			// Retrieve texture from shared memory (every seconds)
-			AHIT *hits_local = (AHIT *)((BYTE *)shGHit + (f->sh.hitOffset + sizeof(SHHITS)+profSize*(1 + nbMoments) + tSize*mApp->worker.displayedMoment));
+			AHIT *hits_local = (AHIT *)((BYTE *)shGHit + (f->sh.hitOffset + facetHitsSize + profSize*(1 + nbMoments) + tSize*mApp->worker.displayedMoment));
 
 
 
@@ -834,10 +835,10 @@ void Geometry::BuildTexture(BYTE *hits) {
 
 			}
 			f->BuildTexture(hits_local, textureMode, min, max, texColormap,
-				dCoef_custom[0] * timeCorrection, dCoef_custom[1] * timeCorrection, dCoef_custom[2] * timeCorrection, texLogScale);
+				dCoef_custom[0] * timeCorrection, dCoef_custom[1] * timeCorrection, dCoef_custom[2] * timeCorrection, texLogScale, mApp->worker.displayedMoment);
 		}
 		if (f->sh.countDirection && f->dirCache) {
-			VHIT *dirs = (VHIT *)((BYTE *)shGHit + (f->sh.hitOffset + sizeof(SHHITS)+profSize*(1 + nbMoments) + tSize*(1 + nbMoments) + dSize*mApp->worker.displayedMoment));
+			VHIT *dirs = (VHIT *)((BYTE *)shGHit + (f->sh.hitOffset + facetHitsSize+profSize*(1 + nbMoments) + tSize*(1 + nbMoments) + dSize*mApp->worker.displayedMoment));
 			for (int j = 0; j < nbElem; j++) {
 				f->dirCache[j].sumDir.x = dirs[j].sumDir.x;
 				f->dirCache[j].sumDir.y = dirs[j].sumDir.y;

@@ -654,15 +654,6 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 				//char fileOnly[512];
 				sprintf(tmp, "cmd /C \"pushd \"%s\"&&7za.exe x -t7z -aoa \"%s\" -otmp&&popd\"", CWD, fileName);
 				system(tmp);
-
-				/*filebegin = strrchr(fileName, '\\');
-				if (filebegin) filebegin++;
-				else filebegin = fileName;
-				memcpy(fileOnly, filebegin, sizeof(char)*(strlen(filebegin) - 2)); //geo7z->geo
-				fileOnly[strlen(filebegin) - 2] = '\0';
-				sprintf(tmp2, "%s\\tmp\\Geometry.geo", CWD);
-				if (!FileUtils::Exist(tmp2)) //fall back to old geo7z format
-				sprintf(tmp2, "%s\\tmp\\%s", CWD, fileOnly);*/
 				toOpen = (std::string)CWD + "\\tmp\\Geometry.geo"; //newer geo7z format: contain Geometry.geo
 				if (!FileUtils::Exist(toOpen)) toOpen = ((std::string)fileName).substr(0, strlen(fileName) - 2); //Inside the zip, try original filename with extension changed from geo7z to geo
 				f = new FileReader(toOpen);
@@ -696,6 +687,7 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 				SHGHITS *gHits = (SHGHITS *)dpHit->buff;
 				SetLeak(pLeak, &nbLastLeaks, gHits);
 				SetHHit(pHits, &nbHHit, gHits);
+				SendHits(); //Global and facet hit counters
 				SAFE_DELETE(f);
 				progressDlg->SetMessage("Loading textures...");
 				LoadTexturesGEO(toOpen, version);
@@ -774,7 +766,7 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 					if (ext == "xml" || ext == "zip")
 						progressDlg->SetMessage("Restoring simulation state...");
 					geom->LoadXML_simustate(loadXML, dpHit, this, progressDlg);
-					SendHits(TRUE); //Send hits without resetting simu state
+					SendHits(TRUE); //Send hits without sending facet counters, as they are directly written during the load process
 					RebuildTextures();
 				}
 				catch (Error &e) {
@@ -784,10 +776,7 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 			else { //insert
 				geom->InsertXML(loadXML, this, progressDlg, newStr);
 				mApp->changedSinceSave = TRUE;
-				nbHit = 0;
-				nbDesorption = 0;
-				maxDesorption = 0;
-				nbLeakTotal = 0;
+				ResetWorkerStats();
 				Reload();
 			}
 		}
@@ -829,6 +818,8 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 	if (!insert)
 	{
 		CalcTotalOutgassing();
+		displayedMoment = 0;
+		if (mApp->timeSettings) mApp->timeSettings->RefreshMoments();
 		if (mApp->momentsEditor) mApp->momentsEditor->Refresh();
 		if (mApp->parameterEditor) mApp->parameterEditor->UpdateCombo();
 		if (mApp->timeSettings) mApp->timeSettings->RefreshMoments();
@@ -843,279 +834,6 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 	}
 }
 
-/*void Worker::InsertGeometry(BOOL newStr, char *fileName) {
-	RealReload(); //Can throw Error
-	char CWD[MAX_PATH];
-	_getcwd(CWD, MAX_PATH);
-
-	std::string ext = FileUtils::GetExtension(fileName);
-
-	if (ext == "")
-		throw Error("LoadGeometry(): No file extension, can't determine type");
-
-	// Read a file
-	FileReader *f = NULL;
-	GLProgress *progressDlg = new GLProgress("Loading file...", "Please wait");
-	progressDlg->SetProgress(0.0);
-	progressDlg->SetVisible(TRUE);
-
-	/*
-	BOOL isASE = (_stricmp(ext, "ase") == 0);
-	BOOL isSTR = (_stricmp(ext, "str") == 0);
-	BOOL isSTL = (_stricmp(ext, "stl") == 0);
-	BOOL isTXT = (_stricmp(ext, "txt") == 0);
-	BOOL isGEO = (_stricmp(ext, "geo") == 0);
-	BOOL isGEO7Z = (_stricmp(ext, "geo7z") == 0);
-	BOOL isSYN = (_stricmp(ext, "syn") == 0);
-	BOOL isSYN7Z = (_stricmp(ext, "syn7z") == 0);
-	BOOL isXML = (_stricmp(ext, "xml") == 0);
-	BOOL isXMLzip = (_stricmp(ext, "zip") == 0);
-	*//*
-
-	if (ext == "txt") {
-
-		try {
-			f = new FileReader(fileName);
-			mApp->changedSinceSave = TRUE;
-			geom->InsertTXT(f, progressDlg, newStr);
-			//geom->sh.nbSuper++;
-			//nbHit = geom->tNbHit;
-			//nbDesorption = geom->tNbDesorption;
-			//maxDesorption = geom->tNbDesorptionMax;
-			//nbLeak = geom->tNbLeak;
-			nbHit = 0;
-			nbDesorption = 0;
-			maxDesorption = 0;
-			nbLeakTotal = 0;
-			Reload();
-			//strcpy(fullFileName,fileName);
-		}
-		catch (Error &e) {
-			//geom->Clear();
-			SAFE_DELETE(f);
-			progressDlg->SetVisible(FALSE);
-			SAFE_DELETE(progressDlg);
-			throw e;
-		}
-
-	}
-	else if (ext == "stl") {
-		try {
-			int ret = GLUnitDialog::Display("", "Choose STL file units:", GLDLG_MM | GLDLG_CM | GLDLG_M | GLDLG_INCH | GLDLG_FOOT | GLDLG_CANCEL_U, GLDLG_ICONNONE);
-			double scaleFactor = 1.0;
-			switch (ret) {
-			case GLDLG_MM:
-				scaleFactor = 0.1;
-				break;
-			case GLDLG_CM:
-				scaleFactor = 1.0;
-				break;
-			case GLDLG_M:
-				scaleFactor = 100;
-				break;
-			case GLDLG_INCH:
-				scaleFactor = 2.54;
-				break;
-			case GLDLG_FOOT:
-				scaleFactor = 30.48;
-				break;
-			}
-			if (ret != GLDLG_CANCEL_U) {
-				mApp->changedSinceSave = TRUE;
-				ResetWorkerStats();
-				f = new FileReader(fileName);
-				geom->InsertSTL(f, progressDlg, scaleFactor, newStr);
-				nbHit = 0;
-				nbLeakTotal = 0;
-				nbDesorption = 0;
-				maxDesorption = 0;
-				nbLeakTotal = 0;
-				Reload();
-			}
-			//strcpy(fullFileName,fileName);
-		}
-		catch (Error &e) {
-			//geom->Clear();
-			SAFE_DELETE(f);
-			progressDlg->SetVisible(FALSE);
-			SAFE_DELETE(progressDlg);
-			throw e;
-		}
-	}
-	else if (ext == "str") {
-		throw Error("STR file inserting is not supported.");
-	}
-	else if (ext == "syn" || ext == "syn7z") { //Synrad file
-		char tmp2[1024];
-
-		progressDlg->SetVisible(TRUE);
-		try {
-			if (ext == "syn7z") {
-				//decompress file
-				progressDlg->SetMessage("Decompressing file...");
-				char tmp[1024];
-				//char fileOnly[512];
-				sprintf(tmp, "cmd /C \"pushd \"%s\"&&7za.exe x -t7z -aoa \"%s\" -otmp&&popd\"", CWD, fileName);
-				//execCMD(tmp);
-				system(tmp);
-
-				/*filebegin = strrchr(fileName, '\\');
-				if (filebegin) filebegin++;
-				else filebegin = fileName;
-				memcpy(fileOnly, filebegin, sizeof(char)*(strlen(filebegin) - 2));
-				fileOnly[strlen(filebegin) - 2] = '\0';
-				sprintf(tmp2, "%s\\tmp\\Geometry.syn", CWD);*//*
-				f = new FileReader((std::string)CWD + "\\tmp\\Geometry.syn"); //Open extracted file
-			} else f = new FileReader(fileName); //syn file, open it directly
-			//progressDlg->SetMessage("Resetting worker...");
-			//ResetWorkerStats();
-
-			geom->InsertSYN(f, progressDlg, newStr);
-			nbLeakTotal = 0;
-			nbHit = 0;
-			nbDesorption = 0;
-			maxDesorption = geom->tNbDesorptionMax;
-
-			progressDlg->SetMessage("Reloading worker with new geometry...");
-			RealReload();
-			SAFE_DELETE(f);
-			//strcpy(fullFileName, fileName);
-		}
-		catch (Error &e) {
-			//geom->Clear();
-			SAFE_DELETE(f);
-			//if (isSYN7Z) remove(tmp2);
-			progressDlg->SetVisible(FALSE);
-			SAFE_DELETE(progressDlg);
-			throw e;
-		}
-	}
-	else if (ext == "geo" || ext == "geo7z") {
-		try {
-			if ((ext == "geo7z") {
-				//decompress file
-				progressDlg->SetMessage("Decompressing file...");
-				char tmp[1024];
-				char fileOnly[512];
-				sprintf(tmp, "cmd /C \"pushd \"%s\"&&7za.exe x -t7z -aoa \"%s\" -otmp&&popd\"", CWD, fileName);
-				//execCMD(tmp);
-				system(tmp);
-
-				filebegin = strrchr(fileName, '\\');
-				if (filebegin) filebegin++;
-				else filebegin = fileName;
-				memcpy(fileOnly, filebegin, sizeof(char)*(strlen(filebegin) - 2));
-				fileOnly[strlen(filebegin) - 2] = '\0';
-				sprintf(tmp2, "%s\\tmp\\Geometry.geo", CWD);
-				if (!FileUtils::Exist(tmp2)) //fall back to old geo7z format
-					sprintf(tmp2, "%s\\tmp\\%s", CWD, fileOnly);
-				f = new FileReader(tmp2);
-			}
-			progressDlg->SetMessage("Resetting worker...");
-			ResetWorkerStats();
-			if (!isGEO7Z) f = new FileReader(fileName);
-			mApp->changedSinceSave = TRUE;
-			geom->InsertGEO(f, progressDlg, newStr);
-			nbHit = 0;
-			nbDesorption = 0;
-			maxDesorption = 0;
-			nbLeakTotal = 0;
-			Reload();
-			//strcpy(fullFileName,fileName);
-		}
-		catch (Error &e) {
-			//geom->Clear();
-			SAFE_DELETE(f);
-			progressDlg->SetVisible(FALSE);
-			SAFE_DELETE(progressDlg);
-			throw e;
-		}
-	}
-	else if (ext == "isXML" || ext == "zip") { //XML file, optionally in ZIP container
-		xml_document loadXML;
-		xml_parse_result parseResult;
-		progressDlg->SetVisible(TRUE);
-		try {
-			if (ext == "zip") { //compressed in ZIP container
-				//decompress file
-				progressDlg->SetMessage("Decompressing file...");
-
-				HZIP hz = OpenZip(fileName, 0);
-				if (!hz) {
-					throw Error("Can't open ZIP file");
-				}
-				ZIPENTRY ze; GetZipItem(hz, -1, &ze); int numitems = ze.index;
-				BOOL notFoundYet = TRUE;
-				for (int i = 0; i < numitems && notFoundYet; i++) { //extract first XML file found in ZIP archive
-					GetZipItem(hz, i, &ze);
-					std::string fileName = ze.name;
-					
-					if (FileUtils::GetExtension(fileName) == "xml") { //if it's an .xml file
-						notFoundYet = FALSE;
-						std::string tmpFileName = "tmp/" + fileName;
-						UnzipItem(hz, i, tmpFileName.c_str()); //unzip it to tmp directory
-						CloseZip(hz);
-						progressDlg->SetMessage("Reading and parsing XML file...");
-						parseResult = loadXML.load_file(tmpFileName.c_str()); //parse it
-					}
-				}
-				if (notFoundYet) {
-					CloseZip(hz);
-					throw Error("No XML file in the ZIP file.");
-				}
-			} else parseResult = loadXML.load_file(fileName); //parse xml file directly
-			ResetWorkerStats();
-			progressDlg->SetMessage("Reading and parsing XML file...");
-			if (!parseResult) {
-				//Parse error
-				std::stringstream err;
-				err << "XML parsed with errors.\n";
-				err << "Error description: " << parseResult.description() << "\n";
-				err << "Error offset: " << parseResult.offset << "\n";
-				throw Error(err.str().c_str());
-			}
-
-			progressDlg->SetMessage("Building geometry...");
-			geom->InsertXML(loadXML, this, progressDlg, newStr);
-			mApp->changedSinceSave = TRUE;
-			nbHit = 0;
-			nbDesorption = 0;
-			maxDesorption = 0;
-			nbLeakTotal = 0;
-			Reload();
-		}
-		catch (Error &e) {
-			//geom->Clear();
-			progressDlg->SetVisible(FALSE);
-			SAFE_DELETE(progressDlg);
-			throw e;
-		}
-
-	}
-	else if (isASE) {
-		throw Error("ASE file inserting is not supported.");
-	}
-	else {
-		SAFE_DELETE(f);
-		progressDlg->SetVisible(FALSE);
-		SAFE_DELETE(progressDlg);
-		throw Error("InsertGeometry(): Invalid file extension [Only txt,stl,geo,ase or str]");
-
-	}
-
-	progressDlg->SetVisible(FALSE);
-	SAFE_DELETE(progressDlg);
-	SAFE_DELETE(f);
-	mApp->UpdateFacetlistSelected();
-	mApp->UpdateViewers();
-
-	//Debug memory check
-	//_ASSERTE (!_CrtDumpMemoryLeaks());;
-	_ASSERTE(_CrtCheckMemory());
-}*/
-
-// -------------------------------------------------------------
-
 void Worker::GetLeak(LEAK *buffer, int *nb) {
 
 	*nb = 0;
@@ -1126,7 +844,6 @@ void Worker::GetLeak(LEAK *buffer, int *nb) {
 
 }
 
-// -------------------------------------------------------------
 
 void Worker::SetLeak(LEAK *buffer, int *nb, SHGHITS *gHits) { //When loading from file
 
@@ -1176,11 +893,6 @@ void Worker::GetHHit(HIT *buffer, int *nb) {
 
 void Worker::SetHHit(HIT *buffer, int *nb, SHGHITS *gHits) {
 
-	/*if( nb>0 ) {
-		memcpy(hhitCache,buffer,sizeof(HIT)*MIN(*nb,NBHHIT));
-		memcpy(gHits->pHits,buffer,sizeof(LEAK)*MIN(NBHLEAK,*nb));
-		gHits->nbHHit = *nb;
-		}*/
 	memcpy(hhitCache, buffer, sizeof(HIT)*MIN(*nb, NBHHIT));
 	memcpy(gHits->pHits, buffer, sizeof(HIT)*MIN(*nb, NBHHIT));
 	gHits->nbHHit = *nb;
@@ -1293,7 +1005,7 @@ void Worker::Update(float appTime) {
 		if (dpControl) {
 			if (AccessDataport(dpControl)) {
 				int i = 0;
-				SHMASTER *master = (SHMASTER *)dpControl->buff;
+				SHCONTROL *master = (SHCONTROL *)dpControl->buff;
 				for (int proc = 0; proc < nbProcess && done; proc++) {
 					done = done && (master->states[proc] == PROCESS_DONE);
 					error = error && (master->states[proc] == PROCESS_ERROR);
@@ -1331,11 +1043,11 @@ void Worker::Update(float appTime) {
 				memcpy(hhitCache, gHits->pHits, sizeof(HIT)*NBHHIT);
 				memcpy(leakCache, gHits->pLeak, sizeof(LEAK)*NBHHIT);
 
-				// Copy facet hits
+				// Refresh local facet hit cache for the displayed moment
 				int nbFacet = geom->GetNbFacet();
 				for (int i = 0; i < nbFacet; i++) {
 					Facet *f = geom->GetFacet(i);
-					memcpy(&(f->sh.counter), buffer + f->sh.hitOffset, sizeof(SHHITS));
+					f->counterCache=(*((SHHITS*)(buffer + f->sh.hitOffset+displayedMoment*sizeof(SHHITS))));
 				}
 				try {
 					geom->BuildTexture(buffer);
@@ -1354,16 +1066,12 @@ void Worker::Update(float appTime) {
 
 // -------------------------------------------------------------
 
-void Worker::SendHits(BOOL noReset) {
+void Worker::SendHits(BOOL skipFacetHits ) {
 	//if (!needsReload) {
 	if (dpHit) {
 		if (AccessDataport(dpHit)) {
 
-			// Store initial hit counts in the shared memory
-			BYTE *pBuff = (BYTE *)dpHit->buff;
-			if (!noReset) memset(pBuff, 0, geom->GetHitsSize(&moments));
-
-			SHGHITS *gHits = (SHGHITS *)pBuff;
+			SHGHITS *gHits = (SHGHITS *)dpHit->buff;
 			gHits->total.hit.nbHit = nbHit;
 			gHits->nbLeakTotal = nbLeakTotal;
 			gHits->total.hit.nbDesorbed = nbDesorption;
@@ -1371,10 +1079,13 @@ void Worker::SendHits(BOOL noReset) {
 			gHits->distTraveledTotal_total = distTraveledTotal_total;
 			gHits->distTraveledTotal_fullHitsOnly = distTraveledTotal_fullHitsOnly;
 
-			int nbFacet = geom->GetNbFacet();
-			for (int i = 0; i < nbFacet; i++) {
-				Facet *f = geom->GetFacet(i);
-				memcpy(pBuff + f->sh.hitOffset, &(f->sh.counter), sizeof(SHHITS));
+			if (!skipFacetHits) {
+				int nbFacet = geom->GetNbFacet();
+				for (int i = 0; i < nbFacet; i++) {
+					Facet *f = geom->GetFacet(i);
+					for (size_t m = 0;m <= moments.size();m++)
+						*((SHHITS*)((BYTE*)dpHit->buff + f->sh.hitOffset + m * sizeof(SHHITS))) = f->counterCache;
+				}
 			}
 			ReleaseDataport(dpHit);
 
@@ -1403,7 +1114,7 @@ void Worker::ComputeAC(float appTime) {
 	size_t maxElem = geom->GetMaxElemNumber();
 	if (!maxElem)
 		throw Error("Mesh with boundary correction must be enabled on all polygons");
-	int dpSize = maxElem*sizeof(SHELEM);
+	size_t dpSize = maxElem*sizeof(SHELEM);
 
 	Dataport *loader = CreateDataport(loadDpName, dpSize);
 	if (!loader)
@@ -1510,7 +1221,7 @@ void Worker::RealReload() { //Sharing geometry with workers
 	ReleaseDataport(loader);
 
 	size_t hitSize = geom->GetHitsSize(&moments);
-	dpHit = CreateDataport(hitsDpName, hitSize);
+	dpHit = CreateDataport(hitsDpName, hitSize);ClearHits(TRUE);
 	if (!dpHit) {
 		CLOSEDP(loader);
 		//GLMessageBox::Display("Failed to create 'hits' dataport: not enough memory.", "Warning (Load)", GLDLG_OK, GLDLG_ICONERROR);
@@ -1522,12 +1233,12 @@ void Worker::RealReload() { //Sharing geometry with workers
 
 	// Compute number of max desorption per process
 	if (AccessDataportTimed(dpControl, 3000 + nbProcess*(int)((double)loadSize / 10000.0))) {
-		SHMASTER *m = (SHMASTER *)dpControl->buff;
+		SHCONTROL *master = (SHCONTROL *)dpControl->buff;
 		llong common = maxDesorption / (llong)nbProcess;
 		int remain = (int)(maxDesorption % (llong)nbProcess);
 		for (int i = 0; i < nbProcess; i++) {
-			m->cmdParam2[i] = common;
-			if (i < remain) m->cmdParam2[i]++;
+			master->cmdParam2[i] = common;
+			if (i < remain) master->cmdParam2[i]++;
 		}
 		ReleaseDataport(dpControl);
 	}
@@ -1545,20 +1256,7 @@ void Worker::RealReload() { //Sharing geometry with workers
 		throw Error(errMsg);
 	}
 
-	progressDlg->SetProgress(1.0);
-	progressDlg->SetMessage("Sending hits...");
-	//Send hit counts
-	try {
-		SendHits();
-	}
-	catch (Error &e) {
-		// Geometry not loaded !
-		CLOSEDP(dpHit);
-		CLOSEDP(loader);
-		progressDlg->SetVisible(FALSE);
-		SAFE_DELETE(progressDlg);
-		throw e;
-	}
+	//Old send hits location
 
 	progressDlg->SetMessage("Closing dataport...");
 	CLOSEDP(loader);
@@ -1572,7 +1270,7 @@ void Worker::RealReload() { //Sharing geometry with workers
 void Worker::SetMaxDesorption(llong max) {
 
 	try {
-		Reset(0.0);
+		ResetStatsAndHits(0.0);
 		maxDesorption = max;
 		Reload();
 	}
@@ -1590,13 +1288,13 @@ char *Worker::GetErrorDetails() {
 	strcpy(err, "");
 
 	AccessDataport(dpControl);
-	SHMASTER *shMaster = (SHMASTER *)dpControl->buff;
+	SHCONTROL *master = (SHCONTROL *)dpControl->buff;
 	for (int i = 0; i < nbProcess; i++) {
 		char tmp[256];
 		if (pID[i] != 0) {
-			int st = shMaster->states[i];
+			int st = master->states[i];
 			if (st == PROCESS_ERROR) {
-				sprintf(tmp, "[#%d] Process [PID %d] %s: %s\n", i, pID[i], prStates[st], shMaster->statusStr[i]);
+				sprintf(tmp, "[#%d] Process [PID %d] %s: %s\n", i, pID[i], prStates[st], master->statusStr[i]);
 			}
 			else {
 				sprintf(tmp, "[#%d] Process [PID %d] %s\n", i, pID[i], prStates[st]);
@@ -1614,9 +1312,9 @@ char *Worker::GetErrorDetails() {
 
 // -------------------------------------------------------------
 
-void Worker::ClearHits() {
+void Worker::ClearHits(BOOL noReload) {
 	try {
-		if (needsReload) RealReload();
+		if (!noReload && needsReload) RealReload();
 	}
 	catch (Error &e) {
 		GLMessageBox::Display((char *)e.GetMsg(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
@@ -1648,16 +1346,16 @@ BOOL Worker::Wait(int waitState, int timeout,GLProgress *prg) {
 
 		ok = TRUE;
 		AccessDataport(dpControl);
-		SHMASTER *shMaster = (SHMASTER *)dpControl->buff;
+		SHCONTROL *master = (SHCONTROL *)dpControl->buff;
 		nbReady=nbError=0;
 		for (int i = 0; i < nbProcess; i++) {
-			if (shMaster->states[i]==waitState) nbReady++;
-			ok = ok & (shMaster->states[i] == waitState || shMaster->states[i] == PROCESS_ERROR || shMaster->states[i] == PROCESS_DONE);
-			if( shMaster->states[i]==PROCESS_ERROR ) {
+			if (master->states[i]==waitState) nbReady++;
+			ok = ok & (master->states[i] == waitState || master->states[i] == PROCESS_ERROR || master->states[i] == PROCESS_DONE);
+			if( master->states[i]==PROCESS_ERROR ) {
 				error = TRUE;
 				nbError++;
 			}
-			allDone = allDone & (shMaster->states[i] == PROCESS_DONE);
+			allDone = allDone & (master->states[i] == PROCESS_DONE);
 		}
 		ReleaseDataport(dpControl);
 
@@ -1699,10 +1397,10 @@ BOOL Worker::ExecuteAndWait(int command, int waitState, size_t param,GLProgress 
 
 	// Send command
 	AccessDataport(dpControl);
-	SHMASTER *shMaster = (SHMASTER *)dpControl->buff;
+	SHCONTROL *master = (SHCONTROL *)dpControl->buff;
 	for (int i = 0; i < nbProcess; i++) {
-		shMaster->states[i] = command;
-		shMaster->cmdParam[i] = param;
+		master->states[i] = command;
+		master->cmdParam[i] = param;
 	}
 	ReleaseDataport(dpControl);
 
@@ -1718,11 +1416,11 @@ if(!dpControl) return;
 
 // Send command
 AccessDataport(dpControl);
-SHMASTER *shMaster = (SHMASTER *)dpControl->buff;
-//int hb = shMaster->heartBeat;
+SHCONTROL *master = (SHCONTROL *)dpControl->buff;
+//int hb = master->heartBeat;
 //hb++;
 //if (hb==1000) hb=0;
-shMaster->heartBeat = m_fTime;
+master->heartBeat = m_fTime;
 ReleaseDataport(dpControl);
 }
 */
@@ -1742,7 +1440,7 @@ void Worker::ResetWorkerStats() {
 
 // -------------------------------------------------------------
 
-void Worker::Reset(float appTime) {
+void Worker::ResetStatsAndHits(float appTime) {
 
 	if (calcAC) {
 		GLMessageBox::Display("Reset not allowed while calculating AC", "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1760,17 +1458,12 @@ void Worker::Reset(float appTime) {
 		ResetWorkerStats();
 		if (!ExecuteAndWait(COMMAND_RESET, PROCESS_READY))
 			ThrowSubProcError();
-		ClearHits();
+		ClearHits(FALSE);
 		Update(appTime);
 	}
 	catch (Error &e) {
 		GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 	}
-
-	//Debug memory check
-	//_ASSERTE (!_CrtDumpMemoryLeaks());;
-	_ASSERTE(_CrtCheckMemory());
-
 }
 
 // -------------------------------------------------------------
@@ -1827,9 +1520,9 @@ void Worker::KillAll() {
 	if (dpControl && nbProcess > 0) {
 		if (!ExecuteAndWait(COMMAND_EXIT, PROCESS_KILLED)) {
 			AccessDataport(dpControl);
-			SHMASTER *shMaster = (SHMASTER *)dpControl->buff;
+			SHCONTROL *master = (SHCONTROL *)dpControl->buff;
 			for (int i = 0; i < nbProcess; i++)
-				if (shMaster->states[i] == PROCESS_KILLED) pID[i] = 0;
+				if (master->states[i] == PROCESS_KILLED) pID[i] = 0;
 			ReleaseDataport(dpControl);
 			// Force kill
 			for (int i = 0; i < nbProcess; i++)
@@ -1859,9 +1552,9 @@ void Worker::GetProcStatus(int *states, char **status) {
 	if (nbProcess == 0) return;
 
 	AccessDataport(dpControl);
-	SHMASTER *shMaster = (SHMASTER *)dpControl->buff;
-	memcpy(states, shMaster->states, MAX_PROCESS*sizeof(int));
-	memcpy(status, shMaster->statusStr, MAX_PROCESS * 64);
+	SHCONTROL *master = (SHCONTROL *)dpControl->buff;
+	memcpy(states, master->states, MAX_PROCESS*sizeof(int));
+	memcpy(status, master->statusStr, MAX_PROCESS * 64);
 	ReleaseDataport(dpControl);
 
 }
@@ -1877,11 +1570,11 @@ void Worker::SetProcNumber(int n) {
 
 	// Create new control dataport
 	if (!dpControl)
-		dpControl = CreateDataport(ctrlDpName, sizeof(SHMASTER));
+		dpControl = CreateDataport(ctrlDpName, sizeof(SHCONTROL));
 	if (!dpControl)
 		throw Error("Failed to create 'control' dataport");
 	AccessDataport(dpControl);
-	memset(dpControl->buff, 0, sizeof(SHMASTER));
+	memset(dpControl->buff, 0, sizeof(SHCONTROL));
 	ReleaseDataport(dpControl);
 
 	// Launch n subprocess

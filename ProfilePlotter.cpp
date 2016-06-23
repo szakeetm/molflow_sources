@@ -301,6 +301,7 @@ void ProfilePlotter::refreshViews() {
 
 	double scaleY;
 
+	size_t facetHitsSize = (1 + worker->moments.size()) * sizeof(SHHITS);
 	for (int i = 0; i < nbView; i++) {
 
 		GLDataView *v = views[i];
@@ -308,9 +309,9 @@ void ProfilePlotter::refreshViews() {
 			Facet *f = geom->GetFacet(v->userData);
 
 			v->Reset();
-			APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + sizeof(SHHITS) + worker->displayedMoment*sizeof(APROFILE)*PROFILE_SIZE);
+			APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + facetHitsSize + worker->displayedMoment*sizeof(APROFILE)*PROFILE_SIZE);
 
-			SHHITS *fCount = (SHHITS *)(buffer + f->sh.hitOffset);
+			SHHITS *fCount = (SHHITS *)(buffer + f->sh.hitOffset+ worker->displayedMoment*sizeof(SHHITS));
 			double fnbHit = (double)fCount->hit.nbHit;
 			if (fnbHit == 0.0) fnbHit = 1.0;
 			if (nbDes > 0){
@@ -339,9 +340,9 @@ void ProfilePlotter::refreshViews() {
 					if (f->sh.is2sided) scaleY *= 0.5;
 					
 					//Correction for double-density effect (measuring density on desorbing/absorbing facets):
-					if (f->sh.counter.hit.nbHit>0 || f->sh.counter.hit.nbDesorbed>0)
-						if (f->sh.counter.hit.nbAbsorbed >0 || f->sh.counter.hit.nbDesorbed>0) //otherwise save calculation time
-						scaleY *= 1.0 - ((double)f->sh.counter.hit.nbAbsorbed + (double)f->sh.counter.hit.nbDesorbed) / ((double)f->sh.counter.hit.nbHit + (double)f->sh.counter.hit.nbDesorbed) / 2.0;
+					if (f->counterCache.hit.nbHit>0 || f->counterCache.hit.nbDesorbed>0)
+						if (f->counterCache.hit.nbAbsorbed >0 || f->counterCache.hit.nbDesorbed>0) //otherwise save calculation time
+						scaleY *= 1.0 - ((double)f->counterCache.hit.nbAbsorbed + (double)f->counterCache.hit.nbDesorbed) / ((double)f->counterCache.hit.nbHit + (double)f->counterCache.hit.nbDesorbed) / 2.0;
 					
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j, profilePtr[j].sum_1_per_ort_velocity*scaleY, FALSE);
@@ -412,14 +413,14 @@ void ProfilePlotter::refreshViews() {
 				for (int j = 0; j < nb; j++) {
 					Facet *f = geom->GetFacet(j);
 					if (f->sh.isVolatile) {
-						SHHITS *fCount = (SHHITS *)(buffer + f->sh.hitOffset);
+						SHHITS *fCount = (SHHITS *)(buffer + f->sh.hitOffset+worker->displayedMoment*sizeof(SHHITS));
 						double z = geom->GetVertex(f->indices[0])->z;
 						v->Add(z, (double)(fCount->hit.nbAbsorbed) / nbDes, FALSE);
 					}
 				}
 				// Last
 				Facet *f = geom->GetFacet(28);
-				SHHITS *fCount = (SHHITS *)(buffer + f->sh.hitOffset);
+				SHHITS *fCount = (SHHITS *)(buffer + f->sh.hitOffset+worker->displayedMoment*sizeof(SHHITS));
 				double fnbAbs = (double)fCount->hit.nbAbsorbed;
 				v->Add(1000.0, fnbAbs / nbDes, FALSE);
 				v->CommitChange();

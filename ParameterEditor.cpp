@@ -308,7 +308,7 @@ BOOL ParameterEditor::ValidateInput() {
 			valueX = ::atof(userValues[row].first.c_str());
 		} catch (std::exception err){
 			char tmp[256];
-			sprintf(tmp, "Can't parse value \"%s\" in row %d, first column:\n%s", userValues[row].first.c_str(), row+1, err.what());
+			sprintf(tmp, "Can't parse value \"%s\" in row %zd, first column:\n%s", userValues[row].first.c_str(), row+1, err.what());
 			GLMessageBox::Display(tmp, "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
 			return FALSE;
 		}
@@ -317,7 +317,7 @@ BOOL ParameterEditor::ValidateInput() {
 		}
 		catch (std::exception err){
 			char tmp[256];
-			sprintf(tmp, "Can't parse value \"%s\" in row %d, second column:\n%s", userValues[row].second.c_str(), row+1, err.what());
+			sprintf(tmp, "Can't parse value \"%s\" in row %zd, second column:\n%s", userValues[row].second.c_str(), row+1, err.what());
 			GLMessageBox::Display(tmp, "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
 			return FALSE;
 		}

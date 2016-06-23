@@ -281,7 +281,7 @@ void GLTextField::Paint() {
   y = (border?2:1);
   x = 1;
   
-  GLToolkit::GetDialogFont()->SetTextColor(0.0f,0.0f,0.0f);
+  GLToolkit::GetDialogFont()->SetTextColor(rText,gText,bText);
   GLToolkit::GetDialogFont()->DrawText(x,y,m_Text+m_Zero,FALSE);
 
   // Draw cursor
@@ -641,4 +641,10 @@ void GLTextField::ManageEvent(SDL_Event *evt) {
 
   }
 
+}
+
+void   GLTextField::SetTextColor(float r, float g, float b) {
+	rText = r;
+	gText = g;
+	bText = b;
 }

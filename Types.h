@@ -20,12 +20,7 @@
 #define TYPESH
 
 // 64 bit integer declaration
-
-#ifdef WIN
-  typedef unsigned __int64 llong;
-#else
-  typedef long long llong;
-#endif
+typedef long long llong;
 
 // AC matrix floating type
 

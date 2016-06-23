@@ -394,7 +394,7 @@ png_set_pCAL(png_structp png_ptr, png_infop info_ptr,
       return;
 
    length = png_strlen(purpose) + 1;
-   png_debug1(3, "allocating purpose for info (%lu bytes)\n", length);
+   png_debug1(3, "allocating purpose for info (%llu bytes)\n", length);
    info_ptr->pcal_purpose = (png_charp)png_malloc_warn(png_ptr, length);
    if (info_ptr->pcal_purpose == NULL)
      {
@@ -410,7 +410,7 @@ png_set_pCAL(png_structp png_ptr, png_infop info_ptr,
    info_ptr->pcal_nparams = (png_byte)nparams;
 
    length = png_strlen(units) + 1;
-   png_debug1(3, "allocating units for info (%lu bytes)\n", length);
+   png_debug1(3, "allocating units for info (%llu bytes)\n", length);
    info_ptr->pcal_units = (png_charp)png_malloc_warn(png_ptr, length);
    if (info_ptr->pcal_units == NULL)
      {
@@ -432,7 +432,7 @@ png_set_pCAL(png_structp png_ptr, png_infop info_ptr,
    for (i = 0; i < nparams; i++)
    {
       length = png_strlen(params[i]) + 1;
-      png_debug2(3, "allocating parameter %d for info (%lu bytes)\n", i, length);
+      png_debug2(3, "allocating parameter %d for info (%llu bytes)\n", i, length);
       info_ptr->pcal_params[i] = (png_charp)png_malloc_warn(png_ptr, length);
       if (info_ptr->pcal_params[i] == NULL)
         {
@@ -831,7 +831,7 @@ png_set_text_2(png_structp png_ptr, png_infop info_ptr, png_textp text_ptr,
          (png_uint_32)(key_len + text_length + lang_len + lang_key_len + 4));
       if (textp->key == NULL)
         return(1);
-      png_debug2(2, "Allocated %lu bytes at %x in png_set_text\n",
+      png_debug2(2, "Allocated %llu bytes at %x in png_set_text\n",
          (png_uint_32)(key_len + lang_len + lang_key_len + text_length + 4),
          (int)textp->key);
 

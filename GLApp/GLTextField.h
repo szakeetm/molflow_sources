@@ -41,6 +41,7 @@ public:
   void SetEditable(BOOL editable);
   BOOL IsEditable();
   void SetEditable_NoBG(BOOL editable);
+  void SetTextColor(float r, float g, float b);
   void Clear();
   // ------------------------------------------------------
 
@@ -81,6 +82,7 @@ private:
   int      m_LastPos;
   int     m_Zero;
   BOOL    m_Editable;
+  float   rText, gText, bText;
 
 };
 

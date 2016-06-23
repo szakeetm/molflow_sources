@@ -213,6 +213,7 @@ void TimewisePlotter::refreshViews() {
 
 	double scaleY;
 
+	size_t facetHitsSize = (1 + worker->moments.size()) * sizeof(SHHITS);
 	for (size_t i = 0; i < nbView; i++) {
 
 		GLDataView *v = views[i];
@@ -227,7 +228,7 @@ void TimewisePlotter::refreshViews() {
 		/*int momentIndex;
 		if (m==(nbView-1) && constantFlowToggle->GetState()) momentIndex=0; //Constant flow
 		else momentIndex=m+1; //any other 'normal' moment*/
-		APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + sizeof(SHHITS) + v->userData*sizeof(APROFILE)*PROFILE_SIZE);
+		APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + facetHitsSize + v->userData*sizeof(APROFILE)*PROFILE_SIZE);
 
 		switch (displayMode) {
 		case 0: //Raw data
@@ -254,11 +255,13 @@ void TimewisePlotter::refreshViews() {
 				/ worker->timeWindowSize));
 			if (f->sh.is2sided) scaleY *= 0.5;
 			
+			/*
 			//Correction for double-density effect (measuring density on desorbing/absorbing facets):
-			if (f->sh.counter.hit.nbHit>0 || f->sh.counter.hit.nbDesorbed>0)
-				if (f->sh.counter.hit.nbAbsorbed >0 || f->sh.counter.hit.nbDesorbed>0) //otherwise save calculation time
-				scaleY *= 1.0 - ((double)f->sh.counter.hit.nbAbsorbed + (double)f->sh.counter.hit.nbDesorbed) / ((double)f->sh.counter.hit.nbHit + (double)f->sh.counter.hit.nbDesorbed) / 2.0;
-			
+			if (f->sh.counter[v->userData].hit.nbHit>0 || f->sh.counter[v->userData].hit.nbDesorbed>0)
+				if (f->sh.counter[v->userData].hit.nbAbsorbed >0 || f->sh.counter[v->userData].hit.nbDesorbed>0) //otherwise save calculation time
+				scaleY *= 1.0 - ((double)f->sh.counter[v->userData].hit.nbAbsorbed + (double)f->sh.counter[v->userData].hit.nbDesorbed) / ((double)f->sh.counter[v->userData].hit.nbHit + (double)f->sh.counter[v->userData].hit.nbDesorbed) / 2.0;
+			*/
+
 			for (int j = 0; j < PROFILE_SIZE; j++)
 				v->Add((double)j, profilePtr[j].sum_1_per_ort_velocity*scaleY, FALSE);
 			break;

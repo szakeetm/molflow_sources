@@ -83,6 +83,8 @@ public:
   std::string userSticking;
   std::string userOpacity;
 
+  SHHITS counterCache; //Local copy of facet counter for the current moment, updated by Worker::Update()
+
   // GUI stuff
   BOOL  *visible;         // Edge visible flag
   BOOL   selected;        // Selected flag
@@ -122,7 +124,7 @@ public:
   size_t GetNbCellForRatio(double ratio);
   size_t GetNbCell();
   void  UpdateFlags();
-  void  BuildTexture(AHIT *texBuffer,int textureMode,double min,double max,BOOL useColorMap,double dCoeff1,double dCoeff2,double dCoeff3,BOOL doLog);
+  void  BuildTexture(AHIT *texBuffer,int textureMode,double min,double max,BOOL useColorMap,double dCoeff1,double dCoeff2,double dCoeff3,BOOL doLog,size_t m);
   BOOL  BuildMesh();
   void  BuildSelElemList();
   int   RestoreDeviceObjects();
@@ -134,7 +136,6 @@ public:
   void  RenderSelectedElem();
   void  SelectElem(int u,int v,int width,int height);
   void  UnselectElem();
-
 };
 
 #endif /* FACETH */

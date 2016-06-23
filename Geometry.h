@@ -237,11 +237,11 @@ private:
 
   void CalculateFacetParam(int facet); // Facet parameters
   void Merge(int nbV,int nbF,VERTEX3D *nV,Facet **nF); // Merge geometry
-  void LoadTXTGeom(FileReader *file,int *nbV,int *nbF,VERTEX3D **V,Facet ***F,int strIdx=0);
-  void InsertTXTGeom(FileReader *file,int *nbV,int *nbF,VERTEX3D **V,Facet ***F,int strIdx=0,BOOL newStruct=FALSE);
-  void InsertGEOGeom(FileReader *file,int *nbV,int *nbF,VERTEX3D **V,Facet ***F,int strIdx=0,BOOL newStruct=FALSE);
-  void InsertSYNGeom(FileReader *file,int *nbV,int *nbF,VERTEX3D **V,Facet ***F,int strIdx=0,BOOL newStruct=FALSE);
-  void InsertSTLGeom(FileReader *file,int *nbV,int *nbF,VERTEX3D **V,Facet ***F,int strIdx=0,double scaleFactor=1.0,BOOL newStruct=FALSE);
+  void LoadTXTGeom(FileReader *file,size_t *nbV, size_t *nbF,VERTEX3D **V,Facet ***F, size_t strIdx=0);
+  void InsertTXTGeom(FileReader *file, size_t *nbV, size_t *nbF,VERTEX3D **V,Facet ***F, size_t strIdx=0,BOOL newStruct=FALSE);
+  void InsertGEOGeom(FileReader *file, size_t *nbV, size_t *nbF,VERTEX3D **V,Facet ***F, size_t strIdx=0,BOOL newStruct=FALSE);
+  void InsertSYNGeom(FileReader *file, size_t *nbV, size_t *nbF,VERTEX3D **V,Facet ***F, size_t strIdx=0,BOOL newStruct=FALSE);
+  void InsertSTLGeom(FileReader *file, size_t *nbV, size_t *nbF,VERTEX3D **V,Facet ***F, size_t strIdx=0,double scaleFactor=1.0,BOOL newStruct=FALSE);
   void RemoveLinkFacet();
   void SaveProfileGEO(FileWriter *file, Dataport *dpHit, int super = -1, BOOL saveSelected = FALSE, BOOL crashSave=FALSE);
   void SaveProfileTXT(FileWriter *file);

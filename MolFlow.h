@@ -154,7 +154,7 @@ public:
     void LoadConfig();
     void UpdateStructMenu();
     void UpdateTitle();
-    void UpdateFacetHits();
+    void UpdateFacetHits(BOOL allRows=FALSE);
     void AnimateViewerChange(int next,BOOL init=FALSE);
     void UpdateViewerParams();
     void SelectViewer(int s);
@@ -171,7 +171,7 @@ public:
 	void UpdateViewers();
 	void SetFacetSearchPrg(BOOL visible,char *text);
 	void DisplayCollapseDialog();
-	void RenumberSelections(int startFacetId);
+	void RenumberSelections(size_t startFacetId);
 
     // Formula management
     int nbFormula;
@@ -179,7 +179,7 @@ public:
 	void ProcessFormulaButtons(GLComponent *src);
     void UpdateFormula();
 	BOOL OffsetFormula(char* expression,int offset,int filter=-1);
-	void RenumberFormulas(int startId);
+	void RenumberFormulas(size_t startId);
     void AddFormula(GLParser *f,BOOL doUpdate=TRUE);
 	void AddFormula(const char *fName, const char *formula);
 	void ClearFormula();

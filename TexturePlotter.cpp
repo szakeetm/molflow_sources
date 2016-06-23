@@ -165,7 +165,8 @@ void TexturePlotter::Update(float appTime, BOOL force) {
 // --------------------------------------------------------------------
 
 void TexturePlotter::UpdateTable() {
-	int nbMoments = (int)mApp->worker.moments.size();
+	size_t nbMoments = mApp->worker.moments.size();
+	size_t facetHitsSize = (1 + nbMoments) * sizeof(SHHITS);
 	maxValue = 0.0f;
 	//double scale;
 	GetSelected();
@@ -209,8 +210,8 @@ void TexturePlotter::UpdateTable() {
 					 try {
 						 if (buffer) {
 							 SHGHITS *shGHit = (SHGHITS *)buffer;
-							 int profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
-							 AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + sizeof(SHHITS)+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
+							 size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
+							 AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
 							 for (int i = 0; i < w; i++) {
 								 for (int j = 0; j<h; j++) {
 									 //int tSize = selFacet->sh.texWidth*selFacet->sh.texHeight;
@@ -220,7 +221,7 @@ void TexturePlotter::UpdateTable() {
 										 maxValue = (double)val;
 										 maxX = i; maxY = j;
 									 }
-									 sprintf(tmp, "%Lu", val);
+									 sprintf(tmp, "%llu", val);
 									 mapList->SetValueAt(i, j, tmp);
 								 }
 							 }
@@ -241,8 +242,8 @@ void TexturePlotter::UpdateTable() {
 					 try {
 						 if (buffer) {
 							 SHGHITS *shGHit = (SHGHITS *)buffer;
-							 int profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
-							 AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + sizeof(SHHITS)+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
+							 size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
+							 AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
 							 double dCoef = /*totalInFlux*/ 1.0 / shGHit->total.hit.nbDesorbed * 1E4/(selFacet->sh.is2sided?2.0:1.0); //1E4: conversion m2->cm2
 							 /*if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
 								 / worker->timeWindowSize));*/
@@ -275,17 +276,17 @@ void TexturePlotter::UpdateTable() {
 					 try {
 						 if (buffer) {
 							 SHGHITS *shGHit = (SHGHITS *)buffer;
-							 int profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
-							 AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + sizeof(SHHITS)+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
+							 size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
+							 AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
 							 //float dCoef = (float)totalOutgassing / 8.31 * gasMass / 100 * MAGIC_CORRECTION_FACTOR;
 							 double dCoef = /*totalInFlux*/1.0 / shGHit->total.hit.nbDesorbed*1E4 / (selFacet->sh.is2sided ? 2.0 : 1.0);   //1E4 m2 -> cm2
 							 /*if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
 								 / worker->timeWindowSize));*/
 
 							 //Correction for double-density effect (measuring density on desorbing/absorbing facets):
-							 if (selFacet->sh.counter.hit.nbHit>0 || selFacet->sh.counter.hit.nbDesorbed>0)
-								 if (selFacet->sh.counter.hit.nbAbsorbed >0 || selFacet->sh.counter.hit.nbDesorbed>0) //otherwise save calculation time
-									 dCoef *= 1.0 - ((double)selFacet->sh.counter.hit.nbAbsorbed + (double)selFacet->sh.counter.hit.nbDesorbed) / ((double)selFacet->sh.counter.hit.nbHit + (double)selFacet->sh.counter.hit.nbDesorbed) / 2.0;
+							 if (selFacet->counterCache.hit.nbHit>0 || selFacet->counterCache.hit.nbDesorbed>0)
+								 if (selFacet->counterCache.hit.nbAbsorbed >0 || selFacet->counterCache.hit.nbDesorbed>0) //otherwise save calculation time
+									 dCoef *= 1.0 - ((double)selFacet->counterCache.hit.nbAbsorbed + (double)selFacet->counterCache.hit.nbDesorbed) / ((double)selFacet->counterCache.hit.nbHit + (double)selFacet->counterCache.hit.nbDesorbed) / 2.0;
 
 							 if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules	 / worker->timeWindowSize));
 							 for (int i = 0; i < w; i++) {
@@ -320,18 +321,18 @@ void TexturePlotter::UpdateTable() {
 					 try {
 						 if (buffer) {
 							 SHGHITS *shGHit = (SHGHITS *)buffer;
-							 int profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
-							 AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + sizeof(SHHITS)+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
+							 size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
+							 AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
 							 //float dCoef = (float)totalOutgassing / 8.31 * gasMass / 100 * MAGIC_CORRECTION_FACTOR;
 							 double dCoef = /*(float)totalInFlux*/ 1.0 / (float)shGHit->total.hit.nbDesorbed *1E4/(selFacet->sh.is2sided ? 2.0 : 1.0);
 							 /*if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
 								 / worker->timeWindowSize));*/
 							
-							 //Correction for double-density effect (measuring density on desorbing/absorbing facets):
-							 if (selFacet->sh.counter.hit.nbHit>0 || selFacet->sh.counter.hit.nbDesorbed>0)
-								 if (selFacet->sh.counter.hit.nbAbsorbed >0 || selFacet->sh.counter.hit.nbDesorbed>0) //otherwise save calculation time
-									 dCoef *= 1.0 - ((double)selFacet->sh.counter.hit.nbAbsorbed + (double)selFacet->sh.counter.hit.nbDesorbed) / ((double)selFacet->sh.counter.hit.nbHit + (double)selFacet->sh.counter.hit.nbDesorbed) / 2.0;
-							 
+								 //Correction for double-density effect (measuring density on desorbing/absorbing facets):
+							 if (selFacet->counterCache.hit.nbHit>0 || selFacet->counterCache.hit.nbDesorbed>0)
+								 if (selFacet->counterCache.hit.nbAbsorbed >0 || selFacet->counterCache.hit.nbDesorbed>0) //otherwise save calculation time
+									 dCoef *= 1.0 - ((double)selFacet->counterCache.hit.nbAbsorbed + (double)selFacet->counterCache.hit.nbDesorbed) / ((double)selFacet->counterCache.hit.nbHit + (double)selFacet->counterCache.hit.nbDesorbed) / 2.0;
+
 							 
 							 if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules	 / worker->timeWindowSize));
 							 for (int i = 0; i < w; i++) {
@@ -367,8 +368,8 @@ void TexturePlotter::UpdateTable() {
 					 try {
 						 if (buffer) {
 							 SHGHITS *shGHit = (SHGHITS *)buffer;
-							 int profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
-							 AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + sizeof(SHHITS)+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
+							 size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
+							 AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
 							 double dCoef = /*totalInFlux*/ 1.0 / shGHit->total.hit.nbDesorbed * 1E4 * (worker->gasMass / 1000 / 6E23) * 0.0100;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 							 /*if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
 								 / worker->timeWindowSize));*/
@@ -404,8 +405,8 @@ void TexturePlotter::UpdateTable() {
 					try {
 						if (buffer) {
 							SHGHITS *shGHit = (SHGHITS *)buffer;
-							int profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
-							AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + sizeof(SHHITS)+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
+							size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
+							AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
 							for (int i = 0; i < w; i++) {
 								for (int j = 0; j<h; j++) {
 									int tSize = selFacet->sh.texWidth*selFacet->sh.texHeight;
