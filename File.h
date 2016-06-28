@@ -66,6 +66,7 @@ public:
 
   // Read function
   int IsEof();
+  int IsEol();
   char *ReadLine();
   char *ReadString();
   llong ReadLLong();

@@ -305,5 +305,5 @@ std::vector<double> MomentsEditor::ParseMoment(std::string userInput) {
 
 void MomentsEditor::PasteClipboard() {
 
-	momentsList->PasteClipboardText();
+	momentsList->PasteClipboardText(TRUE,FALSE);
 }

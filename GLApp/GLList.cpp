@@ -104,7 +104,7 @@ GLList::~GLList() {
 
 // ---------------------------------------------------------------
 
-void GLList::Clear(BOOL showProgress) {
+void GLList::Clear(BOOL keepColumns,BOOL showProgress) {
 	GLProgress *prgList=NULL;
 	double all=(double)nbCol*nbRow;
 	if (showProgress) {
@@ -112,8 +112,10 @@ void GLList::Clear(BOOL showProgress) {
 		prgList->SetProgress(0.0);
 		prgList->SetVisible(TRUE);
 	}
-	for(int i=0;i<nbCol;i++)
-		SAFE_FREE(cNames[i]);
+	if (!keepColumns) {
+		for (int i = 0;i < nbCol;i++)
+			SAFE_FREE(cNames[i]);
+	}
 	for(int i=0;i<nbRow;i++)
 		SAFE_FREE(rNames[i]);
 	for(int i=0;i<nbCol*nbRow;i++) {
@@ -121,21 +123,23 @@ void GLList::Clear(BOOL showProgress) {
 		SAFE_FREE(values[i]);
 	}
 
-	SAFE_FREE(cNames);
+	if (!keepColumns) {
+		SAFE_FREE(cNames);
+		SAFE_FREE(cWidths);
+		SAFE_FREE(cAligns);
+		SAFE_FREE(cColors);
+		SAFE_FREE(cEdits);
+		nbCol = 0;
+		selectedCol = -1;
+	}
 	SAFE_FREE(rNames);
-	SAFE_FREE(cWidths);
-	SAFE_FREE(cAligns);
-	SAFE_FREE(cColors);
 	SAFE_FREE(values);
 	SAFE_FREE(uValues);
-	SAFE_FREE(cEdits);
 	SAFE_FREE(selectedRows);
-
-	nbCol = 0;
+	
 	nbRow = 0;
-	labWidth = 0;
+	labWidth = 0; //Row labels
 	nbSelectedRow = 0;
-	selectedCol = -1;
 	isEditing = FALSE;
 	if (showProgress) prgList->SetVisible(FALSE);
 	SAFE_DELETE(prgList);
@@ -314,43 +318,72 @@ void GLList::SetBounds(int x,int y,int width,int height) {
 
 // ---------------------------------------------------------------
 
-void GLList::SetSize(int nbColumn,int nbRow,BOOL showProgress) {
+void GLList::SetSize(int nbColumn,int nbR, BOOL keepData,BOOL showProgress) {
 
-	if( nbColumn==nbCol && nbRow==this->nbRow )
+	if( nbColumn==nbCol && nbR==this->nbRow )
 		// Already the good size
 		return;
 
-	Clear(showProgress);
+	
 	if( nbColumn==0 ) return;
 
-	nbCol = nbColumn;
-	this->nbRow = nbRow;
-	cEdits = (int *)malloc(nbCol*sizeof(int));
-	memset(cEdits,0,nbCol*sizeof(int));
-	cWidths = (int *)malloc(nbCol*sizeof(int));
-	for(int i=0;i<nbCol;i++) cWidths[i]=50;
-	cAligns = (int *)malloc(nbCol*sizeof(int));
-	memset(cAligns,0,nbCol*sizeof(int));
-	cColors = (int *)malloc(nbCol * sizeof(int));
-	memset(cColors, 0, nbCol * sizeof(int));
-	cNames = (char **)malloc(nbCol*sizeof(char *));
-	memset(cNames,0,nbCol*sizeof(char *));
-	if( nbRow ) {
-		rNames = (char **)malloc(nbRow*sizeof(char *));
-		memset(rNames,0,nbRow*sizeof(char *));
-		values = (char **)malloc(nbCol*nbRow*sizeof(char *));
-		uValues = (int *)malloc(nbCol*nbRow*sizeof(int));
-		memset(values,0,nbCol*nbRow*sizeof(char *));
-		memset(uValues,0,nbCol*nbRow*sizeof(int));
-	} else {
+	if (!keepData) {
+		//Clear & reallocate
+		Clear(FALSE,showProgress);
+		nbCol = nbColumn;
+		this->nbRow = nbR;
+		cEdits = (int *)malloc(nbCol * sizeof(int));
+		memset(cEdits, 0, nbCol * sizeof(int));
+		cWidths = (int *)malloc(nbCol * sizeof(int));
+		for (int i = 0;i < nbCol;i++) cWidths[i] = 50;
+		cAligns = (int *)malloc(nbCol * sizeof(int));
+		memset(cAligns, 0, nbCol * sizeof(int));
+		cColors = (int *)malloc(nbCol * sizeof(int));
+		memset(cColors, 0, nbCol * sizeof(int));
+		cNames = (char **)malloc(nbCol * sizeof(char *));
+		memset(cNames, 0, nbCol * sizeof(char *));
+	}
+	else { //reallocate, keeping data
+		if (nbCol != nbColumn) {
+			cEdits = (int *)realloc(cEdits, nbColumn * sizeof(int));
+			if (nbColumn > nbCol) memset(cEdits+nbCol, 0, (nbColumn - nbCol) * sizeof(int)); //Init new area
+			cWidths = (int *)realloc(cWidths, nbColumn * sizeof(int));
+			for (int i = nbCol;i < nbColumn;i++) cWidths[i] = 50; //Init new area
+			cAligns = (int *)realloc(cAligns, nbCol * sizeof(int));
+			if (nbColumn > nbCol) memset(cAligns+nbCol, 0, (nbColumn - nbCol) * sizeof(int));
+			cColors = (int *)realloc(cColors, nbCol * sizeof(int));
+			if (nbColumn > nbCol) memset(cColors + nbCol, 0, (nbColumn - nbCol) * sizeof(int));
+			cNames = (char **)realloc(cNames, nbCol * sizeof(char*));
+			if (nbColumn > nbCol) memset(cNames + nbCol, 0, (nbColumn - nbCol) * sizeof(char*));
+			nbCol = nbColumn;
+		}
+	}
+	if		(nbR) {
+		if (!keepData) {
+			this->nbRow = nbR;
+			rNames = (char **)malloc(nbR * sizeof(char *));
+			memset(rNames, 0, nbR * sizeof(char *));
+			values = (char **)malloc(nbCol*nbR * sizeof(char *));
+			uValues = (int *)malloc(nbCol*nbR * sizeof(int));
+			memset(values, 0, nbCol*nbR * sizeof(char *));
+			memset(uValues, 0, nbCol*nbR * sizeof(int));
+		}
+		else {
+			rNames = (char **)realloc(rNames,nbR * sizeof(char *));
+			if (nbR>this->nbRow) memset(rNames+this->nbRow, 0, (nbR-this->nbRow) * sizeof(char *));
+			values = (char **)realloc(values,nbCol*nbR * sizeof(char *));
+			if (nbR>this->nbRow) memset(values+nbCol*this->nbRow, 0, nbCol*(nbR-this->nbRow) * sizeof(char *));
+			uValues = (int *)realloc(uValues,nbCol*nbR * sizeof(int));
+			if (nbR>this->nbRow) memset(uValues + nbCol*this->nbRow, 0, nbCol*(nbR - this->nbRow) * sizeof(int));
+			this->nbRow = nbR;
+		}
+	}	else {
 		values = NULL;
 		uValues = NULL;
 		rNames = NULL;
 	}
 	CreateAutoLabel();
 	UpdateSBRange();
-
-
 }
 
 // ---------------------------------------------------------------
@@ -2281,7 +2314,7 @@ void GLList::ReOrder(){
 	}
 }
 
-void GLList::PasteClipboardText() {
+void GLList::PasteClipboardText(BOOL allowExpandRows, BOOL allowExpandColumns, int extraRowsAtEnd) {
 
 #ifdef WIN
 
@@ -2291,6 +2324,8 @@ void GLList::PasteClipboardText() {
       LPVOID ds = GlobalLock(hMem);
       if (ds) {
         char *content=(char *)ds;
+
+		//Get selection and initialize variables
 		int row=0;
 		int col=0;
 		int colBegin=0;
@@ -2299,6 +2334,32 @@ void GLList::PasteClipboardText() {
 			row=v;
 			col=colBegin=u;
 		}
+
+		//Count clipboard table size
+		int clipboardRows = 0;
+		int clipboardCols = 1;
+
+		if (allowExpandRows || allowExpandColumns) {
+			for (size_t m = 0; content[m] != 0 && content[m] != '\r' && content[m] != '\n'; m++) {
+				if (content[m] == '\t') {
+					clipboardCols++;
+				}
+			}
+
+			for (size_t m = 0; content[m] != 0; m++) {
+				if (content[m] == '\r') {
+					clipboardRows++;
+				}
+			}
+			BOOL needsMoreRows = allowExpandRows && (row + clipboardRows + extraRowsAtEnd > nbRow);
+			BOOL needsMoreCols = allowExpandColumns && (col + clipboardCols > nbCol);
+			BOOL ok = TRUE;
+			if (MAX(needsMoreRows * (row + clipboardRows  - nbRow), needsMoreCols*(col + clipboardCols - nbCol)) >= 20)
+				ok = GLMessageBox::Display("Increase list size by more than 20 rows/columns?", "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONINFO) == GLDLG_OK;
+			if (ok && (needsMoreRows || needsMoreCols)) this->SetSize(allowExpandColumns?MAX(nbCol, col + clipboardCols):nbCol, allowExpandRows?MAX(nbRow, row + clipboardRows + extraRowsAtEnd):nbRow,TRUE,FALSE);
+		}
+		
+
 
 		size_t cursor = 0;
 		
@@ -2314,7 +2375,7 @@ void GLList::PasteClipboardText() {
 				tmp[0]=NULL;
 			}
 			else if (c=='\r') {
-				cursor++;
+				cursor++; //Anticipating \n after \r
 				if (col<nbCol && row< nbRow) SetValueAt(col,row,tmp);
 				row++;
 				tmp[0]=NULL;

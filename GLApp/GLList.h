@@ -51,7 +51,7 @@ public:
 
   // Component methods
   void SetWorker(Worker *w);
-  void SetSize(int nbColumn,int nbRow,BOOL showProgress=FALSE);
+  void SetSize(int nbColumn,int nbRow,BOOL keepData=FALSE,BOOL showProgress=FALSE);
   void SetColumnLabels(char **names);
   void SetColumnLabel(int colId,char *name);
   void SetAutoColumnLabel(BOOL enable);
@@ -79,7 +79,7 @@ public:
   void SetSelectionMode(int mode);
   void GLList::SetSelectedCell(int column,int row);
   void SetCornerLabel(char *text);
-  void Clear(BOOL showProgress=FALSE);
+  void Clear(BOOL keepColumns=FALSE,BOOL showProgress=FALSE);
   void ResetValues();
   int  GetNbRow();
   int  GetNbColumn();
@@ -114,7 +114,7 @@ public:
   int GetValueInt(int row, int column);
   //void UpdateAllRows();
   void ReOrder();
-  void PasteClipboardText();
+  void PasteClipboardText(BOOL allowExpandRows, BOOL allowExpandColumns, int extraRowsAtEnd=0);
   void SetFontColor(int r, int g, int b);
 
   

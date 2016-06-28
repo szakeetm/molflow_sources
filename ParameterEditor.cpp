@@ -21,6 +21,7 @@
 #include "GLApp/GLWindowManager.h"
 #include "GLApp/GLMessageBox.h"
 #include "MolFlow.h"
+#include "GLApp\GLFileBox.h"
 #include <sstream>
 #include "GLApp/GLMessageBox.h"
 
@@ -48,6 +49,7 @@ ParameterEditor::ParameterEditor(Worker *w):GLWindow() {
   int cursorX = col1;
   int cursorY = 5;
   int buttonWidth = 110;
+  int toggleWidth = 40;
   int labelWidth = 30;
   int compHeight = 20;
   int panelHeight = 345;
@@ -62,6 +64,7 @@ ParameterEditor::ParameterEditor(Worker *w):GLWindow() {
   cursorX = col2;
   deleteButton = new GLButton(2, "Delete");
   deleteButton->SetBounds(cursorX, cursorY, buttonWidth, compHeight);
+  deleteButton->SetEnabled(FALSE);
   Add(deleteButton);
 
   /*
@@ -114,15 +117,32 @@ ParameterEditor::ParameterEditor(Worker *w):GLWindow() {
 
   cursorX = col1;
   cursorY += listHeight + vSpace;
-  copyButton = new GLButton(0,"Copy to clipboard");
+  /*copyButton = new GLButton(0,"Copy to clipboard");
   copyButton->SetBounds(cursorX, cursorY, buttonWidth, compHeight);
   Add(copyButton);
 
-  cursorX += buttonWidth + hSpace;
+  cursorX += buttonWidth + hSpace;*/
   pasteButton = new GLButton(0,"Paste from clipboard");
   pasteButton->SetBounds(cursorX,cursorY,buttonWidth,compHeight);
-  pasteButton->SetEnabled(FALSE);
+  //pasteButton->SetEnabled(FALSE);
   Add(pasteButton);
+
+  cursorX += buttonWidth + hSpace;
+  loadCSVbutton = new GLButton(0, "Load CSV file");
+  loadCSVbutton->SetBounds(cursorX, cursorY, buttonWidth, compHeight);
+  
+  Add(loadCSVbutton);
+  cursorX += buttonWidth + hSpace;
+
+  logXtoggle = new GLToggle(0, "LogX");
+  logXtoggle->SetBounds(cursorX, cursorY, toggleWidth, compHeight);
+  Add(logXtoggle);
+
+  cursorX += toggleWidth;
+  logYtoggle = new GLToggle(0, "LogY");
+  logYtoggle->SetBounds(cursorX, cursorY, toggleWidth, compHeight);
+  Add(logYtoggle);
+
 
   cursorX = wD-2*buttonWidth-2*hSpace;
   plotButton = new GLButton(0, "Plot");
@@ -175,6 +195,7 @@ void ParameterEditor::ProcessMessage(GLComponent *src,int message) {
 				work->Reload();
 			}
 		} else if (src == deleteButton) {
+			if (strcmp(selectorCombo->GetSelectedValue(), "New...") == 0) return;
 			if (mApp->AskToReset()) {
 				work->parameters.erase(work->parameters.begin() + selectorCombo->GetSelectedIndex());
 				UpdateCombo();
@@ -188,7 +209,12 @@ void ParameterEditor::ProcessMessage(GLComponent *src,int message) {
 			Plot();
 		} else if (src==pasteButton) {
 			PasteFromClipboard();
+		} else if (src==loadCSVbutton) {
+			LoadCSV();
 		}
+		/*else if (src == copyButton) {
+			CopyToClipboard();
+		}*/ //Removed as does the same as right-click and Copy All
 		break;
 	case MSG_TEXT:
 
@@ -234,6 +260,10 @@ void ParameterEditor::ProcessMessage(GLComponent *src,int message) {
 		}
 		RebuildList();
 		break;
+	case MSG_TOGGLE:
+		if (src==logXtoggle) plotArea->GetXAxis()->SetScale(logXtoggle->GetState());
+		else if (src == logYtoggle) plotArea->GetY1Axis()->SetScale(logYtoggle->GetState());
+		break;
 }
 
   GLWindow::ProcessMessage(src,message);
@@ -248,11 +278,61 @@ void ParameterEditor::UpdateCombo() {
 }
 
 void ParameterEditor::PasteFromClipboard() {
+	list->PasteClipboardText(TRUE,FALSE,0); //Paste clipboard text, allow adding more rows, have one extra line in the end
+	//Fill uservalues vector with pasted text
+	userValues = std::vector<std::pair<std::string, std::string>>();
+	for (int row = 0;row<(list->GetNbRow());row++) {
+		if (*(list->GetValueAt(0, row)) != 0 ||
+			*(list->GetValueAt(1, row)) != 0) { //There is some content
+			userValues.push_back ( std::make_pair(list->GetValueAt(0, row), list->GetValueAt(1, row)) ); //update pair
+		}
+	}
+	RebuildList();
+}
+
+void ParameterEditor::LoadCSV() {
+	FILENAME *fn = NULL;
+	fn=GLFileBox::OpenFile(NULL, NULL, "Open File", "CSV files\0*.csv\0All files\0*.*\0", 2);
+	if (!fn || !fn->fullName) return;
 	
+	std::vector<std::vector<string>> table;
+	try {
+		FileReader *f = new FileReader(fn->fullName);
+		work->ImportCSV(f, table);
+		SAFE_DELETE(f);
+	}
+	catch (Error &e) {
+		char errMsg[512];
+		sprintf(errMsg, "Failed to load CSV file.");
+		GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
+		return;
+	}
+	if (table.size() == 0) {
+		GLMessageBox::Display("No full rows found in file", "Error", GLDLG_OK, GLDLG_ICONERROR);
+		return;
+	}
+	if (table[0].size() != 2) {
+		char tmp[256];
+		sprintf(tmp, "First row has %zd columns instead of the expected 2. Load anyway?",table[0].size());
+		if (GLDLG_OK != GLMessageBox::Display(tmp, "Warning", GLDLG_OK|GLDLG_CANCEL, GLDLG_ICONWARNING)) return;
+	}
+	if (table.size() > 30) {
+		char tmp[256];
+		sprintf(tmp, "CSV file has a large number (%zd) of rows. Load anyway?", table.size());
+		if (GLDLG_OK != GLMessageBox::Display(tmp, "Warning", GLDLG_OK|GLDLG_CANCEL, GLDLG_ICONWARNING)) return;
+	}
+	userValues = std::vector<std::pair<std::string, std::string>>();
+	for (auto row :table) {
+			std::string val1, val2;
+			if (row.size()>=1) val1 = row[0];
+			if (row.size()>=2) val2 = row[1];
+			if (val1!="" || val2!="") userValues.push_back(std::make_pair(val1, val2)); //commit pair if not empty
+	}
+	RebuildList();
 }
 
 void ParameterEditor::CopyToClipboard() {
-
+	list->CopyAllToClipboard();
 }
 
 void ParameterEditor::Plot() {
@@ -262,9 +342,9 @@ void ParameterEditor::Plot() {
 	dataView.CommitChange();
 }
 
-void ParameterEditor::RebuildList() {
+void ParameterEditor::RebuildList(BOOL autoSize, BOOL refillValues) {
 
-	list->SetSize(2, userValues.size()+1);
+	if (autoSize) list->SetSize(2, userValues.size()+1);
 	list->SetColumnWidths((int*)flWidth);
 	list->SetColumnLabels((char **)flName);
 	list->SetColumnAligns((int *)flAligns);
@@ -272,11 +352,15 @@ void ParameterEditor::RebuildList() {
 	//list->cEdits[0] = list->cEdits[1]= EDIT_NUMBER;
 
 	//char tmp[128];
-	for (int row = 0; row<(int)userValues.size(); row++){
-		list->SetValueAt(0,row,userValues[row].first.c_str());
-		list->SetValueAt(1,row,userValues[row].second.c_str());
+	if (refillValues) {
+		for (int row = 0; row < (int)userValues.size(); row++) {
+			list->SetValueAt(0, row, userValues[row].first.c_str());
+			list->SetValueAt(1, row, userValues[row].second.c_str());
+		}
+		//last line, possibility to enter new value
+		list->SetValueAt(0, (int)userValues.size(), "");
+		list->SetValueAt(1, (int)userValues.size(), "");
 	}
-	//last line, possibility to enter new value
 }
 
 BOOL ParameterEditor::ValidateInput() {

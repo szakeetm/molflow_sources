@@ -289,7 +289,7 @@ void OutgassingMap::ProcessMessage(GLComponent *src,int message) {
         Close();
         GLWindow::ProcessMessage(NULL,MSG_CLOSE);
       } else if(src==pasteButton) {
-		  mapList->PasteClipboardText();
+		  mapList->PasteClipboardText(FALSE,FALSE);
       } else if (src==sizeButton) {
         mapList->AutoSizeColumn();
       } else if (src==explodeButton) {

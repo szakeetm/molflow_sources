@@ -66,6 +66,7 @@ public:
 	  const std::vector<std::pair<double, double>> &convDistr,
 	  GLProgress *prg);
   void AnalyzeSYNfile(char *fileName, int *nbFacet, int *nbTextured, int *nbDifferent);
+  void ImportCSV(FileReader *file, std::vector<std::vector<string>>& table);
 
   //Import desorption map
   //void ImportDesorption(char *fileName);

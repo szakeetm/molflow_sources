@@ -97,6 +97,10 @@ int FileReader::IsEof() {
 
 }
 
+int FileReader::IsEol() {
+	return CurrentChar == '\n';
+}
+
 // -------------------------------------------------
 
 int FileReader::GetCurrentLine() {

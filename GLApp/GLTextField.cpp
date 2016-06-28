@@ -26,10 +26,10 @@ GLTextField::GLTextField(int compId,char *text):GLComponent(compId) {
   strcpy(m_Text,"!!!Don't remove this default value!!!");
   SetText(text);
   SetBackgroundColor(240,240,240);
+  SetTextColor(0.0f, 0.0f, 0.0f);
   m_CursorState=0;
   m_Editable=TRUE;
   SetCursor(CURSOR_TEXT);
-
 }
 
 // ------------------------------------------------------

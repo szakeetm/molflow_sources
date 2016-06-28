@@ -25,7 +25,7 @@ public:
   // Construction
   ParameterEditor(Worker *work);
   void UpdateCombo();
-  void RebuildList();
+  void RebuildList(BOOL autoSize=TRUE, BOOL refillValues=TRUE);
   // Implementation
   void ProcessMessage(GLComponent *src,int message);
   
@@ -35,18 +35,21 @@ private:
   Worker	   *work;
 
   GLCombo *selectorCombo;
-  GLButton *newButton, *deleteButton, *copyButton, *pasteButton, *plotButton, *applyButton;
+  GLButton *newButton, *deleteButton,/* *copyButton ,*/ *pasteButton, *loadCSVbutton, *plotButton, *applyButton;
   GLList *list;
   GLTextField *nameField;
   GLTitledPanel *editorPanel;
   GLChart *plotArea;
   GLDataView dataView;
+  GLToggle *logXtoggle;
+  GLToggle *logYtoggle;
 
   Parameter tempParam;
   std::vector<std::pair<std::string, std::string>> userValues;
   
   void CopyToClipboard();
   void PasteFromClipboard();
+  void LoadCSV();
   void Plot();
   void UpdateUserValues();
   BOOL ValidateInput();
