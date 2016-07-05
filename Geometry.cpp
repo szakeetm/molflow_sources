@@ -4364,7 +4364,7 @@ void Geometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress
 	for (int i = 0, k = 0; i < sh.nbSuper; i++) {
 		xml_node s = geomNode.child("Structures").append_child("Structure");
 		s.append_attribute("id") = i;
-		s.append_attribute("name") = strName[i];
+		s.append_attribute("name") = (strName)?strName[i]:"";
 
 	}
 

@@ -30,7 +30,7 @@ GNU General Public License for more details.
 #define SB_WIDTH         16
 #define LABEL_HEIGHT     16
 
-int cmp_column(const void *lhs_, const void *rhs_);
+template<class T> int cmp_column(const void *lhs_, const void *rhs_);
 int clickedCol;
 BOOL sortDescending;
 extern MolFlow *mApp;
@@ -133,13 +133,19 @@ void GLList::Clear(BOOL keepColumns,BOOL showProgress) {
 		selectedCol = -1;
 	}
 	SAFE_FREE(rNames);
+
+
 	SAFE_FREE(values);
 	SAFE_FREE(uValues);
+
 	SAFE_FREE(selectedRows);
+
+
 	
 	nbRow = 0;
 	labWidth = 0; //Row labels
 	nbSelectedRow = 0;
+
 	isEditing = FALSE;
 	if (showProgress) prgList->SetVisible(FALSE);
 	SAFE_DELETE(prgList);
@@ -324,6 +330,7 @@ void GLList::SetSize(int nbColumn,int nbR, BOOL keepData,BOOL showProgress) {
 		// Already the good size
 		return;
 
+
 	
 	if( nbColumn==0 ) return;
 
@@ -342,6 +349,7 @@ void GLList::SetSize(int nbColumn,int nbR, BOOL keepData,BOOL showProgress) {
 		memset(cColors, 0, nbCol * sizeof(int));
 		cNames = (char **)malloc(nbCol * sizeof(char *));
 		memset(cNames, 0, nbCol * sizeof(char *));
+
 	}
 	else { //reallocate, keeping data
 		if (nbCol != nbColumn) {
@@ -384,6 +392,8 @@ void GLList::SetSize(int nbColumn,int nbR, BOOL keepData,BOOL showProgress) {
 	}
 	CreateAutoLabel();
 	UpdateSBRange();
+
+
 }
 
 // ---------------------------------------------------------------
@@ -479,6 +489,7 @@ void GLList::SetColumnWidths(int *widths) {
 	UpdateSBRange();
 }
 
+
 void GLList::SetColumnWidthForAll(int width) {
 	if(cWidths)
 		for(int i=0;i<nbCol;i++) cWidths[i] = width;
@@ -548,6 +559,7 @@ void GLList::SetRowLabel(int rowId,char *name) {
 }
 
 
+
 void GLList::SetColumnWidth(int colId,int width) {
 	if(cWidths && colId<nbCol ) {
 		cWidths[colId] = width;
@@ -555,11 +567,14 @@ void GLList::SetColumnWidth(int colId,int width) {
 	UpdateSBRange();
 }
 
+
+
 void GLList::SetColumnAlign(int colId,int align) {
 	if(cAligns && colId<nbCol ) {
 		cAligns[colId] = align;
 	}
 }
+
 
 void GLList::SetColumnColor(int colId,int color) {
 	if(cColors && colId<nbCol ) {
@@ -573,12 +588,14 @@ void GLList::SetRow(int row,char **vals) {
 }
 
 
+
 void GLList::SetValueAt(int col,int row,const char *value,int userData,BOOL searchIndex) {
 	_ASSERTE(col<nbCol);_ASSERTE(row<nbRow);
 	if(this->values) {
 		if(col>=0 && col<this->nbCol && row>=0 && row<this->nbRow) {
 			int rowIndex=row;
 			if (searchIndex) rowIndex= FindIndex(row,0);
+
 			char *cell = this->values[(rowIndex*this->nbCol) + col];
 			if( value==NULL ) {
 				SAFE_FREE(cell);
@@ -622,6 +639,7 @@ void GLList::ScrollToVisible(int row,int col,BOOL searchIndex) {
 			sbV->SetPosition(sy);
 
 	}
+
 	// Horizontal scroll ----------------
 
 	int labW = (showRLabel)?labWidth+labelRowMargin:0;
@@ -836,6 +854,7 @@ void GLList::Paint() {
 
 	if(!parent) return;
 	GLComponent::Paint();
+
 	
 	if( nbRow==0 || nbCol==0 ) return;
 
@@ -925,6 +944,7 @@ void GLList::Paint() {
 		}
 
 	}
+
 	
 	// Paint selected cells
 	switch(selectionMode) {
@@ -971,6 +991,7 @@ void GLList::Paint() {
 		}
 		break;
 	}
+
 	
 	// Paint rows
 	int hc = _height-labHeight+(sbHeight?1:0);
@@ -1000,7 +1021,17 @@ void GLList::Paint() {
 						int offset;
 						GLFont2D* font;
 						if(ISBOLD(value)) {
+
+
 							font = GLToolkit::GetDialogFontBold();
+
+
+
+
+
+
+
+
 							offset = 3;
 						} else {
 							font = GLToolkit::GetDialogFont();
@@ -1015,6 +1046,8 @@ void GLList::Paint() {
 							wT = font->GetTextWidth(value);
 							px = cWidths[i] - wT - 2;
 							break;
+
+
 						}
 						switch (cColors[i]) {
 						case COLOR_RED:
@@ -1038,6 +1071,7 @@ void GLList::Paint() {
 
 		sx += cWidths[i];
 	}// End row loop
+
 	
 	// Paint the grid
 	if( gridVisible ) {
@@ -1092,6 +1126,7 @@ void GLList::Paint() {
 			}
 		}
 	}
+
 	
 	// Restore clip
 	GetWindow()->ClipToWindow();
@@ -1129,6 +1164,18 @@ int GLList::GetValueInt(int row, int column) {
 			GLMessageBox::Display(errMsg,"Error",GLDLG_OK,GLDLG_ICONERROR);
 		}
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 // ---------------------------------------------------------------
 int  GLList::FindIndex(int index,int inColumn) {
@@ -1713,14 +1760,19 @@ void GLList::CopySelectionToClipboard() {
 	if (selectionMode == MULTIPLE_ROW) { //Most probably facet hit list
 		if (this==mApp->facetList) mApp->UpdateFacetHits(TRUE);
 		// Compute data length
+
 		for(int s=0;s<nbSelectedRow;s++) {
 			for(int j=0;j<nbCol;j++) {
 				clipboardData << GetValueAt(j, selectedRows[s]);
+
+
 				if (j<nbCol - 1) clipboardData	<< '\t';
 			}
 			clipboardData << "\r\n";
 		}
+
 	}
+
 	else if (selectionMode == BOX_CELL) {  //Texture plotter, for example
 		int rowStart, colStart, rowNb, colNb;
 		GetSelectionBox(&rowStart, &colStart, &rowNb, &colNb);
@@ -1910,7 +1962,7 @@ void GLList::ManageEvent(SDL_Event *evt) {
 						for (int i=0;i<nbSelectedRow;i++)
 							selFacets[i] = GetValueInt(selectedRows[i],0)-1;
 
-						std::qsort(table, nbRow,sizeof(int*), cmp_column);
+						std::qsort(table, nbRow,sizeof(int*), cmp_column<int>);
 
 
 						lastRowSel=-1;
@@ -2128,6 +2180,7 @@ void GLList::ManageEvent(SDL_Event *evt) {
 					if( menuId==0 ) {
 						CopyAllToClipboard();
 					} else if (menuId==1) {
+
 						if( selectionMode == SINGLE_CELL )
 							CopyToClipboard(selectedRows[0],selectedCol,1,1);
 						else
@@ -2294,10 +2347,10 @@ void GLList::ManageEvent(SDL_Event *evt) {
 
 
 
-int cmp_column(const void *lhs_, const void *rhs_) {
+template<class T> int cmp_column(const void *lhs_, const void *rhs_) {
 	// optimize this to taste
-	const int **lhs = (const int**)(lhs_);
-	const int **rhs = (const int**)(rhs_);
+	const T **lhs = (const T**)(lhs_);
+	const T **rhs = (const T**)(rhs_);
 	//int *lhs = (int*)(lhs_);
 	//int *rhs = (int*)(rhs_);
 	if ((*lhs)[clickedCol] < (*rhs)[clickedCol]) return (sortDescending)?1:-1;
@@ -2335,6 +2388,7 @@ void GLList::PasteClipboardText(BOOL allowExpandRows, BOOL allowExpandColumns, i
 			col=colBegin=u;
 		}
 
+
 		//Count clipboard table size
 		int clipboardRows = 0;
 		int clipboardCols = 1;
@@ -2359,6 +2413,7 @@ void GLList::PasteClipboardText(BOOL allowExpandRows, BOOL allowExpandColumns, i
 			if (ok && (needsMoreRows || needsMoreCols)) this->SetSize(allowExpandColumns?MAX(nbCol, col + clipboardCols):nbCol, allowExpandRows?MAX(nbRow, row + clipboardRows + extraRowsAtEnd):nbRow,TRUE,FALSE);
 		}
 		
+
 
 
 		size_t cursor = 0;

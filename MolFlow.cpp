@@ -2945,7 +2945,7 @@ void MolFlow::UpdateModelParams() {
 	Geometry *geom = worker.GetGeometry();
 	char tmp[256];
 	double sumArea = 0;
-	facetList->SetSize(4, geom->GetNbFacet(), TRUE);
+	facetList->SetSize(4, geom->GetNbFacet(), FALSE,TRUE);
 	facetList->SetColumnWidths((int*)cWidth);
 	facetList->SetColumnLabels((char **)cName);
 
