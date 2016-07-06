@@ -3725,46 +3725,6 @@ void Geometry::SaveSuper(Dataport *dpHit, int s) {
 
 }
 
-void Geometry::RemoveFromStruct(int numToDel) {
-	mApp->changedSinceSave = TRUE;
-
-	int nb = 0;
-	for (int i = 0; i < sh.nbFacet; i++)
-		if (facets[i]->sh.superIdx == numToDel) nb++;
-
-
-	if (nb == 0) return;
-	/*
-	if(sh.nbFacet-nb==0) {
-	// Remove all
-	Clear();
-	return;
-	}
-	*/
-
-	Facet   **f = (Facet **)malloc((sh.nbFacet - nb) * sizeof(Facet *));
-
-	nb = 0;
-	for (int i = 0; i < sh.nbFacet; i++) {
-		if (facets[i]->sh.superIdx == numToDel) {
-
-			delete facets[i];
-			mApp->RenumberSelections(nb);
-			mApp->RenumberFormulas(nb);
-		}
-		else {
-
-			f[nb++] = facets[i];
-		}
-	}
-
-	SAFE_FREE(facets);
-	facets = f;
-	sh.nbFacet = nb;
-	CalcTotalOutGassing();
-
-}
-
 /*BOOL AskToReset_Geom(Worker *work) {
 
 

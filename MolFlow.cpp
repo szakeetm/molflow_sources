@@ -5204,6 +5204,7 @@ void MolFlow::DeleteStruct() {
 	}
 	if (!AskToReset()) return;
 	geom->DelStruct(structNumInt - 1);
+	geom->CalcTotalOutGassing();
 	// Send to sub process
 	try { worker.Reload(); }
 	catch (Error &e) {
