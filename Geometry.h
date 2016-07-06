@@ -110,7 +110,7 @@ public:
   void RemoveSelected();
   void RemoveSelectedVertex();
   void RemoveFromStruct(int numToDel);
-  void RemoveCollinear();
+  BOOL RemoveCollinear();
   int  ExplodeSelected(BOOL toMap=FALSE,int desType=1,double exponent=0.0,double *values=NULL);
   void SelectCoplanar(int width,int height,double tolerance);
   void MoveSelectedVertex(double dX,double dY,double dZ,BOOL copy,Worker *worker);
@@ -251,13 +251,11 @@ private:
   BOOL isLoaded;  // Is loaded flag
 
   // Collapsing stuff
-  int  AddRefVertex(VERTEX3D *p,VERTEX3D *refs,int *nbRef);
-  void RemoveNullFacet();
-  BOOL IsCoplanar(int i1,int i2);
+  int  AddRefVertex(VERTEX3D *p,VERTEX3D *refs,int *nbRef,double vT);
+  BOOL RemoveNullFacet();
   Facet *MergeFacet(Facet *f1,Facet *f2);
   BOOL GetCommonEdges(Facet *f1,Facet *f2,int *c1,int *c2,int *chainLength);
-  void CollapseVertex(GLProgress *prg,double totalWork);
-  double vThreshold;
+  void CollapseVertex(GLProgress *prg,double totalWork,double vT);
 
   // Rendering/Selection stuff
   int selectHist[SEL_HISTORY];

@@ -1623,7 +1623,7 @@ void Facet::InitVisibleEdge() {
 
 // -----------------------------------------------------------
 
-BOOL Facet::IsCoplanar(Facet *f, double threshold) {
+BOOL Facet::IsCoplanarAndEqual(Facet *f, double threshold) {
 
 	// Detect if 2 facets are in the same plane (orientation preserving)
 	// and have same parameters (used by collapse)
@@ -1632,6 +1632,7 @@ BOOL Facet::IsCoplanar(Facet *f, double threshold) {
 		(fabs(b - f->b) < threshold) &&
 		(fabs(c - f->c) < threshold) &&
 		(fabs(d - f->d) < threshold) &&
+
 		(sh.desorbType == f->sh.desorbType) &&
 		(sh.sticking == f->sh.sticking) &&
 		(sh.flow == f->sh.flow) &&

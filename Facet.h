@@ -106,7 +106,7 @@ public:
   void  LoadXML(pugi::xml_node f,int nbVertex,BOOL isMolflowFile,int vertexOffset=0);
   void  SaveGEO(FileWriter *file,int idx);
   void  SaveXML_geom(pugi::xml_node f);
-  BOOL  IsCoplanar(Facet *f,double threshold);
+  BOOL  IsCoplanarAndEqual(Facet *f,double threshold);
   int   GetIndex(int idx);
   void  Copy(Facet *f,BOOL copyMesh=FALSE);
   void  SwapNormal();
