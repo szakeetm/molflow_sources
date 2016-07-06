@@ -3367,6 +3367,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 				if (AskToReset()) {
 					if (worker.running) worker.Stop_Public();
 					geom->RemoveSelected();
+					geom->CalcTotalOutGassing();
 					//geom->CheckIsolatedVertex();
 					UpdateModelParams();
 					if (vertexCoordinates) vertexCoordinates->Update();
@@ -3739,6 +3740,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 					if (AskToReset()) {
 						if (worker.running) worker.Stop_Public();
 						geom->RemoveSelectedVertex();
+						geom->CalcTotalOutGassing();
 						geom->Rebuild(); //Will recalculate facet parameters
 						UpdateModelParams();
 						if (vertexCoordinates) vertexCoordinates->Update();

@@ -186,77 +186,11 @@ void Geometry::CalcTotalOutGassing() {
 	if (mApp->globalSettings) mApp->globalSettings->UpdateOutgassing();*/
 }
 
-void Geometry::CalculateFacetParam(int facet) {
+void Geometry::CalculateFacetParam(int facetId) {
+	
+	CalculateFacetParam_geometry(facets[facetId]);
 
-	Facet *f = facets[facet];
-
-	// Calculate facet normal
-	VERTEX3D p0 = vertices3[facets[facet]->indices[0]];
-	VERTEX3D v1;
-	VERTEX3D v2;
-	BOOL consecutive = TRUE;
-	int ind = 2;
-
-	// TODO: Handle possible collinear consequtive vectors
-	int i0 = facets[facet]->indices[0];
-	int i1 = facets[facet]->indices[1];
-	while (ind < f->sh.nbIndex && consecutive) {
-		int i2 = facets[facet]->indices[ind++];
-
-		Sub(&v1, vertices3 + i1, vertices3 + i0); // v1 = P0P1
-		Sub(&v2, vertices3 + i2, vertices3 + i1); // v2 = P1P2
-		Cross(&(f->sh.N), &v1, &v2);              // Cross product
-		consecutive = (Norme(&(f->sh.N)) < 1e-11);
-	}
-	f->collinear = consecutive; //mark for later that this facet was on a line
-	Normalize(&(f->sh.N));                  // Normalize
-
-	// Calculate Axis Aligned Bounding Box
-	f->sh.bb.min.x = 1e100;
-	f->sh.bb.min.y = 1e100;
-	f->sh.bb.min.z = 1e100;
-	f->sh.bb.max.x = -1e100;
-	f->sh.bb.max.y = -1e100;
-	f->sh.bb.max.z = -1e100;
-
-	for (int i = 0; i < f->sh.nbIndex; i++) {
-		VERTEX3D p = vertices3[f->indices[i]];
-		if (p.x < f->sh.bb.min.x) f->sh.bb.min.x = p.x;
-		if (p.y < f->sh.bb.min.y) f->sh.bb.min.y = p.y;
-		if (p.z < f->sh.bb.min.z) f->sh.bb.min.z = p.z;
-		if (p.x > f->sh.bb.max.x) f->sh.bb.max.x = p.x;
-		if (p.y > f->sh.bb.max.y) f->sh.bb.max.y = p.y;
-		if (p.z > f->sh.bb.max.z) f->sh.bb.max.z = p.z;
-	}
-
-	// Facet center (AABB center)
-	f->sh.center.x = (f->sh.bb.max.x + f->sh.bb.min.x) / 2.0;
-	f->sh.center.y = (f->sh.bb.max.y + f->sh.bb.min.y) / 2.0;
-	f->sh.center.z = (f->sh.bb.max.z + f->sh.bb.min.z) / 2.0;
-
-	// Plane equation
-	double A = f->sh.N.x;
-	double B = f->sh.N.y;
-	double C = f->sh.N.z;
-	double D = -Dot(&(f->sh.N), &p0);
-
-	// Facet planeity
-	int nb = f->sh.nbIndex;
-	double max = 0.0;
-	for (int i = 1; i < nb; i++) {
-		VERTEX3D p = vertices3[f->indices[i]];
-		double d = A * p.x + B * p.y + C * p.z + D;
-		if (fabs(d) > fabs(max)) max = d;
-	}
-
-	// Plane coef
-	f->a = A;
-	f->b = B;
-	f->c = C;
-	f->d = D;
-	f->err = max;
-
-	f->sh.maxSpeed = 4.0 * sqrt(2.0*8.31*f->sh.temperature / 0.001 / mApp->worker.gasMass);
+	facets[facetId]->sh.maxSpeed = 4.0 * sqrt(2.0*8.31*facets[facetId]->sh.temperature / 0.001 / mApp->worker.gasMass);
 }
 
 void Geometry::InitializeGeometry(int facet_number) {

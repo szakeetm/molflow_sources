@@ -201,6 +201,7 @@ void AlignFacet::ProcessMessage(GLComponent *src,int message) {
 			if (mApp->AskToReset()){
 				geom->AlignFacets(selection,nbMemo,Facet_source,Facet_dest,Anchor_source,Anchor_dest,Dir_source,Dir_dest,
 					invertNormal->GetState(),invertDir1->GetState(),invertDir2->GetState(),src==copyButton,work);
+				if (src == copyButton) geom->CalcTotalOutGassing();
 				//mApp->UpdateModelParams();
 				try { work->Reload(); } catch(Error &e) {
 
