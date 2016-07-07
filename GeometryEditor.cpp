@@ -583,7 +583,7 @@ void Geometry::SwapNormal() {
 
 }
 
-void Geometry::Extrude(VERTEX3D offset, double distance) {
+void Geometry::Extrude(int mode, VERTEX3D radiusBase, VERTEX3D offsetORradiusdir, BOOL againstNormal, double distanceORradius, double totalAngle, int steps) {
 
 	//creates facet from selected vertices
 
@@ -593,66 +593,84 @@ void Geometry::Extrude(VERTEX3D offset, double distance) {
 	for (int i = 0; i < oldNbFacet; i++)
 	{
 		if (facets[i]->selected) {
-			int firstFacet = i;
-			facets[firstFacet]->selected = FALSE;
+			int sourceFacet = i;
+			facets[sourceFacet]->selected = FALSE;
 			//Update direction if necessary
-			VERTEX3D dir2;
+			VERTEX3D dir2, axisBase, axis;
 
-			if (IS_ZERO(offset.x) && IS_ZERO(offset.y) && IS_ZERO(offset.z)) { //Use facet normal to determine offset
-				dir2.x = facets[firstFacet]->sh.N.x*distance;
-				dir2.y = facets[firstFacet]->sh.N.y*distance;
-				dir2.z = facets[firstFacet]->sh.N.z*distance;
+			if (mode == 1) { //Use facet normal to determine offset
+				dir2 = facets[sourceFacet]->sh.N;
+				ScalarMult(&dir2, distanceORradius);
+				if (againstNormal) ScalarMult(&dir2, -1.0);
 			}
-			else { //Use provided offset
-				dir2.x = offset.x;
-				dir2.y = offset.y;
-				dir2.z = offset.z;
+			else if (mode == 2) { //Use provided offset
+				dir2 = offsetORradiusdir;
 			}
-
-			//Copy facet
-			VERTEX3D *tmp_vertices3 = (VERTEX3D *)malloc((sh.nbVertex + facets[firstFacet]->sh.nbIndex) * sizeof(VERTEX3D)); //create new, extended vertex array
-			memmove(tmp_vertices3, vertices3, (sh.nbVertex) * sizeof(VERTEX3D)); //copy old vertices
-			SAFE_FREE(vertices3); //delete old array
-			vertices3 = tmp_vertices3; //make new array the official vertex holder
-
-
-			for (int j = 0; j < facets[firstFacet]->sh.nbIndex; j++) { //copy vertex coordinates
-				vertices3[sh.nbVertex + j].x = vertices3[facets[firstFacet]->indices[j]].x + dir2.x;
-				vertices3[sh.nbVertex + j].y = vertices3[facets[firstFacet]->indices[j]].y + dir2.y;
-				vertices3[sh.nbVertex + j].z = vertices3[facets[firstFacet]->indices[j]].z + dir2.z;
-				vertices3[sh.nbVertex + j].selected = FALSE;
+			else if (mode == 3) {
+				Normalize(&offsetORradiusdir);
+				ScalarMult(&offsetORradiusdir, distanceORradius);
+				Add(&axisBase, &radiusBase, &offsetORradiusdir);
+				Cross(&axis, &facets[sourceFacet]->sh.N, &offsetORradiusdir);
+				Normalize(&axis);
 			}
+			
+			//Resize vertex and facet arrays
+			size_t nbNewVertices = facets[sourceFacet]->sh.nbIndex;
+			if (mode == 3) nbNewVertices *= (steps);
+			vertices3 = (VERTEX3D*)realloc(vertices3, (sh.nbVertex + nbNewVertices) * sizeof(VERTEX3D));
 
-			//Copy facet
-			int secondFacet = sh.nbFacet; //last facet
-			facets = (Facet **)realloc(facets, (sh.nbFacet + 1 + facets[firstFacet]->sh.nbIndex) * sizeof(Facet *));
-			facets[secondFacet] = new Facet(facets[firstFacet]->sh.nbIndex);
-			facets[secondFacet]->selected = TRUE;
-			for (int j = 0; j < facets[firstFacet]->sh.nbIndex; j++)
-				facets[secondFacet]->indices[facets[firstFacet]->sh.nbIndex - 1 - j] = sh.nbVertex + j; //assign new vertices to new facet in inverse order
-
-			int direction = 1;
-			if (Dot(&dir2, &facets[firstFacet]->sh.N) *distance < 0.0) direction *= -1; //extrusion towards normal or opposite?
-			for (int j = 0; j < facets[firstFacet]->sh.nbIndex; j++) {
-				facets[secondFacet + 1 + j] = new Facet(4);
-				facets[secondFacet + 1 + j]->indices[0] = facets[firstFacet]->indices[j%facets[firstFacet]->sh.nbIndex];
-				facets[secondFacet + 1 + j]->indices[1] = facets[secondFacet]->indices[(2 * facets[firstFacet]->sh.nbIndex - 1 - j) % facets[firstFacet]->sh.nbIndex];
-				facets[secondFacet + 1 + j]->indices[2] = facets[secondFacet]->indices[(2 * facets[firstFacet]->sh.nbIndex - 2 - j) % facets[firstFacet]->sh.nbIndex];
-				facets[secondFacet + 1 + j]->indices[3] = facets[firstFacet]->indices[(j + 1) % facets[firstFacet]->sh.nbIndex];
-				facets[secondFacet + 1 + j]->selected = TRUE;
+			size_t nbNewFacets = facets[sourceFacet]->sh.nbIndex;
+			if (mode == 3) nbNewFacets *= (steps);
+			nbNewFacets++; //End cap facet
+			facets = (Facet **)realloc(facets, (sh.nbFacet + nbNewFacets) * sizeof(Facet *));
+			
+			//create new vertices
+			if (mode == 1 || mode == 2) {
+				for (int j = 0; j < facets[sourceFacet]->sh.nbIndex; j++) {
+					Add(&vertices3[sh.nbVertex + j], &vertices3[facets[sourceFacet]->indices[j]], &dir2);
+					vertices3[sh.nbVertex + j].selected = FALSE;
+				}
 			}
-			sh.nbVertex += facets[firstFacet]->sh.nbIndex; //update number of vertices
-			sh.nbFacet += facets[firstFacet]->sh.nbIndex + 1;
+			else if (mode == 3) {
+				for (int step = 0;step < steps;step++) {
+					for (int j = 0; j < facets[sourceFacet]->sh.nbIndex; j++) {
+						vertices3[sh.nbVertex + step*facets[sourceFacet]->sh.nbIndex + j] = vertices3[facets[sourceFacet]->indices[j]]; //Copy original vertex
+						Rotate(&vertices3[sh.nbVertex + step*facets[sourceFacet]->sh.nbIndex + j], axisBase, axis, (step + 1)*totalAngle*(againstNormal?-1.0:1.0) / (double)steps); //Rotate into place
+						vertices3[sh.nbVertex + step*facets[sourceFacet]->sh.nbIndex + j].selected = FALSE;
+					}
+				}
+			}
+			
+
+			//Create end cap
+			int endCap = sh.nbFacet+nbNewFacets-1; //last facet
+			facets[endCap] = new Facet(facets[sourceFacet]->sh.nbIndex);
+			facets[endCap]->selected = TRUE;
+			for (int j = 0; j < facets[sourceFacet]->sh.nbIndex; j++)
+				facets[endCap]->indices[facets[sourceFacet]->sh.nbIndex - 1 - j] = sh.nbVertex + j + ((mode==3)?(steps-1)*facets[sourceFacet]->sh.nbIndex:0); //assign new vertices to new facet in inverse order
+
+			//Construct sides
+			//int direction = 1;
+			//if (Dot(&dir2, &facets[sourceFacet]->sh.N) * distanceORradius < 0.0) direction *= -1; //extrusion towards normal or opposite?
+			for (int step = 0;step < ((mode == 3) ? steps : 1);step++) {
+				for (int j = 0; j < facets[sourceFacet]->sh.nbIndex; j++) {
+					facets[sh.nbFacet + step*facets[sourceFacet]->sh.nbIndex + j] = new Facet(4);
+					facets[sh.nbFacet + step*facets[sourceFacet]->sh.nbIndex + j]->indices[0] = (step==0)?facets[sourceFacet]->indices[j]:sh.nbVertex+(step-1)*facets[sourceFacet]->sh.nbIndex+j;
+					facets[sh.nbFacet + step*facets[sourceFacet]->sh.nbIndex + j]->indices[1] = sh.nbVertex + j + (step)*facets[sourceFacet]->sh.nbIndex;
+					facets[sh.nbFacet + step*facets[sourceFacet]->sh.nbIndex + j]->indices[2] = sh.nbVertex + (j+1)%facets[sourceFacet]->sh.nbIndex+ (step)*facets[sourceFacet]->sh.nbIndex;
+					facets[sh.nbFacet + step*facets[sourceFacet]->sh.nbIndex + j]->indices[3] = (step==0)?facets[sourceFacet]->GetIndex(j+1):sh.nbVertex + (j+1)%facets[sourceFacet]->sh.nbIndex + (step-1)*facets[sourceFacet]->sh.nbIndex;
+					facets[sh.nbFacet + step*facets[sourceFacet]->sh.nbIndex + j]->selected = TRUE;
+				}
+			}
+			sh.nbVertex += nbNewVertices; //update number of vertices
+			sh.nbFacet += nbNewFacets;
 		}
 	}
-
-
 	InitializeGeometry();
 	mApp->UpdateFacetParams(TRUE);
 	UpdateSelection();
 	mApp->facetList->SetSelectedRow(sh.nbFacet - 1);
 	mApp->facetList->ScrollToVisible(sh.nbFacet - 1, 1, FALSE);
-
 }
 
 void Geometry::ShiftVertex() {

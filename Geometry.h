@@ -106,7 +106,7 @@ public:
   int  GetNbSelected();
   void UpdateSelection();
   void SwapNormal();
-  void Extrude(VERTEX3D offset, double distance=1.0);
+  void Extrude(int mode,VERTEX3D radiusBase,VERTEX3D offsetORradiusdir, BOOL againstNormal,double distanceORradius,double totalAngle,int steps);
   void RemoveSelected();
   void RemoveSelectedVertex();
   void RemoveFromStruct(int numToDel);
