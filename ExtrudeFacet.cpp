@@ -401,7 +401,7 @@ void ExtrudeFacet::ProcessMessage(GLComponent *src, int message) {
 				else if (offsetCheckbox->GetState()) mode = 2; // By offset vector
 				else mode = 3; //Along curve
 			
-				if ((mode!=1) && dX*dX + dY*dY*dZ*dZ < 1E-8) {
+				if ((mode!=1) && dX*dX + dY*dY + dZ*dZ < 1E-8) {
 				GLMessageBox::Display("Direction is a null-vector", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			} if (mode==3 && abs(radiusLength)<1E-8) {
