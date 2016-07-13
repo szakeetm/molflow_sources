@@ -3,6 +3,8 @@
 #include "Geometry.h"
 #include "GLApp\GLMessageBox.h"
 #include "Molflow.h"
+#include <algorithm>
+#include <list>
 
 extern MolFlow *mApp;
 
@@ -144,7 +146,7 @@ void Geometry::CreatePolyFromVertices_Convex() {
 
 	//Get coordinates in the U,V system
 	for (int i = 0; i < nbSelectedVertex; i++) {
-		ProjectVertex(&(vertices3[vIdx[i]]), &(projected[i]), U, V, vertices3[vIdx[0]]);
+		ProjectVertex(&(vertices3[vIdx[i]]), &(projected[i]), &U, &V, &vertices3[vIdx[0]]);
 	}
 
 	//Graham scan here on the projected[] array
@@ -1720,117 +1722,160 @@ void Geometry::ScaleSelectedFacets(VERTEX3D invariant, double factorX, double fa
 	SAFE_DELETE(prgMove);
 }
 
+ClippingVertex::ClippingVertex() {
+	visited = FALSE;
+	isLink = FALSE;
+}
 
-void Geometry::SplitSelectedFacets(VERTEX3D base, VERTEX3D normal, Worker *worker) {
-	/*
+BOOL operator<(const std::list<ClippingVertex>::iterator& a, const std::list<ClippingVertex>::iterator& b) {
+	return (a->distance < b->distance);
+}
+
+BOOL Geometry::IntersectingPlaneWithLine(const VERTEX3D &P0, const VERTEX3D &u, const VERTEX3D &V0, const VERTEX3D &n, VERTEX3D *intersectPoint) {
+	//Notations from http://geomalgorithms.com/a05-_intersect-1.html
+	//At this point, intersecting ray is L=P0+s*u
+	if (IS_ZERO(Dot(n,u))) return FALSE; //Check for parallelness
+	VERTEX3D w=P0-V0;
+	if (IS_ZERO(Dot(n,w))) return FALSE; //Check for inclusion
+	//Intersection point: P(s_i)-V0=w+s_i*u -> s_i=(-n*w)/(n*u)
+	double s_i = -Dot(n, w) / Dot(n, u);
+	//P(s_i)=V0+w+s*u
+	*intersectPoint = V0 + w + s_i * u;
+	return TRUE;
+}
+
+void Geometry::SplitSelectedFacets(const VERTEX3D &base, const VERTEX3D &normal, /*Worker *worker,*/GLProgress *prg) {
 	mApp->changedSinceSave = TRUE;
-	if (nbSelected == 0) return -1;
-
-	// Check that all facet has a mesh
-	BOOL ok = TRUE;
-	int idx = 0;
-	while (ok && idx < sh.nbFacet) {
-		if (facets[idx]->selected)
-			ok = facets[idx]->hasMesh;
-		idx++;
-	}
-	if (!ok) return -2;
-
-	int nb = 0;
-	int FtoAdd = 0;
-	int VtoAdd = 0;
-	Facet::FACETGROUP *blocks = (Facet::FACETGROUP *)malloc(nbSelected * sizeof(Facet::FACETGROUP));
-
-	for (int i = 0; i < sh.nbFacet; i++) {
-		if (facets[i]->selected) {
-			facets[i]->Explode(blocks + nb);
-			FtoAdd += blocks[nb].nbF;
-			VtoAdd += blocks[nb].nbV;
-			nb++;
-		}
-	}
-
-	// Update vertex array
-	VERTEX3D *ptrVert;
-	int       vIdx;
-	VERTEX3D *nVert = (VERTEX3D *)malloc((sh.nbVertex + VtoAdd)*sizeof(VERTEX3D));
-	memcpy(nVert, vertices3, sh.nbVertex*sizeof(VERTEX3D));
-
-	ptrVert = nVert + sh.nbVertex;
-	vIdx = sh.nbVertex;
-	nb = 0;
-	for (int i = 0; i < sh.nbFacet; i++) {
-		if (facets[i]->selected) {
-			facets[i]->FillVertexArray(ptrVert);
-			for (int j = 0; j < blocks[nb].nbF; j++) {
-				for (int k = 0; k < blocks[nb].facets[j]->sh.nbIndex; k++) {
-					blocks[nb].facets[j]->indices[k] = vIdx + k;
+	int oldNbFacets = sh.nbFacet;
+	for (size_t i = 0;i < oldNbFacets; i++) {
+		Facet *f = facets[i];
+		if (f->selected) {
+			if (prg) prg->SetProgress(double(i) / double(sh.nbFacet));
+			VERTEX3D intersectionPoint, intersectLineDir;
+			if (!IntersectingPlaneWithLine(f->sh.O, f->sh.U,base, normal,  &intersectionPoint))
+				if (!IntersectingPlaneWithLine(f->sh.O, f->sh.V,base, normal,  &intersectionPoint))
+					if (!IntersectingPlaneWithLine(f->sh.O+f->sh.U, -1.0*f->sh.U, base, normal, &intersectionPoint)) //If origin on cutting plane
+						if (!IntersectingPlaneWithLine(f->sh.O+f->sh.V, -1.0*f->sh.V, base, normal, &intersectionPoint)) //If origin on cutting plane
+							continue;
+				//Reduce to a 2D problem in the facet's plane
+				VERTEX2D intPoint2D, intDir2D,intDirOrt2D;
+				ProjectVertex(&intersectionPoint, &intPoint2D, &f->sh.U, &f->sh.V, &f->sh.O);
+				intersectLineDir = CrossProduct(normal,f->sh.N);
+				intDir2D.u = Dot(f->sh.U,intersectLineDir)/Dot(f->sh.U,f->sh.U);
+				intDir2D.v = Dot(f->sh.V,intersectLineDir)/Dot(f->sh.V, f->sh.V);
+				//Construct orthogonal vector to decide inside/outside
+				intDirOrt2D.u = intDir2D.v;
+				intDirOrt2D.v = -intDir2D.u;
+				/*double angleDir=0; //todo
+				if (!IS_ZERO(intDir2D.u)) angleDir = atan(intDir2D.v / intDir2D.u);
+				_ASSERTE(!IS_ZERO(angleDir));*/
+				//Do the clipping. Algorithm following pseudocode from Graphic Gems V: "Clipping a Concave Polygon", Andrew S. Glassner
+				std::list<ClippingVertex> clipVertices;
+				//clipVertices.reserve(f->sh.nbIndex);
+				for (size_t v = 0;v < f->sh.nbIndex;v++) {
+					ClippingVertex V;
+					ProjectVertex(&vertices3[f->indices[v]], &V.vertex, &f->sh.U, &f->sh.V, &f->sh.O);
+					V.globalId = f->indices[v];
+					//V.next = &(clipVertices[(v+1)%f->sh.nbIndex]); //Verify if this works before push_back!
+					/*double angleVertex = 0;
+					if (!IS_ZERO(V.vertex.u)) angleVertex = atan(V.vertex.v / V.vertex.u);
+					V.inside = angleVertex < angleDir; //Double-check this!*/
+					
+					double a = Dot(intDirOrt2D, V.vertex - intPoint2D);
+					V.inside = (a>=1E-10);
+					clipVertices.push_back(V);
 				}
-				vIdx += blocks[nb].facets[j]->sh.nbIndex;
-			}
-			ptrVert += blocks[nb].nbV;
-			nb++;
-		}
-	}
-	SAFE_FREE(vertices3);
-	vertices3 = nVert;
-	for (int i = sh.nbVertex; i < sh.nbVertex + VtoAdd; i++)
-		vertices3[i].selected = FALSE;
-	sh.nbVertex += VtoAdd;
-
-	// Update facet
-	Facet   **f = (Facet **)malloc((sh.nbFacet + FtoAdd - nbSelected) * sizeof(Facet *));
-
-	// Delete selected
-	nb = 0;
-	for (int i = 0; i < sh.nbFacet; i++) {
-		if (facets[i]->selected) {
-			delete facets[i];
-			mApp->RenumberSelections(i);
-			mApp->RenumberFormulas(i);
-		}
-		else {
-			f[nb++] = facets[i];
-		}
-	}
-
-	// Add new facets
-	int count = 0;
-	for (int i = 0; i < nbSelected; i++) {
-		for (int j = 0; j<blocks[i].nbF; j++) {
-			f[nb++] = blocks[i].facets[j];
-			if (toMap) { //set outgassing values
-				f[nb - 1]->sh.flow = *(values + count++) *0.100; //0.1: mbar*l/s->Pa*m3/s
-				if (f[nb - 1]->sh.flow>0.0) {
-					f[nb - 1]->sh.desorbType = desType + 1;
-					f[nb - 1]->selected = TRUE;
-					if (f[nb - 1]->sh.desorbType == DES_COSINE_N) f[nb - 1]->sh.desorbTypeN = exponent;
+				std::list<std::list<ClippingVertex>::iterator> createdList;
+				std::list<ClippingVertex>::iterator V=clipVertices.begin();
+				do {
+					std::list<ClippingVertex>::iterator N= std::next(V);
+					if (N == clipVertices.end()) N = clipVertices.begin();
+					if (V->inside != N->inside) { //side change
+						//Compute location of intersection point P
+						ClippingVertex P;
+						VERTEX2D v = N->vertex - V->vertex;
+						VERTEX2D w = intPoint2D - V->vertex;
+						double s_i = (v.v*w.u - v.u*w.v) / (v.u*intDir2D.v - v.v*intDir2D.u);
+						P.vertex = intPoint2D + intDir2D*s_i;
+						P.globalId = sh.nbVertex + createdList.size();
+						//Insert P in clippingVertices between V and N
+						createdList.push_back(clipVertices.insert(N, P));
+						V++; //iterate to P or end of list
+					}
+					if (V!=clipVertices.end()) V++; //iterate to N
+				} while (V != clipVertices.end());
+				//Register new vertices and calc distance from clipping line
+				if (createdList.size() > 0) { //If there was a cut
+					_ASSERTE(createdList.size() % 2 == 0);
+					vertices3 = (VERTEX3D*)realloc(vertices3, sizeof(VERTEX3D)*(sh.nbVertex + createdList.size()));
+					for (std::list<std::list<ClippingVertex>::iterator>::iterator newVertexIterator = createdList.begin();newVertexIterator != createdList.end();newVertexIterator++) {
+						VERTEX3D newCoord3D = f->sh.O + f->sh.U*(*newVertexIterator)->vertex.u + f->sh.V*(*newVertexIterator)->vertex.v;
+						newCoord3D.selected = FALSE;
+						vertices3[sh.nbVertex] = newCoord3D;
+						sh.nbVertex++;
+						VERTEX2D diff = (*newVertexIterator)->vertex - intPoint2D;
+						(*newVertexIterator)->distance = diff * intDir2D;
+					}
+					createdList.sort();
+					for (std::list<std::list<ClippingVertex>::iterator>::iterator pairFirst = createdList.begin();pairFirst != createdList.end();pairFirst++, pairFirst++) {
+						std::list<std::list<ClippingVertex>::iterator>::iterator pairSecond = std::next(pairFirst);
+						(*pairFirst)->isLink = (*pairSecond)->isLink = TRUE;
+						(*pairFirst)->link = *pairSecond;
+						(*pairSecond)->link = *pairFirst;
+					}
+					std::list<ClippingVertex>::iterator U = clipVertices.begin();
+					std::list<std::vector<size_t>> newFacetsIndices;
+					do {
+						std::vector<size_t> newPolyIndices;
+						if (U->visited == FALSE) {
+							std::list<ClippingVertex>::iterator V = U;
+							do {
+								V->visited = TRUE;
+								newPolyIndices.push_back(V->globalId);
+								if (V->isLink) {
+									V = V->link;
+									V->visited = TRUE;
+									newPolyIndices.push_back(V->globalId);
+								}
+								V++; if (V == clipVertices.end()) V = clipVertices.begin();
+							} while (V != U);
+						}
+						U++;
+						//Register new facet
+						if (newPolyIndices.size() > 0) {
+							newFacetsIndices.push_back(newPolyIndices);
+						}
+					} while (U != clipVertices.end());
+					if (newFacetsIndices.size()>0)
+						facets = (Facet**)realloc(facets, sizeof(Facet*)*(sh.nbFacet + newFacetsIndices.size()));
+					for (auto newPolyIndices : newFacetsIndices) {
+						_ASSERTE(newPolyIndices.size() >= 3);
+						Facet *newFacet = new Facet((int)newPolyIndices.size());
+						for (size_t i = 0;i < newPolyIndices.size();i++) {
+							newFacet->indices[i] = newPolyIndices[i];
+						}
+						CalculateFacetParam_geometry(newFacet);
+						if (Dot(f->sh.N, newFacet->sh.N) < 0) {
+							newFacet->SwapNormal();
+						}
+						newFacet->selected = TRUE;
+						facets[sh.nbFacet] = newFacet;
+						sh.nbFacet++;
+						
+					}
 				}
-				else {
-					f[nb - 1]->sh.desorbType = DES_NONE;
-					f[nb - 1]->selected = FALSE;
-				}
-			}
+				f->selected = FALSE;
 		}
 	}
-
-	// Free allocated memory
-	for (int i = 0; i < nbSelected; i++) {
-		SAFE_FREE(blocks[i].facets);
-	}
-	SAFE_FREE(blocks);
-
-	SAFE_FREE(facets);
-	facets = f;
-	sh.nbFacet = nb;
-
+	
 	// Delete old resources
 	DeleteGLLists(TRUE, TRUE);
 
 	InitializeGeometry();
-
-	return 0;
-	*/
+	mApp->worker.Reload();
+	mApp->UpdateModelParams();
+	mApp->UpdateFacetlistSelected();
+	return;
 }
 
 Facet *Geometry::MergeFacet(Facet *f1, Facet *f2) {

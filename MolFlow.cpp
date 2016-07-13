@@ -216,6 +216,7 @@ MolFlow *mApp;
 #define MENU_TEST_PIPE10000       65
 
 #define MENU_QUICKPIPE            66
+#define MENU_TEST_CUT_BY_XZ         67
 
 //-----------------------------------------------------------------------------
 // Name: WinMain()
@@ -579,6 +580,8 @@ int MolFlow::OneTimeSceneInit()
 	//Quick test pipe
 	menu->GetSubMenu("Test")->Add(NULL);
 	menu->GetSubMenu("Test")->Add("Quick Pipe", MENU_QUICKPIPE, SDLK_q, ALT_MODIFIER);
+	menu->GetSubMenu("Test")->Add(NULL);
+	menu->GetSubMenu("Test")->Add("Cut by XZ plane", MENU_TEST_CUT_BY_XZ);
 
 	/*profilePlotterShortcut=new GLButton(0,"Profile Plotter");
 	Add(profilePlotterShortcut);
@@ -3823,6 +3826,14 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			break;
 		case MENU_QUICKPIPE:
 			if (AskToSave()) QuickPipe();
+			break;
+	    case MENU_TEST_CUT_BY_XZ:
+			//if (AskToSave()) {
+				VERTEX3D origin, Yaxis;
+				origin.x = origin.y = origin.z = 0.0;
+				Yaxis.x = Yaxis.z = 0.0;Yaxis.y = 1.0;
+				geom->SplitSelectedFacets(origin, Yaxis);
+			//}
 			break;
 		}
 		// Load recent menu

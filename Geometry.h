@@ -31,6 +31,7 @@
 #include "PugiXML/pugixml.hpp"
 #include <vector>
 #include <sstream>
+#include <list>
 
 class Worker;
 
@@ -116,7 +117,8 @@ public:
   void MoveSelectedVertex(double dX,double dY,double dZ,BOOL copy,Worker *worker);
   void ScaleSelectedVertices(VERTEX3D invariant,double factor,BOOL copy,Worker *worker);
   void ScaleSelectedFacets(VERTEX3D invariant,double factorX,double factorY,double factorZ,BOOL copy,Worker *worker);
-  void SplitSelectedFacets(VERTEX3D base, VERTEX3D normal, Worker *worker);
+  void SplitSelectedFacets(const VERTEX3D &base, const VERTEX3D &normal, /*Worker *worker,*/GLProgress *prg=NULL);
+  BOOL IntersectingPlaneWithLine(const VERTEX3D &P0, const VERTEX3D &u, const VERTEX3D &V0, const VERTEX3D &n, VERTEX3D *intersectPoint);
   void MoveSelectedFacets(double dX,double dY,double dZ,BOOL copy,Worker *worker);
   void MirrorSelectedFacets(VERTEX3D P0,VERTEX3D N,BOOL copy,Worker *worker);
   void RotateSelectedFacets(const VERTEX3D &AXIS_P0, const VERTEX3D &AXIS_DIR, double theta, BOOL copy, Worker *worker);
@@ -316,6 +318,21 @@ class PreviewFacet {
 public:
 	std::vector<PreviewVertex> indices;
 };
+
+class ClippingVertex {
+public:
+	
+	ClippingVertex();
+	VERTEX2D vertex; //Storing the actual vertex
+	BOOL visited;
+	int inside;
+	BOOL isLink;
+	double distance;
+	std::list<ClippingVertex>::iterator link;
+	size_t globalId;
+};
+
+BOOL operator<(const std::list<ClippingVertex>::iterator& a, const std::list<ClippingVertex>::iterator& b);
 
 #endif /* _GEOMETRYH_ */
 

@@ -19,6 +19,8 @@
 #ifndef _UTILSH_
 #define _UTILSH_
 
+#include "Types.h"
+
 typedef struct {
 
   VERTEX2D  *pts;   // Array of 2D vertex
@@ -60,19 +62,32 @@ typedef struct {
 #define IDX(i,nb) (((i)<0)?nb+(i):(i)%(nb))
 
 
+VERTEX3D CrossProduct(const VERTEX3D &v1, const VERTEX3D &v2);
+VERTEX3D operator+ (const VERTEX3D &v1, const VERTEX3D& v2);
+VERTEX3D operator-(const VERTEX3D &v1, const VERTEX3D& v2);
+double Dot(const VERTEX3D &v1, const VERTEX3D &v2);
+VERTEX3D operator*(const VERTEX3D &v1, const double& mult);
+VERTEX3D operator*(const double& mult, const VERTEX3D &v1);
 
 double Dot(VERTEX3D *v1,VERTEX3D *v2);
+double Dot(const VERTEX2D &v1, const VERTEX2D &v2);
 void   Cross(VERTEX3D *result,VERTEX3D *v1,VERTEX3D *v2);
 double Norme(VERTEX3D *v);
+double Norme(const VERTEX2D &v);
 double Norme(VERTEX2D *v1,VERTEX2D *v2);
 void   Normalize(VERTEX3D *v);
+void   Normalize(VERTEX2D *v);
 void   ScalarMult(VERTEX3D *result,double r);
+void   ScalarMult(VERTEX2D *result, double r);
 void   Sub(VERTEX3D *result,VERTEX3D *v1,VERTEX3D *v2);
+void   Sub(VERTEX2D *result, VERTEX2D *v1, VERTEX2D *v2);
 void   Add(VERTEX3D *result,VERTEX3D *v1,VERTEX3D *v2);
-void   ProjectVertex(VERTEX3D *v,VERTEX2D *projected,VERTEX3D U,VERTEX3D V,VERTEX3D origin);
+void   Add(VERTEX2D *result, VERTEX2D *v1, VERTEX2D *v2);
+void   ProjectVertex(VERTEX3D *v,VERTEX2D *projected,VERTEX3D *U,VERTEX3D *V,VERTEX3D *origin);
 void   Mirror(VERTEX3D *P, VERTEX3D P0, VERTEX3D N);
 void   Rotate(VERTEX3D *P, VERTEX3D AXIS_P0, VERTEX3D AXIS_DIR,double theta);
 int   IsEqual(const double &a, const double &b, double tolerance=1E-8);
+double GetOrientedAngle(VERTEX2D *v1, VERTEX2D *v2);
 
 int    SolveIASM(double *u ,double *v,double *w,
                  VERTEX3D *nuv,VERTEX3D *U,VERTEX3D *V,VERTEX3D *W,VERTEX3D *Z);

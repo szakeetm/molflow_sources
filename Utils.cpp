@@ -29,17 +29,68 @@
 // Linear algebra
 // -------------------------------------------------------
 
-void   Cross(VERTEX3D *result, VERTEX3D *v1, VERTEX3D *v2) {
+void Cross(VERTEX3D *result, VERTEX3D *v1, VERTEX3D *v2) {
 	result->x = (v1->y)*(v2->z) - (v1->z)*(v2->y);
 	result->y = (v1->z)*(v2->x) - (v1->x)*(v2->z);
 	result->z = (v1->x)*(v2->y) - (v1->y)*(v2->x);
+}
+
+VERTEX3D CrossProduct(const VERTEX3D &v1, const VERTEX3D &v2) {
+	VERTEX3D result;
+	result.x = (v1.y)*(v2.z) - (v1.z)*(v2.y);
+	result.y = (v1.z)*(v2.x) - (v1.x)*(v2.z);
+	result.z = (v1.x)*(v2.y) - (v1.y)*(v2.x);
+	return result;
+}
+
+VERTEX3D operator+ (const VERTEX3D &v1, const VERTEX3D& v2) {
+	VERTEX3D result;
+	result.x = v1.x + v2.x;
+	result.y = v1.y + v2.y;
+	result.z = v1.z + v2.z;
+	return result;
+}
+VERTEX3D operator-(const VERTEX3D &v1, const VERTEX3D& v2) {
+	VERTEX3D result;
+	result.x = v1.x - v2.x;
+	result.y = v1.y - v2.y;
+	result.z = v1.z - v2.z;
+	return result;
+}
+
+double Dot(const VERTEX3D &v1, const VERTEX3D &v2) {
+	return (v1.x)*(v2.x) + (v1.y)*(v2.y) + (v1.z)*(v2.z);
+}
+
+VERTEX3D operator*(const VERTEX3D &v1,const double& mult)  {
+	VERTEX3D result;
+	result.x = v1.x * mult;
+	result.y = v1.y * mult;
+	result.z = v1.z * mult;
+	return result;
+}
+
+VERTEX3D operator*(const double& mult, const VERTEX3D &v1) {
+	VERTEX3D result;
+	result.x = v1.x * mult;
+	result.y = v1.y * mult;
+	result.z = v1.z * mult;
+	return result;
 }
 
 double Dot(VERTEX3D *v1, VERTEX3D *v2) {
 	return (v1->x)*(v2->x) + (v1->y)*(v2->y) + (v1->z)*(v2->z);
 }
 
+double Dot(const VERTEX2D &v1, const VERTEX2D &v2) {
+	return v1.u*v2.u + v1.v*v2.v;
+}
+
 double Norme(VERTEX3D *v) {
+	return sqrt(Dot(v, v));
+}
+
+double Norme(const VERTEX2D &v) {
 	return sqrt(Dot(v, v));
 }
 
@@ -49,6 +100,12 @@ int Remainder(int param, int bound) {
 
 void Normalize(VERTEX3D *v) {
 	double length = Norme(v);
+	if (length>0.0)
+		ScalarMult(v, 1.0 / length);
+}
+
+void Normalize(VERTEX2D *v) {
+	double length = Norme(*v);
 	if (length>0.0)
 		ScalarMult(v, 1.0 / length);
 }
@@ -63,10 +120,20 @@ void ScalarMult(VERTEX3D *result, double r) {
 	result->z *= r;
 }
 
+void ScalarMult(VERTEX2D *result, double r) {
+	result->u *= r;
+	result->v *= r;
+}
+
 void Sub(VERTEX3D *result, VERTEX3D *v1, VERTEX3D *v2) {
 	result->x = (v1->x) - (v2->x);
 	result->y = (v1->y) - (v2->y);
 	result->z = (v1->z) - (v2->z);
+}
+
+void Sub(VERTEX2D *result, VERTEX2D *v1, VERTEX2D *v2) {
+	result->u = (v1->u) - (v2->u);
+	result->v = (v1->v) - (v2->v);
 }
 
 void Add(VERTEX3D *result, VERTEX3D *v1, VERTEX3D *v2) {
@@ -75,34 +142,38 @@ void Add(VERTEX3D *result, VERTEX3D *v1, VERTEX3D *v2) {
 	result->z = (v1->z) + (v2->z);
 }
 
+void Add(VERTEX2D *result, VERTEX2D *v1, VERTEX2D *v2) {
+	result->u = (v1->u) + (v2->u);
+	result->v = (v1->v) + (v2->v);
+}
+
 int VertexEqual(VERTEX2D *p1, VERTEX2D *p2) {
 	return IS_ZERO(p1->u - p2->u) && IS_ZERO(p1->v - p2->v);
 }
 
-void Sub2(VERTEX2D *result, VERTEX2D *v1, VERTEX2D *v2) {
-	result->u = (v1->u) - (v2->u);
-	result->v = (v1->v) - (v2->v);
-}
-
-void   ProjectVertex(VERTEX3D *v, VERTEX2D *projected, VERTEX3D U, VERTEX3D V, VERTEX3D origin){
+void ProjectVertex(VERTEX3D *v, VERTEX2D *projected, VERTEX3D *U, VERTEX3D *V, VERTEX3D *origin){
 	//Project v on a plane defined by U,V and return the coordinates in base U,V
-	VERTEX3D AP, APp, projectionPoint, mult;
+	VERTEX3D diff = *v - *origin;
+	projected->u = Dot(*U, diff) /Dot(U,U);
+	projected->v = Dot(*V, diff) / Dot(V,V);
 
-	Sub(&AP, v, &origin);
-	double t = Dot(&U, &AP) / Dot(&U, &U);
-	mult = U;
+	/*
+	Sub(&AP, v, origin);
+	double t = Dot(U, &AP) / Dot(U, U);
+	mult = *U;
 	ScalarMult(&mult, t);
-	Add(&projectionPoint, &origin, &mult);
-	Sub(&APp, &projectionPoint, &origin);
-	projected->u = Dot(&APp, &U); //u coordinate
+	Add(&projectionPoint, origin, &mult);
+	Sub(&APp, &projectionPoint, origin);
+	projected->u = Dot(&APp, U); //u coordinate
 
-	Sub(&AP, v, &origin);
-	t = Dot(&V, &AP) / Dot(&V, &V);
-	mult = V;
+	Sub(&AP, v, origin);
+	t = Dot(V, &AP) / Dot(V, V);
+	mult = *V;
 	ScalarMult(&mult, t);
-	Add(&projectionPoint, &origin, &mult);
-	Sub(&APp, &projectionPoint, &origin);
-	projected->v = Dot(&APp, &V); //v coordinate
+	Add(&projectionPoint, origin, &mult);
+	Sub(&APp, &projectionPoint, origin);
+	projected->v = Dot(&APp, V); //v coordinate
+	*/
 }
 
 void Mirror(VERTEX3D *P, VERTEX3D P0, VERTEX3D N) {
@@ -640,11 +711,11 @@ void CreateGraph(POLYGRAPH *g, POLYGON *inP1, POLYGON *inP2, int *visible2) {
 
 				// TO DEBUG!!! Causes frequent crashes
 				if (g->nodes[i].VI[0] >= 0 && g->nodes[i].VO[0] >= 0 && g->nodes[i].VI[1] >= 0 && g->nodes[i].VO[1] >= 0) {
-					Sub2(&vi1, &(g->nodes[g->nodes[i].VI[0]].p), &(g->nodes[i].p));
-					Sub2(&vo1, &(g->nodes[g->nodes[i].VO[0]].p), &(g->nodes[i].p));
+					Sub(&vi1, &(g->nodes[g->nodes[i].VI[0]].p), &(g->nodes[i].p));
+					Sub(&vo1, &(g->nodes[g->nodes[i].VO[0]].p), &(g->nodes[i].p));
 
-					Sub2(&vi2, &(g->nodes[g->nodes[i].VI[1]].p), &(g->nodes[i].p));
-					Sub2(&vo2, &(g->nodes[g->nodes[i].VO[1]].p), &(g->nodes[i].p));
+					Sub(&vi2, &(g->nodes[g->nodes[i].VI[1]].p), &(g->nodes[i].p));
+					Sub(&vo2, &(g->nodes[g->nodes[i].VO[1]].p), &(g->nodes[i].p));
 				}
 
 				double angI = GetOrientedAngle(&vi1, &vo1);
