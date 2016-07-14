@@ -104,6 +104,8 @@ void Geometry::Clear() {
 	memset(strFileName, 0, MAX_SUPERSTR * sizeof(char *));
 	DeleteGLLists(TRUE, TRUE);
 
+	if (mApp && mApp->splitFacet) mApp->splitFacet->ClearUndoFacets();
+
 	// Init default
 	facets = NULL;         // Facets array
 	vertices3 = NULL;      // Facets vertices in (x,y,z) space
@@ -256,130 +258,7 @@ void Geometry::InitializeGeometry(int facet_number) {
 		if ((facet_number == -1) || (i == facet_number)) { //permits to initialize only one facet
 			// Main facet params
 			CalculateFacetParam(i);
-
-			// Current facet
 			Facet *f = facets[i];
-
-			/*
-			// Search longest edge
-			double dMax = 0.0;
-			int    i1Max,i2Max;
-			for(int j=0;j<f->sh.nbIndex;j++) {
-			int j1 = IDX(j+1,f->sh.nbIndex);
-			int i1 = f->indices[j];
-			int i2 = f->indices[j1];
-			double xl = (vertices3[i1].x - vertices3[i2].x);
-			double yl = (vertices3[i1].y - vertices3[i2].y);
-			double zl = (vertices3[i1].z - vertices3[i2].z);
-			double l = DOT3( xl,yl,zl,xl,yl,zl ); //distance of vertices at i1 and i2
-			if( l>dMax + 1e-8 ) { //disregard differences below double precision
-			dMax = l;
-			i1Max = i1;
-			i2Max = i2;
-			}
-			}
-
-			// First vertex
-			int i0 = f->indices[0];
-			VERTEX3D p0 = vertices3[i0];
-			*/
-
-			VERTEX3D p0 = vertices3[f->indices[0]];
-			VERTEX3D p1 = vertices3[f->indices[1]];
-
-			VERTEX3D U, V;
-
-			/* OLD fashion (no longueur used)
-			// Intersection line (directed by U and including p0)
-			U.x = f->c;
-			U.y = 0.0;
-			U.z = -f->a;
-			double nU = Norme(&U);
-
-			if( IS_ZERO(nU) ) {
-			// Plane parallel to (O,x,z)
-			U.x = 1.0;
-			U.y = 0.0;
-			U.z = 0.0;
-			} else {
-			ScalarMult(&U,1.0/nU); // Normalize U
-			}
-			*/
-			/*
-			U.x = vertices3[i2Max].x - vertices3[i1Max].x;
-			U.y = vertices3[i2Max].y - vertices3[i1Max].y;
-			U.z = vertices3[i2Max].z - vertices3[i1Max].z;
-			*/
-
-			U.x = p1.x - p0.x;
-			U.y = p1.y - p0.y;
-			U.z = p1.z - p0.z;
-
-			double nU = Norme(&U);
-			ScalarMult(&U, 1.0 / nU); // Normalize U
-
-			// Construct a normal vector V
-			Cross(&V, &(f->sh.N), &U); // |U|=1 and |N|=1 => |V|=1
-
-			// u,v vertices (we start with p0 at 0,0)
-			f->vertices2[0].u = 0.0;
-			f->vertices2[0].v = 0.0;
-			VERTEX2D min; min.u = 0.0; min.v = 0.0;
-			VERTEX2D max; max.u = 0.0; max.v = 0.0;
-
-			for (int j = 1; j < f->sh.nbIndex; j++) {
-
-				VERTEX3D p = vertices3[f->indices[j]];
-				VERTEX3D v;
-				Sub(&v, &p, &p0); // v = p0p
-				f->vertices2[j].u = Dot(&U, &v);  // Project p on U along the V direction
-				f->vertices2[j].v = Dot(&V, &v);  // Project p on V along the U direction
-
-				// Bounds
-				if (f->vertices2[j].u > max.u) max.u = f->vertices2[j].u;
-				if (f->vertices2[j].v > max.v) max.v = f->vertices2[j].v;
-				if (f->vertices2[j].u < min.u) min.u = f->vertices2[j].u;
-				if (f->vertices2[j].v < min.v) min.v = f->vertices2[j].v;
-
-			}
-
-			// Calculate facet area (Meister/Gauss formula)
-			double A = 0.0;
-			for (int j = 0; j < f->sh.nbIndex; j++) {
-				int j1 = IDX(j + 1, f->sh.nbIndex);
-				A += f->vertices2[j].u*f->vertices2[j1].v - f->vertices2[j1].u*f->vertices2[j].v;
-			}
-			f->sh.area = fabs(0.5 * A);
-
-			// Compute the 2D basis (O,U,V)
-			double uD = (max.u - min.u);
-			double vD = (max.v - min.v);
-
-			// Origin
-			f->sh.O.x = min.u * U.x + min.v * V.x + p0.x;
-			f->sh.O.y = min.u * U.y + min.v * V.y + p0.y;
-			f->sh.O.z = min.u * U.z + min.v * V.z + p0.z;
-
-			// Rescale U and V vector
-			f->sh.nU = U;
-			ScalarMult(&U, uD);
-			f->sh.U = U;
-
-			f->sh.nV = V;
-			ScalarMult(&V, vD);
-			f->sh.V = V;
-
-			Cross(&(f->sh.Nuv), &U, &V);
-
-			// Rescale u,v coordinates
-			for (int j = 0; j < f->sh.nbIndex; j++) {
-
-				VERTEX2D p = f->vertices2[j];
-				f->vertices2[j].u = (p.u - min.u) / uD;
-				f->vertices2[j].v = (p.v - min.v) / vD;
-
-			}
-
 			// Detect non visible edge
 			f->InitVisibleEdge();
 

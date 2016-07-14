@@ -21,7 +21,9 @@ class SplitFacet : public GLWindow {
 public:
   // Construction
   SplitFacet(Geometry *geom,Worker *work);
+  ~SplitFacet();
   void ProcessMessage(GLComponent *src,int message);
+  void ClearUndoFacets();
 
   // Implementation
 private:

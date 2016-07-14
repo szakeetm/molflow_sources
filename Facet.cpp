@@ -1650,7 +1650,7 @@ void Facet::Copy(Facet *f, BOOL copyMesh) {
 
 	sh.sticking = f->sh.sticking;
 	sh.opacity = f->sh.opacity;
-	sh.area = f->sh.area;
+	//sh.area = f->sh.area;
 	sh.desorbType = f->sh.desorbType;
 	sh.desorbTypeN = f->sh.desorbTypeN;
 	sh.reflectType = f->sh.reflectType;
@@ -1702,12 +1702,12 @@ void Facet::Copy(Facet *f, BOOL copyMesh) {
 
 	//visible = f->visible; //Dragons ahead!
 	volumeVisible = f->volumeVisible;
-	a = f->a;
-	b = f->b;
-	c = f->c;
-	d = f->d;
-	err = f->err;
-	sh.N = f->sh.N;
+	//a = f->a;
+	//b = f->b;
+	//c = f->c;
+	//d = f->d;
+	//err = f->err;
+	//sh.N = f->sh.N;
 	selected = f->selected;
 
 }

@@ -58,6 +58,7 @@
 #define SAFE_FREE(x) if(x) { free(x);x=NULL; }
 #define IVALIDATE_DLG(dlg) if(dlg && !dlg->IsVisible()) dlg->InvalidateDeviceObjects();
 #define RVALIDATE_DLG(dlg) if(dlg && !dlg->IsVisible()) dlg->RestoreDeviceObjects();
+#define NEXT_OF(list,elementIterator) (std::next(element)==list.end())?list.begin():std::next(element);
 
 // Constants
 

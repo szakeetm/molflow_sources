@@ -109,7 +109,7 @@ public:
   void SwapNormal();
   void Extrude(int mode,VERTEX3D radiusBase,VERTEX3D offsetORradiusdir, BOOL againstNormal,double distanceORradius,double totalAngle,int steps);
   void RemoveSelected();
-  void RemoveFacets(const std::vector<size_t> &facetIdList);
+  void RemoveFacets(const std::vector<size_t> &facetIdList,BOOL doNotDestroy=FALSE);
   void RemoveSelectedVertex();
   void RemoveFromStruct(int numToDel);
   BOOL RemoveCollinear();
@@ -326,7 +326,8 @@ public:
 	ClippingVertex();
 	VERTEX2D vertex; //Storing the actual vertex
 	BOOL visited;
-	int inside;
+	BOOL inside;
+	BOOL onClippingLine;
 	BOOL isLink;
 	double distance;
 	std::list<ClippingVertex>::iterator link;

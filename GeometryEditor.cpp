@@ -164,8 +164,9 @@ void Geometry::CreatePolyFromVertices_Convex() {
 	sh.nbFacet++;
 	facets = (Facet **)realloc(facets, sh.nbFacet * sizeof(Facet *));
 	facets[sh.nbFacet - 1] = new Facet(loopLength);
-	facets[sh.nbFacet - 1]->sh.sticking = 0.0;
-	facets[sh.nbFacet - 1]->sh.sticking = DES_NONE;
+	//facets[sh.nbFacet - 1]->sh.sticking = 0.0;
+	//facets[sh.nbFacet - 1]->sh.sticking = DES_NONE;
+	if (viewStruct != -1) facets[sh.nbFacet - 1]->sh.superIdx = viewStruct;
 	//set selection
 	UnSelectAll();
 	facets[sh.nbFacet - 1]->selected = TRUE;
@@ -194,8 +195,9 @@ void Geometry::CreatePolyFromVertices_Order() {
 	sh.nbFacet++;
 	facets = (Facet **)realloc(facets, sh.nbFacet * sizeof(Facet *));
 	facets[sh.nbFacet - 1] = new Facet((int)selectedVertexList.size());
-	facets[sh.nbFacet - 1]->sh.sticking = 0.0;
-	facets[sh.nbFacet - 1]->sh.sticking = DES_NONE;
+	//facets[sh.nbFacet - 1]->sh.sticking = 0.0;
+	//facets[sh.nbFacet - 1]->sh.sticking = DES_NONE;
+	if (viewStruct != -1) facets[sh.nbFacet - 1]->sh.superIdx = viewStruct;
 	//set selection
 	UnSelectAll();
 	facets[sh.nbFacet - 1]->selected = TRUE;
@@ -1004,17 +1006,17 @@ void Geometry::RemoveSelected() {
 	RemoveFacets(facetIdList);
 }
 
-void Geometry::RemoveFacets(const std::vector<size_t> &facetIdList) {
+void Geometry::RemoveFacets(const std::vector<size_t> &facetIdList, BOOL doNotDestroy) {
 	Facet   **f = (Facet **)malloc((sh.nbFacet - facetIdList.size()) * sizeof(Facet *));
 	std::vector<BOOL> facetSelected(sh.nbFacet, FALSE);
 	for (size_t toRemove : facetIdList) {
 		facetSelected[toRemove] = TRUE;
 	}
-
+	
 	size_t nb = 0;
 	for (size_t i = 0; i < sh.nbFacet; i++) {
 		if (facetSelected[i]) {
-			delete facets[i];
+			if (!doNotDestroy) delete facets[i]; //Otherwise it's referenced by an Undo list
 			mApp->RenumberSelections(nb);
 			mApp->RenumberFormulas(nb);
 
@@ -1769,53 +1771,90 @@ std::vector<DeletedFacet> Geometry::SplitSelectedFacets(const VERTEX3D &base, co
 				//Construct orthogonal vector to decide inside/outside
 				intDirOrt2D.u = intDir2D.v;
 				intDirOrt2D.v = -intDir2D.u;
-				/*double angleDir=0; //todo
-				if (!IS_ZERO(intDir2D.u)) angleDir = atan(intDir2D.v / intDir2D.u);
-				_ASSERTE(!IS_ZERO(angleDir));*/
 				//Do the clipping. Algorithm following pseudocode from Graphic Gems V: "Clipping a Concave Polygon", Andrew S. Glassner
 				std::list<ClippingVertex> clipVertices;
-				//clipVertices.reserve(f->sh.nbIndex);
-				for (size_t v = 0;v < f->sh.nbIndex;v++) {
+				//Assure that we begin on either side of the clipping line
+				int currentPos;
+				size_t startIndex = 0;
+				do {
+					double a = Dot(intDirOrt2D, f->vertices2[startIndex] - intPoint2D);
+					if (a > 1E-10) {
+						currentPos = 1;
+					}
+					else if (a < -1E-10) {
+						currentPos = -1;
+					}
+					else {
+						currentPos = 0;
+					}
+					startIndex++;
+				} while (startIndex < f->sh.nbIndex && currentPos == 0);
+
+				if (startIndex == f->sh.nbIndex) continue; //Whole null facet on clipping line...
+
+				startIndex--; //First vertex not on clipping line
+				BOOL areWeInside = (currentPos == 1);
+
+				size_t v = startIndex;
+				do { //Make a circle on the facet
 					ClippingVertex V;
-					ProjectVertex(&vertices3[f->indices[v]], &V.vertex, &f->sh.U, &f->sh.V, &f->sh.O);
+					V.vertex = f->vertices2[v];
 					V.globalId = f->indices[v];
-					//V.next = &(clipVertices[(v+1)%f->sh.nbIndex]); //Verify if this works before push_back!
-					/*double angleVertex = 0;
-					if (!IS_ZERO(V.vertex.u)) angleVertex = atan(V.vertex.v / V.vertex.u);
-					V.inside = angleVertex < angleDir; //Double-check this!*/
 					
 					double a = Dot(intDirOrt2D, V.vertex - intPoint2D);
-					V.inside = (a>=1E-10);
+					if (a > 1E-10) {
+						V.inside = areWeInside = TRUE;
+						V.onClippingLine = FALSE;
+					}
+					else if (a < -1E-10) {
+						V.inside = areWeInside = FALSE;
+						V.onClippingLine = FALSE;
+					}
+					else {
+						V.inside = areWeInside; //Previous point
+						V.onClippingLine = TRUE;
+					}
 					clipVertices.push_back(V);
-				}
-				std::list<std::list<ClippingVertex>::iterator> createdList;
+					v = (v + 1) % f->sh.nbIndex;
+				} while (v != startIndex);
+				//At this point the original vertices are prepared
+				std::list<std::list<ClippingVertex>::iterator> createdList; //Will contain the clipping points
 				std::list<ClippingVertex>::iterator V=clipVertices.begin();
+				size_t nbNewPoints = 0;
 				do {
 					std::list<ClippingVertex>::iterator N= std::next(V);
 					if (N == clipVertices.end()) N = clipVertices.begin();
-					if (V->inside != N->inside) { //side change
-						//Compute location of intersection point P
-						ClippingVertex P;
-						VERTEX2D v = N->vertex - V->vertex;
-						VERTEX2D w = intPoint2D - V->vertex;
-						double s_i = (v.v*w.u - v.u*w.v) / (v.u*intDir2D.v - v.v*intDir2D.u);
-						P.vertex = intPoint2D + intDir2D*s_i;
-						P.globalId = sh.nbVertex + createdList.size();
-						//Insert P in clippingVertices between V and N
-						createdList.push_back(clipVertices.insert(N, P));
-						V++; //iterate to P or end of list
+					if (V->inside != N->inside) { //side change, or leaving (not arriving to!) clipping line
+						if (V->onClippingLine) {
+							createdList.push_back(V); //Just mark V as clipping point, no new vertex required
+						}
+						else  //New vertex
+						{	
+							//Compute location of intersection point P
+							VERTEX2D v = N->vertex - V->vertex;
+							VERTEX2D w = intPoint2D - V->vertex;
+							double s_i = (v.v*w.u - v.u*w.v) / (v.u*intDir2D.v - v.v*intDir2D.u);
+							ClippingVertex P;
+							P.vertex = intPoint2D + intDir2D*s_i;
+							P.globalId = sh.nbVertex + nbNewPoints;
+							nbNewPoints++;
+							createdList.push_back(clipVertices.insert(N, P)); //Insert P in clippingVertices between V and N
+							V++; //iterate to P or end of list
+						}
 					}
 					if (V!=clipVertices.end()) V++; //iterate to N
 				} while (V != clipVertices.end());
 				//Register new vertices and calc distance from clipping line
 				if (createdList.size() > 0) { //If there was a cut
 					_ASSERTE(createdList.size() % 2 == 0);
-					vertices3 = (VERTEX3D*)realloc(vertices3, sizeof(VERTEX3D)*(sh.nbVertex + createdList.size()));
+					if (nbNewPoints) vertices3 = (VERTEX3D*)realloc(vertices3, sizeof(VERTEX3D)*(sh.nbVertex + nbNewPoints));
 					for (std::list<std::list<ClippingVertex>::iterator>::iterator newVertexIterator = createdList.begin();newVertexIterator != createdList.end();newVertexIterator++) {
-						VERTEX3D newCoord3D = f->sh.O + f->sh.U*(*newVertexIterator)->vertex.u + f->sh.V*(*newVertexIterator)->vertex.v;
-						newCoord3D.selected = FALSE;
-						vertices3[sh.nbVertex] = newCoord3D;
-						sh.nbVertex++;
+						if ((*newVertexIterator)->globalId >= sh.nbVertex) {
+							VERTEX3D newCoord3D = f->sh.O + f->sh.U*(*newVertexIterator)->vertex.u + f->sh.V*(*newVertexIterator)->vertex.v;
+							newCoord3D.selected = FALSE;
+							vertices3[sh.nbVertex] = newCoord3D;
+							sh.nbVertex++;
+						}
 						VERTEX2D diff = (*newVertexIterator)->vertex - intPoint2D;
 						(*newVertexIterator)->distance = diff * intDir2D;
 					}
@@ -1857,21 +1896,20 @@ std::vector<DeletedFacet> Geometry::SplitSelectedFacets(const VERTEX3D &base, co
 						for (size_t i = 0;i < newPolyIndices.size();i++) {
 							newFacet->indices[i] = newPolyIndices[i];
 						}
+						newFacet->Copy(f); //Copy physical parameters, structure, etc. - will cause problems with outgassing, though
 						CalculateFacetParam_geometry(newFacet);
-						if (Dot(f->sh.N, newFacet->sh.N) < 0) {
-							newFacet->SwapNormal();
-						}
-						newFacet->selected = TRUE;
-						facets[sh.nbFacet] = newFacet;
-						sh.nbFacet++;
-						
+						/*if (f->sh.area > 0.0) {*/
+							if (Dot(f->sh.N, newFacet->sh.N) < 0) {
+								newFacet->SwapNormal();
+							}
+							newFacet->selected = TRUE;
+							facets[sh.nbFacet] = newFacet;
+							sh.nbFacet++;
+						/*}*/
 					}
 					DeletedFacet df;
 					df.ori_pos = i;
-					df.f = new Facet(f->sh.nbIndex);
-					memcpy(df.f->indices, f->indices, sizeof(int)*f->sh.nbIndex);
-					CalculateFacetParam_geometry(df.f);
-					df.f->Copy(f);
+					df.f = f; //Keep the pointer in memory
 					deletedFacetList.push_back(df);
 				} //end if there was a cut
 		}
@@ -1880,7 +1918,7 @@ std::vector<DeletedFacet> Geometry::SplitSelectedFacets(const VERTEX3D &base, co
 	std::vector<size_t> deletedFacetIds;
 	for (auto deletedFacet : deletedFacetList)
 		deletedFacetIds.push_back(deletedFacet.ori_pos);
-	RemoveFacets(deletedFacetIds);
+	RemoveFacets(deletedFacetIds, TRUE); //We just renumber, keeping the facets in memory
 
 	// Delete old resources
 	DeleteGLLists(TRUE, TRUE);
@@ -2135,6 +2173,83 @@ void Geometry::CalculateFacetParam_geometry(Facet *f) {
 	f->c = C;
 	f->d = D;
 	f->err = max;
+
+	//new part copied from InitGeometry
+
+	//VERTEX3D p0 = vertices3[f->indices[0]];
+	VERTEX3D p1 = vertices3[f->indices[1]];
+
+	VERTEX3D U, V;
+
+	U.x = p1.x - p0.x;
+	U.y = p1.y - p0.y;
+	U.z = p1.z - p0.z;
+
+	double nU = Norme(&U);
+	ScalarMult(&U, 1.0 / nU); // Normalize U
+
+							  // Construct a normal vector V
+	Cross(&V, &(f->sh.N), &U); // |U|=1 and |N|=1 => |V|=1
+
+							   // u,v vertices (we start with p0 at 0,0)
+	f->vertices2[0].u = 0.0;
+	f->vertices2[0].v = 0.0;
+	VERTEX2D BBmin; BBmin.u = 0.0; BBmin.v = 0.0;
+	VERTEX2D BBmax; BBmax.u = 0.0; BBmax.v = 0.0;
+
+	for (int j = 1; j < f->sh.nbIndex; j++) {
+
+		VERTEX3D p = vertices3[f->indices[j]];
+		VERTEX3D v;
+		Sub(&v, &p, &p0); // v = p0p
+		f->vertices2[j].u = Dot(&U, &v);  // Project p on U along the V direction
+		f->vertices2[j].v = Dot(&V, &v);  // Project p on V along the U direction
+
+										  // Bounds
+		if (f->vertices2[j].u > BBmax.u) BBmax.u = f->vertices2[j].u;
+		if (f->vertices2[j].v > BBmax.v) BBmax.v = f->vertices2[j].v;
+		if (f->vertices2[j].u < BBmin.u) BBmin.u = f->vertices2[j].u;
+		if (f->vertices2[j].v < BBmin.v) BBmin.v = f->vertices2[j].v;
+
+	}
+
+	// Calculate facet area (Meister/Gauss formula)
+	double area = 0.0;
+	for (int j = 0; j < f->sh.nbIndex; j++) {
+		int j1 = IDX(j + 1, f->sh.nbIndex);
+		area += f->vertices2[j].u*f->vertices2[j1].v - f->vertices2[j1].u*f->vertices2[j].v;
+	}
+	f->sh.area = fabs(0.5 * area);
+
+	// Compute the 2D basis (O,U,V)
+	double uD = (BBmax.u - BBmin.u);
+	double vD = (BBmax.v - BBmin.v);
+
+	// Origin
+	f->sh.O.x = BBmin.u * U.x + BBmin.v * V.x + p0.x;
+	f->sh.O.y = BBmin.u * U.y + BBmin.v * V.y + p0.y;
+	f->sh.O.z = BBmin.u * U.z + BBmin.v * V.z + p0.z;
+
+	// Rescale U and V vector
+	f->sh.nU = U;
+	ScalarMult(&U, uD);
+	f->sh.U = U;
+
+	f->sh.nV = V;
+	ScalarMult(&V, vD);
+	f->sh.V = V;
+
+	Cross(&(f->sh.Nuv), &U, &V);
+
+	// Rescale u,v coordinates
+	for (int j = 0; j < f->sh.nbIndex; j++) {
+
+		VERTEX2D p = f->vertices2[j];
+		f->vertices2[j].u = (p.u - BBmin.u) / uD;
+		f->vertices2[j].v = (p.v - BBmin.v) / vD;
+
+	}
+
 }
 
 void Geometry::RemoveFromStruct(int numToDel) {

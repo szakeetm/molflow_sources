@@ -124,6 +124,18 @@ SplitFacet::SplitFacet(Geometry *g,Worker *w):GLWindow() {
 
 }
 
+SplitFacet::~SplitFacet() {
+	ClearUndoFacets();
+}
+
+void SplitFacet::ClearUndoFacets() {
+	//Destroy old undo facets
+	for (auto delFacet : deletedFacetList)
+		delete delFacet.f;
+	deletedFacetList.clear();
+	resultLabel->SetText("");
+}
+
 void SplitFacet::ProcessMessage(GLComponent *src,int message) {
   double a,b,c,d;
   int facetNum;
@@ -250,6 +262,8 @@ void SplitFacet::ProcessMessage(GLComponent *src,int message) {
 			SAFE_FREE(vIdx);
 			if (mApp->AskToReset()) {
 				GLProgress *prg = new GLProgress("Splitting facets", "Facet split");
+				
+				ClearUndoFacets();
 				deletedFacetList=geom->SplitSelectedFacets(P0, N, prg);
 				SAFE_DELETE(prg);
 				std::stringstream tmp;
