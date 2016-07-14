@@ -992,25 +992,28 @@ void Geometry::RemoveSelectedVertex() {
 
 void Geometry::RemoveSelected() {
 
+	//Populate list
 	mApp->changedSinceSave = TRUE;
-	int nb = 0;
+	std::vector<size_t> facetIdList;
 	for (int i = 0; i < sh.nbFacet; i++)
-		if (facets[i]->selected) nb++;
+		if (facets[i]->selected) facetIdList.push_back(i);
 
-	if (nb == 0) return;
-	/*
-	if(sh.nbFacet-nb==0) {
-	// Remove all
-	Clear();
-	return;
+	if (facetIdList.size() == 0) return;
+
+	//Execute removal
+	RemoveFacets(facetIdList);
+}
+
+void Geometry::RemoveFacets(const std::vector<size_t> &facetIdList) {
+	Facet   **f = (Facet **)malloc((sh.nbFacet - facetIdList.size()) * sizeof(Facet *));
+	std::vector<BOOL> facetSelected(sh.nbFacet, FALSE);
+	for (size_t toRemove : facetIdList) {
+		facetSelected[toRemove] = TRUE;
 	}
-	*/
 
-	Facet   **f = (Facet **)malloc((sh.nbFacet - nb) * sizeof(Facet *));
-
-	nb = 0;
-	for (int i = 0; i < sh.nbFacet; i++) {
-		if (facets[i]->selected) {
+	size_t nb = 0;
+	for (size_t i = 0; i < sh.nbFacet; i++) {
+		if (facetSelected[i]) {
 			delete facets[i];
 			mApp->RenumberSelections(nb);
 			mApp->RenumberFormulas(nb);
@@ -1027,7 +1030,6 @@ void Geometry::RemoveSelected() {
 
 	// Delete old resources
 	DeleteGLLists(TRUE, TRUE);
-
 	BuildGLList();
 }
 
