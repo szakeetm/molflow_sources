@@ -176,7 +176,16 @@ void SplitFacet::ProcessMessage(GLComponent *src,int message) {
 		EnableDisableControls(planeMode);
 	}
     else if(src==undoButton) {
-
+		geom->RemoveSelected();
+		geom->RestoreFacets(deletedFacetList);
+		deletedFacetList.clear();
+		undoButton->SetEnabled(FALSE);
+		resultLabel->SetText("");
+		//Renumberformula
+		work->Reload();
+		mApp->UpdateModelParams();
+		mApp->UpdateFacetlistSelected();
+		mApp->UpdateViewers();
     } else if (src==splitButton) {
 		if (geom->GetNbSelected()==0) {
 			GLMessageBox::Display("No facets selected","Nothing to split",GLDLG_OK,GLDLG_ICONERROR);

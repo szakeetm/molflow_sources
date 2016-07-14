@@ -1035,6 +1035,27 @@ void Geometry::RemoveFacets(const std::vector<size_t> &facetIdList, BOOL doNotDe
 	BuildGLList();
 }
 
+void Geometry::RestoreFacets(std::vector<DeletedFacet> deletedFacetList) {
+	size_t pos = 0;
+	size_t nbInsert = 0;
+	Facet** tempFacets = (Facet**)malloc(sizeof(Facet*)*(sh.nbFacet + deletedFacetList.size()));
+	for (auto restoreFacet : deletedFacetList) {
+		for (size_t insertPos = pos;insertPos < restoreFacet.ori_pos;insertPos++) {
+			tempFacets[insertPos] = facets[insertPos - nbInsert];
+		}
+		tempFacets[pos] = restoreFacet.f;
+		pos++;
+		nbInsert++;
+	}
+	//Remaining facets
+	for (size_t insertPos = pos;insertPos < (sh.nbFacet+nbInsert);insertPos++) {
+		tempFacets[insertPos] = facets[insertPos - nbInsert];
+	}
+	sh.nbFacet += nbInsert;
+	facets = tempFacets;
+	InitializeGeometry();
+}
+
 int Geometry::ExplodeSelected(BOOL toMap, int desType, double exponent, double *values) {
 
 
@@ -1913,6 +1934,7 @@ std::vector<DeletedFacet> Geometry::SplitSelectedFacets(const VERTEX3D &base, co
 					deletedFacetList.push_back(df);
 				} //end if there was a cut
 		}
+		f->selected = FALSE;
 	}
 	
 	std::vector<size_t> deletedFacetIds;
