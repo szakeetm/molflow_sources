@@ -1746,8 +1746,9 @@ BOOL Geometry::IntersectingPlaneWithLine(const VERTEX3D &P0, const VERTEX3D &u, 
 	return TRUE;
 }
 
-void Geometry::SplitSelectedFacets(const VERTEX3D &base, const VERTEX3D &normal, /*Worker *worker,*/GLProgress *prg) {
+std::vector<DeletedFacet> Geometry::SplitSelectedFacets(const VERTEX3D &base, const VERTEX3D &normal, /*Worker *worker,*/GLProgress *prg) {
 	mApp->changedSinceSave = TRUE;
+	std::vector<DeletedFacet> deletedFacetList;
 	int oldNbFacets = sh.nbFacet;
 	for (size_t i = 0;i < oldNbFacets; i++) {
 		Facet *f = facets[i];
@@ -1865,19 +1866,26 @@ void Geometry::SplitSelectedFacets(const VERTEX3D &base, const VERTEX3D &normal,
 						sh.nbFacet++;
 						
 					}
-				}
-				f->selected = FALSE;
+					DeletedFacet df;
+					df.ori_pos = i;
+					df.f = new Facet(f->sh.nbIndex);
+					memcpy(df.f->indices, f->indices, sizeof(int)*f->sh.nbIndex);
+					CalculateFacetParam_geometry(df.f);
+					df.f->Copy(f);
+					deletedFacetList.push_back(df);
+				} //end if there was a cut
 		}
 	}
 	
+	std::vector<size_t> deletedFacetIds;
+	for (auto deletedFacet : deletedFacetList)
+		deletedFacetIds.push_back(deletedFacet.ori_pos);
+	RemoveFacets(deletedFacetIds);
+
 	// Delete old resources
 	DeleteGLLists(TRUE, TRUE);
-
 	InitializeGeometry();
-	mApp->worker.Reload();
-	mApp->UpdateModelParams();
-	mApp->UpdateFacetlistSelected();
-	return;
+	return deletedFacetList;
 }
 
 Facet *Geometry::MergeFacet(Facet *f1, Facet *f2) {

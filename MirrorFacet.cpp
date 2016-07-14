@@ -237,7 +237,7 @@ void MirrorFacet::ProcessMessage(GLComponent *src,int message) {
 					GLMessageBox::Display("Invalid D coefficient","Error",GLDLG_OK,GLDLG_ICONERROR);
 					return;
 				}
-				if ((a==0.0)&&(b==0.0)&&(c==0.0)&&(d==0.0)) {
+				if ((a==0.0)&&(b==0.0)&&(c==0.0)) {
 					GLMessageBox::Display("A, B, C are all zero. That's not a plane.","Error",GLDLG_OK,GLDLG_ICONERROR);
 					return;
 				}

@@ -165,9 +165,10 @@ MolFlow *mApp;
 #define MENU_FACET_OUTGASSINGMAP 335
 #define MENU_FACET_CREATE_DIFFERENCE 336
 #define MENU_FACET_EXTRUDE 337
+#define MENU_FACET_SPLIT   338
 
-#define MENU_SELECTION_ADDNEW             338
-#define MENU_SELECTION_CLEARALL           339
+#define MENU_SELECTION_ADDNEW             3380
+#define MENU_SELECTION_CLEARALL           3390
 
 #define MENU_SELECTION_MEMORIZESELECTIONS   3300
 #define MENU_SELECTION_SELECTIONS           3400
@@ -321,6 +322,7 @@ MolFlow::MolFlow()
 	moveFacet = NULL;
 	extrudeFacet = NULL;
 	mirrorFacet = NULL;
+	splitFacet = NULL;
 	rotateFacet = NULL;
 	movement = NULL;
 	alignFacet = NULL;
@@ -474,7 +476,6 @@ int MolFlow::OneTimeSceneInit()
 	menu->GetSubMenu("Selection")->Add(NULL); // Separator
 	menu->GetSubMenu("Selection")->Add("Select all vertex", MENU_VERTEX_SELECTALL);
 	menu->GetSubMenu("Selection")->Add("Unselect all vertex", MENU_VERTEX_UNSELECTALL);
-	menu->GetSubMenu("Selection")->Add("Select Isolated vertex", MENU_VERTEX_SELECT_ISOLATED);
 	menu->GetSubMenu("Selection")->Add("Select Coplanar vertex (visible on screen)", MENU_VERTEX_SELECT_COPLANAR);
 
 
@@ -505,6 +506,7 @@ int MolFlow::OneTimeSceneInit()
 	menu->GetSubMenu("Facet")->Add("Rotate ...", MENU_FACET_ROTATE);
 	menu->GetSubMenu("Facet")->Add("Align ...", MENU_FACET_ALIGN);
 	menu->GetSubMenu("Facet")->Add("Extrude ...", MENU_FACET_EXTRUDE);
+	menu->GetSubMenu("Facet")->Add("Split ...", MENU_FACET_SPLIT);
 	menu->GetSubMenu("Facet")->Add("Remove selected", MENU_FACET_REMOVESEL, SDLK_DELETE, CTRL_MODIFIER);
 	menu->GetSubMenu("Facet")->Add("Explode selected", MENU_FACET_EXPLODE);
 	menu->GetSubMenu("Facet")->Add("Create difference of 2", MENU_FACET_CREATE_DIFFERENCE);
@@ -530,6 +532,7 @@ int MolFlow::OneTimeSceneInit()
 	menu->GetSubMenu("Vertex")->Add("Create Facet from Selected");
 	menu->GetSubMenu("Vertex")->GetSubMenu("Create Facet from Selected")->Add("Convex Hull", MENU_VERTEX_CREATE_POLY_CONVEX, SDLK_v, ALT_MODIFIER);
 	menu->GetSubMenu("Vertex")->GetSubMenu("Create Facet from Selected")->Add("Keep selection order", MENU_VERTEX_CREATE_POLY_ORDER);
+	menu->GetSubMenu("Vertex")->Add("Select isolated", MENU_VERTEX_SELECT_ISOLATED);
 	menu->GetSubMenu("Vertex")->Add("Remove selected", MENU_VERTEX_REMOVE);
 	menu->GetSubMenu("Vertex")->Add("Vertex coordinates...", MENU_VERTEX_COORDINATES);
 	menu->GetSubMenu("Vertex")->Add("Move selected...", MENU_VERTEX_MOVE);
@@ -580,8 +583,8 @@ int MolFlow::OneTimeSceneInit()
 	//Quick test pipe
 	menu->GetSubMenu("Test")->Add(NULL);
 	menu->GetSubMenu("Test")->Add("Quick Pipe", MENU_QUICKPIPE, SDLK_q, ALT_MODIFIER);
-	menu->GetSubMenu("Test")->Add(NULL);
-	menu->GetSubMenu("Test")->Add("Cut by XZ plane", MENU_TEST_CUT_BY_XZ);
+	//menu->GetSubMenu("Test")->Add(NULL);
+	//menu->GetSubMenu("Test")->Add("Cut by XZ plane", MENU_TEST_CUT_BY_XZ);
 
 	/*profilePlotterShortcut=new GLButton(0,"Profile Plotter");
 	Add(profilePlotterShortcut);
@@ -2301,6 +2304,7 @@ int MolFlow::RestoreDeviceObjects()
 	RVALIDATE_DLG(moveFacet);
 	RVALIDATE_DLG(extrudeFacet);
 	RVALIDATE_DLG(mirrorFacet);
+	RVALIDATE_DLG(splitFacet);
 	RVALIDATE_DLG(rotateFacet);
 	RVALIDATE_DLG(movement);
 	RVALIDATE_DLG(alignFacet);
@@ -2347,6 +2351,7 @@ int MolFlow::InvalidateDeviceObjects()
 	IVALIDATE_DLG(moveFacet);
 	IVALIDATE_DLG(extrudeFacet);
 	IVALIDATE_DLG(mirrorFacet);
+	IVALIDATE_DLG(splitFacet);
 	IVALIDATE_DLG(rotateFacet);
 	IVALIDATE_DLG(alignFacet);
 	IVALIDATE_DLG(addVertex);
@@ -3303,10 +3308,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			if (AskToReset()) {
 				geom->ShiftVertex();
 				// Send to sub process
-				try { worker.Reload(); }
-				catch (Error &e) {
-					GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
-				}
+				worker.Reload();
 			}
 			break;
 		case MENU_FACET_COORDINATES:
@@ -3333,6 +3335,13 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		case MENU_FACET_MIRROR:
 			if (!mirrorFacet) mirrorFacet = new MirrorFacet(geom, &worker);
 			mirrorFacet->SetVisible(TRUE);
+			break;
+		case MENU_FACET_SPLIT:			
+			if (!splitFacet || !splitFacet->IsVisible()) {
+				SAFE_DELETE(splitFacet);
+				splitFacet = new SplitFacet(geom, &worker);
+				splitFacet->SetVisible(TRUE);
+			}
 			break;
 		case MENU_FACET_ROTATE:
 			if (!rotateFacet) rotateFacet = new RotateFacet(geom, &worker);

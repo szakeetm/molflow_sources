@@ -354,7 +354,7 @@ GLChartOptions::GLChartOptions(GLChart *chart) : GLTabWindow() {
         return;
       }
       double d;
-      if( sscanf(generalDurationText->GetText(),"%f",&d)<=0 ) {
+      if( sscanf(generalDurationText->GetText(),"%lf",&d)<=0 ) {
         error("Display duration: malformed number.");
         d = chart->GetDisplayDuration();
         if(d==MAX_VALUE) sprintf(tmp,"Infinity");

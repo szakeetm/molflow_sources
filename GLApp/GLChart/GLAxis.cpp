@@ -2064,7 +2064,7 @@ GLuint GLAxis::initMarker(char *name) {
           if (labelFormat != TIME_FORMAT && labelFormat != DATE_FORMAT)
           {
             double t;
-            sscanf(tempValue,"%f",&t);
+            sscanf(tempValue,"%lf",&t);
             diff = fabs(t - vt);
           }
           if (strcmp(lastLabelText,tempValue)==0)
