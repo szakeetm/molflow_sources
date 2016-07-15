@@ -110,7 +110,7 @@ public:
   void Extrude(int mode,VERTEX3D radiusBase,VERTEX3D offsetORradiusdir, BOOL againstNormal,double distanceORradius,double totalAngle,int steps);
   void RemoveSelected();
   void RemoveFacets(const std::vector<size_t> &facetIdList,BOOL doNotDestroy=FALSE);
-  void RestoreFacets(std::vector<DeletedFacet> deletedFacetList);
+  void RestoreFacets(std::vector<DeletedFacet> deletedFacetList,BOOL toEnd);
   void RemoveSelectedVertex();
   void RemoveFromStruct(int numToDel);
   BOOL RemoveCollinear();
@@ -119,7 +119,7 @@ public:
   void MoveSelectedVertex(double dX,double dY,double dZ,BOOL copy,Worker *worker);
   void ScaleSelectedVertices(VERTEX3D invariant,double factor,BOOL copy,Worker *worker);
   void ScaleSelectedFacets(VERTEX3D invariant,double factorX,double factorY,double factorZ,BOOL copy,Worker *worker);
-  std::vector<DeletedFacet> SplitSelectedFacets(const VERTEX3D &base, const VERTEX3D &normal, /*Worker *worker,*/GLProgress *prg=NULL);
+  std::vector<DeletedFacet> SplitSelectedFacets(const VERTEX3D &base, const VERTEX3D &normal, size_t *nbCreated,/*Worker *worker,*/GLProgress *prg=NULL);
   BOOL IntersectingPlaneWithLine(const VERTEX3D &P0, const VERTEX3D &u, const VERTEX3D &V0, const VERTEX3D &n, VERTEX3D *intersectPoint);
   void MoveSelectedFacets(double dX,double dY,double dZ,BOOL copy,Worker *worker);
   void MirrorSelectedFacets(VERTEX3D P0,VERTEX3D N,BOOL copy,Worker *worker);

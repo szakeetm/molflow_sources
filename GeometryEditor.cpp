@@ -1035,22 +1035,38 @@ void Geometry::RemoveFacets(const std::vector<size_t> &facetIdList, BOOL doNotDe
 	BuildGLList();
 }
 
-void Geometry::RestoreFacets(std::vector<DeletedFacet> deletedFacetList) {
+void Geometry::RestoreFacets(std::vector<DeletedFacet> deletedFacetList,BOOL toEnd) {
+	Facet** tempFacets = (Facet**)malloc(sizeof(Facet*)*(sh.nbFacet + deletedFacetList.size()));
 	size_t pos = 0;
 	size_t nbInsert = 0;
-	Facet** tempFacets = (Facet**)malloc(sizeof(Facet*)*(sh.nbFacet + deletedFacetList.size()));
-	for (auto restoreFacet : deletedFacetList) {
-		for (size_t insertPos = pos;insertPos < restoreFacet.ori_pos;insertPos++) {
+	if (toEnd) { //insert to end
+		for (size_t insertPos = 0;insertPos < sh.nbFacet;insertPos++) { //Original facets
+			tempFacets[insertPos] = facets[insertPos];
+		}
+		for (auto restoreFacet : deletedFacetList) {
+				tempFacets[sh.nbFacet + nbInsert] = restoreFacet.f;
+				tempFacets[sh.nbFacet + nbInsert]->selected = TRUE;
+				nbInsert++;
+		}
+	}
+	else { //Insert to original locations
+		
+		for (auto restoreFacet : deletedFacetList) {
+			for (size_t insertPos = pos;insertPos < restoreFacet.ori_pos;insertPos++) {
+				tempFacets[insertPos] = facets[insertPos - nbInsert];
+				pos++;
+			}
+			tempFacets[pos] = restoreFacet.f;
+			tempFacets[pos]->selected = TRUE;
+			pos++;
+			nbInsert++;
+		}
+		//Remaining facets
+		for (size_t insertPos = pos;insertPos < (sh.nbFacet + nbInsert);insertPos++) {
 			tempFacets[insertPos] = facets[insertPos - nbInsert];
 		}
-		tempFacets[pos] = restoreFacet.f;
-		pos++;
-		nbInsert++;
 	}
-	//Remaining facets
-	for (size_t insertPos = pos;insertPos < (sh.nbFacet+nbInsert);insertPos++) {
-		tempFacets[insertPos] = facets[insertPos - nbInsert];
-	}
+
 	sh.nbFacet += nbInsert;
 	facets = tempFacets;
 	InitializeGeometry();
@@ -1769,7 +1785,7 @@ BOOL Geometry::IntersectingPlaneWithLine(const VERTEX3D &P0, const VERTEX3D &u, 
 	return TRUE;
 }
 
-std::vector<DeletedFacet> Geometry::SplitSelectedFacets(const VERTEX3D &base, const VERTEX3D &normal, /*Worker *worker,*/GLProgress *prg) {
+std::vector<DeletedFacet> Geometry::SplitSelectedFacets(const VERTEX3D &base, const VERTEX3D &normal, size_t *nbCreated,/*Worker *worker,*/GLProgress *prg) {
 	mApp->changedSinceSave = TRUE;
 	std::vector<DeletedFacet> deletedFacetList;
 	int oldNbFacets = sh.nbFacet;
@@ -1781,8 +1797,11 @@ std::vector<DeletedFacet> Geometry::SplitSelectedFacets(const VERTEX3D &base, co
 			if (!IntersectingPlaneWithLine(f->sh.O, f->sh.U,base, normal,  &intersectionPoint))
 				if (!IntersectingPlaneWithLine(f->sh.O, f->sh.V,base, normal,  &intersectionPoint))
 					if (!IntersectingPlaneWithLine(f->sh.O+f->sh.U, -1.0*f->sh.U, base, normal, &intersectionPoint)) //If origin on cutting plane
-						if (!IntersectingPlaneWithLine(f->sh.O+f->sh.V, -1.0*f->sh.V, base, normal, &intersectionPoint)) //If origin on cutting plane
+						if (!IntersectingPlaneWithLine(f->sh.O + f->sh.V, -1.0*f->sh.V, base, normal, &intersectionPoint)) //If origin on cutting plane
+						{
+							f->selected = FALSE;
 							continue;
+						}
 				//Reduce to a 2D problem in the facet's plane
 				VERTEX2D intPoint2D, intDir2D,intDirOrt2D;
 				ProjectVertex(&intersectionPoint, &intPoint2D, &f->sh.U, &f->sh.V, &f->sh.O);
@@ -1914,6 +1933,7 @@ std::vector<DeletedFacet> Geometry::SplitSelectedFacets(const VERTEX3D &base, co
 					for (auto newPolyIndices : newFacetsIndices) {
 						_ASSERTE(newPolyIndices.size() >= 3);
 						Facet *newFacet = new Facet((int)newPolyIndices.size());
+						(*nbCreated)++;
 						for (size_t i = 0;i < newPolyIndices.size();i++) {
 							newFacet->indices[i] = newPolyIndices[i];
 						}

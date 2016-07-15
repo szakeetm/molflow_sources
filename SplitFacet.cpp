@@ -176,8 +176,17 @@ void SplitFacet::ProcessMessage(GLComponent *src,int message) {
 		EnableDisableControls(planeMode);
 	}
     else if(src==undoButton) {
-		geom->RemoveSelected();
-		geom->RestoreFacets(deletedFacetList);
+		if (nbFacet == geom->GetNbFacet()) { //Assume no change since the split operation
+			std::vector<size_t> newlyCreatedList;
+			for (size_t index = (geom->GetNbFacet() - nbCreated);index < geom->GetNbFacet();index++) {
+				newlyCreatedList.push_back(index);
+			}
+			geom->RemoveFacets(newlyCreatedList);
+			geom->RestoreFacets(deletedFacetList,FALSE); //Restore to original position
+		} else {
+			int answer = GLMessageBox::Display("Geometry changed since split, restore to end without deleting the newly created facets?", "Split undo", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONINFO);
+			geom->RestoreFacets(deletedFacetList, TRUE); //Restore to end
+		}
 		deletedFacetList.clear();
 		undoButton->SetEnabled(FALSE);
 		resultLabel->SetText("");
@@ -273,10 +282,12 @@ void SplitFacet::ProcessMessage(GLComponent *src,int message) {
 				GLProgress *prg = new GLProgress("Splitting facets", "Facet split");
 				
 				ClearUndoFacets();
-				deletedFacetList=geom->SplitSelectedFacets(P0, N, prg);
+				nbCreated = 0;
+				deletedFacetList=geom->SplitSelectedFacets(P0, N, &nbCreated,prg);
+				nbFacet = geom->GetNbFacet();
 				SAFE_DELETE(prg);
 				std::stringstream tmp;
-				tmp << deletedFacetList.size() << " facets split.";
+				tmp << deletedFacetList.size() << " facets split, creating " << nbCreated <<" new.";
 				resultLabel->SetText(tmp.str().c_str());
 				if (deletedFacetList.size() > 0) undoButton->SetEnabled(TRUE);
 				work->Reload();
