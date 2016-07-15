@@ -217,6 +217,7 @@ MolFlow *mApp;
 #define MENU_TEST_PIPE10000       65
 
 #define MENU_QUICKPIPE            66
+#define MENU_TEST_LOFT12          67
 
 //-----------------------------------------------------------------------------
 // Name: WinMain()
@@ -582,7 +583,8 @@ int MolFlow::OneTimeSceneInit()
 	//Quick test pipe
 	menu->GetSubMenu("Test")->Add(NULL);
 	menu->GetSubMenu("Test")->Add("Quick Pipe", MENU_QUICKPIPE, SDLK_q, ALT_MODIFIER);
-
+	menu->GetSubMenu("Test")->Add(NULL);
+	menu->GetSubMenu("Test")->Add("Loft 2 selected facets", MENU_TEST_LOFT12);
 
 	geomNumber = new GLTextField(0, NULL);
 	geomNumber->SetEditable(FALSE);
@@ -3826,6 +3828,13 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			break;
 		case MENU_QUICKPIPE:
 			if (AskToSave()) QuickPipe();
+			break;
+		case MENU_TEST_LOFT12:
+			geom->CreateLoft();
+			worker.Reload();
+			mApp->UpdateModelParams();
+			mApp->UpdateFacetlistSelected();
+			mApp->UpdateViewers();
 			break;
 		}
 		// Load recent menu

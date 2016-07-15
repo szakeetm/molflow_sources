@@ -2324,3 +2324,134 @@ void Geometry::RemoveFromStruct(int numToDel) {
 	facets = f;
 	sh.nbFacet = nb;
 }
+
+void Geometry::CreateLoft() {
+	struct loftIndex {
+		size_t index;
+		BOOL visited;
+	};
+	//Find first two selected facets
+	int nbFound = 0;
+	Facet *f1, *f2;
+	for (size_t i = 0;nbFound < 2 && i < sh.nbFacet;i++) {
+		if (facets[i]->selected) {
+			if (nbFound == 0) f1 = facets[i];
+			else f2 = facets[i];
+			facets[i]->selected = FALSE;
+			nbFound++;
+		}
+	}
+	if (!(nbFound == 2)) return;
+	int incrementDir = (Dot(f1->sh.N, f2->sh.N) > 0) ? -1 : 1;
+	
+	std::vector<loftIndex> closestIndices1; closestIndices1.resize(f1->sh.nbIndex);
+	std::vector<loftIndex> closestIndices2; closestIndices2.resize(f2->sh.nbIndex);
+	for (auto closest : closestIndices1)
+		closest.visited = FALSE;
+	for (auto closest : closestIndices2)
+		closest.visited = FALSE;
+
+	for (size_t i1= 0;i1 < f1->sh.nbIndex;i1++) {
+		//Find closest point on other facet
+		double min = 9E99;
+		size_t minPos;
+		for (size_t i2 = 0;i2 < f2->sh.nbIndex;i2++) {
+			VERTEX2D projection;
+			ProjectVertex(&vertices3[f2->indices[i2]], &projection, &f1->sh.U, &f1->sh.V, &f1->sh.O);
+			double dist = Norme(projection - f1->vertices2[i1]);
+			if (dist < min) {
+				min = dist;
+				minPos = i2;
+			}
+		}
+		//Make pair
+		closestIndices1[i1].index = minPos;
+		closestIndices2[minPos].index = i1;
+		closestIndices1[i1].visited = closestIndices2[minPos].visited = TRUE;
+	}
+	//Revisit those on f2 without a link
+	for (size_t i2 = 0;i2 < f2->sh.nbIndex;i2++) {
+		//Find closest point on other facet
+		if (!closestIndices2[i2].visited) {
+			double min = 9E99;
+			size_t minPos;
+			for (size_t i1 = 0;i1 < f1->sh.nbIndex;i1++) {
+				VERTEX2D projection;
+				ProjectVertex(&vertices3[f1->indices[i1]], &projection, &f2->sh.U, &f2->sh.V, &f2->sh.O);
+				double dist = Norme(projection - f2->vertices2[i2]);
+				if (dist < min) {
+					min = dist;
+					minPos = i1;
+				}
+			}
+			//Make pair
+			closestIndices2[i2].index = minPos;
+			//closestIndices1[minPos].index = i2; //Alerady assigned
+			closestIndices2[i2].visited = TRUE;
+		}
+	}
+	//Link created
+	std::vector<Facet*> newFacets;
+	for (size_t i1 = 0;i1 < f1->sh.nbIndex;i1++) {
+		//Look for smaller points in increasing direction
+		for (size_t i2 = (closestIndices1[i1].index+1)%f2->sh.nbIndex;closestIndices2[i2].index==i1;i2=(i2+1)%f2->sh.nbIndex){
+			//Create triangle
+			Facet *newFacet = new Facet(3);
+			newFacet->indices[0] = f1->indices[i1];
+			newFacet->indices[1] = f2->indices[Remainder(i2-1,f2->sh.nbIndex)];
+			newFacet->indices[2] = f2->indices[i2];
+			newFacet->selected = TRUE;
+			newFacet->SwapNormal();
+			newFacets.push_back(newFacet);
+		}
+		//Look for smaller points in decreasing direction
+		for (size_t i2 = Remainder(closestIndices1[i1].index - 1 , f2->sh.nbIndex);closestIndices2[i2].index == i1;i2 = Remainder(i2 - 1 , f2->sh.nbIndex)) {
+			//Create triangle
+			Facet *newFacet = new Facet(3);
+			newFacet->indices[0] = f1->indices[i1];
+			newFacet->indices[1] = f2->indices[i2];
+			newFacet->indices[2] = f2->indices[(i2 + 1)%f2->sh.nbIndex];
+			newFacet->selected = TRUE;
+			newFacet->SwapNormal();
+			newFacets.push_back(newFacet);
+		}
+		//Create rectangle
+		BOOL triangle = f2->indices[closestIndices1[(i1 + 1) % f1->sh.nbIndex].index] == f2->indices[closestIndices1[i1].index];
+		Facet *newFacet = new Facet(triangle?3:4);
+		newFacet->indices[0] = f1->indices[i1];
+		newFacet->indices[1] = f1->indices[(i1 + 1)%f1->sh.nbIndex];
+		//Find last vertex on other facet that's closest to us
+		size_t increment;
+		for (increment = 0;closestIndices2[Remainder(closestIndices1[(i1 + 1) % f1->sh.nbIndex].index + increment + incrementDir,f2->sh.nbIndex)].index == ((i1 + 1) % f1->sh.nbIndex);increment+=incrementDir);
+		newFacet->indices[2] = f2->indices[Remainder(closestIndices1[(i1 + 1) % f1->sh.nbIndex].index + increment, f2->sh.nbIndex)];
+		if (!triangle) newFacet->indices[3] = f2->indices[Remainder(closestIndices1[(i1 + 1 ) % f1->sh.nbIndex].index+incrementDir+increment,f2->sh.nbIndex)];
+		if (incrementDir == -1) newFacet->SwapNormal();
+		CalculateFacetParam_geometry(newFacet);
+		if (abs(newFacet->err) > 1E-5) {
+			//Split to two triangles
+			int ind4[] = { newFacet->indices[0],newFacet->indices[1], newFacet->indices[2], newFacet->indices[3]};
+			delete newFacet;
+				newFacet = new Facet(3);
+				newFacet->indices[0] = ind4[0];
+				newFacet->indices[1] = ind4[1];
+				newFacet->indices[2] = ind4[2];
+				newFacet->selected = TRUE;
+				newFacet->SwapNormal();
+				newFacets.push_back(newFacet);
+
+				newFacet = new Facet(3);
+				newFacet->indices[0] = ind4[0];
+				newFacet->indices[1] = ind4[2];
+				newFacet->indices[2] = ind4[3];
+		}
+		newFacet->SwapNormal();
+		newFacet->selected = TRUE;
+		newFacets.push_back(newFacet);
+	}
+	//Register new facets
+	if (newFacets.size()>0) facets = (Facet**)realloc(facets, sizeof(Facet*)*(sh.nbFacet + newFacets.size()));
+	for (size_t i=0;i < newFacets.size();i++)
+		facets[sh.nbFacet + i] = newFacets[i];
+	sh.nbFacet += newFacets.size();
+	InitializeGeometry();
+}

@@ -113,6 +113,7 @@ public:
   void RestoreFacets(std::vector<DeletedFacet> deletedFacetList,BOOL toEnd);
   void RemoveSelectedVertex();
   void RemoveFromStruct(int numToDel);
+  void CreateLoft();
   BOOL RemoveCollinear();
   int  ExplodeSelected(BOOL toMap=FALSE,int desType=1,double exponent=0.0,double *values=NULL);
   void SelectCoplanar(int width,int height,double tolerance);
