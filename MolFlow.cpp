@@ -166,6 +166,7 @@ MolFlow *mApp;
 #define MENU_FACET_CREATE_DIFFERENCE 336
 #define MENU_FACET_EXTRUDE 337
 #define MENU_FACET_SPLIT   338
+#define MENU_FACET_LOFT          339
 
 #define MENU_SELECTION_ADDNEW             3380
 #define MENU_SELECTION_CLEARALL           3390
@@ -175,10 +176,11 @@ MolFlow *mApp;
 #define MENU_SELECTION_CLEARSELECTIONS      3500
 
 #define MENU_SELECTION_SELECTFACETNUMBER 360
+#define MENU_SELECTION_ISOLATED_VERTEX 361
 
 #define MENU_VERTEX_SELECTALL   701
 #define MENU_VERTEX_UNSELECTALL 702
-#define MENU_VERTEX_SELECT_ISOLATED 703
+#define MENU_VERTEX_CLEAR_ISOLATED 703
 #define MENU_VERTEX_CREATE_POLY_CONVEX   7040
 #define MENU_VERTEX_CREATE_POLY_ORDER    7041
 #define MENU_VERTEX_SELECT_COPLANAR   705
@@ -217,7 +219,6 @@ MolFlow *mApp;
 #define MENU_TEST_PIPE10000       65
 
 #define MENU_QUICKPIPE            66
-#define MENU_TEST_LOFT12          67
 
 //-----------------------------------------------------------------------------
 // Name: WinMain()
@@ -476,7 +477,8 @@ int MolFlow::OneTimeSceneInit()
 	menu->GetSubMenu("Selection")->Add(NULL); // Separator
 	menu->GetSubMenu("Selection")->Add("Select all vertex", MENU_VERTEX_SELECTALL);
 	menu->GetSubMenu("Selection")->Add("Unselect all vertex", MENU_VERTEX_UNSELECTALL);
-	menu->GetSubMenu("Selection")->Add("Select Coplanar vertex (visible on screen)", MENU_VERTEX_SELECT_COPLANAR);
+	menu->GetSubMenu("Selection")->Add("Select coplanar vertex (visible on screen)", MENU_VERTEX_SELECT_COPLANAR);
+	menu->GetSubMenu("Selection")->Add("Select isolated vertex", MENU_SELECTION_ISOLATED_VERTEX);
 
 
 	menu->Add("Tools");
@@ -509,7 +511,8 @@ int MolFlow::OneTimeSceneInit()
 	menu->GetSubMenu("Facet")->Add("Split ...", MENU_FACET_SPLIT);
 	menu->GetSubMenu("Facet")->Add("Remove selected", MENU_FACET_REMOVESEL, SDLK_DELETE, CTRL_MODIFIER);
 	menu->GetSubMenu("Facet")->Add("Explode selected", MENU_FACET_EXPLODE);
-	menu->GetSubMenu("Facet")->Add("Create difference of 2", MENU_FACET_CREATE_DIFFERENCE);
+	menu->GetSubMenu("Facet")->Add("Difference of 2", MENU_FACET_CREATE_DIFFERENCE);
+	menu->GetSubMenu("Facet")->Add("Transition between 2", MENU_FACET_LOFT);
 	menu->GetSubMenu("Facet")->Add("Convert to outgassing map...", MENU_FACET_OUTGASSINGMAP);
 	menu->GetSubMenu("Facet")->Add(NULL); // Separator
 
@@ -532,7 +535,7 @@ int MolFlow::OneTimeSceneInit()
 	menu->GetSubMenu("Vertex")->Add("Create Facet from Selected");
 	menu->GetSubMenu("Vertex")->GetSubMenu("Create Facet from Selected")->Add("Convex Hull", MENU_VERTEX_CREATE_POLY_CONVEX, SDLK_v, ALT_MODIFIER);
 	menu->GetSubMenu("Vertex")->GetSubMenu("Create Facet from Selected")->Add("Keep selection order", MENU_VERTEX_CREATE_POLY_ORDER);
-	menu->GetSubMenu("Vertex")->Add("Select isolated", MENU_VERTEX_SELECT_ISOLATED);
+	menu->GetSubMenu("Vertex")->Add("Clear isolated", MENU_VERTEX_CLEAR_ISOLATED);
 	menu->GetSubMenu("Vertex")->Add("Remove selected", MENU_VERTEX_REMOVE);
 	menu->GetSubMenu("Vertex")->Add("Vertex coordinates...", MENU_VERTEX_COORDINATES);
 	menu->GetSubMenu("Vertex")->Add("Move selected...", MENU_VERTEX_MOVE);
@@ -583,8 +586,6 @@ int MolFlow::OneTimeSceneInit()
 	//Quick test pipe
 	menu->GetSubMenu("Test")->Add(NULL);
 	menu->GetSubMenu("Test")->Add("Quick Pipe", MENU_QUICKPIPE, SDLK_q, ALT_MODIFIER);
-	menu->GetSubMenu("Test")->Add(NULL);
-	menu->GetSubMenu("Test")->Add("Loft 2 selected facets", MENU_TEST_LOFT12);
 
 	geomNumber = new GLTextField(0, NULL);
 	geomNumber->SetEditable(FALSE);
@@ -3619,8 +3620,12 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		case MENU_VERTEX_SELECTALL:
 			geom->SelectAllVertex();
 			break;
-		case MENU_VERTEX_SELECT_ISOLATED:
+		case MENU_SELECTION_ISOLATED_VERTEX:
 			geom->SelectIsolatedVertices();
+			break;
+		case MENU_VERTEX_CLEAR_ISOLATED:
+			geom->SelectIsolatedVertices();
+			geom->RemoveSelectedVertex();
 			break;
 		case MENU_VERTEX_CREATE_POLY_CONVEX:
 			if (AskToReset()) {
@@ -3674,6 +3679,19 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 				}
 			}
 			else GLMessageBox::Display("No geometry loaded.", "No geometry", GLDLG_OK, GLDLG_ICONERROR);
+			break;
+		case MENU_FACET_LOFT:
+			if (geom->GetNbSelected() != 2) {
+				GLMessageBox::Display("Select exactly 2 facets", "Can't create loft", GLDLG_OK, GLDLG_ICONERROR);
+				return;
+			}
+			if (AskToReset()) {
+				geom->CreateLoft();
+			}
+			worker.Reload();
+			mApp->UpdateModelParams();
+			mApp->UpdateFacetlistSelected();
+			mApp->UpdateViewers();
 			break;
 
 		case MENU_VERTEX_SELECT_COPLANAR:
@@ -3828,13 +3846,6 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			break;
 		case MENU_QUICKPIPE:
 			if (AskToSave()) QuickPipe();
-			break;
-		case MENU_TEST_LOFT12:
-			geom->CreateLoft();
-			worker.Reload();
-			mApp->UpdateModelParams();
-			mApp->UpdateFacetlistSelected();
-			mApp->UpdateViewers();
 			break;
 		}
 		// Load recent menu

@@ -2194,6 +2194,8 @@ void Geometry::CalculateFacetParam_geometry(Facet *f) {
 	f->sh.center.y = (f->sh.bb.max.y + f->sh.bb.min.y) / 2.0;
 	f->sh.center.z = (f->sh.bb.max.z + f->sh.bb.min.z) / 2.0;
 
+	
+
 	// Plane equation
 	double A = f->sh.N.x;
 	double B = f->sh.N.y;
@@ -2281,6 +2283,12 @@ void Geometry::CalculateFacetParam_geometry(Facet *f) {
 	ScalarMult(&V, vD);
 	f->sh.V = V;
 
+	//Center might not be on the facet's plane
+	VERTEX2D projectedCenter;
+	ProjectVertex(&f->sh.center, &projectedCenter, &f->sh.U, &f->sh.V, &f->sh.O);
+	f->sh.center = f->sh.O + projectedCenter.u*f->sh.U + projectedCenter.v*f->sh.V;
+
+
 	Cross(&(f->sh.Nuv), &U, &V);
 
 	// Rescale u,v coordinates
@@ -2351,6 +2359,17 @@ void Geometry::CreateLoft() {
 	for (auto closest : closestIndices2)
 		closest.visited = FALSE;
 
+	double u1Length = Norme(&f1->sh.U);
+	double v1Length = Norme(&f1->sh.V);
+	double u2Length = Norme(&f2->sh.U);
+	double v2Length = Norme(&f2->sh.V);
+
+	VERTEX2D center2Pos;
+	ProjectVertex(&f2->sh.center, &center2Pos, &f1->sh.U, &f1->sh.V, &f1->sh.O);
+	VERTEX2D center1Pos;
+	ProjectVertex(&f1->sh.center, &center1Pos, &f1->sh.U, &f1->sh.V, &f1->sh.O);
+	VERTEX2D centerOffset = center1Pos - center2Pos; //aligns centers
+
 	for (size_t i1= 0;i1 < f1->sh.nbIndex;i1++) {
 		//Find closest point on other facet
 		double min = 9E99;
@@ -2358,7 +2377,8 @@ void Geometry::CreateLoft() {
 		for (size_t i2 = 0;i2 < f2->sh.nbIndex;i2++) {
 			VERTEX2D projection;
 			ProjectVertex(&vertices3[f2->indices[i2]], &projection, &f1->sh.U, &f1->sh.V, &f1->sh.O);
-			double dist = Norme(projection - f1->vertices2[i1]);
+			projection = projection + centerOffset;
+			double dist = pow(u1Length*(projection.u - f1->vertices2[i1].u), 2.0)+ pow(v1Length*(projection.v - f1->vertices2[i1].v), 2.0); //We need the absolute distance
 			if (dist < min) {
 				min = dist;
 				minPos = i2;
@@ -2369,6 +2389,12 @@ void Geometry::CreateLoft() {
 		closestIndices2[minPos].index = i1;
 		closestIndices1[i1].visited = closestIndices2[minPos].visited = TRUE;
 	}
+
+	
+	ProjectVertex(&f2->sh.center, &center2Pos, &f2->sh.U, &f2->sh.V, &f2->sh.O);
+	
+	ProjectVertex(&f1->sh.center, &center1Pos, &f2->sh.U, &f2->sh.V, &f2->sh.O);
+	centerOffset = center2Pos - center1Pos;
 	//Revisit those on f2 without a link
 	for (size_t i2 = 0;i2 < f2->sh.nbIndex;i2++) {
 		//Find closest point on other facet
@@ -2378,7 +2404,8 @@ void Geometry::CreateLoft() {
 			for (size_t i1 = 0;i1 < f1->sh.nbIndex;i1++) {
 				VERTEX2D projection;
 				ProjectVertex(&vertices3[f1->indices[i1]], &projection, &f2->sh.U, &f2->sh.V, &f2->sh.O);
-				double dist = Norme(projection - f2->vertices2[i2]);
+				projection = projection + centerOffset;
+				double dist = pow(u2Length*(projection.u - f2->vertices2[i2].u), 2.0) + pow(v2Length*(projection.v - f2->vertices2[i2].v), 2.0); //We need the absolute distance
 				if (dist < min) {
 					min = dist;
 					minPos = i1;
@@ -2431,18 +2458,21 @@ void Geometry::CreateLoft() {
 			//Split to two triangles
 			int ind4[] = { newFacet->indices[0],newFacet->indices[1], newFacet->indices[2], newFacet->indices[3]};
 			delete newFacet;
-				newFacet = new Facet(3);
-				newFacet->indices[0] = ind4[0];
-				newFacet->indices[1] = ind4[1];
-				newFacet->indices[2] = ind4[2];
-				newFacet->selected = TRUE;
-				newFacet->SwapNormal();
-				newFacets.push_back(newFacet);
+			newFacet = new Facet(3);
+			VERTEX3D diff_0_2 = vertices3[ind4[0]] - vertices3[ind4[2]];
+			VERTEX3D diff_1_3 = vertices3[ind4[1]] - vertices3[ind4[3]];
+			BOOL connect_0_2 = Norme(&diff_0_2) < Norme(&diff_1_3); //Split rectangle to two triangles along shorter side
+			newFacet->indices[0] = ind4[0];
+			newFacet->indices[1] = ind4[1];
+			newFacet->indices[2] = ind4[connect_0_2?2:3];
+			newFacet->selected = TRUE;
+			newFacet->SwapNormal();
+			newFacets.push_back(newFacet);
 
-				newFacet = new Facet(3);
-				newFacet->indices[0] = ind4[0];
-				newFacet->indices[1] = ind4[2];
-				newFacet->indices[2] = ind4[3];
+			newFacet = new Facet(3);
+			newFacet->indices[0] = ind4[connect_0_2 ? 0 : 1];
+			newFacet->indices[1] = ind4[2];
+			newFacet->indices[2] = ind4[3];
 		}
 		newFacet->SwapNormal();
 		newFacet->selected = TRUE;
