@@ -874,8 +874,8 @@ BOOL Facet::BuildMesh() {
 	double sx, sy, A, tA;
 	double iw = 1.0 / (double)sh.texWidthD;
 	double ih = 1.0 / (double)sh.texHeightD;
-	double rw = Norme(&sh.U) * iw;
-	double rh = Norme(&sh.V) * ih;
+	double rw = Norme(sh.U) * iw;
+	double rh = Norme(sh.V) * ih;
 	double *vList;
 	double fA = iw*ih;
 	int    nbv;
@@ -1217,8 +1217,8 @@ size_t Facet::GetTexSwapSize(BOOL useColormap) {
 
 size_t Facet::GetTexSwapSizeForRatio(double ratio, BOOL useColor) {
 
-	double nU = Norme(&(sh.U));
-	double nV = Norme(&(sh.V));
+	double nU = Norme(sh.U);
+	double nV = Norme(sh.V);
 	double width = nU*ratio;
 	double height = nV*ratio;
 
@@ -1255,8 +1255,8 @@ size_t Facet::GetNbCell() {
 
 size_t Facet::GetNbCellForRatio(double ratio) {
 
-	double nU = Norme(&(sh.U));
-	double nV = Norme(&(sh.V));
+	double nU = Norme(sh.U);
+	double nV = Norme(sh.V);
 	double width = nU*ratio;
 	double height = nV*ratio;
 
@@ -1283,8 +1283,8 @@ size_t Facet::GetTexRamSize(size_t nbMoments) {
 }
 
 size_t Facet::GetTexRamSizeForRatio(double ratio, BOOL useMesh, BOOL countDir, size_t nbMoments) {
-	double nU = Norme(&(sh.U));
-	double nV = Norme(&(sh.V));
+	double nU = Norme(sh.U);
+	double nV = Norme(sh.V);
 	double width = nU*ratio;
 	double height = nV*ratio;
 

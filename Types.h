@@ -178,6 +178,11 @@ typedef struct {
 	TEXTURE_SCALE_TYPE density;
 } TEXTURE_LIMITS;*/
 
+struct ProjectedPoint {
+	VERTEX2D vertex2d;
+	size_t globalId;
+};
+
 #define IS_ZERO(x) (fabs((x))<1e-10)
 
 #define DOT2(x1,y1,x2,y2) ((x1)*(x2) + (y1)*(y2))

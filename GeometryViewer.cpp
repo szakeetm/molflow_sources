@@ -1128,7 +1128,7 @@ void GeometryViewer::AutoScale(BOOL reUpdateMouseCursor) {
 	v.x = xMax - org.x;
 	v.y = yMax - org.y;
 	v.z = zFar - org.z;
-	camDistInc = Norme(&v) / 100.0;
+	camDistInc = Norme(v) / 100.0;
 	view.camOffset.x = 0.0;
 	view.camOffset.y = 0.0;
 	view.camOffset.z = 0.0;

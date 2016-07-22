@@ -282,8 +282,7 @@ void FacetCoordinates::RebuildList() {
 void FacetCoordinates::RemoveRow(int rowId){
  lines.erase(lines.begin()+rowId);
  RebuildList();
- 
- facetListC->SetSelectedRow(rowId);
+ if (rowId<facetListC->GetNbRow()) facetListC->SetSelectedRow(rowId);
  int selRow=facetListC->GetSelectedRow()+1;
  insertBeforeButton->SetEnabled(selRow);
  removePosButton->SetEnabled(selRow);

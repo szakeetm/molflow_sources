@@ -438,8 +438,8 @@ void Geometry::CopyGeometryBuffer(BYTE *buffer) {
 			else {
 
 
-				double rw = Norme(&(f->sh.U)) / (double)(f->sh.texWidthD);
-				double rh = Norme(&(f->sh.V)) / (double)(f->sh.texHeightD);
+				double rw = Norme(f->sh.U) / (double)(f->sh.texWidthD);
+				double rh = Norme(f->sh.V) / (double)(f->sh.texHeightD);
 				double area = rw*rh;
 
 				for (int j = 0; j < f->sh.texHeight; j++) {
@@ -915,8 +915,8 @@ void Geometry::BuildFacetList(Facet *f) {
 void Geometry::SetFacetTexture(int facet, double ratio, BOOL mesh) {
 
 	Facet *f = facets[facet];
-	double nU = Norme(&(f->sh.U));
-	double nV = Norme(&(f->sh.V));
+	double nU = Norme(f->sh.U);
+	double nV = Norme(f->sh.V);
 
 	if (!f->SetTexture(nU*ratio, nV*ratio, mesh)) {
 		char errMsg[512];
@@ -1064,8 +1064,8 @@ void Geometry::AdjustProfile() {
 		if (f->sh.profileType == REC_PRESSUREU) {
 			VERTEX3D v0;
 			Sub(&v0, vertices3 + (f->indices[1]), vertices3 + (f->indices[0])); // v0 = P0P1
-			double n0 = Norme(&v0);
-			double nU = Norme(&(f->sh.U));
+			double n0 = Norme(v0);
+			double nU = Norme(f->sh.U);
 			if (IS_ZERO(n0 - nU)) f->sh.profileType = REC_PRESSUREU; // Select U
 			else f->sh.profileType = REC_PRESSUREV; // Select V
 		}
@@ -2415,7 +2415,7 @@ void Geometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *pleak, int *nble
 			throw Error(errMsg);
 		}
 		BuildFacetList(f);
-		double nU = Norme(&(f->sh.U));
+		double nU = Norme(f->sh.U);
 		f->tRatio = f->sh.texWidthD / nU;
 	}
 
@@ -3385,7 +3385,7 @@ void Geometry::ExportProfiles(FILE *file, int isTXT, Dataport *dpHit, Worker *wo
 				std::ostringstream line;
 
 				line << i + 1 << sep << profType[f->sh.profileType] << sep << f->sh.O.x << sep << f->sh.O.y << sep << f->sh.O.z << sep << f->sh.U.x << sep << f->sh.U.y << sep << f->sh.U.z << sep;
-				line << f->sh.V.x << sep << f->sh.V.y << sep << f->sh.V.z << sep << Norme(&f->sh.U) << sep << Norme(&f->sh.V) << sep << f->sh.center.x << sep << f->sh.center.y << sep << f->sh.center.z << sep << f->sh.maxSpeed << sep << f->counterCache.hit.nbHit << sep;
+				line << f->sh.V.x << sep << f->sh.V.y << sep << f->sh.V.z << sep << Norme(f->sh.U) << sep << Norme(f->sh.V) << sep << f->sh.center.x << sep << f->sh.center.y << sep << f->sh.center.z << sep << f->sh.maxSpeed << sep << f->counterCache.hit.nbHit << sep;
 
 				if (f->sh.isProfile) {
 
@@ -3476,8 +3476,8 @@ void Geometry::ImportDesorption_DES(FileReader *file) {
 			f->sh.outgassingFileRatio = 1.0 / f->sh.outgassingFileRatio; //cell size -> samples per cm
 			ratio = f->sh.outgassingFileRatio;
 		}
-		double nU = Norme(&(f->sh.U));
-		double nV = Norme(&(f->sh.V));
+		double nU = Norme(f->sh.U);
+		double nV = Norme(f->sh.V);
 		int w = f->sh.outgassingMapWidth = (int)ceil(nU*ratio); //double precision written to file
 		int h = f->sh.outgassingMapHeight = (int)ceil(nV*ratio); //double precision written to file
 		f->outgassingMap = (double*)malloc(w*h*sizeof(double));
@@ -3739,7 +3739,7 @@ void Geometry::ImportDesorption_SYN(
 			f->sh.outgassingMapHeight = (int)ceil(ydims[i] * 0.9999999);
 
 			if (f->selected) {
-				f->sh.outgassingFileRatio = xdims[i] / Norme(&(f->sh.U));
+				f->sh.outgassingFileRatio = xdims[i] / Norme(f->sh.U);
 				f->outgassingMap = (double*)malloc(f->sh.outgassingMapWidth*f->sh.outgassingMapHeight*sizeof(double));
 				if (!f->outgassingMap) throw Error("Not enough memory to store outgassing map.");
 				memset(f->outgassingMap, 0, f->sh.outgassingMapWidth*f->sh.outgassingMapHeight*sizeof(double)); //set inital values to zero
@@ -4448,7 +4448,7 @@ void Geometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *pr
 			throw Error(errMsg);
 		}
 		BuildFacetList(f);
-		double nU = Norme(&(f->sh.U));
+		double nU = Norme(f->sh.U);
 		f->tRatio = f->sh.texWidthD / nU;
 	}
 }

@@ -37,7 +37,7 @@ GNU General Public License for more details.
 #define APP_NAME "MolFlow+ development version 64-bit (Compiled "__DATE__" "__TIME__") DEBUG MODE"
 #else
 //#define APP_NAME "Molflow+ development version ("__DATE__")"
-#define APP_NAME "Molflow+ 2.7 64-bit ("__DATE__")"
+#define APP_NAME "Molflow+ 2.6.28 64-bit ("__DATE__")"
 #endif
 
 /*
@@ -167,6 +167,7 @@ MolFlow *mApp;
 #define MENU_FACET_EXTRUDE 337
 #define MENU_FACET_SPLIT   338
 #define MENU_FACET_LOFT          339
+#define MENU_FACET_INTERSECT     340
 
 #define MENU_SELECTION_ADDNEW             3380
 #define MENU_SELECTION_CLEARALL           3390
@@ -513,6 +514,7 @@ int MolFlow::OneTimeSceneInit()
 	menu->GetSubMenu("Facet")->Add("Explode selected", MENU_FACET_EXPLODE);
 	menu->GetSubMenu("Facet")->Add("Difference of 2", MENU_FACET_CREATE_DIFFERENCE);
 	menu->GetSubMenu("Facet")->Add("Transition between 2", MENU_FACET_LOFT);
+	menu->GetSubMenu("Facet")->Add("Build intersection", MENU_FACET_INTERSECT);
 	menu->GetSubMenu("Facet")->Add("Convert to outgassing map...", MENU_FACET_OUTGASSINGMAP);
 	menu->GetSubMenu("Facet")->Add(NULL); // Separator
 
@@ -3626,6 +3628,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		case MENU_VERTEX_CLEAR_ISOLATED:
 			geom->SelectIsolatedVertices();
 			geom->RemoveSelectedVertex();
+			UpdateModelParams();
 			break;
 		case MENU_VERTEX_CREATE_POLY_CONVEX:
 			if (AskToReset()) {
@@ -3666,7 +3669,8 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			if (geom->IsLoaded()){
 				try {
 					if (AskToReset()) {
-						geom->CreateDifference();
+						//geom->CreateDifference();
+						geom->ClipSelectedPolygons(ClipperLib::ctDifference);
 					}
 				}
 				catch (Error &e) {
@@ -3687,6 +3691,19 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			}
 			if (AskToReset()) {
 				geom->CreateLoft();
+			}
+			worker.Reload();
+			mApp->UpdateModelParams();
+			mApp->UpdateFacetlistSelected();
+			mApp->UpdateViewers();
+			break;
+		case MENU_FACET_INTERSECT:
+			if (geom->GetNbSelected() < 2) {
+				GLMessageBox::Display("Select at least 2 facets", "Can't create intersection", GLDLG_OK, GLDLG_ICONERROR);
+				return;
+			}
+			if (AskToReset()) {
+				geom->ConstructIntersection();
 			}
 			worker.Reload();
 			mApp->UpdateModelParams();

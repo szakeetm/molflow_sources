@@ -86,7 +86,7 @@ double Dot(const VERTEX2D &v1, const VERTEX2D &v2) {
 	return v1.u*v2.u + v1.v*v2.v;
 }
 
-double Norme(VERTEX3D *v) {
+double Norme(const VERTEX3D &v) {
 	return sqrt(Dot(v, v));
 }
 
@@ -99,7 +99,7 @@ int Remainder(int param, int bound) {
 }
 
 void Normalize(VERTEX3D *v) {
-	double length = Norme(v);
+	double length = Norme(*v);
 	if (length>0.0)
 		ScalarMult(v, 1.0 / length);
 }

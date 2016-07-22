@@ -1000,7 +1000,7 @@ void Geometry::Render(GLfloat *matView, BOOL renderVolume, BOOL renderTexture, i
 			if (f->sh.countDirection && f->dirCache) {
 				double iw = 1.0 / (double)f->sh.texWidthD;
 				double ih = 1.0 / (double)f->sh.texHeightD;
-				double rw = Norme(&f->sh.U) * iw;
+				double rw = Norme(f->sh.U) * iw;
 				for (int x = 0; x < f->sh.texWidth; x++) {
 					for (int y = 0; y<f->sh.texHeight; y++) {
 						int add = x + y*f->sh.texWidth;

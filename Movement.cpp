@@ -286,7 +286,7 @@ void Movement::ProcessMessage(GLComponent *src,int message) {
 				AXIS_P0.x = a; AXIS_P0.y = b; AXIS_P0.z = c;
 				AXIS_DIR.x = u; AXIS_DIR.y = v; AXIS_DIR.z = w;
 
-				if (Norme(&AXIS_DIR) < 1E-5) {
+				if (Norme(AXIS_DIR) < 1E-5) {
 					GLMessageBox::Display("The rotation vector is shorter than 1E-5 cm.\n"
 						"Very likely this is a null vector\n"
 						"If not, increase its coefficients while keeping its direction", "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -466,7 +466,7 @@ void Movement::Update() {
 		rxText->SetText(rot.x);
 		ryText->SetText(rot.y);
 		rzText->SetText(rot.z);
-		double num=Norme(&work->motionVector2)/3.14159*180.0;
+		double num=Norme(work->motionVector2)/3.14159*180.0;
 		degText->SetText(num);
 		rpmText->SetText(num / 6);
 		hzText->SetText(num / 360);

@@ -237,7 +237,7 @@ void SplitFacet::ProcessMessage(GLComponent *src,int message) {
 				Normalize(&V2); // Normalize V2
 
 				VERTEX3D N2 = CrossProduct(V2,U2); //We have a normal vector
-				nN2 = Norme(&N2);
+				nN2 = Norme(N2);
 				if (nN2<1e-8) {
 					GLMessageBox::Display("The 3 selected vertices are on a line.","Can't define plane",GLDLG_OK,GLDLG_ICONERROR);
 					return;

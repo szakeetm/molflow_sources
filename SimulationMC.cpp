@@ -969,7 +969,7 @@ void TreatMovingFacet() {
 	Add(&newVelocity, &oldVelocity, &localVelocityToAdd);
 	sHandle->pDir = newVelocity;
 	Normalize(&sHandle->pDir);
-	sHandle->velocityCurrentParticle = Norme(&newVelocity);
+	sHandle->velocityCurrentParticle = Norme(newVelocity);
 }
 
 void IncreaseFacetCounter(FACET *f,double time, size_t hit,size_t desorb,size_t absorb, double sum_1_per_v, double sum_v_ort) {

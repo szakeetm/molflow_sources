@@ -471,8 +471,8 @@ BOOL LoadSimulation(Dataport *loader) {
 
 				f->iw = 1.0 / (double)f->sh.texWidthD;
 				f->ih = 1.0 / (double)f->sh.texHeightD;
-				f->rw = Norme(&(f->sh.U)) * f->iw;
-				f->rh = Norme(&(f->sh.V)) * f->ih;
+				f->rw = Norme(f->sh.U) * f->iw;
+				f->rh = Norme(f->sh.V) * f->ih;
 			}
 		}
 	}

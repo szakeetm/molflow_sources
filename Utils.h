@@ -72,7 +72,7 @@ VERTEX3D operator*(const double& mult, const VERTEX3D &v1);
 double Dot(VERTEX3D *v1,VERTEX3D *v2);
 double Dot(const VERTEX2D &v1, const VERTEX2D &v2);
 void   Cross(VERTEX3D *result,VERTEX3D *v1,VERTEX3D *v2);
-double Norme(VERTEX3D *v);
+double Norme(const VERTEX3D &v);
 double Norme(const VERTEX2D &v);
 double Norme(VERTEX2D *v1,VERTEX2D *v2);
 void   Normalize(VERTEX3D *v);

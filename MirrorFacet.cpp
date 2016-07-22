@@ -201,17 +201,17 @@ void MirrorFacet::ProcessMessage(GLComponent *src,int message) {
 				U2.x = geom->GetVertex(vIdx[0])->x - geom->GetVertex(vIdx[1])->x;
 				U2.y = geom->GetVertex(vIdx[0])->y - geom->GetVertex(vIdx[1])->y;
 				U2.z = geom->GetVertex(vIdx[0])->z - geom->GetVertex(vIdx[1])->z;
-				nU2 = Norme(&U2);
+				nU2 = Norme(U2);
 				ScalarMult(&U2,1.0/nU2); // Normalize U2
 
 				V2.x = geom->GetVertex(vIdx[0])->x - geom->GetVertex(vIdx[2])->x;
 				V2.y = geom->GetVertex(vIdx[0])->y - geom->GetVertex(vIdx[2])->y;
 				V2.z = geom->GetVertex(vIdx[0])->z - geom->GetVertex(vIdx[2])->z;
-				nV2 = Norme(&V2);
+				nV2 = Norme(V2);
 				ScalarMult(&V2,1.0/nV2); // Normalize V2
 
 				Cross(&N2,&V2,&U2); //We have a normal vector
-				nN2 = Norme(&N2);
+				nN2 = Norme(N2);
 				if (nN2<1e-8) {
 					GLMessageBox::Display("The 3 selected vertices are on a line.","Can't define plane",GLDLG_OK,GLDLG_ICONERROR);
 					return;
