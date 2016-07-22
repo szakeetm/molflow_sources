@@ -487,6 +487,7 @@ void GLWindowManager::RepaintRange(int w0,int w1) {
 #ifdef _DEBUG
   double t0 = theApp->GetTick();
 #endif
+
   if (!(w0<64 && w1<64)) throw Error("Buffer overrun: GLWindowManager::RepaintRange, array allWin");
   SetDefault();
   for(int i=w0;i<w1;i++) allWin[i]->Paint();  
@@ -531,10 +532,13 @@ BOOL GLWindowManager::IsAltDown() {
   return (modState & ALT_MODIFIER)!=0;
 }
 
+BOOL GLWindowManager::IsSpaceDown() {
+  return (modState & SPACE_MODIFIER)!=0;
+}
 // ---------------------------------------------------------------
 
 BOOL GLWindowManager::IsCapsLockOn() {
-	return (modState & CAPSLOCK_MODIFIER)!=0;
+ return (modState & CAPSLOCK_MODIFIER)!=0;
 }
 
 // ---------------------------------------------------------------
@@ -561,6 +565,9 @@ BOOL GLWindowManager::ProcessKey(SDL_Event *evt,BOOL processAcc) {
 	if( unicode == SDLK_CAPSLOCK)
       modState |= CAPSLOCK_MODIFIER;
 
+	
+	if( unicode == SDLK_SPACE)
+      modState |= SPACE_MODIFIER;
   }
 
   if( evt->type == SDL_KEYUP )
@@ -569,6 +576,7 @@ BOOL GLWindowManager::ProcessKey(SDL_Event *evt,BOOL processAcc) {
     int ctrlMask  = CTRL_MODIFIER; ctrlMask  = ~ctrlMask;
     int shiftMask = SHIFT_MODIFIER;shiftMask = ~shiftMask;
 	int capsLockMask = CAPSLOCK_MODIFIER;capsLockMask = ~capsLockMask;
+	int spaceMask = SPACE_MODIFIER;spaceMask = ~spaceMask;
 
     if( unicode == SDLK_LCTRL ||  unicode == SDLK_RCTRL )
       modState &= ctrlMask;
@@ -581,6 +589,9 @@ BOOL GLWindowManager::ProcessKey(SDL_Event *evt,BOOL processAcc) {
 
 	if (unicode == SDLK_CAPSLOCK)
       modState &= capsLockMask;
+
+	if (unicode == SDLK_SPACE)
+		modState &= spaceMask;
   }
 
   // Process

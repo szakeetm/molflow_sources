@@ -270,7 +270,9 @@ BOOL GLWindow::IsAltDown() {
   return GLWindowManager::IsAltDown();
 }
 
-// ---------------------------------------------------------------
+BOOL GLWindow::IsSpaceDown() {
+  return GLWindowManager::IsSpaceDown();
+}
 
 BOOL GLWindow::IsCapsLockOn() {
   return GLWindowManager::IsCapsLockOn();

@@ -1737,8 +1737,16 @@ void GeometryViewer::ManageEvent(SDL_Event *evt)
 				draggMode=DRAGG_MOVE;
 			}
 			else{*/
+			if (GetWindow()->IsSpaceDown()) { //Move origin
+				selX1 += diffX;
+				selX2 += diffX;
+				selY1 += diffY;
+				selY2 += diffY;
+			}
+			else {
 				selX2 = mX;
 				selY2 = mY;
+			}
 			//}
 			break;
 

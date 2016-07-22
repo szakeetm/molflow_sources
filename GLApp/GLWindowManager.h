@@ -26,6 +26,7 @@
 #define CTRL_MODIFIER  2
 #define SHIFT_MODIFIER 4
 #define CAPSLOCK_MODIFIER 8
+#define SPACE_MODIFIER 16
 
 class GLWindow;
 class GLComponent;
@@ -51,6 +52,7 @@ public:
   static BOOL      IsShiftDown();
   static BOOL      IsAltDown();
   static BOOL      IsCapsLockOn();
+  static BOOL      IsSpaceDown();
 
   // Registering
   static void RegisterWindow(GLWindow *wnd);
