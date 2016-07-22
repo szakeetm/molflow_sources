@@ -287,12 +287,12 @@ void Geometry::ClipSelectedPolygons(ClipperLib::ClipType type) {
 			else (secondFacet = i);
 		}
 	}
-	ClipPolygon(firstFacet, secondFacet,type);
+	ClipPolygon(firstFacet, secondFacet, type);
 }
 
 
 
-void Geometry::ClipPolygon(size_t id1, std::vector<std::vector<size_t>> clippingPaths , ClipperLib::ClipType type) {
+void Geometry::ClipPolygon(size_t id1, std::vector<std::vector<size_t>> clippingPaths, ClipperLib::ClipType type) {
 	mApp->changedSinceSave = TRUE;
 	nbSelectedVertex = 0;
 
@@ -400,7 +400,7 @@ void Geometry::ClipPolygon(size_t id1, size_t id2, ClipperLib::ClipType type) {
 	}
 	std::vector<std::vector<size_t>> clippingPaths;
 	clippingPaths.push_back(facet2path);
-	ClipPolygon(id1, clippingPaths,type);
+	ClipPolygon(id1, clippingPaths, type);
 }
 
 void Geometry::RegisterVertex(Facet *f, const VERTEX2D &vert, size_t id1, const std::vector<ProjectedPoint> &projectedPoints, std::vector<VERTEX3D> &newVertices, size_t registerLocation) {
@@ -2048,7 +2048,7 @@ std::vector<size_t> Geometry::ConstructIntersection() {
 	for (size_t facetId = 0;facetId < selectedFacets.size();facetId++) {
 		std::vector<std::vector<EdgePoint>> clipPaths;
 		Facet *f = selectedFacets[facetId].f;
-		for (size_t vertexId = 0;vertexId < selectedFacets[facetId].f->sh.nbIndex;vertexId++) //Go through indices
+		for (size_t vertexId = 0;vertexId < selectedFacets[facetId].f->sh.nbIndex;vertexId++) { //Go through indices
 			//testPath.push_back(f->indices[vertexId]);
 			for (size_t v = 0;v < selectedFacets[facetId].intersectionPointId[vertexId].size();v++) { //If there are intersection points on this edge, go through them 
 				//Check if not the end of an already registered clipping path
@@ -2068,9 +2068,9 @@ std::vector<size_t> Geometry::ConstructIntersection() {
 					int foundId, foundId2;
 					do {
 						foundId = -1;
-						for (size_t p = 0;foundId == -1 && p < selectedFacets[facetId].intersectingPoints.size();p++) { //Get the next intersection point with same facet
-							if (searchId == p) continue;
-							foundId = (selectedFacets[facetId].intersectingPoints[p].withFacetId == searchFacetId) ? p : -1;
+						for (size_t p1 = 0;foundId == -1 && p1 < selectedFacets[facetId].intersectingPoints.size();p1++) { //Get the next intersection point with same facet
+							if (searchId == p1) continue;
+							foundId = ((selectedFacets[facetId].intersectingPoints[p1].withFacetId == searchFacetId) && (selectedFacets[facetId].intersectingPoints[p1].vertexId!=searchId)) ? p1 : -1;
 						}
 						if (foundId != -1) {
 							EdgePoint p;
@@ -2079,10 +2079,11 @@ std::vector<size_t> Geometry::ConstructIntersection() {
 							path.push_back(p);
 							//Get next point which is the same
 							searchId = selectedFacets[facetId].intersectingPoints[foundId].vertexId;
+							searchFacetId = selectedFacets[facetId].intersectingPoints[foundId].withFacetId;
 							foundId2 = -1;
 							for (size_t p2 = 0;foundId2 == -1 && p2 < selectedFacets[facetId].intersectingPoints.size();p2++) { //Search next intersection point which is same vertex
 								if (p2 == foundId) continue;
-								foundId2 = (selectedFacets[facetId].intersectingPoints[p2].vertexId == searchId) ? p2 : -1;
+								foundId2 = ((selectedFacets[facetId].intersectingPoints[p2].vertexId == searchId) && (selectedFacets[facetId].intersectingPoints[p2].withFacetId != searchFacetId)) ? p2 : -1;
 							}
 							if (foundId2 != -1) {
 								searchFacetId = selectedFacets[facetId].intersectingPoints[foundId2].withFacetId;
@@ -2118,76 +2119,77 @@ std::vector<size_t> Geometry::ConstructIntersection() {
 					clipPaths.push_back(path);
 				}
 			}
-
-		//Construct clipped facet, having a selected vertex
-		std::vector<BOOL> isIndexSelected(f->sh.nbIndex);
-		for (size_t v = 0; v < f->sh.nbIndex;v++) {
-			isIndexSelected[v] = vertices3[f->indices[v]].selected; //Make a copy, we don't want to deselect vertices
 		}
-		size_t nbNewfacet = 0;
-		for (size_t v = 0; v < f->sh.nbIndex;v++) {
-			size_t currentVertex = v;
-			if (isIndexSelected[currentVertex]) {
-				//Restore visited state for all clip paths
-				for (size_t i = 0;i < clipPaths.size();i++) {
-					for (size_t j = 0;j < clipPaths[i].size();j++) {
-						clipPaths[i][j].visited = FALSE;
-					}
-				}
-				std::vector<size_t> clipPath;
-				nbNewfacet++;
-				do { //Build points of facet
-					clipPath.push_back(f->indices[currentVertex]);
-					isIndexSelected[currentVertex] = FALSE;
-					//Get closest path end
-					double minDist = 9E99;
-					int clipId = -1;
-					BOOL front;
-
+		if (clipPaths.size() > 0) {
+			//Construct clipped facet, having a selected vertex
+			std::vector<BOOL> isIndexSelected(f->sh.nbIndex);
+			for (size_t v = 0; v < f->sh.nbIndex;v++) {
+				isIndexSelected[v] = vertices3[f->indices[v]].selected; //Make a copy, we don't want to deselect vertices
+			}
+			size_t nbNewfacet = 0;
+			for (size_t v = 0; v < f->sh.nbIndex;v++) {
+				size_t currentVertex = v;
+				if (isIndexSelected[currentVertex]) {
+					//Restore visited state for all clip paths
 					for (size_t i = 0;i < clipPaths.size();i++) {
-						if (clipPaths[i].front().onEdge == currentVertex && clipPaths[i].back().onEdge != -1) { //If a full clipping path is found on the scanned edge, go through it
-							double d = Norme(vertices3[f->indices[currentVertex]] - vertices3[clipPaths[i].front().vertexId]);
-							if (d < minDist) {
-								minDist = d;
-								clipId = i;
-								front = TRUE;
-							}
-						}
-						if (clipPaths[i].back().onEdge == currentVertex && clipPaths[i].front().onEdge != -1) { //If a full clipping path is found on the scanned edge, go through it
-							double d = Norme(vertices3[f->indices[currentVertex]] - vertices3[clipPaths[i].back().vertexId]);
-							if (d < minDist) {
-								minDist = d;
-								clipId = i;
-								front = FALSE;
-							}
+						for (size_t j = 0;j < clipPaths[i].size();j++) {
+							clipPaths[i][j].visited = FALSE;
 						}
 					}
-					if (clipId != -1) {
-						if ((front && !clipPaths[clipId].front().visited) || (!front && !clipPaths[clipId].back().visited)) {
-							for (int cp = front ? 0 : clipPaths[clipId].size() - 1;cp >= 0 && cp < clipPaths[clipId].size();cp += front ? 1 : -1) {
-								clipPath.push_back(clipPaths[clipId][cp].vertexId);
-								clipPaths[clipId][cp].visited = TRUE;
+					std::vector<size_t> clipPath;
+					nbNewfacet++;
+					do { //Build points of facet
+						clipPath.push_back(f->indices[currentVertex]);
+						isIndexSelected[currentVertex] = FALSE;
+						//Get closest path end
+						double minDist = 9E99;
+						int clipId = -1;
+						BOOL front;
+
+						for (size_t i = 0;i < clipPaths.size();i++) {
+							if (clipPaths[i].front().onEdge == currentVertex && clipPaths[i].back().onEdge != -1) { //If a full clipping path is found on the scanned edge, go through it
+								double d = Norme(vertices3[f->indices[currentVertex]] - vertices3[clipPaths[i].front().vertexId]);
+								if (d < minDist) {
+									minDist = d;
+									clipId = i;
+									front = TRUE;
+								}
 							}
-							currentVertex = front ? clipPaths[clipId].back().onEdge : clipPaths[clipId].front().onEdge;
+							if (clipPaths[i].back().onEdge == currentVertex && clipPaths[i].front().onEdge != -1) { //If a full clipping path is found on the scanned edge, go through it
+								double d = Norme(vertices3[f->indices[currentVertex]] - vertices3[clipPaths[i].back().vertexId]);
+								if (d < minDist) {
+									minDist = d;
+									clipId = i;
+									front = FALSE;
+								}
+							}
 						}
-					}
-					currentVertex = (currentVertex + 1) % f->sh.nbIndex;
-				} while (currentVertex != v);
-				if (clipPath.size() > 2) {
-					Facet *f = new Facet(clipPath.size());
-					for (size_t i = 0;i < clipPath.size();i++)
-						f->indices[i] = clipPath[i];
-					f->selected = TRUE;
-					
-					if (nbNewfacet==1) facets[selectedFacets[facetId].id] = f; //replace original
-					else { //create new
-						facets = (Facet**)realloc(facets, sizeof(Facet*)*(sh.nbFacet + 1));
-						facets[sh.nbFacet++] = f;
+						if (clipId != -1) {
+							if ((front && !clipPaths[clipId].front().visited) || (!front && !clipPaths[clipId].back().visited)) {
+								for (int cp = front ? 0 : clipPaths[clipId].size() - 1;cp >= 0 && cp < clipPaths[clipId].size();cp += front ? 1 : -1) {
+									clipPath.push_back(clipPaths[clipId][cp].vertexId);
+									clipPaths[clipId][cp].visited = TRUE;
+								}
+								currentVertex = front ? clipPaths[clipId].back().onEdge : clipPaths[clipId].front().onEdge;
+							}
+						}
+						currentVertex = (currentVertex + 1) % f->sh.nbIndex;
+					} while (currentVertex != v);
+					if (clipPath.size() > 2) {
+						Facet *f = new Facet(clipPath.size());
+						for (size_t i = 0;i < clipPath.size();i++)
+							f->indices[i] = clipPath[i];
+						f->selected = TRUE;
+
+						if (nbNewfacet == 1) facets[selectedFacets[facetId].id] = f; //replace original
+						else { //create new
+							facets = (Facet**)realloc(facets, sizeof(Facet*)*(sh.nbFacet + 1));
+							facets[sh.nbFacet++] = f;
+						}
 					}
 				}
 			}
 		}
-
 		/*
 		//Clip facet
 		std::vector<std::vector<size_t>> clippingPaths;
