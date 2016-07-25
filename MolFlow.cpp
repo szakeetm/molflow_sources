@@ -163,7 +163,10 @@ MolFlow *mApp;
 #define MENU_FACET_ROTATE	   333
 #define MENU_FACET_ALIGN       334
 #define MENU_FACET_OUTGASSINGMAP 335
-#define MENU_FACET_CREATE_DIFFERENCE 336
+#define MENU_FACET_CREATE_DIFFERENCE 3360
+#define MENU_FACET_CREATE_UNION 3361
+#define MENU_FACET_CREATE_INTERSECTION 3362
+#define MENU_FACET_CREATE_XOR 3363
 #define MENU_FACET_EXTRUDE 337
 #define MENU_FACET_SPLIT   338
 #define MENU_FACET_LOFT          339
@@ -512,7 +515,11 @@ int MolFlow::OneTimeSceneInit()
 	menu->GetSubMenu("Facet")->Add("Split ...", MENU_FACET_SPLIT);
 	menu->GetSubMenu("Facet")->Add("Remove selected", MENU_FACET_REMOVESEL, SDLK_DELETE, CTRL_MODIFIER);
 	menu->GetSubMenu("Facet")->Add("Explode selected", MENU_FACET_EXPLODE);
-	menu->GetSubMenu("Facet")->Add("Difference of 2", MENU_FACET_CREATE_DIFFERENCE);
+	menu->GetSubMenu("Facet")->Add("Create two facets' ...");
+	menu->GetSubMenu("Facet")->GetSubMenu("Create two facets' ...")->Add("Difference", MENU_FACET_CREATE_DIFFERENCE);
+	menu->GetSubMenu("Facet")->GetSubMenu("Create two facets' ...")->Add("Union", MENU_FACET_CREATE_UNION);
+	menu->GetSubMenu("Facet")->GetSubMenu("Create two facets' ...")->Add("Intersection", MENU_FACET_CREATE_INTERSECTION);
+	menu->GetSubMenu("Facet")->GetSubMenu("Create two facets' ...")->Add("XOR", MENU_FACET_CREATE_XOR);
 	menu->GetSubMenu("Facet")->Add("Transition between 2", MENU_FACET_LOFT);
 	menu->GetSubMenu("Facet")->Add("Build intersection", MENU_FACET_INTERSECT);
 	menu->GetSubMenu("Facet")->Add("Convert to outgassing map...", MENU_FACET_OUTGASSINGMAP);
@@ -3666,23 +3673,16 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			}
 			break;
 		case MENU_FACET_CREATE_DIFFERENCE:
-			if (geom->IsLoaded()){
-				try {
-					if (AskToReset()) {
-						//geom->CreateDifference();
-						geom->ClipSelectedPolygons(ClipperLib::ctDifference);
-					}
-				}
-				catch (Error &e) {
-					GLMessageBox::Display((char *)e.GetMsg(), "Error creating polygon", GLDLG_OK, GLDLG_ICONERROR);
-				}
-				//UpdateModelParams();
-				try { worker.Reload(); }
-				catch (Error &e) {
-					GLMessageBox::Display((char *)e.GetMsg(), "Error reloading worker", GLDLG_OK, GLDLG_ICONERROR);
-				}
-			}
-			else GLMessageBox::Display("No geometry loaded.", "No geometry", GLDLG_OK, GLDLG_ICONERROR);
+			CreateOfTwoFacets(ClipperLib::ctDifference);
+			break;
+		case MENU_FACET_CREATE_UNION:
+			CreateOfTwoFacets(ClipperLib::ctUnion);
+			break;
+		case MENU_FACET_CREATE_INTERSECTION:
+			CreateOfTwoFacets(ClipperLib::ctIntersection);
+			break;
+		case MENU_FACET_CREATE_XOR:
+			CreateOfTwoFacets(ClipperLib::ctXor);
 			break;
 		case MENU_FACET_LOFT:
 			if (geom->GetNbSelected() != 2) {
@@ -5283,4 +5283,25 @@ void MolFlow::RenumberSelections(size_t startFacetId){
 			}
 		}
 	}
+}
+
+void MolFlow::CreateOfTwoFacets(ClipperLib::ClipType type) {
+	Geometry *geom = worker.GetGeometry();
+	if (geom->IsLoaded()) {
+		try {
+			if (AskToReset()) {
+				//geom->CreateDifference();
+				geom->ClipSelectedPolygons(type);
+			}
+		}
+		catch (Error &e) {
+			GLMessageBox::Display((char *)e.GetMsg(), "Error creating polygon", GLDLG_OK, GLDLG_ICONERROR);
+		}
+		//UpdateModelParams();
+		try { worker.Reload(); }
+		catch (Error &e) {
+			GLMessageBox::Display((char *)e.GetMsg(), "Error reloading worker", GLDLG_OK, GLDLG_ICONERROR);
+		}
+	}
+	else GLMessageBox::Display("No geometry loaded.", "No geometry", GLDLG_OK, GLDLG_ICONERROR);
 }

@@ -162,6 +162,7 @@ public:
     void Place3DViewer();
 	void UpdateMeasurements();
 	void QuickPipe();
+	void CreateOfTwoFacets(ClipperLib::ClipType type);
 	void UpdateFacetlistSelected();
 	BOOL AskToSave();
 	BOOL AskToReset(Worker *work=NULL);
