@@ -367,10 +367,11 @@ void GLParser::ReadTerm(ETREE **node,VLIST **var_list)
 
                   ReadVariable(v_name);
                   if (EC!=',') SetError(", expected",current);AV();
-                  bool selectionGroup;
+                  bool selectionGroup,selectedFacets;
 				  selectionGroup=(EC=='S');
 				  if (selectionGroup) AV();
-				  ReadDouble(&d1);
+				  selectedFacets = (EC == ')');
+				  if (!selectedFacets) ReadDouble(&d1);
                   if (!selectionGroup) {
 					  if (EC!=',') SetError(", expected",current);AV();
 					  ReadDouble(&d2);
@@ -378,7 +379,7 @@ void GLParser::ReadTerm(ETREE **node,VLIST **var_list)
                   if (EC!=')') SetError(") expected",current);AV();
 
                   // Add all variables
-                  i1 = (int)(d1+0.5);
+                  if (!selectedFacets) i1 = (int)(d1+0.5);
                   if (!selectionGroup) 
 					  {//ordinary SUM
 						  i2 = (int)(d2+0.5);
@@ -396,7 +397,7 @@ void GLParser::ReadTerm(ETREE **node,VLIST **var_list)
 						  }
 						  
 				  }
-				  else {
+				  else if (!selectedFacets) { //Regular selection group
 					  i1--; //selection indexes start from 0
 					  //SUM of a selection Group
 					  if (i1 < 0 || i1 >= mApp->nbSelection) {
@@ -417,6 +418,26 @@ void GLParser::ReadTerm(ETREE **node,VLIST **var_list)
 							  }
 						  }
 					  
+				  }
+				  else  { //Currently selected facets
+					  int nbSel;
+					  int *selectedFacets;
+					  mApp->worker.GetGeometry()->GetSelection(&selectedFacets, &nbSel);
+
+					  if (nbSel==0) {
+						  SetError("no facets selected", current);
+						  break;
+					  }
+					  for (int j = 0; j < nbSel; j++) {
+						  sprintf(tmpVName, "%s%d", v_name, selectedFacets[j] + 1);
+						  elem.variable = AddVar(tmpVName, var_list);
+						  if (j == 0) AddNode(TVARIABLE, elem, &l_t, NULL, NULL);
+						  else {
+							  AddNode(TVARIABLE, elem, &r_t, NULL, NULL);
+							  AddNode(OPER_PLUS, elem, &l_t, l_t, r_t);
+						  }
+					  }
+
 				  }
 				  if (!error) *node = l_t;
                 } else {

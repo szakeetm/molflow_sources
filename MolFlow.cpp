@@ -1596,6 +1596,7 @@ void MolFlow::UpdateFormula() {
 	for (int i = 0; i < nbFormula; i++) {
 
 		GLParser *f = formulas[i].parser;
+		f->Parse(); //If selection group changed
 
 		// Variables
 		int nbVar = f->GetNbVariable();
@@ -3096,6 +3097,7 @@ void MolFlow::StartStopSimulation() {
 	if (pressureEvolution) pressureEvolution->Update(m_fTime, TRUE);
 	if (timewisePlotter) timewisePlotter->Update(m_fTime, TRUE);
 	if (texturePlotter) texturePlotter->Update(m_fTime, TRUE);
+	if (autoUpdateFormulas) UpdateFormula();
 
 	// Frame rate measurement
 	lastMeasTime = m_fTime;

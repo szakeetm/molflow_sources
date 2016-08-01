@@ -147,7 +147,7 @@ void TimeSettings::ProcessMessage(GLComponent *src,int message) {
 		if (mApp->facetDetails) mApp->facetDetails->Update();
 		if(mApp->timewisePlotter) mApp->timewisePlotter->UpdateMoment();
 		if(mApp->texturePlotter) mApp->texturePlotter->Update(0.0f,TRUE); 
-		mApp->UpdateFormula();
+		if (mApp->autoUpdateFormulas) mApp->UpdateFormula();
     } else if (src==editButton) {
 		if( mApp->momentsEditor==NULL ) mApp->momentsEditor = new MomentsEditor(work);
 		mApp->momentsEditor->Refresh();
