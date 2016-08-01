@@ -1975,6 +1975,8 @@ int MolFlow::FrameMove()
 			}
 		}
 	}
+	
+	if (globalSettings) globalSettings->SMPUpdate(m_fTime);
 
 	if (worker.running) {
 		if (frameMoveRequested || autoFrameMove && (m_fTime - lastUpdate >= 1.0f)) {
@@ -1999,7 +2001,7 @@ int MolFlow::FrameMove()
 			//if(facetDetails) facetDetails->Update();
 			if (textureSettings) textureSettings->Update();
 			// Facet parameters and hits
-			if (globalSettings) globalSettings->SMPUpdate(m_fTime);
+			
 
 			// Formulas
 			if (autoUpdateFormulas) UpdateFormula();

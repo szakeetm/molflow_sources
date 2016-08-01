@@ -44,15 +44,17 @@ static int       prIdx;
 static int       prState;
 static size_t       prParam;
 static llong     prParam2;
+static DWORD     hostProcessId;
 //static float       heartBeat;
-static HANDLE    masterHandle;
+//static HANDLE    masterHandle;
 static char      ctrlDpName[32];
 static char      loadDpName[32];
 static char      hitsDpName[32];
 
 BOOL end = FALSE;
 void SetErrorSub(char *message);
-int FIND_PROC_BY_NAME(const char *szToFind);
+BOOL IsProcessRunning(DWORD pid);
+//int FIND_PROC_BY_NAME(const char *szToFind);
 // -------------------------------------------------
 
 //void GetState(int sleepTime) {
@@ -76,9 +78,14 @@ void GetState() {
 	printf("\n");
 	*/
     ReleaseDataport(dpControl);
-	if (FIND_PROC_BY_NAME("molflow.exe")!=1) { //if there is no running Windows process called "molflow.exe"
-		printf("molflow.exe not running. Closing.");
-		SetErrorSub("molflow.exe not running. Closing subprocess.");
+	/*if (FIND_PROC_BY_NAME("synrad.exe")!=1) { //if there is no running Windows process called "synrad.exe"
+		printf("synrad.exe not running. Closing.");
+		SetErrorSub("synrad.exe not running. Closing subprocess.");
+		end = TRUE;
+	}*/
+	if (!IsProcessRunning(hostProcessId)) {
+		printf("Host synrad.exe (process id %d) not running. Closing.",hostProcessId);
+		SetErrorSub("Host synrad.exe not running. Closing subprocess.");
 		end = TRUE;
 	}
 	/*
@@ -304,6 +311,7 @@ int main(int argc,char* argv[])
     return 1;
   }
 
+  hostProcessId=atoi(argv[1]);
   prIdx = atoi(argv[2]);
 
   sprintf(ctrlDpName,"MFLWCTRL%s",argv[1]);
@@ -429,6 +437,7 @@ int main(int argc,char* argv[])
 
 }
 
+/*
 int FIND_PROC_BY_NAME(const char *szToFind)
 
 // Created: 12/29/2000  (RK)
@@ -503,7 +512,7 @@ int FIND_PROC_BY_NAME(const char *szToFind)
 
     // Transfer Process name into "szToFindUpper" and
     // convert it to upper case
-    iLenP=(int)strlen(szToFind);
+    iLenP=strlen(szToFind);
     if(iLenP<1 || iLenP>MAX_PATH) return 632;
     for(indx=0;indx<iLenP;indx++)
         szToFindUpper[indx]=toupper(szToFind[indx]);
@@ -689,4 +698,13 @@ int FIND_PROC_BY_NAME(const char *szToFind)
     FreeLibrary(hInstLib);
     return 0;
 
+}
+*/
+
+BOOL IsProcessRunning(DWORD pid)
+{
+	HANDLE process = OpenProcess(SYNCHRONIZE, FALSE, pid);
+	DWORD ret = WaitForSingleObject(process, 0);
+	CloseHandle(process);
+	return ret == WAIT_TIMEOUT;
 }

@@ -2,7 +2,7 @@
   File:        Types.h
   Description: Various type/macro definitions and util functions
   Program:     MolFlow
-  Author:      R. KERSEVAN / J-L PONS / M ADY / M ADY
+  Author:      R. KERSEVAN / J-L PONS / M ADY
   Copyright:   E.S.R.F / CERN / CERN
 
   This program is free software; you can redistribute it and/or modify
@@ -42,6 +42,7 @@ typedef float ACFLOAT;
 #define REF_UNIFORM 2   // Uniform (for testing)
 
 
+
   // Profile type
 
 #define REC_NONE       0  // No recording
@@ -52,6 +53,7 @@ typedef float ACFLOAT;
 #define REC_ORT_VELOCITY 5 //Orthogonal velocity component
 
 #define PROFILE_SIZE  100 // Size of profile
+
 
 
 // Hit type
@@ -67,6 +69,8 @@ typedef float ACFLOAT;
 // Geometry structure definitions
 class VERTEX3D {
 public:
+
+
   double x;
   double y;
   double z;
@@ -75,8 +79,15 @@ public:
 
 struct VERTEX2D {
 
+
 	double u;
 	double v;
+
+
+
+
+
+
 
 
   VERTEX2D operator+(const VERTEX2D& toAdd) const {
@@ -97,6 +108,8 @@ struct VERTEX2D {
 	  }
 	  VERTEX2D operator*(const double& mult) const {
 
+
+
 		  VERTEX2D result;
 		  result.u = this->u * mult;
 		  result.v = this->v * mult;
@@ -115,6 +128,8 @@ typedef struct {
 
   VERTEX3D pos;
   int      type;
+
+
 
 
 
@@ -142,6 +157,7 @@ typedef struct {
 	double sum_v_ort;
 	double sum_1_per_ort_velocity;
 } APROFILE;
+
 
 
 typedef struct {

@@ -259,6 +259,7 @@ void Geometry::InitializeGeometry(int facet_number) {
 			// Main facet params
 			CalculateFacetParam(i);
 			Facet *f = facets[i];
+			
 			// Detect non visible edge
 			f->InitVisibleEdge();
 
@@ -271,7 +272,6 @@ void Geometry::InitializeGeometry(int facet_number) {
 				fOffset += f->GetHitsSize(mApp->worker.moments.size());
 			}
 		}
-		
 	}
 
 	isLoaded = TRUE;

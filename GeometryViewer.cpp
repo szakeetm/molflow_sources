@@ -1714,8 +1714,8 @@ void GeometryViewer::ManageEvent(SDL_Event *evt)
 
 	if( evt->type == SDL_MOUSEMOTION ) {
 
-		double diffX = (mX - mXOrg);
-		double diffY = (mY - mYOrg);
+		int diffX = (mX - mXOrg);
+		int diffY = (mY - mYOrg);
 		mXOrg = mX;
 		mYOrg = mY;
 

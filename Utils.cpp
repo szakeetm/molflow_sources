@@ -17,11 +17,13 @@
   */
 
 #include "Types.h"
+#include "Random.h"
 #include "Utils.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <random>
 
 #define PI 3.14159265358979323846
 
@@ -79,6 +81,7 @@ VERTEX3D operator*(const double& mult, const VERTEX3D &v1) {
 }
 
 double Dot(VERTEX3D *v1, VERTEX3D *v2) {
+
 	return (v1->x)*(v2->x) + (v1->y)*(v2->y) + (v1->z)*(v2->z);
 }
 
@@ -88,6 +91,7 @@ double Dot(const VERTEX2D &v1, const VERTEX2D &v2) {
 
 double Norme(const VERTEX3D &v) {
 	return sqrt(Dot(v, v));
+
 }
 
 double Norme(const VERTEX2D &v) {
@@ -123,17 +127,23 @@ void ScalarMult(VERTEX3D *result, double r) {
 void ScalarMult(VERTEX2D *result, double r) {
 	result->u *= r;
 	result->v *= r;
+
+
 }
 
 void Sub(VERTEX3D *result, VERTEX3D *v1, VERTEX3D *v2) {
 	result->x = (v1->x) - (v2->x);
 	result->y = (v1->y) - (v2->y);
 	result->z = (v1->z) - (v2->z);
+
+
+
 }
 
 void Sub(VERTEX2D *result, VERTEX2D *v1, VERTEX2D *v2) {
 	result->u = (v1->u) - (v2->u);
 	result->v = (v1->v) - (v2->v);
+
 }
 
 void Add(VERTEX3D *result, VERTEX3D *v1, VERTEX3D *v2) {
@@ -145,10 +155,13 @@ void Add(VERTEX3D *result, VERTEX3D *v1, VERTEX3D *v2) {
 void Add(VERTEX2D *result, VERTEX2D *v1, VERTEX2D *v2) {
 	result->u = (v1->u) + (v2->u);
 	result->v = (v1->v) + (v2->v);
+
 }
 
 int VertexEqual(VERTEX2D *p1, VERTEX2D *p2) {
 	return IS_ZERO(p1->u - p2->u) && IS_ZERO(p1->v - p2->v);
+
+
 }
 
 void ProjectVertex(VERTEX3D *v, VERTEX2D *projected, VERTEX3D *U, VERTEX3D *V, VERTEX3D *origin){
@@ -158,6 +171,8 @@ void ProjectVertex(VERTEX3D *v, VERTEX2D *projected, VERTEX3D *U, VERTEX3D *V, V
 	projected->v = Dot(*V, diff) / Dot(V,V);
 
 	/*
+
+
 	Sub(&AP, v, origin);
 	double t = Dot(U, &AP) / Dot(U, U);
 	mult = *U;
@@ -210,6 +225,8 @@ void Rotate(VERTEX3D *P, VERTEX3D AXIS_P0, VERTEX3D AXIS_DIR, double theta) {
 int IsEqual(const double &a, const double &b, double tolerance) {
 	return fabs(a - b) < tolerance;
 }
+
+
 
 // ---------------------------------------------------------------
 // Polygon geometry stuff
@@ -266,6 +283,7 @@ int ContainsConcave(POLYGON *p, int i1, int i2, int i3) {
 			if (IsInsideTri(pt, p1, p2, p3))
 				found = !IsConvex(p, i);
 		}
+
 		i++;
 	}
 
@@ -293,6 +311,7 @@ int EmptyTriangle(POLYGON *p, int i1, int i2, int i3, VERTEX2D *center) {
 			VERTEX2D *pt = p->pts + i;
 			found = IsInsideTri(pt, p1, p2, p3);
 		}
+
 		i++;
 	}
 
@@ -333,8 +352,10 @@ int IsInPoly(double u, double v, VERTEX2D *pts, int nbPts) {
 			else {
 				n_updown = n_updown - 1;
 			}
+
 			n_found++;
 		}
+
 
 	}
 
@@ -355,6 +376,7 @@ int IsInPoly(double u, double v, VERTEX2D *pts, int nbPts) {
 		else {
 			n_updown = n_updown - 1;
 		}
+
 		n_found++;
 	}
 
@@ -483,6 +505,7 @@ int SearchFirst(POLYGRAPH *g, POLYVERTEX **s) {
 
 int AddNode(POLYGRAPH *g, VERTEX2D *p) {
 
+
 	// Add a node to the polygraph and returns its id
 
 	int i = GetNode(g, p);
@@ -549,24 +572,37 @@ void InsertEdge(POLYGRAPH *g, VERTEX2D *p1, VERTEX2D *p2, int a0) {
 
 	// Insert a polygon edge in the polygraph, a0 = first arc to be checked
 
+
 	if (VertexEqual(p1, p2))
 		// Does not add null arc
 		return;
 
+
 	// Insert nodes
 	int n1 = AddNode(g, p1);
 	int n2 = AddNode(g, p2);
+
+
+
 
 	// Check intersection of the new arc with the arcs of the first polygon.
 	int itFound = 0;
 	int i = a0;
 	while (i < g->nbArc && !itFound) {
 
+
+
+
 		if (g->arcs[i].s == 1) {
+
+
+
+
 
 			VERTEX2D *e1 = &(g->nodes[g->arcs[i].i1].p);
 			VERTEX2D *e2 = &(g->nodes[g->arcs[i].i2].p);
 			VERTEX2D I;
+
 
 			if (Intersect2D(p1, p2, e1, e2, &I)) {
 				int ni = AddNode(g, &I);
@@ -576,7 +612,19 @@ void InsertEdge(POLYGRAPH *g, VERTEX2D *p1, VERTEX2D *p2, int a0) {
 				itFound = 1;
 			}
 
+
+
+
 		}
+
+
+
+
+
+
+
+
+
 		i++;
 
 	}
@@ -640,6 +688,7 @@ void CreateGraph(POLYGRAPH *g, POLYGON *inP1, POLYGON *inP2, int *visible2) {
 	g->nbArc = inP1->nbPts;
 	g->nbNode = inP1->nbPts;
 
+
 	for (int i = 0; i < inP1->nbPts; i++) {
 		g->nodes[i].p = inP1->pts[i];
 		g->nodes[i].VI[0] = -1;
@@ -650,6 +699,8 @@ void CreateGraph(POLYGRAPH *g, POLYGON *inP1, POLYGON *inP2, int *visible2) {
 		g->arcs[i].i2 = IDX(i + 1, inP1->nbPts);
 		g->arcs[i].s = 1;
 	}
+
+
 
 	// Intersect with 2nd polygon
 	for (int i = 0; i < inP2->nbPts; i++)  {
@@ -663,6 +714,7 @@ void CreateGraph(POLYGRAPH *g, POLYGON *inP1, POLYGON *inP2, int *visible2) {
 			}
 		}
 	}
+
 
 	// Remove tangent edge
 	for (int i = 0; i<g->nbArc; i++) {
@@ -682,8 +734,27 @@ void CreateGraph(POLYGRAPH *g, POLYGON *inP1, POLYGON *inP2, int *visible2) {
 		}
 	}
 
+
+
+
+
 	// Fill up successor in the polyvertex array to speed up search
 	// of next vertices
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	for (int i = 0; i<g->nbArc; i++) {
 		if (g->arcs[i].s>0) {
@@ -698,16 +769,67 @@ void CreateGraph(POLYGRAPH *g, POLYGON *inP1, POLYGON *inP2, int *visible2) {
 				g->nodes[idxO].nbOut++;
 			}
 		}
+
+
+
+
+
+
+
+
 	}
 
 	// Mark starting points (2 outgoing arcs)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	for (int i = 0; i < g->nbNode; i++) {
 		if (g->nodes[i].nbOut >= 2) {
 			if (g->nodes[i].nbIn >= 2) {
 
+
+
 				// Check tangent point
 				VERTEX2D vi1, vi2, vo1, vo2;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 				// TO DEBUG!!! Causes frequent crashes
 				if (g->nodes[i].VI[0] >= 0 && g->nodes[i].VO[0] >= 0 && g->nodes[i].VI[1] >= 0 && g->nodes[i].VO[1] >= 0) {
@@ -717,6 +839,7 @@ void CreateGraph(POLYGRAPH *g, POLYGON *inP1, POLYGON *inP2, int *visible2) {
 					Sub(&vi2, &(g->nodes[g->nodes[i].VI[1]].p), &(g->nodes[i].p));
 					Sub(&vo2, &(g->nodes[g->nodes[i].VO[1]].p), &(g->nodes[i].p));
 				}
+
 
 				double angI = GetOrientedAngle(&vi1, &vo1);
 				double angII = GetOrientedAngle(&vi1, &vi2);
@@ -729,6 +852,8 @@ void CreateGraph(POLYGRAPH *g, POLYGON *inP1, POLYGON *inP2, int *visible2) {
 				g->nodes[i].isStart = 1;
 			}
 		}
+
+
 	}
 
 }
@@ -756,6 +881,7 @@ int CheckLoop(POLYGRAPH *g) {
 			ok = (s->nbOut == 1);
 			nbVisited++;
 		}
+
 	} while ((s0 != s) && (ok));
 
 	// !ok                   => only tangent node
@@ -796,12 +922,23 @@ int IntersectPoly(POLYGON *inP1, POLYGON *inP2, int *visible2, POLYGON **result)
 	// Create polygraph
 	CreateGraph(g, inP1, inP2, visible2);
 
+
+
+
+
 	// Search a divergent point
 	POLYVERTEX *s, *s0;
 
+
+
+
 	if (!SearchFirst(g, &s)) {
 
+
+
 		// Check particular cases
+
+
 
 		if ((g->nbNode == inP1->nbPts) && (g->nbNode == inP2->nbPts)) {
 			// P1 and P2 are equal
@@ -810,6 +947,7 @@ int IntersectPoly(POLYGON *inP1, POLYGON *inP2, int *visible2, POLYGON **result)
 			return 1;
 		}
 
+
 		if (CheckLoop(g)) {
 			// Only tangent edge/point found => null intersection
 			ClearGraph(g);
@@ -817,10 +955,17 @@ int IntersectPoly(POLYGON *inP1, POLYGON *inP2, int *visible2, POLYGON **result)
 			return 0;
 		}
 
+
 		ClearGraph(g);
 		int i;
 		int insideP1 = 0;
 		int insideP2 = 0;
+
+
+
+
+
+
 
 		i = 0;
 		while (i < inP1->nbPts && !insideP2) {
@@ -830,23 +975,48 @@ int IntersectPoly(POLYGON *inP1, POLYGON *inP2, int *visible2, POLYGON **result)
 		if (insideP2) {
 			// P1 is fully inside P2
 			*result = CopyPoly(inP1);
+
+
+
+
 			return 1;
 		}
+
 
 		i = 0;
 		while (i < inP2->nbPts && !insideP1) {
 			insideP1 = IsInPoly(inP2->pts[i].u, inP2->pts[i].v, inP1->pts, inP1->nbPts);
 			i++;
 		}
+
+
 		if (insideP1) {
 			// P2 is fully inside P1
 			*result = CopyPoly(inP2);
 			return 1;
 		}
 
+
 		// Null intersection
+
+
+
+
+
+
+
 		*result = NULL;
 		return 0;
+
+
+
+
+
+
+
+
+
+
 
 	}
 
@@ -857,9 +1027,13 @@ int IntersectPoly(POLYGON *inP1, POLYGON *inP2, int *visible2, POLYGON **result)
 	VERTEX2D n1, n2;
 	double sine;
 
+
+
 	do {
 
+
 		// Starts a new polygon
+
 		polys[nbPoly].pts = (VERTEX2D *)malloc(MAXEDGE*sizeof(VERTEX2D));
 		polys[nbPoly].sign = 1.0;
 		polys[nbPoly].nbPts = 0;
@@ -867,17 +1041,33 @@ int IntersectPoly(POLYGON *inP1, POLYGON *inP2, int *visible2, POLYGON **result)
 		eop = 0;
 		s0 = s;
 
+
+
+
 		while (!eop && polys[nbPoly - 1].nbPts < MAXEDGE) {
+
 
 			// Add point to the current polygon
 			polys[nbPoly - 1].pts[polys[nbPoly - 1].nbPts] = s->p;
 			polys[nbPoly - 1].nbPts++;
 			s->mark = 1;
 
+
+
+
+
+
+
+
 			// Go to next point
 			switch (s->nbOut) {
 
+
 			case 1:
+
+
+
+
 
 				// Next point
 				if (s->VO[0] >= 0) {
@@ -890,6 +1080,8 @@ int IntersectPoly(POLYGON *inP1, POLYGON *inP2, int *visible2, POLYGON **result)
 				}
 				break;
 
+
+
 			case 2:
 
 				if (s->VO[0] == -1 || s->VO[1] == -1) {
@@ -899,6 +1091,25 @@ int IntersectPoly(POLYGON *inP1, POLYGON *inP2, int *visible2, POLYGON **result)
 					*result = NULL;
 					return -1;
 				}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 				// We have to turn left
 				n1 = g->nodes[s->VO[0]].p;
@@ -925,10 +1136,12 @@ int IntersectPoly(POLYGON *inP1, POLYGON *inP2, int *visible2, POLYGON **result)
 
 			}
 
+
 			// Reach start point, end of polygon
 			eop = (s0 == s);
 
 		}
+
 
 		if (!eop) {
 			//Failure!!! (inner cycle found)
@@ -937,6 +1150,7 @@ int IntersectPoly(POLYGON *inP1, POLYGON *inP2, int *visible2, POLYGON **result)
 			*result = NULL;
 			return -1;
 		}
+
 
 	} while (SearchFirst(&graph, &s));
 
@@ -981,6 +1195,7 @@ double GetInterArea(POLYGON *inP1, POLYGON *inP2, int *edgeVisible, float *uC, f
 			(*lList)[nbE++] = polys[i].pts[j].u;
 			(*lList)[nbE++] = polys[i].pts[j].v;
 		}
+
 		if (i == 0) A0 = fabs(0.5 * A);
 		sum += fabs(0.5 * A);
 	}
@@ -1027,6 +1242,8 @@ double GetInterAreaBF(POLYGON *inP1, double u0, double v0, double u1, double v1,
 				*vC = (float)vc;
 			}
 		}
+
+
 	}
 
 	return (u1 - u0)*(v1 - v0)*((double)nbHit / (double)(step*step));
@@ -1283,6 +1500,7 @@ int  SolveIASM(double *u ,double *v,double *w,
 
 	}
 
+
 	return 1;
 
 not_found:
@@ -1295,6 +1513,7 @@ not_found:
 // Compute determinant and store it in xmm0 low quadword (REM: all xmm registers are affected)
 #define DET33SSE(_11,_12,_13,_21,_22,_23,_31,_32,_33) \
 	__asm {                 \
+
 	__asm movq    xmm0,_23  \
 	__asm movq    xmm1,_31  \
 	__asm movq    xmm2,_33  \
@@ -1305,8 +1524,12 @@ not_found:
 	__asm movhpd  xmm3,_23  \
 	__asm movq    xmm4,_21  \
 	__asm movq    xmm5,_32  \
+
 	__asm mulpd   xmm0,xmm1 \
 	__asm mulpd   xmm2,xmm3 \
+
+
+
 	__asm mulsd   xmm4,xmm5 \
 	__asm movq    xmm6,_31  \
 	__asm movq    xmm7,_22  \
