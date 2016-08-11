@@ -77,7 +77,7 @@ GLApplication::GLApplication() {
 double GLApplication::GetTick() {
 
 #ifdef WIN
-
+ 
   LARGE_INTEGER t,dt;
   QueryPerformanceCounter( &t );
   dt.QuadPart = t.QuadPart - perfTickStart.QuadPart;
@@ -111,6 +111,7 @@ int GLApplication::setUpSDL(BOOL doFirstInit) {
 
   SDL_Surface *vSurf = SDL_GetVideoSurface();
   m_bitsPerPixel = vSurf->format->BitsPerPixel;
+  
 
   errCode = GLToolkit::RestoreDeviceObjects(m_screenWidth,m_screenHeight);
   if( !errCode ) {

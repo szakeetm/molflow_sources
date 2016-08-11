@@ -397,7 +397,7 @@ void GLParser::ReadTerm(ETREE **node,VLIST **var_list)
 						  }
 						  
 				  }
-				  else if (!selectedFacets) { //Regular selection group
+					else if (!selectedFacets) { //Regular selection group
 					  i1--; //selection indexes start from 0
 					  //SUM of a selection Group
 					  if (i1 < 0 || i1 >= mApp->nbSelection) {

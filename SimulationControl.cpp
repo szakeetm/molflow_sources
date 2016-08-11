@@ -98,7 +98,7 @@ void ClearSimulation() {
 			if (f) {
 				SAFE_FREE(f->indices);
 				SAFE_FREE(f->vertices2);
-				SAFE_FREE(f->fullElem);
+				//SAFE_FREE(f->fullElem);
 				SAFE_FREE(f->inc);
 				SAFE_FREE(f->largeEnough);
 				for (size_t m = 0; m < (sHandle->nbMoments + 1); m++) {
@@ -444,8 +444,8 @@ BOOL LoadSimulation(Dataport *loader) {
 				int nbE = f->sh.texWidth*f->sh.texHeight;
 				f->inc = (double *)malloc(nbE*sizeof(double));
 				f->largeEnough = (BOOL *)malloc(sizeof(BOOL)*nbE);
-				f->fullElem = (BOOL *)malloc(sizeof(BOOL)*nbE);
-				if (!(f->inc && f->largeEnough && f->fullElem)) {
+				//f->fullElem = (BOOL *)malloc(sizeof(BOOL)*nbE);
+				if (!(f->inc && f->largeEnough /*&& f->fullElem*/)) {
 					SetErrorSub("Not enough memory to load");
 					return FALSE;
 				}
@@ -453,12 +453,12 @@ BOOL LoadSimulation(Dataport *loader) {
 				for (j = 0; j < nbE; j++) {
 					double incVal = READBUFFER(double);
 					if (incVal < 0) {
-						f->fullElem[j] = 1;
+						//f->fullElem[j] = 1;
 						f->inc[j] = -incVal;
 					}
 					else {
 
-						f->fullElem[j] = 0;
+						//f->fullElem[j] = 0;
 						f->inc[j] = incVal;
 					}
 					if ((f->inc[j]>0.0) && (f->inc[j] < f->fullSizeInc)) f->fullSizeInc = f->inc[j];

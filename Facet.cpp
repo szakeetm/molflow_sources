@@ -1208,7 +1208,7 @@ size_t Facet::GetHitsSize(size_t nbMoments) {
 size_t Facet::GetTexSwapSize(BOOL useColormap) {
 
 	size_t tSize = texDimW*texDimH;
-	if (useColormap) tSize = tSize * (sizeof(llong) + 2 * sizeof(double));
+	if (useColormap) tSize *=4;
 	return tSize;
 
 }
@@ -1232,7 +1232,7 @@ size_t Facet::GetTexSwapSizeForRatio(double ratio, BOOL useColor) {
 		int tDim = GetPower2(m);
 		if (tDim < 16) tDim = 16;
 		size_t tSize = tDim*tDim;
-		if (useColor) tSize = tSize * (sizeof(llong) + 2 * sizeof(double));
+		if (useColor) tSize = tSize *= 4;
 		return tSize;
 
 	}

@@ -52,7 +52,7 @@ public:
   BOOL     *largeEnough;      // cells that are NOT too small for autoscaling
   double   fullSizeInc;       // Texture increment of a full texture element
   VHIT     **direction;       // Direction field recording (average)
-  BOOL     *fullElem;         // Direction field recording (only on full element)
+  //BOOL     *fullElem;         // Direction field recording (only on full element)
   APROFILE **profile;         // Distribution and hit recording
 
   // Temporary var (used in Intersect for collision)
