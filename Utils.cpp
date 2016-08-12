@@ -323,7 +323,7 @@ int EmptyTriangle(POLYGON *p, int i1, int i2, int i3, VERTEX2D *center) {
 
 // -----------------------------------------------------------
 
-int IsInPoly(double u, double v, VERTEX2D *pts, int nbPts) {
+int IsInPoly(const double &u, const double &v, VERTEX2D *pts, const int &nbPts,const bool &includeEdges) {
 
 	// 2D polygon "is inside" solving
 	// Using the "Jordan curve theorem" (we intersect in v direction here)
@@ -334,12 +334,17 @@ int IsInPoly(double u, double v, VERTEX2D *pts, int nbPts) {
 	n_updown = 0;
 	n_found = 0;
 
-	for (j = 0; j < nbPts - 1; j++) {
+	bool isOnEdge = false;
+	for (j = 0; (!includeEdges || !isOnEdge) && j < nbPts - 1; j++) {
+
+		
 
 		x1 = pts[j].u;
 		y1 = pts[j].v;
 		x2 = pts[j + 1].u;
 		y2 = pts[j + 1].v;
+		
+		if (includeEdges) isOnEdge = isOnEdge || IsOnSection(u, v, x1, y1, x2, y2,1E-5);
 
 		if (x2>x1) { minx = x1; maxx = x2; }
 		else        { minx = x2; maxx = x1; }
@@ -365,6 +370,8 @@ int IsInPoly(double u, double v, VERTEX2D *pts, int nbPts) {
 	x2 = pts[0].u;
 	y2 = pts[0].v;
 
+	if (includeEdges) isOnEdge = isOnEdge || IsOnSection(u, v, x1, y1, x2, y2, 1E-5);
+
 	if (x2 > x1) { minx = x1; maxx = x2; }
 	else        { minx = x2; maxx = x1; }
 
@@ -381,8 +388,37 @@ int IsInPoly(double u, double v, VERTEX2D *pts, int nbPts) {
 	}
 
 	if (n_updown < 0) n_updown = -n_updown;
-	return (((n_found / 2) & 1) ^ ((n_updown / 2) & 1));
+	if (includeEdges && isOnEdge) return 1;
+	else return (((n_found / 2) & 1) ^ ((n_updown / 2) & 1));
 
+}
+
+int IsOnPolyEdge(const double & u, const double & v, VERTEX2D * pts, const int & nbPts, const double & tolerance)
+{
+	bool onEdge = false;
+	for (int i = 0;!onEdge && i < nbPts;i++) {
+		double x1 = pts[i].u;
+		double y1 = pts[i].v;
+		double x2 = pts[(i + 1) % nbPts].u;
+		double y2 = pts[(i + 1) % nbPts].v;
+		onEdge = IsOnSection(u, v, x1, y1, x2, y2,tolerance);
+	}
+	return onEdge;
+}
+
+int IsOnSection(const double & u, const double & v, const double & baseU, const double & baseV, const double & targetU, const double & targetV, const double & tolerance)
+{
+	//Notation from https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
+	//u=x0
+	//v=y0
+	//baseU=x1
+	//baseV=y1
+	//targetU=x2
+	//targetV=y2
+	double distU = targetU - baseU;
+	double distV = targetV - baseV;
+	double distance = abs(distV*u-distU*v+targetU*baseV-targetV*baseU) / sqrt(pow(distV, 2) + pow(distU, 2));
+	return distance < tolerance;
 }
 
 // -----------------------------------------------------------
@@ -433,7 +469,7 @@ int Intersect2D(VERTEX2D *p1, VERTEX2D *p2, VERTEX2D *p3, VERTEX2D *p4, VERTEX2D
 
 // -----------------------------------------------------------
 
-int IsOnEdge(VERTEX2D *p1, VERTEX2D *p2, VERTEX2D *p) {
+/*int IsOnEdge(VERTEX2D *p1, VERTEX2D *p2, VERTEX2D *p) {
 
 	// Returns 1 wether p lies in [P1P2], 0 otherwise
 
@@ -455,7 +491,7 @@ int IsOnEdge(VERTEX2D *p1, VERTEX2D *p2, VERTEX2D *p) {
 	t = n1 / n2;
 	return (t >= 0.0 && t <= 1.0);
 
-}
+}*/
 
 // -----------------------------------------------------------
 

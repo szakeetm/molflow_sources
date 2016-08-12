@@ -2008,7 +2008,10 @@ std::vector<size_t> Geometry::ConstructIntersection() {
 						if (IntersectingPlaneWithLine(base, side, f2->sh.O, f2->sh.N, &intersectionPoint, TRUE)) {
 							VERTEX2D projected;
 							ProjectVertex(&intersectionPoint, &projected, &f2->sh.U, &f2->sh.V, &f2->sh.O);
-							if (IsInPoly(projected.u, projected.v, f2->vertices2, f2->sh.nbIndex)) {
+							BOOL inPoly = IsInPoly(projected.u, projected.v, f2->vertices2, f2->sh.nbIndex);
+							BOOL onEdge = IsOnPolyEdge(projected.u, projected.v, f2->vertices2, f2->sh.nbIndex, 1E-6);
+							//onEdge = FALSE;
+							if (inPoly || onEdge) {
 								//Intersection found. First check if we already created this point
 								int foundId = -1;
 								for (size_t v = 0;foundId == -1 && v < newVertices.size();v++) {
@@ -2028,9 +2031,8 @@ std::vector<size_t> Geometry::ConstructIntersection() {
 								}
 								newPoint.withFacetId = j;
 								selectedFacets[i].intersectionPointId[index].push_back(newPoint);
-
 								newPointOtherFacet.withFacetId = i; //With my edge
-								selectedFacets[j].intersectingPoints.push_back(newPointOtherFacet); //Other facet's plane intersected
+								if (!onEdge) selectedFacets[j].intersectingPoints.push_back(newPointOtherFacet); //Other facet's plane intersected
 							}
 						}
 					}
@@ -2116,7 +2118,7 @@ std::vector<size_t> Geometry::ConstructIntersection() {
 							}
 						}
 					}
-					clipPaths.push_back(path);
+					if (path.size()>1) clipPaths.push_back(path);
 				}
 			}
 		}
