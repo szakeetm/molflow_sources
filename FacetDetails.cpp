@@ -329,14 +329,14 @@ char *FacetDetails::FormatCell(int idx,Facet *f,int mode) {
 	{
 	double dCoef = 1.0 / worker->nbDesorption * 1E4;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 
-	dCoef *= worker->finalOutgassingRate;
+	dCoef *= (worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules / worker->timeWindowSize);
 	sprintf(ret, "%g", f->counterCache.hit.nbHit / (f->sh.area*(f->sh.is2sided ? 2.0 : 1.0))*dCoef);
 	//11.77=sqrt(8*8.31*293.15/3.14/0.028)/4/10
 	break; }
 	case 19: //particle density
 	{
 	double dCoef = /*totalInFlux*/ 1.0 / worker->nbDesorption * 1E4;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
-	dCoef *= worker->finalOutgassingRate;
+	dCoef *= (worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules / worker->timeWindowSize);
 	
 	//Correction for double-density effect (measuring density on desorbing/absorbing facets):
 	if (f->counterCache.hit.nbHit>0 || f->counterCache.hit.nbDesorbed>0)
@@ -350,7 +350,7 @@ char *FacetDetails::FormatCell(int idx,Facet *f,int mode) {
 	{
 	double dCoef =  1.0 / worker->nbDesorption * 1E4;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 
-	dCoef *= worker->finalOutgassingRate; //Moments not supported in face details window
+	dCoef *= (worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules / worker->timeWindowSize);
 	
 	//Correction for double-density effect (measuring density on desorbing/absorbing facets):
 	if (f->counterCache.hit.nbHit>0 || f->counterCache.hit.nbDesorbed>0)
@@ -363,7 +363,7 @@ char *FacetDetails::FormatCell(int idx,Facet *f,int mode) {
 	{
 	double dCoef = 1.0 / worker->nbDesorption * 1E4 * (worker->gasMass / 1000 / 6E23) * 0.0100;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 
-	dCoef *= worker->finalOutgassingRate;
+	dCoef *= (worker->displayedMoment==0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules / worker->timeWindowSize);
 	sprintf(ret, "%g", f->counterCache.hit.sum_v_ort*dCoef / (f->sh.area*(f->sh.is2sided ? 2.0 : 1.0)));
 	break; }
 	case 22: //avg. gas speed (estimate)
