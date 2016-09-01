@@ -122,7 +122,7 @@ public:
   void ScaleSelectedVertices(VERTEX3D invariant,double factor,BOOL copy,Worker *worker);
   void ScaleSelectedFacets(VERTEX3D invariant,double factorX,double factorY,double factorZ,BOOL copy,Worker *worker);
   std::vector<DeletedFacet> SplitSelectedFacets(const VERTEX3D &base, const VERTEX3D &normal, size_t *nbCreated,/*Worker *worker,*/GLProgress *prg=NULL);
-  std::vector<size_t> ConstructIntersection();
+  std::vector<DeletedFacet> ConstructIntersection(size_t *nbCreated);
   BOOL IntersectingPlaneWithLine(const VERTEX3D &P0, const VERTEX3D &u, const VERTEX3D &V0, const VERTEX3D &n, VERTEX3D *intersectPoint,BOOL withinSection=FALSE);
   void MoveSelectedFacets(double dX,double dY,double dZ,BOOL copy,Worker *worker);
   void MirrorSelectedFacets(VERTEX3D P0,VERTEX3D N,BOOL copy,Worker *worker);

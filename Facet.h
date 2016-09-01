@@ -141,6 +141,7 @@ public:
 struct DeletedFacet {
 	Facet *f;
 	size_t ori_pos;
+	BOOL replaceOri;
 };
 
 #endif /* FACETH */

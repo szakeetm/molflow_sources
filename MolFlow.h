@@ -42,6 +42,7 @@
 #include "ExtrudeFacet.h"
 #include "MirrorFacet.h"
 #include "SplitFacet.h"
+#include "BuildIntersection.h"
 #include "RotateFacet.h"
 #include "Movement.h"
 #include "AlignFacet.h"
@@ -324,6 +325,7 @@ public:
 	MoveFacet		 *moveFacet;
 	MirrorFacet	     *mirrorFacet;
 	SplitFacet       *splitFacet;
+	BuildIntersection *buildIntersection;
 	RotateFacet      *rotateFacet;
 	Movement         *movement;
 	AlignFacet       *alignFacet;

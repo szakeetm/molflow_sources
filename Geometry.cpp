@@ -105,6 +105,7 @@ void Geometry::Clear() {
 	DeleteGLLists(TRUE, TRUE);
 
 	if (mApp && mApp->splitFacet) mApp->splitFacet->ClearUndoFacets();
+	if (mApp && mApp->buildIntersection) mApp->buildIntersection->ClearUndoFacets();
 
 	// Init default
 	facets = NULL;         // Facets array

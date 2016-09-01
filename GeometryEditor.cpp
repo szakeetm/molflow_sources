@@ -1172,7 +1172,7 @@ void Geometry::RemoveFacets(const std::vector<size_t> &facetIdList, BOOL doNotDe
 	size_t nb = 0;
 	for (size_t i = 0; i < sh.nbFacet; i++) {
 		if (facetSelected[i]) {
-			if (!doNotDestroy) delete facets[i]; //Otherwise it's referenced by an Undo list
+			if (!doNotDestroy) SAFE_DELETE(facets[i]); //Otherwise it's referenced by an Undo list
 			mApp->RenumberSelections(nb);
 			mApp->RenumberFormulas(nb);
 
@@ -1192,7 +1192,10 @@ void Geometry::RemoveFacets(const std::vector<size_t> &facetIdList, BOOL doNotDe
 }
 
 void Geometry::RestoreFacets(std::vector<DeletedFacet> deletedFacetList, BOOL toEnd) {
-	Facet** tempFacets = (Facet**)malloc(sizeof(Facet*)*(sh.nbFacet + deletedFacetList.size()));
+	size_t nbNew = 0;
+	for (auto restoreFacet : deletedFacetList)
+		if (!restoreFacet.ori_pos || toEnd) nbNew++;
+	Facet** tempFacets = (Facet**)malloc(sizeof(Facet*)*(sh.nbFacet + nbNew));
 	size_t pos = 0;
 	size_t nbInsert = 0;
 	if (toEnd) { //insert to end
@@ -1212,10 +1215,11 @@ void Geometry::RestoreFacets(std::vector<DeletedFacet> deletedFacetList, BOOL to
 				tempFacets[insertPos] = facets[insertPos - nbInsert];
 				pos++;
 			}
+			//if (restoreFacet.replaceOri) pos--;
 			tempFacets[pos] = restoreFacet.f;
 			tempFacets[pos]->selected = TRUE;
 			pos++;
-			nbInsert++;
+			if (!restoreFacet.replaceOri) nbInsert++;
 		}
 		//Remaining facets
 		for (size_t insertPos = pos;insertPos < (sh.nbFacet + nbInsert);insertPos++) {
@@ -1961,11 +1965,14 @@ struct EdgePoint {
 	BOOL visited;
 };
 
-std::vector<size_t> Geometry::ConstructIntersection() {
+std::vector<DeletedFacet> Geometry::ConstructIntersection(size_t *nbCreated) {
+	mApp->changedSinceSave = TRUE;
 	//UnselectAllVertex();
-	std::vector<size_t> result;
+	//std::vector<size_t> result;
 	std::vector<VERTEX3D> newVertices;
 	std::vector<IntersectFacet> selectedFacets;
+	std::vector<DeletedFacet> deletedFacetList;
+	*nbCreated = 0; //Total number of new facets created
 
 	//Populate selected facets
 	for (size_t i = 0;i < sh.nbFacet;i++) {
@@ -2043,7 +2050,7 @@ std::vector<size_t> Geometry::ConstructIntersection() {
 	vertices3 = (VERTEX3D*)realloc(vertices3, sizeof(VERTEX3D)*(sh.nbVertex + newVertices.size()));
 	for (VERTEX3D vertex : newVertices) {
 		vertices3[sh.nbVertex] = vertex;
-		result.push_back(sh.nbVertex);
+		//result.push_back(sh.nbVertex);
 		sh.nbVertex++;
 	}
 	UnSelectAll();
@@ -2122,13 +2129,14 @@ std::vector<size_t> Geometry::ConstructIntersection() {
 				}
 			}
 		}
+		
 		if (clipPaths.size() > 0) {
 			//Construct clipped facet, having a selected vertex
 			std::vector<BOOL> isIndexSelected(f->sh.nbIndex);
 			for (size_t v = 0; v < f->sh.nbIndex;v++) {
 				isIndexSelected[v] = vertices3[f->indices[v]].selected; //Make a copy, we don't want to deselect vertices
 			}
-			size_t nbNewfacet = 0;
+			size_t nbNewfacet = 0; //Number of new facets created for this particular clipping path
 			for (size_t v = 0; v < f->sh.nbIndex;v++) {
 				size_t currentVertex = v;
 				if (isIndexSelected[currentVertex]) {
@@ -2183,10 +2191,18 @@ std::vector<size_t> Geometry::ConstructIntersection() {
 							f->indices[i] = clipPath[i];
 						f->selected = TRUE;
 
-						if (nbNewfacet == 1) facets[selectedFacets[facetId].id] = f; //replace original
-						else { //create new
+						if (nbNewfacet == 1) {//replace original
+							DeletedFacet df;
+							df.f = facets[selectedFacets[facetId].id];
+							df.ori_pos = selectedFacets[facetId].id;
+							df.replaceOri = TRUE;
+							deletedFacetList.push_back(df);
+							facets[selectedFacets[facetId].id] = f; //replace original
+						}
+						else {//create new
 							facets = (Facet**)realloc(facets, sizeof(Facet*)*(sh.nbFacet + 1));
 							facets[sh.nbFacet++] = f;
+							(*nbCreated)++;
 						}
 					}
 				}
@@ -2222,7 +2238,7 @@ std::vector<size_t> Geometry::ConstructIntersection() {
 			vertices3[vertexId].selected = TRUE;*/
 
 	Rebuild();
-	return result;
+	return deletedFacetList;
 }
 
 std::vector<DeletedFacet> Geometry::SplitSelectedFacets(const VERTEX3D &base, const VERTEX3D &normal, size_t *nbCreated,/*Worker *worker,*/GLProgress *prg) {
@@ -2391,6 +2407,7 @@ std::vector<DeletedFacet> Geometry::SplitSelectedFacets(const VERTEX3D &base, co
 				DeletedFacet df;
 				df.ori_pos = i;
 				df.f = f; //Keep the pointer in memory
+				df.replaceOri = FALSE;
 				deletedFacetList.push_back(df);
 			} //end if there was a cut
 		}

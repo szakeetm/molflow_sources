@@ -328,6 +328,7 @@ MolFlow::MolFlow()
 	extrudeFacet = NULL;
 	mirrorFacet = NULL;
 	splitFacet = NULL;
+	buildIntersection = NULL;
 	rotateFacet = NULL;
 	movement = NULL;
 	alignFacet = NULL;
@@ -477,13 +478,6 @@ int MolFlow::OneTimeSceneInit()
 	clearSelectionsMenu->Add("Clear All", MENU_SELECTION_CLEARALL);
 	clearSelectionsMenu->Add(NULL); // Separator
 
-	menu->GetSubMenu("Selection")->Add(NULL); // Separator
-	menu->GetSubMenu("Selection")->Add(NULL); // Separator
-	menu->GetSubMenu("Selection")->Add("Select all vertex", MENU_VERTEX_SELECTALL);
-	menu->GetSubMenu("Selection")->Add("Unselect all vertex", MENU_VERTEX_UNSELECTALL);
-	menu->GetSubMenu("Selection")->Add("Select coplanar vertex (visible on screen)", MENU_VERTEX_SELECT_COPLANAR);
-	menu->GetSubMenu("Selection")->Add("Select isolated vertex", MENU_SELECTION_ISOLATED_VERTEX);
-
 
 	menu->Add("Tools");
 
@@ -521,7 +515,7 @@ int MolFlow::OneTimeSceneInit()
 	menu->GetSubMenu("Facet")->GetSubMenu("Create two facets' ...")->Add("Intersection", MENU_FACET_CREATE_INTERSECTION);
 	menu->GetSubMenu("Facet")->GetSubMenu("Create two facets' ...")->Add("XOR", MENU_FACET_CREATE_XOR);
 	menu->GetSubMenu("Facet")->Add("Transition between 2", MENU_FACET_LOFT);
-	menu->GetSubMenu("Facet")->Add("Build intersection", MENU_FACET_INTERSECT);
+	menu->GetSubMenu("Facet")->Add("Build intersection...", MENU_FACET_INTERSECT);
 	menu->GetSubMenu("Facet")->Add("Convert to outgassing map...", MENU_FACET_OUTGASSINGMAP);
 	menu->GetSubMenu("Facet")->Add(NULL); // Separator
 
@@ -550,6 +544,11 @@ int MolFlow::OneTimeSceneInit()
 	menu->GetSubMenu("Vertex")->Add("Move selected...", MENU_VERTEX_MOVE);
 	menu->GetSubMenu("Vertex")->Add("Scale selected...", MENU_VERTEX_SCALE);
 	menu->GetSubMenu("Vertex")->Add("Add new...", MENU_VERTEX_ADD);
+	menu->GetSubMenu("Vertex")->Add(NULL); // Separator
+	menu->GetSubMenu("Vertex")->Add("Select all vertex", MENU_VERTEX_SELECTALL);
+	menu->GetSubMenu("Vertex")->Add("Unselect all vertex", MENU_VERTEX_UNSELECTALL);
+	menu->GetSubMenu("Vertex")->Add("Select coplanar vertex (visible on screen)", MENU_VERTEX_SELECT_COPLANAR);
+	menu->GetSubMenu("Vertex")->Add("Select isolated vertex", MENU_SELECTION_ISOLATED_VERTEX);
 
 	menu->Add("View");
 
@@ -2311,6 +2310,7 @@ int MolFlow::RestoreDeviceObjects()
 	RVALIDATE_DLG(extrudeFacet);
 	RVALIDATE_DLG(mirrorFacet);
 	RVALIDATE_DLG(splitFacet);
+	RVALIDATE_DLG(buildIntersection);
 	RVALIDATE_DLG(rotateFacet);
 	RVALIDATE_DLG(movement);
 	RVALIDATE_DLG(alignFacet);
@@ -2358,6 +2358,7 @@ int MolFlow::InvalidateDeviceObjects()
 	IVALIDATE_DLG(extrudeFacet);
 	IVALIDATE_DLG(mirrorFacet);
 	IVALIDATE_DLG(splitFacet);
+	IVALIDATE_DLG(buildIntersection);
 	IVALIDATE_DLG(rotateFacet);
 	IVALIDATE_DLG(alignFacet);
 	IVALIDATE_DLG(addVertex);
@@ -3702,17 +3703,11 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			mApp->UpdateViewers();
 			break;
 		case MENU_FACET_INTERSECT:
-			if (geom->GetNbSelected() < 2) {
-				GLMessageBox::Display("Select at least 2 facets", "Can't create intersection", GLDLG_OK, GLDLG_ICONERROR);
-				return;
+			if (!buildIntersection || !buildIntersection->IsVisible()) {
+				SAFE_DELETE(buildIntersection);
+				buildIntersection = new BuildIntersection(geom, &worker);
+				buildIntersection->SetVisible(TRUE);
 			}
-			if (AskToReset()) {
-				geom->ConstructIntersection();
-			}
-			worker.Reload();
-			mApp->UpdateModelParams();
-			mApp->UpdateFacetlistSelected();
-			mApp->UpdateViewers();
 			break;
 
 		case MENU_VERTEX_SELECT_COPLANAR:
