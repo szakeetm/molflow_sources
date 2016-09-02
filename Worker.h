@@ -216,7 +216,7 @@ int GetIDId(int paramId);
   BOOL needsReload;
 
   std::vector<Parameter> parameters;
-  
+  BOOL abortRequested; //Signal to stop current operation (Collapse, Analyze, etc.)
   int displayedMoment;
   
 	// Current loaded file

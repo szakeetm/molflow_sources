@@ -51,6 +51,7 @@
 #include "FacetCoordinates.h"
 #include "VertexCoordinates.h"
 #include "FacetDetails.h"
+#include "SmartSelection.h"
 #include "Viewer3DSettings.h"
 #include "TextureSettings.h"
 #include "GlobalSettings.h"
@@ -164,6 +165,7 @@ public:
 	void UpdateMeasurements();
 	void QuickPipe();
 	void CreateOfTwoFacets(ClipperLib::ClipType type);
+	void DoEvents(BOOL forced=FALSE); //Used to catch button presses (check if an abort button was pressed during an operation)
 	void UpdateFacetlistSelected();
 	BOOL AskToSave();
 	BOOL AskToReset(Worker *work=NULL);
@@ -174,15 +176,16 @@ public:
 	void UpdateViewers();
 	void SetFacetSearchPrg(BOOL visible,char *text);
 	void DisplayCollapseDialog();
-	void RenumberSelections(size_t startFacetId);
+	void RenumberSelections(const std::vector<int> &newRefs);
+	void RenumberFormulas(std::vector<int> *newRefs);
 
     // Formula management
     int nbFormula;
 	FORMULA formulas[MAX_FORMULA];
 	void ProcessFormulaButtons(GLComponent *src);
     void UpdateFormula();
-	BOOL OffsetFormula(char* expression,int offset,int filter=-1);
-	void RenumberFormulas(size_t startId);
+	BOOL OffsetFormula(char* expression,int offset,int filter=-1,std::vector<int> *newRefs=NULL);
+	void RenumberFormulas(std::vector<size_t> newRefs);
     void AddFormula(GLParser *f,BOOL doUpdate=TRUE);
 	void AddFormula(const char *fName, const char *formula);
 	void ClearFormula();
@@ -332,6 +335,7 @@ public:
 	AddVertex		 *addVertex;
     FacetMesh        *facetMesh;
     FacetDetails     *facetDetails;
+	SmartSelection   *smartSelection;
     Viewer3DSettings *viewer3DSettings;
     TextureSettings  *textureSettings;
 	GlobalSettings	 *globalSettings;

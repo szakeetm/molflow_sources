@@ -24,6 +24,12 @@
 #include "File.h"
 #include "PugiXML/pugixml.hpp"
 
+//Smart selection stuff
+struct NeighborFacet {
+	size_t id;
+	double angleDiff;
+};
+
 class Facet {
 
 public:
@@ -83,7 +89,11 @@ public:
   std::string userSticking;
   std::string userOpacity;
 
-  SHHITS counterCache; //Local copy of facet counter for the current moment, updated by Worker::Update()
+  //Smart selection stuff
+
+  std::vector<NeighborFacet> neighbors;
+
+  SHHITS counterCache; //Local copy of facet counter for the current moment, updated by Worker::Update() or moment change
 
   // GUI stuff
   BOOL  *visible;         // Edge visible flag
@@ -143,5 +153,7 @@ struct DeletedFacet {
 	size_t ori_pos;
 	BOOL replaceOri;
 };
+
+
 
 #endif /* FACETH */

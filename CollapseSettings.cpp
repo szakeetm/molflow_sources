@@ -88,6 +88,7 @@ CollapseSettings::CollapseSettings():GLWindow() {
 
 	RestoreDeviceObjects();
 
+	isRunning = FALSE;
 	geom = NULL;
 
 }
@@ -120,56 +121,70 @@ void CollapseSettings::ProcessMessage(GLComponent *src,int message) {
 			GLWindow::ProcessMessage(NULL,MSG_CLOSE);
 
 		} else if (src==goButton || src==goSelectedButton) {
+			if (!isRunning) {
+				if (!vThreshold->GetNumber(&vT) || !(vT > 0.0)) {
+					GLMessageBox::Display("Invalid vertex distance value.\nMust be a positive number.", "Error", GLDLG_OK, GLDLG_ICONERROR);
+					return;
+				}
+				if (!pThreshold->GetNumber(&fT) || !(fT > 0.0)) {
+					GLMessageBox::Display("Invalid planarity threshold value.\nMust be a positive number.", "Error", GLDLG_OK, GLDLG_ICONERROR);
+					return;
+				}
+				if (!lThreshold->GetNumber(&lT) || !(lT > 0.0)) {
+					GLMessageBox::Display("Invalid linearity threshold value.\nMust be a positive number.", "Error", GLDLG_OK, GLDLG_ICONERROR);
+					return;
+				}
+				if (!mApp->AskToReset(work)) return;
+				GLProgress *progressDlg = new GLProgress("Collapse", "Please wait");
+				progressDlg->SetProgress(0.0);
+				progressDlg->SetVisible(TRUE);
+				if (!l1->GetState()) vT = 0.0;
+				if (!l2->GetState()) fT = 0.0;
+				if (!l3->GetState()) lT = 0.0;
 
-			if( !vThreshold->GetNumber(&vT) || !(vT>0.0)) {
-				GLMessageBox::Display("Invalid vertex distance value.\nMust be a positive number.","Error",GLDLG_OK,GLDLG_ICONERROR);
-				return;
+				((GLButton*)src)->SetText("Stop collapse");
+				isRunning = TRUE;
+
+				geom->Collapse(vT, fT, lT, (src == goSelectedButton), work,progressDlg);
+
+				if (src == goButton) goButton->SetText("Collapse");
+				else if (src == goSelectedButton) goSelectedButton->SetText("Collapse selected");
+				isRunning = FALSE;
+
+				geom->CheckCollinear();
+				geom->CheckNonSimple();
+				geom->CheckIsolatedVertex();
+
+				mApp->UpdateModelParams();
+				if (mApp->vertexCoordinates) mApp->vertexCoordinates->Update();
+				if (mApp->facetCoordinates) mApp->facetCoordinates->UpdateFromSelection();
+				if (mApp->profilePlotter) mApp->profilePlotter->Refresh();
+				if (mApp->pressureEvolution) mApp->pressureEvolution->Refresh();
+				if (mApp->timewisePlotter) mApp->timewisePlotter->Refresh();
+				// Send to sub process
+				try { work->Reload(); }
+				catch (Error &e) {
+					GLMessageBox::Display((char *)e.GetMsg(), "Error reloading worker", GLDLG_OK, GLDLG_ICONERROR);
+				}
+
+				progressDlg->SetVisible(FALSE);
+				SAFE_DELETE(progressDlg);
+
+				// Update result
+				char tmp[512];
+				sprintf(tmp, "Selected: %d\nVertex:    %d/%d\nFacet:    %d/%d\n\nLast action: Collapse all",
+					geom->GetNbSelected(), geom->GetNbVertex(), nbVertexS, geom->GetNbFacet(), nbFacetS);
+				resultLabel->SetText(tmp);
+
+
+				GLWindowManager::FullRepaint();
 			}
-			if( !pThreshold->GetNumber(&fT) || !(fT>0.0)) {
-				GLMessageBox::Display("Invalid planarity threshold value.\nMust be a positive number.","Error",GLDLG_OK,GLDLG_ICONERROR);
-				return;
+			else {
+				if (src == goButton) goButton->SetText("Collapse");
+				else if (src == goSelectedButton) goSelectedButton->SetText("Collapse selected");
+				isRunning = FALSE;
+				work->abortRequested = TRUE;
 			}
-			if( !lThreshold->GetNumber(&lT) || !(lT>0.0)) {
-				GLMessageBox::Display("Invalid linearity threshold value.\nMust be a positive number.","Error",GLDLG_OK,GLDLG_ICONERROR);
-				return;
-			}
-			if (!mApp->AskToReset(work)) return;
-			GLProgress *progressDlg = new GLProgress("Collapse","Please wait");
-			progressDlg->SetProgress(0.0);
-			progressDlg->SetVisible(TRUE);
-			if (!l1->GetState()) vT=0.0;
-			if (!l2->GetState()) fT=0.0;
-			if (!l3->GetState()) lT=0.0;
-
-			geom->Collapse(vT,fT,lT,(src==goSelectedButton),progressDlg);
-			
-			geom->CheckCollinear();
-			geom->CheckNonSimple();
-			geom->CheckIsolatedVertex();
-
-			mApp->UpdateModelParams();
-			if (mApp->vertexCoordinates) mApp->vertexCoordinates->Update();
-			if (mApp->facetCoordinates) mApp->facetCoordinates->UpdateFromSelection();
-			if (mApp->profilePlotter) mApp->profilePlotter->Refresh();
-			if (mApp->pressureEvolution) mApp->pressureEvolution->Refresh();
-			if (mApp->timewisePlotter) mApp->timewisePlotter->Refresh();
-			// Send to sub process
-			try { work->Reload(); } catch(Error &e) {
-				GLMessageBox::Display((char *)e.GetMsg(),"Error reloading worker",GLDLG_OK,GLDLG_ICONERROR);
-			}
-
-			progressDlg->SetVisible(FALSE);
-			SAFE_DELETE(progressDlg);
-
-			// Update result
-			char tmp[512];
-			sprintf(tmp,"Selected: %d\nVertex:    %d/%d\nFacet:    %d/%d\n\nLast action: Collapse all",
-				geom->GetNbSelected(),geom->GetNbVertex(),nbVertexS,geom->GetNbFacet(),nbFacetS);
-			resultLabel->SetText(tmp);
-
-
-			GLWindowManager::FullRepaint();
-
 		}
 		break;
 	}

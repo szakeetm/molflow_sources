@@ -1,6 +1,6 @@
 /*
-  File:        CollapseSettings.h
-  Description: Collapse settings dialog
+  File:        SmartSelection.h
+  Description: Smart selection dialog
   Program:     MolFlow
   Author:      R. KERSEVAN / J-L PONS / M ADY
   Copyright:   E.S.R.F / CERN
@@ -25,19 +25,16 @@
 #include "Geometry.h"
 #include "Worker.h"
 
-#ifndef _COLLAPSESETTINGSH_
-#define _COLLAPSESETTINGSH_
+#pragma once
 
-class CollapseSettings : public GLWindow {
+class SmartSelection : public GLWindow {
 
 public:
 
   // Construction
-  CollapseSettings();
-
-  // Component methods
-  void SetGeometry(Geometry *s,Worker *w);
-
+  SmartSelection(Geometry *g,Worker *w);
+  BOOL IsSmartSelection();
+  double GetMaxAngle();
   // Implementation
   void ProcessMessage(GLComponent *src,int message);
 
@@ -46,24 +43,11 @@ private:
   Geometry     *geom;
   Worker	   *work;
 
-  GLButton    *goButton;
-  GLButton    *goSelectedButton;
-  GLButton    *cancelButton;
+  GLButton    *analyzeButton;
   GLLabel     *resultLabel;
-  GLTextField *vThreshold;
-  GLTextField *pThreshold;
-  GLTextField *lThreshold;
-  GLToggle *l1;
-  GLToggle *l2;
-  GLToggle *l3;
+  GLTextField *angleThreshold;
+  GLToggle    *enableToggle;
 
   BOOL isRunning;
-
-  int nbVertexS;
-  int nbFacetS;
-  int nbFacetSS;
-
 };
-
-#endif /* _COLLAPSESETTINGSH_ */
 

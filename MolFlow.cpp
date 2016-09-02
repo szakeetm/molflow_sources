@@ -182,6 +182,8 @@ MolFlow *mApp;
 #define MENU_SELECTION_SELECTFACETNUMBER 360
 #define MENU_SELECTION_ISOLATED_VERTEX 361
 
+#define MENU_SELECTION_SMARTSELECTION 362
+
 #define MENU_VERTEX_SELECTALL   701
 #define MENU_VERTEX_UNSELECTALL 702
 #define MENU_VERTEX_CLEAR_ISOLATED 703
@@ -335,6 +337,7 @@ MolFlow::MolFlow()
 	addVertex = NULL;
 	facetMesh = NULL;
 	facetDetails = NULL;
+	smartSelection = NULL;
 	viewer3DSettings = NULL;
 	textureSettings = NULL;
 	globalSettings = NULL;
@@ -437,6 +440,8 @@ int MolFlow::OneTimeSceneInit()
 	//menu->GetSubMenu("File")->SetIcon(MENU_FILE_LOADRECENT,83,24);//83,24
 
 	menu->Add("Selection");
+	menu->GetSubMenu("Selection")->Add("Smart Select facets...", MENU_SELECTION_SMARTSELECTION, SDLK_s, ALT_MODIFIER);
+	menu->GetSubMenu("Selection")->Add(NULL); // Separator
 	menu->GetSubMenu("Selection")->Add("Select All Facets", MENU_FACET_SELECTALL, SDLK_a, CTRL_MODIFIER);
 	menu->GetSubMenu("Selection")->Add("Select by Facet Number...", MENU_SELECTION_SELECTFACETNUMBER, SDLK_n, ALT_MODIFIER);
 	menu->GetSubMenu("Selection")->Add("Select Sticking", MENU_FACET_SELECTSTICK);
@@ -1746,9 +1751,10 @@ void MolFlow::UpdateFormula() {
 
 }
 
-BOOL MolFlow::OffsetFormula(char *expression, int offset, int filter) {
+BOOL MolFlow::OffsetFormula(char *expression, int offset, int filter, std::vector<int> *newRefs) {
 	//will increase or decrease facet numbers in a formula
 	//only applies to facet numbers larger than "filter" parameter
+	//If *newRefs is not NULL, a vector is passed containing the new references
 	BOOL changed = FALSE;
 
 	vector<string> prefixes;
@@ -1785,15 +1791,29 @@ BOOL MolFlow::OffsetFormula(char *expression, int offset, int filter) {
 			if (digitsLength > 0) { //there was a digit after the prefix
 				int facetNumber;
 				if (sscanf(expr.substr(minPos + maxLength, digitsLength).c_str(), "%d", &facetNumber)){
-					if ((facetNumber - 1) > filter) {
-						char tmp[10];
-						sprintf(tmp, "%d", facetNumber += offset);
-						expr.replace(minPos + maxLength, digitsLength, tmp);
-						changed = TRUE;
+					if (newRefs == NULL) { //Offset mode
+						if ((facetNumber - 1) > filter) {
+							char tmp[10];
+							sprintf(tmp, "%d", facetNumber + offset);
+							expr.replace(minPos + maxLength, digitsLength, tmp);
+							changed = TRUE;
+						}
+						else if ((facetNumber - 1) == filter) {
+							expr.replace(minPos + maxLength, digitsLength, "0");
+							changed = TRUE;
+						}
 					}
-					else if ((facetNumber - 1) == filter) {
-						expr.replace(minPos + maxLength, digitsLength, "0");
-						changed = TRUE;
+					else { //newRefs mode
+						if ((facetNumber - 1) >= (*newRefs).size() || (*newRefs)[facetNumber - 1] == -1) { //Facet doesn't exist anymore
+							expr.replace(minPos + maxLength, digitsLength, "0");
+							changed = TRUE;
+						}
+						else { //Update facet number
+							char tmp[10];
+							sprintf(tmp, "%d", (*newRefs)[facetNumber-1]);
+							expr.replace(minPos + maxLength, digitsLength, tmp);
+							changed = TRUE;
+						}
 					}
 				}
 			}
@@ -1804,23 +1824,6 @@ BOOL MolFlow::OffsetFormula(char *expression, int offset, int filter) {
 	strcpy(expression, expr.c_str());
 	return changed;
 }
-
-void MolFlow::RenumberFormulas(size_t startId) {
-	for (int i = 0; i < nbFormula; i++) {
-		char expression[1024];
-		strcpy(expression, this->formulas[i].parser->GetExpression());
-		if (OffsetFormula(expression, -1, startId))	{
-			this->formulas[i].parser->SetExpression(expression);
-			this->formulas[i].parser->Parse();
-		std::string formulaName = formulas[i].parser->GetName();
-			if (formulaName.empty()) formulaName = expression;
-			formulas[i].name->SetText(formulaName.c_str());
-		}
-	}
-}
-
-
-
 
 void InitLog(char *tmp) {
 	FILE *f = fopen("D:\\c++\\molflow\\tests\\data\\scan.txt", "w");
@@ -2317,7 +2320,7 @@ int MolFlow::RestoreDeviceObjects()
 	RVALIDATE_DLG(addVertex);
 	RVALIDATE_DLG(facetMesh);
 	RVALIDATE_DLG(facetDetails);
-
+	RVALIDATE_DLG(smartSelection);
 	RVALIDATE_DLG(viewer3DSettings);
 	RVALIDATE_DLG(textureSettings);
 	RVALIDATE_DLG(globalSettings);
@@ -2363,7 +2366,7 @@ int MolFlow::InvalidateDeviceObjects()
 	IVALIDATE_DLG(alignFacet);
 	IVALIDATE_DLG(addVertex);
 	IVALIDATE_DLG(facetDetails);
-
+	IVALIDATE_DLG(smartSelection);
 	IVALIDATE_DLG(viewer3DSettings);
 	IVALIDATE_DLG(textureSettings);
 	IVALIDATE_DLG(globalSettings);
@@ -3438,6 +3441,10 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			facetDetails->Display(&worker);
 			break;
 
+		case MENU_SELECTION_SMARTSELECTION:
+			if (!smartSelection) smartSelection = new SmartSelection(worker.GetGeometry(),&worker);
+			smartSelection->SetVisible(TRUE);
+			break;
 		case MENU_FACET_SELECTALL:
 			geom->SelectAll();
 			UpdateFacetParams(TRUE);
@@ -5260,29 +5267,40 @@ void MolFlow::DisplayCollapseDialog() {
 }
 
 
+void MolFlow::RenumberFormulas(std::vector<int> *newRefs) {
+	for (int i = 0; i < nbFormula; i++) {
+		char expression[1024];
+		strcpy(expression, this->formulas[i].parser->GetExpression());
+		if (OffsetFormula(expression, NULL, NULL, newRefs)) {
+			this->formulas[i].parser->SetExpression(expression);
+			this->formulas[i].parser->Parse();
+			std::string formulaName = formulas[i].parser->GetName();
+			if (formulaName.empty()) formulaName = expression;
+			formulas[i].name->SetText(formulaName.c_str());
+		}
+	}
+}
 
-
-void MolFlow::RenumberSelections(size_t startFacetId){
+void MolFlow::RenumberSelections(const std::vector<int> &newRefs){
 	for (int i = 0; i < nbSelection; i++) {
 		BOOL found = FALSE;
-		for (int j = 0; j < selections[i].nbSel && !found; j++) { //remove from selection
-			if (selections[i].selection[j] == startFacetId) {
-
+		for (int j = 0; j < selections[i].nbSel; j++) { 
+			if (selections[i].selection[j]>=newRefs.size() || newRefs[selections[i].selection[j]]==-1) { //remove from selection
 				for (int k = j; k < (selections[i].nbSel - 1); k++)
 					selections[i].selection[k] = selections[i].selection[k + 1];
 				selections[i].nbSel--;
-				if (selections[i].nbSel == 0) ClearSelection(i); //last facet removed from selection
-				found = TRUE;
+				if (selections[i].nbSel == 0) {
+					ClearSelection(i); //last facet removed from selection
+				}
+				j--; //Do again the element as now it's the next
 			}
-		}
-		for (int j = 0; j < selections[i].nbSel; j++) { //renumber selection
-			if (selections[i].selection[j] > startFacetId) {
-				//decrease number by 1
-				selections[i].selection[j]--;
+			else { //renumber
+				selections[i].selection[j] = newRefs[selections[i].selection[j]];
 			}
 		}
 	}
 }
+
 
 void MolFlow::CreateOfTwoFacets(ClipperLib::ClipType type) {
 	Geometry *geom = worker.GetGeometry();
@@ -5303,4 +5321,22 @@ void MolFlow::CreateOfTwoFacets(ClipperLib::ClipType type) {
 		}
 	}
 	else GLMessageBox::Display("No geometry loaded.", "No geometry", GLDLG_OK, GLDLG_ICONERROR);
+}
+
+void MolFlow::DoEvents(BOOL forced)
+{
+	static float lastExec = 0;
+	int time = SDL_GetTicks();
+	if (forced || (time-lastExec>333)) { //Don't check for inputs more than 3 times a second
+		SDL_Event sdlEvent;
+		SDL_PollEvent(&sdlEvent);
+		mApp->UpdateEventCount(&sdlEvent);
+		if (GLWindowManager::ManageEvent(&sdlEvent)) {
+			// Relay to GLApp EventProc
+			mApp->EventProc(&sdlEvent);
+		}
+		GLWindowManager::Repaint();
+		GLToolkit::CheckGLErrors("GLApplication::Paint()");
+		lastExec = time;
+	}
 }

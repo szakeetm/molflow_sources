@@ -140,8 +140,6 @@ void Geometry::SelectArea(int x1, int y1, int x2, int y2, BOOL clear, BOOL unsel
 
 void Geometry::Select(int x, int y, BOOL clear, BOOL unselect, BOOL vertexBound, int width, int height) {
 
-
-
 	int i;
 	if (!isLoaded) return;
 
@@ -216,6 +214,7 @@ void Geometry::Select(int x, int y, BOOL clear, BOOL unselect, BOOL vertexBound,
 
 				if (found) {
 					if (unselect) {
+						//TODO: smart selection
 						facets[i]->selected = FALSE;
 						found = FALSE;
 					}
@@ -248,7 +247,16 @@ void Geometry::Select(int x, int y, BOOL clear, BOOL unselect, BOOL vertexBound,
 
 		if (found) {
 			if (!unselect) AddToSelectionHist(i);
-			facets[i]->selected = !unselect;
+			if (!mApp->smartSelection || !mApp->smartSelection->IsSmartSelection()) {
+				facets[i]->selected = !unselect;
+			}
+			else { //Smart selection
+				double maxAngleDiff = mApp->smartSelection->GetMaxAngle();
+				std::vector<size_t> connectedFacets;
+				if (maxAngleDiff >= 0.0) connectedFacets = GetConnectedFacets(i, maxAngleDiff);
+				for (auto ind : connectedFacets)
+					facets[ind]->selected = !unselect;
+			}
 			if (!unselect) mApp->facetList->ScrollToVisible(i, 0, TRUE); //scroll to selected facet
 		}
 		else {

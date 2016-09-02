@@ -72,6 +72,66 @@ void Geometry::CorrectNonSimple(int *nonSimpleList, int nbNonSimple) {
 	//BuildGLList();
 }
 
+void Geometry::AnalyzeNeighbors(Worker *work,GLProgress *prg)
+{
+	work->abortRequested = FALSE;
+	//Clear neighbors
+	for (size_t i = 0;i < sh.nbFacet;i++)
+		facets[i]->neighbors.clear();
+	for (size_t i = 0;!work->abortRequested && i < sh.nbFacet;i++) {
+		mApp->DoEvents();
+		Facet *f1 = facets[i];
+		prg->SetProgress(double(i) / double(sh.nbFacet));
+		for (size_t j = i + 1; j < sh.nbFacet;j++) {
+			Facet *f2 = facets[j];
+			int c1, c2,l;
+			if (GetCommonEdges(facets[i], facets[j], &c1, &c2, &l)) {
+				double dotProduct = Dot(f1->sh.N, f2->sh.N);
+				SATURATE(dotProduct, -1.0, 1.0); //Rounding errors...
+				double angleDiff = fabs(acos(dotProduct));
+				NeighborFacet n1,n2;
+				n1.id = i;
+				n2.id = j;
+				n1.angleDiff = n2.angleDiff = angleDiff;
+				f1->neighbors.push_back(n2);
+				f2->neighbors.push_back(n1);
+			}
+		}
+	}
+}
+
+std::vector<size_t> Geometry::GetConnectedFacets(size_t sourceFacetId, double maxAngleDiff)
+{
+	std::vector<size_t> connectedFacets;
+	std::vector<BOOL> alreadyConnected(sh.nbFacet, FALSE);
+	
+	std::vector<size_t> toCheck;
+
+	toCheck.push_back(sourceFacetId);
+	do {
+		//One iteration
+		std::vector<size_t> toCheckNext;
+		for (auto facetId : toCheck) {
+			for (auto neighbor : facets[facetId]->neighbors) {
+				if (neighbor.id < sh.nbFacet) { //Protect against changed geometry
+					if (neighbor.angleDiff <= maxAngleDiff) {
+						if (!alreadyConnected[neighbor.id]) toCheckNext.push_back(neighbor.id);
+						alreadyConnected[neighbor.id] = TRUE;
+					}
+				}
+			}
+		}
+		toCheck = toCheckNext;
+	} while (toCheck.size() != 0);
+	for (size_t index = 0;index < sh.nbFacet;index++) {
+		if (alreadyConnected[index] || index == sourceFacetId)
+			connectedFacets.push_back(index);
+	}
+	return connectedFacets;
+}
+
+
+
 int Geometry::GetNbVertex() {
 	return sh.nbVertex;
 }
@@ -610,8 +670,9 @@ int Geometry::AddRefVertex(VERTEX3D *p, VERTEX3D *refs, int *nbRef, double vT) {
 
 }
 
-void Geometry::CollapseVertex(GLProgress *prg, double totalWork, double vT) {
+void Geometry::CollapseVertex(Worker *work,GLProgress *prg, double totalWork, double vT) {
 	mApp->changedSinceSave = TRUE;
+
 	if (!isLoaded) return;
 	// Collapse neighbor vertices
 	VERTEX3D *refs = (VERTEX3D *)malloc(sh.nbVertex * sizeof(VERTEX3D));
@@ -622,9 +683,16 @@ void Geometry::CollapseVertex(GLProgress *prg, double totalWork, double vT) {
 
 	// Collapse
 	prg->SetMessage("Collapsing vertices...");
-	for (int i = 0; i < sh.nbVertex; i++) {
+	for (int i = 0; !work->abortRequested && i < sh.nbVertex; i++) {
+		mApp->DoEvents();
 		prg->SetProgress(((double)i / (double)sh.nbVertex) / totalWork);
 		idx[i] = AddRefVertex(vertices3 + i, refs, &nbRef, vT);
+	}
+
+	if (work->abortRequested) {
+		delete refs;
+		delete idx;
+		return;
 	}
 
 	// Create the new vertex array
@@ -666,7 +734,7 @@ BOOL Geometry::GetCommonEdges(Facet *f1, Facet *f2, int *c1, int *c2, int *chain
 			p22 = f2->GetIndex(j + 1);
 
 			if (p11 == p22 && p12 == p21) {
-
+				
 				// Common edge found
 				si = i;
 				sj = j;
@@ -1038,46 +1106,11 @@ void  Geometry::SelectIsolatedVertices() {
 }
 
 BOOL Geometry::RemoveCollinear() {
-
-	mApp->changedSinceSave = TRUE;
-	int nb = 0;
+	std::vector<size_t> facetsToDelete;
 	for (int i = 0; i < sh.nbFacet; i++)
-		if (facets[i]->collinear) nb++;
-
-	if (nb == 0) return FALSE;
-	/*
-	if(sh.nbFacet-nb==0) {
-	// Remove all
-	Clear();
-	return;
-	}
-	*/
-
-	Facet   **f = (Facet **)malloc((sh.nbFacet - nb) * sizeof(Facet *));
-
-	nb = 0;
-	for (int i = 0; i < sh.nbFacet; i++) {
-		if (facets[i]->collinear) {
-			delete facets[i];
-			mApp->RenumberSelections(nb);
-			mApp->RenumberFormulas(nb);
-
-		}
-		else {
-			f[nb++] = facets[i];
-		}
-	}
-
-	SAFE_FREE(facets);
-	facets = f;
-	sh.nbFacet = nb;
-
-	// Delete old resources
-	DeleteGLLists(TRUE, TRUE);
-
-	BuildGLList();
-	mApp->UpdateModelParams();
-	return TRUE;
+		if (facets[i]->collinear) facetsToDelete.push_back(i);
+	RemoveFacets(facetsToDelete);
+	return (facetsToDelete.size() > 0);
 }
 
 void Geometry::RemoveSelectedVertex() {
@@ -1085,7 +1118,7 @@ void Geometry::RemoveSelectedVertex() {
 	mApp->changedSinceSave = TRUE;
 
 	//Analyze facets
-	std::vector<int> facetsToRemove, facetsToChange;
+	std::vector<size_t> facetsToRemove, facetsToChange;
 	for (int f = 0; f < sh.nbFacet; f++) {
 		int nbSelVertex = 0;
 		for (int i = 0; i < facets[f]->sh.nbIndex; i++)
@@ -1120,51 +1153,23 @@ void Geometry::RemoveSelectedVertex() {
 		memset(f->visible, 0xFF, f->sh.nbIndex * sizeof(BOOL));
 	}
 
-	if (facetsToRemove.size()) {
-		Facet   **newFacets = (Facet **)malloc((sh.nbFacet - facetsToRemove.size()) * sizeof(Facet *));
-		size_t nextToRemove = 0;
-		size_t nextToAdd = 0;
-		for (size_t f = 0; (int)f < sh.nbFacet; f++) {
-			if (nextToRemove < facetsToRemove.size() && f == facetsToRemove[nextToRemove]) {
-				delete facets[f];
-				mApp->RenumberSelections(nextToAdd);
-				mApp->RenumberFormulas(nextToAdd);
-				nextToRemove++;
-
-			}
-			else {
-				newFacets[nextToAdd++] = facets[f];
-			}
-		}
-		SAFE_DELETE(facets);
-		facets = newFacets;
-		sh.nbFacet -= facetsToRemove.size();
-	}
-
+	RemoveFacets(facetsToRemove);
 	DeleteIsolatedVertices(TRUE);
-
-	DeleteGLLists(TRUE, TRUE);
-
-	BuildGLList();
 }
 
 void Geometry::RemoveSelected() {
-
-	//Populate list
-	mApp->changedSinceSave = TRUE;
 	std::vector<size_t> facetIdList;
 	for (int i = 0; i < sh.nbFacet; i++)
 		if (facets[i]->selected) facetIdList.push_back(i);
-
-	if (facetIdList.size() == 0) return;
-
-	//Execute removal
 	RemoveFacets(facetIdList);
 }
 
 void Geometry::RemoveFacets(const std::vector<size_t> &facetIdList, BOOL doNotDestroy) {
+	if (facetIdList.size() == 0) return;
+	mApp->changedSinceSave = TRUE;
 	Facet   **f = (Facet **)malloc((sh.nbFacet - facetIdList.size()) * sizeof(Facet *));
 	std::vector<BOOL> facetSelected(sh.nbFacet, FALSE);
+	std::vector<int> newRefs(sh.nbFacet, -1);
 	for (size_t toRemove : facetIdList) {
 		facetSelected[toRemove] = TRUE;
 	}
@@ -1173,18 +1178,21 @@ void Geometry::RemoveFacets(const std::vector<size_t> &facetIdList, BOOL doNotDe
 	for (size_t i = 0; i < sh.nbFacet; i++) {
 		if (facetSelected[i]) {
 			if (!doNotDestroy) SAFE_DELETE(facets[i]); //Otherwise it's referenced by an Undo list
-			mApp->RenumberSelections(nb);
-			mApp->RenumberFormulas(nb);
-
 		}
 		else {
-			f[nb++] = facets[i];
+			f[nb] = facets[i];
+			newRefs[i] = nb;
+			nb++;
 		}
 	}
 
 	SAFE_FREE(facets);
 	facets = f;
 	sh.nbFacet = nb;
+
+	mApp->RenumberSelections(newRefs);
+	mApp->RenumberFormulas(&newRefs);
+	RenumberNeighbors(newRefs);
 
 	// Delete old resources
 	DeleteGLLists(TRUE, TRUE);
@@ -1225,6 +1233,7 @@ void Geometry::RestoreFacets(std::vector<DeletedFacet> deletedFacetList, BOOL to
 		for (size_t insertPos = pos;insertPos < (sh.nbFacet + nbInsert);insertPos++) {
 			tempFacets[insertPos] = facets[insertPos - nbInsert];
 		}
+		//Renumber things;
 	}
 
 	sh.nbFacet += nbInsert;
@@ -1293,19 +1302,8 @@ int Geometry::ExplodeSelected(BOOL toMap, int desType, double exponent, double *
 	// Update facet
 	Facet   **f = (Facet **)malloc((sh.nbFacet + FtoAdd - nbSelected) * sizeof(Facet *));
 
-	// Delete selected
-	nb = 0;
-	for (int i = 0; i < sh.nbFacet; i++) {
-		if (facets[i]->selected) {
-			delete facets[i];
-			mApp->RenumberSelections(nb);
-			mApp->RenumberFormulas(nb);
-
-		}
-		else {
-			f[nb++] = facets[i];
-		}
-	}
+	// Delete selected facets
+	RemoveSelected();
 
 	// Add new facets
 	int count = 0;
@@ -1349,38 +1347,13 @@ int Geometry::ExplodeSelected(BOOL toMap, int desType, double exponent, double *
 BOOL Geometry::RemoveNullFacet() {
 
 	// Remove degenerated facet (area~0.0)
-	int nb = 0;
+	std::vector<size_t> facetsToDelete;
 	double areaMin = 1E-10;
 	for (int i = 0; i < sh.nbFacet; i++)
-		if (facets[i]->sh.area < areaMin) nb++;
+		if (facets[i]->sh.area < areaMin) facetsToDelete.push_back(i);
+	RemoveFacets(facetsToDelete);
 
-	if (nb == 0) return FALSE;
-
-	Facet   **f = (Facet **)malloc((sh.nbFacet - nb) * sizeof(Facet *));
-
-	nb = 0;
-	for (int i = 0; i < sh.nbFacet; i++) {
-		if (facets[i]->sh.area < areaMin) {
-			delete facets[i];
-
-			mApp->RenumberSelections(nb);
-			mApp->RenumberFormulas(nb);
-
-		}
-		else {
-			f[nb++] = facets[i];
-		}
-	}
-
-	SAFE_FREE(facets);
-	facets = f;
-	sh.nbFacet = nb;
-
-	// Delete old resources
-	DeleteGLLists(TRUE, TRUE);
-
-	BuildGLList();
-	return TRUE;
+	return (facetsToDelete.size()>0);
 }
 
 void Geometry::AlignFacets(int* selection, int nbSelected, int Facet_source, int Facet_dest, int Anchor_source, int Anchor_dest,
@@ -2482,28 +2455,31 @@ Facet *Geometry::MergeFacet(Facet *f1, Facet *f2) {
 
 }
 
-void Geometry::Collapse(double vT, double fT, double lT, BOOL doSelectedOnly, GLProgress *prg) {
+void Geometry::Collapse(double vT, double fT, double lT, BOOL doSelectedOnly, Worker *work, GLProgress *prg) {
 	mApp->changedSinceSave = TRUE;
+	work->abortRequested = FALSE;
 	Facet *fi, *fj;
 	Facet *merged;
 
 	double totalWork = (1.0 + (double)(fT > 0.0) + (double)(lT > 0.0)); //for progress indicator
 																	  // Collapse vertex
 	if (vT > 0.0) {
-		CollapseVertex(prg, totalWork, vT);
+		CollapseVertex(work, prg, totalWork, vT);
 		InitializeGeometry(); //Find collinear facets
 		if (RemoveCollinear() || RemoveNullFacet()) InitializeGeometry(); //If  facets were removed, update geom.
 
 	}
 
 
-	if (fT > 0.0) {
+	if (fT > 0.0 && !work->abortRequested) {
 
 		// Collapse facets
 		int i = 0;
 		prg->SetMessage("Collapsing facets...");
-		while (i < sh.nbFacet) {
+		std::vector<int> newRef(sh.nbFacet, -1);
+		while (!work->abortRequested && i < sh.nbFacet) {
 			prg->SetProgress((1.0 + ((double)i / (double)sh.nbFacet)) / totalWork);
+			mApp->DoEvents();
 			fi = facets[i];
 			// Search a coplanar facet
 			int j = i + 1;
@@ -2517,15 +2493,15 @@ void Geometry::Collapse(double vT, double fT, double lT, BOOL doSelectedOnly, GL
 						// Replace the old 2 facets by the new one
 						SAFE_DELETE(fi);
 						SAFE_DELETE(fj);
-						for (int k = j; k < sh.nbFacet - 1; k++)
+						for (int k = j; k < sh.nbFacet - 1; k++) {
 							facets[k] = facets[k + 1];
+							newRef[k + 1] = k;
+						}
 						sh.nbFacet--;
 						facets[i] = merged;
 						//InitializeGeometry(i);
 						//SetFacetTexture(i,facets[i]->tRatio,facets[i]->hasMesh);  //rebuild mesh
 						fi = facets[i];
-						mApp->RenumberSelections(j);
-						mApp->RenumberFormulas(j);
 						j = i + 1;
 
 					}
@@ -2534,10 +2510,13 @@ void Geometry::Collapse(double vT, double fT, double lT, BOOL doSelectedOnly, GL
 			}
 			i++;
 		}
+		mApp->RenumberSelections(newRef);
+		mApp->RenumberFormulas(&newRef);
+		RenumberNeighbors(newRef);
 	}
 	//Collapse collinear sides. Takes some time, so only if threshold>0
 	prg->SetMessage("Collapsing collinear sides...");
-	if (lT > 0.0) {
+	if (lT > 0.0 && !work->abortRequested) {
 		for (int i = 0; i < sh.nbFacet; i++) {
 			prg->SetProgress((1.0 + (double)(fT > 0.0) + ((double)i / (double)sh.nbFacet)) / totalWork);
 			if (!doSelectedOnly || facets[i]->selected)
@@ -2565,8 +2544,6 @@ void Geometry::Collapse(double vT, double fT, double lT, BOOL doSelectedOnly, GL
 
 	}
 
-
-
 	// Delete old resources
 	for (int i = 0; i < sh.nbSuper; i++)
 		DeleteGLLists(TRUE, TRUE);
@@ -2574,6 +2551,26 @@ void Geometry::Collapse(double vT, double fT, double lT, BOOL doSelectedOnly, GL
 	// Reinitialise geom
 	InitializeGeometry();
 
+}
+
+void Geometry::RenumberNeighbors(const std::vector<int> &newRefs) {
+	for (size_t i = 0;i < sh.nbFacet;i++) {
+		Facet *f = facets[i];
+		for (size_t j = 0;j < f->neighbors.size();j++) {
+			size_t oriId = f->neighbors[j].id;
+			if (oriId >= newRefs.size()) { //Refers to a facet that didn't exist even before
+				f->neighbors.erase(f->neighbors.begin() + j);
+				j--; //Do this index again as it's now the next
+			}
+			else if (newRefs[oriId] == -1) { //Refers to a facet that we just deleted now
+				f->neighbors.erase(f->neighbors.begin() + j);
+				j--;  //Do this index again as it's now the next
+			}
+			else { //Update id
+				f->neighbors[j].id = newRefs[oriId];
+			}
+		}
+	}
 }
 
 void Geometry::MergecollinearSides(Facet *f, double lT) {
@@ -2760,34 +2757,10 @@ void Geometry::CalculateFacetParam_geometry(Facet *f) {
 }
 
 void Geometry::RemoveFromStruct(int numToDel) {
-	mApp->changedSinceSave = TRUE;
-
-	int nb = 0;
+	std::vector<size_t> facetsToDelete;
 	for (int i = 0; i < sh.nbFacet; i++)
-		if (facets[i]->sh.superIdx == numToDel) nb++;
-
-
-	if (nb == 0) return;
-
-	Facet   **f = (Facet **)malloc((sh.nbFacet - nb) * sizeof(Facet *));
-
-	nb = 0;
-	for (int i = 0; i < sh.nbFacet; i++) {
-		if (facets[i]->sh.superIdx == numToDel) {
-
-			delete facets[i];
-			mApp->RenumberSelections(nb);
-			mApp->RenumberFormulas(nb);
-		}
-		else {
-
-			f[nb++] = facets[i];
-		}
-	}
-
-	SAFE_FREE(facets);
-	facets = f;
-	sh.nbFacet = nb;
+		if (facets[i]->sh.superIdx == numToDel) facetsToDelete.push_back(i);
+	RemoveFacets(facetsToDelete);
 }
 
 void Geometry::CreateLoft() {

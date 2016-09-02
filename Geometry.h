@@ -132,6 +132,8 @@ public:
   void CloneSelectedFacets();
   void AddVertex(double X,double Y,double Z);
   void CorrectNonSimple(int *nonSimpleList,int nbNonSimple);
+  void AnalyzeNeighbors(Worker *work,GLProgress *prg);
+  std::vector<size_t> GetConnectedFacets(size_t sourceFacetId, double maxAngleDiff);
 
   void AddStruct(char *name);
   void DelStruct(int numToDel);
@@ -173,7 +175,8 @@ public:
   void     MoveVertexTo(int idx,double x,double y,double z);
   VERTEX3D GetFacetCenter(int facet);
   BOOL     IsInFacet(int facet,double u,double v);
-  void     Collapse(double vT,double fT,double lT,BOOL doSelectedOnly,GLProgress *prg);
+  void     Collapse(double vT,double fT,double lT,BOOL doSelectedOnly,Worker *work,GLProgress *prg);
+  void     RenumberNeighbors(const std::vector<int>& newRefs);
   void     SetFacetTexture(int facet,double ratio,BOOL corrMap);
   void     BuildPipe(double L,double R,double s,int step);
   void     BuildFacetList(Facet *f);
@@ -268,7 +271,7 @@ private:
   BOOL RemoveNullFacet();
   Facet *MergeFacet(Facet *f1,Facet *f2);
   BOOL GetCommonEdges(Facet *f1,Facet *f2,int *c1,int *c2,int *chainLength);
-  void CollapseVertex(GLProgress *prg,double totalWork,double vT);
+  void CollapseVertex(Worker *work,GLProgress *prg,double totalWork,double vT);
 
   // Rendering/Selection stuff
   int selectHist[SEL_HISTORY];
@@ -342,6 +345,8 @@ public:
 	std::list<ClippingVertex>::iterator link;
 	size_t globalId;
 };
+
+
 
 BOOL operator<(const std::list<ClippingVertex>::iterator& a, const std::list<ClippingVertex>::iterator& b);
 
