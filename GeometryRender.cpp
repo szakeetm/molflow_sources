@@ -216,8 +216,6 @@ void Geometry::Select(int x, int y, BOOL clear, BOOL unselect, BOOL vertexBound,
 					if (unselect) {
 						if (!mApp->smartSelection || !mApp->smartSelection->IsSmartSelection()) {
 							facets[i]->selected = FALSE;
-							found = FALSE; //Continue looking for facets
-							if (AlreadySelected(i)) lastFound = i;
 						}
 						else { //Smart selection
 							double maxAngleDiff = mApp->smartSelection->GetMaxAngle();
@@ -227,10 +225,13 @@ void Geometry::Select(int x, int y, BOOL clear, BOOL unselect, BOOL vertexBound,
 							for (auto ind : connectedFacets)
 								facets[ind]->selected = FALSE;
 							mApp->SetFacetSearchPrg(FALSE, "");
-							if (AlreadySelected(i)) lastFound = i;
 						}
+					} //end unselect
+					if (AlreadySelected(i)) {
+						lastFound = i;
+						found = FALSE; //Continue looking for facets
 					}
-				}
+				} //end found
 			}
 
 		}
