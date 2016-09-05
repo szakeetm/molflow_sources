@@ -156,7 +156,7 @@ public:
   void PaintSelectedVertices(BOOL hiddenVertex);
   //void RemoveSelectedVertex();
   void GetSelection(int **selection,int *nbSel);
-  void SetSelection(int **selection,int *nbSel);
+  void SetSelection(int **selection,int *nbSel, BOOL isShiftDown, BOOL isCtrlDown);
 
   // OpenGL Rendering/Initialisation
   void Render(GLfloat *matView,BOOL renderVolume,BOOL renderTexture,int showMode,BOOL filter,BOOL showHidden,BOOL showMesh,BOOL showDir);

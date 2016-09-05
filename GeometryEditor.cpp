@@ -1797,12 +1797,12 @@ void Geometry::GetSelection(int **selection, int *nbSel) {
 	*selection = selected;
 }
 
-void Geometry::SetSelection(int **selection, int *nbSel) {
+void Geometry::SetSelection(int **selection, int *nbSel, BOOL isShiftDown, BOOL isCtrlDown) {
 
-	UnSelectAll();
+	if (!isShiftDown && !isCtrlDown) UnSelectAll(); //Set selection
 	for (int i = 0; i < *nbSel; i++) {
 		int toSelect = (*selection)[i];
-		if (toSelect < sh.nbFacet) facets[toSelect]->selected = TRUE;
+		if (toSelect < sh.nbFacet) facets[toSelect]->selected = !isCtrlDown;
 	}
 	UpdateSelection();
 	if (*nbSel > 0) mApp->facetList->ScrollToVisible((*selection)[*nbSel - 1], 0, TRUE); //in facet list, select the last facet of selection group
