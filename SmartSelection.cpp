@@ -32,29 +32,29 @@ SmartSelection::SmartSelection(Geometry *g,Worker *w):GLWindow() {
 
 	SetTitle("Smart selection");
 
-	enableToggle = new GLToggle(0,"Enable smart selection");
-	enableToggle->SetBounds(5,5,170,18);
-	enableToggle->SetState(TRUE);
-	Add(enableToggle);
+	analyzeButton = new GLButton(0,"Analyze");
+	analyzeButton->SetBounds(90,5,100,20);
+	Add(analyzeButton);
+	
+	GLLabel *l1 = new GLLabel("Max. plane diff. between neighbors (deg):");
+	l1->SetBounds(5, 30, 200, 20);
+	Add(l1);
 
 	angleThreshold = new GLTextField(0,"30");
-	angleThreshold->SetBounds(50,30,80,18);
+	angleThreshold->SetBounds(210,30,40,18);
 	Add(angleThreshold);
 
-	resultLabel = new GLLabel("");
-	resultLabel->SetBounds(10,75,wD-20,hD-125);
+	resultLabel = new GLLabel("No neighborhood analysis yet.");
+	resultLabel->SetBounds(50,55,150,20);
 	Add(resultLabel);
 
-	analyzeButton = new GLButton(0,"Analyze");
-	analyzeButton->SetBounds(wD-265,hD-44,85,21);
-	Add(analyzeButton);
+	enableToggle = new GLToggle(0,"Enable smart selection");
+	enableToggle->SetBounds(55,80,170,18);
+	enableToggle->SetState(FALSE);
+	enableToggle->SetEnabled(FALSE);
+	Add(enableToggle);
 
-	// Center dialog
-	/*int wS,hS;
-	GLToolkit::GetScreenSize(&wS,&hS);
-	int xD = (wS-wD)/2;
-	int yD = (hS-hD)/2;*/
-	SetBounds(10,30,wD,hD);
+	SetBounds(10,60,wD,hD);
 
 	RestoreDeviceObjects();
 
@@ -98,12 +98,17 @@ void SmartSelection::ProcessMessage(GLComponent *src,int message) {
 				progressDlg->SetProgress(0.0);
 				progressDlg->SetVisible(TRUE);
 
-				geom->AnalyzeNeighbors(work,progressDlg);
+				size_t nbAnalyzed = geom->AnalyzeNeighbors(work,progressDlg);
 
 				progressDlg->SetVisible(FALSE);
 				SAFE_DELETE(progressDlg);
 				analyzeButton->SetText("Analyze");
 				isRunning = FALSE;
+				std::stringstream tmp;
+				tmp << "Analyzed " << nbAnalyzed << " facets.";
+				resultLabel->SetText(tmp.str().c_str());
+				enableToggle->SetEnabled(TRUE);
+				enableToggle->SetState(1);
 			}
 			else {
 				analyzeButton->SetText("Analyze");

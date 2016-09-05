@@ -101,7 +101,7 @@ public:
   void Select(int x,int y,BOOL clear,BOOL unselect,BOOL vertexBound,int width,int height);
   void Select(int facet);
   void Select(Facet *f);
-  void Unselect();
+  void UnselectAll();
   void CheckIsolatedVertex();
   void CheckNonSimple();
   void CheckCollinear();
@@ -122,7 +122,7 @@ public:
   void ScaleSelectedVertices(VERTEX3D invariant,double factor,BOOL copy,Worker *worker);
   void ScaleSelectedFacets(VERTEX3D invariant,double factorX,double factorY,double factorZ,BOOL copy,Worker *worker);
   std::vector<DeletedFacet> SplitSelectedFacets(const VERTEX3D &base, const VERTEX3D &normal, size_t *nbCreated,/*Worker *worker,*/GLProgress *prg=NULL);
-  std::vector<DeletedFacet> ConstructIntersection(size_t *nbCreated);
+  std::vector<DeletedFacet> BuildIntersection(size_t *nbCreated);
   BOOL IntersectingPlaneWithLine(const VERTEX3D &P0, const VERTEX3D &u, const VERTEX3D &V0, const VERTEX3D &n, VERTEX3D *intersectPoint,BOOL withinSection=FALSE);
   void MoveSelectedFacets(double dX,double dY,double dZ,BOOL copy,Worker *worker);
   void MirrorSelectedFacets(VERTEX3D P0,VERTEX3D N,BOOL copy,Worker *worker);
@@ -132,7 +132,7 @@ public:
   void CloneSelectedFacets();
   void AddVertex(double X,double Y,double Z);
   void CorrectNonSimple(int *nonSimpleList,int nbNonSimple);
-  void AnalyzeNeighbors(Worker *work,GLProgress *prg);
+  size_t AnalyzeNeighbors(Worker *work,GLProgress *prg);
   std::vector<size_t> GetConnectedFacets(size_t sourceFacetId, double maxAngleDiff);
 
   void AddStruct(char *name);

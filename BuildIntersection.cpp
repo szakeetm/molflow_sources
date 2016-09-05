@@ -114,7 +114,7 @@ void BuildIntersection::ProcessMessage(GLComponent *src, int message) {
 			if (mApp->AskToReset()) {
 				ClearUndoFacets();
 				nbCreated = 0;
-				deletedFacetList = geom->ConstructIntersection(&nbCreated);
+				deletedFacetList = geom->BuildIntersection(&nbCreated);
 				nbFacet = geom->GetNbFacet();
 				std::stringstream tmp;
 				tmp << deletedFacetList.size() << " facets intersected, creating " << nbCreated << " new.";

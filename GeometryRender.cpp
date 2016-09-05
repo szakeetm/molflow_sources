@@ -78,7 +78,7 @@ void Geometry::SelectArea(int x1, int y1, int x2, int y2, BOOL clear, BOOL unsel
 	GLMatrix view; view.LoadGL(mView);
 	GLMatrix m; m.Multiply(&proj, &view);
 
-	if (clear && !unselect) Unselect();
+	if (clear && !unselect) UnselectAll();
 	nbSelectedHist = 0;
 	int lastPaintedProgress = -1;
 	char tmp[256];
@@ -214,14 +214,21 @@ void Geometry::Select(int x, int y, BOOL clear, BOOL unselect, BOOL vertexBound,
 
 				if (found) {
 					if (unselect) {
-						//TODO: smart selection
-						facets[i]->selected = FALSE;
-						found = FALSE;
-					}
-					if (AlreadySelected(i)) {
-						// Already selected, try to find an other facet
-						lastFound = i;
-						found = FALSE;
+						if (!mApp->smartSelection || !mApp->smartSelection->IsSmartSelection()) {
+							facets[i]->selected = FALSE;
+							found = FALSE; //Continue looking for facets
+							if (AlreadySelected(i)) lastFound = i;
+						}
+						else { //Smart selection
+							double maxAngleDiff = mApp->smartSelection->GetMaxAngle();
+							std::vector<size_t> connectedFacets;
+							mApp->SetFacetSearchPrg(TRUE, "Smart selecting...");
+							if (maxAngleDiff >= 0.0) connectedFacets = GetConnectedFacets(i, maxAngleDiff);
+							for (auto ind : connectedFacets)
+								facets[ind]->selected = FALSE;
+							mApp->SetFacetSearchPrg(FALSE, "");
+							if (AlreadySelected(i)) lastFound = i;
+						}
 					}
 				}
 			}
@@ -231,8 +238,8 @@ void Geometry::Select(int x, int y, BOOL clear, BOOL unselect, BOOL vertexBound,
 		if (!found) i++;
 
 	}
-	mApp->SetFacetSearchPrg(FALSE, NULL);
-	if (clear && !unselect) Unselect();
+	mApp->SetFacetSearchPrg(FALSE, "");
+	if (clear && !unselect) UnselectAll();
 
 	if (!found && lastFound >= 0) {
 		if (!unselect) {
@@ -253,9 +260,11 @@ void Geometry::Select(int x, int y, BOOL clear, BOOL unselect, BOOL vertexBound,
 			else { //Smart selection
 				double maxAngleDiff = mApp->smartSelection->GetMaxAngle();
 				std::vector<size_t> connectedFacets;
+				mApp->SetFacetSearchPrg(TRUE, "Smart selecting...");
 				if (maxAngleDiff >= 0.0) connectedFacets = GetConnectedFacets(i, maxAngleDiff);
 				for (auto ind : connectedFacets)
 					facets[ind]->selected = !unselect;
+				mApp->SetFacetSearchPrg(FALSE,"");
 			}
 			if (!unselect) mApp->facetList->ScrollToVisible(i, 0, TRUE); //scroll to selected facet
 		}
@@ -527,7 +536,7 @@ int Geometry::GetNbSelectedVertex() {
 }
 
 
-void Geometry::Unselect() {
+void Geometry::UnselectAll() {
 	for (int i = 0; i < sh.nbFacet; i++) {
 		facets[i]->selected = FALSE;
 		facets[i]->UnselectElem();

@@ -72,13 +72,14 @@ void Geometry::CorrectNonSimple(int *nonSimpleList, int nbNonSimple) {
 	//BuildGLList();
 }
 
-void Geometry::AnalyzeNeighbors(Worker *work,GLProgress *prg)
+size_t Geometry::AnalyzeNeighbors(Worker *work,GLProgress *prg)
 {
+	size_t i = 0;
 	work->abortRequested = FALSE;
-	//Clear neighbors
-	for (size_t i = 0;i < sh.nbFacet;i++)
+	for (i = 0;i < sh.nbFacet;i++) {
 		facets[i]->neighbors.clear();
-	for (size_t i = 0;!work->abortRequested && i < sh.nbFacet;i++) {
+	}
+	for (i = 0;!work->abortRequested && i < sh.nbFacet;i++) {
 		mApp->DoEvents();
 		Facet *f1 = facets[i];
 		prg->SetProgress(double(i) / double(sh.nbFacet));
@@ -98,6 +99,7 @@ void Geometry::AnalyzeNeighbors(Worker *work,GLProgress *prg)
 			}
 		}
 	}
+	return i;
 }
 
 std::vector<size_t> Geometry::GetConnectedFacets(size_t sourceFacetId, double maxAngleDiff)
@@ -1201,14 +1203,16 @@ void Geometry::RemoveFacets(const std::vector<size_t> &facetIdList, BOOL doNotDe
 
 void Geometry::RestoreFacets(std::vector<DeletedFacet> deletedFacetList, BOOL toEnd) {
 	size_t nbNew = 0;
+	std::vector<int> newRefs(sh.nbFacet, -1);
 	for (auto restoreFacet : deletedFacetList)
-		if (!restoreFacet.ori_pos || toEnd) nbNew++;
+		if (restoreFacet.ori_pos>=sh.nbFacet || toEnd) nbNew++;
 	Facet** tempFacets = (Facet**)malloc(sizeof(Facet*)*(sh.nbFacet + nbNew));
 	size_t pos = 0;
 	size_t nbInsert = 0;
 	if (toEnd) { //insert to end
 		for (size_t insertPos = 0;insertPos < sh.nbFacet;insertPos++) { //Original facets
 			tempFacets[insertPos] = facets[insertPos];
+			newRefs[insertPos] = insertPos;
 		}
 		for (auto restoreFacet : deletedFacetList) {
 			tempFacets[sh.nbFacet + nbInsert] = restoreFacet.f;
@@ -1221,6 +1225,7 @@ void Geometry::RestoreFacets(std::vector<DeletedFacet> deletedFacetList, BOOL to
 		for (auto restoreFacet : deletedFacetList) {
 			for (size_t insertPos = pos;insertPos < restoreFacet.ori_pos;insertPos++) {
 				tempFacets[insertPos] = facets[insertPos - nbInsert];
+				newRefs[insertPos - nbInsert] = newRefs[insertPos];
 				pos++;
 			}
 			//if (restoreFacet.replaceOri) pos--;
@@ -1232,8 +1237,12 @@ void Geometry::RestoreFacets(std::vector<DeletedFacet> deletedFacetList, BOOL to
 		//Remaining facets
 		for (size_t insertPos = pos;insertPos < (sh.nbFacet + nbInsert);insertPos++) {
 			tempFacets[insertPos] = facets[insertPos - nbInsert];
+			newRefs[insertPos - nbInsert] = newRefs[insertPos];
 		}
 		//Renumber things;
+		RenumberNeighbors(newRefs);
+		mApp->RenumberFormulas(&newRefs);
+		mApp->RenumberSelections(newRefs);
 	}
 
 	sh.nbFacet += nbInsert;
@@ -1938,7 +1947,7 @@ struct EdgePoint {
 	BOOL visited;
 };
 
-std::vector<DeletedFacet> Geometry::ConstructIntersection(size_t *nbCreated) {
+std::vector<DeletedFacet> Geometry::BuildIntersection(size_t *nbCreated) {
 	mApp->changedSinceSave = TRUE;
 	//UnselectAllVertex();
 	//std::vector<size_t> result;

@@ -2694,7 +2694,7 @@ void MolFlow::LoadSelection(char *fName) {
 	try {
 
 		Geometry *geom = worker.GetGeometry();
-		geom->Unselect();
+		geom->UnselectAll();
 		int nbFacet = geom->GetNbFacet();
 
 		f = new FileReader(fullName);
@@ -3450,7 +3450,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			UpdateFacetParams(TRUE);
 			break;
 		case MENU_FACET_SELECTSTICK:
-			geom->Unselect();
+			geom->UnselectAll();
 			for (int i = 0; i < geom->GetNbFacet(); i++)
 				if (geom->GetFacet(i)->sh.sticking != 0.0 && !geom->GetFacet(i)->IsLinkFacet())
 					geom->Select(i);
@@ -3458,7 +3458,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			UpdateFacetParams(TRUE);
 			break;
 		case MENU_FACET_SELECTTRANS:
-			geom->Unselect();
+			geom->UnselectAll();
 			for (int i = 0; i < geom->GetNbFacet(); i++)
 				if (geom->GetFacet(i)->sh.opacity != 1.0 && geom->GetFacet(i)->sh.opacity != 2.0)
 					geom->Select(i);
@@ -3466,7 +3466,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			UpdateFacetParams(TRUE);
 			break;
 		case MENU_FACET_SELECTREFL:
-			geom->Unselect();
+			geom->UnselectAll();
 			for (int i = 0; i < geom->GetNbFacet(); i++) {
 				Facet *f = geom->GetFacet(i);
 				if (f->sh.desorbType == DES_NONE && f->sh.sticking == 0.0 && f->sh.opacity > 0.0)
@@ -3476,7 +3476,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			UpdateFacetParams(TRUE);
 			break;
 		case MENU_FACET_SELECT2SIDE:
-			geom->Unselect();
+			geom->UnselectAll();
 			for (int i = 0; i < geom->GetNbFacet(); i++)
 				if (geom->GetFacet(i)->sh.is2sided)
 					geom->Select(i);
@@ -3484,7 +3484,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			UpdateFacetParams(TRUE);
 			break;
 		case MENU_FACET_SELECTVOL:
-			geom->Unselect();
+			geom->UnselectAll();
 			for (int i = 0; i < geom->GetNbFacet(); i++)
 				if (geom->GetFacet(i)->sh.isVolatile)
 					geom->Select(i);
@@ -3492,7 +3492,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			UpdateFacetParams(TRUE);
 			break;
 		case MENU_FACET_SELECTTEXT:
-			geom->Unselect();
+			geom->UnselectAll();
 			for (int i = 0; i < geom->GetNbFacet(); i++)
 				if (geom->GetFacet(i)->sh.isTextured != NULL)
 					geom->Select(i);
@@ -3500,7 +3500,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			UpdateFacetParams(TRUE);
 			break;
 		case MENU_FACET_SELECTPROF:
-			geom->Unselect();
+			geom->UnselectAll();
 			for (int i = 0; i < geom->GetNbFacet(); i++)
 				if (geom->GetFacet(i)->sh.isProfile != NULL)
 					geom->Select(i);
@@ -3518,7 +3518,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 				GLMessageBox::Display("Invalid number", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
-			geom->Unselect();
+			geom->UnselectAll();
 			for (int i = 0; i < geom->GetNbFacet(); i++)
 				if (geom->GetFacet(i)->err >= planarityThreshold)
 					geom->Select(i);
@@ -3528,7 +3528,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 
 
 		case MENU_FACET_SELECTERR:
-			geom->Unselect();
+			geom->UnselectAll();
 			for (int i = 0; i < geom->GetNbFacet(); i++)
 
 				if (geom->GetFacet(i)->sh.sign == 0.0)
@@ -3538,7 +3538,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			break;
 
 		case MENU_FACET_SELECTDEST:
-			geom->Unselect();
+			geom->UnselectAll();
 			for (int i = 0; i < geom->GetNbFacet(); i++)
 
 				if (geom->GetFacet(i)->sh.superDest != 0)
@@ -3548,7 +3548,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			break;
 
 		case MENU_FACET_SELECTTELEPORT:
-			geom->Unselect();
+			geom->UnselectAll();
 			for (int i = 0; i < geom->GetNbFacet(); i++)
 
 				if (geom->GetFacet(i)->sh.teleportDest != 0)
@@ -3558,7 +3558,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			break;
 
 		case MENU_FACET_SELECTABS:
-			geom->Unselect();
+			geom->UnselectAll();
 			for (int i = 0; i < geom->GetNbFacet(); i++)
 				if (geom->GetFacet(i)->counterCache.hit.nbAbsorbed > 0)
 					geom->Select(i);
@@ -3567,7 +3567,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			break;
 
 		case MENU_FACET_SELECTHITS:
-			geom->Unselect();
+			geom->UnselectAll();
 			for (int i = 0; i < geom->GetNbFacet(); i++)
 
 				if (geom->GetFacet(i)->counterCache.hit.nbHit > 0)
@@ -3586,7 +3586,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 				GLMessageBox::Display("Invalid number", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
-			geom->Unselect();
+			geom->UnselectAll();
 			for (int i = 0; i < geom->GetNbFacet(); i++)
 				if (geom->GetFacet(i)->counterCache.hit.nbHit == 0 && geom->GetFacet(i)->sh.area >= largeArea)
 					geom->Select(i);
@@ -3595,7 +3595,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			break;
 
 		case MENU_FACET_SELECTDES:
-			geom->Unselect();
+			geom->UnselectAll();
 			for (int i = 0; i < geom->GetNbFacet(); i++)
 				if (geom->GetFacet(i)->sh.desorbType != DES_NONE)
 					geom->Select(i);
@@ -3603,7 +3603,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			UpdateFacetParams(TRUE);
 			break;
 		case MENU_SELECT_HASDESFILE:
-			geom->Unselect();
+			geom->UnselectAll();
 			for (int i = 0; i < geom->GetNbFacet(); i++)
 				if (geom->GetFacet(i)->hasOutgassingFile)
 					geom->Select(i);
@@ -3882,7 +3882,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		// Show structure menu
 		if (src->GetId() >= MENU_VIEW_STRUCTURE && src->GetId() <= MENU_VIEW_STRUCTURE + geom->GetNbStructure()) {
 			geom->viewStruct = src->GetId() - MENU_VIEW_STRUCTURE - 1;
-			if (src->GetId() > MENU_VIEW_STRUCTURE) geom->Unselect();
+			if (src->GetId() > MENU_VIEW_STRUCTURE) geom->UnselectAll();
 			UpdateStructMenu();
 		}
 		if (src->GetId() == MENU_VIEW_NEWSTRUCT) {
@@ -3895,12 +3895,12 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		}
 		if (src->GetId() == MENU_VIEW_PREVSTRUCT) {
 			geom->viewStruct = Remainder(geom->viewStruct - 1, geom->GetNbStructure());
-			geom->Unselect();
+			geom->UnselectAll();
 			UpdateStructMenu();
 		}
 		if (src->GetId() == MENU_VIEW_NEXTSTRUCT) {
 			geom->viewStruct = Remainder(geom->viewStruct + 1, geom->GetNbStructure());
-			geom->Unselect();
+			geom->UnselectAll();
 			UpdateStructMenu();
 		}
 
@@ -4079,7 +4079,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			int *sels = (int *)malloc((geom->GetNbFacet())*sizeof(int));
 			int nbSel;
 			facetList->GetSelectedRows(&sels, &nbSel, TRUE);
-			geom->Unselect();
+			geom->UnselectAll();
 			for (int i = 0; i < nbSel; i++)
 				geom->Select(sels[i]);
 			geom->UpdateSelection();
