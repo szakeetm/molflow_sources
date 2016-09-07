@@ -819,10 +819,9 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 	{
 		CalcTotalOutgassing();
 		displayedMoment = 0;
-		if (mApp->timeSettings) mApp->timeSettings->RefreshMoments();
+		if (mApp->timeSettings) mApp->timeSettings->RefreshMoments(); //Sets displayed moment to 0
 		if (mApp->momentsEditor) mApp->momentsEditor->Refresh();
 		if (mApp->parameterEditor) mApp->parameterEditor->UpdateCombo();
-		if (mApp->timeSettings) mApp->timeSettings->RefreshMoments();
 		if (mApp->timewisePlotter) mApp->timewisePlotter->refreshViews();
 	}
 	progressDlg->SetVisible(FALSE);

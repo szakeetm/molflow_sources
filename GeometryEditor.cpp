@@ -72,25 +72,25 @@ void Geometry::CorrectNonSimple(int *nonSimpleList, int nbNonSimple) {
 	//BuildGLList();
 }
 
-size_t Geometry::AnalyzeNeighbors(Worker *work,GLProgress *prg)
+size_t Geometry::AnalyzeNeighbors(Worker *work, GLProgress *prg)
 {
 	size_t i = 0;
 	work->abortRequested = FALSE;
-	for (i = 0;i < sh.nbFacet;i++) {
+	for (i = 0; i < sh.nbFacet; i++) {
 		facets[i]->neighbors.clear();
 	}
-	for (i = 0;!work->abortRequested && i < sh.nbFacet;i++) {
+	for (i = 0;!work->abortRequested && i < sh.nbFacet; i++) {
 		mApp->DoEvents();
 		Facet *f1 = facets[i];
 		prg->SetProgress(double(i) / double(sh.nbFacet));
-		for (size_t j = i + 1; j < sh.nbFacet;j++) {
+		for (size_t j = i + 1; j < sh.nbFacet; j++) {
 			Facet *f2 = facets[j];
-			int c1, c2,l;
+			int c1, c2, l;
 			if (GetCommonEdges(facets[i], facets[j], &c1, &c2, &l)) {
 				double dotProduct = Dot(f1->sh.N, f2->sh.N);
 				SATURATE(dotProduct, -1.0, 1.0); //Rounding errors...
 				double angleDiff = fabs(acos(dotProduct));
-				NeighborFacet n1,n2;
+				NeighborFacet n1, n2;
 				n1.id = i;
 				n2.id = j;
 				n1.angleDiff = n2.angleDiff = angleDiff;
@@ -106,7 +106,7 @@ std::vector<size_t> Geometry::GetConnectedFacets(size_t sourceFacetId, double ma
 {
 	std::vector<size_t> connectedFacets;
 	std::vector<BOOL> alreadyConnected(sh.nbFacet, FALSE);
-	
+
 	std::vector<size_t> toCheck;
 
 	toCheck.push_back(sourceFacetId);
@@ -131,9 +131,6 @@ std::vector<size_t> Geometry::GetConnectedFacets(size_t sourceFacetId, double ma
 	}
 	return connectedFacets;
 }
-
-
-
 int Geometry::GetNbVertex() {
 	return sh.nbVertex;
 }
@@ -301,7 +298,6 @@ void Geometry::CreateDifference() {
 	//TO DO:
 	//swap if normals not collinear
 	//shift vertex to make nice cut
-
 	//a new facet
 	sh.nbFacet++;
 	facets = (Facet **)realloc(facets, sh.nbFacet * sizeof(Facet *));
@@ -323,7 +319,6 @@ void Geometry::CreateDifference() {
 		facets[sh.nbFacet - 1]->indices[counter++] = facets[secondFacet]->GetIndex(i + 1);
 	//close circle by adding the first vertex again
 	facets[sh.nbFacet - 1]->indices[counter++] = facets[secondFacet]->indices[0];
-
 
 	InitializeGeometry();
 	mApp->UpdateFacetParams(TRUE);
@@ -384,12 +379,12 @@ void Geometry::ClipPolygon(size_t id1, std::vector<std::vector<size_t>> clipping
 	//set selection
 	UnSelectAll();
 	std::vector<VERTEX3D> newVertices;
-	for (size_t i = 0;i < nbNewFacets;i++) {
+	for (size_t i = 0; i < nbNewFacets; i++) {
 		BOOL hasHole = solution.Childs[i]->ChildCount() > 0;
 		size_t closestIndexToChild, closestIndexToParent;
 		double minDist = 9E99;
 		if (hasHole) {
-			for (size_t j = 0;j < solution.Childs[i]->Contour.size();j++) { //Find closest parent point
+			for (size_t j = 0; j < solution.Childs[i]->Contour.size(); j++) { //Find closest parent point
 				VERTEX2D vert;
 				vert.u = 1E-6*(double)solution.Childs[i]->Contour[j].X;
 				vert.v = 1E-6*(double)solution.Childs[i]->Contour[j].Y;
@@ -413,7 +408,7 @@ void Geometry::ClipPolygon(size_t id1, std::vector<std::vector<size_t>> clipping
 		else
 			nbVertex = solution.Childs[i]->Contour.size() + 2 + solution.Childs[i]->Childs[0]->Contour.size();
 		Facet *f = new Facet(nbVertex);
-		for (size_t j = 0;j < solution.Childs[i]->Contour.size();j++) {
+		for (size_t j = 0; j < solution.Childs[i]->Contour.size(); j++) {
 			VERTEX2D vert;
 			if (hasHole && j == closestIndexToChild) { //Create hole
 				vert.u = 1E-6*(double)solution.Childs[i]->Contour[j].X;
@@ -448,6 +443,7 @@ void Geometry::ClipPolygon(size_t id1, std::vector<std::vector<size_t>> clipping
 	for (VERTEX3D newVert : newVertices)
 		vertices3[sh.nbVertex++] = newVert;
 
+
 	InitializeGeometry();
 	mApp->UpdateFacetParams(TRUE);
 	UpdateSelection();
@@ -457,7 +453,7 @@ void Geometry::ClipPolygon(size_t id1, std::vector<std::vector<size_t>> clipping
 
 void Geometry::ClipPolygon(size_t id1, size_t id2, ClipperLib::ClipType type) {
 	std::vector<size_t> facet2path;
-	for (size_t i = 0;i < facets[id2]->sh.nbIndex;i++) {
+	for (size_t i = 0; i < facets[id2]->sh.nbIndex; i++) {
 		facet2path.push_back(facets[id2]->indices[i]);
 	}
 	std::vector<std::vector<size_t>> clippingPaths;
@@ -584,8 +580,6 @@ AABB Geometry::GetBB() {
 
 	}
 	else {
-
-
 		// BB of selected struture
 		AABB sbb;
 
@@ -624,7 +618,6 @@ VERTEX3D Geometry::GetCenter() {
 	if (viewStruct < 0) {
 
 		return center;
-
 
 	}
 	else {
@@ -672,9 +665,8 @@ int Geometry::AddRefVertex(VERTEX3D *p, VERTEX3D *refs, int *nbRef, double vT) {
 
 }
 
-void Geometry::CollapseVertex(Worker *work,GLProgress *prg, double totalWork, double vT) {
+void Geometry::CollapseVertex(Worker *work, GLProgress *prg, double totalWork, double vT) {
 	mApp->changedSinceSave = TRUE;
-
 	if (!isLoaded) return;
 	// Collapse neighbor vertices
 	VERTEX3D *refs = (VERTEX3D *)malloc(sh.nbVertex * sizeof(VERTEX3D));
@@ -736,7 +728,7 @@ BOOL Geometry::GetCommonEdges(Facet *f1, Facet *f2, int *c1, int *c2, int *chain
 			p22 = f2->GetIndex(j + 1);
 
 			if (p11 == p22 && p12 == p21) {
-				
+
 				// Common edge found
 				si = i;
 				sj = j;
@@ -926,7 +918,6 @@ void Geometry::ShiftVertex() {
 
 		}
 	}
-
 	// Delete old resource
 	BuildGLList();
 }
@@ -980,7 +971,6 @@ void Geometry::RemoveLinkFacet() { //unused
 	for (int i = 0; i < sh.nbFacet; i++) {
 		if (facets[i]->IsLinkFacet()) {
 			delete facets[i];
-
 		}
 		else {
 			f[nb++] = facets[i];
@@ -1114,7 +1104,6 @@ BOOL Geometry::RemoveCollinear() {
 	RemoveFacets(facetsToDelete);
 	return (facetsToDelete.size() > 0);
 }
-
 void Geometry::RemoveSelectedVertex() {
 
 	mApp->changedSinceSave = TRUE;
@@ -1161,6 +1150,9 @@ void Geometry::RemoveSelectedVertex() {
 
 void Geometry::RemoveSelected() {
 	std::vector<size_t> facetIdList;
+
+
+
 	for (int i = 0; i < sh.nbFacet; i++)
 		if (facets[i]->selected) facetIdList.push_back(i);
 	RemoveFacets(facetIdList);
@@ -1174,13 +1166,22 @@ void Geometry::RemoveFacets(const std::vector<size_t> &facetIdList, BOOL doNotDe
 	std::vector<int> newRefs(sh.nbFacet, -1);
 	for (size_t toRemove : facetIdList) {
 		facetSelected[toRemove] = TRUE;
+
 	}
 
+
 	size_t nb = 0;
+
+
+
 	for (size_t i = 0; i < sh.nbFacet; i++) {
 		if (facetSelected[i]) {
 			if (!doNotDestroy) SAFE_DELETE(facets[i]); //Otherwise it's referenced by an Undo list
 		}
+
+
+
+
 		else {
 			f[nb] = facets[i];
 			newRefs[i] = nb;
@@ -1205,7 +1206,7 @@ void Geometry::RestoreFacets(std::vector<DeletedFacet> deletedFacetList, BOOL to
 	size_t nbNew = 0;
 	std::vector<int> newRefs(sh.nbFacet, -1);
 	for (auto restoreFacet : deletedFacetList)
-		if (restoreFacet.ori_pos>=sh.nbFacet || toEnd) nbNew++;
+		if (restoreFacet.ori_pos >= sh.nbFacet || toEnd) nbNew++;
 	Facet** tempFacets = (Facet**)malloc(sizeof(Facet*)*(sh.nbFacet + nbNew));
 	size_t pos = 0;
 	size_t nbInsert = 0;
@@ -1244,6 +1245,8 @@ void Geometry::RestoreFacets(std::vector<DeletedFacet> deletedFacetList, BOOL to
 		mApp->RenumberFormulas(&newRefs);
 		mApp->RenumberSelections(newRefs);
 	}
+
+
 
 	sh.nbFacet += nbInsert;
 	facets = tempFacets;
@@ -1357,12 +1360,13 @@ BOOL Geometry::RemoveNullFacet() {
 
 	// Remove degenerated facet (area~0.0)
 	std::vector<size_t> facetsToDelete;
+
 	double areaMin = 1E-10;
 	for (int i = 0; i < sh.nbFacet; i++)
 		if (facets[i]->sh.area < areaMin) facetsToDelete.push_back(i);
 	RemoveFacets(facetsToDelete);
 
-	return (facetsToDelete.size()>0);
+	return (facetsToDelete.size() > 0);
 }
 
 void Geometry::AlignFacets(int* selection, int nbSelected, int Facet_source, int Facet_dest, int Anchor_source, int Anchor_dest,
@@ -1424,14 +1428,12 @@ void Geometry::AlignFacets(int* selection, int nbSelected, int Facet_source, int
 			Axis.y = 0.0;
 			Axis.z = 0.0;
 			angle = 0.0;
-
 		}
 		else { //180deg rotation needed
 			Cross(&Axis, &(facets[Facet_source]->sh.U), &(facets[Facet_source]->sh.N));
 			Normalize(&Axis);
 			angle = 180.0;
 		}
-
 	}
 	else {
 		Normalize(&Axis);
@@ -1474,7 +1476,6 @@ void Geometry::AlignFacets(int* selection, int nbSelected, int Facet_source, int
 			Axis.y = 0.0;
 			Axis.z = 0.0;
 			angle = 0.0;
-
 		}
 		else { //180deg rotation needed
 			//construct a vector perpendicular to the normal
@@ -1482,7 +1483,6 @@ void Geometry::AlignFacets(int* selection, int nbSelected, int Facet_source, int
 			Normalize(&Axis);
 			angle = 180.0;
 		}
-
 	}
 	else {
 		Normalize(&Axis);
@@ -1666,6 +1666,7 @@ void Geometry::RotateSelectedFacets(const VERTEX3D &AXIS_P0, const VERTEX3D &AXI
 			GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return;
 		}*/
+
 	}
 	prgRotate->SetVisible(FALSE);
 	SAFE_DELETE(prgRotate);
@@ -1703,7 +1704,6 @@ void Geometry::CloneSelectedFacets() { //create clone of selected facets
 	memset(tmp_vertices3 + sh.nbVertex, 0, (nb + 1 - sh.nbVertex) * sizeof(VERTEX3D));  //zero out remaining bits (not necessary, will be overwritten anyway)
 
 	SAFE_FREE(vertices3); //delete old array
-
 	vertices3 = tmp_vertices3; //make new array the official vertex holder
 	for (int i = 0; i < sh.nbVertex; i++) {
 		if (copyId[i] != -1) {
@@ -1738,7 +1738,6 @@ void Geometry::CloneSelectedFacets() { //create clone of selected facets
 
 void Geometry::MoveSelectedVertex(double dX, double dY, double dZ, BOOL copy, Worker *worker) {
 
-
 	if (!(dX == 0.0&&dY == 0.0&&dZ == 0.0)) {
 		if (!mApp->AskToReset(worker)) return;
 		mApp->changedSinceSave = TRUE;
@@ -1751,12 +1750,8 @@ void Geometry::MoveSelectedVertex(double dX, double dY, double dZ, BOOL copy, Wo
 				}
 			}
 			InitializeGeometry();
-
-
-
-
-
 		}
+
 		else { //copy
 			int nbVertexOri = sh.nbVertex;
 			for (int i = 0; i < nbVertexOri; i++) {
@@ -1798,7 +1793,6 @@ void Geometry::GetSelection(int **selection, int *nbSel) {
 }
 
 void Geometry::SetSelection(int **selection, int *nbSel, BOOL isShiftDown, BOOL isCtrlDown) {
-
 	if (!isShiftDown && !isCtrlDown) UnSelectAll(); //Set selection
 	for (int i = 0; i < *nbSel; i++) {
 		int toSelect = (*selection)[i];
@@ -1846,7 +1840,6 @@ void Geometry::ScaleSelectedVertices(VERTEX3D invariant, double factor, BOOL cop
 				vertices3[i].z = invariant.z + factor*(vertices3[i].z - invariant.z);
 			}
 		}
-
 	}
 	else { //scale and copy
 		int nbVertexOri = sh.nbVertex;
@@ -1899,7 +1892,7 @@ void Geometry::ScaleSelectedFacets(VERTEX3D invariant, double factorX, double fa
 
 	InitializeGeometry();
 	//update textures
-	//for(int i=0;i<sh.nbFacet;i++) if(facets[i]->selected) SetFacetTexture(i,facets[i]->tRatio,facets[i]->hasMesh);	   
+	//for(int i=0;i<sh.nbFacet; i++) if(facets[i]->selected) SetFacetTexture(i,facets[i]->tRatio,facets[i]->hasMesh);	   
 
 	prgMove->SetVisible(FALSE);
 	SAFE_DELETE(prgMove);
@@ -1914,7 +1907,7 @@ BOOL operator<(const std::list<ClippingVertex>::iterator& a, const std::list<Cli
 	return (a->distance < b->distance);
 }
 
-BOOL Geometry::IntersectingPlaneWithLine(const VERTEX3D &P0, const VERTEX3D &u, const VERTEX3D &V0, const VERTEX3D &n, VERTEX3D *intersectPoint, BOOL withinSection) {
+BOOL Geometry::IntersectingPlaneWithLine(const VERTEX3D &P0, const VERTEX3D &u, const VERTEX3D &V0, const VERTEX3D &n, VERTEX3D *intersectPoint, BOOL withinSection = FALSE) {
 	//Notations from http://geomalgorithms.com/a05-_intersect-1.html
 	//At this point, intersecting ray is L=P0+s*u
 	if (IS_ZERO(Dot(n, u))) return FALSE; //Check for parallelness
@@ -1957,7 +1950,7 @@ std::vector<DeletedFacet> Geometry::BuildIntersection(size_t *nbCreated) {
 	*nbCreated = 0; //Total number of new facets created
 
 	//Populate selected facets
-	for (size_t i = 0;i < sh.nbFacet;i++) {
+	for (size_t i = 0; i < sh.nbFacet; i++) {
 		if (facets[i]->selected) {
 			IntersectFacet facet;
 			facet.id = i;
@@ -1967,9 +1960,9 @@ std::vector<DeletedFacet> Geometry::BuildIntersection(size_t *nbCreated) {
 			selectedFacets.push_back(facet);
 		}
 	}
-	for (size_t i = 0;i < selectedFacets.size();i++) {
+	for (size_t i = 0; i < selectedFacets.size(); i++) {
 		Facet* f1 = selectedFacets[i].f;
-		for (size_t j = 0;j < selectedFacets.size();j++) {
+		for (size_t j = 0; j < selectedFacets.size(); j++) {
 			Facet* f2 = selectedFacets[j].f;
 			if (i != j) {
 				int c1, c2, l;
@@ -2044,7 +2037,7 @@ std::vector<DeletedFacet> Geometry::BuildIntersection(size_t *nbCreated) {
 			for (size_t v = 0;v < selectedFacets[facetId].intersectionPointId[vertexId].size();v++) { //If there are intersection points on this edge, go through them 
 				//Check if not the end of an already registered clipping path
 				BOOL found = FALSE;
-				for (size_t i = 0;found == FALSE && i < clipPaths.size();i++) {
+				for (size_t i = 0;found == FALSE && i < clipPaths.size(); i++) {
 					found = clipPaths[i].back().vertexId == selectedFacets[facetId].intersectionPointId[vertexId][v].vertexId;
 				}
 				if (!found) { //Register a new clip path
@@ -2061,7 +2054,7 @@ std::vector<DeletedFacet> Geometry::BuildIntersection(size_t *nbCreated) {
 						foundId = -1;
 						for (size_t p1 = 0;foundId == -1 && p1 < selectedFacets[facetId].intersectingPoints.size();p1++) { //Get the next intersection point with same facet
 							if (searchId == p1) continue;
-							foundId = ((selectedFacets[facetId].intersectingPoints[p1].withFacetId == searchFacetId) && (selectedFacets[facetId].intersectingPoints[p1].vertexId!=searchId)) ? p1 : -1;
+							foundId = ((selectedFacets[facetId].intersectingPoints[p1].withFacetId == searchFacetId) && (selectedFacets[facetId].intersectingPoints[p1].vertexId != searchId)) ? p1 : -1;
 						}
 						if (foundId != -1) {
 							EdgePoint p;
@@ -2107,11 +2100,11 @@ std::vector<DeletedFacet> Geometry::BuildIntersection(size_t *nbCreated) {
 							}
 						}
 					}
-					if (path.size()>1) clipPaths.push_back(path);
+					if (path.size() > 1) clipPaths.push_back(path);
 				}
 			}
 		}
-		
+
 		if (clipPaths.size() > 0) {
 			//Construct clipped facet, having a selected vertex
 			std::vector<BOOL> isIndexSelected(f->sh.nbIndex);
@@ -2123,8 +2116,8 @@ std::vector<DeletedFacet> Geometry::BuildIntersection(size_t *nbCreated) {
 				size_t currentVertex = v;
 				if (isIndexSelected[currentVertex]) {
 					//Restore visited state for all clip paths
-					for (size_t i = 0;i < clipPaths.size();i++) {
-						for (size_t j = 0;j < clipPaths[i].size();j++) {
+					for (size_t i = 0; i < clipPaths.size(); i++) {
+						for (size_t j = 0; j < clipPaths[i].size(); j++) {
 							clipPaths[i][j].visited = FALSE;
 						}
 					}
@@ -2138,7 +2131,7 @@ std::vector<DeletedFacet> Geometry::BuildIntersection(size_t *nbCreated) {
 						int clipId = -1;
 						BOOL front;
 
-						for (size_t i = 0;i < clipPaths.size();i++) {
+						for (size_t i = 0; i < clipPaths.size(); i++) {
 							if (clipPaths[i].front().onEdge == currentVertex && clipPaths[i].back().onEdge != -1) { //If a full clipping path is found on the scanned edge, go through it
 								double d = Norme(vertices3[f->indices[currentVertex]] - vertices3[clipPaths[i].front().vertexId]);
 								if (d < minDist) {
@@ -2169,7 +2162,7 @@ std::vector<DeletedFacet> Geometry::BuildIntersection(size_t *nbCreated) {
 					} while (currentVertex != v);
 					if (clipPath.size() > 2) {
 						Facet *f = new Facet(clipPath.size());
-						for (size_t i = 0;i < clipPath.size();i++)
+						for (size_t i = 0; i < clipPath.size(); i++)
 							f->indices[i] = clipPath[i];
 						f->selected = TRUE;
 
@@ -2210,7 +2203,7 @@ std::vector<DeletedFacet> Geometry::BuildIntersection(size_t *nbCreated) {
 	f->indices = (int*)realloc(f->indices, sizeof(int)*testPath.size());
 	f->vertices2 = (VERTEX2D*)realloc(f->vertices2, sizeof(VERTEX2D)*testPath.size());
 	f->visible = (BOOL*)realloc(f->visible, sizeof(BOOL)*testPath.size());
-	for (size_t i = 0;i < testPath.size();i++)
+	for (size_t i = 0; i < testPath.size(); i++)
 		f->indices[i] = testPath[i];
 	Rebuild();
 	*/
@@ -2227,7 +2220,7 @@ std::vector<DeletedFacet> Geometry::SplitSelectedFacets(const VERTEX3D &base, co
 	mApp->changedSinceSave = TRUE;
 	std::vector<DeletedFacet> deletedFacetList;
 	int oldNbFacets = sh.nbFacet;
-	for (size_t i = 0;i < oldNbFacets; i++) {
+	for (size_t i = 0; i < oldNbFacets; i++) {
 		Facet *f = facets[i];
 		if (f->selected) {
 			if (prg) prg->SetProgress(double(i) / double(sh.nbFacet));
@@ -2372,7 +2365,7 @@ std::vector<DeletedFacet> Geometry::SplitSelectedFacets(const VERTEX3D &base, co
 					_ASSERTE(newPolyIndices.size() >= 3);
 					Facet *newFacet = new Facet((int)newPolyIndices.size());
 					(*nbCreated)++;
-					for (size_t i = 0;i < newPolyIndices.size();i++) {
+					for (size_t i = 0; i < newPolyIndices.size(); i++) {
 						newFacet->indices[i] = newPolyIndices[i];
 					}
 					newFacet->Copy(f); //Copy physical parameters, structure, etc. - will cause problems with outgassing, though
@@ -2563,9 +2556,9 @@ void Geometry::Collapse(double vT, double fT, double lT, BOOL doSelectedOnly, Wo
 }
 
 void Geometry::RenumberNeighbors(const std::vector<int> &newRefs) {
-	for (size_t i = 0;i < sh.nbFacet;i++) {
+	for (size_t i = 0; i < sh.nbFacet; i++) {
 		Facet *f = facets[i];
-		for (size_t j = 0;j < f->neighbors.size();j++) {
+		for (size_t j = 0; j < f->neighbors.size(); j++) {
 			size_t oriId = f->neighbors[j].id;
 			if (oriId >= newRefs.size()) { //Refers to a facet that didn't exist even before
 				f->neighbors.erase(f->neighbors.begin() + j);
@@ -2781,7 +2774,7 @@ void Geometry::CreateLoft() {
 	//Find first two selected facets
 	int nbFound = 0;
 	Facet *f1, *f2;
-	for (size_t i = 0;nbFound < 2 && i < sh.nbFacet;i++) {
+	for (size_t i = 0;nbFound < 2 && i < sh.nbFacet; i++) {
 		if (facets[i]->selected) {
 			if (nbFound == 0) f1 = facets[i];
 			else f2 = facets[i];
@@ -2831,7 +2824,7 @@ void Geometry::CreateLoft() {
 	}
 
 	//Find boundaries of regions on the first facet that are the closest to the same point on facet 2
-	for (int i = 0;i < closestIndices1.size();i++) {
+	for (int i = 0; i < closestIndices1.size(); i++) {
 		int previousId = (i + closestIndices1.size() - 1) % closestIndices1.size();
 		int nextId = (i + 1) % closestIndices1.size();
 		closestIndices1[i].boundary = (closestIndices1[i].index != closestIndices1[nextId].index) || (closestIndices1[i].index != closestIndices1[previousId].index);
@@ -2840,7 +2833,7 @@ void Geometry::CreateLoft() {
 	ProjectVertex(&f2->sh.center, &center2Pos, &f2->sh.U, &f2->sh.V, &f2->sh.O);
 	ProjectVertex(&f1->sh.center, &center1Pos, &f2->sh.U, &f2->sh.V, &f2->sh.O);
 	centerOffset = center2Pos - center1Pos;
-	
+
 	//Revisit those on f2 without a link
 	for (size_t i2 = 0;i2 < f2->sh.nbIndex;i2++) {
 		//Find closest point on other facet
@@ -2848,15 +2841,15 @@ void Geometry::CreateLoft() {
 			double min = 9E99;
 			size_t minPos;
 			for (size_t i1 = 0;i1 < f1->sh.nbIndex;i1++) {
-					VERTEX2D projection;
-					ProjectVertex(&vertices3[f1->indices[i1]], &projection, &f2->sh.U, &f2->sh.V, &f2->sh.O);
-					projection = projection + centerOffset;
-					double dist = pow(u2Length*(projection.u - f2->vertices2[i2].u), 2.0) + pow(v2Length*(projection.v - f2->vertices2[i2].v), 2.0); //We need the absolute distance
-					if (!closestIndices1[i1].boundary) dist += 1E6; //penalty -> try to connect with boundaries
-					if (dist < min) {
-						min = dist;
-						minPos = i1;
-					}
+				VERTEX2D projection;
+				ProjectVertex(&vertices3[f1->indices[i1]], &projection, &f2->sh.U, &f2->sh.V, &f2->sh.O);
+				projection = projection + centerOffset;
+				double dist = pow(u2Length*(projection.u - f2->vertices2[i2].u), 2.0) + pow(v2Length*(projection.v - f2->vertices2[i2].v), 2.0); //We need the absolute distance
+				if (!closestIndices1[i1].boundary) dist += 1E6; //penalty -> try to connect with boundaries
+				if (dist < min) {
+					min = dist;
+					minPos = i1;
+				}
 			}
 			//Make pair
 			closestIndices2[i2].index = minPos;
@@ -2866,7 +2859,7 @@ void Geometry::CreateLoft() {
 	}
 
 	//Same for facet 2
-	for (int i = 0;i < closestIndices2.size();i++) {
+	for (int i = 0; i < closestIndices2.size(); i++) {
 		int previousId = (i + closestIndices2.size() - 1) % closestIndices2.size();
 		int nextId = (i + 1) % closestIndices2.size();
 		closestIndices2[i].boundary = (closestIndices2[i].index != closestIndices2[nextId].index) || (closestIndices2[i].index != closestIndices2[previousId].index);
@@ -2938,8 +2931,8 @@ void Geometry::CreateLoft() {
 	for (size_t i2 = 0;i2 < f2->sh.nbIndex;i2++) {
 		if (closestIndices2[i2].visited == FALSE) {
 			int targetIndex = closestIndices2[Remainder(i2 - 1, f2->sh.nbIndex)].index; //Previous node
-			
-			do  {
+
+			do {
 				//Connect with previous
 				Facet *newFacet = new Facet(3);
 				newFacet->indices[0] = f1->indices[targetIndex];
@@ -2947,21 +2940,21 @@ void Geometry::CreateLoft() {
 				newFacet->indices[2] = f2->indices[Remainder(i2 - 1, f2->sh.nbIndex)];closestIndices2[Remainder(i2 - 1, f2->sh.nbIndex)].visited = TRUE;
 				newFacet->selected = TRUE;
 				newFacets.push_back(newFacet);
-				i2 = Remainder(i2 + 1,f2->sh.nbIndex);
+				i2 = Remainder(i2 + 1, f2->sh.nbIndex);
 			} while (closestIndices2[i2].visited == FALSE);
 			//last
 				//Connect with next for the last unvisited
-				Facet *newFacet = new Facet(3);
-				newFacet->indices[0] = f1->indices[targetIndex];
-				newFacet->indices[1] = f2->indices[i2];closestIndices2[i2].visited = TRUE;
-				newFacet->indices[2] = f2->indices[Remainder(i2 - 1, f2->sh.nbIndex)];closestIndices2[Remainder(i2 - 1, f2->sh.nbIndex)].visited = TRUE;
-				newFacet->selected = TRUE;
-				newFacets.push_back(newFacet);
+			Facet *newFacet = new Facet(3);
+			newFacet->indices[0] = f1->indices[targetIndex];
+			newFacet->indices[1] = f2->indices[i2];closestIndices2[i2].visited = TRUE;
+			newFacet->indices[2] = f2->indices[Remainder(i2 - 1, f2->sh.nbIndex)];closestIndices2[Remainder(i2 - 1, f2->sh.nbIndex)].visited = TRUE;
+			newFacet->selected = TRUE;
+			newFacets.push_back(newFacet);
 		}
 	}
 	//Register new facets
 	if (newFacets.size() > 0) facets = (Facet**)realloc(facets, sizeof(Facet*)*(sh.nbFacet + newFacets.size()));
-	for (size_t i = 0;i < newFacets.size();i++)
+	for (size_t i = 0; i < newFacets.size(); i++)
 		facets[sh.nbFacet + i] = newFacets[i];
 	sh.nbFacet += newFacets.size();
 	InitializeGeometry();

@@ -2760,7 +2760,6 @@ void MolFlow::LoadFile(char *fName) {
 		ClearParameters();
 		ClearAllSelections();
 		ClearAllViews();		
-		worker.displayedMoment = 0;
 
 		worker.LoadGeometry(fullName);
 
@@ -4525,7 +4524,6 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	if (timeSettings) mApp->timeSettings->RefreshMoments();
 	if (momentsEditor) mApp->momentsEditor->Refresh();
 	if (parameterEditor) mApp->parameterEditor->UpdateCombo();
-	if (timeSettings) mApp->timeSettings->RefreshMoments();
 	if (timewisePlotter) mApp->timewisePlotter->refreshViews();
 	if (profilePlotter) profilePlotter->Refresh();
 	if (pressureEvolution) pressureEvolution->Refresh();

@@ -4711,6 +4711,12 @@ BOOL Geometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker
 				facetCounter->hit.nbAbsorbed = facetHitNode.attribute("nbAbs").as_llong();
 				facetCounter->hit.sum_v_ort = facetHitNode.attribute("sum_v_ort").as_double();
 				facetCounter->hit.sum_1_per_ort_velocity = facetHitNode.attribute("sum_1_per_v").as_double();
+
+				if (work->displayedMoment == m) { //For immediate display in facet hits list
+					f->counterCache.hit.nbHit = facetCounter->hit.nbHit;
+					f->counterCache.hit.nbDesorbed = facetCounter->hit.nbDesorbed;
+					f->counterCache.hit.nbAbsorbed = facetCounter->hit.nbAbsorbed;
+				}
 			}
 			else { //No hit information, so set to 0
 				facetCounter->hit.nbHit = 
