@@ -82,39 +82,6 @@ struct VERTEX2D {
 
 	double u;
 	double v;
-
-
-
-
-
-
-
-
-  VERTEX2D operator+(const VERTEX2D& toAdd) const {
-	  VERTEX2D result;
-	  result.u = this->u + toAdd.u;
-	  result.v = this->v + toAdd.v;
-	  return result;
-  }
-  VERTEX2D operator-(const VERTEX2D& toSub) const {
-	  
-	  VERTEX2D result;
-	  result.u = this->u - toSub.u;
-	  result.v = this->v - toSub.v;
-	  return result;
-  }
-	  double operator*(const VERTEX2D& mult) const  {
-		  return this->u*mult.u + this->v*mult.v;
-	  }
-	  VERTEX2D operator*(const double& mult) const {
-
-
-
-		  VERTEX2D result;
-		  result.u = this->u * mult;
-		  result.v = this->v * mult;
-		  return result;
-	  }
 };
 
 typedef struct {

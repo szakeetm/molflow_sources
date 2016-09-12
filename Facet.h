@@ -154,6 +154,4 @@ struct DeletedFacet {
 	BOOL replaceOri;
 };
 
-
-
 #endif /* FACETH */

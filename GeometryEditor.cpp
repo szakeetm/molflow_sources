@@ -2327,7 +2327,7 @@ std::vector<DeletedFacet> Geometry::SplitSelectedFacets(const VERTEX3D &base, co
 						sh.nbVertex++;
 					}
 					VERTEX2D diff = (*newVertexIterator)->vertex - intPoint2D;
-					(*newVertexIterator)->distance = diff * intDir2D;
+					(*newVertexIterator)->distance = Dot(diff,intDir2D);
 				}
 				createdList.sort();
 				for (std::list<std::list<ClippingVertex>::iterator>::iterator pairFirst = createdList.begin();pairFirst != createdList.end();pairFirst++, pairFirst++) {

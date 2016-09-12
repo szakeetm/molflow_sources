@@ -31,11 +31,7 @@
 // Linear algebra
 // -------------------------------------------------------
 
-void Cross(VERTEX3D *result, VERTEX3D *v1, VERTEX3D *v2) {
-	result->x = (v1->y)*(v2->z) - (v1->z)*(v2->y);
-	result->y = (v1->z)*(v2->x) - (v1->x)*(v2->z);
-	result->z = (v1->x)*(v2->y) - (v1->y)*(v2->x);
-}
+//VERTEX3D
 
 VERTEX3D CrossProduct(const VERTEX3D &v1, const VERTEX3D &v2) {
 	VERTEX3D result;
@@ -44,13 +40,18 @@ VERTEX3D CrossProduct(const VERTEX3D &v1, const VERTEX3D &v2) {
 	result.z = (v1.x)*(v2.y) - (v1.y)*(v2.x);
 	return result;
 }
-
+void Cross(VERTEX3D *result, VERTEX3D *v1, VERTEX3D *v2) {
+	*result = CrossProduct(*v1, *v2);
+}
 VERTEX3D operator+ (const VERTEX3D &v1, const VERTEX3D& v2) {
 	VERTEX3D result;
 	result.x = v1.x + v2.x;
 	result.y = v1.y + v2.y;
 	result.z = v1.z + v2.z;
 	return result;
+}
+void Add(VERTEX3D *result, VERTEX3D *v1, VERTEX3D *v2) {
+	*result = *v1 + *v2;
 }
 VERTEX3D operator-(const VERTEX3D &v1, const VERTEX3D& v2) {
 	VERTEX3D result;
@@ -59,11 +60,9 @@ VERTEX3D operator-(const VERTEX3D &v1, const VERTEX3D& v2) {
 	result.z = v1.z - v2.z;
 	return result;
 }
-
-double Dot(const VERTEX3D &v1, const VERTEX3D &v2) {
-	return (v1.x)*(v2.x) + (v1.y)*(v2.y) + (v1.z)*(v2.z);
+void Sub(VERTEX3D *result, VERTEX3D *v1, VERTEX3D *v2) {
+	*result = *v1 + *v2;
 }
-
 VERTEX3D operator*(const VERTEX3D &v1,const double& mult)  {
 	VERTEX3D result;
 	result.x = v1.x * mult;
@@ -71,104 +70,95 @@ VERTEX3D operator*(const VERTEX3D &v1,const double& mult)  {
 	result.z = v1.z * mult;
 	return result;
 }
-
+void ScalarMult(VERTEX3D *result, double r) {
+	*result = *result * r;
+}
 VERTEX3D operator*(const double& mult, const VERTEX3D &v1) {
-	VERTEX3D result;
-	result.x = v1.x * mult;
-	result.y = v1.y * mult;
-	result.z = v1.z * mult;
-	return result;
+	return v1*mult;
 }
 
+double Dot(const VERTEX3D &v1, const VERTEX3D &v2) {
+	return (v1.x)*(v2.x) + (v1.y)*(v2.y) + (v1.z)*(v2.z);
+}
 double Dot(VERTEX3D *v1, VERTEX3D *v2) {
-
-	return (v1->x)*(v2->x) + (v1->y)*(v2->y) + (v1->z)*(v2->z);
+	return Dot(*v1, *v2);
 }
-
-double Dot(const VERTEX2D &v1, const VERTEX2D &v2) {
-	return v1.u*v2.u + v1.v*v2.v;
-}
-
 double Norme(const VERTEX3D &v) {
 	return sqrt(Dot(v, v));
-
-}
-
-double Norme(const VERTEX2D &v) {
-	return sqrt(Dot(v, v));
-}
-
-int Remainder(int param, int bound) {
-	return (bound > 0) ? ((bound + (param) % bound) % bound) : 0;
 }
 
 void Normalize(VERTEX3D *v) {
 	double length = Norme(*v);
 	if (length>0.0)
-		ScalarMult(v, 1.0 / length);
+		*v=(*v) * (1.0 / length);
+}
+
+//VERTEX2D
+
+VERTEX2D operator+ (const VERTEX2D &v1, const VERTEX2D& v2) {
+	VERTEX2D result;
+	result.u = v1.u + v2.u;
+	result.v = v1.v + v2.v;
+	return result;
+}
+void Add(VERTEX2D *result, VERTEX2D *v1, VERTEX2D *v2) {
+	*result = *v1 + *v2;
+}
+VERTEX2D operator-(const VERTEX2D &v1, const VERTEX2D& v2) {
+	VERTEX2D result;
+	result.u = v1.u - v2.u;
+	result.v = v1.v - v2.v;
+	return result;
+}
+void Sub(VERTEX2D *result, VERTEX2D *v1, VERTEX2D *v2) {
+	*result = *v1 + *v2;
+}
+VERTEX2D operator*(const VERTEX2D &v1, const double& mult) {
+	VERTEX2D result;
+	result.u = v1.u * mult;
+	result.v = v1.v * mult;
+	return result;
+}
+void ScalarMult(VERTEX2D *result, double r) {
+	*result = *result * r;
+}
+VERTEX2D operator*(const double& mult, const VERTEX2D &v1) {	
+	return v1*mult;
+}
+
+double Dot(const VERTEX2D &v1, const VERTEX2D &v2) {
+	return v1.u*v2.u + v1.v*v2.v;
+}
+double Dot(VERTEX2D *v1, VERTEX2D *v2) {
+	return Dot(*v1, *v2);
+}
+double Norme(const VERTEX2D &v) {
+	return sqrt(Dot(v, v));
 }
 
 void Normalize(VERTEX2D *v) {
 	double length = Norme(*v);
 	if (length>0.0)
-		ScalarMult(v, 1.0 / length);
-}
-
-double Norme(VERTEX2D *v1, VERTEX2D *v2) {
-	return sqrt((v1->u - v2->u)*(v1->u - v2->u) + (v1->v - v2->v)*(v1->v - v2->v));
-}
-
-void ScalarMult(VERTEX3D *result, double r) {
-	result->x *= r;
-	result->y *= r;
-	result->z *= r;
-}
-
-void ScalarMult(VERTEX2D *result, double r) {
-	result->u *= r;
-	result->v *= r;
-
-
-}
-
-void Sub(VERTEX3D *result, VERTEX3D *v1, VERTEX3D *v2) {
-	result->x = (v1->x) - (v2->x);
-	result->y = (v1->y) - (v2->y);
-	result->z = (v1->z) - (v2->z);
-
-
-
-}
-
-void Sub(VERTEX2D *result, VERTEX2D *v1, VERTEX2D *v2) {
-	result->u = (v1->u) - (v2->u);
-	result->v = (v1->v) - (v2->v);
-
-}
-
-void Add(VERTEX3D *result, VERTEX3D *v1, VERTEX3D *v2) {
-	result->x = (v1->x) + (v2->x);
-	result->y = (v1->y) + (v2->y);
-	result->z = (v1->z) + (v2->z);
-}
-
-void Add(VERTEX2D *result, VERTEX2D *v1, VERTEX2D *v2) {
-	result->u = (v1->u) + (v2->u);
-	result->v = (v1->v) + (v2->v);
-
+		*v = (*v) * (1.0 / length);
 }
 
 int VertexEqual(VERTEX2D *p1, VERTEX2D *p2) {
 	return IS_ZERO(p1->u - p2->u) && IS_ZERO(p1->v - p2->v);
-
-
 }
+
+// -----------------
+
+int Remainder(int param, int bound) {
+	return (bound > 0) ? ((bound + (param) % bound) % bound) : 0;
+}
+
+
 
 void ProjectVertex(VERTEX3D *v, VERTEX2D *projected, VERTEX3D *U, VERTEX3D *V, VERTEX3D *origin){
 	//Project v on a plane defined by U,V and return the coordinates in base U,V
 	VERTEX3D diff = *v - *origin;
-	projected->u = Dot(*U, diff) /Dot(U,U);
-	projected->v = Dot(*V, diff) / Dot(V,V);
+	projected->u = Dot(*U, diff) / Dot(*U,*U);
+	projected->v = Dot(*V, diff) / Dot(*V,*V);
 
 	/*
 
@@ -195,10 +185,9 @@ void Mirror(VERTEX3D *P, VERTEX3D P0, VERTEX3D N) {
 	VERTEX3D P0_P, P_copy, N_copy;
 	P_copy = *P; N_copy = N;
 	Normalize(&N_copy);
-	Sub(&P0_P, &P_copy, &P0);
-	double n_dot_p = Dot(&N_copy, &P0_P);
-	ScalarMult(&N_copy, 2.0*n_dot_p);
-	Sub(P, &P_copy, &N_copy);
+	P0_P = P_copy - P0;
+	N_copy = N_copy*2.0*Dot(N_copy, P0_P);
+	*P = P_copy - N_copy;
 }
 
 void Rotate(VERTEX3D *P, VERTEX3D AXIS_P0, VERTEX3D AXIS_DIR, double theta) {
@@ -607,38 +596,22 @@ void CutArc(POLYGRAPH *g, int idx, int ni) {
 void InsertEdge(POLYGRAPH *g, VERTEX2D *p1, VERTEX2D *p2, int a0) {
 
 	// Insert a polygon edge in the polygraph, a0 = first arc to be checked
-
-
 	if (VertexEqual(p1, p2))
 		// Does not add null arc
 		return;
-
-
 	// Insert nodes
 	int n1 = AddNode(g, p1);
 	int n2 = AddNode(g, p2);
-
-
-
 
 	// Check intersection of the new arc with the arcs of the first polygon.
 	int itFound = 0;
 	int i = a0;
 	while (i < g->nbArc && !itFound) {
-
-
-
-
 		if (g->arcs[i].s == 1) {
-
-
-
-
 
 			VERTEX2D *e1 = &(g->nodes[g->arcs[i].i1].p);
 			VERTEX2D *e2 = &(g->nodes[g->arcs[i].i2].p);
 			VERTEX2D I;
-
 
 			if (Intersect2D(p1, p2, e1, e2, &I)) {
 				int ni = AddNode(g, &I);
@@ -647,26 +620,10 @@ void InsertEdge(POLYGRAPH *g, VERTEX2D *p1, VERTEX2D *p2, int a0) {
 				CutArc(g, i, ni);
 				itFound = 1;
 			}
-
-
-
-
 		}
-
-
-
-
-
-
-
-
-
 		i++;
-
 	}
-
 	if (!itFound) AddArc(g, n1, n2, 2);
-
 }
 
 // -----------------------------------------------------------
@@ -736,8 +693,6 @@ void CreateGraph(POLYGRAPH *g, POLYGON *inP1, POLYGON *inP2, int *visible2) {
 		g->arcs[i].s = 1;
 	}
 
-
-
 	// Intersect with 2nd polygon
 	for (int i = 0; i < inP2->nbPts; i++)  {
 		int i2 = IDX(i + 1, inP2->nbPts);
@@ -750,7 +705,6 @@ void CreateGraph(POLYGRAPH *g, POLYGON *inP1, POLYGON *inP2, int *visible2) {
 			}
 		}
 	}
-
 
 	// Remove tangent edge
 	for (int i = 0; i<g->nbArc; i++) {
@@ -770,28 +724,8 @@ void CreateGraph(POLYGRAPH *g, POLYGON *inP1, POLYGON *inP2, int *visible2) {
 		}
 	}
 
-
-
-
-
 	// Fill up successor in the polyvertex array to speed up search
 	// of next vertices
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	for (int i = 0; i<g->nbArc; i++) {
 		if (g->arcs[i].s>0) {
 			int idxO = g->arcs[i].i1;
@@ -805,93 +739,37 @@ void CreateGraph(POLYGRAPH *g, POLYGON *inP1, POLYGON *inP2, int *visible2) {
 				g->nodes[idxO].nbOut++;
 			}
 		}
-
-
-
-
-
-
-
-
 	}
 
 	// Mark starting points (2 outgoing arcs)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 	for (int i = 0; i < g->nbNode; i++) {
 		if (g->nodes[i].nbOut >= 2) {
 			if (g->nodes[i].nbIn >= 2) {
 
-
-
 				// Check tangent point
 				VERTEX2D vi1, vi2, vo1, vo2;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 				// TO DEBUG!!! Causes frequent crashes
 				if (g->nodes[i].VI[0] >= 0 && g->nodes[i].VO[0] >= 0 && g->nodes[i].VI[1] >= 0 && g->nodes[i].VO[1] >= 0) {
-					Sub(&vi1, &(g->nodes[g->nodes[i].VI[0]].p), &(g->nodes[i].p));
-					Sub(&vo1, &(g->nodes[g->nodes[i].VO[0]].p), &(g->nodes[i].p));
+					vi1 = (g->nodes[g->nodes[i].VI[0]].p) - (g->nodes[i].p);
+					vo1 = (g->nodes[g->nodes[i].VO[0]].p) - (g->nodes[i].p);
 
-					Sub(&vi2, &(g->nodes[g->nodes[i].VI[1]].p), &(g->nodes[i].p));
-					Sub(&vo2, &(g->nodes[g->nodes[i].VO[1]].p), &(g->nodes[i].p));
+					vi2 = (g->nodes[g->nodes[i].VI[1]].p) - (g->nodes[i].p);
+					vo2 = (g->nodes[g->nodes[i].VO[1]].p) - (g->nodes[i].p);
 				}
-
 
 				double angI = GetOrientedAngle(&vi1, &vo1);
 				double angII = GetOrientedAngle(&vi1, &vi2);
 				double angIO = GetOrientedAngle(&vi1, &vo2);
 
 				g->nodes[i].isStart = (angII < angI) || (angIO < angI);
-
 			}
 			else {
 				g->nodes[i].isStart = 1;
 			}
 		}
-
-
 	}
-
 }
 
 // -----------------------------------------------------------
@@ -957,52 +835,31 @@ int IntersectPoly(POLYGON *inP1, POLYGON *inP2, int *visible2, POLYGON **result)
 
 	// Create polygraph
 	CreateGraph(g, inP1, inP2, visible2);
-
-
-
-
-
+	
 	// Search a divergent point
 	POLYVERTEX *s, *s0;
-
-
-
-
 	if (!SearchFirst(g, &s)) {
-
-
-
+				
 		// Check particular cases
-
-
-
 		if ((g->nbNode == inP1->nbPts) && (g->nbNode == inP2->nbPts)) {
 			// P1 and P2 are equal
 			ClearGraph(g);
 			*result = CopyPoly(inP1);
 			return 1;
 		}
-
-
+		
 		if (CheckLoop(g)) {
 			// Only tangent edge/point found => null intersection
 			ClearGraph(g);
 			*result = NULL;
 			return 0;
 		}
-
-
+		
 		ClearGraph(g);
 		int i;
 		int insideP1 = 0;
 		int insideP2 = 0;
-
-
-
-
-
-
-
+		
 		i = 0;
 		while (i < inP1->nbPts && !insideP2) {
 			insideP2 = IsInPoly(inP1->pts[i].u, inP1->pts[i].v, inP2->pts, inP2->nbPts);
@@ -1011,49 +868,25 @@ int IntersectPoly(POLYGON *inP1, POLYGON *inP2, int *visible2, POLYGON **result)
 		if (insideP2) {
 			// P1 is fully inside P2
 			*result = CopyPoly(inP1);
-
-
-
-
 			return 1;
 		}
-
-
+		
 		i = 0;
 		while (i < inP2->nbPts && !insideP1) {
 			insideP1 = IsInPoly(inP2->pts[i].u, inP2->pts[i].v, inP1->pts, inP1->nbPts);
 			i++;
 		}
-
-
+		
 		if (insideP1) {
 			// P2 is fully inside P1
 			*result = CopyPoly(inP2);
 			return 1;
 		}
-
-
+		
 		// Null intersection
-
-
-
-
-
-
-
+		
 		*result = NULL;
 		return 0;
-
-
-
-
-
-
-
-
-
-
-
 	}
 
 	// Compute intersection
@@ -1062,14 +895,10 @@ int IntersectPoly(POLYGON *inP1, POLYGON *inP2, int *visible2, POLYGON **result)
 	int eop;
 	VERTEX2D n1, n2;
 	double sine;
-
-
-
+	
 	do {
-
-
+		
 		// Starts a new polygon
-
 		polys[nbPoly].pts = (VERTEX2D *)malloc(MAXEDGE*sizeof(VERTEX2D));
 		polys[nbPoly].sign = 1.0;
 		polys[nbPoly].nbPts = 0;
@@ -1077,33 +906,17 @@ int IntersectPoly(POLYGON *inP1, POLYGON *inP2, int *visible2, POLYGON **result)
 		eop = 0;
 		s0 = s;
 
-
-
-
 		while (!eop && polys[nbPoly - 1].nbPts < MAXEDGE) {
-
 
 			// Add point to the current polygon
 			polys[nbPoly - 1].pts[polys[nbPoly - 1].nbPts] = s->p;
 			polys[nbPoly - 1].nbPts++;
 			s->mark = 1;
 
-
-
-
-
-
-
-
 			// Go to next point
 			switch (s->nbOut) {
 
-
 			case 1:
-
-
-
-
 
 				// Next point
 				if (s->VO[0] >= 0) {
@@ -1116,8 +929,6 @@ int IntersectPoly(POLYGON *inP1, POLYGON *inP2, int *visible2, POLYGON **result)
 				}
 				break;
 
-
-
 			case 2:
 
 				if (s->VO[0] == -1 || s->VO[1] == -1) {
@@ -1127,25 +938,6 @@ int IntersectPoly(POLYGON *inP1, POLYGON *inP2, int *visible2, POLYGON **result)
 					*result = NULL;
 					return -1;
 				}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 				// We have to turn left
 				n1 = g->nodes[s->VO[0]].p;
@@ -1172,12 +964,9 @@ int IntersectPoly(POLYGON *inP1, POLYGON *inP2, int *visible2, POLYGON **result)
 
 			}
 
-
 			// Reach start point, end of polygon
 			eop = (s0 == s);
-
 		}
-
 
 		if (!eop) {
 			//Failure!!! (inner cycle found)
@@ -1187,7 +976,6 @@ int IntersectPoly(POLYGON *inP1, POLYGON *inP2, int *visible2, POLYGON **result)
 			return -1;
 		}
 
-
 	} while (SearchFirst(&graph, &s));
 
 	ClearGraph(g);
@@ -1195,8 +983,6 @@ int IntersectPoly(POLYGON *inP1, POLYGON *inP2, int *visible2, POLYGON **result)
 	return nbPoly;
 
 }
-
-// -------------------------------------------------------
 
 double GetInterArea(POLYGON *inP1, POLYGON *inP2, int *edgeVisible, float *uC, float *vC, int *nbV, double **lList) {
 

@@ -61,28 +61,25 @@ typedef struct {
 
 #define IDX(i,nb) (((i)<0)?nb+(i):(i)%(nb))
 
-
-VERTEX3D CrossProduct(const VERTEX3D &v1, const VERTEX3D &v2);
-VERTEX3D operator+ (const VERTEX3D &v1, const VERTEX3D& v2);
-VERTEX3D operator-(const VERTEX3D &v1, const VERTEX3D& v2);
-double Dot(const VERTEX3D &v1, const VERTEX3D &v2);
-VERTEX3D operator*(const VERTEX3D &v1, const double& mult);
+//VERTEX3D
+VERTEX3D CrossProduct(const VERTEX3D & v1, const VERTEX3D & v2);void Cross(VERTEX3D *result, VERTEX3D *v1, VERTEX3D *v2);
+VERTEX3D operator+ (const VERTEX3D &v1, const VERTEX3D& v2);void Add(VERTEX3D *result, VERTEX3D *v1, VERTEX3D *v2);
+VERTEX3D operator-(const VERTEX3D &v1, const VERTEX3D& v2);void Sub(VERTEX3D *result, VERTEX3D *v1, VERTEX3D *v2);
+VERTEX3D operator*(const VERTEX3D &v1, const double& mult);void ScalarMult(VERTEX3D *result, double r);
 VERTEX3D operator*(const double& mult, const VERTEX3D &v1);
-
-double Dot(VERTEX3D *v1,VERTEX3D *v2);
-double Dot(const VERTEX2D &v1, const VERTEX2D &v2);
-void   Cross(VERTEX3D *result,VERTEX3D *v1,VERTEX3D *v2);
+double Dot(const VERTEX3D &v1, const VERTEX3D &v2);double Dot(VERTEX3D *v1, VERTEX3D *v2);
 double Norme(const VERTEX3D &v);
+void Normalize(VERTEX3D *v);
+//VERTEX2D
+VERTEX2D operator+ (const VERTEX2D &v1, const VERTEX2D& v2);void Add(VERTEX2D *result, VERTEX2D *v1, VERTEX2D *v2);
+VERTEX2D operator-(const VERTEX2D &v1, const VERTEX2D& v2);void Sub(VERTEX2D *result, VERTEX2D *v1, VERTEX2D *v2);
+VERTEX2D operator*(const VERTEX2D &v1, const double& mult);void   ScalarMult(VERTEX2D *result, double r);
+VERTEX2D operator*(const double& mult, const VERTEX2D &v1);
+double Dot(const VERTEX2D &v1, const VERTEX2D &v2);double Dot(VERTEX2D *v1, VERTEX2D *v2);
 double Norme(const VERTEX2D &v);
-double Norme(VERTEX2D *v1,VERTEX2D *v2);
-void   Normalize(VERTEX3D *v);
-void   Normalize(VERTEX2D *v);
-void   ScalarMult(VERTEX3D *result,double r);
-void   ScalarMult(VERTEX2D *result, double r);
-void   Sub(VERTEX3D *result,VERTEX3D *v1,VERTEX3D *v2);
-void   Sub(VERTEX2D *result, VERTEX2D *v1, VERTEX2D *v2);
-void   Add(VERTEX3D *result,VERTEX3D *v1,VERTEX3D *v2);
-void   Add(VERTEX2D *result, VERTEX2D *v1, VERTEX2D *v2);
+void Normalize(VERTEX2D *v);
+int VertexEqual(VERTEX2D *p1, VERTEX2D *p2);
+
 void   ProjectVertex(VERTEX3D *v,VERTEX2D *projected,VERTEX3D *U,VERTEX3D *V,VERTEX3D *origin);
 void   Mirror(VERTEX3D *P, VERTEX3D P0, VERTEX3D N);
 void   Rotate(VERTEX3D *P, VERTEX3D AXIS_P0, VERTEX3D AXIS_DIR,double theta);
@@ -110,3 +107,4 @@ double GetInterAreaBF(POLYGON *inP1,double u0,double v0,double u1,double v1,floa
 double RoundAngle(double a);
 
 #endif /* _UTILSH_ */
+

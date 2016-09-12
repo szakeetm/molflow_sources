@@ -966,7 +966,7 @@ void TreatMovingFacet() {
 	VERTEX3D oldVelocity, newVelocity;
 	oldVelocity = sHandle->pDir;
 	ScalarMult(&oldVelocity, sHandle->velocityCurrentParticle);
-	Add(&newVelocity, &oldVelocity, &localVelocityToAdd);
+	Add(&newVelocity, &oldVelocity, &localVelocityToAdd);oldVelocity + localVelocityToAdd;
 	sHandle->pDir = newVelocity;
 	Normalize(&sHandle->pDir);
 	sHandle->velocityCurrentParticle = Norme(newVelocity);
