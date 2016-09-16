@@ -19,8 +19,23 @@
 #include "Viewer3DSettings.h"
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
-#include "Molflow.h"
+#ifdef MOLFLOW
+#include "MolFlow.h"
+#endif
+
+#ifdef SYNRAD
+#include "SynRad.h"
+#endif
+
+
+
+#ifdef MOLFLOW
 extern MolFlow *mApp;
+#endif
+
+#ifdef SYNRAD
+extern SynRad*mApp;
+#endif
 
 
 Viewer3DSettings::Viewer3DSettings():GLWindow() {
@@ -245,9 +260,6 @@ void Viewer3DSettings::ProcessMessage(GLComponent *src,int message) {
         return;
       }
 
-
-
-
       viewer->showBack=showMode->GetSelectedIndex();
       viewer->transStep = tstep;
       viewer->angleStep = astep;
@@ -257,18 +269,22 @@ void Viewer3DSettings::ProcessMessage(GLComponent *src,int message) {
 	  viewer->showHiddenVertex=hiddenVertex->GetState();
       viewer->showMesh=showMesh->GetState();
 
+	  BOOL neededMesh = mApp->needsMesh;
+
+	  mApp->CheckNeedsTexture();
+	  BOOL needsMesh = mApp->needsMesh;
+
+	  if (!needsMesh && neededMesh) { //We just disabled mesh
+		  geom->ClearFacetMeshLists();
+	  }
+	  else if (needsMesh && !neededMesh) { //We just enabled mesh
+		  geom->BuildFacetMeshLists();
+	  }
 
 	  viewer->bigDots=bigDots->GetState();
       viewer->showDir=dirShowdirToggle->GetState();
-	  viewer->showTime=showTimeToggle->GetState();
-
-
-
-
-
-
-
-
+	  viewer->showTime=showTimeToggle->GetState(); 
+	  
       if( !dirNormeText->GetNumber(&nratio) ) {
         GLMessageBox::Display("Invalid norme ratio value","Error",GLDLG_OK,GLDLG_ICONERROR);
         return;

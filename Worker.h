@@ -21,6 +21,7 @@
 
 #include "Geometry.h"
 #include "Parameter.h"
+#include "LoadStatus.h"
 #include "PugiXML/pugixml.hpp"
 #include <string>
 
@@ -248,8 +249,8 @@ private:
   LEAK leakCache[NBHHIT];
 
   // Methods
-  BOOL ExecuteAndWait(int command,int waitState,size_t param=0,GLProgress *prg=NULL);
-  BOOL Wait(int waitState, int timeout, GLProgress *prg = NULL);
+  BOOL ExecuteAndWait(int command, int waitState, int param = 0);
+  BOOL Wait(int waitState, LoadStatus *statusWindow = NULL);
   void ResetWorkerStats();
   void ClearHits(BOOL noReload);
   char *GetErrorDetails();

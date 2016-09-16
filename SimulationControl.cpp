@@ -33,9 +33,6 @@ GNU General Public License for more details.
 
 #define READBUFFER(_type) *(_type*)buffer;buffer+=sizeof(_type)
 
-
-extern void SetErrorSub(char *message);
-
 // -------------------------------------------------------
 // Global handles
 // -------------------------------------------------------
@@ -195,10 +192,12 @@ BOOL LoadSimulation(Dataport *loader) {
 	t0 = GetTick();
 
 	sHandle->loadOK = FALSE;
+	SetState(PROCESS_STARTING, "Clearing previous simulation");
 	ClearSimulation();
-
+	SetState(PROCESS_STARTING, "Connecting to dataport");
 	// Connect the dataport
 	if (!AccessDataport(loader)) {
+
 
 		SetErrorSub("Failed to connect to DP");
 		return FALSE;
@@ -238,23 +237,9 @@ BOOL LoadSimulation(Dataport *loader) {
 	sHandle->timeWindowSize = shGeom->timeWindowSize;
 	sHandle->useMaxwellDistribution = shGeom->useMaxwellDistribution;
 	sHandle->calcConstantFlow = shGeom->calcConstantFlow;
-
-
 	sHandle->motionType = shGeom->motionType;
 	sHandle->motionVector1 = shGeom->motionVector1;
 	sHandle->motionVector2 = shGeom->motionVector2;
-
-	/*//Test cube
-	sHandle->testCubeCount=0;
-	sHandle->testCubeTemp=0.0;
-	sHandle->testCubeDist=0.0;
-	sHandle->testCubeTime=0.0;
-	sHandle->testSystemTime=0.0;
-	sHandle->testCubeEnterMoment=0.0;
-	sHandle->testCubeEnterDist=0.0;
-	sHandle->testCubeVelocity=0.0;
-	sHandle->testSystemDist=0.0;*/
-
 	// Prepare super structure (allocate memory for facets)
 	buffer += sizeof(SHGEOM)+sizeof(VERTEX3D)*sHandle->nbVertex;
 	for (i = 0; i < sHandle->totalFacet; i++) {
@@ -281,6 +266,7 @@ BOOL LoadSimulation(Dataport *loader) {
 	}
 
 	incBuff = buffer; //after facets and outgassing maps, with inc values
+
 
 	//buffer = (BYTE *)loader->buff;
 	buffer = bufferStart; //start from beginning again
@@ -452,15 +438,15 @@ BOOL LoadSimulation(Dataport *loader) {
 				f->fullSizeInc = 1E30;
 				for (j = 0; j < nbE; j++) {
 					double incVal = READBUFFER(double);
-					if (incVal < 0) {
+					/*if (incVal < 0) {
 						//f->fullElem[j] = 1;
 						f->inc[j] = -incVal;
 					}
-					else {
+					else {*/
 
 						//f->fullElem[j] = 0;
 						f->inc[j] = incVal;
-					}
+					/*}*/
 					if ((f->inc[j]>0.0) && (f->inc[j] < f->fullSizeInc)) f->fullSizeInc = f->inc[j];
 				}
 				for (j = 0; j < nbE; j++) { //second pass, filter out very small cells
@@ -476,6 +462,7 @@ BOOL LoadSimulation(Dataport *loader) {
 			}
 		}
 	}
+
 
 
 

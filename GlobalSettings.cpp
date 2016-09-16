@@ -20,9 +20,23 @@
 #include "GLApp/GLMessageBox.h"
 #include "GLApp/GLInputBox.h"
 #include "Utils.h"
-#include "Molflow.h"
+#ifdef MOLFLOW
+#include "MolFlow.h"
+#endif
 
+#ifdef SYNRAD
+#include "SynRad.h"
+#endif
+
+extern GLApplication *theApp;
+
+#ifdef MOLFLOW
 extern MolFlow *mApp;
+#endif
+
+#ifdef SYNRAD
+extern SynRad*mApp;
+#endif
 
 static const int   plWidth[] = { 15, 40, 70, 70, 50, 330 };
 static const char *plName[] = { "#", "PID", "Mem Usage", "Mem Peak", "CPU", "Status" };

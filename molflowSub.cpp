@@ -52,7 +52,6 @@ static char      loadDpName[32];
 static char      hitsDpName[32];
 
 BOOL end = FALSE;
-void SetErrorSub(char *message);
 BOOL IsProcessRunning(DWORD pid);
 //int FIND_PROC_BY_NAME(const char *szToFind);
 // -------------------------------------------------
@@ -119,7 +118,7 @@ int GetLocalState() {
 
 // -------------------------------------------------
 
-void SetState(int state,char *status) {
+void SetState(int state,const char *status) {
 
 	prState = state;
 	printf("\n setstate %d \n",state);
@@ -138,7 +137,7 @@ void SetState(int state,char *status) {
 
 // -------------------------------------------------
 
-void SetErrorSub(char *message) {
+void SetErrorSub(const char *message) {
 
   printf("Error: %s\n",message);
   SetState(PROCESS_ERROR,message);

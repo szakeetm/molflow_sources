@@ -21,9 +21,23 @@ GNU General Public License for more details.
 #include "GLApp/GLMessageBox.h"
 #include "Utils.h"
 #include <math.h>
-#include "Molflow.h"
+#ifdef MOLFLOW
+#include "MolFlow.h"
+#endif
 
+#ifdef SYNRAD
+#include "SynRad.h"
+#endif
+
+
+
+#ifdef MOLFLOW
 extern MolFlow *mApp;
+#endif
+
+#ifdef SYNRAD
+extern SynRad*mApp;
+#endif
 
 static const char*profType[] = { "None", "Pressure \201 [mbar]", "Pressure \202 [mbar]", "Angle", "Velocity", "Ort.velocity" };
 
@@ -189,7 +203,7 @@ void PressureEvolution::Refresh() {
 	}
 	//Remove profiles that aren't present anymore
 	for (int v = 0; v < nbView; v++)
-		if (views[v]->userData >= geom->GetNbFacet() || !geom->GetFacet(views[v]->userData)->sh.isProfile) {
+		if (views[v]->userData1 >= geom->GetNbFacet() || !geom->GetFacet(views[v]->userData1)->sh.isProfile) {
 			chart->GetY1Axis()->RemoveDataView(views[v]);
 			SAFE_DELETE(views[v]);
 			for (int j = v; j < nbView - 1; j++) views[j] = views[j + 1];
@@ -259,7 +273,7 @@ void PressureEvolution::plot() {
 	BOOL found = FALSE;
 	int i = 0;
 	while (i < nbView && !found) {
-		found = (views[i]->userData == -1);
+		found = (views[i]->userData1 == -1);
 		if (!found) i++;
 	}
 
@@ -272,7 +286,7 @@ void PressureEvolution::plot() {
 		if (nbView < 50) {
 			v = new GLDataView();
 			v->SetName(formulaText->GetText());
-			v->userData = -1;
+			v->userData1 = -1;
 			chart->GetY1Axis()->AddDataView(v);
 			views[nbView] = v;
 			nbView++;
@@ -308,8 +322,8 @@ void PressureEvolution::refreshViews() {
 	for (int i = 0; i < nbView; i++) {
 
 		GLDataView *v = views[i];
-		if (v->userData >= 0 && v->userData < geom->GetNbFacet()) {
-			Facet *f = geom->GetFacet(v->userData);
+		if (v->userData1 >= 0 && v->userData1 < geom->GetNbFacet()) {
+			Facet *f = geom->GetFacet(v->userData1);
 			SHHITS *fCount = (SHHITS *)(buffer + f->sh.hitOffset);
 			double fnbDes = (double)fCount->hit.nbDesorbed;
 			double fnbHit = (double)fCount->hit.nbHit;
@@ -403,7 +417,7 @@ void PressureEvolution::refreshViews() {
 			v->CommitChange();
 		}
 		else {
-			if (v->userData == -2 && nbDes != 0.0) {
+			if (v->userData1 == -2 && nbDes != 0.0) {
 
 				// Volatile profile
 				v->Reset();
@@ -446,7 +460,7 @@ void PressureEvolution::addView(int facet) {
 	BOOL found = FALSE;
 	int i = 0;
 	while (i < nbView && !found) {
-		found = (views[i]->userData == facet);
+		found = (views[i]->userData1 == facet);
 		if (!found) i++;
 	}
 	if (worker->moments.size() > 10000) {
@@ -465,7 +479,7 @@ void PressureEvolution::addView(int facet) {
 		v->SetMarker(MARKER_DOT);
 		v->SetColor(*colors[nbView%nbColors]);
 		v->SetMarkerColor(*colors[nbView%nbColors]);
-		v->userData = facet;
+		v->userData1 = facet;
 		chart->GetY1Axis()->AddDataView(v);
 		views[nbView] = v;
 		nbView++;
@@ -480,7 +494,7 @@ void PressureEvolution::remView(int facet) {
 	BOOL found = FALSE;
 	int i = 0;
 	while (i < nbView && !found) {
-		found = (views[i]->userData == facet);
+		found = (views[i]->userData1 == facet);
 		if (!found) i++;
 	}
 	if (!found) {

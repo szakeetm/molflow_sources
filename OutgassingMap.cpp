@@ -179,8 +179,8 @@ void OutgassingMap::UpdateTable() {
     return;
   }
 
-  SHELEM *mesh = selFacet->mesh;
-  if( mesh ) {
+  //SHELEM *mesh = selFacet->mesh;
+  if( selFacet->cellPropertiesIds ) {
 
     char tmp[256];
     int w = selFacet->sh.texWidth;
@@ -198,7 +198,7 @@ void OutgassingMap::UpdateTable() {
 			*(mapList->cEdits+i)=EDIT_NUMBER;
           for(int j=0;j<h;j++) { //height (rows)
 			  sprintf(tmp,"0");
-			  if (selFacet->mesh[i+j*w].area==0.0) sprintf(tmp,"Outside");
+			  if (selFacet->GetMeshArea(i+j*w)==0.0) sprintf(tmp,"Outside");
 			  mapList->SetValueAt(i,j,tmp);
           }
         }
@@ -309,7 +309,7 @@ void OutgassingMap::ProcessMessage(GLComponent *src,int message) {
 		  int count=0;
 		  for(int j=0;j<h;j++) { //height (rows)
 			  for(int i=0;i<w;i++) { //width (cols)
-				  if (selFacet->mesh[i+j*w].area>0.0) {
+				  if (selFacet->GetMeshArea(i+j*w)>0.0) {
 					  char *str = mapList->GetValueAt(i,j);
 					  int conv = sscanf(str,"%lf",values+count);
 					  if(!conv || !(*(values+count++)>=0.0)) {

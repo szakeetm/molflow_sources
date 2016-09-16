@@ -20,7 +20,12 @@
 #define TYPESH
 
 // 64 bit integer declaration
-typedef long long llong;
+
+#ifdef WIN
+  typedef unsigned __int64 llong;
+#else
+  typedef long long llong;
+#endif
 
 // AC matrix floating type
 
@@ -43,6 +48,7 @@ typedef float ACFLOAT;
 
 
 
+
   // Profile type
 
 #define REC_NONE       0  // No recording
@@ -53,6 +59,7 @@ typedef float ACFLOAT;
 #define REC_ORT_VELOCITY 5 //Orthogonal velocity component
 
 #define PROFILE_SIZE  100 // Size of profile
+
 
 
 
@@ -71,6 +78,7 @@ class VERTEX3D {
 public:
 
 
+
   double x;
   double y;
   double z;
@@ -78,8 +86,6 @@ public:
 };
 
 struct VERTEX2D {
-
-
 	double u;
 	double v;
 };
@@ -100,6 +106,8 @@ typedef struct {
 
 
 
+
+
 } HIT;
 
 typedef struct {
@@ -110,11 +118,16 @@ typedef struct {
 } LEAK;
 
 typedef struct {
+   VERTEX2D* points;
+   size_t nbPoints;
+   float   area;     // Area of element
+   float   uCenter;  // Center coordinates
+   float   vCenter;  // Center coordinates
+   //int     elemId;   // Element index (MESH array)
+   //int full;
+ } CELLPROPERTIES;
 
-  int nbPts;
-  VERTEX2D *pts;
 
-} MESH;
 
 // Density/Hit field stuff
 #define HITMAX 1E38
@@ -124,6 +137,7 @@ typedef struct {
 	double sum_v_ort;
 	double sum_1_per_ort_velocity;
 } APROFILE;
+
 
 
 

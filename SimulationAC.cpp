@@ -30,8 +30,6 @@
 #include "Simulation.h"
 #include "Random.h"
 
-extern void SetErrorSub(char *message);
-extern void SetState(int state,char *status);
 extern char *GetSimuStatus();
 extern int GetLocalState();
 //extern void GetState(int sleepTime);

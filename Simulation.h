@@ -31,7 +31,7 @@ typedef int BOOL;
 #define TIMELIMIT 0.01
 
 #include "Shared.h"
-#include "smp/SMP.h"
+#include "SMP.h"
 #include "Distributions.h"
 #include <vector>
 #include "Parameter.h"
@@ -221,6 +221,17 @@ typedef struct {
 // Handle to simulation object
 extern SIMULATION *sHandle;
 
+//Just for AC matrix calculation in Molflow, old mesh structure:
+typedef struct {
+
+	float   area;     // Area of element
+	float   uCenter;  // Center coordinates
+	float   vCenter;  // Center coordinates
+	int     elemId;   // Element index (MESH array)
+	BOOL    full;     // Element is full
+
+} SHELEM;
+
 // -- Macros ---------------------------------------------------
 
 
@@ -233,6 +244,8 @@ void DHIT_FACET(FACET *f, double time);
 void ProfileFacet(FACET *f, double time, BOOL countHit, double velocity_factor, double ortSpeedFactor);
 void InitSimulation();
 void ClearSimulation();
+void SetState(int state, const char *status);
+void SetErrorSub(const char *msg);
 void ClearACMatrix();
 BOOL LoadSimulation(Dataport *loader);
 BOOL StartSimulation(size_t mode);
@@ -260,7 +273,7 @@ void DestroyAABB(struct AABBNODE *node);
 void IntersectTree(struct AABBNODE *node);
 BOOL Intersect(VERTEX3D *rayPos,VERTEX3D *rayDir,double *dist,FACET **iFact,FACET *last);
 BOOL Visible(VERTEX3D *c1,VERTEX3D *c2,FACET *f1,FACET *f2);
-BOOL IsInFacet(FACET *f,double u,double v);
+BOOL IsInFacet(FACET *f,const double u,const double v);
 double GetTick();
 size_t   GetHitsSize();
 BOOL ComputeACMatrix(SHELEM *mesh);
@@ -274,5 +287,13 @@ double GetStickingAt(FACET *src,double time);
 double GetOpacityAt(FACET *src,double time);
 void   IncreaseFacetCounter(FACET *f, double time, size_t hit,size_t desorb, size_t absorb, double sum_1_per_v, double sum_v_ort);
 void   TreatMovingFacet();
+
+
+//Static variables shared between IntersectAABB and IntersectAABB_shared routines, declared here
+// Minimum number of facet inside a BB
+#define MINBB    8
+
+// Maximum AABB tree depth
+#define MAXDEPTH 5
 
 #endif /* _SIMULATIONH_ */

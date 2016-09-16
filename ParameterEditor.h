@@ -6,7 +6,7 @@
 #include "GLApp/GLWindow.h"
 #include "GLApp/GLButton.h"
 #include "GLApp/GLCombo.h"
-#include "GLApp/GLChart.h"
+#include "GLApp/GLChart/GLChart.h"
 #include "GLApp\GLTextField.h"
 #include "GLApp\GLToggle.h"
 #include "GLApp\GLTitledPanel.h"

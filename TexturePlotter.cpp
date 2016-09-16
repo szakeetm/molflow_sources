@@ -20,9 +20,23 @@ GNU General Public License for more details.
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
 #include "GLApp/GLFileBox.h"
+#ifdef MOLFLOW
 #include "MolFlow.h"
+#endif
 
+#ifdef SYNRAD
+#include "SynRad.h"
+#endif
+
+
+
+#ifdef MOLFLOW
 extern MolFlow *mApp;
+#endif
+
+#ifdef SYNRAD
+extern SynRad*mApp;
+#endif
 
 static const char *fileFilters = "Text files\0*.txt";
 static const int   nbFilter = sizeof(fileFilters) / (2 * sizeof(char *));
@@ -170,13 +184,13 @@ void TexturePlotter::UpdateTable() {
 	maxValue = 0.0f;
 	//double scale;
 	GetSelected();
-	if (!selFacet || !selFacet->mesh) {
+	if (!selFacet || !selFacet->cellPropertiesIds) {
 		mapList->Clear();
 		return;
 	}
 
-	SHELEM *mesh = selFacet->mesh;
-	if (mesh) {
+	//SHELEM *mesh = selFacet->mesh;
+	if (selFacet->cellPropertiesIds) {
 
 		char tmp[256];
 		int w = selFacet->sh.texWidth;
@@ -192,7 +206,7 @@ void TexturePlotter::UpdateTable() {
 		case 0: {// Cell area
 					for (int i = 0; i < w; i++) {
 						for (int j = 0; j<h; j++) {
-							float val = selFacet->mesh[i + j*w].area;
+							float val = selFacet->GetMeshArea(i + j*w);
 							sprintf(tmp, "%g", val);
 							if (val>maxValue) {
 								maxValue = val;
@@ -250,7 +264,7 @@ void TexturePlotter::UpdateTable() {
 							 if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules	 / worker->timeWindowSize));
 							 for (int i = 0; i < w; i++) {
 								 for (int j = 0; j<h; j++) {
-									 double area = (selFacet->mesh[i + j*w].area); if (area == 0.0) area = 1.0;
+									 double area = (selFacet->GetMeshArea(i + j*w)); if (area == 0.0) area = 1.0;
 									 double val = (double)hits[i + j*w].count / area*dCoef;
 									 if (val>maxValue) {
 										 maxValue = val;
@@ -295,7 +309,7 @@ void TexturePlotter::UpdateTable() {
 									 /*double v_avg = 2.0*(double)hits[i + j*w].count / hits[i + j*w].sum_1_per_ort_velocity;
 									 double imp_rate = hits[i + j*w].count / (selFacet->mesh[i + j*w].area*(selFacet->sh.is2sided ? 2.0 : 1.0))*dCoef;
 									 double rho = 4.0*imp_rate / v_avg;*/
-									 double rho = hits[i + j*w].sum_1_per_ort_velocity / selFacet->mesh[i + j*w].area*dCoef;
+									 double rho = hits[i + j*w].sum_1_per_ort_velocity / selFacet->GetMeshArea(i + j*w)*dCoef;
 									 if (rho>maxValue) {
 										 maxValue = rho;
 										 maxX = i; maxY = j;
@@ -341,7 +355,7 @@ void TexturePlotter::UpdateTable() {
 									 /*double v_avg = 2.0*(double)hits[i + j*w].count / hits[i + j*w].sum_1_per_ort_velocity;
 									 double imp_rate = hits[i + j*w].count / (selFacet->mesh[i + j*w].area*(selFacet->sh.is2sided ? 2.0 : 1.0))*dCoef;
 									 double rho = 4.0*imp_rate / v_avg;*/
-									 double rho = hits[i + j*w].sum_1_per_ort_velocity / selFacet->mesh[i + j*w].area*dCoef;
+									 double rho = hits[i + j*w].sum_1_per_ort_velocity / selFacet->GetMeshArea(i + j*w)*dCoef;
 									 double rho_mass = rho*worker->gasMass / 1000.0 / 6E23;
 									 if (rho_mass>maxValue) {
 										 maxValue = rho_mass;

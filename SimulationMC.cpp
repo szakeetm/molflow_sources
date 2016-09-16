@@ -26,7 +26,6 @@ GNU General Public License for more details.
 #include "Utils.h"
 
 extern SIMULATION *sHandle;
-extern void SetErrorSub(char *message);
 
 // -------------------------------------------------------------
 // Compute area of all the desorption facet

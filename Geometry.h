@@ -25,7 +25,7 @@
 #include "GLApp/GLToolkit.h"
 //#include "GLApp/GLGradient.h"
 #include "GLApp/GLProgress.h"
-#include "smp/SMP.h"
+#include "SMP.h"
 #include "Utils.h"
 #include "GrahamScan.h"
 #include "PugiXML/pugixml.hpp"
@@ -94,6 +94,11 @@ public:
 	void InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg, BOOL newStr);
 	BOOL LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker *work, GLProgress *progressDlg);
 
+	void ClearFacetMeshLists();
+	void BuildFacetMeshLists();
+	void BuildFacetTextures(BYTE * hits);
+	void ClearFacetTextures();
+
 	// Selection (drawing stuff)
 	void SelectAll();
 	void UnSelectAll();
@@ -121,12 +126,11 @@ public:
 
 	// Geometry
 	//BOOL     AskToReset_Geom(Worker *work);
-	BOOL     IsInFacet(int facet, double u, double v);
+	BOOL     IsInFacet(int facet, const double &u, const double &v);
 	void     SetFacetTexture(int facet, double ratio, BOOL corrMap);
 	void     BuildPipe(double L, double R, double s, int step);
 	void     BuildFacetList(Facet *f);
 	void     Rebuild();
-	void     BuildTexture(BYTE *hits);
 	void     SetNormeRatio(float r);
 	float    GetNormeRatio();
 	void     SetAutoNorme(BOOL enable);
@@ -224,7 +228,7 @@ public:
 	void AddVertex(double X, double Y, double Z);
 	void GetSelection(int **selection, int *nbSel);
 	void SetSelection(int **selection, int *nbSel, BOOL isShiftDown, BOOL isCtrlDown);
-	void AddStruct(char *name);
+	void AddStruct(const char *name);
 	void DelStruct(int numToDel);
 	void ScaleSelectedVertices(VERTEX3D invariant, double factor, BOOL copy, Worker *worker);
 	void ScaleSelectedFacets(VERTEX3D invariant, double factorX, double factorY, double factorZ, BOOL copy, Worker *worker);

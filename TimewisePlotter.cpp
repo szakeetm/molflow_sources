@@ -21,9 +21,23 @@ GNU General Public License for more details.
 #include "GLApp/GLMessageBox.h"
 #include "Utils.h"
 #include <math.h>
-#include "Molflow.h"
+#ifdef MOLFLOW
+#include "MolFlow.h"
+#endif
 
+#ifdef SYNRAD
+#include "SynRad.h"
+#endif
+
+
+
+#ifdef MOLFLOW
 extern MolFlow *mApp;
+#endif
+
+#ifdef SYNRAD
+extern SynRad*mApp;
+#endif
 
 static const char*profType[] = { "None", "Pressure \201 [mbar]", "Pressure \202 [mbar]", "Angle", "Velocity", "Ort.velocity" };
 
@@ -154,7 +168,7 @@ void TimewisePlotter::Refresh() {
 	if (nbProf>0 && nbView == 0) addView(profCombo->GetUserValueAt(0));
 	//Remove profiles that aren't present anymore
 	if (nbView>0)
-		if (views[0]->userData >= geom->GetNbFacet() || !geom->GetFacet(views[0]->userData)->sh.isProfile) {
+		if (views[0]->userData1 >= geom->GetNbFacet() || !geom->GetFacet(views[0]->userData1)->sh.isProfile) {
 			Reset();
 		}
 	refreshViews();
@@ -166,7 +180,7 @@ void TimewisePlotter::Display(Worker *w) {
 	if( nbView==0 ) {
 	GLDataView *v = new GLDataView();
 	v->SetName("Transmission Prob.");
-	v->userData = -2;
+	v->userData1 = -2;
 	GLCColor c;
 	c.r=0;c.g=255;c.b=0;
 	v->SetColor(c);
@@ -218,7 +232,7 @@ void TimewisePlotter::refreshViews() {
 
 		GLDataView *v = views[i];
 		UpdateMoment();
-		if (v->userData<0 || v->userData>worker->moments.size()) continue; //invalid moment
+		if (v->userData1<0 || v->userData1>worker->moments.size()) continue; //invalid moment
 		int idx = profCombo->GetSelectedIndex();
 		if (idx < 0) return;
 		Facet *f = geom->GetFacet(profCombo->GetUserValueAt(idx));
@@ -228,7 +242,7 @@ void TimewisePlotter::refreshViews() {
 		/*int momentIndex;
 		if (m==(nbView-1) && constantFlowToggle->GetState()) momentIndex=0; //Constant flow
 		else momentIndex=m+1; //any other 'normal' moment*/
-		APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + facetHitsSize + v->userData*sizeof(APROFILE)*PROFILE_SIZE);
+		APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + facetHitsSize + v->userData1*sizeof(APROFILE)*PROFILE_SIZE);
 
 		switch (displayMode) {
 		case 0: //Raw data
@@ -240,7 +254,7 @@ void TimewisePlotter::refreshViews() {
 			scaleY = 1.0 / nbDes / (f->sh.area / (double)PROFILE_SIZE*1E-4)* worker->gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
 			/*scaleY *= ((worker->displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
 			/ worker->timeWindowSize)); //correction for time window length*/
-			scaleY *= ((v->userData == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
+			scaleY *= ((v->userData1 == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
 				/ worker->timeWindowSize));
 			if (f->sh.is2sided) scaleY *= 0.5;
 			//if(f->sh.opacity>0.0) scaleY *= f->sh.opacity;
@@ -257,9 +271,9 @@ void TimewisePlotter::refreshViews() {
 			
 			/*
 			//Correction for double-density effect (measuring density on desorbing/absorbing facets):
-			if (f->sh.counter[v->userData].hit.nbHit>0 || f->sh.counter[v->userData].hit.nbDesorbed>0)
-				if (f->sh.counter[v->userData].hit.nbAbsorbed >0 || f->sh.counter[v->userData].hit.nbDesorbed>0) //otherwise save calculation time
-				scaleY *= 1.0 - ((double)f->sh.counter[v->userData].hit.nbAbsorbed + (double)f->sh.counter[v->userData].hit.nbDesorbed) / ((double)f->sh.counter[v->userData].hit.nbHit + (double)f->sh.counter[v->userData].hit.nbDesorbed) / 2.0;
+			if (f->sh.counter[v->userData1].hit.nbHit>0 || f->sh.counter[v->userData1].hit.nbDesorbed>0)
+				if (f->sh.counter[v->userData1].hit.nbAbsorbed >0 || f->sh.counter[v->userData1].hit.nbDesorbed>0) //otherwise save calculation time
+				scaleY *= 1.0 - ((double)f->sh.counter[v->userData1].hit.nbAbsorbed + (double)f->sh.counter[v->userData1].hit.nbDesorbed) / ((double)f->sh.counter[v->userData1].hit.nbHit + (double)f->sh.counter[v->userData1].hit.nbDesorbed) / 2.0;
 			*/
 
 			for (int j = 0; j < PROFILE_SIZE; j++)
@@ -331,7 +345,7 @@ void TimewisePlotter::addView(int facet) {
 		GLDataView *v = new GLDataView();
 		sprintf(tmp, "Moment0 (Constant Flow)"/*, facet + 1, profType[f->sh.profileType]*/);
 		v->SetName(tmp);
-		v->userData = 0;
+		v->userData1 = 0;
 		v->SetStyle(STYLE_DOT);
 		//v->SetLineWidth(2);
 		chart->GetY1Axis()->AddDataView(v);
@@ -347,7 +361,7 @@ void TimewisePlotter::addView(int facet) {
 			if (index<1 || (index) > worker->moments.size()) continue; //invalid moment
 			sprintf(tmp, "Moment%d (t=%gs)", (int)index, worker->moments[index - 1]);
 			v->SetName(tmp);
-			v->userData = (int)index;
+			v->userData1 = (int)index;
 			v->SetStyle(STYLE_DOT);
 			chart->GetY1Axis()->AddDataView(v);
 			views[nbView] = v;
@@ -366,7 +380,7 @@ void TimewisePlotter::remView(int facet) {
 	BOOL found = FALSE;
 	int i = 0;
 	while (i < nbView && !found) {
-		found = (views[i]->userData == facet);
+		found = (views[i]->userData1 == facet);
 		if (!found) i++;
 	}
 	if (!found) {
@@ -474,7 +488,7 @@ void TimewisePlotter::UpdateMoment() {
 	for (int i = 0; i < nbView; i++) {
 
 		GLDataView *v = views[i];
-		if (worker->displayedMoment == v->userData) {
+		if (worker->displayedMoment == v->userData1) {
 			v->SetStyle(STYLE_SOLID);
 			v->SetLineWidth(2);
 		}

@@ -15,14 +15,20 @@
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
   */
+#ifdef MOLFLOW
+#include "MolFlow.h"
+#endif
 
+#ifdef SYNRAD
+#include "SynRad.h"
+#endif
 #include "Facet.h"
 #include "Utils.h"
 #include <malloc.h>
 
 #include <string.h>
 #include <math.h>
-#include "GLToolkit.h"
+#include "GLApp/GLToolkit.h"
 #include <sstream>
 
 using namespace pugi;
@@ -31,8 +37,17 @@ using namespace pugi;
 #define MIN(x,y) (((x)<(y))?(x):(y))
 
 // Colormap stuff
-extern COLORREF rainbowCol[];
+extern COLORREF rainbowCol[]; //defined in GLGradient.cpp
 
+
+
+#ifdef MOLFLOW
+extern MolFlow *mApp;
+#endif
+
+#ifdef SYNRAD
+extern SynRad*mApp;
+#endif
 static int colorMap[65536];
 static BOOL colorInited = FALSE;
 
@@ -53,6 +68,7 @@ Facet::Facet(int nbIndex) {
 	sh.counter.hit.nbAbsorbed = 0;
 	sh.counter.hit.nbHit = 0;*/
 	memset(&counterCache, 0, sizeof(SHHITS));
+
 
 	sh.sticking = 0.0;
 	sh.opacity = 1.0;
@@ -111,10 +127,13 @@ Facet::Facet(int nbIndex) {
 	texDimH = 0;
 	tRatio = 0.0;
 
-	mesh = NULL;
-	meshPts = NULL;
+	//mesh = NULL;
+	//meshPts = NULL;
+	cellPropertiesIds = NULL;
+	meshvector = NULL;
+	meshvectorsize = 0;
 	hasMesh = FALSE;
-	nbElem = 0;
+	//nbElem = 0;
 	selectedElem.u = 0;
 	selectedElem.v = 0;
 	selectedElem.width = 0;
@@ -170,16 +189,16 @@ Facet::Facet(int nbIndex) {
 Facet::~Facet() {
 	SAFE_FREE(indices);
 	SAFE_FREE(vertices2);
-	SAFE_FREE(mesh);
+	SAFE_FREE(cellPropertiesIds);
 	SAFE_FREE(dirCache);
 	DELETE_TEX(glTex);
 	DELETE_LIST(glList);
 	DELETE_LIST(glElem);
 	DELETE_LIST(glSelElem);
 	SAFE_FREE(visible);
-	for (int i = 0; i < nbElem; i++)
-		SAFE_FREE(meshPts[i].pts);
-	SAFE_FREE(meshPts);
+ 	for (size_t i = 0; i < meshvectorsize; i++)
+ 		SAFE_FREE(meshvector[i].points);
+ 	SAFE_FREE(meshvector);
 	SAFE_FREE(outgassingMap);
 }
 
@@ -196,6 +215,7 @@ void Facet::ResizeCounter(size_t nbMoments) {
 	std::fill(counter.begin(), counter.end(), zeroes); //Initialize each moment with 0 values
 }
 */
+
 
 BOOL Facet::IsLinkFacet() {
 	return ((sh.opacity == 0.0) && (sh.sticking >= 1.0));
@@ -246,6 +266,7 @@ void Facet::LoadGEO(FileReader *file, int version, int nbVertex) {
 	if (version >= 7) {
 		file->ReadKeyword("outgassing"); file->ReadKeyword(":");
 		sh.flow = file->ReadDouble()*0.100; //mbar*l/s -> Pa*m3/s
+
 
 	}
 	file->ReadKeyword("texDimX"); file->ReadKeyword(":");
@@ -594,6 +615,14 @@ void Facet::LoadTXT(FileReader *file) {
 
 
 
+
+
+
+
+
+
+
+
 void Facet::SaveTXT(FileWriter *file) {
 
 	if (!sh.superDest)
@@ -661,7 +690,7 @@ void Facet::SaveGEO(FileWriter *file, int idx) {
 	file->Write("  superDest:"); file->WriteInt(sh.superDest, "\n");
 	file->Write("  superIdx:"); file->WriteInt(sh.superIdx, "\n");
 	file->Write("  is2sided:"); file->WriteInt(sh.is2sided, "\n");
-	file->Write("  mesh:"); file->WriteInt((mesh != NULL), "\n");
+	file->Write("  mesh:"); file->WriteInt((cellPropertiesIds != NULL), "\n");
 
 
 	file->Write("  outgassing:"); file->WriteDouble(sh.flow*10.00, "\n"); //Pa*m3/s -> mbar*l/s for compatibility with old versions
@@ -698,47 +727,7 @@ void Facet::SaveGEO(FileWriter *file, int idx) {
 
 // -----------------------------------------------------------
 
-void Facet::DetectOrientation() {
 
-	// Detect polygon orientation (clockwise or counter clockwise)
-	// p= 1.0 => The second vertex is convex and vertex are counter clockwise.
-	// p=-1.0 => The second vertex is concave and vertex are clockwise.
-	// p= 0.0 => The polygon is not a simple one and orientation cannot be detected.
-
-	POLYGON p;
-	p.nbPts = sh.nbIndex;
-	p.pts = vertices2;
-	p.sign = 1.0;
-
-	BOOL convexFound = FALSE;
-	int i = 0;
-	while (i < p.nbPts && !convexFound) {
-		VERTEX2D c;
-		BOOL empty = EmptyTriangle(&p, i - 1, i, i + 1, &c);
-		if (empty || sh.nbIndex == 3) {
-			int _i1 = IDX(i - 1, p.nbPts);
-			int _i2 = IDX(i, p.nbPts);
-			int _i3 = IDX(i + 1, p.nbPts);
-			if (IsInPoly(c.u, c.v, p.pts, p.nbPts)) {
-				convexFound = TRUE;
-				// Orientation
-				if (IsConvex(&p, i)) p.sign = 1.0;
-				else                 p.sign = -1.0;
-			}
-		}
-		i++;
-	}
-
-	if (!convexFound) {
-		// Not a simple polygon
-		sh.sign = 0.0;
-	}
-	else {
-
-		sh.sign = p.sign;
-	}
-
-}
 
 // -----------------------------------------------------------
 
@@ -750,431 +739,9 @@ void Facet::UpdateFlags() {
 
 }
 
-// -----------------------------------------------------------
 
-int Facet::RestoreDeviceObjects() {
 
-	// Initialize scene objects (OpenGL)
-	if (sh.isTextured > 0) {
-		glGenTextures(1, &glTex);
-		glList = glGenLists(1);
-	}
 
-	BuildMeshList();
-	BuildSelElemList();
-
-	return GL_OK;
-
-}
-
-// -----------------------------------------------------------
-
-int Facet::InvalidateDeviceObjects() {
-
-	// Free all alocated resource (OpenGL)
-	DELETE_TEX(glTex);
-	DELETE_LIST(glList);
-	DELETE_LIST(glElem);
-	DELETE_LIST(glSelElem);
-	return GL_OK;
-
-}
-
-// -----------------------------------------------------------
-
-BOOL Facet::SetTexture(double width, double height, BOOL useMesh) {
-
-	BOOL dimOK = (width*height > 0.0000001);
-
-	if (dimOK) {
-		sh.texWidthD = width;
-		sh.texHeightD = height;
-		sh.texWidth = (int)ceil(width *0.9999999); //0.9999999: cut the last few digits (convert rounding error 1.00000001 to 1, not 2)
-		sh.texHeight = (int)ceil(height *0.9999999);
-		dimOK = (sh.texWidth > 0 && sh.texHeight > 0);
-	}
-	else {
-
-		sh.texWidth = 0;
-		sh.texHeight = 0;
-		sh.texWidthD = 0.0;
-		sh.texHeightD = 0.0;
-	}
-
-	texDimW = 0;
-	texDimH = 0;
-	hasMesh = FALSE;
-	SAFE_FREE(mesh);
-	SAFE_FREE(dirCache);
-	DELETE_TEX(glTex);
-	DELETE_LIST(glList);
-	DELETE_LIST(glElem);
-	if (meshPts) {
-		for (int i = 0; i < nbElem; i++)
-			SAFE_FREE(meshPts[i].pts);
-	}
-	SAFE_FREE(meshPts);
-	nbElem = 0;
-	UnselectElem();
-
-	if (dimOK) {
-
-		// Add a 1 texel border for bilinear filtering (rendering purpose)
-		texDimW = GetPower2(sh.texWidth + 2);
-		texDimH = GetPower2(sh.texHeight + 2);
-		if (texDimW < 4) texDimW = 4;
-		if (texDimH < 4) texDimH = 4;
-		glGenTextures(1, &glTex);
-		glList = glGenLists(1);
-		if (useMesh)
-			if (!BuildMesh()) return FALSE;
-		if (sh.countDirection) {
-			dirCache = (VHIT *)calloc(sh.texWidth*sh.texHeight, sizeof(VHIT));
-			if (!dirCache) return FALSE;
-			//memset(dirCache,0,dirSize); //already done by calloc
-		}
-
-	}
-
-	UpdateFlags();
-	return TRUE;
-
-}
-
-// -----------------------------------------------------------
-
-void Facet::glVertex2u(double u, double v) {
-
-	glVertex3d(sh.O.x + sh.U.x*u + sh.V.x*v,
-		sh.O.y + sh.U.y*u + sh.V.y*v,
-		sh.O.z + sh.U.z*u + sh.V.z*v);
-
-}
-
-// -----------------------------------------------------------
-
-BOOL Facet::BuildMesh() {
-
-	mesh = (SHELEM *)malloc(sh.texWidth * sh.texHeight * sizeof(SHELEM));
-	if (!mesh) {
-		//Couldn't allocate memory
-		return FALSE;
-		//throw Error("malloc failed on Facet::BuildMesh()");
-	}
-	meshPts = (MESH *)malloc(sh.texWidth * sh.texHeight * sizeof(MESH));
-	if (!meshPts) {
-		return FALSE;
-
-	}
-	hasMesh = TRUE;
-	memset(mesh, 0, sh.texWidth * sh.texHeight * sizeof(SHELEM));
-	memset(meshPts, 0, sh.texWidth * sh.texHeight * sizeof(MESH));
-
-	POLYGON P1, P2;
-	double sx, sy, A, tA;
-	double iw = 1.0 / (double)sh.texWidthD;
-	double ih = 1.0 / (double)sh.texHeightD;
-	double rw = Norme(sh.U) * iw;
-	double rh = Norme(sh.V) * ih;
-	double *vList;
-	double fA = iw*ih;
-	int    nbv;
-
-	P1.pts = (VERTEX2D *)malloc(4 * sizeof(VERTEX2D));
-	_ASSERTE(P1.pts);
-	if (!P1.pts) {
-		throw Error("Couldn't allocate memory for texture mesh points.");
-	}
-	P1.nbPts = 4;
-	P1.sign = 1.0;
-	P2.nbPts = sh.nbIndex;
-	P2.pts = vertices2;
-	P2.sign = -sh.sign;
-	tA = 0.0;
-	nbElem = 0;
-
-	for (int j = 0; j < sh.texHeight; j++) {
-		sy = (double)j;
-		for (int i = 0; i < sh.texWidth; i++) {
-			sx = (double)i;
-
-			BOOL allInside = FALSE;
-			double u0 = sx * iw;
-			double v0 = sy * ih;
-			double u1 = (sx + 1.0) * iw;
-			double v1 = (sy + 1.0) * ih;
-			float  uC, vC;
-			mesh[i + j*sh.texWidth].elemId = -1;
-
-			if (sh.nbIndex <= 4) {
-
-				// Optimization for quad and triangle
-				allInside = IsInPoly(u0, v0, vertices2, sh.nbIndex);
-				allInside = allInside && IsInPoly(u0, v1, vertices2, sh.nbIndex);
-				allInside = allInside && IsInPoly(u1, v0, vertices2, sh.nbIndex);
-				allInside = allInside && IsInPoly(u1, v1, vertices2, sh.nbIndex);
-
-			}
-
-			if (!allInside) {
-
-				// Intersect element with the facet (facet boundaries)
-				P1.pts[0].u = u0;
-				P1.pts[0].v = v0;
-				P1.pts[1].u = u1;
-				P1.pts[1].v = v0;
-				P1.pts[2].u = u1;
-				P1.pts[2].v = v1;
-				P1.pts[3].u = u0;
-				P1.pts[3].v = v1;
-				A = GetInterArea(&P1, &P2, visible, &uC, &vC, &nbv, &vList);
-				if (!IS_ZERO(A)) {
-
-					if (A > (fA + 1e-10)) {
-
-						// Polyon intersection error !
-						// Switch back to brute force
-						A = GetInterAreaBF(&P2, u0, v0, u1, v1, &uC, &vC);
-						mesh[i + j*sh.texWidth].area = (float)(A*(rw*rh) / (iw*ih));
-						mesh[i + j*sh.texWidth].uCenter = uC;
-						mesh[i + j*sh.texWidth].vCenter = vC;
-						mesh[i + j*sh.texWidth].full = IS_ZERO(fA - A);
-
-					}
-					else {
-
-
-						// !! P1 and P2 are in u,v coordinates !!
-						mesh[i + j*sh.texWidth].area = (float)(A*(rw*rh) / (iw*ih));
-						mesh[i + j*sh.texWidth].uCenter = uC;
-						mesh[i + j*sh.texWidth].vCenter = vC;
-						mesh[i + j*sh.texWidth].full = IS_ZERO(fA - A);
-						mesh[i + j*sh.texWidth].elemId = nbElem;
-
-						// Mesh coordinates
-						meshPts[nbElem].nbPts = nbv;
-						meshPts[nbElem].pts = (VERTEX2D *)malloc(nbv * sizeof(VERTEX2D));
-						_ASSERTE(meshPts[nbElem].pts);
-						if (!meshPts[nbElem].pts) {
-							throw Error("Couldn't allocate memory for texture mesh points.");
-						}
-						for (int n = 0; n < nbv; n++) {
-							meshPts[nbElem].pts[n].u = vList[2 * n];
-							meshPts[nbElem].pts[n].v = vList[2 * n + 1];
-						}
-						nbElem++;
-
-					}
-
-				}
-				SAFE_FREE(vList);
-
-			}
-			else {
-
-
-				mesh[i + j*sh.texWidth].area = (float)(rw*rh);
-				mesh[i + j*sh.texWidth].uCenter = (float)(u0 + u1) / 2.0f;
-				mesh[i + j*sh.texWidth].vCenter = (float)(v0 + v1) / 2.0f;
-				mesh[i + j*sh.texWidth].full = TRUE;
-				mesh[i + j*sh.texWidth].elemId = nbElem;
-
-				// Mesh coordinates
-				meshPts[nbElem].nbPts = 4;
-				meshPts[nbElem].pts = (VERTEX2D *)malloc(4 * sizeof(VERTEX2D));
-				_ASSERTE(meshPts[nbElem].pts);
-				if (!meshPts[nbElem].pts) {
-					throw Error("Couldn't allocate memory for texture mesh points.");
-				}
-				meshPts[nbElem].pts[0].u = u0;
-				meshPts[nbElem].pts[0].v = v0;
-				meshPts[nbElem].pts[1].u = u1;
-				meshPts[nbElem].pts[1].v = v0;
-				meshPts[nbElem].pts[2].u = u1;
-				meshPts[nbElem].pts[2].v = v1;
-				meshPts[nbElem].pts[3].u = u0;
-				meshPts[nbElem].pts[3].v = v1;
-				nbElem++;
-
-			}
-
-			tA += mesh[i + j*sh.texWidth].area;
-
-		}
-	}
-
-	// Check meshing accuracy (TODO)
-	/*
-	int p = (int)(ceil(log10(sh.area)));
-	double delta = pow(10.0,(double)(p-5));
-	if( fabs(sh.area - tA)>delta ) {
-	}
-	*/
-
-	free(P1.pts);
-	BuildMeshList();
-	return TRUE;
-
-}
-
-// -----------------------------------------------------------
-
-void Facet::BuildMeshList() {
-
-	if (!meshPts)
-		return;
-
-	DELETE_LIST(glElem);
-
-	// Build OpenGL geometry for meshing
-	glElem = glGenLists(1);
-	glNewList(glElem, GL_COMPILE);
-
-
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	for (int i = 0; i < nbElem; i++) {
-		glBegin(GL_LINE_LOOP);
-		for (int n = 0; n < meshPts[i].nbPts; n++) {
-			glEdgeFlag(TRUE);
-			glVertex2u(meshPts[i].pts[n].u, meshPts[i].pts[n].v);
-		}
-		glEnd();
-
-	}
-
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	glEndList();
-
-}
-
-// -----------------------------------------------------------
-
-void Facet::BuildSelElemList() {
-
-	DELETE_LIST(glSelElem);
-	int nbSel = 0;
-
-	if (mesh && selectedElem.width != 0 && selectedElem.height != 0) {
-
-		glSelElem = glGenLists(1);
-		glNewList(glSelElem, GL_COMPILE);
-		glColor3f(1.0f, 1.0f, 1.0f);
-		glLineWidth(1.0f);
-		glEnable(GL_LINE_SMOOTH);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		glEnable(GL_POLYGON_OFFSET_LINE);
-		glPolygonOffset(-1.0f, -1.0f);
-		for (int i = 0; i < selectedElem.width; i++) {
-			for (int j = 0; j < selectedElem.height; j++) {
-
-				int add = (selectedElem.u + i) + (selectedElem.v + j)*sh.texWidth;
-				int elId = mesh[add].elemId;
-				if (elId >= 0) {
-					glBegin(GL_POLYGON);
-					for (int n = 0; n < meshPts[elId].nbPts; n++) {
-						glEdgeFlag(TRUE);
-						glVertex2u(meshPts[elId].pts[n].u, meshPts[elId].pts[n].v);
-					}
-					glEnd();
-					nbSel++;
-				}
-
-			}
-		}
-
-
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		glDisable(GL_POLYGON_OFFSET_LINE);
-		glDisable(GL_LINE_SMOOTH);
-		glEndList();
-
-		// Empty selection
-		if (nbSel == 0) UnselectElem();
-
-	}
-
-}
-
-// -----------------------------------------------------------
-
-void Facet::UnselectElem() {
-
-	DELETE_LIST(glSelElem);
-	selectedElem.width = 0;
-	selectedElem.height = 0;
-
-}
-
-// -----------------------------------------------------------
-
-void Facet::SelectElem(int u, int v, int width, int height) {
-
-	UnselectElem();
-
-	if (mesh && u >= 0 && u < sh.texWidth && v >= 0 && v < sh.texHeight) {
-
-		int maxW = sh.texWidth - u;
-		int maxH = sh.texHeight - v;
-		selectedElem.u = u;
-		selectedElem.v = v;
-		selectedElem.width = MIN(maxW, width);
-		selectedElem.height = MIN(maxH, height);
-		BuildSelElemList();
-
-	}
-
-}
-
-// -----------------------------------------------------------
-
-void Facet::RenderSelectedElem() {
-	if (glSelElem) glCallList(glSelElem);
-}
-
-// -----------------------------------------------------------
-
-void Facet::Explode(FACETGROUP *group) {
-
-	int nb = 0;
-	if (!(group->facets = (Facet **)malloc(nbElem*sizeof(Facet *))))
-		throw Error("Not enough memory to create new facets");
-	for (int i = 0; i < nbElem; i++) {
-		try {
-			Facet *f = new Facet(meshPts[i].nbPts);
-			f->Copy(this);
-			group->facets[i] = f;
-		}
-		catch (...) {
-			for (int d = 0; d < i; d++)
-				SAFE_DELETE(group->facets[d]);
-			throw Error("Cannot reserve memory for new facet(s)");
-		}
-
-		nb += meshPts[i].nbPts;
-	}
-
-	group->nbF = nbElem;
-	group->nbV = nb;
-
-}
-
-// -----------------------------------------------------------
-
-void Facet::FillVertexArray(VERTEX3D *v) {
-
-	int nb = 0;
-	for (int i = 0; i < nbElem; i++) {
-		for (int j = 0; j < meshPts[i].nbPts; j++) {
-			v[nb].x = sh.O.x + sh.U.x*meshPts[i].pts[j].u + sh.V.x*meshPts[i].pts[j].v;
-			v[nb].y = sh.O.y + sh.U.y*meshPts[i].pts[j].u + sh.V.y*meshPts[i].pts[j].v;
-			v[nb].z = sh.O.z + sh.U.z*meshPts[i].pts[j].u + sh.V.z*meshPts[i].pts[j].v;
-			nb++;
-		}
-	}
-
-}
-
-// -----------------------------------------------------------
 
 size_t Facet::GetGeometrySize() {
 
@@ -1203,76 +770,9 @@ size_t Facet::GetHitsSize(size_t nbMoments) {
 
 }
 
-// -----------------------------------------------------------
-
-size_t Facet::GetTexSwapSize(BOOL useColormap) {
-
-	size_t tSize = texDimW*texDimH;
-	if (useColormap) tSize *=4;
-	return tSize;
-
-}
-
-// -----------------------------------------------------------
-
-size_t Facet::GetTexSwapSizeForRatio(double ratio, BOOL useColor) {
-
-	double nU = Norme(sh.U);
-	double nV = Norme(sh.V);
-	double width = nU*ratio;
-	double height = nV*ratio;
-
-	BOOL dimOK = (width*height > 0.0000001);
-
-	if (dimOK) {
-
-		int iwidth = (int)ceil(width);
-		int iheight = (int)ceil(height);
-		int m = MAX(iwidth, iheight);
-		int tDim = GetPower2(m);
-		if (tDim < 16) tDim = 16;
-		size_t tSize = tDim*tDim;
-		if (useColor) tSize = tSize *= 4;
-		return tSize;
-
-	}
-	else {
 
 
-		return 0;
 
-	}
-
-}
-
-// --------------------------------------------------------------------
-
-size_t Facet::GetNbCell() {
-	return sh.texHeight * sh.texWidth;
-}
-
-// --------------------------------------------------------------------
-
-size_t Facet::GetNbCellForRatio(double ratio) {
-
-	double nU = Norme(sh.U);
-	double nV = Norme(sh.V);
-	double width = nU*ratio;
-	double height = nV*ratio;
-
-	BOOL dimOK = (width*height > 0.0000001);
-
-	if (dimOK) {
-		int iwidth = (int)ceil(width);
-		int iheight = (int)ceil(height);
-		return iwidth*iheight;
-	}
-	else {
-
-		return 0;
-	}
-
-}
 
 size_t Facet::GetTexRamSize(size_t nbMoments) {
 
@@ -1307,13 +807,14 @@ size_t Facet::GetTexRamSizeForRatio(double ratio, BOOL useMesh, BOOL countDir, s
 #define SUM_NEIGHBOR(i,j,we)                      \
 	if( (i)>=0 && (i)<=w && (j)>=0 && (j)<=h ) {    \
 	add = (i)+(j)*sh.texWidth;                    \
-	if( mesh[add].area>0.0 ) {                   \
+	if( GetMeshArea(add)>0.0 ) {                   \
 	if (textureMode==0) sum += we*(texBuffer[add].count*scaleF);          \
 				  		  	  	  else if (textureMode==1) sum += we*(texBuffer[add].sum_1_per_ort_velocity*scaleF);          \
 				  		  	  	  else if (textureMode==2) sum += we*(texBuffer[add].sum_v_ort_per_area*scaleF);          \
 		  W=W+we;                                     \
 				}                                             \
 				}
+
 
 double Facet::GetSmooth(int i, int j, AHIT *texBuffer, int textureMode, double scaleF) {
 
@@ -1336,8 +837,6 @@ double Facet::GetSmooth(int i, int j, AHIT *texBuffer, int textureMode, double s
 		return 0.0f;
 	else
 		return sum / W;
-
-
 }
 
 // -----------------------------------------------------------
@@ -1345,9 +844,6 @@ double Facet::GetSmooth(int i, int j, AHIT *texBuffer, int textureMode, double s
 
 void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double max, BOOL useColorMap,
 	double dCoeff1, double dCoeff2, double dCoeff3, BOOL doLog, size_t m) {
-
-
-
 	int size = sh.texWidth*sh.texHeight;
 	int tSize = texDimW*texDimH;
 	if (size == 0 || tSize == 0) return;
@@ -1390,10 +886,10 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 					physicalValue = texBuffer[idx].sum_v_ort_per_area*dCoeff1;
 					break;
 				case 1: //impingement rate
-					physicalValue = (double)texBuffer[idx].count / (this->mesh[idx].area*(sh.is2sided ? 2.0 : 1.0))*dCoeff2;
+					physicalValue = (double)texBuffer[idx].count / (this->GetMeshArea(idx)*(sh.is2sided ? 2.0 : 1.0))*dCoeff2;
 					break;
 				case 2: //particle density
-					physicalValue = texBuffer[idx].sum_1_per_ort_velocity / (this->mesh[idx].area*(sh.is2sided ? 2.0 : 1.0))*dCoeff3;
+					physicalValue = texBuffer[idx].sum_1_per_ort_velocity / (this->GetMeshArea(idx)*(sh.is2sided ? 2.0 : 1.0))*dCoeff3;
 
 					//Correction for double-density effect (measuring density on desorbing/absorbing facets):
 					if (counterCache.hit.nbHit>0 || counterCache.hit.nbDesorbed>0)
@@ -1438,18 +934,41 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 		*/
 
 
-		glTexImage2D(
-			GL_TEXTURE_2D,       // Type
-			0,                   // No Mipmap
-			GL_RGBA,             // Format RGBA
-			texDimW,             // Width
-			texDimH,             // Height
-			0,                   // Border
-			GL_RGBA,             // Format RGBA
-			GL_UNSIGNED_BYTE,    // 8 Bit/pixel
-			buff32               // Data
-			);
+		GLint width, height, format;
+		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
+		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
+		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &format);
+		if (format == GL_RGBA && width == texDimW && height == texDimH) {
+			//Update texture
+			glTexSubImage2D(
+				GL_TEXTURE_2D,       // Type
 
+
+				0,                   // No Mipmap
+				0,					// X offset
+				0,					// Y offset
+				texDimW,             // Width
+				texDimH,             // Height
+
+				GL_RGBA,             // Format RGBA
+				GL_UNSIGNED_BYTE,    // 8 Bit/pixel
+				buff32              // Data
+			);
+		}
+		else {
+			//Rebuild texture
+			glTexImage2D(
+				GL_TEXTURE_2D,       // Type
+				0,                   // No Mipmap
+				GL_RGBA,             // Format RGBA
+				texDimW,             // Width
+				texDimH,             // Height
+				0,                   // Border
+				GL_RGBA,             // Format RGBA
+				GL_UNSIGNED_BYTE,    // 8 Bit/pixel
+				buff32              // Data
+			);
+		}
 		GLToolkit::CheckGLErrors("Facet::BuildTexture()");
 
 		free(buff32);
@@ -1489,10 +1008,10 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 					physicalValue = texBuffer[idx].sum_v_ort_per_area*dCoeff1;
 					break;
 				case 1: //impingement rate
-					physicalValue = (double)texBuffer[idx].count / (this->mesh[idx].area*(sh.is2sided ? 2.0 : 1.0))*dCoeff2;
+					physicalValue = (double)texBuffer[idx].count / (this->GetMeshArea(idx)*(sh.is2sided ? 2.0 : 1.0))*dCoeff2;
 					break;
 				case 2: //particle density
-					physicalValue = texBuffer[idx].sum_1_per_ort_velocity / (this->mesh[idx].area*(sh.is2sided ? 2.0 : 1.0))*dCoeff3;
+					physicalValue = texBuffer[idx].sum_1_per_ort_velocity / (this->GetMeshArea(idx)*(sh.is2sided ? 2.0 : 1.0))*dCoeff3;
 
 					//Correction for double-density effect (measuring density on desorbing/absorbing facets):
 					if (counterCache.hit.nbHit>0 || counterCache.hit.nbDesorbed>0)
@@ -1505,13 +1024,62 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 					val = (int)((log10(physicalValue) - log10(min))*scaleFactor + 0.5f);
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 				}
 				else {
 					val = (int)((physicalValue - min)*scaleFactor + 0.5f);
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 				}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 				SATURATE(val, 0, 255);
 				buff8[(i + 1) + (j + 1)*texDimW] = val;
@@ -1539,89 +1107,48 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 		}*/
 
 
-		glTexImage2D(
-			GL_TEXTURE_2D,       // Type
-			0,                   // No Mipmap
-			GL_LUMINANCE,        // Format luminance
-			texDimW,             // Width
-			texDimH,             // Height
-			0,                   // Border
-			GL_LUMINANCE,        // Format luminance
-			GL_UNSIGNED_BYTE,    // 8 Bit/pixel
-			buff8                // Data
+		GLint width, height, format;
+		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
+		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
+		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &format);
+		if (format == GL_LUMINANCE && width == texDimW && height == texDimH) {
+			//Update texture
+			glTexSubImage2D(
+				GL_TEXTURE_2D,       // Type
+				0,                   // No Mipmap
+				0,					// X offset
+				0,					// Y offset
+				texDimW,             // Width
+				texDimH,             // Height
+				GL_LUMINANCE,         // Format RGBA
+				GL_UNSIGNED_BYTE,    // 8 Bit/pixel
+				buff8                // Data
 			);
+		}
 
+
+
+		else {
+			//Rebuild texture
+			glTexImage2D(
+				GL_TEXTURE_2D,       // Type
+
+				0,                   // No Mipmap
+				GL_LUMINANCE,         // Format RGBA
+				texDimW,             // Width
+				texDimH,             // Height
+
+				0,                   // Border
+				GL_LUMINANCE,         // Format RGBA
+				GL_UNSIGNED_BYTE,    // 8 Bit/pixel
+				buff8                // Data
+			);
+		}
 		free(buff8);
 
 	}
 	GLToolkit::CheckGLErrors("Facet::BuildTexture()");
 }
-
-
-// -----------------------------------------------------------
-
-void Facet::SwapNormal() {
-
-	// Revert vertex order (around the second point)
-
-	int *tmp = (int *)malloc(sh.nbIndex*sizeof(int));
-	for (int i = sh.nbIndex, j = 0; i > 0; i--, j++)
-		tmp[(i + 1) % sh.nbIndex] = GetIndex(j + 1);
-	free(indices);
-	indices = tmp;
-
-	/* normal recalculated at reinitialize
-	// Invert normal
-	sh.N.x = -sh.N.x;
-	sh.N.y = -sh.N.y;
-	sh.N.z = -sh.N.z;*/
-
-}
-
-// -----------------------------------------------------------
-
-void Facet::ShiftVertex() {
-
-	// Shift vertex
-
-	int *tmp = (int *)malloc(sh.nbIndex*sizeof(int));
-	for (int i = 0; i < sh.nbIndex; i++)
-		tmp[i] = GetIndex(i + 1);
-	free(indices);
-	indices = tmp;
-
-}
-
-// -----------------------------------------------------------
-
-void Facet::InitVisibleEdge() {
-
-	// Detect non visible edge (for polygon which contains holes)
-	memset(visible, 0xFF, sh.nbIndex*sizeof(BOOL));
-
-	for (int i = 0; i < sh.nbIndex; i++) {
-
-		int p11 = GetIndex(i);
-		int p12 = GetIndex(i + 1);
-
-		for (int j = i + 1; j < sh.nbIndex; j++) {
-
-			int p21 = GetIndex(j);
-			int p22 = GetIndex(j + 1);
-
-			if ((p11 == p22 && p12 == p21) || (p11 == p21 && p12 == p22)) {
-				// Invisible edge found
-				visible[i] = FALSE;
-				visible[j] = FALSE;
-			}
-
-		}
-
-	}
-
-}
-
-// -----------------------------------------------------------
 
 BOOL Facet::IsCoplanarAndEqual(Facet *f, double threshold) {
 
@@ -1714,17 +1241,7 @@ void Facet::Copy(Facet *f, BOOL copyMesh) {
 
 // -----------------------------------------------------------
 
-int Facet::GetIndex(int idx) {
 
-	if (idx < 0) {
-		return indices[(sh.nbIndex + idx) % sh.nbIndex];
-	}
-	else {
-
-		return indices[idx % sh.nbIndex];
-	}
-
-}
 
 void Facet::ConvertOldDesorbType() {
 	if (sh.desorbType >= 3 && sh.desorbType <= 5) {
@@ -1797,9 +1314,19 @@ void  Facet::SaveXML_geom(pugi::xml_node f){
 		break;
 
 
+
+
+
+
+
+
+
+
+
+
 	}
 	t = e.append_child("Texture");
-	t.append_attribute("hasMesh") = mesh != NULL;
+	t.append_attribute("hasMesh") = cellPropertiesIds != NULL;
 	t.append_attribute("texDimX") = sh.texWidthD;
 	t.append_attribute("texDimY") = sh.texHeightD;
 	t.append_attribute("countDes") = sh.countDes;
@@ -1824,6 +1351,15 @@ void  Facet::SaveXML_geom(pugi::xml_node f){
 		indice.append_attribute("id") = i;
 		indice.append_attribute("vertex") = indices[i];
 
+
+
+
+
+
+
+
+
+
 	}
 
 
@@ -1841,7 +1377,6 @@ void  Facet::SaveXML_geom(pugi::xml_node f){
 		for (int iy = 0; iy < sh.outgassingMapHeight; iy++) {
 			for (int ix = 0; ix < sh.outgassingMapWidth; ix++) {
 				outgText << outgassingMap[iy*sh.outgassingMapWidth + ix] << '\t';
-
 			}
 			outgText << '\n';
 		}

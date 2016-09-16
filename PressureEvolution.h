@@ -17,7 +17,7 @@
 */
 
 #include "GLApp/GLWindow.h"
-#include "GLApp/GLChart.h"
+#include "GLApp/GLChart/GLChart.h"
 #include "GLApp/GLLabel.h"
 #include "GLApp/GLCombo.h"
 #include "GLApp/GLButton.h"

@@ -341,6 +341,7 @@ MolFlow::MolFlow()
 	viewer3DSettings = NULL;
 	textureSettings = NULL;
 	globalSettings = NULL;
+	loadStatus = NULL;
 	facetCoordinates = NULL;
 	vertexCoordinates = NULL;
 	profilePlotter = NULL;
@@ -848,13 +849,13 @@ int MolFlow::OneTimeSceneInit()
 	facetList->Sortable = TRUE;
 	Add(facetList);
 
-
-
 	ClearFacetParams();
-	PlaceComponents();
-	facetMesh = new FacetMesh(&worker); //To use its UpdatefacetParams() routines
 	LoadConfig();
 	UpdateViewerParams();
+	PlaceComponents();
+	CheckNeedsTexture();
+	facetMesh = new FacetMesh(&worker); //To use its UpdatefacetParams() routines
+	
 	//LoadFile();
 	try {
 
@@ -887,7 +888,7 @@ int MolFlow::OneTimeSceneInit()
 		}
 
 		if (FileUtils::Exist("molflow_updater.exe"))
-			StartProc_background("molflow_updater.exe");
+			StartProc("synrad_updater.exe", STARTPROC_BACKGROUND);
 		else GLMessageBox::Display("molflow_updater.exe not found. You will not receive updates to Molflow."
 			"\n(You can disable checking for updates in Tools/Global Settings)", "Updater module missing.", GLDLG_OK, GLDLG_ICONINFO);
 	}
@@ -2324,6 +2325,7 @@ int MolFlow::RestoreDeviceObjects()
 	RVALIDATE_DLG(viewer3DSettings);
 	RVALIDATE_DLG(textureSettings);
 	RVALIDATE_DLG(globalSettings);
+	RVALIDATE_DLG(loadStatus);
 	RVALIDATE_DLG(facetCoordinates);
 	RVALIDATE_DLG(vertexCoordinates);
 	RVALIDATE_DLG(profilePlotter);
@@ -2370,6 +2372,7 @@ int MolFlow::InvalidateDeviceObjects()
 	IVALIDATE_DLG(viewer3DSettings);
 	IVALIDATE_DLG(textureSettings);
 	IVALIDATE_DLG(globalSettings);
+	RVALIDATE_DLG(loadStatus);
 	IVALIDATE_DLG(facetCoordinates);
 	IVALIDATE_DLG(vertexCoordinates);
 	IVALIDATE_DLG(profilePlotter);
@@ -4089,6 +4092,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 
 		//GEOMVIEWER ------------------------------------------------------------------
 	case MSG_GEOMVIEWER_MAXIMISE:
+	{
 		if (src == viewer[0]) {
 			AnimateViewerChange(0);
 		}
@@ -4102,8 +4106,28 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			AnimateViewerChange(3);
 		}
 		Place3DViewer();
-		break;
 
+		BOOL neededTexture = needsTexture;
+
+		BOOL neededMesh = needsMesh;
+		CheckNeedsTexture();
+
+		if (!needsTexture && neededTexture) { //We just disabled textures
+			worker.GetGeometry()->ClearFacetTextures();
+		}
+		else if (needsTexture && !neededTexture) { //We just enabled textures
+			worker.RebuildTextures();
+		}
+
+		if (!needsMesh && neededMesh) { //We just disabled mesh
+			geom->ClearFacetMeshLists();
+		}
+		else if (needsMesh && !neededMesh) { //We just enabled mesh
+			geom->BuildFacetMeshLists();
+		}
+
+		break;
+	}
 	case MSG_GEOMVIEWER_SELECT: {
 		SelectViewer(src->GetId());
 	}break;
@@ -5041,6 +5065,15 @@ void MolFlow::UpdateViewerFlags() {
 	viewer[curViewer]->showLine = showLine->GetState();
 	viewer[curViewer]->showVolume = showVolume->GetState();
 	viewer[curViewer]->showTexture = showTexture->GetState();
+	BOOL neededTexture = needsTexture;
+	CheckNeedsTexture();
+
+	if (!needsTexture && neededTexture) { //We just disabled mesh
+		worker.GetGeometry()->ClearFacetTextures();
+	}
+	else if (needsTexture && !neededTexture) { //We just enabled mesh
+		worker.RebuildTextures();
+	}
 	viewer[curViewer]->showFilter = showFilter->GetState();
 	viewer[curViewer]->showVertex = showVertex->GetState();
 	viewer[curViewer]->showIndex = showIndex->GetState();
@@ -5336,5 +5369,14 @@ void MolFlow::DoEvents(BOOL forced)
 		GLWindowManager::Repaint();
 		GLToolkit::CheckGLErrors("GLApplication::Paint()");
 		lastExec = time;
+	}
+}
+
+void MolFlow::CheckNeedsTexture()
+{
+	needsMesh = needsTexture = FALSE;
+	for (int i = 0;i < MAX_VIEWER;i++) {
+		needsMesh = needsMesh || (viewer[i]->IsVisible() && viewer[i]->showMesh);
+		needsTexture = needsTexture || (viewer[i]->IsVisible() && viewer[i]->showTexture);
 	}
 }

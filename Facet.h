@@ -58,8 +58,9 @@ public:
 
   int      *indices;      // Indices (Reference to geometry vertex)
   VERTEX2D *vertices2;    // Vertices (2D plane space, UV coordinates)
-  MESH     *meshPts;      // Mesh poly
-  int       nbElem;       // Number of mesh elem
+  int     *cellPropertiesIds;      // -1 if full element, -2 if outside polygon, otherwise index in meshvector
+  CELLPROPERTIES* meshvector;
+  size_t meshvectorsize;
 
   // Normalized plane equation (ax + by + cz + d = 0)
   double a;
@@ -73,7 +74,7 @@ public:
   BOOL	textureVisible; //Draw the texture?
   BOOL  collinear;      //All vertices are on a line (non-simple)
   BOOL	volumeVisible;	//Draw volume?
-  SHELEM *mesh;        // Element mesh
+  //SHELEM *mesh;        // Element mesh
   BOOL    hasMesh;     // Temporary flag (loading)
   
   double *outgassingMap; //outgassing map cell values (loaded from file)
@@ -146,6 +147,10 @@ public:
   void  RenderSelectedElem();
   void  SelectElem(int u,int v,int width,int height);
   void  UnselectElem();
+  float GetMeshArea(int index);
+  size_t GetMeshNbPoint(int index);
+  VERTEX2D GetMeshPoint(int index, int pointId);
+  VERTEX2D GetMeshCenter(int index);
 };
 
 struct DeletedFacet {

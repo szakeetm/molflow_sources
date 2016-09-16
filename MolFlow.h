@@ -55,6 +55,7 @@
 #include "Viewer3DSettings.h"
 #include "TextureSettings.h"
 #include "GlobalSettings.h"
+#include "LoadStatus.h"
 #include "ProfilePlotter.h"
 #include "PressureEvolution.h"
 #include "TimewisePlotter.h"
@@ -68,6 +69,12 @@
 #define MAX_VIEW    19
 #define MAX_SELECTION 19
 #define MAX_RECENT  10
+
+//GeometryViewer stuff
+#define DOWN_MARGIN 25
+
+static const GLfloat position[] = { -0.3f, 0.3f, -1.0f, 0.0f }; //light1
+static const GLfloat positionI[] = { 1.0f,-0.5f,  -0.2f, 0.0f }; //light2
 
 typedef struct {
   GLLabel     *name;
@@ -200,6 +207,10 @@ public:
     int  nbRecent;
     void AddRecent(char *fileName);
     void RemoveRecent(char *fileName);
+
+	BOOL needsMesh;    //At least one viewer displays mesh
+	BOOL needsTexture; //At least one viewer displays textures
+	void CheckNeedsTexture();
 
     // Components
     GLMenuBar     *menu;
@@ -339,6 +350,7 @@ public:
     Viewer3DSettings *viewer3DSettings;
     TextureSettings  *textureSettings;
 	GlobalSettings	 *globalSettings;
+	LoadStatus       *loadStatus;
     FacetCoordinates *facetCoordinates;
 	VertexCoordinates *vertexCoordinates;
     ProfilePlotter   *profilePlotter;

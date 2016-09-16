@@ -23,8 +23,22 @@ GNU General Public License for more details.
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
 #include "Utils.h" 
+#ifdef MOLFLOW
 #include "MolFlow.h"
+#endif
+
+
+
+#ifdef SYNRAD
+#include "SynRad.h"
+#endif
+#ifdef MOLFLOW
 extern MolFlow *mApp;
+#endif
+
+#ifdef SYNRAD
+extern SynRad*mApp;
+#endif
 
 //-----------------------------------------------------------------------------
 
