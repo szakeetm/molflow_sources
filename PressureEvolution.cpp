@@ -39,7 +39,7 @@ extern MolFlow *mApp;
 extern SynRad*mApp;
 #endif
 
-static const char*profType[] = { "None", "Pressure \201 [mbar]", "Pressure \202 [mbar]", "Angle", "Velocity", "Ort.velocity" };
+extern const char*profType[];
 
 PressureEvolution::PressureEvolution() :GLWindow() {
 
@@ -255,7 +255,7 @@ void PressureEvolution::plot() {
 		return;
 	}
 	if (nbVar > 1) {
-		GLMessageBox::Display("Too much variables or unknown constant", "Error", GLDLG_OK, GLDLG_ICONERROR);
+		GLMessageBox::Display("Too many variables or unknown constant", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		SAFE_DELETE(parser);
 		return;
 	}
@@ -473,7 +473,8 @@ void PressureEvolution::addView(int facet) {
 	if (nbView < 50) {
 		Facet *f = geom->GetFacet(facet);
 		GLDataView *v = new GLDataView();
-		sprintf(tmp, "F#%d %s", facet + 1, profType[f->sh.profileType]);
+		//sprintf(tmp, "F#%d %s", facet + 1, profType[f->sh.profileType]);
+		sprintf(tmp, "F#%d", facet + 1);
 		v->SetName(tmp);
 		v->SetViewType(TYPE_BAR);
 		v->SetMarker(MARKER_DOT);

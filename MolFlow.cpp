@@ -1603,153 +1603,30 @@ void MolFlow::UpdateFormula() {
 		GLParser *f = formulas[i].parser;
 		f->Parse(); //If selection group changed
 
-		// Variables
+		// Evaluate variables
 		int nbVar = f->GetNbVariable();
 		BOOL ok = TRUE;
-		BOOL iName = FALSE;
 		for (int j = 0; j < nbVar && ok; j++) {
-
 			VLIST *v = f->GetVariableAt(j);
-			if ((idx = getVariable(v->name, "A")) > 0) {
-				ok = (idx <= nbFacet);
-				if (ok) v->value = (double)geom->GetFacet(idx - 1)->counterCache.hit.nbAbsorbed;
-			}
-			else if ((idx = getVariable(v->name, "D")) > 0) {
-				ok = (idx <= nbFacet);
-				if (ok) v->value = (double)geom->GetFacet(idx - 1)->counterCache.hit.nbDesorbed;
-			}
-			else if ((idx = getVariable(v->name, "H")) > 0) {
-				ok = (idx <= nbFacet);
-				if (ok) v->value = (double)geom->GetFacet(idx - 1)->counterCache.hit.nbHit;
-			}
-			else if ((idx = getVariable(v->name, "P")) > 0) {
-				ok = (idx <= nbFacet);
-				if (ok) v->value = geom->GetFacet(idx - 1)->counterCache.hit.sum_v_ort *
-					worker.finalOutgassingRate / worker.nbDesorption*1E4 / (geom->GetFacet(idx - 1)->sh.area*
-					(geom->GetFacet(idx - 1)->sh.is2sided ? 2.0 : 1.0)) * (worker.gasMass / 1000 / 6E23)*0.0100;
-			}
-			else if ((idx = getVariable(v->name, "DEN")) > 0) {
-				ok = (idx <= nbFacet);
-				if (ok) {
-					double dCoef = 1.0;
-					Facet *f = geom->GetFacet(idx - 1);
-					if (f->counterCache.hit.nbHit>0 || f->counterCache.hit.nbDesorbed>0)
-						if (f->counterCache.hit.nbAbsorbed >0 || f->counterCache.hit.nbDesorbed>0) //otherwise save calculation time
-							dCoef *= 1.0 - ((double)f->counterCache.hit.nbAbsorbed + (double)f->counterCache.hit.nbDesorbed) / ((double)f->counterCache.hit.nbHit + (double)f->counterCache.hit.nbDesorbed) / 2.0;
-					v->value = dCoef * f->counterCache.hit.sum_1_per_ort_velocity /
-						(f->sh.area*(f->sh.is2sided ? 2.0 : 1.0)) *
-						worker.finalOutgassingRate / worker.nbDesorption*1E4;
-				}
-			}
-			else if ((idx = getVariable(v->name, "Z")) > 0) {
-				ok = (idx <= nbFacet);
-				if (ok) v->value = geom->GetFacet(idx - 1)->counterCache.hit.nbHit /
-					(geom->GetFacet(idx - 1)->sh.area*(geom->GetFacet(idx - 1)->sh.is2sided ? 2.0 : 1.0)) *
-					worker.finalOutgassingRate / worker.nbDesorption*1E4;
-			}
-			else if ((idx = getVariable(v->name, "V")) > 0) {
-				ok = (idx <= nbFacet);
-				if (ok) v->value = 4.0*(double)(geom->GetFacet(idx - 1)->counterCache.hit.nbHit + geom->GetFacet(idx - 1)->counterCache.hit.nbDesorbed)/
-					geom->GetFacet(idx - 1)->counterCache.hit.sum_1_per_ort_velocity;
-			}
-			else if ((idx = getVariable(v->name, "T")) > 0) {
-				ok = (idx <= nbFacet);
-				if (ok) v->value = geom->GetFacet(idx - 1)->sh.temperature;
-			}
-			else if ((idx = getVariable(v->name, "_A")) > 0) {
-				ok = (idx <= nbFacet);
-				if (ok) v->value = (double)geom->GetFacet(idx - 1)->counterCache.density.absorbed;
-			}
-			else if ((idx = getVariable(v->name, "_D")) > 0) {
-				ok = (idx <= nbFacet);
-				if (ok) v->value = (double)geom->GetFacet(idx - 1)->counterCache.density.desorbed;
-			}
-			else if ((idx = getVariable(v->name, "_H")) > 0) {
-				ok = (idx <= nbFacet);
-				if (ok) v->value = (double)geom->GetFacet(idx - 1)->counterCache.density.value;
-			}
-			else if ((idx = getVariable(v->name, "AR")) > 0) {
-				ok = (idx <= nbFacet);
-				if (ok) v->value = geom->GetFacet(idx - 1)->sh.area;
-			}
-			else if (_stricmp(v->name, "SUMDES") == 0) {
-				v->value = (double)worker.nbDesorption;
-			}
-			else if (_stricmp(v->name, "SUMABS") == 0) {
-				v->value = (double)worker.nbAbsorption;
-			}
-			else if (_stricmp(v->name, "SUMHIT") == 0) {
-				v->value = (double)worker.nbHit;
-			}
-			else if (_stricmp(v->name, "MPP") == 0) {
-				v->value = worker.distTraveledTotal_total / (double)worker.nbDesorption;
-			}
-			else if (_stricmp(v->name, "MFP") == 0) {
-				v->value = worker.distTraveledTotal_fullHitsOnly / (double)worker.nbHit;
-			}
-			else if (_stricmp(v->name, "DESAR") == 0) {
-				double sumArea = 0.0;
-				for (int i2 = 0; i2 < geom->GetNbFacet(); i2++) {
-					Facet *f_tmp = geom->GetFacet(i2);
-					if (f_tmp->sh.desorbType) sumArea += f_tmp->sh.area*(f_tmp->sh.is2sided ? 2.0 : 1.0);
-				}
-				v->value = sumArea;
-			}
-			else if (_stricmp(v->name, "ABSAR") == 0) {
-				double sumArea = 0.0;
-
-				for (int i2 = 0; i2<geom->GetNbFacet(); i2++) {
-					Facet *f_tmp = geom->GetFacet(i2);
-					if (f_tmp->sh.sticking>0.0) sumArea += f_tmp->sh.area*f_tmp->sh.opacity*(f_tmp->sh.is2sided ? 2.0 : 1.0);
-				}
-				v->value = sumArea;
-			}
-			else if (_stricmp(v->name, "QCONST") == 0) {
-				v->value = worker.finalOutgassingRate_Pa_m3_sec*10.00; //10: Pa*m3/sec -> mbar*l/s
-			}
-			else if (_stricmp(v->name, "QCONST_N") == 0) {
-				v->value = worker.finalOutgassingRate;
-			}
-			else if (_stricmp(v->name, "NTOT") == 0) {
-				v->value = worker.totalDesorbedMolecules;
-			}
-			else if (_stricmp(v->name, "GASMASS") == 0) {
-				v->value =worker.gasMass;
-			}
-			else if (_stricmp(v->name, "KB") == 0) {
-				v->value = 1.3806504e-23;
-			}
-			else if (_stricmp(v->name, "R") == 0) {
-				v->value = 8.314472;
-			}
-			else if (_stricmp(v->name, "Na") == 0) {
-				v->value = 6.02214179e23;
-			}
-			else {
-				formulas[i].value->SetText("Invalid var name");
-				ok = FALSE;
-				iName = TRUE;
-			}
-
-			if (!ok && !iName) formulas[i].value->SetText("Invalid var index");
-
+			ok = EvaluateVariable(v,&worker,geom);
 		}
 
 		// Evaluation
-		if (ok) {
+		if (ok) { //Variables succesfully evaluated
 			double r;
 			if (f->Evaluate(&r)) {
 				sprintf(tmp, "%g", r);
 				formulas[i].value->SetText(tmp);
 			}
-			else {
+			else { //Variables OK but the formula itself can't be evaluated
 				formulas[i].value->SetText(f->GetErrorMsg());
 			}
 			formulas[i].value->SetTextColor(0.0f,0.0f,worker.displayedMoment==0?0.0f:1.0f);
 		}
-
+		else { //Error while evaluating variables
+				formulas[i].value->SetText("Invalid variable name");
+		}
 	}
-
 }
 
 BOOL MolFlow::OffsetFormula(char *expression, int offset, int filter, std::vector<int> *newRefs) {
@@ -5379,4 +5256,127 @@ void MolFlow::CheckNeedsTexture()
 		needsMesh = needsMesh || (viewer[i]->IsVisible() && viewer[i]->showMesh);
 		needsTexture = needsTexture || (viewer[i]->IsVisible() && viewer[i]->showTexture);
 	}
+}
+
+BOOL MolFlow::EvaluateVariable(VLIST *v,Worker *w, Geometry *geom) {
+	BOOL ok=TRUE;
+	int nbFacet = geom->GetNbFacet();
+	int idx;
+
+	if ((idx = getVariable(v->name, "A")) > 0) {
+		ok = (idx <= nbFacet);
+		if (ok) v->value = (double)geom->GetFacet(idx - 1)->counterCache.hit.nbAbsorbed;
+	}
+	else if ((idx = getVariable(v->name, "D")) > 0) {
+		ok = (idx <= nbFacet);
+		if (ok) v->value = (double)geom->GetFacet(idx - 1)->counterCache.hit.nbDesorbed;
+	}
+	else if ((idx = getVariable(v->name, "H")) > 0) {
+		ok = (idx <= nbFacet);
+		if (ok) v->value = (double)geom->GetFacet(idx - 1)->counterCache.hit.nbHit;
+	}
+	else if ((idx = getVariable(v->name, "P")) > 0) {
+		ok = (idx <= nbFacet);
+		if (ok) v->value = geom->GetFacet(idx - 1)->counterCache.hit.sum_v_ort *
+			((worker.displayedMoment == 0) ? worker.finalOutgassingRate : (worker.totalDesorbedMolecules / worker.timeWindowSize)) / worker.nbDesorption*1E4 / (geom->GetFacet(idx - 1)->sh.area*
+			(geom->GetFacet(idx - 1)->sh.is2sided ? 2.0 : 1.0)) * (worker.gasMass / 1000 / 6E23)*0.0100;
+	}
+	else if ((idx = getVariable(v->name, "DEN")) > 0) {
+		ok = (idx <= nbFacet);
+		if (ok) {
+			double dCoef = 1.0;
+			Facet *f = geom->GetFacet(idx - 1);
+			if (f->counterCache.hit.nbHit>0 || f->counterCache.hit.nbDesorbed>0)
+				if (f->counterCache.hit.nbAbsorbed >0 || f->counterCache.hit.nbDesorbed>0) //otherwise save calculation time
+					dCoef *= 1.0 - ((double)f->counterCache.hit.nbAbsorbed + (double)f->counterCache.hit.nbDesorbed) / ((double)f->counterCache.hit.nbHit + (double)f->counterCache.hit.nbDesorbed) / 2.0;
+			v->value = dCoef * f->counterCache.hit.sum_1_per_ort_velocity /
+				(f->sh.area*(f->sh.is2sided ? 2.0 : 1.0)) *
+				((worker.displayedMoment == 0) ? worker.finalOutgassingRate : (worker.totalDesorbedMolecules / worker.timeWindowSize)) / worker.nbDesorption*1E4;
+		}
+	}
+	else if ((idx = getVariable(v->name, "Z")) > 0) {
+		ok = (idx <= nbFacet);
+		if (ok) v->value = geom->GetFacet(idx - 1)->counterCache.hit.nbHit /
+			(geom->GetFacet(idx - 1)->sh.area*(geom->GetFacet(idx - 1)->sh.is2sided ? 2.0 : 1.0)) *
+			((worker.displayedMoment == 0) ? worker.finalOutgassingRate : (worker.totalDesorbedMolecules / worker.timeWindowSize)) / worker.nbDesorption*1E4;
+	}
+	else if ((idx = getVariable(v->name, "V")) > 0) {
+		ok = (idx <= nbFacet);
+		if (ok) v->value = 4.0*(double)(geom->GetFacet(idx - 1)->counterCache.hit.nbHit + geom->GetFacet(idx - 1)->counterCache.hit.nbDesorbed) /
+			geom->GetFacet(idx - 1)->counterCache.hit.sum_1_per_ort_velocity;
+	}
+	else if ((idx = getVariable(v->name, "T")) > 0) {
+		ok = (idx <= nbFacet);
+		if (ok) v->value = geom->GetFacet(idx - 1)->sh.temperature;
+	}
+	else if ((idx = getVariable(v->name, "_A")) > 0) {
+		ok = (idx <= nbFacet);
+		if (ok) v->value = (double)geom->GetFacet(idx - 1)->counterCache.density.absorbed;
+	}
+	else if ((idx = getVariable(v->name, "_D")) > 0) {
+		ok = (idx <= nbFacet);
+		if (ok) v->value = (double)geom->GetFacet(idx - 1)->counterCache.density.desorbed;
+	}
+	else if ((idx = getVariable(v->name, "_H")) > 0) {
+		ok = (idx <= nbFacet);
+		if (ok) v->value = (double)geom->GetFacet(idx - 1)->counterCache.density.value;
+	}
+	else if ((idx = getVariable(v->name, "AR")) > 0) {
+		ok = (idx <= nbFacet);
+		if (ok) v->value = geom->GetFacet(idx - 1)->sh.area;
+	}
+	else if (_stricmp(v->name, "SUMDES") == 0) {
+		v->value = (double)worker.nbDesorption;
+	}
+	else if (_stricmp(v->name, "SUMABS") == 0) {
+		v->value = (double)worker.nbAbsorption;
+	}
+	else if (_stricmp(v->name, "SUMHIT") == 0) {
+		v->value = (double)worker.nbHit;
+	}
+	else if (_stricmp(v->name, "MPP") == 0) {
+		v->value = worker.distTraveledTotal_total / (double)worker.nbDesorption;
+	}
+	else if (_stricmp(v->name, "MFP") == 0) {
+		v->value = worker.distTraveledTotal_fullHitsOnly / (double)worker.nbHit;
+	}
+	else if (_stricmp(v->name, "DESAR") == 0) {
+		double sumArea = 0.0;
+		for (int i2 = 0; i2 < geom->GetNbFacet(); i2++) {
+			Facet *f_tmp = geom->GetFacet(i2);
+			if (f_tmp->sh.desorbType) sumArea += f_tmp->sh.area*(f_tmp->sh.is2sided ? 2.0 : 1.0);
+		}
+		v->value = sumArea;
+	}
+	else if (_stricmp(v->name, "ABSAR") == 0) {
+		double sumArea = 0.0;
+
+		for (int i2 = 0; i2<geom->GetNbFacet(); i2++) {
+			Facet *f_tmp = geom->GetFacet(i2);
+			if (f_tmp->sh.sticking>0.0) sumArea += f_tmp->sh.area*f_tmp->sh.opacity*(f_tmp->sh.is2sided ? 2.0 : 1.0);
+		}
+		v->value = sumArea;
+	}
+	else if (_stricmp(v->name, "QCONST") == 0) {
+		v->value = worker.finalOutgassingRate_Pa_m3_sec*10.00; //10: Pa*m3/sec -> mbar*l/s
+	}
+	else if (_stricmp(v->name, "QCONST_N") == 0) {
+		v->value = worker.finalOutgassingRate;
+	}
+	else if (_stricmp(v->name, "NTOT") == 0) {
+		v->value = worker.totalDesorbedMolecules;
+	}
+	else if (_stricmp(v->name, "GASMASS") == 0) {
+		v->value = worker.gasMass;
+	}
+	else if (_stricmp(v->name, "KB") == 0) {
+		v->value = 1.3806504e-23;
+	}
+	else if (_stricmp(v->name, "R") == 0) {
+		v->value = 8.314472;
+	}
+	else if (_stricmp(v->name, "Na") == 0) {
+		v->value = 6.02214179e23;
+	}
+	return ok;
 }

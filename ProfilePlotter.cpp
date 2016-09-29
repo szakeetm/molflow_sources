@@ -39,7 +39,7 @@ extern MolFlow *mApp;
 extern SynRad*mApp;
 #endif
 
-static const char* profType[] = {
+const char* profType[] = {
 	"None",
 	"Pressure \201 [mbar]",
 	"Pressure \202 [mbar]",
@@ -182,7 +182,6 @@ void ProfilePlotter::Refresh() {
 		Facet *f = geom->GetFacet(i);
 		if (f->sh.isProfile) {
 			char tmp[128];
-
 			sprintf(tmp, "F#%d %s", i + 1, profType[f->sh.profileType]);
 			profCombo->SetValueAt(nbProf, tmp, i);
 			profCombo->SetSelectedIndex(0);
@@ -472,7 +471,8 @@ void ProfilePlotter::addView(int facet) {
 	if (nbView < MAX_VIEWS) {
 		Facet *f = geom->GetFacet(facet);
 		GLDataView *v = new GLDataView();
-		sprintf(tmp, "F#%d %s", facet + 1, profType[f->sh.profileType]);
+		//sprintf(tmp, "F#%d %s", facet + 1, profType[f->sh.profileType]);
+		sprintf(tmp, "F#%d", facet + 1);
 		v->SetName(tmp);
 		v->SetColor(*colors[nbView%nbColors]);
 		v->SetMarkerColor(*colors[nbView%nbColors]);

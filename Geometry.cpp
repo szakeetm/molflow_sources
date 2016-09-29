@@ -2230,13 +2230,7 @@ void Geometry::ExportProfiles(FILE *file, int isTXT, Dataport *dpHit, Worker *wo
 		if (AccessDataport(dpHit))
 			buffer = (BYTE *)dpHit->buff;
 
-	static const char* profType[] = {
-		"None",
-		"Pressure U [mbar]",
-		"Pressure V [mbar]",
-		"Incident angle [deg]",
-		"Speed [m/s]",
-		"Ort. velocity [m/s]" };
+	extern const char* profType[];
 
 	// Globals
 	//BYTE *buffer = (BYTE *)dpHit->buff;

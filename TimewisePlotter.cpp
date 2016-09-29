@@ -39,7 +39,7 @@ extern MolFlow *mApp;
 extern SynRad*mApp;
 #endif
 
-static const char*profType[] = { "None", "Pressure \201 [mbar]", "Pressure \202 [mbar]", "Angle", "Velocity", "Ort.velocity" };
+extern const char* profType[];
 
 TimewisePlotter::TimewisePlotter() :GLWindow() {
 
@@ -359,7 +359,8 @@ void TimewisePlotter::addView(int facet) {
 		if (nbView < 49) {
 			GLDataView *v = new GLDataView();
 			if (index<1 || (index) > worker->moments.size()) continue; //invalid moment
-			sprintf(tmp, "Moment%d (t=%gs)", (int)index, worker->moments[index - 1]);
+			//sprintf(tmp, "Moment%d (t=%gs)", (int)index, worker->moments[index - 1]);
+			sprintf(tmp, "t=%gs", worker->moments[index - 1]);
 			v->SetName(tmp);
 			v->userData1 = (int)index;
 			v->SetStyle(STYLE_DOT);

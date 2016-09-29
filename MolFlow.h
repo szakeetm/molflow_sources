@@ -379,5 +379,6 @@ protected:
     int  FrameMove();
     void ProcessMessage(GLComponent *src,int message);
     int  Resize(DWORD width, DWORD height, BOOL forceWindowed);
+	BOOL EvaluateVariable(VLIST *v, Worker * w, Geometry * geom);
 
 };
