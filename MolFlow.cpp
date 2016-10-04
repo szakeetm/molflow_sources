@@ -3524,8 +3524,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			geom->SelectIsolatedVertices();
 			break;
 		case MENU_VERTEX_CLEAR_ISOLATED:
-			geom->SelectIsolatedVertices();
-			geom->RemoveSelectedVertex();
+			geom->DeleteIsolatedVertices(FALSE);
 			UpdateModelParams();
 			break;
 		case MENU_VERTEX_CREATE_POLY_CONVEX:
