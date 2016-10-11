@@ -48,8 +48,7 @@ void Geometry::BuildFacetTextures(BYTE *hits) {
 	SHGHITS *shGHit = (SHGHITS *)hits;
 
 	Worker *w = &(mApp->worker);
-	double dCoef = 1.0;
-	double timeCorrection = (mApp->worker.displayedMoment == 0) ? w->finalOutgassingRate : (w->totalDesorbedMolecules) / mApp->worker.timeWindowSize;
+	double dCoef = 1E4; //1E4: conversion between m2 and cm2
 	double dCoef_custom[] = { 1.0, 1.0, 1.0 }; //Three coefficients for pressure, imp.rate, density
 
 	int nbMoments = (int)mApp->worker.moments.size();
@@ -57,15 +56,10 @@ void Geometry::BuildFacetTextures(BYTE *hits) {
 	switch (shGHit->mode) {
 
 	case MC_MODE:
-		if (shGHit->total.hit.nbDesorbed > 0) {
-			dCoef = /*totalInFlux*/ 1.0 / (double)shGHit->total.hit.nbDesorbed * 1E4; //1E4: conversion between m2 and cm2
-		}
 
 		dCoef_custom[0] = dCoef*mApp->worker.gasMass / 1000 / 6E23*0.0100; //pressure
 		dCoef_custom[1] = dCoef;
 		dCoef_custom[2] = dCoef;
-
-
 
 		for (int i = 0; i < 3; i++) {
 			//texture limits already corrected by timeFactor in UpdateMCHits()
@@ -74,22 +68,7 @@ void Geometry::BuildFacetTextures(BYTE *hits) {
 			texture_limits[i].autoscale.min.all = shGHit->texture_limits[i].min.all*dCoef_custom[i];
 			texture_limits[i].autoscale.max.all = shGHit->texture_limits[i].max.all*dCoef_custom[i];
 		}
-
-
-
-
-
-
-
-
-
-
 		break;
-
-
-
-
-
 	case AC_MODE:
 		texture_limits[0].autoscale.min.all = shGHit->texture_limits[0].min.all;
 		texture_limits[0].autoscale.max.all = shGHit->texture_limits[0].max.all;
@@ -139,16 +118,10 @@ void Geometry::BuildFacetTextures(BYTE *hits) {
 			// Retrieve texture from shared memory (every seconds)
 			AHIT *hits_local = (AHIT *)((BYTE *)shGHit + (f->sh.hitOffset + facetHitsSize + profSize*(1 + nbMoments) + tSize*mApp->worker.displayedMoment));
 
-
-
-
-
 			double min, max;
 			if (!texAutoScale) { //manual values
 				min = texture_limits[textureMode].manual.min.all;
 				max = texture_limits[textureMode].manual.max.all;
-
-
 
 			}
 			else { //autoscale
@@ -159,13 +132,9 @@ void Geometry::BuildFacetTextures(BYTE *hits) {
 					texture_limits[textureMode].autoscale.max.all
 					: texture_limits[textureMode].autoscale.max.moments_only;
 
-
-
-
-
 			}
 			f->BuildTexture(hits_local, textureMode, min, max, texColormap,
-				dCoef_custom[0] * timeCorrection, dCoef_custom[1] * timeCorrection, dCoef_custom[2] * timeCorrection, texLogScale, mApp->worker.displayedMoment);
+				dCoef_custom[0] * mApp->worker.GetMoleculesPerTP(), dCoef_custom[1] * mApp->worker.GetMoleculesPerTP(), dCoef_custom[2] * mApp->worker.GetMoleculesPerTP(), texLogScale, mApp->worker.displayedMoment);
 		}
 		if (f->sh.countDirection && f->dirCache) {
 			VHIT *dirs = (VHIT *)((BYTE *)shGHit + (f->sh.hitOffset + facetHitsSize + profSize*(1 + nbMoments) + tSize*(1 + nbMoments) + dSize*mApp->worker.displayedMoment));

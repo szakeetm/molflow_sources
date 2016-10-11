@@ -337,20 +337,16 @@ void ProfilePlotter::refreshViews() {
 					break;
 
 				case 1: //Pressure
-					scaleY = 1.0 / nbDes / (f->sh.area / (double)PROFILE_SIZE*1E-4)* worker->gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
-					scaleY *= ((worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
-						/ worker->timeWindowSize));
-					if (f->sh.is2sided) scaleY *= 0.5;
+					scaleY = 1.0 / (f->GetArea() / (double)PROFILE_SIZE*1E-4)* worker->gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
+					scaleY *= worker->GetMoleculesPerTP();
 
 
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j, profilePtr[j].sum_v_ort*scaleY, FALSE);
 					break;
 				case 2: //Particle density
-					scaleY = 1.0 / nbDes / (f->sh.area / (double)PROFILE_SIZE*1E-4);
-					scaleY *= ((worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
-						/ worker->timeWindowSize));
-					if (f->sh.is2sided) scaleY *= 0.5;
+					scaleY = 1.0 / (f->GetArea() / (double)PROFILE_SIZE*1E-4);
+					scaleY *= worker->GetMoleculesPerTP();
 					
 					//Correction for double-density effect (measuring density on desorbing/absorbing facets):
 					if (f->counterCache.hit.nbHit>0 || f->counterCache.hit.nbDesorbed>0)

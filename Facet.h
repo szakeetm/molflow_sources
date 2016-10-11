@@ -147,10 +147,11 @@ public:
   void  RenderSelectedElem();
   void  SelectElem(int u,int v,int width,int height);
   void  UnselectElem();
-  float GetMeshArea(int index);
+  float GetMeshArea(int index,BOOL correct2sides = FALSE);
   size_t GetMeshNbPoint(int index);
   VERTEX2D GetMeshPoint(int index, int pointId);
   VERTEX2D GetMeshCenter(int index);
+  double GetArea();
 };
 
 struct DeletedFacet {

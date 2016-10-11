@@ -29,6 +29,7 @@
 #include "GLApp/GLCombo.h"
 #include "GLApp/GLMenuBar.h"
 
+#include "Interface_shared.h"
 #include "Worker.h"
 #include "GeometryViewer.h"
 #include "FormulaSettings.h"
@@ -83,7 +84,7 @@ typedef struct {
   GLParser    *parser;
 } FORMULA;
 
-class MolFlow : public GLApplication
+class MolFlow : public Interface
 {
 public:
     MolFlow();
@@ -120,7 +121,7 @@ public:
 	int      autoUpdateFormulas;
 	int      compressSavedFiles;
 	int      autoSaveSimuOnly;
-	int      numCPU;
+	
 	BOOL     changedSinceSave; //For saving and autosaving
 	double   autoSaveFrequency; //autosave period, in minutes
 	float    lastSaveTime;

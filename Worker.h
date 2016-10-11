@@ -159,6 +159,7 @@ public:
   int AddMoment(std::vector<double> newMoments); //Adds a time serie to moments and returns the number of elements
   std::vector<double> ParseMoment(std::string userInput); //Parses a user input and returns a vector of time moments
   void ResetMoments();
+  double GetMoleculesPerTP();
 
   std::vector<std::pair<double,double>> Generate_ID(int paramId);
   int GenerateNewID(int paramId);

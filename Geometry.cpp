@@ -430,7 +430,7 @@ void Geometry::CopyGeometryBuffer(BYTE *buffer) {
 			if (f->cellPropertiesIds) {
 				for (int j = 0; j < f->sh.texHeight; j++) {
 					for (int i = 0; i < f->sh.texWidth; i++) {
-						double area = f->GetMeshArea(add)*(f->sh.is2sided ? 2.0 : 1.0);
+						double area = f->GetMeshArea(add);
 
 						if (area > 0.0) {
 							// Use the sign bit to store isFull flag
@@ -2121,30 +2121,27 @@ void Geometry::ExportTextures(FILE *file, int grouping, int mode, Dataport *dpHi
 						break;
 
 					case 2: //Impingement rate
-						dCoef = /*totalInFlux*/ 1.0 / shGHit->total.hit.nbDesorbed * 1E4; //1E4: conversion m2->cm2
-						if (shGHit->mode == MC_MODE) dCoef *= (mApp->worker.displayedMoment == 0)
-							? mApp->worker.finalOutgassingRate : (mApp->worker.totalDesorbedMolecules / mApp->worker.timeWindowSize);
-						if (!grouping || hits[index].count) sprintf(tmp, "%g", (double)hits[i + j*w].count / (f->GetMeshArea(i + j*w)*(f->sh.is2sided ? 2.0 : 1.0))*dCoef);
+						dCoef = 1E4; //1E4: conversion m2->cm2
+						if (shGHit->mode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP();
+						if (!grouping || hits[index].count) sprintf(tmp, "%g", (double)hits[i + j*w].count / f->GetMeshArea(i + j*w,TRUE)*dCoef);
 						break;
 
 					case 3: //Particle density
 					{
-						dCoef = /*totalInFlux*/ 1.0 / shGHit->total.hit.nbDesorbed * 1E4; //1E4: conversion m2->cm2
-						if (shGHit->mode == MC_MODE) dCoef *= (mApp->worker.displayedMoment == 0)
-							? mApp->worker.finalOutgassingRate : (mApp->worker.totalDesorbedMolecules / mApp->worker.timeWindowSize);
+						dCoef = 1E4; //1E4: conversion m2->cm2
+						if (shGHit->mode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP();
 						double v_ort_avg = 2.0*(double)hits[index].count / hits[index].sum_1_per_ort_velocity;
-								double imp_rate = hits[index].count / (f->GetMeshArea(index)*(f->sh.is2sided ? 2.0 : 1.0))*dCoef;
+								double imp_rate = hits[index].count / f->GetMeshArea(index,TRUE)*dCoef;
 								double rho = 2.0*imp_rate / v_ort_avg;
 								if (!grouping || hits[index].count) sprintf(tmp, "%g", rho);
 						break;
 					}
 					case 4: //Gas density
 					{
-						dCoef = /*totalInFlux*/ 1.0 / shGHit->total.hit.nbDesorbed * 1E4; //1E4: conversion m2->cm2
-						if (shGHit->mode == MC_MODE) dCoef *= (mApp->worker.displayedMoment == 0)
-							? mApp->worker.finalOutgassingRate : (mApp->worker.totalDesorbedMolecules / mApp->worker.timeWindowSize);
+						dCoef = 1E4; //1E4: conversion m2->cm2
+						if (shGHit->mode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP();
 								double v_ort_avg = 2.0*(double)hits[index].count / hits[index].sum_1_per_ort_velocity;
-								double imp_rate = hits[index].count / (f->GetMeshArea(index)*(f->sh.is2sided ? 2.0 : 1.0))*dCoef;
+								double imp_rate = hits[index].count / f->GetMeshArea(index,TRUE)*dCoef;
 								double rho = 2.0*imp_rate / v_ort_avg;
 								double rho_mass = rho*mApp->worker.gasMass / 1000.0 / 6E23;
 								if (!grouping || hits[index].count) sprintf(tmp, "%g", rho_mass);
@@ -2153,12 +2150,10 @@ void Geometry::ExportTextures(FILE *file, int grouping, int mode, Dataport *dpHi
 					case 5:  // Pressure [mbar]
 
 						// Lock during update
-						dCoef = /*totalInFlux*/ 1.0 / shGHit->total.hit.nbDesorbed * 1E4 * (mApp->worker.gasMass / 1000 / 6E23) *0.0100;  //1E4 is conversion from m2 to cm2, 0.01: Pa->mbar
-						if (shGHit->mode == MC_MODE) dCoef *= (mApp->worker.displayedMoment == 0)
-							? mApp->worker.finalOutgassingRate : (mApp->worker.totalDesorbedMolecules / mApp->worker.timeWindowSize);
+						dCoef = 1E4 * (mApp->worker.gasMass / 1000 / 6E23) *0.0100;  //1E4 is conversion from m2 to cm2, 0.01: Pa->mbar
+						if (shGHit->mode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP();
 						if (!grouping || hits[index].sum_v_ort_per_area) sprintf(tmp, "%g", hits[index].sum_v_ort_per_area*dCoef);
 						break;
-
 
 					case 6: // Average velocity
 						if (!grouping || hits[index].count) sprintf(tmp, "%g", 2.0*(double)hits[i + j*w].count / hits[i + j*w].sum_1_per_ort_velocity);
@@ -2274,14 +2269,8 @@ void Geometry::ExportProfiles(FILE *file, int isTXT, Dataport *dpHit, Worker *wo
 					switch (f->sh.profileType) {
 					case REC_PRESSUREU:
 					case REC_PRESSUREV:
-						scaleY = 1.0 / nbDes / (f->sh.area / (double)PROFILE_SIZE*1E-4)* worker->gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
-						/*scaleY *= ((worker->displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
-						/ worker->timeWindowSize)); //correction for time window length*/
-						scaleY *= ((worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
-							/ worker->timeWindowSize));
-						if (f->sh.is2sided) scaleY *= 0.5;
-						//if(f->sh.opacity>0.0) scaleY *= f->sh.opacity;
-						//if(IS_ZERO(f->sh.opacity)) scaleY*=2; //transparent profiles are profiled only once...
+						scaleY = 1.0 / (f->GetArea() / (double)PROFILE_SIZE*1E-4)* worker->gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
+						scaleY *= worker->GetMoleculesPerTP();
 
 						for (int j = 0; j < PROFILE_SIZE; j++)
 							line << prof[j].sum_v_ort*scaleY << sep;

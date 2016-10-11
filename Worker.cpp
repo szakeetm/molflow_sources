@@ -1837,6 +1837,21 @@ void Worker::ResetMoments() {
 	userMoments = std::vector<std::string>();
 }
 
+double Worker::GetMoleculesPerTP()
+//Returns how many physical molecules one test particle represents
+{
+	if (displayedMoment == 0) {
+		//Constant flow
+		//Each test particle represents a certain real molecule influx per second
+		return finalOutgassingRate / nbDesorption;
+	}
+	else {
+		//Time-dependent mode
+		//Each test particle represents a certain absolute number of real molecules
+		return (totalDesorbedMolecules / timeWindowSize) / nbDesorption;
+	}
+}
+
 void Worker::ImportDesorption_DES(char *fileName) {
 	//if (needsReload) RealReload();
 	// Read a file

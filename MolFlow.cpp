@@ -37,7 +37,7 @@ GNU General Public License for more details.
 #define APP_NAME "MolFlow+ development version 64-bit (Compiled "__DATE__" "__TIME__") DEBUG MODE"
 #else
 //#define APP_NAME "Molflow+ development version ("__DATE__")"
-#define APP_NAME "Molflow+ 2.6.32 64-bit ("__DATE__")"
+#define APP_NAME "Molflow+ 2.6.33 64-bit ("__DATE__")"
 #endif
 
 /*
@@ -269,13 +269,6 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, INT)
 
 MolFlow::MolFlow()
 {
-
-	//Get number of cores
-	SYSTEM_INFO sysinfo;
-	GetSystemInfo(&sysinfo);
-
-	numCPU = (int)sysinfo.dwNumberOfProcessors;
-
 	mApp = this; //to refer to the app as extern variable
 	antiAliasing = TRUE;
 	whiteBg = FALSE;
@@ -1639,6 +1632,11 @@ BOOL MolFlow::OffsetFormula(char *expression, int offset, int filter, std::vecto
 	prefixes.push_back("A");
 	prefixes.push_back("D");
 	prefixes.push_back("H");
+	prefixes.push_back("P");
+	prefixes.push_back("DEN");
+	prefixes.push_back("Z");
+	prefixes.push_back("V");
+	prefixes.push_back("T");
 	prefixes.push_back("AR");
 	prefixes.push_back("a");
 	prefixes.push_back("d");
@@ -2611,7 +2609,7 @@ void MolFlow::LoadFile(char *fName) {
 	strcpy(fullName, "");
 
 	if (fName == NULL) {
-		FILENAME *fn = GLFileBox::OpenFile(currentDir, NULL, "Open CSV file", fileLFilters, 2);
+		FILENAME *fn = GLFileBox::OpenFile(currentDir, NULL, "Open file", fileLFilters, 2);
 		if (fn)
 			strcpy(fullName, fn->fullName);
 	}
@@ -5263,25 +5261,25 @@ BOOL MolFlow::EvaluateVariable(VLIST *v,Worker *w, Geometry *geom) {
 	int idx;
 
 	if ((idx = getVariable(v->name, "A")) > 0) {
-		ok = (idx <= nbFacet);
+		ok = (idx>0 && idx <= nbFacet);
 		if (ok) v->value = (double)geom->GetFacet(idx - 1)->counterCache.hit.nbAbsorbed;
 	}
 	else if ((idx = getVariable(v->name, "D")) > 0) {
-		ok = (idx <= nbFacet);
+		ok = (idx>0 && idx <= nbFacet);
 		if (ok) v->value = (double)geom->GetFacet(idx - 1)->counterCache.hit.nbDesorbed;
 	}
 	else if ((idx = getVariable(v->name, "H")) > 0) {
-		ok = (idx <= nbFacet);
+		ok = (idx>0 && idx <= nbFacet);
 		if (ok) v->value = (double)geom->GetFacet(idx - 1)->counterCache.hit.nbHit;
 	}
 	else if ((idx = getVariable(v->name, "P")) > 0) {
-		ok = (idx <= nbFacet);
+		ok = (idx>0 && idx <= nbFacet);
 		if (ok) v->value = geom->GetFacet(idx - 1)->counterCache.hit.sum_v_ort *
-			((worker.displayedMoment == 0) ? worker.finalOutgassingRate : (worker.totalDesorbedMolecules / worker.timeWindowSize)) / worker.nbDesorption*1E4 / (geom->GetFacet(idx - 1)->sh.area*
+			worker.GetMoleculesPerTP()*1E4 / (geom->GetFacet(idx - 1)->sh.area*
 			(geom->GetFacet(idx - 1)->sh.is2sided ? 2.0 : 1.0)) * (worker.gasMass / 1000 / 6E23)*0.0100;
 	}
 	else if ((idx = getVariable(v->name, "DEN")) > 0) {
-		ok = (idx <= nbFacet);
+		ok = (idx>0 && idx <= nbFacet);
 		if (ok) {
 			double dCoef = 1.0;
 			Facet *f = geom->GetFacet(idx - 1);
@@ -5289,39 +5287,39 @@ BOOL MolFlow::EvaluateVariable(VLIST *v,Worker *w, Geometry *geom) {
 				if (f->counterCache.hit.nbAbsorbed >0 || f->counterCache.hit.nbDesorbed>0) //otherwise save calculation time
 					dCoef *= 1.0 - ((double)f->counterCache.hit.nbAbsorbed + (double)f->counterCache.hit.nbDesorbed) / ((double)f->counterCache.hit.nbHit + (double)f->counterCache.hit.nbDesorbed) / 2.0;
 			v->value = dCoef * f->counterCache.hit.sum_1_per_ort_velocity /
-				(f->sh.area*(f->sh.is2sided ? 2.0 : 1.0)) *
-				((worker.displayedMoment == 0) ? worker.finalOutgassingRate : (worker.totalDesorbedMolecules / worker.timeWindowSize)) / worker.nbDesorption*1E4;
+				f->GetArea() *
+				worker.GetMoleculesPerTP()*1E4;
 		}
 	}
 	else if ((idx = getVariable(v->name, "Z")) > 0) {
-		ok = (idx <= nbFacet);
+		ok = (idx>0 && idx <= nbFacet);
 		if (ok) v->value = geom->GetFacet(idx - 1)->counterCache.hit.nbHit /
 			(geom->GetFacet(idx - 1)->sh.area*(geom->GetFacet(idx - 1)->sh.is2sided ? 2.0 : 1.0)) *
-			((worker.displayedMoment == 0) ? worker.finalOutgassingRate : (worker.totalDesorbedMolecules / worker.timeWindowSize)) / worker.nbDesorption*1E4;
+			worker.GetMoleculesPerTP()*1E4;
 	}
 	else if ((idx = getVariable(v->name, "V")) > 0) {
-		ok = (idx <= nbFacet);
+		ok = (idx>0 && idx <= nbFacet);
 		if (ok) v->value = 4.0*(double)(geom->GetFacet(idx - 1)->counterCache.hit.nbHit + geom->GetFacet(idx - 1)->counterCache.hit.nbDesorbed) /
 			geom->GetFacet(idx - 1)->counterCache.hit.sum_1_per_ort_velocity;
 	}
 	else if ((idx = getVariable(v->name, "T")) > 0) {
-		ok = (idx <= nbFacet);
+		ok = (idx>0 && idx <= nbFacet);
 		if (ok) v->value = geom->GetFacet(idx - 1)->sh.temperature;
 	}
 	else if ((idx = getVariable(v->name, "_A")) > 0) {
-		ok = (idx <= nbFacet);
+		ok = (idx>0 && idx <= nbFacet);
 		if (ok) v->value = (double)geom->GetFacet(idx - 1)->counterCache.density.absorbed;
 	}
 	else if ((idx = getVariable(v->name, "_D")) > 0) {
-		ok = (idx <= nbFacet);
+		ok = (idx>0 && idx <= nbFacet);
 		if (ok) v->value = (double)geom->GetFacet(idx - 1)->counterCache.density.desorbed;
 	}
 	else if ((idx = getVariable(v->name, "_H")) > 0) {
-		ok = (idx <= nbFacet);
+		ok = (idx>0 && idx <= nbFacet);
 		if (ok) v->value = (double)geom->GetFacet(idx - 1)->counterCache.density.value;
 	}
 	else if ((idx = getVariable(v->name, "AR")) > 0) {
-		ok = (idx <= nbFacet);
+		ok = (idx>0 && idx <= nbFacet);
 		if (ok) v->value = geom->GetFacet(idx - 1)->sh.area;
 	}
 	else if (_stricmp(v->name, "SUMDES") == 0) {
@@ -5377,5 +5375,6 @@ BOOL MolFlow::EvaluateVariable(VLIST *v,Worker *w, Geometry *geom) {
 	else if (_stricmp(v->name, "Na") == 0) {
 		v->value = 6.02214179e23;
 	}
+	else ok = FALSE;
 	return ok;
 }

@@ -886,10 +886,10 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 					physicalValue = texBuffer[idx].sum_v_ort_per_area*dCoeff1;
 					break;
 				case 1: //impingement rate
-					physicalValue = (double)texBuffer[idx].count / (this->GetMeshArea(idx)*(sh.is2sided ? 2.0 : 1.0))*dCoeff2;
+					physicalValue = (double)texBuffer[idx].count / this->GetMeshArea(idx,TRUE)*dCoeff2;
 					break;
 				case 2: //particle density
-					physicalValue = texBuffer[idx].sum_1_per_ort_velocity / (this->GetMeshArea(idx)*(sh.is2sided ? 2.0 : 1.0))*dCoeff3;
+					physicalValue = texBuffer[idx].sum_1_per_ort_velocity / this->GetMeshArea(idx,TRUE)*dCoeff3;
 
 					//Correction for double-density effect (measuring density on desorbing/absorbing facets):
 					if (counterCache.hit.nbHit>0 || counterCache.hit.nbDesorbed>0)
@@ -1008,10 +1008,10 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 					physicalValue = texBuffer[idx].sum_v_ort_per_area*dCoeff1;
 					break;
 				case 1: //impingement rate
-					physicalValue = (double)texBuffer[idx].count / (this->GetMeshArea(idx)*(sh.is2sided ? 2.0 : 1.0))*dCoeff2;
+					physicalValue = (double)texBuffer[idx].count / this->GetMeshArea(idx,TRUE)*dCoeff2;
 					break;
 				case 2: //particle density
-					physicalValue = texBuffer[idx].sum_1_per_ort_velocity / (this->GetMeshArea(idx)*(sh.is2sided ? 2.0 : 1.0))*dCoeff3;
+					physicalValue = texBuffer[idx].sum_1_per_ort_velocity / this->GetMeshArea(idx,TRUE)*dCoeff3;
 
 					//Correction for double-density effect (measuring density on desorbing/absorbing facets):
 					if (counterCache.hit.nbHit>0 || counterCache.hit.nbDesorbed>0)

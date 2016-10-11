@@ -204,287 +204,281 @@ void TexturePlotter::UpdateTable() {
 		switch (mode) {
 
 		case 0: {// Cell area
+			for (int i = 0; i < w; i++) {
+				for (int j = 0; j < h; j++) {
+					float val = selFacet->GetMeshArea(i + j*w);
+					sprintf(tmp, "%g", val);
+					if (val > maxValue) {
+						maxValue = val;
+						maxX = i; maxY = j;
+					}
+					mapList->SetValueAt(i, j, tmp);
+				}
+			}
+			break; }
+
+		case 1: {// MC Hits
+
+					 // Lock during update
+			BYTE *buffer = worker->GetHits();
+			try {
+				if (buffer) {
+					SHGHITS *shGHit = (SHGHITS *)buffer;
+					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(APROFILE)*(1 + nbMoments)) : 0;
+					AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(AHIT)));
 					for (int i = 0; i < w; i++) {
-						for (int j = 0; j<h; j++) {
-							float val = selFacet->GetMeshArea(i + j*w);
-							sprintf(tmp, "%g", val);
-							if (val>maxValue) {
-								maxValue = val;
+						for (int j = 0; j < h; j++) {
+							//int tSize = selFacet->sh.texWidth*selFacet->sh.texHeight;
+
+							llong val = hits[i + j*w].count;
+							if (val > maxValue) {
+								maxValue = (double)val;
 								maxX = i; maxY = j;
 							}
+							sprintf(tmp, "%llu", val);
 							mapList->SetValueAt(i, j, tmp);
 						}
 					}
-					break; }
+					worker->ReleaseHits();
+				}
+			}
+			catch (...) {
+				worker->ReleaseHits();
 
-		case 1:  {// MC Hits
+			}
 
-					 // Lock during update
-					 BYTE *buffer = worker->GetHits();
-					 try {
-						 if (buffer) {
-							 SHGHITS *shGHit = (SHGHITS *)buffer;
-							 size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
-							 AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
-							 for (int i = 0; i < w; i++) {
-								 for (int j = 0; j<h; j++) {
-									 //int tSize = selFacet->sh.texWidth*selFacet->sh.texHeight;
+			break; }
 
-									 llong val = hits[i + j*w].count;
-									 if (val>maxValue) {
-										 maxValue = (double)val;
-										 maxX = i; maxY = j;
-									 }
-									 sprintf(tmp, "%llu", val);
-									 mapList->SetValueAt(i, j, tmp);
-								 }
-							 }
-							 worker->ReleaseHits();
-						 }
-					 }
-					 catch (...) {
-						 worker->ReleaseHits();
-
-					 }
-
-					 break; }
-
-		case 2:  {// Impingement rate
+		case 2: {// Impingement rate
 
 					 // Lock during update
-					 BYTE *buffer = worker->GetHits();
-					 try {
-						 if (buffer) {
-							 SHGHITS *shGHit = (SHGHITS *)buffer;
-							 size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
-							 AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
-							 double dCoef = /*totalInFlux*/ 1.0 / shGHit->total.hit.nbDesorbed * 1E4/(selFacet->sh.is2sided?2.0:1.0); //1E4: conversion m2->cm2
-							 /*if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
-								 / worker->timeWindowSize));*/
-							 if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules	 / worker->timeWindowSize));
-							 for (int i = 0; i < w; i++) {
-								 for (int j = 0; j<h; j++) {
-									 double area = (selFacet->GetMeshArea(i + j*w)); if (area == 0.0) area = 1.0;
-									 double val = (double)hits[i + j*w].count / area*dCoef;
-									 if (val>maxValue) {
-										 maxValue = val;
-										 maxX = i; maxY = j;
-									 }
-									 sprintf(tmp, "%g", val);
-									 mapList->SetValueAt(i, j, tmp);
-								 }
-							 }
-							 worker->ReleaseHits();
-						 }
-					 }
-					 catch (...) { //incorrect hits reference
-						 worker->ReleaseHits();
-					 }
+			BYTE *buffer = worker->GetHits();
+			try {
+				if (buffer) {
+					SHGHITS *shGHit = (SHGHITS *)buffer;
+					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(APROFILE)*(1 + nbMoments)) : 0;
+					AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(AHIT)));
+					double dCoef =1E4; //1E4: conversion m2->cm2
+					/*if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
+						/ worker->timeWindowSize));*/
+					if (shGHit->mode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP();
+					for (int i = 0; i < w; i++) {
+						for (int j = 0; j < h; j++) {
+							double area = (selFacet->GetMeshArea(i + j*w,TRUE)); if (area == 0.0) area = 1.0;
+							double val = (double)hits[i + j*w].count / area*dCoef;
+							if (val > maxValue) {
+								maxValue = val;
+								maxX = i; maxY = j;
+							}
+							sprintf(tmp, "%g", val);
+							mapList->SetValueAt(i, j, tmp);
+						}
+					}
+					worker->ReleaseHits();
+				}
+			}
+			catch (...) { //incorrect hits reference
+				worker->ReleaseHits();
+			}
 
-					 break; }
+			break; }
 
-		case 3:  {// Particle density [1/m3]
-
-					 // Lock during update
-					 BYTE *buffer = worker->GetHits();
-					 try {
-						 if (buffer) {
-							 SHGHITS *shGHit = (SHGHITS *)buffer;
-							 size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
-							 AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
-							 //float dCoef = (float)totalOutgassing / 8.31 * gasMass / 100 * MAGIC_CORRECTION_FACTOR;
-							 double dCoef = /*totalInFlux*/1.0 / shGHit->total.hit.nbDesorbed*1E4 / (selFacet->sh.is2sided ? 2.0 : 1.0);   //1E4 m2 -> cm2
-							 /*if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
-								 / worker->timeWindowSize));*/
-
-							 //Correction for double-density effect (measuring density on desorbing/absorbing facets):
-							 if (selFacet->counterCache.hit.nbHit>0 || selFacet->counterCache.hit.nbDesorbed>0)
-								 if (selFacet->counterCache.hit.nbAbsorbed >0 || selFacet->counterCache.hit.nbDesorbed>0) //otherwise save calculation time
-									 dCoef *= 1.0 - ((double)selFacet->counterCache.hit.nbAbsorbed + (double)selFacet->counterCache.hit.nbDesorbed) / ((double)selFacet->counterCache.hit.nbHit + (double)selFacet->counterCache.hit.nbDesorbed) / 2.0;
-
-							 if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules	 / worker->timeWindowSize));
-							 for (int i = 0; i < w; i++) {
-								 for (int j = 0; j<h; j++) {
-
-									 /*double v_avg = 2.0*(double)hits[i + j*w].count / hits[i + j*w].sum_1_per_ort_velocity;
-									 double imp_rate = hits[i + j*w].count / (selFacet->mesh[i + j*w].area*(selFacet->sh.is2sided ? 2.0 : 1.0))*dCoef;
-									 double rho = 4.0*imp_rate / v_avg;*/
-									 double rho = hits[i + j*w].sum_1_per_ort_velocity / selFacet->GetMeshArea(i + j*w)*dCoef;
-									 if (rho>maxValue) {
-										 maxValue = rho;
-										 maxX = i; maxY = j;
-									 }
-
-									 sprintf(tmp, "%g", rho);
-									 mapList->SetValueAt(i, j, tmp);
-								 }
-							 }
-							 worker->ReleaseHits();
-						 }
-					 }
-					 catch (...) { //incorrect hits reference
-						 worker->ReleaseHits();
-					 }
-
-					 break; }
-
-		case 4:  {// Gas density [kg/m3]
+		case 3: {// Particle density [1/m3]
 
 					 // Lock during update
-					 BYTE *buffer = worker->GetHits();
-					 try {
-						 if (buffer) {
-							 SHGHITS *shGHit = (SHGHITS *)buffer;
-							 size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
-							 AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
-							 //float dCoef = (float)totalOutgassing / 8.31 * gasMass / 100 * MAGIC_CORRECTION_FACTOR;
-							 double dCoef = /*(float)totalInFlux*/ 1.0 / (float)shGHit->total.hit.nbDesorbed *1E4/(selFacet->sh.is2sided ? 2.0 : 1.0);
-							 /*if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
-								 / worker->timeWindowSize));*/
-							
-								 //Correction for double-density effect (measuring density on desorbing/absorbing facets):
-							 if (selFacet->counterCache.hit.nbHit>0 || selFacet->counterCache.hit.nbDesorbed>0)
-								 if (selFacet->counterCache.hit.nbAbsorbed >0 || selFacet->counterCache.hit.nbDesorbed>0) //otherwise save calculation time
-									 dCoef *= 1.0 - ((double)selFacet->counterCache.hit.nbAbsorbed + (double)selFacet->counterCache.hit.nbDesorbed) / ((double)selFacet->counterCache.hit.nbHit + (double)selFacet->counterCache.hit.nbDesorbed) / 2.0;
+			BYTE *buffer = worker->GetHits();
+			try {
+				if (buffer) {
+					SHGHITS *shGHit = (SHGHITS *)buffer;
+					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(APROFILE)*(1 + nbMoments)) : 0;
+					AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(AHIT)));
+					double dCoef =1E4;   //1E4 m2 -> cm2
+					
+					//Correction for double-density effect (measuring density on desorbing/absorbing facets):
+					if (selFacet->counterCache.hit.nbHit > 0 || selFacet->counterCache.hit.nbDesorbed > 0)
+						if (selFacet->counterCache.hit.nbAbsorbed > 0 || selFacet->counterCache.hit.nbDesorbed > 0) //otherwise save calculation time
+							dCoef *= 1.0 - ((double)selFacet->counterCache.hit.nbAbsorbed + (double)selFacet->counterCache.hit.nbDesorbed) / ((double)selFacet->counterCache.hit.nbHit + (double)selFacet->counterCache.hit.nbDesorbed) / 2.0;
 
-							 
-							 if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules	 / worker->timeWindowSize));
-							 for (int i = 0; i < w; i++) {
-								 for (int j = 0; j<h; j++) {
+					if (shGHit->mode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP();
+					for (int i = 0; i < w; i++) {
+						for (int j = 0; j < h; j++) {
 
-									 /*double v_avg = 2.0*(double)hits[i + j*w].count / hits[i + j*w].sum_1_per_ort_velocity;
-									 double imp_rate = hits[i + j*w].count / (selFacet->mesh[i + j*w].area*(selFacet->sh.is2sided ? 2.0 : 1.0))*dCoef;
-									 double rho = 4.0*imp_rate / v_avg;*/
-									 double rho = hits[i + j*w].sum_1_per_ort_velocity / selFacet->GetMeshArea(i + j*w)*dCoef;
-									 double rho_mass = rho*worker->gasMass / 1000.0 / 6E23;
-									 if (rho_mass>maxValue) {
-										 maxValue = rho_mass;
-										 maxX = i; maxY = j;
-									 }
+							/*double v_avg = 2.0*(double)hits[i + j*w].count / hits[i + j*w].sum_1_per_ort_velocity;
+							double imp_rate = hits[i + j*w].count / (selFacet->mesh[i + j*w].area*(selFacet->sh.is2sided ? 2.0 : 1.0))*dCoef;
+							double rho = 4.0*imp_rate / v_avg;*/
+							double rho = hits[i + j*w].sum_1_per_ort_velocity / selFacet->GetMeshArea(i + j*w,TRUE)*dCoef;
+							if (rho > maxValue) {
+								maxValue = rho;
+								maxX = i; maxY = j;
+							}
 
-									 sprintf(tmp, "%g", rho_mass);
-									 mapList->SetValueAt(i, j, tmp);
-								 }
-							 }
-							 worker->ReleaseHits();
-						 }
-					 }
-					 catch (...) { //incorrect hits reference
-						 worker->ReleaseHits();
-					 }
+							sprintf(tmp, "%g", rho);
+							mapList->SetValueAt(i, j, tmp);
+						}
+					}
+					worker->ReleaseHits();
+				}
+			}
+			catch (...) { //incorrect hits reference
+				worker->ReleaseHits();
+			}
 
-					 break; }
+			break; }
 
-		case 5:  {// Pressure
+		case 4: {// Gas density [kg/m3]
 
 					 // Lock during update
-					 BYTE *buffer = worker->GetHits();
-					 try {
-						 if (buffer) {
-							 SHGHITS *shGHit = (SHGHITS *)buffer;
-							 size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
-							 AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
-							 double dCoef = /*totalInFlux*/ 1.0 / shGHit->total.hit.nbDesorbed * 1E4 * (worker->gasMass / 1000 / 6E23) * 0.0100;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
-							 /*if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
-								 / worker->timeWindowSize));*/
-							 if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules	 / worker->timeWindowSize));
-							 for (int i = 0; i < w; i++) {
-								 for (int j = 0; j<h; j++) {
+			BYTE *buffer = worker->GetHits();
+			try {
+				if (buffer) {
+					SHGHITS *shGHit = (SHGHITS *)buffer;
+					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(APROFILE)*(1 + nbMoments)) : 0;
+					AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(AHIT)));
+					//float dCoef = (float)totalOutgassing / 8.31 * gasMass / 100 * MAGIC_CORRECTION_FACTOR;
+					double dCoef = 1E4;
 
-									 double p = hits[i + j*w].sum_v_ort_per_area*dCoef;
-									 if (p>maxValue) {
-										 maxValue = p;
-										 maxX = i; maxY = j;
-									 }
+						//Correction for double-density effect (measuring density on desorbing/absorbing facets):
+					if (selFacet->counterCache.hit.nbHit > 0 || selFacet->counterCache.hit.nbDesorbed > 0)
+						if (selFacet->counterCache.hit.nbAbsorbed > 0 || selFacet->counterCache.hit.nbDesorbed > 0) //otherwise save calculation time
+							dCoef *= 1.0 - ((double)selFacet->counterCache.hit.nbAbsorbed + (double)selFacet->counterCache.hit.nbDesorbed) / ((double)selFacet->counterCache.hit.nbHit + (double)selFacet->counterCache.hit.nbDesorbed) / 2.0;
 
-									 sprintf(tmp, "%g", p);
 
-									 mapList->SetValueAt(i, j, tmp);
-								 }
-							 }
-							 worker->ReleaseHits();
-						 }
-					 }
-					 catch (...) { //incorrect hits reference
-						 worker->ReleaseHits();
-					 }
+					if (shGHit->mode == MC_MODE) dCoef *= worker->GetMoleculesPerTP();
+					for (int i = 0; i < w; i++) {
+						for (int j = 0; j < h; j++) {
 
-					 break; }
+							/*double v_avg = 2.0*(double)hits[i + j*w].count / hits[i + j*w].sum_1_per_ort_velocity;
+							double imp_rate = hits[i + j*w].count / (selFacet->mesh[i + j*w].area*(selFacet->sh.is2sided ? 2.0 : 1.0))*dCoef;
+							double rho = 4.0*imp_rate / v_avg;*/
+							double rho = hits[i + j*w].sum_1_per_ort_velocity / selFacet->GetMeshArea(i + j*w,TRUE)*dCoef;
+							double rho_mass = rho*worker->gasMass / 1000.0 / 6E23;
+							if (rho_mass > maxValue) {
+								maxValue = rho_mass;
+								maxX = i; maxY = j;
+							}
+
+							sprintf(tmp, "%g", rho_mass);
+							mapList->SetValueAt(i, j, tmp);
+						}
+					}
+					worker->ReleaseHits();
+				}
+			}
+			catch (...) { //incorrect hits reference
+				worker->ReleaseHits();
+			}
+
+			break; }
+
+		case 5: {// Pressure
+
+					 // Lock during update
+			BYTE *buffer = worker->GetHits();
+			try {
+				if (buffer) {
+					SHGHITS *shGHit = (SHGHITS *)buffer;
+					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(APROFILE)*(1 + nbMoments)) : 0;
+					AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(AHIT)));
+					double dCoef = 1E4 * (worker->gasMass / 1000 / 6E23) * 0.0100;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
+					
+					if (shGHit->mode == MC_MODE) dCoef *= worker->GetMoleculesPerTP();
+					for (int i = 0; i < w; i++) {
+						for (int j = 0; j < h; j++) {
+
+							double p = hits[i + j*w].sum_v_ort_per_area*dCoef;
+							if (p > maxValue) {
+								maxValue = p;
+								maxX = i; maxY = j;
+							}
+
+							sprintf(tmp, "%g", p);
+
+							mapList->SetValueAt(i, j, tmp);
+						}
+					}
+					worker->ReleaseHits();
+				}
+			}
+			catch (...) { //incorrect hits reference
+				worker->ReleaseHits();
+			}
+
+			break; }
 
 
 		case 6: {// Average gas velocity [m/s]
 
 					// Lock during update
-					BYTE *buffer = worker->GetHits();
-					try {
-						if (buffer) {
-							SHGHITS *shGHit = (SHGHITS *)buffer;
-							size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
-							AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize+profSize + mApp->worker.displayedMoment*w*h*sizeof(AHIT)));
-							for (int i = 0; i < w; i++) {
-								for (int j = 0; j<h; j++) {
-									int tSize = selFacet->sh.texWidth*selFacet->sh.texHeight;
-									double val = 4.0*(double)hits[i + j*w].count / hits[i + j*w].sum_1_per_ort_velocity;
-									if (val>maxValue) {
-										maxValue = val;
-										maxX = i; maxY = j;
-									}
-									sprintf(tmp, "%g", val);
-									mapList->SetValueAt(i, j, tmp);
-								}
+			BYTE *buffer = worker->GetHits();
+			try {
+				if (buffer) {
+					SHGHITS *shGHit = (SHGHITS *)buffer;
+					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(APROFILE)*(1 + nbMoments)) : 0;
+					AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(AHIT)));
+					for (int i = 0; i < w; i++) {
+						for (int j = 0; j < h; j++) {
+							int tSize = selFacet->sh.texWidth*selFacet->sh.texHeight;
+							double val = 4.0*(double)hits[i + j*w].count / hits[i + j*w].sum_1_per_ort_velocity;
+							if (val > maxValue) {
+								maxValue = val;
+								maxX = i; maxY = j;
 							}
-							worker->ReleaseHits();
+							sprintf(tmp, "%g", val);
+							mapList->SetValueAt(i, j, tmp);
 						}
 					}
-					catch (...) {
-						worker->ReleaseHits();
+					worker->ReleaseHits();
+				}
+			}
+			catch (...) {
+				worker->ReleaseHits();
 
-					}
+			}
 
-					break; }
+			break; }
 
 		case 7: {// Gas velocity vector
-					for (int i = 0; i < w; i++) {
-						for (int j = 0; j<h; j++) {
-							if (selFacet->dirCache) {
-								sprintf(tmp, "%g,%g,%g",
-									selFacet->dirCache[i + j*w].sumDir.x / (double)selFacet->dirCache[i + j*w].count,
-									selFacet->dirCache[i + j*w].sumDir.y / (double)selFacet->dirCache[i + j*w].count,
-									selFacet->dirCache[i + j*w].sumDir.z / (double)selFacet->dirCache[i + j*w].count);
-								double vsum = (selFacet->dirCache[i + j*w].sumDir.x*selFacet->dirCache[i + j*w].sumDir.x +
-									selFacet->dirCache[i + j*w].sumDir.y*selFacet->dirCache[i + j*w].sumDir.y +
-									selFacet->dirCache[i + j*w].sumDir.z + selFacet->dirCache[i + j*w].sumDir.z);
-								if (vsum>maxValue) {
-									maxValue = vsum;
-									maxX = i; maxY = j;
-								}
-							}
-							else {
-								sprintf(tmp, "Direction not recorded");
-							}
-							mapList->SetValueAt(i, j, tmp);
+			for (int i = 0; i < w; i++) {
+				for (int j = 0; j < h; j++) {
+					if (selFacet->dirCache) {
+						sprintf(tmp, "%g,%g,%g",
+							selFacet->dirCache[i + j*w].sumDir.x / (double)selFacet->dirCache[i + j*w].count,
+							selFacet->dirCache[i + j*w].sumDir.y / (double)selFacet->dirCache[i + j*w].count,
+							selFacet->dirCache[i + j*w].sumDir.z / (double)selFacet->dirCache[i + j*w].count);
+						double vsum = (selFacet->dirCache[i + j*w].sumDir.x*selFacet->dirCache[i + j*w].sumDir.x +
+							selFacet->dirCache[i + j*w].sumDir.y*selFacet->dirCache[i + j*w].sumDir.y +
+							selFacet->dirCache[i + j*w].sumDir.z + selFacet->dirCache[i + j*w].sumDir.z);
+						if (vsum > maxValue) {
+							maxValue = vsum;
+							maxX = i; maxY = j;
 						}
 					}
-					break; }
+					else {
+						sprintf(tmp, "Direction not recorded");
+					}
+					mapList->SetValueAt(i, j, tmp);
+				}
+			}
+			break; }
 
 		case 8: {// # of velocity vectors
-					for (int i = 0; i < w; i++) {
-						for (int j = 0; j<h; j++) {
-							if (selFacet->dirCache) {
-								llong val = selFacet->dirCache[i + j*w].count;
-								if (val>maxValue) {
-									maxValue = (double)val;
-									maxX = i; maxY = j;
-								}
-								sprintf(tmp, "%I64d", val);
-							}
-							else {
-								sprintf(tmp, "Direction not recorded");
-							}
-							mapList->SetValueAt(i, j, tmp);
+			for (int i = 0; i < w; i++) {
+				for (int j = 0; j < h; j++) {
+					if (selFacet->dirCache) {
+						llong val = selFacet->dirCache[i + j*w].count;
+						if (val > maxValue) {
+							maxValue = (double)val;
+							maxX = i; maxY = j;
 						}
+						sprintf(tmp, "%I64d", val);
 					}
-					break; }
+					else {
+						sprintf(tmp, "Direction not recorded");
+					}
+					mapList->SetValueAt(i, j, tmp);
+				}
+			}
+			break; }
 		}
 
 	}

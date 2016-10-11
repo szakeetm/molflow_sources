@@ -251,12 +251,10 @@ void TimewisePlotter::refreshViews() {
 			break;
 
 		case 1: //Pressure
-			scaleY = 1.0 / nbDes / (f->sh.area / (double)PROFILE_SIZE*1E-4)* worker->gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
-			/*scaleY *= ((worker->displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
-			/ worker->timeWindowSize)); //correction for time window length*/
+			scaleY = 1.0 / nbDes / (f->GetArea() / (double)PROFILE_SIZE*1E-4)* worker->gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
+			
 			scaleY *= ((v->userData1 == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
 				/ worker->timeWindowSize));
-			if (f->sh.is2sided) scaleY *= 0.5;
 			//if(f->sh.opacity>0.0) scaleY *= f->sh.opacity;
 			//if(IS_ZERO(f->sh.opacity)) scaleY*=2; //transparent profiles are profiled only once...
 
@@ -264,10 +262,8 @@ void TimewisePlotter::refreshViews() {
 				v->Add((double)j, profilePtr[j].sum_v_ort*scaleY, FALSE);
 			break;
 		case 2: //Particle density
-			scaleY = 1.0 / nbDes / (f->sh.area / (double)PROFILE_SIZE*1E-4);
-			scaleY *= ((worker->displayedMoment == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
-				/ worker->timeWindowSize));
-			if (f->sh.is2sided) scaleY *= 0.5;
+			scaleY = 1E-4 / (f->GetArea() / (double)PROFILE_SIZE);
+			scaleY *= worker->GetMoleculesPerTP();
 			
 			/*
 			//Correction for double-density effect (measuring density on desorbing/absorbing facets):
