@@ -3604,7 +3604,7 @@ BOOL Geometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker
 				facetCounter->hit.nbDesorbed = 
 				facetCounter->hit.nbAbsorbed = 
 				facetCounter->hit.sum_v_ort = 
-				facetCounter->hit.sum_1_per_ort_velocity = 0;
+				facetCounter->hit.sum_1_per_ort_velocity = 0.0;
 			}
 
 			//Profiles
