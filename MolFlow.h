@@ -68,27 +68,13 @@ public:
     void LoadConfig();
     
 	void PlaceComponents();
-
     void UpdateFacetHits(BOOL allRows=FALSE);
-
-    
-	void UpdateMeasurements();
 	void QuickPipe();
-	void CreateOfTwoFacets(ClipperLib::ClipType type);
-	void DoEvents(BOOL forced=FALSE); //Used to catch button presses (check if an abort button was pressed during an operation)
-	void UpdateFacetlistSelected();
-	BOOL AskToSave();
 	BOOL AskToReset(Worker *work=NULL);
 	float GetAppTime();
 	void ResetAutoSaveTimer();
 	BOOL AutoSave(BOOL crashSave=FALSE);
 	void CheckForRecovery();
-	
-	
-
-    
-    void UpdateFormula();
-
 	void ClearParameters();
 
 	//Flow/sticking coeff. conversion
@@ -103,22 +89,21 @@ public:
     
 	
     GLTextField   *facetSticking;
-    GLTextField   *facetOpacity;
-    GLTextField   *facetTemperature;
-	GLTextField   *facetArea;
-	GLCombo       *facetSideType;
+    
+    
+	
     GLCombo       *facetDesType;
 	GLTextField   *facetDesTypeN;
     GLCombo       *facetRecType;
 	GLLabel       *facetUseDesFileLabel;
 	GLLabel       *modeLabel;
-	GLLabel       *facetAreaLabel;
+	
 	GLLabel       *facetPumpingLabel;
 	GLTextField   *facetPumping;	
     GLLabel       *facetSLabel;
-	GLLabel       *facetSideLabel;
-    GLLabel       *facetTLabel;
-    GLLabel       *facetTempLabel;
+	
+    
+
     GLLabel       *facetDLabel;
     GLLabel       *facetReLabel;
     GLToggle       *facetFILabel;
@@ -161,13 +146,13 @@ public:
     //void BuildPipeStick(double s);
 	
 	void CrashHandler(Error *e);
+	void DoEvents(BOOL forced = FALSE); //Used to catch button presses (check if an abort button was pressed during an operation)
 
 protected:
 
     int  OneTimeSceneInit();
     int  RestoreDeviceObjects();
-    int  InvalidateDeviceObjects();
-    
+	int  InvalidateDeviceObjects();
     int  FrameMove();
     void ProcessMessage(GLComponent *src,int message);
 	BOOL EvaluateVariable(VLIST *v, Worker * w, Geometry * geom);

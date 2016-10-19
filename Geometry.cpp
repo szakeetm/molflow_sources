@@ -2604,14 +2604,6 @@ void Geometry::ImportDesorption_SYN(
 				f->totalDose = f->sh.totalOutgassing = f->totalFlux = 0.0;
 			}
 
-
-
-
-
-
-
-
-
 			int texWidth_file, texHeight_file;
 			//In case of rounding errors, the file might contain different texture dimensions than expected.
 			if (version2 >= 8) {

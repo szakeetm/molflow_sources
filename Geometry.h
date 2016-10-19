@@ -189,7 +189,7 @@ public:
 	void CreatePolyFromVertices_Convex();
 	void CreatePolyFromVertices_Order();
 	void CreateDifference();
-	void ClipSelectedPolygons(ClipperLib::ClipType type);
+	void ClipSelectedPolygons(ClipperLib::ClipType type, BOOL reverseOrder);
 	void ClipPolygon(size_t id1, std::vector<std::vector<size_t>> clippingPaths, ClipperLib::ClipType type);
 	void ClipPolygon(size_t id1, size_t id2, ClipperLib::ClipType type);
 	void RegisterVertex(Facet *f, const VERTEX2D &vert, size_t id1, const std::vector<ProjectedPoint> &projectedPoints, std::vector<VERTEX3D> &newVertices, size_t registerLocation);

@@ -403,6 +403,8 @@ void Facet::LoadXML(xml_node f, int nbVertex, BOOL isMolflowFile, int vertexOffs
 			sh.totalOutgassing = outgNode.attribute("totalOutgassing").as_double();
 			totalFlux = outgNode.attribute("totalFlux").as_double();
 
+			double sum=0.0;
+
 			std::stringstream outgText;
 			outgText << outgNode.child_value("map");
 			outgassingMap = (double*)malloc(sh.outgassingMapWidth*sh.outgassingMapHeight*sizeof(double));
@@ -410,9 +412,10 @@ void Facet::LoadXML(xml_node f, int nbVertex, BOOL isMolflowFile, int vertexOffs
 			for (int iy = 0; iy < sh.outgassingMapHeight; iy++) {
 				for (int ix = 0; ix < sh.outgassingMapWidth; ix++) {
 					outgText >> outgassingMap[iy*sh.outgassingMapWidth + ix];
+					sum+=outgassingMap[iy*sh.outgassingMapWidth + ix];
 				}
 			}
-
+			if (fabs(sum - sh.totalOutgassing) > 1E-10) __debugbreak();
 		}
 		else hasOutgassingFile = sh.useOutgassingFile = 0; //if outgassing map was incorrect, don't use it
 	} //else use default values at Facet() constructor
