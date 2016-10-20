@@ -76,9 +76,6 @@ typedef float ACFLOAT;
 // Geometry structure definitions
 class VERTEX3D {
 public:
-
-
-
   double x;
   double y;
   double z;
@@ -101,13 +98,6 @@ typedef struct {
 
   VERTEX3D pos;
   int      type;
-
-
-
-
-
-
-
 } HIT;
 
 typedef struct {

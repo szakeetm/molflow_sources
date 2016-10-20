@@ -57,12 +57,11 @@ public:
 	void ExportTextures(int grouping,int mode);
 	void ExportProfiles();
     void ClearFacetParams();
-    void UpdateFacetParams(BOOL updateSelection=FALSE);
+	void ResetSimulation(BOOL askConfirm=TRUE);
     void ApplyFacetParams();
-    
+	void UpdateFacetParams(BOOL updateSelection = FALSE);
 	
     void StartStopSimulation();
-	void ResetSimulation(BOOL askConfirm=TRUE);
 
     void SaveConfig();
     void LoadConfig();
@@ -126,7 +125,6 @@ public:
 	Movement         *movement;
     FacetMesh        *facetMesh;
     FacetDetails     *facetDetails;
-	SmartSelection   *smartSelection;
     Viewer3DSettings *viewer3DSettings;
     TextureSettings  *textureSettings;
 	GlobalSettings	 *globalSettings;

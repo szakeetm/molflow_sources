@@ -63,6 +63,7 @@ VERTEX3D operator-(const VERTEX3D &v1, const VERTEX3D& v2) {
 void Sub(VERTEX3D *result, VERTEX3D *v1, VERTEX3D *v2) {
 	*result = *v1 - *v2;
 }
+
 VERTEX3D operator*(const VERTEX3D &v1,const double& mult)  {
 	VERTEX3D result;
 	result.x = v1.x * mult;
