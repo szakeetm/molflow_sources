@@ -129,7 +129,7 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, INT)
 		mApp->Run();
 	}
 	catch (Error &e) {
-		((MolFlow*)mApp)->CrashHandler(&e);
+		mApp->CrashHandler(&e);
 	}
 	delete mApp;
 	return 0;
@@ -149,7 +149,6 @@ MolFlow::MolFlow()
 	//Different Molflow implementation:
 	facetMesh = NULL;
 	facetDetails = NULL;
-	smartSelection = NULL;
 	viewer3DSettings = NULL;
 	textureSettings = NULL;
 	globalSettings = NULL;
@@ -334,6 +333,11 @@ int MolFlow::OneTimeSceneInit()
 	facetPumping = new GLTextField(0, NULL);
 	outputPanel->Add(facetPumping);
 
+	facetTempLabel = new GLLabel("Temperature (\260K):");
+	facetPanel->Add(facetTempLabel);
+	facetTemperature = new GLTextField(0, NULL);
+	facetPanel->Add(facetTemperature);
+	
 	facetReLabel = new GLLabel("Profile:");
 	facetPanel->Add(facetReLabel);
 	facetRecType = new GLCombo(0);
@@ -365,27 +369,20 @@ int MolFlow::OneTimeSceneInit()
 
 	ClearFacetParams();
 	LoadConfig();
-	UpdateViewerParams();
+	UpdateRecentMenu();
+	UpdateViewerPanel();
 	PlaceComponents();
 	CheckNeedsTexture();
 
 	//LoadFile();
 	try {
-
 		worker.SetProcNumber(nbProc);
-
 	}
 	catch (Error &e) {
 		char errMsg[512];
 		sprintf(errMsg, "Failed to start working sub-process(es), simulation not available\n%s", e.GetMsg());
 		GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 	}
-
-	//PlaceComponents(); //Why was it here?
-
-	//SelectViewer(0);
-
-	//viewer[0]->Paint();
 
 	if (checkForUpdates) {
 		//Launch updater tool
@@ -1142,7 +1139,8 @@ int MolFlow::FrameMove()
 			// Formulas
 			if (autoUpdateFormulas) UpdateFormula();
 
-			lastUpdate = GetTick(); //changed from m_fTime: include update duration
+			//lastUpdate = GetTick(); //changed from m_fTime: include update duration
+			lastUpdate = m_fTime;
 
 			// Update timing measurements
 			if (worker.nbHit != lastNbHit || worker.nbDesorption != lastNbDes) {
@@ -1395,68 +1393,9 @@ int MolFlow::InvalidateDeviceObjects()
 
 
 
-void MolFlow::SaveFileAs() {
 
-	FILENAME *fn = GLFileBox::SaveFile(currentDir, worker.GetShortFileName(), "Save File", fileSFilters, 0);
 
-	GLProgress *progressDlg2 = new GLProgress("Saving file...", "Please wait");
-	progressDlg2->SetProgress(0.0);
-	progressDlg2->SetVisible(TRUE);
-	//GLWindowManager::Repaint();  
-	if (fn) {
 
-		try {
-
-			worker.SaveGeometry(fn->fullName, progressDlg2);
-			ResetAutoSaveTimer();
-			changedSinceSave = FALSE;
-			UpdateCurrentDir(worker.fullFileName);
-			UpdateTitle();
-			AddRecent(worker.fullFileName);
-		}
-		catch (Error &e) {
-			char errMsg[512];
-			sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), fn->fullName);
-			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
-			RemoveRecent(fn->fullName);
-		}
-
-	}
-
-	progressDlg2->SetVisible(FALSE);
-	SAFE_DELETE(progressDlg2);
-}
-
-void MolFlow::ExportTextures(int grouping, int mode) {
-
-	Geometry *geom = worker.GetGeometry();
-	if (geom->GetNbSelected() == 0) {
-		GLMessageBox::Display("Empty selection", "Error", GLDLG_OK, GLDLG_ICONERROR);
-		return;
-	}
-	if (!worker.IsDpInitialized()) {
-		GLMessageBox::Display("Worker Dataport not initialized yet", "Error", GLDLG_OK, GLDLG_ICONERROR);
-		return;
-	}
-
-	FILENAME *fn = GLFileBox::SaveFile(currentDir, NULL, "Save File", fileTexFilters, 0);
-
-	if (fn) {
-
-		try {
-			worker.ExportTextures(fn->fullName, grouping, mode, TRUE, TRUE);
-			//UpdateCurrentDir(fn->fullName);
-			//UpdateTitle();
-		}
-		catch (Error &e) {
-			char errMsg[512];
-			sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), fn->fullName);
-			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
-		}
-
-	}
-
-}
 
 void MolFlow::ExportProfiles() {
 
@@ -1962,7 +1901,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		case MENU_FACET_SELECTSTICK:
 			geom->UnselectAll();
 			for (int i = 0; i < geom->GetNbFacet(); i++)
-				if (geom->GetFacet(i)->sh.sticking != 0.0 && !geom->GetFacet(i)->IsLinkFacet())
+				if (geom->GetFacet(i)->sh.sticking != 0.0 && !geom->GetFacet(i)->IsTXTLinkFacet())
 					geom->Select(i);
 			geom->UpdateSelection();
 			UpdateFacetParams(TRUE);
@@ -2513,8 +2452,6 @@ void MolFlow::LoadConfig() {
 			nbRecent++;
 			w = f->ReadString();
 		}
-		for (int i = nbRecent - 1; i >= 0; i--)
-			menu->GetSubMenu("File")->GetSubMenu("Load recent")->Add(recents[i], MENU_FILE_LOADRECENT + i);
 
 		f->ReadKeyword("cdir"); f->ReadKeyword(":");
 		strcpy(currentDir, f->ReadString());
@@ -2872,4 +2809,6 @@ void MolFlow::ResetSimulation(BOOL askConfirm) {
 	Interface::ResetSimulation(askConfirm);
 	if (pressureEvolution) pressureEvolution->Update(m_fTime, TRUE);
 	if (timewisePlotter) timewisePlotter->Update(m_fTime, TRUE);
+	if (profilePlotter) profilePlotter->Update(m_fTime, TRUE);
+	if (texturePlotter) texturePlotter->Update(m_fTime, TRUE);
 }

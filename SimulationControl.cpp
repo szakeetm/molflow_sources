@@ -698,12 +698,8 @@ BOOL StartSimulation(size_t mode) {
 		}
 	}
 
-
-
-
 	SetErrorSub("Unknown simulation mode");
 	return FALSE;
-
 }
 
 // -------------------------------------------------------

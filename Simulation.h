@@ -273,7 +273,7 @@ void DestroyAABB(struct AABBNODE *node);
 void IntersectTree(struct AABBNODE *node);
 BOOL Intersect(VERTEX3D *rayPos,VERTEX3D *rayDir,double *dist,FACET **iFact,FACET *last);
 BOOL Visible(VERTEX3D *c1,VERTEX3D *c2,FACET *f1,FACET *f2);
-BOOL IsInFacet(FACET *f,const double u,const double v);
+BOOL IsInFacet(FACET *f,const double &u,const double &v);
 double GetTick();
 size_t   GetHitsSize();
 BOOL ComputeACMatrix(SHELEM *mesh);

@@ -51,10 +51,8 @@ public:
     void LoadFile(char *fName=NULL);
 	void InsertGeometry(BOOL newStr,char *fName=NULL);
 	void SaveFile();
-    void SaveFileAs();
     
 	void ImportDesorption_DES();
-	void ExportTextures(int grouping,int mode);
 	void ExportProfiles();
     void ClearFacetParams();
 	void ResetSimulation(BOOL askConfirm=TRUE);
@@ -102,7 +100,8 @@ public:
     GLLabel       *facetSLabel;
 	
     
-
+	GLLabel       *facetTempLabel;
+	GLTextField   *facetTemperature;
     GLLabel       *facetDLabel;
     GLLabel       *facetReLabel;
     GLToggle       *facetFILabel;

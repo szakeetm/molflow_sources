@@ -109,7 +109,7 @@ public:
   //Facet methods
 
   void  ConvertOldDesorbType();
-  BOOL  IsLinkFacet();
+  BOOL  IsTXTLinkFacet();
   void  LoadTXT(FileReader *file);
   void  SaveTXT(FileWriter *file);
   void  LoadGEO(FileReader *file,int version,int nbVertex);

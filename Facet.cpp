@@ -25,14 +25,12 @@
 #include "Facet.h"
 #include "Utils.h"
 #include <malloc.h>
-
 #include <string.h>
 #include <math.h>
 #include "GLApp/GLToolkit.h"
 #include <sstream>
-
+#include "PugiXML\pugixml.hpp"
 using namespace pugi;
-
 #define MAX(x,y) (((x)<(y))?(y):(x))
 #define MIN(x,y) (((x)<(y))?(x):(y))
 
@@ -216,12 +214,6 @@ void Facet::ResizeCounter(size_t nbMoments) {
 }
 */
 
-
-BOOL Facet::IsLinkFacet() {
-	return ((sh.opacity == 0.0) && (sh.sticking >= 1.0));
-}
-
-// -----------------------------------------------------------
 
 void Facet::LoadGEO(FileReader *file, int version, int nbVertex) {
 
@@ -607,7 +599,7 @@ void Facet::LoadTXT(FileReader *file) {
 	if (counterCache.hit.nbDesorbed == 0)
 		sh.desorbType = DES_NONE;
 
-	if (IsLinkFacet()) {
+	if (IsTXTLinkFacet()) {
 		sh.superDest = (int)(sh.sticking + 0.5);
 		sh.sticking = 0;
 	}
@@ -615,15 +607,6 @@ void Facet::LoadTXT(FileReader *file) {
 	UpdateFlags();
 
 }
-
-
-
-
-
-
-
-
-
 
 
 void Facet::SaveTXT(FileWriter *file) {

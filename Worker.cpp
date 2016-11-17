@@ -49,8 +49,6 @@ GNU General Public License for more details.
 */
 using namespace pugi;
 
-
-
 #ifdef MOLFLOW
 extern MolFlow *mApp;
 #endif
@@ -61,7 +59,8 @@ extern SynRad*mApp;
 
 
 Worker::Worker() {
-	//test
+	
+	//Molflow specific
 	temperatures = std::vector<double>();
 	moments = std::vector<double>();
 	desorptionParameterIDs = std::vector<size_t>();
@@ -71,22 +70,18 @@ Worker::Worker() {
 	parameters = std::vector<Parameter>();
 	needsReload = TRUE;  //When main and subprocess have different geometries, needs to reload (synchronize)
 	displayedMoment = 0; //By default, steady-state is displayed
-
-	//desorptionStartTime=0.0;
-	//desorptionStopTime=1;
 	timeWindowSize = 0.1;
 	useMaxwellDistribution = TRUE;
 	calcConstantFlow = TRUE;
-	//valveOpenMoment=99999.0;
 	distTraveledTotal_total = 0.0;
 	distTraveledTotal_fullHitsOnly = 0.0;
 	gasMass = 28.0;
 	enableDecay = FALSE;
 	halfLife = 1;
 	finalOutgassingRate = finalOutgassingRate_Pa_m3_sec = totalDesorbedMolecules = 0.0;
-
 	motionType = 0;
 
+	//Common init
 	pid = _getpid();
 	sprintf(ctrlDpName, "MFLWCTRL%d", pid);
 	sprintf(loadDpName, "MFLWLOAD%d", pid);
@@ -95,11 +90,8 @@ Worker::Worker() {
 	nbProcess = 0;
 	maxDesorption = 0;
 
-
-
 	ResetWorkerStats();
 	geom = new Geometry();
-
 
 	dpControl = NULL;
 	dpHit = NULL;
@@ -114,12 +106,8 @@ Worker::Worker() {
 	running = FALSE;
 	calcAC = FALSE;
 	strcpy(fullFileName, "");
-	//Debug memory check
-	//_ASSERTE (!_CrtDumpMemoryLeaks());
+	
 	_ASSERTE(_CrtCheckMemory());
-
-
-
 }
 
 void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL saveSelected, BOOL autoSave, BOOL crashSave) {

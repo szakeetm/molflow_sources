@@ -126,7 +126,7 @@ public:
 
 	// Geometry
 	//BOOL     AskToReset_Geom(Worker *work);
-	BOOL     IsInFacet(int facet, const double &u, const double &v);
+	//BOOL     IsInFacet(int facet, const double &u, const double &v);
 	void     SetFacetTexture(int facet, double ratio, BOOL corrMap);
 	void     BuildPipe(double L, double R, double s, int step);
 	void     BuildFacetList(Facet *f);
