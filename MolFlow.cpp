@@ -48,6 +48,7 @@ static const char *fileInsFilters = "All insertable geometries\0*.txt;*.xml;*.zi
 const char *fileSFilters = "MolFlow saveable files\0*.xml;*.zip;*.geo;*.geo7z;*.txt\0All files\0*.*\0";
 static const char *fileDesFilters = "Desorption files\0*.des\0All files\0*.*\0";
 
+int cSize = 4;
 int   cWidth[] = { 30, 56, 50, 50 };
 char *cName[] = { "#", "Hits", "Des", "Abs" };
 
@@ -63,8 +64,8 @@ float m_fTime;
 MolFlow *mApp;
 
 //Menu elements, Molflow specific:
-#define MENU_FILE_IMPORTDES_DES 120
-#define MENU_FILE_IMPORTDES_SYN 121
+#define MENU_FILE_IMPORTDES_DES 140
+#define MENU_FILE_IMPORTDES_SYN 141
 
 
 #define MENU_FILE_EXPORTTEXTURE_AREA 151
@@ -77,28 +78,28 @@ MolFlow *mApp;
 #define MENU_FILE_EXPORTTEXTURE_V_VECTOR 158
 #define MENU_FILE_EXPORTTEXTURE_N_VECTORS 159
 
-#define MENU_FILE_EXPORTTEXTURE_AREA_COORD 1510
-#define MENU_FILE_EXPORTTEXTURE_MCHITS_COORD  1520
-#define MENU_FILE_EXPORTTEXTURE_IMPINGEMENT_COORD  1530
-#define MENU_FILE_EXPORTTEXTURE_PART_DENSITY_COORD  1540
-#define MENU_FILE_EXPORTTEXTURE_GAS_DENSITY_COORD  1550
-#define MENU_FILE_EXPORTTEXTURE_PRESSURE_COORD  1560
-#define MENU_FILE_EXPORTTEXTURE_AVG_V_COORD  1570
-#define MENU_FILE_EXPORTTEXTURE_V_VECTOR_COORD  1580
-#define MENU_FILE_EXPORTTEXTURE_N_VECTORS_COORD  1590
+#define MENU_FILE_EXPORTTEXTURE_AREA_COORD 171
+#define MENU_FILE_EXPORTTEXTURE_MCHITS_COORD  172
+#define MENU_FILE_EXPORTTEXTURE_IMPINGEMENT_COORD  173
+#define MENU_FILE_EXPORTTEXTURE_PART_DENSITY_COORD  174
+#define MENU_FILE_EXPORTTEXTURE_GAS_DENSITY_COORD  175
+#define MENU_FILE_EXPORTTEXTURE_PRESSURE_COORD  176
+#define MENU_FILE_EXPORTTEXTURE_AVG_V_COORD  177
+#define MENU_FILE_EXPORTTEXTURE_V_VECTOR_COORD  178
+#define MENU_FILE_EXPORTTEXTURE_N_VECTORS_COORD  179
 
 
-#define MENU_EDIT_MOVINGPARTS 26
+#define MENU_TOOLS_MOVINGPARTS 402
 
-#define MENU_FACET_MESH        306
-#define MENU_SELECT_HASDESFILE 313
-#define MENU_FACET_OUTGASSINGMAP 335
+#define MENU_FACET_MESH        360
+#define MENU_SELECT_HASDESFILE 361
+#define MENU_FACET_OUTGASSINGMAP 362
 
-#define MENU_TIME_SETTINGS          50
-#define MENU_TIMEWISE_PLOTTER       51
-#define MENU_TIME_PRESSUREEVOLUTION 52
-#define MENU_TIME_MOMENTS_EDITOR    53
-#define MENU_TIME_PARAMETER_EDITOR  54
+#define MENU_TIME_SETTINGS          900
+#define MENU_TIMEWISE_PLOTTER       901
+#define MENU_TIME_PRESSUREEVOLUTION 902
+#define MENU_TIME_MOMENTS_EDITOR    903
+#define MENU_TIME_PARAMETER_EDITOR  904
 
 
 //-----------------------------------------------------------------------------
@@ -219,7 +220,7 @@ int MolFlow::OneTimeSceneInit()
 	menu->GetSubMenu("Selection")->Add("Select volatile facets", MENU_FACET_SELECTVOL);
 
 	menu->GetSubMenu("Tools")->Add(NULL);
-	menu->GetSubMenu("Tools")->Add("Moving parts...", MENU_EDIT_MOVINGPARTS);
+	menu->GetSubMenu("Tools")->Add("Moving parts...", MENU_TOOLS_MOVINGPARTS);
 	menu->GetSubMenu("Facet")->Add("Convert to outgassing map...", MENU_FACET_OUTGASSINGMAP);
 
 	menu->Add("Time");
@@ -965,7 +966,7 @@ void MolFlow::UpdateFacetParams(BOOL updateSelection) { //Calls facetMesh->Refre
 
 	if (facetDetails) facetDetails->Update();
 	if (facetCoordinates) facetCoordinates->UpdateFromSelection();
-	if (texturePlotter) texturePlotter->Update(m_fTime, TRUE);
+	if (texturePlotter) texturePlotter->Update(m_fTime, TRUE); //Facet change
 	if (outgassingMap) outgassingMap->Update(m_fTime, TRUE);
 }
 
@@ -1011,75 +1012,7 @@ worker.ReleaseHits();
 }
 */
 
-// ----------------------------------------------------------------------------
-void MolFlow::ResetAutoSaveTimer() {
-	if (autoSaveSimuOnly) lastSaveTimeSimu = worker.simuTime + (m_fTime - worker.startTime);
-	else lastSaveTime = m_fTime;
-}
 
-//-----------------------------------------------------------------------------
-BOOL MolFlow::AutoSave(BOOL crashSave) {
-	if (!changedSinceSave) return TRUE;
-	GLProgress *progressDlg2 = new GLProgress("Peforming autosave...", "Please wait");
-	progressDlg2->SetProgress(0.0);
-	progressDlg2->SetVisible(TRUE);
-	//GLWindowManager::Repaint();
-	char CWD[MAX_PATH];
-	_getcwd(CWD, MAX_PATH);
-
-	std::string shortFn(worker.GetShortFileName());
-	std::string newAutosaveFilename = "Molflow_Autosave";
-	if (shortFn != "") newAutosaveFilename += "(" + shortFn + ")";
-	newAutosaveFilename += ".zip";
-	char fn[1024];
-	strcpy(fn, newAutosaveFilename.c_str());
-	try {
-		worker.SaveGeometry(fn, progressDlg2, FALSE, FALSE, TRUE, crashSave);
-		//Success:
-		if (autosaveFilename != "" && autosaveFilename != newAutosaveFilename) remove(autosaveFilename.c_str());
-		autosaveFilename = newAutosaveFilename;
-		ResetAutoSaveTimer(); //deduct saving time from interval
-	}
-	catch (Error &e) {
-		//delete fn;
-		char errMsg[512];
-		sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), fn);
-		GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
-		progressDlg2->SetVisible(FALSE);
-		SAFE_DELETE(progressDlg2);
-		ResetAutoSaveTimer();
-		return FALSE;
-	}
-	//lastSaveTime=(worker.simuTime+(m_fTime-worker.startTime));
-	progressDlg2->SetVisible(FALSE);
-	SAFE_DELETE(progressDlg2);
-	return TRUE;
-}
-
-//-------------------------------------------------------------------------------
-void MolFlow::CheckForRecovery() {
-	// Check for autosave files in current dir.
-	intptr_t file;
-	_finddata_t filedata;
-	file = _findfirst("Molflow_Autosave*.zip", &filedata);
-	if (file != -1)
-	{
-		do
-		{
-			std::ostringstream msg;
-			msg << "Autosave file found:\n" << filedata.name << "\n";
-			int rep = RecoveryDialog::Display(msg.str().c_str(), "Autosave recovery", GLDLG_LOAD | GLDLG_SKIP, GLDLG_DELETE);
-			if (rep == GLDLG_LOAD) {
-				LoadFile(filedata.name);
-				RemoveRecent(filedata.name);
-			}
-			else if (rep == GLDLG_CANCEL) return;
-			else if (rep == GLDLG_SKIP) continue;
-			else if (rep == GLDLG_DELETE) remove(filedata.name);
-		} while (_findnext(file, &filedata) == 0);
-	}
-	_findclose(file);
-}
 
 
 //-----------------------------------------------------------------------------
@@ -1089,242 +1022,36 @@ void MolFlow::CheckForRecovery() {
 //-----------------------------------------------------------------------------
 int MolFlow::FrameMove()
 {
+	Interface::FrameMove();
 	char tmp[256];
-	Geometry *geom = worker.GetGeometry();
-
-	//Autosave routines
-	BOOL timeForAutoSave = FALSE;
-	if (geom->IsLoaded()) {
-		if (autoSaveSimuOnly) {
-			if (worker.running) {
-				if (((worker.simuTime + (m_fTime - worker.startTime)) - lastSaveTimeSimu) >= (float)autoSaveFrequency*60.0f) {
-					timeForAutoSave = TRUE;
-				}
-			}
-		}
-		else {
-			if ((m_fTime - lastSaveTime) >= (float)autoSaveFrequency*60.0f) {
-				timeForAutoSave = TRUE;
-			}
-		}
-	}
-
 	if (globalSettings) globalSettings->SMPUpdate(m_fTime);
-
-	if (worker.running) {
-		if (frameMoveRequested || autoFrameMove && (m_fTime - lastUpdate >= 1.0f)) {
-			forceFrameMoveButton->SetEnabled(FALSE);
-			forceFrameMoveButton->SetText("Updating...");
-			//forceFrameMoveButton->Paint();
-			GLWindowManager::Repaint();
-			frameMoveRequested = FALSE;
-
-			// Update hits
-			try {
-				worker.Update(m_fTime);
-			}
-			catch (Error &e) {
-				GLMessageBox::Display((char *)e.GetMsg(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
-			}
-			// Simulation monitoring
-			if (profilePlotter) profilePlotter->Update(m_fTime);
-			if (pressureEvolution) pressureEvolution->Update(m_fTime);
-			if (timewisePlotter) timewisePlotter->Update(m_fTime);
-			if (texturePlotter) texturePlotter->Update(m_fTime);
-			//if(facetDetails) facetDetails->Update();
-			if (textureSettings) textureSettings->Update();
-			// Facet parameters and hits
-
-
-			// Formulas
-			if (autoUpdateFormulas) UpdateFormula();
-
-			//lastUpdate = GetTick(); //changed from m_fTime: include update duration
-			lastUpdate = m_fTime;
-
-			// Update timing measurements
-			if (worker.nbHit != lastNbHit || worker.nbDesorption != lastNbDes) {
-				double dTime = (double)(m_fTime - lastMeasTime);
-				hps = (double)(worker.nbHit - lastNbHit) / dTime;
-				dps = (double)(worker.nbDesorption - lastNbDes) / dTime;
-				if (lastHps != 0.0) {
-					hps = 0.2*(hps)+0.8*lastHps;
-					dps = 0.2*(dps)+0.8*lastDps;
-				}
-				lastHps = hps;
-				lastDps = dps;
-				lastNbHit = worker.nbHit;
-				lastNbDes = worker.nbDesorption;
-				lastMeasTime = m_fTime;
-			}
-
-		}
-		if (worker.calcAC) {
-			sprintf(tmp, "Calc AC: %s (%zd %%)", FormatTime(worker.simuTime + (m_fTime - worker.startTime)),
-				worker.calcACprg);
-		}
-		else {
-			sprintf(tmp, "Running: %s", FormatTime(worker.simuTime + (m_fTime - worker.startTime)));
-		}
-		sTime->SetText(tmp);
-
-		forceFrameMoveButton->SetEnabled(!autoFrameMove);
-		forceFrameMoveButton->SetText("Update");
-	}
-	else {
-		if (worker.simuTime > 0.0) {
-			hps = (double)(worker.nbHit - nbHitStart) / worker.simuTime;
-			dps = (double)(worker.nbDesorption - nbDesStart) / worker.simuTime;
-		}
-		else {
-			hps = 0.0;
-			dps = 0.0;
-		}
-		sprintf(tmp, "Stopped: %s", FormatTime(worker.simuTime));
-		sTime->SetText(tmp);
-	}
-
-	if (viewer[0]->SelectionChanged() ||
-		viewer[1]->SelectionChanged() ||
-		viewer[2]->SelectionChanged() ||
-		viewer[3]->SelectionChanged()) {
-		UpdateFacetParams(TRUE);
-	}
-	UpdateFacetHits();
-
-	//Autosave
-	if (timeForAutoSave) AutoSave();
+	if (worker.running)
+		if (textureSettings) textureSettings->Update();
 
 	if ((m_fTime - worker.startTime <= 2.0f) && worker.running) {
 		hitNumber->SetText("Starting...");
 		desNumber->SetText("Starting...");
-
 	}
 	else {
-
-		if (worker.mode != AC_MODE) {
-			sprintf(tmp, "%s (%s)", FormatInt(worker.nbHit, "hit"), FormatPS(hps, "hit"));
-			hitNumber->SetText(tmp);
+		if (worker.mode == AC_MODE) {
+			hitNumber->SetText("");
 		}
 		else {
-			hitNumber->SetText("");
+			sprintf(tmp, "%s (%s)", FormatInt(worker.nbHit, "hit"), FormatPS(hps, "hit"));
+			hitNumber->SetText(tmp);
 		}
 		sprintf(tmp, "%s (%s)", FormatInt(worker.nbDesorption, "des"), FormatPS(dps, "des"));
 		desNumber->SetText(tmp);
 	}
 
-
-	if (worker.nbLeakTotal) {
-		sprintf(tmp, "%g (%.4f%%)", (double)worker.nbLeakTotal, (double)(worker.nbLeakTotal)*100.0 / (double)worker.nbDesorption);
-		leakNumber->SetText(tmp);
+	if (worker.calcAC) {
+		sprintf(tmp, "Calc AC: %s (%zd %%)", FormatTime(worker.simuTime + (m_fTime - worker.startTime)),
+			worker.calcACprg);
 	}
 	else {
-		leakNumber->SetText("None");
+		sprintf(tmp, "Running: %s", FormatTime(worker.simuTime + (m_fTime - worker.startTime)));
 	}
-
-	resetSimu->SetEnabled(!worker.running&&worker.nbDesorption > 0);
-
-	if (worker.running) {
-		startSimu->SetText("Pause");
-		//startSimu->SetFontColor(255, 204, 0);
-	}
-	else if (worker.nbHit > 0) {
-		startSimu->SetText("Resume");
-		//startSimu->SetFontColor(0, 140, 0);
-	}
-	else {
-		startSimu->SetText("Begin");
-		//startSimu->SetFontColor(0, 140, 0);
-	}
-
-	// Sleep a bit to avoid unwanted CPU load
-	if (viewer[0]->IsDragging() ||
-		viewer[1]->IsDragging() ||
-		viewer[2]->IsDragging() ||
-		viewer[3]->IsDragging() || !worker.running)
-		SDL_Delay(32);
-	else
-		SDL_Delay(60);
-
 	return GL_OK;
-}
-
-// ----------------------------------------------------------------
-
-void MolFlow::UpdateFacetHits(BOOL allRows) {
-	char tmp[256];
-	Geometry *geom = worker.GetGeometry();
-
-	try {
-		// Facet list
-		if (geom->IsLoaded()) {
-
-			int sR, eR;
-			if (allRows)
-			{
-				sR = 0;
-				eR = facetList->GetNbRow() - 1;
-			}
-			else
-			{
-				facetList->GetVisibleRows(&sR, &eR);
-			}
-
-
-			if (worker.displayedMoment == 0) {
-				int colors[] = { COLOR_BLACK, COLOR_BLACK, COLOR_BLACK, COLOR_BLACK };
-				facetList->SetColumnColors(colors);
-			}
-			else
-			{
-				int colors[] = { COLOR_BLACK, COLOR_BLUE, COLOR_BLUE, COLOR_BLUE };
-				facetList->SetColumnColors(colors);
-			}
-
-
-			for (int i = sR; i <= eR; i++) {
-				int facetId = facetList->GetValueInt(i, 0) - 1;
-				if (facetId == -2) facetId = i;
-				if (i >= geom->GetNbFacet()) {
-					char errMsg[512];
-					sprintf(errMsg, "Molflow::UpdateFacetHits()\nError while updating facet hits. Was looking for facet #%d in list.\nMolflow will now autosave and crash.", i + 1);
-					GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
-					AutoSave();
-				}
-				Facet *f = geom->GetFacet(facetId);
-				sprintf(tmp, "%d", facetId + 1);
-				facetList->SetValueAt(0, i, tmp);
-				switch (modeCombo->GetSelectedIndex()) {
-				case MC_MODE:
-					facetList->SetColumnLabel(1, "Hits");
-					sprintf(tmp, "%I64d", f->counterCache.hit.nbHit);
-					facetList->SetValueAt(1, i, tmp);
-					sprintf(tmp, "%I64d", f->counterCache.hit.nbDesorbed);
-					facetList->SetValueAt(2, i, tmp);
-					sprintf(tmp, "%I64d", f->counterCache.hit.nbAbsorbed);
-					facetList->SetValueAt(3, i, tmp);
-					break;
-				case AC_MODE:
-					facetList->SetColumnLabel(1, "Density");
-					sprintf(tmp, "%g", f->counterCache.density.value);
-					facetList->SetValueAt(1, i, tmp);
-
-					sprintf(tmp, "%g", f->counterCache.density.desorbed);
-					facetList->SetValueAt(2, i, tmp);
-					sprintf(tmp, "%g", f->counterCache.density.absorbed);
-					facetList->SetValueAt(3, i, tmp);
-					break;
-				}
-			}
-
-		}
-	}
-	catch (Error &e) {
-		char errMsg[512];
-		sprintf(errMsg, "%s\nError while updating facet hits", e.GetMsg());
-		GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
-	}
-
 }
 
 
@@ -1556,17 +1283,14 @@ void MolFlow::LoadFile(char *fName) {
 		SelectViewer(0);
 
 		ResetAutoSaveTimer();
-		if (profilePlotter) profilePlotter->Refresh();
-		if (pressureEvolution) pressureEvolution->Refresh();
+		UpdatePlotters();		
 		if (textureSettings) textureSettings->Update();
-		if (texturePlotter) texturePlotter->Update(m_fTime, TRUE);
 		if (outgassingMap) outgassingMap->Update(m_fTime, TRUE);
 		if (facetDetails) facetDetails->Update();
 		if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 		if (vertexCoordinates) vertexCoordinates->Update();
 		if (movement) movement->Update();
 		if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
-		if (timewisePlotter) timewisePlotter->Refresh();
 		if (timeSettings) mApp->timeSettings->RefreshMoments();
 		if (momentsEditor) mApp->momentsEditor->Refresh();
 		if (parameterEditor) mApp->parameterEditor->UpdateCombo();
@@ -1671,11 +1395,8 @@ void MolFlow::InsertGeometry(BOOL newStr, char *fName) {
 		viewer[3]->ToFrontView();
 		SelectViewer(0);
 		*/
-		if (profilePlotter) profilePlotter->Refresh();
-
-		if (pressureEvolution) pressureEvolution->Refresh();
-		if (timewisePlotter) timewisePlotter->Refresh();
-		if (texturePlotter) texturePlotter->Update(m_fTime, TRUE);
+		
+		UpdatePlotters();
 		if (outgassingMap) outgassingMap->Update(m_fTime, TRUE);
 		if (facetDetails) facetDetails->Update();
 		if (facetCoordinates) facetCoordinates->UpdateFromSelection();
@@ -1715,10 +1436,7 @@ void MolFlow::StartStopSimulation() {
 	}
 
 	worker.StartStop(m_fTime, modeCombo->GetSelectedIndex());
-	if (profilePlotter) profilePlotter->Update(m_fTime, TRUE);
-	if (pressureEvolution) pressureEvolution->Update(m_fTime, TRUE);
-	if (timewisePlotter) timewisePlotter->Update(m_fTime, TRUE);
-	if (texturePlotter) texturePlotter->Update(m_fTime, TRUE);
+	UpdatePlotters();
 	if (autoUpdateFormulas) UpdateFormula();
 
 	// Frame rate measurement
@@ -1733,24 +1451,7 @@ void MolFlow::StartStopSimulation() {
 
 }
 
-void MolFlow::DoEvents(BOOL forced)
-{
-	static float lastExec = 0;
-	int time = SDL_GetTicks();
-	if (forced || (time - lastExec > 333)) { //Don't check for inputs more than 3 times a second
-		SDL_Event sdlEvent;
-		SDL_PollEvent(&sdlEvent);
-		mApp->UpdateEventCount(&sdlEvent);
-		/*if (GLWindowManager::ManageEvent(&sdlEvent)) {
-			// Relay to GLApp EventProc
-			mApp->EventProc(&sdlEvent);
-		}*/
-		GLWindowManager::ManageEvent(&sdlEvent);
-		GLWindowManager::Repaint();
-		GLToolkit::CheckGLErrors("GLApplication::Paint()");
-		lastExec = time;
-	}
-}
+
 
 //-----------------------------------------------------------------------------
 // Name: EventProc()
@@ -1828,7 +1529,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			break;
 
 
-		case MENU_EDIT_MOVINGPARTS:
+		case MENU_TOOLS_MOVINGPARTS:
 			if (!movement) movement = new Movement(geom, &worker);
 			movement->Update();
 			movement->SetVisible(TRUE);
@@ -2213,29 +1914,6 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 	}
 }
 
-// ---------------------------------------------------------------------------
-BOOL MolFlow::AskToReset(Worker *work) {
-	if (work == NULL) work = &worker;
-	if (work->nbHit > 0) {
-		int rep = GLMessageBox::Display("This will reset simulation data.", "Geometry change", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING);
-		if (rep == GLDLG_OK) {
-			work->ResetStatsAndHits(m_fTime);
-			nbDesStart = 0;
-			nbHitStart = 0;
-
-			//resetSimu->SetEnabled(FALSE);
-			if (mApp->profilePlotter) mApp->profilePlotter->Update(m_fTime, TRUE);
-
-			if (mApp->pressureEvolution) mApp->pressureEvolution->Update(m_fTime, TRUE);
-			if (mApp->timewisePlotter) mApp->timewisePlotter->Update(m_fTime, TRUE);
-			if (mApp->texturePlotter) mApp->texturePlotter->Update(m_fTime, TRUE);
-			return TRUE;
-		}
-		else return FALSE;
-	}
-	else return TRUE;
-}
-
 
 void MolFlow::BuildPipe(double ratio, int steps) {
 
@@ -2304,14 +1982,12 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 		return;
 	}
 
+	UpdatePlotters();
+
 	if (timeSettings) mApp->timeSettings->RefreshMoments();
 	if (momentsEditor) mApp->momentsEditor->Refresh();
 	if (parameterEditor) mApp->parameterEditor->UpdateCombo();
-	if (timewisePlotter) mApp->timewisePlotter->refreshViews();
-	if (profilePlotter) profilePlotter->Refresh();
-	if (pressureEvolution) pressureEvolution->Refresh();
 	if (textureSettings) textureSettings->Update();
-	if (texturePlotter) texturePlotter->Update(m_fTime, TRUE);
 	if (outgassingMap) outgassingMap->Update(m_fTime, TRUE);
 	if (facetDetails) facetDetails->Update();
 	if (facetCoordinates) facetCoordinates->UpdateFromSelection();
@@ -2805,10 +2481,85 @@ BOOL MolFlow::EvaluateVariable(VLIST *v, Worker *w, Geometry *geom) {
 	return ok;
 }
 
-void MolFlow::ResetSimulation(BOOL askConfirm) {
-	Interface::ResetSimulation(askConfirm);
+void MolFlow::UpdatePlotters() {
 	if (pressureEvolution) pressureEvolution->Update(m_fTime, TRUE);
 	if (timewisePlotter) timewisePlotter->Update(m_fTime, TRUE);
 	if (profilePlotter) profilePlotter->Update(m_fTime, TRUE);
 	if (texturePlotter) texturePlotter->Update(m_fTime, TRUE);
+}
+
+void MolFlow::UpdateFacetHits(BOOL allRows) {
+	char tmp[256];
+	Geometry *geom = worker.GetGeometry();
+
+	try {
+		// Facet list
+		if (geom->IsLoaded()) {
+
+			int sR, eR;
+			if (allRows)
+			{
+				sR = 0;
+				eR = facetList->GetNbRow() - 1;
+			}
+			else
+			{
+				facetList->GetVisibleRows(&sR, &eR);
+			}
+
+
+			if (worker.displayedMoment == 0) {
+				int colors[] = { COLOR_BLACK, COLOR_BLACK, COLOR_BLACK, COLOR_BLACK };
+				facetList->SetColumnColors(colors);
+			}
+			else
+			{
+				int colors[] = { COLOR_BLACK, COLOR_BLUE, COLOR_BLUE, COLOR_BLUE };
+				facetList->SetColumnColors(colors);
+			}
+
+
+			for (int i = sR; i <= eR; i++) {
+				int facetId = facetList->GetValueInt(i, 0) - 1;
+				if (facetId == -2) facetId = i;
+				if (i >= geom->GetNbFacet()) {
+					char errMsg[512];
+					sprintf(errMsg, "Molflow::UpdateFacetHits()\nError while updating facet hits. Was looking for facet #%d in list.\nMolflow will now autosave and crash.", i + 1);
+					GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
+					AutoSave();
+				}
+				Facet *f = geom->GetFacet(facetId);
+				sprintf(tmp, "%d", facetId + 1);
+				facetList->SetValueAt(0, i, tmp);
+				switch (modeCombo->GetSelectedIndex()) {
+				case MC_MODE:
+					facetList->SetColumnLabel(1, "Hits");
+					sprintf(tmp, "%I64d", f->counterCache.hit.nbHit);
+					facetList->SetValueAt(1, i, tmp);
+					sprintf(tmp, "%I64d", f->counterCache.hit.nbDesorbed);
+					facetList->SetValueAt(2, i, tmp);
+					sprintf(tmp, "%I64d", f->counterCache.hit.nbAbsorbed);
+					facetList->SetValueAt(3, i, tmp);
+					break;
+				case AC_MODE:
+					facetList->SetColumnLabel(1, "Density");
+					sprintf(tmp, "%g", f->counterCache.density.value);
+					facetList->SetValueAt(1, i, tmp);
+
+					sprintf(tmp, "%g", f->counterCache.density.desorbed);
+					facetList->SetValueAt(2, i, tmp);
+					sprintf(tmp, "%g", f->counterCache.density.absorbed);
+					facetList->SetValueAt(3, i, tmp);
+					break;
+				}
+			}
+
+		}
+	}
+	catch (Error &e) {
+		char errMsg[512];
+		sprintf(errMsg, "%s\nError while updating facet hits", e.GetMsg());
+		GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
+	}
+
 }

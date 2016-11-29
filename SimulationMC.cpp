@@ -263,9 +263,9 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 						for (y = 0; y < f->sh.texHeight; y++) {
 							for (x = 0; x < f->sh.texWidth; x++) {
 								int add = x + y*f->sh.texWidth;
-								shDir[add].sumDir.x += f->direction[m][add].sumDir.x;
-								shDir[add].sumDir.y += f->direction[m][add].sumDir.y;
-								shDir[add].sumDir.z += f->direction[m][add].sumDir.z;
+								shDir[add].dir.x += f->direction[m][add].dir.x;
+								shDir[add].dir.y += f->direction[m][add].dir.y;
+								shDir[add].dir.z += f->direction[m][add].dir.z;
 								//shDir[add].sumSpeed += f->direction[m][add].sumSpeed;
 								shDir[add].count += f->direction[m][add].count;
 							}
@@ -341,8 +341,8 @@ void PerformTeleport(FACET *iFacet) {
 	}
 	// Count this hit as a transparent pass
 	RecordHit(HIT_TELEPORT);
-	if (iFacet->hits && iFacet->sh.countTrans) AHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 2.0);
-	if (iFacet->direction && iFacet->sh.countDirection) DHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle);
+	if (iFacet->hits && iFacet->sh.countTrans) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 2.0);
+	if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 2.0);
 
 	// Relaunch particle from new facet
@@ -664,8 +664,8 @@ BOOL StartFromSource() {
 	IncreaseFacetCounter(src, sHandle->flightTimeCurrentParticle, 0,1,0,2.0 / ortVelocity, (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity);
 	//Desorption doesn't contribute to angular profiles
 	ProfileFacet(src, sHandle->flightTimeCurrentParticle, FALSE, 2.0, 1.0); //was 2.0, 1.0
-	if (src->hits && src->sh.countDes) AHIT_FACET(src, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0); //was 2.0, 1.0
-	//if (src->direction && src->sh.countDirection) DHIT_FACET(src, sHandle->flightTimeCurrentParticle);
+	if (src->hits && src->sh.countDes) RecordHitOnTexture(src, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0); //was 2.0, 1.0
+	//if (src->direction && src->sh.countDirection) RecordDirectionVector(src, sHandle->flightTimeCurrentParticle);
 
 	// Reset volatile state
 	if (sHandle->hasVolatile) {
@@ -695,8 +695,8 @@ void PerformBounce(FACET *iFacet) {
 		// Count this hit as a transparent pass
 		RecordHit(HIT_TRANS);
 		ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 2.0);
-		if (iFacet->hits && iFacet->sh.countTrans) AHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 2.0);
-		if (iFacet->direction && iFacet->sh.countDirection) DHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle);
+		if (iFacet->hits && iFacet->sh.countTrans) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 2.0);
+		if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
 		return;
 
 	}
@@ -708,8 +708,8 @@ void PerformBounce(FACET *iFacet) {
 			IncreaseFacetCounter(iFacet, sHandle->flightTimeCurrentParticle, 0, 0, 1, 0, 0);
 			iFacet->ready = FALSE;
 			ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0);
-			if (iFacet->hits && iFacet->sh.countAbs) AHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0);
-			if (iFacet->direction && iFacet->sh.countDirection) DHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle);
+			if (iFacet->hits && iFacet->sh.countAbs) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0);
+			if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
 		}
 		return;
 
@@ -734,8 +734,8 @@ void PerformBounce(FACET *iFacet) {
 	iFacet->sh.counter.hit.sum_v_ort += (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
 
 	IncreaseFacetCounter(iFacet, sHandle->flightTimeCurrentParticle, 1, 0, 0, 1.0 / ortVelocity, (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity);
-	if (iFacet->hits && iFacet->sh.countRefl) AHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 1.0, 1.0);
-	if (iFacet->direction && iFacet->sh.countDirection) DHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle);
+	if (iFacet->hits && iFacet->sh.countRefl) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 1.0, 1.0);
+	if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 1.0, 1.0);
 
 	// Relaunch particle
@@ -781,7 +781,7 @@ void PerformBounce(FACET *iFacet) {
 	/*iFacet->sh.counter.hit.sum_1_per_ort_velocity += 1.0 / ortVelocity;
 	iFacet->sh.counter.hit.sum_v_ort += (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
 	IncreaseFacetCounter(iFacet, sHandle->flightTimeCurrentParticle, 0, 0, 0, 1.0 / ortVelocity, (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity);
-	if (iFacet->hits && iFacet->sh.countRefl) AHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle, FALSE, 1.0, 1.0); //count again for outward velocity
+	if (iFacet->hits && iFacet->sh.countRefl) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, FALSE, 1.0, 1.0); //count again for outward velocity
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, FALSE, 1.0, 1.0);
 	//no direction count on outgoing
 
@@ -799,9 +799,9 @@ void PerformTransparentPass(FACET *iFacet) { //disabled, caused finding hits wit
 	iFacet->sh.counter.hit.sum_1_per_ort_velocity += 2.0 / (sHandle->velocityCurrentParticle*directionFactor);
 	iFacet->sh.counter.hit.sum_v_ort += 2.0*(sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*sHandle->velocityCurrentParticle*directionFactor;
 	iFacet->hitted = TRUE;
-	if (iFacet->hits && iFacet->sh.countTrans) AHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle + iFacet->colDist / 100.0 / sHandle->velocityCurrentParticle,
+	if (iFacet->hits && iFacet->sh.countTrans) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle + iFacet->colDist / 100.0 / sHandle->velocityCurrentParticle,
 		TRUE, 2.0, 2.0);
-	if (iFacet->direction && iFacet->sh.countDirection) DHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle + iFacet->colDist / 100.0 / sHandle->velocityCurrentParticle);
+	if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle + iFacet->colDist / 100.0 / sHandle->velocityCurrentParticle);
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle + iFacet->colDist / 100.0 / sHandle->velocityCurrentParticle,
 		TRUE, 2.0, 2.0);
 	RecordHit(HIT_TRANS);
@@ -817,11 +817,11 @@ void PerformAbsorb(FACET *iFacet) {
 		iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z));
 	IncreaseFacetCounter(iFacet, sHandle->flightTimeCurrentParticle, 1, 0, 1, 2.0 / ortVelocity, (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity);
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0); //was 2.0, 1.0
-	if (iFacet->hits && iFacet->sh.countAbs) AHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0); //was 2.0, 1.0
-	if (iFacet->direction && iFacet->sh.countDirection) DHIT_FACET(iFacet, sHandle->flightTimeCurrentParticle);
+	if (iFacet->hits && iFacet->sh.countAbs) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0); //was 2.0, 1.0
+	if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
 }
 
-void AHIT_FACET(FACET *f, double time, BOOL countHit, double velocity_factor, double ortSpeedFactor) {
+void RecordHitOnTexture(FACET *f, double time, BOOL countHit, double velocity_factor, double ortSpeedFactor) {
 
 	int tu = (int)(f->colU * f->sh.texWidthD);
 	int tv = (int)(f->colV * f->sh.texHeightD);
@@ -838,16 +838,16 @@ void AHIT_FACET(FACET *f, double time, BOOL countHit, double velocity_factor, do
 		}
 }
 
-void DHIT_FACET(FACET *f, double time) {
+void RecordDirectionVector(FACET *f, double time) {
 	int tu = (int)(f->colU * f->sh.texWidthD);
 	int tv = (int)(f->colV * f->sh.texHeightD);
 	int add = tu + tv*(f->sh.texWidth);
 
 	for (size_t m = 0; m <= sHandle->moments.size(); m++) {
 		if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
-			f->direction[m][add].sumDir.x += sHandle->pDir.x*sHandle->velocityCurrentParticle;
-			f->direction[m][add].sumDir.y += sHandle->pDir.y*sHandle->velocityCurrentParticle;
-			f->direction[m][add].sumDir.z += sHandle->pDir.z*sHandle->velocityCurrentParticle;
+			f->direction[m][add].dir.x += sHandle->pDir.x*sHandle->velocityCurrentParticle;
+			f->direction[m][add].dir.y += sHandle->pDir.y*sHandle->velocityCurrentParticle;
+			f->direction[m][add].dir.z += sHandle->pDir.z*sHandle->velocityCurrentParticle;
 			f->direction[m][add].count++;
 		}
 	}

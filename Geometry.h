@@ -101,12 +101,11 @@ public:
 
 	// Selection (drawing stuff)
 	void SelectAll();
-	void UnSelectAll();
+	void UnselectAll();
 	void SelectArea(int x1, int y1, int x2, int y2, BOOL clear, BOOL unselect, BOOL vertexBound, BOOL circularSelection);
 	void Select(int x, int y, BOOL clear, BOOL unselect, BOOL vertexBound, int width, int height);
 	void Select(int facet);
 	void Select(Facet *f);
-	void UnselectAll();
 	int  GetNbSelected();
 	void UpdateSelection();
 
@@ -232,7 +231,7 @@ public:
 	void DelStruct(int numToDel);
 	void ScaleSelectedVertices(VERTEX3D invariant, double factor, BOOL copy, Worker *worker);
 	void ScaleSelectedFacets(VERTEX3D invariant, double factorX, double factorY, double factorZ, BOOL copy, Worker *worker);
-	BOOL IntersectingPlaneWithLine(const VERTEX3D &P0, const VERTEX3D &u, const VERTEX3D &V0, const VERTEX3D &n, VERTEX3D *intersectPoint, BOOL withinSection);
+	BOOL IntersectingPlaneWithLine(const VERTEX3D &P0, const VERTEX3D &u, const VERTEX3D &V0, const VERTEX3D &n, VERTEX3D *intersectPoint, BOOL withinSection=FALSE);
 	std::vector<DeletedFacet> BuildIntersection(size_t *nbCreated);
 	std::vector<DeletedFacet> SplitSelectedFacets(const VERTEX3D &base, const VERTEX3D &normal, size_t *nbCreated,/*Worker *worker,*/GLProgress *prg);
 	Facet *MergeFacet(Facet *f1, Facet *f2);

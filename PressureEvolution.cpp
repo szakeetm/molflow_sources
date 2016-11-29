@@ -526,7 +526,7 @@ void PressureEvolution::ProcessMessage(GLComponent *src, int message) {
 		}
 		else if (src == selButton) {
 			int idx = profCombo->GetSelectedIndex();
-			geom->UnSelectAll();
+			geom->UnselectAll();
 			geom->GetFacet(profCombo->GetUserValueAt(idx))->selected = TRUE;
 			geom->UpdateSelection();
 			mApp->UpdateFacetParams(TRUE);

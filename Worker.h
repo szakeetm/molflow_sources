@@ -69,13 +69,6 @@ public:
   void AnalyzeSYNfile(char *fileName, int *nbFacet, int *nbTextured, int *nbDifferent);
   void ImportCSV(FileReader *file, std::vector<std::vector<string>>& table);
 
-  //Import desorption map
-  //void ImportDesorption(char *fileName);
-
-
-  // Save a geometry using the current file name (throws Error)
-  void SaveGeometry(GLProgress *prg);
-
   // Return/Set the current filename
   char *GetFileName();
   char *GetShortFileName();

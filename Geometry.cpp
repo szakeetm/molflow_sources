@@ -709,7 +709,7 @@ void Geometry::InsertSYN(FileReader *file, GLProgress *prg, BOOL newStr) {
 void Geometry::InsertSYNGeom(FileReader *file, size_t *nbVertex, size_t *nbFacet, VERTEX3D **vertices3, Facet ***facets, size_t strIdx, BOOL newStruct) {
 
 
-	UnSelectAll();
+	UnselectAll();
 
 	file->ReadKeyword("version"); file->ReadKeyword(":");
 	int version2;
@@ -2162,9 +2162,9 @@ void Geometry::ExportTextures(FILE *file, int grouping, int mode, Dataport *dpHi
 					case 7: // Velocity vector
 						if (f->sh.countDirection) {
 							sprintf(tmp, "%g,%g,%g",
-								dirs[i + j*w].sumDir.x,
-								dirs[i + j*w].sumDir.y,
-								dirs[i + j*w].sumDir.z);
+								dirs[i + j*w].dir.x,
+								dirs[i + j*w].dir.y,
+								dirs[i + j*w].dir.z);
 						}
 						else {
 							sprintf(tmp, "Direction not recorded");
@@ -2452,40 +2452,13 @@ void Geometry::SaveSuper(Dataport *dpHit, int s) {
 
 }
 
-/*BOOL AskToReset_Geom(Worker *work) {
-
-
-
-
-
-
-if (work->nbHit>0) {
-int rep = GLMessageBox::Display("This will reset simulation data.","Geometry change",GLDLG_OK|GLDLG_CANCEL,GLDLG_ICONWARNING);
-if( rep != GLDLG_OK ) {
-return FALSE;
-
-}
-}
-work->Reset(m_fTime);
-mApp->nbDesStart=0;
-mApp->nbHitStart = 0;
-
-if(mApp->profilePlotter) mApp->profilePlotter->Update(m_fTime,TRUE);
-if(mApp->texturePlotter) mApp->texturePlotter->Update(m_fTime,TRUE);
-return TRUE;
-
-}*/
-
-
-
-
 void Geometry::ImportDesorption_SYN(
 	FileReader *file, const size_t &source, const double &time,
 	const size_t &mode, const double &eta0, const double &alpha, const double &cutoffdose,
 	const std::vector<std::pair<double, double>> &convDistr,
 	GLProgress *prg){
 
-	//UnSelectAll();
+	//UnselectAll();
 	char tmp[512];
 	std::vector<double> xdims, ydims;
 	double no_scans = 1.0;
@@ -2712,7 +2685,7 @@ void Geometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, int *nb
 
 
 
-	UnSelectAll();
+	UnselectAll();
 	//char tmp[512];
 
 	file->ReadKeyword("version"); file->ReadKeyword(":");
@@ -3083,9 +3056,9 @@ BOOL Geometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, S
 				for (int iy = 0; iy < h; iy++) {
 
 					for (int ix = 0; ix < w; ix++) {
-						dirText << dirs[iy*f->sh.texWidth + ix].sumDir.x << ",";
-						dirText << dirs[iy*f->sh.texWidth + ix].sumDir.y << ",";
-						dirText << dirs[iy*f->sh.texWidth + ix].sumDir.z << "\t";
+						dirText << dirs[iy*f->sh.texWidth + ix].dir.x << ",";
+						dirText << dirs[iy*f->sh.texWidth + ix].dir.y << ",";
+						dirText << dirs[iy*f->sh.texWidth + ix].dir.z << "\t";
 						dirCountText << dirs[iy*f->sh.texWidth + ix].count << "\t";
 
 					}
@@ -3335,7 +3308,7 @@ void Geometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progr
 	//Clear();
 	int structId = viewStruct;
 	if (structId == -1) structId = 0;
-	UnSelectAll();
+	UnselectAll();
 
 	xml_node geomNode = loadXML.child("Geometry");
 	//Vertices
@@ -3690,10 +3663,10 @@ BOOL Geometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker
 					for (int ix = 0; ix < f->sh.texWidth; ix++) {
 						std::string component;
 						std::getline(dirText, component, ',');
-						dirs[iy*f->sh.texWidth + ix].sumDir.x = std::stod(component);
+						dirs[iy*f->sh.texWidth + ix].dir.x = std::stod(component);
 						std::getline(dirText, component, ',');
-						dirs[iy*f->sh.texWidth + ix].sumDir.y = std::stod(component);
-						dirText >> dirs[iy*f->sh.texWidth + ix].sumDir.z;
+						dirs[iy*f->sh.texWidth + ix].dir.y = std::stod(component);
+						dirText >> dirs[iy*f->sh.texWidth + ix].dir.z;
 						dirCountText >> dirs[iy*f->sh.texWidth + ix].count;
 					}
 				}

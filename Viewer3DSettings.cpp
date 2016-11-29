@@ -96,15 +96,6 @@ Viewer3DSettings::Viewer3DSettings():GLWindow() {
   dispNumLeaks->SetBounds(100,125,100,18);
   Add(dispNumLeaks);
 
-
-
-
-
-
-
-
-
-
   hiddenEdge = new GLToggle(0,"Show hidden edges (selected facets)");
   hiddenEdge->SetBounds(10,150,50,18);
   Add(hiddenEdge);
@@ -129,11 +120,6 @@ Viewer3DSettings::Viewer3DSettings():GLWindow() {
   dirShowdirToggle = new GLToggle(0,"Show direction");
   dirShowdirToggle->SetBounds(10,280,190,18);
   Add(dirShowdirToggle);
-
-
-
-
-
 
   GLTitledPanel *panel2 = new GLTitledPanel("Direction field");
   panel2->SetBounds(5,305,wD-10,70);
@@ -166,11 +152,6 @@ Viewer3DSettings::Viewer3DSettings():GLWindow() {
   cancelButton->SetBounds(wD-85,hD-43,80,19);
   Add(cancelButton);
 
-
-
-
-
-
   Reposition(wD,hD);
 
   RestoreDeviceObjects();
@@ -178,8 +159,6 @@ Viewer3DSettings::Viewer3DSettings():GLWindow() {
   geom = NULL;
 
 }
-
-// --------------------------------------------------------------------
 
 void Viewer3DSettings :: Reposition(int wD, int hD) {
 	// Position dialog next to Viewer parameters
@@ -225,8 +204,6 @@ void Viewer3DSettings::Refresh(Geometry *s,GeometryViewer *v) {
 
 
 }
-
-// --------------------------------------------------------------------
 
 void Viewer3DSettings::ProcessMessage(GLComponent *src,int message) {
 

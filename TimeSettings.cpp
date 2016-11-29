@@ -142,11 +142,8 @@ void TimeSettings::ProcessMessage(GLComponent *src,int message) {
 	  } catch(Error &e) {
 		  GLMessageBox::Display((char *)e.GetMsg(),"Error (Worker::Update)",GLDLG_OK,GLDLG_ICONERROR);
 	  } 
-		if(mApp->profilePlotter) mApp->profilePlotter->Update(0.0f,TRUE);
-		//if(mApp->pressureEvolution) mApp->pressureEvolution->Update(0.0f,TRUE);
-		if (mApp->facetDetails) mApp->facetDetails->Update();
-		if(mApp->timewisePlotter) mApp->timewisePlotter->UpdateMoment();
-		if(mApp->texturePlotter) mApp->texturePlotter->Update(0.0f,TRUE); 
+	  mApp->UpdatePlotters();
+	  if (mApp->facetDetails) mApp->facetDetails->Update(); 
 		if (mApp->autoUpdateFormulas) mApp->UpdateFormula();
     } else if (src==editButton) {
 		if( mApp->momentsEditor==NULL ) mApp->momentsEditor = new MomentsEditor(work);

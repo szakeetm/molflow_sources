@@ -139,9 +139,9 @@ void Geometry::BuildFacetTextures(BYTE *hits) {
 		if (f->sh.countDirection && f->dirCache) {
 			VHIT *dirs = (VHIT *)((BYTE *)shGHit + (f->sh.hitOffset + facetHitsSize + profSize*(1 + nbMoments) + tSize*(1 + nbMoments) + dSize*mApp->worker.displayedMoment));
 			for (int j = 0; j < nbElem; j++) {
-				f->dirCache[j].sumDir.x = dirs[j].sumDir.x;
-				f->dirCache[j].sumDir.y = dirs[j].sumDir.y;
-				f->dirCache[j].sumDir.z = dirs[j].sumDir.z;
+				f->dirCache[j].dir.x = dirs[j].dir.x;
+				f->dirCache[j].dir.y = dirs[j].dir.y;
+				f->dirCache[j].dir.z = dirs[j].dir.z;
 				//f->dirCache[j].sumSpeed = dirs[j].sumSpeed;
 				f->dirCache[j].count = dirs[j].count;
 			}

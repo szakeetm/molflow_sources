@@ -55,7 +55,7 @@ public:
 	void ImportDesorption_DES();
 	void ExportProfiles();
     void ClearFacetParams();
-	void ResetSimulation(BOOL askConfirm=TRUE);
+	
     void ApplyFacetParams();
 	void UpdateFacetParams(BOOL updateSelection = FALSE);
 	
@@ -67,12 +67,9 @@ public:
 	void PlaceComponents();
     void UpdateFacetHits(BOOL allRows=FALSE);
 	void QuickPipe();
-	BOOL AskToReset(Worker *work=NULL);
 	float GetAppTime();
-	void ResetAutoSaveTimer();
-	BOOL AutoSave(BOOL crashSave=FALSE);
-	void CheckForRecovery();
 	void ClearParameters();
+	void UpdatePlotters();
 
 	//Flow/sticking coeff. conversion
 	void calcFlow();
@@ -143,8 +140,7 @@ public:
     //void BuildPipeStick(double s);
 	
 	void CrashHandler(Error *e);
-	void DoEvents(BOOL forced = FALSE); //Used to catch button presses (check if an abort button was pressed during an operation)
-
+	
 protected:
 
     int  OneTimeSceneInit();
@@ -153,6 +149,4 @@ protected:
     int  FrameMove();
     void ProcessMessage(GLComponent *src,int message);
 	BOOL EvaluateVariable(VLIST *v, Worker * w, Geometry * geom);
-
-	MolFlow* GetMolflow(){ return this; }
 };

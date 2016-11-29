@@ -93,9 +93,9 @@ BOOL Intersect(VERTEX3D *rPos, VERTEX3D *rDir,  // Source ray (rayDir vector mus
 				IncreaseFacetCounter(f, sHandle->flightTimeCurrentParticle + f->colDist / 100.0 / sHandle->velocityCurrentParticle, 1, 0, 0, 2.0 / (sHandle->velocityCurrentParticle*directionFactor), 2.0*(sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*sHandle->velocityCurrentParticle*directionFactor);
 
 				f->hitted = TRUE;
-				if (f->hits && f->sh.countTrans) AHIT_FACET(f, sHandle->flightTimeCurrentParticle + f->colDist / 100.0 / sHandle->velocityCurrentParticle,
+				if (f->hits && f->sh.countTrans) RecordHitOnTexture(f, sHandle->flightTimeCurrentParticle + f->colDist / 100.0 / sHandle->velocityCurrentParticle,
 					TRUE, 2.0, 2.0);
-				if (f->direction && f->sh.countDirection) DHIT_FACET(f, sHandle->flightTimeCurrentParticle + f->colDist / 100.0 / sHandle->velocityCurrentParticle);
+				if (f->direction && f->sh.countDirection) RecordDirectionVector(f, sHandle->flightTimeCurrentParticle + f->colDist / 100.0 / sHandle->velocityCurrentParticle);
 				ProfileFacet(f, sHandle->flightTimeCurrentParticle + f->colDist / 100.0 / sHandle->velocityCurrentParticle,
 					TRUE, 2.0, 2.0);
 			}

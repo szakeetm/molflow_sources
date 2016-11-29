@@ -442,12 +442,12 @@ void TexturePlotter::UpdateTable() {
 				for (int j = 0; j < h; j++) {
 					if (selFacet->dirCache) {
 						sprintf(tmp, "%g,%g,%g",
-							selFacet->dirCache[i + j*w].sumDir.x / (double)selFacet->dirCache[i + j*w].count,
-							selFacet->dirCache[i + j*w].sumDir.y / (double)selFacet->dirCache[i + j*w].count,
-							selFacet->dirCache[i + j*w].sumDir.z / (double)selFacet->dirCache[i + j*w].count);
-						double vsum = (selFacet->dirCache[i + j*w].sumDir.x*selFacet->dirCache[i + j*w].sumDir.x +
-							selFacet->dirCache[i + j*w].sumDir.y*selFacet->dirCache[i + j*w].sumDir.y +
-							selFacet->dirCache[i + j*w].sumDir.z + selFacet->dirCache[i + j*w].sumDir.z);
+							selFacet->dirCache[i + j*w].dir.x / (double)selFacet->dirCache[i + j*w].count,
+							selFacet->dirCache[i + j*w].dir.y / (double)selFacet->dirCache[i + j*w].count,
+							selFacet->dirCache[i + j*w].dir.z / (double)selFacet->dirCache[i + j*w].count);
+						double vsum = (selFacet->dirCache[i + j*w].dir.x*selFacet->dirCache[i + j*w].dir.x +
+							selFacet->dirCache[i + j*w].dir.y*selFacet->dirCache[i + j*w].dir.y +
+							selFacet->dirCache[i + j*w].dir.z + selFacet->dirCache[i + j*w].dir.z);
 						if (vsum > maxValue) {
 							maxValue = vsum;
 							maxX = i; maxY = j;

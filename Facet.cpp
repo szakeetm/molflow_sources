@@ -201,20 +201,6 @@ Facet::~Facet() {
 }
 
 
-/*
-void Facet::ResetCounter() {
-	SHHITS zeroes;memset(&zeroes, 0, sizeof(zeroes)); //A new zero-value vector
-	std::fill(counter.begin(), counter.end(), zeroes); //Initialize each moment with 0 values
-}
-
-void Facet::ResizeCounter(size_t nbMoments) {
-	SHHITS zeroes;memset(&zeroes, 0, sizeof(zeroes)); //A new zero-value vector
-	counter = std::vector<SHHITS>(nbMoments + 1); //Reserve a counter for each moment, plus an extra for const. flow
-	std::fill(counter.begin(), counter.end(), zeroes); //Initialize each moment with 0 values
-}
-*/
-
-
 void Facet::LoadGEO(FileReader *file, int version, int nbVertex) {
 
 	file->ReadKeyword("indices"); file->ReadKeyword(":");

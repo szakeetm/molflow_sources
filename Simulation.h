@@ -239,8 +239,8 @@ typedef struct {
 
 // -- Methods ---------------------------------------------------
 
-void AHIT_FACET(FACET *f, double time, BOOL countHit, double velocity_factor, double ortSpeedFactor);
-void DHIT_FACET(FACET *f, double time);
+void RecordHitOnTexture(FACET *f, double time, BOOL countHit, double velocity_factor, double ortSpeedFactor);
+void RecordDirectionVector(FACET *f, double time);
 void ProfileFacet(FACET *f, double time, BOOL countHit, double velocity_factor, double ortSpeedFactor);
 void InitSimulation();
 void ClearSimulation();

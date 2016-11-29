@@ -32,6 +32,7 @@ GNU General Public License for more details.
 #ifdef SYNRAD
 #include "SynRad.h"
 #endif
+
 #include <direct.h>
 #include "Distributions.h"
 
@@ -114,8 +115,6 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 
 	try {
 		if (needsReload && (!crashSave && !saveSelected)) RealReload();
-
-
 	}
 	catch (Error &e) {
 		char errMsg[512];
@@ -152,11 +151,7 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 	BOOL isXML = _stricmp(ext, "xml") == 0;
 	BOOL isXMLzip = _stricmp(ext, "zip") == 0;
 
-
-
 	if (isTXT || isGEO || isGEO7Z || isSTR || isXML || isXMLzip) {
-
-
 
 		if ((isGEO7Z) && WAIT_TIMEOUT == WaitForSingleObject(mApp->compressProcessHandle, 0)) {
 			GLMessageBox::Display("Compressing a previous save file is in progress. Wait until that finishes"
@@ -190,9 +185,6 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 			sprintf(fileNameWithZIP, "%s.zip", fileNameWithoutExtension);
 		}
 		if (isXMLzip) {
-
-
-
 			sprintf(tmp, "An .xml file of the same name exists. Overwrite that file ?\n%s", fileNameWithZIP);
 			if (!autoSave && FileUtils::Exist(fileNameWithXML)) {
 
@@ -210,7 +202,6 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 				geom->SaveSTR(dpHit, saveSelected);
 			}
 
-
 			else {
 				try {
 					if (isGEO7Z) {
@@ -218,14 +209,8 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 					}
 					else if (!(isXML || isXMLzip))
 
-
-
-
-
-
 						f = new FileWriter(fileName);
 				}
-
 
 				catch (Error &e) {
 					SAFE_DELETE(f);
@@ -274,7 +259,6 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 						}
 					}
 
-
 					prg->SetMessage("Writing xml file...");
 					if (success) {
 						if (!saveDoc.save_file(fileNameWithXML)) throw Error("Error writing XML file."); //successful save
@@ -282,12 +266,6 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 					else {
 						if (!geom_only.save_file(fileNameWithXML)) throw Error("Error writing XML file."); //simu state error
 					}
-
-
-
-
-
-
 
 					if (isXMLzip) {
 						prg->SetProgress(0.75);
@@ -303,20 +281,13 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 							throw Error("Error compressing ZIP file.");
 						}
 						CloseZip(hz);
-
 					}
-
-
-
 				}
 			}
 			/*if (!autoSave && !saveSelected) {
 				strcpy(fullFileName, fileName);
 				remove("Molflow_AutoSave.zip");
 				}*/
-
-
-
 		}
 	}
 	else {
@@ -330,52 +301,16 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 	//File written, compress it if the user wanted to
 	if (ok && isGEO7Z) {
 
-
-
 		if (FileUtils::Exist("compress.exe")) { //compress GEO file to GEO7Z using 7-zip launcher "compress.exe"
 			sprintf(tmp, "compress.exe \"%s\"", fileNameWithGeo);
 			int procId = StartProc(tmp,STARTPROC_BACKGROUND);
 
 			mApp->compressProcessHandle = OpenProcess(PROCESS_ALL_ACCESS, TRUE, procId);
 			fileName = fileNameWithGeo7z;
-
-
-
-
-
-
-
-
-
-
-
 		}
 		else {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 			GLMessageBox::Display("compress.exe (part of Molfow) not found.\n Will save as uncompressed GEO file.", "Compressor not found", GLDLG_OK, GLDLG_ICONERROR);
 			fileName = fileNameWithGeo;
-
-
-
-
-
-
 		}
 	}
 	else if (ok && isGEO) fileName = fileNameWithGeo;
@@ -385,19 +320,12 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 	}
 }
 
-
-
 void Worker::ExportProfiles(char *fileName) {
-
-
-
-
 
 	char tmp[512];
 
 	// Read a file
 	FILE *f = NULL;
-
 
 	char *ext, *dir;
 
@@ -413,9 +341,6 @@ void Worker::ExportProfiles(char *fileName) {
 
 	BOOL ok = TRUE;
 
-
-
-
 	if (FileUtils::Exist(fileName)) {
 		sprintf(tmp, "Overwrite existing file ?\n%s", fileName);
 		ok = (GLMessageBox::Display(tmp, "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK);
@@ -430,10 +355,6 @@ void Worker::ExportProfiles(char *fileName) {
 		}
 		geom->ExportProfiles(f, isTXT, dpHit, this);
 		fclose(f);
-
-
-
-
 	}
 }
 
@@ -448,41 +369,6 @@ void Worker::ExportProfiles(char *fileName) {
 	changedSinceSave=TRUE;
 	Reload();
 	}*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 	if (!insert) {
@@ -1293,7 +1179,6 @@ void Worker::InnerStop(float appTime) {
 	running = FALSE;
 	calcAC = FALSE;
 
-
 }
 
 
@@ -1331,35 +1216,6 @@ void Worker::StartStop(float appTime, int mode) {
 
 	if (running)  {
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 		// Stop
 		InnerStop(appTime);
 		try {
@@ -1385,7 +1241,6 @@ void Worker::StartStop(float appTime, int mode) {
 			this->mode = mode;
 
 			Start();
-
 
 		}
 		catch (Error &e) {

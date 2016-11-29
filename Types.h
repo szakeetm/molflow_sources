@@ -139,7 +139,7 @@ typedef struct {
 
 // Velocity field
 typedef struct {
-	VERTEX3D sumDir;
+	VERTEX3D dir;
 	llong count;
 } VHIT;
 
