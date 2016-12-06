@@ -55,7 +55,7 @@ char *cName[] = { "#", "Hits", "Des", "Abs" };
 #ifdef _DEBUG
 std::string appName = "MolFlow+ development version 64-bit (Compiled " __DATE__ " " __TIME__ ") DEBUG MODE";
 #else
-std::string appName = "Molflow+ 2.6.33 64-bit (" __DATE__ ")";
+std::string appName = "Molflow+ 2.6.34 64-bit (" __DATE__ ")";
 #endif
 
 std::vector<string> formulaPrefixes = { "A","D","H","P","DEN","Z","V","T","AR","a","d","h","ar","," };
@@ -231,8 +231,6 @@ int MolFlow::OneTimeSceneInit()
 	menu->GetSubMenu("Time")->Add("Timewise plotter", MENU_TIMEWISE_PLOTTER);
 	menu->GetSubMenu("Time")->Add("Pressure evolution", MENU_TIME_PRESSUREEVOLUTION);
 
-
-
 	showFilter = new GLToggle(0, "Filtering");
 	//togglePanel->Add(showFilter);
 
@@ -252,8 +250,6 @@ int MolFlow::OneTimeSceneInit()
 
 	textureScalingBtn = new GLButton(0, "Tex.scaling");
 	shortcutPanel->Add(textureScalingBtn);
-
-
 
 	globalSettingsBtn = new GLButton(0, "<< Sim");
 	simuPanel->Add(globalSettingsBtn);
@@ -281,8 +277,6 @@ int MolFlow::OneTimeSceneInit()
 	singleACBtn = new GLButton(0, "1");
 	singleACBtn->SetEnabled(FALSE);
 	//simuPanel->Add(singleACBtn);
-
-
 
 	inputPanel = new GLTitledPanel("Particles in");
 	facetPanel->Add(inputPanel);
@@ -364,7 +358,6 @@ int MolFlow::OneTimeSceneInit()
 	facetList->SetColumnLabelVisible(TRUE);
 	facetList->Sortable = TRUE;
 	Add(facetList);
-
 
 	facetMesh = new FacetMesh(&worker); //To use its UpdatefacetParams() routines
 
@@ -836,7 +829,7 @@ void MolFlow::UpdateFacetParams(BOOL updateSelection) { //Calls facetMesh->Refre
 			stickingE = stickingE && (f0->userSticking.compare(f->userSticking) == 0) && IsEqual(f0->sh.sticking, f->sh.sticking);
 			opacityE = opacityE && (f0->userOpacity.compare(f->userOpacity) == 0) && IsEqual(f0->sh.opacity, f->sh.opacity);
 			temperatureE = temperatureE && IsEqual(f0->sh.temperature, f->sh.temperature);
-			flowE = flowE && f0->userOutgassing.compare(f->userOutgassing) == 0 && IsEqual(f0->sh.flow, f->sh.flow);
+			flowE = flowE && f0->userOutgassing.compare(f->userOutgassing) == 0 && IsEqual(f0->sh.flow, f->sh.flow,1E-16);
 			flowAreaE = flowAreaE && IsEqual(f0->sh.flow / f0Area, f->sh.flow / fArea, 1e-20);
 			is2sidedE = is2sidedE && (f0->sh.is2sided == f->sh.is2sided);
 			desorbTypeE = desorbTypeE && (f0->sh.desorbType == f->sh.desorbType);
@@ -1198,9 +1191,6 @@ void MolFlow::SaveFile() {
 	else SaveFileAs();
 }
 
-//-----------------------------------------------------------------------------
-
-
 
 void MolFlow::LoadFile(char *fName) {
 
@@ -1308,8 +1298,6 @@ void MolFlow::LoadFile(char *fName) {
 	SAFE_DELETE(progressDlg2);
 	changedSinceSave = FALSE;
 }
-
-//-----------------------------------------------------------------------------
 
 void MolFlow::InsertGeometry(BOOL newStr, char *fName) {
 	if (!AskToReset()) return;
@@ -2169,13 +2157,8 @@ void MolFlow::LoadConfig() {
 		SAFE_DELETE(f);
 		return;
 	}
-
 	SAFE_DELETE(f);
-
-
 }
-
-//-----------------------------------------------------------------------------
 
 #define WRITEI(name,var) {             \
 	f->Write(name);                      \
@@ -2192,8 +2175,6 @@ void MolFlow::LoadConfig() {
 	f->WriteDouble(viewer[i]->var," ");\
 	f->Write("\n");                      \
 }
-
-
 
 void MolFlow::SaveConfig() {
 

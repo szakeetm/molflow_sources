@@ -217,7 +217,8 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 						AHIT *shTexture = (AHIT *)(buffer + (f->sh.hitOffset + facetHitsSize+f->profileSize*(1 + nbMoments) + m*f->textureSize));
 						//double dCoef = gHits->total.hit.nbDesorbed * 1E4 * sHandle->gasMass / 1000 / 6E23 * MAGIC_CORRECTION_FACTOR;  //1E4 is conversion from m2 to cm2
 						double timeCorrection = m == 0 ? sHandle->finalOutgassingRate : (sHandle->totalDesorbedMolecules) / sHandle->timeWindowSize;
-						
+						//Timecorrection is required to compare constant flow texture values with moment values (for autoscaling)
+
 						for (y = 0; y < f->sh.texHeight; y++) {
 							for (x = 0; x < f->sh.texWidth; x++) {
 								int add = x + y*f->sh.texWidth;
@@ -232,7 +233,7 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 								val[0] = shTexture[add].sum_v_ort_per_area*timeCorrection; //pressure without dCoef_pressure
 								val[1] = shTexture[add].count*f->inc[add] * timeCorrection; //imp.rate without dCoef
 								val[2] = f->inc[add] * shTexture[add].sum_1_per_ort_velocity* timeCorrection; //particle density without dCoef
-
+							
 								//Global autoscale
 								for (int v = 0; v<3; v++) {
 									if (val[v]>gHits->texture_limits[v].max.all && f->largeEnough[add])
@@ -250,7 +251,6 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 											gHits->texture_limits[v].min.moments_only = val[v];
 									}
 								}
-
 							}
 						}
 					}

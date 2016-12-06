@@ -48,8 +48,11 @@ void Geometry::BuildFacetTextures(BYTE *hits) {
 	SHGHITS *shGHit = (SHGHITS *)hits;
 
 	Worker *w = &(mApp->worker);
-	double dCoef = 1E4; //1E4: conversion between m2 and cm2
+	
 	double dCoef_custom[] = { 1.0, 1.0, 1.0 }; //Three coefficients for pressure, imp.rate, density
+	//Autoscaling limits come from the subprocess corrected by "time factor", which makes constant flow and moment values comparable
+	//Time correction factor in subprocess: MoleculesPerTP * nbDesorbed
+	double timeCorrection = 1.0;
 
 	int nbMoments = (int)mApp->worker.moments.size();
 	size_t facetHitsSize = (1 + nbMoments) * sizeof(SHHITS);
@@ -57,9 +60,10 @@ void Geometry::BuildFacetTextures(BYTE *hits) {
 
 	case MC_MODE:
 
-		dCoef_custom[0] = dCoef*mApp->worker.gasMass / 1000 / 6E23*0.0100; //pressure
-		dCoef_custom[1] = dCoef;
-		dCoef_custom[2] = dCoef;
+		dCoef_custom[0] = 1E4 / (double)shGHit->total.hit.nbDesorbed * mApp->worker.gasMass / 1000 / 6E23*0.0100; //multiplied by timecorr*sum_v_ort_per_area: pressure
+		dCoef_custom[1] = 1E4 / (double)shGHit->total.hit.nbDesorbed;
+		dCoef_custom[2] = 1E4 / (double)shGHit->total.hit.nbDesorbed;
+		timeCorrection = (mApp->worker.displayedMoment == 0) ? mApp->worker.finalOutgassingRate : mApp->worker.totalDesorbedMolecules / mApp->worker.timeWindowSize;
 
 		for (int i = 0; i < 3; i++) {
 			//texture limits already corrected by timeFactor in UpdateMCHits()
@@ -134,7 +138,7 @@ void Geometry::BuildFacetTextures(BYTE *hits) {
 
 			}
 			f->BuildTexture(hits_local, textureMode, min, max, texColormap,
-				dCoef_custom[0] * mApp->worker.GetMoleculesPerTP(), dCoef_custom[1] * mApp->worker.GetMoleculesPerTP(), dCoef_custom[2] * mApp->worker.GetMoleculesPerTP(), texLogScale, mApp->worker.displayedMoment);
+				dCoef_custom[0] * timeCorrection, dCoef_custom[1] * timeCorrection, dCoef_custom[2] * timeCorrection, texLogScale, mApp->worker.displayedMoment);
 		}
 		if (f->sh.countDirection && f->dirCache) {
 			VHIT *dirs = (VHIT *)((BYTE *)shGHit + (f->sh.hitOffset + facetHitsSize + profSize*(1 + nbMoments) + tSize*(1 + nbMoments) + dSize*mApp->worker.displayedMoment));
