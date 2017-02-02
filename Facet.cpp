@@ -23,11 +23,11 @@
 #include "SynRad.h"
 #endif
 #include "Facet.h"
-#include "Utils.h"
 #include <malloc.h>
 #include <string.h>
 #include <math.h>
 #include "GLApp/GLToolkit.h"
+#include "GLApp/MathTools.h"
 #include <sstream>
 #include "PugiXML\pugixml.hpp"
 using namespace pugi;
@@ -53,9 +53,9 @@ static BOOL colorInited = FALSE;
 
 Facet::Facet(int nbIndex) {
 
-	indices = (int *)malloc(nbIndex*sizeof(int));                    // Ref to Geometry VERTEX3D
-	vertices2 = (VERTEX2D *)malloc(nbIndex * sizeof(VERTEX2D));      // Local U,V coordinates
-	memset(vertices2, 0, nbIndex * sizeof(VERTEX2D));
+	indices = (int *)malloc(nbIndex*sizeof(int));                    // Ref to Geometry Vector3d
+	vertices2 = (Vector2d *)malloc(nbIndex * sizeof(Vector2d));      // Local U,V coordinates
+	memset(vertices2, 0, nbIndex * sizeof(Vector2d));
 
 	sh.nbIndex = nbIndex;
 
@@ -71,7 +71,7 @@ Facet::Facet(int nbIndex) {
 	sh.sticking = 0.0;
 	sh.opacity = 1.0;
 	sh.temperature = 293.15; // 20degC
-	sh.flow = 0.0;           // 1 unit*l/s //will be outgasssing
+	sh.outgassing = 0.0;           // 1 unit*l/s //will be outgasssing
 	sh.mass = 28.0;          // Nitrogen
 	sh.desorbType = DES_NONE;
 	sh.desorbTypeN = 0.0;
@@ -243,7 +243,7 @@ void Facet::LoadGEO(FileReader *file, int version, int nbVertex) {
 	hasMesh = file->ReadInt();
 	if (version >= 7) {
 		file->ReadKeyword("outgassing"); file->ReadKeyword(":");
-		sh.flow = file->ReadDouble()*0.100; //mbar*l/s -> Pa*m3/s
+		sh.outgassing = file->ReadDouble()*0.100; //mbar*l/s -> Pa*m3/s
 
 
 	}
@@ -334,7 +334,7 @@ void Facet::LoadXML(xml_node f, int nbVertex, BOOL isMolflowFile, int vertexOffs
 		sh.sticking = f.child("Sticking").attribute("constValue").as_double();
 		sh.sticking_paramId = f.child("Sticking").attribute("parameterId").as_int();
 		sh.opacity_paramId = f.child("Opacity").attribute("parameterId").as_int();
-		sh.flow = f.child("Outgassing").attribute("constValue").as_double();
+		sh.outgassing = f.child("Outgassing").attribute("constValue").as_double();
 		sh.desorbType = f.child("Outgassing").attribute("desType").as_int();
 		sh.desorbTypeN = f.child("Outgassing").attribute("desExponent").as_double();
 		sh.outgassing_paramId = f.child("Outgassing").attribute("parameterId").as_int();
@@ -665,7 +665,7 @@ void Facet::SaveGEO(FileWriter *file, int idx) {
 	file->Write("  mesh:"); file->WriteInt((cellPropertiesIds != NULL), "\n");
 
 
-	file->Write("  outgassing:"); file->WriteDouble(sh.flow*10.00, "\n"); //Pa*m3/s -> mbar*l/s for compatibility with old versions
+	file->Write("  outgassing:"); file->WriteDouble(sh.outgassing*10.00, "\n"); //Pa*m3/s -> mbar*l/s for compatibility with old versions
 	file->Write("  texDimX:"); file->WriteDouble(sh.texWidthD, "\n");
 	file->Write("  texDimY:"); file->WriteDouble(sh.texHeightD, "\n");
 
@@ -719,7 +719,7 @@ size_t Facet::GetGeometrySize() {
 
 	size_t s = sizeof(SHFACET)
 		+ (sh.nbIndex * sizeof(int))
-		+ (sh.nbIndex * sizeof(VERTEX2D));
+		+ (sh.nbIndex * sizeof(Vector2d));
 
 	// Size of the 'element area' array passed to the geometry buffer
 	if (sh.isTextured) s += sizeof(AHIT)*sh.texWidth*sh.texHeight;
@@ -743,20 +743,20 @@ size_t Facet::GetHitsSize(size_t nbMoments) {
 }
 
 
-
-
-
 size_t Facet::GetTexRamSize(size_t nbMoments) {
-
-	int sizePerCell = 220; //estimation
-	int sizePerFacet = 9000; //estimation
-	return (sh.texWidth*sh.texHeight*sizePerCell + sh.isTextured*sizePerFacet);
-
+	//Values
+	size_t sizePerCell = sizeof(AHIT)*nbMoments; //AHIT: long + 2*double
+	if (sh.countDirection) sizePerCell += sizeof(VHIT)*nbMoments; //VHIT: Vector3d + long
+	//Mesh
+	sizePerCell += sizeof(int); //CellPropertiesIds
+	size_t sizePerMeshElement = sizeof(CellProperties);
+	sizePerMeshElement += 4 * sizeof(Vector2d); //Estimate: most mesh elements have 4 points
+	return sh.texWidth*sh.texHeight*sizePerCell + meshvectorsize*sizePerMeshElement;
 }
 
 size_t Facet::GetTexRamSizeForRatio(double ratio, BOOL useMesh, BOOL countDir, size_t nbMoments) {
-	double nU = Norme(sh.U);
-	double nV = Norme(sh.V);
+	double nU = sh.U.Norme();
+	double nV = sh.V.Norme();
 	double width = nU*ratio;
 	double height = nV*ratio;
 
@@ -765,11 +765,15 @@ size_t Facet::GetTexRamSizeForRatio(double ratio, BOOL useMesh, BOOL countDir, s
 	if (dimOK) {
 		int iwidth = (int)ceil(width);
 		int iheight = (int)ceil(height);
-		/*int size = 2*sizeof(double)+sizeof(llong);
-		if(useMesh) size += sizeof(SHELEM)+sizeof(MESH);
-		if(countDir) size += sizeof(VHIT);*/
-		int size = 220; //estimation
-		return iwidth * iheight * size + 9000;
+		
+		//Values
+		size_t sizePerCell = sizeof(AHIT)*nbMoments; //AHIT: long + 2*double
+		if (sh.countDirection) sizePerCell += sizeof(VHIT)*nbMoments; //VHIT: Vector3d + long
+		//Mesh
+		sizePerCell += sizeof(int); //CellPropertiesIds
+		size_t sizePerMeshElement = sizeof(CellProperties);
+		sizePerMeshElement += 4 * sizeof(Vector2d); //Estimate: most mesh elements have 4 points
+		return iwidth*iheight*(sizePerCell + sizePerMeshElement); //Conservative: assuming all cells are non-full
 	}
 	else {
 		return 0;
@@ -1134,7 +1138,7 @@ BOOL Facet::IsCoplanarAndEqual(Facet *f, double threshold) {
 
 		(sh.desorbType == f->sh.desorbType) &&
 		(sh.sticking == f->sh.sticking) &&
-		(sh.flow == f->sh.flow) &&
+		(sh.outgassing == f->sh.outgassing) &&
 		(sh.opacity == f->sh.opacity) &&
 		(sh.is2sided == f->sh.is2sided) &&
 		(sh.reflectType == f->sh.reflectType) &&
@@ -1164,7 +1168,7 @@ void Facet::Copy(Facet *f, BOOL copyMesh) {
 	//sh.center = f->sh.center;
 
 	//sh.counter = f->sh.counter;
-	sh.flow = f->sh.flow;
+	sh.outgassing = f->sh.outgassing;
 
 	sh.mass = f->sh.mass;
 	//sh.nbIndex = f->sh.nbIndex;
@@ -1233,7 +1237,7 @@ void  Facet::SaveXML_geom(pugi::xml_node f){
 	e.append_attribute("is2sided") = sh.is2sided;
 
 	e = f.append_child("Outgassing");
-	e.append_attribute("constValue") = sh.flow;
+	e.append_attribute("constValue") = sh.outgassing;
 	e.append_attribute("parameterId") = sh.outgassing_paramId;
 	e.append_attribute("desType") = sh.desorbType;
 	e.append_attribute("desExponent") = sh.desorbTypeN;

@@ -41,12 +41,12 @@ extern SynRad*mApp;
 Viewer3DSettings::Viewer3DSettings():GLWindow() {
 
   int wD = 215;
-  int hD = 425;
+  int hD = 475;
 
   SetTitle("3D Viewer Settings");
 
   panel = new GLTitledPanel("3D Viewer settings");
-  panel->SetBounds(5,5,wD-10,270);
+  panel->SetBounds(5,5,wD-10,320);
   Add(panel);
 
   GLLabel *l4 = new GLLabel("Show facet");
@@ -116,31 +116,44 @@ Viewer3DSettings::Viewer3DSettings():GLWindow() {
   showTimeToggle->SetBounds(10,250,50,18);
   Add(showTimeToggle);
 
+  hideLotselected = new GLToggle(0, "Hide Normals, \201 \202 vectors, indices");
+  hideLotselected->SetBounds(10, 275, 150, 18);
+  Add(hideLotselected);
 
+  GLLabel* l10 = new GLLabel("when more than             facets sel.");
+  l10->SetBounds(15, 297, 150, 18);
+  Add(l10);
+
+  hideLotText = new GLTextField(0, "");
+  hideLotText->SetBounds(100, 297, 40, 18);
+  hideLotText->SetEditable(FALSE);
+  Add(hideLotText);
+
+  
+  GLTitledPanel *panel2 = new GLTitledPanel("Direction field");
+  panel2->SetBounds(5,330,wD-10,95);
+  Add(panel2);
+  
   dirShowdirToggle = new GLToggle(0,"Show direction");
-  dirShowdirToggle->SetBounds(10,280,190,18);
+  dirShowdirToggle->SetBounds(10,345,190,18);
   Add(dirShowdirToggle);
 
-  GLTitledPanel *panel2 = new GLTitledPanel("Direction field");
-  panel2->SetBounds(5,305,wD-10,70);
-  Add(panel2);
-
   GLLabel *l7 = new GLLabel("Norme ratio");
-  l7->SetBounds(10,325,90,18);
+  l7->SetBounds(10,365,90,18);
   Add(l7);
 
   dirNormeText = new GLTextField(0,"");
-  dirNormeText->SetBounds(100,325,100,18);
+  dirNormeText->SetBounds(100,365,100,18);
   Add(dirNormeText);
 
 
   dirNormalizeToggle = new GLToggle(0,"Normalize");
-  dirNormalizeToggle->SetBounds(10,350,100,18);
+  dirNormalizeToggle->SetBounds(10,390,100,18);
   Add(dirNormalizeToggle);
 
 
   dirCenterToggle = new GLToggle(0,"Center");
-  dirCenterToggle->SetBounds(110,350,90,18);
+  dirCenterToggle->SetBounds(110,390,90,18);
   Add(dirCenterToggle);
 
 
@@ -202,7 +215,15 @@ void Viewer3DSettings::Refresh(Geometry *s,GeometryViewer *v) {
   dirNormalizeToggle->SetState( geom->GetAutoNorme() );
   dirCenterToggle->SetState( geom->GetCenterNorme() );
 
-
+  BOOL suppressDetails = (viewer->hideLot != -1);
+  hideLotselected->SetState(suppressDetails);
+  hideLotText->SetEditable(suppressDetails);
+  if (suppressDetails) {
+	 hideLotText->SetText(viewer->hideLot);
+  }
+  else {
+	 hideLotText->SetText("");
+  }
 }
 
 void Viewer3DSettings::ProcessMessage(GLComponent *src,int message) {
@@ -217,7 +238,7 @@ void Viewer3DSettings::ProcessMessage(GLComponent *src,int message) {
     } else if (src==applyButton) {
 
       double tstep,astep,nratio;
-	  int dnh,dnl;
+	  int dnh,dnl,lotofFacets;
 	  //int dnh;
 
       if( !traStepText->GetNumber(&tstep) ) {
@@ -236,6 +257,10 @@ void Viewer3DSettings::ProcessMessage(GLComponent *src,int message) {
         GLMessageBox::Display("Invalid number of displayed leaks.\nMust be between 1 and 2048.","Error",GLDLG_OK,GLDLG_ICONERROR);
         return;
       }
+	  if ((!hideLotText->GetNumberInt(&lotofFacets) || dnl<2 )) {
+		  GLMessageBox::Display("Invalid number of selected facets.\nMust be larger than 2.", "Error", GLDLG_OK, GLDLG_ICONERROR);
+		  return;
+	  }
 
       viewer->showBack=showMode->GetSelectedIndex();
       viewer->transStep = tstep;
@@ -270,12 +295,16 @@ void Viewer3DSettings::ProcessMessage(GLComponent *src,int message) {
       geom->SetAutoNorme(dirNormalizeToggle->GetState());
       geom->SetCenterNorme(dirCenterToggle->GetState());
 
-      GLWindow::ProcessMessage(NULL,MSG_CLOSE);
+	  viewer->hideLot = hideLotselected->GetState() ? lotofFacets : -1;
 
+	  GLWindow::ProcessMessage(NULL, MSG_CLOSE);
     }
     break;
 
     case MSG_TOGGLE:
+		if (src == hideLotselected) {
+			hideLotText->SetEditable(hideLotselected->GetState());
+		}
     break;
   }
 

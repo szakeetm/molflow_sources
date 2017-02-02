@@ -19,7 +19,8 @@ GNU General Public License for more details.
 #include "PressureEvolution.h"
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
-#include "Utils.h"
+#include "GLApp/MathTools.h"
+#include "Facet.h"
 #include <math.h>
 #ifdef MOLFLOW
 #include "MolFlow.h"

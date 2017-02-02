@@ -19,15 +19,14 @@ GNU General Public License for more details.
 #include <math.h>
 
 #include "FacetMesh.h"
+#include "Facet.h"
 #include "GLApp/GLLabel.h"
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
-#include "Utils.h" 
+#include "GLApp/MathTools.h"
 #ifdef MOLFLOW
 #include "MolFlow.h"
 #endif
-
-
 
 #ifdef SYNRAD
 #include "SynRad.h"
@@ -949,7 +948,7 @@ BOOL FacetMesh::Apply() {
 		nbPerformed++;
 		progressDlg->SetProgress((double)nbPerformed / (double)nbSelected);
 	} //main cycle end
-	if (structChanged) geom->RebuildLists();
+	if (structChanged) geom->BuildGLList(); //Re-render facets
 
 	if (progressDlg) progressDlg->SetVisible(FALSE);
 	SAFE_DELETE(progressDlg);
@@ -978,7 +977,7 @@ void FacetMesh::QuickApply() {
 		}
 
 	}
-	geom->RebuildLists();
+	geom->BuildGLList(); //Re-render facets
 }
 
 //-----------------------------------------------------------------------------

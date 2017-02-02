@@ -23,7 +23,7 @@ GNU General Public License for more details.
 #include <stdlib.h>
 #include "Simulation.h"
 #include "Random.h"
-#include "Utils.h"
+#include "GLApp/MathTools.h"
 
 extern SIMULATION *sHandle;
 
@@ -62,7 +62,7 @@ void CalcTotalOutgassing() {
 
 void PolarToCartesian(FACET *iFacet, double theta, double phi, BOOL reverse) {
 
-	VERTEX3D U, V, N;
+	Vector3d U, V, N;
 	double u, v, n;
 
 	// Polar in (nU,nV,N) to Cartesian(x,y,z) transformation  ( nU = U/|U| , nV = V/|V| )
@@ -119,12 +119,9 @@ void CartesianToPolar(FACET *iFacet, double *theta, double *phi) {
 
 	// Basis change (x,y,z) -> (nU,nV,N)
 	// We use the fact that (nU,nV,N) belongs to SO(3)
-	double u = DOT3(sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
-		iFacet->sh.nU.x, iFacet->sh.nU.y, iFacet->sh.nU.z);
-	double v = DOT3(sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
-		iFacet->sh.nV.x, iFacet->sh.nV.y, iFacet->sh.nV.z);
-	double n = DOT3(sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
-		iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z);
+	double u = Dot(sHandle->pDir,iFacet->sh.nU);
+	double v = Dot(sHandle->pDir,iFacet->sh.nV);
+	double n = Dot(sHandle->pDir,iFacet->sh.N);
 
 	// (u,v,n) -> (theta,phi)
 	double rho = sqrt(v*v + u*u);
@@ -380,9 +377,7 @@ void PerformTeleport(FACET *iFacet) {
 	/*iFacet->sh.counter.hit.nbAbsorbed++;
 	destination->sh.counter.hit.nbDesorbed++;*/
 
-	double ortVelocity = sHandle->velocityCurrentParticle*abs(DOT3(
-		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
-		iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z));
+	double ortVelocity = sHandle->velocityCurrentParticle*abs(Dot(sHandle->pDir,iFacet->sh.N));
 	//We count a teleport as a local hit, but not as a global one since that would affect the MFP calculation
 	/*iFacet->sh.counter.hit.nbHit++; 
 	iFacet->sh.counter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity;
@@ -536,7 +531,7 @@ BOOL StartFromSource() {
 					double facetOutgassing=
 						(f->sh.outgassing_paramId>=0)
 						?sHandle->IDs[f->sh.IDid].back().second/ (1.38E-23*f->sh.temperature)
-						:sHandle->latestMoment*f->sh.flow / (1.38E-23*f->sh.temperature);
+						:sHandle->latestMoment*f->sh.outgassing / (1.38E-23*f->sh.temperature);
 					found = (srcRnd >= sumA) && (srcRnd < (sumA + facetOutgassing));
 					sumA += facetOutgassing;
 				} //end constant or time-dependent outgassing block
@@ -655,9 +650,7 @@ BOOL StartFromSource() {
 		TreatMovingFacet();
 	}
 
-	double ortVelocity = sHandle->velocityCurrentParticle*abs(DOT3(
-		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
-		src->sh.N.x, src->sh.N.y, src->sh.N.z));
+	double ortVelocity = sHandle->velocityCurrentParticle*abs(Dot(sHandle->pDir,src->sh.N));
 	/*src->sh.counter.hit.nbDesorbed++;
 	src->sh.counter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity; //was 2.0 / ortV
 	src->sh.counter.hit.sum_v_ort += (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
@@ -717,17 +710,14 @@ void PerformBounce(FACET *iFacet) {
 
 	if (iFacet->sh.is2sided) {
 		// We may need to revert normal in case of 2 sided hit
-		revert = DOT3(sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
-			iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z) > 0.0;
+		revert = Dot(sHandle->pDir,iFacet->sh.N) > 0.0;
 	}
 
 	//Texture/Profile incoming hit
 	sHandle->tmpCount.hit.nbHit++; //global
 	
 	//Register (orthogonal) velocity
-	double ortVelocity = sHandle->velocityCurrentParticle*abs(DOT3(
-		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
-		iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z));
+	double ortVelocity = sHandle->velocityCurrentParticle*abs(Dot(sHandle->pDir,iFacet->sh.N));
 	
 	/*iFacet->sh.counter.hit.nbHit++; //hit facet
 	iFacet->sh.counter.hit.sum_1_per_ort_velocity += 1.0 / ortVelocity;
@@ -774,9 +764,7 @@ void PerformBounce(FACET *iFacet) {
 
 	//Texture/Profile outgoing particle
 	//Register outgoing velocity
-	ortVelocity = sHandle->velocityCurrentParticle*abs(DOT3(
-		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
-		iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z));
+	ortVelocity = sHandle->velocityCurrentParticle*abs(Dot(sHandle->pDir,iFacet->sh.N));
 
 	/*iFacet->sh.counter.hit.sum_1_per_ort_velocity += 1.0 / ortVelocity;
 	iFacet->sh.counter.hit.sum_v_ort += (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
@@ -812,9 +800,7 @@ void PerformAbsorb(FACET *iFacet) {
 	sHandle->tmpCount.hit.nbHit++; //global	
 	sHandle->tmpCount.hit.nbAbsorbed++;
 	RecordHit(HIT_ABS);
-	double ortVelocity = sHandle->velocityCurrentParticle*abs(DOT3(
-		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
-		iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z));
+	double ortVelocity = sHandle->velocityCurrentParticle*abs(Dot(sHandle->pDir,iFacet->sh.N));
 	IncreaseFacetCounter(iFacet, sHandle->flightTimeCurrentParticle, 1, 0, 1, 2.0 / ortVelocity, (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity);
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0); //was 2.0, 1.0
 	if (iFacet->hits && iFacet->sh.countAbs) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0); //was 2.0, 1.0
@@ -826,9 +812,7 @@ void RecordHitOnTexture(FACET *f, double time, BOOL countHit, double velocity_fa
 	int tu = (int)(f->colU * f->sh.texWidthD);
 	int tv = (int)(f->colV * f->sh.texHeightD);
 	int add = tu + tv*(f->sh.texWidth);
-	double ortVelocity = (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*sHandle->velocityCurrentParticle*abs(DOT3(
-		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
-		f->sh.N.x, f->sh.N.y, f->sh.N.z)); //surface-orthogonal velocity component
+	double ortVelocity = (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*sHandle->velocityCurrentParticle*abs(Dot(sHandle->pDir,f->sh.N)); //surface-orthogonal velocity component
 
 	for (size_t m = 0; m <= sHandle->nbMoments; m++)
 		if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
@@ -864,7 +848,7 @@ void ProfileFacet(FACET *f, double time, BOOL countHit, double velocity_factor, 
 
 	case REC_ANGULAR: {
 		if (countHit) {
-			dot = DOT3(f->sh.N.x, f->sh.N.y, f->sh.N.z, sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z);
+			dot = Dot(f->sh.N, sHandle->pDir);
 			double theta = acos(abs(dot));              // Angle to normal (PI/2 => PI)
 			int pos = (int)(theta / (PI / 2)*((double)PROFILE_SIZE)); // To Grad
 			//int pos = (int)(cos(theta)*(double)PROFILE_SIZE); // COS(theta)
@@ -886,8 +870,7 @@ void ProfileFacet(FACET *f, double time, BOOL countHit, double velocity_factor, 
 		for (size_t m = 0; m <= nbMoments; m++) {
 			if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
 				if (countHit) f->profile[m][pos].count++;
-				double ortVelocity = sHandle->velocityCurrentParticle*abs(DOT3(f->sh.N.x, f->sh.N.y, f->sh.N.z,
-					sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z));
+				double ortVelocity = sHandle->velocityCurrentParticle*abs(Dot(f->sh.N,sHandle->pDir));
 				f->profile[m][pos].sum_1_per_ort_velocity += velocity_factor / ortVelocity;
 				f->profile[m][pos].sum_v_ort += ortSpeedFactor*(sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;
 			}
@@ -895,10 +878,10 @@ void ProfileFacet(FACET *f, double time, BOOL countHit, double velocity_factor, 
 		break;
 
 	case REC_ORT_VELOCITY:
-		if (countHit) dot = abs(DOT3(f->sh.N.x, f->sh.N.y, f->sh.N.z, sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z));  //cos(theta)
+		if (countHit) dot = abs(Dot(f->sh.N,sHandle->pDir));  //cos(theta) as "dot" value
 	case REC_VELOCITY:
 		if (countHit) {
-			pos = (int)(dot*sHandle->velocityCurrentParticle / f->sh.maxSpeed*(double)PROFILE_SIZE);
+			pos = (int)(dot*sHandle->velocityCurrentParticle / f->sh.maxSpeed*(double)PROFILE_SIZE); //"dot" default value is 1.0
 			SATURATE(pos, 0, PROFILE_SIZE - 1);
 			for (size_t m = 0; m <= nbMoments; m++) {
 				if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
@@ -952,23 +935,19 @@ double GetOpacityAt(FACET *f,double time) {
 }
 
 void TreatMovingFacet() {
-	VERTEX3D localVelocityToAdd;
+	Vector3d localVelocityToAdd;
 	if (sHandle->motionType == 1) {
 		localVelocityToAdd = sHandle->motionVector2;
 	}
 	else if (sHandle->motionType == 2) {
-		VERTEX3D distanceVector;
-		Sub(&distanceVector, &sHandle->pPos, &sHandle->motionVector1); //distance from base
-		ScalarMult(&distanceVector, 0.01); //cm->m
-		Cross(&localVelocityToAdd, &sHandle->motionVector2, &distanceVector);
+		Vector3d distanceVector=0.01*(sHandle->pPos-sHandle->motionVector1); //distance from base, with cm->m conversion
+		localVelocityToAdd = CrossProduct(sHandle->motionVector2, distanceVector);
 	}
-	VERTEX3D oldVelocity, newVelocity;
-	oldVelocity = sHandle->pDir;
-	ScalarMult(&oldVelocity, sHandle->velocityCurrentParticle);
-	Add(&newVelocity, &oldVelocity, &localVelocityToAdd);oldVelocity + localVelocityToAdd;
-	sHandle->pDir = newVelocity;
-	Normalize(&sHandle->pDir);
-	sHandle->velocityCurrentParticle = Norme(newVelocity);
+	Vector3d oldVelocity, newVelocity;
+	oldVelocity = sHandle->pDir*sHandle->velocityCurrentParticle;
+	newVelocity = oldVelocity + localVelocityToAdd;
+	sHandle->pDir = newVelocity.Normalized();
+	sHandle->velocityCurrentParticle = newVelocity.Norme();
 }
 
 void IncreaseFacetCounter(FACET *f,double time, size_t hit,size_t desorb,size_t absorb, double sum_1_per_v, double sum_v_ort) {

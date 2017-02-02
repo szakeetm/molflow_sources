@@ -19,7 +19,8 @@ GNU General Public License for more details.
 #include "TimewisePlotter.h"
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
-#include "Utils.h"
+#include "GLApp/MathTools.h"
+#include "Facet.h"
 #include <math.h>
 #ifdef MOLFLOW
 #include "MolFlow.h"
@@ -251,10 +252,9 @@ void TimewisePlotter::refreshViews() {
 			break;
 
 		case 1: //Pressure
-			scaleY = 1.0 / nbDes / (f->GetArea() / (double)PROFILE_SIZE*1E-4)* worker->gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
+			scaleY = 1.0  / (f->GetArea() / (double)PROFILE_SIZE*1E-4)* worker->gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
 			
-			scaleY *= ((v->userData1 == 0) ? worker->finalOutgassingRate : (worker->totalDesorbedMolecules
-				/ worker->timeWindowSize));
+			scaleY *= worker->GetMoleculesPerTP(v->userData1);
 			//if(f->sh.opacity>0.0) scaleY *= f->sh.opacity;
 			//if(IS_ZERO(f->sh.opacity)) scaleY*=2; //transparent profiles are profiled only once...
 
@@ -263,7 +263,7 @@ void TimewisePlotter::refreshViews() {
 			break;
 		case 2: //Particle density
 			scaleY = 1E-4 / (f->GetArea() / (double)PROFILE_SIZE);
-			scaleY *= worker->GetMoleculesPerTP();
+			scaleY *= worker->GetMoleculesPerTP(v->userData1);
 			
 			/*
 			//Correction for double-density effect (measuring density on desorbing/absorbing facets):

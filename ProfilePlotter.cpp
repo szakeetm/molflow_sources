@@ -19,7 +19,8 @@ GNU General Public License for more details.
 #include "ProfilePlotter.h"
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
-#include "Utils.h"
+#include "GLApp/MathTools.h"
+#include "Facet.h"
 #include <math.h>
 #ifdef MOLFLOW
 #include "MolFlow.h"
@@ -338,7 +339,7 @@ void ProfilePlotter::refreshViews() {
 
 				case 1: //Pressure
 					scaleY = 1.0 / (f->GetArea() / (double)PROFILE_SIZE*1E-4)* worker->gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
-					scaleY *= worker->GetMoleculesPerTP();
+					scaleY *= worker->GetMoleculesPerTP(worker->displayedMoment);
 
 
 					for (int j = 0; j < PROFILE_SIZE; j++)
@@ -346,7 +347,7 @@ void ProfilePlotter::refreshViews() {
 					break;
 				case 2: //Particle density
 					scaleY = 1.0 / (f->GetArea() / (double)PROFILE_SIZE*1E-4);
-					scaleY *= worker->GetMoleculesPerTP();
+					scaleY *= worker->GetMoleculesPerTP(worker->displayedMoment);
 					
 					//Correction for double-density effect (measuring density on desorbing/absorbing facets):
 					if (f->counterCache.hit.nbHit>0 || f->counterCache.hit.nbDesorbed>0)

@@ -29,9 +29,6 @@ GNU General Public License for more details.
 #include <stdlib.h>
 #include "Simulation.h"
 #include "Random.h"
-#include "Utils.h"
-
-#define READBUFFER(_type) *(_type*)buffer;buffer+=sizeof(_type)
 
 // -------------------------------------------------------
 // Global handles
@@ -171,7 +168,7 @@ DWORD GetSeed() {
 
 
 
-/*double Norme(VERTEX3D *v) { //already defined
+/*double Norme(Vector3d *v) { //already defined
 	return sqrt(v->x*v->x + v->y*v->y + v->z*v->z);
 }*/
 
@@ -184,7 +181,7 @@ BOOL LoadSimulation(Dataport *loader) {
 	BYTE *incBuff;
 	BYTE *bufferStart;
 	SHGEOM *shGeom;
-	VERTEX3D *shVert;
+	Vector3d *shVert;
 	double t1, t0;
 	DWORD seed;
 	char err[128];
@@ -241,11 +238,11 @@ BOOL LoadSimulation(Dataport *loader) {
 	sHandle->motionVector1 = shGeom->motionVector1;
 	sHandle->motionVector2 = shGeom->motionVector2;
 	// Prepare super structure (allocate memory for facets)
-	buffer += sizeof(SHGEOM)+sizeof(VERTEX3D)*sHandle->nbVertex;
+	buffer += sizeof(SHGEOM)+sizeof(Vector3d)*sHandle->nbVertex;
 	for (i = 0; i < sHandle->totalFacet; i++) {
 		SHFACET *shFacet = (SHFACET *)buffer;
 		sHandle->str[shFacet->superIdx].nbFacet++;
-		buffer += sizeof(SHFACET)+shFacet->nbIndex*(sizeof(int)+sizeof(VERTEX2D));
+		buffer += sizeof(SHFACET)+shFacet->nbIndex*(sizeof(int)+sizeof(Vector2d));
 		if (shFacet->useOutgassingFile) buffer += sizeof(double)*shFacet->outgassingMapWidth*shFacet->outgassingMapHeight;
 	}
 	for (i = 0; i < sHandle->nbSuper; i++) {
@@ -276,16 +273,16 @@ BOOL LoadSimulation(Dataport *loader) {
 
 	// Vertices
 
-	sHandle->vertices3 = (VERTEX3D *)malloc(sHandle->nbVertex*sizeof(VERTEX3D));
+	sHandle->vertices3 = (Vector3d *)malloc(sHandle->nbVertex*sizeof(Vector3d));
 	if (!sHandle->vertices3) {
 		SetErrorSub("Not enough memory to load vertices");
 		return FALSE;
 	}
 	buffer += sizeof(SHGEOM);
 
-	shVert = (VERTEX3D *)(buffer);
-	memcpy(sHandle->vertices3, shVert, sHandle->nbVertex*sizeof(VERTEX3D));
-	buffer += sizeof(VERTEX3D)*sHandle->nbVertex;
+	shVert = (Vector3d *)(buffer);
+	memcpy(sHandle->vertices3, shVert, sHandle->nbVertex*sizeof(Vector3d));
+	buffer += sizeof(Vector3d)*sHandle->nbVertex;
 
 	// Facets
 	for (i = 0; i < sHandle->totalFacet; i++) {
@@ -336,13 +333,13 @@ BOOL LoadSimulation(Dataport *loader) {
 		buffer += sizeof(SHFACET);
 		memcpy(f->indices, buffer, f->sh.nbIndex*sizeof(int));
 		buffer += f->sh.nbIndex*sizeof(int);
-		f->vertices2 = (VERTEX2D *)malloc(f->sh.nbIndex * sizeof(VERTEX2D));
+		f->vertices2 = (Vector2d *)malloc(f->sh.nbIndex * sizeof(Vector2d));
 		if (!f->vertices2) {
 			SetErrorSub("Not enough memory to load vertices");
 			return FALSE;
 		}
-		memcpy(f->vertices2, buffer, f->sh.nbIndex * sizeof(VERTEX2D));
-		buffer += f->sh.nbIndex*sizeof(VERTEX2D);
+		memcpy(f->vertices2, buffer, f->sh.nbIndex * sizeof(Vector2d));
+		buffer += f->sh.nbIndex*sizeof(Vector2d);
 		if (f->sh.useOutgassingFile) {
 			f->outgassingMap = (double*)malloc(sizeof(double)*f->sh.outgassingMapWidth*f->sh.outgassingMapHeight);
 			if (!f->outgassingMap) {
@@ -457,13 +454,11 @@ BOOL LoadSimulation(Dataport *loader) {
 
 				f->iw = 1.0 / (double)f->sh.texWidthD;
 				f->ih = 1.0 / (double)f->sh.texHeightD;
-				f->rw = Norme(f->sh.U) * f->iw;
-				f->rh = Norme(f->sh.V) * f->ih;
+				f->rw = f->sh.U.Norme() * f->iw;
+				f->rh = f->sh.V.Norme() * f->ih;
 			}
 		}
 	}
-
-
 
 
 	//CDFs

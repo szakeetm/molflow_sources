@@ -17,8 +17,12 @@ GNU General Public License for more details.
 */
 
 #include "TextureSettings.h"
+#include "Facet.h"
+#include "MolflowGeometry.h"
+#include "Worker.h"
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
+#include "GLApp/MathTools.h"
 
 TextureSettings::TextureSettings():GLWindow() {
 
@@ -197,7 +201,7 @@ void TextureSettings::Update() {
 void TextureSettings::Display(Worker *w,GeometryViewer **v) {
 
 	worker = w;
-	geom = w->GetGeometry();
+	geom = w->GetMolflowGeometry();
 	viewers = v;
 	if(!geom->IsLoaded()) {
 		GLMessageBox::Display("No geometry loaded.","No geometry",GLDLG_OK,GLDLG_ICONERROR);

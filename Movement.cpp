@@ -229,7 +229,7 @@ void Movement::ProcessMessage(GLComponent *src,int message) {
 
 		} else if (src==button3) { //Apply
 			double a, b, c, u, v, w;
-			VERTEX3D AXIS_P0, AXIS_DIR;
+			Vector3d AXIS_P0, AXIS_DIR;
 			double degPerSec;
 			
 			
@@ -286,7 +286,7 @@ void Movement::ProcessMessage(GLComponent *src,int message) {
 				AXIS_P0.x = a; AXIS_P0.y = b; AXIS_P0.z = c;
 				AXIS_DIR.x = u; AXIS_DIR.y = v; AXIS_DIR.z = w;
 
-				if (Norme(AXIS_DIR) < 1E-5) {
+				if (AXIS_DIR.Norme() < 1E-5) {
 					GLMessageBox::Display("The rotation vector is shorter than 1E-5 cm.\n"
 						"Very likely this is a null vector\n"
 						"If not, increase its coefficients while keeping its direction", "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -304,9 +304,7 @@ void Movement::ProcessMessage(GLComponent *src,int message) {
 					break;
 				case MODE_ROTATING: 
 					work->motionVector1 = AXIS_P0;
-					Normalize(&AXIS_DIR);
-					ScalarMult(&AXIS_DIR, degPerSec / 180 * 3.14159); //degPerSec to RadPerSec
-					work->motionVector2 = AXIS_DIR;
+					work->motionVector2 = AXIS_DIR.Normalized() * (degPerSec / 180.0 * 3.14159);
 					break;
 				}
 
@@ -461,12 +459,11 @@ void Movement::Update() {
 		axText->SetText(work->motionVector1.x);
 		ayText->SetText(work->motionVector1.y);
 		azText->SetText(work->motionVector1.z);
-		VERTEX3D rot = work->motionVector2;
-		Normalize(&rot);
+		Vector3d rot = work->motionVector2.Normalized();
 		rxText->SetText(rot.x);
 		ryText->SetText(rot.y);
 		rzText->SetText(rot.z);
-		double num=Norme(work->motionVector2)/3.14159*180.0;
+		double num=work->motionVector2.Norme()/3.14159*180.0;
 		degText->SetText(num);
 		rpmText->SetText(num / 6);
 		hzText->SetText(num / 360);

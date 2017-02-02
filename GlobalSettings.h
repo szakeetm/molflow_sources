@@ -21,6 +21,7 @@
 #include "GLApp/GLToggle.h"
 #include "GLApp/GLTitledPanel.h"
 #include "GLApp/GLGradient.h"
+#include "Shared.h"
 
 #ifndef _GLOBALSETTINGSH_
 #define _GLOBALSETTINGSH_

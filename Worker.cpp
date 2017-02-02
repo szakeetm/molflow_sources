@@ -17,7 +17,7 @@ GNU General Public License for more details.
 */
 
 #include <Windows.h>
-
+#include "MolflowGeometry.h"
 #include "Worker.h"
 #include "GLApp/GLApp.h"
 #include "GLApp/GLMessageBox.h"
@@ -25,6 +25,9 @@ GNU General Public License for more details.
 #include <stdlib.h>
 #include <Process.h>
 #include "GLApp/GLUnitDialog.h"
+#include "GLApp/MathTools.h"
+#include "Facet.h"
+#include "Simulation.h" //SHELEM
 #ifdef MOLFLOW
 #include "MolFlow.h"
 #endif
@@ -34,8 +37,6 @@ GNU General Public License for more details.
 #endif
 
 #include <direct.h>
-#include "Distributions.h"
-
 #include "ZipUtils/zip.h"
 #include "ZipUtils/unzip.h"
 #include "File.h" //File utils (Get extension, etc)
@@ -92,7 +93,7 @@ Worker::Worker() {
 	maxDesorption = 0;
 
 	ResetWorkerStats();
-	geom = new Geometry();
+	geom = new MolflowGeometry();
 
 	dpControl = NULL;
 	dpHit = NULL;
@@ -107,8 +108,10 @@ Worker::Worker() {
 	running = FALSE;
 	calcAC = FALSE;
 	strcpy(fullFileName, "");
-	
-	_ASSERTE(_CrtCheckMemory());
+}
+
+MolflowGeometry* Worker::GetMolflowGeometry() {
+	return geom;
 }
 
 void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL saveSelected, BOOL autoSave, BOOL crashSave) {
@@ -536,15 +539,7 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 				char tmp[1024];
 				//char fileOnly[512];
 				sprintf(tmp, "cmd /C \"pushd \"%s\"&&7za.exe x -t7z -aoa \"%s\" -otmp&&popd\"", CWD, fileName);
-				//execCMD(tmp);
 				system(tmp);
-
-				/*filebegin = strrchr(fileName, '\\');
-				if (filebegin) filebegin++;
-				else filebegin = fileName;
-				memcpy(fileOnly, filebegin, sizeof(char)*(strlen(filebegin) - 2));
-				fileOnly[strlen(filebegin) - 2] = '\0';
-				sprintf(tmp2, "%s\\tmp\\Geometry.syn", CWD);*/
 				f = new FileReader((std::string)CWD + "\\tmp\\Geometry.syn"); //Open extracted file
 			} else f = new FileReader(fileName); //syn file, open it directly
 
@@ -561,14 +556,7 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 			
 				geom->LoadSYN(f, progressDlg, pLeak, &nbLastLeaks, pHits, &nbHHit, &version);
 
-
-
-
-
-
 				maxDesorption = 0;
-
-
 
 			}
 			else { //insert
@@ -583,49 +571,6 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 			RealReload(); //for the loading of textures
 			//SHGHITS *gHits = (SHGHITS *)dpHit->buff;
 			SAFE_DELETE(f);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 			if (!insert) strcpy(fullFileName, fileName);
 		}
 
@@ -656,12 +601,6 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 				sprintf(tmp, "cmd /C \"pushd \"%s\"&&7za.exe x -t7z -aoa \"%s\" -otmp&&popd\"", CWD, fileName);
 
 				system(tmp);
-
-
-
-
-
-
 
 				toOpen = (std::string)CWD + "\\tmp\\Geometry.geo"; //newer geo7z format: contain Geometry.geo
 				if (!FileUtils::Exist(toOpen)) toOpen = ((std::string)fileName).substr(0, strlen(fileName) - 2); //Inside the zip, try original filename with extension changed from geo7z to geo
@@ -700,8 +639,6 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 				SAFE_DELETE(f);
 				progressDlg->SetMessage("Loading textures...");
 				LoadTexturesGEO(toOpen, version);
-
-
 
 				strcpy(fullFileName, fileName);
 				//if (isGEO7Z) remove(tmp2);
@@ -788,8 +725,6 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 				catch (Error &e) {
 					GLMessageBox::Display(e.GetMsg(), "Error while loading simulation state", GLDLG_CANCEL, GLDLG_ICONWARNING);
 				}
-
-
 			}
 			else { //insert
 				geom->InsertXML(loadXML, this, progressDlg, newStr);
@@ -817,315 +752,21 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 			//RealReload();
 			strcpy(fullFileName, fileName);
 
-
-
-
-
-
-
 		}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 		catch (Error &e) {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 			geom->Clear();
 			SAFE_DELETE(f);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 			progressDlg->SetVisible(FALSE);
 			SAFE_DELETE(progressDlg);
 			throw e;
 		}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	}
 	else {
-
-
-
-
-
 		SAFE_DELETE(f);
 		progressDlg->SetVisible(FALSE);
 		SAFE_DELETE(progressDlg);
 		throw Error("LoadGeometry(): Invalid file extension [Only xml,zip,geo,geo7z,syn.syn7z,txt,ase,stl or str]");
 	}
-	//geom->CalcTotalOutGassing();
 	if (!insert)
 	{
 		CalcTotalOutgassing();
@@ -1326,7 +967,7 @@ void Worker::Update(float appTime) {
 					f->counterCache=(*((SHHITS*)(buffer + f->sh.hitOffset+displayedMoment*sizeof(SHHITS))));
 				}
 				try {
-					if (mApp->needsTexture) geom->BuildFacetTextures(buffer);
+					if (mApp->needsTexture || mApp->needsDirection) geom->BuildFacetTextures(buffer,mApp->needsTexture,mApp->needsDirection);
 				}
 				catch (Error &e) {
 					GLMessageBox::Display((char *)e.GetMsg(), "Error building texture", GLDLG_OK, GLDLG_ICONERROR);
@@ -1405,9 +1046,12 @@ void Worker::ComputeAC(float appTime) {
 	Dataport *loader = CreateDataport(loadDpName, dpSize);
 	if (!loader)
 		throw Error("Failed to create 'loader' dataport");
+	/*
 	AccessDataport(loader);
 	geom->CopyElemBuffer((BYTE *)loader->buff);
 	ReleaseDataport(loader);
+	//CopyElemBuffer needs fix
+	*/
 
 	// Load Elem area and send AC matrix calculation order
 	// Send command
@@ -1426,16 +1070,6 @@ void Worker::ComputeAC(float appTime) {
 	startTime = appTime;
 
 }
-
-// -------------------------------------------------------------
-
-
-
-// -------------------------------------------------------------
-
-
-
-// -------------------------------------------------------------
 
 void Worker::RealReload() { //Sharing geometry with workers
 
@@ -1680,10 +1314,10 @@ void Worker::ResetMoments() {
 	userMoments = std::vector<std::string>();
 }
 
-double Worker::GetMoleculesPerTP()
+double Worker::GetMoleculesPerTP(int moment)
 //Returns how many physical molecules one test particle represents
 {
-	if (displayedMoment == 0) {
+	if (moment == 0) {
 		//Constant flow
 		//Each test particle represents a certain real molecule influx per second
 		return finalOutgassingRate / nbDesorption;
@@ -1956,11 +1590,6 @@ int Worker::GetIDId(int paramId) {
 	if (i >= (int)desorptionParameterIDs.size()) i = -1; //not found
 	return i;
 
-
-
-
-
-
 }
 
 void Worker::CalcTotalOutgassing() {
@@ -1981,9 +1610,9 @@ void Worker::CalcTotalOutgassing() {
 			}
 			else { //regular outgassing
 				if (f->sh.outgassing_paramId == -1) { //constant outgassing
-					totalDesorbedMolecules += latestMoment * f->sh.flow / (1.38E-23*f->sh.temperature);
-					finalOutgassingRate += f->sh.flow / (1.38E-23*f->sh.temperature);  //Outgassing molecules/sec
-					finalOutgassingRate_Pa_m3_sec += f->sh.flow;
+					totalDesorbedMolecules += latestMoment * f->sh.outgassing / (1.38E-23*f->sh.temperature);
+					finalOutgassingRate += f->sh.outgassing / (1.38E-23*f->sh.temperature);  //Outgassing molecules/sec
+					finalOutgassingRate_Pa_m3_sec += f->sh.outgassing;
 				}
 				else { //time-dependent outgassing
 					totalDesorbedMolecules += IDs[f->sh.IDid].back().second / (1.38E-23*f->sh.temperature);
@@ -1994,14 +1623,6 @@ void Worker::CalcTotalOutgassing() {
 		}
 	}
 	if (mApp->globalSettings) mApp->globalSettings->UpdateOutgassing();
-
-
-
-
-
-
-
-
 
 }
 

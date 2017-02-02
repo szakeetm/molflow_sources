@@ -20,6 +20,7 @@ GNU General Public License for more details.
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
 #include "GLApp/GLFileBox.h"
+#include "Facet.h"
 #ifdef MOLFLOW
 #include "MolFlow.h"
 #endif
@@ -261,7 +262,7 @@ void TexturePlotter::UpdateTable() {
 					double dCoef =1E4; //1E4: conversion m2->cm2
 					/*if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
 						/ worker->timeWindowSize));*/
-					if (shGHit->mode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP();
+					if (shGHit->mode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(worker->displayedMoment);
 					for (int i = 0; i < w; i++) {
 						for (int j = 0; j < h; j++) {
 							double area = (selFacet->GetMeshArea(i + j*w,TRUE)); if (area == 0.0) area = 1.0;
@@ -299,7 +300,7 @@ void TexturePlotter::UpdateTable() {
 						if (selFacet->counterCache.hit.nbAbsorbed > 0 || selFacet->counterCache.hit.nbDesorbed > 0) //otherwise save calculation time
 							dCoef *= 1.0 - ((double)selFacet->counterCache.hit.nbAbsorbed + (double)selFacet->counterCache.hit.nbDesorbed) / ((double)selFacet->counterCache.hit.nbHit + (double)selFacet->counterCache.hit.nbDesorbed) / 2.0;
 
-					if (shGHit->mode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP();
+					if (shGHit->mode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(worker->displayedMoment);
 					for (int i = 0; i < w; i++) {
 						for (int j = 0; j < h; j++) {
 
@@ -343,7 +344,7 @@ void TexturePlotter::UpdateTable() {
 							dCoef *= 1.0 - ((double)selFacet->counterCache.hit.nbAbsorbed + (double)selFacet->counterCache.hit.nbDesorbed) / ((double)selFacet->counterCache.hit.nbHit + (double)selFacet->counterCache.hit.nbDesorbed) / 2.0;
 
 
-					if (shGHit->mode == MC_MODE) dCoef *= worker->GetMoleculesPerTP();
+					if (shGHit->mode == MC_MODE) dCoef *= worker->GetMoleculesPerTP(worker->displayedMoment);
 					for (int i = 0; i < w; i++) {
 						for (int j = 0; j < h; j++) {
 
@@ -381,7 +382,7 @@ void TexturePlotter::UpdateTable() {
 					AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(AHIT)));
 					double dCoef = 1E4 * (worker->gasMass / 1000 / 6E23) * 0.0100;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 					
-					if (shGHit->mode == MC_MODE) dCoef *= worker->GetMoleculesPerTP();
+					if (shGHit->mode == MC_MODE) dCoef *= worker->GetMoleculesPerTP(worker->displayedMoment);
 					for (int i = 0; i < w; i++) {
 						for (int j = 0; j < h; j++) {
 

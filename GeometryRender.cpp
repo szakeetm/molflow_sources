@@ -16,9 +16,9 @@
   GNU General Public License for more details.
   */
 
-#include "Geometry.h"
+#include "MolflowGeometry.h"
 #include "Worker.h"
-#include "Utils.h"
+#include "Facet.h"
 #include <malloc.h>
 #include <string.h>
 #include <math.h>
@@ -43,81 +43,80 @@ extern MolFlow *mApp;
 extern SynRad*mApp;
 #endif
 
-void Geometry::BuildFacetTextures(BYTE *hits) {
+void MolflowGeometry::BuildFacetTextures(BYTE *hits, BOOL renderRegularTexture, BOOL renderDirectionTexture) {
 
 	SHGHITS *shGHit = (SHGHITS *)hits;
 
 	Worker *w = &(mApp->worker);
-	
-	double dCoef_custom[] = { 1.0, 1.0, 1.0 }; //Three coefficients for pressure, imp.rate, density
-	//Autoscaling limits come from the subprocess corrected by "time factor", which makes constant flow and moment values comparable
-	//Time correction factor in subprocess: MoleculesPerTP * nbDesorbed
-	double timeCorrection = 1.0;
 
 	int nbMoments = (int)mApp->worker.moments.size();
 	size_t facetHitsSize = (1 + nbMoments) * sizeof(SHHITS);
-	switch (shGHit->mode) {
-
-	case MC_MODE:
-
-		dCoef_custom[0] = 1E4 / (double)shGHit->total.hit.nbDesorbed * mApp->worker.gasMass / 1000 / 6E23*0.0100; //multiplied by timecorr*sum_v_ort_per_area: pressure
-		dCoef_custom[1] = 1E4 / (double)shGHit->total.hit.nbDesorbed;
-		dCoef_custom[2] = 1E4 / (double)shGHit->total.hit.nbDesorbed;
-		timeCorrection = (mApp->worker.displayedMoment == 0) ? mApp->worker.finalOutgassingRate : mApp->worker.totalDesorbedMolecules / mApp->worker.timeWindowSize;
-
-		for (int i = 0; i < 3; i++) {
-			//texture limits already corrected by timeFactor in UpdateMCHits()
-			texture_limits[i].autoscale.min.moments_only = shGHit->texture_limits[i].min.moments_only*dCoef_custom[i];
-			texture_limits[i].autoscale.max.moments_only = shGHit->texture_limits[i].max.moments_only*dCoef_custom[i];
-			texture_limits[i].autoscale.min.all = shGHit->texture_limits[i].min.all*dCoef_custom[i];
-			texture_limits[i].autoscale.max.all = shGHit->texture_limits[i].max.all*dCoef_custom[i];
-		}
-		break;
-	case AC_MODE:
-		texture_limits[0].autoscale.min.all = shGHit->texture_limits[0].min.all;
-		texture_limits[0].autoscale.max.all = shGHit->texture_limits[0].max.all;
-		break;
-
-	}
-
-	double iDesorbed = 0.0;
-	if (shGHit->total.hit.nbDesorbed)
-		iDesorbed = 1.0 / (double)shGHit->total.hit.nbDesorbed;
 
 	GLProgress *prg = new GLProgress("Building texture", "Frame update");
 	prg->SetBounds(5, 28, 300, 90);
-	prg->SetVisible(TRUE);
+	int startTime = SDL_GetTicks();
 	for (int i = 0; i < sh.nbFacet; i++) {
+		int time = SDL_GetTicks();
+		if (!prg->IsVisible() && ((time - startTime) > 500)) {
+			prg->SetVisible(TRUE);
+		}
 		prg->SetProgress((double)i / (double)sh.nbFacet);
 		Facet *f = facets[i];
-		GLint max_t;
-		glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_t);
-		if (f->sh.texHeight > max_t || f->sh.texWidth > max_t) {
-			if (!f->textureError) {
-				char tmp[1024];
-				sprintf(tmp, "Facet #%d has a texture of %dx%d cells.\n"
-					"Your video card only supports texture dimensions (width or height) up to %d cells.\n"
-					"Texture rendering has been disabled on this facet, but you can still read texture values\n"
-					"using the Texture Plotter window. Consider using a smaller mesh resolution, or split the facet\n"
-					"into smaller parts. (Use Facet/Explode... command)", i + 1, f->sh.texHeight, f->sh.texWidth, max_t);
-				GLMessageBox::Display(tmp, "OpenGL Error", GLDLG_OK, GLDLG_ICONWARNING);
-			}
-			f->textureError = TRUE;
-			return;
-		}
-		else {
-
-			f->textureError = FALSE;
-		}
 
 		int profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(APROFILE)) : 0;
-
-
 		int nbElem = f->sh.texWidth*f->sh.texHeight;
 		int tSize = nbElem * sizeof(AHIT);
-		int dSize = nbElem * sizeof(VHIT);
 
-		if (f->sh.isTextured) {
+		if (renderRegularTexture && f->sh.isTextured) {
+
+			GLint max_t;
+			glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_t);
+			if (f->sh.texHeight > max_t || f->sh.texWidth > max_t) {
+				if (!f->textureError) {
+					char tmp[1024];
+					sprintf(tmp, "Facet #%d has a texture of %dx%d cells.\n"
+						"Your video card only supports texture dimensions (width or height) up to %d cells.\n"
+						"Texture rendering has been disabled on this facet, but you can still read texture values\n"
+						"using the Texture Plotter window. Consider using a smaller mesh resolution, or split the facet\n"
+						"into smaller parts. (Use Facet/Explode... command)", i + 1, f->sh.texHeight, f->sh.texWidth, max_t);
+					GLMessageBox::Display(tmp, "OpenGL Error", GLDLG_OK, GLDLG_ICONWARNING);
+				}
+				f->textureError = TRUE;
+				return;
+			}
+			else {
+
+				f->textureError = FALSE;
+			}
+
+			double dCoef_custom[] = { 1.0, 1.0, 1.0 }; //Three coefficients for pressure, imp.rate, density
+													   //Autoscaling limits come from the subprocess corrected by "time factor", which makes constant flow and moment values comparable
+													   //Time correction factor in subprocess: MoleculesPerTP * nbDesorbed
+			double timeCorrection = 1.0;
+
+			switch (shGHit->mode) {
+
+			case MC_MODE:
+
+				dCoef_custom[0] = 1E4 / (double)shGHit->total.hit.nbDesorbed * mApp->worker.gasMass / 1000 / 6E23*0.0100; //multiplied by timecorr*sum_v_ort_per_area: pressure
+				dCoef_custom[1] = 1E4 / (double)shGHit->total.hit.nbDesorbed;
+				dCoef_custom[2] = 1E4 / (double)shGHit->total.hit.nbDesorbed;
+				timeCorrection = (mApp->worker.displayedMoment == 0) ? mApp->worker.finalOutgassingRate : mApp->worker.totalDesorbedMolecules / mApp->worker.timeWindowSize;
+
+				for (int i = 0; i < 3; i++) {
+					//texture limits already corrected by timeFactor in UpdateMCHits()
+					texture_limits[i].autoscale.min.moments_only = shGHit->texture_limits[i].min.moments_only*dCoef_custom[i];
+					texture_limits[i].autoscale.max.moments_only = shGHit->texture_limits[i].max.moments_only*dCoef_custom[i];
+					texture_limits[i].autoscale.min.all = shGHit->texture_limits[i].min.all*dCoef_custom[i];
+					texture_limits[i].autoscale.max.all = shGHit->texture_limits[i].max.all*dCoef_custom[i];
+				}
+				break;
+			case AC_MODE:
+				texture_limits[0].autoscale.min.all = shGHit->texture_limits[0].min.all;
+				texture_limits[0].autoscale.max.all = shGHit->texture_limits[0].max.all;
+				break;
+
+			}
 
 			// Retrieve texture from shared memory (every seconds)
 			AHIT *hits_local = (AHIT *)((BYTE *)shGHit + (f->sh.hitOffset + facetHitsSize + profSize*(1 + nbMoments) + tSize*mApp->worker.displayedMoment));
@@ -140,26 +139,26 @@ void Geometry::BuildFacetTextures(BYTE *hits) {
 			f->BuildTexture(hits_local, textureMode, min, max, texColormap,
 				dCoef_custom[0] * timeCorrection, dCoef_custom[1] * timeCorrection, dCoef_custom[2] * timeCorrection, texLogScale, mApp->worker.displayedMoment);
 		}
-		if (f->sh.countDirection && f->dirCache) {
+
+		if (renderDirectionTexture && f->sh.countDirection && f->dirCache) {
+			
+			int dSize = nbElem * sizeof(VHIT);
+
+			double iDesorbed = 0.0;
+			if (shGHit->total.hit.nbDesorbed)
+			iDesorbed = 1.0 / (double)shGHit->total.hit.nbDesorbed;
+			
 			VHIT *dirs = (VHIT *)((BYTE *)shGHit + (f->sh.hitOffset + facetHitsSize + profSize*(1 + nbMoments) + tSize*(1 + nbMoments) + dSize*mApp->worker.displayedMoment));
 			for (int j = 0; j < nbElem; j++) {
-				f->dirCache[j].dir.x = dirs[j].dir.x;
-				f->dirCache[j].dir.y = dirs[j].dir.y;
-				f->dirCache[j].dir.z = dirs[j].dir.z;
-				//f->dirCache[j].sumSpeed = dirs[j].sumSpeed;
+				f->dirCache[j].dir = dirs[j].dir * iDesorbed;
 				f->dirCache[j].count = dirs[j].count;
 			}
 		}
-
 	}
 
 	prg->SetVisible(FALSE);
 	SAFE_DELETE(prg);
 }
-
-
-
-
 
 
 

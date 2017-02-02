@@ -19,7 +19,7 @@
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
 #include "GLApp/GLInputBox.h"
-#include "Utils.h"
+#include "Facet.h"
 #ifdef MOLFLOW
 #include "MolFlow.h"
 #endif

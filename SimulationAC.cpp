@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "Simulation.h"
+#include "GLApp/MathTools.h" //PI
 #include "Random.h"
 
 extern char *GetSimuStatus();
@@ -57,7 +58,7 @@ if((_f)->sh.opacity!=1.0) _idx+=((_f)->sh.texWidth*(_f)->sh.texHeight); }
 
 // -------------------------------------------------------
 
-void GetCenter(FACET *f,SHELEM *mesh,int idx,VERTEX3D *c) {
+void GetCenter(FACET *f,SHELEM *mesh,int idx,Vector3d *c) {
 
   c->x = f->sh.O.x + f->sh.U.x*mesh[idx].uCenter + f->sh.V.x*mesh[idx].vCenter;
   c->y = f->sh.O.y + f->sh.U.y*mesh[idx].uCenter + f->sh.V.y*mesh[idx].vCenter;
@@ -97,7 +98,7 @@ BOOL ComputeACMatrix(SHELEM *mesh) {
   int      idx,idx1,idx2,i1,i2,j1,j2,k1,k2,nbElem;
   FACET   *f1,*f2;
   int      sz,nbO=0,nbB=0,nbE=0,nbV;
-  VERTEX3D c1,c2;
+  Vector3d c1,c2;
   double   r2,cos1,cos2,vf,pv;
   double   t0,t1;
   size_t      p;
@@ -229,14 +230,11 @@ BOOL ComputeACMatrix(SHELEM *mesh) {
           // (Area of surface element is included whithin the iteration)
           GetCenter(f2,mesh,idx2,&c2);
 
-          r2 = DOT3(c1.x-c2.x,c1.y-c2.y,c1.z-c2.z,
-                    c1.x-c2.x,c1.y-c2.y,c1.z-c2.z);
+		  r2 = Dot(c1 - c2, c1 - c2);
           // cos1 = cos(theta1) * r
-          cos1 = DOT3(f1->sh.N.x  , f1->sh.N.y , f1->sh.N.z ,
-                      c2.x - c1.x , c2.y - c1.y , c2.z - c1.z);
+          cos1 = Dot(f1->sh.N,c2 - c1);
           // cos2 = cos(theta2) * r
-          cos2 = DOT3(f2->sh.N.x  , f2->sh.N.y , f2->sh.N.z ,
-                      c1.x - c2.x , c1.y - c2.y , c1.z - c2.z);
+          cos2 = Dot(f2->sh.N,c1 - c2);
 
           if(cos1>0.0 && cos2>0.0 && r2>0.0) {
             if( Visible(&c1,&c2,f1,f2) ) {

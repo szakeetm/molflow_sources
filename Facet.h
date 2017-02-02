@@ -23,12 +23,7 @@
 #include "Shared.h"
 #include "File.h"
 #include "PugiXML/pugixml.hpp"
-
-//Smart selection stuff
-struct NeighborFacet {
-	size_t id;
-	double angleDiff;
-};
+#include "Geometry.h"
 
 class Facet {
 
@@ -57,9 +52,9 @@ public:
   SHFACET sh;
 
   int      *indices;      // Indices (Reference to geometry vertex)
-  VERTEX2D *vertices2;    // Vertices (2D plane space, UV coordinates)
+  Vector2d *vertices2;    // Vertices (2D plane space, UV coordinates)
   int     *cellPropertiesIds;      // -1 if full element, -2 if outside polygon, otherwise index in meshvector
-  CELLPROPERTIES* meshvector;
+  CellProperties* meshvector;
   size_t meshvectorsize;
 
   // Normalized plane equation (ax + by + cz + d = 0)
@@ -110,6 +105,7 @@ public:
 
   void  ConvertOldDesorbType();
   BOOL  IsTXTLinkFacet();
+  Vector3d GetRealCenter();
   void  LoadTXT(FileReader *file);
   void  SaveTXT(FileWriter *file);
   void  LoadGEO(FileReader *file,int version,int nbVertex);
@@ -122,7 +118,7 @@ public:
   void  Copy(Facet *f,BOOL copyMesh=FALSE);
   void  SwapNormal();
   void  Explode(FACETGROUP *group);
-  void  FillVertexArray(VERTEX3D *v);
+  void  FillVertexArray(Vector3d *v);
   void  BuildMeshList();
   void  InitVisibleEdge();
   BOOL  SetTexture(double width,double height,BOOL useMesh);
@@ -149,12 +145,13 @@ public:
   void  UnselectElem();
   float GetMeshArea(int index,BOOL correct2sides = FALSE);
   size_t GetMeshNbPoint(int index);
-  VERTEX2D GetMeshPoint(int index, int pointId);
-  VERTEX2D GetMeshCenter(int index);
+  Vector2d GetMeshPoint(int index, int pointId);
+  Vector2d GetMeshCenter(int index);
   double GetArea();
 };
 
-struct DeletedFacet {
+class DeletedFacet {
+public:
 	Facet *f;
 	size_t ori_pos;
 	BOOL replaceOri;

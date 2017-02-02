@@ -31,8 +31,8 @@ GNU General Public License for more details.
 // Temporary for intersection
 extern  double    intMinLgth;
 extern  BOOL      intFound;
-extern  VERTEX3D  intD;
-extern  VERTEX3D  intZ;
+extern  Vector3d  intD;
+extern  Vector3d  intZ;
 extern  int       intNbTHits;
 extern  double    iRx;
 extern  double    iRy;
@@ -40,8 +40,8 @@ extern  double    iRz;
 extern  BOOL      nullRx;
 extern  BOOL      nullRy;
 extern  BOOL      nullRz;
-extern  VERTEX3D *rayPos;
-extern  VERTEX3D *rayDir;
+extern  Vector3d *rayPos;
+extern  Vector3d *rayDir;
 extern  FACET   **iFacet;
 extern  FACET    *fLast;
 extern  double    tNear;
@@ -49,7 +49,7 @@ extern  double    tFar;
 extern  double    it1, it2;
 extern  BOOL      AABBHit;
 
-BOOL Intersect(VERTEX3D *rPos, VERTEX3D *rDir,  // Source ray (rayDir vector must be normalized)
+BOOL Intersect(Vector3d *rPos, Vector3d *rDir,  // Source ray (rayDir vector must be normalized)
 	double *dist,                   // Distance to collision point
 	FACET **iFact, FACET *last) {    // Collided facet, previous collision
 
@@ -87,9 +87,7 @@ BOOL Intersect(VERTEX3D *rPos, VERTEX3D *rDir,  // Source ray (rayDir vector mus
 
 			f = THits[i];
 			if (f->colDist < intMinLgth) {
-				double directionFactor = abs(DOT3(
-					sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
-					f->sh.N.x, f->sh.N.y, f->sh.N.z));
+				double directionFactor = abs(Dot(sHandle->pDir,f->sh.N));
 				IncreaseFacetCounter(f, sHandle->flightTimeCurrentParticle + f->colDist / 100.0 / sHandle->velocityCurrentParticle, 1, 0, 0, 2.0 / (sHandle->velocityCurrentParticle*directionFactor), 2.0*(sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*sHandle->velocityCurrentParticle*directionFactor);
 
 				f->hitted = TRUE;

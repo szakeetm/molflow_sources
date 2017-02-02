@@ -19,13 +19,21 @@
 #ifndef _WORKERH_
 #define _WORKERH_
 
-#include "Geometry.h"
 #include "Parameter.h"
-#include "LoadStatus.h"
 #include "PugiXML/pugixml.hpp"
 #include <string>
+#include "GLApp/GLTypes.h"
+#include "Vector.h"
+#include "Shared.h"
+#include "Smp.h"
 
 #define CDF_SIZE 100 //points in a cumulative distribution function
+
+class Geometry;
+class MolflowGeometry;
+class GLProgress;
+class LoadStatus;
+class FileReader;
 
 extern float m_fTime;
 class Worker
@@ -39,6 +47,7 @@ public:
 
   // Return a handle to the currently loaded geometry
   Geometry *GetGeometry();
+  MolflowGeometry* GetMolflowGeometry();
 
   // Load a geometry (throws Error)
 
@@ -67,7 +76,7 @@ public:
 	  const std::vector<std::pair<double, double>> &convDistr,
 	  GLProgress *prg);
   void AnalyzeSYNfile(char *fileName, int *nbFacet, int *nbTextured, int *nbDifferent);
-  void ImportCSV(FileReader *file, std::vector<std::vector<string>>& table);
+  void ImportCSV(FileReader *file, std::vector<std::vector<std::string>>& table);
 
   // Return/Set the current filename
   char *GetFileName();
@@ -152,7 +161,7 @@ public:
   int AddMoment(std::vector<double> newMoments); //Adds a time serie to moments and returns the number of elements
   std::vector<double> ParseMoment(std::string userInput); //Parses a user input and returns a vector of time moments
   void ResetMoments();
-  double GetMoleculesPerTP();
+  double GetMoleculesPerTP(int moment);
 
   std::vector<std::pair<double,double>> Generate_ID(int paramId);
   int GenerateNewID(int paramId);
@@ -205,8 +214,8 @@ int GetIDId(int paramId);
   BOOL calcConstantFlow;
 
   int motionType;
-  VERTEX3D motionVector1; //base point for rotation
-  VERTEX3D motionVector2; //rotation vector or velocity vector
+  Vector3d motionVector1; //base point for rotation
+  Vector3d motionVector2; //rotation vector or velocity vector
 
   BOOL needsReload;
 
@@ -226,7 +235,7 @@ private:
   BOOL   allDone;
 
   // Geometry handle
-  Geometry *geom;
+  MolflowGeometry *geom;
 
   
 

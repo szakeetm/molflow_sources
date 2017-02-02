@@ -16,6 +16,9 @@
   GNU General Public License for more details.
 */
 
+#ifndef _FACETDETAILSH_
+#define _FACETDETAILSH_
+
 #include "GLApp/GLWindow.h"
 #include "GLApp/GLList.h"
 #include "GLApp/GLButton.h"
@@ -23,8 +26,7 @@
 #include "GLApp/GLTitledPanel.h"
 #include "Worker.h"
 
-#ifndef _FACETDETAILSH_
-#define _FACETDETAILSH_
+class Facet;
 
 #define NB_FDCOLUMN 26
 

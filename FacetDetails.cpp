@@ -19,7 +19,8 @@
 #include "FacetDetails.h"
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
-#include "Utils.h"
+#include "GLApp/MathTools.h"
+#include "Facet.h"
 #ifdef MOLFLOW
 #include "MolFlow.h"
 #endif
@@ -315,7 +316,7 @@ char *FacetDetails::FormatCell(int idx,Facet *f,int mode) {
 		sprintf(ret, "%g", f->sh.temperature);
 		break;
     case 11:
-      sprintf(ret,"%g x %g",Norme(f->sh.U),Norme(f->sh.V));
+      sprintf(ret,"%g x %g",f->sh.U.Norme(),f->sh.V.Norme());
       break;
     case 12:
       if( f->sh.isTextured ) {
@@ -341,13 +342,13 @@ char *FacetDetails::FormatCell(int idx,Facet *f,int mode) {
 		break;
 	case 18: //imp.rate
 	{
-	double dCoef = 1E4 * worker->GetMoleculesPerTP();  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
+	double dCoef = 1E4 * worker->GetMoleculesPerTP(worker->displayedMoment);  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 	sprintf(ret, "%g", f->counterCache.hit.nbHit / f->GetArea()*dCoef);
 	//11.77=sqrt(8*8.31*293.15/3.14/0.028)/4/10
 	break; }
 	case 19: //particle density
 	{
-	double dCoef = 1E4 * worker->GetMoleculesPerTP();  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar	
+	double dCoef = 1E4 * worker->GetMoleculesPerTP(worker->displayedMoment);  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar	
 	//Correction for double-density effect (measuring density on desorbing/absorbing facets):
 	if (f->counterCache.hit.nbHit>0 || f->counterCache.hit.nbDesorbed>0)
 		if (f->counterCache.hit.nbAbsorbed >0 || f->counterCache.hit.nbDesorbed>0) //otherwise save calculation time
@@ -358,7 +359,7 @@ char *FacetDetails::FormatCell(int idx,Facet *f,int mode) {
 	break; }
 	case 20: //gas density
 	{
-	double dCoef =  1E4 * worker->GetMoleculesPerTP();  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
+	double dCoef =  1E4 * worker->GetMoleculesPerTP(worker->displayedMoment);  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 	
 	//Correction for double-density effect (measuring density on desorbing/absorbing facets):
 	if (f->counterCache.hit.nbHit>0 || f->counterCache.hit.nbDesorbed>0)
@@ -369,7 +370,7 @@ char *FacetDetails::FormatCell(int idx,Facet *f,int mode) {
 	break; }
 	case 21: //avg.pressure
 	{
-	double dCoef = 1E4 * worker->GetMoleculesPerTP() * (worker->gasMass / 1000 / 6E23) * 0.0100;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
+	double dCoef = 1E4 * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->gasMass / 1000 / 6E23) * 0.0100;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 	
 	sprintf(ret, "%g", f->counterCache.hit.sum_v_ort*dCoef / f->GetArea());
 	break; }

@@ -21,6 +21,8 @@
 #include "GLApp/GLMessageBox.h"
 #include "GLApp/GLFileBox.h"
 #include "MolFlow.h"
+#include "Geometry.h"
+#include "Facet.h"
 extern MolFlow *mApp;
 
 //static const char *fileFilters = "Text files\0*.txt";
@@ -342,12 +344,14 @@ void OutgassingMap::ProcessMessage(GLComponent *src,int message) {
 					  SAFE_FREE(values);
 					  mApp->UpdateModelParams();
 					  mApp->UpdateFacetParams(TRUE);
-					  worker->GetGeometry()->CalcTotalOutGassing();
+					  worker->CalcTotalOutgassing();
 					  // Send to sub process
 					  worker->Reload(); } catch(Error &e) {
 						  GLMessageBox::Display((char *)e.GetMsg(),"Error exploding facet (not enough memory?)",GLDLG_OK,GLDLG_ICONERROR);
 					}
 				}
+				        Close();
+        GLWindow::ProcessMessage(NULL,MSG_CLOSE);
 		  }
       }/*else if (src==saveButton) {
         SaveFile();

@@ -20,25 +20,17 @@ GNU General Public License for more details.
 #include "GeometryViewer.h"
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMatrix.h"
-#include "Utils.h"
 #include <math.h>
 #include <malloc.h>
+
 #ifdef MOLFLOW
 #include "MolFlow.h"
-#endif
-
-#ifdef SYNRAD
-#include "SynRad.h"
-#endif
-
-
-
-#ifdef MOLFLOW
 extern MolFlow *mApp;
 #endif
 
 #ifdef SYNRAD
-extern SynRad*mApp;
+#include "SynRad.h"
+extern SynRad *mApp;
 #endif
 
 void GeometryViewer::SetBounds(int x, int y, int width, int height) {
@@ -49,7 +41,6 @@ void GeometryViewer::SetBounds(int x, int y, int width, int height) {
 		topBtn->SetBounds(posX + 40, posY + height - 22, 33, 19);
 		sideBtn->SetBounds(posX + 75, posY + height - 22, 33, 19);
 		projCombo->SetBounds(posX + 110, posY + height - 22, 50, 19);
-		capsLockLabel->SetBounds(posX + 165, posY + height - 22, 0, 19);
 		coordLab->SetBounds(posX + 162, posY + height - 20, 100, 18);
 		facetSearchState->SetBounds(posX + 10, posY + 10, 90, 19);
 		timeLabel->SetBounds(posX + width - 200, posY + height - 100, 100, 50);
@@ -61,6 +52,9 @@ void GeometryViewer::SetBounds(int x, int y, int width, int height) {
 		zoomBtn->SetBounds(posX + width - 62, posY + height - 22, 19, 19);
 		handBtn->SetBounds(posX + width - 42, posY + height - 22, 19, 19);
 		sysBtn->SetBounds(posX + width - 22, posY + height - 22, 19, 19);
+
+		hideLotlabel->SetBounds(posX + 10, posY + height - 67, 0, 19);
+		capsLockLabel->SetBounds(posX + 10, posY + height - 47, 0, 19);
 
 		toolBack->SetBounds(posX + 1, posY + height - DOWN_MARGIN, width - 2, DOWN_MARGIN - 1);
 		SetCurrentView(view);

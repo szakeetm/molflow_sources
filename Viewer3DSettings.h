@@ -63,7 +63,9 @@ private:
   GLToggle      *dirCenterToggle;
   GLToggle		*antiAliasing;
   GLToggle		*bigDots;
+  GLToggle		*hideLotselected;
   GLTextField   *dirNormeText;
+  GLTextField   *hideLotText;
 
   GLButton    *applyButton;
   GLButton    *cancelButton;

@@ -1,6 +1,6 @@
 #include "Parameter.h"
-#include "Distributions.h"
 #include <algorithm>
+#include "GLApp/MathTools.h"
 
 Parameter::Parameter() { //initialize with empty values
 	name="";

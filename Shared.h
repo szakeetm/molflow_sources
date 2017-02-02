@@ -16,14 +16,16 @@
   GNU General Public License for more details.
 */
 
-#include "Types.h"
+#include "MolflowTypes.h"
 #include <Windows.h>
 #include <vector>
+#include "Vector.h"
 
 #ifndef SHAREDH
 
 #define SHAREDH
 
+#define PROFILE_SIZE  100 // Size of profile
 #define NBHLEAK     2048  // Leak history max length
 #define NBHHIT      2048  // Max. displayed number of lines and Porto (OPO)hits.
 #define BOUNCEMAX   8192  // 'Wall collision count before absoprtion' histogram
@@ -49,6 +51,8 @@
 // ...
 // -----------------------------------------------------------------
 
+typedef float ACFLOAT;
+
 typedef union {
   
   struct {
@@ -68,6 +72,25 @@ typedef union {
   } density;
 
 } SHHITS;
+
+typedef struct {
+
+	Vector3d pos;
+	int      type;
+} HIT;
+
+// Velocity field
+typedef struct {
+	Vector3d dir;
+	llong count;
+} VHIT;
+
+typedef struct {
+
+	Vector3d pos;
+	Vector3d dir;
+
+} LEAK;
 
 typedef struct {
 
@@ -140,24 +163,23 @@ static const char *prStates[] = {
 typedef struct {
   
   // Process control
-  int    states[MAX_PROCESS];        // Process states/commands
+  int		states[MAX_PROCESS];        // Process states/commands
   size_t    cmdParam[MAX_PROCESS];      // Command param 1
-  llong  cmdParam2[MAX_PROCESS];     // Command param 2
-  char   statusStr[MAX_PROCESS][64]; // Status message
-  //float  heartBeat; //a changing int number showing that molflow.exe is alive
+  llong		cmdParam2[MAX_PROCESS];     // Command param 2
+  char		statusStr[MAX_PROCESS][64]; // Status message
 } SHCONTROL;
 
 // -----------------------------------------------------------------
 // Geometry shared structure        (name: MFLWLOAD[masterPID])
 //
 //  SHGEOM
-//  VERTEX3D
+//  Vector3d
 //  SHFACET1
 //  INDEXF1
-//  VERTEX2DF1
+//  Vector2dF1
 //  SHFACET2
 //  INDEXF2
-//  VERTEX2DF2
+//  Vector2dF2
 //  ...
 //  AREA ELEMENTS
 // -----------------------------------------------------------------
@@ -166,7 +188,7 @@ typedef struct {
 
   size_t        nbFacet;   // Number of facets (total)
   size_t        nbVertex;  // Number of 3D vertices
-  size_t        nbSuper;   // Number of superstructures
+  int        nbSuper;   // Number of superstructures
   char       name[64];  // (Short file name)
   
   size_t nbMoments; //To pass in advance for memory reservation
@@ -181,8 +203,8 @@ typedef struct {
   BOOL calcConstantFlow;
 
   int motionType;
-  VERTEX3D motionVector1; //base point for rotation
-  VERTEX3D motionVector2; //rotation vector or velocity vector
+  Vector3d motionVector1; //base point for rotation
+  Vector3d motionVector2; //rotation vector or velocity vector
 
   /* //Vectors must be serialized
   std::vector<std::vector<std::pair<double,double>>> CDFs; //cumulative distribution function for each temperature
@@ -201,7 +223,7 @@ typedef struct {
   double sticking;       // Sticking (0=>reflection  , 1=>absorption)   - can be overridden by time-dependent parameter
   double opacity;        // opacity  (0=>transparent , 1=>opaque)       - can be overridden by time-dependent parameter
   double temperature;    // Facet temperature (Kelvin)                  - can be overridden by time-dependent parameter
-  double flow;           // Desorbed flow (in unit *m^3/s) (outgassing) - can be overridden by time-dependent parameter
+  double outgassing;           // (in unit *m^3/s)                      - can be overridden by time-dependent parameter
 
   int sticking_paramId;    // -1 if use constant value, 0 or more if referencing time-dependent parameter
   int opacity_paramId;     // -1 if use constant value, 0 or more if referencing time-dependent parameter
@@ -233,25 +255,19 @@ typedef struct {
   // Flags
   BOOL   is2sided;     // 2 sided
   BOOL   isProfile;    // Profile facet
-  //BOOL   isOpaque;     // Opacity != 0
   BOOL   isTextured;   // texture
   BOOL   isVolatile;   // Volatile facet (absorbtion facet which does not affect particule trajectory)
 
-  //These don't have to be shared
-  //BOOL   isVolumeVisible;    //Do we paint the volume on this facet?
-  //BOOL   isTextureVisible;	 //Do we paint the texture on this facet?
-
-  
   // Facet hit counters
   // SHHITS counter; - removed as now it's time-dependent and part of the hits buffer
 
   // Normal vector
-  VERTEX3D    N;    // normalized
-  VERTEX3D    Nuv;  // normal to (u,v) not normlized
+  Vector3d    N;    // normalized
+  Vector3d    Nuv;  // normal to (u,v) not normlized
 
   // Axis Aligned Bounding Box (AABB)
   AABB       bb;
-  VERTEX3D   center;
+  Vector3d   center;
 
   // Moving facets
   BOOL isMoving;
@@ -261,11 +277,11 @@ typedef struct {
   double sign;      // Facet vertex rotation (see Facet::DetectOrientation())
 
   // Plane basis (O,U,V) (See Geometry::InitializeGeometry() for info)
-  VERTEX3D   O;  // Origin
-  VERTEX3D   U;  // U vector
-  VERTEX3D   V;  // V vector
-  VERTEX3D   nU; // Normalized U
-  VERTEX3D   nV; // Normalized V
+  Vector3d   O;  // Origin
+  Vector3d   U;  // U vector
+  Vector3d   V;  // V vector
+  Vector3d   nU; // Normalized U
+  Vector3d   nV; // Normalized V
 
   // Hit/Abs/Des/Density recording on 2D texture map
   int    texWidth;    // Rounded texture resolution (U)
@@ -276,12 +292,12 @@ typedef struct {
   size_t   hitOffset;      // Hit address offset for this facet
   
   //Outgassing map
-  BOOL   useOutgassingFile; //has desorption file for cell elements
+  BOOL   useOutgassingFile;   //has desorption file for cell elements
   double outgassingFileRatio; //desorption file's sample/unit ratio
   int   outgassingMapWidth;
   int   outgassingMapHeight;
 
-  double totalOutgassing;
+  double totalOutgassing; //total outgassing for the given facet
 
 } SHFACET;
 

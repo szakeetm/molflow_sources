@@ -19,14 +19,16 @@ GNU General Public License for more details.
 #include <math.h>
 #include <malloc.h>
 #include "MolFlow.h"
+#include "Facet.h"
+#include "MolflowGeometry.h"
 #include "File.h"
 #include "GLApp/GLMessageBox.h"
 #include "GLApp/GLInputBox.h"
 #include "GLApp/GLFileBox.h"
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLWindowManager.h"
+#include "GLApp/MathTools.h"
 #include "RecoveryDialog.h"
-#include "Utils.h" //for Remainder
 #include "direct.h"
 #include <vector>
 #include <string>
@@ -55,7 +57,7 @@ char *cName[] = { "#", "Hits", "Des", "Abs" };
 #ifdef _DEBUG
 std::string appName = "MolFlow+ development version 64-bit (Compiled " __DATE__ " " __TIME__ ") DEBUG MODE";
 #else
-std::string appName = "Molflow+ 2.6.34 64-bit (" __DATE__ ")";
+std::string appName = "Molflow+ 2.6.37 64-bit (" __DATE__ ")";
 #endif
 
 std::vector<string> formulaPrefixes = { "A","D","H","P","DEN","Z","V","T","AR","a","d","h","ar","," };
@@ -66,7 +68,6 @@ MolFlow *mApp;
 //Menu elements, Molflow specific:
 #define MENU_FILE_IMPORTDES_DES 140
 #define MENU_FILE_IMPORTDES_SYN 141
-
 
 #define MENU_FILE_EXPORTTEXTURE_AREA 151
 #define MENU_FILE_EXPORTTEXTURE_MCHITS 152
@@ -88,8 +89,7 @@ MolFlow *mApp;
 #define MENU_FILE_EXPORTTEXTURE_V_VECTOR_COORD  178
 #define MENU_FILE_EXPORTTEXTURE_N_VECTORS_COORD  179
 
-
-#define MENU_TOOLS_MOVINGPARTS 402
+#define MENU_TOOLS_MOVINGPARTS 410
 
 #define MENU_FACET_MESH        360
 #define MENU_SELECT_HASDESFILE 361
@@ -640,14 +640,14 @@ void MolFlow::ApplyFacetParams() {
 	}
 
 	// Outgassing
-	double flow = 0.0;
+	double outgassing = 0.0;
 	BOOL doFlow = FALSE;
 	BOOL outgassingNotNumber;
-	//Calculate flow
+	//Calculate outgassing
 	if (facetFILabel->GetState() && strcmp(facetFlow->GetText(), "...") != 0 && facetDesType->GetSelectedIndex() != 0
 		&& strcmp(facetDesType->GetSelectedValue(), "...") != 0 && facetFlow->IsEditable()) {  //We want outgassing
-		if (facetFlow->GetNumber(&flow)) { //If we can parse the number
-			if (!(flow > 0.0)) {
+		if (facetFlow->GetNumber(&outgassing)) { //If we can parse the number
+			if (!(outgassing > 0.0)) {
 				GLMessageBox::Display("Outgassing must be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
@@ -663,7 +663,7 @@ void MolFlow::ApplyFacetParams() {
 	// Outgassing per area
 	double flowA = 0;
 	BOOL doFlowA = FALSE;
-	//Calculate flow
+	//Calculate outgassing
 
 	if (facetFIAreaLabel->GetState() && strcmp(facetFlowArea->GetText(), "...") != 0
 		&& facetDesType->GetSelectedIndex() != 0 && strcmp(facetDesType->GetSelectedValue(), "...") != 0 && facetFlowArea->IsEditable()) { //We want outgassing per area
@@ -736,16 +736,16 @@ void MolFlow::ApplyFacetParams() {
 			if (doTemperature) f->sh.temperature = temperature;
 			if (doFlow) {
 				if (!outgassingNotNumber) {
-					f->sh.flow = flow*0.100; //0.1: mbar*l/s -> Pa*m3/s
+					f->sh.outgassing = outgassing*0.100; //0.1: mbar*l/s -> Pa*m3/s
 					f->userOutgassing = "";
 				}
 				else {
 					f->userOutgassing = facetFlow->GetText();
 				}
 			}
-			if (doFlowA/* && !useMapA*/) f->sh.flow = flowA*f->sh.area*(f->sh.is2sided ? 2.0 : 1.0)*0.100;
+			if (doFlowA/* && !useMapA*/) f->sh.outgassing = flowA*f->sh.area*(f->sh.is2sided ? 2.0 : 1.0)*0.100;
 			if (desorbType >= 0) {
-				if (desorbType == 0) f->sh.flow = 0.0;
+				if (desorbType == 0) f->sh.outgassing = 0.0;
 				if (desorbType != 3) f->sh.desorbTypeN = 0.0;
 				f->sh.desorbType = desorbType;
 				if (doDesorbTypeN) f->sh.desorbTypeN = desorbTypeN;
@@ -774,7 +774,7 @@ void MolFlow::ApplyFacetParams() {
 		GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
 	}
-	geom->CalcTotalOutGassing();
+	worker.CalcTotalOutgassing();
 	UpdateFacetParams();
 	if (profilePlotter) profilePlotter->Refresh();
 	if (pressureEvolution) pressureEvolution->Refresh();
@@ -829,8 +829,8 @@ void MolFlow::UpdateFacetParams(BOOL updateSelection) { //Calls facetMesh->Refre
 			stickingE = stickingE && (f0->userSticking.compare(f->userSticking) == 0) && IsEqual(f0->sh.sticking, f->sh.sticking);
 			opacityE = opacityE && (f0->userOpacity.compare(f->userOpacity) == 0) && IsEqual(f0->sh.opacity, f->sh.opacity);
 			temperatureE = temperatureE && IsEqual(f0->sh.temperature, f->sh.temperature);
-			flowE = flowE && f0->userOutgassing.compare(f->userOutgassing) == 0 && IsEqual(f0->sh.flow, f->sh.flow,1E-16);
-			flowAreaE = flowAreaE && IsEqual(f0->sh.flow / f0Area, f->sh.flow / fArea, 1e-20);
+			flowE = flowE && f0->userOutgassing.compare(f->userOutgassing) == 0 && IsEqual(f0->sh.outgassing, f->sh.outgassing,1E-16);
+			flowAreaE = flowAreaE && IsEqual(f0->sh.outgassing / f0Area, f->sh.outgassing / fArea, 1e-20);
 			is2sidedE = is2sidedE && (f0->sh.is2sided == f->sh.is2sided);
 			desorbTypeE = desorbTypeE && (f0->sh.desorbType == f->sh.desorbType);
 			desorbTypeNE = desorbTypeNE && IsEqual(f0->sh.desorbTypeN, f->sh.desorbTypeN);
@@ -889,11 +889,11 @@ void MolFlow::UpdateFacetParams(BOOL updateSelection) { //Calls facetMesh->Refre
 				facetFlow->SetEditable(TRUE);
 				if (flowE) {
 					if (f0->userOutgassing.length() == 0)
-						facetFlow->SetText(f0->sh.flow*10.00); //10: Pa*m3/sec -> mbar*l/s
+						facetFlow->SetText(f0->sh.outgassing*10.00); //10: Pa*m3/sec -> mbar*l/s
 					else facetFlow->SetText(f0->userOutgassing);
 				}
 				else facetFlow->SetText("...");
-				if (flowAreaE) facetFlowArea->SetText(f0->sh.flow / f0Area*10.00); else facetFlowArea->SetText("...");
+				if (flowAreaE) facetFlowArea->SetText(f0->sh.outgassing / f0Area*10.00); else facetFlowArea->SetText("...");
 				if (f0->sh.desorbType == 3) {
 					facetDesTypeN->SetEditable(TRUE);
 					if (desorbTypeNE) facetDesTypeN->SetText(f0->sh.desorbTypeN); else facetDesTypeN->SetText("...");
@@ -1160,7 +1160,7 @@ void MolFlow::ImportDesorption_DES() {
 			sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), fn->fullName);
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 		}
-		worker.GetGeometry()->CalcTotalOutGassing();
+		worker.CalcTotalOutgassing();
 		UpdateFacetParams();
 	}
 
@@ -1338,7 +1338,7 @@ void MolFlow::InsertGeometry(BOOL newStr, char *fName) {
 		worker.LoadGeometry(fullName, TRUE, newStr);
 
 		Geometry *geom = worker.GetGeometry();
-		geom->CalcTotalOutGassing();
+		worker.CalcTotalOutgassing();
 		/*
 		// Default initialisation
 		viewer[0]->SetWorker(&worker);
@@ -1462,7 +1462,6 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		case MENU_FILE_IMPORTDES_SYN:
 
 			if (geom->IsLoaded()) {
-				Geometry *geom = worker.GetGeometry();
 				if (!importDesorption) importDesorption = new ImportDesorption();
 				importDesorption->SetGeometry(geom, &worker);
 				importDesorption->SetVisible(TRUE);
@@ -1472,7 +1471,6 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		case MENU_FILE_IMPORTDES_DES:
 			ImportDesorption_DES();
 			break;
-
 
 
 		case MENU_FILE_EXPORTTEXTURE_AREA:
@@ -1569,7 +1567,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 				if (AskToReset()) {
 					if (worker.running) worker.Stop_Public();
 					geom->RemoveSelected();
-					geom->CalcTotalOutGassing();
+					worker.CalcTotalOutgassing();
 					//geom->CheckIsolatedVertex();
 					UpdateModelParams();
 					if (vertexCoordinates) vertexCoordinates->Update();
@@ -1662,7 +1660,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 					if (AskToReset()) {
 						if (worker.running) worker.Stop_Public();
 						geom->RemoveSelectedVertex();
-						geom->CalcTotalOutGassing();
+						worker.CalcTotalOutgassing();
 						geom->Rebuild(); //Will recalculate facet parameters
 						UpdateModelParams();
 						if (vertexCoordinates) vertexCoordinates->Update();
@@ -1700,12 +1698,12 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			facetApplyBtn->SetEnabled(TRUE);
 		}
 		else if (src == facetFlow) {
-			double flow;
+			double outgassing;
 			double area;
-			facetFlow->GetNumber(&flow);
+			facetFlow->GetNumber(&outgassing);
 			facetArea->GetNumber(&area);
 			if (area == 0) facetFlowArea->SetText("#DIV0");
-			else facetFlowArea->SetText(flow / area);
+			else facetFlowArea->SetText(outgassing / area);
 			facetApplyBtn->SetEnabled(TRUE);
 			facetFILabel->SetState(TRUE);
 			facetFIAreaLabel->SetState(FALSE);
@@ -1906,7 +1904,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 void MolFlow::BuildPipe(double ratio, int steps) {
 
 	char tmp[256];
-	Geometry *geom = worker.GetGeometry();
+	MolflowGeometry *geom = worker.GetMolflowGeometry();
 
 	double R = 1.0;
 	double L = ratio * R;
@@ -1997,7 +1995,7 @@ void MolFlow::LoadConfig() {
 	try {
 
 		f = new FileReader("molflow.cfg");
-		Geometry *geom = worker.GetGeometry();
+		MolflowGeometry *geom = worker.GetMolflowGeometry();
 
 		f->ReadKeyword("showRules"); f->ReadKeyword(":");
 		for (int i = 0; i < MAX_VIEWER; i++)
@@ -2147,7 +2145,8 @@ void MolFlow::LoadConfig() {
 		BOOL isOpen = f->ReadInt();
 		if (isOpen) shortcutPanel->Open();
 		else shortcutPanel->Close();
-
+		for (int i = 0; i < MAX_VIEWER; i++)
+			viewer[i]->hideLot = f->ReadInt();
 	}
 	catch (Error &err) {
 		/*std::ostringstream tmp;
@@ -2183,7 +2182,7 @@ void MolFlow::SaveConfig() {
 	try {
 
 		f = new FileWriter("molflow.cfg");
-		Geometry *geom = worker.GetGeometry();
+		MolflowGeometry *geom = worker.GetMolflowGeometry();
 
 		// Save flags
 		WRITEI("showRules", showRule);
@@ -2272,6 +2271,7 @@ void MolFlow::SaveConfig() {
 		f->Write("gasMass:"); f->WriteDouble(worker.gasMass, "\n");
 		f->Write("expandShortcutPanel:"); f->WriteInt(!shortcutPanel->IsClosed(), "\n");
 
+		WRITEI("hideLot", hideLot);
 	}
 	catch (Error &err) {
 		GLMessageBox::Display(err.GetMsg(), "Error saving config file", GLDLG_OK, GLDLG_ICONWARNING);
@@ -2284,7 +2284,7 @@ void MolFlow::SaveConfig() {
 void MolFlow::calcFlow() {
 	double sticking;
 	double area;
-	double flow;
+	double outgassing;
 	double temperature;
 	//double mass;
 
@@ -2293,24 +2293,24 @@ void MolFlow::calcFlow() {
 	facetTemperature->GetNumber(&temperature);
 	//facetMass->GetNumber(&mass);
 
-	flow = 1 * sticking*area / 10.0 / 4.0*sqrt(8.0*8.31*temperature / PI / (worker.gasMass*0.001));
-	facetPumping->SetText(flow);
+	outgassing = 1 * sticking*area / 10.0 / 4.0*sqrt(8.0*8.31*temperature / PI / (worker.gasMass*0.001));
+	facetPumping->SetText(outgassing);
 	return;
 }
 
 void MolFlow::calcSticking() {
 	double sticking;
 	double area;
-	double flow;
+	double outgassing;
 	double temperature;
 	//double mass;
 
-	facetPumping->GetNumber(&flow);
+	facetPumping->GetNumber(&outgassing);
 	facetArea->GetNumber(&area);
 	facetTemperature->GetNumber(&temperature);
 	//facetMass->GetNumber(&mass);
 
-	sticking = abs(flow / (area / 10.0)*4.0*sqrt(1.0 / 8.0 / 8.31 / (temperature)*PI*(worker.gasMass*0.001)));
+	sticking = abs(outgassing / (area / 10.0)*4.0*sqrt(1.0 / 8.0 / 8.31 / (temperature)*PI*(worker.gasMass*0.001)));
 	//if (sticking<=1.0) {
 	facetSticking->SetText(sticking);
 	//}
@@ -2358,7 +2358,7 @@ BOOL MolFlow::EvaluateVariable(VLIST *v, Worker *w, Geometry *geom) {
 	else if ((idx = GetVariable(v->name, "P")) > 0) {
 		ok = (idx > 0 && idx <= nbFacet);
 		if (ok) v->value = geom->GetFacet(idx - 1)->counterCache.hit.sum_v_ort *
-			worker.GetMoleculesPerTP()*1E4 / (geom->GetFacet(idx - 1)->sh.area*
+			worker.GetMoleculesPerTP(worker.displayedMoment)*1E4 / (geom->GetFacet(idx - 1)->sh.area*
 			(geom->GetFacet(idx - 1)->sh.is2sided ? 2.0 : 1.0)) * (worker.gasMass / 1000 / 6E23)*0.0100;
 	}
 	else if ((idx = GetVariable(v->name, "DEN")) > 0) {
@@ -2371,14 +2371,14 @@ BOOL MolFlow::EvaluateVariable(VLIST *v, Worker *w, Geometry *geom) {
 					dCoef *= 1.0 - ((double)f->counterCache.hit.nbAbsorbed + (double)f->counterCache.hit.nbDesorbed) / ((double)f->counterCache.hit.nbHit + (double)f->counterCache.hit.nbDesorbed) / 2.0;
 			v->value = dCoef * f->counterCache.hit.sum_1_per_ort_velocity /
 				f->GetArea() *
-				worker.GetMoleculesPerTP()*1E4;
+				worker.GetMoleculesPerTP(worker.displayedMoment)*1E4;
 		}
 	}
 	else if ((idx = GetVariable(v->name, "Z")) > 0) {
 		ok = (idx > 0 && idx <= nbFacet);
 		if (ok) v->value = geom->GetFacet(idx - 1)->counterCache.hit.nbHit /
 			(geom->GetFacet(idx - 1)->sh.area*(geom->GetFacet(idx - 1)->sh.is2sided ? 2.0 : 1.0)) *
-			worker.GetMoleculesPerTP()*1E4;
+			worker.GetMoleculesPerTP(worker.displayedMoment)*1E4;
 	}
 	else if ((idx = GetVariable(v->name, "V")) > 0) {
 		ok = (idx > 0 && idx <= nbFacet);

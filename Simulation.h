@@ -16,24 +16,12 @@
   GNU General Public License for more details.
 */
 
-
-
-#define PI 3.14159265358979323846
-typedef int BOOL;
-#define MAX(x,y) (((x)<(y))?(y):(x))
-#define MIN(x,y) (((x)<(y))?(x):(y))
-#define TRUE  1
-#define FALSE 0
-#define MY_INFINITY 1.e100
-#define SAFE_FREE(x) if(x) { free(x);x=NULL; }
-#define SATURATE(x,min,max) {if(x<(min)) x=(min); if(x>(max)) x=(max);}
 #define MAX_STRUCT 512
-#define TIMELIMIT 0.01
 
 #include "Shared.h"
 #include "SMP.h"
-#include "Distributions.h"
 #include <vector>
+#include "Vector.h"
 #include "Parameter.h"
 
 #ifndef _SIMULATIONH_
@@ -46,7 +34,7 @@ public:
   SHFACET sh;
 
   int      *indices;          // Indices (Reference to geometry vertex)
-  VERTEX2D *vertices2;        // Vertices (2D plane space, UV coordinates)
+  Vector2d *vertices2;        // Vertices (2D plane space, UV coordinates)
   AHIT     **hits;            // Texture hit recording (taking area, temperature, mass into account)
   double   *inc;              // Texure increment
   BOOL     *largeEnough;      // cells that are NOT too small for autoscaling
@@ -140,9 +128,9 @@ typedef struct {
 
   // Geometry
   char        name[64];         // Global name
-  int         nbVertex;         // Number of vertex
-  int         totalFacet;       // Total number of facet
-  VERTEX3D   *vertices3;        // Vertices
+  size_t         nbVertex;         // Number of vertex
+  size_t         totalFacet;       // Total number of facet
+  Vector3d   *vertices3;        // Vertices
   int         nbSuper;          // Number of super structure
   int         curStruct;        // Current structure
   int         teleportedFrom;   // We memorize where the particle came from: we can teleport back
@@ -167,8 +155,8 @@ typedef struct {
   //HANDLE molflowHandle;
 
   // Particle coordinates (MC)
-  VERTEX3D pPos;    // Position
-  VERTEX3D pDir;    // Direction
+  Vector3d pPos;    // Position
+  Vector3d pDir;    // Direction
   //int      nbPHit;  // Number of hit (current particle) //Uncommented as it had no function
   //double   distTraveledCurrentParticle; //Distance traveled by particle before absorption
   double   distTraveledSinceUpdate_total; //includes "half" hits, i.e. when particle decays mid-air
@@ -179,8 +167,8 @@ typedef struct {
   //double   temperature;  //Temeperature of the particle (=temp. of last facet hit)
 
   int motionType;
-  VERTEX3D motionVector1; //base point for rotation
-  VERTEX3D motionVector2; //rotation vector or velocity vector
+  Vector3d motionVector1; //base point for rotation
+  Vector3d motionVector2; //rotation vector or velocity vector
 
   // Angular coefficient (opaque facets)
   int     nbAC;
@@ -271,8 +259,8 @@ int FindBestCuttingPlane(struct AABBNODE *node,int *left,int *right);
 void ComputeBB(struct AABBNODE *node);
 void DestroyAABB(struct AABBNODE *node);
 void IntersectTree(struct AABBNODE *node);
-BOOL Intersect(VERTEX3D *rayPos,VERTEX3D *rayDir,double *dist,FACET **iFact,FACET *last);
-BOOL Visible(VERTEX3D *c1,VERTEX3D *c2,FACET *f1,FACET *f2);
+BOOL Intersect(Vector3d *rayPos,Vector3d *rayDir,double *dist,FACET **iFact,FACET *last);
+BOOL Visible(Vector3d *c1,Vector3d *c2,FACET *f1,FACET *f2);
 BOOL IsInFacet(FACET *f,const double &u,const double &v);
 double GetTick();
 size_t   GetHitsSize();
