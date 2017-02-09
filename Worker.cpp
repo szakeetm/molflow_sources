@@ -946,12 +946,6 @@ void Worker::Update(float appTime) {
 				distTraveledTotal_fullHitsOnly = gHits->distTraveledTotal_fullHitsOnly;
 				nbDesorption = gHits->total.hit.nbDesorbed;
 
-
-
-
-
-
-
 				nbLeakTotal = gHits->nbLeakTotal;
 				nbHHit = gHits->nbHHit;
 				nbLastLeaks = gHits->nbLastLeaks;
@@ -959,8 +953,6 @@ void Worker::Update(float appTime) {
 				memcpy(leakCache, gHits->pLeak, sizeof(LEAK)*NBHHIT);
 
 				// Refresh local facet hit cache for the displayed moment
-
-
 				int nbFacet = geom->GetNbFacet();
 				for (int i = 0; i < nbFacet; i++) {
 					Facet *f = geom->GetFacet(i);

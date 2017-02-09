@@ -1063,13 +1063,14 @@ void FacetMesh::ProcessMessage(GLComponent *src, int message) {
 		
 		else if (src==SojournInfoButton) {
 
-			char tmp[] = "f: Attempt frequency [Hz]\n"
-				"E: Binding energy [J/mole]\n"
-				"A:= exp(-E/(R*T))\n\n"
+			char tmp[] = "f: Molecule's surface oscillation frequency [Hz]\n"
+				"E: Adsorption energy [J/mole]\n"
+				"A: Escape probability per oscillation:\n"
+				"A = exp(-E/(R*T))\n\n"
 				"Probability of sojourn time t:\n"
 				"p(t)= A*f*exp(-A*f*t)\n\n"
 				"Mean sojourn time:\n"
-				"mean= 1/(A*f)\n";
+				"mean= 1/(A*f) = 1/f*exp(E/(kT))\n";
 			GLMessageBox::Display(tmp, "Wall sojourn time", GLDLG_OK, GLDLG_ICONINFO);
 
 		}

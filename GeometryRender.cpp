@@ -55,6 +55,56 @@ void MolflowGeometry::BuildFacetTextures(BYTE *hits, BOOL renderRegularTexture, 
 	GLProgress *prg = new GLProgress("Building texture", "Frame update");
 	prg->SetBounds(5, 28, 300, 90);
 	int startTime = SDL_GetTicks();
+
+	double dCoef_custom[] = { 1.0, 1.0, 1.0 }; //Three coefficients for pressure, imp.rate, density
+											   //Autoscaling limits come from the subprocess corrected by "time factor", which makes constant flow and moment values comparable
+											   //Time correction factor in subprocess: MoleculesPerTP * nbDesorbed
+	double timeCorrection = 1.0;
+	double min, max;
+
+	if (renderRegularTexture) {
+
+
+		switch (shGHit->mode) {
+
+		case MC_MODE:
+
+			dCoef_custom[0] = 1E4 / (double)shGHit->total.hit.nbDesorbed * mApp->worker.gasMass / 1000 / 6E23*0.0100; //multiplied by timecorr*sum_v_ort_per_area: pressure
+			dCoef_custom[1] = 1E4 / (double)shGHit->total.hit.nbDesorbed;
+			dCoef_custom[2] = 1E4 / (double)shGHit->total.hit.nbDesorbed;
+			timeCorrection = (mApp->worker.displayedMoment == 0) ? mApp->worker.finalOutgassingRate : mApp->worker.totalDesorbedMolecules / mApp->worker.timeWindowSize;
+
+			for (int i = 0; i < 3; i++) {
+				//texture limits already corrected by timeFactor in UpdateMCHits()
+				texture_limits[i].autoscale.min.moments_only = shGHit->texture_limits[i].min.moments_only*dCoef_custom[i];
+				texture_limits[i].autoscale.max.moments_only = shGHit->texture_limits[i].max.moments_only*dCoef_custom[i];
+				texture_limits[i].autoscale.min.all = shGHit->texture_limits[i].min.all*dCoef_custom[i];
+				texture_limits[i].autoscale.max.all = shGHit->texture_limits[i].max.all*dCoef_custom[i];
+			}
+			break;
+		case AC_MODE:
+			texture_limits[0].autoscale.min.all = shGHit->texture_limits[0].min.all;
+			texture_limits[0].autoscale.max.all = shGHit->texture_limits[0].max.all;
+			break;
+
+		}
+
+		if (!texAutoScale) { //manual values
+			min = texture_limits[textureMode].manual.min.all;
+			max = texture_limits[textureMode].manual.max.all;
+
+		}
+		else { //autoscale
+			min = texAutoScaleIncludeConstantFlow ?
+				texture_limits[textureMode].autoscale.min.all
+				: texture_limits[textureMode].autoscale.min.moments_only;
+			max = texAutoScaleIncludeConstantFlow ?
+				texture_limits[textureMode].autoscale.max.all
+				: texture_limits[textureMode].autoscale.max.moments_only;
+
+		}
+	}
+
 	for (int i = 0; i < sh.nbFacet; i++) {
 		int time = SDL_GetTicks();
 		if (!prg->IsVisible() && ((time - startTime) > 500)) {
@@ -89,53 +139,8 @@ void MolflowGeometry::BuildFacetTextures(BYTE *hits, BOOL renderRegularTexture, 
 				f->textureError = FALSE;
 			}
 
-			double dCoef_custom[] = { 1.0, 1.0, 1.0 }; //Three coefficients for pressure, imp.rate, density
-													   //Autoscaling limits come from the subprocess corrected by "time factor", which makes constant flow and moment values comparable
-													   //Time correction factor in subprocess: MoleculesPerTP * nbDesorbed
-			double timeCorrection = 1.0;
-
-			switch (shGHit->mode) {
-
-			case MC_MODE:
-
-				dCoef_custom[0] = 1E4 / (double)shGHit->total.hit.nbDesorbed * mApp->worker.gasMass / 1000 / 6E23*0.0100; //multiplied by timecorr*sum_v_ort_per_area: pressure
-				dCoef_custom[1] = 1E4 / (double)shGHit->total.hit.nbDesorbed;
-				dCoef_custom[2] = 1E4 / (double)shGHit->total.hit.nbDesorbed;
-				timeCorrection = (mApp->worker.displayedMoment == 0) ? mApp->worker.finalOutgassingRate : mApp->worker.totalDesorbedMolecules / mApp->worker.timeWindowSize;
-
-				for (int i = 0; i < 3; i++) {
-					//texture limits already corrected by timeFactor in UpdateMCHits()
-					texture_limits[i].autoscale.min.moments_only = shGHit->texture_limits[i].min.moments_only*dCoef_custom[i];
-					texture_limits[i].autoscale.max.moments_only = shGHit->texture_limits[i].max.moments_only*dCoef_custom[i];
-					texture_limits[i].autoscale.min.all = shGHit->texture_limits[i].min.all*dCoef_custom[i];
-					texture_limits[i].autoscale.max.all = shGHit->texture_limits[i].max.all*dCoef_custom[i];
-				}
-				break;
-			case AC_MODE:
-				texture_limits[0].autoscale.min.all = shGHit->texture_limits[0].min.all;
-				texture_limits[0].autoscale.max.all = shGHit->texture_limits[0].max.all;
-				break;
-
-			}
-
 			// Retrieve texture from shared memory (every seconds)
 			AHIT *hits_local = (AHIT *)((BYTE *)shGHit + (f->sh.hitOffset + facetHitsSize + profSize*(1 + nbMoments) + tSize*mApp->worker.displayedMoment));
-
-			double min, max;
-			if (!texAutoScale) { //manual values
-				min = texture_limits[textureMode].manual.min.all;
-				max = texture_limits[textureMode].manual.max.all;
-
-			}
-			else { //autoscale
-				min = texAutoScaleIncludeConstantFlow ?
-					texture_limits[textureMode].autoscale.min.all
-					: texture_limits[textureMode].autoscale.min.moments_only;
-				max = texAutoScaleIncludeConstantFlow ?
-					texture_limits[textureMode].autoscale.max.all
-					: texture_limits[textureMode].autoscale.max.moments_only;
-
-			}
 			f->BuildTexture(hits_local, textureMode, min, max, texColormap,
 				dCoef_custom[0] * timeCorrection, dCoef_custom[1] * timeCorrection, dCoef_custom[2] * timeCorrection, texLogScale, mApp->worker.displayedMoment);
 		}

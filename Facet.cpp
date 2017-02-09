@@ -998,65 +998,10 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 				}
 				if (doLog) {
 					val = (int)((log10(physicalValue) - log10(min))*scaleFactor + 0.5f);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 				}
 				else {
 					val = (int)((physicalValue - min)*scaleFactor + 0.5f);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 				}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 				SATURATE(val, 0, 255);
 				buff8[(i + 1) + (j + 1)*texDimW] = val;
 			}
@@ -1101,8 +1046,6 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 				buff8                // Data
 			);
 		}
-
-
 
 		else {
 			//Rebuild texture
