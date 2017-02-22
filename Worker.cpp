@@ -1064,15 +1064,16 @@ void Worker::ComputeAC(float appTime) {
 }
 
 void Worker::RealReload() { //Sharing geometry with workers
-
+	GLProgress *progressDlg = new GLProgress("Performing preliminary calculations on geometry...", "Passing Geometry to workers");
+	progressDlg->SetVisible(TRUE);
+	progressDlg->SetProgress(0.0);
+	
 	//Do preliminary calculations
 	PrepareToRun();
 
 	if (nbProcess == 0) return;
-
-	GLProgress *progressDlg = new GLProgress("Asking subprocesses to clear geometry...", "Passing Geometry to workers");
-	progressDlg->SetVisible(TRUE);
-	progressDlg->SetProgress(0.0);
+	
+	progressDlg->SetMessage("Asking subprocesses to clear geometry...");
 
 	// Clear geometry
 	CLOSEDP(dpHit);
@@ -1229,11 +1230,6 @@ void Worker::Start() {
 
 	if (!ExecuteAndWait(COMMAND_START, PROCESS_RUN, mode))
 		ThrowSubProcError();
-
-	//Debug memory check
-	//_ASSERTE (!_CrtDumpMemoryLeaks());;
-	_ASSERTE(_CrtCheckMemory());
-
 }
 
 
@@ -1309,6 +1305,7 @@ void Worker::ResetMoments() {
 double Worker::GetMoleculesPerTP(int moment)
 //Returns how many physical molecules one test particle represents
 {
+	if (nbDesorption == 0) return 0; //avoid division by 0
 	if (moment == 0) {
 		//Constant flow
 		//Each test particle represents a certain real molecule influx per second
@@ -1525,19 +1522,6 @@ void Worker::PrepareToRun() {
 				f->sh.IDid = id; //we've already generated an ID for this temperature
 			else
 				f->sh.IDid = GenerateNewID(f->sh.outgassing_paramId);
-
-
-
-
-
-
-
-
-
-
-
-
-
 		}
 
 		//Generate speed distribution functions

@@ -57,7 +57,7 @@ char *cName[] = { "#", "Hits", "Des", "Abs" };
 #ifdef _DEBUG
 std::string appName = "MolFlow+ development version 64-bit (Compiled " __DATE__ " " __TIME__ ") DEBUG MODE";
 #else
-std::string appName = "Molflow+ 2.6.38 64-bit (" __DATE__ ")";
+std::string appName = "Molflow+ 2.6.39 64-bit (" __DATE__ ")";
 #endif
 
 std::vector<string> formulaPrefixes = { "A","D","H","P","DEN","Z","V","T","AR","a","d","h","ar","," };
@@ -1424,8 +1424,10 @@ void MolFlow::StartStopSimulation() {
 	}
 
 	worker.StartStop(m_fTime, modeCombo->GetSelectedIndex());
-	UpdatePlotters();
-	if (autoUpdateFormulas) UpdateFormula();
+	if (!worker.running) { //Force update on simulation stop
+		UpdatePlotters();
+		if (autoUpdateFormulas) UpdateFormula();
+	}
 
 	// Frame rate measurement
 	lastMeasTime = m_fTime;

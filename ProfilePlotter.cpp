@@ -176,7 +176,7 @@ void ProfilePlotter::Refresh() {
 	int nbProf = 0;
 	for (int i = 0; i < nb; i++)
 		if (geom->GetFacet(i)->sh.isProfile) nbProf++;
-	profCombo->Clear(); profCombo->SetSelectedIndex(0);
+	profCombo->Clear();
 	if (nbProf) profCombo->SetSize(nbProf);
 	nbProf = 0;
 	for (int i = 0; i < nb; i++) {
@@ -185,10 +185,10 @@ void ProfilePlotter::Refresh() {
 			char tmp[128];
 			sprintf(tmp, "F#%d %s", i + 1, profType[f->sh.profileType]);
 			profCombo->SetValueAt(nbProf, tmp, i);
-			profCombo->SetSelectedIndex(0);
 			nbProf++;
 		}
 	}
+	profCombo->SetSelectedIndex(nbProf ? 0 : -1);
 	//Remove profiles that aren't present anymore
 	for (int v = 0; v < nbView; v++)
 		if (views[v]->userData1 >= geom->GetNbFacet() || !geom->GetFacet(views[v]->userData1)->sh.isProfile) {
@@ -310,7 +310,6 @@ void ProfilePlotter::refreshViews() {
 
 	Geometry *geom = worker->GetGeometry();
 	SHGHITS *gHits = (SHGHITS *)buffer;
-	double nbDes = (double)gHits->total.hit.nbDesorbed;
 
 
 	double scaleY;
@@ -328,7 +327,7 @@ void ProfilePlotter::refreshViews() {
 			SHHITS *fCount = (SHHITS *)(buffer + f->sh.hitOffset+ worker->displayedMoment*sizeof(SHHITS));
 			double fnbHit = (double)fCount->hit.nbHit;
 			if (fnbHit == 0.0) fnbHit = 1.0;
-			if (nbDes > 0){
+			if (worker->nbDesorption > 0){
 
 				switch (displayMode) {
 				case 0: //Raw data
@@ -415,7 +414,7 @@ void ProfilePlotter::refreshViews() {
 		}
 		else {
 
-			if (v->userData1 == -2 && nbDes != 0.0) {
+			if (v->userData1 == -2 && worker->nbDesorption != 0.0) {
 
 				// Volatile profile
 				v->Reset();
@@ -425,14 +424,14 @@ void ProfilePlotter::refreshViews() {
 					if (f->sh.isVolatile) {
 						SHHITS *fCount = (SHHITS *)(buffer + f->sh.hitOffset+worker->displayedMoment*sizeof(SHHITS));
 						double z = geom->GetVertex(f->indices[0])->z;
-						v->Add(z, (double)(fCount->hit.nbAbsorbed) / nbDes, FALSE);
+						v->Add(z, (double)(fCount->hit.nbAbsorbed) / worker->nbDesorption, FALSE);
 					}
 				}
 				// Last
 				Facet *f = geom->GetFacet(28);
 				SHHITS *fCount = (SHHITS *)(buffer + f->sh.hitOffset+worker->displayedMoment*sizeof(SHHITS));
 				double fnbAbs = (double)fCount->hit.nbAbsorbed;
-				v->Add(1000.0, fnbAbs / nbDes, FALSE);
+				v->Add(1000.0, fnbAbs / worker->nbDesorption, FALSE);
 				v->CommitChange();
 
 				//v->Reset();
@@ -523,14 +522,16 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
 		else if (src == selButton) {
 
 			int idx = profCombo->GetSelectedIndex();
-			geom->UnselectAll();
-			geom->GetFacet(profCombo->GetUserValueAt(idx))->selected = TRUE;
-			geom->UpdateSelection();
+			if (idx >= 0) {
+				geom->UnselectAll();
+				geom->GetFacet(profCombo->GetUserValueAt(idx))->selected = TRUE;
+				geom->UpdateSelection();
 
-			mApp->UpdateFacetParams(TRUE);
+				mApp->UpdateFacetParams(TRUE);
 
-			mApp->facetList->SetSelectedRow(profCombo->GetUserValueAt(idx));
-			mApp->facetList->ScrollToVisible(profCombo->GetUserValueAt(idx), 1, TRUE);
+				mApp->facetList->SetSelectedRow(profCombo->GetUserValueAt(idx));
+				mApp->facetList->ScrollToVisible(profCombo->GetUserValueAt(idx), 1, TRUE);
+			}
 		}
 		else if (src == addButton) {
 

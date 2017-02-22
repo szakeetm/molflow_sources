@@ -198,10 +198,11 @@ void PressureEvolution::Refresh() {
 			char tmp[128];
 			sprintf(tmp, "F#%d %s", i + 1, profType[f->sh.profileType]);
 			profCombo->SetValueAt(nbProf, tmp, i);
-			profCombo->SetSelectedIndex(0);
+			
 			nbProf++;
 		}
 	}
+	profCombo->SetSelectedIndex(nbProf?0:-1);
 	//Remove profiles that aren't present anymore
 	for (int v = 0; v < nbView; v++)
 		if (views[v]->userData1 >= geom->GetNbFacet() || !geom->GetFacet(views[v]->userData1)->sh.isProfile) {
@@ -527,12 +528,14 @@ void PressureEvolution::ProcessMessage(GLComponent *src, int message) {
 		}
 		else if (src == selButton) {
 			int idx = profCombo->GetSelectedIndex();
-			geom->UnselectAll();
-			geom->GetFacet(profCombo->GetUserValueAt(idx))->selected = TRUE;
-			geom->UpdateSelection();
-			mApp->UpdateFacetParams(TRUE);
-			mApp->facetList->SetSelectedRow(profCombo->GetUserValueAt(idx));
-			mApp->facetList->ScrollToVisible(profCombo->GetUserValueAt(idx), 1, TRUE);
+			if (idx >= 0) {
+				geom->UnselectAll();
+				geom->GetFacet(profCombo->GetUserValueAt(idx))->selected = TRUE;
+				geom->UpdateSelection();
+				mApp->UpdateFacetParams(TRUE);
+				mApp->facetList->SetSelectedRow(profCombo->GetUserValueAt(idx));
+				mApp->facetList->ScrollToVisible(profCombo->GetUserValueAt(idx), 1, TRUE);
+			}
 		}
 		else if (src == addButton) {
 			int idx = profCombo->GetSelectedIndex();

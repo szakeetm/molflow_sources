@@ -162,10 +162,10 @@ void TimewisePlotter::Refresh() {
 			char tmp[128];
 			sprintf(tmp, "F#%d %s", i + 1, profType[f->sh.profileType]);
 			profCombo->SetValueAt(nbProf, tmp, i);
-			profCombo->SetSelectedIndex(0);
 			nbProf++;
 		}
 	}
+	profCombo->SetSelectedIndex(nbProf ? 0 : -1);
 	if (nbProf>0 && nbView == 0) addView(profCombo->GetUserValueAt(0));
 	//Remove profiles that aren't present anymore
 	if (nbView>0)
@@ -224,7 +224,6 @@ void TimewisePlotter::refreshViews() {
 
 	Geometry *geom = worker->GetGeometry();
 	SHGHITS *gHits = (SHGHITS *)buffer;
-	double nbDes = (double)gHits->total.hit.nbDesorbed;
 
 	double scaleY;
 
@@ -244,81 +243,82 @@ void TimewisePlotter::refreshViews() {
 		if (m==(nbView-1) && constantFlowToggle->GetState()) momentIndex=0; //Constant flow
 		else momentIndex=m+1; //any other 'normal' moment*/
 		APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + facetHitsSize + v->userData1*sizeof(APROFILE)*PROFILE_SIZE);
+		if (worker->nbDesorption > 0) {
+			switch (displayMode) {
+			case 0: //Raw data
+				for (int j = 0; j < PROFILE_SIZE; j++)
+					v->Add((double)j, (double)profilePtr[j].count, FALSE);
+				break;
 
-		switch (displayMode) {
-		case 0: //Raw data
-			for (int j = 0; j < PROFILE_SIZE; j++)
-				v->Add((double)j, (double)profilePtr[j].count, FALSE);
-			break;
+			case 1: //Pressure
+				scaleY = 1.0 / (f->GetArea() / (double)PROFILE_SIZE*1E-4)* worker->gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
 
-		case 1: //Pressure
-			scaleY = 1.0  / (f->GetArea() / (double)PROFILE_SIZE*1E-4)* worker->gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
-			
-			scaleY *= worker->GetMoleculesPerTP(v->userData1);
-			//if(f->sh.opacity>0.0) scaleY *= f->sh.opacity;
-			//if(IS_ZERO(f->sh.opacity)) scaleY*=2; //transparent profiles are profiled only once...
+				scaleY *= worker->GetMoleculesPerTP(v->userData1);
+				//if(f->sh.opacity>0.0) scaleY *= f->sh.opacity;
+				//if(IS_ZERO(f->sh.opacity)) scaleY*=2; //transparent profiles are profiled only once...
 
-			for (int j = 0; j < PROFILE_SIZE; j++)
-				v->Add((double)j, profilePtr[j].sum_v_ort*scaleY, FALSE);
-			break;
-		case 2: //Particle density
-			scaleY = 1E-4 / (f->GetArea() / (double)PROFILE_SIZE);
-			scaleY *= worker->GetMoleculesPerTP(v->userData1);
-			
-			/*
-			//Correction for double-density effect (measuring density on desorbing/absorbing facets):
-			if (f->sh.counter[v->userData1].hit.nbHit>0 || f->sh.counter[v->userData1].hit.nbDesorbed>0)
-				if (f->sh.counter[v->userData1].hit.nbAbsorbed >0 || f->sh.counter[v->userData1].hit.nbDesorbed>0) //otherwise save calculation time
-				scaleY *= 1.0 - ((double)f->sh.counter[v->userData1].hit.nbAbsorbed + (double)f->sh.counter[v->userData1].hit.nbDesorbed) / ((double)f->sh.counter[v->userData1].hit.nbHit + (double)f->sh.counter[v->userData1].hit.nbDesorbed) / 2.0;
-			*/
+				for (int j = 0; j < PROFILE_SIZE; j++)
+					v->Add((double)j, profilePtr[j].sum_v_ort*scaleY, FALSE);
+				break;
+			case 2: //Particle density
+				scaleY = 1E-4 / (f->GetArea() / (double)PROFILE_SIZE);
+				scaleY *= worker->GetMoleculesPerTP(v->userData1);
 
-			for (int j = 0; j < PROFILE_SIZE; j++)
-				v->Add((double)j, profilePtr[j].sum_1_per_ort_velocity*scaleY, FALSE);
-			break;
-		case 3: {//Velocity
-			double sum = 0.0;
-			double val;
-			double scaleX = f->sh.maxSpeed / (double)PROFILE_SIZE;
-			std::vector<double> values;
-			values.reserve(PROFILE_SIZE);
-			for (int j = 0; j < PROFILE_SIZE; j++) {//count distribution sum
-				if (!correctForGas->GetState())
-					val = (double)profilePtr[j].count;
-				else
-					val = (double)profilePtr[j].count / (((double)j + 0.5)*scaleX); //fnbhit not needed, sum will take care of normalization
-				sum += val;
-				values.push_back(val);
+				/*
+				//Correction for double-density effect (measuring density on desorbing/absorbing facets):
+				if (f->sh.counter[v->userData1].hit.nbHit>0 || f->sh.counter[v->userData1].hit.nbDesorbed>0)
+					if (f->sh.counter[v->userData1].hit.nbAbsorbed >0 || f->sh.counter[v->userData1].hit.nbDesorbed>0) //otherwise save calculation time
+					scaleY *= 1.0 - ((double)f->sh.counter[v->userData1].hit.nbAbsorbed + (double)f->sh.counter[v->userData1].hit.nbDesorbed) / ((double)f->sh.counter[v->userData1].hit.nbHit + (double)f->sh.counter[v->userData1].hit.nbDesorbed) / 2.0;
+				*/
+
+				for (int j = 0; j < PROFILE_SIZE; j++)
+					v->Add((double)j, profilePtr[j].sum_1_per_ort_velocity*scaleY, FALSE);
+				break;
+			case 3: {//Velocity
+				double sum = 0.0;
+				double val;
+				double scaleX = f->sh.maxSpeed / (double)PROFILE_SIZE;
+				std::vector<double> values;
+				values.reserve(PROFILE_SIZE);
+				for (int j = 0; j < PROFILE_SIZE; j++) {//count distribution sum
+					if (!correctForGas->GetState())
+						val = (double)profilePtr[j].count;
+					else
+						val = (double)profilePtr[j].count / (((double)j + 0.5)*scaleX); //fnbhit not needed, sum will take care of normalization
+					sum += val;
+					values.push_back(val);
+				}
+				for (int j = 0; j < PROFILE_SIZE; j++)
+					v->Add((double)j*scaleX, values[j] / sum, FALSE);
+				break; }
+			case 4: {//Angle
+				double sum = 0.0;
+				double val;
+				double scaleX = 90.0 / (double)PROFILE_SIZE;
+				std::vector<double> values;
+				values.reserve(PROFILE_SIZE);
+				for (int j = 0; j < PROFILE_SIZE; j++) {//count distribution sum
+					if (!correctForGas->GetState())
+						val = (double)profilePtr[j].count;
+					else
+						val = (double)profilePtr[j].count / sin(((double)j + 0.5)*PI / 2.0 / (double)PROFILE_SIZE); //fnbhit not needed, sum will take care of normalization
+					sum += val;
+					values.push_back(val);
+				}
+				for (int j = 0; j < PROFILE_SIZE; j++)
+					v->Add((double)j*scaleX, values[j] / sum, FALSE);
+				break; }
+			case 5: //To 1 (max value)
+				llong max = 1;
+				for (int j = 0; j < PROFILE_SIZE; j++)
+				{
+					if (profilePtr[j].count > max) max = profilePtr[j].count;
+				}
+				scaleY = 1.0 / (double)max;
+				for (int j = 0; j < PROFILE_SIZE; j++)
+					v->Add((double)j, (double)profilePtr[j].count*scaleY, FALSE);
+				break;
 			}
-			for (int j = 0; j < PROFILE_SIZE; j++)
-				v->Add((double)j*scaleX, values[j] / sum, FALSE);
-			break; }
-		case 4: {//Angle
-			double sum = 0.0;
-			double val;
-			double scaleX = 90.0 / (double)PROFILE_SIZE;
-			std::vector<double> values;
-			values.reserve(PROFILE_SIZE);
-			for (int j = 0; j < PROFILE_SIZE; j++) {//count distribution sum
-				if (!correctForGas->GetState())
-					val = (double)profilePtr[j].count;
-				else
-					val = (double)profilePtr[j].count / sin(((double)j + 0.5)*PI / 2.0 / (double)PROFILE_SIZE); //fnbhit not needed, sum will take care of normalization
-				sum += val;
-				values.push_back(val);
-			}
-			for (int j = 0; j < PROFILE_SIZE; j++)
-				v->Add((double)j*scaleX, values[j] / sum, FALSE);
-			break; }
-		case 5: //To 1 (max value)
-			llong max = 1;
-			for (int j = 0; j < PROFILE_SIZE; j++)
-			{
-				if (profilePtr[j].count > max) max = profilePtr[j].count;
-			}
-			scaleY = 1.0 / (double)max;
-			for (int j = 0; j < PROFILE_SIZE; j++)
-				v->Add((double)j, (double)profilePtr[j].count*scaleY, FALSE);
-			break;
 		}
 		v->CommitChange();
 
@@ -408,12 +408,14 @@ void TimewisePlotter::ProcessMessage(GLComponent *src, int message) {
 		}
 		else if (src == selButton) {
 			int idx = profCombo->GetSelectedIndex();
-			geom->UnselectAll();
-			geom->GetFacet(profCombo->GetUserValueAt(idx))->selected = TRUE;
-			geom->UpdateSelection();
-			mApp->UpdateFacetParams(TRUE);
-			mApp->facetList->SetSelectedRow(profCombo->GetUserValueAt(idx));
-			mApp->facetList->ScrollToVisible(profCombo->GetUserValueAt(idx), 1, TRUE);
+			if (idx >= 0) {
+				geom->UnselectAll();
+				geom->GetFacet(profCombo->GetUserValueAt(idx))->selected = TRUE;
+				geom->UpdateSelection();
+				mApp->UpdateFacetParams(TRUE);
+				mApp->facetList->SetSelectedRow(profCombo->GetUserValueAt(idx));
+				mApp->facetList->ScrollToVisible(profCombo->GetUserValueAt(idx), 1, TRUE);
+			}
 		} /*else if(src==addButton) {
 			int idx = profCombo->GetSelectedIndex();
 			if(idx>=0) addView(profCombo->GetUserValueAt(idx));
