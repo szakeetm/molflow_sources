@@ -3177,10 +3177,12 @@ BOOL MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit,
 				facetCounter->hit.sum_v_ort = facetHitNode.attribute("sum_v_ort").as_double();
 				facetCounter->hit.sum_1_per_ort_velocity = facetHitNode.attribute("sum_1_per_v").as_double();
 
-				if (work->displayedMoment == m) { //For immediate display in facet hits list
+				if (work->displayedMoment == m) { //For immediate display in facet hits list and facet counter
 					f->counterCache.hit.nbHit = facetCounter->hit.nbHit;
 					f->counterCache.hit.nbDesorbed = facetCounter->hit.nbDesorbed;
 					f->counterCache.hit.nbAbsorbed = facetCounter->hit.nbAbsorbed;
+					f->counterCache.hit.sum_v_ort = facetCounter->hit.sum_v_ort;
+					f->counterCache.hit.sum_1_per_ort_velocity = facetCounter->hit.sum_1_per_ort_velocity;
 				}
 			}
 			else { //No hit information, so set to 0

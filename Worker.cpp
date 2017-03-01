@@ -157,7 +157,7 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 	if (isTXT || isGEO || isGEO7Z || isSTR || isXML || isXMLzip) {
 
 		if ((isGEO7Z) && WAIT_TIMEOUT == WaitForSingleObject(mApp->compressProcessHandle, 0)) {
-			GLMessageBox::Display("Compressing a previous save file is in progress. Wait until that finishes"
+			GLMessageBox::Display("Compressing a previous save file is in progress. Wait until that finishes "
 				"or close process \"compress.exe\"\nIf this was an autosave attempt,"
 				"you have to lower the autosave frequency.", "Can't save right now.", GLDLG_OK, GLDLG_ICONERROR);
 			return;
@@ -981,10 +981,7 @@ void Worker::SendHits(BOOL skipFacetHits ) {
 	if (dpHit) {
 		if (AccessDataport(dpHit)) {
 
-
 			SHGHITS *gHits = (SHGHITS *)dpHit->buff;
-
-
 
 			gHits->total.hit.nbHit = nbHit;
 			gHits->nbLeakTotal = nbLeakTotal;
@@ -995,14 +992,11 @@ void Worker::SendHits(BOOL skipFacetHits ) {
 
 			if (!skipFacetHits) {
 
-
-
-
 				int nbFacet = geom->GetNbFacet();
 				for (int i = 0; i < nbFacet; i++) {
 					Facet *f = geom->GetFacet(i);
-					for (size_t m = 0;m <= moments.size();m++)
-						*((SHHITS*)((BYTE*)dpHit->buff + f->sh.hitOffset + m * sizeof(SHHITS))) = f->counterCache;
+					/*for (size_t m = 0;m <= moments.size();m++)*/
+					*((SHHITS*)((BYTE*)dpHit->buff + f->sh.hitOffset /* + m * sizeof(SHHITS) */)) = f->counterCache;
 				}
 
 			}
