@@ -167,7 +167,7 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer) {
 			if (f->cellPropertiesIds) {
 				for (int j = 0; j < f->sh.texHeight; j++) {
 					for (int i = 0; i < f->sh.texWidth; i++) {
-						double area = f->GetMeshArea(add);
+						double area = f->GetMeshArea(add,TRUE);
 
 						if (area > 0.0) {
 							// Use the sign bit to store isFull flag
