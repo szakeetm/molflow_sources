@@ -631,21 +631,20 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 				progressDlg->SetMessage("Reloading worker with new geometry...");
 				RealReload(); //for the loading of textures
 				if (version >= 8) geom->LoadProfile(f, dpHit, version);
-				SAFE_DELETE(f);
 				SetLeakCache(loaded_leakCache, &loaded_nbLeak, dpHit);
 				SetHitCache(hitCache, &hitCacheSize, dpHit);
 				SendHits(); //Global and facet hit counters
 				
 				progressDlg->SetMessage("Loading textures...");
-				LoadTexturesGEO(toOpen, version);
+				LoadTexturesGEO(f, version);
 				strcpy(fullFileName, fileName);
 			}
 			else { //insert
 				mApp->changedSinceSave = TRUE;
 				geom->InsertGEO(f, progressDlg, newStr);
-				SAFE_DELETE(f);
 				Reload();
 			}
+			SAFE_DELETE(f);
 		}
 
 		catch (Error &e) {
@@ -787,14 +786,10 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 	}
 }
 
-void Worker::LoadTexturesGEO(std::string fileName, int version) {
-
-	if (FileUtils::GetExtension(fileName) == "geo") {
+void Worker::LoadTexturesGEO(FileReader *f, int version) {	
 		GLProgress *progressDlg = new GLProgress("Loading textures", "Please wait");
 		progressDlg->SetProgress(0.0);
-		FileReader *f = NULL;
 		try {
-			f = new FileReader(fileName);
 			progressDlg->SetVisible(TRUE);
 			geom->LoadTextures(f, progressDlg, dpHit, version);
 			RebuildTextures();
@@ -805,9 +800,7 @@ void Worker::LoadTexturesGEO(std::string fileName, int version) {
 			GLMessageBox::Display(tmp, "Error while loading textures.", GLDLG_OK, GLDLG_ICONWARNING);
 		}
 		progressDlg->SetVisible(FALSE);
-		SAFE_DELETE(progressDlg);
-		SAFE_DELETE(f);
-	}
+		SAFE_DELETE(progressDlg);	
 }
 
 void Worker::InnerStop(float appTime) {

@@ -58,7 +58,7 @@ public:
   //void InsertGeometry(BOOL newStr,char *fileName);
 
   // Load a textures(throws Error)
-  void LoadTexturesGEO(std::string fileName,int version);
+  void LoadTexturesGEO(FileReader *f,int version);
   void RebuildTextures();
 
   // Save a geometry (throws Error)
