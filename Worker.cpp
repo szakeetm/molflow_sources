@@ -309,7 +309,7 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 	if (ok && isGEO7Z) {
 
 		if (FileUtils::Exist("compress.exe")) { //compress GEO file to GEO7Z using 7-zip launcher "compress.exe"
-			sprintf(tmp, "compress.exe \"%s\"", fileNameWithGeo);
+			sprintf(tmp, "compress.exe \"%s\" Geometry.geo", fileNameWithGeo);
 			int procId = StartProc(tmp,STARTPROC_BACKGROUND);
 
 			mApp->compressProcessHandle = OpenProcess(PROCESS_ALL_ACCESS, TRUE, procId);

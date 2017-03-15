@@ -1317,12 +1317,6 @@ BOOL MolflowGeometry::LoadTextures(FileReader *file, GLProgress *prg, Dataport *
 
 			file->ReadKeyword("min_density_all"); file->ReadKeyword(":");
 
-
-
-
-
-
-
 			gHits->texture_limits[2].min.all = file->ReadDouble();
 			file->ReadKeyword("min_density_moments_only"); file->ReadKeyword(":");
 
@@ -1334,7 +1328,7 @@ BOOL MolflowGeometry::LoadTextures(FileReader *file, GLProgress *prg, Dataport *
 
 			gHits->texture_limits[2].max.moments_only = file->ReadDouble();
 
-			size_t facetHitsSize = (1 + mApp->worker.moments.size()) + sizeof(SHHITS);
+			size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(SHHITS);
 			for (size_t m = 0; m <= mApp->worker.moments.size() || (m == 0 /*&& version<10*/); m++){
 				//if (version>=10) {
 				file->ReadKeyword("moment");
@@ -1390,21 +1384,10 @@ BOOL MolflowGeometry::LoadTextures(FileReader *file, GLProgress *prg, Dataport *
 								hits[iy*f->sh.texWidth + ix].sum_1_per_ort_velocity = file->ReadDouble();
 								hits[iy*f->sh.texWidth + ix].sum_v_ort_per_area = file->ReadDouble();
 
-
-
-
-
-
-
-
-
-
-
 							}
 							for (int ie = 0; ie < texWidth_file - f->sh.texWidth; ie++) {//Executed if file texture is bigger than expected texture
 								//Read extra cells from file without doing anything
 								file->ReadLLong();
-
 								file->ReadDouble();
 								file->ReadDouble();
 							}
@@ -1422,7 +1405,6 @@ BOOL MolflowGeometry::LoadTextures(FileReader *file, GLProgress *prg, Dataport *
 					}
 				}
 				/*if (version>=10)*/ file->ReadKeyword("}");
-
 			}
 		}
 
