@@ -150,8 +150,8 @@ char *GetSimuStatus() {
 
   int mode;
   static char ret[128];
-  llong count = sHandle->nbDesorbed;
-  llong max   = sHandle->maxDesorption;
+  llong count = sHandle->totalDesorbed;
+  llong max   = sHandle->desorptionLimit;
 
   mode = sHandle->sMode;
   if( GetLocalState()==PROCESS_RUNAC ) mode = AC_MODE;
@@ -341,7 +341,7 @@ int main(int argc,char* argv[])
         printf("COMMAND: LOAD (%zd,%llu)\n",prParam,prParam2);
         Load();
         if( sHandle->loadOK ) {
-          sHandle->maxDesorption = prParam2; // 0 for endless
+          sHandle->desorptionLimit = prParam2; // 0 for endless
           SetReady();
         }
         break;

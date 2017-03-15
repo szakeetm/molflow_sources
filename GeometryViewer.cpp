@@ -20,6 +20,7 @@ GNU General Public License for more details.
 #include "GeometryViewer.h"
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMatrix.h"
+#include "GLApp/MathTools.h"
 #include <math.h>
 #include <malloc.h>
 
@@ -63,182 +64,176 @@ void GeometryViewer::SetBounds(int x, int y, int width, int height) {
 
 void GeometryViewer::DrawLinesAndHits() {
 
-	// Draw Lines and Hits
-	if ((showLine || showHit) && work->nbHit > 0) {
+	// Lines
+	if (showLine && mApp->worker.hitCacheSize) {
 
-		// Retrieve hit data
-		HIT pHits[NBHHIT];
-		int nbHHit;
-		work->GetHHit(pHits, &nbHHit);
-
-		if (nbHHit) {
-
-			// Lines
-			if (showLine) {
-
-				glDisable(GL_TEXTURE_2D);
-				glDisable(GL_LIGHTING);
-
-				glDisable(GL_CULL_FACE);
-
-				if (mApp->whiteBg) { //whitebg
-					glColor3f(0.2f, 0.7f, 0.2f);
-				}
-				else {
-					glColor3f(0.5f, 1.0f, 0.5f);
-
-				}
-
-				int count = 0;
-
-				while (count < dispNumHits && pHits[count].type != 0) {
-					//if (count>0&&pHits[count].type==HIT_DES&&pHits[count-1].type!=HIT_ABS) __debugbreak(); //desorbed without being absorbed first
-
-					if (mApp->antiAliasing) { glEnable(GL_BLEND);glEnable(GL_LINE_SMOOTH); }glBegin(GL_LINE_STRIP);
-					while (count < dispNumHits && pHits[count].type != HIT_ABS) {
-
-						//teleport routine
-						if (pHits[count].type == HIT_TELEPORT) {
-							glVertex3d(pHits[count].pos.x, pHits[count].pos.y, pHits[count].pos.z);
-							glEnd();
-							if (!mApp->whiteBg) {
-								glColor3f(1.0f, 0.7f, 0.2f);
-							}
-							else {
-								glColor3f(1.0f, 0.0f, 1.0f);
-							}
-							glPushAttrib(GL_ENABLE_BIT);
-
-							glLineStipple(1, 0x0101);
-							glEnable(GL_LINE_STIPPLE);
-							glBegin(GL_LINE_STRIP);
-							glVertex3d(pHits[count].pos.x, pHits[count].pos.y, pHits[count].pos.z); //source point
-							count++;
-							glVertex3d(pHits[count].pos.x, pHits[count].pos.y, pHits[count].pos.z);  //teleport dest.
-							glEnd();
-							glPopAttrib();
-
-							if (mApp->whiteBg) { //whitebg
-
-								glColor3f(0.2f, 0.7f, 0.2f);
-
-							}
-							else {
-
-
-								glColor3f(0.5f, 1.0f, 0.5f);
-							}
-							glBegin(GL_LINE_STRIP);
-						}
+		glDisable(GL_TEXTURE_2D);
+		glDisable(GL_LIGHTING);
+		glDisable(GL_CULL_FACE);
 
 
 
-						glVertex3d(pHits[count].pos.x, pHits[count].pos.y, pHits[count].pos.z);
-						count++;
-						if (pHits[count].type == LASTHIT) { //pen up at cache refresh border
-							glEnd();
-							count++;
-							glBegin(GL_LINE_STRIP);
-						}
-					}
-					if (count < dispNumHits && pHits[count].type != 0) {
-						glVertex3d(pHits[count].pos.x, pHits[count].pos.y, pHits[count].pos.z);
-						count++;
-					}
-					glEnd();
-					if (mApp->antiAliasing) {
-						glDisable(GL_LINE_SMOOTH);
-						glDisable(GL_BLEND);
-					}
-				}
+		int count = 0;
+		while (count < MIN(dispNumHits, mApp->worker.hitCacheSize) && mApp->worker.hitCache[count].type != 0) {
 
+			if (mApp->whiteBg) { //whitebg
+				glColor3f(0.2f, 0.7f, 0.2f);
+			}
+			else {
+				glColor3f(0.5f, 1.0f, 0.5f);
 			}
 
-			// Hit
-			if (showHit) {
+			if (mApp->antiAliasing) {
+				glEnable(GL_BLEND);
+				glEnable(GL_LINE_SMOOTH);
+			}
 
-				glDisable(GL_TEXTURE_2D);
-				glDisable(GL_LIGHTING);
-				glDisable(GL_BLEND);
-				glDisable(GL_CULL_FACE);
+			glBegin(GL_LINE_STRIP);
+			while (count < MIN(dispNumHits, mApp->worker.hitCacheSize) && mApp->worker.hitCache[count].type != HIT_ABS) {
 
-				// Refl
-				float pointSize = (bigDots) ? 2.0f : 1.0f;
-				glPointSize(pointSize);
-				if (mApp->whiteBg) { //whitebg
-					glColor3f(0.2f, 0.2f, 0.2f);
-				}
-				else {
-					glColor3f(0.0f, 1.0f, 0.0f);
-				}
-				glBegin(GL_POINTS);
-				for (int i = 0;i < dispNumHits;i++)
-					if (pHits[i].type == HIT_REF)
-						glVertex3d(pHits[i].pos.x, pHits[i].pos.y, pHits[i].pos.z);
-				glEnd();
+				//teleport routine
+				if (mApp->worker.hitCache[count].type == HIT_TELEPORT) {
+					glVertex3d(mApp->worker.hitCache[count].pos.x, mApp->worker.hitCache[count].pos.y, mApp->worker.hitCache[count].pos.z);
+					glEnd();
+					if (showTP) {
+						if (!mApp->whiteBg) {
+							glColor3f(1.0f, 0.7f, 0.2f);
+						}
+						else {
+							glColor3f(1.0f, 0.0f, 1.0f);
+						}
+						glPushAttrib(GL_ENABLE_BIT);
 
-				// Moving Refl
+						glLineStipple(1, 0x0101);
+						glEnable(GL_LINE_STIPPLE);
+						glBegin(GL_LINE_STRIP);
+						glVertex3d(mApp->worker.hitCache[count].pos.x, mApp->worker.hitCache[count].pos.y, mApp->worker.hitCache[count].pos.z); //source point
+						count++;
+						glVertex3d(mApp->worker.hitCache[count].pos.x, mApp->worker.hitCache[count].pos.y, mApp->worker.hitCache[count].pos.z);  //teleport dest.
+						glEnd();
+						glPopAttrib();
 
-				glPointSize(pointSize);
-				/*if (mApp->whiteBg) { //whitebg
-					glColor3f(0.2f, 0.2f, 0.2f);
-				}
-				else {*/
-				glColor3f(1.0f, 0.0f, 1.0f);
-				//}
-				glBegin(GL_POINTS);
-				for (int i = 0; i < dispNumHits; i++)
-					if (pHits[i].type == HIT_MOVING)
-						glVertex3d(pHits[i].pos.x, pHits[i].pos.y, pHits[i].pos.z);
-				glEnd();
-
-				// Trans
-				pointSize = (bigDots) ? 3.0f : 2.0f;
-				glPointSize(pointSize);
-				glColor3f(0.5f, 1.0f, 1.0f);
-				glBegin(GL_POINTS);
-				for (int i = 0;i < dispNumHits;i++)
-					if (pHits[i].type == HIT_TRANS)
-						glVertex3d(pHits[i].pos.x, pHits[i].pos.y, pHits[i].pos.z);
-				glEnd();
-
-				// Teleport
-				if (showTP) {
-					//pointSize=(bigDots)?3.0f:2.0f;
-					glPointSize(pointSize);
-					if (!mApp->whiteBg) {
-						glColor3f(1.0f, 0.7f, 0.2f);
+						if (mApp->whiteBg) { //whitebg
+							glColor3f(0.2f, 0.7f, 0.2f);
+						}
+						else {
+							glColor3f(0.5f, 1.0f, 0.5f);
+						}
+						glBegin(GL_LINE_STRIP);
 					}
 					else {
-						glColor3f(1.0f, 0.0f, 1.0f);
+
+						//glVertex3d(hitCache[count].pos.x , hitCache[count].pos.y , hitCache[count].pos.z); //source point
+						count++;
+						glBegin(GL_LINE_STRIP);
+						glVertex3d(mApp->worker.hitCache[count].pos.x, mApp->worker.hitCache[count].pos.y, mApp->worker.hitCache[count].pos.z);  //teleport dest.
+
 					}
-					glBegin(GL_POINTS);
-					for (int i = 0;i < dispNumHits;i++)
-						if (pHits[i].type == HIT_TELEPORT)
-							glVertex3d(pHits[i].pos.x, pHits[i].pos.y, pHits[i].pos.z);
-					glEnd();
 				}
 
-				// Abs
-				glPointSize(pointSize);
-				glColor3f(1.0f, 0.0f, 0.0f);
-				glBegin(GL_POINTS);
-				for (int i = 0;i < dispNumHits;i++)
-					if (pHits[i].type == HIT_ABS)
-						glVertex3d(pHits[i].pos.x, pHits[i].pos.y, pHits[i].pos.z);
-				glEnd();
 
-				// Des
-				glColor3f(0.3f, 0.3f, 1.0f);
-				glBegin(GL_POINTS);
-				for (int i = 0;i < dispNumHits;i++)
-					if (pHits[i].type == HIT_DES)
-						glVertex3d(pHits[i].pos.x, pHits[i].pos.y, pHits[i].pos.z);
-				glEnd();
-
+				glVertex3d(mApp->worker.hitCache[count].pos.x, mApp->worker.hitCache[count].pos.y, mApp->worker.hitCache[count].pos.z);
+				count++;
+				if (mApp->worker.hitCache[count].type == LASTHIT) { //pen up at cache refresh border
+					glEnd();
+					count++;
+					glBegin(GL_LINE_STRIP);
+				}
 			}
-
+			if (count < MIN(dispNumHits, mApp->worker.hitCacheSize) && mApp->worker.hitCache[count].type != 0) {
+				glVertex3d(mApp->worker.hitCache[count].pos.x, mApp->worker.hitCache[count].pos.y, mApp->worker.hitCache[count].pos.z);
+				count++;
+			}
+			glEnd();
+			if (mApp->antiAliasing) {
+				glDisable(GL_LINE_SMOOTH);
+				glDisable(GL_BLEND);
+			}
 		}
+
+	}
+
+	// Hit
+	if (showHit) {
+
+		glDisable(GL_TEXTURE_2D);
+		glDisable(GL_LIGHTING);
+		glDisable(GL_BLEND);
+		glDisable(GL_CULL_FACE);
+
+		// Refl
+		float pointSize = (bigDots) ? 2.0f : 1.0f;
+		glPointSize(pointSize);
+		if (mApp->whiteBg) { //whitebg
+			glColor3f(0.2f, 0.2f, 0.2f);
+		}
+		else {
+			glColor3f(0.0f, 1.0f, 0.0f);
+		}
+		glBegin(GL_POINTS);
+		for (int i = 0; i < MIN(dispNumHits, mApp->worker.hitCacheSize); i++)
+			if (mApp->worker.hitCache[i].type == HIT_REF)
+				glVertex3d(mApp->worker.hitCache[i].pos.x, mApp->worker.hitCache[i].pos.y, mApp->worker.hitCache[i].pos.z);
+		glEnd();
+
+		// Moving Refl
+
+		glPointSize(pointSize);
+		/*if (mApp->whiteBg) { //whitebg
+			glColor3f(0.2f, 0.2f, 0.2f);
+		}
+		else {*/
+		glColor3f(1.0f, 0.0f, 1.0f);
+		//}
+		glBegin(GL_POINTS);
+		for (int i = 0; i < MIN(dispNumHits, mApp->worker.hitCacheSize); i++)
+			if (mApp->worker.hitCache[i].type == HIT_MOVING)
+				glVertex3d(mApp->worker.hitCache[i].pos.x, mApp->worker.hitCache[i].pos.y, mApp->worker.hitCache[i].pos.z);
+		glEnd();
+
+		// Trans
+		pointSize = (bigDots) ? 3.0f : 2.0f;
+		glPointSize(pointSize);
+		glColor3f(0.5f, 1.0f, 1.0f);
+		glBegin(GL_POINTS);
+		for (int i = 0; i < MIN(dispNumHits, mApp->worker.hitCacheSize); i++)
+			if (mApp->worker.hitCache[i].type == HIT_TRANS)
+				glVertex3d(mApp->worker.hitCache[i].pos.x, mApp->worker.hitCache[i].pos.y, mApp->worker.hitCache[i].pos.z);
+		glEnd();
+
+		// Teleport
+		if (showTP) {
+			//pointSize=(bigDots)?3.0f:2.0f;
+			glPointSize(pointSize);
+			if (!mApp->whiteBg) {
+				glColor3f(1.0f, 0.7f, 0.2f);
+			}
+			else {
+				glColor3f(1.0f, 0.0f, 1.0f);
+			}
+			glBegin(GL_POINTS);
+			for (int i = 0; i < MIN(dispNumHits, mApp->worker.hitCacheSize); i++)
+				if (mApp->worker.hitCache[i].type == HIT_TELEPORT)
+					glVertex3d(mApp->worker.hitCache[i].pos.x, mApp->worker.hitCache[i].pos.y, mApp->worker.hitCache[i].pos.z);
+			glEnd();
+		}
+
+		// Abs
+		glPointSize(pointSize);
+		glColor3f(1.0f, 0.0f, 0.0f);
+		glBegin(GL_POINTS);
+		for (int i = 0; i < MIN(dispNumHits, mApp->worker.hitCacheSize); i++)
+			if (mApp->worker.hitCache[i].type == HIT_ABS)
+				glVertex3d(mApp->worker.hitCache[i].pos.x, mApp->worker.hitCache[i].pos.y, mApp->worker.hitCache[i].pos.z);
+		glEnd();
+
+		// Des
+		glColor3f(0.3f, 0.3f, 1.0f);
+		glBegin(GL_POINTS);
+		for (int i = 0; i < MIN(dispNumHits, mApp->worker.hitCacheSize); i++)
+			if (mApp->worker.hitCache[i].type == HIT_DES)
+				glVertex3d(mApp->worker.hitCache[i].pos.x, mApp->worker.hitCache[i].pos.y, mApp->worker.hitCache[i].pos.z);
+		glEnd();
 
 	}
 

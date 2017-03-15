@@ -26,8 +26,8 @@
 #define SHAREDH
 
 #define PROFILE_SIZE  100 // Size of profile
-#define NBHLEAK     2048  // Leak history max length
-#define NBHHIT      2048  // Max. displayed number of lines and Porto (OPO)hits.
+#define LEAKCACHESIZE     2048  // Leak history max length
+#define HITCACHESIZE      2048  // Max. displayed number of lines and Porto (OPO)hits.
 #define BOUNCEMAX   8192  // 'Wall collision count before absoprtion' histogram
 #define MAX_PROCESS 32    // Maximum number of process
 
@@ -54,22 +54,22 @@
 typedef float ACFLOAT;
 
 typedef union {
-  
-  struct {
-    // Counts
-    llong nbDesorbed;          // Number of desorbed molec
-    llong nbHit;               // Number of hits
-	llong nbAbsorbed;          // Number of absorbed molec
-	double sum_1_per_ort_velocity;    // sum of reciprocials of orthogonal velocity components, used to determine the density, regardless of facet orientation
-	double sum_v_ort;          // sum of orthogonal speeds of incident velocities, used to determine the pressure
-  } hit;
 
-  struct {
-    // density
-    double desorbed;
-    double value;
-    double absorbed;
-  } density;
+	struct {
+		// Counts
+		llong nbDesorbed;          // Number of desorbed molec
+		llong nbHit;               // Number of hits
+		llong nbAbsorbed;          // Number of absorbed molec
+		double sum_1_per_ort_velocity;    // sum of reciprocials of orthogonal velocity components, used to determine the density, regardless of facet orientation
+		double sum_v_ort;          // sum of orthogonal speeds of incident velocities, used to determine the pressure
+	} hit;
+
+	struct {
+		// density
+		double desorbed;
+		double value;
+		double absorbed;
+	} density;
 
 } SHHITS;
 
@@ -94,22 +94,27 @@ typedef struct {
 
 typedef struct {
 
-  SHHITS total;               // Global counts
-  int    mode;                // Simu mode (MC_MODE or AC_MODE)
-  llong  nbLeakTotal;         // Total leaks
-  int    nbLastLeaks;         // Last leaks
-  int    nbHHit;              // Last hits
-  HIT    pHits[NBHHIT];       // Hit cache
-  LEAK   pLeak[NBHLEAK];      // Leak cache
-  TEXTURE_MIN_MAX texture_limits[3]; //Min-max on texture
- /* AHIT   minHit;              // Minimum on texture
-  AHIT   maxHit;              // Maximum on texture
-  AHIT   minHitMomentsOnly;   // Minimum, not counting constant flow
-  AHIT   maxHitMomentsOnly;   // Maximum, not counting constant flow*/
-  //llong  wallHits[BOUNCEMAX]; // 'Wall collision count before absoprtion' density histogram
-  double distTraveledTotal_total;
-  double distTraveledTotal_fullHitsOnly;
-  
+	int    mode;                // Simu mode (MC_MODE or AC_MODE)
+
+	SHHITS total;               // Global counts
+	size_t hitCacheSize;              // Number of valid hits in cache
+	size_t lastHitIndex;					//Index of last recorded hit in gHits (turns over when reaches HITCACHESIZE)
+	HIT    hitCache[HITCACHESIZE];       // Hit history
+
+	size_t  lastLeakIndex;		  //Index of last recorded leak in gHits (turns over when reaches LEAKCACHESIZE)
+	size_t  leakCacheSize;        //Number of valid leaks in the cache
+	size_t  nbLeakTotal;         // Total leaks
+	LEAK   leakCache[LEAKCACHESIZE];      // Leak history
+
+	TEXTURE_MIN_MAX texture_limits[3]; //Min-max on texture
+   /* AHIT   minHit;              // Minimum on texture
+	AHIT   maxHit;              // Maximum on texture
+	AHIT   minHitMomentsOnly;   // Minimum, not counting constant flow
+	AHIT   maxHitMomentsOnly;   // Maximum, not counting constant flow*/
+	//llong  wallHits[BOUNCEMAX]; // 'Wall collision count before absoprtion' density histogram
+	double distTraveledTotal_total;
+	double distTraveledTotal_fullHitsOnly;
+
 } SHGHITS;
 
 
@@ -161,12 +166,12 @@ static const char *prStates[] = {
 };
 
 typedef struct {
-  
-  // Process control
-  int		states[MAX_PROCESS];        // Process states/commands
-  size_t    cmdParam[MAX_PROCESS];      // Command param 1
-  llong		cmdParam2[MAX_PROCESS];     // Command param 2
-  char		statusStr[MAX_PROCESS][64]; // Status message
+
+	// Process control
+	int		states[MAX_PROCESS];        // Process states/commands
+	size_t    cmdParam[MAX_PROCESS];      // Command param 1
+	llong		cmdParam2[MAX_PROCESS];     // Command param 2
+	char		statusStr[MAX_PROCESS][64]; // Status message
 } SHCONTROL;
 
 // -----------------------------------------------------------------
@@ -186,118 +191,118 @@ typedef struct {
 
 typedef struct {
 
-  size_t        nbFacet;   // Number of facets (total)
-  size_t        nbVertex;  // Number of 3D vertices
-  int        nbSuper;   // Number of superstructures
-  char       name[64];  // (Short file name)
-  
-  size_t nbMoments; //To pass in advance for memory reservation
-  double latestMoment;  
-  double totalDesorbedMolecules; //Number of molecules desorbed between t=0 and latest_moment
-  double finalOutgassingRate; //Number of outgassing molecules / second at latest_moment (constant flow)
-  double gasMass;
-  BOOL enableDecay;
-  double halfLife;
-  double timeWindowSize;
-  BOOL useMaxwellDistribution; //TRUE: Maxwell-Boltzmann distribution, FALSE: All molecules have the same (V_avg) speed
-  BOOL calcConstantFlow;
+	size_t        nbFacet;   // Number of facets (total)
+	size_t        nbVertex;  // Number of 3D vertices
+	int        nbSuper;   // Number of superstructures
+	char       name[64];  // (Short file name)
 
-  int motionType;
-  Vector3d motionVector1; //base point for rotation
-  Vector3d motionVector2; //rotation vector or velocity vector
+	size_t nbMoments; //To pass in advance for memory reservation
+	double latestMoment;
+	double totalDesorbedMolecules; //Number of molecules desorbed between t=0 and latest_moment
+	double finalOutgassingRate; //Number of outgassing molecules / second at latest_moment (constant flow)
+	double gasMass;
+	BOOL enableDecay;
+	double halfLife;
+	double timeWindowSize;
+	BOOL useMaxwellDistribution; //TRUE: Maxwell-Boltzmann distribution, FALSE: All molecules have the same (V_avg) speed
+	BOOL calcConstantFlow;
 
-  /* //Vectors must be serialized
-  std::vector<std::vector<std::pair<double,double>>> CDFs; //cumulative distribution function for each temperature
-  std::vector<std::vector<std::pair<double,double>>> IDs; //integrated distribution function for each time-dependent desorption type
-  std::vector<Parameter> parameters; //all parameters which are time-dependent
-  std::vector<double> temperatures; //keeping track of all temperatures that have a CDF already generated
-  std::vector<double> moments;             //moments when a time-dependent simulation state is recorded
-  std::vector<size_t> desorptionParameterIDs; //time-dependent parameters which are used as desorptions, therefore need to be integrated
-  */
+	int motionType;
+	Vector3d motionVector1; //base point for rotation
+	Vector3d motionVector2; //rotation vector or velocity vector
+
+	/* //Vectors must be serialized
+	std::vector<std::vector<std::pair<double,double>>> CDFs; //cumulative distribution function for each temperature
+	std::vector<std::vector<std::pair<double,double>>> IDs; //integrated distribution function for each time-dependent desorption type
+	std::vector<Parameter> parameters; //all parameters which are time-dependent
+	std::vector<double> temperatures; //keeping track of all temperatures that have a CDF already generated
+	std::vector<double> moments;             //moments when a time-dependent simulation state is recorded
+	std::vector<size_t> desorptionParameterIDs; //time-dependent parameters which are used as desorptions, therefore need to be integrated
+	*/
 
 } SHGEOM;
 
 typedef struct {
 
-  // Facet parameters
-  double sticking;       // Sticking (0=>reflection  , 1=>absorption)   - can be overridden by time-dependent parameter
-  double opacity;        // opacity  (0=>transparent , 1=>opaque)       - can be overridden by time-dependent parameter
-  double temperature;    // Facet temperature (Kelvin)                  - can be overridden by time-dependent parameter
-  double outgassing;           // (in unit *m^3/s)                      - can be overridden by time-dependent parameter
+	// Facet parameters
+	double sticking;       // Sticking (0=>reflection  , 1=>absorption)   - can be overridden by time-dependent parameter
+	double opacity;        // opacity  (0=>transparent , 1=>opaque)       - can be overridden by time-dependent parameter
+	double temperature;    // Facet temperature (Kelvin)                  - can be overridden by time-dependent parameter
+	double outgassing;           // (in unit *m^3/s)                      - can be overridden by time-dependent parameter
 
-  int sticking_paramId;    // -1 if use constant value, 0 or more if referencing time-dependent parameter
-  int opacity_paramId;     // -1 if use constant value, 0 or more if referencing time-dependent parameter
-  int outgassing_paramId;  // -1 if use constant value, 0 or more if referencing time-dependent parameter
-  
-  int CDFid; //Which probability distribution it belongs to (one CDF per temperature)
-  int IDid;  //If time-dependent desorption, which is its ID
+	int sticking_paramId;    // -1 if use constant value, 0 or more if referencing time-dependent parameter
+	int opacity_paramId;     // -1 if use constant value, 0 or more if referencing time-dependent parameter
+	int outgassing_paramId;  // -1 if use constant value, 0 or more if referencing time-dependent parameter
 
-  double mass;           // Molecule mass of desorbed flow (in u,u=1.660538782E-27 kg) [CURRENTLY UNUSED, gas mass is a global setting]
-  double area;           // Facet area (m^2)
-  int    desorbType;     // Desorption type
-  double desorbTypeN;    // Exponent in Cos^N desorption type
-  int    reflectType;    // Reflection type
-  int    profileType;    // Profile type
-  int    superIdx;       // Super structure index (Indexed from 0)
-  int    superDest;      // Super structure destination index (Indexed from 1, 0=>current)
-  int	 teleportDest;   // Teleport destination facet id (for periodic boundary condition) (Indexed from 1, 0=>none, -1=>teleport to where it came from)
-  BOOL   countDes;       // Count desoprtion (MC texture)
-  BOOL   countAbs;       // Count absoprtion (MC texture)
-  BOOL   countRefl;      // Count reflection (MC texture)
-  BOOL   countTrans;     // Count transparent (MC texture)
-  BOOL   countACD;       // Angular coefficient (AC texture)
-  BOOL   countDirection; // Record avergare direction (MC texture)
-  double maxSpeed;       // Max expected particle velocity (for velocity histogram)
-  double accomodationFactor; // Thermal accomodation factor [0..1]
-  BOOL   enableSojournTime;
-  double sojournFreq, sojournE;
+	int CDFid; //Which probability distribution it belongs to (one CDF per temperature)
+	int IDid;  //If time-dependent desorption, which is its ID
 
-  // Flags
-  BOOL   is2sided;     // 2 sided
-  BOOL   isProfile;    // Profile facet
-  BOOL   isTextured;   // texture
-  BOOL   isVolatile;   // Volatile facet (absorbtion facet which does not affect particule trajectory)
+	double mass;           // Molecule mass of desorbed flow (in u,u=1.660538782E-27 kg) [CURRENTLY UNUSED, gas mass is a global setting]
+	double area;           // Facet area (m^2)
+	int    desorbType;     // Desorption type
+	double desorbTypeN;    // Exponent in Cos^N desorption type
+	int    reflectType;    // Reflection type
+	int    profileType;    // Profile type
+	int    superIdx;       // Super structure index (Indexed from 0)
+	int    superDest;      // Super structure destination index (Indexed from 1, 0=>current)
+	int	 teleportDest;   // Teleport destination facet id (for periodic boundary condition) (Indexed from 1, 0=>none, -1=>teleport to where it came from)
+	BOOL   countDes;       // Count desoprtion (MC texture)
+	BOOL   countAbs;       // Count absoprtion (MC texture)
+	BOOL   countRefl;      // Count reflection (MC texture)
+	BOOL   countTrans;     // Count transparent (MC texture)
+	BOOL   countACD;       // Angular coefficient (AC texture)
+	BOOL   countDirection; // Record avergare direction (MC texture)
+	double maxSpeed;       // Max expected particle velocity (for velocity histogram)
+	double accomodationFactor; // Thermal accomodation factor [0..1]
+	BOOL   enableSojournTime;
+	double sojournFreq, sojournE;
 
-  // Facet hit counters
-  // SHHITS counter; - removed as now it's time-dependent and part of the hits buffer
+	// Flags
+	BOOL   is2sided;     // 2 sided
+	BOOL   isProfile;    // Profile facet
+	BOOL   isTextured;   // texture
+	BOOL   isVolatile;   // Volatile facet (absorbtion facet which does not affect particule trajectory)
 
-  // Normal vector
-  Vector3d    N;    // normalized
-  Vector3d    Nuv;  // normal to (u,v) not normlized
+	// Facet hit counters
+	// SHHITS counter; - removed as now it's time-dependent and part of the hits buffer
 
-  // Axis Aligned Bounding Box (AABB)
-  AABB       bb;
-  Vector3d   center;
+	// Normal vector
+	Vector3d    N;    // normalized
+	Vector3d    Nuv;  // normal to (u,v) not normlized
 
-  // Moving facets
-  BOOL isMoving;
+	// Axis Aligned Bounding Box (AABB)
+	AABB       bb;
+	Vector3d   center;
 
-  // Geometry
-  int    nbIndex;   // Number of index/vertex
-  double sign;      // Facet vertex rotation (see Facet::DetectOrientation())
+	// Moving facets
+	BOOL isMoving;
 
-  // Plane basis (O,U,V) (See Geometry::InitializeGeometry() for info)
-  Vector3d   O;  // Origin
-  Vector3d   U;  // U vector
-  Vector3d   V;  // V vector
-  Vector3d   nU; // Normalized U
-  Vector3d   nV; // Normalized V
+	// Geometry
+	int    nbIndex;   // Number of index/vertex
+	double sign;      // Facet vertex rotation (see Facet::DetectOrientation())
 
-  // Hit/Abs/Des/Density recording on 2D texture map
-  int    texWidth;    // Rounded texture resolution (U)
-  int    texHeight;   // Rounded texture resolution (V)
-  double texWidthD;   // Actual texture resolution (U)
-  double texHeightD;  // Actual texture resolution (V)
+	// Plane basis (O,U,V) (See Geometry::InitializeGeometry() for info)
+	Vector3d   O;  // Origin
+	Vector3d   U;  // U vector
+	Vector3d   V;  // V vector
+	Vector3d   nU; // Normalized U
+	Vector3d   nV; // Normalized V
 
-  size_t   hitOffset;      // Hit address offset for this facet
-  
-  //Outgassing map
-  BOOL   useOutgassingFile;   //has desorption file for cell elements
-  double outgassingFileRatio; //desorption file's sample/unit ratio
-  int   outgassingMapWidth;
-  int   outgassingMapHeight;
+	// Hit/Abs/Des/Density recording on 2D texture map
+	int    texWidth;    // Rounded texture resolution (U)
+	int    texHeight;   // Rounded texture resolution (V)
+	double texWidthD;   // Actual texture resolution (U)
+	double texHeightD;  // Actual texture resolution (V)
 
-  double totalOutgassing; //total outgassing for the given facet
+	size_t   hitOffset;      // Hit address offset for this facet
+
+	//Outgassing map
+	BOOL   useOutgassingFile;   //has desorption file for cell elements
+	double outgassingFileRatio; //desorption file's sample/unit ratio
+	int   outgassingMapWidth;
+	int   outgassingMapHeight;
+
+	double totalOutgassing; //total outgassing for the given facet
 
 } SHFACET;
 

@@ -18,8 +18,8 @@ public:
 	MolflowGeometry();
 
 	// Load
-	void LoadGEO(FileReader *file, GLProgress *prg, LEAK *pleak, int *nbleakLoad, HIT *pHits, int *nbHHitLoad, int *version, Worker *worker);
-	void LoadSYN(FileReader *file, GLProgress *prg, LEAK *pleak, int *nbleakLoad, HIT *pHits, int *nbHHitLoad, int *version);
+	void LoadGEO(FileReader *file, GLProgress *prg, LEAK *leakCache, size_t *leakCacheSize, HIT *hitCache, size_t *hitCacheSize, int *version, Worker *worker);
+	void LoadSYN(FileReader *file, GLProgress *prg, int *version);
 	BOOL LoadTextures(FileReader *file, GLProgress *prg, Dataport *dpHit, int version);
 	void ImportDesorption_DES(FileReader *file);
 	void ImportDesorption_SYN(FileReader *synFile, const size_t &source, const double &time,
@@ -37,11 +37,11 @@ public:
 	void ExportTextures(FILE *file, int grouping, int mode, Dataport *dhHit, BOOL saveSelected);
 	void ExportProfiles(FILE *file, int isTXT, Dataport *dhHit, Worker *worker);
 	void SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, std::vector<std::string> userMoments, Worker *worker,
-		BOOL saveSelected, LEAK *pleak, int *nbleakSave, HIT *pHits, int *nbHHitSave, BOOL crashSave = FALSE);
+		BOOL saveSelected, LEAK *pleak, size_t *nbleakSave, HIT *hitCache, size_t *nbHHitSave, BOOL crashSave = FALSE);
 	
 	void SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress *prg, BOOL saveSelected);
 	BOOL SaveXML_simustate(pugi::xml_node saveDoc, Worker *work, BYTE *buffer, SHGHITS *gHits, int nbLeakSave, int nbHHitSave,
-		LEAK *pLeak, HIT *pHits, GLProgress *prg, BOOL saveSelected);
+		LEAK *leakCache, HIT *hitCache, GLProgress *prg, BOOL saveSelected);
 	void LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg);
 	void InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg, BOOL newStr);
 	BOOL LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker *work, GLProgress *progressDlg);

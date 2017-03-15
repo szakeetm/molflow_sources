@@ -99,14 +99,17 @@ typedef struct {
 typedef struct {
 
   SHHITS tmpCount;            // Temporary number of hits (between 2 updates)
-  llong nbDesorbed;           // Total number of desorptions (for this process)             
-  llong nbLeakTotal;          // Total number of unexpected leak (simulation error)
-  int    nbLastLeak;          // Last leaks
-  int    nbHHit;              // Last hits
-  llong  maxDesorption;       // Maximum number of desorption
-  HIT    pHits[NBHHIT];       // Last hit history
-  LEAK   pLeak[NBHLEAK];      // Leak history
-  //llong  wallHits[BOUNCEMAX]; // 'Wall collision count before absoprtion' density histogram
+  llong  desorptionLimit;       // Maximum number of desorption
+
+  int    hitCacheSize;              // Last hits  
+  HIT    hitCache[HITCACHESIZE];       // Last hit history
+
+  size_t    nbLeakSinceUpdate;   // Leaks since last UpdateMC
+  size_t	leakCacheSize;		// Leaks from regions with displayed photons since last UpdateMC (registered in cache)
+  LEAK		leakCache[LEAKCACHESIZE];      // Leak cache since last UpdateMC
+
+  llong totalDesorbed;           // Total number of desorptions (for this process)
+
 
   std::vector<std::vector<std::pair<double,double>>> CDFs; //cumulative distribution function for each temperature
   std::vector<std::vector<std::pair<double,double>>> IDs; //integrated distribution function for each time-dependent desorption type
@@ -241,7 +244,7 @@ void ResetSimulation();
 BOOL SimulationRun();
 BOOL SimulationMCStep(int nbStep);
 BOOL SimulationACStep(int nbStep);
-void RecordHit(int type);
+void RecordHit(const int& type);
 void RecordLeakPos();
 BOOL StartFromSource();
 void PerformBounce(FACET *iFacet);
@@ -253,7 +256,7 @@ void CartesianToPolar(FACET *iFacet,double *theta,double *phi);
 void UpdateHits(Dataport *dpHit,int prIdx,DWORD timeout);
 void UpdateMCHits(Dataport *dpHit,int prIdx,size_t nbMoments,DWORD timeout);
 void UpdateACHits(Dataport *dpHit,int prIdx,DWORD timeout);
-void ResetCounter();
+void ResetTmpCounters();
 struct AABBNODE *BuildAABBTree(FACET **list,int nbFacet,int depth);
 int FindBestCuttingPlane(struct AABBNODE *node,int *left,int *right);
 void ComputeBB(struct AABBNODE *node);

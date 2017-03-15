@@ -360,7 +360,7 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 		else if (src == maxButton) {
 			if (worker->GetGeometry()->IsLoaded()) {
 				char tmp[128];
-				sprintf(tmp, "%I64d", worker->maxDesorption);
+				sprintf(tmp, "%I64d", worker->desorptionLimit);
 				char *val = GLInputBox::GetInput(tmp, "Desorption max (0=>endless)", "Edit MAX");
 				if (val) {
 					llong maxDes;

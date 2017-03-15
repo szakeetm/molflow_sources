@@ -168,16 +168,19 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 	//for(i=0;i<BOUNCEMAX;i++) gHits->wallHits[i] += sHandle->wallHits[i];
 
 	// Leak
-	nb = gHits->nbLastLeaks;
-	for (i = 0; i < sHandle->nbLastLeak && i < NBHLEAK; i++)
-		gHits->pLeak[(i + nb) % NBHLEAK] = sHandle->pLeak[i];
-	gHits->nbLeakTotal += sHandle->nbLeakTotal;
-	gHits->nbLastLeaks += sHandle->nbLastLeak;
+	for (size_t leakIndex = 0; leakIndex < sHandle->leakCacheSize; leakIndex++)
+		gHits->leakCache[(leakIndex + gHits->lastLeakIndex) % LEAKCACHESIZE] = sHandle->leakCache[leakIndex];
+	gHits->nbLeakTotal += sHandle->nbLeakSinceUpdate;
+	gHits->lastLeakIndex = (gHits->lastLeakIndex + sHandle->leakCacheSize) % LEAKCACHESIZE;
+	gHits->leakCacheSize = MIN(LEAKCACHESIZE, gHits->leakCacheSize + sHandle->leakCacheSize);
 
 	// HHit (Only prIdx 0)
 	if (prIdx == 0) {
-		gHits->nbHHit = sHandle->nbHHit;
-		memcpy(gHits->pHits, sHandle->pHits, NBHHIT*sizeof(HIT));
+		for (size_t hitIndex = 0; hitIndex < sHandle->hitCacheSize; hitIndex++)
+			gHits->hitCache[(hitIndex + gHits->lastHitIndex) % HITCACHESIZE] = sHandle->hitCache[hitIndex];
+
+		gHits->lastHitIndex = (gHits->lastHitIndex + sHandle->hitCacheSize) % HITCACHESIZE;
+		gHits->hitCacheSize = MIN(HITCACHESIZE, gHits->hitCacheSize + sHandle->hitCacheSize);
 	}
 	
 	size_t facetHitsSize = (1 + nbMoments) * sizeof(SHHITS);
@@ -283,7 +286,7 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 	}
 
 	ReleaseDataport(dpHit);
-	ResetCounter();
+	ResetTmpCounters();
 
 #ifdef _DEBUG
 	t1 = GetTick();
@@ -427,7 +430,7 @@ BOOL SimulationMCStep(int nbStep) {
 				RecordHit(LASTHIT);
 				//sHandle->distTraveledSinceUpdate += sHandle->distTraveledCurrentParticle;
 				if (!StartFromSource())
-					// maxDesorption reached
+					// desorptionLimit reached
 					return FALSE;
 			}
 			else { //hit within measured time, particle still alive
@@ -447,7 +450,7 @@ BOOL SimulationMCStep(int nbStep) {
 					PerformAbsorb(collidedFacet);
 					//sHandle->distTraveledSinceUpdate += sHandle->distTraveledCurrentParticle;
 					if (!StartFromSource())
-						// maxDesorption reached
+						// desorptionLimit reached
 						return FALSE;
 				}
 				else {
@@ -460,10 +463,10 @@ BOOL SimulationMCStep(int nbStep) {
 		} //end intersection found
 		else {
 			// No intersection found: Leak
+			sHandle->nbLeakSinceUpdate++;
 			RecordLeakPos();
-			sHandle->nbLeakTotal++;
 			if (!StartFromSource())
-				// maxDesorption reached
+				// desorptionLimit reached
 				return FALSE;
 		}
 	}
@@ -487,8 +490,8 @@ BOOL StartFromSource() {
 	int nbTry = 0;
 
 	// Check end of simulation
-	if (sHandle->maxDesorption > 0) {
-		if (sHandle->nbDesorbed >= sHandle->maxDesorption) {
+	if (sHandle->desorptionLimit > 0) {
+		if (sHandle->totalDesorbed >= sHandle->desorptionLimit) {
 			sHandle->lastHit = NULL;
 			return FALSE;
 		}
@@ -642,7 +645,7 @@ BOOL StartFromSource() {
 	// Count
 	
 	src->hitted = TRUE;
-	sHandle->nbDesorbed++;
+	sHandle->totalDesorbed++;
 	sHandle->tmpCount.hit.nbDesorbed++;
 	//sHandle->nbPHit = 0;
 

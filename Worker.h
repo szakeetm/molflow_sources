@@ -122,21 +122,8 @@ public:
 
   // Send total and facet hit counts to subprocesses
   void SendHits(BOOL skipFacetHits=FALSE);
-
-  // Send heartbeat to subprocesses, otherwise they close
-  //void SendHeartBeat();
- 
-  // Get Leak
-  void GetLeak(LEAK *buffer,int *nb);
-
-    // Set Leak
-  void SetLeak(LEAK *buffer,int *nb,SHGHITS *gHits);
-
-  // Get HHit
-  void GetHHit(HIT *buffer,int *nb);
-
-  // Set HHit
-  void SetHHit(HIT *buffer,int *nb,SHGHITS *gHits);
+  void SetLeakCache(LEAK *buffer,size_t *nb,Dataport* dpHit);
+  void SetHitCache(HIT *buffer, size_t *nb,Dataport* dpHit);
 
   // Get process status
   void GetProcStatus(int *states,char **status);
@@ -153,10 +140,6 @@ public:
 
   // Send Compute AC matrix order
   void ComputeAC(float appTime);
-
-
-
-
 
   int AddMoment(std::vector<double> newMoments); //Adds a time serie to moments and returns the number of elements
   std::vector<double> ParseMoment(std::string userInput); //Parses a user input and returns a vector of time moments
@@ -177,14 +160,11 @@ int GetIDId(int paramId);
   llong  nbHit;             // Total number of hit (64 bit integer)
 
 
-  llong  maxDesorption;     // Number of desoprtion before halting
+  llong  desorptionLimit;     // Number of desoprtion before halting
 
   llong  nbLeakTotal;       // Total number of leak
   double distTraveledTotal_total; // Total distance traveled by particles (for mean pumping path calc.)
   double distTraveledTotal_fullHitsOnly; // Total distance traveled by particles between full hits (for mean free path calc.)
-  int    nbHHit;            // Last hits
-  int    nbLastLeaks;       // Last leaks
-
 
   BOOL   running;           // Started/Stopped state
   float  startTime;         // Start time
@@ -226,6 +206,12 @@ int GetIDId(int paramId);
 	// Current loaded file
   char fullFileName[512];
 
+  // Caches
+  HIT  hitCache[HITCACHESIZE];
+  LEAK leakCache[HITCACHESIZE];
+  size_t    hitCacheSize;
+  size_t    leakCacheSize;
+
 private:
 
   // Process management
@@ -237,19 +223,12 @@ private:
   // Geometry handle
   MolflowGeometry *geom;
 
-  
-
   // Dataport handles and names
   Dataport *dpControl;
   Dataport *dpHit;
   char      ctrlDpName[32];
   char      loadDpName[32];
   char      hitsDpName[32];
-
-
-  // Caches
-  HIT  hhitCache[NBHHIT];
-  LEAK leakCache[NBHHIT];
 
   // Methods
   BOOL ExecuteAndWait(int command, int waitState, int param = 0);

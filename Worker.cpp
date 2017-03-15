@@ -90,17 +90,17 @@ Worker::Worker() {
 	sprintf(hitsDpName, "MFLWHITS%d", pid);
 
 	nbProcess = 0;
-	maxDesorption = 0;
+	desorptionLimit = 0;
 
 	ResetWorkerStats();
 	geom = new MolflowGeometry();
 
 	dpControl = NULL;
 	dpHit = NULL;
-	nbHHit = 0;
+	hitCacheSize = 0;
 	nbHit = 0;
 	nbLeakTotal = 0;
-	nbLastLeaks = 0;
+	leakCacheSize = 0;
 	startTime = 0.0f;
 	stopTime = 0.0f;
 	simuTime = 0.0f;
@@ -220,18 +220,20 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 					GLMessageBox::Display((char*)e.GetMsg(), "Error writing file.", GLDLG_OK, GLDLG_ICONERROR);
 					return;
 				}
-				geom->tNbDesorptionMax = maxDesorption;
+				geom->loaded_desorptionLimit = desorptionLimit;
 				if (isTXT) geom->SaveTXT(f, dpHit, saveSelected);
 				else if (isGEO || isGEO7Z) {
+					/*
 					// Retrieve leak cache
 					int nbLeakSave, nbHHitSave;
-					LEAK pLeak[NBHLEAK];
-					if (!crashSave && !saveSelected) GetLeak(pLeak, &nbLeakSave);
+					LEAK leakCache[LEAKCACHESIZE];
+					if (!crashSave && !saveSelected) GetLeak(leakCache, &nbLeakSave);
 
 					// Retrieve hit cache (lines and dots)
-					HIT pHits[NBHHIT];
-					if (!crashSave && !saveSelected) GetHHit(pHits, &nbHHitSave);
-					geom->SaveGEO(f, prg, dpHit, this->userMoments, this, saveSelected, pLeak, &nbLeakSave, pHits, &nbHHitSave, crashSave);
+					HIT hitCache[HITCACHESIZE];
+					if (!crashSave && !saveSelected) GetHHit(hitCache, &nbHHitSave);
+					*/
+					geom->SaveGEO(f, prg, dpHit, this->userMoments, this, saveSelected, leakCache, &leakCacheSize, hitCache, &hitCacheSize, crashSave);
 				}
 				else if (isXML || isXMLzip) {
 					xml_document saveDoc;
@@ -245,13 +247,15 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, BOOL askConfirm, BOOL
 							buffer = (BYTE *)dpHit->buff;
 							SHGHITS *gHits;
 							gHits = (SHGHITS *)buffer;
+							/*
 							int nbLeakSave, nbHHitSave;
-							LEAK pLeak[NBHLEAK];
-							GetLeak(pLeak, &nbLeakSave);
-							HIT pHits[NBHHIT];
-							GetHHit(pHits, &nbHHitSave);
+							LEAK leakCache[LEAKCACHESIZE];
+							GetLeak(leakCache, &nbLeakSave);
+							HIT hitCache[HITCACHESIZE];
+							GetHHit(hitCache, &nbHHitSave);
+							*/
 
-							success = geom->SaveXML_simustate(saveDoc, this, buffer, gHits, nbLeakSave, nbHHitSave, pLeak, pHits, prg, saveSelected);
+							success = geom->SaveXML_simustate(saveDoc, this, buffer, gHits, leakCacheSize, hitCacheSize, leakCache, hitCache, prg, saveSelected);
 							ReleaseDataport(dpHit);
 						}
 						catch (Error &e) {
@@ -397,13 +401,12 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 
 	if (!insert) {
 		//Clear hits and leaks cache
-		memset(hhitCache, 0, sizeof(HIT)*NBHHIT);
-		memset(leakCache, 0, sizeof(LEAK)*NBHLEAK);
+		memset(hitCache, 0, sizeof(HIT)*HITCACHESIZE);
+		memset(leakCache, 0, sizeof(LEAK)*LEAKCACHESIZE);
 		ResetMoments();
 		//default values
 		enableDecay = FALSE;
 		gasMass = 28;
-
 	}
 
 	/*
@@ -429,20 +432,22 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 			
 			if (!insert) {
 				geom->LoadTXT(f, progressDlg);
-				nbHit = geom->tNbHit;
-				nbDesorption = geom->tNbDesorption;
-				nbAbsorption = geom->tNbAbsorption;
-				maxDesorption = geom->tNbDesorptionMax;
-				nbLeakTotal = geom->tNbLeak;
+				SAFE_DELETE(f);
+				nbHit = geom->loaded_nbHit;
+				nbDesorption = geom->loaded_nbDesorption;
+				nbAbsorption = geom->loaded_nbAbsorption;
+				desorptionLimit = geom->loaded_desorptionLimit;
+				nbLeakTotal = geom->loaded_nbLeak;
 				//RealReload();
 				strcpy(fullFileName, fileName);
 			}
 			else { //insert
 
 				geom->InsertTXT(f, progressDlg, newStr);
+				SAFE_DELETE(f);
 				nbHit = 0;
 				nbDesorption = 0;
-				maxDesorption = 0;
+				desorptionLimit = 0;
 				nbLeakTotal = 0;
 				Reload();
 			}
@@ -487,12 +492,14 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 				f = new FileReader(fileName);
 				if (!insert) {
 					geom->LoadSTL(f, progressDlg, scaleFactor);
+					SAFE_DELETE(f);
 					strcpy(fullFileName, fileName);
 					mApp->DisplayCollapseDialog();
 				}
 				else { //insert
 					mApp->changedSinceSave = TRUE;
 					geom->InsertSTL(f, progressDlg, scaleFactor, newStr);
+					SAFE_DELETE(f);
 					Reload();
 				}
 			}
@@ -514,6 +521,7 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 			f = new FileReader(fileName);
 			progressDlg->SetVisible(TRUE);
 			geom->LoadSTR(f, progressDlg);
+			SAFE_DELETE(f);
 			//RealReload();
 
 			strcpy(fullFileName, fileName);
@@ -521,7 +529,6 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 
 		catch (Error &e) {
 			geom->Clear();
-
 			SAFE_DELETE(f);
 			progressDlg->SetVisible(FALSE);
 			SAFE_DELETE(progressDlg);
@@ -542,35 +549,26 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 				system(tmp);
 				f = new FileReader((std::string)CWD + "\\tmp\\Geometry.syn"); //Open extracted file
 			} else f = new FileReader(fileName); //syn file, open it directly
-
-
-
+			
 			if (!insert) {
 				progressDlg->SetMessage("Resetting worker...");
 				ResetWorkerStats();
-
-				//leaks
-				LEAK pLeak[NBHLEAK];
-				//hits
-				HIT pHits[NBHHIT];
 			
-				geom->LoadSYN(f, progressDlg, pLeak, &nbLastLeaks, pHits, &nbHHit, &version);
-
-				maxDesorption = 0;
-
+				geom->LoadSYN(f, progressDlg, &version);
+				SAFE_DELETE(f);
+				desorptionLimit = 0;
 			}
 			else { //insert
 				geom->InsertSYN(f, progressDlg, newStr);
+				SAFE_DELETE(f);
 				nbLeakTotal = 0;
 				nbHit = 0;
 				nbDesorption = 0;
-				maxDesorption = geom->tNbDesorptionMax;
+				desorptionLimit = geom->loaded_desorptionLimit;
 			}
 
 			progressDlg->SetMessage("Reloading worker with new geometry...");
-			RealReload(); //for the loading of textures
-			//SHGHITS *gHits = (SHGHITS *)dpHit->buff;
-			SAFE_DELETE(f);
+			Reload();
 			if (!insert) strcpy(fullFileName, fileName);
 		}
 
@@ -614,38 +612,38 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 			ResetWorkerStats();
 			if (insert) mApp->changedSinceSave = TRUE;
 
+			LEAK loaded_leakCache[LEAKCACHESIZE];
+			size_t loaded_nbLeak;
+			HIT hitCache[HITCACHESIZE];
+			size_t loaded_nbHit;
 			if (!insert) {
-				//leaks
-				LEAK pLeak[NBHLEAK];
-				//hits
-				HIT pHits[NBHHIT];
 
-				geom->LoadGEO(f, progressDlg, pLeak, &nbLastLeaks, pHits, &nbHHit, &version, this);
+				geom->LoadGEO(f, progressDlg, loaded_leakCache, &loaded_nbLeak, hitCache, &hitCacheSize, &version, this);
+				
 				//copy temp values from geom to worker:
-				nbLeakTotal = geom->tNbLeak;
-				nbHit = geom->tNbHit;
-				nbDesorption = geom->tNbDesorption;
-				maxDesorption = geom->tNbDesorptionMax;
-				nbAbsorption = geom->tNbAbsorption;
+				nbLeakTotal = geom->loaded_nbLeak;
+				nbHit = geom->loaded_nbHit;
+				nbDesorption = geom->loaded_nbDesorption;
+				desorptionLimit = geom->loaded_desorptionLimit;
+				nbAbsorption = geom->loaded_nbAbsorption;
 				distTraveledTotal_total = geom->distTraveledTotal_total;
 				distTraveledTotal_fullHitsOnly = geom->distTraveledTotal_fullHitsOnly;
 				progressDlg->SetMessage("Reloading worker with new geometry...");
 				RealReload(); //for the loading of textures
 				if (version >= 8) geom->LoadProfile(f, dpHit, version);
-				SHGHITS *gHits = (SHGHITS *)dpHit->buff;
-				SetLeak(pLeak, &nbLastLeaks, gHits);
-				SetHHit(pHits, &nbHHit, gHits);
-				SendHits(); //Global and facet hit counters
 				SAFE_DELETE(f);
+				SetLeakCache(loaded_leakCache, &loaded_nbLeak, dpHit);
+				SetHitCache(hitCache, &hitCacheSize, dpHit);
+				SendHits(); //Global and facet hit counters
+				
 				progressDlg->SetMessage("Loading textures...");
 				LoadTexturesGEO(toOpen, version);
-
 				strcpy(fullFileName, fileName);
-				//if (isGEO7Z) remove(tmp2);
 			}
 			else { //insert
 				mApp->changedSinceSave = TRUE;
 				geom->InsertGEO(f, progressDlg, newStr);
+				SAFE_DELETE(f);
 				Reload();
 			}
 		}
@@ -749,6 +747,7 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 			f = new FileReader(fileName);
 			progressDlg->SetVisible(TRUE);
 			geom->LoadASE(f, progressDlg);
+			SAFE_DELETE(f);
 			//RealReload();
 			strcpy(fullFileName, fileName);
 
@@ -762,7 +761,6 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 		}
 	}
 	else {
-		SAFE_DELETE(f);
 		progressDlg->SetVisible(FALSE);
 		SAFE_DELETE(progressDlg);
 		throw Error("LoadGeometry(): Invalid file extension [Only xml,zip,geo,geo7z,syn.syn7z,txt,ase,stl or str]");
@@ -770,25 +768,24 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 	if (!insert)
 	{
 		CalcTotalOutgassing();
-		displayedMoment = 0;
+		/*
+		
+		//Refresh is already done by the caller Molflow::LoadFile()
+
 		if (mApp->timeSettings) mApp->timeSettings->RefreshMoments(); //Sets displayed moment to 0
 		if (mApp->momentsEditor) mApp->momentsEditor->Refresh();
 		if (mApp->parameterEditor) mApp->parameterEditor->UpdateCombo();
-		if (mApp->timewisePlotter) mApp->timewisePlotter->refreshViews();
-
+		if (mApp->timewisePlotter) mApp->timewisePlotter->Refresh();
+		*/
 	}
 
 	progressDlg->SetVisible(FALSE);
 	SAFE_DELETE(progressDlg);
-	SAFE_DELETE(f);
 	if (insert) {
 		mApp->UpdateFacetlistSelected();
 		mApp->UpdateViewers();
 	}
 }
-
-
-
 
 void Worker::LoadTexturesGEO(std::string fileName, int version) {
 
@@ -900,8 +897,7 @@ void Worker::StartStop(float appTime, int mode) {
 
 }
 
-// -------------------------------------------------------------
-
+/* //Moved to worker_shared.cpp
 
 void Worker::Update(float appTime) {
 	if (needsReload) RealReload();
@@ -916,8 +912,9 @@ void Worker::Update(float appTime) {
 				for (int proc = 0; proc < nbProcess && done; proc++) {
 					done = done && (master->states[proc] == PROCESS_DONE);
 					error = error && (master->states[proc] == PROCESS_ERROR);
+#ifdef MOLFLOW
 					if (master->states[proc] == PROCESS_RUNAC) calcACprg = master->cmdParam[proc];
-
+#endif
 				}
 				ReleaseDataport(dpControl);
 			}
@@ -942,15 +939,16 @@ void Worker::Update(float appTime) {
 				// Copy Global hits and leaks
 				nbHit = gHits->total.hit.nbHit;
 				nbAbsorption = gHits->total.hit.nbAbsorbed;
+				nbDesorption = gHits->total.hit.nbDesorbed;				
 				distTraveledTotal_total = gHits->distTraveledTotal_total;
 				distTraveledTotal_fullHitsOnly = gHits->distTraveledTotal_fullHitsOnly;
-				nbDesorption = gHits->total.hit.nbDesorbed;
+				
 
 				nbLeakTotal = gHits->nbLeakTotal;
-				nbHHit = gHits->nbHHit;
-				nbLastLeaks = gHits->nbLastLeaks;
-				memcpy(hhitCache, gHits->pHits, sizeof(HIT)*NBHHIT);
-				memcpy(leakCache, gHits->pLeak, sizeof(LEAK)*NBHHIT);
+				hitCacheSize = gHits->hitCacheSize;
+				memcpy(hitCache, gHits->hitCache, sizeof(HIT)*hitCacheSize);
+				leakCacheSize = gHits->leakCacheSize;
+				memcpy(leakCache, gHits->leakCache, sizeof(LEAK)*leakCacheSize); //will display only first leakCacheSize leaks
 
 				// Refresh local facet hit cache for the displayed moment
 				int nbFacet = geom->GetNbFacet();
@@ -973,8 +971,7 @@ void Worker::Update(float appTime) {
 	//}
 
 }
-
-// -------------------------------------------------------------
+*/
 
 void Worker::SendHits(BOOL skipFacetHits ) {
 	//if (!needsReload) {
@@ -1110,8 +1107,8 @@ void Worker::RealReload() { //Sharing geometry with workers
 	// Compute number of max desorption per process
 	if (AccessDataportTimed(dpControl, 3000 + nbProcess*(int)((double)loadSize / 10000.0))) {
 		SHCONTROL *master = (SHCONTROL *)dpControl->buff;
-		llong common = maxDesorption / (llong)nbProcess;
-		int remain = (int)(maxDesorption % (llong)nbProcess);
+		llong common = desorptionLimit / (llong)nbProcess;
+		int remain = (int)(desorptionLimit % (llong)nbProcess);
 		for (int i = 0; i < nbProcess; i++) {
 			master->cmdParam2[i] = common;
 			if (i < remain) master->cmdParam2[i]++;
@@ -1292,6 +1289,7 @@ std::vector<double> Worker::ParseMoment(std::string userInput) {
 }
 
 void Worker::ResetMoments() {
+	displayedMoment = 0;
 	moments = std::vector<double>();
 	userMoments = std::vector<std::string>();
 }

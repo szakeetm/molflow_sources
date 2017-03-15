@@ -55,7 +55,7 @@ void InitSimulation() {
 	// Global handle allocation
 	sHandle = (SIMULATION *)malloc(sizeof(SIMULATION));
 	memset(sHandle, 0, sizeof(SIMULATION));
-	THits = (FACET **)malloc(MAX_THIT*sizeof(FACET *)); // Transparent hit cache
+	THits = (FACET **)malloc(MAX_THIT * sizeof(FACET *)); // Transparent hit cache
 
 #ifdef WIN
 	{
@@ -112,9 +112,9 @@ void ClearSimulation() {
 				SAFE_FREE(f->direction);
 				//SAFE_FREE(f->velocityHistogram);
 
-				delete(f);f = NULL;
+				delete(f); f = NULL;
 			}
-			
+
 		}
 		SAFE_FREE(sHandle->str[j].facets);
 		if (sHandle->str[j].aabbTree) {
@@ -238,11 +238,11 @@ BOOL LoadSimulation(Dataport *loader) {
 	sHandle->motionVector1 = shGeom->motionVector1;
 	sHandle->motionVector2 = shGeom->motionVector2;
 	// Prepare super structure (allocate memory for facets)
-	buffer += sizeof(SHGEOM)+sizeof(Vector3d)*sHandle->nbVertex;
+	buffer += sizeof(SHGEOM) + sizeof(Vector3d)*sHandle->nbVertex;
 	for (i = 0; i < sHandle->totalFacet; i++) {
 		SHFACET *shFacet = (SHFACET *)buffer;
 		sHandle->str[shFacet->superIdx].nbFacet++;
-		buffer += sizeof(SHFACET)+shFacet->nbIndex*(sizeof(int)+sizeof(Vector2d));
+		buffer += sizeof(SHFACET) + shFacet->nbIndex*(sizeof(int) + sizeof(Vector2d));
 		if (shFacet->useOutgassingFile) buffer += sizeof(double)*shFacet->outgassingMapWidth*shFacet->outgassingMapHeight;
 	}
 	for (i = 0; i < sHandle->nbSuper; i++) {
@@ -255,8 +255,8 @@ BOOL LoadSimulation(Dataport *loader) {
 		}
 		else {
 
-			sHandle->str[i].facets = (FACET **)malloc(nbF*sizeof(FACET *));
-			memset(sHandle->str[i].facets, 0, nbF*sizeof(FACET *));
+			sHandle->str[i].facets = (FACET **)malloc(nbF * sizeof(FACET *));
+			memset(sHandle->str[i].facets, 0, nbF * sizeof(FACET *));
 			//sHandle->str[i].nbFacet = 0;
 		}
 		sHandle->str[i].nbFacet = 0;
@@ -273,7 +273,7 @@ BOOL LoadSimulation(Dataport *loader) {
 
 	// Vertices
 
-	sHandle->vertices3 = (Vector3d *)malloc(sHandle->nbVertex*sizeof(Vector3d));
+	sHandle->vertices3 = (Vector3d *)malloc(sHandle->nbVertex * sizeof(Vector3d));
 	if (!sHandle->vertices3) {
 		SetErrorSub("Not enough memory to load vertices");
 		return FALSE;
@@ -281,7 +281,7 @@ BOOL LoadSimulation(Dataport *loader) {
 	buffer += sizeof(SHGEOM);
 
 	shVert = (Vector3d *)(buffer);
-	memcpy(sHandle->vertices3, shVert, sHandle->nbVertex*sizeof(Vector3d));
+	memcpy(sHandle->vertices3, shVert, sHandle->nbVertex * sizeof(Vector3d));
 	buffer += sizeof(Vector3d)*sHandle->nbVertex;
 
 	// Facets
@@ -329,17 +329,17 @@ BOOL LoadSimulation(Dataport *loader) {
 
 		// Reset counter in local memory
 		//memset(&(f->sh.counter), 0, sizeof(SHHITS));
-		f->indices = (int *)malloc(f->sh.nbIndex*sizeof(int));
+		f->indices = (int *)malloc(f->sh.nbIndex * sizeof(int));
 		buffer += sizeof(SHFACET);
-		memcpy(f->indices, buffer, f->sh.nbIndex*sizeof(int));
-		buffer += f->sh.nbIndex*sizeof(int);
+		memcpy(f->indices, buffer, f->sh.nbIndex * sizeof(int));
+		buffer += f->sh.nbIndex * sizeof(int);
 		f->vertices2 = (Vector2d *)malloc(f->sh.nbIndex * sizeof(Vector2d));
 		if (!f->vertices2) {
 			SetErrorSub("Not enough memory to load vertices");
 			return FALSE;
 		}
 		memcpy(f->vertices2, buffer, f->sh.nbIndex * sizeof(Vector2d));
-		buffer += f->sh.nbIndex*sizeof(Vector2d);
+		buffer += f->sh.nbIndex * sizeof(Vector2d);
 		if (f->sh.useOutgassingFile) {
 			f->outgassingMap = (double*)malloc(sizeof(double)*f->sh.outgassingMapWidth*f->sh.outgassingMapHeight);
 			if (!f->outgassingMap) {
@@ -353,7 +353,7 @@ BOOL LoadSimulation(Dataport *loader) {
 		//Textures
 		if (f->sh.isTextured) {
 			int nbE = f->sh.texWidth*f->sh.texHeight;
-			f->textureSize = nbE*sizeof(AHIT);
+			f->textureSize = nbE * sizeof(AHIT);
 
 			if ((f->hits = (AHIT **)malloc(sizeof(AHIT *)* (1 + sHandle->nbMoments))) == NULL) {
 				ReleaseDataport(loader);
@@ -373,7 +373,7 @@ BOOL LoadSimulation(Dataport *loader) {
 
 		//Profiles
 		if (f->sh.isProfile) {
-			f->profileSize = PROFILE_SIZE*sizeof(APROFILE);
+			f->profileSize = PROFILE_SIZE * sizeof(APROFILE);
 			/*f->profile = (llong *)malloc(f->profileSize);
 			memset(f->profile,0,f->profileSize);*/
 			if ((f->profile = (APROFILE **)malloc(sizeof(APROFILE *)* (1 + sHandle->nbMoments))) == NULL) {
@@ -395,7 +395,7 @@ BOOL LoadSimulation(Dataport *loader) {
 
 		//Direction
 		if (f->sh.countDirection) {
-			f->directionSize = f->sh.texWidth*f->sh.texHeight*sizeof(VHIT);
+			f->directionSize = f->sh.texWidth*f->sh.texHeight * sizeof(VHIT);
 			/*f->direction = (VHIT *)malloc(f->directionSize);
 			memset(f->direction,0,f->directionSize);*/
 			if ((f->direction = (VHIT **)malloc(sizeof(VHIT *)* (1 + sHandle->nbMoments))) == NULL) {
@@ -425,7 +425,7 @@ BOOL LoadSimulation(Dataport *loader) {
 			FACET* f = sHandle->str[k].facets[i];
 			if (f->sh.isTextured) {
 				int nbE = f->sh.texWidth*f->sh.texHeight;
-				f->inc = (double *)malloc(nbE*sizeof(double));
+				f->inc = (double *)malloc(nbE * sizeof(double));
 				f->largeEnough = (BOOL *)malloc(sizeof(BOOL)*nbE);
 				//f->fullElem = (BOOL *)malloc(sizeof(BOOL)*nbE);
 				if (!(f->inc && f->largeEnough /*&& f->fullElem*/)) {
@@ -441,10 +441,10 @@ BOOL LoadSimulation(Dataport *loader) {
 					}
 					else {*/
 
-						//f->fullElem[j] = 0;
-						f->inc[j] = incVal;
+					//f->fullElem[j] = 0;
+					f->inc[j] = incVal;
 					/*}*/
-					if ((f->inc[j]>0.0) && (f->inc[j] < f->fullSizeInc)) f->fullSizeInc = f->inc[j];
+					if ((f->inc[j] > 0.0) && (f->inc[j] < f->fullSizeInc)) f->fullSizeInc = f->inc[j];
 				}
 				for (j = 0; j < nbE; j++) { //second pass, filter out very small cells
 					f->largeEnough[j] = (f->inc[j] < ((5.0f)*f->fullSizeInc));
@@ -563,7 +563,7 @@ BOOL LoadSimulation(Dataport *loader) {
 	printf("  Geom size: %zd bytes\n", (size_t)(buffer - bufferStart));
 	printf("  Number of stucture: %d\n", sHandle->nbSuper);
 	printf("  Global Hit: %zd bytes\n", sizeof(SHGHITS));
-	printf("  Facet Hit : %zd bytes\n", sHandle->totalFacet*sizeof(SHHITS));
+	printf("  Facet Hit : %zd bytes\n", sHandle->totalFacet * sizeof(SHHITS));
 	printf("  Texture   : %zd bytes\n", sHandle->textTotalSize);
 	printf("  Profile   : %zd bytes\n", sHandle->profTotalSize);
 	printf("  Direction : %zd bytes\n", sHandle->dirTotalSize);
@@ -593,52 +593,43 @@ void UpdateHits(Dataport *dpHit, int prIdx, DWORD timeout) {
 // -------------------------------------------------------
 
 size_t GetHitsSize() {
-	return sHandle->textTotalSize + sHandle->profTotalSize + sHandle->dirTotalSize + sHandle->totalFacet*sizeof(SHHITS)+sizeof(SHGHITS);
+	return sHandle->textTotalSize + sHandle->profTotalSize + sHandle->dirTotalSize + sHandle->totalFacet * sizeof(SHHITS) + sizeof(SHGHITS);
 
 }
 
 // -------------------------------------------------------
 
-void ResetCounter() {
+void ResetTmpCounters() {
 
-	int i, j;
-	//printf("Resetcounter called.");
 	memset(&sHandle->tmpCount, 0, sizeof(SHHITS));
 
 	sHandle->distTraveledSinceUpdate_total = 0.0;
 	sHandle->distTraveledSinceUpdate_fullHitsOnly = 0.0;
-	sHandle->nbLeakTotal = 0;
-	//memset(sHandle->wallHits,0,BOUNCEMAX * sizeof(llong));
+	sHandle->nbLeakSinceUpdate = 0;
+	sHandle->hitCacheSize = 0;
+	sHandle->leakCacheSize = 0;
 
-	for (j = 0; j < sHandle->nbSuper; j++) {
-		for (i = 0; i < sHandle->str[j].nbFacet; i++) {
+	for (int j = 0; j < sHandle->nbSuper; j++) {
+		for (int i = 0; i < sHandle->str[j].nbFacet; i++) {
 			FACET *f = sHandle->str[j].facets[i];
-			/*f->sh.counter.hit.nbDesorbed=0;
-			f->sh.counter.hit.nbHit=0;
-			f->sh.counter.hit.nbAbsorbed=0;
-			f->sh.counter.hit.sumSpeed=0.0;
-			f->sh.counter.hit.sum_v_ort=0.0;*/
-			//memset(&f->sh.counter, 0, sizeof(SHHITS));
 			f->ResetCounter();
 			f->hitted = FALSE;
 
 			if (f->hits) {
-				for (size_t m = 0; m < (sHandle->nbMoments + 1); m++)
+				for (size_t m = 0; m < (sHandle->nbMoments + 1); m++) {
 					memset(f->hits[m], 0, f->textureSize);
+				}
 			}
-
 
 			if (f->profile) {
-				for (size_t m = 0; m < (sHandle->nbMoments + 1); m++)
+				for (size_t m = 0; m < (sHandle->nbMoments + 1); m++) {
 					memset(f->profile[m], 0, f->profileSize);
+				}
 			}
 			if (f->direction) {
-				for (size_t m = 0; m < (sHandle->nbMoments + 1); m++)
-
-
-
-
+				for (size_t m = 0; m < (sHandle->nbMoments + 1); m++) {
 					memset(f->direction[m], 0, f->directionSize);
+				}
 			}
 		}
 	}
@@ -649,27 +640,10 @@ void ResetCounter() {
 
 void ResetSimulation() {
 
-	//printf("ResetSimulation called.");
-	sHandle->nbHHit = 0;
-	memset(sHandle->pHits, 0, sizeof(HIT)*NBHHIT);
 	sHandle->lastHit = NULL;
-	//sHandle->counter.hit.nbHit = 0;
-	sHandle->nbDesorbed = 0;
-	//sHandle->counter.hit.nbAbsorbed = 0;
-	sHandle->distTraveledSinceUpdate_total = 0.0;
-	sHandle->distTraveledSinceUpdate_fullHitsOnly = 0.0;
-	/*sHandle->testCubeCount=0;
-	sHandle->testCubeDist=0.0;
-
-	sHandle->testCubeTemp=0.0;
-	sHandle->testCubeTime=0.0;
-	sHandle->testSystemDist=0.0;
-	sHandle->testCubeEnterMoment=0.0;
-	sHandle->testCubeEnterDist=0.0;
-	sHandle->testCubeVelocity=0.0;
-	sHandle->testSystemTime=0.0;*/
-	ResetCounter();
-	if (sHandle->acDensity) memset(sHandle->acDensity, 0, sHandle->nbAC*sizeof(ACFLOAT));
+	sHandle->totalDesorbed = 0;
+	ResetTmpCounters();
+	if (sHandle->acDensity) memset(sHandle->acDensity, 0, sHandle->nbAC * sizeof(ACFLOAT));
 
 }
 
@@ -699,25 +673,24 @@ BOOL StartSimulation(size_t mode) {
 
 // -------------------------------------------------------
 
-void RecordHit(int type) {
-
-	sHandle->pHits[sHandle->nbHHit].pos = sHandle->pPos;
-	sHandle->pHits[sHandle->nbHHit].type = type;
-
-
-	sHandle->nbHHit++;
-	if ((sHandle->nbHHit) >= NBHHIT) sHandle->nbHHit = 0;
-	sHandle->pHits[sHandle->nbHHit].type = LASTHIT;
+void RecordHit(const int &type) {
+	if (sHandle->hitCacheSize < HITCACHESIZE) {
+		sHandle->hitCache[sHandle->hitCacheSize].pos = sHandle->pPos;
+		sHandle->hitCache[sHandle->hitCacheSize].type = type;
+		sHandle->hitCacheSize++;
+	}
 }
 
 void RecordLeakPos() {
+	// Source region check performed when calling this routine 
 	// Record leak for debugging
-	sHandle->pLeak[sHandle->nbLastLeak].pos = sHandle->pPos;
-	sHandle->pLeak[sHandle->nbLastLeak].dir = sHandle->pDir;
-	sHandle->nbLastLeak++;
-	if ((sHandle->nbLastLeak) >= NBHLEAK) sHandle->nbLastLeak = 0;
 	RecordHit(HIT_REF);
 	RecordHit(LASTHIT);
+	if (sHandle->leakCacheSize < LEAKCACHESIZE) {
+		sHandle->leakCache[sHandle->leakCacheSize].pos = sHandle->pPos;
+		sHandle->leakCache[sHandle->leakCacheSize].dir = sHandle->pDir;
+		sHandle->leakCacheSize++;
+	}
 }
 
 // -------------------------------------------------------
@@ -792,16 +765,16 @@ double GetTick() {
 
 #else
 
-	if(tickStart < 0 )
+	if (tickStart < 0)
 		tickStart = time(NULL);
 
 	struct timeval tv;
-	gettimeofday(&tv,NULL);
-	return ( (double)(tv.tv_sec-tickStart)*1000.0 + (double)tv.tv_usec/1000.0 );
+	gettimeofday(&tv, NULL);
+	return ((double)(tv.tv_sec - tickStart)*1000.0 + (double)tv.tv_usec / 1000.0);
 
 #endif
 
-}
+	}
 
 int GetIDId(int paramId) {
 

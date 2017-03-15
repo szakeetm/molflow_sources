@@ -306,7 +306,7 @@ BOOL SimulationACStep(int nbStep) {
 
   step = 0;
   // Run iterations
-  while( (sHandle->maxDesorption==0 || sHandle->nbDesorbed<sHandle->maxDesorption) && step<nbStep ) {
+  while( (sHandle->desorptionLimit==0 || sHandle->totalDesorbed<sHandle->desorptionLimit) && step<nbStep ) {
 
     // Perform iteration
     // density[i] = rho[i] * Sum{j=0,nbAC-1}{ AC(i,j)*area(j)*density(j) } + desorb[i]
@@ -358,12 +358,12 @@ BOOL SimulationACStep(int nbStep) {
 #ifdef JACOBI_ITERATION
     memcpy(sHandle->acDensity , sHandle->acDensityTmp, sizeof(ACFLOAT)*sHandle->nbAC );
 #endif
-    sHandle->nbDesorbed++;
+    sHandle->totalDesorbed++;
     step++;
   
   }
 
-  return sHandle->maxDesorption==0 || sHandle->nbDesorbed<sHandle->maxDesorption;
+  return sHandle->desorptionLimit==0 || sHandle->totalDesorbed<sHandle->desorptionLimit;
 
 }
 
@@ -384,7 +384,7 @@ void UpdateACHits(Dataport *dpHit,int prIdx,DWORD timeout) {
   gHits->texture_limits[0].max.all = 0.0;
   gHits->texture_limits[0].min.all = 0.0;
   gHits->mode = AC_MODE;
-  gHits->total.hit.nbDesorbed = sHandle->nbDesorbed;
+  gHits->total.hit.nbDesorbed = sHandle->totalDesorbed;
 
   // Update texture
   idx = 0;

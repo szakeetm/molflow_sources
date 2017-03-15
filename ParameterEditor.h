@@ -28,6 +28,7 @@ public:
   void RebuildList(BOOL autoSize=TRUE, BOOL refillValues=TRUE);
   // Implementation
   void ProcessMessage(GLComponent *src,int message);
+  void Reset();
   
 
 private:

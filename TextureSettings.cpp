@@ -162,6 +162,12 @@ void TextureSettings::Update() {
 	if(!IsVisible() || IsIconic()) return;  
 
 	char tmp[128];
+	//Manual minimum label
+	sprintf(tmp, "%.3E", geom->texture_limits[geom->textureMode].manual.min.all);
+	texMinText->SetText(tmp);
+	//Manual maximum label
+	sprintf(tmp, "%.3E", geom->texture_limits[geom->textureMode].manual.max.all);
+	texMaxText->SetText(tmp);
 	//Set autoscale minimum label
 	sprintf(tmp,"%.3E",(geom->texAutoScaleIncludeConstantFlow?
 		geom->texture_limits[geom->textureMode].autoscale.min.all
@@ -172,6 +178,7 @@ void TextureSettings::Update() {
 		geom->texture_limits[geom->textureMode].autoscale.max.all
 		:geom->texture_limits[geom->textureMode].autoscale.max.moments_only));
 	texCMaxText->SetText(tmp);
+
 	texAutoScale->SetState(geom->texAutoScale);
 	includeConstantFlow->SetVisible(geom->texAutoScale);
 	includeConstantFlow->SetState(geom->texAutoScaleIncludeConstantFlow);
@@ -194,6 +201,7 @@ void TextureSettings::Update() {
 	}
 	colormapBtn->SetState(viewers[0]->showColormap);
 	gradient->SetType( viewers[0]->showColormap?GRADIENT_COLOR:GRADIENT_BW );
+	modeCombo->SetSelectedIndex(geom->textureMode);
 	UpdateSize();
 
 }
@@ -207,11 +215,6 @@ void TextureSettings::Display(Worker *w,GeometryViewer **v) {
 		GLMessageBox::Display("No geometry loaded.","No geometry",GLDLG_OK,GLDLG_ICONERROR);
 		return;
 	}
-	char tmp[128];
-	sprintf(tmp,"%.3E",geom->texture_limits[geom->textureMode].manual.min.all);
-	texMinText->SetText(tmp);
-	sprintf(tmp,"%.3E",geom->texture_limits[geom->textureMode].manual.max.all);
-	texMaxText->SetText(tmp);
 
 	SetVisible(TRUE);
 	Update();

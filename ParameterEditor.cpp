@@ -250,11 +250,7 @@ void ParameterEditor::ProcessMessage(GLComponent *src,int message) {
 		}
 		else {
 			if (selectorCombo->GetSelectedIndex() != -1) { //New param
-				userValues = std::vector<std::pair<std::string, std::string>>();
-				char tmp[32];
-				sprintf(tmp, "Param%d", selectorCombo->GetSelectedIndex() + 1);
-				nameField->SetText(tmp);
-				dataView.Reset();
+				Reset();
 			}
 			deleteButton->SetEnabled(FALSE);
 		}
@@ -269,12 +265,22 @@ void ParameterEditor::ProcessMessage(GLComponent *src,int message) {
   GLWindow::ProcessMessage(src,message);
 }
 
+void ParameterEditor::Reset() {
+	userValues = std::vector<std::pair<std::string, std::string>>();
+	RebuildList();
+	char tmp[32];
+	sprintf(tmp, "Param%d", selectorCombo->GetSelectedIndex() + 1);
+	nameField->SetText(tmp);
+	dataView.Reset();
+}
+
 void ParameterEditor::UpdateCombo() {
 	selectorCombo->SetSize((int)work->parameters.size()+1);
 	for (size_t i = 0; i < work->parameters.size(); i++)
 		selectorCombo->SetValueAt((int)i, work->parameters[i].name.c_str());
 	selectorCombo->SetValueAt((int)work->parameters.size(), "New...");
 	if (selectorCombo->GetSelectedIndex() == -1 || selectorCombo->GetSelectedIndex() == (selectorCombo->GetNbRow() - 1)) selectorCombo->SetSelectedIndex(selectorCombo->GetNbRow() - 1);
+	Reset();
 }
 
 void ParameterEditor::PasteFromClipboard() {

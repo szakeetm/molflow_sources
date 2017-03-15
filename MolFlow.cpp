@@ -1273,7 +1273,15 @@ void MolFlow::LoadFile(char *fName) {
 		SelectViewer(0);
 
 		ResetAutoSaveTimer();
-		UpdatePlotters();		
+		//UpdatePlotters();
+
+		if (timeSettings) timeSettings->RefreshMoments();
+		if (momentsEditor) momentsEditor->Refresh();
+		if (pressureEvolution) pressureEvolution->Refresh();
+		if (timewisePlotter) timewisePlotter->Refresh();
+		if (profilePlotter) profilePlotter->Refresh();
+		if (texturePlotter) texturePlotter->Update(0.0,TRUE);
+		//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 		if (textureSettings) textureSettings->Update();
 		if (outgassingMap) outgassingMap->Update(m_fTime, TRUE);
 		if (facetDetails) facetDetails->Update();
@@ -1281,9 +1289,6 @@ void MolFlow::LoadFile(char *fName) {
 		if (vertexCoordinates) vertexCoordinates->Update();
 		if (movement) movement->Update();
 		if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
-		if (timeSettings) mApp->timeSettings->RefreshMoments();
-		if (momentsEditor) mApp->momentsEditor->Refresh();
-		if (parameterEditor) mApp->parameterEditor->UpdateCombo();
 
 	}
 	catch (Error &e) {
@@ -1956,7 +1961,6 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	ClearParameters();
 	ClearAllSelections();
 	ClearAllViews();
-	worker.displayedMoment = 0;
 
 	GLParser *f = new GLParser();
 	f->SetExpression("A2/SUMDES");
@@ -1972,11 +1976,15 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 		return;
 	}
 
-	UpdatePlotters();
+	//UpdatePlotters();
 
-	if (timeSettings) mApp->timeSettings->RefreshMoments();
-	if (momentsEditor) mApp->momentsEditor->Refresh();
-	if (parameterEditor) mApp->parameterEditor->UpdateCombo();
+	if (timeSettings) timeSettings->RefreshMoments();
+	if (momentsEditor) momentsEditor->Refresh();
+	if (pressureEvolution) pressureEvolution->Refresh();
+	if (timewisePlotter) timewisePlotter->Refresh();
+	if (profilePlotter) profilePlotter->Refresh();
+	if (texturePlotter) texturePlotter->Update(0.0, TRUE);
+	//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 	if (textureSettings) textureSettings->Update();
 	if (outgassingMap) outgassingMap->Update(m_fTime, TRUE);
 	if (facetDetails) facetDetails->Update();
