@@ -154,12 +154,12 @@ static const char *prStates[] = {
 "",
 "",
 "No command",
-"Load",
-"Start",
-"Stop",
-"Reset",
-"Exit",
-"Close",
+"Loading",
+"Starting",
+"Stopping",
+"Resetting",
+"Exiting",
+"Closing",
 "ComputeAC",
 "Step"
 

@@ -1085,7 +1085,8 @@ void Worker::RealReload() { //Sharing geometry with workers
 	ReleaseDataport(loader);
 
 	size_t hitSize = geom->GetHitsSize(&moments);
-	dpHit = CreateDataport(hitsDpName, hitSize);ClearHits(TRUE);
+	dpHit = CreateDataport(hitsDpName, hitSize);
+	ClearHits(TRUE);
 	if (!dpHit) {
 		CLOSEDP(loader);
 		//GLMessageBox::Display("Failed to create 'hits' dataport: not enough memory.", "Warning (Load)", GLDLG_OK, GLDLG_ICONERROR);
@@ -1126,22 +1127,6 @@ void Worker::RealReload() { //Sharing geometry with workers
 	}
 
 	//Old send hits location
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	progressDlg->SetMessage("Closing dataport...");
 	CLOSEDP(loader);
 	needsReload = false;

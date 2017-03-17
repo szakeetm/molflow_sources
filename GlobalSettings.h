@@ -33,7 +33,7 @@ public:
   // Construction
   GlobalSettings(Worker *w);
   void UpdateOutgassing();
-  void SMPUpdate(float appTime);
+  void SMPUpdate();
 
   // Implementation
   void ProcessMessage(GLComponent *src,int message);

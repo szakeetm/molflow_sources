@@ -235,7 +235,7 @@ void RecordDirectionVector(FACET *f, double time);
 void ProfileFacet(FACET *f, double time, BOOL countHit, double velocity_factor, double ortSpeedFactor);
 void InitSimulation();
 void ClearSimulation();
-void SetState(int state, const char *status);
+void SetState(int state, const char *status, BOOL changeState=TRUE, BOOL changeStatus=TRUE);
 void SetErrorSub(const char *msg);
 void ClearACMatrix();
 BOOL LoadSimulation(Dataport *loader);

@@ -1017,7 +1017,7 @@ int MolFlow::FrameMove()
 {
 	Interface::FrameMove();
 	char tmp[256];
-	if (globalSettings) globalSettings->SMPUpdate(m_fTime);
+	if (globalSettings) globalSettings->SMPUpdate();
 	if (worker.running)
 		if (textureSettings) textureSettings->Update();
 

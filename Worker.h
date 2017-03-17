@@ -111,9 +111,6 @@ public:
   // AC iteration single step
   void StepAC(float appTime);
 
-  // Free all allocated resource
-  void Exit();
-
   // Kill all sub processes
   void KillAll();
 
@@ -231,7 +228,7 @@ private:
   char      hitsDpName[32];
 
   // Methods
-  BOOL ExecuteAndWait(int command, int waitState, int param = 0);
+  BOOL ExecuteAndWait(int command, int readyState, int param = 0);
   BOOL Wait(int waitState, LoadStatus *statusWindow = NULL);
   void ResetWorkerStats();
   void ClearHits(BOOL noReload);

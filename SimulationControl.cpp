@@ -82,9 +82,6 @@ void ClearSimulation() {
 	// Free old stuff
 	sHandle->CDFs = std::vector<std::vector<std::pair<double, double>>>(); //clear CDF distributions
 
-
-
-
 	SAFE_FREE(sHandle->vertices3);
 	for (j = 0; j < sHandle->nbSuper; j++) {
 		for (i = 0; i < sHandle->str[j].nbFacet; i++) {
@@ -103,12 +100,8 @@ void ClearSimulation() {
 					//if (f->velocityHistogram) SAFE_FREE(f->velocityHistogram);
 				}
 
-
-
 				SAFE_FREE(f->hits);
 				SAFE_FREE(f->profile);
-
-
 				SAFE_FREE(f->direction);
 				//SAFE_FREE(f->velocityHistogram);
 
@@ -191,14 +184,18 @@ BOOL LoadSimulation(Dataport *loader) {
 	sHandle->loadOK = FALSE;
 	SetState(PROCESS_STARTING, "Clearing previous simulation");
 	ClearSimulation();
-	SetState(PROCESS_STARTING, "Connecting to dataport");
+	
+	/* //Mutex not necessary: by the time the COMMAND_LOAD is issued the interface releases the handle, concurrent reading is safe and it's only destroyed by the interface when all processes are ready loading
+	   //Result: faster, parallel loading
 	// Connect the dataport
-	if (!AccessDataport(loader)) {
-
-
+	SetState(PROCESS_STARTING, "Waiting for 'loader' dataport access...");
+	if (!AccessDataportTimed(loader,15000)) {
 		SetErrorSub("Failed to connect to DP");
 		return FALSE;
 	}
+	*/
+
+	SetState(PROCESS_STARTING, "Loading simulation");
 
 	buffer = (BYTE *)loader->buff;
 	bufferStart = buffer; //memorize start for later
@@ -545,7 +542,8 @@ BOOL LoadSimulation(Dataport *loader) {
 		sHandle->parameters.push_back(*param1);
 
 		sHandle->str[0].facets[0]->sh.sticking_paramId=0; //set facet 1 as time-dependent desorption*/
-	ReleaseDataport(loader);
+	
+	//ReleaseDataport(loader); //Commented out as AccessDataport removed
 
 	// Build all AABBTrees
 	for (i = 0; i < sHandle->nbSuper; i++)
@@ -580,7 +578,9 @@ BOOL LoadSimulation(Dataport *loader) {
 void UpdateHits(Dataport *dpHit, int prIdx, DWORD timeout) {
 	switch (sHandle->sMode) {
 	case MC_MODE:
+	{
 		UpdateMCHits(dpHit, prIdx, sHandle->nbMoments, timeout);
+	}
 		break;
 	case AC_MODE:
 
@@ -600,6 +600,7 @@ size_t GetHitsSize() {
 // -------------------------------------------------------
 
 void ResetTmpCounters() {
+	SetState(NULL, "Resetting local cache...", FALSE, TRUE);
 
 	memset(&sHandle->tmpCount, 0, sizeof(SHHITS));
 
@@ -615,22 +616,32 @@ void ResetTmpCounters() {
 			f->ResetCounter();
 			f->hitted = FALSE;
 
+			/*
 			if (f->hits) {
 				for (size_t m = 0; m < (sHandle->nbMoments + 1); m++) {
 					memset(f->hits[m], 0, f->textureSize);
 				}
 			}
+			*/
+			memset(&(f->hits[0]), 0, f->textureSize*(sHandle->nbMoments + 1));
 
+			/*
 			if (f->profile) {
 				for (size_t m = 0; m < (sHandle->nbMoments + 1); m++) {
 					memset(f->profile[m], 0, f->profileSize);
 				}
 			}
+			*/
+			memset(&(f->profile[0]), 0, f->profileSize*(sHandle->nbMoments + 1));
+
+			/*
 			if (f->direction) {
 				for (size_t m = 0; m < (sHandle->nbMoments + 1); m++) {
 					memset(f->direction[m], 0, f->directionSize);
 				}
 			}
+			*/
+			memset(&(f->direction[0]), 0, f->directionSize*(sHandle->nbMoments + 1));
 		}
 	}
 
@@ -639,7 +650,6 @@ void ResetTmpCounters() {
 // -------------------------------------------------------
 
 void ResetSimulation() {
-
 	sHandle->lastHit = NULL;
 	sHandle->totalDesorbed = 0;
 	ResetTmpCounters();
