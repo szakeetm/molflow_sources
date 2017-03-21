@@ -1,5 +1,5 @@
 /*
-File:        FacetMesh.cpp
+File:        FacetAdvParams.cpp
 Description: Advanced facet settings window (used to be fact mesh settings)
 Program:     MolFlow
 Author:      R. KERSEVAN / J-L PONS / M ADY
@@ -18,12 +18,13 @@ GNU General Public License for more details.
 
 #include <math.h>
 
-#include "FacetMesh.h"
+#include "FacetAdvParams.h"
 #include "Facet.h"
 #include "GLApp/GLLabel.h"
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
 #include "GLApp/MathTools.h"
+
 #ifdef MOLFLOW
 #include "MolFlow.h"
 #endif
@@ -41,7 +42,7 @@ extern SynRad*mApp;
 
 //-----------------------------------------------------------------------------
 
-FacetMesh::FacetMesh(Worker *w) :GLWindow() {
+FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 
 	worker = w;
 	geom = w->GetGeometry();
@@ -288,7 +289,7 @@ FacetMesh::FacetMesh(Worker *w) :GLWindow() {
 //-----------------------------------------------------------------------------
 
 
-void FacetMesh::UpdateSize() {
+void FacetAdvParams::UpdateSize() {
 
 	char tmp[64];
 
@@ -335,7 +336,7 @@ void FacetMesh::UpdateSize() {
 
 //-----------------------------------------------------------------------------
 
-void FacetMesh::UpdateSizeForRatio() {
+void FacetAdvParams::UpdateSizeForRatio() {
 	if (!geom->IsLoaded()) return;
 	double ratio;
 	char tmp[64];
@@ -399,7 +400,7 @@ void FacetMesh::UpdateSizeForRatio() {
 
 //-----------------------------------------------------------------------------
 
-void FacetMesh::Refresh(int nbSel, int* selection) {
+void FacetAdvParams::Refresh(int nbSel, int* selection) {
 
 	sumArea = sumOutgassing = 0;
 
@@ -689,7 +690,7 @@ void FacetMesh::Refresh(int nbSel, int* selection) {
 	UpdateSize();
 }
 
-void FacetMesh::Reposition(int wD, int hD) {
+void FacetAdvParams::Reposition(int wD, int hD) {
 	if (wD == 0) wD = this->GetWidth();
 	if (hD == 0) hD = this->GetHeight();
 	// Position dialog next to Facet parameters
@@ -701,7 +702,7 @@ void FacetMesh::Reposition(int wD, int hD) {
 
 //-----------------------------------------------------------------------------
 
-BOOL FacetMesh::Apply() {
+BOOL FacetAdvParams::Apply() {
 	if (!mApp->AskToReset(worker)) return FALSE;
 	BOOL boundMap = TRUE; // boundaryBtn->GetState();
 	int nbSelected;
@@ -957,7 +958,7 @@ BOOL FacetMesh::Apply() {
 }
 
 //-----------------------------------------------------------------------------
-void FacetMesh::QuickApply() {
+void FacetAdvParams::QuickApply() {
 	//Apply view settings without stopping the simulation
 
 
@@ -982,7 +983,7 @@ void FacetMesh::QuickApply() {
 
 //-----------------------------------------------------------------------------
 
-void FacetMesh::UpdateToggle(GLComponent *src) {
+void FacetAdvParams::UpdateToggle(GLComponent *src) {
 
 	/*if (src==boundaryBtn) {
 		recordACBtn->SetState(FALSE);
@@ -1042,7 +1043,7 @@ void FacetMesh::UpdateToggle(GLComponent *src) {
 
 //-----------------------------------------------------------------------------
 
-void FacetMesh::ProcessMessage(GLComponent *src, int message) {
+void FacetAdvParams::ProcessMessage(GLComponent *src, int message) {
 
 	switch (message) {
 
@@ -1161,7 +1162,7 @@ void FacetMesh::ProcessMessage(GLComponent *src, int message) {
 	GLWindow::ProcessMessage(src, message);
 }
 
-void FacetMesh::CalcSojournTime() {
+void FacetAdvParams::CalcSojournTime() {
 	double sojF,sojE,facetT;
 	if (enableSojournTime->GetState() == 0
 		|| !(sojournFreq->GetNumber(&sojF))

@@ -19,24 +19,23 @@
 
 #include <crtdbg.h> //To debug heap corruptions in memory
 
-
 #include "Interface.h"
-#include "Worker.h"
-#include "ImportDesorption.h"
-#include "TimeSettings.h"
-#include "Movement.h"
-#include "FacetMesh.h"
-#include "FacetDetails.h"
-#include "Viewer3DSettings.h"
-#include "TextureSettings.h"
-#include "GlobalSettings.h"
-#include "ProfilePlotter.h"
-#include "PressureEvolution.h"
-#include "TimewisePlotter.h"
-#include "TexturePlotter.h"
-#include "OutgassingMap.h"
-#include "MomentsEditor.h"
-#include "ParameterEditor.h"
+class Worker;
+class ImportDesorption;
+class TimeSettings;
+class Movement;
+class FacetAdvParams;
+class FacetDetails;
+class Viewer3DSettings;
+class TextureSettings;
+class GlobalSettings;
+class ProfilePlotter;
+class PressureEvolution;
+class TimewisePlotter;
+class TexturePlotter;
+class OutgassingMap;
+class MomentsEditor;
+class ParameterEditor;
 
 class MolFlow : public Interface
 {
@@ -58,9 +57,7 @@ public:
 	
     void ApplyFacetParams();
 	void UpdateFacetParams(BOOL updateSelection = FALSE);
-	
     void StartStopSimulation();
-
     void SaveConfig();
     void LoadConfig();
     
@@ -119,7 +116,7 @@ public:
 	ImportDesorption *importDesorption;
 	TimeSettings     *timeSettings;
 	Movement         *movement;
-    FacetMesh        *facetMesh;
+    FacetAdvParams        *facetAdvParams;
     FacetDetails     *facetDetails;
     Viewer3DSettings *viewer3DSettings;
     TextureSettings  *textureSettings;

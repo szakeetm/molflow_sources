@@ -21,6 +21,8 @@
 #include "GLApp/GLWindowManager.h"
 #include "GLApp/GLMessageBox.h"
 #include "MolFlow.h"
+#include "TimeSettings.h"
+#include "TimewisePlotter.h"
 
 extern MolFlow *mApp;
 

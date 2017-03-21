@@ -21,23 +21,9 @@
 #include "GLApp/GLMessageBox.h"
 #include "GLApp/MathTools.h"
 #include "Facet.h"
-#ifdef MOLFLOW
+
 #include "MolFlow.h"
-#endif
-
-#ifdef SYNRAD
-#include "SynRad.h"
-#endif
-
-
-
-#ifdef MOLFLOW
 extern MolFlow *mApp;
-#endif
-
-#ifdef SYNRAD
-extern SynRad*mApp;
-#endif
 
 typedef struct {
 

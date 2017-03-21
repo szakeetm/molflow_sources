@@ -2,6 +2,7 @@
 #include "MolFlow.h"
 #include "Facet.h"
 #include "GLApp\MathTools.h"
+#include "ProfilePlotter.h"
 
 /*
 //Leak detection

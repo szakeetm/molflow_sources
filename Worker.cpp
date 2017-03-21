@@ -28,6 +28,8 @@ GNU General Public License for more details.
 #include "GLApp/MathTools.h"
 #include "Facet.h"
 #include "Simulation.h" //SHELEM
+#include "GlobalSettings.h"
+
 #ifdef MOLFLOW
 #include "MolFlow.h"
 #endif

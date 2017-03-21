@@ -1,6 +1,6 @@
 /*
-  File:        FacetMesh.h
-  Description: Facet mesh configuration dialog
+  File:        FacetAdvParams.h
+  Description: Facet advanced parameters
   Program:     MolFlow
   Author:      R. KERSEVAN / J-L PONS / M ADY
   Copyright:   E.S.R.F / CERN
@@ -25,15 +25,14 @@
 #include "GLApp/GLCombo.h"
 #include "Worker.h"
 
-#ifndef _FACETMESHH_
-#define _FACETMESHH_
+#pragma once
 
-class FacetMesh : public GLWindow {
+class FacetAdvParams : public GLWindow {
 
 public:
 
 	// Construction
-	FacetMesh(Worker *w);
+	FacetAdvParams(Worker *w);
 
 	// Component method
 	void Refresh(int nbSel, int* selection);
@@ -42,8 +41,6 @@ public:
 	// Implementation
 	void ProcessMessage(GLComponent *src, int message);
 	BOOL Apply();
-
-
 
 private:
 
@@ -113,7 +110,4 @@ private:
 	GLButton	*SojournInfoButton;
 
 	GLProgress  *progressDlg;
-
 };
-
-#endif /* _FACETMESHH_ */

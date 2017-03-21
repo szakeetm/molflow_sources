@@ -34,14 +34,23 @@ GNU General Public License for more details.
 #include <string>
 #include <io.h>
 
-/*
-//Leak detection
-#ifdef _DEBUG
-#define _CRTDBG_MAP_ALLOC
-#define DEBUG_NEW new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#define new DEBUG_NEW
-#endif
-*/
+#include "Interface.h"
+#include "Worker.h"
+#include "ImportDesorption.h"
+#include "TimeSettings.h"
+#include "Movement.h"
+#include "FacetAdvParams.h"
+#include "FacetDetails.h"
+#include "Viewer3DSettings.h"
+#include "TextureSettings.h"
+#include "GlobalSettings.h"
+#include "ProfilePlotter.h"
+#include "PressureEvolution.h"
+#include "TimewisePlotter.h"
+#include "TexturePlotter.h"
+#include "OutgassingMap.h"
+#include "MomentsEditor.h"
+#include "ParameterEditor.h"
 
 static const char *fileLFilters = "All MolFlow supported files\0*.txt;*.xml;*.zip;*.geo;*.geo7z;*.syn;*.syn7z;*.str;*.stl;*.ase\0"
 "All files\0*.*\0";
@@ -148,7 +157,7 @@ MolFlow::MolFlow()
 	mApp = this; //to refer to the app as extern variable
 
 	//Different Molflow implementation:
-	facetMesh = NULL;
+	facetAdvParams = NULL;
 	facetDetails = NULL;
 	viewer3DSettings = NULL;
 	textureSettings = NULL;
@@ -359,7 +368,7 @@ int MolFlow::OneTimeSceneInit()
 	facetList->Sortable = TRUE;
 	Add(facetList);
 
-	facetMesh = new FacetMesh(&worker); //To use its UpdatefacetParams() routines
+	facetAdvParams = new FacetAdvParams(&worker); //To use its UpdatefacetParams() routines
 
 	ClearFacetParams();
 	LoadConfig();
@@ -762,8 +771,8 @@ void MolFlow::ApplyFacetParams() {
 			f->UpdateFlags();
 		}
 	}
-	if (facetMesh && facetMesh->IsVisible()) {
-		if (!facetMesh->Apply()) {
+	if (facetAdvParams && facetAdvParams->IsVisible()) {
+		if (!facetAdvParams->Apply()) {
 			return;
 		}
 	}
@@ -779,7 +788,7 @@ void MolFlow::ApplyFacetParams() {
 	if (profilePlotter) profilePlotter->Refresh();
 	if (pressureEvolution) pressureEvolution->Refresh();
 	if (timewisePlotter) timewisePlotter->Refresh();
-	//if (facetMesh) facetMesh->Refresh();
+	//if (facetAdvParams) facetAdvParams->Refresh();
 }
 
 
@@ -789,7 +798,7 @@ void MolFlow::ApplyFacetParams() {
 // Desc: Update selected facet parameters.
 //-----------------------------------------------------------------------------
 
-void MolFlow::UpdateFacetParams(BOOL updateSelection) { //Calls facetMesh->Refresh()
+void MolFlow::UpdateFacetParams(BOOL updateSelection) { //Calls facetAdvParams->Refresh()
 
 	char tmp[256];
 
@@ -927,7 +936,7 @@ void MolFlow::UpdateFacetParams(BOOL updateSelection) { //Calls facetMesh->Refre
 			facetFlowArea->SetText("");
 		}
 
-		if (facetMesh) facetMesh->Refresh(count, selection); //Refresh advanced facet parameters panel
+		if (facetAdvParams) facetAdvParams->Refresh(count, selection); //Refresh advanced facet parameters panel
 		if (updateSelection) {
 
 			if (nbSel > 1000 || geom->GetNbFacet() > 50000) { //If it would take too much time to look up every selected facet in the list
@@ -953,7 +962,7 @@ void MolFlow::UpdateFacetParams(BOOL updateSelection) { //Calls facetMesh->Refre
 	}
 	else {
 		ClearFacetParams();
-		if (facetMesh) facetMesh->Refresh(0, NULL); //Clear
+		if (facetAdvParams) facetAdvParams->Refresh(0, NULL); //Clear
 		if (updateSelection) facetList->ClearSelection();
 	}
 
@@ -1059,7 +1068,7 @@ int MolFlow::RestoreDeviceObjects()
 	RestoreDeviceObjects_shared();
 
 	//Different Molflow implementations:
-	RVALIDATE_DLG(facetMesh);
+	RVALIDATE_DLG(facetAdvParams);
 	RVALIDATE_DLG(facetDetails);
 	RVALIDATE_DLG(smartSelection);
 	RVALIDATE_DLG(viewer3DSettings);
@@ -1090,7 +1099,7 @@ int MolFlow::InvalidateDeviceObjects()
 	InvalidateDeviceObjects_shared();
 
 	//Different Molflow implementations:
-	IVALIDATE_DLG(facetMesh);
+	IVALIDATE_DLG(facetAdvParams);
 	IVALIDATE_DLG(facetDetails);
 	IVALIDATE_DLG(smartSelection);
 	IVALIDATE_DLG(viewer3DSettings);
@@ -1561,8 +1570,8 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			pressureEvolution->Display(&worker);
 			break;
 			/*case MENU_FACET_MESH:
-				if (!facetMesh) facetMesh = new FacetMesh(&worker);
-				facetMesh->SetVisible(!facetMesh->IsVisible());
+				if (!facetAdvParams) facetAdvParams = new FacetAdvParams(&worker);
+				facetAdvParams->SetVisible(!facetAdvParams->IsVisible());
 				break;      */
 
 		case MENU_FACET_OUTGASSINGMAP:
@@ -1874,16 +1883,16 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			else globalSettings->SetVisible(FALSE);
 		}
 		else if (src == facetMoreBtn) {
-			if (!facetMesh) {
-				facetMesh = new FacetMesh(&worker);
+			if (!facetAdvParams) {
+				facetAdvParams = new FacetAdvParams(&worker);
 				int *selection;
 				int nbSel;
 				worker.GetGeometry()->GetSelection(&selection, &nbSel);
-				facetMesh->Refresh(nbSel, selection);
+				facetAdvParams->Refresh(nbSel, selection);
 				SAFE_FREE(selection);
 			}
-			facetMesh->SetVisible(!facetMesh->IsVisible());
-			facetMesh->Reposition();
+			facetAdvParams->SetVisible(!facetAdvParams->IsVisible());
+			facetAdvParams->Reposition();
 		}
 
 		else if (src == compACBtn) {

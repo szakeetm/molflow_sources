@@ -616,32 +616,25 @@ void ResetTmpCounters() {
 			f->ResetCounter();
 			f->hitted = FALSE;
 
-			/*
 			if (f->hits) {
 				for (size_t m = 0; m < (sHandle->nbMoments + 1); m++) {
 					memset(f->hits[m], 0, f->textureSize);
 				}
 			}
-			*/
-			memset(&(f->hits[0]), 0, f->textureSize*(sHandle->nbMoments + 1));
 
-			/*
+			
 			if (f->profile) {
 				for (size_t m = 0; m < (sHandle->nbMoments + 1); m++) {
 					memset(f->profile[m], 0, f->profileSize);
 				}
 			}
-			*/
-			memset(&(f->profile[0]), 0, f->profileSize*(sHandle->nbMoments + 1));
 
-			/*
+			
 			if (f->direction) {
 				for (size_t m = 0; m < (sHandle->nbMoments + 1); m++) {
 					memset(f->direction[m], 0, f->directionSize);
 				}
 			}
-			*/
-			memset(&(f->direction[0]), 0, f->directionSize*(sHandle->nbMoments + 1));
 		}
 	}
 

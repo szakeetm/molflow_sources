@@ -21,6 +21,8 @@
 #include "GLApp/GLWindowManager.h"
 #include "GLApp/GLMessageBox.h"
 #include "MolFlow.h"
+#include "MomentsEditor.h"
+#include "FacetDetails.h"
 
 extern MolFlow *mApp;
 
