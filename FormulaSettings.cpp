@@ -22,6 +22,8 @@
 
 FormulaSettings::FormulaSettings():GLWindow() {
 
+	formulaId = -1;
+
   int wD = 500;
   int hD = 500;
 
@@ -67,9 +69,9 @@ FormulaSettings::FormulaSettings():GLWindow() {
   descL->SetBounds(5,55,wD-10,hD-100);
   Add(descL);
 
-  createButton = new GLButton(0,"Create");
-  createButton->SetBounds(wD-300,hD-43,95,19);
-  Add(createButton);
+  applyButton = new GLButton(0,"Create");
+  applyButton->SetBounds(wD-300,hD-43,95,19);
+  Add(applyButton);
 
   deleteButton = new GLButton(0,"Delete");
   deleteButton->SetEnabled(FALSE);
