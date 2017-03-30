@@ -2147,8 +2147,6 @@ void MolFlow::LoadConfig() {
 		f->ReadKeyword("normeratio"); f->ReadKeyword(":");
 		geom->SetNormeRatio((float)(f->ReadDouble()));
 		f->ReadKeyword("showDirection"); f->ReadKeyword(":");
-		for (int i = 0; i < MAX_VIEWER; i++)
-			viewer[i]->showDir = f->ReadInt();
 
 		f->ReadKeyword("autoSaveFrequency"); f->ReadKeyword(":");
 		autoSaveFrequency = f->ReadDouble();
@@ -2282,7 +2280,6 @@ void MolFlow::SaveConfig() {
 		f->Write("autonorme:"); f->WriteInt(geom->GetAutoNorme(), "\n");
 		f->Write("centernorme:"); f->WriteInt(geom->GetCenterNorme(), "\n");
 		f->Write("normeratio:"); f->WriteDouble((double)(geom->GetNormeRatio()), "\n");
-		WRITEI("showDirection", showDir); f->Write("\n");
 
 		f->Write("autoSaveFrequency:"); f->WriteDouble(autoSaveFrequency, "\n");
 		f->Write("autoSaveSimuOnly:"); f->WriteInt(autoSaveSimuOnly, "\n");
