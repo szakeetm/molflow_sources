@@ -257,7 +257,7 @@ void Viewer3DSettings::ProcessMessage(GLComponent *src,int message) {
         GLMessageBox::Display("Invalid number of displayed leaks.\nMust be between 1 and 2048.","Error",GLDLG_OK,GLDLG_ICONERROR);
         return;
       }
-	  if ((!hideLotText->GetNumberInt(&lotofFacets) || dnl<2 )) {
+	   if (hideLotselected->GetState() && (!hideLotText->GetNumberInt(&lotofFacets) || lotofFacets<2)) {
 		  GLMessageBox::Display("Invalid number of selected facets.\nMust be larger than 2.", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		  return;
 	  }
