@@ -167,7 +167,7 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	paramPanel->Add(facetSuperDest);
 
 	label8 = new GLLabel("Link to:");
-	paramPanel->SetCompBounds(label8, 160, 96, 35, 12);
+	paramPanel->SetCompBounds(label8, 159, 91, 35, 12);
 	paramPanel->Add(label8);
 
 	facetStructure = new GLTextField(0, "");
@@ -753,9 +753,9 @@ BOOL FacetAdvParams::Apply() {
 
 	// Super structure destination (link)
 	int superDest;
-	BOOL doSuper = FALSE;
+	BOOL doLink = FALSE;
 	if (strcmp(facetSuperDest->GetText(), "none") == 0 || strcmp(facetSuperDest->GetText(), "no") == 0 || strcmp(facetSuperDest->GetText(), "0") == 0) {
-		doSuper = TRUE;
+		doLink = TRUE;
 		superDest = 0;
 	}
 	else if (sscanf(facetSuperDest->GetText(), "%d", &superDest) > 0) {
@@ -763,12 +763,15 @@ BOOL FacetAdvParams::Apply() {
 			GLMessageBox::Display("Link and superstructure can't be the same", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return FALSE;
 		}
-		else if (superDest > 0 && superDest <= geom->GetNbStructure()) doSuper = TRUE;
+		else if (superDest < 0 || superDest > geom->GetNbStructure()) {
+			GLMessageBox::Display("Link destination points to a structure that doesn't exist", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			return FALSE;
+		}
+		else
+			doLink = TRUE;
 	}
-	else if (strcmp(facetSuperDest->GetText(), "...") == 0) doSuper = FALSE;
-
+	else if (strcmp(facetSuperDest->GetText(), "...") == 0) doLink = FALSE;
 	else {
-
 		GLMessageBox::Display("Invalid superstructure destination", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return FALSE;
 	}
@@ -910,7 +913,7 @@ BOOL FacetAdvParams::Apply() {
 				structChanged = TRUE;
 			}
 		}
-		if (doSuper) {
+		if (doLink) {
 			f->sh.superDest = superDest;
 			if (superDest) f->sh.opacity = 1.0; // Force opacity for link facet
 		}
