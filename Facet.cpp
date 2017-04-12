@@ -945,9 +945,8 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 				buff32              // Data
 			);
 		}
-		GLToolkit::CheckGLErrors("Facet::BuildTexture()");
-
 		free(buff32);
+		GLToolkit::CheckGLErrors("Facet::BuildTexture()");		
 	}
 	else {
 
@@ -1064,9 +1063,9 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 			);
 		}
 		free(buff8);
-
+		GLToolkit::CheckGLErrors("Facet::BuildTexture()");
 	}
-	GLToolkit::CheckGLErrors("Facet::BuildTexture()");
+	
 }
 
 BOOL Facet::IsCoplanarAndEqual(Facet *f, double threshold) {

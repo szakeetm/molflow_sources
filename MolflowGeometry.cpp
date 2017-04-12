@@ -416,7 +416,7 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 		throw Error("Unspecified Error while building pipe");
 	}
 	InitializeGeometry();
-	isLoaded = TRUE;
+	//isLoaded = TRUE; //InitializeGeometry() sets to TRUE
 	strName[0] = _strdup("Pipe");
 	strFileName[0] = _strdup("pipe.txt");
 
@@ -1017,7 +1017,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *leakCache
 
 	InitializeGeometry();
 	//AdjustProfile();
-	isLoaded = TRUE;
+	//isLoaded = TRUE; //InitializeGeometry() sets to TRUE
 	UpdateName(file);
 
 	// Update mesh
@@ -1254,7 +1254,7 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version) {
 	prg->SetMessage("Initalizing geometry and building mesh...");
 	InitializeGeometry();
 	//AdjustProfile();
-	isLoaded = TRUE;
+	//isLoaded = TRUE; //InitializeGeometry() sets to TRUE
 	UpdateName(file);
 
 	// Update mesh
@@ -2891,7 +2891,7 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 
 	InitializeGeometry();
 	//AdjustProfile();
-	isLoaded = TRUE;
+	//isLoaded = TRUE; //InitializeGeometry() sets to TRUE
 
 
 	// Update mesh
@@ -3085,7 +3085,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 	else if (sh.nbSuper < structId + nbNewSuper) sh.nbSuper = structId + nbNewSuper;
 	InitializeGeometry();
 	//AdjustProfile();
-	isLoaded = TRUE;
+	//isLoaded = TRUE; //InitializeGeometry() sets to TRUE
 
 	/*
 	// Update mesh
