@@ -93,10 +93,15 @@ void ClearSimulation() {
 				SAFE_FREE(f->inc);
 				SAFE_FREE(f->largeEnough);
 				for (size_t m = 0; m < (sHandle->nbMoments + 1); m++) {
-
-					if (f->hits) SAFE_FREE(f->hits[m]);
-					if (f->profile) SAFE_FREE(f->profile[m]);
-					if (f->direction) SAFE_FREE(f->direction[m]);
+					if (f->hits) {
+						SAFE_FREE(f->hits[m]);
+					}
+					if (f->profile) {
+						SAFE_FREE(f->profile[m]);
+					}
+					if (f->direction) {
+						SAFE_FREE(f->direction[m]);
+					}
 					//if (f->velocityHistogram) SAFE_FREE(f->velocityHistogram);
 				}
 
@@ -688,7 +693,7 @@ void RecordLeakPos() {
 	// Source region check performed when calling this routine 
 	// Record leak for debugging
 	RecordHit(HIT_REF);
-	RecordHit(LASTHIT);
+	RecordHit(HIT_LAST);
 	if (sHandle->leakCacheSize < LEAKCACHESIZE) {
 		sHandle->leakCache[sHandle->leakCacheSize].pos = sHandle->pPos;
 		sHandle->leakCache[sHandle->leakCacheSize].dir = sHandle->pDir;

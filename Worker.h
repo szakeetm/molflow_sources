@@ -35,7 +35,6 @@ class GLProgress;
 class LoadStatus;
 class FileReader;
 
-extern float m_fTime;
 class Worker
 {
 

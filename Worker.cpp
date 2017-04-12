@@ -1064,7 +1064,11 @@ void Worker::RealReload() { //Sharing geometry with workers
 	// Clear geometry
 	CLOSEDP(dpHit);
 	if (!ExecuteAndWait(COMMAND_CLOSE, PROCESS_READY))
+	{
+		progressDlg->SetVisible(FALSE);
+		SAFE_DELETE(progressDlg);
 		ThrowSubProcError();
+	}
 
 	if (!geom->IsLoaded()) {
 		progressDlg->SetVisible(FALSE);

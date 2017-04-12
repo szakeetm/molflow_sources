@@ -58,7 +58,7 @@ public:
     void ApplyFacetParams();
 	void UpdateFacetParams(BOOL updateSelection = FALSE);
     void StartStopSimulation();
-    void SaveConfig();
+    void SaveConfig(BOOL increaseSessionCount = FALSE);
     void LoadConfig();
     
 	void PlaceComponents();

@@ -57,7 +57,7 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	mPanel = new GLTitledPanel("Texture cell / memory");
 	mPanel->SetBounds(5, 129, 309, 44);
 	Add(mPanel);
-	vPanel = new GLTitledPanel("View settings");
+	vPanel = new GLTitledPanel("Facet draw settings");
 	vPanel->SetBounds(5, 354, 309, 44);
 	Add(vPanel);
 	desPanel = new GLTitledPanel("Dynamic desorption");
@@ -138,7 +138,7 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	mPanel->SetCompBounds(l7, 10, 22, 43, 12);
 	mPanel->Add(l7);
 
-	quickApply = new GLButton(0, "Quick Apply");
+	quickApply = new GLButton(0, "<- Change draw");
 	vPanel->SetCompBounds(quickApply, 200, 15, 99, 20);
 	vPanel->Add(quickApply);
 
@@ -722,12 +722,12 @@ BOOL FacetAdvParams::Apply() {
 		}
 
 		// Resolution
-		if (resolutionText->GetNumber(&ratio) || ratio > 0.0) {
+		if (resolutionText->GetNumber(&ratio) && ratio >= 0.0) {
 			//Got a valid number
 			doRatio = TRUE;
 		}
 		else if (strcmp(resolutionText->GetText(), "...") != 0)  { //Not in mixed "..." state
-			GLMessageBox::Display("Invalid texture resolution", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			GLMessageBox::Display("Invalid texture resolution\nMust be a non-negative number", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return FALSE;
 		}
 		else {
@@ -894,14 +894,20 @@ BOOL FacetAdvParams::Apply() {
 		Facet *f = geom->GetFacet(selection[i]);
 		BOOL hadAnyTexture = f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD || f->sh.countDirection;
 		BOOL hadDirCount = f->sh.countDirection;
-		if (recordDesBtn->GetState() < 2) f->sh.countDes = recordDesBtn->GetState()*(enableBtn->GetState() != 0);
-		if (recordAbsBtn->GetState() < 2) f->sh.countAbs = recordAbsBtn->GetState()*(enableBtn->GetState() != 0);
-		if (recordReflBtn->GetState() < 2) f->sh.countRefl = recordReflBtn->GetState()*(enableBtn->GetState() != 0);
-		if (recordTransBtn->GetState() < 2) f->sh.countTrans = recordTransBtn->GetState()*(enableBtn->GetState() != 0);
-		if (recordACBtn->GetState() < 2) f->sh.countACD = recordACBtn->GetState()*(enableBtn->GetState() != 0);
-		if (recordDirBtn->GetState() < 2) f->sh.countDirection = recordDirBtn->GetState()*(enableBtn->GetState() != 0);
-		//Let the user disable textures with the main switch
-		if (enableBtn->GetState() == 0) f->sh.countDes = f->sh.countAbs = f->sh.countRefl = f->sh.countTrans = f->sh.countACD = f->sh.countDirection = FALSE;
+		
+		if (enableBtn->GetState() == 0 || ratio == 0.0) {
+			//Let the user disable textures with the main switch or by typing 0 as resolution
+			f->sh.countDes = f->sh.countAbs = f->sh.countRefl = f->sh.countTrans = f->sh.countACD = f->sh.countDirection = FALSE;
+		}
+		else {
+			if (recordDesBtn->GetState() < 2) f->sh.countDes = recordDesBtn->GetState();
+			if (recordAbsBtn->GetState() < 2) f->sh.countAbs = recordAbsBtn->GetState();
+			if (recordReflBtn->GetState() < 2) f->sh.countRefl = recordReflBtn->GetState();
+			if (recordTransBtn->GetState() < 2) f->sh.countTrans = recordTransBtn->GetState();
+			if (recordACBtn->GetState() < 2) f->sh.countACD = recordACBtn->GetState();
+			if (recordDirBtn->GetState() < 2) f->sh.countDirection = recordDirBtn->GetState();
+		}
+		
 		BOOL hasAnyTexture = f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD || f->sh.countDirection;
 
 		if (doTeleport) f->sh.teleportDest = teleport;
@@ -929,11 +935,8 @@ BOOL FacetAdvParams::Apply() {
 
 		//set textures
 		try {
-			/*if (enableBtn->GetState()<2 && recordDesBtn->GetState()<2 && recordAbsBtn->GetState()<2 && recordReflBtn->GetState()<2 &&
-				recordTransBtn->GetState()<2 && recordACBtn->GetState()<2 && recordDirBtn->GetState()<2 && doRatio) { //only remesh if all settings well-defined*/
 			BOOL needsRemeshing = (hadAnyTexture != hasAnyTexture) || (hadDirCount != f->sh.countDirection) || (doRatio && (!IS_ZERO(geom->GetFacet(selection[i])->tRatio - ratio)));
 			if (needsRemeshing) geom->SetFacetTexture(selection[i], hasAnyTexture ? ratio : 0.0, hasAnyTexture ? boundMap : FALSE);
-			//}
 		}
 		catch (Error &e) {
 			GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONWARNING);
@@ -1127,8 +1130,10 @@ void FacetAdvParams::ProcessMessage(GLComponent *src, int message) {
 		break;
 	case MSG_TEXT:
 		if (
-			src == facetTeleport
+			src == resolutionText
+			|| src == lengthText
 			|| src == facetAccFactor
+			|| src == facetTeleport
 			|| src == facetSuperDest
 			|| src == facetStructure
 			|| src == sojournFreq

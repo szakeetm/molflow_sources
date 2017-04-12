@@ -181,8 +181,16 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 		for (size_t hitIndex = 0; hitIndex < sHandle->hitCacheSize; hitIndex++)
 			gHits->hitCache[(hitIndex + gHits->lastHitIndex) % HITCACHESIZE] = sHandle->hitCache[hitIndex];
 
-		gHits->lastHitIndex = (gHits->lastHitIndex + sHandle->hitCacheSize) % HITCACHESIZE;
-		gHits->hitCacheSize = MIN(HITCACHESIZE, gHits->hitCacheSize + sHandle->hitCacheSize);
+		if (sHandle->hitCacheSize > 0) {
+			gHits->lastHitIndex = (gHits->lastHitIndex + sHandle->hitCacheSize) % HITCACHESIZE;
+
+			if (gHits->lastHitIndex < (HITCACHESIZE - 1)) {
+				gHits->lastHitIndex++;
+				gHits->hitCache[gHits->lastHitIndex].type = HIT_LAST; //Penup (border between blocks of consecutive hits in the hit cache)
+			}
+
+			gHits->hitCacheSize = MIN(HITCACHESIZE, gHits->hitCacheSize + sHandle->hitCacheSize);
+		}
 	}
 
 	size_t facetHitsSize = (1 + nbMoments) * sizeof(SHHITS);
@@ -430,7 +438,7 @@ BOOL SimulationMCStep(int nbStep) {
 				double remainderFlightPath = sHandle->velocityCurrentParticle*100.0*
 					MIN(sHandle->latestMoment - lastFLightTime, sHandle->particleDecayMoment - lastFLightTime); //distance until the point in space where the particle decayed
 				sHandle->distTraveledSinceUpdate_total += remainderFlightPath;
-				RecordHit(LASTHIT);
+				RecordHit(HIT_LAST);
 				//sHandle->distTraveledSinceUpdate += sHandle->distTraveledCurrentParticle;
 				if (!StartFromSource())
 					// desorptionLimit reached

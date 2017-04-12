@@ -129,15 +129,16 @@ void GeometryViewer::DrawLinesAndHits() {
 						glVertex3d(mApp->worker.hitCache[count].pos.x, mApp->worker.hitCache[count].pos.y, mApp->worker.hitCache[count].pos.z);  //teleport dest.
 
 					}
+				} //end treating teleport 
+
+				if (mApp->worker.hitCache[count].type == HIT_LAST) { //pen up at cache refresh border
+									glEnd();
+									count++;
+									glBegin(GL_LINE_STRIP);
 				}
-
-
-				glVertex3d(mApp->worker.hitCache[count].pos.x, mApp->worker.hitCache[count].pos.y, mApp->worker.hitCache[count].pos.z);
-				count++;
-				if (mApp->worker.hitCache[count].type == LASTHIT) { //pen up at cache refresh border
-					glEnd();
+				else {
+					glVertex3d(mApp->worker.hitCache[count].pos.x, mApp->worker.hitCache[count].pos.y, mApp->worker.hitCache[count].pos.z);
 					count++;
-					glBegin(GL_LINE_STRIP);
 				}
 			}
 			if (count < MIN(dispNumHits, mApp->worker.hitCacheSize) && mApp->worker.hitCache[count].type != 0) {

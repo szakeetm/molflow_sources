@@ -33,6 +33,7 @@ GNU General Public License for more details.
 #include <vector>
 #include <string>
 #include <io.h>
+#include <thread>
 
 #include "Interface.h"
 #include "Worker.h"
@@ -63,15 +64,18 @@ int cSize = 4;
 int   cWidth[] = { 30, 56, 50, 50 };
 char *cName[] = { "#", "Hits", "Des", "Abs" };
 
+
+std::string appId = "Molflow";
+int appVersion = 2645;
 #ifdef _DEBUG
 std::string appName = "MolFlow+ development version 64-bit (Compiled " __DATE__ " " __TIME__ ") DEBUG MODE";
 #else
-std::string appName = "Molflow+ 2.6.45 64-bit (" __DATE__ ")";
+std::string appName = "Molflow+ 2.6.46 64-bit (" __DATE__ ")";
 #endif
+
 
 std::vector<string> formulaPrefixes = { "A","D","H","P","DEN","Z","V","T","AR","a","d","h","ar","," };
 
-float m_fTime;
 MolFlow *mApp;
 
 //Menu elements, Molflow specific:
@@ -377,7 +381,6 @@ int MolFlow::OneTimeSceneInit()
 	PlaceComponents();
 	CheckNeedsTexture();
 
-	//LoadFile();
 	try {
 		worker.SetProcNumber(nbProc);
 	}
@@ -387,22 +390,8 @@ int MolFlow::OneTimeSceneInit()
 		GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 	}
 
-	if (checkForUpdates) {
-		//Launch updater tool
-		char command[1024];
-		char CWD[MAX_PATH];
-		_getcwd(CWD, MAX_PATH);
-		//sprintf(tmp5,"%s\\molflow_updater_tmp.exe",CWD);
-		if (FileUtils::Exist("molflow_updater_tmp.exe")) { //rename after new installation
-			sprintf(command, "move \"%s\\molflow_updater_tmp.exe\" \"%s\\molflow_updater.exe\"", CWD, CWD);
-			system(command);
-		}
+	//AppUpdater(); //Ask if user wants to check for updates
 
-		if (FileUtils::Exist("molflow_updater.exe"))
-			StartProc("synrad_updater.exe", STARTPROC_BACKGROUND);
-		else GLMessageBox::Display("molflow_updater.exe not found. You will not receive updates to Molflow."
-			"\n(You can disable checking for updates in Tools/Global Settings)", "Updater module missing.", GLDLG_OK, GLDLG_ICONINFO);
-	}
 	return GL_OK;
 }
 
@@ -1027,9 +1016,9 @@ int MolFlow::FrameMove()
 	Interface::FrameMove();
 	char tmp[256];
 	if (globalSettings) globalSettings->SMPUpdate();
-	if (worker.running)
+	if (worker.running && ((m_fTime - lastUpdate) >= 1.0f)) {
 		if (textureSettings) textureSettings->Update();
-
+	}
 	if ((m_fTime - worker.startTime <= 2.0f) && worker.running) {
 		hitNumber->SetText("Starting...");
 		desNumber->SetText("Starting...");
@@ -2146,8 +2135,6 @@ void MolFlow::LoadConfig() {
 		geom->SetCenterNorme(f->ReadInt());
 		f->ReadKeyword("normeratio"); f->ReadKeyword(":");
 		geom->SetNormeRatio((float)(f->ReadDouble()));
-		f->ReadKeyword("showDirection"); f->ReadKeyword(":");
-
 		f->ReadKeyword("autoSaveFrequency"); f->ReadKeyword(":");
 		autoSaveFrequency = f->ReadDouble();
 		f->ReadKeyword("autoSaveSimuOnly"); f->ReadKeyword(":");
@@ -2164,8 +2151,13 @@ void MolFlow::LoadConfig() {
 		BOOL isOpen = f->ReadInt();
 		if (isOpen) shortcutPanel->Open();
 		else shortcutPanel->Close();
+		f->ReadKeyword("hideLot"); f->ReadKeyword(":");
 		for (int i = 0; i < MAX_VIEWER; i++)
 			viewer[i]->hideLot = f->ReadInt();
+		f->ReadKeyword("installId"); f->ReadKeyword(":");
+		installId = f->ReadString();
+		f->ReadKeyword("appLaunchesWithoutAsking"); f->ReadKeyword(":");
+		appLaunchesWithoutAsking = f->ReadInt();
 	}
 	catch (Error &err) {
 		/*std::ostringstream tmp;
@@ -2194,7 +2186,7 @@ void MolFlow::LoadConfig() {
 	f->Write("\n");                      \
 }
 
-void MolFlow::SaveConfig() {
+void MolFlow::SaveConfig(BOOL increaseSessionCount) {
 
 	FileWriter *f = NULL;
 
@@ -2290,6 +2282,9 @@ void MolFlow::SaveConfig() {
 		f->Write("expandShortcutPanel:"); f->WriteInt(!shortcutPanel->IsClosed(), "\n");
 
 		WRITEI("hideLot", hideLot);
+		f->Write("installId:"); f->Write(installId+"\n");
+		if (increaseSessionCount && appLaunchesWithoutAsking >= 0) appLaunchesWithoutAsking++;
+		f->Write("appLaunchesWithoutAsking:"); f->WriteInt(appLaunchesWithoutAsking, "\n");
 	}
 	catch (Error &err) {
 		GLMessageBox::Display(err.GetMsg(), "Error saving config file", GLDLG_OK, GLDLG_ICONWARNING);

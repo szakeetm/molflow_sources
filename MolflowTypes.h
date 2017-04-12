@@ -29,7 +29,7 @@
 #define HIT_TRANS 4
 #define HIT_TELEPORT 5
 #define HIT_MOVING 6
-#define LASTHIT 7
+#define HIT_LAST 7
 
 // Density/Hit field stuff
 #define HITMAX 1E38

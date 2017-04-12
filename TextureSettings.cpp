@@ -162,12 +162,15 @@ void TextureSettings::Update() {
 	if(!IsVisible() || IsIconic()) return;  
 
 	char tmp[128];
+	/*
 	//Manual minimum label
 	sprintf(tmp, "%.3E", geom->texture_limits[geom->textureMode].manual.min.all);
 	texMinText->SetText(tmp);
 	//Manual maximum label
 	sprintf(tmp, "%.3E", geom->texture_limits[geom->textureMode].manual.max.all);
 	texMaxText->SetText(tmp);
+	*/
+
 	//Set autoscale minimum label
 	sprintf(tmp,"%.3E",(geom->texAutoScaleIncludeConstantFlow?
 		geom->texture_limits[geom->textureMode].autoscale.min.all
@@ -218,7 +221,11 @@ void TextureSettings::Display(Worker *w,GeometryViewer **v) {
 
 	SetVisible(TRUE);
 	Update();
-
+	char tmp[64];
+	sprintf(tmp, "%g", geom->texture_limits[geom->textureMode].manual.min.all);
+	texMinText->SetText(tmp);
+	sprintf(tmp, "%g", geom->texture_limits[geom->textureMode].manual.max.all);
+	texMaxText->SetText(tmp);
 }
 
 // --------------------------------------------------------------------
