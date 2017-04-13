@@ -66,11 +66,11 @@ char *cName[] = { "#", "Hits", "Des", "Abs" };
 
 
 std::string appId = "Molflow";
-int appVersion = 2647;
+int appVersion = 2648;
 #ifdef _DEBUG
 std::string appName = "MolFlow+ development version 64-bit (Compiled " __DATE__ " " __TIME__ ") DEBUG MODE";
 #else
-std::string appName = "Molflow+ 2.6.47 64-bit (" __DATE__ ")";
+std::string appName = "Molflow+ 2.6.48 64-bit (" __DATE__ ")";
 #endif
 
 
