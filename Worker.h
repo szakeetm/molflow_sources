@@ -67,6 +67,7 @@ public:
 
   void ExportTextures(char *fileName,int grouping,int mode,BOOL askConfirm=TRUE,BOOL saveSelected=FALSE);
   void ExportProfiles(char *fileName);
+  void ExportAngleMaps(std::vector<size_t> faceList, std::string fileName);
 
   //Import desorption map
   void ImportDesorption_DES(char *fileName);

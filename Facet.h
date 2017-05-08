@@ -73,6 +73,7 @@ public:
   BOOL    hasMesh;     // Temporary flag (loading)
   
   double *outgassingMap; //outgassing map cell values (loaded from file)
+  size_t* angleMapCache; //Reading while loading then passing to dpHit
 
   //Dynamic outgassing stuff
   BOOL textureError;   // Disable rendering if the texture has an error
@@ -148,6 +149,7 @@ public:
   Vector2d GetMeshPoint(int index, int pointId);
   Vector2d GetMeshCenter(int index);
   double GetArea();
+  std::string GetAngleMapCSV();
 };
 
 class DeletedFacet {

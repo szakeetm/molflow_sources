@@ -6,6 +6,7 @@
 #define DES_UNIFORM 1   // Uniform
 #define DES_COSINE  2   // cos(theta)
 #define DES_COSINE_N 3 // cos(theta)^N
+#define DES_ANGLEMAP 4 //imported file
 
 // Reflection type
 #define REF_DIFFUSE 0   // Diffuse (cosine law)

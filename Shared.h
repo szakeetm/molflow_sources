@@ -304,6 +304,12 @@ typedef struct {
 
 	double totalOutgassing; //total outgassing for the given facet
 
+	//Incident angle map
+	BOOL   recordAngleMap; // Record incident angle 2-dim distribution
+	BOOL hasRecordedAngleMap;
+	size_t angleMapPhiWidth;
+	size_t angleMapThetaHeight;
+
 } SHFACET;
 
 // -----------------------------------------------------------------

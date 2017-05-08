@@ -55,6 +55,8 @@ private:
 	int       fIdx;
 	double sumArea, sumOutgassing;
 
+	GLProgress* progressDlg;
+
 	GLTitledPanel	*aPanel;
 	GLTextField	*lengthText;
 	GLLabel	*perCm;
@@ -83,6 +85,7 @@ private:
 	GLLabel	*label1;
 	GLLabel	*label2;
 	GLTitledPanel	*paramPanel;
+	GLTitledPanel	*angleMapPanel;
 	GLToggle	*facetMovingToggle;
 	GLTextField	*facetSuperDest;
 	GLLabel	*label8;
@@ -108,6 +111,12 @@ private:
 	GLLabel	*sojournLabel1;
 	GLTextField	*sojournFreq;
 	GLButton	*SojournInfoButton;
-
-	GLProgress  *progressDlg;
+	GLLabel	*label14;
+	GLLabel	*angleMapDistrSizeLabel;
+	GLTextField	*angleMapHeightBox;
+	GLTextField	*angleMapWidthBox;
+	GLButton	*angleMapImportButton;
+	GLButton	*angleMapExportButton;
+	GLToggle	*angleMapRecordCheckbox;
+	GLButton	*angleMapReleaseButton;
 };

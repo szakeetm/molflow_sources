@@ -21,6 +21,7 @@ GNU General Public License for more details.
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sstream>
 #include "Simulation.h"
 #include "Random.h"
 #include "GLApp/MathTools.h"
@@ -123,12 +124,16 @@ void CartesianToPolar(FACET *iFacet, double *theta, double *phi) {
 	double v = Dot(sHandle->pDir, iFacet->sh.nV);
 	double n = Dot(sHandle->pDir, iFacet->sh.N);
 
+	/*
 	// (u,v,n) -> (theta,phi)
 	double rho = sqrt(v*v + u*u);
-	*theta = acos(n);              // Angle to normal (PI/2 => PI)
-	*phi = asin(v / rho);
-	if (u < 0.0) *phi = PI - *phi;  // Angle to U
-
+	*theta = acos(n);              // Angle to normal (PI/2 .. PI for frontal and 0..PI/2 for back incidence)
+	*phi = asin(v / rho);			// Returns -PI/2 ... +PI/2
+	if (u < 0.0) *phi = PI - *phi;  // Angle to U, -PI/2 .. 3PI/2
+	*/
+	
+	*theta = acos(n);
+	*phi = atan2(v, u); // -PI..PI
 }
 
 // -------------------------------------------------------
@@ -282,6 +287,16 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 						}
 					}
 				}
+
+				if (f->sh.recordAngleMap) {
+					size_t *shAngleMap = (size_t *)(buffer + f->sh.hitOffset + facetHitsSize + f->profileSize*(1 + nbMoments) + f->textureSize*(1 + nbMoments) + f->directionSize*(1 + nbMoments));
+					for (y = 0; y < f->sh.angleMapThetaHeight; y++) {
+						for (x = 0; x < f->sh.angleMapPhiWidth; x++) {
+							int add = x + y*f->sh.angleMapPhiWidth;
+							shAngleMap[add] += f->angleMap[add];
+						}
+					}
+				}
 			} // End if(hitted)
 		} // End nbFacet
 	} // End nbSuper
@@ -355,6 +370,7 @@ void PerformTeleport(FACET *iFacet) {
 	if (iFacet->hits && iFacet->sh.countTrans) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 2.0);
 	if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 2.0);
+	if (iFacet->sh.recordAngleMap) RecordAngleMap(iFacet);
 
 	// Relaunch particle from new facet
 	CartesianToPolar(iFacet, &inTheta, &inPhi);
@@ -647,6 +663,48 @@ BOOL StartFromSource() {
 	case DES_COSINE_N:
 		PolarToCartesian(src, acos(pow(rnd(), 1.0 / (src->sh.desorbTypeN + 1.0))), rnd()*2.0*PI, reverse);
 		break;
+	case DES_ANGLEMAP:
+	{
+		double angleMapSum = src->angleMap[src->sh.angleMapThetaHeight * src->sh.angleMapPhiWidth - 1];
+		if (angleMapSum == 0) {
+			std::stringstream tmp;
+			tmp << "Facet " << src->globalId + 1 << ": angle map has all 0 values";
+			SetErrorSub(tmp.str().c_str());
+		}
+		double lookupValue = rnd()*(double)angleMapSum; //last element of cumulative distr. = sum
+		int thetaLowerIndex = my_lower_bound(lookupValue, src->angleMapLineSums, src->sh.angleMapThetaHeight); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
+		double thetaOvershoot;
+		if (thetaLowerIndex == -1) thetaOvershoot = lookupValue / (double)src->angleMapLineSums[0]; //In the first line
+		else thetaOvershoot = (lookupValue - (double)src->angleMapLineSums[thetaLowerIndex]) / (double)(src->angleMapLineSums[thetaLowerIndex + 1] - src->angleMapLineSums[thetaLowerIndex]);
+		double theta = PI/(double)src->sh.angleMapThetaHeight*((double)thetaLowerIndex+1.0+thetaOvershoot); //0..PI
+		
+		
+		//Find phi lower index
+
+		int phiLowerIndex = my_lower_bound(lookupValue, &(src->angleMap[src->sh.angleMapPhiWidth*(thetaLowerIndex+1)]), src->sh.angleMapPhiWidth);
+		double phiOvershoot;
+		if (phiLowerIndex >=0) {
+			//Regular case, found within line
+			phiOvershoot = (lookupValue - (double)src->angleMap[src->sh.angleMapPhiWidth*(thetaLowerIndex + 1) + phiLowerIndex])
+				/ (double)(src->angleMap[src->sh.angleMapPhiWidth*(thetaLowerIndex + 1) + phiLowerIndex + 1] - src->angleMap[src->sh.angleMapPhiWidth*(thetaLowerIndex + 1) + phiLowerIndex]);
+		}
+		else {
+			if (thetaLowerIndex >= 0) {
+				//Special case, found in the first segment
+				phiOvershoot = (lookupValue - (double)src->angleMap[src->sh.angleMapPhiWidth*thetaLowerIndex + src->sh.angleMapPhiWidth - 1])
+					/ (double)(src->angleMap[src->sh.angleMapPhiWidth*(thetaLowerIndex + 1)] - src->angleMap[src->sh.angleMapPhiWidth*thetaLowerIndex + src->sh.angleMapPhiWidth - 1]);
+			}
+			else { //Very first line, very first element
+				phiOvershoot = lookupValue / (double)(src->angleMap[1] - src->angleMap[0]);
+			}
+		}
+		double phi = (2.0 * PI/(double)src->sh.angleMapPhiWidth)*(double)phiLowerIndex+1.0+phiOvershoot - PI; //Shifting from 0..2PI to -PI..PI
+
+		PolarToCartesian(src, theta, phi, FALSE);
+		_ASSERTE(theta == theta);
+		_ASSERTE(phi == phi);
+		_ASSERTE(sHandle->pDir.z > 0.0);
+	}
 	}
 
 	// Current structure
@@ -669,7 +727,7 @@ BOOL StartFromSource() {
 	src->sh.counter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity; //was 2.0 / ortV
 	src->sh.counter.hit.sum_v_ort += (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
 	IncreaseFacetCounter(src, sHandle->flightTimeCurrentParticle, 0, 1, 0, 2.0 / ortVelocity, (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity);
-	//Desorption doesn't contribute to angular profiles
+	//Desorption doesn't contribute to angular profiles, nor to angle maps
 	ProfileFacet(src, sHandle->flightTimeCurrentParticle, FALSE, 2.0, 1.0); //was 2.0, 1.0
 	if (src->hits && src->sh.countDes) RecordHitOnTexture(src, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0); //was 2.0, 1.0
 	//if (src->direction && src->sh.countDirection) RecordDirectionVector(src, sHandle->flightTimeCurrentParticle);
@@ -702,6 +760,7 @@ void PerformBounce(FACET *iFacet) {
 		// Count this hit as a transparent pass
 		RecordHit(HIT_TRANS);
 		ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 2.0);
+		if (iFacet->sh.recordAngleMap) RecordAngleMap(iFacet);
 		if (iFacet->hits && iFacet->sh.countTrans) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 2.0);
 		if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
 		return;
@@ -741,6 +800,7 @@ void PerformBounce(FACET *iFacet) {
 	if (iFacet->hits && iFacet->sh.countRefl) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 1.0, 1.0);
 	if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 1.0, 1.0);
+	if (iFacet->sh.recordAngleMap) RecordAngleMap(iFacet);
 
 	// Relaunch particle
 	UpdateVelocity(iFacet);
@@ -785,7 +845,7 @@ void PerformBounce(FACET *iFacet) {
 	IncreaseFacetCounter(iFacet, sHandle->flightTimeCurrentParticle, 0, 0, 0, 1.0 / ortVelocity, (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity);
 	if (iFacet->hits && iFacet->sh.countRefl) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, FALSE, 1.0, 1.0); //count again for outward velocity
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, FALSE, 1.0, 1.0);
-	//no direction count on outgoing
+	//no direction count on outgoing, neither angle map
 
 	if (iFacet->sh.isMoving && sHandle->motionType) RecordHit(HIT_MOVING);
 	else RecordHit(HIT_REF);
@@ -817,6 +877,7 @@ void PerformAbsorb(FACET *iFacet) {
 	double ortVelocity = sHandle->velocityCurrentParticle*abs(Dot(sHandle->pDir, iFacet->sh.N));
 	IncreaseFacetCounter(iFacet, sHandle->flightTimeCurrentParticle, 1, 0, 1, 2.0 / ortVelocity, (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity);
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0); //was 2.0, 1.0
+	if (iFacet->sh.recordAngleMap) RecordAngleMap(iFacet);
 	if (iFacet->hits && iFacet->sh.countAbs) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, TRUE, 2.0, 1.0); //was 2.0, 1.0
 	if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
 }
@@ -905,6 +966,16 @@ void ProfileFacet(FACET *f, double time, BOOL countHit, double velocity_factor, 
 		}
 		break;
 	}
+}
+
+void RecordAngleMap(FACET* collidedFacet) {
+	double theta, phi;
+	CartesianToPolar(collidedFacet, &theta, &phi);
+ 	size_t thetaIndex = (theta / PI)*collidedFacet->sh.angleMapThetaHeight; //Theta: 0..PI
+	size_t phiIndex = (phi + PI)/(2.0*PI)*collidedFacet->sh.angleMapPhiWidth; //Phi: -PI..PI (shifting by PI to store on 0..2PI)
+	collidedFacet->angleMap[thetaIndex*collidedFacet->sh.angleMapPhiWidth+phiIndex]++;
+	_ASSERTE(phi > (-PI / 2) && phi < (PI / 2));
+	_ASSERTE(sHandle->pDir.z > 0.0);
 }
 
 void UpdateVelocity(FACET *collidedFacet) {

@@ -100,6 +100,7 @@ BOOL Intersect(Vector3d *rPos, Vector3d *rDir,  // Source ray (rayDir vector mus
 				}
 				ProfileFacet(f, sHandle->flightTimeCurrentParticle + f->colDist / 100.0 / sHandle->velocityCurrentParticle,
 					TRUE, 2.0, 2.0);
+				if (f->sh.recordAngleMap) RecordAngleMap(f);
 			}
 		}
 	}

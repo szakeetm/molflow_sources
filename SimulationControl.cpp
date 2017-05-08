@@ -104,7 +104,9 @@ void ClearSimulation() {
 					}
 					//if (f->velocityHistogram) SAFE_FREE(f->velocityHistogram);
 				}
-
+				SAFE_FREE(f->outgassingMap);
+				SAFE_FREE(f->angleMap);
+				SAFE_FREE(f->angleMapLineSums);
 				SAFE_FREE(f->hits);
 				SAFE_FREE(f->profile);
 				SAFE_FREE(f->direction);
@@ -246,6 +248,7 @@ BOOL LoadSimulation(Dataport *loader) {
 		sHandle->str[shFacet->superIdx].nbFacet++;
 		buffer += sizeof(SHFACET) + shFacet->nbIndex*(sizeof(int) + sizeof(Vector2d));
 		if (shFacet->useOutgassingFile) buffer += sizeof(double)*shFacet->outgassingMapWidth*shFacet->outgassingMapHeight;
+		if (shFacet->hasRecordedAngleMap) buffer += sizeof(size_t)*shFacet->angleMapPhiWidth*shFacet->angleMapThetaHeight;
 	}
 	for (i = 0; i < sHandle->nbSuper; i++) {
 		int nbF = sHandle->str[i].nbFacet;
@@ -342,6 +345,7 @@ BOOL LoadSimulation(Dataport *loader) {
 		}
 		memcpy(f->vertices2, buffer, f->sh.nbIndex * sizeof(Vector2d));
 		buffer += f->sh.nbIndex * sizeof(Vector2d);
+		//Outgassing map
 		if (f->sh.useOutgassingFile) {
 			f->outgassingMap = (double*)malloc(sizeof(double)*f->sh.outgassingMapWidth*f->sh.outgassingMapHeight);
 			if (!f->outgassingMap) {
@@ -351,6 +355,39 @@ BOOL LoadSimulation(Dataport *loader) {
 			memcpy(f->outgassingMap, buffer, sizeof(double)*f->sh.outgassingMapWidth*f->sh.outgassingMapHeight);
 			buffer += sizeof(double)*f->sh.outgassingMapWidth*f->sh.outgassingMapHeight;
 		}
+		//Incident angle map
+		if (f->sh.hasRecordedAngleMap) {
+
+			f->angleMapSize = f->sh.angleMapPhiWidth * f->sh.angleMapThetaHeight * sizeof(size_t);
+
+			f->angleMap = (size_t*)malloc(f->angleMapSize);
+			if (!f->angleMap) {
+				SetErrorSub("Not enough memory to load incident angle map (values)");
+				return FALSE;
+			}
+
+			f->angleMapLineSums = (size_t*)malloc(sizeof(size_t)* f->sh.angleMapThetaHeight);
+			if (!f->angleMapLineSums) {
+				SetErrorSub("Not enough memory to load incident angle map (line sums)");
+				return FALSE;
+			}
+
+			//Copy values if "USE" mode, copy 0 values if "RECORD" mode
+			memcpy(f->angleMap, buffer, f->angleMapSize);
+			buffer += f->angleMapSize;
+
+
+			//Convert to cumulative distribution
+			size_t sum = 0;
+			for (int iy = 0; iy < f->sh.angleMapThetaHeight; iy++) {
+				for (int ix = 0; ix < f->sh.angleMapPhiWidth; ix++) {
+					sum += f->angleMap[iy*f->sh.angleMapPhiWidth + ix];
+					f->angleMap[iy*f->sh.angleMapPhiWidth + ix] = sum;
+				}
+				f->angleMapLineSums[iy] = sum;
+			}
+		}
+		else f->angleMapSize = 0;
 
 		//Textures
 		if (f->sh.isTextured) {
@@ -372,6 +409,7 @@ BOOL LoadSimulation(Dataport *loader) {
 				memset(f->hits[m], 0, f->textureSize);
 			}
 		}
+		else f->textureSize = 0;
 
 		//Profiles
 		if (f->sh.isProfile) {
@@ -394,6 +432,7 @@ BOOL LoadSimulation(Dataport *loader) {
 			}
 			sHandle->profTotalSize += f->profileSize*(1 + sHandle->nbMoments);
 		}
+		else f->profileSize = 0;
 
 		//Direction
 		if (f->sh.countDirection) {
@@ -416,6 +455,7 @@ BOOL LoadSimulation(Dataport *loader) {
 			}
 			sHandle->dirTotalSize += f->directionSize*(1 + sHandle->nbMoments);
 		}
+		else f->directionSize = 0;
 
 	}
 
@@ -639,6 +679,10 @@ void ResetTmpCounters() {
 				for (size_t m = 0; m < (sHandle->nbMoments + 1); m++) {
 					memset(f->direction[m], 0, f->directionSize);
 				}
+			}
+
+			if (f->sh.recordAngleMap) {
+				memset(f->angleMap, 0, f->angleMapSize);
 			}
 		}
 	}

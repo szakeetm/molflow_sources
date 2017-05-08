@@ -108,6 +108,7 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer) {
 	indices (nbIndex times int)
 	vertices2 (nbIndex times Vector2d struct)
 	[outgassingMap (height*width*double)]
+	[angleMap (height*width*size_t)]
 	-->incBuff
 	[inc Map: for each facet with texture, height*width*double]
 	CDFs.size()
@@ -157,6 +158,10 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer) {
 		if (f->sh.useOutgassingFile) {
 			memcpy(buffer, f->outgassingMap, sizeof(double)*f->sh.outgassingMapWidth*f->sh.outgassingMapHeight);
 			buffer += sizeof(double)*f->sh.outgassingMapWidth*f->sh.outgassingMapHeight;
+		}
+		if (f->sh.hasRecordedAngleMap) {
+			memcpy(buffer, f->angleMapCache, sizeof(size_t)*f->sh.angleMapPhiWidth*f->sh.angleMapThetaHeight);
+			buffer += sizeof(size_t)*f->sh.angleMapPhiWidth*f->sh.angleMapThetaHeight;
 		}
 	}
 
@@ -2686,6 +2691,7 @@ BOOL MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 	}
 
 
+
 	//Texture Min/Max
 	xml_node minMaxNode = resultNode.append_child("TextureMinMax");
 	minMaxNode.append_child("With_constant_flow").append_child("Pressure").append_attribute("min") = gHits->texture_limits[0].min.all;
@@ -3300,6 +3306,16 @@ BOOL MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit,
 		} //end facetResult
 		m++;
 	} //end moment
+
+	//Send angle maps
+	for (size_t i = 0; i < sh.nbFacet; i++) {
+		Facet* f = facets[i];
+		int profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(APROFILE)*(1 + (int)mApp->worker.moments.size())) : 0;
+		size_t *angleMap = (size_t *)((BYTE *)gHits + f->sh.hitOffset + facetHitsSize
+			+ profSize + (1 + (int)work->moments.size())*f->sh.texWidth*f->sh.texHeight * sizeof(AHIT)
+			+ (1 + (int)work->moments.size())*f->sh.texWidth*f->sh.texHeight * sizeof(VHIT));
+		memcpy(angleMap, f->angleMapCache, f->sh.angleMapPhiWidth*f->sh.angleMapThetaHeight * sizeof(size_t));
+	}
 
 	xml_node minMaxNode = resultNode.child("TextureMinMax");
 	gHits->texture_limits[0].min.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("min").as_double();
