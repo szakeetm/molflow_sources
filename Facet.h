@@ -118,7 +118,7 @@ public:
   void  Copy(Facet *f,BOOL copyMesh=FALSE);
   void  SwapNormal();
   void  Explode(FACETGROUP *group);
-  void  FillVertexArray(Vector3d *v);
+  void  FillVertexArray(InterfaceVertex *v);
   void  BuildMeshList();
   void  InitVisibleEdge();
   BOOL  SetTexture(double width,double height,BOOL useMesh);
