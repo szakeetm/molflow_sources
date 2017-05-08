@@ -29,6 +29,7 @@ GNU General Public License for more details.
 #include "Facet.h"
 #include "Simulation.h" //SHELEM
 #include "GlobalSettings.h"
+#include <fstream>
 
 #ifdef MOLFLOW
 #include "MolFlow.h"
@@ -364,6 +365,42 @@ void Worker::ExportProfiles(char *fileName) {
 		}
 		geom->ExportProfiles(f, isTXT, dpHit, this);
 		fclose(f);
+	}
+}
+
+void Worker::ExportAngleMaps(std::vector<size_t> facetList, std::string fileName) {
+	BOOL overwriteAll = FALSE;
+	for (size_t facetIndex : facetList) {
+		std::string saveFileName;
+			if (facetList.size() == 1) {
+				saveFileName = FileUtils::StripExtension(fileName) + ".csv";
+			}
+			else {
+				std::stringstream tmp;
+				tmp << FileUtils::StripExtension(fileName) << "_facet" << facetIndex + 1 << ".csv";
+				saveFileName = tmp.str();
+			}
+
+		BOOL ok = TRUE;
+
+		if (FileUtils::Exist(saveFileName)) {
+			if (!overwriteAll) {
+				std::vector<std::string> buttons = { "Cancel", "Overwrite" };
+				if (facetList.size() > 1) buttons.push_back("Overwrite All");
+				int answer = GLMessageBox::Display("Overwrite existing file ?\n" + saveFileName, "Question", buttons, GLDLG_ICONWARNING);
+				if (answer == 0) break; //User cancel
+				overwriteAll = (answer == 2);
+			}
+		}
+
+		std::ofstream file;
+		file.open(saveFileName);
+			if (!file.is_open()) {
+				std::string tmp = "Cannot open file for writing " + saveFileName;
+				throw Error(tmp.c_str());
+			}
+			file << geom->GetFacet(facetIndex) -> GetAngleMapCSV();
+			file.close();
 	}
 }
 
@@ -712,7 +749,7 @@ void Worker::LoadGeometry(char *fileName,BOOL insert,BOOL newStr) {
 
 				progressDlg->SetMessage("Reloading worker with new geometry...");
 				try {
-					RealReload(); //for the loading of textures, profiles, etc...
+					RealReload(); //To create the dpHit dataport for the loading of textures, profiles, etc...
 					strcpy(fullFileName, fileName);
 
 					if (ext == "xml" || ext == "zip")
@@ -1055,7 +1092,14 @@ void Worker::RealReload() { //Sharing geometry with workers
 	progressDlg->SetProgress(0.0);
 	
 	//Do preliminary calculations
-	PrepareToRun();
+	try {
+		PrepareToRun();
+	}
+	catch (Error &e) {
+		progressDlg->SetVisible(FALSE);
+		SAFE_DELETE(progressDlg);
+		throw Error(e.GetMsg());
+	}
 
 	if (nbProcess == 0) return;
 	
@@ -1173,11 +1217,7 @@ void Worker::ResetWorkerStats() {
 	nbHit = 0;
 	nbLeakTotal = 0;
 	distTraveledTotal_total = 0.0;
-
-
-
 	distTraveledTotal_fullHitsOnly = 0.0;
-
 
 }
 
@@ -1507,9 +1547,40 @@ void Worker::PrepareToRun() {
 		else
 			f->sh.CDFid = GenerateNewCDF(f->sh.temperature);
 
+		//Angle map
+		if (f->sh.desorbType == DES_ANGLEMAP) {
+			if (!f->sh.hasRecordedAngleMap) {
+				char tmp[256];
+				sprintf(tmp, "Facet #%d: Uses angle map desorption but doesn't have a recorded angle map.", i + 1);
+				throw Error(tmp);
+			}
+			if (f->sh.recordAngleMap) {
+				char tmp[256];
+				sprintf(tmp, "Facet #%d: Can't RECORD and USE angle map desorption at the same time.", i + 1);
+				throw Error(tmp);
+			}
+		}
+
+		if (f->sh.recordAngleMap) {
+			if (!f->sh.hasRecordedAngleMap) {
+				//Initialize angle map
+				//f->sh.angleMapPhiWidth = ANGLEMAP_PHIWIDTH;
+				//f->sh.angleMapThetaHeight = ANGLEMAP_THETAHEIGHT;
+				f->angleMapCache = (size_t*)malloc(f->sh.angleMapPhiWidth * f->sh.angleMapThetaHeight * sizeof(size_t));
+				if (!f->angleMapCache) {
+					std::stringstream tmp;
+					tmp << "Not enough memory for incident angle map on facet " << i + 1;
+					throw Error(tmp.str().c_str());
+				}
+				f->sh.hasRecordedAngleMap = TRUE;
+			}
+			//Set values to zero
+			memset(f->angleMapCache, 0, f->sh.angleMapPhiWidth * f->sh.angleMapThetaHeight * sizeof(size_t));
+		}
 	}
 
 	CalcTotalOutgassing();
+	
 }
 
 

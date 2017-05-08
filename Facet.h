@@ -73,6 +73,7 @@ public:
   BOOL    hasMesh;     // Temporary flag (loading)
   
   double *outgassingMap; //outgassing map cell values (loaded from file)
+  size_t* angleMapCache; //Reading while loading then passing to dpHit
 
   //Dynamic outgassing stuff
   BOOL textureError;   // Disable rendering if the texture has an error
@@ -118,7 +119,7 @@ public:
   void  Copy(Facet *f,BOOL copyMesh=FALSE);
   void  SwapNormal();
   void  Explode(FACETGROUP *group);
-  void  FillVertexArray(Vector3d *v);
+  void  FillVertexArray(InterfaceVertex *v);
   void  BuildMeshList();
   void  InitVisibleEdge();
   BOOL  SetTexture(double width,double height,BOOL useMesh);
@@ -148,6 +149,7 @@ public:
   Vector2d GetMeshPoint(int index, int pointId);
   Vector2d GetMeshCenter(int index);
   double GetArea();
+  std::string GetAngleMapCSV();
 };
 
 class DeletedFacet {

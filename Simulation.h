@@ -42,6 +42,9 @@ public:
   VHIT     **direction;       // Direction field recording (average)
   //BOOL     *fullElem;         // Direction field recording (only on full element)
   APROFILE **profile;         // Distribution and hit recording
+  double   *outgassingMap; //outgassing map when desorption is based on imported file
+  size_t   *angleMap;		  // Incident angle distribution, phi and theta, not normalized
+  size_t   *angleMapLineSums;
 
   // Temporary var (used in Intersect for collision)
   double colDist;
@@ -58,11 +61,11 @@ public:
   int    textureSize;   // Texture size (in bytes)
   int    profileSize;   // profile size (in bytes)
   int    directionSize; // direction field size (in bytes)
+  int    angleMapSize;  // incidentangle map size (in bytes)
 
   /*int CDFid; //Which probability distribution it belongs to (one CDF per temperature)
   int IDid;  //If time-dependent desorption, which is its ID*/
   int globalId; //Global index (to identify when superstructures are present)
-  double *outgassingMap; //outgassing map when desorption is based on imported file
 
   // Facet hit counters
   std::vector<SHHITS> counter;
@@ -233,6 +236,7 @@ typedef struct {
 void RecordHitOnTexture(FACET *f, double time, BOOL countHit, double velocity_factor, double ortSpeedFactor);
 void RecordDirectionVector(FACET *f, double time);
 void ProfileFacet(FACET *f, double time, BOOL countHit, double velocity_factor, double ortSpeedFactor);
+void RecordAngleMap(FACET* collidedFacet);
 void InitSimulation();
 void ClearSimulation();
 void SetState(int state, const char *status, BOOL changeState=TRUE, BOOL changeStatus=TRUE);

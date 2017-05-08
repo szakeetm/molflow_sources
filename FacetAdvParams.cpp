@@ -50,22 +50,25 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	SetIconfiable(TRUE);
 
 	int wD = 320;
-	int hD = 497;
+	int hD = 574;
 	aPanel = new GLTitledPanel("Texture properties");
 	aPanel->SetBounds(5, 3, 309, 123);
 	Add(aPanel);
 	mPanel = new GLTitledPanel("Texture cell / memory");
 	mPanel->SetBounds(5, 129, 309, 44);
 	Add(mPanel);
-	vPanel = new GLTitledPanel("Facet draw settings");
-	vPanel->SetBounds(5, 354, 309, 44);
+	vPanel = new GLTitledPanel("View settings");
+	vPanel->SetBounds(5, 430, 309, 44);
 	Add(vPanel);
 	desPanel = new GLTitledPanel("Dynamic desorption");
-	desPanel->SetBounds(5, 402, 309, 69);
+	desPanel->SetBounds(5, 478, 309, 69);
 	Add(desPanel);
 	paramPanel = new GLTitledPanel("Additional parameters");
 	paramPanel->SetBounds(5, 177, 309, 174);
 	Add(paramPanel);
+	angleMapPanel = new GLTitledPanel("Incident angle distribution");
+	angleMapPanel->SetBounds(5, 357, 309, 67);
+	Add(angleMapPanel);
 	lengthText = new GLTextField(0, "");
 	aPanel->SetCompBounds(lengthText, 180, 36, 72, 18);
 	aPanel->Add(lengthText);
@@ -150,7 +153,7 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	desPanel->SetCompBounds(label3, 265, 21, 33, 12);
 	desPanel->Add(label3);
 
-	label1 = new GLLabel("Avg.yield:");
+	label1 = new GLLabel("Avg");
 	desPanel->SetCompBounds(label1, 155, 21, 48, 12);
 	desPanel->Add(label1);
 
@@ -163,11 +166,11 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	paramPanel->Add(facetMovingToggle);
 
 	facetSuperDest = new GLTextField(0, "");
-	paramPanel->SetCompBounds(facetSuperDest, 195, 90, 101, 18);
+	paramPanel->SetCompBounds(facetSuperDest, 199, 90, 101, 18);
 	paramPanel->Add(facetSuperDest);
 
 	label8 = new GLLabel("Link to:");
-	paramPanel->SetCompBounds(label8, 159, 91, 35, 12);
+	paramPanel->SetCompBounds(label8, 163, 96, 35, 12);
 	paramPanel->Add(label8);
 
 	facetStructure = new GLTextField(0, "");
@@ -228,11 +231,11 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	desPanel->SetCompBounds(label9, 105, 45, 44, 12);
 	desPanel->Add(label9);
 
-	label12 = new GLLabel("Avg.dose:");
+	label12 = new GLLabel("Avg");
 	desPanel->SetCompBounds(label12, 155, 45, 49, 12);
 	desPanel->Add(label12);
 
-	label10 = new GLLabel("Avg.flux:");
+	label10 = new GLLabel("Avg");
 	desPanel->SetCompBounds(label10, 5, 45, 44, 12);
 	desPanel->Add(label10);
 
@@ -240,20 +243,20 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	paramPanel->SetCompBounds(enableSojournTime, 10, 132, 95, 16);
 	paramPanel->Add(enableSojournTime);
 
-	sojournLabel3 = new GLLabel("J/mole");
-	paramPanel->SetCompBounds(sojournLabel3, 253, 153, 53, 13);
+	sojournLabel3 = new GLLabel("J/molecule");
+	paramPanel->SetCompBounds(sojournLabel3, 250, 153, 56, 13);
 	paramPanel->Add(sojournLabel3);
 
 	sojournE = new GLTextField(0, "");
-	paramPanel->SetCompBounds(sojournE, 197, 150, 53, 18);
+	paramPanel->SetCompBounds(sojournE, 200, 150, 50, 18);
 	paramPanel->Add(sojournE);
 
-	sojournLabel2 = new GLLabel("Hz; Binding E:");
-	paramPanel->SetCompBounds(sojournLabel2, 126, 153, 70, 13);
+	sojournLabel2 = new GLLabel("Hz   Binding E:");
+	paramPanel->SetCompBounds(sojournLabel2, 125, 153, 76, 13);
 	paramPanel->Add(sojournLabel2);
 
 	sojournLabel1 = new GLLabel("Attempt freq:");
-	paramPanel->SetCompBounds(sojournLabel1, 11, 153, 66, 13);
+	paramPanel->SetCompBounds(sojournLabel1, 10, 153, 67, 13);
 	paramPanel->Add(sojournLabel1);
 
 	sojournFreq = new GLTextField(0, "");
@@ -261,9 +264,40 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	paramPanel->Add(sojournFreq);
 
 	SojournInfoButton = new GLButton(0, "Info");
-	paramPanel->SetCompBounds(SojournInfoButton, 235, 129, 69, 19);
+	paramPanel->SetCompBounds(SojournInfoButton, 229, 126, 69, 20);
 	paramPanel->Add(SojournInfoButton);
 
+	label14 = new GLLabel("x");
+	angleMapPanel->SetCompBounds(label14, 237, 17, 10, 12);
+	angleMapPanel->Add(label14);
+
+	angleMapDistrSizeLabel = new GLLabel("Distribution size:");
+	angleMapPanel->SetCompBounds(angleMapDistrSizeLabel, 105, 17, 74, 12);
+	angleMapPanel->Add(angleMapDistrSizeLabel);
+
+	angleMapHeightBox = new GLTextField(0, "");
+	angleMapPanel->SetCompBounds(angleMapHeightBox, 249, 14, 50, 18);
+	angleMapPanel->Add(angleMapHeightBox);
+
+	angleMapWidthBox = new GLTextField(0, "");
+	angleMapPanel->SetCompBounds(angleMapWidthBox, 184, 14, 50, 18);
+	angleMapPanel->Add(angleMapWidthBox);
+
+	angleMapImportButton = new GLButton(0, "Import CSV");
+	angleMapPanel->SetCompBounds(angleMapImportButton, 110, 36, 94, 20);
+	angleMapPanel->Add(angleMapImportButton);
+
+	angleMapExportButton = new GLButton(0, "Export to CSV");
+	angleMapPanel->SetCompBounds(angleMapExportButton, 10, 36, 94, 20);
+	angleMapPanel->Add(angleMapExportButton);
+
+	angleMapRecordCheckbox = new GLToggle(0, "Record");
+	angleMapPanel->SetCompBounds(angleMapRecordCheckbox, 10, 16, 54, 16);
+	angleMapPanel->Add(angleMapRecordCheckbox);
+
+	angleMapReleaseButton = new GLButton(0, "Release recorded");
+	angleMapPanel->SetCompBounds(angleMapReleaseButton, 208, 36, 94, 20);
+	angleMapPanel->Add(angleMapReleaseButton);
 
 	SetTitle("Advanced facet parameters");
 	// Center dialog
@@ -412,6 +446,9 @@ void FacetAdvParams::Refresh(int nbSel, int* selection) {
 	recordTransBtn->SetEnabled(somethingSelected);
 	recordACBtn->SetEnabled(somethingSelected);
 	recordDirBtn->SetEnabled(somethingSelected);
+	angleMapRecordCheckbox->SetEnabled(somethingSelected);
+	angleMapWidthBox->SetEditable(somethingSelected);
+	angleMapHeightBox->SetEditable(somethingSelected);
 	showTexture->SetEnabled(somethingSelected);
 	showVolume->SetEnabled(somethingSelected);
 	resolutionText->SetEditable(somethingSelected);
@@ -439,6 +476,9 @@ void FacetAdvParams::Refresh(int nbSel, int* selection) {
 		recordTransBtn->SetState(0);
 		recordACBtn->SetState(0);
 		recordDirBtn->SetState(0);
+		angleMapRecordCheckbox->SetState(0);
+		angleMapWidthBox->SetText("");
+		angleMapHeightBox->SetText("");
 		showTexture->SetState(0);
 		showVolume->SetState(0);
 		facetUseDesFile->SetSelectedValue("");
@@ -465,6 +505,9 @@ void FacetAdvParams::Refresh(int nbSel, int* selection) {
 	BOOL CountTransE = TRUE;
 	BOOL CountACE = TRUE;
 	BOOL CountDirE = TRUE;
+	BOOL RecordAngleMapE = TRUE;
+	BOOL AngleMapWidthE = TRUE;
+	BOOL AngleMapHeightE = TRUE;
 	BOOL TexVisibleE = TRUE;
 	BOOL VolVisibleE = TRUE;
 	BOOL ratioE = TRUE;
@@ -501,6 +544,9 @@ void FacetAdvParams::Refresh(int nbSel, int* selection) {
 		CountTransE = CountTransE && f0->sh.countTrans == f->sh.countTrans;
 		CountACE = CountACE && f0->sh.countACD == f->sh.countACD;
 		CountDirE = CountDirE && f0->sh.countDirection == f->sh.countDirection;
+		RecordAngleMapE = RecordAngleMapE && f0->sh.recordAngleMap == f->sh.recordAngleMap;
+		AngleMapWidthE = AngleMapWidthE && IsEqual(f0->sh.angleMapPhiWidth, f->sh.angleMapPhiWidth);
+		AngleMapHeightE = AngleMapHeightE && IsEqual(f0->sh.angleMapThetaHeight, f->sh.angleMapThetaHeight);
 		TexVisibleE = TexVisibleE && f0->textureVisible == f->textureVisible;
 		VolVisibleE = VolVisibleE && f0->volumeVisible == f->volumeVisible;
 		ratioE = ratioE && abs(f0->tRatio - f->tRatio) < 1E-8;
@@ -547,6 +593,7 @@ void FacetAdvParams::Refresh(int nbSel, int* selection) {
 	recordTransBtn->AllowMixedState(!CountTransE); recordTransBtn->SetState(CountTransE ? f0->sh.countTrans : 2);
 	recordACBtn->AllowMixedState(!CountACE); recordACBtn->SetState(CountACE ? f0->sh.countACD : 2);
 	recordDirBtn->AllowMixedState(!CountDirE); recordDirBtn->SetState(CountDirE ? f0->sh.countDirection : 2);
+	angleMapRecordCheckbox->AllowMixedState(!RecordAngleMapE); angleMapRecordCheckbox->SetState(RecordAngleMapE ? f0->sh.recordAngleMap : 2);
 	showTexture->AllowMixedState(!TexVisibleE); showTexture->SetState(TexVisibleE ? f0->textureVisible : 2);
 	showVolume->AllowMixedState(!VolVisibleE); showVolume->SetState(VolVisibleE ? f0->volumeVisible : 2);
 	facetMovingToggle->AllowMixedState(!isMovingE); facetMovingToggle->SetState(isMovingE ? f0->sh.isMoving : 2);
@@ -664,6 +711,20 @@ void FacetAdvParams::Refresh(int nbSel, int* selection) {
 		facetMovingToggle->AllowMixedState(TRUE);
 	}
 
+	if (AngleMapWidthE) {
+		angleMapWidthBox->SetText((int)f0->sh.angleMapPhiWidth);
+	}
+	else {
+		angleMapWidthBox->SetText("...");
+	}
+
+	if (AngleMapHeightE) {
+		angleMapHeightBox->SetText((int)f0->sh.angleMapThetaHeight);
+	}
+	else {
+		angleMapHeightBox->SetText("...");
+	}
+
 	if (enableSojournTime->GetState() == 0) {
 		enableSojournTime->SetText("Wall sojourn time");
 		sojournFreq->SetEditable(FALSE);
@@ -703,7 +764,7 @@ void FacetAdvParams::Reposition(int wD, int hD) {
 //-----------------------------------------------------------------------------
 
 BOOL FacetAdvParams::Apply() {
-	if (!mApp->AskToReset(worker)) return FALSE;
+
 	BOOL boundMap = TRUE; // boundaryBtn->GetState();
 	int nbSelected;
 	int* selection;
@@ -882,10 +943,55 @@ BOOL FacetAdvParams::Apply() {
 		}
 	}
 
+	// angle map width
+	int angleMapWidth;
+	BOOL doAngleMapWidth = FALSE;
+
+	if (angleMapRecordCheckbox->GetState() == 0 || strcmp(angleMapWidthBox->GetText(), "...") == 0) doAngleMapWidth = FALSE;
+	else if (angleMapWidthBox->GetNumberInt(&angleMapWidth)) {
+		if (angleMapWidth <= 0) {
+			GLMessageBox::Display("Angle map width has to be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			return FALSE;
+		}
+		doAngleMapWidth = TRUE;
+	}
+	else {
+			GLMessageBox::Display("Invalid angle map width", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			return FALSE;
+	}
+	
+
+	// angle map height
+	int angleMapHeight;
+	BOOL doAngleMapHeight = FALSE;
+
+	if (angleMapRecordCheckbox->GetState() == 0 || strcmp(angleMapHeightBox->GetText(), "...") == 0) doAngleMapHeight = FALSE;
+	else if (angleMapHeightBox->GetNumberInt(&angleMapHeight)) {
+		if (angleMapHeight <= 0) {
+			GLMessageBox::Display("Angle map height has to be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			return FALSE;
+		}
+		doAngleMapHeight = TRUE;
+	}
+	else {
+		GLMessageBox::Display("Invalid angle map height", "Error", GLDLG_OK, GLDLG_ICONERROR);
+		return FALSE;
+	}
+	
+
 	// Reflection type
 	int reflType = facetReflType->GetSelectedIndex();
 
 	//Check complete, let's apply
+	//First applying angle map recording before a reset is done
+	int angleMapState = angleMapRecordCheckbox->GetState();
+	if (angleMapState < 2) {
+		for (int i = 0; i < nbSelected; i++) {
+			geom->GetFacet(selection[i])->sh.recordAngleMap=angleMapState;
+		}
+	}
+	
+	if (!mApp->AskToReset(worker)) return FALSE;
 	progressDlg = new GLProgress("Applying mesh settings", "Please wait");
 	progressDlg->SetVisible(TRUE);
 	progressDlg->SetProgress(0.0);
@@ -933,6 +1039,21 @@ BOOL FacetAdvParams::Apply() {
 			f->sh.useOutgassingFile = useMapA;
 		}
 
+		if (doAngleMapWidth) {
+			if (angleMapWidth != f->sh.angleMapPhiWidth) {
+				SAFE_FREE(f->angleMapCache);
+				f->sh.hasRecordedAngleMap = FALSE;
+				f->sh.angleMapPhiWidth = angleMapWidth;
+			}
+		}
+		if (doAngleMapHeight) {
+			if (angleMapHeight != f->sh.angleMapThetaHeight) {
+				SAFE_FREE(f->angleMapCache);
+				f->sh.hasRecordedAngleMap = FALSE;
+				f->sh.angleMapThetaHeight = angleMapHeight;
+			}
+		}
+
 		//set textures
 		try {
 			BOOL needsRemeshing = (hadAnyTexture != hasAnyTexture) || (hadDirCount != f->sh.countDirection) || (doRatio && (!IS_ZERO(geom->GetFacet(selection[i])->tRatio - ratio)));
@@ -950,6 +1071,7 @@ BOOL FacetAdvParams::Apply() {
 			SAFE_DELETE(progressDlg);
 			return FALSE;
 		}
+		//if (angleMapRecordCheckbox->GetState() < 2) f->sh.recordAngleMap = angleMapRecordCheckbox->GetState();
 		if (showTexture->GetState() < 2) f->textureVisible = showTexture->GetState();
 		if (showVolume->GetState() < 2) f->volumeVisible = showVolume->GetState();
 		nbPerformed++;
@@ -1043,6 +1165,9 @@ void FacetAdvParams::UpdateToggle(GLComponent *src) {
 			CalcSojournTime();
 		}
 	}
+	else if (src == angleMapRecordCheckbox) {
+
+	}
 
 	//UpdateSizeForRatio();
 }
@@ -1081,16 +1206,21 @@ void FacetAdvParams::ProcessMessage(GLComponent *src, int message) {
 			GLMessageBox::Display(tmp, "Wall sojourn time", GLDLG_OK, GLDLG_ICONINFO);
 
 		}
+		else if (src == angleMapExportButton) {
+			mApp->ExportAngleMaps();
+		}
+		else if (src == angleMapReleaseButton) {
+			mApp->ClearAngleMapsOnSelection();
+		}
 		
 		break;
 
 		// -------------------------------------------------------------
 	case MSG_TEXT_UPD:
-
+		mApp->facetApplyBtn->SetEnabled(TRUE);
 		if (src == resolutionText) {
 			enableBtn->SetState(TRUE);
 			UpdateSizeForRatio();
-			mApp->facetApplyBtn->SetEnabled(TRUE);
 			double res;
 			if (resolutionText->GetNumber(&res) && res != 0.0)
 				lengthText->SetText(1.0 / res);
@@ -1103,22 +1233,12 @@ void FacetAdvParams::ProcessMessage(GLComponent *src, int message) {
 			if (lengthText->GetNumber(&length) && length != 0.0) {
 				resolutionText->SetText(1.0 / length);
 				UpdateSizeForRatio();
-				mApp->facetApplyBtn->SetEnabled(TRUE);
 			}
 			else
 				resolutionText->SetText("");
 		}
-		else if (
-			src == facetTeleport
-			|| src == facetAccFactor
-			|| src == facetSuperDest
-			|| src == facetStructure
-			) {
-			mApp->facetApplyBtn->SetEnabled(TRUE);
-		}
 		else if (src == sojournFreq || src == sojournE) {
 			CalcSojournTime();
-			mApp->facetApplyBtn->SetEnabled(TRUE);
 		}
 
 		break;
@@ -1129,7 +1249,7 @@ void FacetAdvParams::ProcessMessage(GLComponent *src, int message) {
 		mApp->facetApplyBtn->SetEnabled(TRUE);
 		break;
 	case MSG_TEXT:
-		if (
+		/*if (
 			src == resolutionText
 			|| src == lengthText
 			|| src == facetAccFactor
@@ -1138,9 +1258,9 @@ void FacetAdvParams::ProcessMessage(GLComponent *src, int message) {
 			|| src == facetStructure
 			|| src == sojournFreq
 			|| src == sojournE
-			) {
+			) {*/
 			mApp->ApplyFacetParams();
-		}
+		//}
 		break;
 	case MSG_COMBO:
 		if (src == facetReflType) {

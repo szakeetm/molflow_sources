@@ -297,11 +297,12 @@ int MolFlow::OneTimeSceneInit()
 	facetDLabel = new GLLabel("Desorption");
 	facetPanel->Add(facetDLabel);
 	facetDesType = new GLCombo(0);
-	facetDesType->SetSize(4);
+	facetDesType->SetSize(5);
 	facetDesType->SetValueAt(0, "None");
 	facetDesType->SetValueAt(1, "Uniform");
 	facetDesType->SetValueAt(2, "Cosine");
 	facetDesType->SetValueAt(3, "Cosine^N");
+	facetDesType->SetValueAt(4, "Recorded");
 	inputPanel->Add(facetDesType);
 
 	facetDesTypeN = new GLTextField(0, NULL);
@@ -569,9 +570,6 @@ void MolFlow::ApplyFacetParams() {
 
 	Geometry *geom = worker.GetGeometry();
 	int nbFacet = geom->GetNbFacet();
-	if (!AskToReset()) return;
-	changedSinceSave = TRUE;
-
 
 	// Sticking
 	double sticking;
@@ -707,6 +705,15 @@ void MolFlow::ApplyFacetParams() {
 	// 2sided
 	int is2Sided = facetSideType->GetSelectedIndex();
 
+	//Check complete, let's apply
+	if (facetAdvParams && facetAdvParams->IsVisible()) {
+		if (!facetAdvParams->Apply()) {
+			return;
+		}
+	}
+	if (!AskToReset()) return;
+	
+	changedSinceSave = TRUE;
 
 	// Update facets (local)
 	for (int i = 0; i < nbFacet; i++) {
@@ -760,13 +767,8 @@ void MolFlow::ApplyFacetParams() {
 			f->UpdateFlags();
 		}
 	}
-	if (facetAdvParams && facetAdvParams->IsVisible()) {
-		if (!facetAdvParams->Apply()) {
-			return;
-		}
-	}
 
-	// Mark "needsReload"
+	// Mark "needsReload" to sync changes with workers on next simulation start
 	try { worker.Reload(); }
 	catch (Error &e) {
 		GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1110,11 +1112,6 @@ int MolFlow::InvalidateDeviceObjects()
 }
 
 
-
-
-
-
-
 void MolFlow::ExportProfiles() {
 
 	Geometry *geom = worker.GetGeometry();
@@ -1142,6 +1139,55 @@ void MolFlow::ExportProfiles() {
 
 	}
 
+}
+
+void MolFlow::ExportAngleMaps() {
+
+	Geometry *geom = worker.GetGeometry();
+	std::vector<size_t> angleMapFacetIndices;
+	for (size_t i = 0; i < geom->GetNbFacet(); i++) {
+		Facet* f = geom->GetFacet(i);
+		if (f->selected && f->sh.hasRecordedAngleMap)
+			angleMapFacetIndices.push_back(i);
+	}
+	if (angleMapFacetIndices.size() == 0) {
+		GLMessageBox::Display("Select at least one facet with recorded angle map", "Error", GLDLG_OK, GLDLG_ICONERROR);
+		return;
+	}
+
+	if (!worker.IsDpInitialized()) {
+		GLMessageBox::Display("Worker Dataport not initialized yet", "Error", GLDLG_OK, GLDLG_ICONERROR);
+		return;
+	}
+
+	FILENAME *fn = GLFileBox::SaveFile(currentDir, NULL, "Save File", fileProfFilters, 0);
+
+	if (fn) {
+
+		try {
+			std::string fileName = fn->fullName;
+			worker.ExportAngleMaps(angleMapFacetIndices, fileName);
+		}
+		catch (Error &e) {
+			char errMsg[512];
+			sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), fn->fullName);
+			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
+		}
+	}
+}
+
+void MolFlow::ClearAngleMapsOnSelection() {
+	//if (AskToReset()) {
+		Geometry *geom = worker.GetGeometry();
+		std::vector<size_t> angleMapFacetIndices;
+		for (size_t i = 0; i < geom->GetNbFacet(); i++) {
+			Facet* f = geom->GetFacet(i);
+			if (f->selected && f->sh.hasRecordedAngleMap) {
+				SAFE_FREE(f->angleMapCache);
+				f->sh.hasRecordedAngleMap = FALSE;
+			}
+		}
+	//}
 }
 
 void MolFlow::ImportDesorption_DES() {
