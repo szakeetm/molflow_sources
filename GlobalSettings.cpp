@@ -14,12 +14,22 @@
   GNU General Public License for more details.
   */
 
-#include "GLApp/GLLabel.h"
+//#include "GLApp/GLLabel.h"
 #include "GlobalSettings.h"
 #include "GLApp/GLToolkit.h"
+#include "GLApp/GLToggle.h"
 #include "GLApp/GLMessageBox.h"
+#include "GLApp/GLList.h"
 #include "GLApp/GLInputBox.h"
 #include "Facet.h"
+#include "Geometry.h"
+#include "GLApp/MathTools.h"
+#include "GLApp/GLButton.h"
+#include "GLApp/GLTextField.h"
+#include "GLApp/GLLabel.h"
+#include "GLApp/GLToggle.h"
+#include "GLApp/GLTitledPanel.h"
+#include "Shared.h"
 #ifdef MOLFLOW
 #include "MolFlow.h"
 #endif
@@ -51,7 +61,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	int hD = 500;
 
 	SetTitle("Global Settings");
-	SetIconfiable(TRUE);
+	SetIconfiable(true);
 
 	GLTitledPanel *settingsPanel = new GLTitledPanel("Program settings");
 	settingsPanel->SetBounds(5, 2, 270, 203);
@@ -115,7 +125,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 
 	outgassingText = new GLTextField(0, "");
 	outgassingText->SetBounds(460, 70, 100, 19);
-	outgassingText->SetEditable(FALSE);
+	outgassingText->SetEditable(false);
 	gasPanel->Add(outgassingText);
 
 	GLLabel *influxLabel = new GLLabel("Total desorbed molecules:");
@@ -124,7 +134,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 
 	influxText = new GLTextField(0, "");
 	influxText->SetBounds(460, 95, 100, 19);
-	influxText->SetEditable(FALSE);
+	influxText->SetEditable(false);
 	gasPanel->Add(influxText);
 
 	recalcButton = new GLButton(0, "Recalc. outgassing");
@@ -146,12 +156,12 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 
 
 	processList = new GLList(0);
-	processList->SetHScrollVisible(TRUE);
+	processList->SetHScrollVisible(true);
 	processList->SetSize(5, MAX_PROCESS+1);
 	processList->SetColumnWidths((int*)plWidth);
 	processList->SetColumnLabels((char **)plName);
 	processList->SetColumnAligns((int *)plAligns);
-	processList->SetColumnLabelVisible(TRUE);
+	processList->SetColumnLabelVisible(true);
 	processList->SetBounds(10, 278, wD - 20, hD - 355);
 	panel3->Add(processList);
 
@@ -166,7 +176,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	panel3->Add(l1);
 
 	nbProcText = new GLTextField(0, "");
-	nbProcText->SetEditable(TRUE);
+	nbProcText->SetEditable(true);
 	nbProcText->SetBounds(135, hD - 51, 30, 19);
 	panel3->Add(nbProcText);
 
@@ -191,9 +201,9 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 
 	RestoreDeviceObjects();
 
-	lastUpdate = 0.0f;
-	for (int i = 0; i < MAX_PROCESS; i++) lastCPUTime[i] = -1.0f;
-	memset(lastCPULoad, 0, MAX_PROCESS*sizeof(float));
+	lastUpdate = 0;
+	//for (size_t i = 0; i < MAX_PROCESS; i++) lastCPUTime[i] = -1.0f;
+	//memset(lastCPULoad, 0, MAX_PROCESS*sizeof(float));
 }
 
 
@@ -219,8 +229,8 @@ void GlobalSettings::Update() {
 	chkAutoUpdateFormulas->SetState(mApp->autoUpdateFormulas);
 	chkCompressSavedFiles->SetState(mApp->compressSavedFiles);
 
-	int nb = worker->GetProcNumber();
-	sprintf(tmp, "%d", nb);
+	size_t nb = worker->GetProcNumber();
+	sprintf(tmp, "%zd", nb);
 	nbProcText->SetText(tmp);
 }
 
@@ -230,8 +240,8 @@ void GlobalSettings::SMPUpdate() {
 	int time = SDL_GetTicks();
 
 	if (!IsVisible() || IsIconic()) return;
-	int nb = worker->GetProcNumber();
-	if (processList->GetNbRow() != (nb + 1)) processList->SetSize(5, nb + 1,TRUE);
+	size_t nb = worker->GetProcNumber();
+	if (processList->GetNbRow() != (nb + 1)) processList->SetSize(5, nb + 1,true);
 
 	if( time-lastUpdate>333 ) {
 
@@ -391,14 +401,14 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 			}
 			if (abs(gm - worker->gasMass) > 1e-7) {
 				if (mApp->AskToReset()) {
-					worker->needsReload = TRUE;
+					worker->needsReload = true;
 					worker->gasMass = gm;
 					if (worker->GetGeometry()->IsLoaded()) { //check if there are pumps
-						BOOL hasPump = FALSE;
-						int nbFacet = worker->GetGeometry()->GetNbFacet();
-						for (int i = 0; (i<nbFacet) && (!hasPump); i++) {
+						bool hasPump = false;
+						size_t nbFacet = worker->GetGeometry()->GetNbFacet();
+						for (size_t i = 0; (i<nbFacet) && (!hasPump); i++) {
 							if (worker->GetGeometry()->GetFacet(i)->sh.sticking>0.0) {
-								hasPump = TRUE;
+								hasPump = true;
 							}
 						}
 						if (hasPump) GLMessageBox::Display("Don't forget the pumps: update pumping speeds and/or recalculate sticking factors.", "You have changed the gas mass.", GLDLG_OK, GLDLG_ICONINFO);
@@ -411,9 +421,9 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 				GLMessageBox::Display("Invalid half life", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
-			if (enableDecay->GetState() != worker->enableDecay || (enableDecay->GetState() && abs(hl - worker->halfLife) > 1e-7)) {
+			if ((enableDecay->GetState()==1) != worker->enableDecay || ((enableDecay->GetState()==1) && IsEqual(hl, worker->halfLife, 1e-7))) {
 				if (mApp->AskToReset()) {
-					worker->needsReload = TRUE;
+					worker->needsReload = true;
 					worker->enableDecay = enableDecay->GetState();
 					if (worker->enableDecay) worker->halfLife = hl;
 				}

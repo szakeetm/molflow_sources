@@ -20,6 +20,11 @@
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
 #include "GLApp/GLFileBox.h"
+#include "GLApp/GLTextField.h"
+#include "GLApp/GLLabel.h"
+#include "GLApp/GLButton.h"
+#include "GLApp/GLList.h"
+#include "GLApp/GLCombo.h"
 #include "MolFlow.h"
 #include "Geometry.h"
 #include "Facet.h"
@@ -38,17 +43,17 @@ OutgassingMap::OutgassingMap():GLWindow() {
   strcpy(currentDir,".");
 
   SetTitle("Outgassing map");
-  SetResizable(TRUE);
-  SetIconfiable(TRUE);
+  SetResizable(true);
+  SetIconfiable(true);
   SetMinimumSize(wD,hD);
 
   mapList = new GLList(0);
-  mapList->SetColumnLabelVisible(TRUE);
-  mapList->SetRowLabelVisible(TRUE);
-  mapList->SetAutoColumnLabel(TRUE);
-  mapList->SetAutoRowLabel(TRUE);
+  mapList->SetColumnLabelVisible(true);
+  mapList->SetRowLabelVisible(true);
+  mapList->SetAutoColumnLabel(true);
+  mapList->SetAutoRowLabel(true);
   //mapList->SetRowLabelMargin(20);
-  mapList->SetGrid(TRUE);
+  mapList->SetGrid(true);
   mapList->SetSelectionMode(SINGLE_CELL);
   mapList->SetCornerLabel("\202\\\201");
   Add(mapList);
@@ -89,7 +94,7 @@ OutgassingMap::OutgassingMap():GLWindow() {
   Add(cancelButton);
 
   exponentText = new GLTextField(0,"");
-  exponentText->SetEditable(FALSE);
+  exponentText->SetEditable(false);
   Add(exponentText);
 
   // Center dialog
@@ -139,7 +144,7 @@ void OutgassingMap::GetSelected() {
   Geometry *geom = worker->GetGeometry();
   selFacet = NULL;
   int i = 0;
-  int nb = geom->GetNbFacet();
+  size_t nb = geom->GetNbFacet();
   while(!selFacet && i<nb) {
     if( geom->GetFacet(i)->selected ) selFacet = geom->GetFacet(i);
     if(!selFacet) i++;
@@ -153,7 +158,7 @@ void OutgassingMap::GetSelected() {
 
 // --------------------------------------------------------------------
 
-void OutgassingMap::Update(float appTime,BOOL force) {
+void OutgassingMap::Update(float appTime,bool force) {
 
   if(!IsVisible()) return;
 
@@ -185,34 +190,30 @@ void OutgassingMap::UpdateTable() {
   if( selFacet->cellPropertiesIds ) {
 
     char tmp[256];
-    int w = selFacet->sh.texWidth;
-    int h = selFacet->sh.texHeight;
+	size_t w = selFacet->sh.texWidth;
+	size_t h = selFacet->sh.texHeight;
     mapList->SetSize(w,h);
     mapList->SetAllColumnAlign(ALIGN_CENTER);
-	mapList->SetGrid(TRUE);
-	mapList->SetColumnLabelVisible(TRUE);
+	mapList->SetGrid(true);
+	mapList->SetColumnLabelVisible(true);
 	//mapList->SetSelectionMode(SINGLE_ROW);
 
     //int mode = viewCombo->GetSelectedIndex();
 
     
-        for(int i=0;i<w;i++) { //width (cols)
+        for(size_t i=0;i<w;i++) { //width (cols)
 			*(mapList->cEdits+i)=EDIT_NUMBER;
-          for(int j=0;j<h;j++) { //height (rows)
+          for(size_t j=0;j<h;j++) { //height (rows)
 			  sprintf(tmp,"0");
 			  if (selFacet->GetMeshArea(i+j*w)==0.0) sprintf(tmp,"Outside");
 			  mapList->SetValueAt(i,j,tmp);
           }
-        }
-
-      
+        }   
     }
   else {
 	  mapList->Clear();
 	  mapList->SetSize(0,0);
   }
-  
-
 }
 
 // --------------------------------------------------------------------
@@ -221,7 +222,7 @@ void OutgassingMap::Display(Worker *w) {
 
   worker = w;
   UpdateTable();
-  SetVisible(TRUE);
+  SetVisible(true);
 
 }
 
@@ -291,11 +292,11 @@ void OutgassingMap::ProcessMessage(GLComponent *src,int message) {
         Close();
         GLWindow::ProcessMessage(NULL,MSG_CLOSE);
       } else if(src==pasteButton) {
-		  mapList->PasteClipboardText(FALSE,FALSE);
+		  mapList->PasteClipboardText(false,false);
       } else if (src==sizeButton) {
         mapList->AutoSizeColumn();
       } else if (src==explodeButton) {
-		  if (worker->GetGeometry()->GetNbSelected()!=1) {
+		  if (worker->GetGeometry()->GetNbSelectedFacets()!=1) {
 			  GLMessageBox::Display("Exactly one facet has to be selected","Error",GLDLG_OK,GLDLG_ICONERROR);
 			  return;
 		  }
@@ -304,20 +305,20 @@ void OutgassingMap::ProcessMessage(GLComponent *src,int message) {
 			  return;
 		  }
 		  
-		  int w = mapList->GetNbColumn(); //width
-		  int h = mapList->GetNbRow(); //height
+		  size_t w = mapList->GetNbColumn(); //width
+		  size_t h = mapList->GetNbRow(); //height
 
 		  double *values = (double *)malloc(w*h*sizeof(double));
-		  int count=0;
-		  for(int j=0;j<h;j++) { //height (rows)
-			  for(int i=0;i<w;i++) { //width (cols)
+		  size_t count=0;
+		  for(size_t j=0;j<h;j++) { //height (rows)
+			  for(size_t i=0;i<w;i++) { //width (cols)
 				  if (selFacet->GetMeshArea(i+j*w)>0.0) {
 					  char *str = mapList->GetValueAt(i,j);
 					  int conv = sscanf(str,"%lf",values+count);
 					  if(!conv || !(*(values+count++)>=0.0)) {
 						  mapList->SetSelectedCell(i,j);
 						  char tmp[256];
-						  sprintf(tmp,"Invalid outgassing number at Cell(%d,%d)",i,j);
+						  sprintf(tmp,"Invalid outgassing number at Cell(%zd,%zd)",i,j);
 						  GLMessageBox::Display(tmp,"Error",GLDLG_OK,GLDLG_ICONERROR);
 						  return;
 					  }
@@ -328,7 +329,7 @@ void OutgassingMap::ProcessMessage(GLComponent *src,int message) {
 		  if (desCombo->GetSelectedIndex()==2) {
 			  exponentText->GetNumber(&desorbTypeN) ;
 				  if( !(desorbTypeN>1.0) ) {
-					  exponentText->SetFocus(TRUE);
+					  exponentText->SetFocus(true);
 					  GLMessageBox::Display("Desorption type exponent must be greater than 1.0","Error",GLDLG_OK,GLDLG_ICONERROR);
 					  return;
 				  }
@@ -338,12 +339,12 @@ void OutgassingMap::ProcessMessage(GLComponent *src,int message) {
 
 
 			  if (mApp->AskToReset()) {
-				  mApp->changedSinceSave=TRUE;
+				  mApp->changedSinceSave=true;
 				  try { 
-					  worker->GetGeometry()->ExplodeSelected(TRUE,desCombo->GetSelectedIndex(),desorbTypeN,values);
+					  worker->GetGeometry()->ExplodeSelected(true,desCombo->GetSelectedIndex(),desorbTypeN,values);
 					  SAFE_FREE(values);
 					  mApp->UpdateModelParams();
-					  mApp->UpdateFacetParams(TRUE);
+					  mApp->UpdateFacetParams(true);
 					  worker->CalcTotalOutgassing();
 					  // Send to sub process
 					  worker->Reload(); } catch(Error &e) {
@@ -366,7 +367,7 @@ void OutgassingMap::ProcessMessage(GLComponent *src,int message) {
 
     case MSG_LIST:
       if(src==mapList) {
-        int u,v,wu,wv;
+        size_t u,v,wu,wv;
         if( mapList->GetSelectionBox(&v,&u,&wv,&wu) )
           selFacet->SelectElem(u,v,wu,wv);
       }
@@ -374,7 +375,7 @@ void OutgassingMap::ProcessMessage(GLComponent *src,int message) {
 
     case MSG_COMBO:
       if(src==desCombo) {
-		  BOOL cosineN = desCombo->GetSelectedIndex()==2;
+		  bool cosineN = desCombo->GetSelectedIndex()==2;
 		  exponentText->SetEditable(cosineN);
 		  if (!cosineN) exponentText->SetText("");
       }

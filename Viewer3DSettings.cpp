@@ -17,8 +17,14 @@
 */
 
 #include "Viewer3DSettings.h"
-#include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
+#include "GLApp/GLButton.h"
+#include "GLApp/GLTextField.h"
+#include "GLApp/GLLabel.h"
+#include "GLApp/GLToggle.h"
+#include "GLApp/GLCombo.h"
+#include "GLApp/GLTitledPanel.h"
+#include "Geometry.h"
 #ifdef MOLFLOW
 #include "MolFlow.h"
 #endif
@@ -54,7 +60,7 @@ Viewer3DSettings::Viewer3DSettings():GLWindow() {
   Add(l4);
 
   showMode = new GLCombo(0);
-  showMode->SetEditable(TRUE);
+  showMode->SetEditable(true);
   showMode->SetSize(3);
   showMode->SetValueAt(0,"Front & Back");
   showMode->SetValueAt(1,"Back");
@@ -126,7 +132,7 @@ Viewer3DSettings::Viewer3DSettings():GLWindow() {
 
   hideLotText = new GLTextField(0, "");
   hideLotText->SetBounds(100, 297, 40, 18);
-  hideLotText->SetEditable(FALSE);
+  hideLotText->SetEditable(false);
   Add(hideLotText);
 
   
@@ -215,7 +221,7 @@ void Viewer3DSettings::Refresh(Geometry *s,GeometryViewer *v) {
   dirNormalizeToggle->SetState( geom->GetAutoNorme() );
   dirCenterToggle->SetState( geom->GetCenterNorme() );
 
-  BOOL suppressDetails = (viewer->hideLot != -1);
+  bool suppressDetails = (viewer->hideLot != -1);
   hideLotselected->SetState(suppressDetails);
   hideLotText->SetEditable(suppressDetails);
   if (suppressDetails) {
@@ -271,10 +277,10 @@ void Viewer3DSettings::ProcessMessage(GLComponent *src,int message) {
 	  viewer->showHiddenVertex=hiddenVertex->GetState();
       viewer->showMesh=showMesh->GetState();
 
-	  BOOL neededMesh = mApp->needsMesh;
+	  bool neededMesh = mApp->needsMesh;
 
 	  mApp->CheckNeedsTexture();
-	  BOOL needsMesh = mApp->needsMesh;
+	  bool needsMesh = mApp->needsMesh;
 
 	  if (!needsMesh && neededMesh) { //We just disabled mesh
 		  geom->ClearFacetMeshLists();

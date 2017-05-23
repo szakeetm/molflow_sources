@@ -6,14 +6,15 @@
 #define _MOVEMENTH_
 
 #include "GLApp/GLWindow.h"
-#include "GLApp/GLButton.h"
-#include "GLApp/GLTextField.h"
-#include "GLApp/GLLabel.h"
-#include "GLApp/GLToggle.h"
-#include "GLApp/GLTitledPanel.h"
+#include <vector>
+class GLButton;
+class GLTextField;
+class GLLabel;
+class GLToggle;
+class GLTitledPanel;
 
-#include "Geometry.h"
-#include "Worker.h"
+class Geometry;
+class Worker;
 
 #define MODE_NOMOVE 0
 #define MODE_FIXED 1

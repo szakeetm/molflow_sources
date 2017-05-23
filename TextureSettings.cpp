@@ -20,9 +20,15 @@ GNU General Public License for more details.
 #include "Facet.h"
 #include "MolflowGeometry.h"
 #include "Worker.h"
-#include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
 #include "GLApp/MathTools.h"
+#include "GLApp/GLButton.h"
+#include "GLApp/GLTextField.h"
+#include "GLApp/GLLabel.h"
+#include "GLApp/GLToggle.h"
+#include "GLApp/GLTitledPanel.h"
+#include "GLApp/GLGradient.h"
+#include "GLApp/GLCombo.h"
 
 TextureSettings::TextureSettings():GLWindow() {
 
@@ -30,7 +36,7 @@ TextureSettings::TextureSettings():GLWindow() {
 	int hD = 225;
 
 	SetTitle("Texture Scaling");
-	SetIconfiable(TRUE);
+	SetIconfiable(true);
 
 	GLTitledPanel *panel = new GLTitledPanel("Texture Range");
 	panel->SetBounds(5,2,365,98);
@@ -42,7 +48,7 @@ TextureSettings::TextureSettings():GLWindow() {
 
 	texMinText = new GLTextField(0,"");
 	texMinText->SetBounds(40,20,85,19);
-	texMinText->SetEditable(TRUE);
+	texMinText->SetEditable(true);
 	Add(texMinText);
 
 	GLLabel *l2 = new GLLabel("Max");
@@ -51,7 +57,7 @@ TextureSettings::TextureSettings():GLWindow() {
 
 	texMaxText = new GLTextField(0,"");
 	texMaxText->SetBounds(40,45,85,19);
-	texMaxText->SetEditable(TRUE);
+	texMaxText->SetEditable(true);
 	Add(texMaxText);
 
 	setCurrentButton = new GLButton(0,"Set to current");
@@ -83,7 +89,7 @@ TextureSettings::TextureSettings():GLWindow() {
 	Add(l3);
 
 	swapText = new GLTextField(0,"");
-	swapText->SetEditable(FALSE);
+	swapText->SetEditable(false);
 	swapText->SetBounds(305,70,55,18);
 	Add(swapText);
 
@@ -114,7 +120,7 @@ TextureSettings::TextureSettings():GLWindow() {
 	Add(panel3);
 
 	gradient = new GLGradient(0);
-	gradient->SetMouseCursor(TRUE);
+	gradient->SetMouseCursor(true);
 	gradient->SetBounds(10,117,470,40);
 	Add(gradient);
 
@@ -144,8 +150,8 @@ TextureSettings::TextureSettings():GLWindow() {
 void TextureSettings::UpdateSize() {
 
 	size_t swap = 0;
-	int nbFacet = geom->GetNbFacet();
-	for(int i=0;i<nbFacet;i++) {
+	size_t nbFacet = geom->GetNbFacet();
+	for(size_t i=0;i<nbFacet;i++) {
 		Facet *f = geom->GetFacet(i);
 		if(f->sh.isTextured) {
 			swap += f->GetTexSwapSize(colormapBtn->GetState());
@@ -202,8 +208,9 @@ void TextureSettings::Update() {
 			:geom->texture_limits[geom->textureMode].autoscale.max.moments_only
 			);
 	}
-	colormapBtn->SetState(viewers[0]->showColormap);
-	gradient->SetType( viewers[0]->showColormap?GRADIENT_COLOR:GRADIENT_BW );
+	//colormapBtn->SetState(viewers[0]->showColormap);
+	colormapBtn->SetState(geom->texColormap);
+	gradient->SetType(geom->texColormap /*viewers[0]->showColormap*/?GRADIENT_COLOR:GRADIENT_BW );
 	modeCombo->SetSelectedIndex(geom->textureMode);
 	UpdateSize();
 
@@ -219,7 +226,7 @@ void TextureSettings::Display(Worker *w,GeometryViewer **v) {
 		return;
 	}
 
-	SetVisible(TRUE);
+	SetVisible(true);
 	Update();
 	char tmp[64];
 	sprintf(tmp, "%g", geom->texture_limits[geom->textureMode].manual.min.all);
@@ -276,8 +283,8 @@ void TextureSettings::ProcessMessage(GLComponent *src,int message) {
 				:geom->texture_limits[geom->textureMode].autoscale.max.moments_only;texMinText->SetText(texCMinText->GetText());
 			texMinText->SetText(texCMinText->GetText());
 			texMaxText->SetText(texCMaxText->GetText());
-			texAutoScale->SetState(FALSE);
-			includeConstantFlow->SetVisible(FALSE);
+			texAutoScale->SetState(false);
+			includeConstantFlow->SetVisible(false);
 			geom->texAutoScale=false;
 			try {
 				worker->Update(0.0f);
@@ -290,7 +297,7 @@ void TextureSettings::ProcessMessage(GLComponent *src,int message) {
 
 	case MSG_TOGGLE:
 		if (src==colormapBtn) {
-			for(int i=0;i<MAX_VIEWER;i++) viewers[i]->showColormap = colormapBtn->GetState();
+			//for(int i=0;i<MAX_VIEWER;i++) viewers[i]->showColormap = colormapBtn->GetState();
 			geom->texColormap = colormapBtn->GetState();
 			worker->Update(0.0f);
 			Update();

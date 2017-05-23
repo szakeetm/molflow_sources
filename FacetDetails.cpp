@@ -20,6 +20,7 @@
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
 #include "GLApp/MathTools.h"
+#include "Geometry.h"
 #include "Facet.h"
 
 #include "MolFlow.h"
@@ -100,8 +101,8 @@ FacetDetails::FacetDetails():GLWindow() {
   worker = NULL;
 
   SetTitle("Facets details");
-  SetIconfiable(TRUE);
-  SetResizable(TRUE);
+  SetIconfiable(true);
+  SetResizable(true);
   SetMinimumSize(502,200);
 
   checkAllButton = new GLButton(0,"Check All");
@@ -114,92 +115,92 @@ FacetDetails::FacetDetails():GLWindow() {
   Add(dismissButton);
 
   facetListD = new GLList(0);
-  facetListD->SetColumnLabelVisible(TRUE);
-  facetListD->SetGrid(TRUE);
-  //facetListD->Sortable=TRUE;
+  facetListD->SetColumnLabelVisible(true);
+  facetListD->SetGrid(true);
+  //facetListD->Sortable=true;
   Add(facetListD);
 
   sPanel = new GLTitledPanel("Show column");
-  sPanel->SetClosable(TRUE);
+  sPanel->SetClosable(true);
   Add(sPanel);
 
   show[0] = new GLToggle(0,"#");
-  show[0]->SetState(TRUE);  // Always visible (not displayed)
+  show[0]->SetState(true);  // Always visible (not displayed)
 
   show[1] = new GLToggle(1,"Sticking");
-  show[1]->SetState(TRUE);
+  show[1]->SetState(true);
   sPanel->Add(show[1]);
   show[2] = new GLToggle(2,"Opacity");
-  show[2]->SetState(TRUE);
+  show[2]->SetState(true);
   sPanel->Add(show[2]);
   show[3] = new GLToggle(3,"Structure");
-  show[3]->SetState(TRUE);
+  show[3]->SetState(true);
   sPanel->Add(show[3]);
   show[4] = new GLToggle(4,"Link");
-  show[4]->SetState(TRUE);
+  show[4]->SetState(true);
   sPanel->Add(show[4]);
   show[5] = new GLToggle(5,"Desorption");
-  show[5]->SetState(TRUE);
+  show[5]->SetState(true);
   sPanel->Add(show[5]);
   show[6] = new GLToggle(6,"Reflection");
-  show[6]->SetState(TRUE);
+  show[6]->SetState(true);
   sPanel->Add(show[6]);
   show[7] = new GLToggle(7,"2 Sided");
-  show[7]->SetState(TRUE);
+  show[7]->SetState(true);
   sPanel->Add(show[7]);
   show[8] = new GLToggle(8,"Vertex nb");
-  show[8]->SetState(TRUE);
+  show[8]->SetState(true);
   sPanel->Add(show[8]);
   show[9] = new GLToggle(9,"Area");
-  show[9]->SetState(TRUE);
+  show[9]->SetState(true);
   sPanel->Add(show[9]);
   show[10] = new GLToggle(10, "Temperature");
-  show[10]->SetState(TRUE);
+  show[10]->SetState(true);
   sPanel->Add(show[10]);
   show[11] = new GLToggle(11,"2D Box");
-  show[11]->SetState(TRUE);
+  show[11]->SetState(true);
   sPanel->Add(show[11]);
   show[12] = new GLToggle(12,"Texture UV");
-  show[12]->SetState(TRUE);
+  show[12]->SetState(true);
   sPanel->Add(show[12]);
   show[13] = new GLToggle(13,"Mesh sample/cm");
-  show[13]->SetState(TRUE);
+  show[13]->SetState(true);
   sPanel->Add(show[13]);
   show[14] = new GLToggle(14,"Count mode");
-  show[14]->SetState(TRUE);
+  show[14]->SetState(true);
   sPanel->Add(show[14]);
   show[15] = new GLToggle(15,"Memory");
-  show[15]->SetState(TRUE);
+  show[15]->SetState(true);
   sPanel->Add(show[15]);
   show[16] = new GLToggle(16,"Planarity");
-  show[16]->SetState(TRUE);
+  show[16]->SetState(true);
   sPanel->Add(show[16]);
   show[17] = new GLToggle(17,"Profile");
-  show[17]->SetState(TRUE);
+  show[17]->SetState(true);
   sPanel->Add(show[17]);
   show[18] = new GLToggle(18, "Imping.rate");
-  show[18]->SetState(TRUE);
+  show[18]->SetState(true);
   sPanel->Add(show[18]);
   show[19] = new GLToggle(19, "Density[1/m3]");
-  show[19]->SetState(TRUE);
+  show[19]->SetState(true);
   sPanel->Add(show[19]);
   show[20] = new GLToggle(20, "Density[kg/m3]");
-  show[20]->SetState(TRUE);
+  show[20]->SetState(true);
   sPanel->Add(show[20]);
   show[21] = new GLToggle(21, "Pressure");
-  show[21]->SetState(TRUE);
+  show[21]->SetState(true);
   sPanel->Add(show[21]);
   show[22] = new GLToggle(22, "Mol.speed");
-  show[22]->SetState(TRUE);
+  show[22]->SetState(true);
   sPanel->Add(show[22]);
   show[23] = new GLToggle(23,"Hits");
-  show[23]->SetState(TRUE);
+  show[23]->SetState(true);
   sPanel->Add(show[23]);
   show[24] = new GLToggle(24,"Des.");
-  show[24]->SetState(TRUE);
+  show[24]->SetState(true);
   sPanel->Add(show[24]);
   show[25] = new GLToggle(25,"Abs.");
-  show[25]->SetState(TRUE);
+  show[25]->SetState(true);
   sPanel->Add(show[25]);
 
   // Center dialog
@@ -226,8 +227,8 @@ void FacetDetails::PlaceComponents() {
   else
     hp = 20;
   sPanel->SetBounds(5,height-(hp+52),width-10,hp);
-  for(int i=0;i<NB_FDCOLUMN;i++)
-    sPanel->SetCompBounds(show[i],5+80*((i-1)%nbW),18+20*((i-1)/nbW),85,19);
+  for(size_t i=0;i<NB_FDCOLUMN;i++)
+    sPanel->SetCompBounds(show[i],5+80*(((int)i-1)%nbW),18+20*(((int)i-1)/nbW),85,19);
 
   facetListD->SetBounds(5,5,width-10,height-(62+hp));
 
@@ -261,13 +262,13 @@ char *FacetDetails::GetCountStr(Facet *f) {
 
 // -----------------------------------------------------------------
 
-char *FacetDetails::FormatCell(int idx,Facet *f,int mode) {
+char *FacetDetails::FormatCell(size_t idx,Facet *f,size_t mode) {
   static char ret[256];
   strcpy(ret,"");
 
   switch(mode) {
     case 0:
-      sprintf(ret,"%d",idx+1);
+      sprintf(ret,"%zd",idx+1);
       break;
     case 1:
       sprintf(ret,"%g",f->sh.sticking);
@@ -276,10 +277,10 @@ char *FacetDetails::FormatCell(int idx,Facet *f,int mode) {
       sprintf(ret,"%g",f->sh.opacity);
       break;
     case 3:
-      sprintf(ret,"%d",f->sh.superIdx+1);
+      sprintf(ret,"%zd",f->sh.superIdx+1);
       break;
     case 4:
-      sprintf(ret,"%d",f->sh.superDest);
+      sprintf(ret,"%zd",f->sh.superDest);
       break;
     case 5:
       sprintf(ret,"%s",desStr[f->sh.desorbType]);
@@ -292,7 +293,7 @@ char *FacetDetails::FormatCell(int idx,Facet *f,int mode) {
       sprintf(ret,"%s",ynStr[f->sh.is2sided]);      
       break;
     case 8:
-      sprintf(ret,"%d",f->sh.nbIndex);
+      sprintf(ret,"%zd",f->sh.nbIndex);
       break;
     case 9:
 		if (f->sh.is2sided) sprintf(ret,"2*%g",f->sh.area);
@@ -306,7 +307,7 @@ char *FacetDetails::FormatCell(int idx,Facet *f,int mode) {
       break;
     case 12:
       if( f->sh.isTextured ) {
-        sprintf(ret,"%dx%d (%g x %g)",f->sh.texWidth,f->sh.texHeight,f->sh.texWidthD,f->sh.texHeightD);
+        sprintf(ret,"%zdx%zd (%g x %g)",f->sh.texWidth,f->sh.texHeight,f->sh.texWidthD,f->sh.texHeightD);
       } else {
         sprintf(ret,"None");
       }
@@ -384,26 +385,19 @@ char *FacetDetails::FormatCell(int idx,Facet *f,int mode) {
 
 void FacetDetails::UpdateTable() {
 
-  Geometry *s = worker->GetGeometry();
-  int nbFacet = s->GetNbFacet();
-  int nbS = s->GetNbSelected();
+  Geometry *geom = worker->GetGeometry();
+  auto selectedFacets = geom->GetSelectedFacets();
   static char ret[256];
   strcpy(ret,"");
-
-  /*
-  //SUM Counters
-  double sumArea=0;
-  DWORD sumMemory=0;
-  */
 
   char *tmpName[NB_FDCOLUMN];
   int  tmpWidth[NB_FDCOLUMN];
   int  tmpAlign[NB_FDCOLUMN];
   int  tmpColor[NB_FDCOLUMN];
 
-  int nbCol = 0;
+  size_t nbCol = 0;
 
-  for(int i=0;i<NB_FDCOLUMN;i++) {
+  for(size_t i=0;i<NB_FDCOLUMN;i++) {
     if(i==0 || show[i]->GetState()) {
       tmpName[nbCol]  = allColumn[i].name;
       tmpWidth[nbCol] = allColumn[i].width;
@@ -414,7 +408,7 @@ void FacetDetails::UpdateTable() {
     }
   }
 
-  facetListD->SetSize(nbCol,nbS);
+  facetListD->SetSize(nbCol,selectedFacets.size());
   facetListD->SetColumnWidths(tmpWidth);
   facetListD->SetColumnLabels(tmpName);
   facetListD->SetColumnAligns(tmpAlign);
@@ -425,42 +419,13 @@ void FacetDetails::UpdateTable() {
 	facetListD->SetColumnColors(tmpColor);
   
 
-  nbS = 0;
-  for(int i=0;i<nbFacet;i++) {
-    Facet *f = s->GetFacet(i);
-    if(f->selected) {
-      for(int j=0;j<nbCol;j++)
-        facetListD->SetValueAt(j,nbS,FormatCell(i,f,shown[j]));
-		
-	  /*
-		sumArea+=f->sh.area;
-		sumMemory+=f->GetTexRamSize();
-      */
-		nbS++;
-		}
-	
+  size_t nbS = 0;
+  for(auto sel:selectedFacets) {
+    Facet *f = geom->GetFacet(sel);
+    for(size_t j=0;j<nbCol;j++)
+        facetListD->SetValueAt(j,nbS,FormatCell(sel,f,shown[j]));
+	nbS++;
 	}
-	/*
-  //SUM values
-  for(int j=0;j<nbCol;j++) {
-	  switch (shown[j]) {
-		case 0:
-			facetListD->SetValueAt(j,nbS,"SUM");
-			break;
-		case 9:
-			sprintf(ret,"%g",sumArea);
-			facetListD->SetValueAt(j,nbS,ret);
-			break;
-		case 14:
-			sprintf(ret,"%s",FormatMemory(sumMemory));
-			facetListD->SetValueAt(j,nbS,ret);
-			break;
-		default:
-			facetListD->SetValueAt(j,nbS,"");
-	  }
-	  
-  }
-  */
 }
 
 // -----------------------------------------------------------------
@@ -471,7 +436,7 @@ void FacetDetails::Update() {
   if(!IsVisible()) return;
 
   Geometry *s = worker->GetGeometry();
-  int nbS = s->GetNbSelected();
+  size_t nbS = s->GetNbSelectedFacets();
   
   if(nbS==0) {
     facetListD->Clear();
@@ -487,7 +452,7 @@ void FacetDetails::Update() {
 void FacetDetails::Display(Worker *w) {
 
   worker = w;
-  SetVisible(TRUE);
+  SetVisible(true);
   Update();
 
 }
@@ -500,12 +465,12 @@ void FacetDetails::ProcessMessage(GLComponent *src,int message) {
 
     case MSG_BUTTON:
       if(src==dismissButton) {
-        SetVisible(FALSE);
+        SetVisible(false);
       } else if (src==checkAllButton) {
-        for(int i=0;i<NB_FDCOLUMN;i++) show[i]->SetState(TRUE);
+        for(size_t i=0;i<NB_FDCOLUMN;i++) show[i]->SetState(true);
         UpdateTable();
       } else if (src==uncheckAllButton) {
-        for(int i=0;i<NB_FDCOLUMN;i++) show[i]->SetState(FALSE);
+        for(size_t i=0;i<NB_FDCOLUMN;i++) show[i]->SetState(false);
         UpdateTable();
 	  }	else if (src==updateButton) {
         UpdateTable();

@@ -15,20 +15,20 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 */
-
-#include "GLApp/GLWindow.h"
-#include "GLApp/GLButton.h"
-#include "GLApp/GLTextField.h"
-#include "GLApp/GLLabel.h"
-#include "GLApp/GLToggle.h"
-#include "GLApp/GLTitledPanel.h"
-#include "GLApp/GLGradient.h"
-#include "GeometryViewer.h"
-
 #ifndef _TEXTURESETTINGSH_
 #define _TEXTURESETTINGSH_
 
+#include "GLApp/GLWindow.h"
+class GLButton;
+class GLCombo;
+class GLTextField;
+class GLLabel;
+class GLToggle;
+class GLTitledPanel;
+class GLGradient;
+class GeometryViewer;
 class MolflowGeometry;
+class Worker;
 
 class TextureSettings : public GLWindow {
 

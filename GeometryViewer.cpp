@@ -22,7 +22,12 @@ GNU General Public License for more details.
 #include "GLApp/GLMatrix.h"
 #include "GLApp/MathTools.h"
 #include <math.h>
-#include <malloc.h>
+
+#include "GLApp/GLButton.h"
+#include "GLApp/GLCombo.h"
+#include "GLApp/GLLabel.h"
+#include "GLApp\GLGradient.h"
+//#include <malloc.h>
 
 #ifdef MOLFLOW
 #include "MolFlow.h"

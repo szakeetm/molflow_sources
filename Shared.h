@@ -16,14 +16,13 @@
   GNU General Public License for more details.
 */
 
+#ifndef SHAREDH
+#define SHAREDH
+
 #include "MolflowTypes.h"
 #include <Windows.h>
 #include <vector>
 #include "Vector.h"
-
-#ifndef SHAREDH
-
-#define SHAREDH
 
 #define PROFILE_SIZE  100 // Size of profile
 #define LEAKCACHESIZE     2048  // Leak history max length
@@ -193,7 +192,7 @@ typedef struct {
 
 	size_t        nbFacet;   // Number of facets (total)
 	size_t        nbVertex;  // Number of 3D vertices
-	int        nbSuper;   // Number of superstructures
+	size_t        nbSuper;   // Number of superstructures
 	char       name[64];  // (Short file name)
 
 	size_t nbMoments; //To pass in advance for memory reservation
@@ -201,11 +200,11 @@ typedef struct {
 	double totalDesorbedMolecules; //Number of molecules desorbed between t=0 and latest_moment
 	double finalOutgassingRate; //Number of outgassing molecules / second at latest_moment (constant flow)
 	double gasMass;
-	BOOL enableDecay;
+	bool enableDecay;
 	double halfLife;
 	double timeWindowSize;
-	BOOL useMaxwellDistribution; //TRUE: Maxwell-Boltzmann distribution, FALSE: All molecules have the same (V_avg) speed
-	BOOL calcConstantFlow;
+	bool useMaxwellDistribution; //true: Maxwell-Boltzmann distribution, false: All molecules have the same (V_avg) speed
+	bool calcConstantFlow;
 
 	int motionType;
 	Vector3d motionVector1; //base point for rotation
@@ -243,25 +242,25 @@ typedef struct {
 	double desorbTypeN;    // Exponent in Cos^N desorption type
 	int    reflectType;    // Reflection type
 	int    profileType;    // Profile type
-	int    superIdx;       // Super structure index (Indexed from 0)
-	int    superDest;      // Super structure destination index (Indexed from 1, 0=>current)
+	size_t    superIdx;       // Super structure index (Indexed from 0)
+	size_t    superDest;      // Super structure destination index (Indexed from 1, 0=>current)
 	int	 teleportDest;   // Teleport destination facet id (for periodic boundary condition) (Indexed from 1, 0=>none, -1=>teleport to where it came from)
-	BOOL   countDes;       // Count desoprtion (MC texture)
-	BOOL   countAbs;       // Count absoprtion (MC texture)
-	BOOL   countRefl;      // Count reflection (MC texture)
-	BOOL   countTrans;     // Count transparent (MC texture)
-	BOOL   countACD;       // Angular coefficient (AC texture)
-	BOOL   countDirection; // Record avergare direction (MC texture)
+	bool   countDes;       // Count desoprtion (MC texture)
+	bool   countAbs;       // Count absoprtion (MC texture)
+	bool   countRefl;      // Count reflection (MC texture)
+	bool   countTrans;     // Count transparent (MC texture)
+	bool   countACD;       // Angular coefficient (AC texture)
+	bool   countDirection; // Record avergare direction (MC texture)
 	double maxSpeed;       // Max expected particle velocity (for velocity histogram)
 	double accomodationFactor; // Thermal accomodation factor [0..1]
-	BOOL   enableSojournTime;
+	bool   enableSojournTime;
 	double sojournFreq, sojournE;
 
 	// Flags
-	BOOL   is2sided;     // 2 sided
-	BOOL   isProfile;    // Profile facet
-	BOOL   isTextured;   // texture
-	BOOL   isVolatile;   // Volatile facet (absorbtion facet which does not affect particule trajectory)
+	bool   is2sided;     // 2 sided
+	bool   isProfile;    // Profile facet
+	bool   isTextured;   // texture
+	bool   isVolatile;   // Volatile facet (absorbtion facet which does not affect particule trajectory)
 
 	// Facet hit counters
 	// SHHITS counter; - removed as now it's time-dependent and part of the hits buffer
@@ -275,10 +274,10 @@ typedef struct {
 	Vector3d   center;
 
 	// Moving facets
-	BOOL isMoving;
+	bool isMoving;
 
 	// Geometry
-	int    nbIndex;   // Number of index/vertex
+	size_t    nbIndex;   // Number of index/vertex
 	double sign;      // Facet vertex rotation (see Facet::DetectOrientation())
 
 	// Plane basis (O,U,V) (See Geometry::InitializeGeometry() for info)
@@ -289,24 +288,24 @@ typedef struct {
 	Vector3d   nV; // Normalized V
 
 	// Hit/Abs/Des/Density recording on 2D texture map
-	int    texWidth;    // Rounded texture resolution (U)
-	int    texHeight;   // Rounded texture resolution (V)
+	size_t    texWidth;    // Rounded texture resolution (U)
+	size_t    texHeight;   // Rounded texture resolution (V)
 	double texWidthD;   // Actual texture resolution (U)
 	double texHeightD;  // Actual texture resolution (V)
 
 	size_t   hitOffset;      // Hit address offset for this facet
 
 	//Outgassing map
-	BOOL   useOutgassingFile;   //has desorption file for cell elements
+	bool   useOutgassingFile;   //has desorption file for cell elements
 	double outgassingFileRatio; //desorption file's sample/unit ratio
-	int   outgassingMapWidth;
-	int   outgassingMapHeight;
+	int   outgassingMapWidth; //rounded up outgassing file map width
+	int   outgassingMapHeight; //rounded up outgassing file map height
 
 	double totalOutgassing; //total outgassing for the given facet
 
 	//Incident angle map
-	BOOL   recordAngleMap; // Record incident angle 2-dim distribution
-	BOOL hasRecordedAngleMap;
+	bool   recordAngleMap; // Record incident angle 2-dim distribution
+	bool hasRecordedAngleMap;
 	size_t angleMapPhiWidth;
 	size_t angleMapThetaHeight;
 
@@ -317,14 +316,15 @@ typedef struct {
 //
 //  SHELEM
 
-/*typedef struct {
+//Just for AC matrix calculation in Molflow, old mesh structure:
+typedef struct {
 
-  float   area;     // Area of element
-  float   uCenter;  // Center coordinates
-  float   vCenter;  // Center coordinates
-  int     elemId;   // Element index (MESH array)
-  BOOL    full;     // Element is full
+	float   area;     // Area of element
+	float   uCenter;  // Center coordinates
+	float   vCenter;  // Center coordinates
+	int     elemId;   // Element index (MESH array)
+	bool    full;     // Element is full
 
-} SHELEM;*/
+} SHELEM;
 
 #endif /* SHAREDH */

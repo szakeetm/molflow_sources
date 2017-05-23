@@ -19,9 +19,19 @@ GNU General Public License for more details.
 #include "PressureEvolution.h"
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
+#include "GLApp/GLToggle.h"
 #include "GLApp/MathTools.h"
+#include "GLApp/GLList.h"
+#include "GLApp/GLChart/GLChart.h"
+#include "GLApp/GLLabel.h"
+#include "GLApp/GLCombo.h"
+#include "GLApp/GLButton.h"
+#include "GLApp/GLParser.h"
+#include "GLApp/GLTextField.h"
+#include "Geometry.h"
 #include "Facet.h"
 #include <math.h>
+
 #ifdef MOLFLOW
 #include "MolFlow.h"
 #endif
@@ -48,7 +58,7 @@ PressureEvolution::PressureEvolution() :GLWindow() {
 	int hD = 425;
 
 	SetTitle("Pressure evolution plotter");
-	SetIconfiable(TRUE);
+	SetIconfiable(true);
 	nbView = 0;
 	worker = NULL;
 	lastUpdate = 0.0f;
@@ -67,11 +77,11 @@ PressureEvolution::PressureEvolution() :GLWindow() {
 
 	chart = new GLChart(0);
 	chart->SetBorder(BORDER_BEVEL_IN);
-	chart->GetY1Axis()->SetGridVisible(TRUE);
-	chart->GetXAxis()->SetGridVisible(TRUE);
+	chart->GetY1Axis()->SetGridVisible(true);
+	chart->GetXAxis()->SetGridVisible(true);
 	chart->GetXAxis()->SetName("Time (s)");
-	chart->GetY1Axis()->SetAutoScale(TRUE);
-	chart->GetY2Axis()->SetAutoScale(TRUE);
+	chart->GetY1Axis()->SetAutoScale(true);
+	chart->GetY2Axis()->SetAutoScale(true);
 	chart->GetY1Axis()->SetAnnotation(VALUE_ANNO);
 	chart->GetXAxis()->SetAnnotation(VALUE_ANNO);
 	Add(chart);
@@ -92,7 +102,7 @@ PressureEvolution::PressureEvolution() :GLWindow() {
 	Add(resetButton);
 
 	profCombo = new GLCombo(0);
-	profCombo->SetEditable(TRUE);
+	profCombo->SetEditable(true);
 	Add(profCombo);
 
 	logXToggle = new GLToggle(0, "Log X");
@@ -105,7 +115,7 @@ PressureEvolution::PressureEvolution() :GLWindow() {
 	Add(normLabel);
 
 	normCombo = new GLCombo(0);
-	normCombo->SetEditable(TRUE);
+	normCombo->SetEditable(true);
 	normCombo->SetSize(5);
 	normCombo->SetValueAt(0, "None (raw data)");
 	normCombo->SetValueAt(1, "Pressure (mbar)");
@@ -116,7 +126,7 @@ PressureEvolution::PressureEvolution() :GLWindow() {
 	Add(normCombo);
 
 	modeCombo = new GLCombo(0);
-	modeCombo->SetEditable(TRUE);
+	modeCombo->SetEditable(true);
 	modeCombo->SetSize(2);
 	modeCombo->SetValueAt(0, "Average");
 	modeCombo->SetValueAt(1, "Slice #");
@@ -124,18 +134,18 @@ PressureEvolution::PressureEvolution() :GLWindow() {
 	Add(modeCombo);
 
 	selectedSliceText = new GLTextField(0, "50");
-	selectedSliceText->SetEditable(FALSE);
+	selectedSliceText->SetEditable(false);
 	Add(selectedSliceText);
 
 	label1 = new GLLabel("Show evolution of:");
 	Add(label1);
 
 	correctForGas = new GLToggle(0, "Surface->Volume conversion");
-	correctForGas->SetVisible(FALSE);
+	correctForGas->SetVisible(false);
 	Add(correctForGas);
 
 	formulaText = new GLTextField(0, "");
-	formulaText->SetEditable(TRUE);
+	formulaText->SetEditable(true);
 	Add(formulaText);
 
 	formulaBtn = new GLButton(0, "-> Plot");
@@ -147,7 +157,7 @@ PressureEvolution::PressureEvolution() :GLWindow() {
 	int xD = (wS - wD) / 2;
 	int yD = (hS - hD) / 2;
 	SetBounds(xD, yD, wD, hD);
-	SetResizable(TRUE);
+	SetResizable(true);
 	SetMinimumSize(wD, 220);
 
 	RestoreDeviceObjects();
@@ -185,30 +195,29 @@ void PressureEvolution::Refresh() {
 	if (!worker) return;
 
 	Geometry *geom = worker->GetGeometry();
-	int nb = geom->GetNbFacet();
-	int nbProf = 0;
-	for (int i = 0; i < nb; i++)
+	size_t nb = geom->GetNbFacet();
+	size_t nbProf = 0;
+	for (size_t i = 0; i < nb; i++)
 		if (geom->GetFacet(i)->sh.isProfile) nbProf++;
 	profCombo->Clear();
 	if (nbProf) profCombo->SetSize(nbProf);
 	nbProf = 0;
-	for (int i = 0; i < nb; i++) {
+	for (size_t i = 0; i < nb; i++) {
 		Facet *f = geom->GetFacet(i);
 		if (f->sh.isProfile) {
 			char tmp[128];
-			sprintf(tmp, "F#%d %s", i + 1, profType[f->sh.profileType]);
-			profCombo->SetValueAt(nbProf, tmp, i);
-			
+			sprintf(tmp, "F#%zd %s", i + 1, profType[f->sh.profileType]);
+			profCombo->SetValueAt(nbProf, tmp, (int)i);
 			nbProf++;
 		}
 	}
 	profCombo->SetSelectedIndex(nbProf?0:-1);
 	//Remove profiles that aren't present anymore
-	for (int v = 0; v < nbView; v++)
+	for (size_t v = 0; v < nbView; v++)
 		if (views[v]->userData1 >= geom->GetNbFacet() || !geom->GetFacet(views[v]->userData1)->sh.isProfile) {
 			chart->GetY1Axis()->RemoveDataView(views[v]);
 			SAFE_DELETE(views[v]);
-			for (int j = v; j < nbView - 1; j++) views[j] = views[j + 1];
+			for (size_t j = v; j < nbView - 1; j++) views[j] = views[j + 1];
 			nbView--;
 		}
 	refreshViews();
@@ -219,11 +228,11 @@ void PressureEvolution::Display(Worker *w) {
 
 	worker = w;
 	Refresh();
-	SetVisible(TRUE);
+	SetVisible(true);
 
 }
 
-void PressureEvolution::Update(float appTime, BOOL force) {
+void PressureEvolution::Update(float appTime, bool force) {
 
 	if (!IsVisible() || IsIconic()) return;
 
@@ -272,7 +281,7 @@ void PressureEvolution::plot() {
 	GLDataView *v;
 
 	// Check that view is not already added
-	BOOL found = FALSE;
+	bool found = false;
 	int i = 0;
 	while (i < nbView && !found) {
 		found = (views[i]->userData1 == -1);
@@ -301,7 +310,7 @@ void PressureEvolution::plot() {
 		double y;
 		var->value = x;
 		parser->Evaluate(&y);
-		v->Add(x, y, FALSE);
+		v->Add(x, y, false);
 	}
 	v->CommitChange();
 
@@ -341,7 +350,7 @@ void PressureEvolution::refreshViews() {
 					else //plot sum
 						for (int j = 0; j < PROFILE_SIZE; j++)
 							val_MC += profilePtr[j].count;
-					v->Add(worker->moments[m - 1], (double)val_MC, FALSE);
+					v->Add(worker->moments[m - 1], (double)val_MC, false);
 					break;
 				}
 				case 1: {//Pressure
@@ -356,7 +365,7 @@ void PressureEvolution::refreshViews() {
 							val += profilePtr[j].sum_v_ort;
 						val *= scaleY / (double)PROFILE_SIZE;
 					}
-					v->Add(worker->moments[m - 1], val, FALSE);
+					v->Add(worker->moments[m - 1], val, false);
 					break;
 				}
 				case 2: {//Particle density
@@ -379,7 +388,7 @@ void PressureEvolution::refreshViews() {
 							val += profilePtr[j].sum_1_per_ort_velocity;
 						val *= scaleY / (double)PROFILE_SIZE;
 					}
-					v->Add(worker->moments[m - 1], val, FALSE);
+					v->Add(worker->moments[m - 1], val, false);
 					break;
 				}
 				case 3: {//Velocity
@@ -396,7 +405,7 @@ void PressureEvolution::refreshViews() {
 						weighedSum += ((double)j+0.5)*val;
 					}
 					weighedSum *= scaleX / sum;
-					v->Add(worker->moments[m - 1], weighedSum, FALSE);
+					v->Add(worker->moments[m - 1], weighedSum, false);
 					break; }
 				case 4: {//Angle (deg)
 					double scaleX = 90.0 / (double)PROFILE_SIZE;
@@ -412,7 +421,7 @@ void PressureEvolution::refreshViews() {
 						weighedSum += ((double)j+0.5)*val;
 					}
 					weighedSum *= scaleX / sum;
-					v->Add(worker->moments[m - 1], weighedSum, FALSE);
+					v->Add(worker->moments[m - 1], weighedSum, false);
 					break; }
 				}
 			}
@@ -423,20 +432,20 @@ void PressureEvolution::refreshViews() {
 
 				// Volatile profile
 				v->Reset();
-				int nb = geom->GetNbFacet();
-				for (int j = 0; j < nb; j++) {
+				size_t nb = geom->GetNbFacet();
+				for (size_t j = 0; j < nb; j++) {
 					Facet *f = geom->GetFacet(j);
 					if (f->sh.isVolatile) {
 						SHHITS *fCount = (SHHITS *)(buffer + f->sh.hitOffset);
 						double z = geom->GetVertex(f->indices[0])->z;
-						v->Add(z, (double)(fCount->hit.nbAbsorbed) / nbDes, FALSE);
+						v->Add(z, (double)(fCount->hit.nbAbsorbed) / nbDes, false);
 					}
 				}
 				// Last
 				Facet *f = geom->GetFacet(28);
 				SHHITS *fCount = (SHHITS *)(buffer + f->sh.hitOffset);
 				double fnbAbs = (double)fCount->hit.nbAbsorbed;
-				v->Add(1000.0, fnbAbs / nbDes, FALSE);
+				v->Add(1000.0, fnbAbs / nbDes, false);
 				v->CommitChange();
 
 				//v->Reset();
@@ -459,7 +468,7 @@ void PressureEvolution::addView(int facet) {
 	Geometry *geom = worker->GetGeometry();
 
 	// Check that view is not already added
-	BOOL found = FALSE;
+	bool found = false;
 	int i = 0;
 	while (i < nbView && !found) {
 		found = (views[i]->userData1 == facet);
@@ -494,7 +503,7 @@ void PressureEvolution::remView(int facet) {
 
 	Geometry *geom = worker->GetGeometry();
 
-	BOOL found = FALSE;
+	bool found = false;
 	int i = 0;
 	while (i < nbView && !found) {
 		found = (views[i]->userData1 == facet);
@@ -524,17 +533,17 @@ void PressureEvolution::ProcessMessage(GLComponent *src, int message) {
 	switch (message) {
 	case MSG_BUTTON:
 		if (src == dismissButton) {
-			SetVisible(FALSE);
+			SetVisible(false);
 		}
 		else if (src == selButton) {
 			int idx = profCombo->GetSelectedIndex();
 			if (idx >= 0) {
 				geom->UnselectAll();
-				geom->GetFacet(profCombo->GetUserValueAt(idx))->selected = TRUE;
+				geom->GetFacet(profCombo->GetUserValueAt(idx))->selected = true;
 				geom->UpdateSelection();
-				mApp->UpdateFacetParams(TRUE);
+				mApp->UpdateFacetParams(true);
 				mApp->facetList->SetSelectedRow(profCombo->GetUserValueAt(idx));
-				mApp->facetList->ScrollToVisible(profCombo->GetUserValueAt(idx), 1, TRUE);
+				mApp->facetList->ScrollToVisible(profCombo->GetUserValueAt(idx), 1, true);
 			}
 		}
 		else if (src == addButton) {

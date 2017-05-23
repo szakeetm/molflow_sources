@@ -17,9 +17,11 @@
 
 #include "TimeSettings.h"
 #include "GLApp/GLTitledPanel.h"
-#include "GLApp/GLToolkit.h"
-#include "GLApp/GLWindowManager.h"
 #include "GLApp/GLMessageBox.h"
+#include "GLApp/GLButton.h"
+#include "GLApp/GLTextField.h"
+#include "GLApp/GLLabel.h"
+
 #include "MolFlow.h"
 #include "MomentsEditor.h"
 #include "FacetDetails.h"
@@ -151,7 +153,7 @@ void TimeSettings::ProcessMessage(GLComponent *src,int message) {
 		if( mApp->momentsEditor==NULL ) mApp->momentsEditor = new MomentsEditor(work);
 		mApp->momentsEditor->Refresh();
 		//momentsEditor->Display(work,momentsEditor->GetSelectedIndex());
-		mApp->momentsEditor->SetVisible(TRUE);
+		mApp->momentsEditor->SetVisible(true);
 		//momentsEditor->DoModal();
 		//SAFE_DELETE(momentsEditor);
 		

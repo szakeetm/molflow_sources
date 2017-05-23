@@ -15,16 +15,19 @@
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
 */
-
-#include "GLApp/GLWindow.h"
-#include "GLApp/GLButton.h"
-#include "GLApp/GLList.h"
-#include "GLApp/GLCombo.h"
-#include "Geometry.h"
-#include "GeometryViewer.h"
-
 #ifndef _OutgassingMapH_
 #define _OutgassingMapH_
+
+#include "GLApp/GLWindow.h"
+class GLButton;
+class GLList;
+class GLCombo;
+class GLLabel;
+class GLTextField;
+class Geometry;
+class GeometryViewer;
+class Worker;
+class Facet;
 
 class OutgassingMap : public GLWindow {
 
@@ -35,7 +38,7 @@ public:
 
   // Component methods
   void Display(Worker *w);
-  void Update(float appTime,BOOL force = FALSE);
+  void Update(float appTime,bool force = false);
 
   // Implementation
   void ProcessMessage(GLComponent *src,int message);

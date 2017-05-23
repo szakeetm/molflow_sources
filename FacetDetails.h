@@ -49,7 +49,7 @@ private:
 
   char *GetCountStr(Facet *f);
   void UpdateTable();
-  char *FormatCell(int idx,Facet *f,int mode);
+  char *FormatCell(size_t idx,Facet *f,size_t mode);
   void PlaceComponents();
 
   Worker      *worker;
@@ -57,7 +57,7 @@ private:
 
   GLTitledPanel *sPanel;          // Toggle panel
   GLToggle      *show[NB_FDCOLUMN];
-  int            shown[NB_FDCOLUMN];
+  size_t            shown[NB_FDCOLUMN];
 
   GLButton    *checkAllButton;
   GLButton    *uncheckAllButton;

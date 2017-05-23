@@ -42,7 +42,7 @@ SIMULATION *sHandle;
 // -------------------------------------------------------
 
 #ifdef WIN
-BOOL usePerfCounter;         // Performance counter usage
+bool usePerfCounter;         // Performance counter usage
 LARGE_INTEGER perfTickStart; // First tick
 double perfTicksPerSec;      // Performance counter (number of tick per second)
 #endif
@@ -174,9 +174,9 @@ DWORD GetSeed() {
 
 
 
-BOOL LoadSimulation(Dataport *loader) {
+bool LoadSimulation(Dataport *loader) {
 
-	int i, j, idx;
+	size_t i, j, idx;
 	BYTE *buffer;
 	BYTE *incBuff;
 	BYTE *bufferStart;
@@ -188,7 +188,7 @@ BOOL LoadSimulation(Dataport *loader) {
 
 	t0 = GetTick();
 
-	sHandle->loadOK = FALSE;
+	sHandle->loadOK = false;
 	SetState(PROCESS_STARTING, "Clearing previous simulation");
 	ClearSimulation();
 	
@@ -198,7 +198,7 @@ BOOL LoadSimulation(Dataport *loader) {
 	SetState(PROCESS_STARTING, "Waiting for 'loader' dataport access...");
 	if (!AccessDataportTimed(loader,15000)) {
 		SetErrorSub("Failed to connect to DP");
-		return FALSE;
+		return false;
 	}
 	*/
 
@@ -214,13 +214,13 @@ BOOL LoadSimulation(Dataport *loader) {
 	if (shGeom->nbSuper > MAX_STRUCT) {
 		ReleaseDataport(loader);
 		SetErrorSub("Too many structures");
-		return FALSE;
+		return false;
 	}
 	if (shGeom->nbSuper <= 0) {
 		ReleaseDataport(loader);
 		SetErrorSub("No structures");
 
-		return FALSE;
+		return false;
 	}
 
 
@@ -256,7 +256,7 @@ BOOL LoadSimulation(Dataport *loader) {
 			/*ReleaseDataport(loader);
 			sprintf(err,"Structure #%d has no facets!",i+1);
 			SetErrorSub(err);
-			return FALSE;*/
+			return false;*/
 		}
 		else {
 
@@ -281,7 +281,7 @@ BOOL LoadSimulation(Dataport *loader) {
 	sHandle->vertices3 = (Vector3d *)malloc(sHandle->nbVertex * sizeof(Vector3d));
 	if (!sHandle->vertices3) {
 		SetErrorSub("Not enough memory to load vertices");
-		return FALSE;
+		return false;
 	}
 	buffer += sizeof(SHGEOM);
 
@@ -296,7 +296,7 @@ BOOL LoadSimulation(Dataport *loader) {
 		FACET *f = new FACET;
 		if (!f) {
 			SetErrorSub("Not enough memory to load facets");
-			return FALSE;
+			return false;
 		}
 		memset(f, 0, sizeof(FACET));
 		memcpy(&(f->sh), shFacet, sizeof(SHFACET));
@@ -317,7 +317,7 @@ BOOL LoadSimulation(Dataport *loader) {
 			// Link or volatile facet, overides facet settings
 			// Must be full opaque and 0 sticking
 			// (see SimulationMC.c::PerformBounce)
-			//f->sh.isOpaque = TRUE;
+			//f->sh.isOpaque = true;
 			f->sh.opacity = 1.0;
 			f->sh.opacity_paramId = -1;
 			f->sh.sticking = 0.0;
@@ -326,9 +326,9 @@ BOOL LoadSimulation(Dataport *loader) {
 				// Geometry error
 				ClearSimulation();
 				ReleaseDataport(loader);
-				sprintf(err, "Invalid structure (wrong link on F#%d)", i + 1);
+				sprintf(err, "Invalid structure (wrong link on F#%zd)", i + 1);
 				SetErrorSub(err);
-				return FALSE;
+				return false;
 			}
 		}
 
@@ -341,7 +341,7 @@ BOOL LoadSimulation(Dataport *loader) {
 		f->vertices2 = (Vector2d *)malloc(f->sh.nbIndex * sizeof(Vector2d));
 		if (!f->vertices2) {
 			SetErrorSub("Not enough memory to load vertices");
-			return FALSE;
+			return false;
 		}
 		memcpy(f->vertices2, buffer, f->sh.nbIndex * sizeof(Vector2d));
 		buffer += f->sh.nbIndex * sizeof(Vector2d);
@@ -350,10 +350,13 @@ BOOL LoadSimulation(Dataport *loader) {
 			f->outgassingMap = (double*)malloc(sizeof(double)*f->sh.outgassingMapWidth*f->sh.outgassingMapHeight);
 			if (!f->outgassingMap) {
 				SetErrorSub("Not enough memory to load outgassing map");
-				return FALSE;
+				return false;
 			}
 			memcpy(f->outgassingMap, buffer, sizeof(double)*f->sh.outgassingMapWidth*f->sh.outgassingMapHeight);
 			buffer += sizeof(double)*f->sh.outgassingMapWidth*f->sh.outgassingMapHeight;
+			//Precalc actual outgassing map width and height for faster generation:
+			f->outgassingMapWidthD = f->sh.U.Norme() * f->sh.outgassingFileRatio;
+			f->outgassingMapHeightD = f->sh.V.Norme() * f->sh.outgassingFileRatio;
 		}
 		//Incident angle map
 		if (f->sh.hasRecordedAngleMap) {
@@ -363,13 +366,13 @@ BOOL LoadSimulation(Dataport *loader) {
 			f->angleMap = (size_t*)malloc(f->angleMapSize);
 			if (!f->angleMap) {
 				SetErrorSub("Not enough memory to load incident angle map (values)");
-				return FALSE;
+				return false;
 			}
 
 			f->angleMapLineSums = (size_t*)malloc(sizeof(size_t)* f->sh.angleMapThetaHeight);
 			if (!f->angleMapLineSums) {
 				SetErrorSub("Not enough memory to load incident angle map (line sums)");
-				return FALSE;
+				return false;
 			}
 
 			//Copy values if "USE" mode, copy 0 values if "RECORD" mode
@@ -391,20 +394,20 @@ BOOL LoadSimulation(Dataport *loader) {
 
 		//Textures
 		if (f->sh.isTextured) {
-			int nbE = f->sh.texWidth*f->sh.texHeight;
+			size_t nbE = f->sh.texWidth*f->sh.texHeight;
 			f->textureSize = nbE * sizeof(AHIT);
 
 			if ((f->hits = (AHIT **)malloc(sizeof(AHIT *)* (1 + sHandle->nbMoments))) == NULL) {
 				ReleaseDataport(loader);
 				SetErrorSub("Couldn't allocate memory (time moments container, textures)");
-				return FALSE;
+				return false;
 			}
 			memset(f->hits, 0, sizeof(AHIT *)* (1 + sHandle->nbMoments)); //set all pointers to NULL so we can use SAFE_FREE later
 			for (size_t m = 0; m < (1 + sHandle->nbMoments); m++) {
 				if ((f->hits[m] = (AHIT *)malloc(f->textureSize)) == NULL) { //steady-state plus one for each moment
 					ReleaseDataport(loader);
 					SetErrorSub("Couldn't allocate memory (textures)");
-					return FALSE;
+					return false;
 				}
 				memset(f->hits[m], 0, f->textureSize);
 			}
@@ -419,14 +422,14 @@ BOOL LoadSimulation(Dataport *loader) {
 			if ((f->profile = (APROFILE **)malloc(sizeof(APROFILE *)* (1 + sHandle->nbMoments))) == NULL) {
 				ReleaseDataport(loader);
 				SetErrorSub("Couldn't allocate memory (time moments container, profiles)");
-				return FALSE;
+				return false;
 			}
 			memset(f->profile, 0, sizeof(APROFILE *)* (1 + sHandle->nbMoments)); //set all pointers to NULL so we can use SAFE_FREE later
 			for (size_t m = 0; m < (1 + sHandle->nbMoments); m++) {
 				if ((f->profile[m] = (APROFILE *)malloc(f->profileSize)) == NULL) { //steady-state plus one for each moment
 					ReleaseDataport(loader);
 					SetErrorSub("Couldn't allocate memory (profiles)");
-					return FALSE;
+					return false;
 				}
 				memset(f->profile[m], 0, f->profileSize);
 			}
@@ -442,14 +445,14 @@ BOOL LoadSimulation(Dataport *loader) {
 			if ((f->direction = (VHIT **)malloc(sizeof(VHIT *)* (1 + sHandle->nbMoments))) == NULL) {
 				ReleaseDataport(loader);
 				SetErrorSub("Couldn't allocate memory (time moments container, direction vectors)");
-				return FALSE;
+				return false;
 			}
 			memset(f->direction, 0, sizeof(VHIT *)* (1 + sHandle->nbMoments)); //set all pointers to NULL so we can use SAFE_FREE later
 			for (size_t m = 0; m < (1 + sHandle->nbMoments); m++) {
 				if ((f->direction[m] = (VHIT *)malloc(f->directionSize)) == NULL) { //steady-state plus one for each moment
 					ReleaseDataport(loader);
 					SetErrorSub("Couldn't allocate memory (direction vectors)");
-					return FALSE;
+					return false;
 				}
 				memset(f->direction[m], 0, f->directionSize);
 			}
@@ -466,13 +469,13 @@ BOOL LoadSimulation(Dataport *loader) {
 		for (i = 0; i < sHandle->str[k].nbFacet; i++) {
 			FACET* f = sHandle->str[k].facets[i];
 			if (f->sh.isTextured) {
-				int nbE = f->sh.texWidth*f->sh.texHeight;
+				size_t nbE = f->sh.texWidth*f->sh.texHeight;
 				f->inc = (double *)malloc(nbE * sizeof(double));
-				f->largeEnough = (BOOL *)malloc(sizeof(BOOL)*nbE);
-				//f->fullElem = (BOOL *)malloc(sizeof(BOOL)*nbE);
+				f->largeEnough = (bool *)malloc(sizeof(bool)*nbE);
+				//f->fullElem = (bool *)malloc(sizeof(bool)*nbE);
 				if (!(f->inc && f->largeEnough /*&& f->fullElem*/)) {
 					SetErrorSub("Not enough memory to load");
-					return FALSE;
+					return false;
 				}
 				f->fullSizeInc = 1E30;
 				for (j = 0; j < nbE; j++) {
@@ -549,7 +552,7 @@ BOOL LoadSimulation(Dataport *loader) {
 			newValues.push_back(std::make_pair(valueX, valueY));
 
 		}
-		newParam.SetValues(newValues, FALSE);
+		newParam.SetValues(newValues, false);
 		sHandle->parameters.push_back(newParam);
 	}
 
@@ -598,13 +601,13 @@ BOOL LoadSimulation(Dataport *loader) {
 
 	seed = GetSeed();
 	rseed(seed);
-	sHandle->loadOK = TRUE;
+	sHandle->loadOK = true;
 	t1 = GetTick();
 	printf("  Load %s successful\n", sHandle->name);
-	printf("  Geometry: %d vertex %d facets\n", sHandle->nbVertex, sHandle->totalFacet);
+	printf("  Geometry: %zd vertex %zd facets\n", sHandle->nbVertex, sHandle->totalFacet);
 
 	printf("  Geom size: %zd bytes\n", (size_t)(buffer - bufferStart));
-	printf("  Number of stucture: %d\n", sHandle->nbSuper);
+	printf("  Number of stucture: %zd\n", sHandle->nbSuper);
 	printf("  Global Hit: %zd bytes\n", sizeof(SHGHITS));
 	printf("  Facet Hit : %zd bytes\n", sHandle->totalFacet * sizeof(SHHITS));
 	printf("  Texture   : %zd bytes\n", sHandle->textTotalSize);
@@ -614,7 +617,7 @@ BOOL LoadSimulation(Dataport *loader) {
 	printf("  Total     : %zd bytes\n", GetHitsSize());
 	printf("  Seed: %lu\n", seed);
 	printf("  Loading time: %.3f ms\n", (t1 - t0)*1000.0);
-	return TRUE;
+	return true;
 
 }
 
@@ -645,7 +648,7 @@ size_t GetHitsSize() {
 // -------------------------------------------------------
 
 void ResetTmpCounters() {
-	SetState(NULL, "Resetting local cache...", FALSE, TRUE);
+	SetState(NULL, "Resetting local cache...", false, true);
 
 	memset(&sHandle->tmpCount, 0, sizeof(SHHITS));
 
@@ -659,7 +662,7 @@ void ResetTmpCounters() {
 		for (int i = 0; i < sHandle->str[j].nbFacet; i++) {
 			FACET *f = sHandle->str[j].facets[i];
 			f->ResetCounter();
-			f->hitted = FALSE;
+			f->hitted = false;
 
 			if (f->hits) {
 				for (size_t m = 0; m < (sHandle->nbMoments + 1); m++) {
@@ -701,7 +704,7 @@ void ResetSimulation() {
 
 // -------------------------------------------------------
 
-BOOL StartSimulation(size_t mode) {
+bool StartSimulation(size_t mode) {
 
 	sHandle->sMode = mode;
 	switch (mode) {
@@ -711,16 +714,16 @@ BOOL StartSimulation(size_t mode) {
 	case AC_MODE:
 		if (sHandle->prgAC != 100) {
 			SetErrorSub("AC matrix not calculated");
-			return FALSE;
+			return false;
 		}
 		else {
 			sHandle->stepPerSec = 0.0;
-			return TRUE;
+			return true;
 		}
 	}
 
 	SetErrorSub("Unknown simulation mode");
-	return FALSE;
+	return false;
 }
 
 // -------------------------------------------------------
@@ -747,12 +750,12 @@ void RecordLeakPos() {
 
 // -------------------------------------------------------
 
-BOOL SimulationRun() {
+bool SimulationRun() {
 
 	// 1s step
 	double t0, t1;
 	int    nbStep = 1;
-	BOOL   goOn;
+	bool   goOn;
 
 	if (sHandle->stepPerSec == 0.0) {
 		switch (sHandle->sMode) {

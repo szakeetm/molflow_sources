@@ -23,6 +23,14 @@ GNU General Public License for more details.
 #include "Molflow.h"
 #include "File.h"
 #include "GLApp/GLFileBox.h"
+#include "GLApp/GLButton.h"
+#include "GLApp/GLTextField.h"
+#include "GLApp/GLLabel.h"
+#include "GLApp/GLToggle.h"
+#include "GLApp/GLTitledPanel.h"
+#include "GLApp/GLCombo.h"
+
+#include "Geometry.h"
 
 #define MODE_NOCONV 0
 #define MODE_EQUATION 1
@@ -100,7 +108,7 @@ ImportDesorption::ImportDesorption():GLWindow() {
 
 	r2=new GLToggle(0,"Yield=");
 	r2->SetBounds(15,225,50,21);
-	r2->SetState(TRUE);mode=MODE_EQUATION; //Set default mode
+	r2->SetState(true);mode=MODE_EQUATION; //Set default mode
 	Add(r2);
 
 	eta0Text=new GLTextField(0,"1E-2");
@@ -141,12 +149,12 @@ ImportDesorption::ImportDesorption():GLWindow() {
 
 	convFileName=new GLTextField(0,"");
 	convFileName->SetBounds(30,299,220,19);
-	convFileName->SetEditable(FALSE);
+	convFileName->SetEditable(false);
 	Add(convFileName);
 
 	loadConvButton=new GLButton(0,"Load...");
 	loadConvButton->SetBounds(260,300,80,19);
-	//loadConvButton->SetEnabled(FALSE);
+	//loadConvButton->SetEnabled(false);
 	Add(loadConvButton);
 
 	convInfoButton=new GLButton(0,"info");
@@ -256,7 +264,7 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 				"%d with textures that can be imported\n"
 				,nbFacet,nbTextured);
 			analysisResultLabel->SetText(tmp);
-			mApp->UpdateFacetParams(TRUE); //Update selection
+			mApp->UpdateFacetParams(true); //Update selection
 		} else if (src==setButton) {
 
 			//validate user input
@@ -302,7 +310,7 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 			if (!mApp->AskToReset(work)) return;
 			GLProgress *progressDlg = new GLProgress("Importing...","Please wait");
 			progressDlg->SetProgress(0.0);
-			progressDlg->SetVisible(TRUE);
+			progressDlg->SetVisible(true);
 			
 			try{
 				work->ImportDesorption_SYN((char*)synFile.c_str(),doseSource,time,mode,eta0,alpha,cutoffdose,convDistr,progressDlg);
@@ -318,7 +326,7 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 				GLMessageBox::Display(e.GetMsg(),"Error reloading worker",GLDLG_OK,GLDLG_ICONERROR);
 			}
 
-			progressDlg->SetVisible(FALSE);
+			progressDlg->SetVisible(false);
 			SAFE_DELETE(progressDlg);
 			GLWindow::ProcessMessage(NULL,MSG_CLOSE);
 		} else if (src==convInfoButton) {

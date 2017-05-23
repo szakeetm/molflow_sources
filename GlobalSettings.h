@@ -14,17 +14,19 @@
   GNU General Public License for more details.
 */
 
-#include "GLApp/GLWindow.h"
-#include "GLApp/GLButton.h"
-#include "GLApp/GLTextField.h"
-#include "GLApp/GLLabel.h"
-#include "GLApp/GLToggle.h"
-#include "GLApp/GLTitledPanel.h"
-#include "GLApp/GLGradient.h"
-#include "Shared.h"
-
 #ifndef _GLOBALSETTINGSH_
 #define _GLOBALSETTINGSH_
+
+#include "GLApp/GLWindow.h"
+class GLButton;
+class GLTextField;
+class GLLabel;
+class GLToggle;
+class GLTitledPanel;
+
+
+class Worker;
+class GLList;
 
 class GlobalSettings : public GLWindow {
 
@@ -50,9 +52,9 @@ private:
   GLTextField *autoSaveText;
  
 
-  float lastUpdate;
-  float lastCPUTime[MAX_PROCESS];
-  float lastCPULoad[MAX_PROCESS];
+  int lastUpdate;
+  //float lastCPUTime[MAX_PROCESS];
+  //float lastCPULoad[MAX_PROCESS];
 
   GLToggle      *chkAntiAliasing;
   GLToggle      *chkWhiteBg;

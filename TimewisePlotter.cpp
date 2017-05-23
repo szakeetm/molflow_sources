@@ -19,7 +19,16 @@ GNU General Public License for more details.
 #include "TimewisePlotter.h"
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
+#include "GLApp/GLToggle.h"
 #include "GLApp/MathTools.h"
+#include "GLApp/GLList.h"
+#include "GLApp/GLChart/GLChart.h"
+#include "GLApp/GLLabel.h"
+#include "GLApp/GLCombo.h"
+#include "GLApp/GLButton.h"
+#include "GLApp/GLParser.h"
+#include "GLApp/GLTextField.h"
+#include "Geometry.h"
 #include "Facet.h"
 #include <math.h>
 #ifdef MOLFLOW
@@ -48,17 +57,17 @@ TimewisePlotter::TimewisePlotter() :GLWindow() {
 	int hD = 400;
 
 	SetTitle("Timewise plotter");
-	SetIconfiable(TRUE);
+	SetIconfiable(true);
 	nbView = 0;
 	worker = NULL;
 	lastUpdate = 0.0f;
 
 	chart = new GLChart(0);
 	chart->SetBorder(BORDER_BEVEL_IN);
-	chart->GetY1Axis()->SetGridVisible(TRUE);
-	chart->GetXAxis()->SetGridVisible(TRUE);
-	chart->GetY1Axis()->SetAutoScale(TRUE);
-	chart->GetY2Axis()->SetAutoScale(TRUE);
+	chart->GetY1Axis()->SetGridVisible(true);
+	chart->GetXAxis()->SetGridVisible(true);
+	chart->GetY1Axis()->SetAutoScale(true);
+	chart->GetY2Axis()->SetAutoScale(true);
 	chart->GetY1Axis()->SetAnnotation(VALUE_ANNO);
 	chart->GetXAxis()->SetAnnotation(VALUE_ANNO);
 	Add(chart);
@@ -70,14 +79,14 @@ TimewisePlotter::TimewisePlotter() :GLWindow() {
 	Add(selButton);
 
 	profCombo = new GLCombo(0);
-	profCombo->SetEditable(TRUE);
+	profCombo->SetEditable(true);
 	Add(profCombo);
 
 	normLabel = new GLLabel("Normalize");
 	Add(normLabel);
 
 	normCombo = new GLCombo(0);
-	normCombo->SetEditable(TRUE);
+	normCombo->SetEditable(true);
 	normCombo->SetSize(6);
 	normCombo->SetValueAt(0, "None (raw data)");
 	normCombo->SetValueAt(1, "Pressure (mbar)");
@@ -93,14 +102,14 @@ TimewisePlotter::TimewisePlotter() :GLWindow() {
 	Add(momLabel);
 
 	momentsText = new GLTextField(0, "1,1,32");
-	momentsText->SetEditable(TRUE);
+	momentsText->SetEditable(true);
 	Add(momentsText);
 
 	momentsLabel = new GLLabel("32 moments");
 	Add(momentsLabel);
 
 	correctForGas = new GLToggle(0, "Surface->Volume conversion");
-	correctForGas->SetVisible(FALSE);
+	correctForGas->SetVisible(false);
 	Add(correctForGas);
 
 	constantFlowToggle = new GLToggle(0, "Display constant flow");
@@ -117,7 +126,7 @@ TimewisePlotter::TimewisePlotter() :GLWindow() {
 	int xD = (wS - wD) / 2;
 	int yD = (hS - hD) / 2;
 	SetBounds(xD, yD, wD, hD);
-	SetResizable(TRUE);
+	SetResizable(true);
 	SetMinimumSize(wD, 220);
 
 	RestoreDeviceObjects();
@@ -149,19 +158,19 @@ void TimewisePlotter::Refresh() {
 	if (!worker) return;
 	if (!ParseMoments()) return;
 	Geometry *geom = worker->GetGeometry();
-	int nb = geom->GetNbFacet();
-	int nbProf = 0;
-	for (int i = 0; i < nb; i++)
+	size_t nb = geom->GetNbFacet();
+	size_t nbProf = 0;
+	for (size_t i = 0; i < nb; i++)
 		if (geom->GetFacet(i)->sh.isProfile) nbProf++;
 	profCombo->Clear();
 	if (nbProf) profCombo->SetSize(nbProf);
 	nbProf = 0;
-	for (int i = 0; i < nb; i++) {
+	for (size_t i = 0; i < nb; i++) {
 		Facet *f = geom->GetFacet(i);
 		if (f->sh.isProfile) {
 			char tmp[128];
-			sprintf(tmp, "F#%d %s", i + 1, profType[f->sh.profileType]);
-			profCombo->SetValueAt(nbProf, tmp, i);
+			sprintf(tmp, "F#%zd %s", i + 1, profType[f->sh.profileType]);
+			profCombo->SetValueAt(nbProf, tmp, (int)i);
 			nbProf++;
 		}
 	}
@@ -193,11 +202,11 @@ void TimewisePlotter::Display(Worker *w) {
 
 	worker = w;
 	Refresh();
-	SetVisible(TRUE);
+	SetVisible(true);
 
 }
 
-void TimewisePlotter::Update(float appTime, BOOL force) {
+void TimewisePlotter::Update(float appTime, bool force) {
 
 	if (!IsVisible() || IsIconic()) return;
 
@@ -247,7 +256,7 @@ void TimewisePlotter::refreshViews() {
 			switch (displayMode) {
 			case 0: //Raw data
 				for (int j = 0; j < PROFILE_SIZE; j++)
-					v->Add((double)j, (double)profilePtr[j].count, FALSE);
+					v->Add((double)j, (double)profilePtr[j].count, false);
 				break;
 
 			case 1: //Pressure
@@ -258,7 +267,7 @@ void TimewisePlotter::refreshViews() {
 				//if(IS_ZERO(f->sh.opacity)) scaleY*=2; //transparent profiles are profiled only once...
 
 				for (int j = 0; j < PROFILE_SIZE; j++)
-					v->Add((double)j, profilePtr[j].sum_v_ort*scaleY, FALSE);
+					v->Add((double)j, profilePtr[j].sum_v_ort*scaleY, false);
 				break;
 			case 2: //Particle density
 				scaleY = 1E-4 / (f->GetArea() / (double)PROFILE_SIZE);
@@ -272,7 +281,7 @@ void TimewisePlotter::refreshViews() {
 				*/
 
 				for (int j = 0; j < PROFILE_SIZE; j++)
-					v->Add((double)j, profilePtr[j].sum_1_per_ort_velocity*scaleY, FALSE);
+					v->Add((double)j, profilePtr[j].sum_1_per_ort_velocity*scaleY, false);
 				break;
 			case 3: {//Velocity
 				double sum = 0.0;
@@ -289,7 +298,7 @@ void TimewisePlotter::refreshViews() {
 					values.push_back(val);
 				}
 				for (int j = 0; j < PROFILE_SIZE; j++)
-					v->Add((double)j*scaleX, values[j] / sum, FALSE);
+					v->Add((double)j*scaleX, values[j] / sum, false);
 				break; }
 			case 4: {//Angle
 				double sum = 0.0;
@@ -306,7 +315,7 @@ void TimewisePlotter::refreshViews() {
 					values.push_back(val);
 				}
 				for (int j = 0; j < PROFILE_SIZE; j++)
-					v->Add((double)j*scaleX, values[j] / sum, FALSE);
+					v->Add((double)j*scaleX, values[j] / sum, false);
 				break; }
 			case 5: //To 1 (max value)
 				llong max = 1;
@@ -316,7 +325,7 @@ void TimewisePlotter::refreshViews() {
 				}
 				scaleY = 1.0 / (double)max;
 				for (int j = 0; j < PROFILE_SIZE; j++)
-					v->Add((double)j, (double)profilePtr[j].count*scaleY, FALSE);
+					v->Add((double)j, (double)profilePtr[j].count*scaleY, false);
 				break;
 			}
 		}
@@ -374,7 +383,7 @@ void TimewisePlotter::remView(int facet) {
 
 	Geometry *geom = worker->GetGeometry();
 
-	BOOL found = FALSE;
+	bool found = false;
 	int i = 0;
 	while (i < nbView && !found) {
 		found = (views[i]->userData1 == facet);
@@ -404,17 +413,17 @@ void TimewisePlotter::ProcessMessage(GLComponent *src, int message) {
 	switch (message) {
 	case MSG_BUTTON:
 		if (src == dismissButton) {
-			SetVisible(FALSE);
+			SetVisible(false);
 		}
 		else if (src == selButton) {
 			int idx = profCombo->GetSelectedIndex();
 			if (idx >= 0) {
 				geom->UnselectAll();
-				geom->GetFacet(profCombo->GetUserValueAt(idx))->selected = TRUE;
+				geom->GetFacet(profCombo->GetUserValueAt(idx))->selected = true;
 				geom->UpdateSelection();
-				mApp->UpdateFacetParams(TRUE);
+				mApp->UpdateFacetParams(true);
 				mApp->facetList->SetSelectedRow(profCombo->GetUserValueAt(idx));
-				mApp->facetList->ScrollToVisible(profCombo->GetUserValueAt(idx), 1, TRUE);
+				mApp->facetList->ScrollToVisible(profCombo->GetUserValueAt(idx), 1, true);
 			}
 		} /*else if(src==addButton) {
 			int idx = profCombo->GetSelectedIndex();
@@ -498,7 +507,7 @@ void TimewisePlotter::UpdateMoment() {
 	}
 }
 
-BOOL TimewisePlotter::ParseMoments(){
+bool TimewisePlotter::ParseMoments(){
 	//Quick string parsing from http://stackoverflow.com/questions/14265581/parse-split-a-string-in-c-using-string-delimiter-standard-c
 	std::string s = momentsText->GetText();
 	std::string delimiter = ";";
@@ -513,7 +522,7 @@ BOOL TimewisePlotter::ParseMoments(){
 	}
 	//last token
 	ParseToken(s);
-	return TRUE;
+	return true;
 }
 
 void TimewisePlotter::ParseToken(std::string token) {

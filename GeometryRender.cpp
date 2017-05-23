@@ -19,7 +19,7 @@
 #include "MolflowGeometry.h"
 #include "Worker.h"
 #include "Facet.h"
-#include <malloc.h>
+//#include <malloc.h>
 #include <string.h>
 #include <math.h>
 #include "GLApp/GLMatrix.h"
@@ -43,7 +43,7 @@ extern MolFlow *mApp;
 extern SynRad*mApp;
 #endif
 
-void MolflowGeometry::BuildFacetTextures(BYTE *hits, BOOL renderRegularTexture, BOOL renderDirectionTexture) {
+void MolflowGeometry::BuildFacetTextures(BYTE *hits, bool renderRegularTexture, bool renderDirectionTexture) {
 
 	SHGHITS *shGHit = (SHGHITS *)hits;
 
@@ -105,17 +105,17 @@ void MolflowGeometry::BuildFacetTextures(BYTE *hits, BOOL renderRegularTexture, 
 		}
 	}
 
-	for (int i = 0; i < sh.nbFacet; i++) {
+	for (size_t i = 0; i < sh.nbFacet; i++) {
 		int time = SDL_GetTicks();
 		if (!prg->IsVisible() && ((time - startTime) > 500)) {
-			prg->SetVisible(TRUE);
+			prg->SetVisible(true);
 		}
 		prg->SetProgress((double)i / (double)sh.nbFacet);
 		Facet *f = facets[i];
 
-		int profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(APROFILE)) : 0;
-		int nbElem = f->sh.texWidth*f->sh.texHeight;
-		int tSize = nbElem * sizeof(AHIT);
+		size_t profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(APROFILE)) : 0;
+		size_t nbElem = f->sh.texWidth*f->sh.texHeight;
+		size_t tSize = nbElem * sizeof(AHIT);
 
 		if (renderRegularTexture && f->sh.isTextured) {
 
@@ -124,19 +124,19 @@ void MolflowGeometry::BuildFacetTextures(BYTE *hits, BOOL renderRegularTexture, 
 			if (f->sh.texHeight > max_t || f->sh.texWidth > max_t) {
 				if (!f->textureError) {
 					char tmp[1024];
-					sprintf(tmp, "Facet #%d has a texture of %dx%d cells.\n"
+					sprintf(tmp, "Facet #%zd has a texture of %zdx%zd cells.\n"
 						"Your video card only supports texture dimensions (width or height) up to %d cells.\n"
 						"Texture rendering has been disabled on this facet, but you can still read texture values\n"
 						"using the Texture Plotter window. Consider using a smaller mesh resolution, or split the facet\n"
 						"into smaller parts. (Use Facet/Explode... command)", i + 1, f->sh.texHeight, f->sh.texWidth, max_t);
 					GLMessageBox::Display(tmp, "OpenGL Error", GLDLG_OK, GLDLG_ICONWARNING);
 				}
-				f->textureError = TRUE;
+				f->textureError = true;
 				return;
 			}
 			else {
 
-				f->textureError = FALSE;
+				f->textureError = false;
 			}
 
 			// Retrieve texture from shared memory (every seconds)
@@ -147,21 +147,21 @@ void MolflowGeometry::BuildFacetTextures(BYTE *hits, BOOL renderRegularTexture, 
 
 		if (renderDirectionTexture && f->sh.countDirection && f->dirCache) {
 			
-			int dSize = nbElem * sizeof(VHIT);
+			size_t dSize = nbElem * sizeof(VHIT);
 
 			double iDesorbed = 0.0;
 			if (shGHit->total.hit.nbDesorbed)
 			iDesorbed = 1.0 / (double)shGHit->total.hit.nbDesorbed;
 			
 			VHIT *dirs = (VHIT *)((BYTE *)shGHit + (f->sh.hitOffset + facetHitsSize + profSize*(1 + nbMoments) + tSize*(1 + nbMoments) + dSize*mApp->worker.displayedMoment));
-			for (int j = 0; j < nbElem; j++) {
+			for (size_t j = 0; j < nbElem; j++) {
 				f->dirCache[j].dir = dirs[j].dir * iDesorbed;
 				f->dirCache[j].count = dirs[j].count;
 			}
 		}
 	}
 
-	prg->SetVisible(FALSE);
+	prg->SetVisible(false);
 	SAFE_DELETE(prg);
 }
 

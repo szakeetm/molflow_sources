@@ -17,15 +17,16 @@
 */
 
 #include "GLApp/GLWindow.h"
-#include "GLApp/GLButton.h"
-#include "GLApp/GLTextField.h"
-#include "GLApp/GLLabel.h"
-#include "GLApp/GLToggle.h"
-#include "GLApp/GLTitledPanel.h"
-#include "GLApp/GLCombo.h"
+#include <vector>
+class GLButton;
+class GLTextField;
+class GLLabel;
+class GLToggle;
+class GLTitledPanel;
+class GLCombo;
 
-#include "Geometry.h"
-#include "Worker.h"
+class Geometry;
+class Worker;
 
 #ifndef _IMPORTDESORPTIONH_
 #define _IMPORTDESORPTIONH_
@@ -45,7 +46,7 @@ public:
 
 private:
 
-	//double InterpolateY(double x,const std::vector<std::pair<double,double>>& table,BOOL limitToBounds=FALSE,BOOL logarithmic=FALSE);
+	//double InterpolateY(double x,const std::vector<std::pair<double,double>>& table,bool limitToBounds=false,bool logarithmic=false);
 	void    LoadConvFile(char* fileName);
 	void   EnableDisableComponents();
 

@@ -16,10 +16,14 @@
 */
 
 #include "MomentsEditor.h"
-#include "GLApp/GLTitledPanel.h"
 #include "GLApp/GLToolkit.h"
-#include "GLApp/GLWindowManager.h"
 #include "GLApp/GLMessageBox.h"
+#include "GLApp/GLButton.h"
+#include "GLApp/GLLabel.h"
+#include "GLApp\GLToggle.h"
+#include "GLApp\GLTitledPanel.h"
+#include "GLApp\GLTextField.h"
+#include "GLApp/GLList.h"
 #include "MolFlow.h"
 #include "TimeSettings.h"
 #include "TimewisePlotter.h"
@@ -46,8 +50,8 @@ MomentsEditor::MomentsEditor(Worker *w):GLWindow() {
 
   momentsList = new GLList(0);
   momentsList->SetBounds(10,22,wD-20,200);
-  momentsList->SetColumnLabelVisible(TRUE);
-  momentsList->SetGrid(TRUE);
+  momentsList->SetColumnLabelVisible(true);
+  momentsList->SetGrid(true);
   Add(momentsList);
 
   clearButton = new GLButton(0,"Clear list");
@@ -56,7 +60,7 @@ MomentsEditor::MomentsEditor(Worker *w):GLWindow() {
 
   pasteButton = new GLButton(0,"Paste clipboard");
   pasteButton->SetBounds(110,229,95,20);
-  pasteButton->SetEnabled(FALSE);
+  pasteButton->SetEnabled(false);
   Add(pasteButton);
 
   //char tmp[128];
@@ -307,5 +311,5 @@ std::vector<double> MomentsEditor::ParseMoment(std::string userInput) {
 
 void MomentsEditor::PasteClipboard() {
 
-	momentsList->PasteClipboardText(TRUE,FALSE);
+	momentsList->PasteClipboardText(true,false);
 }

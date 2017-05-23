@@ -15,19 +15,22 @@
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
 */
-
-#include "GLApp/GLWindow.h"
-#include "GLApp/GLChart/GLChart.h"
-#include "GLApp/GLLabel.h"
-#include "GLApp/GLCombo.h"
-#include "GLApp/GLButton.h"
-#include "GLApp/GLParser.h"
-#include "GLApp/GLTextField.h"
-#include "Worker.h"
-#include "Geometry.h"
-
 #ifndef _TIMEWISEPLOTTERH_
 #define _TIMEWISEPLOTTERH_
+
+#include "GLApp/GLWindow.h"
+#include "GLApp/GLChart/GLChartConst.h"
+#include <vector>
+class GLChart;
+class GLLabel;
+class GLCombo;
+class GLButton;
+class GLParser;
+class GLDataView;
+class GLToggle;
+class GLTextField;
+class Worker;
+class Geometry;
 
 class TimewisePlotter : public GLWindow {
 
@@ -39,7 +42,7 @@ public:
   // Component method
   void Display(Worker *w);
   void Refresh();
-  void Update(float appTime,BOOL force=FALSE);
+  void Update(float appTime,bool force=false);
   void UpdateMoment();
   void Reset();
 
@@ -49,7 +52,7 @@ public:
   void refreshViews();
 
 private:
-  BOOL ParseMoments();
+  bool ParseMoments();
   void ParseToken(std::string token);
   void FormatParseText();
   void addView(int facet);

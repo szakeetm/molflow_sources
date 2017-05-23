@@ -15,19 +15,21 @@
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
 */
-
-#include "GLApp/GLWindow.h"
-#include "GLApp/GLChart/GLChart.h"
-#include "GLApp/GLLabel.h"
-#include "GLApp/GLCombo.h"
-#include "GLApp/GLButton.h"
-#include "GLApp/GLParser.h"
-#include "GLApp/GLTextField.h"
-#include "Worker.h"
-#include "Geometry.h"
-
 #ifndef _PRESSUREEVOLUTIONH_
 #define _PRESSUREEVOLUTIONH_
+
+#include "GLApp/GLWindow.h"
+#include "GLApp/GLChart/GLChartConst.h"
+class GLChart;
+class GLLabel;
+class GLCombo;
+class GLButton;
+class GLParser;
+class GLDataView;
+class GLToggle;
+class GLTextField;
+class Worker;
+class Geometry;
 
 #define MODE_SLICE //display selected slice
 #define MODE_SUMAVG //sum or average mode
@@ -42,7 +44,7 @@ public:
   // Component method
   void Display(Worker *w);
   void Refresh();
-  void Update(float appTime,BOOL force=FALSE);
+  void Update(float appTime,bool force=false);
   void Reset();
 
   // Implementation
@@ -82,8 +84,8 @@ private:
 
   GLDataView  *views[50];
   GLCColor    *colors[8];
-  int          nbView;
-  int          nbColors;
+  size_t          nbView;
+  size_t          nbColors;
   int selectedSlice;
   float        lastUpdate;
 

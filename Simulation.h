@@ -15,6 +15,8 @@
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
 */
+#ifndef _SIMULATIONH_
+#define _SIMULATIONH_
 
 #define MAX_STRUCT 512
 
@@ -23,9 +25,6 @@
 #include <vector>
 #include "Vector.h"
 #include "Parameter.h"
-
-#ifndef _SIMULATIONH_
-#define _SIMULATIONH_
 
 // Local facet structure
 
@@ -37,12 +36,14 @@ public:
   Vector2d *vertices2;        // Vertices (2D plane space, UV coordinates)
   AHIT     **hits;            // Texture hit recording (taking area, temperature, mass into account)
   double   *inc;              // Texure increment
-  BOOL     *largeEnough;      // cells that are NOT too small for autoscaling
+  bool     *largeEnough;      // cells that are NOT too small for autoscaling
   double   fullSizeInc;       // Texture increment of a full texture element
   VHIT     **direction;       // Direction field recording (average)
-  //BOOL     *fullElem;         // Direction field recording (only on full element)
+  //bool     *fullElem;         // Direction field recording (only on full element)
   APROFILE **profile;         // Distribution and hit recording
   double   *outgassingMap; //outgassing map when desorption is based on imported file
+  double outgassingMapWidthD; //actual outgassing file map width
+  double outgassingMapHeightD; //actual outgassing file map height
   size_t   *angleMap;		  // Incident angle distribution, phi and theta, not normalized
   size_t   *angleMapLineSums;
 
@@ -56,16 +57,16 @@ public:
   double ih;
 
   // Temporary var (used in FillHit for hit recording)
-  BOOL   hitted;
-  BOOL   ready;         // Volatile state
-  int    textureSize;   // Texture size (in bytes)
-  int    profileSize;   // profile size (in bytes)
-  int    directionSize; // direction field size (in bytes)
-  int    angleMapSize;  // incidentangle map size (in bytes)
+  bool   hitted;
+  bool   ready;         // Volatile state
+  size_t    textureSize;   // Texture size (in bytes)
+  size_t    profileSize;   // profile size (in bytes)
+  size_t    directionSize; // direction field size (in bytes)
+  size_t    angleMapSize;  // incidentangle map size (in bytes)
 
   /*int CDFid; //Which probability distribution it belongs to (one CDF per temperature)
   int IDid;  //If time-dependent desorption, which is its ID*/
-  int globalId; //Global index (to identify when superstructures are present)
+  size_t globalId; //Global index (to identify when superstructures are present)
 
   // Facet hit counters
   std::vector<SHHITS> counter;
@@ -124,11 +125,11 @@ typedef struct {
   double totalDesorbedMolecules;  // Number of desorbed molecules from t=0 to latest_moment
   double finalOutgassingRate;     // Outgassing rate at latest_moment (for const. flow calculation)
   double gasMass;
-  BOOL   enableDecay;
+  bool   enableDecay;
   double halfLife;
   double timeWindowSize;
-  BOOL useMaxwellDistribution; //TRUE: Maxwell-Boltzmann distribution, FALSE: All molecules have the same (V_avg) speed
-  BOOL calcConstantFlow;
+  bool useMaxwellDistribution; //true: Maxwell-Boltzmann distribution, false: All molecules have the same (V_avg) speed
+  bool calcConstantFlow;
 
   std::vector<Parameter> parameters; //Time-dependent parameters
 
@@ -137,8 +138,8 @@ typedef struct {
   size_t         nbVertex;         // Number of vertex
   size_t         totalFacet;       // Total number of facet
   Vector3d   *vertices3;        // Vertices
-  int         nbSuper;          // Number of super structure
-  int         curStruct;        // Current structure
+  size_t         nbSuper;          // Number of super structure
+  size_t         curStruct;        // Current structure
   int         teleportedFrom;   // We memorize where the particle came from: we can teleport back
   size_t      nbMoments;        // Number of time moments
   SUPERSTRUCT str[MAX_STRUCT];
@@ -148,11 +149,11 @@ typedef struct {
   size_t textTotalSize;  // Texture total size
   size_t profTotalSize;  // Profile total size
   size_t dirTotalSize;   // Direction field total size
-  BOOL loadOK;        // Load OK flag
-  BOOL lastUpdateOK;  // Last hit update timeout
-  BOOL hasVolatile;   // Contains volatile facet
-  BOOL hasDirection;  // Contains direction field
-  int  sMode;         // Simulation mode (MC_MODE or AC_MODE)
+  bool loadOK;        // Load OK flag
+  bool lastUpdateOK;  // Last hit update timeout
+  bool hasVolatile;   // Contains volatile facet
+  bool hasDirection;  // Contains direction field
+  size_t  sMode;         // Simulation mode (MC_MODE or AC_MODE)
   double calcACTime;  // AC matrix calculation time
 
   //double totalOutgassing;
@@ -177,7 +178,7 @@ typedef struct {
   Vector3d motionVector2; //rotation vector or velocity vector
 
   // Angular coefficient (opaque facets)
-  int     nbAC;
+  size_t     nbAC;
   ACFLOAT *acMatrix;
   ACFLOAT *acDensity;
   ACFLOAT *acDesorb;
@@ -188,7 +189,7 @@ typedef struct {
   size_t     prgAC;
 
   // Angular coefficient (transparent facets)
-  int     nbACT; 
+  size_t     nbACT; 
   ACFLOAT *acTMatrix;
   ACFLOAT *acTDensity;
   ACFLOAT *acTArea;
@@ -215,17 +216,6 @@ typedef struct {
 // Handle to simulation object
 extern SIMULATION *sHandle;
 
-//Just for AC matrix calculation in Molflow, old mesh structure:
-typedef struct {
-
-	float   area;     // Area of element
-	float   uCenter;  // Center coordinates
-	float   vCenter;  // Center coordinates
-	int     elemId;   // Element index (MESH array)
-	BOOL    full;     // Element is full
-
-} SHELEM;
-
 // -- Macros ---------------------------------------------------
 
 
@@ -233,29 +223,29 @@ typedef struct {
 
 // -- Methods ---------------------------------------------------
 
-void RecordHitOnTexture(FACET *f, double time, BOOL countHit, double velocity_factor, double ortSpeedFactor);
+void RecordHitOnTexture(FACET *f, double time, bool countHit, double velocity_factor, double ortSpeedFactor);
 void RecordDirectionVector(FACET *f, double time);
-void ProfileFacet(FACET *f, double time, BOOL countHit, double velocity_factor, double ortSpeedFactor);
+void ProfileFacet(FACET *f, double time, bool countHit, double velocity_factor, double ortSpeedFactor);
 void RecordAngleMap(FACET* collidedFacet);
 void InitSimulation();
 void ClearSimulation();
-void SetState(int state, const char *status, BOOL changeState=TRUE, BOOL changeStatus=TRUE);
+void SetState(int state, const char *status, bool changeState=true, bool changeStatus=true);
 void SetErrorSub(const char *msg);
 void ClearACMatrix();
-BOOL LoadSimulation(Dataport *loader);
-BOOL StartSimulation(size_t mode);
+bool LoadSimulation(Dataport *loader);
+bool StartSimulation(size_t mode);
 void ResetSimulation();
-BOOL SimulationRun();
-BOOL SimulationMCStep(int nbStep);
-BOOL SimulationACStep(int nbStep);
+bool SimulationRun();
+bool SimulationMCStep(int nbStep);
+bool SimulationACStep(int nbStep);
 void RecordHit(const int& type);
 void RecordLeakPos();
-BOOL StartFromSource();
+bool StartFromSource();
 void PerformBounce(FACET *iFacet);
 void PerformAbsorb(FACET *iFacet);
 void PerformTeleport(FACET *iFacet);
 void PerformTransparentPass(FACET *iFacet);
-void PolarToCartesian(FACET *iFacet,double theta,double phi,BOOL reverse);
+void PolarToCartesian(FACET *iFacet,double theta,double phi,bool reverse);
 void CartesianToPolar(FACET *iFacet,double *theta,double *phi);
 void UpdateHits(Dataport *dpHit,int prIdx,DWORD timeout);
 void UpdateMCHits(Dataport *dpHit,int prIdx,size_t nbMoments,DWORD timeout);
@@ -266,12 +256,12 @@ int FindBestCuttingPlane(struct AABBNODE *node,int *left,int *right);
 void ComputeBB(struct AABBNODE *node);
 void DestroyAABB(struct AABBNODE *node);
 void IntersectTree(struct AABBNODE *node);
-BOOL Intersect(Vector3d *rayPos,Vector3d *rayDir,double *dist,FACET **iFact,FACET *last);
-BOOL Visible(Vector3d *c1,Vector3d *c2,FACET *f1,FACET *f2);
-BOOL IsInFacet(FACET *f,const double &u,const double &v);
+bool Intersect(Vector3d *rayPos,Vector3d *rayDir,double *dist,FACET **iFact,FACET *last);
+bool Visible(Vector3d *c1,Vector3d *c2,FACET *f1,FACET *f2);
+bool IsInFacet(FACET *f,const double &u,const double &v);
 double GetTick();
 size_t   GetHitsSize();
-BOOL ComputeACMatrix(SHELEM *mesh);
+bool ComputeACMatrix(SHELEM *mesh);
 
 int GetIDId(int paramId);
 

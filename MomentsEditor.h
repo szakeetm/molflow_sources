@@ -2,19 +2,18 @@
   File:        MomentsEditor.h
   Description: Moments Editor
 */
-
-#include "GLApp/GLWindow.h"
-#include "GLApp/GLButton.h"
-#include "GLApp/GLLabel.h"
-#include "GLApp\GLTextField.h"
-#include "GLApp\GLToggle.h"
-#include "GLApp\GLTitledPanel.h"
-#include "GLApp/GLList.h"
-
-#include "Worker.h"
-
 #ifndef _MOMENTSEDITORH_
 #define _MOMENTSEDITORH_
+
+#include "GLApp/GLWindow.h"
+class GLButton;
+class GLLabel;
+class GLTextField;
+class GLToggle;
+class GLTitledPanel;
+class GLList;
+
+#include "Worker.h"
 
 class MomentsEditor : public GLWindow {
 
@@ -39,10 +38,7 @@ private:
   GLButton    *pasteButton;
   GLLabel     *l1;
   GLList      *momentsList;
-  /*GLTextField *desStartText;
-  GLTextField *desStopText;*/
   GLTextField *windowSizeText;
-  /*GLTextField *valveText;*/
   GLToggle    *useMaxwellToggle;
   GLToggle    *calcConstantFlow;
   GLTitledPanel *panel1;

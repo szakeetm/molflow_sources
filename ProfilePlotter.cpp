@@ -19,7 +19,15 @@ GNU General Public License for more details.
 #include "ProfilePlotter.h"
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
+#include "GLApp/GLButton.h"
+#include "GLApp/GLLabel.h"
+#include "GLApp/GLCombo.h"
+#include "GLApp/GLTextField.h"
+#include "GLApp/GLToggle.h"
 #include "GLApp/MathTools.h"
+#include "GLApp/GLList.h"
+#include "GLApp/GLChart/GLChart.h"
+#include "Geometry.h"
 #include "Facet.h"
 #include <math.h>
 #ifdef MOLFLOW
@@ -55,7 +63,7 @@ ProfilePlotter::ProfilePlotter() :GLWindow() {
 	int hD = 400;
 
 	SetTitle("Profile plotter");
-	SetIconfiable(TRUE);
+	SetIconfiable(true);
 	nbView = 0;
 	worker = NULL;
 
@@ -73,10 +81,10 @@ ProfilePlotter::ProfilePlotter() :GLWindow() {
 
 	chart = new GLChart(0);
 	chart->SetBorder(BORDER_BEVEL_IN);
-	chart->GetY1Axis()->SetGridVisible(TRUE);
-	chart->GetXAxis()->SetGridVisible(TRUE);
-	chart->GetY1Axis()->SetAutoScale(TRUE);
-	chart->GetY2Axis()->SetAutoScale(TRUE);
+	chart->GetY1Axis()->SetGridVisible(true);
+	chart->GetXAxis()->SetGridVisible(true);
+	chart->GetY1Axis()->SetAutoScale(true);
+	chart->GetY2Axis()->SetAutoScale(true);
 	chart->GetY1Axis()->SetAnnotation(VALUE_ANNO);
 	chart->GetXAxis()->SetAnnotation(VALUE_ANNO);
 	Add(chart);
@@ -97,14 +105,14 @@ ProfilePlotter::ProfilePlotter() :GLWindow() {
 	Add(resetButton);
 
 	profCombo = new GLCombo(0);
-	profCombo->SetEditable(TRUE);
+	profCombo->SetEditable(true);
 	Add(profCombo);
 
 	normLabel = new GLLabel("Normalize:");
 	Add(normLabel);
 
 	normCombo = new GLCombo(0);
-	normCombo->SetEditable(TRUE);
+	normCombo->SetEditable(true);
 	normCombo->SetSize(6);
 	normCombo->SetValueAt(0, "None (raw data)");
 	normCombo->SetValueAt(1, "Pressure (mbar)");
@@ -120,14 +128,14 @@ ProfilePlotter::ProfilePlotter() :GLWindow() {
 	Add(logYToggle);
 
 	correctForGas = new GLToggle(0, "Surface->Volume conversion");
-	correctForGas->SetVisible(FALSE);
+	correctForGas->SetVisible(false);
 	Add(correctForGas);
 
 
 
 
 	formulaText = new GLTextField(0, "");
-	formulaText->SetEditable(TRUE);
+	formulaText->SetEditable(true);
 	Add(formulaText);
 
 	formulaBtn = new GLButton(0, "-> Plot");
@@ -139,7 +147,7 @@ ProfilePlotter::ProfilePlotter() :GLWindow() {
 	int xD = (wS - wD) / 2;
 	int yD = (hS - hD) / 2;
 	SetBounds(xD, yD, wD, hD);
-	SetResizable(TRUE);
+	SetResizable(true);
 	SetMinimumSize(wD, 220);
 
 	RestoreDeviceObjects();
@@ -172,29 +180,29 @@ void ProfilePlotter::Refresh() {
 
 	//Rebuild selection combo box
 	Geometry *geom = worker->GetGeometry();
-	int nb = geom->GetNbFacet();
-	int nbProf = 0;
-	for (int i = 0; i < nb; i++)
+	size_t nb = geom->GetNbFacet();
+	size_t nbProf = 0;
+	for (size_t i = 0; i < nb; i++)
 		if (geom->GetFacet(i)->sh.isProfile) nbProf++;
 	profCombo->Clear();
 	if (nbProf) profCombo->SetSize(nbProf);
 	nbProf = 0;
-	for (int i = 0; i < nb; i++) {
+	for (size_t i = 0; i < nb; i++) {
 		Facet *f = geom->GetFacet(i);
 		if (f->sh.isProfile) {
 			char tmp[128];
-			sprintf(tmp, "F#%d %s", i + 1, profType[f->sh.profileType]);
-			profCombo->SetValueAt(nbProf, tmp, i);
+			sprintf(tmp, "F#%zd %s", i + 1, profType[f->sh.profileType]);
+			profCombo->SetValueAt(nbProf, tmp, (int)i);
 			nbProf++;
 		}
 	}
 	profCombo->SetSelectedIndex(nbProf ? 0 : -1);
 	//Remove profiles that aren't present anymore
-	for (int v = 0; v < nbView; v++)
+	for (size_t v = 0; v < nbView; v++)
 		if (views[v]->userData1 >= geom->GetNbFacet() || !geom->GetFacet(views[v]->userData1)->sh.isProfile) {
 			chart->GetY1Axis()->RemoveDataView(views[v]);
 			SAFE_DELETE(views[v]);
-			for (int j = v; j < nbView - 1; j++) views[j] = views[j + 1];
+			for (size_t j = v; j < nbView - 1; j++) views[j] = views[j + 1];
 			nbView--;
 		}
 
@@ -208,11 +216,11 @@ void ProfilePlotter::Display(Worker *w) {
 	
     SetWorker(w);
 	Refresh();
-	SetVisible(TRUE);
+	SetVisible(true);
 
 }
 
-void ProfilePlotter::Update(float appTime, BOOL force) {
+void ProfilePlotter::Update(float appTime, bool force) {
 
 	if (!IsVisible() || IsIconic()) return;
 
@@ -261,7 +269,7 @@ void ProfilePlotter::plot() {
 	GLDataView *v;
 
 	// Check that view is not already added
-	BOOL found = FALSE;
+	bool found = false;
 	int i = 0;
 	while (i < nbView && !found) {
 		found = (views[i]->userData1 == -1);
@@ -291,7 +299,7 @@ void ProfilePlotter::plot() {
 		double y;
 		var->value = x;
 		parser->Evaluate(&y);
-		v->Add(x, y, FALSE);
+		v->Add(x, y, false);
 	}
 	v->CommitChange();
 
@@ -332,7 +340,7 @@ void ProfilePlotter::refreshViews() {
 				switch (displayMode) {
 				case 0: //Raw data
 					for (int j = 0; j < PROFILE_SIZE; j++)
-						v->Add((double)j, (double)profilePtr[j].count, FALSE);
+						v->Add((double)j, (double)profilePtr[j].count, false);
 
 					break;
 
@@ -342,7 +350,7 @@ void ProfilePlotter::refreshViews() {
 
 
 					for (int j = 0; j < PROFILE_SIZE; j++)
-						v->Add((double)j, profilePtr[j].sum_v_ort*scaleY, FALSE);
+						v->Add((double)j, profilePtr[j].sum_v_ort*scaleY, false);
 					break;
 				case 2: //Particle density
 					scaleY = 1.0 / (f->GetArea() / (double)PROFILE_SIZE*1E-4);
@@ -354,7 +362,7 @@ void ProfilePlotter::refreshViews() {
 						scaleY *= 1.0 - ((double)f->counterCache.hit.nbAbsorbed + (double)f->counterCache.hit.nbDesorbed) / ((double)f->counterCache.hit.nbHit + (double)f->counterCache.hit.nbDesorbed) / 2.0;
 					
 					for (int j = 0; j < PROFILE_SIZE; j++)
-						v->Add((double)j, profilePtr[j].sum_1_per_ort_velocity*scaleY, FALSE);
+						v->Add((double)j, profilePtr[j].sum_1_per_ort_velocity*scaleY, false);
 					break;
 				case 3: {//Velocity
 					double sum = 0.0;
@@ -373,7 +381,7 @@ void ProfilePlotter::refreshViews() {
 
 
 					for (int j = 0; j < PROFILE_SIZE; j++)
-						v->Add((double)j*scaleX, values[j] / sum, FALSE);
+						v->Add((double)j*scaleX, values[j] / sum, false);
 					break; }
 				case 4: {//Angle
 					double sum = 0.0;
@@ -392,7 +400,7 @@ void ProfilePlotter::refreshViews() {
 
 
 					for (int j = 0; j < PROFILE_SIZE; j++)
-						v->Add((double)j*scaleX, values[j] / sum, FALSE);
+						v->Add((double)j*scaleX, values[j] / sum, false);
 					break; }
 				case 5: //To 1 (max value)
 					llong max = 1;
@@ -405,7 +413,7 @@ void ProfilePlotter::refreshViews() {
 					scaleY = 1.0 / (double)max;
 
 					for (int j = 0; j < PROFILE_SIZE; j++)
-						v->Add((double)j, (double)profilePtr[j].count*scaleY, FALSE);
+						v->Add((double)j, (double)profilePtr[j].count*scaleY, false);
 					break;
 				}
 
@@ -418,20 +426,20 @@ void ProfilePlotter::refreshViews() {
 
 				// Volatile profile
 				v->Reset();
-				int nb = geom->GetNbFacet();
-				for (int j = 0; j < nb; j++) {
+				size_t nb = geom->GetNbFacet();
+				for (size_t j = 0; j < nb; j++) {
 					Facet *f = geom->GetFacet(j);
 					if (f->sh.isVolatile) {
 						SHHITS *fCount = (SHHITS *)(buffer + f->sh.hitOffset+worker->displayedMoment*sizeof(SHHITS));
 						double z = geom->GetVertex(f->indices[0])->z;
-						v->Add(z, (double)(fCount->hit.nbAbsorbed) / worker->nbDesorption, FALSE);
+						v->Add(z, (double)(fCount->hit.nbAbsorbed) / worker->nbDesorption, false);
 					}
 				}
 				// Last
 				Facet *f = geom->GetFacet(28);
 				SHHITS *fCount = (SHHITS *)(buffer + f->sh.hitOffset+worker->displayedMoment*sizeof(SHHITS));
 				double fnbAbs = (double)fCount->hit.nbAbsorbed;
-				v->Add(1000.0, fnbAbs / worker->nbDesorption, FALSE);
+				v->Add(1000.0, fnbAbs / worker->nbDesorption, false);
 				v->CommitChange();
 
 				//v->Reset();
@@ -454,7 +462,7 @@ void ProfilePlotter::addView(int facet) {
 	Geometry *geom = worker->GetGeometry();
 
 	// Check that view is not already added
-	BOOL found = FALSE;
+	bool found = false;
 	int i = 0;
 	while (i < nbView && !found) {
 		found = (views[i]->userData1 == facet);
@@ -486,7 +494,7 @@ void ProfilePlotter::remView(int facet) {
 
 	Geometry *geom = worker->GetGeometry();
 
-	BOOL found = FALSE;
+	bool found = false;
 	int i = 0;
 	while (i < nbView && !found) {
 		found = (views[i]->userData1 == facet);
@@ -517,20 +525,20 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
 	switch (message) {
 	case MSG_BUTTON:
 		if (src == dismissButton) {
-			SetVisible(FALSE);
+			SetVisible(false);
 		}
 		else if (src == selButton) {
 
 			int idx = profCombo->GetSelectedIndex();
 			if (idx >= 0) {
 				geom->UnselectAll();
-				geom->GetFacet(profCombo->GetUserValueAt(idx))->selected = TRUE;
+				geom->GetFacet(profCombo->GetUserValueAt(idx))->selected = true;
 				geom->UpdateSelection();
 
-				mApp->UpdateFacetParams(TRUE);
+				mApp->UpdateFacetParams(true);
 
 				mApp->facetList->SetSelectedRow(profCombo->GetUserValueAt(idx));
-				mApp->facetList->ScrollToVisible(profCombo->GetUserValueAt(idx), 1, TRUE);
+				mApp->facetList->ScrollToVisible(profCombo->GetUserValueAt(idx), 1, true);
 			}
 		}
 		else if (src == addButton) {
@@ -596,10 +604,10 @@ std::vector<int> ProfilePlotter::GetViews() {
 	return v;
 }
 
-BOOL ProfilePlotter::IsLogScaled() {
+bool ProfilePlotter::IsLogScaled() {
 	return chart->GetY1Axis()->GetScale();
 }
-void ProfilePlotter::SetLogScaled(BOOL logScale){
+void ProfilePlotter::SetLogScaled(bool logScale){
 	chart->GetY1Axis()->SetScale(logScale);
 	logYToggle->SetState(logScale);
 }

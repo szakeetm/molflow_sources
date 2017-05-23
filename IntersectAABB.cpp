@@ -18,7 +18,7 @@ GNU General Public License for more details.
 
 #include <math.h>
 #include <stdlib.h>
-#include <malloc.h>
+//#include <malloc.h>
 #include <string.h>
 #include <math.h>
 #include "Simulation.h"
@@ -30,16 +30,16 @@ GNU General Public License for more details.
 
 // Temporary for intersection
 extern  double    intMinLgth;
-extern  BOOL      intFound;
+extern  bool      intFound;
 extern  Vector3d  intD;
 extern  Vector3d  intZ;
 extern  int       intNbTHits;
 extern  double    iRx;
 extern  double    iRy;
 extern  double    iRz;
-extern  BOOL      nullRx;
-extern  BOOL      nullRy;
-extern  BOOL      nullRz;
+extern  bool      nullRx;
+extern  bool      nullRy;
+extern  bool      nullRz;
 extern  Vector3d *rayPos;
 extern  Vector3d *rayDir;
 extern  FACET   **iFacet;
@@ -47,15 +47,15 @@ extern  FACET    *fLast;
 extern  double    tNear;
 extern  double    tFar;
 extern  double    it1, it2;
-extern  BOOL      AABBHit;
+extern  bool      AABBHit;
 
-BOOL Intersect(Vector3d *rPos, Vector3d *rDir,  // Source ray (rayDir vector must be normalized)
+bool Intersect(Vector3d *rPos, Vector3d *rDir,  // Source ray (rayDir vector must be normalized)
 	double *dist,                   // Distance to collision point
 	FACET **iFact, FACET *last) {    // Collided facet, previous collision
 
 
 	intMinLgth = 1e100;
-	intFound = FALSE;
+	intFound = false;
 	intNbTHits = 0;
 	rayPos = rPos;
 	rayDir = rDir;
@@ -80,7 +80,7 @@ BOOL Intersect(Vector3d *rPos, Vector3d *rDir,  // Source ray (rayDir vector mus
 
 
 		//ProfileFacet(f,sHandle->flightTimeCurrentParticle+*dist/100.0/sHandle->velocityCurrentParticle);
-		f->hitted = TRUE;
+		f->hitted = true;
 
 		// Second pass for transparent hits
 		for (int i = 0; i<intNbTHits; i++) {
@@ -90,16 +90,16 @@ BOOL Intersect(Vector3d *rPos, Vector3d *rDir,  // Source ray (rayDir vector mus
 				double directionFactor = abs(Dot(sHandle->pDir,f->sh.N));
 				IncreaseFacetCounter(f, sHandle->flightTimeCurrentParticle + f->colDist / 100.0 / sHandle->velocityCurrentParticle, 1, 0, 0, 2.0 / (sHandle->velocityCurrentParticle*directionFactor), 2.0*(sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*sHandle->velocityCurrentParticle*directionFactor);
 
-				f->hitted = TRUE;
+				f->hitted = true;
 				if (f->hits && f->sh.countTrans) {
 					RecordHitOnTexture(f, sHandle->flightTimeCurrentParticle + f->colDist / 100.0 / sHandle->velocityCurrentParticle,
-						TRUE, 2.0, 2.0);
+						true, 2.0, 2.0);
 				}
 				if (f->direction && f->sh.countDirection) {
 					RecordDirectionVector(f, sHandle->flightTimeCurrentParticle + f->colDist / 100.0 / sHandle->velocityCurrentParticle);
 				}
 				ProfileFacet(f, sHandle->flightTimeCurrentParticle + f->colDist / 100.0 / sHandle->velocityCurrentParticle,
-					TRUE, 2.0, 2.0);
+					true, 2.0, 2.0);
 				if (f->sh.recordAngleMap) RecordAngleMap(f);
 			}
 		}

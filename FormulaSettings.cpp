@@ -19,6 +19,9 @@
 #include "FormulaSettings.h"
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
+#include "GLApp/GLLabel.h"
+#include "GLApp/GLTextField.h"
+#include "GLApp/GLButton.h"
 
 FormulaSettings::FormulaSettings():GLWindow() {
 
@@ -33,39 +36,45 @@ FormulaSettings::FormulaSettings():GLWindow() {
   exprL->SetBounds(5,5,75,18);
   Add(exprL);
   exprT = new GLTextField(0,"");
-  exprT->SetBounds(85,5,wD-65,18);
+  exprT->SetBounds(85,5,wD-95,18);
   Add(exprT);
 
   nameL = new GLLabel("Name (optional)");
   nameL->SetBounds(5,30,75,18);
   Add(nameL);
   nameT = new GLTextField(0,"");
-  nameT->SetBounds(85,30,wD-65,18);
+  nameT->SetBounds(85,30,wD-95,18);
   Add(nameT);
 
   descL = new GLLabel(
-    "MC Variables: An (Absorption on facet n), Dn (Desorption on facet n), Hn (Hit on facet n)\n"
-	"              Pn (Pressure [mbar] on facet n), DENn (Density [1/m3] on facet n)\n"
-	"              Zn (Imp. rate on facet n), Vn (avg. speed [m/s] on facet n), Tn (temp[K] of facet n)\n"
-    "              SUMABS (total absorbed), SUMDES (total desorbed), SUMHIT (total hit)\n\n"
-    "AC Variables: _An (Absorption on facet n), _Dn (Desorption on facet n), _Hn (Density on facet n)\n\n"
-    "Area variables: ARn (Area of facet n), DESAR (total desorption area), ABSAR (total absorption area)\n\n"
-	"Gas mass [g/mol]: GASMASS\n"
-	"Final (constant) outgassing rate [mbar*l/s]: QCONST\n"
-	"Final (constant) outgassing rate [molecules/s]: QCONST_N\n"
-	"Total desorbed molecules until last moment: [molecules]: NTOT\n\n"
-	"Mean Pumping Path: MPP (average path of molecules in the system before absorption)\n"
-	"Mean Free Path:      MFP (average path of molecules between two wall hits)\n\n"
-    "Math functions: sin(), cos(), tan(), sinh(), cosh(), tanh()\n"
-    "                   asin(), acos(), atan(), exp(), ln(), pow(x,y)\n"
-    "                   log2(), log10(), inv(), sqrt(), abs()\n\n"
-    //"Utils functions: ci95(p,N) 95% confidence interval (p=prob,N=count)\n"
-    "Utils functions: sum(prefix,i,j) sum variables ex: sum(AR,1,10)=AR1+AR2+...+AR10 \n"
-	"Selections:      sum(prefix,Sn) sum for facets in selection group n.\n"
-	"                   Ex: SUM(AR,S2) is the total area of all facets in selection group 2\n\n"
-    "Constants:  Kb (Boltzmann's constant [J.K\270\271]), R (Gas constant [J.K\270\271.mol\270\271])\n"
-    "              Na (Avogadro's number [mol\270\271]), PI\n\n"
-    );
+    R"(MC Variables: An (Absorption on facet n), Dn (Desorption on facet n), Hn (Hit on facet n)
+Pn (Pressure [mbar] on facet n), DENn (Density [1/m3] on facet n)
+Zn (Imp. rate on facet n), Vn (avg. speed [m/s] on facet n), Tn (temp[K] of facet n)
+SUMABS (total absorbed), SUMDES (total desorbed), SUMHIT (total hit)
+
+SUM(H,3,8)    calculates the sum of hits on facets 3,4,... ...7,8. (Works with H,A,D,AR).
+AVG(P,3,8)    calculates the average pressure (area-wise) on facets 3 to 8 (Works with P,D,Z)
+SUM(H,S3)    calculates the sum of hits on selection group 3 (works with H,A,D,AR)
+AVG(DEN,S2) calculates the average (area-wise) on facets belonging to sel. group 2
+SUM(H,SEL)    calculates the sum of hits on the current selection. (Works with H,A,D,AR)
+AVG(Z,SEL)    calculates the average impingement rate on the current selection
+For the last two, might need to manually refresh formulas after you change the selection.
+
+Area variables: ARn (Area of facet n), DESAR (total desorption area), ABSAR (total absorption area)
+
+Final (constant) outgassing rate [mbar*l/s]: QCONST
+Final (constant) outgassing rate [molecules/s]: QCONST_N
+Total desorbed molecules until last moment: [molecules]: NTOT
+Gas mass [g/mol]: GASMASS
+
+Mean Pumping Path: MPP (average path of molecules in the system before absorption)
+Mean Free Path:      MFP (average path of molecules between two wall hits)
+
+Math functions: sin(), cos(), tan(), sinh(), cosh(), tanh(), asin(), acos(),
+                     atan(), exp(), ln(), pow(x,y), log2(), log10(), inv(), sqrt(), abs()
+
+Constants:  Kb (Boltzmann's constant), R (Gas constant), Na (Avogadro's number), PI
+)");
   descL->SetBounds(5,55,wD-10,hD-100);
   Add(descL);
 
@@ -74,7 +83,7 @@ FormulaSettings::FormulaSettings():GLWindow() {
   Add(applyButton);
 
   deleteButton = new GLButton(0,"Delete");
-  deleteButton->SetEnabled(FALSE);
+  deleteButton->SetEnabled(false);
   deleteButton->SetBounds(wD-200,hD-43,95,19);
   Add(deleteButton);
 

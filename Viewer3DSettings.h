@@ -15,19 +15,18 @@
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
 */
-
-#include "GLApp/GLWindow.h"
-#include "GLApp/GLButton.h"
-#include "GLApp/GLTextField.h"
-#include "GLApp/GLLabel.h"
-#include "GLApp/GLToggle.h"
-#include "GLApp/GLCombo.h"
-#include "GLApp/GLTitledPanel.h"
-#include "Geometry.h"
-#include "GeometryViewer.h"
-
 #ifndef _VIEWER3DSETTINGSH_
 #define _VIEWER3DSETTINGSH_
+
+#include "GLApp/GLWindow.h"
+class GLButton;
+class GLTextField;
+class GLLabel;
+class GLToggle;
+class GLCombo;
+class GLTitledPanel;
+class Geometry;
+class GeometryViewer;
 
 class Viewer3DSettings : public GLWindow {
 

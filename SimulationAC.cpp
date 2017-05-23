@@ -58,7 +58,7 @@ if((_f)->sh.opacity!=1.0) _idx+=((_f)->sh.texWidth*(_f)->sh.texHeight); }
 
 // -------------------------------------------------------
 
-void GetCenter(FACET *f,SHELEM *mesh,int idx,Vector3d *c) {
+void GetCenter(FACET *f,SHELEM *mesh, size_t idx,Vector3d *c) {
 
   c->x = f->sh.O.x + f->sh.U.x*mesh[idx].uCenter + f->sh.V.x*mesh[idx].vCenter;
   c->y = f->sh.O.y + f->sh.U.y*mesh[idx].uCenter + f->sh.V.y*mesh[idx].vCenter;
@@ -93,11 +93,12 @@ void ClearACMatrix() {
 
 // -------------------------------------------------------
 
-BOOL ComputeACMatrix(SHELEM *mesh) {
+bool ComputeACMatrix(SHELEM *mesh) {
 
-  int      idx,idx1,idx2,i1,i2,j1,j2,k1,k2,nbElem;
+	int      idx, i1, i2, j1, j2, k1, k2;
+	size_t nbElem,idx1,idx2,sz;
   FACET   *f1,*f2;
-  int      sz,nbO=0,nbB=0,nbE=0,nbV;
+  size_t      nbO=0,nbB=0,nbE=0,nbV;
   Vector3d c1,c2;
   double   r2,cos1,cos2,vf,pv;
   double   t0,t1;
@@ -121,7 +122,7 @@ BOOL ComputeACMatrix(SHELEM *mesh) {
     } else {
       // partial transparent facet not supported with AC
       SetErrorSub("AC does not handle partial opacity");
-      return FALSE;
+      return false;
     }
   }
 
@@ -132,7 +133,7 @@ BOOL ComputeACMatrix(SHELEM *mesh) {
   sHandle->acMatrix = (ACFLOAT *)malloc(sz);
   if( !sHandle->acMatrix ) {
     SetErrorSub("Not enough memory for AC matrix");
-    return FALSE;
+    return false;
   }
   memset(sHandle->acMatrix,0,sz);
 
@@ -142,45 +143,45 @@ BOOL ComputeACMatrix(SHELEM *mesh) {
   sHandle->acArea = (ACFLOAT *)malloc(sz);
   if( !sHandle->acArea ) {
     SetErrorSub("Not enough memory for AC matrix");
-    return FALSE;
+    return false;
   }
 
   sHandle->acDensity = (ACFLOAT *)malloc(sz);
   if( !sHandle->acDensity ) {
     SetErrorSub("Not enough memory for AC matrix");
-    return FALSE;
+    return false;
   }
 
 #ifdef JACOBI_ITERATION
   sHandle->acDensityTmp = (ACFLOAT *)malloc(sz);
   if( !sHandle->acDensityTmp ) {
     SetErrorSub("Not enough memory for AC matrix");
-    return FALSE;
+    return false;
   }
 #endif
 
   sHandle->acDesorb = (ACFLOAT *)malloc(sz);
   if( !sHandle->acDesorb ) {
     SetErrorSub("Not enough memory for AC matrix");
-    return FALSE;
+    return false;
   }
 
   sHandle->acAbsorb = (ACFLOAT *)malloc(sz);
   if( !sHandle->acAbsorb ) {
     SetErrorSub("Not enough memory for AC matrix");
-    return FALSE;
+    return false;
   }
 
   sHandle->acRho = (ACFLOAT *)malloc(sz);
   if( !sHandle->acRho ) {
     SetErrorSub("Not enough memory for AC matrix");
-    return FALSE;
+    return false;
   }
 
   sHandle->acLines = (double *)malloc(sizeof(double) * sHandle->nbAC);
   if( !sHandle->acLines ) {
     SetErrorSub("Not enough memory for AC matrix");
-    return FALSE;
+    return false;
   }
 
   SetState(PROCESS_RUNAC,GetSimuStatus());
@@ -219,7 +220,7 @@ BOOL ComputeACMatrix(SHELEM *mesh) {
           GetState();
           if(GetLocalState()==COMMAND_PAUSE) {
             sHandle->prgAC=0;
-            return FALSE;
+            return false;
           }
           SetState(PROCESS_RUNAC,GetSimuStatus());
         }
@@ -284,24 +285,24 @@ BOOL ComputeACMatrix(SHELEM *mesh) {
   }
 
   t1 = GetTick();
-  printf("AC matrix calculation succesful (%dx%d)\n",sHandle->nbAC,sHandle->nbAC);
+  printf("AC matrix calculation succesful (%zdx%zd)\n",sHandle->nbAC,sHandle->nbAC);
   nbV = nbElem-nbO-nbB;
   pv = (double)nbV * 100.0 / (double)nbElem;
-  printf("Obstacle:%d Nvisible:%d Not null:%d (%.2f%%)\n",nbO,nbB,nbV,pv);
+  printf("Obstacle:%zd Nvisible:%zd Not null:%zd (%.2f%%)\n",nbO,nbB,nbV,pv);
   sHandle->calcACTime = (t1-t0);
   printf("Calculation time: %.3f s\n",sHandle->calcACTime);
   sHandle->prgAC = 100; // AC matrix calculation done
 
-  return TRUE;
+  return true;
 
 }
 
-BOOL SimulationACStep(int nbStep) {
+bool SimulationACStep(int nbStep) {
 
   int      i,inc,j,idx,step;
 
   if( sHandle->prgAC!=100 ) {
-    return FALSE;
+    return false;
   }
 
   step = 0;

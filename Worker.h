@@ -50,22 +50,22 @@ public:
 
   // Load a geometry (throws Error)
 
-  void LoadGeometry(char *fileName, BOOL insert=FALSE,BOOL newStr=FALSE); // Load or insert a geometry (throws Error)
-  BOOL IsDpInitialized();
+  void LoadGeometry(char *fileName, bool insert=false,bool newStr=false); // Load or insert a geometry (throws Error)
+  bool IsDpInitialized();
 
   // Inserts a new geometry (throws Error)
-  //void InsertGeometry(BOOL newStr,char *fileName);
+  //void InsertGeometry(bool newStr,char *fileName);
 
   // Load a textures(throws Error)
   void LoadTexturesGEO(FileReader *f,int version);
   void RebuildTextures();
 
   // Save a geometry (throws Error)
-  void SaveGeometry(char *fileName,GLProgress *prg,BOOL askConfirm=TRUE,BOOL saveSelected=FALSE,BOOL autoSave=FALSE,BOOL crashSave=FALSE);
+  void SaveGeometry(char *fileName,GLProgress *prg,bool askConfirm=true,bool saveSelected=false,bool autoSave=false,bool crashSave=false);
 
   // Save textures (throws Error)
 
-  void ExportTextures(char *fileName,int grouping,int mode,BOOL askConfirm=TRUE,BOOL saveSelected=FALSE);
+  void ExportTextures(char *fileName,int grouping,int mode,bool askConfirm=true,bool saveSelected=false);
   void ExportProfiles(char *fileName);
   void ExportAngleMaps(std::vector<size_t> faceList, std::string fileName);
 
@@ -85,16 +85,16 @@ public:
   void  SetFileName(char *fileName);
 
   // Set number of processes [1..32] (throws Error)
-  void SetProcNumber(int n);
+  void SetProcNumber(size_t n);
 
   // Get number of processes
-  int GetProcNumber();
+  size_t GetProcNumber();
 
   // Set the number of maximum desorption
   void SetMaxDesorption(llong max);
 
   // Get PID
-  DWORD GetPID(int prIdx);
+  DWORD GetPID(size_t prIdx);
 
   // Reset simulation
   void ResetStatsAndHits(float appTime);
@@ -118,7 +118,7 @@ public:
   void Update(float appTime);
 
   // Send total and facet hit counts to subprocesses
-  void SendHits(BOOL skipFacetHits=FALSE);
+  void SendHits(bool skipFacetHits=false);
   void SetLeakCache(LEAK *buffer,size_t *nb,Dataport* dpHit);
   void SetHitCache(HIT *buffer, size_t *nb,Dataport* dpHit);
 
@@ -141,7 +141,7 @@ public:
   int AddMoment(std::vector<double> newMoments); //Adds a time serie to moments and returns the number of elements
   std::vector<double> ParseMoment(std::string userInput); //Parses a user input and returns a vector of time moments
   void ResetMoments();
-  double GetMoleculesPerTP(int moment);
+  double GetMoleculesPerTP(size_t moment);
 
   std::vector<std::pair<double,double>> Generate_ID(int paramId);
   int GenerateNewID(int paramId);
@@ -163,12 +163,12 @@ int GetIDId(int paramId);
   double distTraveledTotal_total; // Total distance traveled by particles (for mean pumping path calc.)
   double distTraveledTotal_fullHitsOnly; // Total distance traveled by particles between full hits (for mean free path calc.)
 
-  BOOL   running;           // Started/Stopped state
+  bool   running;           // Started/Stopped state
   float  startTime;         // Start time
   float  stopTime;          // Stop time
   float  simuTime;          // Total simulation time
   int    mode;              // Simulation mode
-  BOOL   calcAC;            // Calculating AC matrix
+  bool   calcAC;            // Calculating AC matrix
   size_t    calcACprg;         // AC matrix progress
   
   std::vector<std::vector<std::pair<double,double>>> CDFs; //cumulative distribution function for each temperature
@@ -184,20 +184,20 @@ int GetIDId(int paramId);
   double finalOutgassingRate; //Number of outgassing molecules / second at latest_moment (constant flow)
   double finalOutgassingRate_Pa_m3_sec; //For the user to see on Global Seetings and in formulas. Not shared with workers
   double gasMass;
-  BOOL   enableDecay;
+  bool   enableDecay;
   double halfLife;
   double timeWindowSize;
-  BOOL useMaxwellDistribution; //TRUE: Maxwell-Boltzmann distribution, FALSE: All molecules have the same (V_avg) speed
-  BOOL calcConstantFlow;
+  bool useMaxwellDistribution; //true: Maxwell-Boltzmann distribution, false: All molecules have the same (V_avg) speed
+  bool calcConstantFlow;
 
   int motionType;
   Vector3d motionVector1; //base point for rotation
   Vector3d motionVector2; //rotation vector or velocity vector
 
-  BOOL needsReload;
+  bool needsReload;
 
   std::vector<Parameter> parameters;
-  BOOL abortRequested; //Signal to stop current operation (Collapse, Analyze, etc.)
+  bool abortRequested; //Signal to stop current operation (Collapse, Analyze, etc.)
   int displayedMoment;
   
 	// Current loaded file
@@ -212,10 +212,10 @@ int GetIDId(int paramId);
 private:
 
   // Process management
-  int    nbProcess;
+  size_t    nbProcess;
   DWORD  pID[MAX_PROCESS];
   DWORD  pid;
-  BOOL   allDone;
+  bool   allDone;
 
   // Geometry handle
   MolflowGeometry *geom;
@@ -228,10 +228,10 @@ private:
   char      hitsDpName[32];
 
   // Methods
-  BOOL ExecuteAndWait(int command, int readyState, int param = 0);
-  BOOL Wait(int waitState, LoadStatus *statusWindow = NULL);
+  bool ExecuteAndWait(int command, int readyState, size_t param = 0);
+  bool Wait(int waitState, LoadStatus *statusWindow = NULL);
   void ResetWorkerStats();
-  void ClearHits(BOOL noReload);
+  void ClearHits(bool noReload);
   char *GetErrorDetails();
   void ThrowSubProcError(char *message=NULL);
   void Start();

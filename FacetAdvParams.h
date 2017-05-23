@@ -15,17 +15,19 @@
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
   */
+#pragma once
 
 #include "GLApp/GLWindow.h"
-#include "GLApp/GLToggle.h"
-#include "GLApp/GLButton.h"
-#include "GLApp/GLTextField.h"
-#include "GLApp/GLTitledPanel.h"
-#include "GLApp/GLProgress.h"
-#include "GLApp/GLCombo.h"
-#include "Worker.h"
-
-#pragma once
+#include <vector>
+class GLToggle;
+class GLButton;
+class GLTextField;
+class GLTitledPanel;
+class GLLabel;
+class GLProgress;
+class GLCombo;
+class Geometry;
+class Worker;
 
 class FacetAdvParams : public GLWindow {
 
@@ -35,12 +37,12 @@ public:
 	FacetAdvParams(Worker *w);
 
 	// Component method
-	void Refresh(int nbSel, int* selection);
+	void Refresh(std::vector<size_t> selection);
 	void Reposition(int wD = 0, int hD = 0);
 
 	// Implementation
 	void ProcessMessage(GLComponent *src, int message);
-	BOOL Apply();
+	bool Apply();
 
 private:
 

@@ -27,8 +27,13 @@ GNU General Public License for more details.
 #include "Movement.h"
 #include "GLApp/GLTitledPanel.h"
 #include "GLApp/GLToolkit.h"
-#include "GLApp/GLWindowManager.h"
 #include "GLApp/GLMessageBox.h"
+#include "GLApp/GLButton.h"
+#include "GLApp/GLTextField.h"
+#include "GLApp/GLLabel.h"
+#include "GLApp/GLToggle.h"
+#include "GLApp/GLTitledPanel.h"
+#include "Geometry.h"
 #include "MolFlow.h"
 
 extern MolFlow *mApp;
@@ -176,7 +181,7 @@ Movement::Movement(Geometry *g,Worker *w):GLWindow() {
 
 	checkBox1 = new GLToggle(0, "No moving parts");
 	groupBox1->SetCompBounds(checkBox1, 6, 19, 103, 17);
-	checkBox1->SetState(TRUE);
+	checkBox1->SetState(true);
 	groupBox1->Add(checkBox1);
 
 	button3 = new GLButton(0, "Apply");
@@ -193,10 +198,10 @@ Movement::Movement(Geometry *g,Worker *w):GLWindow() {
 		rpmText, degText, hzText };
 
 	for (auto textField : group1){
-		textField->SetEditable(FALSE);
+		textField->SetEditable(false);
 	}
 	for (auto textField : group2){
-		textField->SetEditable(FALSE);
+		textField->SetEditable(false);
 	}
 
 	SetTitle("Define moving parts");
@@ -312,13 +317,13 @@ void Movement::ProcessMessage(GLComponent *src,int message) {
 				mApp->UpdateFacetlistSelected();
 				mApp->UpdateViewers();
 				//GLWindowManager::FullRepaint();
-				mApp->changedSinceSave = TRUE;
+				mApp->changedSinceSave = true;
 				//GLWindow::ProcessMessage(NULL, MSG_CLOSE);
 				return;
 			}
 		}
 		else if (src == button1){ //Use selected vertex as base
-			int nbs = geom->GetNbSelectedVertex();
+			size_t nbs = geom->GetNbSelectedVertex();
 			if (nbs != 1) {
 				std::ostringstream strstr;
 				strstr << "Exactly one vertex needs to be selected.\n(You have selected " << nbs << ".)";
@@ -338,7 +343,7 @@ void Movement::ProcessMessage(GLComponent *src,int message) {
 			}
 		}
 		else if (src == button2) {
-			int nbs = geom->GetNbSelectedVertex();
+			size_t nbs = geom->GetNbSelectedVertex();
 			if (nbs != 1) {
 				std::ostringstream strstr;
 				strstr << "Exactly one vertex needs to be selected.\n(You have selected " << nbs << ".)";
@@ -440,7 +445,7 @@ void Movement::Update() {
 	}
 	else if (work->motionType == 1) {
 		for (auto textBox : group1) {
-			textBox->SetEditable(TRUE);
+			textBox->SetEditable(true);
 		}
 		for (auto textBox : group2) {
 			textBox->SetText("0");
@@ -454,7 +459,7 @@ void Movement::Update() {
 			textBox->SetText("0");
 		}
 		for (auto textBox : group2) {
-			textBox->SetEditable(TRUE);
+			textBox->SetEditable(true);
 		}
 		axText->SetText(work->motionVector1.x);
 		ayText->SetText(work->motionVector1.y);

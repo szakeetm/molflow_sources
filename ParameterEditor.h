@@ -2,21 +2,21 @@
   File:        ParameterEditor.h
   Description: Moments Editor
 */
-
-#include "GLApp/GLWindow.h"
-#include "GLApp/GLButton.h"
-#include "GLApp/GLCombo.h"
-#include "GLApp/GLChart/GLChart.h"
-#include "GLApp\GLTextField.h"
-#include "GLApp\GLToggle.h"
-#include "GLApp\GLTitledPanel.h"
-#include "GLApp/GLList.h"
-#include "GLApp/GLChart/GLDataView.h"
-
-#include "Worker.h"
-
 #ifndef _PARAMETEREDITORH_
 #define _PARAMETEREDITORH_
+
+#include "GLApp/GLWindow.h"
+#include "Parameter.h"
+class GLButton;
+class GLCombo;
+class GLChart;
+class GLTextField;
+class GLToggle;
+class GLTitledPanel;
+class GLList;
+class GLDataView;
+
+class Worker;
 
 class ParameterEditor : public GLWindow {
 
@@ -25,7 +25,7 @@ public:
   // Construction
   ParameterEditor(Worker *work);
   void UpdateCombo();
-  void RebuildList(BOOL autoSize=TRUE, BOOL refillValues=TRUE);
+  void RebuildList(bool autoSize=true, bool refillValues=true);
   // Implementation
   void ProcessMessage(GLComponent *src,int message);
   void Reset();
@@ -41,7 +41,7 @@ private:
   GLTextField *nameField;
   GLTitledPanel *editorPanel;
   GLChart *plotArea;
-  GLDataView dataView;
+  GLDataView *dataView;
   GLToggle *logXtoggle;
   GLToggle *logYtoggle;
 
@@ -53,7 +53,7 @@ private:
   void LoadCSV();
   void Plot();
   void UpdateUserValues();
-  BOOL ValidateInput();
+  bool ValidateInput();
   
 };
 

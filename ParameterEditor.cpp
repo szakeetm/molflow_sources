@@ -16,14 +16,21 @@
 */
 
 #include "ParameterEditor.h"
-#include "GLApp/GLTitledPanel.h"
+#include "File.h"
 #include "GLApp/GLToolkit.h"
-#include "GLApp/GLWindowManager.h"
 #include "GLApp/GLMessageBox.h"
+#include "GLApp/GLLabel.h"
+#include "GLApp/GLButton.h"
+#include "GLApp/GLCombo.h"
+#include "GLApp/GLChart/GLChart.h"
+#include "GLApp\GLTextField.h"
+#include "GLApp\GLToggle.h"
+#include "GLApp\GLTitledPanel.h"
+#include "GLApp/GLList.h"
+
 #include "MolFlow.h"
 #include "GLApp\GLFileBox.h"
 #include <sstream>
-#include "GLApp/GLMessageBox.h"
 
 extern MolFlow *mApp;
 
@@ -40,7 +47,7 @@ ParameterEditor::ParameterEditor(Worker *w):GLWindow() {
   work=w;
   tempParam = Parameter();
   userValues = std::vector<std::pair<std::string, std::string>>();
-  dataView = GLDataView();
+  dataView = new GLDataView();
 
   int hSpace = 10;
   int vSpace = 5;
@@ -64,7 +71,7 @@ ParameterEditor::ParameterEditor(Worker *w):GLWindow() {
   cursorX = col2;
   deleteButton = new GLButton(2, "Delete");
   deleteButton->SetBounds(cursorX, cursorY, buttonWidth, compHeight);
-  deleteButton->SetEnabled(FALSE);
+  deleteButton->SetEnabled(false);
   Add(deleteButton);
 
   /*
@@ -93,15 +100,15 @@ ParameterEditor::ParameterEditor(Worker *w):GLWindow() {
   plotArea = new GLChart(0);
   plotArea->SetBounds(cursorX, cursorY, wD - col2 - hSpace, compHeight + vSpace + listHeight);
   plotArea->SetBorder(BORDER_BEVEL_IN);
-  plotArea->GetY1Axis()->SetGridVisible(TRUE);
-  plotArea->SetLabelVisible(FALSE);
-  dataView.SetMarker(MARKER_DOT);
-  dataView.SetLineWidth(2);
-  dataView.SetMarkerSize(8);
-  plotArea->GetY1Axis()->AddDataView(&dataView);
-  plotArea->GetXAxis()->SetGridVisible(TRUE);
-  plotArea->GetY1Axis()->SetAutoScale(TRUE);
-  plotArea->GetY2Axis()->SetAutoScale(TRUE);
+  plotArea->GetY1Axis()->SetGridVisible(true);
+  plotArea->SetLabelVisible(false);
+  dataView->SetMarker(MARKER_DOT);
+  dataView->SetLineWidth(2);
+  dataView->SetMarkerSize(8);
+  plotArea->GetY1Axis()->AddDataView(dataView);
+  plotArea->GetXAxis()->SetGridVisible(true);
+  plotArea->GetY1Axis()->SetAutoScale(true);
+  plotArea->GetY2Axis()->SetAutoScale(true);
   plotArea->GetY1Axis()->SetAnnotation(VALUE_ANNO);
   plotArea->GetXAxis()->SetAnnotation(VALUE_ANNO);
   Add(plotArea);
@@ -110,8 +117,8 @@ ParameterEditor::ParameterEditor(Worker *w):GLWindow() {
   cursorY += compHeight + vSpace;
   list = new GLList(0);
   list->SetBounds(cursorX, cursorY, col2-col1-hSpace, listHeight);
-  list->SetColumnLabelVisible(TRUE);
-  list->SetGrid(TRUE);
+  list->SetColumnLabelVisible(true);
+  list->SetGrid(true);
   //list->SetSelectionMode(BOX_CELL);
   Add(list);
 
@@ -124,7 +131,7 @@ ParameterEditor::ParameterEditor(Worker *w):GLWindow() {
   cursorX += buttonWidth + hSpace;*/
   pasteButton = new GLButton(0,"Paste from clipboard");
   pasteButton->SetBounds(cursorX,cursorY,buttonWidth,compHeight);
-  //pasteButton->SetEnabled(FALSE);
+  //pasteButton->SetEnabled(false);
   Add(pasteButton);
 
   cursorX += buttonWidth + hSpace;
@@ -186,8 +193,8 @@ void ParameterEditor::ProcessMessage(GLComponent *src,int message) {
 				} else if (selectorCombo->GetSelectedIndex() == selectorCombo->GetNbRow() - 1) { //new Param
 					work->parameters.push_back(tempParam);
 					UpdateCombo();
-					selectorCombo->SetSelectedIndex(selectorCombo->GetNbRow() - 2);
-					deleteButton->SetEnabled(TRUE);
+					selectorCombo->SetSelectedIndex((int)selectorCombo->GetNbRow() - 2);
+					deleteButton->SetEnabled(true);
 					UpdateUserValues();
 					Plot();
 				}
@@ -202,7 +209,7 @@ void ParameterEditor::ProcessMessage(GLComponent *src,int message) {
 				selectorCombo->SetSelectedIndex(0);
 				UpdateUserValues();
 				RebuildList();
-				deleteButton->SetEnabled(FALSE);
+				deleteButton->SetEnabled(false);
 			}
 		} else if (src == plotButton) {
 			ValidateInput();
@@ -246,13 +253,13 @@ void ParameterEditor::ProcessMessage(GLComponent *src,int message) {
 			UpdateUserValues();
 			ValidateInput();
 			Plot();
-			deleteButton->SetEnabled(TRUE);
+			deleteButton->SetEnabled(true);
 		}
 		else {
 			if (selectorCombo->GetSelectedIndex() != -1) { //New param
 				Reset();
 			}
-			deleteButton->SetEnabled(FALSE);
+			deleteButton->SetEnabled(false);
 		}
 		RebuildList();
 		break;
@@ -271,7 +278,7 @@ void ParameterEditor::Reset() {
 	char tmp[32];
 	sprintf(tmp, "Param%d", selectorCombo->GetSelectedIndex() + 1);
 	nameField->SetText(tmp);
-	dataView.Reset();
+	dataView->Reset();
 }
 
 void ParameterEditor::UpdateCombo() {
@@ -279,12 +286,12 @@ void ParameterEditor::UpdateCombo() {
 	for (size_t i = 0; i < work->parameters.size(); i++)
 		selectorCombo->SetValueAt((int)i, work->parameters[i].name.c_str());
 	selectorCombo->SetValueAt((int)work->parameters.size(), "New...");
-	if (selectorCombo->GetSelectedIndex() == -1 || selectorCombo->GetSelectedIndex() == (selectorCombo->GetNbRow() - 1)) selectorCombo->SetSelectedIndex(selectorCombo->GetNbRow() - 1);
+	if (selectorCombo->GetSelectedIndex() == -1 || selectorCombo->GetSelectedIndex() == ((int)selectorCombo->GetNbRow() - 1)) selectorCombo->SetSelectedIndex((int)selectorCombo->GetNbRow() - 1);
 	Reset();
 }
 
 void ParameterEditor::PasteFromClipboard() {
-	list->PasteClipboardText(TRUE,FALSE,0); //Paste clipboard text, allow adding more rows, have one extra line in the end
+	list->PasteClipboardText(true,false,0); //Paste clipboard text, allow adding more rows, have one extra line in the end
 	//Fill uservalues vector with pasted text
 	userValues = std::vector<std::pair<std::string, std::string>>();
 	for (int row = 0;row<(list->GetNbRow());row++) {
@@ -301,7 +308,7 @@ void ParameterEditor::LoadCSV() {
 	fn=GLFileBox::OpenFile(NULL, NULL, "Open File", "CSV files\0*.csv\0All files\0*.*\0", 2);
 	if (!fn || !fn->fullName) return;
 	
-	std::vector<std::vector<string>> table;
+	std::vector<std::vector<std::string>> table;
 	try {
 		FileReader *f = new FileReader(fn->fullName);
 		work->ImportCSV(f, table);
@@ -309,7 +316,7 @@ void ParameterEditor::LoadCSV() {
 	}
 	catch (Error &e) {
 		char errMsg[512];
-		sprintf(errMsg, "Failed to load CSV file.");
+		sprintf(errMsg, "Failed to load CSV file.\n%s",e.GetMsg());
 		GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
 	}
@@ -342,13 +349,13 @@ void ParameterEditor::CopyToClipboard() {
 }
 
 void ParameterEditor::Plot() {
-	dataView.Reset();
+	dataView->Reset();
 	for (auto i : tempParam.values)
-		dataView.Add(i.first, i.second);
-	dataView.CommitChange();
+		dataView->Add(i.first, i.second);
+	dataView->CommitChange();
 }
 
-void ParameterEditor::RebuildList(BOOL autoSize, BOOL refillValues) {
+void ParameterEditor::RebuildList(bool autoSize, bool refillValues) {
 
 	if (autoSize) list->SetSize(2, userValues.size()+1);
 	list->SetColumnWidths((int*)flWidth);
@@ -369,29 +376,29 @@ void ParameterEditor::RebuildList(BOOL autoSize, BOOL refillValues) {
 	}
 }
 
-BOOL ParameterEditor::ValidateInput() {
+bool ParameterEditor::ValidateInput() {
 	//Validate name
 	std::string tempName = nameField->GetText();
 	if (tempName.length() == 0) {
 		GLMessageBox::Display("Parameter name can't be empty", "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
-		return FALSE;
+		return false;
 	}
 	if (selectorCombo->GetSelectedIndex() == selectorCombo->GetNbRow() - 1) {
 		for (auto p : work->parameters) {
 			if (tempName.compare(p.name) == 0) {
 				GLMessageBox::Display("This parameter name is already used", "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
-				return FALSE;
+				return false;
 			}
 		}
 	}
 	if (!((tempName[0] >= 65 && tempName[0] <= 90) || (tempName[0] >= 97 && tempName[0] <= 122))) {
 		GLMessageBox::Display("Parameter name must begin with a letter", "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
-		return FALSE;
+		return false;
 	}
 	tempParam = Parameter();
 	tempParam.name = tempName;
 
-	BOOL atLeastOne = FALSE;
+	bool atLeastOne = false;
 	for (size_t row = 0; row < userValues.size(); row++) {
 		double valueX, valueY;
 		try {
@@ -400,7 +407,7 @@ BOOL ParameterEditor::ValidateInput() {
 			char tmp[256];
 			sprintf(tmp, "Can't parse value \"%s\" in row %zd, first column:\n%s", userValues[row].first.c_str(), row+1, err.what());
 			GLMessageBox::Display(tmp, "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
-			return FALSE;
+			return false;
 		}
 		try {
 			valueY = ::atof(userValues[row].second.c_str());
@@ -409,14 +416,14 @@ BOOL ParameterEditor::ValidateInput() {
 			char tmp[256];
 			sprintf(tmp, "Can't parse value \"%s\" in row %zd, second column:\n%s", userValues[row].second.c_str(), row+1, err.what());
 			GLMessageBox::Display(tmp, "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
-			return FALSE;
+			return false;
 		}
 		tempParam.AddValue(std::make_pair(valueX, valueY));
-		atLeastOne = TRUE;
+		atLeastOne = true;
 	}
 	if (!atLeastOne) {
 		GLMessageBox::Display("At least one value is required", "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
-		return FALSE;
+		return false;
 	}
 
 	for (size_t i = 0; i < tempParam.values.size();i++) {
@@ -425,12 +432,12 @@ BOOL ParameterEditor::ValidateInput() {
 				std::stringstream msg;
 				msg << "There are two values for t=" << tempParam.values[i].first << "s.";
 				GLMessageBox::Display(msg.str().c_str(), "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
-				return FALSE;
+				return false;
 			}
 		}
 	}
 
-	return TRUE;
+	return true;
 }
 
 void ParameterEditor::UpdateUserValues() {

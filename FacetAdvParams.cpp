@@ -24,6 +24,14 @@ GNU General Public License for more details.
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
 #include "GLApp/MathTools.h"
+#include "GLApp/GLToggle.h"
+#include "GLApp/GLButton.h"
+#include "GLApp/GLTextField.h"
+#include "GLApp/GLTitledPanel.h"
+//#include "GLApp/GLProgress.h"
+#include "GLApp/GLCombo.h"
+//#include "Worker.h"
+#include "Geometry.h"
 
 #ifdef MOLFLOW
 #include "MolFlow.h"
@@ -47,7 +55,7 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	worker = w;
 	geom = w->GetGeometry();
 
-	SetIconfiable(TRUE);
+	SetIconfiable(true);
 
 	int wD = 320;
 	int hD = 574;
@@ -307,14 +315,14 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	int yD = (hS - hD) / 2;
 	SetBounds(xD, yD, wD, hD);
 
-	cellText->SetEditable(FALSE);
-	ramText->SetEditable(FALSE);
-	fileDoseText->SetEditable(FALSE);
-	fileYieldText->SetEditable(FALSE);
-	fileFluxText->SetEditable(FALSE);
+	cellText->SetEditable(false);
+	ramText->SetEditable(false);
+	fileDoseText->SetEditable(false);
+	fileYieldText->SetEditable(false);
+	fileFluxText->SetEditable(false);
 
 
-	Refresh(0, NULL);
+	Refresh(std::vector<size_t>());
 	Reposition(wD, hD);
 
 	RestoreDeviceObjects();
@@ -331,11 +339,11 @@ void FacetAdvParams::UpdateSize() {
 
 		llong ram = 0;
 		llong cell = 0;
-		int nbFacet = geom->GetNbFacet();
+		size_t nbFacet = geom->GetNbFacet();
 
 		if (recordACBtn->GetState()) {
 
-			for (int i = 0; i < nbFacet; i++) {
+			for (size_t i = 0; i < nbFacet; i++) {
 				Facet *f = geom->GetFacet(i);
 				if (f->sh.opacity == 1.0) {
 					cell += (llong)f->GetNbCell();
@@ -347,7 +355,7 @@ void FacetAdvParams::UpdateSize() {
 		}
 		else {
 
-			for (int i = 0; i < nbFacet; i++) {
+			for (size_t i = 0; i < nbFacet; i++) {
 				Facet *f = geom->GetFacet(i);
 				cell += (llong)f->GetNbCell();
 				ram += (llong)f->GetTexRamSize(1 + worker->moments.size());
@@ -355,7 +363,7 @@ void FacetAdvParams::UpdateSize() {
 
 		}
 		ramText->SetText(FormatMemoryLL(ram));
-		sprintf(tmp, "%d", (int)cell);
+		sprintf(tmp, "%zd", cell);
 		cellText->SetText(tmp);
 
 	}
@@ -374,8 +382,8 @@ void FacetAdvParams::UpdateSizeForRatio() {
 	if (!geom->IsLoaded()) return;
 	double ratio;
 	char tmp[64];
-	BOOL boundMap = TRUE;// boundaryBtn->GetState();
-	BOOL recordDir = recordDirBtn->GetState();
+	bool boundMap = true;// boundaryBtn->GetState();
+	bool recordDir = recordDirBtn->GetState();
 
 	if (!enableBtn->GetState()) {
 		ramText->SetText(FormatMemory(0));
@@ -391,15 +399,15 @@ void FacetAdvParams::UpdateSizeForRatio() {
 
 	llong ram = 0;
 	llong cell = 0;
-	int nbFacet = geom->GetNbFacet();
+	size_t nbFacet = geom->GetNbFacet();
 	if (recordACBtn->GetState()) {
 
-		for (int i = 0; i < nbFacet; i++) {
+		for (size_t i = 0; i < nbFacet; i++) {
 			Facet *f = geom->GetFacet(i);
 			//if(f->sh.opacity==1.0) {
 			if (f->selected) {
 				cell += (llong)f->GetNbCellForRatio(ratio);
-				ram += (llong)f->GetTexRamSizeForRatio(ratio, boundMap, FALSE, 1 + worker->moments.size());
+				ram += (llong)f->GetTexRamSizeForRatio(ratio, boundMap, false, 1 + worker->moments.size());
 			}
 			else {
 				cell += (llong)f->GetNbCell();
@@ -412,7 +420,7 @@ void FacetAdvParams::UpdateSizeForRatio() {
 	}
 	else {
 
-		for (int i = 0; i < nbFacet; i++) {
+		for (size_t i = 0; i < nbFacet; i++) {
 			Facet *f = geom->GetFacet(i);
 			if (f->selected) {
 				cell += (llong)f->GetNbCellForRatio(ratio);
@@ -427,18 +435,18 @@ void FacetAdvParams::UpdateSizeForRatio() {
 	}
 
 	ramText->SetText(FormatMemoryLL(ram));
-	sprintf(tmp, "%d", (int)cell);
+	sprintf(tmp, "%zd", cell);
 	cellText->SetText(tmp);
 
 }
 
 //-----------------------------------------------------------------------------
 
-void FacetAdvParams::Refresh(int nbSel, int* selection) {
+void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 
 	sumArea = sumOutgassing = 0;
 
-	BOOL somethingSelected = nbSel > 0;
+	bool somethingSelected = selection.size() > 0;
 	enableBtn->SetEnabled(somethingSelected);
 	recordDesBtn->SetEnabled(somethingSelected);
 	recordAbsBtn->SetEnabled(somethingSelected);
@@ -497,43 +505,43 @@ void FacetAdvParams::Refresh(int nbSel, int* selection) {
 
 	Facet* f0 = geom->GetFacet(selection[0]);
 
-	BOOL isEnabledE = TRUE;
-	BOOL isBoundE = TRUE;
-	BOOL CountDesE = TRUE;
-	BOOL CountAbsE = TRUE;
-	BOOL CountReflE = TRUE;
-	BOOL CountTransE = TRUE;
-	BOOL CountACE = TRUE;
-	BOOL CountDirE = TRUE;
-	BOOL RecordAngleMapE = TRUE;
-	BOOL AngleMapWidthE = TRUE;
-	BOOL AngleMapHeightE = TRUE;
-	BOOL TexVisibleE = TRUE;
-	BOOL VolVisibleE = TRUE;
-	BOOL ratioE = TRUE;
-	BOOL teleportE = TRUE;
-	BOOL accFactorE = TRUE;
-	BOOL superDestE = TRUE;
-	BOOL superIdxE = TRUE;
-	BOOL reflectTypeE = TRUE;
-	BOOL hasOutgMapE = TRUE;
-	BOOL useOutgMapE = TRUE;
-	BOOL yieldEqual = TRUE;
-	BOOL fluxAEqual = TRUE;
-	BOOL doseAEqual = TRUE;
-	BOOL isMovingE = TRUE;
-	BOOL dynOutgEqual = TRUE;
-	BOOL dynOutgAEqual = TRUE;
-	BOOL hasSojournE = TRUE;
-	BOOL sojournFreqE = TRUE;
-	BOOL sojournEE = TRUE;
+	bool isEnabledE = true;
+	bool isBoundE = true;
+	bool CountDesE = true;
+	bool CountAbsE = true;
+	bool CountReflE = true;
+	bool CountTransE = true;
+	bool CountACE = true;
+	bool CountDirE = true;
+	bool RecordAngleMapE = true;
+	bool AngleMapWidthE = true;
+	bool AngleMapHeightE = true;
+	bool TexVisibleE = true;
+	bool VolVisibleE = true;
+	bool ratioE = true;
+	bool teleportE = true;
+	bool accFactorE = true;
+	bool superDestE = true;
+	bool superIdxE = true;
+	bool reflectTypeE = true;
+	bool hasOutgMapE = true;
+	bool useOutgMapE = true;
+	bool yieldEqual = true;
+	bool fluxAEqual = true;
+	bool doseAEqual = true;
+	bool isMovingE = true;
+	bool dynOutgEqual = true;
+	bool dynOutgAEqual = true;
+	bool hasSojournE = true;
+	bool sojournFreqE = true;
+	bool sojournEE = true;
 
-	double f0Area = f0->sh.area * (f0->sh.is2sided ? 2.0 : 1.0);
+	double f0Area = f0->GetArea();
 	sumArea = f0Area;
 	sumOutgassing = f0->sh.totalOutgassing;
-	for (int i = 1; i < nbSel; i++) {
+	for (size_t i = 1; i < selection.size(); i++) {
 		Facet *f = geom->GetFacet(selection[i]);
-		double fArea = f->sh.area * (f->sh.is2sided ? 2.0 : 1.0);
+		double fArea = f->GetArea();
 		sumArea += fArea;
 		sumOutgassing += f->sh.totalOutgassing;
 		isEnabledE = isEnabledE && (f0->sh.isTextured == f->sh.isTextured);
@@ -545,8 +553,8 @@ void FacetAdvParams::Refresh(int nbSel, int* selection) {
 		CountACE = CountACE && f0->sh.countACD == f->sh.countACD;
 		CountDirE = CountDirE && f0->sh.countDirection == f->sh.countDirection;
 		RecordAngleMapE = RecordAngleMapE && f0->sh.recordAngleMap == f->sh.recordAngleMap;
-		AngleMapWidthE = AngleMapWidthE && IsEqual(f0->sh.angleMapPhiWidth, f->sh.angleMapPhiWidth);
-		AngleMapHeightE = AngleMapHeightE && IsEqual(f0->sh.angleMapThetaHeight, f->sh.angleMapThetaHeight);
+		AngleMapWidthE = AngleMapWidthE && (f0->sh.angleMapPhiWidth == f->sh.angleMapPhiWidth);
+		AngleMapHeightE = AngleMapHeightE && (f0->sh.angleMapThetaHeight == f->sh.angleMapThetaHeight);
 		TexVisibleE = TexVisibleE && f0->textureVisible == f->textureVisible;
 		VolVisibleE = VolVisibleE && f0->volumeVisible == f->volumeVisible;
 		ratioE = ratioE && abs(f0->tRatio - f->tRatio) < 1E-8;
@@ -630,7 +638,7 @@ void FacetAdvParams::Refresh(int nbSel, int* selection) {
 			facetUseDesFile->SetSize(1);
 			facetUseDesFile->SetSelectedIndex(0); //no map
 			facetUseDesFile->SetSelectedValue("No map loaded");
-			facetUseDesFile->SetEditable(FALSE);
+			facetUseDesFile->SetEditable(false);
 			fileFluxText->SetText("");
 			fileDoseText->SetText("");
 			fileYieldText->SetText("");
@@ -640,7 +648,7 @@ void FacetAdvParams::Refresh(int nbSel, int* selection) {
 			facetUseDesFile->SetSize(2);
 			facetUseDesFile->SetValueAt(0, "Use user values");
 			facetUseDesFile->SetValueAt(1, "Use des. file");
-			facetUseDesFile->SetEditable(TRUE);
+			facetUseDesFile->SetEditable(true);
 			if (useOutgMapE) {
 				facetUseDesFile->SetSelectedIndex(f0->sh.useOutgassingFile);
 			}
@@ -669,8 +677,8 @@ void FacetAdvParams::Refresh(int nbSel, int* selection) {
 			}
 			else { //some use it, some not
 				facetUseDesFile->SetSelectedValue("...");
-				mApp->facetFlow->SetEditable(FALSE);
-				mApp->facetFlowArea->SetEditable(FALSE);
+				mApp->facetFlow->SetEditable(false);
+				mApp->facetFlowArea->SetEditable(false);
 			}
 		}
 	}
@@ -678,7 +686,7 @@ void FacetAdvParams::Refresh(int nbSel, int* selection) {
 		facetUseDesFile->SetSelectedIndex(0);
 		facetUseDesFile->SetSize(1);
 		facetUseDesFile->SetSelectedValue("...");
-		facetUseDesFile->SetEditable(FALSE);
+		facetUseDesFile->SetEditable(false);
 		fileFluxText->SetText("");
 		fileDoseText->SetText("");
 		fileYieldText->SetText("");
@@ -704,11 +712,11 @@ void FacetAdvParams::Refresh(int nbSel, int* selection) {
 
 	if (isMovingE) {
 		facetMovingToggle->SetState(f0->sh.isMoving);
-		facetMovingToggle->AllowMixedState(FALSE);
+		facetMovingToggle->AllowMixedState(false);
 	}
 	else {
 		facetMovingToggle->SetState(2);
-		facetMovingToggle->AllowMixedState(TRUE);
+		facetMovingToggle->AllowMixedState(true);
 	}
 
 	if (AngleMapWidthE) {
@@ -727,12 +735,12 @@ void FacetAdvParams::Refresh(int nbSel, int* selection) {
 
 	if (enableSojournTime->GetState() == 0) {
 		enableSojournTime->SetText("Wall sojourn time");
-		sojournFreq->SetEditable(FALSE);
-		sojournE->SetEditable(FALSE);
+		sojournFreq->SetEditable(false);
+		sojournE->SetEditable(false);
 	}
 	else {
-		sojournFreq->SetEditable(TRUE);
-		sojournE->SetEditable(TRUE);
+		sojournFreq->SetEditable(true);
+		sojournE->SetEditable(true);
 	}
 
 	if (sojournFreqE) {
@@ -763,15 +771,13 @@ void FacetAdvParams::Reposition(int wD, int hD) {
 
 //-----------------------------------------------------------------------------
 
-BOOL FacetAdvParams::Apply() {
+bool FacetAdvParams::Apply() {
 
-	BOOL boundMap = TRUE; // boundaryBtn->GetState();
-	int nbSelected;
-	int* selection;
+	bool boundMap = true; // boundaryBtn->GetState();
 	double ratio = 0.0;
-	geom->GetSelection(&selection, &nbSelected);
+	std::vector<size_t> selectedFacets=geom->GetSelectedFacets();
 	int nbPerformed = 0;
-	BOOL doRatio = FALSE;
+	bool doRatio = false;
 	if (enableBtn->GetState() == 1) { //check if valid texture settings are to be applied
 
 		// Check counting mode
@@ -779,119 +785,119 @@ BOOL FacetAdvParams::Apply() {
 			!recordReflBtn->GetState() && !recordTransBtn->GetState() &&
 			!recordACBtn->GetState() && !recordDirBtn->GetState()) {
 			GLMessageBox::Display("Please select counting mode", "Error", GLDLG_OK, GLDLG_ICONINFO);
-			return FALSE;
+			return false;
 		}
 
 		// Resolution
 		if (resolutionText->GetNumber(&ratio) && ratio >= 0.0) {
 			//Got a valid number
-			doRatio = TRUE;
+			doRatio = true;
 		}
 		else if (strcmp(resolutionText->GetText(), "...") != 0)  { //Not in mixed "..." state
 			GLMessageBox::Display("Invalid texture resolution\nMust be a non-negative number", "Error", GLDLG_OK, GLDLG_ICONERROR);
-			return FALSE;
+			return false;
 		}
 		else {
-			//Mixed state: leave doRatio as FALSE
+			//Mixed state: leave doRatio as false
 		}
 	}
 
 	// Superstructure
 
-	BOOL structChanged = FALSE; //if a facet gets into a new structure, we have to re-render the geometry
+	bool structChanged = false; //if a facet gets into a new structure, we have to re-render the geometry
 
 	int superStruct;
-	BOOL doSuperStruct = FALSE;
-	if (sscanf(facetStructure->GetText(), "%d", &superStruct) > 0 && superStruct > 0 && superStruct <= geom->GetNbStructure()) doSuperStruct = TRUE;
+	bool doSuperStruct = false;
+	if (sscanf(facetStructure->GetText(), "%d", &superStruct) > 0 && superStruct > 0 && superStruct <= geom->GetNbStructure()) doSuperStruct = true;
 	else {
-		if (strcmp(facetStructure->GetText(), "...") == 0) doSuperStruct = FALSE;
+		if (strcmp(facetStructure->GetText(), "...") == 0) doSuperStruct = false;
 		else{
 			GLMessageBox::Display("Invalid superstructre number", "Error", GLDLG_OK, GLDLG_ICONERROR);
-			return FALSE;
+			return false;
 		}
 	}
 
 
 	// Super structure destination (link)
 	int superDest;
-	BOOL doLink = FALSE;
+	bool doLink = false;
 	if (strcmp(facetSuperDest->GetText(), "none") == 0 || strcmp(facetSuperDest->GetText(), "no") == 0 || strcmp(facetSuperDest->GetText(), "0") == 0) {
-		doLink = TRUE;
+		doLink = true;
 		superDest = 0;
 	}
 	else if (sscanf(facetSuperDest->GetText(), "%d", &superDest) > 0) {
 		if (superDest == superStruct) {
 			GLMessageBox::Display("Link and superstructure can't be the same", "Error", GLDLG_OK, GLDLG_ICONERROR);
-			return FALSE;
+			return false;
 		}
 		else if (superDest < 0 || superDest > geom->GetNbStructure()) {
 			GLMessageBox::Display("Link destination points to a structure that doesn't exist", "Error", GLDLG_OK, GLDLG_ICONERROR);
-			return FALSE;
+			return false;
 		}
 		else
-			doLink = TRUE;
+			doLink = true;
 	}
-	else if (strcmp(facetSuperDest->GetText(), "...") == 0) doLink = FALSE;
+	else if (strcmp(facetSuperDest->GetText(), "...") == 0) doLink = false;
 	else {
 		GLMessageBox::Display("Invalid superstructure destination", "Error", GLDLG_OK, GLDLG_ICONERROR);
-		return FALSE;
+		return false;
 	}
 
 	// teleport
 	int teleport;
-	BOOL doTeleport = FALSE;
+	bool doTeleport = false;
 
 	if (facetTeleport->GetNumberInt(&teleport)) {
 		if (teleport<-1 || teleport>geom->GetNbFacet()) {
 			GLMessageBox::Display("Invalid teleport destination\n(If no teleport: set number to 0)", "Error", GLDLG_OK, GLDLG_ICONERROR);
-			return FALSE;
+			return false;
 		}
 		else if (teleport > 0 && geom->GetFacet(teleport - 1)->selected) {
 			char tmp[256];
 			sprintf(tmp, "The teleport destination of facet #%d can't be itself!", teleport);
 			GLMessageBox::Display(tmp, "Error", GLDLG_OK, GLDLG_ICONERROR);
-			return FALSE;
+			return false;
 		}
-		doTeleport = TRUE;
+		doTeleport = true;
 	}
 	else {
-		if (strcmp(facetTeleport->GetText(), "...") == 0) doTeleport = FALSE;
+		if (strcmp(facetTeleport->GetText(), "...") == 0) doTeleport = false;
 		else {
 			GLMessageBox::Display("Invalid teleport destination\n(If no teleport: set number to 0)", "Error", GLDLG_OK, GLDLG_ICONERROR);
-			return FALSE;
+			return false;
 		}
 	}
 
 	// temp.accomodation factor
 	double accfactor;
-	BOOL doAccfactor = FALSE;
+	bool doAccfactor = false;
 	if (facetAccFactor->GetNumber(&accfactor)) {
 		if (accfactor<0.0 || accfactor>1.0) {
 			GLMessageBox::Display("Facet accomodation factor must be between 0 and 1", "Error", GLDLG_OK, GLDLG_ICONERROR);
-			return FALSE;
+			return false;
 		}
-		doAccfactor = TRUE;
+		doAccfactor = true;
 	}
 	else {
-		if (strcmp(facetAccFactor->GetText(), "...") == 0) doAccfactor = FALSE;
+		if (strcmp(facetAccFactor->GetText(), "...") == 0) doAccfactor = false;
 		else {
 			GLMessageBox::Display("Invalid accomodation factor number", "Error", GLDLG_OK, GLDLG_ICONERROR);
-			return FALSE;
+			return false;
 		}
 	}
 
 	// Use desorption map
 	int useMapA = 0;
-	BOOL doUseMapA = FALSE;
-	if (strcmp(facetUseDesFile->GetSelectedValue(), "...") == 0) doUseMapA = FALSE;
+	bool doUseMapA = false;
+	if (strcmp(facetUseDesFile->GetSelectedValue(), "...") == 0) doUseMapA = false;
 	else {
 		useMapA = (facetUseDesFile->GetSelectedIndex() == 1);
-		BOOL missingMap = FALSE;
+		bool missingMap = false;
 		int missingMapId;
 		if (useMapA) {
 			for (int i = 0; i < geom->GetNbFacet(); i++) {
 				if (geom->GetFacet(i)->selected && !geom->GetFacet(i)->hasOutgassingFile) {
-					missingMap = TRUE;
+					missingMap = true;
 					missingMapId = i;
 				}
 			}
@@ -900,82 +906,82 @@ BOOL FacetAdvParams::Apply() {
 			char tmp[256];
 			sprintf(tmp, "%d is selected but doesn't have any outgassing map loaded.", missingMapId + 1);
 			GLMessageBox::Display(tmp, "Can't use map on all facets", GLDLG_OK, GLDLG_ICONERROR);
-			return FALSE;
+			return false;
 		}
-		doUseMapA = TRUE;
+		doUseMapA = true;
 	}
 
 	// sojourn time coefficient 1
 	double sojF;
-	BOOL doSojF = FALSE;
+	bool doSojF = false;
 
 	if (sojournFreq->GetNumber(&sojF)) {
 		if (sojF <= 0.0) {
 			GLMessageBox::Display("Wall sojourn time frequency has to be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
-			return FALSE;
+			return false;
 		}
-		doSojF = TRUE;
+		doSojF = true;
 	}
 	else {
-		if (enableSojournTime->GetState() == 0 || strcmp(sojournFreq->GetText(), "...") == 0) doSojF = FALSE;
+		if (enableSojournTime->GetState() == 0 || strcmp(sojournFreq->GetText(), "...") == 0) doSojF = false;
 		else {
 			GLMessageBox::Display("Invalid wall sojourn time frequency", "Error", GLDLG_OK, GLDLG_ICONERROR);
-			return FALSE;
+			return false;
 		}
 	}
 
 	// sojourn time coefficient 2
 	double sojE;
-	BOOL doSojE = FALSE;
+	bool doSojE = false;
 
 	if (sojournE->GetNumber(&sojE)) {
 		if (sojE <= 0.0) {
 			GLMessageBox::Display("Wall sojourn time second coefficient (Energy) has to be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
-			return FALSE;
+			return false;
 		}
-		doSojE = TRUE;
+		doSojE = true;
 	}
 	else {
-		if (enableSojournTime->GetState() == 0 || strcmp(sojournE->GetText(), "...") == 0) doSojE = FALSE;
+		if (enableSojournTime->GetState() == 0 || strcmp(sojournE->GetText(), "...") == 0) doSojE = false;
 		else {
 			GLMessageBox::Display("Invalid wall sojourn time second coefficient (Energy)", "Error", GLDLG_OK, GLDLG_ICONERROR);
-			return FALSE;
+			return false;
 		}
 	}
 
 	// angle map width
 	int angleMapWidth;
-	BOOL doAngleMapWidth = FALSE;
+	bool doAngleMapWidth = false;
 
-	if (angleMapRecordCheckbox->GetState() == 0 || strcmp(angleMapWidthBox->GetText(), "...") == 0) doAngleMapWidth = FALSE;
+	if (angleMapRecordCheckbox->GetState() == 0 || strcmp(angleMapWidthBox->GetText(), "...") == 0) doAngleMapWidth = false;
 	else if (angleMapWidthBox->GetNumberInt(&angleMapWidth)) {
 		if (angleMapWidth <= 0) {
 			GLMessageBox::Display("Angle map width has to be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
-			return FALSE;
+			return false;
 		}
-		doAngleMapWidth = TRUE;
+		doAngleMapWidth = true;
 	}
 	else {
 			GLMessageBox::Display("Invalid angle map width", "Error", GLDLG_OK, GLDLG_ICONERROR);
-			return FALSE;
+			return false;
 	}
 	
 
 	// angle map height
 	int angleMapHeight;
-	BOOL doAngleMapHeight = FALSE;
+	bool doAngleMapHeight = false;
 
-	if (angleMapRecordCheckbox->GetState() == 0 || strcmp(angleMapHeightBox->GetText(), "...") == 0) doAngleMapHeight = FALSE;
+	if (angleMapRecordCheckbox->GetState() == 0 || strcmp(angleMapHeightBox->GetText(), "...") == 0) doAngleMapHeight = false;
 	else if (angleMapHeightBox->GetNumberInt(&angleMapHeight)) {
 		if (angleMapHeight <= 0) {
 			GLMessageBox::Display("Angle map height has to be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
-			return FALSE;
+			return false;
 		}
-		doAngleMapHeight = TRUE;
+		doAngleMapHeight = true;
 	}
 	else {
 		GLMessageBox::Display("Invalid angle map height", "Error", GLDLG_OK, GLDLG_ICONERROR);
-		return FALSE;
+		return false;
 	}
 	
 
@@ -986,24 +992,24 @@ BOOL FacetAdvParams::Apply() {
 	//First applying angle map recording before a reset is done
 	int angleMapState = angleMapRecordCheckbox->GetState();
 	if (angleMapState < 2) {
-		for (int i = 0; i < nbSelected; i++) {
-			geom->GetFacet(selection[i])->sh.recordAngleMap=angleMapState;
+		for (auto sel:selectedFacets) {
+			geom->GetFacet(sel)->sh.recordAngleMap=angleMapState;
 		}
 	}
 	
-	if (!mApp->AskToReset(worker)) return FALSE;
+	if (!mApp->AskToReset(worker)) return false;
 	progressDlg = new GLProgress("Applying mesh settings", "Please wait");
-	progressDlg->SetVisible(TRUE);
+	progressDlg->SetVisible(true);
 	progressDlg->SetProgress(0.0);
 	int count = 0;
-	for (int i = 0; i < nbSelected; i++) {
-		Facet *f = geom->GetFacet(selection[i]);
-		BOOL hadAnyTexture = f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD || f->sh.countDirection;
-		BOOL hadDirCount = f->sh.countDirection;
+	for (auto sel:selectedFacets) {
+		Facet *f = geom->GetFacet(sel);
+		bool hadAnyTexture = f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD || f->sh.countDirection;
+		bool hadDirCount = f->sh.countDirection;
 		
 		if (enableBtn->GetState() == 0 || ratio == 0.0) {
 			//Let the user disable textures with the main switch or by typing 0 as resolution
-			f->sh.countDes = f->sh.countAbs = f->sh.countRefl = f->sh.countTrans = f->sh.countACD = f->sh.countDirection = FALSE;
+			f->sh.countDes = f->sh.countAbs = f->sh.countRefl = f->sh.countTrans = f->sh.countACD = f->sh.countDirection = false;
 		}
 		else {
 			if (recordDesBtn->GetState() < 2) f->sh.countDes = recordDesBtn->GetState();
@@ -1014,7 +1020,7 @@ BOOL FacetAdvParams::Apply() {
 			if (recordDirBtn->GetState() < 2) f->sh.countDirection = recordDirBtn->GetState();
 		}
 		
-		BOOL hasAnyTexture = f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD || f->sh.countDirection;
+		bool hasAnyTexture = f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD || f->sh.countDirection;
 
 		if (doTeleport) f->sh.teleportDest = teleport;
 		if (doAccfactor) f->sh.accomodationFactor = accfactor;
@@ -1022,7 +1028,7 @@ BOOL FacetAdvParams::Apply() {
 		if (doSuperStruct) {
 			if (f->sh.superIdx != (superStruct - 1)) {
 				f->sh.superIdx = superStruct - 1;
-				structChanged = TRUE;
+				structChanged = true;
 			}
 		}
 		if (doLink) {
@@ -1042,46 +1048,46 @@ BOOL FacetAdvParams::Apply() {
 		if (doAngleMapWidth) {
 			if (angleMapWidth != f->sh.angleMapPhiWidth) {
 				SAFE_FREE(f->angleMapCache);
-				f->sh.hasRecordedAngleMap = FALSE;
+				f->sh.hasRecordedAngleMap = false;
 				f->sh.angleMapPhiWidth = angleMapWidth;
 			}
 		}
 		if (doAngleMapHeight) {
 			if (angleMapHeight != f->sh.angleMapThetaHeight) {
 				SAFE_FREE(f->angleMapCache);
-				f->sh.hasRecordedAngleMap = FALSE;
+				f->sh.hasRecordedAngleMap = false;
 				f->sh.angleMapThetaHeight = angleMapHeight;
 			}
 		}
 
 		//set textures
 		try {
-			BOOL needsRemeshing = (hadAnyTexture != hasAnyTexture) || (hadDirCount != f->sh.countDirection) || (doRatio && (!IS_ZERO(geom->GetFacet(selection[i])->tRatio - ratio)));
-			if (needsRemeshing) geom->SetFacetTexture(selection[i], hasAnyTexture ? ratio : 0.0, hasAnyTexture ? boundMap : FALSE);
+			bool needsRemeshing = (hadAnyTexture != hasAnyTexture) || (hadDirCount != f->sh.countDirection) || (doRatio && (!IS_ZERO(geom->GetFacet(sel)->tRatio - ratio)));
+			if (needsRemeshing) geom->SetFacetTexture(sel, hasAnyTexture ? ratio : 0.0, hasAnyTexture ? boundMap : false);
 		}
 		catch (Error &e) {
 			GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONWARNING);
-			progressDlg->SetVisible(FALSE);
+			progressDlg->SetVisible(false);
 			SAFE_DELETE(progressDlg);
-			return FALSE;
+			return false;
 		}
 		catch (...) {
 			GLMessageBox::Display("Unexpected error while setting textures", "Error", GLDLG_OK, GLDLG_ICONWARNING);
-			progressDlg->SetVisible(FALSE);
+			progressDlg->SetVisible(false);
 			SAFE_DELETE(progressDlg);
-			return FALSE;
+			return false;
 		}
 		//if (angleMapRecordCheckbox->GetState() < 2) f->sh.recordAngleMap = angleMapRecordCheckbox->GetState();
 		if (showTexture->GetState() < 2) f->textureVisible = showTexture->GetState();
 		if (showVolume->GetState() < 2) f->volumeVisible = showVolume->GetState();
 		nbPerformed++;
-		progressDlg->SetProgress((double)nbPerformed / (double)nbSelected);
+		progressDlg->SetProgress((double)nbPerformed / (double)selectedFacets.size());
 	} //main cycle end
 	if (structChanged) geom->BuildGLList(); //Re-render facets
 
-	if (progressDlg) progressDlg->SetVisible(FALSE);
+	if (progressDlg) progressDlg->SetVisible(false);
 	SAFE_DELETE(progressDlg);
-	return TRUE;
+	return true;
 
 }
 
@@ -1090,7 +1096,7 @@ void FacetAdvParams::QuickApply() {
 	//Apply view settings without stopping the simulation
 
 
-	double nbSelected = (double)geom->GetNbSelected();
+	double nbSelected = (double)geom->GetNbSelectedFacets();
 	double nbPerformed = 0.0;
 
 	for (int i = 0; i < geom->GetNbFacet(); i++) {
@@ -1114,45 +1120,45 @@ void FacetAdvParams::QuickApply() {
 void FacetAdvParams::UpdateToggle(GLComponent *src) {
 
 	/*if (src==boundaryBtn) {
-		recordACBtn->SetState(FALSE);
+		recordACBtn->SetState(false);
 		} else if(src==enableBtn) {
 		//boundaryBtn->SetState(enableBtn->GetState());
 		} else */
 
 	if (src == recordDesBtn) {
-		enableBtn->SetState(TRUE);
-		//boundaryBtn->SetState(TRUE);
-		recordACBtn->SetState(FALSE);
+		enableBtn->SetState(true);
+		//boundaryBtn->SetState(true);
+		recordACBtn->SetState(false);
 	}
 	else if (src == recordAbsBtn) {
-		enableBtn->SetState(TRUE);
-		//boundaryBtn->SetState(TRUE);
-		recordACBtn->SetState(FALSE);
+		enableBtn->SetState(true);
+		//boundaryBtn->SetState(true);
+		recordACBtn->SetState(false);
 	}
 	else if (src == recordReflBtn) {
-		enableBtn->SetState(TRUE);
-		//boundaryBtn->SetState(TRUE);
-		recordACBtn->SetState(FALSE);
+		enableBtn->SetState(true);
+		//boundaryBtn->SetState(true);
+		recordACBtn->SetState(false);
 	}
 	else if (src == recordTransBtn) {
-		enableBtn->SetState(TRUE);
-		//boundaryBtn->SetState(TRUE);
-		recordACBtn->SetState(FALSE);
+		enableBtn->SetState(true);
+		//boundaryBtn->SetState(true);
+		recordACBtn->SetState(false);
 	}
 	else if (src == recordDirBtn) {
-		enableBtn->SetState(TRUE);
-		//boundaryBtn->SetState(TRUE);
-		recordACBtn->SetState(FALSE);
+		enableBtn->SetState(true);
+		//boundaryBtn->SetState(true);
+		recordACBtn->SetState(false);
 	}
 	else if (src == recordACBtn) {
 		if (recordACBtn->GetState()) {
-			enableBtn->SetState(TRUE);
-			//boundaryBtn->SetState(TRUE);
-			recordDesBtn->SetState(FALSE);
-			recordAbsBtn->SetState(FALSE);
-			recordReflBtn->SetState(FALSE);
-			recordTransBtn->SetState(FALSE);
-			recordDirBtn->SetState(FALSE);
+			enableBtn->SetState(true);
+			//boundaryBtn->SetState(true);
+			recordDesBtn->SetState(false);
+			recordAbsBtn->SetState(false);
+			recordReflBtn->SetState(false);
+			recordTransBtn->SetState(false);
+			recordDirBtn->SetState(false);
 		}
 	}
 	else if (src == enableSojournTime) {
@@ -1183,12 +1189,12 @@ void FacetAdvParams::ProcessMessage(GLComponent *src, int message) {
 		if (src == quickApply) {
 
 			progressDlg = new GLProgress("Applying view settings", "Please wait");
-			progressDlg->SetVisible(TRUE);
+			progressDlg->SetVisible(true);
 			progressDlg->SetProgress(0.5);
 
 			QuickApply();
 
-			progressDlg->SetVisible(FALSE);
+			progressDlg->SetVisible(false);
 			SAFE_DELETE(progressDlg);
 
 		}
@@ -1217,9 +1223,9 @@ void FacetAdvParams::ProcessMessage(GLComponent *src, int message) {
 
 		// -------------------------------------------------------------
 	case MSG_TEXT_UPD:
-		mApp->facetApplyBtn->SetEnabled(TRUE);
+		mApp->facetApplyBtn->SetEnabled(true);
 		if (src == resolutionText) {
-			enableBtn->SetState(TRUE);
+			enableBtn->SetState(true);
 			UpdateSizeForRatio();
 			double res;
 			if (resolutionText->GetNumber(&res) && res != 0.0)
@@ -1228,7 +1234,7 @@ void FacetAdvParams::ProcessMessage(GLComponent *src, int message) {
 				lengthText->SetText("");
 		}
 		else if (src == lengthText) {
-			enableBtn->SetState(TRUE);
+			enableBtn->SetState(true);
 			double length;
 			if (lengthText->GetNumber(&length) && length != 0.0) {
 				resolutionText->SetText(1.0 / length);
@@ -1246,7 +1252,7 @@ void FacetAdvParams::ProcessMessage(GLComponent *src, int message) {
 		// -------------------------------------------------------------
 	case MSG_TOGGLE:
 		UpdateToggle(src);
-		mApp->facetApplyBtn->SetEnabled(TRUE);
+		mApp->facetApplyBtn->SetEnabled(true);
 		break;
 	case MSG_TEXT:
 		/*if (
@@ -1264,18 +1270,18 @@ void FacetAdvParams::ProcessMessage(GLComponent *src, int message) {
 		break;
 	case MSG_COMBO:
 		if (src == facetReflType) {
-			mApp->facetApplyBtn->SetEnabled(TRUE);
+			mApp->facetApplyBtn->SetEnabled(true);
 		}
 		else if (src == facetUseDesFile) {
-			mApp->facetApplyBtn->SetEnabled(TRUE);
+			mApp->facetApplyBtn->SetEnabled(true);
 			if (facetUseDesFile->GetSelectedIndex() == 0) {
 				//User values
-				mApp->facetFlow->SetEditable(TRUE);
-				mApp->facetFlowArea->SetEditable(TRUE);
+				mApp->facetFlow->SetEditable(true);
+				mApp->facetFlowArea->SetEditable(true);
 			}
 			else { //use desorption file
-				mApp->facetFlow->SetEditable(FALSE);
-				mApp->facetFlowArea->SetEditable(FALSE);
+				mApp->facetFlow->SetEditable(false);
+				mApp->facetFlowArea->SetEditable(false);
 				//Values from last Refresh();
 				char tmp[64];
 				sprintf(tmp, "%.2E", sumOutgassing);

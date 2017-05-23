@@ -37,6 +37,8 @@ class OutgassingMap;
 class MomentsEditor;
 class ParameterEditor;
 
+class Error;
+
 class MolFlow : public Interface
 {
 public:
@@ -48,7 +50,7 @@ public:
 	
     
     void LoadFile(char *fName=NULL);
-	void InsertGeometry(BOOL newStr,char *fName=NULL);
+	void InsertGeometry(bool newStr,char *fName=NULL);
 	void SaveFile();
     
 	void ImportDesorption_DES();
@@ -58,13 +60,13 @@ public:
     void ClearFacetParams();
 	
     void ApplyFacetParams();
-	void UpdateFacetParams(BOOL updateSelection = FALSE);
+	void UpdateFacetParams(bool updateSelection = false);
     void StartStopSimulation();
-    void SaveConfig(BOOL increaseSessionCount = FALSE);
+    void SaveConfig(bool increaseSessionCount = false);
     void LoadConfig();
     
 	void PlaceComponents();
-    void UpdateFacetHits(BOOL allRows=FALSE);
+    void UpdateFacetHits(bool allRows=false);
 	void QuickPipe();
 	float GetAppTime();
 	void ClearParameters();
@@ -147,5 +149,5 @@ protected:
 	int  InvalidateDeviceObjects();
     int  FrameMove();
     void ProcessMessage(GLComponent *src,int message);
-	BOOL EvaluateVariable(VLIST *v, Worker * w, Geometry * geom);
+	bool EvaluateVariable(VLIST *v, Worker * w, Geometry * geom);
 };

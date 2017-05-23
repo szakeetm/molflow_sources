@@ -20,6 +20,12 @@ GNU General Public License for more details.
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
 #include "GLApp/GLFileBox.h"
+#include "GLApp/GLLabel.h"
+#include "GLApp/GLButton.h"
+#include "GLApp/GLList.h"
+#include "GLApp/GLCombo.h"
+#include "GLApp\GLToggle.h"
+#include "Geometry.h"
 #include "Facet.h"
 #ifdef MOLFLOW
 #include "MolFlow.h"
@@ -52,17 +58,17 @@ TexturePlotter::TexturePlotter() :GLWindow() {
 	strcpy(currentDir, ".");
 
 	SetTitle("Texture plotter");
-	SetResizable(TRUE);
-	SetIconfiable(TRUE);
+	SetResizable(true);
+	SetIconfiable(true);
 	SetMinimumSize(wD, hD);
 
 	mapList = new GLList(0);
-	mapList->SetColumnLabelVisible(TRUE);
-	mapList->SetRowLabelVisible(TRUE);
-	mapList->SetAutoColumnLabel(TRUE);
-	mapList->SetAutoRowLabel(TRUE);
+	mapList->SetColumnLabelVisible(true);
+	mapList->SetRowLabelVisible(true);
+	mapList->SetAutoColumnLabel(true);
+	mapList->SetAutoRowLabel(true);
 	mapList->SetRowLabelMargin(20);
-	mapList->SetGrid(TRUE);
+	mapList->SetGrid(true);
 	mapList->SetSelectionMode(BOX_CELL);
 	mapList->SetCornerLabel("\202\\\201");
 	Add(mapList);
@@ -97,7 +103,7 @@ TexturePlotter::TexturePlotter() :GLWindow() {
 	Add(cancelButton);
 
 	autoSizeOnUpdate = new GLToggle(0, "Autosize on every update (disable for smooth scrolling)");
-	autoSizeOnUpdate->SetState(TRUE);
+	autoSizeOnUpdate->SetState(true);
 	Add(autoSizeOnUpdate);
 
 	// Center dialog
@@ -146,7 +152,7 @@ void TexturePlotter::GetSelected() {
 	Geometry *geom = worker->GetGeometry();
 	selFacet = NULL;
 	int i = 0;
-	int nb = geom->GetNbFacet();
+	size_t nb = geom->GetNbFacet();
 	while (!selFacet && i < nb) {
 		if (geom->GetFacet(i)->selected) selFacet = geom->GetFacet(i);
 		if (!selFacet) i++;
@@ -160,7 +166,7 @@ void TexturePlotter::GetSelected() {
 
 // --------------------------------------------------------------------
 
-void TexturePlotter::Update(float appTime, BOOL force) {
+void TexturePlotter::Update(float appTime, bool force) {
 
 	if (!IsVisible()) return;
 
@@ -194,8 +200,8 @@ void TexturePlotter::UpdateTable() {
 	if (selFacet->cellPropertiesIds) {
 
 		char tmp[256];
-		int w = selFacet->sh.texWidth;
-		int h = selFacet->sh.texHeight;
+		size_t w = selFacet->sh.texWidth;
+		size_t h = selFacet->sh.texHeight;
 		mapList->SetSize(w, h);
 		mapList->SetAllColumnAlign(ALIGN_CENTER);
 
@@ -205,8 +211,8 @@ void TexturePlotter::UpdateTable() {
 		switch (mode) {
 
 		case 0: {// Cell area
-			for (int i = 0; i < w; i++) {
-				for (int j = 0; j < h; j++) {
+			for (size_t i = 0; i < w; i++) {
+				for (size_t j = 0; j < h; j++) {
 					float val = selFacet->GetMeshArea(i + j*w);
 					sprintf(tmp, "%g", val);
 					if (val > maxValue) {
@@ -227,8 +233,8 @@ void TexturePlotter::UpdateTable() {
 					SHGHITS *shGHit = (SHGHITS *)buffer;
 					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(APROFILE)*(1 + nbMoments)) : 0;
 					AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(AHIT)));
-					for (int i = 0; i < w; i++) {
-						for (int j = 0; j < h; j++) {
+					for (size_t i = 0; i < w; i++) {
+						for (size_t j = 0; j < h; j++) {
 							//int tSize = selFacet->sh.texWidth*selFacet->sh.texHeight;
 
 							llong val = hits[i + j*w].count;
@@ -263,9 +269,9 @@ void TexturePlotter::UpdateTable() {
 					/*if (shGHit->mode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
 						/ worker->timeWindowSize));*/
 					if (shGHit->mode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(worker->displayedMoment);
-					for (int i = 0; i < w; i++) {
-						for (int j = 0; j < h; j++) {
-							double area = (selFacet->GetMeshArea(i + j*w,TRUE)); if (area == 0.0) area = 1.0;
+					for (size_t i = 0; i < w; i++) {
+						for (size_t j = 0; j < h; j++) {
+							double area = (selFacet->GetMeshArea(i + j*w,true)); if (area == 0.0) area = 1.0;
 							double val = (double)hits[i + j*w].count / area*dCoef;
 							if (val > maxValue) {
 								maxValue = val;
@@ -301,13 +307,13 @@ void TexturePlotter::UpdateTable() {
 							dCoef *= 1.0 - ((double)selFacet->counterCache.hit.nbAbsorbed + (double)selFacet->counterCache.hit.nbDesorbed) / ((double)selFacet->counterCache.hit.nbHit + (double)selFacet->counterCache.hit.nbDesorbed) / 2.0;
 
 					if (shGHit->mode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(worker->displayedMoment);
-					for (int i = 0; i < w; i++) {
-						for (int j = 0; j < h; j++) {
+					for (size_t i = 0; i < w; i++) {
+						for (size_t j = 0; j < h; j++) {
 
 							/*double v_avg = 2.0*(double)hits[i + j*w].count / hits[i + j*w].sum_1_per_ort_velocity;
 							double imp_rate = hits[i + j*w].count / (selFacet->mesh[i + j*w].area*(selFacet->sh.is2sided ? 2.0 : 1.0))*dCoef;
 							double rho = 4.0*imp_rate / v_avg;*/
-							double rho = hits[i + j*w].sum_1_per_ort_velocity / selFacet->GetMeshArea(i + j*w,TRUE)*dCoef;
+							double rho = hits[i + j*w].sum_1_per_ort_velocity / selFacet->GetMeshArea(i + j*w,true)*dCoef;
 							if (rho > maxValue) {
 								maxValue = rho;
 								maxX = i; maxY = j;
@@ -345,13 +351,13 @@ void TexturePlotter::UpdateTable() {
 
 
 					if (shGHit->mode == MC_MODE) dCoef *= worker->GetMoleculesPerTP(worker->displayedMoment);
-					for (int i = 0; i < w; i++) {
-						for (int j = 0; j < h; j++) {
+					for (size_t i = 0; i < w; i++) {
+						for (size_t j = 0; j < h; j++) {
 
 							/*double v_avg = 2.0*(double)hits[i + j*w].count / hits[i + j*w].sum_1_per_ort_velocity;
 							double imp_rate = hits[i + j*w].count / (selFacet->mesh[i + j*w].area*(selFacet->sh.is2sided ? 2.0 : 1.0))*dCoef;
 							double rho = 4.0*imp_rate / v_avg;*/
-							double rho = hits[i + j*w].sum_1_per_ort_velocity / selFacet->GetMeshArea(i + j*w,TRUE)*dCoef;
+							double rho = hits[i + j*w].sum_1_per_ort_velocity / selFacet->GetMeshArea(i + j*w,true)*dCoef;
 							double rho_mass = rho*worker->gasMass / 1000.0 / 6E23;
 							if (rho_mass > maxValue) {
 								maxValue = rho_mass;
@@ -383,8 +389,8 @@ void TexturePlotter::UpdateTable() {
 					double dCoef = 1E4 * (worker->gasMass / 1000 / 6E23) * 0.0100;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 					
 					if (shGHit->mode == MC_MODE) dCoef *= worker->GetMoleculesPerTP(worker->displayedMoment);
-					for (int i = 0; i < w; i++) {
-						for (int j = 0; j < h; j++) {
+					for (size_t i = 0; i < w; i++) {
+						for (size_t j = 0; j < h; j++) {
 
 							double p = hits[i + j*w].sum_v_ort_per_area*dCoef;
 							if (p > maxValue) {
@@ -416,9 +422,9 @@ void TexturePlotter::UpdateTable() {
 					SHGHITS *shGHit = (SHGHITS *)buffer;
 					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(APROFILE)*(1 + nbMoments)) : 0;
 					AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(AHIT)));
-					for (int i = 0; i < w; i++) {
-						for (int j = 0; j < h; j++) {
-							int tSize = selFacet->sh.texWidth*selFacet->sh.texHeight;
+					for (size_t i = 0; i < w; i++) {
+						for (size_t j = 0; j < h; j++) {
+							size_t tSize = selFacet->sh.texWidth*selFacet->sh.texHeight;
 							double val = 4.0*(double)hits[i + j*w].count / hits[i + j*w].sum_1_per_ort_velocity;
 							if (val > maxValue) {
 								maxValue = val;
@@ -439,8 +445,8 @@ void TexturePlotter::UpdateTable() {
 			break; }
 
 		case 7: {// Gas velocity vector
-			for (int i = 0; i < w; i++) {
-				for (int j = 0; j < h; j++) {
+			for (size_t i = 0; i < w; i++) {
+				for (size_t j = 0; j < h; j++) {
 					if (selFacet->dirCache) {
 						sprintf(tmp, "%g,%g,%g",
 							selFacet->dirCache[i + j*w].dir.x / (double)selFacet->dirCache[i + j*w].count,
@@ -463,8 +469,8 @@ void TexturePlotter::UpdateTable() {
 			break; }
 
 		case 8: {// # of velocity vectors
-			for (int i = 0; i < w; i++) {
-				for (int j = 0; j < h; j++) {
+			for (size_t i = 0; i < w; i++) {
+				for (size_t j = 0; j < h; j++) {
 					if (selFacet->dirCache) {
 						llong val = selFacet->dirCache[i + j*w].count;
 						if (val > maxValue) {
@@ -492,7 +498,7 @@ void TexturePlotter::Display(Worker *w) {
 
 	worker = w;
 	UpdateTable();
-	SetVisible(TRUE);
+	SetVisible(true);
 
 }
 
@@ -514,7 +520,7 @@ void TexturePlotter::SaveFile() {
 
 	if (fn) {
 
-		int u, v, wu, wv;
+		size_t u, v, wu, wv;
 		if (!mapList->GetSelectionBox(&u, &v, &wu, &wv)) {
 			u = 0;
 			v = 0;
@@ -532,8 +538,8 @@ void TexturePlotter::SaveFile() {
 			return;
 		}
 
-		for (int i = u; i < u + wu; i++) {
-			for (int j = v; j < v + wv; j++) {
+		for (size_t i = u; i < u + wu; i++) {
+			for (size_t j = v; j < v + wv; j++) {
 				char *str = mapList->GetValueAt(j, i);
 				if (str) fprintf(f, "%s", str);
 				if (j < v + wv - 1)
@@ -569,7 +575,7 @@ void TexturePlotter::ProcessMessage(GLComponent *src, int message) {
 			SaveFile();
 		}
 		else if (src == maxButton) {
-			int u, v, wu, wv;
+			size_t u, v, wu, wv;
 			mapList->SetSelectedCell(maxX, maxY);
 			if (mapList->GetSelectionBox(&v, &u, &wv, &wu))
 				selFacet->SelectElem(u, v, wu, wv);
@@ -578,7 +584,7 @@ void TexturePlotter::ProcessMessage(GLComponent *src, int message) {
 
 	case MSG_LIST:
 		if (src == mapList) {
-			int u, v, wu, wv;
+			size_t u, v, wu, wv;
 			if (mapList->GetSelectionBox(&v, &u, &wv, &wu))
 				selFacet->SelectElem(u, v, wu, wv);
 		}
@@ -587,7 +593,7 @@ void TexturePlotter::ProcessMessage(GLComponent *src, int message) {
 	case MSG_COMBO:
 		if (src == viewCombo) {
 			UpdateTable();
-			maxButton->SetEnabled(TRUE);
+			maxButton->SetEnabled(true);
 			//maxButton->SetEnabled(viewCombo->GetSelectedIndex()!=2);
 		}
 		break;
