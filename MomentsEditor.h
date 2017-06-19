@@ -44,7 +44,7 @@ private:
   GLTitledPanel *panel1;
   GLTitledPanel *panel2;
 
-  double latest;
+  
   std::vector<double> moments;
   std::vector<std::string> userMoments;
 

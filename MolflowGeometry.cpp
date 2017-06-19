@@ -2390,10 +2390,6 @@ void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLP
 		s.append_attribute("name") = (strName)?strName[i]:"";
 
 	}
-
-
-
-
 	xml_node interfNode = saveDoc.append_child("Interface");
 
 	xml_node selNode = interfNode.append_child("Selections");
@@ -2445,7 +2441,7 @@ void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLP
 	if (mApp->profilePlotter) {
 		std::vector<int> ppViews = mApp->profilePlotter->GetViews();
 		xml_node profilePlotterNode = interfNode.append_child("ProfilePlotter");
-		profilePlotterNode.append_child("Parameters").append_attribute("logScale") = mApp->profilePlotter->IsLogScaled();
+		profilePlotterNode.append_child("Parameters").append_attribute("logScale") = (int)mApp->profilePlotter->IsLogScaled(); //backward compatibility: 0 or 1
 		xml_node viewsNode = profilePlotterNode.append_child("Views");
 		for (int v : ppViews) {
 			xml_node view = viewsNode.append_child("View");
@@ -2457,7 +2453,7 @@ void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLP
 	xml_node simuParamNode = saveDoc.append_child("MolflowSimuSettings");
 
 	simuParamNode.append_child("Gas").append_attribute("mass") = work->gasMass;
-	simuParamNode.child("Gas").append_attribute("enableDecay") = work->enableDecay;
+	simuParamNode.child("Gas").append_attribute("enableDecay") = (int)work->enableDecay; //backward compatibility: 0 or 1
 	simuParamNode.child("Gas").append_attribute("halfLife") = work->halfLife;
 
 	xml_node timeSettingsNode = simuParamNode.append_child("TimeSettings");
@@ -2471,10 +2467,9 @@ void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLP
 
 	}
 
-
 	timeSettingsNode.append_attribute("timeWindow") = work->timeWindowSize;
-	timeSettingsNode.append_attribute("useMaxwellDistr") = work->useMaxwellDistribution;
-	timeSettingsNode.append_attribute("calcConstFlow") = work->calcConstantFlow;
+	timeSettingsNode.append_attribute("useMaxwellDistr") = (int)work->useMaxwellDistribution; //backward compatibility: 0 or 1
+	timeSettingsNode.append_attribute("calcConstFlow") = (int)work->calcConstantFlow; //backward compatibility: 0 or 1
 
 	xml_node motionNode = simuParamNode.append_child("Motion");
 	motionNode.append_attribute("type") = work->motionType;
@@ -2845,8 +2840,8 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 		*/
 
 		work->timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();
-		work->useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_int();
-		work->calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_int();
+		work->useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_bool();
+		work->calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_bool();
 
 		xml_node motionNode = simuParamNode.child("Motion");
 		work->motionType = motionNode.attribute("type").as_int();

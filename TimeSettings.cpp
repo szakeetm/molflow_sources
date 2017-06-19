@@ -25,6 +25,7 @@
 #include "MolFlow.h"
 #include "MomentsEditor.h"
 #include "FacetDetails.h"
+#include "FormulaEditor.h"
 
 extern MolFlow *mApp;
 
@@ -147,8 +148,9 @@ void TimeSettings::ProcessMessage(GLComponent *src,int message) {
 		  GLMessageBox::Display((char *)e.GetMsg(),"Error (Worker::Update)",GLDLG_OK,GLDLG_ICONERROR);
 	  } 
 	  mApp->UpdatePlotters();
-	  if (mApp->facetDetails) mApp->facetDetails->Update(); 
+	  if (mApp->facetDetails) mApp->facetDetails->Update();
 		if (mApp->autoUpdateFormulas) mApp->UpdateFormula();
+		if (mApp->formulaEditor && mApp->formulaEditor->IsVisible()) mApp->formulaEditor->ReEvaluate();
     } else if (src==editButton) {
 		if( mApp->momentsEditor==NULL ) mApp->momentsEditor = new MomentsEditor(work);
 		mApp->momentsEditor->Refresh();

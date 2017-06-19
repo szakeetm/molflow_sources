@@ -342,8 +342,8 @@ void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, size_t vert
 		sh.desorbType = f.child("Outgassing").attribute("desType").as_int();
 		sh.desorbTypeN = f.child("Outgassing").attribute("desExponent").as_double();
 		sh.outgassing_paramId = f.child("Outgassing").attribute("parameterId").as_int();
-		hasOutgassingFile = f.child("Outgassing").attribute("hasOutgassingFile").as_int();
-		sh.useOutgassingFile = f.child("Outgassing").attribute("useOutgassingFile").as_int();
+		hasOutgassingFile = f.child("Outgassing").attribute("hasOutgassingFile").as_bool();
+		sh.useOutgassingFile = f.child("Outgassing").attribute("useOutgassingFile").as_bool();
 		sh.temperature = f.child("Temperature").attribute("value").as_double();
 		sh.accomodationFactor = f.child("Temperature").attribute("accFactor").as_double();
 		xml_node reflNode = f.child("Reflection");
@@ -370,12 +370,12 @@ void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, size_t vert
 		hasMesh = texNode.attribute("hasMesh").as_bool();
 		sh.texWidthD = texNode.attribute("texDimX").as_double();
 		sh.texHeightD = texNode.attribute("texDimY").as_double();
-		sh.countDes = texNode.attribute("countDes").as_int();
-		sh.countAbs = texNode.attribute("countAbs").as_int();
-		sh.countRefl = texNode.attribute("countRefl").as_int();
-		sh.countTrans = texNode.attribute("countTrans").as_int();
-		sh.countDirection = texNode.attribute("countDir").as_int();
-		sh.countACD = texNode.attribute("countAC").as_int();
+		sh.countDes = texNode.attribute("countDes").as_bool();
+		sh.countAbs = texNode.attribute("countAbs").as_bool();
+		sh.countRefl = texNode.attribute("countRefl").as_bool();
+		sh.countTrans = texNode.attribute("countTrans").as_bool();
+		sh.countDirection = texNode.attribute("countDir").as_bool();
+		sh.countACD = texNode.attribute("countAC").as_bool();
 
 		xml_node outgNode = f.child("DynamicOutgassing");
 		if ((hasOutgassingFile) && outgNode && outgNode.child("map")) {
@@ -425,8 +425,8 @@ void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, size_t vert
 		}
 	} //else use default values at Facet() constructor
 
-	textureVisible = f.child("ViewSettings").attribute("textureVisible").as_int();
-	volumeVisible = f.child("ViewSettings").attribute("volumeVisible").as_int();
+	textureVisible = f.child("ViewSettings").attribute("textureVisible").as_bool();
+	volumeVisible = f.child("ViewSettings").attribute("volumeVisible").as_bool();
 
 	UpdateFlags();
 }
@@ -1205,15 +1205,15 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 	e = f.append_child("Opacity");
 	e.append_attribute("constValue") = sh.opacity;
 	e.append_attribute("parameterId") = sh.opacity_paramId;
-	e.append_attribute("is2sided") = sh.is2sided;
+	e.append_attribute("is2sided") = (int)sh.is2sided; //backward compatibility: 0 or 1
 
 	e = f.append_child("Outgassing");
 	e.append_attribute("constValue") = sh.outgassing;
 	e.append_attribute("parameterId") = sh.outgassing_paramId;
 	e.append_attribute("desType") = sh.desorbType;
 	e.append_attribute("desExponent") = sh.desorbTypeN;
-	e.append_attribute("hasOutgassingFile") = hasOutgassingFile;
-	e.append_attribute("useOutgassingFile") = sh.useOutgassingFile;
+	e.append_attribute("hasOutgassingFile") = (int)hasOutgassingFile; //backward compatibility: 0 or 1
+	e.append_attribute("useOutgassingFile") = (int)sh.useOutgassingFile; //backward compatibility: 0 or 1
 
 	e = f.append_child("Temperature");
 	e.append_attribute("value") = sh.temperature;
@@ -1221,7 +1221,7 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 
 	e = f.append_child("Reflection");
 	e.append_attribute("type") = sh.reflectType;
-	e.append_attribute("enableSojournTime") = sh.enableSojournTime;
+	e.append_attribute("enableSojournTime") = (int)sh.enableSojournTime; //backward compatibility: 0 or 1
 	e.append_attribute("sojournFreq") = sh.sojournFreq;
 	e.append_attribute("sojournE") = sh.sojournE;
 
@@ -1234,7 +1234,7 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 
 
 	e = f.append_child("Motion");
-	e.append_attribute("isMoving") = sh.isMoving;
+	e.append_attribute("isMoving") = (int)sh.isMoving; //backward compatibility: 0 or 1
 
 
 	e = f.append_child("Recordings");
@@ -1264,17 +1264,17 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 	t.append_attribute("hasMesh") = cellPropertiesIds != NULL;
 	t.append_attribute("texDimX") = sh.texWidthD;
 	t.append_attribute("texDimY") = sh.texHeightD;
-	t.append_attribute("countDes") = sh.countDes;
-	t.append_attribute("countAbs") = sh.countAbs;
-	t.append_attribute("countRefl") = sh.countRefl;
-	t.append_attribute("countTrans") = sh.countTrans;
-	t.append_attribute("countDir") = sh.countDirection;
-	t.append_attribute("countAC") = sh.countACD;
+	t.append_attribute("countDes") = (int)sh.countDes; //backward compatibility: 0 or 1
+	t.append_attribute("countAbs") = (int)sh.countAbs; //backward compatibility: 0 or 1
+	t.append_attribute("countRefl") = (int)sh.countRefl; //backward compatibility: 0 or 1
+	t.append_attribute("countTrans") = (int)sh.countTrans; //backward compatibility: 0 or 1
+	t.append_attribute("countDir") = (int)sh.countDirection; //backward compatibility: 0 or 1
+	t.append_attribute("countAC") = (int)sh.countACD; //backward compatibility: 0 or 1
 
 	e = f.append_child("ViewSettings");
 
-	e.append_attribute("textureVisible") = textureVisible;
-	e.append_attribute("volumeVisible") = volumeVisible;
+	e.append_attribute("textureVisible") = (int)textureVisible; //backward compatibility: 0 or 1
+	e.append_attribute("volumeVisible") = (int)volumeVisible; //backward compatibility: 0 or 1
 
 
 	f.append_child("Indices").append_attribute("nb") = sh.nbIndex;

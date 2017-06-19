@@ -1,5 +1,5 @@
 /*
-  File:        FormulaSettings.cpp
+  File:        FormulaEditor.cpp
   Description: Formula edition dialog
   Program:     MolFlow
   Author:      R. KERSEVAN / J-L PONS / M ADY

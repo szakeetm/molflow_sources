@@ -76,6 +76,8 @@ public:
 	void calcFlow();
 	void calcSticking();
 
+	bool EvaluateVariable(VLIST *v);
+
 	//char* appName;
 
 	GLButton      *texturePlotterShortcut;
@@ -149,5 +151,4 @@ protected:
 	int  InvalidateDeviceObjects();
     int  FrameMove();
     void ProcessMessage(GLComponent *src,int message);
-	bool EvaluateVariable(VLIST *v, Worker * w, Geometry * geom);
 };

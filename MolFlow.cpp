@@ -57,10 +57,11 @@ GNU General Public License for more details.
 #include "TexturePlotter.h"
 #include "OutgassingMap.h"
 #include "MomentsEditor.h"
-#include "ParameterEditor.h"
 #include "FacetCoordinates.h"
 #include "VertexCoordinates.h"
+#include "ParameterEditor.h"
 #include "SmartSelection.h"
+#include "FormulaEditor.h"
 
 static const char *fileLFilters = "All MolFlow supported files\0*.txt;*.xml;*.zip;*.geo;*.geo7z;*.syn;*.syn7z;*.str;*.stl;*.ase\0"
 "All files\0*.*\0";
@@ -84,6 +85,35 @@ std::string appName = "Molflow+ 2.6.50 64-bit (" __DATE__ ")";
 
 
 std::vector<string> formulaPrefixes = { "A","D","H","P","DEN","Z","V","T","AR","ar","," };
+std::string formulaSyntax =
+R"(MC Variables: An (Absorption on facet n), Dn (Desorption on facet n), Hn (Hit on facet n)
+Pn (Pressure [mbar] on facet n), DENn (Density [1/m3] on facet n)
+Zn (Imp. rate on facet n), Vn (avg. speed [m/s] on facet n), Tn (temp[K] of facet n)
+SUMABS (total absorbed), SUMDES (total desorbed), SUMHIT (total hit)
+
+SUM(H,3,8)    calculates the sum of hits on facets 3,4,... ...7,8. (Works with H,A,D,AR).
+AVG(P,3,8)    calculates the average pressure (area-wise) on facets 3 to 8 (Works with P,D,Z)
+SUM(H,S3)    calculates the sum of hits on selection group 3 (works with H,A,D,AR)
+AVG(DEN,S2) calculates the average (area-wise) on facets belonging to sel. group 2
+SUM(H,SEL)    calculates the sum of hits on the current selection. (Works with H,A,D,AR)
+AVG(Z,SEL)    calculates the average impingement rate on the current selection
+For the last two, might need to manually refresh formulas after you change the selection.
+
+Area variables: ARn (Area of facet n), DESAR (total desorption area), ABSAR (total absorption area)
+
+Final (constant) outgassing rate [mbar*l/s]: QCONST
+Final (constant) outgassing rate [molecules/s]: QCONST_N
+Total desorbed molecules until last moment: [molecules]: NTOT
+Gas mass [g/mol]: GASMASS
+
+Mean Pumping Path: MPP (average path of molecules in the system before absorption)
+Mean Free Path:      MFP (average path of molecules between two wall hits)
+
+Math functions: sin(), cos(), tan(), sinh(), cosh(), tanh(), asin(), acos(),
+                     atan(), exp(), ln(), pow(x,y), log2(), log10(), inv(), sqrt(), abs()
+
+Constants:  Kb (Boltzmann's constant), R (Gas constant), Na (Avogadro's number), PI
+)";
 
 MolFlow *mApp;
 
@@ -174,6 +204,7 @@ MolFlow::MolFlow()
 	facetDetails = NULL;
 	viewer3DSettings = NULL;
 	textureSettings = NULL;
+	formulaEditor = NULL;
 	globalSettings = NULL;
 	profilePlotter = NULL;
 	texturePlotter = NULL;
@@ -816,7 +847,7 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 		f0 = geom->GetFacet(selectedFacets[0]);
 
 		double f0Area = f0->GetArea();
-		double area = f0Area; //sum facet area
+		double sumArea = f0Area; //sum facet area
 
 		bool stickingE = true;
 		bool opacityE = true;
@@ -828,8 +859,8 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 		bool recordE = true;
 		bool is2sidedE = true;
 
-		for (auto sel:selectedFacets) {
-			f = geom->GetFacet(sel);
+		for (size_t sel = 1; sel < selectedFacets.size();sel++) {
+			f = geom->GetFacet(selectedFacets[sel]);
 			double fArea = f->GetArea();
 			stickingE = stickingE && (f0->userSticking.compare(f->userSticking) == 0) && IsEqual(f0->sh.sticking, f->sh.sticking);
 			opacityE = opacityE && (f0->userOpacity.compare(f->userOpacity) == 0) && IsEqual(f0->sh.opacity, f->sh.opacity);
@@ -840,7 +871,7 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 			desorbTypeE = desorbTypeE && (f0->sh.desorbType == f->sh.desorbType);
 			desorbTypeNE = desorbTypeNE && IsEqual(f0->sh.desorbTypeN, f->sh.desorbTypeN);
 			recordE = recordE && (f0->sh.profileType == f->sh.profileType);  //profiles
-			area += fArea;
+			sumArea += fArea;
 		}
 
 		if (nbSel == 1)
@@ -854,7 +885,7 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 		facetPanel->SetTitle(tmp);
 		if (selectedFacets.size() > 1) facetAreaLabel->SetText("Sum Area (cm\262):");
 		else facetAreaLabel->SetText("Area (cm\262):");
-		facetArea->SetText(area);
+		facetArea->SetText(sumArea);
 		if (stickingE) {
 			if (f0->userSticking.length() == 0)
 				facetSticking->SetText(f0->sh.sticking);
@@ -1023,6 +1054,7 @@ int MolFlow::FrameMove()
 	if (globalSettings) globalSettings->SMPUpdate();
 	if (worker.running && ((m_fTime - lastUpdate) >= 1.0f)) {
 		if (textureSettings) textureSettings->Update();
+		if (formulaEditor && formulaEditor->IsVisible()) formulaEditor->Refresh();
 	}
 	if ((m_fTime - worker.startTime <= 2.0f) && worker.running) {
 		hitNumber->SetText("Starting...");
@@ -1242,12 +1274,12 @@ void MolFlow::SaveFile() {
 void MolFlow::LoadFile(char *fName) {
 
 
-	char fullName[1024];
+	char fullName[512];
 	char shortName[512];
 	strcpy(fullName, "");
 
 	if (fName == NULL) {
-		FILENAME *fn = GLFileBox::OpenFile(currentDir, NULL, "Open file", fileLFilters, 2);
+		FILENAME *fn = GLFileBox::OpenFile(currentDir, NULL, "Open file", fileLFilters, 0);
 		if (fn)
 			strcpy(fullName, fn->fullName);
 	}
@@ -1335,7 +1367,7 @@ void MolFlow::LoadFile(char *fName) {
 		if (vertexCoordinates) vertexCoordinates->Update();
 		if (movement) movement->Update();
 		if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
-
+		if (formulaEditor) formulaEditor->Refresh();
 	}
 	catch (Error &e) {
 
@@ -1478,6 +1510,7 @@ void MolFlow::StartStopSimulation() {
 	if (!worker.running) { //Force update on simulation stop
 		UpdatePlotters();
 		if (autoUpdateFormulas) UpdateFormula();
+		if (formulaEditor && formulaEditor->IsVisible()) formulaEditor->ReEvaluate();
 	}
 
 	// Frame rate measurement
@@ -2002,11 +2035,11 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	ClearAllSelections();
 	ClearAllViews();
 
-	GLParser *f = new GLParser();
+	/*GLParser *f = new GLParser();
 	f->SetExpression("A2/SUMDES");
 	f->SetName("Trans. Prob.");
-	f->Parse();
-	AddFormula(f);
+	f->Parse();*/
+	AddFormula("Trans.prob.", "A2/SUMDES");
 
 	UpdateStructMenu();
 	// Send to sub process
@@ -2032,6 +2065,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	if (vertexCoordinates) vertexCoordinates->Update();
 	if (movement) movement->Update();
 	if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
+	if (formulaEditor) formulaEditor->Refresh();
 	UpdateTitle();
 	changedSinceSave = false;
 	ResetAutoSaveTimer();
@@ -2395,8 +2429,9 @@ void MolFlow::CrashHandler(Error *e) {
 }
 
 
-bool MolFlow::EvaluateVariable(VLIST *v, Worker *w, Geometry *geom) {
+bool MolFlow::EvaluateVariable(VLIST *v) {
 	bool ok = true;
+	Geometry* geom = worker.GetGeometry();
 	size_t nbFacet = geom->GetNbFacet();
 	int idx;
 
