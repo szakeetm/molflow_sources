@@ -552,19 +552,20 @@ void MolFlow::PlaceComponents() {
 	sy += (simuPanel->GetHeight() + 5);
 
 	// ---------------------------------------------------------
-	int lg = m_screenHeight - (nbFormula * 25 + 23);
+	int lg = m_screenHeight /*- (nbFormula * 25 + 23)*/;
 
 	facetList->SetBounds(sx, sy, 202, lg - sy);
 
 	// ---------------------------------------------------------
 
+	/*
 	for (int i = 0; i < nbFormula; i++) {
 		formulas[i].name->SetBounds(sx, lg + 5, 95, 18);
 		formulas[i].value->SetBounds(sx + 90, lg + 5, 87, 18);
 		formulas[i].setBtn->SetBounds(sx + 182, lg + 5, 20, 18);
 		lg += 25;
 	}
-
+	*/
 }
 
 //-----------------------------------------------------------------------------
@@ -1304,7 +1305,7 @@ void MolFlow::LoadFile(char *fName) {
 	else strcpy(shortName, fullName);
 
 	try {
-		ClearFormula();
+		ClearFormulas();
 		ClearParameters();
 		ClearAllSelections();
 		ClearAllViews();
@@ -1472,7 +1473,7 @@ void MolFlow::InsertGeometry(bool newStr, char *fName) {
 		if (facetDetails) facetDetails->Update();
 		if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 		if (vertexCoordinates) vertexCoordinates->Update();
-
+		if (formulaEditor) formulaEditor->Refresh();
 
 	}
 	catch (Error &e) {
@@ -1509,8 +1510,8 @@ void MolFlow::StartStopSimulation() {
 	worker.StartStop(m_fTime, modeCombo->GetSelectedIndex());
 	if (!worker.running) { //Force update on simulation stop
 		UpdatePlotters();
-		if (autoUpdateFormulas) UpdateFormula();
-		if (formulaEditor && formulaEditor->IsVisible()) formulaEditor->ReEvaluate();
+		//if (autoUpdateFormulas) UpdateFormula();
+		if (autoUpdateFormulas && formulaEditor && formulaEditor->IsVisible()) formulaEditor->ReEvaluate();
 	}
 
 	// Frame rate measurement
@@ -1975,9 +1976,9 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			}
 			break;
 		}
-		else {
+		/*else {
 			ProcessFormulaButtons(src);
-		}
+		}*/
 		break;
 	}
 }
@@ -2030,7 +2031,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	compACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
 	//resetSimu->SetEnabled(true);
 	ClearFacetParams();
-	ClearFormula();
+	ClearFormulas();
 	ClearParameters();
 	ClearAllSelections();
 	ClearAllViews();

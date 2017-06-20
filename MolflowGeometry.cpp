@@ -738,7 +738,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *leakCache
 	//mApp->ClearAllViews();
 	prg->SetMessage("Clearing current geometry...");
 	Clear();
-	//mApp->ClearFormula();
+	//mApp->ClearFormulas();
 
 
 	// Globals
@@ -1031,7 +1031,7 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version) {
 	//mApp->ClearAllViews();
 	prg->SetMessage("Clearing current geometry...");
 	Clear();
-	//mApp->ClearFormula();
+	//mApp->ClearFormulas();
 
 	// Globals
 	char tmp[512];
@@ -1461,7 +1461,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit
 	file->Write("nbVertex:"); file->Write(sh.nbVertex, "\n");
 	file->Write("nbFacet:"); file->Write(saveSelected ? selectedFacets.size() : sh.nbFacet, "\n");
 	file->Write("nbSuper:"); file->Write(sh.nbSuper, "\n");
-	file->Write("nbFormula:"); file->Write((!saveSelected) ? mApp->nbFormula : 0, "\n");
+	file->Write("nbFormula:"); file->Write((!saveSelected) ? mApp->formulas_n.size() : 0, "\n");
 
 	file->Write("nbView:"); file->Write(mApp->nbView, "\n");
 	file->Write("nbSelection:"); file->Write((!saveSelected) ? selectedFacets.size() : 0, "\n");
@@ -1485,11 +1485,11 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit
 
 	file->Write("formulas {\n");
 	if (!saveSelected){
-		for (int i = 0; i < mApp->nbFormula; i++) {
+		for (auto f:mApp->formulas_n) {
 			file->Write("  \"");
-			file->Write(mApp->formulas[i].parser->GetName());
+			file->Write(f->GetName());
 			file->Write("\" \"");
-			file->Write(mApp->formulas[i].parser->GetExpression());
+			file->Write(f->GetExpression());
 			file->Write("\"\n");
 		}
 	}
@@ -2430,12 +2430,14 @@ void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLP
 
 
 	xml_node formulaNode = interfNode.append_child("Formulas");
-	formulaNode.append_attribute("nb") = (!saveSelected)*(mApp->nbFormula);
-	for (int i = 0; (i < mApp->nbFormula) && !saveSelected; i++) { //don't save formulas when exporting part of the geometry (saveSelected)
-		xml_node newFormula = formulaNode.append_child("Formula");
-		newFormula.append_attribute("id") = i;
-		newFormula.append_attribute("name") = mApp->formulas[i].parser->GetName();
-		newFormula.append_attribute("expression") = mApp->formulas[i].parser->GetExpression();
+	formulaNode.append_attribute("nb") = (!saveSelected)*(mApp->formulas_n.size());
+	if (!saveSelected) { //don't save formulas when exporting part of the geometry (saveSelected)
+		for (size_t i = 0; i < mApp->formulas_n.size();i++) {
+			xml_node newFormula = formulaNode.append_child("Formula");
+			newFormula.append_attribute("id") = i;
+			newFormula.append_attribute("name") = mApp->formulas_n[i]->GetName();
+			newFormula.append_attribute("expression") = mApp->formulas_n[i]->GetExpression();
+		}
 	}
 
 	if (mApp->profilePlotter) {
@@ -2684,7 +2686,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg){
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
-	//mApp->ClearFormula();
+	//mApp->ClearFormulas();
 	Clear();
 	xml_node geomNode = loadXML.child("Geometry");
 
@@ -2890,7 +2892,7 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg, bool newStr){
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
-	//mApp->ClearFormula();
+	//mApp->ClearFormulas();
 	//Clear();
 	int structId = viewStruct;
 	if (structId == -1) structId = 0;
