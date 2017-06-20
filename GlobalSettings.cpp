@@ -421,7 +421,7 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 				GLMessageBox::Display("Invalid half life", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
-			if ((enableDecay->GetState()==1) != worker->enableDecay || ((enableDecay->GetState()==1) && IsEqual(hl, worker->halfLife, 1e-7))) {
+			if ((enableDecay->GetState()==1) != worker->enableDecay || ((enableDecay->GetState()==1) && IsEqual(hl, worker->halfLife))) {
 				if (mApp->AskToReset()) {
 					worker->needsReload = true;
 					worker->enableDecay = enableDecay->GetState();

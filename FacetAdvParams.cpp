@@ -307,6 +307,10 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	angleMapPanel->SetCompBounds(angleMapReleaseButton, 208, 36, 94, 20);
 	angleMapPanel->Add(angleMapReleaseButton);
 
+	remeshButton = new GLButton(0, "Force remesh");
+	aPanel->SetCompBounds(remeshButton, 216, 13, 79, 20);
+	aPanel->Add(remeshButton);
+
 	SetTitle("Advanced facet parameters");
 	// Center dialog
 	int wS, hS;
@@ -565,9 +569,9 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 		reflectTypeE = reflectTypeE && (f0->sh.reflectType == f->sh.reflectType);
 		hasOutgMapE = hasOutgMapE && (f0->hasOutgassingFile == f->hasOutgassingFile);
 		useOutgMapE = useOutgMapE && (f0->sh.useOutgassingFile == f->sh.useOutgassingFile);
-		dynOutgEqual = dynOutgEqual && IsEqual(f0->sh.totalOutgassing, f->sh.totalOutgassing, 1E-20);
-		dynOutgAEqual = dynOutgAEqual && IsEqual(f0->sh.totalOutgassing / f0Area, f->sh.totalOutgassing / fArea, 1E-20);
-		yieldEqual = yieldEqual && IsEqual(f0->sh.totalOutgassing / f0->sh.temperature / f0->totalFlux, f->sh.totalOutgassing / f->sh.temperature / f->totalFlux, 1E-30); //less tolerance, expecting small yields
+		dynOutgEqual = dynOutgEqual && IsEqual(f0->sh.totalOutgassing, f->sh.totalOutgassing);
+		dynOutgAEqual = dynOutgAEqual && IsEqual(f0->sh.totalOutgassing / f0Area, f->sh.totalOutgassing / fArea);
+		yieldEqual = yieldEqual && IsEqual(f0->sh.totalOutgassing / f0->sh.temperature / f0->totalFlux, f->sh.totalOutgassing / f->sh.temperature / f->totalFlux);
 		fluxAEqual = fluxAEqual && IsEqual(f0->totalFlux / f0Area, f->totalFlux / fArea);
 		doseAEqual = doseAEqual && IsEqual(f0->totalDose / f0Area, f->totalDose / fArea);
 		isMovingE = isMovingE && (f0->sh.isMoving == f->sh.isMoving);
@@ -769,14 +773,95 @@ void FacetAdvParams::Reposition(int wD, int hD) {
 }
 
 
-//-----------------------------------------------------------------------------
-
-bool FacetAdvParams::Apply() {
-
+bool FacetAdvParams::ApplyTexture(bool force) {
 	bool boundMap = true; // boundaryBtn->GetState();
 	double ratio = 0.0;
+	std::vector<size_t> selectedFacets = geom->GetSelectedFacets();
+	int nbPerformed = 0;
+	bool doRatio = false;
+	if (enableBtn->GetState() == 1) { //check if valid texture settings are to be applied
+
+									  // Check counting mode
+		if (!recordDesBtn->GetState() && !recordAbsBtn->GetState() &&
+			!recordReflBtn->GetState() && !recordTransBtn->GetState() &&
+			!recordACBtn->GetState() && !recordDirBtn->GetState()) {
+			GLMessageBox::Display("Please select counting mode", "Error", GLDLG_OK, GLDLG_ICONINFO);
+			return false;
+		}
+
+		// Resolution
+		if (resolutionText->GetNumber(&ratio) && ratio >= 0.0) {
+			//Got a valid number
+			doRatio = true;
+		}
+		else if (strcmp(resolutionText->GetText(), "...") != 0) { //Not in mixed "..." state
+			GLMessageBox::Display("Invalid texture resolution\nMust be a non-negative number", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			return false;
+		}
+		else {
+			//Mixed state: leave doRatio as false
+		}
+	}
+
+	if (!mApp->AskToReset(worker)) return false;
+	progressDlg = new GLProgress("Applying mesh settings", "Please wait");
+	progressDlg->SetVisible(true);
+	progressDlg->SetProgress(0.0);
+	int count = 0;
+	for (auto sel : selectedFacets) {
+		Facet *f = geom->GetFacet(sel);
+		bool hadAnyTexture = f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD || f->sh.countDirection;
+		bool hadDirCount = f->sh.countDirection;
+
+		if (enableBtn->GetState() == 0 || ratio == 0.0) {
+			//Let the user disable textures with the main switch or by typing 0 as resolution
+			f->sh.countDes = f->sh.countAbs = f->sh.countRefl = f->sh.countTrans = f->sh.countACD = f->sh.countDirection = false;
+		}
+		else {
+			if (recordDesBtn->GetState() < 2) f->sh.countDes = recordDesBtn->GetState();
+			if (recordAbsBtn->GetState() < 2) f->sh.countAbs = recordAbsBtn->GetState();
+			if (recordReflBtn->GetState() < 2) f->sh.countRefl = recordReflBtn->GetState();
+			if (recordTransBtn->GetState() < 2) f->sh.countTrans = recordTransBtn->GetState();
+			if (recordACBtn->GetState() < 2) f->sh.countACD = recordACBtn->GetState();
+			if (recordDirBtn->GetState() < 2) f->sh.countDirection = recordDirBtn->GetState();
+		}
+
+		bool hasAnyTexture = f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD || f->sh.countDirection;
+
+		//set textures
+		try {
+			bool needsRemeshing = force || (hadAnyTexture != hasAnyTexture) || (hadDirCount != f->sh.countDirection) || (doRatio && (!IS_ZERO(geom->GetFacet(sel)->tRatio - ratio)));
+			if (needsRemeshing) geom->SetFacetTexture(sel, hasAnyTexture ? ratio : 0.0, hasAnyTexture ? boundMap : false);
+		}
+		catch (Error &e) {
+			GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONWARNING);
+			progressDlg->SetVisible(false);
+			SAFE_DELETE(progressDlg);
+			return false;
+		}
+		catch (...) {
+			GLMessageBox::Display("Unexpected error while setting textures", "Error", GLDLG_OK, GLDLG_ICONWARNING);
+			progressDlg->SetVisible(false);
+			SAFE_DELETE(progressDlg);
+			return false;
+		}
+		nbPerformed++;
+		progressDlg->SetProgress((double)nbPerformed / (double)selectedFacets.size());
+	} //main cycle end
+
+	if (progressDlg) progressDlg->SetVisible(false);
+	SAFE_DELETE(progressDlg);
+	return true;
+}
+
+bool FacetAdvParams::Apply() {
 	std::vector<size_t> selectedFacets=geom->GetSelectedFacets();
 	int nbPerformed = 0;
+	/*
+	bool boundMap = true; // boundaryBtn->GetState();
+	double ratio = 0.0;
+	
+	
 	bool doRatio = false;
 	if (enableBtn->GetState() == 1) { //check if valid texture settings are to be applied
 
@@ -800,7 +885,7 @@ bool FacetAdvParams::Apply() {
 		else {
 			//Mixed state: leave doRatio as false
 		}
-	}
+	}*/
 
 	// Superstructure
 
@@ -966,7 +1051,6 @@ bool FacetAdvParams::Apply() {
 			return false;
 	}
 	
-
 	// angle map height
 	int angleMapHeight;
 	bool doAngleMapHeight = false;
@@ -998,12 +1082,13 @@ bool FacetAdvParams::Apply() {
 	}
 	
 	if (!mApp->AskToReset(worker)) return false;
-	progressDlg = new GLProgress("Applying mesh settings", "Please wait");
+	progressDlg = new GLProgress("Applying facet parameters", "Please wait");
 	progressDlg->SetVisible(true);
 	progressDlg->SetProgress(0.0);
 	int count = 0;
 	for (auto sel:selectedFacets) {
 		Facet *f = geom->GetFacet(sel);
+		/*
 		bool hadAnyTexture = f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD || f->sh.countDirection;
 		bool hadDirCount = f->sh.countDirection;
 		
@@ -1021,6 +1106,7 @@ bool FacetAdvParams::Apply() {
 		}
 		
 		bool hasAnyTexture = f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD || f->sh.countDirection;
+		*/
 
 		if (doTeleport) f->sh.teleportDest = teleport;
 		if (doAccfactor) f->sh.accomodationFactor = accfactor;
@@ -1060,9 +1146,10 @@ bool FacetAdvParams::Apply() {
 			}
 		}
 
+		/*
 		//set textures
 		try {
-			bool needsRemeshing = (hadAnyTexture != hasAnyTexture) || (hadDirCount != f->sh.countDirection) || (doRatio && (!IS_ZERO(geom->GetFacet(sel)->tRatio - ratio)));
+			bool needsRemeshing = (hadAnyTexture != hasAnyTexture) || (hadDirCount != f->sh.countDirection) || (doRatio && (!IsEqual(geom->GetFacet(sel)->tRatio , ratio)));
 			if (needsRemeshing) geom->SetFacetTexture(sel, hasAnyTexture ? ratio : 0.0, hasAnyTexture ? boundMap : false);
 		}
 		catch (Error &e) {
@@ -1077,6 +1164,7 @@ bool FacetAdvParams::Apply() {
 			SAFE_DELETE(progressDlg);
 			return false;
 		}
+		*/
 		//if (angleMapRecordCheckbox->GetState() < 2) f->sh.recordAngleMap = angleMapRecordCheckbox->GetState();
 		if (showTexture->GetState() < 2) f->textureVisible = showTexture->GetState();
 		if (showVolume->GetState() < 2) f->volumeVisible = showVolume->GetState();
@@ -1087,12 +1175,12 @@ bool FacetAdvParams::Apply() {
 
 	if (progressDlg) progressDlg->SetVisible(false);
 	SAFE_DELETE(progressDlg);
-	return true;
 
+	return ApplyTexture(); //Finally, apply textures
 }
 
-//-----------------------------------------------------------------------------
-void FacetAdvParams::QuickApply() {
+
+void FacetAdvParams::ApplyDrawSettings() {
 	//Apply view settings without stopping the simulation
 
 
@@ -1115,7 +1203,6 @@ void FacetAdvParams::QuickApply() {
 	geom->BuildGLList(); //Re-render facets
 }
 
-//-----------------------------------------------------------------------------
 
 void FacetAdvParams::UpdateToggle(GLComponent *src) {
 
@@ -1178,7 +1265,7 @@ void FacetAdvParams::UpdateToggle(GLComponent *src) {
 	//UpdateSizeForRatio();
 }
 
-//-----------------------------------------------------------------------------
+
 
 void FacetAdvParams::ProcessMessage(GLComponent *src, int message) {
 
@@ -1192,7 +1279,7 @@ void FacetAdvParams::ProcessMessage(GLComponent *src, int message) {
 			progressDlg->SetVisible(true);
 			progressDlg->SetProgress(0.5);
 
-			QuickApply();
+			ApplyDrawSettings();
 
 			progressDlg->SetVisible(false);
 			SAFE_DELETE(progressDlg);
@@ -1217,6 +1304,9 @@ void FacetAdvParams::ProcessMessage(GLComponent *src, int message) {
 		}
 		else if (src == angleMapReleaseButton) {
 			mApp->ClearAngleMapsOnSelection();
+		}
+		else if (src == remeshButton) {
+			ApplyTexture(true);
 		}
 		
 		break;

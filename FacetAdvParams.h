@@ -42,6 +42,7 @@ public:
 
 	// Implementation
 	void ProcessMessage(GLComponent *src, int message);
+	bool ApplyTexture(bool force=false);
 	bool Apply();
 
 private:
@@ -50,7 +51,7 @@ private:
 	void UpdateSize();
 	void UpdateSizeForRatio();
 	void UpdateToggle(GLComponent *src);
-	void QuickApply(); //Apply View Settings without stopping the simulation
+	void ApplyDrawSettings(); //Apply View Settings without stopping the simulation
 
 	Worker   *worker;
 	Geometry *geom;
@@ -121,4 +122,5 @@ private:
 	GLButton	*angleMapExportButton;
 	GLToggle	*angleMapRecordCheckbox;
 	GLButton	*angleMapReleaseButton;
+	GLButton	*remeshButton;
 };
