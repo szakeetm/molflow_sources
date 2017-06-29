@@ -748,7 +748,7 @@ size_t Facet::GetGeometrySize() {
 		+ (sh.nbIndex * sizeof(Vector2d));
 
 	// Size of the 'element area' array passed to the geometry buffer
-	if (sh.isTextured) s += sizeof(AHIT)*sh.texWidth*sh.texHeight;
+	if (sh.isTextured) s += (sizeof(AHIT)+sizeof(double))*sh.texWidth*sh.texHeight;
 	if (sh.useOutgassingFile ) s += sizeof(double)*sh.outgassingMapWidth*sh.outgassingMapHeight;
 	if (sh.hasRecordedAngleMap) s += sizeof(size_t)*sh.angleMapPhiWidth*sh.angleMapThetaHeight;
 	return s;

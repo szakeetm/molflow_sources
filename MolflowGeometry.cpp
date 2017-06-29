@@ -109,8 +109,8 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer) {
 	vertices2 (nbIndex times Vector2d struct)
 	[outgassingMap (height*width*double)]
 	[angleMap (height*width*size_t)]
-	-->incBuff
 	[inc Map: for each facet with texture, height*width*double]
+	-->globalBuff
 	CDFs.size()
 	CDFs
 	IDs.size()
@@ -163,21 +163,18 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer) {
 			memcpy(buffer, f->angleMapCache, sizeof(size_t)*f->sh.angleMapPhiWidth*f->sh.angleMapThetaHeight);
 			buffer += sizeof(size_t)*f->sh.angleMapPhiWidth*f->sh.angleMapThetaHeight;
 		}
-	}
 
-	// Add surface elements area (reciprocal)
-	for (int k = 0; k < sh.nbFacet; k++) {
-		Facet *f = facets[k];
-		size_t add = 0;
+		// Add surface elements area (reciprocal)
 		if (f->sh.isTextured) {
 			if (f->cellPropertiesIds) {
+				size_t add = 0;
 				for (int j = 0; j < f->sh.texHeight; j++) {
 					for (int i = 0; i < f->sh.texWidth; i++) {
-						double area = f->GetMeshArea(add,true);
+						double area = f->GetMeshArea(add, true);
 
 						if (area > 0.0) {
 							// Use the sign bit to store isFull flag
-								WRITEBUFFER(1.0 / area, double);
+							WRITEBUFFER(1.0 / area, double);
 						}
 						else {
 							WRITEBUFFER(0.0, double);
@@ -206,8 +203,6 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer) {
 			}
 		}
 	}
-
-
 
 	//CDFs
 	WRITEBUFFER(w->CDFs.size(), size_t);

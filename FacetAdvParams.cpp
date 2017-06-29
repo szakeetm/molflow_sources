@@ -1307,6 +1307,7 @@ void FacetAdvParams::ProcessMessage(GLComponent *src, int message) {
 		}
 		else if (src == remeshButton) {
 			ApplyTexture(true);
+			worker->Reload();
 		}
 		
 		break;

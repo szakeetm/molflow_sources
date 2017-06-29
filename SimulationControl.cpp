@@ -178,7 +178,7 @@ bool LoadSimulation(Dataport *loader) {
 
 	size_t i, j, idx;
 	BYTE *buffer;
-	BYTE *incBuff;
+	BYTE *globalBuff;
 	BYTE *bufferStart;
 	SHGEOM *shGeom;
 	Vector3d *shVert;
@@ -249,6 +249,7 @@ bool LoadSimulation(Dataport *loader) {
 		buffer += sizeof(SHFACET) + shFacet->nbIndex*(sizeof(int) + sizeof(Vector2d));
 		if (shFacet->useOutgassingFile) buffer += sizeof(double)*shFacet->outgassingMapWidth*shFacet->outgassingMapHeight;
 		if (shFacet->hasRecordedAngleMap) buffer += sizeof(size_t)*shFacet->angleMapPhiWidth*shFacet->angleMapThetaHeight;
+		if (shFacet->isTextured) buffer += sizeof(double)*shFacet->texWidth*shFacet->texHeight;
 	}
 	for (i = 0; i < sHandle->nbSuper; i++) {
 		int nbF = sHandle->str[i].nbFacet;
@@ -267,7 +268,7 @@ bool LoadSimulation(Dataport *loader) {
 		sHandle->str[i].nbFacet = 0;
 	}
 
-	incBuff = buffer; //after facets and outgassing maps, with inc values
+	globalBuff = buffer; //after facets and outgassing maps, with inc values
 
 
 	//buffer = (BYTE *)loader->buff;
@@ -411,6 +412,30 @@ bool LoadSimulation(Dataport *loader) {
 				}
 				memset(f->hits[m], 0, f->textureSize);
 			}
+
+			//Load inc values (1/area)
+				f->inc = (double *)malloc(nbE * sizeof(double));
+				f->largeEnough = (bool *)malloc(sizeof(bool)*nbE);
+				//f->fullElem = (bool *)malloc(sizeof(bool)*nbE);
+				if (!(f->inc && f->largeEnough /*&& f->fullElem*/)) {
+					SetErrorSub("Not enough memory to load");
+					return false;
+				}
+				f->fullSizeInc = 1E30;
+				for (j = 0; j < nbE; j++) {
+					double incVal = READBUFFER(double);
+					f->inc[j] = incVal;
+					if ((f->inc[j] > 0.0) && (f->inc[j] < f->fullSizeInc)) f->fullSizeInc = f->inc[j];
+				}
+				for (j = 0; j < nbE; j++) { //second pass, filter out very small cells
+					f->largeEnough[j] = (f->inc[j] < ((5.0f)*f->fullSizeInc));
+				}
+				sHandle->textTotalSize += f->textureSize*(1 + sHandle->nbMoments);
+
+				f->iw = 1.0 / (double)f->sh.texWidthD;
+				f->ih = 1.0 / (double)f->sh.texHeightD;
+				f->rw = f->sh.U.Norme() * f->iw;
+				f->rh = f->sh.V.Norme() * f->ih;
 		}
 		else f->textureSize = 0;
 
@@ -463,48 +488,8 @@ bool LoadSimulation(Dataport *loader) {
 	}
 
 
-	//Inc values
-	buffer = incBuff;
-	for (int k = 0; k < sHandle->nbSuper; k++) {
-		for (i = 0; i < sHandle->str[k].nbFacet; i++) {
-			FACET* f = sHandle->str[k].facets[i];
-			if (f->sh.isTextured) {
-				size_t nbE = f->sh.texWidth*f->sh.texHeight;
-				f->inc = (double *)malloc(nbE * sizeof(double));
-				f->largeEnough = (bool *)malloc(sizeof(bool)*nbE);
-				//f->fullElem = (bool *)malloc(sizeof(bool)*nbE);
-				if (!(f->inc && f->largeEnough /*&& f->fullElem*/)) {
-					SetErrorSub("Not enough memory to load");
-					return false;
-				}
-				f->fullSizeInc = 1E30;
-				for (j = 0; j < nbE; j++) {
-					double incVal = READBUFFER(double);
-					/*if (incVal < 0) {
-						//f->fullElem[j] = 1;
-						f->inc[j] = -incVal;
-					}
-					else {*/
-
-					//f->fullElem[j] = 0;
-					f->inc[j] = incVal;
-					/*}*/
-					if ((f->inc[j] > 0.0) && (f->inc[j] < f->fullSizeInc)) f->fullSizeInc = f->inc[j];
-				}
-				for (j = 0; j < nbE; j++) { //second pass, filter out very small cells
-					f->largeEnough[j] = (f->inc[j] < ((5.0f)*f->fullSizeInc));
-				}
-				sHandle->textTotalSize += f->textureSize*(1 + sHandle->nbMoments);
-
-
-				f->iw = 1.0 / (double)f->sh.texWidthD;
-				f->ih = 1.0 / (double)f->sh.texHeightD;
-				f->rw = f->sh.U.Norme() * f->iw;
-				f->rh = f->sh.V.Norme() * f->ih;
-			}
-		}
-	}
-
+	
+	buffer = globalBuff;
 
 	//CDFs
 	size_t size1 = READBUFFER(size_t);
