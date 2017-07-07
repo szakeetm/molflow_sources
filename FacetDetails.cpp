@@ -71,12 +71,6 @@ static const char *desStr[] = {
   "Cosine^"
 };
 
-static const char *refStr[] = {
-  "Diffuse",
-  "Mirror",
-  "Uniform"
-};
-
 static const char *profStr[] = {
   "None",
   "Pressure (\201)",
@@ -287,7 +281,7 @@ char *FacetDetails::FormatCell(size_t idx,Facet *f,size_t mode) {
 	  if (f->sh.desorbType==DES_COSINE_N) sprintf(ret,"%s%g",ret,f->sh.desorbTypeN); //append exponent
       break;
     case 6:
-      sprintf(ret,"%s",refStr[f->sh.reflectType]);
+      sprintf(ret,"%g diff. %g spec.",f->sh.reflection.diffusePart,f->sh.reflection.specularPart);
       break;
     case 7:
       sprintf(ret,"%s",ynStr[f->sh.is2sided]);      

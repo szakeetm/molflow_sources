@@ -164,6 +164,11 @@ static const char *prStates[] = {
 
 };
 
+struct Reflection {
+	double diffusePart;
+	double specularPart;
+};
+
 typedef struct {
 
 	// Process control
@@ -240,7 +245,7 @@ typedef struct {
 	double area;           // Facet area (m^2)
 	int    desorbType;     // Desorption type
 	double desorbTypeN;    // Exponent in Cos^N desorption type
-	int    reflectType;    // Reflection type
+	Reflection reflection;
 	int    profileType;    // Profile type
 	size_t    superIdx;       // Super structure index (Indexed from 0)
 	size_t    superDest;      // Super structure destination index (Indexed from 1, 0=>current)

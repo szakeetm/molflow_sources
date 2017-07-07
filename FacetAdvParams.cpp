@@ -178,7 +178,7 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	paramPanel->Add(facetSuperDest);
 
 	label8 = new GLLabel("Link to:");
-	paramPanel->SetCompBounds(label8, 163, 96, 35, 12);
+	paramPanel->SetCompBounds(label8, 163, 93, 35, 12);
 	paramPanel->Add(label8);
 
 	facetStructure = new GLTextField(0, "");
@@ -186,7 +186,7 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	paramPanel->Add(facetStructure);
 
 	label7 = new GLLabel("Structure:");
-	paramPanel->SetCompBounds(label7, 10, 91, 46, 12);
+	paramPanel->SetCompBounds(label7, 10, 93, 46, 12);
 	paramPanel->Add(label7);
 
 	facetTeleport = new GLTextField(0, "");
@@ -198,20 +198,12 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	paramPanel->Add(label4);
 
 	label5 = new GLLabel("Accomodation coefficient:");
-	paramPanel->SetCompBounds(label5, 10, 47, 126, 13);
+	paramPanel->SetCompBounds(label5, 10, 45, 126, 13);
 	paramPanel->Add(label5);
 
 	label6 = new GLLabel("Reflection:");
 	paramPanel->SetCompBounds(label6, 10, 22, 50, 12);
 	paramPanel->Add(label6);
-
-	facetReflType = new GLCombo(0);
-	paramPanel->SetCompBounds(facetReflType, 155, 18, 147, 20);
-	paramPanel->Add(facetReflType);
-	facetReflType->SetSize(3);
-	facetReflType->SetValueAt(0, "Diffuse");
-	facetReflType->SetValueAt(1, "Mirror");
-	facetReflType->SetValueAt(2, "Uniform");
 
 	facetUseDesFile = new GLCombo(0);
 	desPanel->SetCompBounds(facetUseDesFile, 50, 18, 95, 20);
@@ -308,8 +300,33 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	angleMapPanel->Add(angleMapReleaseButton);
 
 	remeshButton = new GLButton(0, "Force remesh");
-	aPanel->SetCompBounds(remeshButton, 216, 13, 79, 20);
+	aPanel->SetCompBounds(remeshButton, 226, 13, 69, 20);
 	aPanel->Add(remeshButton);
+
+	label16 = new GLLabel("uniform");
+	paramPanel->SetCompBounds(label16, 259, 22, 36, 12);
+	paramPanel->Add(label16);
+
+	label15 = new GLLabel("specular,");
+	paramPanel->SetCompBounds(label15, 173, 22, 43, 12);
+	paramPanel->Add(label15);
+
+	label13 = new GLLabel("diffuse,");
+	paramPanel->SetCompBounds(label13, 97, 22, 36, 12);
+	paramPanel->Add(label13);
+
+	uniformReflBox = new GLTextField(0, "");
+	paramPanel->SetCompBounds(uniformReflBox, 226, 19, 30, 18);
+	uniformReflBox->SetEditable(false);
+	paramPanel->Add(uniformReflBox);
+
+	specularReflBox = new GLTextField(0, "");
+	paramPanel->SetCompBounds(specularReflBox, 138, 19, 30, 18);
+	paramPanel->Add(specularReflBox);
+
+	diffuseReflBox = new GLTextField(0, "");
+	paramPanel->SetCompBounds(diffuseReflBox, 65, 19, 30, 18);
+	paramPanel->Add(diffuseReflBox);
 
 	SetTitle("Advanced facet parameters");
 	// Center dialog
@@ -465,7 +482,8 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	showVolume->SetEnabled(somethingSelected);
 	resolutionText->SetEditable(somethingSelected);
 	lengthText->SetEditable(somethingSelected);
-	facetReflType->SetEditable(somethingSelected);
+	diffuseReflBox->SetEditable(somethingSelected);
+	specularReflBox->SetEditable(somethingSelected);
 	facetAccFactor->SetEditable(somethingSelected);
 	facetTeleport->SetEditable(somethingSelected);
 	facetStructure->SetEditable(somethingSelected);
@@ -494,7 +512,9 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 		showTexture->SetState(0);
 		showVolume->SetState(0);
 		facetUseDesFile->SetSelectedValue("");
-		facetReflType->SetSelectedValue("");
+		diffuseReflBox->SetText("");
+		specularReflBox->SetText("");
+		uniformReflBox->SetText("");
 		facetAccFactor->Clear();
 		facetSuperDest->Clear();
 		facetMovingToggle->SetState(0);
@@ -527,7 +547,9 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	bool accFactorE = true;
 	bool superDestE = true;
 	bool superIdxE = true;
-	bool reflectTypeE = true;
+	bool reflectDiffuseE = true;
+	bool reflectSpecularE = true;
+	bool reflectUniformE = true;
 	bool hasOutgMapE = true;
 	bool useOutgMapE = true;
 	bool yieldEqual = true;
@@ -566,7 +588,9 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 		accFactorE = accFactorE && IsEqual(f0->sh.accomodationFactor, f->sh.accomodationFactor);
 		superDestE = superDestE && (f0->sh.superDest == f->sh.superDest);
 		superIdxE = superIdxE && (f0->sh.superIdx == f->sh.superIdx);
-		reflectTypeE = reflectTypeE && (f0->sh.reflectType == f->sh.reflectType);
+		reflectDiffuseE = reflectDiffuseE && IsEqual(f0->sh.reflection.diffusePart,f->sh.reflection.diffusePart);
+		reflectSpecularE = reflectSpecularE && IsEqual(f0->sh.reflection.specularPart, f->sh.reflection.specularPart);
+		reflectUniformE = reflectUniformE && IsEqual(1.0 - f0->sh.reflection.diffusePart - f0->sh.reflection.specularPart, 1.0 - f->sh.reflection.diffusePart - f->sh.reflection.specularPart);
 		hasOutgMapE = hasOutgMapE && (f0->hasOutgassingFile == f->hasOutgassingFile);
 		useOutgMapE = useOutgMapE && (f0->sh.useOutgassingFile == f->sh.useOutgassingFile);
 		dynOutgEqual = dynOutgEqual && IsEqual(f0->sh.totalOutgassing, f->sh.totalOutgassing);
@@ -634,7 +658,9 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 
 	if (teleportE) facetTeleport->SetText(f0->sh.teleportDest); else facetTeleport->SetText("...");
 	if (accFactorE) facetAccFactor->SetText(f0->sh.accomodationFactor); else facetAccFactor->SetText("...");
-	if (reflectTypeE) facetReflType->SetSelectedIndex(f0->sh.reflectType); else facetReflType->SetSelectedValue("...");
+	if (reflectDiffuseE) diffuseReflBox->SetText(f0->sh.reflection.diffusePart); else diffuseReflBox->SetText("...");
+	if (reflectSpecularE) specularReflBox->SetText(f0->sh.reflection.specularPart); else specularReflBox->SetText("...");
+	if (reflectUniformE) uniformReflBox->SetText(1.0 - f0->sh.reflection.diffusePart - f0->sh.reflection.specularPart); else uniformReflBox->SetText("...");
 	if (hasOutgMapE) { //all selected equally HAVE or equally DON'T HAVE outgassing maps
 		//mApp->facetFlow->SetEditable(!f0->hasOutgassingFile);
 		//mApp->facetFlowArea->SetEditable(!f0->hasOutgassingFile);
@@ -813,7 +839,7 @@ bool FacetAdvParams::ApplyTexture(bool force) {
 		bool hadAnyTexture = f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD || f->sh.countDirection;
 		bool hadDirCount = f->sh.countDirection;
 
-		if (enableBtn->GetState() == 0 || ratio == 0.0) {
+		if (enableBtn->GetState() == 0 || (doRatio && ratio == 0.0)) {
 			//Let the user disable textures with the main switch or by typing 0 as resolution
 			f->sh.countDes = f->sh.countAbs = f->sh.countRefl = f->sh.countTrans = f->sh.countACD = f->sh.countDirection = false;
 		}
@@ -1070,7 +1096,38 @@ bool FacetAdvParams::Apply() {
 	
 
 	// Reflection type
-	int reflType = facetReflType->GetSelectedIndex();
+	double diffuseRefl, specularRefl;
+	bool doDiffuseRefl = false;
+	bool doSpecularRefl = false;
+	if (diffuseReflBox->GetNumber(&diffuseRefl)) {
+		if (diffuseRefl < 0.0 || diffuseRefl > 1.0) {
+			GLMessageBox::Display("Diffuse reflection ratio must be between 0 and 1", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			return false;
+		}
+		doDiffuseRefl = true;
+	}
+	else if (strcmp(diffuseReflBox->GetText(), "...") != 0) {
+		GLMessageBox::Display("Invalid diffuse reflection ratio", "Error", GLDLG_OK, GLDLG_ICONERROR);
+		return false;
+	}
+
+	if (specularReflBox->GetNumber(&specularRefl)) {
+		if (specularRefl < 0.0 || specularRefl > 1.0) {
+			GLMessageBox::Display("Specular reflection ratio must be between 0 and 1", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			return false;
+		}
+		doSpecularRefl = true;
+	}
+	else if (strcmp(specularReflBox->GetText(), "...") != 0) {
+		GLMessageBox::Display("Invalid specular reflection ratio", "Error", GLDLG_OK, GLDLG_ICONERROR);
+		return false;
+	}
+
+	if ((diffuseRefl + specularRefl) > 1.0) {
+		GLMessageBox::Display("The sum of diffuse and specular reflection ratios cannot be larger than 1", "Error", GLDLG_OK, GLDLG_ICONERROR);
+		return false;
+	}
+	
 
 	//Check complete, let's apply
 	//First applying angle map recording before a reset is done
@@ -1110,7 +1167,8 @@ bool FacetAdvParams::Apply() {
 
 		if (doTeleport) f->sh.teleportDest = teleport;
 		if (doAccfactor) f->sh.accomodationFactor = accfactor;
-		if (reflType >= 0) f->sh.reflectType = reflType;
+		if (doDiffuseRefl) f->sh.reflection.diffusePart = diffuseRefl;
+		if (doSpecularRefl) f->sh.reflection.specularPart = specularRefl;
 		if (doSuperStruct) {
 			if (f->sh.superIdx != (superStruct - 1)) {
 				f->sh.superIdx = superStruct - 1;
@@ -1337,6 +1395,11 @@ void FacetAdvParams::ProcessMessage(GLComponent *src, int message) {
 		else if (src == sojournFreq || src == sojournE) {
 			CalcSojournTime();
 		}
+		else if (Contains({ diffuseReflBox,specularReflBox },src)) {
+			double diffuseRefl, specularRefl;
+			if (diffuseReflBox->GetNumber(&diffuseRefl) && specularReflBox->GetNumber(&specularRefl))
+				uniformReflBox->SetText(1.0 - diffuseRefl - specularRefl);
+		}
 
 		break;
 
@@ -1360,10 +1423,7 @@ void FacetAdvParams::ProcessMessage(GLComponent *src, int message) {
 		//}
 		break;
 	case MSG_COMBO:
-		if (src == facetReflType) {
-			mApp->facetApplyBtn->SetEnabled(true);
-		}
-		else if (src == facetUseDesFile) {
+		if (src == facetUseDesFile) {
 			mApp->facetApplyBtn->SetEnabled(true);
 			if (facetUseDesFile->GetSelectedIndex() == 0) {
 				//User values

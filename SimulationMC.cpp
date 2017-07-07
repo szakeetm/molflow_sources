@@ -824,24 +824,28 @@ void PerformBounce(FACET *iFacet) {
 	//sHandle->temperature = iFacet->sh.temperature; //Thermalize particle
 
 
-	switch (iFacet->sh.reflectType) {
-	case REF_MIRROR:
+	double reflTypeRnd = rnd();
+	if (reflTypeRnd < iFacet->sh.reflection.diffusePart)
+	{
+		//diffuse reflection
+		//See docs/theta_gen.png for further details on angular distribution generation
+		PolarToCartesian(iFacet, acos(sqrt(rnd())), rnd()*2.0*PI, revert);
+		/*if (revert) {
+			sHandle->pDir.x = -sHandle->pDir.x;
+			sHandle->pDir.y = -sHandle->pDir.y;
+			sHandle->pDir.z = -sHandle->pDir.z;
+		}*/
+	}
+	else  if (reflTypeRnd < (iFacet->sh.reflection.diffusePart + iFacet->sh.reflection.specularPart))
+	{
+		//specular reflection
 		CartesianToPolar(iFacet, &inTheta, &inPhi);
 		PolarToCartesian(iFacet, PI - inTheta, inPhi, false);
-		break;
-	case REF_DIFFUSE:
-		//See docs/theta_gen.png for further details on angular distribution generation
-		PolarToCartesian(iFacet, acos(sqrt(rnd())), rnd()*2.0*PI, false);
-		break;
-	case REF_UNIFORM:
-		PolarToCartesian(iFacet, acos(rnd()), rnd()*2.0*PI, false);
-		break;
-	}
 
-	if (revert && iFacet->sh.reflectType != REF_MIRROR) {
-		sHandle->pDir.x = -sHandle->pDir.x;
-		sHandle->pDir.y = -sHandle->pDir.y;
-		sHandle->pDir.z = -sHandle->pDir.z;
+	}
+	else {
+		//uniform reflection
+		PolarToCartesian(iFacet, acos(rnd()), rnd()*2.0*PI, revert);
 	}
 
 	if (iFacet->sh.isMoving) {

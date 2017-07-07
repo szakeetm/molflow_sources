@@ -98,7 +98,6 @@ private:
 	GLLabel	*label4;
 	GLLabel	*label5;
 	GLLabel	*label6;
-	GLCombo	*facetReflType;
 	GLCombo	*facetUseDesFile;
 	GLTextField	*facetAccFactor;
 	GLTextField	*fileDoseText;
@@ -123,4 +122,10 @@ private:
 	GLToggle	*angleMapRecordCheckbox;
 	GLButton	*angleMapReleaseButton;
 	GLButton	*remeshButton;
+	GLLabel	*label16;
+	GLLabel	*label15;
+	GLLabel	*label13;
+	GLTextField	*uniformReflBox;
+	GLTextField	*specularReflBox;
+	GLTextField	*diffuseReflBox;
 };

@@ -361,7 +361,8 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 		// Wall facet
 		for (int i = 0; i < step; i++) {
 			facets[i + 2 + nbTF] = new Facet(4);
-			facets[i + 2 + nbTF]->sh.reflectType = REF_DIFFUSE;
+			facets[i + 2 + nbTF]->sh.reflection.diffusePart = 1.0;
+			facets[i + 2 + nbTF]->sh.reflection.specularPart = 0.0;
 			facets[i + 2 + nbTF]->sh.sticking = s;
 			facets[i + 2 + nbTF]->indices[0] = 2 * i + nbTV;
 			facets[i + 2 + nbTF]->indices[1] = 2 * i + 1 + nbTV;

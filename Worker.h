@@ -149,13 +149,12 @@ public:
   int GenerateNewCDF(double temperature);
   void CalcTotalOutgassing();
   int GetCDFId(double temperature);
-int GetIDId(int paramId);
+  int GetIDId(int paramId);
 
   // Global simulation parameters
   llong  nbAbsorption;      // Total number of molecules absorbed (64 bit integer)
   llong  nbDesorption;      // Total number of molecules generated (64 bit integer)
   llong  nbHit;             // Total number of hit (64 bit integer)
-
 
   llong  desorptionLimit;     // Number of desoprtion before halting
 

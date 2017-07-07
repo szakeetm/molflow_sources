@@ -552,7 +552,7 @@ void MolFlow::PlaceComponents() {
 	sy += (simuPanel->GetHeight() + 5);
 
 	// ---------------------------------------------------------
-	int lg = m_screenHeight /*- (nbFormula * 25 + 23)*/;
+	int lg = m_screenHeight -23 /*- (nbFormula * 25)*/;
 
 	facetList->SetBounds(sx, sy, 202, lg - sy);
 

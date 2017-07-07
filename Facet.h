@@ -87,7 +87,6 @@ public:
   bool	textureVisible; //Draw the texture?
   bool  collinear;      //All vertices are on a line (non-simple)
   bool	volumeVisible;	//Draw volume?
-  //SHELEM *mesh;        // Element mesh
   bool    hasMesh;     // Temporary flag (loading)
   
   double *outgassingMap; //outgassing map cell values (loaded from file)

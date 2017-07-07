@@ -521,8 +521,6 @@ bool LoadSimulation(Dataport *loader) {
 		sHandle->IDs.push_back(newID);
 	}
 
-
-
 	//Parameters
 	size1 = READBUFFER(size_t);
 	sHandle->parameters.reserve(size1);
@@ -535,7 +533,6 @@ bool LoadSimulation(Dataport *loader) {
 			double valueX = READBUFFER(double);
 			double valueY = READBUFFER(double);
 			newValues.push_back(std::make_pair(valueX, valueY));
-
 		}
 		newParam.SetValues(newValues, false);
 		sHandle->parameters.push_back(newParam);

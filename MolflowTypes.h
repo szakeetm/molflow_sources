@@ -8,7 +8,7 @@
 #define DES_COSINE_N 3 // cos(theta)^N
 #define DES_ANGLEMAP 4 //imported file
 
-// Reflection type
+// (Old) Reflection types
 #define REF_DIFFUSE 0   // Diffuse (cosine law)
 #define REF_MIRROR  1   // Mirror
 #define REF_UNIFORM 2   // Uniform (for testing)
