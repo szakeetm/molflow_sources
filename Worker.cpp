@@ -29,6 +29,7 @@ GNU General Public License for more details.
 #include "Facet.h"
 //#include "Simulation.h" //SHELEM
 #include "GlobalSettings.h"
+#include "FacetAdvParams.h"
 #include <fstream>
 
 #ifdef MOLFLOW
@@ -1411,7 +1412,7 @@ void Worker::ImportDesorption_SYN(char *fileName, const size_t &source, const do
 	}
 }
 
-void Worker::AnalyzeSYNfile(char *fileName, int *nbFacet, int *nbTextured, int *nbDifferent) {
+void Worker::AnalyzeSYNfile(char *fileName, size_t *nbFacet, size_t *nbTextured, size_t *nbDifferent) {
 	char *ext, *filebegin;
 	char tmp2[1024];
 	ext = strrchr(fileName, '.');
@@ -1448,20 +1449,11 @@ void Worker::AnalyzeSYNfile(char *fileName, int *nbFacet, int *nbTextured, int *
 				fileOnly[strlen(filebegin) - 2] = '\0';
 				sprintf(tmp2, "%s\\tmp\\Geometry.syn", CWD);
 				f = new FileReader(tmp2); //decompressed file opened
-
-
-
-
-
-
 			}
 
 			if (!isSYN7Z) f = new FileReader(fileName);  //original file opened
 
 			geom->AnalyzeSYNfile(f, progressDlg, nbFacet, nbTextured, nbDifferent, progressDlg);
-
-
-
 
 			SAFE_DELETE(f);
 
@@ -1493,6 +1485,8 @@ void Worker::PrepareToRun() {
 	desorptionParameterIDs = std::vector<size_t>();
 	CDFs = std::vector<std::vector<std::pair<double, double>>>();
 	IDs = std::vector<std::vector<std::pair<double, double>>>();
+
+	bool needsAngleMapStatusRefresh = false;
 
 	for (size_t i = 0; i < g->GetNbFacet(); i++) {
 		Facet *f = g->GetFacet(i);
@@ -1548,35 +1542,37 @@ void Worker::PrepareToRun() {
 
 		//Angle map
 		if (f->sh.desorbType == DES_ANGLEMAP) {
-			if (!f->sh.hasRecordedAngleMap) {
+			if (!f->sh.anglemapParams.hasRecorded) {
 				char tmp[256];
 				sprintf(tmp, "Facet #%zd: Uses angle map desorption but doesn't have a recorded angle map.", i + 1);
 				throw Error(tmp);
 			}
-			if (f->sh.recordAngleMap) {
+			if (f->sh.anglemapParams.record) {
 				char tmp[256];
 				sprintf(tmp, "Facet #%zd: Can't RECORD and USE angle map desorption at the same time.", i + 1);
 				throw Error(tmp);
 			}
 		}
 
-		if (f->sh.recordAngleMap) {
-			if (!f->sh.hasRecordedAngleMap) {
+		if (f->sh.anglemapParams.record) {
+			if (!f->sh.anglemapParams.hasRecorded) {
 				//Initialize angle map
-				//f->sh.angleMapPhiWidth = ANGLEMAP_PHIWIDTH;
-				//f->sh.angleMapThetaHeight = ANGLEMAP_THETAHEIGHT;
-				f->angleMapCache = (size_t*)malloc(f->sh.angleMapPhiWidth * f->sh.angleMapThetaHeight * sizeof(size_t));
+				f->angleMapCache = (size_t*)malloc(f->sh.anglemapParams.phiWidth * (f->sh.anglemapParams.thetaLowerRes + f->sh.anglemapParams.thetaHigherRes) * sizeof(size_t));
 				if (!f->angleMapCache) {
 					std::stringstream tmp;
 					tmp << "Not enough memory for incident angle map on facet " << i + 1;
 					throw Error(tmp.str().c_str());
 				}
-				f->sh.hasRecordedAngleMap = true;
+				//Set values to zero
+				memset(f->angleMapCache, 0, f->sh.anglemapParams.phiWidth * (f->sh.anglemapParams.thetaLowerRes + f->sh.anglemapParams.thetaHigherRes) * sizeof(size_t));
+				f->sh.anglemapParams.hasRecorded = true;
+				if (f->selected) needsAngleMapStatusRefresh = true;
 			}
-			//Set values to zero
-			memset(f->angleMapCache, 0, f->sh.angleMapPhiWidth * f->sh.angleMapThetaHeight * sizeof(size_t));
 		}
 	}
+
+	if (mApp->facetAdvParams && mApp->facetAdvParams->IsVisible() && needsAngleMapStatusRefresh)
+		mApp->facetAdvParams->Refresh(geom->GetSelectedFacets());
 
 	CalcTotalOutgassing();
 	

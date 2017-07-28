@@ -246,7 +246,7 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 			if (!synFilePtr) return;
 			if (!synFilePtr->fullName) return;
 			//load file
-			int nbFacet,nbTextured,nbDifferent;
+			size_t nbFacet,nbTextured,nbDifferent;
 			try{
 				work->AnalyzeSYNfile(synFilePtr->fullName,&nbFacet,
 					&nbTextured,&nbDifferent);
@@ -260,8 +260,8 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 			synFileName->SetText(synFilePtr->fullName);
 			char tmp[512];
 			sprintf(tmp,"SYN file analysis results:\n"
-				"%d facets\n"
-				"%d with textures that can be imported\n"
+				"%zd facets\n"
+				"%zd with textures that can be imported\n"
 				,nbFacet,nbTextured);
 			analysisResultLabel->SetText(tmp);
 			mApp->UpdateFacetParams(true); //Update selection

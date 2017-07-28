@@ -25,6 +25,7 @@ GNU General Public License for more details.
 #include "Simulation.h"
 #include "Random.h"
 #include "GLApp/MathTools.h"
+#include <tuple> //std::tie
 
 extern SIMULATION *sHandle;
 
@@ -132,7 +133,7 @@ void CartesianToPolar(FACET *iFacet, double *theta, double *phi) {
 	*phi = asin(v / rho);			// Returns -PI/2 ... +PI/2
 	if (u < 0.0) *phi = PI - *phi;  // Angle to U, -PI/2 .. 3PI/2
 	*/
-	
+
 	*theta = acos(n);
 	*phi = atan2(v, u); // -PI..PI
 }
@@ -179,7 +180,7 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 		gHits->leakCache[(leakIndex + gHits->lastLeakIndex) % LEAKCACHESIZE] = sHandle->leakCache[leakIndex];
 	gHits->nbLeakTotal += sHandle->nbLeakSinceUpdate;
 	gHits->lastLeakIndex = (gHits->lastLeakIndex + sHandle->leakCacheSize) % LEAKCACHESIZE;
-	gHits->leakCacheSize = MIN(LEAKCACHESIZE, gHits->leakCacheSize + sHandle->leakCacheSize);
+	gHits->leakCacheSize = Min(LEAKCACHESIZE, gHits->leakCacheSize + sHandle->leakCacheSize);
 
 	// HHit (Only prIdx 0)
 	if (prIdx == 0) {
@@ -194,7 +195,7 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 				gHits->hitCache[gHits->lastHitIndex].type = HIT_LAST; //Penup (border between blocks of consecutive hits in the hit cache)
 			}
 
-			gHits->hitCacheSize = MIN(HITCACHESIZE, gHits->hitCacheSize + sHandle->hitCacheSize);
+			gHits->hitCacheSize = Min(HITCACHESIZE, gHits->hitCacheSize + sHandle->hitCacheSize);
 		}
 	}
 
@@ -288,12 +289,12 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 					}
 				}
 
-				if (f->sh.recordAngleMap) {
+				if (f->sh.anglemapParams.record) {
 					size_t *shAngleMap = (size_t *)(buffer + f->sh.hitOffset + facetHitsSize + f->profileSize*(1 + nbMoments) + f->textureSize*(1 + nbMoments) + f->directionSize*(1 + nbMoments));
-					for (y = 0; y < f->sh.angleMapThetaHeight; y++) {
-						for (x = 0; x < f->sh.angleMapPhiWidth; x++) {
-							size_t add = x + y*f->sh.angleMapPhiWidth;
-							shAngleMap[add] += f->angleMap[add];
+					for (y = 0; y < (f->sh.anglemapParams.thetaLowerRes + f->sh.anglemapParams.thetaHigherRes); y++) {
+						for (x = 0; x < f->sh.anglemapParams.phiWidth; x++) {
+							size_t add = x + y*f->sh.anglemapParams.phiWidth;
+							shAngleMap[add] += f->angleMap.pdf[add];
 						}
 					}
 				}
@@ -370,7 +371,7 @@ void PerformTeleport(FACET *iFacet) {
 	if (iFacet->hits && iFacet->sh.countTrans) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 2.0);
 	if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 2.0);
-	if (iFacet->sh.recordAngleMap) RecordAngleMap(iFacet);
+	if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
 
 	// Relaunch particle from new facet
 	CartesianToPolar(iFacet, &inTheta, &inPhi);
@@ -452,7 +453,7 @@ bool SimulationMCStep(int nbStep) {
 				//hit time over the measured period - we create a new particle
 				//OR particle has decayed
 				double remainderFlightPath = sHandle->velocityCurrentParticle*100.0*
-					MIN(sHandle->latestMoment - lastFLightTime, sHandle->particleDecayMoment - lastFLightTime); //distance until the point in space where the particle decayed
+					Min(sHandle->latestMoment - lastFLightTime, sHandle->particleDecayMoment - lastFLightTime); //distance until the point in space where the particle decayed
 				sHandle->distTraveledSinceUpdate_total += remainderFlightPath;
 				RecordHit(HIT_LAST);
 				//sHandle->distTraveledSinceUpdate += sHandle->distTraveledCurrentParticle;
@@ -502,7 +503,7 @@ bool SimulationMCStep(int nbStep) {
 
 // -------------------------------------------------------------
 // Launch a ray from a source facet. The ray 
-// direction is choosen according to the desorption type.
+// direction is chosen according to the desorption type.
 // -------------------------------------------------------------
 
 bool StartFromSource() {
@@ -513,7 +514,7 @@ bool StartFromSource() {
 	FACET *src = NULL;
 	double srcRnd;
 	double sumA = 0.0;
-	int i = 0, j = 0, w, h;
+	int i = 0, j = 0;
 	int nbTry = 0;
 
 	// Check end of simulation
@@ -538,7 +539,7 @@ bool StartFromSource() {
 						if (found) {
 							//look for exact position in map
 							double rndRemainder = (srcRnd - sumA) / sHandle->latestMoment*(1.38E-23*f->sh.temperature); //remainder, should be less than f->sh.totalOutgassing
-							double sumB = 0.0;
+							/*double sumB = 0.0;
 							for (w = 0; w < f->sh.outgassingMapWidth && !foundInMap; w++) {
 								for (h = 0; h < f->sh.outgassingMapHeight && !foundInMap; h++) {
 									double cellOutgassing = f->outgassingMap[h*f->sh.outgassingMapWidth + w];
@@ -548,11 +549,17 @@ bool StartFromSource() {
 										sumB += cellOutgassing;
 									}
 								}
-							}
-							if (!foundInMap) {
+							}*/
+							double lookupValue = rndRemainder;
+							int outgLowerIndex = my_lower_bound(lookupValue, f->outgassingMap, f->sh.outgassingMapWidth*f->sh.outgassingMapHeight); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
+							outgLowerIndex++;
+							mapPositionH = (size_t)((double)outgLowerIndex / (double)f->sh.outgassingMapWidth);
+							mapPositionW = outgLowerIndex - mapPositionH * f->sh.outgassingMapWidth;
+							foundInMap = true;
+							/*if (!foundInMap) {
 								SetErrorSub("Starting point not found in imported desorption map");
 								return false;
-							}
+							}*/
 						}
 						sumA += sHandle->latestMoment * f->sh.totalOutgassing / (1.38E-23*f->sh.temperature);
 					}
@@ -618,7 +625,7 @@ bool StartFromSource() {
 			}
 			else {
 				//Last element, prevent from going out of facet
-				v = ((double)mapPositionH + rnd() * (src->outgassingMapHeightD - (src->sh.outgassingMapHeight - 1)))/ src->outgassingMapHeightD;
+				v = ((double)mapPositionH + rnd() * (src->outgassingMapHeightD - (src->sh.outgassingMapHeight - 1))) / src->outgassingMapHeightD;
 			}
 		}
 		else {
@@ -676,47 +683,108 @@ bool StartFromSource() {
 		PolarToCartesian(src, acos(pow(rnd(), 1.0 / (src->sh.desorbTypeN + 1.0))), rnd()*2.0*PI, reverse);
 		break;
 	case DES_ANGLEMAP:
-	{
-		size_t angleMapSum = src->angleMap[src->sh.angleMapThetaHeight * src->sh.angleMapPhiWidth - 1];
-		if (angleMapSum == 0) {
-			std::stringstream tmp;
-			tmp << "Facet " << src->globalId + 1 << ": angle map has all 0 values";
-			SetErrorSub(tmp.str().c_str());
-		}
-		double lookupValue = rnd()*(double)angleMapSum; //last element of cumulative distr. = sum
-		int thetaLowerIndex = my_lower_bound(lookupValue, src->angleMapLineSums, src->sh.angleMapThetaHeight); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
+		{
+		double theta,phi;
+		int thetaLowerIndex;
 		double thetaOvershoot;
-		if (thetaLowerIndex == -1) thetaOvershoot = lookupValue / (double)src->angleMapLineSums[0]; //In the first line
-		else thetaOvershoot = (lookupValue - (double)src->angleMapLineSums[thetaLowerIndex]) / (double)(src->angleMapLineSums[thetaLowerIndex + 1] - src->angleMapLineSums[thetaLowerIndex]);
-		double theta = PI/(double)src->sh.angleMapThetaHeight*((double)thetaLowerIndex+1.0+thetaOvershoot); //0..PI
-		
-		
-		//Find phi lower index
 
-		int phiLowerIndex = my_lower_bound(lookupValue, &(src->angleMap[src->sh.angleMapPhiWidth*(thetaLowerIndex+1)]), src->sh.angleMapPhiWidth);
-		double phiOvershoot;
-		if (phiLowerIndex >=0) {
-			//Regular case, found within line
-			phiOvershoot = (lookupValue - (double)src->angleMap[src->sh.angleMapPhiWidth*(thetaLowerIndex + 1) + phiLowerIndex])
-				/ (double)(src->angleMap[src->sh.angleMapPhiWidth*(thetaLowerIndex + 1) + phiLowerIndex + 1] - src->angleMap[src->sh.angleMapPhiWidth*(thetaLowerIndex + 1) + phiLowerIndex]);
-		}
-		else {
-			if (thetaLowerIndex >= 0) {
-				//Special case, found in the first segment
-				phiOvershoot = (lookupValue - (double)src->angleMap[src->sh.angleMapPhiWidth*thetaLowerIndex + src->sh.angleMapPhiWidth - 1])
-					/ (double)(src->angleMap[src->sh.angleMapPhiWidth*(thetaLowerIndex + 1)] - src->angleMap[src->sh.angleMapPhiWidth*thetaLowerIndex + src->sh.angleMapPhiWidth - 1]);
-			}
-			else { //Very first line, very first element
-				phiOvershoot = lookupValue / (double)(src->angleMap[1] - src->angleMap[0]);
-			}
-		}
-		double phi = (2.0 * PI/(double)src->sh.angleMapPhiWidth)*(double)phiLowerIndex+1.0+phiOvershoot - PI; //Shifting from 0..2PI to -PI..PI
+		std::tie(theta,thetaLowerIndex,thetaOvershoot) = src->angleMap.GenerateThetaFromAngleMap(src->sh.anglemapParams);
+		phi = src->angleMap.GeneratePhiFromAngleMap(thetaLowerIndex, thetaOvershoot, src->sh.anglemapParams);
+			/*
 
-		PolarToCartesian(src, theta, phi, false);
-		_ASSERTE(theta == theta);
-		_ASSERTE(phi == phi);
-		_ASSERTE(sHandle->pDir.z > 0.0);
-	}
+			size_t angleMapSum = src->angleMapLineSums[(src->sh.anglemapParams.thetaLowerRes + src->sh.anglemapParams.thetaHigherRes) - 1];
+			if (angleMapSum == 0) {
+				std::stringstream tmp;
+				tmp << "Facet " << src->globalId + 1 << ": angle map has all 0 values";
+				SetErrorSub(tmp.str().c_str());
+				return false;
+			}
+			double lookupValue = rnd()*(double)angleMapSum; //last element of cumulative distr. = sum
+			int thetaLowerIndex = my_lower_bound(lookupValue, src->angleMapLineSums, (src->sh.anglemapParams.thetaLowerRes + src->sh.anglemapParams.thetaHigherRes)); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
+			double thetaOvershoot;
+			double theta_a, theta_b, theta_c, theta_cumulative_A, theta_cumulative_B, theta_cumulative_C;
+			bool theta_hasThreePoints;
+			if (thetaLowerIndex == -1) {//In the first line
+				thetaOvershoot = lookupValue / (double)src->angleMapLineSums[0]; 
+			}
+			else {
+				//(lower index can't be last element)
+				thetaOvershoot = (lookupValue - (double)src->angleMapLineSums[thetaLowerIndex]) / (double)(src->angleMapLineSums[thetaLowerIndex + 1] - src->angleMapLineSums[thetaLowerIndex]);
+			}
+
+			theta_a = GetTheta(src, (double)thetaLowerIndex); theta_cumulative_A = (thetaLowerIndex == -1) ? 0.0 : (double)src->angleMapLineSums[thetaLowerIndex + 0];
+			theta_b = GetTheta(src, (double)(thetaLowerIndex+1)); theta_cumulative_B = (double)src->angleMapLineSums[thetaLowerIndex + 1];
+			if ((thetaLowerIndex + 2)<(src->sh.anglemapParams.thetaLowerRes + src->sh.anglemapParams.thetaHigherRes)) {
+				theta_c = GetTheta(src, (double)(thetaLowerIndex+2)); theta_cumulative_C = (double)src->angleMapLineSums[thetaLowerIndex + 2];
+				theta_hasThreePoints = true;
+			}
+			else {
+				theta_hasThreePoints = false;
+			}
+		
+			double theta;
+			theta_hasThreePoints = false; //debug
+			if (!theta_hasThreePoints) theta = GetTheta(src,thetaLowerIndex + thetaOvershoot);
+			else theta = InverseQuadraticInterpolation(lookupValue, theta_a, theta_b, theta_c, theta_cumulative_A, theta_cumulative_B, theta_cumulative_C);
+
+			//Theta determined, let's find phi
+			double weigh;
+			size_t distr1index, distr2index;
+			if (thetaOvershoot < 0.5) {
+				distr1index = thetaLowerIndex;
+				distr2index = thetaLowerIndex + 1;
+				weigh = thetaOvershoot + 0.5;
+			}
+			else {
+				distr1index = thetaLowerIndex + 1;
+				distr2index = thetaLowerIndex + 2;
+				weigh = thetaOvershoot - 0.5;
+			}
+			if (distr1index == -1) distr1index++; //In case we interpolate in the first theta range and thetaOvershoot<0.5
+			if (distr2index == (src->sh.anglemapParams.thetaLowerRes + src->sh.anglemapParams.thetaHigherRes)) distr2index--; //In case we interpolate in the last theta range and thetaOvershoot>=0.5
+
+			size_t distr1sum = src->angleMapLineSums[distr1index]-((distr1index!=distr2index && distr1index>0)?src->angleMapLineSums[distr1index-1]:0);
+			size_t distr2sum = src->angleMapLineSums[distr2index] - ((distr1index != distr2index) ? src->angleMapLineSums[distr2index - 1] : 0);
+			double weighedSum=Weigh((double)distr1sum, (double)distr2sum, weigh);
+			double phiLookup = rnd() * weighedSum;
+			int phiLowerIndex = weighed_lower_bound_X(phiLookup, weigh, &(src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr1index]), &(src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr2index]), src->sh.anglemapParams.phiWidth);
+		
+			////////////////
+
+			double phiOvershoot;
+			double phi_a, phi_b, phi_c, phi_cumulative_A, phi_cumulative_B, phi_cumulative_C;
+			bool phi_hasThreePoints;
+			if (phiLowerIndex == -1) {
+				phiOvershoot = phiLookup / Weigh((double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr1index], (double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr2index],weigh);
+			}
+			else {
+				//(lower index can't be last element)
+				phiOvershoot = (phiLookup - Weigh((double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr1index + phiLowerIndex], (double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr2index+phiLowerIndex], weigh))
+					/ (Weigh((double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr1index + phiLowerIndex + 1], (double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr2index + phiLowerIndex + 1], weigh)
+					- Weigh((double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr1index + phiLowerIndex], (double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr2index + phiLowerIndex], weigh));
+			}
+
+			phi_a = 2.0*PI*(double)(phiLowerIndex + 1) / (double)src->sh.anglemapParams.phiWidth - PI; phi_cumulative_A = (phiLowerIndex == -1) ? 0.0 : Weigh((double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr1index + phiLowerIndex], (double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr2index + phiLowerIndex], weigh);
+			phi_b = 2.0*PI*(double)(phiLowerIndex + 2) / (double)src->sh.anglemapParams.phiWidth - PI; phi_cumulative_B = Weigh((double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr1index + phiLowerIndex + 1], (double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr2index + phiLowerIndex + 1], weigh);
+			if ((phiLowerIndex + 2)<(src->sh.anglemapParams.phiWidth)) {
+				phi_c = 2.0*PI*(double)(phiLowerIndex + 3) / (double)src->sh.anglemapParams.phiWidth - PI; phi_cumulative_C = Weigh((double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr1index + phiLowerIndex + 2], (double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr2index + phiLowerIndex + 2], weigh);
+				phi_hasThreePoints = true;
+			}
+			else {
+				phi_hasThreePoints = false;
+			}
+
+			double phi;
+			phi_hasThreePoints = false; //debug
+			if (!phi_hasThreePoints) phi = 2.0*PI*((double)(phiLowerIndex + 1) + phiOvershoot) / (double)src->sh.anglemapParams.phiWidth - PI;
+			else phi = InverseQuadraticInterpolation(phiLookup, phi_a, phi_b, phi_c, phi_cumulative_A, phi_cumulative_B, phi_cumulative_C);
+
+			/////////////////////////////
+			*/
+			PolarToCartesian(src, PI - theta, phi, false); //angle map contains incident angle (between N and source dir) and theta is dir (between N and dest dir)
+			_ASSERTE(sHandle->pDir.x == sHandle->pDir.x);
+			
+		}
 	}
 
 	// Current structure
@@ -757,9 +825,203 @@ bool StartFromSource() {
 	return true;
 }
 
-// -------------------------------------------------------------
-// Compute bounce against a facet
-// -------------------------------------------------------------
+std::tuple<double, int, double> Anglemap::GenerateThetaFromAngleMap(const AnglemapParams& anglemapParams)
+{
+	double lookupValue = rnd();
+	int thetaLowerIndex = my_lower_bound(lookupValue, theta_CDF, (anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes)); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
+	double theta, thetaOvershoot;
+
+	if (thetaLowerIndex == -1) { //first half section
+		thetaOvershoot = 0.5 + 0.5 * lookupValue / theta_CDF[0]; //between 0.5 and 1
+		theta = GetTheta((double)thetaLowerIndex + 0.5 + thetaOvershoot, anglemapParams); //between 0 and the first section end
+		return std::tie(theta, thetaLowerIndex, thetaOvershoot);
+	}
+	else if (thetaLowerIndex == (anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes - 1)) { //last half section //can this happen?
+		thetaOvershoot = 0.5 * (lookupValue - theta_CDF[thetaLowerIndex])
+			/ (1.0 - theta_CDF[thetaLowerIndex]); //between 0 and 0.5
+		theta = GetTheta((double)thetaLowerIndex + 0.5 + thetaOvershoot, anglemapParams); //between 0 and the first section end
+		return std::tie(theta, thetaLowerIndex, thetaOvershoot);
+	}
+	else { //regular section
+		if (phi_CDFsums[thetaLowerIndex] == phi_CDFsums[thetaLowerIndex + 1]) {
+			//The pdf's slope is 0, linear interpolation
+			thetaOvershoot = (lookupValue - theta_CDF[thetaLowerIndex]) / (theta_CDF[thetaLowerIndex + 1] - theta_CDF[thetaLowerIndex]);
+			theta = GetTheta((double)thetaLowerIndex + 0.5 + thetaOvershoot,anglemapParams);
+		}
+		else {
+			//2nd degree interpolation
+			// y(x) = ax^2 + bx + c
+			// c: CDF value at lower index
+			// b: pdf value at lower index
+			// a: pdf slope at lower index / 2
+			// dy := y - c
+			// dx := x - [x at lower index]
+			// dy = ax^2 + bx
+			// dx = ( -b + sqrt(b^2 +4*a*dy) ) / (2a)
+			double thetaStep = GetTheta((double)thetaLowerIndex + 1.5, anglemapParams) - GetTheta((double)thetaLowerIndex + 0.5, anglemapParams);
+			double c = theta_CDF[thetaLowerIndex]; //CDF value at lower index
+			double b = (double)phi_CDFsums[thetaLowerIndex] / (double)theta_CDFsum / thetaStep; //pdf value at lower index
+			double a = 0.5 * ((double)(phi_CDFsums[thetaLowerIndex + 1]) - (double)phi_CDFsums[thetaLowerIndex])/(double)theta_CDFsum/Sqr(thetaStep); //pdf slope at lower index
+			double dy = lookupValue - c;
+
+			double dx = (-b + sqrt(Sqr(b) + 4 * a*dy)) / (2 * a); //Since b>=0 it's the + branch of the +- that is valid for us
+
+			thetaOvershoot = dx/thetaStep;
+			theta = GetTheta((double)thetaLowerIndex + 0.5 + thetaOvershoot,anglemapParams);
+		}
+	}
+	_ASSERTE(theta == theta);
+	return std::tie(theta, thetaLowerIndex, thetaOvershoot);
+}
+
+double Anglemap::GeneratePhiFromAngleMap(const int & thetaLowerIndex, const double & thetaOvershoot, const AnglemapParams & anglemapParams)
+{
+	double lookupValue = rnd();
+	int phiLowerIndex;
+	double weigh;
+	if (thetaLowerIndex == -1) { //first theta half section
+		lookupValue += phi_CDFs[0];
+		phiLowerIndex = my_lower_bound(lookupValue, &phi_CDFs[0], anglemapParams.phiWidth);
+	}
+	else if (thetaLowerIndex == (anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes - 1)) { //last theta half section
+		lookupValue += phi_CDFs[thetaLowerIndex*anglemapParams.phiWidth];
+		phiLowerIndex = my_lower_bound(lookupValue, &phi_CDFs[thetaLowerIndex*anglemapParams.phiWidth], anglemapParams.phiWidth);
+	}
+	else {
+		double div;
+		div = ((double)phi_CDFsums[thetaLowerIndex] * (1.0 - thetaOvershoot) + (double)phi_CDFsums[thetaLowerIndex + 1] * thetaOvershoot);
+		if (div>0.0) {
+			weigh = (thetaOvershoot * (double)phi_CDFsums[thetaLowerIndex + 1]) / div;
+		}
+		else {
+			weigh = thetaOvershoot;
+		}
+		lookupValue += Weigh((double)phi_CDFs[thetaLowerIndex*anglemapParams.phiWidth], (double)phi_CDFs[(thetaLowerIndex + 1) * anglemapParams.phiWidth], weigh);
+		phiLowerIndex = weighed_lower_bound_X(lookupValue, weigh, &phi_CDFs[thetaLowerIndex*anglemapParams.phiWidth], &phi_CDFs[(thetaLowerIndex + 1) * anglemapParams.phiWidth], anglemapParams.phiWidth);
+	}
+
+	double phi, phiOvershoot;
+	double thetaIndex = (double)thetaLowerIndex + 0.5 + /*thetaOvershoot*/ + weigh;
+	if (phiLowerIndex == -1) { //first half section
+		__debugbreak(); //should not happen since we shifted the lookup value with first value
+		phiOvershoot = 0.5 + 0.5 * lookupValue / GetPhiCDFValue(thetaIndex, 0, anglemapParams); //between 0.5 and 1
+		phi = GetPhi((double)phiLowerIndex + 0.5 + phiOvershoot, anglemapParams); //between 0 and the first section end
+	}
+	/*else if (phiLowerIndex == (anglemapParams.phiWidth - 1)) { //last half section
+		phiOvershoot = 0.5 * (lookupValue - GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams) )
+			/ (1.0 - GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams)); //between 0 and 0.5
+		phi = GetPhi((double)phiLowerIndex + 0.5 + phiOvershoot, anglemapParams); //between 0 and the first section end
+	}*/
+	else { //regular or last section 
+		if (GetPhipdfValue(thetaIndex, phiLowerIndex, anglemapParams) == GetPhipdfValue(thetaIndex, phiLowerIndex+1, anglemapParams)) {
+			//The pdf's slope is 0, linear interpolation
+			phiOvershoot = (lookupValue - GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams))
+				/ (GetPhiCDFValue(thetaIndex, phiLowerIndex + 1, anglemapParams) - GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams));
+			phi = GetPhi((double)phiLowerIndex + 0.5 + phiOvershoot, anglemapParams);
+		}
+		else {
+
+
+			//2nd degree interpolation
+			// y(x) = ax^2 + bx + c
+			// c: CDF value at lower index
+			// b: pdf value at lower index
+			// a: pdf slope at lower index / 2
+			// dy := y - c
+			// dx := x - [x at lower index]
+			// dy = ax^2 + bx
+			// dx = ( -b + sqrt(b^2 +4*a*dy) ) / (2a)
+			double phiStep = 2.0 * PI / (double)anglemapParams.phiWidth;
+			double c = GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams); //CDF value at lower index
+			double b = GetPhipdfValue(thetaIndex,phiLowerIndex,anglemapParams) / GetPhiCDFSum(thetaIndex,anglemapParams) / phiStep; //pdf value at lower index
+			double a = 0.5 * (GetPhipdfValue(thetaIndex, phiLowerIndex + 1, anglemapParams) - GetPhipdfValue(thetaIndex, phiLowerIndex, anglemapParams)) / GetPhiCDFSum(thetaIndex, anglemapParams) / Sqr(phiStep); //pdf slope at lower index
+			double dy = lookupValue - c;
+
+			double D = Sqr(b) + 4 * a*dy; //Discriminant. In rare cases it might be slightly negative, then fall back to linear interpolation:
+			if (D < 0) {
+				phiOvershoot = (lookupValue - GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams))
+					/ (GetPhiCDFValue(thetaIndex, phiLowerIndex + 1, anglemapParams) - GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams));
+			}
+			else {
+				double dx = (-b + sqrt(Sqr(b) + 4 * a*dy)) / (2 * a); //Since b>=0 it's the + branch of the +- that is valid for us
+				phiOvershoot = dx / phiStep;
+			}
+			phi = GetPhi((double)phiLowerIndex + 0.5 + phiOvershoot, anglemapParams);
+		}
+	}
+	_ASSERTE(phi == phi);
+	_ASSERTE(phi > -PI && phi < PI);
+	return phi;
+}
+
+double Anglemap::GetTheta(const double& thetaIndex, const AnglemapParams& anglemapParams)
+{
+	if ((size_t)(thetaIndex) < anglemapParams.thetaLowerRes) { // 0 < theta < limit
+		return anglemapParams.thetaLimit * (thetaIndex) / (double)anglemapParams.thetaLowerRes;
+	}
+	else { // limit < theta < PI/2
+		return anglemapParams.thetaLimit + (PI/2.0- anglemapParams.thetaLimit) * (thetaIndex - (double)anglemapParams.thetaLowerRes) / (double)anglemapParams.thetaHigherRes;
+	}
+}
+
+double Anglemap::GetPhi(const double & phiIndex, const AnglemapParams & anglemapParams)
+{
+	double width = (double)anglemapParams.phiWidth;
+	double correctedIndex = (phiIndex < width) ? phiIndex : phiIndex - width;
+	return - PI + 2.0 * PI * correctedIndex / width;
+}
+
+double Anglemap::GetPhipdfValue(const double & thetaIndex, const int & phiLowerIndex, const AnglemapParams& anglemapParams)
+{
+	if (thetaIndex < 0.5) {
+		return (double)pdf[IDX(phiLowerIndex, anglemapParams.phiWidth)];
+	}
+	else if (thetaIndex >(double)(anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes) - 0.5) {
+		return (double)pdf[anglemapParams.phiWidth * (anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes - 1) + IDX(phiLowerIndex, anglemapParams.phiWidth)];
+	}
+	else {
+		size_t thetaLowerIndex = (size_t)(thetaIndex - 0.5);
+		double thetaOvershoot = thetaIndex - 0.5 - (double)thetaLowerIndex;
+		double valueFromLowerpdf = (double)pdf[anglemapParams.phiWidth * thetaLowerIndex + IDX(phiLowerIndex, anglemapParams.phiWidth)];
+		double valueFromHigherpdf = (double)pdf[anglemapParams.phiWidth * (thetaLowerIndex + 1) + IDX(phiLowerIndex, anglemapParams.phiWidth)];
+		return Weigh(valueFromLowerpdf, valueFromHigherpdf, thetaOvershoot);
+	}
+}
+
+double Anglemap::GetPhiCDFValue(const double & thetaIndex, const int & phiLowerIndex, const AnglemapParams& anglemapParams)
+{
+	if (thetaIndex < 0.5) {
+		return (phiLowerIndex < anglemapParams.phiWidth) ? phi_CDFs[phiLowerIndex] : phi_CDFs[anglemapParams.phiWidth - 1] - 1.0;
+	}
+	else if (thetaIndex >(double)(anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes) - 0.5) {
+		return (phiLowerIndex < anglemapParams.phiWidth) ? phi_CDFs[anglemapParams.phiWidth * (anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes - 1) + phiLowerIndex] : 1.0 + phi_CDFs[anglemapParams.phiWidth * (anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes - 1)];
+	}
+	else {
+		size_t thetaLowerIndex = (size_t)(thetaIndex - 0.5);
+		double thetaOvershoot = thetaIndex - 0.5 - (double)thetaLowerIndex;
+		double valueFromLowerCDF = (phiLowerIndex < anglemapParams.phiWidth) ? phi_CDFs[anglemapParams.phiWidth * thetaLowerIndex + phiLowerIndex] : 1.0 + phi_CDFs[anglemapParams.phiWidth * (thetaLowerIndex)];
+		double valueFromHigherCDF = (phiLowerIndex < anglemapParams.phiWidth) ? phi_CDFs[anglemapParams.phiWidth * (thetaLowerIndex + 1) + phiLowerIndex] : 1.0 + phi_CDFs[anglemapParams.phiWidth * (thetaLowerIndex + 1)];
+		return Weigh(valueFromLowerCDF, valueFromHigherCDF, thetaOvershoot);
+	}
+
+}
+
+double Anglemap::GetPhiCDFSum(const double & thetaIndex, const AnglemapParams& anglemapParams)
+{
+	if (thetaIndex < 0.5) {
+		return (double)phi_CDFsums[0];
+	}
+	else if (thetaIndex >(double)(anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes) - 0.5) {
+		return (double)phi_CDFsums[anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes - 1];
+	}
+	else {
+		size_t thetaLowerIndex = (size_t)(thetaIndex - 0.5);
+		double thetaOvershoot = thetaIndex - 0.5 - (double)thetaLowerIndex;
+		double valueFromLowerSum = (double)phi_CDFsums[thetaLowerIndex];
+		double valueFromHigherSum = (double)phi_CDFsums[thetaLowerIndex + 1];
+		return Weigh(valueFromLowerSum, valueFromHigherSum, thetaOvershoot);
+	}
+}
 
 void PerformBounce(FACET *iFacet) {
 
@@ -772,7 +1034,7 @@ void PerformBounce(FACET *iFacet) {
 		// Count this hit as a transparent pass
 		RecordHit(HIT_TRANS);
 		ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 2.0);
-		if (iFacet->sh.recordAngleMap) RecordAngleMap(iFacet);
+		if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
 		if (iFacet->hits && iFacet->sh.countTrans) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 2.0);
 		if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
 		return;
@@ -812,7 +1074,7 @@ void PerformBounce(FACET *iFacet) {
 	if (iFacet->hits && iFacet->sh.countRefl) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, true, 1.0, 1.0);
 	if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, true, 1.0, 1.0);
-	if (iFacet->sh.recordAngleMap) RecordAngleMap(iFacet);
+	if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
 
 	// Relaunch particle
 	UpdateVelocity(iFacet);
@@ -893,7 +1155,7 @@ void PerformAbsorb(FACET *iFacet) {
 	double ortVelocity = sHandle->velocityCurrentParticle*abs(Dot(sHandle->pDir, iFacet->sh.N));
 	IncreaseFacetCounter(iFacet, sHandle->flightTimeCurrentParticle, 1, 0, 1, 2.0 / ortVelocity, (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity);
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 1.0); //was 2.0, 1.0
-	if (iFacet->sh.recordAngleMap) RecordAngleMap(iFacet);
+	if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
 	if (iFacet->hits && iFacet->sh.countAbs) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 1.0); //was 2.0, 1.0
 	if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
 }
@@ -941,9 +1203,9 @@ void ProfileFacet(FACET *f, double time, bool countHit, double velocity_factor, 
 		if (countHit) {
 			dot = Dot(f->sh.N, sHandle->pDir);
 			double theta = acos(abs(dot));              // Angle to normal (PI/2 => PI)
-			int pos = (int)(theta / (PI / 2)*((double)PROFILE_SIZE)); // To Grad
+			size_t pos = (size_t)(theta / (PI / 2)*((double)PROFILE_SIZE)); // To Grad
 			//int pos = (int)(cos(theta)*(double)PROFILE_SIZE); // COS(theta)
-			SATURATE(pos, 0, PROFILE_SIZE - 1);
+			Saturate(pos, 0, PROFILE_SIZE - 1);
 			for (size_t m = 0; m <= nbMoments; m++) {
 				if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
 					f->profile[m][pos].count++;
@@ -956,8 +1218,8 @@ void ProfileFacet(FACET *f, double time, bool countHit, double velocity_factor, 
 	case REC_PRESSUREU:
 	case REC_PRESSUREV:
 
-		pos = (int)((f->sh.profileType == REC_PRESSUREU ? f->colU : f->colV)*(double)PROFILE_SIZE);
-		SATURATE(pos, 0, PROFILE_SIZE - 1);
+		pos = (size_t)((f->sh.profileType == REC_PRESSUREU ? f->colU : f->colV)*(double)PROFILE_SIZE);
+		Saturate(pos, 0, PROFILE_SIZE - 1);
 		for (size_t m = 0; m <= nbMoments; m++) {
 			if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
 				if (countHit) f->profile[m][pos].count++;
@@ -973,7 +1235,7 @@ void ProfileFacet(FACET *f, double time, bool countHit, double velocity_factor, 
 	case REC_VELOCITY:
 		if (countHit) {
 			pos = (int)(dot*sHandle->velocityCurrentParticle / f->sh.maxSpeed*(double)PROFILE_SIZE); //"dot" default value is 1.0
-			SATURATE(pos, 0, PROFILE_SIZE - 1);
+			Saturate(pos, 0, PROFILE_SIZE - 1);
 			for (size_t m = 0; m <= nbMoments; m++) {
 				if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
 					f->profile[m][pos].count++;
@@ -987,11 +1249,30 @@ void ProfileFacet(FACET *f, double time, bool countHit, double velocity_factor, 
 void RecordAngleMap(FACET* collidedFacet) {
 	double theta, phi;
 	CartesianToPolar(collidedFacet, &theta, &phi);
- 	size_t thetaIndex = size_t((theta / PI)*collidedFacet->sh.angleMapThetaHeight); //Theta: 0..PI
-	size_t phiIndex = size_t((phi + PI)/(2.0*PI)*collidedFacet->sh.angleMapPhiWidth); //Phi: -PI..PI (shifting by PI to store on 0..2PI)
-	collidedFacet->angleMap[thetaIndex*collidedFacet->sh.angleMapPhiWidth+phiIndex]++;
-	_ASSERTE(phi > (-PI / 2) && phi < (PI / 2));
-	_ASSERTE(sHandle->pDir.z > 0.0);
+	if (theta > PI / 2.0) theta = abs(PI - theta); //theta is originally respective to N, but we'd like the angle between 0 and PI/2
+	bool countTheta = true;
+	size_t thetaIndex;
+	if (theta < collidedFacet->sh.anglemapParams.thetaLimit) {
+		if (collidedFacet->sh.anglemapParams.thetaLowerRes > 0) {
+			thetaIndex = (size_t)(theta / collidedFacet->sh.anglemapParams.thetaLimit*(double)collidedFacet->sh.anglemapParams.thetaLowerRes);
+		}
+		else {
+			countTheta = false;
+		}
+	}
+	else {
+		if (collidedFacet->sh.anglemapParams.thetaHigherRes > 0) {
+			thetaIndex = collidedFacet->sh.anglemapParams.thetaLowerRes + (size_t)((theta - collidedFacet->sh.anglemapParams.thetaLimit)
+				/ (PI / 2.0 - collidedFacet->sh.anglemapParams.thetaLimit)*(double)collidedFacet->sh.anglemapParams.thetaHigherRes);
+		}
+		else {
+			countTheta = false;
+		}
+	}
+	if (countTheta) {
+		size_t phiIndex = (size_t)((phi + PI) / (2.0*PI)*(double)collidedFacet->sh.anglemapParams.phiWidth); //Phi: -PI..PI (shifting by PI to store on 0..2PI)
+		collidedFacet->angleMap.pdf[thetaIndex*collidedFacet->sh.anglemapParams.phiWidth + phiIndex]++;
+	}
 }
 
 void UpdateVelocity(FACET *collidedFacet) {

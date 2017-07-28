@@ -353,7 +353,7 @@ void ProfilePlotter::refreshViews() {
 						v->Add((double)j, profilePtr[j].sum_v_ort*scaleY, false);
 					break;
 				case 2: //Particle density
-					scaleY = 1.0 / (f->GetArea() / (double)PROFILE_SIZE*1E-4);
+					scaleY = 1.0 / ((f->GetArea() * 1E-4) / (double)PROFILE_SIZE);
 					scaleY *= worker->GetMoleculesPerTP(worker->displayedMoment);
 					
 					//Correction for double-density effect (measuring density on desorbing/absorbing facets):

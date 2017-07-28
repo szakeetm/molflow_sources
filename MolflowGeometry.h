@@ -26,8 +26,8 @@ public:
 		const size_t &mode, const double &eta0, const double &alpha, const double &cutoffdose,
 		const std::vector<std::pair<double, double>> &convDistr,
 		GLProgress *prg);
-	void AnalyzeSYNfile(FileReader *f, GLProgress *progressDlg, int *nbFacet,
-		int *nbTextured, int *nbDifferent, GLProgress *prg);
+	void AnalyzeSYNfile(FileReader *f, GLProgress *progressDlg, size_t *nbNewFacet,
+		size_t *nbTextured, size_t *nbDifferent, GLProgress *prg);
 
 	// Insert
 	void InsertSYN(FileReader *file, GLProgress *prg, bool newStr);

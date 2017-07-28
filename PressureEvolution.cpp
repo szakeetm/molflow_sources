@@ -339,7 +339,7 @@ void PressureEvolution::refreshViews() {
 			double fnbDes = (double)fCount->hit.nbDesorbed;
 			double fnbHit = (double)fCount->hit.nbHit;
 			v->Reset();
-			for (int m = 1; m <= MIN((int)worker->moments.size(), 10000); m++) { //max 10000 points
+			for (int m = 1; m <= Min((int)worker->moments.size(), 10000); m++) { //max 10000 points
 				APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + facetHitsSize + m*sizeof(APROFILE)*PROFILE_SIZE);
 
 				switch (displayMode) {

@@ -58,7 +58,7 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	SetIconfiable(true);
 
 	int wD = 320;
-	int hD = 574;
+	int hD = 655;
 	aPanel = new GLTitledPanel("Texture properties");
 	aPanel->SetBounds(5, 3, 309, 123);
 	Add(aPanel);
@@ -66,16 +66,16 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	mPanel->SetBounds(5, 129, 309, 44);
 	Add(mPanel);
 	vPanel = new GLTitledPanel("View settings");
-	vPanel->SetBounds(5, 430, 309, 44);
+	vPanel->SetBounds(5, 357, 309, 44);
 	Add(vPanel);
 	desPanel = new GLTitledPanel("Dynamic desorption");
-	desPanel->SetBounds(5, 478, 309, 69);
+	desPanel->SetBounds(5, 407, 309, 69);
 	Add(desPanel);
 	paramPanel = new GLTitledPanel("Additional parameters");
 	paramPanel->SetBounds(5, 177, 309, 174);
 	Add(paramPanel);
 	angleMapPanel = new GLTitledPanel("Incident angle distribution");
-	angleMapPanel->SetBounds(5, 357, 309, 67);
+	angleMapPanel->SetBounds(5, 482, 309, 149);
 	Add(angleMapPanel);
 	lengthText = new GLTextField(0, "");
 	aPanel->SetCompBounds(lengthText, 180, 36, 72, 18);
@@ -178,7 +178,7 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	paramPanel->Add(facetSuperDest);
 
 	label8 = new GLLabel("Link to:");
-	paramPanel->SetCompBounds(label8, 163, 93, 35, 12);
+	paramPanel->SetCompBounds(label8, 158, 93, 35, 12);
 	paramPanel->Add(label8);
 
 	facetStructure = new GLTextField(0, "");
@@ -267,28 +267,24 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	paramPanel->SetCompBounds(SojournInfoButton, 229, 126, 69, 20);
 	paramPanel->Add(SojournInfoButton);
 
-	label14 = new GLLabel("x");
-	angleMapPanel->SetCompBounds(label14, 237, 17, 10, 12);
+	label14 = new GLLabel("Theta (grazing angle):");
+	angleMapPanel->SetCompBounds(label14, 9, 36, 93, 12);
 	angleMapPanel->Add(label14);
 
-	angleMapDistrSizeLabel = new GLLabel("Distribution size:");
-	angleMapPanel->SetCompBounds(angleMapDistrSizeLabel, 105, 17, 74, 12);
-	angleMapPanel->Add(angleMapDistrSizeLabel);
+	angleMapPhiResText = new GLTextField(0, "");
+	angleMapPanel->SetCompBounds(angleMapPhiResText, 115, 77, 46, 18);
+	angleMapPanel->Add(angleMapPhiResText);
 
-	angleMapHeightBox = new GLTextField(0, "");
-	angleMapPanel->SetCompBounds(angleMapHeightBox, 249, 14, 50, 18);
-	angleMapPanel->Add(angleMapHeightBox);
-
-	angleMapWidthBox = new GLTextField(0, "");
-	angleMapPanel->SetCompBounds(angleMapWidthBox, 184, 14, 50, 18);
-	angleMapPanel->Add(angleMapWidthBox);
+	angleMapThetaLowresText = new GLTextField(0, "");
+	angleMapPanel->SetCompBounds(angleMapThetaLowresText, 115, 33, 46, 18);
+	angleMapPanel->Add(angleMapThetaLowresText);
 
 	angleMapImportButton = new GLButton(0, "Import CSV");
-	angleMapPanel->SetCompBounds(angleMapImportButton, 110, 36, 94, 20);
+	angleMapPanel->SetCompBounds(angleMapImportButton, 140, 122, 64, 20);
 	angleMapPanel->Add(angleMapImportButton);
 
 	angleMapExportButton = new GLButton(0, "Export to CSV");
-	angleMapPanel->SetCompBounds(angleMapExportButton, 10, 36, 94, 20);
+	angleMapPanel->SetCompBounds(angleMapExportButton, 63, 122, 73, 20);
 	angleMapPanel->Add(angleMapExportButton);
 
 	angleMapRecordCheckbox = new GLToggle(0, "Record");
@@ -296,11 +292,11 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	angleMapPanel->Add(angleMapRecordCheckbox);
 
 	angleMapReleaseButton = new GLButton(0, "Release recorded");
-	angleMapPanel->SetCompBounds(angleMapReleaseButton, 208, 36, 94, 20);
+	angleMapPanel->SetCompBounds(angleMapReleaseButton, 205, 122, 93, 20);
 	angleMapPanel->Add(angleMapReleaseButton);
 
 	remeshButton = new GLButton(0, "Force remesh");
-	aPanel->SetCompBounds(remeshButton, 226, 13, 69, 20);
+	aPanel->SetCompBounds(remeshButton, 218, 13, 77, 20);
 	aPanel->Add(remeshButton);
 
 	label16 = new GLLabel("uniform");
@@ -317,7 +313,6 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 
 	uniformReflBox = new GLTextField(0, "");
 	paramPanel->SetCompBounds(uniformReflBox, 226, 19, 30, 18);
-	uniformReflBox->SetEditable(false);
 	paramPanel->Add(uniformReflBox);
 
 	specularReflBox = new GLTextField(0, "");
@@ -327,6 +322,38 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	diffuseReflBox = new GLTextField(0, "");
 	paramPanel->SetCompBounds(diffuseReflBox, 65, 19, 30, 18);
 	paramPanel->Add(diffuseReflBox);
+
+	angleMapShowButton = new GLButton(0, "Show");
+	angleMapPanel->SetCompBounds(angleMapShowButton, 10, 122, 50, 20);
+	angleMapPanel->Add(angleMapShowButton);
+
+	limitLabel = new GLLabel("values from limit to PI/2");
+	angleMapPanel->SetCompBounds(limitLabel, 166, 58, 91, 12);
+	angleMapPanel->Add(limitLabel);
+
+	label17 = new GLLabel("values from 0 to");
+	angleMapPanel->SetCompBounds(label17, 166, 36, 71, 12);
+	angleMapPanel->Add(label17);
+
+	angleMapThetaLimitText = new GLTextField(0, "");
+	angleMapPanel->SetCompBounds(angleMapThetaLimitText, 249, 33, 46, 18);
+	angleMapPanel->Add(angleMapThetaLimitText);
+
+	label20 = new GLLabel("values from -PI to +PI");
+	angleMapPanel->SetCompBounds(label20, 166, 80, 94, 12);
+	angleMapPanel->Add(label20);
+
+	label19 = new GLLabel("Phi (azimuth with U):");
+	angleMapPanel->SetCompBounds(label19, 10, 80, 91, 12);
+	angleMapPanel->Add(label19);
+
+	angleMapThetaHighresText = new GLTextField(0, "");
+	angleMapPanel->SetCompBounds(angleMapThetaHighresText, 115, 55, 46, 18);
+	angleMapPanel->Add(angleMapThetaHighresText);
+
+	angleMapStatusLabel = new GLLabel("Status: no recorded map");
+	angleMapPanel->SetCompBounds(angleMapStatusLabel, 10, 106, 105, 12);
+	angleMapPanel->Add(angleMapStatusLabel);
 
 	SetTitle("Advanced facet parameters");
 	// Center dialog
@@ -341,7 +368,11 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	fileDoseText->SetEditable(false);
 	fileYieldText->SetEditable(false);
 	fileFluxText->SetEditable(false);
+	desPanel->SetClosable(true);
+	angleMapPanel->SetClosable(true);
 
+	desPanelFullHeight = desPanel->GetHeight();
+	angleMapPanelFullHeight = angleMapPanel->GetHeight();
 
 	Refresh(std::vector<size_t>());
 	Reposition(wD, hD);
@@ -465,7 +496,8 @@ void FacetAdvParams::UpdateSizeForRatio() {
 
 void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 
-	sumArea = sumOutgassing = 0;
+	sumArea = sumOutgassing = 0.0;
+	sumAngleMapSize = 0;
 
 	bool somethingSelected = selection.size() > 0;
 	enableBtn->SetEnabled(somethingSelected);
@@ -476,8 +508,10 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	recordACBtn->SetEnabled(somethingSelected);
 	recordDirBtn->SetEnabled(somethingSelected);
 	angleMapRecordCheckbox->SetEnabled(somethingSelected);
-	angleMapWidthBox->SetEditable(somethingSelected);
-	angleMapHeightBox->SetEditable(somethingSelected);
+	angleMapPhiResText->SetEditable(somethingSelected);
+	angleMapThetaLowresText->SetEditable(somethingSelected);
+	angleMapThetaHighresText->SetEditable(somethingSelected);
+	angleMapThetaLimitText->SetEditable(somethingSelected);
 	showTexture->SetEnabled(somethingSelected);
 	showVolume->SetEnabled(somethingSelected);
 	resolutionText->SetEditable(somethingSelected);
@@ -507,8 +541,11 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 		recordACBtn->SetState(0);
 		recordDirBtn->SetState(0);
 		angleMapRecordCheckbox->SetState(0);
-		angleMapWidthBox->SetText("");
-		angleMapHeightBox->SetText("");
+		angleMapPhiResText->SetText("");
+		angleMapThetaLowresText->SetText("");
+		angleMapThetaHighresText->SetText("");
+		angleMapThetaLimitText->SetText("");
+		angleMapStatusLabel->SetText("");
 		showTexture->SetState(0);
 		showVolume->SetState(0);
 		facetUseDesFile->SetSelectedValue("");
@@ -524,6 +561,8 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 		enableSojournTime->SetText("Wall sojourn time");
 		sojournFreq->SetText("");
 		sojournE->SetText("");
+		std::stringstream label;
+		limitLabel->SetText("values from limit to PI");
 		return;
 	}
 
@@ -538,8 +577,11 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	bool CountACE = true;
 	bool CountDirE = true;
 	bool RecordAngleMapE = true;
-	bool AngleMapWidthE = true;
-	bool AngleMapHeightE = true;
+	bool AngleMapPhiWidthE = true;
+	bool AngleMapThetaLowResE = true;
+	bool AngleMapThetaHiResE = true;
+	bool AngleMapThetaLimitE = true;
+	bool hasAngleMapE = true;
 	bool TexVisibleE = true;
 	bool VolVisibleE = true;
 	bool ratioE = true;
@@ -565,11 +607,14 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	double f0Area = f0->GetArea();
 	sumArea = f0Area;
 	sumOutgassing = f0->sh.totalOutgassing;
+	sumAngleMapSize = f0->sh.anglemapParams.hasRecorded ? (f0->sh.anglemapParams.thetaLowerRes + f0->sh.anglemapParams.thetaHigherRes) * f0->sh.anglemapParams.phiWidth : 0;
+	
 	for (size_t i = 1; i < selection.size(); i++) {
 		Facet *f = geom->GetFacet(selection[i]);
 		double fArea = f->GetArea();
 		sumArea += fArea;
 		sumOutgassing += f->sh.totalOutgassing;
+		sumAngleMapSize += f->sh.anglemapParams.hasRecorded ? (f->sh.anglemapParams.thetaLowerRes + f->sh.anglemapParams.thetaHigherRes) * f->sh.anglemapParams.phiWidth : 0;
 		isEnabledE = isEnabledE && (f0->sh.isTextured == f->sh.isTextured);
 		isBoundE = isBoundE && (f0->hasMesh == f->hasMesh);
 		CountDesE = CountDesE && f0->sh.countDes == f->sh.countDes;
@@ -578,9 +623,12 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 		CountTransE = CountTransE && f0->sh.countTrans == f->sh.countTrans;
 		CountACE = CountACE && f0->sh.countACD == f->sh.countACD;
 		CountDirE = CountDirE && f0->sh.countDirection == f->sh.countDirection;
-		RecordAngleMapE = RecordAngleMapE && f0->sh.recordAngleMap == f->sh.recordAngleMap;
-		AngleMapWidthE = AngleMapWidthE && (f0->sh.angleMapPhiWidth == f->sh.angleMapPhiWidth);
-		AngleMapHeightE = AngleMapHeightE && (f0->sh.angleMapThetaHeight == f->sh.angleMapThetaHeight);
+		RecordAngleMapE = RecordAngleMapE && f0->sh.anglemapParams.record == f->sh.anglemapParams.record;
+		AngleMapPhiWidthE = AngleMapPhiWidthE && (f0->sh.anglemapParams.phiWidth == f->sh.anglemapParams.phiWidth);
+		AngleMapThetaLowResE = AngleMapThetaLowResE && (f0->sh.anglemapParams.thetaLowerRes == f->sh.anglemapParams.thetaLowerRes);
+		AngleMapThetaHiResE = AngleMapThetaHiResE && (f0->sh.anglemapParams.thetaHigherRes == f->sh.anglemapParams.thetaHigherRes);
+		AngleMapThetaLimitE = AngleMapThetaLimitE && IsEqual(f0->sh.anglemapParams.thetaLimit , f->sh.anglemapParams.thetaLimit);
+		hasAngleMapE = hasAngleMapE && (f0->sh.anglemapParams.hasRecorded == f->sh.anglemapParams.hasRecorded);
 		TexVisibleE = TexVisibleE && f0->textureVisible == f->textureVisible;
 		VolVisibleE = VolVisibleE && f0->volumeVisible == f->volumeVisible;
 		ratioE = ratioE && abs(f0->tRatio - f->tRatio) < 1E-8;
@@ -616,9 +664,9 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	} else {
 	sprintf(tmp,"Advanced parameters (%d selected)",nbSel);
 	SetTitle(tmp);
-	sprintf(tmp,"%g (MAX)",maxU);
+	sprintf(tmp,"%g (Max)",maxU);
 	uLength->SetText(tmp);
-	sprintf(tmp,"%g (MAX)",maxV);
+	sprintf(tmp,"%g (Max)",maxV);
 	vLength->SetText(tmp);
 	}*/
 
@@ -629,7 +677,7 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	recordTransBtn->AllowMixedState(!CountTransE); recordTransBtn->SetState(CountTransE ? f0->sh.countTrans : 2);
 	recordACBtn->AllowMixedState(!CountACE); recordACBtn->SetState(CountACE ? f0->sh.countACD : 2);
 	recordDirBtn->AllowMixedState(!CountDirE); recordDirBtn->SetState(CountDirE ? f0->sh.countDirection : 2);
-	angleMapRecordCheckbox->AllowMixedState(!RecordAngleMapE); angleMapRecordCheckbox->SetState(RecordAngleMapE ? f0->sh.recordAngleMap : 2);
+	angleMapRecordCheckbox->AllowMixedState(!RecordAngleMapE); angleMapRecordCheckbox->SetState(RecordAngleMapE ? f0->sh.anglemapParams.record : 2);
 	showTexture->AllowMixedState(!TexVisibleE); showTexture->SetState(TexVisibleE ? f0->textureVisible : 2);
 	showVolume->AllowMixedState(!VolVisibleE); showVolume->SetState(VolVisibleE ? f0->volumeVisible : 2);
 	facetMovingToggle->AllowMixedState(!isMovingE); facetMovingToggle->SetState(isMovingE ? f0->sh.isMoving : 2);
@@ -749,18 +797,50 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 		facetMovingToggle->AllowMixedState(true);
 	}
 
-	if (AngleMapWidthE) {
-		angleMapWidthBox->SetText((int)f0->sh.angleMapPhiWidth);
+	//Angle map
+	std::stringstream statusLabelText;
+	std::string mapSizeText = mApp->FormatSize((DWORD)sumAngleMapSize*sizeof(size_t));
+	if (hasAngleMapE) {
+		if (f0->sh.anglemapParams.hasRecorded)
+			statusLabelText << "All selected facets have recorded angle maps (" << mapSizeText << ")";
+		else
+			statusLabelText << "No recorded angle maps on selected facets.";
 	}
 	else {
-		angleMapWidthBox->SetText("...");
+		statusLabelText << "Some selected facets have recorded angle maps (" << mapSizeText << ")";
+	}
+	angleMapStatusLabel->SetText(statusLabelText.str());
+
+	if (AngleMapPhiWidthE) {
+		angleMapPhiResText->SetText((int)f0->sh.anglemapParams.phiWidth);
+	}
+	else {
+		angleMapPhiResText->SetText("...");
 	}
 
-	if (AngleMapHeightE) {
-		angleMapHeightBox->SetText((int)f0->sh.angleMapThetaHeight);
+	if (AngleMapThetaLowResE) {
+		angleMapThetaLowresText->SetText((int)f0->sh.anglemapParams.thetaLowerRes);
 	}
 	else {
-		angleMapHeightBox->SetText("...");
+		angleMapThetaLowresText->SetText("...");
+	}
+
+	if (AngleMapThetaHiResE) {
+		angleMapThetaHighresText->SetText((int)f0->sh.anglemapParams.thetaHigherRes);
+	}
+	else {
+		angleMapThetaHighresText->SetText("...");
+	}
+
+	if (AngleMapThetaLimitE) {
+		angleMapThetaLimitText->SetText(f0->sh.anglemapParams.thetaLimit);
+		std::stringstream label;
+		label << "values from " << f0->sh.anglemapParams.thetaLimit << " to PI";
+		limitLabel->SetText(label.str());
+	}
+	else {
+		angleMapThetaLimitText->SetText("...");
+		limitLabel->SetText("values from limit to PI");
 	}
 
 	if (enableSojournTime->GetState() == 0) {
@@ -795,7 +875,7 @@ void FacetAdvParams::Reposition(int wD, int hD) {
 	// Position dialog next to Facet parameters
 	int facetX, facetY, facetW, facetH;
 	mApp->facetPanel->GetBounds(&facetX, &facetY, &facetW, &facetH);
-	SetBounds(facetX - wD - 10, facetY + 20, wD, hD);
+	SetBounds(facetX - wD - 10, Min(facetY + 20, 115), wD, hD); //If below 115, the bottom can be out of screen
 }
 
 
@@ -856,7 +936,7 @@ bool FacetAdvParams::ApplyTexture(bool force) {
 
 		//set textures
 		try {
-			bool needsRemeshing = force || (hadAnyTexture != hasAnyTexture) || (hadDirCount != f->sh.countDirection) || (doRatio && (!IS_ZERO(geom->GetFacet(sel)->tRatio - ratio)));
+			bool needsRemeshing = force || (hadAnyTexture != hasAnyTexture) || (hadDirCount != f->sh.countDirection) || (doRatio && (!IsZero(geom->GetFacet(sel)->tRatio - ratio)));
 			if (needsRemeshing) geom->SetFacetTexture(sel, hasAnyTexture ? ratio : 0.0, hasAnyTexture ? boundMap : false);
 		}
 		catch (Error &e) {
@@ -1060,12 +1140,12 @@ bool FacetAdvParams::Apply() {
 		}
 	}
 
-	// angle map width
+	// angle map phi width
 	int angleMapWidth;
 	bool doAngleMapWidth = false;
 
-	if (angleMapRecordCheckbox->GetState() == 0 || strcmp(angleMapWidthBox->GetText(), "...") == 0) doAngleMapWidth = false;
-	else if (angleMapWidthBox->GetNumberInt(&angleMapWidth)) {
+	if (angleMapRecordCheckbox->GetState() == 0 || strcmp(angleMapPhiResText->GetText(), "...") == 0) doAngleMapWidth = false;
+	else if (angleMapPhiResText->GetNumberInt(&angleMapWidth)) {
 		if (angleMapWidth <= 0) {
 			GLMessageBox::Display("Angle map width has to be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return false;
@@ -1073,24 +1153,63 @@ bool FacetAdvParams::Apply() {
 		doAngleMapWidth = true;
 	}
 	else {
-			GLMessageBox::Display("Invalid angle map width", "Error", GLDLG_OK, GLDLG_ICONERROR);
-			return false;
+		GLMessageBox::Display("Invalid angle map width", "Error", GLDLG_OK, GLDLG_ICONERROR);
+		return false;
 	}
-	
-	// angle map height
-	int angleMapHeight;
-	bool doAngleMapHeight = false;
 
-	if (angleMapRecordCheckbox->GetState() == 0 || strcmp(angleMapHeightBox->GetText(), "...") == 0) doAngleMapHeight = false;
-	else if (angleMapHeightBox->GetNumberInt(&angleMapHeight)) {
-		if (angleMapHeight <= 0) {
-			GLMessageBox::Display("Angle map height has to be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
+	// angle map theta (low res) height
+	int angleMapLowRes;
+	bool doAngleMapLowRes = false;
+
+	if (angleMapRecordCheckbox->GetState() == 0 || strcmp(angleMapThetaLowresText->GetText(), "...") == 0) doAngleMapLowRes = false;
+	else if (angleMapThetaLowresText->GetNumberInt(&angleMapLowRes)) {
+		if (angleMapLowRes < 0) {
+			GLMessageBox::Display("Angle map resolution (below theta limit) has to be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return false;
 		}
-		doAngleMapHeight = true;
+		doAngleMapLowRes = true;
 	}
 	else {
-		GLMessageBox::Display("Invalid angle map height", "Error", GLDLG_OK, GLDLG_ICONERROR);
+		GLMessageBox::Display("Invalid angle map resolution (below theta limit)", "Error", GLDLG_OK, GLDLG_ICONERROR);
+		return false;
+	}
+
+	// angle map theta (hi res) height
+	int angleMapHiRes;
+	bool doAngleMapHiRes = false;
+
+	if (angleMapRecordCheckbox->GetState() == 0 || strcmp(angleMapThetaHighresText->GetText(), "...") == 0) doAngleMapHiRes = false;
+	else if (angleMapThetaHighresText->GetNumberInt(&angleMapHiRes)) {
+		if (angleMapHiRes < 0) {
+			GLMessageBox::Display("Angle map resolution (above theta limit) has to be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			return false;
+		}
+		doAngleMapHiRes = true;
+	}
+	else {
+		GLMessageBox::Display("Invalid angle map resolution (above theta limit)", "Error", GLDLG_OK, GLDLG_ICONERROR);
+		return false;
+	}
+
+	if (doAngleMapHiRes && doAngleMapLowRes && ((angleMapLowRes + angleMapHiRes) == 0)) {
+		GLMessageBox::Display("Angle map total theta height (sum of below and above limit) must be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
+		return false;
+	}
+
+	// angle map theta limit
+	double angleMapThetaLimit;
+	bool doAngleMapThetaLimit = false;
+
+	if (angleMapRecordCheckbox->GetState() == 0 || strcmp(angleMapThetaLimitText->GetText(), "...") == 0) doAngleMapThetaLimit = false;
+	else if (angleMapThetaLimitText->GetNumber(&angleMapThetaLimit)) {
+		if (!(angleMapThetaLimit >= 0 && angleMapThetaLimit<=PI/2.0)) {
+			GLMessageBox::Display("Angle map theta limit must be between 0 and PI/2", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			return false;
+		}
+		doAngleMapThetaLimit = true;
+	}
+	else {
+		GLMessageBox::Display("Invalid angle map theta limit", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return false;
 	}
 	
@@ -1134,7 +1253,7 @@ bool FacetAdvParams::Apply() {
 	int angleMapState = angleMapRecordCheckbox->GetState();
 	if (angleMapState < 2) {
 		for (auto sel:selectedFacets) {
-			geom->GetFacet(sel)->sh.recordAngleMap=angleMapState;
+			geom->GetFacet(sel)->sh.anglemapParams.record=angleMapState;
 		}
 	}
 	
@@ -1190,17 +1309,35 @@ bool FacetAdvParams::Apply() {
 		}
 
 		if (doAngleMapWidth) {
-			if (angleMapWidth != f->sh.angleMapPhiWidth) {
+			if (angleMapWidth != f->sh.anglemapParams.phiWidth) {
+				//Delete recorded map, will make a new
 				SAFE_FREE(f->angleMapCache);
-				f->sh.hasRecordedAngleMap = false;
-				f->sh.angleMapPhiWidth = angleMapWidth;
+				f->sh.anglemapParams.hasRecorded = false;
+				f->sh.anglemapParams.phiWidth = angleMapWidth;
 			}
 		}
-		if (doAngleMapHeight) {
-			if (angleMapHeight != f->sh.angleMapThetaHeight) {
+		if (doAngleMapLowRes) {
+			if (angleMapLowRes != f->sh.anglemapParams.thetaLowerRes) {
+				//Delete recorded map, will make a new
 				SAFE_FREE(f->angleMapCache);
-				f->sh.hasRecordedAngleMap = false;
-				f->sh.angleMapThetaHeight = angleMapHeight;
+				f->sh.anglemapParams.hasRecorded = false;
+				f->sh.anglemapParams.thetaLowerRes = angleMapLowRes;
+			}
+		}
+		if (doAngleMapHiRes) {
+			if (angleMapHiRes != f->sh.anglemapParams.thetaHigherRes) {
+				//Delete recorded map, will make a new
+				SAFE_FREE(f->angleMapCache);
+				f->sh.anglemapParams.hasRecorded = false;
+				f->sh.anglemapParams.thetaHigherRes = angleMapHiRes;
+			}
+		}
+		if (doAngleMapThetaLimit) {
+			if (!IsEqual(angleMapThetaLimit,f->sh.anglemapParams.thetaLimit)) {
+				//Delete recorded map, will make a new
+				SAFE_FREE(f->angleMapCache);
+				f->sh.anglemapParams.hasRecorded = false;
+				f->sh.anglemapParams.thetaLimit = angleMapThetaLimit;
 			}
 		}
 
@@ -1223,7 +1360,7 @@ bool FacetAdvParams::Apply() {
 			return false;
 		}
 		*/
-		//if (angleMapRecordCheckbox->GetState() < 2) f->sh.recordAngleMap = angleMapRecordCheckbox->GetState();
+		//if (angleMapRecordCheckbox->GetState() < 2) f->sh.anglemapParams.record = angleMapRecordCheckbox->GetState();
 		if (showTexture->GetState() < 2) f->textureVisible = showTexture->GetState();
 		if (showVolume->GetState() < 2) f->volumeVisible = showVolume->GetState();
 		nbPerformed++;
@@ -1362,6 +1499,7 @@ void FacetAdvParams::ProcessMessage(GLComponent *src, int message) {
 		}
 		else if (src == angleMapReleaseButton) {
 			mApp->ClearAngleMapsOnSelection();
+			Refresh(geom->GetSelectedFacets());
 		}
 		else if (src == remeshButton) {
 			ApplyTexture(true);
@@ -1399,6 +1537,20 @@ void FacetAdvParams::ProcessMessage(GLComponent *src, int message) {
 			double diffuseRefl, specularRefl;
 			if (diffuseReflBox->GetNumber(&diffuseRefl) && specularReflBox->GetNumber(&specularRefl))
 				uniformReflBox->SetText(1.0 - diffuseRefl - specularRefl);
+		}
+		else if (Contains({ angleMapPhiResText,angleMapThetaLowresText,angleMapThetaHighresText,angleMapThetaLimitText }, src)) {
+			angleMapRecordCheckbox->SetState(1);
+			if (src == angleMapThetaLimitText) {
+				double thetaLimit;
+				if (angleMapThetaLimitText->GetNumber(&thetaLimit)) {
+					std::stringstream label;
+					label << "values from " << thetaLimit << " to PI";
+					limitLabel->SetText(label.str());
+				}
+				else {
+					limitLabel->SetText("values from limit to PI");
+				}
+			}
 		}
 
 		break;
@@ -1442,6 +1594,9 @@ void FacetAdvParams::ProcessMessage(GLComponent *src, int message) {
 			}
 		}
 		break;
+	case MSG_PANELR:
+		PlaceComponents();
+		break;
 	}
 
 	GLWindow::ProcessMessage(src, message);
@@ -1459,4 +1614,36 @@ void FacetAdvParams::CalcSojournTime() {
 	std::ostringstream tmp;
 	tmp<< "Wall sojourn time (mean=" << 1.0/(sojF*exp(-sojE /(8.31* facetT))) << " s)";
 	enableSojournTime->SetText(tmp.str());
+}
+
+void FacetAdvParams::PlaceComponents() {
+	int desPanelPos, angleMapPanelPos, desPanelHeight, angleMapPanelHeight;
+	int x, w;
+	desPanel->GetBounds(&x, &desPanelPos, &w, &desPanelHeight);
+	desPanel->SetBounds(x, desPanelPos, w, desPanelFullHeight); //height will be overridden if closed
+	desPanel->GetBounds(&x, &desPanelPos, &w, &desPanelHeight); //now we get the actual height
+	angleMapPanel->SetBounds(x, desPanelPos + desPanelHeight + 8, w, angleMapPanelFullHeight);
+
+	//Update coords below if editing
+	angleMapPanel->SetCompBounds(label14, 9, 36, 93, 12);
+	angleMapPanel->SetCompBounds(angleMapPhiResText, 115, 77, 46, 18);
+	angleMapPanel->SetCompBounds(angleMapThetaLowresText, 115, 33, 46, 18);
+	angleMapPanel->SetCompBounds(angleMapImportButton, 140, 122, 64, 20);
+	angleMapPanel->SetCompBounds(angleMapExportButton, 63, 122, 73, 20);
+	angleMapPanel->SetCompBounds(angleMapRecordCheckbox, 10, 16, 54, 16);
+	angleMapPanel->SetCompBounds(angleMapReleaseButton, 205, 122, 93, 20);
+	angleMapPanel->SetCompBounds(angleMapShowButton, 10, 122, 50, 20);
+	angleMapPanel->SetCompBounds(limitLabel, 166, 58, 91, 12);
+	angleMapPanel->SetCompBounds(label17, 166, 36, 71, 12);
+	angleMapPanel->SetCompBounds(angleMapThetaLimitText, 249, 33, 46, 18);
+	angleMapPanel->SetCompBounds(label20, 166, 80, 94, 12);
+	angleMapPanel->SetCompBounds(label19, 10, 80, 91, 12);
+	angleMapPanel->SetCompBounds(angleMapThetaHighresText, 115, 55, 46, 18);
+	angleMapPanel->SetCompBounds(angleMapStatusLabel, 10, 106, 105, 12);
+
+	angleMapPanel->GetBounds(&x, &angleMapPanelPos, &w, &angleMapPanelHeight);
+	
+	int y,h;
+	this->GetBounds(&x, &y, &w, &h);
+	this->SetBounds(x, y, w, angleMapPanelPos + angleMapPanelHeight + 25);
 }

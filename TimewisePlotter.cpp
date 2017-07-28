@@ -260,17 +260,17 @@ void TimewisePlotter::refreshViews() {
 				break;
 
 			case 1: //Pressure
-				scaleY = 1.0 / (f->GetArea() / (double)PROFILE_SIZE*1E-4)* worker->gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
+				scaleY = 1.0 / (f->GetArea() *1E-4 / (double)PROFILE_SIZE) * worker->gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
 
 				scaleY *= worker->GetMoleculesPerTP(v->userData1);
 				//if(f->sh.opacity>0.0) scaleY *= f->sh.opacity;
-				//if(IS_ZERO(f->sh.opacity)) scaleY*=2; //transparent profiles are profiled only once...
+				//if(IsZero(f->sh.opacity)) scaleY*=2; //transparent profiles are profiled only once...
 
 				for (int j = 0; j < PROFILE_SIZE; j++)
 					v->Add((double)j, profilePtr[j].sum_v_ort*scaleY, false);
 				break;
 			case 2: //Particle density
-				scaleY = 1E-4 / (f->GetArea() / (double)PROFILE_SIZE);
+				scaleY =  1.0 / ((f->GetArea() * 1E-4) / (double)PROFILE_SIZE);
 				scaleY *= worker->GetMoleculesPerTP(v->userData1);
 
 				/*

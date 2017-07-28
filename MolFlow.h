@@ -86,8 +86,6 @@ public:
     
 	
     GLTextField   *facetSticking;
-    
-    
 	
     GLCombo       *facetDesType;
 	GLTextField   *facetDesTypeN;
@@ -122,7 +120,7 @@ public:
 	ImportDesorption *importDesorption;
 	TimeSettings     *timeSettings;
 	Movement         *movement;
-    FacetAdvParams        *facetAdvParams;
+    FacetAdvParams   *facetAdvParams;
     FacetDetails     *facetDetails;
     Viewer3DSettings *viewer3DSettings;
     TextureSettings  *textureSettings;

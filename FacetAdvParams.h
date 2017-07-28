@@ -48,6 +48,7 @@ public:
 private:
 
 	void CalcSojournTime();
+	void PlaceComponents();
 	void UpdateSize();
 	void UpdateSizeForRatio();
 	void UpdateToggle(GLComponent *src);
@@ -57,6 +58,8 @@ private:
 	Geometry *geom;
 	int       fIdx;
 	double sumArea, sumOutgassing;
+	size_t sumAngleMapSize;
+	int desPanelFullHeight, angleMapPanelFullHeight;
 
 	GLProgress* progressDlg;
 
@@ -114,9 +117,8 @@ private:
 	GLTextField	*sojournFreq;
 	GLButton	*SojournInfoButton;
 	GLLabel	*label14;
-	GLLabel	*angleMapDistrSizeLabel;
-	GLTextField	*angleMapHeightBox;
-	GLTextField	*angleMapWidthBox;
+	GLTextField	*angleMapPhiResText;
+	GLTextField	*angleMapThetaLowresText;
 	GLButton	*angleMapImportButton;
 	GLButton	*angleMapExportButton;
 	GLToggle	*angleMapRecordCheckbox;
@@ -128,4 +130,12 @@ private:
 	GLTextField	*uniformReflBox;
 	GLTextField	*specularReflBox;
 	GLTextField	*diffuseReflBox;
+	GLButton	*angleMapShowButton;
+	GLLabel	*limitLabel;
+	GLLabel	*label17;
+	GLTextField	*angleMapThetaLimitText;
+	GLLabel	*label20;
+	GLLabel	*label19;
+	GLTextField	*angleMapThetaHighresText;
+	GLLabel	*angleMapStatusLabel;
 };

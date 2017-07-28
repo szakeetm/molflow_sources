@@ -25,9 +25,26 @@
 #include <vector>
 #include "Vector.h"
 #include "Parameter.h"
+#include <tuple>
+
+class Anglemap {
+public:
+	size_t   *pdf;		  // Incident angle distribution, phi and theta, not normalized. Used either for recording or for 2nd order interpolation
+	double   *phi_CDFs;    // A table containing phi distributions for each theta, starting from 0 for every line (1 line = 1 theta value). For speed we keep it in one memory block, 1 pointer
+	size_t   *phi_CDFsums; // since CDF runs only to the middle of the last segment, for each theta a line sum is stored here. Also a pdf for theta
+	double   *theta_CDF;	  // Theta CDF, not normalized. nth value is the CDF at the end of region n (beginning of first section is always 0)
+	size_t   theta_CDFsum; // since theta CDF only runs till the middle of the last segment, the map sum is here
+
+	double GetTheta(const double& thetaIndex,const AnglemapParams& anglemapParams);
+	double GetPhi(const double& phiIndex, const AnglemapParams& anglemapParams);
+	double GetPhipdfValue(const double & thetaIndex, const int & phiIndex, const AnglemapParams & anglemapParams);
+	double GetPhiCDFValue(const double& thetaIndex, const int& phiIndex, const AnglemapParams& anglemapParams);
+	double GetPhiCDFSum(const double & thetaIndex, const AnglemapParams & anglemapParams);
+	std::tuple<double, int, double> GenerateThetaFromAngleMap(const AnglemapParams& anglemapParams);
+	double GeneratePhiFromAngleMap(const int& thetaLowerIndex, const double& thetaOvershoot, const AnglemapParams& anglemapParams);
+};
 
 // Local facet structure
-
 class FACET {
 public:
   SHFACET sh;
@@ -41,11 +58,10 @@ public:
   VHIT     **direction;       // Direction field recording (average)
   //bool     *fullElem;         // Direction field recording (only on full element)
   APROFILE **profile;         // Distribution and hit recording
-  double   *outgassingMap; //outgassing map when desorption is based on imported file
+  double   *outgassingMap; // Cumulative outgassing map when desorption is based on imported file
   double outgassingMapWidthD; //actual outgassing file map width
   double outgassingMapHeightD; //actual outgassing file map height
-  size_t   *angleMap;		  // Incident angle distribution, phi and theta, not normalized
-  size_t   *angleMapLineSums;
+  Anglemap angleMap;
 
   // Temporary var (used in Intersect for collision)
   double colDist;

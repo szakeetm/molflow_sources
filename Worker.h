@@ -75,7 +75,7 @@ public:
 	  const size_t &mode, const double &eta0, const double &alpha, const double &cutoffdose,
 	  const std::vector<std::pair<double, double>> &convDistr,
 	  GLProgress *prg);
-  void AnalyzeSYNfile(char *fileName, int *nbFacet, int *nbTextured, int *nbDifferent);
+  void AnalyzeSYNfile(char *fileName, size_t *nbFacet, size_t *nbTextured, size_t *nbDifferent);
   void ImportCSV(FileReader *file, std::vector<std::vector<std::string>>& table);
 
   // Return/Set the current filename
@@ -232,6 +232,7 @@ private:
   void ResetWorkerStats();
   void ClearHits(bool noReload);
   char *GetErrorDetails();
+  void ThrowSubProcError(std::string message);
   void ThrowSubProcError(char *message=NULL);
   void Start();
   void Stop();

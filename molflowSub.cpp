@@ -340,7 +340,7 @@ int main(int argc,char* argv[])
         printf("COMMAND: PAUSE (%zd,%llu)\n",prParam,prParam2);
         if( !sHandle->lastUpdateOK ) {
           // Last update not successful, retry with a longer timeout
-          if(dpHit) UpdateHits(dpHit,prIdx,60000);
+			if (dpHit && (GetLocalState() != PROCESS_ERROR)) UpdateHits(dpHit,prIdx,60000);
         }
         SetReady();
         break;
@@ -383,7 +383,7 @@ int main(int argc,char* argv[])
       case PROCESS_RUN:
         SetStatus(GetSimuStatus()); //update hits only
         eos = SimulationRun();                // Run during 1 sec
-        if(dpHit) UpdateHits(dpHit,prIdx,20); // Update hit with 20ms timeout. If fails, probably an other subprocess is updating, so we'll keep calculating and try it later (latest when the simulation is stopped).
+		if (dpHit && (GetLocalState() != PROCESS_ERROR)) UpdateHits(dpHit,prIdx,20); // Update hit with 20ms timeout. If fails, probably an other subprocess is updating, so we'll keep calculating and try it later (latest when the simulation is stopped).
         if(eos) {
           if( GetLocalState()!=PROCESS_ERROR ) {
             // Max desorption reached

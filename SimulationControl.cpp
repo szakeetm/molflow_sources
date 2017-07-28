@@ -29,6 +29,7 @@ GNU General Public License for more details.
 #include <stdlib.h>
 #include "Simulation.h"
 #include "Random.h"
+#include <sstream>
 
 // -------------------------------------------------------
 // Global handles
@@ -105,8 +106,10 @@ void ClearSimulation() {
 					//if (f->velocityHistogram) SAFE_FREE(f->velocityHistogram);
 				}
 				SAFE_FREE(f->outgassingMap);
-				SAFE_FREE(f->angleMap);
-				SAFE_FREE(f->angleMapLineSums);
+				SAFE_FREE(f->angleMap.pdf);
+				SAFE_FREE(f->angleMap.phi_CDFs);
+				SAFE_FREE(f->angleMap.phi_CDFsums);
+				SAFE_FREE(f->angleMap.theta_CDF);
 				SAFE_FREE(f->hits);
 				SAFE_FREE(f->profile);
 				SAFE_FREE(f->direction);
@@ -189,6 +192,7 @@ bool LoadSimulation(Dataport *loader) {
 	t0 = GetTick();
 
 	sHandle->loadOK = false;
+
 	SetState(PROCESS_STARTING, "Clearing previous simulation");
 	ClearSimulation();
 	
@@ -248,7 +252,7 @@ bool LoadSimulation(Dataport *loader) {
 		sHandle->str[shFacet->superIdx].nbFacet++;
 		buffer += sizeof(SHFACET) + shFacet->nbIndex*(sizeof(int) + sizeof(Vector2d));
 		if (shFacet->useOutgassingFile) buffer += sizeof(double)*shFacet->outgassingMapWidth*shFacet->outgassingMapHeight;
-		if (shFacet->hasRecordedAngleMap) buffer += sizeof(size_t)*shFacet->angleMapPhiWidth*shFacet->angleMapThetaHeight;
+		if (shFacet->anglemapParams.hasRecorded) buffer += sizeof(size_t)*shFacet->anglemapParams.phiWidth*(shFacet->anglemapParams.thetaLowerRes+shFacet->anglemapParams.thetaHigherRes);
 		if (shFacet->isTextured) buffer += sizeof(double)*shFacet->texWidth*shFacet->texHeight;
 	}
 	for (i = 0; i < sHandle->nbSuper; i++) {
@@ -348,50 +352,116 @@ bool LoadSimulation(Dataport *loader) {
 		buffer += f->sh.nbIndex * sizeof(Vector2d);
 		//Outgassing map
 		if (f->sh.useOutgassingFile) {
-			f->outgassingMap = (double*)malloc(sizeof(double)*f->sh.outgassingMapWidth*f->sh.outgassingMapHeight);
+			size_t nbE = f->sh.outgassingMapWidth*f->sh.outgassingMapHeight;
+			f->outgassingMap = (double*)malloc(sizeof(double)*nbE);
 			if (!f->outgassingMap) {
 				SetErrorSub("Not enough memory to load outgassing map");
 				return false;
 			}
-			memcpy(f->outgassingMap, buffer, sizeof(double)*f->sh.outgassingMapWidth*f->sh.outgassingMapHeight);
-			buffer += sizeof(double)*f->sh.outgassingMapWidth*f->sh.outgassingMapHeight;
+			memcpy(f->outgassingMap, buffer, sizeof(double)*nbE);
+			buffer += sizeof(double)*nbE;
 			//Precalc actual outgassing map width and height for faster generation:
 			f->outgassingMapWidthD = f->sh.U.Norme() * f->sh.outgassingFileRatio;
 			f->outgassingMapHeightD = f->sh.V.Norme() * f->sh.outgassingFileRatio;
+			
+			for (size_t i = 1; i < nbE; i++) {
+				f->outgassingMap[i] += f->outgassingMap[i - 1]; //Convert p.d.f. to cumulative distr. f.
+			}
 		}
 		//Incident angle map
-		if (f->sh.hasRecordedAngleMap) {
+		if (f->sh.anglemapParams.hasRecorded) {
+			//Record or use to generate
 
-			f->angleMapSize = f->sh.angleMapPhiWidth * f->sh.angleMapThetaHeight * sizeof(size_t);
-
-			f->angleMap = (size_t*)malloc(f->angleMapSize);
-			if (!f->angleMap) {
+			f->angleMapSize = f->sh.anglemapParams.phiWidth * (f->sh.anglemapParams.thetaLowerRes + f->sh.anglemapParams.thetaHigherRes) * sizeof(size_t);
+			f->angleMap.pdf = (size_t*)malloc(f->angleMapSize);
+			if (!f->angleMap.pdf) {
 				SetErrorSub("Not enough memory to load incident angle map (values)");
 				return false;
 			}
-
-			f->angleMapLineSums = (size_t*)malloc(sizeof(size_t)* f->sh.angleMapThetaHeight);
-			if (!f->angleMapLineSums) {
-				SetErrorSub("Not enough memory to load incident angle map (line sums)");
-				return false;
-			}
-
 			//Copy values if "USE" mode, copy 0 values if "RECORD" mode
-			memcpy(f->angleMap, buffer, f->angleMapSize);
+			memcpy(f->angleMap.pdf, buffer, f->angleMapSize);
 			buffer += f->angleMapSize;
 
-
-			//Convert to cumulative distribution
-			size_t sum = 0;
-			for (int iy = 0; iy < f->sh.angleMapThetaHeight; iy++) {
-				for (int ix = 0; ix < f->sh.angleMapPhiWidth; ix++) {
-					sum += f->angleMap[iy*f->sh.angleMapPhiWidth + ix];
-					f->angleMap[iy*f->sh.angleMapPhiWidth + ix] = sum;
+			if (f->sh.desorbType == DES_ANGLEMAP) {
+				//Construct CDFs				
+				f->angleMap.phi_CDFsums = (size_t*)malloc(sizeof(size_t) * (f->sh.anglemapParams.thetaLowerRes + f->sh.anglemapParams.thetaHigherRes));
+				if (!f->angleMap.phi_CDFsums) {
+					SetErrorSub("Not enough memory to load incident angle map (phi CDF line sums)");
+					return false;
 				}
-				f->angleMapLineSums[iy] = sum;
+				f->angleMap.theta_CDF = (double*)malloc(sizeof(double) * (f->sh.anglemapParams.thetaLowerRes + f->sh.anglemapParams.thetaHigherRes));
+				if (!f->angleMap.theta_CDF) {
+					SetErrorSub("Not enough memory to load incident angle map (line sums, CDF)");
+					return false;
+				}
+				f->angleMap.phi_CDFs = (double*)malloc(sizeof(double) * f->sh.anglemapParams.phiWidth * (f->sh.anglemapParams.thetaLowerRes + f->sh.anglemapParams.thetaHigherRes));
+				if (!f->angleMap.phi_CDFs) {
+					SetErrorSub("Not enough memory to load incident angle map (CDF)");
+					return false;
+				}
+				
+				//First pass: determine sums
+				f->angleMap.theta_CDFsum = 0;
+				memset(f->angleMap.phi_CDFsums, 0, sizeof(size_t) * (f->sh.anglemapParams.thetaLowerRes + f->sh.anglemapParams.thetaHigherRes));
+				for (size_t thetaIndex = 0; thetaIndex < (f->sh.anglemapParams.thetaLowerRes + f->sh.anglemapParams.thetaHigherRes); thetaIndex++) {
+					for (size_t phiIndex = 0; phiIndex < f->sh.anglemapParams.phiWidth; phiIndex++) {
+						f->angleMap.phi_CDFsums[thetaIndex] +=	f->angleMap.pdf[thetaIndex*f->sh.anglemapParams.phiWidth + phiIndex];	
+					}
+					f->angleMap.theta_CDFsum += f->angleMap.phi_CDFsums[thetaIndex];
+				}
+				if (!f->angleMap.theta_CDFsum) {
+					std::stringstream err; err << "Facet " << f->globalId + 1 << " has all-zero recorded angle map.";
+					SetErrorSub(err.str().c_str());
+					return false;
+				}
+
+				//Second pass: write CDFs
+				double thetaNormalizingFactor = 1.0 / (double)f->angleMap.theta_CDFsum;
+				for (size_t thetaIndex = 0; thetaIndex < (f->sh.anglemapParams.thetaLowerRes + f->sh.anglemapParams.thetaHigherRes); thetaIndex++) {	
+					if (f->angleMap.theta_CDFsum == 0) { //no hits in this line, generate CDF of uniform distr.
+						f->angleMap.theta_CDF[thetaIndex] = (0.5 + (double)thetaIndex) / (double)(f->sh.anglemapParams.thetaLowerRes + f->sh.anglemapParams.thetaHigherRes);
+					}
+					else {
+						if (thetaIndex == 0) {
+							//First CDF value, covers half of first segment
+							f->angleMap.theta_CDF[thetaIndex] = 0.5 * (double)f->angleMap.phi_CDFsums[0] * thetaNormalizingFactor;
+						}
+						else {
+							//value covering second half of last segment and first of current segment
+							f->angleMap.theta_CDF[thetaIndex] = f->angleMap.theta_CDF[thetaIndex - 1] + (double)(f->angleMap.phi_CDFsums[thetaIndex - 1] + f->angleMap.phi_CDFsums[thetaIndex])*0.5*thetaNormalizingFactor;
+						}
+					}
+					double phiNormalizingFactor = 1.0 / (double)f->angleMap.phi_CDFsums[thetaIndex];
+					for (size_t phiIndex = 0; phiIndex < f->sh.anglemapParams.phiWidth; phiIndex++) {
+						size_t index = f->sh.anglemapParams.phiWidth * thetaIndex + phiIndex;
+						if (f->angleMap.phi_CDFsums[thetaIndex] == 0) { //no hits in this line, create CDF of uniform distr.
+								f->angleMap.phi_CDFs[index] = (0.5 + (double)phiIndex) / (double)f->sh.anglemapParams.phiWidth;
+							}
+						else {
+							if (phiIndex == 0) {
+								//First CDF value, covers half of first segment
+								f->angleMap.phi_CDFs[index] = 0.5 * (double)f->angleMap.pdf[f->sh.anglemapParams.phiWidth * thetaIndex] * phiNormalizingFactor;
+							}
+							else {
+								//value covering second half of last segment and first of current segment
+								f->angleMap.phi_CDFs[index] = f->angleMap.phi_CDFs[f->sh.anglemapParams.phiWidth * thetaIndex + phiIndex - 1] + (double)(f->angleMap.pdf[f->sh.anglemapParams.phiWidth * thetaIndex + phiIndex - 1] + f->angleMap.pdf[f->sh.anglemapParams.phiWidth * thetaIndex + phiIndex])*0.5*phiNormalizingFactor;
+							}
+						}
+					}
+				}
+
+			}
+			else {
+				//Record
+				f->angleMap.phi_CDFs = NULL;
+				f->angleMap.theta_CDF = NULL;
+				f->angleMap.phi_CDFsums = NULL;
 			}
 		}
-		else f->angleMapSize = 0;
+		else {
+			f->angleMapSize = 0;
+			f->angleMap.pdf = NULL;
+		}
 
 		//Textures
 		if (f->sh.isTextured) {
@@ -666,8 +736,8 @@ void ResetTmpCounters() {
 				}
 			}
 
-			if (f->sh.recordAngleMap) {
-				memset(f->angleMap, 0, f->angleMapSize);
+			if (f->sh.anglemapParams.record) {
+				memset(f->angleMap.pdf, 0, f->angleMapSize);
 			}
 		}
 	}

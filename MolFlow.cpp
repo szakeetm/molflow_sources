@@ -76,11 +76,11 @@ char *cName[] = { "#", "Hits", "Des", "Abs" };
 
 
 std::string appId = "Molflow";
-int appVersion = 2650;
+int appVersion = 2651;
 #ifdef _DEBUG
 std::string appName = "MolFlow+ development version 64-bit (Compiled " __DATE__ " " __TIME__ ") DEBUG MODE";
 #else
-std::string appName = "Molflow+ 2.6.50 64-bit (" __DATE__ ")";
+std::string appName = "Molflow+ 2.6.51 64-bit (" __DATE__ ")";
 #endif
 
 
@@ -1049,14 +1049,15 @@ worker.ReleaseHits();
 //       the scene.
 //-----------------------------------------------------------------------------
 int MolFlow::FrameMove()
-{
-	Interface::FrameMove();
-	char tmp[256];
-	if (globalSettings) globalSettings->SMPUpdate();
+{	
 	if (worker.running && ((m_fTime - lastUpdate) >= 1.0f)) {
 		if (textureSettings) textureSettings->Update();
-		if (formulaEditor && formulaEditor->IsVisible()) formulaEditor->Refresh();
+		//if (formulaEditor && formulaEditor->IsVisible()) formulaEditor->Refresh(); //Interface::Framemove does it already
 	}
+	Interface::FrameMove(); //might reset lastupdate
+	char tmp[256];
+	if (globalSettings) globalSettings->SMPUpdate();
+
 	if ((m_fTime - worker.startTime <= 2.0f) && worker.running) {
 		hitNumber->SetText("Starting...");
 		desNumber->SetText("Starting...");
@@ -1183,7 +1184,7 @@ void MolFlow::ExportAngleMaps() {
 	std::vector<size_t> angleMapFacetIndices;
 	for (size_t i = 0; i < geom->GetNbFacet(); i++) {
 		Facet* f = geom->GetFacet(i);
-		if (f->selected && f->sh.hasRecordedAngleMap)
+		if (f->selected && f->sh.anglemapParams.hasRecorded)
 			angleMapFacetIndices.push_back(i);
 	}
 	if (angleMapFacetIndices.size() == 0) {
@@ -1218,9 +1219,9 @@ void MolFlow::ClearAngleMapsOnSelection() {
 		std::vector<size_t> angleMapFacetIndices;
 		for (size_t i = 0; i < geom->GetNbFacet(); i++) {
 			Facet* f = geom->GetFacet(i);
-			if (f->selected && f->sh.hasRecordedAngleMap) {
+			if (f->selected && f->sh.anglemapParams.hasRecorded) {
 				SAFE_FREE(f->angleMapCache);
-				f->sh.hasRecordedAngleMap = false;
+				f->sh.anglemapParams.hasRecorded = false;
 			}
 		}
 	//}
@@ -2141,10 +2142,10 @@ void MolFlow::LoadConfig() {
 			viewer[i]->transStep = f->ReadDouble();
 		f->ReadKeyword("dispNumLines"); f->ReadKeyword(":");
 		for (int i = 0; i < MAX_VIEWER; i++)
-			viewer[i]->dispNumHits = f->ReadInt();
+			viewer[i]->dispNumHits = f->ReadLLong();
 		f->ReadKeyword("dispNumLeaks"); f->ReadKeyword(":");
 		for (int i = 0; i < MAX_VIEWER; i++)
-			viewer[i]->dispNumLeaks = f->ReadInt();
+			viewer[i]->dispNumLeaks = f->ReadLLong();
 		f->ReadKeyword("dirShow"); f->ReadKeyword(":");
 		for (int i = 0; i < MAX_VIEWER; i++)
 			viewer[i]->showDir = f->ReadInt();

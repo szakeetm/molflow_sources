@@ -31,8 +31,8 @@
 #include <sstream>
 #include "PugiXML\pugixml.hpp"
 using namespace pugi;
-#define MAX(x,y) (((x)<(y))?(y):(x))
-#define MIN(x,y) (((x)<(y))?(x):(y))
+#define Max(x,y) (((x)<(y))?(y):(x))
+#define Min(x,y) (((x)<(y))?(x):(y))
 
 // Colormap stuff
 extern COLORREF rainbowCol[]; //defined in GLGradient.cpp
@@ -118,9 +118,10 @@ Facet::Facet(size_t nbIndex) {
 	hasOutgassingFile = false;
 	outgassingMap = NULL;
 
-	sh.recordAngleMap = false;
-	sh.hasRecordedAngleMap = false;
-	sh.angleMapPhiWidth = sh.angleMapThetaHeight = false;
+	sh.anglemapParams.record = false;
+	sh.anglemapParams.hasRecorded = false;
+	sh.anglemapParams.phiWidth = sh.anglemapParams.thetaLowerRes = sh.anglemapParams.thetaHigherRes = 0;
+	sh.anglemapParams.thetaLimit = 1.570796326; //slightly lower than exactly PI/2
 
 	totalFlux = sh.totalOutgassing = totalDose = 0.0;
 
@@ -167,7 +168,7 @@ Facet::Facet(size_t nbIndex) {
 
 		double rr = (double)(i - colId * 8192) / 8192.0;
 		//double rr = (double)(i-colId*10923) / 10923;
-		SATURATE(rr, 0.0, 1.0);
+		Saturate(rr, 0.0, 1.0);
 		colorMap[i] = (COLORREF)((int)(r1 + (r2 - r1)*rr) +
 			(int)(g1 + (g2 - g1)*rr) * 256 +
 			(int)(b1 + (b2 - b1)*rr) * 65536);
@@ -399,7 +400,14 @@ void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, size_t vert
 		sh.isMoving = f.child("Motion").attribute("isMoving").as_bool();
 		xml_node recNode = f.child("Recordings");
 		sh.profileType = recNode.child("Profile").attribute("type").as_int();
-		sh.recordAngleMap = recNode.child("IncidentAngleMap").attribute("record").as_bool();
+		xml_node incidentAngleNode = recNode.child("IncidentAngleMap");
+		if (incidentAngleNode) {
+			sh.anglemapParams.record = recNode.child("IncidentAngleMap").attribute("record").as_bool();
+			sh.anglemapParams.phiWidth = recNode.child("IncidentAngleMap").attribute("phiWidth").as_ullong();
+			sh.anglemapParams.thetaLimit = recNode.child("IncidentAngleMap").attribute("thetaLimit").as_double();
+			sh.anglemapParams.thetaLowerRes = recNode.child("IncidentAngleMap").attribute("thetaLowerRes").as_ullong();
+			sh.anglemapParams.thetaHigherRes = recNode.child("IncidentAngleMap").attribute("thetaHigherRes").as_ullong();
+		}
 		xml_node texNode = recNode.child("Texture");
 		hasMesh = texNode.attribute("hasMesh").as_bool();
 		sh.texWidthD = texNode.attribute("texDimX").as_double();
@@ -437,24 +445,26 @@ void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, size_t vert
 		else hasOutgassingFile = sh.useOutgassingFile = 0; //if outgassing map was incorrect, don't use it
 
 		xml_node angleMapNode = f.child("IncidentAngleMap");
-		if (angleMapNode && angleMapNode.child("map")) {
+		if (angleMapNode && angleMapNode.child("map") && angleMapNode.attribute("angleMapThetaLimit")) {
 
-			sh.angleMapPhiWidth = angleMapNode.attribute("phiWidth").as_ullong();
-			sh.angleMapThetaHeight = angleMapNode.attribute("thetaHeight").as_ullong();
+			sh.anglemapParams.phiWidth = angleMapNode.attribute("angleMapPhiWidth").as_ullong();
+			sh.anglemapParams.thetaLimit = angleMapNode.attribute("angleMapThetaLimit").as_double();
+			sh.anglemapParams.thetaLowerRes = angleMapNode.attribute("angleMapThetaLowerRes").as_ullong();
+			sh.anglemapParams.thetaHigherRes = angleMapNode.attribute("angleMapThetaHigherRes").as_ullong();
 
 			std::stringstream angleText;
 			angleText << angleMapNode.child_value("map");
-			angleMapCache = (size_t*)malloc(sh.angleMapPhiWidth * sh.angleMapThetaHeight * sizeof(size_t));
+			angleMapCache = (size_t*)malloc(sh.anglemapParams.phiWidth * (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes) * sizeof(size_t));
 
-			for (int iy = 0; iy < sh.angleMapThetaHeight; iy++) {
-				for (int ix = 0; ix < sh.angleMapPhiWidth; ix++) {
-					angleText >> angleMapCache[iy*sh.angleMapPhiWidth + ix];
+			for (int iy = 0; iy < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); iy++) {
+				for (int ix = 0; ix < sh.anglemapParams.phiWidth; ix++) {
+					angleText >> angleMapCache[iy*sh.anglemapParams.phiWidth + ix];
 				}
 			}
-			sh.hasRecordedAngleMap = true;
+			sh.anglemapParams.hasRecorded = true;
 		}
 		else {
-			sh.hasRecordedAngleMap = false; //if angle map was incorrect, don't use it
+			sh.anglemapParams.hasRecorded = false; //if angle map was incorrect, don't use it
 			if (sh.desorbType == DES_ANGLEMAP) sh.desorbType = DES_NONE;
 		}
 	} //else use default values at Facet() constructor
@@ -592,13 +602,13 @@ void Facet::LoadTXT(FileReader *file) {
 	if (o < 0.0) {
 
 		sh.opacity = 0.0;
-		if (IS_ZERO(o + 1.0)) {
+		if (IsZero(o + 1.0)) {
 			sh.profileType = REC_PRESSUREU;
 			sh.is2sided = true;
 		}
-		if (IS_ZERO(o + 2.0))
+		if (IsZero(o + 2.0))
 			sh.profileType = REC_ANGULAR;
-		if (IS_ZERO(o + 4.0)) {
+		if (IsZero(o + 4.0)) {
 			sh.profileType = REC_PRESSUREU;
 			sh.is2sided = false;
 		}
@@ -792,7 +802,7 @@ size_t Facet::GetGeometrySize() {
 	// Size of the 'element area' array passed to the geometry buffer
 	if (sh.isTextured) s += sizeof(double)*sh.texWidth*sh.texHeight; //incbuff
 	if (sh.useOutgassingFile ) s += sizeof(double)*sh.outgassingMapWidth*sh.outgassingMapHeight;
-	if (sh.hasRecordedAngleMap) s += sizeof(size_t)*sh.angleMapPhiWidth*sh.angleMapThetaHeight;
+	if (sh.anglemapParams.hasRecorded) s += sizeof(size_t)*sh.anglemapParams.phiWidth*(sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes);
 	return s;
 
 }
@@ -806,7 +816,7 @@ size_t Facet::GetHitsSize(size_t nbMoments) {
 		+(sh.texWidth*sh.texHeight * sizeof(AHIT))
 		+ (sh.isProfile ? (PROFILE_SIZE * sizeof(APROFILE)) : 0)
 		+ (sh.countDirection ? (sh.texWidth*sh.texHeight * sizeof(VHIT)) : 0)
-		+ (sh.hasRecordedAngleMap ? sh.angleMapPhiWidth * sh.angleMapThetaHeight * sizeof(size_t) : 0)
+		+ (sh.anglemapParams.hasRecorded ? sh.anglemapParams.phiWidth * (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes) * sizeof(size_t) : 0)
 		);
 
 }
@@ -955,7 +965,7 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 
 					val = (int)((physicalValue - min)*scaleFactor + 0.5);
 				}
-				SATURATE(val, 0, 65535);
+				Saturate(val, 0, 65535);
 				buff32[(i + 1) + (j + 1)*texDimW] = colorMap[val];
 				if (texBuffer[idx].count == 0.0) buff32[(i + 1) + (j + 1)*texDimW] = (COLORREF)(65535 + 256 + 1); //show unset value as white
 			}
@@ -975,7 +985,7 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 		} else {
 		val = (int)((GetSmooth(i,j,texBuffer,dCoeff)-min)*scaleFactor+0.5f);
 		}
-		SATURATE(val,0,65535);
+		Saturate(val,0,65535);
 		buff32[(i+1) + (j+1)*texDimW] = colorMap[val];
 		}
 		}
@@ -1072,7 +1082,7 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 				else {
 					val = (int)((physicalValue - min)*scaleFactor + 0.5f);
 				}
-				SATURATE(val, 0, 255);
+				Saturate(val, 0, 255);
 				buff8[(i + 1) + (j + 1)*texDimW] = val;
 			}
 		}
@@ -1090,7 +1100,7 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 		} else {
 		val = (int)((GetSmooth(i,j,texBuffer,dCoeff)-min)*scaleFactor+0.5f);
 		}
-		SATURATE(val,0,255);
+		Saturate(val,0,255);
 		buff8[(i+1) + (j+1)*texDimW] = val;
 		}
 		}
@@ -1263,7 +1273,7 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 	e.append_attribute("accFactor") = sh.accomodationFactor;
 
 	e = f.append_child("Reflection");
-	
+
 	e.append_attribute("diffusePart") = sh.reflection.diffusePart;
 	e.append_attribute("specularPart") = sh.reflection.specularPart;
 
@@ -1327,6 +1337,15 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 	t.append_attribute("countDir") = (int)sh.countDirection; //backward compatibility: 0 or 1
 	t.append_attribute("countAC") = (int)sh.countACD; //backward compatibility: 0 or 1
 
+	if (sh.anglemapParams.record) {
+		t = e.append_child("IncidentAngleMap");
+		t.append_attribute("record") = sh.anglemapParams.record;
+		t.append_attribute("phiWidth") = sh.anglemapParams.phiWidth;
+		t.append_attribute("thetaLimit") = sh.anglemapParams.thetaLimit;
+		t.append_attribute("thetaLowerRes") = sh.anglemapParams.thetaLowerRes;
+		t.append_attribute("thetaHigherRes") = sh.anglemapParams.thetaHigherRes;
+	}
+
 	e = f.append_child("ViewSettings");
 
 	e.append_attribute("textureVisible") = (int)textureVisible; //backward compatibility: 0 or 1
@@ -1361,30 +1380,46 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 
 	} //end texture
 
-	if (sh.hasRecordedAngleMap) {
+	if (sh.anglemapParams.hasRecorded) {
 		xml_node textureNode = f.append_child("IncidentAngleMap");
-		textureNode.append_attribute("phiWidth") = sh.angleMapPhiWidth;
-		textureNode.append_attribute("thetaHeight") = sh.angleMapThetaHeight;
+		textureNode.append_attribute("angleMapPhiWidth") = sh.anglemapParams.phiWidth;
+		textureNode.append_attribute("angleMapThetaLimit") = sh.anglemapParams.thetaLimit;
+		textureNode.append_attribute("angleMapThetaLowerRes") = sh.anglemapParams.thetaLowerRes;
+		textureNode.append_attribute("angleMapThetaHigherRes") = sh.anglemapParams.thetaHigherRes;
 
 		std::stringstream anglText;
 		anglText << '\n'; //better readability in file
-		for (int iy = 0; iy < sh.angleMapThetaHeight; iy++) {
-			for (int ix = 0; ix < sh.angleMapPhiWidth; ix++) {
-				anglText << angleMapCache[iy*sh.angleMapPhiWidth + ix] << '\t';
+		for (int iy = 0; iy < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); iy++) {
+			for (int ix = 0; ix < sh.anglemapParams.phiWidth; ix++) {
+				anglText << angleMapCache[iy*sh.anglemapParams.phiWidth + ix] << '\t';
 			}
 			anglText << '\n';
 		}
 		textureNode.append_child("map").append_child(node_cdata).set_value(anglText.str().c_str());
 
-	} //end texture
+	} //end angle map
 }
 
 std::string Facet::GetAngleMapCSV()
 {
 	std::stringstream result;
-	for (size_t row = 0; row < sh.angleMapThetaHeight; row++) {
-		for (size_t col = 0; col < sh.angleMapPhiWidth; col++) {
-			result << angleMapCache[row * sh.angleMapPhiWidth + col] << ",";
+
+	//First row: phi labels
+	result << "Theta below / Phi to the right,"; //A1 cell
+	for (size_t i = 0; i < sh.anglemapParams.phiWidth; i++)
+		result << -PI + (0.5 + (double)i) / ((double)sh.anglemapParams.phiWidth)*2.0*PI << ",";;
+	result << "\n";
+
+	//Actual table
+	for (size_t row = 0; row < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); row++) {
+		//First column: theta label
+		if (row < sh.anglemapParams.thetaLowerRes)
+			result << ((double)row + 0.5) / (double)sh.anglemapParams.thetaLowerRes*sh.anglemapParams.thetaLimit << ",";
+		else
+			result << sh.anglemapParams.thetaLimit + (0.5 + (double)(row-sh.anglemapParams.thetaLowerRes)) / (double)sh.anglemapParams.thetaHigherRes *(PI/2.0-sh.anglemapParams.thetaLimit) << ","; 
+		//Value
+		for (size_t col = 0; col < sh.anglemapParams.phiWidth; col++) {
+			result << angleMapCache[row * sh.anglemapParams.phiWidth + col] << ",";
 		}
 		result << "\n";
 	}

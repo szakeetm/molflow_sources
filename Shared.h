@@ -24,11 +24,11 @@
 #include <vector>
 #include "Vector.h"
 
-#define PROFILE_SIZE  100 // Size of profile
-#define LEAKCACHESIZE     2048  // Leak history max length
-#define HITCACHESIZE      2048  // Max. displayed number of lines and Porto (OPO)hits.
-#define BOUNCEMAX   8192  // 'Wall collision count before absoprtion' histogram
-#define MAX_PROCESS 32    // Maximum number of process
+#define PROFILE_SIZE  (size_t)100 // Size of profile
+#define LEAKCACHESIZE     (size_t)2048  // Leak history max length
+#define HITCACHESIZE      (size_t)2048  // Max. displayed number of lines and Porto (OPO)hits.
+#define BOUNCEMAX   (size_t)8192  // 'Wall collision count before absoprtion' histogram
+#define MAX_PROCESS (size_t)32    // Maximum number of process
 
 #define MC_MODE 0         // Monte Carlo simulation mode
 #define AC_MODE 1         // Angular coefficient simulation mode
@@ -116,7 +116,14 @@ typedef struct {
 
 } SHGHITS;
 
-
+struct AnglemapParams {
+	bool   record; // Record incident angle 2-dim distribution
+	bool hasRecorded;
+	size_t phiWidth; //resolution between -PI and +PI
+	double thetaLimit; //angle map can have a different resolution under and over the limit. Must be between 0 and PI/2
+	size_t thetaLowerRes; //resolution between 0 and angleMapThetaLimit
+	size_t thetaHigherRes; //resolution between angleMapThetaLimit and PI/2
+} ;
 
 // -----------------------------------------------------------------
 // Master control shared memory block  (name: MFLWCTRL[masterPID])
@@ -303,16 +310,12 @@ typedef struct {
 	//Outgassing map
 	bool   useOutgassingFile;   //has desorption file for cell elements
 	double outgassingFileRatio; //desorption file's sample/unit ratio
-	int   outgassingMapWidth; //rounded up outgassing file map width
-	int   outgassingMapHeight; //rounded up outgassing file map height
+	size_t   outgassingMapWidth; //rounded up outgassing file map width
+	size_t   outgassingMapHeight; //rounded up outgassing file map height
 
 	double totalOutgassing; //total outgassing for the given facet
 
-	//Incident angle map
-	bool   recordAngleMap; // Record incident angle 2-dim distribution
-	bool hasRecordedAngleMap;
-	size_t angleMapPhiWidth;
-	size_t angleMapThetaHeight;
+	AnglemapParams anglemapParams;//Incident angle map
 
 } SHFACET;
 
