@@ -510,7 +510,7 @@ bool StartFromSource() {
 	bool found = false;
 	bool foundInMap = false;
 	bool reverse;
-	int mapPositionW, mapPositionH;
+	size_t mapPositionW, mapPositionH;
 	FACET *src = NULL;
 	double srcRnd;
 	double sumA = 0.0;
@@ -554,7 +554,7 @@ bool StartFromSource() {
 							int outgLowerIndex = my_lower_bound(lookupValue, f->outgassingMap, f->sh.outgassingMapWidth*f->sh.outgassingMapHeight); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
 							outgLowerIndex++;
 							mapPositionH = (size_t)((double)outgLowerIndex / (double)f->sh.outgassingMapWidth);
-							mapPositionW = outgLowerIndex - mapPositionH * f->sh.outgassingMapWidth;
+							mapPositionW = (size_t)outgLowerIndex - mapPositionH * f->sh.outgassingMapWidth;
 							foundInMap = true;
 							/*if (!foundInMap) {
 								SetErrorSub("Starting point not found in imported desorption map");
@@ -1193,7 +1193,6 @@ void RecordDirectionVector(FACET *f, double time) {
 
 void ProfileFacet(FACET *f, double time, bool countHit, double velocity_factor, double ortSpeedFactor) {
 
-	int pos;
 	size_t nbMoments = sHandle->moments.size();
 	double dot = 1.0;
 
@@ -1217,8 +1216,8 @@ void ProfileFacet(FACET *f, double time, bool countHit, double velocity_factor, 
 
 	case REC_PRESSUREU:
 	case REC_PRESSUREV:
-
-		pos = (size_t)((f->sh.profileType == REC_PRESSUREU ? f->colU : f->colV)*(double)PROFILE_SIZE);
+	{
+		size_t pos = (size_t)((f->sh.profileType == REC_PRESSUREU ? f->colU : f->colV)*(double)PROFILE_SIZE);
 		Saturate(pos, 0, PROFILE_SIZE - 1);
 		for (size_t m = 0; m <= nbMoments; m++) {
 			if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
@@ -1229,20 +1228,21 @@ void ProfileFacet(FACET *f, double time, bool countHit, double velocity_factor, 
 			}
 		}
 		break;
-
+	}
 	case REC_ORT_VELOCITY:
 		if (countHit) dot = abs(Dot(f->sh.N, sHandle->pDir));  //cos(theta) as "dot" value
 	case REC_VELOCITY:
-		if (countHit) {
-			pos = (int)(dot*sHandle->velocityCurrentParticle / f->sh.maxSpeed*(double)PROFILE_SIZE); //"dot" default value is 1.0
-			Saturate(pos, 0, PROFILE_SIZE - 1);
-			for (size_t m = 0; m <= nbMoments; m++) {
-				if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
-					f->profile[m][pos].count++;
-				}
+	{	if (countHit) {
+		size_t pos = (size_t)(dot*sHandle->velocityCurrentParticle / f->sh.maxSpeed*(double)PROFILE_SIZE); //"dot" default value is 1.0
+		Saturate(pos, 0, PROFILE_SIZE - 1);
+		for (size_t m = 0; m <= nbMoments; m++) {
+			if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
+				f->profile[m][pos].count++;
 			}
 		}
-		break;
+	}
+	break;
+	}
 	}
 }
 

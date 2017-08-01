@@ -1248,30 +1248,6 @@ void Worker::Start() {
 }
 
 
-
-
-
-// -------------------------------------------------------------
-
-void Worker::GetProcStatus(int *states, char **status) {
-
-	if (nbProcess == 0) return;
-
-	AccessDataport(dpControl);
-	SHCONTROL *master = (SHCONTROL *)dpControl->buff;
-	memcpy(states, master->states, MAX_PROCESS*sizeof(int));
-	memcpy(status, master->statusStr, MAX_PROCESS * 64);
-	ReleaseDataport(dpControl);
-
-}
-
-
-
-
-
-
-
-
 /*
 std::string execCMD(char* cmd) {
 FILE* pipe = _popen(cmd, "r");

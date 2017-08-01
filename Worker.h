@@ -123,7 +123,7 @@ public:
   void SetHitCache(HIT *buffer, size_t *nb,Dataport* dpHit);
 
   // Get process status
-  void GetProcStatus(int *states,char **status);
+  void GetProcStatus(int *states,std::vector<std::string>& statusStrings);
 
   //Do calculations necessary before launching simulation
   void PrepareToRun();

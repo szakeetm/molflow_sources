@@ -98,8 +98,8 @@ void SetState(int state,const char *status,bool changeState, bool changeStatus) 
 		SHCONTROL *master = (SHCONTROL *)dpControl->buff;
 		if (changeState) master->states[prIdx] = state;
 		if (changeStatus) {
-			strncpy(master->statusStr[prIdx], status, 63);
-			master->statusStr[prIdx][63] = 0;
+			strncpy(master->statusStr[prIdx], status, 127);
+			master->statusStr[prIdx][127] = 0;
 		}
 		if( state==PROCESS_RUNAC ) {
 			master->cmdParam[prIdx] = sHandle->prgAC;
@@ -174,11 +174,12 @@ void SetReady() {
 
 // -------------------------------------------------
 
-void SetStatus(char *message) {
+void SetStatus(char *status) {
 
   if( AccessDataport(dpControl) ) {
     SHCONTROL *master = (SHCONTROL *)dpControl->buff;
-    strcpy(master->statusStr[prIdx],message);
+	strncpy(master->statusStr[prIdx], status, 127);
+	master->statusStr[prIdx][127] = 0;
     ReleaseDataport(dpControl);
   }
 

@@ -70,12 +70,14 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	Add(vPanel);
 	desPanel = new GLTitledPanel("Dynamic desorption");
 	desPanel->SetBounds(5, 407, 309, 69);
+	//desPanel->Close();
 	Add(desPanel);
 	paramPanel = new GLTitledPanel("Additional parameters");
 	paramPanel->SetBounds(5, 177, 309, 174);
 	Add(paramPanel);
 	angleMapPanel = new GLTitledPanel("Incident angle distribution");
 	angleMapPanel->SetBounds(5, 482, 309, 149);
+	//angleMapPanel->Close();
 	Add(angleMapPanel);
 	lengthText = new GLTextField(0, "");
 	aPanel->SetCompBounds(lengthText, 180, 36, 72, 18);
@@ -267,7 +269,7 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	paramPanel->SetCompBounds(SojournInfoButton, 229, 126, 69, 20);
 	paramPanel->Add(SojournInfoButton);
 
-	label14 = new GLLabel("Theta (grazing angle):");
+	label14 = new GLLabel("Theta (inc. angle):");
 	angleMapPanel->SetCompBounds(label14, 9, 36, 93, 12);
 	angleMapPanel->Add(label14);
 
@@ -374,8 +376,12 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	desPanelFullHeight = desPanel->GetHeight();
 	angleMapPanelFullHeight = angleMapPanel->GetHeight();
 
+	desPanel->Close();
+	angleMapPanel->Close();
+
 	Refresh(std::vector<size_t>());
 	Reposition(wD, hD);
+	PlaceComponents();
 
 	RestoreDeviceObjects();
 }

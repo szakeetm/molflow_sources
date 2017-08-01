@@ -76,11 +76,11 @@ char *cName[] = { "#", "Hits", "Des", "Abs" };
 
 
 std::string appId = "Molflow";
-int appVersion = 2651;
+int appVersion = 2652;
 #ifdef _DEBUG
 std::string appName = "MolFlow+ development version 64-bit (Compiled " __DATE__ " " __TIME__ ") DEBUG MODE";
 #else
-std::string appName = "Molflow+ 2.6.51 64-bit (" __DATE__ ")";
+std::string appName = "Molflow+ 2.6.52 64-bit (" __DATE__ ")";
 #endif
 
 
@@ -114,6 +114,7 @@ Math functions: sin(), cos(), tan(), sinh(), cosh(), tanh(), asin(), acos(),
 
 Constants:  Kb (Boltzmann's constant), R (Gas constant), Na (Avogadro's number), PI
 )";
+int formulaSyntaxHeight = 380;
 
 MolFlow *mApp;
 
@@ -2191,7 +2192,7 @@ void MolFlow::LoadConfig() {
 		geom->texture_limits[2].autoscale.max.moments_only = f->ReadDouble();
 
 		f->ReadKeyword("processNum"); f->ReadKeyword(":");
-		nbProc = f->ReadInt();
+		nbProc = f->ReadLLong();
 #ifdef _DEBUG
 		nbProc = 1;
 #endif

@@ -63,6 +63,10 @@ void GeometryViewer::SetBounds(int x, int y, int width, int height) {
 		capsLockLabel->SetBounds(posX + 10, posY + height - 47, 0, 19);
 
 		toolBack->SetBounds(posX + 1, posY + height - DOWN_MARGIN, width - 2, DOWN_MARGIN - 1);
+
+
+		//debugLabel->SetBounds(posX + 10, posY + 35, 90, 19); //debug
+
 		SetCurrentView(view);
 	}
 }

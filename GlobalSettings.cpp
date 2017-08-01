@@ -166,7 +166,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	panel3->Add(processList);
 
 	char tmp[128];
-	sprintf(tmp, "Number of CPU cores:     %d", mApp->numCPU);
+	sprintf(tmp, "Number of CPU cores:     %zd", mApp->numCPU);
 	GLLabel *coreLabel = new GLLabel(tmp);
 	coreLabel->SetBounds(10, hD - 74, 120, 19);
 	panel3->Add(coreLabel);
@@ -248,10 +248,10 @@ void GlobalSettings::SMPUpdate() {
 	char tmp[512];
 	PROCESS_INFO pInfo;
 	int  states[MAX_PROCESS];
-	char statusStr[MAX_PROCESS][64];
+	std::vector<std::string> statusStrings(MAX_PROCESS);
 
 	memset(states, 0, MAX_PROCESS * sizeof(int));
-	worker->GetProcStatus(states, (char **)statusStr);
+	worker->GetProcStatus(states, statusStrings);
 
 	processList->ResetValues();
 
@@ -305,10 +305,8 @@ void GlobalSettings::SMPUpdate() {
 			*/
 
 			// State/Status
-			char status[128];
-			_snprintf(tmp, 127, "%s: %s", prStates[states[i]], statusStr[i]);
-			status[127] = 0;
-			processList->SetValueAt(4, i + 1, tmp);
+			std::stringstream tmp; tmp << prStates[states[i]] << " " << statusStrings[i];
+			processList->SetValueAt(4, i + 1, tmp.str().c_str());
 
 		}
 	}

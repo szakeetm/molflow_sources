@@ -182,7 +182,7 @@ typedef struct {
 	int		states[MAX_PROCESS];        // Process states/commands
 	size_t    cmdParam[MAX_PROCESS];      // Command param 1
 	llong		cmdParam2[MAX_PROCESS];     // Command param 2
-	char		statusStr[MAX_PROCESS][64]; // Status message
+	char		statusStr[MAX_PROCESS][128]; // Status message
 } SHCONTROL;
 
 // -----------------------------------------------------------------
