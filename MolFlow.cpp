@@ -84,7 +84,7 @@ std::string appName = "Molflow+ 2.6.52 64-bit (" __DATE__ ")";
 #endif
 
 
-std::vector<string> formulaPrefixes = { "A","D","H","P","DEN","Z","V","T","AR","ar","," };
+std::vector<string> formulaPrefixes = { "A","D","H","P","DEN","Z","V","T","AR","a","d","h","p","den","z","v","t","ar","," };
 std::string formulaSyntax =
 R"(MC Variables: An (Absorption on facet n), Dn (Desorption on facet n), Hn (Hit on facet n)
 Pn (Pressure [mbar] on facet n), DENn (Density [1/m3] on facet n)
@@ -2540,18 +2540,18 @@ bool MolFlow::EvaluateVariable(VLIST *v) {
 	else if (_stricmp(v->name, "Na") == 0) {
 		v->value = 6.02214179e23;
 	}
-	else if ((beginsWith(v->name, "SUM(")) || (beginsWith(v->name, "AVG(")) && endsWith(v->name, ")")) {
-		bool avgMode = beginsWith(v->name, "AVG("); //else SUM mode
+	else if ((beginsWith(v->name, "SUM(") || beginsWith(v->name, "sum(") || beginsWith(v->name, "AVG(") || beginsWith(v->name, "avg(")) && endsWith(v->name, ")")) {
+		bool avgMode = (beginsWith(v->name, "AVG(") || beginsWith(v->name, "avg(")); //else SUM mode
 		std::string inside = v->name; inside.erase(0, 4); inside.erase(inside.size() - 1, 1);
 		std::vector<std::string> tokens = SplitString(inside,',');
 		if (!Contains({ 2,3 }, tokens.size()))
 			return false;
 		if (avgMode) {
-			if (!Contains({ "P","DEN","Z" }, tokens[0]))
+			if (!Contains({ "P","DEN","Z","p","den","z" }, tokens[0]))
 				return false;
 		}
 		else {
-			if (!Contains({ "H","D","A" }, tokens[0]))
+			if (!Contains({ "H","D","A","h","d","a" }, tokens[0]))
 				return false;
 		}
 		std::vector<size_t> facetsToSum;
@@ -2569,9 +2569,9 @@ bool MolFlow::EvaluateVariable(VLIST *v) {
 			std::iota(facetsToSum.begin(), facetsToSum.end(), startId-1);
 		}
 		else { //Selection group
-			if (!beginsWith(tokens[1], "S")) return false;
+			if (!(beginsWith(tokens[1], "S") || beginsWith(tokens[1], "s"))) return false;
 			std::string selIdString = tokens[1]; selIdString.erase(0, 1);
-			if (selIdString == "EL") { //Current selections
+			if (Contains({ "EL","el" }, selIdString)) { //Current selections
 				facetsToSum = geom->GetSelectedFacets();
 			}
 			else {
@@ -2589,20 +2589,20 @@ bool MolFlow::EvaluateVariable(VLIST *v) {
 		double sumD=0.0;
 		double sumArea = 0.0; //We average by area
 		for (auto sel : facetsToSum) {
-			if (tokens[0] == "H") {
+			if (Contains({"H", "h"},tokens[0])) {
 				sumLL+=geom->GetFacet(sel)->counterCache.hit.nbHit;
-			} else if (tokens[0] == "D") {
+			} else if (Contains({ "D", "d" }, tokens[0])) {
 				sumLL+=geom->GetFacet(sel)->counterCache.hit.nbDesorbed;
-			} else if (tokens[0] == "A") {
+			} else if (Contains({ "A", "a" }, tokens[0])) {
 				sumLL+=geom->GetFacet(sel)->counterCache.hit.nbAbsorbed;
-			} else if (tokens[0] == "AR") {
+			} else if (Contains({ "AR", "ar" }, tokens[0])) {
 				sumArea += geom->GetFacet(sel)->GetArea();
 			}
-			else if (tokens[0] == "P") {
+			else if (Contains({ "P", "p" }, tokens[0])) {
 				sumD+= geom->GetFacet(sel)->counterCache.hit.sum_v_ort *
 					(worker.gasMass / 1000 / 6E23)*0.0100;
 				sumArea += geom->GetFacet(sel)->GetArea();
-			} else if (tokens[0] == "DEN") {
+			} else if (Contains({ "DEN", "den" }, tokens[0])) {
 				double dCoef = 1.0;
 				Facet *f = geom->GetFacet(sel);
 				if (f->counterCache.hit.nbHit > 0 || f->counterCache.hit.nbDesorbed > 0)
@@ -2610,13 +2610,13 @@ bool MolFlow::EvaluateVariable(VLIST *v) {
 						dCoef *= 1.0 - ((double)f->counterCache.hit.nbAbsorbed + (double)f->counterCache.hit.nbDesorbed) / ((double)f->counterCache.hit.nbHit + (double)f->counterCache.hit.nbDesorbed) / 2.0;
 				sumD += dCoef * f->counterCache.hit.sum_1_per_ort_velocity;
 				sumArea += geom->GetFacet(sel)->GetArea();
-			} else if (tokens[0] == "Z") {
+			} else if (Contains({ "Z", "z" }, tokens[0])) {
 				sumD += geom->GetFacet(sel)->counterCache.hit.nbHit;
 				sumArea += geom->GetFacet(sel)->GetArea();
 			} else return false;
 		}
 		if (avgMode) v->value=sumD * worker.GetMoleculesPerTP(worker.displayedMoment)*1E4 / sumArea;
-		else if (tokens[0] == "AR") v->value = sumArea;
+		else if (Contains({ "AR", "ar" }, tokens[0])) v->value = sumArea;
 		else v->value = (double)sumLL;
 	}
 	else ok = false;
