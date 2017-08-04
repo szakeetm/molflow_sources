@@ -56,7 +56,6 @@ const char* profType[] = {
 	"Speed [m/s]",
 	"Ort. velocity [m/s]" };
 
-
 ProfilePlotter::ProfilePlotter() :GLWindow() {
 
 	int wD = 650;
@@ -130,9 +129,6 @@ ProfilePlotter::ProfilePlotter() :GLWindow() {
 	correctForGas = new GLToggle(0, "Surface->Volume conversion");
 	correctForGas->SetVisible(false);
 	Add(correctForGas);
-
-
-
 
 	formulaText = new GLTextField(0, "");
 	formulaText->SetEditable(true);
@@ -313,12 +309,10 @@ void ProfilePlotter::refreshViews() {
 	BYTE *buffer = worker->GetHits();
 	int displayMode = normCombo->GetSelectedIndex();
 
-
 	if (!buffer) return;
 
 	Geometry *geom = worker->GetGeometry();
 	SHGHITS *gHits = (SHGHITS *)buffer;
-
 
 	double scaleY;
 
@@ -347,7 +341,6 @@ void ProfilePlotter::refreshViews() {
 				case 1: //Pressure
 					scaleY = 1.0 / (f->GetArea() / (double)PROFILE_SIZE*1E-4)* worker->gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
 					scaleY *= worker->GetMoleculesPerTP(worker->displayedMoment);
-
 
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j, profilePtr[j].sum_v_ort*scaleY, false);
@@ -379,7 +372,6 @@ void ProfilePlotter::refreshViews() {
 						values.push_back(val);
 					}
 
-
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j*scaleX, values[j] / sum, false);
 					break; }
@@ -398,13 +390,11 @@ void ProfilePlotter::refreshViews() {
 						values.push_back(val);
 					}
 
-
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j*scaleX, values[j] / sum, false);
 					break; }
 				case 5: //To 1 (max value)
 					llong max = 1;
-
 
 					for (int j = 0; j < PROFILE_SIZE; j++)
 					{
@@ -454,7 +444,6 @@ void ProfilePlotter::refreshViews() {
 	worker->ReleaseHits();
 
 }
-
 
 void ProfilePlotter::addView(int facet) {
 
@@ -578,7 +567,6 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
 		else if (src == correctForGas) {
 
 			refreshViews();
-
 
 		}
 		break;

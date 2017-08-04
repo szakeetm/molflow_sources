@@ -60,10 +60,6 @@ PSSTDAPI PSGetPropertyDescriptionListFromString(
     __deref_out void **ppv);
 	*/
 
-
-
-
-
 /* File Dialog Event Handler *****************************************************************************************************/
 
 class CDialogEventHandler : public IFileDialogEvents,

@@ -74,7 +74,6 @@ int cSize = 4;
 int   cWidth[] = { 30, 56, 50, 50 };
 char *cName[] = { "#", "Hits", "Des", "Abs" };
 
-
 std::string appId = "Molflow";
 int appVersion = 2652;
 #ifdef _DEBUG
@@ -82,7 +81,6 @@ std::string appName = "MolFlow+ development version 64-bit (Compiled " __DATE__ 
 #else
 std::string appName = "Molflow+ 2.6.52 64-bit (" __DATE__ ")";
 #endif
-
 
 std::vector<string> formulaPrefixes = { "A","D","H","P","DEN","Z","V","T","AR","a","d","h","p","den","z","v","t","ar","," };
 std::string formulaSyntax =
@@ -154,12 +152,9 @@ MolFlow *mApp;
 #define MENU_TIME_MOMENTS_EDITOR    903
 #define MENU_TIME_PARAMETER_EDITOR  904
 
-
-//-----------------------------------------------------------------------------
 // Name: WinMain()
 // Desc: Entry point to the program. Initializes everything, and goes into a
 //       message-processing loop. Idle time is used to render the scene.
-//-----------------------------------------------------------------------------
 
 INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, INT)
 {
@@ -189,12 +184,8 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, INT)
 	return 0;
 }
 
-
-
-//-----------------------------------------------------------------------------
 // Name: MolFlow()
 // Desc: Application constructor. Sets default attributes for the app.
-//-----------------------------------------------------------------------------
 
 MolFlow::MolFlow()
 {
@@ -221,11 +212,10 @@ MolFlow::MolFlow()
 	timeSettings = NULL;
 }
 
-//-----------------------------------------------------------------------------
 // Name: OneTimeSceneInit()
 // Desc: Called during initial app startup, this function performs all the
 //       permanent initialization.
-//-----------------------------------------------------------------------------
+
 int MolFlow::OneTimeSceneInit()
 {
 	/*
@@ -437,7 +427,6 @@ int MolFlow::OneTimeSceneInit()
 	return GL_OK;
 }
 
-
 void MolFlow::PlaceComponents() {
 
 	int sx = m_screenWidth - 205;
@@ -547,17 +536,16 @@ void MolFlow::PlaceComponents() {
 	simuPanel->SetCompBounds(leakNumber, 40, 120, 155, 18);
 	simuPanel->SetCompBounds(sTimeLabel, 5, 145, 30, 18);
 
-
 	simuPanel->SetCompBounds(sTime, 40, 145, 155, 18);
 
 	sy += (simuPanel->GetHeight() + 5);
 
-	// ---------------------------------------------------------
+	
 	int lg = m_screenHeight -23 /*- (nbFormula * 25)*/;
 
 	facetList->SetBounds(sx, sy, 202, lg - sy);
 
-	// ---------------------------------------------------------
+	
 
 	/*
 	for (int i = 0; i < nbFormula; i++) {
@@ -569,10 +557,8 @@ void MolFlow::PlaceComponents() {
 	*/
 }
 
-//-----------------------------------------------------------------------------
 // Name: ClearFacetParams()
 // Desc: Reset selected facet parameters.
-//-----------------------------------------------------------------------------
 
 void MolFlow::ClearFacetParams() {
 	facetPanel->SetTitle("Selected Facet (none)");
@@ -602,13 +588,10 @@ void MolFlow::ClearFacetParams() {
 	facetRecType->SetEditable(false);
 }
 
-//-----------------------------------------------------------------------------
 // Name: ApplyFacetParams()
 // Desc: Apply facet parameters.
-//-----------------------------------------------------------------------------
 
 void MolFlow::ApplyFacetParams() {
-
 
 	Geometry *geom = worker.GetGeometry();
 	size_t nbFacet = geom->GetNbFacet();
@@ -798,7 +781,6 @@ void MolFlow::ApplyFacetParams() {
 				if (doDesorbTypeN) f->sh.desorbTypeN = desorbTypeN;
 			}
 
-
 			if (rType >= 0) {
 				f->sh.profileType = rType;
 				//f->sh.isProfile = (rType!=REC_NONE); //included below by f->UpdateFlags();
@@ -824,12 +806,8 @@ void MolFlow::ApplyFacetParams() {
 	//if (facetAdvParams) facetAdvParams->Refresh();
 }
 
-
-
-//-----------------------------------------------------------------------------
 // Name: UpdateFacetParams()
 // Desc: Update selected facet parameters.
-//-----------------------------------------------------------------------------
 
 void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->Refresh()
 
@@ -1041,14 +1019,10 @@ worker.ReleaseHits();
 }
 */
 
-
-
-
-//-----------------------------------------------------------------------------
 // Name: FrameMove()
 // Desc: Called once per frame, the call is the entry point for animating
 //       the scene.
-//-----------------------------------------------------------------------------
+
 int MolFlow::FrameMove()
 {	
 	if (worker.running && ((m_fTime - lastUpdate) >= 1.0f)) {
@@ -1085,13 +1059,9 @@ int MolFlow::FrameMove()
 	return GL_OK;
 }
 
-
-//-----------------------------------------------------------------------------
-
-//-----------------------------------------------------------------------------
 // Name: RestoreDeviceObjects()
 // Desc: Initialize scene objects.
-//-----------------------------------------------------------------------------
+
 int MolFlow::RestoreDeviceObjects()
 {
 	RestoreDeviceObjects_shared();
@@ -1118,10 +1088,8 @@ int MolFlow::RestoreDeviceObjects()
 	return GL_OK;
 }
 
-//-----------------------------------------------------------------------------
 // Name: InvalidateDeviceObjects()
 // Desc: Free all alocated resource
-//-----------------------------------------------------------------------------
 
 int MolFlow::InvalidateDeviceObjects()
 {
@@ -1148,7 +1116,6 @@ int MolFlow::InvalidateDeviceObjects()
 
 	return GL_OK;
 }
-
 
 void MolFlow::ExportProfiles() {
 
@@ -1273,9 +1240,7 @@ void MolFlow::SaveFile() {
 	else SaveFileAs();
 }
 
-
 void MolFlow::LoadFile(char *fName) {
-
 
 	char fullName[512];
 	char shortName[512];
@@ -1300,7 +1265,6 @@ void MolFlow::LoadFile(char *fName) {
 		SAFE_DELETE(progressDlg2);
 		return;
 	}
-
 
 	char *lPart = strrchr(fullName, '\\');
 	if (lPart) strcpy(shortName, lPart + 1);
@@ -1413,7 +1377,6 @@ void MolFlow::InsertGeometry(bool newStr, char *fName) {
 		return;
 	}
 
-
 	char *lPart = strrchr(fullName, '\\');
 	if (lPart) strcpy(shortName, lPart + 1);
 	else strcpy(shortName, fullName);
@@ -1442,7 +1405,6 @@ void MolFlow::InsertGeometry(bool newStr, char *fName) {
 		//nbHitStart = worker.nbHit;
 		AddRecent(fullName);
 		geom->viewStruct = -1;
-
 
 		//worker.LoadTextures(fullName);
 		UpdateStructMenu();
@@ -1528,12 +1490,9 @@ void MolFlow::StartStopSimulation() {
 
 }
 
-
-
-//-----------------------------------------------------------------------------
 // Name: EventProc()
 // Desc: Message proc function to handle key and mouse input
-//-----------------------------------------------------------------------------
+
 void MolFlow::ProcessMessage(GLComponent *src, int message)
 {
 
@@ -1558,7 +1517,6 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		case MENU_FILE_IMPORTDES_DES:
 			ImportDesorption_DES();
 			break;
-
 
 		case MENU_FILE_EXPORTTEXTURE_AREA:
 			ExportTextures(0, 0); break;
@@ -1601,13 +1559,11 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			ExportProfiles();
 			break;
 
-
 		case MENU_TOOLS_MOVINGPARTS:
 			if (!movement) movement = new Movement(geom, &worker);
 			movement->Update();
 			movement->SetVisible(true);
 			break;
-
 
 		case MENU_EDIT_TSCALING:
 			if (!textureSettings || !textureSettings->IsVisible()) {
@@ -1701,7 +1657,6 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			UpdateFacetParams(true);
 			break;
 
-
 		case MENU_FACET_SELECTDES:
 			geom->UnselectAll();
 			for (int i = 0; i < geom->GetNbFacet(); i++)
@@ -1718,7 +1673,6 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			geom->UpdateSelection();
 			UpdateFacetParams(true);
 			break;
-
 
 		case MENU_TIME_SETTINGS:
 			if (!timeSettings) timeSettings = new TimeSettings(&worker);
@@ -1985,7 +1939,6 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 	}
 }
 
-
 void MolFlow::BuildPipe(double ratio, int steps) {
 
 	char tmp[256];
@@ -2073,7 +2026,6 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	changedSinceSave = false;
 	ResetAutoSaveTimer();
 }
-
 
 void MolFlow::LoadConfig() {
 
@@ -2306,7 +2258,6 @@ void MolFlow::SaveConfig(bool increaseSessionCount) {
 		f->Write("autoScale:"); f->Write(geom->texAutoScale, "\n");
 		f->Write("autoScale_include_constant_flow:"); f->Write(geom->texAutoScaleIncludeConstantFlow, "\n");
 
-
 		f->Write("textures_min_pressure_all:");
 		f->Write(geom->texture_limits[0].autoscale.min.all, "\n");
 		f->Write("textures_min_pressure_moments_only:");
@@ -2430,7 +2381,6 @@ void MolFlow::CrashHandler(Error *e) {
 		GLMessageBox::Display("Sorry, I couldn't even autosave.", "Main crash handler", GLDLG_OK, GLDGL_ICONDEAD);
 	}
 }
-
 
 bool MolFlow::EvaluateVariable(VLIST *v) {
 	bool ok = true;
@@ -2649,7 +2599,6 @@ void MolFlow::UpdateFacetHits(bool allRows) {
 				facetList->GetVisibleRows(&sR, &eR);
 			}
 
-
 			if (worker.displayedMoment == 0) {
 				int colors[] = { COLOR_BLACK, COLOR_BLACK, COLOR_BLACK, COLOR_BLACK };
 				facetList->SetColumnColors(colors);
@@ -2659,7 +2608,6 @@ void MolFlow::UpdateFacetHits(bool allRows) {
 				int colors[] = { COLOR_BLACK, COLOR_BLUE, COLOR_BLUE, COLOR_BLUE };
 				facetList->SetColumnColors(colors);
 			}
-
 
 			for (int i = sR; i <= eR; i++) {
 				int facetId = facetList->GetValueInt(i, 0) - 1;

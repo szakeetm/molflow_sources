@@ -42,10 +42,7 @@ private:
 
   GLTextField* value1,value2;
 
-
-
   int nbFacetS;
-
 
 };
 

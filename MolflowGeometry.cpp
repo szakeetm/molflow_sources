@@ -15,8 +15,6 @@
 
 using namespace pugi;
 
-
-
 #ifdef MOLFLOW
 extern MolFlow *mApp;
 #endif
@@ -185,7 +183,6 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer) {
 			}
 			else {
 
-
 				double rw = f->sh.U.Norme() / (double)(f->sh.texWidthD);
 				double rh = f->sh.V.Norme() / (double)(f->sh.texHeightD);
 				double area = rw*rh;
@@ -261,7 +258,6 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer) {
 	}
 }
 
-
 size_t MolflowGeometry::GetHitsSize(std::vector<double> *moments) {
 
 	// Compute number of bytes allocated
@@ -301,15 +297,8 @@ size_t MolflowGeometry::GetMaxElemNumber() {
 
 }*/
 
-
-
-
-
-
-
-// -----------------------------------------------------------
 // Testing purpose function, construct a PIPE
-// -----------------------------------------------------------
+
 void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 	Clear();
 
@@ -423,10 +412,7 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 
 }
 
-// -----------------------------------------------------------
 // File handling
-// -----------------------------------------------------------
-
 
 void MolflowGeometry::InsertSYN(FileReader *file, GLProgress *prg, bool newStr) {
 
@@ -635,7 +621,6 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t *nbVertex, size_t *
 		}
 	}
 
-
 	*nbVertex += nbNewVertex;
 	*nbFacet += nbNewFacets;
 	if (newStruct) sh.nbSuper += nbNewSuper;
@@ -726,16 +711,13 @@ void MolflowGeometry::LoadProfile(FileReader *file, Dataport *dpHit, int version
 	SAFE_FREE(profileFacet);
 }
 
-
 void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *leakCache, size_t *leakCacheSize, HIT *hitCache, size_t *hitCacheSize, int *version, Worker *worker) {
-
 
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
 	prg->SetMessage("Clearing current geometry...");
 	Clear();
 	//mApp->ClearFormulas();
-
 
 	// Globals
 	char tmp[512];
@@ -1021,8 +1003,6 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *leakCache
 
 void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version) {
 
-
-
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
 	prg->SetMessage("Clearing current geometry...");
@@ -1252,7 +1232,6 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version) {
 
 }
 
-
 bool MolflowGeometry::LoadTextures(FileReader *file, GLProgress *prg, Dataport *dpHit, int version) {
 
 	if (file->SeekFor("{textures}")) {
@@ -1272,7 +1251,6 @@ bool MolflowGeometry::LoadTextures(FileReader *file, GLProgress *prg, Dataport *
 		gHits->total.hit.nbAbsorbed = loaded_nbAbsorption;
 		gHits->nbLeakTotal = loaded_nbLeak;
 		gHits->distTraveledTotal_total = distTraveledTotal_total;
-
 
 		gHits->distTraveledTotal_fullHitsOnly = distTraveledTotal_fullHitsOnly;*/
 
@@ -1333,7 +1311,6 @@ bool MolflowGeometry::LoadTextures(FileReader *file, GLProgress *prg, Dataport *
 							throw Error(file->MakeError(tmp));
 						}
 
-
 						file->ReadKeyword("{");
 
 						int ix, iy;
@@ -1346,7 +1323,6 @@ bool MolflowGeometry::LoadTextures(FileReader *file, GLProgress *prg, Dataport *
 
 						AHIT *hits = (AHIT *)((BYTE *)gHits + (f->sh.hitOffset + facetHitsSize + profSize + m*w*h*sizeof(AHIT)));
 
-
 						size_t texWidth_file, texHeight_file;
 						//In case of rounding errors, the file might contain different texture dimensions than expected.
 						if (version >= 14) {
@@ -1357,7 +1333,6 @@ bool MolflowGeometry::LoadTextures(FileReader *file, GLProgress *prg, Dataport *
 							texWidth_file = f->sh.texWidth;
 							texHeight_file = f->sh.texHeight;
 						}
-
 
 						for (iy = 0; iy < (Min(f->sh.texHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
 							for (ix = 0; ix < (Min(f->sh.texWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
@@ -1439,7 +1414,6 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit
 	texMinAutoscale = gHits->minHit;
 	texMaxAutoscale = gHits->maxHit;
 	break;
-
 
 	}*/
 
@@ -1669,9 +1643,6 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit
 	if (!crashSave && !saveSelected) ReleaseDataport(dpHit);
 
 }
-
-
-
 
 void MolflowGeometry::SaveTXT(FileWriter *file, Dataport *dpHit, bool saveSelected) {
 
@@ -1934,7 +1905,6 @@ void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, Dataport *dpHit, Wor
 		for (int i = 0; i < sh.nbFacet; i++) {
 			Facet *f = facets[i];
 
-
 			if (f->selected) {
 				APROFILE *prof = NULL;
 				std::ostringstream line;
@@ -2045,7 +2015,6 @@ void MolflowGeometry::ImportDesorption_DES(FileReader *file) {
 	//_ASSERTE (!_CrtDumpMemoryLeaks());;
 	_ASSERTE(_CrtCheckMemory());
 
-
 }
 
 void MolflowGeometry::ImportDesorption_SYN(
@@ -2149,7 +2118,6 @@ void MolflowGeometry::ImportDesorption_SYN(
 				throw Error(file->MakeError(tmp));
 			}
 
-
 			//Now load values
 			file->ReadKeyword("{");
 
@@ -2249,7 +2217,6 @@ void MolflowGeometry::ImportDesorption_SYN(
 	//UpdateSelection();
 }
 
-
 void MolflowGeometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, size_t *nbNewFacet,
 	size_t *nbTextured, size_t *nbDifferent, GLProgress *prg){
 	//init
@@ -2323,7 +2290,6 @@ void MolflowGeometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, 
 	UpdateSelection();
 
 }
-
 
 void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress *prg, bool saveSelected){
 	//TiXmlDeclaration* decl = new TiXmlDeclaration("1.0")="")="");
@@ -2588,9 +2554,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 				textureNode.append_child("sum_1_per_v").append_child(node_cdata).set_value(sum1perText.str().c_str());
 				textureNode.append_child("sum_v_ort").append_child(node_cdata).set_value(sumvortText.str().c_str());
 
-
 			} //end texture
-
 
 			if (f->sh.countDirection && f->dirCache) {
 				xml_node dirNode = newFacetResult.append_child("Directions");
@@ -2619,7 +2583,6 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 			} //end directions
 		}
 	}
-
 
 	//Texture Min/Max
 	xml_node minMaxNode = resultNode.append_child("TextureMinMax");
@@ -2756,7 +2719,6 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 				newFormula.attribute("expression").as_string());
 		}
 
-
 		xml_node ppNode = interfNode.child("ProfilePlotter");
 		if (ppNode) {
 			if (!mApp->profilePlotter) mApp->profilePlotter = new ProfilePlotter(); mApp->profilePlotter->SetWorker(work);
@@ -2826,7 +2788,6 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 	//AdjustProfile();
 	//isLoaded = true; //InitializeGeometry() sets to true
 
-
 	// Update mesh
 	progressDlg->SetMessage("Building mesh...");
 	for (int i = 0; i < sh.nbFacet; i++) {
@@ -2844,7 +2805,6 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 		f->tRatio = f->sh.texWidthD / nU;
 	}
 }
-
 
 void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg, bool newStr){
 	//mApp->ClearAllSelections();
@@ -2974,7 +2934,6 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 		mApp->AddView(v.name, v);
 	}
 
-
 	sh.nbVertex += nbNewVertex;
 	sh.nbFacet += nbNewFacets; //formulas can refer to newly inserted facets
 
@@ -2992,10 +2951,8 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 	/*work->gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
 	work->halfLife = simuParamNode.child("Gas").attribute("halfLife").as_double();*/
 
-
 	/*
 	xml_node timeSettingsNode = simuParamNode.child("TimeSettings");
-
 
 	xml_node userMomentsNode = timeSettingsNode.child("UserMoments");
 	for (xml_node newUserEntry : userMomentsNode.children("UserEntry")) {
@@ -3003,8 +2960,6 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 	strcpy(tmpExpr, newUserEntry.attribute("content").as_string());
 	work->userMoments.push_back(tmpExpr);
 	work->AddMoment(mApp->worker.ParseMoment(tmpExpr));
-
-
 
 	}
 	work->timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();
@@ -3081,7 +3036,6 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit,
 			}
 			work->SetHitCache(hitCache, &work->hitCacheSize, dpHit);
 
-
 			LEAK leakCache[LEAKCACHESIZE]; //leak temp storage for loading
 			work->leakCacheSize = 0;
 			xml_node leakCacheNode = globalNode.child("Leak_Cache");
@@ -3098,7 +3052,6 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit,
 			}
 			work->SetLeakCache(leakCache, &work->leakCacheSize, dpHit);
 		} //end global node
-
 
 		xml_node facetResultsNode = newMoment.child("FacetResults");
 		for (xml_node newFacetResult : facetResultsNode.children("Facet")) {
@@ -3141,7 +3094,6 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit,
 					id++;
 				}
 			}
-
 
 			//Textures
 			int ix, iy;

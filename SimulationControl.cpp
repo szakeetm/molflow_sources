@@ -31,16 +31,12 @@ GNU General Public License for more details.
 #include "Random.h"
 #include <sstream>
 
-// -------------------------------------------------------
 // Global handles
-// -------------------------------------------------------
 
 FACET     **THits;
 SIMULATION *sHandle;
 
-// -------------------------------------------------------
 // Timing stuff
-// -------------------------------------------------------
 
 #ifdef WIN
 bool usePerfCounter;         // Performance counter usage
@@ -48,8 +44,6 @@ LARGE_INTEGER perfTickStart; // First tick
 double perfTicksPerSec;      // Performance counter (number of tick per second)
 #endif
 DWORD tickStart;
-
-// -------------------------------------------------------
 
 void InitSimulation() {
 
@@ -73,8 +67,6 @@ void InitSimulation() {
 #endif
 
 }
-
-// -------------------------------------------------------
 
 void ClearSimulation() {
 
@@ -139,7 +131,6 @@ void ClearSimulation() {
 	memset(sHandle, 0, sizeof(SIMULATION));
 
 }
-// -------------------------------------------------------
 
 DWORD RevertBit(DWORD dw) {
 	DWORD dwIn = dw;
@@ -169,13 +160,9 @@ DWORD GetSeed() {
 
 }
 
-
-
 /*double Norme(Vector3d *v) { //already defined
 	return sqrt(v->x*v->x + v->y*v->y + v->z*v->z);
 }*/
-
-
 
 bool LoadSimulation(Dataport *loader) {
 
@@ -211,7 +198,6 @@ bool LoadSimulation(Dataport *loader) {
 	buffer = (BYTE *)loader->buff;
 	bufferStart = buffer; //memorize start for later
 
-
 	// Load new geom from the dataport
 
 	shGeom = (SHGEOM *)buffer;
@@ -226,8 +212,6 @@ bool LoadSimulation(Dataport *loader) {
 
 		return false;
 	}
-
-
 
 	sHandle->nbVertex = shGeom->nbVertex;
 	sHandle->nbSuper = shGeom->nbSuper;
@@ -274,7 +258,6 @@ bool LoadSimulation(Dataport *loader) {
 
 	globalBuff = buffer; //after facets and outgassing maps, with inc values
 
-
 	//buffer = (BYTE *)loader->buff;
 	buffer = bufferStart; //start from beginning again
 
@@ -316,7 +299,6 @@ bool LoadSimulation(Dataport *loader) {
 		sHandle->str[idx].facets[sHandle->str[idx].nbFacet] = f;
 		sHandle->str[idx].facets[sHandle->str[idx].nbFacet]->globalId = i;
 		sHandle->str[idx].nbFacet++;
-
 
 		if (f->sh.superDest || f->sh.isVolatile) {
 			// Link or volatile facet, overides facet settings
@@ -557,7 +539,6 @@ bool LoadSimulation(Dataport *loader) {
 
 	}
 
-
 	
 	buffer = globalBuff;
 
@@ -673,8 +654,6 @@ bool LoadSimulation(Dataport *loader) {
 
 }
 
-// -------------------------------------------------------
-
 void UpdateHits(Dataport *dpHit, int prIdx, DWORD timeout) {
 	switch (sHandle->sMode) {
 	case MC_MODE:
@@ -690,14 +669,10 @@ void UpdateHits(Dataport *dpHit, int prIdx, DWORD timeout) {
 
 }
 
-// -------------------------------------------------------
-
 size_t GetHitsSize() {
 	return sHandle->textTotalSize + sHandle->profTotalSize + sHandle->dirTotalSize + sHandle->totalFacet * sizeof(SHHITS) + sizeof(SHGHITS);
 
 }
-
-// -------------------------------------------------------
 
 void ResetTmpCounters() {
 	SetState(NULL, "Resetting local cache...", false, true);
@@ -744,8 +719,6 @@ void ResetTmpCounters() {
 
 }
 
-// -------------------------------------------------------
-
 void ResetSimulation() {
 	sHandle->lastHit = NULL;
 	sHandle->totalDesorbed = 0;
@@ -753,8 +726,6 @@ void ResetSimulation() {
 	if (sHandle->acDensity) memset(sHandle->acDensity, 0, sHandle->nbAC * sizeof(ACFLOAT));
 
 }
-
-// -------------------------------------------------------
 
 bool StartSimulation(size_t mode) {
 
@@ -778,8 +749,6 @@ bool StartSimulation(size_t mode) {
 	return false;
 }
 
-// -------------------------------------------------------
-
 void RecordHit(const int &type) {
 	if (sHandle->hitCacheSize < HITCACHESIZE) {
 		sHandle->hitCache[sHandle->hitCacheSize].pos = sHandle->pPos;
@@ -799,8 +768,6 @@ void RecordLeakPos() {
 		sHandle->leakCacheSize++;
 	}
 }
-
-// -------------------------------------------------------
 
 bool SimulationRun() {
 
@@ -836,7 +803,6 @@ bool SimulationRun() {
 		break;
 	}
 
-
 	t1 = GetTick();
 	sHandle->stepPerSec = (double)(nbStep) / (t1 - t0);
 #ifdef _DEBUG
@@ -846,8 +812,6 @@ bool SimulationRun() {
 	return !goOn;
 
 }
-
-// -------------------------------------------------------
 
 double GetTick() {
 
@@ -864,7 +828,6 @@ double GetTick() {
 
 	}
 	else {
-
 
 		return (double)((GetTickCount() - tickStart) / 1000.0);
 

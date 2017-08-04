@@ -169,7 +169,7 @@ void Intersect3Planes::ProcessMessage(GLComponent *src,int message) {
 	int facetNum;
 
 	switch(message) {
-		// -------------------------------------------------------------
+		
 	case MSG_TOGGLE:
 		UpdateToggle(src);
 		break;

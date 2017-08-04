@@ -130,7 +130,6 @@ typedef struct {
 
   llong totalDesorbed;           // Total number of desorptions (for this process)
 
-
   std::vector<std::vector<std::pair<double,double>>> CDFs; //cumulative distribution function for each temperature
   std::vector<std::vector<std::pair<double,double>>> IDs; //integrated distribution function for each time-dependent desorption type
   std::vector<double> temperatures; //keeping track of all temperatures that have a CDF already generated
@@ -234,9 +233,6 @@ extern SIMULATION *sHandle;
 
 // -- Macros ---------------------------------------------------
 
-
-
-
 // -- Methods ---------------------------------------------------
 
 void RecordHitOnTexture(FACET *f, double time, bool countHit, double velocity_factor, double ortSpeedFactor);
@@ -288,7 +284,6 @@ double GetStickingAt(FACET *src,double time);
 double GetOpacityAt(FACET *src,double time);
 void   IncreaseFacetCounter(FACET *f, double time, size_t hit,size_t desorb, size_t absorb, double sum_1_per_v, double sum_v_ort);
 void   TreatMovingFacet();
-
 
 //Static variables shared between IntersectAABB and IntersectAABB_shared routines, declared here
 // Minimum number of facet inside a BB

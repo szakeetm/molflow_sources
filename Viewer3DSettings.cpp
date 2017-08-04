@@ -33,8 +33,6 @@
 #include "SynRad.h"
 #endif
 
-
-
 #ifdef MOLFLOW
 extern MolFlow *mApp;
 #endif
@@ -42,7 +40,6 @@ extern MolFlow *mApp;
 #ifdef SYNRAD
 extern SynRad*mApp;
 #endif
-
 
 Viewer3DSettings::Viewer3DSettings():GLWindow() {
 
@@ -152,16 +149,13 @@ Viewer3DSettings::Viewer3DSettings():GLWindow() {
   dirNormeText->SetBounds(100,365,100,18);
   Add(dirNormeText);
 
-
   dirNormalizeToggle = new GLToggle(0,"Normalize");
   dirNormalizeToggle->SetBounds(10,390,100,18);
   Add(dirNormalizeToggle);
 
-
   dirCenterToggle = new GLToggle(0,"Center");
   dirCenterToggle->SetBounds(110,390,90,18);
   Add(dirCenterToggle);
-
 
   applyButton = new GLButton(0,"Apply");
   applyButton->SetBounds(wD-170,hD-43,80,19);
@@ -203,7 +197,6 @@ void Viewer3DSettings::Refresh(Geometry *s,GeometryViewer *v) {
   bigDots->SetState(viewer->bigDots);
   dirShowdirToggle->SetState(viewer->showDir);
 
-
   sprintf(tmp,"%g",viewer->transStep);
   traStepText->SetText(tmp);
   sprintf(tmp,"%g",viewer->angleStep);
@@ -212,7 +205,6 @@ void Viewer3DSettings::Refresh(Geometry *s,GeometryViewer *v) {
   dispNumHits->SetText(tmp);
   sprintf(tmp,"%g",(double) viewer->dispNumLeaks);
   dispNumLeaks->SetText(tmp);
-
 
   sprintf(tmp,"Viewer #%d",viewer->GetId()+1);
   panel->SetTitle(tmp);

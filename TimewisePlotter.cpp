@@ -39,8 +39,6 @@ GNU General Public License for more details.
 #include "SynRad.h"
 #endif
 
-
-
 #ifdef MOLFLOW
 extern MolFlow *mApp;
 #endif
@@ -223,7 +221,6 @@ void TimewisePlotter::Update(float appTime, bool force) {
 
 }
 
-
 void TimewisePlotter::refreshViews() {
 
 	// Lock during update
@@ -331,13 +328,11 @@ void TimewisePlotter::refreshViews() {
 		}
 		v->CommitChange();
 
-
 	}
 
 	worker->ReleaseHits();
 
 }
-
 
 void TimewisePlotter::addView(int facet) {
 
@@ -358,8 +353,6 @@ void TimewisePlotter::addView(int facet) {
 		nbView++;
 	}
 
-
-
 	for (size_t index : displayedMoments) {
 		if (nbView < 49) {
 			GLDataView *v = new GLDataView();
@@ -374,8 +367,6 @@ void TimewisePlotter::addView(int facet) {
 			nbView++;
 		}
 	}
-
-
 
 }
 

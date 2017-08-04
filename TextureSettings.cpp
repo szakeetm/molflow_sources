@@ -113,7 +113,7 @@ TextureSettings::TextureSettings():GLWindow() {
 	texCMaxText->SetBounds(420,65,70,19);
 	Add(texCMaxText);
 
-	// ---------------------------------------------------
+	
 
 	GLTitledPanel *panel3 = new GLTitledPanel("Gradient");
 	panel3->SetBounds(5,102,490,65);
@@ -145,8 +145,6 @@ TextureSettings::TextureSettings():GLWindow() {
 
 }
 
-// --------------------------------------------------------------------
-
 void TextureSettings::UpdateSize() {
 
 	size_t swap = 0;
@@ -160,8 +158,6 @@ void TextureSettings::UpdateSize() {
 	swapText->SetText(FormatMemory(swap));
 
 }
-
-// --------------------------------------------------------------------
 
 void TextureSettings::Update() {
 
@@ -234,8 +230,6 @@ void TextureSettings::Display(Worker *w,GeometryViewer **v) {
 	sprintf(tmp, "%g", geom->texture_limits[geom->textureMode].manual.max.all);
 	texMaxText->SetText(tmp);
 }
-
-// --------------------------------------------------------------------
 
 void TextureSettings::ProcessMessage(GLComponent *src,int message) {
 

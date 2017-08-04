@@ -16,8 +16,6 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 */
 
-
-
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,9 +27,7 @@ GNU General Public License for more details.
 
 extern SIMULATION *sHandle;
 
-// -------------------------------------------------------------
 // Compute area of all the desorption facet
-// -------------------------------------------------------------
 
 void CalcTotalOutgassing() {
 	int i, j, k;
@@ -56,12 +52,6 @@ void CalcTotalOutgassing() {
 	}
 
 }
-
-
-
-
-
-// -------------------------------------------------------
 
 void PolarToCartesian(FACET *iFacet, double theta, double phi, bool reverse) {
 
@@ -110,8 +100,6 @@ void PolarToCartesian(FACET *iFacet, double theta, double phi, bool reverse) {
 
 }
 
-// -------------------------------------------------------
-
 void CartesianToPolar(FACET *iFacet, double *theta, double *phi) {
 
 	// Get polar coordinates of the incoming particule direction in the (U,V,N) facet space.
@@ -137,8 +125,6 @@ void CartesianToPolar(FACET *iFacet, double *theta, double *phi) {
 	*theta = acos(n);
 	*phi = atan2(v, u); // -PI..PI
 }
-
-// -------------------------------------------------------
 
 void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 
@@ -272,7 +258,6 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 					}
 				}
 
-
 				if (f->sh.countDirection) {
 					for (int m = 0; m < (1 + nbMoments); m++) {
 						VHIT *shDir = (VHIT *)(buffer + (f->sh.hitOffset + facetHitsSize + f->profileSize*(1 + nbMoments) + f->textureSize*(1 + nbMoments) + f->directionSize*m));
@@ -322,9 +307,7 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 
 }
 
-// -------------------------------------------------------------
 // Compute particle teleport
-// -------------------------------------------------------------
 
 void PerformTeleport(FACET *iFacet) {
 
@@ -421,9 +404,7 @@ void PerformTeleport(FACET *iFacet) {
 	destination->sh.N.x, destination->sh.N.y, destination->sh.N.z));*/
 }
 
-// -------------------------------------------------------------
 // Perform nbStep simulation steps (a step is a bounce)
-// -------------------------------------------------------------
 
 bool SimulationMCStep(int nbStep) {
 
@@ -501,10 +482,8 @@ bool SimulationMCStep(int nbStep) {
 	return true;
 }
 
-// -------------------------------------------------------------
 // Launch a ray from a source facet. The ray 
 // direction is chosen according to the desorption type.
-// -------------------------------------------------------------
 
 bool StartFromSource() {
 	bool found = false;
@@ -604,7 +583,6 @@ bool StartFromSource() {
 	//sHandle->temperature = src->sh.temperature; //Thermalize particle
 
 	found = false; //Starting point within facet
-
 
 	// Choose a starting point
 	while (!found && nbTry < 1000) {
@@ -921,7 +899,6 @@ double Anglemap::GeneratePhiFromAngleMap(const int & thetaLowerIndex, const doub
 		}
 		else {
 
-
 			//2nd degree interpolation
 			// y(x) = ax^2 + bx + c
 			// c: CDF value at lower index
@@ -1084,7 +1061,6 @@ void PerformBounce(FACET *iFacet) {
 		sHandle->flightTimeCurrentParticle += -log(rnd()) / (A*iFacet->sh.sojournFreq);
 	}
 	//sHandle->temperature = iFacet->sh.temperature; //Thermalize particle
-
 
 	double reflTypeRnd = rnd();
 	if (reflTypeRnd < iFacet->sh.reflection.diffusePart)

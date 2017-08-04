@@ -3,7 +3,6 @@ File:        Movement.cpp
 Description: Define moving parts
 Program:     MolFlow
 
-
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2 of the License, or
@@ -221,7 +220,7 @@ Movement::Movement(Geometry *g,Worker *w):GLWindow() {
 void Movement::ProcessMessage(GLComponent *src,int message) {
 
 	switch(message) {
-		// -------------------------------------------------------------
+		
 	case MSG_TOGGLE:
 		UpdateToggle(src);
 		break;

@@ -52,8 +52,6 @@ static const int   plWidth[] = { 60,40,70,70,335 };
 static const char *plName[] = { "#","PID","Mem Usage","Mem Peak",/*"CPU",*/"Status" };
 static const int   plAligns[] = { ALIGN_LEFT,ALIGN_LEFT,ALIGN_LEFT,ALIGN_LEFT,ALIGN_LEFT };
 
-// --------------------------------------------------------------------
-
 GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 
 	worker = w;
@@ -141,7 +139,6 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	recalcButton->SetBounds(460, 123, 100, 19);
 	gasPanel->Add(recalcButton);
 
-
 	applyButton = new GLButton(0, "Apply above settings");
 	applyButton->SetBounds(wD / 2 - 65, 210, 130, 19);
 	Add(applyButton);
@@ -153,7 +150,6 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	GLTitledPanel *panel3 = new GLTitledPanel("Process control");
 	panel3->SetBounds(5, 259, wD - 10, hD - 285);
 	Add(panel3);
-
 
 	processList = new GLList(0);
 	processList->SetHScrollVisible(true);
@@ -188,9 +184,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	maxButton->SetBounds(wD - 195, hD - 51, 180, 19);
 	panel3->Add(maxButton);
 
-	// ---------------------------------------------------
-
-
+	
 
 	// Center dialog
 	int wS, hS;
@@ -205,9 +199,6 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	//for (size_t i = 0; i < MAX_PROCESS; i++) lastCPUTime[i] = -1.0f;
 	//memset(lastCPULoad, 0, MAX_PROCESS*sizeof(float));
 }
-
-
-// --------------------------------------------------------------------
 
 void GlobalSettings::Update() {
 
@@ -233,8 +224,6 @@ void GlobalSettings::Update() {
 	sprintf(tmp, "%zd", nb);
 	nbProcText->SetText(tmp);
 }
-
-// ----------------------------------------------------------------
 
 void GlobalSettings::SMPUpdate() {
 	int time = SDL_GetTicks();
@@ -314,10 +303,8 @@ void GlobalSettings::SMPUpdate() {
 	}
 
 }
-// ----------------------------------------------------------------
 
 void GlobalSettings::RestartProc() {
-
 
 	int nbProc;
 	if (sscanf(nbProcText->GetText(), "%d", &nbProc) == 0) {
@@ -346,7 +333,6 @@ void GlobalSettings::RestartProc() {
 	}
 
 }
-// --------------------------------------------------------------------
 
 void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 
@@ -426,8 +412,6 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 					if (worker->enableDecay) worker->halfLife = hl;
 				}
 			}
-
-
 
 			double autosavefreq;
 			if (!autoSaveText->GetNumber(&autosavefreq) || !(autosavefreq > 0.0)) {

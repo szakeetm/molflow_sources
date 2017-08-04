@@ -64,7 +64,6 @@ void GeometryViewer::SetBounds(int x, int y, int width, int height) {
 
 		toolBack->SetBounds(posX + 1, posY + height - DOWN_MARGIN, width - 2, DOWN_MARGIN - 1);
 
-
 		//debugLabel->SetBounds(posX + 10, posY + 35, 90, 19); //debug
 
 		SetCurrentView(view);
@@ -79,8 +78,6 @@ void GeometryViewer::DrawLinesAndHits() {
 		glDisable(GL_TEXTURE_2D);
 		glDisable(GL_LIGHTING);
 		glDisable(GL_CULL_FACE);
-
-
 
 		size_t count = 0;
 		while (count < Min(dispNumHits, mApp->worker.hitCacheSize) && mApp->worker.hitCache[count].type != 0) {

@@ -48,8 +48,6 @@ extern MolFlow *mApp;
 extern SynRad*mApp;
 #endif
 
-//-----------------------------------------------------------------------------
-
 FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 
 	worker = w;
@@ -386,9 +384,6 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	RestoreDeviceObjects();
 }
 
-//-----------------------------------------------------------------------------
-
-
 void FacetAdvParams::UpdateSize() {
 
 	char tmp[64];
@@ -433,8 +428,6 @@ void FacetAdvParams::UpdateSize() {
 	}
 
 }
-
-//-----------------------------------------------------------------------------
 
 void FacetAdvParams::UpdateSizeForRatio() {
 	if (!geom->IsLoaded()) return;
@@ -497,8 +490,6 @@ void FacetAdvParams::UpdateSizeForRatio() {
 	cellText->SetText(tmp);
 
 }
-
-//-----------------------------------------------------------------------------
 
 void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 
@@ -884,7 +875,6 @@ void FacetAdvParams::Reposition(int wD, int hD) {
 	SetBounds(facetX - wD - 10, Min(facetY + 20, 115), wD, hD); //If below 115, the bottom can be out of screen
 }
 
-
 bool FacetAdvParams::ApplyTexture(bool force) {
 	bool boundMap = true; // boundaryBtn->GetState();
 	double ratio = 0.0;
@@ -1013,7 +1003,6 @@ bool FacetAdvParams::Apply() {
 			return false;
 		}
 	}
-
 
 	// Super structure destination (link)
 	int superDest;
@@ -1380,10 +1369,8 @@ bool FacetAdvParams::Apply() {
 	return ApplyTexture(); //Finally, apply textures
 }
 
-
 void FacetAdvParams::ApplyDrawSettings() {
 	//Apply view settings without stopping the simulation
-
 
 	double nbSelected = (double)geom->GetNbSelectedFacets();
 	double nbPerformed = 0.0;
@@ -1403,7 +1390,6 @@ void FacetAdvParams::ApplyDrawSettings() {
 	}
 	geom->BuildGLList(); //Re-render facets
 }
-
 
 void FacetAdvParams::UpdateToggle(GLComponent *src) {
 
@@ -1466,13 +1452,11 @@ void FacetAdvParams::UpdateToggle(GLComponent *src) {
 	//UpdateSizeForRatio();
 }
 
-
-
 void FacetAdvParams::ProcessMessage(GLComponent *src, int message) {
 
 	switch (message) {
 
-		// -------------------------------------------------------------
+		
 	case MSG_BUTTON:
 		if (src == quickApply) {
 
@@ -1514,7 +1498,7 @@ void FacetAdvParams::ProcessMessage(GLComponent *src, int message) {
 		
 		break;
 
-		// -------------------------------------------------------------
+		
 	case MSG_TEXT_UPD:
 		mApp->facetApplyBtn->SetEnabled(true);
 		if (src == resolutionText) {
@@ -1561,7 +1545,7 @@ void FacetAdvParams::ProcessMessage(GLComponent *src, int message) {
 
 		break;
 
-		// -------------------------------------------------------------
+		
 	case MSG_TOGGLE:
 		UpdateToggle(src);
 		mApp->facetApplyBtn->SetEnabled(true);

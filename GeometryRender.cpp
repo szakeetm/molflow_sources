@@ -33,8 +33,6 @@
 #include "GLApp/GLWindowManager.h"
 #include "GLApp/GLMessageBox.h"
 
-
-
 #ifdef MOLFLOW
 extern MolFlow *mApp;
 #endif
@@ -63,7 +61,6 @@ void MolflowGeometry::BuildFacetTextures(BYTE *hits, bool renderRegularTexture, 
 	double min, max;
 
 	if (renderRegularTexture) {
-
 
 		switch (shGHit->mode) {
 
@@ -164,8 +161,4 @@ void MolflowGeometry::BuildFacetTextures(BYTE *hits, bool renderRegularTexture, 
 	prg->SetVisible(false);
 	SAFE_DELETE(prg);
 }
-
-
-
-
 

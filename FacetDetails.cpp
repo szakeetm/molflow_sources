@@ -85,9 +85,6 @@ static const char *ynStr[] = {
   "Yes"
 };
 
-
-// -----------------------------------------------------------------
-
 FacetDetails::FacetDetails():GLWindow() {
 
   int wD = 502;
@@ -208,8 +205,6 @@ FacetDetails::FacetDetails():GLWindow() {
 
 }
 
-// -----------------------------------------------------------------
-
 void FacetDetails::PlaceComponents() {
 
   // Show toggle panel
@@ -233,16 +228,12 @@ void FacetDetails::PlaceComponents() {
 
 }
 
-// -----------------------------------------------------------------
-
 void FacetDetails::SetBounds(int x,int y,int w,int h) {
 
   GLWindow::SetBounds(x,y,w,h);
   PlaceComponents();
 
 }
-
-// -----------------------------------------------------------------
 
 char *FacetDetails::GetCountStr(Facet *f) {
   static char ret[128];
@@ -253,8 +244,6 @@ char *FacetDetails::GetCountStr(Facet *f) {
   if(f->sh.countTrans) if(strlen(ret)==0) strcat(ret,"TRANS"); else strcat(ret,"+TRANS");
   return ret;
 }
-
-// -----------------------------------------------------------------
 
 char *FacetDetails::FormatCell(size_t idx,Facet *f,size_t mode) {
   static char ret[256];
@@ -375,8 +364,6 @@ char *FacetDetails::FormatCell(size_t idx,Facet *f,size_t mode) {
 
 }
 
-// -----------------------------------------------------------------
-
 void FacetDetails::UpdateTable() {
 
   Geometry *geom = worker->GetGeometry();
@@ -422,8 +409,6 @@ void FacetDetails::UpdateTable() {
 	}
 }
 
-// -----------------------------------------------------------------
-
 void FacetDetails::Update() {
 
   if(!worker) return;
@@ -441,8 +426,6 @@ void FacetDetails::Update() {
 
 }
 
-// -----------------------------------------------------------------
-
 void FacetDetails::Display(Worker *w) {
 
   worker = w;
@@ -450,8 +433,6 @@ void FacetDetails::Display(Worker *w) {
   Update();
 
 }
-
-// -----------------------------------------------------------------
 
 void FacetDetails::ProcessMessage(GLComponent *src,int message) {
 

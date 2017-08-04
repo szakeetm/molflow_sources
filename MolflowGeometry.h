@@ -2,7 +2,6 @@
 
 #include "Geometry.h"
 
-
 #define TEXTURE_MODE_PRESSURE 0
 #define TEXTURE_MODE_IMPINGEMENT 1
 #define TEXTURE_MODE_DENSITY 2

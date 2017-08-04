@@ -3,7 +3,6 @@
   Description: Parameter Editor
   Program:     MolFlow
 
-
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation; either version 2 of the License, or
@@ -150,7 +149,6 @@ ParameterEditor::ParameterEditor(Worker *w):GLWindow() {
   logYtoggle->SetBounds(cursorX, cursorY, toggleWidth, compHeight);
   Add(logYtoggle);
 
-
   cursorX = wD-2*buttonWidth-2*hSpace;
   plotButton = new GLButton(0, "Plot");
   plotButton->SetBounds(cursorX, cursorY, buttonWidth, compHeight);
@@ -177,8 +175,6 @@ ParameterEditor::ParameterEditor(Worker *w):GLWindow() {
   RestoreDeviceObjects();
   
 }
-
-
 
 void ParameterEditor::ProcessMessage(GLComponent *src,int message) {
   switch(message) {

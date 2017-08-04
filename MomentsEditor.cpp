@@ -3,7 +3,6 @@
   Description: Moments Editor
   Program:     MolFlow
 
-
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation; either version 2 of the License, or
@@ -72,7 +71,6 @@ MomentsEditor::MomentsEditor(Worker *w) :GLWindow() {
 	/*GLLabel *startLabel = new GLLabel("Desorption starts at:                   s");
 	startLabel->SetBounds(15,275,170,25);
 	Add(startLabel);*/
-
 
 	//sprintf(tmp,"%g",work->desorptionStartTime);
   /*  desStartText = new GLTextField(0,"");

@@ -13,7 +13,6 @@
 #define REF_MIRROR  1   // Mirror
 #define REF_UNIFORM 2   // Uniform (for testing)
 
-
 // Profile type
 #define REC_NONE       0  // No recording
 #define REC_PRESSUREU  1  // Pressure and density profile (U direction)
@@ -21,7 +20,6 @@
 #define REC_ANGULAR    3  // Angular profile
 #define REC_VELOCITY   4 //Velocity distribution
 #define REC_ORT_VELOCITY 5 //Orthogonal velocity component
-
 
 // Hit type
 #define HIT_DES   1

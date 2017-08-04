@@ -36,13 +36,9 @@ extern int GetLocalState();
 //extern void GetState(int sleepTime);
 extern void GetState();
 
-// -------------------------------------------------------
 // Global handles
-// -------------------------------------------------------
 
 extern SIMULATION *sHandle;
-
-// -------------------------------------------------------
 
 // Loop over all opaque element
 #define LOOP(_k,_f,_i,_j,_idx)                                      \
@@ -55,9 +51,6 @@ for(_k=0;_k<sHandle->str[0].nbFacet;_k++) {                         \
   _idx++;}}                                                                \
 if((_f)->sh.opacity!=1.0) _idx+=((_f)->sh.texWidth*(_f)->sh.texHeight); }
 
-
-// -------------------------------------------------------
-
 void GetCenter(FACET *f,SHELEM *mesh, size_t idx,Vector3d *c) {
 
   c->x = f->sh.O.x + f->sh.U.x*mesh[idx].uCenter + f->sh.V.x*mesh[idx].vCenter;
@@ -65,8 +58,6 @@ void GetCenter(FACET *f,SHELEM *mesh, size_t idx,Vector3d *c) {
   c->z = f->sh.O.z + f->sh.U.z*mesh[idx].uCenter + f->sh.V.z*mesh[idx].vCenter;
 
 }
-
-// -------------------------------------------------------
 
 void ClearACMatrix() {
 
@@ -90,8 +81,6 @@ void ClearACMatrix() {
 #endif
 
 }
-
-// -------------------------------------------------------
 
 bool ComputeACMatrix(SHELEM *mesh) {
 
@@ -257,7 +246,6 @@ bool ComputeACMatrix(SHELEM *mesh) {
 
   END_LOOP(f1,idx1); // End loop k1
 
-
   // Avoid divergence by renormalizing lines
 
   for(i1=0;i1<sHandle->nbAC;i1++) {
@@ -416,7 +404,6 @@ void UpdateACHits(Dataport *dpHit,int prIdx,DWORD timeout) {
     fHits->density.absorbed = sumAbs;
 
   }
-
 
   ReleaseDataport(dpHit);
 

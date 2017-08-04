@@ -40,8 +40,6 @@ GNU General Public License for more details.
 #include "SynRad.h"
 #endif
 
-
-
 #ifdef MOLFLOW
 extern MolFlow *mApp;
 #endif
@@ -460,7 +458,6 @@ void PressureEvolution::refreshViews() {
 	worker->ReleaseHits();
 
 }
-
 
 void PressureEvolution::addView(int facet) {
 

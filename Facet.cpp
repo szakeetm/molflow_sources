@@ -37,8 +37,6 @@ using namespace pugi;
 // Colormap stuff
 extern COLORREF rainbowCol[]; //defined in GLGradient.cpp
 
-
-
 #ifdef MOLFLOW
 extern MolFlow *mApp;
 #endif
@@ -48,8 +46,6 @@ extern SynRad*mApp;
 #endif
 static int colorMap[65536];
 static bool colorInited = false;
-
-// -----------------------------------------------------------
 
 Facet::Facet(size_t nbIndex) {
 
@@ -188,8 +184,6 @@ Facet::Facet(size_t nbIndex) {
 
 }
 
-
-
 Facet::~Facet() {
 	SAFE_FREE(indices);
 	SAFE_FREE(vertices2);
@@ -205,7 +199,6 @@ Facet::~Facet() {
 	SAFE_FREE(meshvector);
 	SAFE_FREE(outgassingMap);
 }
-
 
 void Facet::LoadGEO(FileReader *file, int version, size_t nbVertex) {
 
@@ -248,7 +241,6 @@ void Facet::LoadGEO(FileReader *file, int version, size_t nbVertex) {
 	file->ReadKeyword("profileType"); file->ReadKeyword(":");
 	sh.profileType = file->ReadInt();
 
-
 	file->ReadKeyword("superDest"); file->ReadKeyword(":");
 	sh.superDest = file->ReadInt();
 	file->ReadKeyword("superIdx"); file->ReadKeyword(":");
@@ -265,29 +257,23 @@ void Facet::LoadGEO(FileReader *file, int version, size_t nbVertex) {
 		file->ReadKeyword("outgassing"); file->ReadKeyword(":");
 		sh.outgassing = file->ReadDouble()*0.100; //mbar*l/s -> Pa*m3/s
 
-
 	}
 	file->ReadKeyword("texDimX"); file->ReadKeyword(":");
 	sh.texWidthD = file->ReadDouble();
 
-
 	file->ReadKeyword("texDimY"); file->ReadKeyword(":");
 	sh.texHeightD = file->ReadDouble();
-
 
 	file->ReadKeyword("countDes"); file->ReadKeyword(":");
 	sh.countDes = file->ReadInt();
 	file->ReadKeyword("countAbs"); file->ReadKeyword(":");
 	sh.countAbs = file->ReadInt();
 
-
 	file->ReadKeyword("countRefl"); file->ReadKeyword(":");
 	sh.countRefl = file->ReadInt();
 
-
 	file->ReadKeyword("countTrans"); file->ReadKeyword(":");
 	sh.countTrans = file->ReadInt();
-
 
 	file->ReadKeyword("acMode"); file->ReadKeyword(":");
 	sh.countACD = file->ReadInt();
@@ -306,7 +292,6 @@ void Facet::LoadGEO(FileReader *file, int version, size_t nbVertex) {
 		sh.temperature = file->ReadDouble();
 		file->ReadKeyword("countDirection"); file->ReadKeyword(":");
 		sh.countDirection = file->ReadInt();
-
 
 	}
 	if (version >= 4) {
@@ -475,7 +460,6 @@ void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, size_t vert
 	UpdateFlags();
 }
 
-
 void Facet::LoadSYN(FileReader *file, int version, size_t nbVertex) {
 
 	file->ReadKeyword("indices"); file->ReadKeyword(":");
@@ -574,9 +558,6 @@ void Facet::LoadSYN(FileReader *file, int version, size_t nbVertex) {
 
 }
 
-
-// -----------------------------------------------------------
-
 void Facet::LoadTXT(FileReader *file) {
 
 	// Opacity parameters descripton (TXT format)
@@ -595,7 +576,6 @@ void Facet::LoadTXT(FileReader *file) {
 	counterCache.hit.nbHit = (llong)(file->ReadDouble() + 0.5);
 	counterCache.hit.nbAbsorbed = (llong)(file->ReadDouble() + 0.5);
 	sh.desorbType = (int)(file->ReadDouble() + 0.5);
-
 
 	// Convert opacity
 	sh.profileType = REC_NONE;
@@ -668,7 +648,6 @@ void Facet::LoadTXT(FileReader *file) {
 
 }
 
-
 void Facet::SaveTXT(FileWriter *file) {
 
 	if (!sh.superDest)
@@ -706,8 +685,6 @@ void Facet::SaveTXT(FileWriter *file) {
 	file->Write(0.0, "\n"); // Unused
 }
 
-
-
 void Facet::SaveGEO(FileWriter *file, int idx) {
 
 	char tmp[256];
@@ -743,11 +720,9 @@ void Facet::SaveGEO(FileWriter *file, int idx) {
 	file->Write("  is2sided:"); file->Write(sh.is2sided, "\n");
 	file->Write("  mesh:"); file->Write((cellPropertiesIds != NULL), "\n");
 
-
 	file->Write("  outgassing:"); file->Write(sh.outgassing*10.00, "\n"); //Pa*m3/s -> mbar*l/s for compatibility with old versions
 	file->Write("  texDimX:"); file->Write(sh.texWidthD, "\n");
 	file->Write("  texDimY:"); file->Write(sh.texHeightD, "\n");
-
 
 	file->Write("  countDes:"); file->Write(sh.countDes, "\n");
 	file->Write("  countAbs:"); file->Write(sh.countAbs, "\n");
@@ -775,23 +750,12 @@ void Facet::SaveGEO(FileWriter *file, int idx) {
 	file->Write("}\n");
 }
 
-
-// -----------------------------------------------------------
-
-
-
-// -----------------------------------------------------------
-
 void Facet::UpdateFlags() {
 
 	sh.isProfile = (sh.profileType != REC_NONE);
 	//sh.isOpaque = (sh.opacity != 0.0);
 	sh.isTextured = ((texDimW*texDimH) > 0);
 }
-
-
-
-
 
 size_t Facet::GetGeometrySize() {
 
@@ -807,8 +771,6 @@ size_t Facet::GetGeometrySize() {
 
 }
 
-// -----------------------------------------------------------
-
 size_t Facet::GetHitsSize(size_t nbMoments) {
 
 	return   (1 + nbMoments)*(
@@ -820,7 +782,6 @@ size_t Facet::GetHitsSize(size_t nbMoments) {
 		);
 
 }
-
 
 size_t Facet::GetTexRamSize(size_t nbMoments) {
 	//Values
@@ -899,7 +860,6 @@ void Facet::Sum_Neighbor(const int& i, const int& j, const double& weight, AHIT 
 	}
 }
 
-// -----------------------------------------------------------
 #define LOG10(x) log10f((float)x)
 
 void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double max, bool useColorMap,
@@ -914,9 +874,9 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 	glBindTexture(GL_TEXTURE_2D, glTex);
 	if (useColorMap) {
 
-		// -------------------------------------------------------
+		
 		// 16 Bit rainbow colormap
-		// -------------------------------------------------------
+		
 
 		// Scale
 		if (min < max) {
@@ -993,7 +953,6 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 		}
 		*/
 
-
 		GLint width, height, format;
 		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
 		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
@@ -1031,10 +990,9 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 	}
 	else {
 
-
-		// -------------------------------------------------------
+		
 		// 8 bit Luminance
-		// -------------------------------------------------------
+		
 		if (min < max) {
 			if (doLog) {
 				if (min < 1e-20) min = 1e-20;
@@ -1107,7 +1065,6 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 		}
 		}*/
 
-
 		GLint width, height, format;
 		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
 		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
@@ -1170,8 +1127,6 @@ bool Facet::IsCoplanarAndEqual(Facet *f, double threshold) {
 	//TODO: Add other properties!
 
 }
-
-// -----------------------------------------------------------
 
 void Facet::CopyFacetProperties(Facet *f, bool copyMesh) {
 
@@ -1239,10 +1194,6 @@ void Facet::CopyFacetProperties(Facet *f, bool copyMesh) {
 
 }
 
-// -----------------------------------------------------------
-
-
-
 void Facet::ConvertOldDesorbType() {
 	if (sh.desorbType >= 3 && sh.desorbType <= 5) {
 		sh.desorbTypeN = (double)(sh.desorbType - 1);
@@ -1298,10 +1249,8 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 	e = f.append_child("Teleport");
 	e.append_attribute("target") = sh.teleportDest;
 
-
 	e = f.append_child("Motion");
 	e.append_attribute("isMoving") = (int)sh.isMoving; //backward compatibility: 0 or 1
-
 
 	e = f.append_child("Recordings");
 	xml_node t = e.append_child("Profile");
@@ -1350,7 +1299,6 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 
 	e.append_attribute("textureVisible") = (int)textureVisible; //backward compatibility: 0 or 1
 	e.append_attribute("volumeVisible") = (int)volumeVisible; //backward compatibility: 0 or 1
-
 
 	f.append_child("Indices").append_attribute("nb") = sh.nbIndex;
 	for (size_t i = 0; i < sh.nbIndex; i++) {

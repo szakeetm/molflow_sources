@@ -24,7 +24,6 @@ class GLLabel;
 class GLToggle;
 class GLTitledPanel;
 
-
 class Worker;
 class GLList;
 

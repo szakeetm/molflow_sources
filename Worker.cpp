@@ -63,7 +63,6 @@ extern MolFlow *mApp;
 extern SynRad*mApp;
 #endif
 
-
 Worker::Worker() {
 	
 	//Molflow specific
@@ -308,7 +307,6 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, bool askConfirm, bool
 
 	SAFE_DELETE(f);
 
-
 	//File written, compress it if the user wanted to
 	if (ok && isGEO7Z) {
 
@@ -408,7 +406,6 @@ void Worker::ExportAngleMaps(std::vector<size_t> facetList, std::string fileName
 /*void Worker::ImportDesorption(char *fileName) {
 	//if (needsReload) RealReload();
 
-
 	// Read a file
 	FileReader *f=new FileReader(fileName);
 	geom->ImportDesorption(f,dpHit);
@@ -500,7 +497,6 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 			SAFE_DELETE(progressDlg);
 			throw e;
 		}
-
 
 	}
 	else if (ext == "stl" || ext == "STL") {
@@ -622,7 +618,6 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 			SAFE_DELETE(progressDlg);
 			throw e;
 		}
-
 
 	}
 	else if (ext=="geo" || ext=="geo7z") {
@@ -746,7 +741,6 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 				geom->LoadXML_geom(loadXML, this, progressDlg);
 				geom->UpdateName(fileName);
 
-
 				progressDlg->SetMessage("Reloading worker with new geometry...");
 				try {
 					RealReload(); //To create the dpHit dataport for the loading of textures, profiles, etc...
@@ -851,9 +845,6 @@ void Worker::InnerStop(float appTime) {
 
 }
 
-
-// -------------------------------------------------------------
-
 void Worker::OneStep() {
 
 	if (nbProcess == 0)
@@ -866,8 +857,6 @@ void Worker::OneStep() {
 
 }
 
-// -------------------------------------------------------------
-
 void Worker::StepAC(float appTime) {
 
 	try {
@@ -879,8 +868,6 @@ void Worker::StepAC(float appTime) {
 	}
 
 }
-
-// -------------------------------------------------------------
 
 void Worker::StartStop(float appTime, int mode) {
 
@@ -899,7 +886,6 @@ void Worker::StartStop(float appTime, int mode) {
 		}
 	}
 	else {
-
 
 		// Start
 		try {
@@ -1038,8 +1024,6 @@ void Worker::SendHits(bool skipFacetHits ) {
 	}
 }
 
-// -------------------------------------------------------------
-
 void Worker::ComputeAC(float appTime) {
 	try {
 		if (needsReload) RealReload();
@@ -1142,7 +1126,6 @@ void Worker::RealReload() { //Sharing geometry with workers
 		//GLMessageBox::Display("Failed to create 'hits' dataport: not enough memory.", "Warning (Load)", GLDLG_OK, GLDLG_ICONERROR);
 		//return false;
 
-
 		progressDlg->SetVisible(false);
 		SAFE_DELETE(progressDlg);
 		throw Error("Failed to create 'hits' dataport: out of memory.");
@@ -1169,7 +1152,6 @@ void Worker::RealReload() { //Sharing geometry with workers
 		//GLMessageBox::Display(errMsg, "Warning (Load)", GLDLG_OK, GLDLG_ICONWARNING);
 		//return false;
 
-
 		progressDlg->SetVisible(false);
 		SAFE_DELETE(progressDlg);
 		throw Error(errMsg);
@@ -1183,16 +1165,6 @@ void Worker::RealReload() { //Sharing geometry with workers
 	progressDlg->SetVisible(false);
 	SAFE_DELETE(progressDlg);
 }
-
-// -------------------------------------------------------------
-
-
-
-// -------------------------------------------------------------
-
-
-
-// -------------------------------------------------------------
 
 void Worker::ClearHits(bool noReload) {
 	try {
@@ -1221,7 +1193,6 @@ void Worker::ResetWorkerStats() {
 
 }
 
-
 void Worker::Start() {
 
 	// Check that at least one desortion facet exists
@@ -1246,7 +1217,6 @@ void Worker::Start() {
 	if (!ExecuteAndWait(COMMAND_START, PROCESS_RUN, mode))
 		ThrowSubProcError();
 }
-
 
 /*
 std::string execCMD(char* cmd) {
@@ -1333,8 +1303,6 @@ void Worker::ImportDesorption_SYN(char *fileName, const size_t &source, const do
 		throw Error("ImportDesorption_SYN(): Invalid file extension [Only syn, syn7z]");
 	ext++;
 
-
-
 	// Read a file
 
 	FileReader *f = NULL;
@@ -1371,12 +1339,8 @@ void Worker::ImportDesorption_SYN(char *fileName, const size_t &source, const do
 			CalcTotalOutgassing();
 			SAFE_DELETE(f);
 
-
 		}
 		catch (Error &e) {
-
-
-
 
 			SAFE_DELETE(f);
 			progressDlg->SetVisible(false);
@@ -1554,7 +1518,6 @@ void Worker::PrepareToRun() {
 	
 }
 
-
 int Worker::GetCDFId(double temperature) {
 
 	int i;
@@ -1591,7 +1554,6 @@ void Worker::CalcTotalOutgassing() {
 	totalDesorbedMolecules = finalOutgassingRate_Pa_m3_sec = finalOutgassingRate = 0.0;
 	Geometry *g = GetGeometry();
 
-
 	for (int i = 0; i < g->GetNbFacet(); i++) {
 		Facet *f = g->GetFacet(i);
 		if (f->sh.desorbType != DES_NONE) { //there is a kind of desorption
@@ -1620,7 +1582,6 @@ void Worker::CalcTotalOutgassing() {
 
 }
 
-
 std::vector<std::pair<double, double>> Worker::Generate_CDF(double gasTempKelvins, double gasMassGramsPerMol, size_t size){
 	std::vector<std::pair<double, double>> cdf; cdf.reserve(size);
 	double Kb = 1.38E-23;
@@ -1634,8 +1595,6 @@ std::vector<std::pair<double, double>> Worker::Generate_CDF(double gasTempKelvin
 	double coeff2=sqrt(2.0/PI)/a;
 	double coeff3=1.0/(2.0*pow(a,2));
 
-
-
 	for (size_t i=0;i<size;i++) {
 	double x=(double)i*binSize;
 	cdf.push_back(std::make_pair(x,erf(x*coeff1)-coeff2*x*exp(-pow(x,2)*coeff3)));
@@ -1644,11 +1603,6 @@ std::vector<std::pair<double, double>> Worker::Generate_CDF(double gasTempKelvin
 		double x = (double)i*binSize;
 		double x_square_per_2_a_square = pow(x, 2) / (2 * pow(a, 2));
 		cdf.push_back(std::make_pair(x, 1 - exp(-x_square_per_2_a_square)*(x_square_per_2_a_square + 1)));
-
-
-
-
-
 
 	}
 
@@ -1660,9 +1614,6 @@ std::vector<std::pair<double, double>> Worker::Generate_CDF(double gasTempKelvin
 	double p=(double)i*binSize;
 	//inverseCDF.push_back(std::make_pair(p,InterpolateX(p,cdf,true)));
 	inverseCDF.push_back(std::make_pair(p, InterpolateX(p, cdf, false)));
-
-
-
 
 	}
 	return inverseCDF;
@@ -1725,7 +1676,6 @@ std::vector<std::pair<double, double>> Worker::Generate_ID(int paramId){
 	return ID;
 
 }
-
 
 int Worker::GetParamId(const std::string name) {
 	int foundId = -1;

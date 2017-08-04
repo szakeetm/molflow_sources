@@ -70,7 +70,6 @@ private:
   GLCombo     *normCombo;
   //GLToggle    *showAllMoments;
 
-
   GLButton    *selButton;
   GLButton    *addButton;
   GLButton    *removeButton;

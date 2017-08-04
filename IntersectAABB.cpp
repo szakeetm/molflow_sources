@@ -24,9 +24,7 @@ GNU General Public License for more details.
 #include "Simulation.h"
 #include "Random.h"
 
-// -----------------------------------------------------------
 // AABB tree stuff
-// -----------------------------------------------------------
 
 // Temporary for intersection
 extern  double    intMinLgth;
@@ -53,7 +51,6 @@ bool Intersect(Vector3d *rPos, Vector3d *rDir,  // Source ray (rayDir vector mus
 	double *dist,                   // Distance to collision point
 	FACET **iFact, FACET *last) {    // Collided facet, previous collision
 
-
 	intMinLgth = 1e100;
 	intFound = false;
 	intNbTHits = 0;
@@ -77,7 +74,6 @@ bool Intersect(Vector3d *rPos, Vector3d *rDir,  // Source ray (rayDir vector mus
 
 		FACET *f = *iFacet;
 		*dist = intMinLgth;
-
 
 		//ProfileFacet(f,sHandle->flightTimeCurrentParticle+*dist/100.0/sHandle->velocityCurrentParticle);
 		f->hitted = true;

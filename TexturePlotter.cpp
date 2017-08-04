@@ -35,8 +35,6 @@ GNU General Public License for more details.
 #include "SynRad.h"
 #endif
 
-
-
 #ifdef MOLFLOW
 extern MolFlow *mApp;
 #endif
@@ -47,8 +45,6 @@ extern SynRad*mApp;
 
 static const char *fileFilters = "Text files\0*.txt";
 static const int   nbFilter = sizeof(fileFilters) / (2 * sizeof(char *));
-
-// --------------------------------------------------------------------
 
 TexturePlotter::TexturePlotter() :GLWindow() {
 
@@ -119,8 +115,6 @@ TexturePlotter::TexturePlotter() :GLWindow() {
 
 }
 
-// --------------------------------------------------------------------
-
 void TexturePlotter::PlaceComponents() {
 
 	mapList->SetBounds(5, 5, width - 15, height - 80);
@@ -134,16 +128,12 @@ void TexturePlotter::PlaceComponents() {
 
 }
 
-// -----------------------------------------------------------------
-
 void TexturePlotter::SetBounds(int x, int y, int w, int h) {
 
 	GLWindow::SetBounds(x, y, w, h);
 	PlaceComponents();
 
 }
-
-// --------------------------------------------------------------------
 
 void TexturePlotter::GetSelected() {
 
@@ -164,8 +154,6 @@ void TexturePlotter::GetSelected() {
 
 }
 
-// --------------------------------------------------------------------
-
 void TexturePlotter::Update(float appTime, bool force) {
 
 	if (!IsVisible()) return;
@@ -182,8 +170,6 @@ void TexturePlotter::Update(float appTime, bool force) {
 	}
 
 }
-
-// --------------------------------------------------------------------
 
 void TexturePlotter::UpdateTable() {
 	size_t nbMoments = mApp->worker.moments.size();
@@ -204,7 +190,6 @@ void TexturePlotter::UpdateTable() {
 		size_t h = selFacet->sh.texHeight;
 		mapList->SetSize(w, h);
 		mapList->SetAllColumnAlign(ALIGN_CENTER);
-
 
 		int mode = viewCombo->GetSelectedIndex();
 
@@ -349,7 +334,6 @@ void TexturePlotter::UpdateTable() {
 						if (selFacet->counterCache.hit.nbAbsorbed > 0 || selFacet->counterCache.hit.nbDesorbed > 0) //otherwise save calculation time
 							dCoef *= 1.0 - ((double)selFacet->counterCache.hit.nbAbsorbed + (double)selFacet->counterCache.hit.nbDesorbed) / ((double)selFacet->counterCache.hit.nbHit + (double)selFacet->counterCache.hit.nbDesorbed) / 2.0;
 
-
 					if (shGHit->mode == MC_MODE) dCoef *= worker->GetMoleculesPerTP(worker->displayedMoment);
 					for (size_t i = 0; i < w; i++) {
 						for (size_t j = 0; j < h; j++) {
@@ -411,7 +395,6 @@ void TexturePlotter::UpdateTable() {
 			}
 
 			break; }
-
 
 		case 6: {// Average gas velocity [m/s]
 
@@ -492,8 +475,6 @@ void TexturePlotter::UpdateTable() {
 	if (autoSizeOnUpdate->GetState()) mapList->AutoSizeColumn();
 }
 
-// --------------------------------------------------------------------
-
 void TexturePlotter::Display(Worker *w) {
 
 	worker = w;
@@ -502,15 +483,11 @@ void TexturePlotter::Display(Worker *w) {
 
 }
 
-// --------------------------------------------------------------------
-
 void TexturePlotter::Close() {
 	worker = NULL;
 	if (selFacet) selFacet->UnselectElem();
 	mapList->Clear();
 }
-
-// --------------------------------------------------------------------
 
 void TexturePlotter::SaveFile() {
 
@@ -552,8 +529,6 @@ void TexturePlotter::SaveFile() {
 	}
 
 }
-
-// --------------------------------------------------------------------
 
 void TexturePlotter::ProcessMessage(GLComponent *src, int message) {
 

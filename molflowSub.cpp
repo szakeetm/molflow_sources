@@ -31,9 +31,8 @@
 #include <Process.h> // For _getpid()
 #endif
 
-// -------------------------------------------------
 // Global process variables
-// -------------------------------------------------
+
 #define WAITTIME    100  // Answer in STOP mode
 //#define TIMEOUT     300  // Process kills itself after no heartbeat (seconds)
 
@@ -53,7 +52,6 @@ static char      hitsDpName[32];
 
 bool end = false;
 bool IsProcessRunning(DWORD pid);
-
 
 void GetState() {
   prState = PROCESS_READY;
@@ -82,13 +80,9 @@ void GetState() {
   }
 }
 
-// -------------------------------------------------
-
 int GetLocalState() {
   return prState;
 }
-
-// -------------------------------------------------
 
 void SetState(int state,const char *status,bool changeState, bool changeStatus) {
 
@@ -109,16 +103,12 @@ void SetState(int state,const char *status,bool changeState, bool changeStatus) 
 
 }
 
-// -------------------------------------------------
-
 void SetErrorSub(const char *message) {
 
   printf("Error: %s\n",message);
   SetState(PROCESS_ERROR,message);
 
 }
-
-// -------------------------------------------------
 
 char *GetSimuStatus() {
 
@@ -172,8 +162,6 @@ void SetReady() {
 
 }
 
-// -------------------------------------------------
-
 void SetStatus(char *status) {
 
   if( AccessDataport(dpControl) ) {
@@ -184,8 +172,6 @@ void SetStatus(char *status) {
   }
 
 }
-
-// -------------------------------------------------
 
 void LoadAC() {
 
@@ -235,8 +221,6 @@ void LoadAC() {
 
 }
 
-// -------------------------------------------------
-
 void Load() {
 
   Dataport *loader;
@@ -273,8 +257,6 @@ void Load() {
   printf("Connected to %s (%zd bytes)\n",hitsDpName,hSize);
 
 }
-
-// -------------------------------------------------
 
 int main(int argc,char* argv[])
 {

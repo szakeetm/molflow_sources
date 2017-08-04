@@ -33,8 +33,6 @@ extern MolFlow *mApp;
 //static const char *fileFilters = "Text files\0*.txt";
 //static const int   nbFilter = sizeof(fileFilters) / (2*sizeof(char *));
 
-// --------------------------------------------------------------------
-
 OutgassingMap::OutgassingMap():GLWindow() {
 
   int wD = 600;
@@ -110,8 +108,6 @@ OutgassingMap::OutgassingMap():GLWindow() {
 
 }
 
-// --------------------------------------------------------------------
-
 void OutgassingMap::PlaceComponents() {
 
   mapList->SetBounds(5,5,width-15,height-55);
@@ -126,16 +122,12 @@ void OutgassingMap::PlaceComponents() {
   exponentText->SetBounds(450,height-45,50,19);
 }
 
-// -----------------------------------------------------------------
-
 void OutgassingMap::SetBounds(int x,int y,int w,int h) {
 
   GLWindow::SetBounds(x,y,w,h);
   PlaceComponents();
 
 }
-
-// --------------------------------------------------------------------
 
 void OutgassingMap::GetSelected() {
 
@@ -156,8 +148,6 @@ void OutgassingMap::GetSelected() {
 
 }
 
-// --------------------------------------------------------------------
-
 void OutgassingMap::Update(float appTime,bool force) {
 
   if(!IsVisible()) return;
@@ -174,8 +164,6 @@ void OutgassingMap::Update(float appTime,bool force) {
   }
 
 }
-
-// --------------------------------------------------------------------
 
 void OutgassingMap::UpdateTable() {
 	//maxValue=0.0f;
@@ -216,8 +204,6 @@ void OutgassingMap::UpdateTable() {
   }
 }
 
-// --------------------------------------------------------------------
-
 void OutgassingMap::Display(Worker *w) {
 
   worker = w;
@@ -226,15 +212,12 @@ void OutgassingMap::Display(Worker *w) {
 
 }
 
-// --------------------------------------------------------------------
-
 void OutgassingMap::Close() {
   worker = NULL;
   if(selFacet) selFacet->UnselectElem();
   mapList->Clear();
 }
 
-// --------------------------------------------------------------------
 /*
 void OutgassingMap::SaveFile() {
 
@@ -277,7 +260,6 @@ void OutgassingMap::SaveFile() {
 
 }
 */
-// --------------------------------------------------------------------
 
 void OutgassingMap::ProcessMessage(GLComponent *src,int message) {
 
@@ -336,7 +318,6 @@ void OutgassingMap::ProcessMessage(GLComponent *src,int message) {
 			  
 		  }
 		  if( GLMessageBox::Display("Explode selected facet?","Question",GLDLG_OK|GLDLG_CANCEL,GLDLG_ICONINFO)==GLDLG_OK ) {	
-
 
 			  if (mApp->AskToReset()) {
 				  mApp->changedSinceSave=true;
