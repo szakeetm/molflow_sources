@@ -145,7 +145,7 @@ TextureSettings::TextureSettings():GLWindow() {
 
 }
 
-// --------------------------------------------------------------------
+
 
 void TextureSettings::UpdateSize() {
 
@@ -161,7 +161,7 @@ void TextureSettings::UpdateSize() {
 
 }
 
-// --------------------------------------------------------------------
+
 
 void TextureSettings::Update() {
 
@@ -235,7 +235,7 @@ void TextureSettings::Display(Worker *w,GeometryViewer **v) {
 	texMaxText->SetText(tmp);
 }
 
-// --------------------------------------------------------------------
+
 
 void TextureSettings::ProcessMessage(GLComponent *src,int message) {
 

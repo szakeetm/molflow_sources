@@ -33,9 +33,9 @@
 #define MC_MODE 0         // Monte Carlo simulation mode
 #define AC_MODE 1         // Angular coefficient simulation mode
 
-#define TESTCUBE_STRUCTURE_NO 2 //Special superstructure number for test cube
+//#define TESTCUBE_STRUCTURE_NO 2 //Special superstructure number for test cube
 
-// -----------------------------------------------------------------
+
 // Hit exchange shared structure       (name: MFLWHITS[masterPID])
 //
 // SHGHITS
@@ -48,7 +48,7 @@
 // if(textureF2)   TEXTUREF2
 // if(directionF2) DIRECTIONF2
 // ...
-// -----------------------------------------------------------------
+
 
 typedef float ACFLOAT;
 
@@ -125,10 +125,10 @@ struct AnglemapParams {
 	size_t thetaHigherRes; //resolution between angleMapThetaLimit and PI/2
 } ;
 
-// -----------------------------------------------------------------
+
 // Master control shared memory block  (name: MFLWCTRL[masterPID])
 // 
-// -----------------------------------------------------------------
+
 #define PROCESS_STARTING 0   // Loading state
 #define PROCESS_RUN      1   // Running state
 #define PROCESS_READY    2   // Waiting state
@@ -185,7 +185,7 @@ typedef struct {
 	char		statusStr[MAX_PROCESS][128]; // Status message
 } SHCONTROL;
 
-// -----------------------------------------------------------------
+
 // Geometry shared structure        (name: MFLWLOAD[masterPID])
 //
 //  SHGEOM
@@ -198,7 +198,7 @@ typedef struct {
 //  Vector2dF2
 //  ...
 //  AREA ELEMENTS
-// -----------------------------------------------------------------
+
 
 typedef struct {
 
@@ -319,7 +319,7 @@ typedef struct {
 
 } SHFACET;
 
-// -----------------------------------------------------------------
+
 // Mesh shared structure  (name: MFLWLOAD[masterPID])
 //
 //  SHELEM

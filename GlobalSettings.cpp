@@ -52,7 +52,7 @@ static const int   plWidth[] = { 60,40,70,70,335 };
 static const char *plName[] = { "#","PID","Mem Usage","Mem Peak",/*"CPU",*/"Status" };
 static const int   plAligns[] = { ALIGN_LEFT,ALIGN_LEFT,ALIGN_LEFT,ALIGN_LEFT,ALIGN_LEFT };
 
-// --------------------------------------------------------------------
+
 
 GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 
@@ -207,7 +207,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 }
 
 
-// --------------------------------------------------------------------
+
 
 void GlobalSettings::Update() {
 
@@ -234,7 +234,7 @@ void GlobalSettings::Update() {
 	nbProcText->SetText(tmp);
 }
 
-// ----------------------------------------------------------------
+
 
 void GlobalSettings::SMPUpdate() {
 	int time = SDL_GetTicks();
@@ -314,7 +314,7 @@ void GlobalSettings::SMPUpdate() {
 	}
 
 }
-// ----------------------------------------------------------------
+
 
 void GlobalSettings::RestartProc() {
 
@@ -346,7 +346,7 @@ void GlobalSettings::RestartProc() {
 	}
 
 }
-// --------------------------------------------------------------------
+
 
 void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 

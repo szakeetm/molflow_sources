@@ -86,7 +86,7 @@ static const char *ynStr[] = {
 };
 
 
-// -----------------------------------------------------------------
+
 
 FacetDetails::FacetDetails():GLWindow() {
 
@@ -208,7 +208,7 @@ FacetDetails::FacetDetails():GLWindow() {
 
 }
 
-// -----------------------------------------------------------------
+
 
 void FacetDetails::PlaceComponents() {
 
@@ -233,7 +233,7 @@ void FacetDetails::PlaceComponents() {
 
 }
 
-// -----------------------------------------------------------------
+
 
 void FacetDetails::SetBounds(int x,int y,int w,int h) {
 
@@ -242,7 +242,7 @@ void FacetDetails::SetBounds(int x,int y,int w,int h) {
 
 }
 
-// -----------------------------------------------------------------
+
 
 char *FacetDetails::GetCountStr(Facet *f) {
   static char ret[128];
@@ -254,7 +254,7 @@ char *FacetDetails::GetCountStr(Facet *f) {
   return ret;
 }
 
-// -----------------------------------------------------------------
+
 
 char *FacetDetails::FormatCell(size_t idx,Facet *f,size_t mode) {
   static char ret[256];
@@ -375,7 +375,7 @@ char *FacetDetails::FormatCell(size_t idx,Facet *f,size_t mode) {
 
 }
 
-// -----------------------------------------------------------------
+
 
 void FacetDetails::UpdateTable() {
 
@@ -422,7 +422,7 @@ void FacetDetails::UpdateTable() {
 	}
 }
 
-// -----------------------------------------------------------------
+
 
 void FacetDetails::Update() {
 
@@ -441,7 +441,7 @@ void FacetDetails::Update() {
 
 }
 
-// -----------------------------------------------------------------
+
 
 void FacetDetails::Display(Worker *w) {
 
@@ -451,7 +451,7 @@ void FacetDetails::Display(Worker *w) {
 
 }
 
-// -----------------------------------------------------------------
+
 
 void FacetDetails::ProcessMessage(GLComponent *src,int message) {
 

@@ -33,7 +33,7 @@ extern MolFlow *mApp;
 //static const char *fileFilters = "Text files\0*.txt";
 //static const int   nbFilter = sizeof(fileFilters) / (2*sizeof(char *));
 
-// --------------------------------------------------------------------
+
 
 OutgassingMap::OutgassingMap():GLWindow() {
 
@@ -110,7 +110,7 @@ OutgassingMap::OutgassingMap():GLWindow() {
 
 }
 
-// --------------------------------------------------------------------
+
 
 void OutgassingMap::PlaceComponents() {
 
@@ -126,7 +126,7 @@ void OutgassingMap::PlaceComponents() {
   exponentText->SetBounds(450,height-45,50,19);
 }
 
-// -----------------------------------------------------------------
+
 
 void OutgassingMap::SetBounds(int x,int y,int w,int h) {
 
@@ -135,7 +135,7 @@ void OutgassingMap::SetBounds(int x,int y,int w,int h) {
 
 }
 
-// --------------------------------------------------------------------
+
 
 void OutgassingMap::GetSelected() {
 
@@ -156,7 +156,7 @@ void OutgassingMap::GetSelected() {
 
 }
 
-// --------------------------------------------------------------------
+
 
 void OutgassingMap::Update(float appTime,bool force) {
 
@@ -175,7 +175,7 @@ void OutgassingMap::Update(float appTime,bool force) {
 
 }
 
-// --------------------------------------------------------------------
+
 
 void OutgassingMap::UpdateTable() {
 	//maxValue=0.0f;
@@ -216,7 +216,7 @@ void OutgassingMap::UpdateTable() {
   }
 }
 
-// --------------------------------------------------------------------
+
 
 void OutgassingMap::Display(Worker *w) {
 
@@ -226,7 +226,7 @@ void OutgassingMap::Display(Worker *w) {
 
 }
 
-// --------------------------------------------------------------------
+
 
 void OutgassingMap::Close() {
   worker = NULL;
@@ -234,7 +234,6 @@ void OutgassingMap::Close() {
   mapList->Clear();
 }
 
-// --------------------------------------------------------------------
 /*
 void OutgassingMap::SaveFile() {
 
@@ -277,7 +276,7 @@ void OutgassingMap::SaveFile() {
 
 }
 */
-// --------------------------------------------------------------------
+
 
 void OutgassingMap::ProcessMessage(GLComponent *src,int message) {
 

@@ -48,7 +48,7 @@ extern SynRad*mApp;
 static const char *fileFilters = "Text files\0*.txt";
 static const int   nbFilter = sizeof(fileFilters) / (2 * sizeof(char *));
 
-// --------------------------------------------------------------------
+
 
 TexturePlotter::TexturePlotter() :GLWindow() {
 
@@ -119,7 +119,7 @@ TexturePlotter::TexturePlotter() :GLWindow() {
 
 }
 
-// --------------------------------------------------------------------
+
 
 void TexturePlotter::PlaceComponents() {
 
@@ -134,7 +134,7 @@ void TexturePlotter::PlaceComponents() {
 
 }
 
-// -----------------------------------------------------------------
+
 
 void TexturePlotter::SetBounds(int x, int y, int w, int h) {
 
@@ -143,7 +143,7 @@ void TexturePlotter::SetBounds(int x, int y, int w, int h) {
 
 }
 
-// --------------------------------------------------------------------
+
 
 void TexturePlotter::GetSelected() {
 
@@ -164,7 +164,7 @@ void TexturePlotter::GetSelected() {
 
 }
 
-// --------------------------------------------------------------------
+
 
 void TexturePlotter::Update(float appTime, bool force) {
 
@@ -183,7 +183,7 @@ void TexturePlotter::Update(float appTime, bool force) {
 
 }
 
-// --------------------------------------------------------------------
+
 
 void TexturePlotter::UpdateTable() {
 	size_t nbMoments = mApp->worker.moments.size();
@@ -492,7 +492,7 @@ void TexturePlotter::UpdateTable() {
 	if (autoSizeOnUpdate->GetState()) mapList->AutoSizeColumn();
 }
 
-// --------------------------------------------------------------------
+
 
 void TexturePlotter::Display(Worker *w) {
 
@@ -502,7 +502,7 @@ void TexturePlotter::Display(Worker *w) {
 
 }
 
-// --------------------------------------------------------------------
+
 
 void TexturePlotter::Close() {
 	worker = NULL;
@@ -510,7 +510,6 @@ void TexturePlotter::Close() {
 	mapList->Clear();
 }
 
-// --------------------------------------------------------------------
 
 void TexturePlotter::SaveFile() {
 
@@ -553,7 +552,7 @@ void TexturePlotter::SaveFile() {
 
 }
 
-// --------------------------------------------------------------------
+
 
 void TexturePlotter::ProcessMessage(GLComponent *src, int message) {
 
