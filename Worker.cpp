@@ -398,7 +398,7 @@ void Worker::ExportAngleMaps(std::vector<size_t> facetList, std::string fileName
 				std::string tmp = "Cannot open file for writing " + saveFileName;
 				throw Error(tmp.c_str());
 			}
-			file << geom->GetFacet(facetIndex) -> GetAngleMapCSV();
+			file << geom->GetFacet(facetIndex) -> GetAngleMap(1);
 			file.close();
 	}
 }

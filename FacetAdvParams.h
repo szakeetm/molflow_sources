@@ -130,7 +130,7 @@ private:
 	GLTextField	*uniformReflBox;
 	GLTextField	*specularReflBox;
 	GLTextField	*diffuseReflBox;
-	GLButton	*angleMapShowButton;
+	GLButton	*angleMapCopyButton;
 	GLLabel	*limitLabel;
 	GLLabel	*label17;
 	GLTextField	*angleMapThetaLimitText;

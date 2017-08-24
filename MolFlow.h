@@ -56,6 +56,8 @@ public:
 	void ImportDesorption_DES();
 	void ExportProfiles();
 	void ExportAngleMaps();
+	void ImportAngleMaps();
+	void CopyAngleMapToClipboard();
 	void ClearAngleMapsOnSelection();
     void ClearFacetParams();
 	

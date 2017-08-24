@@ -28,6 +28,7 @@ GNU General Public License for more details.
 #include "GLApp/GLButton.h"
 #include "GLApp/GLTextField.h"
 #include "GLApp/GLTitledPanel.h"
+#include "GLApp/GLFileBox.h"
 //#include "GLApp/GLProgress.h"
 #include "GLApp/GLCombo.h"
 //#include "Worker.h"
@@ -292,7 +293,7 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	angleMapPanel->Add(angleMapRecordCheckbox);
 
 	angleMapReleaseButton = new GLButton(0, "Release recorded");
-	angleMapPanel->SetCompBounds(angleMapReleaseButton, 205, 122, 93, 20);
+	angleMapPanel->SetCompBounds(angleMapReleaseButton, 207, 122, 93, 20);
 	angleMapPanel->Add(angleMapReleaseButton);
 
 	remeshButton = new GLButton(0, "Force remesh");
@@ -323,9 +324,9 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	paramPanel->SetCompBounds(diffuseReflBox, 65, 19, 30, 18);
 	paramPanel->Add(diffuseReflBox);
 
-	angleMapShowButton = new GLButton(0, "Show");
-	angleMapPanel->SetCompBounds(angleMapShowButton, 10, 122, 50, 20);
-	angleMapPanel->Add(angleMapShowButton);
+	angleMapCopyButton = new GLButton(0, "Copy");
+	angleMapPanel->SetCompBounds(angleMapCopyButton, 10, 122, 50, 20);
+	angleMapPanel->Add(angleMapCopyButton);
 
 	limitLabel = new GLLabel("values from limit to PI/2");
 	angleMapPanel->SetCompBounds(limitLabel, 166, 58, 91, 12);
@@ -559,7 +560,7 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 		sojournFreq->SetText("");
 		sojournE->SetText("");
 		std::stringstream label;
-		limitLabel->SetText("values from limit to PI");
+		limitLabel->SetText("values from limit to PI/2");
 		return;
 	}
 
@@ -1487,8 +1488,15 @@ void FacetAdvParams::ProcessMessage(GLComponent *src, int message) {
 		else if (src == angleMapExportButton) {
 			mApp->ExportAngleMaps();
 		}
+		else if (src == angleMapCopyButton) {
+			mApp->CopyAngleMapToClipboard();
+		}
 		else if (src == angleMapReleaseButton) {
 			mApp->ClearAngleMapsOnSelection();
+			Refresh(geom->GetSelectedFacets());
+		}
+		else if (src == angleMapImportButton) {
+			mApp->ImportAngleMaps();
 			Refresh(geom->GetSelectedFacets());
 		}
 		else if (src == remeshButton) {
@@ -1621,8 +1629,8 @@ void FacetAdvParams::PlaceComponents() {
 	angleMapPanel->SetCompBounds(angleMapImportButton, 140, 122, 64, 20);
 	angleMapPanel->SetCompBounds(angleMapExportButton, 63, 122, 73, 20);
 	angleMapPanel->SetCompBounds(angleMapRecordCheckbox, 10, 16, 54, 16);
-	angleMapPanel->SetCompBounds(angleMapReleaseButton, 205, 122, 93, 20);
-	angleMapPanel->SetCompBounds(angleMapShowButton, 10, 122, 50, 20);
+	angleMapPanel->SetCompBounds(angleMapReleaseButton, 207, 122, 93, 20);
+	angleMapPanel->SetCompBounds(angleMapCopyButton, 10, 122, 50, 20);
 	angleMapPanel->SetCompBounds(limitLabel, 166, 58, 91, 12);
 	angleMapPanel->SetCompBounds(label17, 166, 36, 71, 12);
 	angleMapPanel->SetCompBounds(angleMapThetaLimitText, 249, 33, 46, 18);

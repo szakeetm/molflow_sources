@@ -75,11 +75,11 @@ int   cWidth[] = { 30, 56, 50, 50 };
 char *cName[] = { "#", "Hits", "Des", "Abs" };
 
 std::string appId = "Molflow";
-int appVersion = 2652;
+int appVersion = 2653;
 #ifdef _DEBUG
 std::string appName = "MolFlow+ development version 64-bit (Compiled " __DATE__ " " __TIME__ ") DEBUG MODE";
 #else
-std::string appName = "Molflow+ 2.6.52 64-bit (" __DATE__ ")";
+std::string appName = "Molflow+ 2.6.53 64-bit (" __DATE__ ")";
 #endif
 
 std::vector<string> formulaPrefixes = { "A","D","H","P","DEN","Z","V","T","AR","a","d","h","p","den","z","v","t","ar","," };
@@ -1177,8 +1177,109 @@ void MolFlow::ExportAngleMaps() {
 			char errMsg[512];
 			sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), fn->fullName);
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
+			return;
 		}
 	}
+}
+
+void MolFlow::ImportAngleMaps()
+{
+	std::vector<size_t> selFacets = worker.GetGeometry()->GetSelectedFacets();
+	if (selFacets.size() == 0) {
+		GLMessageBox::Display("Select at least one facet to import angle map to", "Error", GLDLG_OK, GLDLG_ICONERROR);
+		return;
+	}
+	std::vector<FILENAME> files = GLFileBox::OpenMultipleFiles("CSV files\0*.csv\0All files\0*.*\0", "Import angle map(s)");
+	if (files.size() == 0) return;
+	if (selFacets.size() != files.size()) {
+		GLMessageBox::Display("Select the same number of facets and files to import", "Error", GLDLG_OK, GLDLG_ICONERROR);
+		return;
+	}
+	for (size_t i = 0; i < files.size(); i++) {
+		try {
+			std::vector<std::vector<std::string>> table;
+			FileReader *f = new FileReader(files[i].fullName);
+			worker.ImportCSV(f, table);
+			SAFE_DELETE(f);
+			AskToReset(&worker);
+			worker.GetGeometry()->GetFacet(selFacets[i])->ImportAngleMap(table);
+			worker.Reload();
+		}
+		catch (Error &e) {
+				char errMsg[512];
+				sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), files[i].fullName);
+				GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
+				return;
+		}
+	}
+}
+
+void MolFlow::CopyAngleMapToClipboard()
+{
+	Geometry *geom = worker.GetGeometry();
+	size_t angleMapFacetIndex;
+	bool found = false;
+	for (size_t i = 0; i < geom->GetNbFacet(); i++) {
+		Facet* f = geom->GetFacet(i);
+		if (f->selected && f->sh.anglemapParams.hasRecorded) {
+			if (found) {
+				GLMessageBox::Display("More than one facet with recorded angle map selected", "Error", GLDLG_OK, GLDLG_ICONERROR);
+				return;
+			}
+			angleMapFacetIndex = i;
+			found = true;
+		}
+	}
+	if (!found) {
+		GLMessageBox::Display("No facet with recorded angle map selected", "Error", GLDLG_OK, GLDLG_ICONERROR);
+		return;
+	}
+
+	/*
+	if (!worker.IsDpInitialized()) {
+		GLMessageBox::Display("Worker Dataport not initialized yet", "Error", GLDLG_OK, GLDLG_ICONERROR);
+		return;
+	}*/
+
+		try {
+			std::string map = geom->GetFacet(angleMapFacetIndex)->GetAngleMap(2);
+			if (map.length() > (10 * 1024 * 1024)) {
+				if (GLMessageBox::Display("Angle map text over 10MB. Copy to clipboard?", "Warning", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) != GLDLG_OK)
+					return;
+			}
+
+#ifdef WIN
+
+			if (!OpenClipboard(NULL))
+				return;
+
+			EmptyClipboard();
+
+			HGLOBAL hText = NULL;
+			char   *lpszText;
+
+			if (!(hText = GlobalAlloc(GMEM_ZEROINIT | GMEM_MOVEABLE, map.length() + 1))) {
+				CloseClipboard();
+				return;
+			}
+			if (!(lpszText = (char *)GlobalLock(hText))) {
+				CloseClipboard();
+				GlobalFree(hText);
+				return;
+			}
+
+			strcpy(lpszText, map.c_str());
+			SetClipboardData(CF_TEXT, hText);
+			GlobalUnlock(hText);
+			CloseClipboard();
+			GlobalFree(hText);
+
+#endif
+
+		}
+		catch (Error &e) {
+			GLMessageBox::Display(e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
+		}
 }
 
 void MolFlow::ClearAngleMapsOnSelection() {

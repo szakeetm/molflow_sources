@@ -30,6 +30,7 @@
 #include "GLApp/MathTools.h"
 #include <sstream>
 #include "PugiXML\pugixml.hpp"
+#include <iomanip> //stringstream precision
 using namespace pugi;
 #define Max(x,y) (((x)<(y))?(y):(x))
 #define Min(x,y) (((x)<(y))?(x):(y))
@@ -1348,28 +1349,156 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 	} //end angle map
 }
 
-std::string Facet::GetAngleMapCSV()
+std::string Facet::GetAngleMap(size_t formatId)
 {
-	std::stringstream result;
-
+	std::stringstream result; result << std::setprecision(8);
+	char separator;
+	if (formatId == 1)
+		separator = ',';
+	else if (formatId == 2)
+		separator = '\t';
+	else return "";
 	//First row: phi labels
-	result << "Theta below / Phi to the right,"; //A1 cell
+	result << "Theta below / Phi to the right" << separator; //A1 cell
 	for (size_t i = 0; i < sh.anglemapParams.phiWidth; i++)
-		result << -PI + (0.5 + (double)i) / ((double)sh.anglemapParams.phiWidth)*2.0*PI << ",";;
+		result << -PI + (0.5 + (double)i) / ((double)sh.anglemapParams.phiWidth)*2.0*PI << separator;
 	result << "\n";
 
 	//Actual table
 	for (size_t row = 0; row < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); row++) {
 		//First column: theta label
 		if (row < sh.anglemapParams.thetaLowerRes)
-			result << ((double)row + 0.5) / (double)sh.anglemapParams.thetaLowerRes*sh.anglemapParams.thetaLimit << ",";
+			result << ((double)row + 0.5) / (double)sh.anglemapParams.thetaLowerRes*sh.anglemapParams.thetaLimit << separator;
 		else
-			result << sh.anglemapParams.thetaLimit + (0.5 + (double)(row-sh.anglemapParams.thetaLowerRes)) / (double)sh.anglemapParams.thetaHigherRes *(PI/2.0-sh.anglemapParams.thetaLimit) << ","; 
+			result << sh.anglemapParams.thetaLimit + (0.5 + (double)(row-sh.anglemapParams.thetaLowerRes)) / (double)sh.anglemapParams.thetaHigherRes *(PI/2.0-sh.anglemapParams.thetaLimit) << separator;
 		//Value
 		for (size_t col = 0; col < sh.anglemapParams.phiWidth; col++) {
-			result << angleMapCache[row * sh.anglemapParams.phiWidth + col] << ",";
+			result << angleMapCache[row * sh.anglemapParams.phiWidth + col] << separator;
 		}
 		result << "\n";
 	}
 	return result.str();
+}
+
+void Facet::ImportAngleMap(const std::vector<std::vector<std::string>>& table)
+{
+	size_t phiWidth, thetaLowerRes, thetaHigherRes;
+	double thetaLimit;
+
+	if (table[0][0] == "" || beginsWith(table[0][0], "Theta")) { //asume there is a header
+		//looking at header values, try to determine theta resolution and limit
+		phiWidth = table[0].size()-1; //row width minus first header column
+		size_t spacingTypes = 1;
+		double currentSpacing;
+		double previousVal;
+		for (size_t i = 1; i < table.size(); i++) { //skip first header row
+			double val; size_t sz;
+			try {
+				val = std::stod(table[i][0], &sz); //convert to double
+			}
+			catch (...) {
+					std::stringstream err;
+					err << "Can't convert row " << i + 1 << " first cell to a double\nCell content: " << table[i][0];
+					throw Error(err.str().c_str());
+			}
+			if (sz != table[i][0].size()) {
+				std::stringstream err;
+				err << "Can't convert row " << i+1 << " first cell to a double\nCell content: " << table[i][0];
+				throw Error(err.str().c_str());
+			}
+			if (i == 1) currentSpacing = val*2.0;
+			else if (!IsEqual(currentSpacing, val - previousVal, 1E-3)) {
+				spacingTypes++;
+				if (spacingTypes > 2) {
+					std::stringstream err;
+					err << "Row  " << i+1 << ": more than two types of theta difference\nCell content: " << table[i][0];
+					throw Error(err.str().c_str());
+				}
+				//Just switched to next range
+				thetaLowerRes = i-1; //subtract header
+				thetaLimit = ((double)(i - 1)) * currentSpacing;
+				currentSpacing = 2.0 * (val - thetaLimit);
+			}
+			previousVal = val;
+		}
+		if (spacingTypes == 1) {
+			//might fill whole 0..PI/2 range, but maybe only lower or only upper res
+			double lastTheta = currentSpacing * (table.size() - 1);
+			if (IsEqual(lastTheta, PI / 2, 1E-3)) { //fills whole range
+				thetaLimit = PI / 2;
+				thetaLowerRes = table.size() - 1;
+				thetaHigherRes = 0;
+			}
+			else if (lastTheta < (PI / 2)) { //fills from 0 to thetaLimit then no higher values
+				thetaLimit = lastTheta;
+				thetaLowerRes = table.size() - 1;
+				thetaHigherRes = 0;
+			}
+			else { //no lower values then fills from thetaLimit to PI/2
+				currentSpacing = 2.0*(PI / 2 - previousVal);
+				thetaLimit = PI / 2 - (table.size() - 1)*currentSpacing;
+				thetaLowerRes = 0;
+				thetaHigherRes = table.size() - 1;
+			}
+		}
+		else thetaHigherRes = table.size() - 1 - thetaLowerRes;
+
+		//Fill table
+		angleMapCache = (size_t*)malloc(phiWidth * (thetaLowerRes + thetaHigherRes) * sizeof(size_t));
+
+		for (int iy = 0; iy < (thetaLowerRes + thetaHigherRes); iy++) {
+			for (int ix = 0; ix < phiWidth; ix++) {
+				size_t cellSize;
+				try {
+					angleMapCache[iy*phiWidth + ix] = std::stoi(table[iy+1][ix+1], &cellSize); //convert to double
+				}
+				catch (...) {
+					std::stringstream err;
+					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to an integer\nCell content: " << table[iy+1][ix+1];
+					throw Error(err.str().c_str());
+				}
+				if (cellSize != table[iy+1][ix+1].size()) {
+					std::stringstream err;
+					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to an integer\nCell content: " << table[iy+1][ix+1];
+					throw Error(err.str().c_str());
+				}
+			}
+		}
+	}
+	else { //no header, equal spacing
+		thetaLowerRes = table.size();
+		thetaHigherRes = 0;
+		phiWidth = table[0].size(); //row width
+		thetaLimit = PI/2.0;
+
+		//Fill table
+		angleMapCache = (size_t*)malloc(phiWidth * (thetaLowerRes + thetaHigherRes) * sizeof(size_t));
+
+		for (int iy = 0; iy < (thetaLowerRes + thetaHigherRes); iy++) {
+			for (int ix = 0; ix < phiWidth; ix++) {
+				size_t cellSize;
+				try {
+					angleMapCache[iy*phiWidth + ix] = std::stoi(table[iy][ix], &cellSize); //convert to double
+				}
+				catch (...) {
+					std::stringstream err;
+					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to an integer\nCell content: " << table[iy][ix];
+					throw Error(err.str().c_str());
+				}
+				if (cellSize != table[iy][ix].size()) {
+					std::stringstream err;
+					err << "Can't convert cell row " << iy+1 << " col " << ix+1 << " to an integer\nCell content: " << table[iy][ix];
+					throw Error(err.str().c_str());
+				}
+			}
+		}
+	}
+
+	//No errors, apply values
+	sh.anglemapParams.hasRecorded = true;
+	sh.anglemapParams.phiWidth = phiWidth;
+	sh.anglemapParams.record = false;
+	sh.anglemapParams.thetaHigherRes = thetaHigherRes;
+	sh.anglemapParams.thetaLimit = thetaLimit;
+	sh.anglemapParams.thetaLowerRes = thetaLowerRes;
 }

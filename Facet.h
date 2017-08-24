@@ -168,7 +168,8 @@ public:
   Vector2d GetMeshPoint(size_t index, size_t pointId);
   Vector2d GetMeshCenter(size_t index);
   double GetArea();
-  std::string GetAngleMapCSV();
+  std::string GetAngleMap(size_t formatId); //formatId: 1=CSV 2=TAB-separated
+  void ImportAngleMap(const std::vector<std::vector<std::string>>& table); //Throws error
 };
 
 class DeletedFacet {
