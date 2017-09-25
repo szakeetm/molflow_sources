@@ -77,7 +77,7 @@ size_t MolflowGeometry::GetGeometrySize() {
 
 		memoryUsage += sizeof(size_t); //parameter size
 
-		memoryUsage += i.values.size() * 2 * sizeof(double);
+		memoryUsage += i.GetSize() * 2 * sizeof(double);
 	}
 	memoryUsage += sizeof(size_t); //number of temperatures
 	memoryUsage += sizeof(double)*(int)(work->temperatures).size(); //temperatures
@@ -231,11 +231,12 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer) {
 	  }
 	  }*/
 	WRITEBUFFER(w->parameters.size(), size_t);
-	for (auto i : w->parameters) {
-		WRITEBUFFER(i.values.size(), size_t);
-		for (auto j : i.values) {
-			WRITEBUFFER(j.first, double);
-			WRITEBUFFER(j.second, double);
+	for (auto par : w->parameters) {
+		size_t paramSize = par.GetSize();
+		WRITEBUFFER(paramSize, size_t);
+		for (int j = 0; j < paramSize;j++) {
+			WRITEBUFFER(par.GetX(j), double);
+			WRITEBUFFER(par.GetY(j), double);
 		}
 	}
 
@@ -2432,12 +2433,12 @@ void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLP
 		xml_node newParameter = paramNode.append_child("Parameter");
 		newParameter.append_attribute("id") = i;
 		newParameter.append_attribute("name") = work->parameters[i].name.c_str();
-		newParameter.append_attribute("nbMoments") = (int)work->parameters[i].values.size();
-		for (size_t m = 0; m < work->parameters[i].values.size(); m++) {
+		newParameter.append_attribute("nbMoments") = (int)work->parameters[i].GetSize();
+		for (size_t m = 0; m < work->parameters[i].GetSize(); m++) {
 			xml_node newMoment = newParameter.append_child("Moment");
 			newMoment.append_attribute("id") = m;
-			newMoment.append_attribute("t") = work->parameters[i].values[m].first;
-			newMoment.append_attribute("value") = work->parameters[i].values[m].second;
+			newMoment.append_attribute("t") = work->parameters[i].GetX(m);
+			newMoment.append_attribute("value") = work->parameters[i].GetY(m);
 		}
 	}
 }
@@ -2646,7 +2647,7 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 			Parameter newPar;
 			newPar.name = newParameter.attribute("name").as_string();
 			for (xml_node newMoment : newParameter.children("Moment")) {
-				newPar.AddValue(std::make_pair(newMoment.attribute("t").as_double(),
+				newPar.AddPair(std::make_pair(newMoment.attribute("t").as_double(),
 					newMoment.attribute("value").as_double()));
 			}
 			work->parameters.push_back(newPar);
@@ -2863,7 +2864,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 			Parameter newPar;
 			newPar.name = newParameter.attribute("name").as_string();
 			for (xml_node newMoment : newParameter.children("Moment")) {
-				newPar.AddValue(std::make_pair(newMoment.attribute("t").as_double(),
+				newPar.AddPair(std::make_pair(newMoment.attribute("t").as_double(),
 					newMoment.attribute("value").as_double()));
 			}
 			work->parameters.push_back(newPar);

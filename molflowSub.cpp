@@ -16,6 +16,7 @@
   GNU General Public License for more details.
 */
 
+#define NOMINMAX
 #include <windows.h>
 
 #include <tlhelp32.h>

@@ -145,7 +145,7 @@ public:
 	void CrashHandler(Error *e);
 	
 protected:
-
+	void LoadParameterCatalog();
     int  OneTimeSceneInit();
     int  RestoreDeviceObjects();
 	int  InvalidateDeviceObjects();

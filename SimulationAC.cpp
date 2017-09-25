@@ -17,6 +17,7 @@
 */
 
 #ifdef WIN
+#define NOMINMAX
 #include <windows.h> // For GetTickCount()
 #include <Process.h> // For _getpid()
 #else
@@ -28,6 +29,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "Simulation.h"
+#include "IntersectAABB_shared.h"
 #include "GLApp/MathTools.h" //PI
 #include "Random.h"
 
@@ -227,7 +229,7 @@ bool ComputeACMatrix(SHELEM *mesh) {
           cos2 = Dot(f2->sh.N,c1 - c2);
 
           if(cos1>0.0 && cos2>0.0 && r2>0.0) {
-            if( Visible(&c1,&c2,f1,f2) ) {
+            if( Visible(&c1,&c2,f1,f2,THitCache) ) {
               vf = (cos1 * cos2) / (PI * r2 * r2);
               sHandle->acMatrix[idx] = (ACFLOAT)vf;
             } else {

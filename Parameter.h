@@ -1,24 +1,23 @@
 #ifndef _PARAMETERH_
 #define _PARAMETERH_
 
+#include "Distributions.h"
 #include <string>
 #include <vector>
 
-class Parameter {
-	
-
+class Parameter:public Distribution2D {
 public:
 	std::string name;
-	std::vector<std::pair<double,double>> values;
+	bool fromCatalog;
 	
 	Parameter();
-	void AddValue(const std::pair<double,double> &value); //looks up correct insert position and adds the value
-	void AddValue(const double &moment,const double &value); //looks up correct insert position and adds the value
-
-	void RemoveValue(size_t index);
-	void SetValues(std::vector<std::pair<double,double>> values,bool sort=true);
-
-	double GetValueAt(double time);
 };
 
+/*
+class StringClass:public Distribution2D {
+public:
+	std::string name;
+	bool fromCatalog;
+	StringClass();
+};*/
 #endif

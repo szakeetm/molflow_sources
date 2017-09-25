@@ -20,6 +20,7 @@
 #define SHAREDH
 
 #include "MolflowTypes.h"
+#define NOMINMAX
 #include <Windows.h>
 #include <vector>
 #include "Vector.h"

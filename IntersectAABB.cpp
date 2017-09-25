@@ -21,87 +21,96 @@ GNU General Public License for more details.
 //#include <malloc.h>
 #include <string.h>
 #include <math.h>
-#include "Simulation.h"
+#include "IntersectAABB_shared.h"
 #include "Random.h"
+#include "Simulation.h"
 
-// AABB tree stuff
+std::tuple<bool,FACET*,double> Intersect(const Vector3d& rayPos, const Vector3d& rayDir, FACET* lastHitFacet, FACET** THitCache) {
+	// Source ray (rayDir vector must be normalized)
+	// lastHit is to avoid detecting twice the same collision
+	// returns bool found (is there a collision), pointer to collided facet, double d (distance to collision)
 
-// Temporary for intersection
-extern  double    intMinLgth;
-extern  bool      intFound;
-extern  Vector3d  intD;
-extern  Vector3d  intZ;
-extern  int       intNbTHits;
-extern  double    iRx;
-extern  double    iRy;
-extern  double    iRz;
-extern  bool      nullRx;
-extern  bool      nullRy;
-extern  bool      nullRz;
-extern  Vector3d *rayPos;
-extern  Vector3d *rayDir;
-extern  FACET   **iFacet;
-extern  FACET    *fLast;
-extern  double    tNear;
-extern  double    tFar;
-extern  double    it1, it2;
-extern  bool      AABBHit;
+	bool nullRx = (rayDir.x == 0.0);
+	bool nullRy = (rayDir.y == 0.0);
+	bool nullRz = (rayDir.z == 0.0);
+	Vector3d inverseRayDir;
+	if (!nullRx) inverseRayDir.x = 1.0 / rayDir.x;
+	if (!nullRy) inverseRayDir.y = 1.0 / rayDir.y;
+	if (!nullRz) inverseRayDir.z = 1.0 / rayDir.z;
+	
+	//Global variables, easier for recursion:
+	size_t intNbTHits = 0;
 
-bool Intersect(Vector3d *rPos, Vector3d *rDir,  // Source ray (rayDir vector must be normalized)
-	double *dist,                   // Distance to collision point
-	FACET **iFact, FACET *last) {    // Collided facet, previous collision
+	//Output values
+	bool found;
+	FACET *collidedFacet;
+	double minLength;
 
-	intMinLgth = 1e100;
-	intFound = false;
-	intNbTHits = 0;
-	rayPos = rPos;
-	rayDir = rDir;
-	intD.x = -rayDir->x;
-	intD.y = -rayDir->y;
-	intD.z = -rayDir->z;
-	nullRx = (rayDir->x == 0.0);
-	nullRy = (rayDir->y == 0.0);
-	nullRz = (rayDir->z == 0.0);
-	if (!nullRx) iRx = 1.0 / rayDir->x;
-	if (!nullRy) iRy = 1.0 / rayDir->y;
-	if (!nullRz) iRz = 1.0 / rayDir->z;
-	iFacet = iFact;
-	fLast = last;
+	std::tie(found,collidedFacet,minLength) = IntersectTree(sHandle->str[sHandle->curStruct].aabbTree,rayPos,rayDir,1e100,lastHitFacet,
+		nullRx,nullRy,nullRz,inverseRayDir,&intNbTHits,THitCache);
 
-	IntersectTree(sHandle->str[sHandle->curStruct].aabbTree);
-
-	if (intFound) {
-
-		FACET *f = *iFacet;
-		*dist = intMinLgth;
+	if (found) {
 
 		//ProfileFacet(f,sHandle->flightTimeCurrentParticle+*dist/100.0/sHandle->velocityCurrentParticle);
-		f->hitted = true;
+		collidedFacet->hitted = true;
 
 		// Second pass for transparent hits
 		for (int i = 0; i<intNbTHits; i++) {
 
-			f = THits[i];
-			if (f->colDist < intMinLgth) {
-				double directionFactor = abs(Dot(sHandle->pDir,f->sh.N));
-				IncreaseFacetCounter(f, sHandle->flightTimeCurrentParticle + f->colDist / 100.0 / sHandle->velocityCurrentParticle, 1, 0, 0, 2.0 / (sHandle->velocityCurrentParticle*directionFactor), 2.0*(sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*sHandle->velocityCurrentParticle*directionFactor);
+			FACET* f = THitCache[i];
+			if (collidedFacet->colDist < minLength) {
+				double directionFactor = abs(Dot(sHandle->pDir,collidedFacet->sh.N));
+				IncreaseFacetCounter(f, sHandle->flightTimeCurrentParticle + collidedFacet->colDist / 100.0 / sHandle->velocityCurrentParticle, 1, 0, 0, 2.0 / (sHandle->velocityCurrentParticle*directionFactor), 2.0*(sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*sHandle->velocityCurrentParticle*directionFactor);
 
-				f->hitted = true;
-				if (f->hits && f->sh.countTrans) {
-					RecordHitOnTexture(f, sHandle->flightTimeCurrentParticle + f->colDist / 100.0 / sHandle->velocityCurrentParticle,
+				collidedFacet->hitted = true;
+				if (collidedFacet->hits && collidedFacet->sh.countTrans) {
+					RecordHitOnTexture(f, sHandle->flightTimeCurrentParticle + collidedFacet->colDist / 100.0 / sHandle->velocityCurrentParticle,
 						true, 2.0, 2.0);
 				}
-				if (f->direction && f->sh.countDirection) {
-					RecordDirectionVector(f, sHandle->flightTimeCurrentParticle + f->colDist / 100.0 / sHandle->velocityCurrentParticle);
+				if (collidedFacet->direction && collidedFacet->sh.countDirection) {
+					RecordDirectionVector(f, sHandle->flightTimeCurrentParticle + collidedFacet->colDist / 100.0 / sHandle->velocityCurrentParticle);
 				}
-				ProfileFacet(f, sHandle->flightTimeCurrentParticle + f->colDist / 100.0 / sHandle->velocityCurrentParticle,
+				ProfileFacet(f, sHandle->flightTimeCurrentParticle + collidedFacet->colDist / 100.0 / sHandle->velocityCurrentParticle,
 					true, 2.0, 2.0);
-				if (f->sh.anglemapParams.record) RecordAngleMap(f);
+				if (collidedFacet->sh.anglemapParams.record) RecordAngleMap(f);
 			}
 		}
 	}
-
-	return intFound;
+	return std::make_tuple(found,collidedFacet,minLength);
 
 }
 
+bool Visible(Vector3d *c1, Vector3d *c2, FACET *f1, FACET *f2, FACET** THitCache) {
+	//For AC matrix calculation
+
+	Vector3d rayPos = *c1;
+	Vector3d rayDir = *c2 - *c1;
+
+	bool nullRx = (rayDir.x == 0.0);
+	bool nullRy = (rayDir.y == 0.0);
+	bool nullRz = (rayDir.z == 0.0);
+	Vector3d inverseRayDir;
+	if (!nullRx) inverseRayDir.x = 1.0 / rayDir.x;
+	if (!nullRy) inverseRayDir.y = 1.0 / rayDir.y;
+	if (!nullRz) inverseRayDir.z = 1.0 / rayDir.z;
+
+	//Global variables, easier for recursion:
+	size_t intNbTHits = 0;
+
+	//Output values
+	bool found;
+	FACET *collidedFacet;
+	double minLength;
+
+	std::tie(found, collidedFacet, minLength) = IntersectTree(sHandle->str[0].aabbTree, rayPos, rayDir, 1e100,
+		f1, nullRx, nullRy, nullRz, inverseRayDir, &intNbTHits, THitCache);
+
+	if (found) {
+		if (collidedFacet != f2) {
+			// Obstacle found
+			return false;
+		}
+	}
+
+	return true;
+}

@@ -17,6 +17,7 @@ GNU General Public License for more details.
 */
 
 #ifdef WIN
+#define NOMINMAX
 #include <windows.h> // For GetTickCount()
 #include <Process.h> // For _getpid()
 #else
@@ -28,12 +29,13 @@ GNU General Public License for more details.
 #include <stdio.h>
 #include <stdlib.h>
 #include "Simulation.h"
+#include "IntersectAABB_shared.h"
 #include "Random.h"
 #include <sstream>
 
 // Global handles
 
-FACET     **THits;
+FACET** THitCache;
 SIMULATION *sHandle;
 
 // Timing stuff
@@ -48,9 +50,8 @@ DWORD tickStart;
 void InitSimulation() {
 
 	// Global handle allocation
-	sHandle = (SIMULATION *)malloc(sizeof(SIMULATION));
-	memset(sHandle, 0, sizeof(SIMULATION));
-	THits = (FACET **)malloc(MAX_THIT * sizeof(FACET *)); // Transparent hit cache
+	sHandle = new SIMULATION();
+	THitCache = new FACET*[MAX_THIT]; // Transparent hit cache
 
 #ifdef WIN
 	{

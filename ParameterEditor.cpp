@@ -26,6 +26,7 @@
 #include "GLApp\GLToggle.h"
 #include "GLApp\GLTitledPanel.h"
 #include "GLApp/GLList.h"
+#include "GLApp/MathTools.h"
 
 #include "MolFlow.h"
 #include "GLApp\GLFileBox.h"
@@ -44,7 +45,6 @@ ParameterEditor::ParameterEditor(Worker *w):GLWindow() {
   int hD = 400;
 
   work=w;
-  tempParam = Parameter();
   userValues = std::vector<std::pair<std::string, std::string>>();
   dataView = new GLDataView();
 
@@ -181,15 +181,15 @@ void ParameterEditor::ProcessMessage(GLComponent *src,int message) {
     case MSG_BUTTON:
 		if (src==applyButton) {
 			if (ValidateInput() && mApp->AskToReset()) {
-				if (selectorCombo->GetSelectedIndex() >= 0 && selectorCombo->GetSelectedIndex() < selectorCombo->GetNbRow() - 1) {//existing param
-					work->parameters[selectorCombo->GetSelectedIndex()] = tempParam;
+				if (selectorCombo->GetSelectedIndex() >= 1 && selectorCombo->GetSelectedIndex() < selectorCombo->GetNbRow()) {//existing param
+					work->parameters[selectorCombo->GetSelectedIndex()-1] = tempParam;
 					UpdateCombo();
 					UpdateUserValues();
 					Plot();
-				} else if (selectorCombo->GetSelectedIndex() == selectorCombo->GetNbRow() - 1) { //new Param
+				} else if (selectorCombo->GetSelectedIndex() == 0) { //new Param
 					work->parameters.push_back(tempParam);
 					UpdateCombo();
-					selectorCombo->SetSelectedIndex((int)selectorCombo->GetNbRow() - 2);
+					selectorCombo->SetSelectedIndex(1);
 					deleteButton->SetEnabled(true);
 					UpdateUserValues();
 					Plot();
@@ -200,9 +200,9 @@ void ParameterEditor::ProcessMessage(GLComponent *src,int message) {
 		} else if (src == deleteButton) {
 			if (strcmp(selectorCombo->GetSelectedValue(), "New...") == 0) return;
 			if (mApp->AskToReset()) {
-				work->parameters.erase(work->parameters.begin() + selectorCombo->GetSelectedIndex());
+				work->parameters.erase(work->parameters.begin() + selectorCombo->GetSelectedIndex()-1);
 				UpdateCombo();
-				selectorCombo->SetSelectedIndex(0);
+				selectorCombo->SetSelectedIndex(1);
 				UpdateUserValues();
 				RebuildList();
 				deleteButton->SetEnabled(false);
@@ -245,7 +245,7 @@ void ParameterEditor::ProcessMessage(GLComponent *src,int message) {
 		}
 		break;
 	case MSG_COMBO:
-		if (selectorCombo->GetSelectedIndex() >= 0 && selectorCombo->GetSelectedIndex() < selectorCombo->GetNbRow() - 1) { //existing param
+		if (selectorCombo->GetSelectedIndex() >= 1 && selectorCombo->GetSelectedIndex() < selectorCombo->GetNbRow()) { //existing param
 			UpdateUserValues();
 			ValidateInput();
 			Plot();
@@ -272,16 +272,17 @@ void ParameterEditor::Reset() {
 	userValues = std::vector<std::pair<std::string, std::string>>();
 	RebuildList();
 	char tmp[32];
-	sprintf(tmp, "Param%d", selectorCombo->GetSelectedIndex() + 1);
+	sprintf(tmp, "Param%d", selectorCombo->GetSelectedIndex());
 	nameField->SetText(tmp);
 	dataView->Reset();
 }
 
 void ParameterEditor::UpdateCombo() {
 	selectorCombo->SetSize((int)work->parameters.size()+1);
+	selectorCombo->SetValueAt(0, "New...");
 	for (size_t i = 0; i < work->parameters.size(); i++)
-		selectorCombo->SetValueAt((int)i, work->parameters[i].name.c_str());
-	selectorCombo->SetValueAt((int)work->parameters.size(), "New...");
+		selectorCombo->SetValueAt((int)i+1, work->parameters[i].name.c_str());
+	
 	if (selectorCombo->GetSelectedIndex() == -1 || selectorCombo->GetSelectedIndex() == ((int)selectorCombo->GetNbRow() - 1)) selectorCombo->SetSelectedIndex((int)selectorCombo->GetNbRow() - 1);
 	Reset();
 }
@@ -303,7 +304,7 @@ void ParameterEditor::LoadCSV() {
 	FILENAME *fn = NULL;
 	fn=GLFileBox::OpenFile(NULL, NULL, "Open File", "CSV files\0*.csv\0All files\0*.*\0", 2);
 	if (!fn || !fn->fullName) return;
-	
+
 	std::vector<std::vector<std::string>> table;
 	try {
 		FileReader *f = new FileReader(fn->fullName);
@@ -346,8 +347,9 @@ void ParameterEditor::CopyToClipboard() {
 
 void ParameterEditor::Plot() {
 	dataView->Reset();
-	for (auto i : tempParam.values)
-		dataView->Add(i.first, i.second);
+	for (size_t i = 0; i < tempParam.GetSize(); i++) {
+		dataView->Add(tempParam.GetX(i), tempParam.GetY(i));
+	}
 	dataView->CommitChange();
 }
 
@@ -379,7 +381,7 @@ bool ParameterEditor::ValidateInput() {
 		GLMessageBox::Display("Parameter name can't be empty", "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
 		return false;
 	}
-	if (selectorCombo->GetSelectedIndex() == selectorCombo->GetNbRow() - 1) {
+	if (selectorCombo->GetSelectedIndex() == 0) {
 		for (auto p : work->parameters) {
 			if (tempName.compare(p.name) == 0) {
 				GLMessageBox::Display("This parameter name is already used", "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
@@ -391,7 +393,13 @@ bool ParameterEditor::ValidateInput() {
 		GLMessageBox::Display("Parameter name must begin with a letter", "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
 		return false;
 	}
-	tempParam = Parameter();
+	
+	/*
+	for (int i = 0; i < 1; i++) {
+		StringClass test;
+	}*/
+
+	tempParam=Parameter();
 	tempParam.name = tempName;
 
 	bool atLeastOne = false;
@@ -414,7 +422,7 @@ bool ParameterEditor::ValidateInput() {
 			GLMessageBox::Display(tmp, "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
 			return false;
 		}
-		tempParam.AddValue(std::make_pair(valueX, valueY));
+		tempParam.AddPair(valueX, valueY, true); //insert in correct position
 		atLeastOne = true;
 	}
 	if (!atLeastOne) {
@@ -422,11 +430,11 @@ bool ParameterEditor::ValidateInput() {
 		return false;
 	}
 
-	for (size_t i = 0; i < tempParam.values.size();i++) {
-		for (size_t j = i+1; j < tempParam.values.size(); j++) {
-			if (abs(tempParam.values[i].first - tempParam.values[j].first) < 1E-10) {
+	for (size_t i = 0; i < tempParam.GetSize();i++) {
+		for (size_t j = i+1; j < tempParam.GetSize(); j++) {
+			if (IsEqual(tempParam.GetX(i) , tempParam.GetX(j))) {
 				std::stringstream msg;
-				msg << "There are two values for t=" << tempParam.values[i].first << "s.";
+				msg << "There are two values for t=" << tempParam.GetX(i) << "s.";
 				GLMessageBox::Display(msg.str().c_str(), "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
 				return false;
 			}
@@ -439,10 +447,10 @@ bool ParameterEditor::ValidateInput() {
 void ParameterEditor::UpdateUserValues() {
 	userValues = std::vector<std::pair<std::string, std::string>>();
 	nameField->SetText("");
-	if (selectorCombo->GetSelectedIndex() <(int)work->parameters.size()) {
-		Parameter *getParam = &work->parameters[selectorCombo->GetSelectedIndex()];
+	if (selectorCombo->GetSelectedIndex()-1 <(int)work->parameters.size()) {
+		Parameter *getParam = &work->parameters[selectorCombo->GetSelectedIndex()-1];
 
-		for (int row = 0; row < (int)getParam->values.size(); row++) {
+		for (int row = 0; row < (int)getParam->GetSize(); row++) {
 			/*std::ostringstream str1, str2;
 			//Make it more precise!
 			str1 << getParam->values[row].first;
@@ -451,8 +459,8 @@ void ParameterEditor::UpdateUserValues() {
 			//userValues.push_back(std::make_pair(std::to_string(getParam->values[row].first), std::to_string(getParam->values[row].second)));
 			char tmp1[32];
 			char tmp2[32];
-			sprintf(tmp1, "%.10g", getParam->values[row].first);
-			sprintf(tmp2, "%.10g", getParam->values[row].second);
+			sprintf(tmp1, "%.10g", getParam->GetX(row));
+			sprintf(tmp2, "%.10g", getParam->GetY(row));
 			userValues.push_back(std::make_pair(tmp1,tmp2));
 		}
 		nameField->SetText(getParam->name.c_str());

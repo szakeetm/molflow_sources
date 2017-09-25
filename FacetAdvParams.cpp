@@ -516,6 +516,7 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	lengthText->SetEditable(somethingSelected);
 	diffuseReflBox->SetEditable(somethingSelected);
 	specularReflBox->SetEditable(somethingSelected);
+	uniformReflBox->SetEditable(somethingSelected);
 	facetAccFactor->SetEditable(somethingSelected);
 	facetTeleport->SetEditable(somethingSelected);
 	facetStructure->SetEditable(somethingSelected);

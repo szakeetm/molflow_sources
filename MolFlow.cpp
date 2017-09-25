@@ -216,6 +216,75 @@ MolFlow::MolFlow()
 // Desc: Called during initial app startup, this function performs all the
 //       permanent initialization.
 
+void MolFlow::LoadParameterCatalog()
+{
+	//Parameters from catalog
+	//Find in parameter_catalog folder
+	intptr_t file;
+	_finddata_t filedata;
+	file = _findfirst("parameter_catalog\\*.csv", &filedata);
+	if (file != -1)
+	{
+		do
+		{
+			Parameter newParam;
+			newParam.fromCatalog = true;
+			newParam.isLogLog = true; //For now
+			std::stringstream parName; parName /*<< "["*/ << filedata.name << " [catalog]";
+			newParam.name = parName.str();
+
+			std::vector<std::vector<string>> table;
+			try {
+				std::stringstream pathAndName; pathAndName << "parameter_catalog\\" << filedata.name;
+				FileReader *f = new FileReader(pathAndName.str());
+				worker.ImportCSV(f, table);
+				SAFE_DELETE(f);
+			}
+			catch (Error &e) {
+				char errMsg[512];
+				sprintf(errMsg, "Failed to load CSV file.\n%s", e.GetMsg());
+				GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
+				continue;
+			}
+			//Parse
+			for (size_t i = 0; i < table.size(); i++) {
+				std::vector<std::string> row = table[i];
+				if (row.size() != 2) {
+					std::stringstream errMsg;
+					errMsg << filedata.name << " Row " << i + 1 << "has " << row.size() << " values instead of 2.";
+					GLMessageBox::Display(errMsg.str().c_str(), "Error", GLDLG_OK, GLDLG_ICONERROR);
+					break;
+				}
+				else {
+					double valueX, valueY;
+					try {
+						valueX = ::atof(row[0].c_str());
+					}
+					catch (std::exception err) {
+						char tmp[256];
+						sprintf(tmp, "Can't parse value \"%s\" in row %zd, first column:\n%s", row[0].c_str(), i + 1, err.what());
+						GLMessageBox::Display(tmp, "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
+						break;
+					}
+					try {
+						valueY = ::atof(row[1].c_str());
+					}
+					catch (std::exception err) {
+						char tmp[256];
+						sprintf(tmp, "Can't parse value \"%s\" in row %zd, second column:\n%s", row[1].c_str(), i + 1, err.what());
+						GLMessageBox::Display(tmp, "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
+						break;
+					}
+					newParam.AddPair(valueX, valueY, true); //insert in correct position
+				}
+			}
+
+			worker.parameters.push_back(newParam);
+		} while (_findnext(file, &filedata) == 0);
+	}
+	_findclose(file);
+}
+
 int MolFlow::OneTimeSceneInit()
 {
 	/*
@@ -343,75 +412,78 @@ int MolFlow::OneTimeSceneInit()
 	facetFILabel = new GLToggle(0, "Outgassing (mbar*l/s):");
 	facetFILabel->SetEnabled(false);
 	facetFILabel->SetState(true);
-	inputPanel->Add(facetFILabel);
-	facetFlow = new GLTextField(0, NULL);
-	inputPanel->Add(facetFlow);
+inputPanel->Add(facetFILabel);
+facetFlow = new GLTextField(0, NULL);
+inputPanel->Add(facetFlow);
 
-	facetFIAreaLabel = new GLToggle(1, "Outg/area(mbar*l/s/cm\262):");
-	facetFIAreaLabel->SetEnabled(false);
-	inputPanel->Add(facetFIAreaLabel);
-	facetFlowArea = new GLTextField(0, NULL);
-	inputPanel->Add(facetFlowArea);
+facetFIAreaLabel = new GLToggle(1, "Outg/area(mbar*l/s/cm\262):");
+facetFIAreaLabel->SetEnabled(false);
+inputPanel->Add(facetFIAreaLabel);
+facetFlowArea = new GLTextField(0, NULL);
+inputPanel->Add(facetFlowArea);
 
-	/*facetUseDesFileLabel = new GLLabel("Desorp. file");
-	facetPanel->Add(facetUseDesFileLabel);
-	facetUseDesFile = new GLCombo(0);
-	facetUseDesFile->SetSize(1);
-	facetUseDesFile->SetValueAt(0,"No desorption map");
-	inputPanel->Add(facetUseDesFile);*/
+/*facetUseDesFileLabel = new GLLabel("Desorp. file");
+facetPanel->Add(facetUseDesFileLabel);
+facetUseDesFile = new GLCombo(0);
+facetUseDesFile->SetSize(1);
+facetUseDesFile->SetValueAt(0,"No desorption map");
+inputPanel->Add(facetUseDesFile);*/
 
-	outputPanel = new GLTitledPanel("Particles out");
-	facetPanel->Add(outputPanel);
+outputPanel = new GLTitledPanel("Particles out");
+facetPanel->Add(outputPanel);
 
-	facetSLabel = new GLLabel("Sticking factor:");
-	outputPanel->Add(facetSLabel);
-	facetSticking = new GLTextField(0, NULL);
-	outputPanel->Add(facetSticking);
+facetSLabel = new GLLabel("Sticking factor:");
+outputPanel->Add(facetSLabel);
+facetSticking = new GLTextField(0, NULL);
+outputPanel->Add(facetSticking);
 
-	facetPumpingLabel = new GLLabel("Pumping Speed (l/s):");
-	outputPanel->Add(facetPumpingLabel);
-	facetPumping = new GLTextField(0, NULL);
-	outputPanel->Add(facetPumping);
+facetPumpingLabel = new GLLabel("Pumping Speed (l/s):");
+outputPanel->Add(facetPumpingLabel);
+facetPumping = new GLTextField(0, NULL);
+outputPanel->Add(facetPumping);
 
-	facetTempLabel = new GLLabel("Temperature (\260K):");
-	facetPanel->Add(facetTempLabel);
-	facetTemperature = new GLTextField(0, NULL);
-	facetPanel->Add(facetTemperature);
-	
-	facetReLabel = new GLLabel("Profile:");
-	facetPanel->Add(facetReLabel);
-	facetRecType = new GLCombo(0);
-	facetRecType->SetSize(6);
-	facetRecType->SetValueAt(0, "None");
-	facetRecType->SetValueAt(1, "Pressure, density (\201)");
-	facetRecType->SetValueAt(2, "Pressure, density (\202)");
-	facetRecType->SetValueAt(3, "Incident angle");
-	facetRecType->SetValueAt(4, "Speed distribution");
-	facetRecType->SetValueAt(5, "Orthogonal velocity");
-	facetPanel->Add(facetRecType);
+facetTempLabel = new GLLabel("Temperature (\260K):");
+facetPanel->Add(facetTempLabel);
+facetTemperature = new GLTextField(0, NULL);
+facetPanel->Add(facetTemperature);
 
-	facetMoreBtn = new GLButton(0, "<< Adv");
-	facetPanel->Add(facetMoreBtn);
+facetReLabel = new GLLabel("Profile:");
+facetPanel->Add(facetReLabel);
+facetRecType = new GLCombo(0);
+facetRecType->SetSize(6);
+facetRecType->SetValueAt(0, "None");
+facetRecType->SetValueAt(1, "Pressure, density (\201)");
+facetRecType->SetValueAt(2, "Pressure, density (\202)");
+facetRecType->SetValueAt(3, "Incident angle");
+facetRecType->SetValueAt(4, "Speed distribution");
+facetRecType->SetValueAt(5, "Orthogonal velocity");
+facetPanel->Add(facetRecType);
 
-	facetList = new GLList(0);
-	facetList->SetWorker(&worker);
-	facetList->SetGrid(true);
-	facetList->SetSelectionMode(MULTIPLE_ROW);
-	facetList->SetSize(4, 1);
-	facetList->SetColumnWidths((int*)cWidth);
-	facetList->SetColumnLabels((char **)cName);
-	facetList->SetColumnLabelVisible(true);
-	facetList->Sortable = true;
-	Add(facetList);
+facetMoreBtn = new GLButton(0, "<< Adv");
+facetPanel->Add(facetMoreBtn);
 
-	facetAdvParams = new FacetAdvParams(&worker); //To use its UpdatefacetParams() routines
+facetList = new GLList(0);
+facetList->SetWorker(&worker);
+facetList->SetGrid(true);
+facetList->SetSelectionMode(MULTIPLE_ROW);
+facetList->SetSize(4, 1);
+facetList->SetColumnWidths((int*)cWidth);
+facetList->SetColumnLabels((char **)cName);
+facetList->SetColumnLabelVisible(true);
+facetList->Sortable = true;
+Add(facetList);
 
-	ClearFacetParams();
-	LoadConfig();
-	UpdateRecentMenu();
-	UpdateViewerPanel();
-	PlaceComponents();
-	CheckNeedsTexture();
+facetAdvParams = new FacetAdvParams(&worker); //To use its UpdatefacetParams() routines
+
+ClearFacetParams();
+LoadConfig();
+UpdateRecentMenu();
+UpdateViewerPanel();
+PlaceComponents();
+CheckNeedsTexture();
+
+
+LoadParameterCatalog();
 
 	try {
 		worker.SetProcNumber(nbProc);

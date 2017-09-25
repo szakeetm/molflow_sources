@@ -21,6 +21,7 @@ GNU General Public License for more details.
 #include <stdlib.h>
 #include <sstream>
 #include "Simulation.h"
+#include "IntersectAABB_shared.h"
 #include "Random.h"
 #include "GLApp/MathTools.h"
 #include <tuple> //std::tie
@@ -367,14 +368,14 @@ void PerformTeleport(FACET *iFacet) {
 	sHandle->pPos.z = destination->sh.O.z + u*destination->sh.U.z + v*destination->sh.V.z;
 	RecordHit(HIT_TELEPORT);
 	int nbTry = 0;
-	if (!IsInFacet(destination, u, v)) { //source and destination facets not the same shape, would generate leak
+	if (!IsInFacet(*destination, u, v)) { //source and destination facets not the same shape, would generate leak
 		// Choose a new starting point
 		RecordHit(HIT_ABS);
 		bool found = false;
 		while (!found && nbTry < 1000) {
 			u = rnd();
 			v = rnd();
-			if (IsInFacet(destination, u, v)) {
+			if (IsInFacet(*destination, u, v)) {
 				found = true;
 				sHandle->pPos.x = destination->sh.O.x + u*destination->sh.U.x + v*destination->sh.V.x;
 				sHandle->pPos.y = destination->sh.O.y + u*destination->sh.U.y + v*destination->sh.V.y;
@@ -406,24 +407,22 @@ void PerformTeleport(FACET *iFacet) {
 
 // Perform nbStep simulation steps (a step is a bounce)
 
-bool SimulationMCStep(int nbStep) {
-
-	FACET   *collidedFacet;
-	double   d;
-	bool     found;
-	int      i;
+bool SimulationMCStep(size_t nbStep) {
 
 	// Perform simulation steps
-	for (i = 0; i < nbStep; i++) {
+	for (size_t i = 0; i < nbStep; i++) {
+		
+		//Prepare output values
+		FACET   *collidedFacet;
+		double   d;
+		bool     found;
 
-		found = Intersect(&(sHandle->pPos), &(sHandle->pDir), &d, &collidedFacet, sHandle->lastHit);
+		std::tie(found,collidedFacet,d) = Intersect(sHandle->pPos, sHandle->pDir, sHandle->lastHit,THitCache);
 
 		if (found) {
 
 			// Move particle to intersection point
-			sHandle->pPos.x += d*sHandle->pDir.x;
-			sHandle->pPos.y += d*sHandle->pDir.y;
-			sHandle->pPos.z += d*sHandle->pDir.z;
+			sHandle->pPos = sHandle->pPos + d*sHandle->pDir;
 			//sHandle->distTraveledCurrentParticle += d;
 
 			double lastFLightTime = sHandle->flightTimeCurrentParticle; //memorize for partial hits
@@ -610,7 +609,7 @@ bool StartFromSource() {
 			u = rnd();
 			v = rnd();
 		}
-		if (IsInFacet(src, u, v)) {
+		if (IsInFacet(*src, u, v)) {
 
 			// (U,V) -> (x,y,z)
 			sHandle->pPos.x = src->sh.O.x + u*src->sh.U.x + v*src->sh.V.x;
@@ -928,7 +927,7 @@ double Anglemap::GeneratePhiFromAngleMap(const int & thetaLowerIndex, const doub
 			double D = Sqr(b) + 4 * a*dy; //Discriminant. In rare cases it might be slightly negative, then fall back to linear interpolation:
 			if (D < 0) {
 				phiOvershoot = (lookupValue - GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams))
-					/ (GetPhiCDFValue(thetaIndex, IDX(phiLowerIndex + 1, anglemapParams.phiWidth), anglemapParams) - GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams));
+					/ (GetPhiCDFValue(thetaIndex, (int)IDX(phiLowerIndex + 1, anglemapParams.phiWidth), anglemapParams) - GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams));
 			}
 			else {
 				double dx = (-b + sqrt(Sqr(b) + 4 * a*dy)) / (2 * a); //Since b>=0 it's the + branch of the +- that is valid for us
@@ -1018,11 +1017,17 @@ void PerformBounce(FACET *iFacet) {
 	double inPhi, inTheta;
 	bool revert = false;
 
-	// Handle super structure link facet
+	// Handle super structure link facet. Can be 
 	if (iFacet->sh.superDest) {
 		sHandle->curStruct = iFacet->sh.superDest - 1;
-		// Count this hit as a transparent pass
-		RecordHit(HIT_TRANS);
+		if (iFacet->sh.isMoving) { //A very special case where link facets can be used as transparent but moving facets
+			RecordHit(HIT_MOVING);
+			TreatMovingFacet();
+		}
+		else {
+			// Count this hit as a transparent pass
+			RecordHit(HIT_TRANS);
+		}
 		ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 2.0);
 		if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
 		if (iFacet->hits && iFacet->sh.countTrans) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 2.0);
@@ -1207,13 +1212,14 @@ void ProfileFacet(FACET *f, double time, bool countHit, double velocity_factor, 
 	case REC_PRESSUREV:
 	{
 		size_t pos = (size_t)((f->sh.profileType == REC_PRESSUREU ? f->colU : f->colV)*(double)PROFILE_SIZE);
-		Saturate(pos, 0, PROFILE_SIZE - 1);
-		for (size_t m = 0; m <= nbMoments; m++) {
-			if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
-				if (countHit) f->profile[m][pos].count++;
-				double ortVelocity = sHandle->velocityCurrentParticle*abs(Dot(f->sh.N, sHandle->pDir));
-				f->profile[m][pos].sum_1_per_ort_velocity += velocity_factor / ortVelocity;
-				f->profile[m][pos].sum_v_ort += ortSpeedFactor*(sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;
+		if (pos >= 0 && pos < PROFILE_SIZE) {
+			for (size_t m = 0; m <= nbMoments; m++) {
+				if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
+					if (countHit) f->profile[m][pos].count++;
+					double ortVelocity = sHandle->velocityCurrentParticle*abs(Dot(f->sh.N, sHandle->pDir));
+					f->profile[m][pos].sum_1_per_ort_velocity += velocity_factor / ortVelocity;
+					f->profile[m][pos].sum_v_ort += ortSpeedFactor*(sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;
+				}
 			}
 		}
 		break;
@@ -1223,10 +1229,11 @@ void ProfileFacet(FACET *f, double time, bool countHit, double velocity_factor, 
 	case REC_VELOCITY:
 	{	if (countHit) {
 		size_t pos = (size_t)(dot*sHandle->velocityCurrentParticle / f->sh.maxSpeed*(double)PROFILE_SIZE); //"dot" default value is 1.0
-		Saturate(pos, 0, PROFILE_SIZE - 1);
-		for (size_t m = 0; m <= nbMoments; m++) {
-			if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
-				f->profile[m][pos].count++;
+		if (pos >= 0 && pos < PROFILE_SIZE) {
+			for (size_t m = 0; m <= nbMoments; m++) {
+				if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
+					f->profile[m][pos].count++;
+				}
 			}
 		}
 	}
@@ -1282,12 +1289,14 @@ void UpdateVelocity(FACET *collidedFacet) {
 
 double GenerateRandomVelocity(int CDFId) {
 	//return FastLookupY(rnd(),sHandle->CDFs[CDFId],false);
-	return InterpolateX(rnd(), sHandle->CDFs[CDFId], true);
+	double r = rnd();
+	double v = InterpolateX(r, sHandle->CDFs[CDFId], false, true); //Allow extrapolate
+	return v;
 }
 
 double GenerateDesorptionTime(FACET *src) {
 	if (src->sh.outgassing_paramId >= 0) { //time-dependent desorption
-		return InterpolateX(rnd()*sHandle->IDs[src->sh.IDid].back().second, sHandle->IDs[src->sh.IDid], true);
+		return InterpolateX(rnd()*sHandle->IDs[src->sh.IDid].back().second, sHandle->IDs[src->sh.IDid], false, true); //allow extrapolate
 	}
 	else {
 		return rnd()*sHandle->latestMoment; //continous desorption between 0 and latestMoment
@@ -1297,13 +1306,13 @@ double GenerateDesorptionTime(FACET *src) {
 double GetStickingAt(FACET *f, double time) {
 	if (f->sh.sticking_paramId == -1) //constant sticking
 		return f->sh.sticking;
-	else return InterpolateY(time, sHandle->parameters[f->sh.sticking_paramId].values, true);
+	else return sHandle->parameters[f->sh.sticking_paramId].InterpolateY(time,false);
 }
 
 double GetOpacityAt(FACET *f, double time) {
 	if (f->sh.opacity_paramId == -1) //constant sticking
 		return f->sh.opacity;
-	else return InterpolateY(time, sHandle->parameters[f->sh.opacity_paramId].values, true);
+	else return sHandle->parameters[f->sh.opacity_paramId].InterpolateY(time, false);
 }
 
 void TreatMovingFacet() {

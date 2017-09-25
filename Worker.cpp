@@ -16,6 +16,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 */
 
+#define NOMINMAX
 #include <Windows.h>
 #include "MolflowGeometry.h"
 #include "Worker.h"
@@ -1572,8 +1573,10 @@ void Worker::CalcTotalOutgassing() {
 				}
 				else { //time-dependent outgassing
 					totalDesorbedMolecules += IDs[f->sh.IDid].back().second / (1.38E-23*f->sh.temperature);
-					finalOutgassingRate += parameters[f->sh.outgassing_paramId].values.back().second *0.100 / (1.38E-23*f->sh.temperature); //0.1: mbar*l/s->Pa*m3/s
-					finalOutgassingRate_Pa_m3_sec += parameters[f->sh.outgassing_paramId].values.back().second *0.100;
+					size_t lastIndex = parameters[f->sh.outgassing_paramId].GetSize() - 1;
+					double finalRate_mbar_l_s = parameters[f->sh.outgassing_paramId].GetY(lastIndex);
+					finalOutgassingRate += finalRate_mbar_l_s *0.100 / (1.38E-23*f->sh.temperature); //0.1: mbar*l/s->Pa*m3/s
+					finalOutgassingRate_Pa_m3_sec += finalRate_mbar_l_s *0.100;
 				}
 			}
 		}
@@ -1625,30 +1628,29 @@ std::vector<std::pair<double, double>> Worker::Generate_ID(int paramId){
 	std::vector<std::pair<double, double>> ID;
 	//First, let's check at which index is the latest moment
 	size_t indexBeforeLastMoment;
-	for (indexBeforeLastMoment = 0; indexBeforeLastMoment < parameters[paramId].values.size() &&
-		(parameters[paramId].values[indexBeforeLastMoment].first < latestMoment); indexBeforeLastMoment++);
-		if (indexBeforeLastMoment >= parameters[paramId].values.size()) indexBeforeLastMoment = parameters[paramId].values.size() - 1; //not found, set as last moment
+	for (indexBeforeLastMoment = 0; indexBeforeLastMoment < parameters[paramId].GetSize() &&
+		(parameters[paramId].GetX(indexBeforeLastMoment) < latestMoment); indexBeforeLastMoment++);
+		if (indexBeforeLastMoment >= parameters[paramId].GetSize()) indexBeforeLastMoment = parameters[paramId].GetSize() - 1; //not found, set as last moment
 
 	//Construct integral from 0 to latest moment
 	//Zero
 	ID.push_back(std::make_pair(0.0, 0.0));
 
 	//First moment
-	ID.push_back(std::make_pair(parameters[paramId].values[0].first,
-		parameters[paramId].values[0].first*parameters[paramId].values[0].second*0.100)); //for the first moment (0.1: mbar*l/s -> Pa*m3/s)
+	ID.push_back(std::make_pair(parameters[paramId].GetX(0),
+		parameters[paramId].GetX(0)*parameters[paramId].GetY(0)*0.100)); //for the first moment (0.1: mbar*l/s -> Pa*m3/s)
 
 	//Intermediate moments
 	for (size_t pos = 1; pos <= indexBeforeLastMoment; pos++) {
-		if (abs(parameters[paramId].values[pos].second - parameters[paramId].values[pos - 1].second) < 1E-10) //two equal values follow, simple integration by multiplying
-			ID.push_back(std::make_pair(parameters[paramId].values[pos].first,
+		if (IsEqual(parameters[paramId].GetY(pos) , parameters[paramId].GetY(pos-1))) //two equal values follow, simple integration by multiplying
+			ID.push_back(std::make_pair(parameters[paramId].GetX(pos),
 			ID.back().second +
-			(parameters[paramId].values[pos].first - parameters[paramId].values[pos - 1].first)*parameters[paramId].values[pos].second*0.100));
-		else { //difficult case, we'll integrate by dividing two 20equal sections
+			(parameters[paramId].GetX(pos) - parameters[paramId].GetX(pos-1))*parameters[paramId].GetY(pos)*0.100));
+		else { //difficult case, we'll integrate by dividing to 20 equal sections
 			for (double delta = 0.05; delta < 1.0001; delta += 0.05) {
-				double delta_t = parameters[paramId].values[pos].first - parameters[paramId].values[pos - 1].first;
-				double time = parameters[paramId].values[pos - 1].first + delta*delta_t;
-				double avg_value = (InterpolateY(time - 0.05*delta_t, parameters[paramId].values)*0.100
-					+ InterpolateY(time, parameters[paramId].values)*0.100) / 2.0;
+				double delta_t = parameters[paramId].GetX(pos) - parameters[paramId].GetX(pos-1);
+				double time = parameters[paramId].GetX(pos-1) + delta*delta_t;
+				double avg_value = (parameters[paramId].InterpolateY(time - 0.05*delta_t,false) + parameters[paramId].InterpolateY(time,false))*0.100 / 2.0;
 				ID.push_back(std::make_pair(time,
 					ID.back().second +
 					0.05*delta_t*avg_value));
@@ -1657,16 +1659,16 @@ std::vector<std::pair<double, double>> Worker::Generate_ID(int paramId){
 	}
 
 	//latestMoment
-	double valueAtLatestMoment = InterpolateY(latestMoment, parameters[paramId].values, true);
-	if ((valueAtLatestMoment - parameters[paramId].values[indexBeforeLastMoment].second) < 1E-10) //two equal values follow, simple integration by multiplying
+	double valueAtLatestMoment = parameters[paramId].InterpolateY(latestMoment,false);
+	if (IsEqual(valueAtLatestMoment , parameters[paramId].GetY(indexBeforeLastMoment))) //two equal values follow, simple integration by multiplying
 		ID.push_back(std::make_pair(latestMoment,
 		ID.back().second +
-		(latestMoment - parameters[paramId].values[indexBeforeLastMoment].first)*parameters[paramId].values[indexBeforeLastMoment].second*0.100));
+		(latestMoment - parameters[paramId].GetX(indexBeforeLastMoment))*parameters[paramId].GetY(indexBeforeLastMoment)*0.100));
 	else { //difficult case, we'll integrate by dividing two 5equal sections
 		for (double delta = 0.0; delta < 1.0001; delta += 0.05) {
-			double delta_t = latestMoment - parameters[paramId].values[indexBeforeLastMoment].first;
-			double time = parameters[paramId].values[indexBeforeLastMoment].first + delta*delta_t;
-			double avg_value = (parameters[paramId].values[indexBeforeLastMoment].second*0.100 + InterpolateY(time, parameters[paramId].values)*0.100) / 2.0;
+			double delta_t = latestMoment - parameters[paramId].GetX(indexBeforeLastMoment);
+			double time = parameters[paramId].GetX(indexBeforeLastMoment) + delta*delta_t;
+			double avg_value = (parameters[paramId].GetY(indexBeforeLastMoment)*0.100 + parameters[paramId].InterpolateY(time, false)*0.100) / 2.0;
 			ID.push_back(std::make_pair(time,
 				ID.back().second +
 				0.05*delta_t*avg_value));

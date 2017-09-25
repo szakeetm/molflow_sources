@@ -19,6 +19,7 @@
 #define _SIMULATIONH_
 
 #define MAX_STRUCT 512
+#define MAX_THIT   16384
 
 #include "Shared.h"
 #include "SMP.h"
@@ -90,21 +91,7 @@ public:
   void	ResizeCounter(size_t nbMoments);
 };
 
-// Temporary transparent hit
-#define MAX_THIT    16384
-extern  FACET     **THits;
-
-// AABBTree node
-
-struct AABBNODE {
-
-  AABB             bb;
-  struct AABBNODE *left;
-  struct AABBNODE *right;
-  FACET          **list;
-  int              nbFacet;
-
-};
+extern  FACET **THitCache; //Global variable
 
 // Local simulation structure
 
@@ -248,7 +235,7 @@ bool LoadSimulation(Dataport *loader);
 bool StartSimulation(size_t mode);
 void ResetSimulation();
 bool SimulationRun();
-bool SimulationMCStep(int nbStep);
+bool SimulationMCStep(size_t nbStep);
 bool SimulationACStep(int nbStep);
 void RecordHit(const int& type);
 void RecordLeakPos();
@@ -263,14 +250,7 @@ void UpdateHits(Dataport *dpHit,int prIdx,DWORD timeout);
 void UpdateMCHits(Dataport *dpHit,int prIdx,size_t nbMoments,DWORD timeout);
 void UpdateACHits(Dataport *dpHit,int prIdx,DWORD timeout);
 void ResetTmpCounters();
-struct AABBNODE *BuildAABBTree(FACET **list,int nbFacet,int depth);
-int FindBestCuttingPlane(struct AABBNODE *node,int *left,int *right);
-void ComputeBB(struct AABBNODE *node);
-void DestroyAABB(struct AABBNODE *node);
-void IntersectTree(struct AABBNODE *node);
-bool Intersect(Vector3d *rayPos,Vector3d *rayDir,double *dist,FACET **iFact,FACET *last);
-bool Visible(Vector3d *c1,Vector3d *c2,FACET *f1,FACET *f2);
-bool IsInFacet(FACET *f,const double &u,const double &v);
+
 double GetTick();
 size_t   GetHitsSize();
 bool ComputeACMatrix(SHELEM *mesh);
