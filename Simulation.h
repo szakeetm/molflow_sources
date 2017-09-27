@@ -265,11 +265,4 @@ double GetOpacityAt(FACET *src,double time);
 void   IncreaseFacetCounter(FACET *f, double time, size_t hit,size_t desorb, size_t absorb, double sum_1_per_v, double sum_v_ort);
 void   TreatMovingFacet();
 
-//Static variables shared between IntersectAABB and IntersectAABB_shared routines, declared here
-// Minimum number of facet inside a BB
-#define MINBB    8
-
-// Maximum AABB tree depth
-#define MAXDEPTH 5
-
 #endif /* _SIMULATIONH_ */

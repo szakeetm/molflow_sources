@@ -417,7 +417,7 @@ bool SimulationMCStep(size_t nbStep) {
 		double   d;
 		bool     found;
 
-		std::tie(found,collidedFacet,d) = Intersect(sHandle->pPos, sHandle->pDir, sHandle->lastHit,THitCache);
+		std::tie(found,collidedFacet,d) = Intersect(sHandle->pPos, sHandle->pDir, /*sHandle->lastHit,*/THitCache);
 
 		if (found) {
 

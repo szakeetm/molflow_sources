@@ -75,11 +75,11 @@ int   cWidth[] = { 30, 56, 50, 50 };
 char *cName[] = { "#", "Hits", "Des", "Abs" };
 
 std::string appId = "Molflow";
-int appVersion = 2653;
+int appVersion = 2654;
 #ifdef _DEBUG
 std::string appName = "MolFlow+ development version 64-bit (Compiled " __DATE__ " " __TIME__ ") DEBUG MODE";
 #else
-std::string appName = "Molflow+ 2.6.53 64-bit (" __DATE__ ")";
+std::string appName = "Molflow+ 2.6.54 64-bit (" __DATE__ ")";
 #endif
 
 std::vector<string> formulaPrefixes = { "A","D","H","P","DEN","Z","V","T","AR","a","d","h","p","den","z","v","t","ar","," };
@@ -1448,6 +1448,7 @@ void MolFlow::LoadFile(char *fName) {
 		ClearParameters();
 		ClearAllSelections();
 		ClearAllViews();
+		ResetSimulation(false);
 
 		worker.LoadGeometry(fullName);
 

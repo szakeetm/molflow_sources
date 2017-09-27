@@ -628,8 +628,9 @@ bool LoadSimulation(Dataport *loader) {
 	//ReleaseDataport(loader); //Commented out as AccessDataport removed
 
 	// Build all AABBTrees
+	size_t maxDepth=0;
 	for (i = 0; i < sHandle->nbSuper; i++)
-		sHandle->str[i].aabbTree = BuildAABBTree(sHandle->str[i].facets, sHandle->str[i].nbFacet, 0);
+		sHandle->str[i].aabbTree = BuildAABBTree(sHandle->str[i].facets, sHandle->str[i].nbFacet, 0,maxDepth);
 
 	// Initialise simulation
 

@@ -25,7 +25,7 @@ GNU General Public License for more details.
 #include "Random.h"
 #include "Simulation.h"
 
-std::tuple<bool,FACET*,double> Intersect(const Vector3d& rayPos, const Vector3d& rayDir, FACET* lastHitFacet, FACET** THitCache) {
+std::tuple<bool,FACET*,double> Intersect(const Vector3d& rayPos, const Vector3d& rayDir, /*FACET* lastHitFacet,*/ FACET**& THitCache) {
 	// Source ray (rayDir vector must be normalized)
 	// lastHit is to avoid detecting twice the same collision
 	// returns bool found (is there a collision), pointer to collided facet, double d (distance to collision)
@@ -42,12 +42,13 @@ std::tuple<bool,FACET*,double> Intersect(const Vector3d& rayPos, const Vector3d&
 	size_t intNbTHits = 0;
 
 	//Output values
-	bool found;
+	bool found=false;
 	FACET *collidedFacet;
-	double minLength;
+	double minLength=1e100;
 
-	std::tie(found,collidedFacet,minLength) = IntersectTree(sHandle->str[sHandle->curStruct].aabbTree,rayPos,rayDir,1e100,lastHitFacet,
-		nullRx,nullRy,nullRz,inverseRayDir,&intNbTHits,THitCache);
+	IntersectTree(sHandle->str[sHandle->curStruct].aabbTree,rayPos, -1.0*rayDir,sHandle->lastHit,
+		nullRx,nullRy,nullRz,inverseRayDir,
+		intNbTHits,THitCache,found,collidedFacet,minLength); //output params
 
 	if (found) {
 
@@ -102,8 +103,8 @@ bool Visible(Vector3d *c1, Vector3d *c2, FACET *f1, FACET *f2, FACET** THitCache
 	FACET *collidedFacet;
 	double minLength;
 
-	std::tie(found, collidedFacet, minLength) = IntersectTree(sHandle->str[0].aabbTree, rayPos, rayDir, 1e100,
-		f1, nullRx, nullRy, nullRz, inverseRayDir, &intNbTHits, THitCache);
+	IntersectTree(sHandle->str[0].aabbTree, rayPos,-1.0*rayDir, 
+		f1, nullRx, nullRy, nullRz, inverseRayDir, intNbTHits, THitCache, found,collidedFacet,minLength);
 
 	if (found) {
 		if (collidedFacet != f2) {
