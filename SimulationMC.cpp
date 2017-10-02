@@ -54,78 +54,78 @@ void CalcTotalOutgassing() {
 
 }
 
-void PolarToCartesian(FACET *iFacet, double theta, double phi, bool reverse) {
-
-	Vector3d U, V, N;
-	double u, v, n;
-
-	// Polar in (nU,nV,N) to Cartesian(x,y,z) transformation  ( nU = U/|U| , nV = V/|V| )
-	// tetha is the angle to the normal of the facet N, phi to U
-	// ! See Geometry::InitializeGeometry() for further informations on the (U,V,N) basis !
-	// (nU,nV,N) and (x,y,z) are both left handed
-
-	//This should be a speed-up routine, but I didn't experience any speed difference so I commented it out. Marton
-	/*#ifdef WIN
-	_asm {                    // FPU stack
-	fld qword ptr [theta]
-	fsincos                 // cos(t)        sin(t)
-	fld qword ptr [phi]
-	fsincos                 // cos(p)        sin(p) cos(t) sin(t)
-	fmul st(0),st(3)        // cos(p)*sin(t) sin(p) cos(t) sin(t)
-	fstp qword ptr [u]      // sin(p)        cos(t) sin(t)
-	fmul st(0),st(2)        // sin(p)*sin(t) cos(t) sin(t)
-	fstp qword ptr [v]      // cos(t) sin(t)
-	fstp qword ptr [n]      // sin(t)
-	fstp qword ptr [dummy]  // Flush the sin(t)
-	}
-	#else*/
-	u = sin(theta)*cos(phi);
-	v = sin(theta)*sin(phi);
-	n = cos(theta);
-	//#endif
-
-	// Get the (nU,nV,N) orthonormal basis of the facet
-	U = iFacet->sh.nU;
-	V = iFacet->sh.nV;
-	N = iFacet->sh.N;
-	if (reverse) {
-		N.x = N.x*(-1.0);
-		N.y = N.y*(-1.0);
-		N.z = N.z*(-1.0);
-	}
-
-	// Basis change (nU,nV,N) -> (x,y,z)
-	sHandle->pDir.x = u*U.x + v*V.x + n*N.x;
-	sHandle->pDir.y = u*U.y + v*V.y + n*N.y;
-	sHandle->pDir.z = u*U.z + v*V.z + n*N.z;
-
-}
-
-void CartesianToPolar(FACET *iFacet, double *theta, double *phi) {
-
-	// Get polar coordinates of the incoming particule direction in the (U,V,N) facet space.
-	// Note: The facet is parallel to (U,V), we use its (nU,nV,N) orthonormal basis here.
-	// (nU,nV,N) and (x,y,z) are both left handed
-
-	// Cartesian(x,y,z) to polar in (nU,nV,N) transformation
-
-	// Basis change (x,y,z) -> (nU,nV,N)
-	// We use the fact that (nU,nV,N) belongs to SO(3)
-	double u = Dot(sHandle->pDir, iFacet->sh.nU);
-	double v = Dot(sHandle->pDir, iFacet->sh.nV);
-	double n = Dot(sHandle->pDir, iFacet->sh.N);
-
-	/*
-	// (u,v,n) -> (theta,phi)
-	double rho = sqrt(v*v + u*u);
-	*theta = acos(n);              // Angle to normal (PI/2 .. PI for frontal and 0..PI/2 for back incidence)
-	*phi = asin(v / rho);			// Returns -PI/2 ... +PI/2
-	if (u < 0.0) *phi = PI - *phi;  // Angle to U, -PI/2 .. 3PI/2
-	*/
-
-	*theta = acos(n);
-	*phi = atan2(v, u); // -PI..PI
-}
+//void PolarToCartesian(FACET *iFacet, double theta, double phi, bool reverse) {
+//
+//	Vector3d U, V, N;
+//	double u, v, n;
+//
+//	// Polar in (nU,nV,N) to Cartesian(x,y,z) transformation  ( nU = U/|U| , nV = V/|V| )
+//	// tetha is the angle to the normal of the facet N, phi to U
+//	// ! See Geometry::InitializeGeometry() for further informations on the (U,V,N) basis !
+//	// (nU,nV,N) and (x,y,z) are both left handed
+//
+//	//This should be a speed-up routine, but I didn't experience any speed difference so I commented it out. Marton
+//	/*#ifdef WIN
+//	_asm {                    // FPU stack
+//	fld qword ptr [theta]
+//	fsincos                 // cos(t)        sin(t)
+//	fld qword ptr [phi]
+//	fsincos                 // cos(p)        sin(p) cos(t) sin(t)
+//	fmul st(0),st(3)        // cos(p)*sin(t) sin(p) cos(t) sin(t)
+//	fstp qword ptr [u]      // sin(p)        cos(t) sin(t)
+//	fmul st(0),st(2)        // sin(p)*sin(t) cos(t) sin(t)
+//	fstp qword ptr [v]      // cos(t) sin(t)
+//	fstp qword ptr [n]      // sin(t)
+//	fstp qword ptr [dummy]  // Flush the sin(t)
+//	}
+//	#else*/
+//	u = sin(theta)*cos(phi);
+//	v = sin(theta)*sin(phi);
+//	n = cos(theta);
+//	//#endif
+//
+//	// Get the (nU,nV,N) orthonormal basis of the facet
+//	U = iFacet->sh.nU;
+//	V = iFacet->sh.nV;
+//	N = iFacet->sh.N;
+//	if (reverse) {
+//		N.x = N.x*(-1.0);
+//		N.y = N.y*(-1.0);
+//		N.z = N.z*(-1.0);
+//	}
+//
+//	// Basis change (nU,nV,N) -> (x,y,z)
+//	sHandle->pDir.x = u*U.x + v*V.x + n*N.x;
+//	sHandle->pDir.y = u*U.y + v*V.y + n*N.y;
+//	sHandle->pDir.z = u*U.z + v*V.z + n*N.z;
+//
+//}
+//
+//void CartesianToPolar(FACET *iFacet, double *theta, double *phi) {
+//
+//	// Get polar coordinates of the incoming particule direction in the (U,V,N) facet space.
+//	// Note: The facet is parallel to (U,V), we use its (nU,nV,N) orthonormal basis here.
+//	// (nU,nV,N) and (x,y,z) are both left handed
+//
+//	// Cartesian(x,y,z) to polar in (nU,nV,N) transformation
+//
+//	// Basis change (x,y,z) -> (nU,nV,N)
+//	// We use the fact that (nU,nV,N) belongs to SO(3)
+//	double u = Dot(sHandle->pDir, iFacet->sh.nU);
+//	double v = Dot(sHandle->pDir, iFacet->sh.nV);
+//	double n = Dot(sHandle->pDir, iFacet->sh.N);
+//
+//	/*
+//	// (u,v,n) -> (theta,phi)
+//	double rho = sqrt(v*v + u*u);
+//	*theta = acos(n);              // Angle to normal (PI/2 .. PI for frontal and 0..PI/2 for back incidence)
+//	*phi = asin(v / rho);			// Returns -PI/2 ... +PI/2
+//	if (u < 0.0) *phi = PI - *phi;  // Angle to U, -PI/2 .. 3PI/2
+//	*/
+//
+//	*theta = acos(n);
+//	*phi = atan2(v, u); // -PI..PI
+//}
 
 void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 
@@ -312,7 +312,7 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 
 void PerformTeleport(FACET *iFacet) {
 
-	double inPhi, inTheta;
+	
 	//Search destination
 	FACET *destination;
 	bool found = false;
@@ -325,7 +325,7 @@ void PerformTeleport(FACET *iFacet) {
 			sprintf(err, "Facet %d tried to teleport to the facet where the particle came from, but there is no such facet.", iFacet->globalId + 1);
 			SetErrorSub(err);*/
 			RecordHit(HIT_REF);
-			sHandle->lastHit = iFacet;
+			sHandle->lastHitFacet = iFacet;
 			return; //LEAK
 		}
 	}
@@ -347,7 +347,7 @@ void PerformTeleport(FACET *iFacet) {
 		sprintf(err, "Teleport destination of facet %d not found (facet %d does not exist)", iFacet->globalId + 1, iFacet->sh.teleportDest);
 		SetErrorSub(err);*/
 		RecordHit(HIT_REF);
-		sHandle->lastHit = iFacet;
+		sHandle->lastHitFacet = iFacet;
 		return; //LEAK
 	}
 	// Count this hit as a transparent pass
@@ -358,7 +358,8 @@ void PerformTeleport(FACET *iFacet) {
 	if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
 
 	// Relaunch particle from new facet
-	CartesianToPolar(iFacet, &inTheta, &inPhi);
+	double inPhi, inTheta;
+	std::tie(inTheta, inPhi) = CartesianToPolar(iFacet->sh.nU, iFacet->sh.nV, iFacet->sh.N);
 	PolarToCartesian(destination, inTheta, inPhi, false);
 	// Move particle to teleport destination point
 	double u = iFacet->colU;
@@ -386,7 +387,7 @@ void PerformTeleport(FACET *iFacet) {
 		nbTry++;
 	}
 
-	sHandle->lastHit = destination;
+	sHandle->lastHitFacet = destination;
 
 	//Count hits on teleport facets
 	/*iFacet->sh.counter.hit.nbAbsorbed++;
@@ -451,21 +452,24 @@ bool SimulationMCStep(size_t nbStep) {
 					sHandle->distTraveledSinceUpdate_total += d;
 					PerformTransparentPass(collidedFacet);
 				}*/
-				else if (GetStickingAt(collidedFacet, sHandle->flightTimeCurrentParticle) == 1.0 || ((GetStickingAt(collidedFacet, sHandle->flightTimeCurrentParticle) > 0.0) && (rnd() < (GetStickingAt(collidedFacet, sHandle->flightTimeCurrentParticle))))) {
-					//Absorbed
-					sHandle->distTraveledSinceUpdate_total += d;
-					sHandle->distTraveledSinceUpdate_fullHitsOnly += d;
-					PerformAbsorb(collidedFacet);
-					//sHandle->distTraveledSinceUpdate += sHandle->distTraveledCurrentParticle;
-					if (!StartFromSource())
-						// desorptionLimit reached
-						return false;
-				}
 				else {
-					//Reflected
-					sHandle->distTraveledSinceUpdate_total += d;
-					sHandle->distTraveledSinceUpdate_fullHitsOnly += d;
-					PerformBounce(collidedFacet);
+					double stickingProbability = GetStickingAt(collidedFacet, sHandle->flightTimeCurrentParticle);
+					if (stickingProbability == 1.0 || ((stickingProbability > 0.0) && (rnd() < (stickingProbability)))) {
+						//Absorbed
+						sHandle->distTraveledSinceUpdate_total += d;
+						sHandle->distTraveledSinceUpdate_fullHitsOnly += d;
+						PerformAbsorb(collidedFacet);
+						//sHandle->distTraveledSinceUpdate += sHandle->distTraveledCurrentParticle;
+						if (!StartFromSource())
+							// desorptionLimit reached
+							return false;
+					}
+					else {
+						//Reflected
+						sHandle->distTraveledSinceUpdate_total += d;
+						sHandle->distTraveledSinceUpdate_fullHitsOnly += d;
+						PerformBounce(collidedFacet);
+					}
 				}
 			} //end hit within measured time
 		} //end intersection found
@@ -498,7 +502,7 @@ bool StartFromSource() {
 	// Check end of simulation
 	if (sHandle->desorptionLimit > 0) {
 		if (sHandle->totalDesorbed >= sHandle->desorptionLimit) {
-			sHandle->lastHit = NULL;
+			sHandle->lastHitFacet = NULL;
 			return false;
 		}
 	}
@@ -563,7 +567,7 @@ bool StartFromSource() {
 	}
 	src = sHandle->str[j].facets[i];
 
-	sHandle->lastHit = src;
+	sHandle->lastHitFacet = src;
 	//sHandle->distTraveledCurrentParticle = 0.0;  //for mean free path calculations
 	//sHandle->flightTimeCurrentParticle = sHandle->desorptionStartTime + (sHandle->desorptionStopTime - sHandle->desorptionStartTime)*rnd();
 	sHandle->flightTimeCurrentParticle = GenerateDesorptionTime(src);
@@ -1014,7 +1018,6 @@ double Anglemap::GetPhiCDFSum(const double & thetaIndex, const AnglemapParams& a
 
 void PerformBounce(FACET *iFacet) {
 
-	double inPhi, inTheta;
 	bool revert = false;
 
 	// Handle super structure link facet. Can be 
@@ -1095,7 +1098,8 @@ void PerformBounce(FACET *iFacet) {
 	else  if (reflTypeRnd < (iFacet->sh.reflection.diffusePart + iFacet->sh.reflection.specularPart))
 	{
 		//specular reflection
-		CartesianToPolar(iFacet, &inTheta, &inPhi);
+		double inPhi, inTheta;
+		std::tie(inPhi,inTheta) = CartesianToPolar(iFacet->sh.nU,iFacet->sh.nV,iFacet->sh.N);
 		PolarToCartesian(iFacet, PI - inTheta, inPhi, false);
 
 	}
@@ -1121,7 +1125,7 @@ void PerformBounce(FACET *iFacet) {
 
 	if (iFacet->sh.isMoving && sHandle->motionType) RecordHit(HIT_MOVING);
 	else RecordHit(HIT_REF);
-	sHandle->lastHit = iFacet;
+	sHandle->lastHitFacet = iFacet;
 	//sHandle->nbPHit++;
 }
 
@@ -1243,14 +1247,14 @@ void ProfileFacet(FACET *f, double time, bool countHit, double velocity_factor, 
 }
 
 void RecordAngleMap(FACET* collidedFacet) {
-	double theta, phi;
-	CartesianToPolar(collidedFacet, &theta, &phi);
-	if (theta > PI / 2.0) theta = abs(PI - theta); //theta is originally respective to N, but we'd like the angle between 0 and PI/2
+	double inTheta, inPhi;
+	std::tie(inTheta,inPhi) = CartesianToPolar(collidedFacet->sh.nU, collidedFacet->sh.nV, collidedFacet->sh.N);
+	if (inTheta > PI / 2.0) inTheta = abs(PI - inTheta); //theta is originally respective to N, but we'd like the angle between 0 and PI/2
 	bool countTheta = true;
 	size_t thetaIndex;
-	if (theta < collidedFacet->sh.anglemapParams.thetaLimit) {
+	if (inTheta < collidedFacet->sh.anglemapParams.thetaLimit) {
 		if (collidedFacet->sh.anglemapParams.thetaLowerRes > 0) {
-			thetaIndex = (size_t)(theta / collidedFacet->sh.anglemapParams.thetaLimit*(double)collidedFacet->sh.anglemapParams.thetaLowerRes);
+			thetaIndex = (size_t)(inTheta / collidedFacet->sh.anglemapParams.thetaLimit*(double)collidedFacet->sh.anglemapParams.thetaLowerRes);
 		}
 		else {
 			countTheta = false;
@@ -1258,7 +1262,7 @@ void RecordAngleMap(FACET* collidedFacet) {
 	}
 	else {
 		if (collidedFacet->sh.anglemapParams.thetaHigherRes > 0) {
-			thetaIndex = collidedFacet->sh.anglemapParams.thetaLowerRes + (size_t)((theta - collidedFacet->sh.anglemapParams.thetaLimit)
+			thetaIndex = collidedFacet->sh.anglemapParams.thetaLowerRes + (size_t)((inTheta - collidedFacet->sh.anglemapParams.thetaLimit)
 				/ (PI / 2.0 - collidedFacet->sh.anglemapParams.thetaLimit)*(double)collidedFacet->sh.anglemapParams.thetaHigherRes);
 		}
 		else {
@@ -1266,7 +1270,7 @@ void RecordAngleMap(FACET* collidedFacet) {
 		}
 	}
 	if (countTheta) {
-		size_t phiIndex = (size_t)((phi + PI) / (2.0*PI)*(double)collidedFacet->sh.anglemapParams.phiWidth); //Phi: -PI..PI (shifting by PI to store on 0..2PI)
+		size_t phiIndex = (size_t)((inPhi + PI) / (2.0*PI)*(double)collidedFacet->sh.anglemapParams.phiWidth); //Phi: -PI..PI (shifting by PI to store on 0..2PI)
 		collidedFacet->angleMap.pdf[thetaIndex*collidedFacet->sh.anglemapParams.phiWidth + phiIndex]++;
 	}
 }
@@ -1357,4 +1361,22 @@ void FACET::ResizeCounter(size_t nbMoments) {
 	counter = std::vector<SHHITS>(nbMoments + 1); //Reserve a counter for each moment, plus an extra for const. flow
 	//std::fill(counter.begin(), counter.end(), zeroes); //Initialize each moment with 0 values
 	memset(&counter[0], 0, counter.size() * sizeof(counter[0]));
+}
+
+void FACET::RegisterTransparentPass()
+{
+	double directionFactor = abs(Dot(sHandle->pDir, this->sh.N));
+	IncreaseFacetCounter(this, sHandle->flightTimeCurrentParticle + this->colDist / 100.0 / sHandle->velocityCurrentParticle, 1, 0, 0, 2.0 / (sHandle->velocityCurrentParticle*directionFactor), 2.0*(sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*sHandle->velocityCurrentParticle*directionFactor);
+
+	this->hitted = true;
+	if (this->hits && this->sh.countTrans) {
+		RecordHitOnTexture(this, sHandle->flightTimeCurrentParticle + this->colDist / 100.0 / sHandle->velocityCurrentParticle,
+			true, 2.0, 2.0);
+	}
+	if (this->direction && this->sh.countDirection) {
+		RecordDirectionVector(this, sHandle->flightTimeCurrentParticle + this->colDist / 100.0 / sHandle->velocityCurrentParticle);
+	}
+	ProfileFacet(this, sHandle->flightTimeCurrentParticle + this->colDist / 100.0 / sHandle->velocityCurrentParticle,
+		true, 2.0, 2.0);
+	if (this->sh.anglemapParams.record) RecordAngleMap(this);
 }

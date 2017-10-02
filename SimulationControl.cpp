@@ -722,7 +722,7 @@ void ResetTmpCounters() {
 }
 
 void ResetSimulation() {
-	sHandle->lastHit = NULL;
+	sHandle->lastHitFacet = NULL;
 	sHandle->totalDesorbed = 0;
 	ResetTmpCounters();
 	if (sHandle->acDensity) memset(sHandle->acDensity, 0, sHandle->nbAC * sizeof(ACFLOAT));
@@ -734,8 +734,8 @@ bool StartSimulation(size_t mode) {
 	sHandle->sMode = mode;
 	switch (mode) {
 	case MC_MODE:
-		if (!sHandle->lastHit) StartFromSource();
-		return (sHandle->lastHit != NULL);
+		if (!sHandle->lastHitFacet) StartFromSource();
+		return (sHandle->lastHitFacet != NULL);
 	case AC_MODE:
 		if (sHandle->prgAC != 100) {
 			SetErrorSub("AC matrix not calculated");

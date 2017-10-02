@@ -89,6 +89,8 @@ public:
   std::vector<SHHITS> counter;
   void  ResetCounter();
   void	ResizeCounter(size_t nbMoments);
+
+  void RegisterTransparentPass(); //Allows one shared Intersect routine between MolFlow and Synrad
 };
 
 extern  FACET **THitCache; //Global variable
@@ -146,7 +148,7 @@ typedef struct {
   size_t      nbMoments;        // Number of time moments
   SUPERSTRUCT str[MAX_STRUCT];
 
-  FACET *lastHit;     // Last hitted facet
+  FACET *lastHitFacet;     // Last hitted facet
   double stepPerSec;  // Avg number of step per sec
   size_t textTotalSize;  // Texture total size
   size_t profTotalSize;  // Profile total size
@@ -244,8 +246,6 @@ void PerformBounce(FACET *iFacet);
 void PerformAbsorb(FACET *iFacet);
 void PerformTeleport(FACET *iFacet);
 void PerformTransparentPass(FACET *iFacet);
-void PolarToCartesian(FACET *iFacet,double theta,double phi,bool reverse);
-void CartesianToPolar(FACET *iFacet,double *theta,double *phi);
 void UpdateHits(Dataport *dpHit,int prIdx,DWORD timeout);
 void UpdateMCHits(Dataport *dpHit,int prIdx,size_t nbMoments,DWORD timeout);
 void UpdateACHits(Dataport *dpHit,int prIdx,DWORD timeout);

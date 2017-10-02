@@ -244,7 +244,7 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	paramPanel->SetCompBounds(enableSojournTime, 10, 132, 95, 16);
 	paramPanel->Add(enableSojournTime);
 
-	sojournLabel3 = new GLLabel("J/molecule");
+	sojournLabel3 = new GLLabel("J/mole");
 	paramPanel->SetCompBounds(sojournLabel3, 250, 153, 56, 13);
 	paramPanel->Add(sojournLabel3);
 
@@ -1475,15 +1475,24 @@ void FacetAdvParams::ProcessMessage(GLComponent *src, int message) {
 		
 		else if (src==SojournInfoButton) {
 
-			char tmp[] = "f: Molecule's surface oscillation frequency [Hz]\n"
-				"E: Adsorption energy [J/mole]\n"
-				"A: Escape probability per oscillation:\n"
-				"A = exp(-E/(R*T))\n\n"
-				"Probability of sojourn time t:\n"
-				"p(t)= A*f*exp(-A*f*t)\n\n"
-				"Mean sojourn time:\n"
-				"mean= 1/(A*f) = 1/f*exp(E/(kT))\n";
-			GLMessageBox::Display(tmp, "Wall sojourn time", GLDLG_OK, GLDLG_ICONINFO);
+			char tmp[] = 
+R"(Sojourn time calculated by Frenkel's equation
+
+f: Molecule's surface oscillation frequency [Hz]
+E: Adsorption energy [J/mole]
+A: Escape probability per oscillation:
+A = exp(-E/(R*T))
+
+Probability of sojourn time t:
+p(t)= A*f*exp(-A*f*t)
+
+Mean sojourn time:
+mean= 1/(A*f) = 1/f*exp(E/(kT))
+
+More info: read report CERN-OPEN-2000-265
+from C. Benvenutti http://cds.cern.ch/record/454180
+)";
+		GLMessageBox::Display(tmp, "Wall sojourn time", GLDLG_OK, GLDLG_ICONINFO);
 
 		}
 		else if (src == angleMapExportButton) {
