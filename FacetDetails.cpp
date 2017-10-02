@@ -20,7 +20,7 @@
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
 #include "GLApp/MathTools.h"
-#include "Geometry.h"
+#include "Geometry_shared.h"
 #include "Facet.h"
 
 #include "MolFlow.h"

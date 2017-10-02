@@ -32,7 +32,7 @@ GNU General Public License for more details.
 //#include "GLApp/GLProgress.h"
 #include "GLApp/GLCombo.h"
 //#include "Worker.h"
-#include "Geometry.h"
+#include "Geometry_shared.h"
 
 #ifdef MOLFLOW
 #include "MolFlow.h"

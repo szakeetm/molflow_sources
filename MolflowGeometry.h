@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Geometry.h"
+#include "Geometry_shared.h"
 
 #define TEXTURE_MODE_PRESSURE 0
 #define TEXTURE_MODE_IMPINGEMENT 1

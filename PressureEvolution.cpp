@@ -28,7 +28,7 @@ GNU General Public License for more details.
 #include "GLApp/GLButton.h"
 #include "GLApp/GLParser.h"
 #include "GLApp/GLTextField.h"
-#include "Geometry.h"
+#include "Geometry_shared.h"
 #include "Facet.h"
 #include <math.h>
 

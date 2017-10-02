@@ -22,7 +22,7 @@
 #include "GLApp/GLList.h"
 #include "GLApp/GLInputBox.h"
 #include "Facet.h"
-#include "Geometry.h"
+#include "Geometry_shared.h"
 #include "GLApp/MathTools.h"
 #include "GLApp/GLButton.h"
 #include "GLApp/GLTextField.h"

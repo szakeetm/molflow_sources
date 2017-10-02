@@ -26,7 +26,7 @@
 #include "GLApp/GLList.h"
 #include "GLApp/GLCombo.h"
 #include "MolFlow.h"
-#include "Geometry.h"
+#include "Geometry_shared.h"
 #include "Facet.h"
 extern MolFlow *mApp;
 

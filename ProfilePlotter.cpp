@@ -27,7 +27,7 @@ GNU General Public License for more details.
 #include "GLApp/MathTools.h"
 #include "GLApp/GLList.h"
 #include "GLApp/GLChart/GLChart.h"
-#include "Geometry.h"
+#include "Geometry_shared.h"
 #include "Facet.h"
 #include <math.h>
 #ifdef MOLFLOW

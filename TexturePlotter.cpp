@@ -25,7 +25,7 @@ GNU General Public License for more details.
 #include "GLApp/GLList.h"
 #include "GLApp/GLCombo.h"
 #include "GLApp\GLToggle.h"
-#include "Geometry.h"
+#include "Geometry_shared.h"
 #include "Facet.h"
 #ifdef MOLFLOW
 #include "MolFlow.h"

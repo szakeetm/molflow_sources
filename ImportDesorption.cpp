@@ -30,7 +30,7 @@ GNU General Public License for more details.
 #include "GLApp/GLTitledPanel.h"
 #include "GLApp/GLCombo.h"
 
-#include "Geometry.h"
+#include "Geometry_shared.h"
 
 #define MODE_NOCONV 0
 #define MODE_EQUATION 1

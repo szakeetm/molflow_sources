@@ -23,7 +23,7 @@
 #include "Shared.h"
 #include "File.h"
 #include "PugiXML/pugixml.hpp"
-//#include "Geometry.h"
+//#include "Geometry_shared.h"
 
 class CellProperties;
 
