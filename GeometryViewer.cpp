@@ -59,8 +59,11 @@ void GeometryViewer::SetBounds(int x, int y, int width, int height) {
 		handBtn->SetBounds(posX + width - 42, posY + height - 22, 19, 19);
 		sysBtn->SetBounds(posX + width - 22, posY + height - 22, 19, 19);
 
-		hideLotlabel->SetBounds(posX + 10, posY + height - 67, 0, 19);
-		capsLockLabel->SetBounds(posX + 10, posY + height - 47, 0, 19);
+		/*
+		tabLabel->SetBounds(posX + 10, posY + height - 87, 0, 19);
+		capsLockLabel->SetBounds(posX + 10, posY + height - 67, 0, 19);
+		hideLotlabel->SetBounds(posX + 10, posY + height - 47, 0, 19);
+		*/ //Will set these dynamically
 
 		toolBack->SetBounds(posX + 1, posY + height - DOWN_MARGIN, width - 2, DOWN_MARGIN - 1);
 
