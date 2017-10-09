@@ -46,6 +46,7 @@ public:
 	bool LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker *work, GLProgress *progressDlg);
 
 	// Geometry
+	void     EmptyGeometry();
 	void     BuildPipe(double L, double R, double s, int step);
 	void     LoadProfile(FileReader *file, Dataport *dpHit, int version);
 

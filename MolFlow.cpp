@@ -75,11 +75,11 @@ int   cWidth[] = { 30, 56, 50, 50 };
 char *cName[] = { "#", "Hits", "Des", "Abs" };
 
 std::string appId = "Molflow";
-int appVersion = 2656;
+int appVersion = 2657;
 #ifdef _DEBUG
 std::string appName = "MolFlow+ development version 64-bit (Compiled " __DATE__ " " __TIME__ ") DEBUG MODE";
 #else
-std::string appName = "Molflow+ 2.6.56 64-bit (" __DATE__ ")";
+std::string appName = "Molflow+ 2.6.57 64-bit (" __DATE__ ")";
 #endif
 
 std::vector<string> formulaPrefixes = { "A","D","H","P","DEN","Z","V","T","AR","a","d","h","p","den","z","v","t","ar","," };
@@ -412,78 +412,77 @@ int MolFlow::OneTimeSceneInit()
 	facetFILabel = new GLToggle(0, "Outgassing (mbar*l/s):");
 	facetFILabel->SetEnabled(false);
 	facetFILabel->SetState(true);
-inputPanel->Add(facetFILabel);
-facetFlow = new GLTextField(0, NULL);
-inputPanel->Add(facetFlow);
+	inputPanel->Add(facetFILabel);
+	facetFlow = new GLTextField(0, NULL);
+	inputPanel->Add(facetFlow);
 
-facetFIAreaLabel = new GLToggle(1, "Outg/area(mbar*l/s/cm\262):");
-facetFIAreaLabel->SetEnabled(false);
-inputPanel->Add(facetFIAreaLabel);
-facetFlowArea = new GLTextField(0, NULL);
-inputPanel->Add(facetFlowArea);
+	facetFIAreaLabel = new GLToggle(1, "Outg/area(mbar*l/s/cm\262):");
+	facetFIAreaLabel->SetEnabled(false);
+	inputPanel->Add(facetFIAreaLabel);
+	facetFlowArea = new GLTextField(0, NULL);
+	inputPanel->Add(facetFlowArea);
 
-/*facetUseDesFileLabel = new GLLabel("Desorp. file");
-facetPanel->Add(facetUseDesFileLabel);
-facetUseDesFile = new GLCombo(0);
-facetUseDesFile->SetSize(1);
-facetUseDesFile->SetValueAt(0,"No desorption map");
-inputPanel->Add(facetUseDesFile);*/
+	/*facetUseDesFileLabel = new GLLabel("Desorp. file");
+	facetPanel->Add(facetUseDesFileLabel);
+	facetUseDesFile = new GLCombo(0);
+	facetUseDesFile->SetSize(1);
+	facetUseDesFile->SetValueAt(0,"No desorption map");
+	inputPanel->Add(facetUseDesFile);*/
 
-outputPanel = new GLTitledPanel("Particles out");
-facetPanel->Add(outputPanel);
+	outputPanel = new GLTitledPanel("Particles out");
+	facetPanel->Add(outputPanel);
 
-facetSLabel = new GLLabel("Sticking factor:");
-outputPanel->Add(facetSLabel);
-facetSticking = new GLTextField(0, NULL);
-outputPanel->Add(facetSticking);
+	facetSLabel = new GLLabel("Sticking factor:");
+	outputPanel->Add(facetSLabel);
+	facetSticking = new GLTextField(0, NULL);
+	outputPanel->Add(facetSticking);
 
-facetPumpingLabel = new GLLabel("Pumping Speed (l/s):");
-outputPanel->Add(facetPumpingLabel);
-facetPumping = new GLTextField(0, NULL);
-outputPanel->Add(facetPumping);
+	facetPumpingLabel = new GLLabel("Pumping Speed (l/s):");
+	outputPanel->Add(facetPumpingLabel);
+	facetPumping = new GLTextField(0, NULL);
+	outputPanel->Add(facetPumping);
 
-facetTempLabel = new GLLabel("Temperature (\260K):");
-facetPanel->Add(facetTempLabel);
-facetTemperature = new GLTextField(0, NULL);
-facetPanel->Add(facetTemperature);
+	facetTempLabel = new GLLabel("Temperature (\260K):");
+	facetPanel->Add(facetTempLabel);
+	facetTemperature = new GLTextField(0, NULL);
+	facetPanel->Add(facetTemperature);
 
-facetReLabel = new GLLabel("Profile:");
-facetPanel->Add(facetReLabel);
-facetRecType = new GLCombo(0);
-facetRecType->SetSize(6);
-facetRecType->SetValueAt(0, "None");
-facetRecType->SetValueAt(1, "Pressure, density (\201)");
-facetRecType->SetValueAt(2, "Pressure, density (\202)");
-facetRecType->SetValueAt(3, "Incident angle");
-facetRecType->SetValueAt(4, "Speed distribution");
-facetRecType->SetValueAt(5, "Orthogonal velocity");
-facetPanel->Add(facetRecType);
+	facetReLabel = new GLLabel("Profile:");
+	facetPanel->Add(facetReLabel);
+	facetRecType = new GLCombo(0);
+	facetRecType->SetSize(6);
+	facetRecType->SetValueAt(0, "None");
+	facetRecType->SetValueAt(1, "Pressure, density (\201)");
+	facetRecType->SetValueAt(2, "Pressure, density (\202)");
+	facetRecType->SetValueAt(3, "Incident angle");
+	facetRecType->SetValueAt(4, "Speed distribution");
+	facetRecType->SetValueAt(5, "Orthogonal velocity");
+	facetPanel->Add(facetRecType);
 
-facetMoreBtn = new GLButton(0, "<< Adv");
-facetPanel->Add(facetMoreBtn);
+	facetMoreBtn = new GLButton(0, "<< Adv");
+	facetPanel->Add(facetMoreBtn);
 
-facetList = new GLList(0);
-facetList->SetWorker(&worker);
-facetList->SetGrid(true);
-facetList->SetSelectionMode(MULTIPLE_ROW);
-facetList->SetSize(4, 1);
-facetList->SetColumnWidths((int*)cWidth);
-facetList->SetColumnLabels((char **)cName);
-facetList->SetColumnLabelVisible(true);
-facetList->Sortable = true;
-Add(facetList);
+	facetList = new GLList(0);
+	facetList->SetWorker(&worker);
+	facetList->SetGrid(true);
+	facetList->SetSelectionMode(MULTIPLE_ROW);
+	facetList->SetSize(4, 0);
+	facetList->SetColumnWidths((int*)cWidth);
+	facetList->SetColumnLabels((char **)cName);
+	facetList->SetColumnLabelVisible(true);
+	facetList->Sortable = true;
+	Add(facetList);
 
-facetAdvParams = new FacetAdvParams(&worker); //To use its UpdatefacetParams() routines
+	facetAdvParams = new FacetAdvParams(&worker); //To use its UpdatefacetParams() routines
 
-ClearFacetParams();
-LoadConfig();
-UpdateRecentMenu();
-UpdateViewerPanel();
-PlaceComponents();
-CheckNeedsTexture();
+	ClearFacetParams();
+	LoadConfig();
+	UpdateRecentMenu();
+	UpdateViewerPanel();
+	PlaceComponents();
+	CheckNeedsTexture();
 
-
-LoadParameterCatalog();
+	LoadParameterCatalog();
 
 	try {
 		worker.SetProcNumber(nbProc);
@@ -494,7 +493,15 @@ LoadParameterCatalog();
 		GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 	}
 
+	/*
+	worker.GetGeometry()->AddStruct("Empty geometry");
+	for (int i = 0; i < MAX_VIEWER; i++)
+		viewer[i]->SetWorker(&worker);
+		*/
+	EmptyGeometry();
 	//AppUpdater(); //Ask if user wants to check for updates
+
+	//worker.GetGeometry()->InitializeGeometry();
 
 	return GL_OK;
 }
@@ -1454,11 +1461,11 @@ void MolFlow::LoadFile(char *fName) {
 
 		Geometry *geom = worker.GetGeometry();
 
+		
 		// Default initialisation
-		viewer[0]->SetWorker(&worker);
-		viewer[1]->SetWorker(&worker);
-		viewer[2]->SetWorker(&worker);
-		viewer[3]->SetWorker(&worker);
+		for (int i = 0; i < MAX_VIEWER; i++)
+			viewer[i]->SetWorker(&worker);
+
 		//UpdateModelParams();
 		startSimu->SetEnabled(true);
 		compACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
@@ -1562,12 +1569,11 @@ void MolFlow::InsertGeometry(bool newStr, char *fName) {
 
 		Geometry *geom = worker.GetGeometry();
 		worker.CalcTotalOutgassing();
-		/*
-		// Default initialisation
-		viewer[0]->SetWorker(&worker);
-		viewer[1]->SetWorker(&worker);
-		viewer[2]->SetWorker(&worker);
-		viewer[3]->SetWorker(&worker);*/
+
+		//Increase BB
+		for (int i = 0; i < MAX_VIEWER; i++)
+			viewer[i]->SetWorker(&worker);
+		
 		//UpdateModelParams();
 		startSimu->SetEnabled(true);
 
@@ -1633,10 +1639,7 @@ void MolFlow::ClearParameters() {
 }
 
 void MolFlow::StartStopSimulation() {
-
-	//if(nbSt<=10) BuildPipeStick((double)nbSt/10);
-	//else         return;
-
+	
 	if (!(worker.nbHit > 0) && !worker.calcConstantFlow && worker.moments.size() == 0) {
 		bool ok = GLMessageBox::Display("Warning: in the Moments Editor, the option \"Calculate constant flow\" is disabled.\n"
 			"This is useful for time-dependent simulations.\n"
@@ -2153,8 +2156,10 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	worker.SetFileName("");
 	nbDesStart = 0;
 	nbHitStart = 0;
+	
 	for (int i = 0; i < MAX_VIEWER; i++)
 		viewer[i]->SetWorker(&worker);
+	
 	//UpdateModelParams();
 	startSimu->SetEnabled(true);
 	compACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
@@ -2173,11 +2178,75 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 
 	UpdateStructMenu();
 	// Send to sub process
-	try { worker.Reload(); }
+	worker.Reload();
+
+	//UpdatePlotters();
+
+	if (timeSettings) timeSettings->RefreshMoments();
+	if (momentsEditor) momentsEditor->Refresh();
+	if (pressureEvolution) pressureEvolution->Refresh();
+	if (timewisePlotter) timewisePlotter->Refresh();
+	if (profilePlotter) profilePlotter->Refresh();
+	if (texturePlotter) texturePlotter->Update(0.0, true);
+	//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
+	if (textureSettings) textureSettings->Update();
+	if (outgassingMap) outgassingMap->Update(m_fTime, true);
+	if (facetDetails) facetDetails->Update();
+	if (facetCoordinates) facetCoordinates->UpdateFromSelection();
+	if (vertexCoordinates) vertexCoordinates->Update();
+	if (movement) movement->Update();
+	if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
+	if (formulaEditor) formulaEditor->Refresh();
+	UpdateTitle();
+	changedSinceSave = false;
+	ResetAutoSaveTimer();
+}
+
+void MolFlow::EmptyGeometry() {
+
+	MolflowGeometry *geom = worker.GetMolflowGeometry();
+	ResetSimulation(false);
+
+	try {
+		geom->EmptyGeometry();
+		worker.CalcTotalOutgassing();
+		//default values
+		worker.enableDecay = false;
+		worker.halfLife = 1;
+		worker.gasMass = 28;
+		worker.ResetMoments();
+	}
 	catch (Error &e) {
-		GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
+		GLMessageBox::Display((char *)e.GetMsg(), "Error building pipe", GLDLG_OK, GLDLG_ICONERROR);
+		geom->Clear();
 		return;
 	}
+	worker.SetFileName("");
+	nbDesStart = 0;
+	nbHitStart = 0;
+
+	for (int i = 0; i < MAX_VIEWER; i++)
+		viewer[i]->SetWorker(&worker);
+
+	//UpdateModelParams();
+	startSimu->SetEnabled(true);
+	compACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
+	//resetSimu->SetEnabled(true);
+	ClearFacetParams();
+	ClearFormulas();
+	ClearParameters();
+	ClearAllSelections();
+	ClearAllViews();
+
+	/*GLParser *f = new GLParser();
+	f->SetExpression("A2/SUMDES");
+	f->SetName("Trans. Prob.");
+	f->Parse();*/
+	//AddFormula("Trans.prob.", "A2/SUMDES");
+
+	UpdateStructMenu();
+	// Send to sub process
+	worker.Reload();
 
 	//UpdatePlotters();
 

@@ -317,7 +317,12 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 	memset(vertices3, 0, sh.nbVertex * sizeof(InterfaceVertex));
 
 	sh.nbFacet = step + 2 + nbTF;
+	
+	
 	sh.nbSuper = 1;
+	strName[0] = _strdup("Pipe");
+	//strFileName[0] = _strdup("pipe.txt");
+
 	if (!(facets = (Facet **)malloc(sh.nbFacet * sizeof(Facet *))))
 		throw Error("Couldn't allocate memory for facets");
 	memset(facets, 0, sh.nbFacet * sizeof(Facet *));
@@ -408,8 +413,18 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 	}
 	InitializeGeometry();
 	//isLoaded = true; //InitializeGeometry() sets to true
-	strName[0] = _strdup("Pipe");
-	strFileName[0] = _strdup("pipe.txt");
+
+}
+
+void  MolflowGeometry::EmptyGeometry() {
+	Clear();
+
+	sh.nbVertex = 0;
+	sh.nbFacet = 0;
+	sh.nbSuper = 1;
+	strName[0] = _strdup("");
+	InitializeGeometry();
+	//isLoaded = true; //InitializeGeometry() sets to true
 
 }
 

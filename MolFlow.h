@@ -140,8 +140,7 @@ public:
     //int     nbSt;
     //void LogProfile();
     void BuildPipe(double ratio,int steps=0);
-    //void BuildPipeStick(double s);
-	
+	void EmptyGeometry();
 	void CrashHandler(Error *e);
 	
 protected:
