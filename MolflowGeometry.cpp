@@ -3,6 +3,7 @@
 #include "Facet.h"
 #include "GLApp\MathTools.h"
 #include "ProfilePlotter.h"
+#include <iomanip>
 
 /*
 //Leak detection
@@ -2552,8 +2553,8 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 				AHIT *hits = (AHIT *)((BYTE *)gHits + (f->sh.hitOffset + facetHitsSize + profSize + m*w*h*sizeof(AHIT)));
 				std::stringstream countText, sum1perText, sumvortText;
 				countText << '\n'; //better readability in file
-				sum1perText << '\n';
-				sumvortText << '\n';
+				sum1perText << std::setprecision(8) << '\n';
+				sumvortText << std::setprecision(8) << '\n';
 
 				for (size_t iy = 0; iy < h; iy++) {
 					for (size_t ix = 0; ix < w; ix++) {
@@ -2580,7 +2581,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 				VHIT *dirs = (VHIT *)((BYTE *)gHits + f->sh.hitOffset + facetHitsSize + profSize + (1 + (int)work->moments.size())*w*h*sizeof(AHIT) + m*w*h*sizeof(VHIT));
 
 				std::stringstream dirText, dirCountText;
-				dirText << '\n'; //better readability in file
+				dirText << std::setprecision(8) << '\n'; //better readability in file
 				dirCountText << '\n';
 
 				for (size_t iy = 0; iy < h; iy++) {
@@ -2674,6 +2675,7 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 	facets = (Facet **)malloc(sh.nbFacet * sizeof(Facet *));
 	memset(facets, 0, sh.nbFacet * sizeof(Facet *));
 	idx = 0;
+	bool ignoreSumMismatch = false;
 	for (xml_node facetNode : geomNode.child("Facets").children("Facet")) {
 		size_t nbIndex = facetNode.child("Indices").select_nodes("Indice").size();
 		if (nbIndex < 3) {
@@ -2683,7 +2685,7 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 		}
 
 		facets[idx] = new Facet(nbIndex);
-		facets[idx]->LoadXML(facetNode, sh.nbVertex, isMolflowFile);
+		facets[idx]->LoadXML(facetNode, sh.nbVertex, isMolflowFile, ignoreSumMismatch);
 
 		if (isMolflowFile) {
 			//Set param names for interface
@@ -2888,6 +2890,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 
 	//Facets
 	idx = sh.nbFacet;
+	bool ignoreSumMismatch = false;
 	for (xml_node facetNode : geomNode.child("Facets").children("Facet")) {
 		size_t nbIndex = facetNode.child("Indices").select_nodes("Indice").size();
 		if (nbIndex < 3) {
@@ -2896,7 +2899,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 			throw Error(errMsg);
 		}
 		facets[idx] = new Facet(nbIndex);
-		facets[idx]->LoadXML(facetNode, sh.nbVertex + nbNewVertex, isMolflowFile, sh.nbVertex);
+		facets[idx]->LoadXML(facetNode, sh.nbVertex + nbNewVertex, isMolflowFile, ignoreSumMismatch, sh.nbVertex);
 		facets[idx]->selected = true;
 
 		if (newStr) {

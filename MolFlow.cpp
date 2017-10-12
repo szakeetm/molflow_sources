@@ -1783,28 +1783,25 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			outgassingMap->Display(&worker);
 			break;
 		case MENU_FACET_REMOVESEL:
+		{
+			auto selectedFacets = geom->GetSelectedFacets();
+			if (selectedFacets.size() == 0) return; //Nothing selected
 			if (GLMessageBox::Display("Remove selected facets?", "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONINFO) == GLDLG_OK) {
 				if (AskToReset()) {
 					if (worker.running) worker.Stop_Public();
-					geom->RemoveSelected();
+					geom->RemoveFacets(selectedFacets);
 					worker.CalcTotalOutgassing();
 					//geom->CheckIsolatedVertex();
 					UpdateModelParams();
+					UpdatePlotters();
 					if (vertexCoordinates) vertexCoordinates->Update();
 					if (facetCoordinates) facetCoordinates->UpdateFromSelection();
-					if (profilePlotter) profilePlotter->Refresh();
-
-					if (pressureEvolution) pressureEvolution->Refresh();
-					if (timewisePlotter) timewisePlotter->Refresh();
 					// Send to sub process
-					try { worker.Reload(); }
-					catch (Error &e) {
-						GLMessageBox::Display((char *)e.GetMsg(), "Error reloading worker", GLDLG_OK, GLDLG_ICONERROR);
-					}
+					worker.Reload();
 				}
 			}
 			break;
-
+		}
 		case MENU_FACET_SELECTSTICK:
 			geom->UnselectAll();
 			for (int i = 0; i < geom->GetNbFacet(); i++)

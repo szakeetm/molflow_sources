@@ -28,6 +28,7 @@
 #include <math.h>
 #include "GLApp/GLToolkit.h"
 #include "GLApp/MathTools.h"
+#include "GLApp/GLMessageBox.h"
 #include <sstream>
 #include "PugiXML\pugixml.hpp"
 #include <iomanip> //stringstream precision
@@ -319,13 +320,14 @@ void Facet::LoadGEO(FileReader *file, int version, size_t nbVertex) {
 
 }
 
-void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, size_t vertexOffset) {
+void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bool& ignoreSumMismatch, size_t vertexOffset) {
 	int idx = 0;
+	int facetId = f.attribute("id").as_int();
 	for (xml_node indice : f.child("Indices").children("Indice")) {
 		indices[idx] = indice.attribute("vertex").as_int() + vertexOffset;
 		if (indices[idx] >= nbVertex) {
 			char err[128];
-			sprintf(err, "Facet %d refers to vertex %d which doesn't exist", f.attribute("id").as_int() + 1, idx + 1);
+			sprintf(err, "Facet %d refers to vertex %d which doesn't exist", facetId + 1, idx + 1);
 			throw Error(err);
 		}
 		idx++;
@@ -426,7 +428,14 @@ void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, size_t vert
 					sum += outgassingMap[iy*sh.outgassingMapWidth + ix];
 				}
 			}
-			if (fabs(sum - sh.totalOutgassing) > 1E-10) __debugbreak();
+			if (!ignoreSumMismatch && !IsEqual(sum, sh.totalOutgassing)) {
+				std::stringstream msg; msg << std::setprecision(8);
+				msg << "Facet " << facetId + 1 << ":\n";
+				msg << "The total dynamic outgassing (" << 10.0 * sh.totalOutgassing << " mbar.l/s)\n";
+				msg << "doesn't match the sum of the dynamic outgassing cells (" << 10.0 * sum << " mbar.l/s).";
+				if (1 == GLMessageBox::Display(msg.str(), "Dynamic outgassing mismatch", { "OK","Ignore rest" },GLDLG_ICONINFO))
+					ignoreSumMismatch = true;
+			}
 		}
 		else hasOutgassingFile = sh.useOutgassingFile = 0; //if outgassing map was incorrect, don't use it
 
@@ -1317,7 +1326,7 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 		textureNode.append_attribute("totalOutgassing") = sh.totalOutgassing;
 		textureNode.append_attribute("totalFlux") = totalFlux;
 
-		std::stringstream outgText;
+		std::stringstream outgText; outgText << std::setprecision(8);
 		outgText << '\n'; //better readability in file
 		for (int iy = 0; iy < sh.outgassingMapHeight; iy++) {
 			for (int ix = 0; ix < sh.outgassingMapWidth; ix++) {
@@ -1336,15 +1345,15 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 		textureNode.append_attribute("angleMapThetaLowerRes") = sh.anglemapParams.thetaLowerRes;
 		textureNode.append_attribute("angleMapThetaHigherRes") = sh.anglemapParams.thetaHigherRes;
 
-		std::stringstream anglText;
-		anglText << '\n'; //better readability in file
+		std::stringstream angleText;
+		angleText << '\n'; //better readability in file
 		for (int iy = 0; iy < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); iy++) {
 			for (int ix = 0; ix < sh.anglemapParams.phiWidth; ix++) {
-				anglText << angleMapCache[iy*sh.anglemapParams.phiWidth + ix] << '\t';
+				angleText << angleMapCache[iy*sh.anglemapParams.phiWidth + ix] << '\t';
 			}
-			anglText << '\n';
+			angleText << '\n';
 		}
-		textureNode.append_child("map").append_child(node_cdata).set_value(anglText.str().c_str());
+		textureNode.append_child("map").append_child(node_cdata).set_value(angleText.str().c_str());
 
 	} //end angle map
 }

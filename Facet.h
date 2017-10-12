@@ -128,7 +128,7 @@ public:
   void  SaveTXT(FileWriter *file);
   void  LoadGEO(FileReader *file,int version, size_t nbVertex);
   void  LoadSYN(FileReader *file,int version,size_t nbVertex);
-  void  LoadXML(pugi::xml_node f, size_t nbVertex,bool isMolflowFile,size_t vertexOffset=0);
+  void  LoadXML(pugi::xml_node f, size_t nbVertex,bool isMolflowFile,bool& ignoreSumMismatch, size_t vertexOffset=0);
   void  SaveGEO(FileWriter *file,int idx);
   void  SaveXML_geom(pugi::xml_node f);
   bool  IsCoplanarAndEqual(Facet *f,double threshold);
@@ -159,7 +159,7 @@ public:
   double GetSmooth(int i,int j,AHIT *texBuffer,int textureMode,double scaleF);
   void Sum_Neighbor(const int& i, const int& j, const double& weight, AHIT *texBuffer, const int& textureMode, const double& scaleF, double *sum, double *totalWeight);
   void  glVertex2u(double u,double v);
-  void  ShiftVertex();
+  void  ShiftVertex(const int& offset=1);
   void  RenderSelectedElem();
   void  SelectElem(size_t u,size_t v,size_t width,size_t height);
   void  UnselectElem();
