@@ -1270,8 +1270,9 @@ void RecordAngleMap(FACET* collidedFacet) {
 		}
 	}
 	if (countTheta) {
-		size_t phiIndex = (size_t)((inPhi + PI) / (2.0*PI)*(double)collidedFacet->sh.anglemapParams.phiWidth); //Phi: -PI..PI (shifting by PI to store on 0..2PI)
+		size_t phiIndex = (size_t)((inPhi + 3.1415926) / (2.0*PI)*(double)collidedFacet->sh.anglemapParams.phiWidth); //Phi: -PI..PI , and shifting by a number slightly smaller than PI to store on interval [0,2PI[
 		collidedFacet->angleMap.pdf[thetaIndex*collidedFacet->sh.anglemapParams.phiWidth + phiIndex]++;
+		int debug = 666; //allows breakpoint to be set here
 	}
 }
 
