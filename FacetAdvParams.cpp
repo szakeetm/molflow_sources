@@ -834,12 +834,12 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	if (AngleMapThetaLimitE) {
 		angleMapThetaLimitText->SetText(f0->sh.anglemapParams.thetaLimit);
 		std::stringstream label;
-		label << "values from " << f0->sh.anglemapParams.thetaLimit << " to PI";
+		label << "values from " << f0->sh.anglemapParams.thetaLimit << " to PI/2";
 		limitLabel->SetText(label.str());
 	}
 	else {
 		angleMapThetaLimitText->SetText("...");
-		limitLabel->SetText("values from limit to PI");
+		limitLabel->SetText("values from limit to PI/2");
 	}
 
 	if (enableSojournTime->GetState() == 0) {
@@ -1552,11 +1552,11 @@ from C. Benvenutti http://cds.cern.ch/record/454180
 				double thetaLimit;
 				if (angleMapThetaLimitText->GetNumber(&thetaLimit)) {
 					std::stringstream label;
-					label << "values from " << thetaLimit << " to PI";
+					label << "values from " << thetaLimit << " to PI/2";
 					limitLabel->SetText(label.str());
 				}
 				else {
-					limitLabel->SetText("values from limit to PI");
+					limitLabel->SetText("values from limit to PI/2");
 				}
 			}
 		}

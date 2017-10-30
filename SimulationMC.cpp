@@ -824,7 +824,7 @@ std::tuple<double, int, double> Anglemap::GenerateThetaFromAngleMap(const Anglem
 		return std::tie(theta, thetaLowerIndex, thetaOvershoot);
 	}
 	else { //regular section
-		if (phi_CDFsums[thetaLowerIndex] == phi_CDFsums[thetaLowerIndex + 1]) {
+		if (/*true ||*/ phi_CDFsums[thetaLowerIndex] == phi_CDFsums[thetaLowerIndex + 1]) {
 			//The pdf's slope is 0, linear interpolation
 			thetaOvershoot = (lookupValue - theta_CDF[thetaLowerIndex]) / (theta_CDF[thetaLowerIndex + 1] - theta_CDF[thetaLowerIndex]);
 			theta = GetTheta((double)thetaLowerIndex + 0.5 + thetaOvershoot,anglemapParams);
@@ -905,7 +905,7 @@ double Anglemap::GeneratePhiFromAngleMap(const int & thetaLowerIndex, const doub
 		phi = GetPhi((double)phiLowerIndex + 0.5 + phiOvershoot, anglemapParams); //between 0 and the first section end
 	}*/
 	else { //regular or last section 
-		if (GetPhipdfValue(thetaIndex, phiLowerIndex, anglemapParams) == GetPhipdfValue(thetaIndex, phiLowerIndex+1, anglemapParams)) {
+		if (/*true ||*/ GetPhipdfValue(thetaIndex, phiLowerIndex, anglemapParams) == GetPhipdfValue(thetaIndex, phiLowerIndex+1, anglemapParams)) {
 			//The pdf's slope is 0, linear interpolation
 			phiOvershoot = (lookupValue - GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams))
 				/ (GetPhiCDFValue(thetaIndex, phiLowerIndex + 1, anglemapParams) - GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams));

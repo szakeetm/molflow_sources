@@ -119,7 +119,7 @@ Facet::Facet(size_t nbIndex) {
 	sh.anglemapParams.record = false;
 	sh.anglemapParams.hasRecorded = false;
 	sh.anglemapParams.phiWidth = sh.anglemapParams.thetaLowerRes = sh.anglemapParams.thetaHigherRes = 0;
-	sh.anglemapParams.thetaLimit = 1.570796326; //slightly lower than exactly PI/2
+	sh.anglemapParams.thetaLimit = 1.570796326; //slightly lower than PI/2
 
 	totalFlux = sh.totalOutgassing = totalDose = 0.0;
 
