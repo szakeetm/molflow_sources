@@ -27,7 +27,7 @@ GNU General Public License for more details.
 #include <Process.h>
 #include "GLApp/GLUnitDialog.h"
 #include "GLApp/MathTools.h"
-#include "Facet.h"
+#include "Facet_shared.h"
 //#include "Simulation.h" //SHELEM
 #include "GlobalSettings.h"
 #include "FacetAdvParams.h"
@@ -249,8 +249,8 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, bool askConfirm, bool
 							AccessDataport(dpHit);
 							BYTE *buffer;
 							buffer = (BYTE *)dpHit->buff;
-							SHGHITS *gHits;
-							gHits = (SHGHITS *)buffer;
+							GlobalHitBuffer *gHits;
+							gHits = (GlobalHitBuffer *)buffer;
 							/*
 							int nbLeakSave, nbHHitSave;
 							LEAK leakCache[LEAKCACHESIZE];
@@ -973,7 +973,7 @@ void Worker::Update(float appTime) {
 				int nbFacet = geom->GetNbFacet();
 				for (int i = 0; i < nbFacet; i++) {
 					Facet *f = geom->GetFacet(i);
-					f->counterCache=(*((SHHITS*)(buffer + f->sh.hitOffset+displayedMoment*sizeof(SHHITS))));
+					f->counterCache=(*((FacetHitBuffer*)(buffer + f->sh.hitOffset+displayedMoment*sizeof(FacetHitBuffer))));
 				}
 				try {
 					if (mApp->needsTexture || mApp->needsDirection) geom->BuildFacetTextures(buffer,mApp->needsTexture,mApp->needsDirection);
@@ -997,7 +997,7 @@ void Worker::SendHits(bool skipFacetHits ) {
 	if (dpHit) {
 		if (AccessDataport(dpHit)) {
 
-			SHGHITS *gHits = (SHGHITS *)dpHit->buff;
+			GlobalHitBuffer *gHits = (GlobalHitBuffer *)dpHit->buff;
 
 			gHits->total.hit.nbHit = nbHit;
 			gHits->nbLeakTotal = nbLeakTotal;
@@ -1012,7 +1012,7 @@ void Worker::SendHits(bool skipFacetHits ) {
 				for (size_t i = 0; i < nbFacet; i++) {
 					Facet *f = geom->GetFacet(i);
 					/*for (size_t m = 0;m <= moments.size();m++)*/
-					*((SHHITS*)((BYTE*)dpHit->buff + f->sh.hitOffset /* + m * sizeof(SHHITS) */)) = f->counterCache;
+					*((FacetHitBuffer*)((BYTE*)dpHit->buff + f->sh.hitOffset /* + m * sizeof(FacetHitBuffer) */)) = f->counterCache;
 				}
 
 			}
@@ -1041,7 +1041,7 @@ void Worker::ComputeAC(float appTime) {
 	size_t maxElem = geom->GetMaxElemNumber();
 	if (!maxElem)
 		throw Error("Mesh with boundary correction must be enabled on all polygons");
-	size_t dpSize = maxElem*sizeof(SHELEM);
+	size_t dpSize = maxElem*sizeof(SHELEM_OLD);
 
 	Dataport *loader = CreateDataport(loadDpName, dpSize);
 	if (!loader)

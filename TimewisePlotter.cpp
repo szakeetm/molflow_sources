@@ -29,7 +29,7 @@ GNU General Public License for more details.
 #include "GLApp/GLParser.h"
 #include "GLApp/GLTextField.h"
 #include "Geometry_shared.h"
-#include "Facet.h"
+#include "Facet_shared.h"
 #include <math.h>
 #ifdef MOLFLOW
 #include "MolFlow.h"
@@ -229,11 +229,11 @@ void TimewisePlotter::refreshViews() {
 	if (!buffer) return;
 
 	Geometry *geom = worker->GetGeometry();
-	SHGHITS *gHits = (SHGHITS *)buffer;
+	GlobalHitBuffer *gHits = (GlobalHitBuffer *)buffer;
 
 	double scaleY;
 
-	size_t facetHitsSize = (1 + worker->moments.size()) * sizeof(SHHITS);
+	size_t facetHitsSize = (1 + worker->moments.size()) * sizeof(FacetHitBuffer);
 	for (size_t i = 0; i < nbView; i++) {
 
 		GLDataView *v = views[i];
@@ -243,7 +243,7 @@ void TimewisePlotter::refreshViews() {
 		if (idx < 0) return;
 		Facet *f = geom->GetFacet(profCombo->GetUserValueAt(idx));
 		v->Reset();
-		SHHITS *fCount = (SHHITS *)(buffer + f->sh.hitOffset);
+		FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->sh.hitOffset);
 		double fnbHit = (double)fCount->hit.nbHit;
 		/*int momentIndex;
 		if (m==(nbView-1) && constantFlowToggle->GetState()) momentIndex=0; //Constant flow

@@ -21,7 +21,7 @@
 #include "GLApp/GLMessageBox.h"
 #include "GLApp/MathTools.h"
 #include "Geometry_shared.h"
-#include "Facet.h"
+#include "Facet_shared.h"
 
 #include "MolFlow.h"
 extern MolFlow *mApp;

@@ -1,31 +1,13 @@
-/*
-  File:        Worker.h
-  Description: Sub processes handling
-  Program:     MolFlow
-  Author:      R. KERSEVAN / J-L PONS / M ADY
-  Copyright:   E.S.R.F / CERN
-
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; either version 2 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-*/
-
-#ifndef _WORKERH_
-#define _WORKERH_
+#pragma once
 
 #include "Parameter.h"
 #include "PugiXML/pugixml.hpp"
 #include <string>
 #include "GLApp/GLTypes.h"
 #include "Vector.h"
-#include "Shared.h"
 #include "Smp.h"
+#include "MolflowTypes.h"
+#include "Buffer_shared.h" //LEAK, HIT
 
 #define CDF_SIZE 100 //points in a cumulative distribution function
 
@@ -240,5 +222,3 @@ private:
   void InnerStop(float appTime);
 
 };
-
-#endif /* _WORKERH_ */

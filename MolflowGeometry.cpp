@@ -1,6 +1,6 @@
 #include "MolflowGeometry.h"
 #include "MolFlow.h"
-#include "Facet.h"
+#include "Facet_shared.h"
 #include "GLApp\MathTools.h"
 #include "ProfilePlotter.h"
 #include <iomanip>
@@ -52,7 +52,7 @@ size_t MolflowGeometry::GetGeometrySize() {
 
 	// Compute number of bytes allocated
 	size_t memoryUsage = 0;
-	memoryUsage += sizeof(SHGEOM);
+	memoryUsage += sizeof(GeomProperties);
 	memoryUsage += sh.nbVertex * sizeof(Vector3d);
 	for (int i = 0; i < sh.nbFacet; i++)
 		memoryUsage += facets[i]->GetGeometrySize();
@@ -124,7 +124,7 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer) {
 	Worker *w = &mApp->worker;
 
 	
-	SHGEOM *shGeom = (SHGEOM *)buffer;
+	GeomProperties *shGeom = (GeomProperties *)buffer;
 	sh.nbMoments = w->moments.size();
 	sh.latestMoment = w->latestMoment;
 	sh.totalDesorbedMolecules = w->totalDesorbedMolecules;
@@ -138,18 +138,18 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer) {
 	sh.motionType = w->motionType;
 	sh.motionVector1 = w->motionVector1;
 	sh.motionVector2 = w->motionVector2;
-	memcpy(shGeom, &(this->sh), sizeof(SHGEOM));
-	buffer += sizeof(SHGEOM);
+	memcpy(shGeom, &(this->sh), sizeof(GeomProperties));
+	buffer += sizeof(GeomProperties);
 	memcpy(buffer, vertices3, sizeof(Vector3d)*sh.nbVertex);
 	buffer += sizeof(Vector3d)*sh.nbVertex;
 
-	size_t fOffset = sizeof(SHGHITS);
+	size_t fOffset = sizeof(GlobalHitBuffer);
 	for (int i = 0; i < sh.nbFacet; i++) {
 		Facet *f = facets[i];
 		f->sh.hitOffset = fOffset; //Just marking the offsets for the hits, but here we don't actually send any hits.
 		fOffset += f->GetHitsSize(mApp->worker.moments.size());
-		memcpy(buffer, &(f->sh), sizeof(SHFACET));
-		buffer += sizeof(SHFACET);
+		memcpy(buffer, &(f->sh), sizeof(FacetProperties));
+		buffer += sizeof(FacetProperties);
 		memcpy(buffer, f->indices, sizeof(int)*f->sh.nbIndex);
 		buffer += sizeof(int)*f->sh.nbIndex;
 		memcpy(buffer, f->vertices2, sizeof(Vector2d)*f->sh.nbIndex);
@@ -264,7 +264,7 @@ size_t MolflowGeometry::GetHitsSize(std::vector<double> *moments) {
 
 	// Compute number of bytes allocated
 	size_t memoryUsage = 0;
-	memoryUsage += sizeof(SHGHITS);
+	memoryUsage += sizeof(GlobalHitBuffer);
 	for (int i = 0; i < sh.nbFacet; i++) {
 		memoryUsage += facets[i]->GetHitsSize((int)mApp->worker.moments.size());
 	}
@@ -663,7 +663,7 @@ void MolflowGeometry::SaveProfileGEO(FileWriter *file, Dataport *dpHit, int supe
 		file->Write(profileFacet[i], "\t");
 
 	file->Write("\n");
-	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(SHHITS);
+	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
 	for (size_t m = 0; (m <= mApp->worker.moments.size()) || (m == 0); m++){
 		char tmp[128];
 		sprintf(tmp, " moment %zd {\n", m);
@@ -700,7 +700,7 @@ void MolflowGeometry::LoadProfile(FileReader *file, Dataport *dpHit, int version
 	file->ReadKeyword("facets"); file->ReadKeyword(":");
 	for (int i = 0; i < nbProfile; i++)
 		profileFacet[i] = file->ReadInt();
-	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(SHHITS);
+	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
 	for (size_t m = 0; m <= mApp->worker.moments.size() || (version < 10 && m == 0); m++){
 		if (version >= 10) {
 			file->ReadKeyword("moment");
@@ -1261,7 +1261,7 @@ bool MolflowGeometry::LoadTextures(FileReader *file, GLProgress *prg, Dataport *
 
 		// Globals
 		BYTE *buffer = (BYTE *)dpHit->buff;
-		SHGHITS *gHits = (SHGHITS *)buffer;
+		GlobalHitBuffer *gHits = (GlobalHitBuffer *)buffer;
 
 		/*gHits->total.hit.nbHit = loaded_nbHit;
 		gHits->total.hit.nbDesorbed = loaded_nbDesorption;
@@ -1304,7 +1304,7 @@ bool MolflowGeometry::LoadTextures(FileReader *file, GLProgress *prg, Dataport *
 
 			gHits->texture_limits[2].max.moments_only = file->ReadDouble();
 
-			size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(SHHITS);
+			size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
 			for (size_t m = 0; m <= mApp->worker.moments.size() || (m == 0 /*&& version<10*/); m++){
 				//if (version>=10) {
 				file->ReadKeyword("moment");
@@ -1408,8 +1408,8 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit
 	// Globals
 	BYTE *buffer;
 	if (!crashSave && !saveSelected) buffer = (BYTE *)dpHit->buff;
-	SHGHITS *gHits;
-	if (!crashSave && !saveSelected) gHits = (SHGHITS *)buffer;
+	GlobalHitBuffer *gHits;
+	if (!crashSave && !saveSelected) gHits = (GlobalHitBuffer *)buffer;
 
 	double dCoef = 1.0;
 	int ix, iy;
@@ -1624,7 +1624,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit
 	//SaveSelections();
 
 	prg->SetMessage("Writing textures...");
-	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(SHHITS);
+	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++){
 		sprintf(tmp, "moment %zd {\n", m);
 		file->Write(tmp);
@@ -1673,7 +1673,7 @@ void MolflowGeometry::SaveTXT(FileWriter *file, Dataport *dpHit, bool saveSelect
 
 	// Globals
 	BYTE *buffer = (BYTE *)dpHit->buff;
-	SHGHITS *gHits = (SHGHITS *)buffer;
+	GlobalHitBuffer *gHits = (GlobalHitBuffer *)buffer;
 
 	// Unused
 	file->Write(gHits->total.hit.nbHit, "\n");
@@ -1717,8 +1717,8 @@ void MolflowGeometry::SaveTXT(FileWriter *file, Dataport *dpHit, bool saveSelect
 
 		// Update facet hits from shared mem
 		Facet *f = facets[i];
-		/*SHHITS *shF = (SHHITS *)(buffer + f->sh.hitOffset);
-		memcpy(&(f->sh.counter), shF, sizeof(SHHITS));*/
+		/*FacetHitBuffer *shF = (FacetHitBuffer *)(buffer + f->sh.hitOffset);
+		memcpy(&(f->sh.counter), shF, sizeof(FacetHitBuffer));*/
 		if (saveSelected) {
 			if (f->selected) f->SaveTXT(file);
 		}
@@ -1751,7 +1751,7 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, Datapor
 
 	if (grouping == 1) fprintf(file, "X_coord_cm\tY_coord_cm\tZ_coord_cm\tValue\t\n"); //mode 10: special ANSYS export
 
-	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(SHHITS);
+	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++){
 		if (m == 0) fprintf(file, " moment 0 (Constant Flow){\n");
 		else fprintf(file, " moment %zd (%g s){\n", m, mApp->worker.moments[m - 1]);
@@ -1770,7 +1770,7 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, Datapor
 					char out[256];
 					double dCoef = 1.0;
 					if (!buffer) return;
-					SHGHITS *shGHit = (SHGHITS *)buffer;
+					GlobalHitBuffer *shGHit = (GlobalHitBuffer *)buffer;
 					size_t nbMoments = mApp->worker.moments.size();
 					size_t profSize = (f->sh.isProfile) ? (PROFILE_SIZE*sizeof(APROFILE)*(1 + nbMoments)) : 0;
 					size_t w = f->sh.texWidth;
@@ -1913,7 +1913,7 @@ void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, Dataport *dpHit, Wor
 
 	fputs(header.str().c_str(), file);
 
-	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(SHHITS);
+	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++){
 		if (m == 0) fputs(" moment 0 (Constant Flow){\n", file);
 		else fprintf(file, " moment %zd (%g s){\n", m, mApp->worker.moments[m - 1]);
@@ -1934,7 +1934,7 @@ void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, Dataport *dpHit, Wor
 					double dCoef = 1.0;
 					if (!buffer) return;
 
-					SHGHITS *shGHit = (SHGHITS *)buffer;
+					GlobalHitBuffer *shGHit = (GlobalHitBuffer *)buffer;
 					double nbDes = (shGHit->total.hit.nbDesorbed > 0) ? (double)shGHit->total.hit.nbDesorbed : 1.0;
 					size_t profOffset = PROFILE_SIZE*sizeof(APROFILE)*m;
 					prof = (APROFILE*)((BYTE *)buffer + (f->sh.hitOffset + facetHitsSize + profOffset));
@@ -2459,13 +2459,13 @@ void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLP
 	}
 }
 
-bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, SHGHITS *gHits, size_t nbLeakSave, size_t nbHHitSave,
+bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, GlobalHitBuffer *gHits, size_t nbLeakSave, size_t nbHHitSave,
 	LEAK *leakCache, HIT *hitCache, GLProgress *prg, bool saveSelected){
 	xml_node resultNode = saveDoc.append_child("MolflowResults");
 	prg->SetMessage("Writing simulation results...");
 	xml_node momentsNode = resultNode.append_child("Moments");
 	momentsNode.append_attribute("nb") = work->moments.size() + 1;
-	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(SHHITS);
+	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++){
 		prg->SetProgress(0.5 + 0.5*(double)m / (1.0 + (double)mApp->worker.moments.size()));
 		xml_node newMoment = momentsNode.append_child("Moment");
@@ -2521,7 +2521,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 			newFacetResult.append_attribute("id") = i;
 			
 			xml_node facetHitNode = newFacetResult.append_child("Hits");
-			SHHITS* facetCounter = (SHHITS *)(buffer + f->sh.hitOffset + m * sizeof(SHHITS));
+			FacetHitBuffer* facetCounter = (FacetHitBuffer *)(buffer + f->sh.hitOffset + m * sizeof(FacetHitBuffer));
 			facetHitNode.append_attribute("nbHit") = facetCounter->hit.nbHit;
 			facetHitNode.append_attribute("nbDes") = facetCounter->hit.nbDesorbed;
 			facetHitNode.append_attribute("nbAbs") = facetCounter->hit.nbAbsorbed;
@@ -2774,7 +2774,7 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 		/*
 		//Initialize facet counters
 		for (size_t i = 0;i < sh.nbFacet;i++) {
-			memset(&(facets[i]->counterCache), 0, sizeof(SHHITS));
+			memset(&(facets[i]->counterCache), 0, sizeof(FacetHitBuffer));
 		}
 		*/
 
@@ -3018,11 +3018,11 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit,
 	if (!loadXML.child("MolflowResults")) return false; //simu state not saved with file
 	AccessDataport(dpHit);
 	BYTE* buffer = (BYTE*)dpHit->buff;
-	SHGHITS *gHits = (SHGHITS *)buffer;
+	GlobalHitBuffer *gHits = (GlobalHitBuffer *)buffer;
 	xml_node resultNode = loadXML.child("MolflowResults");
 	xml_node momentsNode = resultNode.child("Moments");
 	size_t nbMoments = momentsNode.select_nodes("Moment").size(); //Contains constant flow!
-	size_t facetHitsSize = (nbMoments) * sizeof(SHHITS);
+	size_t facetHitsSize = (nbMoments) * sizeof(FacetHitBuffer);
 	size_t m = 0;
 	for (xml_node newMoment : momentsNode.children("Moment")) {
 		progressDlg->SetProgress((double)m / (double)nbMoments);
@@ -3077,7 +3077,7 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit,
 			int facetId = newFacetResult.attribute("id").as_int();
 			Facet* f = GetFacet(facetId);
 			xml_node facetHitNode = newFacetResult.child("Hits");
-			SHHITS* facetCounter = (SHHITS *)(buffer + f->sh.hitOffset + m * sizeof(SHHITS));
+			FacetHitBuffer* facetCounter = (FacetHitBuffer *)(buffer + f->sh.hitOffset + m * sizeof(FacetHitBuffer));
 			if (facetHitNode) { //If there are hit results for the current moment	
 				facetCounter->hit.nbHit = facetHitNode.attribute("nbHit").as_llong();
 				facetCounter->hit.nbDesorbed = facetHitNode.attribute("nbDes").as_llong();

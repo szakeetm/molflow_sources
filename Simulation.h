@@ -1,27 +1,10 @@
- /*
-  File:        Simulation.h
-  Description: Monte-Carlo Simulation for UHV
-  Program:     MolFlow
-  Author:      R. KERSEVAN / J-L PONS / M ADY
-  Copyright:   E.S.R.F / CERN
-
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; either version 2 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-*/
-#ifndef _SIMULATIONH_
-#define _SIMULATIONH_
+#pragma once
 
 #define MAX_STRUCT 512
 #define MAX_THIT   16384
 
-#include "Shared.h"
+#include "MolflowTypes.h"
+#include "Buffer_shared.h" //Facetproperties
 #include "SMP.h"
 #include <vector>
 #include "Vector.h"
@@ -46,9 +29,9 @@ public:
 };
 
 // Local facet structure
-class FACET {
+class SubprocessFacet {
 public:
-  SHFACET sh;
+  FacetProperties sh;
 
   int      *indices;          // Indices (Reference to geometry vertex)
   Vector2d *vertices2;        // Vertices (2D plane space, UV coordinates)
@@ -86,28 +69,28 @@ public:
   size_t globalId; //Global index (to identify when superstructures are present)
 
   // Facet hit counters
-  std::vector<SHHITS> counter;
+  std::vector<FacetHitBuffer> counter;
   void  ResetCounter();
   void	ResizeCounter(size_t nbMoments);
 
   void RegisterTransparentPass(); //Allows one shared Intersect routine between MolFlow and Synrad
 };
 
-extern  FACET **THitCache; //Global variable
+extern  SubprocessFacet **THitCache; //Global variable
 
 // Local simulation structure
 
 typedef struct {
 
   int              nbFacet;  // Number of facet
-  FACET          **facets;   // Facet handles
+  SubprocessFacet          **facets;   // Facet handles
   struct AABBNODE *aabbTree; // Structure AABB tree
 
 } SUPERSTRUCT;
 
 typedef struct {
 
-  SHHITS tmpCount;            // Temporary number of hits (between 2 updates)
+  FacetHitBuffer tmpCount;            // Temporary number of hits (between 2 updates)
   llong  desorptionLimit;       // Maximum number of desorption
 
   int    hitCacheSize;              // Last hits  
@@ -148,7 +131,7 @@ typedef struct {
   size_t      nbMoments;        // Number of time moments
   SUPERSTRUCT str[MAX_STRUCT];
 
-  FACET *lastHitFacet;     // Last hitted facet
+  SubprocessFacet *lastHitFacet;     // Last hitted facet
   double stepPerSec;  // Avg number of step per sec
   size_t textTotalSize;  // Texture total size
   size_t profTotalSize;  // Profile total size
@@ -224,10 +207,10 @@ extern SIMULATION *sHandle;
 
 // -- Methods ---------------------------------------------------
 
-void RecordHitOnTexture(FACET *f, double time, bool countHit, double velocity_factor, double ortSpeedFactor);
-void RecordDirectionVector(FACET *f, double time);
-void ProfileFacet(FACET *f, double time, bool countHit, double velocity_factor, double ortSpeedFactor);
-void RecordAngleMap(FACET* collidedFacet);
+void RecordHitOnTexture(SubprocessFacet *f, double time, bool countHit, double velocity_factor, double ortSpeedFactor);
+void RecordDirectionVector(SubprocessFacet *f, double time);
+void ProfileFacet(SubprocessFacet *f, double time, bool countHit, double velocity_factor, double ortSpeedFactor);
+void RecordAngleMap(SubprocessFacet* collidedFacet);
 void InitSimulation();
 void ClearSimulation();
 void SetState(int state, const char *status, bool changeState=true, bool changeStatus=true);
@@ -242,10 +225,10 @@ bool SimulationACStep(int nbStep);
 void RecordHit(const int& type);
 void RecordLeakPos();
 bool StartFromSource();
-void PerformBounce(FACET *iFacet);
-void PerformAbsorb(FACET *iFacet);
-void PerformTeleport(FACET *iFacet);
-void PerformTransparentPass(FACET *iFacet);
+void PerformBounce(SubprocessFacet *iFacet);
+void PerformAbsorb(SubprocessFacet *iFacet);
+void PerformTeleport(SubprocessFacet *iFacet);
+void PerformTransparentPass(SubprocessFacet *iFacet);
 void UpdateHits(Dataport *dpHit,int prIdx,DWORD timeout);
 void UpdateMCHits(Dataport *dpHit,int prIdx,size_t nbMoments,DWORD timeout);
 void UpdateACHits(Dataport *dpHit,int prIdx,DWORD timeout);
@@ -253,16 +236,14 @@ void ResetTmpCounters();
 
 double GetTick();
 size_t   GetHitsSize();
-bool ComputeACMatrix(SHELEM *mesh);
+bool ComputeACMatrix(SHELEM_OLD *mesh);
 
 int GetIDId(int paramId);
 
-void   UpdateVelocity(FACET *collidedFacet);
+void   UpdateVelocity(SubprocessFacet *collidedFacet);
 double GenerateRandomVelocity(int CDFId);
-double GenerateDesorptionTime(FACET* src);
-double GetStickingAt(FACET *src,double time);
-double GetOpacityAt(FACET *src,double time);
-void   IncreaseFacetCounter(FACET *f, double time, size_t hit,size_t desorb, size_t absorb, double sum_1_per_v, double sum_v_ort);
+double GenerateDesorptionTime(SubprocessFacet* src);
+double GetStickingAt(SubprocessFacet *src,double time);
+double GetOpacityAt(SubprocessFacet *src,double time);
+void   IncreaseFacetCounter(SubprocessFacet *f, double time, size_t hit,size_t desorb, size_t absorb, double sum_1_per_v, double sum_v_ort);
 void   TreatMovingFacet();
-
-#endif /* _SIMULATIONH_ */

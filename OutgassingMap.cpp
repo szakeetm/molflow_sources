@@ -26,8 +26,8 @@
 #include "GLApp/GLList.h"
 #include "GLApp/GLCombo.h"
 #include "MolFlow.h"
-#include "Geometry_shared.h"
-#include "Facet.h"
+#include "MolflowGeometry.h" //Explode command is Molflow-specific
+#include "Facet_shared.h"
 extern MolFlow *mApp;
 
 //static const char *fileFilters = "Text files\0*.txt";
@@ -322,7 +322,7 @@ void OutgassingMap::ProcessMessage(GLComponent *src,int message) {
 			  if (mApp->AskToReset()) {
 				  mApp->changedSinceSave=true;
 				  try { 
-					  worker->GetGeometry()->ExplodeSelected(true,desCombo->GetSelectedIndex(),desorbTypeN,values);
+					  worker->GetMolflowGeometry()->ExplodeSelected(true,desCombo->GetSelectedIndex(),desorbTypeN,values);
 					  SAFE_FREE(values);
 					  mApp->UpdateModelParams();
 					  mApp->UpdateFacetParams(true);

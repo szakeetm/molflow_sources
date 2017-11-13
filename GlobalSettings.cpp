@@ -21,7 +21,7 @@
 #include "GLApp/GLMessageBox.h"
 #include "GLApp/GLList.h"
 #include "GLApp/GLInputBox.h"
-#include "Facet.h"
+#include "Facet_shared.h"
 #include "Geometry_shared.h"
 #include "GLApp/MathTools.h"
 #include "GLApp/GLButton.h"
@@ -29,7 +29,7 @@
 #include "GLApp/GLLabel.h"
 #include "GLApp/GLToggle.h"
 #include "GLApp/GLTitledPanel.h"
-#include "Shared.h"
+#include "Buffer_shared.h"
 #ifdef MOLFLOW
 #include "MolFlow.h"
 #endif

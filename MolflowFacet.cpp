@@ -1,206 +1,17 @@
-/*
-  File:        Facet.cpp
-  Description: Facet class (memory management)
-  Program:     MolFlow
-  Author:      R. KERSEVAN / J-L PONS / M ADY
-  Copyright:   E.S.R.F / CERN
 
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; either version 2 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-  */
-#ifdef MOLFLOW
-#include "MolFlow.h"
-#endif
-
-#ifdef SYNRAD
-#include "SynRad.h"
-#endif
-#include "Facet.h"
-//#include <malloc.h>
-#include <string.h>
-#include <math.h>
-#include "GLApp/GLToolkit.h"
-#include "GLApp/MathTools.h"
-#include "GLApp/GLMessageBox.h"
-#include <sstream>
+#include "Facet_shared.h"
+#include "File.h"
 #include "PugiXML\pugixml.hpp"
-#include <iomanip> //stringstream precision
 using namespace pugi;
-#define Max(x,y) (((x)<(y))?(y):(x))
-#define Min(x,y) (((x)<(y))?(x):(y))
+#include "MolflowTypes.h"
+#include <sstream>
+#include <iomanip> //setprecision
+#include "GLApp/GLToolkit.h"
+#include "GlApp/MathTools.h" //IS_ZERO
+#include "GLApp/GLMessageBox.h"
 
-// Colormap stuff
-extern COLORREF rainbowCol[]; //defined in GLGradient.cpp
-
-#ifdef MOLFLOW
-extern MolFlow *mApp;
-#endif
-
-#ifdef SYNRAD
-extern SynRad*mApp;
-#endif
-static int colorMap[65536];
-static bool colorInited = false;
-
-Facet::Facet(size_t nbIndex) {
-
-	indices = (size_t *)malloc(nbIndex * sizeof(size_t));                    // Ref to Geometry Vector3d
-	vertices2 = (Vector2d *)malloc(nbIndex * sizeof(Vector2d));      // Local U,V coordinates
-	memset(vertices2, 0, nbIndex * sizeof(Vector2d));
-
-	sh.nbIndex = nbIndex;
-
-	//ResizeCounter(nbMoments);
-
-	/*memset(&sh.counter, 0, sizeof(sh.counter));
-	sh.counter.hit.nbDesorbed = 0;
-	sh.counter.hit.nbAbsorbed = 0;
-	sh.counter.hit.nbHit = 0;*/
-	memset(&counterCache, 0, sizeof(SHHITS));
-	angleMapCache = NULL;
-
-	sh.sticking = 0.0;
-	sh.opacity = 1.0;
-	sh.temperature = 293.15; // 20degC
-	sh.outgassing = 0.0;           // 1 unit*l/s //will be outgasssing
-	sh.mass = 28.0;          // Nitrogen
-	sh.desorbType = DES_NONE;
-	sh.desorbTypeN = 0.0;
-
-	sh.reflection.diffusePart = 1.0; //totally diffuse reflection
-	sh.reflection.specularPart = 0.0;
-	sh.profileType = REC_NONE;
-
-	sh.texWidth = 0;
-	sh.texHeight = 0;
-	sh.texWidthD = 0.0;
-	sh.texHeightD = 0.0;
-	sh.center.x = 0.0;
-	sh.center.y = 0.0;
-	sh.center.z = 0.0;
-	sh.is2sided = false;
-	sh.isProfile = false;
-	//sh.isOpaque = true;
-	sh.isTextured = false;
-	sh.sign = 0.0;
-	sh.countDes = false;
-	sh.countAbs = false;
-	sh.countRefl = false;
-	sh.countTrans = false;
-	sh.countACD = false;
-	sh.countDirection = false;
-	sh.superIdx = 0;
-	sh.superDest = 0;
-	sh.teleportDest = 0;
-	sh.isVolatile = false;
-	sh.useOutgassingFile = false;
-	sh.accomodationFactor = 1.0;
-
-	sh.enableSojournTime = false;
-	sh.sojournFreq = 1E13;
-	sh.sojournE = 100;
-
-	sh.outgassing_paramId = -1;
-	sh.opacity_paramId = -1;
-	sh.sticking_paramId = -1;
-
-	sh.isMoving = false;
-
-	hasOutgassingFile = false;
-	outgassingMap = NULL;
-
-	sh.anglemapParams.record = false;
-	sh.anglemapParams.hasRecorded = false;
-	sh.anglemapParams.phiWidth = sh.anglemapParams.thetaLowerRes = sh.anglemapParams.thetaHigherRes = 0;
-	sh.anglemapParams.thetaLimit = 1.570796326; //slightly lower than PI/2
-
-	totalFlux = sh.totalOutgassing = totalDose = 0.0;
-
-	textureVisible = true;
-	volumeVisible = true;
-
-	texDimW = 0;
-	texDimH = 0;
-	tRatio = 0.0;
-
-	//mesh = NULL;
-	//meshPts = NULL;
-	cellPropertiesIds = NULL;
-	meshvector = NULL;
-	meshvectorsize = 0;
-	hasMesh = false;
-	//nbElem = 0;
-	selectedElem.u = 0;
-	selectedElem.v = 0;
-	selectedElem.width = 0;
-	selectedElem.height = 0;
-	dirCache = NULL;
-	textureError = false;
-
-	userOutgassing = "";
-	userOpacity = "";
-	userSticking = "";
-
-	// Init the colormap at the first facet construction
-	for (int i = 0; i < 65536 && !colorInited; i++) {
-
-		double r1, g1, b1;
-		double r2, g2, b2;
-		int colId = i / 8192;
-		//int colId = i/10923;
-
-		r1 = (double)((rainbowCol[colId] >> 16) & 0xFF);
-		g1 = (double)((rainbowCol[colId] >> 8) & 0xFF);
-		b1 = (double)((rainbowCol[colId] >> 0) & 0xFF);
-
-		r2 = (double)((rainbowCol[colId + 1] >> 16) & 0xFF);
-		g2 = (double)((rainbowCol[colId + 1] >> 8) & 0xFF);
-		b2 = (double)((rainbowCol[colId + 1] >> 0) & 0xFF);
-
-		double rr = (double)(i - colId * 8192) / 8192.0;
-		//double rr = (double)(i-colId*10923) / 10923;
-		Saturate(rr, 0.0, 1.0);
-		colorMap[i] = (COLORREF)((int)(r1 + (r2 - r1)*rr) +
-			(int)(g1 + (g2 - g1)*rr) * 256 +
-			(int)(b1 + (b2 - b1)*rr) * 65536);
-
-	}
-	colorMap[65535] = 0xFFFFFF; // Saturation color
-	colorInited = true;
-
-	glTex = 0;
-	glList = 0;
-	glElem = 0;
-	glSelElem = 0;
-	selected = false;
-	visible = (bool *)malloc(nbIndex * sizeof(bool));
-	memset(visible, 0xFF, nbIndex * sizeof(bool));
-	//visible[5]=1; //Troll statement to corrupt heap (APPVERIF debug test)
-
-}
-
-Facet::~Facet() {
-	SAFE_FREE(indices);
-	SAFE_FREE(vertices2);
-	SAFE_FREE(cellPropertiesIds);
-	SAFE_FREE(dirCache);
-	DELETE_TEX(glTex);
-	DELETE_LIST(glList);
-	DELETE_LIST(glElem);
-	DELETE_LIST(glSelElem);
-	SAFE_FREE(visible);
-	for (size_t i = 0; i < meshvectorsize; i++)
-		SAFE_FREE(meshvector[i].points);
-	SAFE_FREE(meshvector);
-	SAFE_FREE(outgassingMap);
-}
+// Colormap stuff, defined in GLGradient.cpp
+extern std::vector<int> colorMap;
 
 void Facet::LoadGEO(FileReader *file, int version, size_t nbVertex) {
 
@@ -581,7 +392,7 @@ void Facet::LoadTXT(FileReader *file) {
 	// Read facet parameters from TXT format
 	sh.sticking = file->ReadDouble();
 	double o = file->ReadDouble();
-	sh.area = file->ReadDouble();
+	/*sh.area =*/ file->ReadDouble();
 	counterCache.hit.nbDesorbed = (llong)(file->ReadDouble() + 0.5);
 	counterCache.hit.nbHit = (llong)(file->ReadDouble() + 0.5);
 	counterCache.hit.nbAbsorbed = (llong)(file->ReadDouble() + 0.5);
@@ -760,16 +571,9 @@ void Facet::SaveGEO(FileWriter *file, int idx) {
 	file->Write("}\n");
 }
 
-void Facet::UpdateFlags() {
+size_t Facet::GetGeometrySize()  {
 
-	sh.isProfile = (sh.profileType != REC_NONE);
-	//sh.isOpaque = (sh.opacity != 0.0);
-	sh.isTextured = ((texDimW*texDimH) > 0);
-}
-
-size_t Facet::GetGeometrySize() {
-
-	size_t s = sizeof(SHFACET)
+	size_t s = sizeof(FacetProperties)
 		+ (sh.nbIndex * sizeof(int))
 		+ (sh.nbIndex * sizeof(Vector2d));
 
@@ -781,10 +585,10 @@ size_t Facet::GetGeometrySize() {
 
 }
 
-size_t Facet::GetHitsSize(size_t nbMoments) {
+size_t Facet::GetHitsSize(size_t nbMoments)  {
 
 	return   (1 + nbMoments)*(
-		sizeof(SHHITS) +
+		sizeof(FacetHitBuffer) +
 		+(sh.texWidth*sh.texHeight * sizeof(AHIT))
 		+ (sh.isProfile ? (PROFILE_SIZE * sizeof(APROFILE)) : 0)
 		+ (sh.countDirection ? (sh.texWidth*sh.texHeight * sizeof(VHIT)) : 0)
@@ -793,7 +597,7 @@ size_t Facet::GetHitsSize(size_t nbMoments) {
 
 }
 
-size_t Facet::GetTexRamSize(size_t nbMoments) {
+size_t Facet::GetTexRamSize(size_t nbMoments)  {
 	//Values
 	size_t sizePerCell = sizeof(AHIT)*nbMoments; //AHIT: long + 2*double
 	if (sh.countDirection) sizePerCell += sizeof(VHIT)*nbMoments; //VHIT: Vector3d + long
@@ -804,7 +608,7 @@ size_t Facet::GetTexRamSize(size_t nbMoments) {
 	return sh.texWidth*sh.texHeight*sizePerCell + meshvectorsize*sizePerMeshElement;
 }
 
-size_t Facet::GetTexRamSizeForRatio(double ratio, bool useMesh, bool countDir, size_t nbMoments) {
+size_t Facet::GetTexRamSizeForRatio(double ratio, bool useMesh, bool countDir, size_t nbMoments)  {
 	double nU = sh.U.Norme();
 	double nV = sh.V.Norme();
 	double width = nU*ratio;
@@ -1113,94 +917,6 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 		free(buff8);
 		GLToolkit::CheckGLErrors("Facet::BuildTexture()");
 	}
-
-}
-
-bool Facet::IsCoplanarAndEqual(Facet *f, double threshold) {
-
-	// Detect if 2 facets are in the same plane (orientation preserving)
-	// and have same parameters (used by collapse)
-
-	return (fabs(a - f->a) < threshold) &&
-		(fabs(b - f->b) < threshold) &&
-		(fabs(c - f->c) < threshold) &&
-		(fabs(d - f->d) < threshold) &&
-
-		(sh.desorbType == f->sh.desorbType) &&
-		IsEqual(sh.sticking , f->sh.sticking) &&
-		IsEqual(sh.outgassing , f->sh.outgassing) &&
-		IsEqual(sh.opacity, f->sh.opacity) &&
-		(sh.is2sided == f->sh.is2sided) &&
-		IsEqual(sh.reflection.diffusePart , f->sh.reflection.diffusePart) &&
-		IsEqual(sh.reflection.specularPart, f->sh.reflection.specularPart) &&
-		(sh.temperature == f->sh.temperature);
-	//TODO: Add other properties!
-
-}
-
-void Facet::CopyFacetProperties(Facet *f, bool copyMesh) {
-
-	sh.sticking = f->sh.sticking;
-	sh.opacity = f->sh.opacity;
-	sh.area = f->sh.area;
-	sh.desorbType = f->sh.desorbType;
-	sh.desorbTypeN = f->sh.desorbTypeN;
-	sh.reflection = f->sh.reflection;
-	if (copyMesh) {
-		sh.profileType = f->sh.profileType;
-	}
-	else {
-		sh.profileType = REC_NONE;
-	}
-	sh.is2sided = f->sh.is2sided;
-	//sh.bb = f->sh.bb;
-	//sh.center = f->sh.center;
-
-	//sh.counter = f->sh.counter;
-	sh.outgassing = f->sh.outgassing;
-
-	sh.mass = f->sh.mass;
-	//sh.nbIndex = f->sh.nbIndex;
-	//sh.nU = f->sh.nU;
-	//sh.Nuv = f->sh.Nuv;
-	//sh.nV = f->sh.nV;
-	sh.superIdx = f->sh.superIdx;
-	sh.superDest = f->sh.superDest;
-	sh.teleportDest = f->sh.teleportDest;
-	sh.temperature = f->sh.temperature;
-	//sh.texHeight = f->sh.texHeight;
-	//sh.texHeightD = f->sh.texHeightD;
-	//sh.texWidth = f->sh.texWidth;
-	//sh.texWidthD = f->sh.texWidthD;
-	//sh.U = f->sh.U;
-	//sh.V = f->sh.V;
-	//dirCache = f->dirCache;
-	if (copyMesh) {
-		sh.countAbs = f->sh.countAbs;
-		sh.countRefl = f->sh.countRefl;
-		sh.countTrans = f->sh.countTrans;
-		sh.countDes = f->sh.countDes;
-		sh.countACD = f->sh.countACD;
-		sh.countDirection = f->sh.countDirection;
-		sh.isTextured = f->sh.isTextured;
-		hasMesh = f->hasMesh;
-		tRatio = f->tRatio;
-	}
-	this->UpdateFlags();
-	//nbElem = f->nbElem;
-	//texDimH = f->texDimH;
-	//texDimW = f->texDimW;
-	textureVisible = f->textureVisible;
-
-	//visible = f->visible; //Dragons ahead!
-	volumeVisible = f->volumeVisible;
-	a = f->a;
-	b = f->b;
-	c = f->c;
-	d = f->d;
-	err = f->err;
-	sh.N = f->sh.N;
-	selected = f->selected;
 
 }
 

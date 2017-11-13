@@ -26,7 +26,7 @@ GNU General Public License for more details.
 #include "GLApp/GLCombo.h"
 #include "GLApp\GLToggle.h"
 #include "Geometry_shared.h"
-#include "Facet.h"
+#include "Facet_shared.h"
 #ifdef MOLFLOW
 #include "MolFlow.h"
 #endif
@@ -173,7 +173,7 @@ void TexturePlotter::Update(float appTime, bool force) {
 
 void TexturePlotter::UpdateTable() {
 	size_t nbMoments = mApp->worker.moments.size();
-	size_t facetHitsSize = (1 + nbMoments) * sizeof(SHHITS);
+	size_t facetHitsSize = (1 + nbMoments) * sizeof(FacetHitBuffer);
 	maxValue = 0.0f;
 	//double scale;
 	GetSelected();
@@ -215,7 +215,7 @@ void TexturePlotter::UpdateTable() {
 			BYTE *buffer = worker->GetHits();
 			try {
 				if (buffer) {
-					SHGHITS *shGHit = (SHGHITS *)buffer;
+					GlobalHitBuffer *shGHit = (GlobalHitBuffer *)buffer;
 					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(APROFILE)*(1 + nbMoments)) : 0;
 					AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(AHIT)));
 					for (size_t i = 0; i < w; i++) {
@@ -247,7 +247,7 @@ void TexturePlotter::UpdateTable() {
 			BYTE *buffer = worker->GetHits();
 			try {
 				if (buffer) {
-					SHGHITS *shGHit = (SHGHITS *)buffer;
+					GlobalHitBuffer *shGHit = (GlobalHitBuffer *)buffer;
 					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(APROFILE)*(1 + nbMoments)) : 0;
 					AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(AHIT)));
 					double dCoef =1E4; //1E4: conversion m2->cm2
@@ -281,7 +281,7 @@ void TexturePlotter::UpdateTable() {
 			BYTE *buffer = worker->GetHits();
 			try {
 				if (buffer) {
-					SHGHITS *shGHit = (SHGHITS *)buffer;
+					GlobalHitBuffer *shGHit = (GlobalHitBuffer *)buffer;
 					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(APROFILE)*(1 + nbMoments)) : 0;
 					AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(AHIT)));
 					double dCoef =1E4;   //1E4 m2 -> cm2
@@ -323,7 +323,7 @@ void TexturePlotter::UpdateTable() {
 			BYTE *buffer = worker->GetHits();
 			try {
 				if (buffer) {
-					SHGHITS *shGHit = (SHGHITS *)buffer;
+					GlobalHitBuffer *shGHit = (GlobalHitBuffer *)buffer;
 					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(APROFILE)*(1 + nbMoments)) : 0;
 					AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(AHIT)));
 					//float dCoef = (float)totalOutgassing / 8.31 * gasMass / 100 * MAGIC_CORRECTION_FACTOR;
@@ -367,7 +367,7 @@ void TexturePlotter::UpdateTable() {
 			BYTE *buffer = worker->GetHits();
 			try {
 				if (buffer) {
-					SHGHITS *shGHit = (SHGHITS *)buffer;
+					GlobalHitBuffer *shGHit = (GlobalHitBuffer *)buffer;
 					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(APROFILE)*(1 + nbMoments)) : 0;
 					AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(AHIT)));
 					double dCoef = 1E4 * (worker->gasMass / 1000 / 6E23) * 0.0100;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
@@ -402,7 +402,7 @@ void TexturePlotter::UpdateTable() {
 			BYTE *buffer = worker->GetHits();
 			try {
 				if (buffer) {
-					SHGHITS *shGHit = (SHGHITS *)buffer;
+					GlobalHitBuffer *shGHit = (GlobalHitBuffer *)buffer;
 					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(APROFILE)*(1 + nbMoments)) : 0;
 					AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(AHIT)));
 					for (size_t i = 0; i < w; i++) {

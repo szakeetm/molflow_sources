@@ -33,7 +33,7 @@ extern SIMULATION *sHandle;
 void CalcTotalOutgassing() {
 	int i, j, k;
 	size_t tSize;
-	FACET *f;
+	SubprocessFacet *f;
 	double scale;
 	//float scale_precomputed;
 
@@ -54,7 +54,7 @@ void CalcTotalOutgassing() {
 
 }
 
-//void PolarToCartesian(FACET *iFacet, double theta, double phi, bool reverse) {
+//void PolarToCartesian(SubprocessFacet *iFacet, double theta, double phi, bool reverse) {
 //
 //	Vector3d U, V, N;
 //	double u, v, n;
@@ -101,7 +101,7 @@ void CalcTotalOutgassing() {
 //
 //}
 //
-//void CartesianToPolar(FACET *iFacet, double *theta, double *phi) {
+//void CartesianToPolar(SubprocessFacet *iFacet, double *theta, double *phi) {
 //
 //	// Get polar coordinates of the incoming particule direction in the (U,V,N) facet space.
 //	// Note: The facet is parallel to (U,V), we use its (nU,nV,N) orthonormal basis here.
@@ -130,7 +130,7 @@ void CalcTotalOutgassing() {
 void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 
 	BYTE *buffer;
-	SHGHITS *gHits;
+	GlobalHitBuffer *gHits;
 	TEXTURE_MIN_MAX texture_limits_old[3];
 	int i, j, s, x, y;
 #ifdef _DEBUG
@@ -143,7 +143,7 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 	if (!sHandle->lastUpdateOK) return;
 
 	buffer = (BYTE*)dpHit->buff;
-	gHits = (SHGHITS *)buffer;
+	gHits = (GlobalHitBuffer *)buffer;
 
 	// Global hits and leaks: adding local hits to shared memory
 	gHits->total.hit.nbHit += sHandle->tmpCount.hit.nbHit;
@@ -186,16 +186,16 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 		}
 	}
 
-	size_t facetHitsSize = (1 + nbMoments) * sizeof(SHHITS);
+	size_t facetHitsSize = (1 + nbMoments) * sizeof(FacetHitBuffer);
 	// Facets
 	for (s = 0; s < sHandle->nbSuper; s++) {
 		for (i = 0; i < sHandle->str[s].nbFacet; i++) {
 
-			FACET *f = sHandle->str[s].facets[i];
+			SubprocessFacet *f = sHandle->str[s].facets[i];
 			if (f->hitted) {
 
 				for (int m = 0; m < (1 + nbMoments); m++) {
-					SHHITS *fFit = (SHHITS *)(buffer + f->sh.hitOffset + m * sizeof(SHHITS));
+					FacetHitBuffer *fFit = (FacetHitBuffer *)(buffer + f->sh.hitOffset + m * sizeof(FacetHitBuffer));
 					fFit->hit.nbAbsorbed += f->counter[m].hit.nbAbsorbed;
 					//printf("\n%d %g + %g",i,(double)fFit->hit.nbHit,(double)f->sh.counter.hit.nbHit);
 					fFit->hit.nbDesorbed += f->counter[m].hit.nbDesorbed;
@@ -310,11 +310,11 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 
 // Compute particle teleport
 
-void PerformTeleport(FACET *iFacet) {
+void PerformTeleport(SubprocessFacet *iFacet) {
 
 	
 	//Search destination
-	FACET *destination;
+	SubprocessFacet *destination;
 	bool found = false;
 	bool revert = false;
 	int destIndex;
@@ -414,7 +414,7 @@ bool SimulationMCStep(size_t nbStep) {
 	for (size_t i = 0; i < nbStep; i++) {
 		
 		//Prepare output values
-		FACET   *collidedFacet;
+		SubprocessFacet   *collidedFacet;
 		double   d;
 		bool     found;
 
@@ -493,7 +493,7 @@ bool StartFromSource() {
 	bool foundInMap = false;
 	bool reverse;
 	size_t mapPositionW, mapPositionH;
-	FACET *src = NULL;
+	SubprocessFacet *src = NULL;
 	double srcRnd;
 	double sumA = 0.0;
 	int i = 0, j = 0;
@@ -513,7 +513,7 @@ bool StartFromSource() {
 	while (!found && j < sHandle->nbSuper) { //Go through superstructures
 		i = 0;
 		while (!found && i < sHandle->str[j].nbFacet) { //Go through facets in a structure
-			FACET *f = sHandle->str[j].facets[i];
+			SubprocessFacet *f = sHandle->str[j].facets[i];
 			if (f->sh.desorbType != DES_NONE) { //there is some kind of outgassing
 				if (f->sh.useOutgassingFile) { //Using SynRad-generated outgassing map
 					if (f->sh.totalOutgassing > 0.0) {
@@ -824,7 +824,7 @@ std::tuple<double, int, double> Anglemap::GenerateThetaFromAngleMap(const Anglem
 		return std::tie(theta, thetaLowerIndex, thetaOvershoot);
 	}
 	else { //regular section
-		if (/*true ||*/ phi_CDFsums[thetaLowerIndex] == phi_CDFsums[thetaLowerIndex + 1]) {
+		if (/*true || */phi_CDFsums[thetaLowerIndex] == phi_CDFsums[thetaLowerIndex + 1]) {
 			//The pdf's slope is 0, linear interpolation
 			thetaOvershoot = (lookupValue - theta_CDF[thetaLowerIndex]) / (theta_CDF[thetaLowerIndex + 1] - theta_CDF[thetaLowerIndex]);
 			theta = GetTheta((double)thetaLowerIndex + 0.5 + thetaOvershoot,anglemapParams);
@@ -1016,7 +1016,7 @@ double Anglemap::GetPhiCDFSum(const double & thetaIndex, const AnglemapParams& a
 	}
 }
 
-void PerformBounce(FACET *iFacet) {
+void PerformBounce(SubprocessFacet *iFacet) {
 
 	bool revert = false;
 
@@ -1098,8 +1098,8 @@ void PerformBounce(FACET *iFacet) {
 	else  if (reflTypeRnd < (iFacet->sh.reflection.diffusePart + iFacet->sh.reflection.specularPart))
 	{
 		//specular reflection
-		double inPhi, inTheta;
-		std::tie(inPhi,inTheta) = CartesianToPolar(iFacet->sh.nU,iFacet->sh.nV,iFacet->sh.N);
+		double inTheta , inPhi;
+		std::tie(inTheta , inPhi) = CartesianToPolar(iFacet->sh.nU,iFacet->sh.nV,iFacet->sh.N);
 		PolarToCartesian(iFacet, PI - inTheta, inPhi, false);
 
 	}
@@ -1129,7 +1129,7 @@ void PerformBounce(FACET *iFacet) {
 	//sHandle->nbPHit++;
 }
 
-void PerformTransparentPass(FACET *iFacet) { //disabled, caused finding hits with the same facet
+void PerformTransparentPass(SubprocessFacet *iFacet) { //disabled, caused finding hits with the same facet
 	/*double directionFactor = abs(DOT3(
 		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
 		iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z));
@@ -1146,7 +1146,7 @@ void PerformTransparentPass(FACET *iFacet) { //disabled, caused finding hits wit
 	sHandle->lastHit = iFacet;*/
 }
 
-void PerformAbsorb(FACET *iFacet) {
+void PerformAbsorb(SubprocessFacet *iFacet) {
 	sHandle->tmpCount.hit.nbHit++; //global	
 	sHandle->tmpCount.hit.nbAbsorbed++;
 	RecordHit(HIT_ABS);
@@ -1158,7 +1158,7 @@ void PerformAbsorb(FACET *iFacet) {
 	if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
 }
 
-void RecordHitOnTexture(FACET *f, double time, bool countHit, double velocity_factor, double ortSpeedFactor) {
+void RecordHitOnTexture(SubprocessFacet *f, double time, bool countHit, double velocity_factor, double ortSpeedFactor) {
 
 	size_t tu = (size_t)(f->colU * f->sh.texWidthD);
 	size_t tv = (size_t)(f->colV * f->sh.texHeightD);
@@ -1173,7 +1173,7 @@ void RecordHitOnTexture(FACET *f, double time, bool countHit, double velocity_fa
 		}
 }
 
-void RecordDirectionVector(FACET *f, double time) {
+void RecordDirectionVector(SubprocessFacet *f, double time) {
 	size_t tu = (size_t)(f->colU * f->sh.texWidthD);
 	size_t tv = (size_t)(f->colV * f->sh.texHeightD);
 	size_t add = tu + tv*(f->sh.texWidth);
@@ -1189,7 +1189,7 @@ void RecordDirectionVector(FACET *f, double time) {
 
 }
 
-void ProfileFacet(FACET *f, double time, bool countHit, double velocity_factor, double ortSpeedFactor) {
+void ProfileFacet(SubprocessFacet *f, double time, bool countHit, double velocity_factor, double ortSpeedFactor) {
 
 	size_t nbMoments = sHandle->moments.size();
 	double dot = 1.0;
@@ -1246,7 +1246,7 @@ void ProfileFacet(FACET *f, double time, bool countHit, double velocity_factor, 
 	}
 }
 
-void RecordAngleMap(FACET* collidedFacet) {
+void RecordAngleMap(SubprocessFacet* collidedFacet) {
 	double inTheta, inPhi;
 	std::tie(inTheta,inPhi) = CartesianToPolar(collidedFacet->sh.nU, collidedFacet->sh.nV, collidedFacet->sh.N);
 	if (inTheta > PI / 2.0) inTheta = abs(PI - inTheta); //theta is originally respective to N, but we'd like the angle between 0 and PI/2
@@ -1276,7 +1276,7 @@ void RecordAngleMap(FACET* collidedFacet) {
 	}
 }
 
-void UpdateVelocity(FACET *collidedFacet) {
+void UpdateVelocity(SubprocessFacet *collidedFacet) {
 	if (collidedFacet->sh.accomodationFactor > 0.9999) { //speedup for the most common case: perfect thermalization
 		if (sHandle->useMaxwellDistribution) sHandle->velocityCurrentParticle = GenerateRandomVelocity(collidedFacet->sh.CDFid);
 		else sHandle->velocityCurrentParticle = 145.469*sqrt(collidedFacet->sh.temperature / sHandle->gasMass);
@@ -1299,7 +1299,7 @@ double GenerateRandomVelocity(int CDFId) {
 	return v;
 }
 
-double GenerateDesorptionTime(FACET *src) {
+double GenerateDesorptionTime(SubprocessFacet *src) {
 	if (src->sh.outgassing_paramId >= 0) { //time-dependent desorption
 		return InterpolateX(rnd()*sHandle->IDs[src->sh.IDid].back().second, sHandle->IDs[src->sh.IDid], false, true); //allow extrapolate
 	}
@@ -1308,13 +1308,13 @@ double GenerateDesorptionTime(FACET *src) {
 	}
 }
 
-double GetStickingAt(FACET *f, double time) {
+double GetStickingAt(SubprocessFacet *f, double time) {
 	if (f->sh.sticking_paramId == -1) //constant sticking
 		return f->sh.sticking;
 	else return sHandle->parameters[f->sh.sticking_paramId].InterpolateY(time,false);
 }
 
-double GetOpacityAt(FACET *f, double time) {
+double GetOpacityAt(SubprocessFacet *f, double time) {
 	if (f->sh.opacity_paramId == -1) //constant sticking
 		return f->sh.opacity;
 	else return sHandle->parameters[f->sh.opacity_paramId].InterpolateY(time, false);
@@ -1336,7 +1336,7 @@ void TreatMovingFacet() {
 	sHandle->velocityCurrentParticle = newVelocity.Norme();
 }
 
-void IncreaseFacetCounter(FACET *f, double time, size_t hit, size_t desorb, size_t absorb, double sum_1_per_v, double sum_v_ort) {
+void IncreaseFacetCounter(SubprocessFacet *f, double time, size_t hit, size_t desorb, size_t absorb, double sum_1_per_v, double sum_v_ort) {
 	size_t nbMoments = sHandle->moments.size();
 	for (size_t m = 0; m <= nbMoments; m++) {
 		if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
@@ -1349,22 +1349,22 @@ void IncreaseFacetCounter(FACET *f, double time, size_t hit, size_t desorb, size
 	}
 }
 
-void FACET::ResetCounter() {
+void SubprocessFacet::ResetCounter() {
 	/*
-	SHHITS zeroes;memset(&zeroes, 0, sizeof(zeroes)); //A new zero-value vector
+	FacetHitBuffer zeroes;memset(&zeroes, 0, sizeof(zeroes)); //A new zero-value vector
 	std::fill(counter.begin(), counter.end(), zeroes); //Initialize each moment with 0 values
 	*/
 	memset(&counter[0], 0, counter.size() * sizeof(counter[0]));
 }
 
-void FACET::ResizeCounter(size_t nbMoments) {
-	//SHHITS zeroes;memset(&zeroes, 0, sizeof(zeroes)); //A new zero-value vector
-	counter = std::vector<SHHITS>(nbMoments + 1); //Reserve a counter for each moment, plus an extra for const. flow
+void SubprocessFacet::ResizeCounter(size_t nbMoments) {
+	//FacetHitBuffer zeroes;memset(&zeroes, 0, sizeof(zeroes)); //A new zero-value vector
+	counter = std::vector<FacetHitBuffer>(nbMoments + 1); //Reserve a counter for each moment, plus an extra for const. flow
 	//std::fill(counter.begin(), counter.end(), zeroes); //Initialize each moment with 0 values
 	memset(&counter[0], 0, counter.size() * sizeof(counter[0]));
 }
 
-void FACET::RegisterTransparentPass()
+void SubprocessFacet::RegisterTransparentPass()
 {
 	double directionFactor = abs(Dot(sHandle->pDir, this->sh.N));
 	IncreaseFacetCounter(this, sHandle->flightTimeCurrentParticle + this->colDist / 100.0 / sHandle->velocityCurrentParticle, 1, 0, 0, 2.0 / (sHandle->velocityCurrentParticle*directionFactor), 2.0*(sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*sHandle->velocityCurrentParticle*directionFactor);

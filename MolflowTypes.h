@@ -1,5 +1,6 @@
 #pragma once
 #include "GLApp/GlTypes.h"
+//#include "Buffer_shared.h"
 
 // Desorption type
 #define DES_NONE    0   // No desorption
@@ -30,8 +31,14 @@
 #define HIT_MOVING 6
 #define HIT_LAST 7
 
+#define MC_MODE 0         // Monte Carlo simulation mode
+#define AC_MODE 1         // Angular coefficient simulation mode
+
+typedef float ACFLOAT;
+
 // Density/Hit field stuff
 #define HITMAX 1E38
+
 
 typedef struct {
 	llong count;
@@ -60,3 +67,31 @@ typedef struct {
 	TEXTURE_MIN_MAX manual;
 	TEXTURE_MIN_MAX autoscale;
 } TEXTURE_SCALE_TYPE;
+
+class AnglemapParams {
+public:
+	bool   record; // Record incident angle 2-dim distribution
+	bool hasRecorded;
+	size_t phiWidth; //resolution between -PI and +PI
+	double thetaLimit; //angle map can have a different resolution under and over the limit. Must be between 0 and PI/2
+	size_t thetaLowerRes; //resolution between 0 and angleMapThetaLimit
+	size_t thetaHigherRes; //resolution between angleMapThetaLimit and PI/2
+};
+
+class Reflection {
+public:
+	double diffusePart;
+	double specularPart;
+};
+
+//Just for AC matrix calculation in Molflow, old mesh structure:
+typedef struct {
+
+	float   area;     // Area of element
+	float   uCenter;  // Center coordinates
+	float   vCenter;  // Center coordinates
+	int     elemId;   // Element index (MESH array)
+	bool    full;     // Element is full
+
+} SHELEM_OLD;
+

@@ -17,7 +17,7 @@ GNU General Public License for more details.
 */
 
 #include "TextureSettings.h"
-#include "Facet.h"
+#include "Facet_shared.h"
 #include "MolflowGeometry.h"
 #include "Worker.h"
 #include "GLApp/GLMessageBox.h"

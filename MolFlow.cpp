@@ -19,7 +19,7 @@ GNU General Public License for more details.
 #include <math.h>
 //#include <malloc.h>
 #include "MolFlow.h"
-#include "Facet.h"
+#include "Facet_shared.h"
 #include "MolflowGeometry.h"
 #include "File.h"
 #include "GLApp/GLMessageBox.h"
@@ -75,11 +75,11 @@ int   cWidth[] = { 30, 56, 50, 50 };
 char *cName[] = { "#", "Hits", "Des", "Abs" };
 
 std::string appId = "Molflow";
-int appVersion = 2659;
+int appVersion = 2660;
 #ifdef _DEBUG
 std::string appName = "MolFlow+ development version 64-bit (Compiled " __DATE__ " " __TIME__ ") DEBUG MODE";
 #else
-std::string appName = "Molflow+ 2.6.59 64-bit (" __DATE__ ")";
+std::string appName = "Molflow+ 2.6.60 64-bit (" __DATE__ ")";
 #endif
 
 std::vector<string> formulaPrefixes = { "A","D","H","P","DEN","Z","V","T","AR","a","d","h","p","den","z","v","t","ar","," };
@@ -1079,7 +1079,7 @@ int nb = geom->GetNbFacet();
 for(int j=0;j<nb;j++) {
 Facet *f = geom->GetFacet(j);
 if( f->sh.isVolatile ) {
-SHHITS *fCount = (SHHITS *)(buffer + f->sh.hitOffset);
+FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->sh.hitOffset);
 double z = geom->GetVertex(f->indices[0])->z;
 fprintf(file,"%g %.10g\n",z,(double)(fCount->hit.nbAbsorbed)/nbDes);
 }
@@ -1087,7 +1087,7 @@ fprintf(file,"%g %.10g\n",z,(double)(fCount->hit.nbAbsorbed)/nbDes);
 
 // Last
 Facet *f = geom->GetFacet(28);
-SHHITS *fCount = (SHHITS *)(buffer + f->sh.hitOffset);
+FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->sh.hitOffset);
 double fnbAbs = (double)fCount->hit.nbAbsorbed;
 fprintf(file,"1000 %.10g\n",fnbAbs/nbDes);
 

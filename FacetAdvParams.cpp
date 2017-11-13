@@ -19,7 +19,7 @@ GNU General Public License for more details.
 #include <math.h>
 
 #include "FacetAdvParams.h"
-#include "Facet.h"
+#include "Facet_shared.h"
 #include "GLApp/GLLabel.h"
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"

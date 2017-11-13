@@ -35,7 +35,7 @@ GNU General Public License for more details.
 
 // Global handles
 
-FACET** THitCache;
+SubprocessFacet** THitCache;
 SIMULATION *sHandle;
 
 // Timing stuff
@@ -51,7 +51,7 @@ void InitSimulation() {
 
 	// Global handle allocation
 	sHandle = new SIMULATION();
-	THitCache = new FACET*[MAX_THIT]; // Transparent hit cache
+	THitCache = new SubprocessFacet*[MAX_THIT]; // Transparent hit cache
 
 #ifdef WIN
 	{
@@ -79,7 +79,7 @@ void ClearSimulation() {
 	SAFE_FREE(sHandle->vertices3);
 	for (j = 0; j < sHandle->nbSuper; j++) {
 		for (i = 0; i < sHandle->str[j].nbFacet; i++) {
-			FACET *f = sHandle->str[j].facets[i];
+			SubprocessFacet *f = sHandle->str[j].facets[i];
 			if (f) {
 				SAFE_FREE(f->indices);
 				SAFE_FREE(f->vertices2);
@@ -171,7 +171,7 @@ bool LoadSimulation(Dataport *loader) {
 	BYTE *buffer;
 	BYTE *globalBuff;
 	BYTE *bufferStart;
-	SHGEOM *shGeom;
+	GeomProperties *shGeom;
 	Vector3d *shVert;
 	double t1, t0;
 	DWORD seed;
@@ -201,7 +201,7 @@ bool LoadSimulation(Dataport *loader) {
 
 	// Load new geom from the dataport
 
-	shGeom = (SHGEOM *)buffer;
+	shGeom = (GeomProperties *)buffer;
 	if (shGeom->nbSuper > MAX_STRUCT) {
 		ReleaseDataport(loader);
 		SetErrorSub("Too many structures");
@@ -231,11 +231,11 @@ bool LoadSimulation(Dataport *loader) {
 	sHandle->motionVector1 = shGeom->motionVector1;
 	sHandle->motionVector2 = shGeom->motionVector2;
 	// Prepare super structure (allocate memory for facets)
-	buffer += sizeof(SHGEOM) + sizeof(Vector3d)*sHandle->nbVertex;
+	buffer += sizeof(GeomProperties) + sizeof(Vector3d)*sHandle->nbVertex;
 	for (i = 0; i < sHandle->totalFacet; i++) {
-		SHFACET *shFacet = (SHFACET *)buffer;
+		FacetProperties *shFacet = (FacetProperties *)buffer;
 		sHandle->str[shFacet->superIdx].nbFacet++;
-		buffer += sizeof(SHFACET) + shFacet->nbIndex*(sizeof(int) + sizeof(Vector2d));
+		buffer += sizeof(FacetProperties) + shFacet->nbIndex*(sizeof(int) + sizeof(Vector2d));
 		if (shFacet->useOutgassingFile) buffer += sizeof(double)*shFacet->outgassingMapWidth*shFacet->outgassingMapHeight;
 		if (shFacet->anglemapParams.hasRecorded) buffer += sizeof(size_t)*shFacet->anglemapParams.phiWidth*(shFacet->anglemapParams.thetaLowerRes+shFacet->anglemapParams.thetaHigherRes);
 		if (shFacet->isTextured) buffer += sizeof(double)*shFacet->texWidth*shFacet->texHeight;
@@ -250,8 +250,8 @@ bool LoadSimulation(Dataport *loader) {
 		}
 		else {
 
-			sHandle->str[i].facets = (FACET **)malloc(nbF * sizeof(FACET *));
-			memset(sHandle->str[i].facets, 0, nbF * sizeof(FACET *));
+			sHandle->str[i].facets = (SubprocessFacet **)malloc(nbF * sizeof(SubprocessFacet *));
+			memset(sHandle->str[i].facets, 0, nbF * sizeof(SubprocessFacet *));
 			//sHandle->str[i].nbFacet = 0;
 		}
 		sHandle->str[i].nbFacet = 0;
@@ -272,7 +272,7 @@ bool LoadSimulation(Dataport *loader) {
 		SetErrorSub("Not enough memory to load vertices");
 		return false;
 	}
-	buffer += sizeof(SHGEOM);
+	buffer += sizeof(GeomProperties);
 
 	shVert = (Vector3d *)(buffer);
 	memcpy(sHandle->vertices3, shVert, sHandle->nbVertex * sizeof(Vector3d));
@@ -281,14 +281,14 @@ bool LoadSimulation(Dataport *loader) {
 	// Facets
 	for (i = 0; i < sHandle->totalFacet; i++) {
 
-		SHFACET *shFacet = (SHFACET *)buffer;
-		FACET *f = new FACET;
+		FacetProperties *shFacet = (FacetProperties *)buffer;
+		SubprocessFacet *f = new SubprocessFacet;
 		if (!f) {
 			SetErrorSub("Not enough memory to load facets");
 			return false;
 		}
-		memset(f, 0, sizeof(FACET));
-		memcpy(&(f->sh), shFacet, sizeof(SHFACET));
+		memset(f, 0, sizeof(SubprocessFacet));
+		memcpy(&(f->sh), shFacet, sizeof(FacetProperties));
 		f->ResizeCounter(sHandle->nbMoments); //Initialize counter
 
 		//f->sh.maxSpeed = 4.0 * sqrt(2.0*8.31*f->sh.temperature/0.001/sHandle->gasMass);
@@ -321,9 +321,9 @@ bool LoadSimulation(Dataport *loader) {
 		}
 
 		// Reset counter in local memory
-		//memset(&(f->sh.counter), 0, sizeof(SHHITS));
+		//memset(&(f->sh.counter), 0, sizeof(FacetHitBuffer));
 		f->indices = (int *)malloc(f->sh.nbIndex * sizeof(int));
-		buffer += sizeof(SHFACET);
+		buffer += sizeof(FacetProperties);
 		memcpy(f->indices, buffer, f->sh.nbIndex * sizeof(int));
 		buffer += f->sh.nbIndex * sizeof(int);
 		f->vertices2 = (Vector2d *)malloc(f->sh.nbIndex * sizeof(Vector2d));
@@ -643,8 +643,8 @@ bool LoadSimulation(Dataport *loader) {
 
 	printf("  Geom size: %zd bytes\n", (size_t)(buffer - bufferStart));
 	printf("  Number of stucture: %zd\n", sHandle->nbSuper);
-	printf("  Global Hit: %zd bytes\n", sizeof(SHGHITS));
-	printf("  Facet Hit : %zd bytes\n", sHandle->totalFacet * sizeof(SHHITS));
+	printf("  Global Hit: %zd bytes\n", sizeof(GlobalHitBuffer));
+	printf("  Facet Hit : %zd bytes\n", sHandle->totalFacet * sizeof(FacetHitBuffer));
 	printf("  Texture   : %zd bytes\n", sHandle->textTotalSize);
 	printf("  Profile   : %zd bytes\n", sHandle->profTotalSize);
 	printf("  Direction : %zd bytes\n", sHandle->dirTotalSize);
@@ -672,14 +672,13 @@ void UpdateHits(Dataport *dpHit, int prIdx, DWORD timeout) {
 }
 
 size_t GetHitsSize() {
-	return sHandle->textTotalSize + sHandle->profTotalSize + sHandle->dirTotalSize + sHandle->totalFacet * sizeof(SHHITS) + sizeof(SHGHITS);
-
+	return sHandle->textTotalSize + sHandle->profTotalSize + sHandle->dirTotalSize + sHandle->totalFacet * sizeof(FacetHitBuffer) + sizeof(GlobalHitBuffer);
 }
 
 void ResetTmpCounters() {
 	SetState(NULL, "Resetting local cache...", false, true);
 
-	memset(&sHandle->tmpCount, 0, sizeof(SHHITS));
+	memset(&sHandle->tmpCount, 0, sizeof(FacetHitBuffer));
 
 	sHandle->distTraveledSinceUpdate_total = 0.0;
 	sHandle->distTraveledSinceUpdate_fullHitsOnly = 0.0;
@@ -689,7 +688,7 @@ void ResetTmpCounters() {
 
 	for (int j = 0; j < sHandle->nbSuper; j++) {
 		for (int i = 0; i < sHandle->str[j].nbFacet; i++) {
-			FACET *f = sHandle->str[j].facets[i];
+			SubprocessFacet *f = sHandle->str[j].facets[i];
 			f->ResetCounter();
 			f->hitted = false;
 

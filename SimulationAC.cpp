@@ -53,7 +53,7 @@ for(_k=0;_k<sHandle->str[0].nbFacet;_k++) {                         \
   _idx++;}}                                                                \
 if((_f)->sh.opacity!=1.0) _idx+=((_f)->sh.texWidth*(_f)->sh.texHeight); }
 
-void GetCenter(FACET *f,SHELEM *mesh, size_t idx,Vector3d *c) {
+void GetCenter(SubprocessFacet *f,SHELEM_OLD *mesh, size_t idx,Vector3d *c) {
 
   c->x = f->sh.O.x + f->sh.U.x*mesh[idx].uCenter + f->sh.V.x*mesh[idx].vCenter;
   c->y = f->sh.O.y + f->sh.U.y*mesh[idx].uCenter + f->sh.V.y*mesh[idx].vCenter;
@@ -84,11 +84,11 @@ void ClearACMatrix() {
 
 }
 
-bool ComputeACMatrix(SHELEM *mesh) {
+bool ComputeACMatrix(SHELEM_OLD *mesh) {
 
 	int      idx, i1, i2, j1, j2, k1, k2;
 	size_t nbElem,idx1,idx2,sz;
-  FACET   *f1,*f2;
+  SubprocessFacet   *f1,*f2;
   size_t      nbO=0,nbB=0,nbE=0,nbV;
   Vector3d c1,c2;
   double   r2,cos1,cos2,vf,pv;
@@ -360,10 +360,10 @@ bool SimulationACStep(int nbStep) {
 
 void UpdateACHits(Dataport *dpHit,int prIdx,DWORD timeout) {
 
-  SHGHITS *gHits;
-  FACET   *f;
+  GlobalHitBuffer *gHits;
+  SubprocessFacet   *f;
   AHIT    *shTexture;
-  SHHITS  *fHits;
+  FacetHitBuffer  *fHits;
   int      i,j,k,idx,nbE;
   double  sumVal=0.0;
   double  sumAbs=0.0;
@@ -371,7 +371,7 @@ void UpdateACHits(Dataport *dpHit,int prIdx,DWORD timeout) {
 
   if( !AccessDataportTimed(dpHit,timeout) ) return;
 
-  gHits = (SHGHITS *)dpHit->buff;
+  gHits = (GlobalHitBuffer *)dpHit->buff;
   gHits->texture_limits[0].max.all = 0.0;
   gHits->texture_limits[0].min.all = 0.0;
   gHits->mode = AC_MODE;
@@ -379,7 +379,7 @@ void UpdateACHits(Dataport *dpHit,int prIdx,DWORD timeout) {
 
   // Update texture
   idx = 0;
-  size_t facetHitsSize = (1 + sHandle->moments.size()) * sizeof(SHHITS);
+  size_t facetHitsSize = (1 + sHandle->moments.size()) * sizeof(FacetHitBuffer);
   for(k=0;k<sHandle->str[0].nbFacet;k++) {
 
     f = sHandle->str[0].facets[k];
@@ -400,7 +400,7 @@ void UpdateACHits(Dataport *dpHit,int prIdx,DWORD timeout) {
         idx++;
       }
     }
-    fHits = (SHHITS  *)((char *)dpHit->buff + f->sh.hitOffset);
+    fHits = (FacetHitBuffer  *)((char *)dpHit->buff + f->sh.hitOffset);
     fHits->density.value    = sumVal;
     fHits->density.desorbed = sumDes;
     fHits->density.absorbed = sumAbs;

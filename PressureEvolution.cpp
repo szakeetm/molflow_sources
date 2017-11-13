@@ -29,7 +29,7 @@ GNU General Public License for more details.
 #include "GLApp/GLParser.h"
 #include "GLApp/GLTextField.h"
 #include "Geometry_shared.h"
-#include "Facet.h"
+#include "Facet_shared.h"
 #include <math.h>
 
 #ifdef MOLFLOW
@@ -324,16 +324,16 @@ void PressureEvolution::refreshViews() {
 	if (!buffer) return;
 
 	Geometry *geom = worker->GetGeometry();
-	SHGHITS *gHits = (SHGHITS *)buffer;
+	GlobalHitBuffer *gHits = (GlobalHitBuffer *)buffer;
 	double nbDes = (double)gHits->total.hit.nbDesorbed;
 	double scaleY;
-	size_t facetHitsSize = (1 + worker->moments.size()) * sizeof(SHHITS);
+	size_t facetHitsSize = (1 + worker->moments.size()) * sizeof(FacetHitBuffer);
 	for (int i = 0; i < nbView; i++) {
 
 		GLDataView *v = views[i];
 		if (v->userData1 >= 0 && v->userData1 < geom->GetNbFacet()) {
 			Facet *f = geom->GetFacet(v->userData1);
-			SHHITS *fCount = (SHHITS *)(buffer + f->sh.hitOffset);
+			FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->sh.hitOffset);
 			double fnbDes = (double)fCount->hit.nbDesorbed;
 			double fnbHit = (double)fCount->hit.nbHit;
 			v->Reset();
@@ -434,14 +434,14 @@ void PressureEvolution::refreshViews() {
 				for (size_t j = 0; j < nb; j++) {
 					Facet *f = geom->GetFacet(j);
 					if (f->sh.isVolatile) {
-						SHHITS *fCount = (SHHITS *)(buffer + f->sh.hitOffset);
+						FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->sh.hitOffset);
 						double z = geom->GetVertex(f->indices[0])->z;
 						v->Add(z, (double)(fCount->hit.nbAbsorbed) / nbDes, false);
 					}
 				}
 				// Last
 				Facet *f = geom->GetFacet(28);
-				SHHITS *fCount = (SHHITS *)(buffer + f->sh.hitOffset);
+				FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->sh.hitOffset);
 				double fnbAbs = (double)fCount->hit.nbAbsorbed;
 				v->Add(1000.0, fnbAbs / nbDes, false);
 				v->CommitChange();

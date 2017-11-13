@@ -28,7 +28,7 @@ GNU General Public License for more details.
 #include "GLApp/GLList.h"
 #include "GLApp/GLChart/GLChart.h"
 #include "Geometry_shared.h"
-#include "Facet.h"
+#include "Facet_shared.h"
 #include <math.h>
 #ifdef MOLFLOW
 #include "MolFlow.h"
@@ -312,11 +312,11 @@ void ProfilePlotter::refreshViews() {
 	if (!buffer) return;
 
 	Geometry *geom = worker->GetGeometry();
-	SHGHITS *gHits = (SHGHITS *)buffer;
+	GlobalHitBuffer *gHits = (GlobalHitBuffer *)buffer;
 
 	double scaleY;
 
-	size_t facetHitsSize = (1 + worker->moments.size()) * sizeof(SHHITS);
+	size_t facetHitsSize = (1 + worker->moments.size()) * sizeof(FacetHitBuffer);
 	for (int i = 0; i < nbView; i++) {
 
 		GLDataView *v = views[i];
@@ -326,7 +326,7 @@ void ProfilePlotter::refreshViews() {
 			v->Reset();
 			APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + facetHitsSize + worker->displayedMoment*sizeof(APROFILE)*PROFILE_SIZE);
 
-			SHHITS *fCount = (SHHITS *)(buffer + f->sh.hitOffset+ worker->displayedMoment*sizeof(SHHITS));
+			FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->sh.hitOffset+ worker->displayedMoment*sizeof(FacetHitBuffer));
 			double fnbHit = (double)fCount->hit.nbHit;
 			if (fnbHit == 0.0) fnbHit = 1.0;
 			if (worker->nbDesorption > 0){
@@ -420,14 +420,14 @@ void ProfilePlotter::refreshViews() {
 				for (size_t j = 0; j < nb; j++) {
 					Facet *f = geom->GetFacet(j);
 					if (f->sh.isVolatile) {
-						SHHITS *fCount = (SHHITS *)(buffer + f->sh.hitOffset+worker->displayedMoment*sizeof(SHHITS));
+						FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->sh.hitOffset+worker->displayedMoment*sizeof(FacetHitBuffer));
 						double z = geom->GetVertex(f->indices[0])->z;
 						v->Add(z, (double)(fCount->hit.nbAbsorbed) / worker->nbDesorption, false);
 					}
 				}
 				// Last
 				Facet *f = geom->GetFacet(28);
-				SHHITS *fCount = (SHHITS *)(buffer + f->sh.hitOffset+worker->displayedMoment*sizeof(SHHITS));
+				FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->sh.hitOffset+worker->displayedMoment*sizeof(FacetHitBuffer));
 				double fnbAbs = (double)fCount->hit.nbAbsorbed;
 				v->Add(1000.0, fnbAbs / worker->nbDesorption, false);
 				v->CommitChange();

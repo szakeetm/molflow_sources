@@ -18,7 +18,7 @@
 
 #include "MolflowGeometry.h"
 #include "Worker.h"
-#include "Facet.h"
+#include "Facet_shared.h"
 //#include <malloc.h>
 #include <string.h>
 #include <math.h>
@@ -43,12 +43,12 @@ extern SynRad*mApp;
 
 void MolflowGeometry::BuildFacetTextures(BYTE *hits, bool renderRegularTexture, bool renderDirectionTexture) {
 
-	SHGHITS *shGHit = (SHGHITS *)hits;
+	GlobalHitBuffer *shGHit = (GlobalHitBuffer *)hits;
 
 	Worker *w = &(mApp->worker);
 
 	int nbMoments = (int)mApp->worker.moments.size();
-	size_t facetHitsSize = (1 + nbMoments) * sizeof(SHHITS);
+	size_t facetHitsSize = (1 + nbMoments) * sizeof(FacetHitBuffer);
 
 	GLProgress *prg = new GLProgress("Building texture", "Frame update");
 	prg->SetBounds(5, 28, 300, 90);

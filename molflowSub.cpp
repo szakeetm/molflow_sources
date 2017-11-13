@@ -177,7 +177,7 @@ void SetStatus(char *status) {
 void LoadAC() {
 
   Dataport *loader;
-  SHELEM *map;
+  SHELEM_OLD *map;
 
   if( !sHandle->loadOK ) {
     SetErrorSub("No geometry loaded");
@@ -202,7 +202,7 @@ void LoadAC() {
   }
   printf("Connected to %s\n",loadDpName);
 
-  map = (SHELEM *)malloc( prParam );
+  map = (SHELEM_OLD *)malloc( prParam );
   memcpy(map,loader->buff,prParam);
   ReleaseDataport(loader);
   CLOSEDP(loader);
