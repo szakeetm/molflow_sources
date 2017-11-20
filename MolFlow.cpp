@@ -504,7 +504,12 @@ int MolFlow::OneTimeSceneInit()
 
 	//worker.GetGeometry()->InitializeGeometry();
 
-
+	int answer = appUpdater->RequestUpdateCheck();
+	if (answer == ANSWER_ASKNOW) {
+		int preference = GLMessageBox::Display("Can I check for updates?", "Updater", { "No","Yes","Decide later" },GLDLG_ICONINFO);
+		if (Contains({ 0,1 }, preference))
+			appUpdater->SetUserUpdatePreference(preference);
+	}
 
 	return GL_OK;
 }
@@ -626,8 +631,6 @@ void MolFlow::PlaceComponents() {
 	int lg = m_screenHeight -23 /*- (nbFormula * 25)*/;
 
 	facetList->SetBounds(sx, sy, 202, lg - sy);
-
-	
 
 	/*
 	for (int i = 0; i < nbFormula; i++) {
