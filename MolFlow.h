@@ -53,7 +53,7 @@ public:
 	void InsertGeometry(bool newStr,char *fName=NULL);
 	void SaveFile();
     
-	void ImportDesorption_DES();
+	//void ImportDesorption_DES(); //Deprecated
 	void ExportProfiles();
 	void ExportAngleMaps();
 	void ImportAngleMaps();
@@ -64,7 +64,7 @@ public:
     void ApplyFacetParams();
 	void UpdateFacetParams(bool updateSelection = false);
     void StartStopSimulation();
-    void SaveConfig(bool increaseSessionCount = false);
+    void SaveConfig();
     void LoadConfig();
     
 	void PlaceComponents();

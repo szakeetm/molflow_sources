@@ -52,7 +52,7 @@ public:
   void ExportAngleMaps(std::vector<size_t> faceList, std::string fileName);
 
   //Import desorption map
-  void ImportDesorption_DES(char *fileName);
+  //void ImportDesorption_DES(char *fileName); //Deprecated
   void ImportDesorption_SYN(char *fileName, const size_t &source, const double &time,
 	  const size_t &mode, const double &eta0, const double &alpha, const double &cutoffdose,
 	  const std::vector<std::pair<double, double>> &convDistr,

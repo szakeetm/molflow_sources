@@ -1081,31 +1081,30 @@ void PerformBounce(SubprocessFacet *iFacet) {
 		double A = exp(-iFacet->sh.sojournE / (8.31*iFacet->sh.temperature));
 		sHandle->flightTimeCurrentParticle += -log(rnd()) / (A*iFacet->sh.sojournFreq);
 	}
-	//sHandle->temperature = iFacet->sh.temperature; //Thermalize particle
 
-	double reflTypeRnd = rnd();
-	if (reflTypeRnd < iFacet->sh.reflection.diffusePart)
-	{
-		//diffuse reflection
-		//See docs/theta_gen.png for further details on angular distribution generation
+	if (iFacet->sh.reflection.diffusePart > 0.999999) { //Speedup branch for most common, diffuse case
 		PolarToCartesian(iFacet, acos(sqrt(rnd())), rnd()*2.0*PI, revert);
-		/*if (revert) {
-			sHandle->pDir.x = -sHandle->pDir.x;
-			sHandle->pDir.y = -sHandle->pDir.y;
-			sHandle->pDir.z = -sHandle->pDir.z;
-		}*/
-	}
-	else  if (reflTypeRnd < (iFacet->sh.reflection.diffusePart + iFacet->sh.reflection.specularPart))
-	{
-		//specular reflection
-		double inTheta , inPhi;
-		std::tie(inTheta , inPhi) = CartesianToPolar(iFacet->sh.nU,iFacet->sh.nV,iFacet->sh.N);
-		PolarToCartesian(iFacet, PI - inTheta, inPhi, false);
-
 	}
 	else {
-		//uniform reflection
-		PolarToCartesian(iFacet, acos(rnd()), rnd()*2.0*PI, revert);
+		double reflTypeRnd = rnd();
+		if (reflTypeRnd < iFacet->sh.reflection.diffusePart)
+		{
+			//diffuse reflection
+			//See docs/theta_gen.png for further details on angular distribution generation
+			PolarToCartesian(iFacet, acos(sqrt(rnd())), rnd()*2.0*PI, revert);
+		}
+		else  if (reflTypeRnd < (iFacet->sh.reflection.diffusePart + iFacet->sh.reflection.specularPart))
+		{
+			//specular reflection
+			double inTheta, inPhi;
+			std::tie(inTheta, inPhi) = CartesianToPolar(iFacet->sh.nU, iFacet->sh.nV, iFacet->sh.N);
+			PolarToCartesian(iFacet, PI - inTheta, inPhi, false);
+
+		}
+		else {
+			//Cos^N reflection
+			PolarToCartesian(iFacet, acos(pow(rnd(), 1.0 / (iFacet->sh.reflection.cosineExponent + 1.0))), rnd()*2.0*PI, revert);
+		}
 	}
 
 	if (iFacet->sh.isMoving) {

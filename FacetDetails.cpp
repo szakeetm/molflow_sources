@@ -270,7 +270,7 @@ char *FacetDetails::FormatCell(size_t idx,Facet *f,size_t mode) {
 	  if (f->sh.desorbType==DES_COSINE_N) sprintf(ret,"%s%g",ret,f->sh.desorbTypeN); //append exponent
       break;
     case 6:
-      sprintf(ret,"%g diff. %g spec.",f->sh.reflection.diffusePart,f->sh.reflection.specularPart);
+      sprintf(ret,"%g diff. %g spec. %g cos^%g",f->sh.reflection.diffusePart,f->sh.reflection.specularPart,1.0-f->sh.reflection.diffusePart-f->sh.reflection.specularPart,f->sh.reflection.cosineExponent);
       break;
     case 7:
       sprintf(ret,"%s",ynStr[f->sh.is2sided]);      

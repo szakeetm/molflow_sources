@@ -1281,6 +1281,7 @@ double Worker::GetMoleculesPerTP(size_t moment)
 	}
 }
 
+/* //Commenting out as deprecated
 void Worker::ImportDesorption_DES(char *fileName) {
 	//if (needsReload) RealReload();
 	// Read a file
@@ -1290,6 +1291,7 @@ void Worker::ImportDesorption_DES(char *fileName) {
 	mApp->changedSinceSave = true;
 	Reload();
 }
+*/
 
 void Worker::ImportDesorption_SYN(char *fileName, const size_t &source, const double &time,
 	const size_t &mode, const double &eta0, const double &alpha, const double &cutoffdose,

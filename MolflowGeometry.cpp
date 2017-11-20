@@ -357,8 +357,8 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 		// Wall facet
 		for (int i = 0; i < step; i++) {
 			facets[i + 2 + nbTF] = new Facet(4);
-			facets[i + 2 + nbTF]->sh.reflection.diffusePart = 1.0;
-			facets[i + 2 + nbTF]->sh.reflection.specularPart = 0.0;
+			//facets[i + 2 + nbTF]->sh.reflection.diffusePart = 1.0; //constructor does this already
+			//facets[i + 2 + nbTF]->sh.reflection.specularPart = 0.0; //constructor does this already
 			facets[i + 2 + nbTF]->sh.sticking = s;
 			facets[i + 2 + nbTF]->indices[0] = 2 * i + nbTV;
 			facets[i + 2 + nbTF]->indices[1] = 2 * i + 1 + nbTV;
@@ -412,18 +412,6 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 	catch (...) {
 		throw Error("Unspecified Error while building pipe");
 	}
-	InitializeGeometry();
-	//isLoaded = true; //InitializeGeometry() sets to true
-
-}
-
-void  MolflowGeometry::EmptyGeometry() {
-	Clear();
-
-	sh.nbVertex = 0;
-	sh.nbFacet = 0;
-	sh.nbSuper = 1;
-	strName[0] = _strdup("");
 	InitializeGeometry();
 	//isLoaded = true; //InitializeGeometry() sets to true
 
@@ -1978,6 +1966,7 @@ void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, Dataport *dpHit, Wor
 
 }
 
+/* Commenting out as deprecated
 void MolflowGeometry::ImportDesorption_DES(FileReader *file) {
 
 	//if(!IsLoaded()) throw Error("Nothing to save !");
@@ -2033,6 +2022,7 @@ void MolflowGeometry::ImportDesorption_DES(FileReader *file) {
 	_ASSERTE(_CrtCheckMemory());
 
 }
+*/
 
 void MolflowGeometry::ImportDesorption_SYN(
 	FileReader *file, const size_t &source, const double &time,

@@ -117,7 +117,7 @@ int formulaSyntaxHeight = 380;
 MolFlow *mApp;
 
 //Menu elements, Molflow specific:
-#define MENU_FILE_IMPORTDES_DES 140
+//#define MENU_FILE_IMPORTDES_DES 140
 #define MENU_FILE_IMPORTDES_SYN 141
 
 #define MENU_FILE_EXPORTTEXTURE_AREA 151
@@ -319,9 +319,9 @@ int MolFlow::OneTimeSceneInit()
 	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->GetSubMenu("By X,Y,Z coordinates")->Add("Velocity vector (m/s)", MENU_FILE_EXPORTTEXTURE_V_VECTOR_COORD);
 	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->GetSubMenu("By X,Y,Z coordinates")->Add("# of velocity vectors", MENU_FILE_EXPORTTEXTURE_N_VECTORS_COORD);
 
-	menu->GetSubMenu("File")->Add("Import desorption file");
-	menu->GetSubMenu("File")->GetSubMenu("Import desorption file")->Add("SYN file", MENU_FILE_IMPORTDES_SYN);
-	menu->GetSubMenu("File")->GetSubMenu("Import desorption file")->Add("DES file (deprecated)", MENU_FILE_IMPORTDES_DES);
+	menu->GetSubMenu("File")->Add("Import desorption from SYN file",MENU_FILE_IMPORTDES_SYN);
+	//menu->GetSubMenu("File")->GetSubMenu("Import desorption file")->Add("SYN file", );
+	//menu->GetSubMenu("File")->GetSubMenu("Import desorption file")->Add("DES file (deprecated)", MENU_FILE_IMPORTDES_DES);
 
 	menu->GetSubMenu("File")->Add(NULL); // Separator
 	menu->GetSubMenu("File")->Add("E&xit", MENU_FILE_EXIT); //Moved here from OnetimeSceneinit_shared to assert it's the last menu item
@@ -477,6 +477,7 @@ int MolFlow::OneTimeSceneInit()
 
 	ClearFacetParams();
 	LoadConfig();
+	appUpdater = new AppUpdater(appId, appVersion, "updater_config.xml");
 	UpdateRecentMenu();
 	UpdateViewerPanel();
 	PlaceComponents();
@@ -502,6 +503,8 @@ int MolFlow::OneTimeSceneInit()
 	//AppUpdater(); //Ask if user wants to check for updates
 
 	//worker.GetGeometry()->InitializeGeometry();
+
+
 
 	return GL_OK;
 }
@@ -1375,6 +1378,7 @@ void MolFlow::ClearAngleMapsOnSelection() {
 	//}
 }
 
+/*
 void MolFlow::ImportDesorption_DES() {
 
 	FILENAME *fn = GLFileBox::OpenFile(currentDir, NULL, "Import desorption File", fileDesFilters, 0);
@@ -1394,6 +1398,7 @@ void MolFlow::ImportDesorption_DES() {
 	}
 
 }
+*/
 
 void MolFlow::SaveFile() {
 	if (strlen(worker.fullFileName) > 0) {
@@ -1691,9 +1696,11 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			}
 			else GLMessageBox::Display("No geometry loaded.", "No geometry", GLDLG_OK, GLDLG_ICONERROR);
 			break;
+		/* //Deprecated
 		case MENU_FILE_IMPORTDES_DES:
 			ImportDesorption_DES();
 			break;
+		*/
 
 		case MENU_FILE_EXPORTTEXTURE_AREA:
 			ExportTextures(0, 0); break;
@@ -2201,7 +2208,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 
 void MolFlow::EmptyGeometry() {
 
-	MolflowGeometry *geom = worker.GetMolflowGeometry();
+	Geometry *geom = worker.GetGeometry();
 	ResetSimulation(false);
 
 	try {
@@ -2214,7 +2221,7 @@ void MolFlow::EmptyGeometry() {
 		worker.ResetMoments();
 	}
 	catch (Error &e) {
-		GLMessageBox::Display((char *)e.GetMsg(), "Error building pipe", GLDLG_OK, GLDLG_ICONERROR);
+		GLMessageBox::Display((char *)e.GetMsg(), "Error resetting geometry", GLDLG_OK, GLDLG_ICONERROR);
 		geom->Clear();
 		return;
 	}
@@ -2254,17 +2261,20 @@ void MolFlow::EmptyGeometry() {
 	if (profilePlotter) profilePlotter->Refresh();
 	if (texturePlotter) texturePlotter->Update(0.0, true);
 	//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
-	if (textureSettings) textureSettings->Update();
 	if (outgassingMap) outgassingMap->Update(m_fTime, true);
-	if (facetDetails) facetDetails->Update();
-	if (facetCoordinates) facetCoordinates->UpdateFromSelection();
-	if (vertexCoordinates) vertexCoordinates->Update();
 	if (movement) movement->Update();
 	if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 	if (formulaEditor) formulaEditor->Refresh();
+	
+	if (textureSettings) textureSettings->Update();
+	if (facetDetails) facetDetails->Update();
+	if (facetCoordinates) facetCoordinates->UpdateFromSelection();
+	if (vertexCoordinates) vertexCoordinates->Update();
+	
 	UpdateTitle();
 	changedSinceSave = false;
 	ResetAutoSaveTimer();
+	UpdatePlotters();
 }
 
 void MolFlow::LoadConfig() {
@@ -2412,7 +2422,7 @@ void MolFlow::LoadConfig() {
 		f->ReadKeyword("autoSaveSimuOnly"); f->ReadKeyword(":");
 		autoSaveSimuOnly = f->ReadInt();
 		f->ReadKeyword("checkForUpdates"); f->ReadKeyword(":");
-		checkForUpdates = f->ReadInt();
+		/*checkForUpdates =*/ f->ReadInt(); //Old checkforupdates
 		f->ReadKeyword("autoUpdateFormulas"); f->ReadKeyword(":");
 		autoUpdateFormulas = f->ReadInt();
 		f->ReadKeyword("compressSavedFiles"); f->ReadKeyword(":");
@@ -2426,10 +2436,6 @@ void MolFlow::LoadConfig() {
 		f->ReadKeyword("hideLot"); f->ReadKeyword(":");
 		for (int i = 0; i < MAX_VIEWER; i++)
 			viewer[i]->hideLot = f->ReadInt();
-		f->ReadKeyword("installId"); f->ReadKeyword(":");
-		installId = f->ReadString();
-		f->ReadKeyword("appLaunchesWithoutAsking"); f->ReadKeyword(":");
-		appLaunchesWithoutAsking = f->ReadInt();
 	}
 	catch (...) {
 		/*std::ostringstream tmp;
@@ -2458,7 +2464,7 @@ void MolFlow::LoadConfig() {
 	f->Write("\n");                      \
 }
 
-void MolFlow::SaveConfig(bool increaseSessionCount) {
+void MolFlow::SaveConfig() {
 
 	FileWriter *f = NULL;
 
@@ -2547,16 +2553,13 @@ void MolFlow::SaveConfig(bool increaseSessionCount) {
 
 		f->Write("autoSaveFrequency:"); f->Write(autoSaveFrequency, "\n");
 		f->Write("autoSaveSimuOnly:"); f->Write(autoSaveSimuOnly, "\n");
-		f->Write("checkForUpdates:"); f->Write(checkForUpdates, "\n");
+		f->Write("checkForUpdates:"); f->Write(/*checkForUpdates*/ 0, "\n"); //Deprecated
 		f->Write("autoUpdateFormulas:"); f->Write(autoUpdateFormulas, "\n");
 		f->Write("compressSavedFiles:"); f->Write(compressSavedFiles, "\n");
 		f->Write("gasMass:"); f->Write(worker.gasMass, "\n");
 		f->Write("expandShortcutPanel:"); f->Write(!shortcutPanel->IsClosed(), "\n");
 
 		WRITEI("hideLot", hideLot);
-		f->Write("installId:"); f->Write(installId+"\n");
-		if (increaseSessionCount && appLaunchesWithoutAsking >= 0) appLaunchesWithoutAsking++;
-		f->Write("appLaunchesWithoutAsking:"); f->Write(appLaunchesWithoutAsking, "\n");
 	}
 	catch (Error &err) {
 		GLMessageBox::Display(err.GetMsg(), "Error saving config file", GLDLG_OK, GLDLG_ICONWARNING);

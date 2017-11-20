@@ -216,7 +216,13 @@ void GlobalSettings::Update() {
 
 	autoSaveText->SetText(mApp->autoSaveFrequency);
 	chkSimuOnly->SetState(mApp->autoSaveSimuOnly);
-	chkCheckForUpdates->SetState(mApp->checkForUpdates);
+	if (mApp->appUpdater) { //Updater initialized
+		chkCheckForUpdates->SetState(mApp->appUpdater->checkForUpdates);
+	}
+	else {
+		chkCheckForUpdates->SetState(0);
+		chkCheckForUpdates->SetEnabled(false);
+	}
 	chkAutoUpdateFormulas->SetState(mApp->autoUpdateFormulas);
 	chkCompressSavedFiles->SetState(mApp->compressSavedFiles);
 
@@ -374,7 +380,13 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 		else if (src == applyButton) {
 			mApp->antiAliasing = chkAntiAliasing->GetState();
 			mApp->whiteBg = chkWhiteBg->GetState();
-			mApp->checkForUpdates = chkCheckForUpdates->GetState();
+			bool updateCheckPreference = chkCheckForUpdates->GetState();
+			if (mApp->appUpdater) {
+				if (mApp->appUpdater->checkForUpdates != updateCheckPreference) {
+					mApp->appUpdater->checkForUpdates = updateCheckPreference;
+					mApp->appUpdater->SetUserUpdatePreference(updateCheckPreference);
+				}
+			}
 			mApp->autoUpdateFormulas = chkAutoUpdateFormulas->GetState();
 			mApp->compressSavedFiles = chkCompressSavedFiles->GetState();
 			mApp->autoSaveSimuOnly = chkSimuOnly->GetState();

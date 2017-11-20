@@ -63,6 +63,7 @@ private:
 
 	GLProgress* progressDlg;
 
+	//Designer generated code below
 	GLTitledPanel	*aPanel;
 	GLTextField	*lengthText;
 	GLLabel	*perCm;
@@ -127,7 +128,7 @@ private:
 	GLLabel	*label16;
 	GLLabel	*label15;
 	GLLabel	*label13;
-	GLTextField	*uniformReflBox;
+	GLTextField	*cosineNReflBox;
 	GLTextField	*specularReflBox;
 	GLTextField	*diffuseReflBox;
 	GLButton	*angleMapCopyButton;
@@ -138,4 +139,5 @@ private:
 	GLLabel	*label19;
 	GLTextField	*angleMapThetaHighresText;
 	GLLabel	*angleMapStatusLabel;
+	GLTextField	*reflectionExponentBox;
 };

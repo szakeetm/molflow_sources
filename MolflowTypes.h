@@ -82,6 +82,7 @@ class Reflection {
 public:
 	double diffusePart;
 	double specularPart;
+	double cosineExponent; //Cos^N part: 1-diffuse-specular
 };
 
 //Just for AC matrix calculation in Molflow, old mesh structure:

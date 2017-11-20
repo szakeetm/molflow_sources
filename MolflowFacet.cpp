@@ -49,6 +49,7 @@ void Facet::LoadGEO(FileReader *file, int version, size_t nbVertex) {
 	else { //Uniform
 		sh.reflection.diffusePart = 0.0;
 		sh.reflection.specularPart = 0.0;
+		sh.reflection.cosineExponent = 0.0; //Cos^0 = uniform
 	}
 
 	file->ReadKeyword("profileType"); file->ReadKeyword(":");
@@ -165,6 +166,12 @@ void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bool& ignor
 		if (reflNode.attribute("diffusePart") && reflNode.attribute("specularPart")) { //New format
 			sh.reflection.diffusePart = reflNode.attribute("diffusePart").as_double();
 			sh.reflection.specularPart = reflNode.attribute("specularPart").as_double();
+			if (reflNode.attribute("cosineExponent")) {
+				sh.reflection.cosineExponent = reflNode.attribute("cosineExponent").as_double();
+			}
+			else {
+				sh.reflection.cosineExponent = 0.0; //uniform
+			}
 		}
 		else { //old XML format: fully diffuse / specular / uniform reflections
 			int oldReflType = reflNode.attribute("type").as_int();
@@ -179,6 +186,7 @@ void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bool& ignor
 			else { //Uniform
 				sh.reflection.diffusePart = 0.0;
 				sh.reflection.specularPart = 0.0;
+				sh.reflection.cosineExponent = 0.0;
 			}
 		}
 		
@@ -445,13 +453,18 @@ void Facet::LoadTXT(FileReader *file) {
 
 	// Convert reflectType
 	switch (reflectType) {
-	case 1:
+	case REF_MIRROR:
 		sh.reflection.diffusePart = 0.0;
 		sh.reflection.specularPart = 1.0;
 		break;
-	default:
+	case REF_DIFFUSE:
 		sh.reflection.diffusePart = 1.0;
 		sh.reflection.specularPart = 0.0;
+		break;
+	default:
+		sh.reflection.diffusePart = 0.0;
+		sh.reflection.specularPart = 0.0;
+		sh.reflection.cosineExponent = 0.0;
 		break;
 	}
 
@@ -526,13 +539,13 @@ void Facet::SaveGEO(FileWriter *file, int idx) {
 	file->Write("  reflectType:"); 
 	//Convert to old reflection type
 	if (sh.reflection.diffusePart > 0.99) {
-		file->Write(0, "\n");
+		file->Write(REF_DIFFUSE, "\n");
 	}
 	else if (sh.reflection.specularPart > 0.99) {
-		file->Write(1, "\n");
+		file->Write(REF_MIRROR, "\n");
 	}
 	else
-		file->Write(2, "\n");
+		file->Write(REF_UNIFORM, "\n");
 	
 	file->Write("  profileType:"); file->Write(sh.profileType, "\n");
 
@@ -953,6 +966,7 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 
 	e.append_attribute("diffusePart") = sh.reflection.diffusePart;
 	e.append_attribute("specularPart") = sh.reflection.specularPart;
+	e.append_attribute("cosineExponent") = sh.reflection.cosineExponent;
 
 	//For backward compatibility
 	if (sh.reflection.diffusePart > 0.99) {

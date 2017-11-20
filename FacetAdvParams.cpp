@@ -57,7 +57,7 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	SetIconfiable(true);
 
 	int wD = 320;
-	int hD = 655;
+	int hD = 694;
 	aPanel = new GLTitledPanel("Texture properties");
 	aPanel->SetBounds(5, 3, 309, 123);
 	Add(aPanel);
@@ -65,18 +65,16 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	mPanel->SetBounds(5, 129, 309, 44);
 	Add(mPanel);
 	vPanel = new GLTitledPanel("View settings");
-	vPanel->SetBounds(5, 357, 309, 44);
+	vPanel->SetBounds(5, 383, 309, 44);
 	Add(vPanel);
 	desPanel = new GLTitledPanel("Dynamic desorption");
-	desPanel->SetBounds(5, 407, 309, 69);
-	//desPanel->Close();
+	desPanel->SetBounds(5, 433, 309, 69);
 	Add(desPanel);
 	paramPanel = new GLTitledPanel("Additional parameters");
-	paramPanel->SetBounds(5, 177, 309, 174);
+	paramPanel->SetBounds(5, 177, 309, 200);
 	Add(paramPanel);
 	angleMapPanel = new GLTitledPanel("Incident angle distribution");
-	angleMapPanel->SetBounds(5, 482, 309, 149);
-	//angleMapPanel->Close();
+	angleMapPanel->SetBounds(5, 508, 309, 149);
 	Add(angleMapPanel);
 	lengthText = new GLTextField(0, "");
 	aPanel->SetCompBounds(lengthText, 180, 36, 72, 18);
@@ -171,35 +169,35 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	desPanel->Add(label2);
 
 	facetMovingToggle = new GLToggle(0, "Moving part");
-	paramPanel->SetCompBounds(facetMovingToggle, 10, 111, 74, 16);
+	paramPanel->SetCompBounds(facetMovingToggle, 9, 132, 74, 16);
 	paramPanel->Add(facetMovingToggle);
 
 	facetSuperDest = new GLTextField(0, "");
-	paramPanel->SetCompBounds(facetSuperDest, 199, 90, 101, 18);
+	paramPanel->SetCompBounds(facetSuperDest, 198, 111, 101, 18);
 	paramPanel->Add(facetSuperDest);
 
 	label8 = new GLLabel("Link to:");
-	paramPanel->SetCompBounds(label8, 158, 93, 35, 12);
+	paramPanel->SetCompBounds(label8, 157, 114, 35, 12);
 	paramPanel->Add(label8);
 
 	facetStructure = new GLTextField(0, "");
-	paramPanel->SetCompBounds(facetStructure, 60, 90, 91, 18);
+	paramPanel->SetCompBounds(facetStructure, 59, 111, 91, 18);
 	paramPanel->Add(facetStructure);
 
 	label7 = new GLLabel("Structure:");
-	paramPanel->SetCompBounds(label7, 10, 93, 46, 12);
+	paramPanel->SetCompBounds(label7, 9, 114, 46, 12);
 	paramPanel->Add(label7);
 
 	facetTeleport = new GLTextField(0, "");
-	paramPanel->SetCompBounds(facetTeleport, 155, 66, 145, 18);
+	paramPanel->SetCompBounds(facetTeleport, 154, 87, 145, 18);
 	paramPanel->Add(facetTeleport);
 
 	label4 = new GLLabel("Teleport to facet:");
-	paramPanel->SetCompBounds(label4, 10, 69, 74, 12);
+	paramPanel->SetCompBounds(label4, 9, 90, 74, 12);
 	paramPanel->Add(label4);
 
 	label5 = new GLLabel("Accomodation coefficient:");
-	paramPanel->SetCompBounds(label5, 10, 45, 126, 13);
+	paramPanel->SetCompBounds(label5, 9, 66, 126, 13);
 	paramPanel->Add(label5);
 
 	label6 = new GLLabel("Reflection:");
@@ -213,7 +211,7 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	facetUseDesFile->SetValueAt(0, "No file imported");
 
 	facetAccFactor = new GLTextField(0, "");
-	paramPanel->SetCompBounds(facetAccFactor, 155, 42, 145, 18);
+	paramPanel->SetCompBounds(facetAccFactor, 154, 63, 145, 18);
 	paramPanel->Add(facetAccFactor);
 
 	fileDoseText = new GLTextField(0, "");
@@ -241,34 +239,34 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	desPanel->Add(label10);
 
 	enableSojournTime = new GLToggle(0, "Wall Sojourn time");
-	paramPanel->SetCompBounds(enableSojournTime, 10, 132, 95, 16);
+	paramPanel->SetCompBounds(enableSojournTime, 9, 153, 95, 16);
 	paramPanel->Add(enableSojournTime);
 
 	sojournLabel3 = new GLLabel("J/mole");
-	paramPanel->SetCompBounds(sojournLabel3, 250, 153, 56, 13);
+	paramPanel->SetCompBounds(sojournLabel3, 249, 174, 37, 13);
 	paramPanel->Add(sojournLabel3);
 
 	sojournE = new GLTextField(0, "");
-	paramPanel->SetCompBounds(sojournE, 200, 150, 50, 18);
+	paramPanel->SetCompBounds(sojournE, 199, 171, 50, 18);
 	paramPanel->Add(sojournE);
 
 	sojournLabel2 = new GLLabel("Hz   Binding E:");
-	paramPanel->SetCompBounds(sojournLabel2, 125, 153, 76, 13);
+	paramPanel->SetCompBounds(sojournLabel2, 124, 174, 76, 13);
 	paramPanel->Add(sojournLabel2);
 
 	sojournLabel1 = new GLLabel("Attempt freq:");
-	paramPanel->SetCompBounds(sojournLabel1, 10, 153, 67, 13);
+	paramPanel->SetCompBounds(sojournLabel1, 9, 174, 67, 13);
 	paramPanel->Add(sojournLabel1);
 
 	sojournFreq = new GLTextField(0, "");
-	paramPanel->SetCompBounds(sojournFreq, 75, 150, 50, 18);
+	paramPanel->SetCompBounds(sojournFreq, 74, 171, 50, 18);
 	paramPanel->Add(sojournFreq);
 
 	SojournInfoButton = new GLButton(0, "Info");
-	paramPanel->SetCompBounds(SojournInfoButton, 229, 126, 69, 20);
+	paramPanel->SetCompBounds(SojournInfoButton, 228, 147, 69, 20);
 	paramPanel->Add(SojournInfoButton);
 
-	label14 = new GLLabel("Theta (inc. angle):");
+	label14 = new GLLabel("Theta (grazing angle):");
 	angleMapPanel->SetCompBounds(label14, 9, 36, 93, 12);
 	angleMapPanel->Add(label14);
 
@@ -293,35 +291,35 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	angleMapPanel->Add(angleMapRecordCheckbox);
 
 	angleMapReleaseButton = new GLButton(0, "Release recorded");
-	angleMapPanel->SetCompBounds(angleMapReleaseButton, 207, 122, 93, 20);
+	angleMapPanel->SetCompBounds(angleMapReleaseButton, 205, 122, 93, 20);
 	angleMapPanel->Add(angleMapReleaseButton);
 
 	remeshButton = new GLButton(0, "Force remesh");
 	aPanel->SetCompBounds(remeshButton, 218, 13, 77, 20);
 	aPanel->Add(remeshButton);
 
-	label16 = new GLLabel("uniform");
-	paramPanel->SetCompBounds(label16, 259, 22, 36, 12);
+	label16 = new GLLabel("part cosine^");
+	paramPanel->SetCompBounds(label16, 108, 44, 55, 12);
 	paramPanel->Add(label16);
 
-	label15 = new GLLabel("specular,");
-	paramPanel->SetCompBounds(label15, 173, 22, 43, 12);
+	label15 = new GLLabel("part specular,");
+	paramPanel->SetCompBounds(label15, 216, 22, 61, 12);
 	paramPanel->Add(label15);
 
-	label13 = new GLLabel("diffuse,");
-	paramPanel->SetCompBounds(label13, 97, 22, 36, 12);
+	label13 = new GLLabel("part diffuse,");
+	paramPanel->SetCompBounds(label13, 108, 22, 54, 12);
 	paramPanel->Add(label13);
 
-	uniformReflBox = new GLTextField(0, "");
-	paramPanel->SetCompBounds(uniformReflBox, 226, 19, 30, 18);
-	paramPanel->Add(uniformReflBox);
+	cosineNReflBox = new GLTextField(0, "");
+	paramPanel->SetCompBounds(cosineNReflBox, 65, 41, 40, 18);
+	paramPanel->Add(cosineNReflBox);
 
 	specularReflBox = new GLTextField(0, "");
-	paramPanel->SetCompBounds(specularReflBox, 138, 19, 30, 18);
+	paramPanel->SetCompBounds(specularReflBox, 171, 19, 40, 18);
 	paramPanel->Add(specularReflBox);
 
 	diffuseReflBox = new GLTextField(0, "");
-	paramPanel->SetCompBounds(diffuseReflBox, 65, 19, 30, 18);
+	paramPanel->SetCompBounds(diffuseReflBox, 65, 19, 40, 18);
 	paramPanel->Add(diffuseReflBox);
 
 	angleMapCopyButton = new GLButton(0, "Copy");
@@ -329,7 +327,7 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	angleMapPanel->Add(angleMapCopyButton);
 
 	limitLabel = new GLLabel("values from limit to PI/2");
-	angleMapPanel->SetCompBounds(limitLabel, 166, 58, 91, 12);
+	angleMapPanel->SetCompBounds(limitLabel, 166, 58, 102, 12);
 	angleMapPanel->Add(limitLabel);
 
 	label17 = new GLLabel("values from 0 to");
@@ -355,6 +353,10 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	angleMapStatusLabel = new GLLabel("Status: no recorded map");
 	angleMapPanel->SetCompBounds(angleMapStatusLabel, 10, 106, 105, 12);
 	angleMapPanel->Add(angleMapStatusLabel);
+
+	reflectionExponentBox = new GLTextField(0, "");
+	paramPanel->SetCompBounds(reflectionExponentBox, 171, 41, 40, 18);
+	paramPanel->Add(reflectionExponentBox);
 
 	SetTitle("Advanced facet parameters");
 	// Center dialog
@@ -516,7 +518,8 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	lengthText->SetEditable(somethingSelected);
 	diffuseReflBox->SetEditable(somethingSelected);
 	specularReflBox->SetEditable(somethingSelected);
-	uniformReflBox->SetEditable(somethingSelected);
+	cosineNReflBox->SetEditable(somethingSelected);
+	reflectionExponentBox->SetEditable(somethingSelected);
 	facetAccFactor->SetEditable(somethingSelected);
 	facetTeleport->SetEditable(somethingSelected);
 	facetStructure->SetEditable(somethingSelected);
@@ -550,7 +553,8 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 		facetUseDesFile->SetSelectedValue("");
 		diffuseReflBox->SetText("");
 		specularReflBox->SetText("");
-		uniformReflBox->SetText("");
+		cosineNReflBox->SetText("");
+		reflectionExponentBox->SetText("");
 		facetAccFactor->Clear();
 		facetSuperDest->Clear();
 		facetMovingToggle->SetState(0);
@@ -590,7 +594,8 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	bool superIdxE = true;
 	bool reflectDiffuseE = true;
 	bool reflectSpecularE = true;
-	bool reflectUniformE = true;
+	bool reflectCosineNE = true;
+	bool reflectionExponentE = true;
 	bool hasOutgMapE = true;
 	bool useOutgMapE = true;
 	bool yieldEqual = true;
@@ -637,7 +642,8 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 		superIdxE = superIdxE && (f0->sh.superIdx == f->sh.superIdx);
 		reflectDiffuseE = reflectDiffuseE && IsEqual(f0->sh.reflection.diffusePart,f->sh.reflection.diffusePart);
 		reflectSpecularE = reflectSpecularE && IsEqual(f0->sh.reflection.specularPart, f->sh.reflection.specularPart);
-		reflectUniformE = reflectUniformE && IsEqual(1.0 - f0->sh.reflection.diffusePart - f0->sh.reflection.specularPart, 1.0 - f->sh.reflection.diffusePart - f->sh.reflection.specularPart);
+		reflectCosineNE = reflectCosineNE && IsEqual(1.0 - f0->sh.reflection.diffusePart - f0->sh.reflection.specularPart, 1.0 - f->sh.reflection.diffusePart - f->sh.reflection.specularPart);
+		reflectionExponentE = reflectionExponentE && IsEqual(f0->sh.reflection.cosineExponent, f->sh.reflection.cosineExponent);
 		hasOutgMapE = hasOutgMapE && (f0->hasOutgassingFile == f->hasOutgassingFile);
 		useOutgMapE = useOutgMapE && (f0->sh.useOutgassingFile == f->sh.useOutgassingFile);
 		dynOutgEqual = dynOutgEqual && IsEqual(f0->sh.totalOutgassing, f->sh.totalOutgassing);
@@ -707,7 +713,8 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	if (accFactorE) facetAccFactor->SetText(f0->sh.accomodationFactor); else facetAccFactor->SetText("...");
 	if (reflectDiffuseE) diffuseReflBox->SetText(f0->sh.reflection.diffusePart); else diffuseReflBox->SetText("...");
 	if (reflectSpecularE) specularReflBox->SetText(f0->sh.reflection.specularPart); else specularReflBox->SetText("...");
-	if (reflectUniformE) uniformReflBox->SetText(1.0 - f0->sh.reflection.diffusePart - f0->sh.reflection.specularPart); else uniformReflBox->SetText("...");
+	if (reflectCosineNE) cosineNReflBox->SetText(1.0 - f0->sh.reflection.diffusePart - f0->sh.reflection.specularPart); else cosineNReflBox->SetText("...");
+	if (reflectionExponentE) reflectionExponentBox->SetText(f0->sh.reflection.cosineExponent); else reflectionExponentBox->SetText("...");
 	if (hasOutgMapE) { //all selected equally HAVE or equally DON'T HAVE outgassing maps
 		//mApp->facetFlow->SetEditable(!f0->hasOutgassingFile);
 		//mApp->facetFlowArea->SetEditable(!f0->hasOutgassingFile);
@@ -1212,9 +1219,10 @@ bool FacetAdvParams::Apply() {
 	
 
 	// Reflection type
-	double diffuseRefl, specularRefl;
+	double diffuseRefl, specularRefl, reflectionExponent;
 	bool doDiffuseRefl = false;
 	bool doSpecularRefl = false;
+	bool doReflExponent = false;
 	if (diffuseReflBox->GetNumber(&diffuseRefl)) {
 		if (diffuseRefl < 0.0 || diffuseRefl > 1.0) {
 			GLMessageBox::Display("Diffuse reflection ratio must be between 0 and 1", "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1241,6 +1249,18 @@ bool FacetAdvParams::Apply() {
 
 	if ((diffuseRefl + specularRefl) > 1.0) {
 		GLMessageBox::Display("The sum of diffuse and specular reflection ratios cannot be larger than 1", "Error", GLDLG_OK, GLDLG_ICONERROR);
+		return false;
+	}
+
+	if (reflectionExponentBox->GetNumber(&reflectionExponent)) {
+		if (reflectionExponent <= -1.0) {
+			GLMessageBox::Display("Cosine^N exponent must be greater than -1", "Error", GLDLG_OK, GLDLG_ICONERROR);
+			return false;
+		}
+		doReflExponent = true;
+	}
+	else if (strcmp(reflectionExponentBox->GetText(), "...") != 0) {
+		GLMessageBox::Display("Invalid cosine^N reflection exponent", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return false;
 	}
 	
@@ -1285,6 +1305,7 @@ bool FacetAdvParams::Apply() {
 		if (doAccfactor) f->sh.accomodationFactor = accfactor;
 		if (doDiffuseRefl) f->sh.reflection.diffusePart = diffuseRefl;
 		if (doSpecularRefl) f->sh.reflection.specularPart = specularRefl;
+		if (doReflExponent) f->sh.reflection.cosineExponent = reflectionExponent;
 		if (doSuperStruct) {
 			if (f->sh.superIdx != (superStruct - 1)) {
 				f->sh.superIdx = superStruct - 1;
@@ -1544,7 +1565,7 @@ from C. Benvenutti http://cds.cern.ch/record/454180
 		else if (Contains({ diffuseReflBox,specularReflBox },src)) {
 			double diffuseRefl, specularRefl;
 			if (diffuseReflBox->GetNumber(&diffuseRefl) && specularReflBox->GetNumber(&specularRefl))
-				uniformReflBox->SetText(1.0 - diffuseRefl - specularRefl);
+				cosineNReflBox->SetText(1.0 - diffuseRefl - specularRefl);
 		}
 		else if (Contains({ angleMapPhiResText,angleMapThetaLowresText,angleMapThetaHighresText,angleMapThetaLimitText }, src)) {
 			angleMapRecordCheckbox->SetState(1);

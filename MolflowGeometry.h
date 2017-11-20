@@ -20,7 +20,7 @@ public:
 	void LoadGEO(FileReader *file, GLProgress *prg, LEAK *leakCache, size_t *leakCacheSize, HIT *hitCache, size_t *hitCacheSize, int *version, Worker *worker);
 	void LoadSYN(FileReader *file, GLProgress *prg, int *version);
 	bool LoadTextures(FileReader *file, GLProgress *prg, Dataport *dpHit, int version);
-	void ImportDesorption_DES(FileReader *file);
+	//void ImportDesorption_DES(FileReader *file); //Deprecated
 	void ImportDesorption_SYN(FileReader *synFile, const size_t &source, const double &time,
 		const size_t &mode, const double &eta0, const double &alpha, const double &cutoffdose,
 		const std::vector<std::pair<double, double>> &convDistr,
@@ -46,7 +46,6 @@ public:
 	bool LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker *work, GLProgress *progressDlg);
 
 	// Geometry
-	void     EmptyGeometry();
 	void     BuildPipe(double L, double R, double s, int step);
 	void     LoadProfile(FileReader *file, Dataport *dpHit, int version);
 
