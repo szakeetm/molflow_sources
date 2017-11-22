@@ -217,7 +217,7 @@ void GlobalSettings::Update() {
 	autoSaveText->SetText(mApp->autoSaveFrequency);
 	chkSimuOnly->SetState(mApp->autoSaveSimuOnly);
 	if (mApp->appUpdater) { //Updater initialized
-		chkCheckForUpdates->SetState(mApp->appUpdater->checkForUpdates);
+		chkCheckForUpdates->SetState(mApp->appUpdater->IsUpdateCheckAllowed());
 	}
 	else {
 		chkCheckForUpdates->SetState(0);
@@ -382,8 +382,7 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 			mApp->whiteBg = chkWhiteBg->GetState();
 			bool updateCheckPreference = chkCheckForUpdates->GetState();
 			if (mApp->appUpdater) {
-				if (mApp->appUpdater->checkForUpdates != updateCheckPreference) {
-					mApp->appUpdater->checkForUpdates = updateCheckPreference;
+				if (mApp->appUpdater->IsUpdateCheckAllowed() != updateCheckPreference) {
 					mApp->appUpdater->SetUserUpdatePreference(updateCheckPreference);
 				}
 			}

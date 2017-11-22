@@ -80,7 +80,7 @@ public:
 
 	bool EvaluateVariable(VLIST *v);
 
-	//char* appName;
+	//char* appTitle;
 
 	GLButton      *texturePlotterShortcut;
 	GLButton      *profilePlotterShortcut;

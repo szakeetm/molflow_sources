@@ -63,6 +63,13 @@ GNU General Public License for more details.
 #include "SmartSelection.h"
 #include "FormulaEditor.h"
 
+//Hard-coded identifiers, update these on new release
+//---------------------------------------------------
+std::string appName = "Molflow";
+int appVersionId = 26610;
+std::string appVersionName = "2.6.61";
+//---------------------------------------------------
+
 static const char *fileLFilters = "All MolFlow supported files\0*.txt;*.xml;*.zip;*.geo;*.geo7z;*.syn;*.syn7z;*.str;*.stl;*.ase\0"
 "All files\0*.*\0";
 static const char *fileInsFilters = "All insertable geometries\0*.txt;*.xml;*.zip;*.geo;*.geo7z;*.syn;*.syn7z;*.stl\0"
@@ -74,12 +81,10 @@ int cSize = 4;
 int   cWidth[] = { 30, 56, 50, 50 };
 char *cName[] = { "#", "Hits", "Des", "Abs" };
 
-std::string appId = "Molflow";
-int appVersion = 2660;
 #ifdef _DEBUG
-std::string appName = "MolFlow+ development version 64-bit (Compiled " __DATE__ " " __TIME__ ") DEBUG MODE";
+std::string appTitle = "MolFlow+ debug version (Compiled " __DATE__ " " __TIME__ ")";
 #else
-std::string appName = "Molflow+ 2.6.60 64-bit (" __DATE__ ")";
+std::string appTitle = "Molflow+ " + appVersionName + " (" __DATE__ ")";
 #endif
 
 std::vector<string> formulaPrefixes = { "A","D","H","P","DEN","Z","V","T","AR","a","d","h","p","den","z","v","t","ar","," };
@@ -477,7 +482,6 @@ int MolFlow::OneTimeSceneInit()
 
 	ClearFacetParams();
 	LoadConfig();
-	appUpdater = new AppUpdater(appId, appVersion, "updater_config.xml");
 	UpdateRecentMenu();
 	UpdateViewerPanel();
 	PlaceComponents();
@@ -504,13 +508,12 @@ int MolFlow::OneTimeSceneInit()
 
 	//worker.GetGeometry()->InitializeGeometry();
 
+	appUpdater = new AppUpdater(appName, appVersionId, "updater_config.xml");
 	int answer = appUpdater->RequestUpdateCheck();
 	if (answer == ANSWER_ASKNOW) {
-		int preference = GLMessageBox::Display("Can I check for updates?", "Updater", { "No","Yes","Decide later" },GLDLG_ICONINFO);
-		if (Contains({ 0,1 }, preference))
-			appUpdater->SetUserUpdatePreference(preference);
+		updateCheckDialog = new UpdateCheckDialog(appName,appUpdater);
+		updateCheckDialog->SetVisible(true);
 	}
-
 	return GL_OK;
 }
 
@@ -1217,7 +1220,6 @@ void MolFlow::ExportProfiles() {
 	FILENAME *fn = GLFileBox::SaveFile(currentDir, NULL, "Save File", fileProfFilters, 0);
 
 	if (fn) {
-
 		try {
 			worker.ExportProfiles(fn->fullName);
 		}
@@ -1226,9 +1228,7 @@ void MolFlow::ExportProfiles() {
 			sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), fn->fullName);
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 		}
-
 	}
-
 }
 
 void MolFlow::ExportAngleMaps() {
@@ -1253,7 +1253,6 @@ void MolFlow::ExportAngleMaps() {
 	FILENAME *fn = GLFileBox::SaveFile(currentDir, NULL, "Save File", fileProfFilters, 0);
 
 	if (fn) {
-
 		try {
 			std::string fileName = fn->fullName;
 			worker.ExportAngleMaps(angleMapFacetIndices, fileName);
