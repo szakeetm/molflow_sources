@@ -30,6 +30,7 @@
 #include "GLApp/GLToggle.h"
 #include "GLApp/GLTitledPanel.h"
 #include "Buffer_shared.h"
+#include "AppUpdater.h"
 #ifdef MOLFLOW
 #include "MolFlow.h"
 #endif

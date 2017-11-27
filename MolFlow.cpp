@@ -42,6 +42,7 @@ GNU General Public License for more details.
 #include <numeric> //std::iota
 
 #include "Interface.h"
+#include "AppUpdater.h"
 #include "Worker.h"
 #include "ImportDesorption.h"
 #include "TimeSettings.h"
@@ -66,7 +67,7 @@ GNU General Public License for more details.
 //Hard-coded identifiers, update these on new release
 //---------------------------------------------------
 std::string appName = "Molflow";
-int appVersionId = 26610;
+int appVersionId = 2661;
 std::string appVersionName = "2.6.61";
 //---------------------------------------------------
 
@@ -513,6 +514,7 @@ int MolFlow::OneTimeSceneInit()
 	if (answer == ANSWER_ASKNOW) {
 		updateCheckDialog = new UpdateCheckDialog(appName,appUpdater);
 		updateCheckDialog->SetVisible(true);
+		wereEvents = true;
 	}
 	return GL_OK;
 }
@@ -1332,33 +1334,7 @@ void MolFlow::CopyAngleMapToClipboard()
 					return;
 			}
 
-#ifdef WIN
-
-			if (!OpenClipboard(NULL))
-				return;
-
-			EmptyClipboard();
-
-			HGLOBAL hText = NULL;
-			char   *lpszText;
-
-			if (!(hText = GlobalAlloc(GMEM_ZEROINIT | GMEM_MOVEABLE, map.length() + 1))) {
-				CloseClipboard();
-				return;
-			}
-			if (!(lpszText = (char *)GlobalLock(hText))) {
-				CloseClipboard();
-				GlobalFree(hText);
-				return;
-			}
-
-			strcpy(lpszText, map.c_str());
-			SetClipboardData(CF_TEXT, hText);
-			GlobalUnlock(hText);
-			CloseClipboard();
-			GlobalFree(hText);
-
-#endif
+			GLToolkit::CopyTextToClipboard(map);
 
 		}
 		catch (Error &e) {

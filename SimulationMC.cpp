@@ -177,10 +177,10 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 		if (sHandle->hitCacheSize > 0) {
 			gHits->lastHitIndex = (gHits->lastHitIndex + sHandle->hitCacheSize) % HITCACHESIZE;
 
-			if (gHits->lastHitIndex < (HITCACHESIZE - 1)) {
-				gHits->lastHitIndex++;
+			//if (gHits->lastHitIndex < (HITCACHESIZE - 1)) {
+				//gHits->lastHitIndex++;
 				gHits->hitCache[gHits->lastHitIndex].type = HIT_LAST; //Penup (border between blocks of consecutive hits in the hit cache)
-			}
+			//}
 
 			gHits->hitCacheSize = Min(HITCACHESIZE, gHits->hitCacheSize + sHandle->hitCacheSize);
 		}
