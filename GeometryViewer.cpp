@@ -85,6 +85,7 @@ void GeometryViewer::DrawLinesAndHits() {
 		size_t count = 0;
 		while (count < Min(dispNumHits, mApp->worker.hitCacheSize) && mApp->worker.hitCache[count].type != 0) {
 
+			//Regular (green) line color
 			if (mApp->whiteBg) { //whitebg
 				glColor3f(0.2f, 0.7f, 0.2f);
 			}
@@ -98,13 +99,14 @@ void GeometryViewer::DrawLinesAndHits() {
 			}
 
 			glBegin(GL_LINE_STRIP);
-			while (count < Min(dispNumHits, mApp->worker.hitCacheSize) && mApp->worker.hitCache[count].type != HIT_ABS) {
+			while (count < Min(dispNumHits, mApp->worker.hitCacheSize) && mApp->worker.hitCache[count].type != HIT_ABS) { //While hits are consecutive
 
-				//teleport routine
-				if (mApp->worker.hitCache[count].type == HIT_TELEPORT) {
-					glVertex3d(mApp->worker.hitCache[count].pos.x, mApp->worker.hitCache[count].pos.y, mApp->worker.hitCache[count].pos.z);
-					glEnd();
-					if (showTP) {
+				//change color in case of teleport
+				if (mApp->worker.hitCache[count].type == HIT_TELEPORTSOURCE) {
+					glVertex3d(mApp->worker.hitCache[count].pos.x, mApp->worker.hitCache[count].pos.y, mApp->worker.hitCache[count].pos.z); //Draw regular line until TP source
+					glEnd(); //Finish regular line
+					if (showTP && (count+1)<Min(dispNumHits, mApp->worker.hitCacheSize) && mApp->worker.hitCache[count+1].type == HIT_TELEPORTDEST) {
+						//Switch to orange dashed line
 						if (!mApp->whiteBg) {
 							glColor3f(1.0f, 0.7f, 0.2f);
 						}
@@ -122,6 +124,7 @@ void GeometryViewer::DrawLinesAndHits() {
 						glEnd();
 						glPopAttrib();
 
+						//Switch back to normal (green) color
 						if (mApp->whiteBg) { //whitebg
 							glColor3f(0.2f, 0.7f, 0.2f);
 						}
@@ -150,6 +153,7 @@ void GeometryViewer::DrawLinesAndHits() {
 					count++;
 				}
 			}
+			//Treat absorption
 			if (count < Min(dispNumHits, mApp->worker.hitCacheSize) && mApp->worker.hitCache[count].type != 0) {
 				glVertex3d(mApp->worker.hitCache[count].pos.x, mApp->worker.hitCache[count].pos.y, mApp->worker.hitCache[count].pos.z);
 				count++;
@@ -160,10 +164,9 @@ void GeometryViewer::DrawLinesAndHits() {
 				glDisable(GL_BLEND);
 			}
 		}
-
 	}
 
-	// Hit
+	// Hits
 	if (showHit) {
 
 		glDisable(GL_TEXTURE_2D);
@@ -172,7 +175,7 @@ void GeometryViewer::DrawLinesAndHits() {
 		glDisable(GL_CULL_FACE);
 
 		// Refl
-		float pointSize = (bigDots) ? 2.0f : 1.0f;
+		float pointSize = (bigDots) ? 3.0f : 2.0f;
 		glPointSize(pointSize);
 		if (mApp->whiteBg) { //whitebg
 			glColor3f(0.2f, 0.2f, 0.2f);
@@ -223,7 +226,7 @@ void GeometryViewer::DrawLinesAndHits() {
 			}
 			glBegin(GL_POINTS);
 			for (size_t i = 0; i < Min(dispNumHits, mApp->worker.hitCacheSize); i++)
-				if (mApp->worker.hitCache[i].type == HIT_TELEPORT)
+				if (Contains({HIT_TELEPORTSOURCE, HIT_TELEPORTDEST}, mApp->worker.hitCache[i].type))
 					glVertex3d(mApp->worker.hitCache[i].pos.x, mApp->worker.hitCache[i].pos.y, mApp->worker.hitCache[i].pos.z);
 			glEnd();
 		}

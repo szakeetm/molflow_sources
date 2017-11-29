@@ -27,9 +27,10 @@
 #define HIT_ABS   2
 #define HIT_REF   3
 #define HIT_TRANS 4
-#define HIT_TELEPORT 5
-#define HIT_MOVING 6
-#define HIT_LAST 7
+#define HIT_TELEPORTSOURCE 5
+#define HIT_TELEPORTDEST 6
+#define HIT_MOVING 7
+#define HIT_LAST 10
 
 #define MC_MODE 0         // Monte Carlo simulation mode
 #define AC_MODE 1         // Angular coefficient simulation mode

@@ -351,7 +351,7 @@ void PerformTeleport(SubprocessFacet *iFacet) {
 		return; //LEAK
 	}
 	// Count this hit as a transparent pass
-	RecordHit(HIT_TELEPORT);
+	RecordHit(HIT_TELEPORTSOURCE);
 	if (iFacet->hits && iFacet->sh.countTrans) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 2.0);
 	if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 2.0);
@@ -364,10 +364,8 @@ void PerformTeleport(SubprocessFacet *iFacet) {
 	// Move particle to teleport destination point
 	double u = iFacet->colU;
 	double v = iFacet->colV;
-	sHandle->pPos.x = destination->sh.O.x + u*destination->sh.U.x + v*destination->sh.V.x;
-	sHandle->pPos.y = destination->sh.O.y + u*destination->sh.U.y + v*destination->sh.V.y;
-	sHandle->pPos.z = destination->sh.O.z + u*destination->sh.U.z + v*destination->sh.V.z;
-	RecordHit(HIT_TELEPORT);
+	sHandle->pPos = destination->sh.O + u*destination->sh.U + v*destination->sh.V;
+	RecordHit(HIT_TELEPORTDEST);
 	int nbTry = 0;
 	if (!IsInFacet(*destination, u, v)) { //source and destination facets not the same shape, would generate leak
 		// Choose a new starting point
@@ -378,9 +376,7 @@ void PerformTeleport(SubprocessFacet *iFacet) {
 			v = rnd();
 			if (IsInFacet(*destination, u, v)) {
 				found = true;
-				sHandle->pPos.x = destination->sh.O.x + u*destination->sh.U.x + v*destination->sh.V.x;
-				sHandle->pPos.y = destination->sh.O.y + u*destination->sh.U.y + v*destination->sh.V.y;
-				sHandle->pPos.z = destination->sh.O.z + u*destination->sh.U.z + v*destination->sh.V.z;
+				sHandle->pPos = destination->sh.O + u*destination->sh.U + v*destination->sh.V;
 				RecordHit(HIT_DES);
 			}
 		}
@@ -616,9 +612,7 @@ bool StartFromSource() {
 		if (IsInFacet(*src, u, v)) {
 
 			// (U,V) -> (x,y,z)
-			sHandle->pPos.x = src->sh.O.x + u*src->sh.U.x + v*src->sh.V.x;
-			sHandle->pPos.y = src->sh.O.y + u*src->sh.U.y + v*src->sh.V.y;
-			sHandle->pPos.z = src->sh.O.z + u*src->sh.U.z + v*src->sh.V.z;
+			sHandle->pPos = src->sh.O + u*src->sh.U + v*src->sh.V;
 			src->colU = u;
 			src->colV = v;
 			found = true;
@@ -634,9 +628,7 @@ bool StartFromSource() {
 			//double vLength = sqrt(pow(src->sh.V.x, 2) + pow(src->sh.V.y, 2) + pow(src->sh.V.z, 2));
 			double u = ((double)mapPositionW + 0.5) / src->outgassingMapWidthD;
 			double v = ((double)mapPositionH + 0.5) / src->outgassingMapHeightD;
-			sHandle->pPos.x = src->sh.O.x + u*src->sh.U.x + v*src->sh.V.x;
-			sHandle->pPos.y = src->sh.O.y + u*src->sh.U.y + v*src->sh.V.y;
-			sHandle->pPos.z = src->sh.O.z + u*src->sh.U.z + v*src->sh.V.z;
+			sHandle->pPos = src->sh.O + u*src->sh.U + v*src->sh.V;
 			src->colU = u;
 			src->colV = v;
 		}

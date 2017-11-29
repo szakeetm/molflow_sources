@@ -300,7 +300,7 @@ int MolFlow::OneTimeSceneInit()
 	_CrtSetDbgFlag( tmpFlag );
 	*/
 
-	OneTimeSceneInit_shared();
+	OneTimeSceneInit_shared_pre();
 
 	menu->GetSubMenu("File")->Add("Export selected textures");
 	menu->GetSubMenu("File")->GetSubMenu("Export selected textures")->Add("Facet by facet");
@@ -481,41 +481,10 @@ int MolFlow::OneTimeSceneInit()
 
 	facetAdvParams = new FacetAdvParams(&worker); //To use its UpdatefacetParams() routines
 
-	ClearFacetParams();
-	LoadConfig();
-	UpdateRecentMenu();
-	UpdateViewerPanel();
-	PlaceComponents();
-	CheckNeedsTexture();
-
 	LoadParameterCatalog();
 
-	try {
-		worker.SetProcNumber(nbProc);
-	}
-	catch (Error &e) {
-		char errMsg[512];
-		sprintf(errMsg, "Failed to start working sub-process(es), simulation not available\n%s", e.GetMsg());
-		GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
-	}
-
-	/*
-	worker.GetGeometry()->AddStruct("Empty geometry");
-	for (int i = 0; i < MAX_VIEWER; i++)
-		viewer[i]->SetWorker(&worker);
-		*/
-	EmptyGeometry();
-	//AppUpdater(); //Ask if user wants to check for updates
-
-	//worker.GetGeometry()->InitializeGeometry();
-
-	appUpdater = new AppUpdater(appName, appVersionId, "updater_config.xml");
-	int answer = appUpdater->RequestUpdateCheck();
-	if (answer == ANSWER_ASKNOW) {
-		updateCheckDialog = new UpdateCheckDialog(appName,appUpdater);
-		updateCheckDialog->SetVisible(true);
-		wereEvents = true;
-	}
+	OneTimeSceneInit_shared_post();
+	
 	return GL_OK;
 }
 
