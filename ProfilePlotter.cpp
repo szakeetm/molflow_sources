@@ -534,8 +534,10 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
 
 			int idx = profCombo->GetSelectedIndex();
 
-			if (idx >= 0) addView(profCombo->GetUserValueAt(idx));
-			refreshViews();
+			if (idx >= 0) {
+				addView(profCombo->GetUserValueAt(idx));
+				refreshViews();
+			}
 		}
 		else if (src == removeButton) {
 
