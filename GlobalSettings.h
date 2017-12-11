@@ -69,6 +69,9 @@ private:
   GLTextField *gasmassText;
   GLToggle    *enableDecay;
   GLTextField *halfLifeText;
+  GLToggle	*lowFluxToggle;
+  GLButton    *lowFluxInfo;
+  GLTextField *cutoffText;
 };
 
 #endif /* _GLOBALSETTINGSH_ */

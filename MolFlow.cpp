@@ -243,7 +243,7 @@ void MolFlow::LoadParameterCatalog()
 			try {
 				std::stringstream pathAndName; pathAndName << "parameter_catalog\\" << filedata.name;
 				FileReader *f = new FileReader(pathAndName.str());
-				worker.ImportCSV(f, table);
+				table = worker.ImportCSV_string(f);
 				SAFE_DELETE(f);
 			}
 			catch (Error &e) {
@@ -1084,7 +1084,7 @@ worker.ReleaseHits();
 
 int MolFlow::FrameMove()
 {	
-	if (worker.running && ((m_fTime - lastUpdate) >= 1.0f)) {
+	if (worker.isRunning && ((m_fTime - lastUpdate) >= 1.0f)) {
 		if (textureSettings) textureSettings->Update();
 		//if (formulaEditor && formulaEditor->IsVisible()) formulaEditor->Refresh(); //Interface::Framemove does it already
 	}
@@ -1092,12 +1092,12 @@ int MolFlow::FrameMove()
 	char tmp[256];
 	if (globalSettings) globalSettings->SMPUpdate();
 
-	if ((m_fTime - worker.startTime <= 2.0f) && worker.running) {
+	if ((m_fTime - worker.startTime <= 2.0f) && worker.isRunning) {
 		hitNumber->SetText("Starting...");
 		desNumber->SetText("Starting...");
 	}
 	else {
-		if (worker.mode == AC_MODE) {
+		if (worker.sMode == AC_MODE) {
 			hitNumber->SetText("");
 		}
 		else {
@@ -1252,9 +1252,8 @@ void MolFlow::ImportAngleMaps()
 	}
 	for (size_t i = 0; i < files.size(); i++) {
 		try {
-			std::vector<std::vector<std::string>> table;
 			FileReader *f = new FileReader(files[i].fullName);
-			worker.ImportCSV(f, table);
+			std::vector<std::vector<std::string>> table = worker.ImportCSV_string(f);
 			SAFE_DELETE(f);
 			AskToReset(&worker);
 			worker.GetGeometry()->GetFacet(selFacets[i])->ImportAngleMap(table);
@@ -1599,9 +1598,9 @@ void MolFlow::StartStopSimulation() {
 			"\nDo you want to continue?\n", "Strange time settings", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK;
 		if (!ok) return;
 	}
-
+	
 	worker.StartStop(m_fTime, modeCombo->GetSelectedIndex());
-	if (!worker.running) { //Force update on simulation stop
+	if (!worker.isRunning) { //Force update on simulation stop
 		UpdatePlotters();
 		//if (autoUpdateFormulas) UpdateFormula();
 		if (autoUpdateFormulas && formulaEditor && formulaEditor->IsVisible()) formulaEditor->ReEvaluate();
@@ -1742,7 +1741,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			if (selectedFacets.size() == 0) return; //Nothing selected
 			if (GLMessageBox::Display("Remove selected facets?", "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONINFO) == GLDLG_OK) {
 				if (AskToReset()) {
-					if (worker.running) worker.Stop_Public();
+					if (worker.isRunning) worker.Stop_Public();
 					geom->RemoveFacets(selectedFacets);
 					worker.CalcTotalOutgassing();
 					//geom->CheckIsolatedVertex();
@@ -1827,7 +1826,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			if (geom->IsLoaded()) {
 				if (GLMessageBox::Display("Remove Selected vertices?\nNote: It will also affect facets that contain them!", "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONINFO) == GLDLG_OK) {
 					if (AskToReset()) {
-						if (worker.running) worker.Stop_Public();
+						if (worker.isRunning) worker.Stop_Public();
 						geom->RemoveSelectedVertex();
 						worker.CalcTotalOutgassing();
 						geom->Rebuild(); //Will recalculate facet parameters
@@ -1982,7 +1981,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		if (src == startSimu) {
 			changedSinceSave = true;
 			StartStopSimulation();
-			resetSimu->SetEnabled(!worker.running);
+			resetSimu->SetEnabled(!worker.isRunning);
 		}
 
 		else if (src == facetApplyBtn) {
@@ -2383,6 +2382,10 @@ void MolFlow::LoadConfig() {
 		f->ReadKeyword("hideLot"); f->ReadKeyword(":");
 		for (int i = 0; i < MAX_VIEWER; i++)
 			viewer[i]->hideLot = f->ReadInt();
+		f->ReadKeyword("lowFluxMode"); f->ReadKeyword(":");
+		worker.ontheflyParam.lowFluxMode = f->ReadInt();
+		f->ReadKeyword("lowFluxCutoff"); f->ReadKeyword(":");
+		worker.ontheflyParam.lowFluxCutoff = f->ReadDouble();
 	}
 	catch (...) {
 		/*std::ostringstream tmp;
@@ -2507,6 +2510,8 @@ void MolFlow::SaveConfig() {
 		f->Write("expandShortcutPanel:"); f->Write(!shortcutPanel->IsClosed(), "\n");
 
 		WRITEI("hideLot", hideLot);
+		f->Write("lowFluxMode:"); f->Write(worker.ontheflyParam.lowFluxMode, "\n");
+		f->Write("lowFluxCutoff:"); f->Write(worker.ontheflyParam.lowFluxCutoff, "\n");
 	}
 	catch (Error &err) {
 		GLMessageBox::Display(err.GetMsg(), "Error saving config file", GLDLG_OK, GLDLG_ICONWARNING);

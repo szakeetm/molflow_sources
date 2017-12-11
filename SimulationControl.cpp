@@ -231,7 +231,9 @@ bool LoadSimulation(Dataport *loader) {
 	sHandle->motionVector1 = shGeom->motionVector1;
 	sHandle->motionVector2 = shGeom->motionVector2;
 	// Prepare super structure (allocate memory for facets)
-	buffer += sizeof(GeomProperties) + sizeof(Vector3d)*sHandle->nbVertex;
+	buffer += sizeof(GeomProperties);
+	sHandle->ontheflyParams = READBUFFER(OntheflySimulationParams);
+	buffer += sizeof(Vector3d)*sHandle->nbVertex;
 	for (i = 0; i < sHandle->totalFacet; i++) {
 		FacetProperties *shFacet = (FacetProperties *)buffer;
 		sHandle->str[shFacet->superIdx].nbFacet++;
@@ -273,7 +275,7 @@ bool LoadSimulation(Dataport *loader) {
 		return false;
 	}
 	buffer += sizeof(GeomProperties);
-
+	buffer += sizeof(OntheflySimulationParams);
 	shVert = (Vector3d *)(buffer);
 	memcpy(sHandle->vertices3, shVert, sHandle->nbVertex * sizeof(Vector3d));
 	buffer += sizeof(Vector3d)*sHandle->nbVertex;
@@ -656,6 +658,21 @@ bool LoadSimulation(Dataport *loader) {
 
 }
 
+bool UpdateSimuParams(Dataport *loader) {
+	// Connect the dataport
+	if (!AccessDataportTimed(loader, 2000)) {
+		SetErrorSub("Failed to connect to DP");
+		return false;
+	}
+	BYTE* buffer = (BYTE *)loader->buff;
+
+	sHandle->ontheflyParams = READBUFFER(OntheflySimulationParams);
+
+	ReleaseDataport(loader);
+
+	return true;
+}
+
 void UpdateHits(Dataport *dpHit, int prIdx, DWORD timeout) {
 	switch (sHandle->sMode) {
 	case MC_MODE:
@@ -728,10 +745,9 @@ void ResetSimulation() {
 
 }
 
-bool StartSimulation(size_t mode) {
-
-	sHandle->sMode = mode;
-	switch (mode) {
+bool StartSimulation(size_t sMode) {
+	sHandle->sMode = sMode;
+	switch (sMode) {
 	case MC_MODE:
 		if (!sHandle->lastHitFacet) StartFromSource();
 		return (sHandle->lastHitFacet != NULL);

@@ -40,7 +40,6 @@ typedef float ACFLOAT;
 // Density/Hit field stuff
 #define HITMAX 1E38
 
-
 typedef struct {
 	llong count;
 	double sum_v_ort;

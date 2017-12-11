@@ -54,7 +54,7 @@ public:
 	size_t GetHitsSize(std::vector<double> *moments);
 
 	// Raw data buffer (geometry)
-	void CopyGeometryBuffer(BYTE *buffer);
+	void CopyGeometryBuffer(BYTE *buffer,OntheflySimulationParams ontheflyParams);
 
 	// AC matrix
 	size_t GetMaxElemNumber();

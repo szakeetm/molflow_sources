@@ -34,7 +34,7 @@
 #include "Random.h"
 
 extern char *GetSimuStatus();
-extern int GetLocalState();
+extern size_t GetLocalState();
 //extern void GetState(int sleepTime);
 extern void GetState();
 
@@ -374,7 +374,7 @@ void UpdateACHits(Dataport *dpHit,int prIdx,DWORD timeout) {
   gHits = (GlobalHitBuffer *)dpHit->buff;
   gHits->texture_limits[0].max.all = 0.0;
   gHits->texture_limits[0].min.all = 0.0;
-  gHits->mode = AC_MODE;
+  gHits->sMode = AC_MODE;
   gHits->total.hit.nbDesorbed = sHandle->totalDesorbed;
 
   // Update texture

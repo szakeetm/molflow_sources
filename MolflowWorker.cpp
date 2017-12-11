@@ -79,7 +79,6 @@ Worker::Worker() {
 	timeWindowSize = 0.1;
 	useMaxwellDistribution = true;
 	calcConstantFlow = true;
-	distTraveledTotal_total = 0.0;
 	distTraveledTotal_fullHitsOnly = 0.0;
 	gasMass = 28.0;
 	enableDecay = false;
@@ -95,6 +94,9 @@ Worker::Worker() {
 
 	nbProcess = 0;
 	desorptionLimit = 0;
+	distTraveledTotal_total = 0.0;
+	ontheflyParam.lowFluxCutoff = 1E-7;
+	ontheflyParam.lowFluxMode = false;
 
 	ResetWorkerStats();
 	geom = new MolflowGeometry();
@@ -846,7 +848,7 @@ void Worker::InnerStop(float appTime) {
 
 }
 
-void Worker::OneStep() {
+void Worker::OneACStep() {
 
 	if (nbProcess == 0)
 		throw Error("No sub process found. (Simulation not available)");
@@ -861,7 +863,7 @@ void Worker::OneStep() {
 void Worker::StepAC(float appTime) {
 
 	try {
-		OneStep();
+		OneACStep();
 		Update(appTime);
 	}
 	catch (Error &e) {
@@ -870,7 +872,7 @@ void Worker::StepAC(float appTime) {
 
 }
 
-void Worker::StartStop(float appTime, int sMode) {
+void Worker::StartStop(float appTime , size_t sMode) {
 
 	if (isRunning)  {
 
@@ -940,7 +942,7 @@ void Worker::Update(float appTime) {
 		}
 
 		// End of simulation reached (Stop GUI)
-		if ((error || done) && isRunning && appTime != 0.0f) {
+		if ((error || done) && running && appTime != 0.0f) {
 			InnerStop(appTime);
 			if (error) ThrowSubProcError();
 		}
@@ -1115,7 +1117,7 @@ void Worker::RealReload() { //Sharing geometry with workers
 	progressDlg->SetMessage("Accessing dataport...");
 	AccessDataportTimed(loader, (DWORD)(3000 + nbProcess*loadSize / 10000));
 	progressDlg->SetMessage("Assembling geometry to pass...");
-	geom->CopyGeometryBuffer((BYTE *)loader->buff);
+	geom->CopyGeometryBuffer((BYTE *)loader->buff,ontheflyParam);
 	progressDlg->SetMessage("Releasing dataport...");
 	ReleaseDataport(loader);
 

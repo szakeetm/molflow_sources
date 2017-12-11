@@ -91,7 +91,7 @@ size_t MolflowGeometry::GetGeometrySize() {
 	return memoryUsage;
 }
 
-void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer) {
+void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer,OntheflySimulationParams ontheflyParams) {
 
 	// Build shared buffer for geometry (see Shared.h)
 	// Basically we serialize all data and let the subprocesses read them
@@ -124,7 +124,7 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer) {
 	Worker *w = &mApp->worker;
 
 	
-	GeomProperties *shGeom = (GeomProperties *)buffer;
+	
 	sh.nbMoments = w->moments.size();
 	sh.latestMoment = w->latestMoment;
 	sh.totalDesorbedMolecules = w->totalDesorbedMolecules;
@@ -138,8 +138,10 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer) {
 	sh.motionType = w->motionType;
 	sh.motionVector1 = w->motionVector1;
 	sh.motionVector2 = w->motionVector2;
+	GeomProperties *shGeom = (GeomProperties *)buffer;
 	memcpy(shGeom, &(this->sh), sizeof(GeomProperties));
 	buffer += sizeof(GeomProperties);
+	WRITEBUFFER(ontheflyParams, OntheflySimulationParams);
 	memcpy(buffer, vertices3, sizeof(Vector3d)*sh.nbVertex);
 	buffer += sizeof(Vector3d)*sh.nbVertex;
 
@@ -1784,14 +1786,14 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, Datapor
 
 					case 2: //Impingement rate
 						dCoef = 1E4; //1E4: conversion m2->cm2
-						if (shGHit->mode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
+						if (shGHit->sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
 						if (!grouping || hits[index].count) sprintf(tmp, "%g", (double)hits[i + j*w].count / f->GetMeshArea(i + j*w,true)*dCoef);
 						break;
 
 					case 3: //Particle density
 					{
 						dCoef = 1E4; //1E4: conversion m2->cm2
-						if (shGHit->mode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
+						if (shGHit->sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
 						double v_ort_avg = 2.0*(double)hits[index].count / hits[index].sum_1_per_ort_velocity;
 								double imp_rate = hits[index].count / f->GetMeshArea(index,true)*dCoef;
 								double rho = 2.0*imp_rate / v_ort_avg;
@@ -1801,7 +1803,7 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, Datapor
 					case 4: //Gas density
 					{
 						dCoef = 1E4; //1E4: conversion m2->cm2
-						if (shGHit->mode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
+						if (shGHit->sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
 								double v_ort_avg = 2.0*(double)hits[index].count / hits[index].sum_1_per_ort_velocity;
 								double imp_rate = hits[index].count / f->GetMeshArea(index,true)*dCoef;
 								double rho = 2.0*imp_rate / v_ort_avg;
@@ -1813,7 +1815,7 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, Datapor
 
 						// Lock during update
 						dCoef = 1E4 * (mApp->worker.gasMass / 1000 / 6E23) *0.0100;  //1E4 is conversion from m2 to cm2, 0.01: Pa->mbar
-						if (shGHit->mode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
+						if (shGHit->sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
 						if (!grouping || hits[index].sum_v_ort_per_area) sprintf(tmp, "%g", hits[index].sum_v_ort_per_area*dCoef);
 						break;
 

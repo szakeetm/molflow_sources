@@ -151,6 +151,7 @@ typedef struct {
   // Particle coordinates (MC)
   Vector3d pPos;    // Position
   Vector3d pDir;    // Direction
+  double oriRatio;
   //int      nbPHit;  // Number of hit (current particle) //Uncommented as it had no function
   //double   distTraveledCurrentParticle; //Distance traveled by particle before absorption
   double   distTraveledSinceUpdate_total; //includes "half" hits, i.e. when particle decays mid-air
@@ -198,6 +199,8 @@ typedef struct {
   ACFLOAT *acDensityTmp;
 #endif
 
+  OntheflySimulationParams ontheflyParams;
+
 } SIMULATION;
 
 // Handle to simulation object
@@ -213,11 +216,12 @@ void ProfileFacet(SubprocessFacet *f, double time, bool countHit, double velocit
 void RecordAngleMap(SubprocessFacet* collidedFacet);
 void InitSimulation();
 void ClearSimulation();
-void SetState(int state, const char *status, bool changeState=true, bool changeStatus=true);
+void SetState(size_t state, const char *status, bool changeState=true, bool changeStatus=true);
 void SetErrorSub(const char *msg);
 void ClearACMatrix();
 bool LoadSimulation(Dataport *loader);
-bool StartSimulation(size_t mode);
+bool UpdateSimuParams(Dataport *loader);
+bool StartSimulation(size_t sMode);
 void ResetSimulation();
 bool SimulationRun();
 bool SimulationMCStep(size_t nbStep);
@@ -226,7 +230,7 @@ void RecordHit(const int& type);
 void RecordLeakPos();
 bool StartFromSource();
 void PerformBounce(SubprocessFacet *iFacet);
-void PerformAbsorb(SubprocessFacet *iFacet);
+void RecordAbsorb(SubprocessFacet *iFacet);
 void PerformTeleport(SubprocessFacet *iFacet);
 void PerformTransparentPass(SubprocessFacet *iFacet);
 void UpdateHits(Dataport *dpHit,int prIdx,DWORD timeout);

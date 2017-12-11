@@ -62,7 +62,7 @@ void MolflowGeometry::BuildFacetTextures(BYTE *hits, bool renderRegularTexture, 
 
 	if (renderRegularTexture) {
 
-		switch (shGHit->mode) {
+		switch (shGHit->sMode) {
 
 		case MC_MODE:
 

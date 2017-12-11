@@ -98,47 +98,64 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	chkWhiteBg->SetBounds(15, 175, 160, 19);
 	settingsPanel->Add(chkWhiteBg);
 
-	GLTitledPanel *gasPanel = new GLTitledPanel("Gas settings");
-	gasPanel->SetBounds(280, 2, 295, 203);
-	Add(gasPanel);
+	GLTitledPanel *simuSettingsPanel = new GLTitledPanel("Simulation settings");
+	simuSettingsPanel->SetBounds(280, 2, 295, 203);
+	Add(simuSettingsPanel);
 
 	GLLabel *massLabel = new GLLabel("Gas molecular mass (g/mol):");
 	massLabel->SetBounds(290, 25, 150, 19);
-	gasPanel->Add(massLabel);
+	simuSettingsPanel->Add(massLabel);
 
 	gasmassText = new GLTextField(0, "");
 	gasmassText->SetBounds(460, 20, 100, 19);
-	gasPanel->Add(gasmassText);
+	simuSettingsPanel->Add(gasmassText);
 
 	enableDecay = new GLToggle(0, "Gas half life (s):");
 	enableDecay->SetBounds(290, 50, 150, 19);
-	gasPanel->Add(enableDecay);
+	simuSettingsPanel->Add(enableDecay);
 
 	halfLifeText = new GLTextField(0, "");
 	halfLifeText->SetBounds(460, 45, 100, 19);
-	gasPanel->Add(halfLifeText);
+	simuSettingsPanel->Add(halfLifeText);
 	
 	GLLabel *outgassingLabel = new GLLabel("Final outgassing rate (mbar*l/sec):");
 	outgassingLabel->SetBounds(290, 75, 150, 19);
-	gasPanel->Add(outgassingLabel);
+	simuSettingsPanel->Add(outgassingLabel);
 
 	outgassingText = new GLTextField(0, "");
 	outgassingText->SetBounds(460, 70, 100, 19);
 	outgassingText->SetEditable(false);
-	gasPanel->Add(outgassingText);
+	simuSettingsPanel->Add(outgassingText);
 
 	GLLabel *influxLabel = new GLLabel("Total desorbed molecules:");
 	influxLabel->SetBounds(290, 100, 150, 19);
-	gasPanel->Add(influxLabel);
+	simuSettingsPanel->Add(influxLabel);
 
 	influxText = new GLTextField(0, "");
 	influxText->SetBounds(460, 95, 100, 19);
 	influxText->SetEditable(false);
-	gasPanel->Add(influxText);
+	simuSettingsPanel->Add(influxText);
 
 	recalcButton = new GLButton(0, "Recalc. outgassing");
 	recalcButton->SetBounds(460, 123, 100, 19);
-	gasPanel->Add(recalcButton);
+	simuSettingsPanel->Add(recalcButton);
+
+	lowFluxToggle = new GLToggle(0, "Enable low flux mode");
+	lowFluxToggle->SetBounds(290, 150, 120, 19);
+	simuSettingsPanel->Add(lowFluxToggle);
+
+	lowFluxInfo = new GLButton(0, "?");
+	lowFluxInfo->SetBounds(420, 150, 20, 19);
+	simuSettingsPanel->Add(lowFluxInfo);
+
+	GLLabel *cutoffLabel = new GLLabel("Cutoff ratio:");
+	cutoffLabel->SetBounds(290, 175, 80, 19);
+	simuSettingsPanel->Add(cutoffLabel);
+
+	cutoffText = new GLTextField(0, "");
+	cutoffText->SetBounds(370, 175, 70, 19);
+	cutoffText->SetEditable(false);
+	simuSettingsPanel->Add(cutoffText);
 
 	applyButton = new GLButton(0, "Apply above settings");
 	applyButton->SetBounds(wD / 2 - 65, 210, 130, 19);
@@ -215,6 +232,10 @@ void GlobalSettings::Update() {
 	halfLifeText->SetText(worker->halfLife);
 	halfLifeText->SetEditable(worker->enableDecay);
 
+	cutoffText->SetText(worker->ontheflyParam.lowFluxCutoff);
+	cutoffText->SetEditable(worker->ontheflyParam.lowFluxMode);
+	lowFluxToggle->SetState(worker->ontheflyParam.lowFluxMode);
+
 	autoSaveText->SetText(mApp->autoSaveFrequency);
 	chkSimuOnly->SetState(mApp->autoSaveSimuOnly);
 	if (mApp->appUpdater) { //Updater initialized
@@ -243,7 +264,7 @@ void GlobalSettings::SMPUpdate() {
 
 	char tmp[512];
 	PROCESS_INFO pInfo;
-	int  states[MAX_PROCESS];
+	size_t  states[MAX_PROCESS];
 	std::vector<std::string> statusStrings(MAX_PROCESS);
 
 	memset(states, 0, MAX_PROCESS * sizeof(int));
@@ -425,6 +446,18 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 				}
 			}
 
+			double cutoffnumber;
+			if (!cutoffText->GetNumber(&cutoffnumber) || !(cutoffnumber>0.0 && cutoffnumber<1.0)) {
+				GLMessageBox::Display("Invalid cutoff ratio, must be between 0 and 1", "Error", GLDLG_OK, GLDLG_ICONWARNING);
+				return;
+			}
+
+			if (!IsEqual(worker->ontheflyParam.lowFluxCutoff, cutoffnumber) || (int)worker->ontheflyParam.lowFluxMode != lowFluxToggle->GetState()) {
+				worker->ontheflyParam.lowFluxCutoff = cutoffnumber;
+				worker->ontheflyParam.lowFluxMode = lowFluxToggle->GetState();
+				worker->ChangeSimuParams();
+			}
+
 			double autosavefreq;
 			if (!autoSaveText->GetNumber(&autosavefreq) || !(autosavefreq > 0.0)) {
 				GLMessageBox::Display("Invalid autosave frequency", "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -435,6 +468,16 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 			return;
 
 		}
+		else if (src == lowFluxInfo) {
+			GLMessageBox::Display("Low flux mode helps to gain more statistics on low pressure parts of the system, at the expense\n"
+				"of higher pressure parts. If a traced particle reflects from a high sticking factor surface, regardless of that probability,\n"
+				"a reflected test particle representing a reduced flux will still be traced. Therefore test particles can reach low flux areas more easily, but\n"
+				"at the same time tracing a test particle takes longer. The cutoff ratio defines what ratio of the originally generated flux\n"
+				"can be neglected. If, for example, it is 0.001, then, when after subsequent reflections the test particle carries less than 0.1%\n"
+				"of the original flux, it will be eliminated. A good advice is that if you'd like to see pressure across N orders of magnitude, set it to 1E-N"
+				, "Low flux mode", GLDLG_OK, GLDLG_ICONINFO);
+			return;
+		}
 		break;
 
 	case MSG_TEXT:
@@ -442,8 +485,11 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 		break;
 
 	case MSG_TOGGLE:
-		if (src == enableDecay)
+		if (src == enableDecay) {
 			halfLifeText->SetEditable(enableDecay->GetState());
+		} else if (src == lowFluxToggle) {
+			cutoffText->SetEditable(lowFluxToggle->GetState());
+		}
 		break;
 	}
 

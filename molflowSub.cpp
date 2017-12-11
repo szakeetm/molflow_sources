@@ -41,7 +41,7 @@ static Dataport *dpControl=NULL;
 static Dataport *dpHit=NULL;
 //static int       noHeartBeatSince;
 static int       prIdx;
-static int       prState;
+static size_t       prState;
 static size_t       prParam;
 static llong     prParam2;
 static DWORD     hostProcessId;
@@ -81,14 +81,14 @@ void GetState() {
   }
 }
 
-int GetLocalState() {
+size_t GetLocalState() {
   return prState;
 }
 
-void SetState(int state,const char *status,bool changeState, bool changeStatus) {
+void SetState(size_t state,const char *status,bool changeState, bool changeStatus) {
 
 	prState = state;
-	if (changeState) printf("\n setstate %d \n",state);
+	if (changeState) printf("\n setstate %zd \n",state);
 	if( AccessDataport(dpControl) ) {
 		SHCONTROL *master = (SHCONTROL *)dpControl->buff;
 		if (changeState) master->states[prIdx] = state;
@@ -113,15 +113,15 @@ void SetErrorSub(const char *message) {
 
 char *GetSimuStatus() {
 
-  size_t mode;
+  size_t sMode;
   static char ret[128];
   llong count = sHandle->totalDesorbed;
   llong max   = sHandle->desorptionLimit;
 
-  mode = sHandle->sMode;
-  if( GetLocalState()==PROCESS_RUNAC ) mode = AC_MODE;
+  sMode = sHandle->sMode;
+  if( GetLocalState()==PROCESS_RUNAC ) sMode = AC_MODE;
 
-  switch(mode) {
+  switch(sMode) {
 
     case MC_MODE:
       if( max!=0 ) {
@@ -259,6 +259,30 @@ void Load() {
 
 }
 
+bool UpdateParams() {
+
+	Dataport *loader;
+
+	// Load geometry
+	loader = OpenDataport(loadDpName, prParam);
+	if (!loader) {
+		char err[512];
+		sprintf(err, "Failed to connect to 'loader' dataport %s (%zd Bytes)", loadDpName, prParam);
+		SetErrorSub(err);
+		return false;
+	}
+
+	printf("Connected to %s\n", loadDpName);
+
+	if (!UpdateSimuParams(loader)) {
+		CLOSEDP(loader);
+		return false;
+	}
+	CLOSEDP(loader);
+	return true;
+}
+
+
 int main(int argc,char* argv[])
 {
   bool eos = false;
@@ -306,6 +330,13 @@ int main(int argc,char* argv[])
         printf("COMMAND: LOADAC (%zd)\n",prParam);
         LoadAC();
         break;
+
+	  case COMMAND_UPDATEPARAMS:
+		  printf("COMMAND: UPDATEPARAMS (%zd,%I64d)\n", prParam, prParam2);
+		  if (UpdateParams()) {
+			  SetState(prParam, GetSimuStatus());
+		  }
+		  break;
 
       case COMMAND_START:
         printf("COMMAND: START (%zd,%llu)\n",prParam,prParam2);
@@ -366,7 +397,7 @@ int main(int argc,char* argv[])
 
       case PROCESS_RUN:
         SetStatus(GetSimuStatus()); //update hits only
-        eos = SimulationRun();                // Run during 1 sec
+        eos = SimulationRun();      // Run during 1 sec
 		if (dpHit && (GetLocalState() != PROCESS_ERROR)) UpdateHits(dpHit,prIdx,20); // Update hit with 20ms timeout. If fails, probably an other subprocess is updating, so we'll keep calculating and try it later (latest when the simulation is stopped).
         if(eos) {
           if( GetLocalState()!=PROCESS_ERROR ) {

@@ -159,7 +159,7 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 		gHits->texture_limits[i].max.all = gHits->texture_limits[i].max.moments_only = 0;
 	}
 
-	gHits->mode = MC_MODE;
+	gHits->sMode = MC_MODE;
 	//for(i=0;i<BOUNCEMAX;i++) gHits->wallHits[i] += sHandle->wallHits[i];
 
 	// Leak
@@ -449,22 +449,36 @@ bool SimulationMCStep(size_t nbStep) {
 					PerformTransparentPass(collidedFacet);
 				}*/
 				else {
+					sHandle->distTraveledSinceUpdate_total += d;
+					sHandle->distTraveledSinceUpdate_fullHitsOnly += d;
 					double stickingProbability = GetStickingAt(collidedFacet, sHandle->flightTimeCurrentParticle);
-					if (stickingProbability == 1.0 || ((stickingProbability > 0.0) && (rnd() < (stickingProbability)))) {
-						//Absorbed
-						sHandle->distTraveledSinceUpdate_total += d;
-						sHandle->distTraveledSinceUpdate_fullHitsOnly += d;
-						PerformAbsorb(collidedFacet);
-						//sHandle->distTraveledSinceUpdate += sHandle->distTraveledCurrentParticle;
-						if (!StartFromSource())
-							// desorptionLimit reached
-							return false;
+					if (!sHandle->ontheflyParams.lowFluxMode) { //Regular stick or bounce
+						if (stickingProbability == 1.0 || ((stickingProbability > 0.0) && (rnd() < (stickingProbability)))) {
+							//Absorbed
+							RecordAbsorb(collidedFacet);
+							//sHandle->distTraveledSinceUpdate += sHandle->distTraveledCurrentParticle;
+							if (!StartFromSource())
+								// desorptionLimit reached
+								return false;
+						}
+						else {
+							//Reflected
+							PerformBounce(collidedFacet);
+						}
 					}
-					else {
-						//Reflected
-						sHandle->distTraveledSinceUpdate_total += d;
-						sHandle->distTraveledSinceUpdate_fullHitsOnly += d;
-						PerformBounce(collidedFacet);
+					else { //Low flux mode
+						double oriRatioBeforeCollision = sHandle->oriRatio; //Local copy
+						sHandle->oriRatio *= (stickingProbability); //Sticking part
+						RecordAbsorb(collidedFacet);
+						sHandle->oriRatio = oriRatioBeforeCollision * (1.0 - stickingProbability); //Reflected part
+						if (sHandle->oriRatio > sHandle->ontheflyParams.lowFluxCutoff) {							
+							PerformBounce(collidedFacet);
+						}
+						else { //eliminate remainder and create new particle
+							if (!StartFromSource())
+								// desorptionLimit reached
+								return false;
+						}
 					}
 				}
 			} //end hit within measured time
@@ -569,6 +583,7 @@ bool StartFromSource() {
 	sHandle->flightTimeCurrentParticle = GenerateDesorptionTime(src);
 	if (sHandle->useMaxwellDistribution) sHandle->velocityCurrentParticle = GenerateRandomVelocity(src->sh.CDFid);
 	else sHandle->velocityCurrentParticle = 145.469*sqrt(src->sh.temperature / sHandle->gasMass);  //sqrt(8*R/PI/1000)=145.47
+	sHandle->oriRatio = 1.0;
 	if (sHandle->enableDecay) { //decaying gas
 		sHandle->particleDecayMoment = sHandle->flightTimeCurrentParticle + sHandle->halfLife*1.44269*-log(rnd()); //1.44269=1/ln2
 		//Exponential distribution PDF: probability of 't' life = 1/TAU*exp(-t/TAU) where TAU = half_life/ln2
@@ -1137,7 +1152,7 @@ void PerformTransparentPass(SubprocessFacet *iFacet) { //disabled, caused findin
 	sHandle->lastHit = iFacet;*/
 }
 
-void PerformAbsorb(SubprocessFacet *iFacet) {
+void RecordAbsorb(SubprocessFacet *iFacet) {
 	sHandle->tmpCount.hit.nbHit++; //global	
 	sHandle->tmpCount.hit.nbAbsorbed++;
 	RecordHit(HIT_ABS);
@@ -1159,8 +1174,8 @@ void RecordHitOnTexture(SubprocessFacet *f, double time, bool countHit, double v
 	for (size_t m = 0; m <= sHandle->nbMoments; m++)
 		if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
 			if (countHit) f->hits[m][add].count++;
-			f->hits[m][add].sum_1_per_ort_velocity += velocity_factor / ortVelocity;
-			f->hits[m][add].sum_v_ort_per_area += ortSpeedFactor*ortVelocity*f->inc[add]; // sum ortho_velocity[m/s] / cell_area[cm2]
+			f->hits[m][add].sum_1_per_ort_velocity += sHandle->oriRatio * velocity_factor / ortVelocity;
+			f->hits[m][add].sum_v_ort_per_area += sHandle->oriRatio * ortSpeedFactor*ortVelocity*f->inc[add]; // sum ortho_velocity[m/s] / cell_area[cm2]
 		}
 }
 
@@ -1171,9 +1186,7 @@ void RecordDirectionVector(SubprocessFacet *f, double time) {
 
 	for (size_t m = 0; m <= sHandle->moments.size(); m++) {
 		if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
-			f->direction[m][add].dir.x += sHandle->pDir.x*sHandle->velocityCurrentParticle;
-			f->direction[m][add].dir.y += sHandle->pDir.y*sHandle->velocityCurrentParticle;
-			f->direction[m][add].dir.z += sHandle->pDir.z*sHandle->velocityCurrentParticle;
+			f->direction[m][add].dir = f->direction[m][add].dir + sHandle->oriRatio * sHandle->pDir * sHandle->velocityCurrentParticle;
 			f->direction[m][add].count++;
 		}
 	}
@@ -1212,8 +1225,8 @@ void ProfileFacet(SubprocessFacet *f, double time, bool countHit, double velocit
 				if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
 					if (countHit) f->profile[m][pos].count++;
 					double ortVelocity = sHandle->velocityCurrentParticle*abs(Dot(f->sh.N, sHandle->pDir));
-					f->profile[m][pos].sum_1_per_ort_velocity += velocity_factor / ortVelocity;
-					f->profile[m][pos].sum_v_ort += ortSpeedFactor*(sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;
+					f->profile[m][pos].sum_1_per_ort_velocity += sHandle->oriRatio * velocity_factor / ortVelocity;
+					f->profile[m][pos].sum_v_ort += sHandle->oriRatio * ortSpeedFactor*(sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;
 				}
 			}
 		}
@@ -1334,8 +1347,8 @@ void IncreaseFacetCounter(SubprocessFacet *f, double time, size_t hit, size_t de
 			f->counter[m].hit.nbHit += hit;
 			f->counter[m].hit.nbDesorbed += desorb;
 			f->counter[m].hit.nbAbsorbed += absorb;
-			f->counter[m].hit.sum_1_per_ort_velocity += sum_1_per_v;
-			f->counter[m].hit.sum_v_ort += sum_v_ort;
+			f->counter[m].hit.sum_1_per_ort_velocity += sHandle->oriRatio * sum_1_per_v;
+			f->counter[m].hit.sum_v_ort += sHandle->oriRatio * sum_v_ort;
 		}
 	}
 }

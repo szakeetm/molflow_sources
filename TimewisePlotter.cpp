@@ -215,7 +215,7 @@ void TimewisePlotter::Update(float appTime, bool force) {
 	}
 
 	if ((appTime - lastUpdate > 1.0f || force) && nbView) {
-		if (worker->running) refreshViews();
+		if (worker->isRunning) refreshViews();
 		lastUpdate = appTime;
 	}
 
