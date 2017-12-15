@@ -79,8 +79,8 @@ TexturePlotter::TexturePlotter() :GLWindow() {
 	viewCombo->SetValueAt(3, "Particle density [1/m3]");
 	viewCombo->SetValueAt(4, "Gas density [kg/m3]");
 	viewCombo->SetValueAt(5, "Pressure [mbar]");
-	viewCombo->SetValueAt(6, "Avg. mol. speed (m/s)");
-	viewCombo->SetValueAt(7, "Incident velocity vector (m/s)");
+	viewCombo->SetValueAt(6, "Avg.speed estimate[m/s]");
+	viewCombo->SetValueAt(7, "Incident velocity vector[m/s]");
 	viewCombo->SetValueAt(8, "# of velocity vectors");
 
 	viewCombo->SetSelectedIndex(5); //Pressure by default
@@ -222,12 +222,12 @@ void TexturePlotter::UpdateTable() {
 						for (size_t j = 0; j < h; j++) {
 							//int tSize = selFacet->sh.texWidth*selFacet->sh.texHeight;
 
-							llong val = hits[i + j*w].count;
+							double val = hits[i + j*w].countEquiv;
 							if (val > maxValue) {
 								maxValue = (double)val;
 								maxX = i; maxY = j;
 							}
-							sprintf(tmp, "%llu", val);
+							sprintf(tmp, "%g", val);
 							mapList->SetValueAt(i, j, tmp);
 						}
 					}
@@ -257,7 +257,7 @@ void TexturePlotter::UpdateTable() {
 					for (size_t i = 0; i < w; i++) {
 						for (size_t j = 0; j < h; j++) {
 							double area = (selFacet->GetMeshArea(i + j*w,true)); if (area == 0.0) area = 1.0;
-							double val = (double)hits[i + j*w].count / area*dCoef;
+							double val = hits[i + j*w].countEquiv / area*dCoef;
 							if (val > maxValue) {
 								maxValue = val;
 								maxX = i; maxY = j;
@@ -284,13 +284,8 @@ void TexturePlotter::UpdateTable() {
 					GlobalHitBuffer *shGHit = (GlobalHitBuffer *)buffer;
 					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(APROFILE)*(1 + nbMoments)) : 0;
 					AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(AHIT)));
-					double dCoef =1E4;   //1E4 m2 -> cm2
+					double dCoef =1E4 * selFacet->DensityCorrection();   //1E4 m2 -> cm2
 					
-					//Correction for double-density effect (measuring density on desorbing/absorbing facets):
-					if (selFacet->counterCache.hit.nbHit > 0 || selFacet->counterCache.hit.nbDesorbed > 0)
-						if (selFacet->counterCache.hit.nbAbsorbed > 0 || selFacet->counterCache.hit.nbDesorbed > 0) //otherwise save calculation time
-							dCoef *= 1.0 - ((double)selFacet->counterCache.hit.nbAbsorbed + (double)selFacet->counterCache.hit.nbDesorbed) / ((double)selFacet->counterCache.hit.nbHit + (double)selFacet->counterCache.hit.nbDesorbed) / 2.0;
-
 					if (shGHit->sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(worker->displayedMoment);
 					for (size_t i = 0; i < w; i++) {
 						for (size_t j = 0; j < h; j++) {
@@ -327,12 +322,7 @@ void TexturePlotter::UpdateTable() {
 					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(APROFILE)*(1 + nbMoments)) : 0;
 					AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(AHIT)));
 					//float dCoef = (float)totalOutgassing / 8.31 * gasMass / 100 * MAGIC_CORRECTION_FACTOR;
-					double dCoef = 1E4;
-
-						//Correction for double-density effect (measuring density on desorbing/absorbing facets):
-					if (selFacet->counterCache.hit.nbHit > 0 || selFacet->counterCache.hit.nbDesorbed > 0)
-						if (selFacet->counterCache.hit.nbAbsorbed > 0 || selFacet->counterCache.hit.nbDesorbed > 0) //otherwise save calculation time
-							dCoef *= 1.0 - ((double)selFacet->counterCache.hit.nbAbsorbed + (double)selFacet->counterCache.hit.nbDesorbed) / ((double)selFacet->counterCache.hit.nbHit + (double)selFacet->counterCache.hit.nbDesorbed) / 2.0;
+					double dCoef = 1E4 * selFacet->DensityCorrection();
 
 					if (shGHit->sMode == MC_MODE) dCoef *= worker->GetMoleculesPerTP(worker->displayedMoment);
 					for (size_t i = 0; i < w; i++) {
@@ -408,7 +398,7 @@ void TexturePlotter::UpdateTable() {
 					for (size_t i = 0; i < w; i++) {
 						for (size_t j = 0; j < h; j++) {
 							size_t tSize = selFacet->sh.texWidth*selFacet->sh.texHeight;
-							double val = 4.0*(double)hits[i + j*w].count / hits[i + j*w].sum_1_per_ort_velocity;
+							double val = 4.0*hits[i + j*w].countEquiv / hits[i + j*w].sum_1_per_ort_velocity;
 							if (val > maxValue) {
 								maxValue = val;
 								maxX = i; maxY = j;

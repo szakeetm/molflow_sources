@@ -59,9 +59,10 @@ static COLUMN allColumn[] = {
   {"Density [kg/m3]",80, ALIGN_CENTER, COLOR_BLUE },
   {"Pressure [mbar]",80 , ALIGN_CENTER, COLOR_BLUE } ,
   {"Av.mol.speed[m/s]",80, ALIGN_CENTER, COLOR_BLUE },
-  {"Hits"           , 80 , ALIGN_CENTER, COLOR_BLUE } ,
+  {"MC Hits"           , 80 , ALIGN_CENTER, COLOR_BLUE } ,
+  {"Equiv.hits"           , 80 , ALIGN_CENTER, COLOR_BLUE } ,
   {"Des."           , 80 , ALIGN_CENTER, COLOR_BLUE } ,
-  {"Abs."           , 80 , ALIGN_CENTER, COLOR_BLUE } ,
+  {"Equiv.abs."           , 80 , ALIGN_CENTER, COLOR_BLUE } ,
 };
 
 static const char *desStr[] = {
@@ -184,15 +185,18 @@ FacetDetails::FacetDetails():GLWindow() {
   show[22] = new GLToggle(22, "Mol.speed");
   show[22]->SetState(true);
   sPanel->Add(show[22]);
-  show[23] = new GLToggle(23,"Hits");
+  show[23] = new GLToggle(23,"MC Hits");
   show[23]->SetState(true);
   sPanel->Add(show[23]);
-  show[24] = new GLToggle(24,"Des.");
+  show[24] = new GLToggle(24, "Equiv.hits");
   show[24]->SetState(true);
   sPanel->Add(show[24]);
-  show[25] = new GLToggle(25,"Abs.");
+  show[25] = new GLToggle(25,"Des.");
   show[25]->SetState(true);
   sPanel->Add(show[25]);
+  show[26] = new GLToggle(26,"Equiv.Abs.");
+  show[26]->SetState(true);
+  sPanel->Add(show[26]);
 
   // Center dialog
   int wS,hS;
@@ -313,28 +317,19 @@ char *FacetDetails::FormatCell(size_t idx,Facet *f,size_t mode) {
 	case 18: //imp.rate
 	{
 	double dCoef = 1E4 * worker->GetMoleculesPerTP(worker->displayedMoment);  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
-	sprintf(ret, "%g", f->counterCache.hit.nbHit / f->GetArea()*dCoef);
+	sprintf(ret, "%g", f->counterCache.hit.nbHitEquiv / f->GetArea()*dCoef);
 	//11.77=sqrt(8*8.31*293.15/3.14/0.028)/4/10
 	break; }
 	case 19: //particle density
 	{
-	double dCoef = 1E4 * worker->GetMoleculesPerTP(worker->displayedMoment);  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar	
-	//Correction for double-density effect (measuring density on desorbing/absorbing facets):
-	if (f->counterCache.hit.nbHit>0 || f->counterCache.hit.nbDesorbed>0)
-		if (f->counterCache.hit.nbAbsorbed >0 || f->counterCache.hit.nbDesorbed>0) //otherwise save calculation time
-		dCoef *= 1.0 - ((double)f->counterCache.hit.nbAbsorbed + (double)f->counterCache.hit.nbDesorbed) / ((double)f->counterCache.hit.nbHit+(double)f->counterCache.hit.nbDesorbed) / 2.0;
+	double dCoef = 1E4 * worker->GetMoleculesPerTP(worker->displayedMoment)*f->DensityCorrection();  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar	
 	
 	sprintf(ret, "%g", f->counterCache.hit.sum_1_per_ort_velocity / f->GetArea()*dCoef);
 
 	break; }
 	case 20: //gas density
 	{
-	double dCoef =  1E4 * worker->GetMoleculesPerTP(worker->displayedMoment);  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
-	
-	//Correction for double-density effect (measuring density on desorbing/absorbing facets):
-	if (f->counterCache.hit.nbHit>0 || f->counterCache.hit.nbDesorbed>0)
-		if (f->counterCache.hit.nbAbsorbed >0 || f->counterCache.hit.nbDesorbed>0) //otherwise save calculation time
-		dCoef *= 1.0 - ((double)f->counterCache.hit.nbAbsorbed + (double)f->counterCache.hit.nbDesorbed) / ((double)f->counterCache.hit.nbHit + (double)f->counterCache.hit.nbDesorbed) / 2.0;
+	double dCoef =  1E4 * worker->GetMoleculesPerTP(worker->displayedMoment)*f->DensityCorrection();  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 	
 	sprintf(ret, "%g", f->counterCache.hit.sum_1_per_ort_velocity / f->GetArea()*dCoef*mApp->worker.gasMass / 1000.0 / 6E23);
 	break; }
@@ -345,18 +340,22 @@ char *FacetDetails::FormatCell(size_t idx,Facet *f,size_t mode) {
 	sprintf(ret, "%g", f->counterCache.hit.sum_v_ort*dCoef / f->GetArea());
 	break; }
 	case 22: //avg. gas speed (estimate)
-		sprintf(ret, "%g", 4.0*(double)(f->counterCache.hit.nbHit+f->counterCache.hit.nbDesorbed) / f->counterCache.hit.sum_1_per_ort_velocity);
+		/*sprintf(ret, "%g", 4.0*(double)(f->counterCache.hit.nbMCHit+f->counterCache.hit.nbDesorbed) / f->counterCache.hit.sum_1_per_ort_velocity);*/
+		sprintf(ret, "%g", (f->counterCache.hit.nbHitEquiv + static_cast<double>(f->counterCache.hit.nbDesorbed)) / f->counterCache.hit.sum_1_per_velocity);
 		//<v_surf>=2*<v_surf_ort>
 		//<v_gas>=1/<1/v_surf>
 		break;
 	case 23:
-		sprintf(ret,"%I64d",f->counterCache.hit.nbHit);
+		sprintf(ret,"%I64d",f->counterCache.hit.nbMCHit);
 		break;
 	case 24:
-		sprintf(ret,"%I64d",f->counterCache.hit.nbDesorbed);
+		sprintf(ret, "%g", f->counterCache.hit.nbHitEquiv);
 		break;
 	case 25:
-		sprintf(ret,"%I64d",f->counterCache.hit.nbAbsorbed);
+		sprintf(ret,"%I64d",f->counterCache.hit.nbDesorbed);
+		break;
+	case 26:
+		sprintf(ret,"%g",f->counterCache.hit.nbAbsEquiv);
 		break;
   }
 

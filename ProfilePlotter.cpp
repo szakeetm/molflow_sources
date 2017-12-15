@@ -326,15 +326,15 @@ void ProfilePlotter::refreshViews() {
 			v->Reset();
 			APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + facetHitsSize + worker->displayedMoment*sizeof(APROFILE)*PROFILE_SIZE);
 
-			FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->sh.hitOffset+ worker->displayedMoment*sizeof(FacetHitBuffer));
-			double fnbHit = (double)fCount->hit.nbHit;
-			if (fnbHit == 0.0) fnbHit = 1.0;
+			//FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->sh.hitOffset+ worker->displayedMoment*sizeof(FacetHitBuffer));
+			//double fnbHit = (double)fCount->hit.nbMCHit;
+			//if (fnbHit == 0.0) fnbHit = 1.0;
 			if (worker->nbDesorption > 0){
 
 				switch (displayMode) {
 				case 0: //Raw data
 					for (int j = 0; j < PROFILE_SIZE; j++)
-						v->Add((double)j, (double)profilePtr[j].count, false);
+						v->Add((double)j, profilePtr[j].countEquiv, false);
 
 					break;
 
@@ -347,12 +347,7 @@ void ProfilePlotter::refreshViews() {
 					break;
 				case 2: //Particle density
 					scaleY = 1.0 / ((f->GetArea() * 1E-4) / (double)PROFILE_SIZE);
-					scaleY *= worker->GetMoleculesPerTP(worker->displayedMoment);
-					
-					//Correction for double-density effect (measuring density on desorbing/absorbing facets):
-					if (f->counterCache.hit.nbHit>0 || f->counterCache.hit.nbDesorbed>0)
-						if (f->counterCache.hit.nbAbsorbed >0 || f->counterCache.hit.nbDesorbed>0) //otherwise save calculation time
-						scaleY *= 1.0 - ((double)f->counterCache.hit.nbAbsorbed + (double)f->counterCache.hit.nbDesorbed) / ((double)f->counterCache.hit.nbHit + (double)f->counterCache.hit.nbDesorbed) / 2.0;
+					scaleY *= worker->GetMoleculesPerTP(worker->displayedMoment) * f->DensityCorrection();
 					
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j, profilePtr[j].sum_1_per_ort_velocity*scaleY, false);
@@ -365,9 +360,9 @@ void ProfilePlotter::refreshViews() {
 					values.reserve(PROFILE_SIZE);
 					for (int j = 0; j < PROFILE_SIZE; j++) {//count distribution sum
 						if (!correctForGas->GetState())
-							val = (double)profilePtr[j].count;
+							val = profilePtr[j].countEquiv;
 						else
-							val = (double)profilePtr[j].count / (((double)j + 0.5)*scaleX); //fnbhit not needed, sum will take care of normalization
+							val = profilePtr[j].countEquiv / (((double)j + 0.5)*scaleX); //fnbhit not needed, sum will take care of normalization
 						sum += val;
 						values.push_back(val);
 					}
@@ -383,9 +378,9 @@ void ProfilePlotter::refreshViews() {
 					values.reserve(PROFILE_SIZE);
 					for (int j = 0; j < PROFILE_SIZE; j++) {//count distribution sum
 						if (!correctForGas->GetState())
-							val = (double)profilePtr[j].count;
+							val = profilePtr[j].countEquiv;
 						else
-							val = (double)profilePtr[j].count / sin(((double)j + 0.5)*PI / 2.0 / (double)PROFILE_SIZE); //fnbhit not needed, sum will take care of normalization
+							val = profilePtr[j].countEquiv / sin(((double)j + 0.5)*PI / 2.0 / (double)PROFILE_SIZE); //fnbhit not needed, sum will take care of normalization
 						sum += val;
 						values.push_back(val);
 					}
@@ -394,16 +389,16 @@ void ProfilePlotter::refreshViews() {
 						v->Add((double)j*scaleX, values[j] / sum, false);
 					break; }
 				case 5: //To 1 (max value)
-					llong max = 1;
+					double max = 1.0;
 
 					for (int j = 0; j < PROFILE_SIZE; j++)
 					{
-						if (profilePtr[j].count > max) max = profilePtr[j].count;
+						if (profilePtr[j].countEquiv > max) max = profilePtr[j].countEquiv;
 					}
 					scaleY = 1.0 / (double)max;
 
 					for (int j = 0; j < PROFILE_SIZE; j++)
-						v->Add((double)j, (double)profilePtr[j].count*scaleY, false);
+						v->Add((double)j, profilePtr[j].countEquiv*scaleY, false);
 					break;
 				}
 
@@ -422,13 +417,13 @@ void ProfilePlotter::refreshViews() {
 					if (f->sh.isVolatile) {
 						FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->sh.hitOffset+worker->displayedMoment*sizeof(FacetHitBuffer));
 						double z = geom->GetVertex(f->indices[0])->z;
-						v->Add(z, (double)(fCount->hit.nbAbsorbed) / worker->nbDesorption, false);
+						v->Add(z,fCount->hit.nbAbsEquiv / worker->nbDesorption, false);
 					}
 				}
 				// Last
 				Facet *f = geom->GetFacet(28);
 				FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->sh.hitOffset+worker->displayedMoment*sizeof(FacetHitBuffer));
-				double fnbAbs = (double)fCount->hit.nbAbsorbed;
+				double fnbAbs = fCount->hit.nbAbsEquiv;
 				v->Add(1000.0, fnbAbs / worker->nbDesorption, false);
 				v->CommitChange();
 

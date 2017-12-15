@@ -146,10 +146,11 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 	gHits = (GlobalHitBuffer *)buffer;
 
 	// Global hits and leaks: adding local hits to shared memory
-	gHits->total.hit.nbHit += sHandle->tmpCount.hit.nbHit;
-	gHits->total.hit.nbAbsorbed += sHandle->tmpCount.hit.nbAbsorbed;
+	gHits->total.hit.nbMCHit += sHandle->tmpCount.hit.nbMCHit;
+	gHits->total.hit.nbHitEquiv += sHandle->tmpCount.hit.nbHitEquiv;
+	gHits->total.hit.nbAbsEquiv += sHandle->tmpCount.hit.nbAbsEquiv;
 	gHits->total.hit.nbDesorbed += sHandle->tmpCount.hit.nbDesorbed;
-	gHits->distTraveledTotal_total += sHandle->distTraveledSinceUpdate_total;
+	gHits->distTraveled_total += sHandle->distTraveledSinceUpdate_total;
 	gHits->distTraveledTotal_fullHitsOnly += sHandle->distTraveledSinceUpdate_fullHitsOnly;
 
 	//Memorize current limits, then do a min/max search
@@ -196,19 +197,20 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 
 				for (int m = 0; m < (1 + nbMoments); m++) {
 					FacetHitBuffer *fFit = (FacetHitBuffer *)(buffer + f->sh.hitOffset + m * sizeof(FacetHitBuffer));
-					fFit->hit.nbAbsorbed += f->counter[m].hit.nbAbsorbed;
-					//printf("\n%d %g + %g",i,(double)fFit->hit.nbHit,(double)f->sh.counter.hit.nbHit);
+					fFit->hit.nbAbsEquiv += f->counter[m].hit.nbAbsEquiv;
 					fFit->hit.nbDesorbed += f->counter[m].hit.nbDesorbed;
-					fFit->hit.nbHit += f->counter[m].hit.nbHit;
+					fFit->hit.nbMCHit += f->counter[m].hit.nbMCHit;
+					fFit->hit.nbHitEquiv += f->counter[m].hit.nbHitEquiv;
 					fFit->hit.sum_1_per_ort_velocity += f->counter[m].hit.sum_1_per_ort_velocity;
 					fFit->hit.sum_v_ort += f->counter[m].hit.sum_v_ort;
+					fFit->hit.sum_1_per_velocity += f->counter[m].hit.sum_1_per_velocity;
 				}
 
 				if (f->sh.isProfile) {
 					for (int m = 0; m < (1 + nbMoments); m++) {
 						APROFILE *shProfile = (APROFILE *)(buffer + f->sh.hitOffset + facetHitsSize + m*f->profileSize);
 						for (j = 0; j < PROFILE_SIZE; j++) {
-							shProfile[j].count += f->profile[m][j].count;
+							shProfile[j].countEquiv += f->profile[m][j].countEquiv;
 							shProfile[j].sum_1_per_ort_velocity += f->profile[m][j].sum_1_per_ort_velocity;
 							shProfile[j].sum_v_ort += f->profile[m][j].sum_v_ort;
 						}
@@ -227,14 +229,14 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 								size_t add = x + y*f->sh.texWidth;
 
 								//Add temporary hit counts
-								shTexture[add].count += f->hits[m][add].count;
+								shTexture[add].countEquiv += f->hits[m][add].countEquiv;
 								shTexture[add].sum_1_per_ort_velocity += f->hits[m][add].sum_1_per_ort_velocity;
 								shTexture[add].sum_v_ort_per_area += f->hits[m][add].sum_v_ort_per_area;
 
 								double val[3];  //pre-calculated autoscaling values (Pressure, imp.rate, density)
 
 								val[0] = shTexture[add].sum_v_ort_per_area*timeCorrection; //pressure without dCoef_pressure
-								val[1] = shTexture[add].count*f->inc[add] * timeCorrection; //imp.rate without dCoef
+								val[1] = shTexture[add].countEquiv*f->inc[add] * timeCorrection; //imp.rate without dCoef
 								val[2] = f->inc[add] * shTexture[add].sum_1_per_ort_velocity* timeCorrection; //particle density without dCoef
 
 								//Global autoscale
@@ -386,12 +388,12 @@ void PerformTeleport(SubprocessFacet *iFacet) {
 	sHandle->lastHitFacet = destination;
 
 	//Count hits on teleport facets
-	/*iFacet->sh.counter.hit.nbAbsorbed++;
+	/*iFacet->sh.counter.hit.nbAbsEquiv++;
 	destination->sh.counter.hit.nbDesorbed++;*/
 
 	double ortVelocity = sHandle->velocityCurrentParticle*abs(Dot(sHandle->pDir, iFacet->sh.N));
 	//We count a teleport as a local hit, but not as a global one since that would affect the MFP calculation
-	/*iFacet->sh.counter.hit.nbHit++;
+	/*iFacet->sh.counter.hit.nbMCHit++;
 	iFacet->sh.counter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity;
 	iFacet->sh.counter.hit.sum_v_ort += 2.0*(sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
 	IncreaseFacetCounter(iFacet, sHandle->flightTimeCurrentParticle, 1, 0, 0, 2.0 / ortVelocity, 2.0*(sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity);
@@ -431,7 +433,7 @@ bool SimulationMCStep(size_t nbStep) {
 				//OR particle has decayed
 				double remainderFlightPath = sHandle->velocityCurrentParticle*100.0*
 					Min(sHandle->latestMoment - lastFLightTime, sHandle->particleDecayMoment - lastFLightTime); //distance until the point in space where the particle decayed
-				sHandle->distTraveledSinceUpdate_total += remainderFlightPath;
+				sHandle->distTraveledSinceUpdate_total += remainderFlightPath * sHandle->oriRatio;
 				RecordHit(HIT_LAST);
 				//sHandle->distTraveledSinceUpdate += sHandle->distTraveledCurrentParticle;
 				if (!StartFromSource())
@@ -440,7 +442,7 @@ bool SimulationMCStep(size_t nbStep) {
 			}
 			else { //hit within measured time, particle still alive
 				if (collidedFacet->sh.teleportDest != 0) {
-					sHandle->distTraveledSinceUpdate_total += d;
+					sHandle->distTraveledSinceUpdate_total += d * sHandle->oriRatio;
 					PerformTeleport(collidedFacet);
 				}
 				/*else if ((GetOpacityAt(collidedFacet, sHandle->flightTimeCurrentParticle) < 1.0) && (rnd() > GetOpacityAt(collidedFacet, sHandle->flightTimeCurrentParticle))) {
@@ -449,8 +451,8 @@ bool SimulationMCStep(size_t nbStep) {
 					PerformTransparentPass(collidedFacet);
 				}*/
 				else {
-					sHandle->distTraveledSinceUpdate_total += d;
-					sHandle->distTraveledSinceUpdate_fullHitsOnly += d;
+					sHandle->distTraveledSinceUpdate_total += d * sHandle->oriRatio;
+					sHandle->distTraveledSinceUpdate_fullHitsOnly += d * sHandle->oriRatio;
 					double stickingProbability = GetStickingAt(collidedFacet, sHandle->flightTimeCurrentParticle);
 					if (!sHandle->ontheflyParams.lowFluxMode) { //Regular stick or bounce
 						if (stickingProbability == 1.0 || ((stickingProbability > 0.0) && (rnd() < (stickingProbability)))) {
@@ -467,10 +469,14 @@ bool SimulationMCStep(size_t nbStep) {
 						}
 					}
 					else { //Low flux mode
-						double oriRatioBeforeCollision = sHandle->oriRatio; //Local copy
-						sHandle->oriRatio *= (stickingProbability); //Sticking part
-						RecordAbsorb(collidedFacet);
-						sHandle->oriRatio = oriRatioBeforeCollision * (1.0 - stickingProbability); //Reflected part
+						if (stickingProbability > 0.0) {
+							double oriRatioBeforeCollision = sHandle->oriRatio; //Local copy
+							sHandle->oriRatio *= (stickingProbability); //Sticking part
+							RecordAbsorb(collidedFacet);
+							sHandle->oriRatio = oriRatioBeforeCollision * (1.0 - stickingProbability); //Reflected part
+						}
+						else
+							sHandle->oriRatio *= (1.0 - stickingProbability);
 						if (sHandle->oriRatio > sHandle->ontheflyParams.lowFluxCutoff) {							
 							PerformBounce(collidedFacet);
 						}
@@ -1066,12 +1072,13 @@ void PerformBounce(SubprocessFacet *iFacet) {
 	}
 
 	//Texture/Profile incoming hit
-	sHandle->tmpCount.hit.nbHit++; //global
+	sHandle->tmpCount.hit.nbMCHit++; //global
+	sHandle->tmpCount.hit.nbHitEquiv += sHandle->oriRatio;
 
 	//Register (orthogonal) velocity
 	double ortVelocity = sHandle->velocityCurrentParticle*abs(Dot(sHandle->pDir, iFacet->sh.N));
 
-	/*iFacet->sh.counter.hit.nbHit++; //hit facet
+	/*iFacet->sh.counter.hit.nbMCHit++; //hit facet
 	iFacet->sh.counter.hit.sum_1_per_ort_velocity += 1.0 / ortVelocity;
 	iFacet->sh.counter.hit.sum_v_ort += (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
 
@@ -1139,7 +1146,7 @@ void PerformTransparentPass(SubprocessFacet *iFacet) { //disabled, caused findin
 	/*double directionFactor = abs(DOT3(
 		sHandle->pDir.x, sHandle->pDir.y, sHandle->pDir.z,
 		iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z));
-	iFacet->sh.counter.hit.nbHit++;
+	iFacet->sh.counter.hit.nbMCHit++;
 	iFacet->sh.counter.hit.sum_1_per_ort_velocity += 2.0 / (sHandle->velocityCurrentParticle*directionFactor);
 	iFacet->sh.counter.hit.sum_v_ort += 2.0*(sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*sHandle->velocityCurrentParticle*directionFactor;
 	iFacet->hitted = true;
@@ -1153,8 +1160,9 @@ void PerformTransparentPass(SubprocessFacet *iFacet) { //disabled, caused findin
 }
 
 void RecordAbsorb(SubprocessFacet *iFacet) {
-	sHandle->tmpCount.hit.nbHit++; //global	
-	sHandle->tmpCount.hit.nbAbsorbed++;
+	sHandle->tmpCount.hit.nbMCHit++; //global	
+	sHandle->tmpCount.hit.nbHitEquiv += sHandle->oriRatio;
+	sHandle->tmpCount.hit.nbAbsEquiv += sHandle->oriRatio;
 	RecordHit(HIT_ABS);
 	double ortVelocity = sHandle->velocityCurrentParticle*abs(Dot(sHandle->pDir, iFacet->sh.N));
 	IncreaseFacetCounter(iFacet, sHandle->flightTimeCurrentParticle, 1, 0, 1, 2.0 / ortVelocity, (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity);
@@ -1173,7 +1181,7 @@ void RecordHitOnTexture(SubprocessFacet *f, double time, bool countHit, double v
 
 	for (size_t m = 0; m <= sHandle->nbMoments; m++)
 		if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
-			if (countHit) f->hits[m][add].count++;
+			if (countHit) f->hits[m][add].countEquiv += sHandle->oriRatio;
 			f->hits[m][add].sum_1_per_ort_velocity += sHandle->oriRatio * velocity_factor / ortVelocity;
 			f->hits[m][add].sum_v_ort_per_area += sHandle->oriRatio * ortSpeedFactor*ortVelocity*f->inc[add]; // sum ortho_velocity[m/s] / cell_area[cm2]
 		}
@@ -1209,7 +1217,7 @@ void ProfileFacet(SubprocessFacet *f, double time, bool countHit, double velocit
 			Saturate(pos, 0, PROFILE_SIZE - 1);
 			for (size_t m = 0; m <= nbMoments; m++) {
 				if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
-					f->profile[m][pos].count++;
+					f->profile[m][pos].countEquiv += sHandle->oriRatio;
 				}
 			}
 		}
@@ -1223,7 +1231,7 @@ void ProfileFacet(SubprocessFacet *f, double time, bool countHit, double velocit
 		if (pos >= 0 && pos < PROFILE_SIZE) {
 			for (size_t m = 0; m <= nbMoments; m++) {
 				if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
-					if (countHit) f->profile[m][pos].count++;
+					if (countHit) f->profile[m][pos].countEquiv += sHandle->oriRatio;
 					double ortVelocity = sHandle->velocityCurrentParticle*abs(Dot(f->sh.N, sHandle->pDir));
 					f->profile[m][pos].sum_1_per_ort_velocity += sHandle->oriRatio * velocity_factor / ortVelocity;
 					f->profile[m][pos].sum_v_ort += sHandle->oriRatio * ortSpeedFactor*(sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;
@@ -1240,7 +1248,7 @@ void ProfileFacet(SubprocessFacet *f, double time, bool countHit, double velocit
 		if (pos >= 0 && pos < PROFILE_SIZE) {
 			for (size_t m = 0; m <= nbMoments; m++) {
 				if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
-					f->profile[m][pos].count++;
+					f->profile[m][pos].countEquiv += sHandle->oriRatio;
 				}
 			}
 		}
@@ -1276,7 +1284,6 @@ void RecordAngleMap(SubprocessFacet* collidedFacet) {
 	if (countTheta) {
 		size_t phiIndex = (size_t)((inPhi + 3.1415926) / (2.0*PI)*(double)collidedFacet->sh.anglemapParams.phiWidth); //Phi: -PI..PI , and shifting by a number slightly smaller than PI to store on interval [0,2PI[
 		collidedFacet->angleMap.pdf[thetaIndex*collidedFacet->sh.anglemapParams.phiWidth + phiIndex]++;
-		int debug = 666; //allows breakpoint to be set here
 	}
 }
 
@@ -1344,11 +1351,14 @@ void IncreaseFacetCounter(SubprocessFacet *f, double time, size_t hit, size_t de
 	size_t nbMoments = sHandle->moments.size();
 	for (size_t m = 0; m <= nbMoments; m++) {
 		if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
-			f->counter[m].hit.nbHit += hit;
+			f->counter[m].hit.nbMCHit += hit;
+			double hitEquiv = static_cast<double>(hit)*sHandle->oriRatio;
+			f->counter[m].hit.nbHitEquiv += hitEquiv;
 			f->counter[m].hit.nbDesorbed += desorb;
-			f->counter[m].hit.nbAbsorbed += absorb;
+			f->counter[m].hit.nbAbsEquiv += static_cast<double>(absorb)*sHandle->oriRatio;
 			f->counter[m].hit.sum_1_per_ort_velocity += sHandle->oriRatio * sum_1_per_v;
 			f->counter[m].hit.sum_v_ort += sHandle->oriRatio * sum_v_ort;
+			f->counter[m].hit.sum_1_per_velocity += (hitEquiv + static_cast<double>(desorb)) / sHandle->velocityCurrentParticle;
 		}
 	}
 }

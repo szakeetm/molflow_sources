@@ -28,7 +28,7 @@
 
 class Facet;
 
-#define NB_FDCOLUMN 26
+#define NB_FDCOLUMN 27
 
 class FacetDetails : public GLWindow {
 

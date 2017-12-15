@@ -243,8 +243,8 @@ void TimewisePlotter::refreshViews() {
 		if (idx < 0) return;
 		Facet *f = geom->GetFacet(profCombo->GetUserValueAt(idx));
 		v->Reset();
-		FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->sh.hitOffset);
-		double fnbHit = (double)fCount->hit.nbHit;
+		//FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->sh.hitOffset);
+		//double fnbHit = (double)fCount->hit.nbMCHit;
 		/*int momentIndex;
 		if (m==(nbView-1) && constantFlowToggle->GetState()) momentIndex=0; //Constant flow
 		else momentIndex=m+1; //any other 'normal' moment*/
@@ -253,7 +253,7 @@ void TimewisePlotter::refreshViews() {
 			switch (displayMode) {
 			case 0: //Raw data
 				for (int j = 0; j < PROFILE_SIZE; j++)
-					v->Add((double)j, (double)profilePtr[j].count, false);
+					v->Add((double)j, profilePtr[j].countEquiv, false);
 				break;
 
 			case 1: //Pressure
@@ -269,13 +269,7 @@ void TimewisePlotter::refreshViews() {
 			case 2: //Particle density
 				scaleY =  1.0 / ((f->GetArea() * 1E-4) / (double)PROFILE_SIZE);
 				scaleY *= worker->GetMoleculesPerTP(v->userData1);
-
-				/*
-				//Correction for double-density effect (measuring density on desorbing/absorbing facets):
-				if (f->sh.counter[v->userData1].hit.nbHit>0 || f->sh.counter[v->userData1].hit.nbDesorbed>0)
-					if (f->sh.counter[v->userData1].hit.nbAbsorbed >0 || f->sh.counter[v->userData1].hit.nbDesorbed>0) //otherwise save calculation time
-					scaleY *= 1.0 - ((double)f->sh.counter[v->userData1].hit.nbAbsorbed + (double)f->sh.counter[v->userData1].hit.nbDesorbed) / ((double)f->sh.counter[v->userData1].hit.nbHit + (double)f->sh.counter[v->userData1].hit.nbDesorbed) / 2.0;
-				*/
+				scaleY *= f->DensityCorrection();
 
 				for (int j = 0; j < PROFILE_SIZE; j++)
 					v->Add((double)j, profilePtr[j].sum_1_per_ort_velocity*scaleY, false);
@@ -288,9 +282,9 @@ void TimewisePlotter::refreshViews() {
 				values.reserve(PROFILE_SIZE);
 				for (int j = 0; j < PROFILE_SIZE; j++) {//count distribution sum
 					if (!correctForGas->GetState())
-						val = (double)profilePtr[j].count;
+						val = profilePtr[j].countEquiv;
 					else
-						val = (double)profilePtr[j].count / (((double)j + 0.5)*scaleX); //fnbhit not needed, sum will take care of normalization
+						val = profilePtr[j].countEquiv / (((double)j + 0.5)*scaleX); //fnbhit not needed, sum will take care of normalization
 					sum += val;
 					values.push_back(val);
 				}
@@ -305,9 +299,9 @@ void TimewisePlotter::refreshViews() {
 				values.reserve(PROFILE_SIZE);
 				for (int j = 0; j < PROFILE_SIZE; j++) {//count distribution sum
 					if (!correctForGas->GetState())
-						val = (double)profilePtr[j].count;
+						val = (double)profilePtr[j].countEquiv;
 					else
-						val = (double)profilePtr[j].count / sin(((double)j + 0.5)*PI / 2.0 / (double)PROFILE_SIZE); //fnbhit not needed, sum will take care of normalization
+						val = (double)profilePtr[j].countEquiv / sin(((double)j + 0.5)*PI / 2.0 / (double)PROFILE_SIZE); //fnbhit not needed, sum will take care of normalization
 					sum += val;
 					values.push_back(val);
 				}
@@ -315,14 +309,14 @@ void TimewisePlotter::refreshViews() {
 					v->Add((double)j*scaleX, values[j] / sum, false);
 				break; }
 			case 5: //To 1 (max value)
-				llong max = 1;
+				double max = 1.0;
 				for (int j = 0; j < PROFILE_SIZE; j++)
 				{
-					if (profilePtr[j].count > max) max = profilePtr[j].count;
+					if (profilePtr[j].countEquiv > max) max = profilePtr[j].countEquiv;
 				}
-				scaleY = 1.0 / (double)max;
+				scaleY = 1.0 / max;
 				for (int j = 0; j < PROFILE_SIZE; j++)
-					v->Add((double)j, (double)profilePtr[j].count*scaleY, false);
+					v->Add((double)j, profilePtr[j].countEquiv*scaleY, false);
 				break;
 			}
 		}

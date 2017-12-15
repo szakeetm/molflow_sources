@@ -92,14 +92,15 @@ void Facet::LoadGEO(FileReader *file, int version, size_t nbVertex) {
 	file->ReadKeyword("acMode"); file->ReadKeyword(":");
 	sh.countACD = file->ReadInt();
 	file->ReadKeyword("nbAbs"); file->ReadKeyword(":");
-	counterCache.hit.nbAbsorbed = file->ReadLLong();
+	counterCache.hit.nbAbsEquiv = file->ReadDouble();
 
 	file->ReadKeyword("nbDes"); file->ReadKeyword(":");
 	counterCache.hit.nbDesorbed = file->ReadLLong();
 
 	file->ReadKeyword("nbHit"); file->ReadKeyword(":");
 
-	counterCache.hit.nbHit = file->ReadLLong();
+	counterCache.hit.nbMCHit = file->ReadLLong();
+	counterCache.hit.nbHitEquiv = static_cast<double>(counterCache.hit.nbMCHit);
 	if (version >= 2) {
 		// Added in GEO version 2
 		file->ReadKeyword("temperature"); file->ReadKeyword(":");
@@ -360,14 +361,14 @@ void Facet::LoadSYN(FileReader *file, int version, size_t nbVertex) {
 	file->ReadKeyword("countTrans"); file->ReadKeyword(":");
 	sh.countTrans = false; file->ReadInt();
 	file->ReadKeyword("nbAbs"); file->ReadKeyword(":");
-	counterCache.hit.nbAbsorbed = 0; file->ReadLLong();
+	counterCache.hit.nbAbsEquiv = 0; file->ReadLLong();
 	if (version < 3) {
 		file->ReadKeyword("nbDes"); file->ReadKeyword(":");
 		counterCache.hit.nbDesorbed = 0;
 		file->ReadLLong();
 	}
 	file->ReadKeyword("nbHit"); file->ReadKeyword(":");
-	counterCache.hit.nbHit = 0; file->ReadLLong();
+	counterCache.hit.nbMCHit = 0; counterCache.hit.nbHitEquiv = 0.0; file->ReadLLong();
 	if (version >= 3) {
 		file->ReadKeyword("fluxAbs"); file->ReadKeyword(":");
 		file->ReadDouble();
@@ -402,8 +403,9 @@ void Facet::LoadTXT(FileReader *file) {
 	double o = file->ReadDouble();
 	/*sh.area =*/ file->ReadDouble();
 	counterCache.hit.nbDesorbed = (llong)(file->ReadDouble() + 0.5);
-	counterCache.hit.nbHit = (llong)(file->ReadDouble() + 0.5);
-	counterCache.hit.nbAbsorbed = (llong)(file->ReadDouble() + 0.5);
+	counterCache.hit.nbMCHit = (llong)(file->ReadDouble() + 0.5);
+	counterCache.hit.nbHitEquiv = static_cast<double>(counterCache.hit.nbMCHit);
+	counterCache.hit.nbAbsEquiv = (double)(llong)(file->ReadDouble() + 0.5);
 	sh.desorbType = (int)(file->ReadDouble() + 0.5);
 
 	// Convert opacity
@@ -502,8 +504,8 @@ void Facet::SaveTXT(FileWriter *file) {
 		file->Write(1.0, "\n");
 	else
 		file->Write(0.0, "\n");
-	file->Write(0.0, "\n"); //nbHit
-	file->Write(0.0, "\n"); //nbAbsorbed
+	file->Write(0.0, "\n"); //nbMCHit
+	file->Write(0.0, "\n"); //nbAbsEquiv
 
 	file->Write(0.0, "\n"); //no desorption
 
@@ -563,9 +565,9 @@ void Facet::SaveGEO(FileWriter *file, int idx) {
 	file->Write("  countRefl:"); file->Write(sh.countRefl, "\n");
 	file->Write("  countTrans:"); file->Write(sh.countTrans, "\n");
 	file->Write("  acMode:"); file->Write(sh.countACD, "\n");
-	file->Write("  nbAbs:"); file->Write(0/*sh.counter.hit.nbAbsorbed*/, "\n");
-	file->Write("  nbDes:"); file->Write(0/*sh.counter.hit.nbDesorbed*/, "\n");
-	file->Write("  nbHit:"); file->Write(0/*sh.counter.hit.nbHit*/, "\n");
+	file->Write("  nbAbs:"); file->Write((llong)sh.counter.hit.nbAbsEquiv, "\n");
+	file->Write("  nbDes:"); file->Write(sh.counter.hit.nbDesorbed, "\n");
+	file->Write("  nbHit:"); file->Write((llong)sh.counter.hit.nbMCHit, "\n");
 
 	// Version 2
 	file->Write("  temperature:"); file->Write(sh.temperature, "\n");
@@ -677,7 +679,7 @@ void Facet::Sum_Neighbor(const int& i, const int& j, const double& weight, AHIT 
 		size_t add = (size_t)i+(size_t)j*sh.texWidth;												
 		if( GetMeshArea(add)>0.0 ) {											
 			if (textureMode==0)													
-				*sum += weight*(texBuffer[add].count*scaleF);					
+				*sum += weight*(texBuffer[add].countEquiv*scaleF);					
 			else if (textureMode==1)											
 				*sum += weight*(texBuffer[add].sum_1_per_ort_velocity*scaleF);   
 			else if (textureMode==2)											
@@ -733,16 +735,10 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 					physicalValue = texBuffer[idx].sum_v_ort_per_area*dCoeff1;
 					break;
 				case 1: //impingement rate
-					physicalValue = (double)texBuffer[idx].count / this->GetMeshArea(idx, true)*dCoeff2;
+					physicalValue = texBuffer[idx].countEquiv / this->GetMeshArea(idx, true)*dCoeff2;
 					break;
 				case 2: //particle density
-					physicalValue = texBuffer[idx].sum_1_per_ort_velocity / this->GetMeshArea(idx, true)*dCoeff3;
-
-					//Correction for double-density effect (measuring density on desorbing/absorbing facets):
-					if (counterCache.hit.nbHit > 0 || counterCache.hit.nbDesorbed > 0)
-						if (counterCache.hit.nbAbsorbed > 0 || counterCache.hit.nbDesorbed > 0) //otherwise save calculation time
-							physicalValue *= 1.0 - ((double)counterCache.hit.nbAbsorbed + (double)counterCache.hit.nbDesorbed) / ((double)counterCache.hit.nbHit + (double)counterCache.hit.nbDesorbed) / 2.0;
-
+					physicalValue = DensityCorrection() * texBuffer[idx].sum_1_per_ort_velocity / this->GetMeshArea(idx, true)*dCoeff3;
 					break;
 				}
 				if (doLog) {
@@ -754,7 +750,7 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 				}
 				Saturate(val, 0, 65535);
 				buff32[(i + 1) + (j + 1)*texDimW] = colorMap[val];
-				if (texBuffer[idx].count == 0.0) buff32[(i + 1) + (j + 1)*texDimW] = (COLORREF)(65535 + 256 + 1); //show unset value as white
+				if (IsEqual(texBuffer[idx].countEquiv,0.0)) buff32[(i + 1) + (j + 1)*texDimW] = (COLORREF)(65535 + 256 + 1); //show unset value as white
 			}
 		}
 
@@ -849,16 +845,10 @@ void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double ma
 					physicalValue = texBuffer[idx].sum_v_ort_per_area*dCoeff1;
 					break;
 				case 1: //impingement rate
-					physicalValue = (double)texBuffer[idx].count / this->GetMeshArea(idx, true)*dCoeff2;
+					physicalValue = (double)texBuffer[idx].countEquiv / this->GetMeshArea(idx, true)*dCoeff2;
 					break;
 				case 2: //particle density
-					physicalValue = texBuffer[idx].sum_1_per_ort_velocity / this->GetMeshArea(idx, true)*dCoeff3;
-
-					//Correction for double-density effect (measuring density on desorbing/absorbing facets):
-					if (counterCache.hit.nbHit > 0 || counterCache.hit.nbDesorbed > 0)
-						if (counterCache.hit.nbAbsorbed > 0 || counterCache.hit.nbDesorbed > 0) //otherwise save calculation time
-							physicalValue *= 1.0 - ((double)counterCache.hit.nbAbsorbed + (double)counterCache.hit.nbDesorbed) / ((double)counterCache.hit.nbHit + (double)counterCache.hit.nbDesorbed) / 2.0;
-
+					physicalValue = DensityCorrection() * texBuffer[idx].sum_1_per_ort_velocity / this->GetMeshArea(idx, true)*dCoeff3;
 					break;
 				}
 				if (doLog) {
@@ -1240,4 +1230,20 @@ void Facet::ImportAngleMap(const std::vector<std::vector<std::string>>& table)
 	sh.anglemapParams.thetaHigherRes = thetaHigherRes;
 	sh.anglemapParams.thetaLimit = thetaLimit;
 	sh.anglemapParams.thetaLowerRes = thetaLowerRes;
+}
+
+double Facet::DensityCorrection() {
+	//Correction for double-density effect (measuring density on desorbing/absorbing facets):
+
+	//Normally a facet only sees half of the particles (those moving towards it). So it multiplies the "seen" density by two.
+	//However, in case of desorption or sticking, the real density is not twice the "seen" density, but a bit less, therefore this reduction factor
+	//If only desorption, or only absorption, the correction factor is 0.5, if no des/abs, it's 1.0, and in between, see below
+
+	if (counterCache.hit.nbMCHit > 0 || counterCache.hit.nbDesorbed > 0) {
+		if (counterCache.hit.nbAbsEquiv > 0.0 || counterCache.hit.nbDesorbed > 0) {//otherwise save calculation time
+			return 1.0 - (counterCache.hit.nbAbsEquiv + (double)counterCache.hit.nbDesorbed) / (counterCache.hit.nbHitEquiv + (double)counterCache.hit.nbDesorbed) / 2.0;
+		}
+		else return 1.0;
+	}
+	else return 1.0;
 }

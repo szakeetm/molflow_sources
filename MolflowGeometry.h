@@ -19,7 +19,7 @@ public:
 	// Load
 	void LoadGEO(FileReader *file, GLProgress *prg, LEAK *leakCache, size_t *leakCacheSize, HIT *hitCache, size_t *hitCacheSize, int *version, Worker *worker);
 	void LoadSYN(FileReader *file, GLProgress *prg, int *version);
-	bool LoadTextures(FileReader *file, GLProgress *prg, Dataport *dpHit, int version);
+	bool LoadTexturesGEO(FileReader *file, GLProgress *prg, Dataport *dpHit, int version);
 	//void ImportDesorption_DES(FileReader *file); //Deprecated
 	void ImportDesorption_SYN(FileReader *synFile, const size_t &source, const double &time,
 		const size_t &mode, const double &eta0, const double &alpha, const double &cutoffdose,
@@ -47,7 +47,7 @@ public:
 
 	// Geometry
 	void     BuildPipe(double L, double R, double s, int step);
-	void     LoadProfile(FileReader *file, Dataport *dpHit, int version);
+	void     LoadProfileGEO(FileReader *file, Dataport *dpHit, int version);
 
 	// Memory usage (in bytes)
 	size_t GetGeometrySize();
@@ -69,7 +69,7 @@ public:
 #pragma endregion
 
 	// Temporary variable (used by LoadXXX)
-	double distTraveledTotal_total;
+	double distTraveled_total;
 	double distTraveledTotal_fullHitsOnly;
 
 private:

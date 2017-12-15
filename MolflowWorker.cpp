@@ -94,7 +94,7 @@ Worker::Worker() {
 
 	nbProcess = 0;
 	desorptionLimit = 0;
-	distTraveledTotal_total = 0.0;
+	distTraveled_total = 0.0;
 	ontheflyParam.lowFluxCutoff = 1E-7;
 	ontheflyParam.lowFluxMode = false;
 
@@ -104,7 +104,8 @@ Worker::Worker() {
 	dpControl = NULL;
 	dpHit = NULL;
 	hitCacheSize = 0;
-	nbHit = 0;
+	nbMCHit = 0;
+	nbHitEquiv = 0.0;
 	nbLeakTotal = 0;
 	leakCacheSize = 0;
 	startTime = 0.0f;
@@ -473,9 +474,10 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 			if (!insert) {
 				geom->LoadTXT(f, progressDlg);
 				SAFE_DELETE(f);
-				nbHit = geom->loaded_nbHit;
+				nbMCHit = geom->loaded_nbMCHit;
+				nbHitEquiv = geom->loaded_nbHitEquiv;
 				nbDesorption = geom->loaded_nbDesorption;
-				nbAbsorption = geom->loaded_nbAbsorption;
+				nbAbsEquiv = geom->loaded_nbAbsEquiv;
 				desorptionLimit = geom->loaded_desorptionLimit;
 				nbLeakTotal = geom->loaded_nbLeak;
 				//RealReload();
@@ -485,7 +487,8 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 
 				geom->InsertTXT(f, progressDlg, newStr);
 				SAFE_DELETE(f);
-				nbHit = 0;
+				nbMCHit = 0;
+				nbHitEquiv = 0.0;
 				nbDesorption = 0;
 				desorptionLimit = 0;
 				nbLeakTotal = 0;
@@ -601,7 +604,8 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 				geom->InsertSYN(f, progressDlg, newStr);
 				SAFE_DELETE(f);
 				nbLeakTotal = 0;
-				nbHit = 0;
+				nbMCHit = 0;
+				nbHitEquiv = 0.0;
 				nbDesorption = 0;
 				desorptionLimit = geom->loaded_desorptionLimit;
 			}
@@ -659,15 +663,16 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 				
 				//copy temp values from geom to worker:
 				nbLeakTotal = geom->loaded_nbLeak;
-				nbHit = geom->loaded_nbHit;
+				nbMCHit = geom->loaded_nbMCHit;
+				nbHitEquiv = geom->loaded_nbHitEquiv;
 				nbDesorption = geom->loaded_nbDesorption;
 				desorptionLimit = geom->loaded_desorptionLimit;
-				nbAbsorption = geom->loaded_nbAbsorption;
-				distTraveledTotal_total = geom->distTraveledTotal_total;
+				nbAbsEquiv = geom->loaded_nbAbsEquiv;
+				distTraveled_total = geom->distTraveled_total;
 				distTraveledTotal_fullHitsOnly = geom->distTraveledTotal_fullHitsOnly;
 				progressDlg->SetMessage("Reloading worker with new geometry...");
 				RealReload(); //for the loading of textures
-				if (version >= 8) geom->LoadProfile(f, dpHit, version);
+				if (version >= 8) geom->LoadProfileGEO(f, dpHit, version);
 				SetLeakCache(loaded_leakCache, &loaded_nbLeak, dpHit);
 				SetHitCache(hitCache, &hitCacheSize, dpHit);
 				SendHits(); //Global and facet hit counters
@@ -827,7 +832,7 @@ void Worker::LoadTexturesGEO(FileReader *f, int version) {
 		progressDlg->SetProgress(0.0);
 		try {
 			progressDlg->SetVisible(true);
-			geom->LoadTextures(f, progressDlg, dpHit, version);
+			geom->LoadTexturesGEO(f, progressDlg, dpHit, version);
 			RebuildTextures();
 		}
 		catch (Error &e) {
@@ -958,10 +963,10 @@ void Worker::Update(float appTime) {
 				SHGHITS *gHits = (SHGHITS *)buffer;
 
 				// Copy Global hits and leaks
-				nbHit = gHits->total.hit.nbHit;
-				nbAbsorption = gHits->total.hit.nbAbsorbed;
+				nbMCHit = gHits->total.hit.nbMCHit;
+				nbAbsEquiv = gHits->total.hit.nbAbsEquiv;
 				nbDesorption = gHits->total.hit.nbDesorbed;				
-				distTraveledTotal_total = gHits->distTraveledTotal_total;
+				distTraveled_total = gHits->distTraveled_total;
 				distTraveledTotal_fullHitsOnly = gHits->distTraveledTotal_fullHitsOnly;
 				
 
@@ -1001,11 +1006,12 @@ void Worker::SendHits(bool skipFacetHits ) {
 
 			GlobalHitBuffer *gHits = (GlobalHitBuffer *)dpHit->buff;
 
-			gHits->total.hit.nbHit = nbHit;
+			gHits->total.hit.nbMCHit = nbMCHit;
+			gHits->total.hit.nbHitEquiv = nbHitEquiv;
 			gHits->nbLeakTotal = nbLeakTotal;
 			gHits->total.hit.nbDesorbed = nbDesorption;
-			gHits->total.hit.nbAbsorbed = nbAbsorption;
-			gHits->distTraveledTotal_total = distTraveledTotal_total;
+			gHits->total.hit.nbAbsEquiv = nbAbsEquiv;
+			gHits->distTraveled_total = distTraveled_total;
 			gHits->distTraveledTotal_fullHitsOnly = distTraveledTotal_fullHitsOnly;
 
 			if (!skipFacetHits) {
@@ -1187,11 +1193,12 @@ void Worker::ClearHits(bool noReload) {
 
 void Worker::ResetWorkerStats() {
 
-	nbAbsorption = 0;
+	nbAbsEquiv = 0.0;
 	nbDesorption = 0;
-	nbHit = 0;
+	nbMCHit = 0;
+	nbHitEquiv = 0.0;
 	nbLeakTotal = 0;
-	distTraveledTotal_total = 0.0;
+	distTraveled_total = 0.0;
 	distTraveledTotal_fullHitsOnly = 0.0;
 
 }

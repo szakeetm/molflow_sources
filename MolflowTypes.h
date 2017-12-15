@@ -41,13 +41,13 @@ typedef float ACFLOAT;
 #define HITMAX 1E38
 
 typedef struct {
-	llong count;
+	double countEquiv;
 	double sum_v_ort;
 	double sum_1_per_ort_velocity;
 } APROFILE;
 
 typedef struct {
-	llong count;
+	double countEquiv;
 	double sum_v_ort_per_area;
 	double sum_1_per_ort_velocity;
 } AHIT;

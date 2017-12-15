@@ -333,22 +333,22 @@ void PressureEvolution::refreshViews() {
 		GLDataView *v = views[i];
 		if (v->userData1 >= 0 && v->userData1 < geom->GetNbFacet()) {
 			Facet *f = geom->GetFacet(v->userData1);
-			FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->sh.hitOffset);
-			double fnbDes = (double)fCount->hit.nbDesorbed;
-			double fnbHit = (double)fCount->hit.nbHit;
+			//FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->sh.hitOffset);
+			//double fnbDes = (double)fCount->hit.nbDesorbed;
+			//double fnbHit = (double)fCount->hit.nbMCHit;
 			v->Reset();
 			for (int m = 1; m <= Min((int)worker->moments.size(), 10000); m++) { //max 10000 points
 				APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + facetHitsSize + m*sizeof(APROFILE)*PROFILE_SIZE);
 
 				switch (displayMode) {
 				case 0: { //Raw data 
-					llong val_MC = 0;
+					double val = 0;
 					if (modeCombo->GetSelectedIndex() == 1) //plot one slice
-						val_MC = profilePtr[selectedSlice].count;
+						val = profilePtr[selectedSlice].countEquiv;
 					else //plot sum
 						for (int j = 0; j < PROFILE_SIZE; j++)
-							val_MC += profilePtr[j].count;
-					v->Add(worker->moments[m - 1], (double)val_MC, false);
+							val += profilePtr[j].countEquiv;
+					v->Add(worker->moments[m - 1], val, false);
 					break;
 				}
 				case 1: {//Pressure
@@ -367,16 +367,9 @@ void PressureEvolution::refreshViews() {
 					break;
 				}
 				case 2: {//Particle density
-					scaleY = 1.0 / nbDes / (f->sh.area / (double)PROFILE_SIZE*1E-4);
+					scaleY = 1.0 / nbDes / (f->GetArea() / (double)PROFILE_SIZE*1E-4);
 					scaleY *= worker->totalDesorbedMolecules / worker->timeWindowSize;
-					if (f->sh.is2sided) scaleY *= 0.5;
-					
-					/*
-					//Correction for double-density effect (measuring density on desorbing/absorbing facets):
-					if (f->counterCache.hit.nbHit>0 || f->counterCache.hit.nbDesorbed>0)
-						if (f->counterCache.hit.nbAbsorbed >0 || f->counterCache.hit.nbDesorbed>0) //otherwise save calculation time
-						scaleY *= 1.0 - ((double)f->counterCache.hit.nbAbsorbed + (double)f->counterCache.hit.nbDesorbed) / ((double)f->counterCache.hit.nbHit + (double)f->counterCache.hit.nbDesorbed) / 2.0;
-					*/
+					scaleY *= f->DensityCorrection();
 
 					double val = 0.0;
 					if (modeCombo->GetSelectedIndex() == 1) //plot one slice
@@ -396,9 +389,9 @@ void PressureEvolution::refreshViews() {
 					double val;
 					for (int j = 0; j < PROFILE_SIZE; j++) {
 						if (!correctForGas->GetState())
-							val = (double)profilePtr[j].count; //weighed sum
+							val = (double)profilePtr[j].countEquiv; //weighed sum
 						else
-							val = (double)profilePtr[j].count / (((double)j + 0.5));
+							val = (double)profilePtr[j].countEquiv / (((double)j + 0.5));
 						sum += val;
 						weighedSum += ((double)j+0.5)*val;
 					}
@@ -412,9 +405,9 @@ void PressureEvolution::refreshViews() {
 					double val;
 					for (int j = 0; j < PROFILE_SIZE; j++) {
 						if (!correctForGas->GetState())
-							val = (double)profilePtr[j].count; //weighed sum
+							val = (double)profilePtr[j].countEquiv; //weighed sum
 						else
-							val = (double)profilePtr[j].count / sin(((double)j + 0.5)*PI / 2.0 / (double)PROFILE_SIZE);
+							val = (double)profilePtr[j].countEquiv / sin(((double)j + 0.5)*PI / 2.0 / (double)PROFILE_SIZE);
 						sum += val;
 						weighedSum += ((double)j+0.5)*val;
 					}
@@ -436,13 +429,13 @@ void PressureEvolution::refreshViews() {
 					if (f->sh.isVolatile) {
 						FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->sh.hitOffset);
 						double z = geom->GetVertex(f->indices[0])->z;
-						v->Add(z, (double)(fCount->hit.nbAbsorbed) / nbDes, false);
+						v->Add(z, fCount->hit.nbAbsEquiv / nbDes, false);
 					}
 				}
 				// Last
 				Facet *f = geom->GetFacet(28);
 				FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->sh.hitOffset);
-				double fnbAbs = (double)fCount->hit.nbAbsorbed;
+				double fnbAbs = fCount->hit.nbAbsEquiv;
 				v->Add(1000.0, fnbAbs / nbDes, false);
 				v->CommitChange();
 
