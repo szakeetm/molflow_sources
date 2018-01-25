@@ -10,17 +10,18 @@
 #define DES_ANGLEMAP 4 //imported file
 
 // (Old) Reflection types
-#define REF_DIFFUSE 0   // Diffuse (cosine law)
-#define REF_MIRROR  1   // Mirror
-#define REF_UNIFORM 2   // Uniform (for testing)
+#define REFLECTION_DIFFUSE 0   // Diffuse (cosine law)
+#define REFLECTION_MIRROR  1   // Mirror
+#define REFLECTION_UNIFORM 2   // Uniform (for testing)
 
 // Profile type
-#define REC_NONE       0  // No recording
-#define REC_PRESSUREU  1  // Pressure and density profile (U direction)
-#define REC_PRESSUREV  2  // Pressure and density profile (V direction)
-#define REC_ANGULAR    3  // Angular profile
-#define REC_VELOCITY   4 //Velocity distribution
-#define REC_ORT_VELOCITY 5 //Orthogonal velocity component
+#define PROFILE_NONE       0  // No recording
+#define PROFILE_PRESSURE_U  1  // Pressure and density profile (U direction)
+#define PROFILE_PRESSURE_V  2  // Pressure and density profile (V direction)
+#define PROFILE_ANGULAR    3  // Angular profile
+#define PROFILE_VELOCITY   4 //Velocity distribution
+#define PROFILE_ORT_VELOCITY 5 //Orthogonal velocity component
+#define PROFILE_TAN_VELOCITY 6 //Tangential velocity (experimental)
 
 // Hit type
 #define HIT_DES   1

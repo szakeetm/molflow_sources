@@ -1204,30 +1204,20 @@ void RecordDirectionVector(SubprocessFacet *f, double time) {
 void ProfileFacet(SubprocessFacet *f, double time, bool countHit, double velocity_factor, double ortSpeedFactor) {
 
 	size_t nbMoments = sHandle->moments.size();
-	double dot = 1.0;
 
-	switch (f->sh.profileType) {
-
-	case REC_ANGULAR: {
-		if (countHit) {
-			dot = Dot(f->sh.N, sHandle->pDir);
-			double theta = acos(abs(dot));              // Angle to normal (PI/2 => PI)
+	if (countHit && f->sh.profileType == PROFILE_ANGULAR) {
+			double dot = Dot(f->sh.N, sHandle->pDir);
+			double theta = acos(abs(dot));     // Angle to normal (PI/2 => PI)
 			size_t pos = (size_t)(theta / (PI / 2)*((double)PROFILE_SIZE)); // To Grad
-			//int pos = (int)(cos(theta)*(double)PROFILE_SIZE); // COS(theta)
 			Saturate(pos, 0, PROFILE_SIZE - 1);
 			for (size_t m = 0; m <= nbMoments; m++) {
 				if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
 					f->profile[m][pos].countEquiv += sHandle->oriRatio;
 				}
 			}
-		}
 	}
-					  break;
-
-	case REC_PRESSUREU:
-	case REC_PRESSUREV:
-	{
-		size_t pos = (size_t)((f->sh.profileType == REC_PRESSUREU ? f->colU : f->colV)*(double)PROFILE_SIZE);
+	else if (Contains({PROFILE_PRESSURE_U,PROFILE_PRESSURE_V},f->sh.profileType)) {
+		size_t pos = (size_t)((f->sh.profileType == PROFILE_PRESSURE_U ? f->colU : f->colV)*(double)PROFILE_SIZE);
 		if (pos >= 0 && pos < PROFILE_SIZE) {
 			for (size_t m = 0; m <= nbMoments; m++) {
 				if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
@@ -1238,12 +1228,18 @@ void ProfileFacet(SubprocessFacet *f, double time, bool countHit, double velocit
 				}
 			}
 		}
-		break;
 	}
-	case REC_ORT_VELOCITY:
-		if (countHit) dot = abs(Dot(f->sh.N, sHandle->pDir));  //cos(theta) as "dot" value
-	case REC_VELOCITY:
-	{	if (countHit) {
+	else if (countHit && Contains({ PROFILE_VELOCITY,PROFILE_ORT_VELOCITY,PROFILE_TAN_VELOCITY },f->sh.profileType)) {
+		double dot;
+		if (f->sh.profileType == PROFILE_VELOCITY) {
+			dot = 1.0;
+		}
+		else if (f->sh.profileType == PROFILE_ORT_VELOCITY) {
+			dot = abs(Dot(f->sh.N, sHandle->pDir));  //cos(theta) as "dot" value
+		}
+		else { //Tangential
+			dot = sqrt(1 - Sqr(abs(Dot(f->sh.N, sHandle->pDir))));  //tangential
+		}
 		size_t pos = (size_t)(dot*sHandle->velocityCurrentParticle / f->sh.maxSpeed*(double)PROFILE_SIZE); //"dot" default value is 1.0
 		if (pos >= 0 && pos < PROFILE_SIZE) {
 			for (size_t m = 0; m <= nbMoments; m++) {
@@ -1252,10 +1248,7 @@ void ProfileFacet(SubprocessFacet *f, double time, bool countHit, double velocit
 				}
 			}
 		}
-	}
-	break;
-	}
-	}
+	}	
 }
 
 void RecordAngleMap(SubprocessFacet* collidedFacet) {
@@ -1364,10 +1357,6 @@ void IncreaseFacetCounter(SubprocessFacet *f, double time, size_t hit, size_t de
 }
 
 void SubprocessFacet::ResetCounter() {
-	/*
-	FacetHitBuffer zeroes;memset(&zeroes, 0, sizeof(zeroes)); //A new zero-value vector
-	std::fill(counter.begin(), counter.end(), zeroes); //Initialize each moment with 0 values
-	*/
 	memset(&counter[0], 0, counter.size() * sizeof(counter[0]));
 }
 

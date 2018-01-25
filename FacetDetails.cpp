@@ -78,7 +78,8 @@ static const char *profStr[] = {
   "Pressure (\202)",
   "Angular",
   "Speed distr.",
-  "Ort. velocity"
+  "Ort. velocity",
+  "Tan. velocity"
 };
 
 static const char *ynStr[] = {

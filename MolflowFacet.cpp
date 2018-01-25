@@ -38,11 +38,11 @@ void Facet::LoadGEO(FileReader *file, int version, size_t nbVertex) {
 	file->ReadKeyword("reflectType"); file->ReadKeyword(":");
 	//Convert old model
 	int oldReflType = file->ReadInt();
-	if (oldReflType == REF_DIFFUSE) {
+	if (oldReflType == REFLECTION_DIFFUSE) {
 		sh.reflection.diffusePart = 1.0;
 		sh.reflection.specularPart = 0.0;
 	}
-	else if (oldReflType == REF_MIRROR) {
+	else if (oldReflType == REFLECTION_MIRROR) {
 		sh.reflection.diffusePart = 0.0;
 		sh.reflection.specularPart = 1.0;
 	}
@@ -176,11 +176,11 @@ void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bool& ignor
 		}
 		else { //old XML format: fully diffuse / specular / uniform reflections
 			int oldReflType = reflNode.attribute("type").as_int();
-			if (oldReflType == REF_DIFFUSE) {
+			if (oldReflType == REFLECTION_DIFFUSE) {
 				sh.reflection.diffusePart = 1.0;
 				sh.reflection.specularPart = 0.0;
 			}
-			else if (oldReflType == REF_MIRROR) {
+			else if (oldReflType == REFLECTION_MIRROR) {
 				sh.reflection.diffusePart = 0.0;
 				sh.reflection.specularPart = 1.0;
 			}
@@ -360,7 +360,8 @@ void Facet::LoadSYN(FileReader *file, int version, size_t nbVertex) {
 	sh.countRefl = false; file->ReadInt();
 	file->ReadKeyword("countTrans"); file->ReadKeyword(":");
 	sh.countTrans = false; file->ReadInt();
-	file->ReadKeyword("nbAbs"); file->ReadKeyword(":");
+	if (version >= 10) file->ReadKeyword("nbAbsEquiv");
+	else file->ReadKeyword("nbAbs"); file->ReadKeyword(":");
 	counterCache.hit.nbAbsEquiv = 0; file->ReadLLong();
 	if (version < 3) {
 		file->ReadKeyword("nbDes"); file->ReadKeyword(":");
@@ -368,6 +369,9 @@ void Facet::LoadSYN(FileReader *file, int version, size_t nbVertex) {
 		file->ReadLLong();
 	}
 	file->ReadKeyword("nbHit"); file->ReadKeyword(":");
+	if (version >= 10) {
+		file->ReadKeyword("nbHitEquiv"); file->ReadKeyword(":");
+	}
 	counterCache.hit.nbMCHit = 0; counterCache.hit.nbHitEquiv = 0.0; file->ReadLLong();
 	if (version >= 3) {
 		file->ReadKeyword("fluxAbs"); file->ReadKeyword(":");
@@ -409,18 +413,18 @@ void Facet::LoadTXT(FileReader *file) {
 	sh.desorbType = (int)(file->ReadDouble() + 0.5);
 
 	// Convert opacity
-	sh.profileType = REC_NONE;
+	sh.profileType = PROFILE_NONE;
 	if (o < 0.0) {
 
 		sh.opacity = 0.0;
 		if (IsZero(o + 1.0)) {
-			sh.profileType = REC_PRESSUREU;
+			sh.profileType = PROFILE_PRESSURE_U;
 			sh.is2sided = true;
 		}
 		if (IsZero(o + 2.0))
-			sh.profileType = REC_ANGULAR;
+			sh.profileType = PROFILE_ANGULAR;
 		if (IsZero(o + 4.0)) {
-			sh.profileType = REC_PRESSUREU;
+			sh.profileType = PROFILE_PRESSURE_U;
 			sh.is2sided = false;
 		}
 
@@ -455,11 +459,11 @@ void Facet::LoadTXT(FileReader *file) {
 
 	// Convert reflectType
 	switch (reflectType) {
-	case REF_MIRROR:
+	case REFLECTION_MIRROR:
 		sh.reflection.diffusePart = 0.0;
 		sh.reflection.specularPart = 1.0;
 		break;
-	case REF_DIFFUSE:
+	case REFLECTION_DIFFUSE:
 		sh.reflection.diffusePart = 1.0;
 		sh.reflection.specularPart = 0.0;
 		break;
@@ -510,13 +514,13 @@ void Facet::SaveTXT(FileWriter *file) {
 	file->Write(0.0, "\n"); //no desorption
 
 	if (sh.reflection.diffusePart > 0.99) {
-		file->Write((double)REF_DIFFUSE, "\n");
+		file->Write((double)REFLECTION_DIFFUSE, "\n");
 	}
 	else if (sh.reflection.specularPart > 0.99) {
-		file->Write((double)REF_MIRROR, "\n");
+		file->Write((double)REFLECTION_MIRROR, "\n");
 	} 
 	else
-		file->Write((double)REF_UNIFORM, "\n");
+		file->Write((double)REFLECTION_UNIFORM, "\n");
 
 	file->Write(0.0, "\n"); // Unused
 }
@@ -541,13 +545,13 @@ void Facet::SaveGEO(FileWriter *file, int idx) {
 	file->Write("  reflectType:"); 
 	//Convert to old reflection type
 	if (sh.reflection.diffusePart > 0.99) {
-		file->Write(REF_DIFFUSE, "\n");
+		file->Write(REFLECTION_DIFFUSE, "\n");
 	}
 	else if (sh.reflection.specularPart > 0.99) {
-		file->Write(REF_MIRROR, "\n");
+		file->Write(REFLECTION_MIRROR, "\n");
 	}
 	else
-		file->Write(REF_UNIFORM, "\n");
+		file->Write(REFLECTION_UNIFORM, "\n");
 	
 	file->Write("  profileType:"); file->Write(sh.profileType, "\n");
 
@@ -565,9 +569,9 @@ void Facet::SaveGEO(FileWriter *file, int idx) {
 	file->Write("  countRefl:"); file->Write(sh.countRefl, "\n");
 	file->Write("  countTrans:"); file->Write(sh.countTrans, "\n");
 	file->Write("  acMode:"); file->Write(sh.countACD, "\n");
-	file->Write("  nbAbs:"); file->Write((llong)sh.counter.hit.nbAbsEquiv, "\n");
-	file->Write("  nbDes:"); file->Write(sh.counter.hit.nbDesorbed, "\n");
-	file->Write("  nbHit:"); file->Write((llong)sh.counter.hit.nbMCHit, "\n");
+	file->Write("  nbAbs:"); file->Write((llong)counterCache.hit.nbAbsEquiv, "\n");
+	file->Write("  nbDes:"); file->Write(counterCache.hit.nbDesorbed, "\n");
+	file->Write("  nbHit:"); file->Write((llong)counterCache.hit.nbMCHit, "\n");
 
 	// Version 2
 	file->Write("  temperature:"); file->Write(sh.temperature, "\n");
@@ -960,13 +964,13 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 
 	//For backward compatibility
 	if (sh.reflection.diffusePart > 0.99) {
-		e.append_attribute("type") = REF_DIFFUSE;
+		e.append_attribute("type") = REFLECTION_DIFFUSE;
 	}
 	else if (sh.reflection.specularPart > 0.99) {
-		e.append_attribute("type") = REF_MIRROR;
+		e.append_attribute("type") = REFLECTION_MIRROR;
 	}
 	else
-		e.append_attribute("type") = REF_UNIFORM;
+		e.append_attribute("type") = REFLECTION_UNIFORM;
 
 	e.append_attribute("enableSojournTime") = (int)sh.enableSojournTime; //backward compatibility: 0 or 1
 	e.append_attribute("sojournFreq") = sh.sojournFreq;
@@ -1003,6 +1007,9 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 		break;
 	case 5:
 		t.append_attribute("name") = "ortho.v";
+		break;
+	case 6:
+		t.append_attribute("name") = "tang.v.";
 		break;
 	}
 	t = e.append_child("Texture");

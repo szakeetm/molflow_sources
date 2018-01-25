@@ -274,7 +274,7 @@ bool UpdateParams() {
 
 	printf("Connected to %s\n", loadDpName);
 
-	if (!UpdateSimuParams(loader)) {
+	if (!UpdateOntheflySimuParams(loader)) {
 		CLOSEDP(loader);
 		return false;
 	}

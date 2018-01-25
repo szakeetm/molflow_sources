@@ -658,7 +658,7 @@ bool LoadSimulation(Dataport *loader) {
 
 }
 
-bool UpdateSimuParams(Dataport *loader) {
+bool UpdateOntheflySimuParams(Dataport *loader) {
 	// Connect the dataport
 	if (!AccessDataportTimed(loader, 2000)) {
 		SetErrorSub("Failed to connect to DP");

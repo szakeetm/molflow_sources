@@ -94,9 +94,8 @@ Worker::Worker() {
 
 	nbProcess = 0;
 	desorptionLimit = 0;
-	distTraveled_total = 0.0;
-	ontheflyParam.lowFluxCutoff = 1E-7;
-	ontheflyParam.lowFluxMode = false;
+	ontheflyParams.lowFluxCutoff = 1E-7;
+	ontheflyParams.lowFluxMode = false;
 
 	ResetWorkerStats();
 	geom = new MolflowGeometry();
@@ -1123,7 +1122,7 @@ void Worker::RealReload() { //Sharing geometry with workers
 	progressDlg->SetMessage("Accessing dataport...");
 	AccessDataportTimed(loader, (DWORD)(3000 + nbProcess*loadSize / 10000));
 	progressDlg->SetMessage("Assembling geometry to pass...");
-	geom->CopyGeometryBuffer((BYTE *)loader->buff,ontheflyParam);
+	geom->CopyGeometryBuffer((BYTE *)loader->buff,ontheflyParams);
 	progressDlg->SetMessage("Releasing dataport...");
 	ReleaseDataport(loader);
 

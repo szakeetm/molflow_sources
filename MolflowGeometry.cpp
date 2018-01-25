@@ -91,7 +91,7 @@ size_t MolflowGeometry::GetGeometrySize() {
 	return memoryUsage;
 }
 
-void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer,OntheflySimulationParams ontheflyParams) {
+void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer,const OntheflySimulationParams& ontheflyParams) {
 
 	// Build shared buffer for geometry (see Shared.h)
 	// Basically we serialize all data and let the subprocesses read them
@@ -1931,21 +1931,22 @@ void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, Dataport *dpHit, Wor
 					prof = (APROFILE*)((BYTE *)buffer + (f->sh.hitOffset + facetHitsSize + profOffset));
 					double scaleX, scaleY;
 					switch (f->sh.profileType) {
-					case REC_PRESSUREU:
-					case REC_PRESSUREV:
+					case PROFILE_PRESSURE_U:
+					case PROFILE_PRESSURE_V:
 						scaleY = 1.0 / (f->GetArea() / (double)PROFILE_SIZE*1E-4)* worker->gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
 						scaleY *= worker->GetMoleculesPerTP(m);
 
 						for (int j = 0; j < PROFILE_SIZE; j++)
 							line << prof[j].sum_v_ort*scaleY << sep;
 						break;
-					case REC_VELOCITY:
-					case REC_ORT_VELOCITY:
+					case PROFILE_VELOCITY:
+					case PROFILE_ORT_VELOCITY:
+					case PROFILE_TAN_VELOCITY:
 						scaleX = f->sh.maxSpeed / (double)PROFILE_SIZE;
 						for (int j = 0; j < PROFILE_SIZE; j++)
 							line << prof[j].countEquiv / (f->counterCache.hit.nbHitEquiv + static_cast<double>(f->counterCache.hit.nbDesorbed))  << sep;
 						break;
-					case REC_ANGULAR:
+					case PROFILE_ANGULAR:
 						scaleX = 90.0 / (double)PROFILE_SIZE;
 						for (int j = 0; j < PROFILE_SIZE; j++)
 							line << prof[j].countEquiv / (f->counterCache.hit.nbHitEquiv + static_cast<double>(f->counterCache.hit.nbDesorbed)) << sep;

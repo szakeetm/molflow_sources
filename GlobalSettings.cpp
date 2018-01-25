@@ -232,9 +232,9 @@ void GlobalSettings::Update() {
 	halfLifeText->SetText(worker->halfLife);
 	halfLifeText->SetEditable(worker->enableDecay);
 
-	cutoffText->SetText(worker->ontheflyParam.lowFluxCutoff);
-	cutoffText->SetEditable(worker->ontheflyParam.lowFluxMode);
-	lowFluxToggle->SetState(worker->ontheflyParam.lowFluxMode);
+	cutoffText->SetText(worker->ontheflyParams.lowFluxCutoff);
+	cutoffText->SetEditable(worker->ontheflyParams.lowFluxMode);
+	lowFluxToggle->SetState(worker->ontheflyParams.lowFluxMode);
 
 	autoSaveText->SetText(mApp->autoSaveFrequency);
 	chkSimuOnly->SetState(mApp->autoSaveSimuOnly);
@@ -452,9 +452,9 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 				return;
 			}
 
-			if (!IsEqual(worker->ontheflyParam.lowFluxCutoff, cutoffnumber) || (int)worker->ontheflyParam.lowFluxMode != lowFluxToggle->GetState()) {
-				worker->ontheflyParam.lowFluxCutoff = cutoffnumber;
-				worker->ontheflyParam.lowFluxMode = lowFluxToggle->GetState();
+			if (!IsEqual(worker->ontheflyParams.lowFluxCutoff, cutoffnumber) || (int)worker->ontheflyParams.lowFluxMode != lowFluxToggle->GetState()) {
+				worker->ontheflyParams.lowFluxCutoff = cutoffnumber;
+				worker->ontheflyParams.lowFluxMode = lowFluxToggle->GetState();
 				worker->ChangeSimuParams();
 			}
 

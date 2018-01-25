@@ -67,8 +67,8 @@ GNU General Public License for more details.
 //Hard-coded identifiers, update these on new release
 //---------------------------------------------------
 std::string appName = "Molflow";
-int appVersionId = 2663;
-std::string appVersionName = "2.6.63";
+int appVersionId = 2664;
+std::string appVersionName = "2.6.64";
 //---------------------------------------------------
 
 static const char *fileLFilters = "All MolFlow supported files\0*.txt;*.xml;*.zip;*.geo;*.geo7z;*.syn;*.syn7z;*.str;*.stl;*.ase\0"
@@ -456,13 +456,14 @@ int MolFlow::OneTimeSceneInit()
 	facetReLabel = new GLLabel("Profile:");
 	facetPanel->Add(facetReLabel);
 	facetRecType = new GLCombo(0);
-	facetRecType->SetSize(6);
+	facetRecType->SetSize(7);
 	facetRecType->SetValueAt(0, "None");
 	facetRecType->SetValueAt(1, "Pressure, density (\201)");
 	facetRecType->SetValueAt(2, "Pressure, density (\202)");
 	facetRecType->SetValueAt(3, "Incident angle");
 	facetRecType->SetValueAt(4, "Speed distribution");
 	facetRecType->SetValueAt(5, "Orthogonal velocity");
+	facetRecType->SetValueAt(6, "Tangential velocity");
 	facetPanel->Add(facetRecType);
 
 	facetMoreBtn = new GLButton(0, "<< Adv");
@@ -842,7 +843,7 @@ void MolFlow::ApplyFacetParams() {
 
 			if (rType >= 0) {
 				f->sh.profileType = rType;
-				//f->sh.isProfile = (rType!=REC_NONE); //included below by f->UpdateFlags();
+				//f->sh.isProfile = (rType!=PROFILE_NONE); //included below by f->UpdateFlags();
 			}
 			if (is2Sided >= 0) f->sh.is2sided = is2Sided;
 
@@ -2383,9 +2384,9 @@ void MolFlow::LoadConfig() {
 		for (int i = 0; i < MAX_VIEWER; i++)
 			viewer[i]->hideLot = f->ReadInt();
 		f->ReadKeyword("lowFluxMode"); f->ReadKeyword(":");
-		worker.ontheflyParam.lowFluxMode = f->ReadInt();
+		worker.ontheflyParams.lowFluxMode = f->ReadInt();
 		f->ReadKeyword("lowFluxCutoff"); f->ReadKeyword(":");
-		worker.ontheflyParam.lowFluxCutoff = f->ReadDouble();
+		worker.ontheflyParams.lowFluxCutoff = f->ReadDouble();
 	}
 	catch (...) {
 		/*std::ostringstream tmp;
@@ -2510,8 +2511,8 @@ void MolFlow::SaveConfig() {
 		f->Write("expandShortcutPanel:"); f->Write(!shortcutPanel->IsClosed(), "\n");
 
 		WRITEI("hideLot", hideLot);
-		f->Write("lowFluxMode:"); f->Write(worker.ontheflyParam.lowFluxMode, "\n");
-		f->Write("lowFluxCutoff:"); f->Write(worker.ontheflyParam.lowFluxCutoff, "\n");
+		f->Write("lowFluxMode:"); f->Write(worker.ontheflyParams.lowFluxMode, "\n");
+		f->Write("lowFluxCutoff:"); f->Write(worker.ontheflyParams.lowFluxCutoff, "\n");
 	}
 	catch (Error &err) {
 		GLMessageBox::Display(err.GetMsg(), "Error saving config file", GLDLG_OK, GLDLG_ICONWARNING);
@@ -2649,7 +2650,7 @@ bool MolFlow::EvaluateVariable(VLIST *v) {
 		v->value = worker.distTraveled_total / (double)worker.nbDesorption;
 	}
 	else if (_stricmp(v->name, "MFP") == 0) {
-		v->value = worker.distTraveledTotal_fullHitsOnly / (double)worker.nbHitEquiv;
+		v->value = worker.distTraveledTotal_fullHitsOnly / worker.nbHitEquiv;
 	}
 	else if (_stricmp(v->name, "DESAR") == 0) {
 		double sumArea = 0.0;
@@ -2700,7 +2701,7 @@ bool MolFlow::EvaluateVariable(VLIST *v) {
 				return false;
 		}
 		else {
-			if (!Contains({ "MCH","H","D","A","h","d","a" }, tokens[0]))
+			if (!Contains({ "MCH","H","D","A","mch","h","d","a" }, tokens[0]))
 				return false;
 		}
 		std::vector<size_t> facetsToSum;

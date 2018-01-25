@@ -131,7 +131,6 @@ Viewer3DSettings::Viewer3DSettings():GLWindow() {
   hideLotText->SetBounds(100, 297, 40, 18);
   hideLotText->SetEditable(false);
   Add(hideLotText);
-
   
   GLTitledPanel *panel2 = new GLTitledPanel("Direction field");
   panel2->SetBounds(5,330,wD-10,95);

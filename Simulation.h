@@ -220,7 +220,7 @@ void SetState(size_t state, const char *status, bool changeState=true, bool chan
 void SetErrorSub(const char *msg);
 void ClearACMatrix();
 bool LoadSimulation(Dataport *loader);
-bool UpdateSimuParams(Dataport *loader);
+bool UpdateOntheflySimuParams(Dataport *loader);
 bool StartSimulation(size_t sMode);
 void ResetSimulation();
 bool SimulationRun();

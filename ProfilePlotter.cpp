@@ -54,7 +54,9 @@ const char* profType[] = {
 	"Pressure \202 [mbar]",
 	"Incident angle [deg]",
 	"Speed [m/s]",
-	"Ort. velocity [m/s]" };
+	"Ort. velocity [m/s]",
+	"Tan. velocity [m/s]"
+};
 
 ProfilePlotter::ProfilePlotter() :GLWindow() {
 

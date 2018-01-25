@@ -5,7 +5,7 @@
 #define TEXTURE_MODE_PRESSURE 0
 #define TEXTURE_MODE_IMPINGEMENT 1
 #define TEXTURE_MODE_DENSITY 2
-#define SYNVERSION 9
+#define SYNVERSION 10
 
 class Worker;
 
@@ -54,7 +54,7 @@ public:
 	size_t GetHitsSize(std::vector<double> *moments);
 
 	// Raw data buffer (geometry)
-	void CopyGeometryBuffer(BYTE *buffer,OntheflySimulationParams ontheflyParams);
+	void CopyGeometryBuffer(BYTE *buffer,const OntheflySimulationParams& ontheflyParams);
 
 	// AC matrix
 	size_t GetMaxElemNumber();
