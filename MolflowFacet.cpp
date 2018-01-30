@@ -42,7 +42,7 @@ void Facet::LoadGEO(FileReader *file, int version, size_t nbVertex) {
 		sh.reflection.diffusePart = 1.0;
 		sh.reflection.specularPart = 0.0;
 	}
-	else if (oldReflType == REFLECTION_MIRROR) {
+	else if (oldReflType == REFLECTION_SPECULAR) {
 		sh.reflection.diffusePart = 0.0;
 		sh.reflection.specularPart = 1.0;
 	}
@@ -180,7 +180,7 @@ void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bool& ignor
 				sh.reflection.diffusePart = 1.0;
 				sh.reflection.specularPart = 0.0;
 			}
-			else if (oldReflType == REFLECTION_MIRROR) {
+			else if (oldReflType == REFLECTION_SPECULAR) {
 				sh.reflection.diffusePart = 0.0;
 				sh.reflection.specularPart = 1.0;
 			}
@@ -459,7 +459,7 @@ void Facet::LoadTXT(FileReader *file) {
 
 	// Convert reflectType
 	switch (reflectType) {
-	case REFLECTION_MIRROR:
+	case REFLECTION_SPECULAR:
 		sh.reflection.diffusePart = 0.0;
 		sh.reflection.specularPart = 1.0;
 		break;
@@ -517,7 +517,7 @@ void Facet::SaveTXT(FileWriter *file) {
 		file->Write((double)REFLECTION_DIFFUSE, "\n");
 	}
 	else if (sh.reflection.specularPart > 0.99) {
-		file->Write((double)REFLECTION_MIRROR, "\n");
+		file->Write((double)REFLECTION_SPECULAR, "\n");
 	} 
 	else
 		file->Write((double)REFLECTION_UNIFORM, "\n");
@@ -548,7 +548,7 @@ void Facet::SaveGEO(FileWriter *file, int idx) {
 		file->Write(REFLECTION_DIFFUSE, "\n");
 	}
 	else if (sh.reflection.specularPart > 0.99) {
-		file->Write(REFLECTION_MIRROR, "\n");
+		file->Write(REFLECTION_SPECULAR, "\n");
 	}
 	else
 		file->Write(REFLECTION_UNIFORM, "\n");
@@ -608,8 +608,8 @@ size_t Facet::GetHitsSize(size_t nbMoments)  {
 
 	return   (1 + nbMoments)*(
 		sizeof(FacetHitBuffer) +
-		+(sh.texWidth*sh.texHeight * sizeof(AHIT))
-		+ (sh.isProfile ? (PROFILE_SIZE * sizeof(APROFILE)) : 0)
+		+(sh.texWidth*sh.texHeight * sizeof(TextureCell))
+		+ (sh.isProfile ? (PROFILE_SIZE * sizeof(ProfileSlice)) : 0)
 		+ (sh.countDirection ? (sh.texWidth*sh.texHeight * sizeof(VHIT)) : 0)
 		+ (sh.anglemapParams.hasRecorded ? sh.anglemapParams.phiWidth * (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes) * sizeof(size_t) : 0)
 		);
@@ -618,7 +618,7 @@ size_t Facet::GetHitsSize(size_t nbMoments)  {
 
 size_t Facet::GetTexRamSize(size_t nbMoments)  {
 	//Values
-	size_t sizePerCell = sizeof(AHIT)*nbMoments; //AHIT: long + 2*double
+	size_t sizePerCell = sizeof(TextureCell)*nbMoments; //TextureCell: long + 2*double
 	if (sh.countDirection) sizePerCell += sizeof(VHIT)*nbMoments; //VHIT: Vector3d + long
 	//Mesh
 	sizePerCell += sizeof(int); //CellPropertiesIds
@@ -640,7 +640,7 @@ size_t Facet::GetTexRamSizeForRatio(double ratio, bool useMesh, bool countDir, s
 		int iheight = (int)ceil(height);
 
 		//Values
-		size_t sizePerCell = sizeof(AHIT)*nbMoments; //AHIT: long + 2*double
+		size_t sizePerCell = sizeof(TextureCell)*nbMoments; //TextureCell: long + 2*double
 		if (sh.countDirection) sizePerCell += sizeof(VHIT)*nbMoments; //VHIT: Vector3d + long
 		//Mesh
 		sizePerCell += sizeof(int); //CellPropertiesIds
@@ -653,7 +653,7 @@ size_t Facet::GetTexRamSizeForRatio(double ratio, bool useMesh, bool countDir, s
 	}
 }
 
-double Facet::GetSmooth(int i, int j, AHIT *texBuffer, int textureMode, double scaleF) {
+double Facet::GetSmooth(int i, int j, TextureCell *texBuffer, int textureMode, double scaleF) {
 
 	double W = 0.0;
 	double sum = 0.0;
@@ -677,7 +677,7 @@ double Facet::GetSmooth(int i, int j, AHIT *texBuffer, int textureMode, double s
 		return sum / W;
 }
 
-void Facet::Sum_Neighbor(const int& i, const int& j, const double& weight, AHIT *texBuffer, const int& textureMode, const double& scaleF, double *sum, double *totalWeight) {
+void Facet::Sum_Neighbor(const int& i, const int& j, const double& weight, TextureCell *texBuffer, const int& textureMode, const double& scaleF, double *sum, double *totalWeight) {
 												
 	if( i>=0 && i<sh.texWidth && j>=0 && j<sh.texHeight ) {								
 		size_t add = (size_t)i+(size_t)j*sh.texWidth;												
@@ -695,7 +695,7 @@ void Facet::Sum_Neighbor(const int& i, const int& j, const double& weight, AHIT 
 
 #define LOG10(x) log10f((float)x)
 
-void Facet::BuildTexture(AHIT *texBuffer, int textureMode, double min, double max, bool useColorMap,
+void Facet::BuildTexture(TextureCell *texBuffer, int textureMode, double min, double max, bool useColorMap,
 	double dCoeff1, double dCoeff2, double dCoeff3, bool doLog, size_t m) {
 	size_t size = sh.texWidth*sh.texHeight;
 	size_t tSize = texDimW*texDimH;
@@ -967,7 +967,7 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 		e.append_attribute("type") = REFLECTION_DIFFUSE;
 	}
 	else if (sh.reflection.specularPart > 0.99) {
-		e.append_attribute("type") = REFLECTION_MIRROR;
+		e.append_attribute("type") = REFLECTION_SPECULAR;
 	}
 	else
 		e.append_attribute("type") = REFLECTION_UNIFORM;

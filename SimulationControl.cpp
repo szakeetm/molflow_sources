@@ -451,16 +451,16 @@ bool LoadSimulation(Dataport *loader) {
 		//Textures
 		if (f->sh.isTextured) {
 			size_t nbE = f->sh.texWidth*f->sh.texHeight;
-			f->textureSize = nbE * sizeof(AHIT);
+			f->textureSize = nbE * sizeof(TextureCell);
 
-			if ((f->hits = (AHIT **)malloc(sizeof(AHIT *)* (1 + sHandle->nbMoments))) == NULL) {
+			if ((f->hits = (TextureCell **)malloc(sizeof(TextureCell *)* (1 + sHandle->nbMoments))) == NULL) {
 				ReleaseDataport(loader);
 				SetErrorSub("Couldn't allocate memory (time moments container, textures)");
 				return false;
 			}
-			memset(f->hits, 0, sizeof(AHIT *)* (1 + sHandle->nbMoments)); //set all pointers to NULL so we can use SAFE_FREE later
+			memset(f->hits, 0, sizeof(TextureCell *)* (1 + sHandle->nbMoments)); //set all pointers to NULL so we can use SAFE_FREE later
 			for (size_t m = 0; m < (1 + sHandle->nbMoments); m++) {
-				if ((f->hits[m] = (AHIT *)malloc(f->textureSize)) == NULL) { //steady-state plus one for each moment
+				if ((f->hits[m] = (TextureCell *)malloc(f->textureSize)) == NULL) { //steady-state plus one for each moment
 					ReleaseDataport(loader);
 					SetErrorSub("Couldn't allocate memory (textures)");
 					return false;
@@ -496,17 +496,17 @@ bool LoadSimulation(Dataport *loader) {
 
 		//Profiles
 		if (f->sh.isProfile) {
-			f->profileSize = PROFILE_SIZE * sizeof(APROFILE);
+			f->profileSize = PROFILE_SIZE * sizeof(ProfileSlice);
 			/*f->profile = (llong *)malloc(f->profileSize);
 			memset(f->profile,0,f->profileSize);*/
-			if ((f->profile = (APROFILE **)malloc(sizeof(APROFILE *)* (1 + sHandle->nbMoments))) == NULL) {
+			if ((f->profile = (ProfileSlice **)malloc(sizeof(ProfileSlice *)* (1 + sHandle->nbMoments))) == NULL) {
 				ReleaseDataport(loader);
 				SetErrorSub("Couldn't allocate memory (time moments container, profiles)");
 				return false;
 			}
-			memset(f->profile, 0, sizeof(APROFILE *)* (1 + sHandle->nbMoments)); //set all pointers to NULL so we can use SAFE_FREE later
+			memset(f->profile, 0, sizeof(ProfileSlice *)* (1 + sHandle->nbMoments)); //set all pointers to NULL so we can use SAFE_FREE later
 			for (size_t m = 0; m < (1 + sHandle->nbMoments); m++) {
-				if ((f->profile[m] = (APROFILE *)malloc(f->profileSize)) == NULL) { //steady-state plus one for each moment
+				if ((f->profile[m] = (ProfileSlice *)malloc(f->profileSize)) == NULL) { //steady-state plus one for each moment
 					ReleaseDataport(loader);
 					SetErrorSub("Couldn't allocate memory (profiles)");
 					return false;

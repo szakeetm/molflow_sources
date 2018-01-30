@@ -35,13 +35,13 @@ public:
 
   int      *indices;          // Indices (Reference to geometry vertex)
   Vector2d *vertices2;        // Vertices (2D plane space, UV coordinates)
-  AHIT     **hits;            // Texture hit recording (taking area, temperature, mass into account)
+  TextureCell     **hits;            // Texture hit recording (taking area, temperature, mass into account)
   double   *inc;              // Texure increment
   bool     *largeEnough;      // cells that are NOT too small for autoscaling
   double   fullSizeInc;       // Texture increment of a full texture element
   VHIT     **direction;       // Direction field recording (average)
   //bool     *fullElem;         // Direction field recording (only on full element)
-  APROFILE **profile;         // Distribution and hit recording
+  ProfileSlice **profile;         // Distribution and hit recording
   double   *outgassingMap; // Cumulative outgassing map when desorption is based on imported file
   double outgassingMapWidthD; //actual outgassing file map width
   double outgassingMapHeightD; //actual outgassing file map height

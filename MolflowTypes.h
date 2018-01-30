@@ -11,7 +11,7 @@
 
 // (Old) Reflection types
 #define REFLECTION_DIFFUSE 0   // Diffuse (cosine law)
-#define REFLECTION_MIRROR  1   // Mirror
+#define REFLECTION_SPECULAR  1   // Mirror
 #define REFLECTION_UNIFORM 2   // Uniform (for testing)
 
 // Profile type
@@ -40,18 +40,21 @@ typedef float ACFLOAT;
 
 // Density/Hit field stuff
 #define HITMAX 1E38
-
-typedef struct {
+class ProfileSlice {
+public:
 	double countEquiv;
 	double sum_v_ort;
 	double sum_1_per_ort_velocity;
-} APROFILE;
+	ProfileSlice& operator+=(const ProfileSlice& rhs);
+};
 
-typedef struct {
+class TextureCell {
+public:
 	double countEquiv;
 	double sum_v_ort_per_area;
 	double sum_1_per_ort_velocity;
-} AHIT;
+	TextureCell& operator+=(const TextureCell& rhs);
+} ;
 
 //Texture limit types
 typedef struct {

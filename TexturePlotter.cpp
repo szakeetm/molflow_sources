@@ -216,8 +216,8 @@ void TexturePlotter::UpdateTable() {
 			try {
 				if (buffer) {
 					GlobalHitBuffer *shGHit = (GlobalHitBuffer *)buffer;
-					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(APROFILE)*(1 + nbMoments)) : 0;
-					AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(AHIT)));
+					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
+					TextureCell *hits = (TextureCell *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
 					for (size_t i = 0; i < w; i++) {
 						for (size_t j = 0; j < h; j++) {
 							//int tSize = selFacet->sh.texWidth*selFacet->sh.texHeight;
@@ -248,8 +248,8 @@ void TexturePlotter::UpdateTable() {
 			try {
 				if (buffer) {
 					GlobalHitBuffer *shGHit = (GlobalHitBuffer *)buffer;
-					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(APROFILE)*(1 + nbMoments)) : 0;
-					AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(AHIT)));
+					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
+					TextureCell *hits = (TextureCell *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
 					double dCoef =1E4; //1E4: conversion m2->cm2
 					/*if (shGHit->sMode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
 						/ worker->timeWindowSize));*/
@@ -282,8 +282,8 @@ void TexturePlotter::UpdateTable() {
 			try {
 				if (buffer) {
 					GlobalHitBuffer *shGHit = (GlobalHitBuffer *)buffer;
-					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(APROFILE)*(1 + nbMoments)) : 0;
-					AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(AHIT)));
+					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
+					TextureCell *hits = (TextureCell *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
 					double dCoef =1E4 * selFacet->DensityCorrection();   //1E4 m2 -> cm2
 					
 					if (shGHit->sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(worker->displayedMoment);
@@ -319,8 +319,8 @@ void TexturePlotter::UpdateTable() {
 			try {
 				if (buffer) {
 					GlobalHitBuffer *shGHit = (GlobalHitBuffer *)buffer;
-					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(APROFILE)*(1 + nbMoments)) : 0;
-					AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(AHIT)));
+					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
+					TextureCell *hits = (TextureCell *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
 					//float dCoef = (float)totalOutgassing / 8.31 * gasMass / 100 * MAGIC_CORRECTION_FACTOR;
 					double dCoef = 1E4 * selFacet->DensityCorrection();
 
@@ -358,8 +358,8 @@ void TexturePlotter::UpdateTable() {
 			try {
 				if (buffer) {
 					GlobalHitBuffer *shGHit = (GlobalHitBuffer *)buffer;
-					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(APROFILE)*(1 + nbMoments)) : 0;
-					AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(AHIT)));
+					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
+					TextureCell *hits = (TextureCell *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
 					double dCoef = 1E4 * (worker->gasMass / 1000 / 6E23) * 0.0100;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 					
 					if (shGHit->sMode == MC_MODE) dCoef *= worker->GetMoleculesPerTP(worker->displayedMoment);
@@ -393,8 +393,8 @@ void TexturePlotter::UpdateTable() {
 			try {
 				if (buffer) {
 					GlobalHitBuffer *shGHit = (GlobalHitBuffer *)buffer;
-					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(APROFILE)*(1 + nbMoments)) : 0;
-					AHIT *hits = (AHIT *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(AHIT)));
+					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
+					TextureCell *hits = (TextureCell *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
 					for (size_t i = 0; i < w; i++) {
 						for (size_t j = 0; j < h; j++) {
 							size_t tSize = selFacet->sh.texWidth*selFacet->sh.texHeight;

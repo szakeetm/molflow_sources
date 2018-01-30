@@ -248,7 +248,7 @@ void TimewisePlotter::refreshViews() {
 		/*int momentIndex;
 		if (m==(nbView-1) && constantFlowToggle->GetState()) momentIndex=0; //Constant flow
 		else momentIndex=m+1; //any other 'normal' moment*/
-		APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + facetHitsSize + v->userData1*sizeof(APROFILE)*PROFILE_SIZE);
+		ProfileSlice *profilePtr = (ProfileSlice *)(buffer + f->sh.hitOffset + facetHitsSize + v->userData1*sizeof(ProfileSlice)*PROFILE_SIZE);
 		if (worker->nbDesorption > 0) {
 			switch (displayMode) {
 			case 0: //Raw data

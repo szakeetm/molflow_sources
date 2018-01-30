@@ -208,18 +208,16 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 
 				if (f->sh.isProfile) {
 					for (int m = 0; m < (1 + nbMoments); m++) {
-						APROFILE *shProfile = (APROFILE *)(buffer + f->sh.hitOffset + facetHitsSize + m*f->profileSize);
+						ProfileSlice *shProfile = (ProfileSlice *)(buffer + f->sh.hitOffset + facetHitsSize + m*f->profileSize);
 						for (j = 0; j < PROFILE_SIZE; j++) {
-							shProfile[j].countEquiv += f->profile[m][j].countEquiv;
-							shProfile[j].sum_1_per_ort_velocity += f->profile[m][j].sum_1_per_ort_velocity;
-							shProfile[j].sum_v_ort += f->profile[m][j].sum_v_ort;
+							shProfile[j] += f->profile[m][j];
 						}
 					}
 				}
 
 				if (f->sh.isTextured) {
 					for (int m = 0; m < (1 + nbMoments); m++) {
-						AHIT *shTexture = (AHIT *)(buffer + (f->sh.hitOffset + facetHitsSize + f->profileSize*(1 + nbMoments) + m*f->textureSize));
+						TextureCell *shTexture = (TextureCell *)(buffer + (f->sh.hitOffset + facetHitsSize + f->profileSize*(1 + nbMoments) + m*f->textureSize));
 						//double dCoef = gHits->total.hit.nbDesorbed * 1E4 * sHandle->gasMass / 1000 / 6E23 * MAGIC_CORRECTION_FACTOR;  //1E4 is conversion from m2 to cm2
 						double timeCorrection = m == 0 ? sHandle->finalOutgassingRate : (sHandle->totalDesorbedMolecules) / sHandle->timeWindowSize;
 						//Timecorrection is required to compare constant flow texture values with moment values (for autoscaling)
@@ -229,9 +227,7 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 								size_t add = x + y*f->sh.texWidth;
 
 								//Add temporary hit counts
-								shTexture[add].countEquiv += f->hits[m][add].countEquiv;
-								shTexture[add].sum_1_per_ort_velocity += f->hits[m][add].sum_1_per_ort_velocity;
-								shTexture[add].sum_v_ort_per_area += f->hits[m][add].sum_v_ort_per_area;
+								shTexture[add] += f->hits[m][add];
 
 								double val[3];  //pre-calculated autoscaling values (Pressure, imp.rate, density)
 

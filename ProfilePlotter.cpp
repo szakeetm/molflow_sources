@@ -326,7 +326,7 @@ void ProfilePlotter::refreshViews() {
 			Facet *f = geom->GetFacet(v->userData1);
 
 			v->Reset();
-			APROFILE *profilePtr = (APROFILE *)(buffer + f->sh.hitOffset + facetHitsSize + worker->displayedMoment*sizeof(APROFILE)*PROFILE_SIZE);
+			ProfileSlice *profilePtr = (ProfileSlice *)(buffer + f->sh.hitOffset + facetHitsSize + worker->displayedMoment*sizeof(ProfileSlice)*PROFILE_SIZE);
 
 			//FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->sh.hitOffset+ worker->displayedMoment*sizeof(FacetHitBuffer));
 			//double fnbHit = (double)fCount->hit.nbMCHit;

@@ -110,9 +110,9 @@ void MolflowGeometry::BuildFacetTextures(BYTE *hits, bool renderRegularTexture, 
 		prg->SetProgress((double)i / (double)sh.nbFacet);
 		Facet *f = facets[i];
 
-		size_t profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(APROFILE)) : 0;
+		size_t profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)) : 0;
 		size_t nbElem = f->sh.texWidth*f->sh.texHeight;
-		size_t tSize = nbElem * sizeof(AHIT);
+		size_t tSize = nbElem * sizeof(TextureCell);
 
 		if (renderRegularTexture && f->sh.isTextured) {
 
@@ -137,7 +137,7 @@ void MolflowGeometry::BuildFacetTextures(BYTE *hits, bool renderRegularTexture, 
 			}
 
 			// Retrieve texture from shared memory (every seconds)
-			AHIT *hits_local = (AHIT *)((BYTE *)shGHit + (f->sh.hitOffset + facetHitsSize + profSize*(1 + nbMoments) + tSize*mApp->worker.displayedMoment));
+			TextureCell *hits_local = (TextureCell *)((BYTE *)shGHit + (f->sh.hitOffset + facetHitsSize + profSize*(1 + nbMoments) + tSize*mApp->worker.displayedMoment));
 			f->BuildTexture(hits_local, textureMode, min, max, texColormap,
 				dCoef_custom[0] * timeCorrection, dCoef_custom[1] * timeCorrection, dCoef_custom[2] * timeCorrection, texLogScale, mApp->worker.displayedMoment);
 		}

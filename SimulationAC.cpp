@@ -362,7 +362,7 @@ void UpdateACHits(Dataport *dpHit,int prIdx,DWORD timeout) {
 
   GlobalHitBuffer *gHits;
   SubprocessFacet   *f;
-  AHIT    *shTexture;
+  TextureCell    *shTexture;
   FacetHitBuffer  *fHits;
   int      i,j,k,idx,nbE;
   double  sumVal=0.0;
@@ -387,7 +387,7 @@ void UpdateACHits(Dataport *dpHit,int prIdx,DWORD timeout) {
     sumAbs = 0.0;
     sumVal = 0.0;
     nbE = 0;
-    shTexture = (AHIT *)((char *)dpHit->buff + (f->sh.hitOffset + facetHitsSize + f->profileSize));
+    shTexture = (TextureCell *)((char *)dpHit->buff + (f->sh.hitOffset + facetHitsSize + f->profileSize));
     for(j=0;j<f->sh.texHeight && f->sh.opacity==1.0f;j++) {
       for(i=0;i<f->sh.texWidth;i++) {
         ACFLOAT val = (ACFLOAT)(sHandle->acDensity[idx]);
