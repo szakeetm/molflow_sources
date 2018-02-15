@@ -144,13 +144,13 @@ void MolflowGeometry::BuildFacetTextures(BYTE *hits, bool renderRegularTexture, 
 
 		if (renderDirectionTexture && f->sh.countDirection && f->dirCache) {
 			
-			size_t dSize = nbElem * sizeof(VHIT);
+			size_t dSize = nbElem * sizeof(DirectionCell);
 
 			double iDesorbed = 0.0;
 			if (shGHit->total.hit.nbDesorbed)
 			iDesorbed = 1.0 / (double)shGHit->total.hit.nbDesorbed;
 			
-			VHIT *dirs = (VHIT *)((BYTE *)shGHit + (f->sh.hitOffset + facetHitsSize + profSize*(1 + nbMoments) + tSize*(1 + nbMoments) + dSize*mApp->worker.displayedMoment));
+			DirectionCell *dirs = (DirectionCell *)((BYTE *)shGHit + (f->sh.hitOffset + facetHitsSize + profSize*(1 + nbMoments) + tSize*(1 + nbMoments) + dSize*mApp->worker.displayedMoment));
 			for (size_t j = 0; j < nbElem; j++) {
 				f->dirCache[j].dir = dirs[j].dir * iDesorbed;
 				f->dirCache[j].count = dirs[j].count;

@@ -63,6 +63,7 @@ GNU General Public License for more details.
 #include "ParameterEditor.h"
 #include "SmartSelection.h"
 #include "FormulaEditor.h"
+#include "ParticleLogger.h"
 
 //Hard-coded identifiers, update these on new release
 //---------------------------------------------------
@@ -1361,7 +1362,7 @@ void MolFlow::SaveFile() {
 		}
 		catch (Error &e) {
 			char errMsg[512];
-			sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), worker.GetFileName());
+			sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), worker.GetCurrentFileName());
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 		}
 		progressDlg2->SetVisible(false);
@@ -1605,6 +1606,7 @@ void MolFlow::StartStopSimulation() {
 		UpdatePlotters();
 		//if (autoUpdateFormulas) UpdateFormula();
 		if (autoUpdateFormulas && formulaEditor && formulaEditor->IsVisible()) formulaEditor->ReEvaluate();
+		if (particleLogger && particleLogger->IsVisible()) particleLogger->UpdateStatus();
 	}
 
 	// Frame rate measurement
@@ -2104,7 +2106,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	}
 	//worker.nbDesorption = 0; //Already done by ResetWorkerStats
 	//sprintf(tmp,"L|R %g",L/R);
-	worker.SetFileName("");
+	worker.SetCurrentFileName("");
 	nbDesStart = 0;
 	nbHitStart = 0;
 	
@@ -2172,7 +2174,7 @@ void MolFlow::EmptyGeometry() {
 		geom->Clear();
 		return;
 	}
-	worker.SetFileName("");
+	worker.SetCurrentFileName("");
 	nbDesStart = 0;
 	nbHitStart = 0;
 

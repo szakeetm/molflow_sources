@@ -35,11 +35,11 @@ public:
 
   int      *indices;          // Indices (Reference to geometry vertex)
   Vector2d *vertices2;        // Vertices (2D plane space, UV coordinates)
-  TextureCell     **hits;            // Texture hit recording (taking area, temperature, mass into account)
+  TextureCell     **texture;            // Texture hit recording (taking area, temperature, mass into account)
   double   *inc;              // Texure increment
   bool     *largeEnough;      // cells that are NOT too small for autoscaling
   double   fullSizeInc;       // Texture increment of a full texture element
-  VHIT     **direction;       // Direction field recording (average)
+  DirectionCell     **direction;       // Direction field recording (average)
   //bool     *fullElem;         // Direction field recording (only on full element)
   ProfileSlice **profile;         // Distribution and hit recording
   double   *outgassingMap; // Cumulative outgassing map when desorption is based on imported file
@@ -90,8 +90,7 @@ typedef struct {
 
 typedef struct {
 
-  FacetHitBuffer tmpCount;            // Temporary number of hits (between 2 updates)
-  llong  desorptionLimit;       // Maximum number of desorption
+  FacetHitBuffer tmpGlobalCount;            // Temporary number of hits (between 2 updates)
 
   int    hitCacheSize;              // Last hits  
   HIT    hitCache[HITCACHESIZE];       // Last hit history
@@ -107,6 +106,7 @@ typedef struct {
   std::vector<double> temperatures; //keeping track of all temperatures that have a CDF already generated
   std::vector<double> moments;      //time values (seconds) when a simulation state is measured
   std::vector<size_t> desorptionParameterIDs; //time-dependent parameters which are used as desorptions, therefore need to be integrated
+  std::vector<Parameter> parameters; //Time-dependent parameters
   double latestMoment;
 
   double totalDesorbedMolecules;  // Number of desorbed molecules from t=0 to latest_moment
@@ -118,7 +118,7 @@ typedef struct {
   bool useMaxwellDistribution; //true: Maxwell-Boltzmann distribution, false: All molecules have the same (V_avg) speed
   bool calcConstantFlow;
 
-  std::vector<Parameter> parameters; //Time-dependent parameters
+  
 
   // Geometry
   char        name[64];         // Global name
@@ -137,7 +137,8 @@ typedef struct {
   size_t profTotalSize;  // Profile total size
   size_t dirTotalSize;   // Direction field total size
   bool loadOK;        // Load OK flag
-  bool lastUpdateOK;  // Last hit update timeout
+  bool lastHitUpdateOK;  // Last hit update timeout
+  bool lastLogUpdateOK; // Last log update timeout
   bool hasVolatile;   // Contains volatile facet
   bool hasDirection;  // Contains direction field
   size_t  sMode;         // Simulation mode (MC_MODE or AC_MODE)
@@ -201,6 +202,8 @@ typedef struct {
 
   OntheflySimulationParams ontheflyParams;
 
+  std::vector<ParticleLoggerItem> tmpParticleLog;
+
 } SIMULATION;
 
 // Handle to simulation object
@@ -213,6 +216,7 @@ extern SIMULATION *sHandle;
 void RecordHitOnTexture(SubprocessFacet *f, double time, bool countHit, double velocity_factor, double ortSpeedFactor);
 void RecordDirectionVector(SubprocessFacet *f, double time);
 void ProfileFacet(SubprocessFacet *f, double time, bool countHit, double velocity_factor, double ortSpeedFactor);
+void LogHit(SubprocessFacet *f);
 void RecordAngleMap(SubprocessFacet* collidedFacet);
 void InitSimulation();
 void ClearSimulation();
@@ -233,7 +237,8 @@ void PerformBounce(SubprocessFacet *iFacet);
 void RecordAbsorb(SubprocessFacet *iFacet);
 void PerformTeleport(SubprocessFacet *iFacet);
 void PerformTransparentPass(SubprocessFacet *iFacet);
-void UpdateHits(Dataport *dpHit,int prIdx,DWORD timeout);
+void UpdateHits(Dataport *dpHit,Dataport *dpLog,int prIdx,DWORD timeout);
+void UpdateLog(Dataport *dpLog, DWORD timeout);
 void UpdateMCHits(Dataport *dpHit,int prIdx,size_t nbMoments,DWORD timeout);
 void UpdateACHits(Dataport *dpHit,int prIdx,DWORD timeout);
 void ResetTmpCounters();

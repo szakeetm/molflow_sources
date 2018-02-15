@@ -16,8 +16,8 @@
 
 // Profile type
 #define PROFILE_NONE       0  // No recording
-#define PROFILE_PRESSURE_U  1  // Pressure and density profile (U direction)
-#define PROFILE_PRESSURE_V  2  // Pressure and density profile (V direction)
+#define PROFILE_U  1  // Pressure and density profile (U direction)
+#define PROFILE_V  2  // Pressure and density profile (V direction)
 #define PROFILE_ANGULAR    3  // Angular profile
 #define PROFILE_VELOCITY   4 //Velocity distribution
 #define PROFILE_ORT_VELOCITY 5 //Orthogonal velocity component

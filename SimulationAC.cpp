@@ -297,7 +297,7 @@ bool SimulationACStep(int nbStep) {
 
   step = 0;
   // Run iterations
-  while( (sHandle->desorptionLimit==0 || sHandle->totalDesorbed<sHandle->desorptionLimit) && step<nbStep ) {
+  while( (sHandle->ontheflyParams.desorptionLimit==0 || sHandle->totalDesorbed<sHandle->ontheflyParams.desorptionLimit/ sHandle->ontheflyParams.nbProcess) && step<nbStep ) {
 
     // Perform iteration
     // density[i] = rho[i] * Sum{j=0,nbAC-1}{ AC(i,j)*area(j)*density(j) } + desorb[i]
@@ -354,7 +354,7 @@ bool SimulationACStep(int nbStep) {
   
   }
 
-  return sHandle->desorptionLimit==0 || sHandle->totalDesorbed<sHandle->desorptionLimit;
+  return sHandle->ontheflyParams.desorptionLimit==0 || sHandle->totalDesorbed<sHandle->ontheflyParams.desorptionLimit/sHandle->ontheflyParams.nbProcess;
 
 }
 

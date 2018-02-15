@@ -87,8 +87,8 @@ void ClearSimulation() {
 				SAFE_FREE(f->inc);
 				SAFE_FREE(f->largeEnough);
 				for (size_t m = 0; m < (sHandle->nbMoments + 1); m++) {
-					if (f->hits) {
-						SAFE_FREE(f->hits[m]);
+					if (f->texture) {
+						SAFE_FREE(f->texture[m]);
 					}
 					if (f->profile) {
 						SAFE_FREE(f->profile[m]);
@@ -103,11 +103,12 @@ void ClearSimulation() {
 				SAFE_FREE(f->angleMap.phi_CDFs);
 				SAFE_FREE(f->angleMap.phi_CDFsums);
 				SAFE_FREE(f->angleMap.theta_CDF);
-				SAFE_FREE(f->hits);
+				SAFE_FREE(f->texture);
 				SAFE_FREE(f->profile);
 				SAFE_FREE(f->direction);
 				//SAFE_FREE(f->velocityHistogram);
-
+				f->counter.clear();
+				f->counter.shrink_to_fit();
 				delete(f); f = NULL;
 			}
 
@@ -121,15 +122,17 @@ void ClearSimulation() {
 		}
 	}
 
-	sHandle->CDFs = std::vector<std::vector<std::pair<double, double>>>();
-	sHandle->IDs = std::vector<std::vector<std::pair<double, double>>>();
-	sHandle->parameters = std::vector<Parameter>();
-	sHandle->temperatures = std::vector<double>();
-	sHandle->moments = std::vector<double>();
-	sHandle->desorptionParameterIDs = std::vector<size_t>();
+	sHandle->CDFs.clear(); sHandle->CDFs.shrink_to_fit();
+	sHandle->IDs.clear();sHandle->IDs.shrink_to_fit();
+	sHandle->parameters.clear();sHandle->parameters.shrink_to_fit();
+	sHandle->temperatures.clear();
+	sHandle->moments.clear();
+	sHandle->desorptionParameterIDs.clear();
+	sHandle->tmpParticleLog.clear();sHandle->tmpParticleLog.shrink_to_fit();
+	
 
 	ClearACMatrix();
-	memset(sHandle, 0, sizeof(SIMULATION));
+	memset(sHandle, 0, sizeof(SIMULATION)); //Will it corrupt vectors?
 
 }
 
@@ -203,12 +206,12 @@ bool LoadSimulation(Dataport *loader) {
 
 	shGeom = (GeomProperties *)buffer;
 	if (shGeom->nbSuper > MAX_STRUCT) {
-		ReleaseDataport(loader);
+		//ReleaseDataport(loader);
 		SetErrorSub("Too many structures");
 		return false;
 	}
 	if (shGeom->nbSuper <= 0) {
-		ReleaseDataport(loader);
+		//ReleaseDataport(loader);
 		SetErrorSub("No structures");
 
 		return false;
@@ -233,6 +236,7 @@ bool LoadSimulation(Dataport *loader) {
 	// Prepare super structure (allocate memory for facets)
 	buffer += sizeof(GeomProperties);
 	sHandle->ontheflyParams = READBUFFER(OntheflySimulationParams);
+	if (sHandle->ontheflyParams.enableLogging) sHandle->tmpParticleLog.reserve(sHandle->ontheflyParams.logLimit / sHandle->ontheflyParams.nbProcess);
 	buffer += sizeof(Vector3d)*sHandle->nbVertex;
 	for (i = 0; i < sHandle->totalFacet; i++) {
 		FacetProperties *shFacet = (FacetProperties *)buffer;
@@ -315,7 +319,7 @@ bool LoadSimulation(Dataport *loader) {
 			if (((f->sh.superDest - 1) >= sHandle->nbSuper || f->sh.superDest < 0)) {
 				// Geometry error
 				ClearSimulation();
-				ReleaseDataport(loader);
+				//ReleaseDataport(loader);
 				sprintf(err, "Invalid structure (wrong link on F#%zd)", i + 1);
 				SetErrorSub(err);
 				return false;
@@ -453,19 +457,19 @@ bool LoadSimulation(Dataport *loader) {
 			size_t nbE = f->sh.texWidth*f->sh.texHeight;
 			f->textureSize = nbE * sizeof(TextureCell);
 
-			if ((f->hits = (TextureCell **)malloc(sizeof(TextureCell *)* (1 + sHandle->nbMoments))) == NULL) {
-				ReleaseDataport(loader);
+			if ((f->texture = (TextureCell **)malloc(sizeof(TextureCell *)* (1 + sHandle->nbMoments))) == NULL) {
+				//ReleaseDataport(loader);
 				SetErrorSub("Couldn't allocate memory (time moments container, textures)");
 				return false;
 			}
-			memset(f->hits, 0, sizeof(TextureCell *)* (1 + sHandle->nbMoments)); //set all pointers to NULL so we can use SAFE_FREE later
+			memset(f->texture, 0, sizeof(TextureCell *)* (1 + sHandle->nbMoments)); //set all pointers to NULL so we can use SAFE_FREE later
 			for (size_t m = 0; m < (1 + sHandle->nbMoments); m++) {
-				if ((f->hits[m] = (TextureCell *)malloc(f->textureSize)) == NULL) { //steady-state plus one for each moment
-					ReleaseDataport(loader);
+				if ((f->texture[m] = (TextureCell *)malloc(f->textureSize)) == NULL) { //steady-state plus one for each moment
+					//ReleaseDataport(loader);
 					SetErrorSub("Couldn't allocate memory (textures)");
 					return false;
 				}
-				memset(f->hits[m], 0, f->textureSize);
+				memset(f->texture[m], 0, f->textureSize);
 			}
 
 			//Load inc values (1/area)
@@ -500,14 +504,14 @@ bool LoadSimulation(Dataport *loader) {
 			/*f->profile = (llong *)malloc(f->profileSize);
 			memset(f->profile,0,f->profileSize);*/
 			if ((f->profile = (ProfileSlice **)malloc(sizeof(ProfileSlice *)* (1 + sHandle->nbMoments))) == NULL) {
-				ReleaseDataport(loader);
+				//ReleaseDataport(loader);
 				SetErrorSub("Couldn't allocate memory (time moments container, profiles)");
 				return false;
 			}
 			memset(f->profile, 0, sizeof(ProfileSlice *)* (1 + sHandle->nbMoments)); //set all pointers to NULL so we can use SAFE_FREE later
 			for (size_t m = 0; m < (1 + sHandle->nbMoments); m++) {
 				if ((f->profile[m] = (ProfileSlice *)malloc(f->profileSize)) == NULL) { //steady-state plus one for each moment
-					ReleaseDataport(loader);
+					//ReleaseDataport(loader);
 					SetErrorSub("Couldn't allocate memory (profiles)");
 					return false;
 				}
@@ -519,18 +523,18 @@ bool LoadSimulation(Dataport *loader) {
 
 		//Direction
 		if (f->sh.countDirection) {
-			f->directionSize = f->sh.texWidth*f->sh.texHeight * sizeof(VHIT);
-			/*f->direction = (VHIT *)malloc(f->directionSize);
+			f->directionSize = f->sh.texWidth*f->sh.texHeight * sizeof(DirectionCell);
+			/*f->direction = (DirectionCell *)malloc(f->directionSize);
 			memset(f->direction,0,f->directionSize);*/
-			if ((f->direction = (VHIT **)malloc(sizeof(VHIT *)* (1 + sHandle->nbMoments))) == NULL) {
-				ReleaseDataport(loader);
+			if ((f->direction = (DirectionCell **)malloc(sizeof(DirectionCell *)* (1 + sHandle->nbMoments))) == NULL) {
+				//ReleaseDataport(loader);
 				SetErrorSub("Couldn't allocate memory (time moments container, direction vectors)");
 				return false;
 			}
-			memset(f->direction, 0, sizeof(VHIT *)* (1 + sHandle->nbMoments)); //set all pointers to NULL so we can use SAFE_FREE later
+			memset(f->direction, 0, sizeof(DirectionCell *)* (1 + sHandle->nbMoments)); //set all pointers to NULL so we can use SAFE_FREE later
 			for (size_t m = 0; m < (1 + sHandle->nbMoments); m++) {
-				if ((f->direction[m] = (VHIT *)malloc(f->directionSize)) == NULL) { //steady-state plus one for each moment
-					ReleaseDataport(loader);
+				if ((f->direction[m] = (DirectionCell *)malloc(f->directionSize)) == NULL) { //steady-state plus one for each moment
+					//ReleaseDataport(loader);
 					SetErrorSub("Couldn't allocate memory (direction vectors)");
 					return false;
 				}
@@ -660,24 +664,26 @@ bool LoadSimulation(Dataport *loader) {
 
 bool UpdateOntheflySimuParams(Dataport *loader) {
 	// Connect the dataport
+	
+
 	if (!AccessDataportTimed(loader, 2000)) {
-		SetErrorSub("Failed to connect to DP");
+		SetErrorSub("Failed to connect to loader DP");
 		return false;
 	}
 	BYTE* buffer = (BYTE *)loader->buff;
 
 	sHandle->ontheflyParams = READBUFFER(OntheflySimulationParams);
-
 	ReleaseDataport(loader);
 
 	return true;
 }
 
-void UpdateHits(Dataport *dpHit, int prIdx, DWORD timeout) {
+void UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DWORD timeout) {
 	switch (sHandle->sMode) {
 	case MC_MODE:
 	{
 		UpdateMCHits(dpHit, prIdx, sHandle->nbMoments, timeout);
+		if (dpLog) UpdateLog(dpLog, timeout);
 	}
 		break;
 	case AC_MODE:
@@ -695,7 +701,7 @@ size_t GetHitsSize() {
 void ResetTmpCounters() {
 	SetState(NULL, "Resetting local cache...", false, true);
 
-	memset(&sHandle->tmpCount, 0, sizeof(FacetHitBuffer));
+	memset(&sHandle->tmpGlobalCount, 0, sizeof(FacetHitBuffer));
 
 	sHandle->distTraveledSinceUpdate_total = 0.0;
 	sHandle->distTraveledSinceUpdate_fullHitsOnly = 0.0;
@@ -709,9 +715,9 @@ void ResetTmpCounters() {
 			f->ResetCounter();
 			f->hitted = false;
 
-			if (f->hits) {
+			if (f->texture) {
 				for (size_t m = 0; m < (sHandle->nbMoments + 1); m++) {
-					memset(f->hits[m], 0, f->textureSize);
+					memset(f->texture[m], 0, f->textureSize);
 				}
 			}
 
@@ -741,6 +747,7 @@ void ResetSimulation() {
 	sHandle->lastHitFacet = NULL;
 	sHandle->totalDesorbed = 0;
 	ResetTmpCounters();
+	sHandle->tmpParticleLog.clear();
 	if (sHandle->acDensity) memset(sHandle->acDensity, 0, sHandle->nbAC * sizeof(ACFLOAT));
 
 }

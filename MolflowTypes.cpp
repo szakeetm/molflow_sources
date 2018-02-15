@@ -8,7 +8,7 @@ ProfileSlice& ProfileSlice::operator+=(const ProfileSlice& rhs)
 	return *this;
 }
 
-TextureCell & TextureCell::operator+=(const TextureCell & rhs)
+TextureCell& TextureCell::operator+=(const TextureCell& rhs)
 {
 	this->countEquiv += rhs.countEquiv;
 	this->sum_v_ort_per_area += rhs.sum_v_ort_per_area;

@@ -383,7 +383,7 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 		else if (src == maxButton) {
 			if (worker->GetGeometry()->IsLoaded()) {
 				char tmp[128];
-				sprintf(tmp, "%I64d", worker->desorptionLimit);
+				sprintf(tmp, "%I64d", worker->ontheflyParams.desorptionLimit);
 				char *val = GLInputBox::GetInput(tmp, "Desorption max (0=>endless)", "Edit MAX");
 				if (val) {
 					llong maxDes;
@@ -391,7 +391,8 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 						GLMessageBox::Display("Invalid 'maximum desorption' number", "Error", GLDLG_OK, GLDLG_ICONERROR);
 					}
 					else {
-						worker->SetMaxDesorption(maxDes);
+						worker->ontheflyParams.desorptionLimit = maxDes;
+						worker->ChangeSimuParams(); //Sync with subprocesses
 					}
 				}
 			}

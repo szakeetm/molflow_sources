@@ -127,7 +127,7 @@ void CalcTotalOutgassing() {
 //	*phi = atan2(v, u); // -PI..PI
 //}
 
-void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
+void UpdateMCHits(Dataport *dpHit,int prIdx, size_t nbMoments, DWORD timeout) {
 
 	BYTE *buffer;
 	GlobalHitBuffer *gHits;
@@ -138,18 +138,18 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 	t0 = GetTick();
 #endif
 	SetState(NULL, "Waiting for 'hits' dataport access...", false, true);
-	sHandle->lastUpdateOK = AccessDataportTimed(dpHit, timeout);
+	sHandle->lastHitUpdateOK = AccessDataportTimed(dpHit, timeout);
 	SetState(NULL, "Updating MC hits...", false, true);
-	if (!sHandle->lastUpdateOK) return;
+	if (!sHandle->lastHitUpdateOK) return; //Timeout, will try again later
 
 	buffer = (BYTE*)dpHit->buff;
 	gHits = (GlobalHitBuffer *)buffer;
 
 	// Global hits and leaks: adding local hits to shared memory
-	gHits->total.hit.nbMCHit += sHandle->tmpCount.hit.nbMCHit;
-	gHits->total.hit.nbHitEquiv += sHandle->tmpCount.hit.nbHitEquiv;
-	gHits->total.hit.nbAbsEquiv += sHandle->tmpCount.hit.nbAbsEquiv;
-	gHits->total.hit.nbDesorbed += sHandle->tmpCount.hit.nbDesorbed;
+	gHits->total.hit.nbMCHit += sHandle->tmpGlobalCount.hit.nbMCHit;
+	gHits->total.hit.nbHitEquiv += sHandle->tmpGlobalCount.hit.nbHitEquiv;
+	gHits->total.hit.nbAbsEquiv += sHandle->tmpGlobalCount.hit.nbAbsEquiv;
+	gHits->total.hit.nbDesorbed += sHandle->tmpGlobalCount.hit.nbDesorbed;
 	gHits->distTraveled_total += sHandle->distTraveledSinceUpdate_total;
 	gHits->distTraveledTotal_fullHitsOnly += sHandle->distTraveledSinceUpdate_fullHitsOnly;
 
@@ -227,7 +227,7 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 								size_t add = x + y*f->sh.texWidth;
 
 								//Add temporary hit counts
-								shTexture[add] += f->hits[m][add];
+								shTexture[add] += f->texture[m][add];
 
 								double val[3];  //pre-calculated autoscaling values (Pressure, imp.rate, density)
 
@@ -259,7 +259,7 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 
 				if (f->sh.countDirection) {
 					for (int m = 0; m < (1 + nbMoments); m++) {
-						VHIT *shDir = (VHIT *)(buffer + (f->sh.hitOffset + facetHitsSize + f->profileSize*(1 + nbMoments) + f->textureSize*(1 + nbMoments) + f->directionSize*m));
+						DirectionCell *shDir = (DirectionCell *)(buffer + (f->sh.hitOffset + facetHitsSize + f->profileSize*(1 + nbMoments) + f->textureSize*(1 + nbMoments) + f->directionSize*m));
 						for (y = 0; y < f->sh.texHeight; y++) {
 							for (x = 0; x < f->sh.texWidth; x++) {
 								size_t add = x + y*f->sh.texWidth;
@@ -295,6 +295,7 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 	}
 
 	ReleaseDataport(dpHit);
+
 	ResetTmpCounters();
 	extern char* GetSimuStatus();
 	SetState(NULL, GetSimuStatus(), false, true);
@@ -304,6 +305,37 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 	printf("Update hits: %f us\n", (t1 - t0)*1000000.0);
 #endif
 
+}
+
+void UpdateLog(Dataport * dpLog, DWORD timeout)
+{
+	if (sHandle->tmpParticleLog.size()) {
+		//double t0, t1;
+		//t0 = GetTick();
+		SetState(NULL, "Waiting for 'dpLog' dataport access...", false, true);
+		sHandle->lastLogUpdateOK = AccessDataportTimed(dpLog, timeout);
+		SetState(NULL, "Updating Log...", false, true);
+		if (!sHandle->lastLogUpdateOK) return;
+
+		size_t* logBuff = (size_t*)dpLog->buff;
+		size_t recordedLogSize = *logBuff;
+		ParticleLoggerItem* logBuff2 = (ParticleLoggerItem*)(logBuff + 1);
+
+		size_t writeNb;
+		if (recordedLogSize > sHandle->ontheflyParams.logLimit) writeNb = 0;
+		else writeNb = Min(sHandle->tmpParticleLog.size(), sHandle->ontheflyParams.logLimit - recordedLogSize);
+		memcpy(&logBuff2[recordedLogSize], &sHandle->tmpParticleLog[0], writeNb * sizeof(ParticleLoggerItem)); //Knowing that vector memories are contigious
+		(*logBuff) += writeNb;
+		ReleaseDataport(dpLog);
+		sHandle->tmpParticleLog.clear();
+		extern char* GetSimuStatus();
+		SetState(NULL, GetSimuStatus(), false, true);
+
+#ifdef _DEBUG
+		t1 = GetTick();
+		printf("Update hits: %f us\n", (t1 - t0)*1000000.0);
+#endif
+	}
 }
 
 // Compute particle teleport
@@ -350,9 +382,10 @@ void PerformTeleport(SubprocessFacet *iFacet) {
 	}
 	// Count this hit as a transparent pass
 	RecordHit(HIT_TELEPORTSOURCE);
-	if (iFacet->hits && iFacet->sh.countTrans) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 2.0);
+	if (iFacet->texture && iFacet->sh.countTrans) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 2.0);
 	if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 2.0);
+	LogHit(iFacet);
 	if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
 
 	// Relaunch particle from new facet
@@ -512,8 +545,8 @@ bool StartFromSource() {
 	int nbTry = 0;
 
 	// Check end of simulation
-	if (sHandle->desorptionLimit > 0) {
-		if (sHandle->totalDesorbed >= sHandle->desorptionLimit) {
+	if (sHandle->ontheflyParams.desorptionLimit > 0) {
+		if (sHandle->totalDesorbed >= sHandle->ontheflyParams.desorptionLimit/sHandle->ontheflyParams.nbProcess) {
 			sHandle->lastHitFacet = NULL;
 			return false;
 		}
@@ -785,7 +818,7 @@ bool StartFromSource() {
 
 	src->hitted = true;
 	sHandle->totalDesorbed++;
-	sHandle->tmpCount.hit.nbDesorbed++;
+	sHandle->tmpGlobalCount.hit.nbDesorbed++;
 	//sHandle->nbPHit = 0;
 
 	if (src->sh.isMoving) {
@@ -799,7 +832,8 @@ bool StartFromSource() {
 	IncreaseFacetCounter(src, sHandle->flightTimeCurrentParticle, 0, 1, 0, 2.0 / ortVelocity, (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity);
 	//Desorption doesn't contribute to angular profiles, nor to angle maps
 	ProfileFacet(src, sHandle->flightTimeCurrentParticle, false, 2.0, 1.0); //was 2.0, 1.0
-	if (src->hits && src->sh.countDes) RecordHitOnTexture(src, sHandle->flightTimeCurrentParticle, true, 2.0, 1.0); //was 2.0, 1.0
+	LogHit(src);
+	if (src->texture && src->sh.countDes) RecordHitOnTexture(src, sHandle->flightTimeCurrentParticle, true, 2.0, 1.0); //was 2.0, 1.0
 	//if (src->direction && src->sh.countDirection) RecordDirectionVector(src, sHandle->flightTimeCurrentParticle);
 
 	// Reset volatile state
@@ -1029,8 +1063,12 @@ void PerformBounce(SubprocessFacet *iFacet) {
 
 	bool revert = false;
 
+	sHandle->tmpGlobalCount.hit.nbMCHit++; //global
+	sHandle->tmpGlobalCount.hit.nbHitEquiv += sHandle->oriRatio;
+
 	// Handle super structure link facet. Can be 
 	if (iFacet->sh.superDest) {
+		IncreaseFacetCounter(iFacet, sHandle->flightTimeCurrentParticle, 1, 0, 0, 0, 0);
 		sHandle->curStruct = iFacet->sh.superDest - 1;
 		if (iFacet->sh.isMoving) { //A very special case where link facets can be used as transparent but moving facets
 			RecordHit(HIT_MOVING);
@@ -1040,9 +1078,10 @@ void PerformBounce(SubprocessFacet *iFacet) {
 			// Count this hit as a transparent pass
 			RecordHit(HIT_TRANS);
 		}
+		LogHit(iFacet);
 		ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 2.0);
 		if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
-		if (iFacet->hits && iFacet->sh.countTrans) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 2.0);
+		if (iFacet->texture && iFacet->sh.countTrans) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 2.0);
 		if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
 		return;
 
@@ -1054,8 +1093,9 @@ void PerformBounce(SubprocessFacet *iFacet) {
 		if (iFacet->ready) {
 			IncreaseFacetCounter(iFacet, sHandle->flightTimeCurrentParticle, 0, 0, 1, 0, 0);
 			iFacet->ready = false;
+			LogHit(iFacet);
 			ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 1.0);
-			if (iFacet->hits && iFacet->sh.countAbs) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 1.0);
+			if (iFacet->texture && iFacet->sh.countAbs) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 1.0);
 			if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
 		}
 		return;
@@ -1068,8 +1108,7 @@ void PerformBounce(SubprocessFacet *iFacet) {
 	}
 
 	//Texture/Profile incoming hit
-	sHandle->tmpCount.hit.nbMCHit++; //global
-	sHandle->tmpCount.hit.nbHitEquiv += sHandle->oriRatio;
+	
 
 	//Register (orthogonal) velocity
 	double ortVelocity = sHandle->velocityCurrentParticle*abs(Dot(sHandle->pDir, iFacet->sh.N));
@@ -1079,8 +1118,9 @@ void PerformBounce(SubprocessFacet *iFacet) {
 	iFacet->sh.counter.hit.sum_v_ort += (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
 
 	IncreaseFacetCounter(iFacet, sHandle->flightTimeCurrentParticle, 1, 0, 0, 1.0 / ortVelocity, (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity);
-	if (iFacet->hits && iFacet->sh.countRefl) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, true, 1.0, 1.0);
+	if (iFacet->texture && iFacet->sh.countRefl) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, true, 1.0, 1.0);
 	if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
+	LogHit(iFacet);
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, true, 1.0, 1.0);
 	if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
 
@@ -1128,7 +1168,7 @@ void PerformBounce(SubprocessFacet *iFacet) {
 	/*iFacet->sh.counter.hit.sum_1_per_ort_velocity += 1.0 / ortVelocity;
 	iFacet->sh.counter.hit.sum_v_ort += (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
 	IncreaseFacetCounter(iFacet, sHandle->flightTimeCurrentParticle, 0, 0, 0, 1.0 / ortVelocity, (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity);
-	if (iFacet->hits && iFacet->sh.countRefl) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, false, 1.0, 1.0); //count again for outward velocity
+	if (iFacet->texture && iFacet->sh.countRefl) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, false, 1.0, 1.0); //count again for outward velocity
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, false, 1.0, 1.0);
 	//no direction count on outgoing, neither angle map
 
@@ -1146,7 +1186,7 @@ void PerformTransparentPass(SubprocessFacet *iFacet) { //disabled, caused findin
 	iFacet->sh.counter.hit.sum_1_per_ort_velocity += 2.0 / (sHandle->velocityCurrentParticle*directionFactor);
 	iFacet->sh.counter.hit.sum_v_ort += 2.0*(sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*sHandle->velocityCurrentParticle*directionFactor;
 	iFacet->hitted = true;
-	if (iFacet->hits && iFacet->sh.countTrans) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle + iFacet->colDist / 100.0 / sHandle->velocityCurrentParticle,
+	if (iFacet->texture && iFacet->sh.countTrans) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle + iFacet->colDist / 100.0 / sHandle->velocityCurrentParticle,
 		true, 2.0, 2.0);
 	if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle + iFacet->colDist / 100.0 / sHandle->velocityCurrentParticle);
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle + iFacet->colDist / 100.0 / sHandle->velocityCurrentParticle,
@@ -1156,15 +1196,16 @@ void PerformTransparentPass(SubprocessFacet *iFacet) { //disabled, caused findin
 }
 
 void RecordAbsorb(SubprocessFacet *iFacet) {
-	sHandle->tmpCount.hit.nbMCHit++; //global	
-	sHandle->tmpCount.hit.nbHitEquiv += sHandle->oriRatio;
-	sHandle->tmpCount.hit.nbAbsEquiv += sHandle->oriRatio;
+	sHandle->tmpGlobalCount.hit.nbMCHit++; //global	
+	sHandle->tmpGlobalCount.hit.nbHitEquiv += sHandle->oriRatio;
+	sHandle->tmpGlobalCount.hit.nbAbsEquiv += sHandle->oriRatio;
 	RecordHit(HIT_ABS);
 	double ortVelocity = sHandle->velocityCurrentParticle*abs(Dot(sHandle->pDir, iFacet->sh.N));
 	IncreaseFacetCounter(iFacet, sHandle->flightTimeCurrentParticle, 1, 0, 1, 2.0 / ortVelocity, (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity);
+	LogHit(iFacet);
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 1.0); //was 2.0, 1.0
 	if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
-	if (iFacet->hits && iFacet->sh.countAbs) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 1.0); //was 2.0, 1.0
+	if (iFacet->texture && iFacet->sh.countAbs) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 1.0); //was 2.0, 1.0
 	if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
 }
 
@@ -1177,9 +1218,9 @@ void RecordHitOnTexture(SubprocessFacet *f, double time, bool countHit, double v
 
 	for (size_t m = 0; m <= sHandle->nbMoments; m++)
 		if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
-			if (countHit) f->hits[m][add].countEquiv += sHandle->oriRatio;
-			f->hits[m][add].sum_1_per_ort_velocity += sHandle->oriRatio * velocity_factor / ortVelocity;
-			f->hits[m][add].sum_v_ort_per_area += sHandle->oriRatio * ortSpeedFactor*ortVelocity*f->inc[add]; // sum ortho_velocity[m/s] / cell_area[cm2]
+			if (countHit) f->texture[m][add].countEquiv += sHandle->oriRatio;
+			f->texture[m][add].sum_1_per_ort_velocity += sHandle->oriRatio * velocity_factor / ortVelocity;
+			f->texture[m][add].sum_v_ort_per_area += sHandle->oriRatio * ortSpeedFactor*ortVelocity*f->inc[add]; // sum ortho_velocity[m/s] / cell_area[cm2]
 		}
 }
 
@@ -1212,8 +1253,8 @@ void ProfileFacet(SubprocessFacet *f, double time, bool countHit, double velocit
 				}
 			}
 	}
-	else if (Contains({PROFILE_PRESSURE_U,PROFILE_PRESSURE_V},f->sh.profileType)) {
-		size_t pos = (size_t)((f->sh.profileType == PROFILE_PRESSURE_U ? f->colU : f->colV)*(double)PROFILE_SIZE);
+	else if (Contains({PROFILE_U,PROFILE_V},f->sh.profileType)) {
+		size_t pos = (size_t)((f->sh.profileType == PROFILE_U ? f->colU : f->colV)*(double)PROFILE_SIZE);
 		if (pos >= 0 && pos < PROFILE_SIZE) {
 			for (size_t m = 0; m <= nbMoments; m++) {
 				if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->timeWindowSize / 2.0) {
@@ -1245,6 +1286,22 @@ void ProfileFacet(SubprocessFacet *f, double time, bool countHit, double velocit
 			}
 		}
 	}	
+}
+
+void LogHit(SubprocessFacet * f)
+{
+	if (sHandle->ontheflyParams.enableLogging &&
+		sHandle->ontheflyParams.logFacetId == f->globalId &&
+		sHandle->tmpParticleLog.size() < (sHandle->ontheflyParams.logLimit / sHandle->ontheflyParams.nbProcess)) {
+		ParticleLoggerItem log;
+		log.facetHitPosition = Vector2d(f->colU, f->colV);
+		std::tie(log.hitTheta,log.hitPhi) = CartesianToPolar(f->sh.nU, f->sh.nV, f->sh.N);
+		log.oriRatio = sHandle->oriRatio;
+		log.particleDecayMoment = sHandle->particleDecayMoment;
+		log.time = sHandle->flightTimeCurrentParticle;
+		log.velocity = sHandle->velocityCurrentParticle;
+		sHandle->tmpParticleLog.push_back(log);
+	}
 }
 
 void RecordAngleMap(SubprocessFacet* collidedFacet) {
@@ -1369,13 +1426,14 @@ void SubprocessFacet::RegisterTransparentPass()
 	IncreaseFacetCounter(this, sHandle->flightTimeCurrentParticle + this->colDist / 100.0 / sHandle->velocityCurrentParticle, 1, 0, 0, 2.0 / (sHandle->velocityCurrentParticle*directionFactor), 2.0*(sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*sHandle->velocityCurrentParticle*directionFactor);
 
 	this->hitted = true;
-	if (this->hits && this->sh.countTrans) {
+	if (this->texture && this->sh.countTrans) {
 		RecordHitOnTexture(this, sHandle->flightTimeCurrentParticle + this->colDist / 100.0 / sHandle->velocityCurrentParticle,
 			true, 2.0, 2.0);
 	}
 	if (this->direction && this->sh.countDirection) {
 		RecordDirectionVector(this, sHandle->flightTimeCurrentParticle + this->colDist / 100.0 / sHandle->velocityCurrentParticle);
 	}
+	LogHit(this);
 	ProfileFacet(this, sHandle->flightTimeCurrentParticle + this->colDist / 100.0 / sHandle->velocityCurrentParticle,
 		true, 2.0, 2.0);
 	if (this->sh.anglemapParams.record) RecordAngleMap(this);

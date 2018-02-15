@@ -64,8 +64,8 @@ public:
 	bool  texAutoScaleIncludeConstantFlow;  // Include constant flow when calculating autoscale values
 
 #pragma region GeometryRender.cpp
-	void BuildFacetTextures(BYTE *hits,bool renderRegularTexture,bool renderDirectionTexture);
-	void BuildFacetDirectionTextures(BYTE *hits);
+	void BuildFacetTextures(BYTE *texture,bool renderRegularTexture,bool renderDirectionTexture);
+	void BuildFacetDirectionTextures(BYTE *texture);
 #pragma endregion
 
 	// Temporary variable (used by LoadXXX)

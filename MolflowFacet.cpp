@@ -418,13 +418,13 @@ void Facet::LoadTXT(FileReader *file) {
 
 		sh.opacity = 0.0;
 		if (IsZero(o + 1.0)) {
-			sh.profileType = PROFILE_PRESSURE_U;
+			sh.profileType = PROFILE_U;
 			sh.is2sided = true;
 		}
 		if (IsZero(o + 2.0))
 			sh.profileType = PROFILE_ANGULAR;
 		if (IsZero(o + 4.0)) {
-			sh.profileType = PROFILE_PRESSURE_U;
+			sh.profileType = PROFILE_U;
 			sh.is2sided = false;
 		}
 
@@ -610,7 +610,7 @@ size_t Facet::GetHitsSize(size_t nbMoments)  {
 		sizeof(FacetHitBuffer) +
 		+(sh.texWidth*sh.texHeight * sizeof(TextureCell))
 		+ (sh.isProfile ? (PROFILE_SIZE * sizeof(ProfileSlice)) : 0)
-		+ (sh.countDirection ? (sh.texWidth*sh.texHeight * sizeof(VHIT)) : 0)
+		+ (sh.countDirection ? (sh.texWidth*sh.texHeight * sizeof(DirectionCell)) : 0)
 		+ (sh.anglemapParams.hasRecorded ? sh.anglemapParams.phiWidth * (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes) * sizeof(size_t) : 0)
 		);
 
@@ -619,7 +619,7 @@ size_t Facet::GetHitsSize(size_t nbMoments)  {
 size_t Facet::GetTexRamSize(size_t nbMoments)  {
 	//Values
 	size_t sizePerCell = sizeof(TextureCell)*nbMoments; //TextureCell: long + 2*double
-	if (sh.countDirection) sizePerCell += sizeof(VHIT)*nbMoments; //VHIT: Vector3d + long
+	if (sh.countDirection) sizePerCell += sizeof(DirectionCell)*nbMoments; //DirectionCell: Vector3d + long
 	//Mesh
 	sizePerCell += sizeof(int); //CellPropertiesIds
 	size_t sizePerMeshElement = sizeof(CellProperties);
@@ -641,7 +641,7 @@ size_t Facet::GetTexRamSizeForRatio(double ratio, bool useMesh, bool countDir, s
 
 		//Values
 		size_t sizePerCell = sizeof(TextureCell)*nbMoments; //TextureCell: long + 2*double
-		if (sh.countDirection) sizePerCell += sizeof(VHIT)*nbMoments; //VHIT: Vector3d + long
+		if (sh.countDirection) sizePerCell += sizeof(DirectionCell)*nbMoments; //DirectionCell: Vector3d + long
 		//Mesh
 		sizePerCell += sizeof(int); //CellPropertiesIds
 		size_t sizePerMeshElement = sizeof(CellProperties);
@@ -705,7 +705,6 @@ void Facet::BuildTexture(TextureCell *texBuffer, int textureMode, double min, do
 	int val;
 
 	glBindTexture(GL_TEXTURE_2D, glTex);
-	if (useColorMap) {
 
 		
 		// 16 Bit rainbow colormap
@@ -715,11 +714,11 @@ void Facet::BuildTexture(TextureCell *texBuffer, int textureMode, double min, do
 		if (min < max) {
 			if (doLog) {
 				if (min < 1e-20) min = 1e-20;
-				scaleFactor = 65534.0 / (log10(max) - log10(min)); // -1 for saturation color
+				scaleFactor = (useColorMap ? 65534.0 : 255.0) / (log10(max) - log10(min)); // -1 for saturation color
 			}
 			else {
 
-				scaleFactor = 65534.0 / (max - min); // -1 for saturation color
+				scaleFactor = (useColorMap ? 65534.0 : 255.0) / (max - min); // -1 for saturation color
 			}
 		}
 		else {
@@ -727,9 +726,18 @@ void Facet::BuildTexture(TextureCell *texBuffer, int textureMode, double min, do
 			min = 0;
 		}
 
-		int *buff32 = (int *)malloc(tSize * 4);
-		if (!buff32) throw Error("Out of memory in Facet::BuildTexture()");
-		memset(buff32, 0, tSize * 4);
+		unsigned char *buff8;
+		int *buff32;
+
+		if (useColorMap) {
+			buff32 = (int *)calloc(tSize, sizeof(int)); //Color
+			if (!buff32) throw Error("Cannot allocate memory for texture buffer");
+		}
+		else {
+			buff8 = (unsigned char *)calloc(tSize, sizeof(unsigned char)); //Greyscale
+			if (!buff8) throw Error("Cannot allocate memory for texture buffer");
+		}
+
 		for (size_t j = 0; j < sh.texHeight; j++) {
 			for (size_t i = 0; i < sh.texWidth; i++) {
 				size_t idx = i + j*sh.texWidth;
@@ -752,9 +760,14 @@ void Facet::BuildTexture(TextureCell *texBuffer, int textureMode, double min, do
 
 					val = (int)((physicalValue - min)*scaleFactor + 0.5);
 				}
-				Saturate(val, 0, 65535);
-				buff32[(i + 1) + (j + 1)*texDimW] = colorMap[val];
-				if (IsEqual(texBuffer[idx].countEquiv,0.0)) buff32[(i + 1) + (j + 1)*texDimW] = (COLORREF)(65535 + 256 + 1); //show unset value as white
+				Saturate(val, 0, useColorMap ? 65535 : 255);
+				if (useColorMap) {
+					buff32[(i + 1) + (j + 1)*texDimW] = colorMap[val];
+					if (IsEqual(texBuffer[idx].countEquiv, 0.0)) buff32[(i + 1) + (j + 1)*texDimW] = (COLORREF)(65535 + 256 + 1); //show unset value as white
+				}
+				else {
+					buff8[(i + 1) + (j + 1)*texDimW] = val;
+				}
 			}
 		}
 
@@ -784,7 +797,7 @@ void Facet::BuildTexture(TextureCell *texBuffer, int textureMode, double min, do
 		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
 		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
 		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &format);
-		if (format == GL_RGBA && width == texDimW && height == texDimH) {
+		if (format == (useColorMap ? GL_RGBA : GL_LUMINANCE) && width == texDimW && height == texDimH) {
 			//Update texture
 			glTexSubImage2D(
 				GL_TEXTURE_2D,       // Type
@@ -793,9 +806,9 @@ void Facet::BuildTexture(TextureCell *texBuffer, int textureMode, double min, do
 				0,					// Y offset
 				(int)texDimW,             // Width
 				(int)texDimH,             // Height
-				GL_RGBA,             // Format RGBA
+				(useColorMap ? GL_RGBA : GL_LUMINANCE),             // Format RGBA
 				GL_UNSIGNED_BYTE,    // 8 Bit/pixel
-				buff32              // Data
+				(useColorMap ? (void*)buff32 : (void*)buff8)              // Data
 			);
 		}
 		else {
@@ -803,127 +816,17 @@ void Facet::BuildTexture(TextureCell *texBuffer, int textureMode, double min, do
 			glTexImage2D(
 				GL_TEXTURE_2D,       // Type
 				0,                   // No Mipmap
-				GL_RGBA,             // Format RGBA
+				(useColorMap ? GL_RGBA : GL_LUMINANCE),             // Format RGBA or LUMINANCE
 				(int)texDimW,             // Width
 				(int)texDimH,             // Height
 				0,                   // Border
-				GL_RGBA,             // Format RGBA
+				(useColorMap ? GL_RGBA : GL_LUMINANCE),             // Format RGBA or LUMINANCE
 				GL_UNSIGNED_BYTE,    // 8 Bit/pixel
-				buff32              // Data
+				(useColorMap ? (void*)buff32 : (void*)buff8)              // Data
 			);
 		}
-		free(buff32);
+		free(useColorMap ? (void*)buff32 : (void*)buff8);
 		GLToolkit::CheckGLErrors("Facet::BuildTexture()");
-	}
-	else {
-
-		
-		// 8 bit Luminance
-		
-		if (min < max) {
-			if (doLog) {
-				if (min < 1e-20) min = 1e-20;
-				scaleFactor = 255.0 / (log10(max) - log10(min)); // -1 for saturation color
-			}
-			else {
-
-				scaleFactor = 255.0 / (max - min); // -1 for saturation color
-			}
-		}
-		else {
-			doLog = false;
-			min = 0;
-		}
-
-		unsigned char *buff8 = (unsigned char *)malloc(tSize * sizeof(unsigned char));
-		if (!buff8) throw Error("Out of memory in Facet::BuildTexture()");
-		memset(buff8, 0, tSize * sizeof(unsigned char));
-		float fmin = (float)min;
-
-		for (size_t j = 0; j < sh.texHeight; j++) {
-			for (size_t i = 0; i < sh.texWidth; i++) {
-				size_t idx = i + j*sh.texWidth;
-				double physicalValue;
-				switch (textureMode) {
-				case 0: //pressure
-					physicalValue = texBuffer[idx].sum_v_ort_per_area*dCoeff1;
-					break;
-				case 1: //impingement rate
-					physicalValue = (double)texBuffer[idx].countEquiv / this->GetMeshArea(idx, true)*dCoeff2;
-					break;
-				case 2: //particle density
-					physicalValue = DensityCorrection() * texBuffer[idx].sum_1_per_ort_velocity / this->GetMeshArea(idx, true)*dCoeff3;
-					break;
-				}
-				if (doLog) {
-					val = (int)((log10(physicalValue) - log10(min))*scaleFactor + 0.5f);
-				}
-				else {
-					val = (int)((physicalValue - min)*scaleFactor + 0.5f);
-				}
-				Saturate(val, 0, 255);
-				buff8[(i + 1) + (j + 1)*texDimW] = val;
-			}
-		}
-		/*
-		// Perform edge smoothing (only with mesh)
-		if( mesh ) {
-		for(int j=-1;j<=sh.texHeight;j++) {
-		for(int i=-1;i<=sh.texWidth;i++) {
-		bool doSmooth = (i<0) || (i>=sh.texWidth) ||
-		(j<0) || (j>=sh.texHeight) ||
-		mesh[i+j*sh.texWidth].area==0.0;
-		if( doSmooth ) {
-		if( doLog ) {
-		val = (int)((LOG10(GetSmooth(i,j,texBuffer,dCoeff))-LOG10(min))*scaleFactor+0.5f);
-		} else {
-		val = (int)((GetSmooth(i,j,texBuffer,dCoeff)-min)*scaleFactor+0.5f);
-		}
-		Saturate(val,0,255);
-		buff8[(i+1) + (j+1)*texDimW] = val;
-		}
-		}
-		}
-		}*/
-
-		GLint width, height, format;
-		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
-		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
-		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &format);
-		if (format == GL_LUMINANCE && width == texDimW && height == texDimH) {
-			//Update texture
-			glTexSubImage2D(
-				GL_TEXTURE_2D,       // Type
-				0,                   // No Mipmap
-				0,					// X offset
-				0,					// Y offset
-				(int)texDimW,             // Width
-				(int)texDimH,             // Height
-				GL_LUMINANCE,         // Format RGBA
-				GL_UNSIGNED_BYTE,    // 8 Bit/pixel
-				buff8                // Data
-			);
-		}
-
-		else {
-			//Rebuild texture
-			glTexImage2D(
-				GL_TEXTURE_2D,       // Type
-
-				0,                   // No Mipmap
-				GL_LUMINANCE,         // Format RGBA
-				(int)texDimW,             // Width
-				(int)texDimH,             // Height
-
-				0,                   // Border
-				GL_LUMINANCE,         // Format RGBA
-				GL_UNSIGNED_BYTE,    // 8 Bit/pixel
-				buff8                // Data
-			);
-		}
-		free(buff8);
-		GLToolkit::CheckGLErrors("Facet::BuildTexture()");
-	}
 
 }
 

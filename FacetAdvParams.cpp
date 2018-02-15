@@ -805,7 +805,7 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 
 	//Angle map
 	std::stringstream statusLabelText;
-	std::string mapSizeText = mApp->FormatSize((DWORD)sumAngleMapSize*sizeof(size_t));
+	std::string mapSizeText = mApp->FormatSize(sumAngleMapSize*sizeof(size_t));
 	if (hasAngleMapE) {
 		if (f0->sh.anglemapParams.hasRecorded)
 			statusLabelText << "All selected facets have recorded angle maps (" << mapSizeText << ")";

@@ -91,9 +91,11 @@ Worker::Worker() {
 	sprintf(ctrlDpName, "MFLWCTRL%d", pid);
 	sprintf(loadDpName, "MFLWLOAD%d", pid);
 	sprintf(hitsDpName, "MFLWHITS%d", pid);
+	sprintf(logDpName, "MFLWLOG%d", pid);
 
-	nbProcess = 0;
-	desorptionLimit = 0;
+	ontheflyParams.nbProcess = 0;
+	ontheflyParams.enableLogging = false;
+	ontheflyParams.desorptionLimit = 0;
 	ontheflyParams.lowFluxCutoff = 1E-7;
 	ontheflyParams.lowFluxMode = false;
 
@@ -102,6 +104,8 @@ Worker::Worker() {
 
 	dpControl = NULL;
 	dpHit = NULL;
+	dpLog = NULL;
+
 	hitCacheSize = 0;
 	nbMCHit = 0;
 	nbHitEquiv = 0.0;
@@ -226,7 +230,7 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, bool askConfirm, bool
 					GLMessageBox::Display((char*)e.GetMsg(), "Error writing file.", GLDLG_OK, GLDLG_ICONERROR);
 					return;
 				}
-				geom->loaded_desorptionLimit = desorptionLimit;
+				geom->loaded_desorptionLimit = ontheflyParams.desorptionLimit;
 				if (isTXT) geom->SaveTXT(f, dpHit, saveSelected);
 				else if (isGEO || isGEO7Z) {
 					/*
@@ -288,7 +292,7 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, bool askConfirm, bool
 						if (!hz) {
 							throw Error("Error creating ZIP file");
 						}
-						if (!ZipAdd(hz, GetShortFileName(fileNameWithXML), fileNameWithXML)) remove(fileNameWithXML);
+						if (!ZipAdd(hz, FileUtils::GetFilename(fileNameWithXML).c_str(), fileNameWithXML)) remove(fileNameWithXML);
 						else {
 							CloseZip(hz);
 							throw Error("Error compressing ZIP file.");
@@ -327,7 +331,7 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, bool askConfirm, bool
 	}
 	else if (ok && isGEO) fileName = fileNameWithGeo;
 	if (!autoSave && !saveSelected) {
-		SetFileName(fileName);
+		SetCurrentFileName(fileName);
 		mApp->UpdateTitle();
 	}
 }
@@ -477,7 +481,7 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 				nbHitEquiv = geom->loaded_nbHitEquiv;
 				nbDesorption = geom->loaded_nbDesorption;
 				nbAbsEquiv = geom->loaded_nbAbsEquiv;
-				desorptionLimit = geom->loaded_desorptionLimit;
+				ontheflyParams.desorptionLimit = geom->loaded_desorptionLimit;
 				nbLeakTotal = geom->loaded_nbLeak;
 				//RealReload();
 				strcpy(fullFileName, fileName);
@@ -489,7 +493,7 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 				nbMCHit = 0;
 				nbHitEquiv = 0.0;
 				nbDesorption = 0;
-				desorptionLimit = 0;
+				ontheflyParams.desorptionLimit = 0;
 				nbLeakTotal = 0;
 				Reload();
 			}
@@ -597,7 +601,7 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 			
 				geom->LoadSYN(f, progressDlg, &version);
 				SAFE_DELETE(f);
-				desorptionLimit = 0;
+				ontheflyParams.desorptionLimit = 0;
 			}
 			else { //insert
 				geom->InsertSYN(f, progressDlg, newStr);
@@ -606,7 +610,7 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 				nbMCHit = 0;
 				nbHitEquiv = 0.0;
 				nbDesorption = 0;
-				desorptionLimit = geom->loaded_desorptionLimit;
+				ontheflyParams.desorptionLimit = geom->loaded_desorptionLimit;
 			}
 
 			progressDlg->SetMessage("Reloading worker with new geometry...");
@@ -665,7 +669,7 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 				nbMCHit = geom->loaded_nbMCHit;
 				nbHitEquiv = geom->loaded_nbHitEquiv;
 				nbDesorption = geom->loaded_nbDesorption;
-				desorptionLimit = geom->loaded_desorptionLimit;
+				ontheflyParams.desorptionLimit = geom->loaded_desorptionLimit;
 				nbAbsEquiv = geom->loaded_nbAbsEquiv;
 				distTraveled_total = geom->distTraveled_total;
 				distTraveledTotal_fullHitsOnly = geom->distTraveledTotal_fullHitsOnly;
@@ -854,7 +858,7 @@ void Worker::InnerStop(float appTime) {
 
 void Worker::OneACStep() {
 
-	if (nbProcess == 0)
+	if (ontheflyParams.nbProcess == 0)
 		throw Error("No sub process found. (Simulation not available)");
 
 	if (!isRunning)  {
@@ -1093,12 +1097,13 @@ void Worker::RealReload() { //Sharing geometry with workers
 		throw Error(e.GetMsg());
 	}
 
-	if (nbProcess == 0) return;
+	if (ontheflyParams.nbProcess == 0) return;
 	
 	progressDlg->SetMessage("Asking subprocesses to clear geometry...");
 
 	// Clear geometry
 	CLOSEDP(dpHit);
+	CLOSEDP(dpLog);
 	if (!ExecuteAndWait(COMMAND_CLOSE, PROCESS_READY))
 	{
 		progressDlg->SetVisible(false);
@@ -1116,11 +1121,17 @@ void Worker::RealReload() { //Sharing geometry with workers
 	progressDlg->SetMessage("Creating dataport...");
 
 	size_t loadSize = geom->GetGeometrySize();
+	if (ontheflyParams.enableLogging) {
+		dpLog = CreateDataport(logDpName, sizeof(size_t) + sizeof(ParticleLoggerItem)*ontheflyParams.logLimit);
+		if (!dpLog)
+			throw Error("Failed to create 'dpLog' dataport.\nMost probably out of memory.\nReduce number of logged particles in Particle Logger.");
+		//*((size_t*)dpLog->buff) = 0; //Automatic 0-filling
+	}
 	Dataport *loader = CreateDataport(loadDpName, loadSize);
 	if( !loader )
 		throw Error("Failed to create 'loader' dataport.\nMost probably out of memory.\nReduce number of subprocesses or texture size.");
 	progressDlg->SetMessage("Accessing dataport...");
-	AccessDataportTimed(loader, (DWORD)(3000 + nbProcess*loadSize / 10000));
+	AccessDataportTimed(loader, (DWORD)(3000 + ontheflyParams.nbProcess*loadSize / 10000));
 	progressDlg->SetMessage("Assembling geometry to pass...");
 	geom->CopyGeometryBuffer((BYTE *)loader->buff,ontheflyParams);
 	progressDlg->SetMessage("Releasing dataport...");
@@ -1139,17 +1150,19 @@ void Worker::RealReload() { //Sharing geometry with workers
 		throw Error("Failed to create 'hits' dataport: out of memory.");
 	}
 
+	/*
 	// Compute number of max desorption per process
 	if (AccessDataportTimed(dpControl, DWORD(3000 + nbProcess*loadSize / 10000))) {
 		SHCONTROL *master = (SHCONTROL *)dpControl->buff;
-		llong common = desorptionLimit / (llong)nbProcess;
-		int remain = (int)(desorptionLimit % (llong)nbProcess);
+		llong common = ontheflyParams.desorptionLimit / (llong)nbProcess;
+		int remain = (int)(ontheflyParams.desorptionLimit % (llong)nbProcess);
 		for (size_t i = 0; i < nbProcess; i++) {
 			master->cmdParam2[i] = common;
 			if (i < remain) master->cmdParam2[i]++;
 		}
 		ReleaseDataport(dpControl);
 	}
+	*/
 
 	// Load geometry
 	progressDlg->SetMessage("Waiting for subprocesses to load geometry...");
@@ -1219,7 +1232,7 @@ void Worker::Start() {
 	if (!(totalDesorbedMolecules>0.0))
 		throw Error("Total outgassing is zero.");
 
-	if (nbProcess == 0)
+	if (ontheflyParams.nbProcess == 0)
 
 		throw Error("No sub process found. (Simulation not available)");
 
