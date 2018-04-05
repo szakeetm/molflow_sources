@@ -18,11 +18,11 @@ GNU General Public License for more details.
 
 #ifdef WIN
 #define NOMINMAX
-#include <windows.h> // For GetTickCount()
+//#include <windows.h> // For GetTickCount()
 #include <Process.h> // For _getpid()
 #else
-#include <time.h>
-#include <sys/time.h>
+//#include <time.h>
+//#include <sys/time.h>
 #endif
 
 #include <math.h>
@@ -159,6 +159,14 @@ DWORD GetSeed() {
 	}
 	return RevertBit(r ^ (DWORD)(_getpid()*65519));
 	#else*/
+	int processId;
+#ifdef  WIN
+	processId = _getpid();
+#else
+	processId = ::getpid();
+#endif //  WIN
+
+
 	return (DWORD)((int)(GetTick()*1000.0)*_getpid());
 	//#endif
 

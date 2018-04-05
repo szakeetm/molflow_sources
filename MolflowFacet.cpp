@@ -369,6 +369,7 @@ void Facet::LoadSYN(FileReader *file, int version, size_t nbVertex) {
 		file->ReadLLong();
 	}
 	file->ReadKeyword("nbHit"); file->ReadKeyword(":");
+	file->ReadLLong();
 	if (version >= 10) {
 		file->ReadKeyword("nbHitEquiv"); file->ReadKeyword(":");
 	}

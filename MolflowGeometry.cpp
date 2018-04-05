@@ -294,7 +294,6 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
-	sprintf(sh.name, "PIPE%g", L / R);
 
 	int nbDecade = 0;
 	int nbTF = 9 * nbDecade;
@@ -1015,6 +1014,10 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version) {
 	}
 	file->ReadKeyword("totalHit"); file->ReadKeyword(":");
 	loaded_nbMCHit = 0; loaded_nbHitEquiv = 0.0;  file->ReadLLong();
+	if (*version >= 10) {
+		file->ReadKeyword("totalHitEquiv"); file->ReadKeyword(":");
+		file->ReadDouble();
+	}
 	file->ReadKeyword("totalDes"); file->ReadKeyword(":");
 	loaded_nbDesorption = 0; file->ReadLLong();
 	if (*version >= 6) {
@@ -1027,6 +1030,12 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version) {
 		file->ReadKeyword("totalFlux"); file->ReadKeyword(":");
 		file->ReadDouble();
 		file->ReadKeyword("totalPower"); file->ReadKeyword(":");
+		file->ReadDouble();
+	}
+	if (*version >= 10) {
+		file->ReadKeyword("totalAbsEquiv"); file->ReadKeyword(":");
+		file->ReadDouble();
+		file->ReadKeyword("totalDist"); file->ReadKeyword(":");
 		file->ReadDouble();
 	}
 	file->ReadKeyword("maxDes"); file->ReadKeyword(":");

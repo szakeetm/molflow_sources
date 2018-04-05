@@ -17,9 +17,8 @@
 */
 
 #define NOMINMAX
-#include <windows.h>
-
-#include <tlhelp32.h>
+//#include <windows.h>
+//#include <tlhelp32.h>
 
 //#include <iostream>
 
@@ -29,7 +28,7 @@
 
 #include "Simulation.h"
 #ifdef WIN
-#include <Process.h> // For _getpid()
+//#include <Process.h> // For _getpid()
 #endif
 
 // Global process variables
@@ -303,7 +302,7 @@ bool UpdateParams() {
 	sHandle->tmpParticleLog.shrink_to_fit();
 	if (sHandle->ontheflyParams.enableLogging) sHandle->tmpParticleLog.reserve(sHandle->ontheflyParams.logLimit / sHandle->ontheflyParams.nbProcess);
 
-	return true;
+	return result;
 }
 
 

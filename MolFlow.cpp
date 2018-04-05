@@ -50,7 +50,7 @@ GNU General Public License for more details.
 #include "FacetAdvParams.h"
 #include "FacetDetails.h"
 #include "Viewer3DSettings.h"
-#include "TextureSettings.h"
+#include "TextureScaling.h"
 #include "GlobalSettings.h"
 #include "ProfilePlotter.h"
 #include "PressureEvolution.h"
@@ -69,7 +69,7 @@ GNU General Public License for more details.
 //---------------------------------------------------
 std::string appName = "Molflow";
 int appVersionId = 2664;
-std::string appVersionName = "2.6.64";
+std::string appVersionName = "2.6.65";
 //---------------------------------------------------
 
 static const char *fileLFilters = "All MolFlow supported files\0*.txt;*.xml;*.zip;*.geo;*.geo7z;*.syn;*.syn7z;*.str;*.stl;*.ase\0"
@@ -202,7 +202,7 @@ MolFlow::MolFlow()
 	facetAdvParams = NULL;
 	facetDetails = NULL;
 	viewer3DSettings = NULL;
-	textureSettings = NULL;
+	textureScaling = NULL;
 	formulaEditor = NULL;
 	globalSettings = NULL;
 	profilePlotter = NULL;
@@ -1087,7 +1087,7 @@ worker.ReleaseHits();
 int MolFlow::FrameMove()
 {	
 	if (worker.isRunning && ((m_fTime - lastUpdate) >= 1.0f)) {
-		if (textureSettings) textureSettings->Update();
+		if (textureScaling) textureScaling->Update();
 		//if (formulaEditor && formulaEditor->IsVisible()) formulaEditor->Refresh(); //Interface::Framemove does it already
 	}
 	Interface::FrameMove(); //might reset lastupdate
@@ -1132,7 +1132,7 @@ int MolFlow::RestoreDeviceObjects()
 	RVALIDATE_DLG(facetDetails);
 	RVALIDATE_DLG(smartSelection);
 	RVALIDATE_DLG(viewer3DSettings);
-	RVALIDATE_DLG(textureSettings);
+	RVALIDATE_DLG(textureScaling);
 	RVALIDATE_DLG(globalSettings);
 	RVALIDATE_DLG(profilePlotter);
 	RVALIDATE_DLG(texturePlotter);
@@ -1161,7 +1161,7 @@ int MolFlow::InvalidateDeviceObjects()
 	IVALIDATE_DLG(facetDetails);
 	IVALIDATE_DLG(smartSelection);
 	IVALIDATE_DLG(viewer3DSettings);
-	IVALIDATE_DLG(textureSettings);
+	IVALIDATE_DLG(textureScaling);
 	IVALIDATE_DLG(globalSettings);
 	IVALIDATE_DLG(profilePlotter);
 	IVALIDATE_DLG(texturePlotter);
@@ -1461,7 +1461,7 @@ void MolFlow::LoadFile(char *fName) {
 		if (profilePlotter) profilePlotter->Refresh();
 		if (texturePlotter) texturePlotter->Update(0.0,true);
 		//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
-		if (textureSettings) textureSettings->Update();
+		if (textureScaling) textureScaling->Update();
 		if (outgassingMap) outgassingMap->Update(m_fTime, true);
 		if (facetDetails) facetDetails->Update();
 		if (facetCoordinates) facetCoordinates->UpdateFromSelection();
@@ -1699,10 +1699,10 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			break;
 
 		case MENU_EDIT_TSCALING:
-			if (!textureSettings || !textureSettings->IsVisible()) {
-				SAFE_DELETE(textureSettings);
-				textureSettings = new TextureSettings();
-				textureSettings->Display(&worker, viewer);
+			if (!textureScaling || !textureScaling->IsVisible()) {
+				SAFE_DELETE(textureScaling);
+				textureScaling = new TextureScaling();
+				textureScaling->Display(&worker, viewer);
 			}
 			break;
 
@@ -2007,13 +2007,13 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 
 		}
 		else if (src == textureScalingBtn) {
-			if (!textureSettings || !textureSettings->IsVisible()) {
-				SAFE_DELETE(textureSettings);
-				textureSettings = new TextureSettings();
-				textureSettings->Display(&worker, viewer);
+			if (!textureScaling || !textureScaling->IsVisible()) {
+				SAFE_DELETE(textureScaling);
+				textureScaling = new TextureScaling();
+				textureScaling->Display(&worker, viewer);
 			}
 			else {
-				textureSettings->SetVisible(false);
+				textureScaling->SetVisible(false);
 			}
 		}
 		else if (src == profilePlotterBtn) {
@@ -2088,6 +2088,9 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 			return;
 		}
 	}
+	std::ostringstream temp;
+	temp << "PIPE" << L / R;
+	geom->UpdateName(temp.str().c_str());
 	ResetSimulation(false);
 
 	try {
@@ -2142,7 +2145,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	if (profilePlotter) profilePlotter->Refresh();
 	if (texturePlotter) texturePlotter->Update(0.0, true);
 	//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
-	if (textureSettings) textureSettings->Update();
+	if (textureScaling) textureScaling->Update();
 	if (outgassingMap) outgassingMap->Update(m_fTime, true);
 	if (facetDetails) facetDetails->Update();
 	if (facetCoordinates) facetCoordinates->UpdateFromSelection();
@@ -2215,7 +2218,7 @@ void MolFlow::EmptyGeometry() {
 	if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 	if (formulaEditor) formulaEditor->Refresh();
 	
-	if (textureSettings) textureSettings->Update();
+	if (textureScaling) textureScaling->Update();
 	if (facetDetails) facetDetails->Update();
 	if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 	if (vertexCoordinates) vertexCoordinates->Update();

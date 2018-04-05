@@ -1,5 +1,5 @@
 /*
-File:        TextureSettings.cpp
+File:        TextureScaling.cpp
 Description: Texture settings dialog (min,max,autoscale,gradient)
 Program:     MolFlow
 Author:      R. KERSEVAN / J-L PONS / M ADY
@@ -16,7 +16,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 */
 
-#include "TextureSettings.h"
+#include "TextureScaling.h"
 #include "Facet_shared.h"
 #include "MolflowGeometry.h"
 #include "Worker.h"
@@ -30,7 +30,7 @@ GNU General Public License for more details.
 #include "GLApp/GLGradient.h"
 #include "GLApp/GLCombo.h"
 
-TextureSettings::TextureSettings():GLWindow() {
+TextureScaling::TextureScaling():GLWindow() {
 
 	int wD = 500;
 	int hD = 225;
@@ -145,7 +145,7 @@ TextureSettings::TextureSettings():GLWindow() {
 
 }
 
-void TextureSettings::UpdateSize() {
+void TextureScaling::UpdateSize() {
 
 	size_t swap = 0;
 	size_t nbFacet = geom->GetNbFacet();
@@ -159,7 +159,7 @@ void TextureSettings::UpdateSize() {
 
 }
 
-void TextureSettings::Update() {
+void TextureScaling::Update() {
 
 	if(!IsVisible() || IsIconic()) return;  
 
@@ -212,7 +212,7 @@ void TextureSettings::Update() {
 
 }
 
-void TextureSettings::Display(Worker *w,GeometryViewer **v) {
+void TextureScaling::Display(Worker *w,GeometryViewer **v) {
 
 	worker = w;
 	geom = w->GetMolflowGeometry();
@@ -231,7 +231,7 @@ void TextureSettings::Display(Worker *w,GeometryViewer **v) {
 	texMaxText->SetText(tmp);
 }
 
-void TextureSettings::ProcessMessage(GLComponent *src,int message) {
+void TextureScaling::ProcessMessage(GLComponent *src,int message) {
 
 	switch(message) {
 	case MSG_BUTTON:

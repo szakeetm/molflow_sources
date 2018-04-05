@@ -310,8 +310,8 @@ void UpdateMCHits(Dataport *dpHit,int prIdx, size_t nbMoments, DWORD timeout) {
 void UpdateLog(Dataport * dpLog, DWORD timeout)
 {
 	if (sHandle->tmpParticleLog.size()) {
-		//double t0, t1;
-		//t0 = GetTick();
+		double t0, t1;
+		t0 = GetTick();
 		SetState(NULL, "Waiting for 'dpLog' dataport access...", false, true);
 		sHandle->lastLogUpdateOK = AccessDataportTimed(dpLog, timeout);
 		SetState(NULL, "Updating Log...", false, true);

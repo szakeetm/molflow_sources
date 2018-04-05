@@ -18,8 +18,8 @@
 
 #ifdef WIN
 #define NOMINMAX
-#include <windows.h> // For GetTickCount()
-#include <Process.h> // For _getpid()
+//#include <windows.h> // For GetTickCount()
+//#include <Process.h> // For _getpid()
 #else
 #include <time.h>
 #include <sys/time.h>

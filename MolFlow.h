@@ -27,7 +27,7 @@ class Movement;
 class FacetAdvParams;
 class FacetDetails;
 class Viewer3DSettings;
-class TextureSettings;
+class TextureScaling;
 class GlobalSettings;
 class ProfilePlotter;
 class PressureEvolution;
@@ -125,7 +125,7 @@ public:
     FacetAdvParams   *facetAdvParams;
     FacetDetails     *facetDetails;
     Viewer3DSettings *viewer3DSettings;
-    TextureSettings  *textureSettings;
+    TextureScaling  *textureScaling;
 	GlobalSettings	 *globalSettings;
     ProfilePlotter   *profilePlotter;
 	PressureEvolution *pressureEvolution;

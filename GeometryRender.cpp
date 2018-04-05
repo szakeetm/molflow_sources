@@ -83,13 +83,11 @@ void MolflowGeometry::BuildFacetTextures(BYTE *hits, bool renderRegularTexture, 
 			texture_limits[0].autoscale.min.all = shGHit->texture_limits[0].min.all;
 			texture_limits[0].autoscale.max.all = shGHit->texture_limits[0].max.all;
 			break;
-
 		}
 
 		if (!texAutoScale) { //manual values
 			min = texture_limits[textureMode].manual.min.all;
 			max = texture_limits[textureMode].manual.max.all;
-
 		}
 		else { //autoscale
 			min = texAutoScaleIncludeConstantFlow ?
@@ -98,7 +96,6 @@ void MolflowGeometry::BuildFacetTextures(BYTE *hits, bool renderRegularTexture, 
 			max = texAutoScaleIncludeConstantFlow ?
 				texture_limits[textureMode].autoscale.max.all
 				: texture_limits[textureMode].autoscale.max.moments_only;
-
 		}
 	}
 
@@ -132,7 +129,6 @@ void MolflowGeometry::BuildFacetTextures(BYTE *hits, bool renderRegularTexture, 
 				return;
 			}
 			else {
-
 				f->textureError = false;
 			}
 

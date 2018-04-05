@@ -1,5 +1,5 @@
 /*
-File:        TextureSettings.h
+File:        TextureScaling.h
 Description: Texture settings dialog (min,max,autoscale,gradient)
 Program:     MolFlow
 Author:      R. KERSEVAN / J-L PONS / M ADY
@@ -30,12 +30,12 @@ class GeometryViewer;
 class MolflowGeometry;
 class Worker;
 
-class TextureSettings : public GLWindow {
+class TextureScaling : public GLWindow {
 
 public:
 
 	// Construction
-	TextureSettings();
+	TextureScaling();
 
 	// Component methods
 	void Display(Worker *w,GeometryViewer **v);

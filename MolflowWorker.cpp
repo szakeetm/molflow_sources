@@ -678,7 +678,7 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 				if (version >= 8) geom->LoadProfileGEO(f, dpHit, version);
 				SetLeakCache(loaded_leakCache, &loaded_nbLeak, dpHit);
 				SetHitCache(hitCache, &hitCacheSize, dpHit);
-				SendHits(); //Global and facet hit counters
+				WriteHitBuffer(); //Global and facet hit counters
 				
 				progressDlg->SetMessage("Loading textures...");
 				LoadTexturesGEO(f, version);
@@ -760,7 +760,7 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 					if (ext == "xml" || ext == "zip")
 						progressDlg->SetMessage("Restoring simulation state...");
 					geom->LoadXML_simustate(loadXML, dpHit, this, progressDlg);
-					SendHits(true); //Send hits without sending facet counters, as they are directly written during the load process
+					WriteHitBuffer(true); //Send hits without sending facet counters, as they are directly written during the load process
 					RebuildTextures();
 				}
 				catch (Error &e) {
@@ -1002,7 +1002,7 @@ void Worker::Update(float appTime) {
 }
 */
 
-void Worker::SendHits(bool skipFacetHits ) {
+void Worker::WriteHitBuffer(bool skipFacetHits ) {
 	//if (!needsReload) {
 	if (dpHit) {
 		if (AccessDataport(dpHit)) {
@@ -1197,7 +1197,7 @@ void Worker::ClearHits(bool noReload) {
 	}
 	if (dpHit) {
 		AccessDataport(dpHit);
-		memset(dpHit->buff, 0, geom->GetHitsSize(&moments));
+		memset(dpHit->buff, 0, geom->GetHitsSize(&moments)); //Also clears hits, leaks
 		ReleaseDataport(dpHit);
 	}
 
