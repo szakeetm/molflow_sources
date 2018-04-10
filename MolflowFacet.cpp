@@ -371,9 +371,9 @@ void Facet::LoadSYN(FileReader *file, int version, size_t nbVertex) {
 	file->ReadKeyword("nbHit"); file->ReadKeyword(":");
 	file->ReadLLong();
 	if (version >= 10) {
-		file->ReadKeyword("nbHitEquiv"); file->ReadKeyword(":");
+		file->ReadKeyword("nbHitEquiv"); file->ReadKeyword(":");file->ReadLLong();
 	}
-	counterCache.hit.nbMCHit = 0; counterCache.hit.nbHitEquiv = 0.0; file->ReadLLong();
+	counterCache.hit.nbMCHit = 0; counterCache.hit.nbHitEquiv = 0.0; 
 	if (version >= 3) {
 		file->ReadKeyword("fluxAbs"); file->ReadKeyword(":");
 		file->ReadDouble();
