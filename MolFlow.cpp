@@ -64,6 +64,7 @@ GNU General Public License for more details.
 #include "SmartSelection.h"
 #include "FormulaEditor.h"
 #include "ParticleLogger.h"
+#include "HistogramSettings.h"
 
 //Hard-coded identifiers, update these on new release
 //---------------------------------------------------
@@ -354,8 +355,8 @@ int MolFlow::OneTimeSceneInit()
 	showFilter = new GLToggle(0, "Filtering");
 	//togglePanel->Add(showFilter);
 
-	showMoreBtn = new GLButton(0, "<< View");
-	togglePanel->Add(showMoreBtn);
+	viewerMoreButton = new GLButton(0, "<< View");
+	togglePanel->Add(viewerMoreButton);
 
 	shortcutPanel = new GLTitledPanel("Shortcuts");
 	shortcutPanel->SetClosable(true);
@@ -467,8 +468,8 @@ int MolFlow::OneTimeSceneInit()
 	facetRecType->SetValueAt(6, "Tangential velocity");
 	facetPanel->Add(facetRecType);
 
-	facetMoreBtn = new GLButton(0, "<< Adv");
-	facetPanel->Add(facetMoreBtn);
+	facetAdvParamsBtn = new GLButton(0, "<< Adv");
+	facetPanel->Add(facetAdvParamsBtn);
 
 	facetList = new GLList(0);
 	facetList->SetWorker(&worker);
@@ -514,7 +515,7 @@ void MolFlow::PlaceComponents() {
 	togglePanel->SetCompBounds(showTexture, 70, 64, 60, 18);
 	togglePanel->SetCompBounds(showFilter, 135, 64, 60, 18);
 
-	togglePanel->SetCompBounds(showMoreBtn, 5, 86, 55, 18);
+	togglePanel->SetCompBounds(viewerMoreButton, 5, 86, 55, 18);
 	togglePanel->SetCompBounds(showVertex, 70, 86, 60, 18);
 	togglePanel->SetCompBounds(showIndex, 137, 86, 60, 18);
 
@@ -562,9 +563,9 @@ void MolFlow::PlaceComponents() {
 	facetPanel->SetCompBounds(facetReLabel, 7, cursorY += 25, 60, 18);
 	facetPanel->SetCompBounds(facetRecType, 65, cursorY, 130, 18);
 
-	facetPanel->SetCompBounds(facetMoreBtn, 5, cursorY += 25, 48, 18);
+	facetPanel->SetCompBounds(facetAdvParamsBtn, 5, cursorY += 25, 48, 18);
 	facetPanel->SetCompBounds(facetDetailsBtn, 56, cursorY, 45, 18);
-	facetPanel->SetCompBounds(facetCoordBtn, 104, cursorY, 45, 18);
+	facetPanel->SetCompBounds(facetHistogramBtn, 104, cursorY, 45, 18);
 	facetPanel->SetCompBounds(facetApplyBtn, 153, cursorY, 44, 18);
 
 	sy += facetPanel->GetHeight() + 5;
@@ -794,6 +795,11 @@ void MolFlow::ApplyFacetParams() {
 	//Check complete, let's apply
 	if (facetAdvParams && facetAdvParams->IsVisible()) {
 		if (!facetAdvParams->Apply()) {
+			return;
+		}
+	}
+	if (histogramSettings && histogramSettings->IsVisible()) {
+		if (!histogramSettings->Apply()) {
 			return;
 		}
 	}
@@ -1995,11 +2001,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			if (facetDetails == NULL) facetDetails = new FacetDetails();
 			facetDetails->Display(&worker);
 		}
-		else if (src == facetCoordBtn) {
-			if (!facetCoordinates) facetCoordinates = new FacetCoordinates();
-			facetCoordinates->Display(&worker);
-		}
-		else if (src == showMoreBtn) {
+		else if (src == viewerMoreButton) {
 			if (!viewer3DSettings)	viewer3DSettings = new Viewer3DSettings();
 			viewer3DSettings->SetVisible(!viewer3DSettings->IsVisible());
 			viewer3DSettings->Reposition();
@@ -2037,7 +2039,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			}
 			else globalSettings->SetVisible(false);
 		}
-		else if (src == facetMoreBtn) {
+		else if (src == facetAdvParamsBtn) {
 			if (!facetAdvParams) {
 				facetAdvParams = new FacetAdvParams(&worker);
 				facetAdvParams->Refresh(geom->GetSelectedFacets());
