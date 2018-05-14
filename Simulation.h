@@ -33,7 +33,7 @@ class SubprocessFacet {
 public:
   FacetProperties sh;
 
-  int      *indices;          // Indices (Reference to geometry vertex)
+  size_t      *indices;          // Indices (Reference to geometry vertex)
   Vector2d *vertices2;        // Vertices (2D plane space, UV coordinates)
   TextureCell     **texture;            // Texture hit recording (taking area, temperature, mass into account)
   double   *inc;              // Texure increment

@@ -109,8 +109,6 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer,const OntheflySimulationPa
 
 	Worker *w = &mApp->worker;
 
-	
-	
 	sh.nbMoments = w->moments.size();
 	sh.latestMoment = w->latestMoment;
 	sh.totalDesorbedMolecules = w->totalDesorbedMolecules;
@@ -138,8 +136,8 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer,const OntheflySimulationPa
 		fOffset += f->GetHitsSize(mApp->worker.moments.size());
 		memcpy(buffer, &(f->sh), sizeof(FacetProperties));
 		buffer += sizeof(FacetProperties);
-		memcpy(buffer, f->indices, sizeof(int)*f->sh.nbIndex);
-		buffer += sizeof(int)*f->sh.nbIndex;
+		memcpy(buffer, f->indices, sizeof(size_t)*f->sh.nbIndex);
+		buffer += sizeof(size_t)*f->sh.nbIndex;
 		memcpy(buffer, f->vertices2, sizeof(Vector2d)*f->sh.nbIndex);
 		buffer += sizeof(Vector2d)*f->sh.nbIndex;
 		if (f->sh.useOutgassingFile) {

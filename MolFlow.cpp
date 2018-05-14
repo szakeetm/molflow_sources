@@ -69,8 +69,8 @@ GNU General Public License for more details.
 //Hard-coded identifiers, update these on new release
 //---------------------------------------------------
 std::string appName = "Molflow";
-int appVersionId = 2666;
-std::string appVersionName = "2.6.66";
+int appVersionId = 2667;
+std::string appVersionName = "2.6.67";
 //---------------------------------------------------
 
 static const char *fileLFilters = "All MolFlow supported files\0*.txt;*.xml;*.zip;*.geo;*.geo7z;*.syn;*.syn7z;*.str;*.stl;*.ase\0"
@@ -2394,6 +2394,8 @@ void MolFlow::LoadConfig() {
 		worker.ontheflyParams.lowFluxMode = f->ReadInt();
 		f->ReadKeyword("lowFluxCutoff"); f->ReadKeyword(":");
 		worker.ontheflyParams.lowFluxCutoff = f->ReadDouble();
+		f->ReadKeyword("leftHandedView"); f->ReadKeyword(":");
+		leftHandedView = f->ReadInt();
 	}
 	catch (...) {
 		/*std::ostringstream tmp;
@@ -2520,6 +2522,7 @@ void MolFlow::SaveConfig() {
 		WRITEI("hideLot", hideLot);
 		f->Write("lowFluxMode:"); f->Write(worker.ontheflyParams.lowFluxMode, "\n");
 		f->Write("lowFluxCutoff:"); f->Write(worker.ontheflyParams.lowFluxCutoff, "\n");
+		f->Write("leftHandedView:"); f->Write(leftHandedView, "\n");
 	}
 	catch (Error &err) {
 		GLMessageBox::Display(err.GetMsg(), "Error saving config file", GLDLG_OK, GLDLG_ICONWARNING);

@@ -57,13 +57,13 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 
 	worker = w;
 	int wD = 580;
-	int hD = 500;
+	int hD = 525;
 
 	SetTitle("Global Settings");
 	SetIconfiable(true);
 
 	GLTitledPanel *settingsPanel = new GLTitledPanel("Program settings");
-	settingsPanel->SetBounds(5, 2, 270, 203);
+	settingsPanel->SetBounds(5, 2, 270, 228);
 	Add(settingsPanel);
 
 	GLLabel *asLabel = new GLLabel("Autosave frequency (minutes):");
@@ -98,8 +98,12 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	chkWhiteBg->SetBounds(15, 175, 160, 19);
 	settingsPanel->Add(chkWhiteBg);
 
+	leftHandedToggle = new GLToggle(0, "Left-handed coord. system");
+	leftHandedToggle->SetBounds(15, 200, 160, 19);
+	settingsPanel->Add(leftHandedToggle);
+
 	GLTitledPanel *simuSettingsPanel = new GLTitledPanel("Simulation settings");
-	simuSettingsPanel->SetBounds(280, 2, 295, 203);
+	simuSettingsPanel->SetBounds(280, 2, 295, 228);
 	Add(simuSettingsPanel);
 
 	GLLabel *massLabel = new GLLabel("Gas molecular mass (g/mol):");
@@ -158,7 +162,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	simuSettingsPanel->Add(cutoffText);
 
 	applyButton = new GLButton(0, "Apply above settings");
-	applyButton->SetBounds(wD / 2 - 65, 210, 130, 19);
+	applyButton->SetBounds(wD / 2 - 65, 235, 130, 19);
 	Add(applyButton);
 
 	/*chkNonIsothermal = new GLToggle(0,"Non-isothermal system (textures only, experimental)");
@@ -166,7 +170,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	Add(chkNonIsothermal);*/
 
 	GLTitledPanel *panel3 = new GLTitledPanel("Process control");
-	panel3->SetBounds(5, 259, wD - 10, hD - 285);
+	panel3->SetBounds(5, 284, wD - 10, hD - 285);
 	Add(panel3);
 
 	processList = new GLList(0);
@@ -223,6 +227,7 @@ void GlobalSettings::Update() {
 	char tmp[256];
 	chkAntiAliasing->SetState(mApp->antiAliasing);
 	chkWhiteBg->SetState(mApp->whiteBg);
+	leftHandedToggle->SetState(mApp->leftHandedView);
 	//chkNonIsothermal->SetState(nonIsothermal);
 	UpdateOutgassing();
 
@@ -403,6 +408,9 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 		else if (src == applyButton) {
 			mApp->antiAliasing = chkAntiAliasing->GetState();
 			mApp->whiteBg = chkWhiteBg->GetState();
+			mApp->leftHandedView = (bool)leftHandedToggle->GetState();
+			for (int i = 0; i < MAX_VIEWER; i++)  mApp->viewer[i]->UpdateMatrix();
+			mApp->wereEvents = true;
 			bool updateCheckPreference = chkCheckForUpdates->GetState();
 			if (mApp->appUpdater) {
 				if (mApp->appUpdater->IsUpdateCheckAllowed() != updateCheckPreference) {

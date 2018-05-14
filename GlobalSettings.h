@@ -57,6 +57,7 @@ private:
 
   GLToggle      *chkAntiAliasing;
   GLToggle      *chkWhiteBg;
+  GLToggle		*leftHandedToggle;
   GLToggle      *chkSimuOnly;
   GLToggle      *chkCheckForUpdates;
   GLToggle      *chkAutoUpdateFormulas;
