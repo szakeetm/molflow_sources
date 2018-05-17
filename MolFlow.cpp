@@ -69,8 +69,8 @@ GNU General Public License for more details.
 //Hard-coded identifiers, update these on new release
 //---------------------------------------------------
 std::string appName = "Molflow";
-int appVersionId = 2667;
-std::string appVersionName = "2.6.67";
+int appVersionId = 2669; //Compared with available updates. Recompile Interface.cpp if changed
+std::string appVersionName = "2.6.69";
 //---------------------------------------------------
 
 static const char *fileLFilters = "All MolFlow supported files\0*.txt;*.xml;*.zip;*.geo;*.geo7z;*.syn;*.syn7z;*.str;*.stl;*.ase\0"

@@ -39,6 +39,7 @@ size_t MolflowGeometry::GetGeometrySize() {
 	// Compute number of bytes allocated
 	size_t memoryUsage = 0;
 	memoryUsage += sizeof(GeomProperties);
+	memoryUsage += sizeof(OntheflySimulationParams);
 	memoryUsage += sh.nbVertex * sizeof(Vector3d);
 	for (int i = 0; i < sh.nbFacet; i++)
 		memoryUsage += facets[i]->GetGeometrySize();
