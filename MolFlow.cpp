@@ -1,9 +1,9 @@
 /*
-File:        MolFlow.cpp
-Description: Main application class (GUI management)
 Program:     MolFlow+
-Author:      Roberto KERSEVAN / J-L Pons / Marton ADY
+Description: Monte Carlo simulator for ultra-high vacuum
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY
 Copyright:   E.S.R.F / CERN
+Website:     https://cern.ch/molflow
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -15,7 +15,6 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 */
-
 #include <math.h>
 //#include <malloc.h>
 #include "MolFlow.h"
