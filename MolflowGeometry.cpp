@@ -142,12 +142,14 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer,const OntheflySimulationPa
 	sh.motionType = w->motionType;
 	sh.motionVector1 = w->motionVector1;
 	sh.motionVector2 = w->motionVector2;
+	sh.globalHistogramParams = w->globalHistogramParams;
 	GeomProperties *shGeom = (GeomProperties *)buffer;
 	memcpy(shGeom, &(this->sh), sizeof(GeomProperties));
 	buffer += sizeof(GeomProperties);
 	WRITEBUFFER(ontheflyParams, OntheflySimulationParams);
 	memcpy(buffer, vertices3, sizeof(Vector3d)*sh.nbVertex);
 	buffer += sizeof(Vector3d)*sh.nbVertex;
+	
 
 	size_t fOffset = sizeof(GlobalHitBuffer);
 	for (int i = 0; i < sh.nbFacet; i++) {

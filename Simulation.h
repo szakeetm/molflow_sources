@@ -125,29 +125,14 @@ typedef struct {
   std::vector<double> temperatures; //keeping track of all temperatures that have a CDF already generated
   std::vector<double> moments;      //time values (seconds) when a simulation state is measured
   std::vector<size_t> desorptionParameterIDs; //time-dependent parameters which are used as desorptions, therefore need to be integrated
-  std::vector<Parameter> parameters; //Time-dependent parameters
-  double latestMoment;
-
-  double totalDesorbedMolecules;  // Number of desorbed molecules from t=0 to latest_moment
-  double finalOutgassingRate;     // Outgassing rate at latest_moment (for const. flow calculation)
-  double gasMass;
-  bool   enableDecay;
-  double halfLife;
-  double timeWindowSize;
-  bool useMaxwellDistribution; //true: Maxwell-Boltzmann distribution, false: All molecules have the same (V_avg) speed
-  bool calcConstantFlow;
-
-  
+  std::vector<Parameter> parameters; //Time-dependent parameters  
 
   // Geometry
-  char        name[64];         // Global name
-  size_t         nbVertex;         // Number of vertex
-  size_t         totalFacet;       // Total number of facet
+  GeomProperties sh;
+
   Vector3d   *vertices3;        // Vertices
-  size_t         nbSuper;          // Number of super structure
   size_t         curStruct;        // Current structure
   int         teleportedFrom;   // We memorize where the particle came from: we can teleport back
-  size_t      nbMoments;        // Number of time moments
   SUPERSTRUCT str[MAX_STRUCT];
 
   SubprocessFacet *lastHitFacet;     // Last hitted facet
@@ -219,7 +204,7 @@ typedef struct {
 #endif
 
   OntheflySimulationParams ontheflyParams;
-
+  HistogramParams globalHistogramParams;
   std::vector<ParticleLoggerItem> tmpParticleLog;
 
 } SIMULATION;

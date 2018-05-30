@@ -226,9 +226,10 @@ bool LoadSimulation(Dataport *loader) {
 		return false;
 	}
 
+	sHandle->totalFacet = shGeom->nbFacet;
 	sHandle->nbVertex = shGeom->nbVertex;
 	sHandle->nbSuper = shGeom->nbSuper;
-	sHandle->totalFacet = shGeom->nbFacet;
+
 	sHandle->nbMoments = shGeom->nbMoments;
 	sHandle->latestMoment = shGeom->latestMoment;
 	sHandle->totalDesorbedMolecules = shGeom->totalDesorbedMolecules;
@@ -239,11 +240,14 @@ bool LoadSimulation(Dataport *loader) {
 	sHandle->timeWindowSize = shGeom->timeWindowSize;
 	sHandle->useMaxwellDistribution = shGeom->useMaxwellDistribution;
 	sHandle->calcConstantFlow = shGeom->calcConstantFlow;
+
 	sHandle->motionType = shGeom->motionType;
 	sHandle->motionVector1 = shGeom->motionVector1;
 	sHandle->motionVector2 = shGeom->motionVector2;
+	sHandle->globalHistogramParams = shGeom->globalHistogramParams;
 	// Prepare super structure (allocate memory for facets)
 	buffer += sizeof(GeomProperties);
+
 	sHandle->ontheflyParams = READBUFFER(OntheflySimulationParams);
 	if (sHandle->ontheflyParams.enableLogging) sHandle->tmpParticleLog.reserve(sHandle->ontheflyParams.logLimit / sHandle->ontheflyParams.nbProcess);
 	buffer += sizeof(Vector3d)*sHandle->nbVertex;
