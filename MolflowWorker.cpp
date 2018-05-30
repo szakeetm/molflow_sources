@@ -967,9 +967,9 @@ void Worker::Update(float appTime) {
 				SHGHITS *gHits = (SHGHITS *)buffer;
 
 				// Copy Global hits and leaks
-				nbMCHit = gHits->total.hit.nbMCHit;
-				nbAbsEquiv = gHits->total.hit.nbAbsEquiv;
-				nbDesorption = gHits->total.hit.nbDesorbed;				
+				nbMCHit = gHits->globalHits.hit.nbMCHit;
+				nbAbsEquiv = gHits->globalHits.hit.nbAbsEquiv;
+				nbDesorption = gHits->globalHits.hit.nbDesorbed;				
 				distTraveled_total = gHits->distTraveled_total;
 				distTraveledTotal_fullHitsOnly = gHits->distTraveledTotal_fullHitsOnly;
 				
@@ -984,7 +984,7 @@ void Worker::Update(float appTime) {
 				int nbFacet = geom->GetNbFacet();
 				for (int i = 0; i < nbFacet; i++) {
 					Facet *f = geom->GetFacet(i);
-					f->counterCache=(*((FacetHitBuffer*)(buffer + f->sh.hitOffset+displayedMoment*sizeof(FacetHitBuffer))));
+					f->facetHitCache=(*((FacetHitBuffer*)(buffer + f->sh.hitOffset+displayedMoment*sizeof(FacetHitBuffer))));
 				}
 				try {
 					if (mApp->needsTexture || mApp->needsDirection) geom->BuildFacetTextures(buffer,mApp->needsTexture,mApp->needsDirection);
@@ -1010,11 +1010,11 @@ void Worker::WriteHitBuffer(bool skipFacetHits ) {
 
 			GlobalHitBuffer *gHits = (GlobalHitBuffer *)dpHit->buff;
 
-			gHits->total.hit.nbMCHit = nbMCHit;
-			gHits->total.hit.nbHitEquiv = nbHitEquiv;
+			gHits->globalHits.hit.nbMCHit = nbMCHit;
+			gHits->globalHits.hit.nbHitEquiv = nbHitEquiv;
 			gHits->nbLeakTotal = nbLeakTotal;
-			gHits->total.hit.nbDesorbed = nbDesorption;
-			gHits->total.hit.nbAbsEquiv = nbAbsEquiv;
+			gHits->globalHits.hit.nbDesorbed = nbDesorption;
+			gHits->globalHits.hit.nbAbsEquiv = nbAbsEquiv;
 			gHits->distTraveled_total = distTraveled_total;
 			gHits->distTraveledTotal_fullHitsOnly = distTraveledTotal_fullHitsOnly;
 
@@ -1024,7 +1024,7 @@ void Worker::WriteHitBuffer(bool skipFacetHits ) {
 				for (size_t i = 0; i < nbFacet; i++) {
 					Facet *f = geom->GetFacet(i);
 					/*for (size_t m = 0;m <= moments.size();m++)*/
-					*((FacetHitBuffer*)((BYTE*)dpHit->buff + f->sh.hitOffset /* + m * sizeof(FacetHitBuffer) */)) = f->counterCache;
+					*((FacetHitBuffer*)((BYTE*)dpHit->buff + f->sh.hitOffset /* + m * sizeof(FacetHitBuffer) */)) = f->facetHitCache;
 				}
 
 			}

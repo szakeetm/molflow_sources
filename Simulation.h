@@ -172,8 +172,7 @@ typedef struct {
   Vector3d pPos;    // Position
   Vector3d pDir;    // Direction
   double oriRatio;
-  //int      nbPHit;  // Number of hit (current particle) //Uncommented as it had no function
-  //double   distTraveledCurrentParticle; //Distance traveled by particle before absorption
+  size_t   nbHitCurrentParticle; // Number of hit (current particle) since desorption
   double   distTraveledSinceUpdate_total; //includes "half" hits, i.e. when particle decays mid-air
   double   distTraveledSinceUpdate_fullHitsOnly; //partial distances not included (for MFP calculation)
   double   velocityCurrentParticle;

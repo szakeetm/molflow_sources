@@ -110,15 +110,15 @@ void Facet::LoadGEO(FileReader *file, int version, size_t nbVertex) {
 	file->ReadKeyword("acMode"); file->ReadKeyword(":");
 	sh.countACD = file->ReadInt();
 	file->ReadKeyword("nbAbs"); file->ReadKeyword(":");
-	counterCache.hit.nbAbsEquiv = file->ReadDouble();
+	facetHitCache.hit.nbAbsEquiv = file->ReadDouble();
 
 	file->ReadKeyword("nbDes"); file->ReadKeyword(":");
-	counterCache.hit.nbDesorbed = file->ReadLLong();
+	facetHitCache.hit.nbDesorbed = file->ReadLLong();
 
 	file->ReadKeyword("nbHit"); file->ReadKeyword(":");
 
-	counterCache.hit.nbMCHit = file->ReadLLong();
-	counterCache.hit.nbHitEquiv = static_cast<double>(counterCache.hit.nbMCHit);
+	facetHitCache.hit.nbMCHit = file->ReadLLong();
+	facetHitCache.hit.nbHitEquiv = static_cast<double>(facetHitCache.hit.nbMCHit);
 	if (version >= 2) {
 		// Added in GEO version 2
 		file->ReadKeyword("temperature"); file->ReadKeyword(":");
@@ -380,10 +380,10 @@ void Facet::LoadSYN(FileReader *file, int version, size_t nbVertex) {
 	sh.countTrans = false; file->ReadInt();
 	if (version >= 10) file->ReadKeyword("nbAbsEquiv");
 	else file->ReadKeyword("nbAbs"); file->ReadKeyword(":");
-	counterCache.hit.nbAbsEquiv = 0; file->ReadLLong();
+	facetHitCache.hit.nbAbsEquiv = 0; file->ReadLLong();
 	if (version < 3) {
 		file->ReadKeyword("nbDes"); file->ReadKeyword(":");
-		counterCache.hit.nbDesorbed = 0;
+		facetHitCache.hit.nbDesorbed = 0;
 		file->ReadLLong();
 	}
 	file->ReadKeyword("nbHit"); file->ReadKeyword(":");
@@ -391,7 +391,7 @@ void Facet::LoadSYN(FileReader *file, int version, size_t nbVertex) {
 	if (version >= 10) {
 		file->ReadKeyword("nbHitEquiv"); file->ReadKeyword(":");file->ReadLLong();
 	}
-	counterCache.hit.nbMCHit = 0; counterCache.hit.nbHitEquiv = 0.0; 
+	facetHitCache.hit.nbMCHit = 0; facetHitCache.hit.nbHitEquiv = 0.0; 
 	if (version >= 3) {
 		file->ReadKeyword("fluxAbs"); file->ReadKeyword(":");
 		file->ReadDouble();
@@ -425,10 +425,10 @@ void Facet::LoadTXT(FileReader *file) {
 	sh.sticking = file->ReadDouble();
 	double o = file->ReadDouble();
 	/*sh.area =*/ file->ReadDouble();
-	counterCache.hit.nbDesorbed = (llong)(file->ReadDouble() + 0.5);
-	counterCache.hit.nbMCHit = (llong)(file->ReadDouble() + 0.5);
-	counterCache.hit.nbHitEquiv = static_cast<double>(counterCache.hit.nbMCHit);
-	counterCache.hit.nbAbsEquiv = (double)(llong)(file->ReadDouble() + 0.5);
+	facetHitCache.hit.nbDesorbed = (llong)(file->ReadDouble() + 0.5);
+	facetHitCache.hit.nbMCHit = (llong)(file->ReadDouble() + 0.5);
+	facetHitCache.hit.nbHitEquiv = static_cast<double>(facetHitCache.hit.nbMCHit);
+	facetHitCache.hit.nbAbsEquiv = (double)(llong)(file->ReadDouble() + 0.5);
 	sh.desorbType = (int)(file->ReadDouble() + 0.5);
 
 	// Convert opacity
@@ -495,7 +495,7 @@ void Facet::LoadTXT(FileReader *file) {
 
 	file->ReadDouble(); // Unused
 
-	if (counterCache.hit.nbDesorbed == 0)
+	if (facetHitCache.hit.nbDesorbed == 0)
 		sh.desorbType = DES_NONE;
 
 	if (IsTXTLinkFacet()) {
@@ -588,9 +588,9 @@ void Facet::SaveGEO(FileWriter *file, int idx) {
 	file->Write("  countRefl:"); file->Write(sh.countRefl, "\n");
 	file->Write("  countTrans:"); file->Write(sh.countTrans, "\n");
 	file->Write("  acMode:"); file->Write(sh.countACD, "\n");
-	file->Write("  nbAbs:"); file->Write((llong)counterCache.hit.nbAbsEquiv, "\n");
-	file->Write("  nbDes:"); file->Write(counterCache.hit.nbDesorbed, "\n");
-	file->Write("  nbHit:"); file->Write((llong)counterCache.hit.nbMCHit, "\n");
+	file->Write("  nbAbs:"); file->Write((llong)facetHitCache.hit.nbAbsEquiv, "\n");
+	file->Write("  nbDes:"); file->Write(facetHitCache.hit.nbDesorbed, "\n");
+	file->Write("  nbHit:"); file->Write((llong)facetHitCache.hit.nbMCHit, "\n");
 
 	// Version 2
 	file->Write("  temperature:"); file->Write(sh.temperature, "\n");
@@ -1168,9 +1168,9 @@ double Facet::DensityCorrection() {
 	//However, in case of desorption or sticking, the real density is not twice the "seen" density, but a bit less, therefore this reduction factor
 	//If only desorption, or only absorption, the correction factor is 0.5, if no des/abs, it's 1.0, and in between, see below
 
-	if (counterCache.hit.nbMCHit > 0 || counterCache.hit.nbDesorbed > 0) {
-		if (counterCache.hit.nbAbsEquiv > 0.0 || counterCache.hit.nbDesorbed > 0) {//otherwise save calculation time
-			return 1.0 - (counterCache.hit.nbAbsEquiv + (double)counterCache.hit.nbDesorbed) / (counterCache.hit.nbHitEquiv + (double)counterCache.hit.nbDesorbed) / 2.0;
+	if (facetHitCache.hit.nbMCHit > 0 || facetHitCache.hit.nbDesorbed > 0) {
+		if (facetHitCache.hit.nbAbsEquiv > 0.0 || facetHitCache.hit.nbDesorbed > 0) {//otherwise save calculation time
+			return 1.0 - (facetHitCache.hit.nbAbsEquiv + (double)facetHitCache.hit.nbDesorbed) / (facetHitCache.hit.nbHitEquiv + (double)facetHitCache.hit.nbDesorbed) / 2.0;
 		}
 		else return 1.0;
 	}

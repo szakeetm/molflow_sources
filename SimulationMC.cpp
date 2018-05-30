@@ -147,10 +147,10 @@ void UpdateMCHits(Dataport *dpHit,int prIdx, size_t nbMoments, DWORD timeout) {
 	gHits = (GlobalHitBuffer *)buffer;
 
 	// Global hits and leaks: adding local hits to shared memory
-	gHits->total.hit.nbMCHit += sHandle->tmpGlobalCount.hit.nbMCHit;
-	gHits->total.hit.nbHitEquiv += sHandle->tmpGlobalCount.hit.nbHitEquiv;
-	gHits->total.hit.nbAbsEquiv += sHandle->tmpGlobalCount.hit.nbAbsEquiv;
-	gHits->total.hit.nbDesorbed += sHandle->tmpGlobalCount.hit.nbDesorbed;
+	gHits->globalHits.hit.nbMCHit += sHandle->tmpGlobalCount.hit.nbMCHit;
+	gHits->globalHits.hit.nbHitEquiv += sHandle->tmpGlobalCount.hit.nbHitEquiv;
+	gHits->globalHits.hit.nbAbsEquiv += sHandle->tmpGlobalCount.hit.nbAbsEquiv;
+	gHits->globalHits.hit.nbDesorbed += sHandle->tmpGlobalCount.hit.nbDesorbed;
 	gHits->distTraveled_total += sHandle->distTraveledSinceUpdate_total;
 	gHits->distTraveledTotal_fullHitsOnly += sHandle->distTraveledSinceUpdate_fullHitsOnly;
 
@@ -219,7 +219,7 @@ void UpdateMCHits(Dataport *dpHit,int prIdx, size_t nbMoments, DWORD timeout) {
 				if (f->sh.isTextured) {
 					for (int m = 0; m < (1 + nbMoments); m++) {
 						TextureCell *shTexture = (TextureCell *)(buffer + (f->sh.hitOffset + facetHitsSize + f->profileSize*(1 + nbMoments) + m*f->textureSize));
-						//double dCoef = gHits->total.hit.nbDesorbed * 1E4 * sHandle->gasMass / 1000 / 6E23 * MAGIC_CORRECTION_FACTOR;  //1E4 is conversion from m2 to cm2
+						//double dCoef = gHits->globalHits.hit.nbDesorbed * 1E4 * sHandle->gasMass / 1000 / 6E23 * MAGIC_CORRECTION_FACTOR;  //1E4 is conversion from m2 to cm2
 						double timeCorrection = m == 0 ? sHandle->finalOutgassingRate : (sHandle->totalDesorbedMolecules) / sHandle->timeWindowSize;
 						//Timecorrection is required to compare constant flow texture values with moment values (for autoscaling)
 
@@ -633,6 +633,7 @@ bool StartFromSource() {
 		sHandle->particleDecayMoment = 1e100; //never decay
 	}
 	//sHandle->temperature = src->sh.temperature; //Thermalize particle
+	sHandle->nbHitCurrentParticle = 0;
 
 	found = false; //Starting point within facet
 
@@ -1086,6 +1087,7 @@ void PerformBounce(SubprocessFacet *iFacet) {
 		if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
 		if (iFacet->texture && iFacet->sh.countTrans) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 2.0);
 		if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
+
 		return;
 
 	}
@@ -1121,6 +1123,7 @@ void PerformBounce(SubprocessFacet *iFacet) {
 	iFacet->sh.counter.hit.sum_v_ort += (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
 
 	IncreaseFacetCounter(iFacet, sHandle->flightTimeCurrentParticle, 1, 0, 0, 1.0 / ortVelocity, (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity);
+	sHandle->nbHitCurrentParticle++;
 	if (iFacet->texture && iFacet->sh.countRefl) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, true, 1.0, 1.0);
 	if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
 	LogHit(iFacet);
@@ -1205,6 +1208,7 @@ void RecordAbsorb(SubprocessFacet *iFacet) {
 	RecordHit(HIT_ABS);
 	double ortVelocity = sHandle->velocityCurrentParticle*abs(Dot(sHandle->pDir, iFacet->sh.N));
 	IncreaseFacetCounter(iFacet, sHandle->flightTimeCurrentParticle, 1, 0, 1, 2.0 / ortVelocity, (sHandle->useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity);
+	sHandle->nbHitCurrentParticle++;
 	LogHit(iFacet);
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 1.0); //was 2.0, 1.0
 	if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);

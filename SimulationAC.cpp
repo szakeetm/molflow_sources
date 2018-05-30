@@ -376,7 +376,7 @@ void UpdateACHits(Dataport *dpHit,int prIdx,DWORD timeout) {
   gHits->texture_limits[0].max.all = 0.0;
   gHits->texture_limits[0].min.all = 0.0;
   gHits->sMode = AC_MODE;
-  gHits->total.hit.nbDesorbed = sHandle->totalDesorbed;
+  gHits->globalHits.hit.nbDesorbed = sHandle->totalDesorbed;
 
   // Update texture
   idx = 0;

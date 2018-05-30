@@ -1057,9 +1057,9 @@ sprintf(filename,"C:\\Temp\\dataS%d.txt",nbSt);
 FILE *file = fopen(filename,"a");
 
 SHGHITS *gHits = (SHGHITS *)buffer;
-double nbAbs = (double)gHits->total.hit.nbAbsEquiv;
-double nbDes = (double)gHits->total.hit.nbDesorbed;
-double nbMCHit = (double)gHits->total.hit.nbMCHit;
+double nbAbs = (double)gHits->globalHits.hit.nbAbsEquiv;
+double nbDes = (double)gHits->globalHits.hit.nbDesorbed;
+double nbMCHit = (double)gHits->globalHits.hit.nbMCHit;
 
 fprintf(file,"Time:%s Sticking=%g Des=%g\n",FormatTime(worker.simuTime),(double)nbSt/10.0,nbDes);
 
@@ -2597,45 +2597,45 @@ bool MolFlow::EvaluateVariable(VLIST *v) {
 
 	if ((idx = GetVariable(v->name, "A")) > 0) {
 		ok = (idx > 0 && idx <= nbFacet);
-		if (ok) v->value = geom->GetFacet(idx - 1)->counterCache.hit.nbAbsEquiv;
+		if (ok) v->value = geom->GetFacet(idx - 1)->facetHitCache.hit.nbAbsEquiv;
 	}
 	else if ((idx = GetVariable(v->name, "D")) > 0) {
 		ok = (idx > 0 && idx <= nbFacet);
-		if (ok) v->value = (double)geom->GetFacet(idx - 1)->counterCache.hit.nbDesorbed;
+		if (ok) v->value = (double)geom->GetFacet(idx - 1)->facetHitCache.hit.nbDesorbed;
 	}
 	else if ((idx = GetVariable(v->name, "MCH")) > 0) {
 		ok = (idx > 0 && idx <= nbFacet);
-		if (ok) v->value = (double)geom->GetFacet(idx - 1)->counterCache.hit.nbMCHit;
+		if (ok) v->value = (double)geom->GetFacet(idx - 1)->facetHitCache.hit.nbMCHit;
 	}
 	else if ((idx = GetVariable(v->name, "H")) > 0) {
 		ok = (idx > 0 && idx <= nbFacet);
-		if (ok) v->value = (double)geom->GetFacet(idx - 1)->counterCache.hit.nbHitEquiv;
+		if (ok) v->value = (double)geom->GetFacet(idx - 1)->facetHitCache.hit.nbHitEquiv;
 	}
 	else if ((idx = GetVariable(v->name, "P")) > 0) {
 		ok = (idx > 0 && idx <= nbFacet);
-		if (ok) v->value = geom->GetFacet(idx - 1)->counterCache.hit.sum_v_ort *
+		if (ok) v->value = geom->GetFacet(idx - 1)->facetHitCache.hit.sum_v_ort *
 			worker.GetMoleculesPerTP(worker.displayedMoment)*1E4 / geom->GetFacet(idx - 1)->GetArea() * (worker.gasMass / 1000 / 6E23)*0.0100;
 	}
 	else if ((idx = GetVariable(v->name, "DEN")) > 0) {
 		ok = (idx > 0 && idx <= nbFacet);
 		if (ok) {
 			Facet *f = geom->GetFacet(idx - 1);
-			v->value = f->DensityCorrection() * f->counterCache.hit.sum_1_per_ort_velocity /
+			v->value = f->DensityCorrection() * f->facetHitCache.hit.sum_1_per_ort_velocity /
 				f->GetArea() *
 				worker.GetMoleculesPerTP(worker.displayedMoment)*1E4;
 		}
 	}
 	else if ((idx = GetVariable(v->name, "Z")) > 0) {
 		ok = (idx > 0 && idx <= nbFacet);
-		if (ok) v->value = geom->GetFacet(idx - 1)->counterCache.hit.nbHitEquiv /
+		if (ok) v->value = geom->GetFacet(idx - 1)->facetHitCache.hit.nbHitEquiv /
 			geom->GetFacet(idx - 1)->GetArea() *
 			worker.GetMoleculesPerTP(worker.displayedMoment)*1E4;
 	}
 	else if ((idx = GetVariable(v->name, "V")) > 0) {
 		ok = (idx > 0 && idx <= nbFacet);
-		if (ok) /*v->value = 4.0*(double)(geom->GetFacet(idx - 1)->counterCache.hit.nbMCHit + geom->GetFacet(idx - 1)->counterCache.hit.nbDesorbed) /
-			geom->GetFacet(idx - 1)->counterCache.hit.sum_1_per_ort_velocity;*/
-			v->value = (geom->GetFacet(idx - 1)->counterCache.hit.nbHitEquiv + static_cast<double>(geom->GetFacet(idx - 1)->counterCache.hit.nbDesorbed)) / geom->GetFacet(idx - 1)->counterCache.hit.sum_1_per_velocity;
+		if (ok) /*v->value = 4.0*(double)(geom->GetFacet(idx - 1)->facetHitCache.hit.nbMCHit + geom->GetFacet(idx - 1)->facetHitCache.hit.nbDesorbed) /
+			geom->GetFacet(idx - 1)->facetHitCache.hit.sum_1_per_ort_velocity;*/
+			v->value = (geom->GetFacet(idx - 1)->facetHitCache.hit.nbHitEquiv + static_cast<double>(geom->GetFacet(idx - 1)->facetHitCache.hit.nbDesorbed)) / geom->GetFacet(idx - 1)->facetHitCache.hit.sum_1_per_velocity;
 	}
 	else if ((idx = GetVariable(v->name, "T")) > 0) {
 		ok = (idx > 0 && idx <= nbFacet);
@@ -2751,28 +2751,28 @@ bool MolFlow::EvaluateVariable(VLIST *v) {
 		double sumArea = 0.0; //We average by area
 		for (auto sel : facetsToSum) {
 			if (Contains({"MCH", "mch"},tokens[0])) {
-				sumLL+=geom->GetFacet(sel)->counterCache.hit.nbMCHit;
+				sumLL+=geom->GetFacet(sel)->facetHitCache.hit.nbMCHit;
 			} 
 			else if (Contains({ "H", "h" }, tokens[0])) {
-				sumD += geom->GetFacet(sel)->counterCache.hit.nbHitEquiv;
+				sumD += geom->GetFacet(sel)->facetHitCache.hit.nbHitEquiv;
 			}
 			else if (Contains({ "D", "d" }, tokens[0])) {
-				sumLL+=geom->GetFacet(sel)->counterCache.hit.nbDesorbed;
+				sumLL+=geom->GetFacet(sel)->facetHitCache.hit.nbDesorbed;
 			} else if (Contains({ "A", "a" }, tokens[0])) {
-				sumD += geom->GetFacet(sel)->counterCache.hit.nbAbsEquiv;
+				sumD += geom->GetFacet(sel)->facetHitCache.hit.nbAbsEquiv;
 			} else if (Contains({ "AR", "ar" }, tokens[0])) {
 				sumArea += geom->GetFacet(sel)->GetArea();
 			}
 			else if (Contains({ "P", "p" }, tokens[0])) {
-				sumD+= geom->GetFacet(sel)->counterCache.hit.sum_v_ort *
+				sumD+= geom->GetFacet(sel)->facetHitCache.hit.sum_v_ort *
 					(worker.gasMass / 1000 / 6E23)*0.0100;
 				sumArea += geom->GetFacet(sel)->GetArea();
 			} else if (Contains({ "DEN", "den" }, tokens[0])) {
 				Facet *f = geom->GetFacet(sel);
-				sumD += f->DensityCorrection() * f->counterCache.hit.sum_1_per_ort_velocity;
+				sumD += f->DensityCorrection() * f->facetHitCache.hit.sum_1_per_ort_velocity;
 				sumArea += geom->GetFacet(sel)->GetArea();
 			} else if (Contains({ "Z", "z" }, tokens[0])) {
-				sumD += geom->GetFacet(sel)->counterCache.hit.nbHitEquiv;
+				sumD += geom->GetFacet(sel)->facetHitCache.hit.nbHitEquiv;
 				sumArea += geom->GetFacet(sel)->GetArea();
 			} else return false;
 		}
@@ -2836,21 +2836,21 @@ void MolFlow::UpdateFacetHits(bool allRows) {
 				switch (modeCombo->GetSelectedIndex()) {
 				case MC_MODE:
 					facetList->SetColumnLabel(1, "Hits");
-					sprintf(tmp, "%I64d", f->counterCache.hit.nbMCHit);
+					sprintf(tmp, "%I64d", f->facetHitCache.hit.nbMCHit);
 					facetList->SetValueAt(1, i, tmp);
-					sprintf(tmp, "%I64d", f->counterCache.hit.nbDesorbed);
+					sprintf(tmp, "%I64d", f->facetHitCache.hit.nbDesorbed);
 					facetList->SetValueAt(2, i, tmp);
-					sprintf(tmp, "%g", f->counterCache.hit.nbAbsEquiv);
+					sprintf(tmp, "%g", f->facetHitCache.hit.nbAbsEquiv);
 					facetList->SetValueAt(3, i, tmp);
 					break;
 				case AC_MODE:
 					facetList->SetColumnLabel(1, "Density");
-					sprintf(tmp, "%g", f->counterCache.density.value);
+					sprintf(tmp, "%g", f->facetHitCache.density.value);
 					facetList->SetValueAt(1, i, tmp);
 
-					sprintf(tmp, "%g", f->counterCache.density.desorbed);
+					sprintf(tmp, "%g", f->facetHitCache.density.desorbed);
 					facetList->SetValueAt(2, i, tmp);
-					sprintf(tmp, "%g", f->counterCache.density.absorbed);
+					sprintf(tmp, "%g", f->facetHitCache.density.absorbed);
 					facetList->SetValueAt(3, i, tmp);
 					break;
 				}

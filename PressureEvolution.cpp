@@ -326,7 +326,7 @@ void PressureEvolution::refreshViews() {
 
 	Geometry *geom = worker->GetGeometry();
 	GlobalHitBuffer *gHits = (GlobalHitBuffer *)buffer;
-	double nbDes = (double)gHits->total.hit.nbDesorbed;
+	double nbDes = (double)gHits->globalHits.hit.nbDesorbed;
 	double scaleY;
 	size_t facetHitsSize = (1 + worker->moments.size()) * sizeof(FacetHitBuffer);
 	for (int i = 0; i < nbView; i++) {
