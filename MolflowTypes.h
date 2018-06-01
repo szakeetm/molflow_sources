@@ -99,6 +99,20 @@ public:
 	double thetaLimit; //angle map can have a different resolution under and over the limit. Must be between 0 and PI/2
 	size_t thetaLowerRes; //resolution between 0 and angleMapThetaLimit
 	size_t thetaHigherRes; //resolution between angleMapThetaLimit and PI/2
+	
+	size_t GetMapSize() {
+		return phiWidth * (thetaLowerRes + thetaHigherRes);
+	}
+	size_t GetRecordedMapSize() {
+		if (!hasRecorded) return 0;
+		else return GetMapSize();
+	}
+	size_t GetDataSize() {
+		return sizeof(size_t)*GetMapSize();
+	}
+	size_t GetRecordedDataSize() {
+		return sizeof(size_t)*GetRecordedMapSize();
+	}
 };
 
 class Reflection {

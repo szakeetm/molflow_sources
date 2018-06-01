@@ -188,7 +188,7 @@ bool ComputeACMatrix(SHELEM_OLD *mesh) {
     sHandle->acArea[idx] = mesh[idx1].area;
     // Normalize density for Q=1,M=28,T=20degC
     // TODO: Update for random gas mass/temperature
-    if(f1->sh.desorbType) sHandle->acDesorb[idx] = (ACFLOAT)(1.0/(11.7*sHandle->finalOutgassingRate));
+    if(f1->sh.desorbType) sHandle->acDesorb[idx] = (ACFLOAT)(1.0/(11.7*sHandle->sh.finalOutgassingRate));
     sHandle->acRho[idx] = (ACFLOAT)(1.0 - f1->sh.sticking);
     idx++;
   END_LOOP(f1,idx1)

@@ -612,14 +612,14 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	double f0Area = f0->GetArea();
 	sumArea = f0Area;
 	sumOutgassing = f0->sh.totalOutgassing;
-	sumAngleMapSize = f0->sh.anglemapParams.hasRecorded ? (f0->sh.anglemapParams.thetaLowerRes + f0->sh.anglemapParams.thetaHigherRes) * f0->sh.anglemapParams.phiWidth : 0;
+	sumAngleMapSize = f0->sh.anglemapParams.GetRecordedMapSize();
 	
 	for (size_t i = 1; i < selection.size(); i++) {
 		Facet *f = geom->GetFacet(selection[i]);
 		double fArea = f->GetArea();
 		sumArea += fArea;
 		sumOutgassing += f->sh.totalOutgassing;
-		sumAngleMapSize += f->sh.anglemapParams.hasRecorded ? (f->sh.anglemapParams.thetaLowerRes + f->sh.anglemapParams.thetaHigherRes) * f->sh.anglemapParams.phiWidth : 0;
+		sumAngleMapSize += f->sh.anglemapParams.GetRecordedMapSize();
 		isEnabledE = isEnabledE && (f0->sh.isTextured == f->sh.isTextured);
 		isBoundE = isBoundE && (f0->hasMesh == f->hasMesh);
 		CountDesE = CountDesE && f0->sh.countDes == f->sh.countDes;

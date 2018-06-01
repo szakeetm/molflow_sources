@@ -77,7 +77,7 @@ Worker::Worker() {
 	parameters = std::vector<Parameter>();
 	needsReload = true;  //When main and subprocess have different geometries, needs to reload (synchronize)
 	displayedMoment = 0; //By default, steady-state is displayed
-	timeWindowSize = 0.1;
+	timeWindowSize = 1E-10; //Dirac-delta desorption pulse at t=0
 	useMaxwellDistribution = true;
 	calcConstantFlow = true;
 	distTraveledTotal_fullHitsOnly = 0.0;
@@ -86,6 +86,7 @@ Worker::Worker() {
 	halfLife = 1;
 	finalOutgassingRate = finalOutgassingRate_Pa_m3_sec = totalDesorbedMolecules = 0.0;
 	motionType = 0;
+	globalHistogramParams.record = false;
 
 	//Common init
 	pid = _getpid();
@@ -679,7 +680,7 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 				if (version >= 8) geom->LoadProfileGEO(f, dpHit, version);
 				SetLeakCache(loaded_leakCache, &loaded_nbLeak, dpHit);
 				SetHitCache(hitCache, &hitCacheSize, dpHit);
-				WriteHitBuffer(); //Global and facet hit counters
+				WriteHitBuffer(); //Global and facet hit counters, only const.flow is written
 				
 				progressDlg->SetMessage("Loading textures...");
 				LoadTexturesGEO(f, version);
@@ -761,7 +762,7 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 					if (ext == "xml" || ext == "zip")
 						progressDlg->SetMessage("Restoring simulation state...");
 					geom->LoadXML_simustate(loadXML, dpHit, this, progressDlg);
-					WriteHitBuffer(true); //Send hits without sending facet counters, as they are directly written during the load process
+					WriteHitBuffer(true); //Send hits without sending facet counters, as they are directly written during the load process (mutiple moments)
 					RebuildTextures();
 				}
 				catch (Error &e) {
@@ -1012,13 +1013,16 @@ void Worker::WriteHitBuffer(bool skipFacetHits ) {
 
 			gHits->globalHits.hit.nbMCHit = nbMCHit;
 			gHits->globalHits.hit.nbHitEquiv = nbHitEquiv;
-			gHits->nbLeakTotal = nbLeakTotal;
 			gHits->globalHits.hit.nbDesorbed = nbDesorption;
 			gHits->globalHits.hit.nbAbsEquiv = nbAbsEquiv;
+			gHits->nbLeakTotal = nbLeakTotal;
+
 			gHits->distTraveled_total = distTraveled_total;
 			gHits->distTraveledTotal_fullHitsOnly = distTraveledTotal_fullHitsOnly;
 
-			if (!skipFacetHits) {
+			//We don't write histogram
+
+			if (!skipFacetHits) { //This is used for GEO files which contain only one moment (const.flow)
 
 				size_t nbFacet = geom->GetNbFacet();
 				for (size_t i = 0; i < nbFacet; i++) {
@@ -1522,14 +1526,14 @@ void Worker::PrepareToRun() {
 		if (f->sh.anglemapParams.record) {
 			if (!f->sh.anglemapParams.hasRecorded) {
 				//Initialize angle map
-				f->angleMapCache = (size_t*)malloc(f->sh.anglemapParams.phiWidth * (f->sh.anglemapParams.thetaLowerRes + f->sh.anglemapParams.thetaHigherRes) * sizeof(size_t));
+				f->angleMapCache = (size_t*)malloc(f->sh.anglemapParams.GetDataSize());
 				if (!f->angleMapCache) {
 					std::stringstream tmp;
 					tmp << "Not enough memory for incident angle map on facet " << i + 1;
 					throw Error(tmp.str().c_str());
 				}
 				//Set values to zero
-				memset(f->angleMapCache, 0, f->sh.anglemapParams.phiWidth * (f->sh.anglemapParams.thetaLowerRes + f->sh.anglemapParams.thetaHigherRes) * sizeof(size_t));
+				memset(f->angleMapCache, 0, f->sh.anglemapParams.GetDataSize());
 				f->sh.anglemapParams.hasRecorded = true;
 				if (f->selected) needsAngleMapStatusRefresh = true;
 			}

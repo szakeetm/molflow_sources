@@ -287,7 +287,7 @@ void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bool& ignor
 
 			std::stringstream angleText;
 			angleText << angleMapNode.child_value("map");
-			angleMapCache = (size_t*)malloc(sh.anglemapParams.phiWidth * (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes) * sizeof(size_t));
+			angleMapCache = (size_t*)malloc(sh.anglemapParams.GetDataSize());
 
 			for (int iy = 0; iy < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); iy++) {
 				for (int ix = 0; ix < sh.anglemapParams.phiWidth; ix++) {
@@ -609,7 +609,7 @@ void Facet::SaveGEO(FileWriter *file, int idx) {
 	file->Write("}\n");
 }
 
-size_t Facet::GetGeometrySize()  {
+size_t Facet::GetGeometrySize()  { //for loader dataport
 
 	size_t s = sizeof(FacetProperties)
 		+ (sh.nbIndex * sizeof(size_t)) //indices
@@ -618,19 +618,20 @@ size_t Facet::GetGeometrySize()  {
 	// Size of the 'element area' array passed to the geometry buffer
 	if (sh.isTextured) s += sizeof(double)*sh.texWidth*sh.texHeight; //incbuff
 	if (sh.useOutgassingFile ) s += sizeof(double)*sh.outgassingMapWidth*sh.outgassingMapHeight;
-	if (sh.anglemapParams.hasRecorded) s += sizeof(size_t)*sh.anglemapParams.phiWidth*(sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes);
+	s += sh.anglemapParams.GetRecordedDataSize();
 	return s;
 
 }
 
-size_t Facet::GetHitsSize(size_t nbMoments)  {
+size_t Facet::GetHitsSize(size_t nbMoments)  { //for hits dataport
 
 	return   (1 + nbMoments)*(
 		sizeof(FacetHitBuffer) +
 		+(sh.texWidth*sh.texHeight * sizeof(TextureCell))
 		+ (sh.isProfile ? (PROFILE_SIZE * sizeof(ProfileSlice)) : 0)
 		+ (sh.countDirection ? (sh.texWidth*sh.texHeight * sizeof(DirectionCell)) : 0)
-		+ (sh.anglemapParams.hasRecorded ? sh.anglemapParams.phiWidth * (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes) * sizeof(size_t) : 0)
+		+ sh.anglemapParams.GetRecordedDataSize()
+		+ sh.facetHistogramParams.GetDataSize()
 		);
 
 }

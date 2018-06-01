@@ -88,7 +88,7 @@ public:
   size_t globalId; //Global index (to identify when superstructures are present)
 
   // Facet hit counters
-  std::vector<FacetHitBuffer> counter;
+  std::vector<FacetHitBuffer> tmpCounter; //1+nbMoment
   void  ResetCounter();
   void	ResizeCounter(size_t nbMoments);
 
@@ -125,7 +125,9 @@ typedef struct {
   std::vector<double> temperatures; //keeping track of all temperatures that have a CDF already generated
   std::vector<double> moments;      //time values (seconds) when a simulation state is measured
   std::vector<size_t> desorptionParameterIDs; //time-dependent parameters which are used as desorptions, therefore need to be integrated
-  std::vector<Parameter> parameters; //Time-dependent parameters  
+  std::vector<Parameter> parameters; //Time-dependent parameters 
+  
+  std::vector<FacetHistogramBuffer> tmpGlobalHistograms; //1+nbMoment
 
   // Geometry
   GeomProperties sh;
@@ -158,16 +160,13 @@ typedef struct {
   Vector3d pDir;    // Direction
   double oriRatio;
   size_t   nbHitCurrentParticle; // Number of hit (current particle) since desorption
+  double   distTraveledCurrentParticle;
   double   distTraveledSinceUpdate_total; //includes "half" hits, i.e. when particle decays mid-air
   double   distTraveledSinceUpdate_fullHitsOnly; //partial distances not included (for MFP calculation)
   double   velocityCurrentParticle;
   double   flightTimeCurrentParticle;
   double   particleDecayMoment; //for radioactive gases
   //double   temperature;  //Temeperature of the particle (=temp. of last facet hit)
-
-  int motionType;
-  Vector3d motionVector1; //base point for rotation
-  Vector3d motionVector2; //rotation vector or velocity vector
 
   // Angular coefficient (opaque facets)
   size_t     nbAC;
@@ -186,25 +185,12 @@ typedef struct {
   ACFLOAT *acTDensity;
   ACFLOAT *acTArea;
   double  *acTLines;
-
-  /*
-  //Test cube
-  double testCubeTime;
-  double testSystemDist;
-  double testCubeTemp;
-  double testCubeDist;
-  double testCubeEnterMoment;
-  double testCubeEnterDist;
-  double testCubeVelocity;
-  double testSystemTime;
-  llong  testCubeCount;*/
   
 #ifdef JACOBI_ITERATION
   ACFLOAT *acDensityTmp;
 #endif
 
   OntheflySimulationParams ontheflyParams;
-  HistogramParams globalHistogramParams;
   std::vector<ParticleLoggerItem> tmpParticleLog;
 
 } SIMULATION;
@@ -232,6 +218,7 @@ bool StartSimulation(size_t sMode);
 void ResetSimulation();
 bool SimulationRun();
 bool SimulationMCStep(size_t nbStep);
+void IncreaseDistanceCounters(double d);
 bool SimulationACStep(int nbStep);
 void RecordHit(const int& type);
 void RecordLeakPos();

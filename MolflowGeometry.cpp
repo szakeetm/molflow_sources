@@ -107,6 +107,7 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer,const OntheflySimulationPa
 
 	-->bufferStart
 	SHGEOM (nbFacets, time-dep parameters, gas mass, etc.)
+	OntheflyParams
 	vertices3 (nbVertex times Vector3d struct)
 	FOR EACH FACET
 	SHFACET
@@ -143,18 +144,18 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer,const OntheflySimulationPa
 	sh.motionVector1 = w->motionVector1;
 	sh.motionVector2 = w->motionVector2;
 	sh.globalHistogramParams = w->globalHistogramParams;
-	GeomProperties *shGeom = (GeomProperties *)buffer;
+	WRITEBUFFER(sh, GeomProperties);
+	/*GeomProperties *shGeom = (GeomProperties *)buffer;
 	memcpy(shGeom, &(this->sh), sizeof(GeomProperties));
-	buffer += sizeof(GeomProperties);
+	buffer += sizeof(GeomProperties);*/
 	WRITEBUFFER(ontheflyParams, OntheflySimulationParams);
 	memcpy(buffer, vertices3, sizeof(Vector3d)*sh.nbVertex);
 	buffer += sizeof(Vector3d)*sh.nbVertex;
 	
-
-	size_t fOffset = sizeof(GlobalHitBuffer);
-	for (int i = 0; i < sh.nbFacet; i++) {
+	size_t fOffset = sizeof(GlobalHitBuffer)+(1+mApp->worker.moments.size())*mApp->worker.globalHistogramParams.GetDataSize(); //calculating offsets for all facets for the hits dataport during the simulation
+	for (size_t i = 0; i < sh.nbFacet; i++) {
 		Facet *f = facets[i];
-		f->sh.hitOffset = fOffset; //Just marking the offsets for the hits, but here we don't actually send any hits.
+		f->sh.hitOffset = fOffset; //Marking the offsets for the hits, but here we don't actually send any hits.
 		fOffset += f->GetHitsSize(mApp->worker.moments.size());
 		memcpy(buffer, &(f->sh), sizeof(FacetProperties));
 		buffer += sizeof(FacetProperties);
@@ -166,10 +167,10 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer,const OntheflySimulationPa
 			memcpy(buffer, f->outgassingMap, sizeof(double)*f->sh.outgassingMapWidth*f->sh.outgassingMapHeight);
 			buffer += sizeof(double)*f->sh.outgassingMapWidth*f->sh.outgassingMapHeight;
 		}
-		if (f->sh.anglemapParams.hasRecorded) {
-			memcpy(buffer, f->angleMapCache, sizeof(size_t)*f->sh.anglemapParams.phiWidth*(f->sh.anglemapParams.thetaLowerRes+f->sh.anglemapParams.thetaHigherRes));
-			buffer += sizeof(size_t)*f->sh.anglemapParams.phiWidth*(f->sh.anglemapParams.thetaLowerRes + f->sh.anglemapParams.thetaHigherRes);
-		}
+		//if (f->sh.anglemapParams.hasRecorded) { //Check not necessary, commented out
+			memcpy(buffer, f->angleMapCache, f->sh.anglemapParams.GetRecordedDataSize());
+			buffer += f->sh.anglemapParams.GetRecordedDataSize();
+		//}
 
 		// Add surface elements area (reciprocal)
 		if (f->sh.isTextured) {
@@ -272,9 +273,9 @@ size_t MolflowGeometry::GetHitsSize(std::vector<double> *moments) {
 
 	// Compute number of bytes allocated
 	size_t memoryUsage = 0;
-	memoryUsage += sizeof(GlobalHitBuffer);
+	memoryUsage += sizeof(GlobalHitBuffer)+(1+moments->size())*mApp->worker.globalHistogramParams.GetDataSize();
 	for (int i = 0; i < sh.nbFacet; i++) {
-		memoryUsage += facets[i]->GetHitsSize((int)mApp->worker.moments.size());
+		memoryUsage += facets[i]->GetHitsSize(moments->size());
 	}
 
 	return memoryUsage;
@@ -1724,7 +1725,7 @@ void MolflowGeometry::SaveTXT(FileWriter *file, Dataport *dpHit, bool saveSelect
 		// Update facet hits from shared mem
 		Facet *f = facets[i];
 		/*FacetHitBuffer *shF = (FacetHitBuffer *)(buffer + f->sh.hitOffset);
-		memcpy(&(f->sh.counter), shF, sizeof(FacetHitBuffer));*/
+		memcpy(&(f->sh.tmpCounter), shF, sizeof(FacetHitBuffer));*/
 		if (saveSelected) {
 			if (f->selected) f->SaveTXT(file);
 		}

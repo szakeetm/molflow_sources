@@ -75,10 +75,12 @@ void ClearSimulation() {
 	int i, j;
 
 	// Free old stuff
-	sHandle->CDFs = std::vector<std::vector<std::pair<double, double>>>(); //clear CDF distributions
+	//sHandle->CDFs = std::vector<std::vector<std::pair<double, double>>>(); //clear CDF distributions
+	sHandle->CDFs.clear(); sHandle->CDFs.shrink_to_fit();
+	sHandle->tmpGlobalHistograms.clear(); sHandle->tmpGlobalHistograms.shrink_to_fit();
 
 	SAFE_FREE(sHandle->vertices3);
-	for (j = 0; j < sHandle->nbSuper; j++) {
+	for (j = 0; j < sHandle->sh.nbSuper; j++) {
 		for (i = 0; i < sHandle->str[j].nbFacet; i++) {
 			SubprocessFacet *f = sHandle->str[j].facets[i];
 			if (f) {
@@ -87,7 +89,7 @@ void ClearSimulation() {
 				//SAFE_FREE(f->fullElem);
 				SAFE_FREE(f->inc);
 				SAFE_FREE(f->largeEnough);
-				for (size_t m = 0; m < (sHandle->nbMoments + 1); m++) {
+				for (size_t m = 0; m < (sHandle->sh.nbMoments + 1); m++) {
 					if (f->texture) {
 						SAFE_FREE(f->texture[m]);
 					}
@@ -108,8 +110,10 @@ void ClearSimulation() {
 				SAFE_FREE(f->profile);
 				SAFE_FREE(f->direction);
 				//SAFE_FREE(f->velocityHistogram);
-				f->counter.clear();
-				f->counter.shrink_to_fit();
+				f->tmpCounter.clear();
+				f->tmpCounter.shrink_to_fit();
+				f->tmpHistograms.clear();
+				f->tmpHistograms.shrink_to_fit();
 				delete(f); f = NULL;
 			}
 
@@ -180,9 +184,6 @@ DWORD GetSeed() {
 bool LoadSimulation(Dataport *loader) {
 
 	size_t i, j, idx;
-	BYTE *buffer;
-	BYTE *globalBuff;
-	BYTE *bufferStart;
 	GeomProperties *shGeom;
 	Vector3d *shVert;
 	double t1, t0;
@@ -195,7 +196,7 @@ bool LoadSimulation(Dataport *loader) {
 
 	SetState(PROCESS_STARTING, "Clearing previous simulation");
 	ClearSimulation();
-	
+
 	/* //Mutex not necessary: by the time the COMMAND_LOAD is issued the interface releases the handle, concurrent reading is safe and it's only destroyed by the interface when all processes are ready loading
 	   //Result: faster, parallel loading
 	// Connect the dataport
@@ -208,8 +209,8 @@ bool LoadSimulation(Dataport *loader) {
 
 	SetState(PROCESS_STARTING, "Loading simulation");
 
-	buffer = (BYTE *)loader->buff;
-	bufferStart = buffer; //memorize start for later
+	BYTE* buffer = (BYTE *)loader->buff;
+	BYTE* bufferStart = buffer; //memorize start for later
 
 	// Load new geom from the dataport
 
@@ -222,95 +223,67 @@ bool LoadSimulation(Dataport *loader) {
 	if (shGeom->nbSuper <= 0) {
 		//ReleaseDataport(loader);
 		SetErrorSub("No structures");
-
 		return false;
 	}
 
-	sHandle->totalFacet = shGeom->nbFacet;
-	sHandle->nbVertex = shGeom->nbVertex;
-	sHandle->nbSuper = shGeom->nbSuper;
+	sHandle->sh = READBUFFER(GeomProperties); //Copy all geometry properties
+	FacetHistogramBuffer hist;
+	if (sHandle->sh.globalHistogramParams.record) {
+	hist.distanceHistogram.resize(sHandle->sh.globalHistogramParams.GetBounceHistogramSize());
+	hist.distanceHistogram.resize(sHandle->sh.globalHistogramParams.distanceResolution);
+	hist.timeHistogram.resize(sHandle->sh.globalHistogramParams.timeResolution);
+	}
+	sHandle->tmpGlobalHistograms = std::vector<FacetHistogramBuffer>(1 + sHandle->sh.nbMoments,hist);
 
-	sHandle->nbMoments = shGeom->nbMoments;
-	sHandle->latestMoment = shGeom->latestMoment;
-	sHandle->totalDesorbedMolecules = shGeom->totalDesorbedMolecules;
-	sHandle->finalOutgassingRate = shGeom->finalOutgassingRate;
-	sHandle->gasMass = shGeom->gasMass;
-	sHandle->enableDecay = shGeom->enableDecay;
-	sHandle->halfLife = shGeom->halfLife;
-	sHandle->timeWindowSize = shGeom->timeWindowSize;
-	sHandle->useMaxwellDistribution = shGeom->useMaxwellDistribution;
-	sHandle->calcConstantFlow = shGeom->calcConstantFlow;
-
-	sHandle->motionType = shGeom->motionType;
-	sHandle->motionVector1 = shGeom->motionVector1;
-	sHandle->motionVector2 = shGeom->motionVector2;
-	sHandle->globalHistogramParams = shGeom->globalHistogramParams;
 	// Prepare super structure (allocate memory for facets)
-	buffer += sizeof(GeomProperties);
-
 	sHandle->ontheflyParams = READBUFFER(OntheflySimulationParams);
 	if (sHandle->ontheflyParams.enableLogging) sHandle->tmpParticleLog.reserve(sHandle->ontheflyParams.logLimit / sHandle->ontheflyParams.nbProcess);
-	buffer += sizeof(Vector3d)*sHandle->nbVertex;
-	for (i = 0; i < sHandle->totalFacet; i++) {
+	BYTE* bufferVertex = buffer;
+	buffer += sizeof(Vector3d)*sHandle->sh.nbVertex; //Skip vertices
+	BYTE* bufferFacets = buffer;
+	
+	for (i = 0; i < sHandle->sh.nbFacet; i++) { //Count facets in structures
 		FacetProperties *shFacet = (FacetProperties *)buffer;
-		sHandle->str[shFacet->superIdx].nbFacet++;
-		buffer += sizeof(FacetProperties) + shFacet->nbIndex*(sizeof(size_t) + sizeof(Vector2d));
-		if (shFacet->useOutgassingFile) buffer += sizeof(double)*shFacet->outgassingMapWidth*shFacet->outgassingMapHeight;
-		if (shFacet->anglemapParams.hasRecorded) buffer += sizeof(size_t)*shFacet->anglemapParams.phiWidth*(shFacet->anglemapParams.thetaLowerRes+shFacet->anglemapParams.thetaHigherRes);
-		if (shFacet->isTextured) buffer += sizeof(double)*shFacet->texWidth*shFacet->texHeight;
+		buffer += sizeof(FacetProperties) + shFacet->nbIndex*(sizeof(size_t) + sizeof(Vector2d)); //Skip indices and vertex2d
+		if (shFacet->useOutgassingFile) buffer += sizeof(double)*shFacet->outgassingMapWidth*shFacet->outgassingMapHeight; //Skip outgassing map
+		buffer += shFacet->anglemapParams.GetRecordedDataSize(); //Skip angle map
+		if (shFacet->isTextured) buffer += sizeof(double)*shFacet->texWidth*shFacet->texHeight; //Skip texture increments
 	}
-	for (i = 0; i < sHandle->nbSuper; i++) {
-		int nbF = sHandle->str[i].nbFacet;
-		if (nbF == 0) {
-			/*ReleaseDataport(loader);
-			sprintf(err,"Structure #%d has no facets!",i+1);
-			SetErrorSub(err);
-			return false;*/
-		}
-		else {
 
-			sHandle->str[i].facets = (SubprocessFacet **)malloc(nbF * sizeof(SubprocessFacet *));
-			memset(sHandle->str[i].facets, 0, nbF * sizeof(SubprocessFacet *));
-			//sHandle->str[i].nbFacet = 0;
-		}
+	for (i = 0; i < sHandle->sh.nbSuper; i++) { //Reserve memory for subprocess facet pointer array (not the facets themselves)
+		sHandle->str[i].facets = (SubprocessFacet **)malloc(sHandle->str[i].nbFacet * sizeof(SubprocessFacet *));
+		memset(sHandle->str[i].facets, 0, sHandle->str[i].nbFacet * sizeof(SubprocessFacet *));
 		sHandle->str[i].nbFacet = 0;
 	}
 
-	globalBuff = buffer; //after facets and outgassing maps, with inc values
-
-	//buffer = (BYTE *)loader->buff;
-	buffer = bufferStart; //start from beginning again
+	BYTE* globalBuff = buffer; //after facets
 
 	// Name
-	memcpy(sHandle->name, shGeom->name, 64);
+	memcpy(sHandle->sh.name, shGeom->name, 64); //necessary? check later
 
 	// Vertices
-
-	sHandle->vertices3 = (Vector3d *)malloc(sHandle->nbVertex * sizeof(Vector3d));
+	sHandle->vertices3 = (Vector3d *)malloc(sHandle->sh.nbVertex * sizeof(Vector3d));
 	if (!sHandle->vertices3) {
 		SetErrorSub("Not enough memory to load vertices");
 		return false;
 	}
-	buffer += sizeof(GeomProperties);
-	buffer += sizeof(OntheflySimulationParams);
-	shVert = (Vector3d *)(buffer);
-	memcpy(sHandle->vertices3, shVert, sHandle->nbVertex * sizeof(Vector3d));
-	buffer += sizeof(Vector3d)*sHandle->nbVertex;
+	shVert = (Vector3d *)(bufferVertex);
+	memcpy(sHandle->vertices3, shVert, sHandle->sh.nbVertex * sizeof(Vector3d));
 
 	// Facets
-	for (i = 0; i < sHandle->totalFacet; i++) {
+	buffer = bufferFacets;
+	for (i = 0; i < sHandle->sh.nbFacet; i++) {
 
 		FacetProperties *shFacet = (FacetProperties *)buffer;
-		SubprocessFacet *f = new SubprocessFacet;
+		SubprocessFacet *f = new SubprocessFacet();
 		if (!f) {
 			SetErrorSub("Not enough memory to load facets");
 			return false;
 		}
-		memset(f, 0, sizeof(SubprocessFacet));
 		memcpy(&(f->sh), shFacet, sizeof(FacetProperties));
-		f->ResizeCounter(sHandle->nbMoments); //Initialize counter
+		f->ResizeCounter(sHandle->sh.nbMoments); //Initialize counter
 
-		//f->sh.maxSpeed = 4.0 * sqrt(2.0*8.31*f->sh.temperature/0.001/sHandle->gasMass);
+		//f->sh.maxSpeed = 4.0 * sqrt(2.0*8.31*f->sh.temperature/0.001/sHandle->sh.gasMass);
 
 		sHandle->hasVolatile |= f->sh.isVolatile;
 		sHandle->hasDirection |= f->sh.countDirection;
@@ -329,7 +302,7 @@ bool LoadSimulation(Dataport *loader) {
 			f->sh.opacity_paramId = -1;
 			f->sh.sticking = 0.0;
 			f->sh.sticking_paramId = -1;
-			if (((f->sh.superDest - 1) >= sHandle->nbSuper || f->sh.superDest < 0)) {
+			if (((f->sh.superDest - 1) >= sHandle->sh.nbSuper || f->sh.superDest < 0)) {
 				// Geometry error
 				ClearSimulation();
 				//ReleaseDataport(loader);
@@ -340,7 +313,7 @@ bool LoadSimulation(Dataport *loader) {
 		}
 
 		// Reset counter in local memory
-		//memset(&(f->sh.counter), 0, sizeof(FacetHitBuffer));
+		//memset(&(f->sh.tmpCounter), 0, sizeof(FacetHitBuffer)); //Done by ResizeCounter() above
 		f->indices = (size_t *)malloc(f->sh.nbIndex * sizeof(size_t));
 		buffer += sizeof(FacetProperties);
 		memcpy(f->indices, buffer, f->sh.nbIndex * sizeof(size_t));
@@ -374,7 +347,7 @@ bool LoadSimulation(Dataport *loader) {
 		if (f->sh.anglemapParams.hasRecorded) {
 			//Record or use to generate
 
-			f->angleMapSize = f->sh.anglemapParams.phiWidth * (f->sh.anglemapParams.thetaLowerRes + f->sh.anglemapParams.thetaHigherRes) * sizeof(size_t);
+			f->angleMapSize = f->sh.anglemapParams.GetRecordedDataSize();
 			f->angleMap.pdf = (size_t*)malloc(f->angleMapSize);
 			if (!f->angleMap.pdf) {
 				SetErrorSub("Not enough memory to load incident angle map (values)");
@@ -470,13 +443,13 @@ bool LoadSimulation(Dataport *loader) {
 			size_t nbE = f->sh.texWidth*f->sh.texHeight;
 			f->textureSize = nbE * sizeof(TextureCell);
 
-			if ((f->texture = (TextureCell **)malloc(sizeof(TextureCell *)* (1 + sHandle->nbMoments))) == NULL) {
+			if ((f->texture = (TextureCell **)malloc(sizeof(TextureCell *)* (1 + sHandle->sh.nbMoments))) == NULL) {
 				//ReleaseDataport(loader);
 				SetErrorSub("Couldn't allocate memory (time moments container, textures)");
 				return false;
 			}
-			memset(f->texture, 0, sizeof(TextureCell *)* (1 + sHandle->nbMoments)); //set all pointers to NULL so we can use SAFE_FREE later
-			for (size_t m = 0; m < (1 + sHandle->nbMoments); m++) {
+			memset(f->texture, 0, sizeof(TextureCell *)* (1 + sHandle->sh.nbMoments)); //set all pointers to NULL so we can use SAFE_FREE later
+			for (size_t m = 0; m < (1 + sHandle->sh.nbMoments); m++) {
 				if ((f->texture[m] = (TextureCell *)malloc(f->textureSize)) == NULL) { //steady-state plus one for each moment
 					//ReleaseDataport(loader);
 					SetErrorSub("Couldn't allocate memory (textures)");
@@ -502,7 +475,7 @@ bool LoadSimulation(Dataport *loader) {
 				for (j = 0; j < nbE; j++) { //second pass, filter out very small cells
 					f->largeEnough[j] = (f->inc[j] < ((5.0f)*f->fullSizeInc));
 				}
-				sHandle->textTotalSize += f->textureSize*(1 + sHandle->nbMoments);
+				sHandle->textTotalSize += f->textureSize*(1 + sHandle->sh.nbMoments);
 
 				f->iw = 1.0 / (double)f->sh.texWidthD;
 				f->ih = 1.0 / (double)f->sh.texHeightD;
@@ -516,13 +489,13 @@ bool LoadSimulation(Dataport *loader) {
 			f->profileSize = PROFILE_SIZE * sizeof(ProfileSlice);
 			/*f->profile = (llong *)malloc(f->profileSize);
 			memset(f->profile,0,f->profileSize);*/
-			if ((f->profile = (ProfileSlice **)malloc(sizeof(ProfileSlice *)* (1 + sHandle->nbMoments))) == NULL) {
+			if ((f->profile = (ProfileSlice **)malloc(sizeof(ProfileSlice *)* (1 + sHandle->sh.nbMoments))) == NULL) {
 				//ReleaseDataport(loader);
 				SetErrorSub("Couldn't allocate memory (time moments container, profiles)");
 				return false;
 			}
-			memset(f->profile, 0, sizeof(ProfileSlice *)* (1 + sHandle->nbMoments)); //set all pointers to NULL so we can use SAFE_FREE later
-			for (size_t m = 0; m < (1 + sHandle->nbMoments); m++) {
+			memset(f->profile, 0, sizeof(ProfileSlice *)* (1 + sHandle->sh.nbMoments)); //set all pointers to NULL so we can use SAFE_FREE later
+			for (size_t m = 0; m < (1 + sHandle->sh.nbMoments); m++) {
 				if ((f->profile[m] = (ProfileSlice *)malloc(f->profileSize)) == NULL) { //steady-state plus one for each moment
 					//ReleaseDataport(loader);
 					SetErrorSub("Couldn't allocate memory (profiles)");
@@ -530,7 +503,7 @@ bool LoadSimulation(Dataport *loader) {
 				}
 				memset(f->profile[m], 0, f->profileSize);
 			}
-			sHandle->profTotalSize += f->profileSize*(1 + sHandle->nbMoments);
+			sHandle->profTotalSize += f->profileSize*(1 + sHandle->sh.nbMoments);
 		}
 		else f->profileSize = 0;
 
@@ -539,13 +512,13 @@ bool LoadSimulation(Dataport *loader) {
 			f->directionSize = f->sh.texWidth*f->sh.texHeight * sizeof(DirectionCell);
 			/*f->direction = (DirectionCell *)malloc(f->directionSize);
 			memset(f->direction,0,f->directionSize);*/
-			if ((f->direction = (DirectionCell **)malloc(sizeof(DirectionCell *)* (1 + sHandle->nbMoments))) == NULL) {
+			if ((f->direction = (DirectionCell **)malloc(sizeof(DirectionCell *)* (1 + sHandle->sh.nbMoments))) == NULL) {
 				//ReleaseDataport(loader);
 				SetErrorSub("Couldn't allocate memory (time moments container, direction vectors)");
 				return false;
 			}
-			memset(f->direction, 0, sizeof(DirectionCell *)* (1 + sHandle->nbMoments)); //set all pointers to NULL so we can use SAFE_FREE later
-			for (size_t m = 0; m < (1 + sHandle->nbMoments); m++) {
+			memset(f->direction, 0, sizeof(DirectionCell *)* (1 + sHandle->sh.nbMoments)); //set all pointers to NULL so we can use SAFE_FREE later
+			for (size_t m = 0; m < (1 + sHandle->sh.nbMoments); m++) {
 				if ((f->direction[m] = (DirectionCell *)malloc(f->directionSize)) == NULL) { //steady-state plus one for each moment
 					//ReleaseDataport(loader);
 					SetErrorSub("Couldn't allocate memory (direction vectors)");
@@ -553,9 +526,17 @@ bool LoadSimulation(Dataport *loader) {
 				}
 				memset(f->direction[m], 0, f->directionSize);
 			}
-			sHandle->dirTotalSize += f->directionSize*(1 + sHandle->nbMoments);
+			sHandle->dirTotalSize += f->directionSize*(1 + sHandle->sh.nbMoments);
 		}
 		else f->directionSize = 0;
+
+		FacetHistogramBuffer hist;
+		if (f->sh.facetHistogramParams.record) {
+			hist.distanceHistogram.resize(f->sh.facetHistogramParams.GetBounceHistogramSize());
+			hist.distanceHistogram.resize(f->sh.facetHistogramParams.distanceResolution);
+			hist.timeHistogram.resize(f->sh.facetHistogramParams.timeResolution);
+		}
+		f->tmpHistograms = std::vector<FacetHistogramBuffer>(1 + sHandle->sh.nbMoments, hist);
 
 	}
 
@@ -619,8 +600,8 @@ bool LoadSimulation(Dataport *loader) {
 
 	//Time moments
 	//size1=READBUFFER(size_t);
-	sHandle->moments.reserve(sHandle->nbMoments); //nbMoments already passed
-	for (size_t i = 0; i < sHandle->nbMoments; i++) {
+	sHandle->moments.reserve(sHandle->sh.nbMoments); //nbMoments already passed
+	for (size_t i = 0; i < sHandle->sh.nbMoments; i++) {
 		double valueX = READBUFFER(double);
 		sHandle->moments.push_back(valueX);
 	}
@@ -648,7 +629,7 @@ bool LoadSimulation(Dataport *loader) {
 
 	// Build all AABBTrees
 	size_t maxDepth=0;
-	for (i = 0; i < sHandle->nbSuper; i++)
+	for (i = 0; i < sHandle->sh.nbSuper; i++)
 		sHandle->str[i].aabbTree = BuildAABBTree(sHandle->str[i].facets, sHandle->str[i].nbFacet, 0,maxDepth);
 
 	// Initialise simulation
@@ -657,13 +638,13 @@ bool LoadSimulation(Dataport *loader) {
 	rseed(seed);
 	sHandle->loadOK = true;
 	t1 = GetTick();
-	printf("  Load %s successful\n", sHandle->name);
-	printf("  Geometry: %zd vertex %zd facets\n", sHandle->nbVertex, sHandle->totalFacet);
+	printf("  Load %s successful\n", sHandle->sh.name);
+	printf("  Geometry: %zd vertex %zd facets\n", sHandle->sh.nbVertex, sHandle->sh.nbFacet);
 
 	printf("  Geom size: %zd bytes\n", (size_t)(buffer - bufferStart));
-	printf("  Number of stucture: %zd\n", sHandle->nbSuper);
+	printf("  Number of stucture: %zd\n", sHandle->sh.nbSuper);
 	printf("  Global Hit: %zd bytes\n", sizeof(GlobalHitBuffer));
-	printf("  Facet Hit : %zd bytes\n", sHandle->totalFacet * sizeof(FacetHitBuffer));
+	printf("  Facet Hit : %zd bytes\n", sHandle->sh.nbFacet * sizeof(FacetHitBuffer));
 	printf("  Texture   : %zd bytes\n", sHandle->textTotalSize);
 	printf("  Profile   : %zd bytes\n", sHandle->profTotalSize);
 	printf("  Direction : %zd bytes\n", sHandle->dirTotalSize);
@@ -695,7 +676,7 @@ void UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DWORD timeout) {
 	switch (sHandle->sMode) {
 	case MC_MODE:
 	{
-		UpdateMCHits(dpHit, prIdx, sHandle->nbMoments, timeout);
+		UpdateMCHits(dpHit, prIdx, sHandle->sh.nbMoments, timeout);
 		if (dpLog) UpdateLog(dpLog, timeout);
 	}
 		break;
@@ -708,7 +689,7 @@ void UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DWORD timeout) {
 }
 
 size_t GetHitsSize() {
-	return sHandle->textTotalSize + sHandle->profTotalSize + sHandle->dirTotalSize + sHandle->totalFacet * sizeof(FacetHitBuffer) + sizeof(GlobalHitBuffer);
+	return sHandle->textTotalSize + sHandle->profTotalSize + sHandle->dirTotalSize + sHandle->sh.nbFacet * sizeof(FacetHitBuffer) + sizeof(GlobalHitBuffer); //Update with histogram and nbmoments
 }
 
 void ResetTmpCounters() {
@@ -721,29 +702,47 @@ void ResetTmpCounters() {
 	sHandle->nbLeakSinceUpdate = 0;
 	sHandle->hitCacheSize = 0;
 	sHandle->leakCacheSize = 0;
+	
+	//Reset global histograms
+	if (sHandle->sh.globalHistogramParams.record) {
+		for (size_t m = 0; m < (sHandle->sh.nbMoments + 1); m++) {
+			std::fill(sHandle->tmpGlobalHistograms[m].nbHitsHistogram.begin(), sHandle->tmpGlobalHistograms[m].nbHitsHistogram.end(), 0);
+			std::fill(sHandle->tmpGlobalHistograms[m].distanceHistogram.begin(), sHandle->tmpGlobalHistograms[m].distanceHistogram.end(), 0);
+			std::fill(sHandle->tmpGlobalHistograms[m].timeHistogram.begin(), sHandle->tmpGlobalHistograms[m].timeHistogram.end(), 0);
+		}
+	}
 
-	for (int j = 0; j < sHandle->nbSuper; j++) {
+	for (int j = 0; j < sHandle->sh.nbSuper; j++) {
 		for (int i = 0; i < sHandle->str[j].nbFacet; i++) {
 			SubprocessFacet *f = sHandle->str[j].facets[i];
 			f->ResetCounter();
 			f->hitted = false;
 
+			//Reset facet histograms
+			if (f->sh.facetHistogramParams.record) {
+				for (size_t m = 0; m < (sHandle->sh.nbMoments + 1); m++) {
+					std::fill(f->tmpHistograms[m].nbHitsHistogram.begin(), f->tmpHistograms[m].nbHitsHistogram.end(), 0);
+					std::fill(f->tmpHistograms[m].distanceHistogram.begin(), f->tmpHistograms[m].distanceHistogram.end(), 0);
+					std::fill(f->tmpHistograms[m].timeHistogram.begin(), f->tmpHistograms[m].timeHistogram.end(), 0);
+				}
+			}
+
 			if (f->texture) {
-				for (size_t m = 0; m < (sHandle->nbMoments + 1); m++) {
+				for (size_t m = 0; m < (sHandle->sh.nbMoments + 1); m++) {
 					memset(f->texture[m], 0, f->textureSize);
 				}
 			}
 
 			
 			if (f->profile) {
-				for (size_t m = 0; m < (sHandle->nbMoments + 1); m++) {
+				for (size_t m = 0; m < (sHandle->sh.nbMoments + 1); m++) {
 					memset(f->profile[m], 0, f->profileSize);
 				}
 			}
 
 			
 			if (f->direction) {
-				for (size_t m = 0; m < (sHandle->nbMoments + 1); m++) {
+				for (size_t m = 0; m < (sHandle->sh.nbMoments + 1); m++) {
 					memset(f->direction[m], 0, f->directionSize);
 				}
 			}

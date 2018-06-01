@@ -128,23 +128,23 @@ char *GetSimuStatus() {
     case MC_MODE:
       if( max!=0 ) {
         double percent = (double)(count)*100.0 / (double)(max);
-        sprintf(ret,"(%s) MC %I64d/%I64d (%.1f%%)",sHandle->name,count,max,percent);
+        sprintf(ret,"(%s) MC %I64d/%I64d (%.1f%%)",sHandle->sh.name,count,max,percent);
       } else {
-        sprintf(ret,"(%s) MC %I64d",sHandle->name,count);
+        sprintf(ret,"(%s) MC %I64d",sHandle->sh.name,count);
       }
       break;
 
     case AC_MODE:
       if( sHandle->prgAC<100 ) {
-          sprintf(ret,"(%s) AC (%zdx%zd) (%zd%%)",sHandle->name,
+          sprintf(ret,"(%s) AC (%zdx%zd) (%zd%%)",sHandle->sh.name,
                       sHandle->nbAC,sHandle->nbAC,sHandle->prgAC);
       } else {
         if( max!=0 ) {
           double percent = (double)(count)*100.0 / (double)(max);
-          sprintf(ret,"(%s) AC (%zdx%zd) %I64d/%I64d (%.1f%%)",sHandle->name,
+          sprintf(ret,"(%s) AC (%zdx%zd) %I64d/%I64d (%.1f%%)",sHandle->sh.name,
                       sHandle->nbAC,sHandle->nbAC,count,max,percent);
         } else {
-          sprintf(ret,"(%s) AC (%zdx%zd) %I64d",sHandle->name,sHandle->nbAC,
+          sprintf(ret,"(%s) AC (%zdx%zd) %I64d",sHandle->sh.name,sHandle->nbAC,
                       sHandle->nbAC,count);
         }
       }
