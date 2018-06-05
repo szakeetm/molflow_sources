@@ -19,9 +19,6 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 #pragma once
 
-#define MAX_STRUCT 512
-#define MAX_THIT   16384
-
 #include "MolflowTypes.h"
 #include "Buffer_shared.h" //Facetproperties
 #include "SMP.h"
@@ -32,10 +29,10 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 class Anglemap {
 public:
-	size_t   *pdf;		  // Incident angle distribution, phi and theta, not normalized. Used either for recording or for 2nd order interpolation
-	double   *phi_CDFs;    // A table containing phi distributions for each theta, starting from 0 for every line (1 line = 1 theta value). For speed we keep it in one memory block, 1 pointer
-	size_t   *phi_CDFsums; // since CDF runs only to the middle of the last segment, for each theta a line sum is stored here. Also a pdf for theta
-	double   *theta_CDF;	  // Theta CDF, not normalized. nth value is the CDF at the end of region n (beginning of first section is always 0)
+	std::vector<size_t>   pdf;		  // Incident angle distribution, phi and theta, not normalized. Used either for recording or for 2nd order interpolation
+	std::vector<double>   phi_CDFs;    // A table containing phi distributions for each theta, starting from 0 for every line (1 line = 1 theta value). For speed we keep it in one memory block, 1 pointer
+	std::vector<size_t>   phi_CDFsums; // since CDF runs only to the middle of the last segment, for each theta a line sum is stored here. Also a pdf for theta
+	std::vector<double>   theta_CDF;	  // Theta CDF, not normalized. nth value is the CDF at the end of region n (beginning of first section is always 0)
 	size_t   theta_CDFsum; // since theta CDF only runs till the middle of the last segment, the map sum is here
 
 	double GetTheta(const double& thetaIndex,const AnglemapParams& anglemapParams);
@@ -52,16 +49,16 @@ class SubprocessFacet {
 public:
   FacetProperties sh;
 
-  size_t      *indices;          // Indices (Reference to geometry vertex)
-  Vector2d *vertices2;        // Vertices (2D plane space, UV coordinates)
-  TextureCell     **texture;            // Texture hit recording (taking area, temperature, mass into account)
-  double   *inc;              // Texure increment
-  bool     *largeEnough;      // cells that are NOT too small for autoscaling
+	std::vector<size_t>      indices;          // Indices (Reference to geometry vertex)
+	std::vector<Vector2d> vertices2;        // Vertices (2D plane space, UV coordinates)
+	std::vector<std::vector<TextureCell>>     texture;            // Texture hit recording (taking area, temperature, mass into account), 1+nbMoments
+	std::vector<double>   textureCellIncrements;              // Texure increment
+	std::vector<bool>     largeEnough;      // cells that are NOT too small for autoscaling
   double   fullSizeInc;       // Texture increment of a full texture element
-  DirectionCell     **direction;       // Direction field recording (average)
+  std::vector<std::vector<DirectionCell>>     direction;       // Direction field recording (average), 1+nbMoments
   //bool     *fullElem;         // Direction field recording (only on full element)
-  ProfileSlice **profile;         // Distribution and hit recording
-  double   *outgassingMap; // Cumulative outgassing map when desorption is based on imported file
+  std::vector<std::vector<ProfileSlice>> profile;         // Distribution and hit recording
+  std::vector<double>   outgassingMap; // Cumulative outgassing map when desorption is based on imported file
   double outgassingMapWidthD; //actual outgassing file map width
   double outgassingMapHeightD; //actual outgassing file map height
   Anglemap angleMap;
@@ -89,26 +86,29 @@ public:
 
   // Facet hit counters
   std::vector<FacetHitBuffer> tmpCounter; //1+nbMoment
+  std::vector<FacetHistogramBuffer> tmpHistograms; //1+nbMoment
   void  ResetCounter();
   void	ResizeCounter(size_t nbMoments);
 
   void RegisterTransparentPass(); //Allows one shared Intersect routine between MolFlow and Synrad
 };
 
-extern  SubprocessFacet **THitCache; //Global variable
-
 // Local simulation structure
 
-typedef struct {
+class AABBNODE;
 
-  int              nbFacet;  // Number of facet
-  SubprocessFacet          **facets;   // Facet handles
-  struct AABBNODE *aabbTree; // Structure AABB tree
+class SuperStructure {
+public:
+	SuperStructure();
+	~SuperStructure();
+  std::vector<SubprocessFacet>  facets;   // Facet handles
+  AABBNODE* aabbTree; // Structure AABB tree
+};
 
-} SUPERSTRUCT;
+class Simulation {
+public:
 
-typedef struct {
-
+  Simulation();
   FacetHitBuffer tmpGlobalCount;            // Temporary number of hits (between 2 updates)
 
   int    hitCacheSize;              // Last hits  
@@ -132,10 +132,11 @@ typedef struct {
   // Geometry
   GeomProperties sh;
 
-  Vector3d   *vertices3;        // Vertices
+  std::vector<Vector3d>   vertices3;        // Vertices
+  std::vector<SuperStructure> structures; //They contain the facets
   size_t         curStruct;        // Current structure
   int         teleportedFrom;   // We memorize where the particle came from: we can teleport back
-  SUPERSTRUCT str[MAX_STRUCT];
+  
 
   SubprocessFacet *lastHitFacet;     // Last hitted facet
   double stepPerSec;  // Avg number of step per sec
@@ -146,7 +147,6 @@ typedef struct {
   bool lastHitUpdateOK;  // Last hit update timeout
   bool lastLogUpdateOK; // Last log update timeout
   bool hasVolatile;   // Contains volatile facet
-  bool hasDirection;  // Contains direction field
   size_t  sMode;         // Simulation mode (MC_MODE or AC_MODE)
   double calcACTime;  // AC matrix calculation time
 
@@ -193,13 +193,7 @@ typedef struct {
   OntheflySimulationParams ontheflyParams;
   std::vector<ParticleLoggerItem> tmpParticleLog;
 
-} SIMULATION;
-
-// Handle to simulation object
-extern SIMULATION *sHandle;
-
-// -- Macros ---------------------------------------------------
-
+};
 // -- Methods ---------------------------------------------------
 
 void RecordHitOnTexture(SubprocessFacet *f, double time, bool countHit, double velocity_factor, double ortSpeedFactor);
@@ -230,7 +224,6 @@ void PerformTransparentPass(SubprocessFacet *iFacet);
 void UpdateHits(Dataport *dpHit,Dataport *dpLog,int prIdx,DWORD timeout);
 void UpdateLog(Dataport *dpLog, DWORD timeout);
 void UpdateMCHits(Dataport *dpHit,int prIdx,size_t nbMoments,DWORD timeout);
-void AddOnetoA();
 void UpdateACHits(Dataport *dpHit,int prIdx,DWORD timeout);
 void ResetTmpCounters();
 

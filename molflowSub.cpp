@@ -33,6 +33,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #endif
 
 // Global process variables
+Simulation* sHandle; //Global handle to simulation, one per subprocess
 
 #define WAITTIME    100  // Answer in STOP mode
 //#define TIMEOUT     300  // Process kills itself after no heartbeat (seconds)
@@ -332,7 +333,7 @@ int main(int argc,char* argv[])
 
   printf("Connected to %s (%zd bytes), molflowSub.exe #%d\n",ctrlDpName,sizeof(SHCONTROL),prIdx);
 
-  InitSimulation();
+  InitSimulation(); //Creates sHandle instance
 
   // Sub process ready
   SetReady();

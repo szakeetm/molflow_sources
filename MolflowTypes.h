@@ -73,7 +73,7 @@ public:
 	double sum_v_ort_per_area;
 	double sum_1_per_ort_velocity;
 	TextureCell& operator+=(const TextureCell& rhs);
-} ;
+};
 
 //Texture limit types
 typedef struct {

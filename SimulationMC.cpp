@@ -27,28 +27,21 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/MathTools.h"
 #include <tuple> //std::tie
 
-extern SIMULATION *sHandle;
+extern Simulation *sHandle; //delcared in molflowSub.cpp
 
 // Compute area of all the desorption facet
 
 void CalcTotalOutgassing() {
-	int i, j, k;
-	size_t tSize;
-	SubprocessFacet *f;
-	double scale;
 	//float scale_precomputed;
 
 	// Update texture increment for MC
 	//scale_precomputed=(float)(40.0/(sqrt(8.0*8.31/(PI*sHandle->sh.gasMass*0.001))));
-	for (j = 0; j < sHandle->sh.nbSuper; j++) {
-		for (i = 0; i < sHandle->str[j].nbFacet; i++) {
-			f = sHandle->str[j].facets[i];
-			if (f->inc) {
-				tSize = f->sh.texWidth*f->sh.texHeight;
-				scale = 1.0;
-				if (f->sh.is2sided) scale = scale * 0.5;
-				for (k = 0; k < tSize; k++) f->inc[k] *= scale;
-				f->fullSizeInc *= scale;
+	for (size_t j = 0; j < sHandle->sh.nbSuper; j++) {
+		for (SubprocessFacet f : sHandle->structures[j].facets) {
+			if (f.sh.is2sided) {
+				f.fullSizeInc *= 0.5;
+				for (auto inc : f.textureCellIncrements)
+					inc *= 0.5;
 			}
 		}
 	}
@@ -205,65 +198,63 @@ void UpdateMCHits(Dataport *dpHit,int prIdx, size_t nbMoments, DWORD timeout) {
 	size_t facetHitsSize = (1 + nbMoments) * sizeof(FacetHitBuffer);
 	// Facets
 	for (s = 0; s < sHandle->sh.nbSuper; s++) {
-		for (i = 0; i < sHandle->str[s].nbFacet; i++) {
-
-			SubprocessFacet *f = sHandle->str[s].facets[i];
-			if (f->hitted) {
+		for (SubprocessFacet f : sHandle->structures[s].facets) {
+			if (f.hitted) {
 
 				for (int m = 0; m < (1 + nbMoments); m++) {
-					FacetHitBuffer *fFit = (FacetHitBuffer *)(buffer + f->sh.hitOffset + m * sizeof(FacetHitBuffer));
-					fFit->hit.nbAbsEquiv += f->tmpCounter[m].hit.nbAbsEquiv;
-					fFit->hit.nbDesorbed += f->tmpCounter[m].hit.nbDesorbed;
-					fFit->hit.nbMCHit += f->tmpCounter[m].hit.nbMCHit;
-					fFit->hit.nbHitEquiv += f->tmpCounter[m].hit.nbHitEquiv;
-					fFit->hit.sum_1_per_ort_velocity += f->tmpCounter[m].hit.sum_1_per_ort_velocity;
-					fFit->hit.sum_v_ort += f->tmpCounter[m].hit.sum_v_ort;
-					fFit->hit.sum_1_per_velocity += f->tmpCounter[m].hit.sum_1_per_velocity;
+					FacetHitBuffer *fFit = (FacetHitBuffer *)(buffer + f.sh.hitOffset + m * sizeof(FacetHitBuffer));
+					fFit->hit.nbAbsEquiv += f.tmpCounter[m].hit.nbAbsEquiv;
+					fFit->hit.nbDesorbed += f.tmpCounter[m].hit.nbDesorbed;
+					fFit->hit.nbMCHit += f.tmpCounter[m].hit.nbMCHit;
+					fFit->hit.nbHitEquiv += f.tmpCounter[m].hit.nbHitEquiv;
+					fFit->hit.sum_1_per_ort_velocity += f.tmpCounter[m].hit.sum_1_per_ort_velocity;
+					fFit->hit.sum_v_ort += f.tmpCounter[m].hit.sum_v_ort;
+					fFit->hit.sum_1_per_velocity += f.tmpCounter[m].hit.sum_1_per_velocity;
 				}
 
-				if (f->sh.isProfile) {
+				if (f.sh.isProfile) {
 					for (int m = 0; m < (1 + nbMoments); m++) {
-						ProfileSlice *shProfile = (ProfileSlice *)(buffer + f->sh.hitOffset + facetHitsSize + m*f->profileSize);
+						ProfileSlice *shProfile = (ProfileSlice *)(buffer + f.sh.hitOffset + facetHitsSize + m*f.profileSize);
 						for (j = 0; j < PROFILE_SIZE; j++) {
-							shProfile[j] += f->profile[m][j];
+							shProfile[j] += f.profile[m][j];
 						}
 					}
 				}
 
-				if (f->sh.isTextured) {
+				if (f.sh.isTextured) {
 					for (int m = 0; m < (1 + nbMoments); m++) {
-						TextureCell *shTexture = (TextureCell *)(buffer + (f->sh.hitOffset + facetHitsSize + f->profileSize*(1 + nbMoments) + m*f->textureSize));
+						TextureCell *shTexture = (TextureCell *)(buffer + (f.sh.hitOffset + facetHitsSize + f.profileSize*(1 + nbMoments) + m*f.textureSize));
 						//double dCoef = gHits->globalHits.hit.nbDesorbed * 1E4 * sHandle->sh.gasMass / 1000 / 6E23 * MAGIC_CORRECTION_FACTOR;  //1E4 is conversion from m2 to cm2
 						double timeCorrection = m == 0 ? sHandle->sh.finalOutgassingRate : (sHandle->sh.totalDesorbedMolecules) / sHandle->sh.timeWindowSize;
 						//Timecorrection is required to compare constant flow texture values with moment values (for autoscaling)
 
-						for (y = 0; y < f->sh.texHeight; y++) {
-							for (x = 0; x < f->sh.texWidth; x++) {
-								size_t add = x + y*f->sh.texWidth;
+						for (y = 0; y < f.sh.texHeight; y++) {
+							for (x = 0; x < f.sh.texWidth; x++) {
+								size_t add = x + y*f.sh.texWidth;
 
 								//Add temporary hit counts
-								shTexture[add] += f->texture[m][add];
+								shTexture[add] += f.texture[m][add];
 
 								double val[3];  //pre-calculated autoscaling values (Pressure, imp.rate, density)
 
 								val[0] = shTexture[add].sum_v_ort_per_area*timeCorrection; //pressure without dCoef_pressure
-								val[1] = shTexture[add].countEquiv*f->inc[add] * timeCorrection; //imp.rate without dCoef
-								val[2] = f->inc[add] * shTexture[add].sum_1_per_ort_velocity* timeCorrection; //particle density without dCoef
+								val[1] = shTexture[add].countEquiv*f.textureCellIncrements[add] * timeCorrection; //imp.rate without dCoef
+								val[2] = f.textureCellIncrements[add] * shTexture[add].sum_1_per_ort_velocity* timeCorrection; //particle density without dCoef
 
 								//Global autoscale
 								for (int v = 0; v < 3; v++) {
-									if (val[v] > gHits->texture_limits[v].max.all && f->largeEnough[add])
+									if (val[v] > gHits->texture_limits[v].max.all && f.largeEnough[add])
 										gHits->texture_limits[v].max.all = val[v];
 
-									if (val[v] > 0.0 && val[v] < gHits->texture_limits[v].min.all && f->largeEnough[add])
+									if (val[v] > 0.0 && val[v] < gHits->texture_limits[v].min.all && f.largeEnough[add])
 										gHits->texture_limits[v].min.all = val[v];
 
 									//Autoscale ignoring constant flow (moments only)
 									if (m != 0) {
-										if (val[v] > gHits->texture_limits[v].max.moments_only && f->largeEnough[add])
+										if (val[v] > gHits->texture_limits[v].max.moments_only && f.largeEnough[add])
 											gHits->texture_limits[v].max.moments_only = val[v];
 
-										if (val[v] > 0.0 && val[v] < gHits->texture_limits[v].min.moments_only && f->largeEnough[add])
+										if (val[v] > 0.0 && val[v] < gHits->texture_limits[v].min.moments_only && f.largeEnough[add])
 											gHits->texture_limits[v].min.moments_only = val[v];
 									}
 								}
@@ -272,42 +263,42 @@ void UpdateMCHits(Dataport *dpHit,int prIdx, size_t nbMoments, DWORD timeout) {
 					}
 				}
 
-				if (f->sh.countDirection) {
+				if (f.sh.countDirection) {
 					for (int m = 0; m < (1 + nbMoments); m++) {
-						DirectionCell *shDir = (DirectionCell *)(buffer + (f->sh.hitOffset + facetHitsSize + f->profileSize*(1 + nbMoments) + f->textureSize*(1 + nbMoments) + f->directionSize*m));
-						for (y = 0; y < f->sh.texHeight; y++) {
-							for (x = 0; x < f->sh.texWidth; x++) {
-								size_t add = x + y*f->sh.texWidth;
-								shDir[add].dir.x += f->direction[m][add].dir.x;
-								shDir[add].dir.y += f->direction[m][add].dir.y;
-								shDir[add].dir.z += f->direction[m][add].dir.z;
-								//shDir[add].sumSpeed += f->direction[m][add].sumSpeed;
-								shDir[add].count += f->direction[m][add].count;
+						DirectionCell *shDir = (DirectionCell *)(buffer + (f.sh.hitOffset + facetHitsSize + f.profileSize*(1 + nbMoments) + f.textureSize*(1 + nbMoments) + f.directionSize*m));
+						for (y = 0; y < f.sh.texHeight; y++) {
+							for (x = 0; x < f.sh.texWidth; x++) {
+								size_t add = x + y*f.sh.texWidth;
+								shDir[add].dir.x += f.direction[m][add].dir.x;
+								shDir[add].dir.y += f.direction[m][add].dir.y;
+								shDir[add].dir.z += f.direction[m][add].dir.z;
+								//shDir[add].sumSpeed += f.direction[m][add].sumSpeed;
+								shDir[add].count += f.direction[m][add].count;
 							}
 						}
 					}
 				}
 
-				if (f->sh.anglemapParams.record) {
-					size_t *shAngleMap = (size_t *)(buffer + f->sh.hitOffset + facetHitsSize + f->profileSize*(1 + nbMoments) + f->textureSize*(1 + nbMoments) + f->directionSize*(1 + nbMoments));
-					for (y = 0; y < (f->sh.anglemapParams.thetaLowerRes + f->sh.anglemapParams.thetaHigherRes); y++) {
-						for (x = 0; x < f->sh.anglemapParams.phiWidth; x++) {
-							size_t add = x + y*f->sh.anglemapParams.phiWidth;
-							shAngleMap[add] += f->angleMap.pdf[add];
+				if (f.sh.anglemapParams.record) {
+					size_t *shAngleMap = (size_t *)(buffer + f.sh.hitOffset + facetHitsSize + f.profileSize*(1 + nbMoments) + f.textureSize*(1 + nbMoments) + f.directionSize*(1 + nbMoments));
+					for (y = 0; y < (f.sh.anglemapParams.thetaLowerRes + f.sh.anglemapParams.thetaHigherRes); y++) {
+						for (x = 0; x < f.sh.anglemapParams.phiWidth; x++) {
+							size_t add = x + y*f.sh.anglemapParams.phiWidth;
+							shAngleMap[add] += f.angleMap.pdf[add];
 						}
 					}
 				}
 
 				//Facet histograms
-				if (f->sh.facetHistogramParams.record) {
+				if (f.sh.facetHistogramParams.record) {
 					for (int m = 0; m < (1 + nbMoments); m++) {
-						FacetHistogramBuffer *hist = (FacetHistogramBuffer *)(buffer + f->sh.hitOffset + facetHitsSize + f->profileSize*(1 + nbMoments) + f->textureSize*(1 + nbMoments) + f->directionSize*(1 + nbMoments) + f->sh.anglemapParams.GetRecordedDataSize() + m * sHandle->sh.globalHistogramParams.GetDataSize());
-						for (size_t i = 0; i < f->sh.facetHistogramParams.GetBounceHistogramSize(); i++)
-							hist->nbHitsHistogram[i] += f->tmpHistograms[m].nbHitsHistogram[i];
-						for (size_t i = 0; i < (f->sh.facetHistogramParams.distanceResolution + 1); i++)
-							hist->distanceHistogram[i] += f->tmpHistograms[m].distanceHistogram[i];
-						for (size_t i = 0; i < (f->sh.facetHistogramParams.timeResolution + 1); i++)
-							hist->timeHistogram[i] += f->tmpHistograms[m].timeHistogram[i];
+						FacetHistogramBuffer *hist = (FacetHistogramBuffer *)(buffer + f.sh.hitOffset + facetHitsSize + f.profileSize*(1 + nbMoments) + f.textureSize*(1 + nbMoments) + f.directionSize*(1 + nbMoments) + f.sh.anglemapParams.GetRecordedDataSize() + m * sHandle->sh.globalHistogramParams.GetDataSize());
+						for (size_t i = 0; i < f.sh.facetHistogramParams.GetBounceHistogramSize(); i++)
+							hist->nbHitsHistogram[i] += f.tmpHistograms[m].nbHitsHistogram[i];
+						for (size_t i = 0; i < (f.sh.facetHistogramParams.distanceResolution + 1); i++)
+							hist->distanceHistogram[i] += f.tmpHistograms[m].distanceHistogram[i];
+						for (size_t i = 0; i < (f.sh.facetHistogramParams.timeResolution + 1); i++)
+							hist->timeHistogram[i] += f.tmpHistograms[m].timeHistogram[i];
 					}
 				}
 			} // End if(hitted)
@@ -392,10 +383,10 @@ void PerformTeleport(SubprocessFacet *iFacet) {
 	else destIndex = iFacet->sh.teleportDest - 1;
 
 	//Look in which superstructure is the destination facet:
-	for (int i = 0; i < sHandle->sh.nbSuper && (!found); i++) {
-		for (int j = 0; j < sHandle->str[i].nbFacet && (!found); j++) {
-			if (destIndex == sHandle->str[i].facets[j]->globalId) {
-				destination = sHandle->str[i].facets[j];
+	for (size_t i = 0; i < sHandle->sh.nbSuper && (!found); i++) {
+		for (size_t j = 0; j < sHandle->structures[i].facets.size() && (!found); j++) {
+			if (destIndex == sHandle->structures[i].facets[j].globalId) {
+				destination = &(sHandle->structures[i].facets[j]);
 				sHandle->curStruct = destination->sh.superIdx; //change current superstructure
 				sHandle->teleportedFrom = (int)iFacet->globalId; //memorize where the particle came from
 				found = true;
@@ -412,16 +403,16 @@ void PerformTeleport(SubprocessFacet *iFacet) {
 	}
 	// Count this hit as a transparent pass
 	RecordHit(HIT_TELEPORTSOURCE);
-	if (iFacet->texture && iFacet->sh.countTrans) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 2.0);
-	if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
+	if (/*iFacet->texture && */iFacet->sh.countTrans) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 2.0);
+	if (/*iFacet->direction && */iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 2.0);
 	LogHit(iFacet);
 	if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
 
 	// Relaunch particle from new facet
 	double inPhi, inTheta;
-	std::tie(inTheta, inPhi) = CartesianToPolar(iFacet->sh.nU, iFacet->sh.nV, iFacet->sh.N);
-	PolarToCartesian(destination, inTheta, inPhi, false);
+	std::tie(inTheta, inPhi) = CartesianToPolar(sHandle->pDir, iFacet->sh.nU, iFacet->sh.nV, iFacet->sh.N);
+	sHandle->pDir = PolarToCartesian(destination, inTheta, inPhi, false);
 	// Move particle to teleport destination point
 	double u = iFacet->colU;
 	double v = iFacet->colV;
@@ -475,7 +466,7 @@ bool SimulationMCStep(size_t nbStep) {
 		double   d;
 		bool     found;
 
-		std::tie(found,collidedFacet,d) = Intersect(sHandle->pPos, sHandle->pDir, /*sHandle->lastHit,*/THitCache);
+		std::tie(found,collidedFacet,d) = Intersect(*sHandle, sHandle->pPos, sHandle->pDir);
 
 		if (found) {
 
@@ -594,19 +585,19 @@ bool StartFromSource() {
 
 	while (!found && j < sHandle->sh.nbSuper) { //Go through superstructures
 		i = 0;
-		while (!found && i < sHandle->str[j].nbFacet) { //Go through facets in a structure
-			SubprocessFacet *f = sHandle->str[j].facets[i];
-			if (f->sh.desorbType != DES_NONE) { //there is some kind of outgassing
-				if (f->sh.useOutgassingFile) { //Using SynRad-generated outgassing map
-					if (f->sh.totalOutgassing > 0.0) {
-						found = (srcRnd >= sumA) && (srcRnd < (sumA + sHandle->sh.latestMoment * f->sh.totalOutgassing / (1.38E-23*f->sh.temperature)));
+		while (!found && i < sHandle->structures[j].facets.size()) { //Go through facets in a structure
+			SubprocessFacet f = sHandle->structures[j].facets[i];
+			if (f.sh.desorbType != DES_NONE) { //there is some kind of outgassing
+				if (f.sh.useOutgassingFile) { //Using SynRad-generated outgassing map
+					if (f.sh.totalOutgassing > 0.0) {
+						found = (srcRnd >= sumA) && (srcRnd < (sumA + sHandle->sh.latestMoment * f.sh.totalOutgassing / (1.38E-23*f.sh.temperature)));
 						if (found) {
 							//look for exact position in map
-							double rndRemainder = (srcRnd - sumA) / sHandle->sh.latestMoment*(1.38E-23*f->sh.temperature); //remainder, should be less than f->sh.totalOutgassing
+							double rndRemainder = (srcRnd - sumA) / sHandle->sh.latestMoment*(1.38E-23*f.sh.temperature); //remainder, should be less than f.sh.totalOutgassing
 							/*double sumB = 0.0;
-							for (w = 0; w < f->sh.outgassingMapWidth && !foundInMap; w++) {
-								for (h = 0; h < f->sh.outgassingMapHeight && !foundInMap; h++) {
-									double cellOutgassing = f->outgassingMap[h*f->sh.outgassingMapWidth + w];
+							for (w = 0; w < f.sh.outgassingMapWidth && !foundInMap; w++) {
+								for (h = 0; h < f.sh.outgassingMapHeight && !foundInMap; h++) {
+									double cellOutgassing = f.outgassingMap[h*f.sh.outgassingMapWidth + w];
 									if (cellOutgassing > 0.0) {
 										foundInMap = (rndRemainder >= sumB) && (rndRemainder < (sumB + cellOutgassing));
 										if (foundInMap) mapPositionW = w; mapPositionH = h;
@@ -615,30 +606,30 @@ bool StartFromSource() {
 								}
 							}*/
 							double lookupValue = rndRemainder;
-							int outgLowerIndex = my_lower_bound(lookupValue, f->outgassingMap, f->sh.outgassingMapWidth*f->sh.outgassingMapHeight); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
+							int outgLowerIndex = my_lower_bound(lookupValue, f.outgassingMap); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
 							outgLowerIndex++;
-							mapPositionH = (size_t)((double)outgLowerIndex / (double)f->sh.outgassingMapWidth);
-							mapPositionW = (size_t)outgLowerIndex - mapPositionH * f->sh.outgassingMapWidth;
+							mapPositionH = (size_t)((double)outgLowerIndex / (double)f.sh.outgassingMapWidth);
+							mapPositionW = (size_t)outgLowerIndex - mapPositionH * f.sh.outgassingMapWidth;
 							foundInMap = true;
 							/*if (!foundInMap) {
 								SetErrorSub("Starting point not found in imported desorption map");
 								return false;
 							}*/
 						}
-						sumA += sHandle->sh.latestMoment * f->sh.totalOutgassing / (1.38E-23*f->sh.temperature);
+						sumA += sHandle->sh.latestMoment * f.sh.totalOutgassing / (1.38E-23*f.sh.temperature);
 					}
 				} //end outgassing file block
 				else { //constant or time-dependent outgassing
 					double facetOutgassing =
-						(f->sh.outgassing_paramId >= 0)
-						? sHandle->IDs[f->sh.IDid].back().second / (1.38E-23*f->sh.temperature)
-						: sHandle->sh.latestMoment*f->sh.outgassing / (1.38E-23*f->sh.temperature);
+						(f.sh.outgassing_paramId >= 0)
+						? sHandle->IDs[f.sh.IDid].back().second / (1.38E-23*f.sh.temperature)
+						: sHandle->sh.latestMoment*f.sh.outgassing / (1.38E-23*f.sh.temperature);
 					found = (srcRnd >= sumA) && (srcRnd < (sumA + facetOutgassing));
 					sumA += facetOutgassing;
 				} //end constant or time-dependent outgassing block
 			} //end 'there is some kind of outgassing'
 			if (!found) i++;
-			if (f->sh.is2sided) reverse = rnd() > 0.5;
+			if (f.sh.is2sided) reverse = rnd() > 0.5;
 			else reverse = false;
 		}
 		if (!found) j++;
@@ -647,7 +638,7 @@ bool StartFromSource() {
 		SetErrorSub("No starting point, aborting");
 		return false;
 	}
-	src = sHandle->str[j].facets[i];
+	src =&(sHandle->structures[j].facets[i]);
 
 	sHandle->lastHitFacet = src;
 	//sHandle->distTraveledCurrentParticle = 0.0;  //for mean free path calculations
@@ -724,7 +715,7 @@ bool StartFromSource() {
 		else {
 			src->colU = 0.5;
 			src->colV = 0.5;
-			sHandle->pPos = sHandle->str[j].facets[i]->sh.center;
+			sHandle->pPos = sHandle->structures[j].facets[i].sh.center;
 		}
 
 	}
@@ -735,14 +726,14 @@ bool StartFromSource() {
 	//See docs/theta_gen.png for further details on angular distribution generation
 	switch (src->sh.desorbType) {
 	case DES_UNIFORM:
-		PolarToCartesian(src, acos(rnd()), rnd()*2.0*PI, reverse);
+		sHandle->pDir = PolarToCartesian(src, acos(rnd()), rnd()*2.0*PI, reverse);
 		break;
 	case DES_NONE: //for file-based
 	case DES_COSINE:
-		PolarToCartesian(src, acos(sqrt(rnd())), rnd()*2.0*PI, reverse);
+		sHandle->pDir = PolarToCartesian(src, acos(sqrt(rnd())), rnd()*2.0*PI, reverse);
 		break;
 	case DES_COSINE_N:
-		PolarToCartesian(src, acos(pow(rnd(), 1.0 / (src->sh.desorbTypeN + 1.0))), rnd()*2.0*PI, reverse);
+		sHandle->pDir = PolarToCartesian(src, acos(pow(rnd(), 1.0 / (src->sh.desorbTypeN + 1.0))), rnd()*2.0*PI, reverse);
 		break;
 	case DES_ANGLEMAP:
 		{
@@ -843,7 +834,7 @@ bool StartFromSource() {
 
 			/////////////////////////////
 			*/
-			PolarToCartesian(src, PI - theta, phi, false); //angle map contains incident angle (between N and source dir) and theta is dir (between N and dest dir)
+			sHandle->pDir = PolarToCartesian(src, PI - theta, phi, false); //angle map contains incident angle (between N and source dir) and theta is dir (between N and dest dir)
 			_ASSERTE(sHandle->pDir.x == sHandle->pDir.x);
 			
 		}
@@ -872,14 +863,14 @@ bool StartFromSource() {
 	//Desorption doesn't contribute to angular profiles, nor to angle maps
 	ProfileFacet(src, sHandle->flightTimeCurrentParticle, false, 2.0, 1.0); //was 2.0, 1.0
 	LogHit(src);
-	if (src->texture && src->sh.countDes) RecordHitOnTexture(src, sHandle->flightTimeCurrentParticle, true, 2.0, 1.0); //was 2.0, 1.0
+	if (/*src->texture && */src->sh.countDes) RecordHitOnTexture(src, sHandle->flightTimeCurrentParticle, true, 2.0, 1.0); //was 2.0, 1.0
 	//if (src->direction && src->sh.countDirection) RecordDirectionVector(src, sHandle->flightTimeCurrentParticle);
 
 	// Reset volatile state
 	if (sHandle->hasVolatile) {
-		for (j = 0; j < sHandle->sh.nbSuper; j++) {
-			for (i = 0; i < sHandle->str[j].nbFacet; i++) {
-				sHandle->str[j].facets[i]->ready = true;
+		for (auto& s : sHandle->structures) {
+			for (auto& f : s.facets) {
+				f.ready = true;
 			}
 		}
 	}
@@ -891,7 +882,7 @@ bool StartFromSource() {
 std::tuple<double, int, double> Anglemap::GenerateThetaFromAngleMap(const AnglemapParams& anglemapParams)
 {
 	double lookupValue = rnd();
-	int thetaLowerIndex = my_lower_bound(lookupValue, theta_CDF, (anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes)); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
+	int thetaLowerIndex = my_lower_bound(lookupValue, theta_CDF); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
 	double theta, thetaOvershoot;
 
 	if (thetaLowerIndex == -1) { //first half section
@@ -1120,8 +1111,8 @@ void PerformBounce(SubprocessFacet *iFacet) {
 		LogHit(iFacet);
 		ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 2.0);
 		if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
-		if (iFacet->texture && iFacet->sh.countTrans) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 2.0);
-		if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
+		if (/*iFacet->texture &&*/ iFacet->sh.countTrans) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 2.0);
+		if (/*iFacet->direction &&*/ iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
 
 		return;
 
@@ -1135,8 +1126,8 @@ void PerformBounce(SubprocessFacet *iFacet) {
 			iFacet->ready = false;
 			LogHit(iFacet);
 			ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 1.0);
-			if (iFacet->texture && iFacet->sh.countAbs) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 1.0);
-			if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
+			if (/*iFacet->texture && */iFacet->sh.countAbs) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 1.0);
+			if (/*iFacet->direction && */iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
 		}
 		return;
 
@@ -1159,8 +1150,8 @@ void PerformBounce(SubprocessFacet *iFacet) {
 
 	IncreaseFacetCounter(iFacet, sHandle->flightTimeCurrentParticle, 1, 0, 0, 1.0 / ortVelocity, (sHandle->sh.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity);
 	sHandle->nbHitCurrentParticle++;
-	if (iFacet->texture && iFacet->sh.countRefl) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, true, 1.0, 1.0);
-	if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
+	if (/*iFacet->texture &&*/ iFacet->sh.countRefl) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, true, 1.0, 1.0);
+	if (/*iFacet->direction &&*/ iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
 	LogHit(iFacet);
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, true, 1.0, 1.0);
 	if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
@@ -1174,7 +1165,7 @@ void PerformBounce(SubprocessFacet *iFacet) {
 	}
 
 	if (iFacet->sh.reflection.diffusePart > 0.999999) { //Speedup branch for most common, diffuse case
-		PolarToCartesian(iFacet, acos(sqrt(rnd())), rnd()*2.0*PI, revert);
+		sHandle->pDir = PolarToCartesian(iFacet, acos(sqrt(rnd())), rnd()*2.0*PI, revert);
 	}
 	else {
 		double reflTypeRnd = rnd();
@@ -1182,19 +1173,19 @@ void PerformBounce(SubprocessFacet *iFacet) {
 		{
 			//diffuse reflection
 			//See docs/theta_gen.png for further details on angular distribution generation
-			PolarToCartesian(iFacet, acos(sqrt(rnd())), rnd()*2.0*PI, revert);
+			sHandle->pDir = PolarToCartesian(iFacet, acos(sqrt(rnd())), rnd()*2.0*PI, revert);
 		}
 		else  if (reflTypeRnd < (iFacet->sh.reflection.diffusePart + iFacet->sh.reflection.specularPart))
 		{
 			//specular reflection
 			double inTheta, inPhi;
-			std::tie(inTheta, inPhi) = CartesianToPolar(iFacet->sh.nU, iFacet->sh.nV, iFacet->sh.N);
-			PolarToCartesian(iFacet, PI - inTheta, inPhi, false);
+			std::tie(inTheta, inPhi) = CartesianToPolar(sHandle->pDir, iFacet->sh.nU, iFacet->sh.nV, iFacet->sh.N);
+			sHandle->pDir = PolarToCartesian(iFacet, PI - inTheta, inPhi, false);
 
 		}
 		else {
 			//Cos^N reflection
-			PolarToCartesian(iFacet, acos(pow(rnd(), 1.0 / (iFacet->sh.reflection.cosineExponent + 1.0))), rnd()*2.0*PI, revert);
+			sHandle->pDir = PolarToCartesian(iFacet, acos(pow(rnd(), 1.0 / (iFacet->sh.reflection.cosineExponent + 1.0))), rnd()*2.0*PI, revert);
 		}
 	}
 
@@ -1209,7 +1200,7 @@ void PerformBounce(SubprocessFacet *iFacet) {
 	/*iFacet->sh.tmpCounter.hit.sum_1_per_ort_velocity += 1.0 / ortVelocity;
 	iFacet->sh.tmpCounter.hit.sum_v_ort += (sHandle->sh.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
 	IncreaseFacetCounter(iFacet, sHandle->flightTimeCurrentParticle, 0, 0, 0, 1.0 / ortVelocity, (sHandle->sh.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity);
-	if (iFacet->texture && iFacet->sh.countRefl) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, false, 1.0, 1.0); //count again for outward velocity
+	if (/*iFacet->texture &&*/ iFacet->sh.countRefl) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, false, 1.0, 1.0); //count again for outward velocity
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, false, 1.0, 1.0);
 	//no direction count on outgoing, neither angle map
 
@@ -1275,8 +1266,8 @@ void RecordAbsorb(SubprocessFacet *iFacet) {
 	LogHit(iFacet);
 	ProfileFacet(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 1.0); //was 2.0, 1.0
 	if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
-	if (iFacet->texture && iFacet->sh.countAbs) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 1.0); //was 2.0, 1.0
-	if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
+	if (/*iFacet->texture &&*/ iFacet->sh.countAbs) RecordHitOnTexture(iFacet, sHandle->flightTimeCurrentParticle, true, 2.0, 1.0); //was 2.0, 1.0
+	if (/*iFacet->direction &&*/ iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->flightTimeCurrentParticle);
 }
 
 void RecordHitOnTexture(SubprocessFacet *f, double time, bool countHit, double velocity_factor, double ortSpeedFactor) {
@@ -1290,7 +1281,7 @@ void RecordHitOnTexture(SubprocessFacet *f, double time, bool countHit, double v
 		if (m == 0 || abs(time - sHandle->moments[m - 1]) < sHandle->sh.timeWindowSize / 2.0) {
 			if (countHit) f->texture[m][add].countEquiv += sHandle->oriRatio;
 			f->texture[m][add].sum_1_per_ort_velocity += sHandle->oriRatio * velocity_factor / ortVelocity;
-			f->texture[m][add].sum_v_ort_per_area += sHandle->oriRatio * ortSpeedFactor*ortVelocity*f->inc[add]; // sum ortho_velocity[m/s] / cell_area[cm2]
+			f->texture[m][add].sum_v_ort_per_area += sHandle->oriRatio * ortSpeedFactor*ortVelocity*f->textureCellIncrements[add]; // sum ortho_velocity[m/s] / cell_area[cm2]
 		}
 }
 
@@ -1365,7 +1356,7 @@ void LogHit(SubprocessFacet * f)
 		sHandle->tmpParticleLog.size() < (sHandle->ontheflyParams.logLimit / sHandle->ontheflyParams.nbProcess)) {
 		ParticleLoggerItem log;
 		log.facetHitPosition = Vector2d(f->colU, f->colV);
-		std::tie(log.hitTheta,log.hitPhi) = CartesianToPolar(f->sh.nU, f->sh.nV, f->sh.N);
+		std::tie(log.hitTheta,log.hitPhi) = CartesianToPolar(sHandle->pDir, f->sh.nU, f->sh.nV, f->sh.N);
 		log.oriRatio = sHandle->oriRatio;
 		log.particleDecayMoment = sHandle->particleDecayMoment;
 		log.time = sHandle->flightTimeCurrentParticle;
@@ -1376,7 +1367,7 @@ void LogHit(SubprocessFacet * f)
 
 void RecordAngleMap(SubprocessFacet* collidedFacet) {
 	double inTheta, inPhi;
-	std::tie(inTheta,inPhi) = CartesianToPolar(collidedFacet->sh.nU, collidedFacet->sh.nV, collidedFacet->sh.N);
+	std::tie(inTheta,inPhi) = CartesianToPolar(sHandle->pDir, collidedFacet->sh.nU, collidedFacet->sh.nV, collidedFacet->sh.N);
 	if (inTheta > PI / 2.0) inTheta = abs(PI - inTheta); //theta is originally respective to N, but we'd like the angle between 0 and PI/2
 	bool countTheta = true;
 	size_t thetaIndex;
@@ -1480,7 +1471,7 @@ void IncreaseFacetCounter(SubprocessFacet *f, double time, size_t hit, size_t de
 }
 
 void SubprocessFacet::ResetCounter() {
-	memset(&tmpCounter[0], 0, tmpCounter.size() * sizeof(tmpCounter[0]));
+	ZEROVECTOR(tmpCounter);
 }
 
 void SubprocessFacet::ResizeCounter(size_t nbMoments) {
@@ -1496,11 +1487,11 @@ void SubprocessFacet::RegisterTransparentPass()
 	IncreaseFacetCounter(this, sHandle->flightTimeCurrentParticle + this->colDist / 100.0 / sHandle->velocityCurrentParticle, 1, 0, 0, 2.0 / (sHandle->velocityCurrentParticle*directionFactor), 2.0*(sHandle->sh.useMaxwellDistribution ? 1.0 : 1.1781)*sHandle->velocityCurrentParticle*directionFactor);
 
 	this->hitted = true;
-	if (this->texture && this->sh.countTrans) {
+	if (/*this->texture &&*/ this->sh.countTrans) {
 		RecordHitOnTexture(this, sHandle->flightTimeCurrentParticle + this->colDist / 100.0 / sHandle->velocityCurrentParticle,
 			true, 2.0, 2.0);
 	}
-	if (this->direction && this->sh.countDirection) {
+	if (/*this->direction &&*/ this->sh.countDirection) {
 		RecordDirectionVector(this, sHandle->flightTimeCurrentParticle + this->colDist / 100.0 / sHandle->velocityCurrentParticle);
 	}
 	LogHit(this);
