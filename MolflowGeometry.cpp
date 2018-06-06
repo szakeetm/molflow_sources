@@ -23,6 +23,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp\MathTools.h"
 #include "ProfilePlotter.h"
 #include <iomanip>
+#include <cereal/archives/binary.hpp>
 
 /*
 //Leak detection
@@ -65,14 +66,14 @@ size_t MolflowGeometry::GetGeometrySize() {
 
 	//CDFs
 	memoryUsage += sizeof(size_t); //number of CDFs
-	for (auto i : work->CDFs) {
+	for (auto& i : work->CDFs) {
 		memoryUsage += sizeof(size_t); //CDF size
 		memoryUsage += i.size() * 2 * sizeof(double);
 	}
 
 	//IDs
 	memoryUsage += sizeof(size_t); //number of IDs
-	for (auto i : work->IDs) {
+	for (auto& i : work->IDs) {
 
 		memoryUsage += sizeof(size_t); //ID size
 		memoryUsage += i.size() * 2 * sizeof(double);
@@ -80,7 +81,7 @@ size_t MolflowGeometry::GetGeometrySize() {
 
 	//Parameters
 	memoryUsage += sizeof(size_t); //number of parameters
-	for (auto i : work->parameters) {
+	for (auto& i : work->parameters) {
 
 		memoryUsage += sizeof(size_t); //parameter size
 
@@ -149,7 +150,7 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer,const OntheflySimulationPa
 	memcpy(shGeom, &(this->sh), sizeof(GeomProperties));
 	buffer += sizeof(GeomProperties);*/
 	WRITEBUFFER(ontheflyParams, OntheflySimulationParams);
-	memcpy(buffer, vertices3, sizeof(Vector3d)*sh.nbVertex);
+	memcpy(buffer, vertices3.data(), sizeof(Vector3d)*sh.nbVertex);
 	buffer += sizeof(Vector3d)*sh.nbVertex;
 	
 	size_t fOffset = sizeof(GlobalHitBuffer)+(1+mApp->worker.moments.size())*mApp->worker.globalHistogramParams.GetDataSize(); //calculating offsets for all facets for the hits dataport during the simulation
@@ -240,7 +241,7 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer,const OntheflySimulationPa
 	  }
 	  }*/
 	WRITEBUFFER(w->parameters.size(), size_t);
-	for (auto par : w->parameters) {
+	for (auto& par : w->parameters) {
 		size_t paramSize = par.GetSize();
 		WRITEBUFFER(paramSize, size_t);
 		for (int j = 0; j < paramSize;j++) {
@@ -320,9 +321,7 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 	int nbTV = 4 * nbTF;
 
 	sh.nbVertex = 2 * step + nbTV;
-	if (!(vertices3 = (InterfaceVertex *)malloc(sh.nbVertex * sizeof(InterfaceVertex))))
-		throw Error("Couldn't allocate memory for vertices");
-	memset(vertices3, 0, sh.nbVertex * sizeof(InterfaceVertex));
+	vertices3.swap(std::vector<InterfaceVertex>(sh.nbVertex));
 
 	sh.nbFacet = step + 2 + nbTF;
 	
@@ -430,14 +429,14 @@ void MolflowGeometry::InsertSYN(FileReader *file, GLProgress *prg, bool newStr) 
 
 	int structId = viewStruct;
 	if (structId == -1) structId = 0;
-	InsertSYNGeom(file, &(sh.nbVertex), &(sh.nbFacet), &vertices3, &facets, structId, newStr);
+	InsertSYNGeom(file, structId, newStr);
 	char *e = strrchr(strName[0], '.');
 	if (e) *e = 0;
 	InitializeGeometry();
 	//AdjustProfile();
 
 }
-void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t *nbVertex, size_t *nbFacet, InterfaceVertex **vertices3, Facet ***facets, size_t strIdx, bool newStruct) {
+void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStruct) {
 
 	UnselectAll();
 
@@ -544,25 +543,28 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t *nbVertex, size_t *
 	file->ReadKeyword("}");
 
 	// Reallocate memory
-	*facets = (Facet **)realloc(*facets, (nbNewFacets + *nbFacet) * sizeof(Facet **));
-	memset(*facets + *nbFacet, 0, nbNewFacets * sizeof(Facet *));
-	//*vertices3 = (Vector3d*)realloc(*vertices3,(nbNewVertex+*nbVertex) * sizeof(Vector3d));
-	InterfaceVertex *tmp_vertices3 = (InterfaceVertex *)malloc((nbNewVertex + *nbVertex) * sizeof(InterfaceVertex));
-	memmove(tmp_vertices3, *vertices3, (*nbVertex)*sizeof(Vector3d));
-	memset(tmp_vertices3 + *nbVertex, 0, nbNewVertex * sizeof(Vector3d));
+	facets = (Facet **)realloc(*facets, (nbNewFacets + sh.nbFacet) * sizeof(Facet **));
+	memset(facets + sh.nbFacet, 0, nbNewFacets * sizeof(Facet *));
+	
+	/*
+	InterfaceVertex *tmp_vertices3 = (InterfaceVertex *)malloc((nbNewVertex + sh.nbVertex) * sizeof(InterfaceVertex));
+	memmove(tmp_vertices3, *vertices3, (sh.nbVertex)*sizeof(Vector3d));
+	memset(tmp_vertices3 + sh.nbVertex, 0, nbNewVertex * sizeof(Vector3d));
 	SAFE_FREE(*vertices3);
 	*vertices3 = tmp_vertices3;
+	*/
+	vertices3.resize(nbNewVertex + sh.nbVertex);
 
 	// Read geometry vertices
 	file->ReadKeyword("vertices"); file->ReadKeyword("{");
-	for (size_t i = *nbVertex; i < (*nbVertex + nbNewVertex); i++) {
+	for (size_t i = sh.nbVertex; i < (sh.nbVertex + nbNewVertex); i++) {
 		// Check idx
 		int idx = file->ReadInt();
-		if (idx != i - *nbVertex + 1) throw Error(file->MakeError("Wrong vertex index !"));
-		(*vertices3 + i)->x = file->ReadDouble();
-		(*vertices3 + i)->y = file->ReadDouble();
-		(*vertices3 + i)->z = file->ReadDouble();
-		(*vertices3 + i)->selected = false;
+		if (idx != i - sh.nbVertex + 1) throw Error(file->MakeError("Wrong vertex index !"));
+		vertices3[i].x = file->ReadDouble();
+		vertices3[i].y = file->ReadDouble();
+		vertices3[i].z = file->ReadDouble();
+		vertices3[i].selected = false;
 	}
 	file->ReadKeyword("}");
 
@@ -600,11 +602,11 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t *nbVertex, size_t *
 	file->ReadKeyword("}");
 
 	// Read geometry facets (indexed from 1)
-	for (size_t i = *nbFacet; i < (*nbFacet + nbNewFacets); i++) {
+	for (size_t i = sh.nbFacet; i < (sh.nbFacet + nbNewFacets); i++) {
 		file->ReadKeyword("facet");
 		// Check idx
 		size_t idx = file->ReadLLong();
-		if (idx != i + 1 - *nbFacet) throw Error(file->MakeError("Wrong facet index !"));
+		if (idx != i + 1 - sh.nbFacet) throw Error(file->MakeError("Wrong facet index !"));
 		file->ReadKeyword("{");
 		file->ReadKeyword("nbIndex");
 		file->ReadKeyword(":");
@@ -616,25 +618,25 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t *nbVertex, size_t *
 			throw Error(errMsg);
 		}
 
-		*(*facets + i) = new Facet(nb);
-		(*facets)[i]->LoadSYN(file, version2, nbNewVertex);
-		(*facets)[i]->selected = true;
+		facets[i] = new Facet(nb);
+		facets[i]->LoadSYN(file, version2, nbNewVertex);
+		facets[i]->selected = true;
 		for (size_t j = 0; j < nb; j++)
-			(*facets)[i]->indices[j] += *nbVertex;
+			facets[i]->indices[j] += sh.nbVertex;
 		file->ReadKeyword("}");
 		if (newStruct) {
-			(*facets)[i]->sh.superIdx += sh.nbSuper;
-			if ((*facets)[i]->sh.superDest > 0) (*facets)[i]->sh.superDest += sh.nbSuper;
+			facets[i]->sh.superIdx += sh.nbSuper;
+			if (facets[i]->sh.superDest > 0) facets[i]->sh.superDest += sh.nbSuper;
 		}
 		else {
 
-			(*facets)[i]->sh.superIdx += strIdx;
-			if ((*facets)[i]->sh.superDest > 0) (*facets)[i]->sh.superDest += strIdx;
+			facets[i]->sh.superIdx += strIdx;
+			if (facets[i]->sh.superDest > 0) facets[i]->sh.superDest += strIdx;
 		}
 	}
 
-	*nbVertex += nbNewVertex;
-	*nbFacet += nbNewFacets;
+	sh.nbVertex += nbNewVertex;
+	sh.nbFacet += nbNewFacets;
 	if (newStruct) sh.nbSuper += nbNewSuper;
 	else if (sh.nbSuper < strIdx + nbNewSuper) sh.nbSuper = strIdx + nbNewSuper;
 	//return result;
@@ -905,8 +907,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *leakCache
 	// Allocate memory
 	facets = (Facet **)malloc(sh.nbFacet * sizeof(Facet *));
 	memset(facets, 0, sh.nbFacet * sizeof(Facet *));
-	vertices3 = (InterfaceVertex *)malloc(sh.nbVertex * sizeof(InterfaceVertex));
-	memset(vertices3, 0, sh.nbVertex * sizeof(Vector3d));
+	vertices3.swap(std::vector<InterfaceVertex>(sh.nbVertex));
 
 	// Read vertices
 	prg->SetMessage("Reading vertices...");
@@ -1150,7 +1151,7 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version) {
 	// Allocate memory
 	facets = (Facet **)malloc(sh.nbFacet * sizeof(Facet *));
 	memset(facets, 0, sh.nbFacet * sizeof(Facet *));
-	vertices3 = (InterfaceVertex *)malloc(sh.nbVertex * sizeof(InterfaceVertex));
+	vertices3.resize(sh.nbVertex); vertices3.shrink_to_fit();
 
 	// Read vertices
 	prg->SetMessage("Reading vertices...");
@@ -1478,7 +1479,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit
 
 	file->Write("formulas {\n");
 	if (!saveSelected){
-		for (auto f:mApp->formulas_n) {
+		for (auto& f:mApp->formulas_n) {
 			file->Write("  \"");
 			file->Write(f->GetName());
 			file->Write("\" \"");
@@ -1515,7 +1516,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit
 		file->Write(mApp->selections[i].name);
 		file->Write("\"\n ");
 		file->Write(mApp->selections[i].selection.size(), "\n");
-		for (auto sel:mApp->selections[i].selection) {
+		for (auto& sel:mApp->selections[i].selection) {
 			file->Write("  ");
 			file->Write(sel, "\n");
 		}
@@ -2642,7 +2643,7 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 	//Vertices
 	sh.nbVertex = geomNode.child("Vertices").select_nodes("Vertex").size();
 
-	vertices3 = (InterfaceVertex *)malloc(sh.nbVertex * sizeof(InterfaceVertex));
+	vertices3.resize(sh.nbVertex); vertices3.shrink_to_fit();
 	size_t idx = 0;
 	for (xml_node vertex : geomNode.child("Vertices").children("Vertex")) {
 		vertices3[idx].x = vertex.attribute("x").as_double();
@@ -2854,11 +2855,14 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 	facets = (Facet **)realloc(facets, (nbNewFacets + sh.nbFacet) * sizeof(Facet **));
 	memset(facets + sh.nbFacet, 0, nbNewFacets * sizeof(Facet *));
 
+	/*
 	InterfaceVertex *tmp_vertices3 = (InterfaceVertex *)malloc((nbNewVertex + sh.nbVertex) * sizeof(InterfaceVertex));
 	memmove(tmp_vertices3, vertices3, (sh.nbVertex)*sizeof(InterfaceVertex));
 	memset(tmp_vertices3 + sh.nbVertex, 0, nbNewVertex * sizeof(InterfaceVertex));
 	SAFE_FREE(vertices3);
 	vertices3 = tmp_vertices3;
+	*/
+	vertices3.resize(nbNewVertex + sh.nbVertex);
 
 	// Read geometry vertices
 	size_t idx = sh.nbVertex;
@@ -3291,4 +3295,31 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit,
 	gHits->texture_limits[2].max.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("max").as_double();
 	ReleaseDataport(dpHit);
 	return true;
+}
+
+template <class Archive> void MolflowGeometry::Serialize(Archive & archive, const OntheflySimulationParams& ontheflyParams, const Worker& w) {
+	archive(
+		w.moments,
+		w.latestMoment,
+		w.totalDesorbedMolecules,
+		w.finalOutgassingRate,
+		w.gasMass,
+		w.enableDecay,
+		w.halfLife,
+		w.timeWindowSize,
+		w.useMaxwellDistribution,
+		w.calcConstantFlow,
+		w.motionType,
+		w.motionVector1,
+		w.motionVector2,
+		w.globalHistogramParams,
+
+		nbFacet,
+		nbVertex,
+		nbSuper,
+		name,
+
+		ontheflyParams,
+		vertices3
+	);
 }

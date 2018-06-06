@@ -105,7 +105,7 @@ bool ComputeACMatrix(SHELEM_OLD *mesh) {
 
   // Count number of elements
   sHandle->nbAC = 0;
-  for(auto f1 : sHandle->structures[0].facets) {
+  for(auto& f1 : sHandle->structures[0].facets) {
     if(f1.sh.opacity==1.0f) {
       sHandle->nbAC += f1.sh.texHeight * f1.sh.texWidth;
     } else if(f1.sh.opacity==0.0f) {
@@ -379,7 +379,7 @@ void UpdateACHits(Dataport *dpHit,int prIdx,DWORD timeout) {
   // Update texture
   idx = 0;
   size_t facetHitsSize = (1 + sHandle->moments.size()) * sizeof(FacetHitBuffer);
-  for(auto f : sHandle->structures[0].facets) {
+  for(auto& f : sHandle->structures[0].facets) {
     sumDes = 0.0;
     sumAbs = 0.0;
     sumVal = 0.0;

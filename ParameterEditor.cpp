@@ -335,7 +335,7 @@ void ParameterEditor::LoadCSV() {
 		if (GLDLG_OK != GLMessageBox::Display(tmp, "Warning", GLDLG_OK|GLDLG_CANCEL, GLDLG_ICONWARNING)) return;
 	}
 	userValues = std::vector<std::pair<std::string, std::string>>();
-	for (auto row :table) {
+	for (auto& row :table) {
 			std::string val1, val2;
 			if (row.size()>=1) val1 = row[0];
 			if (row.size()>=2) val2 = row[1];
@@ -385,7 +385,7 @@ bool ParameterEditor::ValidateInput() {
 		return false;
 	}
 	if (selectorCombo->GetSelectedIndex() == 0) {
-		for (auto p : work->parameters) {
+		for (auto& p : work->parameters) {
 			if (tempName.compare(p.name) == 0) {
 				GLMessageBox::Display("This parameter name is already used", "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
 				return false;

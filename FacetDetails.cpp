@@ -402,7 +402,7 @@ void FacetDetails::UpdateTable() {
   
 
   size_t nbS = 0;
-  for(auto sel:selectedFacets) {
+  for(auto& sel:selectedFacets) {
     Facet *f = geom->GetFacet(sel);
     for(size_t j=0;j<nbCol;j++)
         facetListD->SetValueAt(j,nbS,FormatCell(sel,f,shown[j]));

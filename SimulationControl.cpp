@@ -576,30 +576,30 @@ void ResetTmpCounters() {
 	}
 
 	for (int j = 0; j < sHandle->sh.nbSuper; j++) {
-		for (auto f : sHandle->structures[j].facets) {
+		for (auto& f : sHandle->structures[j].facets) {
 			f.ResetCounter();
 			f.hitted = false;
 
 			//Reset facet histograms
 			if (f.sh.facetHistogramParams.record) {
-				for (auto t : f.tmpHistograms) {
+				for (auto& t : f.tmpHistograms) {
 					ZEROVECTOR(t.nbHitsHistogram);
 					ZEROVECTOR(t.distanceHistogram);
 					ZEROVECTOR(t.timeHistogram);
 				}
 			}
 
-			for (auto t : f.texture) {
+			for (auto& t : f.texture) {
 				ZEROVECTOR(t);
 			}
 
 			
-			for (auto t : f.profile) {
+			for (auto& t : f.profile) {
 				ZEROVECTOR(t);
 			}
 
 			
-			for (auto t : f.direction) {
+			for (auto& t : f.direction) {
 				ZEROVECTOR(t);
 			}
 

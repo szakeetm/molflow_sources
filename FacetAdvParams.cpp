@@ -920,7 +920,7 @@ bool FacetAdvParams::ApplyTexture(bool force) {
 	progressDlg->SetVisible(true);
 	progressDlg->SetProgress(0.0);
 	int count = 0;
-	for (auto sel : selectedFacets) {
+	for (auto& sel : selectedFacets) {
 		Facet *f = geom->GetFacet(sel);
 		bool hadAnyTexture = f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD || f->sh.countDirection;
 		bool hadDirCount = f->sh.countDirection;
@@ -1270,7 +1270,7 @@ bool FacetAdvParams::Apply() {
 	//First applying angle map recording before a reset is done
 	int angleMapState = angleMapRecordCheckbox->GetState();
 	if (angleMapState < 2) {
-		for (auto sel:selectedFacets) {
+		for (auto& sel:selectedFacets) {
 			geom->GetFacet(sel)->sh.anglemapParams.record=angleMapState;
 		}
 	}
@@ -1280,7 +1280,7 @@ bool FacetAdvParams::Apply() {
 	progressDlg->SetVisible(true);
 	progressDlg->SetProgress(0.0);
 	int count = 0;
-	for (auto sel:selectedFacets) {
+	for (auto& sel:selectedFacets) {
 		Facet *f = geom->GetFacet(sel);
 		/*
 		bool hadAnyTexture = f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD || f->sh.countDirection;

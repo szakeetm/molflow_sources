@@ -70,8 +70,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 //Hard-coded identifiers, update these on new release
 //---------------------------------------------------
 std::string appName = "Molflow";
-int appVersionId = 2669; //Compared with available updates. Recompile Interface.cpp if changed
-std::string appVersionName = "2.6.69";
+int appVersionId = 2670; //Compared with available updates. Recompile Interface.cpp if changed
+std::string appVersionName = "2.6.70";
 //---------------------------------------------------
 
 static const char *fileLFilters = "All MolFlow supported files\0*.txt;*.xml;*.zip;*.geo;*.geo7z;*.syn;*.syn7z;*.str;*.stl;*.ase\0"
@@ -2749,7 +2749,7 @@ bool MolFlow::EvaluateVariable(VLIST *v) {
 		llong sumLL=0;
 		double sumD=0.0;
 		double sumArea = 0.0; //We average by area
-		for (auto sel : facetsToSum) {
+		for (auto& sel : facetsToSum) {
 			if (Contains({"MCH", "mch"},tokens[0])) {
 				sumLL+=geom->GetFacet(sel)->facetHitCache.hit.nbMCHit;
 			} 

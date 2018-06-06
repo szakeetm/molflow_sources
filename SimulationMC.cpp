@@ -37,10 +37,10 @@ void CalcTotalOutgassing() {
 	// Update texture increment for MC
 	//scale_precomputed=(float)(40.0/(sqrt(8.0*8.31/(PI*sHandle->sh.gasMass*0.001))));
 	for (size_t j = 0; j < sHandle->sh.nbSuper; j++) {
-		for (SubprocessFacet f : sHandle->structures[j].facets) {
+		for (SubprocessFacet& f : sHandle->structures[j].facets) {
 			if (f.sh.is2sided) {
 				f.fullSizeInc *= 0.5;
-				for (auto inc : f.textureCellIncrements)
+				for (auto& inc : f.textureCellIncrements)
 					inc *= 0.5;
 			}
 		}
@@ -198,7 +198,7 @@ void UpdateMCHits(Dataport *dpHit,int prIdx, size_t nbMoments, DWORD timeout) {
 	size_t facetHitsSize = (1 + nbMoments) * sizeof(FacetHitBuffer);
 	// Facets
 	for (s = 0; s < sHandle->sh.nbSuper; s++) {
-		for (SubprocessFacet f : sHandle->structures[s].facets) {
+		for (SubprocessFacet& f : sHandle->structures[s].facets) {
 			if (f.hitted) {
 
 				for (int m = 0; m < (1 + nbMoments); m++) {
@@ -331,8 +331,10 @@ void UpdateMCHits(Dataport *dpHit,int prIdx, size_t nbMoments, DWORD timeout) {
 void UpdateLog(Dataport * dpLog, DWORD timeout)
 {
 	if (sHandle->tmpParticleLog.size()) {
+#ifdef _DEBUG
 		double t0, t1;
 		t0 = GetTick();
+#endif
 		SetState(NULL, "Waiting for 'dpLog' dataport access...", false, true);
 		sHandle->lastLogUpdateOK = AccessDataportTimed(dpLog, timeout);
 		SetState(NULL, "Updating Log...", false, true);
@@ -412,7 +414,7 @@ void PerformTeleport(SubprocessFacet *iFacet) {
 	// Relaunch particle from new facet
 	double inPhi, inTheta;
 	std::tie(inTheta, inPhi) = CartesianToPolar(sHandle->pDir, iFacet->sh.nU, iFacet->sh.nV, iFacet->sh.N);
-	sHandle->pDir = PolarToCartesian(destination, inTheta, inPhi, false);
+	PolarToCartesian(destination, inTheta, inPhi, false);
 	// Move particle to teleport destination point
 	double u = iFacet->colU;
 	double v = iFacet->colV;
@@ -586,7 +588,7 @@ bool StartFromSource() {
 	while (!found && j < sHandle->sh.nbSuper) { //Go through superstructures
 		i = 0;
 		while (!found && i < sHandle->structures[j].facets.size()) { //Go through facets in a structure
-			SubprocessFacet f = sHandle->structures[j].facets[i];
+			SubprocessFacet& f = sHandle->structures[j].facets[i];
 			if (f.sh.desorbType != DES_NONE) { //there is some kind of outgassing
 				if (f.sh.useOutgassingFile) { //Using SynRad-generated outgassing map
 					if (f.sh.totalOutgassing > 0.0) {
@@ -1314,7 +1316,7 @@ void ProfileFacet(SubprocessFacet *f, double time, bool countHit, double velocit
 				}
 			}
 	}
-	else if (Contains({PROFILE_U,PROFILE_V},f->sh.profileType)) {
+	else if (f->sh.profileType==PROFILE_U || f->sh.profileType==PROFILE_V) {
 		size_t pos = (size_t)((f->sh.profileType == PROFILE_U ? f->colU : f->colV)*(double)PROFILE_SIZE);
 		if (pos >= 0 && pos < PROFILE_SIZE) {
 			for (size_t m = 0; m <= nbMoments; m++) {
@@ -1327,7 +1329,7 @@ void ProfileFacet(SubprocessFacet *f, double time, bool countHit, double velocit
 			}
 		}
 	}
-	else if (countHit && Contains({ PROFILE_VELOCITY,PROFILE_ORT_VELOCITY,PROFILE_TAN_VELOCITY },f->sh.profileType)) {
+	else if (countHit && (f->sh.profileType==PROFILE_VELOCITY || f->sh.profileType == PROFILE_ORT_VELOCITY || f->sh.profileType == PROFILE_TAN_VELOCITY)) {
 		double dot;
 		if (f->sh.profileType == PROFILE_VELOCITY) {
 			dot = 1.0;

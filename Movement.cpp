@@ -199,10 +199,10 @@ Movement::Movement(Geometry *g,Worker *w):GLWindow() {
 		rxText, ryText, rzText,
 		rpmText, degText, hzText };
 
-	for (auto textField : group1){
+	for (auto& textField : group1){
 		textField->SetEditable(false);
 	}
-	for (auto textField : group2){
+	for (auto& textField : group2){
 		textField->SetEditable(false);
 	}
 
@@ -420,11 +420,11 @@ void Movement::UpdateToggle(GLComponent *src) {
 	checkBox2->SetState(src == checkBox2);
 	checkBox3->SetState(src == checkBox3);
 
-	for (auto textBox : group1) {
+	for (auto& textBox : group1) {
 		textBox->SetEditable(src == checkBox2);
 	}
 
-	for (auto textBox : group2) {
+	for (auto& textBox : group2) {
 		textBox->SetEditable(src == checkBox3);
 	}
 }
@@ -438,18 +438,18 @@ void Movement::Update() {
 	checkBox3->SetState(work->motionType == 2);
 
 	if (work->motionType == 0) {
-		for (auto textBox : group1) {
+		for (auto& textBox : group1) {
 			textBox->SetText("0");
 		}
-		for (auto textBox : group2) {
+		for (auto& textBox : group2) {
 			textBox->SetText("0");
 		}
 	}
 	else if (work->motionType == 1) {
-		for (auto textBox : group1) {
+		for (auto& textBox : group1) {
 			textBox->SetEditable(true);
 		}
-		for (auto textBox : group2) {
+		for (auto& textBox : group2) {
 			textBox->SetText("0");
 		}
 		vxText->SetText(work->motionVector2.x);
@@ -457,10 +457,10 @@ void Movement::Update() {
 		vzText->SetText(work->motionVector2.z);
 	}
 	else if (work->motionType == 2) {
-		for (auto textBox : group1) {
+		for (auto& textBox : group1) {
 			textBox->SetText("0");
 		}
-		for (auto textBox : group2) {
+		for (auto& textBox : group2) {
 			textBox->SetEditable(true);
 		}
 		axText->SetText(work->motionVector1.x);

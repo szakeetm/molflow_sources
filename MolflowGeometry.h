@@ -74,6 +74,7 @@ public:
 
 	// Raw data buffer (geometry)
 	void CopyGeometryBuffer(BYTE *buffer,const OntheflySimulationParams& ontheflyParams);
+	template <class Archive> void Serialize(Archive & archive, const OntheflySimulationParams& ontheflyParams,const Worker& w);
 
 	// AC matrix
 	size_t GetMaxElemNumber();
@@ -93,7 +94,7 @@ public:
 
 private:
 
-	void InsertSYNGeom(FileReader *file, size_t *nbV, size_t *nbF, InterfaceVertex **V, Facet ***F, size_t strIdx = 0, bool newStruct = false);
+	void InsertSYNGeom(FileReader *file, size_t strIdx = 0, bool newStruct = false);
 	void SaveProfileGEO(FileWriter *file, Dataport *dpHit, int super = -1, bool saveSelected = false, bool crashSave = false);
 
 };
