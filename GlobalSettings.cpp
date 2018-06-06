@@ -114,9 +114,9 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	massLabel->SetBounds(290, 25, 150, 19);
 	simuSettingsPanel->Add(massLabel);
 
-	gasmassText = new GLTextField(0, "");
-	gasmassText->SetBounds(460, 20, 100, 19);
-	simuSettingsPanel->Add(gasmassText);
+	gasMassText = new GLTextField(0, "");
+	gasMassText->SetBounds(460, 20, 100, 19);
+	simuSettingsPanel->Add(gasMassText);
 
 	enableDecay = new GLToggle(0, "Gas half life (s):");
 	enableDecay->SetBounds(290, 50, 150, 19);
@@ -235,11 +235,11 @@ void GlobalSettings::Update() {
 	//chkNonIsothermal->SetState(nonIsothermal);
 	UpdateOutgassing();
 
-	gasmassText->SetText(worker->gasMass);
+	gasMassText->SetText(worker->wp.gasMass);
 
-	enableDecay->SetState(worker->enableDecay);
-	halfLifeText->SetText(worker->halfLife);
-	halfLifeText->SetEditable(worker->enableDecay);
+	enableDecay->SetState(worker->wp.enableDecay);
+	halfLifeText->SetText(worker->wp.halfLife);
+	halfLifeText->SetEditable(worker->wp.enableDecay);
 
 	cutoffText->SetText(worker->ontheflyParams.lowFluxCutoff);
 	cutoffText->SetEditable(worker->ontheflyParams.lowFluxMode);
@@ -425,14 +425,14 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 			mApp->compressSavedFiles = chkCompressSavedFiles->GetState();
 			mApp->autoSaveSimuOnly = chkSimuOnly->GetState();
 			double gm;
-			if (!gasmassText->GetNumber(&gm) || !(gm > 0.0)) {
+			if (!gasMassText->GetNumber(&gm) || !(gm > 0.0)) {
 				GLMessageBox::Display("Invalid gas mass", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
-			if (abs(gm - worker->gasMass) > 1e-7) {
+			if (abs(gm - worker->wp.gasMass) > 1e-7) {
 				if (mApp->AskToReset()) {
 					worker->needsReload = true;
-					worker->gasMass = gm;
+					worker->wp.gasMass = gm;
 					if (worker->GetGeometry()->IsLoaded()) { //check if there are pumps
 						bool hasPump = false;
 						size_t nbFacet = worker->GetGeometry()->GetNbFacet();
@@ -451,11 +451,11 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 				GLMessageBox::Display("Invalid half life", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
-			if ((enableDecay->GetState()==1) != worker->enableDecay || ((enableDecay->GetState()==1) && IsEqual(hl, worker->halfLife))) {
+			if ((enableDecay->GetState()==1) != worker->wp.enableDecay || ((enableDecay->GetState()==1) && IsEqual(hl, worker->wp.halfLife))) {
 				if (mApp->AskToReset()) {
 					worker->needsReload = true;
-					worker->enableDecay = enableDecay->GetState();
-					if (worker->enableDecay) worker->halfLife = hl;
+					worker->wp.enableDecay = enableDecay->GetState();
+					if (worker->wp.enableDecay) worker->wp.halfLife = hl;
 				}
 			}
 
@@ -511,10 +511,10 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 
 void GlobalSettings::UpdateOutgassing() {
 	char tmp[128];
-	sprintf(tmp, "%g", worker->gasMass);
-	gasmassText->SetText(tmp);
-	sprintf(tmp, "%g", worker->finalOutgassingRate_Pa_m3_sec * 10.00); //10: conversion Pa*m3/sec -> mbar*l/s
+	sprintf(tmp, "%g", worker->wp.gasMass);
+	gasMassText->SetText(tmp);
+	sprintf(tmp, "%g", worker->wp.finalOutgassingRate_Pa_m3_sec * 10.00); //10: conversion Pa*m3/sec -> mbar*l/s
 	outgassingText->SetText(tmp);
-	sprintf(tmp, "%.3E", worker->totalDesorbedMolecules);
+	sprintf(tmp, "%.3E", worker->wp.totalDesorbedMolecules);
 	influxText->SetText(tmp);
 }

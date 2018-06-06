@@ -23,7 +23,12 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp\MathTools.h"
 #include "ProfilePlotter.h"
 #include <iomanip>
-#include <cereal/archives/binary.hpp>
+
+/*
+#include <cereal/archives/xml.hpp>
+#include <cereal/types/vector.hpp>
+#include <fstream>
+*/
 
 /*
 //Leak detection
@@ -130,30 +135,16 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer,const OntheflySimulationPa
 	*/
 
 	Worker *w = &mApp->worker;
-
-	sh.nbMoments = w->moments.size();
-	sh.latestMoment = w->latestMoment;
-	sh.totalDesorbedMolecules = w->totalDesorbedMolecules;
-	sh.finalOutgassingRate = w->finalOutgassingRate;
-	sh.gasMass = w->gasMass;
-	sh.enableDecay = w->enableDecay;
-	sh.halfLife = w->halfLife;
-	sh.timeWindowSize = w->timeWindowSize;
-	sh.useMaxwellDistribution = w->useMaxwellDistribution;
-	sh.calcConstantFlow = w->calcConstantFlow;
-	sh.motionType = w->motionType;
-	sh.motionVector1 = w->motionVector1;
-	sh.motionVector2 = w->motionVector2;
-	sh.globalHistogramParams = w->globalHistogramParams;
 	WRITEBUFFER(sh, GeomProperties);
+	WRITEBUFFER(w->wp, WorkerParams);
 	/*GeomProperties *shGeom = (GeomProperties *)buffer;
-	memcpy(shGeom, &(this->sh), sizeof(GeomProperties));
+	memcpy(shGeom, &(this->wp), sizeof(GeomProperties));
 	buffer += sizeof(GeomProperties);*/
 	WRITEBUFFER(ontheflyParams, OntheflySimulationParams);
 	memcpy(buffer, vertices3.data(), sizeof(Vector3d)*sh.nbVertex);
 	buffer += sizeof(Vector3d)*sh.nbVertex;
 	
-	size_t fOffset = sizeof(GlobalHitBuffer)+(1+mApp->worker.moments.size())*mApp->worker.globalHistogramParams.GetDataSize(); //calculating offsets for all facets for the hits dataport during the simulation
+	size_t fOffset = sizeof(GlobalHitBuffer)+(1+mApp->worker.moments.size())*mApp->worker.wp.globalHistogramParams.GetDataSize(); //calculating offsets for all facets for the hits dataport during the simulation
 	for (size_t i = 0; i < sh.nbFacet; i++) {
 		Facet *f = facets[i];
 		f->sh.hitOffset = fOffset; //Marking the offsets for the hits, but here we don't actually send any hits.
@@ -167,7 +158,7 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer,const OntheflySimulationPa
 			memcpy(buffer, f->outgassingMap, sizeof(double)*f->sh.outgassingMapWidth*f->sh.outgassingMapHeight);
 			buffer += sizeof(double)*f->sh.outgassingMapWidth*f->sh.outgassingMapHeight;
 		}
-		//if (f->sh.anglemapParams.hasRecorded) { //Check not necessary, commented out
+		//if (f->wp.anglemapParams.hasRecorded) { //Check not necessary, commented out
 			memcpy(buffer, f->angleMapCache, f->sh.anglemapParams.GetRecordedDataSize());
 			buffer += f->sh.anglemapParams.GetRecordedDataSize();
 		//}
@@ -273,7 +264,7 @@ size_t MolflowGeometry::GetHitsSize(std::vector<double> *moments) {
 
 	// Compute number of bytes allocated
 	size_t memoryUsage = 0;
-	memoryUsage += sizeof(GlobalHitBuffer)+(1+moments->size())*mApp->worker.globalHistogramParams.GetDataSize();
+	memoryUsage += sizeof(GlobalHitBuffer)+(1+moments->size())*mApp->worker.wp.globalHistogramParams.GetDataSize();
 	for (int i = 0; i < sh.nbFacet; i++) {
 		memoryUsage += facets[i]->GetHitsSize(moments->size());
 	}
@@ -296,10 +287,10 @@ size_t MolflowGeometry::GetMaxElemNumber() {
 /*void MolflowGeometry::CopyElemBuffer(BYTE *buffer) {
 
 	int idx = 0;
-	for (int i = 0; i < sh.nbFacet; i++) {
+	for (int i = 0; i < wp.nbFacet; i++) {
 		Facet *f = facets[i];
 		
-		//int sz = f->sh.texWidth * f->sh.texHeight * sizeof(SHELEM);
+		//int sz = f->wp.texWidth * f->wp.texHeight * sizeof(SHELEM);
 		//memcpy(buffer + idx, f->mesh, sz);
 		//idx += sz;
 		
@@ -363,8 +354,8 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 		// Wall facet
 		for (int i = 0; i < step; i++) {
 			facets[i + 2 + nbTF] = new Facet(4);
-			//facets[i + 2 + nbTF]->sh.reflection.diffusePart = 1.0; //constructor does this already
-			//facets[i + 2 + nbTF]->sh.reflection.specularPart = 0.0; //constructor does this already
+			//facets[i + 2 + nbTF]->wp.reflection.diffusePart = 1.0; //constructor does this already
+			//facets[i + 2 + nbTF]->wp.reflection.specularPart = 0.0; //constructor does this already
 			facets[i + 2 + nbTF]->sh.sticking = s;
 			facets[i + 2 + nbTF]->indices[0] = 2 * i + nbTV;
 			facets[i + 2 + nbTF]->indices[1] = 2 * i + 1 + nbTV;
@@ -547,9 +538,9 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 	memset(facets + sh.nbFacet, 0, nbNewFacets * sizeof(Facet *));
 	
 	/*
-	InterfaceVertex *tmp_vertices3 = (InterfaceVertex *)malloc((nbNewVertex + sh.nbVertex) * sizeof(InterfaceVertex));
-	memmove(tmp_vertices3, *vertices3, (sh.nbVertex)*sizeof(Vector3d));
-	memset(tmp_vertices3 + sh.nbVertex, 0, nbNewVertex * sizeof(Vector3d));
+	InterfaceVertex *tmp_vertices3 = (InterfaceVertex *)malloc((nbNewVertex + wp.nbVertex) * sizeof(InterfaceVertex));
+	memmove(tmp_vertices3, *vertices3, (wp.nbVertex)*sizeof(Vector3d));
+	memset(tmp_vertices3 + wp.nbVertex, 0, nbNewVertex * sizeof(Vector3d));
 	SAFE_FREE(*vertices3);
 	*vertices3 = tmp_vertices3;
 	*/
@@ -797,8 +788,8 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *leakCache
 		nbS = file->ReadInt();
 	}
 	if (*version >= 7) {
-		file->ReadKeyword("gasMass"); file->ReadKeyword(":");
-		worker->gasMass = file->ReadDouble();
+		file->ReadKeyword("sh.gasMass"); file->ReadKeyword(":");
+		worker->wp.gasMass = file->ReadDouble();
 	}
 	if (*version >= 10) { //time-dependent version
 		file->ReadKeyword("userMoments"); file->ReadKeyword("{");
@@ -813,8 +804,8 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *leakCache
 		}
 		file->ReadKeyword("}");
 
-		/*for (size_t i = 0; i < sh.nbFacet;i++)
-			facets[i]->ResizeCounter(sh.nbMoments); //Initialize hits counters for facets*/
+		/*for (size_t i = 0; i < wp.nbFacet;i++)
+			facets[i]->ResizeCounter(wp.nbMoments); //Initialize hits counters for facets*/
 	}
 	if (*version >= 11) { //pulse version
 		file->ReadKeyword("desorptionStart"); file->ReadKeyword(":");
@@ -824,15 +815,15 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *leakCache
 		/*worker->desorptionStopTime =*/ file->ReadDouble();
 
 		file->ReadKeyword("timeWindow"); file->ReadKeyword(":");
-		worker->timeWindowSize = file->ReadDouble();
+		worker->wp.timeWindowSize = file->ReadDouble();
 
 		file->ReadKeyword("useMaxwellian"); file->ReadKeyword(":");
-		worker->useMaxwellDistribution = file->ReadInt();
+		worker->wp.useMaxwellDistribution = file->ReadInt();
 
 	}
 	if (*version >= 12) { //2013.aug.22
 		file->ReadKeyword("calcConstantFlow"); file->ReadKeyword(":");
-		worker->calcConstantFlow = file->ReadInt();
+		worker->wp.calcConstantFlow = file->ReadInt();
 
 	}
 	if (*version >= 2) {
@@ -1247,10 +1238,10 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version) {
 		double p = (double)i / (double)sh.nbFacet;
 		prg->SetProgress(p);
 		Facet *f = facets[i];
-		//f->SetTexture(f->sh.texWidthD,f->sh.texHeightD,f->hasMesh);
+		//f->SetTexture(f->wp.texWidthD,f->wp.texHeightD,f->hasMesh);
 		BuildFacetList(f);
-		//double nU = &(f->sh.U).Norme();
-		//f->tRatio = f->sh.texWidthD / nU;
+		//double nU = &(f->wp.U).Norme();
+		//f->tRatio = f->wp.texWidthD / nU;
 	}
 	//return result;
 
@@ -1425,7 +1416,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit
 
 	case MC_MODE:
 	if( gHits->globalHits.hit.nbDesorbed>0 ) {
-	dCoef = (float)totalOutgassing / (float)gHits->globalHits.hit.nbDesorbed / 8.31 * gasMass / 100;
+	dCoef = (float)totalOutgassing / (float)gHits->globalHits.hit.nbDesorbed / 8.31 * wp.gasMass / 100;
 	texMinAutoscale = gHits->minHit * dCoef;
 	texMaxAutoscale = gHits->maxHit * dCoef;
 	} else {
@@ -1460,7 +1451,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit
 	file->Write("nbView:"); file->Write(mApp->nbView, "\n");
 	file->Write("nbSelection:"); file->Write((!saveSelected) ? mApp->selections.size() : 0, "\n");
 
-	file->Write("gasMass:"); file->Write(worker->gasMass, "\n");
+	file->Write("sh.gasMass:"); file->Write(worker->wp.gasMass, "\n");
 
 	file->Write("userMoments {\n");
 	file->Write(" nb:"); file->Write((int)userMoments.size());
@@ -1473,9 +1464,9 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit
 
 	file->Write("desorptionStart:"); file->Write(/*worker->desorptionStartTime*/0.0, "\n");
 	file->Write("desorptionStop:"); file->Write(/*worker->desorptionStopTime*/1.0, "\n");
-	file->Write("timeWindow:"); file->Write(worker->timeWindowSize, "\n");
-	file->Write("useMaxwellian:"); file->Write(worker->useMaxwellDistribution, "\n");
-	file->Write("calcConstantFlow:"); file->Write(worker->calcConstantFlow, "\n");
+	file->Write("timeWindow:"); file->Write(worker->wp.timeWindowSize, "\n");
+	file->Write("useMaxwellian:"); file->Write(worker->wp.useMaxwellDistribution, "\n");
+	file->Write("calcConstantFlow:"); file->Write(worker->wp.calcConstantFlow, "\n");
 
 	file->Write("formulas {\n");
 	if (!saveSelected){
@@ -1724,8 +1715,8 @@ void MolflowGeometry::SaveTXT(FileWriter *file, Dataport *dpHit, bool saveSelect
 
 		// Update facet hits from shared mem
 		Facet *f = facets[i];
-		/*FacetHitBuffer *shF = (FacetHitBuffer *)(buffer + f->sh.hitOffset);
-		memcpy(&(f->sh.tmpCounter), shF, sizeof(FacetHitBuffer));*/
+		/*FacetHitBuffer *shF = (FacetHitBuffer *)(buffer + f->wp.hitOffset);
+		memcpy(&(f->wp.tmpCounter), shF, sizeof(FacetHitBuffer));*/
 		if (saveSelected) {
 			if (f->selected) f->SaveTXT(file);
 		}
@@ -1824,14 +1815,14 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, Datapor
 								double v_ort_avg = 2.0*texture[index].countEquiv / texture[index].sum_1_per_ort_velocity;
 								double imp_rate = texture[index].countEquiv / f->GetMeshArea(index,true)*dCoef;
 								double rho = 2.0*imp_rate / v_ort_avg;
-								double rho_mass = rho*mApp->worker.gasMass / 1000.0 / 6E23;
+								double rho_mass = rho*mApp->worker.wp.gasMass / 1000.0 / 6E23;
 								if (!grouping || texture[index].countEquiv>0.0) sprintf(tmp, "%g", rho_mass);
 						break;
 					}
 					case 5:  // Pressure [mbar]
 
 						// Lock during update
-						dCoef = 1E4 * (mApp->worker.gasMass / 1000 / 6E23) *0.0100;  //1E4 is conversion from m2 to cm2, 0.01: Pa->mbar
+						dCoef = 1E4 * (mApp->worker.wp.gasMass / 1000 / 6E23) *0.0100;  //1E4 is conversion from m2 to cm2, 0.01: Pa->mbar
 						if (shGHit->sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
 						if (!grouping || texture[index].sum_v_ort_per_area) sprintf(tmp, "%g", texture[index].sum_v_ort_per_area*dCoef);
 						break;
@@ -1949,7 +1940,7 @@ void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, Dataport *dpHit, Wor
 					switch (f->sh.profileType) {
 					case PROFILE_U:
 					case PROFILE_V:
-						scaleY = 1.0 / (f->GetArea() / (double)PROFILE_SIZE*1E-4)* worker->gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
+						scaleY = 1.0 / (f->GetArea() / (double)PROFILE_SIZE*1E-4)* worker->wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
 						scaleY *= worker->GetMoleculesPerTP(m);
 
 						for (int j = 0; j < PROFILE_SIZE; j++)
@@ -1993,10 +1984,10 @@ void MolflowGeometry::ImportDesorption_DES(FileReader *file) {
 
 	// Block dpHit during the whole disc writing
 
-	for (int i = 0; i < sh.nbFacet; i++) { //clear previous desorption maps
+	for (int i = 0; i < wp.nbFacet; i++) { //clear previous desorption maps
 		facets[i]->hasOutgassingFile = false;
-		facets[i]->sh.useOutgassingFile = false;
-		facets[i]->sh.desorbType = DES_NONE; //clear previously set desorptions
+		facets[i]->wp.useOutgassingFile = false;
+		facets[i]->wp.desorbType = DES_NONE; //clear previously set desorptions
 		facets[i]->selected = false;
 		facets[i]->UnselectElem();
 	}
@@ -2005,26 +1996,26 @@ void MolflowGeometry::ImportDesorption_DES(FileReader *file) {
 		file->ReadKeyword("facet");
 		int facetId = file->ReadInt() - 1;
 		file->ReadKeyword("{");
-		if (!(facetId >= 0 && facetId < sh.nbFacet)) {
+		if (!(facetId >= 0 && facetId < wp.nbFacet)) {
 			file->MakeError("Invalid facet Id (loaded desorption file for a different geometry?)");
 			return;
 		}
 
 		Facet *f = facets[facetId];
 		f->hasOutgassingFile = true;
-		f->sh.useOutgassingFile = true; //turn on file usage by default
-		f->sh.desorbType = DES_COSINE; //auto-set to cosine
+		f->wp.useOutgassingFile = true; //turn on file usage by default
+		f->wp.desorbType = DES_COSINE; //auto-set to cosine
 		SelectFacet(facetId);
 		file->ReadKeyword("cell_size_cm"); file->ReadKeyword(":");
-		double ratio = f->sh.outgassingFileRatio = file->ReadDouble();
-		if (f->sh.outgassingFileRatio != 0.0) {
-			f->sh.outgassingFileRatio = 1.0 / f->sh.outgassingFileRatio; //cell size -> samples per cm
-			ratio = f->sh.outgassingFileRatio;
+		double ratio = f->wp.outgassingFileRatio = file->ReadDouble();
+		if (f->wp.outgassingFileRatio != 0.0) {
+			f->wp.outgassingFileRatio = 1.0 / f->wp.outgassingFileRatio; //cell size -> samples per cm
+			ratio = f->wp.outgassingFileRatio;
 		}
-		double nU = f->sh.U.Norme();
-		double nV = f->sh.V.Norme();
-		size_t w = f->sh.outgassingMapWidth = (size_t)ceil(nU*ratio); //double precision written to file
-		size_t h = f->sh.outgassingMapHeight = (size_t)ceil(nV*ratio); //double precision written to file
+		double nU = f->wp.U.Norme();
+		double nV = f->wp.V.Norme();
+		size_t w = f->wp.outgassingMapWidth = (size_t)ceil(nU*ratio); //double precision written to file
+		size_t h = f->wp.outgassingMapHeight = (size_t)ceil(nV*ratio); //double precision written to file
 		f->outgassingMap = (double*)malloc(w*h*sizeof(double));
 		if (!f->outgassingMap) throw Error("Not enough memory to store outgassing map.");
 		for (int i = 0; i < w; i++) {
@@ -2302,13 +2293,13 @@ void MolflowGeometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, 
 			(*nbTextured)++;
 			SelectFacet(i);
 			/*file->ReadKeyword("texDimX");file->ReadKeyword(":");
-			if ((this->GetFacet(i)->sh.texWidthD-file->ReadDouble())>1E-8) {
+			if ((this->GetFacet(i)->wp.texWidthD-file->ReadDouble())>1E-8) {
 			(*nbDifferent)++;
 			continue;
 
 			}
 			file->ReadKeyword("texDimY");file->ReadKeyword(":");
-			if ((this->GetFacet(i)->sh.texHeightD-file->ReadDouble())>1E-8) {
+			if ((this->GetFacet(i)->wp.texHeightD-file->ReadDouble())>1E-8) {
 			(*nbDifferent)++;
 			}*/
 
@@ -2325,7 +2316,7 @@ void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLP
 	xml_node geomNode = saveDoc.append_child("Geometry");
 
 	prg->SetMessage("Writing vertices...");
-	geomNode.append_child("Vertices").append_attribute("nb") = sh.nbVertex; //creates Vertices node, adds nb attribute and sets its value to sh.nbVertex
+	geomNode.append_child("Vertices").append_attribute("nb") = sh.nbVertex; //creates Vertices node, adds nb attribute and sets its value to wp.nbVertex
 	for (int i = 0; i < sh.nbVertex; i++) {
 		prg->SetProgress(0.166*((double)i / (double)sh.nbVertex));
 		xml_node v = geomNode.child("Vertices").append_child("Vertex");
@@ -2416,9 +2407,9 @@ void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLP
 
 	xml_node simuParamNode = saveDoc.append_child("MolflowSimuSettings");
 
-	simuParamNode.append_child("Gas").append_attribute("mass") = work->gasMass;
-	simuParamNode.child("Gas").append_attribute("enableDecay") = (int)work->enableDecay; //backward compatibility: 0 or 1
-	simuParamNode.child("Gas").append_attribute("halfLife") = work->halfLife;
+	simuParamNode.append_child("Gas").append_attribute("mass") = work->wp.gasMass;
+	simuParamNode.child("Gas").append_attribute("enableDecay") = (int)work->wp.enableDecay; //backward compatibility: 0 or 1
+	simuParamNode.child("Gas").append_attribute("sh.halfLife") = work->wp.halfLife;
 
 	xml_node timeSettingsNode = simuParamNode.append_child("TimeSettings");
 
@@ -2430,27 +2421,27 @@ void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLP
 		newUserEntry.append_attribute("content") = work->userMoments[i].c_str();
 	}
 
-	timeSettingsNode.append_attribute("timeWindow") = work->timeWindowSize;
-	timeSettingsNode.append_attribute("useMaxwellDistr") = (int)work->useMaxwellDistribution; //backward compatibility: 0 or 1
-	timeSettingsNode.append_attribute("calcConstFlow") = (int)work->calcConstantFlow; //backward compatibility: 0 or 1
+	timeSettingsNode.append_attribute("timeWindow") = work->wp.timeWindowSize;
+	timeSettingsNode.append_attribute("useMaxwellDistr") = (int)work->wp.useMaxwellDistribution; //backward compatibility: 0 or 1
+	timeSettingsNode.append_attribute("calcConstFlow") = (int)work->wp.calcConstantFlow; //backward compatibility: 0 or 1
 
 	xml_node motionNode = simuParamNode.append_child("Motion");
-	motionNode.append_attribute("type") = work->motionType;
-	if (work->motionType == 1) { //fixed motion
+	motionNode.append_attribute("type") = work->wp.motionType;
+	if (work->wp.motionType == 1) { //fixed motion
 		xml_node v = motionNode.append_child("VelocityVector");
-		v.append_attribute("vx") = work->motionVector2.x;
-		v.append_attribute("vy") = work->motionVector2.y;
-		v.append_attribute("vz") = work->motionVector2.z;
+		v.append_attribute("vx") = work->wp.motionVector2.x;
+		v.append_attribute("vy") = work->wp.motionVector2.y;
+		v.append_attribute("vz") = work->wp.motionVector2.z;
 	}
-	else if (work->motionType == 2) { //rotation
+	else if (work->wp.motionType == 2) { //rotation
 		xml_node v = motionNode.append_child("AxisBasePoint");
-		v.append_attribute("x") = work->motionVector1.x;
-		v.append_attribute("y") = work->motionVector1.y;
-		v.append_attribute("z") = work->motionVector1.z;
+		v.append_attribute("x") = work->wp.motionVector1.x;
+		v.append_attribute("y") = work->wp.motionVector1.y;
+		v.append_attribute("z") = work->wp.motionVector1.z;
 		xml_node v2 = motionNode.append_child("RotationVector");
-		v2.append_attribute("x") = work->motionVector2.x;
-		v2.append_attribute("y") = work->motionVector2.y;
-		v2.append_attribute("z") = work->motionVector2.z;
+		v2.append_attribute("x") = work->wp.motionVector2.x;
+		v2.append_attribute("y") = work->wp.motionVector2.y;
+		v2.append_attribute("z") = work->wp.motionVector2.z;
 	}
 
 	xml_node paramNode = simuParamNode.append_child("Parameters");
@@ -2765,13 +2756,13 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 			}
 		}
 
-		work->gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
-		work->halfLife = simuParamNode.child("Gas").attribute("halfLife").as_double();
+		work->wp.gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
+		work->wp.halfLife = simuParamNode.child("Gas").attribute("sh.halfLife").as_double();
 		if (simuParamNode.child("Gas").attribute("enableDecay")) {
-			work->enableDecay = simuParamNode.child("Gas").attribute("enableDecay").as_bool();
+			work->wp.enableDecay = simuParamNode.child("Gas").attribute("enableDecay").as_bool();
 		}
 		else {
-			work->enableDecay = work->halfLife < 1e100;
+			work->wp.enableDecay = work->wp.halfLife < 1e100;
 		}
 
 		xml_node timeSettingsNode = simuParamNode.child("TimeSettings");
@@ -2786,32 +2777,32 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 
 		/*
 		//Initialize facet counters
-		for (size_t i = 0;i < sh.nbFacet;i++) {
+		for (size_t i = 0;i < wp.nbFacet;i++) {
 			memset(&(facets[i]->facetHitCache), 0, sizeof(FacetHitBuffer));
 		}
 		*/
 
-		work->timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();
-		work->useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_bool();
-		work->calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_bool();
+		work->wp.timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();
+		work->wp.useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_bool();
+		work->wp.calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_bool();
 
 		xml_node motionNode = simuParamNode.child("Motion");
-		work->motionType = motionNode.attribute("type").as_int();
-		if (work->motionType == 1) { //fixed motion
+		work->wp.motionType = motionNode.attribute("type").as_int();
+		if (work->wp.motionType == 1) { //fixed motion
 			xml_node v = motionNode.child("VelocityVector");
-			work->motionVector2.x = v.attribute("vx").as_double();
-			work->motionVector2.y = v.attribute("vy").as_double();
-			work->motionVector2.z = v.attribute("vz").as_double();
+			work->wp.motionVector2.x = v.attribute("vx").as_double();
+			work->wp.motionVector2.y = v.attribute("vy").as_double();
+			work->wp.motionVector2.z = v.attribute("vz").as_double();
 		}
-		else if (work->motionType == 2) { //rotation
+		else if (work->wp.motionType == 2) { //rotation
 			xml_node v = motionNode.child("AxisBasePoint");
-			work->motionVector1.x = v.attribute("x").as_double();
-			work->motionVector1.y = v.attribute("y").as_double();
-			work->motionVector1.z = v.attribute("z").as_double();
+			work->wp.motionVector1.x = v.attribute("x").as_double();
+			work->wp.motionVector1.y = v.attribute("y").as_double();
+			work->wp.motionVector1.z = v.attribute("z").as_double();
 			xml_node v2 = motionNode.child("RotationVector");
-			work->motionVector2.x = v2.attribute("x").as_double();
-			work->motionVector2.y = v2.attribute("y").as_double();
-			work->motionVector2.z = v2.attribute("z").as_double();
+			work->wp.motionVector2.x = v2.attribute("x").as_double();
+			work->wp.motionVector2.y = v2.attribute("y").as_double();
+			work->wp.motionVector2.z = v2.attribute("z").as_double();
 		}
 	}
 
@@ -2856,9 +2847,9 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 	memset(facets + sh.nbFacet, 0, nbNewFacets * sizeof(Facet *));
 
 	/*
-	InterfaceVertex *tmp_vertices3 = (InterfaceVertex *)malloc((nbNewVertex + sh.nbVertex) * sizeof(InterfaceVertex));
-	memmove(tmp_vertices3, vertices3, (sh.nbVertex)*sizeof(InterfaceVertex));
-	memset(tmp_vertices3 + sh.nbVertex, 0, nbNewVertex * sizeof(InterfaceVertex));
+	InterfaceVertex *tmp_vertices3 = (InterfaceVertex *)malloc((nbNewVertex + wp.nbVertex) * sizeof(InterfaceVertex));
+	memmove(tmp_vertices3, vertices3, (wp.nbVertex)*sizeof(InterfaceVertex));
+	memset(tmp_vertices3 + wp.nbVertex, 0, nbNewVertex * sizeof(InterfaceVertex));
 	SAFE_FREE(vertices3);
 	vertices3 = tmp_vertices3;
 	*/
@@ -2983,8 +2974,8 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 		}
 	}
 
-	/*work->gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
-	work->halfLife = simuParamNode.child("Gas").attribute("halfLife").as_double();*/
+	/*work->wp.gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
+	work->wp.halfLife = simuParamNode.child("Gas").attribute("wp.halfLife").as_double();*/
 
 	/*
 	xml_node timeSettingsNode = simuParamNode.child("TimeSettings");
@@ -2997,9 +2988,9 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 	work->AddMoment(mApp->worker.ParseMoment(tmpExpr));
 
 	}
-	work->timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();
-	work->useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_int();
-	work->calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_int();
+	work->wp.wp.timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();
+	work->wp.useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_int();
+	work->wp.calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_int();
 	*/
 
 	if (newStr) sh.nbSuper += nbNewSuper;
@@ -3012,11 +3003,11 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 	// Update mesh
 	progressDlg->SetMessage("Building mesh...");
 
-	for (int i = 0; i < sh.nbFacet; i++) {
-	double p = (double)i / (double)sh.nbFacet;
+	for (int i = 0; i < wp.nbFacet; i++) {
+	double p = (double)i / (double)wp.nbFacet;
 	progressDlg->SetProgress(p);
 	Facet *f = facets[i];
-	if (!f->SetTexture(f->sh.texWidthD, f->sh.texHeightD, f->hasMesh)) {
+	if (!f->SetTexture(f->wp.texWidthD, f->wp.texHeightD, f->hasMesh)) {
 
 	char errMsg[512];
 	sprintf(errMsg, "Not enough memory to build mesh on Facet %d. ", i + 1);
@@ -3024,8 +3015,8 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 	throw Error(errMsg);
 	}
 	BuildFacetList(f);
-	double nU = &(f->sh.U).Norme();
-	f->tRatio = f->sh.texWidthD / nU;
+	double nU = &(f->wp.U).Norme();
+	f->tRatio = f->wp.texWidthD / nU;
 	}
 	*/
 }
@@ -3177,18 +3168,18 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit,
 			//Textures
 			int ix, iy;
 			int profSize = (f->sh.isProfile) ? (PROFILE_SIZE*sizeof(ProfileSlice)*(1 + (int)mApp->worker.moments.size())) : 0;
-			/*int h = (f->sh.texHeight);
-			int w = (f->sh.texWidth);*/
+			/*int h = (f->wp.texHeight);
+			int w = (f->wp.texWidth);*/
 
 			if (f->hasMesh){
 				xml_node textureNode = newFacetResult.child("Texture");
 				size_t texWidth_file = textureNode.attribute("width").as_llong();
 				size_t texHeight_file = textureNode.attribute("height").as_llong();
 
-				/*if (textureNode.attribute("width").as_int() != f->sh.texWidth ||
-					textureNode.attribute("height").as_int() != f->sh.texHeight) {
+				/*if (textureNode.attribute("width").as_int() != f->wp.texWidth ||
+					textureNode.attribute("height").as_int() != f->wp.texHeight) {
 					std::stringstream msg;
-					msg << "Texture size mismatch on facet " << facetId + 1 << ".\nExpected: " << f->sh.texWidth << "x" << f->sh.texHeight << "\n"
+					msg << "Texture size mismatch on facet " << facetId + 1 << ".\nExpected: " << f->wp.texWidth << "x" << f->wp.texHeight << "\n"
 					<< "In file: " << textureNode.attribute("width").as_int() << "x" << textureNode.attribute("height").as_int();
 					throw Error(msg.str().c_str());
 					}*/ //We'll treat texture size mismatch, see below
@@ -3270,13 +3261,13 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit,
 
 	/*
 	//Send angle maps //Commented out: CopyGeometryBuffer will send it after LoadXML_geom
-	for (size_t i = 0; i < sh.nbFacet; i++) {
+	for (size_t i = 0; i < wp.nbFacet; i++) {
 		Facet* f = facets[i];
-		int profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + (int)mApp->worker.moments.size())) : 0;
-		size_t *angleMap = (size_t *)((BYTE *)gHits + f->sh.hitOffset + facetHitsSize
-			+ profSize + (1 + (int)work->moments.size())*f->sh.texWidth*f->sh.texHeight * sizeof(TextureCell)
-			+ (1 + (int)work->moments.size())*f->sh.texWidth*f->sh.texHeight * sizeof(DirectionCell));
-		memcpy(angleMap, f->angleMapCache, f->sh.anglemapParams.phiWidth*(f->sh.anglemapParams.thetaLowerRes + f->sh.anglemapParams.thetaHigherRes) * sizeof(size_t));
+		int profSize = (f->wp.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + (int)mApp->worker.moments.size())) : 0;
+		size_t *angleMap = (size_t *)((BYTE *)gHits + f->wp.hitOffset + facetHitsSize
+			+ profSize + (1 + (int)work->moments.size())*f->wp.texWidth*f->wp.texHeight * sizeof(TextureCell)
+			+ (1 + (int)work->moments.size())*f->wp.texWidth*f->wp.texHeight * sizeof(DirectionCell));
+		memcpy(angleMap, f->angleMapCache, f->wp.anglemapParams.phiWidth*(f->wp.anglemapParams.thetaLowerRes + f->wp.anglemapParams.thetaHigherRes) * sizeof(size_t));
 	}
 	*/
 
@@ -3295,31 +3286,4 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit,
 	gHits->texture_limits[2].max.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("max").as_double();
 	ReleaseDataport(dpHit);
 	return true;
-}
-
-template <class Archive> void MolflowGeometry::Serialize(Archive & archive, const OntheflySimulationParams& ontheflyParams, const Worker& w) {
-	archive(
-		w.moments,
-		w.latestMoment,
-		w.totalDesorbedMolecules,
-		w.finalOutgassingRate,
-		w.gasMass,
-		w.enableDecay,
-		w.halfLife,
-		w.timeWindowSize,
-		w.useMaxwellDistribution,
-		w.calcConstantFlow,
-		w.motionType,
-		w.motionVector1,
-		w.motionVector2,
-		w.globalHistogramParams,
-
-		nbFacet,
-		nbVertex,
-		nbSuper,
-		name,
-
-		ontheflyParams,
-		vertices3
-	);
 }

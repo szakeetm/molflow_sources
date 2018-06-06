@@ -334,7 +334,7 @@ void PressureEvolution::refreshViews() {
 		GLDataView *v = views[i];
 		if (v->userData1 >= 0 && v->userData1 < geom->GetNbFacet()) {
 			Facet *f = geom->GetFacet(v->userData1);
-			//FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->sh.hitOffset);
+			//FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->wp.hitOffset);
 			//double fnbDes = (double)fCount->hit.nbDesorbed;
 			//double fnbHit = (double)fCount->hit.nbMCHit;
 			v->Reset();
@@ -353,8 +353,8 @@ void PressureEvolution::refreshViews() {
 					break;
 				}
 				case 1: {//Pressure
-					scaleY = 1.0 / nbDes / (f->sh.area / (double)PROFILE_SIZE*1E-4)* worker->gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
-					scaleY *= worker->totalDesorbedMolecules / worker->timeWindowSize;
+					scaleY = 1.0 / nbDes / (f->sh.area / (double)PROFILE_SIZE*1E-4)* worker->wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
+					scaleY *= worker->wp.totalDesorbedMolecules / worker->wp.timeWindowSize;
 					if (f->sh.is2sided) scaleY *= 0.5;
 					double val = 0.0;
 					if (modeCombo->GetSelectedIndex() == 1) //plot one slice
@@ -369,7 +369,7 @@ void PressureEvolution::refreshViews() {
 				}
 				case 2: {//Particle density
 					scaleY = 1.0 / nbDes / (f->GetArea() / (double)PROFILE_SIZE*1E-4);
-					scaleY *= worker->totalDesorbedMolecules / worker->timeWindowSize;
+					scaleY *= worker->wp.totalDesorbedMolecules / worker->wp.timeWindowSize;
 					scaleY *= f->DensityCorrection();
 
 					double val = 0.0;
@@ -475,7 +475,7 @@ void PressureEvolution::addView(int facet) {
 	if (nbView < 50) {
 		Facet *f = geom->GetFacet(facet);
 		GLDataView *v = new GLDataView();
-		//sprintf(tmp, "F#%d %s", facet + 1, profType[f->sh.profileType]);
+		//sprintf(tmp, "F#%d %s", facet + 1, profType[f->wp.profileType]);
 		sprintf(tmp, "F#%d", facet + 1);
 		v->SetName(tmp);
 		v->SetViewType(TYPE_BAR);

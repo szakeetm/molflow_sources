@@ -74,7 +74,7 @@ public:
 
 	// Raw data buffer (geometry)
 	void CopyGeometryBuffer(BYTE *buffer,const OntheflySimulationParams& ontheflyParams);
-	template <class Archive> void Serialize(Archive & archive, const OntheflySimulationParams& ontheflyParams,const Worker& w);
+	template <class Archive> void serialize(Archive & archive, const OntheflySimulationParams& ontheflyParams,const Worker& w);
 
 	// AC matrix
 	size_t GetMaxElemNumber();
@@ -91,6 +91,19 @@ public:
 	// Temporary variable (used by LoadXXX)
 	double distTraveled_total;
 	double distTraveledTotal_fullHitsOnly;
+
+	template <class Archive> void serialize(Archive & archive) {
+		archive(
+			sh,
+			vertices3
+		);
+		
+		for (size_t i = 0; i < sh.nbFacet; i++) {
+			archive(
+				*(facets[i])
+			);
+		}
+	}
 
 private:
 

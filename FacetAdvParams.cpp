@@ -459,7 +459,7 @@ void FacetAdvParams::UpdateSizeForRatio() {
 
 		for (size_t i = 0; i < nbFacet; i++) {
 			Facet *f = geom->GetFacet(i);
-			//if(f->sh.opacity==1.0) {
+			//if(f->wp.opacity==1.0) {
 			if (f->selected) {
 				cell += (llong)f->GetNbCellForRatio(ratio);
 				ram += (llong)f->GetTexRamSizeForRatio(ratio, boundMap, false, 1 + worker->moments.size());
@@ -1283,23 +1283,23 @@ bool FacetAdvParams::Apply() {
 	for (auto& sel:selectedFacets) {
 		Facet *f = geom->GetFacet(sel);
 		/*
-		bool hadAnyTexture = f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD || f->sh.countDirection;
-		bool hadDirCount = f->sh.countDirection;
+		bool hadAnyTexture = f->wp.countDes || f->wp.countAbs || f->wp.countRefl || f->wp.countTrans || f->wp.countACD || f->wp.countDirection;
+		bool hadDirCount = f->wp.countDirection;
 		
 		if (enableBtn->GetState() == 0 || ratio == 0.0) {
 			//Let the user disable textures with the main switch or by typing 0 as resolution
-			f->sh.countDes = f->sh.countAbs = f->sh.countRefl = f->sh.countTrans = f->sh.countACD = f->sh.countDirection = false;
+			f->wp.countDes = f->wp.countAbs = f->wp.countRefl = f->wp.countTrans = f->wp.countACD = f->wp.countDirection = false;
 		}
 		else {
-			if (recordDesBtn->GetState() < 2) f->sh.countDes = recordDesBtn->GetState();
-			if (recordAbsBtn->GetState() < 2) f->sh.countAbs = recordAbsBtn->GetState();
-			if (recordReflBtn->GetState() < 2) f->sh.countRefl = recordReflBtn->GetState();
-			if (recordTransBtn->GetState() < 2) f->sh.countTrans = recordTransBtn->GetState();
-			if (recordACBtn->GetState() < 2) f->sh.countACD = recordACBtn->GetState();
-			if (recordDirBtn->GetState() < 2) f->sh.countDirection = recordDirBtn->GetState();
+			if (recordDesBtn->GetState() < 2) f->wp.countDes = recordDesBtn->GetState();
+			if (recordAbsBtn->GetState() < 2) f->wp.countAbs = recordAbsBtn->GetState();
+			if (recordReflBtn->GetState() < 2) f->wp.countRefl = recordReflBtn->GetState();
+			if (recordTransBtn->GetState() < 2) f->wp.countTrans = recordTransBtn->GetState();
+			if (recordACBtn->GetState() < 2) f->wp.countACD = recordACBtn->GetState();
+			if (recordDirBtn->GetState() < 2) f->wp.countDirection = recordDirBtn->GetState();
 		}
 		
-		bool hasAnyTexture = f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD || f->sh.countDirection;
+		bool hasAnyTexture = f->wp.countDes || f->wp.countAbs || f->wp.countRefl || f->wp.countTrans || f->wp.countACD || f->wp.countDirection;
 		*/
 
 		if (doTeleport) f->sh.teleportDest = teleport;
@@ -1363,7 +1363,7 @@ bool FacetAdvParams::Apply() {
 		/*
 		//set textures
 		try {
-			bool needsRemeshing = (hadAnyTexture != hasAnyTexture) || (hadDirCount != f->sh.countDirection) || (doRatio && (!IsEqual(geom->GetFacet(sel)->tRatio , ratio)));
+			bool needsRemeshing = (hadAnyTexture != hasAnyTexture) || (hadDirCount != f->wp.countDirection) || (doRatio && (!IsEqual(geom->GetFacet(sel)->tRatio , ratio)));
 			if (needsRemeshing) geom->SetFacetTexture(sel, hasAnyTexture ? ratio : 0.0, hasAnyTexture ? boundMap : false);
 		}
 		catch (Error &e) {
@@ -1379,7 +1379,7 @@ bool FacetAdvParams::Apply() {
 			return false;
 		}
 		*/
-		//if (angleMapRecordCheckbox->GetState() < 2) f->sh.anglemapParams.record = angleMapRecordCheckbox->GetState();
+		//if (angleMapRecordCheckbox->GetState() < 2) f->wp.anglemapParams.record = angleMapRecordCheckbox->GetState();
 		if (showTexture->GetState() < 2) f->textureVisible = showTexture->GetState();
 		if (showVolume->GetState() < 2) f->volumeVisible = showVolume->GetState();
 		nbPerformed++;

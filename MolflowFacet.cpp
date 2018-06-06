@@ -424,7 +424,7 @@ void Facet::LoadTXT(FileReader *file) {
 	// Read facet parameters from TXT format
 	sh.sticking = file->ReadDouble();
 	double o = file->ReadDouble();
-	/*sh.area =*/ file->ReadDouble();
+	/*wp.area =*/ file->ReadDouble();
 	facetHitCache.hit.nbDesorbed = (llong)(file->ReadDouble() + 0.5);
 	facetHitCache.hit.nbMCHit = (llong)(file->ReadDouble() + 0.5);
 	facetHitCache.hit.nbHitEquiv = static_cast<double>(facetHitCache.hit.nbMCHit);
@@ -794,11 +794,11 @@ void Facet::BuildTexture(TextureCell *texBuffer, int textureMode, double min, do
 		/*
 		// Perform edge smoothing (only with mesh)
 		if( mesh ) {
-		for(int j=-1;j<=sh.texHeight;j++) {
-		for(int i=-1;i<=sh.texWidth;i++) {
-		bool doSmooth = (i<0) || (i>=sh.texWidth) ||
-		(j<0) || (j>=sh.texHeight) ||
-		mesh[i+j*sh.texWidth].area==0.0f;
+		for(int j=-1;j<=wp.texHeight;j++) {
+		for(int i=-1;i<=wp.texWidth;i++) {
+		bool doSmooth = (i<0) || (i>=wp.texWidth) ||
+		(j<0) || (j>=wp.texHeight) ||
+		mesh[i+j*wp.texWidth].area==0.0f;
 		if( doSmooth ) {
 		if( doLog ) {
 		val = (int)((log10(GetSmooth(i,j,texBuffer,dCoeff))-log10(min))*scaleFactor+0.5f);

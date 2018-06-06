@@ -221,7 +221,7 @@ void TexturePlotter::UpdateTable() {
 					TextureCell *texture = (TextureCell *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
 					for (size_t i = 0; i < w; i++) {
 						for (size_t j = 0; j < h; j++) {
-							//int tSize = selFacet->sh.texWidth*selFacet->sh.texHeight;
+							//int tSize = selFacet->wp.texWidth*selFacet->wp.texHeight;
 
 							double val = texture[i + j*w].countEquiv;
 							if (val > maxValue) {
@@ -253,7 +253,7 @@ void TexturePlotter::UpdateTable() {
 					TextureCell *texture = (TextureCell *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
 					double dCoef =1E4; //1E4: conversion m2->cm2
 					/*if (shGHit->sMode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
-						/ worker->timeWindowSize));*/
+						/ worker->wp.wp.timeWindowSize));*/
 					if (shGHit->sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(worker->displayedMoment);
 					for (size_t i = 0; i < w; i++) {
 						for (size_t j = 0; j < h; j++) {
@@ -292,7 +292,7 @@ void TexturePlotter::UpdateTable() {
 						for (size_t j = 0; j < h; j++) {
 
 							/*double v_avg = 2.0*(double)texture[i + j*w].count / texture[i + j*w].sum_1_per_ort_velocity;
-							double imp_rate = texture[i + j*w].count / (selFacet->mesh[i + j*w].area*(selFacet->sh.is2sided ? 2.0 : 1.0))*dCoef;
+							double imp_rate = texture[i + j*w].count / (selFacet->mesh[i + j*w].area*(selFacet->wp.is2sided ? 2.0 : 1.0))*dCoef;
 							double rho = 4.0*imp_rate / v_avg;*/
 							double rho = texture[i + j*w].sum_1_per_ort_velocity / selFacet->GetMeshArea(i + j*w,true)*dCoef;
 							if (rho > maxValue) {
@@ -322,7 +322,7 @@ void TexturePlotter::UpdateTable() {
 					GlobalHitBuffer *shGHit = (GlobalHitBuffer *)buffer;
 					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
 					TextureCell *texture = (TextureCell *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
-					//float dCoef = (float)totalOutgassing / 8.31 * gasMass / 100 * MAGIC_CORRECTION_FACTOR;
+					//float dCoef = (float)totalOutgassing / 8.31 * wp.gasMass / 100 * MAGIC_CORRECTION_FACTOR;
 					double dCoef = 1E4 * selFacet->DensityCorrection();
 
 					if (shGHit->sMode == MC_MODE) dCoef *= worker->GetMoleculesPerTP(worker->displayedMoment);
@@ -330,10 +330,10 @@ void TexturePlotter::UpdateTable() {
 						for (size_t j = 0; j < h; j++) {
 
 							/*double v_avg = 2.0*(double)texture[i + j*w].count / texture[i + j*w].sum_1_per_ort_velocity;
-							double imp_rate = texture[i + j*w].count / (selFacet->mesh[i + j*w].area*(selFacet->sh.is2sided ? 2.0 : 1.0))*dCoef;
+							double imp_rate = texture[i + j*w].count / (selFacet->mesh[i + j*w].area*(selFacet->wp.is2sided ? 2.0 : 1.0))*dCoef;
 							double rho = 4.0*imp_rate / v_avg;*/
 							double rho = texture[i + j*w].sum_1_per_ort_velocity / selFacet->GetMeshArea(i + j*w,true)*dCoef;
-							double rho_mass = rho*worker->gasMass / 1000.0 / 6E23;
+							double rho_mass = rho*worker->wp.gasMass / 1000.0 / 6E23;
 							if (rho_mass > maxValue) {
 								maxValue = rho_mass;
 								maxX = i; maxY = j;
@@ -361,7 +361,7 @@ void TexturePlotter::UpdateTable() {
 					GlobalHitBuffer *shGHit = (GlobalHitBuffer *)buffer;
 					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
 					TextureCell *texture = (TextureCell *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
-					double dCoef = 1E4 * (worker->gasMass / 1000 / 6E23) * 0.0100;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
+					double dCoef = 1E4 * (worker->wp.gasMass / 1000 / 6E23) * 0.0100;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 					
 					if (shGHit->sMode == MC_MODE) dCoef *= worker->GetMoleculesPerTP(worker->displayedMoment);
 					for (size_t i = 0; i < w; i++) {

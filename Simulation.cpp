@@ -21,7 +21,7 @@ Simulation::Simulation()
 
 	loadOK = false;
 	sMode = MC_MODE;
-	sh.globalHistogramParams.record = false;
+	wp.globalHistogramParams.record = false;
 	lastHitFacet = NULL;
 
 	hasVolatile = false;

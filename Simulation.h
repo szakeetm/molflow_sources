@@ -191,6 +191,7 @@ public:
 #endif
 
   OntheflySimulationParams ontheflyParams;
+  WorkerParams wp;
   std::vector<ParticleLoggerItem> tmpParticleLog;
 
 };

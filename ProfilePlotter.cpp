@@ -329,7 +329,7 @@ void ProfilePlotter::refreshViews() {
 			v->Reset();
 			ProfileSlice *profilePtr = (ProfileSlice *)(buffer + f->sh.hitOffset + facetHitsSize + worker->displayedMoment*sizeof(ProfileSlice)*PROFILE_SIZE);
 
-			//FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->sh.hitOffset+ worker->displayedMoment*sizeof(FacetHitBuffer));
+			//FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->wp.hitOffset+ worker->displayedMoment*sizeof(FacetHitBuffer));
 			//double fnbHit = (double)fCount->hit.nbMCHit;
 			//if (fnbHit == 0.0) fnbHit = 1.0;
 			if (worker->nbDesorption > 0){
@@ -342,7 +342,7 @@ void ProfilePlotter::refreshViews() {
 					break;
 
 				case 1: //Pressure
-					scaleY = 1.0 / (f->GetArea() / (double)PROFILE_SIZE*1E-4)* worker->gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
+					scaleY = 1.0 / (f->GetArea() / (double)PROFILE_SIZE*1E-4)* worker->wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
 					scaleY *= worker->GetMoleculesPerTP(worker->displayedMoment);
 
 					for (int j = 0; j < PROFILE_SIZE; j++)
@@ -462,7 +462,7 @@ void ProfilePlotter::addView(int facet) {
 	if (nbView < MAX_VIEWS) {
 		Facet *f = geom->GetFacet(facet);
 		GLDataView *v = new GLDataView();
-		//sprintf(tmp, "F#%d %s", facet + 1, profType[f->sh.profileType]);
+		//sprintf(tmp, "F#%d %s", facet + 1, profType[f->wp.profileType]);
 		sprintf(tmp, "F#%d", facet + 1);
 		v->SetName(tmp);
 		v->SetColor(*colors[nbView%nbColors]);

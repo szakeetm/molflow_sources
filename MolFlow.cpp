@@ -111,7 +111,7 @@ Area variables: ARn (Area of facet n), DESAR (total desorption area), ABSAR (tot
 Final (constant) outgassing rate [mbar*l/s]: QCONST
 Final (constant) outgassing rate [molecules/s]: QCONST_N
 Total desorbed molecules until last moment: [molecules]: NTOT
-Gas mass [g/mol]: GASMASS
+Gas mass [g/mol]: sh.gasMass
 
 Mean Pumping Path: MPP (average path of molecules in the system before absorption)
 Mean Free Path:      MFP (average path of molecules between two wall hits)
@@ -851,11 +851,11 @@ void MolFlow::ApplyFacetParams() {
 
 			if (rType >= 0) {
 				f->sh.profileType = rType;
-				//f->sh.isProfile = (rType!=PROFILE_NONE); //included below by f->UpdateFlags();
+				//f->wp.isProfile = (rType!=PROFILE_NONE); //included below by f->UpdateFlags();
 			}
 			if (is2Sided >= 0) f->sh.is2sided = is2Sided;
 
-			f->sh.maxSpeed = 4.0 * sqrt(2.0*8.31*f->sh.temperature / 0.001 / worker.gasMass);
+			f->sh.maxSpeed = 4.0 * sqrt(2.0*8.31*f->sh.temperature / 0.001 / worker.wp.gasMass);
 			f->UpdateFlags();
 		}
 	}
@@ -928,7 +928,7 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 			sprintf(tmp, "Selected Facet (%zd selected)", selectedFacets.size());
 
 		// Old STR compatibility
-		//if (stickingE && f0->sh.superDest) stickingE = false;
+		//if (stickingE && f0->wp.superDest) stickingE = false;
 
 		facetPanel->SetTitle(tmp);
 		if (selectedFacets.size() > 1) facetAreaLabel->SetText("Sum Area (cm\262):");
@@ -1067,8 +1067,8 @@ fprintf(file,"Time:%s Sticking=%g Des=%g\n",FormatTime(worker.simuTime),(double)
 int nb = geom->GetNbFacet();
 for(int j=0;j<nb;j++) {
 Facet *f = geom->GetFacet(j);
-if( f->sh.isVolatile ) {
-FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->sh.hitOffset);
+if( f->wp.isVolatile ) {
+FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->wp.hitOffset);
 double z = geom->GetVertex(f->indices[0])->z;
 fprintf(file,"%g %.10g\n",z,(double)(fCount->hit.nbAbsEquiv)/nbDes);
 }
@@ -1076,7 +1076,7 @@ fprintf(file,"%g %.10g\n",z,(double)(fCount->hit.nbAbsEquiv)/nbDes);
 
 // Last
 Facet *f = geom->GetFacet(28);
-FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->sh.hitOffset);
+FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->wp.hitOffset);
 double fnbAbs = (double)fCount->hit.nbAbsEquiv;
 fprintf(file,"1000 %.10g\n",fnbAbs/nbDes);
 
@@ -1600,7 +1600,7 @@ void MolFlow::ClearParameters() {
 
 void MolFlow::StartStopSimulation() {
 	
-	if (!(worker.nbMCHit > 0) && !worker.calcConstantFlow && worker.moments.size() == 0) {
+	if (!(worker.nbMCHit > 0) && !worker.wp.calcConstantFlow && worker.moments.size() == 0) {
 		bool ok = GLMessageBox::Display("Warning: in the Moments Editor, the option \"Calculate constant flow\" is disabled.\n"
 			"This is useful for time-dependent simulations.\n"
 			"However, you didn't define any moments, suggesting you're using steady-state mode.\n"
@@ -2100,9 +2100,10 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 		geom->BuildPipe(L, R, 0, step);
 		worker.CalcTotalOutgassing();
 		//default values
-		worker.enableDecay = false;
-		worker.halfLife = 1;
-		worker.gasMass = 28;
+		worker.wp.enableDecay = false;
+		worker.wp.halfLife = 1;
+		worker.wp.gasMass = 28;
+		worker.wp.nbMoments = 0;
 		worker.ResetMoments();
 	}
 	catch (Error &e) {
@@ -2167,12 +2168,14 @@ void MolFlow::EmptyGeometry() {
 	ResetSimulation(false);
 
 	try {
+		_ASSERTE(_CrtCheckMemory());
 		geom->EmptyGeometry();
+		_ASSERTE(_CrtCheckMemory());
 		worker.CalcTotalOutgassing();
 		//default values
-		worker.enableDecay = false;
-		worker.halfLife = 1;
-		worker.gasMass = 28;
+		worker.wp.enableDecay = false;
+		worker.wp.halfLife = 1;
+		worker.wp.gasMass = 28;
 		worker.ResetMoments();
 	}
 	catch (Error &e) {
@@ -2382,8 +2385,8 @@ void MolFlow::LoadConfig() {
 		autoUpdateFormulas = f->ReadInt();
 		f->ReadKeyword("compressSavedFiles"); f->ReadKeyword(":");
 		compressSavedFiles = f->ReadInt();
-		f->ReadKeyword("gasMass"); f->ReadKeyword(":");
-		worker.gasMass = f->ReadDouble();
+		f->ReadKeyword("sh.gasMass"); f->ReadKeyword(":");
+		worker.wp.gasMass = f->ReadDouble();
 		f->ReadKeyword("expandShortcutPanel"); f->ReadKeyword(":");
 		bool isOpen = f->ReadInt();
 		if (isOpen) shortcutPanel->Open();
@@ -2517,7 +2520,7 @@ void MolFlow::SaveConfig() {
 		f->Write("checkForUpdates:"); f->Write(/*checkForUpdates*/ 0, "\n"); //Deprecated
 		f->Write("autoUpdateFormulas:"); f->Write(autoUpdateFormulas, "\n");
 		f->Write("compressSavedFiles:"); f->Write(compressSavedFiles, "\n");
-		f->Write("gasMass:"); f->Write(worker.gasMass, "\n");
+		f->Write("sh.gasMass:"); f->Write(worker.wp.gasMass, "\n");
 		f->Write("expandShortcutPanel:"); f->Write(!shortcutPanel->IsClosed(), "\n");
 
 		WRITEI("hideLot", hideLot);
@@ -2545,7 +2548,7 @@ void MolFlow::calcFlow() {
 	facetTemperature->GetNumber(&temperature);
 	//facetMass->GetNumber(&mass);
 
-	outgassing = 1 * sticking*area / 10.0 / 4.0*sqrt(8.0*8.31*temperature / PI / (worker.gasMass*0.001));
+	outgassing = 1 * sticking*area / 10.0 / 4.0*sqrt(8.0*8.31*temperature / PI / (worker.wp.gasMass*0.001));
 	facetPumping->SetText(outgassing);
 	return;
 }
@@ -2562,7 +2565,7 @@ void MolFlow::calcSticking() {
 	facetTemperature->GetNumber(&temperature);
 	//facetMass->GetNumber(&mass);
 
-	sticking = abs(outgassing / (area / 10.0)*4.0*sqrt(1.0 / 8.0 / 8.31 / (temperature)*PI*(worker.gasMass*0.001)));
+	sticking = abs(outgassing / (area / 10.0)*4.0*sqrt(1.0 / 8.0 / 8.31 / (temperature)*PI*(worker.wp.gasMass*0.001)));
 	//if (sticking<=1.0) {
 	facetSticking->SetText(sticking);
 	//}
@@ -2614,7 +2617,7 @@ bool MolFlow::EvaluateVariable(VLIST *v) {
 	else if ((idx = GetVariable(v->name, "P")) > 0) {
 		ok = (idx > 0 && idx <= nbFacet);
 		if (ok) v->value = geom->GetFacet(idx - 1)->facetHitCache.hit.sum_v_ort *
-			worker.GetMoleculesPerTP(worker.displayedMoment)*1E4 / geom->GetFacet(idx - 1)->GetArea() * (worker.gasMass / 1000 / 6E23)*0.0100;
+			worker.GetMoleculesPerTP(worker.displayedMoment)*1E4 / geom->GetFacet(idx - 1)->GetArea() * (worker.wp.gasMass / 1000 / 6E23)*0.0100;
 	}
 	else if ((idx = GetVariable(v->name, "DEN")) > 0) {
 		ok = (idx > 0 && idx <= nbFacet);
@@ -2681,16 +2684,16 @@ bool MolFlow::EvaluateVariable(VLIST *v) {
 		v->value = sumArea;
 	}
 	else if (_stricmp(v->name, "QCONST") == 0) {
-		v->value = worker.finalOutgassingRate_Pa_m3_sec*10.00; //10: Pa*m3/sec -> mbar*l/s
+		v->value = worker.wp.finalOutgassingRate_Pa_m3_sec*10.00; //10: Pa*m3/sec -> mbar*l/s
 	}
 	else if (_stricmp(v->name, "QCONST_N") == 0) {
-		v->value = worker.finalOutgassingRate;
+		v->value = worker.wp.finalOutgassingRate;
 	}
 	else if (_stricmp(v->name, "NTOT") == 0) {
-		v->value = worker.totalDesorbedMolecules;
+		v->value = worker.wp.totalDesorbedMolecules;
 	}
-	else if (_stricmp(v->name, "GASMASS") == 0) {
-		v->value = worker.gasMass;
+	else if (_stricmp(v->name, "sh.gasMass") == 0) {
+		v->value = worker.wp.gasMass;
 	}
 	else if (_stricmp(v->name, "KB") == 0) {
 		v->value = 1.3806504e-23;
@@ -2765,7 +2768,7 @@ bool MolFlow::EvaluateVariable(VLIST *v) {
 			}
 			else if (Contains({ "P", "p" }, tokens[0])) {
 				sumD+= geom->GetFacet(sel)->facetHitCache.hit.sum_v_ort *
-					(worker.gasMass / 1000 / 6E23)*0.0100;
+					(worker.wp.gasMass / 1000 / 6E23)*0.0100;
 				sumArea += geom->GetFacet(sel)->GetArea();
 			} else if (Contains({ "DEN", "den" }, tokens[0])) {
 				Facet *f = geom->GetFacet(sel);

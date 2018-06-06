@@ -100,6 +100,19 @@ public:
 	size_t thetaLowerRes; //resolution between 0 and angleMapThetaLimit
 	size_t thetaHigherRes; //resolution between angleMapThetaLimit and PI/2
 	
+	template<class Archive>
+	void serialize(Archive & archive)
+	{
+		archive(
+			   record, // Record incident angle 2-dim distribution
+		 hasRecorded,
+		 phiWidth, //resolution between -PI and +PI
+		 thetaLimit, //angle map can have a different resolution under and over the limit. Must be between 0 and PI/2
+		 thetaLowerRes, //resolution between 0 and angleMapThetaLimit
+		 thetaHigherRes //resolution between angleMapThetaLimit and PI/2
+		);
+	}
+
 	size_t GetMapSize() {
 		return phiWidth * (thetaLowerRes + thetaHigherRes);
 	}
@@ -120,6 +133,12 @@ public:
 	double diffusePart;
 	double specularPart;
 	double cosineExponent; //Cos^N part: 1-diffuse-specular
+	
+	template<class Archive>
+	void serialize(Archive & archive)
+	{
+		archive(diffusePart, specularPart, cosineExponent);
+	}
 };
 
 //Just for AC matrix calculation in Molflow, old mesh structure:

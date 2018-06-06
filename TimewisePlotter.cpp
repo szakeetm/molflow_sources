@@ -244,7 +244,7 @@ void TimewisePlotter::refreshViews() {
 		if (idx < 0) return;
 		Facet *f = geom->GetFacet(profCombo->GetUserValueAt(idx));
 		v->Reset();
-		//FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->sh.hitOffset);
+		//FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->wp.hitOffset);
 		//double fnbHit = (double)fCount->hit.nbMCHit;
 		/*int momentIndex;
 		if (m==(nbView-1) && constantFlowToggle->GetState()) momentIndex=0; //Constant flow
@@ -258,11 +258,11 @@ void TimewisePlotter::refreshViews() {
 				break;
 
 			case 1: //Pressure
-				scaleY = 1.0 / (f->GetArea() *1E-4 / (double)PROFILE_SIZE) * worker->gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
+				scaleY = 1.0 / (f->GetArea() *1E-4 / (double)PROFILE_SIZE) * worker->wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
 
 				scaleY *= worker->GetMoleculesPerTP(v->userData1);
-				//if(f->sh.opacity>0.0) scaleY *= f->sh.opacity;
-				//if(IsZero(f->sh.opacity)) scaleY*=2; //transparent profiles are profiled only once...
+				//if(f->wp.opacity>0.0) scaleY *= f->wp.opacity;
+				//if(IsZero(f->wp.opacity)) scaleY*=2; //transparent profiles are profiled only once...
 
 				for (int j = 0; j < PROFILE_SIZE; j++)
 					v->Add((double)j, profilePtr[j].sum_v_ort*scaleY, false);
@@ -338,7 +338,7 @@ void TimewisePlotter::addView(int facet) {
 
 	if (constantFlowToggle->GetState()) { //add constant flow
 		GLDataView *v = new GLDataView();
-		sprintf(tmp, "Moment0 (Constant Flow)"/*, facet + 1, profType[f->sh.profileType]*/);
+		sprintf(tmp, "Moment0 (Constant Flow)"/*, facet + 1, profType[f->wp.profileType]*/);
 		v->SetName(tmp);
 		v->userData1 = 0;
 		v->SetStyle(STYLE_DOT);
