@@ -20,6 +20,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #pragma once
 
 #include "Geometry_shared.h"
+#include <cereal/archives/xml.hpp>
 
 #define TEXTURE_MODE_PRESSURE 0
 #define TEXTURE_MODE_IMPINGEMENT 1
@@ -74,7 +75,6 @@ public:
 
 	// Raw data buffer (geometry)
 	void CopyGeometryBuffer(BYTE *buffer,const OntheflySimulationParams& ontheflyParams);
-	template <class Archive> void serialize(Archive & archive, const OntheflySimulationParams& ontheflyParams,const Worker& w);
 
 	// AC matrix
 	size_t GetMaxElemNumber();
@@ -92,18 +92,21 @@ public:
 	double distTraveled_total;
 	double distTraveledTotal_fullHitsOnly;
 
+	void SerializeForLoader(cereal::BinaryOutputArchive&);
+	/*
 	template <class Archive> void serialize(Archive & archive) {
 		archive(
-			sh,
-			vertices3
+			CEREAL_NVP(sh),
+			CEREAL_NVP(vertices3)
 		);
 		
 		for (size_t i = 0; i < sh.nbFacet; i++) {
 			archive(
-				*(facets[i])
+				CEREAL_NVP(*(facets[i]))
 			);
 		}
 	}
+	*/
 
 private:
 

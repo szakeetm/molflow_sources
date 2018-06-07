@@ -89,6 +89,21 @@ public:
   std::vector<FacetHistogramBuffer> tmpHistograms; //1+nbMoment
   void  ResetCounter();
   void	ResizeCounter(size_t nbMoments);
+  bool  InitializeOnLoad(const size_t& globalId);
+
+  void InitializeHistogram();
+
+  bool InitializeDirectionTexture();
+
+  bool InitializeProfile();
+
+  bool InitializeTexture();
+
+  bool InitializeAngleMap();
+
+  void InitializeOutgassingMap();
+
+  bool InitializeLinkAndVolatile(const size_t & id);
 
   void RegisterTransparentPass(); //Allows one shared Intersect routine between MolFlow and Synrad
 };

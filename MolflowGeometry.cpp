@@ -24,11 +24,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "ProfilePlotter.h"
 #include <iomanip>
 
-/*
-#include <cereal/archives/xml.hpp>
 #include <cereal/types/vector.hpp>
-#include <fstream>
-*/
+#include <cereal/types/string.hpp>
 
 /*
 //Leak detection
@@ -257,6 +254,21 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer,const OntheflySimulationPa
 	WRITEBUFFER(w->desorptionParameterIDs.size(), size_t);
 	for (size_t i = 0; i < w->desorptionParameterIDs.size(); i++) {
 		WRITEBUFFER(w->desorptionParameterIDs[i], size_t);
+	}
+}
+
+void MolflowGeometry::SerializeForLoader(cereal::BinaryOutputArchive& outputArchive) {
+	outputArchive(
+		CEREAL_NVP(sh),
+		CEREAL_NVP(vertices3)
+	);
+
+	size_t fOffset = sizeof(GlobalHitBuffer) + (1 + mApp->worker.moments.size())*mApp->worker.wp.globalHistogramParams.GetDataSize(); //calculating offsets for all facets for the hits dataport during the simulation
+
+	for (size_t i = 0; i < sh.nbFacet; i++) {
+		facets[i]->sh.hitOffset = fOffset; //Marking the offsets for the hits, but here we don't actually send any hits.
+		fOffset += facets[i]->GetHitsSize(mApp->worker.moments.size());
+		facets[i]->SerializeForLoader(outputArchive);
 	}
 }
 

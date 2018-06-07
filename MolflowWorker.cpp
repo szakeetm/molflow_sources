@@ -33,10 +33,11 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GlobalSettings.h"
 #include "FacetAdvParams.h"
 #include <fstream>
+#include <istream>
 
-
+#include <cereal/archives/binary.hpp>
 #include <cereal/types/utility.hpp>
-#include <cereal/archives/xml.hpp>
+//#include <cereal/archives/xml.hpp>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/string.hpp>
 #include <fstream>
@@ -1132,22 +1133,32 @@ void Worker::RealReload() { //Sharing geometry with workers
 	// Create the temporary geometry shared structure
 	progressDlg->SetMessage("Creating dataport...");
 
-	size_t loadSize = geom->GetGeometrySize();
+	
 	if (ontheflyParams.enableLogging) {
 		dpLog = CreateDataport(logDpName, sizeof(size_t) + sizeof(ParticleLoggerItem)*ontheflyParams.logLimit);
 		if (!dpLog)
 			throw Error("Failed to create 'dpLog' dataport.\nMost probably out of memory.\nReduce number of logged particles in Particle Logger.");
 		//*((size_t*)dpLog->buff) = 0; //Automatic 0-filling
 	}
+
+	std::string loaderString = SerializeForLoader().str();
+
+	//size_t loadSize = geom->GetGeometrySize();
+	//Dataport *loader = CreateDataport(loadDpName, loadSize);
+
+	size_t loadSize = loaderString.size();
+
 	Dataport *loader = CreateDataport(loadDpName, loadSize);
 	if( !loader )
 		throw Error("Failed to create 'loader' dataport.\nMost probably out of memory.\nReduce number of subprocesses or texture size.");
 	progressDlg->SetMessage("Accessing dataport...");
 	AccessDataportTimed(loader, (DWORD)(3000 + ontheflyParams.nbProcess*loadSize / 10000));
 	progressDlg->SetMessage("Assembling geometry to pass...");
-	geom->CopyGeometryBuffer((BYTE *)loader->buff,ontheflyParams);
+	//geom->CopyGeometryBuffer((BYTE *)loader->buff,ontheflyParams);
 
-	Serialize();
+	BYTE* buffer = (BYTE*)loader->buff;
+	//memcpy(loader->buff, loaderString.c_str(), loadSize);
+	std::copy(loaderString.begin(), loaderString.end(), buffer);
 
 	progressDlg->SetMessage("Releasing dataport...");
 	ReleaseDataport(loader);
@@ -1202,18 +1213,26 @@ void Worker::RealReload() { //Sharing geometry with workers
 	SAFE_DELETE(progressDlg);
 }
 
-void Worker::Serialize()
+std::ostringstream Worker::SerializeForLoader()
 {
-	//Serialization test
+	//std::ofstream os("out.xml");
+	std::ostringstream result;
+	cereal::BinaryOutputArchive outputarchive(result);
 
+	outputarchive(
+		CEREAL_NVP(wp),
+		CEREAL_NVP(ontheflyParams),
+		CEREAL_NVP(CDFs),
+		CEREAL_NVP(IDs),
+		CEREAL_NVP(parameters),
+		CEREAL_NVP(temperatures),
+		CEREAL_NVP(moments),
+		CEREAL_NVP(desorptionParameterIDs)
+	); //Worker
 
-	std::ofstream os("out.xml");
-	cereal::XMLOutputArchive archive(os);
+	geom->SerializeForLoader(outputarchive);
 
-	archive(*geom);
-	archive(*this);
-
-	//------------
+	return result;
 }
 
 void Worker::ClearHits(bool noReload) {

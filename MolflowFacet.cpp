@@ -28,6 +28,8 @@ using namespace pugi;
 #include "GlApp/MathTools.h" //IS_ZERO
 #include "GLApp/GLMessageBox.h"
 
+#include <cereal/types/vector.hpp>
+
 // Colormap stuff, defined in GLGradient.cpp
 extern std::vector<int> colorMap;
 
@@ -1176,4 +1178,68 @@ double Facet::DensityCorrection() {
 		else return 1.0;
 	}
 	else return 1.0;
+}
+
+void Facet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchive) {
+
+		std::vector<size_t> indicesVector(sh.nbIndex);
+		std::vector<Vector2d> vertices2Vector(sh.nbIndex);
+		for (size_t i = 0; i < sh.nbIndex; i++) {
+			indicesVector[i] = indices[i];
+			vertices2Vector[i] = vertices2[i];
+		}
+		std::vector<double> outgMapVector(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0);
+		memcpy(outgMapVector.data(), outgassingMap, sizeof(double)*(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0));
+		std::vector<double> textIncVector;
+
+		// Add surface elements area (reciprocal)
+		if (sh.isTextured) {
+			textIncVector.resize(sh.texHeight*sh.texWidth);
+			if (cellPropertiesIds) {
+				size_t add = 0;
+				for (size_t j = 0; j < sh.texHeight; j++) {
+					for (size_t i = 0; i < sh.texWidth; i++) {
+						double area = GetMeshArea(add, true);
+
+						if (area > 0.0) {
+							// Use the sign bit to store isFull flag
+							textIncVector[add] = 1.0 / area;
+						}
+						else {
+							textIncVector[add] = 0.0;
+						}
+						add++;
+					}
+				}
+			}
+			else {
+
+				double rw = sh.U.Norme() / (double)(sh.texWidthD);
+				double rh = sh.V.Norme() / (double)(sh.texHeightD);
+				double area = rw * rh;
+				size_t add = 0;
+				for (int j = 0; j < sh.texHeight; j++) {
+					for (int i = 0; i < sh.texWidth; i++) {
+						if (area > 0.0) {
+							textIncVector[add] = 1.0 / area;
+						}
+						else {
+							textIncVector[add] = 0.0;
+						}
+						add++;
+					}
+				}
+			}
+		}
+
+		outputarchive(
+			CEREAL_NVP(sh), //Contains anglemapParams
+			CEREAL_NVP(indicesVector),
+			CEREAL_NVP(vertices2Vector)
+#ifdef MOLFLOW
+			, CEREAL_NVP(outgMapVector)
+			, CEREAL_NVP(textIncVector)
+#endif
+		);
+	
 }
