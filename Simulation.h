@@ -155,9 +155,12 @@ public:
 
   SubprocessFacet *lastHitFacet;     // Last hitted facet
   double stepPerSec;  // Avg number of step per sec
+  //Facet size counters
   size_t textTotalSize;  // Texture total size
   size_t profTotalSize;  // Profile total size
   size_t dirTotalSize;   // Direction field total size
+  size_t angleMapTotalSize;
+  size_t histogramTotalSize;
   bool loadOK;        // Load OK flag
   bool lastHitUpdateOK;  // Last hit update timeout
   bool lastLogUpdateOK; // Last log update timeout

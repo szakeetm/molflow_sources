@@ -1106,14 +1106,14 @@ int MolFlow::FrameMove()
 		desNumber->SetText("Starting...");
 	}
 	else {
-		if (worker.sMode == AC_MODE) {
+		if (worker.wp.sMode == AC_MODE) {
 			hitNumber->SetText("");
 		}
 		else {
-			sprintf(tmp, "%s (%s)", FormatInt(worker.nbMCHit, "hit"), FormatPS(hps, "hit"));
+			sprintf(tmp, "%s (%s)", FormatInt(worker.globalHitCache.globalHits.hit.nbMCHit, "hit"), FormatPS(hps, "hit"));
 			hitNumber->SetText(tmp);
 		}
-		sprintf(tmp, "%s (%s)", FormatInt(worker.nbDesorption, "des"), FormatPS(dps, "des"));
+		sprintf(tmp, "%s (%s)", FormatInt(worker.globalHitCache.globalHits.hit.nbDesorbed, "des"), FormatPS(dps, "des"));
 		desNumber->SetText(tmp);
 	}
 
@@ -1432,8 +1432,8 @@ void MolFlow::LoadFile(char *fName) {
 		singleACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
 		//resetSimu->SetEnabled(true);
 		ClearFacetParams();
-		nbDesStart = worker.nbDesorption;
-		nbHitStart = worker.nbMCHit;
+		nbDesStart = worker.globalHitCache.globalHits.hit.nbDesorbed;
+		nbHitStart = worker.globalHitCache.globalHits.hit.nbMCHit;
 		AddRecent(fullName);
 		geom->viewStruct = -1;
 
@@ -1541,8 +1541,8 @@ void MolFlow::InsertGeometry(bool newStr, char *fName) {
 		singleACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
 		//resetSimu->SetEnabled(true);
 		//ClearFacetParams();
-		//nbDesStart = worker.nbDesorption;
-		//nbHitStart = worker.nbMCHit;
+		//nbDesStart = worker.globalHitCache.globalHits.hit.nbDesorbed;
+		//nbHitStart = worker.globalHitCache.globalHits.hit.nbMC;
 		AddRecent(fullName);
 		geom->viewStruct = -1;
 
@@ -1600,7 +1600,7 @@ void MolFlow::ClearParameters() {
 
 void MolFlow::StartStopSimulation() {
 	
-	if (!(worker.nbMCHit > 0) && !worker.wp.calcConstantFlow && worker.moments.size() == 0) {
+	if (!(worker.globalHitCache.globalHits.hit.nbMCHit > 0) && !worker.wp.calcConstantFlow && worker.moments.size() == 0) {
 		bool ok = GLMessageBox::Display("Warning: in the Moments Editor, the option \"Calculate constant flow\" is disabled.\n"
 			"This is useful for time-dependent simulations.\n"
 			"However, you didn't define any moments, suggesting you're using steady-state mode.\n"
@@ -1622,8 +1622,8 @@ void MolFlow::StartStopSimulation() {
 	hps = 0.0;
 	lastHps = hps;
 	lastDps = dps;
-	lastNbHit = worker.nbMCHit;
-	lastNbDes = worker.nbDesorption;
+	lastNbHit = worker.globalHitCache.globalHits.hit.nbMCHit;
+	lastNbDes = worker.globalHitCache.globalHits.hit.nbDesorbed;
 	lastUpdate = 0.0;
 
 }
@@ -2111,7 +2111,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 		geom->Clear();
 		return;
 	}
-	//worker.nbDesorption = 0; //Already done by ResetWorkerStats
+	//worker.globalHitCache.globalHits.hit.nbDesorbed = 0; //Already done by ResetWorkerStats
 	//sprintf(tmp,"L|R %g",L/R);
 	worker.SetCurrentFileName("");
 	nbDesStart = 0;
@@ -2649,22 +2649,22 @@ bool MolFlow::EvaluateVariable(VLIST *v) {
 		if (ok) v->value = geom->GetFacet(idx - 1)->sh.area;
 	}
 	else if (_stricmp(v->name, "SUMDES") == 0) {
-		v->value = (double)worker.nbDesorption;
+		v->value = (double)worker.globalHitCache.globalHits.hit.nbDesorbed;
 	}
 	else if (_stricmp(v->name, "SUMABS") == 0) {
-		v->value = worker.nbAbsEquiv;
+		v->value = worker.globalHitCache.globalHits.hit.nbAbsEquiv;
 	}
 	else if (_stricmp(v->name, "SUMMCHIT") == 0) {
-		v->value = (double)worker.nbMCHit;
+		v->value = (double)worker.globalHitCache.globalHits.hit.nbMCHit;
 	}
 	else if (_stricmp(v->name, "SUMHIT") == 0) {
-		v->value = worker.nbHitEquiv;
+		v->value = worker.globalHitCache.globalHits.hit.nbHitEquiv;
 	}
 	else if (_stricmp(v->name, "MPP") == 0) {
-		v->value = worker.distTraveled_total / (double)worker.nbDesorption;
+		v->value = worker.globalHitCache.distTraveled_total / (double)worker.globalHitCache.globalHits.hit.nbDesorbed;
 	}
 	else if (_stricmp(v->name, "MFP") == 0) {
-		v->value = worker.distTraveledTotal_fullHitsOnly / worker.nbHitEquiv;
+		v->value = worker.globalHitCache.distTraveledTotal_fullHitsOnly / worker.globalHitCache.globalHits.hit.nbHitEquiv;
 	}
 	else if (_stricmp(v->name, "DESAR") == 0) {
 		double sumArea = 0.0;

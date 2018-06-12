@@ -728,7 +728,7 @@ void MolflowGeometry::LoadProfileGEO(FileReader *file, Dataport *dpHit, int vers
 	SAFE_FREE(profileFacet);
 }
 
-void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *leakCache, size_t *leakCacheSize, HIT *hitCache, size_t *hitCacheSize, int *version, Worker *worker) {
+void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, Worker *worker) {
 
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
@@ -748,18 +748,18 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *leakCache
 	}
 
 	file->ReadKeyword("totalHit"); file->ReadKeyword(":");
-	loaded_nbMCHit = file->ReadLLong();
-	loaded_nbHitEquiv = static_cast<double>(loaded_nbMCHit);
+	worker->globalHitCache.globalHits.hit.nbMCHit = file->ReadLLong();
+	worker->globalHitCache.globalHits.hit.nbHitEquiv = static_cast<double>(worker->globalHitCache.globalHits.hit.nbMCHit);
 
 	file->ReadKeyword("totalDes"); file->ReadKeyword(":");
-	loaded_nbDesorption = file->ReadLLong();
+	worker->globalHitCache.globalHits.hit.nbDesorbed = file->ReadLLong();
 
 	file->ReadKeyword("totalLeak"); file->ReadKeyword(":");
-	loaded_nbLeak = file->ReadLLong();
+	worker->globalHitCache.nbLeakTotal = file->ReadLLong();
 
 	if (*version >= 12) {
 		file->ReadKeyword("totalAbs"); file->ReadKeyword(":");
-		loaded_nbAbsEquiv = (double)file->ReadLLong();
+		worker->globalHitCache.globalHits.hit.nbAbsEquiv = (double)file->ReadLLong();
 		if (*version >= 15) {
 			file->ReadKeyword("totalDist_total");
 		}
@@ -767,19 +767,19 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *leakCache
 			file->ReadKeyword("totalDist");
 		}
 		file->ReadKeyword(":");
-		distTraveled_total = file->ReadDouble();
+		worker->globalHitCache.distTraveled_total = file->ReadDouble();
 		if (*version >= 15) {
 			file->ReadKeyword("totalDist_fullHitsOnly"); file->ReadKeyword(":");
-			distTraveledTotal_fullHitsOnly = file->ReadDouble();
+			worker->globalHitCache.distTraveledTotal_fullHitsOnly = file->ReadDouble();
 		}
 	}
 	else {
-		loaded_nbAbsEquiv = 0.0;
-		distTraveled_total = 0.0;
-		distTraveledTotal_fullHitsOnly = 0.0;
+		worker->globalHitCache.globalHits.hit.nbAbsEquiv = 0.0;
+		worker->globalHitCache.distTraveled_total = 0.0;
+		worker->globalHitCache.distTraveledTotal_fullHitsOnly = 0.0;
 	}
 	file->ReadKeyword("maxDes"); file->ReadKeyword(":");
-	loaded_desorptionLimit = file->ReadLLong();
+	worker->ontheflyParams.desorptionLimit = file->ReadLLong();
 	file->ReadKeyword("nbVertex"); file->ReadKeyword(":");
 	sh.nbVertex = file->ReadInt();
 	file->ReadKeyword("nbFacet"); file->ReadKeyword(":");
@@ -931,18 +931,18 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *leakCache
 		// Read leaks
 		file->ReadKeyword("leaks"); file->ReadKeyword("{");
 		file->ReadKeyword("nbLeak"); file->ReadKeyword(":");
-		*leakCacheSize = file->ReadInt();
-		for (int i = 0; i < *leakCacheSize; i++) {
+		worker->globalHitCache.leakCacheSize = file->ReadInt();
+		for (int i = 0; i < worker->globalHitCache.leakCacheSize; i++) {
 			int idx = file->ReadInt();
 			if (idx != i) throw Error(file->MakeError("Wrong leak index !"));
 			if (i < LEAKCACHESIZE) {
-				(leakCache + i)->pos.x = file->ReadDouble();
-				(leakCache + i)->pos.y = file->ReadDouble();
-				(leakCache + i)->pos.z = file->ReadDouble();
+				worker->globalHitCache.leakCache[i].pos.x = file->ReadDouble();
+				worker->globalHitCache.leakCache[i].pos.y = file->ReadDouble();
+				worker->globalHitCache.leakCache[i].pos.z = file->ReadDouble();
 
-				(leakCache + i)->dir.x = file->ReadDouble();
-				(leakCache + i)->dir.y = file->ReadDouble();
-				(leakCache + i)->dir.z = file->ReadDouble();
+				worker->globalHitCache.leakCache[i].dir.x = file->ReadDouble();
+				worker->globalHitCache.leakCache[i].dir.y = file->ReadDouble();
+				worker->globalHitCache.leakCache[i].dir.z = file->ReadDouble();
 			}
 			else { //Saved file has more leaks than we could load
 				for (int i = 0; i < 6; i++)
@@ -954,20 +954,21 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *leakCache
 		// Read hit cache
 		file->ReadKeyword("hits"); file->ReadKeyword("{");
 		file->ReadKeyword("nbHHit"); file->ReadKeyword(":");
-		*hitCacheSize = file->ReadInt();
-		for (int i = 0; i < *hitCacheSize; i++) {
+		worker->globalHitCache.hitCacheSize = file->ReadInt();
+		for (int i = 0; i < worker->globalHitCache.hitCacheSize; i++) {
 			int idx = file->ReadInt();
 			if (idx != i) throw Error(file->MakeError("Wrong hit cache index !"));
 			if (i < HITCACHESIZE) {
-				(hitCache + i)->pos.x = file->ReadDouble();
-				(hitCache + i)->pos.y = file->ReadDouble();
-				(hitCache + i)->pos.z = file->ReadDouble();
+				worker->globalHitCache.hitCache[i].pos.x = file->ReadDouble();
+				worker->globalHitCache.hitCache[i].pos.y = file->ReadDouble();
+				worker->globalHitCache.hitCache[i].pos.z = file->ReadDouble();
 
-				(hitCache + i)->type = file->ReadInt();
+				worker->globalHitCache.hitCache[i].type = file->ReadInt();
 			}
 			else { //Saved file has more hits than we could load
-				for (int i = 0; i < 6; i++)
+				for (int i = 0; i < 3; i++)
 					file->ReadDouble();
+				file->ReadInt();
 			}
 		}
 		file->ReadKeyword("}");
@@ -1018,7 +1019,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, LEAK *leakCache
 
 }
 
-void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version) {
+void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, Worker *worker) {
 
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
@@ -1037,19 +1038,21 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version) {
 		throw Error(errMsg);
 	}
 	file->ReadKeyword("totalHit"); file->ReadKeyword(":");
-	loaded_nbMCHit = 0; loaded_nbHitEquiv = 0.0;  file->ReadLLong();
+	worker->globalHitCache.globalHits.hit.nbMCHit = 0;
+	worker->globalHitCache.globalHits.hit.nbHitEquiv = 0.0;
+	file->ReadLLong();
 	if (*version >= 10) {
 		file->ReadKeyword("totalHitEquiv"); file->ReadKeyword(":");
 		file->ReadDouble();
 	}
 	file->ReadKeyword("totalDes"); file->ReadKeyword(":");
-	loaded_nbDesorption = 0; file->ReadLLong();
+	worker->globalHitCache.globalHits.hit.nbDesorbed = 0; file->ReadLLong();
 	if (*version >= 6) {
 		file->ReadKeyword("no_scans"); file->ReadKeyword(":");
 		/*loaded_no_scans = */file->ReadDouble();
 	}
 	file->ReadKeyword("totalLeak"); file->ReadKeyword(":");
-	loaded_nbLeak = 0; file->ReadLLong();
+	worker->globalHitCache.nbLeakTotal = 0; file->ReadLLong();
 	if (*version > 2) {
 		file->ReadKeyword("totalFlux"); file->ReadKeyword(":");
 		file->ReadDouble();
@@ -1063,7 +1066,7 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version) {
 		file->ReadDouble();
 	}
 	file->ReadKeyword("maxDes"); file->ReadKeyword(":");
-	loaded_desorptionLimit = 0; file->ReadLLong();
+	worker->ontheflyParams.desorptionLimit = 0; file->ReadLLong();
 	file->ReadKeyword("nbVertex"); file->ReadKeyword(":");
 	sh.nbVertex = file->ReadInt();
 	file->ReadKeyword("nbFacet"); file->ReadKeyword(":");
@@ -1406,8 +1409,8 @@ bool MolflowGeometry::LoadTexturesGEO(FileReader *file, GLProgress *prg, Datapor
 
 }
 
-void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, std::vector<std::string> userMoments, Worker *worker,
-	bool saveSelected, LEAK *pleak, size_t *nbleakSave, HIT *hitCache, size_t *nbHHitSave, bool crashSave) {
+void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, Worker *worker,
+	bool saveSelected, bool crashSave) {
 
 	prg->SetMessage("Counting hits...");
 	if (!IsLoaded()) throw Error("Nothing to save !");
@@ -1452,7 +1455,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit
 	file->Write("totalAbs:"); file->Write((!crashSave && !saveSelected) ? (llong)gHits->globalHits.hit.nbAbsEquiv : 0, "\n");
 	file->Write("totalDist_total:"); file->Write((!crashSave && !saveSelected) ? gHits->distTraveled_total : 0, "\n");
 	file->Write("totalDist_fullHitsOnly:"); file->Write((!crashSave && !saveSelected) ? gHits->distTraveledTotal_fullHitsOnly : 0, "\n");
-	file->Write("maxDes:"); file->Write((!crashSave && !saveSelected) ? loaded_desorptionLimit : 0, "\n");
+	file->Write("maxDes:"); file->Write((!crashSave && !saveSelected) ? worker->ontheflyParams.desorptionLimit : 0, "\n");
 
 	auto selectedFacets = GetSelectedFacets();
 	file->Write("nbVertex:"); file->Write(sh.nbVertex, "\n");
@@ -1466,10 +1469,10 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit
 	file->Write("sh.gasMass:"); file->Write(worker->wp.gasMass, "\n");
 
 	file->Write("userMoments {\n");
-	file->Write(" nb:"); file->Write((int)userMoments.size());
-	for (size_t u = 0; u < userMoments.size(); u++) {
+	file->Write(" nb:"); file->Write((int)worker->userMoments.size());
+	for (size_t u = 0; u < worker->userMoments.size(); u++) {
 		file->Write("\n \"");
-		file->Write(userMoments[u].c_str());
+		file->Write(worker->userMoments[u].c_str());
 		file->Write("\"");
 	}
 	file->Write("\n}\n");
@@ -1550,18 +1553,18 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit
 	//leaks
 	prg->SetMessage("Writing leaks...");
 	file->Write("leaks {\n");
-	file->Write("  nbLeak:"); file->Write((!crashSave && !saveSelected) ? *nbleakSave : 0, "\n");
-	for (int i = 0; (i < *nbleakSave) && (!crashSave && !saveSelected); i++) {
+	file->Write("  nbLeak:"); file->Write((!crashSave && !saveSelected) ? worker->globalHitCache.leakCacheSize : 0, "\n");
+	for (int i = 0; (i < worker->globalHitCache.leakCacheSize) && (!crashSave && !saveSelected); i++) {
 
 		file->Write("  ");
 		file->Write(i, " ");
-		file->Write((pleak + i)->pos.x, " ");
-		file->Write((pleak + i)->pos.y, " ");
-		file->Write((pleak + i)->pos.z, " ");
+		file->Write(worker->globalHitCache.leakCache[i].pos.x, " ");
+		file->Write(worker->globalHitCache.leakCache[i].pos.y, " ");
+		file->Write(worker->globalHitCache.leakCache[i].pos.z, " ");
 
-		file->Write((pleak + i)->dir.x, " ");
-		file->Write((pleak + i)->dir.y, " ");
-		file->Write((pleak + i)->dir.z, "\n");
+		file->Write(worker->globalHitCache.leakCache[i].dir.x, " ");
+		file->Write(worker->globalHitCache.leakCache[i].dir.y, " ");
+		file->Write(worker->globalHitCache.leakCache[i].dir.z, "\n");
 	}
 
 	file->Write("}\n");
@@ -1570,16 +1573,16 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit
 	prg->SetMessage("Writing hit cache...");
 
 	file->Write("hits {\n");
-	file->Write("  nbHHit:"); file->Write((!crashSave && !saveSelected) ? *nbHHitSave : 0, "\n");
-	for (int i = 0; (i < *nbHHitSave) && (!crashSave && !saveSelected); i++) {
+	file->Write("  nbHHit:"); file->Write((!crashSave && !saveSelected) ? worker->globalHitCache.hitCacheSize : 0, "\n");
+	for (int i = 0; (i < worker->globalHitCache.hitCacheSize) && (!crashSave && !saveSelected); i++) {
 
 		file->Write("  ");
 		file->Write(i, " ");
-		file->Write((hitCache + i)->pos.x, " ");
-		file->Write((hitCache + i)->pos.y, " ");
-		file->Write((hitCache + i)->pos.z, " ");
+		file->Write(worker->globalHitCache.hitCache[i].pos.x, " ");
+		file->Write(worker->globalHitCache.hitCache[i].pos.y, " ");
+		file->Write(worker->globalHitCache.hitCache[i].pos.z, " ");
 
-		file->Write((hitCache + i)->type, "\n");
+		file->Write(worker->globalHitCache.hitCache[i].type, "\n");
 	}
 
 	file->Write("}\n");
@@ -1690,7 +1693,7 @@ void MolflowGeometry::SaveTXT(FileWriter *file, Dataport *dpHit, bool saveSelect
 	file->Write(gHits->nbLeakTotal, "\n");
 
 	file->Write(gHits->globalHits.hit.nbDesorbed, "\n");
-	file->Write(loaded_desorptionLimit, "\n");
+	file->Write(0, "\n"); //Desorption limit
 
 	file->Write(sh.nbVertex, "\n");
 	file->Write(saveSelected ? GetNbSelectedFacets() : sh.nbFacet, "\n");
@@ -1745,7 +1748,7 @@ void MolflowGeometry::SaveTXT(FileWriter *file, Dataport *dpHit, bool saveSelect
 
 }
 
-void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, Dataport *dpHit, bool saveSelected) {
+void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, Dataport *dpHit, bool saveSelected, size_t sMode) {
 
 	//if(!IsLoaded()) throw Error("Nothing to save !");
 
@@ -1806,14 +1809,14 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, Datapor
 
 					case 2: //Impingement rate
 						dCoef = 1E4; //1E4: conversion m2->cm2
-						if (shGHit->sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
+						if (sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
 						if (!grouping || texture[index].countEquiv>0.0) sprintf(tmp, "%g", texture[i + j*w].countEquiv / f->GetMeshArea(i + j*w,true)*dCoef);
 						break;
 
 					case 3: //Particle density
 					{
 						dCoef = 1E4; //1E4: conversion m2->cm2
-						if (shGHit->sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
+						if (sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
 						double v_ort_avg = 2.0*texture[index].countEquiv / texture[index].sum_1_per_ort_velocity;
 								double imp_rate = texture[index].countEquiv / f->GetMeshArea(index,true)*dCoef;
 								double rho = 2.0*imp_rate / v_ort_avg;
@@ -1823,7 +1826,7 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, Datapor
 					case 4: //Gas density
 					{
 						dCoef = 1E4; //1E4: conversion m2->cm2
-						if (shGHit->sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
+						if (sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
 								double v_ort_avg = 2.0*texture[index].countEquiv / texture[index].sum_1_per_ort_velocity;
 								double imp_rate = texture[index].countEquiv / f->GetMeshArea(index,true)*dCoef;
 								double rho = 2.0*imp_rate / v_ort_avg;
@@ -1835,7 +1838,7 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, Datapor
 
 						// Lock during update
 						dCoef = 1E4 * (mApp->worker.wp.gasMass / 1000 / 6E23) *0.0100;  //1E4 is conversion from m2 to cm2, 0.01: Pa->mbar
-						if (shGHit->sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
+						if (sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
 						if (!grouping || texture[index].sum_v_ort_per_area) sprintf(tmp, "%g", texture[index].sum_v_ort_per_area*dCoef);
 						break;
 
@@ -2472,13 +2475,13 @@ void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLP
 	}
 }
 
-bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, GlobalHitBuffer *gHits, size_t nbLeakSave, size_t nbHHitSave,
-	LEAK *leakCache, HIT *hitCache, GLProgress *prg, bool saveSelected){
+bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, GLProgress *prg, bool saveSelected){
 	xml_node resultNode = saveDoc.append_child("MolflowResults");
 	prg->SetMessage("Writing simulation results...");
 	xml_node momentsNode = resultNode.append_child("Moments");
 	momentsNode.append_attribute("nb") = work->moments.size() + 1;
 	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
+	GlobalHitBuffer* gHits = (GlobalHitBuffer*)buffer;
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++){
 		prg->SetProgress(0.5 + 0.5*(double)m / (1.0 + (double)mApp->worker.moments.size()));
 		xml_node newMoment = momentsNode.append_child("Moment");
@@ -2502,28 +2505,28 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 			hitsNode.append_attribute("maxDesorption") = work->ontheflyParams.desorptionLimit;
 
 			xml_node hitCacheNode = globalNode.append_child("Hit_Cache");
-			hitCacheNode.append_attribute("nb") = nbHHitSave;
+			hitCacheNode.append_attribute("nb") = work->globalHitCache.hitCacheSize;
 
-			for (int i = 0; i < nbHHitSave; i++) {
+			for (int i = 0; i < work->globalHitCache.hitCacheSize; i++) {
 				xml_node newHit = hitCacheNode.append_child("Hit");
 				newHit.append_attribute("id") = i;
-				newHit.append_attribute("posX") = hitCache[i].pos.x;
-				newHit.append_attribute("posY") = hitCache[i].pos.y;
-				newHit.append_attribute("posZ") = hitCache[i].pos.z;
-				newHit.append_attribute("type") = hitCache[i].type;
+				newHit.append_attribute("posX") = work->globalHitCache.hitCache[i].pos.x;
+				newHit.append_attribute("posY") = work->globalHitCache.hitCache[i].pos.y;
+				newHit.append_attribute("posZ") = work->globalHitCache.hitCache[i].pos.z;
+				newHit.append_attribute("type") = work->globalHitCache.hitCache[i].type;
 			}
 
 			xml_node leakCacheNode = globalNode.append_child("Leak_Cache");
-			leakCacheNode.append_attribute("nb") = nbLeakSave;
-			for (int i = 0; i < nbLeakSave; i++) {
+			leakCacheNode.append_attribute("nb") = work->globalHitCache.leakCacheSize;
+			for (int i = 0; i < work->globalHitCache.leakCacheSize; i++) {
 				xml_node newLeak = leakCacheNode.append_child("Leak");
 				newLeak.append_attribute("id") = i;
-				newLeak.append_attribute("posX") = leakCache[i].pos.x;
-				newLeak.append_attribute("posY") = leakCache[i].pos.y;
-				newLeak.append_attribute("posZ") = leakCache[i].pos.z;
-				newLeak.append_attribute("dirX") = leakCache[i].dir.x;
-				newLeak.append_attribute("dirY") = leakCache[i].dir.y;
-				newLeak.append_attribute("dirZ") = leakCache[i].dir.z;
+				newLeak.append_attribute("posX") = work->globalHitCache.leakCache[i].pos.x;
+				newLeak.append_attribute("posY") = work->globalHitCache.leakCache[i].pos.y;
+				newLeak.append_attribute("posZ") = work->globalHitCache.leakCache[i].pos.z;
+				newLeak.append_attribute("dirX") = work->globalHitCache.leakCache[i].dir.x;
+				newLeak.append_attribute("dirY") = work->globalHitCache.leakCache[i].dir.y;
+				newLeak.append_attribute("dirZ") = work->globalHitCache.leakCache[i].dir.z;
 			}
 		} //end global node
 
@@ -2566,7 +2569,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 				textureNode.append_attribute("width") = f->sh.texWidth;
 				textureNode.append_attribute("height") = f->sh.texHeight;
 
-				TextureCell *texture = (TextureCell *)((BYTE *)gHits + (f->sh.hitOffset + facetHitsSize + profSize + m*w*h*sizeof(TextureCell)));
+				TextureCell *texture = (TextureCell *)(buffer + f->sh.hitOffset + facetHitsSize + profSize + m*w*h*sizeof(TextureCell));
 				std::stringstream countText, sum1perText, sumvortText;
 				countText << '\n'; //better readability in file
 				sum1perText << std::setprecision(8) << '\n';
@@ -2594,7 +2597,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 				dirNode.append_attribute("width") = f->sh.texWidth;
 				dirNode.append_attribute("height") = f->sh.texHeight;
 
-				DirectionCell *dirs = (DirectionCell *)((BYTE *)gHits + f->sh.hitOffset + facetHitsSize + profSize + (1 + (int)work->moments.size())*w*h*sizeof(TextureCell) + m*w*h*sizeof(DirectionCell));
+				DirectionCell *dirs = (DirectionCell *)(buffer + f->sh.hitOffset + facetHitsSize + profSize + (1 + (int)work->moments.size())*w*h*sizeof(TextureCell) + m*w*h*sizeof(DirectionCell));
 
 				std::stringstream dirText, dirCountText;
 				dirText << std::setprecision(8) << '\n'; //better readability in file
@@ -3048,60 +3051,56 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit,
 		if (m == 0) { //read global results
 			xml_node globalNode = newMoment.child("Global");
 			xml_node hitsNode = globalNode.child("Hits");
-			work->nbMCHit = hitsNode.attribute("totalHit").as_llong();
+			work->globalHitCache.globalHits.hit.nbMCHit = hitsNode.attribute("totalHit").as_llong();
 			if (hitsNode.attribute("totalHitEquiv")) {
-				work->nbHitEquiv = hitsNode.attribute("totalHitEquiv").as_double();
+				work->globalHitCache.globalHits.hit.nbHitEquiv = hitsNode.attribute("totalHitEquiv").as_double();
 			}
 			else {
 				//Backward compatibility
-				work->nbHitEquiv = static_cast<double>(work->nbMCHit);
+				work->globalHitCache.globalHits.hit.nbHitEquiv = static_cast<double>(work->globalHitCache.globalHits.hit.nbMCHit);
 			}
-			work->nbDesorption = hitsNode.attribute("totalDes").as_llong();
+			work->globalHitCache.globalHits.hit.nbDesorbed = hitsNode.attribute("totalDes").as_llong();
 			if (hitsNode.attribute("totalAbsEquiv")) {
-				work->nbAbsEquiv = hitsNode.attribute("totalAbsEquiv").as_double();
+				work->globalHitCache.globalHits.hit.nbAbsEquiv = hitsNode.attribute("totalAbsEquiv").as_double();
 			}
 			else {
 				//Backward compatibility
-				work->nbAbsEquiv = hitsNode.attribute("totalAbs").as_double();
+				work->globalHitCache.globalHits.hit.nbAbsEquiv = hitsNode.attribute("totalAbs").as_double();
 			}
 			if (hitsNode.attribute("totalDist_total")) { //if it's in the new format where total/partial are separated
-				work->distTraveled_total = hitsNode.attribute("totalDist_total").as_double();
-				work->distTraveledTotal_fullHitsOnly = hitsNode.attribute("totalDist_fullHitsOnly").as_double();
+				work->globalHitCache.distTraveled_total = hitsNode.attribute("totalDist_total").as_double();
+				work->globalHitCache.distTraveledTotal_fullHitsOnly = hitsNode.attribute("totalDist_fullHitsOnly").as_double();
 			}
 			else
-				work->distTraveled_total = work->distTraveledTotal_fullHitsOnly = hitsNode.attribute("totalDist").as_double();
-			work->nbLeakTotal = hitsNode.attribute("totalLeak").as_llong();
+				work->globalHitCache.distTraveled_total = work->globalHitCache.distTraveledTotal_fullHitsOnly = hitsNode.attribute("totalDist").as_double();
+			work->globalHitCache.nbLeakTotal = hitsNode.attribute("totalLeak").as_llong();
 			//work->desorptionLimit=hitsNode.attribute("maxDesorption").as_llong();
 
-			HIT hitCache[HITCACHESIZE]; //hits temp storage for loading
-			work->hitCacheSize = 0;
+			work->globalHitCache.hitCacheSize = 0;
 			xml_node hitCacheNode = globalNode.child("Hit_Cache");
 			for (xml_node newHit : hitCacheNode.children("Hit")) {
-				if (work->hitCacheSize < HITCACHESIZE) {
-					hitCache[work->hitCacheSize].pos.x = newHit.attribute("posX").as_double();
-					hitCache[work->hitCacheSize].pos.y = newHit.attribute("posY").as_double();
-					hitCache[work->hitCacheSize].pos.z = newHit.attribute("posZ").as_double();
-					hitCache[work->hitCacheSize].type = newHit.attribute("type").as_int();
-					work->hitCacheSize++;
+				if (work->globalHitCache.hitCacheSize < HITCACHESIZE) {
+					work->globalHitCache.hitCache[work->globalHitCache.hitCacheSize].pos.x = newHit.attribute("posX").as_double();
+					work->globalHitCache.hitCache[work->globalHitCache.hitCacheSize].pos.y = newHit.attribute("posY").as_double();
+					work->globalHitCache.hitCache[work->globalHitCache.hitCacheSize].pos.z = newHit.attribute("posZ").as_double();
+					work->globalHitCache.hitCache[work->globalHitCache.hitCacheSize].type = newHit.attribute("type").as_int();
+					work->globalHitCache.hitCacheSize++;
 				}
 			}
-			work->SetHitCache(hitCache, &work->hitCacheSize, dpHit);
 
-			LEAK leakCache[LEAKCACHESIZE]; //leak temp storage for loading
-			work->leakCacheSize = 0;
+			work->globalHitCache.leakCacheSize = 0;
 			xml_node leakCacheNode = globalNode.child("Leak_Cache");
 			for (xml_node newLeak : leakCacheNode.children("Leak")) {
-				if (work->leakCacheSize < LEAKCACHESIZE) {
-					leakCache[work->leakCacheSize].pos.x = newLeak.attribute("posX").as_double();
-					leakCache[work->leakCacheSize].pos.y = newLeak.attribute("posY").as_double();
-					leakCache[work->leakCacheSize].pos.z = newLeak.attribute("posZ").as_double();
-					leakCache[work->leakCacheSize].dir.x = newLeak.attribute("dirX").as_double();
-					leakCache[work->leakCacheSize].dir.y = newLeak.attribute("dirY").as_double();
-					leakCache[work->leakCacheSize].dir.z = newLeak.attribute("dirZ").as_double();
-					work->leakCacheSize++;
+				if (work->globalHitCache.leakCacheSize < LEAKCACHESIZE) {
+					work->globalHitCache.leakCache[work->globalHitCache.leakCacheSize].pos.x = newLeak.attribute("posX").as_double();
+					work->globalHitCache.leakCache[work->globalHitCache.leakCacheSize].pos.y = newLeak.attribute("posY").as_double();
+					work->globalHitCache.leakCache[work->globalHitCache.leakCacheSize].pos.z = newLeak.attribute("posZ").as_double();
+					work->globalHitCache.leakCache[work->globalHitCache.leakCacheSize].dir.x = newLeak.attribute("dirX").as_double();
+					work->globalHitCache.leakCache[work->globalHitCache.leakCacheSize].dir.y = newLeak.attribute("dirY").as_double();
+					work->globalHitCache.leakCache[work->globalHitCache.leakCacheSize].dir.z = newLeak.attribute("dirZ").as_double();
+					work->globalHitCache.leakCacheSize++;
 				}
 			}
-			work->SetLeakCache(leakCache, &work->leakCacheSize, dpHit);
 		} //end global node
 
 		xml_node facetResultsNode = newMoment.child("FacetResults");
@@ -3138,11 +3137,6 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit,
 				}
 
 				if (work->displayedMoment == m) { //For immediate display in facet hits list and facet counter
-					/*f->facetHitCache.hit.nbMCHit = facetCounter->hit.nbMCHit;
-					f->facetHitCache.hit.nbDesorbed = facetCounter->hit.nbDesorbed;
-					f->facetHitCache.hit.nbAbsEquiv = facetCounter->hit.nbAbsEquiv;
-					f->facetHitCache.hit.sum_v_ort = facetCounter->hit.sum_v_ort;
-					f->facetHitCache.hit.sum_1_per_ort_velocity = facetCounter->hit.sum_1_per_ort_velocity;*/
 					f->facetHitCache.hit = facetCounter->hit;
 				}
 			}
@@ -3196,7 +3190,7 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit,
 					throw Error(msg.str().c_str());
 					}*/ //We'll treat texture size mismatch, see below
 
-				TextureCell *texture = (TextureCell *)((BYTE *)gHits + (f->sh.hitOffset + facetHitsSize + profSize + m*f->sh.texWidth*f->sh.texHeight*sizeof(TextureCell)));
+				TextureCell *texture = (TextureCell *)(buffer + f->sh.hitOffset + facetHitsSize + profSize + m*f->sh.texWidth*f->sh.texHeight*sizeof(TextureCell));
 				std::stringstream countText, sum1perText, sumvortText;
 				if (textureNode.child("countEquiv")) {
 					countText << textureNode.child_value("countEquiv");
@@ -3247,7 +3241,7 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit,
 					throw Error(msg.str().c_str());
 
 				}
-				DirectionCell *dirs = (DirectionCell *)((BYTE *)gHits + f->sh.hitOffset + facetHitsSize
+				DirectionCell *dirs = (DirectionCell *)(buffer + f->sh.hitOffset + facetHitsSize
 					+ profSize + (1 + (int)work->moments.size())*f->sh.texWidth*f->sh.texHeight*sizeof(TextureCell)
 					+ m*f->sh.texWidth*f->sh.texHeight*sizeof(DirectionCell));
 
@@ -3284,6 +3278,7 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit,
 	*/
 
 	xml_node minMaxNode = resultNode.child("TextureMinMax");
+	/* //First write to worker->globalhitcache, then sync it to ghits(dphit) with SendToHitBuffer()
 	gHits->texture_limits[0].min.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("min").as_double();
 	gHits->texture_limits[0].max.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("max").as_double();
 	gHits->texture_limits[1].min.all = minMaxNode.child("With_constant_flow").child("Density").attribute("min").as_double();
@@ -3296,6 +3291,21 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit,
 	gHits->texture_limits[1].max.moments_only = minMaxNode.child("Moments_only").child("Density").attribute("max").as_double();
 	gHits->texture_limits[2].min.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("min").as_double();
 	gHits->texture_limits[2].max.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("max").as_double();
+	*/
+
+	work->globalHitCache.texture_limits[0].min.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("min").as_double();
+	work->globalHitCache.texture_limits[0].max.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("max").as_double();
+	work->globalHitCache.texture_limits[1].min.all = minMaxNode.child("With_constant_flow").child("Density").attribute("min").as_double();
+	work->globalHitCache.texture_limits[1].max.all = minMaxNode.child("With_constant_flow").child("Density").attribute("max").as_double();
+	work->globalHitCache.texture_limits[2].min.all = minMaxNode.child("With_constant_flow").child("Imp.rate").attribute("min").as_double();
+	work->globalHitCache.texture_limits[2].max.all = minMaxNode.child("With_constant_flow").child("Imp.rate").attribute("max").as_double();
+	work->globalHitCache.texture_limits[0].min.moments_only = minMaxNode.child("Moments_only").child("Pressure").attribute("min").as_double();
+	work->globalHitCache.texture_limits[0].max.moments_only = minMaxNode.child("Moments_only").child("Pressure").attribute("max").as_double();
+	work->globalHitCache.texture_limits[1].min.moments_only = minMaxNode.child("Moments_only").child("Density").attribute("min").as_double();
+	work->globalHitCache.texture_limits[1].max.moments_only = minMaxNode.child("Moments_only").child("Density").attribute("max").as_double();
+	work->globalHitCache.texture_limits[2].min.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("min").as_double();
+	work->globalHitCache.texture_limits[2].max.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("max").as_double();
+
 	ReleaseDataport(dpHit);
 	return true;
 }

@@ -154,7 +154,7 @@ void UpdateMCHits(Dataport *dpHit,int prIdx, size_t nbMoments, DWORD timeout) {
 		gHits->texture_limits[i].max.all = gHits->texture_limits[i].max.moments_only = 0;
 	}
 
-	gHits->sMode = MC_MODE;
+	sHandle->wp.sMode = MC_MODE;
 	//for(i=0;i<BOUNCEMAX;i++) gHits->wallHits[i] += sHandle->wallHits[i];
 
 	// Leak
@@ -171,12 +171,7 @@ void UpdateMCHits(Dataport *dpHit,int prIdx, size_t nbMoments, DWORD timeout) {
 
 		if (sHandle->hitCacheSize > 0) {
 			gHits->lastHitIndex = (gHits->lastHitIndex + sHandle->hitCacheSize) % HITCACHESIZE;
-
-			//if (gHits->lastHitIndex < (HITCACHESIZE - 1)) {
-				//gHits->lastHitIndex++;
-				gHits->hitCache[gHits->lastHitIndex].type = HIT_LAST; //Penup (border between blocks of consecutive hits in the hit cache)
-			//}
-
+			gHits->hitCache[gHits->lastHitIndex].type = HIT_LAST; //Penup (border between blocks of consecutive hits in the hit cache)
 			gHits->hitCacheSize = Min(HITCACHESIZE, gHits->hitCacheSize + sHandle->hitCacheSize);
 		}
 	}
@@ -202,14 +197,14 @@ void UpdateMCHits(Dataport *dpHit,int prIdx, size_t nbMoments, DWORD timeout) {
 			if (f.hitted) {
 
 				for (int m = 0; m < (1 + nbMoments); m++) {
-					FacetHitBuffer *fFit = (FacetHitBuffer *)(buffer + f.sh.hitOffset + m * sizeof(FacetHitBuffer));
-					fFit->hit.nbAbsEquiv += f.tmpCounter[m].hit.nbAbsEquiv;
-					fFit->hit.nbDesorbed += f.tmpCounter[m].hit.nbDesorbed;
-					fFit->hit.nbMCHit += f.tmpCounter[m].hit.nbMCHit;
-					fFit->hit.nbHitEquiv += f.tmpCounter[m].hit.nbHitEquiv;
-					fFit->hit.sum_1_per_ort_velocity += f.tmpCounter[m].hit.sum_1_per_ort_velocity;
-					fFit->hit.sum_v_ort += f.tmpCounter[m].hit.sum_v_ort;
-					fFit->hit.sum_1_per_velocity += f.tmpCounter[m].hit.sum_1_per_velocity;
+					FacetHitBuffer *facetHitBuffer = (FacetHitBuffer *)(buffer + f.sh.hitOffset + m * sizeof(FacetHitBuffer));
+					facetHitBuffer->hit.nbAbsEquiv += f.tmpCounter[m].hit.nbAbsEquiv;
+					facetHitBuffer->hit.nbDesorbed += f.tmpCounter[m].hit.nbDesorbed;
+					facetHitBuffer->hit.nbMCHit += f.tmpCounter[m].hit.nbMCHit;
+					facetHitBuffer->hit.nbHitEquiv += f.tmpCounter[m].hit.nbHitEquiv;
+					facetHitBuffer->hit.sum_1_per_ort_velocity += f.tmpCounter[m].hit.sum_1_per_ort_velocity;
+					facetHitBuffer->hit.sum_v_ort += f.tmpCounter[m].hit.sum_v_ort;
+					facetHitBuffer->hit.sum_1_per_velocity += f.tmpCounter[m].hit.sum_1_per_velocity;
 				}
 
 				if (f.sh.isProfile) {

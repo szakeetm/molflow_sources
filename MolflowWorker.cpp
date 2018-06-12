@@ -88,13 +88,13 @@ Worker::Worker() {
 	wp.timeWindowSize = 1E-10; //Dirac-delta desorption pulse at t=0
 	wp.useMaxwellDistribution = true;
 	wp.calcConstantFlow = true;
-	distTraveledTotal_fullHitsOnly = 0.0;
 	wp.gasMass = 28.0;
 	wp.enableDecay = false;
 	wp.halfLife = 1;
 	wp.finalOutgassingRate = wp.finalOutgassingRate_Pa_m3_sec = wp.totalDesorbedMolecules = 0.0;
 	wp.motionType = 0;
 	wp.globalHistogramParams.record = false;
+	wp.sMode = MC_MODE;
 
 	//Common init
 	pid = _getpid();
@@ -116,11 +116,6 @@ Worker::Worker() {
 	dpHit = NULL;
 	dpLog = NULL;
 
-	hitCacheSize = 0;
-	nbMCHit = 0;
-	nbHitEquiv = 0.0;
-	nbLeakTotal = 0;
-	leakCacheSize = 0;
 	startTime = 0.0f;
 	stopTime = 0.0f;
 	simuTime = 0.0f;
@@ -240,7 +235,7 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, bool askConfirm, bool
 					GLMessageBox::Display((char*)e.GetMsg(), "Error writing file.", GLDLG_OK, GLDLG_ICONERROR);
 					return;
 				}
-				geom->loaded_desorptionLimit = ontheflyParams.desorptionLimit;
+				
 				if (isTXT) geom->SaveTXT(f, dpHit, saveSelected);
 				else if (isGEO || isGEO7Z) {
 					/*
@@ -253,7 +248,7 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, bool askConfirm, bool
 					HIT hitCache[HITCACHESIZE];
 					if (!crashSave && !saveSelected) GetHHit(hitCache, &nbHHitSave);
 					*/
-					geom->SaveGEO(f, prg, dpHit, this->userMoments, this, saveSelected, leakCache, &leakCacheSize, hitCache, &hitCacheSize, crashSave);
+					geom->SaveGEO(f, prg, dpHit, this, saveSelected, crashSave);
 				}
 				else if (isXML || isXMLzip) {
 					xml_document saveDoc;
@@ -275,7 +270,7 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, bool askConfirm, bool
 							GetHHit(hitCache, &nbHHitSave);
 							*/
 
-							success = geom->SaveXML_simustate(saveDoc, this, buffer, gHits, leakCacheSize, hitCacheSize, leakCache, hitCache, prg, saveSelected);
+							success = geom->SaveXML_simustate(saveDoc, this, buffer, prg, saveSelected);
 							ReleaseDataport(dpHit);
 						}
 						catch (Error &e) {
@@ -453,11 +448,12 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 	progressDlg->SetVisible(true);
 	progressDlg->SetProgress(0.0);
 
+	ResetWorkerStats();
+
 	if (!insert) {
 		//Clear hits and leaks cache
-		memset(hitCache, 0, sizeof(HIT)*HITCACHESIZE);
-		memset(leakCache, 0, sizeof(LEAK)*LEAKCACHESIZE);
 		ResetMoments();
+		
 		//default values
 		wp.enableDecay = false;
 		wp.gasMass = 28;
@@ -479,20 +475,14 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 	if (ext == "txt" || ext == "TXT") {
 
 		try {
-			if (!insert) ResetWorkerStats();
-			else mApp->changedSinceSave = true;
+			
+			if (insert) mApp->changedSinceSave = true;
 
 			f = new FileReader(fileName);
 			
 			if (!insert) {
-				geom->LoadTXT(f, progressDlg);
+				geom->LoadTXT(f, progressDlg, this);
 				SAFE_DELETE(f);
-				nbMCHit = geom->loaded_nbMCHit;
-				nbHitEquiv = geom->loaded_nbHitEquiv;
-				nbDesorption = geom->loaded_nbDesorption;
-				nbAbsEquiv = geom->loaded_nbAbsEquiv;
-				ontheflyParams.desorptionLimit = geom->loaded_desorptionLimit;
-				nbLeakTotal = geom->loaded_nbLeak;
 				//RealReload();
 				strcpy(fullFileName, fileName);
 			}
@@ -500,11 +490,6 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 
 				geom->InsertTXT(f, progressDlg, newStr);
 				SAFE_DELETE(f);
-				nbMCHit = 0;
-				nbHitEquiv = 0.0;
-				nbDesorption = 0;
-				ontheflyParams.desorptionLimit = 0;
-				nbLeakTotal = 0;
 				Reload();
 			}
 		}
@@ -542,7 +527,6 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 			if (ret != GLDLG_CANCEL_U) {
 				progressDlg->SetMessage("Resetting worker...");
 				progressDlg->SetVisible(true);
-				ResetWorkerStats();				
 				progressDlg->SetMessage("Reading geometry...");
 				f = new FileReader(fileName);
 				if (!insert) {
@@ -572,7 +556,6 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 	else if (ext == "str" || ext == "STR") {
 		if (insert) throw Error("STR file inserting is not supported.");
 		try {
-			ResetWorkerStats();
 			f = new FileReader(fileName);
 			progressDlg->SetVisible(true);
 			geom->LoadSTR(f, progressDlg);
@@ -607,20 +590,14 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 			
 			if (!insert) {
 				progressDlg->SetMessage("Resetting worker...");
-				ResetWorkerStats();
 			
-				geom->LoadSYN(f, progressDlg, &version);
+				geom->LoadSYN(f, progressDlg, &version, this);
 				SAFE_DELETE(f);
 				ontheflyParams.desorptionLimit = 0;
 			}
 			else { //insert
 				geom->InsertSYN(f, progressDlg, newStr);
 				SAFE_DELETE(f);
-				nbLeakTotal = 0;
-				nbMCHit = 0;
-				nbHitEquiv = 0.0;
-				nbDesorption = 0;
-				ontheflyParams.desorptionLimit = geom->loaded_desorptionLimit;
 			}
 
 			progressDlg->SetMessage("Reloading worker with new geometry...");
@@ -663,32 +640,17 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 				toOpen = fileName;
 				f = new FileReader(fileName); //geo file, open it directly
 			}
-			progressDlg->SetMessage("Resetting worker...");
-			ResetWorkerStats();
 			if (insert) mApp->changedSinceSave = true;
 
-			LEAK loaded_leakCache[LEAKCACHESIZE];
-			size_t loaded_nbLeak;
-			HIT hitCache[HITCACHESIZE];
 			if (!insert) {
 
-				geom->LoadGEO(f, progressDlg, loaded_leakCache, &loaded_nbLeak, hitCache, &hitCacheSize, &version, this);
+				geom->LoadGEO(f, progressDlg, &version, this);
 				
-				//copy temp values from geom to worker:
-				nbLeakTotal = geom->loaded_nbLeak;
-				nbMCHit = geom->loaded_nbMCHit;
-				nbHitEquiv = geom->loaded_nbHitEquiv;
-				nbDesorption = geom->loaded_nbDesorption;
-				ontheflyParams.desorptionLimit = geom->loaded_desorptionLimit;
-				nbAbsEquiv = geom->loaded_nbAbsEquiv;
-				distTraveled_total = geom->distTraveled_total;
-				distTraveledTotal_fullHitsOnly = geom->distTraveledTotal_fullHitsOnly;
 				progressDlg->SetMessage("Reloading worker with new geometry...");
 				RealReload(); //for the loading of textures
 				if (version >= 8) geom->LoadProfileGEO(f, dpHit, version);
-				SetLeakCache(loaded_leakCache, &loaded_nbLeak, dpHit);
-				SetHitCache(hitCache, &hitCacheSize, dpHit);
-				WriteHitBuffer(); //Global and facet hit counters, only const.flow is written
+				SendToHitBuffer(); //Global hit counters and hit/leak cache
+				SendFacetHitCounts(dpHit); // From facetHitCache to dpHit's const.flow counter
 				
 				progressDlg->SetMessage("Loading textures...");
 				LoadTexturesGEO(f, version);
@@ -770,7 +732,7 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 					if (ext == "xml" || ext == "zip")
 						progressDlg->SetMessage("Restoring simulation state...");
 					geom->LoadXML_simustate(loadXML, dpHit, this, progressDlg);
-					WriteHitBuffer(true); //Send hits without sending facet counters, as they are directly written during the load process (mutiple moments)
+					SendToHitBuffer(); //Send hits without sending facet counters, as they are directly written during the load process (mutiple moments)
 					RebuildTextures();
 				}
 				catch (Error &e) {
@@ -915,7 +877,7 @@ void Worker::StartStop(float appTime , size_t sMode) {
 			isRunning = true;
 			calcAC = false;
 
-			this->sMode = sMode;
+			wp.sMode = sMode;
 
 			Start();
 
@@ -1012,34 +974,14 @@ void Worker::Update(float appTime) {
 }
 */
 
-void Worker::WriteHitBuffer(bool skipFacetHits ) {
-	//if (!needsReload) {
+void Worker::SendToHitBuffer(bool skipFacetHits ) {
 	if (dpHit) {
 		if (AccessDataport(dpHit)) {
 
 			GlobalHitBuffer *gHits = (GlobalHitBuffer *)dpHit->buff;
 
-			gHits->globalHits.hit.nbMCHit = nbMCHit;
-			gHits->globalHits.hit.nbHitEquiv = nbHitEquiv;
-			gHits->globalHits.hit.nbDesorbed = nbDesorption;
-			gHits->globalHits.hit.nbAbsEquiv = nbAbsEquiv;
-			gHits->nbLeakTotal = nbLeakTotal;
+			*gHits = globalHitCache;
 
-			gHits->distTraveled_total = distTraveled_total;
-			gHits->distTraveledTotal_fullHitsOnly = distTraveledTotal_fullHitsOnly;
-
-			//We don't write histogram
-
-			if (!skipFacetHits) { //This is used for GEO files which contain only one moment (const.flow)
-
-				size_t nbFacet = geom->GetNbFacet();
-				for (size_t i = 0; i < nbFacet; i++) {
-					Facet *f = geom->GetFacet(i);
-					/*for (size_t m = 0;m <= moments.size();m++)*/
-					*((FacetHitBuffer*)((BYTE*)dpHit->buff + f->sh.hitOffset /* + m * sizeof(FacetHitBuffer) */)) = f->facetHitCache;
-				}
-
-			}
 			ReleaseDataport(dpHit);
 
 		}
@@ -1253,13 +1195,7 @@ void Worker::ClearHits(bool noReload) {
 
 void Worker::ResetWorkerStats() {
 
-	nbAbsEquiv = 0.0;
-	nbDesorption = 0;
-	nbMCHit = 0;
-	nbHitEquiv = 0.0;
-	nbLeakTotal = 0;
-	distTraveled_total = 0.0;
-	distTraveledTotal_fullHitsOnly = 0.0;
+	memset(&globalHitCache, 0, sizeof(GlobalHitBuffer));
 
 }
 
@@ -1284,7 +1220,7 @@ void Worker::Start() {
 
 		throw Error("No sub process found. (Simulation not available)");
 
-	if (!ExecuteAndWait(COMMAND_START, PROCESS_RUN, sMode))
+	if (!ExecuteAndWait(COMMAND_START, PROCESS_RUN, wp.sMode))
 		ThrowSubProcError();
 }
 
@@ -1338,16 +1274,16 @@ void Worker::ResetMoments() {
 double Worker::GetMoleculesPerTP(size_t moment)
 //Returns how many physical molecules one test particle represents
 {
-	if (nbDesorption == 0) return 0; //avoid division by 0
+	if (globalHitCache.globalHits.hit.nbDesorbed == 0) return 0; //avoid division by 0
 	if (moment == 0) {
 		//Constant flow
 		//Each test particle represents a certain real molecule influx per second
-		return wp.finalOutgassingRate / nbDesorption;
+		return wp.finalOutgassingRate / globalHitCache.globalHits.hit.nbDesorbed;
 	}
 	else {
 		//Time-dependent mode
 		//Each test particle represents a certain absolute number of real molecules
-		return (wp.totalDesorbedMolecules / wp.timeWindowSize) / nbDesorption;
+		return (wp.totalDesorbedMolecules / wp.timeWindowSize) / globalHitCache.globalHits.hit.nbDesorbed;
 	}
 }
 
@@ -1773,3 +1709,11 @@ throw Error("Error compressing ZIP file.");
 CloseZip(hz);
 return 0;
 }*/
+
+void Worker::SendFacetHitCounts(Dataport* dpHit) {
+	size_t nbFacet = geom->GetNbFacet();
+	for (size_t i = 0; i < nbFacet; i++) {
+		Facet *f = geom->GetFacet(i);
+		*((FacetHitBuffer*)((BYTE*)dpHit->buff + f->sh.hitOffset )) = f->facetHitCache; //Only const.flow
+	}
+}

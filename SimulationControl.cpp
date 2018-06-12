@@ -148,6 +148,12 @@ bool LoadSimulation(Dataport *loader) {
 
 	SetState(PROCESS_STARTING, "Loading simulation");
 
+	sHandle->textTotalSize =
+		sHandle->profTotalSize =
+		sHandle->dirTotalSize =
+		sHandle->angleMapTotalSize =
+		sHandle->histogramTotalSize = 0;
+
 	{
 		
 		std::string inputString(loader->size,NULL);
@@ -522,7 +528,9 @@ void UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DWORD timeout) {
 }
 
 size_t GetHitsSize() {
-	return sHandle->textTotalSize + sHandle->profTotalSize + sHandle->dirTotalSize + sHandle->sh.nbFacet * sizeof(FacetHitBuffer) + sizeof(GlobalHitBuffer); //Update with histogram and nbmoments
+	return sizeof(GlobalHitBuffer) + sHandle->wp.globalHistogramParams.GetDataSize() +
+		sHandle->textTotalSize + sHandle->profTotalSize + sHandle->dirTotalSize + sHandle->angleMapTotalSize + sHandle->histogramTotalSize
+		+ sHandle->sh.nbFacet * sizeof(FacetHitBuffer) * (1+sHandle->wp.nbMoments);
 }
 
 void ResetTmpCounters() {
@@ -740,6 +748,10 @@ void SubprocessFacet::InitializeHistogram()
 		hist.timeHistogram.resize(sh.facetHistogramParams.timeResolution);
 	}
 	tmpHistograms = std::vector<FacetHistogramBuffer>(1 + sHandle->wp.nbMoments, hist);
+	sHandle->histogramTotalSize += (1 + sHandle->wp.nbMoments) * 
+		(sh.facetHistogramParams.GetBouncesDataSize() 
+		+ sh.facetHistogramParams.GetDistanceDataSize() 
+		+ sh.facetHistogramParams.GetTimeDataSize());
 }
 
 bool SubprocessFacet::InitializeDirectionTexture()
@@ -897,6 +909,7 @@ bool SubprocessFacet::InitializeAngleMap()
 	else {
 		angleMapSize = 0;
 	}
+	sHandle->angleMapTotalSize += angleMapSize;
 	return true;
 }
 

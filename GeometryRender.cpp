@@ -42,7 +42,7 @@ extern MolFlow *mApp;
 extern SynRad*mApp;
 #endif
 
-void MolflowGeometry::BuildFacetTextures(BYTE *hits, bool renderRegularTexture, bool renderDirectionTexture) {
+void MolflowGeometry::BuildFacetTextures(BYTE *hits, bool renderRegularTexture, bool renderDirectionTexture,size_t sMode) {
 
 	GlobalHitBuffer *shGHit = (GlobalHitBuffer *)hits;
 
@@ -63,7 +63,7 @@ void MolflowGeometry::BuildFacetTextures(BYTE *hits, bool renderRegularTexture, 
 
 	if (renderRegularTexture) {
 
-		switch (shGHit->sMode) {
+		switch (sMode) {
 
 		case MC_MODE:
 

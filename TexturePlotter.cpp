@@ -254,7 +254,7 @@ void TexturePlotter::UpdateTable() {
 					double dCoef =1E4; //1E4: conversion m2->cm2
 					/*if (shGHit->sMode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
 						/ worker->wp.wp.timeWindowSize));*/
-					if (shGHit->sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(worker->displayedMoment);
+					if (worker->wp.sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(worker->displayedMoment);
 					for (size_t i = 0; i < w; i++) {
 						for (size_t j = 0; j < h; j++) {
 							double area = (selFacet->GetMeshArea(i + j*w,true)); if (area == 0.0) area = 1.0;
@@ -287,7 +287,7 @@ void TexturePlotter::UpdateTable() {
 					TextureCell *texture = (TextureCell *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
 					double dCoef =1E4 * selFacet->DensityCorrection();   //1E4 m2 -> cm2
 					
-					if (shGHit->sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(worker->displayedMoment);
+					if (worker->wp.sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(worker->displayedMoment);
 					for (size_t i = 0; i < w; i++) {
 						for (size_t j = 0; j < h; j++) {
 
@@ -325,7 +325,7 @@ void TexturePlotter::UpdateTable() {
 					//float dCoef = (float)totalOutgassing / 8.31 * wp.gasMass / 100 * MAGIC_CORRECTION_FACTOR;
 					double dCoef = 1E4 * selFacet->DensityCorrection();
 
-					if (shGHit->sMode == MC_MODE) dCoef *= worker->GetMoleculesPerTP(worker->displayedMoment);
+					if (worker->wp.sMode == MC_MODE) dCoef *= worker->GetMoleculesPerTP(worker->displayedMoment);
 					for (size_t i = 0; i < w; i++) {
 						for (size_t j = 0; j < h; j++) {
 
@@ -363,7 +363,7 @@ void TexturePlotter::UpdateTable() {
 					TextureCell *texture = (TextureCell *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
 					double dCoef = 1E4 * (worker->wp.gasMass / 1000 / 6E23) * 0.0100;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 					
-					if (shGHit->sMode == MC_MODE) dCoef *= worker->GetMoleculesPerTP(worker->displayedMoment);
+					if (worker->wp.sMode == MC_MODE) dCoef *= worker->GetMoleculesPerTP(worker->displayedMoment);
 					for (size_t i = 0; i < w; i++) {
 						for (size_t j = 0; j < h; j++) {
 

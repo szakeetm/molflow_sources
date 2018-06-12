@@ -37,8 +37,8 @@ public:
 	MolflowGeometry();
 
 	// Load
-	void LoadGEO(FileReader *file, GLProgress *prg, LEAK *leakCache, size_t *leakCacheSize, HIT *hitCache, size_t *hitCacheSize, int *version, Worker *worker);
-	void LoadSYN(FileReader *file, GLProgress *prg, int *version);
+	void LoadGEO(FileReader *file, GLProgress *prg, int *version, Worker *worker);
+	void LoadSYN(FileReader *file, GLProgress *prg, int *version, Worker *worker);
 	bool LoadTexturesGEO(FileReader *file, GLProgress *prg, Dataport *dpHit, int version);
 	//void ImportDesorption_DES(FileReader *file); //Deprecated
 	void ImportDesorption_SYN(FileReader *synFile, const size_t &source, const double &time,
@@ -53,14 +53,13 @@ public:
 
 	// Save
 	void SaveTXT(FileWriter *file, Dataport *dhHit, bool saveSelected);
-	void ExportTextures(FILE *file, int grouping, int mode, Dataport *dhHit, bool saveSelected);
+	void ExportTextures(FILE *file, int grouping, int mode, Dataport *dhHit, bool saveSelected, size_t sMode);
 	void ExportProfiles(FILE *file, int isTXT, Dataport *dhHit, Worker *worker);
-	void SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, std::vector<std::string> userMoments, Worker *worker,
-		bool saveSelected, LEAK *pleak, size_t *nbleakSave, HIT *hitCache, size_t *nbHHitSave, bool crashSave = false);
+	void SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, Worker *worker,
+		bool saveSelected, bool crashSave = false);
 	
 	void SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress *prg, bool saveSelected);
-	bool SaveXML_simustate(pugi::xml_node saveDoc, Worker *work, BYTE *buffer, GlobalHitBuffer *gHits, size_t nbLeakSave, size_t nbHHitSave,
-		LEAK *leakCache, HIT *hitCache, GLProgress *prg, bool saveSelected);
+	bool SaveXML_simustate(pugi::xml_node saveDoc, Worker *work, BYTE *buffer, GLProgress *prg, bool saveSelected);
 	void LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg);
 	void InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg, bool newStr);
 	bool LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker *work, GLProgress *progressDlg);
@@ -84,13 +83,9 @@ public:
 	bool  texAutoScaleIncludeConstantFlow;  // Include constant flow when calculating autoscale values
 
 #pragma region GeometryRender.cpp
-	void BuildFacetTextures(BYTE *texture,bool renderRegularTexture,bool renderDirectionTexture);
+	void BuildFacetTextures(BYTE *texture,bool renderRegularTexture,bool renderDirectionTexture,size_t sMode);
 	void BuildFacetDirectionTextures(BYTE *texture);
 #pragma endregion
-
-	// Temporary variable (used by LoadXXX)
-	double distTraveled_total;
-	double distTraveledTotal_fullHitsOnly;
 
 	void SerializeForLoader(cereal::BinaryOutputArchive&);
 	/*
