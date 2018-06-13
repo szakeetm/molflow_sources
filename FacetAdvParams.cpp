@@ -446,7 +446,7 @@ void FacetAdvParams::UpdateSizeForRatio() {
 		return;
 	}
 
-	if (sscanf(resolutionText->GetText(), "%lf", &ratio) == 0) {
+	if (!resolutionText->GetNumber(&ratio)) {
 		ramText->SetText("");
 		cellText->SetText("");
 		return;
@@ -906,7 +906,7 @@ bool FacetAdvParams::ApplyTexture(bool force) {
 			//Got a valid number
 			doRatio = true;
 		}
-		else if (strcmp(resolutionText->GetText(), "...") != 0) { //Not in mixed "..." state
+		else if (resolutionText->GetText()!="...") { //Not in mixed "..." state
 			GLMessageBox::Display("Invalid texture resolution\nMust be a non-negative number", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return false;
 		}
@@ -1005,9 +1005,9 @@ bool FacetAdvParams::Apply() {
 
 	int superStruct;
 	bool doSuperStruct = false;
-	if (sscanf(facetStructure->GetText(), "%d", &superStruct) > 0 && superStruct > 0 && superStruct <= geom->GetNbStructure()) doSuperStruct = true;
+	if (facetStructure->GetNumberInt(&superStruct) && superStruct > 0 && superStruct <= geom->GetNbStructure()) doSuperStruct = true;
 	else {
-		if (strcmp(facetStructure->GetText(), "...") == 0) doSuperStruct = false;
+		if (facetStructure->GetText() == "...") doSuperStruct = false;
 		else{
 			GLMessageBox::Display("Invalid superstructre number", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return false;
@@ -1017,11 +1017,11 @@ bool FacetAdvParams::Apply() {
 	// Super structure destination (link)
 	int superDest;
 	bool doLink = false;
-	if (strcmp(facetSuperDest->GetText(), "none") == 0 || strcmp(facetSuperDest->GetText(), "no") == 0 || strcmp(facetSuperDest->GetText(), "0") == 0) {
+	if (Contains({ "none","no","0" },facetSuperDest->GetText())) {
 		doLink = true;
 		superDest = 0;
 	}
-	else if (sscanf(facetSuperDest->GetText(), "%d", &superDest) > 0) {
+	else if (facetSuperDest->GetNumberInt(&superDest)) {
 		if (superDest == superStruct) {
 			GLMessageBox::Display("Link and superstructure can't be the same", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return false;
@@ -1033,7 +1033,7 @@ bool FacetAdvParams::Apply() {
 		else
 			doLink = true;
 	}
-	else if (strcmp(facetSuperDest->GetText(), "...") == 0) doLink = false;
+	else if (facetSuperDest->GetText() == "...") doLink = false;
 	else {
 		GLMessageBox::Display("Invalid superstructure destination", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return false;
@@ -1057,7 +1057,7 @@ bool FacetAdvParams::Apply() {
 		doTeleport = true;
 	}
 	else {
-		if (strcmp(facetTeleport->GetText(), "...") == 0) doTeleport = false;
+		if (facetTeleport->GetText() == "...") doTeleport = false;
 		else {
 			GLMessageBox::Display("Invalid teleport destination\n(If no teleport: set number to 0)", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return false;
@@ -1075,7 +1075,7 @@ bool FacetAdvParams::Apply() {
 		doAccfactor = true;
 	}
 	else {
-		if (strcmp(facetAccFactor->GetText(), "...") == 0) doAccfactor = false;
+		if (facetAccFactor->GetText() == "...") doAccfactor = false;
 		else {
 			GLMessageBox::Display("Invalid accomodation factor number", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return false;
@@ -1085,7 +1085,7 @@ bool FacetAdvParams::Apply() {
 	// Use desorption map
 	int useMapA = 0;
 	bool doUseMapA = false;
-	if (strcmp(facetUseDesFile->GetSelectedValue(), "...") == 0) doUseMapA = false;
+	if (facetUseDesFile->GetSelectedValue()=="...") doUseMapA = false;
 	else {
 		useMapA = (facetUseDesFile->GetSelectedIndex() == 1);
 		bool missingMap = false;
@@ -1119,7 +1119,7 @@ bool FacetAdvParams::Apply() {
 		doSojF = true;
 	}
 	else {
-		if (enableSojournTime->GetState() == 0 || strcmp(sojournFreq->GetText(), "...") == 0) doSojF = false;
+		if (enableSojournTime->GetState() == 0 || sojournFreq->GetText() == "...") doSojF = false;
 		else {
 			GLMessageBox::Display("Invalid wall sojourn time frequency", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return false;
@@ -1138,7 +1138,7 @@ bool FacetAdvParams::Apply() {
 		doSojE = true;
 	}
 	else {
-		if (enableSojournTime->GetState() == 0 || strcmp(sojournE->GetText(), "...") == 0) doSojE = false;
+		if (enableSojournTime->GetState() == 0 || sojournE->GetText()=="...") doSojE = false;
 		else {
 			GLMessageBox::Display("Invalid wall sojourn time second coefficient (Energy)", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return false;
@@ -1149,7 +1149,7 @@ bool FacetAdvParams::Apply() {
 	int angleMapWidth;
 	bool doAngleMapWidth = false;
 
-	if (angleMapRecordCheckbox->GetState() == 0 || strcmp(angleMapPhiResText->GetText(), "...") == 0) doAngleMapWidth = false;
+	if (angleMapRecordCheckbox->GetState() == 0 || angleMapPhiResText->GetText()== "...") doAngleMapWidth = false;
 	else if (angleMapPhiResText->GetNumberInt(&angleMapWidth)) {
 		if (angleMapWidth <= 0) {
 			GLMessageBox::Display("Angle map width has to be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1166,7 +1166,7 @@ bool FacetAdvParams::Apply() {
 	int angleMapLowRes;
 	bool doAngleMapLowRes = false;
 
-	if (angleMapRecordCheckbox->GetState() == 0 || strcmp(angleMapThetaLowresText->GetText(), "...") == 0) doAngleMapLowRes = false;
+	if (angleMapRecordCheckbox->GetState() == 0 || angleMapThetaLowresText->GetText()== "...") doAngleMapLowRes = false;
 	else if (angleMapThetaLowresText->GetNumberInt(&angleMapLowRes)) {
 		if (angleMapLowRes < 0) {
 			GLMessageBox::Display("Angle map resolution (below theta limit) has to be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1183,7 +1183,7 @@ bool FacetAdvParams::Apply() {
 	int angleMapHiRes;
 	bool doAngleMapHiRes = false;
 
-	if (angleMapRecordCheckbox->GetState() == 0 || strcmp(angleMapThetaHighresText->GetText(), "...") == 0) doAngleMapHiRes = false;
+	if (angleMapRecordCheckbox->GetState() == 0 || angleMapThetaHighresText->GetText()== "...") doAngleMapHiRes = false;
 	else if (angleMapThetaHighresText->GetNumberInt(&angleMapHiRes)) {
 		if (angleMapHiRes < 0) {
 			GLMessageBox::Display("Angle map resolution (above theta limit) has to be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1205,7 +1205,7 @@ bool FacetAdvParams::Apply() {
 	double angleMapThetaLimit;
 	bool doAngleMapThetaLimit = false;
 
-	if (angleMapRecordCheckbox->GetState() == 0 || strcmp(angleMapThetaLimitText->GetText(), "...") == 0) doAngleMapThetaLimit = false;
+	if (angleMapRecordCheckbox->GetState() == 0 || angleMapThetaLimitText->GetText() == "...") doAngleMapThetaLimit = false;
 	else if (angleMapThetaLimitText->GetNumber(&angleMapThetaLimit)) {
 		if (!(angleMapThetaLimit >= 0 && angleMapThetaLimit<=PI/2.0)) {
 			GLMessageBox::Display("Angle map theta limit must be between 0 and PI/2", "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1231,7 +1231,7 @@ bool FacetAdvParams::Apply() {
 		}
 		doDiffuseRefl = true;
 	}
-	else if (strcmp(diffuseReflBox->GetText(), "...") != 0) {
+	else if (diffuseReflBox->GetText()!= "...") {
 		GLMessageBox::Display("Invalid diffuse reflection ratio", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return false;
 	}
@@ -1243,7 +1243,7 @@ bool FacetAdvParams::Apply() {
 		}
 		doSpecularRefl = true;
 	}
-	else if (strcmp(specularReflBox->GetText(), "...") != 0) {
+	else if (specularReflBox->GetText()!= "...") {
 		GLMessageBox::Display("Invalid specular reflection ratio", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return false;
 	}
@@ -1260,7 +1260,7 @@ bool FacetAdvParams::Apply() {
 		}
 		doReflExponent = true;
 	}
-	else if (strcmp(reflectionExponentBox->GetText(), "...") != 0) {
+	else if (reflectionExponentBox->GetText()!= "...") {
 		GLMessageBox::Display("Invalid cosine^N reflection exponent", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return false;
 	}

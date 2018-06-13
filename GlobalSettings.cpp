@@ -344,7 +344,7 @@ void GlobalSettings::SMPUpdate() {
 void GlobalSettings::RestartProc() {
 
 	int nbProc;
-	if (sscanf(nbProcText->GetText(), "%d", &nbProc) == 0) {
+	if (!nbProcText->GetNumberInt(&nbProc)) {
 		GLMessageBox::Display("Invalid process number", "Error", GLDLG_OK, GLDLG_ICONERROR);
 	}
 	else {

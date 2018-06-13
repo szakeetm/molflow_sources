@@ -566,7 +566,7 @@ void MolFlow::PlaceComponents() {
 
 	facetPanel->SetCompBounds(facetAdvParamsBtn, 5, cursorY += 25, 48, 18);
 	facetPanel->SetCompBounds(facetDetailsBtn, 56, cursorY, 45, 18);
-	facetPanel->SetCompBounds(facetHistogramBtn, 104, cursorY, 45, 18);
+	facetPanel->SetCompBounds(facetCoordBtn, 104, cursorY, 45, 18);
 	facetPanel->SetCompBounds(facetApplyBtn, 153, cursorY, 44, 18);
 
 	sy += facetPanel->GetHeight() + 5;
@@ -672,7 +672,7 @@ void MolFlow::ApplyFacetParams() {
 		stickingNotNumber = false;
 	}
 	else {
-		if (strcmp(facetSticking->GetText(), "...") == 0) doSticking = false;
+		if (facetSticking->GetText() == "...") doSticking = false;
 		else {/*
 			GLMessageBox::Display("Invalid sticking number","Error",GLDLG_OK,GLDLG_ICONERROR);
 			UpdateFacetParams();
@@ -695,7 +695,7 @@ void MolFlow::ApplyFacetParams() {
 		opacityNotNumber = false;
 	}
 	else {
-		if (strcmp(facetOpacity->GetText(), "...") == 0) doOpacity = false;
+		if (facetOpacity->GetText() == "...") doOpacity = false;
 		else {/*
 			GLMessageBox::Display("Invalid opacity number","Error",GLDLG_OK,GLDLG_ICONERROR);
 			UpdateFacetParams();
@@ -716,7 +716,7 @@ void MolFlow::ApplyFacetParams() {
 		doTemperature = true;
 	}
 	else {
-		if (strcmp(facetTemperature->GetText(), "...") == 0) doTemperature = false;
+		if (facetTemperature->GetText() == "...") doTemperature = false;
 		else {
 			GLMessageBox::Display("Invalid temperature number", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return;
@@ -728,8 +728,8 @@ void MolFlow::ApplyFacetParams() {
 	bool doFlow = false;
 	bool outgassingNotNumber;
 	//Calculate outgassing
-	if (facetFILabel->GetState() && strcmp(facetFlow->GetText(), "...") != 0 && facetDesType->GetSelectedIndex() != 0
-		&& strcmp(facetDesType->GetSelectedValue(), "...") != 0 && facetFlow->IsEditable()) {  //We want outgassing
+	if (facetFILabel->GetState() && facetFlow->GetText() != "..." && facetDesType->GetSelectedIndex() != 0
+		&& facetDesType->GetSelectedValue() != "..." && facetFlow->IsEditable()) {  //We want outgassing
 		if (facetFlow->GetNumber(&outgassing)) { //If we can parse the number
 			if (!(outgassing > 0.0)) {
 				GLMessageBox::Display("Outgassing must be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -749,8 +749,8 @@ void MolFlow::ApplyFacetParams() {
 	bool doFlowA = false;
 	//Calculate outgassing
 
-	if (facetFIAreaLabel->GetState() && strcmp(facetFlowArea->GetText(), "...") != 0
-		&& facetDesType->GetSelectedIndex() != 0 && strcmp(facetDesType->GetSelectedValue(), "...") != 0 && facetFlowArea->IsEditable()) { //We want outgassing per area
+	if (facetFIAreaLabel->GetState() && facetFlowArea->GetText()!= "..."
+		&& facetDesType->GetSelectedIndex() != 0 && facetDesType->GetSelectedValue() != "..." && facetFlowArea->IsEditable()) { //We want outgassing per area
 		if (facetFlowArea->GetNumber(&flowA)) { //Can be parsed as number
 			if (!(flowA > 0.0)) {
 				GLMessageBox::Display("Outgassing per area must be positive", "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -779,7 +779,7 @@ void MolFlow::ApplyFacetParams() {
 			doDesorbTypeN = true;
 		}
 		else {
-			if (strcmp(facetDesTypeN->GetText(), "...") == 0) doDesorbTypeN = false;
+			if (facetDesTypeN->GetText() == "...") doDesorbTypeN = false;
 			else {
 				GLMessageBox::Display("Invalid desorption type exponent", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
@@ -796,11 +796,6 @@ void MolFlow::ApplyFacetParams() {
 	//Check complete, let's apply
 	if (facetAdvParams && facetAdvParams->IsVisible()) {
 		if (!facetAdvParams->Apply()) {
-			return;
-		}
-	}
-	if (histogramSettings && histogramSettings->IsVisible()) {
-		if (!histogramSettings->Apply()) {
 			return;
 		}
 	}

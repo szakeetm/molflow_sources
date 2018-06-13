@@ -251,7 +251,7 @@ void PressureEvolution::Update(float appTime, bool force) {
 void PressureEvolution::plot() {
 
 	GLParser *parser = new GLParser();
-	parser->SetExpression(formulaText->GetText());
+	parser->SetExpression(formulaText->GetText().c_str());
 	if (!parser->Parse()) {
 		GLMessageBox::Display(parser->GetErrorMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 		SAFE_DELETE(parser);
@@ -289,13 +289,13 @@ void PressureEvolution::plot() {
 
 	if (found) {
 		v = views[i];
-		v->SetName(formulaText->GetText());
+		v->SetName(formulaText->GetText().c_str());
 		v->Reset();
 	}
 	else {
 		if (nbView < 50) {
 			v = new GLDataView();
-			v->SetName(formulaText->GetText());
+			v->SetName(formulaText->GetText().c_str());
 			v->userData1 = -1;
 			chart->GetY1Axis()->AddDataView(v);
 			views[nbView] = v;
