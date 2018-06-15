@@ -201,7 +201,7 @@ void ParameterEditor::ProcessMessage(GLComponent *src,int message) {
 				work->Reload();
 			}
 		} else if (src == deleteButton) {
-			if (strcmp(selectorCombo->GetSelectedValue(), "New...") == 0) return;
+			if (selectorCombo->GetSelectedValue() == "New...") return;
 			if (mApp->AskToReset()) {
 				work->parameters.erase(work->parameters.begin() + selectorCombo->GetSelectedIndex()-1);
 				UpdateCombo();

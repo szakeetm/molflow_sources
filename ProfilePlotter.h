@@ -75,14 +75,14 @@ private:
   GLButton    *selButton;
   GLButton    *addButton;
   GLButton    *removeButton;
-  GLButton    *resetButton;
+  GLButton    *removeAllButton;
   GLTextField *formulaText;
   GLButton    *formulaBtn;
   GLToggle    *logYToggle;
   GLToggle    *correctForGas;
 
   GLDataView  *views[MAX_VIEWS];
-  GLCColor    *colors[8];
+  GLColor    *colors[8];
 
   int          nbColors;
   int          nbView;

@@ -878,14 +878,16 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 
 	// Update params
 	Geometry *geom = worker.GetGeometry();
-	size_t nbSel = geom->GetNbSelectedFacets();
+	// Get list of selected facet
+	std::vector<size_t> selectedFacets = geom->GetSelectedFacets();
+	size_t nbSel = selectedFacets.size();
+
 	if (nbSel > 0) {
 
 		Facet *f0;
 		Facet *f;
 
-		// Get list of selected facet
-		std::vector<size_t> selectedFacets = geom->GetSelectedFacets();
+		
 
 		f0 = geom->GetFacet(selectedFacets[0]);
 
@@ -1038,6 +1040,7 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 	if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 	if (texturePlotter) texturePlotter->Update(m_fTime, true); //Facet change
 	if (outgassingMap) outgassingMap->Update(m_fTime, true);
+	if (histogramSettings) histogramSettings->Refresh(selectedFacets);
 }
 
 /*
@@ -1458,9 +1461,9 @@ void MolFlow::LoadFile(char *fName) {
 
 		if (timeSettings) timeSettings->RefreshMoments();
 		if (momentsEditor) momentsEditor->Refresh();
-		if (pressureEvolution) pressureEvolution->Refresh();
+		if (pressureEvolution) pressureEvolution->Reset();
 		if (timewisePlotter) timewisePlotter->Refresh();
-		if (profilePlotter) profilePlotter->Refresh();
+		//if (profilePlotter) profilePlotter->Refresh(); //Might have loaded views
 		if (texturePlotter) texturePlotter->Update(0.0,true);
 		//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 		if (textureScaling) textureScaling->Update();
@@ -1544,7 +1547,6 @@ void MolFlow::InsertGeometry(bool newStr, char *fName) {
 		//worker.LoadTexturesGEO(fullName);
 		UpdateStructMenu();
 		if (profilePlotter) profilePlotter->Reset();
-
 		if (pressureEvolution) pressureEvolution->Reset();
 		if (timewisePlotter) timewisePlotter->Reset();
 		//UpdateCurrentDir(fullName);
@@ -1728,13 +1730,9 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			break;
 
 		case MENU_TIME_PRESSUREEVOLUTION:
-			if (!pressureEvolution) pressureEvolution = new PressureEvolution();
-			pressureEvolution->Display(&worker);
+			if (!pressureEvolution) pressureEvolution = new PressureEvolution(&worker);
+			pressureEvolution->SetVisible(true);
 			break;
-			/*case MENU_FACET_MESH:
-				if (!facetAdvParams) facetAdvParams = new FacetAdvParams(&worker);
-				facetAdvParams->SetVisible(!facetAdvParams->IsVisible());
-				break;      */
 
 		case MENU_FACET_OUTGASSINGMAP:
 			if (!outgassingMap) outgassingMap = new OutgassingMap();
@@ -2098,7 +2096,6 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 		worker.wp.enableDecay = false;
 		worker.wp.halfLife = 1;
 		worker.wp.gasMass = 28;
-		worker.wp.nbMoments = 0;
 		worker.ResetMoments();
 	}
 	catch (Error &e) {
@@ -2139,7 +2136,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 
 	if (timeSettings) timeSettings->RefreshMoments();
 	if (momentsEditor) momentsEditor->Refresh();
-	if (pressureEvolution) pressureEvolution->Refresh();
+	if (pressureEvolution) pressureEvolution->Reset();
 	if (timewisePlotter) timewisePlotter->Refresh();
 	if (profilePlotter) profilePlotter->Refresh();
 	if (texturePlotter) texturePlotter->Update(0.0, true);

@@ -200,11 +200,11 @@ bool LoadSimulation(Dataport *loader) {
 	//Initialize global histogram
 	FacetHistogramBuffer hist;
 	if (sHandle->wp.globalHistogramParams.record) {
-		hist.distanceHistogram.resize(sHandle->wp.globalHistogramParams.GetBounceHistogramSize());
-		hist.distanceHistogram.resize(sHandle->wp.globalHistogramParams.distanceResolution);
-		hist.timeHistogram.resize(sHandle->wp.globalHistogramParams.timeResolution);
+		hist.nbHitsHistogram.resize(sHandle->wp.globalHistogramParams.GetBounceHistogramSize());
+		hist.distanceHistogram.resize(sHandle->wp.globalHistogramParams.GetDistanceHistogramSize());
+		hist.timeHistogram.resize(sHandle->wp.globalHistogramParams.GetTimeHistogramSize());
 	}
-	sHandle->tmpGlobalHistograms = std::vector<FacetHistogramBuffer>(1 + sHandle->wp.nbMoments, hist);
+	sHandle->tmpGlobalHistograms = std::vector<FacetHistogramBuffer>(1 + sHandle->moments.size(), hist);
 
 	//Reserve particle log
 	if (sHandle->ontheflyParams.enableLogging) sHandle->tmpParticleLog.reserve(sHandle->ontheflyParams.logLimit / sHandle->ontheflyParams.nbProcess);
@@ -239,7 +239,7 @@ bool LoadSimulation(Dataport *loader) {
 		hist.distanceHistogram.resize(sHandle->wp.globalHistogramParams.distanceResolution);
 		hist.timeHistogram.resize(sHandle->wp.globalHistogramParams.timeResolution);
 	}
-	sHandle->tmpGlobalHistograms = std::vector<FacetHistogramBuffer>(1 + sHandle->wp.nbMoments,hist);
+	sHandle->tmpGlobalHistograms = std::vector<FacetHistogramBuffer>(1 + sHandle->moments.size(),hist);
 
 	sHandle->ontheflyParams = READBUFFER(OntheflySimulationParams);
 	if (sHandle->ontheflyParams.enableLogging) sHandle->tmpParticleLog.reserve(sHandle->ontheflyParams.logLimit / sHandle->ontheflyParams.nbProcess);
@@ -263,7 +263,7 @@ bool LoadSimulation(Dataport *loader) {
 		SubprocessFacet f;
 		
 		f.sh = READBUFFER(FacetProperties);
-			f.ResizeCounter(sHandle->wp.nbMoments); //Initialize counter
+			f.ResizeCounter(sHandle->moments.size()); //Initialize counter
 
 	sHandle->hasVolatile |= f.sh.isVolatile;
 
@@ -321,7 +321,7 @@ bool LoadSimulation(Dataport *loader) {
 			size_t nbE = f.sh.texWidth*f.sh.texHeight;
 			f.textureSize = nbE * sizeof(TextureCell);
 			try {
-				f.texture = std::vector<std::vector<TextureCell>>(1 + sHandle->wp.nbMoments, std::vector<TextureCell>(nbE));
+				f.texture = std::vector<std::vector<TextureCell>>(1 + sHandle->moments.size(), std::vector<TextureCell>(nbE));
 			}
 			catch (...) {
 				SetErrorSub("Not enough memory to load textures");
@@ -340,7 +340,7 @@ bool LoadSimulation(Dataport *loader) {
 				for (size_t j = 0; j < nbE; j++) { //second pass, filter out very small cells
 					f.largeEnough[j] = (f.textureCellIncrements[j] < ((5.0f)*f.fullSizeInc));
 				}
-				sHandle->textTotalSize += f.textureSize*(1 + sHandle->wp.nbMoments);
+				sHandle->textTotalSize += f.textureSize*(1 + sHandle->moments.size());
 
 				f.iw = 1.0 / (double)f.sh.texWidthD;
 				f.ih = 1.0 / (double)f.sh.texHeightD;
@@ -353,13 +353,13 @@ bool LoadSimulation(Dataport *loader) {
 		if (f.sh.isProfile) {
 			f.profileSize = PROFILE_SIZE * sizeof(ProfileSlice);
 			try {
-				f.profile = std::vector<std::vector<ProfileSlice>>(1 + sHandle->wp.nbMoments, std::vector<ProfileSlice>(PROFILE_SIZE));
+				f.profile = std::vector<std::vector<ProfileSlice>>(1 + sHandle->moments.size(), std::vector<ProfileSlice>(PROFILE_SIZE));
 			}
 			catch (...) {
 				SetErrorSub("Not enough memory to load profiles");
 				return false;
 			}
-			sHandle->profTotalSize += f.profileSize*(1 + sHandle->wp.nbMoments);
+			sHandle->profTotalSize += f.profileSize*(1 + sHandle->moments.size());
 		}
 		else f.profileSize = 0;
 
@@ -367,13 +367,13 @@ bool LoadSimulation(Dataport *loader) {
 		if (f.sh.countDirection) {
 			f.directionSize = f.sh.texWidth*f.sh.texHeight * sizeof(DirectionCell);
 			try {
-				f.direction = std::vector<std::vector<DirectionCell>>(1 + sHandle->wp.nbMoments, std::vector<DirectionCell>(f.sh.texWidth*f.sh.texHeight));
+				f.direction = std::vector<std::vector<DirectionCell>>(1 + sHandle->moments.size(), std::vector<DirectionCell>(f.sh.texWidth*f.sh.texHeight));
 			}
 			catch (...) {
 				SetErrorSub("Not enough memory to load direction textures");
 				return false;
 			}
-			sHandle->dirTotalSize += f.directionSize*(1 + sHandle->wp.nbMoments);
+			sHandle->dirTotalSize += f.directionSize*(1 + sHandle->moments.size());
 		}
 		else f.directionSize = 0;
 
@@ -383,7 +383,7 @@ bool LoadSimulation(Dataport *loader) {
 			hist.distanceHistogram.resize(f.sh.facetHistogramParams.distanceResolution);
 			hist.timeHistogram.resize(f.sh.facetHistogramParams.timeResolution);
 		}
-		f.tmpHistograms = std::vector<FacetHistogramBuffer>(1 + sHandle->wp.nbMoments, hist);
+		f.tmpHistograms = std::vector<FacetHistogramBuffer>(1 + sHandle->moments.size(), hist);
 
 		sHandle->structures[f.sh.superIdx].facets.push_back(f); //Assign to structure
 	}
@@ -444,8 +444,8 @@ bool LoadSimulation(Dataport *loader) {
 	}
 
 	//Time moments
-	sHandle->moments.reserve(sHandle->wp.nbMoments); //nbMoments already passed
-	for (size_t i = 0; i < sHandle->wp.nbMoments; i++) {
+	sHandle->moments.reserve(sHandle->moments.size()); //nbMoments already passed
+	for (size_t i = 0; i < sHandle->moments.size(); i++) {
 		double valueX = READBUFFER(double);
 		sHandle->moments.push_back(valueX);
 	}
@@ -512,10 +512,10 @@ bool UpdateOntheflySimuParams(Dataport *loader) {
 }
 
 void UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DWORD timeout) {
-	switch (sHandle->sMode) {
+	switch (sHandle->wp.sMode) {
 	case MC_MODE:
 	{
-		UpdateMCHits(dpHit, prIdx, sHandle->wp.nbMoments, timeout);
+		UpdateMCHits(dpHit, prIdx, sHandle->moments.size(), timeout);
 		if (dpLog) UpdateLog(dpLog, timeout);
 	}
 		break;
@@ -530,23 +530,17 @@ void UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DWORD timeout) {
 size_t GetHitsSize() {
 	return sizeof(GlobalHitBuffer) + sHandle->wp.globalHistogramParams.GetDataSize() +
 		sHandle->textTotalSize + sHandle->profTotalSize + sHandle->dirTotalSize + sHandle->angleMapTotalSize + sHandle->histogramTotalSize
-		+ sHandle->sh.nbFacet * sizeof(FacetHitBuffer) * (1+sHandle->wp.nbMoments);
+		+ sHandle->sh.nbFacet * sizeof(FacetHitBuffer) * (1+sHandle->moments.size());
 }
 
 void ResetTmpCounters() {
 	SetState(NULL, "Resetting local cache...", false, true);
 
-	memset(&sHandle->tmpGlobalCount, 0, sizeof(FacetHitBuffer));
-
-	sHandle->distTraveledSinceUpdate_total = 0.0;
-	sHandle->distTraveledSinceUpdate_fullHitsOnly = 0.0;
-	sHandle->nbLeakSinceUpdate = 0;
-	sHandle->hitCacheSize = 0;
-	sHandle->leakCacheSize = 0;
+	memset(&sHandle->tmpGlobalResult, 0, sizeof(GlobalHitBuffer));
 	
 	//Reset global histograms
 	if (sHandle->wp.globalHistogramParams.record) {
-		for (size_t m = 0; m < (sHandle->wp.nbMoments + 1); m++) {
+		for (size_t m = 0; m < (sHandle->moments.size() + 1); m++) {
 			std::fill(sHandle->tmpGlobalHistograms[m].nbHitsHistogram.begin(), sHandle->tmpGlobalHistograms[m].nbHitsHistogram.end(), 0);
 			std::fill(sHandle->tmpGlobalHistograms[m].distanceHistogram.begin(), sHandle->tmpGlobalHistograms[m].distanceHistogram.end(), 0);
 			std::fill(sHandle->tmpGlobalHistograms[m].timeHistogram.begin(), sHandle->tmpGlobalHistograms[m].timeHistogram.end(), 0);
@@ -590,7 +584,7 @@ void ResetTmpCounters() {
 }
 
 void ResetSimulation() {
-	sHandle->lastHitFacet = NULL;
+	sHandle->currentParticle.lastHitFacet = NULL;
 	sHandle->totalDesorbed = 0;
 	ResetTmpCounters();
 	sHandle->tmpParticleLog.clear();
@@ -599,11 +593,11 @@ void ResetSimulation() {
 }
 
 bool StartSimulation(size_t sMode) {
-	sHandle->sMode = sMode;
+	sHandle->wp.sMode = sMode;
 	switch (sMode) {
 	case MC_MODE:
-		if (!sHandle->lastHitFacet) StartFromSource();
-		return (sHandle->lastHitFacet != NULL);
+		if (!sHandle->currentParticle.lastHitFacet) StartFromSource();
+		return (sHandle->currentParticle.lastHitFacet != NULL);
 	case AC_MODE:
 		if (sHandle->prgAC != 100) {
 			SetErrorSub("AC matrix not calculated");
@@ -620,10 +614,10 @@ bool StartSimulation(size_t sMode) {
 }
 
 void RecordHit(const int &type) {
-	if (sHandle->hitCacheSize < HITCACHESIZE) {
-		sHandle->hitCache[sHandle->hitCacheSize].pos = sHandle->pPos;
-		sHandle->hitCache[sHandle->hitCacheSize].type = type;
-		sHandle->hitCacheSize++;
+	if (sHandle->tmpGlobalResult.hitCacheSize < HITCACHESIZE) {
+		sHandle->tmpGlobalResult.hitCache[sHandle->tmpGlobalResult.hitCacheSize].pos = sHandle->currentParticle.position;
+		sHandle->tmpGlobalResult.hitCache[sHandle->tmpGlobalResult.hitCacheSize].type = type;
+		sHandle->tmpGlobalResult.hitCacheSize++;
 	}
 }
 
@@ -632,10 +626,10 @@ void RecordLeakPos() {
 	// Record leak for debugging
 	RecordHit(HIT_REF);
 	RecordHit(HIT_LAST);
-	if (sHandle->leakCacheSize < LEAKCACHESIZE) {
-		sHandle->leakCache[sHandle->leakCacheSize].pos = sHandle->pPos;
-		sHandle->leakCache[sHandle->leakCacheSize].dir = sHandle->pDir;
-		sHandle->leakCacheSize++;
+	if (sHandle->tmpGlobalResult.leakCacheSize < LEAKCACHESIZE) {
+		sHandle->tmpGlobalResult.leakCache[sHandle->tmpGlobalResult.leakCacheSize].pos = sHandle->currentParticle.position;
+		sHandle->tmpGlobalResult.leakCache[sHandle->tmpGlobalResult.leakCacheSize].dir = sHandle->currentParticle.direction;
+		sHandle->tmpGlobalResult.leakCacheSize++;
 	}
 }
 
@@ -647,9 +641,8 @@ bool SimulationRun() {
 	bool   goOn;
 
 	if (sHandle->stepPerSec == 0.0) {
-		switch (sHandle->sMode) {
+		switch (sHandle->wp.sMode) {
 		case MC_MODE:
-
 			nbStep = 250;
 			break;
 		case AC_MODE:
@@ -663,7 +656,7 @@ bool SimulationRun() {
 		nbStep = (int)(sHandle->stepPerSec + 0.5);
 	if (nbStep < 1) nbStep = 1;
 	t0 = GetTick();
-	switch (sHandle->sMode) {
+	switch (sHandle->wp.sMode) {
 	case MC_MODE:
 
 		goOn = SimulationMCStep(nbStep);
@@ -727,7 +720,7 @@ int GetIDId(int paramId) {
 
 bool SubprocessFacet::InitializeOnLoad(const size_t& id) {
 	globalId = id;
-	ResizeCounter(sHandle->wp.nbMoments); //Initialize counter
+	ResizeCounter(sHandle->moments.size()); //Initialize counter
 	if (!InitializeLinkAndVolatile(id)) return false;
 	InitializeOutgassingMap();
 	if (!InitializeAngleMap()) return false;
@@ -744,11 +737,11 @@ void SubprocessFacet::InitializeHistogram()
 	FacetHistogramBuffer hist;
 	if (sh.facetHistogramParams.record) {
 		hist.distanceHistogram.resize(sh.facetHistogramParams.GetBounceHistogramSize());
-		hist.distanceHistogram.resize(sh.facetHistogramParams.distanceResolution);
-		hist.timeHistogram.resize(sh.facetHistogramParams.timeResolution);
+		hist.distanceHistogram.resize(sh.facetHistogramParams.GetDistanceHistogramSize());
+		hist.timeHistogram.resize(sh.facetHistogramParams.GetTimeHistogramSize());
 	}
-	tmpHistograms = std::vector<FacetHistogramBuffer>(1 + sHandle->wp.nbMoments, hist);
-	sHandle->histogramTotalSize += (1 + sHandle->wp.nbMoments) * 
+	tmpHistograms = std::vector<FacetHistogramBuffer>(1 + sHandle->moments.size(), hist);
+	sHandle->histogramTotalSize += (1 + sHandle->moments.size()) * 
 		(sh.facetHistogramParams.GetBouncesDataSize() 
 		+ sh.facetHistogramParams.GetDistanceDataSize() 
 		+ sh.facetHistogramParams.GetTimeDataSize());
@@ -760,13 +753,13 @@ bool SubprocessFacet::InitializeDirectionTexture()
 	if (sh.countDirection) {
 		directionSize = sh.texWidth*sh.texHeight * sizeof(DirectionCell);
 		try {
-			direction = std::vector<std::vector<DirectionCell>>(1 + sHandle->wp.nbMoments, std::vector<DirectionCell>(sh.texWidth*sh.texHeight));
+			direction = std::vector<std::vector<DirectionCell>>(1 + sHandle->moments.size(), std::vector<DirectionCell>(sh.texWidth*sh.texHeight));
 		}
 		catch (...) {
 			SetErrorSub("Not enough memory to load direction textures");
 			return false;
 		}
-		sHandle->dirTotalSize += directionSize * (1 + sHandle->wp.nbMoments);
+		sHandle->dirTotalSize += directionSize * (1 + sHandle->moments.size());
 	}
 	else directionSize = 0;
 	return true;
@@ -778,13 +771,13 @@ bool SubprocessFacet::InitializeProfile()
 	if (sh.isProfile) {
 		profileSize = PROFILE_SIZE * sizeof(ProfileSlice);
 		try {
-			profile = std::vector<std::vector<ProfileSlice>>(1 + sHandle->wp.nbMoments, std::vector<ProfileSlice>(PROFILE_SIZE));
+			profile = std::vector<std::vector<ProfileSlice>>(1 + sHandle->moments.size(), std::vector<ProfileSlice>(PROFILE_SIZE));
 		}
 		catch (...) {
 			SetErrorSub("Not enough memory to load profiles");
 			return false;
 		}
-		sHandle->profTotalSize += profileSize * (1 + sHandle->wp.nbMoments);
+		sHandle->profTotalSize += profileSize * (1 + sHandle->moments.size());
 	}
 	else profileSize = 0;
 	return true;
@@ -798,7 +791,7 @@ bool SubprocessFacet::InitializeTexture()
 		largeEnough.resize(nbE);
 		textureSize = nbE * sizeof(TextureCell);
 		try {
-			texture = std::vector<std::vector<TextureCell>>(1 + sHandle->wp.nbMoments, std::vector<TextureCell>(nbE));
+			texture = std::vector<std::vector<TextureCell>>(1 + sHandle->moments.size(), std::vector<TextureCell>(nbE));
 		}
 		catch (...) {
 			SetErrorSub("Not enough memory to load textures");
@@ -811,7 +804,7 @@ bool SubprocessFacet::InitializeTexture()
 		for (size_t j = 0; j < nbE; j++) { //second pass, filter out very small cells
 			largeEnough[j] = (textureCellIncrements[j] < ((5.0f)*fullSizeInc));
 		}
-		sHandle->textTotalSize += textureSize * (1 + sHandle->wp.nbMoments);
+		sHandle->textTotalSize += textureSize * (1 + sHandle->moments.size());
 
 		iw = 1.0 / (double)sh.texWidthD;
 		ih = 1.0 / (double)sh.texHeightD;

@@ -190,7 +190,7 @@ void TimewisePlotter::Display(Worker *w) {
 	GLDataView *v = new GLDataView();
 	v->SetName("Transmission Prob.");
 	v->userData1 = -2;
-	GLCColor c;
+	GLColor c;
 	c.r=0;c.g=255;c.b=0;
 	v->SetColor(c);
 	chart->GetY1Axis()->AddDataView(v);
@@ -419,7 +419,7 @@ void TimewisePlotter::ProcessMessage(GLComponent *src, int message) {
 			int idx = profCombo->GetSelectedIndex();
 			if(idx>=0) remView(profCombo->GetUserValueAt(idx));
 			refreshViews();
-			} else if(src==resetButton) {
+			} else if(src==removeAllButton) {
 			Reset();
 			}*/
 	case MSG_COMBO:

@@ -229,7 +229,7 @@ bool ComputeACMatrix(SHELEM_OLD *mesh) {
           cos2 = Dot(f2->sh.N,c1 - c2);
 
           if(cos1>0.0 && cos2>0.0 && r2>0.0) {
-            if( Visible(*sHandle, &c1,&c2,f1,f2) ) {
+            if( Visible(sHandle, &c1,&c2,f1,f2) ) {
               vf = (cos1 * cos2) / (PI * r2 * r2);
               sHandle->acMatrix[idx] = (ACFLOAT)vf;
             } else {
@@ -373,7 +373,7 @@ void UpdateACHits(Dataport *dpHit,int prIdx,DWORD timeout) {
   gHits = (GlobalHitBuffer *)dpHit->buff;
   gHits->texture_limits[0].max.all = 0.0;
   gHits->texture_limits[0].min.all = 0.0;
-  sHandle->wp.sMode = AC_MODE;
+  //sHandle->wp.sMode = AC_MODE;
   gHits->globalHits.hit.nbDesorbed = sHandle->totalDesorbed;
 
   // Update texture

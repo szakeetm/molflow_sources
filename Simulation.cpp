@@ -13,20 +13,16 @@ SuperStructure::~SuperStructure()
 
 Simulation::Simulation()
 {
-	
-	hitCacheSize = 0;
-	nbLeakSinceUpdate = 0;
-	leakCacheSize = 0;
 	totalDesorbed = 0;
 
 	loadOK = false;
-	sMode = MC_MODE;
-	wp.globalHistogramParams.record = false;
-	lastHitFacet = NULL;
+	wp.sMode = MC_MODE;
+	//wp.globalHistogramParams.record = false;
+	currentParticle.lastHitFacet = NULL;
 
 	hasVolatile = false;
 
-	memset(&tmpGlobalCount, 0, sizeof(tmpGlobalCount));
+	memset(&tmpGlobalResult, 0, sizeof(GlobalHitBuffer));
 
 	sh.nbSuper = 0;
 	acDensity =

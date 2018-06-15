@@ -116,15 +116,14 @@ void SetErrorSub(const char *message) {
 
 char *GetSimuStatus() {
 
-  size_t sMode;
   static char ret[128];
   llong count = sHandle->totalDesorbed;
   llong max   = sHandle->ontheflyParams.desorptionLimit/sHandle->ontheflyParams.nbProcess;
 
-  sMode = sHandle->sMode;
-  if( GetLocalState()==PROCESS_RUNAC ) sMode = AC_MODE;
+  
+  if( GetLocalState()==PROCESS_RUNAC ) sHandle->wp.sMode = AC_MODE;
 
-  switch(sMode) {
+  switch(sHandle->wp.sMode) {
 
     case MC_MODE:
       if( max!=0 ) {

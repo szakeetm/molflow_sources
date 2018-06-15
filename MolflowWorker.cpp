@@ -93,7 +93,7 @@ Worker::Worker() {
 	wp.halfLife = 1;
 	wp.finalOutgassingRate = wp.finalOutgassingRate_Pa_m3_sec = wp.totalDesorbedMolecules = 0.0;
 	wp.motionType = 0;
-	wp.globalHistogramParams.record = false;
+	//wp.globalHistogramParams.record = false;
 	wp.sMode = MC_MODE;
 
 	//Common init
@@ -1268,7 +1268,6 @@ void Worker::ResetMoments() {
 	displayedMoment = 0;
 	moments.swap(std::vector<double>());
 	userMoments.swap(std::vector<std::string>());
-	wp.nbMoments = 0;
 }
 
 double Worker::GetMoleculesPerTP(size_t moment)
