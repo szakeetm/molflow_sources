@@ -2062,11 +2062,10 @@ void MolflowGeometry::ImportDesorption_SYN(
 	double no_scans = 1.0;
 
 	file->ReadKeyword("version"); file->ReadKeyword(":");
-	int version2;
-	version2 = file->ReadInt();
-	if (version2 > SYNVERSION) {
+	int version = file->ReadInt();
+	if (version > SYNVERSION) {
 		char errMsg[512];
-		sprintf(errMsg, "Unsupported SYN version V%d", version2);
+		sprintf(errMsg, "Unsupported SYN version V%d", version);
 		throw Error(errMsg);
 
 	}
@@ -2074,20 +2073,30 @@ void MolflowGeometry::ImportDesorption_SYN(
 	//now read number of facets
 	file->ReadKeyword("totalHit"); file->ReadKeyword(":");
 	file->ReadLLong();
+	if (version >= 10) {
+		file->ReadKeyword("totalHitEquiv"); file->ReadKeyword(":");
+		file->ReadDouble();
+	}
 	file->ReadKeyword("totalDes"); file->ReadKeyword(":");
 	file->ReadLLong();
-	if (version2 >= 6) {
+	if (version >= 6) {
 		file->ReadKeyword("no_scans"); file->ReadKeyword(":");
 		no_scans = file->ReadDouble();
 	}
 	file->ReadKeyword("totalLeak"); file->ReadKeyword(":");
 	file->ReadLLong();
-	if (version2 > 2) {
+	if (version > 2) {
 		file->ReadKeyword("totalFlux"); file->ReadKeyword(":");
 		file->ReadDouble();
 		file->ReadKeyword("totalPower"); file->ReadKeyword(":");
 		file->ReadDouble();
 
+	}
+	if (version >= 10) {
+		file->ReadKeyword("totalAbsEquiv"); file->ReadKeyword(":");
+		file->ReadDouble();
+		file->ReadKeyword("totalDist"); file->ReadKeyword(":");
+		file->ReadDouble();
 	}
 	file->ReadKeyword("maxDes"); file->ReadKeyword(":");
 	file->ReadLLong();
@@ -2168,7 +2177,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 
 			size_t texWidth_file, texHeight_file;
 			//In case of rounding errors, the file might contain different texture dimensions than expected.
-			if (version2 >= 8) {
+			if (version >= 8) {
 				file->ReadKeyword("width"); file->ReadKeyword(":"); texWidth_file = file->ReadInt();
 				file->ReadKeyword("height"); file->ReadKeyword(":"); texHeight_file = file->ReadInt();
 			}
@@ -2183,7 +2192,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 					//Read original values
 					llong MC = file->ReadLLong();
 					double cellArea = 1.0;
-					if (version2 >= 7) cellArea = file->ReadDouble();
+					if (version >= 7) cellArea = file->ReadDouble();
 					if (cellArea < 1E-10) cellArea = 1.0; //to avoid division by zero
 					double flux = file->ReadDouble() / no_scans; //not normalized by cell area
 					double power = file->ReadDouble() / no_scans; //not normalized by cell area
@@ -2228,7 +2237,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 					//Read extra cells from file without doing anything
 					//Read original values
 					file->ReadLLong(); //MC
-					if (version2 >= 7) file->ReadDouble(); //area
+					if (version >= 7) file->ReadDouble(); //area
 					file->ReadDouble(); //flux
 					file->ReadDouble(); //power
 				}
@@ -2238,7 +2247,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 				for (size_t iw = 0; iw < texWidth_file; iw++) {
 					//Read original values
 					file->ReadLLong(); //MC
-					if (version2 >= 7) file->ReadDouble(); //area
+					if (version >= 7) file->ReadDouble(); //area
 					file->ReadDouble(); //flux
 					file->ReadDouble(); //power
 				}
@@ -2261,11 +2270,11 @@ void MolflowGeometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, 
 	//char tmp[512];
 
 	file->ReadKeyword("version"); file->ReadKeyword(":");
-	int version2;
-	version2 = file->ReadInt();
-	if (version2 > SYNVERSION) {
+	int version;
+	version = file->ReadInt();
+	if (version > SYNVERSION) {
 		char errMsg[512];
-		sprintf(errMsg, "Unsupported SYN version V%d", version2);
+		sprintf(errMsg, "Unsupported SYN version V%d", version);
 		throw Error(errMsg);
 
 	}
@@ -2273,19 +2282,29 @@ void MolflowGeometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, 
 	//now read number of facets
 	file->ReadKeyword("totalHit"); file->ReadKeyword(":");
 	file->ReadLLong();
+	if (version >= 10) {
+		file->ReadKeyword("totalHitEquiv"); file->ReadKeyword(":");
+		file->ReadDouble();
+	}
 	file->ReadKeyword("totalDes"); file->ReadKeyword(":");
 	file->ReadLLong();
-	if (version2 >= 6) {
+	if (version >= 6) {
 		file->ReadKeyword("no_scans"); file->ReadKeyword(":");
 		/*no_scans = */file->ReadDouble();
 
 	}
 	file->ReadKeyword("totalLeak"); file->ReadKeyword(":");
 	file->ReadLLong();
-	if (version2 > 2) {
+	if (version > 2) {
 		file->ReadKeyword("totalFlux"); file->ReadKeyword(":");
 		file->ReadDouble();
 		file->ReadKeyword("totalPower"); file->ReadKeyword(":");
+		file->ReadDouble();
+	}
+	if (version >= 10) {
+		file->ReadKeyword("totalAbsEquiv"); file->ReadKeyword(":");
+		file->ReadDouble();
+		file->ReadKeyword("totalDist"); file->ReadKeyword(":");
 		file->ReadDouble();
 	}
 	file->ReadKeyword("maxDes"); file->ReadKeyword(":");
