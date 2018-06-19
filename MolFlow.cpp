@@ -2411,8 +2411,7 @@ void MolFlow::LoadConfig() {
 	for(size_t i=0;i<MAX_VIEWER;i++)        \
 	f->Write(viewer[i]->var," ");   \
 	f->Write("\n");                      \
-}           
-
+}
 
 
 #define WRITED(name,var) {             \

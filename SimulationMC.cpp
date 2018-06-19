@@ -177,20 +177,29 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 	}
 
 	//Global histograms
-	if (sHandle->wp.globalHistogramParams.record) {
+	
 		for (int m = 0; m < (1 + nbMoments); m++) {
 			BYTE *histCurrentMoment = buffer + sizeof(GlobalHitBuffer) + m * sHandle->wp.globalHistogramParams.GetDataSize();
-			double* nbHitsHistogram = (double*)histCurrentMoment;
-			for (size_t i = 0; i < sHandle->wp.globalHistogramParams.GetBounceHistogramSize(); i++)
-				nbHitsHistogram[i] += sHandle->tmpGlobalHistograms[m].nbHitsHistogram[i];
-			double* distanceHistogram = (double*)(histCurrentMoment + sHandle->wp.globalHistogramParams.GetBouncesDataSize());
-			for (size_t i = 0; i < (sHandle->wp.globalHistogramParams.GetDistanceHistogramSize()); i++)
-				distanceHistogram[i] += sHandle->tmpGlobalHistograms[m].distanceHistogram[i];
-			double* timeHistogram = (double*)(histCurrentMoment + sHandle->wp.globalHistogramParams.GetBouncesDataSize() + sHandle->wp.globalHistogramParams.GetDistanceDataSize());
-			for (size_t i = 0; i < (sHandle->wp.globalHistogramParams.GetTimeHistogramSize()); i++)
-				timeHistogram[i] += sHandle->tmpGlobalHistograms[m].timeHistogram[i];
+			if (sHandle->wp.globalHistogramParams.recordBounce) {
+				double* nbHitsHistogram = (double*)histCurrentMoment;
+				for (size_t i = 0; i < sHandle->wp.globalHistogramParams.GetBounceHistogramSize(); i++) {
+					nbHitsHistogram[i] += sHandle->tmpGlobalHistograms[m].nbHitsHistogram[i];
+				}
+			}
+			if (sHandle->wp.globalHistogramParams.recordDistance) {
+				double* distanceHistogram = (double*)(histCurrentMoment + sHandle->wp.globalHistogramParams.GetBouncesDataSize());
+				for (size_t i = 0; i < (sHandle->wp.globalHistogramParams.GetDistanceHistogramSize()); i++) {
+					distanceHistogram[i] += sHandle->tmpGlobalHistograms[m].distanceHistogram[i];
+				}
+			}
+			if (sHandle->wp.globalHistogramParams.recordTime) {
+				double* timeHistogram = (double*)(histCurrentMoment + sHandle->wp.globalHistogramParams.GetBouncesDataSize() + sHandle->wp.globalHistogramParams.GetDistanceDataSize());
+				for (size_t i = 0; i < (sHandle->wp.globalHistogramParams.GetTimeHistogramSize()); i++) {
+					timeHistogram[i] += sHandle->tmpGlobalHistograms[m].timeHistogram[i];
+				}
+			}
 		}
-	}
+	
 
 	size_t facetHitsSize = (1 + nbMoments) * sizeof(FacetHitBuffer);
 	// Facets
@@ -287,20 +296,29 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 				}
 
 				//Facet histograms
-				if (f.sh.facetHistogramParams.record) {
+				
 					for (int m = 0; m < (1 + nbMoments); m++) {
 						BYTE *histCurrentMoment = buffer + f.sh.hitOffset + facetHitsSize + f.profileSize*(1 + nbMoments) + f.textureSize*(1 + nbMoments) + f.directionSize*(1 + nbMoments) + f.sh.anglemapParams.GetRecordedDataSize() + m * f.sh.facetHistogramParams.GetDataSize();
-						double* nbHitsHistogram = (double*)histCurrentMoment;
-						for (size_t i = 0; i < sHandle->wp.globalHistogramParams.GetBounceHistogramSize(); i++)
-							nbHitsHistogram[i] += sHandle->tmpGlobalHistograms[m].nbHitsHistogram[i];
-						double* distanceHistogram = (double*)(histCurrentMoment + sHandle->wp.globalHistogramParams.GetBouncesDataSize());
-						for (size_t i = 0; i < (sHandle->wp.globalHistogramParams.GetDistanceHistogramSize()); i++)
-							distanceHistogram[i] += sHandle->tmpGlobalHistograms[m].distanceHistogram[i];
-						double* timeHistogram = (double*)(histCurrentMoment + sHandle->wp.globalHistogramParams.GetBouncesDataSize() + sHandle->wp.globalHistogramParams.GetDistanceDataSize());
-						for (size_t i = 0; i < (sHandle->wp.globalHistogramParams.GetTimeHistogramSize()); i++)
-							timeHistogram[i] += sHandle->tmpGlobalHistograms[m].timeHistogram[i];
+						if (f.sh.facetHistogramParams.recordBounce) {
+							double* nbHitsHistogram = (double*)histCurrentMoment;
+							for (size_t i = 0; i < f.sh.facetHistogramParams.GetBounceHistogramSize(); i++) {
+								nbHitsHistogram[i] += f.tmpHistograms[m].nbHitsHistogram[i];
+							}
+						}
+						if (f.sh.facetHistogramParams.recordDistance) {
+							double* distanceHistogram = (double*)(histCurrentMoment + f.sh.facetHistogramParams.GetBouncesDataSize());
+							for (size_t i = 0; i < (f.sh.facetHistogramParams.GetDistanceHistogramSize()); i++) {
+								distanceHistogram[i] += f.tmpHistograms[m].distanceHistogram[i];
+							}
+						}
+						if (f.sh.facetHistogramParams.recordTime) {
+							double* timeHistogram = (double*)(histCurrentMoment + f.sh.facetHistogramParams.GetBouncesDataSize() + f.sh.facetHistogramParams.GetDistanceDataSize());
+							for (size_t i = 0; i < (f.sh.facetHistogramParams.GetTimeHistogramSize()); i++) {
+								timeHistogram[i] += f.tmpHistograms[m].timeHistogram[i];
+							}
+						}
 					}
-				}
+				
 			} // End if(hitted)
 		} // End nbFacet
 	} // End nbSuper
@@ -1233,32 +1251,7 @@ void RecordAbsorb(SubprocessFacet *iFacet) {
 	sHandle->tmpGlobalResult.globalHits.hit.nbHitEquiv += sHandle->currentParticle.oriRatio;
 	sHandle->tmpGlobalResult.globalHits.hit.nbAbsEquiv += sHandle->currentParticle.oriRatio;
 
-	//Record in global and facet histograms
-	for (size_t m = 0; m <= sHandle->moments.size(); m++) {
-		if (m == 0 || abs(sHandle->currentParticle.flightTime - sHandle->moments[m - 1]) < sHandle->wp.timeWindowSize / 2.0) {
-			size_t binIndex;
-			if (sHandle->wp.globalHistogramParams.record) {
-				binIndex = Min(sHandle->currentParticle.nbBounces / sHandle->wp.globalHistogramParams.nbBounceBinsize, sHandle->wp.globalHistogramParams.GetBounceHistogramSize() - 1);
-				sHandle->tmpGlobalHistograms[m].nbHitsHistogram[binIndex] += sHandle->currentParticle.oriRatio;
-
-				binIndex = Min(static_cast<size_t>(sHandle->currentParticle.distanceTraveled / sHandle->wp.globalHistogramParams.distanceBinsize), sHandle->wp.globalHistogramParams.GetDistanceHistogramSize() - 1);
-				sHandle->tmpGlobalHistograms[m].distanceHistogram[binIndex] += sHandle->currentParticle.oriRatio;
-
-				binIndex = Min(static_cast<size_t>(sHandle->currentParticle.flightTime / sHandle->wp.globalHistogramParams.timeBinsize), sHandle->wp.globalHistogramParams.GetTimeHistogramSize() - 1);
-				sHandle->tmpGlobalHistograms[m].timeHistogram[binIndex] += sHandle->currentParticle.oriRatio;
-			}
-			if (iFacet->sh.facetHistogramParams.record) {
-				binIndex = Min(sHandle->currentParticle.nbBounces / iFacet->sh.facetHistogramParams.nbBounceBinsize, iFacet->sh.facetHistogramParams.GetBounceHistogramSize() - 1);
-				iFacet->tmpHistograms[m].nbHitsHistogram[binIndex] += sHandle->currentParticle.oriRatio;
-
-				binIndex = Min(static_cast<size_t>(sHandle->currentParticle.distanceTraveled / iFacet->sh.facetHistogramParams.distanceBinsize), iFacet->sh.facetHistogramParams.GetDistanceHistogramSize() - 1);
-				iFacet->tmpHistograms[m].distanceHistogram[binIndex] += sHandle->currentParticle.oriRatio;
-
-				binIndex = Min(static_cast<size_t>(sHandle->currentParticle.flightTime / iFacet->sh.facetHistogramParams.timeBinsize), iFacet->sh.facetHistogramParams.GetTimeHistogramSize() - 1);
-				iFacet->tmpHistograms[m].timeHistogram[binIndex] += sHandle->currentParticle.oriRatio;
-			}
-		}
-	}
+	RecordHistograms(iFacet);
 
 	RecordHit(HIT_ABS);
 	double ortVelocity = sHandle->currentParticle.velocity*abs(Dot(sHandle->currentParticle.direction, iFacet->sh.N));
@@ -1268,6 +1261,40 @@ void RecordAbsorb(SubprocessFacet *iFacet) {
 	if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
 	if (/*iFacet->texture &&*/ iFacet->sh.countAbs) RecordHitOnTexture(iFacet, sHandle->currentParticle.flightTime, true, 2.0, 1.0); //was 2.0, 1.0
 	if (/*iFacet->direction &&*/ iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->currentParticle.flightTime);
+}
+
+void RecordHistograms(SubprocessFacet * iFacet)
+{
+	//Record in global and facet histograms
+	for (size_t m = 0; m <= sHandle->moments.size(); m++) {
+		if (m == 0 || abs(sHandle->currentParticle.flightTime - sHandle->moments[m - 1]) < sHandle->wp.timeWindowSize / 2.0) {
+			size_t binIndex;
+			if (sHandle->wp.globalHistogramParams.recordBounce) {
+				binIndex = Min(sHandle->currentParticle.nbBounces / sHandle->wp.globalHistogramParams.nbBounceBinsize, sHandle->wp.globalHistogramParams.GetBounceHistogramSize() - 1);
+				sHandle->tmpGlobalHistograms[m].nbHitsHistogram[binIndex] += sHandle->currentParticle.oriRatio;
+			}
+			if (sHandle->wp.globalHistogramParams.recordDistance) {
+				binIndex = Min(static_cast<size_t>(sHandle->currentParticle.distanceTraveled / sHandle->wp.globalHistogramParams.distanceBinsize), sHandle->wp.globalHistogramParams.GetDistanceHistogramSize() - 1);
+				sHandle->tmpGlobalHistograms[m].distanceHistogram[binIndex] += sHandle->currentParticle.oriRatio;
+			}
+			if (sHandle->wp.globalHistogramParams.recordTime) {
+				binIndex = Min(static_cast<size_t>(sHandle->currentParticle.flightTime / sHandle->wp.globalHistogramParams.timeBinsize), sHandle->wp.globalHistogramParams.GetTimeHistogramSize() - 1);
+				sHandle->tmpGlobalHistograms[m].timeHistogram[binIndex] += sHandle->currentParticle.oriRatio;
+			}
+			if (iFacet->sh.facetHistogramParams.recordBounce) {
+				binIndex = Min(sHandle->currentParticle.nbBounces / iFacet->sh.facetHistogramParams.nbBounceBinsize, iFacet->sh.facetHistogramParams.GetBounceHistogramSize() - 1);
+				iFacet->tmpHistograms[m].nbHitsHistogram[binIndex] += sHandle->currentParticle.oriRatio;
+			}
+			if (iFacet->sh.facetHistogramParams.recordDistance) {
+				binIndex = Min(static_cast<size_t>(sHandle->currentParticle.distanceTraveled / iFacet->sh.facetHistogramParams.distanceBinsize), iFacet->sh.facetHistogramParams.GetDistanceHistogramSize() - 1);
+				iFacet->tmpHistograms[m].distanceHistogram[binIndex] += sHandle->currentParticle.oriRatio;
+			}
+			if (iFacet->sh.facetHistogramParams.recordTime) {
+				binIndex = Min(static_cast<size_t>(sHandle->currentParticle.flightTime / iFacet->sh.facetHistogramParams.timeBinsize), iFacet->sh.facetHistogramParams.GetTimeHistogramSize() - 1);
+				iFacet->tmpHistograms[m].timeHistogram[binIndex] += sHandle->currentParticle.oriRatio;
+			}
+		}
+	}
 }
 
 void RecordHitOnTexture(SubprocessFacet *f, double time, bool countHit, double velocity_factor, double ortSpeedFactor) {
