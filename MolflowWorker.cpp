@@ -93,7 +93,6 @@ Worker::Worker() {
 	wp.halfLife = 1;
 	wp.finalOutgassingRate = wp.finalOutgassingRate_Pa_m3_sec = wp.totalDesorbedMolecules = 0.0;
 	wp.motionType = 0;
-	//wp.globalHistogramParams.record = false;
 	wp.sMode = MC_MODE;
 
 	//Common init

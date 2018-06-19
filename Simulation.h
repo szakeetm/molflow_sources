@@ -225,6 +225,7 @@ void RecordLeakPos();
 bool StartFromSource();
 void PerformBounce(SubprocessFacet *iFacet);
 void RecordAbsorb(SubprocessFacet *iFacet);
+void RecordHistograms(SubprocessFacet * iFacet);
 void PerformTeleport(SubprocessFacet *iFacet);
 void PerformTransparentPass(SubprocessFacet *iFacet);
 void UpdateHits(Dataport *dpHit, Dataport *dpLog, int prIdx, DWORD timeout);

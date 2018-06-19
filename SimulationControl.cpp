@@ -199,11 +199,10 @@ bool LoadSimulation(Dataport *loader) {
 
 	//Initialize global histogram
 	FacetHistogramBuffer hist;
-	if (sHandle->wp.globalHistogramParams.record) {
-		hist.nbHitsHistogram.resize(sHandle->wp.globalHistogramParams.GetBounceHistogramSize());
-		hist.distanceHistogram.resize(sHandle->wp.globalHistogramParams.GetDistanceHistogramSize());
-		hist.timeHistogram.resize(sHandle->wp.globalHistogramParams.GetTimeHistogramSize());
-	}
+	hist.nbHitsHistogram.resize(sHandle->wp.globalHistogramParams.recordBounce ? sHandle->wp.globalHistogramParams.GetBounceHistogramSize() : 0); hist.nbHitsHistogram.shrink_to_fit();
+	hist.distanceHistogram.resize(sHandle->wp.globalHistogramParams.recordDistance ? sHandle->wp.globalHistogramParams.GetDistanceHistogramSize() : 0); hist.distanceHistogram.shrink_to_fit();
+	hist.timeHistogram.resize(sHandle->wp.globalHistogramParams.recordTime ? sHandle->wp.globalHistogramParams.GetTimeHistogramSize() : 0); hist.timeHistogram.shrink_to_fit();
+	
 	sHandle->tmpGlobalHistograms = std::vector<FacetHistogramBuffer>(1 + sHandle->moments.size(), hist);
 
 	//Reserve particle log
@@ -539,12 +538,11 @@ void ResetTmpCounters() {
 	memset(&sHandle->tmpGlobalResult, 0, sizeof(GlobalHitBuffer));
 	
 	//Reset global histograms
-	if (sHandle->wp.globalHistogramParams.record) {
-		for (size_t m = 0; m < (sHandle->moments.size() + 1); m++) {
+	for (size_t m = 0; m < (sHandle->moments.size() + 1); m++) {
+		//Could use ZEROVECTOR as well
 			std::fill(sHandle->tmpGlobalHistograms[m].nbHitsHistogram.begin(), sHandle->tmpGlobalHistograms[m].nbHitsHistogram.end(), 0);
 			std::fill(sHandle->tmpGlobalHistograms[m].distanceHistogram.begin(), sHandle->tmpGlobalHistograms[m].distanceHistogram.end(), 0);
 			std::fill(sHandle->tmpGlobalHistograms[m].timeHistogram.begin(), sHandle->tmpGlobalHistograms[m].timeHistogram.end(), 0);
-		}
 	}
 
 	for (int j = 0; j < sHandle->sh.nbSuper; j++) {
@@ -553,13 +551,13 @@ void ResetTmpCounters() {
 			f.hitted = false;
 
 			//Reset facet histograms
-			if (f.sh.facetHistogramParams.record) {
+			
 				for (auto& t : f.tmpHistograms) {
 					ZEROVECTOR(t.nbHitsHistogram);
 					ZEROVECTOR(t.distanceHistogram);
 					ZEROVECTOR(t.timeHistogram);
 				}
-			}
+			
 
 			for (auto& t : f.texture) {
 				ZEROVECTOR(t);
@@ -735,11 +733,10 @@ bool SubprocessFacet::InitializeOnLoad(const size_t& id) {
 void SubprocessFacet::InitializeHistogram()
 {
 	FacetHistogramBuffer hist;
-	if (sh.facetHistogramParams.record) {
-		hist.distanceHistogram.resize(sh.facetHistogramParams.GetBounceHistogramSize());
-		hist.distanceHistogram.resize(sh.facetHistogramParams.GetDistanceHistogramSize());
-		hist.timeHistogram.resize(sh.facetHistogramParams.GetTimeHistogramSize());
-	}
+	if (sh.facetHistogramParams.recordBounce) hist.nbHitsHistogram.resize(sh.facetHistogramParams.GetBounceHistogramSize());
+	if (sh.facetHistogramParams.recordDistance) 	hist.distanceHistogram.resize(sh.facetHistogramParams.GetDistanceHistogramSize());
+	if (sh.facetHistogramParams.recordTime) 	hist.timeHistogram.resize(sh.facetHistogramParams.GetTimeHistogramSize());
+	
 	tmpHistograms = std::vector<FacetHistogramBuffer>(1 + sHandle->moments.size(), hist);
 	sHandle->histogramTotalSize += (1 + sHandle->moments.size()) * 
 		(sh.facetHistogramParams.GetBouncesDataSize() 

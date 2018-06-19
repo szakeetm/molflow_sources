@@ -17,7 +17,6 @@ Simulation::Simulation()
 
 	loadOK = false;
 	wp.sMode = MC_MODE;
-	//wp.globalHistogramParams.record = false;
 	currentParticle.lastHitFacet = NULL;
 
 	hasVolatile = false;
