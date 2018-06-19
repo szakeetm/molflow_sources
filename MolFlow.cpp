@@ -2404,13 +2404,16 @@ void MolFlow::LoadConfig() {
 	SAFE_DELETE(f);
 }
 
+
 #define WRITEI(name,var) {             \
 	f->Write(name);                      \
 	f->Write(":");                       \
 	for(size_t i=0;i<MAX_VIEWER;i++)        \
 	f->Write(viewer[i]->var," ");   \
 	f->Write("\n");                      \
-}                                      \
+}           
+
+
 
 #define WRITED(name,var) {             \
 	f->Write(name);                      \
@@ -2419,6 +2422,7 @@ void MolFlow::LoadConfig() {
 	f->Write(viewer[i]->var," ");\
 	f->Write("\n");                      \
 }
+
 
 void MolFlow::SaveConfig() {
 
