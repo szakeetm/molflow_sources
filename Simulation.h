@@ -133,6 +133,7 @@ public:
 	size_t   structureId;        // Current structure
 	int      teleportedFrom;   // We memorize where the particle came from: we can teleport back
 	SubprocessFacet *lastHitFacet;     // Last hitted facet
+	std::vector<SubprocessFacet*> transparentHitBuffer; //Storing this buffer simulation-wide is cheaper than recreating it at every Intersect() call
 };
 
 class Simulation {

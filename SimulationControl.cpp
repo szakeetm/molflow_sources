@@ -538,11 +538,11 @@ void ResetTmpCounters() {
 	memset(&sHandle->tmpGlobalResult, 0, sizeof(GlobalHitBuffer));
 	
 	//Reset global histograms
-	for (size_t m = 0; m < (sHandle->moments.size() + 1); m++) {
+	for (auto& h : sHandle->tmpGlobalHistograms) {
 		//Could use ZEROVECTOR as well
-			std::fill(sHandle->tmpGlobalHistograms[m].nbHitsHistogram.begin(), sHandle->tmpGlobalHistograms[m].nbHitsHistogram.end(), 0);
-			std::fill(sHandle->tmpGlobalHistograms[m].distanceHistogram.begin(), sHandle->tmpGlobalHistograms[m].distanceHistogram.end(), 0);
-			std::fill(sHandle->tmpGlobalHistograms[m].timeHistogram.begin(), sHandle->tmpGlobalHistograms[m].timeHistogram.end(), 0);
+		ZEROVECTOR(h.nbHitsHistogram);
+		ZEROVECTOR(h.distanceHistogram);
+		ZEROVECTOR(h.timeHistogram);
 	}
 
 	for (int j = 0; j < sHandle->sh.nbSuper; j++) {
@@ -560,17 +560,17 @@ void ResetTmpCounters() {
 			
 
 			for (auto& t : f.texture) {
-				ZEROVECTOR(t);
+				std::fill(t.begin(), t.end(), TextureCell());
 			}
 
 			
-			for (auto& t : f.profile) {
-				ZEROVECTOR(t);
+			for (auto& p : f.profile) {
+				std::fill(p.begin(), p.end(), ProfileSlice());
 			}
 
 			
-			for (auto& t : f.direction) {
-				ZEROVECTOR(t);
+			for (auto& d : f.direction) {
+				std::fill(d.begin(), d.end(), DirectionCell());
 			}
 
 			if (f.sh.anglemapParams.record) {

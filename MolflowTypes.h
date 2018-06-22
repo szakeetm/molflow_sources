@@ -61,17 +61,17 @@ typedef float ACFLOAT;
 #define HITMAX 1E38
 class ProfileSlice {
 public:
-	double countEquiv;
-	double sum_v_ort;
-	double sum_1_per_ort_velocity;
+	double countEquiv=0.0;
+	double sum_v_ort=0.0;
+	double sum_1_per_ort_velocity=0.0;
 	ProfileSlice& operator+=(const ProfileSlice& rhs);
 };
 
 class TextureCell {
 public:
-	double countEquiv;
-	double sum_v_ort_per_area;
-	double sum_1_per_ort_velocity;
+	double countEquiv=0.0;
+	double sum_v_ort_per_area=0.0;
+	double sum_1_per_ort_velocity=0.0;
 	TextureCell& operator+=(const TextureCell& rhs);
 };
 

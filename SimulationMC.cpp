@@ -1498,7 +1498,7 @@ void IncreaseFacetCounter(SubprocessFacet *f, double time, size_t hit, size_t de
 }
 
 void SubprocessFacet::ResetCounter() {
-	ZEROVECTOR(tmpCounter);
+	std::fill(tmpCounter.begin(), tmpCounter.end(), FacetHitBuffer());
 }
 
 void SubprocessFacet::ResizeCounter(size_t nbMoments) {
