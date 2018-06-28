@@ -147,9 +147,9 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer,const OntheflySimulationPa
 		f->sh.hitOffset = fOffset; //Marking the offsets for the hits, but here we don't actually send any hits.
 		fOffset += f->GetHitsSize(mApp->worker.moments.size());
 		WRITEBUFFER(f->sh, FacetProperties);
-		memcpy(buffer, f->indices, sizeof(size_t)*f->sh.nbIndex);
+		memcpy(buffer, f->indices.data(), sizeof(size_t)*f->sh.nbIndex);
 		buffer += sizeof(size_t)*f->sh.nbIndex;
-		memcpy(buffer, f->vertices2, sizeof(Vector2d)*f->sh.nbIndex);
+		memcpy(buffer, f->vertices2.data(), sizeof(Vector2d)*f->sh.nbIndex);
 		buffer += sizeof(Vector2d)*f->sh.nbIndex;
 		if (f->sh.useOutgassingFile) {
 			memcpy(buffer, f->outgassingMap, sizeof(double)*f->sh.outgassingMapWidth*f->sh.outgassingMapHeight);

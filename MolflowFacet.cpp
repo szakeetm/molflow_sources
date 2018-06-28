@@ -1181,12 +1181,6 @@ double Facet::DensityCorrection() {
 
 void Facet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchive) {
 
-		std::vector<size_t> indicesVector(sh.nbIndex);
-		std::vector<Vector2d> vertices2Vector(sh.nbIndex);
-		for (size_t i = 0; i < sh.nbIndex; i++) {
-			indicesVector[i] = indices[i];
-			vertices2Vector[i] = vertices2[i];
-		}
 		std::vector<double> outgMapVector(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0);
 		memcpy(outgMapVector.data(), outgassingMap, sizeof(double)*(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0));
 		std::vector<double> textIncVector;
@@ -1233,8 +1227,8 @@ void Facet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchive) {
 
 		outputarchive(
 			CEREAL_NVP(sh), //Contains anglemapParams
-			CEREAL_NVP(indicesVector),
-			CEREAL_NVP(vertices2Vector)
+			CEREAL_NVP(indices),
+			CEREAL_NVP(vertices2)
 #ifdef MOLFLOW
 			, CEREAL_NVP(outgMapVector)
 			, CEREAL_NVP(textIncVector)

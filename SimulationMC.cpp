@@ -430,8 +430,7 @@ void PerformTeleport(SubprocessFacet *iFacet) {
 	if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
 
 	// Relaunch particle from new facet
-	double inPhi, inTheta;
-	std::tie(inTheta, inPhi) = CartesianToPolar(sHandle->currentParticle.direction, iFacet->sh.nU, iFacet->sh.nV, iFacet->sh.N);
+	auto[inTheta, inPhi] = CartesianToPolar(sHandle->currentParticle.direction, iFacet->sh.nU, iFacet->sh.nV, iFacet->sh.N);
 	PolarToCartesian(destination, inTheta, inPhi, false);
 	// Move particle to teleport destination point
 	double u = iFacet->colU;
@@ -482,11 +481,7 @@ bool SimulationMCStep(size_t nbStep) {
 	for (size_t i = 0; i < nbStep; i++) {
 
 		//Prepare output values
-		SubprocessFacet   *collidedFacet;
-		double   d;
-		bool     found;
-
-		std::tie(found, collidedFacet, d) = Intersect(sHandle, sHandle->currentParticle.position, sHandle->currentParticle.direction);
+		auto[found, collidedFacet, d] = Intersect(sHandle, sHandle->currentParticle.position, sHandle->currentParticle.direction);
 
 		if (found) {
 
@@ -756,12 +751,8 @@ bool StartFromSource() {
 		break;
 	case DES_ANGLEMAP:
 	{
-		double theta, phi;
-		int thetaLowerIndex;
-		double thetaOvershoot;
-
-		std::tie(theta, thetaLowerIndex, thetaOvershoot) = src->angleMap.GenerateThetaFromAngleMap(src->sh.anglemapParams);
-		phi = src->angleMap.GeneratePhiFromAngleMap(thetaLowerIndex, thetaOvershoot, src->sh.anglemapParams);
+		auto [theta, thetaLowerIndex, thetaOvershoot] = src->angleMap.GenerateThetaFromAngleMap(src->sh.anglemapParams);
+		auto phi = src->angleMap.GeneratePhiFromAngleMap(thetaLowerIndex, thetaOvershoot, src->sh.anglemapParams);
 		/*
 
 		size_t angleMapSum = src->angleMapLineSums[(src->sh.anglemapParams.thetaLowerRes + src->sh.anglemapParams.thetaHigherRes) - 1];
@@ -907,13 +898,13 @@ std::tuple<double, int, double> Anglemap::GenerateThetaFromAngleMap(const Anglem
 	if (thetaLowerIndex == -1) { //first half section
 		thetaOvershoot = 0.5 + 0.5 * lookupValue / theta_CDF[0]; //between 0.5 and 1
 		theta = GetTheta((double)thetaLowerIndex + 0.5 + thetaOvershoot, anglemapParams); //between 0 and the first section end
-		return std::tie(theta, thetaLowerIndex, thetaOvershoot);
+		return { theta, thetaLowerIndex, thetaOvershoot };
 	}
 	else if (thetaLowerIndex == (anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes - 1)) { //last half section //can this happen?
 		thetaOvershoot = 0.5 * (lookupValue - theta_CDF[thetaLowerIndex])
 			/ (1.0 - theta_CDF[thetaLowerIndex]); //between 0 and 0.5
 		theta = GetTheta((double)thetaLowerIndex + 0.5 + thetaOvershoot, anglemapParams); //between 0 and the first section end
-		return std::tie(theta, thetaLowerIndex, thetaOvershoot);
+		return { theta, thetaLowerIndex, thetaOvershoot };
 	}
 	else { //regular section
 		if (/*true || */phi_CDFsums[thetaLowerIndex] == phi_CDFsums[thetaLowerIndex + 1]) {
@@ -944,7 +935,7 @@ std::tuple<double, int, double> Anglemap::GenerateThetaFromAngleMap(const Anglem
 		}
 	}
 	_ASSERTE(theta == theta);
-	return std::tie(theta, thetaLowerIndex, thetaOvershoot);
+	return { theta, thetaLowerIndex, thetaOvershoot };
 }
 
 double Anglemap::GeneratePhiFromAngleMap(const int & thetaLowerIndex, const double & thetaOvershoot, const AnglemapParams & anglemapParams)
@@ -1197,8 +1188,7 @@ void PerformBounce(SubprocessFacet *iFacet) {
 		else  if (reflTypeRnd < (iFacet->sh.reflection.diffusePart + iFacet->sh.reflection.specularPart))
 		{
 			//specular reflection
-			double inTheta, inPhi;
-			std::tie(inTheta, inPhi) = CartesianToPolar(sHandle->currentParticle.direction, iFacet->sh.nU, iFacet->sh.nV, iFacet->sh.N);
+			auto [inTheta, inPhi] = CartesianToPolar(sHandle->currentParticle.direction, iFacet->sh.nU, iFacet->sh.nV, iFacet->sh.N);
 			sHandle->currentParticle.direction = PolarToCartesian(iFacet, PI - inTheta, inPhi, false);
 
 		}
@@ -1393,8 +1383,7 @@ void LogHit(SubprocessFacet * f)
 }
 
 void RecordAngleMap(SubprocessFacet* collidedFacet) {
-	double inTheta, inPhi;
-	std::tie(inTheta, inPhi) = CartesianToPolar(sHandle->currentParticle.direction, collidedFacet->sh.nU, collidedFacet->sh.nV, collidedFacet->sh.N);
+	auto[inTheta, inPhi] = CartesianToPolar(sHandle->currentParticle.direction, collidedFacet->sh.nU, collidedFacet->sh.nV, collidedFacet->sh.N);
 	if (inTheta > PI / 2.0) inTheta = abs(PI - inTheta); //theta is originally respective to N, but we'd like the angle between 0 and PI/2
 	bool countTheta = true;
 	size_t thetaIndex;
