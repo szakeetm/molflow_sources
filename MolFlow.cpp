@@ -66,6 +66,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "FormulaEditor.h"
 #include "ParticleLogger.h"
 #include "HistogramSettings.h"
+#include "HistogramPlotter.h"
 
 //Hard-coded identifiers, update these on new release
 //---------------------------------------------------
@@ -1463,6 +1464,8 @@ void MolFlow::LoadFile(char *fName) {
 		if (momentsEditor) momentsEditor->Refresh();
 		if (pressureEvolution) pressureEvolution->Reset();
 		if (timewisePlotter) timewisePlotter->Refresh();
+		if (histogramPlotter) histogramPlotter->Reset();
+		if (histogramSettings) histogramSettings->Refresh({});
 		//if (profilePlotter) profilePlotter->Refresh(); //Might have loaded views
 		if (texturePlotter) texturePlotter->Update(0.0,true);
 		//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
@@ -2139,6 +2142,8 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	if (pressureEvolution) pressureEvolution->Reset();
 	if (timewisePlotter) timewisePlotter->Refresh();
 	if (profilePlotter) profilePlotter->Refresh();
+	if (histogramSettings) histogramSettings->Refresh({});
+	if (histogramPlotter) histogramPlotter->Reset();
 	if (texturePlotter) texturePlotter->Update(0.0, true);
 	//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 	if (textureScaling) textureScaling->Update();
@@ -2209,6 +2214,8 @@ void MolFlow::EmptyGeometry() {
 	if (pressureEvolution) pressureEvolution->Refresh();
 	if (timewisePlotter) timewisePlotter->Refresh();
 	if (profilePlotter) profilePlotter->Refresh();
+	if (histogramSettings) histogramSettings->Refresh({});
+	if (histogramPlotter) histogramPlotter->Reset();
 	if (texturePlotter) texturePlotter->Update(0.0, true);
 	//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 	if (outgassingMap) outgassingMap->Update(m_fTime, true);
@@ -2788,6 +2795,7 @@ void MolFlow::UpdatePlotters() {
 	if (timewisePlotter) timewisePlotter->Update(m_fTime, true);
 	if (profilePlotter) profilePlotter->Update(m_fTime, true);
 	if (texturePlotter) texturePlotter->Update(m_fTime, true);
+	if (histogramPlotter) histogramPlotter->Update(m_fTime,true);
 }
 
 void MolFlow::UpdateFacetHits(bool allRows) {
