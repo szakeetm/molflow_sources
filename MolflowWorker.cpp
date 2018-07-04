@@ -1196,6 +1196,7 @@ void Worker::ResetWorkerStats() {
 
 	memset(&globalHitCache, 0, sizeof(GlobalHitBuffer));
 
+
 }
 
 void Worker::Start() {

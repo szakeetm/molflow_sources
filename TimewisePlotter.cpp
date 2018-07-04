@@ -496,18 +496,11 @@ void TimewisePlotter::UpdateMoment() {
 bool TimewisePlotter::ParseMoments(){
 	//Quick string parsing from http://stackoverflow.com/questions/14265581/parse-split-a-string-in-c-using-string-delimiter-standard-c
 	std::string s = momentsText->GetText();
-	std::string delimiter = ";";
-	size_t pos = 0;
-	std::string token;
-	displayedMoments = std::vector<size_t>();
-	while ((pos = s.find(delimiter)) != std::string::npos) {
-		token = s.substr(0, pos);
-		//process tokens
+	std::vector<std::string> tokens = SplitString(s,';');
+	displayedMoments.clear();
+	for (const auto& token : tokens) {
 		ParseToken(token);
-		s.erase(0, pos + delimiter.length());
 	}
-	//last token
-	ParseToken(s);
 	return true;
 }
 
