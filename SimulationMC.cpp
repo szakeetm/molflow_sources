@@ -407,7 +407,9 @@ void PerformTeleport(SubprocessFacet *iFacet) {
 		for (size_t j = 0; j < sHandle->structures[i].facets.size() && (!found); j++) {
 			if (destIndex == sHandle->structures[i].facets[j].globalId) {
 				destination = &(sHandle->structures[i].facets[j]);
-				sHandle->currentParticle.structureId = destination->sh.superIdx; //change current superstructure
+				if (destination->sh.superIdx != -1) {
+					sHandle->currentParticle.structureId = destination->sh.superIdx; //change current superstructure, unless the target is a universal facet
+				}
 				sHandle->currentParticle.teleportedFrom = (int)iFacet->globalId; //memorize where the particle came from
 				found = true;
 			}
@@ -851,6 +853,12 @@ bool StartFromSource() {
 	}
 
 	// Current structure
+	if (src->sh.superIdx == -1) {
+		std::ostringstream out;
+		out << "Facet " << (src->globalId + 1) << " is in all structures, it shouldn't desorb.";
+		SetErrorSub(out.str().c_str());
+		return false;
+	}
 	sHandle->currentParticle.structureId = src->sh.superIdx;
 	sHandle->currentParticle.teleportedFrom = -1;
 

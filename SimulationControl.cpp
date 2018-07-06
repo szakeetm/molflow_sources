@@ -180,7 +180,7 @@ bool LoadSimulation(Dataport *loader) {
 		sHandle->structures.resize(sHandle->sh.nbSuper); //Create structures
 
 		//Facets
-		for (size_t i = 0; i < sHandle->sh.nbFacet; i++) {
+		for (size_t i = 0; i < sHandle->sh.nbFacet; i++) { //Necessary because facets is not (yet) a vector in the interface
 			SubprocessFacet f;
 			inputarchive(
 				f.sh,
@@ -192,8 +192,14 @@ bool LoadSimulation(Dataport *loader) {
 
 			//Some initialization
 			if (!f.InitializeOnLoad(i)) return false;
-
-			sHandle->structures[f.sh.superIdx].facets.push_back(f); //Assign to structure
+			if (f.sh.superIdx == -1) { //Facet in all structures
+				for (auto& s : sHandle->structures) {
+					s.facets.push_back(f);
+				}
+			}
+			else {
+				sHandle->structures[f.sh.superIdx].facets.push_back(f); //Assign to structure
+			}
 		}
 	}//inputarchive goes out of scope, file released
 
@@ -477,7 +483,7 @@ bool LoadSimulation(Dataport *loader) {
 	sHandle->loadOK = true;
 	t1 = GetTick();
 	printf("  Load %s successful\n", sHandle->sh.name.c_str());
-	printf("  Geometry: %zd vertex %zd facets\n", sHandle->sh.nbVertex, sHandle->sh.nbFacet);
+	printf("  Geometry: %zd vertex %zd facets\n", sHandle->vertices3.size(), sHandle->sh.nbFacet);
 
 	printf("  Geom size: %d bytes\n", /*(size_t)(buffer - bufferStart)*/0);
 	printf("  Number of stucture: %zd\n", sHandle->sh.nbSuper);

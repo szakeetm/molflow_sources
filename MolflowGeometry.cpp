@@ -628,12 +628,13 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 			facets[i]->indices[j] += sh.nbVertex;
 		file->ReadKeyword("}");
 		if (newStruct) {
-			facets[i]->sh.superIdx += sh.nbSuper;
+			if (facets[i]->sh.superIdx != -1) //-1 = facet member of all structures
+				facets[i]->sh.superIdx += static_cast<int>(sh.nbSuper);
 			if (facets[i]->sh.superDest > 0) facets[i]->sh.superDest += sh.nbSuper;
 		}
 		else {
-
-			facets[i]->sh.superIdx += strIdx;
+			if (facets[i]->sh.superIdx != -1) //-1 = facet member of all structures
+				facets[i]->sh.superIdx += static_cast<int>(strIdx);
 			if (facets[i]->sh.superDest > 0) facets[i]->sh.superDest += strIdx;
 		}
 	}
@@ -705,9 +706,7 @@ void MolflowGeometry::LoadProfileGEO(FileReader *file, Dataport *dpHit, int vers
 		if (version >= 10) {
 			file->ReadKeyword("moment");
 			if (m != file->ReadInt()) {
-				char errMsg[512];
-				sprintf(errMsg, "Unexpected profile moment");
-				throw Error(errMsg);
+				throw Error("Unexpected profile moment");
 				break;
 			}
 			file->ReadKeyword("{");
@@ -2944,12 +2943,13 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 		facets[idx]->selected = true;
 
 		if (newStr) {
-			facets[idx]->sh.superIdx += sh.nbSuper; //offset structure
+			if (facets[idx]->sh.superIdx != -1) //-1 = facet member of all structures
+				facets[idx]->sh.superIdx += static_cast<int>(sh.nbSuper); //offset structure
 			if (facets[idx]->sh.superDest>0) facets[idx]->sh.superDest += sh.nbSuper;
 		}
 		else {
-
-			facets[idx]->sh.superIdx += structId; //offset structure
+			if (facets[idx]->sh.superIdx != -1) //-1 = facet member of all structures
+				facets[idx]->sh.superIdx += structId; //offset structure
 			if (facets[idx]->sh.superDest>0) facets[idx]->sh.superDest += structId;
 		}
 

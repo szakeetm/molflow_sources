@@ -789,7 +789,12 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 		facetSuperDest->SetText("...");
 	}
 	if (superIdxE) {
-		facetStructure->SetText(f0->sh.superIdx + 1);
+		if (f0->sh.superIdx >= 0) {
+			facetStructure->SetText(f0->sh.superIdx + 1);
+		}
+		else {
+			facetStructure->SetText("All");
+		}
 	}
 	else {
 		facetStructure->SetText("...");
@@ -1005,10 +1010,24 @@ bool FacetAdvParams::Apply() {
 
 	int superStruct;
 	bool doSuperStruct = false;
-	if (facetStructure->GetNumberInt(&superStruct) && superStruct > 0 && superStruct <= geom->GetNbStructure()) doSuperStruct = true;
+	auto ssText = facetStructure->GetText();
+	if (Contains({ "All","all" }, ssText)) {
+		doSuperStruct = true;
+		superStruct = -1;
+	}
+	else if (ssText == "...") {
+		//Nothing to do, doSuperStruct is already false
+	} 
 	else {
-		if (facetStructure->GetText() == "...") doSuperStruct = false;
-		else{
+		try {
+			superStruct = std::stoi(ssText);
+			superStruct--; //Internally numbered from 0
+			if (superStruct < 0 || superStruct >= geom->GetNbStructure()) {
+				throw std::invalid_argument("Invalid superstructure number");
+			}
+			doSuperStruct = true;
+		}
+		catch (std::invalid_argument err) {
 			GLMessageBox::Display("Invalid superstructre number", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return false;
 		}
@@ -1022,7 +1041,7 @@ bool FacetAdvParams::Apply() {
 		superDest = 0;
 	}
 	else if (facetSuperDest->GetNumberInt(&superDest)) {
-		if (superDest == superStruct) {
+		if (superDest == (superStruct+1)) {
 			GLMessageBox::Display("Link and superstructure can't be the same", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return false;
 		}
@@ -1308,8 +1327,8 @@ bool FacetAdvParams::Apply() {
 		if (doSpecularRefl) f->sh.reflection.specularPart = specularRefl;
 		if (doReflExponent) f->sh.reflection.cosineExponent = reflectionExponent;
 		if (doSuperStruct) {
-			if (f->sh.superIdx != (superStruct - 1)) {
-				f->sh.superIdx = superStruct - 1;
+			if (f->sh.superIdx != superStruct) {
+				f->sh.superIdx = superStruct;
 				structChanged = true;
 			}
 		}

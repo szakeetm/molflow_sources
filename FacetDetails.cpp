@@ -266,8 +266,13 @@ char *FacetDetails::FormatCell(size_t idx,Facet *f,size_t mode) {
       sprintf(ret,"%g",f->sh.opacity);
       break;
     case 3:
-      sprintf(ret,"%zd",f->sh.superIdx+1);
-      break;
+	{
+		std::ostringstream out;
+		if (f->sh.superIdx == -1) out << "All";
+		else out << (f->sh.superIdx + 1);
+		sprintf(ret, "%s", out.str().c_str());
+		break;
+	}
     case 4:
       sprintf(ret,"%zd",f->sh.superDest);
       break;
