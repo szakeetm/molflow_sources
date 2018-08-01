@@ -1036,50 +1036,53 @@ void Worker::ComputeAC(float appTime) {
 
 }
 
-void Worker::RealReload() { //Sharing geometry with workers
+void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 	GLProgress *progressDlg = new GLProgress("Performing preliminary calculations on geometry...", "Passing Geometry to workers");
 	progressDlg->SetVisible(true);
 	progressDlg->SetProgress(0.0);
 	
-	//Do preliminary calculations
-	try {
-		PrepareToRun();
-	}
-	catch (Error &e) {
-		progressDlg->SetVisible(false);
-		SAFE_DELETE(progressDlg);
-		throw Error(e.GetMsg());
-	}
+	if (!sendOnly) {
+		//Do preliminary calculations
+		try {
+			PrepareToRun();
+		}
+		catch (Error &e) {
+			progressDlg->SetVisible(false);
+			SAFE_DELETE(progressDlg);
+			throw Error(e.GetMsg());
+		}
 
-	if (ontheflyParams.nbProcess == 0) return;
-	
-	progressDlg->SetMessage("Asking subprocesses to clear geometry...");
+		if (ontheflyParams.nbProcess == 0) return;
 
-	// Clear geometry
-	CLOSEDP(dpHit);
-	CLOSEDP(dpLog);
-	if (!ExecuteAndWait(COMMAND_CLOSE, PROCESS_READY))
-	{
-		progressDlg->SetVisible(false);
-		SAFE_DELETE(progressDlg);
-		ThrowSubProcError();
-	}
+		progressDlg->SetMessage("Asking subprocesses to clear geometry...");
 
-	if (!geom->IsLoaded()) {
-		progressDlg->SetVisible(false);
-		SAFE_DELETE(progressDlg);
-		return;
-	}
 
-	// Create the temporary geometry shared structure
-	progressDlg->SetMessage("Creating dataport...");
+		// Clear geometry
+		CLOSEDP(dpHit);
+		CLOSEDP(dpLog);
+		if (!ExecuteAndWait(COMMAND_CLOSE, PROCESS_READY))
+		{
+			progressDlg->SetVisible(false);
+			SAFE_DELETE(progressDlg);
+			ThrowSubProcError();
+		}
 
-	
-	if (ontheflyParams.enableLogging) {
-		dpLog = CreateDataport(logDpName, sizeof(size_t) + sizeof(ParticleLoggerItem)*ontheflyParams.logLimit);
-		if (!dpLog)
-			throw Error("Failed to create 'dpLog' dataport.\nMost probably out of memory.\nReduce number of logged particles in Particle Logger.");
-		//*((size_t*)dpLog->buff) = 0; //Automatic 0-filling
+		if (!geom->IsLoaded()) {
+			progressDlg->SetVisible(false);
+			SAFE_DELETE(progressDlg);
+			return;
+		}
+
+		// Create the temporary geometry shared structure
+		progressDlg->SetMessage("Creating dataport...");
+
+
+		if (ontheflyParams.enableLogging) {
+			dpLog = CreateDataport(logDpName, sizeof(size_t) + sizeof(ParticleLoggerItem)*ontheflyParams.logLimit);
+			if (!dpLog)
+				throw Error("Failed to create 'dpLog' dataport.\nMost probably out of memory.\nReduce number of logged particles in Particle Logger.");
+			//*((size_t*)dpLog->buff) = 0; //Automatic 0-filling
+		}
 	}
 
 	std::string loaderString = SerializeForLoader().str();
@@ -1104,17 +1107,19 @@ void Worker::RealReload() { //Sharing geometry with workers
 	progressDlg->SetMessage("Releasing dataport...");
 	ReleaseDataport(loader);
 
-	size_t hitSize = geom->GetHitsSize(&moments);
-	dpHit = CreateDataport(hitsDpName, hitSize);
-	ClearHits(true);
-	if (!dpHit) {
-		CLOSEDP(loader);
-		//GLMessageBox::Display("Failed to create 'hits' dataport: not enough memory.", "Warning (Load)", GLDLG_OK, GLDLG_ICONERROR);
-		//return false;
+	if (!sendOnly) {
+		size_t hitSize = geom->GetHitsSize(&moments);
+		dpHit = CreateDataport(hitsDpName, hitSize);
+		ClearHits(true);
+		if (!dpHit) {
+			CLOSEDP(loader);
+			//GLMessageBox::Display("Failed to create 'hits' dataport: not enough memory.", "Warning (Load)", GLDLG_OK, GLDLG_ICONERROR);
+			//return false;
 
-		progressDlg->SetVisible(false);
-		SAFE_DELETE(progressDlg);
-		throw Error("Failed to create 'hits' dataport: out of memory.");
+			progressDlg->SetVisible(false);
+			SAFE_DELETE(progressDlg);
+			throw Error("Failed to create 'hits' dataport: out of memory.");
+		}
 	}
 
 	/*

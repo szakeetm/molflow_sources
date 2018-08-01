@@ -352,21 +352,23 @@ void GlobalSettings::RestartProc() {
 		//sprintf(tmp,"Kill all running sub-process(es) and start %d new ones ?",nbProc);
 		//int rep = GLMessageBox::Display(tmp,"Question",GLDLG_OK|GLDLG_CANCEL,GLDLG_ICONWARNING);
 
-		if (mApp->AskToReset()) {
+		//if (mApp->AskToReset()) {
 			if (nbProc <= 0 || nbProc > MAX_PROCESS) {
 				GLMessageBox::Display("Invalid process number [1..32]", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			}
 			else {
 				try {
-					worker->SetProcNumber(nbProc);
-					worker->Reload();
+					worker->Stop_Public();
+					worker->SetProcNumber(nbProc,true);
+					//worker->Reload();
+					worker->RealReload(true);
 					mApp->SaveConfig();
 				}
 				catch (Error &e) {
 					GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 				}
 			}
-		}
+		//}
 	}
 
 }
