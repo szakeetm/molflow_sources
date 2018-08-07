@@ -100,7 +100,7 @@ size_t MolflowGeometry::GetGeometrySize() {
 	return memoryUsage;
 }
 
-void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer,const OntheflySimulationParams& ontheflyParams) {
+void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer, const OntheflySimulationParams& ontheflyParams) {
 
 	// Build shared buffer for geometry (see Shared.h)
 	// Basically we serialize all data and let the subprocesses read them
@@ -140,8 +140,8 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer,const OntheflySimulationPa
 	WRITEBUFFER(ontheflyParams, OntheflySimulationParams);
 	memcpy(buffer, vertices3.data(), sizeof(Vector3d)*sh.nbVertex);
 	buffer += sizeof(Vector3d)*sh.nbVertex;
-	
-	size_t fOffset = sizeof(GlobalHitBuffer)+(1+mApp->worker.moments.size())*mApp->worker.wp.globalHistogramParams.GetDataSize(); //calculating offsets for all facets for the hits dataport during the simulation
+
+	size_t fOffset = sizeof(GlobalHitBuffer) + (1 + mApp->worker.moments.size())*mApp->worker.wp.globalHistogramParams.GetDataSize(); //calculating offsets for all facets for the hits dataport during the simulation
 	for (size_t i = 0; i < sh.nbFacet; i++) {
 		Facet *f = facets[i];
 		f->sh.hitOffset = fOffset; //Marking the offsets for the hits, but here we don't actually send any hits.
@@ -156,8 +156,8 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer,const OntheflySimulationPa
 			buffer += sizeof(double)*f->sh.outgassingMapWidth*f->sh.outgassingMapHeight;
 		}
 		//if (f->wp.anglemapParams.hasRecorded) { //Check not necessary, commented out
-			memcpy(buffer, f->angleMapCache, f->sh.anglemapParams.GetRecordedDataSize());
-			buffer += f->sh.anglemapParams.GetRecordedDataSize();
+		memcpy(buffer, f->angleMapCache, f->sh.anglemapParams.GetRecordedDataSize());
+		buffer += f->sh.anglemapParams.GetRecordedDataSize();
 		//}
 
 		// Add surface elements area (reciprocal)
@@ -183,7 +183,7 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer,const OntheflySimulationPa
 
 				double rw = f->sh.U.Norme() / (double)(f->sh.texWidthD);
 				double rh = f->sh.V.Norme() / (double)(f->sh.texHeightD);
-				double area = rw*rh;
+				double area = rw * rh;
 
 				for (int j = 0; j < f->sh.texHeight; j++) {
 					for (int i = 0; i < f->sh.texWidth; i++) {
@@ -232,7 +232,7 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer,const OntheflySimulationPa
 	for (auto& par : w->parameters) {
 		size_t paramSize = par.GetSize();
 		WRITEBUFFER(paramSize, size_t);
-		for (int j = 0; j < paramSize;j++) {
+		for (int j = 0; j < paramSize; j++) {
 			WRITEBUFFER(par.GetX(j), double);
 			WRITEBUFFER(par.GetY(j), double);
 		}
@@ -276,7 +276,7 @@ size_t MolflowGeometry::GetHitsSize(std::vector<double> *moments) {
 
 	// Compute number of bytes allocated
 	size_t memoryUsage = 0;
-	memoryUsage += sizeof(GlobalHitBuffer)+(1+moments->size())*mApp->worker.wp.globalHistogramParams.GetDataSize();
+	memoryUsage += sizeof(GlobalHitBuffer) + (1 + moments->size())*mApp->worker.wp.globalHistogramParams.GetDataSize();
 	for (int i = 0; i < sh.nbFacet; i++) {
 		memoryUsage += facets[i]->GetHitsSize(moments->size());
 	}
@@ -301,11 +301,11 @@ size_t MolflowGeometry::GetMaxElemNumber() {
 	int idx = 0;
 	for (int i = 0; i < wp.nbFacet; i++) {
 		Facet *f = facets[i];
-		
+
 		//int sz = f->wp.texWidth * f->wp.texHeight * sizeof(SHELEM);
 		//memcpy(buffer + idx, f->mesh, sz);
 		//idx += sz;
-		
+
 		//To fix
 	}
 
@@ -327,8 +327,8 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 	vertices3.swap(std::vector<InterfaceVertex>(sh.nbVertex));
 
 	sh.nbFacet = step + 2 + nbTF;
-	
-	
+
+
 	sh.nbSuper = 1;
 	strName[0] = _strdup("Pipe");
 	//strFileName[0] = _strdup("pipe.txt");
@@ -340,11 +340,11 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 	// Vertices
 	for (int i = 0; i < step; i++) {
 		double angle = (double)i / (double)step * 2 * PI;
-		vertices3[2 * i + nbTV].x = R*cos(angle);
-		vertices3[2 * i + nbTV].y = R*sin(angle);
+		vertices3[2 * i + nbTV].x = R * cos(angle);
+		vertices3[2 * i + nbTV].y = R * sin(angle);
 		vertices3[2 * i + nbTV].z = 0.0;
-		vertices3[2 * i + 1 + nbTV].x = R*cos(angle);
-		vertices3[2 * i + 1 + nbTV].y = R*sin(angle);
+		vertices3[2 * i + 1 + nbTV].x = R * cos(angle);
+		vertices3[2 * i + 1 + nbTV].y = R * sin(angle);
 		vertices3[2 * i + 1 + nbTV].z = L;
 	}
 
@@ -548,7 +548,7 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 	// Reallocate memory
 	facets = (Facet **)realloc(*facets, (nbNewFacets + sh.nbFacet) * sizeof(Facet **));
 	memset(facets + sh.nbFacet, 0, nbNewFacets * sizeof(Facet *));
-	
+
 	/*
 	InterfaceVertex *tmp_vertices3 = (InterfaceVertex *)malloc((nbNewVertex + wp.nbVertex) * sizeof(InterfaceVertex));
 	memmove(tmp_vertices3, *vertices3, (wp.nbVertex)*sizeof(Vector3d));
@@ -588,7 +588,7 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 	}
 	file->ReadKeyword("}");
 	// Read hit cache
-	
+
 	file->ReadKeyword("hits"); file->ReadKeyword("{");
 	file->ReadKeyword("nbHHit"); file->ReadKeyword(":");
 	size_t nbHHit_local = file->ReadLLong();
@@ -653,7 +653,7 @@ void MolflowGeometry::SaveProfileGEO(FileWriter *file, Dataport *dpHit, int supe
 	file->Write("profiles {\n");
 	// Profiles
 	int nbProfile = 0;
-	int *profileFacet = (int *)malloc((sh.nbFacet)*sizeof(int));
+	int *profileFacet = (int *)malloc((sh.nbFacet) * sizeof(int));
 	for (int i = 0; i < sh.nbFacet; i++)
 		if ((!saveSelected && !crashSave) && facets[i]->sh.isProfile)
 			profileFacet[nbProfile++] = i;
@@ -665,15 +665,15 @@ void MolflowGeometry::SaveProfileGEO(FileWriter *file, Dataport *dpHit, int supe
 
 	file->Write("\n");
 	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
-	for (size_t m = 0; (m <= mApp->worker.moments.size()) || (m == 0); m++){
+	for (size_t m = 0; (m <= mApp->worker.moments.size()) || (m == 0); m++) {
 		char tmp[128];
 		sprintf(tmp, " moment %zd {\n", m);
 		file->Write(tmp);
-		
+
 		for (int j = 0; j < PROFILE_SIZE; j++) {
 			for (int i = 0; i < nbProfile; i++) { //doesn't execute when crashSave or saveSelected...
 				Facet *f = GetFacet(profileFacet[i]);
-				ProfileSlice *profilePtr = (ProfileSlice *)(buffer + f->sh.hitOffset + facetHitsSize + m*sizeof(ProfileSlice)*PROFILE_SIZE);
+				ProfileSlice *profilePtr = (ProfileSlice *)(buffer + f->sh.hitOffset + facetHitsSize + m * sizeof(ProfileSlice)*PROFILE_SIZE);
 				//char tmp2[128];
 				file->Write(static_cast<size_t>(profilePtr[j].countEquiv), "\t"); //Backwards compatibility
 				file->Write(profilePtr[j].sum_1_per_ort_velocity, "\t");
@@ -697,12 +697,12 @@ void MolflowGeometry::LoadProfileGEO(FileReader *file, Dataport *dpHit, int vers
 	// Profiles
 	int nbProfile;
 	file->ReadKeyword("number"); file->ReadKeyword(":"); nbProfile = file->ReadInt();
-	int *profileFacet = (int *)malloc((nbProfile)*sizeof(int));
+	int *profileFacet = (int *)malloc((nbProfile) * sizeof(int));
 	file->ReadKeyword("facets"); file->ReadKeyword(":");
 	for (int i = 0; i < nbProfile; i++)
 		profileFacet[i] = file->ReadInt();
 	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
-	for (size_t m = 0; m <= mApp->worker.moments.size() || (version < 10 && m == 0); m++){
+	for (size_t m = 0; m <= mApp->worker.moments.size() || (version < 10 && m == 0); m++) {
 		if (version >= 10) {
 			file->ReadKeyword("moment");
 			if (m != file->ReadInt()) {
@@ -715,7 +715,7 @@ void MolflowGeometry::LoadProfileGEO(FileReader *file, Dataport *dpHit, int vers
 		for (int j = 0; j < PROFILE_SIZE; j++) {
 			for (int i = 0; i < nbProfile; i++) {
 				Facet *f = GetFacet(profileFacet[i]);
-				ProfileSlice *profilePtr = (ProfileSlice *)(buffer + f->sh.hitOffset + facetHitsSize + m*PROFILE_SIZE*sizeof(ProfileSlice));
+				ProfileSlice *profilePtr = (ProfileSlice *)(buffer + f->sh.hitOffset + facetHitsSize + m * PROFILE_SIZE * sizeof(ProfileSlice));
 				profilePtr[j].countEquiv = static_cast<double>(file->ReadLLong());
 				if (version >= 13) profilePtr[j].sum_1_per_ort_velocity = file->ReadDouble();
 				if (version >= 13) profilePtr[j].sum_v_ort = file->ReadDouble();
@@ -886,7 +886,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 			int nbSel = file->ReadInt();
 
 			for (int j = 0; j < nbSel; j++) {
-				s.selection.push_back( file->ReadInt());
+				s.selection.push_back(file->ReadInt());
 			}
 			mApp->AddSelection(s);
 		}
@@ -1138,7 +1138,7 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
 		int nbSel = file->ReadInt();
 
 		for (int j = 0; j < nbSel; j++) {
-			s.selection.push_back( file->ReadInt());
+			s.selection.push_back(file->ReadInt());
 		}
 		mApp->AddSelection(s);
 	}
@@ -1175,7 +1175,7 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
 	// Read leaks
 	file->ReadKeyword("leaks"); file->ReadKeyword("{");
 	file->ReadKeyword("nbLeak"); file->ReadKeyword(":");
-	
+
 	int nbleak_local = file->ReadInt();
 	for (int i = 0; i < nbleak_local; i++) {
 		int idx = file->ReadInt();
@@ -1199,7 +1199,7 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
 	// Read hit cache
 	file->ReadKeyword("hits"); file->ReadKeyword("{");
 	file->ReadKeyword("nbHHit"); file->ReadKeyword(":");
-	
+
 	int nbHHit_local = file->ReadInt();
 	for (int i = 0; i < nbHHit_local; i++) {
 		int idx = file->ReadInt();
@@ -1317,7 +1317,7 @@ bool MolflowGeometry::LoadTexturesGEO(FileReader *file, GLProgress *prg, Datapor
 			gHits->texture_limits[2].max.moments_only = file->ReadDouble();
 
 			size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
-			for (size_t m = 0; m <= mApp->worker.moments.size() || (m == 0 /*&& version<10*/); m++){
+			for (size_t m = 0; m <= mApp->worker.moments.size() || (m == 0 /*&& version<10*/); m++) {
 				//if (version>=10) {
 				file->ReadKeyword("moment");
 				if (m != file->ReadInt()) {
@@ -1330,7 +1330,7 @@ bool MolflowGeometry::LoadTexturesGEO(FileReader *file, GLProgress *prg, Datapor
 				for (int i = 0; i < sh.nbFacet; i++) {
 					Facet *f = facets[i];
 					if (f->hasMesh/* || version<8*/) {
-						prg->SetProgress((double)(i + m*sh.nbFacet) / (double)(mApp->worker.moments.size()*sh.nbFacet)*0.33 + 0.66);
+						prg->SetProgress((double)(i + m * sh.nbFacet) / (double)(mApp->worker.moments.size()*sh.nbFacet)*0.33 + 0.66);
 						file->ReadKeyword("texture_facet");
 						// Check idx
 						int idx = file->ReadInt();
@@ -1346,11 +1346,11 @@ bool MolflowGeometry::LoadTexturesGEO(FileReader *file, GLProgress *prg, Datapor
 
 						///Load textures, for GEO file version 3+
 
-						size_t profSize = (f->sh.isProfile) ? ((1 + mApp->worker.moments.size())*(PROFILE_SIZE*sizeof(ProfileSlice))) : 0;
+						size_t profSize = (f->sh.isProfile) ? ((1 + mApp->worker.moments.size())*(PROFILE_SIZE * sizeof(ProfileSlice))) : 0;
 						size_t h = f->sh.texHeight;
 						size_t w = f->sh.texWidth;
 
-						TextureCell *texture = (TextureCell *)((BYTE *)gHits + (f->sh.hitOffset + facetHitsSize + profSize + m*w*h*sizeof(TextureCell)));
+						TextureCell *texture = (TextureCell *)((BYTE *)gHits + (f->sh.hitOffset + facetHitsSize + profSize + m * w*h * sizeof(TextureCell)));
 
 						size_t texWidth_file, texHeight_file;
 						//In case of rounding errors, the file might contain different texture dimensions than expected.
@@ -1413,7 +1413,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit
 
 	prg->SetMessage("Counting hits...");
 	if (!IsLoaded()) throw Error("Nothing to save !");
-	
+
 	// Block dpHit during the whole disc writing
 	if (!crashSave && !saveSelected) AccessDataport(dpHit);
 
@@ -1483,8 +1483,8 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit
 	file->Write("calcConstantFlow:"); file->Write(worker->wp.calcConstantFlow, "\n");
 
 	file->Write("formulas {\n");
-	if (!saveSelected){
-		for (auto& f:mApp->formulas_n) {
+	if (!saveSelected) {
+		for (auto& f : mApp->formulas_n) {
 			file->Write("  \"");
 			file->Write(f->GetName());
 			file->Write("\" \"");
@@ -1521,7 +1521,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit
 		file->Write(mApp->selections[i].name);
 		file->Write("\"\n ");
 		file->Write(mApp->selections[i].selection.size(), "\n");
-		for (auto& sel:mApp->selections[i].selection) {
+		for (auto& sel : mApp->selections[i].selection) {
 			file->Write("  ");
 			file->Write(sel, "\n");
 		}
@@ -1637,18 +1637,18 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit
 
 	prg->SetMessage("Writing textures...");
 	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
-	for (size_t m = 0; m <= mApp->worker.moments.size(); m++){
+	for (size_t m = 0; m <= mApp->worker.moments.size(); m++) {
 		sprintf(tmp, "moment %zd {\n", m);
 		file->Write(tmp);
 		for (size_t i = 0; i < sh.nbFacet; i++) {
-			prg->SetProgress((double)(i + m*sh.nbFacet) / (double)(mApp->worker.moments.size()*sh.nbFacet)*0.33 + 0.66);
+			prg->SetProgress((double)(i + m * sh.nbFacet) / (double)(mApp->worker.moments.size()*sh.nbFacet)*0.33 + 0.66);
 			Facet *f = facets[i];
 			if (f->hasMesh) {
 				size_t h = f->sh.texHeight;
 				size_t w = f->sh.texWidth;
-				size_t profSize = (f->sh.isProfile) ? (PROFILE_SIZE*sizeof(ProfileSlice)*(1 + (int)mApp->worker.moments.size())) : 0;
+				size_t profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + (int)mApp->worker.moments.size())) : 0;
 				TextureCell *texture;
-				if (!crashSave && !saveSelected) texture = (TextureCell *)((BYTE *)gHits + (f->sh.hitOffset + facetHitsSize + profSize + m*w*h*sizeof(TextureCell)));
+				if (!crashSave && !saveSelected) texture = (TextureCell *)((BYTE *)gHits + (f->sh.hitOffset + facetHitsSize + profSize + m * w*h * sizeof(TextureCell)));
 
 				//char tmp[256];
 				sprintf(tmp, " texture_facet %zd {\n", i + 1);
@@ -1749,7 +1749,7 @@ void MolflowGeometry::SaveTXT(FileWriter *file, Dataport *dpHit, bool saveSelect
 
 void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, Dataport *dpHit, bool saveSelected, size_t sMode) {
 
-	//if(!IsLoaded()) throw Error("Nothing to save !");
+
 
 	// Block dpHit during the whole disc writing
 	BYTE *buffer = NULL;
@@ -1757,14 +1757,10 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, Datapor
 		if (AccessDataport(dpHit))
 			buffer = (BYTE *)dpHit->buff;
 
-	// Globals
-	//BYTE *buffer = (BYTE *)dpHit->buff;
-	//SHGHITS *gHits = (SHGHITS *)buffer;
-
 	if (grouping == 1) fprintf(file, "X_coord_cm\tY_coord_cm\tZ_coord_cm\tValue\t\n"); //mode 10: special ANSYS export
 
 	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
-	for (size_t m = 0; m <= mApp->worker.moments.size(); m++){
+	for (size_t m = 0; m <= mApp->worker.moments.size(); m++) {
 		if (m == 0) fprintf(file, " moment 0 (Constant Flow){\n");
 		else fprintf(file, " moment %zd (%g s){\n", m, mApp->worker.moments[m - 1]);
 		// Facets
@@ -1784,89 +1780,89 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, Datapor
 					if (!buffer) return;
 					GlobalHitBuffer *shGHit = (GlobalHitBuffer *)buffer;
 					size_t nbMoments = mApp->worker.moments.size();
-					size_t profSize = (f->sh.isProfile) ? (PROFILE_SIZE*sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
+					size_t profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
 					size_t w = f->sh.texWidth;
 					size_t h = f->sh.texHeight;
-					size_t tSize = w*h*sizeof(TextureCell);
-					size_t dSize = w*h*sizeof(DirectionCell);
-					if (f->cellPropertiesIds) texture = (TextureCell *)((BYTE *)buffer + (f->sh.hitOffset + facetHitsSize + profSize + m*tSize));
-					if (f->sh.countDirection) dirs = (DirectionCell *)((BYTE *)buffer + (f->sh.hitOffset + facetHitsSize + profSize*(1 + nbMoments) + tSize*(1 + nbMoments) + m*dSize));
+					size_t tSize = w * h * sizeof(TextureCell);
+					size_t dSize = w * h * sizeof(DirectionCell);
+					if (f->cellPropertiesIds) texture = (TextureCell *)((BYTE *)buffer + (f->sh.hitOffset + facetHitsSize + profSize + m * tSize));
+					if (f->sh.countDirection) dirs = (DirectionCell *)((BYTE *)buffer + (f->sh.hitOffset + facetHitsSize + profSize * (1 + nbMoments) + tSize * (1 + nbMoments) + m * dSize));
 
 					for (size_t i = 0; i < w; i++) {
 						for (size_t j = 0; j < h; j++) {
-							size_t index = i + j*w;
+							size_t index = i + j * w;
 							tmp[0] = out[0] = 0;
 							switch (mode) {
 
-					case 0: // Element area
-						sprintf(tmp, "%g", f->GetMeshArea(index));
-						break;
+							case 0: // Element area
+								sprintf(tmp, "%g", f->GetMeshArea(index));
+								break;
 
-					case 1: //MC Hits
-						if (!grouping || texture[index].countEquiv>0.0) sprintf(tmp, "%g", texture[index].countEquiv);
-						break;
+							case 1: //MC Hits
+								if (!grouping || texture[index].countEquiv > 0.0) sprintf(tmp, "%g", texture[index].countEquiv);
+								break;
 
-					case 2: //Impingement rate
-						dCoef = 1E4; //1E4: conversion m2->cm2
-						if (sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
-						if (!grouping || texture[index].countEquiv>0.0) sprintf(tmp, "%g", texture[i + j*w].countEquiv / f->GetMeshArea(i + j*w,true)*dCoef);
-						break;
+							case 2: //Impingement rate
+								dCoef = 1E4; //1E4: conversion m2->cm2
+								if (sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
+								if (!grouping || texture[index].countEquiv > 0.0) sprintf(tmp, "%g", texture[i + j * w].countEquiv / f->GetMeshArea(i + j * w, true)*dCoef);
+								break;
 
-					case 3: //Particle density
-					{
-						dCoef = 1E4; //1E4: conversion m2->cm2
-						if (sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
-						double v_ort_avg = 2.0*texture[index].countEquiv / texture[index].sum_1_per_ort_velocity;
-								double imp_rate = texture[index].countEquiv / f->GetMeshArea(index,true)*dCoef;
-								double rho = 2.0*imp_rate / v_ort_avg;
-								if (!grouping || texture[index].countEquiv>0.0) sprintf(tmp, "%g", rho);
-						break;
-					}
-					case 4: //Gas density
-					{
-						dCoef = 1E4; //1E4: conversion m2->cm2
-						if (sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
+							case 3: //Particle density
+							{
+								dCoef = 1E4; //1E4: conversion m2->cm2
+								if (sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
 								double v_ort_avg = 2.0*texture[index].countEquiv / texture[index].sum_1_per_ort_velocity;
-								double imp_rate = texture[index].countEquiv / f->GetMeshArea(index,true)*dCoef;
+								double imp_rate = texture[index].countEquiv / f->GetMeshArea(index, true)*dCoef;
 								double rho = 2.0*imp_rate / v_ort_avg;
-								double rho_mass = rho*mApp->worker.wp.gasMass / 1000.0 / 6E23;
-								if (!grouping || texture[index].countEquiv>0.0) sprintf(tmp, "%g", rho_mass);
-						break;
-					}
-					case 5:  // Pressure [mbar]
+								if (!grouping || texture[index].countEquiv > 0.0) sprintf(tmp, "%g", rho);
+								break;
+							}
+							case 4: //Gas density
+							{
+								dCoef = 1E4; //1E4: conversion m2->cm2
+								if (sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
+								double v_ort_avg = 2.0*texture[index].countEquiv / texture[index].sum_1_per_ort_velocity;
+								double imp_rate = texture[index].countEquiv / f->GetMeshArea(index, true)*dCoef;
+								double rho = 2.0*imp_rate / v_ort_avg;
+								double rho_mass = rho * mApp->worker.wp.gasMass / 1000.0 / 6E23;
+								if (!grouping || texture[index].countEquiv > 0.0) sprintf(tmp, "%g", rho_mass);
+								break;
+							}
+							case 5:  // Pressure [mbar]
 
-						// Lock during update
-						dCoef = 1E4 * (mApp->worker.wp.gasMass / 1000 / 6E23) *0.0100;  //1E4 is conversion from m2 to cm2, 0.01: Pa->mbar
-						if (sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
-						if (!grouping || texture[index].sum_v_ort_per_area) sprintf(tmp, "%g", texture[index].sum_v_ort_per_area*dCoef);
-						break;
+								// Lock during update
+								dCoef = 1E4 * (mApp->worker.wp.gasMass / 1000 / 6E23) *0.0100;  //1E4 is conversion from m2 to cm2, 0.01: Pa->mbar
+								if (sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
+								if (!grouping || texture[index].sum_v_ort_per_area) sprintf(tmp, "%g", texture[index].sum_v_ort_per_area*dCoef);
+								break;
 
-					case 6: // Average velocity
-						if (!grouping || texture[index].countEquiv>0.0) sprintf(tmp, "%g", 2.0*texture[i + j*w].countEquiv / texture[i + j*w].sum_1_per_ort_velocity);
-						break;
+							case 6: // Average velocity
+								if (!grouping || texture[index].countEquiv > 0.0) sprintf(tmp, "%g", 2.0*texture[i + j * w].countEquiv / texture[i + j * w].sum_1_per_ort_velocity);
+								break;
 
-					case 7: // Velocity vector
-						if (f->sh.countDirection) {
-							sprintf(tmp, "%g,%g,%g",
-								dirs[i + j*w].dir.x,
-								dirs[i + j*w].dir.y,
-								dirs[i + j*w].dir.z);
-						}
-						else {
-							sprintf(tmp, "Direction not recorded");
-						}
-						break;
+							case 7: // Velocity vector
+								if (f->sh.countDirection) {
+									sprintf(tmp, "%g,%g,%g",
+										dirs[i + j * w].dir.x,
+										dirs[i + j * w].dir.y,
+										dirs[i + j * w].dir.z);
+								}
+								else {
+									sprintf(tmp, "Direction not recorded");
+								}
+								break;
 
-					case 8: // Velocity vector Count
-						if (f->sh.countDirection) {
-							sprintf(tmp, "%I64d", dirs[i + j*w].count);
-						}
-						else {
+							case 8: // Velocity vector Count
+								if (f->sh.countDirection) {
+									sprintf(tmp, "%I64d", dirs[i + j * w].count);
+								}
+								else {
 
-							sprintf(tmp, "None");
-						}
-						break;
-					} //end switch
+									sprintf(tmp, "None");
+								}
+								break;
+							} //end switch
 
 							if (grouping == 1 && tmp && tmp[0]) {
 								Vector2d facetCenter = f->GetMeshCenter(index);
@@ -1876,22 +1872,22 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, Datapor
 									f->sh.O.z + facetCenter.u*f->sh.U.z + facetCenter.v*f->sh.V.z,
 									tmp);
 							}
-					else sprintf(out, "%s", tmp);
+							else sprintf(out, "%s", tmp);
 
-					if (out) fprintf(file, "%s", out);
-					if (j < w - 1 && grouping == 0)
-						fprintf(file, "\t");
-					} //h
-					if (grouping == 0) fprintf(file, "\n");
-				} //w
-			} //if mesh
-			else {
-				fprintf(file, "No mesh.\n");
-			}
-			if (grouping == 0) fprintf(file, "\n"); //Current facet exported. 
-		} //if selected
+							if (out) fprintf(file, "%s", out);
+							if (j < w - 1 && grouping == 0)
+								fprintf(file, "\t");
+						} //h
+						if (grouping == 0) fprintf(file, "\n");
+					} //w
+				} //if mesh
+				else {
+					fprintf(file, "No mesh.\n");
+				}
+				if (grouping == 0) fprintf(file, "\n"); //Current facet exported. 
+			} //if selected
 
-	} //end facet
+		} //end facet
 		fprintf(file, " }\n");
 
 	} //end moment
@@ -1926,7 +1922,7 @@ void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, Dataport *dpHit, Wor
 	fputs(header.str().c_str(), file);
 
 	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
-	for (size_t m = 0; m <= mApp->worker.moments.size(); m++){
+	for (size_t m = 0; m <= mApp->worker.moments.size(); m++) {
 		if (m == 0) fputs(" moment 0 (Constant Flow){\n", file);
 		else fprintf(file, " moment %zd (%g s){\n", m, mApp->worker.moments[m - 1]);
 		// Facets
@@ -1948,7 +1944,7 @@ void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, Dataport *dpHit, Wor
 
 					GlobalHitBuffer *shGHit = (GlobalHitBuffer *)buffer;
 					double nbDes = (shGHit->globalHits.hit.nbDesorbed > 0) ? (double)shGHit->globalHits.hit.nbDesorbed : 1.0;
-					size_t profOffset = PROFILE_SIZE*sizeof(ProfileSlice)*m;
+					size_t profOffset = PROFILE_SIZE * sizeof(ProfileSlice)*m;
 					prof = (ProfileSlice*)((BYTE *)buffer + (f->sh.hitOffset + facetHitsSize + profOffset));
 					double scaleX, scaleY;
 					switch (f->sh.profileType) {
@@ -1965,7 +1961,7 @@ void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, Dataport *dpHit, Wor
 					case PROFILE_TAN_VELOCITY:
 						scaleX = f->sh.maxSpeed / (double)PROFILE_SIZE;
 						for (int j = 0; j < PROFILE_SIZE; j++)
-							line << prof[j].countEquiv / (f->facetHitCache.hit.nbHitEquiv + static_cast<double>(f->facetHitCache.hit.nbDesorbed))  << sep;
+							line << prof[j].countEquiv / (f->facetHitCache.hit.nbHitEquiv + static_cast<double>(f->facetHitCache.hit.nbDesorbed)) << sep;
 						break;
 					case PROFILE_ANGULAR:
 						scaleX = 90.0 / (double)PROFILE_SIZE;
@@ -2053,7 +2049,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 	FileReader *file, const size_t &source, const double &time,
 	const size_t &mode, const double &eta0, const double &alpha, const double &cutoffdose,
 	const std::vector<std::pair<double, double>> &convDistr,
-	GLProgress *prg){
+	GLProgress *prg) {
 
 	//UnselectAll();
 	char tmp[512];
@@ -2107,7 +2103,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 	ydims.reserve(nbNewFacet);
 
 	//now go for the facets to get their texture ratio
-	for (size_t i = 0; i < Min(nbNewFacet , GetNbFacet()); i++) {
+	for (size_t i = 0; i < Min(nbNewFacet, GetNbFacet()); i++) {
 		prg->SetProgress(0.5*(double)i / (double)Min(nbNewFacet, GetNbFacet()));
 		file->JumpSection("facet");
 		// Check idx
@@ -2139,7 +2135,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 	file->ReadDouble();
 
 	//read texture values
-	for (size_t i = 0; i < Min(nbNewFacet , GetNbFacet()); i++) {
+	for (size_t i = 0; i < Min(nbNewFacet, GetNbFacet()); i++) {
 		prg->SetProgress(0.5 + 0.5*(double)i / (double)Min(nbNewFacet, GetNbFacet()));
 		if (!IsZero(xdims[i])) { //has texture
 			Facet *f = GetFacet(i);
@@ -2168,9 +2164,9 @@ void MolflowGeometry::ImportDesorption_SYN(
 
 			if (f->selected) {
 				f->sh.outgassingFileRatio = xdims[i] / f->sh.U.Norme();
-				f->outgassingMap = (double*)malloc(f->sh.outgassingMapWidth*f->sh.outgassingMapHeight*sizeof(double));
+				f->outgassingMap = (double*)malloc(f->sh.outgassingMapWidth*f->sh.outgassingMapHeight * sizeof(double));
 				if (!f->outgassingMap) throw Error("Not enough memory to store outgassing map.");
-				memset(f->outgassingMap, 0, f->sh.outgassingMapWidth*f->sh.outgassingMapHeight*sizeof(double)); //set inital values to zero
+				memset(f->outgassingMap, 0, f->sh.outgassingMapWidth*f->sh.outgassingMapHeight * sizeof(double)); //set inital values to zero
 				f->totalDose = f->sh.totalOutgassing = f->totalFlux = 0.0;
 			}
 
@@ -2187,7 +2183,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 
 			for (iy = 0; iy < (Min(f->sh.outgassingMapHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
 				for (ix = 0; ix < (Min(f->sh.outgassingMapWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
-					size_t index = iy*f->sh.outgassingMapWidth + ix;
+					size_t index = iy * f->sh.outgassingMapWidth + ix;
 					//Read original values
 					llong MC = file->ReadLLong();
 					double cellArea = 1.0;
@@ -2200,8 +2196,8 @@ void MolflowGeometry::ImportDesorption_SYN(
 						//Calculate dose
 						double dose;
 						if (source == 0) dose = (double)MC*time;
-						else if (source == 1) dose = flux*time / cellArea;
-						else if (source == 2) dose = power*time / cellArea;
+						else if (source == 1) dose = flux * time / cellArea;
+						else if (source == 2) dose = power * time / cellArea;
 
 						double outgassing;
 						if (dose == 0) outgassing = 0; //to avoid division by zero later
@@ -2213,12 +2209,12 @@ void MolflowGeometry::ImportDesorption_SYN(
 								else if (source == 2) outgassing = power * 0.100 / 1.38E-23 / f->sh.temperature; //(Outgassing is stored internally in Pa*m3/s, for consistent SI unit calculations)
 							}
 							else if (mode == 1) {
-								double moleculePerPhoton = eta0*pow(Max(1.0, dose / cutoffdose), alpha);
-								outgassing = flux*moleculePerPhoton;
+								double moleculePerPhoton = eta0 * pow(Max(1.0, dose / cutoffdose), alpha);
+								outgassing = flux * moleculePerPhoton;
 							}
 							else if (mode == 2) {
 								double moleculePerPhoton = InterpolateY(dose, convDistr, false, true);
-								outgassing = flux*moleculePerPhoton;
+								outgassing = flux * moleculePerPhoton;
 							}
 						}
 						//Apply outgassing
@@ -2226,7 +2222,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 						f->outgassingMap[index] = outgassing * 1.38E-23 * f->sh.temperature; //1[Pa*m3/s] = kT [particles/sec]
 
 						//Facet diagnostic info
-						f->totalDose += flux*time;
+						f->totalDose += flux * time;
 						f->totalFlux += flux;
 						f->sh.totalOutgassing += f->outgassingMap[index];
 
@@ -2259,7 +2255,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 }
 
 void MolflowGeometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, size_t *nbNewFacet,
-	size_t *nbTextured, size_t *nbDifferent, GLProgress *prg){
+	size_t *nbTextured, size_t *nbDifferent, GLProgress *prg) {
 	//init
 	*nbTextured = 0;
 	*nbNewFacet = 0;
@@ -2342,7 +2338,7 @@ void MolflowGeometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, 
 
 }
 
-void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress *prg, bool saveSelected){
+void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress *prg, bool saveSelected) {
 	//TiXmlDeclaration* decl = new TiXmlDeclaration("1.0")="")="");
 	//saveDoc->LinkEndChild(decl);
 
@@ -2377,7 +2373,7 @@ void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLP
 	for (int i = 0, k = 0; i < sh.nbSuper; i++) {
 		xml_node s = geomNode.child("Structures").append_child("Structure");
 		s.append_attribute("id") = i;
-		s.append_attribute("name") = (strName)?strName[i]:"";
+		s.append_attribute("name") = (strName) ? strName[i] : "";
 
 	}
 	xml_node interfNode = saveDoc.append_child("Interface");
@@ -2419,7 +2415,7 @@ void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLP
 	xml_node formulaNode = interfNode.append_child("Formulas");
 	formulaNode.append_attribute("nb") = (!saveSelected)*(mApp->formulas_n.size());
 	if (!saveSelected) { //don't save formulas when exporting part of the geometry (saveSelected)
-		for (size_t i = 0; i < mApp->formulas_n.size();i++) {
+		for (size_t i = 0; i < mApp->formulas_n.size(); i++) {
 			xml_node newFormula = formulaNode.append_child("Formula");
 			newFormula.append_attribute("id") = i;
 			newFormula.append_attribute("name") = mApp->formulas_n[i]->GetName();
@@ -2493,14 +2489,14 @@ void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLP
 	}
 }
 
-bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, GLProgress *prg, bool saveSelected){
+bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, GLProgress *prg, bool saveSelected) {
 	xml_node resultNode = saveDoc.append_child("MolflowResults");
 	prg->SetMessage("Writing simulation results...");
 	xml_node momentsNode = resultNode.append_child("Moments");
 	momentsNode.append_attribute("nb") = work->moments.size() + 1;
 	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
 	GlobalHitBuffer* gHits = (GlobalHitBuffer*)buffer;
-	for (size_t m = 0; m <= mApp->worker.moments.size(); m++){
+	for (size_t m = 0; m <= mApp->worker.moments.size(); m++) {
 		prg->SetProgress(0.5 + 0.5*(double)m / (1.0 + (double)mApp->worker.moments.size()));
 		xml_node newMoment = momentsNode.append_child("Moment");
 		newMoment.append_attribute("id") = m;
@@ -2554,7 +2550,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 			Facet *f = GetFacet(i);
 			xml_node newFacetResult = facetResultsNode.append_child("Facet");
 			newFacetResult.append_attribute("id") = i;
-			
+
 			xml_node facetHitNode = newFacetResult.append_child("Hits");
 			FacetHitBuffer* facetCounter = (FacetHitBuffer *)(buffer + f->sh.hitOffset + m * sizeof(FacetHitBuffer));
 			facetHitNode.append_attribute("nbHit") = facetCounter->hit.nbMCHit;
@@ -2565,11 +2561,11 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 			facetHitNode.append_attribute("sum_1_per_v") = facetCounter->hit.sum_1_per_ort_velocity;
 			facetHitNode.append_attribute("sum_v") = facetCounter->hit.sum_1_per_velocity;
 
-			if (f->sh.isProfile){
+			if (f->sh.isProfile) {
 				xml_node profileNode = newFacetResult.append_child("Profile");
 				profileNode.append_attribute("size") = PROFILE_SIZE;
-				ProfileSlice *profilePtr = (ProfileSlice *)(buffer + f->sh.hitOffset + facetHitsSize + m*sizeof(ProfileSlice)*PROFILE_SIZE);
-				for (int p = 0; p < PROFILE_SIZE; p++){
+				ProfileSlice *profilePtr = (ProfileSlice *)(buffer + f->sh.hitOffset + facetHitsSize + m * sizeof(ProfileSlice)*PROFILE_SIZE);
+				for (int p = 0; p < PROFILE_SIZE; p++) {
 					xml_node slice = profileNode.append_child("Slice");
 					slice.append_attribute("id") = p;
 					slice.append_attribute("countEquiv") = profilePtr[p].countEquiv;
@@ -2578,16 +2574,16 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 				}
 			}
 
-			size_t profSize = (f->sh.isProfile) ? (PROFILE_SIZE*sizeof(ProfileSlice)*(1 + mApp->worker.moments.size())) : 0;
+			size_t profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + mApp->worker.moments.size())) : 0;
 			size_t h = f->sh.texHeight;
 			size_t w = f->sh.texWidth;
 
-			if (f->hasMesh){
+			if (f->hasMesh) {
 				xml_node textureNode = newFacetResult.append_child("Texture");
 				textureNode.append_attribute("width") = f->sh.texWidth;
 				textureNode.append_attribute("height") = f->sh.texHeight;
 
-				TextureCell *texture = (TextureCell *)(buffer + f->sh.hitOffset + facetHitsSize + profSize + m*w*h*sizeof(TextureCell));
+				TextureCell *texture = (TextureCell *)(buffer + f->sh.hitOffset + facetHitsSize + profSize + m * w*h * sizeof(TextureCell));
 				std::stringstream countText, sum1perText, sumvortText;
 				countText << '\n'; //better readability in file
 				sum1perText << std::setprecision(8) << '\n';
@@ -2615,7 +2611,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 				dirNode.append_attribute("width") = f->sh.texWidth;
 				dirNode.append_attribute("height") = f->sh.texHeight;
 
-				DirectionCell *dirs = (DirectionCell *)(buffer + f->sh.hitOffset + facetHitsSize + profSize + (1 + (int)work->moments.size())*w*h*sizeof(TextureCell) + m*w*h*sizeof(DirectionCell));
+				DirectionCell *dirs = (DirectionCell *)(buffer + f->sh.hitOffset + facetHitsSize + profSize + (1 + (int)work->moments.size())*w*h * sizeof(TextureCell) + m * w*h * sizeof(DirectionCell));
 
 				std::stringstream dirText, dirCountText;
 				dirText << std::setprecision(8) << '\n'; //better readability in file
@@ -2657,7 +2653,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 	return true;
 }
 
-void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg){
+void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg) {
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
 	//mApp->ClearFormulas();
@@ -2696,7 +2692,7 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 
 	if (isMolflowFile) {
 		xml_node paramNode = simuParamNode.child("Parameters");
-		for (xml_node newParameter : paramNode.children("Parameter")){
+		for (xml_node newParameter : paramNode.children("Parameter")) {
 			Parameter newPar;
 			newPar.name = newParameter.attribute("name").as_string();
 			for (xml_node newMoment : newParameter.children("Moment")) {
@@ -2861,7 +2857,7 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 	}
 }
 
-void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg, bool newStr){
+void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg, bool newStr) {
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
 	//mApp->ClearFormulas();
@@ -2917,7 +2913,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 
 	if (isMolflowFile) {
 		xml_node paramNode = simuParamNode.child("Parameters");
-		for (xml_node newParameter : paramNode.children("Parameter")){
+		for (xml_node newParameter : paramNode.children("Parameter")) {
 			Parameter newPar;
 			newPar.name = newParameter.attribute("name").as_string();
 			for (xml_node newMoment : newParameter.children("Moment")) {
@@ -2945,12 +2941,12 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 		if (newStr) {
 			if (facets[idx]->sh.superIdx != -1) //-1 = facet member of all structures
 				facets[idx]->sh.superIdx += static_cast<int>(sh.nbSuper); //offset structure
-			if (facets[idx]->sh.superDest>0) facets[idx]->sh.superDest += sh.nbSuper;
+			if (facets[idx]->sh.superDest > 0) facets[idx]->sh.superDest += sh.nbSuper;
 		}
 		else {
 			if (facets[idx]->sh.superIdx != -1) //-1 = facet member of all structures
 				facets[idx]->sh.superIdx += structId; //offset structure
-			if (facets[idx]->sh.superDest>0) facets[idx]->sh.superDest += structId;
+			if (facets[idx]->sh.superDest > 0) facets[idx]->sh.superDest += structId;
 		}
 
 		if (isMolflowFile) {
@@ -3055,7 +3051,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 	*/
 }
 
-bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker *work, GLProgress *progressDlg){
+bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker *work, GLProgress *progressDlg) {
 	if (!loadXML.child("MolflowResults")) return false; //simu state not saved with file
 	AccessDataport(dpHit);
 	BYTE* buffer = (BYTE*)dpHit->buff;
@@ -3152,7 +3148,7 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit,
 				}
 				else {
 					//Backward compatibility
-					facetCounter->hit.sum_1_per_velocity = 4.0 * Sqr(facetCounter->hit.nbHitEquiv + static_cast<double>(facetCounter->hit.nbDesorbed))/ facetCounter->hit.sum_1_per_ort_velocity;
+					facetCounter->hit.sum_1_per_velocity = 4.0 * Sqr(facetCounter->hit.nbHitEquiv + static_cast<double>(facetCounter->hit.nbDesorbed)) / facetCounter->hit.sum_1_per_ort_velocity;
 				}
 
 				if (work->displayedMoment == m) { //For immediate display in facet hits list and facet counter
@@ -3161,22 +3157,22 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit,
 			}
 			else { //No hit information, so set to 0
 				facetCounter->hit.nbMCHit =
-				facetCounter->hit.nbDesorbed =
-				0;
-				facetCounter->hit.sum_v_ort = 
-				facetCounter->hit.nbHitEquiv =
-				facetCounter->hit.sum_1_per_ort_velocity =
-				facetCounter->hit.sum_1_per_velocity =
-				facetCounter->hit.nbAbsEquiv =
-				0.0;
+					facetCounter->hit.nbDesorbed =
+					0;
+				facetCounter->hit.sum_v_ort =
+					facetCounter->hit.nbHitEquiv =
+					facetCounter->hit.sum_1_per_ort_velocity =
+					facetCounter->hit.sum_1_per_velocity =
+					facetCounter->hit.nbAbsEquiv =
+					0.0;
 			}
 
 			//Profiles
-			if (f->sh.isProfile){
+			if (f->sh.isProfile) {
 				xml_node profileNode = newFacetResult.child("Profile");
-				ProfileSlice *profilePtr = (ProfileSlice *)(buffer + f->sh.hitOffset + facetHitsSize + m*sizeof(ProfileSlice)*PROFILE_SIZE);
+				ProfileSlice *profilePtr = (ProfileSlice *)(buffer + f->sh.hitOffset + facetHitsSize + m * sizeof(ProfileSlice)*PROFILE_SIZE);
 				size_t id = 0;
-				for (xml_node slice : profileNode.children("Slice")){
+				for (xml_node slice : profileNode.children("Slice")) {
 					if (slice.attribute("countEquiv")) {
 						profilePtr[id].countEquiv = slice.attribute("countEquiv").as_double();
 					}
@@ -3192,11 +3188,11 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit,
 
 			//Textures
 			int ix, iy;
-			int profSize = (f->sh.isProfile) ? (PROFILE_SIZE*sizeof(ProfileSlice)*(1 + (int)mApp->worker.moments.size())) : 0;
+			int profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + (int)mApp->worker.moments.size())) : 0;
 			/*int h = (f->wp.texHeight);
 			int w = (f->wp.texWidth);*/
 
-			if (f->hasMesh){
+			if (f->hasMesh) {
 				xml_node textureNode = newFacetResult.child("Texture");
 				size_t texWidth_file = textureNode.attribute("width").as_llong();
 				size_t texHeight_file = textureNode.attribute("height").as_llong();
@@ -3209,7 +3205,7 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit,
 					throw Error(msg.str().c_str());
 					}*/ //We'll treat texture size mismatch, see below
 
-				TextureCell *texture = (TextureCell *)(buffer + f->sh.hitOffset + facetHitsSize + profSize + m*f->sh.texWidth*f->sh.texHeight*sizeof(TextureCell));
+				TextureCell *texture = (TextureCell *)(buffer + f->sh.hitOffset + facetHitsSize + profSize + m * f->sh.texWidth*f->sh.texHeight * sizeof(TextureCell));
 				std::stringstream countText, sum1perText, sumvortText;
 				if (textureNode.child("countEquiv")) {
 					countText << textureNode.child_value("countEquiv");
@@ -3261,8 +3257,8 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit,
 
 				}
 				DirectionCell *dirs = (DirectionCell *)(buffer + f->sh.hitOffset + facetHitsSize
-					+ profSize + (1 + (int)work->moments.size())*f->sh.texWidth*f->sh.texHeight*sizeof(TextureCell)
-					+ m*f->sh.texWidth*f->sh.texHeight*sizeof(DirectionCell));
+					+ profSize + (1 + (int)work->moments.size())*f->sh.texWidth*f->sh.texHeight * sizeof(TextureCell)
+					+ m * f->sh.texWidth*f->sh.texHeight * sizeof(DirectionCell));
 
 				std::stringstream dirText, dirCountText;
 				dirText << dirNode.child_value("vel.vectors");

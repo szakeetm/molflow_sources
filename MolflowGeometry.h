@@ -25,6 +25,9 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #define TEXTURE_MODE_PRESSURE 0
 #define TEXTURE_MODE_IMPINGEMENT 1
 #define TEXTURE_MODE_DENSITY 2
+
+
+
 #define SYNVERSION 10
 
 class Worker;
@@ -81,6 +84,8 @@ public:
 	// Texture scaling
 	TEXTURE_SCALE_TYPE texture_limits[3];   // Min/max values for texture scaling: Pressure/Impingement rate/Density
 	bool  texAutoScaleIncludeConstantFlow;  // Include constant flow when calculating autoscale values
+
+	
 
 #pragma region GeometryRender.cpp
 	void BuildFacetTextures(BYTE *texture,bool renderRegularTexture,bool renderDirectionTexture,size_t sMode);

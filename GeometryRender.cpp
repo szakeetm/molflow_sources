@@ -42,6 +42,8 @@ extern MolFlow *mApp;
 extern SynRad*mApp;
 #endif
 
+
+
 void MolflowGeometry::BuildFacetTextures(BYTE *hits, bool renderRegularTexture, bool renderDirectionTexture,size_t sMode) {
 
 	GlobalHitBuffer *shGHit = (GlobalHitBuffer *)hits;
@@ -143,13 +145,16 @@ void MolflowGeometry::BuildFacetTextures(BYTE *hits, bool renderRegularTexture, 
 			
 			size_t dSize = nbElem * sizeof(DirectionCell);
 
+			/*
 			double iDesorbed = 0.0;
 			if (shGHit->globalHits.hit.nbDesorbed)
 			iDesorbed = 1.0 / (double)shGHit->globalHits.hit.nbDesorbed;
-			
+			*/
+						
 			DirectionCell *dirs = (DirectionCell *)((BYTE *)shGHit + (f->sh.hitOffset + facetHitsSize + profSize*(1 + nbMoments) + tSize*(1 + nbMoments) + dSize*mApp->worker.displayedMoment));
 			for (size_t j = 0; j < nbElem; j++) {
-				f->dirCache[j].dir = dirs[j].dir * iDesorbed;
+				double denominator = (dirs[j].count > 0) ? 1.0 / dirs[j].count : 1.0;
+				f->dirCache[j].dir = dirs[j].dir * denominator;
 				f->dirCache[j].count = dirs[j].count;
 			}
 		}
