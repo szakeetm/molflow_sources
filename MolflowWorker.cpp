@@ -1271,8 +1271,8 @@ std::vector<double> Worker::ParseMoment(std::string userInput) {
 
 void Worker::ResetMoments() {
 	displayedMoment = 0;
-	moments.swap(std::vector<double>());
-	userMoments.swap(std::vector<std::string>());
+	moments.clear();
+	userMoments.clear();
 }
 
 double Worker::GetMoleculesPerTP(size_t moment)
