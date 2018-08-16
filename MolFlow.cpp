@@ -68,11 +68,11 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "HistogramSettings.h"
 #include "HistogramPlotter.h"
 
-//Hard-coded identifiers, update these on new release
+//Hard-coded identifiers, update these on new release and rebuild solution
 //---------------------------------------------------
 std::string appName = "Molflow";
-int appVersionId = 2670; //Compared with available updates. Recompile Interface.cpp if changed
-std::string appVersionName = "2.6.70";
+int appVersionId = 2671; //Compared with available updates. Global variable, so rebuild whole solution if changed.
+std::string appVersionName = "2.6.71";
 //---------------------------------------------------
 
 static const char *fileLFilters = "All MolFlow supported files\0*.txt;*.xml;*.zip;*.geo;*.geo7z;*.syn;*.syn7z;*.str;*.stl;*.ase\0"
@@ -112,7 +112,7 @@ Area variables: ARn (Area of facet n), DESAR (total desorption area), ABSAR (tot
 Final (constant) outgassing rate [mbar*l/s]: QCONST
 Final (constant) outgassing rate [molecules/s]: QCONST_N
 Total desorbed molecules until last moment: [molecules]: NTOT
-Gas mass [g/mol]: sh.gasMass
+Gas mass [g/mol]: GASMASS
 
 Mean Pumping Path: MPP (average path of molecules in the system before absorption)
 Mean Free Path:      MFP (average path of molecules between two wall hits)
@@ -2384,7 +2384,7 @@ void MolFlow::LoadConfig() {
 		autoUpdateFormulas = f->ReadInt();
 		f->ReadKeyword("compressSavedFiles"); f->ReadKeyword(":");
 		compressSavedFiles = f->ReadInt();
-		f->ReadKeyword("sh.gasMass"); f->ReadKeyword(":");
+		f->ReadKeyword("gasMass"); f->ReadKeyword(":");
 		worker.wp.gasMass = f->ReadDouble();
 		f->ReadKeyword("expandShortcutPanel"); f->ReadKeyword(":");
 		bool isOpen = f->ReadInt();
@@ -2522,7 +2522,7 @@ void MolFlow::SaveConfig() {
 		f->Write("checkForUpdates:"); f->Write(/*checkForUpdates*/ 0, "\n"); //Deprecated
 		f->Write("autoUpdateFormulas:"); f->Write(autoUpdateFormulas, "\n");
 		f->Write("compressSavedFiles:"); f->Write(compressSavedFiles, "\n");
-		f->Write("sh.gasMass:"); f->Write(worker.wp.gasMass, "\n");
+		f->Write("gasMass:"); f->Write(worker.wp.gasMass, "\n");
 		f->Write("expandShortcutPanel:"); f->Write(!shortcutPanel->IsClosed(), "\n");
 
 		WRITEI("hideLot", hideLot);
@@ -2694,7 +2694,7 @@ bool MolFlow::EvaluateVariable(VLIST *v) {
 	else if (_stricmp(v->name, "NTOT") == 0) {
 		v->value = worker.wp.totalDesorbedMolecules;
 	}
-	else if (_stricmp(v->name, "sh.gasMass") == 0) {
+	else if (_stricmp(v->name, "GASMASS") == 0) {
 		v->value = worker.wp.gasMass;
 	}
 	else if (_stricmp(v->name, "KB") == 0) {

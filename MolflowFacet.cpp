@@ -1183,6 +1183,9 @@ void Facet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchive) {
 
 		std::vector<double> outgMapVector(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0);
 		memcpy(outgMapVector.data(), outgassingMap, sizeof(double)*(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0));
+		size_t mapSize = sh.anglemapParams.GetMapSize();
+		std::vector<size_t> angleMapVector(mapSize);
+		memcpy(angleMapVector.data(), angleMapCache, sh.anglemapParams.GetRecordedDataSize());
 		std::vector<double> textIncVector;
 
 		// Add surface elements area (reciprocal)
@@ -1231,6 +1234,7 @@ void Facet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchive) {
 			CEREAL_NVP(vertices2)
 #ifdef MOLFLOW
 			, CEREAL_NVP(outgMapVector)
+			, CEREAL_NVP(angleMapVector)
 			, CEREAL_NVP(textIncVector)
 #endif
 		);
