@@ -32,7 +32,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/MathTools.h"
 
 #include "MolFlow.h"
-#include "GLApp\GLFileBox.h"
+//#include "GLApp\GLFileBox.h"
+#include "NativeFileDialog\molflow_wrapper\nfd_wrapper.h"
 #include <sstream>
 
 extern MolFlow *mApp;
@@ -304,13 +305,13 @@ void ParameterEditor::PasteFromClipboard() {
 }
 
 void ParameterEditor::LoadCSV() {
-	FILENAME *fn = NULL;
-	fn=GLFileBox::OpenFile(NULL, NULL, "Open File", "CSV files\0*.csv\0All files\0*.*\0", 2);
-	if (!fn || !fn->fullName) return;
+
+	std::string fn = NFD_OpenFile_Cpp("csv", "");
+	if (fn.empty()) return;
 
 	std::vector<std::vector<std::string>> table;
 	try {
-		FileReader *f = new FileReader(fn->fullName);
+		FileReader *f = new FileReader(fn);
 		table = work->ImportCSV_string(f);
 		SAFE_DELETE(f);
 	}

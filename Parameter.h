@@ -34,7 +34,7 @@ public:
 	template<class Archive>
 	void serialize(Archive & archive)
 	{
-		archive(name,fromCatalog);
+		archive(name,values,isLogLog,fromCatalog);
 	}
 };
 

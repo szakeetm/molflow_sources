@@ -25,7 +25,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "File.h"
 #include "GLApp/GLMessageBox.h"
 #include "GLApp/GLInputBox.h"
-#include "GLApp/GLFileBox.h"
+//#include "GLApp/GLFileBox.h"
+#include "NativeFileDialog/molflow_wrapper/nfd_wrapper.h"
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLWindowManager.h"
 #include "GLApp/MathTools.h"
@@ -68,19 +69,30 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "HistogramSettings.h"
 #include "HistogramPlotter.h"
 
-//Hard-coded identifiers, update these on new release
+//Hard-coded identifiers, update these on new release and rebuild solution
 //---------------------------------------------------
 std::string appName = "Molflow";
-int appVersionId = 2670; //Compared with available updates. Recompile Interface.cpp if changed
-std::string appVersionName = "2.6.70";
+int appVersionId = 2672; //Compared with available updates. Global variable, so rebuild whole solution if changed.
+std::string appVersionName = "2.6.72";
 //---------------------------------------------------
 
+/*
 static const char *fileLFilters = "All MolFlow supported files\0*.txt;*.xml;*.zip;*.geo;*.geo7z;*.syn;*.syn7z;*.str;*.stl;*.ase\0"
 "All files\0*.*\0";
 static const char *fileInsFilters = "All insertable geometries\0*.txt;*.xml;*.zip;*.geo;*.geo7z;*.syn;*.syn7z;*.stl\0"
 "All files\0*.*\0";
 const char *fileSFilters = "MolFlow saveable files\0*.xml;*.zip;*.geo;*.geo7z;*.txt\0All files\0*.*\0";
 static const char *fileDesFilters = "Desorption files\0*.des\0All files\0*.*\0";
+*/
+
+//NativeFileDialog compatible file filters
+std::string fileLoadFilters = "txt,xml,zip,geo,geo7z,syn,syn7z,str,stl,ase";
+std::string fileInsertFilters = "txt,xml,zip,geo,geo7z,syn,syn7z,stl";
+std::string fileSaveFilters = "xml,zip,geo,geo7z,txt";
+std::string fileSelFilters = "sel";
+std::string fileTexFilters = "txt";
+std::string fileProfFilters = "csv;txt";
+
 
 int cSize = 4;
 int   cWidth[] = { 30, 56, 50, 50 };
@@ -112,7 +124,7 @@ Area variables: ARn (Area of facet n), DESAR (total desorption area), ABSAR (tot
 Final (constant) outgassing rate [mbar*l/s]: QCONST
 Final (constant) outgassing rate [molecules/s]: QCONST_N
 Total desorbed molecules until last moment: [molecules]: NTOT
-Gas mass [g/mol]: sh.gasMass
+Gas mass [g/mol]: GASMASS
 
 Mean Pumping Path: MPP (average path of molecules in the system before absorption)
 Mean Free Path:      MFP (average path of molecules between two wall hits)
@@ -1196,15 +1208,16 @@ void MolFlow::ExportProfiles() {
 		return;
 	}
 
-	FILENAME *fn = GLFileBox::SaveFile(currentDir, NULL, "Save File", fileProfFilters, 0);
+	//FILENAME *fn = GLFileBox::SaveFile(currentDir, NULL, "Save File", fileProfFilters, 0);
+	std::string saveFile = NFD_SaveFile_Cpp(fileProfFilters, "");
 
-	if (fn) {
+	if (!saveFile.empty()) {
 		try {
-			worker.ExportProfiles(fn->fullName);
+			worker.ExportProfiles(saveFile.c_str());
 		}
 		catch (Error &e) {
 			char errMsg[512];
-			sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), fn->fullName);
+			sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), saveFile.c_str());
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 		}
 	}
@@ -1229,16 +1242,16 @@ void MolFlow::ExportAngleMaps() {
 		return;
 	}
 
-	FILENAME *fn = GLFileBox::SaveFile(currentDir, NULL, "Save File", fileProfFilters, 0);
+	//FILENAME *fn = GLFileBox::SaveFile(currentDir, NULL, "Save File", fileProfFilters, 0);
+	std::string profFile = NFD_SaveFile_Cpp(fileProfFilters, "");
 
-	if (fn) {
+	if (!profFile.empty()) {
 		try {
-			std::string fileName = fn->fullName;
-			worker.ExportAngleMaps(angleMapFacetIndices, fileName);
+			worker.ExportAngleMaps(angleMapFacetIndices, profFile);
 		}
 		catch (Error &e) {
 			char errMsg[512];
-			sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), fn->fullName);
+			sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), profFile.c_str());
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return;
 		}
@@ -1252,15 +1265,17 @@ void MolFlow::ImportAngleMaps()
 		GLMessageBox::Display("Select at least one facet to import angle map to", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
 	}
-	std::vector<FILENAME> files = GLFileBox::OpenMultipleFiles("CSV files\0*.csv\0All files\0*.*\0", "Import angle map(s)");
-	if (files.size() == 0) return;
-	if (selFacets.size() != files.size()) {
+
+	//std::vector<FILENAME> files = GLFileBox::OpenMultipleFiles("CSV files\0*.csv\0All files\0*.*\0", "Import angle map(s)");
+	auto fileNames = NFD_OpenMultiple_Cpp("csv", "");
+	if (fileNames.empty()) return;
+	if (selFacets.size() != fileNames.size()) {
 		GLMessageBox::Display("Select the same number of facets and files to import", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
 	}
-	for (size_t i = 0; i < files.size(); i++) {
+	for (size_t i = 0; i < fileNames.size();i++) {
 		try {
-			FileReader *f = new FileReader(files[i].fullName);
+			FileReader *f = new FileReader(fileNames[i]);
 			std::vector<std::vector<std::string>> table = worker.ImportCSV_string(f);
 			SAFE_DELETE(f);
 			AskToReset(&worker);
@@ -1269,7 +1284,7 @@ void MolFlow::ImportAngleMaps()
 		}
 		catch (Error &e) {
 				char errMsg[512];
-				sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), files[i].fullName);
+				sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), fileNames[i].c_str());
 				GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 		}
@@ -1379,35 +1394,28 @@ void MolFlow::SaveFile() {
 	else SaveFileAs();
 }
 
-void MolFlow::LoadFile(char *fName) {
+void MolFlow::LoadFile(std::string fileName) {
 
-	char fullName[512];
-	char shortName[512];
-	strcpy(fullName, "");
+	std::string fileShortName, filePath;
 
-	if (fName == NULL) {
-		FILENAME *fn = GLFileBox::OpenFile(currentDir, NULL, "Open file", fileLFilters, 0);
-		if (fn)
-			strcpy(fullName, fn->fullName);
+	if (fileName.empty()) {
+		fileName = NFD_OpenFile_Cpp(fileLoadFilters, "");
 	}
-	else {
-		strcpy(fullName, fName);
-	}
+	
+	filePath = fileName;
 
 	GLProgress *progressDlg2 = new GLProgress("Preparing to load file...", "Please wait");
 	progressDlg2->SetVisible(true);
 	progressDlg2->SetProgress(0.0);
 	//GLWindowManager::Repaint();
 
-	if (strlen(fullName) == 0) {
+	if (filePath.empty()) {
 		progressDlg2->SetVisible(false);
 		SAFE_DELETE(progressDlg2);
 		return;
 	}
-
-	char *lPart = strrchr(fullName, '\\');
-	if (lPart) strcpy(shortName, lPart + 1);
-	else strcpy(shortName, fullName);
+	
+	fileShortName = FileUtils::GetFilename(filePath);
 
 	try {
 		ClearFormulas();
@@ -1416,7 +1424,7 @@ void MolFlow::LoadFile(char *fName) {
 		ClearAllViews();
 		ResetSimulation(false);
 
-		worker.LoadGeometry(fullName);
+		worker.LoadGeometry(filePath);
 
 		Geometry *geom = worker.GetGeometry();
 
@@ -1433,17 +1441,17 @@ void MolFlow::LoadFile(char *fName) {
 		ClearFacetParams();
 		nbDesStart = worker.globalHitCache.globalHits.hit.nbDesorbed;
 		nbHitStart = worker.globalHitCache.globalHits.hit.nbMCHit;
-		AddRecent(fullName);
+		AddRecent(filePath.c_str());
 		geom->viewStruct = -1;
 
 		UpdateStructMenu();
-		UpdateCurrentDir(fullName);
+		UpdateCurrentDir(filePath.c_str());
 
 		// Check non simple polygon
 		progressDlg2->SetMessage("Checking for non simple polygons...");
 
 		geom->CheckCollinear();
-		geom->CheckNonSimple();
+		//geom->CheckNonSimple();
 		geom->CheckIsolatedVertex();
 		// Set up view
 		// Default
@@ -1481,9 +1489,9 @@ void MolFlow::LoadFile(char *fName) {
 	catch (Error &e) {
 
 		char errMsg[512];
-		sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), shortName);
+		sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), fileShortName.c_str());
 		GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
-		RemoveRecent(fName);
+		RemoveRecent(filePath.c_str());
 
 	}
 	progressDlg2->SetVisible(false);
@@ -1491,42 +1499,37 @@ void MolFlow::LoadFile(char *fName) {
 	changedSinceSave = false;
 }
 
-void MolFlow::InsertGeometry(bool newStr, char *fName) {
-	if (!AskToReset()) return;
-	ResetSimulation(false);
+void MolFlow::InsertGeometry(bool newStr,std::string fileName) {
+	
 
-	char fullName[1024];
-	char shortName[512];
-	strcpy(fullName, "");
+	std::string fileShortName, filePath;
 
-	if (fName == NULL) {
-		FILENAME *fn = GLFileBox::OpenFile(currentDir, NULL, "Open File", fileInsFilters, 0);
-		if (fn)
-			strcpy(fullName, fn->fullName);
-	}
-	else {
-		strcpy(fullName, fName);
+	if (fileName.empty()) {
+		fileName = NFD_OpenFile_Cpp(fileInsertFilters, "");
 	}
 
-	GLProgress *progressDlg2 = new GLProgress("Loading file...", "Please wait");
+	filePath = fileName;
+
+	GLProgress *progressDlg2 = new GLProgress("Preparing to load file...", "Please wait");
 	progressDlg2->SetVisible(true);
 	progressDlg2->SetProgress(0.0);
 	//GLWindowManager::Repaint();
 
-	if (strlen(fullName) == 0) {
+	if (filePath.empty()) {
 		progressDlg2->SetVisible(false);
 		SAFE_DELETE(progressDlg2);
 		return;
 	}
+	
+	if (!AskToReset()) return;
+	ResetSimulation(false);
 
-	char *lPart = strrchr(fullName, '\\');
-	if (lPart) strcpy(shortName, lPart + 1);
-	else strcpy(shortName, fullName);
+	fileShortName = FileUtils::GetFilename(filePath);
 
 	try {
 
 		//worker.InsertGeometry(newStr, fullName);
-		worker.LoadGeometry(fullName, true, newStr);
+		worker.LoadGeometry(filePath, true, newStr);
 
 		Geometry *geom = worker.GetGeometry();
 		worker.CalcTotalOutgassing();
@@ -1544,7 +1547,7 @@ void MolFlow::InsertGeometry(bool newStr, char *fName) {
 		//ClearFacetParams();
 		//nbDesStart = worker.globalHitCache.globalHits.hit.nbDesorbed;
 		//nbHitStart = worker.globalHitCache.globalHits.hit.nbMC;
-		AddRecent(fullName);
+		AddRecent(filePath.c_str());
 		geom->viewStruct = -1;
 
 		//worker.LoadTexturesGEO(fullName);
@@ -1555,7 +1558,7 @@ void MolFlow::InsertGeometry(bool newStr, char *fName) {
 		//UpdateCurrentDir(fullName);
 
 		geom->CheckCollinear();
-		geom->CheckNonSimple();
+		//geom->CheckNonSimple();
 		geom->CheckIsolatedVertex();
 
 		/*
@@ -1583,9 +1586,9 @@ void MolFlow::InsertGeometry(bool newStr, char *fName) {
 	catch (Error &e) {
 
 		char errMsg[512];
-		sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), shortName);
+		sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), fileShortName.c_str());
 		GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
-		RemoveRecent(fName);
+		RemoveRecent(filePath.c_str());
 
 	}
 	progressDlg2->SetVisible(false);
@@ -1764,7 +1767,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		case MENU_FACET_SELECTSTICK:
 			geom->UnselectAll();
 			for (int i = 0; i < geom->GetNbFacet(); i++)
-				if (geom->GetFacet(i)->sh.sticking != 0.0 && !geom->GetFacet(i)->IsTXTLinkFacet())
+				if (geom->GetFacet(i)->sh.sticking_paramId!=-1 || (geom->GetFacet(i)->sh.sticking != 0.0 && !geom->GetFacet(i)->IsTXTLinkFacet()))
 					geom->SelectFacet(i);
 			geom->UpdateSelection();
 			UpdateFacetParams(true);
@@ -2384,7 +2387,7 @@ void MolFlow::LoadConfig() {
 		autoUpdateFormulas = f->ReadInt();
 		f->ReadKeyword("compressSavedFiles"); f->ReadKeyword(":");
 		compressSavedFiles = f->ReadInt();
-		f->ReadKeyword("sh.gasMass"); f->ReadKeyword(":");
+		f->ReadKeyword("gasMass"); f->ReadKeyword(":");
 		worker.wp.gasMass = f->ReadDouble();
 		f->ReadKeyword("expandShortcutPanel"); f->ReadKeyword(":");
 		bool isOpen = f->ReadInt();
@@ -2522,7 +2525,7 @@ void MolFlow::SaveConfig() {
 		f->Write("checkForUpdates:"); f->Write(/*checkForUpdates*/ 0, "\n"); //Deprecated
 		f->Write("autoUpdateFormulas:"); f->Write(autoUpdateFormulas, "\n");
 		f->Write("compressSavedFiles:"); f->Write(compressSavedFiles, "\n");
-		f->Write("sh.gasMass:"); f->Write(worker.wp.gasMass, "\n");
+		f->Write("gasMass:"); f->Write(worker.wp.gasMass, "\n");
 		f->Write("expandShortcutPanel:"); f->Write(!shortcutPanel->IsClosed(), "\n");
 
 		WRITEI("hideLot", hideLot);
@@ -2694,7 +2697,7 @@ bool MolFlow::EvaluateVariable(VLIST *v) {
 	else if (_stricmp(v->name, "NTOT") == 0) {
 		v->value = worker.wp.totalDesorbedMolecules;
 	}
-	else if (_stricmp(v->name, "sh.gasMass") == 0) {
+	else if (_stricmp(v->name, "GASMASS") == 0) {
 		v->value = worker.wp.gasMass;
 	}
 	else if (_stricmp(v->name, "KB") == 0) {

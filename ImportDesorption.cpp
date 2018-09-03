@@ -23,7 +23,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/GLMessageBox.h"
 #include "Molflow.h"
 #include "File.h"
-#include "GLApp/GLFileBox.h"
+//#include "GLApp/GLFileBox.h"
+#include "NativeFileDialog/molflow_wrapper/nfd_wrapper.h"
 #include "GLApp/GLButton.h"
 #include "GLApp/GLTextField.h"
 #include "GLApp/GLLabel.h"
@@ -204,21 +205,26 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 			GLWindow::ProcessMessage(NULL,MSG_CLOSE);
 
 		} else if (src==loadConvButton) {
+			/*
 			//load file dialog
 			FILENAME *convFile=GLFileBox::OpenFile(mApp->currentDir,NULL,"Open conversion file","All files\0*.*\0",2);
 			if (!convFile) return;
 			if (!convFile->fullName) return;
+			*/
+			std::string fileName = NFD_OpenFile_Cpp("", "");
+			if (fileName.empty()) return;
+
 			//load file
 			try{
-				LoadConvFile(convFile->fullName);
+				LoadConvFile(fileName.c_str());
 			} catch (Error &e) {
 				char errMsg[512];
-				sprintf(errMsg,"%s\nFile:%s",e.GetMsg(),convFile->fullName);
+				sprintf(errMsg,"%s\nFile:%s",e.GetMsg(), fileName.c_str());
 				GLMessageBox::Display(errMsg,"Error loading conversion file",GLDLG_OK,GLDLG_ICONERROR);
 				return;
 			}
 			if (convDistr.size()>0) {
-			convFileName->SetText(convFile->fullName);
+			convFileName->SetText(fileName);
 			char tmp[256];
 			sprintf(tmp,"%d points loaded.",(int)convDistr.size());
 			convAnalysisLabel->SetText(tmp);
@@ -230,35 +236,36 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 			EnableDisableComponents();
 		} else if (src==loadSynButton || src==useCurrentButton || src==reloadButton) {
 			//load file dialog
+			/*
 			FILENAME synFileTmp;
 			FILENAME *synFilePtr=NULL;
-			if (src==loadSynButton)
-				synFilePtr=GLFileBox::OpenFile(mApp->currentDir,NULL,"Open source SYN file",
-				"SynRad+ files\0*.syn;*.syn7z\0All files\0*.*\0",2);
+			*/
+			std::string fileName;
+			if (src == loadSynButton) {
+				/*synFilePtr = GLFileBox::OpenFile(mApp->currentDir, NULL, "Open source SYN file",
+					"SynRad+ files\0*.syn;*.syn7z\0All files\0*.*\0", 2);*/
+				fileName = NFD_OpenFile_Cpp("syn,syn7z", "");
+			}
 			else if (src==useCurrentButton) {
-				strcpy(synFileTmp.fullName,work->fullFileName);
-				synFilePtr=&synFileTmp;
+				fileName = work->fullFileName;
 			}
 			else if (src == reloadButton) {
-				std::string synFile = synFileName->GetText();
-				strcpy(synFileTmp.fullName, synFile.c_str());
-				synFilePtr = &synFileTmp;
+				fileName = synFileName->GetText();
 			}
-			if (!synFilePtr) return;
-			if (!synFilePtr->fullName) return;
+			if (fileName.length()==0) return;
 			//load file
 			size_t nbFacet,nbTextured,nbDifferent;
 			try{
-				work->AnalyzeSYNfile(synFilePtr->fullName,&nbFacet,
+				work->AnalyzeSYNfile(fileName.c_str(),&nbFacet,
 					&nbTextured,&nbDifferent);
 			} catch (Error &e) {
 				char errMsg[512];
-				sprintf(errMsg,"%s\nFile:%s",e.GetMsg(),synFilePtr->fullName);
+				sprintf(errMsg,"%s\nFile:%s",e.GetMsg(),fileName.c_str());
 				GLMessageBox::Display(errMsg,"Error loading source file",GLDLG_OK,GLDLG_ICONERROR);
 				return;
 			}
 			
-			synFileName->SetText(synFilePtr->fullName);
+			synFileName->SetText(fileName);
 			char tmp[512];
 			sprintf(tmp,"SYN file analysis results:\n"
 				"%zd facets\n"
@@ -353,7 +360,7 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 	GLWindow::ProcessMessage(src,message);
 }
 
-void ImportDesorption::LoadConvFile(char* fileName) {
+void ImportDesorption::LoadConvFile(const char* fileName) {
 	FileReader *f = NULL;
 	try {
 		f=new FileReader(fileName);

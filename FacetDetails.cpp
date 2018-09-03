@@ -316,7 +316,7 @@ char *FacetDetails::FormatCell(size_t idx,Facet *f,size_t mode) {
 		sprintf(ret,"%s",FormatMemory(f->GetTexRamSize(1+worker->moments.size())));
       break;
     case 16:
-      sprintf(ret,"%f",f->err);
+      sprintf(ret,"%f",f->planarityError);
       break;
     case 17:
 		sprintf(ret,"%s",profStr[f->sh.profileType]);

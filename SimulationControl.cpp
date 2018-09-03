@@ -187,6 +187,7 @@ bool LoadSimulation(Dataport *loader) {
 				f.indices,
 				f.vertices2,
 				f.outgassingMap,
+				f.angleMap.pdf,
 				f.textureCellIncrements
 			);
 
@@ -822,11 +823,8 @@ bool SubprocessFacet::InitializeAngleMap()
 {
 	//Incident angle map
 	if (sh.anglemapParams.hasRecorded) {
-		//Record or use to generate
 
-		angleMapSize = sh.anglemapParams.GetRecordedDataSize();
-
-		if (sh.desorbType == DES_ANGLEMAP) {
+		if (sh.desorbType == DES_ANGLEMAP) { //Use mode
 			//Construct CDFs				
 			try {
 				angleMap.phi_CDFsums.resize(sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes);
@@ -900,6 +898,10 @@ bool SubprocessFacet::InitializeAngleMap()
 				}
 			}
 
+		}
+		else {
+			//Record mode, create pdf vector
+			angleMap.pdf.resize(sh.anglemapParams.GetMapSize());
 		}
 	}
 	else {

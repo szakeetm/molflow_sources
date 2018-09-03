@@ -18,7 +18,7 @@ GNU General Public License for more details.
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 #define NOMINMAX
-#include <Windows.h>
+//#include <Windows.h>
 #include "MolflowGeometry.h"
 #include "Worker.h"
 #include "GLApp/GLApp.h"
@@ -128,7 +128,7 @@ MolflowGeometry* Worker::GetMolflowGeometry() {
 	return geom;
 }
 
-void Worker::SaveGeometry(char *fileName, GLProgress *prg, bool askConfirm, bool saveSelected, bool autoSave, bool crashSave) {
+void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm, bool saveSelected, bool autoSave, bool crashSave) {
 
 	try {
 		if (needsReload && (!crashSave && !saveSelected)) RealReload();
@@ -139,34 +139,27 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, bool askConfirm, bool
 		GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 		crashSave = true;
 	}
-	char tmp[10000]; //compress.exe command line
-	char fileNameWithGeo[2048]; //file name with .geo extension (instead of .geo7z)
-	char fileNameWithGeo7z[2048];
-	char fileNameWithXML[2048];
-	char fileNameWithZIP[2048];
-	char fileNameWithoutExtension[2048]; //file name without extension
-	//char *ext = fileName+strlen(fileName)-4;
-	char *ext, *dir;
+	std::string compressCommandLine;
+	std::string fileNameWithGeo; //file name with .geo extension (instead of .geo7z)
+	std::string fileNameWithGeo7z;
+	std::string fileNameWithXML;
+	std::string fileNameWithZIP;
+	std::string fileNameWithoutExtension; //file name without extension
+	
+	std::string ext = FileUtils::GetExtension(fileName);
+	std::string path = FileUtils::GetPath(fileName);
 
-	dir = strrchr(fileName, '\\');
-	ext = strrchr(fileName, '.');
-
-	if (!(ext) || !(*ext == '.') || ((dir) && (dir > ext))) {
-		sprintf(fileName, mApp->compressSavedFiles ? "%s.zip" : "%s.xml", fileName); //set to default XML/ZIP format
-		ext = strrchr(fileName, '.');
-	}
-
-	ext++;
+	if (ext.empty()) fileName = fileName + (mApp->compressSavedFiles ? ".zip" : ".xml");
 
 	// Read a file
 	bool ok = true;
 	FileWriter *f = NULL;
-	bool isTXT = _stricmp(ext, "txt") == 0;
-	bool isSTR = _stricmp(ext, "str") == 0;
-	bool isGEO = _stricmp(ext, "geo") == 0;
-	bool isGEO7Z = _stricmp(ext, "geo7z") == 0;
-	bool isXML = _stricmp(ext, "xml") == 0;
-	bool isXMLzip = _stricmp(ext, "zip") == 0;
+	bool isTXT = Contains({ "txt","TXT" },ext);
+	bool isSTR = Contains({ "str","STR" }, ext);
+	bool isGEO = ext == "geo";
+	bool isGEO7Z = ext == "geo7z";
+	bool isXML = ext == "xml";
+	bool isXMLzip = ext == "zip";
 
 	if (isTXT || isGEO || isGEO7Z || isSTR || isXML || isXMLzip) {
 
@@ -177,32 +170,28 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, bool askConfirm, bool
 			return;
 		}
 		if (isGEO) {
-			memcpy(fileNameWithoutExtension, fileName, sizeof(char)*(strlen(fileName) - 4));
-			fileNameWithoutExtension[strlen(fileName) - 4] = '\0';
-			sprintf(fileNameWithGeo7z, "%s7z", fileName);
-			memcpy(fileNameWithGeo, fileName, (strlen(fileName) + 1)*sizeof(char));
+			fileNameWithoutExtension=fileName.substr(0,fileName.length()-4);
+			fileNameWithGeo7z = fileName + "7z";			
 		}
 		else if (isGEO7Z) {
-			memcpy(fileNameWithoutExtension, fileName, sizeof(char)*(strlen(fileName) - 6));
-			fileNameWithoutExtension[strlen(fileName) - 6] = '\0';
-			memcpy(fileNameWithGeo, fileName, sizeof(char)*(strlen(fileName) - 2));
-			fileNameWithGeo[strlen(fileName) - 2] = '\0';
-			memcpy(fileNameWithGeo7z, fileName, (1 + strlen(fileName))*sizeof(char));
-			sprintf(tmp, "A .geo file of the same name exists. Overwrite that file ?\n%s", fileNameWithGeo);
+			fileNameWithoutExtension = fileName.substr(0, fileName.length() - 6);
+			fileNameWithGeo = fileName.substr(0, fileName.length() - 2);
+			fileNameWithGeo7z = fileName;
+			std::ostringstream tmp;
+			tmp << "A .geo file of the same name exists. Overwrite that file ?\n" << fileNameWithGeo;
 			if (!autoSave && FileUtils::Exist(fileNameWithGeo)) {
-				ok = (GLMessageBox::Display(tmp, "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK);
+				ok = (GLMessageBox::Display(tmp.str().c_str(), "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK);
 			}
 		}
 
 		if (isXML || isXMLzip) {
-
-			memcpy(fileNameWithoutExtension, fileName, sizeof(char)*(strlen(fileName) - 4));
-			fileNameWithoutExtension[strlen(fileName) - 4] = '\0';
-			sprintf(fileNameWithXML, "%s.xml", fileNameWithoutExtension);
-			sprintf(fileNameWithZIP, "%s.zip", fileNameWithoutExtension);
+			fileNameWithoutExtension = fileName.substr(0,fileName.length() - 4);			
+			fileNameWithXML = fileNameWithoutExtension + ".xml";
+			fileNameWithZIP = fileNameWithoutExtension + ".zip";
 		}
 		if (isXMLzip) {
-			sprintf(tmp, "An .xml file of the same name exists. Overwrite that file ?\n%s", fileNameWithZIP);
+			char tmp[1024];
+			sprintf(tmp, "An .xml file of the same name exists. Overwrite that file ?\n%s", fileNameWithZIP.c_str());
 			if (!autoSave && FileUtils::Exist(fileNameWithXML)) {
 
 				ok = (GLMessageBox::Display(tmp, "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK);
@@ -210,7 +199,8 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, bool askConfirm, bool
 		}
 
 		if (!autoSave && ok && FileUtils::Exist(fileName)) {
-			sprintf(tmp, "Overwrite existing file ?\n%s", fileName);
+			char tmp[1024];
+			sprintf(tmp, "Overwrite existing file ?\n%s", fileName.c_str());
 			if (askConfirm) ok = (GLMessageBox::Display(tmp, "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK);
 		}
 
@@ -282,21 +272,21 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, bool askConfirm, bool
 
 					prg->SetMessage("Writing xml file...");
 					if (success) {
-						if (!saveDoc.save_file(fileNameWithXML)) throw Error("Error writing XML file."); //successful save
+						if (!saveDoc.save_file(fileNameWithXML.c_str())) throw Error("Error writing XML file."); //successful save
 					}
 					else {
-						if (!geom_only.save_file(fileNameWithXML)) throw Error("Error writing XML file."); //simu state error
+						if (!geom_only.save_file(fileNameWithXML.c_str())) throw Error("Error writing XML file."); //simu state error
 					}
 
 					if (isXMLzip) {
 						prg->SetProgress(0.75);
 						prg->SetMessage("Compressing xml to zip...");
 						//mApp->compressProcessHandle=CreateThread(0, 0, ZipThreadProc, 0, 0, 0);
-						HZIP hz = CreateZip(fileNameWithZIP, 0);
+						HZIP hz = CreateZip(fileNameWithZIP.c_str(), 0);
 						if (!hz) {
 							throw Error("Error creating ZIP file");
 						}
-						if (!ZipAdd(hz, FileUtils::GetFilename(fileNameWithXML).c_str(), fileNameWithXML)) remove(fileNameWithXML);
+						if (!ZipAdd(hz, FileUtils::GetFilename(fileNameWithXML).c_str(), fileNameWithXML.c_str())) remove(fileNameWithXML.c_str());
 						else {
 							CloseZip(hz);
 							throw Error("Error compressing ZIP file.");
@@ -322,8 +312,9 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, bool askConfirm, bool
 	if (ok && isGEO7Z) {
 
 		if (FileUtils::Exist("compress.exe")) { //compress GEO file to GEO7Z using 7-zip launcher "compress.exe"
-			sprintf(tmp, "compress.exe \"%s\" Geometry.geo", fileNameWithGeo);
-			int procId = StartProc(tmp,STARTPROC_BACKGROUND);
+			std::ostringstream tmp;
+			tmp<<"compress.exe \"" << fileNameWithGeo << "\" Geometry.geo";
+			int procId = StartProc(tmp.str().c_str(),STARTPROC_BACKGROUND);
 
 			mApp->compressProcessHandle = OpenProcess(PROCESS_ALL_ACCESS, true, procId);
 			fileName = fileNameWithGeo7z;
@@ -335,29 +326,21 @@ void Worker::SaveGeometry(char *fileName, GLProgress *prg, bool askConfirm, bool
 	}
 	else if (ok && isGEO) fileName = fileNameWithGeo;
 	if (!autoSave && !saveSelected) {
-		SetCurrentFileName(fileName);
+		SetCurrentFileName(fileName.c_str());
 		mApp->UpdateTitle();
 	}
 }
 
-void Worker::ExportProfiles(char *fileName) {
+void Worker::ExportProfiles(const char *fileName) {
 
 	char tmp[512];
 
 	// Read a file
 	FILE *f = NULL;
 
-	char *ext, *dir;
-
-	dir = strrchr(fileName, '\\');
-	ext = strrchr(fileName, '.');
-
-	if (!(ext) || !(*ext == '.') || ((dir) && (dir > ext))) {
-		sprintf(fileName, "%s.csv", fileName); //set to default CSV format
-		ext = strrchr(fileName, '.');
-	}
-	ext++;
-	bool isTXT = _stricmp(ext, "txt") == 0;
+	std::string fileNameExtended = fileName;
+	if (FileUtils::GetExtension(fileNameExtended).empty()) fileNameExtended = fileNameExtended + ".csv"; //set to default CSV format
+	bool isTXT = FileUtils::GetExtension(fileNameExtended) == "txt";
 
 	bool ok = true;
 
@@ -425,7 +408,7 @@ void Worker::ExportAngleMaps(std::vector<size_t> facetList, std::string fileName
 	Reload();
 	}*/
 
-void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
+void Worker::LoadGeometry(const std::string& fileName,bool insert,bool newStr) {
 	if (!insert) {
 		needsReload = true;
 	}
@@ -483,7 +466,7 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 				geom->LoadTXT(f, progressDlg, this);
 				SAFE_DELETE(f);
 				//RealReload();
-				strcpy(fullFileName, fileName);
+				strcpy(fullFileName, fileName.c_str());
 			}
 			else { //insert
 
@@ -531,7 +514,7 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 				if (!insert) {
 					geom->LoadSTL(f, progressDlg, scaleFactor);
 					SAFE_DELETE(f);
-					strcpy(fullFileName, fileName);
+					strcpy(fullFileName, fileName.c_str());
 					mApp->DisplayCollapseDialog();
 				}
 				else { //insert
@@ -561,7 +544,7 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 			SAFE_DELETE(f);
 			//RealReload();
 
-			strcpy(fullFileName, fileName);
+			strcpy(fullFileName, fileName.c_str());
 		}
 
 		catch (Error &e) {
@@ -580,10 +563,9 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 			if (ext=="syn7z") {
 				//decompress file
 				progressDlg->SetMessage("Decompressing file...");
-				char tmp[1024];
-				//char fileOnly[512];
-				sprintf(tmp, "cmd /C \"pushd \"%s\"&&7za.exe x -t7z -aoa \"%s\" -otmp&&popd\"", CWD, fileName);
-				system(tmp);
+				std::ostringstream tmp;
+				tmp << "cmd /C \"pushd \"" << CWD << "\"&&7za.exe x -t7z -aoa \"" << fileName << "\" -otmp&&popd\"";
+				system(tmp.str().c_str());
 				f = new FileReader((std::string)CWD + "\\tmp\\Geometry.syn"); //Open extracted file
 			} else f = new FileReader(fileName); //syn file, open it directly
 			
@@ -601,7 +583,7 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 
 			progressDlg->SetMessage("Reloading worker with new geometry...");
 			Reload();
-			if (!insert) strcpy(fullFileName, fileName);
+			if (!insert) strcpy(fullFileName, fileName.c_str());
 		}
 
 		catch (Error &e) {
@@ -625,14 +607,12 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 			if (ext == "geo7z") {
 				//decompress file
 				progressDlg->SetMessage("Decompressing file...");
-				char tmp[1024];
-				//char fileOnly[512];
-				sprintf(tmp, "cmd /C \"pushd \"%s\"&&7za.exe x -t7z -aoa \"%s\" -otmp&&popd\"", CWD, fileName);
-
-				system(tmp);
+				std::ostringstream tmp;
+				tmp << "cmd /C \"pushd \"" << CWD << "\"&&7za.exe x -t7z -aoa \"" << fileName << "\" -otmp&&popd\"";
+				system(tmp.str().c_str());
 
 				toOpen = (std::string)CWD + "\\tmp\\Geometry.geo"; //newer geo7z format: contain Geometry.geo
-				if (!FileUtils::Exist(toOpen)) toOpen = ((std::string)fileName).substr(0, strlen(fileName) - 2); //Inside the zip, try original filename with extension changed from geo7z to geo
+				if (!FileUtils::Exist(toOpen)) toOpen = ((std::string)fileName).substr(0, fileName.length() - 2); //Inside the zip, try original filename with extension changed from geo7z to geo
 				f = new FileReader(toOpen);
 			}
 			else { //not geo7z
@@ -653,7 +633,7 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 				
 				progressDlg->SetMessage("Loading textures...");
 				LoadTexturesGEO(f, version);
-				strcpy(fullFileName, fileName);
+				strcpy(fullFileName, fileName.c_str());
 			}
 			else { //insert
 				mApp->changedSinceSave = true;
@@ -682,7 +662,7 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 				//decompress file
 				progressDlg->SetMessage("Decompressing file...");
 
-				HZIP hz = OpenZip(fileName, 0);
+				HZIP hz = OpenZip(fileName.c_str(), 0);
 				if (!hz) {
 					throw Error("Can't open ZIP file");
 				}
@@ -706,7 +686,7 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 					throw Error("Didn't find any XML file in the ZIP file.");
 				}
 
-			} else parseResult = loadXML.load_file(fileName); //parse xml file directly
+			} else parseResult = loadXML.load_file(fileName.c_str()); //parse xml file directly
 
 			ResetWorkerStats();
 			if (!parseResult) {
@@ -721,12 +701,12 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 			progressDlg->SetMessage("Building geometry...");
 			if (!insert) {
 				geom->LoadXML_geom(loadXML, this, progressDlg);
-				geom->UpdateName(fileName);
+				geom->UpdateName(fileName.c_str());
 
 				progressDlg->SetMessage("Reloading worker with new geometry...");
 				try {
 					RealReload(); //To create the dpHit dataport for the loading of textures, profiles, etc...
-					strcpy(fullFileName, fileName);
+					strcpy(fullFileName, fileName.c_str());
 
 					if (ext == "xml" || ext == "zip")
 						progressDlg->SetMessage("Restoring simulation state...");
@@ -763,7 +743,7 @@ void Worker::LoadGeometry(char *fileName,bool insert,bool newStr) {
 			geom->LoadASE(f, progressDlg);
 			SAFE_DELETE(f);
 			//RealReload();
-			strcpy(fullFileName, fileName);
+			strcpy(fullFileName, fileName.c_str());
 
 		}
 		catch (Error &e) {
@@ -1365,15 +1345,14 @@ void Worker::ImportDesorption_SYN(char *fileName, const size_t &source, const do
 	}
 }
 
-void Worker::AnalyzeSYNfile(char *fileName, size_t *nbFacet, size_t *nbTextured, size_t *nbDifferent) {
-	char *ext, *filebegin;
-	char tmp2[1024];
-	ext = strrchr(fileName, '.');
+void Worker::AnalyzeSYNfile(const char *fileName, size_t *nbFacet, size_t *nbTextured, size_t *nbDifferent) {
+	std::string ext = FileUtils::GetExtension(fileName);
+	bool isSYN = (ext == "syn") || (ext == "SYN");
+	bool isSYN7Z = (ext == "syn7z") || (ext == "SYN7Z");
 	char CWD[MAX_PATH];
 	_getcwd(CWD, MAX_PATH);
-	if (ext == NULL || (!(_stricmp(ext, ".syn7z") == 0)) && (!(_stricmp(ext, ".syn") == 0)))
+	if (!(isSYN || isSYN7Z))
 		throw Error("AnalyzeSYNfile(): Invalid file extension [Only syn, syn7z]");
-	ext++;
 
 	// Read a file
 	FileReader *f = NULL;
@@ -1381,8 +1360,6 @@ void Worker::AnalyzeSYNfile(char *fileName, size_t *nbFacet, size_t *nbTextured,
 	GLProgress *progressDlg = new GLProgress("Analyzing SYN file...", "Please wait");
 	progressDlg->SetProgress(0.0);
 	progressDlg->SetVisible(true);
-	bool isSYN7Z = (_stricmp(ext, "syn7z") == 0);
-	bool isSYN = (_stricmp(ext, "syn") == 0);
 
 	if (isSYN || isSYN7Z) {
 		progressDlg->SetVisible(true);
@@ -1391,15 +1368,10 @@ void Worker::AnalyzeSYNfile(char *fileName, size_t *nbFacet, size_t *nbTextured,
 				//decompress file
 				progressDlg->SetMessage("Decompressing file...");
 				char tmp[1024];
-				char fileOnly[512];
 				sprintf(tmp, "cmd /C \"pushd \"%s\"&&7za.exe x -t7z -aoa \"%s\" -otmp&&popd\"", CWD, fileName);
 				system(tmp);
 
-				filebegin = strrchr(fileName, '\\');
-				if (filebegin) filebegin++;
-				else filebegin = fileName;
-				memcpy(fileOnly, filebegin, sizeof(char)*(strlen(filebegin) - 2)); //remove ..7z from extension
-				fileOnly[strlen(filebegin) - 2] = '\0';
+				char tmp2[1024];
 				sprintf(tmp2, "%s\\tmp\\Geometry.syn", CWD);
 				f = new FileReader(tmp2); //decompressed file opened
 			}

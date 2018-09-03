@@ -51,8 +51,8 @@ public:
 	GLTextField   *facetFlowArea;
 	
     
-    void LoadFile(char *fName=NULL);
-	void InsertGeometry(bool newStr,char *fName=NULL);
+    void LoadFile(std::string fileName="");
+	void InsertGeometry(bool newStr,std::string fileName="");
 	void SaveFile();
     
 	//void ImportDesorption_DES(); //Deprecated

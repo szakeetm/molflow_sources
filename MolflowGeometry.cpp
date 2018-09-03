@@ -546,7 +546,7 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 	file->ReadKeyword("}");
 
 	// Reallocate memory
-	facets = (Facet **)realloc(*facets, (nbNewFacets + sh.nbFacet) * sizeof(Facet **));
+	facets = (Facet **)realloc(facets, (nbNewFacets + sh.nbFacet) * sizeof(Facet **));
 	memset(facets + sh.nbFacet, 0, nbNewFacets * sizeof(Facet *));
 
 	/*
@@ -799,7 +799,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 		nbS = file->ReadInt();
 	}
 	if (*version >= 7) {
-		file->ReadKeyword("sh.gasMass"); file->ReadKeyword(":");
+		file->ReadKeyword("gasMass"); file->ReadKeyword(":");
 		worker->wp.gasMass = file->ReadDouble();
 	}
 	if (*version >= 10) { //time-dependent version
@@ -1465,7 +1465,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit
 	file->Write("nbView:"); file->Write(mApp->nbView, "\n");
 	file->Write("nbSelection:"); file->Write((!saveSelected) ? mApp->selections.size() : 0, "\n");
 
-	file->Write("sh.gasMass:"); file->Write(worker->wp.gasMass, "\n");
+	file->Write("gasMass:"); file->Write(worker->wp.gasMass, "\n");
 
 	file->Write("userMoments {\n");
 	file->Write(" nb:"); file->Write((int)worker->userMoments.size());
@@ -2438,7 +2438,7 @@ void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLP
 
 	simuParamNode.append_child("Gas").append_attribute("mass") = work->wp.gasMass;
 	simuParamNode.child("Gas").append_attribute("enableDecay") = (int)work->wp.enableDecay; //backward compatibility: 0 or 1
-	simuParamNode.child("Gas").append_attribute("sh.halfLife") = work->wp.halfLife;
+	simuParamNode.child("Gas").append_attribute("halfLife") = work->wp.halfLife;
 
 	xml_node timeSettingsNode = simuParamNode.append_child("TimeSettings");
 
@@ -2786,7 +2786,7 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 		}
 
 		work->wp.gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
-		work->wp.halfLife = simuParamNode.child("Gas").attribute("sh.halfLife").as_double();
+		work->wp.halfLife = simuParamNode.child("Gas").attribute("halfLife").as_double();
 		if (simuParamNode.child("Gas").attribute("enableDecay")) {
 			work->wp.enableDecay = simuParamNode.child("Gas").attribute("enableDecay").as_bool();
 		}
