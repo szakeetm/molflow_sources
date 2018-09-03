@@ -19,6 +19,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 #include <math.h>
 //#include <malloc.h>
+#include "versionId.h"
 #include "MolFlow.h"
 #include "Facet_shared.h"
 #include "MolflowGeometry.h"
@@ -69,12 +70,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "HistogramSettings.h"
 #include "HistogramPlotter.h"
 
-//Hard-coded identifiers, update these on new release and rebuild solution
-//---------------------------------------------------
-std::string appName = "Molflow";
-int appVersionId = 2672; //Compared with available updates. Global variable, so rebuild whole solution if changed.
-std::string appVersionName = "2.6.72";
-//---------------------------------------------------
+
 
 /*
 static const char *fileLFilters = "All MolFlow supported files\0*.txt;*.xml;*.zip;*.geo;*.geo7z;*.syn;*.syn7z;*.str;*.stl;*.ase\0"
@@ -97,12 +93,6 @@ std::string fileProfFilters = "csv;txt";
 int cSize = 4;
 int   cWidth[] = { 30, 56, 50, 50 };
 char *cName[] = { "#", "Hits", "Des", "Abs" };
-
-#ifdef _DEBUG
-std::string appTitle = "MolFlow+ debug version (Compiled " __DATE__ " " __TIME__ ")";
-#else
-std::string appTitle = "Molflow+ " + appVersionName + " (" __DATE__ ")";
-#endif
 
 std::vector<string> formulaPrefixes = { "A","D","H","MCH","P","DEN","Z","V","T","AR","a","d","h","mch","p","den","z","v","t","ar","," };
 std::string formulaSyntax =
