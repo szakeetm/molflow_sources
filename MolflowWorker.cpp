@@ -150,6 +150,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
 	std::string path = FileUtils::GetPath(fileName);
 
 	if (ext.empty()) fileName = fileName + (mApp->compressSavedFiles ? ".zip" : ".xml");
+	ext = FileUtils::GetExtension(fileName);
 
 	// Read a file
 	bool ok = true;
