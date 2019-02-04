@@ -70,7 +70,7 @@ private:
 
   GLTextField *outgassingText;
   GLTextField *influxText;
-  GLTextField *gasmassText;
+  GLTextField *gasMassText;
   GLToggle    *enableDecay;
   GLTextField *halfLifeText;
   GLToggle	*lowFluxToggle;

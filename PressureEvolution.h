@@ -17,34 +17,30 @@ GNU General Public License for more details.
 
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
-#ifndef _PRESSUREEVOLUTIONH_
-#define _PRESSUREEVOLUTIONH_
 
+#pragma once
+#include <vector>
 #include "GLApp/GLWindow.h"
 #include "GLApp/GLChart/GLChartConst.h"
 class GLChart;
 class GLLabel;
 class GLCombo;
 class GLButton;
-class GLParser;
 class GLDataView;
 class GLToggle;
 class GLTextField;
 class Worker;
 class Geometry;
 
-#define MODE_SLICE //display selected slice
-#define MODE_SUMAVG //sum or average mode
 
 class PressureEvolution : public GLWindow {
 
 public:
 
   // Construction
-  PressureEvolution();
+  PressureEvolution(Worker *w);
 
   // Component method
-  void Display(Worker *w);
   void Refresh();
   void Update(float appTime,bool force=false);
   void Reset();
@@ -55,42 +51,27 @@ public:
 
 private:
 
-  void addView(int facet);
-  void remView(int facet);
-  void refreshViews();
-  void plot();
+  void addView(size_t facetId);
+  void remView(size_t viewId);
+  void refreshChart();
 
   Worker      *worker;
-  GLButton    *dismissButton;
+
   GLChart     *chart;
+  GLLabel *label1, *normLabel;
+
+
   GLCombo     *profCombo;
-  GLLabel     *normLabel;
-  //GLLabel	  *qLabel;
-  //GLLabel     *unitLabel;
-  GLLabel     *label1;
-  GLCombo     *normCombo;
-  //GLToggle    *showAllMoments;
+  GLCombo     *yScaleCombo;
   GLButton    *selButton;
   GLButton    *addButton;
   GLButton    *removeButton;
-  GLButton    *resetButton;
-  GLButton    *setSliceButton;
-  GLTextField *formulaText;
-  //GLTextField *qText;
-  GLButton    *formulaBtn;
+  GLButton    *removeAllButton;
 
-  GLCombo *modeCombo;
-  GLTextField *selectedSliceText;
+  GLToggle *logXToggle,*logYToggle;
 
-  GLToggle *logXToggle,*logYToggle,*correctForGas;
-
-  GLDataView  *views[50];
-  GLCColor    *colors[8];
-  size_t          nbView;
-  size_t          nbColors;
-  int selectedSlice;
+  std::vector<GLDataView*>  views;
+  std::vector<GLColor>    colors;
   float        lastUpdate;
 
 };
-
-#endif /* _PRESSUREEVOLUTIONH_ */

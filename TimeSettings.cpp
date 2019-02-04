@@ -145,7 +145,7 @@ void TimeSettings::ProcessMessage(GLComponent *src,int message) {
 			timeLabel->SetText(tmp);
 		}
 		try {
-		  work->Update(0.0f);//update displayed profiles and textures
+		  work->Update(0.0f);//update displayed profiles and textures, facet hits, etc
 	  } catch(Error &e) {
 		  GLMessageBox::Display((char *)e.GetMsg(),"Error (Worker::Update)",GLDLG_OK,GLDLG_ICONERROR);
 	  } 

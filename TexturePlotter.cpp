@@ -20,7 +20,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "TexturePlotter.h"
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
-#include "GLApp/GLFileBox.h"
+//#include "GLApp/GLFileBox.h"
+#include "NativeFileDialog\molflow_wrapper\nfd_wrapper.h"
 #include "GLApp/GLLabel.h"
 #include "GLApp/GLButton.h"
 #include "GLApp/GLList.h"
@@ -44,8 +45,7 @@ extern MolFlow *mApp;
 extern SynRad*mApp;
 #endif
 
-static const char *fileFilters = "Text files\0*.txt";
-static const int   nbFilter = sizeof(fileFilters) / (2 * sizeof(char *));
+std::string fileFilters = "txt";
 
 TexturePlotter::TexturePlotter() :GLWindow() {
 
@@ -199,7 +199,7 @@ void TexturePlotter::UpdateTable() {
 		case 0: {// Cell area
 			for (size_t i = 0; i < w; i++) {
 				for (size_t j = 0; j < h; j++) {
-					float val = selFacet->GetMeshArea(i + j*w);
+					double val = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::CellArea, 1.0, 1.0, 1.0, (int)(i + j*w), NULL).value;
 					sprintf(tmp, "%g", val);
 					if (val > maxValue) {
 						maxValue = val;
@@ -212,18 +212,17 @@ void TexturePlotter::UpdateTable() {
 
 		case 1: {// MC Hits
 
-					 // Lock during update
-			BYTE *buffer = worker->GetHits();
+			BYTE *buffer = worker->GetHits(); //Locks and returns handle
 			try {
 				if (buffer) {
-					GlobalHitBuffer *shGHit = (GlobalHitBuffer *)buffer;
+					
 					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
 					TextureCell *texture = (TextureCell *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
 					for (size_t i = 0; i < w; i++) {
 						for (size_t j = 0; j < h; j++) {
-							//int tSize = selFacet->sh.texWidth*selFacet->sh.texHeight;
+							//int tSize = selFacet->wp.texWidth*selFacet->wp.texHeight;
 
-							double val = texture[i + j*w].countEquiv;
+							double val = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::MCHits, 1.0, 1.0, 1.0, (int)(i + j*w), (BYTE*)texture).value;
 							if (val > maxValue) {
 								maxValue = (double)val;
 								maxX = i; maxY = j;
@@ -248,17 +247,16 @@ void TexturePlotter::UpdateTable() {
 			BYTE *buffer = worker->GetHits();
 			try {
 				if (buffer) {
-					GlobalHitBuffer *shGHit = (GlobalHitBuffer *)buffer;
+					
 					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
 					TextureCell *texture = (TextureCell *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
-					double dCoef =1E4; //1E4: conversion m2->cm2
+					
 					/*if (shGHit->sMode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
-						/ worker->timeWindowSize));*/
-					if (shGHit->sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(worker->displayedMoment);
+						/ worker->wp.wp.timeWindowSize));*/
+					double moleculesPerTP = (worker->wp.sMode == MC_MODE) ? mApp->worker.GetMoleculesPerTP(worker->displayedMoment) : 1.0;
 					for (size_t i = 0; i < w; i++) {
 						for (size_t j = 0; j < h; j++) {
-							double area = (selFacet->GetMeshArea(i + j*w,true)); if (area == 0.0) area = 1.0;
-							double val = texture[i + j*w].countEquiv / area*dCoef;
+							double val = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::ImpingementRate, moleculesPerTP,1.0, worker->wp.gasMass, (int)(i + j * w), (BYTE*)texture).value;
 							if (val > maxValue) {
 								maxValue = val;
 								maxX = i; maxY = j;
@@ -282,19 +280,15 @@ void TexturePlotter::UpdateTable() {
 			BYTE *buffer = worker->GetHits();
 			try {
 				if (buffer) {
-					GlobalHitBuffer *shGHit = (GlobalHitBuffer *)buffer;
+					
 					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
 					TextureCell *texture = (TextureCell *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
-					double dCoef =1E4 * selFacet->DensityCorrection();   //1E4 m2 -> cm2
-					
-					if (shGHit->sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(worker->displayedMoment);
+					double moleculesPerTP = (worker->wp.sMode == MC_MODE) ? mApp->worker.GetMoleculesPerTP(worker->displayedMoment) : 1.0;
+					double densityCorrection = selFacet->DensityCorrection();
+
 					for (size_t i = 0; i < w; i++) {
 						for (size_t j = 0; j < h; j++) {
-
-							/*double v_avg = 2.0*(double)texture[i + j*w].count / texture[i + j*w].sum_1_per_ort_velocity;
-							double imp_rate = texture[i + j*w].count / (selFacet->mesh[i + j*w].area*(selFacet->sh.is2sided ? 2.0 : 1.0))*dCoef;
-							double rho = 4.0*imp_rate / v_avg;*/
-							double rho = texture[i + j*w].sum_1_per_ort_velocity / selFacet->GetMeshArea(i + j*w,true)*dCoef;
+							double rho = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::ParticleDensity, moleculesPerTP, densityCorrection, worker->wp.gasMass, (int)(i + j*w), (BYTE*)texture).value;
 							if (rho > maxValue) {
 								maxValue = rho;
 								maxX = i; maxY = j;
@@ -319,21 +313,19 @@ void TexturePlotter::UpdateTable() {
 			BYTE *buffer = worker->GetHits();
 			try {
 				if (buffer) {
-					GlobalHitBuffer *shGHit = (GlobalHitBuffer *)buffer;
+					
 					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
 					TextureCell *texture = (TextureCell *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
-					//float dCoef = (float)totalOutgassing / 8.31 * gasMass / 100 * MAGIC_CORRECTION_FACTOR;
-					double dCoef = 1E4 * selFacet->DensityCorrection();
+					double moleculesPerTP = (worker->wp.sMode == MC_MODE) ? mApp->worker.GetMoleculesPerTP(worker->displayedMoment) : 1.0;
+					double densityCorrection = selFacet->DensityCorrection();
 
-					if (shGHit->sMode == MC_MODE) dCoef *= worker->GetMoleculesPerTP(worker->displayedMoment);
 					for (size_t i = 0; i < w; i++) {
 						for (size_t j = 0; j < h; j++) {
 
 							/*double v_avg = 2.0*(double)texture[i + j*w].count / texture[i + j*w].sum_1_per_ort_velocity;
-							double imp_rate = texture[i + j*w].count / (selFacet->mesh[i + j*w].area*(selFacet->sh.is2sided ? 2.0 : 1.0))*dCoef;
+							double imp_rate = texture[i + j*w].count / (selFacet->mesh[i + j*w].area*(selFacet->wp.is2sided ? 2.0 : 1.0))*dCoef;
 							double rho = 4.0*imp_rate / v_avg;*/
-							double rho = texture[i + j*w].sum_1_per_ort_velocity / selFacet->GetMeshArea(i + j*w,true)*dCoef;
-							double rho_mass = rho*worker->gasMass / 1000.0 / 6E23;
+							double rho_mass = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::GasDensity, moleculesPerTP, densityCorrection, worker->wp.gasMass, (int)(i + j*w), (BYTE*)texture).value;
 							if (rho_mass > maxValue) {
 								maxValue = rho_mass;
 								maxX = i; maxY = j;
@@ -358,16 +350,14 @@ void TexturePlotter::UpdateTable() {
 			BYTE *buffer = worker->GetHits();
 			try {
 				if (buffer) {
-					GlobalHitBuffer *shGHit = (GlobalHitBuffer *)buffer;
 					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
-					TextureCell *texture = (TextureCell *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
-					double dCoef = 1E4 * (worker->gasMass / 1000 / 6E23) * 0.0100;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
-					
-					if (shGHit->sMode == MC_MODE) dCoef *= worker->GetMoleculesPerTP(worker->displayedMoment);
+					TextureCell *texture = (TextureCell *)(buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
+					double moleculesPerTP = (worker->wp.sMode == MC_MODE) ? mApp->worker.GetMoleculesPerTP(worker->displayedMoment) : 1.0;
+
 					for (size_t i = 0; i < w; i++) {
 						for (size_t j = 0; j < h; j++) {
 
-							double p = texture[i + j*w].sum_v_ort_per_area*dCoef;
+							double p = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::Pressure, moleculesPerTP, 1.0, worker->wp.gasMass, (int)(i + j*w), (BYTE*)texture).value;
 							if (p > maxValue) {
 								maxValue = p;
 								maxX = i; maxY = j;
@@ -393,13 +383,11 @@ void TexturePlotter::UpdateTable() {
 			BYTE *buffer = worker->GetHits();
 			try {
 				if (buffer) {
-					GlobalHitBuffer *shGHit = (GlobalHitBuffer *)buffer;
 					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
 					TextureCell *texture = (TextureCell *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
 					for (size_t i = 0; i < w; i++) {
 						for (size_t j = 0; j < h; j++) {
-							size_t tSize = selFacet->sh.texWidth*selFacet->sh.texHeight;
-							double val = 4.0*texture[i + j*w].countEquiv / texture[i + j*w].sum_1_per_ort_velocity;
+							double val = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::AvgGasVelocity, 1.0, 1.0, 1.0, (int)(i + j*w), (BYTE*)texture).value;
 							if (val > maxValue) {
 								maxValue = val;
 								maxX = i; maxY = j;
@@ -419,46 +407,78 @@ void TexturePlotter::UpdateTable() {
 			break; }
 
 		case 7: {// Gas velocity vector
-			for (size_t i = 0; i < w; i++) {
-				for (size_t j = 0; j < h; j++) {
-					if (selFacet->dirCache) {
-						sprintf(tmp, "%g,%g,%g",
-							selFacet->dirCache[i + j*w].dir.x / (double)selFacet->dirCache[i + j*w].count,
-							selFacet->dirCache[i + j*w].dir.y / (double)selFacet->dirCache[i + j*w].count,
-							selFacet->dirCache[i + j*w].dir.z / (double)selFacet->dirCache[i + j*w].count);
-						double vsum = (selFacet->dirCache[i + j*w].dir.x*selFacet->dirCache[i + j*w].dir.x +
-							selFacet->dirCache[i + j*w].dir.y*selFacet->dirCache[i + j*w].dir.y +
-							selFacet->dirCache[i + j*w].dir.z + selFacet->dirCache[i + j*w].dir.z);
-						if (vsum > maxValue) {
-							maxValue = vsum;
-							maxX = i; maxY = j;
+			BYTE *buffer = worker->GetHits();
+			try {
+				if (buffer) {
+					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
+					size_t nbElem = selFacet->sh.texWidth*selFacet->sh.texHeight;
+					size_t tSize = nbElem * sizeof(TextureCell);
+					size_t dSize = nbElem * sizeof(DirectionCell);
+					DirectionCell *dirs = (DirectionCell *)(buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize * (1 + nbMoments) + tSize * (1 + nbMoments) + dSize * mApp->worker.displayedMoment));
+
+					for (size_t i = 0; i < w; i++) {
+						for (size_t j = 0; j < h; j++) {
+							if (selFacet->sh.countDirection) {
+								Vector3d v_vect = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::GasVelocityVector, 1.0, 1.0, 1.0, (int)(i + j*w), (BYTE*)dirs).vect;
+								sprintf(tmp, "%g,%g,%g",
+									v_vect.x, v_vect.y, v_vect.z);
+								double length = v_vect.Norme();
+								if (length > maxValue) {
+									maxValue = length;
+									maxX = i; maxY = j;
+								}
+							}
+							else {
+								sprintf(tmp, "Direction not recorded");
+							}
+							mapList->SetValueAt(i, j, tmp);
 						}
 					}
-					else {
-						sprintf(tmp, "Direction not recorded");
-					}
-					mapList->SetValueAt(i, j, tmp);
+					worker->ReleaseHits();
 				}
 			}
+			catch (...) {
+				worker->ReleaseHits();
+
+			}
+
 			break; }
 
-		case 8: {// # of velocity vectors
-			for (size_t i = 0; i < w; i++) {
-				for (size_t j = 0; j < h; j++) {
-					if (selFacet->dirCache) {
-						llong val = selFacet->dirCache[i + j*w].count;
-						if (val > maxValue) {
-							maxValue = (double)val;
-							maxX = i; maxY = j;
+		case 8: {// Nb of velocity vectors
+			BYTE *buffer = worker->GetHits();
+			try {
+				if (buffer) {
+					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
+					size_t nbElem = selFacet->sh.texWidth*selFacet->sh.texHeight;
+					size_t tSize = nbElem * sizeof(TextureCell);
+					size_t dSize = nbElem * sizeof(DirectionCell);
+					DirectionCell *dirs = (DirectionCell *)(buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize * (1 + nbMoments) + tSize * (1 + nbMoments) + dSize * mApp->worker.displayedMoment));
+
+					for (size_t i = 0; i < w; i++) {
+						for (size_t j = 0; j < h; j++) {
+							if (selFacet->sh.countDirection) {
+								size_t count = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::NbVelocityVectors, 1.0, 1.0, 1.0, (int)(i + j*w), (BYTE*)dirs).count;
+								sprintf(tmp, "%zd", count);		
+								double countEq = (double)count;
+								if (countEq > maxValue) {
+									maxValue = countEq;
+									maxX = i; maxY = j;
+								}
+							}
+							else {
+								sprintf(tmp, "Direction not recorded");
+							}
+							mapList->SetValueAt(i, j, tmp);
 						}
-						sprintf(tmp, "%I64d", val);
 					}
-					else {
-						sprintf(tmp, "Direction not recorded");
-					}
-					mapList->SetValueAt(i, j, tmp);
+					worker->ReleaseHits();
 				}
 			}
+			catch (...) {
+				worker->ReleaseHits();
+
+			}
+
 			break; }
 		}
 
@@ -484,9 +504,9 @@ void TexturePlotter::SaveFile() {
 
 	if (!selFacet) return;
 
-	FILENAME *fn = GLFileBox::SaveFile(currentDir, NULL, "Save File", fileFilters, nbFilter);
-
-	if (fn) {
+	//FILENAME *fn = GLFileBox::SaveFile(currentDir, NULL, "Save File", fileFilters, nbFilter);
+	std::string fn = NFD_SaveFile_Cpp(fileFilters, "");
+	if (!fn.empty()) {
 
 		size_t u, v, wu, wv;
 		if (!mapList->GetSelectionBox(&u, &v, &wu, &wv)) {
@@ -497,11 +517,11 @@ void TexturePlotter::SaveFile() {
 		}
 
 		// Save tab separated text
-		FILE *f = fopen(fn->fullName, "w");
+		FILE *f = fopen(fn.c_str(), "w");
 
 		if (f == NULL) {
 			char errMsg[512];
-			sprintf(errMsg, "Cannot open file\nFile:%s", fn->fullName);
+			sprintf(errMsg, "Cannot open file\nFile:%s", fn.c_str());
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return;
 		}

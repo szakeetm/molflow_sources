@@ -32,7 +32,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/MathTools.h"
 
 #include "MolFlow.h"
-#include "GLApp\GLFileBox.h"
+//#include "GLApp\GLFileBox.h"
+#include "NativeFileDialog\molflow_wrapper\nfd_wrapper.h"
 #include <sstream>
 
 extern MolFlow *mApp;
@@ -201,7 +202,7 @@ void ParameterEditor::ProcessMessage(GLComponent *src,int message) {
 				work->Reload();
 			}
 		} else if (src == deleteButton) {
-			if (strcmp(selectorCombo->GetSelectedValue(), "New...") == 0) return;
+			if (selectorCombo->GetSelectedValue() == "New...") return;
 			if (mApp->AskToReset()) {
 				work->parameters.erase(work->parameters.begin() + selectorCombo->GetSelectedIndex()-1);
 				UpdateCombo();
@@ -304,13 +305,13 @@ void ParameterEditor::PasteFromClipboard() {
 }
 
 void ParameterEditor::LoadCSV() {
-	FILENAME *fn = NULL;
-	fn=GLFileBox::OpenFile(NULL, NULL, "Open File", "CSV files\0*.csv\0All files\0*.*\0", 2);
-	if (!fn || !fn->fullName) return;
+
+	std::string fn = NFD_OpenFile_Cpp("csv", "");
+	if (fn.empty()) return;
 
 	std::vector<std::vector<std::string>> table;
 	try {
-		FileReader *f = new FileReader(fn->fullName);
+		FileReader *f = new FileReader(fn);
 		table = work->ImportCSV_string(f);
 		SAFE_DELETE(f);
 	}
@@ -335,7 +336,7 @@ void ParameterEditor::LoadCSV() {
 		if (GLDLG_OK != GLMessageBox::Display(tmp, "Warning", GLDLG_OK|GLDLG_CANCEL, GLDLG_ICONWARNING)) return;
 	}
 	userValues = std::vector<std::pair<std::string, std::string>>();
-	for (auto row :table) {
+	for (auto& row :table) {
 			std::string val1, val2;
 			if (row.size()>=1) val1 = row[0];
 			if (row.size()>=2) val2 = row[1];
@@ -385,7 +386,7 @@ bool ParameterEditor::ValidateInput() {
 		return false;
 	}
 	if (selectorCombo->GetSelectedIndex() == 0) {
-		for (auto p : work->parameters) {
+		for (auto& p : work->parameters) {
 			if (tempName.compare(p.name) == 0) {
 				GLMessageBox::Display("This parameter name is already used", "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
 				return false;

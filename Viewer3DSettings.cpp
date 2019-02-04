@@ -269,19 +269,6 @@ void Viewer3DSettings::ProcessMessage(GLComponent *src,int message) {
       viewer->showHidden=hiddenEdge->GetState();
 	  viewer->showHiddenVertex=hiddenVertex->GetState();
       viewer->showMesh=showMesh->GetState();
-
-	  bool neededMesh = mApp->needsMesh;
-
-	  mApp->CheckNeedsTexture();
-	  bool needsMesh = mApp->needsMesh;
-
-	  if (!needsMesh && neededMesh) { //We just disabled mesh
-		  geom->ClearFacetMeshLists();
-	  }
-	  else if (needsMesh && !neededMesh) { //We just enabled mesh
-		  geom->BuildFacetMeshLists();
-	  }
-
 	  viewer->bigDots=bigDots->GetState();
       viewer->showDir=dirShowdirToggle->GetState();
 	  viewer->showTime=showTimeToggle->GetState(); 
@@ -295,6 +282,18 @@ void Viewer3DSettings::ProcessMessage(GLComponent *src,int message) {
       geom->SetCenterNorme(dirCenterToggle->GetState());
 
 	  viewer->hideLot = hideLotselected->GetState() ? lotofFacets : -1;
+
+	  bool neededMesh = mApp->needsMesh;
+
+	  mApp->CheckNeedsTexture();
+	  bool needsMesh = mApp->needsMesh;
+
+	  if (!needsMesh && neededMesh) { //We just disabled mesh
+		  geom->ClearFacetMeshLists();
+	  }
+	  else if (needsMesh && !neededMesh) { //We just enabled mesh
+		  geom->BuildFacetMeshLists();
+	  }
 
 	  GLWindow::ProcessMessage(NULL, MSG_CLOSE);
     }
