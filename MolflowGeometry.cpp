@@ -2474,19 +2474,24 @@ void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLP
 	}
 
 	xml_node paramNode = simuParamNode.append_child("Parameters");
-	paramNode.append_attribute("nb") = work->parameters.size();
+	size_t nonCatalogParameters = 0;
+
 	for (size_t i = 0; i < work->parameters.size(); i++) {
-		xml_node newParameter = paramNode.append_child("Parameter");
-		newParameter.append_attribute("id") = i;
-		newParameter.append_attribute("name") = work->parameters[i].name.c_str();
-		newParameter.append_attribute("nbMoments") = (int)work->parameters[i].GetSize();
-		for (size_t m = 0; m < work->parameters[i].GetSize(); m++) {
-			xml_node newMoment = newParameter.append_child("Moment");
-			newMoment.append_attribute("id") = m;
-			newMoment.append_attribute("t") = work->parameters[i].GetX(m);
-			newMoment.append_attribute("value") = work->parameters[i].GetY(m);
+		if (work->parameters[i].fromCatalog == false) { //Don't save catalog parameters
+			xml_node newParameter = paramNode.append_child("Parameter");
+			newParameter.append_attribute("id") = nonCatalogParameters;
+			newParameter.append_attribute("name") = work->parameters[i].name.c_str();
+			newParameter.append_attribute("nbMoments") = (int)work->parameters[i].GetSize();
+			for (size_t m = 0; m < work->parameters[i].GetSize(); m++) {
+				xml_node newMoment = newParameter.append_child("Moment");
+				newMoment.append_attribute("id") = m;
+				newMoment.append_attribute("t") = work->parameters[i].GetX(m);
+				newMoment.append_attribute("value") = work->parameters[i].GetY(m);
+			}
+			nonCatalogParameters++;
 		}
 	}
+	paramNode.append_attribute("nb") = nonCatalogParameters;
 }
 
 bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, GLProgress *prg, bool saveSelected) {

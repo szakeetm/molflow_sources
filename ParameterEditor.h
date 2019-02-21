@@ -49,7 +49,7 @@ public:
   // Implementation
   void ProcessMessage(GLComponent *src,int message);
   void Reset();
-  
+  void Refresh();
 
 private:
 
