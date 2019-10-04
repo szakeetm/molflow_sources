@@ -191,7 +191,7 @@ void ParameterEditor::Refresh()
 	UpdateCombo();
 	UpdateUserValues();
 	RebuildList();
-	if (work->parameters.size() > 0) { //If there is at least one parameter, show values and plot it 
+	if (work->parameters.size() > 0) { //If there is at least one parameter, show values and plot it
 		ValidateInput();
 		Plot();
 	}
@@ -236,7 +236,7 @@ void ParameterEditor::ProcessMessage(GLComponent *src,int message) {
 		} else if (src == deleteButton) {
 			if (selectorCombo->GetSelectedValue() == "New...") return; //Delete button shouldn't have been enabled
 			if (mApp->AskToReset()) {
-				work->parameters.erase(work->parameters.begin() + selectorCombo->GetSelectedIndex()-1);
+				work->parameters.erase(work->parameters.begin() + selectorCombo->GetSelectedIndex() - 1);
 				UpdateCombo();
 				bool paramSelected = selectorCombo->GetSelectedIndex() > 0;
 				UpdateUserValues();
@@ -325,7 +325,7 @@ void ParameterEditor::PrepareForNewParam() {
 * \brief Updates selector field for defined parameter lists in editor
 */
 void ParameterEditor::UpdateCombo() {
-	selectorCombo->SetSize((int)work->parameters.size()+1);
+	selectorCombo->SetSize((int)work->parameters.size() + 1);
 	selectorCombo->SetValueAt(0, "New...");
 	for (size_t i = 0; i < work->parameters.size(); i++) {
 		selectorCombo->SetValueAt((int)i + 1, work->parameters[i].name.c_str());
@@ -335,6 +335,14 @@ void ParameterEditor::UpdateCombo() {
 	else if (selectorCombo->GetSelectedIndex() > (int)selectorCombo->GetNbRow() - 1) selectorCombo->SetSelectedIndex((int)selectorCombo->GetNbRow() - 1); //Select last (probably just deleted the last)
 	if (selectorCombo->GetSelectedIndex() > 0) deleteButton->SetEnabled(true);
 	if (selectorCombo->GetSelectedIndex()==0) PrepareForNewParam(); //If "New..." selected
+	for (size_t i = 0; i < work->parameters.size(); i++) {
+		selectorCombo->SetValueAt((int)i + 1, work->parameters[i].name.c_str());
+	}
+
+	if (selectorCombo->GetSelectedIndex() < 1) selectorCombo->SetSelectedIndex(selectorCombo->GetNbRow() > 1 ? 1 : 0); //Select first param, otherwise "New..."
+	else if (selectorCombo->GetSelectedIndex() > (int)selectorCombo->GetNbRow() - 1) selectorCombo->SetSelectedIndex((int)selectorCombo->GetNbRow() - 1); //Select last (probably just deleted the last)
+	if (selectorCombo->GetSelectedIndex() > 0) deleteButton->SetEnabled(true);
+	if (selectorCombo->GetSelectedIndex() == 0) Reset(); //If "New..." selected
 }
 
 /**
@@ -526,6 +534,9 @@ void ParameterEditor::UpdateUserValues() {
 	//nameField->SetText("");
 	if (selectorCombo->GetSelectedIndex()>0 && selectorCombo->GetSelectedIndex()-1 <(int)work->parameters.size()) {
 		Parameter *getParam = &work->parameters[selectorCombo->GetSelectedIndex()-1];
+	//nameField->SetText("");
+	if (selectorCombo->GetSelectedIndex() > 0 && selectorCombo->GetSelectedIndex() - 1 < (int)work->parameters.size()) {
+		Parameter *getParam = &work->parameters[selectorCombo->GetSelectedIndex() - 1];
 
 		for (int row = 0; row < (int)getParam->GetSize(); row++) {
 			/*std::ostringstream str1, str2;

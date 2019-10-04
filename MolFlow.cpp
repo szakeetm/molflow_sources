@@ -87,9 +87,9 @@ static const char *fileDesFilters = "Desorption files\0*.des\0All files\0*.*\0";
 */
 
 //NativeFileDialog compatible file filters
-std::string fileLoadFilters = "txt,xml,zip,stl,str,ase,geo,syn,geo7z,syn7z";
-std::string fileInsertFilters = "txt,xml,zip,stl,geo,syn,geo7z,syn7z";
-std::string fileSaveFilters = "xml,zip,txt,geo,geo7z";
+std::string fileLoadFilters = "txt,xml,zip,geo,geo7z,syn,syn7z,str,stl,ase";
+std::string fileInsertFilters = "txt,xml,zip,geo,geo7z,syn,syn7z,stl";
+std::string fileSaveFilters = "xml,zip,geo,geo7z,txt";
 std::string fileSelFilters = "sel";
 std::string fileTexFilters = "txt";
 std::string fileProfFilters = "csv;txt";
@@ -197,7 +197,7 @@ int main(int argc, char* argv[])
 		SAFE_FREE(logs);
 		delete mApp;
 		return -1;
-}
+    }
 	try {
 		mApp->Run();
 	}
@@ -1471,7 +1471,7 @@ void MolFlow::LoadFile(std::string fileName) {
 		if (timewisePlotter) timewisePlotter->Refresh();
 		if (histogramPlotter) histogramPlotter->Reset();
 		if (histogramSettings) histogramSettings->Refresh({});
-		if (profilePlotter) profilePlotter->Refresh();
+		//if (profilePlotter) profilePlotter->Refresh(); //Might have loaded views
 		if (texturePlotter) texturePlotter->Update(0.0,true);
 		//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 		if (textureScaling) textureScaling->Update();
@@ -1550,8 +1550,9 @@ void MolFlow::InsertGeometry(bool newStr,std::string fileName) {
 
 		//worker.LoadTexturesGEO(fullName);
 		UpdateStructMenu();
-
-		
+		if (profilePlotter) profilePlotter->Reset();
+		if (pressureEvolution) pressureEvolution->Reset();
+		if (timewisePlotter) timewisePlotter->Reset();
 		//UpdateCurrentDir(fullName);
 
 		geom->CheckCollinear();
@@ -1573,7 +1574,7 @@ void MolFlow::InsertGeometry(bool newStr,std::string fileName) {
 		*/
 		RefreshPlotterCombos();
 		//UpdatePlotters();
-		
+
 		if (outgassingMap) outgassingMap->Update(m_fTime, true);
 		if (facetDetails) facetDetails->Update();
 		if (facetCoordinates) facetCoordinates->UpdateFromSelection();
@@ -2056,7 +2057,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		else if (src == compACBtn) {
 			try { lastUpdate = 0.0; worker.ComputeAC(m_fTime); }
 			catch (Error &e) {
-				GLMessageBox::Display(e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
+				GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
 			break;
@@ -2064,7 +2065,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		else if (src == singleACBtn) {
 			try { lastUpdate = 0.0; worker.StepAC(m_fTime); }
 			catch (Error &e) {
-				GLMessageBox::Display(e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
+				GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
 			break;
@@ -2110,7 +2111,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 		worker.ResetMoments();
 	}
 	catch (Error &e) {
-		GLMessageBox::Display(e.GetMsg(), "Error building pipe", GLDLG_OK, GLDLG_ICONERROR);
+		GLMessageBox::Display((char *)e.GetMsg(), "Error building pipe", GLDLG_OK, GLDLG_ICONERROR);
 		geom->Clear();
 		return;
 	}

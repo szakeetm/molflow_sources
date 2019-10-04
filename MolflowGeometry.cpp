@@ -2613,7 +2613,7 @@ void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLP
 
 	xml_node paramNode = simuParamNode.append_child("Parameters");
 	size_t nonCatalogParameters = 0;
-	
+
 	for (size_t i = 0; i < work->parameters.size(); i++) {
 		if (work->parameters[i].fromCatalog == false) { //Don't save catalog parameters
 			xml_node newParameter = paramNode.append_child("Parameter");

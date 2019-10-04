@@ -166,7 +166,7 @@ public:
 	std::vector<Vector3d>   vertices3;        // Vertices
 	std::vector<SuperStructure> structures; //They contain the facets  
 
-	double stepPerSec;  // Avg number of step per sec
+	double stepPerSec=0.0;  // Avg number of step per sec
 	//Facet size counters
 	size_t textTotalSize;  // Texture total size
 	size_t profTotalSize;  // Profile total size

@@ -433,7 +433,7 @@ void PerformTeleport(SubprocessFacet *iFacet) {
 
 	// Relaunch particle from new facet
 	auto[inTheta, inPhi] = CartesianToPolar(sHandle->currentParticle.direction, iFacet->sh.nU, iFacet->sh.nV, iFacet->sh.N);
-	PolarToCartesian(destination, inTheta, inPhi, false);
+	sHandle->currentParticle.direction = PolarToCartesian(destination, inTheta, inPhi, false);
 	// Move particle to teleport destination point
 	double u = iFacet->colU;
 	double v = iFacet->colV;
@@ -971,7 +971,7 @@ double Anglemap::GeneratePhiFromAngleMap(const int & thetaLowerIndex, const doub
 		// result: previous value weight: w1*w3 / (w1*w3 + w2*w4)
 		//         next     value weight: w2*w4 / (w1*w3 + w2*w4) <- this will be the input for weighed_lower_bound
 
-		double div, weigh;
+		double div;
 		div = ((double)phi_CDFsums[thetaLowerIndex] * (1.0 - thetaOvershoot) + (double)phi_CDFsums[thetaLowerIndex + 1] * thetaOvershoot); // (w1*w3 + w2*w4)
 		if (div > 0.0) {
 			weigh = (thetaOvershoot * (double)phi_CDFsums[thetaLowerIndex + 1]) / div;    //      w2*w4 / (w1*w3 + w2*w4)
