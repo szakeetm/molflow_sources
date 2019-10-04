@@ -31,6 +31,9 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/GLGradient.h"
 #include "GLApp/GLCombo.h"
 
+/**
+* \brief Constructor with initialisation for Texture scaling window (Tools/Texture Scaling)
+*/
 TextureScaling::TextureScaling():GLWindow() {
 
 	int wD = 500;
@@ -146,6 +149,9 @@ TextureScaling::TextureScaling():GLWindow() {
 
 }
 
+/**
+* \brief Updates text for memory requirement size (Swap)
+*/
 void TextureScaling::UpdateSize() {
 
 	size_t swap = 0;
@@ -160,6 +166,9 @@ void TextureScaling::UpdateSize() {
 
 }
 
+/**
+* \brief Updates all components in the window e.g. text labels and gradient
+*/
 void TextureScaling::Update() {
 
 	if(!IsVisible() || IsIconic()) return;  
@@ -213,6 +222,11 @@ void TextureScaling::Update() {
 
 }
 
+/**
+* \brief Displays the window
+* \param w Worker handle
+* \param v handle for the GeometryViewer (TODO: needed?)
+*/
 void TextureScaling::Display(Worker *w,GeometryViewer **v) {
 
 	worker = w;
@@ -232,6 +246,11 @@ void TextureScaling::Display(Worker *w,GeometryViewer **v) {
 	texMaxText->SetText(tmp);
 }
 
+/**
+* \brief Function for processing various inputs (button, check boxes etc.)
+* \param src Exact source of the call
+* \param message Type of the source (button)
+*/
 void TextureScaling::ProcessMessage(GLComponent *src,int message) {
 
 	switch(message) {
@@ -263,7 +282,7 @@ void TextureScaling::ProcessMessage(GLComponent *src,int message) {
 			try {
 				worker->Update(0.0f);
 			} catch(Error &e) {
-				GLMessageBox::Display((char *)e.GetMsg(),"Error (Worker::Update)",GLDLG_OK,GLDLG_ICONERROR);
+				GLMessageBox::Display(e.GetMsg(),"Error (Worker::Update)",GLDLG_OK,GLDLG_ICONERROR);
 			}
 			Update();
 
@@ -284,7 +303,7 @@ void TextureScaling::ProcessMessage(GLComponent *src,int message) {
 			try {
 				worker->Update(0.0f);
 			} catch(Error &e) {
-				GLMessageBox::Display((char *)e.GetMsg(),"Error (Worker::Update)",GLDLG_OK,GLDLG_ICONERROR);
+				GLMessageBox::Display(e.GetMsg(),"Error (Worker::Update)",GLDLG_OK,GLDLG_ICONERROR);
 			}
 			Update();
 		}
@@ -322,7 +341,7 @@ void TextureScaling::ProcessMessage(GLComponent *src,int message) {
 			try {
 				worker->Update(0.0f);
 			} catch(Error &e) {
-				GLMessageBox::Display((char *)e.GetMsg(),"Error (Worker::Update)",GLDLG_OK,GLDLG_ICONERROR);
+				GLMessageBox::Display(e.GetMsg(),"Error (Worker::Update)",GLDLG_OK,GLDLG_ICONERROR);
 			}
 			char tmp[256];
 			sprintf(tmp,"%g",geom->texture_limits[geom->textureMode].manual.min.all);

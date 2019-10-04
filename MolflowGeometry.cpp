@@ -20,7 +20,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "MolflowGeometry.h"
 #include "MolFlow.h"
 #include "Facet_shared.h"
-#include "GLApp\MathTools.h"
+#include "GLApp/MathTools.h"
 #include "ProfilePlotter.h"
 #include <iomanip>
 
@@ -46,6 +46,9 @@ extern MolFlow *mApp;
 extern SynRad*mApp;
 #endif
 
+/**
+* \brief Basic constructor that initializes a clean (none) geometry
+*/
 MolflowGeometry::MolflowGeometry() {
 
 	texAutoScaleIncludeConstantFlow = true;
@@ -54,6 +57,10 @@ MolflowGeometry::MolflowGeometry() {
 
 }
 
+/**
+* \brief Calculates the memory size for the whole geometry
+* \return calculated memory usage for the whole geometry
+*/
 size_t MolflowGeometry::GetGeometrySize() {
 
 	Worker  *work = &mApp->worker;
@@ -100,6 +107,11 @@ size_t MolflowGeometry::GetGeometrySize() {
 	return memoryUsage;
 }
 
+/**
+* \brief Builds a shared buffer for the geometry and copies necessary values into it (TODO: check if it unused)
+* \param buffer buffer
+* \param ontheflyParams parameters that can be changed without restarting the simulation
+*/
 void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer, const OntheflySimulationParams& ontheflyParams) {
 
 	// Build shared buffer for geometry (see Shared.h)
@@ -257,6 +269,10 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer, const OntheflySimulationP
 	}
 }
 
+/**
+* \brief Serializes data of the complete geometry into a cereal binary archive
+* \param outputarchive reference to the binary archive
+*/
 void MolflowGeometry::SerializeForLoader(cereal::BinaryOutputArchive& outputArchive) {
 	outputArchive(
 		CEREAL_NVP(sh),
@@ -272,6 +288,11 @@ void MolflowGeometry::SerializeForLoader(cereal::BinaryOutputArchive& outputArch
 	}
 }
 
+/**
+* \brief Compute number of bytes allocated from the hits size of all facets
+* \param moments vector containing all moments
+* \return calculated size of memory usage from all facet hits in the geometry
+*/
 size_t MolflowGeometry::GetHitsSize(std::vector<double> *moments) {
 
 	// Compute number of bytes allocated
@@ -284,6 +305,10 @@ size_t MolflowGeometry::GetHitsSize(std::vector<double> *moments) {
 	return memoryUsage;
 }
 
+/**
+* \brief Compute the maximal (surface) element number (TODO: check if unused)
+* \return max element number
+*/
 size_t MolflowGeometry::GetMaxElemNumber() {
 
 	size_t nbElem = 0;
@@ -311,8 +336,13 @@ size_t MolflowGeometry::GetMaxElemNumber() {
 
 }*/
 
-// Testing purpose function, construct a PIPE
-
+/**
+* \brief Testing purpose function, construct a PIPE
+* \param L length
+* \param R radius
+* \param s sticking value
+* \param step number of facets used to construct the circular hull
+*/
 void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 	Clear();
 
@@ -324,14 +354,14 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 	int nbTV = 4 * nbTF;
 
 	sh.nbVertex = 2 * step + nbTV;
-	vertices3.swap(std::vector<InterfaceVertex>(sh.nbVertex));
+	std::vector<InterfaceVertex>(sh.nbVertex).swap(vertices3);
 
 	sh.nbFacet = step + 2 + nbTF;
 
 
 	sh.nbSuper = 1;
-	strName[0] = _strdup("Pipe");
-	//strFileName[0] = _strdup("pipe.txt");
+	strName[0] = strdup("Pipe");
+	//strFileName[0] = strdup("pipe.txt");
 
 	if (!(facets = (Facet **)malloc(sh.nbFacet * sizeof(Facet *))))
 		throw Error("Couldn't allocate memory for facets");
@@ -426,8 +456,12 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 
 }
 
-// File handling
-
+/**
+* \brief File handling for inserting a SYN geometry + initialisation
+* \param file name of the input file
+* \param prg GLProgress (TODO: which is never used)
+* \param newStr newStructure if a super structure will be used or not
+*/
 void MolflowGeometry::InsertSYN(FileReader *file, GLProgress *prg, bool newStr) {
 
 	int structId = viewStruct;
@@ -439,6 +473,13 @@ void MolflowGeometry::InsertSYN(FileReader *file, GLProgress *prg, bool newStr) 
 	//AdjustProfile();
 
 }
+
+/**
+* \brief Inserting the SYN geometry
+* \param file name of the input file
+* \param strIdx struct ID
+* \param newStruct if a super structure will be used or not
+*/
 void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStruct) {
 
 	UnselectAll();
@@ -453,16 +494,16 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 	}
 
 	file->ReadKeyword("totalHit"); file->ReadKeyword(":");
-	file->ReadLLong();
+	file->ReadSizeT();
 	file->ReadKeyword("totalDes"); file->ReadKeyword(":");
-	file->ReadLLong();
+	file->ReadSizeT();
 	if (version2 >= 6) {
 		file->ReadKeyword("no_scans"); file->ReadKeyword(":");
 		/*loaded_no_scans = */file->ReadDouble();
 	}
 
 	file->ReadKeyword("totalLeak"); file->ReadKeyword(":");
-	file->ReadLLong();
+	file->ReadSizeT();
 	if (version2 > 2) {
 		file->ReadKeyword("totalFlux"); file->ReadKeyword(":");
 		file->ReadDouble();
@@ -470,22 +511,22 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 		file->ReadDouble();
 	}
 	file->ReadKeyword("maxDes"); file->ReadKeyword(":");
-	file->ReadLLong();
+	file->ReadSizeT();
 	file->ReadKeyword("nbVertex"); file->ReadKeyword(":");
-	size_t nbNewVertex = file->ReadLLong();
+	size_t nbNewVertex = file->ReadSizeT();
 	file->ReadKeyword("nbFacet"); file->ReadKeyword(":");
-	size_t nbNewFacets = file->ReadLLong();
+	size_t nbNewFacets = file->ReadSizeT();
 	file->ReadKeyword("nbSuper"); file->ReadKeyword(":");
-	size_t nbNewSuper = file->ReadLLong();
+	size_t nbNewSuper = file->ReadSizeT();
 	file->ReadKeyword("nbFormula"); file->ReadKeyword(":");
-	size_t nbF = file->ReadLLong();
+	size_t nbF = file->ReadSizeT();
 	file->ReadKeyword("nbView"); file->ReadKeyword(":");
-	size_t nbV = file->ReadLLong();
+	size_t nbV = file->ReadSizeT();
 	file->ReadKeyword("nbSelection"); file->ReadKeyword(":");
-	size_t nbS = file->ReadLLong();
+	size_t nbS = file->ReadSizeT();
 	if (version2 > 1) {
 		file->ReadKeyword("nbRegions"); file->ReadKeyword(":");
-		size_t nbR = file->ReadLLong();
+		size_t nbR = file->ReadSizeT();
 		file->ReadKeyword("PARfiles"); file->ReadKeyword("{");
 		for (size_t i = 0; i < nbR; i++) {
 			file->ReadString();
@@ -530,8 +571,8 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 		SelectionGroup s;
 		char tmpName[256];
 		strcpy(tmpName, file->ReadString());
-		s.name = _strdup(tmpName);
-		size_t nbSel = file->ReadLLong();
+		s.name = strdup(tmpName);
+		size_t nbSel = file->ReadSizeT();
 		for (size_t j = 0; j < nbSel; j++) {
 			s.selection.push_back(file->ReadInt() + sh.nbFacet);
 		}
@@ -541,7 +582,7 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 
 	file->ReadKeyword("structures"); file->ReadKeyword("{");
 	for (size_t i = 0; i < nbNewSuper; i++) {
-		strName[sh.nbSuper + i] = _strdup(file->ReadString());
+		strName[sh.nbSuper + i] = strdup(file->ReadString());
 	}
 	file->ReadKeyword("}");
 
@@ -574,9 +615,9 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 	// Read leaks
 	file->ReadKeyword("leaks"); file->ReadKeyword("{");
 	file->ReadKeyword("nbLeak"); file->ReadKeyword(":");
-	size_t nbleak_local = file->ReadLLong();
+	size_t nbleak_local = file->ReadSizeT();
 	for (size_t i = 0; i < nbleak_local; i++) {
-		size_t idx = file->ReadLLong();
+		size_t idx = file->ReadSizeT();
 		//if( idx != i ) throw Error(file->MakeError("Wrong leak index !"));
 		file->ReadDouble();
 		file->ReadDouble();
@@ -591,9 +632,9 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 
 	file->ReadKeyword("hits"); file->ReadKeyword("{");
 	file->ReadKeyword("nbHHit"); file->ReadKeyword(":");
-	size_t nbHHit_local = file->ReadLLong();
+	size_t nbHHit_local = file->ReadSizeT();
 	for (size_t i = 0; i < nbHHit_local; i++) {
-		size_t idx = file->ReadLLong();
+		size_t idx = file->ReadSizeT();
 		//if( idx != i ) throw Error(file->MakeError("Wrong hit cache index !"));
 		file->ReadDouble(); //x
 		file->ReadDouble(); //y
@@ -608,12 +649,12 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 	for (size_t i = sh.nbFacet; i < (sh.nbFacet + nbNewFacets); i++) {
 		file->ReadKeyword("facet");
 		// Check idx
-		size_t idx = file->ReadLLong();
+		size_t idx = file->ReadSizeT();
 		if (idx != i + 1 - sh.nbFacet) throw Error(file->MakeError("Wrong facet index !"));
 		file->ReadKeyword("{");
 		file->ReadKeyword("nbIndex");
 		file->ReadKeyword(":");
-		size_t nb = file->ReadLLong();
+		size_t nb = file->ReadSizeT();
 
 		if (nb < 3) {
 			char errMsg[512];
@@ -646,6 +687,15 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 	//return result;
 }
 
+/**
+* \brief For saving profile data (simulation) into GEO format
+* \param file name of the output file
+* \param results results from the simulation
+* \param super TODO: check if truly unused
+* \param saveSelected prevents profile from being saved?
+* \param crashSave prevents profile from being saved?
+* TODO: Function doesn't seem to cancel properly
+*/
 void MolflowGeometry::SaveProfileGEO(FileWriter *file, Dataport *dpHit, int super, bool saveSelected, bool crashSave) {
 
 	BYTE *buffer;
@@ -673,11 +723,11 @@ void MolflowGeometry::SaveProfileGEO(FileWriter *file, Dataport *dpHit, int supe
 		for (int j = 0; j < PROFILE_SIZE; j++) {
 			for (int i = 0; i < nbProfile; i++) { //doesn't execute when crashSave or saveSelected...
 				Facet *f = GetFacet(profileFacet[i]);
-				ProfileSlice *profilePtr = (ProfileSlice *)(buffer + f->sh.hitOffset + facetHitsSize + m * sizeof(ProfileSlice)*PROFILE_SIZE);
+				ProfileSlice *pr = (ProfileSlice *)(buffer + f->sh.hitOffset + facetHitsSize + m * sizeof(ProfileSlice)*PROFILE_SIZE);
 				//char tmp2[128];
-				file->Write(static_cast<size_t>(profilePtr[j].countEquiv), "\t"); //Backwards compatibility
-				file->Write(profilePtr[j].sum_1_per_ort_velocity, "\t");
-				file->Write(profilePtr[j].sum_v_ort);
+				file->Write(static_cast<size_t>(pr[j].countEquiv), "\t"); //Backwards compatibility
+				file->Write(pr[j].sum_1_per_ort_velocity, "\t");
+				file->Write(pr[j].sum_v_ort);
 				file->Write("\t");
 			}
 
@@ -689,6 +739,12 @@ void MolflowGeometry::SaveProfileGEO(FileWriter *file, Dataport *dpHit, int supe
 	SAFE_FREE(profileFacet);
 }
 
+/**
+* \brief For loading profile data (simulation) from GEO format
+* \param file name of the input file
+* \param results results from the simulation
+* \param version version of the GEO description
+*/
 void MolflowGeometry::LoadProfileGEO(FileReader *file, Dataport *dpHit, int version) {
 
 	AccessDataport(dpHit);
@@ -715,10 +771,10 @@ void MolflowGeometry::LoadProfileGEO(FileReader *file, Dataport *dpHit, int vers
 		for (int j = 0; j < PROFILE_SIZE; j++) {
 			for (int i = 0; i < nbProfile; i++) {
 				Facet *f = GetFacet(profileFacet[i]);
-				ProfileSlice *profilePtr = (ProfileSlice *)(buffer + f->sh.hitOffset + facetHitsSize + m * PROFILE_SIZE * sizeof(ProfileSlice));
-				profilePtr[j].countEquiv = static_cast<double>(file->ReadLLong());
-				if (version >= 13) profilePtr[j].sum_1_per_ort_velocity = file->ReadDouble();
-				if (version >= 13) profilePtr[j].sum_v_ort = file->ReadDouble();
+				ProfileSlice *pr = (ProfileSlice *)(buffer + f->sh.hitOffset + facetHitsSize + m * PROFILE_SIZE * sizeof(ProfileSlice));
+				pr[j].countEquiv = static_cast<double>(file->ReadSizeT());
+				if (version >= 13) pr[j].sum_1_per_ort_velocity = file->ReadDouble();
+				if (version >= 13) pr[j].sum_v_ort = file->ReadDouble();
 			}
 		}
 		if (version >= 10) file->ReadKeyword("}");
@@ -727,6 +783,13 @@ void MolflowGeometry::LoadProfileGEO(FileReader *file, Dataport *dpHit, int vers
 	SAFE_FREE(profileFacet);
 }
 
+/**
+* \brief For loading geometry data from GEO format
+* \param file name of the input file
+* \param prg GLProgress window
+* \param version version of the GEO description
+* \param worker thread worker that executes the task
+*/
 void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, Worker *worker) {
 
 	//mApp->ClearAllSelections();
@@ -747,18 +810,18 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 	}
 
 	file->ReadKeyword("totalHit"); file->ReadKeyword(":");
-	worker->globalHitCache.globalHits.hit.nbMCHit = file->ReadLLong();
+	worker->globalHitCache.globalHits.hit.nbMCHit = file->ReadSizeT();
 	worker->globalHitCache.globalHits.hit.nbHitEquiv = static_cast<double>(worker->globalHitCache.globalHits.hit.nbMCHit);
 
 	file->ReadKeyword("totalDes"); file->ReadKeyword(":");
-	worker->globalHitCache.globalHits.hit.nbDesorbed = file->ReadLLong();
+	worker->globalHitCache.globalHits.hit.nbDesorbed = file->ReadSizeT();
 
 	file->ReadKeyword("totalLeak"); file->ReadKeyword(":");
-	worker->globalHitCache.nbLeakTotal = file->ReadLLong();
+	worker->globalHitCache.nbLeakTotal = file->ReadSizeT();
 
 	if (*version >= 12) {
 		file->ReadKeyword("totalAbs"); file->ReadKeyword(":");
-		worker->globalHitCache.globalHits.hit.nbAbsEquiv = (double)file->ReadLLong();
+		worker->globalHitCache.globalHits.hit.nbAbsEquiv = (double) file->ReadSizeT();
 		if (*version >= 15) {
 			file->ReadKeyword("totalDist_total");
 		}
@@ -778,7 +841,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 		worker->globalHitCache.distTraveledTotal_fullHitsOnly = 0.0;
 	}
 	file->ReadKeyword("maxDes"); file->ReadKeyword(":");
-	worker->ontheflyParams.desorptionLimit = file->ReadLLong();
+	worker->ontheflyParams.desorptionLimit = file->ReadSizeT();
 	file->ReadKeyword("nbVertex"); file->ReadKeyword(":");
 	sh.nbVertex = file->ReadInt();
 	file->ReadKeyword("nbFacet"); file->ReadKeyword(":");
@@ -882,7 +945,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 			SelectionGroup s;
 			char tmpName[256];
 			strcpy(tmpName, file->ReadString());
-			s.name = _strdup(tmpName);
+			s.name = strdup(tmpName);
 			int nbSel = file->ReadInt();
 
 			for (int j = 0; j < nbSel; j++) {
@@ -899,17 +962,17 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 
 	file->ReadKeyword("structures"); file->ReadKeyword("{");
 	for (int i = 0; i < sh.nbSuper; i++) {
-		strName[i] = _strdup(file->ReadString());
+		strName[i] = strdup(file->ReadString());
 		// For backward compatibilty with STR
 		sprintf(tmp, "%s.txt", strName[i]);
-		strFileName[i] = _strdup(tmp);
+		strFileName[i] = strdup(tmp);
 	}
 	file->ReadKeyword("}");
 
 	// Allocate memory
 	facets = (Facet **)malloc(sh.nbFacet * sizeof(Facet *));
 	memset(facets, 0, sh.nbFacet * sizeof(Facet *));
-	vertices3.swap(std::vector<InterfaceVertex>(sh.nbVertex));
+	std::vector<InterfaceVertex>(sh.nbVertex).swap(vertices3);
 
 	// Read vertices
 	prg->SetMessage("Reading vertices...");
@@ -1018,6 +1081,13 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 
 }
 
+/**
+* \brief For loading geometry data from SYN format
+* \param file name of the input file
+* \param prg GLProgress window
+* \param version version of the SYN description
+* \param worker thread worker that executes the task
+*/
 void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, Worker *worker) {
 
 	//mApp->ClearAllSelections();
@@ -1039,19 +1109,20 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
 	file->ReadKeyword("totalHit"); file->ReadKeyword(":");
 	worker->globalHitCache.globalHits.hit.nbMCHit = 0;
 	worker->globalHitCache.globalHits.hit.nbHitEquiv = 0.0;
-	file->ReadLLong();
+    file->ReadSizeT();
 	if (*version >= 10) {
 		file->ReadKeyword("totalHitEquiv"); file->ReadKeyword(":");
 		file->ReadDouble();
 	}
 	file->ReadKeyword("totalDes"); file->ReadKeyword(":");
-	worker->globalHitCache.globalHits.hit.nbDesorbed = 0; file->ReadLLong();
+	worker->globalHitCache.globalHits.hit.nbDesorbed = 0;
+    file->ReadSizeT();
 	if (*version >= 6) {
 		file->ReadKeyword("no_scans"); file->ReadKeyword(":");
 		/*loaded_no_scans = */file->ReadDouble();
 	}
 	file->ReadKeyword("totalLeak"); file->ReadKeyword(":");
-	worker->globalHitCache.nbLeakTotal = 0; file->ReadLLong();
+	worker->globalHitCache.nbLeakTotal = 0; file->ReadSizeT();
 	if (*version > 2) {
 		file->ReadKeyword("totalFlux"); file->ReadKeyword(":");
 		file->ReadDouble();
@@ -1065,7 +1136,7 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
 		file->ReadDouble();
 	}
 	file->ReadKeyword("maxDes"); file->ReadKeyword(":");
-	worker->ontheflyParams.desorptionLimit = 0; file->ReadLLong();
+	worker->ontheflyParams.desorptionLimit = 0; file->ReadSizeT();
 	file->ReadKeyword("nbVertex"); file->ReadKeyword(":");
 	sh.nbVertex = file->ReadInt();
 	file->ReadKeyword("nbFacet"); file->ReadKeyword(":");
@@ -1092,7 +1163,7 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
 		for (int i = 0; i < nbR; i++) {
 			/*char tmp[512];
 			strcpy(tmp,file->ReadString());
-			result.fileNames[i]=_strdup(tmp);*/
+			result.fileNames[i]=strdup(tmp);*/
 			file->ReadString();
 		}
 		file->ReadKeyword("}");
@@ -1134,7 +1205,7 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
 		SelectionGroup s;
 		char tmpName[256];
 		strcpy(tmpName, file->ReadString());
-		s.name = _strdup(tmpName);
+		s.name = strdup(tmpName);
 		int nbSel = file->ReadInt();
 
 		for (int j = 0; j < nbSel; j++) {
@@ -1146,10 +1217,10 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
 
 	file->ReadKeyword("structures"); file->ReadKeyword("{");
 	for (int i = 0; i < sh.nbSuper; i++) {
-		strName[i] = _strdup(file->ReadString());
+		strName[i] = strdup(file->ReadString());
 		// For backward compatibilty with STR
 		sprintf(tmp, "%s.txt", strName[i]);
-		strFileName[i] = _strdup(tmp);
+		strFileName[i] = strdup(tmp);
 	}
 	file->ReadKeyword("}");
 
@@ -1261,6 +1332,13 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
 
 }
 
+/**
+* \brief For loading texture data from GEO format
+* \param file name of the input file
+* \param prg GLProgress window
+* \param results simulation results describing the texture
+* \param version version of the GEO description
+*/
 bool MolflowGeometry::LoadTexturesGEO(FileReader *file, GLProgress *prg, Dataport *dpHit, int version) {
 
 	if (file->SeekFor("{textures}")) {
@@ -1365,14 +1443,15 @@ bool MolflowGeometry::LoadTexturesGEO(FileReader *file, GLProgress *prg, Datapor
 
 						for (iy = 0; iy < (Min(f->sh.texHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
 							for (ix = 0; ix < (Min(f->sh.texWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
-								texture[iy*f->sh.texWidth + ix].countEquiv = static_cast<double>(file->ReadLLong());
-								texture[iy*f->sh.texWidth + ix].sum_1_per_ort_velocity = file->ReadDouble();
-								texture[iy*f->sh.texWidth + ix].sum_v_ort_per_area = file->ReadDouble();
+								size_t index = iy * f->sh.texWidth + ix;
+								texture[index].countEquiv = static_cast<double>(file->ReadSizeT());
+								texture[index].sum_1_per_ort_velocity = file->ReadDouble();
+								texture[index].sum_v_ort_per_area = file->ReadDouble();
 
 							}
 							for (size_t ie = 0; ie < texWidth_file - f->sh.texWidth; ie++) {//Executed if file texture is bigger than expected texture
 								//Read extra cells from file without doing anything
-								file->ReadLLong();
+								file->ReadSizeT();
 								file->ReadDouble();
 								file->ReadDouble();
 							}
@@ -1380,7 +1459,7 @@ bool MolflowGeometry::LoadTexturesGEO(FileReader *file, GLProgress *prg, Datapor
 						for (size_t ie = 0; ie < texHeight_file - f->sh.texHeight; ie++) {//Executed if file texture is bigger than expected texture
 							//Read extra cells ffrom file without doing anything
 							for (int iw = 0; iw < texWidth_file; iw++) {
-								file->ReadLLong();
+								file->ReadSizeT();
 
 								file->ReadDouble();
 								file->ReadDouble();
@@ -1408,6 +1487,15 @@ bool MolflowGeometry::LoadTexturesGEO(FileReader *file, GLProgress *prg, Datapor
 
 }
 
+/**
+* \brief For saving the geometry data into GEO format
+* \param file name of the output file
+* \param prg GLProgress window
+* \param results simulation results describing the texture
+* \param worker thread worker handling this task
+* \param saveSelected if a selection is to be saved
+* \param crashSave if crash save is enabled
+*/
 void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, Worker *worker,
 	bool saveSelected, bool crashSave) {
 
@@ -1451,7 +1539,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit
 	file->Write("totalHit:"); file->Write((!crashSave && !saveSelected) ? gHits->globalHits.hit.nbMCHit : 0, "\n");
 	file->Write("totalDes:"); file->Write((!crashSave && !saveSelected) ? gHits->globalHits.hit.nbDesorbed : 0, "\n");
 	file->Write("totalLeak:"); file->Write((!crashSave && !saveSelected) ? gHits->nbLeakTotal : 0, "\n");
-	file->Write("totalAbs:"); file->Write((!crashSave && !saveSelected) ? (llong)gHits->globalHits.hit.nbAbsEquiv : 0, "\n");
+	file->Write("totalAbs:"); file->Write((!crashSave && !saveSelected) ? (size_t)gHits->globalHits.hit.nbAbsEquiv : 0, "\n");
 	file->Write("totalDist_total:"); file->Write((!crashSave && !saveSelected) ? gHits->distTraveled_total : 0, "\n");
 	file->Write("totalDist_fullHitsOnly:"); file->Write((!crashSave && !saveSelected) ? gHits->distTraveledTotal_fullHitsOnly : 0, "\n");
 	file->Write("maxDes:"); file->Write((!crashSave && !saveSelected) ? worker->ontheflyParams.desorptionLimit : 0, "\n");
@@ -1673,15 +1761,21 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit
 
 }
 
+/**
+* \brief For saving the geometry data into TXT format
+* \param file name of the output file
+* \param results simulation results describing the texture
+* \param saveSelected if a selection is to be saved
+*/
 void MolflowGeometry::SaveTXT(FileWriter *file, Dataport *dpHit, bool saveSelected) {
 
 	if (!IsLoaded()) throw Error("Nothing to save !");
 
-	// Unused
-	file->Write(0, "\n");
-
 	// Block dpHit during the whole disc writing
 	AccessDataport(dpHit);
+
+	// Unused
+	file->Write(0, "\n");
 
 	// Globals
 	BYTE *buffer = (BYTE *)dpHit->buff;
@@ -1747,6 +1841,15 @@ void MolflowGeometry::SaveTXT(FileWriter *file, Dataport *dpHit, bool saveSelect
 
 }
 
+/**
+* \brief For exporting textures depending on the texture mode
+* \param file name of the output file
+* \param grouping if facets should be grouped for the output
+* \param mode texture mode; which type of data describes it
+* \param results simulation results describing the texture
+* \param saveSelected if a selection is to be saved (TODO: chefk if actually used)
+* \param sMode simulation mode
+*/
 void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, Dataport *dpHit, bool saveSelected, size_t sMode) {
 
 
@@ -1775,7 +1878,7 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, Datapor
 				if (f->cellPropertiesIds || f->sh.countDirection) {
 
 					char tmp[256];
-					char out[256];
+					char out[512];
 					double dCoef = 1.0;
 					if (!buffer) return;
 					GlobalHitBuffer *shGHit = (GlobalHitBuffer *)buffer;
@@ -1855,7 +1958,7 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, Datapor
 
 							case 8: // Velocity vector Count
 								if (f->sh.countDirection) {
-									sprintf(tmp, "%I64d", dirs[i + j * w].count);
+									sprintf(tmp, "%zd", dirs[i + j * w].count);
 								}
 								else {
 
@@ -1896,6 +1999,13 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, Datapor
 
 }
 
+/**
+* \brief For exporting profile data (simulation)
+* \param file name of the output file
+* \param isTXT if TXT output will be used
+* \param results simulation results describing the texture
+* \param worker thread worker handling the task
+*/
 void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, Dataport *dpHit, Worker *worker) {
 
 	char sep = isTXT ? '\t' : ',';
@@ -2045,6 +2155,18 @@ void MolflowGeometry::ImportDesorption_DES(FileReader *file) {
 }
 */
 
+/**
+* \brief For importing desorption data from a SYN file
+* \param file name of the input file
+* \param source what the source to calculate the dose is
+* \param time time to calculate the dose
+* \param mode mode used for outgassing calculation
+* \param eta0 coefficient for outgassing calculation in mode==1
+* \param alpha exponent for outgassing calculation in mode==1
+* \param cutoffdose cutoff dose for outgassing calculation in mode==1
+* \param convDistr distribution for outgassing calculation in mode==2
+* \param prg GLProgress window where visualising of the import progress is shown
+*/
 void MolflowGeometry::ImportDesorption_SYN(
 	FileReader *file, const size_t &source, const double &time,
 	const size_t &mode, const double &eta0, const double &alpha, const double &cutoffdose,
@@ -2067,19 +2189,19 @@ void MolflowGeometry::ImportDesorption_SYN(
 
 	//now read number of facets
 	file->ReadKeyword("totalHit"); file->ReadKeyword(":");
-	file->ReadLLong();
+	file->ReadSizeT();
 	if (version >= 10) {
 		file->ReadKeyword("totalHitEquiv"); file->ReadKeyword(":");
 		file->ReadDouble();
 	}
 	file->ReadKeyword("totalDes"); file->ReadKeyword(":");
-	file->ReadLLong();
+	file->ReadSizeT();
 	if (version >= 6) {
 		file->ReadKeyword("no_scans"); file->ReadKeyword(":");
 		no_scans = file->ReadDouble();
 	}
 	file->ReadKeyword("totalLeak"); file->ReadKeyword(":");
-	file->ReadLLong();
+	file->ReadSizeT();
 	if (version > 2) {
 		file->ReadKeyword("totalFlux"); file->ReadKeyword(":");
 		file->ReadDouble();
@@ -2094,7 +2216,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 		file->ReadDouble();
 	}
 	file->ReadKeyword("maxDes"); file->ReadKeyword(":");
-	file->ReadLLong();
+	file->ReadSizeT();
 	file->ReadKeyword("nbVertex"); file->ReadKeyword(":");
 	file->ReadInt();
 	file->ReadKeyword("nbFacet"); file->ReadKeyword(":");
@@ -2122,9 +2244,9 @@ void MolflowGeometry::ImportDesorption_SYN(
 	//read header
 	file->SeekFor("{textures}");
 	file->ReadKeyword("minHit_MC"); file->ReadKeyword(":");
-	file->ReadLLong();
+	file->ReadSizeT();
 	file->ReadKeyword("maxHit_MC"); file->ReadKeyword(":");
-	file->ReadLLong();
+	file->ReadSizeT();
 	file->ReadKeyword("minHit_flux"); file->ReadKeyword(":");
 	file->ReadDouble();
 	file->ReadKeyword("maxHit_flux"); file->ReadKeyword(":");
@@ -2185,7 +2307,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 				for (ix = 0; ix < (Min(f->sh.outgassingMapWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
 					size_t index = iy * f->sh.outgassingMapWidth + ix;
 					//Read original values
-					llong MC = file->ReadLLong();
+					size_t MC = file->ReadSizeT();
 					double cellArea = 1.0;
 					if (version >= 7) cellArea = file->ReadDouble();
 					if (cellArea < 1E-10) cellArea = 1.0; //to avoid division by zero
@@ -2231,7 +2353,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 				for (size_t ie = 0; ie < texWidth_file - f->sh.outgassingMapWidth; ie++) {//Executed if file texture is bigger than expected texture
 					//Read extra cells from file without doing anything
 					//Read original values
-					file->ReadLLong(); //MC
+					file->ReadSizeT(); //MC
 					if (version >= 7) file->ReadDouble(); //area
 					file->ReadDouble(); //flux
 					file->ReadDouble(); //power
@@ -2241,7 +2363,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 				//Read extra cells ffrom file without doing anything
 				for (size_t iw = 0; iw < texWidth_file; iw++) {
 					//Read original values
-					file->ReadLLong(); //MC
+					file->ReadSizeT(); //MC
 					if (version >= 7) file->ReadDouble(); //area
 					file->ReadDouble(); //flux
 					file->ReadDouble(); //power
@@ -2254,6 +2376,15 @@ void MolflowGeometry::ImportDesorption_SYN(
 	//UpdateSelection();
 }
 
+/**
+* \brief To analyse desorption data from a SYN file
+* \param file name of the input file
+* \param progressDlg GLProgress dialog (TODO: but is it ever used?)
+* \param nbNewFacet number of facets in the file
+* \param nbTextured number of textured facets in the file
+* \param nbDifferent number that is only set to 0 but never used (TODO: check usage)
+* \param prg GLProgress window where visualising of the analysation progress is shown
+*/
 void MolflowGeometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, size_t *nbNewFacet,
 	size_t *nbTextured, size_t *nbDifferent, GLProgress *prg) {
 	//init
@@ -2276,20 +2407,20 @@ void MolflowGeometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, 
 
 	//now read number of facets
 	file->ReadKeyword("totalHit"); file->ReadKeyword(":");
-	file->ReadLLong();
+	file->ReadSizeT();
 	if (version >= 10) {
 		file->ReadKeyword("totalHitEquiv"); file->ReadKeyword(":");
 		file->ReadDouble();
 	}
 	file->ReadKeyword("totalDes"); file->ReadKeyword(":");
-	file->ReadLLong();
+	file->ReadSizeT();
 	if (version >= 6) {
 		file->ReadKeyword("no_scans"); file->ReadKeyword(":");
 		/*no_scans = */file->ReadDouble();
 
 	}
 	file->ReadKeyword("totalLeak"); file->ReadKeyword(":");
-	file->ReadLLong();
+	file->ReadSizeT();
 	if (version > 2) {
 		file->ReadKeyword("totalFlux"); file->ReadKeyword(":");
 		file->ReadDouble();
@@ -2303,7 +2434,7 @@ void MolflowGeometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, 
 		file->ReadDouble();
 	}
 	file->ReadKeyword("maxDes"); file->ReadKeyword(":");
-	file->ReadLLong();
+	file->ReadSizeT();
 	file->ReadKeyword("nbVertex"); file->ReadKeyword(":");
 	file->ReadInt();
 	file->ReadKeyword("nbFacet"); file->ReadKeyword(":");
@@ -2338,6 +2469,13 @@ void MolflowGeometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, 
 
 }
 
+/**
+* \brief To save geometry data into a XML file
+* \param saveDoc xml output file
+* \param work thread worker handling the task
+* \param prg GLProgress window where visualising of the export progress is shown
+* \param saveSelected saveSelected if a selection is to be saved
+*/
 void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress *prg, bool saveSelected) {
 	//TiXmlDeclaration* decl = new TiXmlDeclaration("1.0")="")="");
 	//saveDoc->LinkEndChild(decl);
@@ -2474,21 +2612,35 @@ void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLP
 	}
 
 	xml_node paramNode = simuParamNode.append_child("Parameters");
-	paramNode.append_attribute("nb") = work->parameters.size();
+	size_t nonCatalogParameters = 0;
+	
 	for (size_t i = 0; i < work->parameters.size(); i++) {
-		xml_node newParameter = paramNode.append_child("Parameter");
-		newParameter.append_attribute("id") = i;
-		newParameter.append_attribute("name") = work->parameters[i].name.c_str();
-		newParameter.append_attribute("nbMoments") = (int)work->parameters[i].GetSize();
-		for (size_t m = 0; m < work->parameters[i].GetSize(); m++) {
-			xml_node newMoment = newParameter.append_child("Moment");
-			newMoment.append_attribute("id") = m;
-			newMoment.append_attribute("t") = work->parameters[i].GetX(m);
-			newMoment.append_attribute("value") = work->parameters[i].GetY(m);
+		if (work->parameters[i].fromCatalog == false) { //Don't save catalog parameters
+			xml_node newParameter = paramNode.append_child("Parameter");
+			newParameter.append_attribute("id") = nonCatalogParameters;
+			newParameter.append_attribute("name") = work->parameters[i].name.c_str();
+			newParameter.append_attribute("nbMoments") = (int)work->parameters[i].GetSize();
+			for (size_t m = 0; m < work->parameters[i].GetSize(); m++) {
+				xml_node newMoment = newParameter.append_child("Moment");
+				newMoment.append_attribute("id") = m;
+				newMoment.append_attribute("t") = work->parameters[i].GetX(m);
+				newMoment.append_attribute("value") = work->parameters[i].GetY(m);
+			}
+			nonCatalogParameters++;
 		}
 	}
+	paramNode.append_attribute("nb") = nonCatalogParameters;
 }
 
+/**
+* \brief To save simulation data into a XML file
+* \param saveDoc xml output file
+* \param work thread worker handling the task
+* \param results simulation results
+* \param prg GLProgress window where visualising of the export progress is shown
+* \param saveSelected saveSelected if a selection is to be saved (TODO: check if necessary)
+* \return bool if saving is successfull (always is here)
+*/
 bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, GLProgress *prg, bool saveSelected) {
 	xml_node resultNode = saveDoc.append_child("MolflowResults");
 	prg->SetMessage("Writing simulation results...");
@@ -2564,13 +2716,13 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 			if (f->sh.isProfile) {
 				xml_node profileNode = newFacetResult.append_child("Profile");
 				profileNode.append_attribute("size") = PROFILE_SIZE;
-				ProfileSlice *profilePtr = (ProfileSlice *)(buffer + f->sh.hitOffset + facetHitsSize + m * sizeof(ProfileSlice)*PROFILE_SIZE);
+				ProfileSlice *pr = (ProfileSlice *)(buffer + f->sh.hitOffset + facetHitsSize + m * sizeof(ProfileSlice)*PROFILE_SIZE);
 				for (int p = 0; p < PROFILE_SIZE; p++) {
 					xml_node slice = profileNode.append_child("Slice");
 					slice.append_attribute("id") = p;
-					slice.append_attribute("countEquiv") = profilePtr[p].countEquiv;
-					slice.append_attribute("sum_1_per_v") = profilePtr[p].sum_1_per_ort_velocity;
-					slice.append_attribute("sum_v_ort") = profilePtr[p].sum_v_ort;
+					slice.append_attribute("countEquiv") = pr[p].countEquiv;
+					slice.append_attribute("sum_1_per_v") = pr[p].sum_1_per_ort_velocity;
+					slice.append_attribute("sum_v_ort") = pr[p].sum_v_ort;
 				}
 			}
 
@@ -2653,6 +2805,12 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 	return true;
 }
 
+/**
+* \brief To load geometry data from a XML file
+* \param loadXML xml input file
+* \param work thread worker handling the task
+* \param progressDlg GLProgress window where visualising of the import progress is shown
+*/
 void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg) {
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
@@ -2678,11 +2836,11 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 	sh.nbSuper = geomNode.child("Structures").select_nodes("Structure").size();
 	idx = 0;
 	for (xml_node structure : geomNode.child("Structures").children("Structure")) {
-		strName[idx] = _strdup(structure.attribute("name").value());
+		strName[idx] = strdup(structure.attribute("name").value());
 		// For backward compatibilty with STR
 		char tmp[256];
 		sprintf(tmp, "%s.txt", strName[idx]);
-		strFileName[idx] = _strdup(tmp);
+		strFileName[idx] = strdup(tmp);
 		idx++;
 	}
 
@@ -2690,17 +2848,21 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 	xml_node simuParamNode = loadXML.child("MolflowSimuSettings");
 	bool isMolflowFile = (simuParamNode != NULL); //if no "MolflowSimuSettings" node, it's a Synrad file
 
-	if (isMolflowFile) {
-		xml_node paramNode = simuParamNode.child("Parameters");
-		for (xml_node newParameter : paramNode.children("Parameter")) {
-			Parameter newPar;
-			newPar.name = newParameter.attribute("name").as_string();
-			for (xml_node newMoment : newParameter.children("Moment")) {
-				newPar.AddPair(std::make_pair(newMoment.attribute("t").as_double(),
-					newMoment.attribute("value").as_double()));
+	{
+		std::vector<Parameter> loadedParams;
+		if (isMolflowFile) {
+			xml_node paramNode = simuParamNode.child("Parameters");
+			for (xml_node newParameter : paramNode.children("Parameter")) {
+				Parameter newPar;
+				newPar.name = newParameter.attribute("name").as_string();
+				for (xml_node newMoment : newParameter.children("Moment")) {
+					newPar.AddPair(std::make_pair(newMoment.attribute("t").as_double(),
+						newMoment.attribute("value").as_double()));
+				}
+				loadedParams.push_back(newPar);
 			}
-			work->parameters.push_back(newPar);
 		}
+		work->InsertParametersBeforeCatalog(loadedParams);
 	}
 
 	//Facets
@@ -2736,7 +2898,7 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 
 	for (xml_node sNode : selNode.children("Selection")) {
 		SelectionGroup s;
-		s.name = _strdup(sNode.attribute("name").as_string());
+		s.name = strdup(sNode.attribute("name").as_string());
 		s.selection.reserve(sNode.select_nodes("selItem").size());
 		for (xml_node iNode : sNode.children("selItem"))
 			s.selection.push_back(iNode.attribute("facet").as_llong());
@@ -2746,7 +2908,7 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 	xml_node viewNode = interfNode.child("Views");
 	for (xml_node newView : viewNode.children("View")) {
 		AVIEW v;
-		v.name = _strdup(newView.attribute("name").as_string());
+		v.name = strdup(newView.attribute("name").as_string());
 		v.projMode = newView.attribute("projMode").as_int();
 		v.camAngleOx = newView.attribute("camAngleOx").as_double();
 		v.camAngleOy = newView.attribute("camAngleOy").as_double();
@@ -2841,14 +3003,14 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 
 	// Update mesh
 	progressDlg->SetMessage("Building mesh...");
-	for (int i = 0; i < sh.nbFacet; i++) {
+	for (size_t i = 0; i < sh.nbFacet; i++) {
 		double p = (double)i / (double)sh.nbFacet;
 
 		progressDlg->SetProgress(p);
 		Facet *f = facets[i];
 		if (!f->SetTexture(f->sh.texWidthD, f->sh.texHeightD, f->hasMesh)) {
 			char errMsg[512];
-			sprintf(errMsg, "Not enough memory to build mesh on Facet %d. ", i + 1);
+			sprintf(errMsg, "Not enough memory to build mesh on Facet %zd. ", i + 1);
 			throw Error(errMsg);
 		}
 		BuildFacetList(f);
@@ -2857,6 +3019,13 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 	}
 }
 
+/**
+* \brief To load geometry data from a XML file and insert into an existing structure
+* \param loadXML xml input file
+* \param work thread worker handling the task
+* \param progressDlg GLProgress window where visualising of the insert progress is shown
+* \param newStr if a new super structure is to be used
+*/
 void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg, bool newStr) {
 	//mApp->ClearAllSelections();
 	//mApp->ClearAllViews();
@@ -2899,11 +3068,11 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 	size_t nbNewSuper = geomNode.child("Structures").select_nodes("Structure").size();
 	idx = 0;
 	for (xml_node structure : geomNode.child("Structures").children("Structure")) {
-		strName[sh.nbSuper + idx] = _strdup(structure.attribute("name").value());
+		strName[sh.nbSuper + idx] = strdup(structure.attribute("name").value());
 		// For backward compatibilty with STR
 		char tmp[256];
 		sprintf(tmp, "%s.txt", strName[idx]);
-		strFileName[sh.nbSuper + idx] = _strdup(tmp);
+		strFileName[sh.nbSuper + idx] = strdup(tmp);
 		idx++;
 	}
 
@@ -2911,17 +3080,21 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 	xml_node simuParamNode = loadXML.child("MolflowSimuSettings");
 	bool isMolflowFile = (simuParamNode != NULL); //if no "MolflowSimuSettings" node, it's a Synrad XML file
 
-	if (isMolflowFile) {
-		xml_node paramNode = simuParamNode.child("Parameters");
-		for (xml_node newParameter : paramNode.children("Parameter")) {
-			Parameter newPar;
-			newPar.name = newParameter.attribute("name").as_string();
-			for (xml_node newMoment : newParameter.children("Moment")) {
-				newPar.AddPair(std::make_pair(newMoment.attribute("t").as_double(),
-					newMoment.attribute("value").as_double()));
+	{
+		std::vector<Parameter> loadedParams;
+		if (isMolflowFile) {
+			xml_node paramNode = simuParamNode.child("Parameters");
+			for (xml_node newParameter : paramNode.children("Parameter")) {
+				Parameter newPar;
+				newPar.name = newParameter.attribute("name").as_string();
+				for (xml_node newMoment : newParameter.children("Moment")) {
+					newPar.AddPair(std::make_pair(newMoment.attribute("t").as_double(),
+						newMoment.attribute("value").as_double()));
+				}
+				loadedParams.push_back(newPar);
 			}
-			work->parameters.push_back(newPar);
 		}
+		work->InsertParametersBeforeCatalog(loadedParams);
 	}
 
 	//Facets
@@ -2964,7 +3137,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 
 	for (xml_node sNode : selNode.children("Selection")) {
 		SelectionGroup s;
-		s.name = _strdup(sNode.attribute("name").as_string());
+		s.name = strdup(sNode.attribute("name").as_string());
 		size_t nbSel = sNode.select_nodes("selItem").size();
 		for (xml_node iNode : sNode.children("selItem"))
 			s.selection.push_back(iNode.attribute("facet").as_int() + sh.nbFacet); //offset selection numbers
@@ -2974,7 +3147,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 	xml_node viewNode = interfNode.child("Views");
 	for (xml_node newView : selNode.children("View")) {
 		AVIEW v;
-		v.name = _strdup(newView.attribute("name").as_string());
+		v.name = strdup(newView.attribute("name").as_string());
 		v.projMode = newView.attribute("projMode").as_int();
 		v.camAngleOx = newView.attribute("camAngleOx").as_double();
 		v.camAngleOy = newView.attribute("camAngleOy").as_double();
@@ -3029,28 +3202,32 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 	//AdjustProfile();
 	//isLoaded = true; //InitializeGeometry() sets to true
 
-	/*
-	// Update mesh
+	// Update mesh for newly inserted facets
 	progressDlg->SetMessage("Building mesh...");
+	for (size_t i = sh.nbFacet - nbNewFacets; i < sh.nbFacet; i++) {
+		double p = (double)(sh.nbFacet-i) / (double)nbNewFacets;
 
-	for (int i = 0; i < wp.nbFacet; i++) {
-	double p = (double)i / (double)wp.nbFacet;
-	progressDlg->SetProgress(p);
-	Facet *f = facets[i];
-	if (!f->SetTexture(f->wp.texWidthD, f->wp.texHeightD, f->hasMesh)) {
-
-	char errMsg[512];
-	sprintf(errMsg, "Not enough memory to build mesh on Facet %d. ", i + 1);
-
-	throw Error(errMsg);
+		progressDlg->SetProgress(p);
+		Facet *f = facets[i];
+		if (!f->SetTexture(f->sh.texWidthD, f->sh.texHeightD, f->hasMesh)) {
+			char errMsg[512];
+			sprintf(errMsg, "Not enough memory to build mesh on Facet %zd. ", i + 1);
+			throw Error(errMsg);
+		}
+		BuildFacetList(f);
+		double nU = f->sh.U.Norme();
+		f->tRatio = f->sh.texWidthD / nU;
 	}
-	BuildFacetList(f);
-	double nU = &(f->wp.U).Norme();
-	f->tRatio = f->wp.texWidthD / nU;
-	}
-	*/
 }
 
+/**
+* \brief To load simulation data from a XML file
+* \param loadXML xml input file
+* \param results current simulation results
+* \param work thread worker handling the task
+* \param progressDlg GLProgress window where visualising of the load progress is shown
+* \return bool showing if loading was successful
+*/
 bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker *work, GLProgress *progressDlg) {
 	if (!loadXML.child("MolflowResults")) return false; //simu state not saved with file
 	AccessDataport(dpHit);
@@ -3189,8 +3366,6 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit,
 			//Textures
 			int ix, iy;
 			int profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + (int)mApp->worker.moments.size())) : 0;
-			/*int h = (f->wp.texHeight);
-			int w = (f->wp.texWidth);*/
 
 			if (f->hasMesh) {
 				xml_node textureNode = newFacetResult.child("Texture");
@@ -3225,7 +3400,7 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit,
 					}
 					for (int ie = 0; ie < texWidth_file - f->sh.texWidth; ie++) {//Executed if file texture is bigger than expected texture
 						//Read extra cells from file without doing anything
-						llong dummy_ll;
+						size_t dummy_ll;
 						double dummy_d;
 						countText >> dummy_ll;
 						sum1perText >> dummy_d;
@@ -3236,7 +3411,7 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit,
 				for (int ie = 0; ie < texHeight_file - f->sh.texHeight; ie++) {//Executed if file texture is bigger than expected texture
 					//Read extra cells ffrom file without doing anything
 					for (int iw = 0; iw < texWidth_file; iw++) {
-						llong dummy_ll;
+						size_t dummy_ll;
 						double dummy_d;
 						countText >> dummy_ll;
 						sum1perText >> dummy_d;

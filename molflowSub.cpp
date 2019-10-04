@@ -45,7 +45,7 @@ static Dataport *dpLog = NULL;
 static int       prIdx;
 static size_t       prState;
 static size_t       prParam;
-static llong     prParam2;
+static size_t     prParam2;
 static DWORD     hostProcessId;
 //static float       heartBeat;
 //static HANDLE    masterHandle;
@@ -117,8 +117,8 @@ void SetErrorSub(const char *message) {
 char *GetSimuStatus() {
 
   static char ret[128];
-  llong count = sHandle->totalDesorbed;
-  llong max   = sHandle->ontheflyParams.desorptionLimit/sHandle->ontheflyParams.nbProcess;
+  size_t count = sHandle->totalDesorbed;
+  size_t max   = sHandle->ontheflyParams.desorptionLimit/sHandle->ontheflyParams.nbProcess;
 
   
   if( GetLocalState()==PROCESS_RUNAC ) sHandle->wp.sMode = AC_MODE;

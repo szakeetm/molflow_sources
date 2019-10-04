@@ -59,6 +59,9 @@ const char* profType[] = {
 	"Tan. velocity [m/s]"
 };
 
+/**
+* \brief Constructor with initialisation for Profile plotter window (Tools/Profile Plotter)
+*/
 ProfilePlotter::ProfilePlotter() :GLWindow() {
 
 	int wD = 650;
@@ -70,16 +73,6 @@ ProfilePlotter::ProfilePlotter() :GLWindow() {
 	worker = NULL;
 
 	lastUpdate = 0.0f;
-
-	nbColors = 8;
-	colors[0] = new GLColor(); colors[0]->r = 255; colors[0]->g = 000; colors[0]->b = 055; //red
-	colors[1] = new GLColor(); colors[1]->r = 000; colors[1]->g = 000; colors[1]->b = 255; //blue
-	colors[2] = new GLColor(); colors[2]->r = 000; colors[2]->g = 204; colors[2]->b = 051; //green
-	colors[3] = new GLColor(); colors[3]->r = 000; colors[3]->g = 000; colors[3]->b = 000; //black
-	colors[4] = new GLColor(); colors[4]->r = 255; colors[4]->g = 153; colors[4]->b = 051; //orange
-	colors[5] = new GLColor(); colors[5]->r = 153; colors[5]->g = 204; colors[5]->b = 255; //light blue
-	colors[6] = new GLColor(); colors[6]->r = 153; colors[6]->g = 000; colors[6]->b = 102; //violet
-	colors[7] = new GLColor(); colors[7]->r = 255; colors[7]->g = 230; colors[7]->b = 005; //yellow
 
 	chart = new GLChart(0);
 	chart->SetBorder(BORDER_BEVEL_IN);
@@ -126,8 +119,10 @@ ProfilePlotter::ProfilePlotter() :GLWindow() {
 	Add(normCombo);
 
 	logYToggle = new GLToggle(0, "Log Y");
-
 	Add(logYToggle);
+
+	warningLabel = new GLLabel("Profiles can only be used on rectangular facets.");
+	Add(warningLabel);
 
 	correctForGas = new GLToggle(0, "Surface->Volume conversion");
 	correctForGas->SetVisible(false);
@@ -137,7 +132,7 @@ ProfilePlotter::ProfilePlotter() :GLWindow() {
 	formulaText->SetEditable(true);
 	Add(formulaText);
 
-	formulaBtn = new GLButton(0, "-> Plot");
+	formulaBtn = new GLButton(0, "-> Plot expression");
 	Add(formulaBtn);
 
 	// Center dialog
@@ -153,8 +148,15 @@ ProfilePlotter::ProfilePlotter() :GLWindow() {
 
 }
 
+/**
+* \brief Sets positions and sizes of all UI elements
+* \param x x-coordinate of the element
+* \param y y-coordinate of the element
+* \param w width of the element
+* \param h height of the element
+*/
 void ProfilePlotter::SetBounds(int x, int y, int w, int h) {
-
+	
 	chart->SetBounds(7, 5, w - 15, h - 110);
 	profCombo->SetBounds(7, h - 95, 180, 19);
 	selButton->SetBounds(190, h - 95, 80, 19);
@@ -162,17 +164,21 @@ void ProfilePlotter::SetBounds(int x, int y, int w, int h) {
 	removeButton->SetBounds(360, h - 95, 80, 19);
 	removeAllButton->SetBounds(445, h - 95, 80, 19);
 	logYToggle->SetBounds(190, h - 70, 40, 19);
+	warningLabel->SetBounds(w-240,h-70,235,19);
 	correctForGas->SetBounds(240, h - 70, 80, 19);
 	normLabel->SetBounds(7, h - 68, 50, 19);
 	normCombo->SetBounds(61, h - 70, 125, 19);
 	formulaText->SetBounds(7, h - 45, 350, 19);
-	formulaBtn->SetBounds(360, h - 45, 80, 19);;
+	formulaBtn->SetBounds(360, h - 45, 120, 19);;
 	dismissButton->SetBounds(w - 100, h - 45, 90, 19);
 
 	GLWindow::SetBounds(x, y, w, h);
 
 }
 
+/**
+* \brief Refreshes all window components (combo, chart, values)
+*/
 void ProfilePlotter::Refresh() {
 
 	if (!worker) return;
@@ -210,6 +216,11 @@ void ProfilePlotter::Refresh() {
 
 }
 
+
+/**
+* \brief Displays window with refreshed values
+* \param w worker handle
+*/
 void ProfilePlotter::Display(Worker *w) {
 
 	
@@ -219,6 +230,11 @@ void ProfilePlotter::Display(Worker *w) {
 
 }
 
+/**
+* \brief Refreshes the view if needed
+* \param appTime current time of the applicaiton
+* \param force if view should be refreshed no matter what
+*/
 void ProfilePlotter::Update(float appTime, bool force) {
 
 	if (!IsVisible() || IsIconic()) return;
@@ -236,6 +252,9 @@ void ProfilePlotter::Update(float appTime, bool force) {
 
 }
 
+/**
+* \brief Creates a plot from the expression given in the textbox of the form f(x)=EXPRESSION (e.g. 2*x+50)
+*/
 void ProfilePlotter::plot() {
 
 	GLParser *parser = new GLParser();
@@ -258,7 +277,7 @@ void ProfilePlotter::plot() {
 		return;
 	}
 	VLIST *var = parser->GetVariableAt(0);
-	if (_stricmp(var->name, "x") != 0) {
+	if (!iequals(var->name, "x")) {
 		GLMessageBox::Display("Variable 'x' not found", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		SAFE_DELETE(parser);
 		return;
@@ -290,6 +309,9 @@ void ProfilePlotter::plot() {
 			views[nbView] = v;
 			nbView++;
 		}
+		else {
+			return;
+		}
 	}
 
 	// Plot
@@ -306,13 +328,15 @@ void ProfilePlotter::plot() {
 
 }
 
+/**
+* \brief Refreshes view by updating the data for the plot
+*/
 void ProfilePlotter::refreshViews() {
 
 	// Lock during update
 	BYTE *buffer = worker->GetHits();
-	int displayMode = normCombo->GetSelectedIndex();
-
 	if (!buffer) return;
+	int displayMode = normCombo->GetSelectedIndex();
 
 	Geometry *geom = worker->GetGeometry();
 	GlobalHitBuffer *gHits = (GlobalHitBuffer *)buffer;
@@ -342,7 +366,7 @@ void ProfilePlotter::refreshViews() {
 					break;
 
 				case 1: //Pressure
-					scaleY = 1.0 / (f->GetArea() / (double)PROFILE_SIZE*1E-4)* worker->wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
+					scaleY = 1.0 / (f->GetArea() * 1E-4 / (double)PROFILE_SIZE)* worker->wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
 					scaleY *= worker->GetMoleculesPerTP(worker->displayedMoment);
 
 					for (int j = 0; j < PROFILE_SIZE; j++)
@@ -438,11 +462,13 @@ void ProfilePlotter::refreshViews() {
 		}
 
 	}
-
 	worker->ReleaseHits();
-
 }
 
+/**
+* \brief Adds view/plot for a specific facet
+* \param facet specific facet ID
+*/
 void ProfilePlotter::addView(int facet) {
 
 	char tmp[128];
@@ -465,8 +491,10 @@ void ProfilePlotter::addView(int facet) {
 		//sprintf(tmp, "F#%d %s", facet + 1, profType[f->wp.profileType]);
 		sprintf(tmp, "F#%d", facet + 1);
 		v->SetName(tmp);
-		v->SetColor(*colors[nbView%nbColors]);
-		v->SetMarkerColor(*colors[nbView%nbColors]);
+		//Look for first available color
+		GLColor col = chart->GetFirstAvailableColor();
+		v->SetColor(col);
+		v->SetMarkerColor(col);
 		v->SetLineWidth(2);
 		v->userData1 = facet;
 
@@ -477,6 +505,10 @@ void ProfilePlotter::addView(int facet) {
 
 }
 
+/**
+* \brief Removes view/plot for a specific facet
+* \param facet specific facet ID
+*/
 void ProfilePlotter::remView(int facet) {
 
 	Geometry *geom = worker->GetGeometry();
@@ -498,6 +530,9 @@ void ProfilePlotter::remView(int facet) {
 
 }
 
+/**
+* \brief Resets the whole chart
+*/
 void ProfilePlotter::Reset() {
 
 	chart->GetY1Axis()->ClearDataView();
@@ -506,6 +541,11 @@ void ProfilePlotter::Reset() {
 
 }
 
+/**
+* \brief Function for processing various inputs (button, check boxes etc.)
+* \param src Exact source of the call
+* \param message Type of the source (button)
+*/
 void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
 	Geometry *geom = worker->GetGeometry();
 
@@ -515,24 +555,26 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
 			SetVisible(false);
 		}
 		else if (src == selButton) {
-
 			int idx = profCombo->GetSelectedIndex();
-			if (idx >= 0) {
-				geom->UnselectAll();
-				geom->GetFacet(profCombo->GetUserValueAt(idx))->selected = true;
-				geom->UpdateSelection();
+			if (idx >= 0) { //Something selected (not -1)
+				int facetId = profCombo->GetUserValueAt(idx);
+				//if (facetId >= 0 && facetId < geom->GetNbFacet()) { //Check commented out: should never be able to select non-existing facet
+					geom->UnselectAll();
+					geom->GetFacet(facetId)->selected = true;
+					geom->UpdateSelection();
 
-				mApp->UpdateFacetParams(true);
+					mApp->UpdateFacetParams(true);
 
-				mApp->facetList->SetSelectedRow(profCombo->GetUserValueAt(idx));
-				mApp->facetList->ScrollToVisible(profCombo->GetUserValueAt(idx), 1, true);
+					mApp->facetList->SetSelectedRow(profCombo->GetUserValueAt(idx));
+					mApp->facetList->ScrollToVisible(profCombo->GetUserValueAt(idx), 1, true);
+				//}
 			}
 		}
 		else if (src == addButton) {
 
 			int idx = profCombo->GetSelectedIndex();
 
-			if (idx >= 0) {
+			if (idx >= 0) { //Something selected (not -1)
 				addView(profCombo->GetUserValueAt(idx));
 				refreshViews();
 			}
@@ -576,14 +618,22 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
 
 }
 
+/**
+* \brief Adds views to the plotter if loaded form a file (XML)
+* \param views vector containing the ids of the views
+*/
 void ProfilePlotter::SetViews(std::vector<int> views) {
 	Reset();
 	for (int view : views)
 		if (view<worker->GetGeometry()->GetNbFacet() && worker->GetGeometry()->GetFacet(view)->sh.isProfile)
 			addView(view);
-	Refresh();
+	//Refresh(); //Commented out: at this point, simulation results are not yet loaded
 }
 
+/**
+* \brief Create and return a vector of view IDs
+* \return vector containing the IDs of the views
+*/
 std::vector<int> ProfilePlotter::GetViews() {
 	std::vector<int>v;
 	v.reserve(nbView);
@@ -592,14 +642,27 @@ std::vector<int> ProfilePlotter::GetViews() {
 	return v;
 }
 
+/**
+* \brief Returns bool for active/inactive logarithmic scaling
+* \return bool that expresses if Y axis is logarithmically scaled
+*/
 bool ProfilePlotter::IsLogScaled() {
 	return chart->GetY1Axis()->GetScale();
 }
+
+/**
+* \brief Sets type of scale (logarithmic or not)
+* \param bool that expresses if Y axis should be logarithmically scaled or not
+*/
 void ProfilePlotter::SetLogScaled(bool logScale){
 	chart->GetY1Axis()->SetScale(logScale);
 	logYToggle->SetState(logScale);
 }
 
+/**
+* \brief Sets worker handle for loading views before the full geometry
+* \param w worker handle
+*/
 void ProfilePlotter::SetWorker(Worker *w) { //for loading views before the full geometry
 
 	worker = w;

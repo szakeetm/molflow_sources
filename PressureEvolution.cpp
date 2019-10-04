@@ -51,6 +51,10 @@ extern SynRad*mApp;
 
 extern const char*profType[];
 
+/**
+* \brief Constructor with initialisation for Pressure evolution window (Time/Pressure evolution)
+* \param w worker handle
+*/
 PressureEvolution::PressureEvolution(Worker *w) :GLWindow() {
 
 	int wD = 750;
@@ -133,6 +137,13 @@ PressureEvolution::PressureEvolution(Worker *w) :GLWindow() {
 
 }
 
+/**
+* \brief Sets positions and sizes of all UI elements
+* \param x x-coordinate of the element
+* \param y y-coordinate of the element
+* \param w width of the element
+* \param h height of the element
+*/
 void PressureEvolution::SetBounds(int x, int y, int w, int h) {
 
 	chart->SetBounds(7, 5, w - 15, h - 60);
@@ -151,6 +162,9 @@ void PressureEvolution::SetBounds(int x, int y, int w, int h) {
 
 }
 
+/**
+* \brief Rebuilds combo and calls refreshviews
+*/
 void PressureEvolution::Refresh() {
 	//Rebuilds combo and calls refreshviews
 
@@ -158,14 +172,16 @@ void PressureEvolution::Refresh() {
 
 	//Remove views that aren't present anymore
 	for (auto i = views.begin();i!=views.end();) {
-		if ((*i)->userData1 >= geom->GetNbFacet()) {
+		if ((*i)->userData1 >= geom->GetNbFacet()) { //If pointing to non-existent facet
 			chart->GetY1Axis()->RemoveDataView(*i);
-			views.erase(i);
+			SAFE_DELETE(*i);
+			i=views.erase(i);
 		}
 		else {
 			i++;
 		}
 	}
+	
 
 	//Construct combo
 	profCombo->SetSize(views.size());
@@ -179,8 +195,11 @@ void PressureEvolution::Refresh() {
 	refreshChart();
 }
 
-
-
+/**
+* \brief Calls refreshChart if needed
+* \param appTime current time of the applicaiton
+* \param force if chart should be refreshed no matter what
+*/
 void PressureEvolution::Update(float appTime, bool force) {
 	//Calls refreshChart if needed
 	if (!IsVisible() || IsIconic()) return;
@@ -198,13 +217,16 @@ void PressureEvolution::Update(float appTime, bool force) {
 
 }
 
+/**
+* \brief refreshes chart values
+*/
 void PressureEvolution::refreshChart() {
 	//refreshes chart values
 
 	// Lock during update
 	BYTE *buffer = worker->GetHits();
-	int yScaleMode = yScaleCombo->GetSelectedIndex();
 	if (!buffer) return;
+	int yScaleMode = yScaleCombo->GetSelectedIndex();
 
 	Geometry *geom = worker->GetGeometry();
 	GlobalHitBuffer *gHits = (GlobalHitBuffer *)buffer;
@@ -234,7 +256,7 @@ void PressureEvolution::refreshChart() {
 				break;
 			}
 			case 2: {//Pressure
-				scaleY = 1.0 / nbDes / (f->sh.area / 1E-4)* worker->wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
+				scaleY = 1.0 / nbDes / (f->sh.area * 1E-4)* worker->wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
 				scaleY *= worker->wp.totalDesorbedMolecules / worker->wp.timeWindowSize;
 				if (f->sh.is2sided) scaleY *= 0.5;
 				for (size_t m = 1; m <= Min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
@@ -244,7 +266,7 @@ void PressureEvolution::refreshChart() {
 				break;
 			}
 			case 3: {//Particle density
-				scaleY = 1.0 / nbDes / (f->GetArea() / 1E-4);
+				scaleY = 1.0 / nbDes / (f->GetArea() * 1E-4);
 				scaleY *= worker->wp.totalDesorbedMolecules / worker->wp.timeWindowSize;
 				scaleY *= f->DensityCorrection();
 				for (size_t m = 1; m <= Min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
@@ -254,7 +276,7 @@ void PressureEvolution::refreshChart() {
 				break;
 			}
 			case 4: {//Imp.rate
-				scaleY = 1.0 / nbDes / (f->GetArea() / 1E-4);
+				scaleY = 1.0 / nbDes / (f->GetArea() * 1E-4);
 				scaleY *= worker->wp.totalDesorbedMolecules / worker->wp.timeWindowSize;
 				for (size_t m = 1; m <= Min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
 					FacetHitBuffer* facetHits = (FacetHitBuffer*)(buffer + f->sh.hitOffset + m * sizeof(FacetHitBuffer));
@@ -270,6 +292,10 @@ void PressureEvolution::refreshChart() {
 	worker->ReleaseHits();
 }
 
+/**
+* \brief Adds a view to the chart for a specific facet
+* \param facetId Id of the facet that should be added
+*/
 void PressureEvolution::addView(size_t facetId) {
 
 	Geometry *geom = worker->GetGeometry();
@@ -296,21 +322,30 @@ void PressureEvolution::addView(size_t facetId) {
 	v->SetName(tmp.str().c_str());
 	v->SetViewType(TYPE_BAR);
 	v->SetMarker(MARKER_DOT);
-	v->SetColor(colors[views.size() % colors.size()]);
-	v->SetMarkerColor(colors[views.size() % colors.size()]);
+	GLColor col = chart->GetFirstAvailableColor();
+	v->SetColor(col);
+	v->SetMarkerColor(col);
 	v->userData1 = (int)facetId;
 	views.push_back(v);
 	chart->GetY1Axis()->AddDataView(v);
 	Refresh();
 }
 
+/**
+* \brief Removes a view from the chart with a specific ID
+* \param viewId Id of the view that should be removed
+*/
 void PressureEvolution::remView(size_t viewId) {
 
 	chart->GetY1Axis()->RemoveDataView(views[viewId]);
+	SAFE_DELETE(views[viewId]);
 	views.erase(views.begin()+viewId);
 
 }
 
+/**
+* \brief Resets view
+*/
 void PressureEvolution::Reset() {
 
 	chart->GetY1Axis()->ClearDataView();
@@ -320,6 +355,11 @@ void PressureEvolution::Reset() {
 	Refresh();
 }
 
+/**
+* \brief Function for processing various inputs (button, check boxes etc.)
+* \param src Exact source of the call
+* \param message Type of the source (button)
+*/
 void PressureEvolution::ProcessMessage(GLComponent *src, int message) {
 	Geometry *geom = worker->GetGeometry();
 	switch (message) {

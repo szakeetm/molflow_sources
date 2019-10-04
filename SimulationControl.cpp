@@ -213,7 +213,8 @@ bool LoadSimulation(Dataport *loader) {
 	sHandle->tmpGlobalHistograms = std::vector<FacetHistogramBuffer>(1 + sHandle->moments.size(), hist);
 
 	//Reserve particle log
-	if (sHandle->ontheflyParams.enableLogging) sHandle->tmpParticleLog.reserve(sHandle->ontheflyParams.logLimit / sHandle->ontheflyParams.nbProcess);
+	if (sHandle->ontheflyParams.enableLogging)
+	    sHandle->tmpParticleLog.reserve(sHandle->ontheflyParams.logLimit / sHandle->ontheflyParams.nbProcess);
 
 
 

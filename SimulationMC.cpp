@@ -59,7 +59,7 @@ void CalcTotalOutgassing() {
 //	// (nU,nV,N) and (x,y,z) are both left handed
 //
 //	//This should be a speed-up routine, but I didn't experience any speed difference so I commented it out. Marton
-//	/*#ifdef WIN
+//	/*#ifdef _WIN32
 //	_asm {                    // FPU stack
 //	fld qword ptr [theta]
 //	fsincos                 // cos(t)        sin(t)

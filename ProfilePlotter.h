@@ -67,8 +67,7 @@ private:
   GLChart     *chart;
   GLCombo     *profCombo;
   GLLabel     *normLabel;
-  GLLabel	  *qLabel;
-  GLLabel     *unitLabel;
+  GLLabel     *warningLabel;
   GLCombo     *normCombo;
   //GLToggle    *showAllMoments;
 
@@ -82,9 +81,6 @@ private:
   GLToggle    *correctForGas;
 
   GLDataView  *views[MAX_VIEWS];
-  GLColor    *colors[8];
-
-  int          nbColors;
   int          nbView;
   float        lastUpdate;
 

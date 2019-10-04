@@ -25,15 +25,15 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/GLButton.h"
 #include "GLApp/GLCombo.h"
 #include "GLApp/GLChart/GLChart.h"
-#include "GLApp\GLTextField.h"
-#include "GLApp\GLToggle.h"
-#include "GLApp\GLTitledPanel.h"
+#include "GLApp/GLTextField.h"
+#include "GLApp/GLToggle.h"
+#include "GLApp/GLTitledPanel.h"
 #include "GLApp/GLList.h"
 #include "GLApp/MathTools.h"
 
 #include "MolFlow.h"
-//#include "GLApp\GLFileBox.h"
-#include "NativeFileDialog\molflow_wrapper\nfd_wrapper.h"
+//#include "GLApp/GLFileBox.h"
+#include "NativeFileDialog/molflow_wrapper/nfd_wrapper.h"
 #include <sstream>
 
 extern MolFlow *mApp;
@@ -43,6 +43,10 @@ extern MolFlow *mApp;
   static const int   flAligns[] = { ALIGN_LEFT,ALIGN_LEFT };
   static const int   fEdits[] = { EDIT_STRING,EDIT_STRING };
 
+/**
+* \brief Constructor with initialisation for Parameter editor window (Time/Edit parameters)
+* \param w worker handle
+*/
 ParameterEditor::ParameterEditor(Worker *w):GLWindow() {
 
   int wD = 700;
@@ -165,8 +169,7 @@ ParameterEditor::ParameterEditor(Worker *w):GLWindow() {
   
   Add(applyButton);
 
-  UpdateCombo();
-  RebuildList();
+  Refresh();
   
   // Center dialog
   int wS,hS;
@@ -180,36 +183,72 @@ ParameterEditor::ParameterEditor(Worker *w):GLWindow() {
   
 }
 
+/**
+* \brief Refreshes parameter window
+*/
+void ParameterEditor::Refresh()
+{
+	UpdateCombo();
+	UpdateUserValues();
+	RebuildList();
+	if (work->parameters.size() > 0) { //If there is at least one parameter, show values and plot it 
+		ValidateInput();
+		Plot();
+	}
+}
+
+/**
+* \brief Function for processing various inputs (button, check boxes etc.)
+* \param src Exact source of the call
+* \param message Type of the source (button)
+*/
 void ParameterEditor::ProcessMessage(GLComponent *src,int message) {
   switch(message) {
     case MSG_BUTTON:
+		if (Contains({ applyButton,deleteButton }, src) ) {
+			int i = selectorCombo->GetSelectedIndex();
+			if (i > 0 && i-1 < work->parameters.size()) {
+				if (work->parameters[i-1].fromCatalog) {
+					GLMessageBox::Display("Parameters imported from the catalog (.csv files in the parameter_catalog folder) are read-only.");
+					return;
+				}
+			}
+		}
 		if (src==applyButton) {
-			if (ValidateInput() && mApp->AskToReset()) {
+			if (ValidateInput() && mApp->AskToReset()) { //ValidateInput() constructs tempParam
 				if (selectorCombo->GetSelectedIndex() >= 1 && selectorCombo->GetSelectedIndex() < selectorCombo->GetNbRow()) {//existing param
 					work->parameters[selectorCombo->GetSelectedIndex()-1] = tempParam;
-					UpdateCombo();
+					UpdateCombo(); //If name changed
 					UpdateUserValues();
 					Plot();
 				} else if (selectorCombo->GetSelectedIndex() == 0) { //new Param
-					work->parameters.push_back(tempParam);
+					//work->parameters.push_back(tempParam); //Inserted newly defined parameter as last
+					size_t insertPos = work->InsertParametersBeforeCatalog({ tempParam }); //Inserts before catalog
 					UpdateCombo();
-					selectorCombo->SetSelectedIndex(1);
+					selectorCombo->SetSelectedIndex((int)insertPos); //Set to newly added parameter
 					deleteButton->SetEnabled(true);
 					UpdateUserValues();
 					Plot();
 				}
-				RebuildList();
-				work->Reload();
+				RebuildList(); //Show parsed and sorted values
+				work->Reload(); //Mark for re-sync with workers
 			}
 		} else if (src == deleteButton) {
-			if (selectorCombo->GetSelectedValue() == "New...") return;
+			if (selectorCombo->GetSelectedValue() == "New...") return; //Delete button shouldn't have been enabled
 			if (mApp->AskToReset()) {
 				work->parameters.erase(work->parameters.begin() + selectorCombo->GetSelectedIndex()-1);
 				UpdateCombo();
-				selectorCombo->SetSelectedIndex(1);
+				bool paramSelected = selectorCombo->GetSelectedIndex() > 0;
 				UpdateUserValues();
 				RebuildList();
-				deleteButton->SetEnabled(false);
+				if (paramSelected) {
+					ValidateInput();
+					Plot();
+				}
+				else {
+					dataView->Reset();
+				}
+				deleteButton->SetEnabled(paramSelected); //has at least one valid parameter
 			}
 		} else if (src == plotButton) {
 			ValidateInput();
@@ -257,7 +296,7 @@ void ParameterEditor::ProcessMessage(GLComponent *src,int message) {
 		}
 		else {
 			if (selectorCombo->GetSelectedIndex() != -1) { //New param
-				Reset();
+				PrepareForNewParam();
 			}
 			deleteButton->SetEnabled(false);
 		}
@@ -272,25 +311,35 @@ void ParameterEditor::ProcessMessage(GLComponent *src,int message) {
   GLWindow::ProcessMessage(src,message);
 }
 
-void ParameterEditor::Reset() {
+void ParameterEditor::PrepareForNewParam() {
+	//Clear table
 	userValues = std::vector<std::pair<std::string, std::string>>();
 	RebuildList();
-	char tmp[32];
-	sprintf(tmp, "Param%d", selectorCombo->GetSelectedIndex());
-	nameField->SetText(tmp);
+	//Clear plot
 	dataView->Reset();
+	//Set default name for new param
+	nameField->SetText("Param"+std::to_string(work->parameters.size()+1));
 }
 
+/**
+* \brief Updates selector field for defined parameter lists in editor
+*/
 void ParameterEditor::UpdateCombo() {
 	selectorCombo->SetSize((int)work->parameters.size()+1);
 	selectorCombo->SetValueAt(0, "New...");
-	for (size_t i = 0; i < work->parameters.size(); i++)
-		selectorCombo->SetValueAt((int)i+1, work->parameters[i].name.c_str());
-	
-	if (selectorCombo->GetSelectedIndex() == -1 || selectorCombo->GetSelectedIndex() == ((int)selectorCombo->GetNbRow() - 1)) selectorCombo->SetSelectedIndex((int)selectorCombo->GetNbRow() - 1);
-	Reset();
+	for (size_t i = 0; i < work->parameters.size(); i++) {
+		selectorCombo->SetValueAt((int)i + 1, work->parameters[i].name.c_str());
+	}
+
+	if (selectorCombo->GetSelectedIndex() < 1) selectorCombo->SetSelectedIndex(selectorCombo->GetNbRow()>1 ? 1 : 0); //Select first param, otherwise "New..."
+	else if (selectorCombo->GetSelectedIndex() > (int)selectorCombo->GetNbRow() - 1) selectorCombo->SetSelectedIndex((int)selectorCombo->GetNbRow() - 1); //Select last (probably just deleted the last)
+	if (selectorCombo->GetSelectedIndex() > 0) deleteButton->SetEnabled(true);
+	if (selectorCombo->GetSelectedIndex()==0) PrepareForNewParam(); //If "New..." selected
 }
 
+/**
+* \brief Pastes values from clipboard into the table
+*/
 void ParameterEditor::PasteFromClipboard() {
 	list->PasteClipboardText(true,false,0); //Paste clipboard text, allow adding more rows, have one extra line in the end
 	//Fill uservalues vector with pasted text
@@ -304,6 +353,9 @@ void ParameterEditor::PasteFromClipboard() {
 	RebuildList();
 }
 
+/**
+* \brief Loads data from a CSV file into the table
+*/
 void ParameterEditor::LoadCSV() {
 
 	std::string fn = NFD_OpenFile_Cpp("csv", "");
@@ -345,10 +397,16 @@ void ParameterEditor::LoadCSV() {
 	RebuildList();
 }
 
+/**
+* \brief Copies values from the table into the clipboard
+*/
 void ParameterEditor::CopyToClipboard() {
 	list->CopyAllToClipboard();
 }
 
+/**
+* \brief Creates plot from parameter values
+*/
 void ParameterEditor::Plot() {
 	dataView->Reset();
 	for (size_t i = 0; i < tempParam.GetSize(); i++) {
@@ -357,11 +415,16 @@ void ParameterEditor::Plot() {
 	dataView->CommitChange();
 }
 
+/**
+* \brief Rebuilds list of parameter values
+* \param autoSize if number of columns/rows should be set automatically
+* \param refillValues if table values should be refilled with existing userValues
+*/
 void ParameterEditor::RebuildList(bool autoSize, bool refillValues) {
 
 	if (autoSize) list->SetSize(2, userValues.size()+1);
 	list->SetColumnWidths((int*)flWidth);
-	list->SetColumnLabels((char **)flName);
+	list->SetColumnLabels(flName);
 	list->SetColumnAligns((int *)flAligns);
 	list->SetColumnEditable((int *)fEdits);
 	//list->cEdits[0] = list->cEdits[1]= EDIT_NUMBER;
@@ -378,24 +441,31 @@ void ParameterEditor::RebuildList(bool autoSize, bool refillValues) {
 	}
 }
 
+/**
+* \brief Checks for valid input for the parameter list name and table input
+* \return bool for wether the input was valid or not
+*/
 bool ParameterEditor::ValidateInput() {
 	//Validate name
 	std::string tempName = nameField->GetText();
-	if (tempName.length() == 0) {
-		GLMessageBox::Display("Parameter name can't be empty", "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
-		return false;
-	}
-	if (selectorCombo->GetSelectedIndex() == 0) {
-		for (auto& p : work->parameters) {
-			if (tempName.compare(p.name) == 0) {
-				GLMessageBox::Display("This parameter name is already used", "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
-				return false;
+
+	if (!beginsWith(tempName, "[catalog]")) {
+		if (tempName.length() == 0) {
+			GLMessageBox::Display("Parameter name can't be empty", "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
+			return false;
+		}
+		if (selectorCombo->GetSelectedIndex() == 0) {
+			for (auto& p : work->parameters) {
+				if (tempName.compare(p.name) == 0) {
+					GLMessageBox::Display("This parameter name is already used", "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
+					return false;
+				}
 			}
 		}
-	}
-	if (!((tempName[0] >= 65 && tempName[0] <= 90) || (tempName[0] >= 97 && tempName[0] <= 122))) {
-		GLMessageBox::Display("Parameter name must begin with a letter", "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
-		return false;
+		if (!((tempName[0] >= 65 && tempName[0] <= 90) || (tempName[0] >= 97 && tempName[0] <= 122))) {
+			GLMessageBox::Display("Parameter name must begin with a letter", "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
+			return false;
+		}
 	}
 	
 	/*
@@ -448,10 +518,13 @@ bool ParameterEditor::ValidateInput() {
 	return true;
 }
 
+/**
+* \brief Updates vector of user values
+*/
 void ParameterEditor::UpdateUserValues() {
 	userValues = std::vector<std::pair<std::string, std::string>>();
-	nameField->SetText("");
-	if (selectorCombo->GetSelectedIndex()-1 <(int)work->parameters.size()) {
+	//nameField->SetText("");
+	if (selectorCombo->GetSelectedIndex()>0 && selectorCombo->GetSelectedIndex()-1 <(int)work->parameters.size()) {
 		Parameter *getParam = &work->parameters[selectorCombo->GetSelectedIndex()-1];
 
 		for (int row = 0; row < (int)getParam->GetSize(); row++) {

@@ -39,6 +39,12 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "MolFlow.h"
 #endif
 
+#ifndef _WIN32
+//getpid in linux
+#include <sys/types.h>
+#include <unistd.h>
+#endif
+
 #ifdef SYNRAD
 #include "SynRad.h"
 #endif
@@ -57,6 +63,10 @@ static const int   plWidth[] = { 60,40,70,70,335 };
 static const char *plName[] = { "#","PID","Mem Usage","Mem Peak",/*"CPU",*/"Status" };
 static const int   plAligns[] = { ALIGN_LEFT,ALIGN_LEFT,ALIGN_LEFT,ALIGN_LEFT,ALIGN_LEFT };
 
+/**
+* \brief Constructor for the global settings window with initial setup.
+* \param worker Worker that handles the window.
+*/
 GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 
 	worker = w;
@@ -67,11 +77,11 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	SetIconfiable(true);
 
 	GLTitledPanel *settingsPanel = new GLTitledPanel("Program settings");
-	settingsPanel->SetBounds(5, 2, 270, 228);
+	settingsPanel->SetBounds(5, 2, 270, 242);
 	Add(settingsPanel);
 
 	GLLabel *asLabel = new GLLabel("Autosave frequency (minutes):");
-	asLabel->SetBounds(16, 25, 80, 19);
+	asLabel->SetBounds(16, 22, 80, 19);
 	settingsPanel->Add(asLabel);
 
 	autoSaveText = new GLTextField(0, "");
@@ -79,39 +89,43 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	settingsPanel->Add(autoSaveText);
 
 	chkSimuOnly = new GLToggle(0, "Autosave only when simulation is running");
-	chkSimuOnly->SetBounds(15, 50, 160, 19);
+	chkSimuOnly->SetBounds(15, 47, 160, 19);
 	settingsPanel->Add(chkSimuOnly);
 
 	chkCompressSavedFiles = new GLToggle(0, "Use .zip as default extension (otherwise .xml)");
-	chkCompressSavedFiles->SetBounds(15, 75, 100, 19);
+	chkCompressSavedFiles->SetBounds(15, 72, 100, 19);
 	settingsPanel->Add(chkCompressSavedFiles);
 
 	chkCheckForUpdates = new GLToggle(0, "Check for updates at startup");
-	chkCheckForUpdates->SetBounds(15, 100, 160, 19);
+	chkCheckForUpdates->SetBounds(15, 97, 160, 19);
 	settingsPanel->Add(chkCheckForUpdates);
 
 	chkAutoUpdateFormulas = new GLToggle(0, "Auto refresh formulas");
-	chkAutoUpdateFormulas->SetBounds(15, 125, 160, 19);
+	chkAutoUpdateFormulas->SetBounds(15, 122, 160, 19);
 	settingsPanel->Add(chkAutoUpdateFormulas);
 
 	chkAntiAliasing = new GLToggle(0, "Anti-Aliasing");
-	chkAntiAliasing->SetBounds(15, 150, 160, 19);
+	chkAntiAliasing->SetBounds(15, 147, 160, 19);
 	settingsPanel->Add(chkAntiAliasing);
 
 	chkWhiteBg = new GLToggle(0, "White Background");
-	chkWhiteBg->SetBounds(15, 175, 160, 19);
+	chkWhiteBg->SetBounds(15, 172, 160, 19);
 	settingsPanel->Add(chkWhiteBg);
 
 	leftHandedToggle = new GLToggle(0, "Left-handed coord. system");
-	leftHandedToggle->SetBounds(15, 200, 160, 19);
-	settingsPanel->Add(leftHandedToggle);
+	leftHandedToggle->SetBounds(15, 197, 160, 19);
+	settingsPanel->Add( leftHandedToggle );
+
+	highlightNonplanarToggle = new GLToggle(0, "Highlight non-planar facets");
+	highlightNonplanarToggle->SetBounds(15, 222, 160, 19);
+	settingsPanel->Add(highlightNonplanarToggle);
 
 	GLTitledPanel *simuSettingsPanel = new GLTitledPanel("Simulation settings");
-	simuSettingsPanel->SetBounds(280, 2, 295, 228);
+	simuSettingsPanel->SetBounds(280, 2, 290, 242);
 	Add(simuSettingsPanel);
 
 	GLLabel *massLabel = new GLLabel("Gas molecular mass (g/mol):");
-	massLabel->SetBounds(290, 25, 150, 19);
+	massLabel->SetBounds(290, 22, 150, 19);
 	simuSettingsPanel->Add(massLabel);
 
 	gasMassText = new GLTextField(0, "");
@@ -119,7 +133,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	simuSettingsPanel->Add(gasMassText);
 
 	enableDecay = new GLToggle(0, "Gas half life (s):");
-	enableDecay->SetBounds(290, 50, 150, 19);
+	enableDecay->SetBounds(290, 47, 150, 19);
 	simuSettingsPanel->Add(enableDecay);
 
 	halfLifeText = new GLTextField(0, "");
@@ -127,7 +141,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	simuSettingsPanel->Add(halfLifeText);
 	
 	GLLabel *outgassingLabel = new GLLabel("Final outgassing rate (mbar*l/sec):");
-	outgassingLabel->SetBounds(290, 75, 150, 19);
+	outgassingLabel->SetBounds(290, 72, 150, 19);
 	simuSettingsPanel->Add(outgassingLabel);
 
 	outgassingText = new GLTextField(0, "");
@@ -136,7 +150,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	simuSettingsPanel->Add(outgassingText);
 
 	GLLabel *influxLabel = new GLLabel("Total desorbed molecules:");
-	influxLabel->SetBounds(290, 100, 150, 19);
+	influxLabel->SetBounds(290, 97, 150, 19);
 	simuSettingsPanel->Add(influxLabel);
 
 	influxText = new GLTextField(0, "");
@@ -157,7 +171,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	simuSettingsPanel->Add(lowFluxInfo);
 
 	GLLabel *cutoffLabel = new GLLabel("Cutoff ratio:");
-	cutoffLabel->SetBounds(290, 175, 80, 19);
+	cutoffLabel->SetBounds(310, 176, 80, 19);
 	simuSettingsPanel->Add(cutoffLabel);
 
 	cutoffText = new GLTextField(0, "");
@@ -166,7 +180,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	simuSettingsPanel->Add(cutoffText);
 
 	applyButton = new GLButton(0, "Apply above settings");
-	applyButton->SetBounds(wD / 2 - 65, 235, 130, 19);
+	applyButton->SetBounds(wD / 2 - 65, 248, 130, 19);
 	Add(applyButton);
 
 	/*chkNonIsothermal = new GLToggle(0,"Non-isothermal system (textures only, experimental)");
@@ -181,7 +195,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	processList->SetHScrollVisible(true);
 	processList->SetSize(5, MAX_PROCESS+1);
 	processList->SetColumnWidths((int*)plWidth);
-	processList->SetColumnLabels((char **)plName);
+	processList->SetColumnLabels((const char **)plName);
 	processList->SetColumnAligns((int *)plAligns);
 	processList->SetColumnLabelVisible(true);
 	processList->SetBounds(10, 278, wD - 20, hD - 355);
@@ -226,11 +240,15 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	//memset(lastCPULoad, 0, MAX_PROCESS*sizeof(float));
 }
 
+/**
+* \brief Function to change global settings values (may happen due to change or load of file etc.)
+*/
 void GlobalSettings::Update() {
 
 	char tmp[256];
 	chkAntiAliasing->SetState(mApp->antiAliasing);
 	chkWhiteBg->SetState(mApp->whiteBg);
+	highlightNonplanarToggle->SetState(mApp->highlightNonplanarFacets);
 	leftHandedToggle->SetState(mApp->leftHandedView);
 	//chkNonIsothermal->SetState(nonIsothermal);
 	UpdateOutgassing();
@@ -262,6 +280,9 @@ void GlobalSettings::Update() {
 	nbProcText->SetText(tmp);
 }
 
+/**
+* \brief Function to update the thread information table in the global settings window.
+*/
 void GlobalSettings::SMPUpdate() {
 	int time = SDL_GetTicks();
 
@@ -282,11 +303,15 @@ void GlobalSettings::SMPUpdate() {
 	processList->ResetValues();
 
 	//Interface
-	DWORD currpid = GetCurrentProcessId();
-	GetProcInfo(currpid, &pInfo);
+#ifdef _WIN32
+	size_t currPid = GetCurrentProcessId();
+#else
+	size_t currPid = getpid();
+#endif
+	GetProcInfo(currPid, &pInfo);
 	processList->SetValueAt(0, 0, "Interface");
-	sprintf(tmp, "%d", currpid);
-	processList->SetValueAt(1, 0, tmp, currpid);
+	sprintf(tmp, "%zd", currPid);
+	processList->SetValueAt(1, 0, tmp, currPid);
 	sprintf(tmp, "%.0f MB", (double)pInfo.mem_use / (1024.0*1024.0));
 	processList->SetValueAt(2, 0, tmp);
 	sprintf(tmp, "%.0f MB", (double)pInfo.mem_peak / (1024.0*1024.0));
@@ -331,7 +356,7 @@ void GlobalSettings::SMPUpdate() {
 			*/
 
 			// State/Status
-			std::stringstream tmp; tmp << prStates[states[i]] << " " << statusStrings[i];
+			std::stringstream tmp; tmp << "[" << prStates[states[i]] << "] " << statusStrings[i];
 			processList->SetValueAt(4, i + 1, tmp.str().c_str());
 
 		}
@@ -341,6 +366,9 @@ void GlobalSettings::SMPUpdate() {
 
 }
 
+/**
+* \brief Function to apply changes to the number of processes.
+*/
 void GlobalSettings::RestartProc() {
 
 	int nbProc;
@@ -348,11 +376,6 @@ void GlobalSettings::RestartProc() {
 		GLMessageBox::Display("Invalid process number", "Error", GLDLG_OK, GLDLG_ICONERROR);
 	}
 	else {
-		//char tmp[128];
-		//sprintf(tmp,"Kill all running sub-process(es) and start %d new ones ?",nbProc);
-		//int rep = GLMessageBox::Display(tmp,"Question",GLDLG_OK|GLDLG_CANCEL,GLDLG_ICONWARNING);
-
-		//if (mApp->AskToReset()) {
 			if (nbProc <= 0 || nbProc > MAX_PROCESS) {
 				GLMessageBox::Display("Invalid process number [1..32]", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			}
@@ -360,19 +383,22 @@ void GlobalSettings::RestartProc() {
 				try {
 					worker->Stop_Public();
 					worker->SetProcNumber(nbProc,true);
-					//worker->Reload();
 					worker->RealReload(true);
 					mApp->SaveConfig();
 				}
 				catch (Error &e) {
-					GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
+					GLMessageBox::Display(e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 				}
 			}
-		//}
 	}
 
 }
 
+/**
+* \brief Function for processing various inputs (button, check boxes etc.)
+* \param src Exact source of the call
+* \param message Type of the source (button)
+*/
 void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 
 	switch (message) {
@@ -394,11 +420,11 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 		else if (src == maxButton) {
 			if (worker->GetGeometry()->IsLoaded()) {
 				char tmp[128];
-				sprintf(tmp, "%I64d", worker->ontheflyParams.desorptionLimit);
+				sprintf(tmp, "%zd", worker->ontheflyParams.desorptionLimit);
 				char *val = GLInputBox::GetInput(tmp, "Desorption max (0=>endless)", "Edit MAX");
 				if (val) {
-					llong maxDes;
-					if (sscanf(val, "%I64d", &maxDes) == 0) {
+					size_t maxDes;
+					if (sscanf(val, "%zd", &maxDes) == 0) {
 						GLMessageBox::Display("Invalid 'maximum desorption' number", "Error", GLDLG_OK, GLDLG_ICONERROR);
 					}
 					else {
@@ -414,8 +440,12 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 		else if (src == applyButton) {
 			mApp->antiAliasing = chkAntiAliasing->GetState();
 			mApp->whiteBg = chkWhiteBg->GetState();
+			mApp->highlightNonplanarFacets = highlightNonplanarToggle->GetState();
 			mApp->leftHandedView = (bool)leftHandedToggle->GetState();
-			for (int i = 0; i < MAX_VIEWER; i++)  mApp->viewer[i]->UpdateMatrix();
+			for (int i = 0; i < MAX_VIEWER; i++) {
+				mApp->viewer[i]->UpdateMatrix();
+				mApp->viewer[i]->UpdateLabelColors();
+			}
 			mApp->wereEvents = true;
 			bool updateCheckPreference = chkCheckForUpdates->GetState();
 			if (mApp->appUpdater) {
@@ -431,7 +461,7 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 				GLMessageBox::Display("Invalid gas mass", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
-			if (abs(gm - worker->wp.gasMass) > 1e-7) {
+			if (std::abs(gm - worker->wp.gasMass) > 1e-7) {
 				if (mApp->AskToReset()) {
 					worker->needsReload = true;
 					worker->wp.gasMass = gm;
@@ -511,6 +541,9 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 	GLWindow::ProcessMessage(src, message);
 }
 
+/**
+* \brief Updates the values regarding outgassing (from memory and by calculation)
+*/
 void GlobalSettings::UpdateOutgassing() {
 	char tmp[128];
 	sprintf(tmp, "%g", worker->wp.gasMass);

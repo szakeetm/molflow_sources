@@ -50,6 +50,9 @@ extern SynRad*mApp;
 
 extern const char* profType[];
 
+/**
+* \brief Constructor with initialisation for Time settings window (Time/Timewise plotter)
+*/
 TimewisePlotter::TimewisePlotter() :GLWindow() {
 
 	int wD = 750;
@@ -70,9 +73,6 @@ TimewisePlotter::TimewisePlotter() :GLWindow() {
 	chart->GetY1Axis()->SetAnnotation(VALUE_ANNO);
 	chart->GetXAxis()->SetAnnotation(VALUE_ANNO);
 	Add(chart);
-
-	dismissButton = new GLButton(0, "Dismiss");
-	Add(dismissButton);
 
 	selButton = new GLButton(0, "Show Facet");
 	Add(selButton);
@@ -100,7 +100,7 @@ TimewisePlotter::TimewisePlotter() :GLWindow() {
 	momLabel = new GLLabel("Displayed moments:");
 	Add(momLabel);
 
-	momentsText = new GLTextField(0, "1,1,32");
+	momentsText = new GLTextField(0, "1,1,50");
 	momentsText->SetEditable(true);
 	Add(momentsText);
 
@@ -117,7 +117,11 @@ TimewisePlotter::TimewisePlotter() :GLWindow() {
 	logYToggle = new GLToggle(0, "Log Y");
 	Add(logYToggle);
 
-	
+	warningLabel = new GLLabel("Profiles can only be used on rectangular facets.");
+	Add(warningLabel);
+
+	dismissButton = new GLButton(0, "Dismiss");
+	Add(dismissButton);
 
 	// Center dialog
 	int wS, hS;
@@ -132,6 +136,13 @@ TimewisePlotter::TimewisePlotter() :GLWindow() {
 
 }
 
+/**
+* \brief Sets positions and sizes of the window
+* \param x x-coordinate of the element
+* \param y y-coordinate of the element
+* \param w width of the element
+* \param h height of the element
+*/
 void TimewisePlotter::SetBounds(int x, int y, int w, int h) {
 
 	chart->SetBounds(7, 5, w - 15, h - 85);
@@ -146,12 +157,17 @@ void TimewisePlotter::SetBounds(int x, int y, int w, int h) {
 	momLabel->SetBounds(30, h - 45, 117, 19);
 	momentsText->SetBounds(130, h - 45, 180, 19);
 	momentsLabel->SetBounds(315, h - 45, 60, 19);
+
+	warningLabel->SetBounds(w - 340, h - 45, 235, 19);
 	dismissButton->SetBounds(w - 100, h - 45, 90, 19);
 
 	GLWindow::SetBounds(x, y, w, h);
 
 }
 
+/**
+* \brief Refresh everything inside the window
+*/
 void TimewisePlotter::Refresh() {
 	Reset();
 	if (!worker) return;
@@ -183,6 +199,10 @@ void TimewisePlotter::Refresh() {
 	refreshViews();
 }
 
+/**
+* \brief Displays window with refreshed values
+* \param w worker handle
+*/
 void TimewisePlotter::Display(Worker *w) {
 
 	/*
@@ -205,6 +225,11 @@ void TimewisePlotter::Display(Worker *w) {
 
 }
 
+/**
+* \brief Refreshes the view if needed
+* \param appTime current time of the applicaiton
+* \param force if view should be refreshed no matter what
+*/
 void TimewisePlotter::Update(float appTime, bool force) {
 
 	if (!IsVisible() || IsIconic()) return;
@@ -222,12 +247,16 @@ void TimewisePlotter::Update(float appTime, bool force) {
 
 }
 
+/**
+* \brief Refreshes view by updating the data for the plot depending on the selected normalisation mode
+*/
 void TimewisePlotter::refreshViews() {
 
 	// Lock during update
 	BYTE *buffer = worker->GetHits();
-	int displayMode = normCombo->GetSelectedIndex();
 	if (!buffer) return;
+	int displayMode = normCombo->GetSelectedIndex();
+	
 
 	Geometry *geom = worker->GetGeometry();
 	GlobalHitBuffer *gHits = (GlobalHitBuffer *)buffer;
@@ -258,7 +287,7 @@ void TimewisePlotter::refreshViews() {
 				break;
 
 			case 1: //Pressure
-				scaleY = 1.0 / (f->GetArea() *1E-4 / (double)PROFILE_SIZE) * worker->wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
+				scaleY = 1.0 / (f->GetArea() * 1E-4 / (double)PROFILE_SIZE) * worker->wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
 
 				scaleY *= worker->GetMoleculesPerTP(v->userData1);
 				//if(f->wp.opacity>0.0) scaleY *= f->wp.opacity;
@@ -329,6 +358,10 @@ void TimewisePlotter::refreshViews() {
 
 }
 
+/**
+* \brief Uses a specified facet to the plot
+* \param facet ID of the facet that should be added
+*/
 void TimewisePlotter::addView(int facet) {
 
 	char tmp[128];
@@ -365,6 +398,10 @@ void TimewisePlotter::addView(int facet) {
 
 }
 
+/**
+* \brief Removes a specified facet from the plot (TODO: check if funcion is needed)
+* \param facet ID of the facet that should be removed
+*/
 void TimewisePlotter::remView(int facet) {
 
 	Geometry *geom = worker->GetGeometry();
@@ -386,6 +423,9 @@ void TimewisePlotter::remView(int facet) {
 
 }
 
+/**
+* \brief Clears data inside the data view
+*/
 void TimewisePlotter::Reset() {
 
 	chart->GetY1Axis()->ClearDataView();
@@ -394,6 +434,11 @@ void TimewisePlotter::Reset() {
 
 }
 
+/**
+* \brief Function for processing various inputs (button, check boxes etc.)
+* \param src Exact source of the call
+* \param message Type of the source (button)
+*/
 void TimewisePlotter::ProcessMessage(GLComponent *src, int message) {
 	Geometry *geom = worker->GetGeometry();
 	switch (message) {
@@ -403,7 +448,7 @@ void TimewisePlotter::ProcessMessage(GLComponent *src, int message) {
 		}
 		else if (src == selButton) {
 			int idx = profCombo->GetSelectedIndex();
-			if (idx >= 0) {
+			if (idx >= 0 && idx < geom->GetNbFacet()) {
 				geom->UnselectAll();
 				geom->GetFacet(profCombo->GetUserValueAt(idx))->selected = true;
 				geom->UpdateSelection();
@@ -478,6 +523,9 @@ void TimewisePlotter::ProcessMessage(GLComponent *src, int message) {
 
 }
 
+/**
+* \brief Changes line style to highlight the selected moment
+*/
 void TimewisePlotter::UpdateMoment() {
 	for (int i = 0; i < nbView; i++) {
 
@@ -493,6 +541,10 @@ void TimewisePlotter::UpdateMoment() {
 	}
 }
 
+/**
+* \brief Parses (sets of) moments with ; delimiter
+* \return true if parsing successful
+*/
 bool TimewisePlotter::ParseMoments(){
 	//Quick string parsing from http://stackoverflow.com/questions/14265581/parse-split-a-string-in-c-using-string-delimiter-standard-c
 	std::string s = momentsText->GetText();
@@ -504,6 +556,10 @@ bool TimewisePlotter::ParseMoments(){
 	return true;
 }
 
+/**
+* \brief Evaluates and parses moments or intervals of moments of the form "begin,interval,end" e.g. 1,2,50
+* \param token string of a moment or interval of moments
+*/
 void TimewisePlotter::ParseToken(std::string token) {
 	int begin, interval, end;
 	int nb = sscanf(token.c_str(), "%d,%d,%d", &begin, &interval, &end);
@@ -518,6 +574,9 @@ void TimewisePlotter::ParseToken(std::string token) {
 	}
 }
 
+/**
+* \brief Formats the text for how many moments will be displayed
+*/
 void TimewisePlotter::FormatParseText() {
 	std::ostringstream tmp;
 	int dispNum = (int)displayedMoments.size() + constantFlowToggle->GetState();

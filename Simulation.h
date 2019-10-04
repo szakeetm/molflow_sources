@@ -26,6 +26,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Vector.h"
 #include "Parameter.h"
 #include <tuple>
+#include "Random.h"
 
 class Anglemap {
 public:
@@ -124,11 +125,14 @@ class CurrentParticleStatus {
 public:
 	Vector3d position;    // Position
 	Vector3d direction;    // Direction
-	double oriRatio;
+	double oriRatio; //Represented ratio of desorbed, used for low flux mode
+
+	//Recordings for histogram
 	size_t   nbBounces; // Number of hit (current particle) since desorption
 	double   distanceTraveled;
-	double   velocity;
 	double   flightTime;
+
+	double   velocity;
 	double   expectedDecayMoment; //for radioactive gases
 	size_t   structureId;        // Current structure
 	int      teleportedFrom;   // We memorize where the particle came from: we can teleport back
@@ -144,7 +148,7 @@ public:
 	std::vector<FacetHistogramBuffer> tmpGlobalHistograms; //Recorded histogram since last UpdateMCHits, 1+nbMoment copies
 	std::vector<ParticleLoggerItem> tmpParticleLog; //Recorded particle log since last UpdateMCHits
 
-	llong totalDesorbed;           // Total number of desorptions (for this process, not reset on UpdateMCHits)
+	size_t totalDesorbed;           // Total number of desorptions (for this process, not reset on UpdateMCHits)
 
 	std::vector<std::vector<std::pair<double, double>>> CDFs; //cumulative distribution function for each temperature
 	std::vector<std::vector<std::pair<double, double>>> IDs; //integrated distribution function for each time-dependent desorption type
@@ -152,6 +156,7 @@ public:
 	std::vector<double> moments;      //time values (seconds) when a simulation state is measured
 	std::vector<size_t> desorptionParameterIDs; //time-dependent parameters which are used as desorptions, therefore need to be integrated
 	std::vector<Parameter> parameters; //Time-dependent parameters 
+
 
 	// Geometry
 	GeomProperties sh;

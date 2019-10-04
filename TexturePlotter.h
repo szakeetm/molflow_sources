@@ -55,7 +55,8 @@ private:
   void SaveFile();
 
   Worker       *worker;
-  Facet        *selFacet;
+  Facet*      selFacet;
+  int         selFacetId;
   float        lastUpdate;
   double    	maxValue;
   size_t			maxX,maxY;

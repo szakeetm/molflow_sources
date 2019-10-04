@@ -20,7 +20,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "OutgassingMap.h"
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
-#include "GLApp/GLFileBox.h"
+//#include "GLApp/GLFileBox.h"
 #include "GLApp/GLTextField.h"
 #include "GLApp/GLLabel.h"
 #include "GLApp/GLButton.h"
@@ -34,6 +34,9 @@ extern MolFlow *mApp;
 //static const char *fileFilters = "Text files\0*.txt";
 //static const int   nbFilter = sizeof(fileFilters) / (2*sizeof(char *));
 
+/**
+* \brief Constructor with initialisation for Outgassing map window (Facet/Convert to outgassing map)
+*/
 OutgassingMap::OutgassingMap():GLWindow() {
 
   int wD = 600;
@@ -109,6 +112,9 @@ OutgassingMap::OutgassingMap():GLWindow() {
 
 }
 
+/**
+* \brief Places all components (buttons, text etc.) at the right position inside the window
+*/
 void OutgassingMap::PlaceComponents() {
 
   mapList->SetBounds(5,5,width-15,height-55);
@@ -123,6 +129,13 @@ void OutgassingMap::PlaceComponents() {
   exponentText->SetBounds(450,height-45,50,19);
 }
 
+/**
+* \brief Places all components (buttons, text etc.) at the right position inside the window
+* \param x x-Coordinate of the window
+* \param y y-Coordinate of the window
+* \param w width of the window
+* \param h height of the window
+*/
 void OutgassingMap::SetBounds(int x,int y,int w,int h) {
 
   GLWindow::SetBounds(x,y,w,h);
@@ -130,6 +143,9 @@ void OutgassingMap::SetBounds(int x,int y,int w,int h) {
 
 }
 
+/**
+* \brief Sets lowest selected facet id in the title
+*/
 void OutgassingMap::GetSelected() {
 
   if(!worker) return;
@@ -143,12 +159,17 @@ void OutgassingMap::GetSelected() {
     if(!selFacet) i++;
   }
 
-  char tmp[32];
+  char tmp[64];
   sprintf(tmp,"Outgassing map for Facet #%d",i+1);
   SetTitle(tmp);
 
 }
 
+/**
+* \brief Checks and executes an update if necessary
+* \param appTime current time of the application
+* \param force if table should be updated no matter what
+*/
 void OutgassingMap::Update(float appTime,bool force) {
 
   if(!IsVisible()) return;
@@ -166,6 +187,9 @@ void OutgassingMap::Update(float appTime,bool force) {
 
 }
 
+/**
+* \brief Updates the values inside the table if a profile is set
+*/
 void OutgassingMap::UpdateTable() {
 	//maxValue=0.0f;
 	//double scale;
@@ -205,6 +229,10 @@ void OutgassingMap::UpdateTable() {
   }
 }
 
+/**
+* \brief Displays the window
+* \param w worker handle
+*/
 void OutgassingMap::Display(Worker *w) {
 
   worker = w;
@@ -213,6 +241,9 @@ void OutgassingMap::Display(Worker *w) {
 
 }
 
+/**
+* \brief Close the window
+*/
 void OutgassingMap::Close() {
   worker = NULL;
   if(selFacet) selFacet->UnselectElem();
@@ -262,6 +293,11 @@ void OutgassingMap::SaveFile() {
 }
 */
 
+/**
+* \brief Function for processing various inputs (button, check boxes etc.)
+* \param src Exact source of the call
+* \param message Type of the source (button)
+*/
 void OutgassingMap::ProcessMessage(GLComponent *src,int message) {
 
   switch(message) {
@@ -330,7 +366,7 @@ void OutgassingMap::ProcessMessage(GLComponent *src,int message) {
 					  worker->CalcTotalOutgassing();
 					  // Send to sub process
 					  worker->Reload(); } catch(Error &e) {
-						  GLMessageBox::Display((char *)e.GetMsg(),"Error exploding facet (not enough memory?)",GLDLG_OK,GLDLG_ICONERROR);
+						  GLMessageBox::Display(e.GetMsg(),"Error exploding facet (not enough memory?)",GLDLG_OK,GLDLG_ICONERROR);
 					}
 				}
 				        Close();

@@ -21,12 +21,12 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
 //#include "GLApp/GLFileBox.h"
-#include "NativeFileDialog\molflow_wrapper\nfd_wrapper.h"
+#include "NativeFileDialog/molflow_wrapper/nfd_wrapper.h"
 #include "GLApp/GLLabel.h"
 #include "GLApp/GLButton.h"
 #include "GLApp/GLList.h"
 #include "GLApp/GLCombo.h"
-#include "GLApp\GLToggle.h"
+#include "GLApp/GLToggle.h"
 #include "Geometry_shared.h"
 #include "Facet_shared.h"
 #ifdef MOLFLOW
@@ -47,6 +47,9 @@ extern SynRad*mApp;
 
 std::string fileFilters = "txt";
 
+/**
+* \brief Constructor with initialisation for Texture plotter window (Tools/Texture Plotter)
+*/
 TexturePlotter::TexturePlotter() :GLWindow() {
 
 	int wD = 500;
@@ -116,6 +119,9 @@ TexturePlotter::TexturePlotter() :GLWindow() {
 
 }
 
+/**
+* \brief Places all components (buttons, text etc.) at the right position inside the window
+*/
 void TexturePlotter::PlaceComponents() {
 
 	mapList->SetBounds(5, 5, width - 15, height - 80);
@@ -129,6 +135,13 @@ void TexturePlotter::PlaceComponents() {
 
 }
 
+/**
+* \brief Sets positions and sizes of the window
+* \param x x-coordinate of the element
+* \param y y-coordinate of the element
+* \param w width of the element
+* \param h height of the element
+*/
 void TexturePlotter::SetBounds(int x, int y, int w, int h) {
 
 	GLWindow::SetBounds(x, y, w, h);
@@ -136,25 +149,40 @@ void TexturePlotter::SetBounds(int x, int y, int w, int h) {
 
 }
 
+
+/**
+* \brief Sets selected facet ID in the title of the window
+*/
 void TexturePlotter::GetSelected() {
 
 	if (!worker) return;
 
 	Geometry *geom = worker->GetGeometry();
+	selFacetId = -1;
 	selFacet = NULL;
 	int i = 0;
 	size_t nb = geom->GetNbFacet();
-	while (!selFacet && i < nb) {
-		if (geom->GetFacet(i)->selected) selFacet = geom->GetFacet(i);
-		if (!selFacet) i++;
+	while (selFacetId==-1 && i < nb) {
+		if (geom->GetFacet(i)->selected) {
+			selFacetId = i;
+			selFacet = geom->GetFacet(i);
+		}
+		else {
+			i++;
+		}
 	}
 
-	char tmp[32];
+	char tmp[64];
 	sprintf(tmp, "Texture plotter [Facet #%d]", i + 1);
 	SetTitle(tmp);
 
 }
 
+/**
+* \brief Updates table values if necessary
+* \param appTime curent time of the application
+* \param force if update should be forced
+*/
 void TexturePlotter::Update(float appTime, bool force) {
 
 	if (!IsVisible()) return;
@@ -172,6 +200,11 @@ void TexturePlotter::Update(float appTime, bool force) {
 
 }
 
+/**
+* \brief Update table values for selected facets (only shows facet with lowest ID) corresponding to the texture values
+* \param appTime curent time of the application
+* \param force if update should be forced
+*/
 void TexturePlotter::UpdateTable() {
 	size_t nbMoments = mApp->worker.moments.size();
 	size_t facetHitsSize = (1 + nbMoments) * sizeof(FacetHitBuffer);
@@ -213,8 +246,9 @@ void TexturePlotter::UpdateTable() {
 		case 1: {// MC Hits
 
 			BYTE *buffer = worker->GetHits(); //Locks and returns handle
+			if (!buffer) return;
 			try {
-				if (buffer) {
+				
 					
 					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
 					TextureCell *texture = (TextureCell *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
@@ -232,7 +266,7 @@ void TexturePlotter::UpdateTable() {
 						}
 					}
 					worker->ReleaseHits();
-				}
+				
 			}
 			catch (...) {
 				worker->ReleaseHits();
@@ -245,8 +279,9 @@ void TexturePlotter::UpdateTable() {
 
 					 // Lock during update
 			BYTE *buffer = worker->GetHits();
+			if (!buffer) return;
 			try {
-				if (buffer) {
+				
 					
 					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
 					TextureCell *texture = (TextureCell *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
@@ -266,7 +301,7 @@ void TexturePlotter::UpdateTable() {
 						}
 					}
 					worker->ReleaseHits();
-				}
+				
 			}
 			catch (...) { //incorrect hits reference
 				worker->ReleaseHits();
@@ -278,8 +313,9 @@ void TexturePlotter::UpdateTable() {
 
 					 // Lock during update
 			BYTE *buffer = worker->GetHits();
+			if (!buffer) return;
 			try {
-				if (buffer) {
+				
 					
 					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
 					TextureCell *texture = (TextureCell *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
@@ -299,7 +335,7 @@ void TexturePlotter::UpdateTable() {
 						}
 					}
 					worker->ReleaseHits();
-				}
+				
 			}
 			catch (...) { //incorrect hits reference
 				worker->ReleaseHits();
@@ -311,8 +347,9 @@ void TexturePlotter::UpdateTable() {
 
 					 // Lock during update
 			BYTE *buffer = worker->GetHits();
+			if (!buffer) return;
 			try {
-				if (buffer) {
+				
 					
 					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
 					TextureCell *texture = (TextureCell *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
@@ -336,7 +373,7 @@ void TexturePlotter::UpdateTable() {
 						}
 					}
 					worker->ReleaseHits();
-				}
+				
 			}
 			catch (...) { //incorrect hits reference
 				worker->ReleaseHits();
@@ -348,8 +385,9 @@ void TexturePlotter::UpdateTable() {
 
 					 // Lock during update
 			BYTE *buffer = worker->GetHits();
+			if (!buffer) return;
 			try {
-				if (buffer) {
+				
 					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
 					TextureCell *texture = (TextureCell *)(buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
 					double moleculesPerTP = (worker->wp.sMode == MC_MODE) ? mApp->worker.GetMoleculesPerTP(worker->displayedMoment) : 1.0;
@@ -369,7 +407,7 @@ void TexturePlotter::UpdateTable() {
 						}
 					}
 					worker->ReleaseHits();
-				}
+				
 			}
 			catch (...) { //incorrect hits reference
 				worker->ReleaseHits();
@@ -381,8 +419,9 @@ void TexturePlotter::UpdateTable() {
 
 					// Lock during update
 			BYTE *buffer = worker->GetHits();
+			if (!buffer) return;
 			try {
-				if (buffer) {
+				
 					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
 					TextureCell *texture = (TextureCell *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
 					for (size_t i = 0; i < w; i++) {
@@ -397,7 +436,7 @@ void TexturePlotter::UpdateTable() {
 						}
 					}
 					worker->ReleaseHits();
-				}
+				
 			}
 			catch (...) {
 				worker->ReleaseHits();
@@ -408,8 +447,9 @@ void TexturePlotter::UpdateTable() {
 
 		case 7: {// Gas velocity vector
 			BYTE *buffer = worker->GetHits();
+			if (!buffer) return;
 			try {
-				if (buffer) {
+				
 					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
 					size_t nbElem = selFacet->sh.texWidth*selFacet->sh.texHeight;
 					size_t tSize = nbElem * sizeof(TextureCell);
@@ -435,7 +475,7 @@ void TexturePlotter::UpdateTable() {
 						}
 					}
 					worker->ReleaseHits();
-				}
+				
 			}
 			catch (...) {
 				worker->ReleaseHits();
@@ -446,8 +486,9 @@ void TexturePlotter::UpdateTable() {
 
 		case 8: {// Nb of velocity vectors
 			BYTE *buffer = worker->GetHits();
+			if (!buffer) return;
 			try {
-				if (buffer) {
+				
 					size_t profSize = (selFacet->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
 					size_t nbElem = selFacet->sh.texWidth*selFacet->sh.texHeight;
 					size_t tSize = nbElem * sizeof(TextureCell);
@@ -472,7 +513,7 @@ void TexturePlotter::UpdateTable() {
 						}
 					}
 					worker->ReleaseHits();
-				}
+				
 			}
 			catch (...) {
 				worker->ReleaseHits();
@@ -486,6 +527,10 @@ void TexturePlotter::UpdateTable() {
 	if (autoSizeOnUpdate->GetState()) mapList->AutoSizeColumn();
 }
 
+/**
+* \brief Displays the window
+* \param w Worker handle
+*/
 void TexturePlotter::Display(Worker *w) {
 
 	worker = w;
@@ -494,12 +539,18 @@ void TexturePlotter::Display(Worker *w) {
 
 }
 
+/**
+* \brief Closes the window
+*/
 void TexturePlotter::Close() {
 	worker = NULL;
 	if (selFacet) selFacet->UnselectElem();
 	mapList->Clear();
 }
 
+/**
+* \brief Saves table values to a file
+*/
 void TexturePlotter::SaveFile() {
 
 	if (!selFacet) return;
@@ -541,6 +592,11 @@ void TexturePlotter::SaveFile() {
 
 }
 
+/**
+* \brief Function for processing various inputs (button, check boxes etc.)
+* \param src Exact source of the call
+* \param message Type of the source (button)
+*/
 void TexturePlotter::ProcessMessage(GLComponent *src, int message) {
 
 	switch (message) {

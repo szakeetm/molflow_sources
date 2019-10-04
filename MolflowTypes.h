@@ -18,7 +18,8 @@ GNU General Public License for more details.
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 #pragma once
-#include "GLApp/GlTypes.h"
+#include "GLApp/GLTypes.h"
+#include <stddef.h> //size_t for gcc
 //#include "Buffer_shared.h"
 
 // Desorption type
@@ -65,6 +66,7 @@ public:
 	double sum_v_ort=0.0;
 	double sum_1_per_ort_velocity=0.0;
 	ProfileSlice& operator+=(const ProfileSlice& rhs);
+	ProfileSlice& operator+(const ProfileSlice& rhs);
 };
 
 class TextureCell {
@@ -73,6 +75,7 @@ public:
 	double sum_v_ort_per_area=0.0;
 	double sum_1_per_ort_velocity=0.0;
 	TextureCell& operator+=(const TextureCell& rhs);
+	TextureCell& operator+(const TextureCell& rhs);
 };
 
 //Texture limit types

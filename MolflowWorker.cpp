@@ -35,6 +35,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <fstream>
 #include <istream>
 
+#include <filesystem>
+
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/utility.hpp>
 //#include <cereal/archives/xml.hpp>
@@ -51,8 +53,9 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #endif
 
 #include <direct.h>
-#include "ZipUtils/zip.h"
-#include "ZipUtils/unzip.h"
+#include "ziplib/ZipArchive.h"
+#include "ziplib/ZipArchiveEntry.h"
+#include "ziplib/ZipFile.h"
 #include "File.h" //File utils (Get extension, etc)
 
 /*
@@ -73,6 +76,9 @@ extern MolFlow *mApp;
 extern SynRad*mApp;
 #endif
 
+/**
+* \brief Default constructor for a worker
+*/
 Worker::Worker() {
 	
 	//Molflow specific
@@ -124,10 +130,23 @@ Worker::Worker() {
 	strcpy(fullFileName, "");
 }
 
+/**
+* \brief Getter to retrieve the geometry on this worker
+* \return pointer of the geometry object
+*/
 MolflowGeometry* Worker::GetMolflowGeometry() {
 	return geom;
 }
 
+/**
+* \brief Function for saving geometry to a set file
+* \param fileName output file name with extension
+* \param prg GLProgress window where loading is visualised
+* \param askConfirm if a window should be opened to ask if the file should be overwritten
+* \param saveSelected if a selection is to be saved
+* \param autoSave if automatic saving is enabled
+* \param crashSave if save on crash is enabled
+*/
 void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm, bool saveSelected, bool autoSave, bool crashSave) {
 
 	try {
@@ -148,11 +167,20 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
 	
 	std::string ext = FileUtils::GetExtension(fileName);
 	std::string path = FileUtils::GetPath(fileName);
-
-	if (ext.empty()) fileName = fileName + (mApp->compressSavedFiles ? ".zip" : ".xml");
+	
+	bool ok = true;
+	if (ext.empty()) {
+		fileName = fileName + (mApp->compressSavedFiles ? ".zip" : ".xml");
+		ext = FileUtils::GetExtension(fileName);
+		if (!autoSave && FileUtils::Exist(fileName)) {
+			char tmp[1024];
+			sprintf(tmp, "Overwrite existing file ?\n%s", fileName.c_str());
+			if (askConfirm) ok = (GLMessageBox::Display(tmp, "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK);
+		}
+	}
 
 	// Read a file
-	bool ok = true;
+	
 	FileWriter *f = NULL;
 	bool isTXT = Contains({ "txt","TXT" },ext);
 	bool isSTR = Contains({ "str","STR" }, ext);
@@ -162,13 +190,15 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
 	bool isXMLzip = ext == "zip";
 
 	if (isTXT || isGEO || isGEO7Z || isSTR || isXML || isXMLzip) {
-
+#ifdef _WIN32
+		//Check (using native handle) if background compressor is still alive
 		if ((isGEO7Z) && WAIT_TIMEOUT == WaitForSingleObject(mApp->compressProcessHandle, 0)) {
 			GLMessageBox::Display("Compressing a previous save file is in progress. Wait until that finishes "
 				"or close process \"compress.exe\"\nIf this was an autosave attempt,"
 				"you have to lower the autosave frequency.", "Can't save right now.", GLDLG_OK, GLDLG_ICONERROR);
 			return;
 		}
+#endif
 		if (isGEO) {
 			fileNameWithoutExtension=fileName.substr(0,fileName.length()-4);
 			fileNameWithGeo7z = fileName + "7z";			
@@ -196,13 +226,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
 
 				ok = (GLMessageBox::Display(tmp, "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK);
 			}
-		}
-
-		if (!autoSave && ok && FileUtils::Exist(fileName)) {
-			char tmp[1024];
-			sprintf(tmp, "Overwrite existing file ?\n%s", fileName.c_str());
-			if (askConfirm) ok = (GLMessageBox::Display(tmp, "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK);
-		}
+		}		
 
 		if (ok) {
 			if (isSTR) {
@@ -221,7 +245,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
 
 				catch (Error &e) {
 					SAFE_DELETE(f);
-					GLMessageBox::Display((char*)e.GetMsg(), "Error writing file.", GLDLG_OK, GLDLG_ICONERROR);
+					GLMessageBox::Display(e.GetMsg(), "Error writing file.", GLDLG_OK, GLDLG_ICONERROR);
 					return;
 				}
 				
@@ -265,7 +289,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
 						catch (Error &e) {
 							SAFE_DELETE(f);
 							ReleaseDataport(dpHit);
-							GLMessageBox::Display((char*)e.GetMsg(), "Error saving simulation state.", GLDLG_OK, GLDLG_ICONERROR);
+							GLMessageBox::Display(e.GetMsg(), "Error saving simulation state.", GLDLG_OK, GLDLG_ICONERROR);
 							return;
 						}
 					}
@@ -276,12 +300,21 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
 					}
 					else {
 						if (!geom_only.save_file(fileNameWithXML.c_str())) throw Error("Error writing XML file."); //simu state error
-					}
-
+					} //saveDoc goes out of scope for the compress duration
 					if (isXMLzip) {
 						prg->SetProgress(0.75);
 						prg->SetMessage("Compressing xml to zip...");
 						//mApp->compressProcessHandle=CreateThread(0, 0, ZipThreadProc, 0, 0, 0);
+						
+						//Zipper library
+						if (FileUtils::Exist(fileNameWithZIP)) remove(fileNameWithZIP.c_str());
+						ZipFile::AddFile(fileNameWithZIP, fileNameWithXML,FileUtils::GetFilename(fileNameWithXML));
+						//At this point, if no error was thrown, the compression is successful
+						remove(fileNameWithXML.c_str());
+
+
+						/*
+						//Old ZipUtils library, Windows only
 						HZIP hz = CreateZip(fileNameWithZIP.c_str(), 0);
 						if (!hz) {
 							throw Error("Error creating ZIP file");
@@ -292,6 +325,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
 							throw Error("Error compressing ZIP file.");
 						}
 						CloseZip(hz);
+						*/
 					}
 				}
 			}
@@ -311,10 +345,22 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
 	//File written, compress it if the user wanted to
 	if (ok && isGEO7Z) {
 
-		if (FileUtils::Exist("compress.exe")) { //compress GEO file to GEO7Z using 7-zip launcher "compress.exe"
+#ifdef _WIN32
+		std::string compressorName = "compress.exe";
+#else
+		std::string compressorName = "./compress";
+#endif
+
+		if (FileUtils::Exist(compressorName)) { //compress GEO file to GEO7Z using 7-zip launcher "compress.exe"
 			std::ostringstream tmp;
-			tmp<<"compress.exe \"" << fileNameWithGeo << "\" Geometry.geo";
-			int procId = StartProc(tmp.str().c_str(),STARTPROC_BACKGROUND);
+			tmp<<compressorName << " \"" << fileNameWithGeo << "\" Geometry.geo";
+#ifdef _WIN32
+			size_t procId = StartProc(tmp.str().c_str(),STARTPROC_BACKGROUND);
+			mApp->compressProcessHandle = OpenProcess(PROCESS_ALL_ACCESS, true, (unsigned long)procId);
+#else
+			//In Linux, compressing to old format will be blocking
+			system(tmp.str().c_str());
+#endif
 
 			mApp->compressProcessHandle = OpenProcess(PROCESS_ALL_ACCESS, true, procId);
 			fileName = fileNameWithGeo7z;
@@ -331,36 +377,44 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
 	}
 }
 
-void Worker::ExportProfiles(const char *fileName) {
+/**
+* \brief Function for saving of the profile data (simulation)
+* \param fileName output file name
+*/
+void Worker::ExportProfiles(const char *fn) {
 
+	std::string fileName = fn;
 	char tmp[512];
 
 	// Read a file
 	FILE *f = NULL;
 
-	std::string fileNameExtended = fileName;
-	if (FileUtils::GetExtension(fileNameExtended).empty()) fileNameExtended = fileNameExtended + ".csv"; //set to default CSV format
-	bool isTXT = FileUtils::GetExtension(fileNameExtended) == "txt";
-
-	bool ok = true;
-
-	if (FileUtils::Exist(fileName)) {
-		sprintf(tmp, "Overwrite existing file ?\n%s", fileName);
-		ok = (GLMessageBox::Display(tmp, "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK);
+	if (FileUtils::GetExtension(fileName).empty()) {
+		fileName += ".csv"; //set to default CSV format
+		if (FileUtils::Exist(fileName)) {
+			sprintf(tmp, "Overwrite existing file ?\n%s", fileName.c_str());
+			if (GLMessageBox::Display(tmp, "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) != GLDLG_OK) return;
+		}
 	}
+	bool isTXT = FileUtils::GetExtension(fileName) == "txt";
 
-	if (ok) {
-		f = fopen(fileName, "w");
+
+		f = fopen(fileName.c_str(), "w");
 		if (!f) {
 			char tmp[256];
-			sprintf(tmp, "Cannot open file for writing %s", fileName);
+			sprintf(tmp, "Cannot open file for writing %s", fileName.c_str());
 			throw Error(tmp);
 		}
 		geom->ExportProfiles(f, isTXT, dpHit, this);
 		fclose(f);
-	}
+	
 }
 
+/**
+* \brief Function for exportation of the angle maps
+* \param facetList vector of all facets necessary for the export
+* \param fileName output file name
+*/
 void Worker::ExportAngleMaps(std::vector<size_t> facetList, std::string fileName) {
 	bool overwriteAll = false;
 	for (size_t facetIndex : facetList) {
@@ -376,6 +430,7 @@ void Worker::ExportAngleMaps(std::vector<size_t> facetList, std::string fileName
 
 		bool ok = true;
 
+		
 		if (FileUtils::Exist(saveFileName)) {
 			if (!overwriteAll) {
 				std::vector<std::string> buttons = { "Cancel", "Overwrite" };
@@ -385,6 +440,7 @@ void Worker::ExportAngleMaps(std::vector<size_t> facetList, std::string fileName
 				overwriteAll = (answer == 2);
 			}
 		}
+		
 
 		std::ofstream file;
 		file.open(saveFileName);
@@ -397,7 +453,7 @@ void Worker::ExportAngleMaps(std::vector<size_t> facetList, std::string fileName
 	}
 }
 
-/*void Worker::ImportDesorption(char *fileName) {
+/*void Worker::ImportDesorption(const char *fileName) {
 	//if (needsReload) RealReload();
 
 	// Read a file
@@ -408,6 +464,12 @@ void Worker::ExportAngleMaps(std::vector<size_t> facetList, std::string fileName
 	Reload();
 	}*/
 
+	/**
+	* \brief Function for loading of the geometry
+	* \param fileName input file name
+	* \param insert if geometry will be inserted into an existing geometry view
+	* \param newStr if a new structure needs to be created
+	*/
 void Worker::LoadGeometry(const std::string& fileName,bool insert,bool newStr) {
 	if (!insert) {
 		needsReload = true;
@@ -415,8 +477,8 @@ void Worker::LoadGeometry(const std::string& fileName,bool insert,bool newStr) {
 	else {
 		RealReload();
 	}
-	char CWD[MAX_PATH];
-	_getcwd(CWD, MAX_PATH);
+	//char CWD[MAX_PATH];
+	//_getcwd(CWD, MAX_PATH);
 
 	std::string ext=FileUtils::GetExtension(fileName);
 
@@ -442,16 +504,16 @@ void Worker::LoadGeometry(const std::string& fileName,bool insert,bool newStr) {
 	}
 
 	/*
-	bool isASE = (_stricmp(ext, "ase") == 0);
-	bool isSTR = (_stricmp(ext, "str") == 0);
-	bool isSTL = (_stricmp(ext, "stl") == 0);
-	bool isTXT = (_stricmp(ext, "txt") == 0);
-	bool isGEO = (_stricmp(ext, "geo") == 0);
-	bool isGEO7Z = (_stricmp(ext, "geo7z") == 0);
-	bool isSYN = (_stricmp(ext, "syn") == 0);
-	bool isSYN7Z = (_stricmp(ext, "syn7z") == 0);
-	bool isXML = (_stricmp(ext, "xml") == 0);
-	bool isXMLzip = (_stricmp(ext, "zip") == 0);
+	bool isASE = (stricmp(ext, "ase") == 0);
+	bool isSTR = (stricmp(ext, "str") == 0);
+	bool isSTL = (stricmp(ext, "stl") == 0);
+	bool isTXT = (stricmp(ext, "txt") == 0);
+	bool isGEO = (stricmp(ext, "geo") == 0);
+	bool isGEO7Z = (stricmp(ext, "geo7z") == 0);
+	bool isSYN = (stricmp(ext, "syn") == 0);
+	bool isSYN7Z = (stricmp(ext, "syn7z") == 0);
+	bool isXML = (stricmp(ext, "xml") == 0);
+	bool isXMLzip = (stricmp(ext, "zip") == 0);
 	*/
 
 	if (ext == "txt" || ext == "TXT") {
@@ -563,11 +625,11 @@ void Worker::LoadGeometry(const std::string& fileName,bool insert,bool newStr) {
 			if (ext=="syn7z") {
 				//decompress file
 				progressDlg->SetMessage("Decompressing file...");
-				std::ostringstream tmp;
-				tmp << "cmd /C \"pushd \"" << CWD << "\"&&7za.exe x -t7z -aoa \"" << fileName << "\" -otmp&&popd\"";
-				system(tmp.str().c_str());
-				f = new FileReader((std::string)CWD + "\\tmp\\Geometry.syn"); //Open extracted file
-			} else f = new FileReader(fileName); //syn file, open it directly
+					f = ExtractFrom7zAndOpen(fileName, "Geometry.syn");
+				}
+				else {
+					f = new FileReader(fileName);  //original file opened
+				}
 			
 			if (!insert) {
 				progressDlg->SetMessage("Resetting worker...");
@@ -599,24 +661,15 @@ void Worker::LoadGeometry(const std::string& fileName,bool insert,bool newStr) {
 
 	}
 	else if (ext=="geo" || ext=="geo7z") {
-		//char tmp2[1024];
-		std::string toOpen;
 		int version;
 		progressDlg->SetVisible(true);
 		try {
 			if (ext == "geo7z") {
 				//decompress file
 				progressDlg->SetMessage("Decompressing file...");
-				std::ostringstream tmp;
-				tmp << "cmd /C \"pushd \"" << CWD << "\"&&7za.exe x -t7z -aoa \"" << fileName << "\" -otmp&&popd\"";
-				system(tmp.str().c_str());
-
-				toOpen = (std::string)CWD + "\\tmp\\Geometry.geo"; //newer geo7z format: contain Geometry.geo
-				if (!FileUtils::Exist(toOpen)) toOpen = ((std::string)fileName).substr(0, fileName.length() - 2); //Inside the zip, try original filename with extension changed from geo7z to geo
-				f = new FileReader(toOpen);
+				f = ExtractFrom7zAndOpen(fileName, "Geometry.geo");
 			}
 			else { //not geo7z
-				toOpen = fileName;
 				f = new FileReader(fileName); //geo file, open it directly
 			}
 			if (insert) mApp->changedSinceSave = true;
@@ -662,6 +715,34 @@ void Worker::LoadGeometry(const std::string& fileName,bool insert,bool newStr) {
 				//decompress file
 				progressDlg->SetMessage("Decompressing file...");
 
+				ZipArchive::Ptr zip = ZipFile::Open(fileName);
+				if (zip == nullptr) {
+					throw Error("Can't open ZIP file");
+				}
+				size_t numitems = zip->GetEntriesCount();
+				bool notFoundYet = true;
+				for (int i = 0; i < numitems && notFoundYet; i++) { //extract first xml file found in ZIP archive
+					auto zipItem = zip->GetEntry(i);
+					std::string zipFileName = zipItem->GetName();
+
+					if (FileUtils::GetExtension(zipFileName) == "xml") { //if it's an .xml file
+						notFoundYet = false;
+
+						FileUtils::CreateDir("tmp");// If doesn't exist yet
+
+						std::string tmpFileName = "tmp/" + zipFileName;
+						ZipFile::ExtractFile(fileName, zipFileName, tmpFileName);
+						progressDlg->SetMessage("Reading and parsing XML file...");
+
+						parseResult = loadXML.load_file(tmpFileName.c_str()); //load and parse it
+					}
+				}
+				if (notFoundYet) {
+					throw Error("Didn't find any XML file in the ZIP file.");
+				}
+
+				/*
+				//Old ZipUtils library
 				HZIP hz = OpenZip(fileName.c_str(), 0);
 				if (!hz) {
 					throw Error("Can't open ZIP file");
@@ -685,6 +766,7 @@ void Worker::LoadGeometry(const std::string& fileName,bool insert,bool newStr) {
 					CloseZip(hz);
 					throw Error("Didn't find any XML file in the ZIP file.");
 				}
+				*/
 
 			} else parseResult = loadXML.load_file(fileName.c_str()); //parse xml file directly
 
@@ -781,6 +863,11 @@ void Worker::LoadGeometry(const std::string& fileName,bool insert,bool newStr) {
 	}
 }
 
+/**
+* \brief Function for loading textures from a GEO file
+* \param f input file handle
+* \param version version of the GEO data description
+*/
 void Worker::LoadTexturesGEO(FileReader *f, int version) {	
 		GLProgress *progressDlg = new GLProgress("Loading textures", "Please wait");
 		progressDlg->SetProgress(0.0);
@@ -798,6 +885,10 @@ void Worker::LoadTexturesGEO(FileReader *f, int version) {
 		SAFE_DELETE(progressDlg);	
 }
 
+/**
+* \brief Function that updates various variables when stopping a simulation
+* \param appTime current time of the application
+*/
 void Worker::InnerStop(float appTime) {
 
 	stopTime = appTime;
@@ -807,6 +898,9 @@ void Worker::InnerStop(float appTime) {
 
 }
 
+/**
+* \brief Function that starts exactly one simulation step for AC (angular coefficient) mode
+*/
 void Worker::OneACStep() {
 
 	if (ontheflyParams.nbProcess == 0)
@@ -819,6 +913,10 @@ void Worker::OneACStep() {
 
 }
 
+/**
+* \brief Function that executes one step in AC (angular coefficient) mode and updates the interface
+* \param appTime current time of the application
+*/
 void Worker::StepAC(float appTime) {
 
 	try {
@@ -826,11 +924,16 @@ void Worker::StepAC(float appTime) {
 		Update(appTime);
 	}
 	catch (Error &e) {
-		GLMessageBox::Display((char *)e.GetMsg(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
+		GLMessageBox::Display(e.GetMsg(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
 	}
 
 }
 
+/**
+* \brief Function that handles starting and stopping of the simulation
+* \param appTime current time of the application
+* \param sMode simulation mode (MC/AC)
+*/
 void Worker::StartStop(float appTime , size_t sMode) {
 
 	if (isRunning)  {
@@ -843,7 +946,7 @@ void Worker::StartStop(float appTime , size_t sMode) {
 		}
 
 		catch (Error &e) {
-			GLMessageBox::Display((char *)e.GetMsg(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
+			GLMessageBox::Display(e.GetMsg(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
 			return;
 		}
 	}
@@ -863,7 +966,7 @@ void Worker::StartStop(float appTime , size_t sMode) {
 		}
 		catch (Error &e) {
 			isRunning = false;
-			GLMessageBox::Display((char *)e.GetMsg(), "Error (Start)", GLDLG_OK, GLDLG_ICONERROR);
+			GLMessageBox::Display(e.GetMsg(), "Error (Start)", GLDLG_OK, GLDLG_ICONERROR);
 			return;
 		}
 
@@ -875,6 +978,19 @@ void Worker::StartStop(float appTime , size_t sMode) {
 
 	}
 
+}
+
+/**
+* \brief Function that inserts a list of new paramters at the beginning of the catalog parameters
+* \param newParams vector containing new parameters to be inserted
+* \return index to insert position
+*/
+size_t Worker::InsertParametersBeforeCatalog(const std::vector<Parameter>& newParams)
+{
+	size_t index = 0;
+	for (; index != parameters.size() && parameters[index].fromCatalog==false; index++);
+	parameters.insert(parameters.begin()+index, newParams.begin(), newParams.end()); //Insert to front (before catalog parameters)
+	return index; //returns insert position
 }
 
 /* //Moved to worker_shared.cpp
@@ -940,7 +1056,7 @@ void Worker::Update(float appTime) {
 					if (mApp->needsTexture || mApp->needsDirection) geom->BuildFacetTextures(buffer,mApp->needsTexture,mApp->needsDirection);
 				}
 				catch (Error &e) {
-					GLMessageBox::Display((char *)e.GetMsg(), "Error building texture", GLDLG_OK, GLDLG_ICONERROR);
+					GLMessageBox::Display(e.GetMsg(), "Error building texture", GLDLG_OK, GLDLG_ICONERROR);
 					ReleaseDataport(dpHit);
 					return;
 				}
@@ -953,6 +1069,12 @@ void Worker::Update(float appTime) {
 }
 */
 
+/**
+* \brief Function that updates the global hit counter with the cached value + releases the mutex
+* \param skipFacetHits TODO: check if not necessary anymore
+* 
+* Send total and facet hit counts to subprocesses
+*/
 void Worker::SendToHitBuffer(bool skipFacetHits ) {
 	if (dpHit) {
 		if (AccessDataport(dpHit)) {
@@ -975,7 +1097,7 @@ void Worker::ComputeAC(float appTime) {
 		if (needsReload) RealReload();
 	}
 	catch (Error &e) {
-		GLMessageBox::Display((char *)e.GetMsg(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
+		GLMessageBox::Display(e.GetMsg(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
 		return;
 	}
 	if (isRunning)
@@ -1016,6 +1138,10 @@ void Worker::ComputeAC(float appTime) {
 
 }
 
+/**
+* \brief Function that reloads the whole simulation (resets simulation, rebuilds ray tracing etc) and synchronises subprocesses to main process
+* \param sendOnly if only certain parts should be reloaded (geometry reloading / ray tracing tree)
+*/
 void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 	GLProgress *progressDlg = new GLProgress("Performing preliminary calculations on geometry...", "Passing Geometry to workers");
 	progressDlg->SetVisible(true);
@@ -1122,8 +1248,6 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 		CLOSEDP(loader);
 		char errMsg[1024];
 		sprintf(errMsg, "Failed to send geometry to sub process:\n%s", GetErrorDetails());
-		//GLMessageBox::Display(errMsg, "Warning (Load)", GLDLG_OK, GLDLG_ICONWARNING);
-		//return false;
 
 		progressDlg->SetVisible(false);
 		SAFE_DELETE(progressDlg);
@@ -1139,6 +1263,10 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 	SAFE_DELETE(progressDlg);
 }
 
+/**
+* \brief Serialization function for a binary cereal archive for the worker attributes
+* \return output string stream containing the result of the archiving
+*/
 std::ostringstream Worker::SerializeForLoader()
 {
 	//std::ofstream os("out.xml");
@@ -1161,12 +1289,16 @@ std::ostringstream Worker::SerializeForLoader()
 	return result;
 }
 
+/**
+* \brief Resets the hit counter and can reload the simulation
+* \param noReload if the whole simulation should not be reloaded
+*/
 void Worker::ClearHits(bool noReload) {
 	try {
 		if (!noReload && needsReload) RealReload();
 	}
 	catch (Error &e) {
-		GLMessageBox::Display((char *)e.GetMsg(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
+		GLMessageBox::Display(e.GetMsg(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
 		return;
 	}
 	if (dpHit) {
@@ -1177,6 +1309,10 @@ void Worker::ClearHits(bool noReload) {
 
 }
 
+/**
+* \brief Resets workers global hit cache
+* Reset function mainly used for initialisation / reload procedures
+*/
 void Worker::ResetWorkerStats() {
 
 	memset(&globalHitCache, 0, sizeof(GlobalHitBuffer));
@@ -1184,6 +1320,9 @@ void Worker::ResetWorkerStats() {
 
 }
 
+/**
+* \brief Starts the simulation process
+*/
 void Worker::Start() {
 
 	// Check that at least one desortion facet exists
@@ -1224,6 +1363,11 @@ return result;
 }
 */
 
+/**
+* \brief Adds a time serie to moments and returns the number of elements
+* \param newMoments vector containing a list of new moments that should be added
+* \return number of new moments that got added
+*/
 int Worker::AddMoment(std::vector<double> newMoments) {
 	int nb = (int)newMoments.size();
 	for (int i = 0; i < nb; i++)
@@ -1231,6 +1375,11 @@ int Worker::AddMoment(std::vector<double> newMoments) {
 	return nb;
 }
 
+/**
+* \brief Parses a user input and returns a vector of time moments
+* \param userInput string of format "%lf,%lf,%lf" describing start, interval and end for a list of new moments
+* \return vector containing parsed moments
+*/
 std::vector<double> Worker::ParseMoment(std::string userInput) {
 	std::vector<double> parsedResult;
 	double begin, interval, end;
@@ -1249,15 +1398,21 @@ std::vector<double> Worker::ParseMoment(std::string userInput) {
 	return parsedResult;
 }
 
+/**
+* \brief Resets/clears all moment variables
+*/
 void Worker::ResetMoments() {
 	displayedMoment = 0;
 	moments.clear();
 	userMoments.clear();
 }
 
-double Worker::GetMoleculesPerTP(size_t moment)
-//Returns how many physical molecules one test particle represents
-{
+/**
+* \brief Returns how many physical molecules one test particle represents
+* \param moment if there is constant flow or time-dependent mode
+* \return amount of physical molecules represented by one test particle
+*/
+double Worker::GetMoleculesPerTP(size_t moment) {
 	if (globalHitCache.globalHits.hit.nbDesorbed == 0) return 0; //avoid division by 0
 	if (moment == 0) {
 		//Constant flow
@@ -1272,7 +1427,7 @@ double Worker::GetMoleculesPerTP(size_t moment)
 }
 
 /* //Commenting out as deprecated
-void Worker::ImportDesorption_DES(char *fileName) {
+void Worker::ImportDesorption_DES(const char *fileName) {
 	//if (needsReload) RealReload();
 	// Read a file
 	FileReader *f = new FileReader(fileName);
@@ -1283,18 +1438,24 @@ void Worker::ImportDesorption_DES(char *fileName) {
 }
 */
 
-void Worker::ImportDesorption_SYN(char *fileName, const size_t &source, const double &time,
+/**
+* \brief Importing desorption data from a SYN file
+* \param fileName name of the input file
+* \param source what the source to calculate the dose is
+* \param time time to calculate the dose
+* \param mode mode used for outgassing calculation
+* \param eta0 coefficient for outgassing calculation in mode==1
+* \param alpha exponent for outgassing calculation in mode==1
+* \param cutoffdose cutoff dose for outgassing calculation in mode==1
+* \param convDistr distribution for outgassing calculation in mode==2
+* \param prg GLProgress window where visualising of the import progress is shown
+*/
+void Worker::ImportDesorption_SYN(const char *fileName, const size_t &source, const double &time,
 	const size_t &mode, const double &eta0, const double &alpha, const double &cutoffdose,
 	const std::vector<std::pair<double, double>> &convDistr,
 	GLProgress *prg) {
-	char *ext, *filebegin;
-	char tmp2[1024];
-	ext = strrchr(fileName, '.');
-	char CWD[MAX_PATH];
-	_getcwd(CWD, MAX_PATH);
-	if (ext == NULL || (!(_stricmp(ext, ".syn7z") == 0)) && (!(_stricmp(ext, ".syn") == 0)))
-		throw Error("ImportDesorption_SYN(): Invalid file extension [Only syn, syn7z]");
-	ext++;
+	std::string ext = FileUtils::GetExtension(fileName);
+	if (!Contains({"syn7z","syn"},ext)) throw Error("ImportDesorption_SYN(): Invalid file extension [Only syn, syn7z]");
 
 	// Read a file
 
@@ -1303,30 +1464,18 @@ void Worker::ImportDesorption_SYN(char *fileName, const size_t &source, const do
 	GLProgress *progressDlg = new GLProgress("Analyzing SYN file...", "Please wait");
 	progressDlg->SetProgress(0.0);
 	progressDlg->SetVisible(true);
-	bool isSYN7Z = (_stricmp(ext, "syn7z") == 0);
-	bool isSYN = (_stricmp(ext, "syn") == 0);
+	bool isSYN7Z = (iequals(ext, "syn7z") );
+	bool isSYN = (iequals(ext, "syn"));
 
 	if (isSYN || isSYN7Z) {
 		progressDlg->SetVisible(true);
 		try {
 			if (isSYN7Z) {
-				//decompress file
-				progressDlg->SetMessage("Decompressing file...");
-				char tmp[1024];
-				char fileOnly[512];
-				sprintf(tmp, "cmd /C \"pushd \"%s\"&&7za.exe x -t7z -aoa \"%s\" -otmp&&popd\"", CWD, fileName);
-				system(tmp);
-
-				filebegin = strrchr(fileName, '\\');
-				if (filebegin) filebegin++;
-				else filebegin = fileName;
-				memcpy(fileOnly, filebegin, sizeof(char)*(strlen(filebegin) - 2)); //remove ..7z from extension
-				fileOnly[strlen(filebegin) - 2] = '\0';
-				sprintf(tmp2, "%s\\tmp\\Geometry.syn", CWD);
-				f = new FileReader(tmp2); //decompressed file opened
+				f = ExtractFrom7zAndOpen(fileName, "Geometry.syn");
 			}
-
-			if (!isSYN7Z) f = new FileReader(fileName);  //original file opened
+			else {
+				f = new FileReader(fileName);  //original file opened
+			} 
 
 			geom->ImportDesorption_SYN(f, source, time, mode, eta0, alpha, cutoffdose, convDistr, prg);
 			CalcTotalOutgassing();
@@ -1345,12 +1494,18 @@ void Worker::ImportDesorption_SYN(char *fileName, const size_t &source, const do
 	}
 }
 
+/**
+* \brief To analyse desorption data from a SYN file
+* \param fileName name of the input file
+* \param nbFacet number of facets in the file
+* \param nbTextured number of textured facets in the file
+* \param nbDifferent (TODO: check usage)
+*/
 void Worker::AnalyzeSYNfile(const char *fileName, size_t *nbFacet, size_t *nbTextured, size_t *nbDifferent) {
 	std::string ext = FileUtils::GetExtension(fileName);
 	bool isSYN = (ext == "syn") || (ext == "SYN");
 	bool isSYN7Z = (ext == "syn7z") || (ext == "SYN7Z");
-	char CWD[MAX_PATH];
-	_getcwd(CWD, MAX_PATH);
+	
 	if (!(isSYN || isSYN7Z))
 		throw Error("AnalyzeSYNfile(): Invalid file extension [Only syn, syn7z]");
 
@@ -1367,16 +1522,11 @@ void Worker::AnalyzeSYNfile(const char *fileName, size_t *nbFacet, size_t *nbTex
 			if (isSYN7Z) {
 				//decompress file
 				progressDlg->SetMessage("Decompressing file...");
-				char tmp[1024];
-				sprintf(tmp, "cmd /C \"pushd \"%s\"&&7za.exe x -t7z -aoa \"%s\" -otmp&&popd\"", CWD, fileName);
-				system(tmp);
-
-				char tmp2[1024];
-				sprintf(tmp2, "%s\\tmp\\Geometry.syn", CWD);
-				f = new FileReader(tmp2); //decompressed file opened
+				f = ExtractFrom7zAndOpen(fileName, "Geometry.syn");
 			}
-
-			if (!isSYN7Z) f = new FileReader(fileName);  //original file opened
+			else {
+				f = new FileReader(fileName);  //original file opened
+			}
 
 			geom->AnalyzeSYNfile(f, progressDlg, nbFacet, nbTextured, nbDifferent, progressDlg);
 
@@ -1395,6 +1545,52 @@ void Worker::AnalyzeSYNfile(const char *fileName, size_t *nbFacet, size_t *nbTex
 	}
 }
 
+/**
+* \brief Extract a 7z file and return the file handle
+* \param fileName name of the input file
+* \param geomName name of the geometry file
+* \return handle to opened decompressed file
+*/
+FileReader* Worker::ExtractFrom7zAndOpen(const std::string & fileName, const std::string & geomName)
+{
+	std::ostringstream cmd;
+	std::string sevenZipName = "7za";
+
+#ifdef _WIN32
+	//Necessary push/pop trick to support UNC (network) paths in Windows command-line
+	auto CWD = FileUtils::get_working_path();
+	cmd << "cmd /C \"pushd \"" << CWD << "\"&&";
+	cmd << "7za.exe x -t7z -aoa \"" << fileName << "\" -otmp";
+#else
+	cmd << "./7za x -t7z -aoa \"" << fileName << "\" -otmp";
+#endif
+
+#ifdef _WIN32
+	cmd << "&&popd\"";
+#endif
+	system(cmd.str().c_str());
+
+	std::string toOpen, prefix;
+	std::string shortFileName = FileUtils::GetFilename(fileName);
+#ifdef _WIN32
+	prefix = CWD + "\\tmp\\";
+#else
+	prefix = "tmp/";
+#endif
+	toOpen = prefix + geomName;
+	if (!FileUtils::Exist(toOpen)) toOpen = prefix + (shortFileName).substr(0, shortFileName.length() - 2); //Inside the zip, try original filename with extension changed from geo7z to geo
+
+	return new FileReader(toOpen); //decompressed file opened
+}
+
+/**
+* \brief Do calculations necessary before launching simulation
+* determine latest moment
+* Generate integrated desorption functions
+* match parameters
+* Generate speed distribution functions
+* Angle map
+*/
 void Worker::PrepareToRun() {
 
 	//determine latest moment
@@ -1479,6 +1675,7 @@ void Worker::PrepareToRun() {
 			}
 		}
 
+		/* //First worker::update will do it
 		if (f->sh.anglemapParams.record) {
 			if (!f->sh.anglemapParams.hasRecorded) {
 				//Initialize angle map
@@ -1494,6 +1691,7 @@ void Worker::PrepareToRun() {
 				if (f->selected) needsAngleMapStatusRefresh = true;
 			}
 		}
+		*/
 	}
 
 	if (mApp->facetAdvParams && mApp->facetAdvParams->IsVisible() && needsAngleMapStatusRefresh)
@@ -1503,14 +1701,24 @@ void Worker::PrepareToRun() {
 	
 }
 
+/**
+* \brief Get ID (if it exists) of the Commulative Distribution Function (CFD) for a particular temperature (bin)
+* \param temperature temperature for the CFD
+* \return ID of the CFD
+*/
 int Worker::GetCDFId(double temperature) {
 
 	int i;
-	for (i = 0; i<(int)temperatures.size() && (abs(temperature - temperatures[i])>1E-5); i++); //check if we already had this temperature
+	for (i = 0; i<(int)temperatures.size() && (std::abs(temperature - temperatures[i])>1E-5); i++); //check if we already had this temperature
 	if (i >= (int)temperatures.size()) i = -1; //not found
 	return i;
 }
 
+/**
+* \brief Generate a new Commulative Distribution Function (CFD) for a particular temperature (bin)
+* \param temperature for the CFD
+* \return Previous size of temperatures vector, which determines new ID
+*/
 int Worker::GenerateNewCDF(double temperature){
 	size_t i = temperatures.size();
 	temperatures.push_back(temperature);
@@ -1518,6 +1726,11 @@ int Worker::GenerateNewCDF(double temperature){
 	return (int)i;
 }
 
+/**
+* \brief Generate a new ID (integrated desorption) for desorption parameter for time-dependent simulations
+* \param paramId parameter ID
+* \return Previous size of IDs vector, which determines new id in the vector
+*/
 int Worker::GenerateNewID(int paramId){
 	size_t i = desorptionParameterIDs.size();
 	desorptionParameterIDs.push_back(paramId);
@@ -1525,6 +1738,11 @@ int Worker::GenerateNewID(int paramId){
 	return (int)i;
 }
 
+/**
+* \brief Get ID (if it exists) of the integrated desorption (ID) function for a particular paramId
+* \param paramId parameter ID
+* \return Id of the integrated desorption function
+*/
 int Worker::GetIDId(int paramId) {
 
 	int i;
@@ -1534,6 +1752,9 @@ int Worker::GetIDId(int paramId) {
 
 }
 
+/**
+* \brief Compute the outgassing of all source facet depending on the mode (file, regular, time-dependent) and set it to the global settings
+*/
 void Worker::CalcTotalOutgassing() {
 	// Compute the outgassing of all source facet
 	wp.totalDesorbedMolecules = wp.finalOutgassingRate_Pa_m3_sec = wp.finalOutgassingRate = 0.0;
@@ -1569,6 +1790,13 @@ void Worker::CalcTotalOutgassing() {
 
 }
 
+/**
+* \brief Generate cumulative distribution function (CFD) for the velocity
+* \param gasTempKelvins gas temperature in Kelvin
+* \param gasMassGramsPerMol molar gas mass in grams per mol
+* \param size amount of points/bins of the CFD
+* \return CFD as a Vector containing a pair of double values (x value = speed_bin, y value = cumulated value)
+*/
 std::vector<std::pair<double, double>> Worker::Generate_CDF(double gasTempKelvins, double gasMassGramsPerMol, size_t size){
 	std::vector<std::pair<double, double>> cdf; cdf.reserve(size);
 	double Kb = 1.38E-23;
@@ -1608,6 +1836,11 @@ std::vector<std::pair<double, double>> Worker::Generate_CDF(double gasTempKelvin
 	return cdf;
 }
 
+/**
+* \brief Generate integrated desorption (ID) function
+* \param paramId parameter identifier
+* \return ID as a Vector containing a pair of double values (x value = moment, y value = desorption value)
+*/
 std::vector<std::pair<double, double>> Worker::Generate_ID(int paramId){
 	std::vector<std::pair<double, double>> ID;
 	//First, let's check at which index is the latest moment
@@ -1663,6 +1896,11 @@ std::vector<std::pair<double, double>> Worker::Generate_ID(int paramId){
 
 }
 
+/**
+* \brief Get ID of a parameter (if it exists) for a corresponding name
+* \param name name of the parameter that shall be looked up
+* \return ID corresponding to the found parameter
+*/
 int Worker::GetParamId(const std::string name) {
 	int foundId = -1;
 	for (int i = 0; foundId == -1 && i < (int)parameters.size(); i++)
@@ -1671,7 +1909,7 @@ int Worker::GetParamId(const std::string name) {
 }
 
 
-/*DWORD Worker::ZipThreadProc(char* fileNameWithXML, char* fileNameWithXMLzip)
+/*size_t Worker::ZipThreadProc(char* fileNameWithXML, char* fileNameWithXMLzip)
 {
 HZIP hz = CreateZip(fileNameWithXMLzip, 0);
 if (!hz) {
@@ -1686,6 +1924,9 @@ CloseZip(hz);
 return 0;
 }*/
 
+/**
+* \brief Saves current facet hit counter from cache to results
+*/
 void Worker::SendFacetHitCounts(Dataport* dpHit) {
 	size_t nbFacet = geom->GetNbFacet();
 	for (size_t i = 0; i < nbFacet; i++) {

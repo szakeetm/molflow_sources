@@ -82,7 +82,7 @@ public:
 	size_t GetMaxElemNumber();
 
 	// Texture scaling
-	TEXTURE_SCALE_TYPE texture_limits[3];   // Min/max values for texture scaling: Pressure/Impingement rate/Density
+	//TEXTURE_SCALE_TYPE texture_limits[3];   // Min/max values for texture scaling: Pressure/Impingement rate/Density
 	bool  texAutoScaleIncludeConstantFlow;  // Include constant flow when calculating autoscale values
 
 	

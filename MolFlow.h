@@ -19,8 +19,6 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 #pragma once
 
-#include <crtdbg.h> //To debug heap corruptions in memory
-
 #include "Interface.h"
 class Worker;
 class ImportDesorption;
@@ -75,6 +73,7 @@ public:
 	float GetAppTime();
 	void ClearParameters();
 	void UpdatePlotters();
+	void RefreshPlotterCombos();
 
 	//Flow/sticking coeff. conversion
 	void calcFlow();

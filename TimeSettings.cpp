@@ -31,6 +31,9 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 extern MolFlow *mApp;
 
+/**
+* \brief Constructor with initialisation for Time settings window (Time/Time settings)
+*/
 TimeSettings::TimeSettings(Worker *w):GLWindow() {
 
   int wD = 170;
@@ -87,6 +90,11 @@ TimeSettings::TimeSettings(Worker *w):GLWindow() {
 
 }
 
+/**
+* \brief Function for processing various inputs (button, check boxes etc.)
+* \param src Exact source of the call
+* \param message Type of the source (button)
+*/
 void TimeSettings::ProcessMessage(GLComponent *src,int message) {
   int id;
   int nbMoments=(int)work->moments.size();
@@ -147,7 +155,7 @@ void TimeSettings::ProcessMessage(GLComponent *src,int message) {
 		try {
 		  work->Update(0.0f);//update displayed profiles and textures, facet hits, etc
 	  } catch(Error &e) {
-		  GLMessageBox::Display((char *)e.GetMsg(),"Error (Worker::Update)",GLDLG_OK,GLDLG_ICONERROR);
+		  GLMessageBox::Display(e.GetMsg(),"Error (Worker::Update)",GLDLG_OK,GLDLG_ICONERROR);
 	  } 
 	  mApp->UpdatePlotters();
 	  if (mApp->facetDetails) mApp->facetDetails->Update();
@@ -168,6 +176,9 @@ void TimeSettings::ProcessMessage(GLComponent *src,int message) {
   GLWindow::ProcessMessage(src,message);
 }
 
+/**
+* \brief Refreshes the labels and button texts in the window
+*/
 void TimeSettings::RefreshMoments() {
 	timeLabel->SetText("Constant Flow");
 	timeId->SetText("0");

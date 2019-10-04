@@ -31,11 +31,13 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLWindowManager.h"
 #include "GLApp/MathTools.h"
-#include "GLApp/GLMenubar.h"
+#include "GLApp/GLMenuBar.h"
 #include "GLApp/GLButton.h"
 #include "GLApp/GLLabel.h"
 #include "GLApp/GLCombo.h"
 #include "GLApp/GLTextField.h"
+
+#include "GLApp/MathTools.h"
 #include "RecoveryDialog.h"
 #include "direct.h"
 #include <vector>
@@ -43,7 +45,10 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <io.h>
 #include <thread>
 #include <numeric> //std::iota
-
+#include <filesystem>
+#ifndef _WIN32
+#include <unistd.h> //chdir
+#endif
 #include "Interface.h"
 #include "AppUpdater.h"
 #include "Worker.h"
@@ -82,9 +87,9 @@ static const char *fileDesFilters = "Desorption files\0*.des\0All files\0*.*\0";
 */
 
 //NativeFileDialog compatible file filters
-std::string fileLoadFilters = "txt,xml,zip,geo,geo7z,syn,syn7z,str,stl,ase";
-std::string fileInsertFilters = "txt,xml,zip,geo,geo7z,syn,syn7z,stl";
-std::string fileSaveFilters = "xml,zip,geo,geo7z,txt";
+std::string fileLoadFilters = "txt,xml,zip,stl,str,ase,geo,syn,geo7z,syn7z";
+std::string fileInsertFilters = "txt,xml,zip,stl,geo,syn,geo7z,syn7z";
+std::string fileSaveFilters = "xml,zip,txt,geo,geo7z";
 std::string fileSelFilters = "sel";
 std::string fileTexFilters = "txt";
 std::string fileProfFilters = "csv;txt";
@@ -92,7 +97,7 @@ std::string fileProfFilters = "csv;txt";
 
 int cSize = 4;
 int   cWidth[] = { 30, 56, 50, 50 };
-char *cName[] = { "#", "Hits", "Des", "Abs" };
+const char* cName[] = { "#", "Hits", "Des", "Abs" };
 
 std::vector<string> formulaPrefixes = { "A","D","H","MCH","P","DEN","Z","V","T","AR","a","d","h","mch","p","den","z","v","t","ar","," };
 std::string formulaSyntax =
@@ -168,24 +173,31 @@ MolFlow *mApp;
 // Desc: Entry point to the program. Initializes everything, and goes into a
 //       message-processing loop. Idle time is used to render the scene.
 
-INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, INT)
+//INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, INT) //Can be replaced with main() if including SDL2Main.lib
+int main(int argc, char* argv[])
 {
 	MolFlow *mApp = new MolFlow();
 
+#ifndef _WIN32
+	//Change working directory to executable path (if launched by dbl-click)
+	std::string myPath = FileUtils::GetPath(argv[0]);
+	if (!myPath.empty()) chdir(myPath.c_str());
+#endif
+
 	if (!mApp->Create(1024, 800, false)) {
 		char *logs = GLToolkit::GetLogs();
-#ifdef WIN
+#ifdef _WIN32
 		if (logs) MessageBox(NULL, logs, "Molflow [Fatal error]", MB_OK);
 #else
 		if (logs) {
 			printf("Molflow [Fatal error]\n");
-			printf(logs);
+			printf("%s", logs);
 		}
 #endif
 		SAFE_FREE(logs);
 		delete mApp;
 		return -1;
-	}
+}
 	try {
 		mApp->Run();
 	}
@@ -230,32 +242,30 @@ MolFlow::MolFlow()
 
 void MolFlow::LoadParameterCatalog()
 {
-	//Parameters from catalog
-	//Find in parameter_catalog folder
-	intptr_t file;
-	_finddata_t filedata;
-	file = _findfirst("parameter_catalog\\*.csv", &filedata);
-	if (file != -1)
-	{
-		do
-		{
+	std::filesystem::path catalogPath = "parameter_catalog"; //string (POSIX) or wstring (Windows)
+	if (!std::filesystem::exists(catalogPath)) return; //No param_catalog directory
+	for (const auto & p : std::filesystem::directory_iterator(catalogPath)) {
+		if (p.path().extension() == ".csv") {
+
+			std::string csvPath = p.path().u8string();
+			std::string csvName = p.path().filename().u8string();
+
 			Parameter newParam;
 			newParam.fromCatalog = true;
 			newParam.isLogLog = true; //For now
-			std::stringstream parName; parName /*<< "["*/ << filedata.name << " [catalog]";
-			newParam.name = parName.str();
+			newParam.name = "[catalog] " + csvName;
 
 			std::vector<std::vector<string>> table;
 			try {
-				std::stringstream pathAndName; pathAndName << "parameter_catalog\\" << filedata.name;
-				FileReader *f = new FileReader(pathAndName.str());
+
+				FileReader *f = new FileReader(csvPath);
 				table = worker.ImportCSV_string(f);
 				SAFE_DELETE(f);
 			}
 			catch (Error &e) {
 				char errMsg[512];
 				sprintf(errMsg, "Failed to load CSV file.\n%s", e.GetMsg());
-				GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
+				//GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR); //Can't display dialog window: interface not yet initialized
 				continue;
 			}
 			//Parse
@@ -263,7 +273,7 @@ void MolFlow::LoadParameterCatalog()
 				std::vector<std::string> row = table[i];
 				if (row.size() != 2) {
 					std::stringstream errMsg;
-					errMsg << filedata.name << " Row " << i + 1 << "has " << row.size() << " values instead of 2.";
+					errMsg << p.path().filename() << " Row " << i + 1 << "has " << row.size() << " values instead of 2.";
 					GLMessageBox::Display(errMsg.str().c_str(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 					break;
 				}
@@ -290,11 +300,9 @@ void MolFlow::LoadParameterCatalog()
 					newParam.AddPair(valueX, valueY, true); //insert in correct position
 				}
 			}
-
 			worker.parameters.push_back(newParam);
-		} while (_findnext(file, &filedata) == 0);
+		}
 	}
-	_findclose(file);
 }
 
 int MolFlow::OneTimeSceneInit()
@@ -481,7 +489,7 @@ int MolFlow::OneTimeSceneInit()
 	facetList->SetSelectionMode(MULTIPLE_ROW);
 	facetList->SetSize(4, 0);
 	facetList->SetColumnWidths((int*)cWidth);
-	facetList->SetColumnLabels((char **)cName);
+	facetList->SetColumnLabels((const char**)cName);
 	facetList->SetColumnLabelVisible(true);
 	facetList->Sortable = true;
 	Add(facetList);
@@ -861,7 +869,7 @@ void MolFlow::ApplyFacetParams() {
 	// Mark "needsReload" to sync changes with workers on next simulation start
 	try { worker.Reload(); }
 	catch (Error &e) {
-		GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
+		GLMessageBox::Display(e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
 	}
 	worker.CalcTotalOutgassing();
@@ -1326,7 +1334,6 @@ void MolFlow::CopyAngleMapToClipboard()
 void MolFlow::ClearAngleMapsOnSelection() {
 	//if (AskToReset()) {
 		Geometry *geom = worker.GetGeometry();
-		std::vector<size_t> angleMapFacetIndices;
 		for (size_t i = 0; i < geom->GetNbFacet(); i++) {
 			Facet* f = geom->GetFacet(i);
 			if (f->selected && f->sh.anglemapParams.hasRecorded) {
@@ -1464,7 +1471,7 @@ void MolFlow::LoadFile(std::string fileName) {
 		if (timewisePlotter) timewisePlotter->Refresh();
 		if (histogramPlotter) histogramPlotter->Reset();
 		if (histogramSettings) histogramSettings->Refresh({});
-		//if (profilePlotter) profilePlotter->Refresh(); //Might have loaded views
+		if (profilePlotter) profilePlotter->Refresh();
 		if (texturePlotter) texturePlotter->Update(0.0,true);
 		//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 		if (textureScaling) textureScaling->Update();
@@ -1475,6 +1482,7 @@ void MolFlow::LoadFile(std::string fileName) {
 		if (movement) movement->Update();
 		if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 		if (formulaEditor) formulaEditor->Refresh();
+		if (parameterEditor) parameterEditor->Refresh();
 	}
 	catch (Error &e) {
 
@@ -1542,9 +1550,8 @@ void MolFlow::InsertGeometry(bool newStr,std::string fileName) {
 
 		//worker.LoadTexturesGEO(fullName);
 		UpdateStructMenu();
-		if (profilePlotter) profilePlotter->Reset();
-		if (pressureEvolution) pressureEvolution->Reset();
-		if (timewisePlotter) timewisePlotter->Reset();
+
+		
 		//UpdateCurrentDir(fullName);
 
 		geom->CheckCollinear();
@@ -1564,14 +1571,15 @@ void MolFlow::InsertGeometry(bool newStr,std::string fileName) {
 		viewer[3]->ToFrontView();
 		SelectViewer(0);
 		*/
+		RefreshPlotterCombos();
+		//UpdatePlotters();
 		
-		UpdatePlotters();
 		if (outgassingMap) outgassingMap->Update(m_fTime, true);
 		if (facetDetails) facetDetails->Update();
 		if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 		if (vertexCoordinates) vertexCoordinates->Update();
 		if (formulaEditor) formulaEditor->Refresh();
-
+		if (parameterEditor) parameterEditor->Refresh();
 	}
 	catch (Error &e) {
 
@@ -1587,8 +1595,15 @@ void MolFlow::InsertGeometry(bool newStr,std::string fileName) {
 }
 
 void MolFlow::ClearParameters() {
-	worker.parameters = std::vector<Parameter>();
-	if (parameterEditor) parameterEditor->UpdateCombo();
+	auto iter = worker.parameters.begin();
+	while (iter != worker.parameters.end()) {
+		//Delete non-catalog parameters
+		if (!iter->fromCatalog)
+			iter = worker.parameters.erase(iter);
+		else
+			++iter;
+	}
+	if (parameterEditor) parameterEditor->Refresh();
 }
 
 void MolFlow::StartStopSimulation() {
@@ -1745,7 +1760,8 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 					worker.CalcTotalOutgassing();
 					//geom->CheckIsolatedVertex();
 					UpdateModelParams();
-					UpdatePlotters();
+					RefreshPlotterCombos();
+					//UpdatePlotters();
 					if (vertexCoordinates) vertexCoordinates->Update();
 					if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 					// Send to sub process
@@ -1814,7 +1830,6 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			break;
 		case MENU_TIME_PARAMETER_EDITOR:
 			if (parameterEditor == NULL) parameterEditor = new ParameterEditor(&worker);
-			parameterEditor->UpdateCombo();
 			parameterEditor->SetVisible(true);
 			break;
 		case MENU_TIMEWISE_PLOTTER:
@@ -1840,7 +1855,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 						// Send to sub process
 						try { worker.Reload(); }
 						catch (Error &e) {
-							GLMessageBox::Display((char *)e.GetMsg(), "Error reloading worker", GLDLG_OK, GLDLG_ICONERROR);
+							GLMessageBox::Display(e.GetMsg(), "Error reloading worker", GLDLG_OK, GLDLG_ICONERROR);
 						}
 					}
 				}
@@ -2041,7 +2056,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		else if (src == compACBtn) {
 			try { lastUpdate = 0.0; worker.ComputeAC(m_fTime); }
 			catch (Error &e) {
-				GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
+				GLMessageBox::Display(e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
 			break;
@@ -2049,7 +2064,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		else if (src == singleACBtn) {
 			try { lastUpdate = 0.0; worker.StepAC(m_fTime); }
 			catch (Error &e) {
-				GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
+				GLMessageBox::Display(e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
 			break;
@@ -2095,7 +2110,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 		worker.ResetMoments();
 	}
 	catch (Error &e) {
-		GLMessageBox::Display((char *)e.GetMsg(), "Error building pipe", GLDLG_OK, GLDLG_ICONERROR);
+		GLMessageBox::Display(e.GetMsg(), "Error building pipe", GLDLG_OK, GLDLG_ICONERROR);
 		geom->Clear();
 		return;
 	}
@@ -2169,7 +2184,7 @@ void MolFlow::EmptyGeometry() {
 		worker.ResetMoments();
 	}
 	catch (Error &e) {
-		GLMessageBox::Display((char *)e.GetMsg(), "Error resetting geometry", GLDLG_OK, GLDLG_ICONERROR);
+		GLMessageBox::Display(e.GetMsg(), "Error resetting geometry", GLDLG_OK, GLDLG_ICONERROR);
 		geom->Clear();
 		return;
 	}
@@ -2224,7 +2239,8 @@ void MolFlow::EmptyGeometry() {
 	UpdateTitle();
 	changedSinceSave = false;
 	ResetAutoSaveTimer();
-	UpdatePlotters();
+	RefreshPlotterCombos();
+	//UpdatePlotters();
 }
 
 void MolFlow::LoadConfig() {
@@ -2295,10 +2311,10 @@ void MolFlow::LoadConfig() {
 			viewer[i]->transStep = f->ReadDouble();
 		f->ReadKeyword("dispNumLines"); f->ReadKeyword(":");
 		for (int i = 0; i < MAX_VIEWER; i++)
-			viewer[i]->dispNumHits = f->ReadLLong();
+			viewer[i]->dispNumHits = f->ReadSizeT();
 		f->ReadKeyword("dispNumLeaks"); f->ReadKeyword(":");
 		for (int i = 0; i < MAX_VIEWER; i++)
-			viewer[i]->dispNumLeaks = f->ReadLLong();
+			viewer[i]->dispNumLeaks = f->ReadSizeT();
 		f->ReadKeyword("dirShow"); f->ReadKeyword(":");
 		for (int i = 0; i < MAX_VIEWER; i++)
 			viewer[i]->showDir = f->ReadInt();
@@ -2344,7 +2360,7 @@ void MolFlow::LoadConfig() {
 		geom->texture_limits[2].autoscale.max.moments_only = f->ReadDouble();
 
 		f->ReadKeyword("processNum"); f->ReadKeyword(":");
-		nbProc = f->ReadLLong();
+		nbProc = f->ReadSizeT();
 #ifdef _DEBUG
 		nbProc = 1;
 #endif
@@ -2352,7 +2368,7 @@ void MolFlow::LoadConfig() {
 		f->ReadKeyword("recents"); f->ReadKeyword(":"); f->ReadKeyword("{");
 		w = f->ReadString();
 		while (strcmp(w, "}") != 0 && nbRecent < MAX_RECENT) {
-			recents[nbRecent] = _strdup(w);
+			recents[nbRecent] = strdup(w);
 			nbRecent++;
 			w = f->ReadString();
 		}
@@ -2392,6 +2408,8 @@ void MolFlow::LoadConfig() {
 		worker.ontheflyParams.lowFluxCutoff = f->ReadDouble();
 		f->ReadKeyword("leftHandedView"); f->ReadKeyword(":");
 		leftHandedView = f->ReadInt();
+		f->ReadKeyword("highlightNonplanarFacets"); f->ReadKeyword(":");
+		highlightNonplanarFacets = f->ReadInt();
 	}
 	catch (...) {
 		/*std::ostringstream tmp;
@@ -2522,6 +2540,7 @@ void MolFlow::SaveConfig() {
 		f->Write("lowFluxMode:"); f->Write(worker.ontheflyParams.lowFluxMode, "\n");
 		f->Write("lowFluxCutoff:"); f->Write(worker.ontheflyParams.lowFluxCutoff, "\n");
 		f->Write("leftHandedView:"); f->Write(leftHandedView, "\n");
+		f->Write("highlightNonplanarFacets:"); f->Write(highlightNonplanarFacets, "\n");
 	}
 	catch (Error &err) {
 		GLMessageBox::Display(err.GetMsg(), "Error saving config file", GLDLG_OK, GLDLG_ICONWARNING);
@@ -2560,7 +2579,7 @@ void MolFlow::calcSticking() {
 	facetTemperature->GetNumber(&temperature);
 	//facetMass->GetNumber(&mass);
 
-	sticking = abs(outgassing / (area / 10.0)*4.0*sqrt(1.0 / 8.0 / 8.31 / (temperature)*PI*(worker.wp.gasMass*0.001)));
+	sticking = std::abs(outgassing / (area / 10.0)*4.0*sqrt(1.0 / 8.0 / 8.31 / (temperature)*PI*(worker.wp.gasMass*0.001)));
 	//if (sticking<=1.0) {
 	facetSticking->SetText(sticking);
 	//}
@@ -2573,7 +2592,7 @@ void MolFlow::calcSticking() {
 
 void MolFlow::CrashHandler(Error *e) {
 	char tmp[1024];
-	sprintf(tmp, "Well, that's emberassing. Molflow crashed and will exit now.\nBefore that, an autosave will be attempted.\nHere is the error info:\n\n%s", (char *)e->GetMsg());
+	sprintf(tmp, "Well, that's emberassing. Molflow crashed and will exit now.\nBefore that, an autosave will be attempted.\nHere is the error info:\n\n%s", e->GetMsg());
 	GLMessageBox::Display(tmp, "Main crash handler", GLDLG_OK, GLDGL_ICONDEAD);
 	try {
 		if (AutoSave(true))
@@ -2643,25 +2662,25 @@ bool MolFlow::EvaluateVariable(VLIST *v) {
 		ok = (idx > 0 && idx <= nbFacet);
 		if (ok) v->value = geom->GetFacet(idx - 1)->sh.area;
 	}
-	else if (_stricmp(v->name, "SUMDES") == 0) {
+	else if (iequals(v->name, "SUMDES")) {
 		v->value = (double)worker.globalHitCache.globalHits.hit.nbDesorbed;
 	}
-	else if (_stricmp(v->name, "SUMABS") == 0) {
+	else if (iequals(v->name, "SUMABS")) {
 		v->value = worker.globalHitCache.globalHits.hit.nbAbsEquiv;
 	}
-	else if (_stricmp(v->name, "SUMMCHIT") == 0) {
+	else if (iequals(v->name, "SUMMCHIT")) {
 		v->value = (double)worker.globalHitCache.globalHits.hit.nbMCHit;
 	}
-	else if (_stricmp(v->name, "SUMHIT") == 0) {
+	else if (iequals(v->name, "SUMHIT")) {
 		v->value = worker.globalHitCache.globalHits.hit.nbHitEquiv;
 	}
-	else if (_stricmp(v->name, "MPP") == 0) {
+	else if (iequals(v->name, "MPP")) {
 		v->value = worker.globalHitCache.distTraveled_total / (double)worker.globalHitCache.globalHits.hit.nbDesorbed;
 	}
-	else if (_stricmp(v->name, "MFP") == 0) {
+	else if (iequals(v->name, "MFP")) {
 		v->value = worker.globalHitCache.distTraveledTotal_fullHitsOnly / worker.globalHitCache.globalHits.hit.nbHitEquiv;
 	}
-	else if (_stricmp(v->name, "DESAR") == 0) {
+	else if (iequals(v->name, "DESAR")) {
 		double sumArea = 0.0;
 		for (int i2 = 0; i2 < geom->GetNbFacet(); i2++) {
 			Facet *f_tmp = geom->GetFacet(i2);
@@ -2669,7 +2688,7 @@ bool MolFlow::EvaluateVariable(VLIST *v) {
 		}
 		v->value = sumArea;
 	}
-	else if (_stricmp(v->name, "ABSAR") == 0) {
+	else if (iequals(v->name, "ABSAR")) {
 		double sumArea = 0.0;
 
 		for (int i2 = 0; i2 < geom->GetNbFacet(); i2++) {
@@ -2678,25 +2697,25 @@ bool MolFlow::EvaluateVariable(VLIST *v) {
 		}
 		v->value = sumArea;
 	}
-	else if (_stricmp(v->name, "QCONST") == 0) {
+	else if (iequals(v->name, "QCONST")) {
 		v->value = worker.wp.finalOutgassingRate_Pa_m3_sec*10.00; //10: Pa*m3/sec -> mbar*l/s
 	}
-	else if (_stricmp(v->name, "QCONST_N") == 0) {
+	else if (iequals(v->name, "QCONST_N")) {
 		v->value = worker.wp.finalOutgassingRate;
 	}
-	else if (_stricmp(v->name, "NTOT") == 0) {
+	else if (iequals(v->name, "NTOT")) {
 		v->value = worker.wp.totalDesorbedMolecules;
 	}
-	else if (_stricmp(v->name, "GASMASS") == 0) {
+	else if (iequals(v->name, "GASMASS")) {
 		v->value = worker.wp.gasMass;
 	}
-	else if (_stricmp(v->name, "KB") == 0) {
+	else if (iequals(v->name, "KB")) {
 		v->value = 1.3806504e-23;
 	}
-	else if (_stricmp(v->name, "R") == 0) {
+	else if (iequals(v->name, "R")) {
 		v->value = 8.314472;
 	}
-	else if (_stricmp(v->name, "Na") == 0) {
+	else if (iequals(v->name, "Na")) {
 		v->value = 6.02214179e23;
 	}
 	else if ((beginsWith(v->name, "SUM(") || beginsWith(v->name, "sum(") || beginsWith(v->name, "AVG(") || beginsWith(v->name, "avg(")) && endsWith(v->name, ")")) {
@@ -2710,7 +2729,7 @@ bool MolFlow::EvaluateVariable(VLIST *v) {
 				return false;
 		}
 		else {
-			if (!Contains({ "MCH","H","D","A","mch","h","d","a" }, tokens[0]))
+			if (!Contains({ "MCH","H","D","A","AR","mch","h","d","a","ar" }, tokens[0]))
 				return false;
 		}
 		std::vector<size_t> facetsToSum;
@@ -2744,7 +2763,7 @@ bool MolFlow::EvaluateVariable(VLIST *v) {
 				facetsToSum = selections[selGroupId - 1].selection;
 			}
 		}
-		llong sumLL=0;
+		size_t sumLL=0;
 		double sumD=0.0;
 		double sumArea = 0.0; //We average by area
 		for (auto& sel : facetsToSum) {
@@ -2789,6 +2808,13 @@ void MolFlow::UpdatePlotters() {
 	if (profilePlotter) profilePlotter->Update(m_fTime, true);
 	if (texturePlotter) texturePlotter->Update(m_fTime, true);
 	if (histogramPlotter) histogramPlotter->Update(m_fTime,true);
+}
+
+void MolFlow::RefreshPlotterCombos() {
+	if (pressureEvolution) pressureEvolution->Refresh();
+	if (timewisePlotter) timewisePlotter->Refresh();
+	if (profilePlotter) profilePlotter->Refresh();
+	if (histogramPlotter) histogramPlotter->Refresh();
 }
 
 void MolFlow::UpdateFacetHits(bool allRows) {

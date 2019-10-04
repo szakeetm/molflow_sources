@@ -50,7 +50,7 @@ private:
 
   char *GetCountStr(Facet *f);
   void UpdateTable();
-  char *FormatCell(size_t idx,Facet *f,size_t mode);
+  char *FormatCell(size_t idx,Facet *f, size_t mode);
   void PlaceComponents();
 
   Worker      *worker;
