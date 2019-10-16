@@ -335,14 +335,6 @@ void ParameterEditor::UpdateCombo() {
 	else if (selectorCombo->GetSelectedIndex() > (int)selectorCombo->GetNbRow() - 1) selectorCombo->SetSelectedIndex((int)selectorCombo->GetNbRow() - 1); //Select last (probably just deleted the last)
 	if (selectorCombo->GetSelectedIndex() > 0) deleteButton->SetEnabled(true);
 	if (selectorCombo->GetSelectedIndex()==0) PrepareForNewParam(); //If "New..." selected
-	for (size_t i = 0; i < work->parameters.size(); i++) {
-		selectorCombo->SetValueAt((int)i + 1, work->parameters[i].name.c_str());
-	}
-
-	if (selectorCombo->GetSelectedIndex() < 1) selectorCombo->SetSelectedIndex(selectorCombo->GetNbRow() > 1 ? 1 : 0); //Select first param, otherwise "New..."
-	else if (selectorCombo->GetSelectedIndex() > (int)selectorCombo->GetNbRow() - 1) selectorCombo->SetSelectedIndex((int)selectorCombo->GetNbRow() - 1); //Select last (probably just deleted the last)
-	if (selectorCombo->GetSelectedIndex() > 0) deleteButton->SetEnabled(true);
-	if (selectorCombo->GetSelectedIndex() == 0) Reset(); //If "New..." selected
 }
 
 /**
@@ -531,9 +523,6 @@ bool ParameterEditor::ValidateInput() {
 */
 void ParameterEditor::UpdateUserValues() {
 	userValues = std::vector<std::pair<std::string, std::string>>();
-	//nameField->SetText("");
-	if (selectorCombo->GetSelectedIndex()>0 && selectorCombo->GetSelectedIndex()-1 <(int)work->parameters.size()) {
-		Parameter *getParam = &work->parameters[selectorCombo->GetSelectedIndex()-1];
 	//nameField->SetText("");
 	if (selectorCombo->GetSelectedIndex() > 0 && selectorCombo->GetSelectedIndex() - 1 < (int)work->parameters.size()) {
 		Parameter *getParam = &work->parameters[selectorCombo->GetSelectedIndex() - 1];

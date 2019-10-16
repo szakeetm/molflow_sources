@@ -26,6 +26,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
+#include "GPUSim/SimulationOptiX.h"
 
 #include "Simulation.h"
 #ifdef WIN
@@ -54,7 +55,7 @@ static char      loadDpName[32];
 static char		 logDpName[32];
 static char      hitsDpName[32];
 
-bool end = false;
+bool endState = false;
 bool IsProcessRunning(DWORD pid);
 
 void GetState() {
@@ -74,13 +75,13 @@ void GetState() {
 	if (!IsProcessRunning(hostProcessId)) {
 		printf("Host synrad.exe (process id %d) not running. Closing.",hostProcessId);
 		SetErrorSub("Host synrad.exe not running. Closing subprocess.");
-		end = true;
+		endState = true;
 	}
   } else {
 	  printf("Subprocess couldn't connect to Molflow.\n");
 	  SetErrorSub("No connection to main program. Closing subprocess.");
 	  Sleep(5000);
-	  end = true;
+	  endState = true;
   }
 }
 
@@ -333,14 +334,16 @@ int main(int argc,char* argv[])
   printf("Connected to %s (%zd bytes), molflowSub.exe #%d\n",ctrlDpName,sizeof(SHCONTROL),prIdx);
 
   InitSimulation(); //Creates sHandle instance
-
+#ifdef GPU_MODE
+    SimulationOptiX gpuSim;
+#endif
   // Sub process ready
   SetReady();
 
   // Main loop
-  while( !end ) {
+  while( !endState ) {
 	GetState();
-    switch(prState) {
+      switch(prState) {
 
       case COMMAND_LOAD:
         printf("COMMAND: LOAD (%zd,%llu)\n",prParam,prParam2);
@@ -372,6 +375,9 @@ int main(int argc,char* argv[])
       case COMMAND_START:
         printf("COMMAND: START (%zd,%llu)\n",prParam,prParam2);
         if( sHandle->loadOK ) {
+#ifdef GPU_MODE
+            gpuSim.LoadSimulation(sHandle->vertices3,sHandle->structures);
+#endif
           if( StartSimulation(prParam) )
             SetState(PROCESS_RUN,GetSimuStatus());
           else {
@@ -399,10 +405,13 @@ int main(int argc,char* argv[])
 
       case COMMAND_EXIT:
         printf("COMMAND: EXIT (%zd,%llu)\n",prParam,prParam2);
-        end = true;
+        endState = true;
         break;
 
       case COMMAND_CLOSE:
+#ifdef GPU_MODE
+              //gpuSim.CloseSimulation();
+#endif
         printf("COMMAND: CLOSE (%zd,%llu)\n",prParam,prParam2);
         ClearSimulation();
         CLOSEDP(dpHit);
@@ -430,6 +439,9 @@ int main(int argc,char* argv[])
       case PROCESS_RUN:
         SetStatus(GetSimuStatus()); //update hits only
         eos = SimulationRun();      // Run during 1 sec
+#ifdef GPU_MODE
+              gpuSim.RunSimulation();
+#endif
 		if (dpHit && (GetLocalState() != PROCESS_ERROR)) UpdateHits(dpHit,dpLog,prIdx,20); // Update hit with 20ms timeout. If fails, probably an other subprocess is updating, so we'll keep calculating and try it later (latest when the simulation is stopped).
         if(eos) {
           if( GetLocalState()!=PROCESS_ERROR ) {
