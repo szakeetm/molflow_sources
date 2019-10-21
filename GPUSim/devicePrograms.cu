@@ -112,7 +112,7 @@ namespace osc {
                     );
                 }
             }
-        }*/
+        }
         //const Parallelogram* floor = reinterpret_cast<Parallelogram*>( optixGetSbtDataPointer() );
         //const PolygonMeshSBTData &sbtData = *(const PolygonMeshSBTData*)optixGetSbtDataPointer();
         const Polygon* poly = reinterpret_cast<Polygon*>( optixGetSbtDataPointer() );
@@ -143,7 +143,7 @@ namespace osc {
                     );
                 }
             }
-        }
+        }*/
     }
 
     extern "C" __global__ void __intersection__polygon()

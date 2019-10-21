@@ -52,7 +52,8 @@ int SimulationOptiX::LoadSimulation(const std::vector<Vector3d> &geomVertices, c
     // something approximating the scale of the world, so the
     // camera knows how much to move for any given user interaction:
     const float worldScale = length(model->bounds.span());
-    window = new osc::SampleWindow("Optix 7 OBJ Model",model,camera,worldScale);
+    const std::string windowTitle = "Optix 7 OBJ Model";
+    window = new osc::SampleWindow(windowTitle,model,camera,worldScale);
     return 0;
 }
 

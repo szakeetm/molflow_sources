@@ -80,7 +80,7 @@ namespace osc {
         return newID;
     }
 
-    Model *loadOBJ(const std::string &objFile){
+    /*Model *loadOBJ(const std::string &objFile){
         Model *model = new Model;
 
         const std::string mtlDir
@@ -150,33 +150,47 @@ namespace osc {
 
         std::cout << "created a total of " << model->meshes.size() << " meshes" << std::endl;
         return model;
-    }
+    }*/
 
     Model *loadFromMolflow(const std::vector<Vector3d> &geomVertices, const std::vector<SuperStructure> &structures){
         Model *model = new Model;
         // Loop over Vertices3
 
-        PolygonMesh *mesh = new PolygonMesh;
-        mesh->nbFacets = 0;
-        for (const SuperStructure& structure : structures){
-            mesh->nbFacets += structure.facets.size();
+        int polyNb = 0;
+        for(int i = 0; i < structures.size(); i++){
+            polyNb += structures[i].facets.size();
         }
 
-        mesh->vertices3d.resize(geomVertices.size());
-        mesh->poly.reserve(mesh->nbFacets);
-
-        int polyNb = 0;
-        for (const SuperStructure& structure : structures){
+        for ( int s = 0; s < structures.size(); s++){
+            //TODO: one mesh per structure
             //mesh->nbFacets += structure.facets.size();
-            for(const SubprocessFacet& fac : structure.facets){
+
+            PolygonMesh *mesh = new PolygonMesh;
+            mesh->nbFacets = polyNb;
+
+            //std::vector<vec3f>(geomVertices.size()).swap(mesh->vertices3d);
+            //mesh->poly.reserve(mesh->nbFacets);
+
+            for( int f = 0; f < structures[s].facets.size(); f++){
                 // Create new temp polygon and initialize number of vert and ind
                 // load with proper values
+                const SubprocessFacet& fac = structures[s].facets[f];
+                Polygon newPoly(fac.indices.size());
+                //newPoly.nbIndices = fac.indices.size();
+                //newPoly.nbVertices = fac.vertices2.size();
 
-                Polygon newPoly;
-                newPoly.nbIndices = fac.indices.size();
-                newPoly.nbVertices = fac.vertices2.size();
-                newPoly.indices = new int32_t[fac.indices.size()];
-                newPoly.vertices2d = new vec2f[fac.vertices2.size()];
+
+                //newPoly.indices = (int32_t*) malloc(newPoly.nbIndices* sizeof(int32_t));//new int32_t[fac.indices.size()];
+                //newPoly.vertices2d = (vec2f*) malloc(newPoly.nbVertices* sizeof(vec2f));
+                //newPoly.indices = new int32_t[newPoly.nbIndices];
+                //newPoly.vertices2d = new vec2f[newPoly.nbVertices];
+
+                /*
+                for(int i=0;i<newPoly.nbIndices;i++)
+                    newPoly.vertices2d[i] = vec2f(0.0,0.0);
+                for(int i=0;i<newPoly.nbVertices;i++)
+                    newPoly.indices[i] = 0;
+                */
                 newPoly.O.x = fac.sh.O.x;
                 newPoly.O.y = fac.sh.O.y;
                 newPoly.O.z = fac.sh.O.z;
@@ -190,11 +204,10 @@ namespace osc {
                 newPoly.Nuv.y = fac.sh.Nuv.y;
                 newPoly.Nuv.z = fac.sh.Nuv.z;
 
-
                 //
                 int counter = 0;
 
-                for(auto vertInd : fac.indices){
+                for(size_t vertInd : fac.indices){
                     newPoly.indices[counter++] = vertInd;
 
                     // load vertex corresponding to index
@@ -203,7 +216,13 @@ namespace osc {
                     newVert.y = geomVertices[vertInd].y;
                     newVert.z = geomVertices[vertInd].z;
 
-                    mesh->vertices3d[vertInd] = std::move(newVert);
+                    if(mesh->vertices3d.size()==vertInd){
+                        std::cout << vertInd<<"/"<<mesh->vertices3d.size()<<" -- Vert push"<<std::endl;
+                        mesh->vertices3d.push_back(newVert);
+                    }
+                    /*else if(mesh->vertices3d.size()>vertInd && mesh->vertices3d[vertInd]!=newVert){
+                        std::cout << vertInd<<"/"<<mesh->vertices3d.size()<<" -- Vert insert error"<<std::endl;
+                    }*/
                 }
 
                 counter = 0;
@@ -212,24 +231,14 @@ namespace osc {
                     newPoly.vertices2d[counter++].v = vert.v;
                 }
                 mesh->poly.push_back(std::move(newPoly));
-
-                polyNb++;
             }
+
+            if (mesh->vertices3d.empty())
+                delete mesh;
+            else
+                model->poly_meshes.push_back(mesh);
         }
 
-        /*for(const Vector3d& loadedVertex : geomVertices){
-            // Load Molflow style vertex into optix mesh
-            vec3f newVert;
-            newVert.x = loadedVertex.x;
-            newVert.y = loadedVertex.y;
-            newVert.z = loadedVertex.z;
-            mesh->vertices3d.push_back(std::move(newVert));
-        }*/
-
-        if (mesh->vertices3d.empty())
-            delete mesh;
-        else
-            model->poly_meshes.push_back(mesh);
 
         for (PolygonMesh* mesh : model->poly_meshes)
             for (const vec3f& vtx : mesh->vertices3d)

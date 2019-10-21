@@ -21,9 +21,85 @@
 
 namespace osc {
     using namespace gdt;
+    struct vector2f{
+        float u;
+        float v;
+    };
 
-    struct Polygon {
-        vec2f* vertices2d;
+    class Polygon {
+    public:
+        Polygon(){
+
+            vertices2d = nullptr;
+            indices = nullptr;
+            this->nbVertices = 0;
+            this->nbIndices = 0;
+            this->O = vec3f();
+            this->U = vec3f();
+            this->V = vec3f();
+
+        }
+        Polygon(int32_t nbOfVertices) : nbVertices(nbOfVertices), nbIndices(nbOfVertices),O(),U(),V(),Nuv(){
+            /*if(vertices2d)
+                delete[] vertices2d;
+            if(indices)
+                delete[] indices;*/
+            vertices2d = new vector2f[nbOfVertices];
+            indices = new int32_t[nbOfVertices];
+            //std::cout << vertices2d << " - " << indices << " / " << &vertices2d << " - " << &indices <<std::endl;
+        }
+        ~Polygon(){
+            if(vertices2d) delete[] vertices2d;
+            if(indices) delete[] indices;
+        }
+        Polygon& operator=(Polygon&& o){
+            if (this != &o)
+            {
+                if(this->vertices2d) delete[] this->vertices2d;
+                if(this->indices) delete[] this->indices;
+
+                this->vertices2d = o.vertices2d;
+                this->indices = o.indices;
+                this->nbVertices = o.nbVertices;
+                this->nbIndices = o.nbVertices;
+                this->O = o.O;
+                this->U = o.U;
+                this->V = o.V;
+
+                o.vertices2d = nullptr;
+                o.indices = nullptr;
+                o.nbVertices = 0;
+                o.nbIndices = 0;
+                o.O = vec3f();
+                o.U = vec3f();
+                o.V = vec3f();
+            }
+
+            return *this;
+        }
+        Polygon(Polygon&& o){
+            *this = std::move(o);
+        }
+        Polygon& operator=(const Polygon& o){
+
+            this->vertices2d = o.vertices2d;
+            this->indices = o.indices;
+            this->nbVertices = o.nbVertices;
+            this->nbIndices = o.nbVertices;
+            this->O = o.O;
+            this->U = o.U;
+            this->V = o.V;
+
+            return *this;
+        }
+        Polygon(const Polygon& o){
+            *this = o;
+        }
+
+
+
+        //vec2f* vertices2d;
+        vector2f* vertices2d;
         int32_t* indices;
         int32_t nbVertices;
         int32_t nbIndices;

@@ -40,25 +40,25 @@ namespace osc {
     struct Model {
         ~Model()
         {
-            for (auto mesh : meshes) delete mesh;
+            //for (auto mesh : meshes) delete mesh;
             for (auto mesh : poly_meshes) {
                 for (auto& poly : mesh->poly) {
 
                     delete[] poly.vertices2d;
                     delete[] poly.indices;
-
+                    //delete poly;
                 }
                 delete mesh;
             }
         }
 
-        std::vector<TriangleMesh *> meshes;
+        //std::vector<TriangleMesh *> meshes;
         std::vector<PolygonMesh *> poly_meshes;
         //! bounding box of all vertices in the model
         box3f bounds;
     };
 
-    Model *loadOBJ(const std::string &objFile);
+    //Model *loadOBJ(const std::string &objFile);
     Model *loadFromMolflow(const std::vector<Vector3d> &geomVertices, const std::vector<SuperStructure> &structures);
 }
 

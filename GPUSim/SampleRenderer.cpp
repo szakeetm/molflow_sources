@@ -29,7 +29,7 @@ namespace osc {
         __align__( OPTIX_SBT_RECORD_ALIGNMENT ) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
         // just a dummy value - later examples will use more interesting
         // data here
-        void *data;
+        //void *data;
         void *data_poly;
     };
 
@@ -39,7 +39,7 @@ namespace osc {
         __align__( OPTIX_SBT_RECORD_ALIGNMENT ) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
         // just a dummy value - later examples will use more interesting
         // data here
-        void *data;
+        //void *data;
         void *data_poly;
     };
 
@@ -47,7 +47,7 @@ namespace osc {
     struct __align__( OPTIX_SBT_RECORD_ALIGNMENT ) HitgroupRecord
     {
         __align__( OPTIX_SBT_RECORD_ALIGNMENT ) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
-        TriangleMeshSBTData data;
+        //TriangleMeshSBTData data;
         PolygonMeshSBTData data_poly;
     };
 
@@ -129,10 +129,10 @@ namespace osc {
 
         std::vector<OptixBuildInput> polygonInput(model->poly_meshes.size());
         std::vector<CUdeviceptr> d_aabb(model->poly_meshes.size());
-        std::vector<OptixBuildInput> triangleInput(model->poly_meshes.size());
+        //std::vector<OptixBuildInput> triangleInput(model->poly_meshes.size());
         std::vector<CUdeviceptr> d_vertices(model->poly_meshes.size());
         std::vector<CUdeviceptr> d_polygons(model->poly_meshes.size());
-        std::vector<uint32_t> triangleInputFlags(model->poly_meshes.size());
+        //std::vector<uint32_t> triangleInputFlags(model->poly_meshes.size());
 
         for (int meshID=0;meshID<model->poly_meshes.size();meshID++) {
             // upload the model to the device: the builder
@@ -141,7 +141,7 @@ namespace osc {
 
             std::vector<OptixAabb> aabb(mesh.poly.size());
             int bbCount = 0;
-            for(Polygon poly : mesh.poly){
+            for(Polygon& poly : mesh.poly){
                 polygon_bound(poly.indices, mesh.vertices3d, poly.nbIndices,
                               reinterpret_cast<float*>(&aabb[bbCount]));
                 std::cout << bbCount<<"# poly box: " << "("<<aabb[bbCount].minX <<","<<aabb[bbCount].minY <<","<<aabb[bbCount].minZ <<")-("
@@ -509,7 +509,7 @@ namespace osc {
         for (int i=0;i<raygenPGs.size();i++) {
             RaygenRecord rec;
             OPTIX_CHECK(optixSbtRecordPackHeader(raygenPGs[i],&rec));
-            rec.data = nullptr; /* for now ... */
+            //rec.data = nullptr; /* for now ... */
             rec.data_poly = nullptr; /* for now ... */
             raygenRecords.push_back(rec);
         }
@@ -523,7 +523,7 @@ namespace osc {
         for (int i=0;i<missPGs.size();i++) {
             MissRecord rec;
             OPTIX_CHECK(optixSbtRecordPackHeader(missPGs[i],&rec));
-            rec.data = nullptr; /* for now ... */
+            //rec.data = nullptr; /* for now ... */
             rec.data_poly = nullptr; /* for now ... */
             missRecords.push_back(rec);
         }
