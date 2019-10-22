@@ -368,14 +368,14 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
 	}
 
 	// Save angle maps together with Molflow_Autosave.zip; otherwise data is lost after crash
-	if(autoSave){
+	/*if(autoSave){
         std::vector<std::string> listOfFiles = ExportAngleMaps(fileNameWithoutExtension, true);
         for(auto angleFile : listOfFiles){
             ZipFile::AddFile(fileNameWithZIP, angleFile,FileUtils::GetFilename(angleFile));
             //At this point, if no error was thrown, the compression is successful
             remove(angleFile.c_str());
         }
-	}
+	}*/
 }
 
 /**
@@ -466,6 +466,7 @@ std::vector<std::string> Worker::ExportAngleMaps(std::string fileName, bool save
 	return listOfFiles; // false if angleMapFacetIndices.size() == 0
 }
 
+// TODO: Without use yet
 bool Worker::ImportAngleMaps(std::string fileName) {
 
     for(auto& p : std::filesystem::directory_iterator("")){
@@ -760,11 +761,11 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 
 						parseResult = loadXML.load_file(tmpFileName.c_str()); //load and parse it
 					}
-					else if(FileUtils::GetExtension(zipFileName) == "csv"){ // otherwise extract angle maps
+					/*else if(FileUtils::GetExtension(zipFileName) == "csv"){ // otherwise extract angle maps
                         ZipFile::ExtractFile(fileName, zipFileName, zipFileName);
-                    }
+                    }*/
 				}
-                if (!notFoundYet) {
+                /*if (!notFoundYet) {
                     for (int i = 0; i < numitems; i++) { //extract first xml file found in ZIP archive
                         auto zipItem = zip->GetEntry(i);
                         std::string zipFileName = zipItem->GetName();
@@ -774,7 +775,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
                             ImportAngleMaps(fileName);
                         }
                     }
-                }
+                }*/
 				if (notFoundYet) {
 					throw Error("Didn't find any XML file in the ZIP file.");
 				}

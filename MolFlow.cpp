@@ -1228,7 +1228,6 @@ void MolFlow::ExportAngleMaps() {
 		return;
 	}
 
-	//FILENAME *fn = GLFileBox::SaveFile(currentDir, NULL, "Save File", fileProfFilters, 0);
 	std::string profFile = NFD_SaveFile_Cpp(fileProfFilters, "");
 
 	if (!profFile.empty()) {
