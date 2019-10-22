@@ -1679,7 +1679,7 @@ void Worker::PrepareToRun() {
 			}
 		}
 
-		/* //First worker::update will do it
+		 //First worker::update will do it
 		if (f->sh.anglemapParams.record) {
 			if (!f->sh.anglemapParams.hasRecorded) {
 				//Initialize angle map
@@ -1695,7 +1695,7 @@ void Worker::PrepareToRun() {
 				if (f->selected) needsAngleMapStatusRefresh = true;
 			}
 		}
-		*/
+
 	}
 
 	if (mApp->facetAdvParams && mApp->facetAdvParams->IsVisible() && needsAngleMapStatusRefresh)
