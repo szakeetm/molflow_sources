@@ -1223,18 +1223,6 @@ void MolFlow::ExportProfiles() {
 
 void MolFlow::ExportAngleMaps() {
 
-	Geometry *geom = worker.GetGeometry();
-	std::vector<size_t> angleMapFacetIndices;
-	for (size_t i = 0; i < geom->GetNbFacet(); i++) {
-		Facet* f = geom->GetFacet(i);
-		if (f->selected && f->sh.anglemapParams.hasRecorded)
-			angleMapFacetIndices.push_back(i);
-	}
-	if (angleMapFacetIndices.size() == 0) {
-		GLMessageBox::Display("Select at least one facet with recorded angle map", "Error", GLDLG_OK, GLDLG_ICONERROR);
-		return;
-	}
-
 	if (!worker.IsDpInitialized()) {
 		GLMessageBox::Display("Worker Dataport not initialized yet", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
@@ -1245,7 +1233,11 @@ void MolFlow::ExportAngleMaps() {
 
 	if (!profFile.empty()) {
 		try {
-			worker.ExportAngleMaps(angleMapFacetIndices, profFile);
+			std::vector<std::string> exportList = worker.ExportAngleMaps(profFile, false);
+            if (exportList.empty()) {
+                GLMessageBox::Display("Select at least one facet with recorded angle map", "Error", GLDLG_OK, GLDLG_ICONERROR);
+                return;
+            }
 		}
 		catch (Error &e) {
 			char errMsg[512];
@@ -1256,8 +1248,7 @@ void MolFlow::ExportAngleMaps() {
 	}
 }
 
-void MolFlow::ImportAngleMaps()
-{
+void MolFlow::ImportAngleMaps(){
 	std::vector<size_t> selFacets = worker.GetGeometry()->GetSelectedFacets();
 	if (selFacets.size() == 0) {
 		GLMessageBox::Display("Select at least one facet to import angle map to", "Error", GLDLG_OK, GLDLG_ICONERROR);

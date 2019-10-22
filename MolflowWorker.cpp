@@ -314,24 +314,9 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
 
 						//Zipper library
 						if (FileUtils::Exist(fileNameWithZIP)) remove(fileNameWithZIP.c_str());
-						ZipFile::AddFile(fileNameWithZIP, fileNameWithXML,FileUtils::GetFilename(fileNameWithXML));
-						//At this point, if no error was thrown, the compression is successful
-						remove(fileNameWithXML.c_str());
-
-
-						/*
-						//Old ZipUtils library, Windows only
-						HZIP hz = CreateZip(fileNameWithZIP.c_str(), 0);
-						if (!hz) {
-							throw Error("Error creating ZIP file");
-						}
-						if (!ZipAdd(hz, FileUtils::GetFilename(fileNameWithXML).c_str(), fileNameWithXML.c_str())) remove(fileNameWithXML.c_str());
-						else {
-							CloseZip(hz);
-							throw Error("Error compressing ZIP file.");
-						}
-						CloseZip(hz);
-						*/
+                        ZipFile::AddFile(fileNameWithZIP, fileNameWithXML,FileUtils::GetFilename(fileNameWithXML));
+                        //At this point, if no error was thrown, the compression is successful
+                        remove(fileNameWithXML.c_str());
 					}
 				}
 			}
@@ -381,6 +366,16 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
 		SetCurrentFileName(fileName.c_str());
 		mApp->UpdateTitle();
 	}
+
+	// Save angle maps together with Molflow_Autosave.zip; otherwise data is lost after crash
+	if(autoSave){
+        std::vector<std::string> listOfFiles = ExportAngleMaps(fileNameWithoutExtension, true);
+        for(auto angleFile : listOfFiles){
+            ZipFile::AddFile(fileNameWithZIP, angleFile,FileUtils::GetFilename(angleFile));
+            //At this point, if no error was thrown, the compression is successful
+            remove(angleFile.c_str());
+        }
+	}
 }
 
 /**
@@ -418,14 +413,27 @@ void Worker::ExportProfiles(const char *fn) {
 
 /**
 * \brief Function for exportation of the angle maps
-* \param facetList vector of all facets necessary for the export
 * \param fileName output file name
+ * \param saveAll true if all files -- otherwise only selected -- should be saved
+ * \return Vector with strings containing the file names of all angle map files
 */
-void Worker::ExportAngleMaps(std::vector<size_t> facetList, std::string fileName) {
+std::vector<std::string> Worker::ExportAngleMaps(std::string fileName, bool saveAll) {
 	bool overwriteAll = false;
-	for (size_t facetIndex : facetList) {
+
+    Geometry *geom = GetGeometry();
+    std::vector<size_t> angleMapFacetIndices;
+    for (size_t i = 0; i < geom->GetNbFacet(); i++) {
+        Facet* f = geom->GetFacet(i);
+        // saveAll facets e.g. when auto saving or just when selected
+        if ((saveAll || f->selected) && f->sh.anglemapParams.hasRecorded){
+            angleMapFacetIndices.push_back(i);
+        }
+    }
+
+    std::vector<std::string> listOfFiles;
+    for (size_t facetIndex : angleMapFacetIndices) {
 		std::string saveFileName;
-		if (facetList.size() == 1) {
+		if (angleMapFacetIndices.size() == 1) {
 			saveFileName = FileUtils::StripExtension(fileName) + ".csv";
 		}
 		else {
@@ -434,12 +442,10 @@ void Worker::ExportAngleMaps(std::vector<size_t> facetList, std::string fileName
 			saveFileName = tmp.str();
 		}
 
-		bool ok = true;
-
 		if (FileUtils::Exist(saveFileName)) {
 			if (!overwriteAll) {
 				std::vector<std::string> buttons = { "Cancel", "Overwrite" };
-				if (facetList.size() > 1) buttons.push_back("Overwrite All");
+				if (angleMapFacetIndices.size() > 1) buttons.push_back("Overwrite All");
 				int answer = GLMessageBox::Display("Overwrite existing file ?\n" + saveFileName, "Question", buttons, GLDLG_ICONWARNING);
 				if (answer == 0) break; //User cancel
 				overwriteAll = (answer == 2);
@@ -454,7 +460,21 @@ void Worker::ExportAngleMaps(std::vector<size_t> facetList, std::string fileName
 		}
 		file << geom->GetFacet(facetIndex)->GetAngleMap(1);
 		file.close();
+        listOfFiles.push_back(saveFileName);
 	}
+
+	return listOfFiles; // false if angleMapFacetIndices.size() == 0
+}
+
+bool Worker::ImportAngleMaps(std::string fileName) {
+
+    for(auto& p : std::filesystem::directory_iterator("")){
+        std::stringstream fileName;
+        fileName << p.path().string();
+        if(FileUtils::GetExtension(fileName.str()) == "csv") std::cout << p.path() << '\n';
+    }
+
+    return true; // false if angleMapFacetIndices.size() == 0
 }
 
 /*void Worker::ImportDesorption(const char *fileName) {
@@ -740,37 +760,24 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 
 						parseResult = loadXML.load_file(tmpFileName.c_str()); //load and parse it
 					}
+					else if(FileUtils::GetExtension(zipFileName) == "csv"){ // otherwise extract angle maps
+                        ZipFile::ExtractFile(fileName, zipFileName, zipFileName);
+                    }
 				}
+                if (!notFoundYet) {
+                    for (int i = 0; i < numitems; i++) { //extract first xml file found in ZIP archive
+                        auto zipItem = zip->GetEntry(i);
+                        std::string zipFileName = zipItem->GetName();
+                        if(FileUtils::GetExtension(zipFileName) == "csv"){ // extract angle maps
+                            ZipFile::ExtractFile(fileName, zipFileName, zipFileName);
+                            std::cout << "Import fileName: "<< fileName<<" - "<< zipFileName<<std::endl;
+                            ImportAngleMaps(fileName);
+                        }
+                    }
+                }
 				if (notFoundYet) {
 					throw Error("Didn't find any XML file in the ZIP file.");
 				}
-
-				/*
-				//Old ZipUtils library
-				HZIP hz = OpenZip(fileName.c_str(), 0);
-				if (!hz) {
-					throw Error("Can't open ZIP file");
-				}
-				ZIPENTRY ze; GetZipItem(hz, -1, &ze); int numitems = ze.index;
-				bool notFoundYet = true;
-				for (int i = 0; i < numitems && notFoundYet; i++) { //extract first xml file found in ZIP archive
-					GetZipItem(hz, i, &ze);
-					std::string zipFileName = ze.name;
-
-					if (FileUtils::GetExtension(zipFileName) == "xml") { //if it's an .xml file
-						notFoundYet = false;
-						std::string tmpFileName = "tmp/" + zipFileName;
-						UnzipItem(hz, i, tmpFileName.c_str()); //unzip it to tmp directory
-						CloseZip(hz);
-						progressDlg->SetMessage("Reading and parsing XML file...");
-						parseResult = loadXML.load_file(tmpFileName.c_str()); //load and parse it
-					}
-				}
-				if (notFoundYet) {
-					CloseZip(hz);
-					throw Error("Didn't find any XML file in the ZIP file.");
-				}
-				*/
 
 			}
 			else parseResult = loadXML.load_file(fileName.c_str()); //parse xml file directly
