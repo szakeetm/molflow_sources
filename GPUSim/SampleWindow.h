@@ -11,7 +11,7 @@
 #include "glfWindow/GLFWindow.h"
 #include <GL/gl.h>
 
-namespace osc {
+namespace flowgpu {
 
     struct SampleWindow : public GLFCameraWindow {
         SampleWindow(const std::string &title,

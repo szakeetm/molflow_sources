@@ -15,8 +15,8 @@
 #include "Simulation.h"
 #include "LaunchParams.h"
 
-/*! \namespace osc - Optix Siggraph Course */
-namespace osc {
+/*! \namespace flowgpu - Molflow GPU code */
+namespace flowgpu {
     using namespace gdt;
 
     /*! a simple indexed triangle mesh that our sample renderer will
@@ -32,9 +32,13 @@ namespace osc {
     };
 
     struct PolygonMesh {
+        std::vector<uint32_t> indices;
+        std::vector<vec2f> vertices2d;
         std::vector<vec3f> vertices3d;
         std::vector<Polygon> poly;
         int32_t nbFacets;
+        int32_t nbIndices;
+        int32_t nbVertices;
     };
 
     struct Model {
@@ -42,12 +46,6 @@ namespace osc {
         {
             //for (auto mesh : meshes) delete mesh;
             for (auto mesh : poly_meshes) {
-                for (auto& poly : mesh->poly) {
-
-                    delete[] poly.vertices2d;
-                    delete[] poly.indices;
-                    //delete poly;
-                }
                 delete mesh;
             }
         }

@@ -73,8 +73,8 @@ void GetState() {
     ReleaseDataport(dpControl);
 	
 	if (!IsProcessRunning(hostProcessId)) {
-		printf("Host synrad.exe (process id %d) not running. Closing.",hostProcessId);
-		SetErrorSub("Host synrad.exe not running. Closing subprocess.");
+		printf("Host molflow.exe (process id %d) not running. Closing.",hostProcessId);
+		SetErrorSub("Host molflow.exe not running. Closing subprocess.");
 		endState = true;
 	}
   } else {
@@ -457,9 +457,9 @@ int main(int argc,char* argv[])
         break;
     }
   }
-
-  // Release
+  // Release and clear memory
   SetState(PROCESS_KILLED,"");
+  delete sHandle;
   //CLOSEDP(dpControl);
   //CLOSEDP(dpHit);
   //Why bother closing dataports? Windows will release handles automatically.

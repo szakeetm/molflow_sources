@@ -15,13 +15,16 @@
 // ======================================================================== //
 
 #include "SampleRenderer.h"
+#include "LaunchParams.h"
 // this include may only appear in a single source file:
 #include <optix_function_table_definition.h>
 
-/*! \namespace osc - Optix Siggraph Course */
-namespace osc {
+/*! \namespace flowgpu - Molflow GPU code */
+namespace flowgpu {
 
-    extern "C" char embedded_ptx_code[];
+    extern "C" char geometry_ptx_code[];
+    extern "C" char trace_ptx_code[];
+    extern "C" char ray_ptx_code[];
 
     /*! SBT record for a raygen program */
     struct __align__( OPTIX_SBT_RECORD_ALIGNMENT ) RaygenRecord
@@ -51,15 +54,19 @@ namespace osc {
         PolygonMeshSBTData data_poly;
     };
 
-    static void polygon_bound(int32_t* polyIndicies, std::vector<vec3f> polyVertices, int32_t nbIndices, float result[6])
+    static void
+    polygon_bound(std::vector<uint32_t> polyIndicies, uint32_t indexOffset, std::vector<vec3f> polyVertices,
+                  uint32_t nbIndices, float *result)
     {
 
         float3 m_max{static_cast<float>(-1e100),static_cast<float>(-1e100),static_cast<float>(-1e100)};
         float3 m_min{static_cast<float>(1e100),static_cast<float>(1e100),static_cast<float>(1e100)};
 
-        for(int ind = 0; ind < nbIndices; ind++){
+        for(int ind = indexOffset; ind < indexOffset + nbIndices; ind++){
             auto polyIndex = polyIndicies[ind];
+            std::cout << "BB Poly ["<<"] "<< polyIndex<<std::endl;
             const auto& vert = polyVertices[polyIndex];
+            //auto newVert = vert / dot(vert,vert); // scale back
             m_min.x = std::min(vert.x,m_min.x);
             m_min.y = std::min(vert.y, m_min.y);
             m_min.z = std::min(vert.z, m_min.z);
@@ -83,32 +90,32 @@ namespace osc {
     {
         initOptix();
 
-        std::cout << "#osc: creating optix context ..." << std::endl;
+        std::cout << "#flowgpu: creating optix context ..." << std::endl;
         createContext();
 
-        std::cout << "#osc: setting up module ..." << std::endl;
+        std::cout << "#flowgpu: setting up module ..." << std::endl;
         createModule();
 
-        std::cout << "#osc: creating raygen programs ..." << std::endl;
+        std::cout << "#flowgpu: creating raygen programs ..." << std::endl;
         createRaygenPrograms();
-        std::cout << "#osc: creating miss programs ..." << std::endl;
+        std::cout << "#flowgpu: creating miss programs ..." << std::endl;
         createMissPrograms();
-        std::cout << "#osc: creating hitgroup programs ..." << std::endl;
+        std::cout << "#flowgpu: creating hitgroup programs ..." << std::endl;
         createHitgroupPrograms();
 
         launchParams.traversable = buildAccel();
 
-        std::cout << "#osc: setting up optix pipeline ..." << std::endl;
+        std::cout << "#flowgpu: setting up optix pipeline ..." << std::endl;
         createPipeline();
 
-        std::cout << "#osc: building SBT ..." << std::endl;
+        std::cout << "#flowgpu: building SBT ..." << std::endl;
         buildSBT();
 
         launchParamsBuffer.alloc(sizeof(launchParams));
-        std::cout << "#osc: context, module, pipeline, etc, all set up ..." << std::endl;
+        std::cout << "#flowgpu: context, module, pipeline, etc, all set up ..." << std::endl;
 
         std::cout << GDT_TERMINAL_GREEN;
-        std::cout << "#osc: Optix 7 Sample fully set up" << std::endl;
+        std::cout << "#flowgpu: Optix 7 Sample fully set up" << std::endl;
         std::cout << GDT_TERMINAL_DEFAULT;
     }
 
@@ -119,6 +126,8 @@ namespace osc {
 
         aabbBuffer.resize(model->poly_meshes.size());
         vertexBuffer.resize(model->poly_meshes.size());
+        vertex2Buffer.resize(model->poly_meshes.size());
+        indexBuffer.resize(model->poly_meshes.size());
         polyBuffer.resize(model->poly_meshes.size());
 
         OptixTraversableHandle asHandle { 0 };
@@ -131,6 +140,9 @@ namespace osc {
         std::vector<CUdeviceptr> d_aabb(model->poly_meshes.size());
         //std::vector<OptixBuildInput> triangleInput(model->poly_meshes.size());
         std::vector<CUdeviceptr> d_vertices(model->poly_meshes.size());
+        std::vector<CUdeviceptr> d_vertices2(model->poly_meshes.size());
+        std::vector<CUdeviceptr> d_indices(model->poly_meshes.size());
+
         std::vector<CUdeviceptr> d_polygons(model->poly_meshes.size());
         //std::vector<uint32_t> triangleInputFlags(model->poly_meshes.size());
 
@@ -142,16 +154,18 @@ namespace osc {
             std::vector<OptixAabb> aabb(mesh.poly.size());
             int bbCount = 0;
             for(Polygon& poly : mesh.poly){
-                polygon_bound(poly.indices, mesh.vertices3d, poly.nbIndices,
-                              reinterpret_cast<float*>(&aabb[bbCount]));
+                polygon_bound(mesh.indices, poly.vertOffset, mesh.vertices3d, poly.nbVertices,
+                              reinterpret_cast<float *>(&aabb[bbCount]));
                 std::cout << bbCount<<"# poly box: " << "("<<aabb[bbCount].minX <<","<<aabb[bbCount].minY <<","<<aabb[bbCount].minZ <<")-("
                           <<aabb[bbCount].maxX <<","<<aabb[bbCount].maxY <<","<<aabb[bbCount].maxZ <<")"<<std::endl;
-                bbCount++;
+                std::cout << bbCount<<"# poly uv: " << "("<<poly.U <<","<<poly.V <<")"<<std::endl;
 
+                bbCount++;
             }
 
-
             vertexBuffer[meshID].alloc_and_upload(mesh.vertices3d);
+            vertex2Buffer[meshID].alloc_and_upload(mesh.vertices2d);
+            indexBuffer[meshID].alloc_and_upload(mesh.indices);
             aabbBuffer[meshID].alloc_and_upload(aabb);
             polyBuffer[meshID].alloc_and_upload(mesh.poly);
 
@@ -162,6 +176,8 @@ namespace osc {
             // create local variables, because we need a *pointer* to the
             // device pointers
             d_vertices[meshID] = vertexBuffer[meshID].d_pointer();
+            d_vertices2[meshID] = vertex2Buffer[meshID].d_pointer();
+            d_indices[meshID] = indexBuffer[meshID].d_pointer();
             d_aabb[meshID] =  aabbBuffer[meshID].d_pointer();
             d_polygons[meshID]  = polyBuffer[meshID].d_pointer();
 
@@ -170,7 +186,7 @@ namespace osc {
             polygonInput[meshID].aabbArray.aabbBuffers   = &(d_aabb[meshID]);
             polygonInput[meshID].aabbArray.flags         = aabb_input_flags;
             polygonInput[meshID].aabbArray.numSbtRecords = 1;
-            polygonInput[meshID].aabbArray.numPrimitives = bbCount;
+            polygonInput[meshID].aabbArray.numPrimitives = mesh.poly.size();
             polygonInput[meshID].aabbArray.sbtIndexOffsetBuffer         = 0;
             polygonInput[meshID].aabbArray.sbtIndexOffsetSizeInBytes    = 0;
             polygonInput[meshID].aabbArray.primitiveIndexOffset         = 0;
@@ -290,7 +306,7 @@ namespace osc {
     /*! helper function that initializes optix and checks for errors */
     void SampleRenderer::initOptix()
     {
-        std::cout << "#osc: initializing optix..." << std::endl;
+        std::cout << "#flowgpu: initializing optix..." << std::endl;
 
         // -------------------------------------------------------
         // check for available optix7 capable devices
@@ -299,15 +315,15 @@ namespace osc {
         int numDevices;
         cudaGetDeviceCount(&numDevices);
         if (numDevices == 0)
-            throw std::runtime_error("#osc: no CUDA capable devices found!");
-        std::cout << "#osc: found " << numDevices << " CUDA devices" << std::endl;
+            throw std::runtime_error("#flowgpu: no CUDA capable devices found!");
+        std::cout << "#flowgpu: found " << numDevices << " CUDA devices" << std::endl;
 
         // -------------------------------------------------------
         // initialize optix
         // -------------------------------------------------------
         OPTIX_CHECK( optixInit() );
         std::cout << GDT_TERMINAL_GREEN
-                  << "#osc: successfully initialized optix... yay!"
+                  << "#flowgpu: successfully initialized optix... yay!"
                   << GDT_TERMINAL_DEFAULT << std::endl;
     }
 
@@ -329,7 +345,7 @@ namespace osc {
         CUDA_CHECK(StreamCreate(&stream));
 
         cudaGetDeviceProperties(&deviceProps, deviceID);
-        std::cout << "#osc: running on device: " << deviceProps.name << std::endl;
+        std::cout << "#flowgpu: running on device: " << deviceProps.name << std::endl;
 
         CUresult  cuRes = cuCtxGetCurrent(&cudaContext);
         if( cuRes != CUDA_SUCCESS )
@@ -354,7 +370,7 @@ namespace osc {
         pipelineCompileOptions = {};
         pipelineCompileOptions.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY;
         pipelineCompileOptions.usesMotionBlur     = false;
-        pipelineCompileOptions.numPayloadValues   = 2;
+        pipelineCompileOptions.numPayloadValues   = 4;
         pipelineCompileOptions.numAttributeValues = 5; // ret values e.g. by optixReportIntersection
         pipelineCompileOptions.exceptionFlags     = OPTIX_EXCEPTION_FLAG_NONE;
         pipelineCompileOptions.pipelineLaunchParamsVariableName = "optixLaunchParams";
@@ -362,19 +378,47 @@ namespace osc {
         pipelineLinkOptions.overrideUsesMotionBlur = false;
         pipelineLinkOptions.maxTraceDepth          = 2;
 
-        const std::string ptxCode = embedded_ptx_code;
-
         char log[2048];
         size_t sizeof_log = sizeof( log );
-        OPTIX_CHECK(optixModuleCreateFromPTX(optixContext,
-                                             &moduleCompileOptions,
-                                             &pipelineCompileOptions,
-                                             ptxCode.c_str(),
-                                             ptxCode.size(),
-                                             log,&sizeof_log,
-                                             &module
-        ));
-        if (sizeof_log > 1) PRINT(log);
+
+        {
+            const std::string ptxCode = geometry_ptx_code;
+            OPTIX_CHECK(optixModuleCreateFromPTX(optixContext,
+                                                 &moduleCompileOptions,
+                                                 &pipelineCompileOptions,
+                                                 ptxCode.c_str(),
+                                                 ptxCode.size(),
+                                                 log,&sizeof_log,
+                                                 &modules.geometryModule
+            ));
+            if (sizeof_log > 1) PRINT(log);
+        }
+
+        {
+            const std::string ptxCode = ray_ptx_code;
+            OPTIX_CHECK(optixModuleCreateFromPTX(optixContext,
+                                                 &moduleCompileOptions,
+                                                 &pipelineCompileOptions,
+                                                 ptxCode.c_str(),
+                                                 ptxCode.size(),
+                                                 log,&sizeof_log,
+                                                 &modules.rayModule
+            ));
+            if (sizeof_log > 1) PRINT(log);
+        }
+
+        {
+            const std::string ptxCode = trace_ptx_code;
+            OPTIX_CHECK(optixModuleCreateFromPTX(optixContext,
+                                                 &moduleCompileOptions,
+                                                 &pipelineCompileOptions,
+                                                 ptxCode.c_str(),
+                                                 ptxCode.size(),
+                                                 log,&sizeof_log,
+                                                 &modules.traceModule
+            ));
+            if (sizeof_log > 1) PRINT(log);
+        }
     }
 
 
@@ -388,7 +432,7 @@ namespace osc {
         OptixProgramGroupOptions pgOptions = {};
         OptixProgramGroupDesc pgDesc    = {};
         pgDesc.kind                     = OPTIX_PROGRAM_GROUP_KIND_RAYGEN;
-        pgDesc.raygen.module            = module;
+        pgDesc.raygen.module            = modules.rayModule;
         pgDesc.raygen.entryFunctionName = "__raygen__renderFrame";
 
         // OptixProgramGroup raypg;
@@ -413,7 +457,7 @@ namespace osc {
         OptixProgramGroupOptions pgOptions = {};
         OptixProgramGroupDesc pgDesc    = {};
         pgDesc.kind                     = OPTIX_PROGRAM_GROUP_KIND_MISS;
-        pgDesc.miss.module            = module;
+        pgDesc.miss.module            = modules.traceModule;
         pgDesc.miss.entryFunctionName = "__miss__radiance";
 
         // OptixProgramGroup raypg;
@@ -438,11 +482,11 @@ namespace osc {
         OptixProgramGroupOptions pgOptions = {};
         OptixProgramGroupDesc pgDesc    = {};
         pgDesc.kind                     = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-        pgDesc.hitgroup.moduleIS            = module;
+        pgDesc.hitgroup.moduleIS            = modules.geometryModule;
         pgDesc.hitgroup.entryFunctionNameIS = "__intersection__polygon";
-        pgDesc.hitgroup.moduleCH            = module;
+        pgDesc.hitgroup.moduleCH            = modules.traceModule;
         pgDesc.hitgroup.entryFunctionNameCH = "__closesthit__radiance";
-        pgDesc.hitgroup.moduleAH            = module;
+        pgDesc.hitgroup.moduleAH            = modules.traceModule;
         pgDesc.hitgroup.entryFunctionNameAH = "__anyhit__radiance";
 
         char log[2048];
@@ -545,6 +589,8 @@ namespace osc {
             //rec.data.vertex = (vec3f*)vertexBuffer[meshID].d_pointer();
             rec.data_poly.color  = gdt::vec3f(0.5,1.0,0.5);
             rec.data_poly.vertex = (vec3f*)vertexBuffer[meshID].d_pointer();
+            rec.data_poly.vertex2 = (vec2f*)vertex2Buffer[meshID].d_pointer();
+            rec.data_poly.index = (uint32_t *)indexBuffer[meshID].d_pointer();
             rec.data_poly.poly = (Polygon*)polyBuffer[meshID].d_pointer();
             hitgroupRecords.push_back(rec);
         }
@@ -576,6 +622,7 @@ namespace osc {
                 launchParams.frame.size.y,
                 1
         ));
+
         // sync - make sure the frame is rendered before we download and
         // display (obviously, for a high-performance application you
         // want to use streams and double-buffering, but for this simple
@@ -604,11 +651,15 @@ namespace osc {
     {
         // resize our cuda frame buffer
         colorBuffer.resize(newSize.x*newSize.y*sizeof(uint32_t));
+        dirBuffer.resize(newSize.x*newSize.y*sizeof(vec3f));
+        oriBuffer.resize(newSize.x*newSize.y*sizeof(vec3f));
 
         // update the launch parameters that we'll pass to the optix
         // launch:
         launchParams.frame.size  = newSize;
         launchParams.frame.colorBuffer = (uint32_t*)colorBuffer.d_pointer();
+        launchParams.frame.dir = (vec3f*)dirBuffer.d_pointer();
+        launchParams.frame.origin = (vec3f*)oriBuffer.d_pointer();
 
         // and re-set the camera, since aspect may have changed
         setCamera(lastSetCamera);
@@ -619,6 +670,18 @@ namespace osc {
     {
         colorBuffer.download(h_pixels,
                              launchParams.frame.size.x*launchParams.frame.size.y);
+        vec3f* dir = new vec3f[launchParams.frame.size.x*launchParams.frame.size.y];
+        vec3f* ori = new vec3f[launchParams.frame.size.x*launchParams.frame.size.y];
+        dirBuffer.download(dir,
+                                          launchParams.frame.size.x*launchParams.frame.size.y);
+        oriBuffer.download(ori,
+                           launchParams.frame.size.x*launchParams.frame.size.y);
+        for(int i= 0;i<launchParams.frame.size.x*launchParams.frame.size.y;i++) {
+            if(i%5000==0/*&&(ori[i].x>0.9+0.001 || ori[i].x<0.9-0.001)*/) std::cout << i << " - " << dir[i] << " / " << ori[i] << std::endl;
+        }
+
+        delete[] dir;
+        delete[] ori;
     }
 
-} // ::osc
+} // ::flowgpu

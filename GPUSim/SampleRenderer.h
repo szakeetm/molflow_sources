@@ -21,8 +21,8 @@
 #include "LaunchParams.h"
 #include "Model.h"
 
-/*! \namespace osc - Optix Siggraph Course */
-namespace osc {
+/*! \namespace flowgpu - Molflow GPU code */
+namespace flowgpu {
 
     struct Camera {
         /*! camera position - *from* where we are looking */
@@ -111,7 +111,12 @@ namespace osc {
         /*! @} */
 
         /*! @{ the module that contains out device programs */
-        OptixModule                 module;
+        struct Modules {
+            OptixModule                 geometryModule;
+            OptixModule                 rayModule;
+            OptixModule                 traceModule;
+        } modules;
+
         OptixModuleCompileOptions   moduleCompileOptions;
         /* @} */
 
@@ -132,7 +137,8 @@ namespace osc {
         /*! @} */
 
         CUDABuffer colorBuffer;
-
+        CUDABuffer dirBuffer;
+        CUDABuffer oriBuffer;
         /*! the camera we are to render with. */
         Camera lastSetCamera;
 
@@ -143,10 +149,12 @@ namespace osc {
         std::vector<CUDABuffer> aabbBuffer;
         /*! one buffer per input mesh */
         std::vector<CUDABuffer> vertexBuffer;
+        std::vector<CUDABuffer> vertex2Buffer;
+        std::vector<CUDABuffer> indexBuffer;
         /*! one buffer per input mesh */
         std::vector<CUDABuffer> polyBuffer;
         //! buffer that keeps the (final, compacted) accel structure
         CUDABuffer asBuffer;
     };
 
-} // ::osc
+} // ::flowgpu

@@ -4,7 +4,7 @@
 
 #include "SampleWindow.h"
 
-void osc::SampleWindow::render(){
+void flowgpu::SampleWindow::render(){
     if (cameraFrame.modified) {
         sample.setCamera(Camera{ cameraFrame.get_from(),
                                  cameraFrame.get_at(),
@@ -14,7 +14,7 @@ void osc::SampleWindow::render(){
     sample.render();
 }
 
-void osc::SampleWindow::draw(){
+void flowgpu::SampleWindow::draw(){
     sample.downloadPixels(pixels.data());
     if (fbTexture == 0)
         glGenTextures(1, &fbTexture);
@@ -70,7 +70,7 @@ void osc::SampleWindow::draw(){
 /*! callback for _moving_ the mouse to a new position */
 static void glfwindow_mouseMotion_cb(GLFWwindow *window, double x, double y)
 {
-    osc::SampleWindow *gw = static_cast<osc::SampleWindow*>(glfwGetWindowUserPointer(window));
+    flowgpu::SampleWindow *gw = static_cast<flowgpu::SampleWindow*>(glfwGetWindowUserPointer(window));
     assert(gw);
     gw->mouseMotion(gdt::vec2i((int)x, (int)y));
 }
@@ -78,7 +78,7 @@ static void glfwindow_mouseMotion_cb(GLFWwindow *window, double x, double y)
 /*! callback for a key press */
 static void glfwindow_key_cb(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
-    osc::SampleWindow *gw = static_cast<osc::SampleWindow*>(glfwGetWindowUserPointer(window));
+    flowgpu::SampleWindow *gw = static_cast<flowgpu::SampleWindow*>(glfwGetWindowUserPointer(window));
     assert(gw);
     if (action == GLFW_PRESS) {
         gw->key(key,mods);
@@ -88,14 +88,14 @@ static void glfwindow_key_cb(GLFWwindow *window, int key, int scancode, int acti
 /*! callback for pressing _or_ releasing a mouse button*/
 static void glfwindow_mouseButton_cb(GLFWwindow *window, int button, int action, int mods)
 {
-    osc::SampleWindow *gw = static_cast<osc::SampleWindow*>(glfwGetWindowUserPointer(window));
+    flowgpu::SampleWindow *gw = static_cast<flowgpu::SampleWindow*>(glfwGetWindowUserPointer(window));
     assert(gw);
     // double x, y;
     // glfwGetCursorPos(window,&x,&y);
     gw->mouseButton(button,action,mods);
 }
 
-void osc::SampleWindow::run()
+void flowgpu::SampleWindow::run()
 {
     int width, height;
     glfwGetFramebufferSize(handle, &width, &height);
@@ -103,9 +103,9 @@ void osc::SampleWindow::run()
 
     // glfwSetWindowUserPointer(window, GLFWindow::current);
     //glfwSetFramebufferSizeCallback(handle, glfwindow_reshape_cb);
-    //glfwSetMouseButtonCallback(handle, glfwindow_mouseButton_cb);
-    //glfwSetKeyCallback(handle, glfwindow_key_cb);
-    //glfwSetCursorPosCallback(handle, glfwindow_mouseMotion_cb);
+    glfwSetMouseButtonCallback(handle, glfwindow_mouseButton_cb);
+    glfwSetKeyCallback(handle, glfwindow_key_cb);
+    glfwSetCursorPosCallback(handle, glfwindow_mouseMotion_cb);
 
     //glfwSetMouseButtonCallback( handle, mouseButtonCallback );
     //glfwSetKeyCallback        ( handle, keyCallback         );
@@ -118,11 +118,12 @@ void osc::SampleWindow::run()
         glfwSwapBuffers(handle);
         glfwPollEvents();
     //}
-    std::cout << "#osc: camera at " << cameraFrame.position << std::endl;
+    std::cout << "#flowgpu: camera at " << cameraFrame.position << std::endl;
+    std::cout << "#flowgpu: camera lookat " << cameraFrame.get_at() << std::endl;
 
 }
 
-void osc::SampleWindow::resize(const vec2i &newSize){
+void flowgpu::SampleWindow::resize(const vec2i &newSize){
     fbSize = newSize;
     sample.resize(newSize);
     pixels.resize(newSize.x*newSize.y);

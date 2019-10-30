@@ -8,7 +8,8 @@
 #include "SimulationOptiX.h"
 
 SimulationOptiX::SimulationOptiX(){
-
+    window = nullptr;
+    model = nullptr;
 }
 
 SimulationOptiX::~SimulationOptiX(){
@@ -16,8 +17,9 @@ SimulationOptiX::~SimulationOptiX(){
         glfwDestroyWindow(reinterpret_cast<GLFWwindow *>(window));
         delete window;
     }
-    if(model)
+    if(model){
         delete model;
+    }
 }
 
 /**
@@ -26,8 +28,8 @@ SimulationOptiX::~SimulationOptiX(){
  */
 int SimulationOptiX::LoadSimulation(const std::vector<Vector3d> &geomVertices, const std::vector<SuperStructure> &structures) {
     try {
-        model = osc::loadFromMolflow(geomVertices, structures);
-        /*(model = osc::loadOBJ(
+        model = flowgpu::loadFromMolflow(geomVertices, structures);
+        /*(model = flowgpu::loadOBJ(
 #ifdef _WIN32
                 // on windows, visual studio creates _two_ levels of build dir
                 // (x86/Release)
@@ -45,15 +47,21 @@ int SimulationOptiX::LoadSimulation(const std::vector<Vector3d> &geomVertices, c
         exit(1);
     }
 
-    osc::Camera camera = { osc::vec3f(-2.0f, 0.1f, -2.0f),
-            model->bounds.center()-osc::vec3f(-0.3f, 0.1f, 1.0f),
-            osc::vec3f(0.f,1.f,0.f) };
+    /*flowgpu::Camera camera = { *//*model->bounds.center()-*//*flowgpu::vec3f(7.637f, -2.58f, -5.03f),
+                                                                                        model->bounds.center()-flowgpu::vec3f(0.f, 0.f, 0.0f),
+                                                                                        flowgpu::vec3f(0.f,1.f,0.f) };*/
+    flowgpu::Camera camera = {flowgpu::vec3f(11.0f, -4.6f, -4.0f),
+                              model->bounds.center(),
+                              flowgpu::vec3f(0.f, 1.f, 0.f) };
+    /*flowgpu::Camera camera = { model->bounds.center(),
+                               model->bounds.center()-flowgpu::vec3f(0.1f, 0.1f, 0.1f),
+                       flowgpu::vec3f(0.f,1.f,0.f) };*/
 
     // something approximating the scale of the world, so the
     // camera knows how much to move for any given user interaction:
     const float worldScale = length(model->bounds.span());
     const std::string windowTitle = "Optix 7 OBJ Model";
-    window = new osc::SampleWindow(windowTitle,model,camera,worldScale);
+    window = new flowgpu::SampleWindow(windowTitle, model, camera, worldScale);
     return 0;
 }
 

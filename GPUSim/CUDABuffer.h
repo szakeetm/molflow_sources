@@ -21,8 +21,8 @@
 #include <vector>
 #include <assert.h>
 
-/*! \namespace osc - Optix Siggraph Course */
-namespace osc {
+/*! \namespace flowgpu - Molflow GPU code */
+namespace flowgpu {
 
   /*! simple wrapper for creating, and managing a device-side CUDA
       buffer */
@@ -82,4 +82,4 @@ namespace osc {
     void  *d_ptr { nullptr };
   };
 
-} // ::osc
+} // ::flowgpu

@@ -11,8 +11,8 @@
 
 class SimulationOptiX {
 protected:
-    osc::SampleWindow* window;
-    osc::Model *model;
+    flowgpu::SampleWindow* window;
+    flowgpu::Model *model;
 public:
     SimulationOptiX();
     ~SimulationOptiX();
