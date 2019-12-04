@@ -14,8 +14,16 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "SampleRenderer.h"
+#include <curand_kernel.h>
+#include "OptixControl.h"
 #include "LaunchParams.h"
+#include "cudaRandom.cuh"
+#include "GPUDefines.h"
+
+extern void initializeRand(unsigned int kernelSize, curandState_t *states, float *randomNumbers);
+extern void generateRand(unsigned int kernelSize, curandState_t *states, float *randomNumbers);
+extern void destroyRand(curandState_t *states, float *randomNumbers);
+
 // this include may only appear in a single source file:
 #include <optix_function_table_definition.h>
 
@@ -33,7 +41,7 @@ namespace flowgpu {
         // just a dummy value - later examples will use more interesting
         // data here
         //void *data;
-        void *data_poly;
+        PolygonRayGenData data_poly;
     };
 
     /*! SBT record for a miss program */
@@ -62,9 +70,8 @@ namespace flowgpu {
         float3 m_max{static_cast<float>(-1e100),static_cast<float>(-1e100),static_cast<float>(-1e100)};
         float3 m_min{static_cast<float>(1e100),static_cast<float>(1e100),static_cast<float>(1e100)};
 
-        for(int ind = indexOffset; ind < indexOffset + nbIndices; ind++){
+        for(uint32_t ind = indexOffset; ind < indexOffset + nbIndices; ind++){
             auto polyIndex = polyIndicies[ind];
-            std::cout << "BB Poly ["<<"] "<< polyIndex<<std::endl;
             const auto& vert = polyVertices[polyIndex];
             //auto newVert = vert / dot(vert,vert); // scale back
             m_min.x = std::min(vert.x,m_min.x);
@@ -85,7 +92,7 @@ namespace flowgpu {
 
     /*! constructor - performs all setup, including initializing
       optix, creates module, pipeline, programs, SBT, etc. */
-    SampleRenderer::SampleRenderer(const Model *model)
+    OptixControl::OptixControl(const Model *model)
             : model(model)
     {
         initOptix();
@@ -119,16 +126,19 @@ namespace flowgpu {
         std::cout << GDT_TERMINAL_DEFAULT;
     }
 
-    OptixTraversableHandle SampleRenderer::buildAccel()
+    OptixTraversableHandle OptixControl::buildAccel()
     {
         PING;
         PRINT(model->poly_meshes.size());
 
-        aabbBuffer.resize(model->poly_meshes.size());
-        vertexBuffer.resize(model->poly_meshes.size());
-        vertex2Buffer.resize(model->poly_meshes.size());
-        indexBuffer.resize(model->poly_meshes.size());
-        polyBuffer.resize(model->poly_meshes.size());
+        // All buffers that should be uploaded to device memory
+        memory.aabbBuffer.resize(model->poly_meshes.size());
+        memory.vertexBuffer.resize(model->poly_meshes.size());
+        memory.vertex2Buffer.resize(model->poly_meshes.size());
+        memory.indexBuffer.resize(model->poly_meshes.size());
+        memory.polyBuffer.resize(model->poly_meshes.size());
+        memory.facprobBuffer.resize(model->poly_meshes.size());
+        memory.cdfBuffer.resize(model->poly_meshes.size());
 
         OptixTraversableHandle asHandle { 0 };
 
@@ -136,38 +146,32 @@ namespace flowgpu {
         // triangle inputs
         // ==================================================================
 
+        //std::vector<OptixBuildInput> triangleInput(model->poly_meshes.size());
+
         std::vector<OptixBuildInput> polygonInput(model->poly_meshes.size());
         std::vector<CUdeviceptr> d_aabb(model->poly_meshes.size());
-        //std::vector<OptixBuildInput> triangleInput(model->poly_meshes.size());
-        std::vector<CUdeviceptr> d_vertices(model->poly_meshes.size());
+        /*std::vector<CUdeviceptr> d_vertices(model->poly_meshes.size());
         std::vector<CUdeviceptr> d_vertices2(model->poly_meshes.size());
         std::vector<CUdeviceptr> d_indices(model->poly_meshes.size());
-
-        std::vector<CUdeviceptr> d_polygons(model->poly_meshes.size());
-        //std::vector<uint32_t> triangleInputFlags(model->poly_meshes.size());
+        std::vector<CUdeviceptr> d_polygons(model->poly_meshes.size());*/
 
         for (int meshID=0;meshID<model->poly_meshes.size();meshID++) {
+
             // upload the model to the device: the builder
             PolygonMesh &mesh = *model->poly_meshes[meshID];
-
 
             std::vector<OptixAabb> aabb(mesh.poly.size());
             int bbCount = 0;
             for(Polygon& poly : mesh.poly){
                 polygon_bound(mesh.indices, poly.vertOffset, mesh.vertices3d, poly.nbVertices,
                               reinterpret_cast<float *>(&aabb[bbCount]));
-                std::cout << bbCount<<"# poly box: " << "("<<aabb[bbCount].minX <<","<<aabb[bbCount].minY <<","<<aabb[bbCount].minZ <<")-("
-                          <<aabb[bbCount].maxX <<","<<aabb[bbCount].maxY <<","<<aabb[bbCount].maxZ <<")"<<std::endl;
-                std::cout << bbCount<<"# poly uv: " << "("<<poly.U <<","<<poly.V <<")"<<std::endl;
+                //std::cout << bbCount<<"# poly box: " << "("<<aabb[bbCount].minX <<","<<aabb[bbCount].minY <<","<<aabb[bbCount].minZ <<")-("<<aabb[bbCount].maxX <<","<<aabb[bbCount].maxY <<","<<aabb[bbCount].maxZ <<")"<<std::endl;
+                //std::cout << bbCount<<"# poly uv: " << "("<<poly.U <<","<<poly.V <<")"<<std::endl;
 
                 bbCount++;
             }
 
-            vertexBuffer[meshID].alloc_and_upload(mesh.vertices3d);
-            vertex2Buffer[meshID].alloc_and_upload(mesh.vertices2d);
-            indexBuffer[meshID].alloc_and_upload(mesh.indices);
-            aabbBuffer[meshID].alloc_and_upload(aabb);
-            polyBuffer[meshID].alloc_and_upload(mesh.poly);
+            memory.aabbBuffer[meshID].alloc_and_upload(aabb);
 
             polygonInput[meshID] = {};
             polygonInput[meshID].type
@@ -175,11 +179,7 @@ namespace flowgpu {
             uint32_t aabb_input_flags[1]       = {OPTIX_GEOMETRY_FLAG_NONE};
             // create local variables, because we need a *pointer* to the
             // device pointers
-            d_vertices[meshID] = vertexBuffer[meshID].d_pointer();
-            d_vertices2[meshID] = vertex2Buffer[meshID].d_pointer();
-            d_indices[meshID] = indexBuffer[meshID].d_pointer();
-            d_aabb[meshID] =  aabbBuffer[meshID].d_pointer();
-            d_polygons[meshID]  = polyBuffer[meshID].d_pointer();
+            d_aabb[meshID] =  memory.aabbBuffer[meshID].d_pointer();
 
             // in this example we have one SBT entry, and no per-primitive
             // materials:
@@ -304,7 +304,7 @@ namespace flowgpu {
     }
 
     /*! helper function that initializes optix and checks for errors */
-    void SampleRenderer::initOptix()
+    void OptixControl::initOptix()
     {
         std::cout << "#flowgpu: initializing optix..." << std::endl;
 
@@ -337,7 +337,7 @@ namespace flowgpu {
 
     /*! creates and configures a optix device context (in this simple
       example, only for the primary GPU device) */
-    void SampleRenderer::createContext()
+    void OptixControl::createContext()
     {
         // for this sample, do everything on one device
         const int deviceID = 0;
@@ -354,6 +354,7 @@ namespace flowgpu {
         OPTIX_CHECK(optixDeviceContextCreate(cudaContext, 0, &optixContext));
         OPTIX_CHECK(optixDeviceContextSetLogCallback
                             (optixContext,context_log_cb,nullptr,4));
+
     }
 
 
@@ -361,7 +362,7 @@ namespace flowgpu {
     /*! creates the module that contains all the programs we are going
       to use. in this simple example, we use a single module from a
       single .cu file, using a single embedded ptx string */
-    void SampleRenderer::createModule()
+    void OptixControl::createModule()
     {
         moduleCompileOptions.maxRegisterCount  = 100;
         moduleCompileOptions.optLevel          = OPTIX_COMPILE_OPTIMIZATION_LEVEL_0;
@@ -370,7 +371,7 @@ namespace flowgpu {
         pipelineCompileOptions = {};
         pipelineCompileOptions.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY;
         pipelineCompileOptions.usesMotionBlur     = false;
-        pipelineCompileOptions.numPayloadValues   = 4;
+        pipelineCompileOptions.numPayloadValues   = 5; // values that get send as PerRayData
         pipelineCompileOptions.numAttributeValues = 5; // ret values e.g. by optixReportIntersection
         pipelineCompileOptions.exceptionFlags     = OPTIX_EXCEPTION_FLAG_NONE;
         pipelineCompileOptions.pipelineLaunchParamsVariableName = "optixLaunchParams";
@@ -424,7 +425,7 @@ namespace flowgpu {
 
 
     /*! does all setup for the raygen program(s) we are going to use */
-    void SampleRenderer::createRaygenPrograms()
+    void OptixControl::createRaygenPrograms()
     {
         // we do a single ray gen program in this example:
         raygenPGs.resize(1);
@@ -433,7 +434,7 @@ namespace flowgpu {
         OptixProgramGroupDesc pgDesc    = {};
         pgDesc.kind                     = OPTIX_PROGRAM_GROUP_KIND_RAYGEN;
         pgDesc.raygen.module            = modules.rayModule;
-        pgDesc.raygen.entryFunctionName = "__raygen__renderFrame";
+        pgDesc.raygen.entryFunctionName = "__raygen__startFromSource";
 
         // OptixProgramGroup raypg;
         char log[2048];
@@ -449,7 +450,7 @@ namespace flowgpu {
     }
 
     /*! does all setup for the miss program(s) we are going to use */
-    void SampleRenderer::createMissPrograms()
+    void OptixControl::createMissPrograms()
     {
         // we do a single ray gen program in this example:
         missPGs.resize(1);
@@ -458,7 +459,7 @@ namespace flowgpu {
         OptixProgramGroupDesc pgDesc    = {};
         pgDesc.kind                     = OPTIX_PROGRAM_GROUP_KIND_MISS;
         pgDesc.miss.module            = modules.traceModule;
-        pgDesc.miss.entryFunctionName = "__miss__radiance";
+        pgDesc.miss.entryFunctionName = "__miss__molecule";
 
         // OptixProgramGroup raypg;
         char log[2048];
@@ -474,7 +475,7 @@ namespace flowgpu {
     }
 
     /*! does all setup for the hitgroup program(s) we are going to use */
-    void SampleRenderer::createHitgroupPrograms()
+    void OptixControl::createHitgroupPrograms()
     {
         // for this simple example, we set up a single hit group
         hitgroupPGs.resize(1);
@@ -485,9 +486,9 @@ namespace flowgpu {
         pgDesc.hitgroup.moduleIS            = modules.geometryModule;
         pgDesc.hitgroup.entryFunctionNameIS = "__intersection__polygon";
         pgDesc.hitgroup.moduleCH            = modules.traceModule;
-        pgDesc.hitgroup.entryFunctionNameCH = "__closesthit__radiance";
+        pgDesc.hitgroup.entryFunctionNameCH = "__closesthit__molecule";
         pgDesc.hitgroup.moduleAH            = modules.traceModule;
-        pgDesc.hitgroup.entryFunctionNameAH = "__anyhit__radiance";
+        pgDesc.hitgroup.entryFunctionNameAH = "__anyhit__molecule";
 
         char log[2048];
         size_t sizeof_log = sizeof( log );
@@ -503,7 +504,7 @@ namespace flowgpu {
 
 
     /*! assembles the full pipeline of all programs */
-    void SampleRenderer::createPipeline()
+    void OptixControl::createPipeline()
     {
         std::vector<OptixProgramGroup> programGroups;
         for (auto pg : raygenPGs)
@@ -544,8 +545,19 @@ namespace flowgpu {
 
 
     /*! constructs the shader binding table */
-    void SampleRenderer::buildSBT()
+    void OptixControl::buildSBT()
     {
+        // first allocate device memory and upload data
+        for (int meshID=0;meshID<(int)model->poly_meshes.size();meshID++) {
+            PolygonMesh &mesh = *model->poly_meshes[meshID];
+            memory.vertexBuffer[meshID].alloc_and_upload(mesh.vertices3d);
+            memory.vertex2Buffer[meshID].alloc_and_upload(mesh.vertices2d);
+            memory.indexBuffer[meshID].alloc_and_upload(mesh.indices);
+            memory.polyBuffer[meshID].alloc_and_upload(mesh.poly);
+            memory.cdfBuffer[meshID].alloc_and_upload(mesh.cdfs);
+            memory.facprobBuffer[meshID].alloc_and_upload(mesh.facetProbabilities);
+        }
+
         // ------------------------------------------------------------------
         // build raygen records
         // ------------------------------------------------------------------
@@ -553,8 +565,12 @@ namespace flowgpu {
         for (int i=0;i<raygenPGs.size();i++) {
             RaygenRecord rec;
             OPTIX_CHECK(optixSbtRecordPackHeader(raygenPGs[i],&rec));
-            //rec.data = nullptr; /* for now ... */
-            rec.data_poly = nullptr; /* for now ... */
+            rec.data_poly.vertex = (vec3f*)memory.vertexBuffer[0].d_pointer();
+            rec.data_poly.vertex2 = (vec2f*)memory.vertex2Buffer[0].d_pointer();
+            rec.data_poly.index = (uint32_t*)memory.indexBuffer[0].d_pointer();
+            rec.data_poly.poly = (Polygon*)memory.polyBuffer[0].d_pointer();
+            rec.data_poly.cdfs = (float*)memory.cdfBuffer[0].d_pointer();
+            rec.data_poly.facetProbabilities = (vec2f*)memory.facprobBuffer[0].d_pointer();
             raygenRecords.push_back(rec);
         }
         raygenRecordsBuffer.alloc_and_upload(raygenRecords);
@@ -587,11 +603,12 @@ namespace flowgpu {
             OPTIX_CHECK(optixSbtRecordPackHeader(hitgroupPGs[0],&rec));
             //rec.data.color  = gdt::vec3f(0.5,1.0,0.5);
             //rec.data.vertex = (vec3f*)vertexBuffer[meshID].d_pointer();
+
             rec.data_poly.color  = gdt::vec3f(0.5,1.0,0.5);
-            rec.data_poly.vertex = (vec3f*)vertexBuffer[meshID].d_pointer();
-            rec.data_poly.vertex2 = (vec2f*)vertex2Buffer[meshID].d_pointer();
-            rec.data_poly.index = (uint32_t *)indexBuffer[meshID].d_pointer();
-            rec.data_poly.poly = (Polygon*)polyBuffer[meshID].d_pointer();
+            rec.data_poly.vertex = (vec3f*)memory.vertexBuffer[meshID].d_pointer();
+            rec.data_poly.vertex2 = (vec2f*)memory.vertex2Buffer[meshID].d_pointer();
+            rec.data_poly.index3 = (uint32_t*)memory.indexBuffer[meshID].d_pointer();
+            rec.data_poly.poly = (Polygon*)memory.polyBuffer[meshID].d_pointer();
             hitgroupRecords.push_back(rec);
         }
         hitgroupRecordsBuffer.alloc_and_upload(hitgroupRecords);
@@ -601,15 +618,38 @@ namespace flowgpu {
     }
 
 
+    /*! upload some parts only on start */
+    void OptixControl::initSimulation()
+    {
+        const uint32_t launchSize = launchParams.simConstants.size.x * launchParams.simConstants.size.y;
+        CuFacetHitCounter *hitCounter = new CuFacetHitCounter[launchSize*launchParams.simConstants.nbFacets]();
+        //TODO: Delete hitCounter
+
+        hitCounterBuffer.upload(hitCounter,launchSize*launchParams.simConstants.nbFacets);
+        launchParamsBuffer.upload(&launchParams,1);
+    }
 
     /*! render one frame */
-    void SampleRenderer::render()
+    void OptixControl::render()
     {
         // sanity check: make sure we launch only after first resize is
         // already done:
-        if (launchParams.frame.size.x == 0) return;
+        if (launchParams.simConstants.size.x == 0) return;
 
-        launchParamsBuffer.upload(&launchParams,1);
+        // Initialize RNG
+        //const uint32_t launchSize = launchParams.simConstants.size.x * launchParams.simConstants.size.y;
+        //const uint32_t nbRand  = 10*launchSize;
+        //float *randomNumbers = new float[nbRand];
+        //CuFacetHitCounter *hitCounter = new CuFacetHitCounter[launchSize*launchParams.simConstants.nbFacets]();
+
+        //RandWrapper::getRand(randomNumbers, nbRand);
+        //curandState_t *states;
+        //crng::initializeRand(launchParams.frame.size.x*launchParams.frame.size.y, states, randomNumbers);
+        //crng::generateRand(launchParams.frame.size.x*launchParams.frame.size.y, states, randomNumbers);
+        //launchParams.randomNumbers = randomNumbers;
+        //randBuffer.upload(randomNumbers,nbRand);
+        //hitCounterBuffer.upload(hitCounter,launchSize*launchParams.simConstants.nbFacets);
+        //launchParamsBuffer.upload(&launchParams,1);
 
         OPTIX_CHECK(optixLaunch(/*! pipeline we're launching launch: */
                 pipeline,stream,
@@ -618,8 +658,8 @@ namespace flowgpu {
                 launchParamsBuffer.sizeInBytes,
                 &sbt,
                 /*! dimensions of the launch: */
-                launchParams.frame.size.x,
-                launchParams.frame.size.y,
+                launchParams.simConstants.size.x,
+                launchParams.simConstants.size.y,
                 1
         ));
 
@@ -628,60 +668,160 @@ namespace flowgpu {
         // want to use streams and double-buffering, but for this simple
         // example, this will have to do)
         CUDA_SYNC_CHECK();
+
+        //delete[] randomNumbers;
     }
 
-    /*! set camera to render with */
-    void SampleRenderer::setCamera(const Camera &camera)
+    void OptixControl::generateRand()
     {
-        lastSetCamera = camera;
-        launchParams.camera.position  = camera.from;
-        launchParams.camera.direction = normalize(camera.at-camera.from);
-        const float cosFovy = 0.66f;
-        const float aspect = launchParams.frame.size.x / float(launchParams.frame.size.y);
-        launchParams.camera.horizontal
-                = cosFovy * aspect * normalize(cross(launchParams.camera.direction,
-                                                     camera.up));
-        launchParams.camera.vertical
-                = cosFovy * normalize(cross(launchParams.camera.horizontal,
-                                            launchParams.camera.direction));
+        /*const uint32_t launchSize = launchParams.simConstants.size.x * launchParams.simConstants.size.y;
+        const short nbRand  = NB_RAND*launchSize;
+        float *randomNumbers = new float[nbRand];
+        RandWrapper::getRand(randomNumbers, nbRand);
+        uint32_t *randomOffset = new uint32_t[launchSize]();
+
+        //curandState_t *states;
+        //crng::initializeRand(launchParams.frame.size.x*launchParams.frame.size.y, states, randomNumbers);
+        //crng::generateRand(launchParams.frame.size.x*launchParams.frame.size.y, states, randomNumbers);
+        //launchParams.randomNumbers = randomNumbers;
+        randBuffer.upload(randomNumbers,nbRand);
+        delete[] randomNumbers;
+        delete[] randomOffset;*/
+
+        const unsigned int launchSize = launchParams.simConstants.size.x * launchParams.simConstants.size.y;
+        const unsigned int nbRand  = NB_RAND*launchSize;
+
+        //CUDABuffer stateBuff, randomBuff;
+        //curandState_t *states;
+        //TODO: Try upload or host API
+        //printf( "Pre : %p --> %p \n", (void*)randBuffer.d_ptr, (void*)&randBuffer.d_ptr);
+        //crng::testRand(&randomBuff.d_ptr, launchSize);
+        //crng::initializeRandHost(launchSize, (float**) &randomBuff.d_ptr);
+        crng::generateRandHost(launchSize, (float*) randBuffer.d_ptr);
+        //printf( "Post: %p --> %p --> %p\n", (void*)randBuffer.d_ptr, (void*)&randBuffer.d_ptr, randBuffer.d_pointer());
+
+        //std::cout<< " --- print Rand --- " << std::endl;
+        //crng::printDevDataAtHost(randBuffer.d_ptr, nbRand);
+        //std::cout<< " --- ---------- --- " << std::endl;
+        //crng::initializeRand(launchSize, stateBuff.d_ptr, randomBuff.d_ptr);
+        //crng::generateRand(launchSize, (curandState_t *)stateBuff.d_ptr, (float*)randomBuff.d_ptr);
+        launchParams.randomNumbers = (float *)randBuffer.d_ptr;
+
+        //randBuffer.upload(randomNumbers,nbRand);
+
+        /*uint32_t *randomOffset = new uint32_t[launchSize]();
+        randOffsetBuffer.upload(randomOffset,launchSize);
+        delete[] randomOffset;*/
+        crng::offsetBufferZeroInit(launchSize, (void*) randOffsetBuffer.d_ptr);
+
+        //launchParamsBuffer.upload(&launchParams,1);
+
     }
 
-    /*! resize frame buffer to given resolution */
-    void SampleRenderer::resize(const vec2i &newSize)
+
+    /*! resize buffers to given amount of threads */
+    // initlaunchparams
+    void OptixControl::resize(const vec2i &newSize)
     {
+
+        const uint32_t nbRand = NB_RAND;
+
         // resize our cuda frame buffer
-        colorBuffer.resize(newSize.x*newSize.y*sizeof(uint32_t));
-        dirBuffer.resize(newSize.x*newSize.y*sizeof(vec3f));
-        oriBuffer.resize(newSize.x*newSize.y*sizeof(vec3f));
+        // TODO: one counter per thread is a problem for memory
+        hitBuffer.resize(newSize.x*newSize.y*sizeof(MolPRD));
+        randBuffer.resize(nbRand*newSize.x*newSize.y*sizeof(float));
+        randOffsetBuffer.resize(newSize.x*newSize.y*sizeof(uint32_t));
+        hitCounterBuffer.resize(model->nbFacets_total*newSize.x*newSize.y*sizeof(CuFacetHitCounter));
 
         // update the launch parameters that we'll pass to the optix
         // launch:
-        launchParams.frame.size  = newSize;
-        launchParams.frame.colorBuffer = (uint32_t*)colorBuffer.d_pointer();
-        launchParams.frame.dir = (vec3f*)dirBuffer.d_pointer();
-        launchParams.frame.origin = (vec3f*)oriBuffer.d_pointer();
+        launchParams.simConstants.maxDepth  = MAX_DEPTH;
+        launchParams.simConstants.size  = newSize;
+        launchParams.simConstants.nbFacets  = model->nbFacets_total;
+        // TODO: Total nb for indices and vertices
+        launchParams.simConstants.nbIndices  = model->nbIndices_total;
+        launchParams.simConstants.nbVertices  = model->nbVertices_total;
+        launchParams.perThreadData.hitBuffer = (MolPRD*)hitBuffer.d_pointer();
+        launchParams.perThreadData.randBufferOffset = (uint32_t*)randOffsetBuffer.d_pointer();
 
-        // and re-set the camera, since aspect may have changed
-        setCamera(lastSetCamera);
+        crng::initializeRandHost(newSize.x*newSize.y, (float**) &randBuffer.d_ptr);
+        launchParams.randomNumbers = (float*)randBuffer.d_pointer();
+        launchParams.hitCounter = (CuFacetHitCounter*)hitCounterBuffer.d_pointer();
+
+        //TODO: Only necessary if changes will be made after initialization
+        //launchParamsBuffer.upload(&launchParams,1);
+
+
+        // -- one time init of device data --
+        MolPRD *perThreadData = new MolPRD[newSize.x*newSize.y]();
+        hitBuffer.upload(perThreadData,newSize.x*newSize.y);
+        delete[] perThreadData;
+
+    }
+    
+    /*static vec3f dir_max(-10.e10);
+    static vec3f dir_min(10.e10);*/
+    static std::vector<unsigned int> counter2;
+    static std::vector<unsigned int> absorb;
+
+    /*! download the rendered color buffer and return the total amount of hits (= followed rays) */
+    unsigned int OptixControl::downloadDataFromDevice(/*uint32_t *h_pixels*/)
+    {
+        //colorBuffer.download(h_pixels,launchParams.frame.size.x*launchParams.frame.size.y);
+        // get the 'per thread' data
+        MolPRD* hit = new MolPRD[launchParams.simConstants.size.x * launchParams.simConstants.size.y];
+        CuFacetHitCounter* hitCounter = new CuFacetHitCounter[model->nbFacets_total * launchParams.simConstants.size.x * launchParams.simConstants.size.y];
+        hitBuffer.download(hit, launchParams.simConstants.size.x * launchParams.simConstants.size.y);
+        hitCounterBuffer.download(hitCounter, model->nbFacets_total * launchParams.simConstants.size.x * launchParams.simConstants.size.y);
+
+        counter2.clear();
+        counter2.resize(this->model->nbFacets_total+1);
+
+        absorb.clear();
+        absorb.resize(this->model->nbFacets_total+1);
+
+        for(int i= 0;i< launchParams.simConstants.nbFacets * launchParams.simConstants.size.x * launchParams.simConstants.size.y; i++) {
+            counter2[i%launchParams.simConstants.nbFacets] += hitCounter[i].nbMCHit; // let misses count as 0 (-1+1)
+            absorb[i%launchParams.simConstants.nbFacets] += hitCounter[i].nbAbsEquiv; // let misses count as 0 (-1+1)
+        }
+        unsigned int total_counter = 0;
+        unsigned int total_abs = 0;
+        for(int i = 0; i <= this->model->nbFacets_total; i++){
+            //std::cout << "hits >>> "<< i+1 << "- " << counter2[i]<<std::endl;
+            //std::cout << " abs >>> "<< i+1 << "- " << absorb[i]<<std::endl;
+            total_counter += counter2[i];
+            total_abs += absorb[i];
+        }
+        std::cout << "total hits >>> "<< total_counter<<std::endl;
+        std::cout << " total abs >>> "<< total_abs<<std::endl;
+
+        delete[] hitCounter;
+        delete[] hit;
+
+        return total_counter;
     }
 
-    /*! download the rendered color buffer */
-    void SampleRenderer::downloadPixels(uint32_t h_pixels[])
+    void OptixControl::cleanup()
     {
-        colorBuffer.download(h_pixels,
-                             launchParams.frame.size.x*launchParams.frame.size.y);
-        vec3f* dir = new vec3f[launchParams.frame.size.x*launchParams.frame.size.y];
-        vec3f* ori = new vec3f[launchParams.frame.size.x*launchParams.frame.size.y];
-        dirBuffer.download(dir,
-                                          launchParams.frame.size.x*launchParams.frame.size.y);
-        oriBuffer.download(ori,
-                           launchParams.frame.size.x*launchParams.frame.size.y);
-        for(int i= 0;i<launchParams.frame.size.x*launchParams.frame.size.y;i++) {
-            if(i%5000==0/*&&(ori[i].x>0.9+0.001 || ori[i].x<0.9-0.001)*/) std::cout << i << " - " << dir[i] << " / " << ori[i] << std::endl;
-        }
 
-        delete[] dir;
-        delete[] ori;
+        for (int meshID=0;meshID<model->poly_meshes.size();meshID++) {
+            memory.aabbBuffer[meshID].free();
+            memory.vertex2Buffer[meshID].free();
+            memory.vertexBuffer[meshID].free();
+            memory.indexBuffer[meshID].free();
+            memory.polyBuffer[meshID].free();
+            memory.cdfBuffer[meshID].free();
+            memory.facprobBuffer[meshID].free();
+        }
+        raygenRecordsBuffer.free();
+        missRecordsBuffer.free();
+        hitgroupRecordsBuffer.free();
+
+        hitBuffer.free();
+        crng::destroyRandHost((float**) &randBuffer.d_ptr),
+        //randBuffer.free();
+        randOffsetBuffer.free();
+        hitCounterBuffer.free();
     }
 
 } // ::flowgpu

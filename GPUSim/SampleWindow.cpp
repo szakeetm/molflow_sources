@@ -15,7 +15,7 @@ void flowgpu::SampleWindow::render(){
 }
 
 void flowgpu::SampleWindow::draw(){
-    sample.downloadPixels(pixels.data());
+    sample.downloadDataFromDevice(pixels.data());
     if (fbTexture == 0)
         glGenTextures(1, &fbTexture);
 

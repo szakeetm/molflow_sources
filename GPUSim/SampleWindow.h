@@ -5,7 +5,7 @@
 #ifndef MOLFLOW_SAMPLEWINDOW_H
 #define MOLFLOW_SAMPLEWINDOW_H
 
-#include "SampleRenderer.h"
+#include "OptixControl.h"
 
 // our helper library for window handling
 #include "glfWindow/GLFWindow.h"
@@ -34,7 +34,7 @@ namespace flowgpu {
 
         vec2i                 fbSize;
         GLuint                fbTexture {0};
-        SampleRenderer        sample;
+        OptixControl        sample;
         std::vector<uint32_t> pixels;
     };
 

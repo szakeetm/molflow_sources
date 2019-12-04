@@ -1,89 +1,35 @@
 //
-// Created by pbahr on 08/10/2019.
+// Created by pbahr on 15/11/2019.
 //
 
-#include "Model.h"
-#define TINYOBJLOADER_IMPLEMENTATION
-#include "3rdParty/tiny_obj_loader.h"
-//std
-#include <set>
-//#include <Facet_shared.h>
+#include "MolflowModelParser.h"
+//#include "Facet_shared.h"
 
-#include <thrust/device_vector.h>
+// debug output
+#include <fstream>
+#include <cereal/archives/xml.hpp>
+#include <cereal/types/vector.hpp>
+
+/*#include <thrust/device_vector.h>
 #include <thrust/transform.h>
 #include <thrust/sequence.h>
 #include <thrust/copy.h>
 #include <thrust/fill.h>
 #include <thrust/replace.h>
-#include <thrust/functional.h>
-
-namespace std {
-    inline bool operator<(const tinyobj::index_t &a,
-                          const tinyobj::index_t &b)
-    {
-        if (a.vertex_index < b.vertex_index) return true;
-        if (a.vertex_index > b.vertex_index) return false;
-
-        if (a.normal_index < b.normal_index) return true;
-        if (a.normal_index > b.normal_index) return false;
-
-        if (a.texcoord_index < b.texcoord_index) return true;
-        if (a.texcoord_index > b.texcoord_index) return false;
-
-        return false;
-    }
-}
+#include <thrust/functional.h>*/
 
 /*! \namespace flowgpu - Molflow GPU code */
 namespace flowgpu {
 
-    /*inline void vector3d_to_vec3f(gdt::vec3f& t, const Vector3d& o){
+    inline void vector3d_to_vec3f(gdt::vec3f& t, const Vector3d& o){
         t.x = o.x;
         t.y = o.y;
         t.z = o.z;
 
         return;
-    }*/
-
-    /*! find vertex with given position, normal, texcoord, and return
-        its vertex ID, or, if it doesn't exit, add it to the mesh, and
-        its just-created index */
-    int addVertex(TriangleMesh *mesh,
-                  tinyobj::attrib_t &attributes,
-                  const tinyobj::index_t &idx,
-                  std::map<tinyobj::index_t,int> &knownVertices){
-
-        if (knownVertices.find(idx) != knownVertices.end())
-            return knownVertices[idx];
-
-        const vec3f *vertex_array   = (const vec3f*)attributes.vertices.data();
-        const vec3f *normal_array   = (const vec3f*)attributes.normals.data();
-        const vec2f *texcoord_array = (const vec2f*)attributes.texcoords.data();
-
-        int newID = mesh->vertex.size();
-        knownVertices[idx] = newID;
-
-        mesh->vertex.push_back(vertex_array[idx.vertex_index]);
-        if (idx.normal_index >= 0) {
-            while (mesh->normal.size() < mesh->vertex.size())
-                mesh->normal.push_back(normal_array[idx.normal_index]);
-        }
-        if (idx.texcoord_index >= 0) {
-            while (mesh->texcoord.size() < mesh->vertex.size())
-                mesh->texcoord.push_back(texcoord_array[idx.texcoord_index]);
-        }
-
-        // just for sanity's sake:
-        if (mesh->texcoord.size() > 0)
-            mesh->texcoord.resize(mesh->vertex.size());
-        // just for sanity's sake:
-        if (mesh->normal.size() > 0)
-            mesh->normal.resize(mesh->vertex.size());
-
-        return newID;
     }
 
-    /*Model *loadFromMolflow(const std::vector<Vector3d> &geomVertices, const std::vector<SuperStructure> &structures, const WorkerParams& wp, const std::vector<std::vector<std::pair<double,double>>> CDFs){
+    Model *loadFromMolflow(const std::vector<Vector3d> &geomVertices, const std::vector<SuperStructure> &structures, const WorkerParams& wp, const std::vector<std::vector<std::pair<double,double>>> CDFs){
         Model *model = new Model;
         // Loop over Vertices3
         //thrust::host_vector<int> X(10);
@@ -189,19 +135,43 @@ namespace flowgpu {
 
         // calculate total amount of facets
         model->nbFacets_total = 0;
-        for (PolygonMesh* mesh : model->poly_meshes)
+        model->nbIndices_total = 0;
+        model->nbVertices_total = 0;
+        for (PolygonMesh* mesh : model->poly_meshes){
             model->nbFacets_total += mesh->nbFacets;
-
+            model->nbIndices_total += mesh->nbIndices;
+            model->nbVertices_total += mesh->nbVertices;
+        }
         // calculate global bounds for the whole model
         for (PolygonMesh* mesh : model->poly_meshes)
             for (const vec3f& vtx : mesh->vertices3d)
                 model->bounds.extend(vtx);
 
 
-            // load some global settings (for now into model)
-            model->useMaxwell = wp.useMaxwellDistribution;
+        // load some global settings (for now into model)
+        model->useMaxwell = wp.useMaxwellDistribution;
 
+
+        std::ofstream file( "test_geom.xml" );
+        cereal::XMLOutputArchive archive( file );
+        archive(
+                cereal::make_nvp("poly", model->poly_meshes[0]->poly) ,
+                cereal::make_nvp("facetProbabilities", model->poly_meshes[0]->facetProbabilities) ,
+                cereal::make_nvp("cdfs", model->poly_meshes[0]->cdfs) ,
+                cereal::make_nvp("vertices2d", model->poly_meshes[0]->vertices2d) ,
+                cereal::make_nvp("vertices3d", model->poly_meshes[0]->vertices3d) ,
+                cereal::make_nvp("indices", model->poly_meshes[0]->indices) ,
+                cereal::make_nvp("nbFacets", model->poly_meshes[0]->nbFacets) ,
+                cereal::make_nvp("nbVertices", model->poly_meshes[0]->nbVertices) ,
+                cereal::make_nvp("nbIndices", model->poly_meshes[0]->nbIndices) ,
+                cereal::make_nvp("nbFacetsTotal", model->nbFacets_total) ,
+                cereal::make_nvp("nbVerticesTotal", model->nbVertices_total) ,
+                cereal::make_nvp("nbIndicesTotal", model->nbIndices_total) ,
+                cereal::make_nvp("useMaxwell", model->useMaxwell) ,
+                cereal::make_nvp("bounds.lower", model->bounds.lower) ,
+                cereal::make_nvp("bounds.upper", model->bounds.upper)
+        );
 
         return model;
-    }*/
+    }
 }

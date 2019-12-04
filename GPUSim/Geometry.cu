@@ -15,9 +15,9 @@
   (a.y*b.z - a.z*b.y, a.z*b.x - a.x*b.z, a.x*b.y - a.y*b.x)
 
 #define float3_as_args(u) \
-    reinterpret_cast<uint32_t&>((u).x), \
-    reinterpret_cast<uint32_t&>((u).y), \
-    reinterpret_cast<uint32_t&>((u).z)
+    reinterpret_cast<cuuint32_t&>((u).x), \
+    reinterpret_cast<cuuint32_t&>((u).y), \
+    reinterpret_cast<cuuint32_t&>((u).z)
 
 
 using namespace flowgpu;
@@ -39,102 +39,25 @@ namespace flowgpu {
     // one group of them to set up the SBT)
     //------------------------------------------------------------------------------
 
-    extern "C" __device__ void intersection__polygon(float d, float u, float v, vec3f n) {
-        // Fast method to check if a point is inside a polygon or not.
-        // Works with convex and concave polys, orientation independent
-
-        const PolygonMeshSBTData &sbtData = *(const PolygonMeshSBTData*)optixGetSbtDataPointer();
-        const int   primID = optixGetPrimitiveIndex();
-
-        const Polygon& poly  = sbtData.poly[primID];
-
-        const int nbSizeMinusOne = poly.nbVertices - 1;
-        const vec2f* polyPoints = sbtData.vertex2;
-
-        int n_updown = 0;
-        int n_found = 0;
-
-        vec2f p;
-        p.u = u;
-        p.v = v;
-
-        const vec3f& p0 = sbtData.vertex[sbtData.index[poly.vertOffset]];
-
-        for (size_t j = 0; j < nbSizeMinusOne; j++) {
-            const vec2f& p1 = polyPoints[sbtData.index[poly.vertOffset+j]];
-            const vec2f& p2 = polyPoints[sbtData.index[poly.vertOffset+j+1]];
-
-            const vec3f& p31 = sbtData.vertex[sbtData.index[poly.vertOffset+j]];
-            const vec3f& p32 = sbtData.vertex[sbtData.index[poly.vertOffset+j+1]];
-
-            const vec3f v2U1 = normalize(p31-p0);
-            const vec3f v2V1 = cross(n,v2U1);
-            const float u1 = dot(v2U1, p31-p0);
-            const float v1 = dot(v2V1, p31-p0);
-            const vec3f v2U2 = normalize(p32-p0);
-            const vec3f v2V2 = cross(n,v2U2);
-            const float u2 = dot(v2U2, p32-p0);
-            const float v2 = dot(v2V2, p32-p0);
-
-            if (p.u<u1 != p.u<u2) {
-                float slope = (v2 - v1) / (u2 - u1);
-                if ((slope * p.u - p.v) < (slope * u1 - v1)) {
-                    n_updown++;
-                }
-                else {
-                    n_updown--;
-                }
-                n_found++;
-            }
-        }
-        //Last point. Repeating code because it's the fastest and this function is heavily used
-        const vec2f& p1 = polyPoints[sbtData.index[poly.vertOffset+nbSizeMinusOne]];
-        const vec2f& p2 = polyPoints[sbtData.index[poly.vertOffset+0]];
-
-        const vec3f& p31 = sbtData.vertex[sbtData.index[poly.vertOffset+nbSizeMinusOne]];
-        const vec3f v2U1 = normalize(p31-p0);
-        const vec3f v2V1 = cross(n,v2U1);
-        const float u1 = dot(v2U1, p31-p0);
-        const float v1 = dot(v2V1, p31-p0);
-
-        if (p.u<p1.u != p.u<0.0) {
-            float slope = (0.0 - v1) / (0.0 - u1);
-            if ((slope * p.u - p.v) < (slope * u1 - v1)) {
-                n_updown++;
-            }
-            else {
-                n_updown--;
-            }
-            n_found++;
-        }
-
-        if(((n_found / 2) & 1) ^ ((n_updown / 2) & 1)){
-            optixReportIntersection(
-                    d,
-                    0,
-                    float3_as_args(n),
-                    float_as_int( u ), float_as_int( v )
-            );
-        }
-    }
-
     // Parallelogram intersection from the SDK optixWhitted example
-    extern "C" __device__ void intersection__parallelogram()
+    extern "C" __device__ void intersection__parallelogram__camera()
     {
         //const Parallelogram* floor = reinterpret_cast<Parallelogram*>( optixGetSbtDataPointer() );
         const PolygonMeshSBTData &sbtData = *(const PolygonMeshSBTData*)optixGetSbtDataPointer();
 
         const int   primID = optixGetPrimitiveIndex();
         const Polygon& poly  = sbtData.poly[primID];
-        const vec3f &Aa     = sbtData.vertex[sbtData.index[poly.vertOffset+0]];
-        const vec3f &Bb     = sbtData.vertex[sbtData.index[poly.vertOffset+1]];
-        const vec3f &Cc     = sbtData.vertex[sbtData.index[poly.vertOffset+2]];
+        const vec3f &Aa     = sbtData.vertex[sbtData.index3[poly.vertOffset + 0]];
+        const vec3f &Bb     = sbtData.vertex[sbtData.index3[poly.vertOffset + 1]];
+        const vec3f &Cc     = sbtData.vertex[sbtData.index3[poly.vertOffset + 2]];
 
         vec3f v1 = Bb-Aa; // v1 = P0P1
         vec3f v2 = Cc-Aa; // v2 = P1P2
         vec3f n = cross(v1,v2);
         v1 *= 1.0f / dot( v1, v1 );
         v2 *= 1.0f / dot( v2, v2 );
+
+        //printf("Normal (on device): %10.4f %10.4f %10.4f \n", n.x, n.y, n.z);
         //f->sh.N = CrossProduct(v1, v2);
         //vec3f n = cross(A,B);
 
@@ -179,27 +102,107 @@ namespace flowgpu {
                 }
             }
         }
+    }
 
+    extern "C" __device__ void intersection__polygon(float d, float u, float v, vec3f n) {
+        // Fast method to check if a point is inside a polygon or not.
+        // Works with convex and concave polys, orientation independent
 
+        const PolygonMeshSBTData &sbtData = *(const PolygonMeshSBTData*)optixGetSbtDataPointer();
+        const int   primID = optixGetPrimitiveIndex();
 
-        /*const int   primID = optixGetPrimitiveIndex();
+        const Polygon& poly  = sbtData.poly[primID];
+
+        const int nbSizeMinusOne = poly.nbVertices - 1;
+        const vec2f* polyPoints = sbtData.vertex2;
+
+        int n_updown = 0;
+        int n_found = 0;
+
+        vec2f p;
+        p.u = u;
+        p.v = v;
+
+        for (size_t j = 0; j < nbSizeMinusOne; j++) {
+            const vec2f& p1 = polyPoints[poly.vertOffset+j];
+            const vec2f& p2 = polyPoints[poly.vertOffset+j+1];
+/*
+            if(primID==2 && optixGetLaunchIndex().x+optixGetLaunchIndex().y*optixLaunchParams.frame.size.x % 500 == 0)
+                */
+/*printf("[%d] -- %10.4f / %10.4f / %10.4f / %10.4f > %10.4f for Ray from %10.4f , %10.4f , %10.4f to %10.4f , %10.4f , %10.4f \n",
+                       primID, det, u, v, d, ray_tmin, ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z);*//*
+
+                printf("[%d] -- %10.4f , %10.4f -- %10.4f , %10.4f \n", sbtData.index[poly.vertOffset+j], p1.x, p1.y, p2.x, p2.y);
+*/
+
+            if (p.u<p1.u != p.u<p2.u) {
+                float slope = (p2.v - p1.v) / (p2.u - p1.u);
+                if ((slope * p.u - p.v) < (slope * p1.u - p1.v)) {
+                    n_updown++;
+                }
+                else {
+                    n_updown--;
+                }
+                n_found++;
+            }
+        }
+
+/*
+        if(primID==2 && optixGetLaunchIndex().x+optixGetLaunchIndex().y*optixLaunchParams.frame.size.x % 500 == 0)
+            */
+/*printf("[%d] -- %10.4f / %10.4f / %10.4f / %10.4f > %10.4f for Ray from %10.4f , %10.4f , %10.4f to %10.4f , %10.4f , %10.4f \n",
+                   primID, det, u, v, d, ray_tmin, ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z);*//*
+
+            printf("[%d]half -- found would be %d with %d and %d \n",nbSizeMinusOne, ((n_found / 2) & 1) ^ ((n_updown / 2) & 1), n_found, n_updown);
+*/
+
+        //Last point. Repeating code because it's the fastest and this function is heavily used
+        const vec2f& p1 = polyPoints[poly.vertOffset+nbSizeMinusOne];
+        const vec2f& p2 = polyPoints[poly.vertOffset+0];
+        if (p.u<p1.u != p.u<p2.u) {
+            float slope = (p2.v - p1.v) / (p2.u - p1.u);
+            if ((slope * p.u - p.v) < (slope * p1.u - p1.v)) {
+                n_updown++;
+            }
+            else {
+                n_updown--;
+            }
+            n_found++;
+        }
+
+        /*if(primID==2 && optixGetLaunchIndex().x+optixGetLaunchIndex().y*optixLaunchParams.frame.size.x % 500 == 0)
+            *//*printf("[%d] -- %10.4f / %10.4f / %10.4f / %10.4f > %10.4f for Ray from %10.4f , %10.4f , %10.4f to %10.4f , %10.4f , %10.4f \n",
+                   primID, det, u, v, d, ray_tmin, ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z);*//*
+            printf("[%d] -- found would be %d with %d and %d \n",nbSizeMinusOne, ((n_found / 2) & 1) ^ ((n_updown / 2) & 1), n_found, n_updown);*/
+        if(((n_found / 2) & 1) ^ ((n_updown / 2) & 1)){
+            optixReportIntersection(
+                    d,
+                    0,
+                    float3_as_args(n),
+                    float_as_int( u ), float_as_int( v )
+            );
+        }
+    }
+
+    // Parallelogram intersection based on the SDK optixWhitted example
+    extern "C" __device__ void intersection__parallelogram()
+    {
+        const PolygonMeshSBTData &sbtData = *(const PolygonMeshSBTData*)optixGetSbtDataPointer();
+
+        const int   primID = optixGetPrimitiveIndex();
 
         const vec3f ray_orig = optixGetWorldRayOrigin();
-        const vec3f ray_dir  = optixGetWorldRayDirection();
+        vec3f ray_dir = optixGetWorldRayDirection();
+        ray_dir = vec3f(-1.0,-1.0,-1.0) * ray_dir;
 
         const float ray_tmin = optixGetRayTmin(), ray_tmax = optixGetRayTmax();
 
         const Polygon& poly  = sbtData.poly[primID];
-        const vec3f &A     = sbtData.vertex[sbtData.index[poly.vertOffset+0]];
-        const vec3f &B     = sbtData.vertex[sbtData.index[poly.vertOffset+1]];
-        const vec3f &C     = sbtData.vertex[sbtData.index[poly.vertOffset+2]];
-        const vec3f n     = normalize(cross(A,B));
-        //const vec3f n = vec3f(-1.0) * poly->Nuv;
-        const float det = DOT(n, ray_dir);
+        const float det = dot(poly.Nuv, ray_dir);
 
         if(det > 0.0) {
             const float iDet = 1.0 / det;
-            vec3f intZ = ray_orig - C;
+            vec3f intZ = ray_orig - poly.O;
             const float u = iDet * DET33(intZ.x, poly.V.x, ray_dir.x,
                                    intZ.y, poly.V.y, ray_dir.y,
                                    intZ.z, poly.V.z, ray_dir.z);
@@ -212,32 +215,29 @@ namespace flowgpu {
 
                 if (v >= 0.0 && v <= 1.0) {
 
-                    const float d = iDet * DOT(n, intZ);
-                    if (d>0.0) {
+                    const float d = iDet * dot(poly.Nuv, intZ);
+
+                    /*if(primID==2)
+                        printf("[%d] -- %10.4f / %10.4f / %10.4f / %10.4f > %10.4f for Ray from %10.4f , %10.4f , %10.4f to %10.4f , %10.4f , %10.4f \n",
+                               primID, det, u, v, d, ray_tmin, ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z);
+*/
+                    if (d>ray_tmin) {
                         //intersection__polygon(u,v);
-                        intersection__polygon(d,u,v,n);
-                        *//*if(inPoly > 0){
+                        intersection__polygon(d,u,v,poly.Nuv);
+                        /*if(inPoly > 0){
                             optixReportIntersection(
                                     d,
                                     0,
-                                    float_as_int( n.x ), float_as_int( n.y ), float_as_int( n.z ),
-                                    //float3_as_args(n),
+                                    //float_as_int( poly.Nuv.x ), float_as_int( poly.Nuv.y ), float_as_int( n.z ),
+                                    float3_as_args(poly.Nuv),
                                     float_as_int( u ), float_as_int( v )
                             );
-                        }*//*
+                        }*/
                     }
-
-                        *//*optixReportIntersection(
-                                d,
-                                0,
-                                float_as_int( n.x ), float_as_int( n.y ), float_as_int( n.z ),
-                                //float3_as_args(n),
-                                float_as_int( u ), float_as_int( v )
-                        );*//*
                 }
             }
 
-        }*/
+        }
     }
 
     extern "C" __global__ void __intersection__polygon()

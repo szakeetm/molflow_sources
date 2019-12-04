@@ -26,7 +26,10 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
+#ifdef GPU_MODE
 #include "GPUSim/SimulationOptiX.h"
+#include "GPUSim/MolflowModelParser.h"
+#endif
 
 #include "Simulation.h"
 #ifdef WIN
@@ -376,7 +379,9 @@ int main(int argc,char* argv[])
         printf("COMMAND: START (%zd,%llu)\n",prParam,prParam2);
         if( sHandle->loadOK ) {
 #ifdef GPU_MODE
-            gpuSim.LoadSimulation(sHandle->vertices3,sHandle->structures);
+            flowgpu::Model* molflowModel = flowgpu::loadFromMolflow(sHandle->vertices3,sHandle->structures, sHandle->wp, sHandle->CDFs);
+            //flowgpu::Model* molflowModel = nullptr;
+            gpuSim.LoadSimulation(molflowModel);
 #endif
           if( StartSimulation(prParam) )
             SetState(PROCESS_RUN,GetSimuStatus());

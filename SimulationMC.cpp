@@ -1523,3 +1523,4 @@ void SubprocessFacet::RegisterTransparentPass()
 		true, 2.0, 2.0);
 	if (this->sh.anglemapParams.record) RecordAngleMap(this);
 }
+    

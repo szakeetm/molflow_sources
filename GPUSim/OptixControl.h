@@ -24,20 +24,11 @@
 /*! \namespace flowgpu - Molflow GPU code */
 namespace flowgpu {
 
-    struct Camera {
-        /*! camera position - *from* where we are looking */
-        vec3f from;
-        /*! which point we are looking *at* */
-        vec3f at;
-        /*! general up-vector */
-        vec3f up;
-    };
-
     /*! a sample OptiX-7 renderer that demonstrates how to set up
         context, module, programs, pipeline, SBT, etc, and perform a
         valid launch that renders some pixel (using a simple test
         pattern, in this case */
-    class SampleRenderer
+    class OptixControl
     {
         // ------------------------------------------------------------------
         // publicly accessible interface
@@ -45,19 +36,25 @@ namespace flowgpu {
     public:
         /*! constructor - performs all setup, including initializing
           optix, creates module, pipeline, programs, SBT, etc. */
-        SampleRenderer(const Model *model);
+        OptixControl(const Model *model);
+
+        /*! upload some parts only on start */
+        void initSimulation();
 
         /*! render one frame */
         void render();
 
-        /*! resize frame buffer to given resolution */
+        /*! resize thread buffer to given resolution */
         void resize(const vec2i &newSize);
 
-        /*! download the rendered color buffer */
-        void downloadPixels(uint32_t h_pixels[]);
+        /*! resize t buffer to given resolution */
+        void generateRand();
 
-        /*! set camera to render with */
-        void setCamera(const Camera &camera);
+        /*! download the rendered color buffer */
+        unsigned int downloadDataFromDevice(/*uint32_t *h_pixels*/);
+
+        void cleanup();
+
     protected:
         // ------------------------------------------------------------------
         // internal helper functions
@@ -136,23 +133,28 @@ namespace flowgpu {
         CUDABuffer   launchParamsBuffer;
         /*! @} */
 
-        CUDABuffer colorBuffer;
-        CUDABuffer dirBuffer;
-        CUDABuffer oriBuffer;
-        /*! the camera we are to render with. */
-        Camera lastSetCamera;
+        CUDABuffer hitBuffer;
+        CUDABuffer randBuffer;
+        CUDABuffer randOffsetBuffer;
+        CUDABuffer hitCounterBuffer;
 
         /*! the model we are going to trace rays against */
         const Model *model;
 
         /*! one buffer per input mesh */
-        std::vector<CUDABuffer> aabbBuffer;
-        /*! one buffer per input mesh */
-        std::vector<CUDABuffer> vertexBuffer;
-        std::vector<CUDABuffer> vertex2Buffer;
-        std::vector<CUDABuffer> indexBuffer;
-        /*! one buffer per input mesh */
-        std::vector<CUDABuffer> polyBuffer;
+        struct DeviceMemory {
+            std::vector<CUDABuffer> aabbBuffer;
+            std::vector<CUDABuffer> vertexBuffer;
+            std::vector<CUDABuffer> vertex2Buffer;
+            std::vector<CUDABuffer> indexBuffer;
+            std::vector<CUDABuffer> polyBuffer;
+
+            std::vector<CUDABuffer> facprobBuffer;
+            std::vector<CUDABuffer> cdfBuffer;
+
+
+        } memory;
+
         //! buffer that keeps the (final, compacted) accel structure
         CUDABuffer asBuffer;
     };
