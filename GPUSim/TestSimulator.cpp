@@ -50,12 +50,15 @@ void main() {
         std::cout << "--- Run #"<<i<< " - Elapsed Time: " << elapsed.count() << " ms ---" << std::endl;
     }
     auto finish_total = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double,std::milli> elapsed = finish_total - start_total;
+
+    std::chrono::duration<double> elapsed = finish_total - start_total;
+    std::cout << "-- Total Elapsed Time: " << elapsed.count() << " s ---" << std::endl;
+    double raysPerSecond = (double)(gpuSim.GetSimulationData())/(elapsed.count());
+    std::cout << "-- Rays per second: " << raysPerSecond/1000.0/1000.0 << " MRay/s ---" << std::endl;
+    /*std::chrono::duration<double,std::milli> elapsed = finish_total - start_total;
     std::cout << "-- Total Elapsed Time: " << elapsed.count() << " ms ---" << std::endl;
-
     double raysPerSecond = (double)(gpuSim.GetSimulationData())/(elapsed.count()/1000);
-    std::cout << "-- Rays per second: " << raysPerSecond << " Ray/s ---" << std::endl;
-
+    std::cout << "-- Rays per second: " << raysPerSecond << " Ray/s ---" << std::endl;*/
 
     //gpuSim.CloseSimulation();
 
