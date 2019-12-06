@@ -2164,9 +2164,9 @@ void MolFlow::EmptyGeometry() {
 	ResetSimulation(false);
 
 	try {
-		_ASSERTE(_CrtCheckMemory());
+        assert(_CrtCheckMemory());
 		geom->EmptyGeometry();
-		_ASSERTE(_CrtCheckMemory());
+        assert(_CrtCheckMemory());
 		worker.CalcTotalOutgassing();
 		//default values
 		worker.wp.enableDecay = false;
