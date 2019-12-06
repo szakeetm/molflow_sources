@@ -847,7 +847,7 @@ bool StartFromSource() {
             /////////////////////////////
             */
             sHandle->currentParticle.direction = PolarToCartesian(src, PI - theta, phi, false); //angle map contains incident angle (between N and source dir) and theta is dir (between N and dest dir)
-            _ASSERTE(sHandle->currentParticle.direction.x == sHandle->currentParticle.direction.x);
+            assert(sHandle->currentParticle.direction.x == sHandle->currentParticle.direction.x);
 
         }
 	}
@@ -942,7 +942,7 @@ std::tuple<double, int, double> Anglemap::GenerateThetaFromAngleMap(const Anglem
 			theta = GetTheta((double)thetaLowerIndex + 0.5 + thetaOvershoot, anglemapParams);
 		}
 	}
-	_ASSERTE(theta == theta);
+    assert(theta == theta);
 	return { theta, thetaLowerIndex, thetaOvershoot };
 }
 
@@ -1031,8 +1031,8 @@ double Anglemap::GeneratePhiFromAngleMap(const int & thetaLowerIndex, const doub
 			phi = GetPhi((double)phiLowerIndex + 0.5 + phiOvershoot, anglemapParams);
 		}
 	}
-	_ASSERTE(phi == phi);
-	_ASSERTE(phi > -PI && phi < PI);
+    assert(phi == phi);
+    assert(phi > -PI && phi < PI);
 	return phi;
 }
 
@@ -1523,4 +1523,3 @@ void SubprocessFacet::RegisterTransparentPass()
 		true, 2.0, 2.0);
 	if (this->sh.anglemapParams.record) RecordAngleMap(this);
 }
-    
