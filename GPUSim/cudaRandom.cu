@@ -64,7 +64,7 @@ namespace crng {
     };
 */
     curandGenerator_t gen;
-    int  initializeRandHost(unsigned int kernelSize, float **randomNumbersPtr){
+    int initializeRandHost(unsigned int kernelSize, float **randomNumbersPtr, unsigned int seed) {
         //curandGenerator_t gen;
         /*float *//**devData,*//* *hostData;
 
@@ -83,7 +83,7 @@ namespace crng {
         CURAND_CALL(curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT));
 
         /* Set seed */
-        CURAND_CALL(curandSetPseudoRandomGeneratorSeed(gen, 1234ULL));
+        CURAND_CALL(curandSetPseudoRandomGeneratorSeed(gen, seed));
 
         return EXIT_SUCCESS;
     }

@@ -26,6 +26,8 @@ extern void destroyRand(curandState_t *states, float *randomNumbers);
 
 // this include may only appear in a single source file:
 #include <optix_function_table_definition.h>
+#include <fstream>
+#include <ctime>
 
 /*! \namespace flowgpu - Molflow GPU code */
 namespace flowgpu {
@@ -744,7 +746,8 @@ namespace flowgpu {
         launchParams.perThreadData.hitBuffer = (MolPRD*)hitBuffer.d_pointer();
         launchParams.perThreadData.randBufferOffset = (uint32_t*)randOffsetBuffer.d_pointer();
 
-        crng::initializeRandHost(newSize.x*newSize.y, (float**) &randBuffer.d_ptr);
+        //crng::initializeRandHost(newSize.x * newSize.y, (float **) &randBuffer.d_ptr,  time(NULL));
+        crng::initializeRandHost(newSize.x * newSize.y, (float **) &randBuffer.d_ptr);
         launchParams.randomNumbers = (float*)randBuffer.d_pointer();
         launchParams.hitCounter = (CuFacetHitCounter*)hitCounterBuffer.d_pointer();
 
@@ -780,19 +783,26 @@ namespace flowgpu {
         absorb.clear();
         absorb.resize(this->model->nbFacets_total+1);
 
+        //std::ofstream myfile;
+        //myfile.open ("gpu_counter_blockid.txt");
+
         for(int i= 0;i< launchParams.simConstants.nbFacets * launchParams.simConstants.size.x * launchParams.simConstants.size.y; i++) {
             counter2[i%launchParams.simConstants.nbFacets] += hitCounter[i].nbMCHit; // let misses count as 0 (-1+1)
             absorb[i%launchParams.simConstants.nbFacets] += hitCounter[i].nbAbsEquiv; // let misses count as 0 (-1+1)
+
+            //if(hitCounter[i].nbMCHit > 0 || hitCounter[i].nbAbsEquiv > 0)
+                //myfile << "["<<i/(launchParams.simConstants.nbFacets)<<"] on facet #"<<i%launchParams.simConstants.nbFacets<<" has total hits >>> "<< hitCounter[i].nbMCHit<< " / total abs >>> " << hitCounter[i].nbAbsEquiv<<" ---> "<< i<<std::endl;
         }
+        //myfile.close();
         unsigned int total_counter = 0;
         unsigned int total_abs = 0;
         for(int i = 0; i <= this->model->nbFacets_total; i++){
-            //std::cout << "hits >>> "<< i+1 << "- " << counter2[i]<<std::endl;
-            //std::cout << " abs >>> "<< i+1 << "- " << absorb[i]<<std::endl;
+            std::cout << "hits >>> "<< i+1 << "- " << counter2[i]<<std::endl;
+            std::cout << " abs >>> "<< i+1 << "- " << absorb[i]<<std::endl;
             total_counter += counter2[i];
             total_abs += absorb[i];
         }
-        std::cout << "total hits >>> "<< total_counter<<std::endl;
+        std::cout << " total hits >>> "<< total_counter<<std::endl;
         std::cout << " total abs >>> "<< total_abs<<std::endl;
 
         delete[] hitCounter;

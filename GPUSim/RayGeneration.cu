@@ -252,7 +252,7 @@ namespace flowgpu {
         }*/
 
             float* randFloat = optixLaunchParams.randomNumbers;
-            cuuint32_t randInd = NB_RAND*(ix+iy*optixLaunchParams.simConstants.size.x);
+            cuuint32_t randInd = NB_RAND*(fbIndex);
             cuuint32_t randOffset = optixLaunchParams.perThreadData.randBufferOffset[fbIndex];
 
             //printf("Optix vals: %d %d - %d %d - %d - %10.4f\n", ix, iy, optixGetLaunchDimensions().x, optixGetLaunchDimensions().y, randInd++, randFloat[randInd++]);

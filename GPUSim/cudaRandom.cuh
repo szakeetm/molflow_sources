@@ -24,7 +24,7 @@ namespace crng {
     __host__ int  testRand(void** devData, size_t n);
     __host__ int  printDevDataAtHost(void* devData, size_t n);
 
-    __host__ int  initializeRandHost(unsigned int kernelSize, float **randomNumbersPtr);
+    __host__ int initializeRandHost(unsigned int kernelSize, float **randomNumbersPtr, unsigned int seed = 1234ULL);
     __host__ int  generateRandHost(unsigned int kernelSize, float *randomNumbers);
     __host__ int  destroyRandHost(float **randomNumbersPtr);
     __host__ int  offsetBufferZeroInit(unsigned int kernelSize, void *randomOffsets);

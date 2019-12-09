@@ -11,6 +11,20 @@
 #endif
 
 //#define BOUND_CHECK
+#define MAX_DEPTH 0 // 0=no recursion
+#define NB_RAND 100
+#define LAUNCH_SIZE_X 1664
+#define LAUNCH_SIZE_Y 256
+#define LAUNCH_SIZE_Z 1
+#ifdef DEBUG
+#define LAUNCH_SIZE_X 4
+    #define LAUNCH_SIZE_Y 1
+    #define LAUNCH_SIZE_Z 1
+#endif
+
+#define NB_INPOLYCHECKS 3 //0=always use middle point
+
+/*//#define BOUND_CHECK
 #define MAX_DEPTH 2 // 0=no recursion
 #define NB_RAND 100
 #define LAUNCH_SIZE_X 1664
@@ -22,7 +36,7 @@
     #define LAUNCH_SIZE_Z 1
 #endif
 
-#define NB_INPOLYCHECKS 3 //0=always use middle point
+#define NB_INPOLYCHECKS 3 //0=always use middle point*/
 
 /*//#define BOUND_CHECK
 #define MAX_DEPTH 2 // 0=no recursion
