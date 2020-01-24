@@ -20,13 +20,41 @@
 #include "optix7.h"
 #include "OptixPolygon.h"
 
+#ifdef DEBUGCOUNT
+#define NCOUNTBINS 100
+#define NBCOUNTS 100
+#define DETLOW (-0.2f)
+#define DETHIGH 0.2f
+#define ULOW (-0.2f)
+#define UHIGH 1.2f
+#define VLOW (-0.2f)
+#define VHIGH 1.2f
+#endif
+
 namespace flowgpu {
     using namespace gdt;
 
     struct TriangleMeshSBTData {
-        vec3f  color;
         vec3f *vertex;
         vec3i *index;
+        Polygon *poly;
+    };
+
+    struct TriangleRayGenData {
+        vec3f *vertex;
+        vec3i *index;
+        Polygon *poly;
+
+        // -- data for launch parameters --
+        // --------------------------------
+        // probability for facet selection
+        vec2f* facetProbabilities;
+        //double* prob_lower;
+        //double* prob_upper;
+        // CFD for velocity calculation (temperature, v-bin)
+        float* cdfs;
+        //double *cdf_x; //index of map
+        //double *cdf_val; //value of map
     };
 
     struct PolygonRayGenData {
@@ -48,10 +76,9 @@ namespace flowgpu {
     };
 
     struct PolygonMeshSBTData {
-        vec3f  color;
         vec3f *vertex;
         vec2f *vertex2;
-        uint32_t *index3;
+        uint32_t *index;
         Polygon *poly;
     };
 
@@ -107,8 +134,19 @@ namespace flowgpu {
     {
 
         struct {
-            MolPRD *hitBuffer;
+            uint32_t *missCounter;
+        } sharedData;
+
+        struct {
+            MolPRD *currentMoleculeData;
             uint32_t* randBufferOffset; /*! offset to remember which random number is next */
+#ifdef DEBUGPOS
+            uint32_t* posOffsetBuffer_debug;
+            vec3f* positionsBuffer_debug;
+#endif
+#ifdef DEBUGMISS
+            uint32_t* missBuffer; //first value is the amount of primitives N, followed by N primitive IDs
+#endif
         } perThreadData;
 
         struct {
@@ -121,10 +159,21 @@ namespace flowgpu {
             // globalSettings
             bool useMaxwell;
             uint32_t maxDepth;
+
+            float scene_epsilon;
+            uint32_t nbRandNumbersPerThread;
         } simConstants;
 
         float* randomNumbers;
         CuFacetHitCounter* hitCounter;
+
+#ifdef DEBUGCOUNT
+        struct {
+            uint32_t* detCount;
+            uint32_t* uCount;
+            uint32_t* vCount;
+        } debugCounter;
+#endif
         OptixTraversableHandle traversable;
     };
 

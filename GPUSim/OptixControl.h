@@ -51,7 +51,7 @@ namespace flowgpu {
         void generateRand();
 
         /*! download the rendered color buffer */
-        unsigned int downloadDataFromDevice(/*uint32_t *h_pixels*/);
+        unsigned long long int downloadDataFromDevice(/*uint32_t *h_pixels*/);
 
         void cleanup();
 
@@ -85,11 +85,12 @@ namespace flowgpu {
         void createPipeline();
 
         /*! constructs the shader binding table */
-        void buildSBT();
+        void buildSBTPolygon();
+        void buildSBTTriangle();
 
         /*! build an acceleration structure for the given triangle mesh */
-        OptixTraversableHandle buildAccel();
-
+        OptixTraversableHandle buildAccelPolygon();
+        OptixTraversableHandle buildAccelTriangle();
     protected:
         /*! @{ CUDA device context and stream that optix pipeline will run
             on, as well as device properties for this device */
@@ -133,16 +134,26 @@ namespace flowgpu {
         CUDABuffer   launchParamsBuffer;
         /*! @} */
 
-        CUDABuffer hitBuffer;
+        CUDABuffer moleculeBuffer;
         CUDABuffer randBuffer;
         CUDABuffer randOffsetBuffer;
         CUDABuffer hitCounterBuffer;
+        CUDABuffer missCounterBuffer;
 
         /*! the model we are going to trace rays against */
         const Model *model;
 
         /*! one buffer per input mesh */
-        struct DeviceMemory {
+        struct DeviceTriangleMemory {
+            std::vector<CUDABuffer> vertexBuffer;
+            std::vector<CUDABuffer> indexBuffer;
+            std::vector<CUDABuffer> polyBuffer;
+
+            std::vector<CUDABuffer> facprobBuffer;
+            std::vector<CUDABuffer> cdfBuffer;
+        } tri_memory;
+
+        struct DevicePolygonMemory {
             std::vector<CUDABuffer> aabbBuffer;
             std::vector<CUDABuffer> vertexBuffer;
             std::vector<CUDABuffer> vertex2Buffer;
@@ -151,10 +162,27 @@ namespace flowgpu {
 
             std::vector<CUDABuffer> facprobBuffer;
             std::vector<CUDABuffer> cdfBuffer;
+        } poly_memory;
 
+#ifdef DEBUG
+        struct DeviceMemoryDebug {
+#ifdef DEBUGCOUNT
+            CUDABuffer detBuffer;
+            CUDABuffer uBuffer;
+            CUDABuffer vBuffer;
+#endif DEBUGCOUNT
 
-        } memory;
+#ifdef DEBUGPOS
+            CUDABuffer posBuffer;
+            CUDABuffer posOffsetBuffer;
+#endif DEBUGPOS
 
+#ifdef DEBUGMISS
+            CUDABuffer missBuffer;
+#endif DEBUGMISS
+
+        } memory_debug;
+#endif
         //! buffer that keeps the (final, compacted) accel structure
         CUDABuffer asBuffer;
     };

@@ -22,13 +22,22 @@ namespace flowgpu {
     /*! a simple indexed triangle mesh that our sample renderer will
         render */
     struct TriangleMesh {
-        std::vector<vec3f> vertex;
-        std::vector<vec3f> normal;
-        std::vector<vec2f> texcoord;
-        std::vector<vec3i> index;
+        //std::vector<vec3f> vertex;
+        //std::vector<vec3f> normal;
+        //std::vector<vec3i> index;
+        std::vector<vec3i> indices;
+        std::vector<vec3f> vertices3d;
 
         // material data:
-        vec3f              diffuse;
+        //vec3f              diffuse;
+        std::vector<Polygon> poly;
+
+        std::vector<vec2f> facetProbabilities;
+        std::vector<float> cdfs; // should not be part of each mesh, but the model itself
+
+        uint32_t nbFacets;
+        uint32_t nbIndices;
+        uint32_t nbVertices;
     };
 
     struct PolygonMesh {
@@ -57,9 +66,12 @@ namespace flowgpu {
             for (auto& mesh : poly_meshes) {
                 delete mesh;
             }
+            for (auto& mesh : triangle_meshes) {
+                delete mesh;
+            }
         }
 
-        //std::vector<TriangleMesh *> meshes;
+        std::vector<TriangleMesh *> triangle_meshes;
         std::vector<PolygonMesh *> poly_meshes;
         uint32_t nbFacets_total;
         uint32_t nbIndices_total;

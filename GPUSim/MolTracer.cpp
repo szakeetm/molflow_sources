@@ -15,7 +15,7 @@ void flowgpu::MolTracer::launchRT(){
 }
 
 // Fetch data
-unsigned int flowgpu::MolTracer::fetchData(){
+unsigned long long int flowgpu::MolTracer::fetchData(){
     return optixHandle.downloadDataFromDevice(/*pixels.data()*/);
 }
 
@@ -25,8 +25,8 @@ void flowgpu::MolTracer::run()
 {
 
     // for testing only generate and upload random numbers once
-    // generate new numbers whenever necessary, recursion = TraceProcessing only
-    if(runCount%(NB_RAND/(11+MAX_DEPTH*2))==0){
+    // generate new numbers whenever necessary, recursion = TraceProcessing only, poly checks only for ray generation with polygons
+    if(runCount%(NB_RAND/(8+MAX_DEPTH*2+NB_INPOLYCHECKS*2))==0){
         std::cout << "#flowgpu: generating random numbers at run #" << runCount << std::endl;
         optixHandle.generateRand();
     }

@@ -5,8 +5,9 @@
 #ifndef MOLFLOW_PROJ_MOLFLOWMODELPARSER_H
 #define MOLFLOW_PROJ_MOLFLOWMODELPARSER_H
 
-#include "Model.h"
+//#include "Model.h"
 #include "Simulation.h"
+#include <Geometry_shared.h>
 
 // debug output
 /*#include <fstream>
@@ -21,11 +22,15 @@
 #include <thrust/replace.h>
 #include <thrust/functional.h>*/
 
-/*! \namespace flowgpu - Molflow GPU code */
-namespace flowgpu {
-    Model *loadFromMolflow(
+/*! \namespace flowgeom - Molflow Geometry code */
+namespace flowgeom {
+    /*int loadFromMolflow(
+                Geometry& geometry, const WorkerParams& wp, const std::vector<std::vector<std::pair<double,double>>> CDFs);*/
+    /*flowgpu::Model *loadFromMolflowSimu(
             const std::vector<Vector3d> &geomVertices, const std::vector<SuperStructure> &structures,
-            const WorkerParams& wp, const std::vector<std::vector<std::pair<double,double>>> CDFs);
-}
+            const WorkerParams& wp, const std::vector<std::vector<std::pair<double,double>>> CDFs);*/
+    int saveFromMolflow(Geometry& geometry, const WorkerParams& wp, const std::vector<std::vector<std::pair<double,double>>> CDFs);
+    int saveFromMolflowTriangle(Geometry& geometry, const WorkerParams& wp, const std::vector<std::vector<std::pair<double,double>>> CDFs);
+    }
 
 #endif //MOLFLOW_PROJ_MOLFLOWMODELPARSER_H

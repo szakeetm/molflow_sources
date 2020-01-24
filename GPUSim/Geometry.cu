@@ -2,6 +2,8 @@
 
 #include <optix_device.h>
 #include "LaunchParams.h"
+#include "GPUDefines.h" // for NB_RAND
+#include "jetbrains_indexing.h"
 
 #define DET33(_11,_12,_13,_21,_22,_23,_31,_32,_33)  \
   ((_11)*( (_22)*(_33) - (_32)*(_23) ) +            \
@@ -25,7 +27,7 @@
     reinterpret_cast<cuuint32_t&>((u).z)
 
 
-using namespace flowgpu;
+//using namespace flowgpu;
 
 namespace flowgpu {
 
@@ -33,6 +35,53 @@ namespace flowgpu {
         optixLaunch (this gets filled in from the buffer we pass to
         optixLaunch) */
     extern "C" __constant__ LaunchParams optixLaunchParams;
+
+    // for this simple example, we have a single ray type
+    enum { SURFACE_RAY_TYPE=0, RAY_TYPE_COUNT };
+
+    static __forceinline__ __device__
+    void *unpackPointer( cuuint32_t i0, cuuint32_t i1 )
+    {
+        const uint64_t uptr = static_cast<uint64_t>( i0 ) << 32 | i1;
+        void*           ptr = reinterpret_cast<void*>( uptr );
+        return ptr;
+    }
+
+    static __forceinline__ __device__
+    void  packPointer( void* ptr, cuuint32_t& i0, cuuint32_t& i1 )
+    {
+        const uint64_t uptr = reinterpret_cast<uint64_t>( ptr );
+        i0 = uptr >> 32;
+        i1 = uptr & 0x00000000ffffffff;
+    }
+
+    template<typename T>
+    static __forceinline__ __device__ T *getPRD()
+    {
+        const cuuint32_t u0 = optixGetPayload_0();
+        const cuuint32_t u1 = optixGetPayload_1();
+        return reinterpret_cast<T*>( unpackPointer( u0, u1 ) );
+    }
+
+    static __device__ __inline__ MolPRD getMolPRD()
+    {
+        MolPRD prd;
+        prd.velocity = int_as_float( optixGetPayload_0() );
+        prd.currentDepth = optixGetPayload_1();
+        prd.inSystem = optixGetPayload_2();
+        prd.hitFacetId = optixGetPayload_3();
+        prd.hitT = int_as_float( optixGetPayload_4() );
+        return prd;
+    }
+
+    static __device__ __inline__ void setMolPRD( const MolPRD &prd )
+    {
+        optixSetPayload_0( float_as_int(prd.velocity) );
+        optixSetPayload_1( prd.currentDepth );
+        optixSetPayload_2( prd.inSystem );
+        optixSetPayload_3( prd.hitFacetId );
+        optixSetPayload_4( float_as_int(prd.hitT) );
+    }
 
     //------------------------------------------------------------------------------
     // closest hit and anyhit programs for radiance-type rays.
@@ -52,9 +101,9 @@ namespace flowgpu {
 
         const int   primID = optixGetPrimitiveIndex();
         const Polygon& poly  = sbtData.poly[primID];
-        const vec3f &Aa     = sbtData.vertex[sbtData.index3[poly.vertOffset + 0]];
-        const vec3f &Bb     = sbtData.vertex[sbtData.index3[poly.vertOffset + 1]];
-        const vec3f &Cc     = sbtData.vertex[sbtData.index3[poly.vertOffset + 2]];
+        const vec3f &Aa     = sbtData.vertex[sbtData.index[poly.vertOffset + 0]];
+        const vec3f &Bb     = sbtData.vertex[sbtData.index[poly.vertOffset + 1]];
+        const vec3f &Cc     = sbtData.vertex[sbtData.index[poly.vertOffset + 2]];
 
         vec3f v1 = Bb-Aa; // v1 = P0P1
         vec3f v2 = Cc-Aa; // v2 = P1P2
@@ -211,14 +260,6 @@ namespace flowgpu {
         for (size_t j = 0; j < nbSizeMinusOne; j++) {
             const vec2f& p1 = polyPoints[poly.vertOffset+j];
             const vec2f& p2 = polyPoints[poly.vertOffset+j+1];
-/*
-            if(primID==2 && optixGetLaunchIndex().x+optixGetLaunchIndex().y*optixLaunchParams.frame.size.x % 500 == 0)
-                */
-/*printf("[%d] -- %10.4f / %10.4f / %10.4f / %10.4f > %10.4f for Ray from %10.4f , %10.4f , %10.4f to %10.4f , %10.4f , %10.4f \n",
-                       primID, det, u, v, d, ray_tmin, ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z);*//*
-
-                printf("[%d] -- %10.4f , %10.4f -- %10.4f , %10.4f \n", sbtData.index[poly.vertOffset+j], p1.x, p1.y, p2.x, p2.y);
-*/
 
             if (p.u<p1.u != p.u<p2.u) {
                 double slope = (double)(p2.v - p1.v) / (double)(p2.u - p1.u);
@@ -231,15 +272,6 @@ namespace flowgpu {
                 n_found++;
             }
         }
-
-/*
-        if(primID==2 && optixGetLaunchIndex().x+optixGetLaunchIndex().y*optixLaunchParams.frame.size.x % 500 == 0)
-            */
-/*printf("[%d] -- %10.4f / %10.4f / %10.4f / %10.4f > %10.4f for Ray from %10.4f , %10.4f , %10.4f to %10.4f , %10.4f , %10.4f \n",
-                   primID, det, u, v, d, ray_tmin, ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z);*//*
-
-            printf("[%d]half -- found would be %d with %d and %d \n",nbSizeMinusOne, ((n_found / 2) & 1) ^ ((n_updown / 2) & 1), n_found, n_updown);
-*/
 
         //Last point. Repeating code because it's the fastest and this function is heavily used
         const vec2f& p1 = polyPoints[poly.vertOffset+nbSizeMinusOne];
@@ -254,11 +286,6 @@ namespace flowgpu {
             }
             n_found++;
         }
-
-        /*if(primID==2 && optixGetLaunchIndex().x+optixGetLaunchIndex().y*optixLaunchParams.frame.size.x % 500 == 0)
-            *//*printf("[%d] -- %10.4f / %10.4f / %10.4f / %10.4f > %10.4f for Ray from %10.4f , %10.4f , %10.4f to %10.4f , %10.4f , %10.4f \n",
-                   primID, det, u, v, d, ray_tmin, ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z);*//*
-            printf("[%d] -- found would be %d with %d and %d \n",nbSizeMinusOne, ((n_found / 2) & 1) ^ ((n_updown / 2) & 1), n_found, n_updown);*/
 
            if(((n_found / 2) & 1) ^ ((n_updown / 2) & 1)){
             optixReportIntersection(
@@ -277,27 +304,104 @@ namespace flowgpu {
 
         const int   primID = optixGetPrimitiveIndex();
 
-        const vec3f ray_orig = optixGetWorldRayOrigin();
+        vec3f ray_orig = optixGetWorldRayOrigin();
         vec3f ray_dir = optixGetWorldRayDirection();
+
+        /*if(blockDim.x * blockIdx.x + threadIdx.x == 3 && ray_dir.x > -0.26 && ray_dir.x < -0.24)
+            primID=162;*/
+
         ray_dir = vec3f(-1.0,-1.0,-1.0) * ray_dir;
 
         const float ray_tmin = optixGetRayTmin(), ray_tmax = optixGetRayTmax();
 
         const Polygon& poly  = sbtData.poly[primID];
         const float det = dot(poly.Nuv, ray_dir);
+        //atomicAdd(optixLaunchParams.debugCounter.detCount,1);
+
+#ifdef DEBUGMISS
+        const int ix = optixGetLaunchIndex().x;
+        const int iy = optixGetLaunchIndex().y;
+        const cuuint32_t fbIndex = ix+iy*optixLaunchParams.simConstants.size.x;
+        const unsigned int missIndex = fbIndex*NMISSES;
+        optixLaunchParams.perThreadData.missBuffer[missIndex]++;
+        if(optixLaunchParams.perThreadData.missBuffer[missIndex] < NMISSES)
+            optixLaunchParams.perThreadData.missBuffer[missIndex+optixLaunchParams.perThreadData.missBuffer[missIndex]] = primID;
+#endif
+
+#ifdef DEBUGCOUNT
+        unsigned int counterIndex = (det-DETLOW)/(DETHIGH-DETLOW)*NCOUNTBINS;
+        if(counterIndex<0) counterIndex = 0;
+        else if(counterIndex>=NCOUNTBINS) counterIndex = NCOUNTBINS-1;
+#ifdef BOUND_CHECK
+        //printf("detCount Index %u >= %u is out of bounds: %4.2f\n", counterIndex, NCOUNTBINS, det);
+        if(counterIndex < 0 || counterIndex >= NCOUNTBINS){
+            printf("detCount Index %u >= %u is out of bounds\n", counterIndex, NCOUNTBINS);
+        }
+#endif
+        atomicAdd(&optixLaunchParams.debugCounter.detCount[counterIndex],1);
+#endif
+
+        /*if(fabsf(det) < 1e-6){
+            MolPRD prd = getMolPRD();
+            printf("det[%d->%d] insystem %d det: %12.10f\n", blockDim.x * blockIdx.x + threadIdx.x,primID, prd.inSystem, det);
+        }*/
 
         if(det > 0.0) {
             const float iDet = 1.0 / det;
             vec3f intZ = ray_orig - poly.O;
+#ifdef DEBUG
+            /*printf("[%d] IntZ = (%12.10f , %12.10f , %12.10f) - (%12.10f , %12.10f , %12.10f)\n",
+                   primID, ray_orig.x, ray_orig.y, ray_orig.z, poly.O.x, poly.O.y, poly.O.z);*/
+#endif
+
             const float u = iDet * DET33(intZ.x, poly.V.x, ray_dir.x,
                                    intZ.y, poly.V.y, ray_dir.y,
                                    intZ.z, poly.V.z, ray_dir.z);
+#ifdef DEBUGCOUNT
+            counterIndex = (int)((u-ULOW)/(UHIGH-ULOW)*NCOUNTBINS);
+        if(counterIndex<0) counterIndex = 0;
+        else if(counterIndex>=NCOUNTBINS) counterIndex = NCOUNTBINS-1;
+            atomicAdd(&optixLaunchParams.debugCounter.uCount[counterIndex],1);
 
+#endif
+
+            /*if(fabsf(u) < 1e-6f || (u > 1.0 && u < 1.0f + 1e-6f)){
+                printf("u[%d] u = %12.10f\n", primID, u);
+                *//*printf("u[%d] PolyNorm: %12.10f , %12.10f , %12.10f\n", primID, poly.Nuv.x, poly.Nuv.y, poly.Nuv.z);
+                printf("u[%d] PolyU: %12.10f , %12.10f , %12.10f\n", primID, poly.U.x, poly.U.y, poly.U.z);
+                printf("u[%d] IntZ: %12.10f , %12.10f , %12.10f\n", primID, intZ.x, intZ.y, intZ.z);
+                printf("u[%d] DET33: %12.10f = %12.10f * %12.10f\n", primID, u, iDet,DET33(intZ.x, poly.V.x, ray_dir.x,
+                                                                                          intZ.y, poly.V.y, ray_dir.y,
+                                                                                          intZ.z, poly.V.z, ray_dir.z));
+            *//*
+            }*/
             if (u >= 0.0 && u <= 1.0) {
 
                 const float v = iDet * DET33(poly.U.x, intZ.x, ray_dir.x,
                                  poly.U.y, intZ.y, ray_dir.y,
                                  poly.U.z, intZ.z, ray_dir.z);
+
+#ifdef DEBUGCOUNT
+                counterIndex = (int)((v-VLOW)/(VHIGH-VLOW)*NCOUNTBINS);
+
+        if(counterIndex<0)counterIndex = 0;
+        else if(counterIndex>=NCOUNTBINS)counterIndex = NCOUNTBINS-1;
+            atomicAdd(&optixLaunchParams.debugCounter.vCount[counterIndex],1);
+#endif
+
+               /* if(fabsf(v) < 1e-6f || (v > 1.0 && v < 1.0f + 1e-6f)){
+                    printf("v[%d] v = %12.10f\n", primID, v);
+                    *//*printf("v[%d] PolyNorm: %12.10f , %12.10f , %12.10f\n", primID, poly.Nuv.x, poly.Nuv.y, poly.Nuv.z);
+                    printf("v[%d] PolyU: %12.10f , %12.10f , %12.10f\n", primID, poly.U.x, poly.U.y, poly.U.z);
+                    printf("v[%d] IntZ: %12.10f , %12.10f , %12.10f\n", primID, intZ.x, intZ.y, intZ.z);
+                    printf("v[%d] DET33: %12.10f = %12.10f * (%12.10f + %12.10f + %12.10f)\n", primID, v, iDet,
+                           (poly.U.x)*( (intZ.y)*(ray_dir.z) - (intZ.z)*(ray_dir.y)) ,
+                           (intZ.x)*( (ray_dir.y)*(poly.U.z) - (ray_dir.z)*(poly.U.y)),
+                           (ray_dir.x)*( (poly.U.y)*(intZ.z) - (poly.U.z)*(intZ.y)));*//*
+                    //printf("[%d] 1DET33: %12.10f * (%12.10f - %12.10f) = %12.10f\n", primID, (poly.U.x), (intZ.y)*(ray_dir.z), (intZ.z)*(ray_dir.y), (poly.U.x) * ((intZ.y)*(ray_dir.z) - (intZ.z)*(ray_dir.y)));
+                    //printf("[%d] 2DET33: %12.10f * (%12.10f - %12.10f) = %12.10f\n", primID, (intZ.x), (ray_dir.y)*(poly.U.z), (ray_dir.z)*(poly.U.y), (intZ.x) * ((ray_dir.y)*(poly.U.z) - (ray_dir.z)*(poly.U.y)));
+                    //printf("[%d] 3DET33: %12.10f * (%12.10f - %12.10f) = %12.10f\n", primID, (ray_dir.x), (poly.U.y)*(intZ.z) , (poly.U.z)*(intZ.y), (ray_dir.x) * ( (poly.U.y)*(intZ.z) - (poly.U.z)*(intZ.y)));
+                }*/
 
                 if (v >= 0.0 && v <= 1.0) {
 

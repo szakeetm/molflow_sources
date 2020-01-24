@@ -53,15 +53,43 @@ namespace flowgpu {
         // just a dummy value - later examples will use more interesting
         // data here
         //void *data;
-        void *data_poly;
+        //void *data_poly;
+        PolygonMeshSBTData data_poly;
     };
 
     /*! SBT record for a hitgroup program */
     struct __align__( OPTIX_SBT_RECORD_ALIGNMENT ) HitgroupRecord
     {
         __align__( OPTIX_SBT_RECORD_ALIGNMENT ) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
-        //TriangleMeshSBTData data;
         PolygonMeshSBTData data_poly;
+    };
+
+    /*! SBT record for a raygen program */
+    struct __align__( OPTIX_SBT_RECORD_ALIGNMENT ) RaygenRecordTri
+    {
+        __align__( OPTIX_SBT_RECORD_ALIGNMENT ) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
+        // just a dummy value - later examples will use more interesting
+        // data here
+        //void *data;
+        TriangleRayGenData data_tri;
+    };
+
+    /*! SBT record for a miss program */
+    struct __align__( OPTIX_SBT_RECORD_ALIGNMENT ) MissRecordTri
+    {
+        __align__( OPTIX_SBT_RECORD_ALIGNMENT ) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
+        // just a dummy value - later examples will use more interesting
+        // data here
+        //void *data;
+        //void *data_poly;
+        TriangleMeshSBTData data_tri;
+    };
+
+    /*! SBT record for a hitgroup program */
+    struct __align__( OPTIX_SBT_RECORD_ALIGNMENT ) HitgroupRecordTri
+    {
+        __align__( OPTIX_SBT_RECORD_ALIGNMENT ) char header[OPTIX_SBT_RECORD_HEADER_SIZE];
+        TriangleMeshSBTData data_tri;
     };
 
     static void
@@ -112,14 +140,20 @@ namespace flowgpu {
         std::cout << "#flowgpu: creating hitgroup programs ..." << std::endl;
         createHitgroupPrograms();
 
-        launchParams.traversable = buildAccel();
-
+#ifdef WITHTRIANGLES
+        launchParams.traversable = buildAccelTriangle();
+#else
+        launchParams.traversable = buildAccelPolygon();
+#endif
         std::cout << "#flowgpu: setting up optix pipeline ..." << std::endl;
         createPipeline();
 
         std::cout << "#flowgpu: building SBT ..." << std::endl;
-        buildSBT();
-
+#ifdef WITHTRIANGLES
+        buildSBTTriangle();
+#else
+        buildSBTPolygon();
+#endif
         launchParamsBuffer.alloc(sizeof(launchParams));
         std::cout << "#flowgpu: context, module, pipeline, etc, all set up ..." << std::endl;
 
@@ -128,19 +162,19 @@ namespace flowgpu {
         std::cout << GDT_TERMINAL_DEFAULT;
     }
 
-    OptixTraversableHandle OptixControl::buildAccel()
+    OptixTraversableHandle OptixControl::buildAccelPolygon()
     {
         PING;
         PRINT(model->poly_meshes.size());
 
         // All buffers that should be uploaded to device memory
-        memory.aabbBuffer.resize(model->poly_meshes.size());
-        memory.vertexBuffer.resize(model->poly_meshes.size());
-        memory.vertex2Buffer.resize(model->poly_meshes.size());
-        memory.indexBuffer.resize(model->poly_meshes.size());
-        memory.polyBuffer.resize(model->poly_meshes.size());
-        memory.facprobBuffer.resize(model->poly_meshes.size());
-        memory.cdfBuffer.resize(model->poly_meshes.size());
+        poly_memory.aabbBuffer.resize(model->poly_meshes.size());
+        poly_memory.vertexBuffer.resize(model->poly_meshes.size());
+        poly_memory.vertex2Buffer.resize(model->poly_meshes.size());
+        poly_memory.indexBuffer.resize(model->poly_meshes.size());
+        poly_memory.polyBuffer.resize(model->poly_meshes.size());
+        poly_memory.facprobBuffer.resize(model->poly_meshes.size());
+        poly_memory.cdfBuffer.resize(model->poly_meshes.size());
 
         OptixTraversableHandle asHandle { 0 };
 
@@ -173,15 +207,16 @@ namespace flowgpu {
                 bbCount++;
             }
 
-            memory.aabbBuffer[meshID].alloc_and_upload(aabb);
+            poly_memory.aabbBuffer[meshID].alloc_and_upload(aabb);
 
             polygonInput[meshID] = {};
             polygonInput[meshID].type
                     = OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES;
-            uint32_t aabb_input_flags[1]       = {OPTIX_GEOMETRY_FLAG_NONE};
+            uint32_t aabb_input_flags[1]       = {OPTIX_GEOMETRY_FLAG_NONE
+                                                    | OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT};
             // create local variables, because we need a *pointer* to the
             // device pointers
-            d_aabb[meshID] =  memory.aabbBuffer[meshID].d_pointer();
+            d_aabb[meshID] =  poly_memory.aabbBuffer[meshID].d_pointer();
 
             // in this example we have one SBT entry, and no per-primitive
             // materials:
@@ -192,45 +227,16 @@ namespace flowgpu {
             polygonInput[meshID].aabbArray.sbtIndexOffsetBuffer         = 0;
             polygonInput[meshID].aabbArray.sbtIndexOffsetSizeInBytes    = 0;
             polygonInput[meshID].aabbArray.primitiveIndexOffset         = 0;
-            /*TriangleMesh &mesh = *model->meshes[meshID];
-            vertexBuffer[meshID].alloc_and_upload(mesh.vertex);
-            indexBuffer[meshID].alloc_and_upload(mesh.index);
-
-            triangleInput[meshID] = {};
-            triangleInput[meshID].type
-                    = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
-
-            /s/ create local variables, because we need a *pointer* to the
-            // device pointers
-            d_vertices[meshID] = vertexBuffer[meshID].d_pointer();
-            d_indices[meshID]  = indexBuffer[meshID].d_pointer();
-
-            triangleInput[meshID].triangleArray.vertexFormat        = OPTIX_VERTEX_FORMAT_FLOAT3;
-            triangleInput[meshID].triangleArray.vertexStrideInBytes = sizeof(vec3f);
-            triangleInput[meshID].triangleArray.numVertices         = (int)mesh.vertex.size();
-            triangleInput[meshID].triangleArray.vertexBuffers       = &d_vertices[meshID];
-
-            triangleInput[meshID].triangleArray.indexFormat         = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
-            triangleInput[meshID].triangleArray.indexStrideInBytes  = sizeof(vec3i);
-            triangleInput[meshID].triangleArray.numIndexTriplets    = (int)mesh.index.size();
-            triangleInput[meshID].triangleArray.indexBuffer         = d_indices[meshID];
-
-            triangleInputFlags[meshID] = 0 ;
-
-            // in this example we have one SBT entry, and no per-primitive
-            // materials:
-            triangleInput[meshID].triangleArray.flags               = &triangleInputFlags[meshID];
-            triangleInput[meshID].triangleArray.numSbtRecords               = 1;
-            triangleInput[meshID].triangleArray.sbtIndexOffsetBuffer        = 0;
-            triangleInput[meshID].triangleArray.sbtIndexOffsetSizeInBytes   = 0;
-            triangleInput[meshID].triangleArray.sbtIndexOffsetStrideInBytes = 0;*/
         }
         // ==================================================================
         // BLAS setup
         // ==================================================================
 
         OptixAccelBuildOptions accelOptions = {};
-        accelOptions.buildFlags             = OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
+        accelOptions.buildFlags             = OPTIX_BUILD_FLAG_NONE
+                                            | OPTIX_BUILD_FLAG_ALLOW_COMPACTION
+                                            | OPTIX_BUILD_FLAG_PREFER_FAST_TRACE
+                ;
         accelOptions.operation              = OPTIX_BUILD_OPERATION_BUILD;
 
         OptixAccelBufferSizes blasBufferSizes;
@@ -289,6 +295,165 @@ namespace flowgpu {
         asBuffer.alloc(compactedSize);
         OPTIX_CHECK(optixAccelCompact(optixContext,
                 0,
+                                      asHandle,
+                                      asBuffer.d_pointer(),
+                                      asBuffer.sizeInBytes,
+                                      &asHandle));
+        CUDA_SYNC_CHECK();
+
+        // ==================================================================
+        // aaaaaand .... clean up
+        // ==================================================================
+        outputBuffer.free(); // << the UNcompacted, temporary output buffer
+        tempBuffer.free();
+        compactedSizeBuffer.free();
+
+        return asHandle;
+    }
+
+    OptixTraversableHandle OptixControl::buildAccelTriangle()
+    {
+        PING;
+        PRINT(model->triangle_meshes.size());
+
+        // All buffers that should be uploaded to device memory
+        //memory.aabbBuffer.resize(model->triangle_meshes.size());
+        tri_memory.vertexBuffer.resize(model->triangle_meshes.size());
+        //memory.vertex2Buffer.resize(model->triangle_meshes.size());
+        tri_memory.indexBuffer.resize(model->triangle_meshes.size());
+        tri_memory.polyBuffer.resize(model->triangle_meshes.size());
+        tri_memory.facprobBuffer.resize(model->triangle_meshes.size());
+        tri_memory.cdfBuffer.resize(model->triangle_meshes.size());
+
+        OptixTraversableHandle asHandle { 0 };
+
+        // ==================================================================
+        // triangle inputs
+        // ==================================================================
+        std::vector<OptixBuildInput> triangleInput(model->triangle_meshes.size());
+        std::vector<CUdeviceptr> d_vertices(model->triangle_meshes.size());
+        std::vector<CUdeviceptr> d_indices(model->triangle_meshes.size());
+        std::vector<uint32_t> triangleInputFlags(model->triangle_meshes.size());
+
+        //std::vector<OptixBuildInput> polygonInput(model->triangle_meshes.size());
+        //std::vector<CUdeviceptr> d_aabb(model->triangle_meshes.size());
+        /*std::vector<CUdeviceptr> d_vertices(model->triangle_meshes.size());
+        std::vector<CUdeviceptr> d_vertices2(model->triangle_meshes.size());
+        std::vector<CUdeviceptr> d_indices(model->triangle_meshes.size());
+        std::vector<CUdeviceptr> d_polygons(model->triangle_meshes.size());*/
+
+        for (int meshID=0;meshID<model->triangle_meshes.size();meshID++) {
+
+            // upload the model to the device: the builder
+            TriangleMesh &mesh = *model->triangle_meshes[meshID];
+
+            /*for(vec3i& vert : mesh.indices){
+
+                std::cout << vert << std::endl;
+                //std::cout << bbCount<<"# poly uv: " << "("<<poly.U <<","<<poly.V <<")"<<std::endl;
+            }
+            //exit(0);*/
+
+            tri_memory.vertexBuffer[meshID].alloc_and_upload(mesh.vertices3d);
+            tri_memory.indexBuffer[meshID].alloc_and_upload(mesh.indices);
+
+            triangleInput[meshID] = {};
+            triangleInput[meshID].type
+                    = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
+
+            // create local variables, because we need a *pointer* to the
+            // device pointers
+            d_vertices[meshID] = tri_memory.vertexBuffer[meshID].d_pointer();
+            d_indices[meshID]  = tri_memory.indexBuffer[meshID].d_pointer();
+
+            triangleInput[meshID].triangleArray.vertexFormat        = OPTIX_VERTEX_FORMAT_FLOAT3;
+            triangleInput[meshID].triangleArray.vertexStrideInBytes = sizeof(vec3f);
+            triangleInput[meshID].triangleArray.numVertices         = (int)mesh.vertices3d.size();
+            triangleInput[meshID].triangleArray.vertexBuffers       = &d_vertices[meshID];
+
+            triangleInput[meshID].triangleArray.indexFormat         = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
+            triangleInput[meshID].triangleArray.indexStrideInBytes  = sizeof(vec3i);
+            triangleInput[meshID].triangleArray.numIndexTriplets    = (int)mesh.indices.size();
+            triangleInput[meshID].triangleArray.indexBuffer         = d_indices[meshID];
+
+            triangleInputFlags[meshID] = OPTIX_GEOMETRY_FLAG_NONE | OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT  ;
+
+            // in this example we have one SBT entry, and no per-primitive
+            // materials:
+            triangleInput[meshID].triangleArray.flags               = &triangleInputFlags[meshID];
+            triangleInput[meshID].triangleArray.numSbtRecords               = 1;
+            triangleInput[meshID].triangleArray.sbtIndexOffsetBuffer        = 0;
+            triangleInput[meshID].triangleArray.sbtIndexOffsetSizeInBytes   = 0;
+            triangleInput[meshID].triangleArray.sbtIndexOffsetStrideInBytes = 0;
+        }
+        // ==================================================================
+        // BLAS setup
+        // ==================================================================
+
+        OptixAccelBuildOptions accelOptions = {};
+        accelOptions.buildFlags             = OPTIX_BUILD_FLAG_NONE
+                                              | OPTIX_BUILD_FLAG_ALLOW_COMPACTION
+                                              | OPTIX_BUILD_FLAG_PREFER_FAST_TRACE
+                ;
+        accelOptions.motionOptions.numKeys  = 1;
+        accelOptions.operation              = OPTIX_BUILD_OPERATION_BUILD;
+
+        OptixAccelBufferSizes blasBufferSizes;
+        OPTIX_CHECK(optixAccelComputeMemoryUsage
+                            (optixContext,
+                             &accelOptions,
+                             triangleInput.data(),
+                             (int)model->triangle_meshes.size(),  // num_build_inputs
+                             &blasBufferSizes
+                            ));
+
+        // ==================================================================
+        // prepare compaction
+        // ==================================================================
+
+        CUDABuffer compactedSizeBuffer;
+        compactedSizeBuffer.alloc(sizeof(uint64_t));
+
+        OptixAccelEmitDesc emitDesc;
+        emitDesc.type   = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
+        emitDesc.result = compactedSizeBuffer.d_pointer();
+
+        // ==================================================================
+        // execute build (main stage)
+        // ==================================================================
+
+        CUDABuffer tempBuffer;
+        tempBuffer.alloc(blasBufferSizes.tempSizeInBytes);
+
+        CUDABuffer outputBuffer;
+        outputBuffer.alloc(blasBufferSizes.outputSizeInBytes);
+
+        OPTIX_CHECK(optixAccelBuild(optixContext,
+                                    0,
+                                    &accelOptions,
+                                    triangleInput.data(),
+                                    (int)model->triangle_meshes.size(),
+                                    tempBuffer.d_pointer(),
+                                    tempBuffer.sizeInBytes,
+
+                                    outputBuffer.d_pointer(),
+                                    outputBuffer.sizeInBytes,
+
+                                    &asHandle,
+
+                                    &emitDesc,1
+        ));
+        CUDA_SYNC_CHECK();
+
+        // ==================================================================
+        // perform compaction
+        // ==================================================================
+        uint64_t compactedSize;
+        compactedSizeBuffer.download(&compactedSize,1);
+
+        asBuffer.alloc(compactedSize);
+        OPTIX_CHECK(optixAccelCompact(optixContext,
+                                      0,
                                       asHandle,
                                       asBuffer.d_pointer(),
                                       asBuffer.sizeInBytes,
@@ -366,12 +531,16 @@ namespace flowgpu {
       single .cu file, using a single embedded ptx string */
     void OptixControl::createModule()
     {
-        moduleCompileOptions.maxRegisterCount  = 100;
+        moduleCompileOptions.maxRegisterCount  = 50;
+#ifdef DEBUG
         moduleCompileOptions.optLevel          = OPTIX_COMPILE_OPTIMIZATION_LEVEL_0;
         moduleCompileOptions.debugLevel        = OPTIX_COMPILE_DEBUG_LEVEL_LINEINFO;
-
+#else
+        moduleCompileOptions.optLevel          = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
+        moduleCompileOptions.debugLevel        = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
+#endif
         pipelineCompileOptions = {};
-        pipelineCompileOptions.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY;
+        pipelineCompileOptions.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
         pipelineCompileOptions.usesMotionBlur     = false;
         pipelineCompileOptions.numPayloadValues   = 5; // values that get send as PerRayData
         pipelineCompileOptions.numAttributeValues = 5; // ret values e.g. by optixReportIntersection
@@ -485,10 +654,17 @@ namespace flowgpu {
         OptixProgramGroupOptions pgOptions = {};
         OptixProgramGroupDesc pgDesc    = {};
         pgDesc.kind                     = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
+#ifdef WITHTRIANGLES
+        pgDesc.hitgroup.moduleCH            = modules.traceModule;
+        pgDesc.hitgroup.entryFunctionNameCH = "__closesthit__molecule_triangle";
+#else
         pgDesc.hitgroup.moduleIS            = modules.geometryModule;
         pgDesc.hitgroup.entryFunctionNameIS = "__intersection__polygon";
         pgDesc.hitgroup.moduleCH            = modules.traceModule;
         pgDesc.hitgroup.entryFunctionNameCH = "__closesthit__molecule";
+#endif
+
+
         pgDesc.hitgroup.moduleAH            = modules.traceModule;
         pgDesc.hitgroup.entryFunctionNameAH = "__anyhit__molecule";
 
@@ -541,23 +717,23 @@ namespace flowgpu {
                                     2*1024,
                                     /* [in] The maximum depth of a traversable graph
                                        passed to trace. */
-                                    3));
+                                    1));
         if (sizeof_log > 1) PRINT(log);
     }
 
 
     /*! constructs the shader binding table */
-    void OptixControl::buildSBT()
+    void OptixControl::buildSBTPolygon()
     {
         // first allocate device memory and upload data
         for (int meshID=0;meshID<(int)model->poly_meshes.size();meshID++) {
             PolygonMesh &mesh = *model->poly_meshes[meshID];
-            memory.vertexBuffer[meshID].alloc_and_upload(mesh.vertices3d);
-            memory.vertex2Buffer[meshID].alloc_and_upload(mesh.vertices2d);
-            memory.indexBuffer[meshID].alloc_and_upload(mesh.indices);
-            memory.polyBuffer[meshID].alloc_and_upload(mesh.poly);
-            memory.cdfBuffer[meshID].alloc_and_upload(mesh.cdfs);
-            memory.facprobBuffer[meshID].alloc_and_upload(mesh.facetProbabilities);
+            poly_memory.vertexBuffer[meshID].alloc_and_upload(mesh.vertices3d);
+            poly_memory.vertex2Buffer[meshID].alloc_and_upload(mesh.vertices2d);
+            poly_memory.indexBuffer[meshID].alloc_and_upload(mesh.indices);
+            poly_memory.polyBuffer[meshID].alloc_and_upload(mesh.poly);
+            poly_memory.cdfBuffer[meshID].alloc_and_upload(mesh.cdfs);
+            poly_memory.facprobBuffer[meshID].alloc_and_upload(mesh.facetProbabilities);
         }
 
         // ------------------------------------------------------------------
@@ -567,12 +743,12 @@ namespace flowgpu {
         for (int i=0;i<raygenPGs.size();i++) {
             RaygenRecord rec;
             OPTIX_CHECK(optixSbtRecordPackHeader(raygenPGs[i],&rec));
-            rec.data_poly.vertex = (vec3f*)memory.vertexBuffer[0].d_pointer();
-            rec.data_poly.vertex2 = (vec2f*)memory.vertex2Buffer[0].d_pointer();
-            rec.data_poly.index = (uint32_t*)memory.indexBuffer[0].d_pointer();
-            rec.data_poly.poly = (Polygon*)memory.polyBuffer[0].d_pointer();
-            rec.data_poly.cdfs = (float*)memory.cdfBuffer[0].d_pointer();
-            rec.data_poly.facetProbabilities = (vec2f*)memory.facprobBuffer[0].d_pointer();
+            rec.data_poly.vertex = (vec3f*)poly_memory.vertexBuffer[0].d_pointer();
+            rec.data_poly.vertex2 = (vec2f*)poly_memory.vertex2Buffer[0].d_pointer();
+            rec.data_poly.index = (uint32_t*)poly_memory.indexBuffer[0].d_pointer();
+            rec.data_poly.poly = (Polygon*)poly_memory.polyBuffer[0].d_pointer();
+            rec.data_poly.cdfs = (float*)poly_memory.cdfBuffer[0].d_pointer();
+            rec.data_poly.facetProbabilities = (vec2f*)poly_memory.facprobBuffer[0].d_pointer();
             raygenRecords.push_back(rec);
         }
         raygenRecordsBuffer.alloc_and_upload(raygenRecords);
@@ -581,12 +757,17 @@ namespace flowgpu {
         // ------------------------------------------------------------------
         // build miss records
         // ------------------------------------------------------------------
+        int numObjects = (int)model->poly_meshes.size();
         std::vector<MissRecord> missRecords;
-        for (int i=0;i<missPGs.size();i++) {
+        for (int meshID=0;meshID<numObjects;meshID++) {
             MissRecord rec;
-            OPTIX_CHECK(optixSbtRecordPackHeader(missPGs[i],&rec));
+            OPTIX_CHECK(optixSbtRecordPackHeader(missPGs[0],&rec));
             //rec.data = nullptr; /* for now ... */
-            rec.data_poly = nullptr; /* for now ... */
+            //rec.data_poly = nullptr; /* for now ... */
+            rec.data_poly.vertex = (vec3f*)poly_memory.vertexBuffer[meshID].d_pointer();
+            rec.data_poly.vertex2 = (vec2f*)poly_memory.vertex2Buffer[meshID].d_pointer();
+            rec.data_poly.index = (uint32_t*)poly_memory.indexBuffer[meshID].d_pointer();
+            rec.data_poly.poly = (Polygon*)poly_memory.polyBuffer[meshID].d_pointer();
             missRecords.push_back(rec);
         }
         missRecordsBuffer.alloc_and_upload(missRecords);
@@ -597,7 +778,6 @@ namespace flowgpu {
         // ------------------------------------------------------------------
         // build hitgroup records
         // ------------------------------------------------------------------
-        int numObjects = (int)model->poly_meshes.size();
         std::vector<HitgroupRecord> hitgroupRecords;
         for (int meshID=0;meshID<numObjects;meshID++) {
             HitgroupRecord rec;
@@ -605,12 +785,10 @@ namespace flowgpu {
             OPTIX_CHECK(optixSbtRecordPackHeader(hitgroupPGs[0],&rec));
             //rec.data.color  = gdt::vec3f(0.5,1.0,0.5);
             //rec.data.vertex = (vec3f*)vertexBuffer[meshID].d_pointer();
-
-            rec.data_poly.color  = gdt::vec3f(0.5,1.0,0.5);
-            rec.data_poly.vertex = (vec3f*)memory.vertexBuffer[meshID].d_pointer();
-            rec.data_poly.vertex2 = (vec2f*)memory.vertex2Buffer[meshID].d_pointer();
-            rec.data_poly.index3 = (uint32_t*)memory.indexBuffer[meshID].d_pointer();
-            rec.data_poly.poly = (Polygon*)memory.polyBuffer[meshID].d_pointer();
+            rec.data_poly.vertex = (vec3f*)poly_memory.vertexBuffer[meshID].d_pointer();
+            rec.data_poly.vertex2 = (vec2f*)poly_memory.vertex2Buffer[meshID].d_pointer();
+            rec.data_poly.index = (uint32_t*)poly_memory.indexBuffer[meshID].d_pointer();
+            rec.data_poly.poly = (Polygon*)poly_memory.polyBuffer[meshID].d_pointer();
             hitgroupRecords.push_back(rec);
         }
         hitgroupRecordsBuffer.alloc_and_upload(hitgroupRecords);
@@ -619,15 +797,119 @@ namespace flowgpu {
         sbt.hitgroupRecordCount         = (int)hitgroupRecords.size();
     }
 
+    /*! constructs the shader binding table */
+    void OptixControl::buildSBTTriangle()
+    {
+        // first allocate device memory and upload data
+        for (int meshID=0;meshID<(int)model->triangle_meshes.size();meshID++) {
+            TriangleMesh &mesh = *model->triangle_meshes[meshID];
+            tri_memory.polyBuffer[meshID].alloc_and_upload(mesh.poly);
+            tri_memory.cdfBuffer[meshID].alloc_and_upload(mesh.cdfs);
+            tri_memory.facprobBuffer[meshID].alloc_and_upload(mesh.facetProbabilities);
+        }
+
+        // ------------------------------------------------------------------
+        // build raygen records
+        // ------------------------------------------------------------------
+        std::vector<RaygenRecordTri> raygenRecords;
+        for (int i=0;i<raygenPGs.size();i++) {
+            RaygenRecordTri rec;
+            OPTIX_CHECK(optixSbtRecordPackHeader(raygenPGs[i],&rec));
+            rec.data_tri.vertex = (vec3f*)tri_memory.vertexBuffer[0].d_pointer();
+            rec.data_tri.index = (vec3i*)tri_memory.indexBuffer[0].d_pointer();
+            rec.data_tri.poly = (Polygon*)tri_memory.polyBuffer[0].d_pointer();
+            rec.data_tri.cdfs = (float*)tri_memory.cdfBuffer[0].d_pointer();
+            rec.data_tri.facetProbabilities = (vec2f*)tri_memory.facprobBuffer[0].d_pointer();
+            raygenRecords.push_back(rec);
+        }
+        raygenRecordsBuffer.alloc_and_upload(raygenRecords);
+        sbt.raygenRecord = raygenRecordsBuffer.d_pointer();
+
+        // ------------------------------------------------------------------
+        // build miss records
+        // ------------------------------------------------------------------
+        int numObjects = (int)model->triangle_meshes.size();
+        std::vector<MissRecordTri> missRecords;
+        for (int meshID=0;meshID<numObjects;meshID++) {
+            MissRecordTri rec;
+            OPTIX_CHECK(optixSbtRecordPackHeader(missPGs[0],&rec));
+            //rec.data = nullptr; /* for now ... */
+            //rec.data_poly = nullptr; /* for now ... */
+            rec.data_tri.vertex = (vec3f*)tri_memory.vertexBuffer[meshID].d_pointer();
+            rec.data_tri.index = (vec3i*)tri_memory.indexBuffer[meshID].d_pointer();
+            rec.data_tri.poly = (Polygon*)tri_memory.polyBuffer[meshID].d_pointer();
+            missRecords.push_back(rec);
+        }
+        missRecordsBuffer.alloc_and_upload(missRecords);
+        sbt.missRecordBase          = missRecordsBuffer.d_pointer();
+        sbt.missRecordStrideInBytes = sizeof(MissRecordTri);
+        sbt.missRecordCount         = (int)missRecords.size();
+
+        // ------------------------------------------------------------------
+        // build hitgroup records
+        // ------------------------------------------------------------------
+        std::vector<HitgroupRecordTri> hitgroupRecords;
+        for (int meshID=0;meshID<numObjects;meshID++) {
+            HitgroupRecordTri rec;
+            // all meshes use the same code, so all same hit group
+            OPTIX_CHECK(optixSbtRecordPackHeader(hitgroupPGs[0],&rec));
+            //rec.data.color  = gdt::vec3f(0.5,1.0,0.5);
+            //rec.data.vertex = (vec3f*)vertexBuffer[meshID].d_pointer();
+            rec.data_tri.vertex = (vec3f*)tri_memory.vertexBuffer[meshID].d_pointer();
+            rec.data_tri.index = (vec3i*)tri_memory.indexBuffer[meshID].d_pointer();
+            rec.data_tri.poly = (Polygon*)tri_memory.polyBuffer[meshID].d_pointer();
+            hitgroupRecords.push_back(rec);
+        }
+        hitgroupRecordsBuffer.alloc_and_upload(hitgroupRecords);
+        sbt.hitgroupRecordBase          = hitgroupRecordsBuffer.d_pointer();
+        sbt.hitgroupRecordStrideInBytes = sizeof(HitgroupRecordTri);
+        sbt.hitgroupRecordCount         = (int)hitgroupRecords.size();
+    }
+
 
     /*! upload some parts only on start */
     void OptixControl::initSimulation()
     {
         const uint32_t launchSize = launchParams.simConstants.size.x * launchParams.simConstants.size.y;
-        CuFacetHitCounter *hitCounter = new CuFacetHitCounter[launchSize*launchParams.simConstants.nbFacets]();
-        //TODO: Delete hitCounter
+        const uint32_t nbHCBins = CORESPERMP*WARPSCHEDULERS;
 
-        hitCounterBuffer.upload(hitCounter,launchSize*launchParams.simConstants.nbFacets);
+        CuFacetHitCounter *hitCounter = new CuFacetHitCounter[nbHCBins*launchParams.simConstants.nbFacets]();
+        uint32_t *missCounter = new uint32_t(0);
+
+        hitCounterBuffer.upload(hitCounter,nbHCBins*launchParams.simConstants.nbFacets);
+        missCounterBuffer.upload(missCounter,1);
+
+        delete[] hitCounter;
+        delete missCounter;
+
+#ifdef DEBUGCOUNT
+        uint32_t *detVal = new uint32_t[NCOUNTBINS]();
+        uint32_t *uVal = new uint32_t[NCOUNTBINS]();
+        uint32_t *vVal = new uint32_t[NCOUNTBINS]();
+
+        memory_debug.detBuffer.upload(detVal,NCOUNTBINS*1);
+        memory_debug.uBuffer.upload(uVal,NCOUNTBINS*1);
+        memory_debug.vBuffer.upload(vVal,NCOUNTBINS*1);
+
+        delete[] detVal;
+        delete[] uVal;
+        delete[] vVal;
+#endif
+#ifdef DEBUGPOS
+        vec3f *pos = new vec3f[NBCOUNTS*LAUNCH_SIZE_X*LAUNCH_SIZE_Y]();
+        uint32_t *offset = new uint32_t[LAUNCH_SIZE_X*LAUNCH_SIZE_Y]();
+        memory_debug.posBuffer.upload(pos,NBCOUNTS*LAUNCH_SIZE_X*LAUNCH_SIZE_Y*1);
+        memory_debug.posOffsetBuffer.upload(offset,LAUNCH_SIZE_X*LAUNCH_SIZE_Y*1);
+
+        delete[] pos;
+        delete[] offset;
+#endif
+#ifdef DEBUGMISS
+        uint32_t *miss = new uint32_t[NMISSES*LAUNCH_SIZE_X*LAUNCH_SIZE_Y]();
+        memory_debug.missBuffer.upload(miss,NMISSES*LAUNCH_SIZE_X*LAUNCH_SIZE_Y*1);
+
+        delete[] miss;
+#endif
         launchParamsBuffer.upload(&launchParams,1);
     }
 
@@ -730,34 +1012,60 @@ namespace flowgpu {
 
         // resize our cuda frame buffer
         // TODO: one counter per thread is a problem for memory
-        hitBuffer.resize(newSize.x*newSize.y*sizeof(MolPRD));
+        moleculeBuffer.resize(newSize.x * newSize.y * sizeof(MolPRD));
         randBuffer.resize(nbRand*newSize.x*newSize.y*sizeof(float));
         randOffsetBuffer.resize(newSize.x*newSize.y*sizeof(uint32_t));
-        hitCounterBuffer.resize(model->nbFacets_total*newSize.x*newSize.y*sizeof(CuFacetHitCounter));
+        hitCounterBuffer.resize(model->nbFacets_total*CORESPERMP*WARPSCHEDULERS*sizeof(CuFacetHitCounter));
+        missCounterBuffer.resize(sizeof(uint32_t));
 
         // update the launch parameters that we'll pass to the optix
         // launch:
+        launchParams.simConstants.nbRandNumbersPerThread = nbRand;
+        launchParams.simConstants.scene_epsilon = SCENE_EPSILON;
         launchParams.simConstants.maxDepth  = MAX_DEPTH;
         launchParams.simConstants.size  = newSize;
         launchParams.simConstants.nbFacets  = model->nbFacets_total;
         // TODO: Total nb for indices and vertices
         launchParams.simConstants.nbIndices  = model->nbIndices_total;
         launchParams.simConstants.nbVertices  = model->nbVertices_total;
-        launchParams.perThreadData.hitBuffer = (MolPRD*)hitBuffer.d_pointer();
+        launchParams.perThreadData.currentMoleculeData = (MolPRD*)moleculeBuffer.d_pointer();
         launchParams.perThreadData.randBufferOffset = (uint32_t*)randOffsetBuffer.d_pointer();
 
-        //crng::initializeRandHost(newSize.x * newSize.y, (float **) &randBuffer.d_ptr,  time(NULL));
-        crng::initializeRandHost(newSize.x * newSize.y, (float **) &randBuffer.d_ptr);
+        crng::initializeRandHost(newSize.x * newSize.y, (float **) &randBuffer.d_ptr,  time(NULL));
+        //crng::initializeRandHost(newSize.x * newSize.y, (float **) &randBuffer.d_ptr);
         launchParams.randomNumbers = (float*)randBuffer.d_pointer();
         launchParams.hitCounter = (CuFacetHitCounter*)hitCounterBuffer.d_pointer();
 
+        launchParams.sharedData.missCounter = (uint32_t *)missCounterBuffer.d_pointer();
+
+#ifdef DEBUGCOUNT
+        memory_debug.detBuffer.resize(NCOUNTBINS*sizeof(uint32_t));
+        memory_debug.uBuffer.resize(NCOUNTBINS*sizeof(uint32_t));
+        memory_debug.vBuffer.resize(NCOUNTBINS*sizeof(uint32_t));
+
+        launchParams.debugCounter.detCount  = (uint32_t*)memory_debug.detBuffer.d_pointer();
+        launchParams.debugCounter.uCount  = (uint32_t*)memory_debug.uBuffer.d_pointer();
+        launchParams.debugCounter.vCount  = (uint32_t*)memory_debug.vBuffer.d_pointer();
+#endif
+
+#ifdef DEBUGPOS
+        memory_debug.posBuffer.resize(newSize.x * newSize.y*NBCOUNTS*sizeof(vec3f));
+        memory_debug.posOffsetBuffer.resize(newSize.x * newSize.y*sizeof(uint32_t));
+        launchParams.perThreadData.positionsBuffer_debug = (vec3f*)memory_debug.posBuffer.d_pointer();
+        launchParams.perThreadData.posOffsetBuffer_debug = (uint32_t*)memory_debug.posOffsetBuffer.d_pointer();
+#endif
+
+#ifdef DEBUGMISS
+        memory_debug.missBuffer.resize(NMISSES*newSize.x * newSize.y*sizeof(uint32_t));
+        launchParams.perThreadData.missBuffer = (uint32_t*)memory_debug.missBuffer.d_pointer();
+#endif
         //TODO: Only necessary if changes will be made after initialization
-        //launchParamsBuffer.upload(&launchParams,1);
+        launchParamsBuffer.upload(&launchParams,1);
 
 
         // -- one time init of device data --
         MolPRD *perThreadData = new MolPRD[newSize.x*newSize.y]();
-        hitBuffer.upload(perThreadData,newSize.x*newSize.y);
+        moleculeBuffer.upload(perThreadData, newSize.x * newSize.y);
         delete[] perThreadData;
 
     }
@@ -766,45 +1074,118 @@ namespace flowgpu {
     static vec3f dir_min(10.e10);*/
     static std::vector<unsigned int> counter2;
     static std::vector<unsigned int> absorb;
+    static std::vector<unsigned int> desorb;
 
     /*! download the rendered color buffer and return the total amount of hits (= followed rays) */
-    unsigned int OptixControl::downloadDataFromDevice(/*uint32_t *h_pixels*/)
+    unsigned long long int OptixControl::downloadDataFromDevice(/*uint32_t *h_pixels*/)
     {
         //colorBuffer.download(h_pixels,launchParams.frame.size.x*launchParams.frame.size.y);
         // get the 'per thread' data
         MolPRD* hit = new MolPRD[launchParams.simConstants.size.x * launchParams.simConstants.size.y];
-        CuFacetHitCounter* hitCounter = new CuFacetHitCounter[model->nbFacets_total * launchParams.simConstants.size.x * launchParams.simConstants.size.y];
-        hitBuffer.download(hit, launchParams.simConstants.size.x * launchParams.simConstants.size.y);
-        hitCounterBuffer.download(hitCounter, model->nbFacets_total * launchParams.simConstants.size.x * launchParams.simConstants.size.y);
+        CuFacetHitCounter* hitCounter = new CuFacetHitCounter[model->nbFacets_total * CORESPERMP*WARPSCHEDULERS];
+        uint32_t * missCounter = new uint32_t;
+        moleculeBuffer.download(hit, launchParams.simConstants.size.x * launchParams.simConstants.size.y);
+        hitCounterBuffer.download(hitCounter, model->nbFacets_total * CORESPERMP*WARPSCHEDULERS);
+        missCounterBuffer.download(missCounter, 1);
+
+
+#ifdef DEBUGCOUNT
+        uint32_t* detCounter = new uint32_t[NCOUNTBINS];
+        uint32_t* uCounter = new uint32_t[NCOUNTBINS];
+        uint32_t* vCounter = new uint32_t[NCOUNTBINS];
+
+        memory_debug.detBuffer.download(detCounter, NCOUNTBINS);
+        memory_debug.uBuffer.download(uCounter, NCOUNTBINS);
+        memory_debug.vBuffer.download(vCounter, NCOUNTBINS);
+
+        /*std::cout << "Determinant Distribution:"<<std::endl; for(int i=0;i<NBCOUNTS;i++) std::cout << "["<< ((float)i/NBCOUNTS)*(DETHIGH-DETLOW)+DETLOW << "] " <<detCounter[i] << std::endl;
+        std::cout << "U Distribution:"<<std::endl; for(int i=0;i<NBCOUNTS;i++) std::cout << "["<< ((float)i/NBCOUNTS)*(UHIGH-ULOW)+ULOW << "] " <<uCounter[i] << std::endl;
+        std::cout << "V Distribution:"<<std::endl; for(int i=0;i<NBCOUNTS;i++) std::cout << "["<< ((float)i/NBCOUNTS)*(VHIGH-VLOW)+VLOW << "] " <<vCounter[i] << std::endl;*/
+        std::ofstream detfile,ufile,vfile;
+        detfile.open ("det_counter.txt");ufile.open ("u_counter.txt");vfile.open ("v_counter.txt");
+
+        for(int i=0;i<NCOUNTBINS;i++) detfile << "" << ((float)i/NBCOUNTS)*(DETHIGH - DETLOW) + DETLOW << " " << detCounter[i] << std::endl;
+        for(int i=0;i<NCOUNTBINS;i++) ufile << "" << ((float)i/NBCOUNTS)*(UHIGH - ULOW) + ULOW << " " << uCounter[i] << std::endl;
+        for(int i=0;i<NCOUNTBINS;i++) vfile << "" << ((float)i/NBCOUNTS)*(VHIGH - VLOW) + VLOW << " " << vCounter[i] << std::endl;
+        detfile.close();
+        ufile.close();
+        vfile.close();
+
+        delete[] detCounter;
+        delete[] uCounter;
+        delete[] vCounter;
+#endif
+
+#ifdef DEBUGPOS
+        vec3f* positions = new vec3f[NBCOUNTS*LAUNCH_SIZE_X*LAUNCH_SIZE_Y];
+        memory_debug.posBuffer.download(positions, NBCOUNTS*LAUNCH_SIZE_X*LAUNCH_SIZE_Y);
+        uint32_t * posOffset = new uint32_t[LAUNCH_SIZE_X*LAUNCH_SIZE_Y];
+        memory_debug.posOffsetBuffer.download(posOffset, LAUNCH_SIZE_X*LAUNCH_SIZE_Y);
+
+        std::ofstream posFile;
+        posFile.open ("debug_positions.txt");
+
+        int nbPos = NBCOUNTS;
+
+        std::cout << "LIMIT " <<NBCOUNTS<< std::endl;
+
+        for(int i=0;i<NBCOUNTS*LAUNCH_SIZE_X*LAUNCH_SIZE_Y;){
+            //posFile << i/(NBCOUNTS) << " " << posOffset[i/(NBCOUNTS)] << " ";
+            posFile <<"{";
+            for(int pos=0;pos<30;pos++){
+                size_t index = i/(NBCOUNTS)*NBCOUNTS+pos;
+                posFile <<"{"<<positions[index].x << "," << positions[index].y << "," << positions[index].z <<"}";
+                if(pos!=30-1)posFile <<",";
+                //posFile <<positions[index].x << "," << positions[index].y << "," << positions[index].z <<"   ";
+            }
+            i+=nbPos;
+            posFile <<"},"<<std::endl;
+        }
+        posFile.close();
+        std::cout << "POS closed " <<nbPos << std::endl;
+
+        delete[] positions;
+        delete[] posOffset;
+#endif
 
         counter2.clear();
-        counter2.resize(this->model->nbFacets_total+1);
+        counter2.resize(this->model->nbFacets_total);
 
         absorb.clear();
-        absorb.resize(this->model->nbFacets_total+1);
+        absorb.resize(this->model->nbFacets_total);
+
+        desorb.clear();
+        desorb.resize(this->model->nbFacets_total);
 
         //std::ofstream myfile;
         //myfile.open ("gpu_counter_blockid.txt");
 
-        for(int i= 0;i< launchParams.simConstants.nbFacets * launchParams.simConstants.size.x * launchParams.simConstants.size.y; i++) {
-            counter2[i%launchParams.simConstants.nbFacets] += hitCounter[i].nbMCHit; // let misses count as 0 (-1+1)
-            absorb[i%launchParams.simConstants.nbFacets] += hitCounter[i].nbAbsEquiv; // let misses count as 0 (-1+1)
+        for(unsigned int i = 0; i < launchParams.simConstants.nbFacets * CORESPERMP*WARPSCHEDULERS; i++) {
+            unsigned int facIndex = i%launchParams.simConstants.nbFacets;
+            counter2[facIndex] += hitCounter[i].nbMCHit; // let misses count as 0 (-1+1)
+            absorb[facIndex] += hitCounter[i].nbAbsEquiv; // let misses count as 0 (-1+1)
+            desorb[facIndex] += hitCounter[i].nbDesorbed; // let misses count as 0 (-1+1)
 
-            //if(hitCounter[i].nbMCHit > 0 || hitCounter[i].nbAbsEquiv > 0)
-                //myfile << "["<<i/(launchParams.simConstants.nbFacets)<<"] on facet #"<<i%launchParams.simConstants.nbFacets<<" has total hits >>> "<< hitCounter[i].nbMCHit<< " / total abs >>> " << hitCounter[i].nbAbsEquiv<<" ---> "<< i<<std::endl;
+            /*if(hitCounter[i].nbMCHit > 0 || hitCounter[i].nbAbsEquiv > 0){
+                std::cout << "["<<i/(launchParams.simConstants.nbFacets)<<"] on facet #"<<i%launchParams.simConstants.nbFacets<<" has total hits >>> "<< hitCounter[i].nbMCHit<< " / total abs >>> " << hitCounter[i].nbAbsEquiv<<" ---> "<< i<<std::endl;
+            }*/
         }
         //myfile.close();
-        unsigned int total_counter = 0;
-        unsigned int total_abs = 0;
-        for(int i = 0; i <= this->model->nbFacets_total; i++){
-            std::cout << "hits >>> "<< i+1 << "- " << counter2[i]<<std::endl;
-            std::cout << " abs >>> "<< i+1 << "- " << absorb[i]<<std::endl;
+        unsigned long long int total_counter = 0;
+        unsigned long long int total_abs = 0;
+        unsigned long long int total_des = 0;
+        for(unsigned int i = 0; i < this->model->nbFacets_total; i++){
+            if(counter2[i]>0 || absorb[i]> 0 || desorb[i]>0) std::cout << i+1 << " " << counter2[i]<<" " << desorb[i]<<" " << absorb[i]<<std::endl;
             total_counter += counter2[i];
             total_abs += absorb[i];
+            total_des += desorb[i];
         }
         std::cout << " total hits >>> "<< total_counter<<std::endl;
-        std::cout << " total abs >>> "<< total_abs<<std::endl;
+        std::cout << " total  abs >>> "<< total_abs<<std::endl;
+        std::cout << " total  des >>> "<< total_des<<std::endl;
+        std::cout << " total miss >>> "<< *missCounter<< " -- miss/hit ratio: "<<(double)(*missCounter) / total_counter <<std::endl;
 
+        delete missCounter;
         delete[] hitCounter;
         delete[] hit;
 
@@ -813,25 +1194,40 @@ namespace flowgpu {
 
     void OptixControl::cleanup()
     {
+        for (int meshID=0;meshID<model->triangle_meshes.size();meshID++) {
+            tri_memory.vertexBuffer[meshID].free();
+            tri_memory.indexBuffer[meshID].free();
+            tri_memory.polyBuffer[meshID].free();
+            tri_memory.cdfBuffer[meshID].free();
+            tri_memory.facprobBuffer[meshID].free();
+        }
 
         for (int meshID=0;meshID<model->poly_meshes.size();meshID++) {
-            memory.aabbBuffer[meshID].free();
-            memory.vertex2Buffer[meshID].free();
-            memory.vertexBuffer[meshID].free();
-            memory.indexBuffer[meshID].free();
-            memory.polyBuffer[meshID].free();
-            memory.cdfBuffer[meshID].free();
-            memory.facprobBuffer[meshID].free();
+            poly_memory.aabbBuffer[meshID].free();
+            poly_memory.vertex2Buffer[meshID].free();
+            poly_memory.vertexBuffer[meshID].free();
+            poly_memory.indexBuffer[meshID].free();
+            poly_memory.polyBuffer[meshID].free();
+            poly_memory.cdfBuffer[meshID].free();
+            poly_memory.facprobBuffer[meshID].free();
         }
         raygenRecordsBuffer.free();
         missRecordsBuffer.free();
         hitgroupRecordsBuffer.free();
 
-        hitBuffer.free();
+        moleculeBuffer.free();
         crng::destroyRandHost((float**) &randBuffer.d_ptr),
         //randBuffer.free();
         randOffsetBuffer.free();
         hitCounterBuffer.free();
+        missCounterBuffer.free();
+
+#ifdef DEBUGCOUNT
+        memory_debug.detBuffer.free();
+        memory_debug.uBuffer.free();
+        memory_debug.vBuffer.free();
+#endif
+
     }
 
 } // ::flowgpu

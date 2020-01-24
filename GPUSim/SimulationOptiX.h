@@ -20,7 +20,7 @@ public:
     int LoadSimulation(flowgpu::Model* loaded_model);
     //int LoadSimulation(const std::vector<Vector3d> &geomVertices, const std::vector<SuperStructure> &structures, const WorkerParams& wp, const std::vector<std::vector<std::pair<double,double>>> CDFs);
     int RunSimulation();
-    unsigned int GetSimulationData();
+    unsigned long long int GetSimulationData();
     int CloseSimulation();
 };
 

@@ -45,44 +45,6 @@ namespace flowgpu {
         return;
     }*/
 
-    /*! find vertex with given position, normal, texcoord, and return
-        its vertex ID, or, if it doesn't exit, add it to the mesh, and
-        its just-created index */
-    int addVertex(TriangleMesh *mesh,
-                  tinyobj::attrib_t &attributes,
-                  const tinyobj::index_t &idx,
-                  std::map<tinyobj::index_t,int> &knownVertices){
-
-        if (knownVertices.find(idx) != knownVertices.end())
-            return knownVertices[idx];
-
-        const vec3f *vertex_array   = (const vec3f*)attributes.vertices.data();
-        const vec3f *normal_array   = (const vec3f*)attributes.normals.data();
-        const vec2f *texcoord_array = (const vec2f*)attributes.texcoords.data();
-
-        int newID = mesh->vertex.size();
-        knownVertices[idx] = newID;
-
-        mesh->vertex.push_back(vertex_array[idx.vertex_index]);
-        if (idx.normal_index >= 0) {
-            while (mesh->normal.size() < mesh->vertex.size())
-                mesh->normal.push_back(normal_array[idx.normal_index]);
-        }
-        if (idx.texcoord_index >= 0) {
-            while (mesh->texcoord.size() < mesh->vertex.size())
-                mesh->texcoord.push_back(texcoord_array[idx.texcoord_index]);
-        }
-
-        // just for sanity's sake:
-        if (mesh->texcoord.size() > 0)
-            mesh->texcoord.resize(mesh->vertex.size());
-        // just for sanity's sake:
-        if (mesh->normal.size() > 0)
-            mesh->normal.resize(mesh->vertex.size());
-
-        return newID;
-    }
-
     /*Model *loadFromMolflow(const std::vector<Vector3d> &geomVertices, const std::vector<SuperStructure> &structures, const WorkerParams& wp, const std::vector<std::vector<std::pair<double,double>>> CDFs){
         Model *model = new Model;
         // Loop over Vertices3

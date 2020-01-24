@@ -16,7 +16,7 @@ namespace flowgpu {
 
         void launchRT();
 
-        unsigned int fetchData();
+        unsigned long long int fetchData();
 
         void run();
 

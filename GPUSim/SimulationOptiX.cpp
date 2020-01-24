@@ -122,7 +122,7 @@ int SimulationOptiX::RunSimulation() {
  *
  * @return 1=could not load GPU Sim, 0=successfully loaded
  */
-unsigned int SimulationOptiX::GetSimulationData() {
+unsigned long long int SimulationOptiX::GetSimulationData() {
 
     try {
         return tracer->fetchData();
