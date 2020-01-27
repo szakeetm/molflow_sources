@@ -2238,7 +2238,6 @@ void MolFlow::LoadConfig() {
 
 	FileReader *f = NULL;
 	char *w;
-	nbRecent = 0;
 
 	try {
 
@@ -2358,11 +2357,10 @@ void MolFlow::LoadConfig() {
 		if (nbProc <= 0) nbProc = 1;
 		f->ReadKeyword("recents"); f->ReadKeyword(":"); f->ReadKeyword("{");
 		w = f->ReadString();
-		while (strcmp(w, "}") != 0 && nbRecent < MAX_RECENT) {
-			recents[nbRecent] = strdup(w);
-			nbRecent++;
-			w = f->ReadString();
-		}
+        while (strcmp(w, "}") != 0 && recentsList.size() < MAX_RECENT) {
+            recentsList.emplace_back(_strdup(w));
+            w = f->ReadString();
+        }
 
 		f->ReadKeyword("cdir"); f->ReadKeyword(":");
 		strcpy(currentDir, f->ReadString());
@@ -2505,12 +2503,12 @@ void MolFlow::SaveConfig() {
 #else
 		f->Write("processNum:"); f->Write(worker.GetProcNumber(), "\n");
 #endif
-		f->Write("recents:{\n");
-		for (int i = 0; i < nbRecent; i++) {
-			f->Write("\"");
-			f->Write(recents[i]);
-			f->Write("\"\n");
-		}
+        f->Write("recents:{\n");
+        for(auto& recent : recentsList){
+            f->Write("\"");
+            f->Write(recent);
+            f->Write("\"\n");
+        }
 		f->Write("}\n");
 
 		f->Write("cdir:\""); f->Write(currentDir); f->Write("\"\n");
