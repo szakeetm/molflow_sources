@@ -474,8 +474,6 @@ namespace flowgpu {
 
         MolPRD hitData;
 
-
-
         switch (optixLaunchParams.perThreadData.currentMoleculeData[threadIndex].inSystem) {
             case 1:
             {

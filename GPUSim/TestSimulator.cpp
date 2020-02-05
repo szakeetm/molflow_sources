@@ -86,12 +86,13 @@ flowgpu::Model* initializeModel(std::string fileName){
 void printUsageAndExit( const char* argv0 )
 {
     fprintf( stderr, "Usage  : %s [options]\n", argv0 );
-    fprintf( stderr, "Options: --file | -f <filename>      Specify file for model input\n" );
-    fprintf( stderr, "         --help | -h                 Print this usage message\n" );
-    fprintf( stderr, "         --size | -s <launchsize>    Set kernel launch size\n" );
-    fprintf( stderr, "         --loop | -l <nbLoops>       Set number of simulation loops\n" );
-    fprintf( stderr, "         --nhit | -n <nbHits>        Set approx. number of hits for the simulation\n" );
-    //fprintf( stderr, "         --dim=<width>x<height>      Set image dimensions; defaults to 512x384\n" );
+    fprintf( stderr, "Options: --file  | -f <filename>        Specify file for model input\n" );
+    fprintf( stderr, "         --help  | -h                   Print this usage message\n" );
+    fprintf( stderr, "         --size  | -s <launchsize>      Set kernel launch size\n" );
+    fprintf( stderr, "         --size=<width>x<height>x<depth>\n" );
+    fprintf( stderr, "         --loop  | -l <nbLoops>         Set number of simulation loops\n" );
+    fprintf( stderr, "         --nhit  | -n <nbHits>          Set approx. number of hits for the simulation\n" );
+    //fprintf( stderr, "         --dim=<width>x<height>        Set image dimensions; defaults to 512x384\n" );
     exit(1);
 }
 
@@ -150,7 +151,7 @@ int main(int argc, char **argv) {
     for(int i = 1; i < argc; ++i ) {
         if( strcmp( argv[i], "--help" ) == 0 || strcmp( argv[i], "-h" ) == 0 ) {
             printUsageAndExit( argv[0] );
-        } else if( strcmp( argv[i], "--file " ) == 0 || strcmp( argv[i], "-f" ) == 0 ) {
+        } else if( strcmp( argv[i], "--file" ) == 0 || strcmp( argv[i], "-f" ) == 0 ) {
             if( i < argc-1 ) {
                 fileName = argv[++i];
             } else {
@@ -192,12 +193,19 @@ int main(int argc, char **argv) {
 
     std::cout << "#GPUTestsuite: Starting simulation with " << launchSize << " threads per launch => " << nbLoops << " runs "<<std::endl;
     auto start_total = std::chrono::high_resolution_clock::now();
+    auto start = start_total;
     for(size_t i = 0; i < nbLoops; ++i){
-        auto start = std::chrono::high_resolution_clock::now();
+        //auto start = std::chrono::high_resolution_clock::now();
+
         gpuSim.RunSimulation();
-        auto finish = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double,std::milli> elapsed = finish - start;
-        std::cout << "--- Run #"<<i<< " - Elapsed Time: " << elapsed.count() << " ms ---" << std::endl;
+
+
+        if((i+1)%50==0){
+            auto finish = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double,std::milli> elapsed = finish - start;
+            start = finish;
+            std::cout << "--- Run #"<<i+1<< " - Elapsed Time: " << elapsed.count() << " ms\t--- " << (double)launchSize * 50.0 / elapsed.count() / 1000.0 << " MRay/s ---" << std::endl;
+        }
     }
     auto finish_total = std::chrono::high_resolution_clock::now();
 

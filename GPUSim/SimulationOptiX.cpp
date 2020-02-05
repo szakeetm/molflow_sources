@@ -34,9 +34,15 @@ int SimulationOptiX::LoadSimulation(flowgpu::Model* loaded_model, size_t launchS
     if(loaded_model == nullptr)
         return 1;
 
+    /*uint2 newSize = make_uint2(launchSize,1);
+    if(newSize != kernelDimensions){
+        kernelDimensions = newSize;
+    }*/
+    kernelDimensions = make_uint2(launchSize,1);
+
     try {
         model = loaded_model;
-        optixHandle = new flowgpu::OptixController(loaded_model);
+        optixHandle = new flowgpu::OptixController(loaded_model, kernelDimensions);
     } catch (std::runtime_error& e) {
         std::cout << MF_TERMINAL_RED << "FATAL ERROR: " << e.what()
                   << MF_TERMINAL_DEFAULT << std::endl;
@@ -44,11 +50,6 @@ int SimulationOptiX::LoadSimulation(flowgpu::Model* loaded_model, size_t launchS
         exit(1);
     }
 
-    uint2 newSize = make_uint2(launchSize,1);
-    if(newSize != kernelDimensions){
-        kernelDimensions = newSize;
-    }
-    optixHandle->resize(newSize);
     optixHandle->initSimulation();
 
     return 0;
@@ -65,7 +66,9 @@ int SimulationOptiX::RunSimulation() {
         // for testing only generate and upload random numbers once
         // generate new numbers whenever necessary, recursion = TraceProcessing only, poly checks only for ray generation with polygons
         if(runCount%(NB_RAND/(8+MAX_DEPTH*2+NB_INPOLYCHECKS*2))==0){
+#ifdef DEBUG
             std::cout << "#flowgpu: generating random numbers at run #" << runCount << std::endl;
+#endif
             optixHandle->generateRand();
         }
         optixHandle->launchMolecules();

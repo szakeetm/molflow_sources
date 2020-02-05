@@ -84,7 +84,7 @@ namespace flowgpu {
     public:
         /*! constructor - performs all setup, including initializing
           optix, creates module, pipeline, programs, SBT, etc. */
-        OptixController(const Model *model);
+        OptixController(const Model *model, const uint2 &launchSize);
 
         /*! upload some parts only on start */
         void initSimulation();
@@ -110,6 +110,8 @@ namespace flowgpu {
 
         /*! helper function that initializes optix and checks for errors */
         void initOptix();
+
+        void initLaunchParams(const uint2 &newSize);
 
         /*! creates and configures a optix device context (in this simple
           example, only for the primary GPU device) */
@@ -147,50 +149,14 @@ namespace flowgpu {
         SBTMemory sbt_memory;
         SimulationMemory_perThread sim_memory;
         SimulationMemory_perFacet facet_memory;
+        DeviceTriangleMemory tri_memory;
+        DevicePolygonMemory poly_memory;
+#ifdef DEBUG
+        DeviceMemoryDebug memory_debug;
+#endif
 
         /*! the model we are going to trace rays against */
         const Model *model;
-
-        /*! one buffer per input mesh */
-        struct DeviceTriangleMemory {
-            std::vector<CUDABuffer> vertexBuffer;
-            std::vector<CUDABuffer> indexBuffer;
-            std::vector<CUDABuffer> polyBuffer;
-
-            std::vector<CUDABuffer> facprobBuffer;
-            std::vector<CUDABuffer> cdfBuffer;
-        } tri_memory;
-
-        struct DevicePolygonMemory {
-            std::vector<CUDABuffer> aabbBuffer;
-            std::vector<CUDABuffer> vertexBuffer;
-            std::vector<CUDABuffer> vertex2Buffer;
-            std::vector<CUDABuffer> indexBuffer;
-            std::vector<CUDABuffer> polyBuffer;
-
-            std::vector<CUDABuffer> facprobBuffer;
-            std::vector<CUDABuffer> cdfBuffer;
-        } poly_memory;
-
-#ifdef DEBUG
-        struct DeviceMemoryDebug {
-#ifdef DEBUGCOUNT
-            CUDABuffer detBuffer;
-            CUDABuffer uBuffer;
-            CUDABuffer vBuffer;
-#endif DEBUGCOUNT
-
-#ifdef DEBUGPOS
-            CUDABuffer posBuffer;
-            CUDABuffer posOffsetBuffer;
-#endif DEBUGPOS
-
-#ifdef DEBUGMISS
-            CUDABuffer missBuffer;
-#endif DEBUGMISS
-
-        } memory_debug;
-#endif
     };
 
 } // ::flowgpu

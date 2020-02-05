@@ -6,12 +6,14 @@
 #define MOLFLOW_PROJ_GPUDEFINES_H
 
 // some GPU info we are making use of
-#define CORESPERMP 1664 // 13MP * 128 CUDA Cores
+/*#define CORESPERMP 1664 // 13MP * 128 CUDA Cores
+#define WARPSCHEDULERS 4*/
+#define CORESPERMP 1920 // 30MP * 64 CUDA Cores
 #define WARPSCHEDULERS 4
 
 #define MAX_DEPTH 0 // 0=no recursion
 #define SCENE_EPSILON 1.e-6f // 0=no recursion
-#define NB_RAND 64 // for triangle, make it a power of 8
+#define NB_RAND 8 // for triangle, make it a factor of 8
 
 #define NB_INPOLYCHECKS 0 //0=always use middle point
 #ifdef DEBUG

@@ -26,6 +26,46 @@ namespace flowgpu {
         CUDABuffer missCounterBuffer;
     };
 
+    /*! one buffer per input mesh */
+    struct DeviceTriangleMemory {
+        std::vector<CUDABuffer> vertexBuffer;
+        std::vector<CUDABuffer> indexBuffer;
+        std::vector<CUDABuffer> polyBuffer;
+
+        std::vector<CUDABuffer> facprobBuffer;
+        std::vector<CUDABuffer> cdfBuffer;
+    };
+
+    struct DevicePolygonMemory {
+        std::vector<CUDABuffer> aabbBuffer;
+        std::vector<CUDABuffer> vertexBuffer;
+        std::vector<CUDABuffer> vertex2Buffer;
+        std::vector<CUDABuffer> indexBuffer;
+        std::vector<CUDABuffer> polyBuffer;
+
+        std::vector<CUDABuffer> facprobBuffer;
+        std::vector<CUDABuffer> cdfBuffer;
+    };
+
+#ifdef DEBUG
+struct DeviceMemoryDebug {
+#ifdef DEBUGCOUNT
+        CUDABuffer detBuffer;
+            CUDABuffer uBuffer;
+            CUDABuffer vBuffer;
+#endif DEBUGCOUNT
+
+#ifdef DEBUGPOS
+        CUDABuffer posBuffer;
+            CUDABuffer posOffsetBuffer;
+#endif DEBUGPOS
+
+#ifdef DEBUGMISS
+        CUDABuffer missBuffer;
+#endif DEBUGMISS
+    };
+#endif DEBUG
+
     class DeviceBuffers {
 
     };

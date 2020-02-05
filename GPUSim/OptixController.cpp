@@ -142,9 +142,13 @@ namespace flowgpu {
 
     /*! constructor - performs all setup, including initializing
       optix, creates module, pipeline, programs, SBT, etc. */
-    OptixController::OptixController(const Model *model)
+    OptixController::OptixController(const Model *model, const uint2 &launchSize)
             : model(model)
     {
+        std::cout << "#flowgpu: initializing launch parameters ..." << std::endl;
+        initLaunchParams(launchSize);
+
+        std::cout << "#flowgpu: initializing optix ..." << std::endl;
         initOptix();
 
         std::cout << "#flowgpu: creating optix context ..." << std::endl;
@@ -176,7 +180,6 @@ namespace flowgpu {
 #else
         buildSBTPolygon();
 #endif
-        state.launchParamsBuffer.alloc(sizeof(state.launchParams));
         std::cout << "#flowgpu: context, module, pipeline, etc, all set up ..." << std::endl;
 
         std::cout << MF_TERMINAL_GREEN;
@@ -758,6 +761,9 @@ namespace flowgpu {
     void OptixController::buildSBTPolygon()
     {
         // first allocate device memory and upload data
+
+        sim_memory.moleculeBuffer.initDeviceData(state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y);
+
         for (int meshID=0;meshID<(int)model->poly_meshes.size();meshID++) {
             PolygonMesh &mesh = *model->poly_meshes[meshID];
             poly_memory.vertexBuffer[meshID].alloc_and_upload(mesh.vertices3d);
@@ -838,6 +844,8 @@ namespace flowgpu {
     void OptixController::buildSBTTriangle()
     {
         // first allocate device memory and upload data
+        sim_memory.moleculeBuffer.initDeviceData(state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y);
+
         for (int meshID=0;meshID<(int)model->triangle_meshes.size();meshID++) {
             TriangleMesh &mesh = *model->triangle_meshes[meshID];
             tri_memory.polyBuffer[meshID].alloc_and_upload(mesh.poly);
@@ -1041,11 +1049,7 @@ namespace flowgpu {
 
     }
 
-
-    /*! resize buffers to given amount of threads */
-    // initlaunchparams
-    void OptixController::resize(const uint2 &newSize)
-    {
+    void OptixController::initLaunchParams(const uint2 &newSize){
 
         const uint32_t nbRand = NB_RAND;
 
@@ -1098,15 +1102,49 @@ namespace flowgpu {
         memory_debug.missBuffer.resize(NMISSES*newSize.x * newSize.y*sizeof(uint32_t));
         state.launchParams.perThreadData.missBuffer = (uint32_t*)memory_debug.missBuffer.d_pointer();
 #endif
-        //TODO: Only necessary if changes will be made after initialization
+
+        state.launchParamsBuffer.alloc(sizeof(state.launchParams));
         state.launchParamsBuffer.upload(&state.launchParams,1);
 
 
-        // -- one time init of device data --
+        /*// -- one time init of device data --
         MolPRD *perThreadData = new MolPRD[newSize.x*newSize.y]();
         sim_memory.moleculeBuffer.upload(perThreadData, newSize.x * newSize.y);
-        delete[] perThreadData;
+        delete[] perThreadData;*/
+    }
 
+    /*! resize buffers to given amount of threads */
+    // initlaunchparams
+    void OptixController::resize(const uint2 &newSize)
+    {
+
+        const uint32_t nbRand = NB_RAND;
+
+        // resize our cuda frame buffer
+        sim_memory.moleculeBuffer.resize(newSize.x * newSize.y * sizeof(MolPRD));
+        sim_memory.moleculeBuffer.initDeviceData(newSize.x * newSize.y * sizeof(MolPRD));
+
+        sim_memory.randBuffer.resize(nbRand*newSize.x*newSize.y*sizeof(float));
+        sim_memory.randOffsetBuffer.resize(newSize.x*newSize.y*sizeof(uint32_t));
+
+        // update the launch parameters that we'll pass to the optix
+        // launch:
+        state.launchParams.simConstants.size  = newSize;
+
+        crng::destroyRandHost((float **) &sim_memory.randBuffer.d_ptr);
+        crng::initializeRandHost(newSize.x * newSize.y, (float **) &sim_memory.randBuffer.d_ptr,  time(NULL));
+
+#ifdef DEBUGPOS
+        memory_debug.posBuffer.resize(newSize.x * newSize.y*NBCOUNTS*sizeof(float3));
+        memory_debug.posOffsetBuffer.resize(newSize.x * newSize.y*sizeof(uint32_t));
+#endif
+
+#ifdef DEBUGMISS
+        memory_debug.missBuffer.resize(NMISSES*newSize.x * newSize.y*sizeof(uint32_t));
+#endif
+
+
+        state.launchParamsBuffer.upload(&state.launchParams,1);
     }
     
     /*static float3 dir_max(-10.e10);

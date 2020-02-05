@@ -19,7 +19,7 @@ namespace flowgpu {
                      const Camera &camera,
                      const float worldScale)
                 : GLFCameraWindow(title,camera.from,camera.at,camera.up,worldScale),
-                  sample(model)
+                  sample(model, <#initializer#>)
                   {
             sample.setCamera(camera);
         }
