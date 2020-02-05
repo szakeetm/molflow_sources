@@ -4,6 +4,7 @@
 #include "LaunchParams.h"
 #include "GPUDefines.h" // for NB_RAND
 #include "jetbrains_indexing.h"
+#include "helper_math.h"
 
 #define DET33(_11,_12,_13,_21,_22,_23,_31,_32,_33)  \
   ((_11)*( (_22)*(_33) - (_32)*(_23) ) +            \
@@ -35,9 +36,6 @@ namespace flowgpu {
         optixLaunch (this gets filled in from the buffer we pass to
         optixLaunch) */
     extern "C" __constant__ LaunchParams optixLaunchParams;
-
-    // for this simple example, we have a single ray type
-    enum { SURFACE_RAY_TYPE=0, RAY_TYPE_COUNT };
 
     static __forceinline__ __device__
     void *unpackPointer( cuuint32_t i0, cuuint32_t i1 )
@@ -101,19 +99,19 @@ namespace flowgpu {
 
         const int   primID = optixGetPrimitiveIndex();
         const Polygon& poly  = sbtData.poly[primID];
-        const vec3f &Aa     = sbtData.vertex[sbtData.index[poly.vertOffset + 0]];
-        const vec3f &Bb     = sbtData.vertex[sbtData.index[poly.vertOffset + 1]];
-        const vec3f &Cc     = sbtData.vertex[sbtData.index[poly.vertOffset + 2]];
+        const float3 &Aa     = sbtData.vertex[sbtData.index[poly.vertOffset + 0]];
+        const float3 &Bb     = sbtData.vertex[sbtData.index[poly.vertOffset + 1]];
+        const float3 &Cc     = sbtData.vertex[sbtData.index[poly.vertOffset + 2]];
 
-        vec3f v1 = Bb-Aa; // v1 = P0P1
-        vec3f v2 = Cc-Aa; // v2 = P1P2
-        vec3f n = cross(v1,v2);
+        float3 v1 = Bb-Aa; // v1 = P0P1
+        float3 v2 = Cc-Aa; // v2 = P1P2
+        float3 n = cross(v1,v2);
         v1 *= 1.0f / dot( v1, v1 );
         v2 *= 1.0f / dot( v2, v2 );
 
         //printf("Normal (on device): %10.4f %10.4f %10.4f \n", n.x, n.y, n.z);
         //f->sh.N = CrossProduct(v1, v2);
-        //vec3f n = cross(A,B);
+        //float3 n = cross(A,B);
 
         /*int ind = 2;
         while (ind < poly.nbVertices) {
@@ -128,8 +126,8 @@ namespace flowgpu {
         //v1 = poly.U;
         //v2 = poly.V;
 
-        vec3f ray_orig = optixGetWorldRayOrigin();
-        vec3f ray_dir  = optixGetWorldRayDirection();
+        float3 ray_orig = optixGetWorldRayOrigin();
+        float3 ray_dir  = optixGetWorldRayDirection();
 
         const float ray_tmin = optixGetRayTmin(), ray_tmax = optixGetRayTmax();
 
@@ -138,8 +136,8 @@ namespace flowgpu {
         float t = (dot(n,Aa) - dot(n, ray_orig))/dt;
         if( t > ray_tmin && t < ray_tmax )
         {
-            vec3f p = ray_orig + ray_dir * t;
-            vec3f vi = p - Aa;
+            float3 p = ray_orig + ray_dir * t;
+            float3 vi = p - Aa;
             float a1 = dot(v1, vi);
             if(a1 >= 0 && a1 <= 1)
             {
@@ -158,7 +156,7 @@ namespace flowgpu {
         }
     }
 
-    extern "C" __device__ void intersection__polygon(float d, float u, float v, vec3f n) {
+    extern "C" __device__ void intersection__polygon(float d, float u, float v, float3 n) {
         // Fast method to check if a point is inside a polygon or not.
         // Works with convex and concave polys, orientation independent
 
@@ -168,18 +166,18 @@ namespace flowgpu {
         const Polygon& poly  = sbtData.poly[primID];
 
         const int nbSizeMinusOne = poly.nbVertices - 1;
-        const vec2f* polyPoints = sbtData.vertex2;
+        const float2* polyPoints = sbtData.vertex2;
 
         int n_updown = 0;
         int n_found = 0;
 
-        vec2f p;
-        p.u = u;
-        p.v = v;
+        float2 p;
+        p.x = u;
+        p.y = v;
 
         for (size_t j = 0; j < nbSizeMinusOne; j++) {
-            const vec2f& p1 = polyPoints[poly.vertOffset+j];
-            const vec2f& p2 = polyPoints[poly.vertOffset+j+1];
+            const float2& p1 = polyPoints[poly.vertOffset+j];
+            const float2& p2 = polyPoints[poly.vertOffset+j+1];
 /*
             if(primID==2 && optixGetLaunchIndex().x+optixGetLaunchIndex().y*optixLaunchParams.frame.size.x % 500 == 0)
                 */
@@ -189,9 +187,9 @@ namespace flowgpu {
                 printf("[%d] -- %10.4f , %10.4f -- %10.4f , %10.4f \n", sbtData.index[poly.vertOffset+j], p1.x, p1.y, p2.x, p2.y);
 */
 
-            if (p.u<p1.u != p.u<p2.u) {
-                float slope = (p2.v - p1.v) / (p2.u - p1.u);
-                if ((slope * p.u - p.v) < (slope * p1.u - p1.v)) {
+            if (p.x<p1.x != p.x<p2.x) {
+                float slope = (p2.y - p1.y) / (p2.x - p1.x);
+                if ((slope * p.x - p.y) < (slope * p1.x - p1.y)) {
                     n_updown++;
                 }
                 else {
@@ -211,11 +209,11 @@ namespace flowgpu {
 */
 
         //Last point. Repeating code because it's the fastest and this function is heavily used
-        const vec2f& p1 = polyPoints[poly.vertOffset+nbSizeMinusOne];
-        const vec2f& p2 = polyPoints[poly.vertOffset+0];
-        if (p.u<p1.u != p.u<p2.u) {
-            float slope = (p2.v - p1.v) / (p2.u - p1.u);
-            if ((slope * p.u - p.v) < (slope * p1.u - p1.v)) {
+        const float2& p1 = polyPoints[poly.vertOffset+nbSizeMinusOne];
+        const float2& p2 = polyPoints[poly.vertOffset+0];
+        if (p.x<p1.x != p.x<p2.x) {
+            float slope = (p2.y - p1.y) / (p2.x - p1.x);
+            if ((slope * p.x - p.y) < (slope * p1.x - p1.y)) {
                 n_updown++;
             }
             else {
@@ -238,7 +236,7 @@ namespace flowgpu {
         }
     }
 
-    extern "C" __device__ void intersection__polygon_double(double d, double u, double v, vec3f n) {
+    extern "C" __device__ void intersection__polygon_double(double d, double u, double v, float3 n) {
         // Fast method to check if a point is inside a polygon or not.
         // Works with convex and concave polys, orientation independent
 
@@ -248,22 +246,22 @@ namespace flowgpu {
         const Polygon& poly  = sbtData.poly[primID];
 
         const int nbSizeMinusOne = poly.nbVertices - 1;
-        const vec2f* polyPoints = sbtData.vertex2;
+        const float2* polyPoints = sbtData.vertex2;
 
         int n_updown = 0;
         int n_found = 0;
 
-        vec2d p;
-        p.u = u;
-        p.v = v;
+        double2 p;
+        p.x = u;
+        p.y = v;
 
         for (size_t j = 0; j < nbSizeMinusOne; j++) {
-            const vec2f& p1 = polyPoints[poly.vertOffset+j];
-            const vec2f& p2 = polyPoints[poly.vertOffset+j+1];
+            const float2& p1 = polyPoints[poly.vertOffset+j];
+            const float2& p2 = polyPoints[poly.vertOffset+j+1];
 
-            if (p.u<p1.u != p.u<p2.u) {
-                double slope = (double)(p2.v - p1.v) / (double)(p2.u - p1.u);
-                if ((slope * p.u - p.v) < (slope * p1.u - p1.v)) {
+            if (p.x<p1.x != p.x<p2.x) {
+                float slope = (p2.y - p1.y) / (p2.x - p1.x);
+                if ((slope * p.x - p.y) < (slope * p1.x - p1.y)) {
                     n_updown++;
                 }
                 else {
@@ -274,11 +272,11 @@ namespace flowgpu {
         }
 
         //Last point. Repeating code because it's the fastest and this function is heavily used
-        const vec2f& p1 = polyPoints[poly.vertOffset+nbSizeMinusOne];
-        const vec2f& p2 = polyPoints[poly.vertOffset+0];
-        if (p.u<p1.u != p.u<p2.u) {
-            double slope = (double)(p2.v - p1.v) / (double)(p2.u - p1.u);
-            if ((slope * p.u - p.v) < (slope * p1.u - p1.v)) {
+        const double2& p1 = make_double2(polyPoints[poly.vertOffset+nbSizeMinusOne].x,polyPoints[poly.vertOffset+nbSizeMinusOne].y);
+        const double2& p2 = make_double2(polyPoints[poly.vertOffset+0].x,polyPoints[poly.vertOffset+0].y);
+        if (p.x<p1.x != p.x<p2.x) {
+            double slope = (p2.y - p1.y) / (p2.x - p1.x);
+            if ((slope * p.x - p.y) < (slope * p1.x - p1.y)) {
                 n_updown++;
             }
             else {
@@ -304,13 +302,13 @@ namespace flowgpu {
 
         const int   primID = optixGetPrimitiveIndex();
 
-        vec3f ray_orig = optixGetWorldRayOrigin();
-        vec3f ray_dir = optixGetWorldRayDirection();
+        float3 ray_orig = optixGetWorldRayOrigin();
+        float3 ray_dir = optixGetWorldRayDirection();
 
         /*if(blockDim.x * blockIdx.x + threadIdx.x == 3 && ray_dir.x > -0.26 && ray_dir.x < -0.24)
             primID=162;*/
 
-        ray_dir = vec3f(-1.0,-1.0,-1.0) * ray_dir;
+        ray_dir = make_float3(-1.0,-1.0,-1.0) * ray_dir;
 
         const float ray_tmin = optixGetRayTmin(), ray_tmax = optixGetRayTmax();
 
@@ -348,7 +346,7 @@ namespace flowgpu {
 
         if(det > 0.0) {
             const float iDet = 1.0 / det;
-            vec3f intZ = ray_orig - poly.O;
+            float3 intZ = ray_orig - poly.O;
 #ifdef DEBUG
             /*printf("[%d] IntZ = (%12.10f , %12.10f , %12.10f) - (%12.10f , %12.10f , %12.10f)\n",
                    primID, ray_orig.x, ray_orig.y, ray_orig.z, poly.O.x, poly.O.y, poly.O.z);*/
@@ -437,27 +435,28 @@ namespace flowgpu {
 
         const int   primID = optixGetPrimitiveIndex();
 
-        const vec3d ray_orig = optixGetWorldRayOrigin();
-        vec3d ray_dir = optixGetWorldRayDirection();
-        ray_dir = vec3d(-1.0,-1.0,-1.0) * ray_dir;
+        const double3 ray_orig = make_double3(optixGetWorldRayOrigin());
+        //const double3 ray_dir = make_double3(optixGetWorldRayDirection().x,optixGetWorldRayDirection().y,optixGetWorldRayDirection().z);
+        //ray_dir = make_double3(-1.0,-1.0,-1.0) * ray_dir;
+        const double3 ray_dir = make_double3(-1.0 * optixGetWorldRayDirection());
 
         const double ray_tmin = optixGetRayTmin(), ray_tmax = optixGetRayTmax();
 
         const Polygon& poly  = sbtData.poly[primID];
-        const double det = dot(vec3d(poly.Nuv), ray_dir);
+        const double det = dot(make_double3(poly.Nuv), ray_dir);
 
         if(det > 0.0) {
             const double iDet = 1.0 / det;
-            vec3d intZ = ray_orig - vec3d(poly.O);
-            const double u = iDet * DET33_ROW(intZ, vec3d(poly.V), ray_dir);
+            double3 intZ = ray_orig - make_double3(poly.O);
+            const double u = iDet * DET33_ROW(intZ, make_double3(poly.V), ray_dir);
 
             if (u >= 0.0 && u <= 1.0) {
 
-                const double v = iDet * DET33_ROW(vec3d(poly.U), intZ, ray_dir);
+                const double v = iDet * DET33_ROW(make_double3(poly.U), intZ, ray_dir);
 
                 if (v >= 0.0 && v <= 1.0) {
 
-                    const double d = iDet * dot(vec3d(poly.Nuv), intZ);
+                    const double d = iDet * dot(make_double3(poly.Nuv), intZ);
 
                     /*if(primID==2)
                         printf("[%d] -- %10.4f / %10.4f / %10.4f / %10.4f > %10.4f for Ray from %10.4f , %10.4f , %10.4f to %10.4f , %10.4f , %10.4f \n",

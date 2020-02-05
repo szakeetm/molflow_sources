@@ -3,7 +3,6 @@
 //
 
 #include "SimulationOptiX.h"
-#include "gdt/math/vec.h"
 // debug output
 #include <fstream>
 #include <cereal/archives/xml.hpp>
@@ -13,27 +12,33 @@
 #include <chrono>
 #include "GPUDefines.h"
 
-int main(int argc, char **argv) {
+template<class Archive>
+void serialize(Archive & archive,
+               float2 & m)
+{
+    archive( m.x, m.y);
+}
+
+template<class Archive>
+void serialize(Archive & archive,
+               float3 & m)
+{
+    archive( m.x, m.y, m.z);
+}
+
+template<class Archive>
+void serialize(Archive & archive,
+               int3 & m)
+{
+    archive( m.x, m.y, m.z);
+}
+
+/*! --- Initialise model with a Molflow-exported geometry --- */
+flowgpu::Model* initializeModel(std::string fileName){
+
+    std::cout << "#GPUTestsuite: Loading input file: " << fileName << std::endl;
+
     flowgpu::Model* model = new flowgpu::Model();
-    //model->poly_meshes.resize(1);
-    //model->poly_meshes[0] = new flowgpu::PolygonMesh();
-
-    // --- Initialise model with a Molflow-exported geometry ---
-
-    std::cout << "You have entered " << argc
-         << " arguments:" << "\n";
-
-    for (int i = 0; i < argc; ++i)
-        std::cout << argv[i] << "\n";
-
-    std::string fileName = "test_geom.xml";
-    if(argc>1)
-        fileName = argv[1];
-
-    size_t nbLoops = N_LOOPS;
-    if(argc>2)
-        nbLoops = atoi(argv[2]);
-
     std::ifstream file( fileName );
     cereal::XMLInputArchive archive( file );
 
@@ -52,9 +57,7 @@ int main(int argc, char **argv) {
             cereal::make_nvp("nbFacetsTotal", model->nbFacets_total) ,
             cereal::make_nvp("nbVerticesTotal", model->nbVertices_total) ,
             cereal::make_nvp("nbIndicesTotal", model->nbIndices_total) ,
-            cereal::make_nvp("useMaxwell", model->useMaxwell) ,
-            cereal::make_nvp("bounds.lower", model->bounds.lower) ,
-            cereal::make_nvp("bounds.upper", model->bounds.upper)
+            cereal::make_nvp("useMaxwell", model->useMaxwell)
     );
 #else
     model->poly_meshes.push_back(new flowgpu::PolygonMesh());
@@ -71,14 +74,123 @@ int main(int argc, char **argv) {
             cereal::make_nvp("nbFacetsTotal", model->nbFacets_total) ,
             cereal::make_nvp("nbVerticesTotal", model->nbVertices_total) ,
             cereal::make_nvp("nbIndicesTotal", model->nbIndices_total) ,
-            cereal::make_nvp("useMaxwell", model->useMaxwell) ,
-            cereal::make_nvp("bounds.lower", model->bounds.lower) ,
-            cereal::make_nvp("bounds.upper", model->bounds.upper)
+            cereal::make_nvp("useMaxwell", model->useMaxwell)
     );
 #endif
 
+    std::cout << "#GPUTestsuite: Loading completed!" << std::endl;
+
+    return model;
+}
+
+void printUsageAndExit( const char* argv0 )
+{
+    fprintf( stderr, "Usage  : %s [options]\n", argv0 );
+    fprintf( stderr, "Options: --file | -f <filename>      Specify file for model input\n" );
+    fprintf( stderr, "         --help | -h                 Print this usage message\n" );
+    fprintf( stderr, "         --size | -s <launchsize>    Set kernel launch size\n" );
+    fprintf( stderr, "         --loop | -l <nbLoops>       Set number of simulation loops\n" );
+    fprintf( stderr, "         --nhit | -n <nbHits>        Set approx. number of hits for the simulation\n" );
+    //fprintf( stderr, "         --dim=<width>x<height>      Set image dimensions; defaults to 512x384\n" );
+    exit(1);
+}
+
+void parseSize( const char* arg, size_t& kernelSize )
+{
+
+    // look for an 'x': <width>x<height>
+    size_t width_end = strchr( arg, 'x' ) - arg;
+    size_t height_begin = width_end + 1;
+
+    if ( height_begin < strlen( arg ) )
+    {
+        // find the beginning of the height string/
+        const char *height_arg = &arg[height_begin];
+
+        // copy width to null-terminated string
+        char width_arg[32];
+        strncpy( width_arg, arg, width_end );
+        width_arg[width_end] = '\0';
+
+        // terminate the width string
+        width_arg[width_end] = '\0';
+
+        kernelSize = atoi(width_arg) * atoi(height_arg);
+
+        size_t height_end = strchr( strchr( arg, 'x' )+1, 'x' ) - arg;
+        size_t depth_begin = height_end + 1;
+
+        if (depth_begin < strlen( arg ) )
+        {
+            const char *depth_arg = &arg[depth_begin];
+            kernelSize *= atoi(depth_arg);
+            if(kernelSize>0)
+                return;
+        }
+
+        if(kernelSize>0)
+            return;
+    }
+
+    std::cout << "#GPUTestsuite: Failed to parse width, height from string '" << std::string( arg ) << "'"  << std::endl;
+    throw;
+}
+
+int main(int argc, char **argv) {
+
+#ifdef WITHTRIANGLES
+    std::string fileName = "test_geom_tri.xml"; // Input file
+#else
+    std::string fileName = "test_geom.xml"; // Input file
+#endif
+
+    size_t nbLoops = 1;               // Number of Simulation loops
+    size_t launchSize = 1;                  // Kernel launch size
+
+    for(int i = 1; i < argc; ++i ) {
+        if( strcmp( argv[i], "--help" ) == 0 || strcmp( argv[i], "-h" ) == 0 ) {
+            printUsageAndExit( argv[0] );
+        } else if( strcmp( argv[i], "--file " ) == 0 || strcmp( argv[i], "-f" ) == 0 ) {
+            if( i < argc-1 ) {
+                fileName = argv[++i];
+            } else {
+                printUsageAndExit( argv[0] );
+            }
+        } else if ( strcmp( argv[i], "--size") == 0 || strcmp( argv[i], "-s" ) == 0 ) {
+            if( i < argc-1 ) {
+                launchSize = atoi(argv[++i]);
+            } else {
+                printUsageAndExit( argv[0] );
+            }
+        } else if ( strncmp( argv[i], "--size=", 7 ) == 0 ) {
+                const char *size_arg = &argv[i][7];
+                parseSize(size_arg, launchSize);
+
+        } else if ( strcmp( argv[i], "--loop") == 0  || strcmp( argv[i], "-l" ) == 0 ) {
+            if( i < argc-1 ) {
+                nbLoops = atoi(argv[++i]);
+            } else {
+                printUsageAndExit( argv[0] );
+            }
+        } else if ( strcmp( argv[i], "--nhit") == 0  || strcmp( argv[i], "-n" ) == 0 ) {
+            if( i < argc-1 ) {
+                nbLoops = atof(argv[++i]) / launchSize;
+            } else {
+                printUsageAndExit( argv[0] );
+            }
+        } else {
+            fprintf( stderr, "Unknown option '%s'\n", argv[i] );
+            printUsageAndExit( argv[0] );
+        }
+    }
+
     SimulationOptiX gpuSim;
-    gpuSim.LoadSimulation(model);
+    flowgpu::Model* model = initializeModel(fileName);
+
+    std::cout << "#GPUTestsuite: Loading simulation with kernel size: " << launchSize << std::endl;
+    gpuSim.LoadSimulation(model, launchSize);
+
+    std::cout << "#GPUTestsuite: Starting simulation with " << launchSize << " threads per launch => " << nbLoops << " runs "<<std::endl;
     auto start_total = std::chrono::high_resolution_clock::now();
     for(size_t i = 0; i < nbLoops; ++i){
         auto start = std::chrono::high_resolution_clock::now();

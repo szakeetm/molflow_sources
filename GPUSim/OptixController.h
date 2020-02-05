@@ -17,18 +17,66 @@
 #pragma once
 
 // our own classes, partly shared between host and device
-#include "CUDABuffer.h"
+#include "DeviceBuffers.h"
 #include "LaunchParams.h"
 #include "Model.h"
 
 /*! \namespace flowgpu - Molflow GPU code */
 namespace flowgpu {
 
+
+    struct OptixState
+    {
+
+        /*! @{ CUDA device context and stream that optix pipeline will run
+            on, as well as device properties for this device */
+        CUcontext          cudaContext;
+        cudaDeviceProp     deviceProps;
+        CUstream                    stream                    = 0;
+        /*! @} */
+
+        OptixDeviceContext          context                   = 0;        //! the optix context that our pipeline will run in.
+
+        OptixTraversableHandle      asHandle                = {};
+        CUDABuffer asBuffer;                                        //! buffer that keeps the (final, compacted) accel structure
+
+        /*! @{ the module that contains our device programs */
+        struct Modules {
+            OptixModule                 geometryModule        = 0;
+            OptixModule                 rayModule             = 0;
+            OptixModule                 traceModule           = 0;
+        } modules;
+
+        OptixModuleCompileOptions   moduleCompileOptions;
+        /* @} */
+
+        /*!  all our program(group)s, for now only for one molecule and surface type */
+        OptixProgramGroup           raygenPG            = 0;
+        OptixProgramGroup           missPG              = 0;
+        OptixProgramGroup           hitgroupPG          = 0;
+
+
+        /*!  and the SBT built around them */
+        OptixShaderBindingTable     sbt                       = {};
+
+        /*! @{ the pipeline we're building */
+        OptixPipeline               pipeline                  = 0;
+        OptixPipelineCompileOptions pipelineCompileOptions  = {};
+        OptixPipelineLinkOptions    pipelineLinkOptions;
+        /*! @} */
+
+        /*! @{ our launch parameters, on the host, and the buffer to store
+            them on the device */
+        LaunchParams                      launchParams;
+        CUDABuffer   launchParamsBuffer;
+/*! @} */
+    };
+
     /*! a sample OptiX-7 renderer that demonstrates how to set up
         context, module, programs, pipeline, SBT, etc, and perform a
         valid launch that renders some pixel (using a simple test
         pattern, in this case */
-    class OptixControl
+    class OptixController
     {
         // ------------------------------------------------------------------
         // publicly accessible interface
@@ -36,16 +84,16 @@ namespace flowgpu {
     public:
         /*! constructor - performs all setup, including initializing
           optix, creates module, pipeline, programs, SBT, etc. */
-        OptixControl(const Model *model);
+        OptixController(const Model *model);
 
         /*! upload some parts only on start */
         void initSimulation();
 
-        /*! render one frame */
-        void render();
+        /*! launch a bunch of molecules to trace */
+        void launchMolecules();
 
         /*! resize thread buffer to given resolution */
-        void resize(const vec2i &newSize);
+        void resize(const uint2 &newSize);
 
         /*! resize t buffer to given resolution */
         void generateRand();
@@ -73,16 +121,16 @@ namespace flowgpu {
         void createModule();
 
         /*! does all setup for the raygen program(s) we are going to use */
-        void createRaygenPrograms();
+        void createRaygenPrograms(std::vector<OptixProgramGroup> &programGroups);
 
         /*! does all setup for the miss program(s) we are going to use */
-        void createMissPrograms();
+        void createMissPrograms(std::vector<OptixProgramGroup> &programGroups);
 
         /*! does all setup for the hitgroup program(s) we are going to use */
-        void createHitgroupPrograms();
+        void createHitgroupPrograms(std::vector<OptixProgramGroup> &programGroups);
 
         /*! assembles the full pipeline of all programs */
-        void createPipeline();
+        void createPipeline(std::vector<OptixProgramGroup> &programGroups);
 
         /*! constructs the shader binding table */
         void buildSBTPolygon();
@@ -91,54 +139,14 @@ namespace flowgpu {
         /*! build an acceleration structure for the given triangle mesh */
         OptixTraversableHandle buildAccelPolygon();
         OptixTraversableHandle buildAccelTriangle();
+
     protected:
-        /*! @{ CUDA device context and stream that optix pipeline will run
-            on, as well as device properties for this device */
-        CUcontext          cudaContext;
-        CUstream           stream;
-        cudaDeviceProp     deviceProps;
-        /*! @} */
 
-        //! the optix context that our pipeline will run in.
-        OptixDeviceContext optixContext;
+        OptixState state;
 
-        /*! @{ the pipeline we're building */
-        OptixPipeline               pipeline;
-        OptixPipelineCompileOptions pipelineCompileOptions;
-        OptixPipelineLinkOptions    pipelineLinkOptions;
-        /*! @} */
-
-        /*! @{ the module that contains out device programs */
-        struct Modules {
-            OptixModule                 geometryModule;
-            OptixModule                 rayModule;
-            OptixModule                 traceModule;
-        } modules;
-
-        OptixModuleCompileOptions   moduleCompileOptions;
-        /* @} */
-
-        /*! vector of all our program(group)s, and the SBT built around
-            them */
-        std::vector<OptixProgramGroup> raygenPGs;
-        CUDABuffer raygenRecordsBuffer;
-        std::vector<OptixProgramGroup> missPGs;
-        CUDABuffer missRecordsBuffer;
-        std::vector<OptixProgramGroup> hitgroupPGs;
-        CUDABuffer hitgroupRecordsBuffer;
-        OptixShaderBindingTable sbt = {};
-
-        /*! @{ our launch parameters, on the host, and the buffer to store
-            them on the device */
-        LaunchParams launchParams;
-        CUDABuffer   launchParamsBuffer;
-        /*! @} */
-
-        CUDABuffer moleculeBuffer;
-        CUDABuffer randBuffer;
-        CUDABuffer randOffsetBuffer;
-        CUDABuffer hitCounterBuffer;
-        CUDABuffer missCounterBuffer;
+        SBTMemory sbt_memory;
+        SimulationMemory_perThread sim_memory;
+        SimulationMemory_perFacet facet_memory;
 
         /*! the model we are going to trace rays against */
         const Model *model;
@@ -183,8 +191,6 @@ namespace flowgpu {
 
         } memory_debug;
 #endif
-        //! buffer that keeps the (final, compacted) accel structure
-        CUDABuffer asBuffer;
     };
 
 } // ::flowgpu

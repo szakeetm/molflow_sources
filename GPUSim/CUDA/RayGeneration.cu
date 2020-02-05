@@ -6,6 +6,7 @@
 #include "LaunchParams.h"
 #include "GPUDefines.h" // for NB_RAND
 #include "jetbrains_indexing.h"
+#include "helper_math.h"
 
 #define DET33(_11,_12,_13,_21,_22,_23,_31,_32,_33)  \
   ((_11)*( (_22)*(_33) - (_32)*(_23) ) +            \
@@ -41,9 +42,6 @@ namespace flowgpu {
         optixLaunch) */
     extern "C" __constant__ LaunchParams optixLaunchParams;
 
-    // for this simple example, we have a single ray type
-    enum { SURFACE_RAY_TYPE=0, RAY_TYPE_COUNT };
-
     static __forceinline__ __device__
     void  packPointer( void* ptr, uint32_t& i0, uint32_t& i1 )
     {
@@ -51,70 +49,6 @@ namespace flowgpu {
         i0 = uptr >> 32;
         i1 = uptr & 0x00000000ffffffff;
     }
-
-    /*//------------------------------------------------------------------------------
-    // ray gen program - the actual rendering happens in here
-    //------------------------------------------------------------------------------
-    extern "C" __global__ void __raygen__renderFrame()
-    {
-        // compute a test pattern based on pixel ID
-        const int ix = optixGetLaunchIndex().x;
-        const int iy = optixGetLaunchIndex().y;
-
-        const auto &camera = optixLaunchParams.camera;
-
-        // normalized screen plane position, in [0,1]^2
-        const vec2f screen(vec2f(ix+.5f,iy+.5f)
-                           / vec2f(optixLaunchParams.simConstants.size));
-
-        // generate ray direction
-        vec3f rayDir = normalize(camera.direction
-                                 + (screen.x - 0.5f) * camera.horizontal
-                                 + (screen.y - 0.5f) * camera.vertical);
-
-        // our per-ray data for this example. what we initialize it to
-        // won't matter, since this value will be overwritten by either
-        // the miss or hit program, anyway
-        vec3f pixelColorPRD = camera.position;
-        vec3f pixelRay = rayDir;
-
-        // the values we store the PRD pointer in:
-        uint32_t u0, u1, u2, u3;
-        packPointer( &pixelColorPRD, u0, u1 );
-        packPointer( &pixelRay, u2, u3 );
-
-        optixTrace(optixLaunchParams.traversable,
-                   camera.position,
-                   rayDir,
-                   0.f,    // tmin
-                   1e20f,  // tmax
-                   0.0f,   // rayTime
-                   OptixVisibilityMask( 255 ),
-                   OPTIX_RAY_FLAG_DISABLE_ANYHIT,//OPTIX_RAY_FLAG_NONE,
-                   SURFACE_RAY_TYPE,             // SBT offset
-                   RAY_TYPE_COUNT,               // SBT stride
-                   SURFACE_RAY_TYPE,             // missSBTIndex
-                   u0, u1 , u2, u3);
-
-        const int r = int(255.99f*pixelColorPRD.x);
-        const int g = int(255.99f*pixelColorPRD.y);
-        const int b = int(255.99f*pixelColorPRD.z);
-
-        // convert to 32-bit rgba value (we explicitly set alpha to 0xff
-        // to make stb_image_write happy ...
-        const uint32_t rgba = 0xff000000
-                              | (r<<0) | (g<<8) | (b<<16);
-
-        // and write to frame buffer ...
-        const uint32_t fbIndex = ix+iy*optixLaunchParams.simConstants.size.x;
-        //optixLaunchParams.frame.colorBuffer[fbIndex] = rgba;
-
-        //pixelColorPRD = camera.position;
-        //pixelRay = rayDir;
-
-        //optixLaunchParams.simConstants.dir[fbIndex] = pixelRay;
-        //optixLaunchParams.simConstants.origin[fbIndex] = pixelColorPRD;
-    }*/
 
     static __forceinline__ __device__
     void *getRayOriginPolygon( cuuint32_t i0, cuuint32_t i1 )
@@ -157,18 +91,18 @@ namespace flowgpu {
         //const Polygon& poly  = sbtData.poly[primID];
 
         const int nbSizeMinusOne = poly.nbVertices - 1;
-        const vec2f* polyPoints = rayGenData->vertex2;
+        const float2* polyPoints = rayGenData->vertex2;
 
         int n_updown = 0;
         int n_found = 0;
 
-        vec2f p;
-        p.u = u;
-        p.v = v;
+        float2 p;
+        p.x = u;
+        p.y = v;
 
-        //printf("[%d] poly check with %d vert at poly offset %d for p %4.2f %4.2f\n",threadIdx.x,poly.nbVertices,poly.vertOffset,p.u,p.v);
-        //printf("[%d] poly first vec2 %4.2f , %4.2f\n",threadIdx.x,rayGenData->vertex2[0].u,rayGenData->vertex2[0].v);
-        //printf("[%d] poly second vec2 %4.2f , %4.2f\n",threadIdx.x,rayGenData->vertex2[1].u,rayGenData->vertex2[1].v);
+        //printf("[%d] poly check with %d vert at poly offset %d for p %4.2f %4.2f\n",threadIdx.x,poly.nbVertices,poly.yertOffset,p.x,p.y);
+        //printf("[%d] poly first vec2 %4.2f , %4.2f\n",threadIdx.x,rayGenData->vertex2[0].x,rayGenData->vertex2[0].y);
+        //printf("[%d] poly second vec2 %4.2f , %4.2f\n",threadIdx.x,rayGenData->vertex2[1].x,rayGenData->vertex2[1].y);
 
 #ifdef BOUND_CHECK
         if(poly.vertOffset < 0 || poly.vertOffset+poly.nbVertices >= optixLaunchParams.simConstants.nbVertices){
@@ -176,16 +110,16 @@ namespace flowgpu {
         }
 #endif
         for (int j = 0; j < nbSizeMinusOne; j++) {
-            const vec2f& p1 = polyPoints[poly.vertOffset+j];
-            const vec2f& p2 = polyPoints[poly.vertOffset+j+1];
+            const float2& p1 = polyPoints[poly.vertOffset+j];
+            const float2& p2 = polyPoints[poly.vertOffset+j+1];
 
-            //printf("[%d / %u] p1 %4.2f %4.2f / p2 %4.2f %4.2f \n",threadIdx.x,j,p1.u,p1.v,p2.u,p2.v);
+            //printf("[%d / %u] p1 %4.2f %4.2f / p2 %4.2f %4.2f \n",threadIdx.x,j,p1.x,p1.y,p2.x,p2.y);
 
-            if (p.u<p1.u != p.u<p2.u) {
-                float slope = (p2.v - p1.v) / (p2.u - p1.u);
-                //printf("[%d / %u] slope %4.2f --> %4.2f < %4.2f \n",threadIdx.x,j,slope, (slope * p.u - p.v), (slope * p1.u - p1.v));
+            if (p.x<p1.x != p.x<p2.x) {
+                float slope = (p2.y - p1.y) / (p2.x - p1.x);
+                //printf("[%d / %u] slope %4.2f --> %4.2f < %4.2f \n",threadIdx.x,j,slope, (slope * p.x - p.y), (slope * p1.x - p1.y));
 
-                if ((slope * p.u - p.v) < (slope * p1.u - p1.v)) {
+                if ((slope * p.x - p.y) < (slope * p1.x - p1.y)) {
                     n_updown++;
                 }
                 else {
@@ -196,15 +130,15 @@ namespace flowgpu {
         }
 
         //Last point. Repeating code because it's the fastest and this function is heavily used
-        const vec2f& p1 = polyPoints[poly.vertOffset+nbSizeMinusOne];
-        const vec2f& p2 = polyPoints[poly.vertOffset+0];
-        if (p.u<p1.u != p.u<p2.u) {
-            //printf("[%d / %u] p1 %4.2f %4.2f / p2 %4.2f %4.2f \n",threadIdx.x,0,p1.u,p1.v,p2.u,p2.v);
+        const float2& p1 = polyPoints[poly.vertOffset+nbSizeMinusOne];
+        const float2& p2 = polyPoints[poly.vertOffset+0];
+        if (p.x<p1.x != p.x<p2.x) {
+            //printf("[%d / %u] p1 %4.2f %4.2f / p2 %4.2f %4.2f \n",threadIdx.x,0,p1.x,p1.y,p2.x,p2.y);
 
-            float slope = (p2.v - p1.v) / (p2.u - p1.u);
-            //printf("[%d / %u] slope %4.2f --> %4.2f < %4.2f \n",threadIdx.x,0,slope, (slope * p.u - p.v), (slope * p1.u - p1.v));
+            float slope = (p2.y - p1.y) / (p2.x - p1.x);
+            //printf("[%d / %u] slope %4.2f --> %4.2f < %4.2f \n",threadIdx.x,0,slope, (slope * p.x - p.y), (slope * p1.x - p1.y));
 
-            if ((slope * p.u - p.v) < (slope * p1.u - p1.v)) {
+            if ((slope * p.x - p.y) < (slope * p1.x - p1.y)) {
                 n_updown++;
             }
             else {
@@ -243,22 +177,22 @@ namespace flowgpu {
 #ifdef BOUND_CHECK
             if(facIndex < 0 || facIndex >= optixLaunchParams.simConstants.nbFacets){
                 printf("facIndex %u >= %u is out of bounds\n", facIndex, optixLaunchParams.simConstants.nbFacets);
-                printf("found %u with last prob %4.2f > facetRnd %4.2f \n", (rayGenData->facetProbabilities[facIndex].t >= facetRnd), optixLaunchParams.simConstants.nbFacets,
-                       rayGenData->facetProbabilities[facIndex].t,facetRnd);
+                printf("found %u with last prob %4.2f > facetRnd %4.2f \n", (rayGenData->facetProbabilities[facIndex].y >= facetRnd), optixLaunchParams.simConstants.nbFacets,
+                       rayGenData->facetProbabilities[facIndex].y,facetRnd);
             }
 #endif
 
-            found = (rayGenData->facetProbabilities[facIndex].t >= facetRnd); // find probability interval rand lies in
+            found = (rayGenData->facetProbabilities[facIndex].y >= facetRnd); // find probability interval rand lies in
             if(!found)
                 facIndex++;
 
             /*if(found){
                 if(facIndex==0)
                     printf("[%d] %u/%u with last prob %8.6f > facetRnd %8.6f and rand index %u+%u\n", fbIndex, facIndex, optixLaunchParams.simConstants.nbFacets,
-                           rayGenData->facetProbabilities[facIndex].t,facetRnd, randInd,randOffset-1);
+                           rayGenData->facetProbabilities[facIndex].y,facetRnd, randInd,randOffset-1);
                 else
                     printf("found %u/%u with last prob %8.6f > facetRnd %8.6f \n", facIndex, optixLaunchParams.simConstants.nbFacets,
-                       rayGenData->facetProbabilities[facIndex].t,facetRnd);
+                       rayGenData->facetProbabilities[facIndex].y,facetRnd);
             }*/
         }while(!found && facIndex<optixLaunchParams.simConstants.nbFacets);
 
@@ -266,7 +200,7 @@ namespace flowgpu {
         if(facIndex < 0 || facIndex >= optixLaunchParams.simConstants.nbFacets){
             printf("Post facIndex %u >= %u is out of bounds\n", facIndex, optixLaunchParams.simConstants.nbFacets);
             printf("Post found %u with last prob %4.2f > facetRnd %4.2f \n", found, optixLaunchParams.simConstants.nbFacets,
-                   rayGenData->facetProbabilities[facIndex].t,facetRnd);
+                   rayGenData->facetProbabilities[facIndex].y,facetRnd);
 
         }
 #endif
@@ -277,7 +211,7 @@ namespace flowgpu {
     }
 
     static __forceinline__ __device__
-    vec3f getNewOrigin(MolPRD& hitData,
+    float3 getNewOrigin(MolPRD& hitData,
 #ifdef WITHTRIANGLES
         const TriangleRayGenData* rayGenData,
 #else
@@ -314,9 +248,9 @@ namespace flowgpu {
         }
         #endif
 
-            vec3f vertA = rayGenData->vertex[rayGenData->index[facIndex].x];
-            vec3f vertB = rayGenData->vertex[rayGenData->index[facIndex].y];
-            vec3f vertC = rayGenData->vertex[rayGenData->index[facIndex].z];
+            float3 vertA = rayGenData->vertex[rayGenData->index[facIndex].x];
+            float3 vertB = rayGenData->vertex[rayGenData->index[facIndex].y];
+            float3 vertC = rayGenData->vertex[rayGenData->index[facIndex].z];
 
             //rayOrigin =
             return (1-r1_sqrt) * vertA + r1_sqrt * (1 - r2) * vertB + r1_sqrt * r2 * vertC; //rayGenData
@@ -338,7 +272,7 @@ namespace flowgpu {
                 printf("randInd %u is out of bounds\n", randInd + randOffset);
             }
 #endif
-            uDir = randFloat[(cuuint32_t)(randInd + randOffset++)]; // vec3f(randFloat[randInd++],randFloat[randInd++],randFloat[randInd++])
+            uDir = randFloat[(cuuint32_t)(randInd + randOffset++)]; // float3(randFloat[randInd++],randFloat[randInd++],randFloat[randInd++])
 
 #ifdef BOUND_CHECK
             if(randInd + randOffset < 0 || randInd + randOffset >= optixLaunchParams.simConstants.nbRandNumbersPerThread*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y){
@@ -365,7 +299,7 @@ namespace flowgpu {
 
 
     static __forceinline__ __device__
-    vec3f getNewDirection(MolPRD& hitData, Polygon& poly,
+    float3 getNewDirection(MolPRD& hitData, Polygon& poly,
             const float* randFloat, cuuint32_t& randInd, cuuint32_t& randOffset)
     {
 
@@ -390,23 +324,23 @@ namespace flowgpu {
         const float v = sinf(theta)*sinf(phi);
         const float n = cosf(theta);
 
-        /*vec3f nU = rayGenData->poly[facIndex].nU;
-        vec3f nV = rayGenData->poly[facIndex].nV;
-        vec3f N = rayGenData->poly[facIndex].N;*/
-        const vec3f nU = poly.nU;
-        const vec3f nV = poly.nV;
-        const vec3f N = poly.N;
+        /*float3 nU = rayGenData->poly[facIndex].nU;
+        float3 nV = rayGenData->poly[facIndex].nV;
+        float3 N = rayGenData->poly[facIndex].N;*/
+        const float3 nU = poly.nU;
+        const float3 nV = poly.nV;
+        const float3 N = poly.N;
 
         //rayDir = u*nU + v*nV + n*N;
         return u*nU + v*nV + n*N;
         /*if (rayDir.x != 0.0) rayDir.x = 1.0 / rayDir.x;
         if (rayDir.y != 0.0) rayDir.y = 1.0 / rayDir.y;
         if (rayDir.z != 0.0) rayDir.z = 1.0 / rayDir.z;
-        rayDir = vec3f(-1.0f,-1.0f,-1.0f) * rayDir;*/
+        rayDir = float3(-1.0f,-1.0f,-1.0f) * rayDir;*/
     }
 
     static __forceinline__ __device__
-    void initMoleculeInSystem(const cuuint32_t thrInd, MolPRD& hitData, vec3f& rayDir , vec3f& rayOrigin)
+    void initMoleculeInSystem(const cuuint32_t thrInd, MolPRD& hitData, float3& rayDir , float3& rayOrigin)
     {
         hitData = optixLaunchParams.perThreadData.currentMoleculeData[thrInd];
         rayDir = hitData.postHitDir;
@@ -420,7 +354,7 @@ namespace flowgpu {
 
     // Calculate new direction, but keep old position for molecule that was stuck due to self-intersection
     static __forceinline__ __device__
-    void initMoleculePostSelfIntersection(const cuuint32_t thrInd, MolPRD& hitData, vec3f& rayDir , vec3f& rayOrigin)
+    void initMoleculePostSelfIntersection(const cuuint32_t thrInd, MolPRD& hitData, float3& rayDir , float3& rayOrigin)
     {
         hitData = optixLaunchParams.perThreadData.currentMoleculeData[thrInd];
 
@@ -451,7 +385,7 @@ namespace flowgpu {
     // increase facet counters for desorption
     // --------------------------------------
     static __forceinline__ __device__
-    void increaseHitCounterDesorption(CuFacetHitCounter& hitCounter, MolPRD& hitData, vec3f& rayDir, vec3f& polyNormal)
+    void increaseHitCounterDesorption(CuFacetHitCounter& hitCounter, MolPRD& hitData, float3& rayDir, float3& polyNormal)
     {
         double velFactor = optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f; // TODO: Save somewhere as a shared constant instead of repetively evaluating
 
@@ -474,10 +408,10 @@ namespace flowgpu {
     
     // Calculate new direction, but keep old position
     static __forceinline__ __device__
-    void initMoleculeFromStart(const cuuint32_t thrInd, MolPRD& hitData, vec3f& rayDir , vec3f& rayOrigin)
+    void initMoleculeFromStart(const cuuint32_t thrInd, MolPRD& hitData, float3& rayDir , float3& rayOrigin)
     {
-        hitData.hitPos = vec3f(-999.9f,-999.9f,-999.9f);
-        hitData.postHitDir = vec3f(-999.9f,-999.9f,-999.9f);
+        hitData.hitPos = make_float3(-999.9f,-999.9f,-999.9f);
+        hitData.postHitDir = make_float3(-999.9f,-999.9f,-999.9f);
         hitData.hitT = -999.0f;
         hitData.velocity = -999.0f;
         hitData.currentDepth = 0;
@@ -535,8 +469,8 @@ namespace flowgpu {
             printf("threadIndex %u is out of bounds\n", threadIndex);
         }
 #endif
-        vec3f rayOrigin;
-        vec3f rayDir;
+        float3 rayOrigin;
+        float3 rayDir;
 
         MolPRD hitData;
 
@@ -602,9 +536,9 @@ namespace flowgpu {
                0.0f,   // rayTime
                OptixVisibilityMask( 255 ),
                OPTIX_RAY_FLAG_DISABLE_ANYHIT,//OPTIX_RAY_FLAG_NONE,
-               SURFACE_RAY_TYPE,             // SBT offset
-               RAY_TYPE_COUNT,               // SBT stride
-               SURFACE_RAY_TYPE,             // missSBTIndex
+                   RayType::RAY_TYPE_MOLECULE,             // SBT offset
+                   RayType::RAY_TYPE_COUNT,               // SBT stride
+                   RayType::RAY_TYPE_MOLECULE,             // missSBTIndex
                //u0, u1 , u2, u3);
                //float3_as_args(hitData.hitPos),
                reinterpret_cast<cuuint32_t&>(hitData.velocity),

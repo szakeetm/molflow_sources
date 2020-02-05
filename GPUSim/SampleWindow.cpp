@@ -11,7 +11,7 @@ void flowgpu::SampleWindow::render(){
                                  cameraFrame.get_up() });
         cameraFrame.modified = false;
     }
-    sample.render();
+    sample.launchMolecules();
 }
 
 void flowgpu::SampleWindow::draw(){
@@ -72,7 +72,7 @@ static void glfwindow_mouseMotion_cb(GLFWwindow *window, double x, double y)
 {
     flowgpu::SampleWindow *gw = static_cast<flowgpu::SampleWindow*>(glfwGetWindowUserPointer(window));
     assert(gw);
-    gw->mouseMotion(gdt::vec2i((int)x, (int)y));
+    gw->mouseMotion(gdt::int2((int)x, (int)y));
 }
 
 /*! callback for a key press */
@@ -99,7 +99,7 @@ void flowgpu::SampleWindow::run()
 {
     int width, height;
     glfwGetFramebufferSize(handle, &width, &height);
-    resize(vec2i(width,height));
+    resize(int2(width,height));
 
     // glfwSetWindowUserPointer(window, GLFWindow::current);
     //glfwSetFramebufferSizeCallback(handle, glfwindow_reshape_cb);
@@ -123,7 +123,7 @@ void flowgpu::SampleWindow::run()
 
 }
 
-void flowgpu::SampleWindow::resize(const vec2i &newSize){
+void flowgpu::SampleWindow::resize(const int2 &newSize){
     fbSize = newSize;
     sample.resize(newSize);
     pixels.resize(newSize.x*newSize.y);

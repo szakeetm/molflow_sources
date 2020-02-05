@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include "gdt/math/AffineSpace.h"
 #include <vector>
 //#include "Vector.h"
 //#include "Geometry_shared.h"
@@ -17,48 +16,48 @@
 
 /*! \namespace flowgpu - Molflow GPU code */
 namespace flowgpu {
-    using namespace gdt;
+
+    struct Mesh {
+        Mesh() : nbFacets(0), nbIndices(0), nbVertices(0){};
+        Mesh(const Mesh&) = delete;
+
+        //std::vector<uint32_t> indices;
+        //std::vector<float2> vertices2d;
+        std::vector<float3> vertices3d;
+        std::vector<Polygon> poly;
+
+        std::vector<float2> facetProbabilities;
+        std::vector<float> cdfs; // should not be part of each mesh, but the model itself
+
+        uint32_t nbFacets;
+        uint32_t nbIndices;
+        uint32_t nbVertices;
+    };
 
     /*! a simple indexed triangle mesh that our sample renderer will
         render */
-    struct TriangleMesh {
-        //std::vector<vec3f> vertex;
-        //std::vector<vec3f> normal;
-        //std::vector<vec3i> index;
-        std::vector<vec3i> indices;
-        std::vector<vec3f> vertices3d;
+    struct TriangleMesh : public Mesh {
+        TriangleMesh() : Mesh(){};
+        TriangleMesh(const TriangleMesh&) = delete;
+        //std::vector<float3> vertex;
+        //std::vector<float3> normal;
+        //std::vector<int3> index;
+        std::vector<int3> indices;
 
         // material data:
-        //vec3f              diffuse;
-        std::vector<Polygon> poly;
-
-        std::vector<vec2f> facetProbabilities;
-        std::vector<float> cdfs; // should not be part of each mesh, but the model itself
-
-        uint32_t nbFacets;
-        uint32_t nbIndices;
-        uint32_t nbVertices;
+        //float3              diffuse;
     };
 
-    struct PolygonMesh {
-        PolygonMesh() : nbFacets(0), nbIndices(0), nbVertices(0){};
+    struct PolygonMesh : public Mesh {
+        PolygonMesh() : Mesh(){};
         PolygonMesh(const PolygonMesh&) = delete;
 
         std::vector<uint32_t> indices;
-        std::vector<vec2f> vertices2d;
-        std::vector<vec3f> vertices3d;
-        std::vector<Polygon> poly;
-
-        std::vector<vec2f> facetProbabilities;
-        std::vector<float> cdfs; // should not be part of each mesh, but the model itself
-
-        uint32_t nbFacets;
-        uint32_t nbIndices;
-        uint32_t nbVertices;
+        std::vector<float2> vertices2d;
     };
 
     struct Model {
-        Model() : nbFacets_total(), nbIndices_total(), nbVertices_total(), bounds(), useMaxwell(){};
+        Model() : nbFacets_total(), nbIndices_total(), nbVertices_total(), useMaxwell(){};
         Model(const Model&) = delete;
         ~Model()
         {
@@ -77,7 +76,8 @@ namespace flowgpu {
         uint32_t nbIndices_total;
         uint32_t nbVertices_total;
         //! bounding box of all vertices in the model
-        box3f bounds;
+        //float3 bounds.lower;
+        //float3 bounds.upper;
 
         // Global Settings
         // Should they be here as well or only LaunchParams?

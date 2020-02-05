@@ -6,6 +6,7 @@
 #include "LaunchParams.h"
 #include "GPUDefines.h" // for NB_RAND
 #include "jetbrains_indexing.h"
+#include "helper_math.h"
 
 #define DET33(_11,_12,_13,_21,_22,_23,_31,_32,_33)  \
   ((_11)*( (_22)*(_33) - (_32)*(_23) ) +            \
@@ -13,7 +14,7 @@
    (_13)*( (_21)*(_32) - (_31)*(_22) ))
 //printf("[%d->%d] -- 1DET33: %20.18f > 0 \n",threadIdx.x, primID, DET33(poly.U.x, intZ.x, ray_dir.x,poly.U.y, intZ.y, ray_dir.y,poly.U.z, intZ.z, ray_dir.z));
 //printf("[%d->%d] -- DET33: %20.18f > 0 \n",threadIdx.x, primID, m[0]*m[4]*m[8] + m[1]*m[5]*m[6] + m[2]*m[3]*m[7] - m[0]*m[5]*m[7] - m[1]*m[3]*m[8] - m[2]*m[4]*m[6]);
-//printf("[%d->%d] -- 2DET33: %20.18f > 0 \n",threadIdx.x, primID, dot(vec3d(cross(ray_dir,poly.U)), intZ));
+//printf("[%d->%d] -- 2DET33: %20.18f > 0 \n",threadIdx.x, primID, dot(double3(cross(ray_dir,poly.U)), intZ));
 //printf("[%d->%d] -- 3DET33: %20.18f > 0 = %d\n",threadIdx.x, primID, poly.U.x*intZ.y*ray_dir.z + intZ.x*ray_dir.y*poly.U.z + ray_dir.x*poly.U.y*intZ.z - poly.U.x*ray_dir.y*intZ.z - intZ.x*poly.U.y*ray_dir.z - ray_dir.x*intZ.y*poly.U.z,poly.U.x*intZ.y*ray_dir.z + intZ.x*ray_dir.y*poly.U.z + ray_dir.x*poly.U.y*intZ.z - poly.U.x*ray_dir.y*intZ.z - intZ.x*poly.U.y*ray_dir.z - ray_dir.x*intZ.y*poly.U.z > 0);
 
 #define DOT(v1, v2)  \
@@ -36,9 +37,6 @@ namespace flowgpu {
         optixLaunch (this gets filled in from the buffer we pass to
         optixLaunch) */
     extern "C" __constant__ LaunchParams optixLaunchParams;
-
-    // for this simple example, we have a single ray type
-    enum { SURFACE_RAY_TYPE=0, RAY_TYPE_COUNT };
 
     static __forceinline__ __device__
     void *unpackPointer( cuuint32_t i0, cuuint32_t i1 )
@@ -104,8 +102,8 @@ namespace flowgpu {
         const PolygonMeshSBTData &sbtData = *(const PolygonMeshSBTData*)optixGetSbtDataPointer();
 
         //const int   primID = optixGetPrimitiveIndex();
-        const vec3f ray_orig = optixGetWorldRayOrigin();
-        const vec3f ray_dir  = optixGetWorldRayDirection();
+        const float3 ray_orig = optixGetWorldRayOrigin();
+        const float3 ray_dir  = optixGetWorldRayDirection();
         const float  ray_t    = optixGetRayTmax();
 
         const int ix = optixGetLaunchIndex().x;
@@ -275,9 +273,9 @@ namespace flowgpu {
         const float v = sinf(theta)*sinf(phi);
         const float n = cosf(theta);
 
-        vec3f nU = poly.nU;
-        vec3f nV = poly.nV;
-        vec3f N = poly.N;
+        float3 nU = poly.nU;
+        float3 nV = poly.nV;
+        float3 N = poly.N;
 
         prd.postHitDir = u*nU + v*nV + n*N;
 
@@ -315,9 +313,9 @@ namespace flowgpu {
                        0.0f,   // rayTime
                        OptixVisibilityMask(255),
                        OPTIX_RAY_FLAG_DISABLE_ANYHIT,//OPTIX_RAY_FLAG_NONE,
-                       SURFACE_RAY_TYPE,             // SBT offset
-                       RAY_TYPE_COUNT,               // SBT stride
-                       SURFACE_RAY_TYPE,             // missSBTIndex
+                       RayType::RAY_TYPE_MOLECULE,             // SBT offset
+                       RayType::RAY_TYPE_COUNT,               // SBT stride
+                       RayType::RAY_TYPE_MOLECULE,             // missSBTIndex
                     //u0, u1 , u2, u3);
                     //float3_as_args(hitData.hitPos),
                        reinterpret_cast<cuuint32_t &>(prd.velocity),
@@ -355,13 +353,13 @@ namespace flowgpu {
 
         //const int   primID = optixGetPrimitiveIndex();
 
-        vec3f ray_orig = optixGetWorldRayOrigin();
-        vec3f ray_dir = optixGetWorldRayDirection();
+        float3 ray_orig = optixGetWorldRayOrigin();
+        float3 ray_dir = optixGetWorldRayDirection();
 
         /*if(blockDim.x * blockIdx.x + threadIdx.x == 3 && ray_dir.x > -0.26 && ray_dir.x < -0.24)
             primID=162;*/
 
-        ray_dir = vec3f(-1.0,-1.0,-1.0) * ray_dir;
+        ray_dir = make_float3(-1.0,-1.0,-1.0) * ray_dir;
 
         const float ray_tmin = optixGetRayTmin(), ray_tmax = optixGetRayTmax();
 
@@ -370,7 +368,7 @@ namespace flowgpu {
         printf("[%d] intersection det = %12.10f\n", primID, det);
         if(det > 0.0) {
             const float iDet = 1.0 / det;
-            vec3f intZ = ray_orig - poly.O;
+            float3 intZ = ray_orig - poly.O;
 
             const float u = iDet * DET33(intZ.x, poly.V.x, ray_dir.x,
                                          intZ.y, poly.V.y, ray_dir.y,
@@ -397,8 +395,8 @@ namespace flowgpu {
         const TriangleMeshSBTData &sbtData = *(const TriangleMeshSBTData*)optixGetSbtDataPointer();
 
         //const int   primID = optixGetPrimitiveIndex();
-        const vec3f ray_orig = optixGetWorldRayOrigin();
-        const vec3f ray_dir  = optixGetWorldRayDirection();
+        const float3 ray_orig = optixGetWorldRayOrigin();
+        const float3 ray_dir  = optixGetWorldRayDirection();
         const float  ray_t    = optixGetRayTmax();
 
         const int ix = optixGetLaunchIndex().x;
@@ -559,9 +557,9 @@ namespace flowgpu {
         const float v = sinf(theta)*sinf(phi);
         const float n = cosf(theta);
 
-        vec3f nU = poly.nU;
-        vec3f nV = poly.nV;
-        vec3f N = poly.N;
+        float3 nU = poly.nU;
+        float3 nV = poly.nV;
+        float3 N = poly.N;
 
         prd.postHitDir = u*nU + v*nV + n*N;
 
@@ -599,9 +597,9 @@ namespace flowgpu {
                        0.0f,   // rayTime
                        OptixVisibilityMask(255),
                        OPTIX_RAY_FLAG_DISABLE_ANYHIT,//OPTIX_RAY_FLAG_NONE,
-                       SURFACE_RAY_TYPE,             // SBT offset
-                       RAY_TYPE_COUNT,               // SBT stride
-                       SURFACE_RAY_TYPE,             // missSBTIndex
+                       RayType::RAY_TYPE_MOLECULE,             // SBT offset
+                       RayType::RAY_TYPE_COUNT,               // SBT stride
+                       RayType::RAY_TYPE_MOLECULE,             // missSBTIndex
                     //u0, u1 , u2, u3);
                     //float3_as_args(hitData.hitPos),
                        reinterpret_cast<cuuint32_t &>(prd.velocity),
@@ -623,13 +621,13 @@ namespace flowgpu {
 
     extern "C" __global__ void __miss__molecule()
     {
-        //vec3i &prd = *(vec3i*)getPRD<vec3i>();
+        //int3 &prd = *(int3*)getPRD<int3>();
 
         MolPRD prd = getMolPRD();
 
 #ifdef DEBUG
-        const vec3f ray_orig = optixGetWorldRayOrigin();
-        const vec3f ray_dir  = optixGetWorldRayDirection();
+        const float3 ray_orig = optixGetWorldRayOrigin();
+        const float3 ray_dir  = optixGetWorldRayDirection();
         const float  ray_t    = optixGetRayTmax();
 
         printf("--------------------(%d) miss[%d -> %d] (%12.10f , %12.10f , %12.10f) --> (%12.10f , %12.10f , %12.10f) = %12.10f \n",
@@ -661,13 +659,14 @@ optixLaunchParams.perThreadData.currentMoleculeData[fbIndex].postHitDir = prd.po
 
         // Try to relaunch a molecule for some time until removing it from the system
         // Differentiate between physical and single precision leaks here
+
         //if(prd.inSystem > 20) {
-            optixLaunchParams.sharedData.missCounter += 1;
+            //optixLaunchParams.sharedData.missCounter += 1;
             atomicAdd(optixLaunchParams.sharedData.missCounter, 1);
 
             prd.velocity = -999.0;
-            prd.hitPos = vec3f(-999.0, -999.0, -999.0);
-            prd.postHitDir = vec3f(-999.0, -999.0, -999.0);
+            prd.hitPos = make_float3(-999.0);
+            prd.postHitDir = make_float3(-999.0);
             prd.hitFacetId = -1;
             prd.hitT = -999.0f;
             prd.inSystem = 0;

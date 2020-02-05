@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "gdt/math/vec.h"
 #include "optix7.h"
 #include "OptixPolygon.h"
 
@@ -32,23 +31,28 @@
 #endif
 
 namespace flowgpu {
-    using namespace gdt;
+
+    enum RayType
+    {
+        RAY_TYPE_MOLECULE  = 0,
+        RAY_TYPE_COUNT
+    };
 
     struct TriangleMeshSBTData {
-        vec3f *vertex;
-        vec3i *index;
+        float3 *vertex;
+        int3 *index;
         Polygon *poly;
     };
 
     struct TriangleRayGenData {
-        vec3f *vertex;
-        vec3i *index;
+        float3 *vertex;
+        int3 *index;
         Polygon *poly;
 
         // -- data for launch parameters --
         // --------------------------------
         // probability for facet selection
-        vec2f* facetProbabilities;
+        float2* facetProbabilities;
         //double* prob_lower;
         //double* prob_upper;
         // CFD for velocity calculation (temperature, v-bin)
@@ -58,15 +62,15 @@ namespace flowgpu {
     };
 
     struct PolygonRayGenData {
-        vec3f *vertex;
-        vec2f *vertex2;
+        float3 *vertex;
+        float2 *vertex2;
         uint32_t *index;
         Polygon *poly;
 
         // -- data for launch parameters --
         // --------------------------------
         // probability for facet selection
-        vec2f* facetProbabilities;
+        float2* facetProbabilities;
         //double* prob_lower;
         //double* prob_upper;
         // CFD for velocity calculation (temperature, v-bin)
@@ -76,8 +80,8 @@ namespace flowgpu {
     };
 
     struct PolygonMeshSBTData {
-        vec3f *vertex;
-        vec2f *vertex2;
+        float3 *vertex;
+        float2 *vertex2;
         uint32_t *index;
         Polygon *poly;
     };
@@ -93,8 +97,8 @@ namespace flowgpu {
 
         // post hit data
         float hitT; // distance in molecule path
-        vec3f hitPos;
-        vec3f postHitDir;
+        float3 hitPos;
+        float3 postHitDir;
         int   hitFacetId;
 
         // flags - post launch processing TODO: convert all into one uint32_t ?
@@ -142,7 +146,7 @@ namespace flowgpu {
             uint32_t* randBufferOffset; /*! offset to remember which random number is next */
 #ifdef DEBUGPOS
             uint32_t* posOffsetBuffer_debug;
-            vec3f* positionsBuffer_debug;
+            float3* positionsBuffer_debug;
 #endif
 #ifdef DEBUGMISS
             uint32_t* missBuffer; //first value is the amount of primitives N, followed by N primitive IDs
@@ -151,7 +155,7 @@ namespace flowgpu {
 
         struct {
             //uint32_t *colorBuffer;
-            vec2i     size;
+            uint2     size;
             uint32_t nbFacets;
             uint32_t nbIndices;
             uint32_t nbVertices;

@@ -68,7 +68,7 @@ namespace flowgeom {
         }
     };
 
-    /*inline void vector3d_to_vec3f(gdt::vec3f& t, const Vector3d& o){
+    /*inline void vector3d_to_float3(gdt::float3& t, const Vector3d& o){
         t.x = o.x;
         t.y = o.y;
         t.z = o.z;
@@ -138,7 +138,7 @@ namespace flowgeom {
             mesh->nbIndices = indNb;
             mesh->nbVertices = indNb;
 
-            std::vector<vec3f>(geomVertices.size()).swap(mesh->vertices3d);
+            std::vector<float3>(geomVertices.size()).swap(mesh->vertices3d);
             mesh->poly.resize(mesh->nbFacets);
             mesh->indices.resize(mesh->nbIndices);
             mesh->vertices2d.resize(mesh->nbVertices);
@@ -162,26 +162,26 @@ namespace flowgeom {
                 newPoly.nbVertices = fac.indices.size();
                 newPoly.stickingFactor = fac.sh.sticking;
 
-                vector3d_to_vec3f(newPoly.O, fac.sh.O);
-                vector3d_to_vec3f(newPoly.U, fac.sh.U);
-                vector3d_to_vec3f(newPoly.V, fac.sh.V);
-                vector3d_to_vec3f(newPoly.Nuv, fac.sh.Nuv);
-                vector3d_to_vec3f(newPoly.nU, fac.sh.nU);
-                vector3d_to_vec3f(newPoly.nV, fac.sh.nV);
-                vector3d_to_vec3f(newPoly.N, fac.sh.N);
+                vector3d_to_float3(newPoly.O, fac.sh.O);
+                vector3d_to_float3(newPoly.U, fac.sh.U);
+                vector3d_to_float3(newPoly.V, fac.sh.V);
+                vector3d_to_float3(newPoly.Nuv, fac.sh.Nuv);
+                vector3d_to_float3(newPoly.nU, fac.sh.nU);
+                vector3d_to_float3(newPoly.nV, fac.sh.nV);
+                vector3d_to_float3(newPoly.N, fac.sh.N);
 
                 int counter = 0;
                 for(size_t vertInd : fac.indices){
 
                     // load vertex corresponding to index
-                    vec3f newVert;
-                    vector3d_to_vec3f(newVert, geomVertices[vertInd]);
+                    float3 newVert;
+                    vector3d_to_float3(newVert, geomVertices[vertInd]);
 
                     //newVert *= 1.0f / dot(newVert,newVert);
 
                     mesh->vertices3d[vertInd] = newVert;
                     mesh->indices[vertCount] = vertInd;
-                    mesh->vertices2d[vertCount] = vec2f(fac.vertices2[counter].u, fac.vertices2[counter].v);
+                    mesh->vertices2d[vertCount] = float2(fac.vertices2[counter].u, fac.vertices2[counter].v);
                     counter++;
                     vertCount++;
                 }
@@ -229,7 +229,7 @@ namespace flowgeom {
         }
         // calculate global bounds for the whole model
         for (PolygonMesh* mesh : model->poly_meshes)
-            for (const vec3f& vtx : mesh->vertices3d)
+            for (const float3& vtx : mesh->vertices3d)
                 model->bounds.extend(vtx);
 
 
@@ -449,9 +449,7 @@ namespace flowgeom {
                 cereal::make_nvp("nbFacetsTotal", nbFacets_total) ,
                 cereal::make_nvp("nbVerticesTotal", nbVertices_total) ,
                 cereal::make_nvp("nbIndicesTotal", nbIndices_total) ,
-                cereal::make_nvp("useMaxwell", useMaxwell) ,
-                cereal::make_nvp("bounds.lower", lower) ,
-                cereal::make_nvp("bounds.upper", upper)
+                cereal::make_nvp("useMaxwell", useMaxwell)
         );
 
         return 0;
@@ -645,9 +643,7 @@ namespace flowgeom {
                 cereal::make_nvp("nbFacetsTotal", nbFacets_total) ,
                 cereal::make_nvp("nbVerticesTotal", nbVertices_total) ,
                 cereal::make_nvp("nbIndicesTotal", nbIndices_total) ,
-                cereal::make_nvp("useMaxwell", useMaxwell) ,
-                cereal::make_nvp("bounds.lower", lower) ,
-                cereal::make_nvp("bounds.upper", upper)
+                cereal::make_nvp("useMaxwell", useMaxwell)
         );
 
         return 0;

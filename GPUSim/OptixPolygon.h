@@ -6,10 +6,8 @@
 
 #ifndef MOLFLOW_PROJ_OPTIXPOLYGON_H
 #define MOLFLOW_PROJ_OPTIXPOLYGON_H
-#include "gdt/math/vec.h"
 
 namespace flowgpu {
-    using namespace gdt;
 
     class Polygon {
     public:
@@ -47,13 +45,13 @@ namespace flowgpu {
 
                 o.nbVertices = 0;
                 o.vertOffset = 0;
-                o.O = vec3f();
-                o.U = vec3f();
-                o.V = vec3f();
-                o.Nuv = vec3f();
-                o.nU = vec3f();
-                o.nV = vec3f();
-                o.N = vec3f();
+                o.O = float3();
+                o.U = float3();
+                o.V = float3();
+                o.Nuv = float3();
+                o.nU = float3();
+                o.nV = float3();
+                o.N = float3();
             }
             return *this;
         }
@@ -80,15 +78,15 @@ namespace flowgpu {
         uint32_t vertOffset;
 
         // variables for ray-plane (3d space) intersection
-        vec3f O;
-        vec3f U;
-        vec3f V;
-        vec3f Nuv;
+        float3 O;
+        float3 U;
+        float3 V;
+        float3 Nuv;
 
         // normalized facet vectors
-        vec3f nU;
-        vec3f nV;
-        vec3f N;
+        float3 nU;
+        float3 nV;
+        float3 N;
 
         template<class Archive>
         void serialize(Archive & archive)

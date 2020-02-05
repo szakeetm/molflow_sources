@@ -380,8 +380,8 @@ int main(int argc,char* argv[])
         if( sHandle->loadOK ) {
 #ifdef GPU_MODE
             //flowgpu::Model* molflowModel = flowgpu::loadFromMolflow(sHandle->vertices3,sHandle->structures, sHandle->wp, sHandle->CDFs);
-            //flowgpu::Model* molflowModel = nullptr;
-            //gpuSim.LoadSimulation(molflowModel);
+            flowgpu::Model* molflowModel = nullptr;
+            gpuSim.LoadSimulation(molflowModel);
 #endif
           if( StartSimulation(prParam) )
             SetState(PROCESS_RUN,GetSimuStatus());
