@@ -19,7 +19,6 @@
 #include <iostream>
 #include "helper_output.h"
 #include "OptixController.h"
-#include "LaunchParams.h"
 #include "CUDA/cudaRandom.cuh"
 #include "GPUDefines.h"
 
@@ -533,8 +532,14 @@ namespace flowgpu {
     {
         // for this sample, do everything on one device
         const int deviceID = 0;
-        CUDA_CHECK(SetDevice(deviceID));
-        CUDA_CHECK(StreamCreate(&state.stream));
+        CUDA_CHECK(cudaSetDevice(deviceID));
+        CUDA_CHECK(cudaStreamCreate(&state.stream));
+        CUDA_CHECK(cudaStreamCreate(&state.stream2));
+
+        state.cuStreams.resize(8);
+        for(auto& stream : state.cuStreams){
+            CUDA_CHECK(cudaStreamCreate(&stream));
+        }
 
         cudaGetDeviceProperties(&state.deviceProps, deviceID);
         std::cout << "#flowgpu: running on device: " << state.deviceProps.name << std::endl;
@@ -762,7 +767,7 @@ namespace flowgpu {
     {
         // first allocate device memory and upload data
 
-        sim_memory.moleculeBuffer.initDeviceData(state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y);
+        sim_memory.moleculeBuffer.initDeviceData(state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y * sizeof(MolPRD));
 
         for (int meshID=0;meshID<(int)model->poly_meshes.size();meshID++) {
             PolygonMesh &mesh = *model->poly_meshes[meshID];
@@ -844,7 +849,8 @@ namespace flowgpu {
     void OptixController::buildSBTTriangle()
     {
         // first allocate device memory and upload data
-        sim_memory.moleculeBuffer.initDeviceData(state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y);
+        sim_memory.moleculeBuffer.initDeviceData(state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y * sizeof(MolPRD));
+        std::cout << "#flowgpu: building init ..." << std::endl;
 
         for (int meshID=0;meshID<(int)model->triangle_meshes.size();meshID++) {
             TriangleMesh &mesh = *model->triangle_meshes[meshID];
@@ -922,7 +928,7 @@ namespace flowgpu {
     void OptixController::initSimulation()
     {
         const uint32_t launchSize = state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y;
-        const uint32_t nbHCBins = CORESPERMP*WARPSCHEDULERS;
+        const uint32_t nbHCBins = CORESPERSM * WARPSCHEDULERS;
 
         CuFacetHitCounter *hitCounter = new CuFacetHitCounter[nbHCBins*state.launchParams.simConstants.nbFacets]();
         uint32_t *missCounter = new uint32_t(0);
@@ -982,6 +988,18 @@ namespace flowgpu {
         //hitCounterBuffer.upload(hitCounter,launchSize*state.launchParams.simConstants.nbFacets);
         //state.launchParamsBuffer.upload(&launchParams,1);
 
+        /*for(auto& stream : state.cuStreams)
+            OPTIX_CHECK(optixLaunch(
+                                            state.pipeline,stream,
+
+                                            state.launchParamsBuffer.d_pointer(),
+                                    state.launchParamsBuffer.sizeInBytes,
+                                    &state.sbt,
+
+                                            state.launchParams.simConstants.size.x/state.cuStreams.size(),
+                                    state.launchParams.simConstants.size.y,
+                                    1
+            ));*/
         OPTIX_CHECK(optixLaunch(/*! pipeline we're launching launch: */
                 state.pipeline,state.stream,
                 /*! parameters and SBT */
@@ -993,6 +1011,18 @@ namespace flowgpu {
                 state.launchParams.simConstants.size.y,
                 1
         ));
+
+        /*OPTIX_CHECK(optixLaunch(*//*! pipeline we're launching launch: *//*
+                state.pipeline,state.stream2,
+                *//*! parameters and SBT *//*
+                state.launchParamsBuffer.d_pointer(),
+                state.launchParamsBuffer.sizeInBytes,
+                &state.sbt,
+                *//*! dimensions of the launch: *//*
+                state.launchParams.simConstants.size.x/2,
+                state.launchParams.simConstants.size.y,
+                1
+        ));*/
 
         // sync - make sure the frame is rendered before we download and
         // display (obviously, for a high-performance application you
@@ -1058,7 +1088,7 @@ namespace flowgpu {
         sim_memory.moleculeBuffer.resize(newSize.x * newSize.y * sizeof(MolPRD));
         sim_memory.randBuffer.resize(nbRand*newSize.x*newSize.y*sizeof(float));
         sim_memory.randOffsetBuffer.resize(newSize.x*newSize.y*sizeof(uint32_t));
-        facet_memory.hitCounterBuffer.resize(model->nbFacets_total*CORESPERMP*WARPSCHEDULERS*sizeof(CuFacetHitCounter));
+        facet_memory.hitCounterBuffer.resize(model->nbFacets_total * CORESPERSM * WARPSCHEDULERS * sizeof(CuFacetHitCounter));
         facet_memory.missCounterBuffer.resize(sizeof(uint32_t));
 
         // update the launch parameters that we'll pass to the optix
@@ -1073,8 +1103,11 @@ namespace flowgpu {
         state.launchParams.simConstants.nbVertices  = model->nbVertices_total;
         state.launchParams.perThreadData.currentMoleculeData = (MolPRD*)sim_memory.moleculeBuffer.d_pointer();
         state.launchParams.perThreadData.randBufferOffset = (uint32_t*)sim_memory.randOffsetBuffer.d_pointer();
-
+#ifdef DEBUG
+        crng::initializeRandHost(newSize.x * newSize.y, (float **) &sim_memory.randBuffer.d_ptr);
+#else
         crng::initializeRandHost(newSize.x * newSize.y, (float **) &sim_memory.randBuffer.d_ptr,  time(NULL));
+#endif
         //crng::initializeRandHost(newSize.x * newSize.y, (float **) &randBuffer.d_ptr);
         state.launchParams.randomNumbers = (float*)sim_memory.randBuffer.d_pointer();
         state.launchParams.hitCounter = (CuFacetHitCounter*) facet_memory.hitCounterBuffer.d_pointer();
@@ -1105,34 +1138,28 @@ namespace flowgpu {
 
         state.launchParamsBuffer.alloc(sizeof(state.launchParams));
         state.launchParamsBuffer.upload(&state.launchParams,1);
-
-
-        /*// -- one time init of device data --
-        MolPRD *perThreadData = new MolPRD[newSize.x*newSize.y]();
-        sim_memory.moleculeBuffer.upload(perThreadData, newSize.x * newSize.y);
-        delete[] perThreadData;*/
     }
 
     /*! resize buffers to given amount of threads */
     // initlaunchparams
     void OptixController::resize(const uint2 &newSize)
     {
-
         const uint32_t nbRand = NB_RAND;
+        state.launchParams.simConstants.size  = newSize;
 
         // resize our cuda frame buffer
         sim_memory.moleculeBuffer.resize(newSize.x * newSize.y * sizeof(MolPRD));
         sim_memory.moleculeBuffer.initDeviceData(newSize.x * newSize.y * sizeof(MolPRD));
-
         sim_memory.randBuffer.resize(nbRand*newSize.x*newSize.y*sizeof(float));
         sim_memory.randOffsetBuffer.resize(newSize.x*newSize.y*sizeof(uint32_t));
 
-        // update the launch parameters that we'll pass to the optix
-        // launch:
-        state.launchParams.simConstants.size  = newSize;
 
         crng::destroyRandHost((float **) &sim_memory.randBuffer.d_ptr);
+#ifdef DEBUG
+        crng::initializeRandHost(newSize.x * newSize.y, (float **) &sim_memory.randBuffer.d_ptr);
+#else
         crng::initializeRandHost(newSize.x * newSize.y, (float **) &sim_memory.randBuffer.d_ptr,  time(NULL));
+#endif
 
 #ifdef DEBUGPOS
         memory_debug.posBuffer.resize(newSize.x * newSize.y*NBCOUNTS*sizeof(float3));
@@ -1146,127 +1173,25 @@ namespace flowgpu {
 
         state.launchParamsBuffer.upload(&state.launchParams,1);
     }
-    
-    /*static float3 dir_max(-10.e10);
-    static float3 dir_min(10.e10);*/
-    static std::vector<unsigned int> counter2;
-    static std::vector<unsigned int> absorb;
-    static std::vector<unsigned int> desorb;
 
     /*! download the rendered color buffer and return the total amount of hits (= followed rays) */
-    unsigned long long int OptixController::downloadDataFromDevice(/*uint32_t *h_pixels*/)
+    void OptixController::downloadDataFromDevice(HostData* hostData)
     {
-        //colorBuffer.download(h_pixels,state.launchParams.frame.size.x*state.launchParams.frame.size.y);
-        // get the 'per thread' data
-        MolPRD* hit = new MolPRD[state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y];
-        CuFacetHitCounter* hitCounter = new CuFacetHitCounter[model->nbFacets_total * CORESPERMP*WARPSCHEDULERS];
-        uint32_t * missCounter = new uint32_t;
-        sim_memory.moleculeBuffer.download(hit, state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y);
-        facet_memory.hitCounterBuffer.download(hitCounter, model->nbFacets_total * CORESPERMP*WARPSCHEDULERS);
-        facet_memory.missCounterBuffer.download(missCounter, 1);
+        //sim_memory.moleculeBuffer.download(hit, state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y);
+        facet_memory.hitCounterBuffer.download(hostData->facetHitCounters.data(), model->nbFacets_total * CORESPERSM * WARPSCHEDULERS);
+        facet_memory.missCounterBuffer.download(hostData->leakCounter.data(), 1);
 
 
 #ifdef DEBUGCOUNT
-        uint32_t* detCounter = new uint32_t[NCOUNTBINS];
-        uint32_t* uCounter = new uint32_t[NCOUNTBINS];
-        uint32_t* vCounter = new uint32_t[NCOUNTBINS];
-
-        memory_debug.detBuffer.download(detCounter, NCOUNTBINS);
-        memory_debug.uBuffer.download(uCounter, NCOUNTBINS);
-        memory_debug.vBuffer.download(vCounter, NCOUNTBINS);
-
-        /*std::cout << "Determinant Distribution:"<<std::endl; for(int i=0;i<NBCOUNTS;i++) std::cout << "["<< ((float)i/NBCOUNTS)*(DETHIGH-DETLOW)+DETLOW << "] " <<detCounter[i] << std::endl;
-        std::cout << "U Distribution:"<<std::endl; for(int i=0;i<NBCOUNTS;i++) std::cout << "["<< ((float)i/NBCOUNTS)*(UHIGH-ULOW)+ULOW << "] " <<uCounter[i] << std::endl;
-        std::cout << "V Distribution:"<<std::endl; for(int i=0;i<NBCOUNTS;i++) std::cout << "["<< ((float)i/NBCOUNTS)*(VHIGH-VLOW)+VLOW << "] " <<vCounter[i] << std::endl;*/
-        std::ofstream detfile,ufile,vfile;
-        detfile.open ("det_counter.txt");ufile.open ("u_counter.txt");vfile.open ("v_counter.txt");
-
-        for(int i=0;i<NCOUNTBINS;i++) detfile << "" << ((float)i/NBCOUNTS)*(DETHIGH - DETLOW) + DETLOW << " " << detCounter[i] << std::endl;
-        for(int i=0;i<NCOUNTBINS;i++) ufile << "" << ((float)i/NBCOUNTS)*(UHIGH - ULOW) + ULOW << " " << uCounter[i] << std::endl;
-        for(int i=0;i<NCOUNTBINS;i++) vfile << "" << ((float)i/NBCOUNTS)*(VHIGH - VLOW) + VLOW << " " << vCounter[i] << std::endl;
-        detfile.close();
-        ufile.close();
-        vfile.close();
-
-        delete[] detCounter;
-        delete[] uCounter;
-        delete[] vCounter;
+        memory_debug.detBuffer.download(hostData->detCounter.data(), NCOUNTBINS);
+        memory_debug.uBuffer.download(hostData->uCounter.data(), NCOUNTBINS);
+        memory_debug.vBuffer.download(hostData->vCounter.data(), NCOUNTBINS);
 #endif
 
 #ifdef DEBUGPOS
-        float3* positions = new float3[NBCOUNTS*state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y];
-        memory_debug.posBuffer.download(positions, NBCOUNTS*state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y);
-        uint32_t * posOffset = new uint32_t[state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y];
-        memory_debug.posOffsetBuffer.download(posOffset, state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y);
-
-        std::ofstream posFile;
-        posFile.open ("debug_positions.txt");
-
-        int nbPos = NBCOUNTS;
-
-        std::cout << "LIMIT " <<NBCOUNTS<< std::endl;
-
-        for(int i=0;i<NBCOUNTS*state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y;){
-            //posFile << i/(NBCOUNTS) << " " << posOffset[i/(NBCOUNTS)] << " ";
-            posFile <<"{";
-            for(int pos=0;pos<30;pos++){
-                size_t index = i/(NBCOUNTS)*NBCOUNTS+pos;
-                posFile <<"{"<<positions[index].x << "," << positions[index].y << "," << positions[index].z <<"}";
-                if(pos!=30-1)posFile <<",";
-                //posFile <<positions[index].x << "," << positions[index].y << "," << positions[index].z <<"   ";
-            }
-            i+=nbPos;
-            posFile <<"},"<<std::endl;
-        }
-        posFile.close();
-        std::cout << "POS closed " <<nbPos << std::endl;
-
-        delete[] positions;
-        delete[] posOffset;
+        memory_debug.posBuffer.download(hostData->positions.data(), NBCOUNTS*state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y);
+        memory_debug.posOffsetBuffer.download(hostData->posOffset.data(), state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y);
 #endif
-
-        counter2.clear();
-        counter2.resize(this->model->nbFacets_total);
-
-        absorb.clear();
-        absorb.resize(this->model->nbFacets_total);
-
-        desorb.clear();
-        desorb.resize(this->model->nbFacets_total);
-
-        //std::ofstream myfile;
-        //myfile.open ("gpu_counter_blockid.txt");
-
-        for(unsigned int i = 0; i < state.launchParams.simConstants.nbFacets * CORESPERMP*WARPSCHEDULERS; i++) {
-            unsigned int facIndex = i%state.launchParams.simConstants.nbFacets;
-            counter2[facIndex] += hitCounter[i].nbMCHit; // let misses count as 0 (-1+1)
-            absorb[facIndex] += hitCounter[i].nbAbsEquiv; // let misses count as 0 (-1+1)
-            desorb[facIndex] += hitCounter[i].nbDesorbed; // let misses count as 0 (-1+1)
-
-            /*if(hitCounter[i].nbMCHit > 0 || hitCounter[i].nbAbsEquiv > 0){
-                std::cout << "["<<i/(state.launchParams.simConstants.nbFacets)<<"] on facet #"<<i%state.launchParams.simConstants.nbFacets<<" has total hits >>> "<< hitCounter[i].nbMCHit<< " / total abs >>> " << hitCounter[i].nbAbsEquiv<<" ---> "<< i<<std::endl;
-            }*/
-        }
-        //myfile.close();
-        unsigned long long int total_counter = 0;
-        unsigned long long int total_abs = 0;
-        unsigned long long int total_des = 0;
-        for(unsigned int i = 0; i < this->model->nbFacets_total; i++){
-            if(counter2[i]>0 || absorb[i]> 0 || desorb[i]>0) std::cout << i+1 << " " << counter2[i]<<" " << desorb[i]<<" " << absorb[i]<<std::endl;
-            total_counter += counter2[i];
-            total_abs += absorb[i];
-            total_des += desorb[i];
-        }
-        std::cout << " total hits >>> "<< total_counter<<std::endl;
-        std::cout << " total  abs >>> "<< total_abs<<std::endl;
-        std::cout << " total  des >>> "<< total_des<<std::endl;
-        std::cout << " total miss >>> "<< *missCounter<< " -- miss/hit ratio: "<<(double)(*missCounter) / total_counter <<std::endl;
-
-        delete missCounter;
-        delete[] hitCounter;
-        delete[] hit;
-
-        return total_counter;
     }
 
     void OptixController::cleanup()
@@ -1279,6 +1204,13 @@ namespace flowgpu {
         OPTIX_CHECK( optixModuleDestroy       ( state.modules.geometryModule         ) );
         OPTIX_CHECK( optixModuleDestroy       ( state.modules.traceModule           ) );
         OPTIX_CHECK( optixDeviceContextDestroy( state.context                 ) );
+
+        CUDA_CHECK( cudaStreamDestroy( state.stream                 ) );
+        CUDA_CHECK( cudaStreamDestroy( state.stream2                 ) );
+        for(auto& stream : state.cuStreams){
+            CUDA_CHECK(cudaStreamDestroy(stream));
+        }
+        state.cuStreams.clear();
 
         for (int meshID=0;meshID<model->triangle_meshes.size();meshID++) {
             tri_memory.vertexBuffer[meshID].free();
@@ -1313,7 +1245,10 @@ namespace flowgpu {
         memory_debug.uBuffer.free();
         memory_debug.vBuffer.free();
 #endif
-
+#ifdef DEBUGPOS
+        memory_debug.posBuffer.free();
+        memory_debug.posOffsetBuffer.free();
+#endif
         state.asBuffer.free();
         state.launchParamsBuffer.free();
     }

@@ -8,8 +8,8 @@
 // some GPU info we are making use of
 /*#define CORESPERMP 1664 // 13MP * 128 CUDA Cores
 #define WARPSCHEDULERS 4*/
-#define CORESPERMP 1920 // 30MP * 64 CUDA Cores
-#define WARPSCHEDULERS 4
+#define CORESPERSM 1 // 30SM * 64 CUDA Cores
+#define WARPSCHEDULERS 1 // 4WS ???* 3 GPC???
 
 #define MAX_DEPTH 0 // 0=no recursion
 #define SCENE_EPSILON 1.e-6f // 0=no recursion

@@ -79,9 +79,13 @@ namespace crng {
         /* Allocate n floats on device */
         CUDA_CALL(cudaMalloc((void **)randomNumbersPtr, NB_RAND*kernelSize*sizeof(float)));
         //printf("Allocating size for %d random number\n",NB_RAND*kernelSize);
+
         /* Create pseudo-random number generator */
-        //CURAND_CALL(curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT));
+#ifdef DEBUG
+        CURAND_CALL(curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT));
+#else
         CURAND_CALL(curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_XORWOW));
+#endif
 
         /* Set seed */
         CURAND_CALL(curandSetPseudoRandomGeneratorSeed(gen, seed));
@@ -104,7 +108,7 @@ namespace crng {
 
     int offsetBufferZeroInit(unsigned int kernelSize, void *randomOffsets){
         /* Generate n floats on device */
-        CUDA_CALL(cudaMemset((cuuint32_t*)randomOffsets, 0, kernelSize*sizeof(cuuint32_t)));
+        CUDA_CALL(cudaMemset((unsigned int*)randomOffsets, 0, kernelSize*sizeof(unsigned int)));
         return EXIT_SUCCESS;
     }
 
@@ -161,8 +165,8 @@ namespace crng {
         CUDA_CALL(cudaMemcpy(hostData, devData, n * sizeof(float), cudaMemcpyDeviceToHost));
 
         /* Show result */
-        cuuint32_t countSub = 0;
-        cuuint32_t countSuper = 0;
+        unsigned int countSub = 0;
+        unsigned int countSuper = 0;
 
         size_t i;
         for(i = 0; i < n; i++) {

@@ -7,6 +7,8 @@
 #include "GPUDefines.h" // for NB_RAND
 #include "jetbrains_indexing.h"
 #include "helper_math.h"
+#include <cooperative_groups.h>
+namespace cg = cooperative_groups;
 
 #define DET33(_11,_12,_13,_21,_22,_23,_31,_32,_33)  \
   ((_11)*( (_22)*(_33) - (_32)*(_23) ) +            \
@@ -51,7 +53,7 @@ namespace flowgpu {
     }
 
     static __forceinline__ __device__
-    void *getRayOriginPolygon( cuuint32_t i0, cuuint32_t i1 )
+    void *getRayOriginPolygon( unsigned int i0, unsigned int i1 )
     {
         const uint64_t uptr = static_cast<uint64_t>( i0 ) << 32 | i1;
         void*           ptr = reinterpret_cast<void*>( uptr );
@@ -59,7 +61,7 @@ namespace flowgpu {
     }
 
     static __forceinline__ __device__
-    void *getRayOriginTriangle( cuuint32_t i0, cuuint32_t i1 )
+    void *getRayOriginTriangle( unsigned int i0, unsigned int i1 )
     {
         const uint64_t uptr = static_cast<uint64_t>( i0 ) << 32 | i1;
         void*           ptr = reinterpret_cast<void*>( uptr );
@@ -162,14 +164,14 @@ namespace flowgpu {
 #else
                          const PolygonRayGenData* rayGenData,
 #endif
-                         const float* randFloat, cuuint32_t& randInd, cuuint32_t& randOffset)
+                         const float* randFloat, unsigned int& randInd, unsigned int& randOffset)
     {
 #ifdef BOUND_CHECK
         if(randInd + randOffset < 0 || randInd + randOffset >= optixLaunchParams.simConstants.nbRandNumbersPerThread*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y){
             printf("randInd %u is out of bounds\n", randInd + randOffset);
         }
 #endif
-        float facetRnd = randFloat[(cuuint32_t)(randInd + randOffset++)];
+        float facetRnd = randFloat[(unsigned int)(randInd + randOffset++)];
 
         int facIndex = 0;
         bool found = false;
@@ -218,7 +220,7 @@ namespace flowgpu {
         const PolygonRayGenData* rayGenData,
 #endif
         const int& facIndex,
-        const float* randFloat, cuuint32_t& randInd, cuuint32_t& randOffset)
+        const float* randFloat, unsigned int& randInd, unsigned int& randOffset)
     {
 
 #ifdef WITHTRIANGLES
@@ -229,7 +231,7 @@ namespace flowgpu {
         }
         #endif
 
-        float r1_sqrt = sqrtf(randFloat[(cuuint32_t)(randInd + randOffset++)]);
+        float r1_sqrt = sqrtf(randFloat[(unsigned int)(randInd + randOffset++)]);
 
         #ifdef BOUND_CHECK
         if(randInd + randOffset < 0 || randInd + randOffset >= optixLaunchParams.simConstants.nbRandNumbersPerThread*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y){
@@ -237,7 +239,7 @@ namespace flowgpu {
         }
         #endif
 
-            float r2 = randFloat[(cuuint32_t)(randInd + randOffset++)];
+            float r2 = randFloat[(unsigned int)(randInd + randOffset++)];
 
 
         #ifdef BOUND_CHECK
@@ -264,7 +266,7 @@ namespace flowgpu {
         float uDir = 0.0f, vDir = 0.0f;
 
         short isInPoly = 0;
-        cuuint32_t loopNb = 0;
+        unsigned int loopNb = 0;
 
         while(!isInPoly && loopNb < NB_INPOLYCHECKS){
 #ifdef BOUND_CHECK
@@ -272,14 +274,14 @@ namespace flowgpu {
                 printf("randInd %u is out of bounds\n", randInd + randOffset);
             }
 #endif
-            uDir = randFloat[(cuuint32_t)(randInd + randOffset++)]; // float3(randFloat[randInd++],randFloat[randInd++],randFloat[randInd++])
+            uDir = randFloat[(unsigned int)(randInd + randOffset++)]; // float3(randFloat[randInd++],randFloat[randInd++],randFloat[randInd++])
 
 #ifdef BOUND_CHECK
             if(randInd + randOffset < 0 || randInd + randOffset >= optixLaunchParams.simConstants.nbRandNumbersPerThread*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y){
                 printf("randInd %u is out of bounds\n", randInd + randOffset);
             }
 #endif
-            vDir = randFloat[(cuuint32_t)(randInd + randOffset++)];
+            vDir = randFloat[(unsigned int)(randInd + randOffset++)];
 
             isInPoly = point_in_polygon(uDir,vDir, rayGenData->poly[facIndex]);
 
@@ -300,7 +302,7 @@ namespace flowgpu {
 
     static __forceinline__ __device__
     float3 getNewDirection(MolPRD& hitData, Polygon& poly,
-            const float* randFloat, cuuint32_t& randInd, cuuint32_t& randOffset)
+            const float* randFloat, unsigned int& randInd, unsigned int& randOffset)
     {
 
         // generate ray direction
@@ -309,7 +311,7 @@ namespace flowgpu {
             printf("randInd %u is out of bounds\n", randInd + randOffset);
         }
 #endif
-        const float theta = acosf(sqrtf(randFloat[(cuuint32_t)(randInd + randOffset++)]));
+        const float theta = acosf(sqrtf(randFloat[(unsigned int)(randInd + randOffset++)]));
 
 
 #ifdef BOUND_CHECK
@@ -317,7 +319,7 @@ namespace flowgpu {
             printf("randInd %u is out of bounds\n", randInd + randOffset);
         }
 #endif
-        const float phi = randFloat[(cuuint32_t)(randInd + randOffset++)] * 2.0 * CUDART_PI_F;
+        const float phi = randFloat[(unsigned int)(randInd + randOffset++)] * 2.0 * CUDART_PI_F;
 
 
         const float u = sinf(theta)*cosf(phi);
@@ -340,9 +342,9 @@ namespace flowgpu {
     }
 
     static __forceinline__ __device__
-    void initMoleculeInSystem(const cuuint32_t thrInd, MolPRD& hitData, float3& rayDir , float3& rayOrigin)
+    void initMoleculeInSystem(const unsigned int bufferIndex, MolPRD& hitData, float3& rayDir , float3& rayOrigin)
     {
-        hitData = optixLaunchParams.perThreadData.currentMoleculeData[thrInd];
+        hitData = optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex];
         rayDir = hitData.postHitDir;
         rayOrigin = hitData.hitPos;
 
@@ -354,13 +356,13 @@ namespace flowgpu {
 
     // Calculate new direction, but keep old position for molecule that was stuck due to self-intersection
     static __forceinline__ __device__
-    void initMoleculePostSelfIntersection(const cuuint32_t thrInd, MolPRD& hitData, float3& rayDir , float3& rayOrigin)
+    void initMoleculePostSelfIntersection(const unsigned int bufferIndex, MolPRD& hitData, float3& rayDir , float3& rayOrigin)
     {
-        hitData = optixLaunchParams.perThreadData.currentMoleculeData[thrInd];
+        hitData = optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex];
 
         float* randFloat = optixLaunchParams.randomNumbers;
-        cuuint32_t randInd = optixLaunchParams.simConstants.nbRandNumbersPerThread*(thrInd);
-        cuuint32_t randOffset = optixLaunchParams.perThreadData.randBufferOffset[thrInd];
+        unsigned int randInd = optixLaunchParams.simConstants.nbRandNumbersPerThread*(bufferIndex);
+        unsigned int randOffset = optixLaunchParams.perThreadData.randBufferOffset[bufferIndex];
 
 #ifdef BOUND_CHECK
         if(hitData.hitFacetId < 0 || hitData.hitFacetId >= optixLaunchParams.simConstants.nbFacets){
@@ -377,15 +379,66 @@ namespace flowgpu {
         //rayDir = hitData.postHitDir;
         rayDir = getNewDirection(hitData,rayGenData->poly[hitData.hitFacetId],randFloat,randInd,randOffset);
         rayOrigin = hitData.hitPos;
-        optixLaunchParams.perThreadData.randBufferOffset[thrInd] = randOffset; // set value back to buffer
+        optixLaunchParams.perThreadData.randBufferOffset[bufferIndex] = randOffset; // set value back to buffer
 
+    }
+
+    __device__
+    int atomicAggInc(int *ptr, int incVal)
+    {
+        cg::coalesced_group g = cg::coalesced_threads();
+        int prev;
+
+        // elect the first active thread to perform atomic add
+        if (g.thread_rank() == 0) {
+            prev = atomicAdd(ptr, g.size() * incVal);
+        }
+
+        // broadcast previous value within the warp
+        // and add each active thread’s rank to it
+        prev = g.shfl(prev, 0);
+        return g.thread_rank() + prev;
+    }
+
+    __device__
+    uint32_t atomicAggInc(uint32_t *ptr, uint32_t incVal)
+    {
+        cg::coalesced_group g = cg::coalesced_threads();
+        int prev;
+
+        // elect the first active thread to perform atomic add
+        if (g.thread_rank() == 0) {
+            prev = atomicAdd(ptr, g.size() * incVal);
+        }
+
+        // broadcast previous value within the warp
+        // and add each active thread’s rank to it
+        prev = g.shfl(prev, 0);
+        return g.thread_rank() + prev;
+    }
+
+    __device__
+    float atomicAggInc(float *ptr, float incVal)
+    {
+        cg::coalesced_group g = cg::coalesced_threads();
+        int prev;
+
+        // elect the first active thread to perform atomic add
+        if (g.thread_rank() == 0) {
+            prev = atomicAdd(ptr, g.size() * incVal);
+        }
+
+        // broadcast previous value within the warp
+        // and add each active thread’s rank to it
+        prev = g.thread_rank() + g.shfl(prev, 0);
+        return prev;
     }
 
     // --------------------------------------
     // increase facet counters for desorption
     // --------------------------------------
     static __forceinline__ __device__
-    void increaseHitCounterDesorption(CuFacetHitCounter& hitCounter, MolPRD& hitData, float3& rayDir, float3& polyNormal)
+    void increaseHitCounterDesorption(CuFacetHitCounter& hitCounter, const MolPRD hitData, const float3 rayDir, const float3 polyNormal)
     {
         double velFactor = optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f; // TODO: Save somewhere as a shared constant instead of repetively evaluating
 
@@ -396,19 +449,22 @@ namespace flowgpu {
         //const float absEquiv = 0.0f; //1.0*prd.orientationRatio; // hit=1.0 (only changed for lowflux mode)
         //atomicAdd(&optixLaunchParams.hitCounter[counterIdx].nbMCHit,1);
         //++optixLaunchParams.hitCounter[counterIdx].nbMCHit;
-        //const cuuint32_t counterIdx = facIndex + ((thrInd)%(CORESPERMP*WARPSCHEDULERS))*optixLaunchParams.simConstants.nbFacets;
+        //const unsigned int counterIdx = facIndex + ((bufferIndex)%(CORESPERMP*WARPSCHEDULERS))*optixLaunchParams.simConstants.nbFacets;
 
-        hitCounter.nbHitEquiv += 0.0f;
-        hitCounter.nbDesorbed += 1;
-        hitCounter.nbAbsEquiv += 0.0f; //static_cast<double>(absorb)*sHandle->currentParticle.oriRatio;
-        hitCounter.sum_1_per_ort_velocity += (2.0f / ortVelocity);//prd.oriRatio * sum_1_per_v;
-        hitCounter.sum_v_ort += velFactor*ortVelocity;//(sHandle->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity; //prd.oriRatio * sum_v_ort;
-        hitCounter.sum_1_per_velocity += 0.0f / velocity;//(hitEquiv + static_cast<double>(desorb)) / prd.velocity;
+        atomicAdd(&hitCounter.nbMCHit, static_cast<uint32_t>(0));
+        atomicAdd(&hitCounter.nbHitEquiv, 0.0f);
+        atomicAdd(&hitCounter.nbDesorbed, static_cast<uint32_t>(1));
+        atomicAdd(&hitCounter.nbAbsEquiv, 0.0f); //static_cast<double>(absorb)*sHandle->currentParticle.oriRatio;
+
+
+        atomicAdd(&hitCounter.sum_1_per_ort_velocity, (2.0f / ortVelocity));//prd.oriRatio * sum_1_per_v;
+        atomicAdd(&hitCounter.sum_v_ort, velFactor*ortVelocity);//(sHandle->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity; //prd.oriRatio * sum_v_ort;
+        atomicAdd(&hitCounter.sum_1_per_velocity, 1.0f / velocity);//(hitEquiv + static_cast<double>(desorb)) / prd.velocity;
     }
     
     // Calculate new direction, but keep old position
     static __forceinline__ __device__
-    void initMoleculeFromStart(const cuuint32_t thrInd, MolPRD& hitData, float3& rayDir , float3& rayOrigin)
+    void initMoleculeFromStart(const unsigned int bufferIndex, MolPRD& hitData, float3& rayDir , float3& rayOrigin)
     {
         hitData.hitPos = make_float3(-999.9f,-999.9f,-999.9f);
         hitData.postHitDir = make_float3(-999.9f,-999.9f,-999.9f);
@@ -418,8 +474,8 @@ namespace flowgpu {
         hitData.inSystem = 0;
 
         const float* randFloat = optixLaunchParams.randomNumbers;
-        cuuint32_t randInd = optixLaunchParams.simConstants.nbRandNumbersPerThread*(thrInd);
-        cuuint32_t randOffset = optixLaunchParams.perThreadData.randBufferOffset[thrInd];
+        unsigned int randInd = optixLaunchParams.simConstants.nbRandNumbersPerThread*(bufferIndex);
+        unsigned int randOffset = optixLaunchParams.perThreadData.randBufferOffset[bufferIndex];
 
 #ifdef WITHTRIANGLES
         const TriangleRayGenData* rayGenData = (TriangleRayGenData*) optixGetSbtDataPointer();
@@ -438,15 +494,15 @@ namespace flowgpu {
 
 
         // Write back cached local variables to shared memory
-        optixLaunchParams.perThreadData.randBufferOffset[thrInd] = randOffset;
+        optixLaunchParams.perThreadData.randBufferOffset[bufferIndex] = randOffset;
 
         // --------------------------------------
         // increase facet counters for desorption
         // --------------------------------------
-        const cuuint32_t counterIdx = facIndex + ((thrInd)%(CORESPERMP*WARPSCHEDULERS))*optixLaunchParams.simConstants.nbFacets;
+        const unsigned int counterIdx = facIndex + ((bufferIndex)%(CORESPERSM * WARPSCHEDULERS)) * optixLaunchParams.simConstants.nbFacets;
 #ifdef BOUND_CHECK
-        if(counterIdx < 0 || counterIdx >= optixLaunchParams.simConstants.nbFacets*CORESPERMP*WARPSCHEDULERS){
-            printf("facIndex %u >= %u is out of bounds\n", counterIdx, optixLaunchParams.simConstants.nbFacets*CORESPERMP*WARPSCHEDULERS);
+        if(counterIdx < 0 || counterIdx >= optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS){
+            printf("facIndex %u >= %u is out of bounds\n", counterIdx, optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS);
         }
 #endif
         increaseHitCounterDesorption(optixLaunchParams.hitCounter[counterIdx],hitData,rayDir, rayGenData->poly[facIndex].N);
@@ -459,14 +515,12 @@ namespace flowgpu {
     {
         //TODO: use thrust::random or curand
 
-        const int ix = optixGetLaunchIndex().x;
-        const int iy = optixGetLaunchIndex().y;
-        // load from thread buffer ...
-        const cuuint32_t threadIndex = ix + iy * optixLaunchParams.simConstants.size.x;
+        const uint2 launchIndex = make_uint2(optixGetLaunchIndex());
+        const unsigned int bufferIndex = launchIndex.x + launchIndex.y * optixLaunchParams.simConstants.size.x;
 
 #ifdef BOUND_CHECK
-        if(threadIndex < 0 || threadIndex >= optixLaunchParams.simConstants.nbRandNumbersPerThread * optixLaunchParams.simConstants.size.x * optixLaunchParams.simConstants.size.y){
-            printf("threadIndex %u is out of bounds\n", threadIndex);
+        if(bufferIndex < 0 || bufferIndex >= optixLaunchParams.simConstants.nbRandNumbersPerThread * optixLaunchParams.simConstants.size.x * optixLaunchParams.simConstants.size.y){
+            printf("bufferIndex %u is out of bounds\n", bufferIndex);
         }
 #endif
         float3 rayOrigin;
@@ -474,13 +528,13 @@ namespace flowgpu {
 
         MolPRD hitData;
 
-        switch (optixLaunchParams.perThreadData.currentMoleculeData[threadIndex].inSystem) {
+        switch (optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem) {
             case 1:
             {
                 /* if molecule is still in the system (bounce etc.)
                  * load data from thread buffer
                  */
-                initMoleculeInSystem(threadIndex, hitData, rayDir, rayOrigin);
+                initMoleculeInSystem(bufferIndex, hitData, rayDir, rayOrigin);
                 break;
             }
             case 0:
@@ -488,7 +542,7 @@ namespace flowgpu {
                 /*
                  * start from a source
                  */
-                initMoleculeFromStart(threadIndex, hitData, rayDir, rayOrigin);
+                initMoleculeFromStart(bufferIndex, hitData, rayDir, rayOrigin);
                 break;
             }
             default:
@@ -496,15 +550,15 @@ namespace flowgpu {
                 /*
                  * if molecule suffered from self intersection with starting facet, try again with new direction
                  */
-                initMoleculePostSelfIntersection(threadIndex, hitData, rayDir, rayOrigin);
+                initMoleculePostSelfIntersection(bufferIndex, hitData, rayDir, rayOrigin);
             }
         }
 
 #ifdef DEBUGPOS
-        const cuuint32_t posIndexOffset = optixLaunchParams.perThreadData.posOffsetBuffer_debug[threadIndex]++;
+        const unsigned int posIndexOffset = optixLaunchParams.perThreadData.posOffsetBuffer_debug[bufferIndex]++;
         if(posIndexOffset<NBCOUNTS){
-            const cuuint32_t posIndex = threadIndex*NBCOUNTS+posIndexOffset;
-            //printf("[%d] my pos is %d\n", threadIndex, posIndex);
+            const unsigned int posIndex = bufferIndex*NBCOUNTS+posIndexOffset;
+            //printf("[%d] my pos is %d\n", bufferIndex, posIndex);
             optixLaunchParams.perThreadData.positionsBuffer_debug[posIndex] = rayOrigin;
         }
 #endif
@@ -520,7 +574,7 @@ namespace flowgpu {
             uint32_t facIndex = hitData.hitFacetId;
 #ifdef BOUND_CHECK
             if(facIndex < 0 || facIndex >= optixLaunchParams.simConstants.nbFacets){
-            printf("[RayOffset] facIndex %u >= %u is out of bounds (%u)\n", facIndex, optixLaunchParams.simConstants.nbFacets, optixLaunchParams.perThreadData.currentMoleculeData[threadIndex].inSystem);
+            printf("[RayOffset] facIndex %u >= %u is out of bounds (%u)\n", facIndex, optixLaunchParams.simConstants.nbFacets, optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem);
         }
 #endif
             rayOrigin = offset_ray(make_float3(rayOrigin.x,rayOrigin.y,rayOrigin.z),make_float3(rayGenData->poly[facIndex].N.x,rayGenData->poly[facIndex].N.y,rayGenData->poly[facIndex].N.z));
@@ -539,20 +593,20 @@ namespace flowgpu {
                    RayType::RAY_TYPE_MOLECULE,             // missSBTIndex
                //u0, u1 , u2, u3);
                //float3_as_args(hitData.hitPos),
-               reinterpret_cast<cuuint32_t&>(hitData.velocity),
-               reinterpret_cast<cuuint32_t&>(hitData.currentDepth),
-               reinterpret_cast<cuuint32_t&>(hitData.inSystem),
+               reinterpret_cast<unsigned int&>(hitData.velocity),
+               reinterpret_cast<unsigned int&>(hitData.currentDepth),
+               reinterpret_cast<unsigned int&>(hitData.inSystem),
             /* Can't use float_as_int() because it returns rvalue but payload requires a lvalue */
-               reinterpret_cast<cuuint32_t&>(hitData.hitFacetId),
-               reinterpret_cast<cuuint32_t&>(hitData.hitT));
+               reinterpret_cast<unsigned int&>(hitData.hitFacetId),
+               reinterpret_cast<unsigned int&>(hitData.hitT));
 
         //hitData.hitPos = hitData.hitOri + hitData.hitT * hitData.hitDir;
 
         // and write to thread buffer ...
-        optixLaunchParams.perThreadData.currentMoleculeData[threadIndex].velocity = hitData.velocity;
-        optixLaunchParams.perThreadData.currentMoleculeData[threadIndex].currentDepth = hitData.currentDepth;
-        optixLaunchParams.perThreadData.currentMoleculeData[threadIndex].inSystem = hitData.inSystem;
-        optixLaunchParams.perThreadData.currentMoleculeData[threadIndex].hitFacetId = hitData.hitFacetId;
-        optixLaunchParams.perThreadData.currentMoleculeData[threadIndex].hitT = hitData.hitT;
+        optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].velocity = hitData.velocity;
+        optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].currentDepth = hitData.currentDepth;
+        optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem = hitData.inSystem;
+        optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitFacetId = hitData.hitFacetId;
+        optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitT = hitData.hitT;
     }
 } // ::flowgpu

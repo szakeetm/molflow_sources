@@ -23,9 +23,9 @@
   (a.y*b.z - a.z*b.y, a.z*b.x - a.x*b.z, a.x*b.y - a.y*b.x)
 
 #define float3_as_args(u) \
-    reinterpret_cast<cuuint32_t&>((u).x), \
-    reinterpret_cast<cuuint32_t&>((u).y), \
-    reinterpret_cast<cuuint32_t&>((u).z)
+    reinterpret_cast<unsigned int&>((u).x), \
+    reinterpret_cast<unsigned int&>((u).y), \
+    reinterpret_cast<unsigned int&>((u).z)
 
 
 //using namespace flowgpu;
@@ -38,7 +38,7 @@ namespace flowgpu {
     extern "C" __constant__ LaunchParams optixLaunchParams;
 
     static __forceinline__ __device__
-    void *unpackPointer( cuuint32_t i0, cuuint32_t i1 )
+    void *unpackPointer( unsigned int i0, unsigned int i1 )
     {
         const uint64_t uptr = static_cast<uint64_t>( i0 ) << 32 | i1;
         void*           ptr = reinterpret_cast<void*>( uptr );
@@ -46,7 +46,7 @@ namespace flowgpu {
     }
 
     static __forceinline__ __device__
-    void  packPointer( void* ptr, cuuint32_t& i0, cuuint32_t& i1 )
+    void  packPointer( void* ptr, unsigned int& i0, unsigned int& i1 )
     {
         const uint64_t uptr = reinterpret_cast<uint64_t>( ptr );
         i0 = uptr >> 32;
@@ -56,8 +56,8 @@ namespace flowgpu {
     template<typename T>
     static __forceinline__ __device__ T *getPRD()
     {
-        const cuuint32_t u0 = optixGetPayload_0();
-        const cuuint32_t u1 = optixGetPayload_1();
+        const unsigned int u0 = optixGetPayload_0();
+        const unsigned int u1 = optixGetPayload_1();
         return reinterpret_cast<T*>( unpackPointer( u0, u1 ) );
     }
 
@@ -319,7 +319,7 @@ namespace flowgpu {
 #ifdef DEBUGMISS
         const int ix = optixGetLaunchIndex().x;
         const int iy = optixGetLaunchIndex().y;
-        const cuuint32_t fbIndex = ix+iy*optixLaunchParams.simConstants.size.x;
+        const unsigned int fbIndex = ix+iy*optixLaunchParams.simConstants.size.x;
         const unsigned int missIndex = fbIndex*NMISSES;
         optixLaunchParams.perThreadData.missBuffer[missIndex]++;
         if(optixLaunchParams.perThreadData.missBuffer[missIndex] < NMISSES)

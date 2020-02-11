@@ -175,7 +175,7 @@ int main(int argc, char **argv) {
             }
         } else if ( strcmp( argv[i], "--nhit") == 0  || strcmp( argv[i], "-n" ) == 0 ) {
             if( i < argc-1 ) {
-                nbLoops = atof(argv[++i]) / launchSize;
+                nbLoops = (size_t)(atof(argv[++i]) / launchSize);
             } else {
                 printUsageAndExit( argv[0] );
             }
@@ -192,22 +192,26 @@ int main(int argc, char **argv) {
     gpuSim.LoadSimulation(model, launchSize);
 
     std::cout << "#GPUTestsuite: Starting simulation with " << launchSize << " threads per launch => " << nbLoops << " runs "<<std::endl;
-    auto start_total = std::chrono::high_resolution_clock::now();
-    auto start = start_total;
+
+    const int printPerNRuns = nbLoops/100;
+
+    auto start_total = std::chrono::steady_clock::now();
+    auto t0 = start_total;
+
     for(size_t i = 0; i < nbLoops; ++i){
         //auto start = std::chrono::high_resolution_clock::now();
 
         gpuSim.RunSimulation();
 
 
-        if((i+1)%50==0){
-            auto finish = std::chrono::high_resolution_clock::now();
-            std::chrono::duration<double,std::milli> elapsed = finish - start;
-            start = finish;
-            std::cout << "--- Run #"<<i+1<< " - Elapsed Time: " << elapsed.count() << " ms\t--- " << (double)launchSize * 50.0 / elapsed.count() / 1000.0 << " MRay/s ---" << std::endl;
+        if((i+1)%printPerNRuns==0){
+            auto t1 = std::chrono::steady_clock::now();
+            std::chrono::duration<double,std::milli> elapsed = t1 - t0;
+            t0 = t1;
+            std::cout << "--- Run #"<<i+1<< " \t- Elapsed Time: " << elapsed.count() << " ms \t--- " << (double)launchSize * printPerNRuns / elapsed.count() / 1000.0 << " MRay/s ---" << std::endl;
         }
     }
-    auto finish_total = std::chrono::high_resolution_clock::now();
+    auto finish_total = std::chrono::steady_clock::now();
 
     std::chrono::duration<double> elapsed = finish_total - start_total;
     std::cout << "-- Total Elapsed Time: " << elapsed.count() << " s ---" << std::endl;

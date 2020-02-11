@@ -20,6 +20,7 @@
 #include "DeviceBuffers.h"
 #include "LaunchParams.h"
 #include "Model.h"
+#include "HostData.h"
 
 /*! \namespace flowgpu - Molflow GPU code */
 namespace flowgpu {
@@ -32,7 +33,9 @@ namespace flowgpu {
             on, as well as device properties for this device */
         CUcontext          cudaContext;
         cudaDeviceProp     deviceProps;
+        std::vector<CUstream> cuStreams;
         CUstream                    stream                    = 0;
+        CUstream                    stream2                    = 0;
         /*! @} */
 
         OptixDeviceContext          context                   = 0;        //! the optix context that our pipeline will run in.
@@ -99,7 +102,7 @@ namespace flowgpu {
         void generateRand();
 
         /*! download the rendered color buffer */
-        unsigned long long int downloadDataFromDevice(/*uint32_t *h_pixels*/);
+        void downloadDataFromDevice(HostData* hostData);
 
         void cleanup();
 

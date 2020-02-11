@@ -4,11 +4,12 @@
 
 // common MF helper tools
 #include <iostream>
+#include <fstream>
+
 #include "optix7.h"
 #include "SimulationOptiX.h"
 #include "helper_output.h"
 #include "helper_math.h"
-
 #include "GPUDefines.h"
 
 SimulationOptiX::SimulationOptiX(){
@@ -51,6 +52,7 @@ int SimulationOptiX::LoadSimulation(flowgpu::Model* loaded_model, size_t launchS
     }
 
     optixHandle->initSimulation();
+    Resize();
 
     return 0;
 }
@@ -67,7 +69,7 @@ int SimulationOptiX::RunSimulation() {
         // generate new numbers whenever necessary, recursion = TraceProcessing only, poly checks only for ray generation with polygons
         if(runCount%(NB_RAND/(8+MAX_DEPTH*2+NB_INPOLYCHECKS*2))==0){
 #ifdef DEBUG
-            std::cout << "#flowgpu: generating random numbers at run #" << runCount << std::endl;
+            //std::cout << "#flowgpu: generating random numbers at run #" << runCount << std::endl;
 #endif
             optixHandle->generateRand();
         }
@@ -87,8 +89,15 @@ int SimulationOptiX::RunSimulation() {
  */
 unsigned long long int SimulationOptiX::GetSimulationData() {
 
+    bool writeData = true;
+    bool printData = false;
+    bool printCounters = true;
     try {
-        return optixHandle->downloadDataFromDevice(/*pixels.data()*/);
+        optixHandle->downloadDataFromDevice(&data);
+        if(writeData) WriteDataToFile("hitcounters.txt");
+        if(printData) PrintData();
+        if(printCounters) PrintTotalCounters();
+        return GetTotalHits();
     } catch (std::runtime_error& e) {
         std::cout << MF_TERMINAL_RED << "FATAL ERROR: " << e.what()
                   << MF_TERMINAL_DEFAULT << std::endl;
@@ -96,6 +105,191 @@ unsigned long long int SimulationOptiX::GetSimulationData() {
     }
 }
 
+void SimulationOptiX::Resize(){
+    //data.hit.resize(kernelDimensions.x*kernelDimensions.y);
+    data.facetHitCounters.resize(model->nbFacets_total * CORESPERSM * WARPSCHEDULERS);
+    data.leakCounter.resize(1);
+
+#ifdef DEBUGCOUNT
+    data.detCounter.resize(NCOUNTBINS);
+    data.uCounter.resize(NCOUNTBINS);
+    data.vCounter.resize(NCOUNTBINS);
+#endif
+
+#ifdef DEBUGPOS
+    data.positions.resize(NBCOUNTS*kernelDimensions.x*kernelDimensions.y);
+    data.posOffset.resize(kernelDimensions.x*kernelDimensions.y);
+#endif
+}
+
+/*! download the rendered color buffer and return the total amount of hits (= followed rays) */
+void SimulationOptiX::PrintData()
+{
+#ifdef DEBUGCOUNT
+    std::cout << "Determinant Distribution:"<<std::endl;
+    for(int i=0;i<NBCOUNTS;i++)
+        std::cout << "["<< ((float)i/NBCOUNTS)*(DETHIGH-DETLOW)+DETLOW << "] " << detCounter[i] << std::endl;
+    std::cout << "U Distribution:"<<std::endl;
+    for(int i=0;i<NBCOUNTS;i++)
+        std::cout << "["<< ((float)i/NBCOUNTS)*(UHIGH-ULOW)+ULOW << "] " << uCounter[i] << std::endl;
+    std::cout << "V Distribution:"<<std::endl;
+    for(int i=0;i<NBCOUNTS;i++)
+        std::cout << "["<< ((float)i/NBCOUNTS)*(VHIGH-VLOW)+VLOW << "] " << vCounter[i] << std::endl;
+
+    /*for(int i=0;i<data.detCounter.size();i++) std::cout << "" << ((float)i/NBCOUNTS)*(DETHIGH - DETLOW) + DETLOW << " " << data.detCounter[i] << std::endl;
+    for(int i=0;i<data.uCounter.size();i++) std::cout << "" << ((float)i/NBCOUNTS)*(UHIGH - ULOW) + ULOW << " " << data.uCounter[i] << std::endl;
+    for(int i=0;i<data.vCounter.size();i++) std::cout << "" << ((float)i/NBCOUNTS)*(VHIGH - VLOW) + VLOW << " " << data.vCounter[i] << std::endl;*/
+
+#endif
+
+#ifdef DEBUGPOS
+
+    int nbPos = NBCOUNTS;
+
+    const int hitPositionsPerMol = 30;
+    for(int i=0;i<data.positions.size();){
+        //std::cout << i/(NBCOUNTS) << " " << data.posOffset[i/(NBCOUNTS)] << " ";
+        std::cout <<"{";
+        for(int pos=0;pos<hitPositionsPerMol;pos++){
+            size_t index = i/(NBCOUNTS)*NBCOUNTS+pos;
+            std::cout <<"{"<<data.positions[index].x << "," << data.positions[index].y << "," << data.positions[index].z <<"}";
+            if(pos != hitPositionsPerMol-1) std::cout <<",";
+            //std::cout << data.positions[index].x << "," << data.positions[index].y << "," << data.positions[index].z <<"   ";
+        }
+        i+=nbPos; // jump to next molecule/thread
+        std::cout <<"},"<<std::endl;
+    }
+#endif
+
+    std::vector<unsigned int> counterMCHit(this->model->nbFacets_total, 0);
+    std::vector<unsigned int> counterDesorp(this->model->nbFacets_total, 0);
+    std::vector<double> counterAbsorp(this->model->nbFacets_total, 0);
+
+    for(unsigned int i = 0; i < data.facetHitCounters.size(); i++) {
+        unsigned int facIndex = i%this->model->nbFacets_total;
+        counterMCHit[facIndex] += data.facetHitCounters[i].nbMCHit; // let misses count as 0 (-1+1)
+        counterDesorp[facIndex] += data.facetHitCounters[i].nbDesorbed; // let misses count as 0 (-1+1)
+        counterAbsorp[facIndex] += data.facetHitCounters[i].nbAbsEquiv; // let misses count as 0 (-1+1)
+
+        /*if(data.facetHitCounters[i].nbMCHit == 0*//* || data.facetHitCounters[i].nbAbsEquiv == 0*//*){
+            std::cout << "["<<i/(this->model->nbFacets_total)<<"] on facet #"<<i%this->model->nbFacets_total<<" has total hits >>> "<< data.facetHitCounters[i].nbMCHit<< " / total abs >>> " << data.facetHitCounters[i].nbAbsEquiv<<" ---> "<< i<<std::endl;
+        }*/
+    }
+
+    for(unsigned int i = 0; i < this->model->nbFacets_total; i++){
+        if(counterMCHit[i] > 0 || counterAbsorp[i] > 0 || counterDesorp[i] > 0)
+            std::cout << i+1 << " " << counterMCHit[i] << " " << counterDesorp[i] << " " << static_cast<unsigned int>(counterAbsorp[i]) << std::endl;
+    }
+
+    /*unsigned long long int total_counter = 0;
+    unsigned long long int total_abs = 0;
+    unsigned long long int total_des = 0;
+    for(unsigned int i = 0; i < this->model->nbFacets_total; i++){
+        if(counter2[i]>0 || absorb[i]> 0 || desorb[i]>0) std::cout << i+1 << " " << counter2[i]<<" " << desorb[i]<<" " << absorb[i]<<std::endl;
+        total_counter += counter2[i];
+        total_abs += absorb[i];
+        total_des += desorb[i];
+    }
+    std::cout << " total hits >>> "<< total_counter<<std::endl;
+    std::cout << " total  abs >>> "<< total_abs<<std::endl;
+    std::cout << " total  des >>> "<< total_des<<std::endl;
+    std::cout << " total miss >>> "<< *data.leakCounter.data()<< " -- miss/hit ratio: "<<(double)(*data.leakCounter.data()) / total_counter <<std::endl;*/
+}
+
+/*! download the rendered color buffer and return the total amount of hits (= followed rays) */
+void SimulationOptiX::PrintTotalCounters()
+{
+    unsigned long long int total_counter = 0;
+    unsigned long long int total_abs = 0;
+    double total_absd = 0;
+    unsigned long long int total_des = 0;
+
+    for(unsigned int i = 0; i < data.facetHitCounters.size(); i++) {
+        total_counter += data.facetHitCounters[i].nbMCHit; // let misses count as 0 (-1+1)
+        total_des += data.facetHitCounters[i].nbDesorbed; // let misses count as 0 (-1+1)
+        total_absd += data.facetHitCounters[i].nbAbsEquiv; // let misses count as 0 (-1+1)
+    }
+
+    std::cout << " total hits >>> "<< total_counter<<std::endl;
+    std::cout << " total  des >>> "<< total_des<<std::endl;
+    std::cout << " total  abs >>> "<< static_cast<unsigned long long int>(total_absd) <<std::endl;
+    std::cout << " total miss >>> "<< *data.leakCounter.data()<< " -- miss/hit ratio: "<<static_cast<double>(*data.leakCounter.data()) / total_counter <<std::endl;
+}
+
+/*! download the rendered color buffer and return the total amount of hits (= followed rays) */
+void SimulationOptiX::WriteDataToFile(std::string fileName)
+{
+#ifdef DEBUGCOUNT
+        std::ofstream detfile,ufile,vfile;
+        detfile.open ("det_counter.txt");
+        ufile.open ("u_counter.txt");
+        vfile.open ("v_counter.txt");
+
+        for(int i=0;i<data.detCounter.size();i++) detfile << "" << ((float)i/NBCOUNTS)*(DETHIGH - DETLOW) + DETLOW << " " << data.detCounter[i] << std::endl;
+        for(int i=0;i<data.uCounter.size();i++) ufile << "" << ((float)i/NBCOUNTS)*(UHIGH - ULOW) + ULOW << " " << data.uCounter[i] << std::endl;
+        for(int i=0;i<data.vCounter.size();i++) vfile << "" << ((float)i/NBCOUNTS)*(VHIGH - VLOW) + VLOW << " " << data.vCounter[i] << std::endl;
+
+        detfile.close();
+        ufile.close();
+        vfile.close();
+#endif
+
+#ifdef DEBUGPOS
+        std::ofstream posFile;
+        posFile.open ("debug_positions.txt");
+
+        int nbPos = NBCOUNTS;
+
+        const int hitPositionsPerMol = 30;
+        for(int i=0;i<data.positions.size();){
+            //posFile << i/(NBCOUNTS) << " " << data.posOffset[i/(NBCOUNTS)] << " ";
+            posFile <<"{";
+            for(int pos=0;pos<hitPositionsPerMol;pos++){
+                size_t index = i/(NBCOUNTS)*NBCOUNTS+pos;
+                posFile <<"{"<<data.positions[index].x << "," << data.positions[index].y << "," << data.positions[index].z <<"}";
+                if(pos != hitPositionsPerMol-1) posFile <<",";
+            }
+            i+=nbPos; // jump to next molecule/thread
+            posFile <<"},"<<std::endl;
+        }
+        posFile.close();
+#endif
+
+    std::vector<unsigned int> counterMCHit(this->model->nbFacets_total, 0);
+    std::vector<unsigned int> counterDesorp(this->model->nbFacets_total, 0);
+    std::vector<double> counterAbsorp(this->model->nbFacets_total, 0);
+
+
+    //std::ofstream facetCounterEveryFile("every"+fileName);
+
+    for(unsigned int i = 0; i < data.facetHitCounters.size(); i++) {
+        unsigned int facIndex = i%this->model->nbFacets_total;
+        counterMCHit[facIndex] += data.facetHitCounters[i].nbMCHit; // let misses count as 0 (-1+1)
+        counterDesorp[facIndex] += data.facetHitCounters[i].nbDesorbed; // let misses count as 0 (-1+1)
+        counterAbsorp[facIndex] += data.facetHitCounters[i].nbAbsEquiv; // let misses count as 0 (-1+1)
+        //if(data.facetHitCounters[i].nbMCHit>0 || data.facetHitCounters[i].nbDesorbed> 0 || data.facetHitCounters[i].nbAbsEquiv>0)
+           // facetCounterEveryFile << (i/this->model->nbFacets_total) << " " << (i%this->model->nbFacets_total)+1 << " " << data.facetHitCounters[i].nbMCHit << " " << data.facetHitCounters[i].nbDesorbed << " " << static_cast<unsigned int>(data.facetHitCounters[i].nbAbsEquiv) << std::endl;
+    }
+    //facetCounterEveryFile.close();
+
+    std::ofstream facetCounterFile;
+    facetCounterFile.open (fileName);
+    for(unsigned int i = 0; i < this->model->nbFacets_total; i++) {
+        //if(counter2[i]>0 || absorb[i]> 0 || desorb[i]>0)
+        facetCounterFile << i+1 << " " << counterMCHit[i] << " " << counterDesorp[i] << " " << static_cast<unsigned int>(counterAbsorp[i]) << std::endl;
+    }
+    facetCounterFile.close();
+}
+
+unsigned long long int SimulationOptiX::GetTotalHits(){
+
+    unsigned long long int total_counter = 0;
+    for(unsigned int i = 0; i < data.facetHitCounters.size(); i++) {
+        total_counter += data.facetHitCounters[i].nbMCHit; // let misses count as 0 (-1+1)
+    }
+
+    return total_counter;
+}
 /**
  *
  * @return 1=could not load GPU Sim, 0=successfully loaded

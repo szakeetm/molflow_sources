@@ -8,6 +8,7 @@
 
 //#include "Simulation.h"
 #include "OptixController.h"
+#include "HostData.h"
 
 class SimulationOptiX {
 protected:
@@ -15,15 +16,24 @@ protected:
     flowgpu::OptixController *optixHandle;
     flowgpu::Model *model;
     uint2 kernelDimensions; // blocks and threads per block
-    std::vector<uint32_t> pixels;
+
+    HostData data;
+
+    void Resize();
+    unsigned long long int GetTotalHits();
 public:
     SimulationOptiX();
     ~SimulationOptiX();
+
     int LoadSimulation(flowgpu::Model* loaded_model, size_t launchSize);
-    //int LoadSimulation(const std::vector<Vector3d> &geomVertices, const std::vector<SuperStructure> &structures, const WorkerParams& wp, const std::vector<std::vector<std::pair<double,double>>> CDFs);
     int RunSimulation();
-    unsigned long long int GetSimulationData();
     int CloseSimulation();
+
+    unsigned long long int GetSimulationData();
+    void PrintData();
+    void PrintTotalCounters();
+    void WriteDataToFile(std::string fileName);
+
 };
 
 
