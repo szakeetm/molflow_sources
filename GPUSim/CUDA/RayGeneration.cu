@@ -84,7 +84,7 @@ namespace flowgpu {
                 fabsf(p.z) < origin() ? p.z+float_scale()*n.z : p_i.z));
     }
 
-    extern "C" __device__ int point_in_polygon(float u, float v, const Polygon& poly) {
+    extern "C" __device__ int point_in_polygon(float u, float v, const flowgeom::Polygon& poly) {
         // Fast method to check if a point is inside a polygon or not.
         // Works with convex and concave polys, orientation independent
         const PolygonRayGenData* rayGenData = (PolygonRayGenData*) optixGetSbtDataPointer();
@@ -107,13 +107,13 @@ namespace flowgpu {
         //printf("[%d] poly second vec2 %4.2f , %4.2f\n",threadIdx.x,rayGenData->vertex2[1].x,rayGenData->vertex2[1].y);
 
 #ifdef BOUND_CHECK
-        if(poly.vertOffset < 0 || poly.vertOffset+poly.nbVertices >= optixLaunchParams.simConstants.nbVertices){
-            printf("[%d] vertOffset %u -- %u >= %u is out of bounds\n", poly.vertOffset, poly.vertOffset+poly.nbVertices, optixLaunchParams.simConstants.nbVertices);
+        if(poly.indexOffset < 0 || poly.indexOffset+poly.nbVertices >= optixLaunchParams.simConstants.nbVertices){
+            printf("[%d] indexOffset %u -- %u >= %u is out of bounds\n", poly.indexOffset, poly.indexOffset+poly.nbVertices, optixLaunchParams.simConstants.nbVertices);
         }
 #endif
         for (int j = 0; j < nbSizeMinusOne; j++) {
-            const float2& p1 = polyPoints[poly.vertOffset+j];
-            const float2& p2 = polyPoints[poly.vertOffset+j+1];
+            const float2& p1 = polyPoints[poly.indexOffset + j];
+            const float2& p2 = polyPoints[poly.indexOffset + j + 1];
 
             //printf("[%d / %u] p1 %4.2f %4.2f / p2 %4.2f %4.2f \n",threadIdx.x,j,p1.x,p1.y,p2.x,p2.y);
 
@@ -132,8 +132,8 @@ namespace flowgpu {
         }
 
         //Last point. Repeating code because it's the fastest and this function is heavily used
-        const float2& p1 = polyPoints[poly.vertOffset+nbSizeMinusOne];
-        const float2& p2 = polyPoints[poly.vertOffset+0];
+        const float2& p1 = polyPoints[poly.indexOffset + nbSizeMinusOne];
+        const float2& p2 = polyPoints[poly.indexOffset + 0];
         if (p.x<p1.x != p.x<p2.x) {
             //printf("[%d / %u] p1 %4.2f %4.2f / p2 %4.2f %4.2f \n",threadIdx.x,0,p1.x,p1.y,p2.x,p2.y);
 
@@ -256,11 +256,6 @@ namespace flowgpu {
 
             //rayOrigin =
             return (1-r1_sqrt) * vertA + r1_sqrt * (1 - r2) * vertB + r1_sqrt * r2 * vertC; //rayGenData
-
-            /*printf("--- [%d..%d] triangle origin %8.6f , %8.6f , %8.6f - %4.2f ---\n", threadIdx.x,facIndex, rayOrigin.x, rayOrigin.y, rayOrigin.z);
-            printf("--- [%d..%d/0] triangle vert %8.6f , %8.6f , %8.6f - %4.2f ---\n", threadIdx.x,facIndex,vertA.x, vertA.y, vertA.z);
-            printf("--- [%d..%d/1] triangle vert %8.6f , %8.6f , %8.6f - %4.2f ---\n", threadIdx.x,facIndex,vertB.x, vertB.y, vertB.z);
-            printf("--- [%d..%d/2] triangle vert %8.6f , %8.6f , %8.6f - %4.2f ---\n", threadIdx.x,facIndex,vertC.x, vertC.y, vertC.z);*/
 #else
         // start position of particle (U,V) -> (x,y,z)
         float uDir = 0.0f, vDir = 0.0f;
@@ -296,12 +291,12 @@ namespace flowgpu {
 
         //rayOrigin =
         return rayGenData->poly[facIndex].O + uDir * rayGenData->poly[facIndex].U + vDir * rayGenData->poly[facIndex].V;
-#endif WITHTRIANGLES
+#endif //WITHTRIANGLES
     }
 
 
     static __forceinline__ __device__
-    float3 getNewDirection(MolPRD& hitData, Polygon& poly,
+    float3 getNewDirection(MolPRD& hitData, flowgeom::Polygon& poly,
             const float* randFloat, unsigned int& randInd, unsigned int& randOffset)
     {
 
@@ -451,17 +446,35 @@ namespace flowgpu {
         //++optixLaunchParams.hitCounter[counterIdx].nbMCHit;
         //const unsigned int counterIdx = facIndex + ((bufferIndex)%(CORESPERMP*WARPSCHEDULERS))*optixLaunchParams.simConstants.nbFacets;
 
-        atomicAdd(&hitCounter.nbMCHit, static_cast<uint32_t>(0));
-        atomicAdd(&hitCounter.nbHitEquiv, 0.0f);
+        //atomicAdd(&hitCounter.nbMCHit, static_cast<uint32_t>(0));
+        //atomicAdd(&hitCounter.nbHitEquiv, 0.0f);
         atomicAdd(&hitCounter.nbDesorbed, static_cast<uint32_t>(1));
-        atomicAdd(&hitCounter.nbAbsEquiv, 0.0f); //static_cast<double>(absorb)*sHandle->currentParticle.oriRatio;
+        //atomicAdd(&hitCounter.nbAbsEquiv, 0.0f); //static_cast<double>(absorb)*sHandle->currentParticle.oriRatio;
 
 
         atomicAdd(&hitCounter.sum_1_per_ort_velocity, (2.0f / ortVelocity));//prd.oriRatio * sum_1_per_v;
         atomicAdd(&hitCounter.sum_v_ort, velFactor*ortVelocity);//(sHandle->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity; //prd.oriRatio * sum_v_ort;
         atomicAdd(&hitCounter.sum_1_per_velocity, 1.0f / velocity);//(hitEquiv + static_cast<double>(desorb)) / prd.velocity;
     }
-    
+
+    // --------------------------------------
+    // increase texture counters for desorption
+    // --------------------------------------
+    static __forceinline__ __device__
+    void RecordDesorptionTexture(flowgpu::Polygon *poly, float3 rayOrigin, float velocity_factor, float ortSpeedFactor){
+/*
+        size_t tu = (size_t)(f->colU * poly->texWidthD);
+        size_t tv = (size_t)(f->colV * poly->texHeightD);
+        size_t add = tu + tv * (f->sh.texWidth);
+        double ortVelocity = (sHandle->wp.useMaxwellDistribution ? 1.0 : 1.1781)*sHandle->currentParticle.velocity*abs(Dot(sHandle->currentParticle.direction, f->sh.N)); //surface-orthogonal velocity component
+
+        if (countHit) f->texture[m][add].countEquiv += sHandle->currentParticle.oriRatio;
+        f->texture[m][add].sum_1_per_ort_velocity += sHandle->currentParticle.oriRatio * velocity_factor / ortVelocity;
+        f->texture[m][add].sum_v_ort_per_area += sHandle->currentParticle.oriRatio * ortSpeedFactor*ortVelocity*f->textureCellIncrements[add]; // sum ortho_velocity[m/s] / cell_area[cm2]
+*/
+
+    }
+
     // Calculate new direction, but keep old position
     static __forceinline__ __device__
     void initMoleculeFromStart(const unsigned int bufferIndex, MolPRD& hitData, float3& rayDir , float3& rayOrigin)
@@ -506,6 +519,10 @@ namespace flowgpu {
         }
 #endif
         increaseHitCounterDesorption(optixLaunchParams.hitCounter[counterIdx],hitData,rayDir, rayGenData->poly[facIndex].N);
+        /*if (rayGenData->poly[facIndex].textureFlags & TextureCounter::countDes)
+            RecordHitOnTexture(rayGenData->poly[facIndex], true, 2.0, 1.0); //was 2.0, 1.0
+*/
+
     }
 
     //------------------------------------------------------------------------------
@@ -577,17 +594,19 @@ namespace flowgpu {
             printf("[RayOffset] facIndex %u >= %u is out of bounds (%u)\n", facIndex, optixLaunchParams.simConstants.nbFacets, optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem);
         }
 #endif
-            rayOrigin = offset_ray(make_float3(rayOrigin.x,rayOrigin.y,rayOrigin.z),make_float3(rayGenData->poly[facIndex].N.x,rayGenData->poly[facIndex].N.y,rayGenData->poly[facIndex].N.z));
+            rayOrigin = offset_ray(rayOrigin,rayGenData->poly[facIndex].N);
 
         }
+
         optixTrace(optixLaunchParams.traversable,
                rayOrigin,
                rayDir,
-                   0.f,//optixLaunchParams.simConstants.scene_epsilon,//1.e-6f,//0.f,    // tmin // TODO: Choose scene_epsilon wisely
+               0.f,//optixLaunchParams.simConstants.scene_epsilon,//1.e-6f,//0.f,    // tmin // TODO: Choose scene_epsilon wisely
                1e20f,  // tmax
                0.0f,   // rayTime
                OptixVisibilityMask( 255 ),
-               OPTIX_RAY_FLAG_DISABLE_ANYHIT,//OPTIX_RAY_FLAG_NONE,
+               OPTIX_RAY_FLAG_DISABLE_ANYHIT
+               | OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES,//OPTIX_RAY_FLAG_NONE,
                    RayType::RAY_TYPE_MOLECULE,             // SBT offset
                    RayType::RAY_TYPE_COUNT,               // SBT stride
                    RayType::RAY_TYPE_MOLECULE,             // missSBTIndex

@@ -14,10 +14,6 @@ namespace cg = cooperative_groups;
   ((_11)*( (_22)*(_33) - (_32)*(_23) ) +            \
    (_12)*( (_23)*(_31) - (_33)*(_21) ) +            \
    (_13)*( (_21)*(_32) - (_31)*(_22) ))
-//printf("[%d->%d] -- 1DET33: %20.18f > 0 \n",threadIdx.x, primID, DET33(poly.U.x, intZ.x, ray_dir.x,poly.U.y, intZ.y, ray_dir.y,poly.U.z, intZ.z, ray_dir.z));
-//printf("[%d->%d] -- DET33: %20.18f > 0 \n",threadIdx.x, primID, m[0]*m[4]*m[8] + m[1]*m[5]*m[6] + m[2]*m[3]*m[7] - m[0]*m[5]*m[7] - m[1]*m[3]*m[8] - m[2]*m[4]*m[6]);
-//printf("[%d->%d] -- 2DET33: %20.18f > 0 \n",threadIdx.x, primID, dot(double3(cross(ray_dir,poly.U)), intZ));
-//printf("[%d->%d] -- 3DET33: %20.18f > 0 = %d\n",threadIdx.x, primID, poly.U.x*intZ.y*ray_dir.z + intZ.x*ray_dir.y*poly.U.z + ray_dir.x*poly.U.y*intZ.z - poly.U.x*ray_dir.y*intZ.z - intZ.x*poly.U.y*ray_dir.z - ray_dir.x*intZ.y*poly.U.z,poly.U.x*intZ.y*ray_dir.z + intZ.x*ray_dir.y*poly.U.z + ray_dir.x*poly.U.y*intZ.z - poly.U.x*ray_dir.y*intZ.z - intZ.x*poly.U.y*ray_dir.z - ray_dir.x*intZ.y*poly.U.z > 0);
 
 #define DOT(v1, v2)  \
   ((v1.x)*(v2.x) + (v1.y)*(v2.y) + (v1.z)*(v2.z))
@@ -147,7 +143,7 @@ namespace flowgpu {
 
         atomicAdd(&hitCounter.nbMCHit,static_cast<uint32_t>(1));
         atomicAdd(&hitCounter.nbHitEquiv, hitEquiv);
-        atomicAdd(&hitCounter.nbDesorbed, static_cast<uint32_t>(0));
+        //atomicAdd(&hitCounter.nbDesorbed, static_cast<uint32_t>(0));
         atomicAdd(&hitCounter.nbAbsEquiv, absEquiv);
 
         atomicAdd(&hitCounter.sum_1_per_ort_velocity, (1.0f / ortVelocity));//prd.oriRatio * sum_1_per_v;
@@ -165,8 +161,8 @@ namespace flowgpu {
 
         atomicAdd(&hitCounter.nbMCHit, static_cast<uint32_t>(1));
         atomicAdd(&hitCounter.nbHitEquiv, hitEquiv);
-        atomicAdd(&hitCounter.nbDesorbed, static_cast<uint32_t>(0));
-        atomicAdd(&hitCounter.nbAbsEquiv, 0.0f); //static_cast<double>(absorb)*sHandle->currentParticle.oriRatio;
+        //atomicAdd(&hitCounter.nbDesorbed, static_cast<uint32_t>(0));
+        //atomicAdd(&hitCounter.nbAbsEquiv, 0.0f); //static_cast<double>(absorb)*sHandle->currentParticle.oriRatio;
 
         atomicAdd(&hitCounter.sum_1_per_ort_velocity, 1.0f*(1.0f / ortVelocity));//prd.oriRatio * sum_1_per_v;
         atomicAdd(&hitCounter.sum_v_ort, 1.0f*velFactor*ortVelocity);//(sHandle->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity; //prd.oriRatio * sum_v_ort;
@@ -231,7 +227,7 @@ namespace flowgpu {
         const unsigned int counterIdx = prd.hitFacetId + (bufferIndex%(CORESPERSM * WARPSCHEDULERS)) * optixLaunchParams.simConstants.nbFacets;
 
         //Register (orthogonal) velocity
-        const Polygon& poly  = sbtData.poly[prd.hitFacetId];
+        const flowgeom::Polygon& poly  = sbtData.poly[prd.hitFacetId];
 
         // TODO: Consider maxwelldistribution or not and oriRatio for lowFlux and desorbtion/absorbtion
         //IncreaseFacetCounter(
@@ -428,7 +424,7 @@ namespace flowgpu {
 
         const float ray_tmin = optixGetRayTmin(), ray_tmax = optixGetRayTmax();
 
-        const Polygon& poly  = sbtData.poly[primID];
+        const flowgeom::Polygon& poly  = sbtData.poly[primID];
         const float det = dot(poly.Nuv, ray_dir);
         printf("[%d] intersection det = %12.10f\n", primID, det);
         if(det > 0.0) {
@@ -481,9 +477,12 @@ namespace flowgpu {
 #ifdef DEBUG
 
 #endif
+
         // self intersection
         if(prd.hitFacetId == optixGetPrimitiveIndex()){
-            //printf("[%d] source and goal facet equal %d : %8.6f,%8.6f,%8.6f -> %8.6f,%8.6f,%8.6f : [%.5e .. %.5e] (tri)\n",(blockDim.x * blockIdx.x + threadIdx.x), prd.hitFacetId, ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z, optixGetRayTmin(),ray_t);
+#ifdef DEBUG
+            printf("[%d] source and goal facet equal %d : %8.6f,%8.6f,%8.6f -> %8.6f,%8.6f,%8.6f : [%.5e .. %.5e] (tri)\n",(blockDim.x * blockIdx.x + threadIdx.x), prd.hitFacetId, ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z, optixGetRayTmin(),ray_t);
+#endif
             prd.inSystem = 2;
             //prd.hitPos = ray_orig;
             optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos = ray_orig;
@@ -504,25 +503,10 @@ namespace flowgpu {
         //TODO: Need to account for post-bounce effects on same facet
 
         // first add facet hits
-        //TODO: Check if counters can be used on threads instead of launch id
-        //const unsigned int counterIdx = prd.hitFacetId+ix*optixLaunchParams.simConstants.nbFacets+iy*optixLaunchParams.simConstants.nbFacets*optixLaunchParams.simConstants.size.x;
-        //const unsigned int counterIdx = prd.hitFacetId + (blockDim.x * blockIdx.x + threadIdx.x)*optixLaunchParams.simConstants.nbFacets;
         const unsigned int counterIdx = prd.hitFacetId + (bufferIndex%(CORESPERSM * WARPSCHEDULERS)) * optixLaunchParams.simConstants.nbFacets;
-        /*if(blockIdx.x > 0){
-            printf("x[%u] Here is thread [%u , %u] from dim #%u / grid #%u! \n",blockDim.x * blockIdx.x + threadIdx.x, threadIdx.x, blockIdx.x, blockDim.x, gridDim.x);
-        }*/
-        /*if(threadIdx.x > 1662){
-            printf("XHere is thread [%u]! \n",threadIdx.x);
-        }
-        if(threadIdx.y > 0){
-            printf("YHere is thread [%u]! \n",threadIdx.y);
-        }
-        if(threadIdx.z > 0){
-            printf("ZHere is thread [%u]! \n",threadIdx.z);
-        }*/
 
         //Register (orthogonal) velocity
-        const Polygon& poly  = sbtData.poly[prd.hitFacetId];
+        const flowgeom::Polygon& poly  = sbtData.poly[prd.hitFacetId];
 
         // TODO: Consider maxwelldistribution or not and oriRatio for lowFlux and desorbtion/absorbtion
         //IncreaseFacetCounter(
@@ -566,18 +550,6 @@ namespace flowgpu {
             }
 #endif
             increaseHitCounterAbsorp(optixLaunchParams.hitCounter[counterIdx], hitEquiv, absEquiv, ortVelocity, velFactor, prd.velocity);
-/*
-            atomicAdd(&optixLaunchParams.hitCounter[counterIdx].nbMCHit,1);
-            //++optixLaunchParams.hitCounter[counterIdx].nbMCHit;
-            atomicAdd(&optixLaunchParams.hitCounter[counterIdx].nbHitEquiv,hitEquiv);
-            //optixLaunchParams.hitCounter[counterIdx].nbHitEquiv += hitEquiv;
-            optixLaunchParams.hitCounter[counterIdx].nbDesorbed += 0.0f;
-            atomicAdd(&optixLaunchParams.hitCounter[counterIdx].nbAbsEquiv,absEquiv);
-            //optixLaunchParams.hitCounter[counterIdx].nbAbsEquiv += absEquiv; //static_cast<double>(absorb)*sHandle->currentParticle.oriRatio;
-            optixLaunchParams.hitCounter[counterIdx].sum_1_per_ort_velocity += (2.0f / ortVelocity);//prd.oriRatio * sum_1_per_v;
-            optixLaunchParams.hitCounter[counterIdx].sum_v_ort += velFactor*ortVelocity;//(sHandle->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity; //prd.oriRatio * sum_v_ort;
-            optixLaunchParams.hitCounter[counterIdx].sum_1_per_velocity += (hitEquiv) / prd.velocity;//(hitEquiv + static_cast<double>(desorb)) / prd.velocity;
-*/
 
             optixLaunchParams.perThreadData.randBufferOffset[bufferIndex] = randOffset;
 
@@ -593,31 +565,15 @@ namespace flowgpu {
             }
 #endif
             increaseHitCounterBounce(optixLaunchParams.hitCounter[counterIdx], hitEquiv, ortVelocity, velFactor, prd.velocity);
-/*
-            atomicAdd(&optixLaunchParams.hitCounter[counterIdx].nbMCHit,1);
-            //++optixLaunchParams.hitCounter[counterIdx].nbMCHit;
-            atomicAdd(&optixLaunchParams.hitCounter[counterIdx].nbHitEquiv,hitEquiv);
-            //optixLaunchParams.hitCounter[counterIdx].nbHitEquiv += hitEquiv;
-            optixLaunchParams.hitCounter[counterIdx].nbDesorbed += 0.0f;
-            optixLaunchParams.hitCounter[counterIdx].nbAbsEquiv += 0.0f; //static_cast<double>(absorb)*sHandle->currentParticle.oriRatio;
-            optixLaunchParams.hitCounter[counterIdx].sum_1_per_ort_velocity += (1.0f / ortVelocity);//prd.oriRatio * sum_1_per_v;
-            optixLaunchParams.hitCounter[counterIdx].sum_v_ort += velFactor*ortVelocity;//(sHandle->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity; //prd.oriRatio * sum_v_ort;
-            optixLaunchParams.hitCounter[counterIdx].sum_1_per_velocity += (hitEquiv) / prd.velocity;//(hitEquiv + static_cast<double>(desorb)) / prd.velocity;
-*/
+
             prd.inSystem = 1;
         }
         else{
             //optixThrowException( 42);
 
-            printf("-- %lf Err ----- \n",poly.stickingFactor);
+            printf("[%d,%d] -- %lf Err ----- \n",prd.hitFacetId,poly.parentIndex,poly.stickingFactor);
             return;
         }
-
-        /*if(fbIndex==0)
-            printf("--- pre new dir ---\n");*/
-
-        /*if(optixLaunchParams.perThreadData.randBufferOffset[fbIndex] > NB_RAND-(NB_RAND*0.15))
-            printf("[%d] Dangerous Offset for Rand: %u \n", fbIndex, optixLaunchParams.perThreadData.randBufferOffset[fbIndex]);*/
 
 
 #ifdef DEBUG
@@ -625,11 +581,7 @@ namespace flowgpu {
 #endif
         // new ray direction (for now only diffuse)
         const float theta = acosf(sqrtf(randFloat[(unsigned int)(randInd + randOffset++)]));
-        /*if(optixLaunchParams.perThreadData.randBufferOffset[fbIndex] > NB_RAND-(NB_RAND*0.15))
-            printf("[%d] Dangerous Offset for Rand: %u \n", fbIndex, optixLaunchParams.perThreadData.randBufferOffset[fbIndex]);*/
         const float phi = randFloat[(unsigned int)(randInd + randOffset++)] * 2.0f * CUDART_PI_F;
-        /*if(optixLaunchParams.perThreadData.randBufferOffset[fbIndex] > NB_RAND-(NB_RAND*0.15))
-            printf("[%d] Dangerous Offset for Rand: %u \n", fbIndex, optixLaunchParams.perThreadData.randBufferOffset[fbIndex]);*/
         const float u = sinf(theta)*cosf(phi);
         const float v = sinf(theta)*sinf(phi);
         const float n = cosf(theta);
@@ -673,7 +625,8 @@ namespace flowgpu {
                        1e20f,  // tmax
                        0.0f,   // rayTime
                        OptixVisibilityMask(255),
-                       OPTIX_RAY_FLAG_DISABLE_ANYHIT,//OPTIX_RAY_FLAG_NONE,
+                       OPTIX_RAY_FLAG_DISABLE_ANYHIT
+                       | OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES,//OPTIX_RAY_FLAG_NONE,
                        RayType::RAY_TYPE_MOLECULE,             // SBT offset
                        RayType::RAY_TYPE_COUNT,               // SBT stride
                        RayType::RAY_TYPE_MOLECULE,             // missSBTIndex
@@ -737,7 +690,7 @@ optixLaunchParams.perThreadData.currentMoleculeData[fbIndex].postHitDir = prd.po
 
         //if(prd.inSystem > 20) {
             //optixLaunchParams.sharedData.missCounter += 1;
-            atomicAggInc(optixLaunchParams.sharedData.missCounter, 1);
+            atomicAdd(optixLaunchParams.sharedData.missCounter, 1);
 
             prd.velocity = -999.0;
             prd.hitPos = make_float3(-999.0);

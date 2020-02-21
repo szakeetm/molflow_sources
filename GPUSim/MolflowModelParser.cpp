@@ -7,12 +7,14 @@
 
 // debug output
 #include <fstream>
+
 #include <cereal/archives/xml.hpp>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/tuple.hpp>
-#include <Geometry_shared.h>
-#include <Facet_shared.h>
-
+#ifdef MOLFLOW
+#include "Geometry_shared.h"
+#include "Facet_shared.h"
+#endif MOLFLOW
 /*#include <thrust/device_vector.h>
 #include <thrust/transform.h>
 #include <thrust/sequence.h>
@@ -23,50 +25,6 @@
 
 /*! \namespace flowgeom - Molflow Geometry code */
 namespace flowgeom {
-
-    struct Polygon {
-    public:
-        Polygon()
-                : stickingFactor(-1.0), nbVertices(0), vertOffset(0), O(), U(), V(), Nuv(), nU(), nV(), N(){
-        }
-        Polygon(int32_t nbOfVertices)
-                : stickingFactor(-1.0), nbVertices(nbOfVertices), vertOffset(0), O(), U(), V(), Nuv(), nU(), nV(), N(){
-        }
-        // attributes that don't describe the geometry
-        float stickingFactor;
-
-        // variables for access to  global memory (indices, vertices)
-        uint32_t nbVertices;
-        uint32_t vertOffset;
-
-        // variables for ray-plane (3d space) intersection
-        Vector3d O;
-        Vector3d U;
-        Vector3d V;
-        Vector3d Nuv;
-
-        // normalized facet vectors
-        Vector3d nU;
-        Vector3d nV;
-        Vector3d N;
-
-        template<class Archive>
-        void serialize(Archive & archive)
-        {
-            archive(
-                    cereal::make_nvp("stickingFactor", stickingFactor) ,
-                    cereal::make_nvp("nbVertices", nbVertices) ,
-                    cereal::make_nvp("vertOffset", vertOffset) ,
-                    cereal::make_nvp("O", O) ,
-                    cereal::make_nvp("U", U) ,
-                    cereal::make_nvp("V", V) ,
-                    cereal::make_nvp("Nuv", Nuv) ,
-                    cereal::make_nvp("nU", nU) ,
-                    cereal::make_nvp("nV", nV) ,
-                    cereal::make_nvp("N", N)
-            );
-        }
-    };
 
     /*inline void vector3d_to_float3(gdt::float3& t, const Vector3d& o){
         t.x = o.x;
@@ -135,12 +93,10 @@ namespace flowgeom {
 
             PolygonMesh *mesh = new PolygonMesh;
             mesh->nbFacets = polyNb;
-            mesh->nbIndices = indNb;
             mesh->nbVertices = indNb;
 
             std::vector<float3>(geomVertices.size()).swap(mesh->vertices3d);
             mesh->poly.resize(mesh->nbFacets);
-            mesh->indices.resize(mesh->nbIndices);
             mesh->vertices2d.resize(mesh->nbVertices);
 
             int size_cdf = 0;
@@ -158,7 +114,7 @@ namespace flowgeom {
                 // load with proper values
                 const SubprocessFacet& fac = structures[s].facets[f];
                 Polygon newPoly(fac.indices.size());
-                newPoly.vertOffset = vertCount;
+                newPoly.indexOffset = vertCount;
                 newPoly.nbVertices = fac.indices.size();
                 newPoly.stickingFactor = fac.sh.sticking;
 
@@ -220,11 +176,9 @@ namespace flowgeom {
 
         // calculate total amount of facets
         model->nbFacets_total = 0;
-        model->nbIndices_total = 0;
         model->nbVertices_total = 0;
         for (PolygonMesh* mesh : model->poly_meshes){
             model->nbFacets_total += mesh->nbFacets;
-            model->nbIndices_total += mesh->nbIndices;
             model->nbVertices_total += mesh->nbVertices;
         }
         // calculate global bounds for the whole model
@@ -248,10 +202,8 @@ namespace flowgeom {
                 cereal::make_nvp("indices", model->poly_meshes[0]->indices) ,
                 cereal::make_nvp("nbFacets", model->poly_meshes[0]->nbFacets) ,
                 cereal::make_nvp("nbVertices", model->poly_meshes[0]->nbVertices) ,
-                cereal::make_nvp("nbIndices", model->poly_meshes[0]->nbIndices) ,
                 cereal::make_nvp("nbFacetsTotal", model->nbFacets_total) ,
                 cereal::make_nvp("nbVerticesTotal", model->nbVertices_total) ,
-                cereal::make_nvp("nbIndicesTotal", model->nbIndices_total) ,
                 cereal::make_nvp("useMaxwell", model->useMaxwell) ,
                 cereal::make_nvp("bounds.lower", model->bounds.lower) ,
                 cereal::make_nvp("bounds.upper", model->bounds.upper)
@@ -259,6 +211,50 @@ namespace flowgeom {
 
         return model;
     }*/
+
+    struct Polygon {
+    public:
+        Polygon()
+                : stickingFactor(-1.0), nbVertices(0), indexOffset(0), O(), U(), V(), Nuv(), nU(), nV(), N(){
+        }
+        Polygon(int32_t nbOfVertices)
+                : stickingFactor(-1.0), nbVertices(nbOfVertices), indexOffset(0), O(), U(), V(), Nuv(), nU(), nV(), N(){
+        }
+        // attributes that don't describe the geometry
+        float stickingFactor;
+
+        // variables for access to  global memory (indices, vertices)
+        uint32_t nbVertices;
+        uint32_t indexOffset;
+
+        // variables for ray-plane (3d space) intersection
+        Vector3d O;
+        Vector3d U;
+        Vector3d V;
+        Vector3d Nuv;
+
+        // normalized facet vectors
+        Vector3d nU;
+        Vector3d nV;
+        Vector3d N;
+
+        template<class Archive>
+        void serialize(Archive & archive)
+        {
+            archive(
+                    cereal::make_nvp("stickingFactor", stickingFactor) ,
+                    cereal::make_nvp("nbVertices", nbVertices) ,
+                    cereal::make_nvp("indexOffset", indexOffset) ,
+                    cereal::make_nvp("O", O) ,
+                    cereal::make_nvp("U", U) ,
+                    cereal::make_nvp("V", V) ,
+                    cereal::make_nvp("Nuv", Nuv) ,
+                    cereal::make_nvp("nU", nU) ,
+                    cereal::make_nvp("nV", nV) ,
+                    cereal::make_nvp("N", N)
+            );
+        }
+    };
 
     int saveFromMolflowTriangle(Geometry& geometry, const WorkerParams& wp, const std::vector<std::vector<std::pair<double,double>>> CDFs){
 
@@ -271,7 +267,6 @@ namespace flowgeom {
         std::vector<float> cdfs; // first pair value: ind%2==0 .. second pair value: ind%2==1
 
         uint32_t nbFacets = 0;
-        uint32_t nbIndices = 0;
         uint32_t nbVertices = 0;
 
         int polyNb = 0;
@@ -308,12 +303,11 @@ namespace flowgeom {
             //TODO: one mesh per structure
 
             nbFacets = polyNb;
-            nbIndices = indNb;
             nbVertices = indNb;
 
             std::vector<Vector3d>(geomVertices.size()).swap(vertices3d);
             poly.resize(nbFacets);
-            indices.resize(nbIndices/3);
+            indices.resize(nbVertices/3);
             vertices2d.resize(nbVertices);
 
             int size_cdf = 0;
@@ -337,7 +331,7 @@ namespace flowgeom {
 
                 //Polygon newPoly(fac.indices.size());
                 poly[f] = Polygon(fac->indices.size());
-                poly[f].vertOffset = indexCount;
+                poly[f].indexOffset = indexCount;
                 poly[f].nbVertices = fac->indices.size();
                 if(poly[f].nbVertices != 3){
                     std::cout << "[ERROR] Facet with "<<poly[f].nbVertices<<" vertices loaded, while looking for triangles!"<<std::endl;
@@ -404,18 +398,12 @@ namespace flowgeom {
 
         // calculate total amount of facets
         uint32_t nbFacets_total = 0;
-        uint32_t nbIndices_total = 0;
         uint32_t nbVertices_total = 0;
         //for (PolygonMesh* mesh : model->poly_meshes){
         nbFacets_total += nbFacets;
-        nbIndices_total += nbIndices;
         nbVertices_total += nbVertices;
         //}
 
-        if(nbFacets_total * 3 != nbIndices_total){
-            std::cout << "[ERROR] Number of facets "<<nbFacets_total<<" doesn't match number of indices "<<nbIndices_total<<"!"<<std::endl;
-            return 1;
-        }
         Vector3d lower(std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max());
         Vector3d upper(std::numeric_limits<double>::min(),std::numeric_limits<double>::min(),std::numeric_limits<double>::min());
         // calculate global bounds for the whole model
@@ -445,10 +433,8 @@ namespace flowgeom {
                 cereal::make_nvp("indices", indices) ,
                 cereal::make_nvp("nbFacets", nbFacets) ,
                 cereal::make_nvp("nbVertices", nbVertices) ,
-                cereal::make_nvp("nbIndices", nbIndices) ,
                 cereal::make_nvp("nbFacetsTotal", nbFacets_total) ,
                 cereal::make_nvp("nbVerticesTotal", nbVertices_total) ,
-                cereal::make_nvp("nbIndicesTotal", nbIndices_total) ,
                 cereal::make_nvp("useMaxwell", useMaxwell)
         );
 
@@ -466,7 +452,6 @@ namespace flowgeom {
         std::vector<float> cdfs;
 
         uint32_t nbFacets = 0;
-        uint32_t nbIndices = 0;
         uint32_t nbVertices = 0;
 
         int polyNb = 0;
@@ -506,12 +491,11 @@ namespace flowgeom {
             //TODO: one mesh per structure
 
             nbFacets = polyNb;
-            nbIndices = indNb;
             nbVertices = indNb;
 
             std::vector<Vector3d>(geomVertices.size()).swap(vertices3d);
             poly.resize(nbFacets);
-            indices.resize(nbIndices);
+            indices.resize(indNb);
             vertices2d.resize(nbVertices);
 
             int size_cdf = 0;
@@ -538,7 +522,7 @@ namespace flowgeom {
                 
                 //Polygon newPoly(fac.indices.size());
                 poly[f] = Polygon(fac->indices.size());
-                poly[f].vertOffset = vertCount;
+                poly[f].indexOffset = vertCount;
                 poly[f].nbVertices = fac->indices.size();
                 poly[f].stickingFactor = fac->sh.sticking;
 
@@ -602,11 +586,9 @@ namespace flowgeom {
 
         // calculate total amount of facets
         uint32_t nbFacets_total = 0;
-        uint32_t nbIndices_total = 0;
         uint32_t nbVertices_total = 0;
         //for (PolygonMesh* mesh : model->poly_meshes){
             nbFacets_total += nbFacets;
-            nbIndices_total += nbIndices;
             nbVertices_total += nbVertices;
         //}
 
@@ -639,10 +621,8 @@ namespace flowgeom {
                 cereal::make_nvp("indices", indices) ,
                 cereal::make_nvp("nbFacets", nbFacets) ,
                 cereal::make_nvp("nbVertices", nbVertices) ,
-                cereal::make_nvp("nbIndices", nbIndices) ,
                 cereal::make_nvp("nbFacetsTotal", nbFacets_total) ,
                 cereal::make_nvp("nbVerticesTotal", nbVertices_total) ,
-                cereal::make_nvp("nbIndicesTotal", nbIndices_total) ,
                 cereal::make_nvp("useMaxwell", useMaxwell)
         );
 

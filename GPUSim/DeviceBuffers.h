@@ -19,11 +19,14 @@ namespace flowgpu {
         CUDABuffer moleculeBuffer;
         CUDABuffer randBuffer;
         CUDABuffer randOffsetBuffer;
+
     };
 
     struct SimulationMemory_perFacet{
         CUDABuffer hitCounterBuffer;
         CUDABuffer missCounterBuffer;
+        CUDABuffer textureBuffer;
+
     };
 
     /*! one buffer per input mesh */

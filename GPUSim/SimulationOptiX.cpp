@@ -5,6 +5,7 @@
 // common MF helper tools
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 
 #include "optix7.h"
 #include "SimulationOptiX.h"
@@ -91,11 +92,13 @@ unsigned long long int SimulationOptiX::GetSimulationData() {
 
     bool writeData = true;
     bool printData = false;
+    bool printDataParent = true;
     bool printCounters = true;
     try {
         optixHandle->downloadDataFromDevice(&data);
         if(writeData) WriteDataToFile("hitcounters.txt");
         if(printData) PrintData();
+        if(printDataParent) PrintDataForParent();
         if(printCounters) PrintTotalCounters();
         return GetTotalHits();
     } catch (std::runtime_error& e) {
@@ -120,6 +123,35 @@ void SimulationOptiX::Resize(){
     data.positions.resize(NBCOUNTS*kernelDimensions.x*kernelDimensions.y);
     data.posOffset.resize(kernelDimensions.x*kernelDimensions.y);
 #endif
+}
+
+/*! download the rendered color buffer and return the total amount of hits (= followed rays) */
+void SimulationOptiX::PrintDataForParent()
+{
+    // Find amount of Polygons, we don't have this information anymore
+    unsigned int maxPoly = 0;
+    for(auto& mesh : model->triangle_meshes){
+        for(auto& facet : mesh->poly){
+            maxPoly = std::max(maxPoly,facet.parentIndex);
+        }
+    }
+
+    std::vector<unsigned long long int> counterMCHit(maxPoly+1, 0);
+    std::vector<unsigned long long int> counterDesorp(maxPoly+1, 0);
+    std::vector<double> counterAbsorp(maxPoly+1, 0);
+
+    for(unsigned int i = 0; i < data.facetHitCounters.size(); i++) {
+        unsigned int facIndex = i%this->model->nbFacets_total;
+        unsigned int facParent = model->triangle_meshes[0]->poly[facIndex].parentIndex;
+        counterMCHit[facParent] += data.facetHitCounters[i].nbMCHit; // let misses count as 0 (-1+1)
+        counterDesorp[facParent] += data.facetHitCounters[i].nbDesorbed; // let misses count as 0 (-1+1)
+        counterAbsorp[facParent] += data.facetHitCounters[i].nbAbsEquiv; // let misses count as 0 (-1+1)
+    }
+
+    for(unsigned int i = 0; i <= maxPoly; i++){
+        if(counterMCHit[i] > 0 || counterAbsorp[i] > 0 || counterDesorp[i] > 0)
+            std::cout << i+1 << " " << counterMCHit[i] << " " << counterDesorp[i] << " " << static_cast<unsigned long long int>(counterAbsorp[i]) << std::endl;
+    }
 }
 
 /*! download the rendered color buffer and return the total amount of hits (= followed rays) */
@@ -421,10 +453,8 @@ int SimulationOptiX::CloseSimulation() {
             CEREAL_NVP(model->poly_meshes[0]->indices) ,
             CEREAL_NVP(model->poly_meshes[0]->nbFacets) ,
             CEREAL_NVP(model->poly_meshes[0]->nbVertices) ,
-            CEREAL_NVP(model->poly_meshes[0]->nbIndices) ,
             CEREAL_NVP(model->nbFacets_total) ,
             CEREAL_NVP(model->nbVertices_total) ,
-            CEREAL_NVP(model->nbIndices_total) ,
             CEREAL_NVP(model->useMaxwell) ,
             CEREAL_NVP(model->bounds.lower) ,
             CEREAL_NVP(model->bounds.upper)

@@ -1354,3 +1354,53 @@ void Facet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchive) {
 		);
 	
 }
+
+void Facet::SerializeData(std::vector<double>& outgMapVector, std::vector<size_t>& angleMapVector, std::vector<double>& textIncVector) {
+
+    outgMapVector.resize(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0);
+    memcpy(outgMapVector.data(), outgassingMap, sizeof(double)*(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0));
+
+    size_t mapSize = sh.anglemapParams.GetMapSize();
+    angleMapVector.resize(mapSize);
+    memcpy(angleMapVector.data(), angleMapCache, sh.anglemapParams.GetRecordedDataSize());
+
+    // Add surface elements area (reciprocal)
+    if (sh.isTextured) {
+        textIncVector.resize(sh.texHeight*sh.texWidth);
+        if (cellPropertiesIds) {
+            size_t add = 0;
+            for (size_t j = 0; j < sh.texHeight; j++) {
+                for (size_t i = 0; i < sh.texWidth; i++) {
+                    double area = GetMeshArea(add, true);
+
+                    if (area > 0.0) {
+                        // Use the sign bit to store isFull flag
+                        textIncVector[add] = 1.0 / area;
+                    }
+                    else {
+                        textIncVector[add] = 0.0;
+                    }
+                    add++;
+                }
+            }
+        }
+        else {
+
+            double rw = sh.U.Norme() / (double)(sh.texWidthD);
+            double rh = sh.V.Norme() / (double)(sh.texHeightD);
+            double area = rw * rh;
+            size_t add = 0;
+            for (int j = 0; j < sh.texHeight; j++) {
+                for (int i = 0; i < sh.texWidth; i++) {
+                    if (area > 0.0) {
+                        textIncVector[add] = 1.0 / area;
+                    }
+                    else {
+                        textIncVector[add] = 0.0;
+                    }
+                    add++;
+                }
+            }
+        }
+    }
+}

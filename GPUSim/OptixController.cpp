@@ -113,13 +113,13 @@ namespace flowgpu {
 
     static void
     polygon_bound(std::vector<uint32_t> polyIndicies, uint32_t indexOffset, std::vector<float3> polyVertices,
-                  uint32_t nbIndices, float *result)
+                  uint32_t nbVert, float *result)
     {
 
         float3 m_max{static_cast<float>(-1e100),static_cast<float>(-1e100),static_cast<float>(-1e100)};
         float3 m_min{static_cast<float>(1e100),static_cast<float>(1e100),static_cast<float>(1e100)};
 
-        for(uint32_t ind = indexOffset; ind < indexOffset + nbIndices; ind++){
+        for(uint32_t ind = indexOffset; ind < indexOffset + nbVert; ind++){
             auto polyIndex = polyIndicies[ind];
             const auto& vert = polyVertices[polyIndex];
             //auto newVert = vert / dot(vert,vert); // scale back
@@ -222,8 +222,8 @@ namespace flowgpu {
 
             std::vector<OptixAabb> aabb(mesh.poly.size());
             int bbCount = 0;
-            for(Polygon& poly : mesh.poly){
-                polygon_bound(mesh.indices, poly.vertOffset, mesh.vertices3d, poly.nbVertices,
+            for(flowgeom::Polygon& poly : mesh.poly){
+                polygon_bound(mesh.indices, poly.indexOffset, mesh.vertices3d, poly.nbVertices,
                               reinterpret_cast<float *>(&aabb[bbCount]));
                 //std::cout << bbCount<<"# poly box: " << "("<<aabb[bbCount].minX <<","<<aabb[bbCount].minY <<","<<aabb[bbCount].minZ <<")-("<<aabb[bbCount].maxX <<","<<aabb[bbCount].maxY <<","<<aabb[bbCount].maxZ <<")"<<std::endl;
                 //std::cout << bbCount<<"# poly uv: " << "("<<poly.U <<","<<poly.V <<")"<<std::endl;
@@ -593,7 +593,7 @@ namespace flowgpu {
                                                  log,&sizeof_log,
                                                  &state.modules.geometryModule
             ));
-            if (sizeof_log > 1) PRINT(log);
+            //if (sizeof_log > 1) PRINT(log);
         }
 
         {
@@ -606,7 +606,7 @@ namespace flowgpu {
                                                  log,&sizeof_log,
                                                  &state.modules.rayModule
             ));
-            if (sizeof_log > 1) PRINT(log);
+            //if (sizeof_log > 1) PRINT(log);
         }
 
         {
@@ -619,7 +619,7 @@ namespace flowgpu {
                                                  log,&sizeof_log,
                                                  &state.modules.traceModule
             ));
-            if (sizeof_log > 1) PRINT(log);
+            //if (sizeof_log > 1) PRINT(log);
         }
     }
 
@@ -647,7 +647,7 @@ namespace flowgpu {
                                             log,&sizeof_log,
                                             &pgRayGen
         ));
-        if (sizeof_log > 1) PRINT(log);
+        //if (sizeof_log > 1) PRINT(log);
 
         programGroups.push_back(pgRayGen);
         state.raygenPG = pgRayGen;
@@ -675,7 +675,7 @@ namespace flowgpu {
                                             log,&sizeof_log,
                                             &pgMiss
         ));
-        if (sizeof_log > 1) PRINT(log);
+        //if (sizeof_log > 1) PRINT(log);
 
         programGroups.push_back(pgMiss);
         state.missPG = pgMiss;
@@ -695,9 +695,9 @@ namespace flowgpu {
         pgDesc.hitgroup.moduleCH            = state.modules.traceModule;
         pgDesc.hitgroup.entryFunctionNameCH = "__closesthit__molecule_triangle";
 #else
-        pgDesc.hitgroup.moduleIS            = modules.geometryModule;
+        pgDesc.hitgroup.moduleIS            = state.modules.geometryModule;
         pgDesc.hitgroup.entryFunctionNameIS = "__intersection__polygon";
-        pgDesc.hitgroup.moduleCH            = modules.traceModule;
+        pgDesc.hitgroup.moduleCH            = state.modules.traceModule;
         pgDesc.hitgroup.entryFunctionNameCH = "__closesthit__molecule";
 #endif
 
@@ -714,7 +714,7 @@ namespace flowgpu {
                                             log,&sizeof_log,
                                             &pgHitgroup
         ));
-        if (sizeof_log > 1) PRINT(log);
+        //if (sizeof_log > 1) PRINT(log);
 
         programGroups.push_back(pgHitgroup);
         state.hitgroupPG = pgHitgroup;
@@ -742,7 +742,7 @@ namespace flowgpu {
                                         log,&sizeof_log,
                                         &state.pipeline
         ));
-        if (sizeof_log > 1) PRINT(log);
+        //if (sizeof_log > 1) PRINT(log);
 
         OPTIX_CHECK(optixPipelineSetStackSize
                             (/* [in] The pipeline to configure the stack size for */
@@ -758,7 +758,7 @@ namespace flowgpu {
                                     /* [in] The maximum depth of a traversable graph
                                        passed to trace. */
                                     1));
-        if (sizeof_log > 1) PRINT(log);
+        //if (sizeof_log > 1) PRINT(log);
     }
 
 
@@ -789,7 +789,7 @@ namespace flowgpu {
             rec.data.vertex = (float3*)poly_memory.vertexBuffer[0].d_pointer();
             rec.data.vertex2 = (float2*)poly_memory.vertex2Buffer[0].d_pointer();
             rec.data.index = (uint32_t*)poly_memory.indexBuffer[0].d_pointer();
-            rec.data.poly = (Polygon*)poly_memory.polyBuffer[0].d_pointer();
+            rec.data.poly = (flowgeom::Polygon*)poly_memory.polyBuffer[0].d_pointer();
             rec.data.cdfs = (float*)poly_memory.cdfBuffer[0].d_pointer();
             rec.data.facetProbabilities = (float2*)poly_memory.facprobBuffer[0].d_pointer();
             //raygenRecords.push_back(rec);
@@ -811,7 +811,7 @@ namespace flowgpu {
             rec.data.vertex = (float3*)poly_memory.vertexBuffer[0].d_pointer();
             rec.data.vertex2 = (float2*)poly_memory.vertex2Buffer[0].d_pointer();
             rec.data.index = (uint32_t*)poly_memory.indexBuffer[0].d_pointer();
-            rec.data.poly = (Polygon*)poly_memory.polyBuffer[0].d_pointer();
+            rec.data.poly = (flowgeom::Polygon*)poly_memory.polyBuffer[0].d_pointer();
             //missRecords.push_back(rec);
             sbt_memory.missRecordsBuffer.alloc(sizeof(rec));
             sbt_memory.missRecordsBuffer.upload(&rec,1);
@@ -834,7 +834,7 @@ namespace flowgpu {
             rec.data.vertex = (float3*)poly_memory.vertexBuffer[0].d_pointer();
             rec.data.vertex2 = (float2*)poly_memory.vertex2Buffer[0].d_pointer();
             rec.data.index = (uint32_t*)poly_memory.indexBuffer[0].d_pointer();
-            rec.data.poly = (Polygon*)poly_memory.polyBuffer[0].d_pointer();
+            rec.data.poly = (flowgeom::Polygon*)poly_memory.polyBuffer[0].d_pointer();
             //hitgroupRecords.push_back(rec);
             sbt_memory.hitgroupRecordsBuffer.alloc(sizeof(rec));
             sbt_memory.hitgroupRecordsBuffer.upload(&rec,1);
@@ -850,7 +850,6 @@ namespace flowgpu {
     {
         // first allocate device memory and upload data
         sim_memory.moleculeBuffer.initDeviceData(state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y * sizeof(MolPRD));
-        std::cout << "#flowgpu: building init ..." << std::endl;
 
         for (int meshID=0;meshID<(int)model->triangle_meshes.size();meshID++) {
             TriangleMesh &mesh = *model->triangle_meshes[meshID];
@@ -868,7 +867,7 @@ namespace flowgpu {
             OPTIX_CHECK(optixSbtRecordPackHeader(state.raygenPG,&rec));
             rec.data.vertex = (float3*)tri_memory.vertexBuffer[0].d_pointer();
             rec.data.index = (int3*)tri_memory.indexBuffer[0].d_pointer();
-            rec.data.poly = (Polygon*)tri_memory.polyBuffer[0].d_pointer();
+            rec.data.poly = (flowgeom::Polygon*)tri_memory.polyBuffer[0].d_pointer();
             rec.data.cdfs = (float*)tri_memory.cdfBuffer[0].d_pointer();
             rec.data.facetProbabilities = (float2*)tri_memory.facprobBuffer[0].d_pointer();
             //raygenRecords.push_back(rec);
@@ -890,7 +889,7 @@ namespace flowgpu {
             //rec.data_poly = nullptr; /* for now ... */
             rec.data.vertex = (float3*)tri_memory.vertexBuffer[0].d_pointer();
             rec.data.index = (int3*)tri_memory.indexBuffer[0].d_pointer();
-            rec.data.poly = (Polygon*)tri_memory.polyBuffer[0].d_pointer();
+            rec.data.poly = (flowgeom::Polygon*)tri_memory.polyBuffer[0].d_pointer();
             //missRecords.push_back(rec);
             sbt_memory.missRecordsBuffer.alloc(sizeof(rec));
             sbt_memory.missRecordsBuffer.upload(&rec,1);
@@ -912,7 +911,7 @@ namespace flowgpu {
             //rec.data.vertex = (float3*)vertexBuffer[meshID].d_pointer();
             rec.data.vertex = (float3*)tri_memory.vertexBuffer[0].d_pointer();
             rec.data.index = (int3*)tri_memory.indexBuffer[0].d_pointer();
-            rec.data.poly = (Polygon*)tri_memory.polyBuffer[0].d_pointer();
+            rec.data.poly = (flowgeom::Polygon*)tri_memory.polyBuffer[0].d_pointer();
             //hitgroupRecords.push_back(rec);
             sbt_memory.hitgroupRecordsBuffer.alloc(sizeof(rec));
             sbt_memory.hitgroupRecordsBuffer.upload(&rec,1);
@@ -935,6 +934,9 @@ namespace flowgpu {
 
         facet_memory.hitCounterBuffer.upload(hitCounter,nbHCBins*state.launchParams.simConstants.nbFacets);
         facet_memory.missCounterBuffer.upload(missCounter,1);
+        std::cout << "Tex Size "<<model->textures.size() << std::endl;
+        if(!model->textures.empty())
+            facet_memory.textureBuffer.alloc_and_upload(model->textures);
 
         delete[] hitCounter;
         delete missCounter;
@@ -1090,6 +1092,7 @@ namespace flowgpu {
         sim_memory.randOffsetBuffer.resize(newSize.x*newSize.y*sizeof(uint32_t));
         facet_memory.hitCounterBuffer.resize(model->nbFacets_total * CORESPERSM * WARPSCHEDULERS * sizeof(CuFacetHitCounter));
         facet_memory.missCounterBuffer.resize(sizeof(uint32_t));
+        //facet_memory.textureBuffer.resize(model->textures.size() * sizeof(TextureCell));
 
         // update the launch parameters that we'll pass to the optix
         // launch:
@@ -1099,7 +1102,6 @@ namespace flowgpu {
         state.launchParams.simConstants.size  = newSize;
         state.launchParams.simConstants.nbFacets  = model->nbFacets_total;
         // TODO: Total nb for indices and vertices
-        state.launchParams.simConstants.nbIndices  = model->nbIndices_total;
         state.launchParams.simConstants.nbVertices  = model->nbVertices_total;
         state.launchParams.perThreadData.currentMoleculeData = (MolPRD*)sim_memory.moleculeBuffer.d_pointer();
         state.launchParams.perThreadData.randBufferOffset = (uint32_t*)sim_memory.randOffsetBuffer.d_pointer();
@@ -1111,8 +1113,10 @@ namespace flowgpu {
         //crng::initializeRandHost(newSize.x * newSize.y, (float **) &randBuffer.d_ptr);
         state.launchParams.randomNumbers = (float*)sim_memory.randBuffer.d_pointer();
         state.launchParams.hitCounter = (CuFacetHitCounter*) facet_memory.hitCounterBuffer.d_pointer();
-
         state.launchParams.sharedData.missCounter = (uint32_t*) facet_memory.missCounterBuffer.d_pointer();
+        if(!facet_memory.textureBuffer.isNullptr())
+            state.launchParams.sharedData.facetTextures = (TextureCell*) facet_memory.textureBuffer.d_pointer();
+
 
 #ifdef DEBUGCOUNT
         memory_debug.detBuffer.resize(NCOUNTBINS*sizeof(uint32_t));
@@ -1239,6 +1243,8 @@ namespace flowgpu {
 
         facet_memory.hitCounterBuffer.free();
         facet_memory.missCounterBuffer.free();
+        if(!facet_memory.textureBuffer.isNullptr())
+            facet_memory.textureBuffer.free();
 
 #ifdef DEBUGCOUNT
         memory_debug.detBuffer.free();

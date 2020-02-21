@@ -18,7 +18,6 @@ GNU General Public License for more details.
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 #pragma once
-#include "GLApp/GLTypes.h"
 #include <stddef.h> //size_t for gcc
 //#include "Buffer_shared.h"
 
@@ -58,8 +57,6 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 typedef float ACFLOAT;
 
-// Density/Hit field stuff
-#define HITMAX 1E38
 class ProfileSlice {
 public:
 	double countEquiv=0.0;
@@ -77,22 +74,6 @@ public:
 	TextureCell& operator+=(const TextureCell& rhs);
 	TextureCell& operator+(const TextureCell& rhs);
 };
-
-//Texture limit types
-typedef struct {
-	double all;
-	double moments_only;
-} TEXTURE_MOMENT_TYPE;
-
-typedef struct {
-	TEXTURE_MOMENT_TYPE min;
-	TEXTURE_MOMENT_TYPE max;
-} TEXTURE_MIN_MAX;
-
-typedef struct {
-	TEXTURE_MIN_MAX manual;
-	TEXTURE_MIN_MAX autoscale;
-} TEXTURE_SCALE_TYPE;
 
 class AnglemapParams {
 public:

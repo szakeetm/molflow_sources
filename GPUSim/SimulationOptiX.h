@@ -31,6 +31,7 @@ public:
 
     unsigned long long int GetSimulationData();
     void PrintData();
+    void PrintDataForParent();
     void PrintTotalCounters();
     void WriteDataToFile(std::string fileName);
 

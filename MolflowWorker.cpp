@@ -1281,9 +1281,8 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 */
 std::ostringstream Worker::SerializeForLoader()
 {
-	//std::ofstream os("out.xml");
 	std::ostringstream result;
-	cereal::BinaryOutputArchive outputarchive(result);
+    cereal::BinaryOutputArchive outputarchive(result);
 
 	outputarchive(
 		CEREAL_NVP(wp),
@@ -1296,11 +1295,38 @@ std::ostringstream Worker::SerializeForLoader()
 		CEREAL_NVP(desorptionParameterIDs)
 	); //Worker
 
-	geom->SerializeForLoader(outputarchive);
+    geom->SerializeForLoader(outputarchive);
+
+    SerializeForExternal();
 
 	return result;
 }
 
+void Worker::SerializeForExternal(){
+    std::ofstream resultf("minimalout.xml");
+
+        cereal::XMLOutputArchive outputarchivef(resultf);
+
+        outputarchivef(
+                cereal::make_nvp("gasMass",wp.gasMass),
+                cereal::make_nvp("useMaxwellDistribution",wp.useMaxwellDistribution),
+                cereal::make_nvp("lowFluxMode",ontheflyParams.lowFluxMode),
+                cereal::make_nvp("lowFluxCutoff",ontheflyParams.lowFluxCutoff)
+                /*,
+                CEREAL_NVP(ontheflyParams),
+                CEREAL_NVP(CDFs),
+                CEREAL_NVP(IDs),
+                CEREAL_NVP(parameters),
+                CEREAL_NVP(temperatures),
+                CEREAL_NVP(moments),
+                CEREAL_NVP(desorptionParameterIDs)*/
+        ); //Worker
+
+        geom->SerializeForExternal(outputarchivef);
+
+    //resultf.close();
+
+}
 /**
 * \brief Resets the hit counter and can reload the simulation
 * \param noReload if the whole simulation should not be reloaded

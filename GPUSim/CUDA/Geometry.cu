@@ -98,10 +98,10 @@ namespace flowgpu {
         const PolygonMeshSBTData &sbtData = *(const PolygonMeshSBTData*)optixGetSbtDataPointer();
 
         const int   primID = optixGetPrimitiveIndex();
-        const Polygon& poly  = sbtData.poly[primID];
-        const float3 &Aa     = sbtData.vertex[sbtData.index[poly.vertOffset + 0]];
-        const float3 &Bb     = sbtData.vertex[sbtData.index[poly.vertOffset + 1]];
-        const float3 &Cc     = sbtData.vertex[sbtData.index[poly.vertOffset + 2]];
+        const flowgeom::Polygon& poly  = sbtData.poly[primID];
+        const float3 &Aa     = sbtData.vertex[sbtData.index[poly.indexOffset + 0]];
+        const float3 &Bb     = sbtData.vertex[sbtData.index[poly.indexOffset + 1]];
+        const float3 &Cc     = sbtData.vertex[sbtData.index[poly.indexOffset + 2]];
 
         float3 v1 = Bb-Aa; // v1 = P0P1
         float3 v2 = Cc-Aa; // v2 = P1P2
@@ -115,7 +115,7 @@ namespace flowgpu {
 
         /*int ind = 2;
         while (ind < poly.nbVertices) {
-            int i2 = sbtData.index[poly.vertOffset+ind++];
+            int i2 = sbtData.index[poly.indexOffset+ind++];
 
             v1 = Bb - Aa; // v1 = P0P1
             v2 = sbtData.vertex[i2] - Bb; // v2 = P1P2
@@ -163,7 +163,7 @@ namespace flowgpu {
         const PolygonMeshSBTData &sbtData = *(const PolygonMeshSBTData*)optixGetSbtDataPointer();
         const int   primID = optixGetPrimitiveIndex();
 
-        const Polygon& poly  = sbtData.poly[primID];
+        const flowgeom::Polygon& poly  = sbtData.poly[primID];
 
         const int nbSizeMinusOne = poly.nbVertices - 1;
         const float2* polyPoints = sbtData.vertex2;
@@ -176,15 +176,15 @@ namespace flowgpu {
         p.y = v;
 
         for (size_t j = 0; j < nbSizeMinusOne; j++) {
-            const float2& p1 = polyPoints[poly.vertOffset+j];
-            const float2& p2 = polyPoints[poly.vertOffset+j+1];
+            const float2& p1 = polyPoints[poly.indexOffset + j];
+            const float2& p2 = polyPoints[poly.indexOffset + j + 1];
 /*
             if(primID==2 && optixGetLaunchIndex().x+optixGetLaunchIndex().y*optixLaunchParams.frame.size.x % 500 == 0)
                 */
 /*printf("[%d] -- %10.4f / %10.4f / %10.4f / %10.4f > %10.4f for Ray from %10.4f , %10.4f , %10.4f to %10.4f , %10.4f , %10.4f \n",
                        primID, det, u, v, d, ray_tmin, ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z);*//*
 
-                printf("[%d] -- %10.4f , %10.4f -- %10.4f , %10.4f \n", sbtData.index[poly.vertOffset+j], p1.x, p1.y, p2.x, p2.y);
+                printf("[%d] -- %10.4f , %10.4f -- %10.4f , %10.4f \n", sbtData.index[poly.indexOffset+j], p1.x, p1.y, p2.x, p2.y);
 */
 
             if (p.x<p1.x != p.x<p2.x) {
@@ -209,8 +209,8 @@ namespace flowgpu {
 */
 
         //Last point. Repeating code because it's the fastest and this function is heavily used
-        const float2& p1 = polyPoints[poly.vertOffset+nbSizeMinusOne];
-        const float2& p2 = polyPoints[poly.vertOffset+0];
+        const float2& p1 = polyPoints[poly.indexOffset + nbSizeMinusOne];
+        const float2& p2 = polyPoints[poly.indexOffset + 0];
         if (p.x<p1.x != p.x<p2.x) {
             float slope = (p2.y - p1.y) / (p2.x - p1.x);
             if ((slope * p.x - p.y) < (slope * p1.x - p1.y)) {
@@ -243,7 +243,7 @@ namespace flowgpu {
         const PolygonMeshSBTData &sbtData = *(const PolygonMeshSBTData*)optixGetSbtDataPointer();
         const int   primID = optixGetPrimitiveIndex();
 
-        const Polygon& poly  = sbtData.poly[primID];
+        const flowgeom::Polygon& poly  = sbtData.poly[primID];
 
         const int nbSizeMinusOne = poly.nbVertices - 1;
         const float2* polyPoints = sbtData.vertex2;
@@ -256,8 +256,8 @@ namespace flowgpu {
         p.y = v;
 
         for (size_t j = 0; j < nbSizeMinusOne; j++) {
-            const float2& p1 = polyPoints[poly.vertOffset+j];
-            const float2& p2 = polyPoints[poly.vertOffset+j+1];
+            const float2& p1 = polyPoints[poly.indexOffset + j];
+            const float2& p2 = polyPoints[poly.indexOffset + j + 1];
 
             if (p.x<p1.x != p.x<p2.x) {
                 float slope = (p2.y - p1.y) / (p2.x - p1.x);
@@ -272,8 +272,8 @@ namespace flowgpu {
         }
 
         //Last point. Repeating code because it's the fastest and this function is heavily used
-        const double2& p1 = make_double2(polyPoints[poly.vertOffset+nbSizeMinusOne].x,polyPoints[poly.vertOffset+nbSizeMinusOne].y);
-        const double2& p2 = make_double2(polyPoints[poly.vertOffset+0].x,polyPoints[poly.vertOffset+0].y);
+        const double2& p1 = make_double2(polyPoints[poly.indexOffset + nbSizeMinusOne].x, polyPoints[poly.indexOffset + nbSizeMinusOne].y);
+        const double2& p2 = make_double2(polyPoints[poly.indexOffset + 0].x, polyPoints[poly.indexOffset + 0].y);
         if (p.x<p1.x != p.x<p2.x) {
             double slope = (p2.y - p1.y) / (p2.x - p1.x);
             if ((slope * p.x - p.y) < (slope * p1.x - p1.y)) {
@@ -312,7 +312,7 @@ namespace flowgpu {
 
         const float ray_tmin = optixGetRayTmin(), ray_tmax = optixGetRayTmax();
 
-        const Polygon& poly  = sbtData.poly[primID];
+        const flowgeom::Polygon& poly  = sbtData.poly[primID];
         const float det = dot(poly.Nuv, ray_dir);
         //atomicAdd(optixLaunchParams.debugCounter.detCount,1);
 
@@ -442,7 +442,7 @@ namespace flowgpu {
 
         const double ray_tmin = optixGetRayTmin(), ray_tmax = optixGetRayTmax();
 
-        const Polygon& poly  = sbtData.poly[primID];
+        const flowgeom::Polygon& poly  = sbtData.poly[primID];
         const double det = dot(make_double3(poly.Nuv), ray_dir);
 
         if(det > 0.0) {

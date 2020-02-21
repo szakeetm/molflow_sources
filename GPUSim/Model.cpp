@@ -64,12 +64,10 @@ namespace flowgpu {
 
             PolygonMesh *mesh = new PolygonMesh;
             mesh->nbFacets = polyNb;
-            mesh->nbIndices = indNb;
             mesh->nbVertices = indNb;
 
             std::vector<float3>(geomVertices.size()).swap(mesh->vertices3d);
             mesh->poly.resize(mesh->nbFacets);
-            mesh->indices.resize(mesh->nbIndices);
             mesh->vertices2d.resize(mesh->nbVertices);
 
             int size_cdf = 0;
@@ -87,7 +85,7 @@ namespace flowgpu {
                 // load with proper values
                 const SubprocessFacet& fac = structures[s].facets[f];
                 Polygon newPoly(fac.indices.size());
-                newPoly.vertOffset = vertCount;
+                newPoly.indexOffset = vertCount;
                 newPoly.nbVertices = fac.indices.size();
                 newPoly.stickingFactor = fac.sh.sticking;
 

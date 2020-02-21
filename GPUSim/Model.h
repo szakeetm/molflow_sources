@@ -13,24 +13,24 @@
 //#include "Geometry_shared.h"
 //#include "Simulation.h"
 #include "LaunchParams.h"
+#include <cereal/cereal.hpp>
 
 /*! \namespace flowgpu - Molflow GPU code */
 namespace flowgpu {
 
     struct Mesh {
-        Mesh() : nbFacets(0), nbIndices(0), nbVertices(0){};
+        Mesh() : nbFacets(0), nbVertices(0){};
         Mesh(const Mesh&) = delete;
 
         //std::vector<uint32_t> indices;
         //std::vector<float2> vertices2d;
         std::vector<float3> vertices3d;
-        std::vector<Polygon> poly;
+        std::vector<flowgeom::Polygon> poly;
 
         std::vector<float2> facetProbabilities;
         std::vector<float> cdfs; // should not be part of each mesh, but the model itself
 
         uint32_t nbFacets;
-        uint32_t nbIndices;
         uint32_t nbVertices;
     };
 
@@ -56,8 +56,43 @@ namespace flowgpu {
         std::vector<float2> vertices2d;
     };
 
+    struct MolflowGlobal{
+        MolflowGlobal() : useMaxwellDistribution(){};
+
+        float gasMass;
+        bool useMaxwellDistribution;
+        /*bool	 lowFluxMode;
+        double	 lowFluxCutoff;*/
+
+
+        template <class Archive>
+        void serialize(Archive & archive) {
+            archive(
+                    CEREAL_NVP(gasMass)
+                    , CEREAL_NVP(useMaxwellDistribution)
+            );
+        }
+    };
+
+    //TODO: Unify with buffer_shared.h
+    struct GeomProperties {  //Formerly SHGEOM
+        size_t     nbFacet;   // Number of facets (total)
+        size_t     nbVertex;  // Number of 3D vertices
+        size_t     nbSuper;   // Number of superstructures
+        std::string name;  // (Short file name)
+
+        template <class Archive> void serialize(Archive & archive) {
+            archive(
+                    CEREAL_NVP(nbFacet),   // Number of facets (total)
+                    CEREAL_NVP(nbVertex),  // Number of 3D vertices
+                    CEREAL_NVP(nbSuper),   // Number of superstructures
+                    CEREAL_NVP(name)  // (Short file name)
+            );
+        }
+    };
+
     struct Model {
-        Model() : nbFacets_total(), nbIndices_total(), nbVertices_total(), useMaxwell(){};
+        Model() : nbFacets_total(), nbVertices_total(), parametersGlobal(){};
         Model(const Model&) = delete;
         ~Model()
         {
@@ -72,8 +107,9 @@ namespace flowgpu {
 
         std::vector<TriangleMesh *> triangle_meshes;
         std::vector<PolygonMesh *> poly_meshes;
+        std::vector<TextureCell> textures;
+
         uint32_t nbFacets_total;
-        uint32_t nbIndices_total;
         uint32_t nbVertices_total;
         //! bounding box of all vertices in the model
         //float3 bounds.lower;
@@ -81,7 +117,9 @@ namespace flowgpu {
 
         // Global Settings
         // Should they be here as well or only LaunchParams?
-        bool useMaxwell;
+
+        MolflowGlobal parametersGlobal;
+        GeomProperties geomProperties;
     };
 
     //Model *loadOBJ(const std::string &objFile);

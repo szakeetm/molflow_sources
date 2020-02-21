@@ -92,7 +92,9 @@ public:
 	void BuildFacetDirectionTextures(BYTE *texture);
 #pragma endregion
 
-	void SerializeForLoader(cereal::BinaryOutputArchive&);
+    void SerializeForLoader(cereal::BinaryOutputArchive&);
+    void SerializeForExternal(cereal::XMLOutputArchive&);
+
 	/*
 	template <class Archive> void serialize(Archive & archive) {
 		archive(

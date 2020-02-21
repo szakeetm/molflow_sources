@@ -5,83 +5,12 @@
 #include "SimulationOptiX.h"
 // debug output
 #include <fstream>
-#include <cereal/archives/xml.hpp>
-#include <cereal/types/vector.hpp>
-#include <cereal/types/tuple.hpp>
 
 #include <chrono>
-#include "GPUDefines.h"
-
-template<class Archive>
-void serialize(Archive & archive,
-               float2 & m)
-{
-    archive( m.x, m.y);
-}
-
-template<class Archive>
-void serialize(Archive & archive,
-               float3 & m)
-{
-    archive( m.x, m.y, m.z);
-}
-
-template<class Archive>
-void serialize(Archive & archive,
-               int3 & m)
-{
-    archive( m.x, m.y, m.z);
-}
-
-/*! --- Initialise model with a Molflow-exported geometry --- */
-flowgpu::Model* initializeModel(std::string fileName){
-
-    std::cout << "#GPUTestsuite: Loading input file: " << fileName << std::endl;
-
-    flowgpu::Model* model = new flowgpu::Model();
-    std::ifstream file( fileName );
-    cereal::XMLInputArchive archive( file );
-
-#ifdef WITHTRIANGLES
-    model->triangle_meshes.push_back(new flowgpu::TriangleMesh());
-    archive(
-            cereal::make_nvp("poly", model->triangle_meshes[0]->poly) ,
-            cereal::make_nvp("facetProbabilities", model->triangle_meshes[0]->facetProbabilities) ,
-            cereal::make_nvp("cdfs", model->triangle_meshes[0]->cdfs) ,
-            //cereal::make_nvp("vertices2d", nullptr) ,
-            cereal::make_nvp("vertices3d", model->triangle_meshes[0]->vertices3d) ,
-            cereal::make_nvp("indices", model->triangle_meshes[0]->indices) ,
-            cereal::make_nvp("nbFacets", model->triangle_meshes[0]->nbFacets) ,
-            cereal::make_nvp("nbVertices", model->triangle_meshes[0]->nbVertices) ,
-            cereal::make_nvp("nbIndices", model->triangle_meshes[0]->nbIndices) ,
-            cereal::make_nvp("nbFacetsTotal", model->nbFacets_total) ,
-            cereal::make_nvp("nbVerticesTotal", model->nbVertices_total) ,
-            cereal::make_nvp("nbIndicesTotal", model->nbIndices_total) ,
-            cereal::make_nvp("useMaxwell", model->useMaxwell)
-    );
-#else
-    model->poly_meshes.push_back(new flowgpu::PolygonMesh());
-    archive(
-            cereal::make_nvp("poly", model->poly_meshes[0]->poly) ,
-            cereal::make_nvp("facetProbabilities", model->poly_meshes[0]->facetProbabilities) ,
-            cereal::make_nvp("cdfs", model->poly_meshes[0]->cdfs) ,
-            cereal::make_nvp("vertices2d", model->poly_meshes[0]->vertices2d) ,
-            cereal::make_nvp("vertices3d", model->poly_meshes[0]->vertices3d) ,
-            cereal::make_nvp("indices", model->poly_meshes[0]->indices) ,
-            cereal::make_nvp("nbFacets", model->poly_meshes[0]->nbFacets) ,
-            cereal::make_nvp("nbVertices", model->poly_meshes[0]->nbVertices) ,
-            cereal::make_nvp("nbIndices", model->poly_meshes[0]->nbIndices) ,
-            cereal::make_nvp("nbFacetsTotal", model->nbFacets_total) ,
-            cereal::make_nvp("nbVerticesTotal", model->nbVertices_total) ,
-            cereal::make_nvp("nbIndicesTotal", model->nbIndices_total) ,
-            cereal::make_nvp("useMaxwell", model->useMaxwell)
-    );
-#endif
-
-    std::cout << "#GPUTestsuite: Loading completed!" << std::endl;
-
-    return model;
-}
+#include <algorithm>
+#include <iostream>
+#include <filesystem>
+#include "ModelReader.h"
 
 void printUsageAndExit( const char* argv0 )
 {
@@ -89,9 +18,10 @@ void printUsageAndExit( const char* argv0 )
     fprintf( stderr, "Options: --file  | -f <filename>        Specify file for model input\n" );
     fprintf( stderr, "         --help  | -h                   Print this usage message\n" );
     fprintf( stderr, "         --size  | -s <launchsize>      Set kernel launch size\n" );
-    fprintf( stderr, "         --size=<width>x<height>x<depth>\n" );
+    fprintf( stderr, "         --size=<width>x<height>[x<depth>]\n" );
     fprintf( stderr, "         --loop  | -l <nbLoops>         Set number of simulation loops\n" );
     fprintf( stderr, "         --nhit  | -n <nbHits>          Set approx. number of hits for the simulation\n" );
+    fprintf( stderr, "         --quiet | -q                   Set terminal output messages to a minimum\n" );
     //fprintf( stderr, "         --dim=<width>x<height>        Set image dimensions; defaults to 512x384\n" );
     exit(1);
 }
@@ -140,13 +70,14 @@ void parseSize( const char* arg, size_t& kernelSize )
 int main(int argc, char **argv) {
 
 #ifdef WITHTRIANGLES
-    std::string fileName = "test_geom_tri.xml"; // Input file
+    std::string fileName = "minimalout.xml"; // Input file
 #else
     std::string fileName = "test_geom.xml"; // Input file
 #endif
 
     size_t nbLoops = 1;               // Number of Simulation loops
     size_t launchSize = 1;                  // Kernel launch size
+    bool silentMode = false;
 
     for(int i = 1; i < argc; ++i ) {
         if( strcmp( argv[i], "--help" ) == 0 || strcmp( argv[i], "-h" ) == 0 ) {
@@ -154,6 +85,10 @@ int main(int argc, char **argv) {
         } else if( strcmp( argv[i], "--file" ) == 0 || strcmp( argv[i], "-f" ) == 0 ) {
             if( i < argc-1 ) {
                 fileName = argv[++i];
+                if(!std::filesystem::exists(fileName)){
+                    std::cout << "File "<<fileName<<" does not exist!"<< std::endl;
+                    exit(0);
+                }
             } else {
                 printUsageAndExit( argv[0] );
             }
@@ -179,6 +114,8 @@ int main(int argc, char **argv) {
             } else {
                 printUsageAndExit( argv[0] );
             }
+        } else if ( strcmp( argv[i], "--quiet") == 0  || strcmp( argv[i], "-q" ) == 0 ) {
+            silentMode = true;
         } else {
             fprintf( stderr, "Unknown option '%s'\n", argv[i] );
             printUsageAndExit( argv[0] );
@@ -186,29 +123,37 @@ int main(int argc, char **argv) {
     }
 
     SimulationOptiX gpuSim;
-    flowgpu::Model* model = initializeModel(fileName);
+    //flowgpu::Model* model = flowgeom::initializeModel(fileName);
+    flowgpu::Model* model = flowgeom::loadFromSerialization(fileName);
+            //flowgpu::Model* test = flowgeom::loadFromSerialization("minimalout.xml");
+    //delete model;
+    //model = test;
 
     std::cout << "#GPUTestsuite: Loading simulation with kernel size: " << launchSize << std::endl;
     gpuSim.LoadSimulation(model, launchSize);
 
     std::cout << "#GPUTestsuite: Starting simulation with " << launchSize << " threads per launch => " << nbLoops << " runs "<<std::endl;
 
-    const int printPerNRuns = nbLoops/100;
+    const int printPerNRuns = std::max(1, static_cast<int>(nbLoops/10)); // prevent n%0 operation
 
     auto start_total = std::chrono::steady_clock::now();
     auto t0 = start_total;
 
+    double raysPerSecondMax = 0.0;
     for(size_t i = 0; i < nbLoops; ++i){
         //auto start = std::chrono::high_resolution_clock::now();
 
         gpuSim.RunSimulation();
 
 
-        if((i+1)%printPerNRuns==0){
+        if(!silentMode && (i+1)%printPerNRuns==0){
             auto t1 = std::chrono::steady_clock::now();
             std::chrono::duration<double,std::milli> elapsed = t1 - t0;
             t0 = t1;
-            std::cout << "--- Run #"<<i+1<< " \t- Elapsed Time: " << elapsed.count() << " ms \t--- " << (double)launchSize * printPerNRuns / elapsed.count() / 1000.0 << " MRay/s ---" << std::endl;
+
+            double rpsRun = (double)launchSize * printPerNRuns / elapsed.count() / 1000.0;
+            raysPerSecondMax = std::max(raysPerSecondMax,rpsRun);
+            std::cout << "--- Run #"<<i+1<< " \t- Elapsed Time: " << elapsed.count() << " ms \t--- " << rpsRun << " MRay/s ---" << std::endl;
         }
     }
     auto finish_total = std::chrono::steady_clock::now();
@@ -216,7 +161,9 @@ int main(int argc, char **argv) {
     std::chrono::duration<double> elapsed = finish_total - start_total;
     std::cout << "-- Total Elapsed Time: " << elapsed.count() << " s ---" << std::endl;
     double raysPerSecond = (double)(gpuSim.GetSimulationData())/(elapsed.count());
-    std::cout << "-- Rays per second: " << raysPerSecond/1000.0/1000.0 << " MRay/s ---" << std::endl;
+    std::cout << "-- Avg. Rays per second: " << raysPerSecond/1000.0/1000.0 << " MRay/s ---" << std::endl;
+    std::cout << "-- Max  Rays per second: " << raysPerSecondMax << " MRay/s ---" << std::endl;
+
     /*std::chrono::duration<double,std::milli> elapsed = finish_total - start_total;
     std::cout << "-- Total Elapsed Time: " << elapsed.count() << " ms ---" << std::endl;
     double raysPerSecond = (double)(gpuSim.GetSimulationData())/(elapsed.count()/1000);

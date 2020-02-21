@@ -18,6 +18,7 @@
 
 #include "optix7.h"
 #include "OptixPolygon.h"
+#include "../MolflowTypes.h"
 
 #ifdef DEBUGCOUNT
 #define NCOUNTBINS 100
@@ -41,13 +42,13 @@ namespace flowgpu {
     struct TriangleMeshSBTData {
         float3 *vertex;
         int3 *index;
-        Polygon *poly;
+        flowgeom::Polygon *poly;
     };
 
     struct TriangleRayGenData {
         float3 *vertex;
         int3 *index;
-        Polygon *poly;
+        flowgeom::Polygon *poly;
 
         // -- data for launch parameters --
         // --------------------------------
@@ -65,7 +66,7 @@ namespace flowgpu {
         float3 *vertex;
         float2 *vertex2;
         uint32_t *index;
-        Polygon *poly;
+        flowgeom::Polygon *poly;
 
         // -- data for launch parameters --
         // --------------------------------
@@ -83,7 +84,7 @@ namespace flowgpu {
         float3 *vertex;
         float2 *vertex2;
         uint32_t *index;
-        Polygon *poly;
+        flowgeom::Polygon *poly;
     };
 
     // attributes of the molecule that have effects for tracing or post processing
@@ -139,6 +140,7 @@ namespace flowgpu {
 
         struct {
             uint32_t *missCounter;
+            TextureCell *facetTextures;
         } sharedData;
 
         struct {
@@ -170,6 +172,7 @@ namespace flowgpu {
 
         float* randomNumbers;
         CuFacetHitCounter* hitCounter;
+        TextureCell* textures;
 
 #ifdef DEBUGCOUNT
         struct {
