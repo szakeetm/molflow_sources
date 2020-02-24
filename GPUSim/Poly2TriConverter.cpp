@@ -229,7 +229,7 @@ int Poly2TriConverter::PolygonsToTriangles(flowgpu::PolygonMesh *polygonMesh, fl
                 }
                 flowgeom::Polygon newPoly(3);
                 newPoly.parentIndex = facetIndex;
-                newPoly.indexOffset = polygons[facetIndex].indexOffset;
+                newPoly.indexOffset = std::numeric_limits<uint32_t>::max();
                 newTris.push_back(newPoly);
             }
             convertedTris.insert(std::end(convertedTris),std::begin(newTris),std::end(newTris));
@@ -274,19 +274,6 @@ int Poly2TriConverter::PolygonsToTriangles(flowgpu::PolygonMesh *polygonMesh, fl
 
     std::cout << "Amount of n>3 Polygons after triangulation: "<<polygons.size()<<std::endl;
     std::cout << "Amount of Triangles after triangulation: "<<convertedTris.size()<<std::endl;
-
-
-    /*geometry->sh.nbFacet = triangleFacets.size();
-    geometry->facets = (Facet **)realloc(geometry->facets, geometry->sh.nbFacet * sizeof(Facet *));
-
-    // Update facet list
-    int i = 0;
-    for(Facet* facet : triangleFacets){
-        geometry->facets[i++] = facet;
-    }
-
-    // to recalculate various facet properties
-    geometry->InitializeGeometry();*/
 
     triangleMesh->poly.insert(std::end(triangleMesh->poly),std::begin(convertedTris),std::end(convertedTris));
     return convertedTris.size();

@@ -107,7 +107,9 @@ namespace flowgpu {
 
         std::vector<TriangleMesh *> triangle_meshes;
         std::vector<PolygonMesh *> poly_meshes;
-        std::vector<TextureCell> textures;
+        std::vector<flowgeom::Texel> textures;
+        std::vector<flowgeom::FacetTexture> facetTex;
+        std::vector<float> texInc;
 
         uint32_t nbFacets_total;
         uint32_t nbVertices_total;

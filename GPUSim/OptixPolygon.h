@@ -11,13 +11,13 @@
 
 namespace flowgeom {
 
-    enum TextureCounters {
+    enum TEXTURE_FLAGS {
         noTexture = (1 << 0),
         countAbs  = (1 << 1),
         countRefl           = (1 << 2),
         countTrans         = (1 << 3),
         countDirection         = (1 << 4)
-                ,countDes = (1 << 5) // Molflow only
+        ,countDes = (1 << 5) // Molflow only
     };
 
     struct FacetProperties { //Formerly SHFACET
@@ -61,13 +61,13 @@ namespace flowgeom {
         // Hit/Abs/Des/Density recording on 2D texture map
         size_t    texWidth;    // Rounded texture resolution (U)
         size_t    texHeight;   // Rounded texture resolution (V)
-        double texWidthD;   // Actual texture resolution (U)
-        double texHeightD;  // Actual texture resolution (V)
+        float texWidthD;   // Actual texture resolution (U)
+        float texHeightD;  // Actual texture resolution (V)
 
         // ----
         // Molflow-specific facet parameters
-        double temperature;    // Facet temperature (Kelvin) for velocity and outgassing calculation and soujourn time
-        double outgassing;           // (in unit *m^3/s)  used to calculate the true facetOutgassing value
+        float temperature;    // Facet temperature (Kelvin) for velocity and outgassing calculation and soujourn time
+        float outgassing;           // (in unit *m^3/s)  used to calculate the true facetOutgassing value
 
         /*int sticking_paramId;    // -1 if use constant value, 0 or more if referencing time-dependent parameter
         int opacity_paramId;     // -1 if use constant value, 0 or more if referencing time-dependent parameter
@@ -77,7 +77,7 @@ namespace flowgeom {
         int IDid;  //If time-dependent desorption, which is its ID*/
 
         int    desorbType;     // Desorption type
-        double desorbTypeN;    // Exponent in Cos^N desorption type
+        float desorbTypeN;    // Exponent in Cos^N desorption type
 
         bool   countDes;       // Count desoprtion (MC texture)
 
@@ -99,7 +99,7 @@ namespace flowgeom {
         size_t   outgassingMapWidth; //rounded up outgassing file map width
         size_t   outgassingMapHeight; //rounded up outgassing file map height*/
 
-        double totalOutgassing; //total outgassing for the given facet
+        float totalOutgassing; //total outgassing for the given facet
 
         //AnglemapParams anglemapParams;//Incident angle map
         // ----
@@ -164,15 +164,59 @@ namespace flowgeom {
         }
     };
 
+    struct Texel {
+        Texel() : countEquiv(0.0f), sum_v_ort_per_area(0.0f), sum_1_per_ort_velocity(0.0f){}
+
+        //TODO: float3 counter could increase speed
+        unsigned int countEquiv;
+        float sum_v_ort_per_area;
+        float sum_1_per_ort_velocity;
+    };
+
+    struct FacetTexture {
+        FacetTexture() : texelOffset(0), texWidth(0), texHeight(0),texWidthD(0.0f),texHeightD(0.0f), bbMin(), bbMax(){}
+
+        unsigned int texelOffset;
+        // Hit/Abs/Des/Density recording on 2D texture map
+        unsigned int    texWidth;    // Rounded texture resolution (U)
+        unsigned int    texHeight;   // Rounded texture resolution (V)
+        float texWidthD;   // Actual texture resolution (U)
+        float texHeightD;  // Actual texture resolution (V)
+
+        float3 bbMin;
+        float3 bbMax;
+
+        //TODO: Maybe fit texCellInc with texels, needs smart offsets then with time-dependence added
+        //float*   textureCellIncrements; // texWidth*texHeight
+        //Texel*   texels; // texWidth*texHeight
+    };
+
+    // TODO: Maybe save some variables (e.g. texture WxH) not with the Polygon to save memory when Facets are actually not textured
+    struct TextureProperties{
+        TextureProperties() : textureOffset(0),textureSize(0),textureFlags(TEXTURE_FLAGS::noTexture){}
+        TextureProperties& operator=(const TextureProperties& o){
+            this->textureOffset = o.textureOffset;
+            this->textureSize = o.textureSize;
+            this->textureFlags = o.textureFlags;
+
+            return *this;
+        }
+
+        unsigned int textureOffset; // map it to the original polygon index
+        unsigned int textureSize; // check ==0 to find if texture exists, could also get its own SBT
+        unsigned int textureFlags; // enum TextureCounters
+
+    };
+
     class Polygon {
     public:
         Polygon()
         : stickingFactor(-1.0), nbVertices(0), indexOffset(0), O(), U(), V(), Nuv(), nU(), nV(), N(),
-        parentIndex(std::numeric_limits<uint32_t>::max()), textureOffset(0), textureSize(0), textureFlags(TextureCounters::noTexture){
+        parentIndex(std::numeric_limits<unsigned int>::max()), texProps(){
         }
-        Polygon(int32_t nbOfVertices)
+        Polygon(unsigned int nbOfVertices)
         : stickingFactor(-1.0), nbVertices(nbOfVertices), indexOffset(0), O(), U(), V(), Nuv(), nU(), nV(), N(),
-        parentIndex(std::numeric_limits<uint32_t>::max()), textureOffset(0), textureSize(0), textureFlags(TextureCounters::noTexture){
+        parentIndex(std::numeric_limits<unsigned int>::max()), texProps(){
         }
         Polygon(Polygon&& o){
             *this = std::move(o);
@@ -200,9 +244,7 @@ namespace flowgeom {
                 this->nV = o.nV;
                 this->N = o.N;
                 this->parentIndex = o.parentIndex;
-                this->textureOffset = o.textureOffset;
-                this->textureSize = o.textureSize;
-                this->textureFlags = o.textureFlags;
+                this->texProps = o.texProps;
 
                 o.nbVertices = 0;
                 o.indexOffset = 0;
@@ -213,10 +255,8 @@ namespace flowgeom {
                 o.nU = float3();
                 o.nV = float3();
                 o.N = float3();
-                o.parentIndex = std::numeric_limits<uint32_t>::max();
-                o.textureOffset = 0;
-                o.textureSize = 0;
-                o.textureFlags = TextureCounters::noTexture;
+                o.parentIndex = std::numeric_limits<unsigned int>::max();
+                o.texProps = TextureProperties();
 
             }
             return *this;
@@ -235,9 +275,7 @@ namespace flowgeom {
             this->nV = o.nV;
 
             this->parentIndex = o.parentIndex;
-            this->textureOffset = o.textureOffset;
-            this->textureSize = o.textureSize;
-            this->textureFlags = o.textureFlags;
+            this->texProps = o.texProps;
 
             return *this;
         }
@@ -254,23 +292,20 @@ namespace flowgeom {
             this->nV = o.nV;
 
             this->parentIndex = o.parentIndex;
-            this->textureOffset = o.textureOffset;
-            this->textureSize = o.textureSize;
-            this->textureFlags = o.textureFlags;
-
+            this->texProps = o.texProps;
         }
 
-        uint32_t parentIndex; // map it to the original polygon index
-        uint32_t textureOffset; // map it to the original polygon index
-        uint32_t textureSize; // check ==0 to find if texture exists, could also get its own SBT
-        uint32_t textureFlags; // enum TextureCounters
+        TextureProperties texProps;
+
+
+        unsigned int parentIndex; // map it to the original polygon index
 
         // attributes that don't describe the geometry
         float stickingFactor;
 
         // variables for access to  global memory (indices, vertices)
-        uint32_t nbVertices;
-        uint32_t indexOffset;
+        unsigned int nbVertices;
+        unsigned int indexOffset;
 
         // variables for ray-plane (3d space) intersection
         float3 O;

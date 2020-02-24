@@ -13,6 +13,7 @@ struct HostData {
     //std::vector<uint32_t> pixels;
     //std::vector<MolPRD> hitData;
     std::vector<flowgpu::CuFacetHitCounter> facetHitCounters;
+    std::vector<flowgeom::Texel> texels;
     std::vector<uint32_t> leakCounter;
 
 #ifdef DEBUGCOUNT

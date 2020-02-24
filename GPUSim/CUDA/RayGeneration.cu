@@ -8,6 +8,8 @@
 #include "jetbrains_indexing.h"
 #include "helper_math.h"
 #include <cooperative_groups.h>
+#include <LaunchParams.h>
+
 namespace cg = cooperative_groups;
 
 #define DET33(_11,_12,_13,_21,_22,_23,_31,_32,_33)  \
@@ -461,17 +463,40 @@ namespace flowgpu {
     // increase texture counters for desorption
     // --------------------------------------
     static __forceinline__ __device__
-    void RecordDesorptionTexture(flowgpu::Polygon *poly, float3 rayOrigin, float velocity_factor, float ortSpeedFactor){
-/*
-        size_t tu = (size_t)(f->colU * poly->texWidthD);
-        size_t tv = (size_t)(f->colV * poly->texHeightD);
-        size_t add = tu + tv * (f->sh.texWidth);
-        double ortVelocity = (sHandle->wp.useMaxwellDistribution ? 1.0 : 1.1781)*sHandle->currentParticle.velocity*abs(Dot(sHandle->currentParticle.direction, f->sh.N)); //surface-orthogonal velocity component
+    void RecordDesorptionTexture(flowgeom::Polygon& poly, MolPRD& hitData, float3 rayOrigin, float3 rayDir){
 
-        if (countHit) f->texture[m][add].countEquiv += sHandle->currentParticle.oriRatio;
-        f->texture[m][add].sum_1_per_ort_velocity += sHandle->currentParticle.oriRatio * velocity_factor / ortVelocity;
-        f->texture[m][add].sum_v_ort_per_area += sHandle->currentParticle.oriRatio * ortSpeedFactor*ortVelocity*f->textureCellIncrements[add]; // sum ortho_velocity[m/s] / cell_area[cm2]
-*/
+        const float velocity_factor = 2.0f;
+        const float ortSpeedFactor = 1.0f;
+
+        // Find texture coordinates via Gauss or Cramers to solve Ax=b
+        const float3 b = rayOrigin - poly.O;
+
+        const float det = poly.U.x * poly.V.y - poly.U.y * poly.V.x; // TODO: Pre calculate
+        const float detU = b.x * poly.V.y - b.y * poly.V.x;
+        const float detV = poly.U.x * b.y - poly.U.y * b.x;
+
+        float hitLocationU = detU/det;
+        float hitLocationV = detV/det;
+
+        if(hitLocationU <= 0.0f || hitLocationU >= 1.0f || hitLocationV <= 0.0f || hitLocationV >= 1.0f)
+            printf("Hit at %lf , %lf\n", hitLocationU, hitLocationV);
+
+        flowgeom::FacetTexture& facetTex = optixLaunchParams.sharedData.facetTextures[poly.texProps.textureOffset];
+
+        unsigned int tu = (unsigned int)(hitLocationU * facetTex.texWidthD);
+        unsigned int tv = (unsigned int)(hitLocationV * facetTex.texHeightD);
+        unsigned int add = tu + tv * (facetTex.texWidth);
+        //printf("Hit at %lf , %lf for tex %lf , %lf\n", hitLocationU, hitLocationV, facetTex.texWidthD, facetTex.texHeightD);
+
+        float ortVelocity = (optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f) * hitData.velocity*abs(dot(rayDir, poly.N)); //surface-orthogonal velocity component
+
+        flowgeom::Texel& tex = optixLaunchParams.sharedData.texels[facetTex.texelOffset + add];
+        atomicAdd(&tex.countEquiv, hitData.orientationRatio);
+        atomicAdd(&tex.sum_1_per_ort_velocity, hitData.orientationRatio * velocity_factor / ortVelocity);
+        atomicAdd(&tex.sum_v_ort_per_area, hitData.orientationRatio * ortSpeedFactor * ortVelocity * optixLaunchParams.sharedData.texelInc[facetTex.texelOffset + add]); // sum ortho_velocity[m/s] / cell_area[cm2]
+
+
+        //printf("Desorbing on facet#%u %u + %u = %u\n", poly.parentIndex, tu, tv, add);
 
     }
 
@@ -485,6 +510,7 @@ namespace flowgpu {
         hitData.velocity = -999.0f;
         hitData.currentDepth = 0;
         hitData.inSystem = 0;
+        hitData.orientationRatio = 1.0f;
 
         const float* randFloat = optixLaunchParams.randomNumbers;
         unsigned int randInd = optixLaunchParams.simConstants.nbRandNumbersPerThread*(bufferIndex);
@@ -519,9 +545,9 @@ namespace flowgpu {
         }
 #endif
         increaseHitCounterDesorption(optixLaunchParams.hitCounter[counterIdx],hitData,rayDir, rayGenData->poly[facIndex].N);
-        /*if (rayGenData->poly[facIndex].textureFlags & TextureCounter::countDes)
-            RecordHitOnTexture(rayGenData->poly[facIndex], true, 2.0, 1.0); //was 2.0, 1.0
-*/
+        if (rayGenData->poly[facIndex].texProps.textureFlags & flowgeom::TEXTURE_FLAGS::countDes)
+            RecordDesorptionTexture(rayGenData->poly[facIndex], hitData, rayOrigin, rayDir);
+
 
     }
 

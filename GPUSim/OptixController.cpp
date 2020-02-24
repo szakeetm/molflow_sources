@@ -21,6 +21,7 @@
 #include "OptixController.h"
 #include "CUDA/cudaRandom.cuh"
 #include "GPUDefines.h"
+#include "LaunchParams.h"
 
 extern void initializeRand(unsigned int kernelSize, curandState_t *states, float *randomNumbers);
 extern void generateRand(unsigned int kernelSize, curandState_t *states, float *randomNumbers);
@@ -934,9 +935,9 @@ namespace flowgpu {
 
         facet_memory.hitCounterBuffer.upload(hitCounter,nbHCBins*state.launchParams.simConstants.nbFacets);
         facet_memory.missCounterBuffer.upload(missCounter,1);
-        std::cout << "Tex Size "<<model->textures.size() << std::endl;
-        if(!model->textures.empty())
-            facet_memory.textureBuffer.alloc_and_upload(model->textures);
+        std::cout << "nbTextures "<<model->facetTex.size() << std::endl;
+        std::cout << "nbTexels "<<model->textures.size() << std::endl;
+        std::cout << "nbTexInc "<<model->texInc.size() << std::endl;
 
         delete[] hitCounter;
         delete missCounter;
@@ -1114,9 +1115,20 @@ namespace flowgpu {
         state.launchParams.randomNumbers = (float*)sim_memory.randBuffer.d_pointer();
         state.launchParams.hitCounter = (CuFacetHitCounter*) facet_memory.hitCounterBuffer.d_pointer();
         state.launchParams.sharedData.missCounter = (uint32_t*) facet_memory.missCounterBuffer.d_pointer();
-        if(!facet_memory.textureBuffer.isNullptr())
-            state.launchParams.sharedData.facetTextures = (TextureCell*) facet_memory.textureBuffer.d_pointer();
 
+        // Texture
+        if(!model->textures.empty()){
+            facet_memory.textureBuffer.alloc_and_upload(model->facetTex);
+            facet_memory.texelBuffer.alloc_and_upload(model->textures);
+            facet_memory.texIncBuffer.alloc_and_upload(model->texInc);
+        }
+
+        if(!facet_memory.textureBuffer.isNullptr())
+            state.launchParams.sharedData.facetTextures = (flowgeom::FacetTexture*) facet_memory.textureBuffer.d_pointer();
+        if(!facet_memory.texelBuffer.isNullptr())
+            state.launchParams.sharedData.texels = (flowgeom::Texel*) facet_memory.texelBuffer.d_pointer();
+        if(!facet_memory.texIncBuffer.isNullptr())
+            state.launchParams.sharedData.texelInc = (float*) facet_memory.texIncBuffer.d_pointer();
 
 #ifdef DEBUGCOUNT
         memory_debug.detBuffer.resize(NCOUNTBINS*sizeof(uint32_t));
@@ -1185,6 +1197,7 @@ namespace flowgpu {
         facet_memory.hitCounterBuffer.download(hostData->facetHitCounters.data(), model->nbFacets_total * CORESPERSM * WARPSCHEDULERS);
         facet_memory.missCounterBuffer.download(hostData->leakCounter.data(), 1);
 
+        facet_memory.texelBuffer.download(hostData->texels.data(), model->textures.size());
 
 #ifdef DEBUGCOUNT
         memory_debug.detBuffer.download(hostData->detCounter.data(), NCOUNTBINS);
@@ -1245,7 +1258,10 @@ namespace flowgpu {
         facet_memory.missCounterBuffer.free();
         if(!facet_memory.textureBuffer.isNullptr())
             facet_memory.textureBuffer.free();
-
+        if(!facet_memory.texelBuffer.isNullptr())
+            facet_memory.texelBuffer.free();
+        if(!facet_memory.texIncBuffer.isNullptr())
+            facet_memory.texIncBuffer.free();
 #ifdef DEBUGCOUNT
         memory_debug.detBuffer.free();
         memory_debug.uBuffer.free();

@@ -111,6 +111,7 @@ unsigned long long int SimulationOptiX::GetSimulationData() {
 void SimulationOptiX::Resize(){
     //data.hit.resize(kernelDimensions.x*kernelDimensions.y);
     data.facetHitCounters.resize(model->nbFacets_total * CORESPERSM * WARPSCHEDULERS);
+    data.texels.resize(model->textures.size());
     data.leakCounter.resize(1);
 
 #ifdef DEBUGCOUNT
@@ -151,6 +152,27 @@ void SimulationOptiX::PrintDataForParent()
     for(unsigned int i = 0; i <= maxPoly; i++){
         if(counterMCHit[i] > 0 || counterAbsorp[i] > 0 || counterDesorp[i] > 0)
             std::cout << i+1 << " " << counterMCHit[i] << " " << counterDesorp[i] << " " << static_cast<unsigned long long int>(counterAbsorp[i]) << std::endl;
+    }
+
+    for(auto& mesh : model->triangle_meshes){
+        int lastTexture = -1;
+        for(auto& facet : mesh->poly){
+            if((facet.texProps.textureFlags & flowgeom::TEXTURE_FLAGS::countDes) && (lastTexture<(int)facet.parentIndex)){
+                std::cout << "Texture for #"<<facet.parentIndex << std::endl << " ";
+                unsigned int total = 0;
+                for(int w = 0; w < model->facetTex[facet.texProps.textureOffset].texWidth; ++w){
+                    for(int h = 0; h < model->facetTex[facet.texProps.textureOffset].texHeight; ++h){
+                        std::cout << data.texels[w+h*model->facetTex[facet.texProps.textureOffset].texWidth].countEquiv << "  ";
+                        total+=data.texels[w+h*model->facetTex[facet.texProps.textureOffset].texWidth].countEquiv;
+                    }
+                    std::cout << std::endl << " ";
+                }
+                std::cout << std::endl;
+                std::cout << "  total: "<<total << std::endl;
+
+                lastTexture = facet.parentIndex;
+            }
+        }
     }
 }
 

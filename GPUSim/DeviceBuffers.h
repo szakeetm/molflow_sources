@@ -26,6 +26,8 @@ namespace flowgpu {
         CUDABuffer hitCounterBuffer;
         CUDABuffer missCounterBuffer;
         CUDABuffer textureBuffer;
+        CUDABuffer texelBuffer;
+        CUDABuffer texIncBuffer;
 
     };
 

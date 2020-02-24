@@ -18,7 +18,6 @@
 
 #include "optix7.h"
 #include "OptixPolygon.h"
-#include "../MolflowTypes.h"
 
 #ifdef DEBUGCOUNT
 #define NCOUNTBINS 100
@@ -140,7 +139,9 @@ namespace flowgpu {
 
         struct {
             uint32_t *missCounter;
-            TextureCell *facetTextures;
+            flowgeom::FacetTexture *facetTextures;
+            flowgeom::Texel *texels;
+            float *texelInc;
         } sharedData;
 
         struct {
@@ -172,7 +173,6 @@ namespace flowgpu {
 
         float* randomNumbers;
         CuFacetHitCounter* hitCounter;
-        TextureCell* textures;
 
 #ifdef DEBUGCOUNT
         struct {

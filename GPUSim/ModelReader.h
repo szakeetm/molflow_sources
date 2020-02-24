@@ -16,23 +16,26 @@ namespace flowgeom {
             const WorkerParams& wp, const std::vector<std::vector<std::pair<double,double>>> CDFs);*/
 
     // for loading from a Molflow/cereal export
-    struct TempFacet{
+    struct TempFacet {
         FacetProperties facetProperties;
         std::vector<uint32_t> indices;
         std::vector<float2> vertices2;
+        std::vector<float> texelInc;
 
         template<class Archive>
-        void serialize(Archive & archive) {
+        void serialize(Archive &archive) {
             archive(
                     facetProperties,
                     indices,
-                    vertices2
+                    vertices2,
+                    cereal::make_nvp("textIncVector", texelInc)
             );
         }
     };
 
-    flowgpu::Model* initializeModel(std::string fileName);
-    flowgpu::Model* loadFromSerialization(std::string fileName);
+    flowgpu::Model *initializeModel(std::string fileName);
+
+    flowgpu::Model *loadFromSerialization(std::string fileName);
 }
 
 

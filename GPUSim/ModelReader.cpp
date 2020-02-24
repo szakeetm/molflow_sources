@@ -160,23 +160,35 @@ namespace flowgeom {
         }
     };
 
-    std::vector<TextureCell> InitializeTexture(TempFacet& facet)
+    int InitializeTexture(TempFacet& facet,
+            std::vector<Texel>& texture,
+            FacetTexture& facetTex,
+            std::vector<float>& texInc)
     {
-        std::vector<TextureCell> texture;
-        std::vector<double> textureCellIncrements;
 
         //Textures
         if (facet.facetProperties.isTextured) {
             size_t nbE = facet.facetProperties.texWidth*facet.facetProperties.texHeight;
+            facetTex.texHeight = facet.facetProperties.texHeight;
+            facetTex.texWidth = facet.facetProperties.texWidth;
+            facetTex.texHeightD = facet.facetProperties.texHeightD;
+            facetTex.texWidthD = facet.facetProperties.texWidthD;
+
+            if(facet.texelInc.size() != nbE){
+                printf("texture inc vector has weird size: %d should be %d\n", facet.texelInc.size() , nbE);
+                return 0;
+            }
+
             try {
-                texture = std::vector<TextureCell>(nbE);
+                texture = std::vector<Texel>(nbE);
+                texInc = facet.texelInc;
             }
             catch (...) {
                 printf("Not enough memory to load textures\n");
-                //return nullptr;
+                return 0;
             }
         }
-        return texture;
+        return 1;
     }
 
     //! Load simulation data (geometry etc.) from Molflow's serialization output
@@ -207,7 +219,10 @@ namespace flowgeom {
             std::cout << "#ModelReader: Name: " << model->geomProperties.name << std::endl;
             std::cout << "#ModelReader: #Vertex: " << vertices3d.size() << std::endl;
             std::cout << "#ModelReader: #Facets: " << model->geomProperties.nbFacet << std::endl;
-
+            for(int facInd = 0; facInd < facets.size(); ++facInd){
+                if(!facets[facInd].texelInc.empty())
+                    std::cout << "#ModelReader: Facet#" << facInd << " #Texels: " << facets[facInd].texelInc.size() << std::endl;
+            }
             // First create a regular polygonmesh
             // transform Molflow facet data to simulation polygons
             // transform polygons to triangles
@@ -242,6 +257,56 @@ namespace flowgeom {
 
             triMesh->cdfs.push_back(0);
 
+            /*// Recalc 2d coords
+            for(int triInd = 0; triInd<triMesh->poly.size(); ++triInd){
+
+                // Calculate triangle area
+                auto& triIndices = triMesh->indices[triInd];
+                auto& a = triMesh->vertices3d[triIndices.x];
+                auto& b = triMesh->vertices3d[triIndices.y];
+                auto& c = triMesh->vertices3d[triIndices.z];
+
+                float3 N = cross(b-a, c-b);              // Cross product
+
+                float2 BBmin = make_float2(0.0f);
+                float2 BBmax = make_float2(0.0f);
+
+                printf("[%d] Vec : (%lf,%lf,%lf) - (%lf,%lf,%lf) - (%lf,%lf,%lf)\n", triInd,
+                        a.x,a.y,a.z,b.x,b.y,b.z,c.x,c.y,c.z);
+
+                printf("[%d] Pre : (%lf,%lf,%lf) - (%lf,%lf,%lf) - (%lf,%lf,%lf)\n", triInd,
+                        triMesh->poly[triInd].N.x, triMesh->poly[triInd].N.y, triMesh->poly[triInd].N.z,
+                       triMesh->poly[triInd].U.x, triMesh->poly[triInd].U.y, triMesh->poly[triInd].U.z,
+                        triMesh->poly[triInd].V.x, triMesh->poly[triInd].V.y, triMesh->poly[triInd].V.z);
+                triMesh->poly[triInd].N = normalize(N);
+                triMesh->poly[triInd].U = normalize(b - a);
+                triMesh->poly[triInd].V = cross(triMesh->poly[triInd].N, triMesh->poly[triInd].U);
+
+                float bu = dot(triMesh->poly[triInd].U, b-a);
+                float bv = dot(triMesh->poly[triInd].V, b-a);
+                float cu = dot(triMesh->poly[triInd].U, c-a);
+                float cv = dot(triMesh->poly[triInd].V, c-a);
+
+                // Bounds
+                BBmax.x  = std::fmax(BBmax.x , bu);
+                BBmax.y = std::fmax(BBmax.y, bv);
+                BBmin.x = std::fmin(BBmin.x, cu);
+                BBmin.y = std::fmin(BBmin.y, cv);
+
+                float uD = (BBmax.x - BBmin.x);
+                float vD = (BBmax.y - BBmin.y);
+
+                triMesh->poly[triInd].U *= uD;
+                triMesh->poly[triInd].V *= vD;
+                printf("[%d] Post: (%lf,%lf,%lf) - (%lf,%lf,%lf) - (%lf,%lf,%lf)\n", triInd,
+                       triMesh->poly[triInd].N.x, triMesh->poly[triInd].N.y, triMesh->poly[triInd].N.z,
+                       triMesh->poly[triInd].U.x, triMesh->poly[triInd].U.y, triMesh->poly[triInd].U.z,
+                       triMesh->poly[triInd].V.x, triMesh->poly[triInd].V.y, triMesh->poly[triInd].V.z);
+                printf("[%d] Direct: (%lf,%lf,%lf) - (%lf,%lf,%lf) - (%lf,%lf,%lf)\n", triInd,
+                       triMesh->poly[triInd].N.x, triMesh->poly[triInd].N.y, triMesh->poly[triInd].N.z,
+                       (b-a).x, (b-a).y, (b-a).z,
+                       (c-a).x, (c-a).y, (c-a).z);
+            }*/
 
             if(!polyMesh->poly.empty())
                 model->poly_meshes.push_back(polyMesh);
@@ -263,49 +328,72 @@ namespace flowgeom {
 
 
             if(!model->textures.empty()){
-                std::cout << "[WARNING] Textures get added to non-empty vector!"<< std::endl;
+                std::cout << "[WARNING] Textures would get added to non-empty vector!"<< std::endl;
                 return nullptr;
             }
             else{
                 int textureOffset = 0;
+                int texelOffset = 0;
                 for(int facetInd = 0; facetInd < facets.size(); ++facetInd){
                     auto& facet = facets[facetInd];
                     if(facet.facetProperties.isTextured){
-                        std::vector<TextureCell> texture = InitializeTexture(facet);
+
+                        std::vector<Texel> texture;
+                        std::vector<float> texInc;
+                        FacetTexture facetTex; // TODO: Map Offset to Triangle
+                        if(!InitializeTexture(facet, texture, facetTex, texInc)){
+                            printf("[ERROR] Initializing facetTex #%d\n", facetInd);
+                            exit(0);
+                        }
+
+                        facetTex.bbMin = make_float3(std::numeric_limits<float>::max());
+                        facetTex.bbMax = make_float3(std::numeric_limits<float>::min());
+
+                        for(auto& ind : facet.indices){
+                            facetTex.bbMin = fminf(facetTex.bbMin, vertices3d[ind]);
+                            facetTex.bbMax = fmaxf(facetTex.bbMax, vertices3d[ind]);
+                        }
+
+                        facetTex.texelOffset = texelOffset;
+                        texelOffset += texture.size();
+
                         model->textures.insert(std::end(model->textures),std::begin(texture),std::end(texture));
+                        model->texInc.insert(std::end(model->texInc),std::begin(texInc),std::end(texInc));
+                        model->facetTex.push_back(facetTex);
+
                         for(auto& polyMesh : model->poly_meshes){
                             for(auto& polygon : polyMesh->poly){
                                 if(polygon.parentIndex == facetInd){
-                                    polygon.textureOffset = textureOffset;
-                                    polygon.textureSize = texture.size();
+                                    polygon.texProps.textureOffset = textureOffset;
+                                    polygon.texProps.textureSize = texture.size();
                                     if(facet.facetProperties.countAbs)
-                                        polygon.textureFlags |= TextureCounters::countAbs;
+                                        polygon.texProps.textureFlags |= TEXTURE_FLAGS::countAbs;
                                     if(facet.facetProperties.countRefl)
-                                        polygon.textureFlags |= TextureCounters::countRefl;
+                                        polygon.texProps.textureFlags |= TEXTURE_FLAGS::countRefl;
                                     if(facet.facetProperties.countTrans)
-                                        polygon.textureFlags |= TextureCounters::countTrans;
+                                        polygon.texProps.textureFlags |= TEXTURE_FLAGS::countTrans;
                                     if(facet.facetProperties.countDirection)
-                                        polygon.textureFlags |= TextureCounters::countDirection;
+                                        polygon.texProps.textureFlags |= TEXTURE_FLAGS::countDirection;
                                     if(facet.facetProperties.countDes)
-                                        polygon.textureFlags |= TextureCounters::countDes;
+                                        polygon.texProps.textureFlags |= TEXTURE_FLAGS::countDes;
                                 }
                             }
                         }
                         for(auto& triMesh : model->triangle_meshes){
                             for(auto& triangle : triMesh->poly){
                                 if(triangle.parentIndex == facetInd){
-                                    triangle.textureOffset = textureOffset;
-                                    triangle.textureSize = texture.size();
+                                    triangle.texProps.textureOffset = textureOffset;
+                                    triangle.texProps.textureSize = texture.size();
                                     if(facet.facetProperties.countAbs)
-                                        triangle.textureFlags |= TextureCounters::countAbs;
+                                        triangle.texProps.textureFlags |= TEXTURE_FLAGS::countAbs;
                                     if(facet.facetProperties.countRefl)
-                                        triangle.textureFlags |= TextureCounters::countRefl;
+                                        triangle.texProps.textureFlags |= TEXTURE_FLAGS::countRefl;
                                     if(facet.facetProperties.countTrans)
-                                        triangle.textureFlags |= TextureCounters::countTrans;
+                                        triangle.texProps.textureFlags |= TEXTURE_FLAGS::countTrans;
                                     if(facet.facetProperties.countDirection)
-                                        triangle.textureFlags |= TextureCounters::countDirection;
+                                        triangle.texProps.textureFlags |= TEXTURE_FLAGS::countDirection;
                                     if(facet.facetProperties.countDes)
-                                        triangle.textureFlags |= TextureCounters::countDes;
+                                        triangle.texProps.textureFlags |= TEXTURE_FLAGS::countDes;
                                 }
                             }
                         }
