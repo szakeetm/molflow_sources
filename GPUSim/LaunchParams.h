@@ -165,9 +165,10 @@ namespace flowgpu {
 
             // globalSettings
             bool useMaxwell;
-            uint32_t maxDepth;
+            float gasMass;
 
-            float scene_epsilon;
+            uint32_t maxDepth; // for recursion
+            float scene_epsilon; // to prevent self intersection (currently unused due to other techniques)
             uint32_t nbRandNumbersPerThread;
         } simConstants;
 

@@ -1097,6 +1097,8 @@ namespace flowgpu {
 
         // update the launch parameters that we'll pass to the optix
         // launch:
+        state.launchParams.simConstants.useMaxwell = model->parametersGlobal.useMaxwellDistribution;
+        state.launchParams.simConstants.gasMass = model->parametersGlobal.gasMass;
         state.launchParams.simConstants.nbRandNumbersPerThread = nbRand;
         state.launchParams.simConstants.scene_epsilon = SCENE_EPSILON;
         state.launchParams.simConstants.maxDepth  = MAX_DEPTH;

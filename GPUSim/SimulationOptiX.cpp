@@ -92,7 +92,7 @@ unsigned long long int SimulationOptiX::GetSimulationData() {
 
     bool writeData = true;
     bool printData = false;
-    bool printDataParent = true;
+    bool printDataParent = false;
     bool printCounters = true;
     try {
         optixHandle->downloadDataFromDevice(&data);
@@ -157,13 +157,17 @@ void SimulationOptiX::PrintDataForParent()
     for(auto& mesh : model->triangle_meshes){
         int lastTexture = -1;
         for(auto& facet : mesh->poly){
-            if((facet.texProps.textureFlags & flowgeom::TEXTURE_FLAGS::countDes) && (lastTexture<(int)facet.parentIndex)){
+            if((facet.texProps.textureFlags & flowgeom::TEXTURE_FLAGS::countRefl) && (lastTexture<(int)facet.parentIndex)){
                 std::cout << "Texture for #"<<facet.parentIndex << std::endl << " ";
                 unsigned int total = 0;
-                for(int w = 0; w < model->facetTex[facet.texProps.textureOffset].texWidth; ++w){
-                    for(int h = 0; h < model->facetTex[facet.texProps.textureOffset].texHeight; ++h){
-                        std::cout << data.texels[w+h*model->facetTex[facet.texProps.textureOffset].texWidth].countEquiv << "  ";
-                        total+=data.texels[w+h*model->facetTex[facet.texProps.textureOffset].texWidth].countEquiv;
+                unsigned int width = model->facetTex[facet.texProps.textureOffset].texWidth;
+                unsigned int height = model->facetTex[facet.texProps.textureOffset].texHeight;
+
+                for(unsigned int h = 0; h < height; ++h){
+                    for(unsigned int w = 0; w < width; ++w){
+                        unsigned int index = w+h*model->facetTex[facet.texProps.textureOffset].texWidth;
+                        std::cout << data.texels[index].countEquiv << "  ";
+                        total += data.texels[index].countEquiv;
                     }
                     std::cout << std::endl << " ";
                 }
@@ -331,6 +335,63 @@ void SimulationOptiX::WriteDataToFile(std::string fileName)
     for(unsigned int i = 0; i < this->model->nbFacets_total; i++) {
         //if(counter2[i]>0 || absorb[i]> 0 || desorb[i]>0)
         facetCounterFile << i+1 << " " << counterMCHit[i] << " " << counterDesorp[i] << " " << static_cast<unsigned int>(counterAbsorp[i]) << std::endl;
+    }
+    facetCounterFile.close();
+
+    // Texture output
+    facetCounterFile.open ("textures.txt");
+    for(auto& mesh : model->triangle_meshes){
+        int lastTexture = -1;
+        for(auto& facet : mesh->poly){
+            if((facet.texProps.textureFlags & flowgeom::TEXTURE_FLAGS::countRefl) && (lastTexture<(int)facet.parentIndex)){
+                facetCounterFile << "Texture for #"<<facet.parentIndex << std::endl << " ";
+                unsigned long long int total0 = 0;
+                double total1 = 0;
+                double total2 = 0;
+
+                unsigned int width = model->facetTex[facet.texProps.textureOffset].texWidth;
+                unsigned int height = model->facetTex[facet.texProps.textureOffset].texHeight;
+
+                facetCounterFile << "#MC" << std::endl << " ";
+                for(unsigned int h = 0; h < height; ++h){
+                    for(unsigned int w = 0; w < width; ++w){
+                        unsigned int index = w+h*model->facetTex[facet.texProps.textureOffset].texWidth;
+                        facetCounterFile << data.texels[index].countEquiv << "  ";
+                        total0 += data.texels[index].countEquiv;
+                    }
+                    facetCounterFile << std::endl << " ";
+                }
+                facetCounterFile << std::endl;
+
+                facetCounterFile << "Sum V" << std::endl << " ";
+                for(unsigned int h = 0; h < height; ++h){
+                    for(unsigned int w = 0; w < width; ++w){
+                        unsigned int index = w+h*model->facetTex[facet.texProps.textureOffset].texWidth;
+                        facetCounterFile << data.texels[index].sum_v_ort_per_area << "  ";
+                        total1 += data.texels[index].sum_v_ort_per_area;
+                    }
+                    facetCounterFile << std::endl << " ";
+                }
+                facetCounterFile << std::endl;
+
+                facetCounterFile << "Sum 1" << std::endl << " ";
+                for(unsigned int h = 0; h < height; ++h){
+                    for(unsigned int w = 0; w < width; ++w){
+                        unsigned int index = w+h*model->facetTex[facet.texProps.textureOffset].texWidth;
+                        facetCounterFile << data.texels[index].sum_1_per_ort_velocity << "  ";
+                        total2 += data.texels[index].sum_1_per_ort_velocity;
+                    }
+                    facetCounterFile << std::endl << " ";
+                }
+                facetCounterFile << std::endl;
+
+                facetCounterFile << "  total MC  : "<<total0 << std::endl;
+                facetCounterFile << "  total SumV: "<<total1 << std::endl;
+                facetCounterFile << "  total Sum1: "<<total2 << std::endl;
+
+                lastTexture = facet.parentIndex;
+            }
+        }
     }
     facetCounterFile.close();
 }

@@ -468,18 +468,24 @@ namespace flowgpu {
         const float velocity_factor = 2.0f;
         const float ortSpeedFactor = 1.0f;
 
-        // Find texture coordinates via Gauss or Cramers to solve Ax=b
         const float3 b = rayOrigin - poly.O;
+        float det = poly.U.x * poly.V.y - poly.U.y * poly.V.x; // TODO: Pre calculate
+        float detU = b.x * poly.V.y - b.y * poly.V.x;
+        float detV = poly.U.x * b.y - poly.U.y * b.x;
 
-        const float det = poly.U.x * poly.V.y - poly.U.y * poly.V.x; // TODO: Pre calculate
-        const float detU = b.x * poly.V.y - b.y * poly.V.x;
-        const float detV = poly.U.x * b.y - poly.U.y * b.x;
+        if(det==0.0f){
+            det = poly.U.y * poly.V.z - poly.U.z * poly.V.y; // TODO: Pre calculate
+            detU = b.y * poly.V.z - b.z * poly.V.y;
+            detV = poly.U.y * b.z - poly.U.z * b.y;
+            if(det==0.0f){
+                det = poly.U.x * poly.V.x - poly.U.x * poly.V.x; // TODO: Pre calculate
+                detU = b.x * poly.V.x - b.x * poly.V.x;
+                detV = poly.U.x * b.x - poly.U.x * b.x;
+            }
+        }
 
         float hitLocationU = detU/det;
         float hitLocationV = detV/det;
-
-        if(hitLocationU <= 0.0f || hitLocationU >= 1.0f || hitLocationV <= 0.0f || hitLocationV >= 1.0f)
-            printf("Hit at %lf , %lf\n", hitLocationU, hitLocationV);
 
         flowgeom::FacetTexture& facetTex = optixLaunchParams.sharedData.facetTextures[poly.texProps.textureOffset];
 
@@ -488,7 +494,7 @@ namespace flowgpu {
         unsigned int add = tu + tv * (facetTex.texWidth);
         //printf("Hit at %lf , %lf for tex %lf , %lf\n", hitLocationU, hitLocationV, facetTex.texWidthD, facetTex.texHeightD);
 
-        float ortVelocity = (optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f) * hitData.velocity*abs(dot(rayDir, poly.N)); //surface-orthogonal velocity component
+        float ortVelocity = (optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f) * hitData.velocity*fabsf(dot(rayDir, poly.N)); //surface-orthogonal velocity component
 
         flowgeom::Texel& tex = optixLaunchParams.sharedData.texels[facetTex.texelOffset + add];
         atomicAdd(&tex.countEquiv, hitData.orientationRatio);

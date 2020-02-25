@@ -208,15 +208,29 @@ namespace flowgeom {
 
     };
 
+    struct SimProperties{
+        SimProperties() : stickingFactor(-1.0f),temperature(-1.0f){}
+        SimProperties& operator=(const SimProperties& o){
+            this->stickingFactor = o.stickingFactor;
+            this->temperature = o.temperature;
+
+            return *this;
+        }
+
+        float stickingFactor;
+        float temperature;
+
+    };
+
     class Polygon {
     public:
         Polygon()
-        : stickingFactor(-1.0), nbVertices(0), indexOffset(0), O(), U(), V(), Nuv(), nU(), nV(), N(),
-        parentIndex(std::numeric_limits<unsigned int>::max()), texProps(){
+        : nbVertices(0), indexOffset(0), O(), U(), V(), Nuv(), nU(), nV(), N(),
+        parentIndex(std::numeric_limits<unsigned int>::max()), texProps(), facProps(){
         }
         Polygon(unsigned int nbOfVertices)
-        : stickingFactor(-1.0), nbVertices(nbOfVertices), indexOffset(0), O(), U(), V(), Nuv(), nU(), nV(), N(),
-        parentIndex(std::numeric_limits<unsigned int>::max()), texProps(){
+        : nbVertices(nbOfVertices), indexOffset(0), O(), U(), V(), Nuv(), nU(), nV(), N(),
+        parentIndex(std::numeric_limits<unsigned int>::max()), texProps(), facProps(){
         }
         Polygon(Polygon&& o){
             *this = std::move(o);
@@ -225,15 +239,11 @@ namespace flowgeom {
             *this = o;
         }
 
-        ~Polygon(){
-
-        }
+        ~Polygon(){}
 
         Polygon& operator=(Polygon&& o){
             if (this != &o)
             {
-                this->stickingFactor = o.stickingFactor;
-
                 this->nbVertices = o.nbVertices;
                 this->indexOffset = o.indexOffset;
                 this->O = o.O;
@@ -245,6 +255,7 @@ namespace flowgeom {
                 this->N = o.N;
                 this->parentIndex = o.parentIndex;
                 this->texProps = o.texProps;
+                this->facProps = o.facProps;
 
                 o.nbVertices = 0;
                 o.indexOffset = 0;
@@ -257,12 +268,11 @@ namespace flowgeom {
                 o.N = float3();
                 o.parentIndex = std::numeric_limits<unsigned int>::max();
                 o.texProps = TextureProperties();
-
+                o.facProps = SimProperties();
             }
             return *this;
         }
         Polygon& operator=(const Polygon& o){
-            this->stickingFactor = o.stickingFactor;
 
             this->nbVertices = o.nbVertices;
             this->indexOffset = o.indexOffset;
@@ -276,12 +286,12 @@ namespace flowgeom {
 
             this->parentIndex = o.parentIndex;
             this->texProps = o.texProps;
+            this->facProps = o.facProps;
 
             return *this;
         }
 
         void copyParametersFrom(const Polygon& o){
-            this->stickingFactor = o.stickingFactor;
 
             this->O = o.O;
             this->U = o.U;
@@ -293,15 +303,16 @@ namespace flowgeom {
 
             this->parentIndex = o.parentIndex;
             this->texProps = o.texProps;
+            this->facProps = o.facProps;
+
         }
 
+        // attributes that don't describe the geometry
         TextureProperties texProps;
+        SimProperties facProps;
 
 
         unsigned int parentIndex; // map it to the original polygon index
-
-        // attributes that don't describe the geometry
-        float stickingFactor;
 
         // variables for access to  global memory (indices, vertices)
         unsigned int nbVertices;
@@ -322,7 +333,6 @@ namespace flowgeom {
         void serialize(Archive & archive)
         {
             archive(
-                    stickingFactor,
                     nbVertices,
                     indexOffset,
                     O,

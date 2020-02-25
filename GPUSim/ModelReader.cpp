@@ -102,7 +102,8 @@ namespace flowgeom {
             auto& temp = facets[i];
 
             flowgeom::Polygon polygon(temp.vertices2.size());
-            polygon.stickingFactor = temp.facetProperties.sticking;
+            polygon.facProps.stickingFactor = temp.facetProperties.sticking;
+            polygon.facProps.temperature = temp.facetProperties.temperature;
 
             if(polygon.nbVertices != temp.facetProperties.nbIndex){
                 polygon.nbVertices = temp.facetProperties.nbIndex;
@@ -397,8 +398,8 @@ namespace flowgeom {
                                 }
                             }
                         }
-                        textureOffset += texture.size();
-                    }
+                        textureOffset += 1;
+                    } // one more texture
                 }
             }
             std::cout << "#ModelReader: #TextureCells: " << model->textures.size() << std::endl;
