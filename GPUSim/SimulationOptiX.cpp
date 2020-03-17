@@ -6,6 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <iomanip>
 
 #include "optix7.h"
 #include "SimulationOptiX.h"
@@ -88,19 +89,21 @@ int SimulationOptiX::RunSimulation() {
  * Fetch simulation data from the device
  * @return 1=could not load GPU Sim, 0=successfully loaded
  */
-unsigned long long int SimulationOptiX::GetSimulationData() {
+unsigned long long int SimulationOptiX::GetSimulationData(bool silent) {
 
     bool writeData = true;
-    bool printData = false;
-    bool printDataParent = false;
-    bool printCounters = true;
+    bool printData = false & !silent;
+    bool printDataParent = false & !silent;
+    bool printCounters = true & !silent;
     try {
-        optixHandle->downloadDataFromDevice(&data);
+        optixHandle->downloadDataFromDevice(&data); //download tmp counters
+        IncreaseGlobalCounters(&data); //increase global counters
+        optixHandle->resetDeviceBuffers(); //reset tmp counters
         if(writeData) WriteDataToFile("hitcounters.txt");
         if(printData) PrintData();
         if(printDataParent) PrintDataForParent();
         if(printCounters) PrintTotalCounters();
-        return GetTotalHits();
+        return 0;//GetTotalHits();
     } catch (std::runtime_error& e) {
         std::cout << MF_TERMINAL_RED << "FATAL ERROR: " << e.what()
                   << MF_TERMINAL_DEFAULT << std::endl;
@@ -108,11 +111,63 @@ unsigned long long int SimulationOptiX::GetSimulationData() {
     }
 }
 
+void SimulationOptiX::IncreaseGlobalCounters(HostData* tempData){
+
+    //facet hit counters + miss
+    for(int i = 0; i < model->nbFacets_total; ++i){
+        globalCounter.facetHitCounters[i].nbMCHit += tempData->facetHitCounters[i].nbMCHit;
+        globalCounter.facetHitCounters[i].nbDesorbed += tempData->facetHitCounters[i].nbDesorbed;
+        globalCounter.facetHitCounters[i].nbAbsEquiv += tempData->facetHitCounters[i].nbAbsEquiv;
+    }
+
+    globalCounter.leakCounter[0] += tempData->leakCounter[0];
+
+    //textures
+    for(auto& [id, texels] : globalCounter.textures){
+        for(auto& mesh : model->triangle_meshes){
+            for(auto& facet : mesh->poly){
+                if((facet.texProps.textureFlags) && (id == facet.parentIndex)){
+                    unsigned int width = model->facetTex[facet.texProps.textureOffset].texWidth;
+                    unsigned int height = model->facetTex[facet.texProps.textureOffset].texHeight;
+                    for(unsigned int h = 0; h < height; ++h){
+                        for(unsigned int w = 0; w < width; ++w){
+                            unsigned int index_glob = w+h*model->facetTex[facet.texProps.textureOffset].texWidth;
+                            unsigned int index_tmp = index_glob + model->facetTex[facet.texProps.textureOffset].texelOffset;
+
+                            texels[index_glob].countEquiv += data.texels[index_tmp].countEquiv;
+                            texels[index_glob].sum_v_ort_per_area += data.texels[index_tmp].sum_v_ort_per_area;
+                            texels[index_glob].sum_1_per_ort_velocity += data.texels[index_tmp].sum_1_per_ort_velocity;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    //profiles
+
+}
+
 void SimulationOptiX::Resize(){
     //data.hit.resize(kernelDimensions.x*kernelDimensions.y);
     data.facetHitCounters.resize(model->nbFacets_total * CORESPERSM * WARPSCHEDULERS);
     data.texels.resize(model->textures.size());
     data.leakCounter.resize(1);
+
+    globalCounter.facetHitCounters.resize(model->nbFacets_total);
+    globalCounter.leakCounter.resize(1);
+    for(auto& mesh : model->triangle_meshes) {
+        int lastTexture = -1;
+        for (auto &facet : mesh->poly) {
+            if ((facet.texProps.textureFlags) &&
+                (lastTexture < (int) facet.parentIndex)) {
+                unsigned int width = model->facetTex[facet.texProps.textureOffset].texWidth;
+                unsigned int height = model->facetTex[facet.texProps.textureOffset].texHeight;
+                std::vector<Texel64> texels(width*height);
+                globalCounter.textures.insert(std::pair<uint32_t,std::vector<Texel64>>(facet.parentIndex,std::move(texels)));
+            }
+        }
+    }
 
 #ifdef DEBUGCOUNT
     data.detCounter.resize(NCOUNTBINS);
@@ -165,7 +220,7 @@ void SimulationOptiX::PrintDataForParent()
 
                 for(unsigned int h = 0; h < height; ++h){
                     for(unsigned int w = 0; w < width; ++w){
-                        unsigned int index = w+h*model->facetTex[facet.texProps.textureOffset].texWidth;
+                        unsigned int index = w+h*model->facetTex[facet.texProps.textureOffset].texWidth  + model->facetTex[facet.texProps.textureOffset].texelOffset;
                         std::cout << data.texels[index].countEquiv << "  ";
                         total += data.texels[index].countEquiv;
                     }
@@ -262,21 +317,23 @@ void SimulationOptiX::PrintTotalCounters()
     double total_absd = 0;
     unsigned long long int total_des = 0;
 
-    for(unsigned int i = 0; i < data.facetHitCounters.size(); i++) {
-        total_counter += data.facetHitCounters[i].nbMCHit; // let misses count as 0 (-1+1)
-        total_des += data.facetHitCounters[i].nbDesorbed; // let misses count as 0 (-1+1)
-        total_absd += data.facetHitCounters[i].nbAbsEquiv; // let misses count as 0 (-1+1)
+    for(unsigned int i = 0; i < globalCounter.facetHitCounters.size(); i++) {
+        total_counter += globalCounter.facetHitCounters[i].nbMCHit; // let misses count as 0 (-1+1)
+        total_des += globalCounter.facetHitCounters[i].nbDesorbed; // let misses count as 0 (-1+1)
+        total_absd += globalCounter.facetHitCounters[i].nbAbsEquiv; // let misses count as 0 (-1+1)
     }
 
     std::cout << " total hits >>> "<< total_counter<<std::endl;
     std::cout << " total  des >>> "<< total_des<<std::endl;
     std::cout << " total  abs >>> "<< static_cast<unsigned long long int>(total_absd) <<std::endl;
-    std::cout << " total miss >>> "<< *data.leakCounter.data()<< " -- miss/hit ratio: "<<static_cast<double>(*data.leakCounter.data()) / total_counter <<std::endl;
+    std::cout << " total miss >>> "<< *globalCounter.leakCounter.data()<< " -- miss/hit ratio: "<<static_cast<double>(*globalCounter.leakCounter.data()) / total_counter <<std::endl;
 }
 
 /*! download the rendered color buffer and return the total amount of hits (= followed rays) */
 void SimulationOptiX::WriteDataToFile(std::string fileName)
 {
+    uint32_t nbFacets = this->model->nbFacets_total;
+
 #ifdef DEBUGCOUNT
         std::ofstream detfile,ufile,vfile;
         detfile.open ("det_counter.txt");
@@ -313,18 +370,18 @@ void SimulationOptiX::WriteDataToFile(std::string fileName)
         posFile.close();
 #endif
 
-    std::vector<unsigned int> counterMCHit(this->model->nbFacets_total, 0);
-    std::vector<unsigned int> counterDesorp(this->model->nbFacets_total, 0);
-    std::vector<double> counterAbsorp(this->model->nbFacets_total, 0);
+    std::vector<uint64_t> counterMCHit(nbFacets, 0);
+    std::vector<uint64_t> counterDesorp(nbFacets, 0);
+    std::vector<double> counterAbsorp(nbFacets, 0);
 
 
     //std::ofstream facetCounterEveryFile("every"+fileName);
 
-    for(unsigned int i = 0; i < data.facetHitCounters.size(); i++) {
-        unsigned int facIndex = i%this->model->nbFacets_total;
-        counterMCHit[facIndex] += data.facetHitCounters[i].nbMCHit; // let misses count as 0 (-1+1)
-        counterDesorp[facIndex] += data.facetHitCounters[i].nbDesorbed; // let misses count as 0 (-1+1)
-        counterAbsorp[facIndex] += data.facetHitCounters[i].nbAbsEquiv; // let misses count as 0 (-1+1)
+    for(unsigned int i = 0; i < globalCounter.facetHitCounters.size(); i++) {
+        unsigned int facIndex = i%nbFacets;
+        counterMCHit[facIndex] += globalCounter.facetHitCounters[i].nbMCHit; // let misses count as 0 (-1+1)
+        counterDesorp[facIndex] += globalCounter.facetHitCounters[i].nbDesorbed; // let misses count as 0 (-1+1)
+        counterAbsorp[facIndex] += globalCounter.facetHitCounters[i].nbAbsEquiv; // let misses count as 0 (-1+1)
         //if(data.facetHitCounters[i].nbMCHit>0 || data.facetHitCounters[i].nbDesorbed> 0 || data.facetHitCounters[i].nbAbsEquiv>0)
            // facetCounterEveryFile << (i/this->model->nbFacets_total) << " " << (i%this->model->nbFacets_total)+1 << " " << data.facetHitCounters[i].nbMCHit << " " << data.facetHitCounters[i].nbDesorbed << " " << static_cast<unsigned int>(data.facetHitCounters[i].nbAbsEquiv) << std::endl;
     }
@@ -332,68 +389,71 @@ void SimulationOptiX::WriteDataToFile(std::string fileName)
 
     std::ofstream facetCounterFile;
     facetCounterFile.open (fileName);
-    for(unsigned int i = 0; i < this->model->nbFacets_total; i++) {
+    for(unsigned int i = 0; i < nbFacets; i++) {
         //if(counter2[i]>0 || absorb[i]> 0 || desorb[i]>0)
-        facetCounterFile << i+1 << " " << counterMCHit[i] << " " << counterDesorp[i] << " " << static_cast<unsigned int>(counterAbsorp[i]) << std::endl;
+        facetCounterFile << std::setprecision(12) << i+1 << " " << counterMCHit[i] << " " << counterDesorp[i] << " " << static_cast<unsigned int>(counterAbsorp[i]) << std::endl;
     }
     facetCounterFile.close();
 
     // Texture output
-    facetCounterFile.open ("textures.txt");
     for(auto& mesh : model->triangle_meshes){
         int lastTexture = -1;
         for(auto& facet : mesh->poly){
-            if((facet.texProps.textureFlags & flowgeom::TEXTURE_FLAGS::countRefl) && (lastTexture<(int)facet.parentIndex)){
-                facetCounterFile << "Texture for #"<<facet.parentIndex << std::endl << " ";
+            if(((facet.texProps.textureFlags & flowgeom::TEXTURE_FLAGS::countRefl) || (facet.texProps.textureFlags & flowgeom::TEXTURE_FLAGS::countAbs)) && (lastTexture<(int)facet.parentIndex)){
+                facetCounterFile.open ("textures"+std::to_string(facet.parentIndex)+".txt");
+
                 unsigned long long int total0 = 0;
                 double total1 = 0;
                 double total2 = 0;
 
+                size_t binSize = 100;
+                std::vector<unsigned long long int> bin_count(binSize);
+                std::vector<double> bin_sumv(binSize);
+                std::vector<double> bin_sum1(binSize);
+
                 unsigned int width = model->facetTex[facet.texProps.textureOffset].texWidth;
                 unsigned int height = model->facetTex[facet.texProps.textureOffset].texHeight;
 
-                facetCounterFile << "#MC" << std::endl << " ";
+                auto& texels = globalCounter.textures[facet.parentIndex];
+
                 for(unsigned int h = 0; h < height; ++h){
                     for(unsigned int w = 0; w < width; ++w){
-                        unsigned int index = w+h*model->facetTex[facet.texProps.textureOffset].texWidth;
-                        facetCounterFile << data.texels[index].countEquiv << "  ";
+                        unsigned int index = w+h*width;
+                        facetCounterFile << w << " " << h << " " << texels[index].countEquiv << "  "<< texels[index].sum_v_ort_per_area << "  "<< texels[index].sum_1_per_ort_velocity<<std::endl;
+                        total0 += texels[index].countEquiv;
+                        total1 += texels[index].sum_v_ort_per_area;
+                        total2 += texels[index].sum_1_per_ort_velocity;
+
+                        //if(h == (height/2)){
+                            bin_count[index/(width*height/binSize)] += texels[index].countEquiv;
+                            bin_sumv[index/(width*height/binSize)] += texels[index].sum_v_ort_per_area;
+                            bin_sum1[index/(width*height/binSize)] += texels[index].sum_1_per_ort_velocity;
+                       // }
+
+                        /*unsigned int index = w+h*model->facetTex[facet.texProps.textureOffset].texWidth;
+                        facetCounterFile << data.texels[index].countEquiv << "  "<< data.texels[index].sum_v_ort_per_area << "  "<< data.texels[index].sum_1_per_ort_velocity<<std::endl;
                         total0 += data.texels[index].countEquiv;
-                    }
-                    facetCounterFile << std::endl << " ";
-                }
-                facetCounterFile << std::endl;
-
-                facetCounterFile << "Sum V" << std::endl << " ";
-                for(unsigned int h = 0; h < height; ++h){
-                    for(unsigned int w = 0; w < width; ++w){
-                        unsigned int index = w+h*model->facetTex[facet.texProps.textureOffset].texWidth;
-                        facetCounterFile << data.texels[index].sum_v_ort_per_area << "  ";
                         total1 += data.texels[index].sum_v_ort_per_area;
-                    }
-                    facetCounterFile << std::endl << " ";
-                }
-                facetCounterFile << std::endl;
-
-                facetCounterFile << "Sum 1" << std::endl << " ";
-                for(unsigned int h = 0; h < height; ++h){
-                    for(unsigned int w = 0; w < width; ++w){
-                        unsigned int index = w+h*model->facetTex[facet.texProps.textureOffset].texWidth;
-                        facetCounterFile << data.texels[index].sum_1_per_ort_velocity << "  ";
                         total2 += data.texels[index].sum_1_per_ort_velocity;
+
+                        bin_count[index/(width*height/binSize)] += data.texels[index].countEquiv;
+                        bin_sumv[index/(width*height/binSize)] += data.texels[index].sum_v_ort_per_area;
+                        bin_sum1[index/(width*height/binSize)] += data.texels[index].sum_1_per_ort_velocity;*/
                     }
-                    facetCounterFile << std::endl << " ";
                 }
                 facetCounterFile << std::endl;
+                facetCounterFile.close();
 
-                facetCounterFile << "  total MC  : "<<total0 << std::endl;
-                facetCounterFile << "  total SumV: "<<total1 << std::endl;
-                facetCounterFile << "  total Sum1: "<<total2 << std::endl;
-
+                facetCounterFile.open ("profiles"+std::to_string(facet.parentIndex)+".txt");
+                for(int i=0; i<binSize; ++i){
+                    facetCounterFile << std::setprecision(12) << bin_count[i] << "  "<< bin_sumv[i] << "  "<< bin_sum1[i]<<std::endl;
+                }
+                facetCounterFile.close();
                 lastTexture = facet.parentIndex;
             }
         }
     }
-    facetCounterFile.close();
+
 }
 
 unsigned long long int SimulationOptiX::GetTotalHits(){

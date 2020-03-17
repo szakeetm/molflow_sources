@@ -165,10 +165,10 @@ namespace flowgeom {
     };
 
     struct Texel {
-        Texel() : countEquiv(0.0f), sum_v_ort_per_area(0.0f), sum_1_per_ort_velocity(0.0f){}
+        Texel() : countEquiv(0), sum_v_ort_per_area(0.0f), sum_1_per_ort_velocity(0.0f){}
 
-        //TODO: float3 counter could increase speed
-        unsigned int countEquiv;
+        //TODO: 32bit counter for temporary
+        uint32_t countEquiv;
         float sum_v_ort_per_area;
         float sum_1_per_ort_velocity;
     };

@@ -9,6 +9,9 @@
 #include "helper_math.h"
 #include <cooperative_groups.h>
 #include <LaunchParams.h>
+#include "CommonFunctions.cuh"
+
+#define EPS32 1e-6f
 
 namespace cg = cooperative_groups;
 
@@ -159,14 +162,15 @@ namespace flowgpu {
             return 0;
         }
     }
+
     static __forceinline__ __device__
     int getSourceFacet(MolPRD& hitData,
 #ifdef WITHTRIANGLES
-            const TriangleRayGenData* rayGenData,
+                       const TriangleRayGenData* rayGenData,
 #else
-                         const PolygonRayGenData* rayGenData,
+            const PolygonRayGenData* rayGenData,
 #endif
-                         const float* randFloat, unsigned int& randInd, unsigned int& randOffset)
+                       const RN_T* randFloat, unsigned int& randInd, unsigned int& randOffset)
     {
 #ifdef BOUND_CHECK
         if(randInd + randOffset < 0 || randInd + randOffset >= optixLaunchParams.simConstants.nbRandNumbersPerThread*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y){
@@ -217,48 +221,58 @@ namespace flowgpu {
     static __forceinline__ __device__
     float3 getNewOrigin(MolPRD& hitData,
 #ifdef WITHTRIANGLES
-        const TriangleRayGenData* rayGenData,
+                        const TriangleRayGenData* rayGenData,
 #else
-        const PolygonRayGenData* rayGenData,
+            const PolygonRayGenData* rayGenData,
 #endif
-        const int& facIndex,
-        const float* randFloat, unsigned int& randInd, unsigned int& randOffset)
+                        const int& facIndex,
+                        const RN_T* randFloat, unsigned int& randInd, unsigned int& randOffset)
     {
 
 #ifdef WITHTRIANGLES
 
-        #ifdef BOUND_CHECK
+#ifdef BOUND_CHECK
         if(randInd + randOffset < 0 || randInd + randOffset >= optixLaunchParams.simConstants.nbRandNumbersPerThread*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y){
             printf("randInd %u is out of bounds\n", randInd + randOffset);
         }
-        #endif
+#endif
 
-        float r1_sqrt = sqrtf(randFloat[(unsigned int)(randInd + randOffset++)]);
+        RN_T r1_sqrt =
+                #ifdef RNG64
+                    sqrt((double)randFloat[(unsigned int)(randInd + randOffset++)]);
+                #else
+                    sqrtf(randFloat[(unsigned int)(randInd + randOffset++)]);
+                #endif
 
-        #ifdef BOUND_CHECK
+
+#ifdef BOUND_CHECK
         if(randInd + randOffset < 0 || randInd + randOffset >= optixLaunchParams.simConstants.nbRandNumbersPerThread*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y){
             printf("randInd %u is out of bounds\n", randInd + randOffset);
         }
-        #endif
+#endif
 
-            float r2 = randFloat[(unsigned int)(randInd + randOffset++)];
+        RN_T r2 = randFloat[(unsigned int)(randInd + randOffset++)];
 
-
-        #ifdef BOUND_CHECK
+#ifdef BOUND_CHECK
         if(rayGenData->index[facIndex].x < 0 || rayGenData->index[facIndex].x >= optixLaunchParams.simConstants.nbVertices
         || rayGenData->index[facIndex].y < 0 || rayGenData->index[facIndex].y >= optixLaunchParams.simConstants.nbVertices
         || rayGenData->index[facIndex].z < 0 || rayGenData->index[facIndex].z >= optixLaunchParams.simConstants.nbVertices){
             printf("rayGenData->index[facIndex] %u,%u,%u >= %u is out of bounds\n", rayGenData->index[facIndex].x, rayGenData->index[facIndex].y, rayGenData->index[facIndex].z, optixLaunchParams.simConstants.nbVertices);
         }
-        #endif
+#endif
 
-            float3 vertA = rayGenData->vertex[rayGenData->index[facIndex].x];
-            float3 vertB = rayGenData->vertex[rayGenData->index[facIndex].y];
-            float3 vertC = rayGenData->vertex[rayGenData->index[facIndex].z];
+        float3 vertA = rayGenData->vertex[rayGenData->index[facIndex].x];
+        float3 vertB = rayGenData->vertex[rayGenData->index[facIndex].y];
+        float3 vertC = rayGenData->vertex[rayGenData->index[facIndex].z];
 
-            //rayOrigin =
-            return (1-r1_sqrt) * vertA + r1_sqrt * (1 - r2) * vertB + r1_sqrt * r2 * vertC; //rayGenData
+#ifdef RNG64
+        return (1.0f-r1_sqrt) * vertA + r1_sqrt * (1.0f - r2) * vertB + r1_sqrt * r2 * vertC; //rayGenData
 #else
+        return (1.0f-r1_sqrt) * vertA + r1_sqrt * (1.0f - r2) * vertB + r1_sqrt * r2 * vertC; //rayGenData
+#endif
+
+#else //WITHTRIANGLES
+
         // start position of particle (U,V) -> (x,y,z)
         float uDir = 0.0f, vDir = 0.0f;
 
@@ -296,48 +310,6 @@ namespace flowgpu {
 #endif //WITHTRIANGLES
     }
 
-
-    static __forceinline__ __device__
-    float3 getNewDirection(MolPRD& hitData, flowgeom::Polygon& poly,
-            const float* randFloat, unsigned int& randInd, unsigned int& randOffset)
-    {
-
-        // generate ray direction
-#ifdef BOUND_CHECK
-        if(randInd + randOffset < 0 || randInd + randOffset >= optixLaunchParams.simConstants.nbRandNumbersPerThread*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y){
-            printf("randInd %u is out of bounds\n", randInd + randOffset);
-        }
-#endif
-        const float theta = acosf(sqrtf(randFloat[(unsigned int)(randInd + randOffset++)]));
-
-
-#ifdef BOUND_CHECK
-        if(randInd + randOffset < 0 || randInd + randOffset >= optixLaunchParams.simConstants.nbRandNumbersPerThread*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y){
-            printf("randInd %u is out of bounds\n", randInd + randOffset);
-        }
-#endif
-        const float phi = randFloat[(unsigned int)(randInd + randOffset++)] * 2.0 * CUDART_PI_F;
-
-
-        const float u = sinf(theta)*cosf(phi);
-        const float v = sinf(theta)*sinf(phi);
-        const float n = cosf(theta);
-
-        /*float3 nU = rayGenData->poly[facIndex].nU;
-        float3 nV = rayGenData->poly[facIndex].nV;
-        float3 N = rayGenData->poly[facIndex].N;*/
-        const float3 nU = poly.nU;
-        const float3 nV = poly.nV;
-        const float3 N = poly.N;
-
-        //rayDir = u*nU + v*nV + n*N;
-        return u*nU + v*nV + n*N;
-        /*if (rayDir.x != 0.0) rayDir.x = 1.0 / rayDir.x;
-        if (rayDir.y != 0.0) rayDir.y = 1.0 / rayDir.y;
-        if (rayDir.z != 0.0) rayDir.z = 1.0 / rayDir.z;
-        rayDir = float3(-1.0f,-1.0f,-1.0f) * rayDir;*/
-    }
-
     static __forceinline__ __device__
     void initMoleculeInSystem(const unsigned int bufferIndex, MolPRD& hitData, float3& rayDir , float3& rayOrigin)
     {
@@ -357,7 +329,7 @@ namespace flowgpu {
     {
         hitData = optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex];
 
-        float* randFloat = optixLaunchParams.randomNumbers;
+        RN_T* randFloat = optixLaunchParams.randomNumbers;
         unsigned int randInd = optixLaunchParams.simConstants.nbRandNumbersPerThread*(bufferIndex);
         unsigned int randOffset = optixLaunchParams.perThreadData.randBufferOffset[bufferIndex];
 
@@ -437,7 +409,7 @@ namespace flowgpu {
     static __forceinline__ __device__
     void increaseHitCounterDesorption(CuFacetHitCounter& hitCounter, const MolPRD hitData, const float3 rayDir, const float3 polyNormal)
     {
-        double velFactor = optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f; // TODO: Save somewhere as a shared constant instead of repetively evaluating
+        const float velFactor = optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f; // TODO: Save somewhere as a shared constant instead of repetively evaluating
 
         // TODO: fix velocity etc
         const float velocity = hitData.velocity;
@@ -473,14 +445,17 @@ namespace flowgpu {
         float detU = b.x * poly.V.y - b.y * poly.V.x;
         float detV = poly.U.x * b.y - poly.U.y * b.x;
 
-        if(det==0.0f){
+        if(fabsf(det)<=EPS32){
             det = poly.U.y * poly.V.z - poly.U.z * poly.V.y; // TODO: Pre calculate
             detU = b.y * poly.V.z - b.z * poly.V.y;
             detV = poly.U.y * b.z - poly.U.z * b.y;
-            if(det==0.0f){
-                det = poly.U.x * poly.V.x - poly.U.x * poly.V.x; // TODO: Pre calculate
-                detU = b.x * poly.V.x - b.x * poly.V.x;
-                detV = poly.U.x * b.x - poly.U.x * b.x;
+            if(fabsf(det)<=EPS32){
+                det = poly.U.z * poly.V.x - poly.U.x * poly.V.z; // TODO: Pre calculate
+                detU = b.z * poly.V.x - b.x * poly.V.z;
+                detV = poly.U.z * b.x - poly.U.x * b.z;
+                if(fabsf(det)<=EPS32){
+                    printf("Dangerous determinant calculated for texture hit: %lf : %lf : %lf -> %lf : %lf\n",det,detU,detV,detU/det,detV/det);
+                }
             }
         }
 
@@ -497,9 +472,9 @@ namespace flowgpu {
         float ortVelocity = (optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f) * hitData.velocity*fabsf(dot(rayDir, poly.N)); //surface-orthogonal velocity component
 
         flowgeom::Texel& tex = optixLaunchParams.sharedData.texels[facetTex.texelOffset + add];
-        atomicAdd(&tex.countEquiv, hitData.orientationRatio);
-        atomicAdd(&tex.sum_1_per_ort_velocity, hitData.orientationRatio * velocity_factor / ortVelocity);
-        atomicAdd(&tex.sum_v_ort_per_area, hitData.orientationRatio * ortSpeedFactor * ortVelocity * optixLaunchParams.sharedData.texelInc[facetTex.texelOffset + add]); // sum ortho_velocity[m/s] / cell_area[cm2]
+        atomicAdd(&tex.countEquiv, static_cast<uint32_t>(1));
+        atomicAdd(&tex.sum_1_per_ort_velocity, 1.0f * velocity_factor / ortVelocity);
+        atomicAdd(&tex.sum_v_ort_per_area, 1.0f * ortSpeedFactor * ortVelocity * optixLaunchParams.sharedData.texelInc[facetTex.texelOffset + add]); // sum ortho_velocity[m/s] / cell_area[cm2]
 
 
         //printf("Desorbing on facet#%u %u + %u = %u\n", poly.parentIndex, tu, tv, add);
@@ -518,7 +493,7 @@ namespace flowgpu {
         hitData.inSystem = 0;
         hitData.orientationRatio = 1.0f;
 
-        const float* randFloat = optixLaunchParams.randomNumbers;
+        const RN_T* randFloat = optixLaunchParams.randomNumbers;
         unsigned int randInd = optixLaunchParams.simConstants.nbRandNumbersPerThread*(bufferIndex);
         unsigned int randOffset = optixLaunchParams.perThreadData.randBufferOffset[bufferIndex];
 

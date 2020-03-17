@@ -1061,15 +1061,15 @@ namespace flowgpu {
         //printf( "Pre : %p --> %p \n", (void*)randBuffer.d_ptr, (void*)&randBuffer.d_ptr);
         //crng::testRand(&randomBuff.d_ptr, launchSize);
         //crng::initializeRandHost(launchSize, (float**) &randomBuff.d_ptr);
-        crng::generateRandHost(launchSize, (float*) sim_memory.randBuffer.d_ptr);
+        crng::generateRandHost(launchSize, (RN_T*) sim_memory.randBuffer.d_ptr);
         //printf( "Post: %p --> %p --> %p\n", (void*)randBuffer.d_ptr, (void*)&randBuffer.d_ptr, randBuffer.d_pointer());
 
         //std::cout<< " --- print Rand --- " << std::endl;
-        //crng::printDevDataAtHost(randBuffer.d_ptr, nbRand);
+        //crng::printDevDataAtHost(sim_memory.randBuffer.d_ptr, nbRand);
         //std::cout<< " --- ---------- --- " << std::endl;
         //crng::initializeRand(launchSize, stateBuff.d_ptr, randomBuff.d_ptr);
         //crng::generateRand(launchSize, (curandState_t *)stateBuff.d_ptr, (float*)randomBuff.d_ptr);
-        state.launchParams.randomNumbers = (float*) sim_memory.randBuffer.d_ptr;
+        state.launchParams.randomNumbers = (RN_T*) sim_memory.randBuffer.d_ptr;
 
         //randBuffer.upload(randomNumbers,nbRand);
 
@@ -1089,7 +1089,7 @@ namespace flowgpu {
         // resize our cuda frame buffer
         // TODO: one counter per thread is a problem for memory
         sim_memory.moleculeBuffer.resize(newSize.x * newSize.y * sizeof(MolPRD));
-        sim_memory.randBuffer.resize(nbRand*newSize.x*newSize.y*sizeof(float));
+        sim_memory.randBuffer.resize(nbRand*newSize.x*newSize.y*sizeof(RN_T));
         sim_memory.randOffsetBuffer.resize(newSize.x*newSize.y*sizeof(uint32_t));
         facet_memory.hitCounterBuffer.resize(model->nbFacets_total * CORESPERSM * WARPSCHEDULERS * sizeof(CuFacetHitCounter));
         facet_memory.missCounterBuffer.resize(sizeof(uint32_t));
@@ -1109,12 +1109,12 @@ namespace flowgpu {
         state.launchParams.perThreadData.currentMoleculeData = (MolPRD*)sim_memory.moleculeBuffer.d_pointer();
         state.launchParams.perThreadData.randBufferOffset = (uint32_t*)sim_memory.randOffsetBuffer.d_pointer();
 #ifdef DEBUG
-        crng::initializeRandHost(newSize.x * newSize.y, (float **) &sim_memory.randBuffer.d_ptr);
+        crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr);
 #else
-        crng::initializeRandHost(newSize.x * newSize.y, (float **) &sim_memory.randBuffer.d_ptr,  time(NULL));
+        crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr,  time(NULL));
 #endif
         //crng::initializeRandHost(newSize.x * newSize.y, (float **) &randBuffer.d_ptr);
-        state.launchParams.randomNumbers = (float*)sim_memory.randBuffer.d_pointer();
+        state.launchParams.randomNumbers = (RN_T*)sim_memory.randBuffer.d_pointer();
         state.launchParams.hitCounter = (CuFacetHitCounter*) facet_memory.hitCounterBuffer.d_pointer();
         state.launchParams.sharedData.missCounter = (uint32_t*) facet_memory.missCounterBuffer.d_pointer();
 
@@ -1168,15 +1168,15 @@ namespace flowgpu {
         // resize our cuda frame buffer
         sim_memory.moleculeBuffer.resize(newSize.x * newSize.y * sizeof(MolPRD));
         sim_memory.moleculeBuffer.initDeviceData(newSize.x * newSize.y * sizeof(MolPRD));
-        sim_memory.randBuffer.resize(nbRand*newSize.x*newSize.y*sizeof(float));
+        sim_memory.randBuffer.resize(nbRand*newSize.x*newSize.y*sizeof(RN_T));
         sim_memory.randOffsetBuffer.resize(newSize.x*newSize.y*sizeof(uint32_t));
 
 
-        crng::destroyRandHost((float **) &sim_memory.randBuffer.d_ptr);
+        crng::destroyRandHost((RN_T **) &sim_memory.randBuffer.d_ptr);
 #ifdef DEBUG
-        crng::initializeRandHost(newSize.x * newSize.y, (float **) &sim_memory.randBuffer.d_ptr);
+        crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr);
 #else
-        crng::initializeRandHost(newSize.x * newSize.y, (float **) &sim_memory.randBuffer.d_ptr,  time(NULL));
+        crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr,  time(NULL));
 #endif
 
 #ifdef DEBUGPOS
@@ -1211,6 +1211,15 @@ namespace flowgpu {
         memory_debug.posBuffer.download(hostData->positions.data(), NBCOUNTS*state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y);
         memory_debug.posOffsetBuffer.download(hostData->posOffset.data(), state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y);
 #endif
+    }
+
+    /*! download the rendered color buffer and return the total amount of hits (= followed rays) */
+    void OptixController::resetDeviceBuffers()
+    {
+        //sim_memory.moleculeBuffer.download(hit, state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y);
+        facet_memory.hitCounterBuffer.initDeviceData(model->nbFacets_total * CORESPERSM * WARPSCHEDULERS * sizeof(flowgpu::CuFacetHitCounter));
+        facet_memory.missCounterBuffer.initDeviceData(sizeof(uint32_t));
+        facet_memory.texelBuffer.initDeviceData(model->textures.size() * sizeof(flowgeom::Texel));
     }
 
     void OptixController::cleanup()
@@ -1253,7 +1262,7 @@ namespace flowgpu {
         sbt_memory.hitgroupRecordsBuffer.free();
 
         sim_memory.moleculeBuffer.free();
-        crng::destroyRandHost((float**) &sim_memory.randBuffer.d_ptr);
+        crng::destroyRandHost((RN_T**) &sim_memory.randBuffer.d_ptr);
         sim_memory.randOffsetBuffer.free();
 
         facet_memory.hitCounterBuffer.free();

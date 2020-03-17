@@ -5,6 +5,8 @@
 #ifndef MOLFLOW_PROJ_GPUDEFINES_H
 #define MOLFLOW_PROJ_GPUDEFINES_H
 
+//#define RNG64
+
 // some GPU info we are making use of
 /*#define CORESPERMP 1664 // 13MP * 128 CUDA Cores
 #define WARPSCHEDULERS 4*/
@@ -27,5 +29,13 @@
 #ifdef DEBUGMISS
 #define NMISSES 10
 #endif
+
+// Random Number typedef
+#ifdef RNG64
+using RN_T = double;
+#else
+using RN_T = float;
+#endif
+
 
 #endif //MOLFLOW_PROJ_GPUDEFINES_H

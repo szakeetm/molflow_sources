@@ -134,35 +134,61 @@ int main(int argc, char **argv) {
 
     std::cout << "#GPUTestsuite: Starting simulation with " << launchSize << " threads per launch => " << nbLoops << " runs "<<std::endl;
 
-    const int printPerNRuns = std::max(1, static_cast<int>(nbLoops/10)); // prevent n%0 operation
+    const uint64_t nPrints = 10;
+    //const int printPerNRuns = std::max(1, static_cast<int>(nbLoops/nPrints)); // prevent n%0 operation
+    uint64_t printPerNRuns = std::min(static_cast<uint64_t>(10000), static_cast<uint64_t>(nbLoops/nPrints)); // prevent n%0 operation
+    printPerNRuns = std::max(printPerNRuns, static_cast<uint64_t>(1));
 
     auto start_total = std::chrono::steady_clock::now();
     auto t0 = start_total;
 
     double raysPerSecondMax = 0.0;
+    /*double raysPerSecondSum = 0.0;
+    uint64_t nRaysSum = 0.0;*/
+
     for(size_t i = 0; i < nbLoops; ++i){
         //auto start = std::chrono::high_resolution_clock::now();
 
         gpuSim.RunSimulation();
-
 
         if(!silentMode && (i+1)%printPerNRuns==0){
             auto t1 = std::chrono::steady_clock::now();
             std::chrono::duration<double,std::milli> elapsed = t1 - t0;
             t0 = t1;
 
+            gpuSim.GetSimulationData();
+            static const uint64_t nRays = launchSize * printPerNRuns;
+            double rpsRun = (double)nRays / elapsed.count() / 1000.0;
+            raysPerSecondMax = std::max(raysPerSecondMax,rpsRun);
+            //raysPerSecondSum += rpsRun;
+            std::cout << "--- Run #"<<i+1<< " \t- Elapsed Time: " << elapsed.count()/1000.0 << " s \t--- " << rpsRun << " MRay/s ---" << std::endl;
+
+            /*auto tdat0 = std::chrono::steady_clock::now();
+            gpuSim.GetSimulationData();
+            std::chrono::duration<double,std::milli> tdiffdat = std::chrono::steady_clock::now() - tdat0;
+            std::cout << "--- Data#"<<i+1<< " \t- Elapsed Time: " << tdiffdat.count() << " ms \t--- " << std::endl;
+*/
+            /*// 1. method
             double rpsRun = (double)launchSize * printPerNRuns / elapsed.count() / 1000.0;
             raysPerSecondMax = std::max(raysPerSecondMax,rpsRun);
+            raysPerSecondSum += rpsRun;
             std::cout << "--- Run #"<<i+1<< " \t- Elapsed Time: " << elapsed.count() << " ms \t--- " << rpsRun << " MRay/s ---" << std::endl;
+
+            // 2. method
+            uint64_t nRays = gpuSim.GetSimulationData();
+            nRaysSum += nRays;
+            double raysPerSecond = (double)(nRays)/(elapsed.count())/1000.0;
+            std::cout << "--- Run #"<<i+1<< " \t- Elapsed Time: " << elapsed.count() << " ms \t--- " << raysPerSecond << " MRay/s (fixed) ---" << std::endl;
+            */
         }
     }
     auto finish_total = std::chrono::steady_clock::now();
-
+    gpuSim.GetSimulationData(false);
     std::chrono::duration<double> elapsed = finish_total - start_total;
-    std::cout << "-- Total Elapsed Time: " << elapsed.count() << " s ---" << std::endl;
-    double raysPerSecond = (double)(gpuSim.GetSimulationData())/(elapsed.count());
-    std::cout << "-- Avg. Rays per second: " << raysPerSecond/1000.0/1000.0 << " MRay/s ---" << std::endl;
-    std::cout << "-- Max  Rays per second: " << raysPerSecondMax << " MRay/s ---" << std::endl;
+    std::cout << "--         Total Elapsed Time: " << elapsed.count() / 60.0 << " min ---" << std::endl;
+    std::cout << "--         Avg. Rays per second: " << (double)launchSize*nbLoops/elapsed.count()/1e6 << " MRay/s ---" << std::endl;
+    //std::cout << "--         Avg. Rays per second: " << raysPerSecondSum/(nbLoops/printPerNRuns) << " MRay/s ---" << std::endl;
+    std::cout << "--         Max  Rays per second: " << raysPerSecondMax << " MRay/s ---" << std::endl;
 
     /*std::chrono::duration<double,std::milli> elapsed = finish_total - start_total;
     std::cout << "-- Total Elapsed Time: " << elapsed.count() << " ms ---" << std::endl;

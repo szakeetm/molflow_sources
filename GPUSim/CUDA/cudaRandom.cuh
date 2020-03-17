@@ -15,6 +15,7 @@
 #pragma once
 #include <curand_kernel.h>
 #include "cuda_runtime.h"
+#include "GPUDefines.h"
 
 namespace crng {
     __host__ int  initializeRand(unsigned int kernelSize, void* states, void* randomNumbers);
@@ -24,10 +25,14 @@ namespace crng {
     __host__ int  testRand(void** devData, size_t n);
     __host__ int  printDevDataAtHost(void* devData, size_t n);
 
-    __host__ int initializeRandHost(unsigned int kernelSize, float **randomNumbersPtr, unsigned int seed = 1234ULL);
-    __host__ int  generateRandHost(unsigned int kernelSize, float *randomNumbers);
-    __host__ int  destroyRandHost(float **randomNumbersPtr);
+    // float
+    __host__ int initializeRandHost(unsigned int kernelSize, RN_T **randomNumbersPtr, unsigned int seed = 1234ULL);
+    __host__ int  generateRandHost(unsigned int kernelSize, RN_T *randomNumbers);
+    __host__ int  destroyRandHost(RN_T **randomNumbersPtr);
+
+    // offset for random number buffer
     __host__ int  offsetBufferZeroInit(unsigned int kernelSize, void *randomOffsets);
+
 /*    class cudaRandom {
         void initializeRand();
 

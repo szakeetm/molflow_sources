@@ -18,6 +18,7 @@
 
 #include "optix7.h"
 #include "OptixPolygon.h"
+#include "GPUDefines.h"
 
 #ifdef DEBUGCOUNT
 #define NCOUNTBINS 100
@@ -172,7 +173,7 @@ namespace flowgpu {
             uint32_t nbRandNumbersPerThread;
         } simConstants;
 
-        float* randomNumbers;
+        RN_T* randomNumbers;
         CuFacetHitCounter* hitCounter;
 
 #ifdef DEBUGCOUNT

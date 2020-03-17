@@ -18,6 +18,7 @@ protected:
     uint2 kernelDimensions; // blocks and threads per block
 
     HostData data;
+    GlobalCounter globalCounter;
 
     void Resize();
     unsigned long long int GetTotalHits();
@@ -29,7 +30,8 @@ public:
     int RunSimulation();
     int CloseSimulation();
 
-    unsigned long long int GetSimulationData();
+    unsigned long long int GetSimulationData(bool silent = true);
+    void IncreaseGlobalCounters(HostData* tempData);
     void PrintData();
     void PrintDataForParent();
     void PrintTotalCounters();

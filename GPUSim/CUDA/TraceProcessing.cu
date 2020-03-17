@@ -2,13 +2,14 @@
 
 #include <optix_device.h>
 #include <math_constants.h>
-
-#include "LaunchParams.h"
-#include "GPUDefines.h" // for NB_RAND
-#include "jetbrains_indexing.h"
 #include "helper_math.h"
 #include <cooperative_groups.h>
+
+#include "jetbrains_indexing.h"
+#include "LaunchParams.h"
+#include "GPUDefines.h" // for NB_RAND
 #include <LaunchParams.h>
+#include "CommonFunctions.cuh"
 
 namespace cg = cooperative_groups;
 
@@ -182,6 +183,7 @@ namespace flowgpu {
         atomicAdd(&hitCounter.sum_1_per_velocity, (hitEquiv) / velocity);//(hitEquiv + static_cast<double>(desorb)) / prd.velocity;
     }
 
+#define EPS32 1e-6f
     // --------------------------------------
     // increase texture counters for absorption (same as desorp)
     // --------------------------------------
@@ -197,14 +199,17 @@ namespace flowgpu {
         float detU = b.x * poly.V.y - b.y * poly.V.x;
         float detV = poly.U.x * b.y - poly.U.y * b.x;
 
-        if(det==0.0f){
+        if(fabsf(det)<=EPS32){
             det = poly.U.y * poly.V.z - poly.U.z * poly.V.y; // TODO: Pre calculate
             detU = b.y * poly.V.z - b.z * poly.V.y;
             detV = poly.U.y * b.z - poly.U.z * b.y;
-            if(det==0.0f){
-                det = poly.U.x * poly.V.x - poly.U.x * poly.V.x; // TODO: Pre calculate
-                detU = b.x * poly.V.x - b.x * poly.V.x;
-                detV = poly.U.x * b.x - poly.U.x * b.x;
+            if(fabsf(det)<=EPS32){
+                det = poly.U.z * poly.V.x - poly.U.x * poly.V.z; // TODO: Pre calculate
+                detU = b.z * poly.V.x - b.x * poly.V.z;
+                detV = poly.U.z * b.x - poly.U.x * b.z;
+                if(fabsf(det)<=EPS32){
+                    printf("Dangerous determinant calculated for texture hit: %lf : %lf : %lf -> %lf : %lf\n",det,detU,detV,detU/det,detV/det);
+                }
             }
         }
 
@@ -220,9 +225,9 @@ namespace flowgpu {
         float ortVelocity = (optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f) * hitData.velocity*fabsf(dot(rayDir, poly.N)); //surface-orthogonal velocity component
 
         flowgeom::Texel& tex = optixLaunchParams.sharedData.texels[facetTex.texelOffset + add];
-        atomicAdd(&tex.countEquiv, 1.0f);
-        atomicAdd(&tex.sum_1_per_ort_velocity, 1.0f * velocity_factor / ortVelocity);
-        atomicAdd(&tex.sum_v_ort_per_area, 1.0f * ortSpeedFactor * ortVelocity * optixLaunchParams.sharedData.texelInc[facetTex.texelOffset + add]); // sum ortho_velocity[m/s] / cell_area[cm2]
+        atomicAdd(&tex.countEquiv, static_cast<uint32_t>(1));
+        atomicAdd(&tex.sum_1_per_ort_velocity, 1.0 * velocity_factor / ortVelocity);
+        atomicAdd(&tex.sum_v_ort_per_area, 1.0 * ortSpeedFactor * ortVelocity * optixLaunchParams.sharedData.texelInc[facetTex.texelOffset + add]); // sum ortho_velocity[m/s] / cell_area[cm2]
     }
 
 
@@ -241,22 +246,23 @@ namespace flowgpu {
         float detU = b.x * poly.V.y - b.y * poly.V.x;
         float detV = poly.U.x * b.y - poly.U.y * b.x;
 
-        if(det==0.0f){
+        if(fabsf(det)<=EPS32){
             det = poly.U.y * poly.V.z - poly.U.z * poly.V.y; // TODO: Pre calculate
             detU = b.y * poly.V.z - b.z * poly.V.y;
             detV = poly.U.y * b.z - poly.U.z * b.y;
-            if(det==0.0f){
-                det = poly.U.x * poly.V.x - poly.U.x * poly.V.x; // TODO: Pre calculate
-                detU = b.x * poly.V.x - b.x * poly.V.x;
-                detV = poly.U.x * b.x - poly.U.x * b.x;
+            if(fabsf(det)<=EPS32){
+                det = poly.U.z * poly.V.x - poly.U.x * poly.V.z; // TODO: Pre calculate
+                detU = b.z * poly.V.x - b.x * poly.V.z;
+                detV = poly.U.z * b.x - poly.U.x * b.z;
+                if(fabsf(det)<=EPS32){
+                    printf("Dangerous determinant calculated for texture hit: %lf : %lf : %lf -> %lf : %lf\n",det,detU,detV,detU/det,detV/det);
+                }
             }
         }
 
         float hitLocationU = detU/det;
         float hitLocationV = detV/det;
 
-        if(poly.texProps.textureOffset!=0)
-            printf("Illegal texture offset %u?\n",poly.texProps.textureOffset);
         flowgeom::FacetTexture& facetTex = optixLaunchParams.sharedData.facetTextures[poly.texProps.textureOffset];
 
         unsigned int tu = (unsigned int)(hitLocationU * facetTex.texWidthD);
@@ -266,7 +272,7 @@ namespace flowgpu {
         const float ortVelocity = (optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f) * hitData.velocity*fabsf(dot(rayDir, poly.N)); //surface-orthogonal velocity component
 
         flowgeom::Texel& tex = optixLaunchParams.sharedData.texels[facetTex.texelOffset + add];
-        atomicAdd(&tex.countEquiv, 1.0f);
+        atomicAdd(&tex.countEquiv, static_cast<uint32_t>(1.0f));
         atomicAdd(&tex.sum_1_per_ort_velocity, 1.0f * velocity_factor / ortVelocity);
         atomicAdd(&tex.sum_v_ort_per_area, 1.0f * ortSpeedFactor * ortVelocity * optixLaunchParams.sharedData.texelInc[facetTex.texelOffset + add]); // sum ortho_velocity[m/s] / cell_area[cm2]
 
@@ -362,7 +368,7 @@ namespace flowgpu {
         const float absEquiv = 1.0f; //1.0*prd.orientationRatio; // hit=1.0 (only changed for lowflux mode)
 
 
-        const float* randFloat = optixLaunchParams.randomNumbers;
+        const RN_T* randFloat = optixLaunchParams.randomNumbers;
         unsigned int randInd = NB_RAND*(bufferIndex);
         unsigned int randOffset = optixLaunchParams.perThreadData.randBufferOffset[bufferIndex];
 
@@ -374,7 +380,8 @@ namespace flowgpu {
             if(counterIdx < 0 || counterIdx >= optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS){printf("facIndex %u >= %u is out of bounds\n", counterIdx, optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS);}
 #endif
             increaseHitCounterAbsorp(optixLaunchParams.hitCounter[counterIdx], hitEquiv, absEquiv, ortVelocity, velFactor, prd.velocity);
-            RecordAbsorpTexture(poly, prd, prd.hitPos, ray_dir);
+            if (poly.texProps.textureFlags & flowgeom::TEXTURE_FLAGS::countAbs)
+                RecordAbsorpTexture(poly, prd, prd.hitPos, ray_dir);
 
             optixLaunchParams.perThreadData.randBufferOffset[bufferIndex] = randOffset;
 
@@ -400,7 +407,9 @@ namespace flowgpu {
             //--------------------------
             // 1. Increment counters
             increaseHitCounterBounce(optixLaunchParams.hitCounter[counterIdx], hitEquiv, ortVelocity, velFactor, prd.velocity);
-            const unsigned int texelIndex = RecordBounceTexture(poly, prd, prd.hitPos, ray_dir);
+            unsigned int texelIndex = 1e10;
+            if (poly.texProps.textureFlags & flowgeom::TEXTURE_FLAGS::countRefl)
+                texelIndex = RecordBounceTexture(poly, prd, prd.hitPos, ray_dir);
 
             // also increase a nbBounce counter if there is need (e.g. recursion)
             prd.inSystem = 1;
@@ -415,7 +424,7 @@ namespace flowgpu {
             //-----------
             // new ray direction (for now only diffuse)
             //-----------
-            const float theta = acosf(sqrtf(randFloat[(unsigned int)(randInd + randOffset++)]));
+            /*const float theta = acosf(sqrtf(randFloat[(unsigned int)(randInd + randOffset++)]));
             const float phi = randFloat[(unsigned int)(randInd + randOffset++)] * 2.0f * CUDART_PI_F;
             const float u = sinf(theta)*cosf(phi);
             const float v = sinf(theta)*sinf(phi);
@@ -423,14 +432,15 @@ namespace flowgpu {
 
             float3 nU = poly.nU;
             float3 nV = poly.nV;
-            float3 N = poly.N;
+            float3 N = poly.N;*/
 
-            prd.postHitDir = u*nU + v*nV + n*N;
+            prd.postHitDir = getNewDirection(prd,poly,randFloat,randInd,randOffset);
 
             // 3. Increment counters for post bounce / outgoing particles
-            ortVelocity = prd.velocity*fabsf(dot(prd.postHitDir, N));
+            ortVelocity = prd.velocity*fabsf(dot(prd.postHitDir, poly.N));
             increaseHitCounterBounce(optixLaunchParams.hitCounter[counterIdx], hitEquiv, ortVelocity, velFactor, prd.velocity);
-            RecordPostBounceTexture(poly, prd, ray_dir, texelIndex);
+            if (poly.texProps.textureFlags & flowgeom::TEXTURE_FLAGS::countRefl)
+                RecordPostBounceTexture(poly, prd, ray_dir, texelIndex);
 
             optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos = prd.hitPos;
             optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].postHitDir = prd.postHitDir;
@@ -609,7 +619,7 @@ namespace flowgpu {
 
 
 
-        const float* randFloat = optixLaunchParams.randomNumbers;
+        const RN_T* randFloat = optixLaunchParams.randomNumbers;
         unsigned int randInd = NB_RAND*(bufferIndex);
         unsigned int randOffset = optixLaunchParams.perThreadData.randBufferOffset[bufferIndex];
 
@@ -622,9 +632,10 @@ namespace flowgpu {
             if(counterIdx < 0 || counterIdx >= optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS){printf("facIndex %u >= %u is out of bounds\n", counterIdx, optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS);}
 #endif
             increaseHitCounterAbsorp(optixLaunchParams.hitCounter[counterIdx], hitEquiv, absEquiv, ortVelocity, velFactor, prd.velocity);
-            if (poly.texProps.textureFlags & flowgeom::TEXTURE_FLAGS::countAbs)
+            if (poly.texProps.textureFlags & flowgeom::TEXTURE_FLAGS::countAbs){
+                //printf("[%u] Absorb texture hit: %lf , %lf , %lf -> %lf , %lf , %lf => %lf , %lf , %lf\n",poly.parentIndex,ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z,ray_orig.x+ray_dir.x,ray_orig.y+ray_dir.y,ray_orig.z+ray_dir.z);
                 RecordAbsorpTexture(poly, prd, prd.hitPos, ray_dir);
-
+            }
             optixLaunchParams.perThreadData.randBufferOffset[bufferIndex] = randOffset;
 
             prd.inSystem = 0;
@@ -650,7 +661,7 @@ namespace flowgpu {
 
             // 1. Increment counters
             increaseHitCounterBounce(optixLaunchParams.hitCounter[counterIdx], hitEquiv, ortVelocity, velFactor, prd.velocity);
-            unsigned int texelIndex = 9999999;
+            unsigned int texelIndex = 1e10;
             if (poly.texProps.textureFlags & flowgeom::TEXTURE_FLAGS::countRefl)
                 texelIndex = RecordBounceTexture(poly, prd, prd.hitPos, ray_dir);
 
@@ -670,20 +681,20 @@ namespace flowgpu {
             //-----------
             // new ray direction (for now only diffuse)
             //-----------
-            const float theta = acosf(sqrtf(randFloat[(unsigned int)(randInd + randOffset++)]));
+            /*const float theta = acosf(sqrtf(randFloat[(unsigned int)(randInd + randOffset++)]));
             const float phi = randFloat[(unsigned int)(randInd + randOffset++)] * 2.0f * CUDART_PI_F;
-            const float u = sinf(theta)*cosf(phi);
-            const float v = sinf(theta)*sinf(phi);
-            const float n = cosf(theta);
+            const float u = sin(theta)*cos(phi);
+            const float v = sin(theta)*sin(phi);
+            const float n = cos(theta);
 
             float3 nU = poly.nU;
             float3 nV = poly.nV;
-            float3 N = poly.N;
+            float3 N = poly.N;*/
 
-            prd.postHitDir = u*nU + v*nV + n*N;
+            prd.postHitDir = getNewDirection(prd,poly,randFloat,randInd,randOffset);
 
             // 3. Increment counters for post bounce / outgoing particles
-            ortVelocity = prd.velocity*fabsf(dot(prd.postHitDir, N));
+            ortVelocity = prd.velocity*fabsf(dot(prd.postHitDir, poly.N));
             increaseHitCounterPostBounce(optixLaunchParams.hitCounter[counterIdx], hitEquiv, ortVelocity, velFactor, prd.velocity);
             if (poly.texProps.textureFlags & flowgeom::TEXTURE_FLAGS::countRefl)
                 RecordPostBounceTexture(poly, prd, ray_dir, texelIndex);
