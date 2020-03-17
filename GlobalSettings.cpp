@@ -293,7 +293,6 @@ void GlobalSettings::SMPUpdate() {
 	if( time-lastUpdate>333 ) {
 
 	char tmp[512];
-	PROCESS_INFO pInfo;
 	size_t  states[MAX_PROCESS];
 	std::vector<std::string> statusStrings(MAX_PROCESS);
 
@@ -303,21 +302,36 @@ void GlobalSettings::SMPUpdate() {
 	processList->ResetValues();
 
 	//Interface
-#ifdef _WIN32
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	size_t currPid = GetCurrentProcessId();
-#else
-	size_t currPid = getpid();
-#endif
-	GetProcInfo(currPid, &pInfo);
-	processList->SetValueAt(0, 0, "Interface");
+    PROCESS_INFO pInfo;
+    GetProcInfo(currPid, &pInfo);
+
+    processList->SetValueAt(0, 0, "Interface");
 	sprintf(tmp, "%zd", currPid);
 	processList->SetValueAt(1, 0, tmp, currPid);
 	sprintf(tmp, "%.0f MB", (double)pInfo.mem_use / (1024.0*1024.0));
 	processList->SetValueAt(2, 0, tmp);
 	sprintf(tmp, "%.0f MB", (double)pInfo.mem_peak / (1024.0*1024.0));
 	processList->SetValueAt(3, 0, tmp);
-	//sprintf(tmp, "%d %%", (int)pInfo.cpu_time);
-	//processList->SetValueAt(4, 0, tmp);
+
+#else
+    size_t currPid = getpid();
+    PROCESS_INFO pInfo;
+    GetProcInfo(currPid, &pInfo);
+
+    //GetProcInfo(currpid, &pInfo);
+    processList->SetValueAt(0, 0, "Interface");
+    sprintf(tmp, "%zd", currPid);
+    processList->SetValueAt(1, 0, tmp, (int)currPid);
+
+    sprintf(tmp, "%.0f MB", (double)pInfo.mem_use / (1024.0));
+    processList->SetValueAt(2, 0, tmp);
+    sprintf(tmp, "%.0f MB", (double)pInfo.mem_peak / (1024.0));
+    processList->SetValueAt(3, 0, tmp);
+    //sprintf(tmp, "%d %%", (int)pInfo.cpu_time);
+    //processList->SetValueAt(4, 0, tmp);
+#endif
 
 	for (int i = 0;i<nb;i++) {
 		DWORD pid = worker->GetPID(i);
@@ -325,7 +339,9 @@ void GlobalSettings::SMPUpdate() {
 		processList->SetValueAt(0, i + 1, tmp);
 		sprintf(tmp, "%d", pid);
 		processList->SetValueAt(1, i + 1, tmp);
-		if (!GetProcInfo(pid, &pInfo)) {
+
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+        if (!GetProcInfo(pid, &pInfo)) {
 			processList->SetValueAt(2, i + 1, "0 KB");
 			processList->SetValueAt(3, i + 1, "0 KB");
 			//processList->SetValueAt(4,i+1,"0 %");
@@ -336,30 +352,37 @@ void GlobalSettings::SMPUpdate() {
 			processList->SetValueAt(2, i + 1, tmp);
 			sprintf(tmp, "%.0f MB", (double)pInfo.mem_peak / (1024.0*1024.0));
 			processList->SetValueAt(3, i + 1, tmp);
-			//sprintf(tmp, "%d %%", (int)pInfo.cpu_time);
-			//processList->SetValueAt(4, i+1, tmp);
-			/*
-			// CPU usage
-			if( lastCPUTime[i]!=-1.0f ) {
-			float dTime = appTime-lastUpdate;
-			float dCPUTime = (float)pInfo.cpu_time-lastCPUTime[i];
-			float cpuLoad = dCPUTime/dTime;
-			lastCPULoad[i] = 0.85f*cpuLoad + 0.15f*lastCPULoad[i];
-			int percent = (int)(100.0f*lastCPULoad[i] + 0.5f);
-			if(percent<0) percent=0;
-			sprintf(tmp,"%d %%",percent);
-			processList->SetValueAt(4,i,tmp);
-			} else {
-			processList->SetValueAt(4,i,"---");
-			}
-			lastCPUTime[i] = (float)pInfo.cpu_time;
-			*/
 
 			// State/Status
 			std::stringstream tmp; tmp << "[" << prStates[states[i]] << "] " << statusStrings[i];
 			processList->SetValueAt(4, i + 1, tmp.str().c_str());
-
 		}
+
+#else
+        if (pid == currPid) { // TODO: Check if this is wanted
+            processList->SetValueAt(2, i + 1, "0 KB");
+            processList->SetValueAt(3, i + 1, "0 KB");
+            //processList->SetValueAt(4,i+1,"0 %");
+            processList->SetValueAt(4, i + 1, "Dead");
+        }
+        else {
+            PROCESS_INFO pInfo;
+            GetProcInfo(pid, &pInfo);
+
+
+            sprintf(tmp, "%.0f MB", (double)pInfo.mem_use / (1024.0));
+            processList->SetValueAt(2, i + 1, tmp);
+            sprintf(tmp, "%.0f MB", (double)pInfo.mem_peak / (1024.0));
+            processList->SetValueAt(3, i + 1, tmp);
+            //sprintf(tmp, "%d %%", (int)pInfo.cpu_time);
+            //processList->SetValueAt(4, i+1, tmp);
+
+            // State/Status
+            std::stringstream tmp; tmp << "[" << prStates[states[i]] << "] " << statusStrings[i];
+            processList->SetValueAt(4, i + 1, tmp.str().c_str());
+        }
+#endif
+
 	}
 	lastUpdate = SDL_GetTicks();
 	}

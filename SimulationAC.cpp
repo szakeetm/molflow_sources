@@ -17,13 +17,15 @@ GNU General Public License for more details.
 
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
-#ifdef WIN
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #define NOMINMAX
 //#include <windows.h> // For GetTickCount()
 //#include <Process.h> // For _getpid()
 #else
 #include <time.h>
 #include <sys/time.h>
+#include <cstring>
+
 #endif
 
 #include <math.h>

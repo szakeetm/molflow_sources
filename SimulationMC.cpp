@@ -26,6 +26,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Random.h"
 #include "GLApp/MathTools.h"
 #include <tuple> //std::tie
+#include <cstring>
 
 extern Simulation *sHandle; //delcared in molflowSub.cpp
 
@@ -986,7 +987,7 @@ double Anglemap::GeneratePhiFromAngleMap(const int & thetaLowerIndex, const doub
 	double phi, phiOvershoot;
 	double thetaIndex = (double)thetaLowerIndex + 0.5 + weigh;
 	if (phiLowerIndex == -1) { //first half section
-		__debugbreak(); //should not happen since we shifted the lookup value with first value
+        DEBUG_BREAK; //should not happen since we shifted the lookup value with first value
 		phiOvershoot = 0.5 + 0.5 * lookupValue / GetPhiCDFValue(thetaIndex, 0, anglemapParams); //between 0.5 and 1
 		phi = GetPhi((double)phiLowerIndex + 0.5 + phiOvershoot, anglemapParams); //between 0 and the first section end
 	}

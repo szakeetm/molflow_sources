@@ -17,13 +17,14 @@ GNU General Public License for more details.
 
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
-#ifdef WIN
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #define NOMINMAX
 //#include <windows.h> // For GetTickCount()
 #include <Process.h> // For _getpid()
 #else
 //#include <time.h>
-//#include <sys/time.h>
+#include <sys/time.h>
+#include <cstring>
 #endif
 
 #include <math.h>
@@ -45,7 +46,7 @@ extern Simulation* sHandle; //Declared at molflowSub.cpp
 
 // Timing stuff
 
-#ifdef WIN
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 bool usePerfCounter;         // Performance counter usage
 LARGE_INTEGER perfTickStart; // First tick
 double perfTicksPerSec;      // Performance counter (number of tick per second)
@@ -57,7 +58,7 @@ void InitSimulation() {
 	// Global handle allocation
 	sHandle = new Simulation();
 
-#ifdef WIN
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	{
 		LARGE_INTEGER qwTicksPerSec;
 		usePerfCounter = QueryPerformanceFrequency(&qwTicksPerSec);
@@ -98,7 +99,7 @@ DWORD RevertBit(DWORD dw) {
 
 DWORD GetSeed() {
 
-	/*#ifdef WIN
+	/*#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	DWORD r;
 	_asm {
 	rdtsc
@@ -107,14 +108,14 @@ DWORD GetSeed() {
 	return RevertBit(r ^ (DWORD)(_getpid()*65519));
 	#else*/
 	int processId;
-#ifdef  WIN
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	processId = _getpid();
 #else
 	processId = ::getpid();
 #endif //  WIN
 
 
-	return (DWORD)((int)(GetTick()*1000.0)*_getpid());
+	return (DWORD)((int)(GetTick()*1000.0)*processId);
 	//#endif
 
 }
@@ -520,17 +521,17 @@ bool UpdateOntheflySimuParams(Dataport *loader) {
 
 void UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DWORD timeout) {
 	switch (sHandle->wp.sMode) {
-	case MC_MODE:
-	{
-		UpdateMCHits(dpHit, prIdx, sHandle->moments.size(), timeout);
-		if (dpLog) UpdateLog(dpLog, timeout);
-	}
-		break;
-	case AC_MODE:
-
-		UpdateACHits(dpHit, prIdx, timeout);
-		break;
-	}
+        case MC_MODE: {
+            UpdateMCHits(dpHit, prIdx, sHandle->moments.size(), timeout);
+            if (dpLog) UpdateLog(dpLog, timeout);
+            break;
+        }
+        case AC_MODE:
+        {
+            UpdateACHits(dpHit, prIdx, timeout);
+            break;
+        }
+    }
 
 }
 
@@ -686,7 +687,7 @@ double GetTick() {
 
 	// Number of sec since the application startup
 
-#ifdef WIN
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 
 	if (usePerfCounter) {
 

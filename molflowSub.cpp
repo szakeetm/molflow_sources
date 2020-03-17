@@ -17,9 +17,15 @@ GNU General Public License for more details.
 
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #define NOMINMAX
 //#include <windows.h>
 //#include <tlhelp32.h>
+//#include <Process.h> // For _getpid()
+#else
+#include <cstring>
+#endif
+
 
 //#include <iostream>
 
@@ -28,9 +34,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <time.h>
 
 #include "Simulation.h"
-#ifdef WIN
-//#include <Process.h> // For _getpid()
-#endif
+
 
 // Global process variables
 Simulation* sHandle; //Global handle to simulation, one per subprocess
@@ -54,33 +58,40 @@ static char      loadDpName[32];
 static char		 logDpName[32];
 static char      hitsDpName[32];
 
-bool end = false;
+bool endState = false;
 bool IsProcessRunning(DWORD pid);
 
 void GetState() {
-  prState = PROCESS_READY;
-  prParam = 0;
+    prState = PROCESS_READY;
+    prParam = 0;
 
-  if( AccessDataport(dpControl) ) {
-    SHCONTROL *master = (SHCONTROL *)dpControl->buff;
-    prState = master->states[prIdx];
-    prParam = master->cmdParam[prIdx];
-    prParam2 = master->cmdParam2[prIdx];
-    master->cmdParam[prIdx] = 0;
-    master->cmdParam2[prIdx] = 0;
+    if( AccessDataport(dpControl) ) {
+        SHCONTROL *master = (SHCONTROL *)dpControl->buff;
+        prState = master->states[prIdx];
+        prParam = master->cmdParam[prIdx];
+        prParam2 = master->cmdParam2[prIdx];
+        master->cmdParam[prIdx] = 0;
+        master->cmdParam2[prIdx] = 0;
 
-    ReleaseDataport(dpControl);
-	
-	if (!IsProcessRunning(hostProcessId)) {
-		printf("Host synrad.exe (process id %d) not running. Closing.",hostProcessId);
-		SetErrorSub("Host synrad.exe not running. Closing subprocess.");
-		end = true;
-	}
-  } else {
-	  printf("Subprocess couldn't connect to Molflow.\n");
-	  SetErrorSub("No connection to main program. Closing subprocess.");
-	  Sleep(5000);
-	  end = true;
+        ReleaseDataport(dpControl);
+
+        if (!IsProcessRunning(hostProcessId)) {
+            printf("Host molflow.exe (process id %d) not running. Closing.",hostProcessId);
+            SetErrorSub("Host molflow.exe not running. Closing subprocess.");
+            endState = true;
+        }
+    } else {
+	    printf("Subprocess %d couldn't connect to Molflow.\n", prIdx);
+	    SetErrorSub("No connection to main program. Closing subprocess.");
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+        Sleep(5000);
+#else
+        struct timespec tv;
+        tv.tv_sec = 5000/1000;
+        tv.tv_nsec = (5000%1000)*1000000;
+        nanosleep(&tv,nullptr);
+#endif
+	    endState = true;
   }
 }
 
@@ -128,9 +139,9 @@ char *GetSimuStatus() {
     case MC_MODE:
       if( max!=0 ) {
         double percent = (double)(count)*100.0 / (double)(max);
-        sprintf(ret,"(%s) MC %I64d/%I64d (%.1f%%)",sHandle->sh.name.c_str(),count,max,percent);
+        sprintf(ret, "(%s) MC %zd/%zd (%.1f%%)", sHandle->sh.name.c_str(), count, max, percent);
       } else {
-        sprintf(ret,"(%s) MC %I64d",sHandle->sh.name.c_str(),count);
+        sprintf(ret,"(%s) MC %zd",sHandle->sh.name.c_str(),count);
       }
       break;
 
@@ -141,10 +152,10 @@ char *GetSimuStatus() {
       } else {
         if( max!=0 ) {
           double percent = (double)(count)*100.0 / (double)(max);
-          sprintf(ret,"(%s) AC (%zdx%zd) %I64d/%I64d (%.1f%%)",sHandle->sh.name.c_str(),
+          sprintf(ret,"(%s) AC (%zdx%zd) %zd/%zd (%.1f%%)",sHandle->sh.name.c_str(),
                       sHandle->nbAC,sHandle->nbAC,count,max,percent);
         } else {
-          sprintf(ret,"(%s) AC (%zdx%zd) %I64d",sHandle->sh.name.c_str(),sHandle->nbAC,
+          sprintf(ret,"(%s) AC (%zdx%zd) %zd",sHandle->sh.name.c_str(),sHandle->nbAC,
                       sHandle->nbAC,count);
         }
       }
@@ -319,11 +330,19 @@ int main(int argc,char* argv[])
   hostProcessId=atoi(argv[1]);
   prIdx = atoi(argv[2]);
 
+
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
   sprintf(ctrlDpName,"MFLWCTRL%s",argv[1]);
   sprintf(loadDpName,"MFLWLOAD%s",argv[1]);
   sprintf(hitsDpName,"MFLWHITS%s",argv[1]);
   sprintf(logDpName, "MFLWLOG%s", argv[1]);
-
+#else
+    // creates semaphore as /dev/sem/%s_sema
+    sprintf(ctrlDpName,"/MFLWCTRL%s",argv[1]);
+    sprintf(loadDpName,"/MFLWLOAD%s",argv[1]);
+    sprintf(hitsDpName,"/MFLWHITS%s",argv[1]);
+    sprintf(logDpName, "/MFLWLOG%s", argv[1]);
+#endif
   dpControl = OpenDataport(ctrlDpName,sizeof(SHCONTROL));
   if( !dpControl ) {
     printf("Usage: Cannot connect to MFLWCTRL%s\n",argv[1]);
@@ -338,12 +357,12 @@ int main(int argc,char* argv[])
   SetReady();
 
   // Main loop
-  while( !end ) {
+  while( !endState ) {
 	GetState();
     switch(prState) {
 
       case COMMAND_LOAD:
-        printf("COMMAND: LOAD (%zd,%llu)\n",prParam,prParam2);
+        printf("[%d] COMMAND: LOAD (%zd,%llu)\n", prIdx, prParam,prParam2);
         Load();
         if( sHandle->loadOK ) {
           //sHandle->desorptionLimit = prParam2; // 0 for endless
@@ -352,25 +371,25 @@ int main(int argc,char* argv[])
         break;
 
       case COMMAND_LOADAC:
-        printf("COMMAND: LOADAC (%zd)\n",prParam);
+        printf("[%d] COMMAND: LOADAC (%zd)\n", prIdx,prParam);
         LoadAC();
         break;
 
 	  case COMMAND_UPDATEPARAMS:
-		  printf("COMMAND: UPDATEPARAMS (%zd,%I64d)\n", prParam, prParam2);
+		  printf("[%d] COMMAND: UPDATEPARAMS (%zd,%zd)\n", prIdx, prParam, prParam2);
 		  if (UpdateParams()) {
 			  SetState(prParam, GetSimuStatus());
 		  }
 		  break;
 
 	  case COMMAND_RELEASEDPLOG:
-		  printf("COMMAND: UPDATEPARAMS (%zd,%I64d)\n", prParam, prParam2);
+		  printf("[%d] COMMAND: UPDATEPARAMS (%zd,%zd)\n", prIdx, prParam, prParam2);
 		  CLOSEDP(dpLog);
 		  SetState(prParam, GetSimuStatus());
 		  break;
 
       case COMMAND_START:
-        printf("COMMAND: START (%zd,%llu)\n",prParam,prParam2);
+        printf("[%d] COMMAND: START (%zd,%llu)\n", prIdx,prParam,prParam2);
         if( sHandle->loadOK ) {
           if( StartSimulation(prParam) )
             SetState(PROCESS_RUN,GetSimuStatus());
@@ -383,7 +402,7 @@ int main(int argc,char* argv[])
         break;
 
       case COMMAND_PAUSE:
-        printf("COMMAND: PAUSE (%zd,%llu)\n",prParam,prParam2);
+        printf("[%d] COMMAND: PAUSE (%zd,%llu)\n", prIdx,prParam,prParam2);
         if( !sHandle->lastHitUpdateOK ) {
           // Last update not successful, retry with a longer timeout
 			if (dpHit && (GetLocalState() != PROCESS_ERROR)) UpdateHits(dpHit,dpLog,prIdx,60000);
@@ -392,18 +411,18 @@ int main(int argc,char* argv[])
         break;
 
       case COMMAND_RESET:
-        printf("COMMAND: RESET (%zd,%llu)\n",prParam,prParam2);
+        printf("[%d] COMMAND: RESET (%zd,%llu)\n", prIdx,prParam,prParam2);
         ResetSimulation();
         SetReady();
         break;
 
       case COMMAND_EXIT:
-        printf("COMMAND: EXIT (%zd,%llu)\n",prParam,prParam2);
-        end = true;
+        printf("[%d] COMMAND: EXIT (%zd,%llu)\n", prIdx,prParam,prParam2);
+        endState = true;
         break;
 
       case COMMAND_CLOSE:
-        printf("COMMAND: CLOSE (%zd,%llu)\n",prParam,prParam2);
+        printf("[%d] COMMAND: CLOSE (%zd,%llu)\n", prIdx,prParam,prParam2);
         ClearSimulation();
         CLOSEDP(dpHit);
 		CLOSEDP(dpLog);
@@ -412,7 +431,7 @@ int main(int argc,char* argv[])
 
       case COMMAND_STEPAC:
         // Debug command
-        printf("COMMAND: STEPAC (%zd,%llu)\n",prParam,prParam2);
+        printf("[%d] COMMAND: STEPAC (%zd,%llu)\n", prIdx,prParam,prParam2);
         if( sHandle->loadOK ) {
           if( StartSimulation(prParam) ) {
             SetState(PROCESS_RUN,GetSimuStatus());
@@ -430,24 +449,33 @@ int main(int argc,char* argv[])
       case PROCESS_RUN:
         SetStatus(GetSimuStatus()); //update hits only
         eos = SimulationRun();      // Run during 1 sec
-		if (dpHit && (GetLocalState() != PROCESS_ERROR)) UpdateHits(dpHit,dpLog,prIdx,20); // Update hit with 20ms timeout. If fails, probably an other subprocess is updating, so we'll keep calculating and try it later (latest when the simulation is stopped).
+		if (dpHit && (GetLocalState() != PROCESS_ERROR))
+		    UpdateHits(dpHit,dpLog,prIdx,20); // Update hit with 20ms timeout. If fails, probably an other subprocess is updating, so we'll keep calculating and try it later (latest when the simulation is stopped).
         if(eos) {
           if( GetLocalState()!=PROCESS_ERROR ) {
             // Max desorption reached
             SetState(PROCESS_DONE,GetSimuStatus());
-            printf("COMMAND: PROCESS_DONE (Max reached)\n");
+            printf("[%d] COMMAND: PROCESS_DONE (Max reached)\n",prIdx);
           }
         }
         break;
 
       default:
-        Sleep(WAITTIME);
+
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+              Sleep(WAITTIME);
+#else
+              struct timespec tv;
+              tv.tv_sec = WAITTIME/1000;
+              tv.tv_nsec = (WAITTIME%1000)*1000000;
+              nanosleep(&tv,0);
+#endif
         break;
     }
   }
-
-  // Release
+  // Release and clear memory
   SetState(PROCESS_KILLED,"");
+  delete sHandle;
   //CLOSEDP(dpControl);
   //CLOSEDP(dpHit);
   //Why bother closing dataports? Windows will release handles automatically.
@@ -455,10 +483,3 @@ int main(int argc,char* argv[])
 
 }
 
-bool IsProcessRunning(DWORD pid)
-{
-	HANDLE process = OpenProcess(SYNCHRONIZE, false, pid);
-	DWORD ret = WaitForSingleObject(process, 0);
-	CloseHandle(process);
-	return ret == WAIT_TIMEOUT;
-}

@@ -1475,7 +1475,7 @@ bool MolflowGeometry::LoadTexturesGEO(FileReader *file, GLProgress *prg, Datapor
 		ReleaseDataport(dpHit);
 		//Debug memory check
 		//_ASSERTE (!_CrtDumpMemoryLeaks());;
-        assert(_CrtCheckMemory());
+        //assert(_CrtCheckMemory());
 		return true;
 
 	}

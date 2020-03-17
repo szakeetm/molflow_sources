@@ -39,16 +39,19 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 #include "GLApp/MathTools.h"
 #include "RecoveryDialog.h"
-#include "direct.h"
 #include <vector>
 #include <string>
-#include <io.h>
 #include <thread>
 #include <numeric> //std::iota
 #include <filesystem>
-#ifndef _WIN32
+
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+#include "direct.h"
+#include <io.h>
+#else
 #include <unistd.h> //chdir
 #endif
+
 #include "Interface.h"
 #include "AppUpdater.h"
 #include "Worker.h"
@@ -2164,9 +2167,9 @@ void MolFlow::EmptyGeometry() {
 	ResetSimulation(false);
 
 	try {
-        assert(_CrtCheckMemory());
+        //assert(_CrtCheckMemory());
 		geom->EmptyGeometry();
-        assert(_CrtCheckMemory());
+        //assert(_CrtCheckMemory());
 		worker.CalcTotalOutgassing();
 		//default values
 		worker.wp.enableDecay = false;
@@ -2358,7 +2361,7 @@ void MolFlow::LoadConfig() {
 		f->ReadKeyword("recents"); f->ReadKeyword(":"); f->ReadKeyword("{");
 		w = f->ReadString();
         while (strcmp(w, "}") != 0 && recentsList.size() < MAX_RECENT) {
-            recentsList.emplace_back(_strdup(w));
+            recentsList.emplace_back(strdup(w));
             w = f->ReadString();
         }
 
@@ -2850,9 +2853,9 @@ void MolFlow::UpdateFacetHits(bool allRows) {
 				switch (modeCombo->GetSelectedIndex()) {
 				case MC_MODE:
 					facetList->SetColumnLabel(1, "Hits");
-					sprintf(tmp, "%I64d", f->facetHitCache.hit.nbMCHit);
+					sprintf(tmp, "%zd", f->facetHitCache.hit.nbMCHit);
 					facetList->SetValueAt(1, i, tmp);
-					sprintf(tmp, "%I64d", f->facetHitCache.hit.nbDesorbed);
+					sprintf(tmp, "%zd", f->facetHitCache.hit.nbDesorbed);
 					facetList->SetValueAt(2, i, tmp);
 					sprintf(tmp, "%g", f->facetHitCache.hit.nbAbsEquiv);
 					facetList->SetValueAt(3, i, tmp);

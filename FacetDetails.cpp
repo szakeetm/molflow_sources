@@ -387,13 +387,13 @@ char *FacetDetails::FormatCell(size_t idx,Facet *f,size_t mode) {
 		//<v_gas>=1/<1/v_surf>
 		break;
 	case 23:
-		sprintf(ret,"%I64d",f->facetHitCache.hit.nbMCHit);
+		sprintf(ret,"%zd",f->facetHitCache.hit.nbMCHit);
 		break;
 	case 24:
 		sprintf(ret, "%g", f->facetHitCache.hit.nbHitEquiv);
 		break;
 	case 25:
-		sprintf(ret,"%I64d",f->facetHitCache.hit.nbDesorbed);
+		sprintf(ret,"%zd",f->facetHitCache.hit.nbDesorbed);
 		break;
 	case 26:
 		sprintf(ret,"%g",f->facetHitCache.hit.nbAbsEquiv);

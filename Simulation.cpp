@@ -1,5 +1,6 @@
 #include "Simulation.h"
 #include "IntersectAABB_shared.h"
+#include <cstring>
 
 SuperStructure::SuperStructure()
 {

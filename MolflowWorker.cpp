@@ -17,15 +17,23 @@ GNU General Public License for more details.
 
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
+
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #define NOMINMAX
 //#include <Windows.h>
+#include <direct.h>
+#include <Process.h>
+
+#else
+
+#endif
+
 #include "MolflowGeometry.h"
 #include "Worker.h"
 #include "GLApp/GLApp.h"
 #include "GLApp/GLMessageBox.h"
 #include <math.h>
 #include <stdlib.h>
-#include <Process.h>
 #include "GLApp/GLUnitDialog.h"
 #include "GLApp/MathTools.h"
 #include "Facet_shared.h"
@@ -52,7 +60,6 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "SynRad.h"
 #endif
 
-#include <direct.h>
 #include "ziplib/ZipArchive.h"
 #include "ziplib/ZipArchiveEntry.h"
 #include "ziplib/ZipFile.h"
@@ -102,12 +109,24 @@ Worker::Worker() {
 	wp.sMode = MC_MODE;
 
 	//Common init
-	pid = _getpid();
-	sprintf(ctrlDpName, "MFLWCTRL%d", pid);
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+    pid = _getpid();
+#else
+    pid = ::getpid();
+#endif //  WIN
+
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+    sprintf(ctrlDpName, "MFLWCTRL%d", pid);
 	sprintf(loadDpName, "MFLWLOAD%d", pid);
 	sprintf(hitsDpName, "MFLWHITS%d", pid);
 	sprintf(logDpName, "MFLWLOG%d", pid);
-
+#else
+    // creates shm as /dev/shm/%s
+    sprintf(ctrlDpName, "/MFLWCTRL%d", pid);
+    sprintf(loadDpName, "/MFLWLOAD%d", pid);
+    sprintf(hitsDpName, "/MFLWHITS%d", pid);
+    sprintf(logDpName, "/MFLWLOG%d", pid);
+#endif
 	ontheflyParams.nbProcess = 0;
 	ontheflyParams.enableLogging = false;
 	ontheflyParams.desorptionLimit = 0;
@@ -191,7 +210,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
     bool isSTL = ext == "stl";
 
 	if (isTXT || isGEO || isGEO7Z || isSTR || isXML || isXMLzip || isSTL) {
-#ifdef _WIN32
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		//Check (using native handle) if background compressor is still alive
 		if ((isGEO7Z) && WAIT_TIMEOUT == WaitForSingleObject(mApp->compressProcessHandle, 0)) {
 			GLMessageBox::Display("Compressing a previous save file is in progress. Wait until that finishes "
@@ -344,25 +363,24 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
 	//File written, compress it if the user wanted to
 	if (ok && isGEO7Z) {
 
-#ifdef _WIN32
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 		std::string compressorName = "compress.exe";
 #else
 		std::string compressorName = "./compress";
 #endif
 
 		if (FileUtils::Exist(compressorName)) { //compress GEO file to GEO7Z using 7-zip launcher "compress.exe"
-			std::ostringstream tmp;
-			tmp<<compressorName << " \"" << fileNameWithGeo << "\" Geometry.geo";
-#ifdef _WIN32
-			size_t procId = StartProc(tmp.str().c_str(),STARTPROC_BACKGROUND);
+            std::ostringstream tmp;
+            tmp<<compressorName << " \"" << fileNameWithGeo << "\" Geometry.geo";
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+            size_t procId = StartProc(tmp.str().c_str(),STARTPROC_BACKGROUND, NULL);
 			mApp->compressProcessHandle = OpenProcess(PROCESS_ALL_ACCESS, true, (unsigned long)procId);
 #else
-			//In Linux, compressing to old format will be blocking
-			system(tmp.str().c_str());
+            //In Linux, compressing to old format will be blocking
+            system(tmp.str().c_str());
 #endif
 
-			mApp->compressProcessHandle = OpenProcess(PROCESS_ALL_ACCESS, true, procId);
-			fileName = fileNameWithGeo7z;
+            fileName = fileNameWithGeo7z;
 		}
 		else {
 			GLMessageBox::Display("compress.exe (part of Molfow) not found.\n Will save as uncompressed GEO file.", "Compressor not found", GLDLG_OK, GLDLG_ICONERROR);
@@ -1289,9 +1307,8 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 */
 std::ostringstream Worker::SerializeForLoader()
 {
-	//std::ofstream os("out.xml");
 	std::ostringstream result;
-	cereal::BinaryOutputArchive outputarchive(result);
+    cereal::BinaryOutputArchive outputarchive(result);
 
 	outputarchive(
 		CEREAL_NVP(wp),
