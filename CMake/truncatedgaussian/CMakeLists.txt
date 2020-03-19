@@ -13,13 +13,22 @@ set(PROJECT_NAME truncatedgaussian)
 
 IF (WIN32)
     set(OS_NAME "win")
+    set(OS_RELPATH "..")
+ELSEIF(APPLE)
+    set(OS_NAME "mac")
+    set(OS_RELPATH "")
 ELSE()
-    set(OS_NAME "linux")
+    IF(os_version_suffix STREQUAL ".el7")
+        set(OS_NAME "linux_fedora")
+    ELSE()
+        set(OS_NAME "linux_debian")
+    ENDIF()
+    set(OS_RELPATH "..")
 ENDIF()
 
 # Output Variables
-set(OUTPUT_DEBUG ../lib/${OS_NAME}/debug/)
-set(OUTPUT_REL ../lib/${OS_NAME}/release/)
+set(OUTPUT_DEBUG ${OS_RELPATH}/lib/${OS_NAME}/debug/)
+set(OUTPUT_REL ${OS_RELPATH}/lib/${OS_NAME}/release/)
 # Folders files
 set(CPP_DIR_1 ../../src_shared/TruncatedGaussian)
 set(HEADER_DIR_1 ../../src_shared/TruncatedGaussian)
@@ -67,20 +76,16 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 if(MSVC)
     target_include_directories(${PROJECT_NAME} PUBLIC
-            "../../include/windows_only"
+            #"../../include/windows_only"
             "${CMAKE_CURRENT_SOURCE_DIR}/../../include/windows_only"
             )
 endif(MSVC)
 if(NOT MSVC)
-
     find_package(GSL REQUIRED)
     target_include_directories(${PROJECT_NAME} PRIVATE ${GSL_INCLUDE_DIRS})
 
     target_link_libraries(${PROJECT_NAME} ${GSL_LIBRARIES})
-
 endif(NOT MSVC)
-
-
 
 ################# Flags ################
 # Defines Flags for Windows and Linux. #

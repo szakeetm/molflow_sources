@@ -8,15 +8,17 @@ set(PROJECT_NAME molflow)
 
 IF (WIN32)
     set(OS_NAME "win")
-    add_definitions(-DMOLFLOW -DWIN -DCURL_STATICLIB -DNDEBUG -D_WINDOWS -D_WITHGL -D_CRT_SECURE_NO_DEPRECATE)
-
-
+    set(OS_RELPATH "..")
+ELSEIF(APPLE)
+    set(OS_NAME "mac")
+    set(OS_RELPATH "")
 ELSE()
     IF(os_version_suffix STREQUAL ".el7")
         set(OS_NAME "linux_fedora")
     ELSE()
         set(OS_NAME "linux_debian")
     ENDIF()
+    set(OS_RELPATH "..")
 ENDIF()
 
 IF (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -26,8 +28,8 @@ ELSE()
 ENDIF()
 
 # Output Variables
-set(OUTPUT_DEBUG ../bin/${OS_NAME}/debug/)
-set(OUTPUT_REL ../bin/${OS_NAME}/release/)
+set(OUTPUT_DEBUG ${OS_RELPATH}/bin/${OS_NAME}/debug/)
+set(OUTPUT_REL ${OS_RELPATH}/bin/${OS_NAME}/release/)
 
 # Folders files
 set(CPP_DIR_1 ../../src)
@@ -54,6 +56,11 @@ IF (WIN32)
     #set(LINK_DIR_2 ../../_molflow/molflow_project/lib/lib)
     set(LINK_DIR_3 ../../lib_external/win/${MY_BUILD_TYPE})
     set(DLL_DIR ../../lib_external/win/dll)
+ELSEIF(APPLE)
+    # set stuff for mac os
+    set(HEADER_DIR_7 "../../include/mac_only")
+    set(LINK_DIR_1 ../../lib_external/mac)
+    #set(LINK_DIR_2 ../../lib_external/mac/SDL2)
 ELSE()
     # set stuff for other systems
 
@@ -84,6 +91,8 @@ add_definitions(
         -DMOLFLOW
         -D_CRT_SECURE_NO_WARNINGS
         -D_CRT_NONSTDC_NO_DEPRECATE
+        -D_WINDOWS
+        -D_WITHGL
 )
 
 ############## Artefacts Output #################
@@ -101,6 +110,8 @@ else()
     set(CMAKE_EXECUTABLE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_REL}")
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_REL}")
 endif()
+set(EXECUTABLE_OUTPUT_PATH ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY}) #to build executable in main folder
+#message(${EXECUTABLE_OUTPUT_PATH})
 
 # Messages
 message("${PROJECT_NAME}: MAIN PROJECT: ${CMAKE_PROJECT_NAME}")
@@ -303,10 +314,6 @@ endif(MSVC)
 
 #find_library(PROTOBUF_LIBRARY bzip2 HINTS ${LINK_DIR_2})
 
-
-set(EXECUTABLE_OUTPUT_PATH ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY}) #to build executable in main folder
-#message(${EXECUTABLE_OUTPUT_PATH})
-
 # Add executable to build.
 add_executable(${PROJECT_NAME} WIN32 ${SRC_FILES} ${HEADER_FILES} ${GLOB_FILES})
 
@@ -323,13 +330,13 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 
-# Multi-processor compilation
+
 if (MSVC)
     set_target_properties(${PROJECT_NAME} PROPERTIES
             WIN32_EXECUTABLE YES
             LINK_FLAGS "/ENTRY:mainCRTStartup"
             )
-
+    # Multi-processor compilation
     target_compile_options(${PROJECT_NAME} PRIVATE
             "$<$<CONFIG:Debug>:/MP>"
             "$<$<CONFIG:Release>:/MP>"
@@ -350,6 +357,7 @@ if(MSVC)
     link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
     #target_link_libraries(${PROJECT_NAME} clipper.lib pugixml.lib nativefiledialog.lib sdl_savepng.lib truncatedgaussian.lib png_zlib_win_library.lib)
     #target_link_libraries(${PROJECT_NAME} libgsl_dll.lib libgslcblas_dll.lib SDL2.lib SDL2main.lib libcurl_a_x64.lib opengl32.lib Advapi32.lib user32.lib shell32.lib kernel32.lib ZipLib.lib zlib.lib lzma.lib)
+    # 1. link against external libs
     target_link_libraries(${PROJECT_NAME} bzip2.lib
             libcurl_a_x64.lib
             SDL2.lib
@@ -363,28 +371,44 @@ if(MSVC)
             user32.lib
             shell32.lib
             ole32.lib)
+    # 2. link against our own libs
     target_link_libraries(${PROJECT_NAME} pugixml clipper nativefiledialog sdl_savepng truncatedgaussian png_zlib_win_library)
 endif(MSVC)
 if(NOT MSVC)
-    # Use the package PkgConfig to detect GTK+ headers/library files
-    FIND_PACKAGE(PkgConfig REQUIRED)
-    PKG_CHECK_MODULES(GTK3 REQUIRED gtk+-3.0)
 
-    # Setup CMake to use GTK+, tell the compiler where to look for headers
-    # and to the linker where to look for libraries
-    INCLUDE_DIRECTORIES(${GTK3_INCLUDE_DIRS})
-    LINK_DIRECTORIES(${GTK3_LIBRARY_DIRS})
+    if(APPLE)
+        #link to self-build sdl shared lib
+        target_link_libraries(${PROJECT_NAME} "-framework AppKit")
 
-    # Add other flags to the compiler
-    ADD_DEFINITIONS(${GTK3_CFLAGS_OTHER})
+        #add_library( libSDL2 SHARED IMPORTED GLOBAL)
+        #get_filename_component(ABS_LINK_DIR_2 "${LINK_DIR_2}" REALPATH)
+        #set_target_properties( libSDL2 PROPERTIES IMPORTED_LOCATION ${ABS_LINK_DIR_2}/libSDL2-2.0.dylib)
+        #target_link_libraries(${PROJECT_NAME} libSDL2) # from ./lib/
 
+    else()
+        # Use the package PkgConfig to detect GTK+ headers/library files
+        FIND_PACKAGE(PkgConfig REQUIRED)
+        PKG_CHECK_MODULES(GTK3 REQUIRED gtk+-3.0)
+
+        # Setup CMake to use GTK+, tell the compiler where to look for headers
+        # and to the linker where to look for libraries
+        INCLUDE_DIRECTORIES(${GTK3_INCLUDE_DIRS})
+        LINK_DIRECTORIES(${GTK3_LIBRARY_DIRS})
+
+        # Add other flags to the compiler
+        ADD_DEFINITIONS(${GTK3_CFLAGS_OTHER})
+
+        target_link_libraries(${PROJECT_NAME} ${GTK3_LIBRARIES})
+
+        find_package(X11 REQUIRED)
+        target_include_directories(${PROJECT_NAME} PRIVATE ${X11_INCLUDE_DIRS})
+    endif()
 
     find_package(OpenGL REQUIRED)
     target_include_directories(${PROJECT_NAME} PRIVATE ${OPENGL_INCLUDE_DIRS})
 
     find_package(SDL2 REQUIRED)
     target_include_directories(${PROJECT_NAME} PRIVATE ${SDL2_INCLUDE_DIRS})
-    message("SDL2 INCLUDE DIR " ${SDL2_INCLUDE_DIRS})
 
     find_package(PNG REQUIRED)
     target_include_directories(${PROJECT_NAME} PRIVATE ${PNG_INCLUDE_DIRS})
@@ -398,9 +422,6 @@ if(NOT MSVC)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
 
-    find_package(X11 REQUIRED)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${X11_INCLUDE_DIRS})
-
     #GSLCBLAS or BLAS?
     #find_package(GSLCBLAS REQUIRED)
     #target_include_directories(${PROJECT_NAME} PRIVATE ${GSLCBLAS_INCLUDE_DIRS})
@@ -408,8 +429,6 @@ if(NOT MSVC)
     #find_package(stdc++fs REQUIRED)
     #target_include_directories(${PROJECT_NAME} PRIVATE ${stdc++fs_INCLUDE_DIRS})
 
-
-    target_link_libraries(${PROJECT_NAME} ${GTK3_LIBRARIES} )
     target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES})
     target_link_libraries(${PROJECT_NAME} ${SDL2_LIBRARIES})
     target_link_libraries(${PROJECT_NAME} ${PNG_LIBRARIES})
@@ -440,6 +459,13 @@ if(NOT MSVC)
     endif()
     target_link_libraries(${PROJECT_NAME} libzip) # from ./lib/
 
+    #use prebuild nfd for GCC on MacOS
+    if(APPLE AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+        add_library( libnfd STATIC IMPORTED GLOBAL)
+        set_target_properties( libnfd PROPERTIES IMPORTED_LOCATION ${ABS_LINK_DIR_1}/libnfd.a )
+        target_link_libraries(${PROJECT_NAME} libnfd) # from ./lib/
+    endif()
+
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         target_link_libraries(${PROJECT_NAME} c++fs)
     elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
@@ -448,15 +474,12 @@ if(NOT MSVC)
         target_link_libraries(${PROJECT_NAME} stdc++fs)
     endif()
 
-    target_link_libraries(${PROJECT_NAME} pugixml clipper nativefiledialog sdl_savepng truncatedgaussian)
-    #[[IF(WIN32)
-        target_link_libraries(${PROJECT_NAME} png_zlib_win_library)
-    ENDIF(WIN32)]]
+    target_link_libraries(${PROJECT_NAME} pugixml clipper sdl_savepng truncatedgaussian)
+    target_link_libraries(${PROJECT_NAME} nativefiledialog)
     endif(NOT MSVC)
 
 # Clear previous build to prevent remaining (old) files
 # file(REMOVE_RECURSE ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})
-
 
 IF (WIN32)
     file(GLOB DLL_FILFES
@@ -470,6 +493,40 @@ set(COPY_FILES ${COPY_DIR}/desorption_yields
         ${COPY_DIR}/images
         ${COPY_DIR}/parameter_catalog)
 
+IF (WIN32)
+    set(COPY_FILES ${COPY_FILES}
+            ${COPY_DIR}/7za.exe
+            )
+ELSEIF(NOT APPLE)
+    set(COPY_FILES ${COPY_FILES}
+            ${COPY_DIR}/7za
+            )
+ENDIF()
+
+IF(${OS_NAME} STREQUAL "linux_fedora")
+    set(COPY_FILES ${COPY_FILES}
+            ${COPY_DIR}/launch_molflow.sh
+            )
+ENDIF()
+
+#Copy our own libSDL2 to /lib
+IF(APPLE)
+    #    file(COPY
+    #	 ${LINK_DIR_2}/libSDL2-2.0.dylib
+    #	DESTINATION
+    #	${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY}/lib
+    #            )
+ENDIF()
+
+set(COPY_FILES ${COPY_FILES}
+        ${COPY_DIR}/updater_config_default_${OS_NAME}.xml
+        )
+
 file(COPY ${COPY_FILES}
         DESTINATION ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})
-#file(COPY ${COPY_DIR} DESTINATION ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})
+
+file(RENAME
+        ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY}/updater_config_default_${OS_NAME}.xml
+        ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY}/updater_config.xml)
+
+message("COPIED: " ${COPY_FILES})

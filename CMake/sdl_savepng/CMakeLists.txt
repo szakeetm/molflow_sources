@@ -8,17 +8,22 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 set(PROJECT_NAME sdl_savepng)
 IF (WIN32)
     set(OS_NAME "win")
+    set(OS_RELPATH "..")
+ELSEIF(APPLE)
+    set(OS_NAME "mac")
+    set(OS_RELPATH "")
 ELSE()
     IF(os_version_suffix STREQUAL ".el7")
         set(OS_NAME "linux_fedora")
     ELSE()
         set(OS_NAME "linux_debian")
     ENDIF()
+    set(OS_RELPATH "..")
 ENDIF()
 
 # Output Variables
-set(OUTPUT_DEBUG ../lib/${OS_NAME}/debug/)
-set(OUTPUT_REL ../lib/${OS_NAME}/release/)
+set(OUTPUT_DEBUG ${OS_RELPATH}/lib/${OS_NAME}/debug/)
+set(OUTPUT_REL ${OS_RELPATH}/lib/${OS_NAME}/release/)
 
 # Folders files
 set(CPP_DIR_1 ../../src_shared/SDL_SavePNG)
@@ -97,9 +102,6 @@ ELSE()
             ${HEADER_DIR_1}
             )
 
-ENDIF()
-
-IF(NOT APPLE AND NOT MSVC)
     find_package(SDL2 REQUIRED)
     target_include_directories(${PROJECT_NAME} PRIVATE ${SDL2_INCLUDE_DIRS})
 
@@ -109,6 +111,7 @@ IF(NOT APPLE AND NOT MSVC)
     target_link_libraries(${PROJECT_NAME} ${SDL2_LIBRARIES})
     target_link_libraries(${PROJECT_NAME} ${PNG_LIBRARIES})
 ENDIF()
+
 ################# Flags ################
 # Defines Flags for Windows and Linux. #
 ########################################

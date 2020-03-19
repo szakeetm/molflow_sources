@@ -8,12 +8,17 @@ set(PROJECT_NAME molflowSub)
 
 IF (WIN32)
     set(OS_NAME "win")
+    set(OS_RELPATH "..")
+ELSEIF(APPLE)
+    set(OS_NAME "mac")
+    set(OS_RELPATH "")
 ELSE()
     IF(os_version_suffix STREQUAL ".el7")
         set(OS_NAME "linux_fedora")
     ELSE()
         set(OS_NAME "linux_debian")
     ENDIF()
+    set(OS_RELPATH "..")
 ENDIF()
 
 IF (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -23,8 +28,8 @@ ELSE()
 ENDIF()
 
 # Output Variables
-set(OUTPUT_DEBUG ../bin/${OS_NAME}/debug/)
-set(OUTPUT_REL ../bin/${OS_NAME}/release/)
+set(OUTPUT_DEBUG ${OS_RELPATH}/bin/${OS_NAME}/debug/)
+set(OUTPUT_REL ${OS_RELPATH}/bin/${OS_NAME}/release/)
 
 # Folders files
 set(CPP_DIR_1 ../../src)
@@ -38,18 +43,19 @@ set(HEADER_DIR_3 ../../src_shared/GLApp)
 
 #set(HEADER_DIR_4 ../../_molflow/molflow_project/lib/include/)
 #set(HEADER_DIR_5 ../../_molflow/molflow_project/lib/include/SDL)
-set(HEADER_DIR_6 ../../include)
 
 IF (WIN32)
     # set stuff for windows
+    set(HEADER_DIR_6 ../../include)
+
     set(LINK_DIR_1 ../../lib/win/${MY_BUILD_TYPE})
     #set(LINK_DIR_2 ../../_molflow/molflowsub_project/lib/lib)
     set(LINK_DIR_3 ../../lib_external/win/${MY_BUILD_TYPE})
     set(DLL_DIR ../../lib_external/win/dll)
+ELSEIF(APPLE)
+    set(LINK_DIR_1 ../../lib_external/mac)
 ELSE()
     # set stuff for other systems
-
-    set(HEADER_DIR_6 "")
 
     # link to fedora libraries if EL Linux (Red Hat Enterprise Linux) has been detected
     IF(os_version_suffix STREQUAL ".el7")
@@ -72,11 +78,15 @@ message("GPU support via CUDA is " ${USE_CUDA})
 
 # Definition of Macros
 add_definitions(
-        -DWIN
         -D_MBCS
         -DMOLFLOW
         -D_CRT_SECURE_NO_WARNINGS
 )
+IF (WIN32)
+    add_definitions(
+            -DWIN
+    )
+ENDIF()
 
 if(USE_CUDA)
     set(CUDA_ROOT "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.2")
@@ -135,7 +145,7 @@ if(MSVC)
 endif(MSVC)
 if(NOT MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
-    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
     endif()
 endif(NOT MSVC)
@@ -345,18 +355,28 @@ if(MSVC)
 endif(MSVC)
 if(NOT MSVC)
 
+    if(APPLE)
+        #link to self-build sdl shared lib
+        target_link_libraries(${PROJECT_NAME} "-framework AppKit")
+
+        #add_library( libSDL2 SHARED IMPORTED GLOBAL)
+        #get_filename_component(ABS_LINK_DIR_2 "${LINK_DIR_2}" REALPATH)
+        #set_target_properties( libSDL2 PROPERTIES IMPORTED_LOCATION ${ABS_LINK_DIR_2}/libSDL2-2.0.dylib)
+        #target_link_libraries(${PROJECT_NAME} libSDL2) # from ./lib/
+
+    else()
+        find_package(X11 REQUIRED)
+        target_include_directories(${PROJECT_NAME} PRIVATE ${X11_INCLUDE_DIRS})
+    endif()
+
     find_package(GSL REQUIRED)
     target_include_directories(${PROJECT_NAME} PRIVATE ${GSL_INCLUDE_DIRS})
 
     find_package(CURL REQUIRED)
     target_include_directories(${PROJECT_NAME} PRIVATE ${CURL_INCLUDE_DIRS})
 
-
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
-
-    find_package(X11 REQUIRED)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${X11_INCLUDE_DIRS})
 
     #GSLCBLAS or BLAS?
     #find_package(GSLCBLAS REQUIRED)
@@ -399,7 +419,7 @@ if(NOT MSVC)
         target_link_libraries(${PROJECT_NAME} stdc++fs)
     endif()
 
-    target_link_libraries(${PROJECT_NAME} pugixml clipper nativefiledialog sdl_savepng truncatedgaussian)
+    target_link_libraries(${PROJECT_NAME} pugixml clipper sdl_savepng truncatedgaussian)
 
 
 endif(NOT MSVC)
@@ -408,12 +428,12 @@ endif(NOT MSVC)
 # file(REMOVE_RECURSE ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})
 
 
-IF (WIN32)
+#[[IF (WIN32)
     file(GLOB DLL_FILES
             ${DLL_DIR}/*.dll
             )
     file(COPY ${DLL_FILES}
             DESTINATION ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})
-ENDIF()
+ENDIF()]]
 
 #file(COPY ${COPY_DIR} DESTINATION ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})
