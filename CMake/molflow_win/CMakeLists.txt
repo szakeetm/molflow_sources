@@ -44,7 +44,7 @@ set(HEADER_DIR_4 ../../src_shared/GLApp/GLChart)
 set(HEADER_DIR_6 ../../include)
 
 set(COPY_DIR ../../copy_to_build/)
- 
+
 IF (WIN32)
     # set stuff for windows
 
@@ -91,10 +91,13 @@ add_definitions(
         -DMOLFLOW
         -D_CRT_SECURE_NO_WARNINGS
         -D_CRT_NONSTDC_NO_DEPRECATE
-        -D_WINDOWS
-        -D_WITHGL
 )
-
+IF (WIN32)
+    add_definitions(
+            -D_WINDOWS
+            -D_WITHGL
+    )
+ENDIF()
 ############## Artefacts Output #################
 # Defines outputs , depending Debug or Release. #
 #################################################
