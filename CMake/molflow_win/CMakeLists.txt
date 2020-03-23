@@ -189,7 +189,7 @@ set(SRC_FILES ${CPP_DIR_1}/FacetAdvParams.cpp
         ${CPP_DIR_1}/TimewisePlotter.cpp
         ${CPP_DIR_1}/Viewer3DSettings.cpp
 
-        ${CPP_DIR_2}/ASELoader.cpp
+        #[[${CPP_DIR_2}/ASELoader.cpp
         ${CPP_DIR_2}/AddVertex.cpp
         ${CPP_DIR_2}/AlignFacet.cpp
         ${CPP_DIR_2}/AppUpdater.cpp
@@ -232,7 +232,7 @@ set(SRC_FILES ${CPP_DIR_1}/FacetAdvParams.cpp
         ${CPP_DIR_2}/VertexCoordinates.cpp
         ${CPP_DIR_2}/Web.cpp
         ${CPP_DIR_2}/Worker_shared.cpp
-        ${CPP_DIR_2}/GeometryConverter.cpp
+        ${CPP_DIR_2}/GeometryConverter.cpp]]
         )
 
 set(HEADER_FILES ${HEADER_DIR_1}/FacetAdvParams.h
@@ -256,7 +256,7 @@ set(HEADER_FILES ${HEADER_DIR_1}/FacetAdvParams.h
         ${HEADER_DIR_1}/TimewisePlotter.h
         ${HEADER_DIR_1}/Viewer3DSettings.h
 
-        ${HEADER_DIR_2}/ASELoader.h
+        #[[${HEADER_DIR_2}/ASELoader.h
         ${HEADER_DIR_2}/AddVertex.h
         ${HEADER_DIR_2}/AlignFacet.h
         ${HEADER_DIR_2}/AppUpdater.h
@@ -297,7 +297,7 @@ set(HEADER_FILES ${HEADER_DIR_1}/FacetAdvParams.h
         ${HEADER_DIR_2}/VertexCoordinates.h
         ${HEADER_DIR_1}/versionId.h
         ${HEADER_DIR_2}/Worker.h
-        ${HEADER_DIR_2}/GeometryConverter.h
+        ${HEADER_DIR_2}/GeometryConverter.h]]
         )
 
 if(WITH_GPU)
@@ -319,6 +319,7 @@ endif(MSVC)
 
 # Add executable to build.
 add_executable(${PROJECT_NAME} WIN32 ${SRC_FILES} ${HEADER_FILES} ${GLOB_FILES})
+target_link_libraries(${PROJECT_NAME} simulator_shared)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_1}
@@ -413,8 +414,8 @@ if(NOT MSVC)
     find_package(SDL2 REQUIRED)
     target_include_directories(${PROJECT_NAME} PRIVATE ${SDL2_INCLUDE_DIRS})
 
-    find_package(PNG REQUIRED)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${PNG_INCLUDE_DIRS})
+    #[[find_package(PNG REQUIRED)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${PNG_INCLUDE_DIRS})]]
 
     find_package(GSL REQUIRED)
     target_include_directories(${PROJECT_NAME} PRIVATE ${GSL_INCLUDE_DIRS})

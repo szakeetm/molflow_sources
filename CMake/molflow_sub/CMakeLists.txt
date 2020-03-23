@@ -162,20 +162,21 @@ set(SRC_FILES ${CPP_DIR_1}/molflowSub.cpp
         ${CPP_DIR_1}/SimulationControl.cpp
         ${CPP_DIR_1}/SimulationMC.cpp
 
-        ${CPP_DIR_2}/Distributions.cpp
+#[[        ${CPP_DIR_2}/Distributions.cpp
         ${CPP_DIR_2}/IntersectAABB_shared.cpp
         ${CPP_DIR_2}/Polygon.cpp
         ${CPP_DIR_2}/Random.cpp
         ${CPP_DIR_2}/ShMemory.cpp
         ${CPP_DIR_2}/Process.cpp
         ${CPP_DIR_2}/Vector.cpp
-
+]]
         ${CPP_DIR_3}/MathTools.cpp
         )
 
 set(HEADER_FILES ${HEADER_DIR_1}/MolflowTypes.h
         ${HEADER_DIR_1}/Parameter.h
         ${HEADER_DIR_1}/Simulation.h
+#[[
         ${HEADER_DIR_2}/Buffer_shared.h
         ${HEADER_DIR_2}/Distributions.h
         ${HEADER_DIR_2}/IntersectAABB_shared.h
@@ -184,8 +185,10 @@ set(HEADER_FILES ${HEADER_DIR_1}/MolflowTypes.h
         ${HEADER_DIR_2}/SMP.h
         ${HEADER_DIR_2}/Vector.h
 
+
         ${HEADER_DIR_3}/GLTypes.h
         ${HEADER_DIR_3}/MathTools.h
+]]
         )
 
 # set the path to the library folder
@@ -245,6 +248,7 @@ if(USE_CUDA)
 endif(USE_CUDA)
 
 add_executable(${PROJECT_NAME} ${SRC_FILES} ${HEADER_FILES})
+target_link_libraries(${PROJECT_NAME} simulator_shared)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_1}
