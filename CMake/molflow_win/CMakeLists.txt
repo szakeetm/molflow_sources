@@ -6,36 +6,8 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 
 set(PROJECT_NAME molflow)
 
-IF (WIN32)
-    set(OS_NAME "win")
-    set(OS_RELPATH "..")
-ELSEIF(APPLE)
-    set(OS_NAME "mac")
-    set(OS_RELPATH "")
-ELSE()
-    IF(os_version_suffix STREQUAL ".el7")
-        set(OS_NAME "linux_fedora")
-    ELSE()
-        set(OS_NAME "linux_debian")
-    ENDIF()
-    set(OS_RELPATH "..")
-ENDIF()
-
-IF (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(MY_BUILD_TYPE "debug")
-ELSE()
-    set(MY_BUILD_TYPE "release")
-ENDIF()
-
-# Output Variables
-set(OUTPUT_DEBUG ${OS_RELPATH}/bin/${OS_NAME}/debug/)
-set(OUTPUT_REL ${OS_RELPATH}/bin/${OS_NAME}/release/)
-
 # Folders files
 set(CPP_DIR_1 ../../src)
-set(CPP_DIR_2 ../../src_shared)
-set(CPP_DIR_3 ../../src_shared/GLApp)
-set(CPP_DIR_4 ../../src_shared/GLApp/GLChart)
 set(HEADER_DIR_1 ../../src)
 set(HEADER_DIR_2 ../../src_shared)
 set(HEADER_DIR_3 ../../src_shared/GLApp)
@@ -43,7 +15,6 @@ set(HEADER_DIR_4 ../../src_shared/GLApp/GLChart)
 #set(HEADER_DIR_5 ../../_molflow/molflow_project/lib/include/)
 set(HEADER_DIR_6 ../../include)
 
-set(COPY_DIR ../../copy_to_build/)
 
 IF (WIN32)
     # set stuff for windows
@@ -88,7 +59,6 @@ project(${PROJECT_NAME} CXX)
 add_definitions(
         -DCURL_STATICLIB
         -D_MBCS
-        -DMOLFLOW
         -D_CRT_SECURE_NO_WARNINGS
         -D_CRT_NONSTDC_NO_DEPRECATE
 )
@@ -98,50 +68,10 @@ IF (WIN32)
             -D_WITHGL
     )
 ENDIF()
-############## Artefacts Output #################
-# Defines outputs , depending Debug or Release. #
-#################################################
-
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_DEBUG}")
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_DEBUG}")
-    set(CMAKE_EXECUTABLE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_DEBUG}")
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_DEBUG}")
-else()
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_REL}")
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_REL}")
-    set(CMAKE_EXECUTABLE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_REL}")
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_REL}")
-endif()
-set(EXECUTABLE_OUTPUT_PATH ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY}) #to build executable in main folder
-#message(${EXECUTABLE_OUTPUT_PATH})
-
-# Messages
-message("${PROJECT_NAME}: MAIN PROJECT: ${CMAKE_PROJECT_NAME}")
-message("${PROJECT_NAME}: CURR PROJECT: ${CMAKE_CURRENT_SOURCE_DIR}")
-message("${PROJECT_NAME}: CURR BIN DIR: ${CMAKE_CURRENT_BINARY_DIR}")
 
 ################# Flags ################
 # Defines Flags for Windows and Linux. #
 ########################################
-
-#[[if(MSVC)
-    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
-    set(CMAKE_GENERATOR_PLATFORM x64)
-    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /mwindows")
-    #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mwindows")
-    # main vs WinMain
-    # https://stackoverflow.com/questions/2752792/whats-the-equivalent-of-gccs-mwindows-option-in-cmake
-    #set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /subsystem:windows /ENTRY:mainCRTStartup")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /W3 /EHsc")
-   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /W3 /EHsc")
-endif(MSVC)
-if(NOT MSVC)
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
-   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-       set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-   endif()
-endif(NOT MSVC)]]
 
 if(MSVC)
 
@@ -158,11 +88,11 @@ endif(NOT MSVC)
 #######################################
 
 file(GLOB GLOB_FILES
-        ${CPP_DIR_3}/*.cpp
-        ${CPP_DIR_4}/*.cpp
-        ${CPP_DIR_5}/*.cpp
-        ${HEADER_DIR_3}/*.h
-        ${HEADER_DIR_4}/*.h
+        #${CPP_DIR_3}/*.cpp
+        #${CPP_DIR_4}/*.cpp
+        #${CPP_DIR_5}/*.cpp
+        #${HEADER_DIR_3}/*.h
+        #${HEADER_DIR_4}/*.h
         )
 
 set(SRC_FILES ${CPP_DIR_1}/FacetAdvParams.cpp
@@ -414,8 +344,8 @@ if(NOT MSVC)
     find_package(SDL2 REQUIRED)
     target_include_directories(${PROJECT_NAME} PRIVATE ${SDL2_INCLUDE_DIRS})
 
-    #[[find_package(PNG REQUIRED)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${PNG_INCLUDE_DIRS})]]
+    find_package(PNG REQUIRED)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${PNG_INCLUDE_DIRS})
 
     find_package(GSL REQUIRED)
     target_include_directories(${PROJECT_NAME} PRIVATE ${GSL_INCLUDE_DIRS})
@@ -481,56 +411,3 @@ if(NOT MSVC)
     target_link_libraries(${PROJECT_NAME} pugixml clipper sdl_savepng truncatedgaussian)
     target_link_libraries(${PROJECT_NAME} nativefiledialog)
     endif(NOT MSVC)
-
-# Clear previous build to prevent remaining (old) files
-# file(REMOVE_RECURSE ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})
-
-IF (WIN32)
-    file(GLOB DLL_FILFES
-            ${DLL_DIR}/*.dll
-            )
-    file(COPY ${DLL_FILES}
-            DESTINATION ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})
-ENDIF()
-
-set(COPY_FILES ${COPY_DIR}/desorption_yields
-        ${COPY_DIR}/images
-        ${COPY_DIR}/parameter_catalog)
-
-IF (WIN32)
-    set(COPY_FILES ${COPY_FILES}
-            ${COPY_DIR}/7za.exe
-            )
-ELSEIF(NOT APPLE)
-    set(COPY_FILES ${COPY_FILES}
-            ${COPY_DIR}/7za
-            )
-ENDIF()
-
-IF(${OS_NAME} STREQUAL "linux_fedora")
-    set(COPY_FILES ${COPY_FILES}
-            ${COPY_DIR}/launch_molflow.sh
-            )
-ENDIF()
-
-#Copy our own libSDL2 to /lib
-IF(APPLE)
-    #    file(COPY
-    #	 ${LINK_DIR_2}/libSDL2-2.0.dylib
-    #	DESTINATION
-    #	${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY}/lib
-    #            )
-ENDIF()
-
-set(COPY_FILES ${COPY_FILES}
-        ${COPY_DIR}/updater_config_default_${OS_NAME}.xml
-        )
-
-file(COPY ${COPY_FILES}
-        DESTINATION ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})
-
-file(RENAME
-        ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY}/updater_config_default_${OS_NAME}.xml
-        ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY}/updater_config.xml)
-
-message("COPIED: " ${COPY_FILES})

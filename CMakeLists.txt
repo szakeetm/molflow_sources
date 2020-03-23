@@ -74,6 +74,9 @@ endif(USE_PROFILING)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS OFF)
 
+include(CMake/Molflow.cmake)
+
+add_subdirectory(src_shared)
 add_subdirectory(CMake/molflow_sub)
 add_subdirectory(CMake/molflow_win)
 #add_subdirectory(CMake/compress)
@@ -82,7 +85,6 @@ add_subdirectory(CMake/molflow_win)
 #add_subdirectory(CMake/nativefiledialog)
 #add_subdirectory(CMake/sdl_savepng)
 #add_subdirectory(CMake/truncatedgaussian)
-add_subdirectory(src_shared)
 
 #add_subdirectory(ziputils)
 

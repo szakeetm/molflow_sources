@@ -6,31 +6,6 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 
 set(PROJECT_NAME molflowSub)
 
-IF (WIN32)
-    set(OS_NAME "win")
-    set(OS_RELPATH "..")
-ELSEIF(APPLE)
-    set(OS_NAME "mac")
-    set(OS_RELPATH "")
-ELSE()
-    IF(os_version_suffix STREQUAL ".el7")
-        set(OS_NAME "linux_fedora")
-    ELSE()
-        set(OS_NAME "linux_debian")
-    ENDIF()
-    set(OS_RELPATH "..")
-ENDIF()
-
-IF (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(MY_BUILD_TYPE "debug")
-ELSE()
-    set(MY_BUILD_TYPE "release")
-ENDIF()
-
-# Output Variables
-set(OUTPUT_DEBUG ${OS_RELPATH}/bin/${OS_NAME}/debug/)
-set(OUTPUT_REL ${OS_RELPATH}/bin/${OS_NAME}/release/)
-
 # Folders files
 set(CPP_DIR_1 ../../src)
 set(CPP_DIR_2 ../../src_shared)
@@ -51,7 +26,6 @@ IF (WIN32)
     set(LINK_DIR_1 ../../lib/win/${MY_BUILD_TYPE})
     #set(LINK_DIR_2 ../../_molflow/molflowsub_project/lib/lib)
     set(LINK_DIR_3 ../../lib_external/win/${MY_BUILD_TYPE})
-    set(DLL_DIR ../../lib_external/win/dll)
 ELSEIF(APPLE)
     set(LINK_DIR_1 ../../lib_external/mac)
 ELSE()
@@ -79,7 +53,6 @@ message("GPU support via CUDA is " ${USE_CUDA})
 # Definition of Macros
 add_definitions(
         -D_MBCS
-        -DMOLFLOW
         -D_CRT_SECURE_NO_WARNINGS
 )
 IF (WIN32)
@@ -97,48 +70,9 @@ if(USE_CUDA)
     )
 endif()
 
-    ############## Artefacts Output #################
-# Defines outputs , depending Debug or Release. #
-#################################################
-
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_DEBUG}")
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_DEBUG}")
-    set(CMAKE_EXECUTABLE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_DEBUG}")
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_DEBUG}")
-else()
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_REL}")
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_REL}")
-    set(CMAKE_EXECUTABLE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_REL}")
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_REL}")
-endif()
-
-# Messages
-message("${PROJECT_NAME}: MAIN PROJECT: ${CMAKE_PROJECT_NAME}")
-message("${PROJECT_NAME}: CURR PROJECT: ${CMAKE_CURRENT_SOURCE_DIR}")
-message("${PROJECT_NAME}: CURR BIN DIR: ${CMAKE_CURRENT_BINARY_DIR}")
-
 ################# Flags ################
 # Defines Flags for Windows and Linux. #
 ########################################
-
-#[[if(MSVC)
-    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
-    set(CMAKE_GENERATOR_PLATFORM x64)
-    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /mwindows")
-    #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mwindows")
-    # main vs WinMain
-    # https://stackoverflow.com/questions/2752792/whats-the-equivalent-of-gccs-mwindows-option-in-cmake
-    #set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /subsystem:windows /ENTRY:mainCRTStartup")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /W3 /EHsc")
-   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /W3 /EHsc")
-endif(MSVC)
-if(NOT MSVC)
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
-   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-       set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-   endif()
-endif(NOT MSVC)]]
 
 if(MSVC)
 
@@ -427,17 +361,3 @@ if(NOT MSVC)
 
 
 endif(NOT MSVC)
-
-# Clear previous build to prevent remaining (old) files
-# file(REMOVE_RECURSE ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})
-
-
-#[[IF (WIN32)
-    file(GLOB DLL_FILES
-            ${DLL_DIR}/*.dll
-            )
-    file(COPY ${DLL_FILES}
-            DESTINATION ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})
-ENDIF()]]
-
-#file(COPY ${COPY_DIR} DESTINATION ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})

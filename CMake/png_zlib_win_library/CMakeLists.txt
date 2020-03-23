@@ -9,24 +9,6 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 #set(DEPENDENCIES_DIR ${PROJECT_DIR}/dependencies)
 set(PROJECT_NAME png_zlib_win_library)
 
-IF (WIN32)
-    set(OS_NAME "win")
-    set(OS_RELPATH "..")
-ELSEIF(APPLE)
-    set(OS_NAME "mac")
-    set(OS_RELPATH "")
-ELSE()
-    IF(os_version_suffix STREQUAL ".el7")
-        set(OS_NAME "linux_fedora")
-    ELSE()
-        set(OS_NAME "linux_debian")
-    ENDIF()
-    set(OS_RELPATH "..")
-ENDIF()
-
-# Output Variables
-set(OUTPUT_DEBUG ${OS_RELPATH}/lib/${OS_NAME}/debug/)
-set(OUTPUT_REL ${OS_RELPATH}/lib/${OS_NAME}/release/)
 # Folders files
 set(C_DIR_1 ../../include/windows_only/zlib/)
 set(HEADER_DIR_1 ../../include/windows_only/zlib/)
@@ -38,30 +20,6 @@ set(HEADER_DIR_2 ../../include/windows_only/png/)
 ############################################################
 
 project(${PROJECT_NAME} C)
-
-############## Artefacts Output ############################
-# Defines outputs , depending BUILD TYPE                   #
-############################################################
-
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_DEBUG}")
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_DEBUG}")
-    set(CMAKE_EXECUTABLE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_DEBUG}")
-else()
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_REL}")
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_REL}")
-    set(CMAKE_EXECUTABLE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_REL}")
-endif()
-
-# Messages
-message("${PROJECT_NAME}: MAIN PROJECT: ${CMAKE_PROJECT_NAME}")
-message("${PROJECT_NAME}: CURR PROJECT: ${CMAKE_CURRENT_SOURCE_DIR}")
-message("${PROJECT_NAME}: CURR BIN DIR: ${CMAKE_CURRENT_BINARY_DIR}")
-# Messages
-message("${PROJECT_NAME}: CMAKE_LIBRARY_OUTPUT_DIRECTORY: ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
-message("${PROJECT_NAME}: CMAKE_ARCHIVE_OUTPUT_DIRECTORY: ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}")
-message("${PROJECT_NAME}: CMAKE_EXECUTABLE_OUTPUT_DIRECTORY: ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY}")
-
 
 ############### Files & Targets ############################
 # Files of project and target to build                     #
