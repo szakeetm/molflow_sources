@@ -76,6 +76,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS OFF)
 
 include(CMake/Molflow.cmake)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 add_subdirectory(src_shared)
 add_subdirectory(CMake/molflow_sub)
 add_subdirectory(CMake/molflow_win)

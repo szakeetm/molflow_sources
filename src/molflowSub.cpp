@@ -210,7 +210,7 @@ void LoadAC() {
   map = (SHELEM_OLD *)malloc( prParam );
   memcpy(map,loader->buff,prParam);
   ReleaseDataport(loader);
-  CLOSEDP(loader);
+  CLOSEDPSUB(loader);
 
   SetState(PROCESS_RUNAC,GetSimuStatus());
   ComputeACMatrix(map);
@@ -244,10 +244,10 @@ void Load() {
   printf("Connected to %s\n",loadDpName);
 
   if( !LoadSimulation(loader) ) {
-    CLOSEDP(loader);
+    CLOSEDPSUB(loader);
     return;
   }
-  CLOSEDP(loader);
+  CLOSEDPSUB(loader);
 
   //Connect to log dataport
   if (sHandle->ontheflyParams.enableLogging) {
@@ -290,7 +290,7 @@ bool UpdateParams() {
 	printf("Connected to %s\n", loadDpName);
 
 	bool result = UpdateOntheflySimuParams(loader);
-	CLOSEDP(loader);
+	CLOSEDPSUB(loader);
 
 	if (sHandle->ontheflyParams.enableLogging) {
 		dpLog = OpenDataport(logDpName, sizeof(size_t) + sHandle->ontheflyParams.logLimit * sizeof(ParticleLoggerItem));
@@ -376,7 +376,7 @@ int main(int argc,char* argv[])
 
 	  case COMMAND_RELEASEDPLOG:
 		  printf("[%d] COMMAND: UPDATEPARAMS (%zd,%zd)\n", prIdx, prParam, prParam2);
-		  CLOSEDP(dpLog);
+		  CLOSEDPSUB(dpLog);
 		  SetState(prParam, GetSimuStatus());
 		  break;
 
@@ -416,8 +416,8 @@ int main(int argc,char* argv[])
       case COMMAND_CLOSE:
         printf("[%d] COMMAND: CLOSE (%zd,%llu)\n", prIdx,prParam,prParam2);
         ClearSimulation();
-        CLOSEDP(dpHit);
-		CLOSEDP(dpLog);
+        CLOSEDPSUB(dpHit);
+		CLOSEDPSUB(dpLog);
         SetReady();
         break;
 

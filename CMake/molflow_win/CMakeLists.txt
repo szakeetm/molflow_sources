@@ -410,4 +410,4 @@ if(NOT MSVC)
 
     target_link_libraries(${PROJECT_NAME} pugixml clipper sdl_savepng truncatedgaussian)
     target_link_libraries(${PROJECT_NAME} nativefiledialog)
-    endif(NOT MSVC)
+endif(NOT MSVC)

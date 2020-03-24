@@ -336,8 +336,11 @@ if(NOT MSVC)
         target_link_libraries(${PROJECT_NAME} ${LIBRT})
     endif()
 
+if (NOT TARGET libzip)
     # Your-external "mylib", add GLOBAL if the imported library is located in directories above the current.
     add_library( libzip STATIC IMPORTED GLOBAL)
+endif() 
+    
     # You can define two import-locations: one for debug and one for release.
     get_filename_component(ABS_LINK_DIR_1 "${LINK_DIR_1}" REALPATH)
 
@@ -357,7 +360,7 @@ if(NOT MSVC)
         target_link_libraries(${PROJECT_NAME} stdc++fs)
     endif()
 
-    target_link_libraries(${PROJECT_NAME} pugixml clipper sdl_savepng truncatedgaussian)
+    #target_link_libraries(${PROJECT_NAME} pugixml clipper sdl_savepng truncatedgaussian)
 
 
 endif(NOT MSVC)
