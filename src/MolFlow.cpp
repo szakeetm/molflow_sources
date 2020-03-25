@@ -1464,7 +1464,7 @@ void MolFlow::LoadFile(std::string fileName) {
 		if (timewisePlotter) timewisePlotter->Refresh();
 		if (histogramPlotter) histogramPlotter->Reset();
 		if (histogramSettings) histogramSettings->Refresh({});
-		//if (profilePlotter) profilePlotter->Refresh(); //Might have loaded views
+		if (profilePlotter) profilePlotter->Refresh(); //Might have loaded views
 		if (texturePlotter) texturePlotter->Update(0.0,true);
 		//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 		if (textureScaling) textureScaling->Update();
@@ -2167,9 +2167,7 @@ void MolFlow::EmptyGeometry() {
 	ResetSimulation(false);
 
 	try {
-        //assert(_CrtCheckMemory());
 		geom->EmptyGeometry();
-        //assert(_CrtCheckMemory());
 		worker.CalcTotalOutgassing();
 		//default values
 		worker.wp.enableDecay = false;

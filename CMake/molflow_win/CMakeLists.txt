@@ -10,34 +10,26 @@ set(PROJECT_NAME molflow)
 set(CPP_DIR_1 ../../src)
 set(HEADER_DIR_1 ../../src)
 set(HEADER_DIR_2 ../../src_shared)
-set(HEADER_DIR_3 ../../src_shared/GLApp)
-set(HEADER_DIR_4 ../../src_shared/GLApp/GLChart)
+#set(HEADER_DIR_3 ../../src_shared/GLApp)
+#set(HEADER_DIR_4 ../../src_shared/GLApp/GLChart)
 #set(HEADER_DIR_5 ../../_molflow/molflow_project/lib/include/)
 set(HEADER_DIR_6 ../../include)
-
 
 IF (WIN32)
     # set stuff for windows
 
-    set(CPP_DIR_5 ../../source/shared_code/windows_only)
     set(HEADER_DIR_7 ../../include/windows_only)
     set(HEADER_DIR_8 ../../include/windows_only/png)
 
     set(LINK_DIR_1 ../../lib/win/${MY_BUILD_TYPE})
-    #set(LINK_DIR_2 ../../_molflow/molflow_project/lib/lib)
-    set(LINK_DIR_3 ../../lib_external/win/${MY_BUILD_TYPE})
+    set(LINK_DIR_2 ../../lib_external/win/${MY_BUILD_TYPE})
     set(DLL_DIR ../../lib_external/win/dll)
 ELSEIF(APPLE)
     # set stuff for mac os
     set(HEADER_DIR_7 "../../include/mac_only")
     set(LINK_DIR_1 ../../lib_external/mac)
-    #set(LINK_DIR_2 ../../lib_external/mac/SDL2)
 ELSE()
     # set stuff for other systems
-
-    set(CPP_DIR_5 "")
-    set(HEADER_DIR_7 "")
-    set(HEADER_DIR_8 "")
 
     # link to fedora libraries if EL Linux (Red Hat Enterprise Linux) has been detected
     IF(os_version_suffix STREQUAL ".el7")
@@ -46,8 +38,6 @@ ELSE()
         set(LINK_DIR_1 ../../lib_external/linux_debian)
     ENDIF()
 ENDIF()
-
-
 
 ############## CMake Project ################
 #        The main options of project        #
@@ -87,14 +77,6 @@ endif(NOT MSVC)
 #   --   Add files to project.   --   #
 #######################################
 
-file(GLOB GLOB_FILES
-        #${CPP_DIR_3}/*.cpp
-        #${CPP_DIR_4}/*.cpp
-        #${CPP_DIR_5}/*.cpp
-        #${HEADER_DIR_3}/*.h
-        #${HEADER_DIR_4}/*.h
-        )
-
 set(SRC_FILES ${CPP_DIR_1}/FacetAdvParams.cpp
         ${CPP_DIR_1}/FacetDetails.cpp
         ${CPP_DIR_1}/GeometryRender.cpp
@@ -118,137 +100,24 @@ set(SRC_FILES ${CPP_DIR_1}/FacetAdvParams.cpp
         ${CPP_DIR_1}/TimeSettings.cpp
         ${CPP_DIR_1}/TimewisePlotter.cpp
         ${CPP_DIR_1}/Viewer3DSettings.cpp
-
-        #[[${CPP_DIR_2}/ASELoader.cpp
-        ${CPP_DIR_2}/AddVertex.cpp
-        ${CPP_DIR_2}/AlignFacet.cpp
-        ${CPP_DIR_2}/AppUpdater.cpp
-        ${CPP_DIR_2}/BuildIntersection.cpp
-        ${CPP_DIR_2}/CollapseSettings.cpp
-        ${CPP_DIR_2}/CreateShape.cpp
-        ${CPP_DIR_2}/Distributions.cpp
-        ${CPP_DIR_2}/ExtrudeFacet.cpp
-        ${CPP_DIR_2}/FacetCoordinates.cpp
-        ${CPP_DIR_2}/Facet_shared.cpp
-        ${CPP_DIR_2}/File.cpp
-        ${CPP_DIR_2}/FormulaEditor.cpp
-        ${CPP_DIR_2}/GeometryRender_shared.cpp
-        ${CPP_DIR_2}/GeometryViewer_shared.cpp
-        ${CPP_DIR_2}/Geometry_shared.cpp
-        ${CPP_DIR_2}/GrahamScan.cpp
-        ${CPP_DIR_2}/HistogramPlotter.cpp
-        ${CPP_DIR_2}/HistogramSettings.cpp
-        ${CPP_DIR_2}/Interface.cpp
-        ${CPP_DIR_2}/LoadStatus.cpp
-        ${CPP_DIR_2}/MirrorFacet.cpp
-        ${CPP_DIR_2}/MirrorVertex.cpp
-        ${CPP_DIR_2}/MoveFacet.cpp
-        ${CPP_DIR_2}/MoveVertex.cpp
-        ${CPP_DIR_2}/ParticleLogger.cpp
-        ${CPP_DIR_2}/Polygon.cpp
-        ${CPP_DIR_2}/Process.cpp
-        ${CPP_DIR_2}/Random.cpp
-        ${CPP_DIR_2}/RecoveryDialog.cpp
-        ${CPP_DIR_2}/RotateFacet.cpp
-        ${CPP_DIR_2}/RotateVertex.cpp
-        ${CPP_DIR_2}/ScaleFacet.cpp
-        ${CPP_DIR_2}/ScaleVertex.cpp
-        ${CPP_DIR_2}/SelectDialog.cpp
-        ${CPP_DIR_2}/SelectTextureType.cpp
-        ${CPP_DIR_2}/ShMemory.cpp
-        ${CPP_DIR_2}/SmartSelection.cpp
-        ${CPP_DIR_2}/SplitFacet.cpp
-        ${CPP_DIR_2}/Vector.cpp
-        ${CPP_DIR_2}/VertexCoordinates.cpp
-        ${CPP_DIR_2}/Web.cpp
-        ${CPP_DIR_2}/Worker_shared.cpp
-        ${CPP_DIR_2}/GeometryConverter.cpp]]
         )
-
-set(HEADER_FILES ${HEADER_DIR_1}/FacetAdvParams.h
-        ${HEADER_DIR_1}/FacetDetails.h
-        ${HEADER_DIR_1}/GlobalSettings.h
-        ${HEADER_DIR_1}/ImportDesorption.h
-        ${HEADER_DIR_1}/MolFlow.h
-        ${HEADER_DIR_1}/MolflowFacet.h
-        ${HEADER_DIR_1}/MolflowGeometry.h
-        ${HEADER_DIR_1}/MolflowTypes.h
-        ${HEADER_DIR_1}/MomentsEditor.h
-        ${HEADER_DIR_1}/Movement.h
-        ${HEADER_DIR_1}/OutgassingMap.h
-        ${HEADER_DIR_1}/Parameter.h
-        ${HEADER_DIR_1}/ParameterEditor.h
-        ${HEADER_DIR_1}/PressureEvolution.h
-        ${HEADER_DIR_1}/ProfilePlotter.h
-        ${HEADER_DIR_1}/TexturePlotter.h
-        ${HEADER_DIR_1}/TextureScaling.h
-        ${HEADER_DIR_1}/TimeSettings.h
-        ${HEADER_DIR_1}/TimewisePlotter.h
-        ${HEADER_DIR_1}/Viewer3DSettings.h
-
-        #[[${HEADER_DIR_2}/ASELoader.h
-        ${HEADER_DIR_2}/AddVertex.h
-        ${HEADER_DIR_2}/AlignFacet.h
-        ${HEADER_DIR_2}/AppUpdater.h
-        ${HEADER_DIR_2}/Buffer_shared.h
-        ${HEADER_DIR_2}/BuildIntersection.h
-        ${HEADER_DIR_2}/CollapseSettings.h
-        ${HEADER_DIR_2}/CreateShape.h
-        ${HEADER_DIR_2}/Distributions.h
-        ${HEADER_DIR_2}/ExtrudeFacet.h
-        ${HEADER_DIR_2}/FacetCoordinates.h
-        ${HEADER_DIR_2}/Facet_shared.h
-        ${HEADER_DIR_2}/File.h
-        ${HEADER_DIR_2}/FormulaEditor.h
-        ${HEADER_DIR_2}/GeometryViewer.h
-        ${HEADER_DIR_2}/Geometry_shared.h
-        ${HEADER_DIR_2}/GrahamScan.h
-        ${HEADER_DIR_2}/HistogramPlotter.h
-        ${HEADER_DIR_2}/HistogramSettings.h
-        ${HEADER_DIR_2}/Interface.h
-        ${HEADER_DIR_2}/LoadStatus.h
-        ${HEADER_DIR_2}/MirrorFacet.h
-        ${HEADER_DIR_2}/MirrorVertex.h
-        ${HEADER_DIR_2}/MoveFacet.h
-        ${HEADER_DIR_2}/MoveVertex.h
-        ${HEADER_DIR_2}/ParticleLogger.h
-        ${HEADER_DIR_2}/Polygon.h
-        ${HEADER_DIR_2}/RecoveryDialog.h
-        ${HEADER_DIR_2}/RotateFacet.h
-        ${HEADER_DIR_2}/RotateVertex.h
-        ${HEADER_DIR_2}/ScaleFacet.h
-        ${HEADER_DIR_2}/ScaleVertex.h
-        ${HEADER_DIR_2}/SelectDialog.h
-        ${HEADER_DIR_2}/SelectTextureType.h
-        ${HEADER_DIR_2}/SmartSelection.h
-        ${HEADER_DIR_2}/SMP.h
-        ${HEADER_DIR_2}/SplitFacet.h
-        ${HEADER_DIR_2}/Vector.h
-        ${HEADER_DIR_2}/VertexCoordinates.h
-        ${HEADER_DIR_1}/versionId.h
-        ${HEADER_DIR_2}/Worker.h
-        ${HEADER_DIR_2}/GeometryConverter.h]]
-        )
-
-if(WITH_GPU)
-    add_definitions(-DGPUCOMPABILITY)
-    set(SRC_FILES ${SRC_FILES} ${CPP_DIR_1}/GPUSim/MolflowModelParser.cpp)
-    set(HEADER_FILES ${HEADER_FILES} ${HEADER_DIR_1}/GPUSim/MolflowModelParser.h)
-endif(WITH_GPU)
 
 # set the path to the library folder
-link_directories(
-        ${LINK_DIR_2}
-        ${LINK_DIR_3}
-        )
+
 if(MSVC)
     link_directories(${LINK_DIR_1})
+    link_directories(
+            ${LINK_DIR_2}
+    )
 endif(MSVC)
 
-#find_library(PROTOBUF_LIBRARY bzip2 HINTS ${LINK_DIR_2})
-
 # Add executable to build.
-add_executable(${PROJECT_NAME} WIN32 ${SRC_FILES} ${HEADER_FILES} ${GLOB_FILES})
+if(WIN32)
+    add_executable(${PROJECT_NAME} WIN32 ${SRC_FILES})
+else()
+    add_executable(${PROJECT_NAME} ${SRC_FILES})
+endif()
+
 target_link_libraries(${PROJECT_NAME} simulator_shared)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
@@ -264,23 +133,20 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 
-
-if (MSVC)
+if(MSVC)
+    # Add Whole Program Optimization and Link Time Code Generation
+    set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/GL")
+    set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/LTCG")
     set_target_properties(${PROJECT_NAME} PROPERTIES
             WIN32_EXECUTABLE YES
             LINK_FLAGS "/ENTRY:mainCRTStartup"
             )
+
     # Multi-processor compilation
     target_compile_options(${PROJECT_NAME} PRIVATE
             "$<$<CONFIG:Debug>:/MP>"
             "$<$<CONFIG:Release>:/MP>"
             )
-endif ()
-
-if(MSVC)
-    # Add Whole Program Optimization and Link Time Code Generation
-    set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/GL")
-    set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/LTCG")
 
     # Add Windows Console output
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -289,15 +155,15 @@ if(MSVC)
 
     message(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
     link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
-    #target_link_libraries(${PROJECT_NAME} clipper.lib pugixml.lib nativefiledialog.lib sdl_savepng.lib truncatedgaussian.lib png_zlib_win_library.lib)
-    #target_link_libraries(${PROJECT_NAME} libgsl_dll.lib libgslcblas_dll.lib SDL2.lib SDL2main.lib libcurl_a_x64.lib opengl32.lib Advapi32.lib user32.lib shell32.lib kernel32.lib ZipLib.lib zlib.lib lzma.lib)
+
     # 1. link against external libs
-    target_link_libraries(${PROJECT_NAME} bzip2.lib
-            libcurl_a_x64.lib
+    target_link_libraries(${PROJECT_NAME}
+            bzip2.lib
+            #libcurl_a_x64.lib
             SDL2.lib
             SDL2main.lib
-            libgsl.lib
-            libgslcblas.lib
+            #libgsl.lib
+            #libgslcblas.lib
             lzma.lib
             ZipLib.lib
             #zlib.lib
@@ -306,19 +172,11 @@ if(MSVC)
             shell32.lib
             ole32.lib)
     # 2. link against our own libs
-    target_link_libraries(${PROJECT_NAME} pugixml clipper nativefiledialog sdl_savepng truncatedgaussian png_zlib_win_library)
-endif(MSVC)
-if(NOT MSVC)
-
+    target_link_libraries(${PROJECT_NAME} pugixml nativefiledialog)
+elseif(NOT MSVC)
     if(APPLE)
         #link to self-build sdl shared lib
         target_link_libraries(${PROJECT_NAME} "-framework AppKit")
-
-        #add_library( libSDL2 SHARED IMPORTED GLOBAL)
-        #get_filename_component(ABS_LINK_DIR_2 "${LINK_DIR_2}" REALPATH)
-        #set_target_properties( libSDL2 PROPERTIES IMPORTED_LOCATION ${ABS_LINK_DIR_2}/libSDL2-2.0.dylib)
-        #target_link_libraries(${PROJECT_NAME} libSDL2) # from ./lib/
-
     else()
         # Use the package PkgConfig to detect GTK+ headers/library files
         FIND_PACKAGE(PkgConfig REQUIRED)
@@ -356,13 +214,6 @@ if(NOT MSVC)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
 
-    #GSLCBLAS or BLAS?
-    #find_package(GSLCBLAS REQUIRED)
-    #target_include_directories(${PROJECT_NAME} PRIVATE ${GSLCBLAS_INCLUDE_DIRS})
-
-    #find_package(stdc++fs REQUIRED)
-    #target_include_directories(${PROJECT_NAME} PRIVATE ${stdc++fs_INCLUDE_DIRS})
-
     target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES})
     target_link_libraries(${PROJECT_NAME} ${SDL2_LIBRARIES})
     target_link_libraries(${PROJECT_NAME} ${PNG_LIBRARIES})
@@ -370,7 +221,6 @@ if(NOT MSVC)
     target_link_libraries(${PROJECT_NAME} ${CURL_LIBRARIES})
     target_link_libraries(${PROJECT_NAME} Threads::Threads)
     target_link_libraries(${PROJECT_NAME} ${X11_LIBRARIES})
-    #target_link_libraries(${PROJECT_NAME} ${GSLCBLAS_LIBRARIES})
 
     #for shared memory
     find_library(LIBRT rt)
@@ -395,7 +245,9 @@ if(NOT MSVC)
 
     #use prebuild nfd for GCC on MacOS
     if(APPLE AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-        add_library( libnfd STATIC IMPORTED GLOBAL)
+        if (NOT TARGET libzip)
+            add_library( libnfd STATIC IMPORTED GLOBAL)
+        endif()
         set_target_properties( libnfd PROPERTIES IMPORTED_LOCATION ${ABS_LINK_DIR_1}/libnfd.a )
         target_link_libraries(${PROJECT_NAME} libnfd) # from ./lib/
     endif()
@@ -408,6 +260,6 @@ if(NOT MSVC)
         target_link_libraries(${PROJECT_NAME} stdc++fs)
     endif()
 
-    target_link_libraries(${PROJECT_NAME} pugixml clipper sdl_savepng truncatedgaussian)
+    target_link_libraries(${PROJECT_NAME} pugixml sdl_savepng truncatedgaussian)
     target_link_libraries(${PROJECT_NAME} nativefiledialog)
-endif(NOT MSVC)
+endif()
