@@ -179,7 +179,7 @@ elseif(NOT MSVC)
         target_link_libraries(${PROJECT_NAME} "-framework AppKit")
     else()
         # Use the package PkgConfig to detect GTK+ headers/library files
-        FIND_PACKAGE(PkgConfig REQUIRED)
+        #[[FIND_PACKAGE(PkgConfig REQUIRED)
         PKG_CHECK_MODULES(GTK3 REQUIRED gtk+-3.0)
 
         # Setup CMake to use GTK+, tell the compiler where to look for headers
@@ -193,10 +193,10 @@ elseif(NOT MSVC)
         target_link_libraries(${PROJECT_NAME} ${GTK3_LIBRARIES})
 
         find_package(X11 REQUIRED)
-        target_include_directories(${PROJECT_NAME} PRIVATE ${X11_INCLUDE_DIRS})
+        target_include_directories(${PROJECT_NAME} PRIVATE ${X11_INCLUDE_DIRS})]]
     endif()
 
-    find_package(OpenGL REQUIRED)
+    #[[find_package(OpenGL REQUIRED)
     target_include_directories(${PROJECT_NAME} PRIVATE ${OPENGL_INCLUDE_DIRS})
 
     find_package(SDL2 REQUIRED)
@@ -227,7 +227,7 @@ elseif(NOT MSVC)
     if(LIBRT)
         target_link_libraries(${PROJECT_NAME} ${LIBRT})
     endif()
-
+]]
     # Your-external "mylib", add GLOBAL if the imported library is located in directories above the current.
     if (NOT TARGET libzip)
         add_library( libzip STATIC IMPORTED GLOBAL)
@@ -260,6 +260,7 @@ elseif(NOT MSVC)
         target_link_libraries(${PROJECT_NAME} stdc++fs)
     endif()
 
-    target_link_libraries(${PROJECT_NAME} pugixml sdl_savepng truncatedgaussian)
+    #[[target_link_libraries(${PROJECT_NAME} pugixml sdl_savepng truncatedgaussian)
     target_link_libraries(${PROJECT_NAME} nativefiledialog)
+]]
 endif()

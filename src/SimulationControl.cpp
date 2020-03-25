@@ -542,7 +542,7 @@ size_t GetHitsSize() {
 }
 
 void ResetTmpCounters() {
-	SetState(NULL, "Resetting local cache...", false, true);
+	SetState(0, "Resetting local cache...", false, true);
 
 	memset(&sHandle->tmpGlobalResult, 0, sizeof(GlobalHitBuffer));
 	

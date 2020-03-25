@@ -132,9 +132,9 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 	double t0, t1;
 	t0 = GetTick();
 #endif
-	SetState(NULL, "Waiting for 'hits' dataport access...", false, true);
+	SetState(0, "Waiting for 'hits' dataport access...", false, true);
 	sHandle->lastHitUpdateOK = AccessDataportTimed(dpHit, timeout);
-	SetState(NULL, "Updating MC hits...", false, true);
+	SetState(0, "Updating MC hits...", false, true);
 	if (!sHandle->lastHitUpdateOK) return; //Timeout, will try again later
 
 	buffer = (BYTE*)dpHit->buff;
@@ -336,7 +336,7 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 
 	ResetTmpCounters();
 	extern char* GetSimuStatus();
-	SetState(NULL, GetSimuStatus(), false, true);
+	SetState(0, GetSimuStatus(), false, true);
 
 #ifdef _DEBUG
 	t1 = GetTick();
@@ -354,9 +354,9 @@ void UpdateLog(Dataport * dpLog, DWORD timeout)
 		double t0, t1;
 		t0 = GetTick();
 #endif
-		SetState(NULL, "Waiting for 'dpLog' dataport access...", false, true);
+		SetState(0, "Waiting for 'dpLog' dataport access...", false, true);
 		sHandle->lastLogUpdateOK = AccessDataportTimed(dpLog, timeout);
-		SetState(NULL, "Updating Log...", false, true);
+		SetState(0, "Updating Log...", false, true);
 		if (!sHandle->lastLogUpdateOK) return;
 
 		size_t* logBuff = (size_t*)dpLog->buff;
@@ -371,7 +371,7 @@ void UpdateLog(Dataport * dpLog, DWORD timeout)
 		ReleaseDataport(dpLog);
 		sHandle->tmpParticleLog.clear();
 		extern char* GetSimuStatus();
-		SetState(NULL, GetSimuStatus(), false, true);
+		SetState(0, GetSimuStatus(), false, true);
 
 #ifdef _DEBUG
 		t1 = GetTick();
