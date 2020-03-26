@@ -62,6 +62,9 @@ project(${PROJECT_NAME} CXX)
 add_definitions(
         -DMOLFLOW
 )
+if(WITH_GPU)
+    add_definitions(-DGPUCOMPABILITY)
+endif(WITH_GPU)
 
 set(COPY_DIR ./copy_to_build/)
 

@@ -1523,7 +1523,7 @@ void MolFlow::InsertGeometry(bool newStr,std::string fileName) {
 		worker.LoadGeometry(filePath, true, newStr);
 
 		Geometry *geom = worker.GetGeometry();
-        worker.PrepareToRun();
+		worker.PrepareToRun();
 		worker.CalcTotalOutgassing();
 
 		//Increase BB

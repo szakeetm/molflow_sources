@@ -1323,13 +1323,11 @@ std::ostringstream Worker::SerializeForLoader()
 
     geom->SerializeForLoader(outputarchive);
 
-    SerializeForExternal();
-
 	return result;
 }
 
-void Worker::SerializeForExternal(){
-    std::ofstream resultf("minimalout.xml");
+void Worker::SerializeForExternal(std::string outputName) {
+    std::ofstream resultf(outputName);
 
         cereal::XMLOutputArchive outputarchivef(resultf);
 
