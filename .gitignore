@@ -1,3 +1,8 @@
+#blacklist all hidden files (start with . )but the root .gitignore
+
+.*
+!/.gitignore
+#blacklist various file types
 #Ignore files build by Visual Studio
 #ignore thumbnails created by windows
 Thumbs.db
@@ -26,3 +31,59 @@ obj/
 [Rr]elease*/
 _ReSharper*/
 [Tt]est[Rr]esult*
+
+
+# blacklist folders
+
+/*/
+build*/
+
+intermediary/*
+shipped/
+source_snapshots/
+test/
+tmp/
+CMake/cmake-*
+
+!source
+!precomp_obj
+!molflow_tests
+!lib_external
+!include
+!screens
+!build_mac
+!copy_to_build
+!additional_libraries
+!Visual_Studio
+!MolflowGUIElements
+!CMake
+
+# Ignore cmake generated directories and files.
+CMakeFiles
+CTestTestfile.cmake
+Makefile
+cmake_install.cmake
+**/CMakeCache.txt
+#Visual Studio generated solutions (based on CMake):
+**/*.dir
+CMake/**/*.vcxproj
+CMake/**/*.vcxproj.filters
+CMake/**/*.sln
+
+!/additional_libraries/**/Makefile
+**/Screenshots/
+*.ilk
+*.exp
+*.bak
+*.obsolete
+*.cbp
+*.cache
+
+molflow.cfg
+
+# 
+bin/
+lib/
+
+
+**/venv
