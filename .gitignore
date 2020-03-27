@@ -45,18 +45,13 @@ test/
 tmp/
 CMake/cmake-*
 
-!source
-!precomp_obj
-!molflow_tests
-!lib_external
-!include
-!screens
-!build_mac
-!copy_to_build
-!additional_libraries
-!Visual_Studio
-!MolflowGUIElements
+
 !CMake
+!copy_to_build
+!include
+!lib_external
+!src
+!src/GPUSim
 
 # Ignore cmake generated directories and files.
 CMakeFiles

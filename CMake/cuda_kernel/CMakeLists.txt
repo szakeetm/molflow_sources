@@ -49,6 +49,37 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     ADD_DEFINITIONS(-D_DEBUG)
 endif()
 
+
+option(DEBUG_MISS "Enable Debugging for Miss Program" OFF)
+option(DEBUG_COUNT "Enable counters for intersection results" OFF)
+option(DEBUG_POS "Enable generating hit positions from GPU calculations" OFF)
+option(WITH_TRIANGLES "Enable calculations with triangles only" ON)
+option(WITH_TEXTURES "Enable textures" OFF)
+#option(USE_RANDOM_NUMBER_TYPE_64 "Use double instead of float for random numbers" ON)
+
+IF (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    if (DEBUG_MISS)
+        add_definitions(-DDEBUGMISS)
+    endif (DEBUG_MISS)
+
+    if (DEBUG_COUNT)
+        add_definitions(-DDEBUGCOUNT)
+    endif (DEBUG_COUNT)
+
+    if (DEBUG_POS)
+        add_definitions(-DDEBUGPOS)
+    endif (DEBUG_POS)
+ENDIF()
+if (WITH_TRIANGLES)
+    add_definitions(-DWITHTRIANGLES)
+endif (WITH_TRIANGLES)
+if (WITH_TEXTURES)
+    add_definitions(-DWITH_TEX)
+endif (WITH_TEXTURES)
+if (USE_RANDOM_NUMBER_TYPE_64)
+    add_definitions(-DRNG64)
+endif (USE_RANDOM_NUMBER_TYPE_64)
+
 ################# Flags ################
 # Defines Flags for Windows and Linux. #
 ########################################
