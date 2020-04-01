@@ -247,15 +247,15 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
 				ok = (GLMessageBox::Display(tmp, "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK);
 			}
 		}
-        if (isSTL) {
-            //Nothing to prepare
-            ok = true;
-        }
+		if (isSTL) {
+			//Nothing to prepare
+			ok = true;
+		}
 
-        if (!autoSave && ok && FileUtils::Exist(fileName)) {
-			char tmp[1024];
-			sprintf(tmp, "Overwrite existing file ?\n%s", fileName.c_str());
-			if (askConfirm) ok = (GLMessageBox::Display(tmp, "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK);
+		if (!autoSave && ok && FileUtils::Exist(fileName)) {
+				char tmp[1024];
+				sprintf(tmp, "Overwrite existing file ?\n%s", fileName.c_str());
+				if (askConfirm) ok = (GLMessageBox::Display(tmp, "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK);
 		}
 
 		if (ok) {
@@ -271,7 +271,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
 					else if (!(isXML || isXMLzip))
 
 						f = new FileWriter(fileName); //Txt, stl, geo, etc...
-                }
+                		}
 
 				catch (Error &e) {
 					SAFE_DELETE(f);
@@ -451,7 +451,7 @@ std::vector<std::string> Worker::ExportAngleMaps(std::string fileName, bool save
     for (size_t i = 0; i < geom->GetNbFacet(); i++) {
         Facet* f = geom->GetFacet(i);
         // saveAll facets e.g. when auto saving or just when selected
-        if ((saveAll || f->selected) && f->sh.anglemapParams.hasRecorded){
+        if ((saveAll || f->selected) && !f->angleMapCache.empty()){
             angleMapFacetIndices.push_back(i);
         }
     }
@@ -1662,7 +1662,7 @@ void Worker::PrepareToRun() {
 
 		//Angle map
 		if (f->sh.desorbType == DES_ANGLEMAP) {
-			if (!f->sh.anglemapParams.hasRecorded) {
+			if (!f->angleMapCache.empty()) {
 				char tmp[256];
 				sprintf(tmp, "Facet #%zd: Uses angle map desorption but doesn't have a recorded angle map.", i + 1);
 				throw Error(tmp);
@@ -1675,8 +1675,8 @@ void Worker::PrepareToRun() {
 		}
 
 		 //First worker::update will do it
-		if (f->sh.anglemapParams.record) {
-			if (!f->sh.anglemapParams.hasRecorded) {
+		/*if (f->sh.anglemapParams.record) {
+			if (!f->angleMapCache.empty()) {
 				//Initialize angle map
 				f->angleMapCache = (size_t*)malloc(f->sh.anglemapParams.GetDataSize());
 				if (!f->angleMapCache) {
@@ -1689,7 +1689,7 @@ void Worker::PrepareToRun() {
 				f->sh.anglemapParams.hasRecorded = true;
 				if (f->selected) needsAngleMapStatusRefresh = true;
 			}
-		}
+		}*/
 
 	}
 

@@ -164,12 +164,12 @@ void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer, const OntheflySimulationP
 		memcpy(buffer, f->vertices2.data(), sizeof(Vector2d)*f->sh.nbIndex);
 		buffer += sizeof(Vector2d)*f->sh.nbIndex;
 		if (f->sh.useOutgassingFile) {
-			memcpy(buffer, f->outgassingMap, sizeof(double)*f->sh.outgassingMapWidth*f->sh.outgassingMapHeight);
+			memcpy(buffer, f->outgassingMap.data(), sizeof(double)*f->sh.outgassingMapWidth*f->sh.outgassingMapHeight);
 			buffer += sizeof(double)*f->sh.outgassingMapWidth*f->sh.outgassingMapHeight;
 		}
 		//if (f->wp.anglemapParams.hasRecorded) { //Check not necessary, commented out
-		memcpy(buffer, f->angleMapCache, f->sh.anglemapParams.GetRecordedDataSize());
-		buffer += f->sh.anglemapParams.GetRecordedDataSize();
+		memcpy(buffer, f->angleMapCache.data(), sizeof(size_t)*f->angleMapCache.size());
+		buffer += sizeof(size_t)*f->angleMapCache.size();
 		//}
 
 		// Add surface elements area (reciprocal)
@@ -552,6 +552,7 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 		v.projMode = file->ReadInt();
 		v.camAngleOx = file->ReadDouble();
 		v.camAngleOy = file->ReadDouble();
+		v.camAngleOz = 0.0; //No support for Z angle in current SYN version
 		v.camDist = file->ReadDouble();
 		v.camOffset.x = file->ReadDouble();
 		v.camOffset.y = file->ReadDouble();
@@ -924,6 +925,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 			v.projMode = file->ReadInt();
 			v.camAngleOx = file->ReadDouble();
 			v.camAngleOy = file->ReadDouble();
+			v.camAngleOz = 0.0; //No support for Z angle in current GEO version
 			v.camDist = file->ReadDouble();
 			v.camOffset.x = file->ReadDouble();
 			v.camOffset.y = file->ReadDouble();
@@ -1109,14 +1111,14 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
 	file->ReadKeyword("totalHit"); file->ReadKeyword(":");
 	worker->globalHitCache.globalHits.hit.nbMCHit = 0;
 	worker->globalHitCache.globalHits.hit.nbHitEquiv = 0.0;
-    file->ReadSizeT();
+	file->ReadSizeT();
 	if (*version >= 10) {
 		file->ReadKeyword("totalHitEquiv"); file->ReadKeyword(":");
 		file->ReadDouble();
 	}
 	file->ReadKeyword("totalDes"); file->ReadKeyword(":");
 	worker->globalHitCache.globalHits.hit.nbDesorbed = 0;
-    file->ReadSizeT();
+	file->ReadSizeT();
 	if (*version >= 6) {
 		file->ReadKeyword("no_scans"); file->ReadKeyword(":");
 		/*loaded_no_scans = */file->ReadDouble();
@@ -1187,6 +1189,7 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
 		v.projMode = file->ReadInt();
 		v.camAngleOx = file->ReadDouble();
 		v.camAngleOy = file->ReadDouble();
+		v.camAngleOz = 0.0; //No support for Z angle in current SYN version
 		v.camDist = file->ReadDouble();
 		v.camOffset.x = file->ReadDouble();
 		v.camOffset.y = file->ReadDouble();
@@ -1473,9 +1476,7 @@ bool MolflowGeometry::LoadTexturesGEO(FileReader *file, GLProgress *prg, Datapor
 		}
 
 		ReleaseDataport(dpHit);
-		//Debug memory check
-		//_ASSERTE (!_CrtDumpMemoryLeaks());;
-        //assert(_CrtCheckMemory());
+
 		return true;
 
 	}
@@ -2286,9 +2287,12 @@ void MolflowGeometry::ImportDesorption_SYN(
 
 			if (f->selected) {
 				f->sh.outgassingFileRatio = xdims[i] / f->sh.U.Norme();
-				f->outgassingMap = (double*)malloc(f->sh.outgassingMapWidth*f->sh.outgassingMapHeight * sizeof(double));
-				if (!f->outgassingMap) throw Error("Not enough memory to store outgassing map.");
-				memset(f->outgassingMap, 0, f->sh.outgassingMapWidth*f->sh.outgassingMapHeight * sizeof(double)); //set inital values to zero
+				try {
+					std::vector<double>(f->sh.outgassingMapWidth*f->sh.outgassingMapHeight).swap(f->outgassingMap);
+				}
+				catch (...) {
+					throw Error("Not enough memory to store outgassing map.");
+				}
 				f->totalDose = f->sh.totalOutgassing = f->totalFlux = 0.0;
 			}
 
@@ -2539,6 +2543,7 @@ void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLP
 		newView.append_attribute("projMode") = mApp->views[i].projMode;
 		newView.append_attribute("camAngleOx") = mApp->views[i].camAngleOx;
 		newView.append_attribute("camAngleOy") = mApp->views[i].camAngleOy;
+		newView.append_attribute("camAngleOz") = mApp->views[i].camAngleOz;
 		newView.append_attribute("camDist") = mApp->views[i].camDist;
 		newView.append_attribute("camOffset.x") = mApp->views[i].camOffset.x;
 		newView.append_attribute("camOffset.y") = mApp->views[i].camOffset.y;
@@ -2613,7 +2618,7 @@ void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLP
 
 	xml_node paramNode = simuParamNode.append_child("Parameters");
 	size_t nonCatalogParameters = 0;
-
+	
 	for (size_t i = 0; i < work->parameters.size(); i++) {
 		if (work->parameters[i].fromCatalog == false) { //Don't save catalog parameters
 			xml_node newParameter = paramNode.append_child("Parameter");
@@ -2912,6 +2917,12 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 		v.projMode = newView.attribute("projMode").as_int();
 		v.camAngleOx = newView.attribute("camAngleOx").as_double();
 		v.camAngleOy = newView.attribute("camAngleOy").as_double();
+		if (newView.attribute("camAngleOz")) {
+			v.camAngleOz = newView.attribute("camAngleOz").as_double();
+		}
+		else {
+			v.camAngleOz = 0.0; //Otherwise RoundAngle() routine hangs for unitialized value
+		}
 		v.camDist = newView.attribute("camDist").as_double();
 		v.camOffset.x = newView.attribute("camOffset.x").as_double();
 		v.camOffset.y = newView.attribute("camOffset.y").as_double();
@@ -3151,6 +3162,12 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 		v.projMode = newView.attribute("projMode").as_int();
 		v.camAngleOx = newView.attribute("camAngleOx").as_double();
 		v.camAngleOy = newView.attribute("camAngleOy").as_double();
+		if (newView.attribute("camAngleOz")) {
+			v.camAngleOz = newView.attribute("camAngleOz").as_double();
+		}
+		else {
+			v.camAngleOz = 0.0; //Otherwise RoundAngle() routine hangs for unitialized value
+		}
 		v.camDist = newView.attribute("camDist").as_double();
 		v.camOffset.x = newView.attribute("camOffset.x").as_double();
 		v.camOffset.y = newView.attribute("camOffset.y").as_double();

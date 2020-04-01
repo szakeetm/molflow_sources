@@ -181,7 +181,7 @@ void PressureEvolution::Refresh() {
 			i++;
 		}
 	}
-
+	
 
 	//Construct combo
 	profCombo->SetSize(views.size());

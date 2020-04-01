@@ -276,7 +276,7 @@ void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bool& ignor
 
 			std::stringstream outgText;
 			outgText << outgNode.child_value("map");
-			outgassingMap = (double*)malloc(sh.outgassingMapWidth*sh.outgassingMapHeight * sizeof(double));
+			std::vector<double>(sh.outgassingMapWidth*sh.outgassingMapHeight).swap(outgassingMap);
 
 			for (int iy = 0; iy < sh.outgassingMapHeight; iy++) {
 				for (int ix = 0; ix < sh.outgassingMapWidth; ix++) {
@@ -305,17 +305,17 @@ void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bool& ignor
 
 			std::stringstream angleText;
 			angleText << angleMapNode.child_value("map");
-			angleMapCache = (size_t*)malloc(sh.anglemapParams.GetDataSize());
+			std::vector<size_t>(sh.anglemapParams.GetMapSize()).swap(angleMapCache);
 
 			for (int iy = 0; iy < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); iy++) {
 				for (int ix = 0; ix < sh.anglemapParams.phiWidth; ix++) {
 					angleText >> angleMapCache[iy*sh.anglemapParams.phiWidth + ix];
 				}
 			}
-			sh.anglemapParams.hasRecorded = true;
+
 		}
 		else {
-			sh.anglemapParams.hasRecorded = false; //if angle map was incorrect, don't use it
+			//if angle map was incorrect, don't use it
 			if (sh.desorbType == DES_ANGLEMAP) sh.desorbType = DES_NONE;
 		}
 	} //else use default values at Facet() constructor
@@ -406,17 +406,17 @@ void Facet::LoadSYN(FileReader *file, int version, size_t nbVertex) {
 	if (version >= 10) file->ReadKeyword("nbAbsEquiv");
 	else file->ReadKeyword("nbAbs"); file->ReadKeyword(":");
 	facetHitCache.hit.nbAbsEquiv = 0;
-    file->ReadSizeT();
+	file->ReadSizeT();
 	if (version < 3) {
 		file->ReadKeyword("nbDes"); file->ReadKeyword(":");
 		facetHitCache.hit.nbDesorbed = 0;
-        file->ReadSizeT();
+		file->ReadSizeT();
 	}
 	file->ReadKeyword("nbHit"); file->ReadKeyword(":");
-    file->ReadSizeT();
+	file->ReadSizeT();
 	if (version >= 10) {
 		file->ReadKeyword("nbHitEquiv"); file->ReadKeyword(":");
-        file->ReadSizeT();
+		file->ReadSizeT();
 	}
 	facetHitCache.hit.nbMCHit = 0; facetHitCache.hit.nbHitEquiv = 0.0; 
 	if (version >= 3) {
@@ -662,7 +662,7 @@ size_t Facet::GetGeometrySize()  { //for loader dataport
 	// Size of the 'element area' array passed to the geometry buffer
 	if (sh.isTextured) s += sizeof(double)*sh.texWidth*sh.texHeight; //incbuff
 	if (sh.useOutgassingFile ) s += sizeof(double)*sh.outgassingMapWidth*sh.outgassingMapHeight;
-	s += sh.anglemapParams.GetRecordedDataSize();
+	s += sizeof(size_t)*angleMapCache.size();
 	return s;
 
 }
@@ -680,7 +680,7 @@ size_t Facet::GetHitsSize(size_t nbMoments)  { //for hits dataport
 		+ (sh.isProfile ? (PROFILE_SIZE * sizeof(ProfileSlice)) : 0)
 		+ (sh.countDirection ? (sh.texWidth*sh.texHeight * sizeof(DirectionCell)) : 0)
 		+ sh.facetHistogramParams.GetDataSize()
-		) + sh.anglemapParams.GetRecordedDataSize();
+		) + sizeof(size_t)*angleMapCache.size();
 
 }
 
@@ -1043,7 +1043,7 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 	t.append_attribute("countDir") = (int)sh.countDirection; //backward compatibility: 0 or 1
 	t.append_attribute("countAC") = (int)sh.countACD; //backward compatibility: 0 or 1
 
-	if (sh.anglemapParams.record) {
+	if (!angleMapCache.empty()) {
 		t = e.append_child("IncidentAngleMap");
 		t.append_attribute("record") = sh.anglemapParams.record;
 		t.append_attribute("phiWidth") = sh.anglemapParams.phiWidth;
@@ -1085,7 +1085,7 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 
 	} //end texture
 
-	if (sh.anglemapParams.hasRecorded) {
+	if (!angleMapCache.empty()) {
 		xml_node textureNode = f.append_child("IncidentAngleMap");
 		textureNode.append_attribute("angleMapPhiWidth") = sh.anglemapParams.phiWidth;
 		textureNode.append_attribute("angleMapThetaLimit") = sh.anglemapParams.thetaLimit;
@@ -1210,7 +1210,7 @@ void Facet::ImportAngleMap(const std::vector<std::vector<std::string>>& table)
 		else thetaHigherRes = table.size() - 1 - thetaLowerRes;
 
 		//Fill table
-		angleMapCache = (size_t*)malloc(phiWidth * (thetaLowerRes + thetaHigherRes) * sizeof(size_t));
+		angleMapCache.resize(phiWidth * (thetaLowerRes + thetaHigherRes)); //Will be filled with values
 
 		for (int iy = 0; iy < (thetaLowerRes + thetaHigherRes); iy++) {
 			for (int ix = 0; ix < phiWidth; ix++) {
@@ -1221,11 +1221,13 @@ void Facet::ImportAngleMap(const std::vector<std::vector<std::string>>& table)
 				catch (...) {
 					std::stringstream err;
 					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to an integer\nCell content: " << table[iy+1][ix+1];
+					angleMapCache.clear();
 					throw Error(err.str().c_str());
 				}
 				if (cellSize != table[iy+1][ix+1].size()) {
 					std::stringstream err;
 					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to an integer\nCell content: " << table[iy+1][ix+1];
+					angleMapCache.clear();
 					throw Error(err.str().c_str());
 				}
 			}
@@ -1238,7 +1240,7 @@ void Facet::ImportAngleMap(const std::vector<std::vector<std::string>>& table)
 		thetaLimit = PI/2.0;
 
 		//Fill table
-		angleMapCache = (size_t*)malloc(phiWidth * (thetaLowerRes + thetaHigherRes) * sizeof(size_t));
+		angleMapCache.resize(phiWidth * (thetaLowerRes + thetaHigherRes)); //Will be filled with values
 
 		for (int iy = 0; iy < (thetaLowerRes + thetaHigherRes); iy++) {
 			for (int ix = 0; ix < phiWidth; ix++) {
@@ -1249,11 +1251,13 @@ void Facet::ImportAngleMap(const std::vector<std::vector<std::string>>& table)
 				catch (...) {
 					std::stringstream err;
 					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to an integer\nCell content: " << table[iy][ix];
+					angleMapCache.clear();
 					throw Error(err.str().c_str());
 				}
 				if (cellSize != table[iy][ix].size()) {
 					std::stringstream err;
 					err << "Can't convert cell row " << iy+1 << " col " << ix+1 << " to an integer\nCell content: " << table[iy][ix];
+					angleMapCache.clear();
 					throw Error(err.str().c_str());
 				}
 			}
@@ -1261,7 +1265,7 @@ void Facet::ImportAngleMap(const std::vector<std::vector<std::string>>& table)
 	}
 
 	//No errors, apply values
-	sh.anglemapParams.hasRecorded = true;
+
 	sh.anglemapParams.phiWidth = phiWidth;
 	sh.anglemapParams.record = false;
 	sh.anglemapParams.thetaHigherRes = thetaHigherRes;
@@ -1295,11 +1299,8 @@ double Facet::DensityCorrection() {
 */
 void Facet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchive) {
 
-		std::vector<double> outgMapVector(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0);
-		memcpy(outgMapVector.data(), outgassingMap, sizeof(double)*(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0));
-		size_t mapSize = sh.anglemapParams.GetMapSize();
-		std::vector<size_t> angleMapVector(mapSize);
-		memcpy(angleMapVector.data(), angleMapCache, sh.anglemapParams.GetRecordedDataSize());
+		//std::vector<double> outgMapVector(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0);
+		//memcpy(outgMapVector.data(), outgassingMap, sizeof(double)*(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0));
 		std::vector<double> textIncVector;
 
 		// Add surface elements area (reciprocal)
@@ -1347,8 +1348,8 @@ void Facet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchive) {
 			CEREAL_NVP(indices),
 			CEREAL_NVP(vertices2)
 #ifdef MOLFLOW
-			, CEREAL_NVP(outgMapVector)
-			, CEREAL_NVP(angleMapVector)
+			, CEREAL_NVP(outgassingMap)
+			, CEREAL_NVP(angleMapCache)
 			, CEREAL_NVP(textIncVector)
 #endif
 		);

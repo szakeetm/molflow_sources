@@ -1289,7 +1289,7 @@ void MolFlow::CopyAngleMapToClipboard()
 	bool found = false;
 	for (size_t i = 0; i < geom->GetNbFacet(); i++) {
 		Facet* f = geom->GetFacet(i);
-		if (f->selected && f->sh.anglemapParams.hasRecorded) {
+		if (f->selected && !f->angleMapCache.empty()) {
 			if (found) {
 				GLMessageBox::Display("More than one facet with recorded angle map selected", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
@@ -1329,9 +1329,8 @@ void MolFlow::ClearAngleMapsOnSelection() {
 		Geometry *geom = worker.GetGeometry();
 		for (size_t i = 0; i < geom->GetNbFacet(); i++) {
 			Facet* f = geom->GetFacet(i);
-			if (f->selected && f->sh.anglemapParams.hasRecorded) {
-				SAFE_FREE(f->angleMapCache);
-				f->sh.anglemapParams.hasRecorded = false;
+			if (f->selected) {
+				f->angleMapCache.clear();
 			}
 		}
 	//}
@@ -1464,7 +1463,7 @@ void MolFlow::LoadFile(std::string fileName) {
 		if (timewisePlotter) timewisePlotter->Refresh();
 		if (histogramPlotter) histogramPlotter->Reset();
 		if (histogramSettings) histogramSettings->Refresh({});
-		if (profilePlotter) profilePlotter->Refresh(); //Might have loaded views
+		if (profilePlotter) profilePlotter->Refresh();
 		if (texturePlotter) texturePlotter->Update(0.0,true);
 		//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 		if (textureScaling) textureScaling->Update();
@@ -1523,7 +1522,7 @@ void MolFlow::InsertGeometry(bool newStr,std::string fileName) {
 		worker.LoadGeometry(filePath, true, newStr);
 
 		Geometry *geom = worker.GetGeometry();
-        worker.PrepareToRun();
+		worker.PrepareToRun();
 		worker.CalcTotalOutgassing();
 
 		//Increase BB
@@ -1544,9 +1543,7 @@ void MolFlow::InsertGeometry(bool newStr,std::string fileName) {
 
 		//worker.LoadTexturesGEO(fullName);
 		UpdateStructMenu();
-		if (profilePlotter) profilePlotter->Reset();
-		if (pressureEvolution) pressureEvolution->Reset();
-		if (timewisePlotter) timewisePlotter->Reset();
+		
 		//UpdateCurrentDir(fullName);
 
 		geom->CheckCollinear();
@@ -1568,7 +1565,7 @@ void MolFlow::InsertGeometry(bool newStr,std::string fileName) {
 		*/
 		RefreshPlotterCombos();
 		//UpdatePlotters();
-
+		
 		if (outgassingMap) outgassingMap->Update(m_fTime, true);
 		if (facetDetails) facetDetails->Update();
 		if (facetCoordinates) facetCoordinates->UpdateFromSelection();
@@ -2359,10 +2356,10 @@ void MolFlow::LoadConfig() {
 		if (nbProc <= 0) nbProc = 1;
 		f->ReadKeyword("recents"); f->ReadKeyword(":"); f->ReadKeyword("{");
 		w = f->ReadString();
-        while (strcmp(w, "}") != 0 && recentsList.size() < MAX_RECENT) {
-            recentsList.emplace_back(strdup(w));
-            w = f->ReadString();
-        }
+		while (strcmp(w, "}") != 0 && recentsList.size() < MAX_RECENT) {
+			recentsList.emplace_back(strdup(w));
+			w = f->ReadString();
+		}
 
 		f->ReadKeyword("cdir"); f->ReadKeyword(":");
 		strcpy(currentDir, f->ReadString());
@@ -2505,12 +2502,12 @@ void MolFlow::SaveConfig() {
 #else
 		f->Write("processNum:"); f->Write(worker.GetProcNumber(), "\n");
 #endif
-        f->Write("recents:{\n");
-        for(auto& recent : recentsList){
-            f->Write("\"");
-            f->Write(recent);
-            f->Write("\"\n");
-        }
+		f->Write("recents:{\n");
+		for(auto& recent : recentsList){
+			f->Write("\"");
+			f->Write(recent);
+			f->Write("\"\n");
+		}
 		f->Write("}\n");
 
 		f->Write("cdir:\""); f->Write(currentDir); f->Write("\"\n");
