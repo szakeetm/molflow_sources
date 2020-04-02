@@ -44,34 +44,13 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 // Global handles
 extern Simulation* sHandle; //Declared at molflowSub.cpp
 
-// Timing stuff
 
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-bool usePerfCounter;         // Performance counter usage
-LARGE_INTEGER perfTickStart; // First tick
-double perfTicksPerSec;      // Performance counter (number of tick per second)
-#endif
-DWORD tickStart;
 
 void InitSimulation() {
 
 	// Global handle allocation
 	sHandle = new Simulation();
-
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-	{
-		LARGE_INTEGER qwTicksPerSec;
-		usePerfCounter = QueryPerformanceFrequency(&qwTicksPerSec);
-		if (usePerfCounter) {
-			QueryPerformanceCounter(&perfTickStart);
-			perfTicksPerSec = (double)qwTicksPerSec.QuadPart;
-		}
-		tickStart = GetTickCount();
-	}
-#else
-	tickStart = (DWORD)time(NULL);
-#endif
-
+	InitTick();
 }
 
 void ClearSimulation() {
@@ -97,28 +76,7 @@ DWORD RevertBit(DWORD dw) {
 	return dwOut;
 }
 
-DWORD GetSeed() {
 
-	/*#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-	DWORD r;
-	_asm {
-	rdtsc
-	mov r,eax
-	}
-	return RevertBit(r ^ (DWORD)(_getpid()*65519));
-	#else*/
-	int processId;
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-	processId = _getpid();
-#else
-	processId = ::getpid();
-#endif //  WIN
-
-
-	return (DWORD)((int)(GetTick()*1000.0)*processId);
-	//#endif
-
-}
 
 /*double Norme(Vector3d *v) { //already defined
 	return sqrt(v->x*v->x + v->y*v->y + v->z*v->z);
@@ -566,13 +524,15 @@ void ResetTmpCounters() {
 					ZEROVECTOR(t.distanceHistogram);
 					ZEROVECTOR(t.timeHistogram);
 				}
-			
+			/*std::vector<TextureCell>(f.texture.size()).swap(f.texture);
+			std::vector<ProfileSlice>(f.profile.size()).swap(f.profile);
+			std::vector<DirectionCell>(f.direction.size()).swap(f.direction);*/
 
 			for (auto& t : f.texture) {
 				std::fill(t.begin(), t.end(), TextureCell());
 			}
 
-			
+
 			for (auto& p : f.profile) {
 				std::fill(p.begin(), p.end(), ProfileSlice());
 			}
@@ -683,38 +643,7 @@ bool SimulationRun() {
 
 }
 
-double GetTick() {
 
-	// Number of sec since the application startup
-
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-
-	if (usePerfCounter) {
-
-		LARGE_INTEGER t, dt;
-		QueryPerformanceCounter(&t);
-		dt.QuadPart = t.QuadPart - perfTickStart.QuadPart;
-		return (double)(dt.QuadPart) / perfTicksPerSec;
-
-	}
-	else {
-
-		return (double)((GetTickCount() - tickStart) / 1000.0);
-
-	}
-
-#else
-
-	if (tickStart < 0)
-		tickStart = time(NULL);
-
-	struct timeval tv;
-	gettimeofday(&tv, NULL);
-	return ((double)(tv.tv_sec - tickStart)*1000.0 + (double)tv.tv_usec / 1000.0);
-
-#endif
-
-	}
 
 int GetIDId(int paramId) {
 

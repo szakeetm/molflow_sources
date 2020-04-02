@@ -49,78 +49,7 @@ void CalcTotalOutgassing() {
 
 }
 
-//void PolarToCartesian(SubprocessFacet *iFacet, double theta, double phi, bool reverse) {
-//
-//	Vector3d U, V, N;
-//	double u, v, n;
-//
-//	// Polar in (nU,nV,N) to Cartesian(x,y,z) transformation  ( nU = U/|U| , nV = V/|V| )
-//	// tetha is the angle to the normal of the facet N, phi to U
-//	// ! See Geometry::InitializeGeometry() for further informations on the (U,V,N) basis !
-//	// (nU,nV,N) and (x,y,z) are both left handed
-//
-//	//This should be a speed-up routine, but I didn't experience any speed difference so I commented it out. Marton
-//	/*#ifdef _WIN32
-//	_asm {                    // FPU stack
-//	fld qword ptr [theta]
-//	fsincos                 // cos(t)        sin(t)
-//	fld qword ptr [phi]
-//	fsincos                 // cos(p)        sin(p) cos(t) sin(t)
-//	fmul st(0),st(3)        // cos(p)*sin(t) sin(p) cos(t) sin(t)
-//	fstp qword ptr [u]      // sin(p)        cos(t) sin(t)
-//	fmul st(0),st(2)        // sin(p)*sin(t) cos(t) sin(t)
-//	fstp qword ptr [v]      // cos(t) sin(t)
-//	fstp qword ptr [n]      // sin(t)
-//	fstp qword ptr [dummy]  // Flush the sin(t)
-//	}
-//	#else*/
-//	u = sin(theta)*cos(phi);
-//	v = sin(theta)*sin(phi);
-//	n = cos(theta);
-//	//#endif
-//
-//	// Get the (nU,nV,N) orthonormal basis of the facet
-//	U = iFacet->sh.nU;
-//	V = iFacet->sh.nV;
-//	N = iFacet->sh.N;
-//	if (reverse) {
-//		N.x = N.x*(-1.0);
-//		N.y = N.y*(-1.0);
-//		N.z = N.z*(-1.0);
-//	}
-//
-//	// Basis change (nU,nV,N) -> (x,y,z)
-//	sHandle->currentParticle.direction.x = u*U.x + v*V.x + n*N.x;
-//	sHandle->currentParticle.direction.y = u*U.y + v*V.y + n*N.y;
-//	sHandle->currentParticle.direction.z = u*U.z + v*V.z + n*N.z;
-//
-//}
-//
-//void CartesianToPolar(SubprocessFacet *iFacet, double *theta, double *phi) {
-//
-//	// Get polar coordinates of the incoming particule direction in the (U,V,N) facet space.
-//	// Note: The facet is parallel to (U,V), we use its (nU,nV,N) orthonormal basis here.
-//	// (nU,nV,N) and (x,y,z) are both left handed
-//
-//	// Cartesian(x,y,z) to polar in (nU,nV,N) transformation
-//
-//	// Basis change (x,y,z) -> (nU,nV,N)
-//	// We use the fact that (nU,nV,N) belongs to SO(3)
-//	double u = Dot(sHandle->currentParticle.direction, iFacet->sh.nU);
-//	double v = Dot(sHandle->currentParticle.direction, iFacet->sh.nV);
-//	double n = Dot(sHandle->currentParticle.direction, iFacet->sh.N);
-//
-//	/*
-//	// (u,v,n) -> (theta,phi)
-//	double rho = sqrt(v*v + u*u);
-//	*theta = acos(n);              // Angle to normal (PI/2 .. PI for frontal and 0..PI/2 for back incidence)
-//	*phi = asin(v / rho);			// Returns -PI/2 ... +PI/2
-//	if (u < 0.0) *phi = PI - *phi;  // Angle to U, -PI/2 .. 3PI/2
-//	*/
-//
-//	*theta = acos(n);
-//	*phi = atan2(v, u); // -PI..PI
-//}
+
 
 void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 
