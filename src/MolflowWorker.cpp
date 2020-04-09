@@ -40,6 +40,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 //#include "Simulation.h" //SHELEM
 #include "GlobalSettings.h"
 #include "FacetAdvParams.h"
+#include "ProfilePlotter.h"
 #include <fstream>
 #include <istream>
 
@@ -836,6 +837,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 					RebuildTextures();
 				}
 				catch (Error &e) {
+					mApp->ProfilePlotter->Reset(); //To avoid trying to display non-loaded simulation results
 					GLMessageBox::Display(e.GetMsg(), "Error while loading simulation state", GLDLG_CANCEL, GLDLG_ICONWARNING);
 				}
 			}
