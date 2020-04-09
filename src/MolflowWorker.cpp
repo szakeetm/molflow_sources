@@ -837,7 +837,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 					RebuildTextures();
 				}
 				catch (Error &e) {
-					mApp->profilePlotter->Reset(); //To avoid trying to display non-loaded simulation results
+					mApp->ProfilePlotter->Reset(); //To avoid trying to display non-loaded simulation results
 					GLMessageBox::Display(e.GetMsg(), "Error while loading simulation state", GLDLG_CANCEL, GLDLG_ICONWARNING);
 				}
 			}
