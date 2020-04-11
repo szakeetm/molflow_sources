@@ -77,7 +77,8 @@ private:
   GLButton    *lowFluxInfo;
   GLTextField *cutoffText;
 
-  GLToggle *highlightNonplanarToggle;
+    GLToggle *highlightNonplanarToggle;
+    GLToggle *highlightSelectionToggle;
 };
 
 #endif /* _GLOBALSETTINGSH_ */

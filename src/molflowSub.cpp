@@ -121,7 +121,7 @@ char *GetSimuStatus() {
 
   static char ret[128];
   size_t count = sHandle->totalDesorbed;
-  size_t max   = sHandle->ontheflyParams.desorptionLimit/sHandle->ontheflyParams.nbProcess;
+  size_t max   = sHandle->ontheflyParams.desorptionLimit / sHandle->ontheflyParams.nbProcess;
 
   
   if( GetLocalState()==PROCESS_RUNAC ) sHandle->wp.sMode = AC_MODE;
@@ -169,15 +169,14 @@ void SetReady() {
 }
 
 void SetStatus(char *status) {
-
-  if( AccessDataport(dpControl) ) {
-    SHCONTROL *master = (SHCONTROL *)dpControl->buff;
-	strncpy(master->statusStr[prIdx], status, 127);
-	master->statusStr[prIdx][127] = 0;
-    ReleaseDataport(dpControl);
-  }
-
+	if (AccessDataport(dpControl)) {
+		SHCONTROL *master = (SHCONTROL *)dpControl->buff;
+		strncpy(master->statusStr[prIdx], status, 127);
+		master->statusStr[prIdx][127] = 0;
+		ReleaseDataport(dpControl);
+	}
 }
+
 
 void LoadAC() {
 
@@ -375,7 +374,7 @@ int main(int argc,char* argv[])
 		  break;
 
 	  case COMMAND_RELEASEDPLOG:
-		  printf("[%d] COMMAND: UPDATEPARAMS (%zd,%zd)\n", prIdx, prParam, prParam2);
+		  printf("[%d] COMMAND: RELEASEDPLOG (%zd,%zd)\n", prIdx, prParam, prParam2);
 		  CLOSEDPSUB(dpLog);
 		  SetState(prParam, GetSimuStatus());
 		  break;

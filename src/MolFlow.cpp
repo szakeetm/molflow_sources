@@ -2398,6 +2398,8 @@ void MolFlow::LoadConfig() {
 		leftHandedView = f->ReadInt();
 		f->ReadKeyword("highlightNonplanarFacets"); f->ReadKeyword(":");
 		highlightNonplanarFacets = f->ReadInt();
+        f->ReadKeyword("highlightSelection"); f->ReadKeyword(":");
+        highlightSelection = f->ReadInt();
 	}
 	catch (...) {
 		/*std::ostringstream tmp;

@@ -618,9 +618,9 @@ bool SimulationRun() {
 		}
 
 	}
-
-	if (sHandle->stepPerSec != 0.0)
+	else //if (sHandle->stepPerSec != 0.0)
 		nbStep = (int)(sHandle->stepPerSec + 0.5);
+
 	if (nbStep < 1) nbStep = 1;
 	t0 = GetTick();
 	switch (sHandle->wp.sMode) {
