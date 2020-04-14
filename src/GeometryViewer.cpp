@@ -107,7 +107,9 @@ void GeometryViewer::DrawLinesAndHits() {
 
 			if (mApp->antiAliasing) {
 				glEnable(GL_BLEND);
-				glEnable(GL_LINE_SMOOTH);
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                glHint(GL_LINE_SMOOTH_HINT,GL_NICEST);
+                glEnable(GL_LINE_SMOOTH);
 			}
 
 			glBegin(GL_LINE_STRIP);
