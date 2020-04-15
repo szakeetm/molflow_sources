@@ -49,6 +49,9 @@ CMake/cmake-*
 !precomp_obj
 !molflow_tests
 !lib_external
+!lib_external/*
+!lib_external/*/*
+!lib_external/*/*/*.lib
 !include
 !screens
 !build_mac
