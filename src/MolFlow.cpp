@@ -38,7 +38,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/GLTextField.h"
 
 #include "GLApp/MathTools.h"
-#include "RecoveryDialog.h"
+#include "Interface/RecoveryDialog.h"
 #include <vector>
 #include <string>
 #include <thread>
@@ -52,7 +52,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <unistd.h> //chdir
 #endif
 
-#include "Interface.h"
+#include "Interface/Interface.h"
 #include "AppUpdater.h"
 #include "Worker.h"
 #include "ImportDesorption.h"
@@ -69,14 +69,14 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "TexturePlotter.h"
 #include "OutgassingMap.h"
 #include "MomentsEditor.h"
-#include "FacetCoordinates.h"
-#include "VertexCoordinates.h"
+#include "Interface/FacetCoordinates.h"
+#include "Interface/VertexCoordinates.h"
 #include "ParameterEditor.h"
-#include "SmartSelection.h"
-#include "FormulaEditor.h"
-#include "ParticleLogger.h"
-#include "HistogramSettings.h"
-#include "HistogramPlotter.h"
+#include "Interface/SmartSelection.h"
+#include "Interface/FormulaEditor.h"
+#include "Interface/ParticleLogger.h"
+#include "Interface/HistogramSettings.h"
+#include "Interface/HistogramPlotter.h"
 
 
 
