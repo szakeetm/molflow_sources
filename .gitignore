@@ -60,6 +60,7 @@ CMake/cmake-*
 !Visual_Studio
 !MolflowGUIElements
 !CMake
+!7za.exe
 
 # Ignore cmake generated directories and files.
 CMakeFiles
