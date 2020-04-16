@@ -2,6 +2,7 @@
 
 .*
 !/.gitignore
+!/.gitmodules
 #blacklist various file types
 #Ignore files build by Visual Studio
 #ignore thumbnails created by windows

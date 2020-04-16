@@ -1,0 +1,3 @@
+[submodule "src_shared"]
+	path = src_shared
+	url = https://gitlab.cern.ch/molflow_synrad/shared_code.git
