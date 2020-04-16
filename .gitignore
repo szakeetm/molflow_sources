@@ -48,10 +48,11 @@ CMake/cmake-*
 !src
 !precomp_obj
 !molflow_tests
-!lib_external
+!lib_external*
 !lib_external/*
 !lib_external/*/*
-!lib_external/*/*/*.lib
+!lib_external/*/*/*
+lib_external/*/.* #still ignore hidden, like thumbs.db
 !include
 !screens
 !build_mac
