@@ -25,11 +25,11 @@ Thumbs.db
 *.ilk
 *.log
 [Bb]in
-#[Dd]ebug*/
+[Dd]ebug*/
 *.lib
 *.sbr
 obj/
-#[Rr]elease*/
+[Rr]elease*/
 _ReSharper*/
 [Tt]est[Rr]esult*
 
@@ -50,6 +50,12 @@ CMake/cmake-*
 !/precomp_obj/
 !/molflow_tests/
 !/lib_external/
+#Include "debug" and "release" dirs previously excluded:
+!/lib_external/*/*
+#include .lib previously excluded:
+!/lib_external/*/*/*.lib
+#Still exclude hidden files:
+/lib_external/**/.*
 !/include/
 !/screens/
 !/build_mac/
