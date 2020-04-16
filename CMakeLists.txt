@@ -50,6 +50,7 @@ endif(MSVC)
 if(NOT MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 	#Flag to set debug symbols
+	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g")
 	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 	
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
