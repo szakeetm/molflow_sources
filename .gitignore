@@ -46,6 +46,7 @@ tmp/
 CMake/cmake-*
 
 !src
+!tests
 !precomp_obj
 !molflow_tests
 !lib_external
