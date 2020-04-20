@@ -321,19 +321,17 @@ int main(int argc,char* argv[])
   hostProcessId=atoi(argv[1]);
   prIdx = atoi(argv[2]);
 
-
+    {
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-  sprintf(ctrlDpName,"MFLWCTRL%s",argv[1]);
-  sprintf(loadDpName,"MFLWLOAD%s",argv[1]);
-  sprintf(hitsDpName,"MFLWHITS%s",argv[1]);
-  sprintf(logDpName, "MFLWLOG%s", argv[1]);
+        const char* dpPrefix = "MFLW";
 #else
-    // creates semaphore as /dev/sem/%s_sema
-    sprintf(ctrlDpName,"/MFLWCTRL%s",argv[1]);
-    sprintf(loadDpName,"/MFLWLOAD%s",argv[1]);
-    sprintf(hitsDpName,"/MFLWHITS%s",argv[1]);
-    sprintf(logDpName, "/MFLWLOG%s", argv[1]);
+        const char* dpPrefix = "/MFLW"; // creates semaphore as /dev/sem/%s_sema
 #endif
+        sprintf(ctrlDpName,"%sCTRL%s",dpPrefix,argv[1]);
+        sprintf(loadDpName,"%sLOAD%s",dpPrefix,argv[1]);
+        sprintf(hitsDpName,"%sHITS%s",dpPrefix,argv[1]);
+        sprintf(logDpName, "%sLOG%s",dpPrefix,argv[1]);
+    }
   dpControl = OpenDataport(ctrlDpName,sizeof(SHCONTROL));
   if( !dpControl ) {
     printf("Usage: Cannot connect to MFLWCTRL%s\n",argv[1]);

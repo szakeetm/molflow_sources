@@ -110,24 +110,20 @@ Worker::Worker() {
 	wp.sMode = MC_MODE;
 
 	//Common init
+    {
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-    pid = _getpid();
+        pid = _getpid();
+        const char* dpPrefix = "MFLW";
 #else
-    pid = ::getpid();
-#endif //  WIN
-
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-    sprintf(ctrlDpName, "MFLWCTRL%d", pid);
-	sprintf(loadDpName, "MFLWLOAD%d", pid);
-	sprintf(hitsDpName, "MFLWHITS%d", pid);
-	sprintf(logDpName, "MFLWLOG%d", pid);
-#else
-    // creates shm as /dev/shm/%s
-    sprintf(ctrlDpName, "/MFLWCTRL%d", pid);
-    sprintf(loadDpName, "/MFLWLOAD%d", pid);
-    sprintf(hitsDpName, "/MFLWHITS%d", pid);
-    sprintf(logDpName, "/MFLWLOG%d", pid);
+        pid = ::getpid();
+        const char* dpPrefix = "/MFLW"; // creates semaphore as /dev/sem/%s_sema
 #endif
+        sprintf(ctrlDpName,"%sCTRL%lu",dpPrefix,pid);
+        sprintf(loadDpName,"%sLOAD%lu",dpPrefix,pid);
+        sprintf(hitsDpName,"%sHITS%lu",dpPrefix,pid);
+        sprintf(logDpName, "%sLOG%lu",dpPrefix,pid);
+
+    }
 	ontheflyParams.nbProcess = 0;
 	ontheflyParams.enableLogging = false;
 	ontheflyParams.desorptionLimit = 0;
@@ -1204,9 +1200,10 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 
 
 		// Clear geometry
-		CLOSEDP(dpHit);
-		CLOSEDP(dpLog);
-		if (!ExecuteAndWait(COMMAND_CLOSE, PROCESS_READY))
+		simManager.CloseHitsDP();
+        simManager.CloseLogDP();
+		simManager.ForwardCommand(COMMAND_CLOSE);
+		if (simManager.WaitForProcStatus(PROCESS_READY))
 		{
 			progressDlg->SetVisible(false);
 			SAFE_DELETE(progressDlg);
@@ -1224,14 +1221,16 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 
 
 		if (ontheflyParams.enableLogging) {
-			dpLog = CreateDataport(logDpName, sizeof(size_t) + sizeof(ParticleLoggerItem)*ontheflyParams.logLimit);
+		    simManager.CreateLogDP(sizeof(size_t) + sizeof(ParticleLoggerItem)*ontheflyParams.logLimit);
+			/*dpLog = CreateDataport(logDpName, sizeof(size_t) + sizeof(ParticleLoggerItem)*ontheflyParams.logLimit);
 			if (!dpLog)
 				throw Error("Failed to create 'dpLog' dataport.\nMost probably out of memory.\nReduce number of logged particles in Particle Logger.");
-			//*((size_t*)dpLog->buff) = 0; //Automatic 0-filling
+			//*((size_t*)dpLog->buff) = 0; //Automatic 0-filling*/
 		}
 	}
 
 	std::string loaderString = SerializeForLoader().str();
+    simManager.CreateLoaderDP(loaderString);
 
 	//size_t loadSize = geom->GetGeometrySize();
 	//Dataport *loader = CreateDataport(loadDpName, loadSize);
@@ -1340,12 +1339,7 @@ void Worker::ClearHits(bool noReload) {
 		GLMessageBox::Display(e.GetMsg(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
 		return;
 	}
-	if (dpHit) {
-		AccessDataport(dpHit);
-		memset(dpHit->buff, 0, geom->GetHitsSize(&moments)); //Also clears hits, leaks
-		ReleaseDataport(dpHit);
-	}
-
+	simManager.ClearHitsBuffer();
 }
 
 /**

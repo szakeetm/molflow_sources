@@ -80,3 +80,11 @@ ELSE()
 ENDIF(WIN32)
 
 add_dependencies(molflow molflowSub compress)
+
+option(USE_TESTS "Build the tests" ON)
+if(USE_TESTS)
+    enable_testing()
+    include(GoogleTest)
+    add_subdirectory(tests)
+    add_dependencies(example molflowSub)
+endif()
