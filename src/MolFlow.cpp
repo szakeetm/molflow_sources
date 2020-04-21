@@ -1204,10 +1204,6 @@ void MolFlow::ExportProfiles() {
 		GLMessageBox::Display("Empty selection", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
 	}
-	if (!worker.IsDpInitialized()) {
-		GLMessageBox::Display("Worker Dataport not initialized yet", "Error", GLDLG_OK, GLDLG_ICONERROR);
-		return;
-	}
 
 	//FILENAME *fn = GLFileBox::SaveFile(currentDir, NULL, "Save File", fileProfFilters, 0);
 	std::string saveFile = NFD_SaveFile_Cpp(fileProfFilters, "");
@@ -1225,11 +1221,6 @@ void MolFlow::ExportProfiles() {
 }
 
 void MolFlow::ExportAngleMaps() {
-
-	if (!worker.IsDpInitialized()) {
-		GLMessageBox::Display("Worker Dataport not initialized yet", "Error", GLDLG_OK, GLDLG_ICONERROR);
-		return;
-	}
 
 	std::string profFile = NFD_SaveFile_Cpp(fileProfFilters, "");
 

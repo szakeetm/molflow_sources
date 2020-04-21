@@ -604,7 +604,7 @@ bool SimulationRun() {
 
 	// 1s step
 	double t0, t1;
-	int    nbStep = 1;
+	size_t    nbStep = 1;
 	bool   goOn;
 
 	if (sHandle->stepPerSec == 0.0) {
@@ -618,10 +618,10 @@ bool SimulationRun() {
 		}
 
 	}
-	else //if (sHandle->stepPerSec != 0.0)
-		nbStep = (int)(sHandle->stepPerSec + 0.5);
+	else {
+        nbStep = std::ceil(sHandle->stepPerSec + 0.5);
+    }
 
-	if (nbStep < 1) nbStep = 1;
 	t0 = GetTick();
 	switch (sHandle->wp.sMode) {
 	case MC_MODE:
@@ -634,7 +634,7 @@ bool SimulationRun() {
 	}
 
 	t1 = GetTick();
-	sHandle->stepPerSec = (double)(nbStep) / (t1 - t0);
+	sHandle->stepPerSec = (1.0 * nbStep) / (t1 - t0); // every 1 second
 #ifdef _DEBUG
 	printf("Running: stepPerSec = %f\n", sHandle->stepPerSec);
 #endif

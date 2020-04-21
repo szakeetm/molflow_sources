@@ -121,7 +121,9 @@ char *GetSimuStatus() {
 
   static char ret[128];
   size_t count = sHandle->totalDesorbed;
-  size_t max   = sHandle->ontheflyParams.desorptionLimit / sHandle->ontheflyParams.nbProcess;
+  size_t max   = 0;
+  if(sHandle->ontheflyParams.nbProcess)
+      max = sHandle->ontheflyParams.desorptionLimit / sHandle->ontheflyParams.nbProcess;
 
   
   if( GetLocalState()==PROCESS_RUNAC ) sHandle->wp.sMode = AC_MODE;
@@ -334,7 +336,7 @@ int main(int argc,char* argv[])
     }
   dpControl = OpenDataport(ctrlDpName,sizeof(SHCONTROL));
   if( !dpControl ) {
-    printf("Usage: Cannot connect to MFLWCTRL%s\n",argv[1]);
+    printf("Usage: Cannot connect to %s\n",ctrlDpName);
     return 1;
   }
 
@@ -438,9 +440,10 @@ int main(int argc,char* argv[])
       case PROCESS_RUN:
         SetStatus(GetSimuStatus()); //update hits only
         eos = SimulationRun();      // Run during 1 sec
-		if (dpHit && (GetLocalState() != PROCESS_ERROR))
-		    UpdateHits(dpHit,dpLog,prIdx,20); // Update hit with 20ms timeout. If fails, probably an other subprocess is updating, so we'll keep calculating and try it later (latest when the simulation is stopped).
-        if(eos) {
+		if (dpHit && (GetLocalState() != PROCESS_ERROR)) {
+            UpdateHits(dpHit, dpLog, prIdx,20); // Update hit with 20ms timeout. If fails, probably an other subprocess is updating, so we'll keep calculating and try it later (latest when the simulation is stopped).
+		}
+		if(eos) {
           if( GetLocalState()!=PROCESS_ERROR ) {
             // Max desorption reached
             SetState(PROCESS_DONE,GetSimuStatus());

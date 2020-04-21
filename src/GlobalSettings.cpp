@@ -35,16 +35,19 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/GLTitledPanel.h"
 #include "Buffer_shared.h"
 #include "AppUpdater.h"
-#ifdef MOLFLOW
-#include "MolFlow.h"
-#endif
+#include "SMP.h"
 
-#ifndef _WIN32
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+
+#else
 //getpid in linux
 #include <sys/types.h>
 #include <unistd.h>
 #endif
 
+#ifdef MOLFLOW
+#include "MolFlow.h"
+#endif
 #ifdef SYNRAD
 #include "SynRad.h"
 #endif

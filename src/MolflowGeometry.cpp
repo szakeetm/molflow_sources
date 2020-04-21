@@ -697,10 +697,9 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 * \param crashSave prevents profile from being saved?
 * TODO: Function doesn't seem to cancel properly
 */
-void MolflowGeometry::SaveProfileGEO(FileWriter *file, Dataport *dpHit, int super, bool saveSelected, bool crashSave) {
+void MolflowGeometry::SaveProfileGEO(FileWriter *file, BYTE *buffer, int super, bool saveSelected, bool crashSave) {
 
-	BYTE *buffer;
-	if (!crashSave && !saveSelected) buffer = (BYTE *)dpHit->buff;
+	//if (!crashSave && !saveSelected) buffer = (BYTE *)buffer->buff;
 	file->Write("profiles {\n");
 	// Profiles
 	int nbProfile = 0;
@@ -746,10 +745,8 @@ void MolflowGeometry::SaveProfileGEO(FileWriter *file, Dataport *dpHit, int supe
 * \param results results from the simulation
 * \param version version of the GEO description
 */
-void MolflowGeometry::LoadProfileGEO(FileReader *file, Dataport *dpHit, int version) {
+void MolflowGeometry::LoadProfileGEO(FileReader *file, BYTE *buffer, int version) {
 
-	AccessDataport(dpHit);
-	BYTE *buffer = (BYTE *)dpHit->buff;
 	file->ReadKeyword("profiles"); file->ReadKeyword("{");
 	// Profiles
 	int nbProfile;
@@ -780,7 +777,6 @@ void MolflowGeometry::LoadProfileGEO(FileReader *file, Dataport *dpHit, int vers
 		}
 		if (version >= 10) file->ReadKeyword("}");
 	}
-	ReleaseDataport(dpHit);
 	SAFE_FREE(profileFacet);
 }
 
@@ -1342,18 +1338,16 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
 * \param results simulation results describing the texture
 * \param version version of the GEO description
 */
-bool MolflowGeometry::LoadTexturesGEO(FileReader *file, GLProgress *prg, Dataport *dpHit, int version) {
+bool MolflowGeometry::LoadTexturesGEO(FileReader *file, GLProgress *prg, BYTE *buffer, int version) {
 
 	if (file->SeekFor("{textures}")) {
 		char tmp[256];
 		//versions 3+
 		// Block dpHit during the whole disc reading
 
-		AccessDataport(dpHit);
 		//TextureCell readVal;
 
 		// Globals
-		BYTE *buffer = (BYTE *)dpHit->buff;
 		GlobalHitBuffer *gHits = (GlobalHitBuffer *)buffer;
 
 		/*gHits->globalHits.hit.nbMCHit = loaded_nbMCHit;
@@ -1475,8 +1469,6 @@ bool MolflowGeometry::LoadTexturesGEO(FileReader *file, GLProgress *prg, Datapor
 			}
 		}
 
-		ReleaseDataport(dpHit);
-
 		return true;
 
 	}
@@ -1497,18 +1489,18 @@ bool MolflowGeometry::LoadTexturesGEO(FileReader *file, GLProgress *prg, Datapor
 * \param saveSelected if a selection is to be saved
 * \param crashSave if crash save is enabled
 */
-void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, Worker *worker,
-	bool saveSelected, bool crashSave) {
+void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, BYTE *buffer, Worker *worker,
+                              bool saveSelected, bool crashSave) {
 
 	prg->SetMessage("Counting hits...");
 	if (!IsLoaded()) throw Error("Nothing to save !");
 
 	// Block dpHit during the whole disc writing
-	if (!crashSave && !saveSelected) AccessDataport(dpHit);
+	//if (!crashSave && !saveSelected) AccessDataport(buffer);
 
 	// Globals
-	BYTE *buffer;
-	if (!crashSave && !saveSelected) buffer = (BYTE *)dpHit->buff;
+	//BYTE *buffer;
+	//if (!crashSave && !saveSelected) buffer = (BYTE *)buffer->buff;
 	GlobalHitBuffer *gHits;
 	if (!crashSave && !saveSelected) gHits = (GlobalHitBuffer *)buffer;
 
@@ -1687,7 +1679,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit
 	}
 
 	prg->SetMessage("Writing profiles...");
-	SaveProfileGEO(file, dpHit, -1, saveSelected, crashSave);
+	SaveProfileGEO(file, buffer, -1, saveSelected, crashSave);
 
 	///Save textures, for GEO file version 3+
 
@@ -1758,7 +1750,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit
 		}
 		file->Write("}\n");
 	}
-	if (!crashSave && !saveSelected) ReleaseDataport(dpHit);
+	//if (!crashSave && !saveSelected) ReleaseDataport(buffer);
 
 }
 
@@ -1768,18 +1760,14 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit
 * \param results simulation results describing the texture
 * \param saveSelected if a selection is to be saved
 */
-void MolflowGeometry::SaveTXT(FileWriter *file, Dataport *dpHit, bool saveSelected) {
+void MolflowGeometry::SaveTXT(FileWriter *file, BYTE *buffer, bool saveSelected) {
 
 	if (!IsLoaded()) throw Error("Nothing to save !");
-
-	// Block dpHit during the whole disc writing
-	AccessDataport(dpHit);
 
 	// Unused
 	file->Write(0, "\n");
 
 	// Globals
-	BYTE *buffer = (BYTE *)dpHit->buff;
 	GlobalHitBuffer *gHits = (GlobalHitBuffer *)buffer;
 
 	// Unused
@@ -1837,9 +1825,6 @@ void MolflowGeometry::SaveTXT(FileWriter *file, Dataport *dpHit, bool saveSelect
 	}
 
 	SaveProfileTXT(file);
-
-	ReleaseDataport(dpHit);
-
 }
 
 /**
@@ -1851,15 +1836,8 @@ void MolflowGeometry::SaveTXT(FileWriter *file, Dataport *dpHit, bool saveSelect
 * \param saveSelected if a selection is to be saved (TODO: chefk if actually used)
 * \param sMode simulation mode
 */
-void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, Dataport *dpHit, bool saveSelected, size_t sMode) {
+void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, BYTE *buffer, bool saveSelected, size_t sMode) {
 
-
-
-	// Block dpHit during the whole disc writing
-	BYTE *buffer = NULL;
-	if (dpHit)
-		if (AccessDataport(dpHit))
-			buffer = (BYTE *)dpHit->buff;
 
 	if (grouping == 1) fprintf(file, "X_coord_cm\tY_coord_cm\tZ_coord_cm\tValue\t\n"); //mode 10: special ANSYS export
 
@@ -1868,13 +1846,13 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, Datapor
 		if (m == 0) fprintf(file, " moment 0 (Constant Flow){\n");
 		else fprintf(file, " moment %zd (%g s){\n", m, mApp->worker.moments[m - 1]);
 		// Facets
-		for (int i = 0; i < sh.nbFacet; i++) {
-			Facet *f = facets[i];
+		for (int fInd = 0; fInd < sh.nbFacet; fInd++) {
+			Facet *f = facets[fInd];
 
 			if (f->selected) {
-				if (grouping == 0) fprintf(file, "FACET%d\n", i + 1); //mode 10: special ANSYS export
-				TextureCell *texture = NULL;
-				DirectionCell *dirs = NULL;
+				if (grouping == 0) fprintf(file, "FACET%d\n", fInd + 1); //mode 10: special ANSYS export
+				TextureCell *texture = nullptr;
+				DirectionCell *dirs = nullptr;
 
 				if (f->cellPropertiesIds || f->sh.countDirection) {
 
@@ -1966,7 +1944,10 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, Datapor
 									sprintf(tmp, "None");
 								}
 								break;
-							} //end switch
+							    default:
+                                    sprintf(tmp, "Unknown mode");
+                                    break;
+                            } //end switch
 
 							if (grouping == 1 && tmp && tmp[0]) {
 								Vector2d facetCenter = f->GetMeshCenter(index);
@@ -1996,8 +1977,6 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, Datapor
 
 	} //end moment
 
-	ReleaseDataport(dpHit);
-
 }
 
 /**
@@ -2007,16 +1986,16 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, Datapor
 * \param results simulation results describing the texture
 * \param worker thread worker handling the task
 */
-void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, Dataport *dpHit, Worker *worker) {
+void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, BYTE *buffer, Worker *worker) {
 
 	char sep = isTXT ? '\t' : ',';
 	//if(!IsLoaded()) throw Error("Nothing to save !");
 
 	// Block dpHit during the whole disc writing
-	BYTE *buffer = NULL;
-	if (dpHit)
-		if (AccessDataport(dpHit))
-			buffer = (BYTE *)dpHit->buff;
+    /*BYTE *buffer = nullptr;
+	if (buffer)
+		if (AccessDataport(buffer))
+			buffer = (BYTE *)buffer->buff;*/
 
 	extern const char* profType[];
 
@@ -2094,8 +2073,6 @@ void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, Dataport *dpHit, Wor
 		fputs(" }\n", file);
 
 	}
-	ReleaseDataport(dpHit);
-
 }
 
 /* Commenting out as deprecated
@@ -3245,10 +3222,9 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 * \param progressDlg GLProgress window where visualising of the load progress is shown
 * \return bool showing if loading was successful
 */
-bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker *work, GLProgress *progressDlg) {
+bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, BYTE *buffer, Worker *work, GLProgress *progressDlg) {
 	if (!loadXML.child("MolflowResults")) return false; //simu state not saved with file
-	AccessDataport(dpHit);
-	BYTE* buffer = (BYTE*)dpHit->buff;
+
 	GlobalHitBuffer *gHits = (GlobalHitBuffer *)buffer;
 	xml_node resultNode = loadXML.child("MolflowResults");
 	xml_node momentsNode = resultNode.child("Moments");
@@ -3382,7 +3358,7 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit,
 
 			//Textures
 			int ix, iy;
-			int profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + (int)mApp->worker.moments.size())) : 0;
+			int profSize = (f->sh.isProfile) ? ((int)PROFILE_SIZE * (int)sizeof(ProfileSlice)*(1 + (int)mApp->worker.moments.size())) : 0;
 
 			if (f->hasMesh) {
 				xml_node textureNode = newFacetResult.child("Texture");
@@ -3513,6 +3489,5 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit,
 	work->globalHitCache.texture_limits[2].min.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("min").as_double();
 	work->globalHitCache.texture_limits[2].max.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("max").as_double();
 
-	ReleaseDataport(dpHit);
 	return true;
 }

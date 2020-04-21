@@ -42,7 +42,7 @@ public:
 	// Load
 	void LoadGEO(FileReader *file, GLProgress *prg, int *version, Worker *worker);
 	void LoadSYN(FileReader *file, GLProgress *prg, int *version, Worker *worker);
-	bool LoadTexturesGEO(FileReader *file, GLProgress *prg, Dataport *dpHit, int version);
+	bool LoadTexturesGEO(FileReader *file, GLProgress *prg, BYTE *buffer, int version);
 	//void ImportDesorption_DES(FileReader *file); //Deprecated
 	void ImportDesorption_SYN(FileReader *synFile, const size_t &source, const double &time,
 		const size_t &mode, const double &eta0, const double &alpha, const double &cutoffdose,
@@ -55,21 +55,21 @@ public:
 	void InsertSYN(FileReader *file, GLProgress *prg, bool newStr);
 
 	// Save
-	void SaveTXT(FileWriter *file, Dataport *dhHit, bool saveSelected);
-	void ExportTextures(FILE *file, int grouping, int mode, Dataport *dhHit, bool saveSelected, size_t sMode);
-	void ExportProfiles(FILE *file, int isTXT, Dataport *dhHit, Worker *worker);
-	void SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, Worker *worker,
-		bool saveSelected, bool crashSave = false);
+	void SaveTXT(FileWriter *file, BYTE *buffer, bool saveSelected);
+	void ExportTextures(FILE *file, int grouping, int mode, BYTE *buffer, bool saveSelected, size_t sMode);
+	void ExportProfiles(FILE *file, int isTXT, BYTE *buffer, Worker *worker);
+	void SaveGEO(FileWriter *file, GLProgress *prg, BYTE *buffer, Worker *worker,
+                 bool saveSelected, bool crashSave = false);
 	
 	void SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress *prg, bool saveSelected);
 	bool SaveXML_simustate(pugi::xml_node saveDoc, Worker *work, BYTE *buffer, GLProgress *prg, bool saveSelected);
 	void LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg);
 	void InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg, bool newStr);
-	bool LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker *work, GLProgress *progressDlg);
+	bool LoadXML_simustate(pugi::xml_node loadXML, BYTE *buffer, Worker *work, GLProgress *progressDlg);
 
 	// Geometry
 	void     BuildPipe(double L, double R, double s, int step);
-	void     LoadProfileGEO(FileReader *file, Dataport *dpHit, int version);
+	void     LoadProfileGEO(FileReader *file, BYTE *buffer, int version);
 
 	// Memory usage (in bytes)
 	size_t GetGeometrySize();
@@ -111,7 +111,7 @@ public:
 private:
 
 	void InsertSYNGeom(FileReader *file, size_t strIdx = 0, bool newStruct = false);
-	void SaveProfileGEO(FileWriter *file, Dataport *dpHit, int super = -1, bool saveSelected = false, bool crashSave = false);
+	void SaveProfileGEO(FileWriter *file, BYTE *buffer, int super = -1, bool saveSelected = false, bool crashSave = false);
 
 };
 
