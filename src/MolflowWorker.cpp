@@ -28,12 +28,22 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 #endif
 
+#include <cmath>
+#include <cstdlib>
+#include <fstream>
+#include <istream>
+#include <filesystem>
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/utility.hpp>
+//#include <cereal/archives/xml.hpp>
+#include <cereal/types/vector.hpp>
+#include <cereal/types/string.hpp>
+
 #include "MolflowGeometry.h"
 #include "Worker.h"
 #include "GLApp/GLApp.h"
 #include "GLApp/GLMessageBox.h"
-#include <math.h>
-#include <stdlib.h>
+
 #include "GLApp/GLUnitDialog.h"
 #include "GLApp/MathTools.h"
 #include "Facet_shared.h"
@@ -41,25 +51,17 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GlobalSettings.h"
 #include "FacetAdvParams.h"
 #include "ProfilePlotter.h"
-#include <fstream>
-#include <istream>
 
-#include <filesystem>
 
-#include <cereal/archives/binary.hpp>
-#include <cereal/types/utility.hpp>
-//#include <cereal/archives/xml.hpp>
-#include <cereal/types/vector.hpp>
-#include <cereal/types/string.hpp>
-#include <fstream>
 
-#ifdef MOLFLOW
+
+#if defined(MOLFLOW)
 
 #include "MolFlow.h"
 
 #endif
 
-#ifdef SYNRAD
+#if defined(SYNRAD)
 #include "SynRad.h"
 #endif
 
@@ -67,10 +69,11 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "ziplib/ZipArchiveEntry.h"
 #include "ziplib/ZipFile.h"
 #include "File.h" //File utils (Get extension, etc)
+#include "ProcessControl.h"
 
 /*
 //Leak detection
-#ifdef _DEBUG
+#if defined(_DEBUG)
 #define _CRTDBG_MAP_ALLOC
 #define DEBUG_NEW new(_NORMAL_BLOCK, __FILE__, __LINE__)
 #define new DEBUG_NEW
@@ -78,11 +81,11 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 using namespace pugi;
 
-#ifdef MOLFLOW
+#if defined(MOLFLOW)
 extern MolFlow *mApp;
 #endif
 
-#ifdef SYNRAD
+#if defined(SYNRAD)
 extern SynRad*mApp;
 #endif
 
@@ -154,7 +157,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
     }
     catch (Error &e) {
         char errMsg[512];
-        sprintf(errMsg, "Error reloading worker. Trying safe save (geometry only):\n%s", e.GetMsg());
+        sprintf(errMsg, "Error reloading worker. Trying safe save (geometry only):\n%s", e.what());
         GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
         crashSave = true;
     }
@@ -251,7 +254,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                 }
             }
             catch (Error &e) {
-                GLMessageBox::Display(e.GetMsg(), "Error getting access to hit buffer.", GLDLG_OK, GLDLG_ICONERROR);
+                GLMessageBox::Display(e.what(), "Error getting access to hit buffer.", GLDLG_OK, GLDLG_ICONERROR);
                 return;
             }
 
@@ -266,7 +269,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                 }
                 catch (Error &e) {
                     SAFE_DELETE(f);
-                    GLMessageBox::Display(e.GetMsg(), "Error writing file.", GLDLG_OK, GLDLG_ICONERROR);
+                    GLMessageBox::Display(e.what(), "Error writing file.", GLDLG_OK, GLDLG_ICONERROR);
                     return;
                 }
 
@@ -311,7 +314,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                         catch (Error &e) {
                             SAFE_DELETE(f);
                             simManager.UnlockHitBuffer();
-                            GLMessageBox::Display(e.GetMsg(), "Error saving simulation state.", GLDLG_OK,
+                            GLMessageBox::Display(e.what(), "Error saving simulation state.", GLDLG_OK,
                                                   GLDLG_ICONERROR);
                             return;
                         }
@@ -834,7 +837,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 }
                 catch (Error &e) {
                     mApp->profilePlotter->Reset(); //To avoid trying to display non-loaded simulation results
-                    GLMessageBox::Display(e.GetMsg(), "Error while loading simulation state", GLDLG_CANCEL,
+                    GLMessageBox::Display(e.what(), "Error while loading simulation state", GLDLG_CANCEL,
                                           GLDLG_ICONWARNING);
                 }
             } else { //insert
@@ -917,7 +920,7 @@ void Worker::LoadTexturesGEO(FileReader *f, int version) {
         char tmp[256];
         sprintf(tmp,
                 "Couldn't load some textures. To avoid continuing a partially loaded state, it is recommended to reset the simulation.\n%s",
-                e.GetMsg());
+                e.what());
         GLMessageBox::Display(tmp, "Error while loading textures.", GLDLG_OK, GLDLG_ICONWARNING);
     }
     progressDlg->SetVisible(false);
@@ -963,7 +966,7 @@ void Worker::StepAC(float appTime) {
         Update(appTime);
     }
     catch (Error &e) {
-        GLMessageBox::Display(e.GetMsg(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
+        GLMessageBox::Display(e.what(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
     }
 
 }
@@ -985,7 +988,7 @@ void Worker::StartStop(float appTime, size_t sMode) {
         }
 
         catch (Error &e) {
-            GLMessageBox::Display(e.GetMsg(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
+            GLMessageBox::Display(e.what(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
             return;
         }
     } else {
@@ -1004,7 +1007,7 @@ void Worker::StartStop(float appTime, size_t sMode) {
         }
         catch (Error &e) {
             isRunning = false;
-            GLMessageBox::Display(e.GetMsg(), "Error (Start)", GLDLG_OK, GLDLG_ICONERROR);
+            GLMessageBox::Display(e.what(), "Error (Start)", GLDLG_OK, GLDLG_ICONERROR);
             return;
         }
 
@@ -1046,7 +1049,7 @@ void Worker::Update(float appTime) {
 				for (int proc = 0; proc < nbProcess && done; proc++) {
 					done = done && (master->states[proc] == PROCESS_DONE);
 					error = error && (master->states[proc] == PROCESS_ERROR);
-#ifdef MOLFLOW
+#if defined(MOLFLOW)
 					if (master->states[proc] == PROCESS_RUNAC) calcACprg = master->cmdParam[proc];
 #endif
 				}
@@ -1094,7 +1097,7 @@ void Worker::Update(float appTime) {
 					if (mApp->needsTexture || mApp->needsDirection) geom->BuildFacetTextures(buffer,mApp->needsTexture,mApp->needsDirection);
 				}
 				catch (Error &e) {
-					GLMessageBox::Display(e.GetMsg(), "Error building texture", GLDLG_OK, GLDLG_ICONERROR);
+					GLMessageBox::Display(e.what(), "Error building texture", GLDLG_OK, GLDLG_ICONERROR);
 					ReleaseDataport(dpHit);
 					return;
 				}
@@ -1124,7 +1127,7 @@ void Worker::ComputeAC(float appTime) {
         if (needsReload) RealReload();
     }
     catch (Error &e) {
-        GLMessageBox::Display(e.GetMsg(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
+        GLMessageBox::Display(e.what(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
         return;
     }
     if (isRunning)
@@ -1176,7 +1179,7 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
         catch (Error &e) {
             progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
-            throw Error(e.GetMsg());
+            throw Error(e.what());
         }
 
         if (ontheflyParams.nbProcess == 0) return;
@@ -1293,7 +1296,7 @@ void Worker::ClearHits(bool noReload) {
         if (!noReload && needsReload) RealReload();
     }
     catch (Error &e) {
-        GLMessageBox::Display(e.GetMsg(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
+        GLMessageBox::Display(e.what(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
         return;
     }
     simManager.ClearHitsBuffer();

@@ -35,18 +35,18 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 //#include "Worker.h"
 #include "Geometry_shared.h"
 
-#ifdef MOLFLOW
+#if defined(MOLFLOW)
 #include "MolFlow.h"
 #endif
 
-#ifdef SYNRAD
+#if defined(SYNRAD)
 #include "SynRad.h"
 #endif
-#ifdef MOLFLOW
+#if defined(MOLFLOW)
 extern MolFlow *mApp;
 #endif
 
-#ifdef SYNRAD
+#if defined(SYNRAD)
 extern SynRad*mApp;
 #endif
 
@@ -981,7 +981,7 @@ bool FacetAdvParams::ApplyTexture(bool force) {
 			if (needsRemeshing) geom->SetFacetTexture(sel, hasAnyTexture ? (doRatio?ratio:f->tRatio) : 0.0, hasAnyTexture ? boundMap : false);
 		}
 		catch (Error &e) {
-			GLMessageBox::Display(e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONWARNING);
+			GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONWARNING);
 			progressDlg->SetVisible(false);
 			SAFE_DELETE(progressDlg);
 			return false;
@@ -1416,7 +1416,7 @@ bool FacetAdvParams::Apply() {
 			if (needsRemeshing) geom->SetFacetTexture(sel, hasAnyTexture ? ratio : 0.0, hasAnyTexture ? boundMap : false);
 		}
 		catch (Error &e) {
-			GLMessageBox::Display(e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONWARNING);
+			GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONWARNING);
 			progressDlg->SetVisible(false);
 			SAFE_DELETE(progressDlg);
 			return false;

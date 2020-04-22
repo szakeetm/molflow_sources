@@ -36,6 +36,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Buffer_shared.h"
 #include "AppUpdater.h"
 #include "SMP.h"
+#include "ProcessControl.h"
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 
@@ -45,20 +46,20 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <unistd.h>
 #endif
 
-#ifdef MOLFLOW
+#if defined(MOLFLOW)
 #include "MolFlow.h"
 #endif
-#ifdef SYNRAD
+#if defined(SYNRAD)
 #include "SynRad.h"
 #endif
 
 extern GLApplication *theApp;
 
-#ifdef MOLFLOW
+#if defined(MOLFLOW)
 extern MolFlow *mApp;
 #endif
 
-#ifdef SYNRAD
+#if defined(SYNRAD)
 extern SynRad*mApp;
 #endif
 
@@ -418,7 +419,7 @@ void GlobalSettings::RestartProc() {
 					mApp->SaveConfig();
 				}
 				catch (Error &e) {
-					GLMessageBox::Display(e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
+					GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 				}
 			}
 	}
@@ -441,7 +442,7 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 					worker->RealReload();
 				}
 				catch (Error &e) {
-					GLMessageBox::Display(e.GetMsg(), "Recalculation failed: Couldn't reload Worker", GLDLG_OK, GLDLG_ICONWARNING);
+					GLMessageBox::Display(e.what(), "Recalculation failed: Couldn't reload Worker", GLDLG_OK, GLDLG_ICONWARNING);
 				}
 			}
 		}

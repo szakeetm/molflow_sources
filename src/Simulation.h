@@ -19,14 +19,16 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 #pragma once
 
+#include <tuple>
+#include <vector>
+
 #include "MolflowTypes.h"
 #include "Buffer_shared.h" //Facetproperties
 #include "SMP.h"
-#include <vector>
 #include "Vector.h"
 #include "Parameter.h"
-#include <tuple>
 #include "Random.h"
+#include "ProcessControl.h"
 
 class Anglemap {
 public:
@@ -74,8 +76,8 @@ public:
 	double ih;
 
 	// Temporary var (used in FillHit for hit recording)
-	bool   hitted;
-	bool   ready;         // Volatile state
+	bool   isHit;
+	bool   isReady;         // Volatile state
 	size_t    textureSize;   // Texture size (in bytes)
 	size_t    profileSize;   // profile size (in bytes)
 	size_t    directionSize; // direction field size (in bytes)

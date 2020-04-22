@@ -120,28 +120,28 @@ bool LoadSimulation(Dataport *loader) {
 		std::copy(buffer, buffer + loader->size, inputString.begin());
 		std::stringstream inputStream;
 		inputStream << inputString;
-		cereal::BinaryInputArchive inputarchive(inputStream);
+		cereal::BinaryInputArchive inputArchive(inputStream);
 
 		//Worker params
-		inputarchive(sHandle->wp);
-		inputarchive(sHandle->ontheflyParams);
-		inputarchive(sHandle->CDFs);
-		inputarchive(sHandle->IDs);
-		inputarchive(sHandle->parameters);
-		inputarchive(sHandle->temperatures);
-		inputarchive(sHandle->moments);
-		inputarchive(sHandle->desorptionParameterIDs);
+		inputArchive(sHandle->wp);
+		inputArchive(sHandle->ontheflyParams);
+		inputArchive(sHandle->CDFs);
+		inputArchive(sHandle->IDs);
+		inputArchive(sHandle->parameters);
+		inputArchive(sHandle->temperatures);
+		inputArchive(sHandle->moments);
+		inputArchive(sHandle->desorptionParameterIDs);
 
 		//Geometry
-		inputarchive(sHandle->sh);
-		inputarchive(sHandle->vertices3);
+		inputArchive(sHandle->sh);
+		inputArchive(sHandle->vertices3);
 
 		sHandle->structures.resize(sHandle->sh.nbSuper); //Create structures
 
 		//Facets
 		for (size_t i = 0; i < sHandle->sh.nbFacet; i++) { //Necessary because facets is not (yet) a vector in the interface
 			SubprocessFacet f;
-			inputarchive(
+			inputArchive(
 				f.sh,
 				f.indices,
 				f.vertices2,
@@ -165,267 +165,16 @@ bool LoadSimulation(Dataport *loader) {
 
 	//Initialize global histogram
 	FacetHistogramBuffer hist;
-	hist.nbHitsHistogram.resize(sHandle->wp.globalHistogramParams.recordBounce ? sHandle->wp.globalHistogramParams.GetBounceHistogramSize() : 0); hist.nbHitsHistogram.shrink_to_fit();
+    hist.Resize(sHandle->wp.globalHistogramParams);
+	/*hist.nbHitsHistogram.resize(sHandle->wp.globalHistogramParams.recordBounce ? sHandle->wp.globalHistogramParams.GetBounceHistogramSize() : 0); hist.nbHitsHistogram.shrink_to_fit();
 	hist.distanceHistogram.resize(sHandle->wp.globalHistogramParams.recordDistance ? sHandle->wp.globalHistogramParams.GetDistanceHistogramSize() : 0); hist.distanceHistogram.shrink_to_fit();
 	hist.timeHistogram.resize(sHandle->wp.globalHistogramParams.recordTime ? sHandle->wp.globalHistogramParams.GetTimeHistogramSize() : 0); hist.timeHistogram.shrink_to_fit();
-	
+	*/
 	sHandle->tmpGlobalHistograms = std::vector<FacetHistogramBuffer>(1 + sHandle->moments.size(), hist);
 
 	//Reserve particle log
 	if (sHandle->ontheflyParams.enableLogging)
 	    sHandle->tmpParticleLog.reserve(sHandle->ontheflyParams.logLimit / sHandle->ontheflyParams.nbProcess);
-
-
-
-	/* //Old dataport-based loading, replaced by above serialization
-
-	BYTE* buffer = (BYTE *)loader->buff;
-	BYTE* bufferStart = buffer; //memorize start for later
-
-	// Load new geom from the dataport
-
-	//Struct number precheck
-	GeomProperties *shGeom = (GeomProperties *)buffer;
-	if (shGeom->nbSuper > MAX_STRUCT) {
-		//ReleaseDataport(loader);
-		SetErrorSub("Too many structures");
-		return false;
-	}
-	if (shGeom->nbSuper <= 0) {
-		//ReleaseDataport(loader);
-		SetErrorSub("No structures");
-		return false;
-	}
-	sHandle->sh = READBUFFER(GeomProperties); //Copy all geometry properties
-	sHandle->wp = READBUFFER(WorkerParams);
-	sHandle->structures.resize(sHandle->sh.nbSuper); //Create structures
-	FacetHistogramBuffer hist;
-	if (sHandle->wp.globalHistogramParams.record) {
-		hist.distanceHistogram.resize(sHandle->wp.globalHistogramParams.GetBounceHistogramSize());
-		hist.distanceHistogram.resize(sHandle->wp.globalHistogramParams.distanceResolution);
-		hist.timeHistogram.resize(sHandle->wp.globalHistogramParams.timeResolution);
-	}
-	sHandle->tmpGlobalHistograms = std::vector<FacetHistogramBuffer>(1 + sHandle->moments.size(),hist);
-
-	sHandle->ontheflyParams = READBUFFER(OntheflySimulationParams);
-	if (sHandle->ontheflyParams.enableLogging) sHandle->tmpParticleLog.reserve(sHandle->ontheflyParams.logLimit / sHandle->ontheflyParams.nbProcess);
-	
-	// Vertices
-	try {
-		sHandle->vertices3.resize(sHandle->sh.nbVertex);
-	}
-	catch (...) {
-		SetErrorSub("Not enough memory to load vertices");
-		return false;
-	}
-	memcpy(sHandle->vertices3.data(), buffer, sHandle->sh.nbVertex * sizeof(Vector3d));
-	buffer += sizeof(Vector3d)*sHandle->sh.nbVertex; //Skip vertices
-
-	
-
-	// Facets
-	for (size_t i = 0; i < sHandle->sh.nbFacet; i++) {
-
-		SubprocessFacet f;
-		
-		f.sh = READBUFFER(FacetProperties);
-			f.ResizeCounter(sHandle->moments.size()); //Initialize counter
-
-	sHandle->hasVolatile |= f.sh.isVolatile;
-
-	f.globalId = globalId;
-
-	if (f.sh.superDest || f.sh.isVolatile) {
-		// Link or volatile facet, overides facet settings
-		// Must be full opaque and 0 sticking
-		// (see SimulationMC.c::PerformBounce)
-		//f.sh.isOpaque = true;
-		f.sh.opacity = 1.0;
-		f.sh.opacity_paramId = -1;
-		f.sh.sticking = 0.0;
-		f.sh.sticking_paramId = -1;
-		if (((f.sh.superDest - 1) >= sHandle->sh.nbSuper || f.sh.superDest < 0)) {
-			// Geometry error
-			ClearSimulation();
-			//ReleaseDataport(loader);
-			sprintf(err, "Invalid structure (wrong link on F#%zd)", i + 1);
-			SetErrorSub(err);
-			return false;
-		}
-	}
-
-		// Reset counter in local memory
-		//memset(&(f.sh.tmpCounter), 0, sizeof(FacetHitBuffer)); //Done by ResizeCounter() above
-		f.indices.resize(f.sh.nbIndex);
-		memcpy(f.indices.data(), buffer, f.sh.nbIndex * sizeof(size_t));
-		buffer += f.sh.nbIndex * sizeof(size_t);
-		try {
-			f.vertices2.resize(f.sh.nbIndex);
-		} catch (...) {
-			SetErrorSub("Not enough memory to load vertices");
-			return false;
-		}
-		memcpy(f.vertices2.data(), buffer, f.sh.nbIndex * sizeof(Vector2d));
-		buffer += f.sh.nbIndex * sizeof(Vector2d);
-		//Outgassing map
-		if (f.sh.useOutgassingFile) {
-			size_t nbE = f.sh.outgassingMapWidth*f.sh.outgassingMapHeight;
-			try {
-				f.outgassingMap.resize(nbE);
-			} catch (...) {
-				SetErrorSub("Not enough memory to load outgassing map");
-				return false;
-			}
-			memcpy(f.outgassingMap.data(), buffer, sizeof(double)*nbE);
-			buffer += sizeof(double)*nbE;
-
-		}
-
-
-		//Textures
-		if (f.sh.isTextured) {
-			size_t nbE = f.sh.texWidth*f.sh.texHeight;
-			f.textureSize = nbE * sizeof(TextureCell);
-			try {
-				f.texture = std::vector<std::vector<TextureCell>>(1 + sHandle->moments.size(), std::vector<TextureCell>(nbE));
-			}
-			catch (...) {
-				SetErrorSub("Not enough memory to load textures");
-				return false;
-			}
-
-			//Load textureCellIncrements values (1/area)
-				f.textureCellIncrements.resize(nbE);
-				f.largeEnough.resize(nbE);
-				f.fullSizeInc = 1E30;
-				for (size_t j = 0; j < nbE; j++) {
-					double incVal = READBUFFER(double);
-					f.textureCellIncrements[j] = incVal;
-					if ((f.textureCellIncrements[j] > 0.0) && (f.textureCellIncrements[j] < f.fullSizeInc)) f.fullSizeInc = f.textureCellIncrements[j];
-				}
-				for (size_t j = 0; j < nbE; j++) { //second pass, filter out very small cells
-					f.largeEnough[j] = (f.textureCellIncrements[j] < ((5.0f)*f.fullSizeInc));
-				}
-				sHandle->textTotalSize += f.textureSize*(1 + sHandle->moments.size());
-
-				f.iw = 1.0 / (double)f.sh.texWidthD;
-				f.ih = 1.0 / (double)f.sh.texHeightD;
-				f.rw = f.sh.U.Norme() * f.iw;
-				f.rh = f.sh.V.Norme() * f.ih;
-		}
-		else f.textureSize = 0;
-
-		//Profiles
-		if (f.sh.isProfile) {
-			f.profileSize = PROFILE_SIZE * sizeof(ProfileSlice);
-			try {
-				f.profile = std::vector<std::vector<ProfileSlice>>(1 + sHandle->moments.size(), std::vector<ProfileSlice>(PROFILE_SIZE));
-			}
-			catch (...) {
-				SetErrorSub("Not enough memory to load profiles");
-				return false;
-			}
-			sHandle->profTotalSize += f.profileSize*(1 + sHandle->moments.size());
-		}
-		else f.profileSize = 0;
-
-		//Direction
-		if (f.sh.countDirection) {
-			f.directionSize = f.sh.texWidth*f.sh.texHeight * sizeof(DirectionCell);
-			try {
-				f.direction = std::vector<std::vector<DirectionCell>>(1 + sHandle->moments.size(), std::vector<DirectionCell>(f.sh.texWidth*f.sh.texHeight));
-			}
-			catch (...) {
-				SetErrorSub("Not enough memory to load direction textures");
-				return false;
-			}
-			sHandle->dirTotalSize += f.directionSize*(1 + sHandle->moments.size());
-		}
-		else f.directionSize = 0;
-
-		FacetHistogramBuffer hist;
-		if (f.sh.facetHistogramParams.record) {
-			hist.distanceHistogram.resize(f.sh.facetHistogramParams.GetBounceHistogramSize());
-			hist.distanceHistogram.resize(f.sh.facetHistogramParams.distanceResolution);
-			hist.timeHistogram.resize(f.sh.facetHistogramParams.timeResolution);
-		}
-		f.tmpHistograms = std::vector<FacetHistogramBuffer>(1 + sHandle->moments.size(), hist);
-
-		sHandle->structures[f.sh.superIdx].facets.push_back(f); //Assign to structure
-	}
-
-	//CDFs
-	size_t size1 = READBUFFER(size_t);
-	sHandle->CDFs.reserve(size1);
-	for (size_t i = 0; i < size1; i++) {
-		std::vector<std::pair<double, double>> newCDF;
-		size_t size2 = READBUFFER(size_t);
-		newCDF.reserve(size2);
-		for (size_t j = 0; j < size2; j++) {
-			double valueX = READBUFFER(double);
-			double valueY = READBUFFER(double);
-			newCDF.push_back(std::make_pair(valueX, valueY));
-		}
-		sHandle->CDFs.push_back(newCDF);
-	}
-
-	//IDs
-	size1 = READBUFFER(size_t);
-	sHandle->IDs.reserve(size1);
-	for (size_t i = 0; i < size1; i++) {
-		std::vector<std::pair<double, double>> newID;
-		size_t size2 = READBUFFER(size_t);
-		newID.reserve(size2);
-		for (size_t j = 0; j < size2; j++) {
-			double valueX = READBUFFER(double);
-			double valueY = READBUFFER(double);
-			newID.push_back(std::make_pair(valueX, valueY));
-		}
-		sHandle->IDs.push_back(newID);
-	}
-
-	//Parameters
-	size1 = READBUFFER(size_t);
-	sHandle->parameters.reserve(size1);
-	for (size_t i = 0; i < size1; i++) {
-		Parameter newParam = Parameter();
-		std::vector<std::pair<double, double>> newValues;
-		size_t size2 = READBUFFER(size_t);
-		newValues.reserve(size2);
-		for (size_t j = 0; j < size2; j++) {
-			double valueX = READBUFFER(double);
-			double valueY = READBUFFER(double);
-			newValues.push_back(std::make_pair(valueX, valueY));
-		}
-		newParam.SetValues(newValues, false);
-		sHandle->parameters.push_back(newParam);
-	}
-
-	//Temperatures
-	size1 = READBUFFER(size_t);
-	sHandle->temperatures.reserve(size1);
-	for (size_t i = 0; i < size1; i++) {
-		double valueX = READBUFFER(double);
-		sHandle->temperatures.push_back(valueX);
-	}
-
-	//Time moments
-	sHandle->moments.reserve(sHandle->moments.size()); //nbMoments already passed
-	for (size_t i = 0; i < sHandle->moments.size(); i++) {
-		double valueX = READBUFFER(double);
-		sHandle->moments.push_back(valueX);
-	}
-
-	//Desorption parameter IDs
-	size1 = READBUFFER(size_t);
-	sHandle->desorptionParameterIDs.reserve(size1);
-	for (size_t i = 0; i < size1; i++) {
-		size_t valueX = READBUFFER(size_t);
-		sHandle->desorptionParameterIDs.push_back(valueX);
-	}
-	
-	//ReleaseDataport(loader); //Commented out as AccessDataport removed
-	*/
 
 	// Build all AABBTrees
 	size_t maxDepth=0;
@@ -455,7 +204,7 @@ bool LoadSimulation(Dataport *loader) {
 	printf("  Direction : %zd bytes\n", sHandle->dirTotalSize);
 
 	printf("  Total     : %zd bytes\n", GetHitsSize());
-	printf("  Seed: %lu\n", seed);
+	printf("  Seed: %u\n", seed);
 	printf("  Loading time: %.3f ms\n", (t1 - t0)*1000.0);
 	return true;
 
@@ -506,23 +255,18 @@ void ResetTmpCounters() {
 	
 	//Reset global histograms
 	for (auto& h : sHandle->tmpGlobalHistograms) {
-		//Could use ZEROVECTOR as well
-		ZEROVECTOR(h.nbHitsHistogram);
-		ZEROVECTOR(h.distanceHistogram);
-		ZEROVECTOR(h.timeHistogram);
+		h.Reset();
 	}
 
 	for (int j = 0; j < sHandle->sh.nbSuper; j++) {
 		for (auto& f : sHandle->structures[j].facets) {
 			f.ResetCounter();
-			f.hitted = false;
+			f.isHit = false;
 
 			//Reset facet histograms
 			
 				for (auto& t : f.tmpHistograms) {
-					ZEROVECTOR(t.nbHitsHistogram);
-					ZEROVECTOR(t.distanceHistogram);
-					ZEROVECTOR(t.timeHistogram);
+					t.Reset();
 				}
 			/*std::vector<TextureCell>(f.texture.size()).swap(f.texture);
 			std::vector<ProfileSlice>(f.profile.size()).swap(f.profile);
@@ -607,7 +351,7 @@ bool SimulationRun() {
 	size_t    nbStep = 1;
 	bool   goOn;
 
-	if (sHandle->stepPerSec == 0.0) {
+	if (sHandle->stepPerSec <= 0.0) {
 		switch (sHandle->wp.sMode) {
 		case MC_MODE:
 			nbStep = 250;
@@ -634,9 +378,9 @@ bool SimulationRun() {
 	}
 
 	t1 = GetTick();
-	sHandle->stepPerSec = (1.0 * nbStep) / (t1 - t0); // every 1 second
-#ifdef _DEBUG
-	printf("Running: stepPerSec = %f\n", sHandle->stepPerSec);
+	sHandle->stepPerSec = (1.0 * nbStep) / (t1 - t0); // every 1.0 second
+#if defined(_DEBUG)
+	printf("Running: stepPerSec = %lf\n", sHandle->stepPerSec);
 #endif
 
 	return !goOn;
@@ -671,9 +415,7 @@ bool SubprocessFacet::InitializeOnLoad(const size_t& id) {
 void SubprocessFacet::InitializeHistogram()
 {
 	FacetHistogramBuffer hist;
-	if (sh.facetHistogramParams.recordBounce) hist.nbHitsHistogram.resize(sh.facetHistogramParams.GetBounceHistogramSize());
-	if (sh.facetHistogramParams.recordDistance) 	hist.distanceHistogram.resize(sh.facetHistogramParams.GetDistanceHistogramSize());
-	if (sh.facetHistogramParams.recordTime) 	hist.timeHistogram.resize(sh.facetHistogramParams.GetTimeHistogramSize());
+	hist.Resize(sh.facetHistogramParams);
 	
 	tmpHistograms = std::vector<FacetHistogramBuffer>(1 + sHandle->moments.size(), hist);
 	sHandle->histogramTotalSize += (1 + sHandle->moments.size()) * 

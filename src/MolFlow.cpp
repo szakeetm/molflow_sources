@@ -267,7 +267,7 @@ void MolFlow::LoadParameterCatalog()
 			}
 			catch (Error &e) {
 				char errMsg[512];
-				sprintf(errMsg, "Failed to load CSV file.\n%s", e.GetMsg());
+				sprintf(errMsg, "Failed to load CSV file.\n%s", e.what());
 				//GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR); //Can't display dialog window: interface not yet initialized
 				continue;
 			}
@@ -872,7 +872,7 @@ void MolFlow::ApplyFacetParams() {
 	// Mark "needsReload" to sync changes with workers on next simulation start
 	try { worker.Reload(); }
 	catch (Error &e) {
-		GLMessageBox::Display(e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
+		GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
 	}
 	worker.CalcTotalOutgassing();
@@ -1214,7 +1214,7 @@ void MolFlow::ExportProfiles() {
 		}
 		catch (Error &e) {
 			char errMsg[512];
-			sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), saveFile.c_str());
+			sprintf(errMsg, "%s\nFile:%s", e.what(), saveFile.c_str());
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 		}
 	}
@@ -1234,7 +1234,7 @@ void MolFlow::ExportAngleMaps() {
 		}
 		catch (Error &e) {
 			char errMsg[512];
-			sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), profFile.c_str());
+			sprintf(errMsg, "%s\nFile:%s", e.what(), profFile.c_str());
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return;
 		}
@@ -1266,7 +1266,7 @@ void MolFlow::ImportAngleMaps(){
 		}
 		catch (Error &e) {
 				char errMsg[512];
-				sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), fileNames[i].c_str());
+				sprintf(errMsg, "%s\nFile:%s", e.what(), fileNames[i].c_str());
 				GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 		}
@@ -1311,7 +1311,7 @@ void MolFlow::CopyAngleMapToClipboard()
 
 		}
 		catch (Error &e) {
-			GLMessageBox::Display(e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
+			GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 		}
 }
 
@@ -1339,7 +1339,7 @@ void MolFlow::ImportDesorption_DES() {
 		}
 		catch (Error &e) {
 			char errMsg[512];
-			sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), fn->fullName);
+			sprintf(errMsg, "%s\nFile:%s", e.what(), fn->fullName);
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 		}
 		worker.CalcTotalOutgassing();
@@ -1363,7 +1363,7 @@ void MolFlow::SaveFile() {
 		}
 		catch (Error &e) {
 			char errMsg[512];
-			sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), worker.GetCurrentFileName());
+			sprintf(errMsg, "%s\nFile:%s", e.what(), worker.GetCurrentFileName());
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 		}
 		progressDlg2->SetVisible(false);
@@ -1470,7 +1470,7 @@ void MolFlow::LoadFile(std::string fileName) {
 	catch (Error &e) {
 
 		char errMsg[512];
-		sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), fileShortName.c_str());
+		sprintf(errMsg, "%s\nFile:%s", e.what(), fileShortName.c_str());
 		GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 		RemoveRecent(filePath.c_str());
 
@@ -1567,7 +1567,7 @@ void MolFlow::InsertGeometry(bool newStr,std::string fileName) {
 	catch (Error &e) {
 
 		char errMsg[512];
-		sprintf(errMsg, "%s\nFile:%s", e.GetMsg(), fileShortName.c_str());
+		sprintf(errMsg, "%s\nFile:%s", e.what(), fileShortName.c_str());
 		GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 		RemoveRecent(filePath.c_str());
 
@@ -1735,7 +1735,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		case MENU_FACET_REMOVESEL:
 		{
 			auto selectedFacets = geom->GetSelectedFacets();
-			if (selectedFacets.size() == 0) return; //Nothing selected
+			if (selectedFacets.empty()) return; //Nothing selected
 			if (GLMessageBox::Display("Remove selected facets?", "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONINFO) == GLDLG_OK) {
 				if (AskToReset()) {
 					if (worker.isRunning) worker.Stop_Public();
@@ -1838,7 +1838,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 						// Send to sub process
 						try { worker.Reload(); }
 						catch (Error &e) {
-							GLMessageBox::Display(e.GetMsg(), "Error reloading worker", GLDLG_OK, GLDLG_ICONERROR);
+							GLMessageBox::Display(e.what(), "Error reloading worker", GLDLG_OK, GLDLG_ICONERROR);
 						}
 					}
 				}
@@ -2039,7 +2039,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		else if (src == compACBtn) {
 			try { lastUpdate = 0.0; worker.ComputeAC(m_fTime); }
 			catch (Error &e) {
-				GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
+				GLMessageBox::Display((char *)e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
 			break;
@@ -2047,7 +2047,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		else if (src == singleACBtn) {
 			try { lastUpdate = 0.0; worker.StepAC(m_fTime); }
 			catch (Error &e) {
-				GLMessageBox::Display((char *)e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
+				GLMessageBox::Display((char *)e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
 			break;
@@ -2056,6 +2056,9 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			ProcessFormulaButtons(src);
 		}*/
 		break;
+	    default:
+            GLMessageBox::Display("Corrupted menu item selected!", "Error", GLDLG_OK, GLDLG_ICONERROR);
+            return;
 	}
 }
 
@@ -2093,7 +2096,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 		worker.ResetMoments();
 	}
 	catch (Error &e) {
-		GLMessageBox::Display((char *)e.GetMsg(), "Error building pipe", GLDLG_OK, GLDLG_ICONERROR);
+		GLMessageBox::Display((char *)e.what(), "Error building pipe", GLDLG_OK, GLDLG_ICONERROR);
 		geom->Clear();
 		return;
 	}
@@ -2165,7 +2168,7 @@ void MolFlow::EmptyGeometry() {
 		worker.ResetMoments();
 	}
 	catch (Error &e) {
-		GLMessageBox::Display(e.GetMsg(), "Error resetting geometry", GLDLG_OK, GLDLG_ICONERROR);
+		GLMessageBox::Display(e.what(), "Error resetting geometry", GLDLG_OK, GLDLG_ICONERROR);
 		geom->Clear();
 		return;
 	}
@@ -2341,7 +2344,7 @@ void MolFlow::LoadConfig() {
 
 		f->ReadKeyword("processNum"); f->ReadKeyword(":");
 		nbProc = f->ReadSizeT();
-#ifdef _DEBUG
+#if defined(_DEBUG)
 		nbProc = 1;
 #endif
 		if (nbProc <= 0) nbProc = 1;
@@ -2490,7 +2493,7 @@ void MolFlow::SaveConfig() {
 		f->Write("textures_max_density_moments_only:");
 		f->Write(geom->texture_limits[2].autoscale.max.moments_only, "\n");
 
-#ifdef _DEBUG
+#if defined(_DEBUG)
 		f->Write("processNum:");f->Write(numCPU, "\n");
 #else
 		f->Write("processNum:"); f->Write(worker.GetProcNumber(), "\n");
@@ -2524,7 +2527,7 @@ void MolFlow::SaveConfig() {
 		f->Write("highlightNonplanarFacets:"); f->Write(highlightNonplanarFacets, "\n");
 	}
 	catch (Error &err) {
-		GLMessageBox::Display(err.GetMsg(), "Error saving config file", GLDLG_OK, GLDLG_ICONWARNING);
+		GLMessageBox::Display(err.what(), "Error saving config file", GLDLG_OK, GLDLG_ICONWARNING);
 	}
 
 	SAFE_DELETE(f);
@@ -2573,7 +2576,7 @@ void MolFlow::calcSticking() {
 
 void MolFlow::CrashHandler(Error *e) {
 	char tmp[1024];
-	sprintf(tmp, "Well, that's emberassing. Molflow crashed and will exit now.\nBefore that, an autosave will be attempted.\nHere is the error info:\n\n%s", e->GetMsg());
+	sprintf(tmp, "Well, that's emberassing. Molflow crashed and will exit now.\nBefore that, an autosave will be attempted.\nHere is the error info:\n\n%s", e->what());
 	GLMessageBox::Display(tmp, "Main crash handler", GLDLG_OK, GLDGL_ICONDEAD);
 	try {
 		if (AutoSave(true))
@@ -2582,7 +2585,7 @@ void MolFlow::CrashHandler(Error *e) {
 			GLMessageBox::Display("Sorry, I couldn't even autosave.", "Main crash handler", GLDLG_OK, GLDGL_ICONDEAD);
 	}
 	catch (Error &e) {
-		e.GetMsg();
+		e.what();
 		GLMessageBox::Display("Sorry, I couldn't even autosave.", "Main crash handler", GLDLG_OK, GLDGL_ICONDEAD);
 	}
 }
@@ -2866,7 +2869,7 @@ void MolFlow::UpdateFacetHits(bool allRows) {
 	}
 	catch (Error &e) {
 		char errMsg[512];
-		sprintf(errMsg, "%s\nError while updating facet hits", e.GetMsg());
+		sprintf(errMsg, "%s\nError while updating facet hits", e.what());
 		GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 	}
 

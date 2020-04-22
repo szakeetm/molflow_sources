@@ -57,7 +57,7 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
     GlobalHitBuffer *gHits;
     TEXTURE_MIN_MAX texture_limits_old[3];
     int i, j, s, x, y;
-#ifdef _DEBUG
+#if defined(_DEBUG)
     double t0, t1;
     t0 = GetTick();
 #endif
@@ -141,7 +141,7 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
     // Facets
     for (s = 0; s < sHandle->sh.nbSuper; s++) {
         for (SubprocessFacet &f : sHandle->structures[s].facets) {
-            if (f.hitted) {
+            if (f.isHit) {
 
                 for (int m = 0; m < (1 + nbMoments); m++) {
                     FacetHitBuffer *facetHitBuffer = (FacetHitBuffer *) (buffer + f.sh.hitOffset +
@@ -279,7 +279,7 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
                     }
                 }
 
-            } // End if(hitted)
+            } // End if(isHit)
         } // End nbFacet
     } // End nbSuper
 
@@ -300,7 +300,7 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
     extern char *GetSimuStatus();
     SetState(0, GetSimuStatus(), false, true);
 
-#ifdef _DEBUG
+#if defined(_DEBUG)
     t1 = GetTick();
     printf("Update hits: %f us\n", (t1 - t0) * 1000000.0);
 #endif
@@ -310,7 +310,7 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 
 void UpdateLog(Dataport *dpLog, DWORD timeout) {
     if (sHandle->tmpParticleLog.size()) {
-#ifdef _DEBUG
+#if defined(_DEBUG)
         double t0, t1;
         t0 = GetTick();
 #endif
@@ -334,7 +334,7 @@ void UpdateLog(Dataport *dpLog, DWORD timeout) {
         extern char *GetSimuStatus();
         SetState(0, GetSimuStatus(), false, true);
 
-#ifdef _DEBUG
+#if defined(_DEBUG)
         t1 = GetTick();
         printf("Update hits: %f us\n", (t1 - t0) * 1000000.0);
 #endif
@@ -434,7 +434,7 @@ void PerformTeleport(SubprocessFacet *iFacet) {
     iFacet->sh.tmpCounter.hit.sum_v_ort += 2.0*(sHandle->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
     IncreaseFacetCounter(iFacet, sHandle->currentParticle.flightTime, 1, 0, 0, 2.0 / ortVelocity,
                          2.0 * (sHandle->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
-    iFacet->hitted = true;
+    iFacet->isHit = true;
     /*destination->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / sHandle->currentParticle.velocity;
     destination->sh.tmpCounter.hit.sum_v_ort += sHandle->currentParticle.velocity*abs(DOT3(
     sHandle->currentParticle.direction.x, sHandle->currentParticle.direction.y, sHandle->currentParticle.direction.z,
@@ -838,7 +838,7 @@ bool StartFromSource() {
 
     // Count
 
-    src->hitted = true;
+    src->isHit = true;
     sHandle->totalDesorbed++;
     sHandle->tmpGlobalResult.globalHits.hit.nbDesorbed++;
     //sHandle->nbPHit = 0;
@@ -865,7 +865,7 @@ bool StartFromSource() {
     if (sHandle->hasVolatile) {
         for (auto &s : sHandle->structures) {
             for (auto &f : s.facets) {
-                f.ready = true;
+                f.isReady = true;
             }
         }
     }
@@ -1184,9 +1184,9 @@ void PerformBounce(SubprocessFacet *iFacet) {
     // Handle volatile facet
     if (iFacet->sh.isVolatile) {
 
-        if (iFacet->ready) {
+        if (iFacet->isReady) {
             IncreaseFacetCounter(iFacet, sHandle->currentParticle.flightTime, 0, 0, 1, 0, 0);
-            iFacet->ready = false;
+            iFacet->isReady = false;
             LogHit(iFacet);
             ProfileFacet(iFacet, sHandle->currentParticle.flightTime, true, 2.0, 1.0);
             if (/*iFacet->texture && */iFacet->sh.countAbs)
@@ -1287,7 +1287,7 @@ void PerformTransparentPass(SubprocessFacet *iFacet) { //disabled, caused findin
     iFacet->sh.tmpCounter.hit.nbMCHit++;
     iFacet->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / (sHandle->currentParticle.velocity*directionFactor);
     iFacet->sh.tmpCounter.hit.sum_v_ort += 2.0*(sHandle->wp.useMaxwellDistribution ? 1.0 : 1.1781)*sHandle->currentParticle.velocity*directionFactor;
-    iFacet->hitted = true;
+    iFacet->isHit = true;
     if (iFacet->texture && iFacet->sh.countTrans) RecordHitOnTexture(iFacet, sHandle->currentParticle.flightTime + iFacet->colDist / 100.0 / sHandle->currentParticle.velocity,
         true, 2.0, 2.0);
     if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->currentParticle.flightTime + iFacet->colDist / 100.0 / sHandle->currentParticle.velocity);
@@ -1613,7 +1613,7 @@ void SubprocessFacet::RegisterTransparentPass() {
                          2.0 * (sHandle->wp.useMaxwellDistribution ? 1.0 : 1.1781) * sHandle->currentParticle.velocity *
                          directionFactor);
 
-    this->hitted = true;
+    this->isHit = true;
     if (/*this->texture &&*/ this->sh.countTrans) {
         RecordHitOnTexture(this, sHandle->currentParticle.flightTime +
                                  this->colDist / 100.0 / sHandle->currentParticle.velocity,

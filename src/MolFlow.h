@@ -140,7 +140,7 @@ public:
     // Testing
     //int     nbSt;
     //void LogProfile();
-    void BuildPipe(double ratio,int steps=0);
+    void BuildPipe(double ratio,int steps = 0) override;
 	void EmptyGeometry();
 	void CrashHandler(Error *e);
 	
@@ -149,6 +149,6 @@ protected:
     int  OneTimeSceneInit();
     int  RestoreDeviceObjects();
 	int  InvalidateDeviceObjects();
-    int  FrameMove();
-    void ProcessMessage(GLComponent *src,int message);
+    int  FrameMove() override;
+    void ProcessMessage(GLComponent *src,int message) override;
 };

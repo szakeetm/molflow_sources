@@ -84,6 +84,7 @@ set(SRC_FILES ${CPP_DIR_1}/FacetAdvParams.cpp
         ${CPP_DIR_1}/GlobalSettings.cpp
         ${CPP_DIR_1}/ImportDesorption.cpp
         ${CPP_DIR_1}/MolFlow.cpp
+        ${CPP_DIR_1}/MolflowBuffer.cpp
         ${CPP_DIR_1}/MolflowFacet.cpp
         ${CPP_DIR_1}/MolflowGeometry.cpp
         ${CPP_DIR_1}/MolflowTypes.cpp

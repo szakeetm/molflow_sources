@@ -31,12 +31,12 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/GLGradient.h"
 //#include <malloc.h>
 
-#ifdef MOLFLOW
+#if defined(MOLFLOW)
 #include "MolFlow.h"
 extern MolFlow *mApp;
 #endif
 
-#ifdef SYNRAD
+#if defined(SYNRAD)
 #include "SynRad.h"
 extern SynRad *mApp;
 #endif

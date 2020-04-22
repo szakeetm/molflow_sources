@@ -24,21 +24,21 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <string.h>
 #include <math.h>
 #include "GLApp/GLMatrix.h"
-#ifdef MOLFLOW
+#if defined(MOLFLOW)
 #include "MolFlow.h"
 #endif
 
-#ifdef SYNRAD
+#if defined(SYNRAD)
 #include "SynRad.h"
 #endif
 #include "GLApp/GLWindowManager.h"
 #include "GLApp/GLMessageBox.h"
 
-#ifdef MOLFLOW
+#if defined(MOLFLOW)
 extern MolFlow *mApp;
 #endif
 
-#ifdef SYNRAD
+#if defined(SYNRAD)
 extern SynRad*mApp;
 #endif
 

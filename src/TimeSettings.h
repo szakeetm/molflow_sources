@@ -41,7 +41,7 @@ public:
   TimeSettings(Worker *work);
 
   // Implementation
-  void ProcessMessage(GLComponent *src,int message);
+  void ProcessMessage(GLComponent *src,int message) override;
   void RefreshMoments();
 
 private:

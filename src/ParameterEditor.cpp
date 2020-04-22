@@ -369,7 +369,7 @@ void ParameterEditor::LoadCSV() {
 	}
 	catch (Error &e) {
 		char errMsg[512];
-		sprintf(errMsg, "Failed to load CSV file.\n%s",e.GetMsg());
+		sprintf(errMsg, "Failed to load CSV file.\n%s",e.what());
 		GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
 	}
