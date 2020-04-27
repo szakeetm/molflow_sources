@@ -29,10 +29,11 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 //#include <iostream>
 
-#include <stdio.h>
-#include <math.h>
+#include <cstdio>
+#include <cmath>
 
 #include "Simulation.h"
+#include "Parameter.h"
 
 
 // Global process variables
@@ -68,9 +69,9 @@ void GetState() {
         SHCONTROL *master = (SHCONTROL *)dpControl->buff;
         prState = master->states[prIdx];
         prParam = master->cmdParam[prIdx];
-        prParam2 = master->cmdParam2[prIdx];
+        prParam2 = master->oldStates[prIdx];
         master->cmdParam[prIdx] = 0;
-        master->cmdParam2[prIdx] = 0;
+        master->oldStates[prIdx] = 0;
 
         ReleaseDataport(dpControl);
 
@@ -336,7 +337,7 @@ int main(int argc,char* argv[])
     }
   dpControl = OpenDataport(ctrlDpName,sizeof(SHCONTROL));
   if( !dpControl ) {
-    printf("Usage: Cannot connect to %s\n",ctrlDpName);
+    printf("Cannot connect to %s\n",ctrlDpName);
     return 1;
   }
 
@@ -353,7 +354,7 @@ int main(int argc,char* argv[])
     switch(prState) {
 
       case COMMAND_LOAD:
-        printf("[%d] COMMAND: LOAD (%zd,%llu)\n", prIdx, prParam,prParam2);
+        printf("[%d] COMMAND: LOAD (%zd,%zu)\n", prIdx, prParam,prParam2);
         Load();
         if( sHandle->loadOK ) {
           //sHandle->desorptionLimit = prParam2; // 0 for endless
@@ -369,7 +370,7 @@ int main(int argc,char* argv[])
 	  case COMMAND_UPDATEPARAMS:
 		  printf("[%d] COMMAND: UPDATEPARAMS (%zd,%zd)\n", prIdx, prParam, prParam2);
 		  if (UpdateParams()) {
-			  SetState(prParam, GetSimuStatus());
+			  SetState(prParam2, GetSimuStatus());
 		  }
 		  break;
 
@@ -380,7 +381,7 @@ int main(int argc,char* argv[])
 		  break;
 
       case COMMAND_START:
-        printf("[%d] COMMAND: START (%zd,%llu)\n", prIdx,prParam,prParam2);
+        printf("[%d] COMMAND: START (%zd,%zu)\n", prIdx,prParam,prParam2);
         if( sHandle->loadOK ) {
           if( StartSimulation(prParam) )
             SetState(PROCESS_RUN,GetSimuStatus());
@@ -393,7 +394,7 @@ int main(int argc,char* argv[])
         break;
 
       case COMMAND_PAUSE:
-        printf("[%d] COMMAND: PAUSE (%zd,%llu)\n", prIdx,prParam,prParam2);
+        printf("[%d] COMMAND: PAUSE (%zd,%zu)\n", prIdx,prParam,prParam2);
         if( !sHandle->lastHitUpdateOK ) {
           // Last update not successful, retry with a longer timeout
 			if (dpHit && (GetLocalState() != PROCESS_ERROR)) UpdateHits(dpHit,dpLog,prIdx,60000);
@@ -402,18 +403,18 @@ int main(int argc,char* argv[])
         break;
 
       case COMMAND_RESET:
-        printf("[%d] COMMAND: RESET (%zd,%llu)\n", prIdx,prParam,prParam2);
+        printf("[%d] COMMAND: RESET (%zd,%zu)\n", prIdx,prParam,prParam2);
         ResetSimulation();
         SetReady();
         break;
 
       case COMMAND_EXIT:
-        printf("[%d] COMMAND: EXIT (%zd,%llu)\n", prIdx,prParam,prParam2);
+        printf("[%d] COMMAND: EXIT (%zd,%zu)\n", prIdx,prParam,prParam2);
         endState = true;
         break;
 
       case COMMAND_CLOSE:
-        printf("[%d] COMMAND: CLOSE (%zd,%llu)\n", prIdx,prParam,prParam2);
+        printf("[%d] COMMAND: CLOSE (%zd,%zu)\n", prIdx,prParam,prParam2);
         ClearSimulation();
         CLOSEDPSUB(dpHit);
 		CLOSEDPSUB(dpLog);
@@ -422,7 +423,7 @@ int main(int argc,char* argv[])
 
       case COMMAND_STEPAC:
         // Debug command
-        printf("[%d] COMMAND: STEPAC (%zd,%llu)\n", prIdx,prParam,prParam2);
+        printf("[%d] COMMAND: STEPAC (%zd,%zu)\n", prIdx,prParam,prParam2);
         if( sHandle->loadOK ) {
           if( StartSimulation(prParam) ) {
             SetState(PROCESS_RUN,GetSimuStatus());

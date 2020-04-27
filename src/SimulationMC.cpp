@@ -17,16 +17,17 @@ GNU General Public License for more details.
 
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cmath>
+#include <cstdio>
+#include <tuple> //std::tie
+#include <cstring>
 #include <sstream>
 #include "Simulation.h"
 #include "IntersectAABB_shared.h"
 #include "Random.h"
 #include "GLApp/MathTools.h"
-#include <tuple> //std::tie
-#include <cstring>
+
+#include "Parameter.h"
 
 extern Simulation *sHandle; //delcared in molflowSub.cpp
 
@@ -409,8 +410,8 @@ void PerformTeleport(SubprocessFacet *iFacet) {
         RecordHit(HIT_ABS);
         bool found = false;
         while (!found && nbTry < 1000) {
-            u = rnd();
-            v = rnd();
+            u = sHandle->randomGenerator.rnd();
+            v = sHandle->randomGenerator.rnd();
             if (IsInFacet(*destination, u, v)) {
                 found = true;
                 sHandle->currentParticle.position = destination->sh.O + u * destination->sh.U + v * destination->sh.V;
@@ -483,7 +484,7 @@ bool SimulationMCStep(size_t nbStep) {
                     IncreaseDistanceCounters(d * sHandle->currentParticle.oriRatio);
                     PerformTeleport(collidedFacet);
                 }
-                    /*else if ((GetOpacityAt(collidedFacet, sHandle->currentParticle.flightTime) < 1.0) && (rnd() > GetOpacityAt(collidedFacet, sHandle->currentParticle.flightTime))) {
+                    /*else if ((GetOpacityAt(collidedFacet, sHandle->currentParticle.flightTime) < 1.0) && (randomGenerator.rnd() > GetOpacityAt(collidedFacet, sHandle->currentParticle.flightTime))) {
                         //Transparent pass
                         sHandle->tmpGlobalResult.distTraveled_total += d;
                         PerformTransparentPass(collidedFacet);
@@ -493,7 +494,7 @@ bool SimulationMCStep(size_t nbStep) {
                     double stickingProbability = GetStickingAt(collidedFacet, sHandle->currentParticle.flightTime);
                     if (!sHandle->ontheflyParams.lowFluxMode) { //Regular stick or bounce
                         if (stickingProbability == 1.0 ||
-                            ((stickingProbability > 0.0) && (rnd() < (stickingProbability)))) {
+                            ((stickingProbability > 0.0) && (sHandle->randomGenerator.rnd() < (stickingProbability)))) {
                             //Absorbed
                             RecordAbsorb(collidedFacet);
                             //sHandle->distTraveledSinceUpdate += sHandle->currentParticle.distanceTraveled;
@@ -565,7 +566,7 @@ bool StartFromSource() {
     }
 
     // Select source
-    srcRnd = rnd() * sHandle->wp.totalDesorbedMolecules;
+    srcRnd = sHandle->randomGenerator.rnd() * sHandle->wp.totalDesorbedMolecules;
 
     while (!found && j < sHandle->sh.nbSuper) { //Go through superstructures
         i = 0;
@@ -616,7 +617,7 @@ bool StartFromSource() {
                 } //end constant or time-dependent outgassing block
             } //end 'there is some kind of outgassing'
             if (!found) i++;
-            if (f.sh.is2sided) reverse = rnd() > 0.5;
+            if (f.sh.is2sided) reverse = sHandle->randomGenerator.rnd() > 0.5;
             else reverse = false;
         }
         if (!found) j++;
@@ -629,7 +630,7 @@ bool StartFromSource() {
 
     sHandle->currentParticle.lastHitFacet = src;
     //sHandle->currentParticle.distanceTraveled = 0.0;  //for mean free path calculations
-    //sHandle->currentParticle.flightTime = sHandle->desorptionStartTime + (sHandle->desorptionStopTime - sHandle->desorptionStartTime)*rnd();
+    //sHandle->currentParticle.flightTime = sHandle->desorptionStartTime + (sHandle->desorptionStopTime - sHandle->desorptionStartTime)*sHandle->randomGenerator.rnd();
     sHandle->currentParticle.flightTime = GenerateDesorptionTime(src);
     if (sHandle->wp.useMaxwellDistribution) sHandle->currentParticle.velocity = GenerateRandomVelocity(src->sh.CDFid);
     else
@@ -638,11 +639,11 @@ bool StartFromSource() {
     sHandle->currentParticle.oriRatio = 1.0;
     if (sHandle->wp.enableDecay) { //decaying gas
         sHandle->currentParticle.expectedDecayMoment =
-                sHandle->currentParticle.flightTime + sHandle->wp.halfLife * 1.44269 * -log(rnd()); //1.44269=1/ln2
+                sHandle->currentParticle.flightTime + sHandle->wp.halfLife * 1.44269 * -log(sHandle->randomGenerator.rnd()); //1.44269=1/ln2
         //Exponential distribution PDF: probability of 't' life = 1/TAU*exp(-t/TAU) where TAU = half_life/ln2
         //Exponential distribution CDF: probability of life shorter than 't" = 1-exp(-t/TAU)
-        //Equation: rnd()=1-exp(-t/TAU)
-        //Solution: t=TAU*-log(1-rnd()) and 1-rnd()=rnd() therefore t=half_life/ln2*-log(rnd())
+        //Equation: sHandle->randomGenerator.rnd()=1-exp(-t/TAU)
+        //Solution: t=TAU*-log(1-sHandle->randomGenerator.rnd()) and 1-sHandle->randomGenerator.rnd()=sHandle->randomGenerator.rnd() therefore t=half_life/ln2*-log(sHandle->randomGenerator.rnd())
     } else {
         sHandle->currentParticle.expectedDecayMoment = 1e100; //never decay
     }
@@ -659,23 +660,23 @@ bool StartFromSource() {
         if (foundInMap) {
             if (mapPositionW < (src->sh.outgassingMapWidth - 1)) {
                 //Somewhere in the middle of the facet
-                u = ((double) mapPositionW + rnd()) / src->outgassingMapWidthD;
+                u = ((double) mapPositionW + sHandle->randomGenerator.rnd()) / src->outgassingMapWidthD;
             } else {
                 //Last element, prevent from going out of facet
-                u = ((double) mapPositionW + rnd() * (src->outgassingMapWidthD - (src->sh.outgassingMapWidth - 1))) /
+                u = ((double) mapPositionW + sHandle->randomGenerator.rnd() * (src->outgassingMapWidthD - (src->sh.outgassingMapWidth - 1))) /
                     src->outgassingMapWidthD;
             }
             if (mapPositionH < (src->sh.outgassingMapHeight - 1)) {
                 //Somewhere in the middle of the facet
-                v = ((double) mapPositionH + rnd()) / src->outgassingMapHeightD;
+                v = ((double) mapPositionH + sHandle->randomGenerator.rnd()) / src->outgassingMapHeightD;
             } else {
                 //Last element, prevent from going out of facet
-                v = ((double) mapPositionH + rnd() * (src->outgassingMapHeightD - (src->sh.outgassingMapHeight - 1))) /
+                v = ((double) mapPositionH + sHandle->randomGenerator.rnd() * (src->outgassingMapHeightD - (src->sh.outgassingMapHeight - 1))) /
                     src->outgassingMapHeightD;
             }
         } else {
-            u = rnd();
-            v = rnd();
+            u = sHandle->randomGenerator.rnd();
+            v = sHandle->randomGenerator.rnd();
         }
         if (IsInFacet(*src, u, v)) {
 
@@ -713,16 +714,16 @@ bool StartFromSource() {
     //See docs/theta_gen.png for further details on angular distribution generation
     switch (src->sh.desorbType) {
         case DES_UNIFORM:
-            sHandle->currentParticle.direction = PolarToCartesian(src, std::acos(rnd()), rnd() * 2.0 * PI, reverse);
+            sHandle->currentParticle.direction = PolarToCartesian(src, std::acos(sHandle->randomGenerator.rnd()), sHandle->randomGenerator.rnd() * 2.0 * PI, reverse);
             break;
         case DES_NONE: //for file-based
         case DES_COSINE:
-            sHandle->currentParticle.direction = PolarToCartesian(src, std::acos(std::sqrt(rnd())), rnd() * 2.0 * PI,
+            sHandle->currentParticle.direction = PolarToCartesian(src, std::acos(std::sqrt(sHandle->randomGenerator.rnd())), sHandle->randomGenerator.rnd() * 2.0 * PI,
                                                                   reverse);
             break;
         case DES_COSINE_N:
             sHandle->currentParticle.direction = PolarToCartesian(src, std::acos(
-                    std::pow(rnd(), 1.0 / (src->sh.desorbTypeN + 1.0))), rnd() * 2.0 * PI, reverse);
+                    std::pow(sHandle->randomGenerator.rnd(), 1.0 / (src->sh.desorbTypeN + 1.0))), sHandle->randomGenerator.rnd() * 2.0 * PI, reverse);
             break;
         case DES_ANGLEMAP: {
             auto[theta, thetaLowerIndex, thetaOvershoot] = src->angleMap.GenerateThetaFromAngleMap(
@@ -737,7 +738,7 @@ bool StartFromSource() {
                 SetErrorSub(tmp.str().c_str());
                 return false;
             }
-            double lookupValue = rnd()*(double)angleMapSum; //last element of cumulative distr. = sum
+            double lookupValue = sHandle->randomGenerator.rnd()*(double)angleMapSum; //last element of cumulative distr. = sum
             int thetaLowerIndex = my_lower_bound(lookupValue, src->angleMapLineSums, (src->sh.anglemapParams.thetaLowerRes + src->sh.anglemapParams.thetaHigherRes)); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
             double thetaOvershoot;
             double theta_a, theta_b, theta_c, theta_cumulative_A, theta_cumulative_B, theta_cumulative_C;
@@ -784,7 +785,7 @@ bool StartFromSource() {
             size_t distr1sum = src->angleMapLineSums[distr1index]-((distr1index!=distr2index && distr1index>0)?src->angleMapLineSums[distr1index-1]:0);
             size_t distr2sum = src->angleMapLineSums[distr2index] - ((distr1index != distr2index) ? src->angleMapLineSums[distr2index - 1] : 0);
             double weighedSum=Weigh((double)distr1sum, (double)distr2sum, weigh);
-            double phiLookup = rnd() * weighedSum;
+            double phiLookup = sHandle->randomGenerator.rnd() * weighedSum;
             int phiLowerIndex = weighed_lower_bound_X(phiLookup, weigh, &(src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr1index]), &(src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr2index]), src->sh.anglemapParams.phiWidth);
 
             ////////////////
@@ -875,7 +876,7 @@ bool StartFromSource() {
 }
 
 std::tuple<double, int, double> Anglemap::GenerateThetaFromAngleMap(const AnglemapParams &anglemapParams) {
-    double lookupValue = rnd();
+    double lookupValue = sHandle->randomGenerator.rnd();
     int thetaLowerIndex = my_lower_bound(lookupValue,
                                          theta_CDF); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
     double theta, thetaOvershoot;
@@ -939,7 +940,7 @@ std::tuple<double, int, double> Anglemap::GenerateThetaFromAngleMap(const Anglem
 
 double Anglemap::GeneratePhiFromAngleMap(const int &thetaLowerIndex, const double &thetaOvershoot,
                                          const AnglemapParams &anglemapParams) {
-    double lookupValue = rnd();
+    double lookupValue = sHandle->randomGenerator.rnd();
     if (anglemapParams.phiWidth == 1) return -PI + 2.0 * PI * lookupValue; //special case, uniform phi distribution
     int phiLowerIndex;
     double weigh; //0: take previous theta line, 1: take next theta line, 0..1: interpolate in-between
@@ -1230,18 +1231,18 @@ void PerformBounce(SubprocessFacet *iFacet) {
     //Sojourn time
     if (iFacet->sh.enableSojournTime) {
         double A = exp(-iFacet->sh.sojournE / (8.31 * iFacet->sh.temperature));
-        sHandle->currentParticle.flightTime += -log(rnd()) / (A * iFacet->sh.sojournFreq);
+        sHandle->currentParticle.flightTime += -log(sHandle->randomGenerator.rnd()) / (A * iFacet->sh.sojournFreq);
     }
 
     if (iFacet->sh.reflection.diffusePart > 0.999999) { //Speedup branch for most common, diffuse case
-        sHandle->currentParticle.direction = PolarToCartesian(iFacet, std::acos(std::sqrt(rnd())), rnd() * 2.0 * PI,
+        sHandle->currentParticle.direction = PolarToCartesian(iFacet, std::acos(std::sqrt(sHandle->randomGenerator.rnd())), sHandle->randomGenerator.rnd() * 2.0 * PI,
                                                               revert);
     } else {
-        double reflTypeRnd = rnd();
+        double reflTypeRnd = sHandle->randomGenerator.rnd();
         if (reflTypeRnd < iFacet->sh.reflection.diffusePart) {
             //diffuse reflection
             //See docs/theta_gen.png for further details on angular distribution generation
-            sHandle->currentParticle.direction = PolarToCartesian(iFacet, std::acos(std::sqrt(rnd())), rnd() * 2.0 * PI,
+            sHandle->currentParticle.direction = PolarToCartesian(iFacet, std::acos(std::sqrt(sHandle->randomGenerator.rnd())), sHandle->randomGenerator.rnd() * 2.0 * PI,
                                                                   revert);
         } else if (reflTypeRnd < (iFacet->sh.reflection.diffusePart + iFacet->sh.reflection.specularPart)) {
             //specular reflection
@@ -1252,7 +1253,7 @@ void PerformBounce(SubprocessFacet *iFacet) {
         } else {
             //Cos^N reflection
             sHandle->currentParticle.direction = PolarToCartesian(iFacet, std::acos(
-                    std::pow(rnd(), 1.0 / (iFacet->sh.reflection.cosineExponent + 1.0))), rnd() * 2.0 * PI, revert);
+                    std::pow(sHandle->randomGenerator.rnd(), 1.0 / (iFacet->sh.reflection.cosineExponent + 1.0))), sHandle->randomGenerator.rnd() * 2.0 * PI, revert);
         }
     }
 
@@ -1517,18 +1518,18 @@ void UpdateVelocity(SubprocessFacet *collidedFacet) {
 }
 
 double GenerateRandomVelocity(int CDFId) {
-    //return FastLookupY(rnd(),sHandle->CDFs[CDFId],false);
-    double r = rnd();
+    //return FastLookupY(sHandle->randomGenerator.rnd(),sHandle->CDFs[CDFId],false);
+    double r = sHandle->randomGenerator.rnd();
     double v = InterpolateX(r, sHandle->CDFs[CDFId], false, true); //Allow extrapolate
     return v;
 }
 
 double GenerateDesorptionTime(SubprocessFacet *src) {
     if (src->sh.outgassing_paramId >= 0) { //time-dependent desorption
-        return InterpolateX(rnd() * sHandle->IDs[src->sh.IDid].back().second, sHandle->IDs[src->sh.IDid], false,
+        return InterpolateX(sHandle->randomGenerator.rnd() * sHandle->IDs[src->sh.IDid].back().second, sHandle->IDs[src->sh.IDid], false,
                             true); //allow extrapolate
     } else {
-        return rnd() * sHandle->wp.latestMoment; //continous desorption between 0 and latestMoment
+        return sHandle->randomGenerator.rnd() * sHandle->wp.latestMoment; //continous desorption between 0 and latestMoment
     }
 }
 

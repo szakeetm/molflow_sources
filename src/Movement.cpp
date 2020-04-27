@@ -37,6 +37,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/GLTitledPanel.h"
 #include "Geometry_shared.h"
 #include "MolFlow.h"
+#include <sstream>
 
 extern MolFlow *mApp;
 int    axisMode2;

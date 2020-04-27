@@ -141,14 +141,14 @@ public:
     //int     nbSt;
     //void LogProfile();
     void BuildPipe(double ratio,int steps = 0) override;
-	void EmptyGeometry();
+	void EmptyGeometry() override;
 	void CrashHandler(Error *e);
 	
 protected:
 	void LoadParameterCatalog();
-    int  OneTimeSceneInit();
-    int  RestoreDeviceObjects();
-	int  InvalidateDeviceObjects();
+    int  OneTimeSceneInit() override;
+    int  RestoreDeviceObjects() override;
+	int  InvalidateDeviceObjects() override;
     int  FrameMove() override;
     void ProcessMessage(GLComponent *src,int message) override;
 };

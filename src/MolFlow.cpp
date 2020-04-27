@@ -102,7 +102,7 @@ int cSize = 4;
 int   cWidth[] = { 30, 56, 50, 50 };
 const char* cName[] = { "#", "Hits", "Des", "Abs" };
 
-std::vector<string> formulaPrefixes = { "A","D","H","MCH","P","DEN","Z","V","T","AR","a","d","h","mch","p","den","z","v","t","ar","," };
+std::vector<std::string> formulaPrefixes = { "A","D","H","MCH","P","DEN","Z","V","T","AR","a","d","h","mch","p","den","z","v","t","ar","," };
 std::string formulaSyntax =
 R"(MC Variables: An (Absorption on facet n), Dn (Desorption on facet n), Hn (Hit on facet n)
 Pn (Pressure [mbar] on facet n), DENn (Density [1/m3] on facet n)
@@ -258,7 +258,7 @@ void MolFlow::LoadParameterCatalog()
 			newParam.isLogLog = true; //For now
 			newParam.name = "[catalog] " + csvName;
 
-			std::vector<std::vector<string>> table;
+			std::vector<std::vector<std::string>> table;
 			try {
 
 				FileReader *f = new FileReader(csvPath);
@@ -2057,9 +2057,11 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		}*/
 		break;
 	    default:
-            GLMessageBox::Display("Corrupted menu item selected!", "Error", GLDLG_OK, GLDLG_ICONERROR);
+            //GLMessageBox::Display("Corrupted menu item selected!", "Error", GLDLG_OK, GLDLG_ICONERROR);
             return;
 	}
+
+	return;
 }
 
 void MolFlow::BuildPipe(double ratio, int steps) {

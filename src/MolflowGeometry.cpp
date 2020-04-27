@@ -108,168 +108,6 @@ size_t MolflowGeometry::GetGeometrySize() {
 }
 
 /**
-* \brief Builds a shared buffer for the geometry and copies necessary values into it (TODO: check if it unused)
-* \param buffer buffer
-* \param ontheflyParams parameters that can be changed without restarting the simulation
-*/
-void MolflowGeometry::CopyGeometryBuffer(BYTE *buffer, const OntheflySimulationParams& ontheflyParams) {
-
-	// Build shared buffer for geometry (see Shared.h)
-	// Basically we serialize all data and let the subprocesses read them
-
-	/*
-	Memory map:
-
-	-->bufferStart
-	SHGEOM (nbFacets, time-dep parameters, gas mass, etc.)
-	OntheflyParams
-	vertices3 (nbVertex times Vector3d struct)
-	FOR EACH FACET
-	SHFACET
-	indices (nbIndex times int)
-	vertices2 (nbIndex times Vector2d struct)
-	[outgassingMap (height*width*double)]
-	[angleMap (height*width*size_t)]
-	[inc Map: for each facet with texture, height*width*double]
-	-->globalBuff
-	CDFs.size()
-	CDFs
-	IDs.size()
-	[IDs]
-	parameters.size()
-	[parameters]
-	temperatures.size()
-	temperatures
-
-	*/
-
-	Worker *w = &mApp->worker;
-	WRITEBUFFER(sh, GeomProperties);
-	WRITEBUFFER(w->wp, WorkerParams);
-	/*GeomProperties *shGeom = (GeomProperties *)buffer;
-	memcpy(shGeom, &(this->wp), sizeof(GeomProperties));
-	buffer += sizeof(GeomProperties);*/
-	WRITEBUFFER(ontheflyParams, OntheflySimulationParams);
-	memcpy(buffer, vertices3.data(), sizeof(Vector3d)*sh.nbVertex);
-	buffer += sizeof(Vector3d)*sh.nbVertex;
-
-	size_t fOffset = sizeof(GlobalHitBuffer) + (1 + mApp->worker.moments.size())*mApp->worker.wp.globalHistogramParams.GetDataSize(); //calculating offsets for all facets for the hits dataport during the simulation
-	for (size_t i = 0; i < sh.nbFacet; i++) {
-		Facet *f = facets[i];
-		f->sh.hitOffset = fOffset; //Marking the offsets for the hits, but here we don't actually send any hits.
-		fOffset += f->GetHitsSize(mApp->worker.moments.size());
-		WRITEBUFFER(f->sh, FacetProperties);
-		memcpy(buffer, f->indices.data(), sizeof(size_t)*f->sh.nbIndex);
-		buffer += sizeof(size_t)*f->sh.nbIndex;
-		memcpy(buffer, f->vertices2.data(), sizeof(Vector2d)*f->sh.nbIndex);
-		buffer += sizeof(Vector2d)*f->sh.nbIndex;
-		if (f->sh.useOutgassingFile) {
-			memcpy(buffer, f->outgassingMap.data(), sizeof(double)*f->sh.outgassingMapWidth*f->sh.outgassingMapHeight);
-			buffer += sizeof(double)*f->sh.outgassingMapWidth*f->sh.outgassingMapHeight;
-		}
-		//if (f->wp.anglemapParams.hasRecorded) { //Check not necessary, commented out
-		memcpy(buffer, f->angleMapCache.data(), sizeof(size_t)*f->angleMapCache.size());
-		buffer += sizeof(size_t)*f->angleMapCache.size();
-		//}
-
-		// Add surface elements area (reciprocal)
-		if (f->sh.isTextured) {
-			if (f->cellPropertiesIds) {
-				size_t add = 0;
-				for (int j = 0; j < f->sh.texHeight; j++) {
-					for (int i = 0; i < f->sh.texWidth; i++) {
-						double area = f->GetMeshArea(add, true);
-
-						if (area > 0.0) {
-							// Use the sign bit to store isFull flag
-							WRITEBUFFER(1.0 / area, double);
-						}
-						else {
-							WRITEBUFFER(0.0, double);
-						}
-						add++;
-					}
-				}
-			}
-			else {
-
-				double rw = f->sh.U.Norme() / (double)(f->sh.texWidthD);
-				double rh = f->sh.V.Norme() / (double)(f->sh.texHeightD);
-				double area = rw * rh;
-
-				for (int j = 0; j < f->sh.texHeight; j++) {
-					for (int i = 0; i < f->sh.texWidth; i++) {
-						if (area > 0.0) {
-							WRITEBUFFER(1.0 / area, double);
-						}
-						else {
-							WRITEBUFFER(0.0, double);
-						}
-					}
-				}
-			}
-		}
-	}
-
-	//CDFs
-	WRITEBUFFER(w->CDFs.size(), size_t);
-	for (size_t i = 0; i < w->CDFs.size(); i++) {
-		WRITEBUFFER(w->CDFs[i].size(), size_t);
-		for (size_t j = 0; j < w->CDFs[i].size(); j++) {
-			WRITEBUFFER(w->CDFs[i][j].first, double);
-			WRITEBUFFER(w->CDFs[i][j].second, double);
-		}
-	}
-
-	//IDs
-	WRITEBUFFER(w->IDs.size(), size_t);
-	for (size_t i = 0; i < w->IDs.size(); i++) {
-		WRITEBUFFER(w->IDs[i].size(), size_t);
-		for (size_t j = 0; j < w->IDs[i].size(); j++) {
-			WRITEBUFFER(w->IDs[i][j].first, double);
-			WRITEBUFFER(w->IDs[i][j].second, double);
-		}
-	}
-
-	//Parameters
-	/*WRITEBUFFER(w->parameters.size(), size_t);
-	  for (size_t i = 0; i < w->parameters.size(); i++) {
-	  WRITEBUFFER(w->parameters[i].values.size(), size_t);
-	  for (size_t j=0;j<w->parameters[i].values.size();j++) {
-	  WRITEBUFFER(w->parameters[i].values[j].first, double);
-	  WRITEBUFFER(w->parameters[i].values[j].second, double);
-	  }
-	  }*/
-	WRITEBUFFER(w->parameters.size(), size_t);
-	for (auto& par : w->parameters) {
-		size_t paramSize = par.GetSize();
-		WRITEBUFFER(paramSize, size_t);
-		for (int j = 0; j < paramSize; j++) {
-			WRITEBUFFER(par.GetX(j), double);
-			WRITEBUFFER(par.GetY(j), double);
-		}
-	}
-
-	//Temperatures
-	WRITEBUFFER(w->temperatures.size(), size_t);
-	for (size_t i = 0; i < w->temperatures.size(); i++) {
-		WRITEBUFFER(w->temperatures[i], double);
-	}
-
-	//Time moments
-	//WRITEBUFFER(w->moments.size(), size_t); //nbMoments already passed
-	for (size_t i = 0; i < w->moments.size(); i++) {
-		WRITEBUFFER(w->moments[i], double);
-	}
-
-	//Desorption parameter IDs
-	WRITEBUFFER(w->desorptionParameterIDs.size(), size_t);
-	for (size_t i = 0; i < w->desorptionParameterIDs.size(); i++) {
-		WRITEBUFFER(w->desorptionParameterIDs[i], size_t);
-	}
-}
-
-/**
 * \brief Serializes data of the complete geometry into a cereal binary archive
 * \param outputarchive reference to the binary archive
 */
@@ -845,7 +683,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 	sh.nbFacet = file->ReadInt();
 	file->ReadKeyword("nbSuper"); file->ReadKeyword(":");
 	sh.nbSuper = file->ReadInt();
-	int nbF = 0; std::vector<std::vector<string>> loadFormulas;
+	int nbF = 0; std::vector<std::vector<std::string>> loadFormulas;
 	int nbV = 0;
 	if (*version >= 2) {
 		file->ReadKeyword("nbFormula"); file->ReadKeyword(":");
@@ -906,9 +744,9 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 			strcpy(tmpExpr, file->ReadString());
 			//mApp->AddFormula(tmpName, tmpExpr); //parse after selection groups are loaded
 
-			std::vector<string> newFormula;
-			newFormula.push_back(tmpName);
-			newFormula.push_back(tmpExpr);
+			std::vector<std::string> newFormula;
+			newFormula.emplace_back(tmpName);
+			newFormula.emplace_back(tmpExpr);
 			loadFormulas.push_back(newFormula);
 		}
 		file->ReadKeyword("}");

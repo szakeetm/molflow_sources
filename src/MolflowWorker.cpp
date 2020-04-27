@@ -997,16 +997,15 @@ void Worker::StartStop(float appTime, size_t sMode) {
         try {
             if (needsReload) RealReload(); //Synchronize subprocesses to main process
             startTime = appTime;
-            isRunning = true;
+            //isRunning = true;
             calcAC = false;
 
             wp.sMode = sMode;
 
             Start();
-
         }
         catch (Error &e) {
-            isRunning = false;
+            //isRunning = false;
             GLMessageBox::Display(e.what(), "Error (Start)", GLDLG_OK, GLDLG_ICONERROR);
             return;
         }
@@ -1018,7 +1017,6 @@ void Worker::StartStop(float appTime, size_t sMode) {
         }
 
     }
-
 }
 
 /**
@@ -1110,19 +1108,10 @@ void Worker::Update(float appTime) {
 }
 */
 
-/**
-* \brief Function that updates the global hit counter with the cached value + releases the mutex
-* \param skipFacetHits TODO: check if not necessary anymore
-*
-* Send total and facet hit counts to subprocesses
-*/
-void Worker::SendToHitBuffer(bool skipFacetHits) {
-    if (simManager.UploadToHitBuffer(&globalHitCache, sizeof(GlobalHitBuffer))) {
-        throw Error("Failed to initialize 'hits' dataport");
-    }
-}
-
 void Worker::ComputeAC(float appTime) {
+    GLMessageBox::Display("AC Mode has compatibility issues with this version of Molflow!", "ERROR (LoadAC)", GLDLG_OK, GLDLG_ICONWARNING);
+    return;
+
     try {
         if (needsReload) RealReload();
     }
@@ -1140,20 +1129,25 @@ void Worker::ComputeAC(float appTime) {
         throw Error("Mesh with boundary correction must be enabled on all polygons");
     size_t dpSize = maxElem * sizeof(SHELEM_OLD);
 
-    if (simManager.CreateLoaderDP(dpSize))
-        throw Error("Failed to create 'loader' dataport");
+    /*
+	AccessDataport(loader);
+	geom->CopyElemBuffer((BYTE *)loader->buff);
+	ReleaseDataport(loader);
+	//CopyElemBuffer needs fix
+	*/
 
     // Load Elem area and send AC matrix calculation order
     // Send command
-    if (simManager.ExecuteAndWait(COMMAND_LOADAC, PROCESS_RUNAC, dpSize)) {
-        simManager.CloseLoaderDP();
-        char errMsg[1024];
-        sprintf(errMsg, "Failed to send geometry to sub process:\n%s", GetErrorDetails());
-        GLMessageBox::Display(errMsg, "Warning (LoadAC)", GLDLG_OK, GLDLG_ICONWARNING);
-        return;
+    try {
+        if (simManager.ShareWithSimUnits(nullptr, dpSize, LoadType::LOADAC)) {
+            std::string errString = "Failed to send geometry to sub process\n";
+            GLMessageBox::Display(errString.c_str(), "Warning (LoadAC)", GLDLG_OK, GLDLG_ICONWARNING);
+            return;
+        }
     }
-
-    simManager.CloseLoaderDP();
+    catch (std::exception& e) {
+        GLMessageBox::Display(e.what(), "Error (LoadGeom)", GLDLG_OK, GLDLG_ICONERROR);
+    }
 
     isRunning = true;
     calcAC = true;
@@ -1172,92 +1166,58 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
     progressDlg->SetProgress(0.0);
 
     if (!sendOnly) {
-        //Do preliminary calculations
-        try {
-            PrepareToRun();
-        }
-        catch (Error &e) {
-            progressDlg->SetVisible(false);
-            SAFE_DELETE(progressDlg);
-            throw Error(e.what());
-        }
-
-        if (ontheflyParams.nbProcess == 0) return;
-
-        progressDlg->SetMessage("Asking subprocesses to clear geometry...");
-
-
-        // Clear geometry
-        simManager.CloseHitsDP();
-        simManager.CloseLogDP();
-        if (simManager.ExecuteAndWait(COMMAND_CLOSE, PROCESS_READY)) {
-            progressDlg->SetVisible(false);
-            SAFE_DELETE(progressDlg);
-            ThrowSubProcError();
-        }
-
-        if (!geom->IsLoaded()) {
+        if (ontheflyParams.nbProcess == 0 && !geom->IsLoaded()) {
             progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
             return;
         }
 
-        // Create the temporary geometry shared structure
-        progressDlg->SetMessage("Creating dataport...");
+        try {
+            progressDlg->SetMessage("Do preliminary calculations...");
+            PrepareToRun();
 
+            size_t logDpSize = 0;
+            if (ontheflyParams.enableLogging) {
+                logDpSize = sizeof(size_t) + ontheflyParams.logLimit * sizeof(ParticleLoggerItem);
+            }
+            size_t hitSize = geom->GetHitsSize(&moments);
 
-        if (ontheflyParams.enableLogging) {
-            simManager.CreateLogDP(sizeof(size_t) + sizeof(ParticleLoggerItem) * ontheflyParams.logLimit);
-            /*dpLog = CreateDataport(logDpName, sizeof(size_t) + sizeof(ParticleLoggerItem)*ontheflyParams.logLimit);
-            if (!dpLog)
-                throw Error("Failed to create 'dpLog' dataport.\nMost probably out of memory.\nReduce number of logged particles in Particle Logger.");
-            //*((size_t*)dpLog->buff) = 0; //Automatic 0-filling*/
+            progressDlg->SetMessage("Asking subprocesses to clear geometry...");
+            simManager.ResetSimulations();
+            progressDlg->SetMessage("Creating Logger...");
+            simManager.ReloadLogBuffer(logDpSize, true);
+            progressDlg->SetMessage("Creating hit buffer...");
+            simManager.ReloadHitBuffer(hitSize);
         }
-    }
-
-    std::string loaderString = SerializeForLoader().str();
-    simManager.CreateLoaderDP(loaderString.size());
-    simManager.UploadToLoader((BYTE *) loaderString.c_str(), loaderString.size());
-    if (!sendOnly) {
-        size_t hitSize = geom->GetHitsSize(&moments);
-        ClearHits(true);
-        if (simManager.CreateHitsDP(hitSize)) {
+        catch (Error &e) {
+            GLMessageBox::Display(e.what(), "Error (Full reload)", GLDLG_OK, GLDLG_ICONWARNING);
             progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
-            throw Error("Failed to create 'hits' dataport: out of memory.");
+            throw Error(e.what());
         }
     }
 
-    /*
-    // Compute number of max desorption per process
-    if (AccessDataportTimed(dpControl, DWORD(3000 + nbProcess*loadSize / 10000))) {
-        SHCONTROL *master = (SHCONTROL *)dpControl->buff;
-        llong common = ontheflyParams.desorptionLimit / (llong)nbProcess;
-        int remain = (int)(ontheflyParams.desorptionLimit % (llong)nbProcess);
-        for (size_t i = 0; i < nbProcess; i++) {
-            master->cmdParam2[i] = common;
-            if (i < remain) master->cmdParam2[i]++;
-        }
-        ReleaseDataport(dpControl);
-    }
-    */
-
-    // Load geometry
+    // Send and Load geometry
+    std::string loaderString = SerializeForLoader().str();
     progressDlg->SetMessage("Waiting for subprocesses to load geometry...");
-    if (simManager.ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, loaderString.size())) {
-        simManager.CloseLoaderDP();
-        char errMsg[1024];
-        sprintf(errMsg, "Failed to send geometry to sub process:\n%s", GetErrorDetails());
+    try {
+        if (simManager.ShareWithSimUnits((BYTE *) loaderString.c_str(), loaderString.size(), LoadType::LOADGEOM)) {
+            std::string errString = "Failed to send params to sub process!\n";
+            GLMessageBox::Display(errString.c_str(), "Warning (LoadGeom)", GLDLG_OK, GLDLG_ICONWARNING);
 
-        progressDlg->SetVisible(false);
-        SAFE_DELETE(progressDlg);
-        throw Error(errMsg);
-
+            progressDlg->SetVisible(false);
+            SAFE_DELETE(progressDlg);
+            return;
+        }
     }
+    catch (std::exception& e) {
+        GLMessageBox::Display(e.what(), "Error (LoadGeom)", GLDLG_OK, GLDLG_ICONERROR);
+    }
+
+
 
     //Old send hits location
     progressDlg->SetMessage("Closing dataport...");
-    simManager.CloseLoaderDP();
     needsReload = false;
     progressDlg->SetVisible(false);
     SAFE_DELETE(progressDlg);
@@ -1269,9 +1229,9 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 */
 std::ostringstream Worker::SerializeForLoader() {
     std::ostringstream result;
-    cereal::BinaryOutputArchive outputarchive(result);
+    cereal::BinaryOutputArchive outputArchive(result);
 
-    outputarchive(
+    outputArchive(
             CEREAL_NVP(wp),
             CEREAL_NVP(ontheflyParams),
             CEREAL_NVP(CDFs),
@@ -1282,24 +1242,33 @@ std::ostringstream Worker::SerializeForLoader() {
             CEREAL_NVP(desorptionParameterIDs)
     ); //Worker
 
-    geom->SerializeForLoader(outputarchive);
+    geom->SerializeForLoader(outputArchive);
 
     return result;
 }
 
 /**
-* \brief Resets the hit counter and can reload the simulation
-* \param noReload if the whole simulation should not be reloaded
+* \brief Serialization function for a binary cereal archive for the worker attributes
+* \return output string stream containing the result of the archiving
 */
-void Worker::ClearHits(bool noReload) {
-    try {
-        if (!noReload && needsReload) RealReload();
+std::ostringstream Worker::SerializeParamsForLoader() {
+    std::ostringstream result;
+    cereal::BinaryOutputArchive outputArchive(result);
+
+    outputArchive(
+            CEREAL_NVP(ontheflyParams)
+    ); //Worker
+    // Create the temporary geometry shared structure
+/*    size_t loadSize = sizeof(OntheflySimulationParams);
+#if defined(SYNRAD)
+    loadSize += regions.size() * sizeof(bool); //Show photons or not
+#endif*/
+/*#if defined(SYNRAD)
+    for (size_t i = 0; i < regions.size(); i++) {
+        WRITEBUFFER(regions[i].params.showPhotons, bool);
     }
-    catch (Error &e) {
-        GLMessageBox::Display(e.what(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
-        return;
-    }
-    simManager.ClearHitsBuffer();
+#endif*/
+    return result;
 }
 
 /**
@@ -1317,27 +1286,24 @@ void Worker::ResetWorkerStats() {
 * \brief Starts the simulation process
 */
 void Worker::Start() {
-
-    // Check that at least one desortion facet exists
-    bool found = false;
-    size_t nbF = geom->GetNbFacet();
-    size_t i = 0;
-    while (i < nbF && !found) {
-        found = (geom->GetFacet(i)->sh.desorbType != DES_NONE);
-        if (!found) i++;
-    }
-
-    if (!found)
+    // Sanity checks
+    // Is there some desorption in the system? (depends on pre calculation)
+    if(wp.finalOutgassingRate_Pa_m3_sec <= 0.0){
         throw Error("No desorption facet found");
-
+    }
     if (wp.totalDesorbedMolecules <= 0.0)
         throw Error("Total outgassing is zero.");
 
-    if (ontheflyParams.nbProcess == 0)
-        throw Error("No sub process found. (Simulation not available)");
-
-    if (simManager.ExecuteAndWait(COMMAND_START,PROCESS_RUN,wp.sMode))
-        ThrowSubProcError();
+    try {
+        if (simManager.StartSimulation()) {
+            isRunning = false;
+            throw std::logic_error("Processes are already done!");
+        }
+    }
+    catch (std::exception& e) {
+        throw Error(e.what());
+    }
+    isRunning = true;
 }
 
 /*
@@ -1866,33 +1832,4 @@ int Worker::GetParamId(const std::string name) {
     for (int i = 0; foundId == -1 && i < (int) parameters.size(); i++)
         if (name.compare(parameters[i].name) == 0) foundId = i;
     return foundId;
-}
-
-
-/*size_t Worker::ZipThreadProc(char* fileNameWithXML, char* fileNameWithXMLzip)
-{
-HZIP hz = CreateZip(fileNameWithXMLzip, 0);
-if (!hz) {
-throw Error("Error creating ZIP file");
-}
-if (!ZipAdd(hz, GetShortFileName(fileNameWithXML), fileNameWithXML)) remove(fileNameWithXML);
-else {
-CloseZip(hz);
-throw Error("Error compressing ZIP file.");
-}
-CloseZip(hz);
-return 0;
-}*/
-
-/**
-* \brief Saves current facet hit counter from cache to results
-*/
-void Worker::SendFacetHitCounts() {
-    BYTE* buffer = simManager.GetLockedHitBuffer();
-    size_t nbFacet = geom->GetNbFacet();
-    for (size_t i = 0; i < nbFacet; i++) {
-        Facet *f = geom->GetFacet(i);
-        *((FacetHitBuffer *) (buffer + f->sh.hitOffset)) = f->facetHitCache; //Only const.flow
-    }
-    simManager.UnlockHitBuffer();
 }

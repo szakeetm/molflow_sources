@@ -20,6 +20,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #pragma once
 
 #include "Geometry_shared.h"
+#include "PugiXML/pugixml.hpp"
 #include <cereal/archives/xml.hpp>
 
 #define TEXTURE_MODE_PRESSURE 0

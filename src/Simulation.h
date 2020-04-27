@@ -22,13 +22,13 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <tuple>
 #include <vector>
 
-#include "MolflowTypes.h"
 #include "Buffer_shared.h" //Facetproperties
 #include "SMP.h"
 #include "Vector.h"
-#include "Parameter.h"
 #include "Random.h"
 #include "ProcessControl.h"
+
+class Parameter;
 
 class Anglemap {
 public:
@@ -146,7 +146,10 @@ class Simulation {
 public:
 
 	Simulation();
-	GlobalHitBuffer tmpGlobalResult; //Global results since last UpdateMCHits
+
+    MersenneTwister randomGenerator;
+
+    GlobalHitBuffer tmpGlobalResult; //Global results since last UpdateMCHits
 	std::vector<FacetHistogramBuffer> tmpGlobalHistograms; //Recorded histogram since last UpdateMCHits, 1+nbMoment copies
 	std::vector<ParticleLoggerItem> tmpParticleLog; //Recorded particle log since last UpdateMCHits
 

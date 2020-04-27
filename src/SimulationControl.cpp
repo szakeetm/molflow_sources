@@ -27,19 +27,18 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <cstring>
 #endif
 
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include "Simulation.h"
-#include "IntersectAABB_shared.h"
-#include "Random.h"
+#include <cmath>
+#include <cstdio>
 #include <sstream>
-#include <fstream>
-
 #include <cereal/types/utility.hpp>
 #include <cereal/archives/binary.hpp>
-#include <cereal/types/vector.hpp>
-#include <cereal/types/string.hpp>
+
+#include "Simulation.h"
+#include "IntersectAABB_shared.h"
+#include "Parameter.h"
+
+
+
 
 // Global handles
 extern Simulation* sHandle; //Declared at molflowSub.cpp
@@ -84,26 +83,13 @@ DWORD RevertBit(DWORD dw) {
 
 
 bool LoadSimulation(Dataport *loader) {
-	double t1, t0;
-	DWORD seed;
-	//char err[128];
-
-	t0 = GetTick();
+	double t1;
+	double t0 = GetTick();
 
 	sHandle->loadOK = false;
 
 	SetState(PROCESS_STARTING, "Clearing previous simulation");
 	ClearSimulation();
-
-	/* //Mutex not necessary: by the time the COMMAND_LOAD is issued the interface releases the handle, concurrent reading is safe and it's only destroyed by the interface when all processes are ready loading
-	   //Result: faster, parallel loading
-	// Connect the dataport
-	SetState(PROCESS_STARTING, "Waiting for 'loader' dataport access...");
-	if (!AccessDataportTimed(loader,15000)) {
-		SetErrorSub("Failed to connect to DP");
-		return false;
-	}
-	*/
 
 	SetState(PROCESS_STARTING, "Loading simulation");
 
@@ -115,7 +101,7 @@ bool LoadSimulation(Dataport *loader) {
 
 	{
 		
-		std::string inputString(loader->size,NULL);
+		std::string inputString(loader->size,'\0');
 		BYTE* buffer = (BYTE*)loader->buff;
 		std::copy(buffer, buffer + loader->size, inputString.begin());
 		std::stringstream inputStream;
@@ -166,10 +152,6 @@ bool LoadSimulation(Dataport *loader) {
 	//Initialize global histogram
 	FacetHistogramBuffer hist;
     hist.Resize(sHandle->wp.globalHistogramParams);
-	/*hist.nbHitsHistogram.resize(sHandle->wp.globalHistogramParams.recordBounce ? sHandle->wp.globalHistogramParams.GetBounceHistogramSize() : 0); hist.nbHitsHistogram.shrink_to_fit();
-	hist.distanceHistogram.resize(sHandle->wp.globalHistogramParams.recordDistance ? sHandle->wp.globalHistogramParams.GetDistanceHistogramSize() : 0); hist.distanceHistogram.shrink_to_fit();
-	hist.timeHistogram.resize(sHandle->wp.globalHistogramParams.recordTime ? sHandle->wp.globalHistogramParams.GetTimeHistogramSize() : 0); hist.timeHistogram.shrink_to_fit();
-	*/
 	sHandle->tmpGlobalHistograms = std::vector<FacetHistogramBuffer>(1 + sHandle->moments.size(), hist);
 
 	//Reserve particle log
@@ -188,8 +170,6 @@ bool LoadSimulation(Dataport *loader) {
 
 	// Initialise simulation
 
-	seed = GetSeed();
-	rseed(seed);
 	sHandle->loadOK = true;
 	t1 = GetTick();
 	printf("  Load %s successful\n", sHandle->sh.name.c_str());
@@ -204,7 +184,7 @@ bool LoadSimulation(Dataport *loader) {
 	printf("  Direction : %zd bytes\n", sHandle->dirTotalSize);
 
 	printf("  Total     : %zd bytes\n", GetHitsSize());
-	printf("  Seed: %u\n", seed);
+	printf("  Seed: %lu\n", sHandle->randomGenerator.GetSeed());
 	printf("  Loading time: %.3f ms\n", (t1 - t0)*1000.0);
 	return true;
 
@@ -218,9 +198,15 @@ bool UpdateOntheflySimuParams(Dataport *loader) {
 		SetErrorSub("Failed to connect to loader DP");
 		return false;
 	}
-	BYTE* buffer = (BYTE *)loader->buff;
+    std::string inputString(loader->size,'\0');
+    BYTE* buffer = (BYTE*)loader->buff;
+    std::copy(buffer, buffer + loader->size, inputString.begin());
+    std::stringstream inputStream;
+    inputStream << inputString;
+    cereal::BinaryInputArchive inputArchive(inputStream);
 
-	sHandle->ontheflyParams = READBUFFER(OntheflySimulationParams);
+    inputArchive(sHandle->ontheflyParams);
+
 	ReleaseDataport(loader);
 
 	return true;
@@ -378,7 +364,9 @@ bool SimulationRun() {
 	}
 
 	t1 = GetTick();
-	sHandle->stepPerSec = (1.0 * nbStep) / (t1 - t0); // every 1.0 second
+	if(goOn) // don't update on end, this will give a false ratio (SimMCStep could return actual steps instead of plain "false"
+	    sHandle->stepPerSec = (1.0 * nbStep) / (t1 - t0); // every 1.0 second
+
 #if defined(_DEBUG)
 	printf("Running: stepPerSec = %lf\n", sHandle->stepPerSec);
 #endif
