@@ -72,6 +72,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 add_subdirectory(src_shared)
 add_subdirectory(CMake/molflow_sub)
 add_subdirectory(CMake/molflow_win)
+add_subdirectory(CMake/molflow_cli)
 
 IF (WIN32)
     add_subdirectory(CMake/png_zlib_win_library)
@@ -80,6 +81,7 @@ ELSE()
 ENDIF(WIN32)
 
 add_dependencies(molflow molflowSub compress)
+add_dependencies(molflowCLI molflowSub)
 
 option(USE_TESTS "Build the tests" ON)
 if(USE_TESTS)

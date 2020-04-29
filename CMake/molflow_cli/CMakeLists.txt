@@ -4,20 +4,18 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 # Change if you want modify path or other values. #
 ###################################################
 
-set(PROJECT_NAME molflowSub)
+set(PROJECT_NAME molflowCLI)
 
 # Folders files
 set(CPP_DIR_1 ../../src)
 set(CPP_DIR_2 ../../src_shared)
-set(CPP_DIR_3 ../../src_shared/GLApp)
 
 set(HEADER_DIR_1 ../../src)
 set(HEADER_DIR_2 ../../src_shared)
-set(HEADER_DIR_3 ../../src_shared/GLApp)
+set(HEADER_DIR_3 ../../include)
 
 IF (WIN32)
     # set stuff for windows
-    set(HEADER_DIR_6 ../../include)
 
     set(LINK_DIR_1 ../../lib/win/${MY_BUILD_TYPE})
     set(LINK_DIR_2 ../../lib_external/win/${MY_BUILD_TYPE})
@@ -47,11 +45,11 @@ add_definitions(
         -D_MBCS
         -D_CRT_SECURE_NO_WARNINGS
 )
-IF (WIN32)
-    add_definitions(
-            -DWIN
-    )
-ENDIF()
+
+# Definition of Macros
+add_definitions(
+        -DMOLFLOW
+)
 
 ################# Flags ################
 # Defines Flags for Windows and Linux. #
@@ -71,32 +69,25 @@ endif(NOT MSVC)
 #   --   Add files to project.   --   #
 #######################################
 
-set(SRC_FILES ${CPP_DIR_1}/molflowSub.cpp
-        ${CPP_DIR_1}/MolflowTypes.cpp
+set(SRC_FILES
+        ${CPP_DIR_2}/FlowCLI.cpp
+        ${CPP_DIR_2}/SimulationManager.cpp
+        ${CPP_DIR_2}/ShMemory.cpp
+        ${CPP_DIR_2}/Process.cpp
+
+        ${CPP_DIR_1}/Geometry_sub.cpp
         ${CPP_DIR_1}/MolflowBuffer.cpp
         ${CPP_DIR_1}/Parameter.cpp
-        ${CPP_DIR_1}/Simulation.cpp
-        ${CPP_DIR_1}/SimulationAC.cpp
-        ${CPP_DIR_1}/SimulationControl.cpp
-        ${CPP_DIR_1}/SimulationMC.cpp
-        ${CPP_DIR_1}/Geometry_sub.cpp
-
-        ${CPP_DIR_3}/MathTools.cpp
-        )
-
-set(HEADER_FILES ${HEADER_DIR_1}/MolflowTypes.h
-        ${HEADER_DIR_1}/Parameter.h
-        ${HEADER_DIR_1}/Simulation.h
-        ${HEADER_DIR_2}/SimulationUnit.h
+        ${CPP_DIR_2}/Vector.cpp
         )
 
 # set the path to the library folder
-link_directories(${LINK_DIR_1}
+#[[link_directories(${LINK_DIR_1}
         ${LINK_DIR_2}
-        )
+        )]]
 
-add_executable(${PROJECT_NAME} ${SRC_FILES} ${HEADER_FILES})
-target_link_libraries(${PROJECT_NAME} simulator_shared)
+add_executable(${PROJECT_NAME} ${SRC_FILES})
+#target_link_libraries(${PROJECT_NAME} simulator_shared)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_1}
@@ -131,58 +122,7 @@ if(MSVC)
     # Add Windows Console output
     message(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
     link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
-    target_link_libraries(${PROJECT_NAME}
-            #libgsl.lib
-            #libgslcblas.lib
-            kernel32.lib
-            user32.lib
-            gdi32.lib
-            winspool.lib
-            comdlg32.lib
-            advapi32.lib
-            shell32.lib
-            ole32.lib
-            oleaut32.lib
-            uuid.lib
-            odbc32.lib
-            odbccp32.lib)
-    target_link_libraries(${PROJECT_NAME} truncatedgaussian)
 endif(MSVC)
 if(NOT MSVC)
-
-    if(APPLE)
-        target_link_libraries(${PROJECT_NAME} "-framework AppKit")
-    else()
-        #find_package(X11 REQUIRED)
-        #target_include_directories(${PROJECT_NAME} PRIVATE ${X11_INCLUDE_DIRS})
-    endif()
-
-    find_package(GSL REQUIRED)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${GSL_INCLUDE_DIRS})
-
-    find_package(CURL REQUIRED)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${CURL_INCLUDE_DIRS})
-
-    set(THREADS_PREFER_PTHREAD_FLAG ON)
-    find_package(Threads REQUIRED)
-
-    target_link_libraries(${PROJECT_NAME} ${GSL_LIBRARIES})
-    target_link_libraries(${PROJECT_NAME} ${CURL_LIBRARIES})
-    target_link_libraries(${PROJECT_NAME} Threads::Threads)
-    target_link_libraries(${PROJECT_NAME} ${X11_LIBRARIES})
-
-    #for shared memory
-    find_library(LIBRT rt)
-    if(LIBRT)
-        target_link_libraries(${PROJECT_NAME} ${LIBRT})
-    endif()
-
-    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        target_link_libraries(${PROJECT_NAME} c++fs)
-    elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
-        #don´t add anything for filesystem
-    else()
-        target_link_libraries(${PROJECT_NAME} stdc++fs)
-    endif()
 
 endif(NOT MSVC)

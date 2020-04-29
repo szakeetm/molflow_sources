@@ -31,27 +31,6 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 extern Simulation *sHandle; //delcared in molflowSub.cpp
 
-// Compute area of all the desorption facet
-
-void CalcTotalOutgassing() {
-    //float scale_precomputed;
-
-    // Update texture increment for MC
-    //scale_precomputed=(float)(40.0/(sqrt(8.0*8.31/(PI*sHandle->wp.gasMass*0.001))));
-    for (size_t j = 0; j < sHandle->sh.nbSuper; j++) {
-        for (SubprocessFacet &f : sHandle->structures[j].facets) {
-            if (f.sh.is2sided) {
-                f.fullSizeInc *= 0.5;
-                for (auto &inc : f.textureCellIncrements)
-                    inc *= 0.5;
-            }
-        }
-    }
-
-}
-
-
-
 void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 
     BYTE *buffer;
@@ -290,7 +269,8 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
             gHits->texture_limits[v].min.all = texture_limits_old[v].min.all;
         if (gHits->texture_limits[v].min.moments_only == HITMAX)
             gHits->texture_limits[v].min.moments_only = texture_limits_old[v].min.moments_only;
-        if (gHits->texture_limits[v].max.all == 0.0) gHits->texture_limits[v].max.all = texture_limits_old[v].max.all;
+        if (gHits->texture_limits[v].max.all == 0.0)
+            gHits->texture_limits[v].max.all = texture_limits_old[v].max.all;
         if (gHits->texture_limits[v].max.moments_only == 0.0)
             gHits->texture_limits[v].max.moments_only = texture_limits_old[v].max.moments_only;
     }
@@ -299,7 +279,7 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 
     ResetTmpCounters();
     extern char *GetSimuStatus();
-    SetState(0, GetSimuStatus(), false, true);
+    SetState(PROCESS_STARTING, GetSimuStatus(), false, true);
 
 #if defined(_DEBUG)
     t1 = GetTick();
@@ -315,9 +295,9 @@ void UpdateLog(Dataport *dpLog, DWORD timeout) {
         double t0, t1;
         t0 = GetTick();
 #endif
-        SetState(0, "Waiting for 'dpLog' dataport access...", false, true);
+        SetState(PROCESS_STARTING, "Waiting for 'dpLog' dataport access...", false, true);
         sHandle->lastLogUpdateOK = AccessDataportTimed(dpLog, timeout);
-        SetState(0, "Updating Log...", false, true);
+        SetState(PROCESS_STARTING, "Updating Log...", false, true);
         if (!sHandle->lastLogUpdateOK) return;
 
         size_t *logBuff = (size_t *) dpLog->buff;
@@ -333,11 +313,11 @@ void UpdateLog(Dataport *dpLog, DWORD timeout) {
         ReleaseDataport(dpLog);
         sHandle->tmpParticleLog.clear();
         extern char *GetSimuStatus();
-        SetState(0, GetSimuStatus(), false, true);
+        SetState(PROCESS_STARTING, GetSimuStatus(), false, true);
 
 #if defined(_DEBUG)
         t1 = GetTick();
-        printf("Update hits: %f us\n", (t1 - t0) * 1000000.0);
+        printf("Update log: %f us\n", (t1 - t0) * 1000000.0);
 #endif
     }
 }
@@ -729,100 +709,7 @@ bool StartFromSource() {
             auto[theta, thetaLowerIndex, thetaOvershoot] = src->angleMap.GenerateThetaFromAngleMap(
                     src->sh.anglemapParams);
             auto phi = src->angleMap.GeneratePhiFromAngleMap(thetaLowerIndex, thetaOvershoot, src->sh.anglemapParams);
-            /*
-
-            size_t angleMapSum = src->angleMapLineSums[(src->sh.anglemapParams.thetaLowerRes + src->sh.anglemapParams.thetaHigherRes) - 1];
-            if (angleMapSum == 0) {
-                std::stringstream tmp;
-                tmp << "Facet " << src->globalId + 1 << ": angle map has all 0 values";
-                SetErrorSub(tmp.str().c_str());
-                return false;
-            }
-            double lookupValue = sHandle->randomGenerator.rnd()*(double)angleMapSum; //last element of cumulative distr. = sum
-            int thetaLowerIndex = my_lower_bound(lookupValue, src->angleMapLineSums, (src->sh.anglemapParams.thetaLowerRes + src->sh.anglemapParams.thetaHigherRes)); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
-            double thetaOvershoot;
-            double theta_a, theta_b, theta_c, theta_cumulative_A, theta_cumulative_B, theta_cumulative_C;
-            bool theta_hasThreePoints;
-            if (thetaLowerIndex == -1) {//In the first line
-                thetaOvershoot = lookupValue / (double)src->angleMapLineSums[0];
-            }
-            else {
-                //(lower index can't be last element)
-                thetaOvershoot = (lookupValue - (double)src->angleMapLineSums[thetaLowerIndex]) / (double)(src->angleMapLineSums[thetaLowerIndex + 1] - src->angleMapLineSums[thetaLowerIndex]);
-            }
-
-            theta_a = GetTheta(src, (double)thetaLowerIndex); theta_cumulative_A = (thetaLowerIndex == -1) ? 0.0 : (double)src->angleMapLineSums[thetaLowerIndex + 0];
-            theta_b = GetTheta(src, (double)(thetaLowerIndex+1)); theta_cumulative_B = (double)src->angleMapLineSums[thetaLowerIndex + 1];
-            if ((thetaLowerIndex + 2)<(src->sh.anglemapParams.thetaLowerRes + src->sh.anglemapParams.thetaHigherRes)) {
-                theta_c = GetTheta(src, (double)(thetaLowerIndex+2)); theta_cumulative_C = (double)src->angleMapLineSums[thetaLowerIndex + 2];
-                theta_hasThreePoints = true;
-            }
-            else {
-                theta_hasThreePoints = false;
-            }
-
-            double theta;
-            theta_hasThreePoints = false; //debug
-            if (!theta_hasThreePoints) theta = GetTheta(src,thetaLowerIndex + thetaOvershoot);
-            else theta = InverseQuadraticInterpolation(lookupValue, theta_a, theta_b, theta_c, theta_cumulative_A, theta_cumulative_B, theta_cumulative_C);
-
-            //Theta determined, let's find phi
-            double weigh;
-            size_t distr1index, distr2index;
-            if (thetaOvershoot < 0.5) {
-                distr1index = thetaLowerIndex;
-                distr2index = thetaLowerIndex + 1;
-                weigh = thetaOvershoot + 0.5;
-            }
-            else {
-                distr1index = thetaLowerIndex + 1;
-                distr2index = thetaLowerIndex + 2;
-                weigh = thetaOvershoot - 0.5;
-            }
-            if (distr1index == -1) distr1index++; //In case we interpolate in the first theta range and thetaOvershoot<0.5
-            if (distr2index == (src->sh.anglemapParams.thetaLowerRes + src->sh.anglemapParams.thetaHigherRes)) distr2index--; //In case we interpolate in the last theta range and thetaOvershoot>=0.5
-
-            size_t distr1sum = src->angleMapLineSums[distr1index]-((distr1index!=distr2index && distr1index>0)?src->angleMapLineSums[distr1index-1]:0);
-            size_t distr2sum = src->angleMapLineSums[distr2index] - ((distr1index != distr2index) ? src->angleMapLineSums[distr2index - 1] : 0);
-            double weighedSum=Weigh((double)distr1sum, (double)distr2sum, weigh);
-            double phiLookup = sHandle->randomGenerator.rnd() * weighedSum;
-            int phiLowerIndex = weighed_lower_bound_X(phiLookup, weigh, &(src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr1index]), &(src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr2index]), src->sh.anglemapParams.phiWidth);
-
-            ////////////////
-
-            double phiOvershoot;
-            double phi_a, phi_b, phi_c, phi_cumulative_A, phi_cumulative_B, phi_cumulative_C;
-            bool phi_hasThreePoints;
-            if (phiLowerIndex == -1) {
-                phiOvershoot = phiLookup / Weigh((double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr1index], (double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr2index],weigh);
-            }
-            else {
-                //(lower index can't be last element)
-                phiOvershoot = (phiLookup - Weigh((double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr1index + phiLowerIndex], (double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr2index+phiLowerIndex], weigh))
-                    / (Weigh((double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr1index + phiLowerIndex + 1], (double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr2index + phiLowerIndex + 1], weigh)
-                    - Weigh((double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr1index + phiLowerIndex], (double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr2index + phiLowerIndex], weigh));
-            }
-
-            phi_a = 2.0*PI*(double)(phiLowerIndex + 1) / (double)src->sh.anglemapParams.phiWidth - PI; phi_cumulative_A = (phiLowerIndex == -1) ? 0.0 : Weigh((double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr1index + phiLowerIndex], (double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr2index + phiLowerIndex], weigh);
-            phi_b = 2.0*PI*(double)(phiLowerIndex + 2) / (double)src->sh.anglemapParams.phiWidth - PI; phi_cumulative_B = Weigh((double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr1index + phiLowerIndex + 1], (double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr2index + phiLowerIndex + 1], weigh);
-            if ((phiLowerIndex + 2)<(src->sh.anglemapParams.phiWidth)) {
-                phi_c = 2.0*PI*(double)(phiLowerIndex + 3) / (double)src->sh.anglemapParams.phiWidth - PI; phi_cumulative_C = Weigh((double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr1index + phiLowerIndex + 2], (double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr2index + phiLowerIndex + 2], weigh);
-                phi_hasThreePoints = true;
-            }
-            else {
-                phi_hasThreePoints = false;
-            }
-
-            double phi;
-            phi_hasThreePoints = false; //debug
-            if (!phi_hasThreePoints) phi = 2.0*PI*((double)(phiLowerIndex + 1) + phiOvershoot) / (double)src->sh.anglemapParams.phiWidth - PI;
-            else phi = InverseQuadraticInterpolation(phiLookup, phi_a, phi_b, phi_c, phi_cumulative_A, phi_cumulative_B, phi_cumulative_C);
-
-            /////////////////////////////
-            */
-            sHandle->currentParticle.direction = PolarToCartesian(src, PI - theta, phi,
-                                                                  false); //angle map contains incident angle (between N and source dir) and theta is dir (between N and dest dir)
-            assert(sHandle->currentParticle.direction.x == sHandle->currentParticle.direction.x);
+            sHandle->currentParticle.direction = PolarToCartesian(src, PI - theta, phi,false); //angle map contains incident angle (between N and source dir) and theta is dir (between N and dest dir)
 
         }
     }
@@ -925,7 +812,6 @@ std::tuple<double, int, double> Anglemap::GenerateThetaFromAngleMap(const Anglem
             theta = GetTheta((double) thetaLowerIndex + 0.5 + thetaOvershoot, anglemapParams);
         }
     }
-    assert(theta == theta);
     return {theta, thetaLowerIndex, thetaOvershoot};
 }
 
@@ -1036,7 +922,6 @@ double Anglemap::GeneratePhiFromAngleMap(const int &thetaLowerIndex, const doubl
             phi = GetPhi((double) phiLowerIndex + 0.5 + phiOvershoot, anglemapParams);
         }
     }
-    assert(phi == phi);
     assert(phi > -PI && phi < PI);
     return phi;
 }
@@ -1595,37 +1480,26 @@ void IncreaseFacetCounter(SubprocessFacet *f, double time, size_t hit, size_t de
     }
 }
 
-void SubprocessFacet::ResetCounter() {
-    std::fill(tmpCounter.begin(), tmpCounter.end(), FacetHitBuffer());
-}
-
-void SubprocessFacet::ResizeCounter(size_t nbMoments) {
-    tmpCounter = std::vector<FacetHitBuffer>(nbMoments + 1); //Includes 0-init
-    tmpCounter.shrink_to_fit();
-    tmpHistograms = std::vector<FacetHistogramBuffer>(nbMoments + 1);
-    tmpHistograms.shrink_to_fit();
-}
-
-void SubprocessFacet::RegisterTransparentPass() {
-    double directionFactor = std::abs(Dot(sHandle->currentParticle.direction, this->sh.N));
-    IncreaseFacetCounter(this, sHandle->currentParticle.flightTime +
-                               this->colDist / 100.0 / sHandle->currentParticle.velocity, 1, 0, 0,
+void RegisterTransparentPass(SubprocessFacet *facet) {
+    double directionFactor = std::abs(Dot(sHandle->currentParticle.direction, facet->sh.N));
+    IncreaseFacetCounter(facet, sHandle->currentParticle.flightTime +
+                               facet->colDist / 100.0 / sHandle->currentParticle.velocity, 1, 0, 0,
                          2.0 / (sHandle->currentParticle.velocity * directionFactor),
                          2.0 * (sHandle->wp.useMaxwellDistribution ? 1.0 : 1.1781) * sHandle->currentParticle.velocity *
                          directionFactor);
 
-    this->isHit = true;
-    if (/*this->texture &&*/ this->sh.countTrans) {
-        RecordHitOnTexture(this, sHandle->currentParticle.flightTime +
-                                 this->colDist / 100.0 / sHandle->currentParticle.velocity,
+    facet->isHit = true;
+    if (/*facet->texture &&*/ facet->sh.countTrans) {
+        RecordHitOnTexture(facet, sHandle->currentParticle.flightTime +
+                                 facet->colDist / 100.0 / sHandle->currentParticle.velocity,
                            true, 2.0, 2.0);
     }
-    if (/*this->direction &&*/ this->sh.countDirection) {
-        RecordDirectionVector(this, sHandle->currentParticle.flightTime +
-                                    this->colDist / 100.0 / sHandle->currentParticle.velocity);
+    if (/*facet->direction &&*/ facet->sh.countDirection) {
+        RecordDirectionVector(facet, sHandle->currentParticle.flightTime +
+                                    facet->colDist / 100.0 / sHandle->currentParticle.velocity);
     }
-    LogHit(this);
-    ProfileFacet(this, sHandle->currentParticle.flightTime + this->colDist / 100.0 / sHandle->currentParticle.velocity,
+    LogHit(facet);
+    ProfileFacet(facet, sHandle->currentParticle.flightTime + facet->colDist / 100.0 / sHandle->currentParticle.velocity,
                  true, 2.0, 2.0);
-    if (this->sh.anglemapParams.record) RecordAngleMap(this);
+    if (facet->sh.anglemapParams.record) RecordAngleMap(facet);
 }

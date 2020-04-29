@@ -128,16 +128,16 @@ void MolflowGeometry::SerializeForLoader(cereal::BinaryOutputArchive& outputArch
 
 /**
 * \brief Compute number of bytes allocated from the hits size of all facets
-* \param moments vector containing all moments
+* \param nbMoments vector containing all moments
 * \return calculated size of memory usage from all facet hits in the geometry
 */
-size_t MolflowGeometry::GetHitsSize(std::vector<double> *moments) {
+size_t MolflowGeometry::GetHitsSize(const size_t nbMoments) {
 
 	// Compute number of bytes allocated
 	size_t memoryUsage = 0;
-	memoryUsage += sizeof(GlobalHitBuffer) + (1 + moments->size())*mApp->worker.wp.globalHistogramParams.GetDataSize();
+	memoryUsage += sizeof(GlobalHitBuffer) + (1 + nbMoments) * mApp->worker.wp.globalHistogramParams.GetDataSize();
 	for (int i = 0; i < sh.nbFacet; i++) {
-		memoryUsage += facets[i]->GetHitsSize(moments->size());
+		memoryUsage += facets[i]->GetHitsSize(nbMoments);
 	}
 
 	return memoryUsage;

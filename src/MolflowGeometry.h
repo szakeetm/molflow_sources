@@ -74,7 +74,7 @@ public:
 
 	// Memory usage (in bytes)
 	size_t GetGeometrySize();
-	size_t GetHitsSize(std::vector<double> *moments);
+	size_t GetHitsSize(size_t nbMoments);
 
 	// Raw data buffer (geometry)
 	void CopyGeometryBuffer(BYTE *buffer,const OntheflySimulationParams& ontheflyParams);

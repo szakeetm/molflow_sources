@@ -267,6 +267,9 @@ void Load() {
   // Connect to hit dataport
   hSize = GetHitsSize();
   dpHit = OpenDataport(hitsDpName,hSize);
+  if(!dpHit){
+      dpHit = CreateDataport(hitsDpName,hSize);
+  }
   if( !dpHit ) {
 	  char err[512];
 	  sprintf(err, "Failed to connect to 'hits' dataport (%zd Bytes)", hSize);

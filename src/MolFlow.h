@@ -114,7 +114,6 @@ public:
 	GLButton      *profilePlotterBtn;
 	GLButton      *texturePlotterBtn;
 	GLButton      *textureScalingBtn;
-	GLButton      *globalSettingsBtn;
 
 	GLTitledPanel *inputPanel;
 	GLTitledPanel *outputPanel;

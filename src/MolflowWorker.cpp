@@ -92,7 +92,7 @@ extern SynRad*mApp;
 /**
 * \brief Default constructor for a worker
 */
-Worker::Worker() {
+Worker::Worker() : simManager("molflow", "MFLW"){
 
     //Molflow specific
     temperatures = std::vector<double>();
@@ -1180,7 +1180,7 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
             if (ontheflyParams.enableLogging) {
                 logDpSize = sizeof(size_t) + ontheflyParams.logLimit * sizeof(ParticleLoggerItem);
             }
-            size_t hitSize = geom->GetHitsSize(&moments);
+            size_t hitSize = geom->GetHitsSize(moments.size());
 
             progressDlg->SetMessage("Asking subprocesses to clear geometry...");
             simManager.ResetSimulations();
@@ -1244,6 +1244,8 @@ std::ostringstream Worker::SerializeForLoader() {
 
     geom->SerializeForLoader(outputArchive);
 
+    std::ofstream outFile("serialized_load.bin");
+    outFile << result.str() ;
     return result;
 }
 
@@ -1257,17 +1259,7 @@ std::ostringstream Worker::SerializeParamsForLoader() {
 
     outputArchive(
             CEREAL_NVP(ontheflyParams)
-    ); //Worker
-    // Create the temporary geometry shared structure
-/*    size_t loadSize = sizeof(OntheflySimulationParams);
-#if defined(SYNRAD)
-    loadSize += regions.size() * sizeof(bool); //Show photons or not
-#endif*/
-/*#if defined(SYNRAD)
-    for (size_t i = 0; i < regions.size(); i++) {
-        WRITEBUFFER(regions[i].params.showPhotons, bool);
-    }
-#endif*/
+    );
     return result;
 }
 

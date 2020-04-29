@@ -54,33 +54,10 @@ void InitSimulation() {
 
 void ClearSimulation() {
 
-
-	ClearACMatrix();
-
 	delete sHandle;
 	sHandle = new Simulation;
 
 }
-
-DWORD RevertBit(DWORD dw) {
-	DWORD dwIn = dw;
-	DWORD dwOut = 0;
-	DWORD dWMask = 1;
-	int i;
-	for (i = 0; i < 32; i++) {
-		if (dwIn & 0x80000000UL) dwOut |= dWMask;
-		dwIn = dwIn << 1;
-		dWMask = dWMask << 1;
-	}
-	return dwOut;
-}
-
-
-
-/*double Norme(Vector3d *v) { //already defined
-	return sqrt(v->x*v->x + v->y*v->y + v->z*v->z);
-}*/
-
 
 bool LoadSimulation(Dataport *loader) {
 	double t1;
@@ -137,8 +114,26 @@ bool LoadSimulation(Dataport *loader) {
 			);
 
 			//Some initialization
-			if (!f.InitializeOnLoad(i)) return false;
-			if (f.sh.superIdx == -1) { //Facet in all structures
+			if (!f.InitializeOnLoad(i, sHandle->moments.size(), sHandle->histogramTotalSize)) return false;
+			// Increase size counters
+			//sHandle->histogramTotalSize += 0;
+			sHandle->angleMapTotalSize += f.angleMapSize;
+			sHandle->dirTotalSize += f.directionSize* (1 + sHandle->moments.size());
+			sHandle->profTotalSize += f.profileSize* (1 + sHandle->moments.size());
+			sHandle->textTotalSize += f.textureSize* (1 + sHandle->moments.size());
+
+            sHandle->hasVolatile |= f.sh.isVolatile;
+            if ((f.sh.superDest || f.sh.isVolatile) && ((f.sh.superDest - 1) >= sHandle->sh.nbSuper || f.sh.superDest < 0)) {
+                // Geometry error
+                ClearSimulation();
+                //ReleaseDataport(loader);
+                std::ostringstream err;
+                err << "Invalid structure (wrong link on F#" << i + 1 << ")";
+                SetErrorSub(err.str().c_str());
+                return false;
+            }
+
+            if (f.sh.superIdx == -1) { //Facet in all structures
 				for (auto& s : sHandle->structures) {
 					s.facets.push_back(f);
 				}
@@ -373,241 +368,4 @@ bool SimulationRun() {
 
 	return !goOn;
 
-}
-
-
-
-int GetIDId(int paramId) {
-
-	int i;
-	for (i = 0; i < (int)sHandle->desorptionParameterIDs.size() && (paramId != sHandle->desorptionParameterIDs[i]); i++); //check if we already had this parameter Id
-	if (i >= (int)sHandle->desorptionParameterIDs.size()) i = -1; //not found
-	return i;
-}
-
-
-bool SubprocessFacet::InitializeOnLoad(const size_t& id) {
-	globalId = id;
-	ResizeCounter(sHandle->moments.size()); //Initialize counter
-	if (!InitializeLinkAndVolatile(id)) return false;
-	InitializeOutgassingMap();
-	if (!InitializeAngleMap()) return false;
-	if (!InitializeTexture()) return false;
-	if (!InitializeProfile()) return false;
-	if (!InitializeDirectionTexture()) return false;
-	InitializeHistogram();
-
-	return true;
-}
-
-void SubprocessFacet::InitializeHistogram()
-{
-	FacetHistogramBuffer hist;
-	hist.Resize(sh.facetHistogramParams);
-	
-	tmpHistograms = std::vector<FacetHistogramBuffer>(1 + sHandle->moments.size(), hist);
-	sHandle->histogramTotalSize += (1 + sHandle->moments.size()) * 
-		(sh.facetHistogramParams.GetBouncesDataSize() 
-		+ sh.facetHistogramParams.GetDistanceDataSize() 
-		+ sh.facetHistogramParams.GetTimeDataSize());
-}
-
-bool SubprocessFacet::InitializeDirectionTexture()
-{
-	//Direction
-	if (sh.countDirection) {
-		directionSize = sh.texWidth*sh.texHeight * sizeof(DirectionCell);
-		try {
-			direction = std::vector<std::vector<DirectionCell>>(1 + sHandle->moments.size(), std::vector<DirectionCell>(sh.texWidth*sh.texHeight));
-		}
-		catch (...) {
-			SetErrorSub("Not enough memory to load direction textures");
-			return false;
-		}
-		sHandle->dirTotalSize += directionSize * (1 + sHandle->moments.size());
-	}
-	else directionSize = 0;
-	return true;
-}
-
-bool SubprocessFacet::InitializeProfile()
-{
-	//Profiles
-	if (sh.isProfile) {
-		profileSize = PROFILE_SIZE * sizeof(ProfileSlice);
-		try {
-			profile = std::vector<std::vector<ProfileSlice>>(1 + sHandle->moments.size(), std::vector<ProfileSlice>(PROFILE_SIZE));
-		}
-		catch (...) {
-			SetErrorSub("Not enough memory to load profiles");
-			return false;
-		}
-		sHandle->profTotalSize += profileSize * (1 + sHandle->moments.size());
-	}
-	else profileSize = 0;
-	return true;
-}
-
-bool SubprocessFacet::InitializeTexture()
-{
-	//Textures
-	if (sh.isTextured) {
-		size_t nbE = sh.texWidth*sh.texHeight;
-		largeEnough.resize(nbE);
-		textureSize = nbE * sizeof(TextureCell);
-		try {
-			texture = std::vector<std::vector<TextureCell>>(1 + sHandle->moments.size(), std::vector<TextureCell>(nbE));
-		}
-		catch (...) {
-			SetErrorSub("Not enough memory to load textures");
-			return false;
-		}
-		fullSizeInc = 1E30;
-		for (size_t j = 0; j < nbE; j++) {
-			if ((textureCellIncrements[j] > 0.0) && (textureCellIncrements[j] < fullSizeInc)) fullSizeInc = textureCellIncrements[j];
-		}
-		for (size_t j = 0; j < nbE; j++) { //second pass, filter out very small cells
-			largeEnough[j] = (textureCellIncrements[j] < ((5.0f)*fullSizeInc));
-		}
-		sHandle->textTotalSize += textureSize * (1 + sHandle->moments.size());
-
-		iw = 1.0 / (double)sh.texWidthD;
-		ih = 1.0 / (double)sh.texHeightD;
-		rw = sh.U.Norme() * iw;
-		rh = sh.V.Norme() * ih;
-	}
-	else textureSize = 0;
-	return true;
-}
-
-
-bool SubprocessFacet::InitializeAngleMap()
-{
-	//Incident angle map
-    angleMapSize = 0;
-    if (sh.desorbType == DES_ANGLEMAP) { //Use mode
-        //if (angleMapCache.empty()) throw Error(("Facet " + std::to_string(globalId + 1) + ": should generate by angle map but has none recorded.").c_str());
-
-        //Construct CDFs
-        try {
-            angleMap.phi_CDFsums.resize(sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes);
-        }
-        catch (...) {
-            SetErrorSub("Not enough memory to load incident angle map (phi CDF line sums)");
-            return false;
-        }
-        try {
-            angleMap.theta_CDF.resize(sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes);
-        }
-        catch (...) {
-            SetErrorSub("Not enough memory to load incident angle map (line sums, CDF)");
-            return false;
-        }
-        try {
-            angleMap.phi_CDFs.resize(sh.anglemapParams.phiWidth * (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes));
-        }
-        catch (...) {
-            SetErrorSub("Not enough memory to load incident angle map (CDF)");
-            return false;
-        }
-
-        //First pass: determine sums
-        angleMap.theta_CDFsum = 0;
-        memset(angleMap.phi_CDFsums.data(), 0, sizeof(size_t) * (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes));
-        for (size_t thetaIndex = 0; thetaIndex < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); thetaIndex++) {
-            for (size_t phiIndex = 0; phiIndex < sh.anglemapParams.phiWidth; phiIndex++) {
-                angleMap.phi_CDFsums[thetaIndex] += angleMap.pdf[thetaIndex*sh.anglemapParams.phiWidth + phiIndex];
-            }
-            angleMap.theta_CDFsum += angleMap.phi_CDFsums[thetaIndex];
-        }
-        if (!angleMap.theta_CDFsum) {
-            std::stringstream err; err << "Facet " << globalId + 1 << " has all-zero recorded angle map.";
-            SetErrorSub(err.str().c_str());
-            return false;
-        }
-
-        //Second pass: write CDFs
-        double thetaNormalizingFactor = 1.0 / (double)angleMap.theta_CDFsum;
-        for (size_t thetaIndex = 0; thetaIndex < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); thetaIndex++) {
-            if (angleMap.theta_CDFsum == 0) { //no hits in this line, generate CDF of uniform distr.
-                angleMap.theta_CDF[thetaIndex] = (0.5 + (double)thetaIndex) / (double)(sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes);
-            }
-            else {
-                if (thetaIndex == 0) {
-                    //First CDF value, covers half of first segment
-                    angleMap.theta_CDF[thetaIndex] = 0.5 * (double)angleMap.phi_CDFsums[0] * thetaNormalizingFactor;
-                }
-                else {
-                    //value covering second half of last segment and first of current segment
-                    angleMap.theta_CDF[thetaIndex] = angleMap.theta_CDF[thetaIndex - 1] + (double)(angleMap.phi_CDFsums[thetaIndex - 1] + angleMap.phi_CDFsums[thetaIndex])*0.5*thetaNormalizingFactor;
-                }
-            }
-            double phiNormalizingFactor = 1.0 / (double)angleMap.phi_CDFsums[thetaIndex];
-            for (size_t phiIndex = 0; phiIndex < sh.anglemapParams.phiWidth; phiIndex++) {
-                size_t index = sh.anglemapParams.phiWidth * thetaIndex + phiIndex;
-                if (angleMap.phi_CDFsums[thetaIndex] == 0) { //no hits in this line, create CDF of uniform distr.
-                    angleMap.phi_CDFs[index] = (0.5 + (double)phiIndex) / (double)sh.anglemapParams.phiWidth;
-                }
-                else {
-                    if (phiIndex == 0) {
-                        //First CDF value, covers half of first segment
-                        angleMap.phi_CDFs[index] = 0.5 * (double)angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex] * phiNormalizingFactor;
-                    }
-                    else {
-                        //value covering second half of last segment and first of current segment
-                        angleMap.phi_CDFs[index] = angleMap.phi_CDFs[sh.anglemapParams.phiWidth * thetaIndex + phiIndex - 1] + (double)(angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex + phiIndex - 1] + angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex + phiIndex])*0.5*phiNormalizingFactor;
-                    }
-                }
-            }
-        }
-    }
-    else {
-        //Record mode, create pdf vector
-        angleMap.pdf.resize(sh.anglemapParams.GetMapSize());
-    }
-
-	sHandle->angleMapTotalSize += angleMapSize;
-	return true;
-}
-
-void SubprocessFacet::InitializeOutgassingMap()
-{
-	if (sh.useOutgassingFile) {
-		//Precalc actual outgassing map width and height for faster generation:
-		outgassingMapWidthD = sh.U.Norme() * sh.outgassingFileRatio;
-		outgassingMapHeightD = sh.V.Norme() * sh.outgassingFileRatio;
-		size_t nbE = sh.outgassingMapWidth*sh.outgassingMapHeight;
-		// TODO: Check with molflow_threaded e10c2a6f and 66b89ac7 if right
-		// making a copy shouldn't be necessary as i will never get changed before use
-        //outgassingMap = facetRef->outgassingMap; //init by copying pdf
-        for (size_t i = 1; i < nbE; i++) {
-            outgassingMap[i] = outgassingMap[i - 1] + outgassingMap[i]; //Convert p.d.f to cumulative distr.
-        }
-	}
-}
-
-bool SubprocessFacet::InitializeLinkAndVolatile(const size_t & id)
-{
-	sHandle->hasVolatile |= sh.isVolatile;
-
-	if (sh.superDest || sh.isVolatile) {
-		// Link or volatile facet, overides facet settings
-		// Must be full opaque and 0 sticking
-		// (see SimulationMC.c::PerformBounce)
-		//sh.isOpaque = true;
-		sh.opacity = 1.0;
-		sh.opacity_paramId = -1;
-		sh.sticking = 0.0;
-		sh.sticking_paramId = -1;
-		if (((sh.superDest - 1) >= sHandle->sh.nbSuper || sh.superDest < 0)) {
-			// Geometry error
-			ClearSimulation();
-			//ReleaseDataport(loader);
-			std::ostringstream err;
-			err << "Invalid structure (wrong link on F#" << id + 1 << ")";
-			SetErrorSub(err.str().c_str());
-			return false;
-		}
-	}
-	return true;
 }

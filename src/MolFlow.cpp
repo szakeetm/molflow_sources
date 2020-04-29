@@ -387,9 +387,9 @@ int MolFlow::OneTimeSceneInit()
 	textureScalingBtn = new GLButton(0, "Tex.scaling");
 	shortcutPanel->Add(textureScalingBtn);
 
-	globalSettingsBtn = new GLButton(0, "<< Sim");
+	/*globalSettingsBtn = new GLButton(0, "<< Sim");
 	simuPanel->Add(globalSettingsBtn);
-
+*/
 	/*
 	statusSimu = new GLButton(0,"...");
 	simuPanel->Add(statusSimu);
