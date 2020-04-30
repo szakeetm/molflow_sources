@@ -2801,6 +2801,7 @@ void MolFlow::UpdatePlotters() {
 }
 
 void MolFlow::RefreshPlotterCombos() {
+	//Removes non-present views, rebuilds combobox and refreshes plotted data
 	if (pressureEvolution) pressureEvolution->Refresh();
 	if (timewisePlotter) timewisePlotter->Refresh();
 	if (profilePlotter) profilePlotter->Refresh();
