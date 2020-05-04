@@ -25,7 +25,8 @@
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,
-            "MIMode": "lldb"
+            "MIMode": "lldb",
+            "preLaunchTask": "CMake Make Debug Build with clang"
         },
         {
             "name": "(Release) Launch Release",
@@ -37,7 +38,8 @@
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,
-            "MIMode": "lldb"
+            "MIMode": "lldb",
+            "preLaunchTask": "CMake Make Release Build with clang"
         }
     ]
 }
