@@ -203,7 +203,7 @@ void ProfilePlotter::Refresh() {
 	}
 	profCombo->SetSelectedIndex(nbProf ? 0 : -1);
 	//Remove profiles that aren't present anymore
-	for (size_t v = nbView - 1; v >= 0; v--) { //int because it can be temporarily -1
+	for (int v = nbView - 1; v >= 0; v--) { //int because it can be -1, nbView is also int
 		if (views[v]->userData1 >= geom->GetNbFacet() || !geom->GetFacet(views[v]->userData1)->sh.isProfile) {
 			chart->GetY1Axis()->RemoveDataView(views[v]);
 			SAFE_DELETE(views[v]);
