@@ -47,6 +47,7 @@ build*/
 CMake/cmake-*
 
 !/src/
+!/src_shared/
 !/precomp_obj/
 !/molflow_tests/
 !/lib_external/
