@@ -41,40 +41,41 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 
 // Global handles
-extern Simulation* sHandle; //Declared at molflowSub.cpp
+//extern Simulation* sHandle; //Declared at molflowSub.cpp
 
 
 
-void InitSimulation() {
+/*void InitSimulation() {
 
 	// Global handle allocation
 	sHandle = new Simulation();
 	InitTick();
+}*/
+
+int Simulation::SanityCheckGeom() {
+
+    return 0; // all ok
 }
 
-void ClearSimulation() {
+void Simulation::ClearSimulation() {
 
-	delete sHandle;
-	sHandle = new Simulation;
+    loadOK = false;
 
+    textTotalSize =
+    profTotalSize =
+    dirTotalSize =
+    angleMapTotalSize =
+    histogramTotalSize = 0;
+	
 }
 
-bool LoadSimulation(Dataport *loader) {
-	double t1;
+bool Simulation::LoadSimulation(Dataport *loader) {
 	double t0 = GetTick();
-
-	sHandle->loadOK = false;
 
 	SetState(PROCESS_STARTING, "Clearing previous simulation");
 	ClearSimulation();
 
 	SetState(PROCESS_STARTING, "Loading simulation");
-
-	sHandle->textTotalSize =
-		sHandle->profTotalSize =
-		sHandle->dirTotalSize =
-		sHandle->angleMapTotalSize =
-		sHandle->histogramTotalSize = 0;
 
 	{
 		
@@ -86,23 +87,23 @@ bool LoadSimulation(Dataport *loader) {
 		cereal::BinaryInputArchive inputArchive(inputStream);
 
 		//Worker params
-		inputArchive(sHandle->wp);
-		inputArchive(sHandle->ontheflyParams);
-		inputArchive(sHandle->CDFs);
-		inputArchive(sHandle->IDs);
-		inputArchive(sHandle->parameters);
-		inputArchive(sHandle->temperatures);
-		inputArchive(sHandle->moments);
-		inputArchive(sHandle->desorptionParameterIDs);
+		inputArchive(wp);
+		inputArchive(ontheflyParams);
+		inputArchive(CDFs);
+		inputArchive(IDs);
+		inputArchive(parameters);
+		inputArchive(temperatures);
+		inputArchive(moments);
+		inputArchive(desorptionParameterIDs);
 
 		//Geometry
-		inputArchive(sHandle->sh);
-		inputArchive(sHandle->vertices3);
+		inputArchive(sh);
+		inputArchive(vertices3);
 
-		sHandle->structures.resize(sHandle->sh.nbSuper); //Create structures
+		structures.resize(sh.nbSuper); //Create structures
 
 		//Facets
-		for (size_t i = 0; i < sHandle->sh.nbFacet; i++) { //Necessary because facets is not (yet) a vector in the interface
+		for (size_t i = 0; i < sh.nbFacet; i++) { //Necessary because facets is not (yet) a vector in the interface
 			SubprocessFacet f;
 			inputArchive(
 				f.sh,
@@ -114,18 +115,18 @@ bool LoadSimulation(Dataport *loader) {
 			);
 
 			//Some initialization
-			if (!f.InitializeOnLoad(i, sHandle->moments.size(), sHandle->histogramTotalSize)) return false;
+			if (!f.InitializeOnLoad(i, moments.size(), histogramTotalSize)) return false;
 			// Increase size counters
-			//sHandle->histogramTotalSize += 0;
-			sHandle->angleMapTotalSize += f.angleMapSize;
-			sHandle->dirTotalSize += f.directionSize* (1 + sHandle->moments.size());
-			sHandle->profTotalSize += f.profileSize* (1 + sHandle->moments.size());
-			sHandle->textTotalSize += f.textureSize* (1 + sHandle->moments.size());
+			//histogramTotalSize += 0;
+			angleMapTotalSize += f.angleMapSize;
+			dirTotalSize += f.directionSize* (1 + moments.size());
+			profTotalSize += f.profileSize* (1 + moments.size());
+			textTotalSize += f.textureSize* (1 + moments.size());
 
-            sHandle->hasVolatile |= f.sh.isVolatile;
-            if ((f.sh.superDest || f.sh.isVolatile) && ((f.sh.superDest - 1) >= sHandle->sh.nbSuper || f.sh.superDest < 0)) {
+            hasVolatile |= f.sh.isVolatile;
+            if ((f.sh.superDest || f.sh.isVolatile) && ((f.sh.superDest - 1) >= sh.nbSuper || f.sh.superDest < 0)) {
                 // Geometry error
-                ClearSimulation();
+                //ClearSimulation();
                 //ReleaseDataport(loader);
                 std::ostringstream err;
                 err << "Invalid structure (wrong link on F#" << i + 1 << ")";
@@ -134,28 +135,28 @@ bool LoadSimulation(Dataport *loader) {
             }
 
             if (f.sh.superIdx == -1) { //Facet in all structures
-				for (auto& s : sHandle->structures) {
+				for (auto& s : structures) {
 					s.facets.push_back(f);
 				}
 			}
 			else {
-				sHandle->structures[f.sh.superIdx].facets.push_back(f); //Assign to structure
+				structures[f.sh.superIdx].facets.push_back(f); //Assign to structure
 			}
 		}
 	}//inputarchive goes out of scope, file released
 
 	//Initialize global histogram
 	FacetHistogramBuffer hist;
-    hist.Resize(sHandle->wp.globalHistogramParams);
-	sHandle->tmpGlobalHistograms = std::vector<FacetHistogramBuffer>(1 + sHandle->moments.size(), hist);
+    hist.Resize(wp.globalHistogramParams);
+	tmpGlobalHistograms = std::vector<FacetHistogramBuffer>(1 + moments.size(), hist);
 
 	//Reserve particle log
-	if (sHandle->ontheflyParams.enableLogging)
-	    sHandle->tmpParticleLog.reserve(sHandle->ontheflyParams.logLimit / sHandle->ontheflyParams.nbProcess);
+	if (ontheflyParams.enableLogging)
+	    tmpParticleLog.reserve(ontheflyParams.logLimit / ontheflyParams.nbProcess);
 
 	// Build all AABBTrees
 	size_t maxDepth=0;
-	for (auto& s : sHandle->structures) {
+	for (auto& s : structures) {
 		std::vector<SubprocessFacet*> facetPointers; facetPointers.reserve(s.facets.size());
 		for (auto& f : s.facets) {
 			facetPointers.push_back(&f);
@@ -165,27 +166,28 @@ bool LoadSimulation(Dataport *loader) {
 
 	// Initialise simulation
 
-	sHandle->loadOK = true;
-	t1 = GetTick();
-	printf("  Load %s successful\n", sHandle->sh.name.c_str());
-	printf("  Geometry: %zd vertex %zd facets\n", sHandle->vertices3.size(), sHandle->sh.nbFacet);
+	//if(!sh.name.empty())
+	    loadOK = true;
+	double t1 = GetTick();
+	printf("  Load %s successful\n", sh.name.c_str());
+	printf("  Geometry: %zd vertex %zd facets\n", vertices3.size(), sh.nbFacet);
 
 	printf("  Geom size: %d bytes\n", /*(size_t)(buffer - bufferStart)*/0);
-	printf("  Number of stucture: %zd\n", sHandle->sh.nbSuper);
+	printf("  Number of stucture: %zd\n", sh.nbSuper);
 	printf("  Global Hit: %zd bytes\n", sizeof(GlobalHitBuffer));
-	printf("  Facet Hit : %zd bytes\n", sHandle->sh.nbFacet * sizeof(FacetHitBuffer));
-	printf("  Texture   : %zd bytes\n", sHandle->textTotalSize);
-	printf("  Profile   : %zd bytes\n", sHandle->profTotalSize);
-	printf("  Direction : %zd bytes\n", sHandle->dirTotalSize);
+	printf("  Facet Hit : %zd bytes\n", sh.nbFacet * sizeof(FacetHitBuffer));
+	printf("  Texture   : %zd bytes\n", textTotalSize);
+	printf("  Profile   : %zd bytes\n", profTotalSize);
+	printf("  Direction : %zd bytes\n", dirTotalSize);
 
 	printf("  Total     : %zd bytes\n", GetHitsSize());
-	printf("  Seed: %lu\n", sHandle->randomGenerator.GetSeed());
+	printf("  Seed: %lu\n", randomGenerator.GetSeed());
 	printf("  Loading time: %.3f ms\n", (t1 - t0)*1000.0);
 	return true;
 
 }
 
-bool UpdateOntheflySimuParams(Dataport *loader) {
+bool Simulation::UpdateOntheflySimuParams(Dataport *loader) {
 	// Connect the dataport
 	
 
@@ -200,47 +202,36 @@ bool UpdateOntheflySimuParams(Dataport *loader) {
     inputStream << inputString;
     cereal::BinaryInputArchive inputArchive(inputStream);
 
-    inputArchive(sHandle->ontheflyParams);
+    inputArchive(ontheflyParams);
 
 	ReleaseDataport(loader);
 
 	return true;
 }
 
-void UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DWORD timeout) {
-	switch (sHandle->wp.sMode) {
-        case MC_MODE: {
-            UpdateMCHits(dpHit, prIdx, sHandle->moments.size(), timeout);
+void Simulation::UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DWORD timeout) {
+            UpdateMCHits(dpHit, prIdx, moments.size(), timeout);
             if (dpLog) UpdateLog(dpLog, timeout);
-            break;
-        }
-        case AC_MODE:
-        {
-            UpdateACHits(dpHit, prIdx, timeout);
-            break;
-        }
-    }
-
 }
 
-size_t GetHitsSize() {
-	return sizeof(GlobalHitBuffer) + sHandle->wp.globalHistogramParams.GetDataSize() +
-		sHandle->textTotalSize + sHandle->profTotalSize + sHandle->dirTotalSize + sHandle->angleMapTotalSize + sHandle->histogramTotalSize
-		+ sHandle->sh.nbFacet * sizeof(FacetHitBuffer) * (1+sHandle->moments.size());
+size_t Simulation::GetHitsSize() {
+	return sizeof(GlobalHitBuffer) + wp.globalHistogramParams.GetDataSize() +
+		textTotalSize + profTotalSize + dirTotalSize + angleMapTotalSize + histogramTotalSize
+		+ sh.nbFacet * sizeof(FacetHitBuffer) * (1+moments.size());
 }
 
-void ResetTmpCounters() {
+void Simulation::ResetTmpCounters() {
 	SetState(0, "Resetting local cache...", false, true);
 
-	memset(&sHandle->tmpGlobalResult, 0, sizeof(GlobalHitBuffer));
+	memset(&tmpGlobalResult, 0, sizeof(GlobalHitBuffer));
 	
 	//Reset global histograms
-	for (auto& h : sHandle->tmpGlobalHistograms) {
+	for (auto& h : tmpGlobalHistograms) {
 		h.Reset();
 	}
 
-	for (int j = 0; j < sHandle->sh.nbSuper; j++) {
-		for (auto& f : sHandle->structures[j].facets) {
+	for (int j = 0; j < sh.nbSuper; j++) {
+		for (auto& f : structures[j].facets) {
 			f.ResetCounter();
 			f.isHit = false;
 
@@ -275,97 +266,60 @@ void ResetTmpCounters() {
 
 }
 
-void ResetSimulation() {
-	sHandle->currentParticle.lastHitFacet = NULL;
-	sHandle->totalDesorbed = 0;
+void Simulation::ResetSimulation() {
+	currentParticle.lastHitFacet = NULL;
+	totalDesorbed = 0;
 	ResetTmpCounters();
-	sHandle->tmpParticleLog.clear();
-	if (sHandle->acDensity) memset(sHandle->acDensity, 0, sHandle->nbAC * sizeof(ACFLOAT));
-
+	tmpParticleLog.clear();
 }
 
-bool StartSimulation(size_t sMode) {
-	sHandle->wp.sMode = sMode;
-	switch (sMode) {
-	case MC_MODE:
-		if (!sHandle->currentParticle.lastHitFacet) StartFromSource();
-		return (sHandle->currentParticle.lastHitFacet != NULL);
-	case AC_MODE:
-		if (sHandle->prgAC != 100) {
-			SetErrorSub("AC matrix not calculated");
-			return false;
-		}
-		else {
-			sHandle->stepPerSec = 0.0;
-			return true;
-		}
-	}
-
-	SetErrorSub("Unknown simulation mode");
-	return false;
+bool Simulation::StartSimulation() {
+    if (!currentParticle.lastHitFacet) StartFromSource();
+    return (currentParticle.lastHitFacet != nullptr);
 }
 
-void RecordHit(const int &type) {
-	if (sHandle->tmpGlobalResult.hitCacheSize < HITCACHESIZE) {
-		sHandle->tmpGlobalResult.hitCache[sHandle->tmpGlobalResult.hitCacheSize].pos = sHandle->currentParticle.position;
-		sHandle->tmpGlobalResult.hitCache[sHandle->tmpGlobalResult.hitCacheSize].type = type;
-		sHandle->tmpGlobalResult.hitCacheSize++;
+void Simulation::RecordHit(const int &type) {
+	if (tmpGlobalResult.hitCacheSize < HITCACHESIZE) {
+		tmpGlobalResult.hitCache[tmpGlobalResult.hitCacheSize].pos = currentParticle.position;
+		tmpGlobalResult.hitCache[tmpGlobalResult.hitCacheSize].type = type;
+		tmpGlobalResult.hitCacheSize++;
 	}
 }
 
-void RecordLeakPos() {
+void Simulation::RecordLeakPos() {
 	// Source region check performed when calling this routine 
 	// Record leak for debugging
 	RecordHit(HIT_REF);
 	RecordHit(HIT_LAST);
-	if (sHandle->tmpGlobalResult.leakCacheSize < LEAKCACHESIZE) {
-		sHandle->tmpGlobalResult.leakCache[sHandle->tmpGlobalResult.leakCacheSize].pos = sHandle->currentParticle.position;
-		sHandle->tmpGlobalResult.leakCache[sHandle->tmpGlobalResult.leakCacheSize].dir = sHandle->currentParticle.direction;
-		sHandle->tmpGlobalResult.leakCacheSize++;
+	if (tmpGlobalResult.leakCacheSize < LEAKCACHESIZE) {
+		tmpGlobalResult.leakCache[tmpGlobalResult.leakCacheSize].pos = currentParticle.position;
+		tmpGlobalResult.leakCache[tmpGlobalResult.leakCacheSize].dir = currentParticle.direction;
+		tmpGlobalResult.leakCacheSize++;
 	}
 }
+/*
 
-bool SimulationRun() {
+bool Simulation::SimulationRun() {
 
 	// 1s step
-	double t0, t1;
-	size_t    nbStep = 1;
-	bool   goOn;
-
-	if (sHandle->stepPerSec <= 0.0) {
-		switch (sHandle->wp.sMode) {
-		case MC_MODE:
-			nbStep = 250;
-			break;
-		case AC_MODE:
-			nbStep = 1;
-			break;
-		}
-
+    size_t    nbStep = 1;
+    if (stepPerSec <= 0.0) {
+        nbStep = 250;
 	}
-	else {
-        nbStep = std::ceil(sHandle->stepPerSec + 0.5);
+    else {
+        nbStep = std::ceil(stepPerSec + 0.5);
     }
 
-	t0 = GetTick();
-	switch (sHandle->wp.sMode) {
-	case MC_MODE:
-
-		goOn = SimulationMCStep(nbStep);
-		break;
-	case AC_MODE:
-		goOn = SimulationACStep(nbStep);
-		break;
-	}
-
-	t1 = GetTick();
+    double t0 = GetTick();
+    bool goOn = SimulationMCStep(nbStep);
+    double t1 = GetTick();
 	if(goOn) // don't update on end, this will give a false ratio (SimMCStep could return actual steps instead of plain "false"
-	    sHandle->stepPerSec = (1.0 * nbStep) / (t1 - t0); // every 1.0 second
+	    stepPerSec = (1.0 * nbStep) / (t1 - t0); // every 1.0 second
 
 #if defined(_DEBUG)
-	printf("Running: stepPerSec = %lf\n", sHandle->stepPerSec);
+	printf("Running: stepPerSec = %lf\n", stepPerSec);
 #endif
 
 	return !goOn;
 
-}
+}*/

@@ -1140,7 +1140,7 @@ void Worker::ComputeAC(float appTime) {
     // Send command
     try {
         if (simManager.ShareWithSimUnits(nullptr, dpSize, LoadType::LOADAC)) {
-            std::string errString = "Failed to send geometry to sub process\n";
+            std::string errString = "Failed to send AC geometry to sub process\n";
             GLMessageBox::Display(errString.c_str(), "Warning (LoadAC)", GLDLG_OK, GLDLG_ICONWARNING);
             return;
         }

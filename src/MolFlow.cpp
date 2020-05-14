@@ -90,9 +90,9 @@ static const char *fileDesFilters = "Desorption files\0*.des\0All files\0*.*\0";
 */
 
 //NativeFileDialog compatible file filters
-std::string fileLoadFilters = "txt,xml,zip,geo,geo7z,syn,syn7z,str,stl,ase";
-std::string fileInsertFilters = "txt,xml,zip,geo,geo7z,syn,syn7z,stl";
-std::string fileSaveFilters = "xml,zip,txt,geo,geo7z,stl";
+std::string fileLoadFilters = "txt,xml,zip,geo,syn,str,stl,ase,geo7z,syn7z";
+std::string fileInsertFilters = "txt,xml,zip,geo,syn,stl,geo7z,syn7z";
+std::string fileSaveFilters = "zip,xml,txt,geo,stl,geo7z";
 std::string fileSelFilters = "sel";
 std::string fileTexFilters = "txt";
 std::string fileProfFilters = "csv;txt";
@@ -2797,6 +2797,7 @@ void MolFlow::UpdatePlotters() {
 }
 
 void MolFlow::RefreshPlotterCombos() {
+	//Removes non-present views, rebuilds combobox and refreshes plotted data
 	if (pressureEvolution) pressureEvolution->Refresh();
 	if (timewisePlotter) timewisePlotter->Refresh();
 	if (profilePlotter) profilePlotter->Refresh();

@@ -2,10 +2,11 @@
 // Created by Pascal Baehr on 28.04.20.
 //
 
-#ifndef MOLFLOW_PROJ_GEOMETRY_SUB_H
-#define MOLFLOW_PROJ_GEOMETRY_SUB_H
+#ifndef MOLFLOW_PROJ_GEOMETRYSIMU_H
+#define MOLFLOW_PROJ_GEOMETRYSIMU_H
 
 #include <vector>
+#include <Random.h>
 #include "MolflowTypes.h"
 #include "Buffer_shared.h"
 
@@ -22,8 +23,10 @@ public:
     double GetPhipdfValue(const double & thetaIndex, const int & phiIndex, const AnglemapParams & anglemapParams);
     double GetPhiCDFValue(const double& thetaIndex, const int& phiIndex, const AnglemapParams& anglemapParams);
     double GetPhiCDFSum(const double & thetaIndex, const AnglemapParams & anglemapParams);
-    std::tuple<double, int, double> GenerateThetaFromAngleMap(const AnglemapParams& anglemapParams);
-    double GeneratePhiFromAngleMap(const int& thetaLowerIndex, const double& thetaOvershoot, const AnglemapParams& anglemapParams);
+    std::tuple<double, int, double>
+    GenerateThetaFromAngleMap(const AnglemapParams &anglemapParams, MersenneTwister &randomGenerator);
+    double GeneratePhiFromAngleMap(const int &thetaLowerIndex, const double &thetaOvershoot,
+                                   const AnglemapParams &anglemapParams, MersenneTwister &randomGenerator);
 };
 
 // Local facet structure
@@ -102,4 +105,4 @@ public:
     AABBNODE* aabbTree; // Structure AABB tree
 };
 
-#endif //MOLFLOW_PROJ_GEOMETRY_SUB_H
+#endif //MOLFLOW_PROJ_GEOMETRYSIMU_H
