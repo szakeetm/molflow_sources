@@ -118,8 +118,8 @@ if(USE_CUDA)
     set(CUDA_DIR_1 ../../src/GPUSim/CUDA)
 
     set(SRC_FILES ${SRC_FILES}
-            #[[${GPU_DIR_1}/SimulationOptiX.cpp
-            ${GPU_DIR_1}/OptixController.cpp
+            #[[${GPU_DIR_1}/SimulationControllerGPU.cpp
+            ${GPU_DIR_1}/SimulationOptiX.cpp
             ${GPU_DIR_1}/Model.cpp
             ${GPU_DIR_1}/MolTracer.cpp
             ${GPU_DIR_1}/MolflowModelParser.cpp]]
@@ -127,7 +127,7 @@ if(USE_CUDA)
 
     set(HEADER_FILES ${HEADER_FILES}
             ${GPU_DIR_1}/SimulationOptiX.h
-            #[[${GPU_DIR_1}/OptixController.h
+            #[[${GPU_DIR_1}/SimulationOptiX.h
             ${GPU_DIR_1}/CUDABuffer.h
             ${GPU_DIR_1}/optix7.h
             #${GPU_DIR_1}/SampleWindow.h

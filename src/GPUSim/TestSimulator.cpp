@@ -2,7 +2,7 @@
 // Created by pbahr on 15/11/2019.
 //
 
-#include "SimulationOptiX.h"
+#include "SimulationControllerGPU.h"
 // debug output
 #include <fstream>
 
@@ -122,7 +122,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    SimulationOptiX gpuSim;
+    SimulationControllerGPU gpuSim;
     //flowgpu::Model* model = flowgeom::initializeModel(fileName);
     flowgpu::Model* model = flowgeom::loadFromSerialization(fileName);
             //flowgpu::Model* test = flowgeom::loadFromSerialization("minimalout.xml");

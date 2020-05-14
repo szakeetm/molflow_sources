@@ -33,7 +33,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <math.h>
 #include <time.h>
 #ifdef GPU_MODE
-#include "GPUSim/SimulationOptiX.h"
+#include "GPUSim/SimulationControllerGPU.h"
 #include "GPUSim/MolflowModelParser.h"
 #endif
 
@@ -350,7 +350,7 @@ int main(int argc,char* argv[])
 
   InitSimulation(); //Creates sHandle instance
 #ifdef GPU_MODE
-    SimulationOptiX gpuSim;
+    SimulationControllerGPU gpuSim;
 #endif
   // Sub process ready
   SetReady();

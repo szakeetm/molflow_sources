@@ -116,8 +116,8 @@ message("Module Path is " ${CMAKE_MODULE_PATH})]]
 #set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -g -G")
 
 set(SRC_FILES ${SRC_FILES}
+        ${GPU_DIR_1}/SimulationControllerGPU.cpp
         ${GPU_DIR_1}/SimulationOptiX.cpp
-        ${GPU_DIR_1}/OptixController.cpp
         ${GPU_DIR_1}/Model.cpp
         #${GPU_DIR_1}/RNGKernel.cu
         #${GPU_DIR_1}/RandomWrapper.cpp
