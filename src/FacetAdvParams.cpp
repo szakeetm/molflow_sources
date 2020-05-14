@@ -631,14 +631,14 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	double f0Area = f0->GetArea();
 	sumArea = f0Area;
 	sumOutgassing = f0->sh.totalOutgassing;
-	sumAngleMapSize = f0->angleMapCache.size();
+	sumAngleMapSize = f0->sh.anglemapParams.GetRecordedMapSize();
 	
 	for (size_t i = 1; i < selection.size(); i++) {
 		Facet *f = geom->GetFacet(selection[i]);
 		double fArea = f->GetArea();
 		sumArea += fArea;
 		sumOutgassing += f->sh.totalOutgassing;
-		sumAngleMapSize += f->angleMapCache.size();
+		sumAngleMapSize += f->sh.anglemapParams.GetRecordedMapSize();
 		isEnabledE = isEnabledE && (f0->sh.isTextured == f->sh.isTextured);
 		isBoundE = isBoundE && (f0->hasMesh == f->hasMesh);
 		CountDesE = CountDesE && f0->sh.countDes == f->sh.countDes;
@@ -652,7 +652,7 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 		AngleMapThetaLowResE = AngleMapThetaLowResE && (f0->sh.anglemapParams.thetaLowerRes == f->sh.anglemapParams.thetaLowerRes);
 		AngleMapThetaHiResE = AngleMapThetaHiResE && (f0->sh.anglemapParams.thetaHigherRes == f->sh.anglemapParams.thetaHigherRes);
 		AngleMapThetaLimitE = AngleMapThetaLimitE && IsEqual(f0->sh.anglemapParams.thetaLimit , f->sh.anglemapParams.thetaLimit);
-		hasAngleMapE = hasAngleMapE && (!f0->angleMapCache.empty() == !f->angleMapCache.empty());
+		hasAngleMapE = hasAngleMapE && (f0->sh.anglemapParams.hasRecorded == f->sh.anglemapParams.hasRecorded);
 		TexVisibleE = TexVisibleE && f0->textureVisible == f->textureVisible;
 		VolVisibleE = VolVisibleE && f0->volumeVisible == f->volumeVisible;
 		ratioE = ratioE && std::abs(f0->tRatio - f->tRatio) < 1E-8;
@@ -832,7 +832,7 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	std::stringstream statusLabelText;
 	std::string mapSizeText = mApp->FormatSize(sumAngleMapSize*sizeof(size_t));
 	if (hasAngleMapE) {
-		if (!f0->angleMapCache.empty())
+		if (f0->sh.anglemapParams.hasRecorded)
 			statusLabelText << "All selected facets have recorded angle maps (" << mapSizeText << ")";
 		else
 			statusLabelText << "No recorded angle maps on selected facets.";
@@ -1383,28 +1383,32 @@ bool FacetAdvParams::Apply() {
 		if (doAngleMapWidth) {
 			if (angleMapWidth != f->sh.anglemapParams.phiWidth) {
 				//Delete recorded map, will make a new
-				f->angleMapCache.clear();
+				SAFE_FREE(f->angleMapCache);
+				f->sh.anglemapParams.hasRecorded = false;
 				f->sh.anglemapParams.phiWidth = angleMapWidth;
 			}
 		}
 		if (doAngleMapLowRes) {
 			if (angleMapLowRes != f->sh.anglemapParams.thetaLowerRes) {
 				//Delete recorded map, will make a new
-				f->angleMapCache.clear();
+				SAFE_FREE(f->angleMapCache);
+				f->sh.anglemapParams.hasRecorded = false;
 				f->sh.anglemapParams.thetaLowerRes = angleMapLowRes;
 			}
 		}
 		if (doAngleMapHiRes) {
 			if (angleMapHiRes != f->sh.anglemapParams.thetaHigherRes) {
 				//Delete recorded map, will make a new
-				f->angleMapCache.clear();
+				SAFE_FREE(f->angleMapCache);
+				f->sh.anglemapParams.hasRecorded = false;
 				f->sh.anglemapParams.thetaHigherRes = angleMapHiRes;
 			}
 		}
 		if (doAngleMapThetaLimit) {
 			if (!IsEqual(angleMapThetaLimit,f->sh.anglemapParams.thetaLimit)) {
 				//Delete recorded map, will make a new
-				f->angleMapCache.clear();
+				SAFE_FREE(f->angleMapCache);
+				f->sh.anglemapParams.hasRecorded = false;
 				f->sh.anglemapParams.thetaLimit = angleMapThetaLimit;
 			}
 		}
