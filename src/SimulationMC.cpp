@@ -229,7 +229,13 @@ void Simulation::UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWOR
                 //Facet histograms
 
                 for (int m = 0; m < (1 + nbMoments); m++) {
-						BYTE *histCurrentMoment = buffer + f.sh.hitOffset + facetHitsSize + f.profileSize*(1 + nbMoments) + f.textureSize*(1 + nbMoments) + f.directionSize*(1 + nbMoments) + f.sh.anglemapParams.GetRecordedDataSize() + m * f.sh.facetHistogramParams.GetDataSize();
+                    size_t angleMapRecordedDataSize = sizeof(size_t) * (f.sh.anglemapParams.phiWidth *
+                                                                        (f.sh.anglemapParams.thetaLowerRes +
+                                                                         f.sh.anglemapParams.thetaHigherRes));
+                    BYTE *histCurrentMoment =
+                            buffer + f.sh.hitOffset + facetHitsSize + f.profileSize * (1 + nbMoments) +
+                            f.textureSize * (1 + nbMoments) + f.directionSize * (1 + nbMoments) +
+                            angleMapRecordedDataSize + m * f.sh.facetHistogramParams.GetDataSize();
                     if (f.sh.facetHistogramParams.recordBounce) {
                         double *nbHitsHistogram = (double *) histCurrentMoment;
                         for (size_t i = 0; i < f.sh.facetHistogramParams.GetBounceHistogramSize(); i++) {
