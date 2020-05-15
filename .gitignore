@@ -1,7 +1,6 @@
 #blacklist all hidden files (start with . )but the root .gitignore
 
 .*
-
 !/.gitignore
 !/.gitmodules
 #blacklist various file types
@@ -48,6 +47,7 @@ build*/
 CMake/cmake-*
 
 !/src/
+!/src_shared/
 !/tests/
 !/precomp_obj/
 !/molflow_tests/
