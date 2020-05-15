@@ -12,12 +12,12 @@ namespace {
     TEST(SubProcessInit, Zero) {
 
         {
-            SimulationManager simMan;
+            SimulationManager simMan("molflow","MFLW");
             EXPECT_EQ(0, simMan.InitSimUnits());
         }
 
         {
-            SimulationManager simMan;
+            SimulationManager simMan("molflow","MFLW");
             simMan.useCPU = true;
             simMan.nbCores = 0;
             simMan.InitSimUnits();
@@ -25,7 +25,7 @@ namespace {
         }
 
         {
-            SimulationManager simMan;
+            SimulationManager simMan("molflow","MFLW");
             simMan.useCPU = true;
             simMan.nbCores = 4;
             simMan.InitSimUnits();
@@ -35,7 +35,7 @@ namespace {
 
     TEST(SubProcessCreateAndKill, CPU) {
         {
-            SimulationManager simMan;
+            SimulationManager simMan("molflow","MFLW");
             simMan.useCPU = true;
             simMan.nbCores = 4;
             simMan.InitSimUnits();

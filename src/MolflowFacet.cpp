@@ -1033,7 +1033,7 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 		break;
 	}
 	t = e.append_child("Texture");
-	assert(!(cellPropertiesIds == NULL && (sh.countAbs || sh.countDes || sh.countRefl || sh.countTrans))); //Count texture on non-existent texture 
+	assert(!(cellPropertiesIds == NULL && (sh.countAbs || sh.countDes || sh.countRefl || sh.countTrans))); //Count texture on non-existent texture
 
 	t.append_attribute("hasMesh") = cellPropertiesIds != NULL;
 	t.append_attribute("texDimX") = sh.texWidthD;

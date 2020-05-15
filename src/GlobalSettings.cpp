@@ -353,6 +353,7 @@ void GlobalSettings::SMPUpdate() {
 		processList->SetValueAt(1, i, tmp);
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+        PROCESS_INFO pInfo;
         if (!GetProcInfo(pid, &pInfo)) {
 			processList->SetValueAt(2, i, "0 KB");
 			processList->SetValueAt(3, i, "0 KB");

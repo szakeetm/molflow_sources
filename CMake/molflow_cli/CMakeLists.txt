@@ -99,9 +99,15 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_7}
         )
 
-find_package(GSL REQUIRED)
-target_include_directories(${PROJECT_NAME} PRIVATE ${GSL_INCLUDE_DIRS})
-
+if(MSVC)
+        set(HEADER_DIR_6 ../include/windows_only)
+        target_include_directories(${PROJECT_NAME} PUBLIC
+                ${HEADER_DIR_6}
+                )
+    else()
+        find_package(GSL REQUIRED)
+        target_include_directories(${PROJECT_NAME} PRIVATE ${GSL_INCLUDE_DIRS})
+endif()
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 target_compile_options(${PROJECT_NAME} PRIVATE
