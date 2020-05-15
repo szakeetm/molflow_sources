@@ -232,7 +232,7 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 				LoadConvFile(fileName.c_str());
 			} catch (Error &e) {
 				char errMsg[512];
-				sprintf(errMsg,"%s\nFile:%s",e.GetMsg(), fileName.c_str());
+				sprintf(errMsg,"%s\nFile:%s",e.what(), fileName.c_str());
 				GLMessageBox::Display(errMsg,"Error loading conversion file",GLDLG_OK,GLDLG_ICONERROR);
 				return;
 			}
@@ -273,7 +273,7 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 					&nbTextured,&nbDifferent);
 			} catch (Error &e) {
 				char errMsg[512];
-				sprintf(errMsg,"%s\nFile:%s",e.GetMsg(),fileName.c_str());
+				sprintf(errMsg,"%s\nFile:%s",e.what(),fileName.c_str());
 				GLMessageBox::Display(errMsg,"Error loading source file",GLDLG_OK,GLDLG_ICONERROR);
 				return;
 			}
@@ -337,14 +337,14 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 				work->ImportDesorption_SYN(synFile.c_str(),doseSource,time,mode,eta0,alpha,cutoffdose,convDistr,progressDlg);
 			} catch (Error &e) {
 				char errMsg[512];
-				sprintf(errMsg,"%s\nFile:%s",e.GetMsg(),synFile.c_str());
+				sprintf(errMsg,"%s\nFile:%s",e.what(),synFile.c_str());
 				GLMessageBox::Display(errMsg,"Error",GLDLG_OK,GLDLG_ICONERROR);
 			}
 			work->CalcTotalOutgassing();
 			mApp->UpdateFacetParams();
 			// Send to sub process
 			try { work->Reload(); } catch(Error &e) {
-				GLMessageBox::Display(e.GetMsg(),"Error reloading worker",GLDLG_OK,GLDLG_ICONERROR);
+				GLMessageBox::Display(e.what(),"Error reloading worker",GLDLG_OK,GLDLG_ICONERROR);
 			}
 
 			progressDlg->SetVisible(false);
@@ -395,7 +395,7 @@ void ImportDesorption::LoadConvFile(const char* fileName) {
 	}  catch (Error &e) {
 		SAFE_DELETE(f);
 		char errMsg[512];
-		sprintf(errMsg,"%s\nFile:%s",e.GetMsg(),fileName);
+		sprintf(errMsg,"%s\nFile:%s",e.what(),fileName);
 		GLMessageBox::Display(errMsg,"Error",GLDLG_OK,GLDLG_ICONERROR);
 	}
 }

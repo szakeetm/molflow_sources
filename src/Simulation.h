@@ -19,16 +19,19 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 #pragma once
 
-#include "MolflowTypes.h"
+#include <tuple>
+#include <vector>
+
 #include "Buffer_shared.h" //Facetproperties
 #include "SMP.h"
-#include <vector>
 #include "Vector.h"
-#include "Parameter.h"
-#include <tuple>
 #include "Random.h"
+#include "ProcessControl.h"
+#include "Geometry_sub.h"
 
-class Anglemap {
+class Parameter;
+
+/*class Anglemap {
 public:
 	std::vector<size_t>   pdf;		  // Incident angle distribution, phi and theta, not normalized. Used either for recording or for 2nd order interpolation
 	std::vector<double>   phi_CDFs;    // A table containing phi distributions for each theta, starting from 0 for every line (1 line = 1 theta value). For speed we keep it in one memory block, 1 pointer
@@ -43,10 +46,10 @@ public:
 	double GetPhiCDFSum(const double & thetaIndex, const AnglemapParams & anglemapParams);
 	std::tuple<double, int, double> GenerateThetaFromAngleMap(const AnglemapParams& anglemapParams);
 	double GeneratePhiFromAngleMap(const int& thetaLowerIndex, const double& thetaOvershoot, const AnglemapParams& anglemapParams);
-};
+};*/
 
 // Local facet structure
-class SubprocessFacet {
+/*class SubprocessFacet{
 public:
 	FacetProperties sh;
 
@@ -74,15 +77,15 @@ public:
 	double ih;
 
 	// Temporary var (used in FillHit for hit recording)
-	bool   hitted;
-	bool   ready;         // Volatile state
+	bool   isHit;
+	bool   isReady;         // Volatile state
 	size_t    textureSize;   // Texture size (in bytes)
 	size_t    profileSize;   // profile size (in bytes)
 	size_t    directionSize; // direction field size (in bytes)
 	size_t    angleMapSize;  // incidentangle map size (in bytes)
 
-	/*int CDFid; //Which probability distribution it belongs to (one CDF per temperature)
-	int IDid;  //If time-dependent desorption, which is its ID*/
+	*//*int CDFid; //Which probability distribution it belongs to (one CDF per temperature)
+	int IDid;  //If time-dependent desorption, which is its ID*//*
 	size_t globalId; //Global index (to identify when superstructures are present)
 
 	// Facet hit counters
@@ -107,19 +110,19 @@ public:
 	bool InitializeLinkAndVolatile(const size_t & id);
 
 	void RegisterTransparentPass(); //Allows one shared Intersect routine between MolFlow and Synrad
-};
+};*/
 
 // Local simulation structure
 
 class AABBNODE;
 
-class SuperStructure {
+/*class SuperStructure {
 public:
 	SuperStructure();
 	~SuperStructure();
 	std::vector<SubprocessFacet>  facets;   // Facet handles
 	AABBNODE* aabbTree; // Structure AABB tree
-};
+};*/
 
 class CurrentParticleStatus {
 public:
@@ -140,11 +143,18 @@ public:
 	std::vector<SubprocessFacet*> transparentHitBuffer; //Storing this buffer simulation-wide is cheaper than recreating it at every Intersect() call
 };
 
+struct FacetSizeCounters {
+
+};
+
 class Simulation {
 public:
 
 	Simulation();
-	GlobalHitBuffer tmpGlobalResult; //Global results since last UpdateMCHits
+    ~Simulation();
+    MersenneTwister randomGenerator;
+
+    GlobalHitBuffer tmpGlobalResult; //Global results since last UpdateMCHits
 	std::vector<FacetHistogramBuffer> tmpGlobalHistograms; //Recorded histogram since last UpdateMCHits, 1+nbMoment copies
 	std::vector<ParticleLoggerItem> tmpParticleLog; //Recorded particle log since last UpdateMCHits
 
@@ -252,4 +262,5 @@ double GenerateDesorptionTime(SubprocessFacet* src);
 double GetStickingAt(SubprocessFacet *src, double time);
 double GetOpacityAt(SubprocessFacet *src, double time);
 void   IncreaseFacetCounter(SubprocessFacet *f, double time, size_t hit, size_t desorb, size_t absorb, double sum_1_per_v, double sum_v_ort);
+void   RegisterTransparentPass(SubprocessFacet *facet);
 void   TreatMovingFacet();

@@ -32,19 +32,19 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Geometry_shared.h"
 #include "Facet_shared.h"
 #include <math.h>
-#ifdef MOLFLOW
+#if defined(MOLFLOW)
 #include "MolFlow.h"
 #endif
 
-#ifdef SYNRAD
+#if defined(SYNRAD)
 #include "SynRad.h"
 #endif
 
-#ifdef MOLFLOW
+#if defined(MOLFLOW)
 extern MolFlow *mApp;
 #endif
 
-#ifdef SYNRAD
+#if defined(SYNRAD)
 extern SynRad*mApp;
 #endif
 

@@ -86,11 +86,13 @@ endif(NOT MSVC)
 
 set(SRC_FILES ${CPP_DIR_1}/molflowSub.cpp
         ${CPP_DIR_1}/MolflowTypes.cpp
+        ${CPP_DIR_1}/MolflowBuffer.cpp
         ${CPP_DIR_1}/Parameter.cpp
         ${CPP_DIR_1}/Simulation.cpp
         ${CPP_DIR_1}/SimulationAC.cpp
         ${CPP_DIR_1}/SimulationControl.cpp
         ${CPP_DIR_1}/SimulationMC.cpp
+        ${CPP_DIR_1}/Geometry_sub.cpp
 
         ${CPP_DIR_3}/MathTools.cpp
         )
@@ -98,6 +100,7 @@ set(SRC_FILES ${CPP_DIR_1}/molflowSub.cpp
 set(HEADER_FILES ${HEADER_DIR_1}/MolflowTypes.h
         ${HEADER_DIR_1}/Parameter.h
         ${HEADER_DIR_1}/Simulation.h
+        ${HEADER_DIR_2}/SimulationUnit.h
         )
 
 # set the path to the library folder

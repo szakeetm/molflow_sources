@@ -37,6 +37,6 @@ endif()
 # Now simply link against gtest or gtest_main as needed. Eg
 add_executable(example example.cpp ../src_shared/SimulationManager.cpp ../src_shared/ShMemory.cpp ../src_shared/Process.cpp)
 target_link_libraries(example gtest_main)
-target_include_directories(example PRIVATE ../include)
+target_include_directories(example PRIVATE ../include ../src_shared)
 target_compile_features(example PRIVATE cxx_std_17)
 add_test(NAME example_test COMMAND example)

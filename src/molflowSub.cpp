@@ -29,8 +29,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 //#include <iostream>
 
-#include <stdio.h>
-#include <math.h>
+#include <cstdio>
+#include <cmath>
 #include <time.h>
 #ifdef GPU_MODE
 #include "GPUSim/SimulationControllerGPU.h"
@@ -38,6 +38,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #endif
 
 #include "Simulation.h"
+#include "Parameter.h"
 
 
 // Global process variables
@@ -73,16 +74,16 @@ void GetState() {
         SHCONTROL *master = (SHCONTROL *)dpControl->buff;
         prState = master->states[prIdx];
         prParam = master->cmdParam[prIdx];
-        prParam2 = master->cmdParam2[prIdx];
+        prParam2 = master->oldStates[prIdx];
         master->cmdParam[prIdx] = 0;
-        master->cmdParam2[prIdx] = 0;
+        master->oldStates[prIdx] = 0;
 
         ReleaseDataport(dpControl);
 
         if (!IsProcessRunning(hostProcessId)) {
-		printf("Host molflow.exe (process id %d) not running. Closing.",hostProcessId);
-		SetErrorSub("Host molflow.exe not running. Closing subprocess.");
-		endState = true;
+            printf("Host molflow.exe (process id %d) not running. Closing.",hostProcessId);
+            SetErrorSub("Host molflow.exe not running. Closing subprocess.");
+            endState = true;
         }
     } else {
 	    printf("Subprocess %d couldn't connect to Molflow.\n", prIdx);
@@ -126,7 +127,9 @@ char *GetSimuStatus() {
 
   static char ret[128];
   size_t count = sHandle->totalDesorbed;
-  size_t max   = sHandle->ontheflyParams.desorptionLimit / sHandle->ontheflyParams.nbProcess;
+  size_t max   = 0;
+  if(sHandle->ontheflyParams.nbProcess)
+      max = sHandle->ontheflyParams.desorptionLimit / sHandle->ontheflyParams.nbProcess;
 
   
   if( GetLocalState()==PROCESS_RUNAC ) sHandle->wp.sMode = AC_MODE;
@@ -269,6 +272,9 @@ void Load() {
   // Connect to hit dataport
   hSize = GetHitsSize();
   dpHit = OpenDataport(hitsDpName,hSize);
+  if(!dpHit){
+      dpHit = CreateDataport(hitsDpName,hSize);
+  }
   if( !dpHit ) {
 	  char err[512];
 	  sprintf(err, "Failed to connect to 'hits' dataport (%zd Bytes)", hSize);
@@ -339,26 +345,24 @@ int main(int argc,char* argv[])
     }
   dpControl = OpenDataport(ctrlDpName,sizeof(SHCONTROL));
   if( !dpControl ) {
-    printf("Usage: Cannot connect to MFLWCTRL%s\n",argv[1]);
+    printf("Cannot connect to %s\n",ctrlDpName);
     return 1;
   }
 
   printf("Connected to %s (%zd bytes), molflowSub.exe #%d\n",ctrlDpName,sizeof(SHCONTROL),prIdx);
 
   InitSimulation(); //Creates sHandle instance
-#ifdef GPU_MODE
-    SimulationControllerGPU gpuSim;
-#endif
+
   // Sub process ready
   SetReady();
 
   // Main loop
   while( !endState ) {
 	GetState();
-      switch(prState) {
+    switch(prState) {
 
       case COMMAND_LOAD:
-        printf("[%d] COMMAND: LOAD (%zd,%llu)\n", prIdx, prParam,prParam2);
+        printf("[%d] COMMAND: LOAD (%zd,%zu)\n", prIdx, prParam,prParam2);
         Load();
         if( sHandle->loadOK ) {
           //sHandle->desorptionLimit = prParam2; // 0 for endless
@@ -374,7 +378,7 @@ int main(int argc,char* argv[])
 	  case COMMAND_UPDATEPARAMS:
 		  printf("[%d] COMMAND: UPDATEPARAMS (%zd,%zd)\n", prIdx, prParam, prParam2);
 		  if (UpdateParams()) {
-			  SetState(prParam, GetSimuStatus());
+			  SetState(prParam2, GetSimuStatus());
 		  }
 		  break;
 
@@ -385,13 +389,8 @@ int main(int argc,char* argv[])
 		  break;
 
       case COMMAND_START:
-        printf("[%d] COMMAND: START (%zd,%llu)\n", prIdx,prParam,prParam2);
+        printf("[%d] COMMAND: START (%zd,%zu)\n", prIdx,prParam,prParam2);
         if( sHandle->loadOK ) {
-#ifdef GPU_MODE
-            //flowgpu::Model* molflowModel = flowgpu::loadFromMolflow(sHandle->vertices3,sHandle->structures, sHandle->wp, sHandle->CDFs);
-            flowgpu::Model* molflowModel = nullptr;
-            gpuSim.LoadSimulation(molflowModel);
-#endif
           if( StartSimulation(prParam) )
             SetState(PROCESS_RUN,GetSimuStatus());
           else {
@@ -403,7 +402,7 @@ int main(int argc,char* argv[])
         break;
 
       case COMMAND_PAUSE:
-        printf("[%d] COMMAND: PAUSE (%zd,%llu)\n", prIdx,prParam,prParam2);
+        printf("[%d] COMMAND: PAUSE (%zd,%zu)\n", prIdx,prParam,prParam2);
         if( !sHandle->lastHitUpdateOK ) {
           // Last update not successful, retry with a longer timeout
 			if (dpHit && (GetLocalState() != PROCESS_ERROR)) UpdateHits(dpHit,dpLog,prIdx,60000);
@@ -412,21 +411,18 @@ int main(int argc,char* argv[])
         break;
 
       case COMMAND_RESET:
-        printf("[%d] COMMAND: RESET (%zd,%llu)\n", prIdx,prParam,prParam2);
+        printf("[%d] COMMAND: RESET (%zd,%zu)\n", prIdx,prParam,prParam2);
         ResetSimulation();
         SetReady();
         break;
 
       case COMMAND_EXIT:
-        printf("[%d] COMMAND: EXIT (%zd,%llu)\n", prIdx,prParam,prParam2);
+        printf("[%d] COMMAND: EXIT (%zd,%zu)\n", prIdx,prParam,prParam2);
         endState = true;
         break;
 
       case COMMAND_CLOSE:
-#ifdef GPU_MODE
-              //gpuSim.CloseSimulation();
-#endif
-        printf("[%d] COMMAND: CLOSE (%zd,%llu)\n", prIdx,prParam,prParam2);
+        printf("[%d] COMMAND: CLOSE (%zd,%zu)\n", prIdx,prParam,prParam2);
         ClearSimulation();
         CLOSEDPSUB(dpHit);
 		CLOSEDPSUB(dpLog);
@@ -435,7 +431,7 @@ int main(int argc,char* argv[])
 
       case COMMAND_STEPAC:
         // Debug command
-        printf("[%d] COMMAND: STEPAC (%zd,%llu)\n", prIdx,prParam,prParam2);
+        printf("[%d] COMMAND: STEPAC (%zd,%zu)\n", prIdx,prParam,prParam2);
         if( sHandle->loadOK ) {
           if( StartSimulation(prParam) ) {
             SetState(PROCESS_RUN,GetSimuStatus());
@@ -453,12 +449,10 @@ int main(int argc,char* argv[])
       case PROCESS_RUN:
         SetStatus(GetSimuStatus()); //update hits only
         eos = SimulationRun();      // Run during 1 sec
-#ifdef GPU_MODE
-              gpuSim.RunSimulation();
-#endif
-		if (dpHit && (GetLocalState() != PROCESS_ERROR))
-		    UpdateHits(dpHit,dpLog,prIdx,20); // Update hit with 20ms timeout. If fails, probably an other subprocess is updating, so we'll keep calculating and try it later (latest when the simulation is stopped).
-        if(eos) {
+		if (dpHit && (GetLocalState() != PROCESS_ERROR)) {
+            UpdateHits(dpHit, dpLog, prIdx,20); // Update hit with 20ms timeout. If fails, probably an other subprocess is updating, so we'll keep calculating and try it later (latest when the simulation is stopped).
+		}
+		if(eos) {
           if( GetLocalState()!=PROCESS_ERROR ) {
             // Max desorption reached
             SetState(PROCESS_DONE,GetSimuStatus());

@@ -114,7 +114,6 @@ public:
 	GLButton      *profilePlotterBtn;
 	GLButton      *texturePlotterBtn;
 	GLButton      *textureScalingBtn;
-	GLButton      *globalSettingsBtn;
 
 	GLTitledPanel *inputPanel;
 	GLTitledPanel *outputPanel;
@@ -140,15 +139,15 @@ public:
     // Testing
     //int     nbSt;
     //void LogProfile();
-    void BuildPipe(double ratio,int steps=0);
-	void EmptyGeometry();
+    void BuildPipe(double ratio,int steps = 0) override;
+	void EmptyGeometry() override;
 	void CrashHandler(Error *e);
 	
 protected:
 	void LoadParameterCatalog();
-    int  OneTimeSceneInit();
-    int  RestoreDeviceObjects();
-	int  InvalidateDeviceObjects();
-    int  FrameMove();
-    void ProcessMessage(GLComponent *src,int message);
+    int  OneTimeSceneInit() override;
+    int  RestoreDeviceObjects() override;
+	int  InvalidateDeviceObjects() override;
+    int  FrameMove() override;
+    void ProcessMessage(GLComponent *src,int message) override;
 };

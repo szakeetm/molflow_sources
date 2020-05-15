@@ -282,7 +282,7 @@ void TextureScaling::ProcessMessage(GLComponent *src,int message) {
 			try {
 				worker->Update(0.0f);
 			} catch(Error &e) {
-				GLMessageBox::Display(e.GetMsg(),"Error (Worker::Update)",GLDLG_OK,GLDLG_ICONERROR);
+				GLMessageBox::Display(e.what(),"Error (Worker::Update)",GLDLG_OK,GLDLG_ICONERROR);
 			}
 			Update();
 
@@ -303,7 +303,7 @@ void TextureScaling::ProcessMessage(GLComponent *src,int message) {
 			try {
 				worker->Update(0.0f);
 			} catch(Error &e) {
-				GLMessageBox::Display(e.GetMsg(),"Error (Worker::Update)",GLDLG_OK,GLDLG_ICONERROR);
+				GLMessageBox::Display(e.what(),"Error (Worker::Update)",GLDLG_OK,GLDLG_ICONERROR);
 			}
 			Update();
 		}
@@ -341,7 +341,7 @@ void TextureScaling::ProcessMessage(GLComponent *src,int message) {
 			try {
 				worker->Update(0.0f);
 			} catch(Error &e) {
-				GLMessageBox::Display(e.GetMsg(),"Error (Worker::Update)",GLDLG_OK,GLDLG_ICONERROR);
+				GLMessageBox::Display(e.what(),"Error (Worker::Update)",GLDLG_OK,GLDLG_ICONERROR);
 			}
 			char tmp[256];
 			sprintf(tmp,"%g",geom->texture_limits[geom->textureMode].manual.min.all);

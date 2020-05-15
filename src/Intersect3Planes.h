@@ -21,7 +21,7 @@ class Intersect3Planes : public GLWindow {
 public:
   // Construction
   Intersect3Planes(Geometry *geom,Worker *work);
-  void ProcessMessage(GLComponent *src,int message);
+  void ProcessMessage(GLComponent *src,int message) override;
 
   // Implementation
 private:

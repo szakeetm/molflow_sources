@@ -31,31 +31,34 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/GLButton.h"
 #include "GLApp/GLTextField.h"
 #include "GLApp/GLLabel.h"
-#include "GLApp/GLToggle.h"
 #include "GLApp/GLTitledPanel.h"
 #include "Buffer_shared.h"
 #include "AppUpdater.h"
-#ifdef MOLFLOW
-#include "MolFlow.h"
-#endif
+#include "SMP.h"
+#include "ProcessControl.h"
 
-#ifndef _WIN32
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+
+#else
 //getpid in linux
 #include <sys/types.h>
 #include <unistd.h>
 #endif
 
-#ifdef SYNRAD
+#if defined(MOLFLOW)
+#include "MolFlow.h"
+#endif
+#if defined(SYNRAD)
 #include "SynRad.h"
 #endif
 
 extern GLApplication *theApp;
 
-#ifdef MOLFLOW
+#if defined(MOLFLOW)
 extern MolFlow *mApp;
 #endif
 
-#ifdef SYNRAD
+#if defined(SYNRAD)
 extern SynRad*mApp;
 #endif
 
@@ -76,11 +79,11 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	SetTitle("Global Settings");
 	SetIconfiable(true);
 
-	GLTitledPanel *settingsPanel = new GLTitledPanel("Program settings");
+	auto *settingsPanel = new GLTitledPanel("Program settings");
 	settingsPanel->SetBounds(5, 2, 270, 267);
 	Add(settingsPanel);
 
-	GLLabel *asLabel = new GLLabel("Autosave frequency (minutes):");
+	auto *asLabel = new GLLabel("Autosave frequency (minutes):");
 	asLabel->SetBounds(16, 22, 80, 19);
 	settingsPanel->Add(asLabel);
 
@@ -124,11 +127,11 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
     highlightSelectionToggle->SetBounds(15, 247, 160, 19);
     settingsPanel->Add(highlightSelectionToggle);
 
-	GLTitledPanel *simuSettingsPanel = new GLTitledPanel("Simulation settings");
+	auto *simuSettingsPanel = new GLTitledPanel("Simulation settings");
 	simuSettingsPanel->SetBounds(280, 2, 290, 267);
 	Add(simuSettingsPanel);
 
-	GLLabel *massLabel = new GLLabel("Gas molecular mass (g/mol):");
+	auto *massLabel = new GLLabel("Gas molecular mass (g/mol):");
 	massLabel->SetBounds(290, 22, 150, 19);
 	simuSettingsPanel->Add(massLabel);
 
@@ -144,7 +147,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	halfLifeText->SetBounds(460, 45, 100, 19);
 	simuSettingsPanel->Add(halfLifeText);
 	
-	GLLabel *outgassingLabel = new GLLabel("Final outgassing rate (mbar*l/sec):");
+	auto *outgassingLabel = new GLLabel("Final outgassing rate (mbar*l/sec):");
 	outgassingLabel->SetBounds(290, 72, 150, 19);
 	simuSettingsPanel->Add(outgassingLabel);
 
@@ -153,7 +156,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	outgassingText->SetEditable(false);
 	simuSettingsPanel->Add(outgassingText);
 
-	GLLabel *influxLabel = new GLLabel("Total desorbed molecules:");
+	auto *influxLabel = new GLLabel("Total desorbed molecules:");
 	influxLabel->SetBounds(290, 97, 150, 19);
 	simuSettingsPanel->Add(influxLabel);
 
@@ -174,7 +177,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	lowFluxInfo->SetBounds(420, 150, 20, 19);
 	simuSettingsPanel->Add(lowFluxInfo);
 
-	GLLabel *cutoffLabel = new GLLabel("Cutoff ratio:");
+	auto *cutoffLabel = new GLLabel("Cutoff ratio:");
 	cutoffLabel->SetBounds(310, 176, 80, 19);
 	simuSettingsPanel->Add(cutoffLabel);
 
@@ -191,7 +194,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	chkNonIsothermal->SetBounds(315,125,100,19);
 	Add(chkNonIsothermal);*/
 
-	GLTitledPanel *panel3 = new GLTitledPanel("Process control");
+	auto *panel3 = new GLTitledPanel("Process control");
 	panel3->SetBounds(5, 309, wD - 10, hD - 310);
 	Add(panel3);
 
@@ -207,11 +210,11 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 
 	char tmp[128];
 	sprintf(tmp, "Number of CPU cores:     %zd", mApp->numCPU);
-	GLLabel *coreLabel = new GLLabel(tmp);
+	auto *coreLabel = new GLLabel(tmp);
 	coreLabel->SetBounds(10, hD - 74, 120, 19);
 	panel3->Add(coreLabel);
 
-	GLLabel *l1 = new GLLabel("Number of subprocesses:");
+	auto *l1 = new GLLabel("Number of subprocesses:");
 	l1->SetBounds(10, hD - 49, 120, 19);
 	panel3->Add(l1);
 
@@ -235,9 +238,9 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	GLToolkit::GetScreenSize(&wS, &hS);
 	int xD = (wS - wD) / 2;
 	int yD = (hS - hD) / 2;
-	SetBounds(xD, yD, wD, hD);
+	GLWindow::SetBounds(xD, yD, wD, hD);
 
-	RestoreDeviceObjects();
+    GLContainer::RestoreDeviceObjects();
 
 	lastUpdate = 0;
 	//for (size_t i = 0; i < MAX_PROCESS; i++) lastCPUTime[i] = -1.0f;
@@ -304,71 +307,75 @@ void GlobalSettings::SMPUpdate() {
 	memset(states, 0, MAX_PROCESS * sizeof(int));
 	worker->GetProcStatus(states, statusStrings);
 
-	processList->ResetValues();
+        std::vector<SubProcInfo> procInfo;
+        worker->GetProcStatus(procInfo);
+
+        processList->ResetValues();
 
 	//Interface
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	size_t currPid = GetCurrentProcessId();
-    PROCESS_INFO pInfo;
-    GetProcInfo(currPid, &pInfo);
+    PROCESS_INFO parentInfo;
+    GetProcInfo(currPid, &parentInfo);
 
     processList->SetValueAt(0, 0, "Interface");
 	sprintf(tmp, "%zd", currPid);
 	processList->SetValueAt(1, 0, tmp, currPid);
-	sprintf(tmp, "%.0f MB", (double)pInfo.mem_use / (1024.0*1024.0));
+	sprintf(tmp, "%.0f MB", (double)parentInfo.mem_use / (1024.0*1024.0));
 	processList->SetValueAt(2, 0, tmp);
-	sprintf(tmp, "%.0f MB", (double)pInfo.mem_peak / (1024.0*1024.0));
+	sprintf(tmp, "%.0f MB", (double)parentInfo.mem_peak / (1024.0*1024.0));
 	processList->SetValueAt(3, 0, tmp);
 
 #else
     size_t currPid = getpid();
-    PROCESS_INFO pInfo;
-    GetProcInfo(currPid, &pInfo);
+    PROCESS_INFO parentInfo;
+    GetProcInfo(currPid, &parentInfo);
 
-    //GetProcInfo(currpid, &pInfo);
+    //GetProcInfo(currpid, &parentInfo);
     processList->SetValueAt(0, 0, "Interface");
     sprintf(tmp, "%zd", currPid);
     processList->SetValueAt(1, 0, tmp, (int)currPid);
 
-    sprintf(tmp, "%.0f MB", (double)pInfo.mem_use / (1024.0));
+    sprintf(tmp, "%.0f MB", (double)parentInfo.mem_use / (1024.0));
     processList->SetValueAt(2, 0, tmp);
-    sprintf(tmp, "%.0f MB", (double)pInfo.mem_peak / (1024.0));
+    sprintf(tmp, "%.0f MB", (double)parentInfo.mem_peak / (1024.0));
     processList->SetValueAt(3, 0, tmp);
-    //sprintf(tmp, "%d %%", (int)pInfo.cpu_time);
+    //sprintf(tmp, "%d %%", (int)parentInfo.cpu_time);
     //processList->SetValueAt(4, 0, tmp);
 #endif
 
-	for (int i = 0;i<nb;i++) {
-		DWORD pid = worker->GetPID(i);
-		sprintf(tmp, "Subproc.%d", i + 1);
-		processList->SetValueAt(0, i + 1, tmp);
+    size_t i = 1;
+	for (auto& proc : procInfo) {
+		DWORD pid = proc.procId;
+		sprintf(tmp, "Subproc.%lu", i);
+		processList->SetValueAt(0, i, tmp);
 		sprintf(tmp, "%d", pid);
-		processList->SetValueAt(1, i + 1, tmp);
+		processList->SetValueAt(1, i, tmp);
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
         if (!GetProcInfo(pid, &pInfo)) {
-			processList->SetValueAt(2, i + 1, "0 KB");
-			processList->SetValueAt(3, i + 1, "0 KB");
-			//processList->SetValueAt(4,i+1,"0 %");
-			processList->SetValueAt(4, i + 1, "Dead");
+			processList->SetValueAt(2, i, "0 KB");
+			processList->SetValueAt(3, i, "0 KB");
+			//processList->SetValueAt(4,i,"0 %");
+			processList->SetValueAt(4, i, "Dead");
 		}
 		else {
 			sprintf(tmp, "%.0f MB", (double)pInfo.mem_use / (1024.0*1024.0));
-			processList->SetValueAt(2, i + 1, tmp);
+			processList->SetValueAt(2, i, tmp);
 			sprintf(tmp, "%.0f MB", (double)pInfo.mem_peak / (1024.0*1024.0));
-			processList->SetValueAt(3, i + 1, tmp);
+			processList->SetValueAt(3, i, tmp);
 
 			// State/Status
 			std::stringstream tmp; tmp << "[" << prStates[states[i]] << "] " << statusStrings[i];
-			processList->SetValueAt(4, i + 1, tmp.str().c_str());
+			processList->SetValueAt(4, i, tmp.str().c_str());
 		}
 
 #else
         if (pid == currPid) { // TODO: Check if this is wanted
-            processList->SetValueAt(2, i + 1, "0 KB");
-            processList->SetValueAt(3, i + 1, "0 KB");
-            //processList->SetValueAt(4,i+1,"0 %");
-            processList->SetValueAt(4, i + 1, "Dead");
+            processList->SetValueAt(2, i, "0 KB");
+            processList->SetValueAt(3, i, "0 KB");
+            //processList->SetValueAt(4,i,"0 %");
+            processList->SetValueAt(4, i, "Dead");
         }
         else {
             PROCESS_INFO pInfo;
@@ -376,18 +383,18 @@ void GlobalSettings::SMPUpdate() {
 
 
             sprintf(tmp, "%.0f MB", (double)pInfo.mem_use / (1024.0));
-            processList->SetValueAt(2, i + 1, tmp);
+            processList->SetValueAt(2, i, tmp);
             sprintf(tmp, "%.0f MB", (double)pInfo.mem_peak / (1024.0));
-            processList->SetValueAt(3, i + 1, tmp);
+            processList->SetValueAt(3, i, tmp);
             //sprintf(tmp, "%d %%", (int)pInfo.cpu_time);
-            //processList->SetValueAt(4, i+1, tmp);
+            //processList->SetValueAt(4, i, tmp);
 
             // State/Status
-            std::stringstream tmp; tmp << "[" << prStates[states[i]] << "] " << statusStrings[i];
-            processList->SetValueAt(4, i + 1, tmp.str().c_str());
+            std::stringstream tmp_ss; tmp_ss << "[" << prStates[states[i-1]] << "] " << statusStrings[i-1];
+            processList->SetValueAt(4, i, tmp_ss.str().c_str());
         }
 #endif
-
+++i;
 	}
 	lastUpdate = SDL_GetTicks();
 	}
@@ -410,12 +417,12 @@ void GlobalSettings::RestartProc() {
 			else {
 				try {
 					worker->Stop_Public();
-					worker->SetProcNumber(nbProc,true);
+                    worker->SetProcNumber(nbProc);
 					worker->RealReload(true);
 					mApp->SaveConfig();
 				}
 				catch (Error &e) {
-					GLMessageBox::Display(e.GetMsg(), "Error", GLDLG_OK, GLDLG_ICONERROR);
+					GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 				}
 			}
 	}
@@ -438,7 +445,7 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 					worker->RealReload();
 				}
 				catch (Error &e) {
-					GLMessageBox::Display(e.GetMsg(), "Recalculation failed: Couldn't reload Worker", GLDLG_OK, GLDLG_ICONWARNING);
+					GLMessageBox::Display(e.what(), "Recalculation failed: Couldn't reload Worker", GLDLG_OK, GLDLG_ICONWARNING);
 				}
 			}
 		}
@@ -451,14 +458,15 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 				sprintf(tmp, "%zd", worker->ontheflyParams.desorptionLimit);
 				char *val = GLInputBox::GetInput(tmp, "Desorption max (0=>endless)", "Edit MAX");
 				if (val) {
-					size_t maxDes;
-					if (sscanf(val, "%zd", &maxDes) == 0) {
+                    char* endptr;
+                    size_t maxDes = strtold(val,&endptr); // use double function to allow exponential format
+					if (val==endptr) {
 						GLMessageBox::Display("Invalid 'maximum desorption' number", "Error", GLDLG_OK, GLDLG_ICONERROR);
 					}
 					else {
-						worker->ontheflyParams.desorptionLimit = maxDes;
-						worker->ChangeSimuParams(); //Sync with subprocesses
-					}
+                        worker->ontheflyParams.desorptionLimit = maxDes;
+                        worker->ChangeSimuParams(); //Sync with subprocesses
+                    }
 				}
 			}
 			else {
@@ -471,9 +479,9 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
             mApp->highlightSelection = highlightSelectionToggle->GetState();
             mApp->highlightNonplanarFacets = highlightNonplanarToggle->GetState();
             mApp->leftHandedView = (bool)leftHandedToggle->GetState();
-			for (int i = 0; i < MAX_VIEWER; i++) {
-				mApp->viewer[i]->UpdateMatrix();
-				mApp->viewer[i]->UpdateLabelColors();
+			for (auto & i : mApp->viewer) {
+				i->UpdateMatrix();
+				i->UpdateLabelColors();
 			}
 			mApp->wereEvents = true;
 			bool updateCheckPreference = chkCheckForUpdates->GetState();
@@ -486,7 +494,7 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 			mApp->compressSavedFiles = chkCompressSavedFiles->GetState();
 			mApp->autoSaveSimuOnly = chkSimuOnly->GetState();
 			double gm;
-			if (!gasMassText->GetNumber(&gm) || !(gm > 0.0)) {
+			if (!gasMassText->GetNumber(&gm) || gm <= 0.0) {
 				GLMessageBox::Display("Invalid gas mass", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
@@ -508,7 +516,7 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 			}
 
 			double hl;
-			if (enableDecay->GetState() && (!halfLifeText->GetNumber(&hl) || !(hl > 0.0))) {
+			if (enableDecay->GetState() && (!halfLifeText->GetNumber(&hl) || hl <= 0.0)) {
 				GLMessageBox::Display("Invalid half life", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
@@ -533,7 +541,7 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 			}
 
 			double autosavefreq;
-			if (!autoSaveText->GetNumber(&autosavefreq) || !(autosavefreq > 0.0)) {
+			if (!autoSaveText->GetNumber(&autosavefreq) || autosavefreq <= 0.0) {
 				GLMessageBox::Display("Invalid autosave frequency", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
@@ -565,6 +573,9 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 			cutoffText->SetEditable(lowFluxToggle->GetState());
 		}
 		break;
+
+    default:
+        break;
 	}
 
 	GLWindow::ProcessMessage(src, message);

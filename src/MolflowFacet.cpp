@@ -1349,7 +1349,7 @@ void Facet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchive) {
 			CEREAL_NVP(sh), //Contains anglemapParams
 			CEREAL_NVP(indices),
 			CEREAL_NVP(vertices2)
-#ifdef MOLFLOW
+#if defined(MOLFLOW)
 			, CEREAL_NVP(outgassingMap)
 			, CEREAL_NVP(angleMapCache)
 			, CEREAL_NVP(textIncVector)

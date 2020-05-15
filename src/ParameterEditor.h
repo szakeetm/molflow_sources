@@ -48,7 +48,7 @@ public:
   void UpdateCombo();
   void RebuildList(bool autoSize=true, bool refillValues=true);
   // Implementation
-  void ProcessMessage(GLComponent *src,int message);
+  void ProcessMessage(GLComponent *src,int message) override;
   void PrepareForNewParam();
   
 

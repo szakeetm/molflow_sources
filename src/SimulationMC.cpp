@@ -17,39 +17,19 @@ GNU General Public License for more details.
 
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cmath>
+#include <cstdio>
+#include <tuple> //std::tie
+#include <cstring>
 #include <sstream>
 #include "Simulation.h"
 #include "IntersectAABB_shared.h"
 #include "Random.h"
 #include "GLApp/MathTools.h"
-#include <tuple> //std::tie
-#include <cstring>
+
+#include "Parameter.h"
 
 extern Simulation *sHandle; //delcared in molflowSub.cpp
-
-// Compute area of all the desorption facet
-
-void CalcTotalOutgassing() {
-    //float scale_precomputed;
-
-    // Update texture increment for MC
-    //scale_precomputed=(float)(40.0/(sqrt(8.0*8.31/(PI*sHandle->wp.gasMass*0.001))));
-    for (size_t j = 0; j < sHandle->sh.nbSuper; j++) {
-        for (SubprocessFacet &f : sHandle->structures[j].facets) {
-            if (f.sh.is2sided) {
-                f.fullSizeInc *= 0.5;
-                for (auto &inc : f.textureCellIncrements)
-                    inc *= 0.5;
-            }
-        }
-    }
-
-}
-
-
 
 void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 
@@ -57,7 +37,7 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
     GlobalHitBuffer *gHits;
     TEXTURE_MIN_MAX texture_limits_old[3];
     int i, j, s, x, y;
-#ifdef _DEBUG
+#if defined(_DEBUG)
     double t0, t1;
     t0 = GetTick();
 #endif
@@ -141,7 +121,7 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
     // Facets
     for (s = 0; s < sHandle->sh.nbSuper; s++) {
         for (SubprocessFacet &f : sHandle->structures[s].facets) {
-            if (f.hitted) {
+            if (f.isHit) {
 
                 for (int m = 0; m < (1 + nbMoments); m++) {
                     FacetHitBuffer *facetHitBuffer = (FacetHitBuffer *) (buffer + f.sh.hitOffset +
@@ -279,7 +259,7 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
                     }
                 }
 
-            } // End if(hitted)
+            } // End if(isHit)
         } // End nbFacet
     } // End nbSuper
 
@@ -289,7 +269,8 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
             gHits->texture_limits[v].min.all = texture_limits_old[v].min.all;
         if (gHits->texture_limits[v].min.moments_only == HITMAX)
             gHits->texture_limits[v].min.moments_only = texture_limits_old[v].min.moments_only;
-        if (gHits->texture_limits[v].max.all == 0.0) gHits->texture_limits[v].max.all = texture_limits_old[v].max.all;
+        if (gHits->texture_limits[v].max.all == 0.0)
+            gHits->texture_limits[v].max.all = texture_limits_old[v].max.all;
         if (gHits->texture_limits[v].max.moments_only == 0.0)
             gHits->texture_limits[v].max.moments_only = texture_limits_old[v].max.moments_only;
     }
@@ -298,9 +279,9 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 
     ResetTmpCounters();
     extern char *GetSimuStatus();
-    SetState(0, GetSimuStatus(), false, true);
+    SetState(PROCESS_STARTING, GetSimuStatus(), false, true);
 
-#ifdef _DEBUG
+#if defined(_DEBUG)
     t1 = GetTick();
     printf("Update hits: %f us\n", (t1 - t0) * 1000000.0);
 #endif
@@ -310,13 +291,13 @@ void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 
 void UpdateLog(Dataport *dpLog, DWORD timeout) {
     if (sHandle->tmpParticleLog.size()) {
-#ifdef _DEBUG
+#if defined(_DEBUG)
         double t0, t1;
         t0 = GetTick();
 #endif
-        SetState(0, "Waiting for 'dpLog' dataport access...", false, true);
+        SetState(PROCESS_STARTING, "Waiting for 'dpLog' dataport access...", false, true);
         sHandle->lastLogUpdateOK = AccessDataportTimed(dpLog, timeout);
-        SetState(0, "Updating Log...", false, true);
+        SetState(PROCESS_STARTING, "Updating Log...", false, true);
         if (!sHandle->lastLogUpdateOK) return;
 
         size_t *logBuff = (size_t *) dpLog->buff;
@@ -332,11 +313,11 @@ void UpdateLog(Dataport *dpLog, DWORD timeout) {
         ReleaseDataport(dpLog);
         sHandle->tmpParticleLog.clear();
         extern char *GetSimuStatus();
-        SetState(0, GetSimuStatus(), false, true);
+        SetState(PROCESS_STARTING, GetSimuStatus(), false, true);
 
-#ifdef _DEBUG
+#if defined(_DEBUG)
         t1 = GetTick();
-        printf("Update hits: %f us\n", (t1 - t0) * 1000000.0);
+        printf("Update log: %f us\n", (t1 - t0) * 1000000.0);
 #endif
     }
 }
@@ -409,8 +390,8 @@ void PerformTeleport(SubprocessFacet *iFacet) {
         RecordHit(HIT_ABS);
         bool found = false;
         while (!found && nbTry < 1000) {
-            u = rnd();
-            v = rnd();
+            u = sHandle->randomGenerator.rnd();
+            v = sHandle->randomGenerator.rnd();
             if (IsInFacet(*destination, u, v)) {
                 found = true;
                 sHandle->currentParticle.position = destination->sh.O + u * destination->sh.U + v * destination->sh.V;
@@ -434,7 +415,7 @@ void PerformTeleport(SubprocessFacet *iFacet) {
     iFacet->sh.tmpCounter.hit.sum_v_ort += 2.0*(sHandle->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
     IncreaseFacetCounter(iFacet, sHandle->currentParticle.flightTime, 1, 0, 0, 2.0 / ortVelocity,
                          2.0 * (sHandle->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
-    iFacet->hitted = true;
+    iFacet->isHit = true;
     /*destination->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / sHandle->currentParticle.velocity;
     destination->sh.tmpCounter.hit.sum_v_ort += sHandle->currentParticle.velocity*abs(DOT3(
     sHandle->currentParticle.direction.x, sHandle->currentParticle.direction.y, sHandle->currentParticle.direction.z,
@@ -483,7 +464,7 @@ bool SimulationMCStep(size_t nbStep) {
                     IncreaseDistanceCounters(d * sHandle->currentParticle.oriRatio);
                     PerformTeleport(collidedFacet);
                 }
-                    /*else if ((GetOpacityAt(collidedFacet, sHandle->currentParticle.flightTime) < 1.0) && (rnd() > GetOpacityAt(collidedFacet, sHandle->currentParticle.flightTime))) {
+                    /*else if ((GetOpacityAt(collidedFacet, sHandle->currentParticle.flightTime) < 1.0) && (randomGenerator.rnd() > GetOpacityAt(collidedFacet, sHandle->currentParticle.flightTime))) {
                         //Transparent pass
                         sHandle->tmpGlobalResult.distTraveled_total += d;
                         PerformTransparentPass(collidedFacet);
@@ -493,7 +474,7 @@ bool SimulationMCStep(size_t nbStep) {
                     double stickingProbability = GetStickingAt(collidedFacet, sHandle->currentParticle.flightTime);
                     if (!sHandle->ontheflyParams.lowFluxMode) { //Regular stick or bounce
                         if (stickingProbability == 1.0 ||
-                            ((stickingProbability > 0.0) && (rnd() < (stickingProbability)))) {
+                            ((stickingProbability > 0.0) && (sHandle->randomGenerator.rnd() < (stickingProbability)))) {
                             //Absorbed
                             RecordAbsorb(collidedFacet);
                             //sHandle->distTraveledSinceUpdate += sHandle->currentParticle.distanceTraveled;
@@ -565,7 +546,7 @@ bool StartFromSource() {
     }
 
     // Select source
-    srcRnd = rnd() * sHandle->wp.totalDesorbedMolecules;
+    srcRnd = sHandle->randomGenerator.rnd() * sHandle->wp.totalDesorbedMolecules;
 
     while (!found && j < sHandle->sh.nbSuper) { //Go through superstructures
         i = 0;
@@ -616,7 +597,7 @@ bool StartFromSource() {
                 } //end constant or time-dependent outgassing block
             } //end 'there is some kind of outgassing'
             if (!found) i++;
-            if (f.sh.is2sided) reverse = rnd() > 0.5;
+            if (f.sh.is2sided) reverse = sHandle->randomGenerator.rnd() > 0.5;
             else reverse = false;
         }
         if (!found) j++;
@@ -629,7 +610,7 @@ bool StartFromSource() {
 
     sHandle->currentParticle.lastHitFacet = src;
     //sHandle->currentParticle.distanceTraveled = 0.0;  //for mean free path calculations
-    //sHandle->currentParticle.flightTime = sHandle->desorptionStartTime + (sHandle->desorptionStopTime - sHandle->desorptionStartTime)*rnd();
+    //sHandle->currentParticle.flightTime = sHandle->desorptionStartTime + (sHandle->desorptionStopTime - sHandle->desorptionStartTime)*sHandle->randomGenerator.rnd();
     sHandle->currentParticle.flightTime = GenerateDesorptionTime(src);
     if (sHandle->wp.useMaxwellDistribution) sHandle->currentParticle.velocity = GenerateRandomVelocity(src->sh.CDFid);
     else
@@ -638,11 +619,11 @@ bool StartFromSource() {
     sHandle->currentParticle.oriRatio = 1.0;
     if (sHandle->wp.enableDecay) { //decaying gas
         sHandle->currentParticle.expectedDecayMoment =
-                sHandle->currentParticle.flightTime + sHandle->wp.halfLife * 1.44269 * -log(rnd()); //1.44269=1/ln2
+                sHandle->currentParticle.flightTime + sHandle->wp.halfLife * 1.44269 * -log(sHandle->randomGenerator.rnd()); //1.44269=1/ln2
         //Exponential distribution PDF: probability of 't' life = 1/TAU*exp(-t/TAU) where TAU = half_life/ln2
         //Exponential distribution CDF: probability of life shorter than 't" = 1-exp(-t/TAU)
-        //Equation: rnd()=1-exp(-t/TAU)
-        //Solution: t=TAU*-log(1-rnd()) and 1-rnd()=rnd() therefore t=half_life/ln2*-log(rnd())
+        //Equation: sHandle->randomGenerator.rnd()=1-exp(-t/TAU)
+        //Solution: t=TAU*-log(1-sHandle->randomGenerator.rnd()) and 1-sHandle->randomGenerator.rnd()=sHandle->randomGenerator.rnd() therefore t=half_life/ln2*-log(sHandle->randomGenerator.rnd())
     } else {
         sHandle->currentParticle.expectedDecayMoment = 1e100; //never decay
     }
@@ -659,23 +640,23 @@ bool StartFromSource() {
         if (foundInMap) {
             if (mapPositionW < (src->sh.outgassingMapWidth - 1)) {
                 //Somewhere in the middle of the facet
-                u = ((double) mapPositionW + rnd()) / src->outgassingMapWidthD;
+                u = ((double) mapPositionW + sHandle->randomGenerator.rnd()) / src->outgassingMapWidthD;
             } else {
                 //Last element, prevent from going out of facet
-                u = ((double) mapPositionW + rnd() * (src->outgassingMapWidthD - (src->sh.outgassingMapWidth - 1))) /
+                u = ((double) mapPositionW + sHandle->randomGenerator.rnd() * (src->outgassingMapWidthD - (src->sh.outgassingMapWidth - 1))) /
                     src->outgassingMapWidthD;
             }
             if (mapPositionH < (src->sh.outgassingMapHeight - 1)) {
                 //Somewhere in the middle of the facet
-                v = ((double) mapPositionH + rnd()) / src->outgassingMapHeightD;
+                v = ((double) mapPositionH + sHandle->randomGenerator.rnd()) / src->outgassingMapHeightD;
             } else {
                 //Last element, prevent from going out of facet
-                v = ((double) mapPositionH + rnd() * (src->outgassingMapHeightD - (src->sh.outgassingMapHeight - 1))) /
+                v = ((double) mapPositionH + sHandle->randomGenerator.rnd() * (src->outgassingMapHeightD - (src->sh.outgassingMapHeight - 1))) /
                     src->outgassingMapHeightD;
             }
         } else {
-            u = rnd();
-            v = rnd();
+            u = sHandle->randomGenerator.rnd();
+            v = sHandle->randomGenerator.rnd();
         }
         if (IsInFacet(*src, u, v)) {
 
@@ -713,115 +694,22 @@ bool StartFromSource() {
     //See docs/theta_gen.png for further details on angular distribution generation
     switch (src->sh.desorbType) {
         case DES_UNIFORM:
-            sHandle->currentParticle.direction = PolarToCartesian(src, std::acos(rnd()), rnd() * 2.0 * PI, reverse);
+            sHandle->currentParticle.direction = PolarToCartesian(src, std::acos(sHandle->randomGenerator.rnd()), sHandle->randomGenerator.rnd() * 2.0 * PI, reverse);
             break;
         case DES_NONE: //for file-based
         case DES_COSINE:
-            sHandle->currentParticle.direction = PolarToCartesian(src, std::acos(std::sqrt(rnd())), rnd() * 2.0 * PI,
+            sHandle->currentParticle.direction = PolarToCartesian(src, std::acos(std::sqrt(sHandle->randomGenerator.rnd())), sHandle->randomGenerator.rnd() * 2.0 * PI,
                                                                   reverse);
             break;
         case DES_COSINE_N:
             sHandle->currentParticle.direction = PolarToCartesian(src, std::acos(
-                    std::pow(rnd(), 1.0 / (src->sh.desorbTypeN + 1.0))), rnd() * 2.0 * PI, reverse);
+                    std::pow(sHandle->randomGenerator.rnd(), 1.0 / (src->sh.desorbTypeN + 1.0))), sHandle->randomGenerator.rnd() * 2.0 * PI, reverse);
             break;
         case DES_ANGLEMAP: {
             auto[theta, thetaLowerIndex, thetaOvershoot] = src->angleMap.GenerateThetaFromAngleMap(
                     src->sh.anglemapParams);
             auto phi = src->angleMap.GeneratePhiFromAngleMap(thetaLowerIndex, thetaOvershoot, src->sh.anglemapParams);
-            /*
-
-            size_t angleMapSum = src->angleMapLineSums[(src->sh.anglemapParams.thetaLowerRes + src->sh.anglemapParams.thetaHigherRes) - 1];
-            if (angleMapSum == 0) {
-                std::stringstream tmp;
-                tmp << "Facet " << src->globalId + 1 << ": angle map has all 0 values";
-                SetErrorSub(tmp.str().c_str());
-                return false;
-            }
-            double lookupValue = rnd()*(double)angleMapSum; //last element of cumulative distr. = sum
-            int thetaLowerIndex = my_lower_bound(lookupValue, src->angleMapLineSums, (src->sh.anglemapParams.thetaLowerRes + src->sh.anglemapParams.thetaHigherRes)); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
-            double thetaOvershoot;
-            double theta_a, theta_b, theta_c, theta_cumulative_A, theta_cumulative_B, theta_cumulative_C;
-            bool theta_hasThreePoints;
-            if (thetaLowerIndex == -1) {//In the first line
-                thetaOvershoot = lookupValue / (double)src->angleMapLineSums[0];
-            }
-            else {
-                //(lower index can't be last element)
-                thetaOvershoot = (lookupValue - (double)src->angleMapLineSums[thetaLowerIndex]) / (double)(src->angleMapLineSums[thetaLowerIndex + 1] - src->angleMapLineSums[thetaLowerIndex]);
-            }
-
-            theta_a = GetTheta(src, (double)thetaLowerIndex); theta_cumulative_A = (thetaLowerIndex == -1) ? 0.0 : (double)src->angleMapLineSums[thetaLowerIndex + 0];
-            theta_b = GetTheta(src, (double)(thetaLowerIndex+1)); theta_cumulative_B = (double)src->angleMapLineSums[thetaLowerIndex + 1];
-            if ((thetaLowerIndex + 2)<(src->sh.anglemapParams.thetaLowerRes + src->sh.anglemapParams.thetaHigherRes)) {
-                theta_c = GetTheta(src, (double)(thetaLowerIndex+2)); theta_cumulative_C = (double)src->angleMapLineSums[thetaLowerIndex + 2];
-                theta_hasThreePoints = true;
-            }
-            else {
-                theta_hasThreePoints = false;
-            }
-
-            double theta;
-            theta_hasThreePoints = false; //debug
-            if (!theta_hasThreePoints) theta = GetTheta(src,thetaLowerIndex + thetaOvershoot);
-            else theta = InverseQuadraticInterpolation(lookupValue, theta_a, theta_b, theta_c, theta_cumulative_A, theta_cumulative_B, theta_cumulative_C);
-
-            //Theta determined, let's find phi
-            double weigh;
-            size_t distr1index, distr2index;
-            if (thetaOvershoot < 0.5) {
-                distr1index = thetaLowerIndex;
-                distr2index = thetaLowerIndex + 1;
-                weigh = thetaOvershoot + 0.5;
-            }
-            else {
-                distr1index = thetaLowerIndex + 1;
-                distr2index = thetaLowerIndex + 2;
-                weigh = thetaOvershoot - 0.5;
-            }
-            if (distr1index == -1) distr1index++; //In case we interpolate in the first theta range and thetaOvershoot<0.5
-            if (distr2index == (src->sh.anglemapParams.thetaLowerRes + src->sh.anglemapParams.thetaHigherRes)) distr2index--; //In case we interpolate in the last theta range and thetaOvershoot>=0.5
-
-            size_t distr1sum = src->angleMapLineSums[distr1index]-((distr1index!=distr2index && distr1index>0)?src->angleMapLineSums[distr1index-1]:0);
-            size_t distr2sum = src->angleMapLineSums[distr2index] - ((distr1index != distr2index) ? src->angleMapLineSums[distr2index - 1] : 0);
-            double weighedSum=Weigh((double)distr1sum, (double)distr2sum, weigh);
-            double phiLookup = rnd() * weighedSum;
-            int phiLowerIndex = weighed_lower_bound_X(phiLookup, weigh, &(src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr1index]), &(src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr2index]), src->sh.anglemapParams.phiWidth);
-
-            ////////////////
-
-            double phiOvershoot;
-            double phi_a, phi_b, phi_c, phi_cumulative_A, phi_cumulative_B, phi_cumulative_C;
-            bool phi_hasThreePoints;
-            if (phiLowerIndex == -1) {
-                phiOvershoot = phiLookup / Weigh((double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr1index], (double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr2index],weigh);
-            }
-            else {
-                //(lower index can't be last element)
-                phiOvershoot = (phiLookup - Weigh((double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr1index + phiLowerIndex], (double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr2index+phiLowerIndex], weigh))
-                    / (Weigh((double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr1index + phiLowerIndex + 1], (double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr2index + phiLowerIndex + 1], weigh)
-                    - Weigh((double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr1index + phiLowerIndex], (double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr2index + phiLowerIndex], weigh));
-            }
-
-            phi_a = 2.0*PI*(double)(phiLowerIndex + 1) / (double)src->sh.anglemapParams.phiWidth - PI; phi_cumulative_A = (phiLowerIndex == -1) ? 0.0 : Weigh((double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr1index + phiLowerIndex], (double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr2index + phiLowerIndex], weigh);
-            phi_b = 2.0*PI*(double)(phiLowerIndex + 2) / (double)src->sh.anglemapParams.phiWidth - PI; phi_cumulative_B = Weigh((double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr1index + phiLowerIndex + 1], (double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr2index + phiLowerIndex + 1], weigh);
-            if ((phiLowerIndex + 2)<(src->sh.anglemapParams.phiWidth)) {
-                phi_c = 2.0*PI*(double)(phiLowerIndex + 3) / (double)src->sh.anglemapParams.phiWidth - PI; phi_cumulative_C = Weigh((double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr1index + phiLowerIndex + 2], (double)src->angleMap_pdf[src->sh.anglemapParams.phiWidth*distr2index + phiLowerIndex + 2], weigh);
-                phi_hasThreePoints = true;
-            }
-            else {
-                phi_hasThreePoints = false;
-            }
-
-            double phi;
-            phi_hasThreePoints = false; //debug
-            if (!phi_hasThreePoints) phi = 2.0*PI*((double)(phiLowerIndex + 1) + phiOvershoot) / (double)src->sh.anglemapParams.phiWidth - PI;
-            else phi = InverseQuadraticInterpolation(phiLookup, phi_a, phi_b, phi_c, phi_cumulative_A, phi_cumulative_B, phi_cumulative_C);
-
-            /////////////////////////////
-            */
-            sHandle->currentParticle.direction = PolarToCartesian(src, PI - theta, phi,
-                                                                  false); //angle map contains incident angle (between N and source dir) and theta is dir (between N and dest dir)
-            assert(sHandle->currentParticle.direction.x == sHandle->currentParticle.direction.x);
+            sHandle->currentParticle.direction = PolarToCartesian(src, PI - theta, phi,false); //angle map contains incident angle (between N and source dir) and theta is dir (between N and dest dir)
 
         }
     }
@@ -838,7 +726,7 @@ bool StartFromSource() {
 
     // Count
 
-    src->hitted = true;
+    src->isHit = true;
     sHandle->totalDesorbed++;
     sHandle->tmpGlobalResult.globalHits.hit.nbDesorbed++;
     //sHandle->nbPHit = 0;
@@ -865,7 +753,7 @@ bool StartFromSource() {
     if (sHandle->hasVolatile) {
         for (auto &s : sHandle->structures) {
             for (auto &f : s.facets) {
-                f.ready = true;
+                f.isReady = true;
             }
         }
     }
@@ -875,7 +763,7 @@ bool StartFromSource() {
 }
 
 std::tuple<double, int, double> Anglemap::GenerateThetaFromAngleMap(const AnglemapParams &anglemapParams) {
-    double lookupValue = rnd();
+    double lookupValue = sHandle->randomGenerator.rnd();
     int thetaLowerIndex = my_lower_bound(lookupValue,
                                          theta_CDF); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
     double theta, thetaOvershoot;
@@ -924,7 +812,6 @@ std::tuple<double, int, double> Anglemap::GenerateThetaFromAngleMap(const Anglem
             theta = GetTheta((double) thetaLowerIndex + 0.5 + thetaOvershoot, anglemapParams);
         }
     }
-    assert(theta == theta);
     return {theta, thetaLowerIndex, thetaOvershoot};
 }
 
@@ -939,7 +826,7 @@ std::tuple<double, int, double> Anglemap::GenerateThetaFromAngleMap(const Anglem
 
 double Anglemap::GeneratePhiFromAngleMap(const int &thetaLowerIndex, const double &thetaOvershoot,
                                          const AnglemapParams &anglemapParams) {
-    double lookupValue = rnd();
+    double lookupValue = sHandle->randomGenerator.rnd();
     if (anglemapParams.phiWidth == 1) return -PI + 2.0 * PI * lookupValue; //special case, uniform phi distribution
     int phiLowerIndex;
     double weigh; //0: take previous theta line, 1: take next theta line, 0..1: interpolate in-between
@@ -1035,7 +922,6 @@ double Anglemap::GeneratePhiFromAngleMap(const int &thetaLowerIndex, const doubl
             phi = GetPhi((double) phiLowerIndex + 0.5 + phiOvershoot, anglemapParams);
         }
     }
-    assert(phi == phi);
     assert(phi > -PI && phi < PI);
     return phi;
 }
@@ -1184,9 +1070,9 @@ void PerformBounce(SubprocessFacet *iFacet) {
     // Handle volatile facet
     if (iFacet->sh.isVolatile) {
 
-        if (iFacet->ready) {
+        if (iFacet->isReady) {
             IncreaseFacetCounter(iFacet, sHandle->currentParticle.flightTime, 0, 0, 1, 0, 0);
-            iFacet->ready = false;
+            iFacet->isReady = false;
             LogHit(iFacet);
             ProfileFacet(iFacet, sHandle->currentParticle.flightTime, true, 2.0, 1.0);
             if (/*iFacet->texture && */iFacet->sh.countAbs)
@@ -1230,18 +1116,18 @@ void PerformBounce(SubprocessFacet *iFacet) {
     //Sojourn time
     if (iFacet->sh.enableSojournTime) {
         double A = exp(-iFacet->sh.sojournE / (8.31 * iFacet->sh.temperature));
-        sHandle->currentParticle.flightTime += -log(rnd()) / (A * iFacet->sh.sojournFreq);
+        sHandle->currentParticle.flightTime += -log(sHandle->randomGenerator.rnd()) / (A * iFacet->sh.sojournFreq);
     }
 
     if (iFacet->sh.reflection.diffusePart > 0.999999) { //Speedup branch for most common, diffuse case
-        sHandle->currentParticle.direction = PolarToCartesian(iFacet, std::acos(std::sqrt(rnd())), rnd() * 2.0 * PI,
+        sHandle->currentParticle.direction = PolarToCartesian(iFacet, std::acos(std::sqrt(sHandle->randomGenerator.rnd())), sHandle->randomGenerator.rnd() * 2.0 * PI,
                                                               revert);
     } else {
-        double reflTypeRnd = rnd();
+        double reflTypeRnd = sHandle->randomGenerator.rnd();
         if (reflTypeRnd < iFacet->sh.reflection.diffusePart) {
             //diffuse reflection
             //See docs/theta_gen.png for further details on angular distribution generation
-            sHandle->currentParticle.direction = PolarToCartesian(iFacet, std::acos(std::sqrt(rnd())), rnd() * 2.0 * PI,
+            sHandle->currentParticle.direction = PolarToCartesian(iFacet, std::acos(std::sqrt(sHandle->randomGenerator.rnd())), sHandle->randomGenerator.rnd() * 2.0 * PI,
                                                                   revert);
         } else if (reflTypeRnd < (iFacet->sh.reflection.diffusePart + iFacet->sh.reflection.specularPart)) {
             //specular reflection
@@ -1252,7 +1138,7 @@ void PerformBounce(SubprocessFacet *iFacet) {
         } else {
             //Cos^N reflection
             sHandle->currentParticle.direction = PolarToCartesian(iFacet, std::acos(
-                    std::pow(rnd(), 1.0 / (iFacet->sh.reflection.cosineExponent + 1.0))), rnd() * 2.0 * PI, revert);
+                    std::pow(sHandle->randomGenerator.rnd(), 1.0 / (iFacet->sh.reflection.cosineExponent + 1.0))), sHandle->randomGenerator.rnd() * 2.0 * PI, revert);
         }
     }
 
@@ -1287,7 +1173,7 @@ void PerformTransparentPass(SubprocessFacet *iFacet) { //disabled, caused findin
     iFacet->sh.tmpCounter.hit.nbMCHit++;
     iFacet->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / (sHandle->currentParticle.velocity*directionFactor);
     iFacet->sh.tmpCounter.hit.sum_v_ort += 2.0*(sHandle->wp.useMaxwellDistribution ? 1.0 : 1.1781)*sHandle->currentParticle.velocity*directionFactor;
-    iFacet->hitted = true;
+    iFacet->isHit = true;
     if (iFacet->texture && iFacet->sh.countTrans) RecordHitOnTexture(iFacet, sHandle->currentParticle.flightTime + iFacet->colDist / 100.0 / sHandle->currentParticle.velocity,
         true, 2.0, 2.0);
     if (iFacet->direction && iFacet->sh.countDirection) RecordDirectionVector(iFacet, sHandle->currentParticle.flightTime + iFacet->colDist / 100.0 / sHandle->currentParticle.velocity);
@@ -1517,18 +1403,18 @@ void UpdateVelocity(SubprocessFacet *collidedFacet) {
 }
 
 double GenerateRandomVelocity(int CDFId) {
-    //return FastLookupY(rnd(),sHandle->CDFs[CDFId],false);
-    double r = rnd();
+    //return FastLookupY(sHandle->randomGenerator.rnd(),sHandle->CDFs[CDFId],false);
+    double r = sHandle->randomGenerator.rnd();
     double v = InterpolateX(r, sHandle->CDFs[CDFId], false, true); //Allow extrapolate
     return v;
 }
 
 double GenerateDesorptionTime(SubprocessFacet *src) {
     if (src->sh.outgassing_paramId >= 0) { //time-dependent desorption
-        return InterpolateX(rnd() * sHandle->IDs[src->sh.IDid].back().second, sHandle->IDs[src->sh.IDid], false,
+        return InterpolateX(sHandle->randomGenerator.rnd() * sHandle->IDs[src->sh.IDid].back().second, sHandle->IDs[src->sh.IDid], false,
                             true); //allow extrapolate
     } else {
-        return rnd() * sHandle->wp.latestMoment; //continous desorption between 0 and latestMoment
+        return sHandle->randomGenerator.rnd() * sHandle->wp.latestMoment; //continous desorption between 0 and latestMoment
     }
 }
 
@@ -1594,37 +1480,26 @@ void IncreaseFacetCounter(SubprocessFacet *f, double time, size_t hit, size_t de
     }
 }
 
-void SubprocessFacet::ResetCounter() {
-    std::fill(tmpCounter.begin(), tmpCounter.end(), FacetHitBuffer());
-}
-
-void SubprocessFacet::ResizeCounter(size_t nbMoments) {
-    tmpCounter = std::vector<FacetHitBuffer>(nbMoments + 1); //Includes 0-init
-    tmpCounter.shrink_to_fit();
-    tmpHistograms = std::vector<FacetHistogramBuffer>(nbMoments + 1);
-    tmpHistograms.shrink_to_fit();
-}
-
-void SubprocessFacet::RegisterTransparentPass() {
-    double directionFactor = std::abs(Dot(sHandle->currentParticle.direction, this->sh.N));
-    IncreaseFacetCounter(this, sHandle->currentParticle.flightTime +
-                               this->colDist / 100.0 / sHandle->currentParticle.velocity, 1, 0, 0,
+void RegisterTransparentPass(SubprocessFacet *facet) {
+    double directionFactor = std::abs(Dot(sHandle->currentParticle.direction, facet->sh.N));
+    IncreaseFacetCounter(facet, sHandle->currentParticle.flightTime +
+                               facet->colDist / 100.0 / sHandle->currentParticle.velocity, 1, 0, 0,
                          2.0 / (sHandle->currentParticle.velocity * directionFactor),
                          2.0 * (sHandle->wp.useMaxwellDistribution ? 1.0 : 1.1781) * sHandle->currentParticle.velocity *
                          directionFactor);
 
-    this->hitted = true;
-    if (/*this->texture &&*/ this->sh.countTrans) {
-        RecordHitOnTexture(this, sHandle->currentParticle.flightTime +
-                                 this->colDist / 100.0 / sHandle->currentParticle.velocity,
+    facet->isHit = true;
+    if (/*facet->texture &&*/ facet->sh.countTrans) {
+        RecordHitOnTexture(facet, sHandle->currentParticle.flightTime +
+                                 facet->colDist / 100.0 / sHandle->currentParticle.velocity,
                            true, 2.0, 2.0);
     }
-    if (/*this->direction &&*/ this->sh.countDirection) {
-        RecordDirectionVector(this, sHandle->currentParticle.flightTime +
-                                    this->colDist / 100.0 / sHandle->currentParticle.velocity);
+    if (/*facet->direction &&*/ facet->sh.countDirection) {
+        RecordDirectionVector(facet, sHandle->currentParticle.flightTime +
+                                    facet->colDist / 100.0 / sHandle->currentParticle.velocity);
     }
-    LogHit(this);
-    ProfileFacet(this, sHandle->currentParticle.flightTime + this->colDist / 100.0 / sHandle->currentParticle.velocity,
+    LogHit(facet);
+    ProfileFacet(facet, sHandle->currentParticle.flightTime + facet->colDist / 100.0 / sHandle->currentParticle.velocity,
                  true, 2.0, 2.0);
-    if (this->sh.anglemapParams.record) RecordAngleMap(this);
+    if (facet->sh.anglemapParams.record) RecordAngleMap(facet);
 }

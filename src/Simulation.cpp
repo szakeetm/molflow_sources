@@ -1,8 +1,9 @@
 #include "Simulation.h"
 #include "IntersectAABB_shared.h"
+#include "Parameter.h"
 #include <cstring>
 
-SuperStructure::SuperStructure()
+/*SuperStructure::SuperStructure()
 {
 	aabbTree = NULL;
 }
@@ -10,7 +11,7 @@ SuperStructure::SuperStructure()
 SuperStructure::~SuperStructure()
 {
 	SAFE_DELETE(aabbTree);
-}
+}*/
 
 Simulation::Simulation()
 {
@@ -38,4 +39,10 @@ Simulation::Simulation()
 		
 		acLines =
 		acTLines = NULL;
+}
+
+Simulation::~Simulation(){
+    if(wp.sMode== AC_MODE){
+        ClearACMatrix();
+    }
 }

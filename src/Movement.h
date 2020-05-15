@@ -45,7 +45,7 @@ class Movement : public GLWindow {
 public:
   // Construction
 	Movement(Geometry *geom, Worker *work);
-  void ProcessMessage(GLComponent *src,int message);
+  void ProcessMessage(GLComponent *src,int message) override;
   void Update();
 
   // Implementation
