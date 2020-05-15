@@ -448,7 +448,7 @@ std::vector<std::string> Worker::ExportAngleMaps(std::string fileName, bool save
     for (size_t i = 0; i < geom->GetNbFacet(); i++) {
         Facet *f = geom->GetFacet(i);
         // saveAll facets e.g. when auto saving or just when selected
-        if ((saveAll || f->selected) && !f->angleMapCache.empty()) {
+        if ((saveAll || f->selected) && f->sh.anglemapParams.hasRecorded){
             angleMapFacetIndices.push_back(i);
         }
     }
@@ -1140,7 +1140,7 @@ void Worker::ComputeAC(float appTime) {
     // Send command
     try {
         if (simManager.ShareWithSimUnits(nullptr, dpSize, LoadType::LOADAC)) {
-            std::string errString = "Failed to send geometry to sub process\n";
+            std::string errString = "Failed to send AC geometry to sub process\n";
             GLMessageBox::Display(errString.c_str(), "Warning (LoadAC)", GLDLG_OK, GLDLG_ICONWARNING);
             return;
         }
@@ -1592,7 +1592,7 @@ void Worker::PrepareToRun() {
 
         //Angle map
         if (f->sh.desorbType == DES_ANGLEMAP) {
-            if (!f->angleMapCache.empty()) {
+			if (!f->sh.anglemapParams.hasRecorded) {
                 char tmp[256];
                 sprintf(tmp, "Facet #%zd: Uses angle map desorption but doesn't have a recorded angle map.", i + 1);
                 throw Error(tmp);
@@ -1605,8 +1605,8 @@ void Worker::PrepareToRun() {
         }
 
         //First worker::update will do it
-        /*if (f->sh.anglemapParams.record) {
-            if (!f->angleMapCache.empty()) {
+		if (f->sh.anglemapParams.record) {
+			if (!f->sh.anglemapParams.hasRecorded) {
                 //Initialize angle map
                 f->angleMapCache = (size_t*)malloc(f->sh.anglemapParams.GetDataSize());
                 if (!f->angleMapCache) {
@@ -1619,7 +1619,7 @@ void Worker::PrepareToRun() {
                 f->sh.anglemapParams.hasRecorded = true;
                 if (f->selected) needsAngleMapStatusRefresh = true;
             }
-        }*/
+		}
 
     }
 

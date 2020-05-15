@@ -4,7 +4,7 @@
 
 #include <sstream>
 #include <ProcessControl.h>
-#include "Geometry_sub.h"
+#include "GeometrySimu.h"
 
 void ClearSimulation();
 

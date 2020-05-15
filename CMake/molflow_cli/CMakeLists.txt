@@ -75,7 +75,7 @@ set(SRC_FILES
         ${CPP_DIR_2}/ShMemory.cpp
         ${CPP_DIR_2}/Process.cpp
 
-        ${CPP_DIR_1}/Geometry_sub.cpp
+        ${CPP_DIR_1}/GeometrySimu.cpp
         ${CPP_DIR_1}/MolflowBuffer.cpp
         ${CPP_DIR_1}/Parameter.cpp
         ${CPP_DIR_2}/Vector.cpp
@@ -98,6 +98,10 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_6}
         ${HEADER_DIR_7}
         )
+
+find_package(GSL REQUIRED)
+target_include_directories(${PROJECT_NAME} PRIVATE ${GSL_INCLUDE_DIRS})
+
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 target_compile_options(${PROJECT_NAME} PRIVATE

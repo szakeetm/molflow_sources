@@ -305,17 +305,17 @@ void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bool& ignor
 
 			std::stringstream angleText;
 			angleText << angleMapNode.child_value("map");
-			std::vector<size_t>(sh.anglemapParams.GetMapSize()).swap(angleMapCache);
+			angleMapCache = (size_t*)malloc(sh.anglemapParams.GetDataSize());
 
 			for (int iy = 0; iy < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); iy++) {
 				for (int ix = 0; ix < sh.anglemapParams.phiWidth; ix++) {
 					angleText >> angleMapCache[iy*sh.anglemapParams.phiWidth + ix];
 				}
 			}
-
+			sh.anglemapParams.hasRecorded = true;
 		}
 		else {
-			//if angle map was incorrect, don't use it
+			sh.anglemapParams.hasRecorded = false; //if angle map was incorrect, don't use it
 			if (sh.desorbType == DES_ANGLEMAP) sh.desorbType = DES_NONE;
 		}
 	} //else use default values at Facet() constructor
@@ -662,7 +662,7 @@ size_t Facet::GetGeometrySize()  { //for loader dataport
 	// Size of the 'element area' array passed to the geometry buffer
 	if (sh.isTextured) s += sizeof(double)*sh.texWidth*sh.texHeight; //incbuff
 	if (sh.useOutgassingFile ) s += sizeof(double)*sh.outgassingMapWidth*sh.outgassingMapHeight;
-	s += sizeof(size_t)*angleMapCache.size();
+	s += sh.anglemapParams.GetRecordedDataSize();
 	return s;
 
 }
@@ -680,7 +680,7 @@ size_t Facet::GetHitsSize(size_t nbMoments)  { //for hits dataport
 		+ (sh.isProfile ? (PROFILE_SIZE * sizeof(ProfileSlice)) : 0)
 		+ (sh.countDirection ? (sh.texWidth*sh.texHeight * sizeof(DirectionCell)) : 0)
 		+ sh.facetHistogramParams.GetDataSize()
-		) + sizeof(size_t)*angleMapCache.size();
+		) + sh.anglemapParams.GetRecordedDataSize();
 
 }
 
@@ -1045,7 +1045,7 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 	t.append_attribute("countDir") = (int)sh.countDirection; //backward compatibility: 0 or 1
 	t.append_attribute("countAC") = (int)sh.countACD; //backward compatibility: 0 or 1
 
-	if (!angleMapCache.empty()) {
+	if (sh.anglemapParams.record) {
 		t = e.append_child("IncidentAngleMap");
 		t.append_attribute("record") = sh.anglemapParams.record;
 		t.append_attribute("phiWidth") = sh.anglemapParams.phiWidth;
@@ -1087,7 +1087,7 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 
 	} //end texture
 
-	if (!angleMapCache.empty()) {
+	if (sh.anglemapParams.hasRecorded) {
 		xml_node textureNode = f.append_child("IncidentAngleMap");
 		textureNode.append_attribute("angleMapPhiWidth") = sh.anglemapParams.phiWidth;
 		textureNode.append_attribute("angleMapThetaLimit") = sh.anglemapParams.thetaLimit;
@@ -1212,7 +1212,7 @@ void Facet::ImportAngleMap(const std::vector<std::vector<std::string>>& table)
 		else thetaHigherRes = table.size() - 1 - thetaLowerRes;
 
 		//Fill table
-		angleMapCache.resize(phiWidth * (thetaLowerRes + thetaHigherRes)); //Will be filled with values
+		angleMapCache = (size_t*)malloc(phiWidth * (thetaLowerRes + thetaHigherRes) * sizeof(size_t));
 
 		for (int iy = 0; iy < (thetaLowerRes + thetaHigherRes); iy++) {
 			for (int ix = 0; ix < phiWidth; ix++) {
@@ -1223,13 +1223,11 @@ void Facet::ImportAngleMap(const std::vector<std::vector<std::string>>& table)
 				catch (...) {
 					std::stringstream err;
 					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to an integer\nCell content: " << table[iy+1][ix+1];
-					angleMapCache.clear();
 					throw Error(err.str().c_str());
 				}
 				if (cellSize != table[iy+1][ix+1].size()) {
 					std::stringstream err;
 					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to an integer\nCell content: " << table[iy+1][ix+1];
-					angleMapCache.clear();
 					throw Error(err.str().c_str());
 				}
 			}
@@ -1242,7 +1240,7 @@ void Facet::ImportAngleMap(const std::vector<std::vector<std::string>>& table)
 		thetaLimit = PI/2.0;
 
 		//Fill table
-		angleMapCache.resize(phiWidth * (thetaLowerRes + thetaHigherRes)); //Will be filled with values
+		angleMapCache = (size_t*)malloc(phiWidth * (thetaLowerRes + thetaHigherRes) * sizeof(size_t));
 
 		for (int iy = 0; iy < (thetaLowerRes + thetaHigherRes); iy++) {
 			for (int ix = 0; ix < phiWidth; ix++) {
@@ -1253,13 +1251,11 @@ void Facet::ImportAngleMap(const std::vector<std::vector<std::string>>& table)
 				catch (...) {
 					std::stringstream err;
 					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to an integer\nCell content: " << table[iy][ix];
-					angleMapCache.clear();
 					throw Error(err.str().c_str());
 				}
 				if (cellSize != table[iy][ix].size()) {
 					std::stringstream err;
 					err << "Can't convert cell row " << iy+1 << " col " << ix+1 << " to an integer\nCell content: " << table[iy][ix];
-					angleMapCache.clear();
 					throw Error(err.str().c_str());
 				}
 			}
@@ -1267,7 +1263,7 @@ void Facet::ImportAngleMap(const std::vector<std::vector<std::string>>& table)
 	}
 
 	//No errors, apply values
-
+	sh.anglemapParams.hasRecorded = true;
 	sh.anglemapParams.phiWidth = phiWidth;
 	sh.anglemapParams.record = false;
 	sh.anglemapParams.thetaHigherRes = thetaHigherRes;
@@ -1303,7 +1299,10 @@ void Facet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchive) {
 
 		//std::vector<double> outgMapVector(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0);
 		//memcpy(outgMapVector.data(), outgassingMap, sizeof(double)*(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0));
-		std::vector<double> textIncVector;
+        size_t mapSize = sh.anglemapParams.GetMapSize();
+        std::vector<size_t> angleMapVector(mapSize);
+        memcpy(angleMapVector.data(), angleMapCache, sh.anglemapParams.GetRecordedDataSize());
+        std::vector<double> textIncVector;
 
 		// Add surface elements area (reciprocal)
 		if (sh.isTextured) {
@@ -1351,7 +1350,7 @@ void Facet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchive) {
 			CEREAL_NVP(vertices2)
 #if defined(MOLFLOW)
 			, CEREAL_NVP(outgassingMap)
-			, CEREAL_NVP(angleMapCache)
+			, CEREAL_NVP(angleMapVector)
 			, CEREAL_NVP(textIncVector)
 #endif
 		);

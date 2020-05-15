@@ -13,13 +13,12 @@ SuperStructure::~SuperStructure()
 	SAFE_DELETE(aabbTree);
 }*/
 
-Simulation::Simulation()
+Simulation::Simulation(std::string appName , std::string dpName, size_t parentPID, size_t procIdx) : SimulationController(appName, dpName, parentPID, procIdx)
 {
 	totalDesorbed = 0;
 
 	loadOK = false;
-	wp.sMode = MC_MODE;
-	currentParticle.lastHitFacet = NULL;
+	currentParticle.lastHitFacet = nullptr;
 
 	hasVolatile = false;
 
@@ -35,14 +34,12 @@ Simulation::Simulation()
 		acRho = 
 		acTMatrix =
 		acTDensity = acArea =
-		NULL;
+		nullptr;
 		
 		acLines =
-		acTLines = NULL;
+		acTLines = nullptr;
 }
 
 Simulation::~Simulation(){
-    if(wp.sMode== AC_MODE){
-        ClearACMatrix();
-    }
+
 }
