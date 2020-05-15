@@ -126,7 +126,7 @@ char *GetSimuStatus() {
 
   static char ret[128];
   size_t count = sHandle->totalDesorbed;
-  size_t max   = sHandle->ontheflyParams.desorptionLimit/sHandle->ontheflyParams.nbProcess;
+  size_t max   = sHandle->ontheflyParams.desorptionLimit / sHandle->ontheflyParams.nbProcess;
 
   
   if( GetLocalState()==PROCESS_RUNAC ) sHandle->wp.sMode = AC_MODE;
@@ -174,15 +174,14 @@ void SetReady() {
 }
 
 void SetStatus(char *status) {
-
-  if( AccessDataport(dpControl) ) {
-    SHCONTROL *master = (SHCONTROL *)dpControl->buff;
-	strncpy(master->statusStr[prIdx], status, 127);
-	master->statusStr[prIdx][127] = 0;
-    ReleaseDataport(dpControl);
-  }
-
+	if (AccessDataport(dpControl)) {
+		SHCONTROL *master = (SHCONTROL *)dpControl->buff;
+		strncpy(master->statusStr[prIdx], status, 127);
+		master->statusStr[prIdx][127] = 0;
+		ReleaseDataport(dpControl);
+	}
 }
+
 
 void LoadAC() {
 
@@ -327,19 +326,17 @@ int main(int argc,char* argv[])
   hostProcessId=atoi(argv[1]);
   prIdx = atoi(argv[2]);
 
-
+    {
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-  sprintf(ctrlDpName,"MFLWCTRL%s",argv[1]);
-  sprintf(loadDpName,"MFLWLOAD%s",argv[1]);
-  sprintf(hitsDpName,"MFLWHITS%s",argv[1]);
-  sprintf(logDpName, "MFLWLOG%s", argv[1]);
+        const char* dpPrefix = "MFLW";
 #else
-    // creates semaphore as /dev/sem/%s_sema
-    sprintf(ctrlDpName,"/MFLWCTRL%s",argv[1]);
-    sprintf(loadDpName,"/MFLWLOAD%s",argv[1]);
-    sprintf(hitsDpName,"/MFLWHITS%s",argv[1]);
-    sprintf(logDpName, "/MFLWLOG%s", argv[1]);
+        const char* dpPrefix = "/MFLW"; // creates semaphore as /dev/sem/%s_sema
 #endif
+        sprintf(ctrlDpName,"%sCTRL%s",dpPrefix,argv[1]);
+        sprintf(loadDpName,"%sLOAD%s",dpPrefix,argv[1]);
+        sprintf(hitsDpName,"%sHITS%s",dpPrefix,argv[1]);
+        sprintf(logDpName, "%sLOG%s",dpPrefix,argv[1]);
+    }
   dpControl = OpenDataport(ctrlDpName,sizeof(SHCONTROL));
   if( !dpControl ) {
     printf("Usage: Cannot connect to MFLWCTRL%s\n",argv[1]);
@@ -382,7 +379,7 @@ int main(int argc,char* argv[])
 		  break;
 
 	  case COMMAND_RELEASEDPLOG:
-		  printf("[%d] COMMAND: UPDATEPARAMS (%zd,%zd)\n", prIdx, prParam, prParam2);
+		  printf("[%d] COMMAND: RELEASEDPLOG (%zd,%zd)\n", prIdx, prParam, prParam2);
 		  CLOSEDPSUB(dpLog);
 		  SetState(prParam, GetSimuStatus());
 		  break;

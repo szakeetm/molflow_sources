@@ -40,6 +40,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 //#include "Simulation.h" //SHELEM
 #include "GlobalSettings.h"
 #include "FacetAdvParams.h"
+#include "ProfilePlotter.h"
 #include <fstream>
 #include <istream>
 
@@ -109,24 +110,20 @@ Worker::Worker() {
 	wp.sMode = MC_MODE;
 
 	//Common init
+    {
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-    pid = _getpid();
+        pid = _getpid();
+        const char* dpPrefix = "MFLW";
 #else
-    pid = ::getpid();
-#endif //  WIN
-
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-    sprintf(ctrlDpName, "MFLWCTRL%d", pid);
-	sprintf(loadDpName, "MFLWLOAD%d", pid);
-	sprintf(hitsDpName, "MFLWHITS%d", pid);
-	sprintf(logDpName, "MFLWLOG%d", pid);
-#else
-    // creates shm as /dev/shm/%s
-    sprintf(ctrlDpName, "/MFLWCTRL%d", pid);
-    sprintf(loadDpName, "/MFLWLOAD%d", pid);
-    sprintf(hitsDpName, "/MFLWHITS%d", pid);
-    sprintf(logDpName, "/MFLWLOG%d", pid);
+        pid = ::getpid();
+        const char* dpPrefix = "/MFLW"; // creates semaphore as /dev/sem/%s_sema
 #endif
+        sprintf(ctrlDpName,"%sCTRL%lu",dpPrefix,pid);
+        sprintf(loadDpName,"%sLOAD%lu",dpPrefix,pid);
+        sprintf(hitsDpName,"%sHITS%lu",dpPrefix,pid);
+        sprintf(logDpName, "%sLOG%lu",dpPrefix,pid);
+
+    }
 	ontheflyParams.nbProcess = 0;
 	ontheflyParams.enableLogging = false;
 	ontheflyParams.desorptionLimit = 0;
@@ -247,15 +244,15 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
 				ok = (GLMessageBox::Display(tmp, "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK);
 			}
 		}
-        if (isSTL) {
-            //Nothing to prepare
-            ok = true;
-        }
+		if (isSTL) {
+			//Nothing to prepare
+			ok = true;
+		}
 
-        if (!autoSave && ok && FileUtils::Exist(fileName)) {
-			char tmp[1024];
-			sprintf(tmp, "Overwrite existing file ?\n%s", fileName.c_str());
-			if (askConfirm) ok = (GLMessageBox::Display(tmp, "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK);
+		if (!autoSave && ok && FileUtils::Exist(fileName)) {
+				char tmp[1024];
+				sprintf(tmp, "Overwrite existing file ?\n%s", fileName.c_str());
+				if (askConfirm) ok = (GLMessageBox::Display(tmp, "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK);
 		}
 
 		if (ok) {
@@ -271,7 +268,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
 					else if (!(isXML || isXMLzip))
 
 						f = new FileWriter(fileName); //Txt, stl, geo, etc...
-                }
+                		}
 
 				catch (Error &e) {
 					SAFE_DELETE(f);
@@ -451,7 +448,7 @@ std::vector<std::string> Worker::ExportAngleMaps(std::string fileName, bool save
     for (size_t i = 0; i < geom->GetNbFacet(); i++) {
         Facet* f = geom->GetFacet(i);
         // saveAll facets e.g. when auto saving or just when selected
-        if ((saveAll || f->selected) && f->sh.anglemapParams.hasRecorded){
+        if ((saveAll || f->selected) && !f->angleMapCache.empty()){
             angleMapFacetIndices.push_back(i);
         }
     }
@@ -836,6 +833,7 @@ void Worker::LoadGeometry(const std::string& fileName, bool insert, bool newStr)
 					RebuildTextures();
 				}
 				catch (Error &e) {
+					mApp->profilePlotter->Reset(); //To avoid trying to display non-loaded simulation results
 					GLMessageBox::Display(e.GetMsg(), "Error while loading simulation state", GLDLG_CANCEL, GLDLG_ICONWARNING);
 				}
 			}
@@ -1202,9 +1200,10 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 
 
 		// Clear geometry
-		CLOSEDP(dpHit);
-		CLOSEDP(dpLog);
-		if (!ExecuteAndWait(COMMAND_CLOSE, PROCESS_READY))
+		simManager.CloseHitsDP();
+        simManager.CloseLogDP();
+		simManager.ForwardCommand(COMMAND_CLOSE);
+		if (simManager.WaitForProcStatus(PROCESS_READY))
 		{
 			progressDlg->SetVisible(false);
 			SAFE_DELETE(progressDlg);
@@ -1222,14 +1221,16 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 
 
 		if (ontheflyParams.enableLogging) {
-			dpLog = CreateDataport(logDpName, sizeof(size_t) + sizeof(ParticleLoggerItem)*ontheflyParams.logLimit);
+		    simManager.CreateLogDP(sizeof(size_t) + sizeof(ParticleLoggerItem)*ontheflyParams.logLimit);
+			/*dpLog = CreateDataport(logDpName, sizeof(size_t) + sizeof(ParticleLoggerItem)*ontheflyParams.logLimit);
 			if (!dpLog)
 				throw Error("Failed to create 'dpLog' dataport.\nMost probably out of memory.\nReduce number of logged particles in Particle Logger.");
-			//*((size_t*)dpLog->buff) = 0; //Automatic 0-filling
+			//*((size_t*)dpLog->buff) = 0; //Automatic 0-filling*/
 		}
 	}
 
 	std::string loaderString = SerializeForLoader().str();
+    simManager.CreateLoaderDP(loaderString);
 
 	//size_t loadSize = geom->GetGeometrySize();
 	//Dataport *loader = CreateDataport(loadDpName, loadSize);
@@ -1363,12 +1364,7 @@ void Worker::ClearHits(bool noReload) {
 		GLMessageBox::Display(e.GetMsg(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
 		return;
 	}
-	if (dpHit) {
-		AccessDataport(dpHit);
-		memset(dpHit->buff, 0, geom->GetHitsSize(&moments)); //Also clears hits, leaks
-		ReleaseDataport(dpHit);
-	}
-
+	simManager.ClearHitsBuffer();
 }
 
 /**
@@ -1687,7 +1683,7 @@ void Worker::PrepareToRun() {
 
 		//Angle map
 		if (f->sh.desorbType == DES_ANGLEMAP) {
-			if (!f->sh.anglemapParams.hasRecorded) {
+			if (!f->angleMapCache.empty()) {
 				char tmp[256];
 				sprintf(tmp, "Facet #%zd: Uses angle map desorption but doesn't have a recorded angle map.", i + 1);
 				throw Error(tmp);
@@ -1700,8 +1696,8 @@ void Worker::PrepareToRun() {
 		}
 
 		 //First worker::update will do it
-		if (f->sh.anglemapParams.record) {
-			if (!f->sh.anglemapParams.hasRecorded) {
+		/*if (f->sh.anglemapParams.record) {
+			if (!f->angleMapCache.empty()) {
 				//Initialize angle map
 				f->angleMapCache = (size_t*)malloc(f->sh.anglemapParams.GetDataSize());
 				if (!f->angleMapCache) {
@@ -1714,7 +1710,7 @@ void Worker::PrepareToRun() {
 				f->sh.anglemapParams.hasRecorded = true;
 				if (f->selected) needsAngleMapStatusRefresh = true;
 			}
-		}
+		}*/
 
 	}
 

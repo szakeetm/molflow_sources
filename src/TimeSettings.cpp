@@ -27,7 +27,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "MolFlow.h"
 #include "MomentsEditor.h"
 #include "FacetDetails.h"
-#include "FormulaEditor.h"
+#include "Interface/FormulaEditor.h"
 
 extern MolFlow *mApp;
 

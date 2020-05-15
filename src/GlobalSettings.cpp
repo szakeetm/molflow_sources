@@ -71,13 +71,13 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 
 	worker = w;
 	int wD = 580;
-	int hD = 525;
+	int hD = 540;
 
 	SetTitle("Global Settings");
 	SetIconfiable(true);
 
 	GLTitledPanel *settingsPanel = new GLTitledPanel("Program settings");
-	settingsPanel->SetBounds(5, 2, 270, 242);
+	settingsPanel->SetBounds(5, 2, 270, 267);
 	Add(settingsPanel);
 
 	GLLabel *asLabel = new GLLabel("Autosave frequency (minutes):");
@@ -120,8 +120,12 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	highlightNonplanarToggle->SetBounds(15, 222, 160, 19);
 	settingsPanel->Add(highlightNonplanarToggle);
 
+    highlightSelectionToggle = new GLToggle(0, "Highlight selected facets");
+    highlightSelectionToggle->SetBounds(15, 247, 160, 19);
+    settingsPanel->Add(highlightSelectionToggle);
+
 	GLTitledPanel *simuSettingsPanel = new GLTitledPanel("Simulation settings");
-	simuSettingsPanel->SetBounds(280, 2, 290, 242);
+	simuSettingsPanel->SetBounds(280, 2, 290, 267);
 	Add(simuSettingsPanel);
 
 	GLLabel *massLabel = new GLLabel("Gas molecular mass (g/mol):");
@@ -180,7 +184,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	simuSettingsPanel->Add(cutoffText);
 
 	applyButton = new GLButton(0, "Apply above settings");
-	applyButton->SetBounds(wD / 2 - 65, 248, 130, 19);
+	applyButton->SetBounds(wD / 2 - 65, 273, 130, 19);
 	Add(applyButton);
 
 	/*chkNonIsothermal = new GLToggle(0,"Non-isothermal system (textures only, experimental)");
@@ -188,7 +192,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	Add(chkNonIsothermal);*/
 
 	GLTitledPanel *panel3 = new GLTitledPanel("Process control");
-	panel3->SetBounds(5, 284, wD - 10, hD - 285);
+	panel3->SetBounds(5, 309, wD - 10, hD - 310);
 	Add(panel3);
 
 	processList = new GLList(0);
@@ -198,7 +202,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	processList->SetColumnLabels((const char **)plName);
 	processList->SetColumnAligns((int *)plAligns);
 	processList->SetColumnLabelVisible(true);
-	processList->SetBounds(10, 278, wD - 20, hD - 355);
+	processList->SetBounds(10, 329, wD - 20, hD - 408);
 	panel3->Add(processList);
 
 	char tmp[128];
@@ -248,8 +252,9 @@ void GlobalSettings::Update() {
 	char tmp[256];
 	chkAntiAliasing->SetState(mApp->antiAliasing);
 	chkWhiteBg->SetState(mApp->whiteBg);
-	highlightNonplanarToggle->SetState(mApp->highlightNonplanarFacets);
-	leftHandedToggle->SetState(mApp->leftHandedView);
+    highlightNonplanarToggle->SetState(mApp->highlightNonplanarFacets);
+    highlightSelectionToggle->SetState(mApp->highlightSelection);
+    leftHandedToggle->SetState(mApp->leftHandedView);
 	//chkNonIsothermal->SetState(nonIsothermal);
 	UpdateOutgassing();
 
@@ -463,8 +468,9 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 		else if (src == applyButton) {
 			mApp->antiAliasing = chkAntiAliasing->GetState();
 			mApp->whiteBg = chkWhiteBg->GetState();
-			mApp->highlightNonplanarFacets = highlightNonplanarToggle->GetState();
-			mApp->leftHandedView = (bool)leftHandedToggle->GetState();
+            mApp->highlightSelection = highlightSelectionToggle->GetState();
+            mApp->highlightNonplanarFacets = highlightNonplanarToggle->GetState();
+            mApp->leftHandedView = (bool)leftHandedToggle->GetState();
 			for (int i = 0; i < MAX_VIEWER; i++) {
 				mApp->viewer[i]->UpdateMatrix();
 				mApp->viewer[i]->UpdateLabelColors();

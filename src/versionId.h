@@ -9,7 +9,7 @@ static const int appVersionId = 2680; //Compared with available updates. Global 
 static const std::string appVersionName = "2.6.80";
 //---------------------------------------------------
 #ifdef _DEBUG
-static const std::string appTitle = "MolFlow+ debug version (Compiled " __DATE__ " " __TIME__ ")";
+static const std::string appTitle = "Molflow+ debug version (Compiled " __DATE__ " " __TIME__ ")";
 #else
 static const std::string appTitle = "Molflow+ " + appVersionName + " (" __DATE__ ")";
 #endif

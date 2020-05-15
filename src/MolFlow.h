@@ -19,7 +19,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 #pragma once
 
-#include "Interface.h"
+#include "Interface/Interface.h"
 class Worker;
 class ImportDesorption;
 class TimeSettings;

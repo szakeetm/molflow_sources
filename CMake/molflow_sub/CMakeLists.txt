@@ -16,16 +16,12 @@ set(HEADER_DIR_1 ../../src)
 set(HEADER_DIR_2 ../../src_shared)
 set(HEADER_DIR_3 ../../src_shared/GLApp)
 
-#set(HEADER_DIR_4 ../../_molflow/molflow_project/lib/include/)
-#set(HEADER_DIR_5 ../../_molflow/molflow_project/lib/include/SDL)
-
 IF (WIN32)
     # set stuff for windows
     set(HEADER_DIR_6 ../../include)
 
     set(LINK_DIR_1 ../../lib/win/${MY_BUILD_TYPE})
-    #set(LINK_DIR_2 ../../_molflow/molflowsub_project/lib/lib)
-    set(LINK_DIR_3 ../../lib_external/win/${MY_BUILD_TYPE})
+    set(LINK_DIR_2 ../../lib_external/win/${MY_BUILD_TYPE})
 ELSEIF(APPLE)
     set(LINK_DIR_1 ../../lib_external/mac)
 ELSE()
@@ -107,7 +103,6 @@ set(HEADER_FILES ${HEADER_DIR_1}/MolflowTypes.h
 # set the path to the library folder
 link_directories(${LINK_DIR_1}
         ${LINK_DIR_2}
-        ${LINK_DIR_3}
         )
 
 #find_library(PROTOBUF_LIBRARY bzip2 HINTS ${LINK_DIR_2})
@@ -194,6 +189,11 @@ if(USE_CUDA)
 endif(USE_CUDA)
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
+target_compile_options(${PROJECT_NAME} PRIVATE
+        $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
+        -Wall>
+        $<$<CXX_COMPILER_ID:MSVC>:
+        /W4>)
 
 # Multi-processor compilation
 if (MSVC)

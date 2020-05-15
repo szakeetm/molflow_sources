@@ -20,10 +20,10 @@ ELSE()
 ENDIF()
 
 # Output Variables
-set(OUTPUT_BIN_DEBUG ${OS_RELPATH}/bin/${OS_NAME}/debug/)
-set(OUTPUT_BIN_REL ${OS_RELPATH}/bin/${OS_NAME}/release/)
-set(OUTPUT_LIB_DEBUG ${OS_RELPATH}/lib/${OS_NAME}/debug/)
-set(OUTPUT_LIB_REL ${OS_RELPATH}/lib/${OS_NAME}/release/)
+set(OUTPUT_BIN_DEBUG ${OS_RELPATH}/bin/${OS_NAME}/debug)
+set(OUTPUT_BIN_REL ${OS_RELPATH}/bin/${OS_NAME}/release)
+set(OUTPUT_LIB_DEBUG ${OS_RELPATH}/lib/${OS_NAME}/debug)
+set(OUTPUT_LIB_REL ${OS_RELPATH}/lib/${OS_NAME}/release)
 
 ############## Artefacts Output #################
 # Defines outputs , depending Debug or Release. #
@@ -31,12 +31,12 @@ set(OUTPUT_LIB_REL ${OS_RELPATH}/lib/${OS_NAME}/release/)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_LIB_DEBUG}")
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_BIN_DEBUG}")
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_LIB_DEBUG}")
     set(CMAKE_EXECUTABLE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_BIN_DEBUG}")
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_BIN_DEBUG}")
 else()
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_LIB_REL}")
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_BIN_REL}")
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_LIB_REL}")
     set(CMAKE_EXECUTABLE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_BIN_REL}")
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_BIN_REL}")
 endif()
@@ -56,8 +56,6 @@ message("${PROJECT_NAME}: CMAKE_EXECUTABLE_OUTPUT_DIRECTORY: ${CMAKE_EXECUTABLE_
 #        The main options of project        #
 #############################################
 
-project(${PROJECT_NAME} CXX)
-
 # Definition of Macros
 add_definitions(
         -DMOLFLOW
@@ -65,6 +63,14 @@ add_definitions(
 if(WITH_GPU)
     add_definitions(-DGPUCOMPABILITY)
 endif(WITH_GPU)
+
+#disable generation of appname.manifest file
+#alternative: use /MANIFEST:EMBED
+if(MSVC)
+    set(CMAKE_EXE_LINKER_FLAGS    "${CMAKE_EXE_LINKER_FLAGS} /MANIFEST:NO")
+    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} /MANIFEST:NO")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /MANIFEST:NO")
+endif(MSVC)
 
 set(COPY_DIR ./copy_to_build/)
 

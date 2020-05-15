@@ -139,11 +139,16 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         )
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
+target_compile_options(${PROJECT_NAME} PRIVATE
+        $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
+        -Wall>
+        $<$<CXX_COMPILER_ID:MSVC>:
+        /W4>)
 
 if(MSVC)
     # Add Whole Program Optimization and Link Time Code Generation
     set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/GL")
-    set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/LTCG")
+    #set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/LTCG")
     set_target_properties(${PROJECT_NAME} PROPERTIES
             WIN32_EXECUTABLE YES
             LINK_FLAGS "/ENTRY:mainCRTStartup"
@@ -162,7 +167,7 @@ if(MSVC)
 
     message(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
     link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
-
+    find_package(OpenGL REQUIRED)
     # 1. link against external libs
     target_link_libraries(${PROJECT_NAME}
             bzip2.lib
@@ -174,7 +179,7 @@ if(MSVC)
             lzma.lib
             ZipLib.lib
             #zlib.lib
-            opengl32.lib
+            opengl32#.lib
             user32.lib
             shell32.lib
             ole32.lib)
@@ -249,15 +254,6 @@ elseif(NOT MSVC)
         set_target_properties( libzip PROPERTIES IMPORTED_LOCATION ${ABS_LINK_DIR_1}/libzip_gcc.a )
     endif()
     target_link_libraries(${PROJECT_NAME} libzip) # from ./lib/
-
-    #use prebuild nfd for GCC on MacOS
-    if(APPLE AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-        if (NOT TARGET libzip)
-            add_library( libnfd STATIC IMPORTED GLOBAL)
-        endif()
-        set_target_properties( libnfd PROPERTIES IMPORTED_LOCATION ${ABS_LINK_DIR_1}/libnfd.a )
-        target_link_libraries(${PROJECT_NAME} libnfd) # from ./lib/
-    endif()
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         target_link_libraries(${PROJECT_NAME} c++fs)
