@@ -122,7 +122,7 @@ public:
 	std::vector<FacetHistogramBuffer> tmpGlobalHistograms; //Recorded histogram since last UpdateMCHits, 1+nbMoment copies
 	std::vector<ParticleLoggerItem> tmpParticleLog; //Recorded particle log since last UpdateMCHits
 
-	size_t totalDesorbed;           // Total number of desorptions (for this process, not reset on UpdateMCHits)
+	//size_t totalDesorbed;           // Total number of desorptions (for this process, not reset on UpdateMCHits)
 
 	std::vector<std::vector<std::pair<double, double>>> CDFs; //cumulative distribution function for each temperature
 	std::vector<std::vector<std::pair<double, double>>> IDs; //integrated distribution function for each time-dependent desorption type

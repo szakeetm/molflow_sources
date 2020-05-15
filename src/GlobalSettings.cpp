@@ -367,7 +367,7 @@ void GlobalSettings::SMPUpdate() {
 			processList->SetValueAt(3, i, tmp);
 
 			// State/Status
-			std::stringstream tmp; tmp << "[" << prStates[states[i]] << "] " << statusStrings[i];
+			std::stringstream tmp; tmp << "[" << prStates[states[i-1]] << "] " << statusStrings[i-1];
 			processList->SetValueAt(4, i, tmp.str().c_str());
 		}
 
