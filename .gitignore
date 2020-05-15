@@ -1,6 +1,7 @@
 #blacklist all hidden files (start with . )but the root .gitignore
 
 .*
+
 !/.gitignore
 !/.gitmodules
 #blacklist various file types
@@ -79,6 +80,10 @@ cmake_install.cmake
 CMake/**/*.vcxproj
 CMake/**/*.vcxproj.filters
 CMake/**/*.sln
+
+#jetbranis projects
+CMake/.idea
+CMake/.idea/*
 
 !/additional_libraries/**/Makefile
 **/Screenshots/
