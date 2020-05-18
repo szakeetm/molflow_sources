@@ -1359,9 +1359,6 @@ void Facet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchive) {
 
 void Facet::SerializeData(std::vector<double>& outgMapVector, std::vector<size_t>& angleMapVector, std::vector<double>& textIncVector) {
 
-    outgMapVector.resize(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0);
-    memcpy(outgMapVector.data(), outgassingMap, sizeof(double)*(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0));
-
     size_t mapSize = sh.anglemapParams.GetMapSize();
     angleMapVector.resize(mapSize);
     memcpy(angleMapVector.data(), angleMapCache, sh.anglemapParams.GetRecordedDataSize());

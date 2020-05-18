@@ -29,6 +29,7 @@ private:
     void UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DWORD timeout) override;
 public:
     void ResetSimulation() override;
+    bool SimulationMCStep(size_t nbStep) override;
 
 public:
     SimulationControllerGPU gpuSim;

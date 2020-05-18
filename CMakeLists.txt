@@ -21,7 +21,7 @@ if(WIN32 AND MSVC)
 else()
     message("GPU build not available with this compiler and/or OS")
     #set(WITH_GPU OFF)
-endif(MSVC)
+endif(WIN32 AND MSVC)
 
 # Define Release by default.
 if(NOT CMAKE_BUILD_TYPE)
@@ -85,20 +85,20 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 add_subdirectory(src_shared)
 add_subdirectory(CMake/molflow_sub)
 add_subdirectory(CMake/molflow_win)
-IF(NOT WIN32)
 add_subdirectory(CMake/molflow_cli)
-ENDIF()
 
 IF(WITH_GPU)
 #IF(MSVC AND WITH_GPU)
     #set(cuda_obj_dir ${PROJECT_SOURCE_DIR}/cuda_kernel/)
+    add_subdirectory(CMake/molflow_gpusub)
 
     add_subdirectory(CMake/gpu_testsuite)
     add_subdirectory(CMake/cuda_kernel #[["${cuda_obj_dir}"]]) #add_subdirectory(${cuda_obj_dir} "${cuda_obj_dir}" EXCLUDE_FROM_ALL) #already added in molflow_sub
-    add_dependencies(gpuTestsuite flowGPU cudaKernel)
 
-    #set(gdt_dir ${PROJECT_SOURCE_DIR}/include/common/gdt/)
-    #add_subdirectory(${gdt_dir} "${gdt_dir}/cmake/") #add_subdirectory(${gdt_dir} "${gdt_dir}/cmake/" EXCLUDE_FROM_ALL) #already added in molflow_sub
+    add_dependencies(gpuTestsuite flowGPU cudaKernel)
+    add_dependencies(gpuSub flowGPU cudaKernel)
+    add_dependencies(molflow gpuSub)
+
 ENDIF(WITH_GPU)
 
 IF (WIN32)
@@ -108,9 +108,8 @@ ELSE()
 ENDIF(WIN32)
 
 add_dependencies(molflow molflowSub compress)
-IF(NOT WIN32)
 add_dependencies(molflowCLI molflowSub)
-ENDIF()
+
 
 option(USE_TESTS "Build the tests" ON)
 if(USE_TESTS)

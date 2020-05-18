@@ -6,9 +6,6 @@
 #include "SimControllerGPU.h"
 #include "ModelReader.h" // TempFacet
 
-bool SimControllerGPU::Load() {
-    return false;
-}
 
 SimControllerGPU::SimControllerGPU(std::string appName, std::string dpName, size_t parentPID, size_t procIdx)
         : SimulationController(appName, dpName, parentPID, procIdx) {
@@ -33,7 +30,7 @@ void SimControllerGPU::ClearSimulation() {
 
 bool SimControllerGPU::LoadSimulation(Dataport *loader) {
     double t0 = GetTick();
-
+    ProcessSleep(2000);
     SetState(PROCESS_STARTING, "Clearing previous simulation");
     ClearSimulation();
 
@@ -100,4 +97,9 @@ void SimControllerGPU::ResetTmpCounters() {
     SetState(0, "Resetting local cache...", false, true);
 
     memset(&tmpGlobalResult, 0, sizeof(GlobalHitBuffer));
+}
+
+bool SimControllerGPU::SimulationMCStep(size_t nbStep){
+
+    return false;
 }

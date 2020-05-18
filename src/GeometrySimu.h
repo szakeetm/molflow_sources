@@ -6,7 +6,6 @@
 #define MOLFLOW_PROJ_GEOMETRYSIMU_H
 
 #include <vector>
-#include <Random.h>
 #include "MolflowTypes.h"
 #include "Buffer_shared.h"
 

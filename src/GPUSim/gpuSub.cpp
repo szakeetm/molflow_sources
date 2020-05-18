@@ -34,7 +34,6 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <thread>
 #include <time.h>
 #include "SimControllerGPU.h"
-#include "Parameter.h"
 
 
 // Global process variables
@@ -143,11 +142,6 @@ bool SimControllerGPU::UpdateParams() {
         }
         //*((size_t*)sHandle->dpLog->buff) = 0; //Autofill with 0, besides we would need access first
     }
-    this->tmpParticleLog.clear();
-    this->tmpParticleLog.shrink_to_fit();
-    if (this->ontheflyParams.enableLogging)
-        this->tmpParticleLog.reserve(this->ontheflyParams.logLimit / this->ontheflyParams.nbProcess);
-
     return result;
 }
 
