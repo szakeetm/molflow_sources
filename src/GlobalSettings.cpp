@@ -353,6 +353,7 @@ void GlobalSettings::SMPUpdate() {
 		processList->SetValueAt(1, i, tmp);
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+        PROCESS_INFO pInfo;
         if (!GetProcInfo(pid, &pInfo)) {
 			processList->SetValueAt(2, i, "0 KB");
 			processList->SetValueAt(3, i, "0 KB");
@@ -366,7 +367,7 @@ void GlobalSettings::SMPUpdate() {
 			processList->SetValueAt(3, i, tmp);
 
 			// State/Status
-			std::stringstream tmp; tmp << "[" << prStates[states[i]] << "] " << statusStrings[i];
+			std::stringstream tmp; tmp << "[" << prStates[states[i-1]] << "] " << statusStrings[i-1];
 			processList->SetValueAt(4, i, tmp.str().c_str());
 		}
 
