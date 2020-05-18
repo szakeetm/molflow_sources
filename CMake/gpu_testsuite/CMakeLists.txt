@@ -116,7 +116,6 @@ message("Module Path is " ${CMAKE_MODULE_PATH})]]
 #set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -g -G")
 
 set(SRC_FILES ${SRC_FILES}
-        ${GPU_DIR_1}/SimulationControllerGPU.cpp
         ${GPU_DIR_1}/SimulationOptiX.cpp
         ${GPU_DIR_1}/Model.cpp
         #${GPU_DIR_1}/RNGKernel.cu
@@ -222,6 +221,37 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ${common_cuda_dir}
         #${HEADER_DIR_1}
         #${HEADER_DIR_2}
+        #${HEADER_DIR_3}
+        #${HEADER_DIR_4}
+        )
+
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
+target_link_libraries(${PROJECT_NAME}
+        flowGPU
+        )
+
+if(MSVC)
+    # Add Windows Console output
+    set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE ${LINK_FLAGS}")
+endif(MSVC)
+
+
+# a sub proc executable
+# Now create executable
+set(PROJECT_NAME gpuSub)
+set(INCLUDE_DIRECTORIES "")
+add_executable(${PROJECT_NAME}
+        ${GPU_DIR_1}/gpuSub.cpp
+        ${GPU_DIR_1}/SimControllerGPU.cpp
+        ${GPU_DIR_1}/ModelReader.cpp
+        ${GPU_DIR_1}/Poly2TriConverter.cpp)
+
+target_include_directories(${PROJECT_NAME} PRIVATE
+        ${GPU_DIR_1}
+        ${CUDA_DIR_1}
+        ${common_cuda_dir}
+        #${HEADER_DIR_1}
+        ${HEADER_DIR_2}
         #${HEADER_DIR_3}
         #${HEADER_DIR_4}
         )

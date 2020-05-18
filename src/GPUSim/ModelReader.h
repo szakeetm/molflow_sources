@@ -20,6 +20,8 @@ namespace flowgeom {
         FacetProperties facetProperties;
         std::vector<uint32_t> indices;
         std::vector<float2> vertices2;
+        std::vector<double> outgassingMap;
+        std::vector<size_t> angleMapPDF;
         std::vector<float> texelInc;
 
         template<class Archive>
@@ -28,14 +30,18 @@ namespace flowgeom {
                     facetProperties,
                     indices,
                     vertices2,
+                    outgassingMap,
+                    angleMapPDF,
                     cereal::make_nvp("textIncVector", texelInc)
             );
         }
     };
 
     flowgpu::Model *initializeModel(std::string fileName);
+    int parseGeomFromSerialization(flowgpu::Model* model, std::vector<flowgeom::TempFacet>& facets, std::vector<float3>& vertices3d);
+    flowgpu::Model *loadFromExternalSerialization(std::string fileName);
+    flowgpu::Model *loadFromSerialization(std::string inputString);
 
-    flowgpu::Model *loadFromSerialization(std::string fileName);
 }
 
 

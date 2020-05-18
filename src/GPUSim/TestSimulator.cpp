@@ -124,8 +124,8 @@ int main(int argc, char **argv) {
 
     SimulationControllerGPU gpuSim;
     //flowgpu::Model* model = flowgeom::initializeModel(fileName);
-    flowgpu::Model* model = flowgeom::loadFromSerialization(fileName);
-            //flowgpu::Model* test = flowgeom::loadFromSerialization("minimalout.xml");
+    flowgpu::Model* model = flowgeom::loadFromExternalSerialization(fileName);
+            //flowgpu::Model* test = flowgeom::loadFromExternalSerialization("minimalout.xml");
     //delete model;
     //model = test;
 

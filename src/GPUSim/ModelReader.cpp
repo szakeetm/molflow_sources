@@ -192,255 +192,220 @@ namespace flowgeom {
         return 1;
     }
 
-    //! Load simulation data (geometry etc.) from Molflow's serialization output
-    flowgpu::Model* loadFromSerialization(std::string fileName){
-        {
-            std::ifstream file( fileName );
-            cereal::XMLInputArchive inputarchive(file);
+    int parseGeomFromSerialization(flowgpu::Model* model, std::vector<flowgeom::TempFacet>& facets, std::vector<float3>& vertices3d){
+        // First create a regular polygonmesh
+        // transform Molflow facet data to simulation polygons
+        // transform polygons to triangles
+        flowgpu::PolygonMesh* polyMesh = new flowgpu::PolygonMesh();
+        convertFacet2Poly(facets,polyMesh->poly);
 
-            flowgpu::Model* model = new flowgpu::Model();
-            std::vector<float3> vertices3d;
-            std::vector<TempFacet> facets;
+        int i= 0;
+        int indexOffset = 0;
 
-            //Worker params
-            //inputarchive(cereal::make_nvp("wp",model->parametersGlobal));
-            inputarchive(cereal::make_nvp("gasMass",model->parametersGlobal.gasMass));
-            inputarchive(cereal::make_nvp("useMaxwellDistribution",model->parametersGlobal.useMaxwellDistribution));
-            inputarchive(cereal::make_nvp("GeomProperties",model->geomProperties));
-            inputarchive(vertices3d);
-            facets.resize(model->geomProperties.nbFacet);
-            for(int facInd = 0; facInd < model->geomProperties.nbFacet;++facInd){
-                inputarchive(cereal::make_nvp("facet"+std::to_string(facInd),facets[facInd]));
+        for(auto& facet : facets){
+            polyMesh->poly[i++].indexOffset = indexOffset;
+            indexOffset += facet.indices.size();
+
+            for(auto ind : facet.indices){
+                polyMesh->indices.push_back(ind);
             }
-
-
-
-            std::cout << "#ModelReader: Gas mass: " << model->parametersGlobal.gasMass << std::endl;
-            std::cout << "#ModelReader: Maxwell: " << model->parametersGlobal.useMaxwellDistribution << std::endl;
-            std::cout << "#ModelReader: Name: " << model->geomProperties.name << std::endl;
-            std::cout << "#ModelReader: #Vertex: " << vertices3d.size() << std::endl;
-            std::cout << "#ModelReader: #Facets: " << model->geomProperties.nbFacet << std::endl;
-            for(int facInd = 0; facInd < facets.size(); ++facInd){
-                if(!facets[facInd].texelInc.empty())
-                    std::cout << "#ModelReader: Facet#" << facInd << " #Texels: " << facets[facInd].texelInc.size() << std::endl;
+            for(auto vert : facet.vertices2){
+                polyMesh->vertices2d.push_back(vert);
             }
-            // First create a regular polygonmesh
-            // transform Molflow facet data to simulation polygons
-            // transform polygons to triangles
-            flowgpu::PolygonMesh* polyMesh = new flowgpu::PolygonMesh();
-            convertFacet2Poly(facets,polyMesh->poly);
+        }
+        polyMesh->vertices3d = vertices3d;
 
-            int i= 0;
-            int indexOffset = 0;
+        polyMesh->nbFacets = model->geomProperties.nbFacet;
+        polyMesh->nbVertices = model->geomProperties.nbVertex;
 
-            for(auto& facet : facets){
-                polyMesh->poly[i++].indexOffset = indexOffset;
-                indexOffset += facet.indices.size();
+        // Now create Triangle Mesh
+        flowgpu::TriangleMesh* triMesh = new flowgpu::TriangleMesh();
+        int nbTris = Poly2TriConverter::PolygonsToTriangles(polyMesh, triMesh);
+        triMesh->vertices3d = polyMesh->vertices3d;
+        triMesh->nbVertices = triMesh->poly.size() * 3;
+        triMesh->nbFacets = triMesh->poly.size();
 
-                for(auto ind : facet.indices){
-                    polyMesh->indices.push_back(ind);
-                }
-                for(auto vert : facet.vertices2){
-                    polyMesh->vertices2d.push_back(vert);
-                }
-            }
-            polyMesh->vertices3d = vertices3d;
+        triMesh->cdfs.push_back(0);
 
-            polyMesh->nbFacets = model->geomProperties.nbFacet;
-            polyMesh->nbVertices = model->geomProperties.nbVertex;
+        if(!polyMesh->poly.empty())
+            model->poly_meshes.push_back(polyMesh);
+        model->triangle_meshes.push_back(triMesh);
 
-            // Now create Triangle Mesh
-            flowgpu::TriangleMesh* triMesh = new flowgpu::TriangleMesh();
-            int nbTris = Poly2TriConverter::PolygonsToTriangles(polyMesh, triMesh);
-            triMesh->vertices3d = polyMesh->vertices3d;
-            triMesh->nbVertices = triMesh->poly.size() * 3;
-            triMesh->nbFacets = triMesh->poly.size();
+        for(auto& polyMesh : model->poly_meshes){
+            model->nbFacets_total += polyMesh->nbFacets;
+            model->nbVertices_total += polyMesh->nbVertices;
+        }
+        for(auto& triMesh : model->triangle_meshes){
+            model->nbFacets_total += triMesh->nbFacets;
+            model->nbVertices_total += triMesh->nbVertices;
+        }
+        model->geomProperties.nbFacet = model->nbFacets_total;
+        model->geomProperties.nbVertex = model->nbVertices_total;
 
-            triMesh->cdfs.push_back(0);
-
-            /*// Recalc 2d coords
-            for(int triInd = 0; triInd<triMesh->poly.size(); ++triInd){
-
-                // Calculate triangle area
-                auto& triIndices = triMesh->indices[triInd];
-                auto& a = triMesh->vertices3d[triIndices.x];
-                auto& b = triMesh->vertices3d[triIndices.y];
-                auto& c = triMesh->vertices3d[triIndices.z];
-
-                float3 N = cross(b-a, c-b);              // Cross product
-
-                float2 BBmin = make_float2(0.0f);
-                float2 BBmax = make_float2(0.0f);
-
-                printf("[%d] Vec : (%lf,%lf,%lf) - (%lf,%lf,%lf) - (%lf,%lf,%lf)\n", triInd,
-                        a.x,a.y,a.z,b.x,b.y,b.z,c.x,c.y,c.z);
-
-                printf("[%d] Pre : (%lf,%lf,%lf) - (%lf,%lf,%lf) - (%lf,%lf,%lf)\n", triInd,
-                        triMesh->poly[triInd].N.x, triMesh->poly[triInd].N.y, triMesh->poly[triInd].N.z,
-                       triMesh->poly[triInd].U.x, triMesh->poly[triInd].U.y, triMesh->poly[triInd].U.z,
-                        triMesh->poly[triInd].V.x, triMesh->poly[triInd].V.y, triMesh->poly[triInd].V.z);
-                triMesh->poly[triInd].N = normalize(N);
-                triMesh->poly[triInd].U = normalize(b - a);
-                triMesh->poly[triInd].V = cross(triMesh->poly[triInd].N, triMesh->poly[triInd].U);
-
-                float bu = dot(triMesh->poly[triInd].U, b-a);
-                float bv = dot(triMesh->poly[triInd].V, b-a);
-                float cu = dot(triMesh->poly[triInd].U, c-a);
-                float cv = dot(triMesh->poly[triInd].V, c-a);
-
-                // Bounds
-                BBmax.x  = std::fmax(BBmax.x , bu);
-                BBmax.y = std::fmax(BBmax.y, bv);
-                BBmin.x = std::fmin(BBmin.x, cu);
-                BBmin.y = std::fmin(BBmin.y, cv);
-
-                float uD = (BBmax.x - BBmin.x);
-                float vD = (BBmax.y - BBmin.y);
-
-                triMesh->poly[triInd].U *= uD;
-                triMesh->poly[triInd].V *= vD;
-                printf("[%d] Post: (%lf,%lf,%lf) - (%lf,%lf,%lf) - (%lf,%lf,%lf)\n", triInd,
-                       triMesh->poly[triInd].N.x, triMesh->poly[triInd].N.y, triMesh->poly[triInd].N.z,
-                       triMesh->poly[triInd].U.x, triMesh->poly[triInd].U.y, triMesh->poly[triInd].U.z,
-                       triMesh->poly[triInd].V.x, triMesh->poly[triInd].V.y, triMesh->poly[triInd].V.z);
-                printf("[%d] Direct: (%lf,%lf,%lf) - (%lf,%lf,%lf) - (%lf,%lf,%lf)\n", triInd,
-                       triMesh->poly[triInd].N.x, triMesh->poly[triInd].N.y, triMesh->poly[triInd].N.z,
-                       (b-a).x, (b-a).y, (b-a).z,
-                       (c-a).x, (c-a).y, (c-a).z);
-            }*/
-
-            if(!polyMesh->poly.empty())
-                model->poly_meshes.push_back(polyMesh);
-            model->triangle_meshes.push_back(triMesh);
-
-            for(auto& polyMesh : model->poly_meshes){
-                model->nbFacets_total += polyMesh->nbFacets;
-                model->nbVertices_total += polyMesh->nbVertices;
-            }
-            for(auto& triMesh : model->triangle_meshes){
-                model->nbFacets_total += triMesh->nbFacets;
-                model->nbVertices_total += triMesh->nbVertices;
-            }
-            model->geomProperties.nbFacet = model->nbFacets_total;
-            model->geomProperties.nbVertex = model->nbVertices_total;
-
-            //--- Calculate outgassing values in relation to (tri_area / poly_area)
-            CalculateRelativeTriangleOutgassing(facets,triMesh);
+        //--- Calculate outgassing values in relation to (tri_area / poly_area)
+        CalculateRelativeTriangleOutgassing(facets,triMesh);
 
 
-            if(!model->textures.empty()){
-                std::cout << "[WARNING] Textures would get added to non-empty vector!"<< std::endl;
-                return nullptr;
-            }
-            else{
-                int textureOffset = 0;
-                int texelOffset = 0;
-                for(int facetInd = 0; facetInd < facets.size(); ++facetInd){
-                    auto& facet = facets[facetInd];
-                    if(facet.facetProperties.isTextured){
+        if(!model->textures.empty()){
+            std::cout << "[WARNING] Textures would get added to non-empty vector!"<< std::endl;
+            return 1;
+        }
+        else{
+            int textureOffset = 0;
+            int texelOffset = 0;
+            for(int facetInd = 0; facetInd < facets.size(); ++facetInd){
+                auto& facet = facets[facetInd];
+                if(facet.facetProperties.isTextured){
 
-                        std::vector<Texel> texture;
-                        std::vector<float> texInc;
-                        FacetTexture facetTex; // TODO: Map Offset to Triangle
-                        if(!InitializeTexture(facet, texture, facetTex, texInc)){
-                            printf("[ERROR] Initializing facetTex #%d\n", facetInd);
-                            exit(0);
-                        }
-
-                        facetTex.bbMin = make_float3(std::numeric_limits<float>::max());
-                        facetTex.bbMax = make_float3(std::numeric_limits<float>::min());
-
-                        for(auto& ind : facet.indices){
-                            facetTex.bbMin = fminf(facetTex.bbMin, vertices3d[ind]);
-                            facetTex.bbMax = fmaxf(facetTex.bbMax, vertices3d[ind]);
-                        }
-
-                        facetTex.texelOffset = texelOffset;
-                        texelOffset += texture.size();
-
-                        model->textures.insert(std::end(model->textures),std::begin(texture),std::end(texture));
-                        model->texInc.insert(std::end(model->texInc),std::begin(texInc),std::end(texInc));
-                        model->facetTex.push_back(facetTex);
-
-                        for(auto& polyMesh : model->poly_meshes){
-                            for(auto& polygon : polyMesh->poly){
-                                if(polygon.parentIndex == facetInd){
-                                    polygon.texProps.textureOffset = textureOffset;
-                                    polygon.texProps.textureSize = texture.size();
-                                    if(facet.facetProperties.countAbs)
-                                        polygon.texProps.textureFlags |= TEXTURE_FLAGS::countAbs;
-                                    if(facet.facetProperties.countRefl)
-                                        polygon.texProps.textureFlags |= TEXTURE_FLAGS::countRefl;
-                                    if(facet.facetProperties.countTrans)
-                                        polygon.texProps.textureFlags |= TEXTURE_FLAGS::countTrans;
-                                    if(facet.facetProperties.countDirection)
-                                        polygon.texProps.textureFlags |= TEXTURE_FLAGS::countDirection;
-                                    if(facet.facetProperties.countDes)
-                                        polygon.texProps.textureFlags |= TEXTURE_FLAGS::countDes;
-                                }
-                            }
-                        }
-                        for(auto& triMesh : model->triangle_meshes){
-                            for(auto& triangle : triMesh->poly){
-                                if(triangle.parentIndex == facetInd){
-                                    triangle.texProps.textureOffset = textureOffset;
-                                    triangle.texProps.textureSize = texture.size();
-                                    if(facet.facetProperties.countAbs)
-                                        triangle.texProps.textureFlags |= TEXTURE_FLAGS::countAbs;
-                                    if(facet.facetProperties.countRefl)
-                                        triangle.texProps.textureFlags |= TEXTURE_FLAGS::countRefl;
-                                    if(facet.facetProperties.countTrans)
-                                        triangle.texProps.textureFlags |= TEXTURE_FLAGS::countTrans;
-                                    if(facet.facetProperties.countDirection)
-                                        triangle.texProps.textureFlags |= TEXTURE_FLAGS::countDirection;
-                                    if(facet.facetProperties.countDes)
-                                        triangle.texProps.textureFlags |= TEXTURE_FLAGS::countDes;
-                                }
-                            }
-                        }
-                        textureOffset += 1;
-                    } // one more texture
-                }
-            }
-            std::cout << "#ModelReader: #TextureCells: " << model->textures.size() << std::endl;
-
-            return model;
-            /*inputarchive(sHandle->ontheflyParams);
-            inputarchive(sHandle->CDFs);
-            inputarchive(sHandle->IDs);
-            inputarchive(sHandle->parameters);
-            inputarchive(sHandle->temperatures);
-            inputarchive(sHandle->moments);
-            inputarchive(sHandle->desorptionParameterIDs);
-
-            //Geometry
-
-
-            sHandle->structures.resize(sHandle->sh.nbSuper); //Create structures
-
-            //Facets
-            for (size_t i = 0; i < sHandle->sh.nbFacet; i++) { //Necessary because facets is not (yet) a vector in the interface
-                SubprocessFacet f;
-                inputarchive(
-                        f.sh,
-                        f.indices,
-                        f.vertices2,
-                        f.outgassingMap,
-                        f.angleMap.pdf,
-                        f.textureCellIncrements
-                );
-
-                //Some initialization
-                if (!f.InitializeOnLoad(i)) return false;
-                if (f.sh.superIdx == -1) { //Facet in all structures
-                    for (auto& s : sHandle->structures) {
-                        s.facets.push_back(f);
+                    std::vector<Texel> texture;
+                    std::vector<float> texInc;
+                    FacetTexture facetTex; // TODO: Map Offset to Triangle
+                    if(!InitializeTexture(facet, texture, facetTex, texInc)){
+                        printf("[ERROR] Initializing facetTex #%d\n", facetInd);
+                        exit(0);
                     }
-                }
-                else {
-                    sHandle->structures[f.sh.superIdx].facets.push_back(f); //Assign to structure
-                }
-            }*/
-        }//inputarchive goes out of scope, file released
+
+                    facetTex.bbMin = make_float3(std::numeric_limits<float>::max());
+                    facetTex.bbMax = make_float3(std::numeric_limits<float>::min());
+
+                    for(auto& ind : facet.indices){
+                        facetTex.bbMin = fminf(facetTex.bbMin, vertices3d[ind]);
+                        facetTex.bbMax = fmaxf(facetTex.bbMax, vertices3d[ind]);
+                    }
+
+                    facetTex.texelOffset = texelOffset;
+                    texelOffset += texture.size();
+
+                    model->textures.insert(std::end(model->textures),std::begin(texture),std::end(texture));
+                    model->texInc.insert(std::end(model->texInc),std::begin(texInc),std::end(texInc));
+                    model->facetTex.push_back(facetTex);
+
+                    for(auto& polyMesh : model->poly_meshes){
+                        for(auto& polygon : polyMesh->poly){
+                            if(polygon.parentIndex == facetInd){
+                                polygon.texProps.textureOffset = textureOffset;
+                                polygon.texProps.textureSize = texture.size();
+                                if(facet.facetProperties.countAbs)
+                                    polygon.texProps.textureFlags |= TEXTURE_FLAGS::countAbs;
+                                if(facet.facetProperties.countRefl)
+                                    polygon.texProps.textureFlags |= TEXTURE_FLAGS::countRefl;
+                                if(facet.facetProperties.countTrans)
+                                    polygon.texProps.textureFlags |= TEXTURE_FLAGS::countTrans;
+                                if(facet.facetProperties.countDirection)
+                                    polygon.texProps.textureFlags |= TEXTURE_FLAGS::countDirection;
+                                if(facet.facetProperties.countDes)
+                                    polygon.texProps.textureFlags |= TEXTURE_FLAGS::countDes;
+                            }
+                        }
+                    }
+                    for(auto& triMesh : model->triangle_meshes){
+                        for(auto& triangle : triMesh->poly){
+                            if(triangle.parentIndex == facetInd){
+                                triangle.texProps.textureOffset = textureOffset;
+                                triangle.texProps.textureSize = texture.size();
+                                if(facet.facetProperties.countAbs)
+                                    triangle.texProps.textureFlags |= TEXTURE_FLAGS::countAbs;
+                                if(facet.facetProperties.countRefl)
+                                    triangle.texProps.textureFlags |= TEXTURE_FLAGS::countRefl;
+                                if(facet.facetProperties.countTrans)
+                                    triangle.texProps.textureFlags |= TEXTURE_FLAGS::countTrans;
+                                if(facet.facetProperties.countDirection)
+                                    triangle.texProps.textureFlags |= TEXTURE_FLAGS::countDirection;
+                                if(facet.facetProperties.countDes)
+                                    triangle.texProps.textureFlags |= TEXTURE_FLAGS::countDes;
+                            }
+                        }
+                    }
+                    textureOffset += 1;
+                } // one more texture
+            }
+        }
+        return 0;
     }
-}
+
+    //! Load simulation data (geometry etc.) from Molflow's serialization output
+    flowgpu::Model* loadFromSerialization(std::string inputString){
+        std::stringstream inputStream;
+        inputStream << inputString;
+        cereal::BinaryInputArchive inputArchive(inputStream);
+
+        flowgpu::Model* model = new flowgpu::Model();
+        std::vector<float3> vertices3d;
+        std::vector<TempFacet> facets;
+
+        //Worker params
+        inputArchive(model->wp);
+        inputArchive(model->ontheflyParams);
+        inputArchive(model->CDFs);
+        inputArchive(model->IDs);
+        inputArchive(model->parameters);
+        inputArchive(model->temperatures);
+        inputArchive(model->moments);
+        inputArchive(model->desorptionParameterIDs);
+
+        //Geometry
+        inputArchive(model->geomProperties);
+        inputArchive(vertices3d);
+
+        model->structures.resize(model->geomProperties.nbSuper); //Create structures
+
+        //Facets
+        for(int facInd = 0; facInd < model->geomProperties.nbFacet;++facInd){
+            inputArchive(cereal::make_nvp("facet"+std::to_string(facInd),facets[facInd]));
+        }
+
+        parseGeomFromSerialization(model, facets, vertices3d);
+
+        std::cout << "#ModelReader: Gas mass: " << model->parametersGlobal.gasMass << std::endl;
+        std::cout << "#ModelReader: Maxwell: " << model->parametersGlobal.useMaxwellDistribution << std::endl;
+        std::cout << "#ModelReader: Name: " << model->geomProperties.name << std::endl;
+        std::cout << "#ModelReader: #Vertex: " << vertices3d.size() << std::endl;
+        std::cout << "#ModelReader: #Facets: " << model->geomProperties.nbFacet << std::endl;
+        for(int facInd = 0; facInd < facets.size(); ++facInd){
+            if(!facets[facInd].texelInc.empty())
+                std::cout << "#ModelReader: Facet#" << facInd << " #Texels: " << facets[facInd].texelInc.size() << std::endl;
+        }
+
+        parseGeomFromSerialization(model, facets, vertices3d);
+        std::cout << "#ModelReader: #TextureCells: " << model->textures.size() << std::endl;
+
+        return model;
+    }
+
+    //! Load simulation data (geometry etc.) from Molflow's serialization file output
+    flowgpu::Model* loadFromExternalSerialization(std::string fileName){
+        std::ifstream file( fileName );
+        cereal::XMLInputArchive inputarchive(file);
+
+        flowgpu::Model* model = new flowgpu::Model();
+        std::vector<float3> vertices3d;
+        std::vector<TempFacet> facets;
+
+        //Worker params
+        //inputarchive(cereal::make_nvp("wp",model->parametersGlobal));
+        inputarchive(cereal::make_nvp("gasMass",model->parametersGlobal.gasMass));
+        inputarchive(cereal::make_nvp("useMaxwellDistribution",model->parametersGlobal.useMaxwellDistribution));
+        inputarchive(cereal::make_nvp("GeomProperties",model->geomProperties));
+        inputarchive(vertices3d);
+        facets.resize(model->geomProperties.nbFacet);
+        for(int facInd = 0; facInd < model->geomProperties.nbFacet;++facInd){
+            inputarchive(cereal::make_nvp("facet"+std::to_string(facInd),facets[facInd]));
+        }
+
+        std::cout << "#ModelReader: Gas mass: " << model->parametersGlobal.gasMass << std::endl;
+        std::cout << "#ModelReader: Maxwell: " << model->parametersGlobal.useMaxwellDistribution << std::endl;
+        std::cout << "#ModelReader: Name: " << model->geomProperties.name << std::endl;
+        std::cout << "#ModelReader: #Vertex: " << vertices3d.size() << std::endl;
+        std::cout << "#ModelReader: #Facets: " << model->geomProperties.nbFacet << std::endl;
+        for(int facInd = 0; facInd < facets.size(); ++facInd){
+            if(!facets[facInd].texelInc.empty())
+                std::cout << "#ModelReader: Facet#" << facInd << " #Texels: " << facets[facInd].texelInc.size() << std::endl;
+        }
+
+        parseGeomFromSerialization(model, facets, vertices3d);
+        std::cout << "#ModelReader: #TextureCells: " << model->textures.size() << std::endl;
+
+        return model;
+    }
+
+}// namespace

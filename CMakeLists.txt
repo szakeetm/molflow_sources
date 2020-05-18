@@ -13,13 +13,14 @@ message("-- os_version_suffix:      ${os_version_suffix}")
 #list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 option(USE_CLANG "build application with clang" OFF) # OFF is the default
 option(USE_PROFILING "disable optimisation for profiling the application" OFF) # OFF is the default
+option(WITH_GPU "activate GPU build" ON) # OFF is the default
 
-if(MSVC)
+if(WIN32 AND MSVC)
     message("Creating GPU build")
     set(WITH_GPU ON)
 else()
     message("GPU build not available with this compiler and/or OS")
-    set(WITH_GPU OFF)
+    #set(WITH_GPU OFF)
 endif(MSVC)
 
 # Define Release by default.

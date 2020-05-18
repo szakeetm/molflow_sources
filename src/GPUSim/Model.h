@@ -13,6 +13,8 @@
 //#include "Geometry_shared.h"
 //#include "Simulation.h"
 #include "LaunchParams.h"
+#include "../GeometrySimu.h"
+#include "../Parameter.h"
 #include <cereal/cereal.hpp>
 
 /*! \namespace flowgpu - Molflow GPU code */
@@ -122,6 +124,20 @@ namespace flowgpu {
 
         MolflowGlobal parametersGlobal;
         GeomProperties geomProperties;
+
+        // Molflow structures
+        // Geometry
+        WorkerParams wp;
+        //GeomProperties sh;
+        OntheflySimulationParams ontheflyParams;
+
+        std::vector<SuperStructure> structures; //They contain the facets
+        std::vector<std::vector<std::pair<double, double>>> CDFs; //cumulative distribution function for each temperature
+        std::vector<std::vector<std::pair<double, double>>> IDs; //integrated distribution function for each time-dependent desorption type
+        std::vector<double> temperatures; //keeping track of all temperatures that have a CDF already generated
+        std::vector<double> moments;      //time values (seconds) when a simulation state is measured
+        std::vector<size_t> desorptionParameterIDs; //time-dependent parameters which are used as desorptions, therefore need to be integrated
+        std::vector<Parameter> parameters; //Time-dependent parameters
     };
 
     //Model *loadOBJ(const std::string &objFile);
