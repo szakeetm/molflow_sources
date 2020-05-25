@@ -97,17 +97,17 @@ public:
 		);
 	}
 
-	size_t GetMapSize() {
+	size_t GetMapSize() const {
 		return phiWidth * (thetaLowerRes + thetaHigherRes);
 	}
-	size_t GetRecordedMapSize() {
+	size_t GetRecordedMapSize() const{
 		if (!hasRecorded) return 0;
 		else return GetMapSize();
 	}
-	size_t GetDataSize() {
+	size_t GetDataSize() const{
 		return sizeof(size_t)*GetMapSize();
 	}
-	size_t GetRecordedDataSize() {
+	size_t GetRecordedDataSize() const{
 		return sizeof(size_t)*GetRecordedMapSize();
 	}
 };

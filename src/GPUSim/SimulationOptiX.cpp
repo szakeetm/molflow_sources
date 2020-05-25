@@ -1003,6 +1003,7 @@ namespace flowgpu {
                                     state.launchParams.simConstants.size.y,
                                     1
             ));*/
+
         OPTIX_CHECK(optixLaunch(/*! pipeline we're launching launch: */
                 state.pipeline,state.stream,
                 /*! parameters and SBT */
@@ -1097,8 +1098,8 @@ namespace flowgpu {
 
         // update the launch parameters that we'll pass to the optix
         // launch:
-        state.launchParams.simConstants.useMaxwell = model->parametersGlobal.useMaxwellDistribution;
-        state.launchParams.simConstants.gasMass = model->parametersGlobal.gasMass;
+        state.launchParams.simConstants.useMaxwell = model->wp.useMaxwellDistribution;//model->parametersGlobal.useMaxwellDistribution;
+        state.launchParams.simConstants.gasMass = model->wp.gasMass;//model->parametersGlobal.gasMass;
         state.launchParams.simConstants.nbRandNumbersPerThread = nbRand;
         state.launchParams.simConstants.scene_epsilon = SCENE_EPSILON;
         state.launchParams.simConstants.maxDepth  = MAX_DEPTH;
@@ -1199,7 +1200,8 @@ namespace flowgpu {
         facet_memory.hitCounterBuffer.download(hostData->facetHitCounters.data(), model->nbFacets_total * CORESPERSM * WARPSCHEDULERS);
         facet_memory.missCounterBuffer.download(hostData->leakCounter.data(), 1);
 
-        facet_memory.texelBuffer.download(hostData->texels.data(), model->textures.size());
+        if(!facet_memory.texelBuffer.isNullptr())
+            facet_memory.texelBuffer.download(hostData->texels.data(), model->textures.size());
 
 #ifdef DEBUGCOUNT
         memory_debug.detBuffer.download(hostData->detCounter.data(), NCOUNTBINS);
@@ -1219,7 +1221,8 @@ namespace flowgpu {
         //sim_memory.moleculeBuffer.download(hit, state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y);
         facet_memory.hitCounterBuffer.initDeviceData(model->nbFacets_total * CORESPERSM * WARPSCHEDULERS * sizeof(flowgpu::CuFacetHitCounter));
         facet_memory.missCounterBuffer.initDeviceData(sizeof(uint32_t));
-        facet_memory.texelBuffer.initDeviceData(model->textures.size() * sizeof(flowgeom::Texel));
+        if(!facet_memory.texelBuffer.isNullptr())
+            facet_memory.texelBuffer.initDeviceData(model->textures.size() * sizeof(flowgeom::Texel));
     }
 
     void SimulationOptiX::cleanup()

@@ -13,6 +13,14 @@
 #include "LaunchParams.h"
 #include "GPUDefines.h"
 
+//TODO: Only non maxwell for now
+static __forceinline__ __device__
+float getNewVelocity(const flowgeom::Polygon& poly, const float& gasMass)
+{
+    return 145.469*sqrt(poly.facProps.temperature / gasMass);
+}
+
+//TODO: Only cosine for now
 static __forceinline__ __device__
 float3 getNewDirection(flowgpu::MolPRD& hitData, const flowgeom::Polygon& poly,
                        const float* randFloat, unsigned int& randInd, unsigned int& randOffset)

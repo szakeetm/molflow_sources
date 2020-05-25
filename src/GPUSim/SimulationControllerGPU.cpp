@@ -91,9 +91,9 @@ int SimulationControllerGPU::RunSimulation() {
  */
 unsigned long long int SimulationControllerGPU::GetSimulationData(bool silent) {
 
-    bool writeData = true;
+    bool writeData = false;
     bool printData = false & !silent;
-    bool printDataParent = false & !silent;
+    bool printDataParent = true & !silent;
     bool printCounters = true & !silent;
     try {
         optixHandle->downloadDataFromDevice(&data); //download tmp counters
@@ -114,29 +114,37 @@ unsigned long long int SimulationControllerGPU::GetSimulationData(bool silent) {
 void SimulationControllerGPU::IncreaseGlobalCounters(HostData* tempData){
 
     //facet hit counters + miss
-    for(int i = 0; i < model->nbFacets_total; ++i){
-        globalCounter.facetHitCounters[i].nbMCHit += tempData->facetHitCounters[i].nbMCHit;
-        globalCounter.facetHitCounters[i].nbDesorbed += tempData->facetHitCounters[i].nbDesorbed;
-        globalCounter.facetHitCounters[i].nbAbsEquiv += tempData->facetHitCounters[i].nbAbsEquiv;
+    for(unsigned int i = 0; i < data.facetHitCounters.size(); i++) {
+        unsigned int facIndex = i%this->model->nbFacets_total;
+        globalCounter.facetHitCounters[facIndex].nbMCHit += tempData->facetHitCounters[i].nbMCHit;
+        globalCounter.facetHitCounters[facIndex].nbDesorbed += tempData->facetHitCounters[i].nbDesorbed;
+        globalCounter.facetHitCounters[facIndex].nbAbsEquiv += tempData->facetHitCounters[i].nbAbsEquiv;
     }
 
     globalCounter.leakCounter[0] += tempData->leakCounter[0];
 
     //textures
-    for(auto& [id, texels] : globalCounter.textures){
-        for(auto& mesh : model->triangle_meshes){
-            for(auto& facet : mesh->poly){
-                if((facet.texProps.textureFlags) && (id == facet.parentIndex)){
-                    unsigned int width = model->facetTex[facet.texProps.textureOffset].texWidth;
-                    unsigned int height = model->facetTex[facet.texProps.textureOffset].texHeight;
-                    for(unsigned int h = 0; h < height; ++h){
-                        for(unsigned int w = 0; w < width; ++w){
-                            unsigned int index_glob = w+h*model->facetTex[facet.texProps.textureOffset].texWidth;
-                            unsigned int index_tmp = index_glob + model->facetTex[facet.texProps.textureOffset].texelOffset;
+    if(!tempData->texels.empty()) {
+        for (auto&[id, texels] : globalCounter.textures) {
+            for (auto &mesh : model->triangle_meshes) {
+                int parentFacetId = -1;
+                for (auto &facet : mesh->poly) {
+                    if((parentFacetId == facet.parentIndex)) break;
+                    if ((facet.texProps.textureFlags) && (id == facet.parentIndex)) {
+                        parentFacetId = id;
+                        unsigned int width = model->facetTex[facet.texProps.textureOffset].texWidth;
+                        unsigned int height = model->facetTex[facet.texProps.textureOffset].texHeight;
+                        for (unsigned int h = 0; h < height; ++h) {
+                            for (unsigned int w = 0; w < width; ++w) {
+                                unsigned int index_glob =
+                                        w + h * model->facetTex[facet.texProps.textureOffset].texWidth;
+                                unsigned int index_tmp =
+                                        index_glob + model->facetTex[facet.texProps.textureOffset].texelOffset;
 
-                            texels[index_glob].countEquiv += data.texels[index_tmp].countEquiv;
-                            texels[index_glob].sum_v_ort_per_area += data.texels[index_tmp].sum_v_ort_per_area;
-                            texels[index_glob].sum_1_per_ort_velocity += data.texels[index_tmp].sum_1_per_ort_velocity;
+                                texels[index_glob].countEquiv += data.texels[index_tmp].countEquiv;
+                                texels[index_glob].sum_v_ort_per_area += data.texels[index_tmp].sum_v_ort_per_area;
+                                texels[index_glob].sum_1_per_ort_velocity += data.texels[index_tmp].sum_1_per_ort_velocity;
+                            }
                         }
                     }
                 }
@@ -406,16 +414,11 @@ void SimulationControllerGPU::WriteDataToFile(std::string fileName)
                 double total1 = 0;
                 double total2 = 0;
 
-                size_t binSize = 100;
-                std::vector<unsigned long long int> bin_count(binSize);
-                std::vector<double> bin_sumv(binSize);
-                std::vector<double> bin_sum1(binSize);
-
                 unsigned int width = model->facetTex[facet.texProps.textureOffset].texWidth;
                 unsigned int height = model->facetTex[facet.texProps.textureOffset].texHeight;
 
                 auto& texels = globalCounter.textures[facet.parentIndex];
-
+                // textures
                 for(unsigned int h = 0; h < height; ++h){
                     for(unsigned int w = 0; w < width; ++w){
                         unsigned int index = w+h*width;
@@ -423,12 +426,24 @@ void SimulationControllerGPU::WriteDataToFile(std::string fileName)
                         total0 += texels[index].countEquiv;
                         total1 += texels[index].sum_v_ort_per_area;
                         total2 += texels[index].sum_1_per_ort_velocity;
+                    }
+                }
 
+                // profiles
+                size_t binSize = 100;
+                std::vector<unsigned long long int> bin_count(binSize);
+                std::vector<double> bin_sumv(binSize);
+                std::vector<double> bin_sum1(binSize);
+                for(unsigned int h = 0; h < height; ++h){
+                    for(unsigned int w = 0; w < width; ++w){
+                        unsigned int index = w+h*width;
                         //if(h == (height/2)){
                         unsigned int bin_index = index/std::max((unsigned int)(width*height/binSize),1u);
+                        if(width*height<binSize) {
                             bin_count[bin_index] += texels[index].countEquiv;
                             bin_sumv[bin_index] += texels[index].sum_v_ort_per_area;
                             bin_sum1[bin_index] += texels[index].sum_1_per_ort_velocity;
+                        }
                        // }
 
                         /*unsigned int index = w+h*model->facetTex[facet.texProps.textureOffset].texWidth;
@@ -480,6 +495,10 @@ int SimulationControllerGPU::CloseSimulation() {
         exit(1);
     }
     return 0;
+}
+
+GlobalCounter *SimulationControllerGPU::GetGlobalCounter()  {
+    return &this->globalCounter;
 }
 
 /**

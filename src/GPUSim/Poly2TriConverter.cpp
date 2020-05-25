@@ -148,24 +148,22 @@ int  FindEar(const std::vector<float2>& points){
 }
 
 // Return indices to create a new triangle
-int3 GetTriangleFromEar(const flowgeom::TempFacet& facet, const std::vector<float2>& points, const int ear) {
+int3 GetTriangleFromEar(const std::vector<uint32_t> &ind, const std::vector<float2>& points, const int ear) {
 
     int3 indices;
-    indices.x = facet.indices[Previous(ear, points.size())];
-    indices.y = facet.indices[IDX(ear, points.size())];
-    indices.z = facet.indices[Next(ear, points.size())];
+    indices.x = ind[Previous(ear, points.size())];
+    indices.y = ind[IDX(ear, points.size())];
+    indices.z = ind[Next(ear, points.size())];
 
     return indices;
 }
 
-std::vector<int3> Poly2TriConverter::Triangulate(flowgeom::TempFacet& facet) {
+std::vector<int3> Poly2TriConverter::Triangulate(std::vector<float2> &vertices, std::vector<uint32_t> &indices) {
 
     // Triangulate a facet (rendering purpose)
     // The facet must have at least 3 points
     // Use the very simple "Two-Ears" theorem. It computes in O(n^2).
     std::vector<int3> triangles;
-    std::vector<float2>& vertices = facet.vertices2;
-    std::vector<uint32_t>& indices = facet.indices;
 
     // Perform triangulation
     while (vertices.size() > 3) {
@@ -173,7 +171,7 @@ std::vector<int3> Poly2TriConverter::Triangulate(flowgeom::TempFacet& facet) {
         //DrawEar(f, p, e, addTextureCoord);
 
         // Create new triangle facet and copy polygon parameters, but change indices
-        int3 triangleIndices = GetTriangleFromEar(facet, vertices, e);
+        int3 triangleIndices = GetTriangleFromEar(indices, vertices, e);
         triangles.push_back(triangleIndices);
 
         // Remove the ear
@@ -183,7 +181,7 @@ std::vector<int3> Poly2TriConverter::Triangulate(flowgeom::TempFacet& facet) {
     }
 
     // Draw the last ear
-    int3 triangleIndices = GetTriangleFromEar(facet, vertices, 0);
+    int3 triangleIndices = GetTriangleFromEar(indices, vertices, 0);
     triangles.push_back(triangleIndices);
 
     return triangles;
@@ -207,16 +205,18 @@ int Poly2TriConverter::PolygonsToTriangles(flowgpu::PolygonMesh *polygonMesh, fl
         else if (nbVert > 3) {
 
             // Prepare new temp facet to pass to the triangulation algorithm
-            flowgeom::TempFacet temp;
+            std::vector<float2> vertices;
+            std::vector<uint32_t> indices;
+
             for(int i = 0; i < nbVert; ++i){
-                temp.indices.push_back(polygonMesh->indices[polygons[facetIndex].indexOffset + i]);
-                temp.vertices2.push_back(polygonMesh->vertices2d[polygons[facetIndex].indexOffset + i]);
+                indices.emplace_back(polygonMesh->indices[polygons[facetIndex].indexOffset + i]);
+                vertices.emplace_back(polygonMesh->vertices2d[polygons[facetIndex].indexOffset + i]);
             }
 
-            if(nbVert != temp.vertices2.size())
-                std::cout << "[WARNING] Polygon with "<<temp.vertices2.size()<<" vertices should have "<< nbVert <<std::endl;
+            if(nbVert != vertices.size())
+                std::cout << "[WARNING] Polygon with "<<vertices.size()<<" vertices should have "<< nbVert <<std::endl;
 
-            std::vector<int3> triangleIndices = Triangulate(temp);
+            std::vector<int3> triangleIndices = Triangulate(vertices, indices);
             triangleMesh->indices.insert(std::end(triangleMesh->indices),std::begin(triangleIndices),std::end(triangleIndices));
             std::vector<flowgeom::Polygon> newTris;
             for(auto& tri : triangleIndices){
@@ -288,7 +288,14 @@ std::vector<flowgeom::Polygon> Poly2TriConverter::PolygonsToTriangles(std::vecto
         size_t nb = facets[facetIndex].indices.size();
         if (nb > 3) {
             // Create new triangle facets and invalidate old polygon facet
-            std::vector<int3> triangleIndices = Triangulate(facets[facetIndex]);
+            std::vector<float2> vertices;
+            for(std::vector<Vector2d>::iterator it=facets[facetIndex].vertices2.begin(); it!=facets[facetIndex].vertices2.end();it++)
+                vertices.emplace_back(make_float2(it->u,it->v));
+            std::vector<uint32_t> indices;
+            for(std::vector<size_t>::iterator it=facets[facetIndex].indices.begin(); it!=facets[facetIndex].indices.end();it++)
+                indices.emplace_back(*it);
+
+            std::vector<int3> triangleIndices = Triangulate(vertices, indices);
             std::vector<flowgeom::Polygon> newTris;
             for(auto& tri : triangleIndices){
                 flowgeom::Polygon newPoly(3);

@@ -653,7 +653,7 @@ void Facet::SaveGEO(FileWriter *file, int idx) {
 * \brief Calculates the geometry size for a single facet which is necessary for loader dataport
 * \return calculated size of the facet geometry
 */
-size_t Facet::GetGeometrySize()  { //for loader dataport
+size_t Facet::GetGeometrySize() const { //for loader dataport
 
 	size_t s = sizeof(FacetProperties)
 		+ (sh.nbIndex * sizeof(size_t)) //indices
@@ -1357,7 +1357,7 @@ void Facet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchive) {
 	
 }
 
-void Facet::SerializeData(std::vector<double>& outgMapVector, std::vector<size_t>& angleMapVector, std::vector<double>& textIncVector) {
+void Facet::SerializeData(std::vector<double>& outgMapVector, std::vector<size_t>& angleMapVector, std::vector<double>& textIncVector) const {
 
     size_t mapSize = sh.anglemapParams.GetMapSize();
     angleMapVector.resize(mapSize);

@@ -1228,25 +1228,26 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 * \return output string stream containing the result of the archiving
 */
 std::ostringstream Worker::SerializeForLoader() {
-    std::ostringstream result;
-    cereal::BinaryOutputArchive outputArchive(result);
+    std::ostringstream outstream;
+    {
+        cereal::BinaryOutputArchive outputArchive(outstream);
 
-    outputArchive(
-            CEREAL_NVP(wp),
-            CEREAL_NVP(ontheflyParams),
-            CEREAL_NVP(CDFs),
-            CEREAL_NVP(IDs),
-            CEREAL_NVP(parameters),
-            CEREAL_NVP(temperatures),
-            CEREAL_NVP(moments),
-            CEREAL_NVP(desorptionParameterIDs)
-    ); //Worker
+        outputArchive(
+                CEREAL_NVP(wp),
+                CEREAL_NVP(ontheflyParams),
+                CEREAL_NVP(CDFs),
+                CEREAL_NVP(IDs),
+                CEREAL_NVP(parameters),
+                CEREAL_NVP(temperatures),
+                CEREAL_NVP(moments),
+                CEREAL_NVP(desorptionParameterIDs)
+        ); //Worker
 
-    geom->SerializeForLoader(outputArchive);
-
-    std::ofstream outFile("serialized_load.bin");
-    outFile << result.str() ;
-    return result;
+        geom->SerializeForLoader(outputArchive);
+    }
+    //std::ofstream outFile("serialized_load.bin");
+    //outFile << outstream.str() ;
+    return outstream;
 }
 
 void Worker::SerializeForExternal(std::string outputName) {

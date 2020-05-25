@@ -6,7 +6,7 @@
 #define MOLFLOW_PROJ_MODELREADER_H
 
 #include "Model.h"
-
+#include "cereal/types/vector.hpp"
 /*! \namespace flowgeom - Molflow Geometry code */
 namespace flowgeom {
     /*int loadFromMolflow(
@@ -18,20 +18,20 @@ namespace flowgeom {
     // for loading from a Molflow/cereal export
     struct TempFacet {
         FacetProperties facetProperties;
-        std::vector<uint32_t> indices;
-        std::vector<float2> vertices2;
+        std::vector<size_t> indices;
+        std::vector<Vector2d> vertices2;
         std::vector<double> outgassingMap;
         std::vector<size_t> angleMapPDF;
-        std::vector<float> texelInc;
+        std::vector<double> texelInc;
 
         template<class Archive>
         void serialize(Archive &archive) {
             archive(
-                    facetProperties,
+                    cereal::make_nvp("FacetProperties", facetProperties),
                     indices,
                     vertices2,
                     outgassingMap,
-                    angleMapPDF,
+                    cereal::make_nvp("angleMapVector", angleMapPDF),
                     cereal::make_nvp("textIncVector", texelInc)
             );
         }

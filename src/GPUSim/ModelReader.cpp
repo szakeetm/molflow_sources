@@ -46,6 +46,15 @@ void serialize(Archive & archive,
     archive( m.x, m.y, m.z);
 }
 
+inline void vector3d_to_float3(float3& t, const Vector3d& o){
+    t.x = o.x;
+    t.y = o.y;
+    t.z = o.z;
+
+    return;
+}
+
+
 /*! \namespace flowgeom - Molflow Geometry code */
 namespace flowgeom {
 
@@ -112,13 +121,20 @@ namespace flowgeom {
             }
 
             polygon.indexOffset = vertCount;
-            polygon.O = temp.facetProperties.O;
+            vector3d_to_float3(polygon.O,temp.facetProperties.O);
+            vector3d_to_float3(polygon.U,temp.facetProperties.U);
+            vector3d_to_float3(polygon.V,temp.facetProperties.V);
+            vector3d_to_float3(polygon.Nuv,temp.facetProperties.Nuv);
+            vector3d_to_float3(polygon.nU,temp.facetProperties.nU);
+            vector3d_to_float3(polygon.nV,temp.facetProperties.nV);
+            vector3d_to_float3(polygon.N,temp.facetProperties.N);
+            /*polygon.O = temp.facetProperties.O;
             polygon.U = temp.facetProperties.U;
             polygon.V = temp.facetProperties.V;
             polygon.Nuv = temp.facetProperties.Nuv;
             polygon.nU = temp.facetProperties.nU;
             polygon.nV = temp.facetProperties.nV;
-            polygon.N = temp.facetProperties.N;
+            polygon.N = temp.facetProperties.N;*/
 
             polygon.parentIndex = i;
 
@@ -182,7 +198,9 @@ namespace flowgeom {
 
             try {
                 texture = std::vector<Texel>(nbE);
-                texInc = facet.texelInc;
+                for(std::vector<double>::iterator it = facet.texelInc.begin();it != facet.texelInc.end();it++)
+                    texInc.emplace_back(*it);
+                //texInc = facet.texelInc;
             }
             catch (...) {
                 printf("Not enough memory to load textures\n");
@@ -210,7 +228,7 @@ namespace flowgeom {
                 polyMesh->indices.push_back(ind);
             }
             for(auto vert : facet.vertices2){
-                polyMesh->vertices2d.push_back(vert);
+                polyMesh->vertices2d.push_back(make_float2(vert.u,vert.v));
             }
         }
         polyMesh->vertices3d = vertices3d;
@@ -241,6 +259,10 @@ namespace flowgeom {
         }
         model->geomProperties.nbFacet = model->nbFacets_total;
         model->geomProperties.nbVertex = model->nbVertices_total;
+
+        for(auto& facet : facets){
+                model->tri_facetOffset.emplace_back(facet.facetProperties.hitOffset);
+        }
 
         //--- Calculate outgassing values in relation to (tri_area / poly_area)
         CalculateRelativeTriangleOutgassing(facets,triMesh);
@@ -330,34 +352,40 @@ namespace flowgeom {
         cereal::BinaryInputArchive inputArchive(inputStream);
 
         flowgpu::Model* model = new flowgpu::Model();
-        std::vector<float3> vertices3d;
+        std::vector<Vector3d> vertices3d;
         std::vector<TempFacet> facets;
 
         //Worker params
-        inputArchive(model->wp);
-        inputArchive(model->ontheflyParams);
-        inputArchive(model->CDFs);
-        inputArchive(model->IDs);
-        inputArchive(model->parameters);
-        inputArchive(model->temperatures);
-        inputArchive(model->moments);
-        inputArchive(model->desorptionParameterIDs);
+        inputArchive(cereal::make_nvp("wp",model->wp));
+        inputArchive(cereal::make_nvp("ontheflyParams",model->ontheflyParams));
+        inputArchive(cereal::make_nvp("CDFs",model->CDFs));
+        inputArchive(cereal::make_nvp("IDs",model->IDs));
+        inputArchive(cereal::make_nvp("parameters",model->parameters));
+        inputArchive(cereal::make_nvp("temperatures",model->temperatures));
+        inputArchive(cereal::make_nvp("moments",model->moments));
+        inputArchive(cereal::make_nvp("desorptionParameterIDs",model->desorptionParameterIDs));
 
         //Geometry
-        inputArchive(model->geomProperties);
+        inputArchive(cereal::make_nvp("GeomProperties",model->geomProperties));
         inputArchive(vertices3d);
 
         model->structures.resize(model->geomProperties.nbSuper); //Create structures
 
         //Facets
+        facets.resize(model->geomProperties.nbFacet);
+
         for(int facInd = 0; facInd < model->geomProperties.nbFacet;++facInd){
             inputArchive(cereal::make_nvp("facet"+std::to_string(facInd),facets[facInd]));
         }
 
-        parseGeomFromSerialization(model, facets, vertices3d);
+        std::vector<float3> vertices3f;
+        for(std::vector<Vector3d>::iterator it=vertices3d.begin(); it!=vertices3d.end();it++)
+            vertices3f.emplace_back(make_float3(it->x,it->y,it->z));
+        vertices3d.clear();
+        parseGeomFromSerialization(model, facets, vertices3f);
 
-        std::cout << "#ModelReader: Gas mass: " << model->parametersGlobal.gasMass << std::endl;
-        std::cout << "#ModelReader: Maxwell: " << model->parametersGlobal.useMaxwellDistribution << std::endl;
+        std::cout << "#ModelReader: Gas mass: " << model->wp.gasMass << std::endl;
+        std::cout << "#ModelReader: Maxwell: " << model->wp.useMaxwellDistribution << std::endl;
         std::cout << "#ModelReader: Name: " << model->geomProperties.name << std::endl;
         std::cout << "#ModelReader: #Vertex: " << vertices3d.size() << std::endl;
         std::cout << "#ModelReader: #Facets: " << model->geomProperties.nbFacet << std::endl;
@@ -366,7 +394,6 @@ namespace flowgeom {
                 std::cout << "#ModelReader: Facet#" << facInd << " #Texels: " << facets[facInd].texelInc.size() << std::endl;
         }
 
-        parseGeomFromSerialization(model, facets, vertices3d);
         std::cout << "#ModelReader: #TextureCells: " << model->textures.size() << std::endl;
 
         return model;

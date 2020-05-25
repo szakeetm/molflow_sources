@@ -20,7 +20,7 @@ namespace flowgeom {
         ,countDes = (1 << 4) // Molflow only
     };
 
-    struct FacetProperties { //Formerly SHFACET
+    struct TempFacetProperties { //Formerly SHFACET
     public:
         //For sync between interface and subprocess
         double sticking;       // Sticking (0=>reflection  , 1=>absorption)   - can be overridden by time-dependent parameter

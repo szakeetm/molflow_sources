@@ -28,6 +28,7 @@ ENDIF()
 # Definition of Macros
 add_definitions(
         -DWIN
+        -DMOLFLOW
         -D_MBCS
         -DGPU_MODE
         -D_CRT_SECURE_NO_WARNINGS
@@ -37,7 +38,7 @@ option(DEBUG_MISS "Enable Debugging for Miss Program" OFF)
 option(DEBUG_COUNT "Enable counters for intersection results" OFF)
 option(DEBUG_POS "Enable generating hit positions from GPU calculations" OFF)
 option(WITH_TRIANGLES "Enable calculations with triangles only" ON)
-option(WITH_TEXTURES "Enable textures" OFF)
+option(WITH_TEXTURES "Enable textures" ON)
 #option(USE_RANDOM_NUMBER_TYPE_64 "Use double instead of float for random numbers" ON)
 
 IF (CMAKE_BUILD_TYPE STREQUAL "Debug")

@@ -512,6 +512,7 @@ namespace flowgpu {
         rayOrigin = getNewOrigin(hitData,rayGenData,facIndex,randFloat,randInd,randOffset);
         rayDir = getNewDirection(hitData,rayGenData->poly[facIndex],randFloat,randInd,randOffset);
 
+        hitData.velocity = getNewVelocity(rayGenData->poly[facIndex],optixLaunchParams.simConstants.gasMass);
 
         // Write back cached local variables to shared memory
         optixLaunchParams.perThreadData.randBufferOffset[bufferIndex] = randOffset;

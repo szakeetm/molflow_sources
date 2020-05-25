@@ -111,10 +111,11 @@ size_t MolflowGeometry::GetGeometrySize() {
 * \brief Serializes data of the complete geometry into a cereal binary archive
 * \param outputarchive reference to the binary archive
 */
-void MolflowGeometry::SerializeForLoader(cereal::BinaryOutputArchive& outputArchive) {
+void MolflowGeometry::SerializeForLoader(cereal::BinaryOutputArchive &outputArchive) const {
 	outputArchive(
-		CEREAL_NVP(sh),
-		CEREAL_NVP(vertices3)
+		//CEREAL_NVP(sh),
+            cereal::make_nvp("GeomProperties",sh),
+            CEREAL_NVP(vertices3)
 	);
 
 	size_t fOffset = sizeof(GlobalHitBuffer) + (1 + mApp->worker.moments.size())*mApp->worker.wp.globalHistogramParams.GetDataSize(); //calculating offsets for all facets for the hits dataport during the simulation
@@ -122,7 +123,11 @@ void MolflowGeometry::SerializeForLoader(cereal::BinaryOutputArchive& outputArch
 	for (size_t i = 0; i < sh.nbFacet; i++) {
 		facets[i]->sh.hitOffset = fOffset; //Marking the offsets for the hits, but here we don't actually send any hits.
 		fOffset += facets[i]->GetHitsSize(mApp->worker.moments.size());
-		facets[i]->SerializeForLoader(outputArchive);
+		//facets[i]->SerializeForLoader(outputArchive);
+        outputArchive(
+                cereal::make_nvp("facet"+std::to_string(i),*facets[i])
+                //CEREAL_NVP(facet)
+        );
 	}
 }
 

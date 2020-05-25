@@ -87,7 +87,7 @@ add_subdirectory(CMake/molflow_sub)
 add_subdirectory(CMake/molflow_win)
 add_subdirectory(CMake/molflow_cli)
 
-IF(WITH_GPU)
+IF(WITH_GPU AND (MSVC AND WIN32) OR (NOT WIN32))
 #IF(MSVC AND WITH_GPU)
     #set(cuda_obj_dir ${PROJECT_SOURCE_DIR}/cuda_kernel/)
     add_subdirectory(CMake/molflow_gpusub)
@@ -99,7 +99,7 @@ IF(WITH_GPU)
     add_dependencies(gpuSub flowGPU cudaKernel)
     add_dependencies(molflow gpuSub)
 
-ENDIF(WITH_GPU)
+ENDIF()
 
 IF (WIN32)
     add_subdirectory(CMake/png_zlib_win_library)

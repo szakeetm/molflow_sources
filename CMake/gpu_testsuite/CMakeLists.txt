@@ -56,7 +56,7 @@ option(DEBUG_MISS "Enable Debugging for Miss Program" OFF)
 option(DEBUG_COUNT "Enable counters for intersection results" OFF)
 option(DEBUG_POS "Enable generating hit positions from GPU calculations" OFF)
 option(WITH_TRIANGLES "Enable calculations with triangles only" ON)
-option(WITH_TEXTURES "Enable textures" OFF)
+option(WITH_TEXTURES "Enable textures" ON)
 #option(USE_RANDOM_NUMBER_TYPE_64 "Use double instead of float for random numbers" ON)
 
 IF (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -140,6 +140,7 @@ include_directories(SYSTEM ${OptiX_INCLUDE})
 cuda_compile_and_embed(geometry_ptx_code ${CUDA_DIR_1}/Geometry.cu)
 cuda_compile_and_embed(trace_ptx_code ${CUDA_DIR_1}/TraceProcessing.cu)
 cuda_compile_and_embed(ray_ptx_code ${CUDA_DIR_1}/RayGeneration.cu)
+
 #cuda_compile_and_embed(rng2_ptx_code ${GPU_DIR_1}/cudaRandom.cu)
 
 set(SRC_FILES ${geometry_ptx_code} ${SRC_FILES})
@@ -220,7 +221,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ${CUDA_DIR_1}
         ${common_cuda_dir}
         #${HEADER_DIR_1}
-        #${HEADER_DIR_2}
+        ${HEADER_DIR_2}
         #${HEADER_DIR_3}
         #${HEADER_DIR_4}
         )

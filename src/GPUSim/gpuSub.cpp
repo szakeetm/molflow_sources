@@ -81,9 +81,9 @@ bool SimControllerGPU::Load() {
     CLOSEDPSUB(loader);
 
     //Connect to log dataport
-    if (this->ontheflyParams.enableLogging) {
+    if (this->model->ontheflyParams.enableLogging) {
         this->dpLog = OpenDataport(logDpName,
-                                   sizeof(size_t) + this->ontheflyParams.logLimit * sizeof(ParticleLoggerItem));
+                                   sizeof(size_t) + this->model->ontheflyParams.logLimit * sizeof(ParticleLoggerItem));
         if (!this->dpLog) {
             char err[512];
             sprintf(err, "Failed to connect to 'this->dpLog' dataport %s (%zd Bytes)", logDpName,

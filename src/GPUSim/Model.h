@@ -77,7 +77,7 @@ namespace flowgpu {
     };
 
     //TODO: Unify with buffer_shared.h
-    struct GeomProperties {  //Formerly SHGEOM
+    /*struct GeomProperties {  //Formerly SHGEOM
         size_t     nbFacet;   // Number of facets (total)
         size_t     nbVertex;  // Number of 3D vertices
         size_t     nbSuper;   // Number of superstructures
@@ -91,7 +91,7 @@ namespace flowgpu {
                     CEREAL_NVP(name)  // (Short file name)
             );
         }
-    };
+    };*/
 
     struct Model {
         Model() : nbFacets_total(), nbVertices_total(), parametersGlobal(){};
@@ -109,6 +109,8 @@ namespace flowgpu {
 
         std::vector<TriangleMesh *> triangle_meshes;
         std::vector<PolygonMesh *> poly_meshes;
+        std::vector<size_t> tri_facetOffset;
+
         std::vector<flowgeom::Texel> textures;
         std::vector<flowgeom::FacetTexture> facetTex;
         std::vector<float> texInc;
