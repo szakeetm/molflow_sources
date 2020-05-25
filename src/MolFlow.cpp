@@ -2857,6 +2857,15 @@ void MolFlow::UpdateFacetHits(bool allRows) {
 					facetList->SetValueAt(3, i, tmp);
 					break;
 				case AC_MODE:
+				    //TODO: Fix or remove AC Mode
+                    facetList->SetColumnLabel(1, "Density");
+                    sprintf(tmp, "%g", -1.0);
+                    facetList->SetValueAt(1, i, tmp);
+                    sprintf(tmp, "%g", -1.0);
+                    facetList->SetValueAt(2, i, tmp);
+                    sprintf(tmp, "%g", -1.0);
+                    facetList->SetValueAt(3, i, tmp);
+				    /*
 					facetList->SetColumnLabel(1, "Density");
 					sprintf(tmp, "%g", f->facetHitCache.density.value);
 					facetList->SetValueAt(1, i, tmp);
@@ -2865,6 +2874,7 @@ void MolFlow::UpdateFacetHits(bool allRows) {
 					facetList->SetValueAt(2, i, tmp);
 					sprintf(tmp, "%g", f->facetHitCache.density.absorbed);
 					facetList->SetValueAt(3, i, tmp);
+				     */
 					break;
 				}
 			}
