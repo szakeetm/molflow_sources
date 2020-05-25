@@ -621,11 +621,11 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
 
 /**
 * \brief Adds views to the plotter if loaded form a file (XML)
-* \param views vector containing the ids of the views
+* \param updatedViews vector containing the ids of the views
 */
-void ProfilePlotter::SetViews(std::vector<int> views) {
+void ProfilePlotter::SetViews(const std::vector<int> &updatedViews) {
 	Reset();
-	for (int view : views)
+	for (int view : updatedViews)
 		if (view<worker->GetGeometry()->GetNbFacet() && worker->GetGeometry()->GetFacet(view)->sh.isProfile)
 			addView(view);
 	//Refresh(); //Commented out: at this point, simulation results are not yet loaded

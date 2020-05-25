@@ -52,7 +52,7 @@ public:
   void SetBounds(int x,int y,int w,int h);
   void addView(int facet);
   std::vector<int> GetViews();
-  void SetViews(std::vector<int> views);
+  void SetViews(const std::vector<int> &updatedViews);
   bool IsLogScaled();
   void SetLogScaled(bool logScale);
   void SetWorker(Worker *w);
