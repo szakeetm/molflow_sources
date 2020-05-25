@@ -6,7 +6,6 @@
 #define MOLFLOW_PROJ_GEOMETRYSIMU_H
 
 #include <vector>
-#include <Random.h>
 #include "MolflowTypes.h"
 #include "Buffer_shared.h"
 
@@ -17,16 +16,6 @@ public:
     std::vector<size_t>   phi_CDFsums; // since CDF runs only to the middle of the last segment, for each theta a line sum is stored here. Also a pdf for theta
     std::vector<double>   theta_CDF;	  // Theta CDF, not normalized. nth value is the CDF at the end of region n (beginning of first section is always 0)
     size_t   theta_CDFsum; // since theta CDF only runs till the middle of the last segment, the map sum is here
-
-    double GetTheta(const double& thetaIndex, const AnglemapParams& anglemapParams);
-    double GetPhi(const double& phiIndex, const AnglemapParams& anglemapParams);
-    double GetPhipdfValue(const double & thetaIndex, const int & phiIndex, const AnglemapParams & anglemapParams);
-    double GetPhiCDFValue(const double& thetaIndex, const int& phiIndex, const AnglemapParams& anglemapParams);
-    double GetPhiCDFSum(const double & thetaIndex, const AnglemapParams & anglemapParams);
-    std::tuple<double, int, double>
-    GenerateThetaFromAngleMap(const AnglemapParams &anglemapParams, MersenneTwister &randomGenerator);
-    double GeneratePhiFromAngleMap(const int &thetaLowerIndex, const double &thetaOvershoot,
-                                   const AnglemapParams &anglemapParams, MersenneTwister &randomGenerator);
 };
 
 // Local facet structure
