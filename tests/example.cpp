@@ -30,6 +30,7 @@ namespace {
             simMan.nbCores = 4;
             simMan.InitSimUnits();
             EXPECT_EQ(4, simMan.simHandles.size());
+            EXPECT_EQ(0, simMan.ExecuteAndWait(COMMAND_EXIT,PROCESS_KILLED));
         }
     }
 

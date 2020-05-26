@@ -110,7 +110,6 @@ ENDIF(WIN32)
 add_dependencies(molflow molflowSub compress)
 add_dependencies(molflowCLI molflowSub)
 
-
 option(USE_TESTS "Build the tests" ON)
 if(USE_TESTS)
     enable_testing()

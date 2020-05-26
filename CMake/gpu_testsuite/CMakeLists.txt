@@ -214,7 +214,16 @@ target_link_libraries(${PROJECT_NAME}
 # Now create executable
 set(PROJECT_NAME gpuTestsuite)
 set(INCLUDE_DIRECTORIES "")
-add_executable(${PROJECT_NAME} ${GPU_DIR_1}/TestSimulator.cpp ${GPU_DIR_1}/ModelReader.cpp ${GPU_DIR_1}/Poly2TriConverter.cpp)
+add_executable(${PROJECT_NAME}
+        ${GPU_DIR_1}/TestSimulator.cpp
+        ${GPU_DIR_1}/ModelReader.cpp
+        ${HEADER_DIR_1}/GeometrySimu.cpp
+        ${HEADER_DIR_1}/MolflowBuffer.cpp
+        ${HEADER_DIR_1}/Parameter.cpp
+        ${HEADER_DIR_2}/Vector.cpp
+        ${GPU_DIR_1}/Poly2TriConverter.cpp
+        ${GPU_DIR_1}/SimulationControllerGPU.cpp
+        )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${GPU_DIR_1}

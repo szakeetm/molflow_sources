@@ -103,13 +103,6 @@ set(SRC_FILES ${CPP_DIR_1}/FacetAdvParams.cpp
         ${CPP_DIR_1}/Viewer3DSettings.cpp
         )
 
-
-
-if(WITH_GPU)
-    set(SRC_FILES ${SRC_FILES} ${CPP_DIR_1}/GPUSim/MolflowModelParser.cpp)
-    set(HEADER_FILES ${HEADER_FILES} ${HEADER_DIR_1}/GPUSim/MolflowModelParser.h)
-endif(WITH_GPU)
-
 # set the path to the library folder
 
 if(MSVC)
