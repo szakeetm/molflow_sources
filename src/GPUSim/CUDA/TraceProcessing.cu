@@ -303,6 +303,123 @@ namespace flowgpu {
         //printf("PostBounce Tex[%d]: %f , %f - %f (%f)\n", poly.parentIndex, oriRatio * velocity_factor / ortVelocity,oriRatio * ortSpeedFactor * ortVelocity * optixLaunchParams.sharedData.texelInc[texelIndex],ortVelocity,optixLaunchParams.sharedData.texelInc[texelIndex]);
     }
 
+    // --------------------------------------
+    // increase texture counters for absorption (same as desorp)
+    // --------------------------------------
+    static __forceinline__ __device__
+    void RecordAbsorpProfile(const flowgeom::Polygon &poly, MolPRD &hitData, float3 rayOrigin, float3 rayDir){
+
+        const float velocity_factor = 2.0f;
+        const float ortSpeedFactor = 1.0f;
+
+        const float3 b = rayOrigin - poly.O;
+
+        float det = poly.U.x * poly.V.y - poly.U.y * poly.V.x; // TODO: Pre calculate
+        float detU = b.x * poly.V.y - b.y * poly.V.x;
+        float detV = poly.U.x * b.y - poly.U.y * b.x;
+
+        if(fabsf(det)<=EPS32){
+            det = poly.U.y * poly.V.z - poly.U.z * poly.V.y; // TODO: Pre calculate
+            detU = b.y * poly.V.z - b.z * poly.V.y;
+            detV = poly.U.y * b.z - poly.U.z * b.y;
+            if(fabsf(det)<=EPS32){
+                det = poly.U.z * poly.V.x - poly.U.x * poly.V.z; // TODO: Pre calculate
+                detU = b.z * poly.V.x - b.x * poly.V.z;
+                detV = poly.U.z * b.x - poly.U.x * b.z;
+                if(fabsf(det)<=EPS32){
+                    printf("Dangerous determinant calculated for texture hit: %lf : %lf : %lf -> %lf : %lf\n",det,detU,detV,detU/det,detV/det);
+                }
+            }
+        }
+
+        unsigned int add = 0;
+        if(poly.profProps.profileType == flowgeom::PROFILE_FLAGS::profileU){
+            float hitLocationU = detU/det;
+            add = (unsigned int)(hitLocationU * PROFILE_SIZE);
+        }
+        else if(poly.profProps.profileType == flowgeom::PROFILE_FLAGS::profileV){
+            float hitLocationV = detV/det;
+            add = (unsigned int)(hitLocationV * PROFILE_SIZE);
+        }
+
+        float ortVelocity = hitData.velocity*fabsf(dot(rayDir, poly.N)); //surface-orthogonal velocity component
+        //printf("Hit at %lf , %lf for tex %lf , %lf\n", hitLocationU, hitLocationV, facetTex.texWidthD, facetTex.texHeightD);
+
+        flowgeom::Texel& tex = optixLaunchParams.sharedData.profileSlices[poly.profProps.profileOffset + add];
+        atomicAdd(&tex.countEquiv, static_cast<uint32_t>(1));
+        atomicAdd(&tex.sum_1_per_ort_velocity, 1.0 * velocity_factor / ortVelocity);
+        atomicAdd(&tex.sum_v_ort_per_area, 1.0 * ortSpeedFactor * ortVelocity * (optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f)); // sum ortho_velocity[m/s] / cell_area[cm2]
+    }
+
+    // --------------------------------------
+    // increase texture counters for reflections
+    // --------------------------------------
+    static __forceinline__ __device__
+    unsigned int RecordBounceProfile(const flowgeom::Polygon& poly, MolPRD& hitData, const float3& rayOrigin, const float3& rayDir){
+
+        const float3 b = rayOrigin - poly.O;
+
+        float det = poly.U.x * poly.V.y - poly.U.y * poly.V.x; // TODO: Pre calculate
+        float detU = b.x * poly.V.y - b.y * poly.V.x;
+        float detV = poly.U.x * b.y - poly.U.y * b.x;
+
+        if(fabsf(det)<=EPS32){
+            det = poly.U.y * poly.V.z - poly.U.z * poly.V.y; // TODO: Pre calculate
+            detU = b.y * poly.V.z - b.z * poly.V.y;
+            detV = poly.U.y * b.z - poly.U.z * b.y;
+            if(fabsf(det)<=EPS32){
+                det = poly.U.z * poly.V.x - poly.U.x * poly.V.z; // TODO: Pre calculate
+                detU = b.z * poly.V.x - b.x * poly.V.z;
+                detV = poly.U.z * b.x - poly.U.x * b.z;
+                if(fabsf(det)<=EPS32){
+                    printf("Dangerous determinant calculated for texture hit: %lf : %lf : %lf -> %lf : %lf\n",det,detU,detV,detU/det,detV/det);
+                }
+            }
+        }
+
+        unsigned int add = 0;
+        if(poly.profProps.profileType == flowgeom::PROFILE_FLAGS::profileU){
+            float hitLocationU = detU/det;
+            add = (unsigned int)(hitLocationU * PROFILE_SIZE);
+        }
+        else if(poly.profProps.profileType == flowgeom::PROFILE_FLAGS::profileV){
+            float hitLocationV = detV/det;
+            add = (unsigned int)(hitLocationV * PROFILE_SIZE);
+        }
+
+        //printf("Pre Bounce Tex: %f = %f * %f * %f\n",ortVelocity,(optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f) ,hitData.velocity,fabsf(dot(rayDir, poly.N)));
+        flowgeom::Texel& tex = optixLaunchParams.sharedData.profileSlices[poly.profProps.profileOffset + add];
+
+        const float velocity_factor = 1.0f;
+        const float ortSpeedFactor = 1.0f;
+        const float oriRatio = 1.0f; // TODO: Part of particle
+        const float ortVelocity = hitData.velocity * fabsf(dot(rayDir, poly.N)); //surface-orthogonal velocity component
+
+        atomicAdd(&tex.countEquiv, static_cast<uint32_t>(oriRatio));
+        atomicAdd(&tex.sum_1_per_ort_velocity, (float)(oriRatio * velocity_factor / ortVelocity));
+        atomicAdd(&tex.sum_v_ort_per_area, (float)(oriRatio * ortSpeedFactor * ortVelocity * (optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f))); // sum ortho_velocity[m/s] / cell_area[cm2]
+        //printf("Pre Bounce Tex[%d]: %f , %f - %f (%f)\n", poly.parentIndex, oriRatio * velocity_factor / ortVelocity,oriRatio * ortSpeedFactor * ortVelocity * optixLaunchParams.sharedData.texelInc[facetTex.texelOffset + add],ortVelocity,optixLaunchParams.sharedData.texelInc[facetTex.texelOffset + add]);
+
+        // Return Texel index for reuse in post bounce processing
+        return poly.profProps.profileOffset + add;
+    }
+
+    // Same but without increased hit counter
+    static __forceinline__ __device__
+    void RecordPostBounceProfile(const flowgeom::Polygon& poly, MolPRD& hitData, float3 rayDir, unsigned int texelIndex){
+
+        const float velocity_factor = 1.0f;
+        const float ortSpeedFactor = 1.0f;
+        const float oriRatio = 1.0f; // TODO: Part of particle
+        const float ortVelocity =  hitData.velocity * fabsf(dot(rayDir, poly.N)); //surface-orthogonal velocity component
+        //printf("PostBounce Tex: %f = %f * %f * %f\n",ortVelocity,(optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f) ,hitData.velocity,fabsf(dot(rayDir, poly.N)));
+
+        flowgeom::Texel& tex = optixLaunchParams.sharedData.profileSlices[texelIndex];
+        atomicAdd(&tex.sum_1_per_ort_velocity, (float)(oriRatio * velocity_factor / ortVelocity));
+        atomicAdd(&tex.sum_v_ort_per_area, (float)(oriRatio * ortSpeedFactor * ortVelocity * (optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f))); // sum ortho_velocity[m/s] / cell_area[cm2]
+        //printf("PostBounce Tex[%d]: %f , %f - %f (%f)\n", poly.parentIndex, oriRatio * velocity_factor / ortVelocity,oriRatio * ortSpeedFactor * ortVelocity * optixLaunchParams.sharedData.texelInc[texelIndex],ortVelocity,optixLaunchParams.sharedData.texelInc[texelIndex]);
+    }
+
     //------------------------------------------------------------------------------
     //
     // closest hit and miss programs for the molflow ray tracer standard molecules
@@ -394,6 +511,10 @@ namespace flowgpu {
             if (poly.texProps.textureFlags & flowgeom::TEXTURE_FLAGS::countAbs)
                 RecordAbsorpTexture(poly, prd, prd.hitPos, ray_dir);
 #endif
+#ifdef WITH_PROF
+            if (poly.profProps.profileType != flowgeom::PROFILE_FLAGS::noProfile)
+                RecordAbsorpProfile(poly, prd, prd.hitPos, ray_dir);
+#endif
             optixLaunchParams.perThreadData.randBufferOffset[bufferIndex] = randOffset;
 
             prd.inSystem = 0;
@@ -424,7 +545,12 @@ namespace flowgpu {
             if (poly.texProps.textureFlags & flowgeom::TEXTURE_FLAGS::countRefl)
                 texelIndex = RecordBounceTexture(poly, prd, prd.hitPos, ray_dir);
 #endif
-
+#ifdef WITH_PROF
+            unsigned int profileIndex = 1e10;
+            if (poly.profProps.profileType != flowgeom::PROFILE_FLAGS::noProfile){
+                profileIndex = RecordBounceProfile(poly, prd, prd.hitPos, ray_dir);
+            }
+#endif
 
             // also increase a nbBounce counter if there is need (e.g. recursion)
             prd.inSystem = 1;
@@ -459,6 +585,10 @@ namespace flowgpu {
 #ifdef WITH_TEX
             if (poly.texProps.textureFlags & flowgeom::TEXTURE_FLAGS::countRefl)
                 RecordPostBounceTexture(poly, prd, prd.postHitDir, texelIndex);
+#endif
+#ifdef WITH_PROF
+            if (poly.profProps.profileType != flowgeom::PROFILE_FLAGS::noProfile)
+                RecordPostBounceProfile(poly, prd, prd.postHitDir, profileIndex);
 #endif
             optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos = prd.hitPos;
             optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].postHitDir = prd.postHitDir;
@@ -657,7 +787,11 @@ namespace flowgpu {
                 RecordAbsorpTexture(poly, prd, prd.hitPos, ray_dir);
             }
 #endif
-
+#ifdef WITH_PROF
+            if (poly.profProps.profileType != flowgeom::PROFILE_FLAGS::noProfile){
+                RecordAbsorpProfile(poly, prd, prd.hitPos, ray_dir);
+            }
+#endif
             optixLaunchParams.perThreadData.randBufferOffset[bufferIndex] = randOffset;
 
             prd.inSystem = 0;
@@ -689,6 +823,14 @@ namespace flowgpu {
             if (poly.texProps.textureFlags & flowgeom::TEXTURE_FLAGS::countRefl)
                 texelIndex = RecordBounceTexture(poly, prd, prd.hitPos, ray_dir);
 #endif
+#ifdef WITH_PROF
+            unsigned int profileIndex = 1e10;
+            //printf("BOUNCE? %d != %d == %d\n",(int)poly.profProps.profileType, (int)flowgeom::PROFILE_FLAGS::noProfile,(int)poly.profProps.profileType != flowgeom::PROFILE_FLAGS::noProfile);
+            if (poly.profProps.profileType != flowgeom::PROFILE_FLAGS::noProfile){
+                profileIndex = RecordBounceProfile(poly, prd, prd.hitPos, ray_dir);
+            }
+#endif
+
             // also increase a nbBounce counter if there is need (e.g. recursion)
             prd.inSystem = 1;
 
@@ -724,6 +866,11 @@ namespace flowgpu {
 #ifdef WITH_TEX
             if (poly.texProps.textureFlags & flowgeom::TEXTURE_FLAGS::countRefl)
                 RecordPostBounceTexture(poly, prd, prd.postHitDir, texelIndex);
+#endif
+#ifdef WITH_PROF
+            if (poly.profProps.profileType != flowgeom::PROFILE_FLAGS::noProfile){
+                RecordPostBounceProfile(poly, prd, prd.postHitDir, profileIndex);
+            }
 #endif
             optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos = prd.hitPos;
             optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].postHitDir = prd.postHitDir;

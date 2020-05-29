@@ -22,13 +22,18 @@ namespace flowgpu {
 
     };
 
+    /*!
+     * @brief Result buffers for per-facet data
+     */
     struct SimulationMemory_perFacet{
         CUDABuffer hitCounterBuffer;
         CUDABuffer missCounterBuffer;
+
         CUDABuffer textureBuffer;
         CUDABuffer texelBuffer;
         CUDABuffer texIncBuffer;
 
+        CUDABuffer profileBuffer;
     };
 
     /*! one buffer per input mesh */

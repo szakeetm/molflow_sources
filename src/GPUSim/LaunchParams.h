@@ -141,8 +141,9 @@ namespace flowgpu {
         struct {
             uint32_t *missCounter;
             flowgeom::FacetTexture *facetTextures;
-            flowgeom::Texel *texels;
             float *texelInc;
+            flowgeom::Texel *texels;
+            flowgeom::Texel *profileSlices;
         } sharedData;
 
         struct {

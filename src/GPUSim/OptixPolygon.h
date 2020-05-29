@@ -20,6 +20,17 @@ namespace flowgeom {
         ,countDes = (1 << 4) // Molflow only
     };
 
+    enum PROFILE_FLAGS {
+        noProfile = 0,
+        profileU  = (1 << 0),
+        profileV           = (1 << 1),
+        // TODO: Not yet implemented
+        profileAngular         = (1 << 2),
+        profileVelocity         = (1 << 3)
+        ,profileOrtVelocity = (1 << 4)
+        ,profileTanVelocity = (1 << 5)
+    };
+
     struct TempFacetProperties { //Formerly SHFACET
     public:
         //For sync between interface and subprocess
@@ -191,6 +202,13 @@ namespace flowgeom {
         //Texel*   texels; // texWidth*texHeight
     };
 
+    /*struct FacetProfile {
+        FacetProfile() : profileOffset(0), profileType(0){}
+
+        unsigned int profileOffset;
+        int profileType;
+    };*/
+
     // TODO: Maybe save some variables (e.g. texture WxH) not with the Polygon to save memory when Facets are actually not textured
     struct TextureProperties{
         TextureProperties() : textureOffset(0),textureSize(0),textureFlags(TEXTURE_FLAGS::noTexture){}
@@ -205,6 +223,23 @@ namespace flowgeom {
         unsigned int textureOffset; // map it to the original polygon index
         unsigned int textureSize; // check ==0 to find if texture exists, could also get its own SBT
         unsigned int textureFlags; // enum TextureCounters
+
+    };
+
+    // TODO: Maybe save some variables (e.g. texture WxH) not with the Polygon to save memory when Facets are actually not textured
+    struct ProfileProperties{
+        ProfileProperties() : profileOffset(0), profileType(PROFILE_FLAGS::noProfile){}
+        ProfileProperties& operator=(const ProfileProperties& o){
+            this->profileOffset = o.profileOffset;
+            //this->textureSize = o.textureSize;
+            this->profileType = o.profileType;
+
+            return *this;
+        }
+
+        unsigned int profileOffset; // map it to the original polygon index
+        //unsigned int textureSize; // check ==0 to find if texture exists, could also get its own SBT
+        unsigned int profileType; // enum TextureCounters
 
     };
 
@@ -255,6 +290,7 @@ namespace flowgeom {
                 this->N = o.N;
                 this->parentIndex = o.parentIndex;
                 this->texProps = o.texProps;
+                this->profProps = o.profProps;
                 this->facProps = o.facProps;
 
                 o.nbVertices = 0;
@@ -268,6 +304,7 @@ namespace flowgeom {
                 o.N = float3();
                 o.parentIndex = std::numeric_limits<unsigned int>::max();
                 o.texProps = TextureProperties();
+                o.profProps = ProfileProperties();
                 o.facProps = SimProperties();
             }
             return *this;
@@ -286,6 +323,7 @@ namespace flowgeom {
 
             this->parentIndex = o.parentIndex;
             this->texProps = o.texProps;
+            this->profProps = o.profProps;
             this->facProps = o.facProps;
 
             return *this;
@@ -303,12 +341,14 @@ namespace flowgeom {
 
             this->parentIndex = o.parentIndex;
             this->texProps = o.texProps;
+            this->profProps = o.profProps;
             this->facProps = o.facProps;
 
         }
 
         // attributes that don't describe the geometry
         TextureProperties texProps;
+        ProfileProperties profProps;
         SimProperties facProps;
 
 

@@ -115,6 +115,8 @@ namespace flowgpu {
         std::vector<flowgeom::FacetTexture> facetTex;
         std::vector<float> texInc;
 
+        std::vector<flowgeom::Texel> profiles;
+
         uint32_t nbFacets_total;
         uint32_t nbVertices_total;
         //! bounding box of all vertices in the model

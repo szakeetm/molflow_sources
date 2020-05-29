@@ -6,7 +6,7 @@
 #include "SimControllerGPU.h"
 #include "ModelReader.h" // TempFacet
 
-#define LAUNCHSIZE 64*128*64
+#define LAUNCHSIZE 1024*128*128
 
 SimControllerGPU::SimControllerGPU(std::string appName, std::string dpName, size_t parentPID, size_t procIdx)
         : SimulationController(appName, dpName, parentPID, procIdx) {
@@ -145,6 +145,28 @@ void SimControllerGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DW
     } // End nbFacet
 
     //textures
+    if(!globalCount->profiles.empty()) {
+        double timeCorrection = model->wp.finalOutgassingRate;
+        for (auto&[id, profiles] : globalCount->profiles) {
+            for (auto &mesh : model->triangle_meshes) {
+                int previousId = 0;
+                for (auto &facet : mesh->poly) {
+                    if ((facet.profProps.profileType != flowgeom::PROFILE_FLAGS::noProfile) && (id == facet.parentIndex)) {
+                        ProfileSlice *shProfile = (ProfileSlice *) (buffer + (model->tri_facetOffset[id] + sizeof(FacetHitBuffer)));
+                        for (unsigned int s = 0; s < PROFILE_SIZE; ++s) {
+                            shProfile[s].countEquiv += profiles[s].countEquiv;
+                            shProfile[s].sum_v_ort += profiles[s].sum_v_ort_per_area;
+                            shProfile[s].sum_1_per_ort_velocity += profiles[s].sum_1_per_ort_velocity;
+                        }
+
+                        break; //Only need 1 facet for texture position data
+                    }
+                }
+            }
+        }
+    }
+
+    //textures
     if(!globalCount->textures.empty()) {
         double timeCorrection = model->wp.finalOutgassingRate;
         for (auto&[id, texels] : globalCount->textures) {
@@ -152,7 +174,8 @@ void SimControllerGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DW
                 int previousId = 0;
                 for (auto &facet : mesh->poly) {
                     if ((facet.texProps.textureFlags) && (id == facet.parentIndex)) {
-                        TextureCell *shTexture = (TextureCell *) (buffer + (model->tri_facetOffset[id] + sizeof(FacetHitBuffer)));
+                        int bufferOffset_profSize = facet.profProps.profileType ? PROFILE_SIZE * sizeof(ProfileSlice) : 0;
+                        TextureCell *shTexture = (TextureCell *) (buffer + (model->tri_facetOffset[id] + sizeof(FacetHitBuffer) + bufferOffset_profSize));
                         unsigned int width = model->facetTex[facet.texProps.textureOffset].texWidth;
                         unsigned int height = model->facetTex[facet.texProps.textureOffset].texHeight;
                         for (unsigned int h = 0; h < height; ++h) {
@@ -227,6 +250,9 @@ void SimControllerGPU::ResetTmpCounters() {
     std::fill(globalCount->leakCounter.begin(),globalCount->leakCounter.end(), 0);
     for(auto& tex : globalCount->textures){
         std::fill(tex.second.begin(),tex.second.end(), Texel64());
+    }
+    for(auto& prof : globalCount->profiles){
+        std::fill(prof.second.begin(),prof.second.end(), Texel64());
     }
 }
 

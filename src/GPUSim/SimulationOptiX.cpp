@@ -1126,12 +1126,19 @@ namespace flowgpu {
             facet_memory.texIncBuffer.alloc_and_upload(model->texInc);
         }
 
+        // Profile
+        if(!model->profiles.empty()){
+            facet_memory.profileBuffer.alloc_and_upload(model->profiles);
+        }
+
         if(!facet_memory.textureBuffer.isNullptr())
             state.launchParams.sharedData.facetTextures = (flowgeom::FacetTexture*) facet_memory.textureBuffer.d_pointer();
         if(!facet_memory.texelBuffer.isNullptr())
             state.launchParams.sharedData.texels = (flowgeom::Texel*) facet_memory.texelBuffer.d_pointer();
         if(!facet_memory.texIncBuffer.isNullptr())
             state.launchParams.sharedData.texelInc = (float*) facet_memory.texIncBuffer.d_pointer();
+        if(!facet_memory.profileBuffer.isNullptr())
+            state.launchParams.sharedData.profileSlices = (flowgeom::Texel*) facet_memory.profileBuffer.d_pointer();
 
 #ifdef DEBUGCOUNT
         memory_debug.detBuffer.resize(NCOUNTBINS*sizeof(uint32_t));
@@ -1203,6 +1210,9 @@ namespace flowgpu {
         if(!facet_memory.texelBuffer.isNullptr())
             facet_memory.texelBuffer.download(hostData->texels.data(), model->textures.size());
 
+        if(!facet_memory.profileBuffer.isNullptr())
+            facet_memory.profileBuffer.download(hostData->profileSlices.data(), model->profiles.size());
+
 #ifdef DEBUGCOUNT
         memory_debug.detBuffer.download(hostData->detCounter.data(), NCOUNTBINS);
         memory_debug.uBuffer.download(hostData->uCounter.data(), NCOUNTBINS);
@@ -1223,6 +1233,8 @@ namespace flowgpu {
         facet_memory.missCounterBuffer.initDeviceData(sizeof(uint32_t));
         if(!facet_memory.texelBuffer.isNullptr())
             facet_memory.texelBuffer.initDeviceData(model->textures.size() * sizeof(flowgeom::Texel));
+        if(!facet_memory.profileBuffer.isNullptr())
+            facet_memory.profileBuffer.initDeviceData(model->profiles.size() * sizeof(flowgeom::Texel));
     }
 
     void SimulationOptiX::cleanup()
@@ -1276,6 +1288,8 @@ namespace flowgpu {
             facet_memory.texelBuffer.free();
         if(!facet_memory.texIncBuffer.isNullptr())
             facet_memory.texIncBuffer.free();
+        if(!facet_memory.profileBuffer.isNullptr())
+            facet_memory.profileBuffer.free();
 #ifdef DEBUGCOUNT
         memory_debug.detBuffer.free();
         memory_debug.uBuffer.free();

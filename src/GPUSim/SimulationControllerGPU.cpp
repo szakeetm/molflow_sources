@@ -93,8 +93,8 @@ unsigned long long int SimulationControllerGPU::GetSimulationData(bool silent) {
 
     bool writeData = false;
     bool printData = false & !silent;
-    bool printDataParent = true & !silent;
-    bool printCounters = true & !silent;
+    bool printDataParent = false & !silent;
+    bool printCounters = false & !silent;
     try {
         optixHandle->downloadDataFromDevice(&data); //download tmp counters
         IncreaseGlobalCounters(&data); //increase global counters
@@ -119,6 +119,11 @@ void SimulationControllerGPU::IncreaseGlobalCounters(HostData* tempData){
         globalCounter.facetHitCounters[facIndex].nbMCHit += tempData->facetHitCounters[i].nbMCHit;
         globalCounter.facetHitCounters[facIndex].nbDesorbed += tempData->facetHitCounters[i].nbDesorbed;
         globalCounter.facetHitCounters[facIndex].nbAbsEquiv += tempData->facetHitCounters[i].nbAbsEquiv;
+
+        globalCounter.facetHitCounters[facIndex].nbHitEquiv += tempData->facetHitCounters[i].nbHitEquiv;
+        globalCounter.facetHitCounters[facIndex].sum_v_ort += tempData->facetHitCounters[i].sum_v_ort;
+        globalCounter.facetHitCounters[facIndex].sum_1_per_velocity += tempData->facetHitCounters[i].sum_1_per_velocity;
+        globalCounter.facetHitCounters[facIndex].sum_1_per_ort_velocity += tempData->facetHitCounters[i].sum_1_per_ort_velocity;
     }
 
     globalCounter.leakCounter[0] += tempData->leakCounter[0];
@@ -129,7 +134,7 @@ void SimulationControllerGPU::IncreaseGlobalCounters(HostData* tempData){
             for (auto &mesh : model->triangle_meshes) {
                 int parentFacetId = -1;
                 for (auto &facet : mesh->poly) {
-                    if((parentFacetId == facet.parentIndex)) break;
+                    if(parentFacetId == facet.parentIndex) break;
                     if ((facet.texProps.textureFlags) && (id == facet.parentIndex)) {
                         parentFacetId = id;
                         unsigned int width = model->facetTex[facet.texProps.textureOffset].texWidth;
@@ -141,9 +146,9 @@ void SimulationControllerGPU::IncreaseGlobalCounters(HostData* tempData){
                                 unsigned int index_tmp =
                                         index_glob + model->facetTex[facet.texProps.textureOffset].texelOffset;
 
-                                texels[index_glob].countEquiv += data.texels[index_tmp].countEquiv;
-                                texels[index_glob].sum_v_ort_per_area += data.texels[index_tmp].sum_v_ort_per_area;
-                                texels[index_glob].sum_1_per_ort_velocity += data.texels[index_tmp].sum_1_per_ort_velocity;
+                                texels[index_glob].countEquiv += tempData->texels[index_tmp].countEquiv;
+                                texels[index_glob].sum_v_ort_per_area += tempData->texels[index_tmp].sum_v_ort_per_area;
+                                texels[index_glob].sum_1_per_ort_velocity += tempData->texels[index_tmp].sum_1_per_ort_velocity;
                             }
                         }
                     }
@@ -153,26 +158,57 @@ void SimulationControllerGPU::IncreaseGlobalCounters(HostData* tempData){
     }
 
     //profiles
+    if(!tempData->profileSlices.empty()) {
+        for (auto&[id, profiles] : globalCounter.profiles) {
+            for (auto &mesh : model->triangle_meshes) {
+                int parentFacetId = -1;
+                for (auto &facet : mesh->poly) {
+                    if(parentFacetId == facet.parentIndex) break;
+                    if ((facet.profProps.profileType != flowgeom::PROFILE_FLAGS::noProfile) && (id == facet.parentIndex)) {
+                        parentFacetId = id;
+                        for (unsigned int s = 0; s < PROFILE_SIZE; ++s) {
+                            unsigned int index_tmp = s + facet.profProps.profileOffset;
 
+                            profiles[s].countEquiv += tempData->profileSlices[index_tmp].countEquiv;
+                            profiles[s].sum_v_ort_per_area += tempData->profileSlices[index_tmp].sum_v_ort_per_area;
+                            profiles[s].sum_1_per_ort_velocity += tempData->profileSlices[index_tmp].sum_1_per_ort_velocity;
+
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 void SimulationControllerGPU::Resize(){
     //data.hit.resize(kernelDimensions.x*kernelDimensions.y);
     data.facetHitCounters.resize(model->nbFacets_total * CORESPERSM * WARPSCHEDULERS);
     data.texels.resize(model->textures.size());
+    data.profileSlices.resize(model->profiles.size());
     data.leakCounter.resize(1);
 
     globalCounter.facetHitCounters.resize(model->nbFacets_total);
     globalCounter.leakCounter.resize(1);
     for(auto& mesh : model->triangle_meshes) {
         int lastTexture = -1;
+        int lastProfile = -1;
         for (auto &facet : mesh->poly) {
+
+            // has texture?
             if ((facet.texProps.textureFlags) &&
-                (lastTexture < (int) facet.parentIndex)) {
+                (lastTexture < (int) facet.parentIndex)) { // prevent duplicates
                 unsigned int width = model->facetTex[facet.texProps.textureOffset].texWidth;
                 unsigned int height = model->facetTex[facet.texProps.textureOffset].texHeight;
                 std::vector<Texel64> texels(width*height);
                 globalCounter.textures.insert(std::pair<uint32_t,std::vector<Texel64>>(facet.parentIndex,std::move(texels)));
+            }
+
+            // has profile?
+            if ((facet.profProps.profileType != flowgeom::PROFILE_FLAGS::noProfile) &&
+                (lastProfile < (int) facet.parentIndex)) {
+                std::vector<Texel64> texels(PROFILE_SIZE);
+                globalCounter.profiles.insert(std::pair<uint32_t,std::vector<Texel64>>(facet.parentIndex,std::move(texels)));
             }
         }
     }

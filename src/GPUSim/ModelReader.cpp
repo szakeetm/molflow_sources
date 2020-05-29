@@ -210,6 +210,25 @@ namespace flowgeom {
         return 1;
     }
 
+    int InitializeProfile(TempFacet &facet, std::vector<Texel> &profile)
+    {
+
+        //Profile
+        if (facet.facetProperties.isProfile) {
+            //const size_t PROFILE_SIZE = 100;
+
+            try {
+                // PROFILE_SIZE bins per profile
+                profile.resize(PROFILE_SIZE);
+            }
+            catch (...) {
+                printf("Not enough memory to load profiles\n");
+                return 0;
+            }
+        }
+        return 1;
+    }
+
     int parseGeomFromSerialization(flowgpu::Model* model, std::vector<flowgeom::TempFacet>& facets, std::vector<float3>& vertices3d){
         // First create a regular polygonmesh
         // transform Molflow facet data to simulation polygons
@@ -267,7 +286,7 @@ namespace flowgeom {
         //--- Calculate outgassing values in relation to (tri_area / poly_area)
         CalculateRelativeTriangleOutgassing(facets,triMesh);
 
-
+        // Textures
         if(!model->textures.empty()){
             std::cout << "[WARNING] Textures would get added to non-empty vector!"<< std::endl;
             return 1;
@@ -340,6 +359,46 @@ namespace flowgeom {
                     }
                     textureOffset += 1;
                 } // one more texture
+            }
+        }
+
+        // Profiles
+        if(!model->profiles.empty()){
+            std::cout << "[WARNING] Profiles would get added to non-empty vector!"<< std::endl;
+            return 1;
+        }
+        else{
+            int profileOffset = 0;
+            for(int facetInd = 0; facetInd < facets.size(); ++facetInd){
+                auto& facet = facets[facetInd];
+                if(facet.facetProperties.isProfile){
+
+                    std::vector<Texel> profile;
+                    if(!InitializeProfile(facet, profile)){
+                        printf("[ERROR] Initializing facetProf #%d\n", facetInd);
+                        exit(0);
+                    }
+
+                    // append to a global continuous structure
+                    model->profiles.insert(std::end(model->profiles), std::begin(profile), std::end(profile));
+
+                    for(auto& polygonMesh : model->poly_meshes){
+                        for(auto& polygon : polygonMesh->poly){
+                            if(polygon.parentIndex == facetInd){
+                                polygon.profProps.profileOffset = profileOffset;
+                                polygon.profProps.profileType = facet.facetProperties.profileType;
+                            }
+                        }
+                    }
+                    for(auto& triangleMesh : model->triangle_meshes){
+                        for(auto& triangle : triangleMesh->poly){
+                            if(triangle.parentIndex == facetInd){
+                                triangle.profProps.profileOffset = profileOffset;
+                                triangle.profProps.profileType = facet.facetProperties.profileType;
+                            }
+                        }
+                    }
+                } // one more profile
             }
         }
         return 0;

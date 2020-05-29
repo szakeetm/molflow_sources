@@ -39,6 +39,8 @@ struct HostData {
     //std::vector<MolPRD> hitData;
     std::vector<flowgpu::CuFacetHitCounter> facetHitCounters;
     std::vector<flowgeom::Texel> texels;
+    std::vector<flowgeom::Texel> profileSlices;
+
     std::vector<uint32_t> leakCounter;
 
 #ifdef DEBUGCOUNT
@@ -58,6 +60,7 @@ struct GlobalCounter {
     std::vector<CuFacetHitCounter64> facetHitCounters;
     std::vector<uint64_t> leakCounter;
     std::map<uint32_t,std::vector<Texel64>> textures;
+    std::map<uint32_t,std::vector<Texel64>> profiles;
 
 #ifdef DEBUGCOUNT
     std::vector<uint64_t> detCounter;

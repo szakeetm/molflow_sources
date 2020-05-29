@@ -481,6 +481,53 @@ namespace flowgpu {
 
     }
 
+    // --------------------------------------
+    // increase texture counters for desorption
+    // --------------------------------------
+    static __forceinline__ __device__
+    void RecordDesorptionProfile(flowgeom::Polygon& poly, MolPRD& hitData, float3 rayOrigin, float3 rayDir){
+
+        const float velocity_factor = 2.0f;
+        const float ortSpeedFactor = 1.0f;
+
+        const float3 b = rayOrigin - poly.O;
+        float det = poly.U.x * poly.V.y - poly.U.y * poly.V.x; // TODO: Pre calculate
+        float detU = b.x * poly.V.y - b.y * poly.V.x;
+        float detV = poly.U.x * b.y - poly.U.y * b.x;
+
+        if(fabsf(det)<=EPS32){
+            det = poly.U.y * poly.V.z - poly.U.z * poly.V.y; // TODO: Pre calculate
+            detU = b.y * poly.V.z - b.z * poly.V.y;
+            detV = poly.U.y * b.z - poly.U.z * b.y;
+            if(fabsf(det)<=EPS32){
+                det = poly.U.z * poly.V.x - poly.U.x * poly.V.z; // TODO: Pre calculate
+                detU = b.z * poly.V.x - b.x * poly.V.z;
+                detV = poly.U.z * b.x - poly.U.x * b.z;
+                if(fabsf(det)<=EPS32){
+                    printf("Dangerous determinant calculated for texture hit: %lf : %lf : %lf -> %lf : %lf\n",det,detU,detV,detU/det,detV/det);
+                }
+            }
+        }
+
+
+        unsigned int add = 0;
+        if(poly.profProps.profileType == flowgeom::PROFILE_FLAGS::profileU){
+            float hitLocationU = detU/det;
+            add = (unsigned int)(hitLocationU * PROFILE_SIZE);
+        }
+        else if(poly.profProps.profileType == flowgeom::PROFILE_FLAGS::profileV){
+            float hitLocationV = detV/det;
+            add = (unsigned int)(hitLocationV * PROFILE_SIZE);
+        }
+
+        float ortVelocity = hitData.velocity*fabsf(dot(rayDir, poly.N)); //surface-orthogonal velocity component
+
+        flowgeom::Texel& tex = optixLaunchParams.sharedData.profileSlices[poly.profProps.profileOffset + add];
+        atomicAdd(&tex.countEquiv, static_cast<uint32_t>(1));
+        atomicAdd(&tex.sum_1_per_ort_velocity, 1.0f * velocity_factor / ortVelocity);
+        atomicAdd(&tex.sum_v_ort_per_area, 1.0f * ortSpeedFactor * ortVelocity * (optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f)); // sum ortho_velocity[m/s] / cell_area[cm2]
+    }
+
     // Calculate new direction, but keep old position
     static __forceinline__ __device__
     void initMoleculeFromStart(const unsigned int bufferIndex, MolPRD& hitData, float3& rayDir , float3& rayOrigin)
@@ -530,6 +577,10 @@ namespace flowgpu {
 #ifdef WITH_TEX
         if (rayGenData->poly[facIndex].texProps.textureFlags & flowgeom::TEXTURE_FLAGS::countDes)
             RecordDesorptionTexture(rayGenData->poly[facIndex], hitData, rayOrigin, rayDir);
+#endif
+#ifdef WITH_PROF
+        if (rayGenData->poly[facIndex].profProps.profileType != flowgeom::PROFILE_FLAGS::noProfile)
+            RecordDesorptionProfile(rayGenData->poly[facIndex], hitData, rayOrigin, rayDir);
 #endif
 
     }
