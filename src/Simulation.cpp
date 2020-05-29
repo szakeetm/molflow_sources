@@ -2,6 +2,8 @@
 #include "IntersectAABB_shared.h"
 #include "Parameter.h"
 #include <cstring>
+#include <sstream>
+#include <cereal/archives/binary.hpp>
 
 /*SuperStructure::SuperStructure()
 {
@@ -50,4 +52,27 @@ int Simulation::ReinitializeParticleLog() {
         tmpParticleLog.reserve(ontheflyParams.logLimit / ontheflyParams.nbProcess);
 
     return 0;
+}
+
+bool Simulation::UpdateOntheflySimuParams(Dataport *loader) {
+    // Connect the dataport
+
+
+    if (!AccessDataportTimed(loader, 2000)) {
+        //SetErrorSub("Failed to connect to loader DP");
+        std::cerr << "Failed to connect to loader DP" << std::endl;
+        return false;
+    }
+    std::string inputString(loader->size,'\0');
+    BYTE* buffer = (BYTE*)loader->buff;
+    std::copy(buffer, buffer + loader->size, inputString.begin());
+    std::stringstream inputStream;
+    inputStream << inputString;
+    cereal::BinaryInputArchive inputArchive(inputStream);
+
+    inputArchive(ontheflyParams);
+
+    ReleaseDataport(loader);
+
+    return true;
 }
