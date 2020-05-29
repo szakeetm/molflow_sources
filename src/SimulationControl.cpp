@@ -59,23 +59,32 @@ int Simulation::SanityCheckGeom() {
 
 void Simulation::ClearSimulation() {
 
-    loadOK = false;
+    //loadOK = false;
 
     textTotalSize =
     profTotalSize =
     dirTotalSize =
     angleMapTotalSize =
     histogramTotalSize = 0;
-	
+
+    this->currentParticle = CurrentParticleStatus();
+
+    this->structures.clear();
+    this->CDFs.clear();
+    this->IDs.clear();
+    this->moments.clear();
+    this->parameters.clear();
+    this->temperatures.clear();
+    this->vertices3.clear();
 }
 
 bool Simulation::LoadSimulation(Dataport *loader) {
 	double t0 = GetTick();
 
-	SetState(PROCESS_STARTING, "Clearing previous simulation");
+	//SetState(PROCESS_STARTING, "Clearing previous simulation");
 	ClearSimulation();
 
-	SetState(PROCESS_STARTING, "Loading simulation");
+	//SetState(PROCESS_STARTING, "Loading simulation");
 
 	{
 		
@@ -130,7 +139,8 @@ bool Simulation::LoadSimulation(Dataport *loader) {
                 //ReleaseDataport(loader);
                 std::ostringstream err;
                 err << "Invalid structure (wrong link on F#" << i + 1 << ")";
-                SetErrorSub(err.str().c_str());
+                //SetErrorSub(err.str().c_str());
+                std::cerr << err.str() << std::endl;
                 return false;
             }
 
@@ -139,7 +149,7 @@ bool Simulation::LoadSimulation(Dataport *loader) {
 					s.facets.push_back(f);
 				}
 			}
-			else {
+            else {
 				structures[f.sh.superIdx].facets.push_back(f); //Assign to structure
 			}
 		}
@@ -167,7 +177,7 @@ bool Simulation::LoadSimulation(Dataport *loader) {
 	// Initialise simulation
 
 	//if(!sh.name.empty())
-	    loadOK = true;
+	    //loadOK = true;
 	double t1 = GetTick();
 	printf("  Load %s successful\n", sh.name.c_str());
 	printf("  Geometry: %zd vertex %zd facets\n", vertices3.size(), sh.nbFacet);
@@ -187,31 +197,9 @@ bool Simulation::LoadSimulation(Dataport *loader) {
 
 }
 
-bool Simulation::UpdateOntheflySimuParams(Dataport *loader) {
-	// Connect the dataport
-	
-
-	if (!AccessDataportTimed(loader, 2000)) {
-		SetErrorSub("Failed to connect to loader DP");
-		return false;
-	}
-    std::string inputString(loader->size,'\0');
-    BYTE* buffer = (BYTE*)loader->buff;
-    std::copy(buffer, buffer + loader->size, inputString.begin());
-    std::stringstream inputStream;
-    inputStream << inputString;
-    cereal::BinaryInputArchive inputArchive(inputStream);
-
-    inputArchive(ontheflyParams);
-
-	ReleaseDataport(loader);
-
-	return true;
-}
-
 void Simulation::UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DWORD timeout) {
-            UpdateMCHits(dpHit, prIdx, moments.size(), timeout);
-            if (dpLog) UpdateLog(dpLog, timeout);
+        UpdateMCHits(dpHit, prIdx, moments.size(), timeout);
+        if (dpLog) UpdateLog(dpLog, timeout);
 }
 
 size_t Simulation::GetHitsSize() {
@@ -221,7 +209,7 @@ size_t Simulation::GetHitsSize() {
 }
 
 void Simulation::ResetTmpCounters() {
-	SetState(0, "Resetting local cache...", false, true);
+	//SetState(0, "Resetting local cache...", false, true);
 
 	memset(&tmpGlobalResult, 0, sizeof(GlobalHitBuffer));
 	

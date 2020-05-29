@@ -21,6 +21,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 #include <tuple>
 #include <vector>
+#include <SimulationUnit.h>
 
 #include "Buffer_shared.h" //Facetproperties
 #include "SMP.h"
@@ -53,9 +54,10 @@ public:
 	std::vector<SubprocessFacet*> transparentHitBuffer; //Storing this buffer simulation-wide is cheaper than recreating it at every Intersect() call
 };
 
-class Simulation : public SimulationController {
+class Simulation : public SimulationUnit {
 public:
-	Simulation(std::string appName , std::string dpName, size_t parentPID, size_t procIdx);
+
+    Simulation();
     ~Simulation();
 
     //int controlledLoop();
@@ -68,11 +70,13 @@ public:
 
     void RecordHit(const int &type);
     void RecordLeakPos();
-    size_t GetHitsSize();
-    bool UpdateOntheflySimuParams(Dataport *loader);
+    size_t GetHitsSize() override;
+
     void UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DWORD timeout);
-    void UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout);
+    bool UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout);
     void UpdateLog(Dataport *dpLog, DWORD timeout);
+
+    int ReinitializeParticleLog() override;
 
     void PerformTeleport(SubprocessFacet *iFacet);
     bool SimulationMCStep(size_t nbStep);
@@ -107,8 +111,6 @@ public:
     char *GetSimuStatus();
     void SetReady();*/
 
-    bool Load() override;
-    bool UpdateParams() override;
 
     //bool endState;
 

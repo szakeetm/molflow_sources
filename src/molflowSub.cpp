@@ -148,97 +148,7 @@ char *Simulation::GetSimuStatus() {
     }
 }*/
 
-bool Simulation::Load() {
 
-    Dataport *loader;
-    size_t hSize;
-
-    // Load geometry
-    loader = OpenDataport(loadDpName, procInfo.cmdParam);
-    if (!loader) {
-        char err[512];
-        sprintf(err, "Failed to connect to 'loader' dataport %s (%zd Bytes)", loadDpName, procInfo.cmdParam);
-        SetErrorSub(err);
-        return this->loadOK;
-    }
-
-    printf("Connected to %s\n", loadDpName);
-
-    if (!LoadSimulation(loader)) {
-        CLOSEDPSUB(loader);
-        return this->loadOK;
-    }
-    CLOSEDPSUB(loader);
-
-    //Connect to log dataport
-    if (this->ontheflyParams.enableLogging) {
-        this->dpLog = OpenDataport(logDpName,
-                                   sizeof(size_t) + this->ontheflyParams.logLimit * sizeof(ParticleLoggerItem));
-        if (!this->dpLog) {
-            char err[512];
-            sprintf(err, "Failed to connect to 'this->dpLog' dataport %s (%zd Bytes)", logDpName,
-                    sizeof(size_t) + this->ontheflyParams.logLimit * sizeof(ParticleLoggerItem));
-            SetErrorSub(err);
-            this->loadOK = false;
-            return this->loadOK;
-        }
-        //*((size_t*)this->dpLog->buff) = 0; //Autofill with 0. Besides, we don't write without access!
-    }
-
-    // Connect to hit dataport
-    hSize = GetHitsSize();
-    this->dpHit = OpenDataport(hitsDpName, hSize);
-
-    if (!this->dpHit) { // in case of unknown size, create the DP itself
-        this->dpHit = CreateDataport(hitsDpName, hSize);
-    }
-    if (!this->dpHit) {
-        char err[512];
-        sprintf(err, "Failed to connect to 'hits' dataport (%zd Bytes)", hSize);
-        SetErrorSub(err);
-        this->loadOK = false;
-        return this->loadOK;
-    }
-
-    printf("Connected to %s (%zd bytes)\n", hitsDpName, hSize);
-
-    return this->loadOK;
-}
-
-bool Simulation::UpdateParams() {
-
-    // Load geometry
-    Dataport *loader = OpenDataport(loadDpName, procInfo.cmdParam);
-    if (!loader) {
-        char err[512];
-        sprintf(err, "Failed to connect to 'loader' dataport %s (%zd Bytes)", loadDpName, procInfo.cmdParam);
-        SetErrorSub(err);
-        return false;
-    }
-    printf("Connected to %s\n", loadDpName);
-
-    bool result = UpdateOntheflySimuParams(loader);
-    CLOSEDPSUB(loader);
-
-    if (this->ontheflyParams.enableLogging) {
-        this->dpLog = OpenDataport(logDpName,
-                                   sizeof(size_t) + this->ontheflyParams.logLimit * sizeof(ParticleLoggerItem));
-        if (!this->dpLog) {
-            char err[512];
-            sprintf(err, "Failed to connect to 'this->dpLog' dataport %s (%zd Bytes)", logDpName,
-                    sizeof(size_t) + this->ontheflyParams.logLimit * sizeof(ParticleLoggerItem));
-            SetErrorSub(err);
-            return false;
-        }
-        //*((size_t*)sHandle->dpLog->buff) = 0; //Autofill with 0, besides we would need access first
-    }
-    this->tmpParticleLog.clear();
-    this->tmpParticleLog.shrink_to_fit();
-    if (this->ontheflyParams.enableLogging)
-        this->tmpParticleLog.reserve(this->ontheflyParams.logLimit / this->ontheflyParams.nbProcess);
-
-    return result;
-}
 
 
 
@@ -252,7 +162,10 @@ int main(int argc, char *argv[]) {
     size_t hostProcessId = atoi(argv[1]);
     size_t prIdx = atoi(argv[2]);
 
-    Simulation sHandles = {"molflow", "MFLW", hostProcessId, prIdx};
+
+    SimulationController simController = {"molflow", "MFLW", hostProcessId, prIdx, new Simulation()};
+
+    //Simulation sHandles = {"molflow", "MFLW", hostProcessId, prIdx};
     //Simulation *sHandle = new Simulation();
 
     {
@@ -286,7 +199,7 @@ int main(int argc, char *argv[]) {
     }*/
     InitTick();
 
-    sHandles.controlledLoop();
+    simController.controlledLoop();
 
 //Set priority to idle
     /*std::vector<std::thread> threads;
