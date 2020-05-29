@@ -13,11 +13,10 @@ SuperStructure::~SuperStructure()
 	SAFE_DELETE(aabbTree);
 }*/
 
-Simulation::Simulation(std::string appName , std::string dpName, size_t parentPID, size_t procIdx) : SimulationController(appName, dpName, parentPID, procIdx)
+Simulation::Simulation()
 {
 	totalDesorbed = 0;
 
-	loadOK = false;
 	currentParticle.lastHitFacet = nullptr;
 
 	hasVolatile = false;
@@ -42,4 +41,13 @@ Simulation::Simulation(std::string appName , std::string dpName, size_t parentPI
 
 Simulation::~Simulation(){
 
+}
+
+int Simulation::ReinitializeParticleLog() {
+    tmpParticleLog.clear();
+    tmpParticleLog.shrink_to_fit();
+    if (ontheflyParams.enableLogging)
+        tmpParticleLog.reserve(ontheflyParams.logLimit / ontheflyParams.nbProcess);
+
+    return 0;
 }

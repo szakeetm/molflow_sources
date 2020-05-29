@@ -49,7 +49,7 @@ public:
                                           MersenneTwister &randomGenerator, Anglemap &anglemap);
 };
 
-void Simulation::UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
+bool Simulation::UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 
     BYTE *buffer;
     GlobalHitBuffer *gHits;
@@ -59,10 +59,10 @@ void Simulation::UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWOR
     double t0, t1;
     t0 = GetTick();
 #endif
-    SetState(PROCESS_STARTING, "Waiting for 'hits' dataport access...", false, true);
-    lastHitUpdateOK = AccessDataportTimed(dpHit, timeout);
-    SetState(PROCESS_STARTING, "Updating MC hits...", false, true);
-    if (!lastHitUpdateOK) return; //Timeout, will try again later
+    //SetState(PROCESS_STARTING, "Waiting for 'hits' dataport access...", false, true);
+    bool lastHitUpdateOK = AccessDataportTimed(dpHit, timeout);
+    if (!lastHitUpdateOK) false; //Timeout, will try again later
+    //SetState(PROCESS_STARTING, "Updating MC hits...", false, true);
 
     buffer = (BYTE *) dpHit->buff;
     gHits = (GlobalHitBuffer *) buffer;
@@ -297,13 +297,14 @@ void Simulation::UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWOR
 
     ResetTmpCounters();
     //extern char *GetSimuStatus();
-    SetState(PROCESS_STARTING, GetSimuStatus(), false, true);
+    //SetState(PROCESS_STARTING, GetSimuStatus(), false, true);
 
 #if defined(_DEBUG)
     t1 = GetTick();
     printf("Update hits: %f us\n", (t1 - t0) * 1000000.0);
 #endif
 
+    return true;
 }
 
 
@@ -313,9 +314,9 @@ void Simulation::UpdateLog(Dataport *dpLog, DWORD timeout) {
         double t0, t1;
         t0 = GetTick();
 #endif
-        SetState(PROCESS_STARTING, "Waiting for 'dpLog' dataport access...", false, true);
+        //SetState(PROCESS_STARTING, "Waiting for 'dpLog' dataport access...", false, true);
         lastLogUpdateOK = AccessDataportTimed(dpLog, timeout);
-        SetState(PROCESS_STARTING, "Updating Log...", false, true);
+        //SetState(PROCESS_STARTING, "Updating Log...", false, true);
         if (!lastLogUpdateOK) return;
 
         size_t *logBuff = (size_t *) dpLog->buff;
@@ -331,7 +332,7 @@ void Simulation::UpdateLog(Dataport *dpLog, DWORD timeout) {
         ReleaseDataport(dpLog);
         tmpParticleLog.clear();
         //extern char *GetSimuStatus();
-        SetState(PROCESS_STARTING, GetSimuStatus(), false, true);
+        //SetState(PROCESS_STARTING, GetSimuStatus(), false, true);
 
 #if defined(_DEBUG)
         t1 = GetTick();
@@ -623,7 +624,8 @@ bool Simulation::StartFromSource() {
         if (!found) j++;
     }
     if (!found) {
-        SetErrorSub("No starting point, aborting");
+        std::cerr << "No starting point, aborting" << std::endl;
+        //SetErrorSub("No starting point, aborting");
         return false;
     }
     src = &(structures[j].facets[i]);
@@ -739,7 +741,9 @@ bool Simulation::StartFromSource() {
     if (src->sh.superIdx == -1) {
         std::ostringstream out;
         out << "Facet " << (src->globalId + 1) << " is in all structures, it shouldn't desorb.";
-        SetErrorSub(out.str().c_str());
+        //SetErrorSub(out.str().c_str());
+        std::cerr << out.str() << std::endl;
+
         return false;
     }
     currentParticle.structureId = src->sh.superIdx;
