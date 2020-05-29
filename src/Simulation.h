@@ -72,11 +72,12 @@ public:
     void RecordLeakPos();
     size_t GetHitsSize() override;
 
+    int ReinitializeParticleLog() override;
+    bool UpdateOntheflySimuParams(Dataport *loader) override;
+
     void UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DWORD timeout);
     bool UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout);
     void UpdateLog(Dataport *dpLog, DWORD timeout);
-
-    int ReinitializeParticleLog() override;
 
     void PerformTeleport(SubprocessFacet *iFacet);
     bool SimulationMCStep(size_t nbStep);
