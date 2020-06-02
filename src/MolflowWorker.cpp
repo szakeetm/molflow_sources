@@ -1237,15 +1237,13 @@ std::ostringstream Worker::SerializeForLoader() {
             CEREAL_NVP(CDFs),
             CEREAL_NVP(IDs),
             CEREAL_NVP(parameters),
-            CEREAL_NVP(temperatures),
-            CEREAL_NVP(moments),
-            CEREAL_NVP(desorptionParameterIDs)
+            //CEREAL_NVP(temperatures),
+            CEREAL_NVP(moments)
+            //CEREAL_NVP(desorptionParameterIDs)
     ); //Worker
 
     geom->SerializeForLoader(outputArchive);
 
-    std::ofstream outFile("serialized_load.bin");
-    outFile << result.str() ;
     return result;
 }
 

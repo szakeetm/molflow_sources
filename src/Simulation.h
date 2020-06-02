@@ -129,9 +129,9 @@ public:
 
 	std::vector<std::vector<std::pair<double, double>>> CDFs; //cumulative distribution function for each temperature
 	std::vector<std::vector<std::pair<double, double>>> IDs; //integrated distribution function for each time-dependent desorption type
-	std::vector<double> temperatures; //keeping track of all temperatures that have a CDF already generated
+	//std::vector<double> temperatures; //keeping track of all temperatures that have a CDF already generated
 	std::vector<double> moments;      //time values (seconds) when a simulation state is measured
-	std::vector<size_t> desorptionParameterIDs; //time-dependent parameters which are used as desorptions, therefore need to be integrated
+	//std::vector<size_t> desorptionParameterIDs; //time-dependent parameters which are used as desorptions, therefore need to be integrated
 	std::vector<Parameter> parameters; //Time-dependent parameters 
 
 
@@ -154,34 +154,9 @@ public:
 	//bool lastHitUpdateOK;  // Last hit update timeout
 	bool lastLogUpdateOK; // Last log update timeout
 	bool hasVolatile;   // Contains volatile facet
-	double calcACTime;  // AC matrix calculation time
 
 	// Particle coordinates (MC)
 	CurrentParticleStatus currentParticle;
-
-
-	// Angular coefficient (opaque facets)
-	size_t     nbAC;
-	ACFLOAT *acMatrix;
-	ACFLOAT *acDensity;
-	ACFLOAT *acDesorb;
-	ACFLOAT *acAbsorb;
-	ACFLOAT *acRho;
-	ACFLOAT *acArea;
-	double  *acLines;
-	size_t     prgAC;
-
-	// Angular coefficient (transparent facets)
-	size_t     nbACT;
-	ACFLOAT *acTMatrix;
-	ACFLOAT *acTDensity;
-	ACFLOAT *acTArea;
-	double  *acTLines;
-
-#ifdef JACOBI_ITERATION
-	ACFLOAT *acDensityTmp;
-#endif
-
 
 };
 // -- Methods ---------------------------------------------------

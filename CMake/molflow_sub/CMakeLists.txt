@@ -77,7 +77,7 @@ set(SRC_FILES ${CPP_DIR_1}/molflowSub.cpp
         ${CPP_DIR_1}/Parameter.cpp
         ${CPP_DIR_1}/Simulation.cpp
         #${CPP_DIR_1}/SimulationAC.cpp
-        ${CPP_DIR_1}/SimulationControl.cpp
+        #${CPP_DIR_1}/SimulationControl.cpp
         ${CPP_DIR_1}/SimulationMC.cpp
         ${CPP_DIR_1}/GeometrySimu.cpp
 
