@@ -198,8 +198,8 @@ bool Simulation::LoadSimulation(Dataport *loader) {
 }
 
 void Simulation::UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DWORD timeout) {
-        UpdateMCHits(dpHit, prIdx, moments.size(), timeout);
-        if (dpLog) UpdateLog(dpLog, timeout);
+    UpdateMCHits(dpHit, prIdx, moments.size(), timeout);
+    if (dpLog) UpdateLog(dpLog, timeout);
 }
 
 size_t Simulation::GetHitsSize() {
@@ -225,9 +225,9 @@ void Simulation::ResetTmpCounters() {
 
 			//Reset facet histograms
 			
-				for (auto& t : f.tmpHistograms) {
-					t.Reset();
-				}
+            for (auto& t : f.tmpHistograms) {
+                t.Reset();
+            }
 			/*std::vector<TextureCell>(f.texture.size()).swap(f.texture);
 			std::vector<ProfileSlice>(f.profile.size()).swap(f.profile);
 			std::vector<DirectionCell>(f.direction.size()).swap(f.direction);*/
@@ -255,7 +255,7 @@ void Simulation::ResetTmpCounters() {
 }
 
 void Simulation::ResetSimulation() {
-	currentParticle.lastHitFacet = NULL;
+	currentParticle.lastHitFacet = nullptr;
 	totalDesorbed = 0;
 	ResetTmpCounters();
 	tmpParticleLog.clear();
@@ -285,29 +285,3 @@ void Simulation::RecordLeakPos() {
 		tmpGlobalResult.leakCacheSize++;
 	}
 }
-/*
-
-bool Simulation::SimulationRun() {
-
-	// 1s step
-    size_t    nbStep = 1;
-    if (stepPerSec <= 0.0) {
-        nbStep = 250;
-	}
-    else {
-        nbStep = std::ceil(stepPerSec + 0.5);
-    }
-
-    double t0 = GetTick();
-    bool goOn = SimulationMCStep(nbStep);
-    double t1 = GetTick();
-	if(goOn) // don't update on end, this will give a false ratio (SimMCStep could return actual steps instead of plain "false"
-	    stepPerSec = (1.0 * nbStep) / (t1 - t0); // every 1.0 second
-
-#if defined(_DEBUG)
-	printf("Running: stepPerSec = %lf\n", stepPerSec);
-#endif
-
-	return !goOn;
-
-}*/

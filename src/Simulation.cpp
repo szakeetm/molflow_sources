@@ -19,6 +19,15 @@ Simulation::Simulation()
 {
 	totalDesorbed = 0;
 
+    textTotalSize =
+    profTotalSize =
+    dirTotalSize =
+    angleMapTotalSize =
+    histogramTotalSize = 0;
+
+    lastLogUpdateOK = true;
+
+    currentParticle = CurrentParticleStatus();
 	currentParticle.lastHitFacet = nullptr;
 
 	hasVolatile = false;
@@ -26,6 +35,8 @@ Simulation::Simulation()
 	memset(&tmpGlobalResult, 0, sizeof(GlobalHitBuffer));
 
 	sh.nbSuper = 0;
+
+	// AC Mode
 	acDensity =
 		acMatrix =
 		acDensity =
@@ -36,14 +47,17 @@ Simulation::Simulation()
 		acTMatrix =
 		acTDensity = acArea =
 		nullptr;
-		
-		acLines =
+
+	calcACTime = 0.0;
+    nbAC = 0;
+    prgAC = 0;
+    nbACT = 0;
+
+    acLines =
 		acTLines = nullptr;
 }
 
-Simulation::~Simulation(){
-
-}
+Simulation::~Simulation()= default;
 
 int Simulation::ReinitializeParticleLog() {
     tmpParticleLog.clear();

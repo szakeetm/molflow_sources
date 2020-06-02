@@ -1189,7 +1189,7 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
             progressDlg->SetMessage("Creating hit buffer...");
             simManager.ReloadHitBuffer(hitSize);
         }
-        catch (Error &e) {
+        catch (std::exception &e) {
             GLMessageBox::Display(e.what(), "Error (Full reload)", GLDLG_OK, GLDLG_ICONWARNING);
             progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);

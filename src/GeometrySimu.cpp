@@ -194,6 +194,7 @@ bool SubprocessFacet::InitializeAngleMap()
         angleMap.pdf.resize(sh.anglemapParams.GetMapSize());
     }
 
+    angleMapSize += sh.anglemapParams.GetDataSize();
     return true;
 }
 
