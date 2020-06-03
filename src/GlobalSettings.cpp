@@ -307,10 +307,10 @@ void GlobalSettings::SMPUpdate() {
 	memset(states, 0, MAX_PROCESS * sizeof(int));
 	worker->GetProcStatus(states, statusStrings);
 
-        std::vector<SubProcInfo> procInfo;
-        worker->GetProcStatus(procInfo);
+    std::vector<SubProcInfo> procInfo;
+    worker->GetProcStatus(procInfo);
 
-        processList->ResetValues();
+    processList->ResetValues();
 
 	//Interface
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
@@ -379,8 +379,8 @@ void GlobalSettings::SMPUpdate() {
             processList->SetValueAt(4, i, "Dead");
         }
         else {
-            PROCESS_INFO pInfo;
-            GetProcInfo(pid, &pInfo);
+            PROCESS_INFO pInfo = proc.runtimeInfo;
+            //GetProcInfo(pid, &pInfo);
 
 
             sprintf(tmp, "%.0f MB", (double)pInfo.mem_use / (1024.0));

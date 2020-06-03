@@ -444,10 +444,20 @@ void Simulation::PerformTeleport(SubprocessFacet *iFacet) {
 
 bool Simulation::SimulationMCStep(size_t nbStep) {
 
+    // Check end of simulation
+    if (ontheflyParams.desorptionLimit > 0) {
+        if (totalDesorbed >= ontheflyParams.desorptionLimit / ontheflyParams.nbProcess) {
+            //currentParticle.lastHitFacet = nullptr; // reset full particle status or go on from where we left
+            return false;
+        }
+    }
+
     // Perform simulation steps
     for (size_t i = 0; i < nbStep; i++) {
 
-        if (!currentParticle.lastHitFacet) StartFromSource();
+        if (!currentParticle.lastHitFacet)
+            if(!StartFromSource())
+                return false; // desorp limit reached
         //return (currentParticle.lastHitFacet != nullptr);
 
         //Prepare output values
@@ -561,7 +571,7 @@ bool Simulation::StartFromSource() {
     // Check end of simulation
     if (ontheflyParams.desorptionLimit > 0) {
         if (totalDesorbed >= ontheflyParams.desorptionLimit / ontheflyParams.nbProcess) {
-            currentParticle.lastHitFacet = nullptr;
+            //currentParticle.lastHitFacet = nullptr; // reset full particle status or go on from where we left
             return false;
         }
     }
