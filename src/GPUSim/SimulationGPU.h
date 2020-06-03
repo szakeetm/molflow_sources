@@ -2,8 +2,8 @@
 // Created by pbahr on 18/05/2020.
 //
 
-#ifndef MOLFLOW_PROJ_SIMCONTROLLERGPU_H
-#define MOLFLOW_PROJ_SIMCONTROLLERGPU_H
+#ifndef MOLFLOW_PROJ_SIMULATIONGPU_H
+#define MOLFLOW_PROJ_SIMULATIONGPU_H
 
 #include "SimulationController.h"
 #include "Model.h"
@@ -11,20 +11,19 @@
 #include "../Parameter.h"
 #include "../GeometrySimu.h"
 
-class SimControllerGPU : public SimulationController{
+class SimulationGPU  : public SimulationUnit {
 public:
-    SimControllerGPU(std::string appName , std::string dpName, size_t parentPID, size_t procIdx);
-    ~SimControllerGPU();
+    SimulationGPU();
+    ~SimulationGPU();
 
     int SanityCheckGeom() override;
     void ClearSimulation() override;
     bool LoadSimulation(Dataport *loader) override;
-    bool UpdateOntheflySimuParams(Dataport *loader);
-
+    bool UpdateOntheflySimuParams(Dataport *loader) override;
+    int ReinitializeParticleLog() override;
 private:
-    bool Load() override;
-    bool UpdateParams() override;
-    size_t GetHitsSize();
+    size_t GetHitsSize() override;
+
     void ResetTmpCounters();
     void UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DWORD timeout) override;
 public:
@@ -41,4 +40,4 @@ public:
 };
 
 
-#endif //MOLFLOW_PROJ_SIMCONTROLLERGPU_H
+#endif //MOLFLOW_PROJ_SIMULATIONGPU_H

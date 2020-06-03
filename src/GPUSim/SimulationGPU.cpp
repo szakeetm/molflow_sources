@@ -3,38 +3,37 @@
 //
 
 #include <cereal/archives/binary.hpp>
-#include "SimControllerGPU.h"
+#include "SimulationGPU.h"
 #include "ModelReader.h" // TempFacet
 
 #define LAUNCHSIZE 1024*128*128
 
-SimControllerGPU::SimControllerGPU(std::string appName, std::string dpName, size_t parentPID, size_t procIdx)
-        : SimulationController(appName, dpName, parentPID, procIdx) {
+SimulationGPU::SimulationGPU()
+        : SimulationUnit() {
 
     totalDesorbed = 0;
-    loadOK = false;
 
     memset(&tmpGlobalResult, 0, sizeof(GlobalHitBuffer));
 }
 
-SimControllerGPU::~SimControllerGPU() {
+SimulationGPU::~SimulationGPU() {
     delete model;
 }
 
-int SimControllerGPU::SanityCheckGeom() {
+int SimulationGPU::SanityCheckGeom() {
     return 0;
 }
 
-void SimControllerGPU::ClearSimulation() {
+void SimulationGPU::ClearSimulation() {
 
 }
 
-bool SimControllerGPU::LoadSimulation(Dataport *loader) {
+bool SimulationGPU::LoadSimulation(Dataport *loader) {
     double t0 = GetTick();
-    SetState(PROCESS_STARTING, "Clearing previous simulation");
+    //SetState(PROCESS_STARTING, "Clearing previous simulation");
     ClearSimulation();
 
-    SetState(PROCESS_STARTING, "Loading simulation");
+    //SetState(PROCESS_STARTING, "Loading simulation");
 
     {
 
@@ -52,24 +51,25 @@ bool SimControllerGPU::LoadSimulation(Dataport *loader) {
     if(model->nbFacets_total>0)
         gpuSim.LoadSimulation(model,LAUNCHSIZE);
     //if(!sh.name.empty())
-    loadOK = true;
+
     double t1 = GetTick();
     printf("  Load %s successful\n", model->geomProperties.name.c_str());
     printf("  Loading time: %.3f ms\n", (t1 - t0)*1000.0);
     return true;
 }
 
-void SimControllerGPU::ResetSimulation() {
+void SimulationGPU::ResetSimulation() {
     totalDesorbed = 0;
     ResetTmpCounters();
 }
 
-bool SimControllerGPU::UpdateOntheflySimuParams(Dataport *loader) {
+bool SimulationGPU::UpdateOntheflySimuParams(Dataport *loader) {
     // Connect the dataport
 
 
     if (!AccessDataportTimed(loader, 2000)) {
-        SetErrorSub("Failed to connect to loader DP");
+        //SetErrorSub("Failed to connect to loader DP");
+        std::cerr << "Failed to connect to loader DP" << std::endl;
         return false;
     }
     std::string inputString(loader->size,'\0');
@@ -86,10 +86,10 @@ bool SimControllerGPU::UpdateOntheflySimuParams(Dataport *loader) {
     return true;
 }
 
-void SimControllerGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DWORD timeout) {
+void SimulationGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWORD timeout) {
     //UpdateMCHits(dpHit, prIdx, moments.size(), timeout);
     //if (dpLog) UpdateLog(dpLog, timeout);
-    std::cout << "#SimControllerGPU: Updating hits"<<std::endl;
+    std::cout << "#SimulationGPU: Updating hits"<<std::endl;
     gpuSim.GetSimulationData(false);
     GlobalCounter* globalCount = gpuSim.GetGlobalCounter();
 
@@ -101,9 +101,9 @@ void SimControllerGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DW
     double t0, t1;
     t0 = GetTick();
 #endif
-    SetState(PROCESS_STARTING, "Waiting for 'hits' dataport access...", false, true);
-    lastHitUpdateOK = AccessDataportTimed(dpHit, timeout);
-    SetState(PROCESS_STARTING, "Updating MC hits...", false, true);
+    //SetState(PROCESS_STARTING, "Waiting for 'hits' dataport access...", false, true);
+    bool lastHitUpdateOK = AccessDataportTimed(dpHit, timeout);
+    //SetState(PROCESS_STARTING, "Updating MC hits...", false, true);
     if (!lastHitUpdateOK) return; //Timeout, will try again later
 
     buffer = (BYTE *) dpHit->buff;
@@ -227,7 +227,7 @@ void SimControllerGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DW
 
     ResetTmpCounters();
     //extern char *GetSimuStatus();
-    SetState(PROCESS_STARTING, GetSimuStatus(), false, true);
+    //SetState(PROCESS_STARTING, GetSimuStatus(), false, true);
 
 #if defined(_DEBUG)
     t1 = GetTick();
@@ -235,14 +235,14 @@ void SimControllerGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DW
 #endif
 }
 
-size_t SimControllerGPU::GetHitsSize() {
+size_t SimulationGPU::GetHitsSize() {
     return sizeof(GlobalHitBuffer) //+ model->wp.globalHistogramParams.GetDataSize()
            //+ textTotalSize + profTotalSize + dirTotalSize + angleMapTotalSize + histogramTotalSize
            + model->nbFacets_total * sizeof(FacetHitBuffer);
 }
 
-void SimControllerGPU::ResetTmpCounters() {
-    SetState(0, "Resetting local cache...", false, true);
+void SimulationGPU::ResetTmpCounters() {
+    //SetState(0, "Resetting local cache...", false, true);
 
     memset(&tmpGlobalResult, 0, sizeof(GlobalHitBuffer));
     GlobalCounter* globalCount = gpuSim.GetGlobalCounter();
@@ -257,7 +257,7 @@ void SimControllerGPU::ResetTmpCounters() {
 }
 
 static uint64_t currentDes = 0;
-bool SimControllerGPU::SimulationMCStep(size_t nbStep){
+bool SimulationGPU::SimulationMCStep(size_t nbStep){
     for(int i=0;i<nbStep;++i)
         gpuSim.RunSimulation();
     currentDes += nbStep * LAUNCHSIZE;
@@ -265,4 +265,9 @@ bool SimControllerGPU::SimulationMCStep(size_t nbStep){
     if(this->model->ontheflyParams.desorptionLimit == 0)
         goOn = true;
     return goOn;
+}
+
+int SimulationGPU::ReinitializeParticleLog() {
+    // GPU simulations has no support for particle log
+    return 0;
 }
