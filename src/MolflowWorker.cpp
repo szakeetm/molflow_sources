@@ -1189,7 +1189,7 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
             progressDlg->SetMessage("Creating hit buffer...");
             simManager.ReloadHitBuffer(hitSize);
         }
-        catch (Error &e) {
+        catch (std::exception &e) {
             GLMessageBox::Display(e.what(), "Error (Full reload)", GLDLG_OK, GLDLG_ICONWARNING);
             progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
@@ -1228,7 +1228,7 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 * \return output string stream containing the result of the archiving
 */
 std::ostringstream Worker::SerializeForLoader() {
-    std::ostringstream outstream;
+    std::ostringstream result;
     {
         cereal::BinaryOutputArchive outputArchive(outstream);
 
@@ -1238,16 +1238,14 @@ std::ostringstream Worker::SerializeForLoader() {
                 CEREAL_NVP(CDFs),
                 CEREAL_NVP(IDs),
                 CEREAL_NVP(parameters),
-                CEREAL_NVP(temperatures),
-                CEREAL_NVP(moments),
-                CEREAL_NVP(desorptionParameterIDs)
+                //CEREAL_NVP(temperatures),
+                CEREAL_NVP(moments)
+                //CEREAL_NVP(desorptionParameterIDs)
         ); //Worker
 
         geom->SerializeForLoader(outputArchive);
     }
-    //std::ofstream outFile("serialized_load.bin");
-    //outFile << outstream.str() ;
-    return outstream;
+    return result;
 }
 
 void Worker::SerializeForExternal(std::string outputName) {

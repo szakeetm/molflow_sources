@@ -676,11 +676,11 @@ size_t Facet::GetHitsSize(size_t nbMoments)  { //for hits dataport
 
 	return   (1 + nbMoments)*(
 		sizeof(FacetHitBuffer) +
-		+(sh.texWidth*sh.texHeight * sizeof(TextureCell))
+		+(sh.isTextured ? (sh.texWidth*sh.texHeight * sizeof(TextureCell)) : 0)
 		+ (sh.isProfile ? (PROFILE_SIZE * sizeof(ProfileSlice)) : 0)
 		+ (sh.countDirection ? (sh.texWidth*sh.texHeight * sizeof(DirectionCell)) : 0)
 		+ sh.facetHistogramParams.GetDataSize()
-		) + sh.anglemapParams.GetRecordedDataSize();
+		) + (sh.anglemapParams.record ? (sh.anglemapParams.GetRecordedDataSize()) : 0);
 
 }
 

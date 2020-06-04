@@ -94,22 +94,8 @@ public:
 #pragma endregion
 
     void SerializeForLoader(cereal::BinaryOutputArchive &outputArchive) const;
-    void SerializeForExternal(cereal::XMLOutputArchive&);
+    void SerializeForExternal(cereal::XMLOutputArchive &outputArchive);
 
-	/*
-	template <class Archive> void serialize(Archive & archive) {
-		archive(
-			CEREAL_NVP(sh),
-			CEREAL_NVP(vertices3)
-		);
-		
-		for (size_t i = 0; i < sh.nbFacet; i++) {
-			archive(
-				CEREAL_NVP(*(facets[i]))
-			);
-		}
-	}
-	*/
 
 private:
 
