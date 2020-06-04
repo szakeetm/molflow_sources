@@ -1230,7 +1230,7 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 std::ostringstream Worker::SerializeForLoader() {
     std::ostringstream result;
     {
-        cereal::BinaryOutputArchive outputArchive(outstream);
+        cereal::BinaryOutputArchive outputArchive(result);
 
         outputArchive(
                 CEREAL_NVP(wp),

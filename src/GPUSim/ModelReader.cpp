@@ -420,9 +420,9 @@ namespace flowgeom {
         inputArchive(cereal::make_nvp("CDFs",model->CDFs));
         inputArchive(cereal::make_nvp("IDs",model->IDs));
         inputArchive(cereal::make_nvp("parameters",model->parameters));
-        inputArchive(cereal::make_nvp("temperatures",model->temperatures));
+        //inputArchive(cereal::make_nvp("temperatures",model->temperatures));
         inputArchive(cereal::make_nvp("moments",model->moments));
-        inputArchive(cereal::make_nvp("desorptionParameterIDs",model->desorptionParameterIDs));
+        //inputArchive(cereal::make_nvp("desorptionParameterIDs",model->desorptionParameterIDs));
 
         //Geometry
         inputArchive(cereal::make_nvp("GeomProperties",model->geomProperties));

@@ -92,7 +92,7 @@ include_directories(SYSTEM ${OptiX_INCLUDE} )
 
 add_executable(${PROJECT_NAME}
         ${GPU_DIR_1}/gpuSub.cpp
-        ${GPU_DIR_1}/SimControllerGPU.cpp
+        ${GPU_DIR_1}/SimulationGPU.cpp
         ${GPU_DIR_1}/SimulationControllerGPU.cpp
         ${GPU_DIR_1}/ModelReader.cpp
         ${GPU_DIR_1}/Poly2TriConverter.cpp
