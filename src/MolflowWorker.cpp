@@ -849,7 +849,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                                           GLDLG_ICONWARNING);
                 }
             } else { //insert
-                geom->InsertXML(loadXML, this, progressDlg, newStr);
+                geom->InsertXML(rootNode, this, progressDlg, newStr);
                 mApp->changedSinceSave = true;
                 ResetWorkerStats();
 
