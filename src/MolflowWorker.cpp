@@ -70,6 +70,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "ziplib/ZipFile.h"
 #include "File.h" //File utils (Get extension, etc)
 #include "ProcessControl.h"
+#include "versionId.h"
 
 /*
 //Leak detection
@@ -816,8 +817,15 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             }
 
             progressDlg->SetMessage("Building geometry...");
+            xml_node rootNode = loadXML;
+            if(appVersionId >= 2680){
+                xml_node envNode = loadXML.child("SimulationEnvironment");
+                if(!envNode.empty())
+                    rootNode = envNode;
+            }
+
             if (!insert) {
-                geom->LoadXML_geom(loadXML, this, progressDlg);
+                geom->LoadXML_geom(rootNode, this, progressDlg);
                 geom->UpdateName(fileName.c_str());
 
                 progressDlg->SetMessage("Reloading worker with new geometry...");
@@ -830,7 +838,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     BYTE* buffer = simManager.GetLockedHitBuffer();
                     if(!buffer)
                         throw Error("Cannot access shared hit buffer");
-                    geom->LoadXML_simustate(loadXML, buffer, this, progressDlg);
+                    geom->LoadXML_simustate(rootNode, buffer, this, progressDlg);
                     simManager.UnlockHitBuffer();
                     SendToHitBuffer(); //Send hits without sending facet counters, as they are directly written during the load process (mutiple moments)
                     RebuildTextures();
