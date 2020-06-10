@@ -368,8 +368,13 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
             std::ostringstream tmp;
             tmp << compressorName << " \"" << fileNameWithGeo << "\" Geometry.geo";
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-            size_t procId = StartProc(tmp.str().c_str(),STARTPROC_BACKGROUND, NULL);
+            char* command[1];
+            command[0] = new char[512];
+            sprintf(command[0], "%s", tmp.str().c_str());
+            size_t procId = StartProc(command, STARTPROC_BACKGROUND);
             mApp->compressProcessHandle = OpenProcess(PROCESS_ALL_ACCESS, true, (unsigned long)procId);
+
+            delete[] command[0];
 #else
             //In Linux, compressing to old format will be blocking
             system(tmp.str().c_str());
