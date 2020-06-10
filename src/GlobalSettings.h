@@ -79,6 +79,8 @@ private:
 
     GLToggle *highlightNonplanarToggle;
     GLToggle *highlightSelectionToggle;
+
+    GLToggle *useOldXMLFormat;
 };
 
 #endif /* _GLOBALSETTINGSH_ */

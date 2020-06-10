@@ -237,6 +237,8 @@ MolFlow::MolFlow()
 	parameterEditor = NULL;
 	importDesorption = NULL;
 	timeSettings = NULL;
+
+	useOldXMLFormat = false;
 }
 
 // Name: OneTimeSceneInit()
@@ -2397,6 +2399,8 @@ void MolFlow::LoadConfig() {
 		highlightNonplanarFacets = f->ReadInt();
         f->ReadKeyword("highlightSelection"); f->ReadKeyword(":");
         highlightSelection = f->ReadInt();
+        f->ReadKeyword("useOldXMLFormat"); f->ReadKeyword(":");
+        useOldXMLFormat = f->ReadInt();
 	}
 	catch (...) {
 		/*std::ostringstream tmp;
@@ -2527,8 +2531,9 @@ void MolFlow::SaveConfig() {
 		f->Write("lowFluxMode:"); f->Write(worker.ontheflyParams.lowFluxMode, "\n");
 		f->Write("lowFluxCutoff:"); f->Write(worker.ontheflyParams.lowFluxCutoff, "\n");
 		f->Write("leftHandedView:"); f->Write(leftHandedView, "\n");
-		f->Write("highlightNonplanarFacets:"); f->Write(highlightNonplanarFacets, "\n");
-	}
+        f->Write("highlightNonplanarFacets:"); f->Write(highlightNonplanarFacets, "\n");
+        f->Write("useOldXMLFormat:"); f->Write(useOldXMLFormat, "\n");
+    }
 	catch (Error &err) {
 		GLMessageBox::Display(err.what(), "Error saving config file", GLDLG_OK, GLDLG_ICONWARNING);
 	}

@@ -2300,10 +2300,15 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 	//TiXmlDeclaration* decl = new TiXmlDeclaration("1.0")="")="");
 	//saveDoc->LinkEndChild(decl);
 
-    xml_node rootNode = saveDoc.append_child("SimulationEnvironment");
-    rootNode.append_attribute("type") = "molflow";
-    rootNode.append_attribute("version") = appVersionId;
-
+    xml_node rootNode;
+	if(mApp->useOldXMLFormat){
+        rootNode = saveDoc;
+    }
+	else {
+        rootNode = saveDoc.append_child("SimulationEnvironment");
+        rootNode.append_attribute("type") = "molflow";
+        rootNode.append_attribute("version") = appVersionId;
+    }
     xml_node geomNode = rootNode.append_child("Geometry");
 
 	prg->SetMessage("Writing vertices...");
