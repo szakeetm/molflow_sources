@@ -701,14 +701,30 @@ size_t Facet::GetTexRamSize(size_t nbMoments)  {
 }
 
 /**
-* \brief Calculates the RAM size for the texture of a single facet by using a ratio for actual size conversation
-* \param ratio ratio to calculate actual width/height of the facet
-* \param useMesh unused paramter TODO: remove
-* \param countDir unused paramter TODO: remove
+* \brief Calculates the RAM size for the texture of a single facet
 * \param nbMoments amount of moments
 * \return calculated size of the texture RAM usage
 */
-size_t Facet::GetTexRamSizeForRatio(double ratio, bool useMesh, bool countDir, size_t nbMoments)  {
+size_t Facet::GetTexRamSizeForCellNumber(int width, int height, bool useMesh, bool countDir, size_t nbMoments)  {
+
+    //Values
+    size_t sizePerCell = sizeof(TextureCell)*nbMoments; //TextureCell: long + 2*double
+    if (sh.countDirection) sizePerCell += sizeof(DirectionCell)*nbMoments; //DirectionCell: Vector3d + long
+    //Mesh
+    sizePerCell += sizeof(int); //CellPropertiesIds
+    size_t sizePerMeshElement = sizeof(CellProperties);
+    sizePerMeshElement += 4 * sizeof(Vector2d); //Estimate: most mesh elements have 4 points
+    return width*height*(sizePerCell + sizePerMeshElement); //Conservative: assuming all cells are non-full
+
+}
+
+/**
+* \brief Calculates the RAM size for the texture of a single facet by using a ratio for actual size conversation
+* \param ratio ratio to calculate actual width/height of the facet
+* \param nbMoments amount of moments
+* \return calculated size of the texture RAM usage
+*/
+size_t Facet::GetTexRamSizeForRatio(double ratio, size_t nbMoments) {
 	double nU = sh.U.Norme();
 	double nV = sh.V.Norme();
 	double width = nU*ratio;
@@ -717,8 +733,8 @@ size_t Facet::GetTexRamSizeForRatio(double ratio, bool useMesh, bool countDir, s
 	bool dimOK = (width*height > 0.0000001);
 
 	if (dimOK) {
-		int iwidth = (int)ceil(width);
-		int iheight = (int)ceil(height);
+		int iWidth = (int)ceil(width);
+		int iHeight = (int)ceil(height);
 
 		//Values
 		size_t sizePerCell = sizeof(TextureCell)*nbMoments; //TextureCell: long + 2*double
@@ -727,11 +743,44 @@ size_t Facet::GetTexRamSizeForRatio(double ratio, bool useMesh, bool countDir, s
 		sizePerCell += sizeof(int); //CellPropertiesIds
 		size_t sizePerMeshElement = sizeof(CellProperties);
 		sizePerMeshElement += 4 * sizeof(Vector2d); //Estimate: most mesh elements have 4 points
-		return iwidth*iheight*(sizePerCell + sizePerMeshElement); //Conservative: assuming all cells are non-full
+		return iWidth*iHeight*(sizePerCell + sizePerMeshElement); //Conservative: assuming all cells are non-full
 	}
 	else {
 		return 0;
 	}
+}
+
+/**
+* \brief Calculates the RAM size for the texture of a single facet by using a ratio for actual size conversation
+* \param ratioU ratio in U direction to calculate actual width/height of the facet
+* \param ratioV ratio in V direction to calculate actual width/height of the facet
+* \param nbMoments amount of moments
+* \return calculated size of the texture RAM usage
+*/
+size_t Facet::GetTexRamSizeForRatio(double ratioU, double ratioV, size_t nbMoments)  {
+    double nU = sh.U.Norme();
+    double nV = sh.V.Norme();
+    double width = nU*ratioU;
+    double height = nV*ratioV;
+
+    bool dimOK = (width*height > 0.0000001);
+
+    if (dimOK) {
+        int iWidth = (int)ceil(width);
+        int iHeight = (int)ceil(height);
+
+        //Values
+        size_t sizePerCell = sizeof(TextureCell)*nbMoments; //TextureCell: long + 2*double
+        if (sh.countDirection) sizePerCell += sizeof(DirectionCell)*nbMoments; //DirectionCell: Vector3d + long
+        //Mesh
+        sizePerCell += sizeof(int); //CellPropertiesIds
+        size_t sizePerMeshElement = sizeof(CellProperties);
+        sizePerMeshElement += 4 * sizeof(Vector2d); //Estimate: most mesh elements have 4 points
+        return iWidth*iHeight*(sizePerCell + sizePerMeshElement); //Conservative: assuming all cells are non-full
+    }
+    else {
+        return 0;
+    }
 }
 
 /**

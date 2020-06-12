@@ -912,8 +912,15 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 			throw Error(errMsg);
 		}
 		BuildFacetList(f);
-		double nU = f->sh.U.Norme();
-		f->tRatio = f->sh.texWidthD / nU;
+        const double nU = f->sh.U.Norme();
+        const double nV = f->sh.V.Norme();
+
+        f->tRatioU = f->sh.texWidthD / nU;
+        f->tRatioV = f->sh.texHeightD / nV;
+
+        if(std::abs(f->tRatioU - f->tRatioV) <= DBL_EPSILON){
+            f->tRatioV = f->tRatioU;
+        }
 	}
 
 }
@@ -2851,9 +2858,16 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 			throw Error(errMsg);
 		}
 		BuildFacetList(f);
-		double nU = f->sh.U.Norme();
-		f->tRatio = f->sh.texWidthD / nU;
-	}
+		const double nU = f->sh.U.Norme();
+        const double nV = f->sh.V.Norme();
+
+        f->tRatioU = f->sh.texWidthD / nU;
+        f->tRatioV = f->sh.texHeightD / nV;
+
+        if(std::abs(f->tRatioU - f->tRatioV) <= DBL_EPSILON){
+            f->tRatioV = f->tRatioU;
+        }
+    }
 }
 
 /**
@@ -3058,8 +3072,15 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 			throw Error(errMsg);
 		}
 		BuildFacetList(f);
-		double nU = f->sh.U.Norme();
-		f->tRatio = f->sh.texWidthD / nU;
+        const double nU = f->sh.U.Norme();
+        const double nV = f->sh.V.Norme();
+
+        f->tRatioU = f->sh.texWidthD / nU;
+        f->tRatioV = f->sh.texHeightD / nV;
+
+        if(std::abs(f->tRatioU - f->tRatioV) <= DBL_EPSILON){
+            f->tRatioV = f->tRatioU;
+        }
 	}
 }
 

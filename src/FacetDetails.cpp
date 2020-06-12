@@ -341,7 +341,10 @@ char *FacetDetails::FormatCell(size_t idx,Facet *f,size_t mode) {
       }
       break;
     case 13:
-      sprintf(ret,"%g",f->tRatio);
+        if(f->tRatioU == f->tRatioV)
+            sprintf(ret,"%g",f->tRatioU);
+        else
+            sprintf(ret,"%g x %g",f->tRatioU,f->tRatioV);
       break;
     case 14:
       sprintf(ret,"%s",GetCountStr(f));
