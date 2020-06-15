@@ -2089,7 +2089,6 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	std::ostringstream temp;
 	temp << "PIPE" << L / R;
 	geom->UpdateName(temp.str().c_str());
-	ResetSimulation(false);
 
 	try {
 		geom->BuildPipe(L, R, 0, step);
@@ -2099,11 +2098,13 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 		worker.wp.halfLife = 1;
 		worker.wp.gasMass = 28;
 		worker.ResetMoments();
-	}
+        ResetSimulation(false);
+    }
 	catch (Error &e) {
 		GLMessageBox::Display((char *)e.what(), "Error building pipe", GLDLG_OK, GLDLG_ICONERROR);
 		geom->Clear();
-		return;
+        ResetSimulation(false);
+        return;
 	}
 	//worker.globalHitCache.globalHits.hit.nbDesorbed = 0; //Already done by ResetWorkerStats
 	//sprintf(tmp,"L|R %g",L/R);

@@ -121,6 +121,9 @@ ProfilePlotter::ProfilePlotter() :GLWindow() {
 	logYToggle = new GLToggle(0, "Log Y");
 	Add(logYToggle);
 
+    colorToggle = new GLToggle(0, "Colorblind mode");
+    Add(colorToggle);
+
 	warningLabel = new GLLabel("Profiles can only be used on rectangular facets.");
 	Add(warningLabel);
 
@@ -163,7 +166,8 @@ void ProfilePlotter::SetBounds(int x, int y, int w, int h) {
 	addButton->SetBounds(275, h - 95, 80, 19);
 	removeButton->SetBounds(360, h - 95, 80, 19);
 	removeAllButton->SetBounds(445, h - 95, 80, 19);
-	logYToggle->SetBounds(190, h - 70, 40, 19);
+    colorToggle->SetBounds(535, h - 95, 40, 19);
+    logYToggle->SetBounds(190, h - 70, 40, 19);
 	warningLabel->SetBounds(w-240,h-70,235,19);
 	correctForGas->SetBounds(240, h - 70, 80, 19);
 	normLabel->SetBounds(7, h - 68, 50, 19);
@@ -611,6 +615,17 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
 
 			refreshViews();
 
+		}
+		else if(src == colorToggle) {
+		    if(!colorToggle->GetState())
+                chart->SetColorSchemeDefault();
+		    else
+		        chart->SetColorSchemeColorblind();
+
+		    for(int viewId = 0; viewId < nbView; viewId++){
+                GLDataView *v = views[viewId];
+                v->SetColor(chart->GetFirstAvailableColor());
+		    }
 		}
 		break;
 	}

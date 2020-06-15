@@ -78,6 +78,7 @@ private:
   GLTextField *formulaText;
   GLButton    *formulaBtn;
   GLToggle    *logYToggle;
+  GLToggle    *colorToggle;
   GLToggle    *correctForGas;
 
   GLDataView  *views[MAX_VIEWS];
