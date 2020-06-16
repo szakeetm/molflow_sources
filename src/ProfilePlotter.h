@@ -78,10 +78,15 @@ private:
   GLTextField *formulaText;
   GLButton    *formulaBtn;
   GLToggle    *logYToggle;
-  GLToggle    *colorToggle;
   GLToggle    *correctForGas;
 
-  GLDataView  *views[MAX_VIEWS];
+    GLToggle    *colorToggle;
+    GLLabel    *fixedLineWidthText;
+    GLButton    *fixedLineWidthButton;
+    GLTextField    *fixedLineWidthField;
+
+
+    GLDataView  *views[MAX_VIEWS];
   int          nbView;
   float        lastUpdate;
 
