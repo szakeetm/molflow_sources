@@ -530,7 +530,9 @@ void MolFlow::PlaceComponents() {
 
 	togglePanel->SetCompBounds(showVolume, 5, 64, 60, 18);
 	togglePanel->SetCompBounds(showTexture, 70, 64, 60, 18);
-	togglePanel->SetCompBounds(showFilter, 135, 64, 60, 18);
+    togglePanel->SetCompBounds(showFacetId, 135, 64, 60, 18);
+
+    //togglePanel->SetCompBounds(showFilter, 135, 64, 60, 18);
 
 	togglePanel->SetCompBounds(viewerMoreButton, 5, 86, 55, 18);
 	togglePanel->SetCompBounds(showVertex, 70, 86, 60, 18);
@@ -2267,6 +2269,9 @@ void MolFlow::LoadConfig() {
 		f->ReadKeyword("showTexture"); f->ReadKeyword(":");
 		for (int i = 0; i < MAX_VIEWER; i++)
 			viewer[i]->showTexture = f->ReadInt();
+        f->ReadKeyword("showFacetId"); f->ReadKeyword(":");
+        for (int i = 0; i < MAX_VIEWER; i++)
+            viewer[i]->showFacetId = f->ReadInt();
 		f->ReadKeyword("showFilter"); f->ReadKeyword(":");
 		for (int i = 0; i < MAX_VIEWER; i++)
 			viewer[i]->showFilter = f->ReadInt();
@@ -2451,7 +2456,8 @@ void MolFlow::SaveConfig() {
 		WRITEI("showHits", showHit);
 		WRITEI("showVolume", showVolume);
 		WRITEI("showTexture", showTexture);
-		WRITEI("showFilter", showFilter);
+        WRITEI("showFacetId", showFacetId);
+        WRITEI("showFilter", showFilter);
 		WRITEI("showIndices", showIndex);
 		WRITEI("showVertices", showVertex);
 		WRITEI("showMode", showBack);
