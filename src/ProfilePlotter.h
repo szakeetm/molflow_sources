@@ -23,6 +23,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/GLWindow.h"
 #include "GLApp/GLChart/GLChartConst.h"
 #include <vector>
+#include <map>
+
 class GLChart;
 class GLLabel;
 class GLCombo;
@@ -56,6 +58,7 @@ public:
   bool IsLogScaled();
   void SetLogScaled(bool logScale);
   void SetWorker(Worker *w);
+    std::map<int,GLColor> GetIDColorPairs() const;
 
 private:  
   void remView(int facet);
@@ -89,7 +92,7 @@ private:
     GLDataView  *views[MAX_VIEWS];
   int          nbView;
   float        lastUpdate;
-
+    std::map<int,GLColor> plottedFacets;
 };
 
 #endif /* _PROFILEPLOTTERH_ */

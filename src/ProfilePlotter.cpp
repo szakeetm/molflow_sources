@@ -504,9 +504,7 @@ void ProfilePlotter::addView(int facet) {
 		return;
 	}
 	if (nbView < MAX_VIEWS) {
-		Facet *f = geom->GetFacet(facet);
 		GLDataView *v = new GLDataView();
-		//sprintf(tmp, "F#%d %s", facet + 1, profType[f->wp.profileType]);
 		sprintf(tmp, "F#%d", facet + 1);
 		v->SetName(tmp);
 		//Look for first available color
@@ -521,7 +519,9 @@ void ProfilePlotter::addView(int facet) {
 		chart->GetY1Axis()->AddDataView(v);
 		views[nbView] = v;
 		nbView++;
-	}
+
+        plottedFacets.insert(std::make_pair(facet, col));
+    }
 
 }
 
@@ -548,6 +548,7 @@ void ProfilePlotter::remView(int facet) {
 	for (int j = i; j < nbView - 1; j++) views[j] = views[j + 1];
 	nbView--;
 
+    plottedFacets.erase(facet);
 }
 
 /**
@@ -645,7 +646,7 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
 		    else
 		        chart->SetColorSchemeColorblind();
 
-		    auto colors = chart->GetColorScheme();
+		    const auto& colors = chart->GetColorScheme();
 		    for(int viewId = 0; viewId < nbView; viewId++){
                 GLDataView *v = views[viewId];
                 auto col = colors[viewId%colors.size()];
@@ -653,11 +654,15 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
                 v->SetColor(col);
                 v->SetMarkerColor(col);
                 v->SetStyle(lineStyle);
+
+                std::string facId(v->GetName());
+                facId = facId.substr(facId.find("#") + 1);
+                plottedFacets.at(std::stoi(facId)-1) = col;
 		    }
 		}
 		break;
 	}
-
+    this->worker->GetGeometry()->SetPlottedFacets(plottedFacets);
 	GLWindow::ProcessMessage(src, message);
 
 }
@@ -711,4 +716,12 @@ void ProfilePlotter::SetWorker(Worker *w) { //for loading views before the full 
 
 	worker = w;
 
+}
+
+/**
+* \brief Returns a list of plotted facets and the coupled colors
+* \return map containing plotted facet IDs and colors
+*/
+std::map<int,GLColor> ProfilePlotter::GetIDColorPairs() const {
+    return plottedFacets;
 }
