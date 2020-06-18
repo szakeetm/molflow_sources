@@ -31,6 +31,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Geometry_shared.h"
 #include "Facet_shared.h"
 #include <cmath>
+#include <Helper/StringHelper.h>
 
 #if defined(MOLFLOW)
 #include "MolFlow.h"
@@ -103,6 +104,11 @@ ProfilePlotter::ProfilePlotter() :GLWindow() , views{}{
 	profCombo->SetEditable(true);
     Add(profCombo);
 
+    selFacInput = new GLTextField(0, "1,5-6,9");
+    selFacInput->SetEditable(true);
+
+    Add(selFacInput);
+
 	normLabel = new GLLabel("Normalize:");
 	Add(normLabel);
 
@@ -172,11 +178,14 @@ ProfilePlotter::ProfilePlotter() :GLWindow() , views{}{
 void ProfilePlotter::SetBounds(int x, int y, int w, int h) {
 	
 	chart->SetBounds(7, 5, w - 15, h - 135);
-	profCombo->SetBounds(7, h - 120, 180, 19);
-	selButton->SetBounds(190, h - 120, 80, 19);
-	addButton->SetBounds(275, h - 120, 80, 19);
-	removeButton->SetBounds(360, h - 120, 80, 19);
-	removeAllButton->SetBounds(445, h - 120, 80, 19);
+
+	profCombo->SetBounds(7, h - 120, 160, 19);
+    selFacInput->SetBounds(170, h - 120, 120, 19);
+    selButton->SetBounds(295, h - 120, 80, 19);
+	addButton->SetBounds(380, h - 120, 80, 19);
+	removeButton->SetBounds(465, h - 120, 80, 19);
+	removeAllButton->SetBounds(550, h - 120, 80, 19);
+
     logYToggle->SetBounds(190, h - 95, 40, 19);
 	warningLabel->SetBounds(w-240,h-95,235,19);
 	correctForGas->SetBounds(240, h - 95, 80, 19);
@@ -208,13 +217,15 @@ void ProfilePlotter::Refresh() {
 	//Rebuild selection combo box
 	Geometry *geom = worker->GetGeometry();
 	size_t nb = geom->GetNbFacet();
-	size_t nbProf = 0;
+	size_t nbProf = 1; // minimum 1 for custom input
 	for (size_t i = 0; i < nb; i++)
 		if (geom->GetFacet(i)->sh.isProfile) nbProf++;
 	profCombo->Clear();
 	if (nbProf) profCombo->SetSize(nbProf);
-	nbProf = 0;
-	for (size_t i = 0; i < nb; i++) {
+    nbProf = 0;
+    profCombo->SetValueAt(nbProf, "Select [v] or type ->", (int)-1);
+    nbProf = 1;
+    for (size_t i = 0; i < nb; i++) {
 		Facet *f = geom->GetFacet(i);
 		if (f->sh.isProfile) {
 			char tmp[128];
@@ -490,8 +501,9 @@ void ProfilePlotter::refreshViews() {
 /**
 * \brief Adds view/plot for a specific facet
 * \param facet specific facet ID
+* \return 0 if okay, 1 if already plotted
 */
-void ProfilePlotter::addView(int facet) {
+int ProfilePlotter::addView(int facet) {
 
 	char tmp[128];
 	Geometry *geom = worker->GetGeometry();
@@ -504,8 +516,7 @@ void ProfilePlotter::addView(int facet) {
 		if (!found) i++;
 	}
 	if (found) {
-		GLMessageBox::Display("Profile already plotted", "Info", GLDLG_OK, GLDLG_ICONINFO);
-		return;
+		return 1;
 	}
 	if (nbView < MAX_VIEWS) {
 		GLDataView *v = new GLDataView();
@@ -527,13 +538,15 @@ void ProfilePlotter::addView(int facet) {
         plottedFacets.insert(std::make_pair(facet, col));
     }
 
+	return 0;
 }
 
 /**
 * \brief Removes view/plot for a specific facet
 * \param facet specific facet ID
+* \return 0 if okay, 1 if not plotted
 */
-void ProfilePlotter::remView(int facet) {
+int ProfilePlotter::remView(int facet) {
 
 	Geometry *geom = worker->GetGeometry();
 
@@ -544,8 +557,7 @@ void ProfilePlotter::remView(int facet) {
 		if (!found) i++;
 	}
 	if (!found) {
-		GLMessageBox::Display("Profile not plotted", "Error", GLDLG_OK, GLDLG_ICONERROR);
-		return;
+		return 1;
 	}
 	chart->GetY1Axis()->RemoveDataView(views[i]);
 	SAFE_DELETE(views[i]);
@@ -553,6 +565,7 @@ void ProfilePlotter::remView(int facet) {
 	nbView--;
 
     plottedFacets.erase(facet);
+    return 0;
 }
 
 /**
@@ -582,37 +595,99 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
 		}
 		else if (src == selButton) {
 			int idx = profCombo->GetSelectedIndex();
-			if (idx >= 0) { //Something selected (not -1)
-				int facetId = profCombo->GetUserValueAt(idx);
-				//if (facetId >= 0 && facetId < geom->GetNbFacet()) { //Check commented out: should never be able to select non-existing facet
-					geom->UnselectAll();
-					geom->GetFacet(facetId)->selected = true;
-					geom->UpdateSelection();
+			if(idx >= 0) {
+                geom->UnselectAll();
+                size_t facetRow = 0;
+                if (idx > 0) { //Something selected, facets start with idx==1, custom input is idx==0 (not -1)
+                    int facetId = profCombo->GetUserValueAt(idx);
+                    geom->GetFacet(facetId)->selected = true;
+                    mApp->facetList->SetSelectedRow(profCombo->GetUserValueAt(idx));
+                    facetRow = profCombo->GetUserValueAt(idx);
+                } else {
+                    std::vector<size_t> facetIds;
+                    try {
+                        splitFacetList(facetIds, selFacInput->GetText(), geom->GetNbFacet());
+                        if(facetIds.empty())
+                            return;
+                    }
+                    catch (std::exception &e) {
+                        GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
+                        return;
+                    }
+                    catch (...) {
+                        GLMessageBox::Display("Unknown exception", "Error", GLDLG_OK, GLDLG_ICONERROR);
+                        return;
+                    }
 
-					mApp->UpdateFacetParams(true);
+                    for (const auto &facetId : facetIds) {
+                        geom->GetFacet(facetId)->selected = Contains({selButton, addButton}, src);
+                    }
 
-					mApp->facetList->SetSelectedRow(profCombo->GetUserValueAt(idx));
-					mApp->facetList->ScrollToVisible(profCombo->GetUserValueAt(idx), 1, true);
-				//}
-			}
+                    facetRow = facetIds.back();
+                }
+
+                geom->UpdateSelection();
+                mApp->UpdateFacetParams(true);
+                mApp->UpdateFacetlistSelected();
+                mApp->facetList->ScrollToVisible(facetRow, 1, true);
+            }
 		}
 		else if (src == addButton) {
-
 			int idx = profCombo->GetSelectedIndex();
-
 			if (idx >= 0) { //Something selected (not -1)
-				addView(profCombo->GetUserValueAt(idx));
+			    if(idx > 0){
+                    if(addView(profCombo->GetUserValueAt(idx)))
+                        GLMessageBox::Display("Profile already plotted", "Info", GLDLG_OK, GLDLG_ICONINFO);
+                }
+			    else {
+                    std::vector<size_t> facetIds;
+                    try {
+                        splitFacetList(facetIds, selFacInput->GetText(), geom->GetNbFacet());
+                    }
+                    catch (std::exception &e) {
+                        GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
+                        return;
+                    }
+
+                    for (const auto &facetId : facetIds) {
+                        if(geom->GetFacet(facetId)->sh.isProfile) {
+                            if(addView(facetId))
+                                GLMessageBox::Display("Profile already plotted", "Info", GLDLG_OK, GLDLG_ICONINFO);
+                        }
+                    }
+			    }
 				refreshViews();
-			}
-            applyFacetHighlighting();
+                applyFacetHighlighting();
+            }
 		}
 		else if (src == removeButton) {
 
 			int idx = profCombo->GetSelectedIndex();
+            if (idx >= 0) { //Something selected (not -1)
+                if(idx > 0){
+                    if(remView(profCombo->GetUserValueAt(idx))){
+                        GLMessageBox::Display("Profile not plotted", "Error", GLDLG_OK, GLDLG_ICONERROR);
+                    }
+                }
+                else {
+                    std::vector<size_t> facetIds;
+                    try {
+                        splitFacetList(facetIds, selFacInput->GetText(), geom->GetNbFacet());
+                    }
+                    catch (std::exception &e) {
+                        GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
+                        return;
+                    }
 
-			if (idx >= 0) remView(profCombo->GetUserValueAt(idx));
-			refreshViews();
-            applyFacetHighlighting();
+                    for (const auto &facetId : facetIds) {
+                        if(remView(facetId)){
+                            GLMessageBox::Display("Profile not plotted", "Error", GLDLG_OK, GLDLG_ICONERROR);
+                        }
+                    }
+                }
+                refreshViews();
+                applyFacetHighlighting();
+            }
 		}
 		else if (src == removeAllButton) {
 			Reset();
@@ -637,6 +712,10 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
 			correctForGas->SetVisible(normMode == 3 || normMode == 4);
 			refreshViews();
 		}
+		else if(src == profCombo){
+            int profMode = profCombo->GetSelectedIndex();
+            selFacInput->SetEditable(!profMode);
+        }
 		break;
 	case MSG_TOGGLE:
 		if (src == logYToggle) {
