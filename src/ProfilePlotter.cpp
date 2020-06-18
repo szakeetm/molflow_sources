@@ -101,7 +101,7 @@ ProfilePlotter::ProfilePlotter() :GLWindow() , views{}{
 
 	profCombo = new GLCombo(0);
 	profCombo->SetEditable(true);
-	Add(profCombo);
+    Add(profCombo);
 
 	normLabel = new GLLabel("Normalize:");
 	Add(normLabel);
