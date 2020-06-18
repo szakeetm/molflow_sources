@@ -62,7 +62,7 @@ const char* profType[] = {
 /**
 * \brief Constructor with initialisation for Profile plotter window (Tools/Profile Plotter)
 */
-ProfilePlotter::ProfilePlotter() :GLWindow() {
+ProfilePlotter::ProfilePlotter() :GLWindow() , views{}{
 
 	int wD = 650;
 	int hD = 400;
@@ -70,7 +70,7 @@ ProfilePlotter::ProfilePlotter() :GLWindow() {
 	SetTitle("Profile plotter");
 	SetIconfiable(true);
 	nbView = 0;
-	worker = NULL;
+	worker = nullptr;
 
 	lastUpdate = 0.0f;
 
@@ -132,6 +132,9 @@ ProfilePlotter::ProfilePlotter() :GLWindow() {
     fixedLineWidthField->SetEditable(true);
     Add(fixedLineWidthField);
 
+    useProfColToggle = new GLToggle(0, "Use profile colors for viewer");
+    Add(useProfColToggle);
+
 	warningLabel = new GLLabel("Profiles can only be used on rectangular facets.");
 	Add(warningLabel);
 
@@ -185,6 +188,7 @@ void ProfilePlotter::SetBounds(int x, int y, int w, int h) {
     fixedLineWidthText->SetBounds(112, h - 70, 93, 19);
     fixedLineWidthField->SetBounds(206, h - 70, 30, 19);
     fixedLineWidthButton->SetBounds(240, h - 70, 100, 19);
+    useProfColToggle->SetBounds(350, h - 70, 105, 19);
 
     formulaText->SetBounds(7, h - 45, 350, 19);
 	formulaBtn->SetBounds(360, h - 45, 120, 19);;
@@ -560,6 +564,7 @@ void ProfilePlotter::Reset() {
 	for (int i = 0; i < nbView; i++) SAFE_DELETE(views[i]);
 	nbView = 0;
 
+	plottedFacets.clear();
 }
 
 /**
@@ -599,6 +604,7 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
 				addView(profCombo->GetUserValueAt(idx));
 				refreshViews();
 			}
+            applyFacetHighlighting();
 		}
 		else if (src == removeButton) {
 
@@ -606,16 +612,17 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
 
 			if (idx >= 0) remView(profCombo->GetUserValueAt(idx));
 			refreshViews();
+            applyFacetHighlighting();
 		}
 		else if (src == removeAllButton) {
-
 			Reset();
+            applyFacetHighlighting();
 		}
 		else if (src == formulaBtn) {
 
 			plot();
 		}
-        else if(src == fixedLineWidthButton) {
+		else if(src == fixedLineWidthButton) {
             int linW;
             fixedLineWidthField->GetNumberInt(&linW);
             for(int viewId = 0; viewId < nbView; viewId++){
@@ -656,13 +663,17 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
                 v->SetStyle(lineStyle);
 
                 std::string facId(v->GetName());
-                facId = facId.substr(facId.find("#") + 1);
+                facId = facId.substr(facId.find('#') + 1);
                 plottedFacets.at(std::stoi(facId)-1) = col;
 		    }
+            applyFacetHighlighting();
 		}
+		else if(src == useProfColToggle) {
+            applyFacetHighlighting();
+        }
 		break;
 	}
-    this->worker->GetGeometry()->SetPlottedFacets(plottedFacets);
+    //this->worker->GetGeometry()->SetPlottedFacets(plottedFacets);
 	GLWindow::ProcessMessage(src, message);
 
 }
@@ -724,4 +735,18 @@ void ProfilePlotter::SetWorker(Worker *w) { //for loading views before the full 
 */
 std::map<int,GLColor> ProfilePlotter::GetIDColorPairs() const {
     return plottedFacets;
+}
+
+/**
+* \brief Applies or removes facet highlighting
+*/
+void ProfilePlotter::applyFacetHighlighting() const {
+    auto geom = this->worker->GetGeometry();
+    if(useProfColToggle->GetState()){
+        geom->SetPlottedFacets(plottedFacets);
+    }
+    else {
+        geom->SetPlottedFacets(std::map<int, GLColor>());
+    }
+    geom->UpdateSelection();
 }

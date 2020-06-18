@@ -64,6 +64,7 @@ private:
   void remView(int facet);
   void refreshViews();
   void plot();
+  void applyFacetHighlighting() const;
 
   Worker      *worker;
   GLButton    *dismissButton;
@@ -87,6 +88,7 @@ private:
     GLLabel    *fixedLineWidthText;
     GLButton    *fixedLineWidthButton;
     GLTextField    *fixedLineWidthField;
+    GLToggle    *useProfColToggle;
 
 
     GLDataView  *views[MAX_VIEWS];
