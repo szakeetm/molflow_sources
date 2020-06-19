@@ -62,7 +62,7 @@ public:
 	void SaveGEO(FileWriter *file, GLProgress *prg, BYTE *buffer, Worker *worker,
                  bool saveSelected, bool crashSave = false);
 	
-	void SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress *prg, bool saveSelected);
+	void SaveXML_geometry(pugi::xml_node &saveDoc, Worker *work, GLProgress *prg, bool saveSelected);
 	bool SaveXML_simustate(pugi::xml_node saveDoc, Worker *work, BYTE *buffer, GLProgress *prg, bool saveSelected);
 	void LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg);
 	void InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg, bool newStr);

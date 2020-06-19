@@ -85,7 +85,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 add_subdirectory(src_shared)
 add_subdirectory(CMake/molflow_sub)
 add_subdirectory(CMake/molflow_win)
-add_subdirectory(CMake/molflow_cli)
 
 IF(WITH_GPU AND (MSVC AND WIN32) OR (NOT WIN32))
 #IF(MSVC AND WITH_GPU)
@@ -108,7 +107,6 @@ ELSE()
 ENDIF(WIN32)
 
 add_dependencies(molflow molflowSub compress)
-add_dependencies(molflowCLI molflowSub)
 
 option(USE_TESTS "Build the tests" ON)
 if(USE_TESTS)

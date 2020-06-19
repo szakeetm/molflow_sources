@@ -70,6 +70,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "ziplib/ZipFile.h"
 #include "File.h" //File utils (Get extension, etc)
 #include "ProcessControl.h"
+#include "versionId.h"
 
 /*
 //Leak detection
@@ -367,8 +368,13 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
             std::ostringstream tmp;
             tmp << compressorName << " \"" << fileNameWithGeo << "\" Geometry.geo";
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-            size_t procId = StartProc(tmp.str().c_str(),STARTPROC_BACKGROUND, NULL);
+            char* command[1];
+            command[0] = new char[512];
+            sprintf(command[0], "%s", tmp.str().c_str());
+            size_t procId = StartProc(command, STARTPROC_BACKGROUND);
             mApp->compressProcessHandle = OpenProcess(PROCESS_ALL_ACCESS, true, (unsigned long)procId);
+
+            delete[] command[0];
 #else
             //In Linux, compressing to old format will be blocking
             system(tmp.str().c_str());
@@ -816,8 +822,15 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             }
 
             progressDlg->SetMessage("Building geometry...");
+            xml_node rootNode = loadXML;
+            if(appVersionId >= 2680){
+                xml_node envNode = loadXML.child("SimulationEnvironment");
+                if(!envNode.empty())
+                    rootNode = envNode;
+            }
+
             if (!insert) {
-                geom->LoadXML_geom(loadXML, this, progressDlg);
+                geom->LoadXML_geom(rootNode, this, progressDlg);
                 geom->UpdateName(fileName.c_str());
 
                 progressDlg->SetMessage("Reloading worker with new geometry...");
@@ -830,7 +843,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     BYTE* buffer = simManager.GetLockedHitBuffer();
                     if(!buffer)
                         throw Error("Cannot access shared hit buffer");
-                    geom->LoadXML_simustate(loadXML, buffer, this, progressDlg);
+                    geom->LoadXML_simustate(rootNode, buffer, this, progressDlg);
                     simManager.UnlockHitBuffer();
                     SendToHitBuffer(); //Send hits without sending facet counters, as they are directly written during the load process (mutiple moments)
                     RebuildTextures();
@@ -841,7 +854,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                                           GLDLG_ICONWARNING);
                 }
             } else { //insert
-                geom->InsertXML(loadXML, this, progressDlg, newStr);
+                geom->InsertXML(rootNode, this, progressDlg, newStr);
                 mApp->changedSinceSave = true;
                 ResetWorkerStats();
 

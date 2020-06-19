@@ -22,6 +22,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Facet_shared.h"
 #include "GLApp/MathTools.h"
 #include "ProfilePlotter.h"
+#include "versionId.h"
 #include <iomanip>
 
 #include <cereal/types/vector.hpp>
@@ -934,8 +935,15 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 			throw Error(errMsg);
 		}
 		BuildFacetList(f);
-		double nU = f->sh.U.Norme();
-		f->tRatio = f->sh.texWidthD / nU;
+        const double nU = f->sh.U.Norme();
+        const double nV = f->sh.V.Norme();
+
+        f->tRatioU = f->sh.texWidthD / nU;
+        f->tRatioV = f->sh.texHeightD / nV;
+
+        if(std::abs(f->tRatioU - f->tRatioV) <= DBL_EPSILON){
+            f->tRatioV = f->tRatioU;
+        }
 	}
 
 }
@@ -2318,11 +2326,20 @@ void MolflowGeometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, 
 * \param prg GLProgress window where visualising of the export progress is shown
 * \param saveSelected saveSelected if a selection is to be saved
 */
-void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress *prg, bool saveSelected) {
+void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgress *prg, bool saveSelected) {
 	//TiXmlDeclaration* decl = new TiXmlDeclaration("1.0")="")="");
 	//saveDoc->LinkEndChild(decl);
 
-	xml_node geomNode = saveDoc.append_child("Geometry");
+    xml_node rootNode;
+	if(mApp->useOldXMLFormat){
+        rootNode = saveDoc;
+    }
+	else {
+        rootNode = saveDoc.append_child("SimulationEnvironment");
+        rootNode.append_attribute("type") = "molflow";
+        rootNode.append_attribute("version") = appVersionId;
+    }
+    xml_node geomNode = rootNode.append_child("Geometry");
 
 	prg->SetMessage("Writing vertices...");
 	geomNode.append_child("Vertices").append_attribute("nb") = sh.nbVertex; //creates Vertices node, adds nb attribute and sets its value to wp.nbVertex
@@ -2356,7 +2373,7 @@ void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLP
 		s.append_attribute("name") = (strName) ? strName[i] : "";
 
 	}
-	xml_node interfNode = saveDoc.append_child("Interface");
+	xml_node interfNode = rootNode.append_child("Interface");
 
 	xml_node selNode = interfNode.append_child("Selections");
 	selNode.append_attribute("nb") = (!saveSelected)*(mApp->selections.size());
@@ -2415,7 +2432,7 @@ void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLP
 		}
 	}
 
-	xml_node simuParamNode = saveDoc.append_child("MolflowSimuSettings");
+	xml_node simuParamNode = rootNode.append_child("MolflowSimuSettings");
 
 	simuParamNode.append_child("Gas").append_attribute("mass") = work->wp.gasMass;
 	simuParamNode.child("Gas").append_attribute("enableDecay") = (int)work->wp.enableDecay; //backward compatibility: 0 or 1
@@ -2458,7 +2475,7 @@ void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLP
 	size_t nonCatalogParameters = 0;
 	
 	for (size_t i = 0; i < work->parameters.size(); i++) {
-		if (work->parameters[i].fromCatalog == false) { //Don't save catalog parameters
+		if (!work->parameters[i].fromCatalog) { //Don't save catalog parameters
 			xml_node newParameter = paramNode.append_child("Parameter");
 			newParameter.append_attribute("id") = nonCatalogParameters;
 			newParameter.append_attribute("name") = work->parameters[i].name.c_str();
@@ -2485,7 +2502,8 @@ void MolflowGeometry::SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLP
 * \return bool if saving is successfull (always is here)
 */
 bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, GLProgress *prg, bool saveSelected) {
-	xml_node resultNode = saveDoc.append_child("MolflowResults");
+	xml_node rootNode = saveDoc.child("SimulationEnvironment");
+    xml_node resultNode = rootNode.append_child("MolflowResults");
 	prg->SetMessage("Writing simulation results...");
 	xml_node momentsNode = resultNode.append_child("Moments");
 	momentsNode.append_attribute("nb") = work->moments.size() + 1;
@@ -2863,9 +2881,16 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 			throw Error(errMsg);
 		}
 		BuildFacetList(f);
-		double nU = f->sh.U.Norme();
-		f->tRatio = f->sh.texWidthD / nU;
-	}
+		const double nU = f->sh.U.Norme();
+        const double nV = f->sh.V.Norme();
+
+        f->tRatioU = f->sh.texWidthD / nU;
+        f->tRatioV = f->sh.texHeightD / nV;
+
+        if(std::abs(f->tRatioU - f->tRatioV) <= DBL_EPSILON){
+            f->tRatioV = f->tRatioU;
+        }
+    }
 }
 
 /**
@@ -3070,8 +3095,15 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 			throw Error(errMsg);
 		}
 		BuildFacetList(f);
-		double nU = f->sh.U.Norme();
-		f->tRatio = f->sh.texWidthD / nU;
+        const double nU = f->sh.U.Norme();
+        const double nV = f->sh.V.Norme();
+
+        f->tRatioU = f->sh.texWidthD / nU;
+        f->tRatioV = f->sh.texHeightD / nV;
+
+        if(std::abs(f->tRatioU - f->tRatioV) <= DBL_EPSILON){
+            f->tRatioV = f->tRatioU;
+        }
 	}
 }
 

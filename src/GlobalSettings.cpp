@@ -74,13 +74,15 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 
 	worker = w;
 	int wD = 580;
-	int hD = 540;
+	int hD = 565;
+
+	const int checkboxHeight = 25;
 
 	SetTitle("Global Settings");
 	SetIconfiable(true);
 
 	auto *settingsPanel = new GLTitledPanel("Program settings");
-	settingsPanel->SetBounds(5, 2, 270, 267);
+	settingsPanel->SetBounds(5, 2, 270, 292);
 	Add(settingsPanel);
 
 	auto *asLabel = new GLLabel("Autosave frequency (minutes):");
@@ -91,44 +93,59 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	autoSaveText->SetBounds(170, 20, 30, 19);
 	settingsPanel->Add(autoSaveText);
 
+	int programSettingsPosY = 47;
 	chkSimuOnly = new GLToggle(0, "Autosave only when simulation is running");
-	chkSimuOnly->SetBounds(15, 47, 160, 19);
+	chkSimuOnly->SetBounds(15, programSettingsPosY, 160, 19);
 	settingsPanel->Add(chkSimuOnly);
+    programSettingsPosY+=checkboxHeight;
 
 	chkCompressSavedFiles = new GLToggle(0, "Use .zip as default extension (otherwise .xml)");
-	chkCompressSavedFiles->SetBounds(15, 72, 100, 19);
+	chkCompressSavedFiles->SetBounds(15, programSettingsPosY, 100, 19);
 	settingsPanel->Add(chkCompressSavedFiles);
+    programSettingsPosY+=checkboxHeight;
 
 	chkCheckForUpdates = new GLToggle(0, "Check for updates at startup");
-	chkCheckForUpdates->SetBounds(15, 97, 160, 19);
+	chkCheckForUpdates->SetBounds(15, programSettingsPosY, 160, 19);
 	settingsPanel->Add(chkCheckForUpdates);
+    programSettingsPosY+=checkboxHeight;
 
 	chkAutoUpdateFormulas = new GLToggle(0, "Auto refresh formulas");
-	chkAutoUpdateFormulas->SetBounds(15, 122, 160, 19);
+	chkAutoUpdateFormulas->SetBounds(15, programSettingsPosY, 160, 19);
 	settingsPanel->Add(chkAutoUpdateFormulas);
+    programSettingsPosY+=checkboxHeight;
 
 	chkAntiAliasing = new GLToggle(0, "Anti-Aliasing");
-	chkAntiAliasing->SetBounds(15, 147, 160, 19);
+	chkAntiAliasing->SetBounds(15, programSettingsPosY, 160, 19);
 	settingsPanel->Add(chkAntiAliasing);
+    programSettingsPosY+=checkboxHeight;
 
 	chkWhiteBg = new GLToggle(0, "White Background");
-	chkWhiteBg->SetBounds(15, 172, 160, 19);
+	chkWhiteBg->SetBounds(15, programSettingsPosY, 160, 19);
 	settingsPanel->Add(chkWhiteBg);
+    programSettingsPosY+=checkboxHeight;
 
 	leftHandedToggle = new GLToggle(0, "Left-handed coord. system");
-	leftHandedToggle->SetBounds(15, 197, 160, 19);
+	leftHandedToggle->SetBounds(15, programSettingsPosY, 160, 19);
 	settingsPanel->Add( leftHandedToggle );
+    programSettingsPosY+=checkboxHeight;
 
 	highlightNonplanarToggle = new GLToggle(0, "Highlight non-planar facets");
-	highlightNonplanarToggle->SetBounds(15, 222, 160, 19);
+	highlightNonplanarToggle->SetBounds(15, programSettingsPosY, 160, 19);
 	settingsPanel->Add(highlightNonplanarToggle);
+    programSettingsPosY+=checkboxHeight;
 
     highlightSelectionToggle = new GLToggle(0, "Highlight selected facets");
-    highlightSelectionToggle->SetBounds(15, 247, 160, 19);
+    highlightSelectionToggle->SetBounds(15, programSettingsPosY, 160, 19);
     settingsPanel->Add(highlightSelectionToggle);
+    programSettingsPosY+=checkboxHeight;
+
+    useOldXMLFormat = new GLToggle(0, "Use old XML format");
+    useOldXMLFormat->SetBounds(15, programSettingsPosY, 160, 19);
+    settingsPanel->Add(useOldXMLFormat);
+
 
 	auto *simuSettingsPanel = new GLTitledPanel("Simulation settings");
-	simuSettingsPanel->SetBounds(280, 2, 290, 267);
+	simuSettingsPanel->SetBounds(280, 2, 290, 292);
 	Add(simuSettingsPanel);
 
 	auto *massLabel = new GLLabel("Gas molecular mass (g/mol):");
@@ -187,15 +204,16 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	simuSettingsPanel->Add(cutoffText);
 
 	applyButton = new GLButton(0, "Apply above settings");
-	applyButton->SetBounds(wD / 2 - 65, 273, 130, 19);
+	applyButton->SetBounds(wD / 2 - 65, 298, 130, 19);
 	Add(applyButton);
 
 	/*chkNonIsothermal = new GLToggle(0,"Non-isothermal system (textures only, experimental)");
 	chkNonIsothermal->SetBounds(315,125,100,19);
 	Add(chkNonIsothermal);*/
 
+	const int procControlPosY= 334;
 	auto *panel3 = new GLTitledPanel("Process control");
-	panel3->SetBounds(5, 309, wD - 10, hD - 310);
+	panel3->SetBounds(5, procControlPosY, wD - 10, hD - 310);
 	Add(panel3);
 
 	processList = new GLList(0);
@@ -205,7 +223,7 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	processList->SetColumnLabels((const char **)plName);
 	processList->SetColumnAligns((int *)plAligns);
 	processList->SetColumnLabelVisible(true);
-	processList->SetBounds(10, 329, wD - 20, hD - 408);
+	processList->SetBounds(10, procControlPosY+20, wD - 20, hD - 433);
 	panel3->Add(processList);
 
 	char tmp[128];
@@ -253,7 +271,8 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 void GlobalSettings::Update() {
 
 	char tmp[256];
-	chkAntiAliasing->SetState(mApp->antiAliasing);
+    useOldXMLFormat->SetState(mApp->useOldXMLFormat);
+    chkAntiAliasing->SetState(mApp->antiAliasing);
 	chkWhiteBg->SetState(mApp->whiteBg);
     highlightNonplanarToggle->SetState(mApp->highlightNonplanarFacets);
     highlightSelectionToggle->SetState(mApp->highlightSelection);
@@ -475,7 +494,8 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 			}
 		}
 		else if (src == applyButton) {
-			mApp->antiAliasing = chkAntiAliasing->GetState();
+            mApp->useOldXMLFormat = useOldXMLFormat->GetState();
+            mApp->antiAliasing = chkAntiAliasing->GetState();
 			mApp->whiteBg = chkWhiteBg->GetState();
             mApp->highlightSelection = highlightSelectionToggle->GetState();
             mApp->highlightNonplanarFacets = highlightNonplanarToggle->GetState();

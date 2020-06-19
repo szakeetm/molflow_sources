@@ -64,72 +64,117 @@ FacetAdvParams::FacetAdvParams(Worker *w) :GLWindow() {
 	SetIconfiable(true);
 
 	int wD = 320;
-	int hD = 694;
+	int hD = 714;
 	aPanel = new GLTitledPanel("Texture properties");
-	aPanel->SetBounds(5, 3, 309, 123);
+	aPanel->SetBounds(5, 3, 309, 153);
 	Add(aPanel);
 	mPanel = new GLTitledPanel("Texture cell / memory");
-	mPanel->SetBounds(5, 129, 309, 44);
+	mPanel->SetBounds(5, 159, 309, 44);
 	Add(mPanel);
 	vPanel = new GLTitledPanel("View settings");
-	vPanel->SetBounds(5, 383, 309, 44);
+	vPanel->SetBounds(5, 413, 309, 44);
 	Add(vPanel);
 	desPanel = new GLTitledPanel("Dynamic desorption");
-	desPanel->SetBounds(5, 433, 309, 69);
+	desPanel->SetBounds(5, 463, 309, 69);
 	Add(desPanel);
 	paramPanel = new GLTitledPanel("Additional parameters");
-	paramPanel->SetBounds(5, 177, 309, 200);
+	paramPanel->SetBounds(5, 207, 309, 200);
 	Add(paramPanel);
 	angleMapPanel = new GLTitledPanel("Incident angle distribution");
-	angleMapPanel->SetBounds(5, 508, 309, 149);
+	angleMapPanel->SetBounds(5, 538, 309, 149);
 	Add(angleMapPanel);
-	lengthText = new GLTextField(0, "");
-	aPanel->SetCompBounds(lengthText, 180, 36, 72, 18);
-	aPanel->Add(lengthText);
 
-	perCm = new GLLabel("cells/cm");
-	aPanel->SetCompBounds(perCm, 125, 39, 40, 12);
-	aPanel->Add(perCm);
+    enableBtn = new GLToggle(0, "Enable texture");
+    aPanel->SetCompBounds(enableBtn, 5, 18, 83, 16);
+    aPanel->Add(enableBtn);
+
+    aspectRatioBtn = new GLToggle(0, "Use square cells");
+    aPanel->SetCompBounds(aspectRatioBtn, 102, 18, 83, 16);
+    aPanel->Add(aspectRatioBtn);
+
+    l5 = new GLLabel("Resolution:");
+    aPanel->SetCompBounds(l5, 5, 39, 52, 12);
+    aPanel->Add(l5);
 
 	resolutionText = new GLTextField(0, "");
-	aPanel->SetCompBounds(resolutionText, 60, 36, 62, 18);
+	aPanel->SetCompBounds(resolutionText, 60, 39, 36, 18);
 	aPanel->Add(resolutionText);
 
-	l5 = new GLLabel("Resolution:");
-	aPanel->SetCompBounds(l5, 5, 39, 52, 12);
-	aPanel->Add(l5);
+    resolutionText2 = new GLTextField(0, "");
+    aPanel->SetCompBounds(resolutionText2, 104, 39, 36, 18);
+    aPanel->Add(resolutionText2);
 
-	enableBtn = new GLToggle(0, "Enable texture");
-	aPanel->SetCompBounds(enableBtn, 5, 18, 83, 16);
-	aPanel->Add(enableBtn);
+    labelXRes = new GLLabel("x");
+    aPanel->SetCompBounds(labelXRes, 97, 39, 7, 12);
+    aPanel->Add(labelXRes);
 
-	recordDesBtn = new GLToggle(0, "Count desorption");
-	aPanel->SetCompBounds(recordDesBtn, 5, 60, 94, 16);
-	aPanel->Add(recordDesBtn);
+    perCm = new GLLabel("cells/cm");
+    aPanel->SetCompBounds(perCm, 140, 39, 40, 12);
+    aPanel->Add(perCm);
+
+    lengthText = new GLTextField(0, "");
+    aPanel->SetCompBounds(lengthText, 184, 39, 36, 18);
+    aPanel->Add(lengthText);
+
+    lengthText2 = new GLTextField(0, "");
+    aPanel->SetCompBounds(lengthText2, 228, 39, 36, 18);
+    aPanel->Add(lengthText2);
+
+    labelXLen = new GLLabel("x");
+    aPanel->SetCompBounds(labelXLen, 221, 39, 7, 12);
+    aPanel->Add(labelXLen);
 
 	perCell = new GLLabel("cm/cell");
-	aPanel->SetCompBounds(perCell, 260, 39, 35, 12);
+	aPanel->SetCompBounds(perCell, 264, 39, 35, 12);
 	aPanel->Add(perCell);
 
-	recordDirBtn = new GLToggle(0, "Record direction vectors");
-	aPanel->SetCompBounds(recordDirBtn, 165, 102, 125, 16);
-	aPanel->Add(recordDirBtn);
+    aspectRatioBtn->SetState(true);
+    UpdateSquaredCells(true);
+
+    // NxM texture
+    nbCell = new GLLabel("Number of cells:");
+    aPanel->SetCompBounds(nbCell, 25, 64, 80, 12);
+    aPanel->Add(nbCell);
+
+    cellsU = new GLTextField(0, "");
+    aPanel->SetCompBounds(cellsU, 108, 61, 40, 18);
+    aPanel->Add(cellsU);
+
+    labelXCells = new GLLabel(" x ");
+    aPanel->SetCompBounds(labelXCells, 151, 64, 15, 12);
+    aPanel->Add(labelXCells);
+
+    cellsV = new GLTextField(0, "");
+    aPanel->SetCompBounds(cellsV, 169, 61, 40, 18);
+    aPanel->Add(cellsV);
+
+    /*auto breakLine = new GLTitledPanel("");
+    aPanel->SetCompBounds(breakLine, 2, 32, 305, 73-32);
+    aPanel->Add(breakLine);*/
+
+    recordDesBtn = new GLToggle(0, "Count desorption");
+    aPanel->SetCompBounds(recordDesBtn, 5, 87, 94, 16);
+    aPanel->Add(recordDesBtn);
+
+    recordReflBtn = new GLToggle(0, "Count reflection");
+    aPanel->SetCompBounds(recordReflBtn, 165, 87, 89, 16);
+    aPanel->Add(recordReflBtn);
 
 	recordTransBtn = new GLToggle(0, "Count transparent pass");
-	aPanel->SetCompBounds(recordTransBtn, 165, 81, 120, 16);
+	aPanel->SetCompBounds(recordTransBtn, 165, 108, 120, 16);
 	aPanel->Add(recordTransBtn);
 
-	recordReflBtn = new GLToggle(0, "Count reflection");
-	aPanel->SetCompBounds(recordReflBtn, 165, 60, 89, 16);
-	aPanel->Add(recordReflBtn);
+    recordAbsBtn = new GLToggle(0, "Count absorption");
+    aPanel->SetCompBounds(recordAbsBtn, 5, 108, 94, 16);
+    aPanel->Add(recordAbsBtn);
 
 	recordACBtn = new GLToggle(0, "Angular coefficient");
-	aPanel->SetCompBounds(recordACBtn, 5, 102, 101, 16);
+	aPanel->SetCompBounds(recordACBtn, 5, 129, 101, 16);
 	aPanel->Add(recordACBtn);
 
-	recordAbsBtn = new GLToggle(0, "Count absorption");
-	aPanel->SetCompBounds(recordAbsBtn, 5, 81, 94, 16);
-	aPanel->Add(recordAbsBtn);
+    recordDirBtn = new GLToggle(0, "Record direction vectors");
+    aPanel->SetCompBounds(recordDirBtn, 165, 129, 125, 16);
+    aPanel->Add(recordDirBtn);
 
 	showTexture = new GLToggle(0, "Draw Texture");
 	vPanel->SetCompBounds(showTexture, 10, 18, 80, 16);
@@ -413,7 +458,8 @@ void FacetAdvParams::UpdateSize() {
 			for (size_t i = 0; i < nbFacet; i++) {
 				Facet *f = geom->GetFacet(i);
 				if (f->sh.opacity == 1.0) {
-					cell += (size_t)f->GetNbCell();
+                    auto nbCells = f->GetNbCell();
+                    cell += (size_t)(nbCells.first * nbCells.second);
 					ram += (size_t)f->GetTexRamSize(1 + worker->moments.size());
 				}
 			}
@@ -424,7 +470,8 @@ void FacetAdvParams::UpdateSize() {
 
 			for (size_t i = 0; i < nbFacet; i++) {
 				Facet *f = geom->GetFacet(i);
-				cell += (size_t)f->GetNbCell();
+                auto nbCells = f->GetNbCell();
+                cell += (size_t)(nbCells.first * nbCells.second);
 				ram += (size_t)f->GetTexRamSize(1 + worker->moments.size());
 			}
 
@@ -449,7 +496,8 @@ void FacetAdvParams::UpdateSize() {
 */
 void FacetAdvParams::UpdateSizeForRatio() {
 	if (!geom->IsLoaded()) return;
-	double ratio;
+	double ratioU = 0.0;
+	double ratioV = 0.0;
 	char tmp[64];
 	bool boundMap = true;// boundaryBtn->GetState();
 	bool recordDir = recordDirBtn->GetState();
@@ -460,7 +508,7 @@ void FacetAdvParams::UpdateSizeForRatio() {
 		return;
 	}
 
-	if (!resolutionText->GetNumber(&ratio)) {
+	if (!resolutionText->GetNumber(&ratioU) || !resolutionText2->GetNumber(&ratioV)) {
 		ramText->SetText("");
 		cellText->SetText("");
 		return;
@@ -475,11 +523,13 @@ void FacetAdvParams::UpdateSizeForRatio() {
 			Facet *f = geom->GetFacet(i);
 			//if(f->wp.opacity==1.0) {
 			if (f->selected) {
-				cell += (size_t)f->GetNbCellForRatio(ratio);
-				ram += (size_t)f->GetTexRamSizeForRatio(ratio, boundMap, false, 1 + worker->moments.size());
+			    auto nbCells = f->GetNbCellForRatio(ratioU, ratioV);
+				cell += (size_t)(nbCells.first * nbCells.second);
+				ram += (size_t) f->GetTexRamSizeForRatio(ratioU, ratioV, 1 + worker->moments.size());
 			}
 			else {
-				cell += (size_t)f->GetNbCell();
+                auto nbCells = f->GetNbCell();
+                cell += (size_t)(nbCells.first * nbCells.second);
 				ram += (size_t)f->GetTexRamSize(1 + worker->moments.size());
 			}
 			//}
@@ -492,12 +542,14 @@ void FacetAdvParams::UpdateSizeForRatio() {
 		for (size_t i = 0; i < nbFacet; i++) {
 			Facet *f = geom->GetFacet(i);
 			if (f->selected) {
-				cell += (size_t)f->GetNbCellForRatio(ratio);
-				ram += (size_t)f->GetTexRamSizeForRatio(ratio, boundMap, recordDir, 1 + worker->moments.size());
+                auto nbCells = f->GetNbCellForRatio(ratioU, ratioV);
+                cell += (size_t)(nbCells.first * nbCells.second);
+				ram += (size_t) f->GetTexRamSizeForRatio(ratioU, ratioV, 1 + worker->moments.size());
 			}
 			else {
-				cell += (size_t)f->GetNbCell();
-				ram += (size_t)f->GetTexRamSize(1 + worker->moments.size());
+                auto nbCells = f->GetNbCell();
+                cell += (size_t)(nbCells.first * nbCells.second);
+                ram += (size_t)f->GetTexRamSize(1 + worker->moments.size());
 			}
 		}
 
@@ -507,6 +559,35 @@ void FacetAdvParams::UpdateSizeForRatio() {
 	sprintf(tmp, "%zd", cell);
 	cellText->SetText(tmp);
 
+}
+
+/**
+* \brief Get number of cells calculated with a size ratio
+* \param ratioU ratio in U direction used for size conversion
+* \param ratioV ratio in V direction used for size conversion
+* \return number of texture cells
+*/
+std::pair<double,double> FacetAdvParams::GetRatioForNbCell(size_t nbCellsU, size_t nbCellsV) {
+
+    double ratioU = 0.0;
+    double ratioV = 0.0;
+    auto selFacets = geom->GetSelectedFacets();
+
+    if(selFacets.size() == 1) {
+        for (auto &sel : selFacets) {
+            Facet *f = geom->GetFacet(sel);
+            if (f->selected) {
+                double nU = f->sh.U.Norme();
+                double nV = f->sh.V.Norme();
+
+                if (nU != 0.0)
+                    ratioU = (double) nbCellsU / nU;
+                if (nV != 0.0)
+                    ratioV = (double) nbCellsV / nV;
+            }
+        }
+    }
+    return std::make_pair(ratioU,ratioV);
 }
 
 /**
@@ -520,7 +601,9 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	sumAngleMapSize = 0;
 
 	bool somethingSelected = selection.size() > 0;
-	enableBtn->SetEnabled(somethingSelected);
+    bool multiSelect = selection.size() > 1;
+
+    enableBtn->SetEnabled(somethingSelected);
 	recordDesBtn->SetEnabled(somethingSelected);
 	recordAbsBtn->SetEnabled(somethingSelected);
 	recordReflBtn->SetEnabled(somethingSelected);
@@ -536,7 +619,11 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	showVolume->SetEnabled(somethingSelected);
 	resolutionText->SetEditable(somethingSelected);
 	lengthText->SetEditable(somethingSelected);
-	diffuseReflBox->SetEditable(somethingSelected);
+    resolutionText2->SetEditable(somethingSelected);
+    lengthText2->SetEditable(somethingSelected);
+    cellsU->SetEditable(!multiSelect && somethingSelected);
+    cellsV->SetEditable(!multiSelect && somethingSelected && !aspectRatioBtn->GetState());
+    diffuseReflBox->SetEditable(somethingSelected);
 	specularReflBox->SetEditable(somethingSelected);
 	cosineNReflBox->SetEditable(somethingSelected);
 	reflectionExponentBox->SetEditable(somethingSelected);
@@ -556,7 +643,11 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 		enableBtn->SetState(0);
 		resolutionText->SetText("");
 		lengthText->SetText("");
-		recordDesBtn->SetState(0);
+        resolutionText2->SetText("");
+        lengthText2->SetText("");
+        cellsU->SetText("");
+        cellsV->SetText("");
+        recordDesBtn->SetState(0);
 		recordAbsBtn->SetState(0);
 		recordReflBtn->SetState(0);
 		recordTransBtn->SetState(0);
@@ -608,7 +699,8 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	bool TexVisibleE = true;
 	bool VolVisibleE = true;
 	bool ratioE = true;
-	bool teleportE = true;
+    bool ratioVE = true;
+    bool teleportE = true;
 	bool accFactorE = true;
 	bool superDestE = true;
 	bool superIdxE = true;
@@ -655,8 +747,9 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 		hasAngleMapE = hasAngleMapE && (f0->sh.anglemapParams.hasRecorded == f->sh.anglemapParams.hasRecorded);
 		TexVisibleE = TexVisibleE && f0->textureVisible == f->textureVisible;
 		VolVisibleE = VolVisibleE && f0->volumeVisible == f->volumeVisible;
-		ratioE = ratioE && std::abs(f0->tRatio - f->tRatio) < 1E-8;
-		teleportE = teleportE && (f0->sh.teleportDest == f->sh.teleportDest);
+        ratioE = ratioE && std::abs(f0->tRatioU - f->tRatioU) < 1E-8;
+        ratioVE = ratioVE && std::abs(f0->tRatioV - f->tRatioV) < 1E-8;
+        teleportE = teleportE && (f0->sh.teleportDest == f->sh.teleportDest);
 		accFactorE = accFactorE && IsEqual(f0->sh.accomodationFactor, f->sh.accomodationFactor);
 		superDestE = superDestE && (f0->sh.superDest == f->sh.superDest);
 		superIdxE = superIdxE && (f0->sh.superIdx == f->sh.superIdx);
@@ -711,22 +804,57 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	if (isEnabledE) {
 		if (f0->sh.isTextured) { //All facets have textures
 			if (ratioE) { //All facets have textures with same resolution
-				resolutionText->SetText(f0->tRatio);
-				lengthText->SetText(1.0 / f0->tRatio);
+				resolutionText->SetText(f0->tRatioU);
+				lengthText->SetText(1.0 / f0->tRatioU);
+                cellsU->SetText(isEnabledE ? "..." : "");
+                cellsV->SetText(isEnabledE ? "..." : "");
 			}
-			else { //Mixed resolution
-				resolutionText->SetText(isEnabledE ? "..." : "");
-				lengthText->SetText(isEnabledE ? "..." : "");
+			if (ratioVE){
+                resolutionText2->SetText(f0->tRatioV);
+                lengthText2->SetText(1.0 / f0->tRatioV);
+                cellsU->SetText(isEnabledE ? "..." : "");
+                cellsV->SetText(isEnabledE ? "..." : "");
+			}
+			if(!(ratioE && ratioVE)) { //Mixed resolution
+                resolutionText->SetText(isEnabledE ? "..." : "");
+                lengthText->SetText(isEnabledE ? "..." : "");
+                resolutionText2->SetText(isEnabledE ? "..." : "");
+                lengthText2->SetText(isEnabledE ? "..." : "");
+                cellsU->SetText(isEnabledE ? "..." : "");
+                cellsV->SetText(isEnabledE ? "..." : "");
+            }
+			// Allow for cell number input only when one facet is selected
+			if(!multiSelect){
+			    auto nbCells = f0->GetNbCellForRatio(f0->tRatioU,f0->tRatioV);
+                cellsU->SetText(isEnabledE ? std::to_string(nbCells.first) : "");
+                cellsV->SetText(isEnabledE ? std::to_string(nbCells.second) : "");
+                auto aspectState = IsZero(std::abs(f0->tRatioU-f0->tRatioV));
+                aspectRatioBtn->SetState(aspectState);
+                UpdateSquaredCells(aspectState);
+                cellsU->SetEditable(true);
+                cellsV->SetEditable(!aspectState);
+			}
+			else{
+                cellsU->SetEditable(false);
+                cellsV->SetEditable(false);
 			}
 		}
 		else { //None of the facets have textures
 			resolutionText->SetText("");
 			lengthText->SetText("");
-		}
+            resolutionText2->SetText("");
+            lengthText2->SetText("");
+            cellsU->SetText("");
+            cellsV->SetText("");
+        }
 	}
 	else { //Mixed state
 		resolutionText->SetText("");
 		lengthText->SetText("");
+        resolutionText2->SetText("");
+        lengthText2->SetText("");
+        cellsU->SetText("");
+        cellsV->SetText("");
 	}
 
 	if (teleportE) facetTeleport->SetText(f0->sh.teleportDest); else facetTeleport->SetText("...");
@@ -922,11 +1050,13 @@ void FacetAdvParams::Reposition(int wD, int hD) {
 */
 bool FacetAdvParams::ApplyTexture(bool force) {
 	bool boundMap = true; // boundaryBtn->GetState();
-	double ratio = 0.0;
-	std::vector<size_t> selectedFacets = geom->GetSelectedFacets();
+	double ratioU = 0.0;
+    double ratioV = 0.0;
+    std::vector<size_t> selectedFacets = geom->GetSelectedFacets();
 	int nbPerformed = 0;
 	bool doRatio = false;
-	if (enableBtn->GetState() == 1) { //check if valid texture settings are to be applied
+
+    if (enableBtn->GetState() == 1) { //check if valid texture settings are to be applied
 
 		// Check counting mode
 		if (!recordDesBtn->GetState() && !recordAbsBtn->GetState() &&
@@ -937,11 +1067,11 @@ bool FacetAdvParams::ApplyTexture(bool force) {
 		}
 
 		// Resolution
-		if (resolutionText->GetNumber(&ratio) && ratio >= 0.0) {
+        if (resolutionText->GetNumber(&ratioU) && resolutionText2->GetNumber(&ratioV) && ratioU >= 0.0 && ratioV >= 0.0) {
 			//Got a valid number
 			doRatio = true;
 		}
-		else if (resolutionText->GetText()!="...") { //Not in mixed "..." state
+		else if (resolutionText->GetText()!="..." || resolutionText2->GetText()!="...") { //Not in mixed "..." state
 			GLMessageBox::Display("Invalid texture resolution\nMust be a non-negative number", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return false;
 		}
@@ -960,7 +1090,7 @@ bool FacetAdvParams::ApplyTexture(bool force) {
 		bool hadAnyTexture = f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD || f->sh.countDirection;
 		bool hadDirCount = f->sh.countDirection;
 
-		if (enableBtn->GetState() == 0 || (doRatio && ratio == 0.0)) {
+		if (enableBtn->GetState() == 0 || (doRatio && (ratioU == 0.0 || ratioV == 0.0))) {
 			//Let the user disable textures with the main switch or by typing 0 as resolution
 			f->sh.countDes = f->sh.countAbs = f->sh.countRefl = f->sh.countTrans = f->sh.countACD = f->sh.countDirection = false;
 		}
@@ -977,8 +1107,13 @@ bool FacetAdvParams::ApplyTexture(bool force) {
 
 		//set textures
 		try {
-			bool needsRemeshing = force || (hadAnyTexture != hasAnyTexture) || (hadDirCount != f->sh.countDirection) || (doRatio && (!IsZero(geom->GetFacet(sel)->tRatio - ratio)));
-			if (needsRemeshing) geom->SetFacetTexture(sel, hasAnyTexture ? (doRatio?ratio:f->tRatio) : 0.0, hasAnyTexture ? boundMap : false);
+			bool needsRemeshing = force || (hadAnyTexture != hasAnyTexture) || (hadDirCount != f->sh.countDirection)
+			        || (doRatio && (!IsZero(geom->GetFacet(sel)->tRatioU - ratioU)) && (!IsZero(geom->GetFacet(sel)->tRatioV - ratioV)));
+			if (needsRemeshing) {
+                geom->SetFacetTexture(sel, hasAnyTexture ? (doRatio ? ratioU : f->tRatioU) : 0.0,
+                                      hasAnyTexture ? (doRatio ? ratioV : f->tRatioV) : 0.0,
+                      hasAnyTexture ? boundMap : false);
+			}
 		}
 		catch (Error &e) {
 			GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONWARNING);
@@ -1471,6 +1606,43 @@ void FacetAdvParams::ApplyDrawSettings() {
 	geom->BuildGLList(); //Re-render facets
 }
 
+void FacetAdvParams::UpdateSquaredCells(bool aspectState) {
+    int x,y,w,h;
+    if(aspectState){
+        resolutionText2->SetText(resolutionText->GetText());
+        lengthText2->SetText(lengthText->GetText());
+        resolutionText->GetBounds(&x,&y,&w,&h);
+        resolutionText->SetBounds(x, y, 80, 18);
+        lengthText->GetBounds(&x,&y,&w,&h);
+        lengthText->SetBounds(x, y, 80, 18);
+    }
+    else{
+        resolutionText->GetBounds(&x,&y,&w,&h);
+        resolutionText->SetBounds(x, y, 36, 18);
+        lengthText->GetBounds(&x,&y,&w,&h);
+        lengthText->SetBounds(x, y, 36, 18);
+    }
+
+    auto sel = geom->GetSelectedFacets();
+    if(!sel.empty()) {
+        resolutionText2->SetEditable(!aspectState);
+        lengthText2->SetEditable(!aspectState);
+    }
+    if(sel.size()>1){
+        cellsU->SetEditable(false);
+        cellsV->SetEditable(false);
+    }
+    else if(sel.size()==1){
+        cellsU->SetEditable(!aspectState);
+        cellsV->SetEditable(!aspectState);
+    }
+
+    resolutionText2->SetVisible(!aspectState);
+    lengthText2->SetVisible(!aspectState);
+    labelXLen->SetVisible(!aspectState);
+    labelXRes->SetVisible(!aspectState);
+}
+
 /**
 * \brief Toggles various tickboxes depending on what's active and what's not
 * \param src the button that got pressed to call this event
@@ -1483,32 +1655,36 @@ void FacetAdvParams::UpdateToggle(GLComponent *src) {
 		//boundaryBtn->SetState(enableBtn->GetState());
 		} else */
 
-	if (src == recordDesBtn) {
+    if (src == aspectRatioBtn) {
+        auto aspectState = aspectRatioBtn->GetState();
+        UpdateSquaredCells(aspectState);
+    }
+    else if (src == recordDesBtn) {
 		enableBtn->SetState(true);
 		//boundaryBtn->SetState(true);
 		recordACBtn->SetState(false);
 	}
-	else if (src == recordAbsBtn) {
+    else if (src == recordAbsBtn) {
 		enableBtn->SetState(true);
 		//boundaryBtn->SetState(true);
 		recordACBtn->SetState(false);
 	}
-	else if (src == recordReflBtn) {
+    else if (src == recordReflBtn) {
 		enableBtn->SetState(true);
 		//boundaryBtn->SetState(true);
 		recordACBtn->SetState(false);
 	}
-	else if (src == recordTransBtn) {
+    else if (src == recordTransBtn) {
 		enableBtn->SetState(true);
 		//boundaryBtn->SetState(true);
 		recordACBtn->SetState(false);
 	}
-	else if (src == recordDirBtn) {
+    else if (src == recordDirBtn) {
 		enableBtn->SetState(true);
 		//boundaryBtn->SetState(true);
 		recordACBtn->SetState(false);
 	}
-	else if (src == recordACBtn) {
+    else if (src == recordACBtn) {
 		if (recordACBtn->GetState()) {
 			enableBtn->SetState(true);
 			//boundaryBtn->SetState(true);
@@ -1519,7 +1695,7 @@ void FacetAdvParams::UpdateToggle(GLComponent *src) {
 			recordDirBtn->SetState(false);
 		}
 	}
-	else if (src == enableSojournTime) {
+    else if (src == enableSojournTime) {
 		sojournFreq->SetEditable(enableSojournTime->GetState());
 		sojournE->SetEditable(enableSojournTime->GetState());
 		if (enableSojournTime->GetState() == 0) {
@@ -1529,7 +1705,7 @@ void FacetAdvParams::UpdateToggle(GLComponent *src) {
 			CalcSojournTime();
 		}
 	}
-	else if (src == angleMapRecordCheckbox) {
+    else if (src == angleMapRecordCheckbox) {
 
 	}
 
@@ -1607,16 +1783,49 @@ from C. Benvenutti http://cds.cern.ch/record/454180
 	case MSG_TEXT_UPD:
 		mApp->facetApplyBtn->SetEnabled(true);
 		if (src == resolutionText) {
+            auto aspectState = aspectRatioBtn->GetState();
+
 			enableBtn->SetState(true);
-			UpdateSizeForRatio();
 			double res;
-			if (resolutionText->GetNumber(&res) && res != 0.0)
-				lengthText->SetText(1.0 / res);
+			double resV;
+			if (resolutionText->GetNumber(&res) && res != 0.0) {
+
+                lengthText->SetText(1.0 / res);
+                cellsU->SetText(0);
+			}
 			else
 				lengthText->SetText("");
-		}
+			if (aspectState){
+                resolutionText2->SetText(resolutionText->GetText());
+                lengthText2->SetText(lengthText->GetText());
+			}
+
+			auto selFacets = geom->GetSelectedFacets();
+			if(selFacets.size() == 1) {
+                resolutionText2->GetNumber(&resV);
+                auto nbCells = geom->GetFacet(selFacets.front())->GetNbCellForRatio(res, resV);
+                cellsU->SetText(nbCells.first);
+                cellsV->SetText(nbCells.second);
+            }
+			else{ // mixed state
+                cellsU->SetText("...");
+                cellsV->SetText("...");
+			}
+            UpdateSizeForRatio();
+        }
+		else if (src == resolutionText2) {
+            enableBtn->SetState(true);
+            double res;
+            if (resolutionText2->GetNumber(&res) && res != 0.0)
+                lengthText2->SetText(1.0 / res);
+            else
+                lengthText2->SetText("");
+            UpdateSizeForRatio();
+        }
 		else if (src == lengthText) {
-			enableBtn->SetState(true);
+            auto aspectState = aspectRatioBtn->GetState();
+
+            enableBtn->SetState(true);
 			double length;
 			if (lengthText->GetNumber(&length) && length != 0.0) {
 				resolutionText->SetText(1.0 / length);
@@ -1624,7 +1833,50 @@ from C. Benvenutti http://cds.cern.ch/record/454180
 			}
 			else
 				resolutionText->SetText("");
+
+			if(aspectState){
+                lengthText2->SetText(lengthText->GetText());
+                resolutionText2->SetText(resolutionText->GetText());
+            }
 		}
+		else if (src == lengthText2) {
+            enableBtn->SetState(true);
+            double length;
+            if (lengthText2->GetNumber(&length) && length != 0.0) {
+                resolutionText2->SetText(1.0 / length);}
+            else
+                resolutionText2->SetText("");
+            UpdateSizeForRatio();
+        }
+		else if (src == cellsU || src == cellsV) {
+            enableBtn->SetState(true);
+            int nbCellsU = 0;
+            int nbCellsV = 0;
+            if (cellsU->GetNumberInt(&nbCellsU) && nbCellsU != 0) {
+                if(aspectRatioBtn->GetState() == 1) {
+                    auto selected = geom->GetSelectedFacets();
+                    if(selected.size() == 1) {
+                        //apply same ratio for both cells
+                        auto ratio = GetRatioForNbCell(nbCellsU, nbCellsU);
+                        Facet* fac = geom->GetFacet(selected.front());
+                        auto nbCells = fac->GetNbCellForRatio(ratio.first,ratio.first);
+                        cellsV->SetText(nbCells.second);
+                    }
+                }
+                if (cellsV->GetNumberInt(&nbCellsV) && nbCellsV != 0) {
+                    auto ratio = GetRatioForNbCell(nbCellsU, nbCellsV);
+
+                    resolutionText->SetText(ratio.first);
+                    resolutionText2->SetText(ratio.second);
+                    if (ratio.first != 0.0)
+                        lengthText->SetText(1.0 / ratio.first);
+                    if (ratio.second != 0.0)
+                        lengthText2->SetText(1.0 / ratio.second);
+
+                    UpdateSizeForRatio();
+                }
+            }
+        }
 		else if (src == sojournFreq || src == sojournE) {
 			CalcSojournTime();
 		}

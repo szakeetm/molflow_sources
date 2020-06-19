@@ -32,7 +32,8 @@ class Geometry;
 class Worker;
 
 class FacetAdvParams : public GLWindow {
-
+private:
+    void UpdateSquaredCells(bool aspectState);
 public:
 
 	// Construction
@@ -53,6 +54,7 @@ private:
 	void PlaceComponents();
 	void UpdateSize();
 	void UpdateSizeForRatio();
+    std::pair<double,double> GetRatioForNbCell(size_t nbCellsU, size_t nbCellsV);
 	void UpdateToggle(GLComponent *src);
 	void ApplyDrawSettings(); //Apply View Settings without stopping the simulation
 
@@ -68,12 +70,25 @@ private:
 	//Designer generated code below
 	GLTitledPanel	*aPanel;
 	GLTextField	*lengthText;
-	GLLabel	*perCm;
+    GLTextField	*lengthText2;
+    GLLabel* labelXLen;
+    GLLabel	*perCm;
 	GLTextField	*resolutionText;
-	GLLabel	*l5;
+    GLTextField	*resolutionText2;
+    GLLabel* labelXRes;
+    GLLabel	*l5;
 	GLToggle	*enableBtn;
-	GLToggle	*recordDesBtn;
+    GLToggle	*aspectRatioBtn;
+    GLToggle	*recordDesBtn;
 	GLLabel	*perCell;
+
+	// NxM texture input
+    GLLabel* nbCell;
+    GLTextField* cellsU;
+    GLLabel* labelXCells;
+    GLTextField* cellsV;
+
+
 	GLToggle	*recordDirBtn;
 	GLToggle	*recordTransBtn;
 	GLToggle	*recordReflBtn;
