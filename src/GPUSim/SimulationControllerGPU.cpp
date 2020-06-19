@@ -443,7 +443,7 @@ void SimulationControllerGPU::WriteDataToFile(std::string fileName)
     for(auto& mesh : model->triangle_meshes){
         int lastTexture = -1;
         for(auto& facet : mesh->poly){
-            if(((facet.texProps.textureFlags & flowgeom::TEXTURE_FLAGS::countRefl) || (facet.texProps.textureFlags & flowgeom::TEXTURE_FLAGS::countAbs)) && (lastTexture<(int)facet.parentIndex)){
+            if((facet.texProps.textureFlags != flowgeom::TEXTURE_FLAGS::noTexture) && (lastTexture<(int)facet.parentIndex)){
                 facetCounterFile.open ("textures"+std::to_string(facet.parentIndex)+".txt");
 
                 unsigned long long int total0 = 0;

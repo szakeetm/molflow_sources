@@ -86,20 +86,6 @@ add_subdirectory(src_shared)
 add_subdirectory(CMake/molflow_sub)
 add_subdirectory(CMake/molflow_win)
 
-IF(WITH_GPU AND (MSVC AND WIN32) OR (NOT WIN32))
-#IF(MSVC AND WITH_GPU)
-    #set(cuda_obj_dir ${PROJECT_SOURCE_DIR}/cuda_kernel/)
-    add_subdirectory(CMake/molflow_gpusub)
-
-    add_subdirectory(CMake/gpu_testsuite)
-    add_subdirectory(CMake/cuda_kernel #[["${cuda_obj_dir}"]]) #add_subdirectory(${cuda_obj_dir} "${cuda_obj_dir}" EXCLUDE_FROM_ALL) #already added in molflow_sub
-
-    add_dependencies(gpuTestsuite flowGPU cudaKernel)
-    add_dependencies(gpuSub flowGPU cudaKernel)
-    add_dependencies(molflow gpuSub)
-
-ENDIF()
-
 IF (WIN32)
     add_subdirectory(CMake/png_zlib_win_library)
 ELSE()
@@ -115,3 +101,21 @@ if(USE_TESTS)
     add_subdirectory(tests)
     add_dependencies(example molflowSub)
 endif()
+
+IF(WITH_GPU AND (MSVC AND WIN32) OR (NOT WIN32))
+#IF(MSVC AND WITH_GPU)
+    #set(cuda_obj_dir ${PROJECT_SOURCE_DIR}/cuda_kernel/)
+
+    # load defines
+    include(CMake/MolflowGPU.cmake)
+
+    add_subdirectory(CMake/molflow_gpusub)
+
+    add_subdirectory(CMake/gpu_testsuite)
+    add_subdirectory(CMake/cuda_kernel #[["${cuda_obj_dir}"]]) #add_subdirectory(${cuda_obj_dir} "${cuda_obj_dir}" EXCLUDE_FROM_ALL) #already added in molflow_sub
+
+    add_dependencies(gpuTestsuite flowGPU cudaKernel)
+    add_dependencies(gpuSub flowGPU cudaKernel)
+    add_dependencies(molflow gpuSub)
+
+ENDIF()

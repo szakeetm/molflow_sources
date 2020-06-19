@@ -244,10 +244,11 @@ namespace flowgeom {
     };
 
     struct SimProperties{
-        SimProperties() : stickingFactor(-1.0f),temperature(-1.0f){}
+        SimProperties() : stickingFactor(-1.0f),temperature(-1.0f), is2sided(false){}
         SimProperties& operator=(const SimProperties& o){
             this->stickingFactor = o.stickingFactor;
             this->temperature = o.temperature;
+            this->is2sided = o.is2sided;
 
             return *this;
         }
@@ -255,6 +256,8 @@ namespace flowgeom {
         float stickingFactor;
         float temperature;
 
+        // only for transparent / 2sided
+        bool is2sided;
     };
 
     class Polygon {

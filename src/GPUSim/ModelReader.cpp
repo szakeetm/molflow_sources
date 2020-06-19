@@ -114,6 +114,8 @@ namespace flowgeom {
             polygon.facProps.stickingFactor = temp.facetProperties.sticking;
             polygon.facProps.temperature = temp.facetProperties.temperature;
 
+            polygon.facProps.is2sided = temp.facetProperties.is2sided;
+
             if(polygon.nbVertices != temp.facetProperties.nbIndex){
                 polygon.nbVertices = temp.facetProperties.nbIndex;
                 std::cout << "Parsing error! Vert size != nbIndex"<<std::endl;
@@ -257,7 +259,13 @@ namespace flowgeom {
 
         // Now create Triangle Mesh
         flowgpu::TriangleMesh* triMesh = new flowgpu::TriangleMesh();
-        int nbTris = Poly2TriConverter::PolygonsToTriangles(polyMesh, triMesh);
+        try {
+            int nbTris = Poly2TriConverter::PolygonsToTriangles(polyMesh, triMesh);
+        }
+        catch (std::exception& e) {
+            std::cerr << e.what() << std::endl;
+            return -1;
+        }
         triMesh->vertices3d = polyMesh->vertices3d;
         triMesh->nbVertices = triMesh->poly.size() * 3;
         triMesh->nbFacets = triMesh->poly.size();
@@ -280,7 +288,7 @@ namespace flowgeom {
         model->geomProperties.nbVertex = model->nbVertices_total;
 
         for(auto& facet : facets){
-                model->tri_facetOffset.emplace_back(facet.facetProperties.hitOffset);
+            model->tri_facetOffset.emplace_back(facet.facetProperties.hitOffset);
         }
 
         //--- Calculate outgassing values in relation to (tri_area / poly_area)
@@ -441,8 +449,11 @@ namespace flowgeom {
         for(std::vector<Vector3d>::iterator it=vertices3d.begin(); it!=vertices3d.end();it++)
             vertices3f.emplace_back(make_float3(it->x,it->y,it->z));
         vertices3d.clear();
-        parseGeomFromSerialization(model, facets, vertices3f);
-
+        if(parseGeomFromSerialization(model, facets, vertices3f)){
+            delete model;
+            model = nullptr;
+            return model;
+        }
         std::cout << "#ModelReader: Gas mass: " << model->wp.gasMass << std::endl;
         std::cout << "#ModelReader: Maxwell: " << model->wp.useMaxwellDistribution << std::endl;
         std::cout << "#ModelReader: Name: " << model->geomProperties.name << std::endl;
@@ -451,6 +462,17 @@ namespace flowgeom {
         for(int facInd = 0; facInd < facets.size(); ++facInd){
             if(!facets[facInd].texelInc.empty())
                 std::cout << "#ModelReader: Facet#" << facInd << " #Texels: " << facets[facInd].texelInc.size() << std::endl;
+            if(facets[facInd].facetProperties.isTextured)
+                std::cout << "#ModelReader: Facet#" << facInd << " #Texels: " << facets[facInd].texelInc.size() << std::endl;
+        }
+        for(auto& mesh : model->triangle_meshes){
+            std::cout << "#ModelReader: #Tri " << mesh->poly.size()<< std:: endl;
+            size_t nbProf = 0;
+            for(auto& tri : mesh->poly){
+                if(tri.profProps.profileType != PROFILE_FLAGS::noProfile)
+                    ++nbProf;
+            }
+            std::cout << "#ModelReader: #ProfiledTris " << nbProf << std::endl;
         }
 
         std::cout << "#ModelReader: #TextureCells: " << model->textures.size() << std::endl;

@@ -225,7 +225,7 @@ int Poly2TriConverter::PolygonsToTriangles(flowgpu::PolygonMesh *polygonMesh, fl
                 if(tri.x == tri.y || tri.x == tri.z || tri.y == tri.z){
                     std::cout << "[WARNING] Triangle with same vertices was created! PolyIndex: "<< facetIndex <<std::endl;
                     std::cout << "[WARNING] Vertices: "<< tri.x << " , " << tri.y << " , " << tri.z << std::endl;
-                    continue;
+                    throw std::logic_error("Malformed triangle created!");
                 }
                 flowgeom::Polygon newPoly(3);
                 newPoly.parentIndex = facetIndex;

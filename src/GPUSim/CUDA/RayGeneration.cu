@@ -352,6 +352,18 @@ namespace flowgpu {
 
     }
 
+// Calculate new position for molecule with an offset
+static __forceinline__ __device__
+void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData, float3& rayDir , float3& rayOrigin)
+{
+    hitData = optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex];
+
+    //rayDir = hitData.postHitDir;
+    rayDir = hitData.postHitDir;
+    rayOrigin = hitData.hitPos;
+
+}
+
     __device__
     int atomicAggInc(int *ptr, int incVal)
     {
@@ -454,7 +466,7 @@ namespace flowgpu {
                 detU = b.z * poly.V.x - b.x * poly.V.z;
                 detV = poly.U.z * b.x - poly.U.x * b.z;
                 if(fabsf(det)<=EPS32){
-                    printf("Dangerous determinant calculated for texture hit: %lf : %lf : %lf -> %lf : %lf\n",det,detU,detV,detU/det,detV/det);
+                    printf("[RG] Dangerous determinant calculated for texture hit: %lf : %lf : %lf -> %lf : %lf\n",det,detU,detV,detU/det,detV/det);
                 }
             }
         }
@@ -504,7 +516,7 @@ namespace flowgpu {
                 detU = b.z * poly.V.x - b.x * poly.V.z;
                 detV = poly.U.z * b.x - poly.U.x * b.z;
                 if(fabsf(det)<=EPS32){
-                    printf("Dangerous determinant calculated for texture hit: %lf : %lf : %lf -> %lf : %lf\n",det,detU,detV,detU/det,detV/det);
+                    printf("[RG] Dangerous determinant calculated for profile hit: %lf : %lf : %lf -> %lf : %lf\n",det,detU,detV,detU/det,detV/det);
                 }
             }
         }
@@ -606,6 +618,11 @@ namespace flowgpu {
         MolPRD hitData;
 
         switch (optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem) {
+            case 3:
+            {
+                initMoleculeTransparentHit(bufferIndex, hitData, rayDir, rayOrigin);
+                break;
+            }
             case 1:
             {
                 /* if molecule is still in the system (bounce etc.)
@@ -666,7 +683,7 @@ namespace flowgpu {
                0.0f,   // rayTime
                OptixVisibilityMask( 255 ),
                OPTIX_RAY_FLAG_DISABLE_ANYHIT
-               | OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES,//OPTIX_RAY_FLAG_NONE,
+               /*| OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES*/,//OPTIX_RAY_FLAG_NONE,
                    RayType::RAY_TYPE_MOLECULE,             // SBT offset
                    RayType::RAY_TYPE_COUNT,               // SBT stride
                    RayType::RAY_TYPE_MOLECULE,             // missSBTIndex
