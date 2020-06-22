@@ -8,7 +8,7 @@
 #include "Model.h"
 #include "cereal/types/vector.hpp"
 /*! \namespace flowgeom - Molflow Geometry code */
-namespace flowgeom {
+namespace flowgpu {
     /*int loadFromMolflow(
                 Geometry& geometry, const WorkerParams& wp, const std::vector<std::vector<std::pair<double,double>>> CDFs);*/
     /*flowgpu::Model *loadFromMolflowSimu(
@@ -38,7 +38,7 @@ namespace flowgeom {
     };
 
     flowgpu::Model *initializeModel(std::string fileName);
-    int parseGeomFromSerialization(flowgpu::Model* model, std::vector<flowgeom::TempFacet>& facets, std::vector<float3>& vertices3d);
+    int parseGeomFromSerialization(flowgpu::Model* model, std::vector<flowgpu::TempFacet>& facets, std::vector<float3>& vertices3d);
     flowgpu::Model *loadFromExternalSerialization(std::string fileName);
     flowgpu::Model *loadFromSerialization(std::string inputString);
 

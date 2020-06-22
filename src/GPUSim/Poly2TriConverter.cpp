@@ -189,9 +189,8 @@ std::vector<int3> Poly2TriConverter::Triangulate(std::vector<float2> &vertices, 
 
 // Update facet list of geometry by removing polygon facets and replacing them with triangular facets with the same properties
 int Poly2TriConverter::PolygonsToTriangles(flowgpu::PolygonMesh *polygonMesh, flowgpu::TriangleMesh *triangleMesh) {
-
-    std::vector<flowgeom::Polygon> convertedTris;
-    std::vector<flowgeom::Polygon>& polygons = polygonMesh->poly;
+    std::vector<flowgpu::Polygon> convertedTris;
+    std::vector<flowgpu::Polygon>& polygons = polygonMesh->poly;
     for (size_t facetIndex = 0; facetIndex < polygons.size(); facetIndex++) {
         size_t nbVert = polygons[facetIndex].nbVertices;
 
@@ -218,7 +217,7 @@ int Poly2TriConverter::PolygonsToTriangles(flowgpu::PolygonMesh *polygonMesh, fl
 
             std::vector<int3> triangleIndices = Triangulate(vertices, indices);
             triangleMesh->indices.insert(std::end(triangleMesh->indices),std::begin(triangleIndices),std::end(triangleIndices));
-            std::vector<flowgeom::Polygon> newTris;
+            std::vector<flowgpu::Polygon> newTris;
             for(auto& tri : triangleIndices){
 
                 // TODO: This should be checked before triangulation on the polygon itself
@@ -227,7 +226,7 @@ int Poly2TriConverter::PolygonsToTriangles(flowgpu::PolygonMesh *polygonMesh, fl
                     std::cout << "[WARNING] Vertices: "<< tri.x << " , " << tri.y << " , " << tri.z << std::endl;
                     throw std::logic_error("Malformed triangle created!");
                 }
-                flowgeom::Polygon newPoly(3);
+                flowgpu::Polygon newPoly(3);
                 newPoly.parentIndex = facetIndex;
                 newPoly.indexOffset = std::numeric_limits<uint32_t>::max();
                 newTris.push_back(newPoly);
@@ -245,7 +244,7 @@ int Poly2TriConverter::PolygonsToTriangles(flowgpu::PolygonMesh *polygonMesh, fl
 
     // Lookup parent IDs in the original polygon mesh
     for(auto& tri : convertedTris){
-        for(std::vector<flowgeom::Polygon>::iterator polyIter = polygons.begin(); polyIter != polygons.end(); ++polyIter){
+        for(std::vector<flowgpu::Polygon>::iterator polyIter = polygons.begin(); polyIter != polygons.end(); ++polyIter){
             if(tri.parentIndex == (*polyIter).parentIndex){
                 tri.copyParametersFrom(*polyIter);
 
@@ -255,7 +254,7 @@ int Poly2TriConverter::PolygonsToTriangles(flowgpu::PolygonMesh *polygonMesh, fl
     }
 
     // Second lookup to delete
-    for(std::vector<flowgeom::Polygon>::iterator polyIter = polygons.begin(); polyIter != polygons.end(); ++polyIter){
+    for(std::vector<flowgpu::Polygon>::iterator polyIter = polygons.begin(); polyIter != polygons.end(); ++polyIter){
         if((*polyIter).nbVertices == 3){
             //std::cout << "Deleting Tri# "<<(*polyIter).parentIndex<< " from PolyList"<<std::endl;
             polygons.erase(polyIter);
@@ -263,7 +262,7 @@ int Poly2TriConverter::PolygonsToTriangles(flowgpu::PolygonMesh *polygonMesh, fl
         }
     }
     for(auto& tri : convertedTris){
-        for(std::vector<flowgeom::Polygon>::iterator polyIter = polygons.begin(); polyIter != polygons.end(); ++polyIter){
+        for(std::vector<flowgpu::Polygon>::iterator polyIter = polygons.begin(); polyIter != polygons.end(); ++polyIter){
             if(tri.parentIndex == (*polyIter).parentIndex){
                 //std::cout << "Deleting Poly# "<<tri.parentIndex<<std::endl;
                 polygons.erase(polyIter);
@@ -281,9 +280,9 @@ int Poly2TriConverter::PolygonsToTriangles(flowgpu::PolygonMesh *polygonMesh, fl
 
 // Update facet list of geometry by removing polygon facets and replacing them with triangular facets with the same properties
 //TODO: Parameter should be the Model (with vertices etc.)
-std::vector<flowgeom::Polygon> Poly2TriConverter::PolygonsToTriangles(std::vector<flowgeom::TempFacet>& facets){
+std::vector<flowgpu::Polygon> Poly2TriConverter::PolygonsToTriangles(std::vector<flowgpu::TempFacet>& facets){
 
-    std::vector<flowgeom::Polygon> convertedTris;
+    std::vector<flowgpu::Polygon> convertedTris;
     for (size_t facetIndex = 0; facetIndex < facets.size(); facetIndex++) {
         size_t nb = facets[facetIndex].indices.size();
         if (nb > 3) {
@@ -296,9 +295,9 @@ std::vector<flowgeom::Polygon> Poly2TriConverter::PolygonsToTriangles(std::vecto
                 indices.emplace_back(*it);
 
             std::vector<int3> triangleIndices = Triangulate(vertices, indices);
-            std::vector<flowgeom::Polygon> newTris;
+            std::vector<flowgpu::Polygon> newTris;
             for(auto& tri : triangleIndices){
-                flowgeom::Polygon newPoly(3);
+                flowgpu::Polygon newPoly(3);
                 newPoly.parentIndex = facetIndex;
                 newTris.push_back(newPoly);
             }

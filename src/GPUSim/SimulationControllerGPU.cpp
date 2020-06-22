@@ -164,7 +164,7 @@ void SimulationControllerGPU::IncreaseGlobalCounters(HostData* tempData){
                 int parentFacetId = -1;
                 for (auto &facet : mesh->poly) {
                     if(parentFacetId == facet.parentIndex) break;
-                    if ((facet.profProps.profileType != flowgeom::PROFILE_FLAGS::noProfile) && (id == facet.parentIndex)) {
+                    if ((facet.profProps.profileType != flowgpu::PROFILE_FLAGS::noProfile) && (id == facet.parentIndex)) {
                         parentFacetId = id;
                         for (unsigned int s = 0; s < PROFILE_SIZE; ++s) {
                             unsigned int index_tmp = s + facet.profProps.profileOffset;
@@ -205,7 +205,7 @@ void SimulationControllerGPU::Resize(){
             }
 
             // has profile?
-            if ((facet.profProps.profileType != flowgeom::PROFILE_FLAGS::noProfile) &&
+            if ((facet.profProps.profileType != flowgpu::PROFILE_FLAGS::noProfile) &&
                 (lastProfile < (int) facet.parentIndex)) {
                 std::vector<Texel64> texels(PROFILE_SIZE);
                 globalCounter.profiles.insert(std::pair<uint32_t,std::vector<Texel64>>(facet.parentIndex,std::move(texels)));
@@ -256,7 +256,7 @@ void SimulationControllerGPU::PrintDataForParent()
     for(auto& mesh : model->triangle_meshes){
         int lastTexture = -1;
         for(auto& facet : mesh->poly){
-            if((facet.texProps.textureFlags & flowgeom::TEXTURE_FLAGS::countRefl) && (lastTexture<(int)facet.parentIndex)){
+            if((facet.texProps.textureFlags & flowgpu::TEXTURE_FLAGS::countRefl) && (lastTexture < (int)facet.parentIndex)){
                 std::cout << "Texture for #"<<facet.parentIndex << std::endl << " ";
                 unsigned int total = 0;
                 unsigned int width = model->facetTex[facet.texProps.textureOffset].texWidth;
@@ -443,7 +443,7 @@ void SimulationControllerGPU::WriteDataToFile(std::string fileName)
     for(auto& mesh : model->triangle_meshes){
         int lastTexture = -1;
         for(auto& facet : mesh->poly){
-            if((facet.texProps.textureFlags != flowgeom::TEXTURE_FLAGS::noTexture) && (lastTexture<(int)facet.parentIndex)){
+            if((facet.texProps.textureFlags != flowgpu::TEXTURE_FLAGS::noTexture) && (lastTexture < (int)facet.parentIndex)){
                 facetCounterFile.open ("textures"+std::to_string(facet.parentIndex)+".txt");
 
                 unsigned long long int total0 = 0;

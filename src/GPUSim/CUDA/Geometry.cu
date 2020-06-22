@@ -98,7 +98,7 @@ namespace flowgpu {
         const PolygonMeshSBTData &sbtData = *(const PolygonMeshSBTData*)optixGetSbtDataPointer();
 
         const int   primID = optixGetPrimitiveIndex();
-        const flowgeom::Polygon& poly  = sbtData.poly[primID];
+        const flowgpu::Polygon& poly  = sbtData.poly[primID];
         const float3 &Aa     = sbtData.vertex[sbtData.index[poly.indexOffset + 0]];
         const float3 &Bb     = sbtData.vertex[sbtData.index[poly.indexOffset + 1]];
         const float3 &Cc     = sbtData.vertex[sbtData.index[poly.indexOffset + 2]];
@@ -163,7 +163,7 @@ namespace flowgpu {
         const PolygonMeshSBTData &sbtData = *(const PolygonMeshSBTData*)optixGetSbtDataPointer();
         const int   primID = optixGetPrimitiveIndex();
 
-        const flowgeom::Polygon& poly  = sbtData.poly[primID];
+        const flowgpu::Polygon& poly  = sbtData.poly[primID];
 
         const int nbSizeMinusOne = poly.nbVertices - 1;
         const float2* polyPoints = sbtData.vertex2;
@@ -243,7 +243,7 @@ namespace flowgpu {
         const PolygonMeshSBTData &sbtData = *(const PolygonMeshSBTData*)optixGetSbtDataPointer();
         const int   primID = optixGetPrimitiveIndex();
 
-        const flowgeom::Polygon& poly  = sbtData.poly[primID];
+        const flowgpu::Polygon& poly  = sbtData.poly[primID];
 
         const int nbSizeMinusOne = poly.nbVertices - 1;
         const float2* polyPoints = sbtData.vertex2;
@@ -312,7 +312,7 @@ namespace flowgpu {
 
         const float ray_tmin = optixGetRayTmin(), ray_tmax = optixGetRayTmax();
 
-        const flowgeom::Polygon& poly  = sbtData.poly[primID];
+        const flowgpu::Polygon& poly  = sbtData.poly[primID];
         const float det = dot(poly.Nuv, ray_dir);
         //atomicAdd(optixLaunchParams.debugCounter.detCount,1);
 
@@ -442,7 +442,7 @@ namespace flowgpu {
 
         const double ray_tmin = optixGetRayTmin(), ray_tmax = optixGetRayTmax();
 
-        const flowgeom::Polygon& poly  = sbtData.poly[primID];
+        const flowgpu::Polygon& poly  = sbtData.poly[primID];
         const double det = dot(make_double3(poly.Nuv), ray_dir);
 
         if(det > 0.0) {

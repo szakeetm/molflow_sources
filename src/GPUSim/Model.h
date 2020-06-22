@@ -26,8 +26,10 @@ namespace flowgpu {
 
         //std::vector<uint32_t> indices;
         //std::vector<float2> vertices2d;
+        std::vector<flowgpu::FacetType> sbtIndices;
+
         std::vector<float3> vertices3d;
-        std::vector<flowgeom::Polygon> poly;
+        std::vector<flowgpu::Polygon> poly;
 
         std::vector<float2> facetProbabilities;
         std::vector<float> cdfs; // should not be part of each mesh, but the model itself
@@ -45,7 +47,6 @@ namespace flowgpu {
         //std::vector<float3> normal;
         //std::vector<int3> index;
         std::vector<int3> indices;
-
         // material data:
         //float3              diffuse;
     };
@@ -111,11 +112,11 @@ namespace flowgpu {
         std::vector<PolygonMesh *> poly_meshes;
         std::vector<size_t> tri_facetOffset;
 
-        std::vector<flowgeom::Texel> textures;
-        std::vector<flowgeom::FacetTexture> facetTex;
+        std::vector<flowgpu::Texel> textures;
+        std::vector<flowgpu::FacetTexture> facetTex;
         std::vector<float> texInc;
 
-        std::vector<flowgeom::Texel> profiles;
+        std::vector<flowgpu::Texel> profiles;
 
         uint32_t nbFacets_total;
         uint32_t nbVertices_total;

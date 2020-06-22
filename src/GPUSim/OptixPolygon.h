@@ -9,7 +9,25 @@
 
 #include <cereal/cereal.hpp>
 
-namespace flowgeom {
+namespace flowgpu {
+
+    enum RayType : uint8_t
+    {
+        RAY_TYPE_MOLECULE  = 0,
+        RAY_TYPE_COUNT
+    };
+
+    enum FacetType : uint8_t
+    {
+        FACET_TYPE_SOLID  = 0,
+#ifdef WITH_TRANS
+        FACET_TYPE_TRANS  = 1,
+#else
+        FACET_TYPE_TRANS  = 0,
+#endif // WITH_TRANS
+
+        FACET_TYPE_COUNT
+    };
 
     enum TEXTURE_FLAGS {
         noTexture = 0,

@@ -38,8 +38,8 @@ struct HostData {
     //std::vector<uint32_t> pixels;
     //std::vector<MolPRD> hitData;
     std::vector<flowgpu::CuFacetHitCounter> facetHitCounters;
-    std::vector<flowgeom::Texel> texels;
-    std::vector<flowgeom::Texel> profileSlices;
+    std::vector<flowgpu::Texel> texels;
+    std::vector<flowgpu::Texel> profileSlices;
 
     std::vector<uint32_t> leakCounter;
 

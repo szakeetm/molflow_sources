@@ -26,6 +26,7 @@
 namespace flowgpu {
 
 
+
     struct OptixState
     {
 
@@ -56,7 +57,7 @@ namespace flowgpu {
         /*!  all our program(group)s, for now only for one molecule and surface type */
         OptixProgramGroup           raygenPG            = 0;
         OptixProgramGroup           missPG              = 0;
-        OptixProgramGroup           hitgroupPG          = 0;
+        std::vector<OptixProgramGroup>           hitgroupPG;
 
 
         /*!  and the SBT built around them */

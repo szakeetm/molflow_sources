@@ -223,7 +223,7 @@ namespace flowgpu {
 
             std::vector<OptixAabb> aabb(mesh.poly.size());
             int bbCount = 0;
-            for(flowgeom::Polygon& poly : mesh.poly){
+            for(flowgpu::Polygon& poly : mesh.poly){
                 polygon_bound(mesh.indices, poly.indexOffset, mesh.vertices3d, poly.nbVertices,
                               reinterpret_cast<float *>(&aabb[bbCount]));
                 //std::cout << bbCount<<"# poly box: " << "("<<aabb[bbCount].minX <<","<<aabb[bbCount].minY <<","<<aabb[bbCount].minZ <<")-("<<aabb[bbCount].maxX <<","<<aabb[bbCount].maxY <<","<<aabb[bbCount].maxZ <<")"<<std::endl;
@@ -346,6 +346,7 @@ namespace flowgpu {
         tri_memory.vertexBuffer.resize(model->triangle_meshes.size());
         //memory.vertex2Buffer.resize(model->triangle_meshes.size());
         tri_memory.indexBuffer.resize(model->triangle_meshes.size());
+        tri_memory.sbtIndexBuffer.resize(model->triangle_meshes.size());
         tri_memory.polyBuffer.resize(model->triangle_meshes.size());
         tri_memory.facprobBuffer.resize(model->triangle_meshes.size());
         tri_memory.cdfBuffer.resize(model->triangle_meshes.size());
@@ -358,7 +359,9 @@ namespace flowgpu {
         std::vector<OptixBuildInput> triangleInput(model->triangle_meshes.size());
         std::vector<CUdeviceptr> d_vertices(model->triangle_meshes.size());
         std::vector<CUdeviceptr> d_indices(model->triangle_meshes.size());
-        std::vector<uint32_t> triangleInputFlags(model->triangle_meshes.size());
+        std::vector<CUdeviceptr> d_sbt_indices(model->triangle_meshes.size());
+
+        //std::vector<uint32_t> triangleInputFlags(model->triangle_meshes.size());
 
         //std::vector<OptixBuildInput> polygonInput(model->triangle_meshes.size());
         //std::vector<CUdeviceptr> d_aabb(model->triangle_meshes.size());
@@ -381,15 +384,16 @@ namespace flowgpu {
 
             tri_memory.vertexBuffer[meshID].alloc_and_upload(mesh.vertices3d);
             tri_memory.indexBuffer[meshID].alloc_and_upload(mesh.indices);
+            tri_memory.sbtIndexBuffer[meshID].alloc_and_upload(mesh.sbtIndices);
 
             triangleInput[meshID] = {};
-            triangleInput[meshID].type
-                    = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
+            triangleInput[meshID].type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
 
             // create local variables, because we need a *pointer* to the
             // device pointers
             d_vertices[meshID] = tri_memory.vertexBuffer[meshID].d_pointer();
             d_indices[meshID]  = tri_memory.indexBuffer[meshID].d_pointer();
+            d_sbt_indices[meshID]  = tri_memory.sbtIndexBuffer[meshID].d_pointer();
 
             triangleInput[meshID].triangleArray.vertexFormat        = OPTIX_VERTEX_FORMAT_FLOAT3;
             triangleInput[meshID].triangleArray.vertexStrideInBytes = sizeof(float3);
@@ -400,16 +404,28 @@ namespace flowgpu {
             triangleInput[meshID].triangleArray.indexStrideInBytes  = sizeof(int3);
             triangleInput[meshID].triangleArray.numIndexTriplets    = (int)mesh.indices.size();
             triangleInput[meshID].triangleArray.indexBuffer         = d_indices[meshID];
+            uint32_t triangleInputFlags[FacetType::FACET_TYPE_COUNT] = {
+                    // one for every FacetType SBT
+                    OPTIX_GEOMETRY_FLAG_NONE | OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT
+#ifdef WITH_TRANS
+                    ,OPTIX_GEOMETRY_FLAG_NONE | OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT
+#endif// WITH_TRANS
 
-            triangleInputFlags[meshID] = OPTIX_GEOMETRY_FLAG_NONE | OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT  ;
+            };
 
             // in this example we have one SBT entry, and no per-primitive
             // materials:
-            triangleInput[meshID].triangleArray.flags               = &triangleInputFlags[meshID];
-            triangleInput[meshID].triangleArray.numSbtRecords               = 1;
+            triangleInput[meshID].triangleArray.flags               = triangleInputFlags;//&triangleInputFlags[meshID];
+            triangleInput[meshID].triangleArray.numSbtRecords               = flowgpu::FacetType::FACET_TYPE_COUNT;
+#ifdef WITH_TRANS
+            triangleInput[meshID].triangleArray.sbtIndexOffsetBuffer        = d_sbt_indices[meshID];
+            triangleInput[meshID].triangleArray.sbtIndexOffsetSizeInBytes   = sizeof(flowgpu::FacetType);
+            triangleInput[meshID].triangleArray.sbtIndexOffsetStrideInBytes = sizeof(flowgpu::FacetType);
+#else
             triangleInput[meshID].triangleArray.sbtIndexOffsetBuffer        = 0;
             triangleInput[meshID].triangleArray.sbtIndexOffsetSizeInBytes   = 0;
             triangleInput[meshID].triangleArray.sbtIndexOffsetStrideInBytes = 0;
+#endif
         }
         // ==================================================================
         // BLAS setup
@@ -685,9 +701,11 @@ namespace flowgpu {
     /*! does all setup for the hitgroup program(s) we are going to use */
     void SimulationOptiX::createHitgroupPrograms(std::vector<OptixProgramGroup> &programGroups)
     {
-        // for this simple example, we set up a single hit group
-        //hitgroupPGs.resize(1);
-        OptixProgramGroup        pgHitgroup;
+        char log[2048];
+        size_t sizeof_log = sizeof( log );
+        // We create one hitgroup program per ray type and facet combo
+        std::vector<OptixProgramGroup>        pgHitgroup;
+        pgHitgroup.resize(RayType::RAY_TYPE_COUNT * FacetType::FACET_TYPE_COUNT);
         OptixProgramGroupOptions pgOptions = {};
         OptixProgramGroupDesc pgDesc    = {};
         pgDesc.kind                     = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
@@ -702,23 +720,42 @@ namespace flowgpu {
         pgDesc.hitgroup.entryFunctionNameCH = "__closesthit__molecule";
 #endif
 
-
         pgDesc.hitgroup.moduleAH            = state.modules.traceModule;
         pgDesc.hitgroup.entryFunctionNameAH = "__anyhit__molecule";
 
-        char log[2048];
-        size_t sizeof_log = sizeof( log );
         OPTIX_CHECK(optixProgramGroupCreate(state.context,
                                             &pgDesc,
                                             1,
                                             &pgOptions,
                                             log,&sizeof_log,
-                                            &pgHitgroup
+                                            &pgHitgroup[FacetType::FACET_TYPE_SOLID]
         ));
         //if (sizeof_log > 1) PRINT(log);
+        programGroups.push_back(pgHitgroup[FacetType::FACET_TYPE_SOLID]);
 
-        programGroups.push_back(pgHitgroup);
-        state.hitgroupPG = pgHitgroup;
+#ifdef WITH_TRANS
+#ifdef WITHTRIANGLES
+        // use inbuilt IS routine
+        pgDesc.hitgroup.moduleCH            = state.modules.traceModule;
+        pgDesc.hitgroup.entryFunctionNameCH = "__closesthit__transparent_triangle";
+#else
+        pgDesc.hitgroup.moduleCH            = state.modules.traceModule;
+        pgDesc.hitgroup.entryFunctionNameCH = "__closesthit__transparent";
+        std::err << "Transparent polygons (nbVert > 3) not yet supported!" << std::endl;
+#endif
+
+        OPTIX_CHECK(optixProgramGroupCreate(state.context,
+                                            &pgDesc,
+                                            1,
+                                            &pgOptions,
+                                            log,&sizeof_log,
+                                            &pgHitgroup[FacetType::FACET_TYPE_TRANS]
+        ));
+        //if (sizeof_log > 1) PRINT(log);
+        programGroups.push_back(pgHitgroup[FacetType::FACET_TYPE_TRANS]);
+#endif// WITH_TRANS
+
+        state.hitgroupPG.insert(state.hitgroupPG.end(),pgHitgroup.begin(),pgHitgroup.end());
     }
 
 
@@ -790,7 +827,7 @@ namespace flowgpu {
             rec.data.vertex = (float3*)poly_memory.vertexBuffer[0].d_pointer();
             rec.data.vertex2 = (float2*)poly_memory.vertex2Buffer[0].d_pointer();
             rec.data.index = (uint32_t*)poly_memory.indexBuffer[0].d_pointer();
-            rec.data.poly = (flowgeom::Polygon*)poly_memory.polyBuffer[0].d_pointer();
+            rec.data.poly = (flowgpu::Polygon*)poly_memory.polyBuffer[0].d_pointer();
             rec.data.cdfs = (float*)poly_memory.cdfBuffer[0].d_pointer();
             rec.data.facetProbabilities = (float2*)poly_memory.facprobBuffer[0].d_pointer();
             //raygenRecords.push_back(rec);
@@ -812,7 +849,7 @@ namespace flowgpu {
             rec.data.vertex = (float3*)poly_memory.vertexBuffer[0].d_pointer();
             rec.data.vertex2 = (float2*)poly_memory.vertex2Buffer[0].d_pointer();
             rec.data.index = (uint32_t*)poly_memory.indexBuffer[0].d_pointer();
-            rec.data.poly = (flowgeom::Polygon*)poly_memory.polyBuffer[0].d_pointer();
+            rec.data.poly = (flowgpu::Polygon*)poly_memory.polyBuffer[0].d_pointer();
             //missRecords.push_back(rec);
             sbt_memory.missRecordsBuffer.alloc(sizeof(rec));
             sbt_memory.missRecordsBuffer.upload(&rec,1);
@@ -826,24 +863,29 @@ namespace flowgpu {
         // build hitgroup records
         // ------------------------------------------------------------------
         std::vector<HitgroupRecord> hitgroupRecords;
-        {
+        for (int meshID=0;meshID<numObjects;meshID++) {
             HitgroupRecord rec;
             // all meshes use the same code, so all same hit group
-            OPTIX_CHECK(optixSbtRecordPackHeader(state.hitgroupPG,&rec));
+            OPTIX_CHECK(optixSbtRecordPackHeader(state.hitgroupPG[FacetType::FACET_TYPE_SOLID],&rec));
             //rec.data.color  = gdt::float3(0.5,1.0,0.5);
             //rec.data.vertex = (float3*)vertexBuffer[meshID].d_pointer();
-            rec.data.vertex = (float3*)poly_memory.vertexBuffer[0].d_pointer();
-            rec.data.vertex2 = (float2*)poly_memory.vertex2Buffer[0].d_pointer();
-            rec.data.index = (uint32_t*)poly_memory.indexBuffer[0].d_pointer();
-            rec.data.poly = (flowgeom::Polygon*)poly_memory.polyBuffer[0].d_pointer();
-            //hitgroupRecords.push_back(rec);
-            sbt_memory.hitgroupRecordsBuffer.alloc(sizeof(rec));
-            sbt_memory.hitgroupRecordsBuffer.upload(&rec,1);
+            rec.data.vertex = (float3*)poly_memory.vertexBuffer[meshID].d_pointer();
+            rec.data.vertex2 = (float2*)poly_memory.vertex2Buffer[meshID].d_pointer();
+            rec.data.index = (uint32_t*)poly_memory.indexBuffer[meshID].d_pointer();
+            rec.data.poly = (flowgpu::Polygon*)poly_memory.polyBuffer[meshID].d_pointer();
+            hitgroupRecords.push_back(rec);
+#ifdef WITH_TRANS
+            OPTIX_CHECK(optixSbtRecordPackHeader(state.hitgroupPG[FacetType::FACET_TYPE_TRANS],&rec));
+            hitgroupRecords.push_back(rec); // TODO: for now use the same data for all facet types
+#endif
+
+            //sbt_memory.hitgroupRecordsBuffer.alloc(sizeof(rec));
+            //sbt_memory.hitgroupRecordsBuffer.upload(&rec,1);
         }
-        //hitgroupRecordsBuffer.alloc_and_upload(hitgroupRecords);
+        sbt_memory.hitgroupRecordsBuffer.alloc_and_upload(hitgroupRecords);
         state.sbt.hitgroupRecordBase          = sbt_memory.hitgroupRecordsBuffer.d_pointer();
         state.sbt.hitgroupRecordStrideInBytes = static_cast<uint32_t>( sizeof(HitgroupRecord) );
-        state.sbt.hitgroupRecordCount         = RayType::RAY_TYPE_COUNT;
+        state.sbt.hitgroupRecordCount         = RayType::RAY_TYPE_COUNT * FacetType::FACET_TYPE_COUNT;
     }
 
     /*! constructs the shader binding table */
@@ -868,7 +910,8 @@ namespace flowgpu {
             OPTIX_CHECK(optixSbtRecordPackHeader(state.raygenPG,&rec));
             rec.data.vertex = (float3*)tri_memory.vertexBuffer[0].d_pointer();
             rec.data.index = (int3*)tri_memory.indexBuffer[0].d_pointer();
-            rec.data.poly = (flowgeom::Polygon*)tri_memory.polyBuffer[0].d_pointer();
+            rec.data.index = (int3*)tri_memory.indexBuffer[0].d_pointer();
+            rec.data.poly = (flowgpu::Polygon*)tri_memory.polyBuffer[0].d_pointer();
             rec.data.cdfs = (float*)tri_memory.cdfBuffer[0].d_pointer();
             rec.data.facetProbabilities = (float2*)tri_memory.facprobBuffer[0].d_pointer();
             //raygenRecords.push_back(rec);
@@ -890,7 +933,7 @@ namespace flowgpu {
             //rec.data_poly = nullptr; /* for now ... */
             rec.data.vertex = (float3*)tri_memory.vertexBuffer[0].d_pointer();
             rec.data.index = (int3*)tri_memory.indexBuffer[0].d_pointer();
-            rec.data.poly = (flowgeom::Polygon*)tri_memory.polyBuffer[0].d_pointer();
+            rec.data.poly = (flowgpu::Polygon*)tri_memory.polyBuffer[0].d_pointer();
             //missRecords.push_back(rec);
             sbt_memory.missRecordsBuffer.alloc(sizeof(rec));
             sbt_memory.missRecordsBuffer.upload(&rec,1);
@@ -904,23 +947,32 @@ namespace flowgpu {
         // build hitgroup records
         // ------------------------------------------------------------------
         std::vector<HitgroupRecordTri> hitgroupRecords;
-        {
-            HitgroupRecordTri rec;
+        hitgroupRecords.resize(RayType::RAY_TYPE_COUNT * FacetType::FACET_TYPE_COUNT);
+        for (int meshID=0;meshID<numObjects;meshID++) {
             // all meshes use the same code, so all same hit group
-            OPTIX_CHECK(optixSbtRecordPackHeader(state.hitgroupPG,&rec));
+            OPTIX_CHECK(optixSbtRecordPackHeader(state.hitgroupPG[FacetType::FACET_TYPE_SOLID],&hitgroupRecords[FacetType::FACET_TYPE_SOLID]));
             //rec.data.color  = gdt::float3(0.5,1.0,0.5);
             //rec.data.vertex = (float3*)vertexBuffer[meshID].d_pointer();
-            rec.data.vertex = (float3*)tri_memory.vertexBuffer[0].d_pointer();
-            rec.data.index = (int3*)tri_memory.indexBuffer[0].d_pointer();
-            rec.data.poly = (flowgeom::Polygon*)tri_memory.polyBuffer[0].d_pointer();
+            hitgroupRecords[FacetType::FACET_TYPE_SOLID].data.vertex = (float3*)tri_memory.vertexBuffer[meshID].d_pointer();
+            hitgroupRecords[FacetType::FACET_TYPE_SOLID].data.index = (int3*)tri_memory.indexBuffer[meshID].d_pointer();
+            hitgroupRecords[FacetType::FACET_TYPE_SOLID].data.poly = (flowgpu::Polygon*)tri_memory.polyBuffer[meshID].d_pointer();
             //hitgroupRecords.push_back(rec);
-            sbt_memory.hitgroupRecordsBuffer.alloc(sizeof(rec));
-            sbt_memory.hitgroupRecordsBuffer.upload(&rec,1);
+
+#ifdef WITH_TRANS
+            OPTIX_CHECK(optixSbtRecordPackHeader(state.hitgroupPG[FacetType::FACET_TYPE_TRANS],&hitgroupRecords[FacetType::FACET_TYPE_TRANS]));
+            hitgroupRecords[FacetType::FACET_TYPE_TRANS].data.vertex = (float3*)tri_memory.vertexBuffer[meshID].d_pointer();
+            hitgroupRecords[FacetType::FACET_TYPE_TRANS].data.index = (int3*)tri_memory.indexBuffer[meshID].d_pointer();
+            hitgroupRecords[FacetType::FACET_TYPE_TRANS].data.poly = (flowgpu::Polygon*)tri_memory.polyBuffer[meshID].d_pointer();
+            //hitgroupRecords.push_back(rec); // TODO: for now use the same data for all facet types
+#endif
         }
-        //hitgroupRecordsBuffer.alloc_and_upload(hitgroupRecords);
+        //sbt_memory.hitgroupRecordsBuffer.alloc(RayType::RAY_TYPE_COUNT * FacetType::FACET_TYPE_COUNT * sizeof(rec));
+        //sbt_memory.hitgroupRecordsBuffer.upload(&rec,RayType::RAY_TYPE_COUNT * FacetType::FACET_TYPE_COUNT);
+        sbt_memory.hitgroupRecordsBuffer.alloc_and_upload(hitgroupRecords);
+
         state.sbt.hitgroupRecordBase          = sbt_memory.hitgroupRecordsBuffer.d_pointer();
         state.sbt.hitgroupRecordStrideInBytes = static_cast<uint32_t>( sizeof(HitgroupRecordTri));
-        state.sbt.hitgroupRecordCount         = RayType::RAY_TYPE_COUNT;
+        state.sbt.hitgroupRecordCount         = RayType::RAY_TYPE_COUNT * FacetType::FACET_TYPE_COUNT;
     }
 
 
@@ -1132,13 +1184,13 @@ namespace flowgpu {
         }
 
         if(!facet_memory.textureBuffer.isNullptr())
-            state.launchParams.sharedData.facetTextures = (flowgeom::FacetTexture*) facet_memory.textureBuffer.d_pointer();
+            state.launchParams.sharedData.facetTextures = (flowgpu::FacetTexture*) facet_memory.textureBuffer.d_pointer();
         if(!facet_memory.texelBuffer.isNullptr())
-            state.launchParams.sharedData.texels = (flowgeom::Texel*) facet_memory.texelBuffer.d_pointer();
+            state.launchParams.sharedData.texels = (flowgpu::Texel*) facet_memory.texelBuffer.d_pointer();
         if(!facet_memory.texIncBuffer.isNullptr())
             state.launchParams.sharedData.texelInc = (float*) facet_memory.texIncBuffer.d_pointer();
         if(!facet_memory.profileBuffer.isNullptr())
-            state.launchParams.sharedData.profileSlices = (flowgeom::Texel*) facet_memory.profileBuffer.d_pointer();
+            state.launchParams.sharedData.profileSlices = (flowgpu::Texel*) facet_memory.profileBuffer.d_pointer();
 
 #ifdef DEBUGCOUNT
         memory_debug.detBuffer.resize(NCOUNTBINS*sizeof(uint32_t));
@@ -1232,9 +1284,9 @@ namespace flowgpu {
         facet_memory.hitCounterBuffer.initDeviceData(model->nbFacets_total * CORESPERSM * WARPSCHEDULERS * sizeof(flowgpu::CuFacetHitCounter));
         facet_memory.missCounterBuffer.initDeviceData(sizeof(uint32_t));
         if(!facet_memory.texelBuffer.isNullptr())
-            facet_memory.texelBuffer.initDeviceData(model->textures.size() * sizeof(flowgeom::Texel));
+            facet_memory.texelBuffer.initDeviceData(model->textures.size() * sizeof(flowgpu::Texel));
         if(!facet_memory.profileBuffer.isNullptr())
-            facet_memory.profileBuffer.initDeviceData(model->profiles.size() * sizeof(flowgeom::Texel));
+            facet_memory.profileBuffer.initDeviceData(model->profiles.size() * sizeof(flowgpu::Texel));
     }
 
     void SimulationOptiX::cleanup()
@@ -1242,7 +1294,8 @@ namespace flowgpu {
         OPTIX_CHECK( optixPipelineDestroy     ( state.pipeline                ) );
         OPTIX_CHECK( optixProgramGroupDestroy ( state.raygenPG       ) );
         OPTIX_CHECK( optixProgramGroupDestroy ( state.missPG         ) );
-        OPTIX_CHECK( optixProgramGroupDestroy ( state.hitgroupPG        ) );
+        for(auto& hitPG : state.hitgroupPG)
+            OPTIX_CHECK( optixProgramGroupDestroy ( hitPG        ) );
         OPTIX_CHECK( optixModuleDestroy       ( state.modules.rayModule          ) );
         OPTIX_CHECK( optixModuleDestroy       ( state.modules.geometryModule         ) );
         OPTIX_CHECK( optixModuleDestroy       ( state.modules.traceModule           ) );
@@ -1258,6 +1311,7 @@ namespace flowgpu {
         for (int meshID=0;meshID<model->triangle_meshes.size();meshID++) {
             tri_memory.vertexBuffer[meshID].free();
             tri_memory.indexBuffer[meshID].free();
+            tri_memory.sbtIndexBuffer[meshID].free();
             tri_memory.polyBuffer[meshID].free();
             tri_memory.cdfBuffer[meshID].free();
             tri_memory.facprobBuffer[meshID].free();
@@ -1268,6 +1322,7 @@ namespace flowgpu {
             poly_memory.vertex2Buffer[meshID].free();
             poly_memory.vertexBuffer[meshID].free();
             poly_memory.indexBuffer[meshID].free();
+            poly_memory.sbtIndexBuffer[meshID].free();
             poly_memory.polyBuffer[meshID].free();
             poly_memory.cdfBuffer[meshID].free();
             poly_memory.facprobBuffer[meshID].free();

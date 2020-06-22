@@ -89,7 +89,7 @@ namespace flowgpu {
                 fabsf(p.z) < origin() ? p.z+float_scale()*n.z : p_i.z));
     }
 
-    extern "C" __device__ int point_in_polygon(float u, float v, const flowgeom::Polygon& poly) {
+    extern "C" __device__ int point_in_polygon(float u, float v, const flowgpu::Polygon& poly) {
         // Fast method to check if a point is inside a polygon or not.
         // Works with convex and concave polys, orientation independent
         const PolygonRayGenData* rayGenData = (PolygonRayGenData*) optixGetSbtDataPointer();
@@ -447,7 +447,7 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
     // increase texture counters for desorption
     // --------------------------------------
     static __forceinline__ __device__
-    void RecordDesorptionTexture(flowgeom::Polygon& poly, MolPRD& hitData, float3 rayOrigin, float3 rayDir){
+    void RecordDesorptionTexture(flowgpu::Polygon& poly, MolPRD& hitData, float3 rayOrigin, float3 rayDir){
 
         const float velocity_factor = 2.0f;
         const float ortSpeedFactor = 1.0f;
@@ -474,7 +474,7 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
         float hitLocationU = detU/det;
         float hitLocationV = detV/det;
 
-        flowgeom::FacetTexture& facetTex = optixLaunchParams.sharedData.facetTextures[poly.texProps.textureOffset];
+        flowgpu::FacetTexture& facetTex = optixLaunchParams.sharedData.facetTextures[poly.texProps.textureOffset];
 
         unsigned int tu = (unsigned int)(hitLocationU * facetTex.texWidthD);
         unsigned int tv = (unsigned int)(hitLocationV * facetTex.texHeightD);
@@ -483,7 +483,7 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
 
         float ortVelocity = (optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f) * hitData.velocity*fabsf(dot(rayDir, poly.N)); //surface-orthogonal velocity component
 
-        flowgeom::Texel& tex = optixLaunchParams.sharedData.texels[facetTex.texelOffset + add];
+        flowgpu::Texel& tex = optixLaunchParams.sharedData.texels[facetTex.texelOffset + add];
         atomicAdd(&tex.countEquiv, static_cast<uint32_t>(1));
         atomicAdd(&tex.sum_1_per_ort_velocity, 1.0f * velocity_factor / ortVelocity);
         atomicAdd(&tex.sum_v_ort_per_area, 1.0f * ortSpeedFactor * ortVelocity * optixLaunchParams.sharedData.texelInc[facetTex.texelOffset + add]); // sum ortho_velocity[m/s] / cell_area[cm2]
@@ -497,7 +497,7 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
     // increase texture counters for desorption
     // --------------------------------------
     static __forceinline__ __device__
-    void RecordDesorptionProfile(flowgeom::Polygon& poly, MolPRD& hitData, float3 rayOrigin, float3 rayDir){
+    void RecordDesorptionProfile(flowgpu::Polygon& poly, MolPRD& hitData, float3 rayOrigin, float3 rayDir){
 
         const float velocity_factor = 2.0f;
         const float ortSpeedFactor = 1.0f;
@@ -523,18 +523,18 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
 
 
         unsigned int add = 0;
-        if(poly.profProps.profileType == flowgeom::PROFILE_FLAGS::profileU){
+        if(poly.profProps.profileType == flowgpu::PROFILE_FLAGS::profileU){
             float hitLocationU = detU/det;
             add = (unsigned int)(hitLocationU * PROFILE_SIZE);
         }
-        else if(poly.profProps.profileType == flowgeom::PROFILE_FLAGS::profileV){
+        else if(poly.profProps.profileType == flowgpu::PROFILE_FLAGS::profileV){
             float hitLocationV = detV/det;
             add = (unsigned int)(hitLocationV * PROFILE_SIZE);
         }
 
         float ortVelocity = hitData.velocity*fabsf(dot(rayDir, poly.N)); //surface-orthogonal velocity component
 
-        flowgeom::Texel& tex = optixLaunchParams.sharedData.profileSlices[poly.profProps.profileOffset + add];
+        flowgpu::Texel& tex = optixLaunchParams.sharedData.profileSlices[poly.profProps.profileOffset + add];
         atomicAdd(&tex.countEquiv, static_cast<uint32_t>(1));
         atomicAdd(&tex.sum_1_per_ort_velocity, 1.0f * velocity_factor / ortVelocity);
         atomicAdd(&tex.sum_v_ort_per_area, 1.0f * ortSpeedFactor * ortVelocity * (optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f)); // sum ortho_velocity[m/s] / cell_area[cm2]
@@ -587,11 +587,11 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
 #endif
         increaseHitCounterDesorption(optixLaunchParams.hitCounter[counterIdx],hitData,rayDir, rayGenData->poly[facIndex].N);
 #ifdef WITH_TEX
-        if (rayGenData->poly[facIndex].texProps.textureFlags & flowgeom::TEXTURE_FLAGS::countDes)
+        if (rayGenData->poly[facIndex].texProps.textureFlags & flowgpu::TEXTURE_FLAGS::countDes)
             RecordDesorptionTexture(rayGenData->poly[facIndex], hitData, rayOrigin, rayDir);
 #endif
 #ifdef WITH_PROF
-        if (rayGenData->poly[facIndex].profProps.profileType != flowgeom::PROFILE_FLAGS::noProfile)
+        if (rayGenData->poly[facIndex].profProps.profileType != flowgpu::PROFILE_FLAGS::noProfile)
             RecordDesorptionProfile(rayGenData->poly[facIndex], hitData, rayOrigin, rayDir);
 #endif
 

@@ -41,7 +41,7 @@ bool SimulationGPU::LoadSimulation(Dataport *loader) {
         BYTE* buffer = (BYTE*)loader->buff;
         std::copy(buffer, buffer + loader->size, inputString.begin());
 
-        model = flowgeom::loadFromSerialization(inputString);
+        model = flowgpu::loadFromSerialization(inputString);
         this->ontheflyParams = this->model->ontheflyParams;
     }//inputarchive goes out of scope, file released
 
@@ -89,7 +89,7 @@ bool SimulationGPU::UpdateOntheflySimuParams(Dataport *loader) {
 void SimulationGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWORD timeout) {
     //UpdateMCHits(dpHit, prIdx, moments.size(), timeout);
     //if (dpLog) UpdateLog(dpLog, timeout);
-    std::cout << "#SimulationGPU: Updating hits"<<std::endl;
+    //std::cout << "#SimulationGPU: Updating hits"<<std::endl;
     gpuSim.GetSimulationData(false);
     GlobalCounter* globalCount = gpuSim.GetGlobalCounter();
 
@@ -151,7 +151,7 @@ void SimulationGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWOR
             for (auto &mesh : model->triangle_meshes) {
                 int previousId = 0;
                 for (auto &facet : mesh->poly) {
-                    if ((facet.profProps.profileType != flowgeom::PROFILE_FLAGS::noProfile) && (id == facet.parentIndex)) {
+                    if ((facet.profProps.profileType != flowgpu::PROFILE_FLAGS::noProfile) && (id == facet.parentIndex)) {
                         ProfileSlice *shProfile = (ProfileSlice *) (buffer + (model->tri_facetOffset[id] + sizeof(FacetHitBuffer)));
                         for (unsigned int s = 0; s < PROFILE_SIZE; ++s) {
                             shProfile[s].countEquiv += profiles[s].countEquiv;

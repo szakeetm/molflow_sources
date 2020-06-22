@@ -33,22 +33,16 @@
 
 namespace flowgpu {
 
-    enum RayType
-    {
-        RAY_TYPE_MOLECULE  = 0,
-        RAY_TYPE_COUNT
-    };
-
     struct TriangleMeshSBTData {
         float3 *vertex;
         int3 *index;
-        flowgeom::Polygon *poly;
+        flowgpu::Polygon *poly;
     };
 
     struct TriangleRayGenData {
         float3 *vertex;
         int3 *index;
-        flowgeom::Polygon *poly;
+        flowgpu::Polygon *poly;
 
         // -- data for launch parameters --
         // --------------------------------
@@ -66,7 +60,7 @@ namespace flowgpu {
         float3 *vertex;
         float2 *vertex2;
         uint32_t *index;
-        flowgeom::Polygon *poly;
+        flowgpu::Polygon *poly;
 
         // -- data for launch parameters --
         // --------------------------------
@@ -84,7 +78,7 @@ namespace flowgpu {
         float3 *vertex;
         float2 *vertex2;
         uint32_t *index;
-        flowgeom::Polygon *poly;
+        flowgpu::Polygon *poly;
     };
 
     // attributes of the molecule that have effects for tracing or post processing
@@ -140,10 +134,10 @@ namespace flowgpu {
 
         struct {
             uint32_t *missCounter;
-            flowgeom::FacetTexture *facetTextures;
+            flowgpu::FacetTexture *facetTextures;
             float *texelInc;
-            flowgeom::Texel *texels;
-            flowgeom::Texel *profileSlices;
+            flowgpu::Texel *texels;
+            flowgpu::Texel *profileSlices;
         } sharedData;
 
         struct {

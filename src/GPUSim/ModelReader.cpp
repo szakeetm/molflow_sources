@@ -56,7 +56,7 @@ inline void vector3d_to_float3(float3& t, const Vector3d& o){
 
 
 /*! \namespace flowgeom - Molflow Geometry code */
-namespace flowgeom {
+namespace flowgpu {
 
 /*! --- Initialise model with a Molflow-exported geometry --- */
     flowgpu::Model* initializeModel(std::string fileName){
@@ -104,13 +104,13 @@ namespace flowgeom {
         return model;
     }
 
-    void convertFacet2Poly(const std::vector<TempFacet>& facets, std::vector<flowgeom::Polygon>& convertedPolygons){
+    void convertFacet2Poly(const std::vector<TempFacet>& facets, std::vector<flowgpu::Polygon>& convertedPolygons){
 
         int32_t vertCount = 0;
         for(int i = 0; i < facets.size(); ++i){
             auto& temp = facets[i];
 
-            flowgeom::Polygon polygon(temp.vertices2.size());
+            flowgpu::Polygon polygon(temp.vertices2.size());
             polygon.facProps.stickingFactor = temp.facetProperties.sticking;
             polygon.facProps.temperature = temp.facetProperties.temperature;
 
@@ -231,7 +231,7 @@ namespace flowgeom {
         return 1;
     }
 
-    int parseGeomFromSerialization(flowgpu::Model* model, std::vector<flowgeom::TempFacet>& facets, std::vector<float3>& vertices3d){
+    int parseGeomFromSerialization(flowgpu::Model* model, std::vector<flowgpu::TempFacet>& facets, std::vector<float3>& vertices3d){
         // First create a regular polygonmesh
         // transform Molflow facet data to simulation polygons
         // transform polygons to triangles
@@ -260,7 +260,7 @@ namespace flowgeom {
         // Now create Triangle Mesh
         flowgpu::TriangleMesh* triMesh = new flowgpu::TriangleMesh();
         try {
-            int nbTris = Poly2TriConverter::PolygonsToTriangles(polyMesh, triMesh);
+            Poly2TriConverter::PolygonsToTriangles(polyMesh, triMesh);
         }
         catch (std::exception& e) {
             std::cerr << e.what() << std::endl;
@@ -293,6 +293,33 @@ namespace flowgeom {
 
         //--- Calculate outgassing values in relation to (tri_area / poly_area)
         CalculateRelativeTriangleOutgassing(facets,triMesh);
+
+        for(auto& mesh : model->poly_meshes){
+            std::vector<flowgpu::FacetType> sbtIndices; // Facet Type
+            for(auto& polygon : mesh->poly){
+                if(polygon.facProps.is2sided){
+                    std::cout << sbtIndices.size() << " > is transparent " << std::endl;
+                    sbtIndices.emplace_back(FacetType::FACET_TYPE_TRANS);
+                }
+                else{
+                    sbtIndices.emplace_back(FacetType::FACET_TYPE_SOLID);
+                }
+            }
+            mesh->sbtIndices = sbtIndices;
+        }
+        for(auto& mesh : model->triangle_meshes){
+            std::vector<flowgpu::FacetType> sbtIndices; // Facet Type
+            for(auto& triangle : mesh->poly){
+                if(triangle.facProps.is2sided){
+                    std::cout << sbtIndices.size() << " > is transparent " << std::endl;
+                    sbtIndices.emplace_back(FacetType::FACET_TYPE_TRANS);
+                }
+                else{
+                    sbtIndices.emplace_back(FacetType::FACET_TYPE_SOLID);
+                }
+            }
+            mesh->sbtIndices = sbtIndices;
+        }
 
         // Textures
         if(!model->textures.empty()){

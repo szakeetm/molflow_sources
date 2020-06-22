@@ -10,7 +10,7 @@
 class Poly2TriConverter {
     static std::vector<int3> Triangulate(std::vector<float2> &vertices, std::vector<uint32_t> &indices);
 public:
-    static std::vector<flowgeom::Polygon> PolygonsToTriangles(std::vector<flowgeom::TempFacet>& facets);
+    static std::vector<flowgpu::Polygon> PolygonsToTriangles(std::vector<flowgpu::TempFacet>& facets);
     static int
     PolygonsToTriangles(flowgpu::PolygonMesh *polygonMesh, flowgpu::TriangleMesh *triangleMesh);
 };
