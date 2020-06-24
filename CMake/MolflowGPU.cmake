@@ -6,6 +6,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     option(DEBUG_MISS "Enable Debugging for Miss Program" OFF)
     option(DEBUG_COUNT "Enable counters for intersection results" OFF)
     option(DEBUG_POS "Enable generating hit positions from GPU calculations" OFF)
+    option(DEBUG_LEAKPOS "Enable generating hit positions for leaks from GPU calculations" OFF)
 endif()
 
 option(WITH_TRIANGLES "Enable calculations with triangles only" ON)
@@ -49,6 +50,10 @@ IF (CMAKE_BUILD_TYPE STREQUAL "Debug")
     if (DEBUG_POS)
         add_definitions(-DDEBUGPOS)
     endif (DEBUG_POS)
+
+    if (DEBUG_LEAKPOS)
+        add_definitions(-DDEBUGLEAKPOS)
+    endif (DEBUG_LEAKPOS)
 ENDIF()
 
 if (WITH_TRIANGLES)

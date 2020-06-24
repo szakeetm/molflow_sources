@@ -521,7 +521,7 @@ namespace flowgpu {
         const unsigned int bufferIndex = launchIndex.x + launchIndex.y * optixLaunchParams.simConstants.size.x;
 
 #ifdef DEBUGMISS
-        const unsigned int missIndex = fbIndex*NMISSES;
+        const unsigned int missIndex = bufferIndex*NMISSES;
         optixLaunchParams.perThreadData.missBuffer[missIndex] = 0;
 #endif
 
@@ -539,8 +539,16 @@ namespace flowgpu {
         if(prd.hitFacetId == optixGetPrimitiveIndex()){
 #ifdef DEBUG
             //printf("[%d] source and goal facet equal %d : %8.6f,%8.6f,%8.6f -> %8.6f,%8.6f,%8.6f : [%.5e .. %.5e] (tri)\n",(blockDim.x * blockIdx.x + threadIdx.x), prd.hitFacetId, ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z, optixGetRayTmin(),ray_t);
+/*
+if(prd.inSystem == 4)
+                printf("[%d] [backface] source and goal facet equal %d : %8.6f,%8.6f,%8.6f -> %8.6f,%8.6f,%8.6f : [%.5e .. %.5e] (tri)\n",(blockDim.x * blockIdx.x + threadIdx.x), prd.hitFacetId, ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z, optixGetRayTmin(),ray_t);
+*/
+
 #endif
-            prd.inSystem = 2;
+            if(prd.inSystem == ACTIVE_BACK_HIT)
+                prd.inSystem == SELF_BACK_HIT;
+            else
+                prd.inSystem = SELF_INTERSECTION;
             //prd.hitPos = ray_orig;
             optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos = ray_orig;
             //optixLaunchParams.perThreadData.currentMoleculeData[fbIndex].postHitDir = ray_dir;
@@ -582,7 +590,7 @@ namespace flowgpu {
             printf("[%d] 2sided facet hit %d / %d : %8.6f,%8.6f,%8.6f -> %8.6f,%8.6f,%8.6f : [%.5e .. %.5e] (tri)\n",(blockDim.x * blockIdx.x + threadIdx.x), prd.hitFacetId, poly.parentIndex, ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z, optixGetRayTmin(),ray_t);
 #endif
             // replace like with self intersection, but keep position etc.
-            prd.inSystem = 3;
+            prd.inSystem = TRANSPARENT_HIT;
 
             optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos = prd.hitPos;
             optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].postHitDir = ray_dir;
@@ -624,7 +632,7 @@ namespace flowgpu {
 #endif
             optixLaunchParams.perThreadData.randBufferOffset[bufferIndex] = randOffset;
 
-            prd.inSystem = 0;
+            prd.inSystem = NEW_PARTICLE;
             prd.currentDepth = 0;
             setMolPRD(prd);
             return;
@@ -662,7 +670,7 @@ namespace flowgpu {
 #endif
 
             // also increase a nbBounce counter if there is need (e.g. recursion)
-            prd.inSystem = 1;
+            prd.inSystem = ACTIVE_PARTICLE;
 
             // 2. Relaunch particle
 
@@ -686,8 +694,16 @@ namespace flowgpu {
             float3 nU = poly.nU;
             float3 nV = poly.nV;
             float3 N = poly.N;*/
-
-            prd.postHitDir = getNewDirection(prd,poly,randFloat,randInd,randOffset);
+            if(optixGetHitKind() == OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE ) {
+                //if (bufferIndex == 0 && poly.parentIndex == 102) printf("[%d] Front direction!\n", poly.parentIndex);
+                prd.postHitDir = getNewDirection(prd, poly, randFloat, randInd, randOffset);
+            }
+            else {
+                /*if (bufferIndex == 0 && poly.parentIndex == 102) */printf("[%d] Back direction!\n", poly.parentIndex);
+                //else if (bufferIndex == 0 && poly.parentIndex != 102) printf("[%d] Back direction!\n", poly.parentIndex);
+                prd.postHitDir = getNewReverseDirection(prd, poly, randFloat, randInd, randOffset);
+                prd.inSystem = ACTIVE_BACK_HIT;
+            }
 
             // 3. Increment counters for post bounce / outgoing particles
             ortVelocity = prd.velocity*fabsf(dot(prd.postHitDir, poly.N));
@@ -733,7 +749,7 @@ namespace flowgpu {
                            0.0f,   // rayTime
                            OptixVisibilityMask(255),
                            OPTIX_RAY_FLAG_DISABLE_ANYHIT
-                           | OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES,//OPTIX_RAY_FLAG_NONE,
+                           /*| OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES*/,//OPTIX_RAY_FLAG_NONE,
                            RayType::RAY_TYPE_MOLECULE,             // SBT offset
                            RayType::RAY_TYPE_COUNT,               // SBT stride
                            RayType::RAY_TYPE_MOLECULE,             // missSBTIndex
@@ -770,7 +786,7 @@ namespace flowgpu {
 
         // self intersection
         if(prd.hitFacetId == optixGetPrimitiveIndex()){
-            prd.inSystem = 2;
+            prd.inSystem = SELF_INTERSECTION;
             optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos = ray_orig;
             setMolPRD(prd);
             return;
@@ -791,7 +807,7 @@ namespace flowgpu {
         const float hitEquiv = 1.0f; //1.0*prd.orientationRatio; // hit=1.0 (only changed for lowflux mode)
 
         // replace like with self intersection, but keep position etc.
-        prd.inSystem = 3;
+        prd.inSystem = TRANSPARENT_HIT;
         optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos = prd.hitPos;
         optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].postHitDir = ray_dir;
 
@@ -863,12 +879,15 @@ namespace flowgpu {
         const float3 ray_dir  = optixGetWorldRayDirection();
         const float  ray_t    = optixGetRayTmax();
 
-        printf("--------------------(%d) miss[%d -> %d] (%12.10f , %12.10f , %12.10f) --> (%12.10f , %12.10f , %12.10f) = %12.10f \n",
-               prd.inSystem, blockDim.x * blockIdx.x + threadIdx.x, prd.hitFacetId,
-               ray_orig.x, ray_orig.y , ray_orig.z , ray_dir.x, ray_dir.y , ray_dir.z, ray_t);
 
         const unsigned int fbIndex = blockDim.x * blockIdx.x + threadIdx.x;
         const unsigned int missIndex = fbIndex*NMISSES;
+
+        printf("--------------------(%d) miss[%d -> %d][%d] (%12.10f , %12.10f , %12.10f) --> (%12.10f , %12.10f , %12.10f) = %e \n",
+               prd.inSystem, fbIndex, prd.hitFacetId, missIndex,
+               ray_orig.x, ray_orig.y , ray_orig.z , ray_dir.x, ray_dir.y , ray_dir.z, ray_t);
+
+
         for(int i=missIndex+1; i <= missIndex+optixLaunchParams.perThreadData.missBuffer[missIndex];i++){
             printf("-------------------- miss[%d -> %d -> %d] at %d\n",
                     blockDim.x * blockIdx.x + threadIdx.x,
@@ -887,6 +906,31 @@ namespace flowgpu {
 /*optixLaunchParams.perThreadData.currentMoleculeData[fbIndex].hitPos = prd.hitPos;
 optixLaunchParams.perThreadData.currentMoleculeData[fbIndex].postHitDir = prd.postHitDir;*/
 
+#ifdef DEBUGLEAKPOS
+        {
+            const float3 ray_orig = optixGetWorldRayOrigin();
+            const float3 ray_dir  = optixGetWorldRayDirection();
+            const float  ray_t    = optixGetRayTmax();
+
+
+            const unsigned int fbIndex = blockDim.x * blockIdx.x + threadIdx.x;
+
+            printf("--------------------(%d) miss[%d -> %d] (%12.10f , %12.10f , %12.10f) --> (%12.10f , %12.10f , %12.10f) = %e \n",
+                   prd.inSystem, fbIndex, prd.hitFacetId,
+                   ray_orig.x, ray_orig.y , ray_orig.z , ray_dir.x, ray_dir.y , ray_dir.z, ray_t);
+
+
+        const unsigned int posIndexOff = optixLaunchParams.perThreadData.leakPosOffsetBuffer_debug[(unsigned int)(blockDim.x * blockIdx.x + threadIdx.x)]++;
+            if(posIndexOff<NBCOUNTS){
+                const unsigned int posIndex = (blockDim.x * blockIdx.x + threadIdx.x)*NBCOUNTS+posIndexOff;
+                //printf("[%d] my pos is %d\n", (unsigned int)(fbIndex), posIndex);
+                optixLaunchParams.perThreadData.leakPositionsBuffer_debug[posIndex] = ray_orig;
+                optixLaunchParams.perThreadData.leakDirectionsBuffer_debug[posIndex] = ray_dir;
+
+            }
+            }
+#endif
+
         // Try to relaunch a molecule for some time until removing it from the system
         // Differentiate between physical and single precision leaks here
 
@@ -899,7 +943,7 @@ optixLaunchParams.perThreadData.currentMoleculeData[fbIndex].postHitDir = prd.po
             prd.postHitDir = make_float3(-999.0);
             prd.hitFacetId = -1;
             prd.hitT = -999.0f;
-            prd.inSystem = 0;
+            prd.inSystem = NEW_PARTICLE;
         /*}
         else{
             prd.inSystem = max(3,prd.inSystem+1);

@@ -549,7 +549,7 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
         hitData.hitT = -999.0f;
         hitData.velocity = -999.0f;
         hitData.currentDepth = 0;
-        hitData.inSystem = 0;
+        hitData.inSystem = NEW_PARTICLE;
         hitData.orientationRatio = 1.0f;
 
         const RN_T* randFloat = optixLaunchParams.randomNumbers;
@@ -623,8 +623,8 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
                 initMoleculeTransparentHit(bufferIndex, hitData, rayDir, rayOrigin);
                 break;
             }
-            case 1:
-            {
+            case 4:
+            case 1: {
                 /* if molecule is still in the system (bounce etc.)
                  * load data from thread buffer
                  */
@@ -639,6 +639,8 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
                 initMoleculeFromStart(bufferIndex, hitData, rayDir, rayOrigin);
                 break;
             }
+            case SELF_BACK_HIT:
+            case SELF_INTERSECTION:
             default:
             {
                 /*
@@ -671,7 +673,19 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
             printf("[RayOffset] facIndex %u >= %u is out of bounds (%u)\n", facIndex, optixLaunchParams.simConstants.nbFacets, optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem);
         }
 #endif
-            rayOrigin = offset_ray(rayOrigin,rayGenData->poly[facIndex].N);
+            //do not offset a transparent hit
+            if(optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem != 3){
+                float3 facNormal = rayGenData->poly[facIndex].N;
+                if(optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem == ACTIVE_BACK_HIT
+                || optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem == SELF_BACK_HIT)
+                // previous backface hit
+                {
+                    facNormal *= (-1.0f);
+                    //rayOrigin = offset_ray(rayOrigin, (-1.0f) * rayGenData->poly[facIndex].N);
+                }
+                rayOrigin = offset_ray(rayOrigin,facNormal);
+
+            }
 
         }
 
@@ -683,7 +697,7 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
                0.0f,   // rayTime
                OptixVisibilityMask( 255 ),
                OPTIX_RAY_FLAG_DISABLE_ANYHIT
-               /*| OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES*/,//OPTIX_RAY_FLAG_NONE,
+               | OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES,//OPTIX_RAY_FLAG_NONE,
                    RayType::RAY_TYPE_MOLECULE,             // SBT offset
                    RayType::RAY_TYPE_COUNT,               // SBT stride
                    RayType::RAY_TYPE_MOLECULE,             // missSBTIndex

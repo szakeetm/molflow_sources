@@ -65,16 +65,22 @@ struct DeviceMemoryDebug {
         CUDABuffer detBuffer;
             CUDABuffer uBuffer;
             CUDABuffer vBuffer;
-#endif DEBUGCOUNT
+#endif //DEBUGCOUNT
 
 #ifdef DEBUGPOS
         CUDABuffer posBuffer;
             CUDABuffer posOffsetBuffer;
-#endif DEBUGPOS
+#endif //DEBUGPOS
+
+#ifdef DEBUGLEAKPOS
+        CUDABuffer leakPosBuffer;
+        CUDABuffer leakDirBuffer;
+        CUDABuffer leakPosOffsetBuffer;
+#endif //DEBUGLEAKPOS
 
 #ifdef DEBUGMISS
         CUDABuffer missBuffer;
-#endif DEBUGMISS
+#endif //DEBUGMISS
     };
 #endif DEBUG
 

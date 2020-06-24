@@ -262,11 +262,12 @@ namespace flowgpu {
     };
 
     struct SimProperties{
-        SimProperties() : stickingFactor(-1.0f),temperature(-1.0f), is2sided(false){}
+        SimProperties() : stickingFactor(-1.0f), temperature(-1.0f), is2sided(false), opacity(-1.0f){}
         SimProperties& operator=(const SimProperties& o){
             this->stickingFactor = o.stickingFactor;
             this->temperature = o.temperature;
             this->is2sided = o.is2sided;
+            this->opacity = o.opacity;
 
             return *this;
         }
@@ -276,6 +277,7 @@ namespace flowgpu {
 
         // only for transparent / 2sided
         bool is2sided;
+        float opacity;
     };
 
     class Polygon {

@@ -140,6 +140,9 @@ namespace flowgpu {
         };
     }
 
+    SimulationOptiX::~SimulationOptiX(){
+        cleanup();
+    }
     /*! constructor - performs all setup, including initializing
       optix, creates module, pipeline, programs, SBT, etc. */
     SimulationOptiX::SimulationOptiX(const Model *model, const uint2 &launchSize)
@@ -1016,6 +1019,18 @@ namespace flowgpu {
         delete[] pos;
         delete[] offset;
 #endif
+#ifdef DEBUGLEAKPOS
+        float3 *leakPos = new float3[NBCOUNTS*state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y]();
+        float3 *leakDir = new float3[NBCOUNTS*state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y]();
+        uint32_t *leakOffset = new uint32_t[state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y]();
+        memory_debug.leakPosBuffer.upload(leakPos,NBCOUNTS*state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y*1);
+        memory_debug.leakDirBuffer.upload(leakDir,NBCOUNTS*state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y*1);
+        memory_debug.leakPosOffsetBuffer.upload(leakOffset,state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y*1);
+
+        delete[] leakPos;
+        delete[] leakDir;
+        delete[] leakOffset;
+#endif
 #ifdef DEBUGMISS
         uint32_t *miss = new uint32_t[NMISSES*state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y]();
         memory_debug.missBuffer.upload(miss,NMISSES*state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y*1);
@@ -1209,6 +1224,15 @@ namespace flowgpu {
         state.launchParams.perThreadData.posOffsetBuffer_debug = (uint32_t*)memory_debug.posOffsetBuffer.d_pointer();
 #endif
 
+#ifdef DEBUGLEAKPOS
+        memory_debug.leakPosBuffer.resize(newSize.x * newSize.y*NBCOUNTS*sizeof(float3));
+        memory_debug.leakDirBuffer.resize(newSize.x * newSize.y*NBCOUNTS*sizeof(float3));
+        memory_debug.leakPosOffsetBuffer.resize(newSize.x * newSize.y*sizeof(uint32_t));
+        state.launchParams.perThreadData.leakPositionsBuffer_debug = (float3*)memory_debug.leakPosBuffer.d_pointer();
+        state.launchParams.perThreadData.leakDirectionsBuffer_debug = (float3*)memory_debug.leakDirBuffer.d_pointer();
+        state.launchParams.perThreadData.leakPosOffsetBuffer_debug = (uint32_t*)memory_debug.leakPosOffsetBuffer.d_pointer();
+#endif
+
 #ifdef DEBUGMISS
         memory_debug.missBuffer.resize(NMISSES*newSize.x * newSize.y*sizeof(uint32_t));
         state.launchParams.perThreadData.missBuffer = (uint32_t*)memory_debug.missBuffer.d_pointer();
@@ -1244,6 +1268,11 @@ namespace flowgpu {
         memory_debug.posOffsetBuffer.resize(newSize.x * newSize.y*sizeof(uint32_t));
 #endif
 
+#ifdef DEBUGLEAKPOS
+        memory_debug.leakPosBuffer.resize(newSize.x * newSize.y*NBCOUNTS*sizeof(float3));
+        memory_debug.leakDirBuffer.resize(newSize.x * newSize.y*NBCOUNTS*sizeof(float3));
+        memory_debug.leakPosOffsetBuffer.resize(newSize.x * newSize.y*sizeof(uint32_t));
+#endif
 #ifdef DEBUGMISS
         memory_debug.missBuffer.resize(NMISSES*newSize.x * newSize.y*sizeof(uint32_t));
 #endif
@@ -1274,6 +1303,11 @@ namespace flowgpu {
 #ifdef DEBUGPOS
         memory_debug.posBuffer.download(hostData->positions.data(), NBCOUNTS*state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y);
         memory_debug.posOffsetBuffer.download(hostData->posOffset.data(), state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y);
+#endif
+#ifdef DEBUGLEAKPOS
+        memory_debug.leakPosBuffer.download(hostData->leakPositions.data(), NBCOUNTS*state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y);
+        memory_debug.leakDirBuffer.download(hostData->leakDirections.data(), NBCOUNTS*state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y);
+        memory_debug.leakPosOffsetBuffer.download(hostData->leakPosOffset.data(), state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y);
 #endif
     }
 
@@ -1353,6 +1387,14 @@ namespace flowgpu {
 #ifdef DEBUGPOS
         memory_debug.posBuffer.free();
         memory_debug.posOffsetBuffer.free();
+#endif
+#ifdef DEBUGLEAKPOS
+        memory_debug.leakPosBuffer.free();
+        memory_debug.leakDirBuffer.free();
+        memory_debug.leakPosOffsetBuffer.free();
+#endif
+#ifdef DEBUGMISS
+        memory_debug.missBuffer.free();
 #endif
         state.asBuffer.free();
         state.launchParamsBuffer.free();

@@ -89,6 +89,7 @@ namespace flowgpu {
         /*! constructor - performs all setup, including initializing
           optix, creates module, pipeline, programs, SBT, etc. */
         SimulationOptiX(const Model *model, const uint2 &launchSize);
+        ~SimulationOptiX();
 
         /*! upload some parts only on start */
         void initSimulation();

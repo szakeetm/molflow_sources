@@ -52,6 +52,11 @@ struct HostData {
     std::vector<float3> positions;
     std::vector<uint32_t> posOffset;
 #endif
+#ifdef DEBUGLEAKPOS
+    std::vector<float3> leakPositions;
+    std::vector<float3> leakDirections;
+    std::vector<uint32_t> leakPosOffset;
+#endif
 };
 
 struct GlobalCounter {
@@ -70,6 +75,11 @@ struct GlobalCounter {
 #ifdef DEBUGPOS
     std::vector<float3> positions;
     std::vector<uint32_t> posOffset;
+#endif
+#ifdef DEBUGLEAKPOS
+    std::vector<float3> leakPositions;
+    std::vector<float3> leakDirections;
+    std::vector<uint32_t> leakPosOffset;
 #endif
 };
 

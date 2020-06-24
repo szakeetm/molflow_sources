@@ -30,7 +30,9 @@
 #define VLOW (-0.2f)
 #define VHIGH 1.2f
 #endif
-
+#ifdef DEBUGLEAKPOS
+#define NBCOUNTS 3
+#endif
 namespace flowgpu {
 
     struct TriangleMeshSBTData {
@@ -81,6 +83,14 @@ namespace flowgpu {
         flowgpu::Polygon *poly;
     };
 
+    enum MOLSTATUS : uint8_t {
+        NEW_PARTICLE = 0u,
+        ACTIVE_PARTICLE,
+        SELF_INTERSECTION,
+        TRANSPARENT_HIT,
+        ACTIVE_BACK_HIT,
+        SELF_BACK_HIT
+    };
     // attributes of the molecule that have effects for tracing or post processing
     struct MolPRD
     {
@@ -146,6 +156,11 @@ namespace flowgpu {
 #ifdef DEBUGPOS
             uint32_t* posOffsetBuffer_debug;
             float3* positionsBuffer_debug;
+#endif
+#ifdef DEBUGLEAKPOS
+            uint32_t* leakPosOffsetBuffer_debug;
+            float3* leakPositionsBuffer_debug;
+            float3* leakDirectionsBuffer_debug;
 #endif
 #ifdef DEBUGMISS
             uint32_t* missBuffer; //first value is the amount of primitives N, followed by N primitive IDs

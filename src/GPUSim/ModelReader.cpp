@@ -113,6 +113,7 @@ namespace flowgpu {
             flowgpu::Polygon polygon(temp.vertices2.size());
             polygon.facProps.stickingFactor = temp.facetProperties.sticking;
             polygon.facProps.temperature = temp.facetProperties.temperature;
+            polygon.facProps.opacity = temp.facetProperties.opacity;
 
             polygon.facProps.is2sided = temp.facetProperties.is2sided;
 
@@ -297,8 +298,8 @@ namespace flowgpu {
         for(auto& mesh : model->poly_meshes){
             std::vector<flowgpu::FacetType> sbtIndices; // Facet Type
             for(auto& polygon : mesh->poly){
-                if(polygon.facProps.is2sided){
-                    std::cout << sbtIndices.size() << " > is transparent " << std::endl;
+                if(polygon.facProps.is2sided && polygon.facProps.opacity == 0.0f){
+                    //std::cout << sbtIndices.size() << " > is transparent " << std::endl;
                     sbtIndices.emplace_back(FacetType::FACET_TYPE_TRANS);
                 }
                 else{
@@ -310,7 +311,7 @@ namespace flowgpu {
         for(auto& mesh : model->triangle_meshes){
             std::vector<flowgpu::FacetType> sbtIndices; // Facet Type
             for(auto& triangle : mesh->poly){
-                if(triangle.facProps.is2sided){
+                if(triangle.facProps.is2sided && triangle.facProps.opacity == 0.0f){
                     std::cout << sbtIndices.size() << " > is transparent " << std::endl;
                     sbtIndices.emplace_back(FacetType::FACET_TYPE_TRANS);
                 }

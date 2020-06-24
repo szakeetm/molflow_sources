@@ -25,7 +25,7 @@ int SimulationGPU::SanityCheckGeom() {
 }
 
 void SimulationGPU::ClearSimulation() {
-
+    gpuSim.CloseSimulation();
 }
 
 bool SimulationGPU::LoadSimulation(Dataport *loader) {
@@ -42,6 +42,7 @@ bool SimulationGPU::LoadSimulation(Dataport *loader) {
         std::copy(buffer, buffer + loader->size, inputString.begin());
 
         model = flowgpu::loadFromSerialization(inputString);
+        if(!model) return false;
         this->ontheflyParams = this->model->ontheflyParams;
     }//inputarchive goes out of scope, file released
 
@@ -129,7 +130,27 @@ void SimulationGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWOR
         gHits->texture_limits[i].max.all = gHits->texture_limits[i].max.moments_only = 0;
     }
 
+    // Leak
     gHits->nbLeakTotal += globalCount->leakCounter[0];
+#ifdef DEBUGLEAKPOS
+    for (size_t leakIndex = 0; leakIndex < globalCount->leakPositions.size(); leakIndex++) {
+        gHits->leakCache[(leakIndex + gHits->lastLeakIndex) %
+                         LEAKCACHESIZE].pos.x = globalCount->leakPositions[leakIndex].x;
+        gHits->leakCache[(leakIndex + gHits->lastLeakIndex) %
+                         LEAKCACHESIZE].pos.y = globalCount->leakPositions[leakIndex].y;
+        gHits->leakCache[(leakIndex + gHits->lastLeakIndex) %
+                         LEAKCACHESIZE].pos.z = globalCount->leakPositions[leakIndex].z;
+        gHits->leakCache[(leakIndex + gHits->lastLeakIndex) %
+                         LEAKCACHESIZE].dir.x = globalCount->leakDirections[leakIndex].x;
+        gHits->leakCache[(leakIndex + gHits->lastLeakIndex) %
+                         LEAKCACHESIZE].dir.y = globalCount->leakDirections[leakIndex].y;
+        gHits->leakCache[(leakIndex + gHits->lastLeakIndex) %
+                         LEAKCACHESIZE].dir.z = globalCount->leakDirections[leakIndex].z;
+    }
+    gHits->lastLeakIndex = (gHits->lastLeakIndex + globalCount->leakPositions.size()) % LEAKCACHESIZE;
+    gHits->leakCacheSize = std::min(LEAKCACHESIZE, gHits->leakCacheSize + globalCount->leakPositions.size());
+#endif // DEBUGLEAKPOS
+
     // Facets
 
     for(unsigned int i = 0; i < globalCount->facetHitCounters.size(); i++) {

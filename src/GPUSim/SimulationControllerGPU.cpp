@@ -45,6 +45,7 @@ int SimulationControllerGPU::LoadSimulation(flowgpu::Model* loaded_model, size_t
 
     try {
         model = loaded_model;
+        CloseSimulation();
         optixHandle = new flowgpu::SimulationOptiX(loaded_model, kernelDimensions);
     } catch (std::runtime_error& e) {
         std::cout << MF_TERMINAL_RED << "FATAL ERROR: " << e.what()
@@ -112,6 +113,44 @@ unsigned long long int SimulationControllerGPU::GetSimulationData(bool silent) {
 }
 
 void SimulationControllerGPU::IncreaseGlobalCounters(HostData* tempData){
+
+#ifdef DEBUGLEAKPOS
+
+    int nbPos = NBCOUNTS;
+    const uint32_t nbLeaksMax = 1028;
+    uint32_t curLeakPos = 0;
+    const int hitPositionsPerMol = std::min(30, NBCOUNTS);
+    for(int i=0;i<tempData->leakPositions.size();){
+        //std::cout << i/(NBCOUNTS) << " " << data.posOffset[i/(NBCOUNTS)] << " ";
+        bool begin = false;
+        if(curLeakPos >= nbLeaksMax) break;
+        for(int pos=0;pos<hitPositionsPerMol;pos++){
+            size_t index = i/(NBCOUNTS)*NBCOUNTS+pos;
+            if(tempData->leakPositions[index].x != 0
+            || tempData->leakPositions[index].y != 0
+            || tempData->leakPositions[index].z != 0) {
+                if(curLeakPos < nbLeaksMax) {
+                    this->globalCounter.leakPositions.emplace_back(tempData->leakPositions[index]);
+                    this->globalCounter.leakDirections.emplace_back(tempData->leakDirections[index]);
+                    curLeakPos++;
+                }
+                else{
+                    break;
+                }
+                /*if(!begin){
+                    std::cout <<"{";
+                    begin = true;
+                }
+                std::cout << "{" << tempData->leakPositions[index].x << "," << tempData->leakPositions[index].y << ","
+                          << tempData->leakPositions[index].z << "}";
+                if (pos != hitPositionsPerMol - 1) std::cout << ",";*/
+                //std::cout << data.positions[index].x << "," << data.positions[index].y << "," << data.positions[index].z <<"   ";
+            }
+        }
+        i+=nbPos; // jump to next molecule/thread
+        //if(begin) std::cout <<"},"<<std::endl;
+    }
+#endif
 
     //facet hit counters + miss
     for(unsigned int i = 0; i < data.facetHitCounters.size(); i++) {
@@ -222,6 +261,12 @@ void SimulationControllerGPU::Resize(){
 #ifdef DEBUGPOS
     data.positions.resize(NBCOUNTS*kernelDimensions.x*kernelDimensions.y);
     data.posOffset.resize(kernelDimensions.x*kernelDimensions.y);
+#endif
+    std::cout<<"Debugging leakpos size"<<std::endl;
+#ifdef DEBUGLEAKPOS
+    data.leakPositions.resize(NBCOUNTS*kernelDimensions.x*kernelDimensions.y);
+    data.leakDirections.resize(NBCOUNTS*kernelDimensions.x*kernelDimensions.y);
+    data.leakPosOffset.resize(kernelDimensions.x*kernelDimensions.y);
 #endif
 }
 
@@ -523,8 +568,10 @@ unsigned long long int SimulationControllerGPU::GetTotalHits(){
  */
 int SimulationControllerGPU::CloseSimulation() {
     try {
-        optixHandle->cleanup();
-        delete optixHandle;
+        if(optixHandle) {
+            delete optixHandle;
+            optixHandle = nullptr;
+        }
     } catch (std::runtime_error& e) {
         std::cout << MF_TERMINAL_RED << "FATAL ERROR: " << e.what()
                   << MF_TERMINAL_DEFAULT << std::endl;

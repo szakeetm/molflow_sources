@@ -517,7 +517,7 @@ namespace flowgpu {
 #endif
             optixLaunchParams.perThreadData.randBufferOffset[bufferIndex] = randOffset;
 
-            prd.inSystem = 0;
+            prd.inSystem = NEW_PARTICLE;
             prd.currentDepth = 0;
             setMolPRD(prd);
             return;
@@ -553,7 +553,7 @@ namespace flowgpu {
 #endif
 
             // also increase a nbBounce counter if there is need (e.g. recursion)
-            prd.inSystem = 1;
+            prd.inSystem = ACTIVE_PARTICLE;
 
             // 2. Relaunch particle
 
@@ -728,7 +728,7 @@ namespace flowgpu {
 #ifdef DEBUG
             printf("[%d] source and goal facet equal %d : %8.6f,%8.6f,%8.6f -> %8.6f,%8.6f,%8.6f : [%.5e .. %.5e] (tri)\n",(blockDim.x * blockIdx.x + threadIdx.x), prd.hitFacetId, ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z, optixGetRayTmin(),ray_t);
 #endif
-            prd.inSystem = 2;
+            prd.inSystem = SELF_INTERSECTION;
             //prd.hitPos = ray_orig;
             optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos = ray_orig;
             //optixLaunchParams.perThreadData.currentMoleculeData[fbIndex].postHitDir = ray_dir;
@@ -794,7 +794,7 @@ namespace flowgpu {
 #endif
             optixLaunchParams.perThreadData.randBufferOffset[bufferIndex] = randOffset;
 
-            prd.inSystem = 0;
+            prd.inSystem = NEW_PARTICLE;
             prd.currentDepth = 0;
             setMolPRD(prd);
             return;
@@ -832,7 +832,7 @@ namespace flowgpu {
 #endif
 
             // also increase a nbBounce counter if there is need (e.g. recursion)
-            prd.inSystem = 1;
+            prd.inSystem = ACTIVE_PARTICLE;
 
             // 2. Relaunch particle
 
@@ -970,7 +970,7 @@ optixLaunchParams.perThreadData.currentMoleculeData[fbIndex].postHitDir = prd.po
             prd.postHitDir = make_float3(-999.0);
             prd.hitFacetId = -1;
             prd.hitT = -999.0f;
-            prd.inSystem = 0;
+            prd.inSystem = NEW_PARTICLE;
         /*}
         else{
             prd.inSystem = max(3,prd.inSystem+1);

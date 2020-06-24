@@ -127,4 +127,45 @@ float3 getNewDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& poly,
     rayDir = float3(-1.0f,-1.0f,-1.0f) * rayDir;*/
 }
 
+//TODO: Only cosine for now
+static __forceinline__ __device__
+float3 getNewReverseDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& poly,
+                       const float* randFloat, unsigned int& randInd, unsigned int& randOffset)
+{
+    // generate ray direction
+    const float theta = acosf(sqrtf((double)randFloat[(unsigned int)(randInd + randOffset++)]));
+    const float phi = randFloat[(unsigned int)(randInd + randOffset++)] * 2.0f * CUDART_PI_F;
+
+    const float u = sinf(theta)*cosf(phi);
+    const float v = sinf(theta)*sinf(phi);
+    const float n = cosf(theta);
+    const float3 nU = poly.nU;
+    const float3 nV = poly.nV;
+    const float3 N = poly.N;
+
+    return u*nU + v*nV - n*N;
+}
+
+static __forceinline__ __device__
+float3 getNewReverseDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& poly,
+                       const double* randFloat, unsigned int& randInd, unsigned int& randOffset)
+{
+
+    // generate ray direction
+    const float theta = acos(sqrt(randFloat[(unsigned int)(randInd + randOffset++)]));
+
+    const float phi = randFloat[(unsigned int)(randInd + randOffset++)] * 2.0 * CUDART_PI;
+
+
+    const float u = sinf(theta)*cosf(phi);
+    const float v = sinf(theta)*sinf(phi);
+    const float n = cosf(theta);
+
+    const float3 nU = poly.nU;
+    const float3 nV = poly.nV;
+    const float3 N = poly.N; // reverse normal
+
+
+    return u*nU + v*nV - n*N;
+}
 #endif //MOLFLOW_PROJ_COMMONFUNCTIONS_CUH
