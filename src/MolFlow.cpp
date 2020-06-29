@@ -530,7 +530,9 @@ void MolFlow::PlaceComponents() {
 
 	togglePanel->SetCompBounds(showVolume, 5, 64, 60, 18);
 	togglePanel->SetCompBounds(showTexture, 70, 64, 60, 18);
-	togglePanel->SetCompBounds(showFilter, 135, 64, 60, 18);
+    togglePanel->SetCompBounds(showFacetId, 135, 64, 60, 18);
+
+    //togglePanel->SetCompBounds(showFilter, 135, 64, 60, 18);
 
 	togglePanel->SetCompBounds(viewerMoreButton, 5, 86, 55, 18);
 	togglePanel->SetCompBounds(showVertex, 70, 86, 60, 18);
@@ -2089,7 +2091,6 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	std::ostringstream temp;
 	temp << "PIPE" << L / R;
 	geom->UpdateName(temp.str().c_str());
-	ResetSimulation(false);
 
 	try {
 		geom->BuildPipe(L, R, 0, step);
@@ -2099,11 +2100,13 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 		worker.wp.halfLife = 1;
 		worker.wp.gasMass = 28;
 		worker.ResetMoments();
-	}
+        ResetSimulation(false);
+    }
 	catch (Error &e) {
 		GLMessageBox::Display((char *)e.what(), "Error building pipe", GLDLG_OK, GLDLG_ICONERROR);
 		geom->Clear();
-		return;
+        ResetSimulation(false);
+        return;
 	}
 	//worker.globalHitCache.globalHits.hit.nbDesorbed = 0; //Already done by ResetWorkerStats
 	//sprintf(tmp,"L|R %g",L/R);
@@ -2266,6 +2269,9 @@ void MolFlow::LoadConfig() {
 		f->ReadKeyword("showTexture"); f->ReadKeyword(":");
 		for (int i = 0; i < MAX_VIEWER; i++)
 			viewer[i]->showTexture = f->ReadInt();
+        f->ReadKeyword("showFacetId"); f->ReadKeyword(":");
+        for (int i = 0; i < MAX_VIEWER; i++)
+            viewer[i]->showFacetId = f->ReadInt();
 		f->ReadKeyword("showFilter"); f->ReadKeyword(":");
 		for (int i = 0; i < MAX_VIEWER; i++)
 			viewer[i]->showFilter = f->ReadInt();
@@ -2450,7 +2456,8 @@ void MolFlow::SaveConfig() {
 		WRITEI("showHits", showHit);
 		WRITEI("showVolume", showVolume);
 		WRITEI("showTexture", showTexture);
-		WRITEI("showFilter", showFilter);
+        WRITEI("showFacetId", showFacetId);
+        WRITEI("showFilter", showFilter);
 		WRITEI("showIndices", showIndex);
 		WRITEI("showVertices", showVertex);
 		WRITEI("showMode", showBack);

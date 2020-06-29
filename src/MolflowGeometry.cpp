@@ -420,7 +420,7 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 		v.camOffset.y = file->ReadDouble();
 		v.camOffset.z = file->ReadDouble();
 		v.performXY = file->ReadInt();
-
+		v.lightAngleOx = v.lightAngleOy = 0.0;
 		v.vLeft = file->ReadDouble();
 		v.vRight = file->ReadDouble();
 		v.vTop = file->ReadDouble();
@@ -789,7 +789,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 			v.camOffset.y = file->ReadDouble();
 			v.camOffset.z = file->ReadDouble();
 			v.performXY = file->ReadInt();
-
+			v.lightAngleOx = v.lightAngleOy = 0.0;
 			v.vLeft = file->ReadDouble();
 			v.vRight = file->ReadDouble();
 			v.vTop = file->ReadDouble();
@@ -1056,6 +1056,7 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
 		v.camAngleOy = file->ReadDouble();
 		v.camAngleOz = 0.0; //No support for Z angle in current SYN version
 		v.camDist = file->ReadDouble();
+		v.lightAngleOx = v.lightAngleOy = 0.0;
 		v.camOffset.x = file->ReadDouble();
 		v.camOffset.y = file->ReadDouble();
 		v.camOffset.z = file->ReadDouble();
@@ -2400,6 +2401,8 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 		newView.append_attribute("camAngleOy") = mApp->views[i].camAngleOy;
 		newView.append_attribute("camAngleOz") = mApp->views[i].camAngleOz;
 		newView.append_attribute("camDist") = mApp->views[i].camDist;
+		newView.append_attribute("lightAngleOx") = mApp->views[i].lightAngleOx;
+		newView.append_attribute("lightAngleOy") = mApp->views[i].lightAngleOy;
 		newView.append_attribute("camOffset.x") = mApp->views[i].camOffset.x;
 		newView.append_attribute("camOffset.y") = mApp->views[i].camOffset.y;
 		newView.append_attribute("camOffset.z") = mApp->views[i].camOffset.z;
@@ -2779,6 +2782,18 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 		else {
 			v.camAngleOz = 0.0; //Otherwise RoundAngle() routine hangs for unitialized value
 		}
+		if (newView.attribute("lightAngleOx")) {
+			v.lightAngleOx = newView.attribute("lightAngleOx").as_double();
+		}
+		else {
+			v.lightAngleOx = 0.0;
+		}
+		if (newView.attribute("lightAngleOy")) {
+			v.lightAngleOy = newView.attribute("lightAngleOy").as_double();
+		}
+		else {
+			v.lightAngleOy = 0.0;
+		}
 		v.camDist = newView.attribute("camDist").as_double();
 		v.camOffset.x = newView.attribute("camOffset.x").as_double();
 		v.camOffset.y = newView.attribute("camOffset.y").as_double();
@@ -3030,6 +3045,18 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 		}
 		else {
 			v.camAngleOz = 0.0; //Otherwise RoundAngle() routine hangs for unitialized value
+		}
+		if (newView.attribute("lightAngleOx")) {
+			v.lightAngleOx = newView.attribute("lightAngleOx").as_double();
+		}
+		else {
+			v.lightAngleOx = 0.0;
+		}
+		if (newView.attribute("lightAngleOy")) {
+			v.lightAngleOy = newView.attribute("lightAngleOy").as_double();
+		}
+		else {
+			v.lightAngleOy = 0.0;
 		}
 		v.camDist = newView.attribute("camDist").as_double();
 		v.camOffset.x = newView.attribute("camOffset.x").as_double();

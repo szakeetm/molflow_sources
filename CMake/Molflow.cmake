@@ -64,6 +64,16 @@ if(WITH_GPU)
     add_definitions(-DGPUCOMPABILITY)
 endif(WITH_GPU)
 
+if (OS_NAME STREQUAL "linux_fedora" )
+    add_definitions(
+            -D__LINUX_FEDORA
+    )
+elseif(OS_NAME STREQUAL "linux_debian")
+    add_definitions(
+            -D__LINUX_DEBIAN
+    )
+endif ()
+
 #disable generation of appname.manifest file
 #alternative: use /MANIFEST:EMBED
 if(MSVC)
@@ -110,24 +120,7 @@ IF(${OS_NAME} STREQUAL "linux_fedora")
             )
 ENDIF()
 
-#Copy our own libSDL2 to /lib
-IF(APPLE)
-    #    file(COPY
-    #	 ${LINK_DIR_2}/libSDL2-2.0.dylib
-    #	DESTINATION
-    #	${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY}/lib
-    #            )
-ENDIF()
-
-set(COPY_FILES ${COPY_FILES}
-        ${COPY_DIR}/updater_config_default_${OS_NAME}.xml
-        )
-
 file(COPY ${COPY_FILES}
         DESTINATION ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})
-
-file(RENAME
-        ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY}/updater_config_default_${OS_NAME}.xml
-        ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY}/updater_config.xml)
 
 message("COPIED: " ${COPY_FILES})

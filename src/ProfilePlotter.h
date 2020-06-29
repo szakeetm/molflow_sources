@@ -23,6 +23,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/GLWindow.h"
 #include "GLApp/GLChart/GLChartConst.h"
 #include <vector>
+#include <map>
+
 class GLChart;
 class GLLabel;
 class GLCombo;
@@ -50,22 +52,25 @@ public:
   // Implementation
   void ProcessMessage(GLComponent *src,int message) override;
   void SetBounds(int x,int y,int w,int h);
-  void addView(int facet);
+  int addView(int facet);
   std::vector<int> GetViews();
   void SetViews(const std::vector<int> &updatedViews);
   bool IsLogScaled();
   void SetLogScaled(bool logScale);
   void SetWorker(Worker *w);
+    std::map<int,GLColor> GetIDColorPairs() const;
 
 private:  
-  void remView(int facet);
+  int remView(int facet);
   void refreshViews();
   void plot();
+  void applyFacetHighlighting() const;
 
   Worker      *worker;
   GLButton    *dismissButton;
   GLChart     *chart;
   GLCombo     *profCombo;
+  GLTextField *selFacInput;
   GLLabel     *normLabel;
   GLLabel     *warningLabel;
   GLCombo     *normCombo;
@@ -80,10 +85,17 @@ private:
   GLToggle    *logYToggle;
   GLToggle    *correctForGas;
 
-  GLDataView  *views[MAX_VIEWS];
+    GLToggle    *colorToggle;
+    GLLabel    *fixedLineWidthText;
+    GLButton    *fixedLineWidthButton;
+    GLTextField    *fixedLineWidthField;
+    GLToggle    *useProfColToggle;
+
+
+    GLDataView  *views[MAX_VIEWS];
   int          nbView;
   float        lastUpdate;
-
+    std::map<int,GLColor> plottedFacets;
 };
 
 #endif /* _PROFILEPLOTTERH_ */

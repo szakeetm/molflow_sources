@@ -21,8 +21,7 @@ IF (WIN32)
     set(HEADER_DIR_7 ../../include/windows_only)
     set(HEADER_DIR_8 ../../include/windows_only/png)
 
-    set(LINK_DIR_1 ../../lib/win/${MY_BUILD_TYPE})
-    set(LINK_DIR_2 ../../lib_external/win/${MY_BUILD_TYPE})
+    set(LINK_DIR_1 ../../lib_external/win/${MY_BUILD_TYPE})
     set(DLL_DIR ../../lib_external/win/dll)
 ELSEIF(APPLE)
     # set stuff for mac os
@@ -103,15 +102,6 @@ set(SRC_FILES ${CPP_DIR_1}/FacetAdvParams.cpp
         ${CPP_DIR_1}/Viewer3DSettings.cpp
         )
 
-# set the path to the library folder
-
-if(MSVC)
-    link_directories(${LINK_DIR_1})
-    link_directories(
-            ${LINK_DIR_2}
-    )
-endif(MSVC)
-
 # Add executable to build.
 if(WIN32)
     add_executable(${PROJECT_NAME} WIN32 ${SRC_FILES})
@@ -119,7 +109,7 @@ else()
     add_executable(${PROJECT_NAME} ${SRC_FILES})
 endif()
 
-target_link_libraries(${PROJECT_NAME} simulator_shared)
+target_link_libraries(${PROJECT_NAME} PRIVATE simulator_shared)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_1}
@@ -159,11 +149,15 @@ if(MSVC)
         set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE ${LINK_FLAGS}")
     endif()
 
+
+    # set the path to the library folder
+    target_link_directories(${PROJECT_NAME} PRIVATE ${LINK_DIR_1})
+
     message(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
-    link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+    target_link_directories(${PROJECT_NAME} PRIVATE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
     find_package(OpenGL REQUIRED)
     # 1. link against external libs
-    target_link_libraries(${PROJECT_NAME}
+    target_link_libraries(${PROJECT_NAME} PRIVATE
             bzip2.lib
             #libcurl_a_x64.lib
             SDL2.lib
@@ -178,11 +172,11 @@ if(MSVC)
             shell32.lib
             ole32.lib)
     # 2. link against our own libs
-    target_link_libraries(${PROJECT_NAME} pugixml nativefiledialog)
+    target_link_libraries(${PROJECT_NAME} PRIVATE pugixml nativefiledialog)
 elseif(NOT MSVC)
     if(APPLE)
         #link to self-build sdl shared lib
-        target_link_libraries(${PROJECT_NAME} "-framework AppKit")
+        target_link_libraries(${PROJECT_NAME} PRIVATE "-framework AppKit")
     else()
         # Use the package PkgConfig to detect GTK+ headers/library files
         #[[FIND_PACKAGE(PkgConfig REQUIRED)
@@ -220,18 +214,18 @@ elseif(NOT MSVC)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
 
-    target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES})
-    target_link_libraries(${PROJECT_NAME} ${SDL2_LIBRARIES})
-    target_link_libraries(${PROJECT_NAME} ${PNG_LIBRARIES})
-    target_link_libraries(${PROJECT_NAME} ${GSL_LIBRARIES})
-    target_link_libraries(${PROJECT_NAME} ${CURL_LIBRARIES})
-    target_link_libraries(${PROJECT_NAME} Threads::Threads)
-    target_link_libraries(${PROJECT_NAME} ${X11_LIBRARIES})
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${OPENGL_LIBRARIES})
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${SDL2_LIBRARIES})
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${PNG_LIBRARIES})
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${GSL_LIBRARIES})
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${CURL_LIBRARIES})
+    target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads)
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${X11_LIBRARIES})
 
     #for shared memory
     find_library(LIBRT rt)
     if(LIBRT)
-        target_link_libraries(${PROJECT_NAME} ${LIBRT})
+        target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBRT})
     endif()
 
     # Your-external "mylib", add GLOBAL if the imported library is located in directories above the current.
@@ -247,17 +241,17 @@ elseif(NOT MSVC)
     else()
         set_target_properties( libzip PROPERTIES IMPORTED_LOCATION ${ABS_LINK_DIR_1}/libzip_gcc.a )
     endif()
-    target_link_libraries(${PROJECT_NAME} libzip) # from ./lib/
+    target_link_libraries(${PROJECT_NAME} PRIVATE libzip) # from ./lib/
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         target_link_libraries(${PROJECT_NAME} c++fs)
     elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
         #don´t add anything for filesystem
     else()
-        target_link_libraries(${PROJECT_NAME} stdc++fs)
+        target_link_libraries(${PROJECT_NAME} PRIVATE stdc++fs)
     endif()
 
-    target_link_libraries(${PROJECT_NAME} pugixml sdl_savepng truncatedgaussian)
-    target_link_libraries(${PROJECT_NAME} nativefiledialog)
+    target_link_libraries(${PROJECT_NAME} PRIVATE pugixml sdl_savepng truncatedgaussian)
+    target_link_libraries(${PROJECT_NAME} PRIVATE nativefiledialog)
 
 endif()

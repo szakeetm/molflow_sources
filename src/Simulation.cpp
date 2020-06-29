@@ -248,8 +248,8 @@ void Simulation::ResetTmpCounters() {
         h.Reset();
     }
 
-    for (int j = 0; j < sh.nbSuper; j++) {
-        for (auto& f : structures[j].facets) {
+    for (auto& structure : structures) {
+        for (auto& f : structure.facets) {
             f.ResetCounter();
             f.isHit = false;
 
