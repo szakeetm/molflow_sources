@@ -592,8 +592,8 @@ namespace flowgpu {
         state.pipelineCompileOptions = {};
         state.pipelineCompileOptions.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
         state.pipelineCompileOptions.usesMotionBlur     = false;
-        state.pipelineCompileOptions.numPayloadValues   = 5; // values that get send as PerRayData
-        state.pipelineCompileOptions.numAttributeValues = 5; // ret values e.g. by optixReportIntersection
+        state.pipelineCompileOptions.numPayloadValues   = 6; // values that get send as PerRayData
+        state.pipelineCompileOptions.numAttributeValues = 6; // ret values e.g. by optixReportIntersection
         state.pipelineCompileOptions.exceptionFlags     = OPTIX_EXCEPTION_FLAG_NONE;
         state.pipelineCompileOptions.pipelineLaunchParamsVariableName = "optixLaunchParams";
 
@@ -1157,11 +1157,23 @@ namespace flowgpu {
         // resize our cuda frame buffer
         // TODO: one counter per thread is a problem for memory
         sim_memory.moleculeBuffer.resize(newSize.x * newSize.y * sizeof(MolPRD));
+        sim_memory.moleculeBuffer.initDeviceData(newSize.x * newSize.y * sizeof(MolPRD));
         sim_memory.randBuffer.resize(nbRand*newSize.x*newSize.y*sizeof(RN_T));
         sim_memory.randOffsetBuffer.resize(newSize.x*newSize.y*sizeof(uint32_t));
         facet_memory.hitCounterBuffer.resize(model->nbFacets_total * CORESPERSM * WARPSCHEDULERS * sizeof(CuFacetHitCounter));
         facet_memory.missCounterBuffer.resize(sizeof(uint32_t));
         //facet_memory.textureBuffer.resize(model->textures.size() * sizeof(TextureCell));
+// Texture
+        if(!model->textures.empty()){
+            facet_memory.textureBuffer.alloc_and_upload(model->facetTex);
+            facet_memory.texelBuffer.alloc_and_upload(model->textures);
+            facet_memory.texIncBuffer.alloc_and_upload(model->texInc);
+        }
+
+        // Profile
+        if(!model->profiles.empty()){
+            facet_memory.profileBuffer.alloc_and_upload(model->profiles);
+        }
 
         // update the launch parameters that we'll pass to the optix
         // launch:
@@ -1185,18 +1197,6 @@ namespace flowgpu {
         state.launchParams.randomNumbers = (RN_T*)sim_memory.randBuffer.d_pointer();
         state.launchParams.hitCounter = (CuFacetHitCounter*) facet_memory.hitCounterBuffer.d_pointer();
         state.launchParams.sharedData.missCounter = (uint32_t*) facet_memory.missCounterBuffer.d_pointer();
-
-        // Texture
-        if(!model->textures.empty()){
-            facet_memory.textureBuffer.alloc_and_upload(model->facetTex);
-            facet_memory.texelBuffer.alloc_and_upload(model->textures);
-            facet_memory.texIncBuffer.alloc_and_upload(model->texInc);
-        }
-
-        // Profile
-        if(!model->profiles.empty()){
-            facet_memory.profileBuffer.alloc_and_upload(model->profiles);
-        }
 
         if(!facet_memory.textureBuffer.isNullptr())
             state.launchParams.sharedData.facetTextures = (flowgpu::FacetTexture*) facet_memory.textureBuffer.d_pointer();

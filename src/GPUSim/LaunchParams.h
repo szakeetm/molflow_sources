@@ -97,7 +97,9 @@ namespace flowgpu {
         // molecule data
         float velocity;
         int currentDepth;
-        //int nbBounces; //TODO: Check if info is needed
+#ifdef GPUNBOUNCE
+        uint32_t nbBounces; //TODO: Check if info is needed
+#endif
         float orientationRatio; // for low flux mode
 
         // post hit data

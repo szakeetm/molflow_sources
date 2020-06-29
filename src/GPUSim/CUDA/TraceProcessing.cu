@@ -71,6 +71,9 @@ namespace flowgpu {
         prd.inSystem = optixGetPayload_2();
         prd.hitFacetId = optixGetPayload_3();
         prd.hitT = int_as_float( optixGetPayload_4() );
+#ifdef GPUNBOUNCE
+        prd.nbBounces = int_as_float( optixGetPayload_5() );
+#endif
         return prd;
     }
 
@@ -81,6 +84,9 @@ namespace flowgpu {
         optixSetPayload_2( prd.inSystem );
         optixSetPayload_3( prd.hitFacetId );
         optixSetPayload_4( float_as_int(prd.hitT) );
+#ifdef GPUNBOUNCE
+        optixSetPayload_5( float_as_int(prd.nbBounces) );
+#endif
     }
 
     __device__
@@ -313,7 +319,7 @@ namespace flowgpu {
     // increase texture counters for reflections
     // --------------------------------------
     static __forceinline__ __device__
-    unsigned int RecordTransparentTexture(const flowgpu::Polygon& poly, MolPRD& hitData, const float3& rayOrigin, const float3& rayDir){
+    void RecordTransparentTexture(const flowgpu::Polygon& poly, MolPRD& hitData, const float3& rayOrigin, const float3& rayDir){
 
         const float3 b = rayOrigin - poly.O;
 
@@ -546,7 +552,7 @@ if(prd.inSystem == 4)
 
 #endif
             if(prd.inSystem == ACTIVE_BACK_HIT)
-                prd.inSystem == SELF_BACK_HIT;
+                prd.inSystem = SELF_BACK_HIT;
             else
                 prd.inSystem = SELF_INTERSECTION;
             //prd.hitPos = ray_orig;
@@ -634,6 +640,12 @@ if(prd.inSystem == 4)
 
             prd.inSystem = NEW_PARTICLE;
             prd.currentDepth = 0;
+#ifdef GPUNBOUNCE
+            if(poly.parentIndex == 1)
+                printf("[%u][%u == %u][%u] Absorb hit: %lf , %lf , %lf -> %lf , %lf , %lf => %lf , %lf , %lf\n",
+                        bufferIndex,poly.parentIndex,prd.hitFacetId,prd.nbBounces,ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z,prd.hitPos.x,prd.hitPos.y,prd.hitPos.z);
+            optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].nbBounces = prd.nbBounces = 0;
+#endif
             setMolPRD(prd);
             return;
         }
@@ -646,23 +658,32 @@ if(prd.inSystem == 4)
         }
         // Process a bounce/reflection
         else{
+
             //--------------------------
             //-------- REFLECTION ------
             //--------------------------
 #ifdef BOUND_CHECK
             if(counterIdx < 0 || counterIdx >= optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS){printf("facIndex %u >= %u is out of bounds\n", counterIdx, optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS);}
 #endif
-
             // 1. Increment counters
             increaseHitCounterBounce(optixLaunchParams.hitCounter[counterIdx], hitEquiv, ortVelocity, velFactor, prd.velocity);
 
 #ifdef WITH_TEX
-            unsigned int texelIndex = 1e10;
-            if (poly.texProps.textureFlags & flowgpu::TEXTURE_FLAGS::countRefl)
+            unsigned int texelIndex = 1e8;
+            if (poly.texProps.textureFlags & flowgpu::TEXTURE_FLAGS::countRefl){
                 texelIndex = RecordBounceTexture(poly, prd, prd.hitPos, ray_dir);
+
+/*#if defined(GPUNBOUNCE)
+                optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].nbBounces++;
+                prd.nbBounces++;
+            if(bufferIndex == optixLaunchParams.simConstants.size.x - 1)
+            printf("[%d] hit pos %lf , %lf , %lf -> %d [%d]\n",bufferIndex,prd.hitPos.x,prd.hitPos.y,prd.hitPos.z,poly.parentIndex,texelIndex);
+#endif*/
+}
+
 #endif
 #ifdef WITH_PROF
-            unsigned int profileIndex = 1e10;
+            unsigned int profileIndex = 1e8;
             //printf("BOUNCE? %d != %d == %d\n",(int)poly.profProps.profileType, (int)flowgpu::PROFILE_FLAGS::noProfile,(int)poly.profProps.profileType != flowgpu::PROFILE_FLAGS::noProfile);
             if (poly.profProps.profileType != flowgpu::PROFILE_FLAGS::noProfile){
                 profileIndex = RecordBounceProfile(poly, prd, prd.hitPos, ray_dir);
@@ -704,6 +725,12 @@ if(prd.inSystem == 4)
                 prd.postHitDir = getNewReverseDirection(prd, poly, randFloat, randInd, randOffset);
                 prd.inSystem = ACTIVE_BACK_HIT;
             }
+
+/*#if defined(DEBUG)
+        if(bufferIndex == optixLaunchParams.simConstants.size.x - 1)
+                        printf("[%d] hit pos %lf , %lf , %lf -> %lf , %lf , %lf -> %d\n",bufferIndex,prd.hitPos.x,prd.hitPos.y,prd.hitPos.z,prd.postHitDir.x,prd.postHitDir.y,prd.postHitDir.z,poly.parentIndex);
+//printf("[%d] hit pos %lf , %lf , %lf -> %lf , %lf , %lf -> %d\n",bufferIndex,prd.hitPos.x,prd.hitPos.y,prd.hitPos.z,prd.hitPos.x+prd.postHitDir.x,prd.hitPos.y+prd.postHitDir.y,prd.hitPos.z+prd.postHitDir.z,poly.parentIndex);
+#endif*/
 
             // 3. Increment counters for post bounce / outgoing particles
             ortVelocity = prd.velocity*fabsf(dot(prd.postHitDir, poly.N));

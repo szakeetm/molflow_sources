@@ -113,7 +113,7 @@ namespace flowgpu {
 
 #ifdef BOUND_CHECK
         if(poly.indexOffset < 0 || poly.indexOffset+poly.nbVertices >= optixLaunchParams.simConstants.nbVertices){
-            printf("[%d] indexOffset %u -- %u >= %u is out of bounds\n", poly.indexOffset, poly.indexOffset+poly.nbVertices, optixLaunchParams.simConstants.nbVertices);
+            printf("[%d] indexOffset %u -- %u >= %u is out of bounds\n", poly.parentIndex, poly.indexOffset, poly.indexOffset+poly.nbVertices, optixLaunchParams.simConstants.nbVertices);
         }
 #endif
         for (int j = 0; j < nbSizeMinusOne; j++) {
@@ -185,7 +185,7 @@ namespace flowgpu {
 #ifdef BOUND_CHECK
             if(facIndex < 0 || facIndex >= optixLaunchParams.simConstants.nbFacets){
                 printf("facIndex %u >= %u is out of bounds\n", facIndex, optixLaunchParams.simConstants.nbFacets);
-                printf("found %u with last prob %4.2f > facetRnd %4.2f \n", (rayGenData->facetProbabilities[facIndex].y >= facetRnd), optixLaunchParams.simConstants.nbFacets,
+                printf("[%d] found %u with last prob %4.2f > facetRnd %4.2f \n", (rayGenData->facetProbabilities[facIndex].y >= facetRnd), optixLaunchParams.simConstants.nbFacets,
                        rayGenData->facetProbabilities[facIndex].y,facetRnd);
             }
 #endif
@@ -207,7 +207,7 @@ namespace flowgpu {
 #ifdef BOUND_CHECK
         if(facIndex < 0 || facIndex >= optixLaunchParams.simConstants.nbFacets){
             printf("Post facIndex %u >= %u is out of bounds\n", facIndex, optixLaunchParams.simConstants.nbFacets);
-            printf("Post found %u with last prob %4.2f > facetRnd %4.2f \n", found, optixLaunchParams.simConstants.nbFacets,
+            printf("[%d] Post found %u with last prob %4.2f > facetRnd %4.2f \n", found, optixLaunchParams.simConstants.nbFacets,
                    rayGenData->facetProbabilities[facIndex].y,facetRnd);
 
         }
@@ -549,6 +549,9 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
         hitData.hitT = -999.0f;
         hitData.velocity = -999.0f;
         hitData.currentDepth = 0;
+#ifdef GPUNBOUNCE
+        hitData.nbBounces = 0;
+#endif
         hitData.inSystem = NEW_PARTICLE;
         hitData.orientationRatio = 1.0f;
 
@@ -617,6 +620,10 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
 
         MolPRD hitData;
 
+/*#ifdef DEBUG
+        if(bufferIndex == optixLaunchParams.simConstants.size.x - 1)
+            printf("[%d] has launch status -> %d\n",bufferIndex,optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem);
+#endif*/
         switch (optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem) {
             case 3:
             {
@@ -649,6 +656,10 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
                 initMoleculePostSelfIntersection(bufferIndex, hitData, rayDir, rayOrigin);
             }
         }
+/*#ifdef DEBUG
+        if(bufferIndex == optixLaunchParams.simConstants.size.x - 1)
+            printf("[%d] has new launch status -> %d\n",bufferIndex,hitData.inSystem);
+#endif*/
 
 #ifdef DEBUGPOS
         const unsigned int posIndexOffset = optixLaunchParams.perThreadData.posOffsetBuffer_debug[bufferIndex]++;
@@ -708,13 +719,18 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
                reinterpret_cast<unsigned int&>(hitData.inSystem),
             /* Can't use float_as_int() because it returns rvalue but payload requires a lvalue */
                reinterpret_cast<unsigned int&>(hitData.hitFacetId),
-               reinterpret_cast<unsigned int&>(hitData.hitT));
+               reinterpret_cast<unsigned int&>(hitData.hitT),
+                   reinterpret_cast<unsigned int&>(hitData.nbBounces)
+        );
 
         //hitData.hitPos = hitData.hitOri + hitData.hitT * hitData.hitDir;
 
         // and write to thread buffer ...
         optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].velocity = hitData.velocity;
         optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].currentDepth = hitData.currentDepth;
+#ifdef GPUNBOUNCE
+        optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].nbBounces = hitData.nbBounces;
+#endif
         optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem = hitData.inSystem;
         optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitFacetId = hitData.hitFacetId;
         optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitT = hitData.hitT;

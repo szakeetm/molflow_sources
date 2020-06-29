@@ -301,7 +301,7 @@ void SimulationControllerGPU::PrintDataForParent()
     for(auto& mesh : model->triangle_meshes){
         int lastTexture = -1;
         for(auto& facet : mesh->poly){
-            if((facet.texProps.textureFlags & flowgpu::TEXTURE_FLAGS::countRefl) && (lastTexture < (int)facet.parentIndex)){
+            if((facet.texProps.textureFlags != flowgpu::TEXTURE_FLAGS::noTexture) && (lastTexture < (int)facet.parentIndex)){
                 std::cout << "Texture for #"<<facet.parentIndex << std::endl << " ";
                 unsigned int total = 0;
                 unsigned int width = model->facetTex[facet.texProps.textureOffset].texWidth;

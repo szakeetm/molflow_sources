@@ -19,9 +19,6 @@
 #define NB_RAND 8 // for triangle, make it a factor of 8
 
 #define NB_INPOLYCHECKS 0 //0=always use middle point
-#ifdef DEBUG
-#define BOUND_CHECK
-#endif
 
 #ifdef DEBUGCOUNT
 //#define NCOUNTBINS 100

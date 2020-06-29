@@ -437,6 +437,21 @@ namespace flowgpu {
                 } // one more profile
             }
         }
+
+        for(auto& mesh : model->triangle_meshes){
+            uint32_t triInd = 0;
+            for(auto& triangle : mesh->poly){
+                if(triangle.facProps.stickingFactor > 0){
+                    std::cout << triangle.parentIndex << " | " << triInd << " => ";
+                    std::cout << mesh->vertices3d[mesh->indices[triInd].x].x << " , " << mesh->vertices3d[mesh->indices[triInd].x].y << " , " << mesh->vertices3d[mesh->indices[triInd].x].z << " | ";
+                    std::cout << mesh->vertices3d[mesh->indices[triInd].y].x << " , " << mesh->vertices3d[mesh->indices[triInd].y].y << " , " << mesh->vertices3d[mesh->indices[triInd].y].z << " | ";
+                    std::cout << mesh->vertices3d[mesh->indices[triInd].z].x << " , " << mesh->vertices3d[mesh->indices[triInd].z].y << " , " << mesh->vertices3d[mesh->indices[triInd].z].z << " | ";
+                    std::cout << std::endl;
+                }
+                triInd++;
+            }
+        }
+
         return 0;
     }
 
