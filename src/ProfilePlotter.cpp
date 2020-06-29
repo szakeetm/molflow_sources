@@ -138,7 +138,7 @@ ProfilePlotter::ProfilePlotter() :GLWindow() , views{}{
     fixedLineWidthField->SetEditable(true);
     Add(fixedLineWidthField);
 
-    useProfColToggle = new GLToggle(0, "Use profile colors for viewer");
+    useProfColToggle = new GLToggle(0, "Identify profiles in geometry");
     Add(useProfColToggle);
 
 	warningLabel = new GLLabel("Profiles can only be used on rectangular facets.");
