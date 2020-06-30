@@ -348,7 +348,7 @@ void ProfilePlotter::plot() {
 	}
 
 	// Plot
-	for (int i = 0; i < 1000; i++) {
+	for (i = 0; i < 1000; i++) {
 		double x = (double)i;
 		double y;
 		var->value = x;
@@ -578,6 +578,7 @@ void ProfilePlotter::Reset() {
 	nbView = 0;
 
 	plottedFacets.clear();
+    applyFacetHighlighting();
 }
 
 /**

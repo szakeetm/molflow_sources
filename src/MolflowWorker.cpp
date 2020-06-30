@@ -821,6 +821,10 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 throw Error(err.str().c_str());
             }
 
+            // Resetting some menus
+            if(mApp->profilePlotter) mApp->profilePlotter->Reset(); //Reset colored selections
+            //mApp->RefreshPlotterCombos()
+
             progressDlg->SetMessage("Building geometry...");
             xml_node rootNode = loadXML;
             if(appVersionId >= 2680){
