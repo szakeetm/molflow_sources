@@ -30,6 +30,9 @@
 #define VLOW (-0.2f)
 #define VHIGH 1.2f
 #endif
+#ifdef DEBUGPOS
+#define NBPOSCOUNTS 128
+#endif
 #ifdef DEBUGLEAKPOS
 #define NBCOUNTS 3
 #endif

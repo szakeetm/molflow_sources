@@ -86,7 +86,9 @@ void GeometryViewer::SetBounds(int x, int y, int width, int height) {
 * \brief Draws Lines and Hits into 3D area via OpenGL.
 */
 void GeometryViewer::DrawLinesAndHits() {
-
+#ifdef DEBUG
+    size_t nbEnd = 0;
+#endif
 	// Lines
 	if (showLine && mApp->worker.globalHitCache.hitCacheSize) {
 
@@ -158,6 +160,18 @@ void GeometryViewer::DrawLinesAndHits() {
 				if (mApp->worker.globalHitCache.hitCache[count].type == HIT_LAST) { //pen up at cache refresh border
 									glEnd();
 									count++;
+#ifdef DEBUG
+									nbEnd++;
+                    if (nbEnd%3==0) { //whitebg
+                        glColor3f(0.5f, 1.0f, 0.5f);
+                    }
+                    else if (nbEnd%3==1) { //whitebg
+                        glColor3f(1.0f, 0.5f, 0.5f);
+                    }
+                    else if (nbEnd%3==2) { //whitebg
+                        glColor3f(0.5f, 0.5f, 1.0f);
+                    }
+#endif
 									glBegin(GL_LINE_STRIP);
 				}
 				else {

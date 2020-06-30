@@ -662,12 +662,14 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
 #endif*/
 
 #ifdef DEBUGPOS
+    if(bufferIndex==0){
         const unsigned int posIndexOffset = optixLaunchParams.perThreadData.posOffsetBuffer_debug[bufferIndex]++;
-        if(posIndexOffset<NBCOUNTS){
-            const unsigned int posIndex = bufferIndex*NBCOUNTS+posIndexOffset;
+        if(posIndexOffset<NBPOSCOUNTS){
+            const unsigned int posIndex = bufferIndex*NBPOSCOUNTS+posIndexOffset;
             //printf("[%d] my pos is %d\n", bufferIndex, posIndex);
             optixLaunchParams.perThreadData.positionsBuffer_debug[posIndex] = rayOrigin;
         }
+    }
 #endif
 
 
@@ -685,7 +687,7 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
         }
 #endif
             //do not offset a transparent hit
-            if(optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem != 3){
+            if(optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem != TRANSPARENT_HIT){
                 float3 facNormal = rayGenData->poly[facIndex].N;
                 if(optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem == ACTIVE_BACK_HIT
                 || optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem == SELF_BACK_HIT)
@@ -729,6 +731,10 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
         optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].velocity = hitData.velocity;
         optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].currentDepth = hitData.currentDepth;
 #ifdef GPUNBOUNCE
+#ifdef DEBUG
+        if(bufferIndex == optixLaunchParams.simConstants.size.x - 1 && (hitData.nbBounces % (int)1e4 == 1e4 - 1))
+            printf("[%d] has new launch status -> %d and bounces %d / %d\n",bufferIndex,hitData.inSystem,optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].nbBounces,hitData.nbBounces);
+#endif
         optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].nbBounces = hitData.nbBounces;
 #endif
         optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem = hitData.inSystem;

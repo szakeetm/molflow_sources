@@ -23,9 +23,10 @@ SimulationControllerGPU::~SimulationControllerGPU(){
     if(optixHandle){
         CloseSimulation();
     }
-    if(model){
+    /*if(model){
         delete model;
-    }
+    }*/
+    // model is deleted from SimulationGPU
 }
 
 
@@ -115,40 +116,45 @@ unsigned long long int SimulationControllerGPU::GetSimulationData(bool silent) {
 void SimulationControllerGPU::IncreaseGlobalCounters(HostData* tempData){
 
 #ifdef DEBUGLEAKPOS
-
-    int nbPos = NBCOUNTS;
-    const uint32_t nbLeaksMax = 1028;
-    uint32_t curLeakPos = 0;
-    const int hitPositionsPerMol = std::min(30, NBCOUNTS);
-    for(int i=0;i<tempData->leakPositions.size();){
-        //std::cout << i/(NBCOUNTS) << " " << data.posOffset[i/(NBCOUNTS)] << " ";
-        bool begin = false;
-        if(curLeakPos >= nbLeaksMax) break;
-        for(int pos=0;pos<hitPositionsPerMol;pos++){
-            size_t index = i/(NBCOUNTS)*NBCOUNTS+pos;
-            if(tempData->leakPositions[index].x != 0
-            || tempData->leakPositions[index].y != 0
-            || tempData->leakPositions[index].z != 0) {
-                if(curLeakPos < nbLeaksMax) {
-                    this->globalCounter.leakPositions.emplace_back(tempData->leakPositions[index]);
-                    this->globalCounter.leakDirections.emplace_back(tempData->leakDirections[index]);
-                    curLeakPos++;
+    {
+        int nbPos = NBCOUNTS;
+        const uint32_t nbLeaksMax = 1024;
+        uint32_t curLeakPos = 0;
+        const int hitPositionsPerMol = std::min(30, NBCOUNTS);
+        for (int i = 0; i < tempData->leakPositions.size();) {
+            bool begin = false;
+            if (curLeakPos >= nbLeaksMax) break;
+            for (int pos = 0; pos < hitPositionsPerMol; pos++) {
+                size_t index = i / (NBCOUNTS) * NBCOUNTS + pos;
+                if (tempData->leakPositions[index].x != 0
+                    || tempData->leakPositions[index].y != 0
+                    || tempData->leakPositions[index].z != 0) {
+                    if (curLeakPos < nbLeaksMax) {
+                        this->globalCounter.leakPositions.emplace_back(tempData->leakPositions[index]);
+                        this->globalCounter.leakDirections.emplace_back(tempData->leakDirections[index]);
+                        curLeakPos++;
+                    } else {
+                        break;
+                    }
                 }
-                else{
-                    break;
-                }
-                /*if(!begin){
-                    std::cout <<"{";
-                    begin = true;
-                }
-                std::cout << "{" << tempData->leakPositions[index].x << "," << tempData->leakPositions[index].y << ","
-                          << tempData->leakPositions[index].z << "}";
-                if (pos != hitPositionsPerMol - 1) std::cout << ",";*/
-                //std::cout << data.positions[index].x << "," << data.positions[index].y << "," << data.positions[index].z <<"   ";
             }
+            i += nbPos; // jump to next molecule/thread
         }
-        i+=nbPos; // jump to next molecule/thread
-        //if(begin) std::cout <<"},"<<std::endl;
+    }
+#endif
+
+#ifdef DEBUGPOS
+
+    {
+        uint32_t curPos = 0;
+        for (auto& pos : tempData->positions){
+            if(tempData->positions[curPos].x != 0
+               || tempData->positions[curPos].y != 0
+               || tempData->positions[curPos].z != 0) {
+                    this->globalCounter.positions.emplace_back(tempData->positions[curPos]);
+            }
+            curPos++;
+        }
     }
 #endif
 
@@ -221,14 +227,28 @@ void SimulationControllerGPU::IncreaseGlobalCounters(HostData* tempData){
 }
 
 void SimulationControllerGPU::Resize(){
+    data.facetHitCounters.clear();
+    data.texels.clear();
+    data.profileSlices.clear();
+    data.leakCounter.clear();
+
     //data.hit.resize(kernelDimensions.x*kernelDimensions.y);
     data.facetHitCounters.resize(model->nbFacets_total * CORESPERSM * WARPSCHEDULERS);
     data.texels.resize(model->textures.size());
     data.profileSlices.resize(model->profiles.size());
     data.leakCounter.resize(1);
 
+    globalCounter.facetHitCounters.clear();
+    globalCounter.leakCounter.clear();
+    globalCounter.textures.clear();
+    globalCounter.profiles.clear();
+    globalCounter.positions.clear();
+    globalCounter.posOffset.clear();
+
     globalCounter.facetHitCounters.resize(model->nbFacets_total);
     globalCounter.leakCounter.resize(1);
+
+
     for(auto& mesh : model->triangle_meshes) {
         int lastTexture = -1;
         int lastProfile = -1;
@@ -253,17 +273,25 @@ void SimulationControllerGPU::Resize(){
     }
 
 #ifdef DEBUGCOUNT
+    data.detCounter.clear();
+    data.uCounter.clear();
+    data.vCounter.clear();
     data.detCounter.resize(NCOUNTBINS);
     data.uCounter.resize(NCOUNTBINS);
     data.vCounter.resize(NCOUNTBINS);
 #endif
 
 #ifdef DEBUGPOS
-    data.positions.resize(NBCOUNTS*kernelDimensions.x*kernelDimensions.y);
-    data.posOffset.resize(kernelDimensions.x*kernelDimensions.y);
+    data.positions.clear();
+    data.posOffset.clear();
+    data.positions.resize(NBPOSCOUNTS*1);
+    data.posOffset.resize(1);
 #endif
-    std::cout<<"Debugging leakpos size"<<std::endl;
+
 #ifdef DEBUGLEAKPOS
+    data.leakPositions.clear();
+    data.leakDirections.clear();
+    data.leakPosOffset.clear();
     data.leakPositions.resize(NBCOUNTS*kernelDimensions.x*kernelDimensions.y);
     data.leakDirections.resize(NBCOUNTS*kernelDimensions.x*kernelDimensions.y);
     data.leakPosOffset.resize(kernelDimensions.x*kernelDimensions.y);
@@ -346,14 +374,14 @@ void SimulationControllerGPU::PrintData()
 
 #ifdef DEBUGPOS
 
-    int nbPos = NBCOUNTS;
+    int nbPos = NBPOSCOUNTS;
 
     const int hitPositionsPerMol = 30;
     for(int i=0;i<data.positions.size();){
         //std::cout << i/(NBCOUNTS) << " " << data.posOffset[i/(NBCOUNTS)] << " ";
         std::cout <<"{";
         for(int pos=0;pos<hitPositionsPerMol;pos++){
-            size_t index = i/(NBCOUNTS)*NBCOUNTS+pos;
+            size_t index = i/(NBPOSCOUNTS)*NBPOSCOUNTS+pos;
             std::cout <<"{"<<data.positions[index].x << "," << data.positions[index].y << "," << data.positions[index].z <<"}";
             if(pos != hitPositionsPerMol-1) std::cout <<",";
             //std::cout << data.positions[index].x << "," << data.positions[index].y << "," << data.positions[index].z <<"   ";
@@ -442,14 +470,14 @@ void SimulationControllerGPU::WriteDataToFile(std::string fileName)
         std::ofstream posFile;
         posFile.open ("debug_positions.txt");
 
-        int nbPos = NBCOUNTS;
+        int nbPos = NBPOSCOUNTS;
 
         const int hitPositionsPerMol = 30;
         for(int i=0;i<data.positions.size();){
             //posFile << i/(NBCOUNTS) << " " << data.posOffset[i/(NBCOUNTS)] << " ";
             posFile <<"{";
             for(int pos=0;pos<hitPositionsPerMol;pos++){
-                size_t index = i/(NBCOUNTS)*NBCOUNTS+pos;
+                size_t index = i/(nbPos)*nbPos+pos;
                 posFile <<"{"<<data.positions[index].x << "," << data.positions[index].y << "," << data.positions[index].z <<"}";
                 if(pos != hitPositionsPerMol-1) posFile <<",";
             }

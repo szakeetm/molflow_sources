@@ -1011,10 +1011,10 @@ namespace flowgpu {
         delete[] vVal;
 #endif
 #ifdef DEBUGPOS
-        float3 *pos = new float3[NBCOUNTS*state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y]();
-        uint32_t *offset = new uint32_t[state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y]();
-        memory_debug.posBuffer.upload(pos,NBCOUNTS*state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y*1);
-        memory_debug.posOffsetBuffer.upload(offset,state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y*1);
+        float3 *pos = new float3[NBPOSCOUNTS*1]();
+        uint32_t*offset = new uint32_t[1]();
+        memory_debug.posBuffer.upload(pos,NBPOSCOUNTS*1);
+        memory_debug.posOffsetBuffer.upload(offset,1);
 
         delete[] pos;
         delete[] offset;
@@ -1218,8 +1218,8 @@ namespace flowgpu {
 #endif
 
 #ifdef DEBUGPOS
-        memory_debug.posBuffer.resize(newSize.x * newSize.y*NBCOUNTS*sizeof(float3));
-        memory_debug.posOffsetBuffer.resize(newSize.x * newSize.y*sizeof(uint32_t));
+        memory_debug.posBuffer.resize(1*NBPOSCOUNTS*sizeof(float3));
+        memory_debug.posOffsetBuffer.resize(1*sizeof(uint32_t));
         state.launchParams.perThreadData.positionsBuffer_debug = (float3*)memory_debug.posBuffer.d_pointer();
         state.launchParams.perThreadData.posOffsetBuffer_debug = (uint32_t*)memory_debug.posOffsetBuffer.d_pointer();
 #endif
@@ -1264,8 +1264,8 @@ namespace flowgpu {
 #endif
 
 #ifdef DEBUGPOS
-        memory_debug.posBuffer.resize(newSize.x * newSize.y*NBCOUNTS*sizeof(float3));
-        memory_debug.posOffsetBuffer.resize(newSize.x * newSize.y*sizeof(uint32_t));
+        memory_debug.posBuffer.resize(1*NBPOSCOUNTS*sizeof(float3));
+        memory_debug.posOffsetBuffer.resize(1*sizeof(uint32_t));
 #endif
 
 #ifdef DEBUGLEAKPOS
@@ -1301,8 +1301,8 @@ namespace flowgpu {
 #endif
 
 #ifdef DEBUGPOS
-        memory_debug.posBuffer.download(hostData->positions.data(), NBCOUNTS*state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y);
-        memory_debug.posOffsetBuffer.download(hostData->posOffset.data(), state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y);
+        memory_debug.posBuffer.download(hostData->positions.data(), NBPOSCOUNTS*1);
+        memory_debug.posOffsetBuffer.download(hostData->posOffset.data(), 1);
 #endif
 #ifdef DEBUGLEAKPOS
         memory_debug.leakPosBuffer.download(hostData->leakPositions.data(), NBCOUNTS*state.launchParams.simConstants.size.x*state.launchParams.simConstants.size.y);
@@ -1321,6 +1321,10 @@ namespace flowgpu {
             facet_memory.texelBuffer.initDeviceData(model->textures.size() * sizeof(flowgpu::Texel));
         if(!facet_memory.profileBuffer.isNullptr())
             facet_memory.profileBuffer.initDeviceData(model->profiles.size() * sizeof(flowgpu::Texel));
+#ifdef DEBUGPOS
+        memory_debug.posBuffer.initDeviceData(NBPOSCOUNTS*1* sizeof(float3));
+        memory_debug.posOffsetBuffer.initDeviceData(1* sizeof(uint32_t));
+#endif
     }
 
     void SimulationOptiX::cleanup()

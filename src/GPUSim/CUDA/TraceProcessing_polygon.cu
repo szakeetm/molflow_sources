@@ -607,11 +607,14 @@ namespace flowgpu {
                 ++prd.currentDepth;
 
     #ifdef DEBUGPOS
-                const unsigned int posIndexOff = optixLaunchParams.perThreadData.posOffsetBuffer_debug[(unsigned int)(ix+iy*optixLaunchParams.simConstants.size.x)]++;
-                if(posIndexOff<NBCOUNTS){
-                    const unsigned int posIndex = (ix+iy*optixLaunchParams.simConstants.size.x)*NBCOUNTS+posIndexOff;
-                    //printf("[%d] my pos is %d\n", (unsigned int)(ix+iy*optixLaunchParams.simConstants.size.x), posIndex);
-                    optixLaunchParams.perThreadData.positionsBuffer_debug[posIndex] = prd.hitPos;
+                if((ix+iy*optixLaunchParams.simConstants.size.x)==0){
+                    const unsigned int posIndexOff = optixLaunchParams.perThreadData.posOffsetBuffer_debug[(unsigned int)(ix+iy*optixLaunchParams.simConstants.size.x)]++;
+                    if(posIndexOff<NBPOSCOUNTS){
+                        const unsigned int posIndex = (ix+iy*optixLaunchParams.simConstants.size.x)*NBPOSCOUNTS+posIndexOff;
+                        //printf("[%d] my pos is %d\n", (unsigned int)(ix+iy*optixLaunchParams.simConstants.size.x), posIndex);
+                        optixLaunchParams.perThreadData.positionsBuffer_debug[posIndex] = prd.hitPos;
+                        optixLaunchParams.perThreadData.directionsBuffer_debug[posIndex] = prd.postHitDir;
+                    }
                 }
     #endif
 
@@ -888,12 +891,15 @@ namespace flowgpu {
                 ++prd.currentDepth;
 
 #ifdef DEBUGPOS
+        if((ix+iy*optixLaunchParams.simConstants.size.x)==0){
             const unsigned int posIndexOff = optixLaunchParams.perThreadData.posOffsetBuffer_debug[(unsigned int)(ix+iy*optixLaunchParams.simConstants.size.x)]++;
-            if(posIndexOff<NBCOUNTS){
-                const unsigned int posIndex = (ix+iy*optixLaunchParams.simConstants.size.x)*NBCOUNTS+posIndexOff;
+            if(posIndexOff<NBPOSCOUNTS){
+                const unsigned int posIndex = (ix+iy*optixLaunchParams.simConstants.size.x)*NBPOSCOUNTS+posIndexOff;
                 //printf("[%d] my pos is %d\n", (unsigned int)(ix+iy*optixLaunchParams.simConstants.size.x), posIndex);
                 optixLaunchParams.perThreadData.positionsBuffer_debug[posIndex] = prd.hitPos;
+                optixLaunchParams.perThreadData.directionsBuffer_debug[posIndex] = prd.postHitDir;
             }
+        }
 #endif
                 optixTrace(optixLaunchParams.traversable,
                            prd.hitPos,

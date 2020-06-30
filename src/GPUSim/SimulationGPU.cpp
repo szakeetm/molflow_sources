@@ -6,7 +6,7 @@
 #include "SimulationGPU.h"
 #include "ModelReader.h" // TempFacet
 
-#define LAUNCHSIZE 64//1024*128*64
+#define LAUNCHSIZE 8//1024*64*16//1024*128*64
 
 SimulationGPU::SimulationGPU()
         : SimulationUnit() {
@@ -129,6 +129,20 @@ void SimulationGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWOR
         gHits->texture_limits[i].min.all = gHits->texture_limits[i].min.moments_only = HITMAX;
         gHits->texture_limits[i].max.all = gHits->texture_limits[i].max.moments_only = 0;
     }
+
+#ifdef DEBUGPOS
+    // HHit (Only prIdx 0)
+    for (size_t hitIndex = 0; hitIndex < globalCount->positions.size(); hitIndex++) {
+        gHits->hitCache[(hitIndex + gHits->lastHitIndex) % HITCACHESIZE].pos.x = globalCount->positions[hitIndex].x;
+        gHits->hitCache[(hitIndex + gHits->lastHitIndex) % HITCACHESIZE].pos.y = globalCount->positions[hitIndex].y;
+        gHits->hitCache[(hitIndex + gHits->lastHitIndex) % HITCACHESIZE].pos.z = globalCount->positions[hitIndex].z;
+        gHits->hitCache[(hitIndex + gHits->lastHitIndex) % HITCACHESIZE].type = HIT_REF;
+    }
+    gHits->hitCache[gHits->lastHitIndex].type = HIT_REF; //Penup (border between blocks of consecutive hits in the hit cache)
+    gHits->lastHitIndex = (gHits->lastHitIndex + globalCount->positions.size()) % HITCACHESIZE;
+    gHits->hitCache[gHits->lastHitIndex-1].type = HIT_LAST; //Penup (border between blocks of consecutive hits in the hit cache)
+    gHits->hitCacheSize = std::min(HITCACHESIZE, gHits->hitCacheSize + globalCount->positions.size());
+#endif // DEBUGPOS
 
     // Leak
     gHits->nbLeakTotal += globalCount->leakCounter[0];

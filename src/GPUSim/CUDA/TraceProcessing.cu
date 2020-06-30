@@ -72,7 +72,7 @@ namespace flowgpu {
         prd.hitFacetId = optixGetPayload_3();
         prd.hitT = int_as_float( optixGetPayload_4() );
 #ifdef GPUNBOUNCE
-        prd.nbBounces = int_as_float( optixGetPayload_5() );
+        prd.nbBounces = optixGetPayload_5();
 #endif
         return prd;
     }
@@ -85,7 +85,7 @@ namespace flowgpu {
         optixSetPayload_3( prd.hitFacetId );
         optixSetPayload_4( float_as_int(prd.hitT) );
 #ifdef GPUNBOUNCE
-        optixSetPayload_5( float_as_int(prd.nbBounces) );
+        optixSetPayload_5( prd.nbBounces );
 #endif
     }
 
@@ -644,6 +644,7 @@ if(prd.inSystem == 4)
             if(poly.parentIndex == 1)
                 printf("[%u][%u == %u][%u] Absorb hit: %lf , %lf , %lf -> %lf , %lf , %lf => %lf , %lf , %lf\n",
                         bufferIndex,poly.parentIndex,prd.hitFacetId,prd.nbBounces,ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z,prd.hitPos.x,prd.hitPos.y,prd.hitPos.z);
+
             optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].nbBounces = prd.nbBounces = 0;
 #endif
             setMolPRD(prd);
@@ -672,16 +673,8 @@ if(prd.inSystem == 4)
             unsigned int texelIndex = 1e8;
             if (poly.texProps.textureFlags & flowgpu::TEXTURE_FLAGS::countRefl){
                 texelIndex = RecordBounceTexture(poly, prd, prd.hitPos, ray_dir);
-
-/*#if defined(GPUNBOUNCE)
-                optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].nbBounces++;
-                prd.nbBounces++;
-            if(bufferIndex == optixLaunchParams.simConstants.size.x - 1)
-            printf("[%d] hit pos %lf , %lf , %lf -> %d [%d]\n",bufferIndex,prd.hitPos.x,prd.hitPos.y,prd.hitPos.z,poly.parentIndex,texelIndex);
-#endif*/
-}
-
-#endif
+            }
+#endif // WITH_TEX
 #ifdef WITH_PROF
             unsigned int profileIndex = 1e8;
             //printf("BOUNCE? %d != %d == %d\n",(int)poly.profProps.profileType, (int)flowgpu::PROFILE_FLAGS::noProfile,(int)poly.profProps.profileType != flowgpu::PROFILE_FLAGS::noProfile);
@@ -689,6 +682,7 @@ if(prd.inSystem == 4)
                 profileIndex = RecordBounceProfile(poly, prd, prd.hitPos, ray_dir);
             }
 #endif
+
 
             // also increase a nbBounce counter if there is need (e.g. recursion)
             prd.inSystem = ACTIVE_PARTICLE;
@@ -745,6 +739,17 @@ if(prd.inSystem == 4)
                 RecordPostBounceProfile(poly, prd, prd.postHitDir, profileIndex);
             }
 #endif
+
+#if defined(GPUNBOUNCE)
+           /* #ifdef DEBUG
+        if(bufferIndex == optixLaunchParams.simConstants.size.x - 1)
+            printf("[%d] reflection and bounces %d / %d\n",bufferIndex,optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].nbBounces,prd.nbBounces);
+#endif*/
+                optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].nbBounces++;
+                prd.nbBounces++;
+            //if(bufferIndex == optixLaunchParams.simConstants.size.x - 1) printf("[%d] hit pos %lf , %lf , %lf -> %d [%d]\n",bufferIndex,prd.hitPos.x,prd.hitPos.y,prd.hitPos.z,poly.parentIndex,texelIndex);
+#endif
+
             optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos = prd.hitPos;
             optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].postHitDir = prd.postHitDir;
 
@@ -761,12 +766,14 @@ if(prd.inSystem == 4)
                 ++prd.currentDepth;
 
 #ifdef DEBUGPOS
-            const unsigned int posIndexOff = optixLaunchParams.perThreadData.posOffsetBuffer_debug[(unsigned int)(ix+iy*optixLaunchParams.simConstants.size.x)]++;
-            if(posIndexOff<NBCOUNTS){
-                const unsigned int posIndex = (ix+iy*optixLaunchParams.simConstants.size.x)*NBCOUNTS+posIndexOff;
-                //printf("[%d] my pos is %d\n", (unsigned int)(ix+iy*optixLaunchParams.simConstants.size.x), posIndex);
-                optixLaunchParams.perThreadData.positionsBuffer_debug[posIndex] = prd.hitPos;
-            }
+    if(bufferIndex==0){
+        const unsigned int posIndexOff = optixLaunchParams.perThreadData.posOffsetBuffer_debug[(unsigned int)(bufferIndex)]++;
+        if(posIndexOff<NBPOSCOUNTS){
+            const unsigned int posIndex = bufferIndex*NBPOSCOUNTS+posIndexOff;
+            //printf("[%d] my pos is %d\n", (unsigned int)(ix+iy*optixLaunchParams.simConstants.size.x), posIndex);
+            optixLaunchParams.perThreadData.positionsBuffer_debug[posIndex] = prd.hitPos;
+        }
+    }
 #endif
                 optixTrace(optixLaunchParams.traversable,
                            prd.hitPos,
@@ -787,7 +794,8 @@ if(prd.inSystem == 4)
                            reinterpret_cast<unsigned int &>(prd.inSystem),
                         /* Can't use float_as_int() because it returns rvalue but payload requires a lvalue */
                            reinterpret_cast<unsigned int &>(prd.hitFacetId),
-                           reinterpret_cast<unsigned int &>(prd.hitT)
+                           reinterpret_cast<unsigned int &>(prd.hitT),
+                           reinterpret_cast<unsigned int &>(prd.nbBounces)
                            );
             }
 
@@ -909,11 +917,15 @@ if(prd.inSystem == 4)
 
         const unsigned int fbIndex = blockDim.x * blockIdx.x + threadIdx.x;
         const unsigned int missIndex = fbIndex*NMISSES;
-
+#if not defined(GPUNBOUNCE)
         printf("--------------------(%d) miss[%d -> %d][%d] (%12.10f , %12.10f , %12.10f) --> (%12.10f , %12.10f , %12.10f) = %e \n",
                prd.inSystem, fbIndex, prd.hitFacetId, missIndex,
                ray_orig.x, ray_orig.y , ray_orig.z , ray_dir.x, ray_dir.y , ray_dir.z, ray_t);
-
+#else
+        printf("--------------------(%d , %d) miss[%d -> %d][%d] (%12.10f , %12.10f , %12.10f) --> (%12.10f , %12.10f , %12.10f) = %e \n",
+               prd.inSystem, prd.nbBounces, fbIndex, prd.hitFacetId, missIndex,
+               ray_orig.x, ray_orig.y , ray_orig.z , ray_dir.x, ray_dir.y , ray_dir.z, ray_t);
+#endif
 
         for(int i=missIndex+1; i <= missIndex+optixLaunchParams.perThreadData.missBuffer[missIndex];i++){
             printf("-------------------- miss[%d -> %d -> %d] at %d\n",
@@ -942,10 +954,17 @@ optixLaunchParams.perThreadData.currentMoleculeData[fbIndex].postHitDir = prd.po
 
             const unsigned int fbIndex = blockDim.x * blockIdx.x + threadIdx.x;
 
-            printf("--------------------(%d) miss[%d -> %d] (%12.10f , %12.10f , %12.10f) --> (%12.10f , %12.10f , %12.10f) = %e \n",
-                   prd.inSystem, fbIndex, prd.hitFacetId,
-                   ray_orig.x, ray_orig.y , ray_orig.z , ray_dir.x, ray_dir.y , ray_dir.z, ray_t);
 
+
+#if not defined(GPUNBOUNCE)
+        printf("--------------------(%d) miss[%d -> %d] (%12.10f , %12.10f , %12.10f) --> (%12.10f , %12.10f , %12.10f) = %e \n",
+               prd.inSystem, fbIndex, prd.hitFacetId,
+               ray_orig.x, ray_orig.y , ray_orig.z , ray_dir.x, ray_dir.y , ray_dir.z, ray_t);
+#else
+        printf("--------------------(%d , %d) miss[%d -> %d] (%12.10f , %12.10f , %12.10f) --> (%12.10f , %12.10f , %12.10f) = %e \n",
+               prd.inSystem, prd.nbBounces, fbIndex, prd.hitFacetId,
+               ray_orig.x, ray_orig.y , ray_orig.z , ray_dir.x, ray_dir.y , ray_dir.z, ray_t);
+#endif
 
         const unsigned int posIndexOff = optixLaunchParams.perThreadData.leakPosOffsetBuffer_debug[(unsigned int)(blockDim.x * blockIdx.x + threadIdx.x)]++;
             if(posIndexOff<NBCOUNTS){
@@ -971,6 +990,9 @@ optixLaunchParams.perThreadData.currentMoleculeData[fbIndex].postHitDir = prd.po
             prd.hitFacetId = -1;
             prd.hitT = -999.0f;
             prd.inSystem = NEW_PARTICLE;
+#if defined(GPUNBOUNCE)
+        prd.nbBounces = 0;
+#endif
         /*}
         else{
             prd.inSystem = max(3,prd.inSystem+1);
