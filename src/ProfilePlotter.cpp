@@ -247,6 +247,7 @@ void ProfilePlotter::Refresh() {
 
 	//Update values
 	refreshViews();
+    ResetHighlighting();
 
 }
 
@@ -578,6 +579,26 @@ void ProfilePlotter::Reset() {
 	nbView = 0;
 
 	plottedFacets.clear();
+    applyFacetHighlighting();
+}
+
+/**
+* \brief Resets the selection highlighting colors
+*/
+void ProfilePlotter::ResetHighlighting() {
+
+    plottedFacets.clear();
+    for(int viewId = 0; viewId < nbView; viewId++){
+        GLDataView *v = views[viewId];
+        std::string facId = v->GetName();
+        std::istringstream inputStream(facId);
+        while (getline(inputStream, facId, '#')) {
+            ;
+        }
+        plottedFacets.insert(std::make_pair(std::stoi(facId) - 1, v->GetColor()));
+
+    }
+
     applyFacetHighlighting();
 }
 
