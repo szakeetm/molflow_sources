@@ -48,6 +48,7 @@ public:
   void Refresh();
   void Update(float appTime,bool force=false);
   void Reset();
+    void ResetHighlighting();
 
   // Implementation
   void ProcessMessage(GLComponent *src,int message) override;

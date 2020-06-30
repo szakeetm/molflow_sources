@@ -138,7 +138,7 @@ ProfilePlotter::ProfilePlotter() :GLWindow() , views{}{
     fixedLineWidthField->SetEditable(true);
     Add(fixedLineWidthField);
 
-    useProfColToggle = new GLToggle(0, "Use profile colors for viewer");
+    useProfColToggle = new GLToggle(0, "Identify profiles in geometry");
     Add(useProfColToggle);
 
 	warningLabel = new GLLabel("Profiles can only be used on rectangular facets.");
@@ -247,6 +247,7 @@ void ProfilePlotter::Refresh() {
 
 	//Update values
 	refreshViews();
+    ResetHighlighting();
 
 }
 
@@ -348,7 +349,7 @@ void ProfilePlotter::plot() {
 	}
 
 	// Plot
-	for (int i = 0; i < 1000; i++) {
+	for (i = 0; i < 1000; i++) {
 		double x = (double)i;
 		double y;
 		var->value = x;
@@ -578,6 +579,22 @@ void ProfilePlotter::Reset() {
 	nbView = 0;
 
 	plottedFacets.clear();
+    applyFacetHighlighting();
+}
+
+/**
+* \brief Resets the selection highlighting colors
+*/
+void ProfilePlotter::ResetHighlighting() {
+
+    plottedFacets.clear();
+    for(int viewId = 0; viewId < nbView; viewId++){
+        GLDataView *v = views[viewId];
+        plottedFacets.insert(std::make_pair(v->userData1, v->GetColor()));
+
+    }
+
+    applyFacetHighlighting();
 }
 
 /**

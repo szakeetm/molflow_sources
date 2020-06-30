@@ -535,8 +535,8 @@ void MolFlow::PlaceComponents() {
     //togglePanel->SetCompBounds(showFilter, 135, 64, 60, 18);
 
 	togglePanel->SetCompBounds(viewerMoreButton, 5, 86, 55, 18);
-	togglePanel->SetCompBounds(showVertex, 70, 86, 60, 18);
-	togglePanel->SetCompBounds(showIndex, 137, 86, 60, 18);
+	togglePanel->SetCompBounds(showIndex, 70, 86, 60, 18);
+	togglePanel->SetCompBounds(showVertexId, 135, 86, 60, 18);
 
 	sy += (togglePanel->GetHeight() + 5);
 
@@ -2280,7 +2280,7 @@ void MolFlow::LoadConfig() {
 			viewer[i]->showIndex = f->ReadInt();
 		f->ReadKeyword("showVertices"); f->ReadKeyword(":");
 		for (int i = 0; i < MAX_VIEWER; i++)
-			viewer[i]->showVertex = f->ReadInt();
+			viewer[i]->showVertexId = f->ReadInt();
 		f->ReadKeyword("showMode"); f->ReadKeyword(":");
 		for (int i = 0; i < MAX_VIEWER; i++)
 			viewer[i]->showBack = f->ReadInt();
@@ -2459,7 +2459,7 @@ void MolFlow::SaveConfig() {
         WRITEI("showFacetId", showFacetId);
         WRITEI("showFilter", showFilter);
 		WRITEI("showIndices", showIndex);
-		WRITEI("showVertices", showVertex);
+		WRITEI("showVertices", showVertexId);
 		WRITEI("showMode", showBack);
 		WRITEI("showMesh", showMesh);
 		WRITEI("showHidden", showHidden);
