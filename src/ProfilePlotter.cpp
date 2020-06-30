@@ -590,12 +590,7 @@ void ProfilePlotter::ResetHighlighting() {
     plottedFacets.clear();
     for(int viewId = 0; viewId < nbView; viewId++){
         GLDataView *v = views[viewId];
-        std::string facId = v->GetName();
-        std::istringstream inputStream(facId);
-        while (getline(inputStream, facId, '#')) {
-            ;
-        }
-        plottedFacets.insert(std::make_pair(std::stoi(facId) - 1, v->GetColor()));
+        plottedFacets.insert(std::make_pair(v->userData1, v->GetColor()));
 
     }
 
