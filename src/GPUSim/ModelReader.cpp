@@ -404,7 +404,7 @@ namespace flowgpu {
             return 1;
         }
         else{
-            int profileOffset = 0;
+            int currentProfOffset = 0;
             for(int facetInd = 0; facetInd < facets.size(); ++facetInd){
                 auto& facet = facets[facetInd];
                 if(facet.facetProperties.isProfile){
@@ -421,7 +421,7 @@ namespace flowgpu {
                     for(auto& polygonMesh : model->poly_meshes){
                         for(auto& polygon : polygonMesh->poly){
                             if(polygon.parentIndex == facetInd){
-                                polygon.profProps.profileOffset = profileOffset;
+                                polygon.profProps.profileOffset = currentProfOffset;
                                 polygon.profProps.profileType = facet.facetProperties.profileType;
                             }
                         }
@@ -429,11 +429,12 @@ namespace flowgpu {
                     for(auto& triangleMesh : model->triangle_meshes){
                         for(auto& triangle : triangleMesh->poly){
                             if(triangle.parentIndex == facetInd){
-                                triangle.profProps.profileOffset = profileOffset;
+                                triangle.profProps.profileOffset = currentProfOffset;
                                 triangle.profProps.profileType = facet.facetProperties.profileType;
                             }
                         }
                     }
+                    currentProfOffset += PROFILE_SIZE;
                 } // one more profile
             }
         }
