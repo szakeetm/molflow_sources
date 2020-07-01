@@ -554,13 +554,14 @@ namespace flowgpu {
         const int deviceID = 0;
         CUDA_CHECK(cudaSetDevice(deviceID));
         CUDA_CHECK(cudaStreamCreate(&state.stream));
-        CUDA_CHECK(cudaStreamCreate(&state.stream2));
 
+#ifdef MULTI_STREAMS
+        CUDA_CHECK(cudaStreamCreate(&state.stream2));
         state.cuStreams.resize(8);
         for(auto& stream : state.cuStreams){
             CUDA_CHECK(cudaStreamCreate(&stream));
         }
-
+#endif
         cudaGetDeviceProperties(&state.deviceProps, deviceID);
         std::cout << "#flowgpu: running on device: " << state.deviceProps.name << std::endl;
 
@@ -1150,6 +1151,33 @@ namespace flowgpu {
 
     }
 
+
+    void SimulationOptiX::resetDeviceData(const uint2 &newSize){
+
+        const uint32_t nbRand = NB_RAND;
+
+        // resize our cuda frame buffer
+        if(!sim_memory.moleculeBuffer.d_pointer())
+            return;
+
+        sim_memory.moleculeBuffer.initDeviceData(newSize.x * newSize.y * sizeof(MolPRD));
+
+        // Texture
+        if(!model->textures.empty()){
+            facet_memory.textureBuffer.upload(model->facetTex.data(),model->facetTex.size());
+            facet_memory.texelBuffer.upload(model->textures.data(),model->textures.size());
+            facet_memory.texIncBuffer.upload(model->texInc.data(),model->texInc.size());
+        }
+
+        // Profile
+        if(!model->profiles.empty()){
+            facet_memory.profileBuffer.upload(model->profiles.data(),model->profiles.size());
+        }
+
+        state.launchParamsBuffer.upload(&state.launchParams,1);
+    }
+
+
     void SimulationOptiX::initLaunchParams(const uint2 &newSize){
 
         const uint32_t nbRand = NB_RAND;
@@ -1340,11 +1368,13 @@ namespace flowgpu {
         OPTIX_CHECK( optixDeviceContextDestroy( state.context                 ) );
 
         CUDA_CHECK( cudaStreamDestroy( state.stream                 ) );
+#ifdef MULTI_STREAMS
         CUDA_CHECK( cudaStreamDestroy( state.stream2                 ) );
         for(auto& stream : state.cuStreams){
             CUDA_CHECK(cudaStreamDestroy(stream));
         }
         state.cuStreams.clear();
+#endif
 
         for (int meshID=0;meshID<model->triangle_meshes.size();meshID++) {
             tri_memory.vertexBuffer[meshID].free();

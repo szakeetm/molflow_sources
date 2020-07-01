@@ -641,10 +641,10 @@ if(prd.inSystem == 4)
             prd.inSystem = NEW_PARTICLE;
             prd.currentDepth = 0;
 #ifdef GPUNBOUNCE
-            if(poly.parentIndex == 1)
+            /*if(poly.parentIndex == 1)
                 printf("[%u][%u == %u][%u] Absorb hit: %lf , %lf , %lf -> %lf , %lf , %lf => %lf , %lf , %lf\n",
                         bufferIndex,poly.parentIndex,prd.hitFacetId,prd.nbBounces,ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z,prd.hitPos.x,prd.hitPos.y,prd.hitPos.z);
-
+*/
             optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].nbBounces = prd.nbBounces = 0;
 #endif
             setMolPRD(prd);
@@ -697,18 +697,6 @@ if(prd.inSystem == 4)
             //else
             prd.velocity = getNewVelocity(poly, optixLaunchParams.simConstants.gasMass);
 
-            //-----------
-            // new ray direction (for now only diffuse)
-            //-----------
-            /*const float theta = acosf(sqrtf(randFloat[(unsigned int)(randInd + randOffset++)]));
-            const float phi = randFloat[(unsigned int)(randInd + randOffset++)] * 2.0f * CUDART_PI_F;
-            const float u = sin(theta)*cos(phi);
-            const float v = sin(theta)*sin(phi);
-            const float n = cos(theta);
-
-            float3 nU = poly.nU;
-            float3 nV = poly.nV;
-            float3 N = poly.N;*/
             if(optixGetHitKind() == OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE ) {
                 //if (bufferIndex == 0 && poly.parentIndex == 102) printf("[%d] Front direction!\n", poly.parentIndex);
                 prd.postHitDir = getNewDirection(prd, poly, randFloat, randInd, randOffset);

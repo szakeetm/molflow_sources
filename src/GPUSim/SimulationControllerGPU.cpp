@@ -242,9 +242,10 @@ void SimulationControllerGPU::Resize(){
     globalCounter.leakCounter.clear();
     globalCounter.textures.clear();
     globalCounter.profiles.clear();
+#ifdef DEBUGPOS
     globalCounter.positions.clear();
     globalCounter.posOffset.clear();
-
+#endif
     globalCounter.facetHitCounters.resize(model->nbFacets_total);
     globalCounter.leakCounter.resize(1);
 
@@ -606,6 +607,13 @@ int SimulationControllerGPU::CloseSimulation() {
         exit(1);
     }
     return 0;
+}
+
+int SimulationControllerGPU::ResetSimulation(){
+   if(optixHandle)
+       optixHandle->resetDeviceData(kernelDimensions);
+
+   return 0;
 }
 
 GlobalCounter *SimulationControllerGPU::GetGlobalCounter()  {

@@ -6,10 +6,12 @@
 #include "SimulationGPU.h"
 #include "ModelReader.h" // TempFacet
 
-#define LAUNCHSIZE 8//1024*64*16//1024*128*64
+#define LAUNCHSIZE 1920*64*1//1024*64*16//1024*128*64
 
 SimulationGPU::SimulationGPU()
         : SimulationUnit() {
+
+    model = nullptr;
 
     totalDesorbed = 0;
 
@@ -62,6 +64,7 @@ bool SimulationGPU::LoadSimulation(Dataport *loader) {
 void SimulationGPU::ResetSimulation() {
     totalDesorbed = 0;
     ResetTmpCounters();
+    gpuSim.ResetSimulation();
 }
 
 bool SimulationGPU::UpdateOntheflySimuParams(Dataport *loader) {

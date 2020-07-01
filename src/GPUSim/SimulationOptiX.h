@@ -34,9 +34,13 @@ namespace flowgpu {
             on, as well as device properties for this device */
         CUcontext          cudaContext;
         cudaDeviceProp     deviceProps;
-        std::vector<CUstream> cuStreams;
+
         CUstream                    stream                    = 0;
+#ifdef MULTI_STREAMS
         CUstream                    stream2                    = 0;
+        std::vector<CUstream> cuStreams;
+#endif
+
         /*! @} */
 
         OptixDeviceContext          context                   = 0;        //! the optix context that our pipeline will run in.
@@ -91,7 +95,8 @@ namespace flowgpu {
         SimulationOptiX(const Model *model, const uint2 &launchSize);
         ~SimulationOptiX();
 
-        /*! upload some parts only on start */
+        void resetDeviceData(const uint2 &newSize);
+            /*! upload some parts only on start */
         void initSimulation();
 
         /*! launch a bunch of molecules to trace */

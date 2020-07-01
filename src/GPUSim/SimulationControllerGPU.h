@@ -29,6 +29,7 @@ public:
     int LoadSimulation(flowgpu::Model* loaded_model, size_t launchSize);
     int RunSimulation();
     int CloseSimulation();
+    int ResetSimulation();
 
     unsigned long long int GetSimulationData(bool silent = true);
     void IncreaseGlobalCounters(HostData* tempData);
