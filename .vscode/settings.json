@@ -2,6 +2,8 @@
 	"cmake.buildDirectory": "${workspaceRoot}/build_${buildType}",
 	"files.associations": {
 		"*.tcc": "cpp",
-		"tuple": "cpp"
+		"tuple": "cpp",
+		"__tree": "cpp",
+		"complex": "cpp"
 	}
 }
