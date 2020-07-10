@@ -244,14 +244,14 @@ void PressureEvolution::refreshChart() {
 			case 0: { //MC Hits
 				for (size_t m = 1; m <= Min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
 					FacetHitBuffer* facetHits = (FacetHitBuffer*)(buffer + f->sh.hitOffset + m * sizeof(FacetHitBuffer));
-					v->Add(worker->moments[m - 1], (double)facetHits->hit.nbMCHit, false);
+					v->Add(worker->moments[m - 1].first, (double)facetHits->hit.nbMCHit, false);
 				}
 				break;
 			}
 			case 1: { //Equiv Hits
 				for (size_t m = 1; m <= Min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
 					FacetHitBuffer* facetHits = (FacetHitBuffer*)(buffer + f->sh.hitOffset + m * sizeof(FacetHitBuffer));
-					v->Add(worker->moments[m - 1], facetHits->hit.nbHitEquiv, false);
+					v->Add(worker->moments[m - 1].first, facetHits->hit.nbHitEquiv, false);
 				}
 				break;
 			}
@@ -260,7 +260,7 @@ void PressureEvolution::refreshChart() {
 				scaleY *= worker->wp.totalDesorbedMolecules / worker->wp.timeWindowSize;
 				for (size_t m = 1; m <= Min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
 					FacetHitBuffer* facetHits = (FacetHitBuffer*)(buffer + f->sh.hitOffset + m * sizeof(FacetHitBuffer));
-					v->Add(worker->moments[m - 1], facetHits->hit.sum_v_ort*scaleY, false);
+					v->Add(worker->moments[m - 1].first, facetHits->hit.sum_v_ort*scaleY, false);
 				}
 				break;
 			}
@@ -270,7 +270,7 @@ void PressureEvolution::refreshChart() {
 				scaleY *= f->DensityCorrection();
 				for (size_t m = 1; m <= Min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
 					FacetHitBuffer* facetHits = (FacetHitBuffer*)(buffer + f->sh.hitOffset + m * sizeof(FacetHitBuffer));
-					v->Add(worker->moments[m - 1], facetHits->hit.sum_1_per_ort_velocity*scaleY, false);
+					v->Add(worker->moments[m - 1].first, facetHits->hit.sum_1_per_ort_velocity*scaleY, false);
 				}
 				break;
 			}
@@ -279,7 +279,7 @@ void PressureEvolution::refreshChart() {
 				scaleY *= worker->wp.totalDesorbedMolecules / worker->wp.timeWindowSize;
 				for (size_t m = 1; m <= Min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
 					FacetHitBuffer* facetHits = (FacetHitBuffer*)(buffer + f->sh.hitOffset + m * sizeof(FacetHitBuffer));
-					v->Add(worker->moments[m - 1], facetHits->hit.nbHitEquiv*scaleY, false);
+					v->Add(worker->moments[m - 1].first, facetHits->hit.nbHitEquiv*scaleY, false);
 				}
 				break;
 			}

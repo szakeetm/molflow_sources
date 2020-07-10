@@ -97,9 +97,9 @@ Worker::Worker() : simManager("molflow", "MFLW"){
 
     //Molflow specific
     temperatures = std::vector<double>();
-    moments = std::vector<double>();
     desorptionParameterIDs = std::vector<size_t>();
-    userMoments = std::vector<std::string>(); //strings describing moments, to be parsed
+    moments = std::vector<Moment>();
+    userMoments = std::vector<UserMoment>(); //strings describing moments, to be parsed
     CDFs = std::vector<std::vector<std::pair<double, double>>>();
     IDs = std::vector<std::vector<std::pair<double, double>>>();
     parameters = std::vector<Parameter>();
@@ -1324,15 +1324,71 @@ return result;
 }
 */
 
+/*!
+ * @brief Check for 2 unsorted interval vectors (a and b), if any of the contained intervals (a_i and b_j) overlap
+ * @param vecA first Vector [a_low,a_high[
+ * @param vecB second Vector [b_low,b_high[
+ * @return 0=no overlap, 1=overlap
+ */
+int Worker::CheckIntervalOverlap(const std::vector<Moment>& vecA, const std::vector<Moment>& vecB) {
+    if(vecA.empty() || vecB.empty())
+        return 0;
+
+    // Get min_max values for largest vector and compare with single elements of smaller vector
+    if(vecA.size()>=vecB.size()) {
+        double a_low = std::numeric_limits<double>::max();
+        double a_high = std::numeric_limits<double>::lowest();
+
+        for (auto &a_i : vecA) {
+            a_low = std::min(a_low, a_i.first - 0.5 * a_i.second);
+            a_high = std::max(a_high, a_i.first + 0.5 * a_i.second);
+        }
+        for (auto &b_j : vecB) {
+            const double bj_low = b_j.first - 0.5 * b_j.second;
+            const double bj_high = b_j.first + 0.5 * b_j.second;
+
+            if (DBL_EPSILON < std::abs(a_high - bj_low) &&
+                DBL_EPSILON <= std::abs(bj_high - a_low)) { //b_low < a_high && a_low <= b_high
+                return 1; // overlap
+            } else
+                return 0; // no overlap
+        }
+    }
+    else {
+        double b_low = std::numeric_limits<double>::max();
+        double b_high = std::numeric_limits<double>::lowest();
+        for (auto &b_j : vecB) {
+            b_low = std::min(b_low, b_j.first - 0.5 * b_j.second);
+            b_high = std::max(b_high, b_j.first + 0.5 * b_j.second);
+        }
+        for (auto &a_i : vecA) {
+            const double ai_low = a_i.first - 0.5 * a_i.second;
+            const double ai_high = a_i.first + 0.5 * a_i.second;
+
+            if (DBL_EPSILON < std::abs(b_high - ai_low) &&
+                DBL_EPSILON <= std::abs(ai_high - b_low)) { //b_low < a_high && a_low <= b_high
+                return 1; // overlap
+            } else
+                return 0; // no overlap
+        }
+    }
+    
+    return 0;
+}
+
 /**
 * \brief Adds a time serie to moments and returns the number of elements
 * \param newMoments vector containing a list of new moments that should be added
 * \return number of new moments that got added
+* \todo share with MomentsEditor
 */
-int Worker::AddMoment(std::vector<double> newMoments) {
-    int nb = (int) newMoments.size();
-    for (int i = 0; i < nb; i++)
-        moments.push_back(newMoments[i]);
+int Worker::AddMoment(std::vector<Moment> newMoments) {
+
+    if(CheckIntervalOverlap(moments, newMoments)){
+        return -1; // error
+    }
+    int nb = newMoments.size();
+    moments.insert(moments.end(),newMoments.begin(),newMoments.end());
     return nb;
 }
 
@@ -1341,19 +1397,19 @@ int Worker::AddMoment(std::vector<double> newMoments) {
 * \param userInput string of format "%lf,%lf,%lf" describing start, interval and end for a list of new moments
 * \return vector containing parsed moments
 */
-std::vector<double> Worker::ParseMoment(std::string userInput) {
-    std::vector<double> parsedResult;
+std::vector<Moment> Worker::ParseMoment(std::string userInput, double timeWindow) {
+    std::vector<Moment> parsedResult;
     double begin, interval, end;
 
     int nb = sscanf(userInput.c_str(), "%lf,%lf,%lf", &begin, &interval, &end);
     if (nb == 1 && (begin >= 0.0)) {
         //One moment
-        parsedResult.push_back(begin);
+        parsedResult.emplace_back(begin,timeWindow);
         //} else if (nb==3 && (begin>0.0) && (end>begin) && (interval<(end-begin)) && ((end-begin)/interval<300.0)) {
     } else if (nb == 3 && (begin >= 0.0) && (end > begin) && (interval < (end - begin))) {
         //Range
         for (double time = begin; time <= end; time += interval)
-            parsedResult.push_back(time);
+            parsedResult.emplace_back(time,timeWindow);
     }
     return parsedResult;
 }
@@ -1516,7 +1572,7 @@ void Worker::PrepareToRun() {
     //determine latest moment
     wp.latestMoment = 1E-10;
     for (size_t i = 0; i < moments.size(); i++)
-        if (moments[i] > wp.latestMoment) wp.latestMoment = moments[i];
+        if (moments[i].first > wp.latestMoment) wp.latestMoment = moments[i].first;
     wp.latestMoment += wp.timeWindowSize / 2.0;
 
     Geometry *g = GetGeometry();

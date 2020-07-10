@@ -709,8 +709,8 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 		for (int i = 0; i < nb; i++) {
 			char tmpExpr[512];
 			strcpy(tmpExpr, file->ReadString());
-			worker->userMoments.push_back(tmpExpr);
-			worker->AddMoment(mApp->worker.ParseMoment(tmpExpr));
+			worker->userMoments.emplace_back(tmpExpr,0.0);
+			worker->AddMoment(mApp->worker.ParseMoment(tmpExpr, 0.0));
 		}
 		file->ReadKeyword("}");
 
@@ -1399,9 +1399,12 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, BYTE *buffer, W
 	file->Write(" nb:"); file->Write((int)worker->userMoments.size());
 	for (size_t u = 0; u < worker->userMoments.size(); u++) {
 		file->Write("\n \"");
-		file->Write(worker->userMoments[u].c_str());
-		file->Write("\"");
-	}
+		file->Write(worker->userMoments[u].first.c_str());
+		file->Write("\" ");
+        file->Write(worker->userMoments[u].second);
+        file->Write("\"");
+
+    }
 	file->Write("\n}\n");
 
 	file->Write("desorptionStart:"); file->Write(/*worker->desorptionStartTime*/0.0, "\n");
@@ -1691,7 +1694,7 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, BYTE *b
 	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++) {
 		if (m == 0) fprintf(file, " moment 0 (Constant Flow){\n");
-		else fprintf(file, " moment %zd (%g s){\n", m, mApp->worker.moments[m - 1]);
+		else fprintf(file, " moment %zd (%g s)[w=%g]{\n", m, mApp->worker.moments[m - 1].first,mApp->worker.moments[m - 1].second);
 		// Facets
 		for (int fInd = 0; fInd < sh.nbFacet; fInd++) {
 			Facet *f = facets[fInd];
@@ -1861,7 +1864,7 @@ void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, BYTE *buffer, Worker
 	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++) {
 		if (m == 0) fputs(" moment 0 (Constant Flow){\n", file);
-		else fprintf(file, " moment %zd (%g s){\n", m, mApp->worker.moments[m - 1]);
+		else fprintf(file, " moment %zd (%g s)[w=%g]{\n", m, mApp->worker.moments[m - 1].first,mApp->worker.moments[m - 1].second);
 		// Facets
 
 		for (int i = 0; i < sh.nbFacet; i++) {
@@ -2425,8 +2428,9 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 	for (size_t i = 0; i < work->userMoments.size(); i++) {
 		xml_node newUserEntry = userMomentsNode.append_child("UserEntry");
 		newUserEntry.append_attribute("id") = i;
-		newUserEntry.append_attribute("content") = work->userMoments[i].c_str();
-	}
+		newUserEntry.append_attribute("content") = work->userMoments[i].first.c_str();
+        newUserEntry.append_attribute("window") = work->userMoments[i].second;
+    }
 
 	timeSettingsNode.append_attribute("timeWindow") = work->wp.timeWindowSize;
 	timeSettingsNode.append_attribute("useMaxwellDistr") = (int)work->wp.useMaxwellDistribution; //backward compatibility: 0 or 1
@@ -2493,10 +2497,14 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 		prg->SetProgress(0.5 + 0.5*(double)m / (1.0 + (double)mApp->worker.moments.size()));
 		xml_node newMoment = momentsNode.append_child("Moment");
 		newMoment.append_attribute("id") = m;
-		if (m == 0)
-			newMoment.append_attribute("time") = "Constant flow";
-		else
-			newMoment.append_attribute("time") = work->moments[m - 1];
+		if (m == 0) {
+            newMoment.append_attribute("time") = "Constant flow";
+            newMoment.append_attribute("timeWindow") = 0;
+        }
+		else {
+            newMoment.append_attribute("time") = work->moments[m - 1].first;
+            newMoment.append_attribute("timeWindow") = work->moments[m - 1].second;
+        }
 
 		if (m == 0) { //Write global results. Later these results will probably be time-dependent as well.
 			xml_node globalNode = newMoment.append_child("Global");
@@ -2821,8 +2829,8 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 		for (xml_node newUserEntry : userMomentsNode.children("UserEntry")) {
 			char tmpExpr[512];
 			strcpy(tmpExpr, newUserEntry.attribute("content").as_string());
-			work->userMoments.push_back(tmpExpr);
-			work->AddMoment(mApp->worker.ParseMoment(tmpExpr));
+            work->userMoments.emplace_back(tmpExpr,0.0);
+			work->AddMoment(mApp->worker.ParseMoment(tmpExpr, 0.0));
 		}
 
 		/*

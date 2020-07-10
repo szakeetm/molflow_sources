@@ -32,10 +32,10 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 extern MolFlow *mApp;
 
-static const int   flWidth[] = { 35,100,35 };
-static const char *flName[] = { "#","Time (s)","Nb" };
-static const int   flAligns[] = { ALIGN_CENTER,ALIGN_LEFT,ALIGN_CENTER };
-static const int   fEdits[] = { 0,EDIT_STRING,0 };
+static const int   flWidth[] = { 35,100,35,80 };
+static const char *flName[] = { "#","Time (s)","Nb","Window (s)" };
+static const int   flAligns[] = { ALIGN_CENTER,ALIGN_LEFT,ALIGN_CENTER,ALIGN_LEFT };
+static const int   fEdits[] = { 0,EDIT_STRING,0, EDIT_STRING };
 
 /**
 * \brief Constructor for initial creation of the window
@@ -43,7 +43,7 @@ static const int   fEdits[] = { 0,EDIT_STRING,0 };
 */
 MomentsEditor::MomentsEditor(Worker *w) :GLWindow() {
 
-	int wD = 220;
+	int wD = 290;
 	int hD = 401;
 
 	work = w;
@@ -168,8 +168,11 @@ void MomentsEditor::ProcessMessage(GLComponent *src, int message) {
 			if (mApp->AskToReset()) {
 				moments.clear();
 				for (size_t u = 0; u != userMoments.size(); u++) {
-					std::vector<double> newMoments = ParseMoment(userMoments[u]);
-					AddMoment(newMoments);
+					std::vector<Moment> newMoments = ParseMoment(userMoments[u].first, userMoments[u].second);
+					if(AddMoment(newMoments) == -1){
+                        GLMessageBox::Display("Overlapping time window detected!", "Error", GLDLG_OK, GLDLG_ICONERROR);
+                        return;
+                    }
 				}
 
 				work->moments = moments;
@@ -188,7 +191,7 @@ void MomentsEditor::ProcessMessage(GLComponent *src, int message) {
 		}
 		else if (src == clearButton) {
 			if (GLDLG_OK == GLMessageBox::Display("Clear list?", "Moments", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONINFO)) {
-				userMoments = std::vector<std::string>();
+				userMoments = std::vector<UserMoment>();
 				RebuildList();
 			}
 		}
@@ -200,21 +203,40 @@ void MomentsEditor::ProcessMessage(GLComponent *src, int message) {
 	case MSG_LIST:
 		for (size_t row = 0; row < (momentsList->GetNbRow() - 1); row++) {
 
-			if (strcmp(momentsList->GetValueAt(1, row), userMoments[row].c_str()) != 0) {
-				if (*(momentsList->GetValueAt(1, row)) != 0)
-					userMoments[row].assign(momentsList->GetValueAt(1, row)); //update
+		    // Change in time expression
+            // Or change in windows size
+            const char *momentEntry = momentsList->GetValueAt(1, row);
+            const char *windowEntry = momentsList->GetValueAt(3, row);
+            bool change = false;
+            if (strcmp(momentEntry, userMoments[row].first.c_str()) != 0) {
+				if (momentEntry != nullptr && windowEntry != nullptr){//update
+                    userMoments[row].first.assign(momentEntry);
+                }
 				else
 					userMoments.erase(userMoments.begin() + row); //erase
 
 				RebuildList();
-				break;
+				change = true;
 			}
+            if (std::abs(std::strtod(windowEntry,nullptr) - userMoments[row].second) > DBL_EPSILON) {
+                if (windowEntry != nullptr){//update
+                    userMoments[row].second = std::strtod(windowEntry,nullptr);
+                }
+                else
+                    userMoments.erase(userMoments.begin() + row); //erase
+
+                RebuildList();
+                change = true;
+            }
+            if(change){
+                break;
+            }
 		}
-		if (momentsList->GetValueAt(1, momentsList->GetNbRow() - 1) != 0) { //last line
+		if (momentsList->GetValueAt(1, momentsList->GetNbRow() - 1) != nullptr) { //last line
 			if (*(momentsList->GetValueAt(1, momentsList->GetNbRow() - 1)) != 0) {
 				//Add new line
-				userMoments.push_back(momentsList->GetValueAt(1, momentsList->GetNbRow() - 1));
-				RebuildList();
+				userMoments.emplace_back(momentsList->GetValueAt(1, momentsList->GetNbRow() - 1),0.0);
+                RebuildList();
 			}
 		}
 		break;
@@ -228,7 +250,7 @@ void MomentsEditor::ProcessMessage(GLComponent *src, int message) {
 */
 void MomentsEditor::RebuildList() {
 
-	momentsList->SetSize(3, userMoments.size() + 1);
+	momentsList->SetSize(4, userMoments.size() + 1);
 	momentsList->SetColumnWidths((int*)flWidth);
 	momentsList->SetColumnLabels(flName);
 	momentsList->SetColumnAligns((int *)flAligns);
@@ -240,10 +262,12 @@ void MomentsEditor::RebuildList() {
 	for (u = 0; u < userMoments.size(); u++) {
 		sprintf(tmp, "%zd", u + 1);
 		momentsList->SetValueAt(0, u, tmp);
-		sprintf(tmp, "%s", userMoments[u].c_str());
+		sprintf(tmp, "%s", userMoments[u].first.c_str());
 		momentsList->SetValueAt(1, u, tmp);
-		sprintf(tmp, "%zd", ParseMoment(userMoments[u]).size());
+		sprintf(tmp, "%zd", ParseMoment(userMoments[u].first, 0.0).size());
 		momentsList->SetValueAt(2, u, tmp);
+        sprintf(tmp, "%g", userMoments[u].second);
+        momentsList->SetValueAt(3, u, tmp);
 	}
 	//last line, possibility to enter new value
 	sprintf(tmp, "%zd", u + 1);
@@ -267,11 +291,13 @@ void MomentsEditor::Refresh() {
 * \param newMoments vector of new moments that should be inserted
 * \return amount of new moments
 */
-int MomentsEditor::AddMoment(std::vector<double> newMoments) {
-	int nb = (int)newMoments.size();
-	for (int i = 0; i < nb; i++)
-		moments.push_back(newMoments[i]);
-	return nb;
+int MomentsEditor::AddMoment(std::vector<Moment> newMoments) {
+    if(Worker::CheckIntervalOverlap(moments, newMoments)){
+        return -1; // error
+    }
+    int nb = newMoments.size();
+    moments.insert(moments.end(),newMoments.begin(),newMoments.end());
+    return nb;
 }
 
 /**
@@ -279,20 +305,20 @@ int MomentsEditor::AddMoment(std::vector<double> newMoments) {
 * \param userInput string of the form "%lf,%lf,%lf" for beginning, interval step, ending of the moment series
 * \return message Type of the source (button)
 */
-std::vector<double> MomentsEditor::ParseMoment(std::string userInput) {
-	std::vector<double> parsedResult;
+std::vector<Moment> MomentsEditor::ParseMoment(const std::string& userInput, double timeWindow) {
+	std::vector<Moment> parsedResult;
 	double begin, interval, end;
 
 	int nb = sscanf(userInput.c_str(), "%lf,%lf,%lf", &begin, &interval, &end);
 	if (nb == 1 && (begin >= 0.0)) {
 		//One moment
-		parsedResult.push_back(begin);
+		parsedResult.emplace_back(begin,timeWindow);
 		//} else if (nb==3 && (begin>0.0) && (end>begin) && (interval<(end-begin)) && ((end-begin)/interval<300.0)) {
 	}
 	else if (nb == 3 && (begin >= 0.0) && (end > begin) && (interval < (end - begin))) {
 		//Range
 		for (double time = begin; time <= end; time += interval)
-			parsedResult.push_back(time);
+			parsedResult.emplace_back(time,timeWindow);
 	}
 	return parsedResult;
 }

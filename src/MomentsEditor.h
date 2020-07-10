@@ -65,12 +65,12 @@ private:
   GLTitledPanel *panel2;
 
   
-  std::vector<double> moments;
-  std::vector<std::string> userMoments;
+  std::vector<Moment> moments;
+  std::vector<UserMoment> userMoments;
 
-  int AddMoment(std::vector<double> newMoments); //Adds a time serie to moments and returns the number of elements
+  int AddMoment(std::vector<Moment> newMoments); //Adds a time serie to moments and returns the number of elements
   void PasteClipboard();
-  std::vector<double> ParseMoment(std::string userInput); //Parses a user input and returns a vector of time moments
+  std::vector<Moment> ParseMoment(const std::string& userInput, double timeWindow); //Parses a user input and returns a vector of time moments
 
 };
 
