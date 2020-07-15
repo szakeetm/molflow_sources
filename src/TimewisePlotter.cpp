@@ -375,7 +375,8 @@ void TimewisePlotter::addView(int facet) {
 		v->SetName(tmp);
 		v->userData1 = 0;
 		v->SetStyle(STYLE_DOT);
-		//v->SetLineWidth(2);
+        v->SetColor(ColorSchemes::defaultCol[0]);
+        //v->SetLineWidth(2);
 		chart->GetY1Axis()->AddDataView(v);
 		views[nbView] = v;
 		nbView++;
@@ -390,7 +391,8 @@ void TimewisePlotter::addView(int facet) {
 			v->SetName(tmp);
 			v->userData1 = (int)index;
 			v->SetStyle(STYLE_DOT);
-			chart->GetY1Axis()->AddDataView(v);
+            v->SetColor(ColorSchemes::defaultCol[0]);
+            chart->GetY1Axis()->AddDataView(v);
 			views[nbView] = v;
 			nbView++;
 		}

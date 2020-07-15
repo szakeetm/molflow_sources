@@ -849,6 +849,10 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     RebuildTextures();
                 }
                 catch (Error &e) {
+                    if (!mApp->profilePlotter) {
+                        mApp->profilePlotter = new ProfilePlotter();
+                        mApp->profilePlotter->SetWorker(this);
+                    }
                     mApp->profilePlotter->Reset(); //To avoid trying to display non-loaded simulation results
                     GLMessageBox::Display(e.what(), "Error while loading simulation state", GLDLG_CANCEL,
                                           GLDLG_ICONWARNING);
@@ -1244,6 +1248,11 @@ std::ostringstream Worker::SerializeForLoader() {
     std::ostringstream result;
     cereal::BinaryOutputArchive outputArchive(result);
 
+    std::vector<Moment> momentIntervals;
+    momentIntervals.reserve(moments.size());
+    for(auto& moment : moments){
+        momentIntervals.emplace_back(std::make_pair(moment.first - (0.5 * moment.second), moment.first + (0.5 * moment.second)));
+    }
     outputArchive(
             CEREAL_NVP(wp),
             CEREAL_NVP(ontheflyParams),
@@ -1251,7 +1260,8 @@ std::ostringstream Worker::SerializeForLoader() {
             CEREAL_NVP(IDs),
             CEREAL_NVP(parameters),
             //CEREAL_NVP(temperatures),
-            CEREAL_NVP(moments)
+            //CEREAL_NVP(moments)
+            cereal::make_nvp("moments",momentIntervals)
             //CEREAL_NVP(desorptionParameterIDs)
     ); //Worker
 
@@ -1347,8 +1357,8 @@ int Worker::CheckIntervalOverlap(const std::vector<Moment>& vecA, const std::vec
             const double bj_low = b_j.first - 0.5 * b_j.second;
             const double bj_high = b_j.first + 0.5 * b_j.second;
 
-            if (DBL_EPSILON < std::abs(a_high - bj_low) &&
-                DBL_EPSILON <= std::abs(bj_high - a_low)) { //b_low < a_high && a_low <= b_high
+            if (bj_low + DBL_EPSILON < a_high &&
+                    a_low + DBL_EPSILON <= bj_high) { //b_low < a_high && a_low <= b_high
                 return 1; // overlap
             } else
                 return 0; // no overlap
@@ -1365,8 +1375,8 @@ int Worker::CheckIntervalOverlap(const std::vector<Moment>& vecA, const std::vec
             const double ai_low = a_i.first - 0.5 * a_i.second;
             const double ai_high = a_i.first + 0.5 * a_i.second;
 
-            if (DBL_EPSILON < std::abs(b_high - ai_low) &&
-                DBL_EPSILON <= std::abs(ai_high - b_low)) { //b_low < a_high && a_low <= b_high
+            if (ai_low + DBL_EPSILON < b_high &&
+                b_low + DBL_EPSILON <= ai_high) { //b_low < a_high && a_low <= b_high
                 return 1; // overlap
             } else
                 return 0; // no overlap
@@ -1375,6 +1385,41 @@ int Worker::CheckIntervalOverlap(const std::vector<Moment>& vecA, const std::vec
     
     return 0;
 }
+/*!
+ * @brief Check for 2 unsorted interval vectors (a and b), if any of the contained intervals (a_i and b_j) overlap
+ * @param vecA first Vector [a_low,a_high[
+ * @param vecB second Vector [b_low,b_high[
+ * @return 0=no overlap, 1=overlap
+ */
+std::pair<int, int> Worker::CheckIntervalOverlap(const std::vector<std::vector<Moment>>& vecParsedMoments) {
+    if(vecParsedMoments.empty())
+        return std::make_pair<int,int>(0,0);
+
+    std::vector<std::pair<double,double>> intervalBoundaries;
+    for(auto& vec : vecParsedMoments){
+        double a_low = std::numeric_limits<double>::max();
+        double a_high = std::numeric_limits<double>::lowest();
+
+        for (auto &a_i : vec) {
+            a_low = std::min(a_low, a_i.first - 0.5 * a_i.second);
+            a_high = std::max(a_high, a_i.first + 0.5 * a_i.second);
+        }
+
+        intervalBoundaries.emplace_back(std::make_pair(a_low,a_high));
+    }
+
+    for(auto vecOuter = intervalBoundaries.begin(); vecOuter != intervalBoundaries.end(); vecOuter++){
+        for(auto vecInner = vecOuter + 1; vecInner != intervalBoundaries.end() && vecInner != vecOuter; vecInner++){
+            if ((*vecOuter).first + DBL_EPSILON < (*vecInner).second &&
+                (*vecInner).first + DBL_EPSILON <= (*vecOuter).second) { //b_low < a_high && a_low <= b_high
+                return std::make_pair<int,int>
+                        (vecOuter-intervalBoundaries.begin(),vecInner-intervalBoundaries.begin()); // overlap
+            }
+        }
+    }
+    return std::make_pair<int,int>(0,0);
+}
+
 
 /**
 * \brief Adds a time serie to moments and returns the number of elements
@@ -1389,6 +1434,7 @@ int Worker::AddMoment(std::vector<Moment> newMoments) {
     }
     int nb = newMoments.size();
     moments.insert(moments.end(),newMoments.begin(),newMoments.end());
+    std::sort(moments.begin(),moments.end());
     return nb;
 }
 
@@ -1437,7 +1483,7 @@ double Worker::GetMoleculesPerTP(size_t moment) {
     } else {
         //Time-dependent mode
         //Each test particle represents a certain absolute number of real molecules
-        return (wp.totalDesorbedMolecules / wp.timeWindowSize) / globalHitCache.globalHits.hit.nbDesorbed;
+        return (wp.totalDesorbedMolecules / mApp->worker.moments[moment - 1].second) / globalHitCache.globalHits.hit.nbDesorbed;
     }
 }
 
@@ -1571,9 +1617,21 @@ void Worker::PrepareToRun() {
 
     //determine latest moment
     wp.latestMoment = 1E-10;
-    for (size_t i = 0; i < moments.size(); i++)
-        if (moments[i].first > wp.latestMoment) wp.latestMoment = moments[i].first;
-    wp.latestMoment += wp.timeWindowSize / 2.0;
+
+#if defined(DEBUG) // validate with old method for now
+    double latestMoment = 1E-10;
+    for (auto & moment : moments)
+        if (moment.first > latestMoment) latestMoment = moment.first;
+
+    if(!moments.empty() && latestMoment != (moments.end()-1)->first){
+        char tmp[256];
+        sprintf(tmp, R"(Latest moment check differs "%lf" vs. "%lf")", latestMoment, (moments.end()-1)->first);
+        throw Error(tmp);
+    }
+#endif
+    if(!moments.empty())
+        wp.latestMoment = (moments.end()-1)->first + (moments.end()-1)->second / 2.0;
+    //wp.latestMoment += wp.timeWindowSize / 2.0;
 
     Geometry *g = GetGeometry();
     //Generate integrated desorption functions

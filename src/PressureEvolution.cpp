@@ -64,16 +64,7 @@ PressureEvolution::PressureEvolution(Worker *w) :GLWindow() {
 	SetIconfiable(true);
 	lastUpdate = 0.0f;
 
-	colors = {
-		GLColor(255,000,055), //red
-		GLColor(000,000,255), //blue
-		GLColor(000,204,051), //green
-		GLColor(000,000,000), //black
-		GLColor(255,153,051), //orange
-		GLColor(153,204,255), //light blue
-		GLColor(153,000,102), //violet
-		GLColor(255,230,005)  //yellow
-	};
+	colors = ColorSchemes::defaultCol;
 
 	chart = new GLChart(0);
 	chart->SetBorder(BORDER_BEVEL_IN);
@@ -257,29 +248,32 @@ void PressureEvolution::refreshChart() {
 			}
 			case 2: {//Pressure
 				scaleY = 1.0 / nbDes / (f->GetArea() * 1E-4) * worker->wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
-				scaleY *= worker->wp.totalDesorbedMolecules / worker->wp.timeWindowSize;
+                scaleY *= worker->wp.totalDesorbedMolecules;
+                //scaleY *= worker->wp.totalDesorbedMolecules / worker->wp.timeWindowSize;
 				for (size_t m = 1; m <= Min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
 					FacetHitBuffer* facetHits = (FacetHitBuffer*)(buffer + f->sh.hitOffset + m * sizeof(FacetHitBuffer));
-					v->Add(worker->moments[m - 1].first, facetHits->hit.sum_v_ort*scaleY, false);
+					v->Add(worker->moments[m - 1].first, facetHits->hit.sum_v_ort*(scaleY/worker->moments[m - 1].second), false);
 				}
 				break;
 			}
 			case 3: {//Particle density
 				scaleY = 1.0 / nbDes / (f->GetArea() * 1E-4);
-				scaleY *= worker->wp.totalDesorbedMolecules / worker->wp.timeWindowSize;
-				scaleY *= f->DensityCorrection();
+                scaleY *= worker->wp.totalDesorbedMolecules;
+                //scaleY *= worker->wp.totalDesorbedMolecules / worker->wp.timeWindowSize;
+                scaleY *= f->DensityCorrection();
 				for (size_t m = 1; m <= Min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
 					FacetHitBuffer* facetHits = (FacetHitBuffer*)(buffer + f->sh.hitOffset + m * sizeof(FacetHitBuffer));
-					v->Add(worker->moments[m - 1].first, facetHits->hit.sum_1_per_ort_velocity*scaleY, false);
+					v->Add(worker->moments[m - 1].first, facetHits->hit.sum_1_per_ort_velocity*(scaleY/worker->moments[m - 1].second), false);
 				}
 				break;
 			}
 			case 4: {//Imp.rate
 				scaleY = 1.0 / nbDes / (f->GetArea() * 1E-4);
-				scaleY *= worker->wp.totalDesorbedMolecules / worker->wp.timeWindowSize;
-				for (size_t m = 1; m <= Min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
+                scaleY *= worker->wp.totalDesorbedMolecules;
+                //scaleY *= worker->wp.totalDesorbedMolecules / worker->wp.timeWindowSize;
+                for (size_t m = 1; m <= Min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
 					FacetHitBuffer* facetHits = (FacetHitBuffer*)(buffer + f->sh.hitOffset + m * sizeof(FacetHitBuffer));
-					v->Add(worker->moments[m - 1].first, facetHits->hit.nbHitEquiv*scaleY, false);
+					v->Add(worker->moments[m - 1].first, facetHits->hit.nbHitEquiv*(scaleY/worker->moments[m - 1].second), false);
 				}
 				break;
 			}

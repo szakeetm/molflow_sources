@@ -708,9 +708,12 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 
 		for (int i = 0; i < nb; i++) {
 			char tmpExpr[512];
+			double tmpWindow;
 			strcpy(tmpExpr, file->ReadString());
-			worker->userMoments.emplace_back(tmpExpr,0.0);
-			worker->AddMoment(mApp->worker.ParseMoment(tmpExpr, 0.0));
+            file->ReadKeyword(":");
+            tmpWindow = file->ReadDouble();
+            worker->userMoments.emplace_back(tmpExpr,tmpWindow);
+			worker->AddMoment(mApp->worker.ParseMoment(tmpExpr, tmpWindow));
 		}
 		file->ReadKeyword("}");
 
@@ -1400,10 +1403,8 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, BYTE *buffer, W
 	for (size_t u = 0; u < worker->userMoments.size(); u++) {
 		file->Write("\n \"");
 		file->Write(worker->userMoments[u].first.c_str());
-		file->Write("\" ");
+		file->Write("\" : ");
         file->Write(worker->userMoments[u].second);
-        file->Write("\"");
-
     }
 	file->Write("\n}\n");
 
@@ -2828,9 +2829,11 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 		xml_node userMomentsNode = timeSettingsNode.child("UserMoments");
 		for (xml_node newUserEntry : userMomentsNode.children("UserEntry")) {
 			char tmpExpr[512];
+			double tmpWindow;
 			strcpy(tmpExpr, newUserEntry.attribute("content").as_string());
-            work->userMoments.emplace_back(tmpExpr,0.0);
-			work->AddMoment(mApp->worker.ParseMoment(tmpExpr, 0.0));
+			tmpWindow = newUserEntry.attribute("window").as_double();
+            work->userMoments.emplace_back(tmpExpr,tmpWindow);
+			work->AddMoment(mApp->worker.ParseMoment(tmpExpr, tmpWindow));
 		}
 
 		/*
