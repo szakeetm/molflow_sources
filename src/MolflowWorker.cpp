@@ -208,6 +208,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
         if (isGEO) {
             fileNameWithoutExtension = fileName.substr(0, fileName.length() - 4);
             fileNameWithGeo7z = fileName + "7z";
+            fileNameWithGeo = fileName;
         } else if (isGEO7Z) {
             fileNameWithoutExtension = fileName.substr(0, fileName.length() - 6);
             fileNameWithGeo = fileName.substr(0, fileName.length() - 2);
@@ -386,7 +387,10 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                                   "Compressor not found", GLDLG_OK, GLDLG_ICONERROR);
             fileName = fileNameWithGeo;
         }
-    } else if (ok && isGEO) fileName = fileNameWithGeo;
+    }
+    else if (ok && isGEO) {
+        fileName = fileNameWithGeo;
+    }
     if (!autoSave && !saveSelected && !isSTL) { //STL file is just a copy
         SetCurrentFileName(fileName.c_str());
         mApp->UpdateTitle();
