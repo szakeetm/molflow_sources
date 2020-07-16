@@ -43,6 +43,7 @@ public:
 
 	//Recordings for histogram
 	size_t   nbBounces; // Number of hit (current particle) since desorption
+    size_t   lastMomentIndex; // Speedup for binary search
 	double   distanceTraveled;
 	double   flightTime;
 
