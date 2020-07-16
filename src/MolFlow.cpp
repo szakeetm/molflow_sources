@@ -2094,6 +2094,8 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 
 	try {
 		geom->BuildPipe(L, R, 0, step);
+        worker.needsReload = true;
+
 		worker.CalcTotalOutgassing();
 		//default values
 		worker.wp.enableDecay = false;
