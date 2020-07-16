@@ -174,7 +174,7 @@ void MomentsEditor::ProcessMessage(GLComponent *src, int message) {
 				auto overlapPair = Worker::CheckIntervalOverlap(parsedMoments);
 				if(overlapPair.first != 0 || overlapPair.second != 0){
                     char tmp[128];
-                    sprintf(tmp, "Overlapping time window detected! Check arguments: %d and %d.", overlapPair.first+1,overlapPair.second+1);
+                    sprintf(tmp, "Overlapping time window detected! Check lines %d and %d.", overlapPair.first+1,overlapPair.second+1);
                     GLMessageBox::Display(tmp, "Error", GLDLG_OK, GLDLG_ICONERROR);
                     return;
                 }

@@ -701,24 +701,33 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 		file->ReadKeyword("gasMass"); file->ReadKeyword(":");
 		worker->wp.gasMass = file->ReadDouble();
 	}
-	if (*version >= 10) { //time-dependent version
+    if (*version >= 16) { //time-dependent version with variable time windows
+        file->ReadKeyword("userMoments"); file->ReadKeyword("{");
+        file->ReadKeyword("nb"); file->ReadKeyword(":");
+        int nb = file->ReadInt();
+
+        for (int i = 0; i < nb; i++) {
+            char tmpExpr[512];
+            double tmpWindow;
+            strcpy(tmpExpr, file->ReadString());
+            file->ReadKeyword(":");
+            tmpWindow = file->ReadDouble();
+            worker->userMoments.emplace_back(tmpExpr,tmpWindow);
+        }
+        file->ReadKeyword("}");
+    }
+    else if (*version >= 10) { //time-dependent version with fixed time window length
 		file->ReadKeyword("userMoments"); file->ReadKeyword("{");
 		file->ReadKeyword("nb"); file->ReadKeyword(":");
 		int nb = file->ReadInt();
 
 		for (int i = 0; i < nb; i++) {
 			char tmpExpr[512];
-			double tmpWindow;
 			strcpy(tmpExpr, file->ReadString());
-            file->ReadKeyword(":");
-            tmpWindow = file->ReadDouble();
-            worker->userMoments.emplace_back(tmpExpr,tmpWindow);
-			worker->AddMoment(mApp->worker.ParseMoment(tmpExpr, tmpWindow));
+			// Try to set a fixed time window later for GEO versions >= 11
+            worker->userMoments.emplace_back(tmpExpr,0.0);
 		}
 		file->ReadKeyword("}");
-
-		/*for (size_t i = 0; i < wp.nbFacet;i++)
-			facets[i]->ResizeCounter(wp.nbMoments); //Initialize hits counters for facets*/
 	}
 	if (*version >= 11) { //pulse version
 		file->ReadKeyword("desorptionStart"); file->ReadKeyword(":");
@@ -730,10 +739,15 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 		file->ReadKeyword("timeWindow"); file->ReadKeyword(":");
 		worker->wp.timeWindowSize = file->ReadDouble();
 
+		if(*version < 16){ // use fixed time window for user moments
+            for(auto& uMoment : worker->userMoments){
+                uMoment.second = worker->wp.timeWindowSize;
+            }
+        }
 		file->ReadKeyword("useMaxwellian"); file->ReadKeyword(":");
 		worker->wp.useMaxwellDistribution = file->ReadInt();
-
 	}
+
 	if (*version >= 12) { //2013.aug.22
 		file->ReadKeyword("calcConstantFlow"); file->ReadKeyword(":");
 		worker->wp.calcConstantFlow = file->ReadInt();
@@ -847,7 +861,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 				worker->globalHitCache.leakCache[i].dir.z = file->ReadDouble();
 			}
 			else { //Saved file has more leaks than we could load
-				for (int i = 0; i < 6; i++)
+				for (int skipIndex = 0; skipIndex < 6; skipIndex++)
 					file->ReadDouble();
 			}
 		}
@@ -2829,11 +2843,11 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 		xml_node userMomentsNode = timeSettingsNode.child("UserMoments");
 		for (xml_node newUserEntry : userMomentsNode.children("UserEntry")) {
 			char tmpExpr[512];
-			double tmpWindow;
+			double tmpWindow = 0.0;
 			strcpy(tmpExpr, newUserEntry.attribute("content").as_string());
 			tmpWindow = newUserEntry.attribute("window").as_double();
             work->userMoments.emplace_back(tmpExpr,tmpWindow);
-			work->AddMoment(mApp->worker.ParseMoment(tmpExpr, tmpWindow));
+            // Add real moments only after fully loading the file, because we only want to throw a warning and not an error
 		}
 
 		/*
@@ -2844,6 +2858,12 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 		*/
 
 		work->wp.timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();
+		// Default initialization
+		for(auto& uMoment : work->userMoments){
+		    if(uMoment.second == 0.0){
+                uMoment.second = work->wp.timeWindowSize;
+		    }
+		}
 		work->wp.useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_bool();
 		work->wp.calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_bool();
 
