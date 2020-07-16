@@ -472,7 +472,7 @@ bool Simulation::SimulationMCStep(size_t nbStep) {
                     currentParticle.position + d * currentParticle.direction;
             //currentParticle.distanceTraveled += d;
 
-            double lastFLightTime = currentParticle.flightTime; //memorize for partial hits
+            double lastFlightTime = currentParticle.flightTime; //memorize for partial hits
             currentParticle.flightTime +=
                     d / 100.0 / currentParticle.velocity; //conversion from cm to m
 
@@ -482,9 +482,9 @@ bool Simulation::SimulationMCStep(size_t nbStep) {
                 //hit time over the measured period - we create a new particle
                 //OR particle has decayed
                 double remainderFlightPath = currentParticle.velocity * 100.0 *
-                                             Min(wp.latestMoment - lastFLightTime,
+                                             Min(wp.latestMoment - lastFlightTime,
                                                  currentParticle.expectedDecayMoment -
-                                                 lastFLightTime); //distance until the point in space where the particle decayed
+                                                 lastFlightTime); //distance until the point in space where the particle decayed
                 tmpGlobalResult.distTraveled_total += remainderFlightPath * currentParticle.oriRatio;
                 RecordHit(HIT_LAST);
                 //distTraveledSinceUpdate += currentParticle.distanceTraveled;
@@ -645,6 +645,7 @@ bool Simulation::StartFromSource() {
     //currentParticle.distanceTraveled = 0.0;  //for mean free path calculations
     //currentParticle.flightTime = desorptionStartTime + (desorptionStopTime - desorptionStartTime)*randomGenerator.rnd();
     currentParticle.flightTime = GenerateDesorptionTime(src);
+    currentParticle.lastMomentIndex = 0;
     if (wp.useMaxwellDistribution) currentParticle.velocity = GenerateRandomVelocity(src->sh.CDFid);
     else
         currentParticle.velocity =
@@ -1285,8 +1286,9 @@ void Simulation::RecordHistograms(SubprocessFacet *iFacet) {
         iFacet->tmpHistograms[0].timeHistogram[binIndex] += currentParticle.oriRatio;
     }
 
-    size_t m = -1;
-    if((m = LookupMomentIndex(currentParticle.flightTime, moments)) != -1){
+    int m = -1;
+    if((m = LookupMomentIndex(currentParticle.flightTime, moments, currentParticle.lastMomentIndex)) >= 0){
+        currentParticle.lastMomentIndex = m;
         if (wp.globalHistogramParams.recordBounce) {
             binIndex = Min(currentParticle.nbBounces / wp.globalHistogramParams.nbBounceBinsize,
                            wp.globalHistogramParams.GetBounceHistogramSize() - 1);
@@ -1338,8 +1340,9 @@ void Simulation::RecordHitOnTexture(SubprocessFacet *f, double time, bool countH
             currentParticle.oriRatio * velocity_factor / ortVelocity;
     f->texture[0][add].sum_v_ort_per_area += currentParticle.oriRatio * ortSpeedFactor * ortVelocity *
                                              f->textureCellIncrements[add]; // sum ortho_velocity[m/s] / cell_area[cm2]
-    size_t m = -1;
-    if((m = LookupMomentIndex(time, moments)) != -1){
+    int m = -1;
+    if((m = LookupMomentIndex(time, moments, currentParticle.lastMomentIndex)) >= 0){
+        currentParticle.lastMomentIndex = m;
         if (countHit) f->texture[m][add].countEquiv += currentParticle.oriRatio;
         f->texture[m][add].sum_1_per_ort_velocity +=
                 currentParticle.oriRatio * velocity_factor / ortVelocity;
@@ -1357,8 +1360,9 @@ void Simulation::RecordDirectionVector(SubprocessFacet *f, double time) {
                                currentParticle.oriRatio * currentParticle.direction *
                                currentParticle.velocity;
     f->direction[0][add].count++;
-    size_t m = -1;
-    if((m = LookupMomentIndex(time, moments)) != -1){
+    int m = -1;
+    if((m = LookupMomentIndex(time, moments, currentParticle.lastMomentIndex)) >= 0){
+        currentParticle.lastMomentIndex = m;
         f->direction[m][add].dir = f->direction[m][add].dir +
                                    currentParticle.oriRatio * currentParticle.direction *
                                    currentParticle.velocity;
@@ -1370,14 +1374,15 @@ void Simulation::RecordDirectionVector(SubprocessFacet *f, double time) {
 void Simulation::ProfileFacet(SubprocessFacet *f, double time, bool countHit, double velocity_factor, double ortSpeedFactor) {
 
     size_t nbMoments = moments.size();
-    size_t m = LookupMomentIndex(time, moments);
+    int m = LookupMomentIndex(time, moments, currentParticle.lastMomentIndex);
     if (countHit && f->sh.profileType == PROFILE_ANGULAR) {
         double dot = Dot(f->sh.N, currentParticle.direction);
         double theta = std::acos(std::abs(dot));     // Angle to normal (PI/2 => PI)
         size_t pos = (size_t)(theta / (PI / 2) * ((double) PROFILE_SIZE)); // To Grad
         Saturate(pos, 0, PROFILE_SIZE - 1);
         f->profile[0][pos].countEquiv += currentParticle.oriRatio;
-        if(m != -1){
+        if(m >= 0){
+            currentParticle.lastMomentIndex = m;
             f->profile[m][pos].countEquiv += currentParticle.oriRatio;
         }
     } else if (f->sh.profileType == PROFILE_U || f->sh.profileType == PROFILE_V) {
@@ -1390,7 +1395,8 @@ void Simulation::ProfileFacet(SubprocessFacet *f, double time, bool countHit, do
                     currentParticle.oriRatio * velocity_factor / ortVelocity;
             f->profile[0][pos].sum_v_ort += currentParticle.oriRatio * ortSpeedFactor *
                                             (wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity;
-            if(m != -1) {
+            if(m >= 0) {
+                currentParticle.lastMomentIndex = m;
                 if (countHit) f->profile[m][pos].countEquiv += currentParticle.oriRatio;
                 double ortVelocity = currentParticle.velocity *
                                      std::abs(Dot(f->sh.N, currentParticle.direction));
@@ -1414,7 +1420,8 @@ void Simulation::ProfileFacet(SubprocessFacet *f, double time, bool countHit, do
                               (double) PROFILE_SIZE); //"dot" default value is 1.0
         if (pos >= 0 && pos < PROFILE_SIZE) {
             f->profile[0][pos].countEquiv += currentParticle.oriRatio;
-            if (m != -1) {
+            if (m >= 0) {
+                currentParticle.lastMomentIndex = m;
                 f->profile[m][pos].countEquiv += currentParticle.oriRatio;
             }
         }
@@ -1549,8 +1556,6 @@ void Simulation::TreatMovingFacet() {
 */
 void Simulation::IncreaseFacetCounter(SubprocessFacet *f, double time, size_t hit, size_t desorb, size_t absorb, double sum_1_per_v,
                           double sum_v_ort) {
-    size_t nbMoments = moments.size();
-
     f->tmpCounter[0].hit.nbMCHit += hit;
     double hitEquiv = static_cast<double>(hit) * currentParticle.oriRatio;
     f->tmpCounter[0].hit.nbHitEquiv += hitEquiv;
@@ -1560,8 +1565,9 @@ void Simulation::IncreaseFacetCounter(SubprocessFacet *f, double time, size_t hi
     f->tmpCounter[0].hit.sum_v_ort += currentParticle.oriRatio * sum_v_ort;
     f->tmpCounter[0].hit.sum_1_per_velocity += (hitEquiv + static_cast<double>(desorb)) / currentParticle.velocity;
 
-    size_t m = -1;
-    if((m = LookupMomentIndex(time, moments)) != -1){
+    int m = -1;
+    if((m = LookupMomentIndex(time, moments, currentParticle.lastMomentIndex)) >= 0){
+        currentParticle.lastMomentIndex = m;
         f->tmpCounter[m].hit.nbMCHit += hit;
         double hitEquiv = static_cast<double>(hit) * currentParticle.oriRatio;
         f->tmpCounter[m].hit.nbHitEquiv += hitEquiv;
