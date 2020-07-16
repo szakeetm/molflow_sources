@@ -727,6 +727,17 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             if (!insert) {
 
                 geom->LoadGEO(f, progressDlg, &version, this);
+// Add moments only after user Moments are completely initialized
+                for(auto& uMoment : this->userMoments){
+                    if(this->AddMoment(mApp->worker.ParseMoment(uMoment.first, uMoment.second)) == -1){
+                        // Create a warning on interval overlap
+                        progressDlg->SetMessage("Skipping time moments, due to overlap! Please check in Moments Editor!");
+                        GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning!", GLDLG_OK,
+                                              GLDLG_ICONWARNING);
+                        mApp->worker.moments.clear();
+                        break;
+                    }
+                }
 
                 progressDlg->SetMessage("Reloading worker with new geometry...");
                 RealReload(); //for the loading of textures
@@ -835,6 +846,17 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
             if (!insert) {
                 geom->LoadXML_geom(rootNode, this, progressDlg);
+                // Add moments only after user Moments are completely initialized
+                for(auto& uMoment : this->userMoments){
+                    if(this->AddMoment(mApp->worker.ParseMoment(uMoment.first, uMoment.second)) == -1){
+                        // Create a warning on interval overlap
+                        progressDlg->SetMessage("Skipping time moments, due to overlap! Please check in Moments Editor!");
+                        GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning!", GLDLG_OK,
+                                              GLDLG_ICONWARNING);
+                        mApp->worker.moments.clear();
+                        break;
+                    }
+                }
                 geom->UpdateName(fileName.c_str());
 
                 progressDlg->SetMessage("Reloading worker with new geometry...");
