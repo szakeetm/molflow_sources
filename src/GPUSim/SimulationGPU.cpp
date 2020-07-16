@@ -6,15 +6,12 @@
 #include "SimulationGPU.h"
 #include "ModelReader.h" // TempFacet
 
-#define LAUNCHSIZE 1920*64*1//1024*64*16//1024*128*64
+#define LAUNCHSIZE 1920*1*1//1024*64*16//1024*128*64
 
 SimulationGPU::SimulationGPU()
         : SimulationUnit() {
-
     model = nullptr;
-
     totalDesorbed = 0;
-
     memset(&tmpGlobalResult, 0, sizeof(GlobalHitBuffer));
 }
 
@@ -84,6 +81,7 @@ bool SimulationGPU::UpdateOntheflySimuParams(Dataport *loader) {
     cereal::BinaryInputArchive inputArchive(inputStream);
 
     inputArchive(ontheflyParams);
+    model->ontheflyParams = ontheflyParams;
 
     ReleaseDataport(loader);
 
@@ -143,7 +141,7 @@ void SimulationGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWOR
     }
     gHits->hitCache[gHits->lastHitIndex].type = HIT_REF; //Penup (border between blocks of consecutive hits in the hit cache)
     gHits->lastHitIndex = (gHits->lastHitIndex + globalCount->positions.size()) % HITCACHESIZE;
-    gHits->hitCache[gHits->lastHitIndex-1].type = HIT_LAST; //Penup (border between blocks of consecutive hits in the hit cache)
+    gHits->hitCache[gHits->lastHitIndex].type = HIT_LAST; //Penup (border between blocks of consecutive hits in the hit cache)
     gHits->hitCacheSize = std::min(HITCACHESIZE, gHits->hitCacheSize + globalCount->positions.size());
 #endif // DEBUGPOS
 
@@ -182,7 +180,7 @@ void SimulationGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWOR
         facetHitBuffer->hit.sum_1_per_ort_velocity += globalCount->facetHitCounters[i].sum_1_per_ort_velocity;
     } // End nbFacet
 
-    //textures
+    //profiles
     if(!globalCount->profiles.empty()) {
         double timeCorrection = model->wp.finalOutgassingRate;
         for (auto&[id, profiles] : globalCount->profiles) {
@@ -297,9 +295,12 @@ void SimulationGPU::ResetTmpCounters() {
 static uint64_t currentDes = 0;
 bool SimulationGPU::SimulationMCStep(size_t nbStep){
     for(int i=0;i<nbStep;++i)
-        gpuSim.RunSimulation();
-    currentDes += nbStep * LAUNCHSIZE;
+        currentDes = gpuSim.RunSimulation();
+    //currentDes += nbStep * LAUNCHSIZE;
     bool goOn = this->model->ontheflyParams.desorptionLimit > currentDes;
+#ifdef DESORPEXIT
+    goOn = true;
+#endif
     if(this->model->ontheflyParams.desorptionLimit == 0)
         goOn = true;
     return goOn;

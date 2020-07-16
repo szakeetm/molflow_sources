@@ -92,7 +92,9 @@ namespace flowgpu {
         SELF_INTERSECTION,
         TRANSPARENT_HIT,
         ACTIVE_BACK_HIT,
-        SELF_BACK_HIT
+        SELF_BACK_HIT,
+        TRANSPARENT_BACK_HIT,
+        END_STATUS
     };
     // attributes of the molecule that have effects for tracing or post processing
     struct MolPRD
@@ -111,8 +113,12 @@ namespace flowgpu {
         float3 postHitDir;
         int   hitFacetId;
 
-        // flags - post launch processing TODO: convert all into one uint32_t ?
         int inSystem;
+        int facetHitSide;
+        // flags - post launch processing TODO: convert all into one uint32_t ?
+#ifdef DESORPEXIT
+        int hasToTerminate;
+#endif
     };
 
     // Globalhitbuffer
@@ -186,6 +192,10 @@ namespace flowgpu {
             uint32_t maxDepth; // for recursion
             float scene_epsilon; // to prevent self intersection (currently unused due to other techniques)
             uint32_t nbRandNumbersPerThread;
+#ifdef BOUND_CHECK
+            uint32_t nbTexel;
+            uint32_t nbProfSlices;
+#endif
         } simConstants;
 
         RN_T* randomNumbers;

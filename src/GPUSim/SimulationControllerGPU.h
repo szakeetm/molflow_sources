@@ -27,7 +27,7 @@ public:
     ~SimulationControllerGPU();
 
     int LoadSimulation(flowgpu::Model* loaded_model, size_t launchSize);
-    int RunSimulation();
+    uint64_t RunSimulation();
     int CloseSimulation();
     int ResetSimulation();
 

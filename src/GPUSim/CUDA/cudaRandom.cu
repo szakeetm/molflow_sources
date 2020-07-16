@@ -90,7 +90,7 @@ namespace crng {
 #ifdef DEBUG
         CURAND_CALL(curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT));
 #else
-        CURAND_CALL(curandCreateGenerator(&gen, (curandRngType)161));
+        CURAND_CALL(curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_XORWOW));
 #endif
 
         /* Set seed */
@@ -186,17 +186,17 @@ namespace crng {
 
         size_t i;
         for(i = 0; i < n; i++) {
-            //if(i%100==0)
-                //printf("[%d] -- %1.4f ", i, hostData[i]);
-            if(hostData[i]==1.0f){
+            if(i%100==0)
+                printf("[%zu] -- %1.4f ", i, hostData[i]);
+            /*if(hostData[i]==1.0f){
                 printf("[%zd] -- %1.4f \n", i, hostData[i]);}
             else if(hostData[i]==0.0f)
                 printf("[%zd] -- %1.4f \n", i, hostData[i]);
             else if(hostData[i]==0.25f)
-                printf("[%zd] -- %1.4f \n", i, hostData[i]);
+                printf("[%zd] -- %1.4f \n", i, hostData[i]);*/
         }
         printf("\n");
-        printf("[%6.4f/%d -- %6.4f/%d] ", (float)(countSub)/(countSub+countSuper),countSub, (float)(countSuper)/(countSub+countSuper),countSuper);
+        //printf("[%6.4f/%d -- %6.4f/%d] ", (float)(countSub)/(countSub+countSuper),countSub, (float)(countSuper)/(countSub+countSuper),countSuper);
         printf("\n");
         free(hostData);
         return EXIT_SUCCESS;

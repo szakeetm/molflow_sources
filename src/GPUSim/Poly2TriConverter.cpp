@@ -216,22 +216,32 @@ int Poly2TriConverter::PolygonsToTriangles(flowgpu::PolygonMesh *polygonMesh, fl
                 std::cout << "[WARNING] Polygon with "<<vertices.size()<<" vertices should have "<< nbVert <<std::endl;
 
             std::vector<int3> triangleIndices = Triangulate(vertices, indices);
-            triangleMesh->indices.insert(std::end(triangleMesh->indices),std::begin(triangleIndices),std::end(triangleIndices));
-            std::vector<flowgpu::Polygon> newTris;
-            for(auto& tri : triangleIndices){
 
+            std::vector<flowgpu::Polygon> newTris;
+            for(auto triIt = triangleIndices.begin(); triIt != triangleIndices.end();){
                 // TODO: This should be checked before triangulation on the polygon itself
-                if(tri.x == tri.y || tri.x == tri.z || tri.y == tri.z){
-                    std::cout << "[WARNING] Triangle with same vertices was created! PolyIndex: "<< facetIndex <<std::endl;
+                if((*triIt).x == (*triIt).y || (*triIt).x == (*triIt).z || (*triIt).y == (*triIt).z){
+
+                    /*std::cout << "[WARNING] Triangle with same vertices was created! PolyIndex: "<< facetIndex <<std::endl;
                     std::cout << "[WARNING] Vertices: "<< tri.x << " , " << tri.y << " , " << tri.z << std::endl;
-                    throw std::logic_error("Malformed triangle created!");
+                    throw std::logic_error("Malformed triangle created!");*/
+                    std::cout << "[WARNING] Triangle with same vertices could have been created! PolyIndex: "<< facetIndex <<std::endl;
+                    std::cout << "[WARNING] Vertices: "<< (*triIt).x << " , " << (*triIt).y << " , " << (*triIt).z << std::endl;
+                    std::cout << "[WARNING] Skipping triangle! Could lead to unwanted results!" <<std::endl;
+                    triIt = triangleIndices.erase(triIt);
+                    continue;
+                    //throw std::logic_error("Malformed triangle created!");
                 }
-                flowgpu::Polygon newPoly(3);
-                newPoly.parentIndex = facetIndex;
-                newPoly.indexOffset = std::numeric_limits<uint32_t>::max();
-                newTris.push_back(newPoly);
+                else{
+                    flowgpu::Polygon newPoly(3);
+                    newPoly.parentIndex = facetIndex;
+                    newPoly.indexOffset = std::numeric_limits<uint32_t>::max();
+                    newTris.push_back(newPoly);
+                    ++triIt;
+                }
             }
             convertedTris.insert(std::end(convertedTris),std::begin(newTris),std::end(newTris));
+            triangleMesh->indices.insert(std::end(triangleMesh->indices),std::begin(triangleIndices),std::end(triangleIndices));
 
             if(newTris.size() > nbVert - 2)
                 std::cout << "[WARNING] Polygon with "<<nbVert<<" vertices was split into "<< newTris.size() << " triangles!" <<std::endl;
@@ -243,25 +253,40 @@ int Poly2TriConverter::PolygonsToTriangles(flowgpu::PolygonMesh *polygonMesh, fl
     }
 
     // Lookup parent IDs in the original polygon mesh
+
+    std::vector<uint32_t> deletePoly;
+    std::vector<flowgpu::Polygon>::iterator polyIter = polygons.begin();
     for(auto& tri : convertedTris){
-        for(std::vector<flowgpu::Polygon>::iterator polyIter = polygons.begin(); polyIter != polygons.end(); ++polyIter){
+        do{
             if(tri.parentIndex == (*polyIter).parentIndex){
                 tri.copyParametersFrom(*polyIter);
-
+                if(deletePoly.empty() || deletePoly.back() != (*polyIter).parentIndex){
+                    deletePoly.push_back((*polyIter).parentIndex);
+                }
                 break;
+            } else {
+                ++polyIter;
             }
-        }
+        } while(polyIter != polygons.end());
+    }
+
+    for (auto deleteIndex = deletePoly.rbegin(); deleteIndex != deletePoly.rend(); ++deleteIndex) {
+        auto toDelete = polygons.begin() + (*deleteIndex);
+        std::cout << "Deleting Tri# "<<toDelete->parentIndex<< " from PolyList: #"<<(*deleteIndex)<<std::endl;
+        polygons.erase(toDelete);
     }
 
     // Second lookup to delete
-    for(std::vector<flowgpu::Polygon>::iterator polyIter = polygons.begin(); polyIter != polygons.end(); ++polyIter){
+    for(std::vector<flowgpu::Polygon>::iterator polyIter = polygons.begin(); polyIter != polygons.end(); ){
         if((*polyIter).nbVertices == 3){
             //std::cout << "Deleting Tri# "<<(*polyIter).parentIndex<< " from PolyList"<<std::endl;
-            polygons.erase(polyIter);
-            break;
+            polyIter = polygons.erase(polyIter);
+        }
+        else{
+            ++polyIter;
         }
     }
-    for(auto& tri : convertedTris){
+    /*for(auto& tri : convertedTris){
         for(std::vector<flowgpu::Polygon>::iterator polyIter = polygons.begin(); polyIter != polygons.end(); ++polyIter){
             if(tri.parentIndex == (*polyIter).parentIndex){
                 //std::cout << "Deleting Poly# "<<tri.parentIndex<<std::endl;
@@ -269,7 +294,9 @@ int Poly2TriConverter::PolygonsToTriangles(flowgpu::PolygonMesh *polygonMesh, fl
                 break;
             }
         }
-    }
+    }*/
+
+
 
     std::cout << "Amount of n>3 Polygons after triangulation: "<<polygons.size()<<std::endl;
     std::cout << "Amount of Triangles after triangulation: "<<convertedTris.size()<<std::endl;

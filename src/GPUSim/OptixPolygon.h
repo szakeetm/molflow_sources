@@ -261,6 +261,19 @@ namespace flowgpu {
 
     };
 
+    struct DesorpProperties{
+        DesorpProperties() : desorbType(0), cosineExponent(-1){}
+        DesorpProperties& operator=(const DesorpProperties& o){
+            this->desorbType = o.desorbType;
+            this->cosineExponent = o.cosineExponent;
+
+            return *this;
+        }
+
+        uint8_t desorbType; // type of desorption
+        float cosineExponent; // for Cosine^N
+    };
+
     struct SimProperties{
         SimProperties() : stickingFactor(-1.0f), temperature(-1.0f), is2sided(false), opacity(-1.0f){}
         SimProperties& operator=(const SimProperties& o){
@@ -268,7 +281,6 @@ namespace flowgpu {
             this->temperature = o.temperature;
             this->is2sided = o.is2sided;
             this->opacity = o.opacity;
-
             return *this;
         }
 
@@ -284,11 +296,11 @@ namespace flowgpu {
     public:
         Polygon()
         : nbVertices(0), indexOffset(0), O(), U(), V(), Nuv(), nU(), nV(), N(),
-        parentIndex(std::numeric_limits<unsigned int>::max()), texProps(), facProps(){
+        parentIndex(std::numeric_limits<unsigned int>::max()), texProps(), facProps(),desProps(){
         }
         Polygon(unsigned int nbOfVertices)
         : nbVertices(nbOfVertices), indexOffset(0), O(), U(), V(), Nuv(), nU(), nV(), N(),
-        parentIndex(std::numeric_limits<unsigned int>::max()), texProps(), facProps(){
+        parentIndex(std::numeric_limits<unsigned int>::max()), texProps(), facProps(), desProps(){
         }
         Polygon(Polygon&& o){
             *this = std::move(o);
@@ -315,6 +327,7 @@ namespace flowgpu {
                 this->texProps = o.texProps;
                 this->profProps = o.profProps;
                 this->facProps = o.facProps;
+                this->desProps = o.desProps;
 
                 o.nbVertices = 0;
                 o.indexOffset = 0;
@@ -329,6 +342,8 @@ namespace flowgpu {
                 o.texProps = TextureProperties();
                 o.profProps = ProfileProperties();
                 o.facProps = SimProperties();
+                o.desProps = DesorpProperties();
+
             }
             return *this;
         }
@@ -348,6 +363,7 @@ namespace flowgpu {
             this->texProps = o.texProps;
             this->profProps = o.profProps;
             this->facProps = o.facProps;
+            this->desProps = o.desProps;
 
             return *this;
         }
@@ -366,6 +382,7 @@ namespace flowgpu {
             this->texProps = o.texProps;
             this->profProps = o.profProps;
             this->facProps = o.facProps;
+            this->desProps = o.desProps;
 
         }
 
@@ -373,7 +390,7 @@ namespace flowgpu {
         TextureProperties texProps;
         ProfileProperties profProps;
         SimProperties facProps;
-
+        DesorpProperties desProps;
 
         unsigned int parentIndex; // map it to the original polygon index
 

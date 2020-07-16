@@ -111,6 +111,7 @@ namespace flowgpu {
         /*! download the rendered color buffer */
         void downloadDataFromDevice(HostData* hostData);
         void resetDeviceBuffers();
+        void askForExit(HostData* tempData);
 
         void cleanup();
 

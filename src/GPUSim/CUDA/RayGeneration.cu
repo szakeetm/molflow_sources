@@ -7,13 +7,11 @@
 #include "GPUDefines.h" // for NB_RAND
 #include "jetbrains_indexing.h"
 #include "helper_math.h"
-#include <cooperative_groups.h>
 #include <LaunchParams.h>
 #include "CommonFunctions.cuh"
 
 #define EPS32 1e-6f
 
-namespace cg = cooperative_groups;
 
 #define DET33(_11,_12,_13,_21,_22,_23,_31,_32,_33)  \
   ((_11)*( (_22)*(_33) - (_32)*(_23) ) +            \
@@ -346,7 +344,28 @@ namespace flowgpu {
 #endif
 
         //rayDir = hitData.postHitDir;
-        rayDir = getNewDirection(hitData,rayGenData->poly[hitData.hitFacetId],randFloat,randInd,randOffset);
+        if(rayGenData->poly[hitData.hitFacetId].facProps.is2sided && rayGenData->poly[hitData.hitFacetId].facProps.opacity == 0.0f){
+            // todo: just offset later, no direction change
+            if(bufferIndex == 0) printf(" Self intersection back facet hit %d\n",rayGenData->poly[hitData.hitFacetId].parentIndex);
+            rayDir = getNewReverseDirection(hitData, rayGenData->poly[hitData.hitFacetId], randFloat, randInd,
+                                            randOffset);
+        }
+        else /*if(
+                (hitData.facetHitSide == OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE)
+                )*/{
+            rayDir = getNewDirection(hitData, rayGenData->poly[hitData.hitFacetId], randFloat, randInd, randOffset);
+            if(hitData.facetHitSide != OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE)
+                if(bufferIndex == 0)
+                    printf(" Self intersection back facet hit %d\n",rayGenData->poly[hitData.hitFacetId].parentIndex);
+
+        }
+        /*else {
+            if(bufferIndex == 0) printf(" Self intersection back facet hit %d\n",rayGenData->poly[hitData.hitFacetId].parentIndex);
+            rayDir = getNewReverseDirection(hitData, rayGenData->poly[hitData.hitFacetId], randFloat, randInd,
+                                            randOffset);
+        }*/
+        //rayDir = getNewDirection(hitData,rayGenData->poly[hitData.hitFacetId],randFloat,randInd,randOffset);
+
         rayOrigin = hitData.hitPos;
         optixLaunchParams.perThreadData.randBufferOffset[bufferIndex] = randOffset; // set value back to buffer
 
@@ -363,57 +382,6 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
     rayOrigin = hitData.hitPos;
 
 }
-
-    __device__
-    int atomicAggInc(int *ptr, int incVal)
-    {
-        cg::coalesced_group g = cg::coalesced_threads();
-        int prev;
-
-        // elect the first active thread to perform atomic add
-        if (g.thread_rank() == 0) {
-            prev = atomicAdd(ptr, g.size() * incVal);
-        }
-
-        // broadcast previous value within the warp
-        // and add each active thread’s rank to it
-        prev = g.shfl(prev, 0);
-        return g.thread_rank() + prev;
-    }
-
-    __device__
-    uint32_t atomicAggInc(uint32_t *ptr, uint32_t incVal)
-    {
-        cg::coalesced_group g = cg::coalesced_threads();
-        int prev;
-
-        // elect the first active thread to perform atomic add
-        if (g.thread_rank() == 0) {
-            prev = atomicAdd(ptr, g.size() * incVal);
-        }
-
-        // broadcast previous value within the warp
-        // and add each active thread’s rank to it
-        prev = g.shfl(prev, 0);
-        return g.thread_rank() + prev;
-    }
-
-    __device__
-    float atomicAggInc(float *ptr, float incVal)
-    {
-        cg::coalesced_group g = cg::coalesced_threads();
-        int prev;
-
-        // elect the first active thread to perform atomic add
-        if (g.thread_rank() == 0) {
-            prev = atomicAdd(ptr, g.size() * incVal);
-        }
-
-        // broadcast previous value within the warp
-        // and add each active thread’s rank to it
-        prev = g.thread_rank() + g.shfl(prev, 0);
-        return prev;
-    }
 
     // --------------------------------------
     // increase facet counters for desorption
@@ -483,6 +451,9 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
 
         float ortVelocity = (optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f) * hitData.velocity*fabsf(dot(rayDir, poly.N)); //surface-orthogonal velocity component
 
+#ifdef BOUND_CHECK
+        if(facetTex.texelOffset + add < 0 || facetTex.texelOffset + add >= optixLaunchParams.simConstants.nbTexel){printf("facetTex.texelOffset + add %u >= %u is out of bounds\n", facetTex.texelOffset + add, optixLaunchParams.simConstants.nbTexel);}
+#endif
         flowgpu::Texel& tex = optixLaunchParams.sharedData.texels[facetTex.texelOffset + add];
         atomicAdd(&tex.countEquiv, static_cast<uint32_t>(1));
         atomicAdd(&tex.sum_1_per_ort_velocity, 1.0f * velocity_factor / ortVelocity);
@@ -534,6 +505,9 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
 
         float ortVelocity = hitData.velocity*fabsf(dot(rayDir, poly.N)); //surface-orthogonal velocity component
 
+#ifdef BOUND_CHECK
+        if(poly.profProps.profileOffset + add < 0 || poly.profProps.profileOffset + add >= optixLaunchParams.simConstants.nbProfSlices){printf("poly.profProps.profileOffset + add %u >= %u is out of bounds\n", poly.profProps.profileOffset + add, optixLaunchParams.simConstants.nbProfSlices);}
+#endif
         flowgpu::Texel& tex = optixLaunchParams.sharedData.profileSlices[poly.profProps.profileOffset + add];
         atomicAdd(&tex.countEquiv, static_cast<uint32_t>(1));
         atomicAdd(&tex.sum_1_per_ort_velocity, 1.0f * velocity_factor / ortVelocity);
@@ -571,6 +545,9 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
             printf("facIndex %u >= %u is out of bounds\n", facIndex, optixLaunchParams.simConstants.nbFacets);
         }
 #endif
+/*#ifdef DEBUG
+        printf("[%u] generating direction\n", bufferIndex);
+#endif*/
         rayOrigin = getNewOrigin(hitData,rayGenData,facIndex,randFloat,randInd,randOffset);
         rayDir = getNewDirection(hitData,rayGenData->poly[facIndex],randFloat,randInd,randOffset);
 
@@ -598,6 +575,9 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
             RecordDesorptionProfile(rayGenData->poly[facIndex], hitData, rayOrigin, rayDir);
 #endif
 
+/*#ifdef DEBUG
+        printf("[%u] finished initializing\n", bufferIndex);
+#endif*/
     }
 
     //------------------------------------------------------------------------------
@@ -624,36 +604,46 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
         if(bufferIndex == optixLaunchParams.simConstants.size.x - 1)
             printf("[%d] has launch status -> %d\n",bufferIndex,optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem);
 #endif*/
+#ifdef DESORPEXIT
+        if(optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hasToTerminate==2){
+            return;
+        }
+#endif
         switch (optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem) {
-            case 3:
-            {
+            case TRANSPARENT_HIT: {
                 initMoleculeTransparentHit(bufferIndex, hitData, rayDir, rayOrigin);
                 break;
             }
-            case 4:
-            case 1: {
+            case ACTIVE_PARTICLE: {
                 /* if molecule is still in the system (bounce etc.)
                  * load data from thread buffer
                  */
                 initMoleculeInSystem(bufferIndex, hitData, rayDir, rayOrigin);
                 break;
             }
-            case 0:
-            {
+            case NEW_PARTICLE: {
+#ifdef DESORPEXIT
+                if(optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hasToTerminate==1){
+                    optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hasToTerminate=2;
+                    return;
+                }
+#endif
                 /*
                  * start from a source
                  */
                 initMoleculeFromStart(bufferIndex, hitData, rayDir, rayOrigin);
                 break;
             }
-            case SELF_BACK_HIT:
-            case SELF_INTERSECTION:
-            default:
-            {
+            case SELF_INTERSECTION: {
                 /*
                  * if molecule suffered from self intersection with starting facet, try again with new direction
                  */
                 initMoleculePostSelfIntersection(bufferIndex, hitData, rayDir, rayOrigin);
+                break;
+            }
+            default: {
+                printf("Unknown launch status!: %u\n",optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem);
+                break;
             }
         }
 /*#ifdef DEBUG
@@ -675,33 +665,45 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
 
         {
 #ifdef WITHTRIANGLES
-        const TriangleRayGenData* rayGenData = (TriangleRayGenData*) optixGetSbtDataPointer();
+            const TriangleRayGenData* rayGenData = (TriangleRayGenData*) optixGetSbtDataPointer();
 #else
-        const PolygonRayGenData* rayGenData = (PolygonRayGenData*) optixGetSbtDataPointer();
+            const PolygonRayGenData* rayGenData = (PolygonRayGenData*) optixGetSbtDataPointer();
 #endif
 
             uint32_t facIndex = hitData.hitFacetId;
 #ifdef BOUND_CHECK
             if(facIndex < 0 || facIndex >= optixLaunchParams.simConstants.nbFacets){
-            printf("[RayOffset] facIndex %u >= %u is out of bounds (%u)\n", facIndex, optixLaunchParams.simConstants.nbFacets, optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem);
-        }
+                printf("[RayOffset] facIndex %u >= %u is out of bounds (%u)\n", facIndex, optixLaunchParams.simConstants.nbFacets, optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem);
+            }
 #endif
             //do not offset a transparent hit
-            if(optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem != TRANSPARENT_HIT){
-                float3 facNormal = rayGenData->poly[facIndex].N;
-                if(optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem == ACTIVE_BACK_HIT
-                || optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem == SELF_BACK_HIT)
-                // previous backface hit
-                {
-                    facNormal *= (-1.0f);
-                    //rayOrigin = offset_ray(rayOrigin, (-1.0f) * rayGenData->poly[facIndex].N);
-                }
-                rayOrigin = offset_ray(rayOrigin,facNormal);
+            //if(optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem != TRANSPARENT_HIT){
+            float3 facNormal = rayGenData->poly[facIndex].N;
+            /*if((hitData.facetHitSide == OPTIX_HIT_KIND_TRIANGLE_BACK_FACE && hitData.inSystem != TRANSPARENT_HIT)
+               || (hitData.facetHitSide == OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE && hitData.inSystem == TRANSPARENT_HIT))*/
 
+            // Don't flip normal on a normal backface hit (should only be allowed for 2sided transparent facets)
+            if((/*rayGenData->poly[hitData.hitFacetId].facProps.is2sided && */rayGenData->poly[hitData.hitFacetId].facProps.opacity == 0.0f)
+                    && (hitData.facetHitSide == OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE) )
+
+            // previous backface hit
+            {
+                /*if(bufferIndex == 0)
+                    printf("[%d] reverting offset -> %d -> %d\n",bufferIndex,hitData.inSystem, hitData.nbBounces);
+                */facNormal *= (-1.0f);
+                //rayOrigin = offset_ray(rayOrigin, (-1.0f) * rayGenData->poly[facIndex].N);
             }
+            else{
+                facNormal *= (1.0f);
+            }
+            rayOrigin = offset_ray(rayOrigin,facNormal);
+
+            //}
 
         }
-
+/*#ifdef DEBUG
+        printf("[%u] launching ray\n", bufferIndex);
+#endif*/
         optixTrace(optixLaunchParams.traversable,
                rayOrigin,
                rayDir,
@@ -710,7 +712,7 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
                0.0f,   // rayTime
                OptixVisibilityMask( 255 ),
                OPTIX_RAY_FLAG_DISABLE_ANYHIT
-               | OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES,//OPTIX_RAY_FLAG_NONE,
+               /*| OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES*/,//OPTIX_RAY_FLAG_NONE,
                    RayType::RAY_TYPE_MOLECULE,             // SBT offset
                    RayType::RAY_TYPE_COUNT,               // SBT stride
                    RayType::RAY_TYPE_MOLECULE,             // missSBTIndex
@@ -722,7 +724,9 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
             /* Can't use float_as_int() because it returns rvalue but payload requires a lvalue */
                reinterpret_cast<unsigned int&>(hitData.hitFacetId),
                reinterpret_cast<unsigned int&>(hitData.hitT),
-                   reinterpret_cast<unsigned int&>(hitData.nbBounces)
+                   reinterpret_cast<unsigned int&>(hitData.nbBounces),
+                  reinterpret_cast<unsigned int&>(hitData.facetHitSide)
+
         );
 
         //hitData.hitPos = hitData.hitOri + hitData.hitT * hitData.hitDir;
@@ -740,5 +744,8 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
         optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem = hitData.inSystem;
         optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitFacetId = hitData.hitFacetId;
         optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitT = hitData.hitT;
+
+        optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].facetHitSide = hitData.facetHitSide;
+
     }
 } // ::flowgpu

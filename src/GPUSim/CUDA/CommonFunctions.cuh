@@ -13,6 +13,60 @@
 #include "LaunchParams.h"
 #include "GPUDefines.h"
 
+#include <cooperative_groups.h>
+namespace cg = cooperative_groups;
+
+__device__
+int atomicAggInc(int *ptr, int incVal)
+{
+    cg::coalesced_group g = cg::coalesced_threads();
+    int prev;
+
+    // elect the first active thread to perform atomic add
+    if (g.thread_rank() == 0) {
+        prev = atomicAdd(ptr, g.size() * incVal);
+    }
+
+    // broadcast previous value within the warp
+    // and add each active thread’s rank to it
+    prev = g.shfl(prev, 0);
+    return g.thread_rank() + prev;
+}
+
+__device__
+uint32_t atomicAggInc(uint32_t *ptr, uint32_t incVal)
+{
+    cg::coalesced_group g = cg::coalesced_threads();
+    int prev;
+
+    // elect the first active thread to perform atomic add
+    if (g.thread_rank() == 0) {
+        prev = atomicAdd(ptr, g.size() * incVal);
+    }
+
+    // broadcast previous value within the warp
+    // and add each active thread’s rank to it
+    prev = g.shfl(prev, 0);
+    return g.thread_rank() + prev;
+}
+
+__device__
+float atomicAggInc(float *ptr, float incVal)
+{
+    cg::coalesced_group g = cg::coalesced_threads();
+    int prev;
+
+    // elect the first active thread to perform atomic add
+    if (g.thread_rank() == 0) {
+        prev = atomicAdd(ptr, g.size() * incVal);
+    }
+
+    // broadcast previous value within the warp
+    // and add each active thread’s rank to it
+    prev = g.thread_rank() + g.shfl(prev, 0);
+    return prev;
+}
+
 //TODO: Only non maxwell for now
 static __forceinline__ __device__
 float getNewVelocity(const flowgpu::Polygon& poly, const float& gasMass)
@@ -32,16 +86,22 @@ float3 getNewDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& poly,
             printf("randInd %u is out of bounds\n", randInd + randOffset);
         }
 #endif*/
-    const float theta = acosf(sqrtf((double)randFloat[(unsigned int)(randInd + randOffset++)]));
 
-
-/*#ifdef BOUND_CHECK
-    if(randInd + randOffset < 0 || randInd + randOffset >= optixLaunchParams.simConstants.nbRandNumbersPerThread*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y){
-            printf("randInd %u is out of bounds\n", randInd + randOffset);
-        }
-#endif*/
+    float theta = 0.0f;
+    if(poly.desProps.desorbType == 2 || poly.desProps.desorbType == 0) {
+        theta = acosf(sqrtf((double) randFloat[(unsigned int) (randInd + randOffset++)]));
+    }
+    else if (poly.desProps.desorbType == 3) {
+        theta = acosf(powf((double) randFloat[(unsigned int) (randInd + randOffset++)], (1.0f / (poly.desProps.cosineExponent + 1.0f))));
+    }
+    else if (poly.desProps.desorbType == 1) {
+        theta = acosf((double) randFloat[(unsigned int) (randInd + randOffset++)]);
+    }
+    else{
+        printf("Unsupported desorption type! %u on %d\n", poly.desProps.desorbType, poly.parentIndex);
+        return;
+    }
     const float phi = randFloat[(unsigned int)(randInd + randOffset++)] * 2.0f * CUDART_PI_F;
-
 
     const float u = sinf(theta)*cosf(phi);
     const float v = sinf(theta)*sinf(phi);
@@ -86,15 +146,22 @@ float3 getNewDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& poly,
             printf("randInd %u is out of bounds\n", randInd + randOffset);
         }
 #endif*/
-    const float theta = acos(sqrt(randFloat[(unsigned int)(randInd + randOffset++)]));
 
-/*#ifdef BOUND_CHECK
-    if(randInd + randOffset < 0 || randInd + randOffset >= optixLaunchParams.simConstants.nbRandNumbersPerThread*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y){
-            printf("randInd %u is out of bounds\n", randInd + randOffset);
-        }
-#endif*/
-    const float phi = randFloat[(unsigned int)(randInd + randOffset++)] * 2.0 * CUDART_PI;
-
+    float theta = 0.0f;
+    if(poly.desProps.desorbType == 2 || poly.desProps.desorbType == 0) {
+        theta = acos(sqrt(randFloat[(unsigned int) (randInd + randOffset++)]));
+    }
+    else if (poly.desProps.desorbType == 3) {
+        theta = acos(pow(randFloat[(unsigned int) (randInd + randOffset++)], (1.0 / (poly.desProps.cosineExponent + 1.0))));
+    }
+    else if (poly.desProps.desorbType == 1) {
+        theta = acos(randFloat[(unsigned int) (randInd + randOffset++)]);
+    }
+    else{
+        printf("Unsupported desorption type! %u on %d\n", poly.desProps.desorbType, poly.parentIndex);
+        return;
+    }
+    const float phi = randFloat[(unsigned int)(randInd + randOffset++)] * 2.0 * CUDART_PI_F;
 
     const float u = sinf(theta)*cosf(phi);
     const float v = sinf(theta)*sinf(phi);
@@ -133,7 +200,20 @@ float3 getNewReverseDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& 
                        const float* randFloat, unsigned int& randInd, unsigned int& randOffset)
 {
     // generate ray direction
-    const float theta = acosf(sqrtf((double)randFloat[(unsigned int)(randInd + randOffset++)]));
+    float theta = 0.0f;
+    if(poly.desProps.desorbType == 2 || poly.desProps.desorbType == 0) {
+        theta = acosf(sqrtf((double) randFloat[(unsigned int) (randInd + randOffset++)]));
+    }
+    else if (poly.desProps.desorbType == 3) {
+        theta = acosf(powf((double) randFloat[(unsigned int) (randInd + randOffset++)], (1.0f / (poly.desProps.cosineExponent + 1.0f))));
+    }
+    else if (poly.desProps.desorbType == 1) {
+        theta = acosf((double) randFloat[(unsigned int) (randInd + randOffset++)]);
+    }
+    else{
+        printf("Unsupported desorption type! %u on %d\n", poly.desProps.desorbType, poly.parentIndex);
+        return;
+    }
     const float phi = randFloat[(unsigned int)(randInd + randOffset++)] * 2.0f * CUDART_PI_F;
 
     const float u = sinf(theta)*cosf(phi);
@@ -152,9 +232,21 @@ float3 getNewReverseDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& 
 {
 
     // generate ray direction
-    const float theta = acos(sqrt(randFloat[(unsigned int)(randInd + randOffset++)]));
-
-    const float phi = randFloat[(unsigned int)(randInd + randOffset++)] * 2.0 * CUDART_PI;
+    float theta = 0.0f;
+    if(poly.desProps.desorbType == 2 || poly.desProps.desorbType == 0) {
+        theta = acos(sqrt(randFloat[(unsigned int) (randInd + randOffset++)]));
+    }
+    else if (poly.desProps.desorbType == 3) {
+        theta = acos(pow(randFloat[(unsigned int) (randInd + randOffset++)], (1.0 / (poly.desProps.cosineExponent + 1.0))));
+    }
+    else if (poly.desProps.desorbType == 1) {
+        theta = acos(randFloat[(unsigned int) (randInd + randOffset++)]);
+    }
+    else{
+        printf("Unsupported desorption type! %u on %d\n", poly.desProps.desorbType, poly.parentIndex);
+        return;
+    }
+    const float phi = randFloat[(unsigned int)(randInd + randOffset++)] * 2.0 * CUDART_PI_F;
 
 
     const float u = sinf(theta)*cosf(phi);

@@ -593,8 +593,8 @@ namespace flowgpu {
         state.pipelineCompileOptions = {};
         state.pipelineCompileOptions.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
         state.pipelineCompileOptions.usesMotionBlur     = false;
-        state.pipelineCompileOptions.numPayloadValues   = 6; // values that get send as PerRayData
-        state.pipelineCompileOptions.numAttributeValues = 6; // ret values e.g. by optixReportIntersection
+        state.pipelineCompileOptions.numPayloadValues   = 7; // values that get send as PerRayData
+        state.pipelineCompileOptions.numAttributeValues = 7; // ret values e.g. by optixReportIntersection
         state.pipelineCompileOptions.exceptionFlags     = OPTIX_EXCEPTION_FLAG_NONE;
         state.pipelineCompileOptions.pipelineLaunchParamsVariableName = "optixLaunchParams";
 
@@ -1214,6 +1214,11 @@ namespace flowgpu {
         state.launchParams.simConstants.nbFacets  = model->nbFacets_total;
         // TODO: Total nb for indices and vertices
         state.launchParams.simConstants.nbVertices  = model->nbVertices_total;
+#ifdef BOUND_CHECK
+        state.launchParams.simConstants.nbTexel  = model->nbTexel_total;
+        state.launchParams.simConstants.nbProfSlices  = model->nbProfSlices_total;
+#endif
+
         state.launchParams.perThreadData.currentMoleculeData = (MolPRD*)sim_memory.moleculeBuffer.d_pointer();
         state.launchParams.perThreadData.randBufferOffset = (uint32_t*)sim_memory.randOffsetBuffer.d_pointer();
 #ifdef DEBUG
@@ -1312,7 +1317,10 @@ namespace flowgpu {
     /*! download the rendered color buffer and return the total amount of hits (= followed rays) */
     void SimulationOptiX::downloadDataFromDevice(HostData* hostData)
     {
-        //sim_memory.moleculeBuffer.download(hit, state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y);
+#ifdef DESORPEXIT
+        if(!sim_memory.moleculeBuffer.isNullptr())
+            sim_memory.moleculeBuffer.download(hostData->hitData.data(), state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y);
+#endif
         facet_memory.hitCounterBuffer.download(hostData->facetHitCounters.data(), model->nbFacets_total * CORESPERSM * WARPSCHEDULERS);
         facet_memory.missCounterBuffer.download(hostData->leakCounter.data(), 1);
 
@@ -1355,6 +1363,12 @@ namespace flowgpu {
 #endif
     }
 
+    void SimulationOptiX::askForExit(HostData* tempData) {
+#ifdef DESORPEXIT
+        sim_memory.moleculeBuffer.upload(tempData->hitData.data(), state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y);
+#endif
+    }
+
     void SimulationOptiX::cleanup()
     {
         OPTIX_CHECK( optixPipelineDestroy     ( state.pipeline                ) );
@@ -1386,14 +1400,14 @@ namespace flowgpu {
         }
 
         for (int meshID=0;meshID<model->poly_meshes.size();meshID++) {
-            poly_memory.aabbBuffer[meshID].free();
-            poly_memory.vertex2Buffer[meshID].free();
-            poly_memory.vertexBuffer[meshID].free();
-            poly_memory.indexBuffer[meshID].free();
-            poly_memory.sbtIndexBuffer[meshID].free();
-            poly_memory.polyBuffer[meshID].free();
-            poly_memory.cdfBuffer[meshID].free();
-            poly_memory.facprobBuffer[meshID].free();
+            if(poly_memory.aabbBuffer.size()>0 && poly_memory.aabbBuffer.size() > meshID) poly_memory.aabbBuffer[meshID].free();
+            if(poly_memory.vertex2Buffer.size()>0 && poly_memory.vertex2Buffer.size() > meshID)poly_memory.vertex2Buffer[meshID].free();
+            if(poly_memory.vertexBuffer.size()>0 && poly_memory.vertexBuffer.size() > meshID)poly_memory.vertexBuffer[meshID].free();
+            if(poly_memory.indexBuffer.size()>0 && poly_memory.indexBuffer.size() > meshID)poly_memory.indexBuffer[meshID].free();
+            if(poly_memory.sbtIndexBuffer.size()>0 && poly_memory.sbtIndexBuffer.size() > meshID)poly_memory.sbtIndexBuffer[meshID].free();
+            if(poly_memory.polyBuffer.size()>0 && poly_memory.polyBuffer.size() > meshID)poly_memory.polyBuffer[meshID].free();
+            if(poly_memory.cdfBuffer.size()>0 && poly_memory.cdfBuffer.size() > meshID)poly_memory.cdfBuffer[meshID].free();
+            if(poly_memory.facprobBuffer.size()>0 && poly_memory.facprobBuffer.size() > meshID)poly_memory.facprobBuffer[meshID].free();
         }
         sbt_memory.raygenRecordsBuffer.free();
         sbt_memory.missRecordsBuffer.free();

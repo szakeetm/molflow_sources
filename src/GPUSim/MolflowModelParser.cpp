@@ -405,7 +405,7 @@ namespace flowgeom {
         //}
 
         Vector3d lower(std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max());
-        Vector3d upper(std::numeric_limits<double>::min(),std::numeric_limits<double>::min(),std::numeric_limits<double>::min());
+        Vector3d upper(std::numeric_limits<double>::lowest(),std::numeric_limits<double>::lowest(),std::numeric_limits<double>::lowest());
         // calculate global bounds for the whole model
         //for (PolygonMesh* mesh : model->poly_meshes)
         for (const Vector3d& vtx : vertices3d){
@@ -593,7 +593,7 @@ namespace flowgeom {
         //}
 
         Vector3d lower(std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max());
-        Vector3d upper(std::numeric_limits<double>::min(),std::numeric_limits<double>::min(),std::numeric_limits<double>::min());
+        Vector3d upper(std::numeric_limits<double>::lowest(),std::numeric_limits<double>::lowest(),std::numeric_limits<double>::lowest());
         // calculate global bounds for the whole model
         //for (PolygonMesh* mesh : model->poly_meshes)
         for (const Vector3d& vtx : vertices3d){

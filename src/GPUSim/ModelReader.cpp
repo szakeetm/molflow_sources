@@ -107,15 +107,27 @@ namespace flowgpu {
     void convertFacet2Poly(const std::vector<TempFacet>& facets, std::vector<flowgpu::Polygon>& convertedPolygons){
 
         int32_t vertCount = 0;
+        std::vector<size_t> deleteFacets; //mark some facets for deleting e.g. outgassing on linked
+
         for(int i = 0; i < facets.size(); ++i){
             auto& temp = facets[i];
 
             flowgpu::Polygon polygon(temp.vertices2.size());
             polygon.facProps.stickingFactor = temp.facetProperties.sticking;
             polygon.facProps.temperature = temp.facetProperties.temperature;
-            polygon.facProps.opacity = temp.facetProperties.opacity;
 
+            //TODO: For now, treat 'link facets' like transparent facets
+            if(temp.facetProperties.superDest){
+                polygon.facProps.opacity = 0.0f;
+            }
+            else{
+                polygon.facProps.opacity = temp.facetProperties.opacity;
+            }
             polygon.facProps.is2sided = temp.facetProperties.is2sided;
+
+            // desorption
+            polygon.desProps.desorbType = temp.facetProperties.desorbType;
+            polygon.desProps.cosineExponent = temp.facetProperties.desorbTypeN;
 
             if(polygon.nbVertices != temp.facetProperties.nbIndex){
                 polygon.nbVertices = temp.facetProperties.nbIndex;
@@ -193,6 +205,11 @@ namespace flowgpu {
             facetTex.texWidth = facet.facetProperties.texWidth;
             facetTex.texHeightD = facet.facetProperties.texHeightD;
             facetTex.texWidthD = facet.facetProperties.texWidthD;
+
+            // Add a cutoff to allow for texture positions [0.0,1.0], opposed to [0.0,1.0[
+            const float cutOff = 0.9999999f;
+            facetTex.texHeightD *= cutOff;
+            facetTex.texWidthD *= cutOff;
 
             if(facet.texelInc.size() != nbE){
                 printf("texture inc vector has weird size: %d should be %d\n", facet.texelInc.size() , nbE);
@@ -298,7 +315,8 @@ namespace flowgpu {
         for(auto& mesh : model->poly_meshes){
             std::vector<flowgpu::FacetType> sbtIndices; // Facet Type
             for(auto& polygon : mesh->poly){
-                if(polygon.facProps.is2sided && polygon.facProps.opacity == 0.0f){
+                //if(polygon.facProps.is2sided && polygon.facProps.opacity == 0.0f){
+                if(polygon.facProps.opacity == 0.0f){
                     //std::cout << sbtIndices.size() << " > is transparent " << std::endl;
                     sbtIndices.emplace_back(FacetType::FACET_TYPE_TRANS);
                 }
@@ -311,7 +329,8 @@ namespace flowgpu {
         for(auto& mesh : model->triangle_meshes){
             std::vector<flowgpu::FacetType> sbtIndices; // Facet Type
             for(auto& triangle : mesh->poly){
-                if(triangle.facProps.is2sided && triangle.facProps.opacity == 0.0f){
+                //if(triangle.facProps.is2sided && triangle.facProps.opacity == 0.0f){
+                if(triangle.facProps.opacity == 0.0f){
                     std::cout << sbtIndices.size() << " > is transparent " << std::endl;
                     sbtIndices.emplace_back(FacetType::FACET_TYPE_TRANS);
                 }
@@ -343,12 +362,16 @@ namespace flowgpu {
                     }
 
                     facetTex.bbMin = make_float3(std::numeric_limits<float>::max());
-                    facetTex.bbMax = make_float3(std::numeric_limits<float>::min());
+                    facetTex.bbMax = make_float3(std::numeric_limits<float>::lowest());
 
                     for(auto& ind : facet.indices){
                         facetTex.bbMin = fminf(facetTex.bbMin, vertices3d[ind]);
                         facetTex.bbMax = fmaxf(facetTex.bbMax, vertices3d[ind]);
                     }
+
+                    std::cout << "Texture BBox: " <<facetTex.bbMin.x << " , " << facetTex.bbMin.y  << " , " << facetTex.bbMin.z << " | " <<
+                              facetTex.bbMax.x << " , " << facetTex.bbMax.y  << " , " << facetTex.bbMax.z << std::endl;
+
 
                     facetTex.texelOffset = texelOffset;
                     texelOffset += texture.size();
@@ -376,6 +399,7 @@ namespace flowgpu {
                         }
                     }
                     for(auto& triMesh : model->triangle_meshes){
+                        uint32_t triInd = 0;
                         for(auto& triangle : triMesh->poly){
                             if(triangle.parentIndex == facetInd){
                                 triangle.texProps.textureOffset = textureOffset;
@@ -390,12 +414,25 @@ namespace flowgpu {
                                     triangle.texProps.textureFlags |= TEXTURE_FLAGS::countDirection;
                                 if(facet.facetProperties.countDes)
                                     triangle.texProps.textureFlags |= TEXTURE_FLAGS::countDes;
+
+                                if(triangle.texProps.textureFlags!=noTexture){
+                                    std::cout << triangle.parentIndex << " | " << triInd << " => ";
+                                    std::cout << triMesh->vertices3d[triMesh->indices[triInd].x].x << " , " << triMesh->vertices3d[triMesh->indices[triInd].x].y << " , " << triMesh->vertices3d[triMesh->indices[triInd].x].z << " | ";
+                                    std::cout << triMesh->vertices3d[triMesh->indices[triInd].y].x << " , " << triMesh->vertices3d[triMesh->indices[triInd].y].y << " , " << triMesh->vertices3d[triMesh->indices[triInd].y].z << " | ";
+                                    std::cout << triMesh->vertices3d[triMesh->indices[triInd].z].x << " , " << triMesh->vertices3d[triMesh->indices[triInd].z].y << " , " << triMesh->vertices3d[triMesh->indices[triInd].z].z << " | ";
+                                    std::cout << "---" << std::endl;
+                                }
                             }
+
+                            triInd++;
                         }
                     }
                     textureOffset += 1;
                 } // one more texture
             }
+#ifdef BOUND_CHECK
+            model->nbTexel_total = texelOffset;
+#endif
         }
 
         // Profiles
@@ -437,12 +474,22 @@ namespace flowgpu {
                     currentProfOffset += PROFILE_SIZE;
                 } // one more profile
             }
+#ifdef BOUND_CHECK
+            model->nbProfSlices_total = currentProfOffset;
+#endif
         }
 
         for(auto& mesh : model->triangle_meshes){
             uint32_t triInd = 0;
             for(auto& triangle : mesh->poly){
-                if(triangle.facProps.stickingFactor > 0){
+                /*if(triangle.facProps.stickingFactor > 0){
+                    std::cout << triangle.parentIndex << " | " << triInd << " => ";
+                    std::cout << mesh->vertices3d[mesh->indices[triInd].x].x << " , " << mesh->vertices3d[mesh->indices[triInd].x].y << " , " << mesh->vertices3d[mesh->indices[triInd].x].z << " | ";
+                    std::cout << mesh->vertices3d[mesh->indices[triInd].y].x << " , " << mesh->vertices3d[mesh->indices[triInd].y].y << " , " << mesh->vertices3d[mesh->indices[triInd].y].z << " | ";
+                    std::cout << mesh->vertices3d[mesh->indices[triInd].z].x << " , " << mesh->vertices3d[mesh->indices[triInd].z].y << " , " << mesh->vertices3d[mesh->indices[triInd].z].z << " | ";
+                    std::cout << std::endl;
+                }*/
+                if(triangle.texProps.textureFlags!= noTexture){
                     std::cout << triangle.parentIndex << " | " << triInd << " => ";
                     std::cout << mesh->vertices3d[mesh->indices[triInd].x].x << " , " << mesh->vertices3d[mesh->indices[triInd].x].y << " , " << mesh->vertices3d[mesh->indices[triInd].x].z << " | ";
                     std::cout << mesh->vertices3d[mesh->indices[triInd].y].x << " , " << mesh->vertices3d[mesh->indices[triInd].y].y << " , " << mesh->vertices3d[mesh->indices[triInd].y].z << " | ";

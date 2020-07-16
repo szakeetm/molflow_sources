@@ -74,6 +74,7 @@ namespace flowgpu {
 #ifdef GPUNBOUNCE
         prd.nbBounces = optixGetPayload_5();
 #endif
+        prd.facetHitSide = optixGetPayload_6();
         return prd;
     }
 
@@ -87,6 +88,8 @@ namespace flowgpu {
 #ifdef GPUNBOUNCE
         optixSetPayload_5( prd.nbBounces );
 #endif
+        optixSetPayload_6( prd.facetHitSide );
+
     }
 
     __device__
@@ -255,7 +258,10 @@ namespace flowgpu {
 
         float ortVelocity = (optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f) * hitData.velocity*fabsf(dot(rayDir, poly.N)); //surface-orthogonal velocity component
         //printf("Hit at %lf , %lf for tex %lf , %lf\n", hitLocationU, hitLocationV, facetTex.texWidthD, facetTex.texHeightD);
-
+#ifdef BOUND_CHECK
+        if(facetTex.texelOffset + add < 0 || facetTex.texelOffset + add >= optixLaunchParams.simConstants.nbTexel){
+            printf("facetTex.texelOffset + add %u + %u>= %u is out of bounds [%u , %u] - [%d , %d] (%lf * %lf)x(%lf * %lf)\n", facetTex.texelOffset, add, optixLaunchParams.simConstants.nbTexel,tu,tv,facetTex.texWidth,facetTex.texHeight, hitLocationU, facetTex.texWidthD, hitLocationV, facetTex.texHeightD);}
+#endif
         flowgpu::Texel& tex = optixLaunchParams.sharedData.texels[facetTex.texelOffset + add];
         atomicAdd(&tex.countEquiv, static_cast<uint32_t>(1));
         atomicAdd(&tex.sum_1_per_ort_velocity, 1.0 * velocity_factor / ortVelocity);
@@ -299,6 +305,10 @@ namespace flowgpu {
         unsigned int add = tu + tv * (facetTex.texWidth);
 
         //printf("Pre Bounce Tex: %f = %f * %f * %f\n",ortVelocity,(optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f) ,hitData.velocity,fabsf(dot(rayDir, poly.N)));
+#ifdef BOUND_CHECK
+        if(facetTex.texelOffset + add < 0 || facetTex.texelOffset + add >= optixLaunchParams.simConstants.nbTexel){
+            printf("facetTex.texelOffset + add %u + %u>= %u is out of bounds [%u , %u] - [%d , %d] (%lf * %lf)x(%lf * %lf)\n", facetTex.texelOffset, add, optixLaunchParams.simConstants.nbTexel,tu,tv,facetTex.texWidth,facetTex.texHeight, hitLocationU, facetTex.texWidthD, hitLocationV, facetTex.texHeightD);}
+#endif
         flowgpu::Texel& tex = optixLaunchParams.sharedData.texels[facetTex.texelOffset + add];
 
         const float velocity_factor = 1.0f;
@@ -309,8 +319,16 @@ namespace flowgpu {
         atomicAdd(&tex.countEquiv, static_cast<uint32_t>(oriRatio));
         atomicAdd(&tex.sum_1_per_ort_velocity, (float)(oriRatio * velocity_factor / ortVelocity));
         atomicAdd(&tex.sum_v_ort_per_area, (float)(oriRatio * ortSpeedFactor * ortVelocity * optixLaunchParams.sharedData.texelInc[facetTex.texelOffset + add])); // sum ortho_velocity[m/s] / cell_area[cm2]
-        //printf("Pre Bounce Tex[%d]: %f , %f - %f (%f)\n", poly.parentIndex, oriRatio * velocity_factor / ortVelocity,oriRatio * ortSpeedFactor * ortVelocity * optixLaunchParams.sharedData.texelInc[facetTex.texelOffset + add],ortVelocity,optixLaunchParams.sharedData.texelInc[facetTex.texelOffset + add]);
-
+#if DEBUG
+        if(facetTex.texelOffset + add == 4){
+            printf("Pre Bounce Texoffset4[%d]: %f\n", poly.parentIndex,optixLaunchParams.sharedData.texelInc[facetTex.texelOffset + add]);
+        }
+        if(optixLaunchParams.sharedData.texelInc[facetTex.texelOffset + add] >= 1e5)
+            printf("Pre Bounce Tex[%d]: %f , %f - %f (%f) -> [%u + %u]\n", poly.parentIndex,
+                oriRatio * velocity_factor / ortVelocity,oriRatio * ortSpeedFactor * ortVelocity * optixLaunchParams.sharedData.texelInc[facetTex.texelOffset + add],
+                ortVelocity,
+                optixLaunchParams.sharedData.texelInc[facetTex.texelOffset + add], facetTex.texelOffset, add);
+#endif
         // Return Texel index for reuse in post bounce processing
         return facetTex.texelOffset + add;
     }
@@ -327,29 +345,56 @@ namespace flowgpu {
         float detU = b.x * poly.V.y - b.y * poly.V.x;
         float detV = poly.U.x * b.y - poly.U.y * b.x;
 
-        if(fabsf(det)<=EPS32){
+        if(fabsf(det)<=EPS32/* || detU/det > 1.0 || detV/det > 1.0*/){
+            //printf("[1][TP][Hit] Dangerous determinant calculated for texture hit: %lf : %lf : %lf -> %lf : %lf\n",det,detU,detV,detU/det,detV/det);
+
             det = poly.U.y * poly.V.z - poly.U.z * poly.V.y; // TODO: Pre calculate
             detU = b.y * poly.V.z - b.z * poly.V.y;
             detV = poly.U.y * b.z - poly.U.z * b.y;
-            if(fabsf(det)<=EPS32){
+            if(fabsf(det)<=EPS32/* || detU/det > 1.0 || detV/det > 1.0*/){
+                //printf("[2][TP][Hit] Dangerous determinant calculated for texture hit: %lf : %lf : %lf -> %lf : %lf\n",det,detU,detV,detU/det,detV/det);
                 det = poly.U.z * poly.V.x - poly.U.x * poly.V.z; // TODO: Pre calculate
                 detU = b.z * poly.V.x - b.x * poly.V.z;
                 detV = poly.U.z * b.x - poly.U.x * b.z;
-                if(fabsf(det)<=EPS32){
-                    printf("[TP][Hit] Dangerous determinant calculated for texture hit: %lf : %lf : %lf -> %lf : %lf\n",det,detU,detV,detU/det,detV/det);
+                if(fabsf(det)<=EPS32/* || detU/det > 1.0 || detV/det > 1.0*/){
+                    printf("[3][TP][Hit] Dangerous determinant calculated for texture hit: %lf : %lf : %lf -> %lf : %lf\n",det,detU,detV,detU/det,detV/det);
                 }
             }
         }
 
+/*#ifdef DEBUG
+        printf("[%u][%u] trans tex on poly -> %lf , %lf , %lf . %lf , %lf , %lf\n", poly.parentIndex,poly.parentIndex,
+                poly.U.x,poly.U.y,poly.U.z,poly.V.x,poly.V.y,poly.V.z);
+#endif
+#ifdef DEBUG
+        printf("[%u][%u] trans tex on poly pos -> %lf , %lf , %lf\n", poly.parentIndex,poly.parentIndex,
+                rayOrigin.x,rayOrigin.y,rayOrigin.z);
+#endif*/
         const float hitLocationU = detU/det;
         const float hitLocationV = detV/det;
 
+/*#ifdef DEBUG
+        printf("[%u][%u] trans tex offset -> %lf , %lf / %lf = %u!!\n", poly.parentIndex,poly.parentIndex,
+                detU,detV,det,poly.texProps.textureOffset);
+#endif*/
         flowgpu::FacetTexture& facetTex = optixLaunchParams.sharedData.facetTextures[poly.texProps.textureOffset];
-
+/*#ifdef DEBUG
+        printf("[%u][%u] trans tex width -> %lf , %lf!!\n", poly.parentIndex,poly.parentIndex, facetTex.texWidthD,
+                facetTex.texHeightD);
+#endif*/
         const unsigned int tu = (unsigned int)(hitLocationU * facetTex.texWidthD);
         const unsigned int tv = (unsigned int)(hitLocationV * facetTex.texHeightD);
         const unsigned int add = tu + tv * (facetTex.texWidth);
 
+/*#ifdef DEBUG
+        printf("[%u][%u] trans tex hitloc -> %lf , %lf -> %u , %u = %u ===> %u!!\n", poly.parentIndex,poly.parentIndex,
+                hitLocationU, hitLocationV,
+                tu,tv,add, facetTex.texelOffset + add);
+#endif*/
+#ifdef BOUND_CHECK
+        if(facetTex.texelOffset + add < 0 || facetTex.texelOffset + add >= optixLaunchParams.simConstants.nbTexel){
+            printf("facetTex.texelOffset + add %u + %u>= %u is out of bounds [%u , %u] - [%d , %d] (%lf * %lf)x(%lf * %lf)\n", facetTex.texelOffset, add, optixLaunchParams.simConstants.nbTexel,tu,tv,facetTex.texWidth,facetTex.texHeight, hitLocationU, facetTex.texWidthD, hitLocationV, facetTex.texHeightD);}
+#endif
         flowgpu::Texel& tex = optixLaunchParams.sharedData.texels[facetTex.texelOffset + add];
 
         const float velocity_factor = 2.0f;
@@ -357,10 +402,18 @@ namespace flowgpu {
         const float oriRatio = 1.0f; // TODO: Part of particle
         const float ortVelocity = (optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f) * hitData.velocity * fabsf(dot(rayDir, poly.N)); //surface-orthogonal velocity component
 
+/*#ifdef DEBUG
+        printf("[%u][%u] trans tex add!!\n", poly.parentIndex,poly.parentIndex);
+#endif*/
         atomicAdd(&tex.countEquiv, static_cast<uint32_t>(oriRatio));
         atomicAdd(&tex.sum_1_per_ort_velocity, (float)(oriRatio * velocity_factor / ortVelocity));
+/*#ifdef DEBUG
+        printf("[%u][%u] trans tex add sum v!!\n", poly.parentIndex,poly.parentIndex);
+#endif*/
         atomicAdd(&tex.sum_v_ort_per_area, (float)(oriRatio * ortSpeedFactor * ortVelocity * optixLaunchParams.sharedData.texelInc[facetTex.texelOffset + add])); // sum ortho_velocity[m/s] / cell_area[cm2]
-
+/*#ifdef DEBUG
+        printf("[%u][%u] trans tex added!!\n", poly.parentIndex,poly.parentIndex);
+#endif*/
         return;
     }
 
@@ -378,6 +431,14 @@ namespace flowgpu {
         atomicAdd(&tex.sum_1_per_ort_velocity, (float)(oriRatio * velocity_factor / ortVelocity));
         atomicAdd(&tex.sum_v_ort_per_area, (float)(oriRatio * ortSpeedFactor * ortVelocity * optixLaunchParams.sharedData.texelInc[texelIndex])); // sum ortho_velocity[m/s] / cell_area[cm2]
         //printf("PostBounce Tex[%d]: %f , %f - %f (%f)\n", poly.parentIndex, oriRatio * velocity_factor / ortVelocity,oriRatio * ortSpeedFactor * ortVelocity * optixLaunchParams.sharedData.texelInc[texelIndex],ortVelocity,optixLaunchParams.sharedData.texelInc[texelIndex]);
+#if DEBUG
+        if(optixLaunchParams.sharedData.texelInc[texelIndex] >= 1e5)
+        printf("PostBounce Tex[%d]: %f , %f - %f (%f)\n", poly.parentIndex,
+                oriRatio * velocity_factor / ortVelocity,
+                oriRatio * ortSpeedFactor * ortVelocity * optixLaunchParams.sharedData.texelInc[texelIndex],
+                ortVelocity,
+                optixLaunchParams.sharedData.texelInc[texelIndex]);
+#endif
     }
 
     // --------------------------------------
@@ -422,6 +483,9 @@ namespace flowgpu {
         float ortVelocity = hitData.velocity*fabsf(dot(rayDir, poly.N)); //surface-orthogonal velocity component
         //printf("Hit at %lf , %lf for tex %lf , %lf\n", hitLocationU, hitLocationV, facetTex.texWidthD, facetTex.texHeightD);
 
+#ifdef BOUND_CHECK
+        if(poly.profProps.profileOffset + add < 0 || poly.profProps.profileOffset + add >= optixLaunchParams.simConstants.nbProfSlices){printf("poly.profProps.profileOffset + add %u >= %u is out of bounds\n", poly.profProps.profileOffset + add, optixLaunchParams.simConstants.nbProfSlices);}
+#endif
         flowgpu::Texel& tex = optixLaunchParams.sharedData.profileSlices[poly.profProps.profileOffset + add];
         atomicAdd(&tex.countEquiv, static_cast<uint32_t>(1));
         atomicAdd(&tex.sum_1_per_ort_velocity, 1.0 * velocity_factor / ortVelocity);
@@ -429,7 +493,7 @@ namespace flowgpu {
     }
 
     // --------------------------------------
-    // increase texture counters for reflections
+    // increase profile counters for reflections
     // --------------------------------------
     static __forceinline__ __device__
     unsigned int RecordBounceProfile(const flowgpu::Polygon& poly, MolPRD& hitData, const float3& rayOrigin, const float3& rayDir){
@@ -465,6 +529,9 @@ namespace flowgpu {
         }
 
         //printf("Pre Bounce Tex: %f = %f * %f * %f\n",ortVelocity,(optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f) ,hitData.velocity,fabsf(dot(rayDir, poly.N)));
+#ifdef BOUND_CHECK
+        if(poly.profProps.profileOffset + add < 0 || poly.profProps.profileOffset + add >= optixLaunchParams.simConstants.nbProfSlices){printf("poly.profProps.profileOffset + add %u >= %u is out of bounds\n", poly.profProps.profileOffset + add, optixLaunchParams.simConstants.nbProfSlices);}
+#endif
         flowgpu::Texel& tex = optixLaunchParams.sharedData.profileSlices[poly.profProps.profileOffset + add];
 
         const float velocity_factor = 1.0f;
@@ -495,6 +562,62 @@ namespace flowgpu {
         atomicAdd(&tex.sum_1_per_ort_velocity, (float)(oriRatio * velocity_factor / ortVelocity));
         atomicAdd(&tex.sum_v_ort_per_area, (float)(oriRatio * ortSpeedFactor * ortVelocity * (optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f))); // sum ortho_velocity[m/s] / cell_area[cm2]
         //printf("PostBounce Tex[%d]: %f , %f - %f (%f)\n", poly.parentIndex, oriRatio * velocity_factor / ortVelocity,oriRatio * ortSpeedFactor * ortVelocity * optixLaunchParams.sharedData.texelInc[texelIndex],ortVelocity,optixLaunchParams.sharedData.texelInc[texelIndex]);
+    }
+
+    // --------------------------------------
+    // increase profile counters for reflections
+    // --------------------------------------
+    static __forceinline__ __device__
+    unsigned int RecordTransparentProfile(const flowgpu::Polygon& poly, MolPRD& hitData, const float3& rayOrigin, const float3& rayDir){
+
+        const float3 b = rayOrigin - poly.O;
+
+        float det = poly.U.x * poly.V.y - poly.U.y * poly.V.x; // TODO: Pre calculate
+        float detU = b.x * poly.V.y - b.y * poly.V.x;
+        float detV = poly.U.x * b.y - poly.U.y * b.x;
+
+        if(fabsf(det)<=EPS32){
+            det = poly.U.y * poly.V.z - poly.U.z * poly.V.y; // TODO: Pre calculate
+            detU = b.y * poly.V.z - b.z * poly.V.y;
+            detV = poly.U.y * b.z - poly.U.z * b.y;
+            if(fabsf(det)<=EPS32){
+                det = poly.U.z * poly.V.x - poly.U.x * poly.V.z; // TODO: Pre calculate
+                detU = b.z * poly.V.x - b.x * poly.V.z;
+                detV = poly.U.z * b.x - poly.U.x * b.z;
+                if(fabsf(det)<=EPS32){
+                    printf("[TP][Hit][->%u] Dangerous determinant calculated for profile hit: %lf : %lf : %lf -> %lf : %lf\n",poly.parentIndex,det,detU,detV,detU/det,detV/det);
+                }
+            }
+        }
+
+        unsigned int add = 0;
+        if(poly.profProps.profileType == flowgpu::PROFILE_FLAGS::profileU){
+            float hitLocationU = detU/det;
+            add = (unsigned int)(hitLocationU * PROFILE_SIZE);
+        }
+        else if(poly.profProps.profileType == flowgpu::PROFILE_FLAGS::profileV){
+            float hitLocationV = detV/det;
+            add = (unsigned int)(hitLocationV * PROFILE_SIZE);
+        }
+
+        //printf("Pre Bounce Tex: %f = %f * %f * %f\n",ortVelocity,(optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f) ,hitData.velocity,fabsf(dot(rayDir, poly.N)));
+#ifdef BOUND_CHECK
+        if(poly.profProps.profileOffset + add < 0 || poly.profProps.profileOffset + add >= optixLaunchParams.simConstants.nbProfSlices){printf("poly.profProps.profileOffset + add %u >= %u is out of bounds\n", poly.profProps.profileOffset + add, optixLaunchParams.simConstants.nbProfSlices);}
+#endif
+        flowgpu::Texel& tex = optixLaunchParams.sharedData.profileSlices[poly.profProps.profileOffset + add];
+
+        const float velocity_factor = 2.0f;
+        const float ortSpeedFactor = 2.0f;
+        const float oriRatio = 1.0f; // TODO: Part of particle
+        const float ortVelocity = hitData.velocity * fabsf(dot(rayDir, poly.N)); //surface-orthogonal velocity component
+
+        atomicAdd(&tex.countEquiv, static_cast<uint32_t>(oriRatio));
+        atomicAdd(&tex.sum_1_per_ort_velocity, (float)(oriRatio * velocity_factor / ortVelocity));
+        atomicAdd(&tex.sum_v_ort_per_area, (float)(oriRatio * ortSpeedFactor * ortVelocity * (optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f))); // sum ortho_velocity[m/s] / cell_area[cm2]
+        //printf("Pre Bounce Tex[%d]: %f , %f - %f (%f)\n", poly.parentIndex, oriRatio * velocity_factor / ortVelocity,oriRatio * ortSpeedFactor * ortVelocity * optixLaunchParams.sharedData.texelInc[facetTex.texelOffset + add],ortVelocity,optixLaunchParams.sharedData.texelInc[facetTex.texelOffset + add]);
+
+        // Return Texel index for reuse in post bounce processing
+        return poly.profProps.profileOffset + add;
     }
 
     //------------------------------------------------------------------------------
@@ -530,6 +653,7 @@ namespace flowgpu {
         const unsigned int missIndex = bufferIndex*NMISSES;
         optixLaunchParams.perThreadData.missBuffer[missIndex] = 0;
 #endif
+        const int facetHitKind = optixGetHitKind();
 
         /*if(fbIndex==0)
             printf("--- start post processing ---\n");*/
@@ -537,9 +661,9 @@ namespace flowgpu {
         MolPRD prd = getMolPRD();
         //printf("[%d] -- %d Bounces loaded----- \n",ix, prd.currentDepth);
 
-#ifdef DEBUG
-
-#endif
+/*#ifdef DEBUG
+        printf("[%u] normal hit detected -> %u\n", bufferIndex, prd.inSystem);
+#endif*/
 
         // self intersection
         if(prd.hitFacetId == optixGetPrimitiveIndex()){
@@ -551,10 +675,13 @@ if(prd.inSystem == 4)
 */
 
 #endif
-            if(prd.inSystem == ACTIVE_BACK_HIT)
-                prd.inSystem = SELF_BACK_HIT;
-            else
-                prd.inSystem = SELF_INTERSECTION;
+            prd.facetHitSide = facetHitKind;
+            if(facetHitKind == OPTIX_HIT_KIND_TRIANGLE_BACK_FACE) {
+                //prd.inSystem = SELF_BACK_HIT;
+                /*if(bufferIndex==0)
+                    printf("[%u] back self hit detected -> %u -> %u for n=%d\n", bufferIndex, prd.inSystem, sbtData.poly[prd.hitFacetId].parentIndex,prd.nbBounces);
+            */}
+
             //prd.hitPos = ray_orig;
             optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos = ray_orig;
             //optixLaunchParams.perThreadData.currentMoleculeData[fbIndex].postHitDir = ray_dir;
@@ -564,15 +691,25 @@ if(prd.inSystem == 4)
             return;
         }
 
+
         prd.hitT = ray_t;
         prd.hitPos = ray_orig + ray_t * ray_dir;
         prd.hitFacetId = optixGetPrimitiveIndex();
+        prd.facetHitSide = facetHitKind;
 
         // first add facet hits
         const unsigned int counterIdx = prd.hitFacetId + (bufferIndex%(CORESPERSM * WARPSCHEDULERS)) * optixLaunchParams.simConstants.nbFacets;
 
         //Register (orthogonal) velocity
         const flowgpu::Polygon& poly  = sbtData.poly[prd.hitFacetId];
+
+        // replace like with self intersection, but keep position etc.
+        if(facetHitKind == OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE) {
+            //prd.inSystem = TRANSPARENT_HIT;
+        }
+        else
+        if(bufferIndex==0)
+            printf("[%u] back hit detected -> Mol: %u on F#%u\n", bufferIndex, prd.inSystem, poly.parentIndex);
 
         // TODO: Consider maxwelldistribution or not and oriRatio for lowFlux and desorbtion/absorbtion
         //IncreaseFacetCounter(
@@ -591,7 +728,8 @@ if(prd.inSystem == 4)
         const float absEquiv = 1.0f; //1.0*prd.orientationRatio; // hit=1.0 (only changed for lowflux mode)
 
 #ifndef WITH_TRANS
-        if(poly.facProps.is2sided){
+        if(poly.facProps.is2sided && poly.facProps.opacity == 0){
+        //if(poly.facProps.is2sided){
 #ifdef DEBUG
             printf("[%d] 2sided facet hit %d / %d : %8.6f,%8.6f,%8.6f -> %8.6f,%8.6f,%8.6f : [%.5e .. %.5e] (tri)\n",(blockDim.x * blockIdx.x + threadIdx.x), prd.hitFacetId, poly.parentIndex, ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z, optixGetRayTmin(),ray_t);
 #endif
@@ -696,16 +834,16 @@ if(prd.inSystem == 4)
             //if (optixLaunchParams.simConstants.useMaxwell) prd.velocity = GenerateRandomVelocity(collidedFacet->sh.CDFid);
             //else
             prd.velocity = getNewVelocity(poly, optixLaunchParams.simConstants.gasMass);
-
-            if(optixGetHitKind() == OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE ) {
+            if(facetHitKind == OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE || prd.inSystem != TRANSPARENT_HIT) {
                 //if (bufferIndex == 0 && poly.parentIndex == 102) printf("[%d] Front direction!\n", poly.parentIndex);
                 prd.postHitDir = getNewDirection(prd, poly, randFloat, randInd, randOffset);
             }
             else {
-                /*if (bufferIndex == 0 && poly.parentIndex == 102) */printf("[%d] Back direction!\n", poly.parentIndex);
+                if (bufferIndex == 0)
+                    printf("[%d] Back direction!\n", poly.parentIndex);
                 //else if (bufferIndex == 0 && poly.parentIndex != 102) printf("[%d] Back direction!\n", poly.parentIndex);
                 prd.postHitDir = getNewReverseDirection(prd, poly, randFloat, randInd, randOffset);
-                prd.inSystem = ACTIVE_BACK_HIT;
+                //prd.inSystem = ACTIVE_PARTIC;
             }
 
 /*#if defined(DEBUG)
@@ -737,6 +875,8 @@ if(prd.inSystem == 4)
                 prd.nbBounces++;
             //if(bufferIndex == optixLaunchParams.simConstants.size.x - 1) printf("[%d] hit pos %lf , %lf , %lf -> %d [%d]\n",bufferIndex,prd.hitPos.x,prd.hitPos.y,prd.hitPos.z,poly.parentIndex,texelIndex);
 #endif
+
+            optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].facetHitSide = prd.facetHitSide;
 
             optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos = prd.hitPos;
             optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].postHitDir = prd.postHitDir;
@@ -783,8 +923,10 @@ if(prd.inSystem == 4)
                         /* Can't use float_as_int() because it returns rvalue but payload requires a lvalue */
                            reinterpret_cast<unsigned int &>(prd.hitFacetId),
                            reinterpret_cast<unsigned int &>(prd.hitT),
-                           reinterpret_cast<unsigned int &>(prd.nbBounces)
-                           );
+                           reinterpret_cast<unsigned int &>(prd.nbBounces),
+                           reinterpret_cast<unsigned int &>(prd.facetHitSide)
+
+                );
             }
 
             setMolPRD(prd);
@@ -805,25 +947,71 @@ if(prd.inSystem == 4)
         const uint2 launchIndex = make_uint2(optixGetLaunchIndex());
         const unsigned int bufferIndex = launchIndex.x + launchIndex.y * optixLaunchParams.simConstants.size.x;
 
+        /*#ifdef DEBUG
+            printf("[%u] transparent hit detected\n", bufferIndex);
+        #endif*/
+
         MolPRD prd = getMolPRD();
+        const int facetHitKind = optixGetHitKind();
+        const int hitFacetId = optixGetPrimitiveIndex();
 
         // self intersection
-        if(prd.hitFacetId == optixGetPrimitiveIndex()){
-            prd.inSystem = SELF_INTERSECTION;
+        // just try to offset continously
+        if(prd.hitFacetId == hitFacetId){
+#ifdef DEBUG
+            /*if(bufferIndex == 0)
+                printf("[%u->%u] transparent hit self inter\n", bufferIndex, prd.nbBounces);
+*/#endif
+            prd.hitFacetId = hitFacetId;
+            prd.hitT = ray_t;
+            prd.postHitDir = ray_dir;
+            prd.hitPos = ray_orig + ray_t * ray_dir;
+            //prd.inSystem = SELF_INTERSECTION;
+            prd.inSystem = TRANSPARENT_HIT;
             optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos = ray_orig;
+
             setMolPRD(prd);
             return;
         }
 
         prd.hitT = ray_t;
         prd.hitPos = ray_orig + ray_t * ray_dir;
-        prd.hitFacetId = optixGetPrimitiveIndex();
 
         // first add facet hits
-        const unsigned int counterIdx = prd.hitFacetId + (bufferIndex%(CORESPERSM * WARPSCHEDULERS)) * optixLaunchParams.simConstants.nbFacets;
+        const unsigned int counterIdx = hitFacetId + (bufferIndex%(CORESPERSM * WARPSCHEDULERS)) * optixLaunchParams.simConstants.nbFacets;
 
         //Register (orthogonal) velocity
-        const flowgpu::Polygon& poly  = sbtData.poly[prd.hitFacetId];
+        const flowgpu::Polygon& poly  = sbtData.poly[hitFacetId];
+
+        /*#ifdef DEBUG
+            printf("[%u] trans 2side check\n", bufferIndex);
+        #endif*/
+
+#ifdef DEBUG
+        /*if(facetHitKind != OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE && !poly.facProps.is2sided) {
+            //__miss__molecule();
+
+            printf("[%u][%u] Back face hit on 1-sided facet should never happen!\n",bufferIndex,poly.parentIndex);
+            prd.hitFacetId = hitFacetId;
+            prd.facetHitSide = facetHitKind;
+            prd.inSystem = NEW_PARTICLE;
+            setMolPRD(prd);
+            return;
+        }*/
+        if(facetHitKind != OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE && !poly.facProps.is2sided) {
+            //__miss__molecule();
+
+            //printf("[%u][%u] Back face hit on 1-sided facet should never happen!\n",bufferIndex,poly.parentIndex);
+            /*prd.hitFacetId = hitFacetId;
+            prd.facetHitSide = facetHitKind;
+            prd.inSystem = NEW_PARTICLE;
+            setMolPRD(prd);
+            return;*/
+        }
+#endif
+        /*#ifdef DEBUG
+            printf("[%u] trans hit!!\n", bufferIndex);
+        #endif*/
 
         const float velFactor = optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f;
         float ortVelocity = prd.velocity*fabsf(dot(ray_dir, poly.N));
@@ -831,13 +1019,44 @@ if(prd.inSystem == 4)
 
         // replace like with self intersection, but keep position etc.
         prd.inSystem = TRANSPARENT_HIT;
+
+        /*if(optixGetHitKind() == OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE)
+            prd.inSystem = TRANSPARENT_HIT;
+        else
+            prd.inSystem = TRANSPARENT_BACK_HIT;*/
+
+        /*#ifdef DEBUG
+            printf("[%u] trans count!!\n", bufferIndex);
+        #endif*/
+
+        // Only increase counters if not dealing with self intersection
+        if(prd.hitFacetId != hitFacetId){
+
+            //printf("Registering trans hit on status %u\n",prd.inSystem);
+
+            increaseTransparentCounter(optixLaunchParams.hitCounter[counterIdx], hitEquiv, ortVelocity, velFactor, prd.velocity);
+#ifdef WITH_TEX
+            if (poly.texProps.textureFlags & flowgpu::TEXTURE_FLAGS::countTrans) {
+                RecordTransparentTexture(poly, prd, prd.hitPos, ray_dir);
+            }
+#endif // WITH_TEX
+#ifdef WITH_PROF
+            //printf("BOUNCE? %d != %d == %d\n",(int)poly.profProps.profileType, (int)flowgpu::PROFILE_FLAGS::noProfile,(int)poly.profProps.profileType != flowgpu::PROFILE_FLAGS::noProfile);
+            if (poly.profProps.profileType != flowgpu::PROFILE_FLAGS::noProfile){
+                RecordTransparentProfile(poly, prd, prd.hitPos, ray_dir);
+            }
+#endif
+        }
+        prd.hitFacetId = hitFacetId;
+        prd.postHitDir = ray_dir;
+        prd.facetHitSide = facetHitKind;
+
         optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos = prd.hitPos;
         optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].postHitDir = ray_dir;
 
-        increaseTransparentCounter(optixLaunchParams.hitCounter[counterIdx], hitEquiv, ortVelocity, velFactor, prd.velocity);
-        if (poly.texProps.textureFlags & flowgpu::TEXTURE_FLAGS::countTrans) {
-            RecordTransparentTexture(poly, prd, prd.hitPos, ray_dir);
-        }
+        /*#ifdef DEBUG
+            printf("[%u] trans end!!\n", bufferIndex);
+        #endif*/
         setMolPRD(prd);
     }
 #endif // WITH_TRANS
