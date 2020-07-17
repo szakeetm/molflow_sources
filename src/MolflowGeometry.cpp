@@ -2480,6 +2480,8 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 			newParameter.append_attribute("id") = nonCatalogParameters;
 			newParameter.append_attribute("name") = work->parameters[i].name.c_str();
 			newParameter.append_attribute("nbMoments") = (int)work->parameters[i].GetSize();
+			newParameter.append_attribute("logXinterp") = work->parameters[i].logXinterp;
+			newParameter.append_attribute("logYinterp") = work->parameters[i].logYinterp;
 			for (size_t m = 0; m < work->parameters[i].GetSize(); m++) {
 				xml_node newMoment = newParameter.append_child("Moment");
 				newMoment.append_attribute("id") = m;
@@ -2720,6 +2722,12 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 			for (xml_node newParameter : paramNode.children("Parameter")) {
 				Parameter newPar;
 				newPar.name = newParameter.attribute("name").as_string();
+				if (newParameter.attribute("logXinterp")) {
+					newPar.logXinterp = newParameter.attribute("logXinterp").as_bool();
+				} //else set to false by constructor
+				if (newParameter.attribute("logYinterp")) {
+					newPar.logXinterp = newParameter.attribute("logYinterp").as_bool();
+				} //else set to false by constructor
 				for (xml_node newMoment : newParameter.children("Moment")) {
 					newPar.AddPair(std::make_pair(newMoment.attribute("t").as_double(),
 						newMoment.attribute("value").as_double()));

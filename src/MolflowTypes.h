@@ -64,6 +64,7 @@ typedef float ACFLOAT;
 typedef std::pair<std::string,double> UserMoment;
 typedef std::pair<double,double> Moment;
 class IntegratedDesorption {
+	//A cumulative distribution function with time/integrated_desorption pairs
 public:
 	bool logXinterp,logYinterp; //interpolation, should be the same flags as corresponding parameter
 	std::vector<std::pair<double, double>> values; //Time-cum.desorption pairs
@@ -73,7 +74,7 @@ public:
 		archive(
 			CEREAL_NVP(logXinterp),
 			CEREAL_NVP(logYinterp),
-			CEREAL_NVP(values)
+			CEREAL_NVP(values) //(t,sumQ_until_t) pairs
 		);
 	}
 };

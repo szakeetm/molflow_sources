@@ -1505,7 +1505,7 @@ double Simulation::GenerateRandomVelocity(int CDFId) {
 double Simulation::GenerateDesorptionTime(SubprocessFacet *src) {
     if (src->sh.outgassing_paramId >= 0) { //time-dependent desorption
         return InterpolateX(randomGenerator.rnd() * IDs[src->sh.IDid].values.back().second, IDs[src->sh.IDid].values,
-        IDs[src->sh.IDid].logXinterp, IDs[src->sh.IDid].logYinterp, true); //allow extrapolate
+        false, false, true); //allow extrapolate
     } else {
         return randomGenerator.rnd() * wp.latestMoment; //continous desorption between 0 and latestMoment
     }
