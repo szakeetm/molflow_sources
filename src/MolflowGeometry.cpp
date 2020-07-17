@@ -2993,6 +2993,12 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 			for (xml_node newParameter : paramNode.children("Parameter")) {
 				Parameter newPar;
 				newPar.name = newParameter.attribute("name").as_string();
+				if (newParameter.attribute("logXinterp")) {
+					newPar.logXinterp = newParameter.attribute("logXinterp").as_bool();
+				} //else set to false by constructor
+				if (newParameter.attribute("logYinterp")) {
+					newPar.logYinterp = newParameter.attribute("logYinterp").as_bool();
+				} //else set to false by constructor
 				for (xml_node newMoment : newParameter.children("Moment")) {
 					newPar.AddPair(std::make_pair(newMoment.attribute("t").as_double(),
 						newMoment.attribute("value").as_double()));
