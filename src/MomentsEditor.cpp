@@ -174,7 +174,10 @@ void MomentsEditor::ProcessMessage(GLComponent *src, int message) {
 				auto overlapPair = Worker::CheckIntervalOverlap(parsedMoments);
 				if(overlapPair.first != 0 || overlapPair.second != 0){
                     char tmp[128];
-                    sprintf(tmp, "Overlapping time window detected! Check lines %d and %d.", overlapPair.first+1,overlapPair.second+1);
+                    if(overlapPair.second < 0)
+                        sprintf(tmp, "Interval length and time window would create overlap! Check line %d.", overlapPair.first+1);
+                    else
+                        sprintf(tmp, "Overlapping time window detected! Check lines %d and %d.", overlapPair.first+1,overlapPair.second+1);
                     GLMessageBox::Display(tmp, "Error", GLDLG_OK, GLDLG_ICONERROR);
                     return;
                 }
@@ -355,8 +358,11 @@ std::vector<Moment> MomentsEditor::ParseMoment(const std::string& userInput, dou
 	}
 	else if (nb == 3 && (begin >= 0.0) && (end > begin) && (interval < (end - begin))) {
 		//Range
-		for (double time = begin; time <= end; time += interval)
-			parsedResult.emplace_back(time,timeWindow);
+		// First check for potential overlap due to interval<timeWindow
+		if(!(interval<timeWindow)){
+            for (double time = begin; time <= end; time += interval)
+                parsedResult.emplace_back(time, timeWindow);
+        }
 	}
 	return parsedResult;
 }

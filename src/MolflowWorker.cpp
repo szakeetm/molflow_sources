@@ -727,15 +727,23 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             if (!insert) {
 
                 geom->LoadGEO(f, progressDlg, &version, this);
-// Add moments only after user Moments are completely initialized
-                for(auto& uMoment : this->userMoments){
-                    if(this->AddMoment(mApp->worker.ParseMoment(uMoment.first, uMoment.second)) == -1){
-                        // Create a warning on interval overlap
-                        progressDlg->SetMessage("Skipping time moments, due to overlap! Please check in Moments Editor!");
-                        GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning!", GLDLG_OK,
-                                              GLDLG_ICONWARNING);
+
+                // Add moments only after user Moments are completely initialized
+                {
+                    std::vector<std::vector<Moment>> parsedMoments;
+                    for (size_t u = 0; u != userMoments.size(); u++) {
+                        parsedMoments.emplace_back(mApp->worker.ParseMoment(userMoments[u].first, userMoments[u].second));
+                    }
+
+                    auto overlapPair = Worker::CheckIntervalOverlap(parsedMoments);
+                    if (overlapPair.first != 0 || overlapPair.second != 0) {
+                        GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning", GLDLG_OK, GLDLG_ICONWARNING);
                         mApp->worker.moments.clear();
-                        break;
+                        return;
+                    }
+                    else{
+                        for (auto &newMoment : parsedMoments)
+                            this->AddMoment(newMoment);
                     }
                 }
 
@@ -847,16 +855,24 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             if (!insert) {
                 geom->LoadXML_geom(rootNode, this, progressDlg);
                 // Add moments only after user Moments are completely initialized
-                for(auto& uMoment : this->userMoments){
-                    if(this->AddMoment(mApp->worker.ParseMoment(uMoment.first, uMoment.second)) == -1){
-                        // Create a warning on interval overlap
-                        progressDlg->SetMessage("Skipping time moments, due to overlap! Please check in Moments Editor!");
-                        GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning!", GLDLG_OK,
-                                              GLDLG_ICONWARNING);
+                {
+                    std::vector<std::vector<Moment>> parsedMoments;
+                    for (size_t u = 0; u != userMoments.size(); u++) {
+                        parsedMoments.emplace_back(mApp->worker.ParseMoment(userMoments[u].first, userMoments[u].second));
+                    }
+
+                    auto overlapPair = Worker::CheckIntervalOverlap(parsedMoments);
+                    if (overlapPair.first != 0 || overlapPair.second != 0) {
+                        GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning", GLDLG_OK, GLDLG_ICONWARNING);
                         mApp->worker.moments.clear();
-                        break;
+                        return;
+                    }
+                    else{
+                        for (auto &newMoment : parsedMoments)
+                            this->AddMoment(newMoment);
                     }
                 }
+
                 geom->UpdateName(fileName.c_str());
 
                 progressDlg->SetMessage("Reloading worker with new geometry...");
@@ -1420,6 +1436,12 @@ int Worker::CheckIntervalOverlap(const std::vector<Moment>& vecA, const std::vec
 std::pair<int, int> Worker::CheckIntervalOverlap(const std::vector<std::vector<Moment>>& vecParsedMoments) {
     if(vecParsedMoments.empty())
         return std::make_pair<int,int>(0,0);
+
+    // Overlap when parsedMoment is empty
+    for(auto vec = vecParsedMoments.begin(); vec != vecParsedMoments.end(); ++vec) {
+        if(vec->empty())
+            return std::make_pair<int,int>(vec - vecParsedMoments.begin(),-1);
+    }
 
     std::vector<std::pair<double,double>> intervalBoundaries;
     for(auto& vec : vecParsedMoments){
