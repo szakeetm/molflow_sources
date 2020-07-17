@@ -25,6 +25,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 Parameter::Parameter()
 {
 	fromCatalog = false;
+	logXinterp=false; //default: linear
+	logYinterp=false; //default: linear
 	name = "";
 }
 

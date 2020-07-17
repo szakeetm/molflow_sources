@@ -28,6 +28,7 @@ class Parameter:public Distribution2D {
 public:
 	std::string name;
 	bool fromCatalog;
+	bool logXinterp,logYinterp;
 	
 	Parameter();
 
