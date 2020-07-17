@@ -285,7 +285,7 @@ void Simulation::ResetTmpCounters() {
 }
 
 void Simulation::ResetSimulation() {
-    currentParticle.lastHitFacet = nullptr;
+    currentParticle = CurrentParticleStatus();
     totalDesorbed = 0;
     ResetTmpCounters();
     tmpParticleLog.clear();

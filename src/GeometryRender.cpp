@@ -78,7 +78,7 @@ void MolflowGeometry::BuildFacetTextures(BYTE *hits, bool renderRegularTexture, 
 			dCoef_custom[0] = 1E4 / (double)shGHit->globalHits.hit.nbDesorbed * mApp->worker.wp.gasMass / 1000 / 6E23*0.0100; //multiplied by timecorr*sum_v_ort_per_area: pressure
 			dCoef_custom[1] = 1E4 / (double)shGHit->globalHits.hit.nbDesorbed;
 			dCoef_custom[2] = 1E4 / (double)shGHit->globalHits.hit.nbDesorbed;
-			timeCorrection = (mApp->worker.displayedMoment == 0) ? mApp->worker.wp.finalOutgassingRate : mApp->worker.wp.totalDesorbedMolecules / mApp->worker.wp.timeWindowSize;
+			timeCorrection = (mApp->worker.displayedMoment == 0) ? mApp->worker.wp.finalOutgassingRate : mApp->worker.wp.totalDesorbedMolecules / mApp->worker.moments[mApp->worker.displayedMoment - 1].second;
 
 			for (int i = 0; i < 3; i++) {
 				//texture limits already corrected by timeFactor in UpdateMCHits()
