@@ -129,7 +129,7 @@ public:
 	//size_t totalDesorbed;           // Total number of desorptions (for this process, not reset on UpdateMCHits)
 
 	std::vector<std::vector<std::pair<double, double>>> CDFs; //cumulative distribution function for each temperature
-	std::vector<std::vector<std::pair<double, double>>> IDs; //integrated distribution function for each time-dependent desorption type
+	std::vector<IntegratedDesorption> IDs; //integrated distribution function for each time-dependent desorption type
 	//std::vector<double> temperatures; //keeping track of all temperatures that have a CDF already generated
 	std::vector<Moment> moments;      //time values (seconds) when a simulation state is measured
 	//std::vector<size_t> desorptionParameterIDs; //time-dependent parameters which are used as desorptions, therefore need to be integrated

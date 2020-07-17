@@ -101,7 +101,7 @@ Worker::Worker() : simManager("molflow", "MFLW"){
     moments = std::vector<Moment>();
     userMoments = std::vector<UserMoment>(); //strings describing moments, to be parsed
     CDFs = std::vector<std::vector<std::pair<double, double>>>();
-    IDs = std::vector<std::vector<std::pair<double, double>>>();
+    IDs = std::vector<IntegratedDesorption>();
     parameters = std::vector<Parameter>();
     needsReload = true;  //When main and subprocess have different geometries, needs to reload (synchronize)
     displayedMoment = 0; //By default, steady-state is displayed
@@ -1687,7 +1687,7 @@ void Worker::PrepareToRun() {
     temperatures = std::vector<double>();
     desorptionParameterIDs = std::vector<size_t>();
     CDFs = std::vector<std::vector<std::pair<double, double>>>();
-    IDs = std::vector<std::vector<std::pair<double, double>>>();
+    IDs = std::vector<IntegratedDesorption>();
 
     bool needsAngleMapStatusRefresh = false;
 

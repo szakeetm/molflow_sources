@@ -60,6 +60,11 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 typedef float ACFLOAT;
 typedef std::pair<std::string,double> UserMoment;
 typedef std::pair<double,double> Moment;
+class IntegratedDesorption {
+public:
+	bool logX,logY; //interpolation
+	std::vector<std::pair<double, double>> values; //Time-cum.desorption pairs
+};
 
 // Density/Hit field stuff
 #define HITMAX 1E38
