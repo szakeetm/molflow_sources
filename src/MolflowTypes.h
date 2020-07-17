@@ -21,6 +21,9 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/GLTypes.h"
 #include <stddef.h> //size_t for gcc
 #include <string>
+#include <vector>
+#include <cereal/cereal.hpp>
+#include <cereal/types/vector.hpp>
 //#include "Buffer_shared.h"
 
 // Desorption type
@@ -62,8 +65,17 @@ typedef std::pair<std::string,double> UserMoment;
 typedef std::pair<double,double> Moment;
 class IntegratedDesorption {
 public:
-	bool logX,logY; //interpolation
+	bool logXinterp,logYinterp; //interpolation, should be the same flags as corresponding parameter
 	std::vector<std::pair<double, double>> values; //Time-cum.desorption pairs
+
+		template<class Archive>
+		void serialize(Archive& archive) {
+		archive(
+			CEREAL_NVP(logXinterp),
+			CEREAL_NVP(logYinterp),
+			CEREAL_NVP(values)
+		);
+	}
 };
 
 // Density/Hit field stuff

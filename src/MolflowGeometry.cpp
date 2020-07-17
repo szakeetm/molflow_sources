@@ -86,8 +86,8 @@ size_t MolflowGeometry::GetGeometrySize() {
 	for (auto& i : work->IDs) {
 
 		memoryUsage += sizeof(size_t); //ID size
-		memoryUsage += 2*sizeof(bool); //logX,logY interpolation
-		memoryUsage += i.size() * 2 * sizeof(double);
+		memoryUsage += 2*sizeof(bool); //logX,logY interpolation flags
+		memoryUsage += i.values.size() * 2 * sizeof(double);
 	}
 
 	//Parameters

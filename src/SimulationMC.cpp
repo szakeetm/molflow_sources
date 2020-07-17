@@ -621,9 +621,9 @@ bool Simulation::StartFromSource() {
                 } //end outgassing file block
                 else { //constant or time-dependent outgassing
                     double facetOutgassing =
-                            (f.sh.outgassing_paramId >= 0)
-                            ? IDs[f.sh.IDid].back().second / (1.38E-23 * f.sh.temperature)
-                            : wp.latestMoment * f.sh.outgassing / (1.38E-23 * f.sh.temperature);
+                            ((f.sh.outgassing_paramId >= 0)
+                            ? IDs[f.sh.IDid].values.back().second 
+                            : wp.latestMoment * f.sh.outgassing) / (1.38E-23 * f.sh.temperature);
                     found = (srcRnd >= sumA) && (srcRnd < (sumA + facetOutgassing));
                     sumA += facetOutgassing;
                 } //end constant or time-dependent outgassing block
@@ -1504,8 +1504,8 @@ double Simulation::GenerateRandomVelocity(int CDFId) {
 
 double Simulation::GenerateDesorptionTime(SubprocessFacet *src) {
     if (src->sh.outgassing_paramId >= 0) { //time-dependent desorption
-        return InterpolateX(randomGenerator.rnd() * IDs[src->sh.IDid].back().second, IDs[src->sh.IDid], false,
-                            true); //allow extrapolate
+        return InterpolateX(randomGenerator.rnd() * IDs[src->sh.IDid].values.back().second, IDs[src->sh.IDid].values,
+        IDs[src->sh.IDid].logXinterp, IDs[src->sh.IDid].logYinterp, true); //allow extrapolate
     } else {
         return randomGenerator.rnd() * wp.latestMoment; //continous desorption between 0 and latestMoment
     }

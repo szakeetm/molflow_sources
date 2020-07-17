@@ -1855,7 +1855,8 @@ void Worker::CalcTotalOutgassing() {
                             f->sh.outgassing / (1.38E-23 * f->sh.temperature);  //Outgassing molecules/sec
                     wp.finalOutgassingRate_Pa_m3_sec += f->sh.outgassing;
                 } else { //time-dependent outgassing
-                    wp.totalDesorbedMolecules += IDs[f->sh.IDid].back().second / (1.38E-23 * f->sh.temperature);
+                    double lastValue = IDs[f->sh.IDid].values.back().second;
+                    wp.totalDesorbedMolecules += lastValue / (1.38E-23 * f->sh.temperature);
                     size_t lastIndex = parameters[f->sh.outgassing_paramId].GetSize() - 1;
                     double finalRate_mbar_l_s = parameters[f->sh.outgassing_paramId].GetY(lastIndex);
                     wp.finalOutgassingRate +=
@@ -1923,7 +1924,7 @@ Worker::Generate_CDF(double gasTempKelvins, double gasMassGramsPerMol, size_t si
 * \param paramId parameter identifier
 * \return ID as a Vector containing a pair of double values (x value = moment, y value = desorption value)
 */
-std::vector<std::pair<double, double>> Worker::Generate_ID(int paramId) {
+IntegratedDesorption Worker::Generate_ID(int paramId) {
     std::vector<std::pair<double, double>> ID;
     //First, let's check at which index is the latest moment
     size_t indexBeforeLastMoment;
@@ -1982,8 +1983,11 @@ std::vector<std::pair<double, double>> Worker::Generate_ID(int paramId) {
                                         0.05 * delta_t * avg_value));
         }
     }
-
-    return ID;
+    IntegratedDesorption result;
+    result.logXinterp=parameters[paramId].logXinterp;
+    result.logYinterp=parameters[paramId].logYinterp;
+    result.values=ID;
+    return result;
 
 }
 
