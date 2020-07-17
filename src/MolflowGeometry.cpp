@@ -2726,7 +2726,7 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 					newPar.logXinterp = newParameter.attribute("logXinterp").as_bool();
 				} //else set to false by constructor
 				if (newParameter.attribute("logYinterp")) {
-					newPar.logXinterp = newParameter.attribute("logYinterp").as_bool();
+					newPar.logYinterp = newParameter.attribute("logYinterp").as_bool();
 				} //else set to false by constructor
 				for (xml_node newMoment : newParameter.children("Moment")) {
 					newPar.AddPair(std::make_pair(newMoment.attribute("t").as_double(),
