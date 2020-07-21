@@ -60,6 +60,9 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #define MC_MODE 0         // Monte Carlo simulation mode
 #define AC_MODE 1         // Angular coefficient simulation mode
 
+#define MBARLS_TO_PAM3S 0.1 //Multiply by this to convert a value expressed in mbar.l/s to Pa.m3/s
+#define MBAR_TO_PA 100 //Multiply by this to convert a value expressed in mbar to Pa
+
 typedef float ACFLOAT;
 typedef std::pair<std::string,double> UserMoment;
 typedef std::pair<double,double> Moment;

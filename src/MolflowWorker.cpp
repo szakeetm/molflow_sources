@@ -1860,8 +1860,8 @@ void Worker::CalcTotalOutgassing() {
                     size_t lastIndex = parameters[f->sh.outgassing_paramId].GetSize() - 1;
                     double finalRate_mbar_l_s = parameters[f->sh.outgassing_paramId].GetY(lastIndex);
                     wp.finalOutgassingRate +=
-                            finalRate_mbar_l_s * 0.100 / (1.38E-23 * f->sh.temperature); //0.1: mbar*l/s->Pa*m3/s
-                    wp.finalOutgassingRate_Pa_m3_sec += finalRate_mbar_l_s * 0.100;
+                            finalRate_mbar_l_s * MBARLS_TO_PAM3S / (1.38E-23 * f->sh.temperature); //0.1: mbar*l/s->Pa*m3/s
+                    wp.finalOutgassingRate_Pa_m3_sec += finalRate_mbar_l_s * MBARLS_TO_PAM3S;
                 }
             }
         }
@@ -1921,71 +1921,134 @@ Worker::Generate_CDF(double gasTempKelvins, double gasMassGramsPerMol, size_t si
 
 /**
 * \brief Generate integrated desorption (ID) function
-* \param paramId parameter identifier
-* \return ID as a Vector containing a pair of double values (x value = moment, y value = desorption value)
+* \param paramId parameter identifier (parameters can be lin/lin, log-lin, lin-log or log-log, each requiring different integration method)
+* \return ID as a Vector containing a pair of double values (x value = moment, y value = cumulative desorption value)
 */
 IntegratedDesorption Worker::Generate_ID(int paramId) {
     std::vector<std::pair<double, double>> ID;
     //First, let's check at which index is the latest moment
     size_t indexBeforeLastMoment;
-    for (indexBeforeLastMoment = 0; indexBeforeLastMoment < parameters[paramId].GetSize() &&
-                                    (parameters[paramId].GetX(indexBeforeLastMoment) <
+    Parameter& par = par; //we'll reference it a lot
+    for (indexBeforeLastMoment = 0; indexBeforeLastMoment < par.GetSize() &&
+                                    (par.GetX(indexBeforeLastMoment) <
                                      wp.latestMoment); indexBeforeLastMoment++);
-    if (indexBeforeLastMoment >= parameters[paramId].GetSize())
-        indexBeforeLastMoment = parameters[paramId].GetSize() - 1; //not found, set as last moment
+    if (indexBeforeLastMoment >= par.GetSize())
+        indexBeforeLastMoment = par.GetSize() - 1; //not found, set as last moment
 
 //Construct integral from 0 to latest moment
 //Zero
-    ID.push_back(std::make_pair(0.0, 0.0));
+    ID.push_back(std::make_pair(0.0, 0.0)); //At t=0 no particles have desorbed yet
 
     //First moment
-    ID.push_back(std::make_pair(parameters[paramId].GetX(0),
-                                parameters[paramId].GetX(0) * parameters[paramId].GetY(0) *
-                                0.100)); //for the first moment (0.1: mbar*l/s -> Pa*m3/s)
+    ID.push_back(std::make_pair(par.GetX(0),
+                                par.GetX(0) * par.GetY(0) *
+                                MBARLS_TO_PAM3S)); //for the first moment (0.1: mbar*l/s -> Pa*m3/s)
 
     //Intermediate moments
     for (size_t pos = 1; pos <= indexBeforeLastMoment; pos++) {
-        if (IsEqual(parameters[paramId].GetY(pos),
-                    parameters[paramId].GetY(pos - 1))) //two equal values follow, simple integration by multiplying
-            ID.push_back(std::make_pair(parameters[paramId].GetX(pos),
-                                        ID.back().second +
-                                        (parameters[paramId].GetX(pos) - parameters[paramId].GetX(pos - 1)) *
-                                        parameters[paramId].GetY(pos) * 0.100));
-        else { //difficult case, we'll integrate by dividing to 20 equal sections
-            for (double delta = 0.05; delta < 1.0001; delta += 0.05) {
-                double delta_t = parameters[paramId].GetX(pos) - parameters[paramId].GetX(pos - 1);
-                double time = parameters[paramId].GetX(pos - 1) + delta * delta_t;
-                double avg_value = (parameters[paramId].InterpolateY(time - 0.05 * delta_t, false) +
-                                    parameters[paramId].InterpolateY(time, false)) * 0.100 / 2.0;
-                ID.push_back(std::make_pair(time,
-                                            ID.back().second +
-                                            0.05 * delta_t * avg_value));
-            }
+        if (!par.logXinterp && !par.logYinterp && IsEqual(par.GetY(pos), par.GetY(pos - 1))) {
+            //easy case of lin-lin interpolation with two equal y0=y1 values, simple integration by multiplying, reducing number of points
+            ID.push_back(std::make_pair(par.GetX(pos),
+                ID.back().second +
+                (par.GetX(pos) - par.GetX(pos - 1)) *
+                par.GetY(pos) * MBARLS_TO_PAM3S)); //integral = y1*(x1-x0)
         }
-    }
+        else { //we need to split the section to 10 subsections, and integrate each
+               //terminology: section is between two consecutive user-defined time-value pairs
+                //a section is broken into 10 subsections
+            const int nbSteps = 10; //change here
+            double sectionStartTime = par.GetX(pos - 1);
+            double sectionEndTime = par.GetX(pos);
+            double sectionTimeInterval = sectionEndTime - sectionStartTime;
+            double sectionDelta = 1.0 / nbSteps;
+            double subsectionTimeInterval,subsectionLogTimeInterval;
+            double logSectionStartTime, logSectionEndTime, logSectionTimeInterval;
+            if (par.logXinterp) { //time is logarithmic
+                if (sectionStartTime == 0) logSectionStartTime = -99;
+                else logSectionStartTime = log10(sectionStartTime);
+                logSectionEndTime = log10(sectionEndTime);
+                logSectionTimeInterval = logSectionEndTime - logSectionStartTime;
+                subsectionLogTimeInterval = logSectionTimeInterval * sectionDelta;
+            }
+            else {
+                subsectionTimeInterval = sectionTimeInterval * sectionDelta;
+            }
+            double previousSubsectionValue = par.GetY(pos - 1); //Points to start of section, will be updated to point to start of subsections
+            double previousSubsectionTime = sectionStartTime;
+            for (double sectionFraction = sectionDelta; sectionFraction < 1.0001; sectionFraction += sectionDelta) { //sectionFraction: where we are within the section [0..1]
+                double sectionElapsedTime;
+                if (!par.logXinterp) {
+                    //linX: Distribute sampled points evenly
+                    sectionElapsedTime = sectionFraction * sectionTimeInterval;
+                }
+                else {
+                    //logX: Distribute sampled points logarithmically
+                    sectionElapsedTime = Pow10(logSectionStartTime + sectionFraction * logSectionTimeInterval);
+                }
+                double subSectionEndTime = sectionStartTime + sectionElapsedTime;
+                double subSectionEndValue = par.InterpolateY(subSectionEndTime,false);
+                double subsectionDesorbedGas; //desorbed gas in this subsection
+                if (!par.logXinterp && !par.logYinterp) { //lin-lin interpolation
+                    //Area under a straight section from (x0,y0) to (x1,y1) on a lin-lin plot: I = (x1-x0) * (y0+y1)/2
+                    subsectionDesorbedGas = sectionTimeInterval * 0.5 * (previousSubsectionValue + subSectionEndValue) * MBARLS_TO_PAM3S;
+                }
+                else if (par.logXinterp && !par.logYinterp) { //log-lin: time (X) is logarithmix, outgassing (Y) is linear
+                    double a = log10(subSectionEndTime / previousSubsectionTime);
+                    double m = (subSectionEndValue - previousSubsectionValue) / a; //slope
+                    //From Mathematica: integral of a straight section from (x0,y0) to (x1,y1) on a log-lin plot: I = (x1-x0)y0 + (y1-y0)(x0+x1(a-1))/a where a=log10(x1/x0)
+                    subsectionDesorbedGas = previousSubsectionValue*(subSectionEndTime-previousSubsectionTime)
+                        + (subSectionEndValue-previousSubsectionValue) * (previousSubsectionTime+subSectionEndTime * (a-1)/a);
+                }
+                else if (!par.logXinterp && par.logYinterp) { //lin-log: time (X) is linear, outgassing (Y) is logarithmic
+                    //Area under a straight section from (x0,y0) to (x1,y1) on a lin-log plot: I = 1/m * (y1-y0) where m=log10(y1/y0)/(x1-x0)
+                    double m = log10(subSectionEndValue-previousSubsectionValue)/(subSectionEndValue-previousSubsectionValue);//slope
+                    subsectionDesorbedGas = 1.0/m * (subSectionEndValue-previousSubsectionValue);
+                }
+                else { //log-log
+                    //Area under a straight section from (x0,y0) to (x1,y1) on a log-log plot:
+                    //I = (y0/(x0^m))/(m+1) * (x1^(m+1)-x0^(m+1)) if m!=-1
+                    //I = x0*y0*ln(x1/x0) if m==-1
+                    //where m= log10(y1/y0) / log10(x1/x0)
+                    double m = log10(subSectionEndValue/previousSubsectionValue) / log10(subSectionEndTime/previousSubsectionTime); //slope
+                    if (m != -1.0) {
+                        subsectionDesorbedGas = previousSubsectionValue / pow(previousSubsectionTime, m) / (m + 1.0) * (pow(subSectionEndTime, m + 1.0) - pow(previousSubsectionTime, m + 1.0));
+                    }
+                    else { //m==-1
+                        subsectionDesorbedGas = previousSubsectionTime * previousSubsectionValue * log(subSectionEndTime / previousSubsectionTime);
+                    }
+                }
+                    
+                ID.push_back(std::make_pair(subSectionEndTime, ID.back().second + subsectionDesorbedGas));
+                
+                //Cache end values for next iteration
+                previousSubsectionValue = subSectionEndValue;
+                previousSubsectionTime = subSectionEndTime;
+            } //end subsection loop
+        }
+    } //end section loop
 
     //wp.latestMoment
-    double valueAtlatestMoment = parameters[paramId].InterpolateY(wp.latestMoment, false);
-    if (IsEqual(valueAtlatestMoment, parameters[paramId].GetY(
+    double valueAtlatestMoment = par.InterpolateY(wp.latestMoment, false);
+    if (IsEqual(valueAtlatestMoment, par.GetY(
             indexBeforeLastMoment))) //two equal values follow, simple integration by multiplying
         ID.push_back(std::make_pair(wp.latestMoment,
                                     ID.back().second +
-                                    (wp.latestMoment - parameters[paramId].GetX(indexBeforeLastMoment)) *
-                                    parameters[paramId].GetY(indexBeforeLastMoment) * 0.100));
+                                    (wp.latestMoment - par.GetX(indexBeforeLastMoment)) *
+                                    par.GetY(indexBeforeLastMoment) * MBARLS_TO_PAM3S));
     else { //difficult case, we'll integrate by dividing two 5equal sections
         for (double delta = 0.0; delta < 1.0001; delta += 0.05) {
-            double delta_t = wp.latestMoment - parameters[paramId].GetX(indexBeforeLastMoment);
-            double time = parameters[paramId].GetX(indexBeforeLastMoment) + delta * delta_t;
-            double avg_value = (parameters[paramId].GetY(indexBeforeLastMoment) * 0.100 +
-                                parameters[paramId].InterpolateY(time, false) * 0.100) / 2.0;
+            double delta_t = wp.latestMoment - par.GetX(indexBeforeLastMoment);
+            double time = par.GetX(indexBeforeLastMoment) + delta * delta_t;
+            double avg_value = (par.GetY(indexBeforeLastMoment) * MBARLS_TO_PAM3S +
+                                par.InterpolateY(time, false) * MBARLS_TO_PAM3S) / 2.0;
             ID.push_back(std::make_pair(time,
                                         ID.back().second +
                                         0.05 * delta_t * avg_value));
         }
     }
     IntegratedDesorption result;
-    result.logXinterp=parameters[paramId].logXinterp;
-    result.logYinterp=parameters[paramId].logYinterp;
+    result.logXinterp=par.logXinterp;
+    result.logYinterp=par.logYinterp;
     result.values=ID;
     return result;
 

@@ -847,14 +847,14 @@ void MolFlow::ApplyFacetParams() {
 			if (doTemperature) f->sh.temperature = temperature;
 			if (doFlow) {
 				if (!outgassingNotNumber) {
-					f->sh.outgassing = outgassing*0.100; //0.1: mbar*l/s -> Pa*m3/s
+					f->sh.outgassing = outgassing*MBARLS_TO_PAM3S; //0.1: mbar*l/s -> Pa*m3/s
 					f->userOutgassing = "";
 				}
 				else {
 					f->userOutgassing = facetFlow->GetText();
 				}
 			}
-			if (doFlowA/* && !useMapA*/) f->sh.outgassing = flowA*f->GetArea()*0.100;
+			if (doFlowA/* && !useMapA*/) f->sh.outgassing = flowA*f->GetArea()*MBARLS_TO_PAM3S;
 			if (desorbType >= 0) {
 				if (desorbType == 0) f->sh.outgassing = 0.0;
 				if (desorbType != 3) f->sh.desorbTypeN = 0.0;

@@ -2173,9 +2173,9 @@ void MolflowGeometry::ImportDesorption_SYN(
 						else {
 							//Convert to outgassing
 							if (mode == 0) {
-								if (source == 0) outgassing = (double)MC * 0.100 / 1.38E-23 / f->sh.temperature;
-								else if (source == 1) outgassing = flux * 0.100 / 1.38E-23 / f->sh.temperature; //Division by 10 because the user will want to see the same outgassing in mbar*l/s
-								else if (source == 2) outgassing = power * 0.100 / 1.38E-23 / f->sh.temperature; //(Outgassing is stored internally in Pa*m3/s, for consistent SI unit calculations)
+								if (source == 0) outgassing = (double)MC * MBARLS_TO_PAM3S / 1.38E-23 / f->sh.temperature;
+								else if (source == 1) outgassing = flux * MBARLS_TO_PAM3S / 1.38E-23 / f->sh.temperature; //Division by 10 because the user will want to see the same outgassing in mbar*l/s
+								else if (source == 2) outgassing = power * MBARLS_TO_PAM3S / 1.38E-23 / f->sh.temperature; //(Outgassing is stored internally in Pa*m3/s, for consistent SI unit calculations)
 							}
 							else if (mode == 1) {
 								double moleculePerPhoton = eta0 * pow(Max(1.0, dose / cutoffdose), alpha);
@@ -2187,7 +2187,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 							}
 						}
 						//Apply outgassing
-						//f->outgassingMap[index] = outgassing *0.100; //0.1: mbar*l/s->Pa*m3/s
+						//f->outgassingMap[index] = outgassing *MBARLS_TO_PAM3S; //0.1: mbar*l/s->Pa*m3/s
 						f->outgassingMap[index] = outgassing * 1.38E-23 * f->sh.temperature; //1[Pa*m3/s] = kT [particles/sec]
 
 						//Facet diagnostic info
