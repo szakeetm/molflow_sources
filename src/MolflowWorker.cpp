@@ -2014,7 +2014,7 @@ IntegratedDesorption Worker::Generate_ID(int paramId) {
                         subsectionDesorbedGas = previousSubsectionValue / pow(previousSubsectionTime, m) / (m + 1.0) * (pow(subSectionEndTime, m + 1.0) - pow(previousSubsectionTime, m + 1.0));
                     }
                     else { //m==-1
-                        subsectionDesorbedGas = previousSubsectionTime * previousSubsectionValue * log(subSectionEndTime / previousSubsectionTime);
+                        subsectionDesorbedGas = previousSubsectionTime * previousSubsectionValue * log10(subSectionEndTime / previousSubsectionTime);
                     }
                 }
                     
