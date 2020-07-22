@@ -1941,8 +1941,13 @@ IntegratedDesorption Worker::Generate_ID(int paramId) {
     for (indexAfterLatestMoment = 0; indexAfterLatestMoment < par.GetSize() &&
                                     (par.GetX(indexAfterLatestMoment) <
                                      wp.latestMoment); indexAfterLatestMoment++); //loop exits after first index after latestMoment
-    if (indexAfterLatestMoment >= par.GetSize())
+    bool lastUserMomentBeforeLatestMoment;
+    if (indexAfterLatestMoment >= par.GetSize()) {
         indexAfterLatestMoment = par.GetSize() - 1; //not found, set as last moment
+        lastUserMomentBeforeLatestMoment = true;
+    } else {
+        lastUserMomentBeforeLatestMoment = false;
+    }
 
     //Construct integral from 0 to the simulation's latest moment
     //First point: t=0, Q(0)=Q(t0)
@@ -1953,10 +1958,14 @@ IntegratedDesorption Worker::Generate_ID(int paramId) {
     //Consecutive points: user-defined points that are before latestMoment
     {
         auto valuesCopy = par.GetValues();
-        myOutgassing.insert(myOutgassing.end(),valuesCopy.begin(),valuesCopy.begin()+indexAfterLatestMoment-1);
+        if (lastUserMomentBeforeLatestMoment) {
+            myOutgassing.insert(myOutgassing.end(),valuesCopy.begin(),valuesCopy.end());
+        } else if (indexAfterLatestMoment>0) {
+            myOutgassing.insert(myOutgassing.end(),valuesCopy.begin(),valuesCopy.begin()+indexAfterLatestMoment-1);
+        }
     
 
-        if (myOutgassing.back().first<wp.latestMoment) {
+        if (lastUserMomentBeforeLatestMoment) {
             //Create last point equal to last outgassing
             myOutgassing.push_back(std::make_pair(wp.latestMoment,myOutgassing.back().second));
         } else if (!IsEqual(myOutgassing.back().first,wp.latestMoment)) {
@@ -2009,15 +2018,15 @@ IntegratedDesorption Worker::Generate_ID(int paramId) {
                 }
                 double subSectionEndTime = sectionStartTime + sectionElapsedTime;
                 double subSectionEndValue = InterpolateY(subSectionEndTime,myOutgassing,par.logXinterp,par.logYinterp);
-                double subsectionDesorbedGas; //desorbed gas in this subsection
+                double subsectionDesorbedGas; //desorbed gas in this subsection, in mbar*l/s, will be converted to Pa*m3/s when adding to ID
                 if (!par.logXinterp && !par.logYinterp) { //lin-lin interpolation
                     //Area under a straight section from (x0,y0) to (x1,y1) on a lin-lin plot: I = (x1-x0) * (y0+y1)/2
-                    subsectionDesorbedGas = sectionTimeInterval * 0.5 * (previousSubsectionValue + subSectionEndValue) * MBARLS_TO_PAM3S;
+                    subsectionDesorbedGas = subsectionTimeInterval * 0.5 * (previousSubsectionValue + subSectionEndValue);
                 }
                 else if (par.logXinterp && !par.logYinterp) { //log-lin: time (X) is logarithmix, outgassing (Y) is linear
                     double a = subsectionLogTimeInterval;
                     //double a = log10(subSectionEndTime / previousSubsectionTime); //subSectionEndTime>0
-                    double m = (subSectionEndValue - previousSubsectionValue) / a; //slope
+                    //double m = (subSectionEndValue - previousSubsectionValue) / a; //slope
                     //From Mathematica: integral of a straight section from (x0,y0) to (x1,y1) on a log-lin plot: I = (x1-x0)y0 + (y1-y0)(x0+x1(a-1))/a where a=log10(x1/x0)
                     subsectionDesorbedGas = previousSubsectionValue*(subSectionEndTime-previousSubsectionTime)
                         + (subSectionEndValue-previousSubsectionValue) * (previousSubsectionTime+subSectionEndTime * (a-1)/a);
@@ -2026,8 +2035,9 @@ IntegratedDesorption Worker::Generate_ID(int paramId) {
                     //Area under a straight section from (x0,y0) to (x1,y1) on a lin-log plot: I = 1/m * (y1-y0) where m=log10(y1/y0)/(x1-x0)
                     double logSubSectionEndValue = (subSectionEndValue>0.0) ? log10(subSectionEndValue) : -99;
                     double logPreviousSubSectionValue = (previousSubsectionTime>0.0) ? log10(previousSubsectionValue) : -99;
-                    double m = (logSubSectionEndValue-logPreviousSubSectionValue)/subsectionTimeInterval; //slope
-                    subsectionDesorbedGas = 1.0/m * (subSectionEndValue-previousSubsectionValue);
+                    //I = (x2-x1)*(y2-y1)*log10(exp(1))/(log10(y2)-log10(y1)) from https://fr.mathworks.com/matlabcentral/answers/404930-finding-the-area-under-a-semilogy-plot-with-straight-line-segments
+                    subsectionDesorbedGas = subsectionTimeInterval*(subSectionEndValue-previousSubsectionValue)
+                        * log10(exp(1))/(logSubSectionEndValue-logPreviousSubSectionValue);
                 }
                 else { //log-log
                     //Area under a straight section from (x0,y0) to (x1,y1) on a log-log plot:
@@ -2045,7 +2055,7 @@ IntegratedDesorption Worker::Generate_ID(int paramId) {
                     }
                 }
                     
-                ID.push_back(std::make_pair(subSectionEndTime, ID.back().second + subsectionDesorbedGas));
+                ID.push_back(std::make_pair(subSectionEndTime,ID.back().second + subsectionDesorbedGas * MBARLS_TO_PAM3S ));
                 
                 //Cache end values for next iteration
                 previousSubsectionValue = subSectionEndValue;
