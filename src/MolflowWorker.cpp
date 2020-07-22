@@ -1726,9 +1726,9 @@ void Worker::PrepareToRun() {
         if (f->sh.outgassing_paramId >= 0) { //if time-dependent desorption
             int id = GetIDId(f->sh.outgassing_paramId);
             if (id >= 0)
-                f->sh.IDid = id; //we've already generated an ID for this temperature
+                f->sh.IDid = id; //we've already generated an integrated des. for this time-dep. outgassing
             else
-                f->sh.IDid = GenerateNewID(f->sh.outgassing_paramId);
+                f->sh.IDid = GenerateNewID(f->sh.outgassing_paramId); //Convert timedep outg. (PDF) to CDF
         }
 
         //Generate speed distribution functions
@@ -1810,10 +1810,11 @@ int Worker::GenerateNewCDF(double temperature) {
 * \return Previous size of IDs vector, which determines new id in the vector
 */
 int Worker::GenerateNewID(int paramId) {
+    //This function is called if parameter with index paramId doesn't yet have a cumulative des. function
     size_t i = desorptionParameterIDs.size();
-    desorptionParameterIDs.push_back(paramId);
-    IDs.push_back(Generate_ID(paramId));
-    return (int) i;
+    desorptionParameterIDs.push_back(paramId); //mark that i.th integrated des. belongs to paramId
+    IDs.push_back(Generate_ID(paramId)); //actually convert PDF to CDF
+    return (int) i; //return own index
 }
 
 /**
@@ -1920,45 +1921,66 @@ Worker::Generate_CDF(double gasTempKelvins, double gasMassGramsPerMol, size_t si
 }
 
 /**
-* \brief Generate integrated desorption (ID) function
-* \param paramId parameter identifier (parameters can be lin/lin, log-lin, lin-log or log-log, each requiring different integration method)
-* \return ID as a Vector containing a pair of double values (x value = moment, y value = cumulative desorption value)
+* \brief Generate integrated (cumulative) desorption (ID) function from time-dependent outgassing, for inverse lookup at RNG
+* \param paramId outgassing parameter index (parameters can be lin/lin, log-lin, lin-log or log-log, each requiring different integration method)
+* \return Integrated desorption: class containing a Vector containing a pair of double values (x value = time moment, y value = cumulative desorption value)
 */
 IntegratedDesorption Worker::Generate_ID(int paramId) {
-    std::vector<std::pair<double, double>> ID;
+    
+    std::vector<std::pair<double, double>> ID; //time-cumulative desorption pairs. Can have more points than the corresponding outgassing (some sections are divided to subsections)
+    
+    //We need to slightly modify the original outgassing:
+    //Beginning: Add a point at t=0, with the first outgassing value (assuming constant outgassing from 0 to t1 - const. extrap.)
+    //End: if latestMoment is after the last user-defined moment, copy last user value to latestMoment (constant extrapolation)
+    //     if latestMoment is before, create a new point at latestMoment with interpolated outgassing value and throw away the rest (don't generate particles after latestMoment)
+    std::vector<std::pair<double,double>> myOutgassing; //modified parameter
+
     //First, let's check at which index is the latest moment
-    size_t indexBeforeLastMoment;
-    Parameter& par = par; //we'll reference it a lot
-    for (indexBeforeLastMoment = 0; indexBeforeLastMoment < par.GetSize() &&
-                                    (par.GetX(indexBeforeLastMoment) <
-                                     wp.latestMoment); indexBeforeLastMoment++);
-    if (indexBeforeLastMoment >= par.GetSize())
-        indexBeforeLastMoment = par.GetSize() - 1; //not found, set as last moment
+    size_t indexAfterLatestMoment;
+    Parameter& par = parameters[paramId]; //we'll reference it a lot
+    for (indexAfterLatestMoment = 0; indexAfterLatestMoment < par.GetSize() &&
+                                    (par.GetX(indexAfterLatestMoment) <
+                                     wp.latestMoment); indexAfterLatestMoment++); //loop exits after first index after latestMoment
+    if (indexAfterLatestMoment >= par.GetSize())
+        indexAfterLatestMoment = par.GetSize() - 1; //not found, set as last moment
 
-//Construct integral from 0 to latest moment
-//Zero
-    ID.push_back(std::make_pair(0.0, 0.0)); //At t=0 no particles have desorbed yet
+    //Construct integral from 0 to the simulation's latest moment
+    //First point: t=0, Q(0)=Q(t0)
+    if (par.GetX(0)>0.0) {
+        ID.push_back(std::make_pair(0.0, 0.0)); //At t=0 no particles have desorbed yet
+        myOutgassing.push_back(std::make_pair(0.0,par.GetY(0)));
+    }
+    //Consecutive points: user-defined points that are before latestMoment
+    {
+        auto valuesCopy = par.GetValues();
+        myOutgassing.insert(myOutgassing.end(),valuesCopy.begin(),valuesCopy.begin()+indexAfterLatestMoment-1);
+    
 
-    //First moment
-    ID.push_back(std::make_pair(par.GetX(0),
-                                par.GetX(0) * par.GetY(0) *
-                                MBARLS_TO_PAM3S)); //for the first moment (0.1: mbar*l/s -> Pa*m3/s)
-
-    //Intermediate moments
-    for (size_t pos = 1; pos <= indexBeforeLastMoment; pos++) {
-        if (!par.logXinterp && !par.logYinterp && IsEqual(par.GetY(pos), par.GetY(pos - 1))) {
-            //easy case of lin-lin interpolation with two equal y0=y1 values, simple integration by multiplying, reducing number of points
-            ID.push_back(std::make_pair(par.GetX(pos),
-                ID.back().second +
-                (par.GetX(pos) - par.GetX(pos - 1)) *
-                par.GetY(pos) * MBARLS_TO_PAM3S)); //integral = y1*(x1-x0)
+        if (myOutgassing.back().first<wp.latestMoment) {
+            //Create last point equal to last outgassing
+            myOutgassing.push_back(std::make_pair(wp.latestMoment,myOutgassing.back().second));
+        } else if (!IsEqual(myOutgassing.back().first,wp.latestMoment)) {
+            myOutgassing.push_back(std::make_pair(wp.latestMoment,
+            InterpolateY(wp.latestMoment,valuesCopy,par.logXinterp,par.logYinterp)));
         }
-        else { //we need to split the section to 10 subsections, and integrate each
-               //terminology: section is between two consecutive user-defined time-value pairs
-                //a section is broken into 10 subsections
+    } //values copy goes out of scope
+
+    //Intermediate moments, from first to last user-defined moment
+    //We throw away user-defined moments after latestMoment:
+    //Example: we sample the system until t=10s but outgassing is defined until t=1000s -> ignore values after 10s
+    for (size_t i = 1; i < myOutgassing.size(); i++) { //i=0 is t=0, skipping
+        if (IsEqual(myOutgassing[i].second, myOutgassing[i - 1].second)) {
+            //easy case of two equal y0=y1 values, simple integration by multiplying, reducing number of points
+            ID.push_back(std::make_pair(myOutgassing[i].first,
+                ID.back().second +
+                (myOutgassing[i].first - myOutgassing[i - 1].first) *
+                myOutgassing[i].second * MBARLS_TO_PAM3S)); //integral = y1*(x1-x0)
+        }
+        else { //we need to split the user-defined section to 10 subsections, and integrate each
+               //(terminology: section is between two consecutive user-defined time-value pairs)
             const int nbSteps = 10; //change here
-            double sectionStartTime = par.GetX(pos - 1);
-            double sectionEndTime = par.GetX(pos);
+            double sectionStartTime = myOutgassing[i - 1].first;
+            double sectionEndTime = myOutgassing[i].first;
             double sectionTimeInterval = sectionEndTime - sectionStartTime;
             double sectionDelta = 1.0 / nbSteps;
             double subsectionTimeInterval,subsectionLogTimeInterval;
@@ -1973,7 +1995,7 @@ IntegratedDesorption Worker::Generate_ID(int paramId) {
             else {
                 subsectionTimeInterval = sectionTimeInterval * sectionDelta;
             }
-            double previousSubsectionValue = par.GetY(pos - 1); //Points to start of section, will be updated to point to start of subsections
+            double previousSubsectionValue = myOutgassing[i - 1].second; //Points to start of section, will be updated to point to start of subsections
             double previousSubsectionTime = sectionStartTime;
             for (double sectionFraction = sectionDelta; sectionFraction < 1.0001; sectionFraction += sectionDelta) { //sectionFraction: where we are within the section [0..1]
                 double sectionElapsedTime;
@@ -1986,14 +2008,15 @@ IntegratedDesorption Worker::Generate_ID(int paramId) {
                     sectionElapsedTime = Pow10(logSectionStartTime + sectionFraction * logSectionTimeInterval);
                 }
                 double subSectionEndTime = sectionStartTime + sectionElapsedTime;
-                double subSectionEndValue = par.InterpolateY(subSectionEndTime,false);
+                double subSectionEndValue = InterpolateY(subSectionEndTime,myOutgassing,par.logXinterp,par.logYinterp);
                 double subsectionDesorbedGas; //desorbed gas in this subsection
                 if (!par.logXinterp && !par.logYinterp) { //lin-lin interpolation
                     //Area under a straight section from (x0,y0) to (x1,y1) on a lin-lin plot: I = (x1-x0) * (y0+y1)/2
                     subsectionDesorbedGas = sectionTimeInterval * 0.5 * (previousSubsectionValue + subSectionEndValue) * MBARLS_TO_PAM3S;
                 }
                 else if (par.logXinterp && !par.logYinterp) { //log-lin: time (X) is logarithmix, outgassing (Y) is linear
-                    double a = log10(subSectionEndTime / previousSubsectionTime);
+                    double a = subsectionLogTimeInterval;
+                    //double a = log10(subSectionEndTime / previousSubsectionTime); //subSectionEndTime>0
                     double m = (subSectionEndValue - previousSubsectionValue) / a; //slope
                     //From Mathematica: integral of a straight section from (x0,y0) to (x1,y1) on a log-lin plot: I = (x1-x0)y0 + (y1-y0)(x0+x1(a-1))/a where a=log10(x1/x0)
                     subsectionDesorbedGas = previousSubsectionValue*(subSectionEndTime-previousSubsectionTime)
@@ -2001,7 +2024,9 @@ IntegratedDesorption Worker::Generate_ID(int paramId) {
                 }
                 else if (!par.logXinterp && par.logYinterp) { //lin-log: time (X) is linear, outgassing (Y) is logarithmic
                     //Area under a straight section from (x0,y0) to (x1,y1) on a lin-log plot: I = 1/m * (y1-y0) where m=log10(y1/y0)/(x1-x0)
-                    double m = log10(subSectionEndValue-previousSubsectionValue)/(subSectionEndValue-previousSubsectionValue);//slope
+                    double logSubSectionEndValue = (subSectionEndValue>0.0) ? log10(subSectionEndValue) : -99;
+                    double logPreviousSubSectionValue = (previousSubsectionTime>0.0) ? log10(previousSubsectionValue) : -99;
+                    double m = (logSubSectionEndValue-logPreviousSubSectionValue)/subsectionTimeInterval; //slope
                     subsectionDesorbedGas = 1.0/m * (subSectionEndValue-previousSubsectionValue);
                 }
                 else { //log-log
@@ -2009,12 +2034,14 @@ IntegratedDesorption Worker::Generate_ID(int paramId) {
                     //I = (y0/(x0^m))/(m+1) * (x1^(m+1)-x0^(m+1)) if m!=-1
                     //I = x0*y0*ln(x1/x0) if m==-1
                     //where m= log10(y1/y0) / log10(x1/x0)
-                    double m = log10(subSectionEndValue/previousSubsectionValue) / log10(subSectionEndTime/previousSubsectionTime); //slope
+                    double logSubSectionEndValue = (subSectionEndValue>0.0) ? log10(subSectionEndValue) : -99;
+                    double logPreviousSubSectionValue = (previousSubsectionTime>0.0) ? log10(previousSubsectionValue) : -99;
+                    double m = (logSubSectionEndValue-logPreviousSubSectionValue) / subsectionLogTimeInterval; //slope
                     if (m != -1.0) {
                         subsectionDesorbedGas = previousSubsectionValue / pow(previousSubsectionTime, m) / (m + 1.0) * (pow(subSectionEndTime, m + 1.0) - pow(previousSubsectionTime, m + 1.0));
                     }
                     else { //m==-1
-                        subsectionDesorbedGas = previousSubsectionTime * previousSubsectionValue * log10(subSectionEndTime / previousSubsectionTime);
+                        subsectionDesorbedGas = previousSubsectionTime * previousSubsectionValue * subsectionLogTimeInterval;
                     }
                 }
                     
@@ -2027,25 +2054,6 @@ IntegratedDesorption Worker::Generate_ID(int paramId) {
         }
     } //end section loop
 
-    //wp.latestMoment
-    double valueAtlatestMoment = par.InterpolateY(wp.latestMoment, false);
-    if (IsEqual(valueAtlatestMoment, par.GetY(
-            indexBeforeLastMoment))) //two equal values follow, simple integration by multiplying
-        ID.push_back(std::make_pair(wp.latestMoment,
-                                    ID.back().second +
-                                    (wp.latestMoment - par.GetX(indexBeforeLastMoment)) *
-                                    par.GetY(indexBeforeLastMoment) * MBARLS_TO_PAM3S));
-    else { //difficult case, we'll integrate by dividing two 5equal sections
-        for (double delta = 0.0; delta < 1.0001; delta += 0.05) {
-            double delta_t = wp.latestMoment - par.GetX(indexBeforeLastMoment);
-            double time = par.GetX(indexBeforeLastMoment) + delta * delta_t;
-            double avg_value = (par.GetY(indexBeforeLastMoment) * MBARLS_TO_PAM3S +
-                                par.InterpolateY(time, false) * MBARLS_TO_PAM3S) / 2.0;
-            ID.push_back(std::make_pair(time,
-                                        ID.back().second +
-                                        0.05 * delta_t * avg_value));
-        }
-    }
     IntegratedDesorption result;
     result.logXinterp=par.logXinterp;
     result.logYinterp=par.logYinterp;
