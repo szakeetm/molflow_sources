@@ -2007,16 +2007,15 @@ IntegratedDesorption Worker::Generate_ID(int paramId) {
             double previousSubsectionValue = myOutgassing[i - 1].second; //Points to start of section, will be updated to point to start of subsections
             double previousSubsectionTime = sectionStartTime;
             for (double sectionFraction = sectionDelta; sectionFraction < 1.0001; sectionFraction += sectionDelta) { //sectionFraction: where we are within the section [0..1]
-                double sectionElapsedTime;
+                double subSectionEndTime;
                 if (!par.logXinterp) {
                     //linX: Distribute sampled points evenly
-                    sectionElapsedTime = sectionFraction * sectionTimeInterval;
+                    subSectionEndTime = sectionStartTime + sectionFraction * sectionTimeInterval;
                 }
                 else {
                     //logX: Distribute sampled points logarithmically
-                    sectionElapsedTime = Pow10(logSectionStartTime + sectionFraction * logSectionTimeInterval);
+                    subSectionEndTime = Pow10(logSectionStartTime + sectionFraction * logSectionTimeInterval);
                 }
-                double subSectionEndTime = sectionStartTime + sectionElapsedTime;
                 double subSectionEndValue = InterpolateY(subSectionEndTime,myOutgassing,par.logXinterp,par.logYinterp);
                 double subsectionDesorbedGas; //desorbed gas in this subsection, in mbar*l/s, will be converted to Pa*m3/s when adding to ID
                 if (!par.logXinterp && !par.logYinterp) { //lin-lin interpolation
@@ -2042,7 +2041,7 @@ IntegratedDesorption Worker::Generate_ID(int paramId) {
                 else { //log-log
                     //Area under a straight section from (x0,y0) to (x1,y1) on a log-log plot:
                     //I = (y0/(x0^m))/(m+1) * (x1^(m+1)-x0^(m+1)) if m!=-1
-                    //I = x0*y0*ln(x1/x0) if m==-1
+                    //I = x0*y0*log10(x1/x0) if m==-1
                     //where m= log10(y1/y0) / log10(x1/x0)
                     double logSubSectionEndValue = (subSectionEndValue>0.0) ? log10(subSectionEndValue) : -99;
                     double logPreviousSubSectionValue = (previousSubsectionTime>0.0) ? log10(previousSubsectionValue) : -99;
