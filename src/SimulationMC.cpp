@@ -1498,7 +1498,8 @@ void Simulation::UpdateVelocity(SubprocessFacet *collidedFacet) {
 double Simulation::GenerateRandomVelocity(int CDFId) {
     //return FastLookupY(randomGenerator.rnd(),CDFs[CDFId],false);
     double r = randomGenerator.rnd();
-    double v = InterpolateX(r, CDFs[CDFId], false, true); //Allow extrapolate
+    double v = InterpolateX(r, CDFs[CDFId], false, false, true); //Allow extrapolate
+    assert(v == v); //to catch NaN
     return v;
 }
 
@@ -1575,6 +1576,7 @@ void Simulation::IncreaseFacetCounter(SubprocessFacet *f, double time, size_t hi
         f->tmpCounter[m].hit.nbAbsEquiv += static_cast<double>(absorb) * currentParticle.oriRatio;
         f->tmpCounter[m].hit.sum_1_per_ort_velocity += currentParticle.oriRatio * sum_1_per_v;
         f->tmpCounter[m].hit.sum_v_ort += currentParticle.oriRatio * sum_v_ort;
+        assert(sum_v_ort == sum_v_ort);
         f->tmpCounter[m].hit.sum_1_per_velocity +=
                 (hitEquiv + static_cast<double>(desorb)) / currentParticle.velocity;
     }
