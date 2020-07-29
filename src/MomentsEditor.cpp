@@ -29,6 +29,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "MolFlow.h"
 #include "TimeSettings.h"
 #include "TimewisePlotter.h"
+#include "TimeMoments.h"
 
 extern MolFlow *mApp;
 
@@ -171,7 +172,7 @@ void MomentsEditor::ProcessMessage(GLComponent *src, int message) {
 					parsedMoments.emplace_back(ParseMoment(userMoments[u].first, userMoments[u].second));
 				}
 
-				auto overlapPair = Worker::CheckIntervalOverlap(parsedMoments);
+				auto overlapPair = TimeMoments::CheckIntervalOverlap(parsedMoments);
 				if(overlapPair.first != 0 || overlapPair.second != 0){
                     char tmp[128];
                     if(overlapPair.second < 0)

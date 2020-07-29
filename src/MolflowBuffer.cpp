@@ -2,6 +2,8 @@
 // Created by Pascal Baehr on 22.04.20.
 //
 
+#include <Buffer_shared.h>
+
 #include "MolflowBuffer.h"
 
 void FacetHistogramBuffer::Resize(const HistogramParams& params){
@@ -17,4 +19,80 @@ void FacetHistogramBuffer::Reset(){
     ZEROVECTOR(nbHitsHistogram);
     ZEROVECTOR(distanceHistogram);
     ZEROVECTOR(timeHistogram);
+}
+
+FacetProperties::FacetProperties(size_t nbIndices) {
+    nbIndex = nbIndices;
+
+    sticking = 0.0;
+    opacity = 1.0;
+
+    profileType = PROFILE_NONE;
+
+    texWidth = 0;
+    texHeight = 0;
+    texWidthD = 0.0;
+    texHeightD = 0.0;
+    center.x = 0.0;
+    center.y = 0.0;
+    center.z = 0.0;
+
+    is2sided = false;
+    isProfile = false;
+    //wp.isOpaque = true;
+    isTextured = false;
+    countAbs = false;
+    countRefl = false;
+    countTrans = false;
+    countDirection = false;
+
+    superIdx = 0;
+    superDest = 0;
+    teleportDest = 0;
+    isVolatile = false;
+    
+#if defined(MOLFLOW)
+    temperature = 293.15; // 20degC
+    outgassing = 0.0;           // 1 unit*l/s //will be outgasssing
+    desorbType = DES_NONE;
+    desorbTypeN = 0.0;
+
+    reflection.diffusePart = 1.0; //totally diffuse reflection
+    reflection.specularPart = 0.0;
+    reflection.cosineExponent = 0.0; //Cos^0 = uniform
+
+    countDes = false;
+    countACD = false;
+    useOutgassingFile = false;
+    accomodationFactor = 1.0;
+
+    enableSojournTime = false;
+    sojournFreq = 1E13;
+    sojournE = 100;
+
+    outgassing_paramId = -1;
+    opacity_paramId = -1;
+    sticking_paramId = -1;
+
+    isMoving = false;
+    
+
+    anglemapParams.record = false;
+
+    anglemapParams.phiWidth = anglemapParams.thetaLowerRes = anglemapParams.thetaHigherRes = 0;
+    anglemapParams.thetaLimit = 1.570796326; //slightly lower than PI/2
+
+    //facetHistogramParams.record = false;
+
+    totalOutgassing = 0.0;
+#endif
+
+#if defined(SYNRAD)
+    doScattering = false;
+	rmsRoughness = 100.0E-9; //100nm
+	autoCorrLength = 100 * 100E-9; //tau=autoCorr/RMS=100
+
+	reflectType = REFLECTION_SPECULAR;
+	recordSpectrum = false;
+#endif
 }

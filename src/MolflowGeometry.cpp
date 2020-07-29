@@ -2693,7 +2693,6 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 		vertices3[idx].z = vertex.attribute("z").as_double();
 		vertices3[idx].selected = false;
 		idx++;
-
 	}
 
 	//Structures

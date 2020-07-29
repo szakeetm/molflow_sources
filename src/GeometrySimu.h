@@ -8,6 +8,38 @@
 #include <vector>
 #include "MolflowTypes.h"
 #include "Buffer_shared.h"
+#include "Parameter.h"
+
+struct SubprocessFacet;
+
+struct TimeDependentParamters {
+    std::vector<Distribution2D> parameters;
+
+    std::vector<std::vector<std::pair<double, double>>> CDFs; //cumulative distribution function for each temperature
+    std::vector<std::vector<std::pair<double, double>>> IDs; //integrated distribution function for each time-dependent desorption type
+    std::vector<Moment> moments;             //moments when a time-dependent simulation state is recorded
+    /*std::vector<UserMoment> userMoments;    //user-defined text values for defining time moments (can be time or time series)
+    std::vector<double> temperatures; //keeping track of all temperatures that have a CDF already generated
+    std::vector<size_t> desorptionParameterIDs; //time-dependent parameters which are used as desorptions, therefore need to be integrated
+*/
+};
+
+struct SimulationModel {
+public:
+    void CalculateFacetParams(SubprocessFacet* f);
+
+        // Geometry Description
+    SubprocessFacet    **facets;    // All facets of this geometry
+    std::vector<Vector3d> vertices3; // Vertices (3D space)
+
+    // Simulation Properties
+    OntheflySimulationParams otfParams;
+    TimeDependentParamters tdParams;
+    WorkerParams wp;
+
+    // Geometry Properties
+    GeomProperties sh;
+};
 
 class Anglemap {
 public:
@@ -20,6 +52,9 @@ public:
 
 // Local facet structure
 struct SubprocessFacet{
+    SubprocessFacet();
+    SubprocessFacet(size_t nbIndex);
+
     FacetProperties sh;
 
     std::vector<size_t>      indices;          // Indices (Reference to geometry vertex)
@@ -79,6 +114,7 @@ struct SubprocessFacet{
 
     bool InitializeLinkAndVolatile(const size_t & id);
 
+    size_t GetHitsSize(size_t nbMoments) const;
     //void RegisterTransparentPass(SubprocessFacet *facet); //Allows one shared Intersect routine between MolFlow and Synrad
 };
 
