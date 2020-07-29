@@ -264,8 +264,8 @@ void MolFlow::LoadParameterCatalog()
 			try {
 
 				FileReader *f = new FileReader(csvPath);
-				table = worker.ImportCSV_string(f);
-				SAFE_DELETE(f);
+				table = f->ImportCSV_string();
+                SAFE_DELETE(f);
 			}
 			catch (Error &e) {
 				char errMsg[512];
@@ -287,7 +287,7 @@ void MolFlow::LoadParameterCatalog()
 					try {
 						valueX = ::atof(row[0].c_str());
 					}
-					catch (std::exception err) {
+					catch (std::exception& err) {
 						char tmp[256];
 						sprintf(tmp, "Can't parse value \"%s\" in row %zd, first column:\n%s", row[0].c_str(), i + 1, err.what());
 						GLMessageBox::Display(tmp, "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
@@ -296,7 +296,7 @@ void MolFlow::LoadParameterCatalog()
 					try {
 						valueY = ::atof(row[1].c_str());
 					}
-					catch (std::exception err) {
+					catch (std::exception& err) {
 						char tmp[256];
 						sprintf(tmp, "Can't parse value \"%s\" in row %zd, second column:\n%s", row[1].c_str(), i + 1, err.what());
 						GLMessageBox::Display(tmp, "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
@@ -1262,7 +1262,7 @@ void MolFlow::ImportAngleMaps(){
 	for (size_t i = 0; i < fileNames.size();i++) {
 		try {
 			FileReader *f = new FileReader(fileNames[i]);
-			std::vector<std::vector<std::string>> table = worker.ImportCSV_string(f);
+			std::vector<std::vector<std::string>> table = f->ImportCSV_string();
 			SAFE_DELETE(f);
 			AskToReset(&worker);
 			worker.GetGeometry()->GetFacet(selFacets[i])->ImportAngleMap(table);

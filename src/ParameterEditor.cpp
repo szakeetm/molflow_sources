@@ -364,8 +364,8 @@ void ParameterEditor::LoadCSV() {
 	std::vector<std::vector<std::string>> table;
 	try {
 		FileReader *f = new FileReader(fn);
-		table = work->ImportCSV_string(f);
-		SAFE_DELETE(f);
+		table = f->ImportCSV_string();
+        SAFE_DELETE(f);
 	}
 	catch (Error &e) {
 		char errMsg[512];

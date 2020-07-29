@@ -71,6 +71,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "File.h" //File utils (Get extension, etc)
 #include "ProcessControl.h"
 #include "versionId.h"
+#include "TimeMoments.h"
 
 /*
 //Leak detection
@@ -729,22 +730,9 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 geom->LoadGEO(f, progressDlg, &version, this);
 
                 // Add moments only after user Moments are completely initialized
-                {
-                    std::vector<std::vector<Moment>> parsedMoments;
-                    for (size_t u = 0; u != userMoments.size(); u++) {
-                        parsedMoments.emplace_back(mApp->worker.ParseMoment(userMoments[u].first, userMoments[u].second));
-                    }
-
-                    auto overlapPair = Worker::CheckIntervalOverlap(parsedMoments);
-                    if (overlapPair.first != 0 || overlapPair.second != 0) {
-                        GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning", GLDLG_OK, GLDLG_ICONWARNING);
-                        mApp->worker.moments.clear();
-                        return;
-                    }
-                    else{
-                        for (auto &newMoment : parsedMoments)
-                            this->AddMoment(newMoment);
-                    }
+                if(TimeMoments::ParseAndCheckUserMoments(&moments, userMoments)){
+                    GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning", GLDLG_OK, GLDLG_ICONWARNING);
+                    return;
                 }
 
                 progressDlg->SetMessage("Reloading worker with new geometry...");
@@ -855,22 +843,9 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             if (!insert) {
                 geom->LoadXML_geom(rootNode, this, progressDlg);
                 // Add moments only after user Moments are completely initialized
-                {
-                    std::vector<std::vector<Moment>> parsedMoments;
-                    for (size_t u = 0; u != userMoments.size(); u++) {
-                        parsedMoments.emplace_back(mApp->worker.ParseMoment(userMoments[u].first, userMoments[u].second));
-                    }
-
-                    auto overlapPair = Worker::CheckIntervalOverlap(parsedMoments);
-                    if (overlapPair.first != 0 || overlapPair.second != 0) {
-                        GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning", GLDLG_OK, GLDLG_ICONWARNING);
-                        mApp->worker.moments.clear();
-                        return;
-                    }
-                    else{
-                        for (auto &newMoment : parsedMoments)
-                            this->AddMoment(newMoment);
-                    }
+                if(TimeMoments::ParseAndCheckUserMoments(&moments, userMoments)){
+                    GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning", GLDLG_OK, GLDLG_ICONWARNING);
+                    return;
                 }
 
                 geom->UpdateName(fileName.c_str());
@@ -1371,153 +1346,6 @@ void Worker::Start() {
     isRunning = true;
 }
 
-/*
-std::string execCMD(char* cmd) {
-FILE* pipe = _popen(cmd, "r");
-if (!pipe) return "ERROR";
-char buffer[128];
-std::string result = "";
-while(!feof(pipe)) {
-if(fgets(buffer, 128, pipe) != NULL)
-result += buffer;
-}
-_pclose(pipe);
-return result;
-}
-*/
-
-/*!
- * @brief Check for 2 unsorted interval vectors (a and b), if any of the contained intervals (a_i and b_j) overlap
- * @param vecA first Vector [a_low,a_high[
- * @param vecB second Vector [b_low,b_high[
- * @return 0=no overlap, 1=overlap
- */
-int Worker::CheckIntervalOverlap(const std::vector<Moment>& vecA, const std::vector<Moment>& vecB) {
-    if(vecA.empty() || vecB.empty())
-        return 0;
-
-    // Get min_max values for largest vector and compare with single elements of smaller vector
-    if(vecA.size()>=vecB.size()) {
-        double a_low = std::numeric_limits<double>::max();
-        double a_high = std::numeric_limits<double>::lowest();
-
-        for (auto &a_i : vecA) {
-            a_low = std::min(a_low, a_i.first - 0.5 * a_i.second);
-            a_high = std::max(a_high, a_i.first + 0.5 * a_i.second);
-        }
-        for (auto &b_j : vecB) {
-            const double bj_low = b_j.first - 0.5 * b_j.second;
-            const double bj_high = b_j.first + 0.5 * b_j.second;
-
-            if (bj_low + DBL_EPSILON < a_high &&
-                    a_low + DBL_EPSILON <= bj_high) { //b_low < a_high && a_low <= b_high
-                return 1; // overlap
-            } else
-                return 0; // no overlap
-        }
-    }
-    else {
-        double b_low = std::numeric_limits<double>::max();
-        double b_high = std::numeric_limits<double>::lowest();
-        for (auto &b_j : vecB) {
-            b_low = std::min(b_low, b_j.first - 0.5 * b_j.second);
-            b_high = std::max(b_high, b_j.first + 0.5 * b_j.second);
-        }
-        for (auto &a_i : vecA) {
-            const double ai_low = a_i.first - 0.5 * a_i.second;
-            const double ai_high = a_i.first + 0.5 * a_i.second;
-
-            if (ai_low + DBL_EPSILON < b_high &&
-                b_low + DBL_EPSILON <= ai_high) { //b_low < a_high && a_low <= b_high
-                return 1; // overlap
-            } else
-                return 0; // no overlap
-        }
-    }
-    
-    return 0;
-}
-/*!
- * @brief Check for 2 unsorted interval vectors (a and b), if any of the contained intervals (a_i and b_j) overlap
- * @param vecA first Vector [a_low,a_high[
- * @param vecB second Vector [b_low,b_high[
- * @return 0=no overlap, 1=overlap
- */
-std::pair<int, int> Worker::CheckIntervalOverlap(const std::vector<std::vector<Moment>>& vecParsedMoments) {
-    if(vecParsedMoments.empty())
-        return std::make_pair<int,int>(0,0);
-
-    // Overlap when parsedMoment is empty
-    for(auto vec = vecParsedMoments.begin(); vec != vecParsedMoments.end(); ++vec) {
-        if(vec->empty())
-            return std::make_pair<int,int>(vec - vecParsedMoments.begin(),-1);
-    }
-
-    std::vector<std::pair<double,double>> intervalBoundaries;
-    for(auto& vec : vecParsedMoments){
-        double a_low = std::numeric_limits<double>::max();
-        double a_high = std::numeric_limits<double>::lowest();
-
-        for (auto &a_i : vec) {
-            a_low = std::min(a_low, a_i.first - 0.5 * a_i.second);
-            a_high = std::max(a_high, a_i.first + 0.5 * a_i.second);
-        }
-
-        intervalBoundaries.emplace_back(std::make_pair(a_low,a_high));
-    }
-
-    for(auto vecOuter = intervalBoundaries.begin(); vecOuter != intervalBoundaries.end(); vecOuter++){
-        for(auto vecInner = vecOuter + 1; vecInner != intervalBoundaries.end() && vecInner != vecOuter; vecInner++){
-            if ((*vecOuter).first + DBL_EPSILON < (*vecInner).second &&
-                (*vecInner).first + DBL_EPSILON <= (*vecOuter).second) { //b_low < a_high && a_low <= b_high
-                return std::make_pair<int,int>
-                        (vecOuter-intervalBoundaries.begin(),vecInner-intervalBoundaries.begin()); // overlap
-            }
-        }
-    }
-    return std::make_pair<int,int>(0,0);
-}
-
-
-/**
-* \brief Adds a time serie to moments and returns the number of elements
-* \param newMoments vector containing a list of new moments that should be added
-* \return number of new moments that got added
-* \todo share with MomentsEditor
-*/
-int Worker::AddMoment(std::vector<Moment> newMoments) {
-
-    if(CheckIntervalOverlap(moments, newMoments)){
-        return -1; // error
-    }
-    int nb = newMoments.size();
-    moments.insert(moments.end(),newMoments.begin(),newMoments.end());
-    std::sort(moments.begin(),moments.end());
-    return nb;
-}
-
-/**
-* \brief Parses a user input and returns a vector of time moments
-* \param userInput string of format "%lf,%lf,%lf" describing start, interval and end for a list of new moments
-* \return vector containing parsed moments
-*/
-std::vector<Moment> Worker::ParseMoment(std::string userInput, double timeWindow) {
-    std::vector<Moment> parsedResult;
-    double begin, interval, end;
-
-    int nb = sscanf(userInput.c_str(), "%lf,%lf,%lf", &begin, &interval, &end);
-    if (nb == 1 && (begin >= 0.0)) {
-        //One moment
-        parsedResult.emplace_back(begin,timeWindow);
-        //} else if (nb==3 && (begin>0.0) && (end>begin) && (interval<(end-begin)) && ((end-begin)/interval<300.0)) {
-    } else if (nb == 3 && (begin >= 0.0) && (end > begin) && (interval < (end - begin))) {
-        //Range
-        for (double time = begin; time <= end; time += interval)
-            parsedResult.emplace_back(time,timeWindow);
-    }
-    return parsedResult;
-}
-
 /**
 * \brief Resets/clears all moment variables
 */
@@ -1890,9 +1718,9 @@ std::vector<std::pair<double, double>>
 Worker::Generate_CDF(double gasTempKelvins, double gasMassGramsPerMol, size_t size) {
     std::vector<std::pair<double, double>> cdf;
     cdf.reserve(size);
-    double Kb = 1.38E-23;
-    double R = 8.3144621;
-    double a = sqrt(Kb * gasTempKelvins /
+    constexpr double Kb = 1.38E-23;
+    constexpr double R = 8.3144621;
+    const double a = sqrt(Kb * gasTempKelvins /
                     (gasMassGramsPerMol * 1.67E-27)); //distribution a parameter. Converting molar mass to atomic mass
 
     //Generate cumulative distribution function
@@ -1909,7 +1737,7 @@ Worker::Generate_CDF(double gasTempKelvins, double gasMassGramsPerMol, size_t si
     for (size_t i = 0; i < size; i++) {
         double x = (double) i * binSize;
         double x_square_per_2_a_square = pow(x, 2) / (2 * pow(a, 2));
-        cdf.push_back(std::make_pair(x, 1 - exp(-x_square_per_2_a_square) * (x_square_per_2_a_square + 1)));
+        cdf.emplace_back(std::make_pair(x, 1 - exp(-x_square_per_2_a_square) * (x_square_per_2_a_square + 1)));
 
     }
 

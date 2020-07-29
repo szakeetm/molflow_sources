@@ -1557,7 +1557,7 @@ void Simulation::TreatMovingFacet() {
 void Simulation::IncreaseFacetCounter(SubprocessFacet *f, double time, size_t hit, size_t desorb, size_t absorb, double sum_1_per_v,
                           double sum_v_ort) {
     f->tmpCounter[0].hit.nbMCHit += hit;
-    double hitEquiv = static_cast<double>(hit) * currentParticle.oriRatio;
+    const double hitEquiv = static_cast<double>(hit) * currentParticle.oriRatio;
     f->tmpCounter[0].hit.nbHitEquiv += hitEquiv;
     f->tmpCounter[0].hit.nbDesorbed += desorb;
     f->tmpCounter[0].hit.nbAbsEquiv += static_cast<double>(absorb) * currentParticle.oriRatio;
@@ -1569,7 +1569,6 @@ void Simulation::IncreaseFacetCounter(SubprocessFacet *f, double time, size_t hi
     if((m = LookupMomentIndex(time, moments, currentParticle.lastMomentIndex)) >= 0){
         currentParticle.lastMomentIndex = m;
         f->tmpCounter[m].hit.nbMCHit += hit;
-        double hitEquiv = static_cast<double>(hit) * currentParticle.oriRatio;
         f->tmpCounter[m].hit.nbHitEquiv += hitEquiv;
         f->tmpCounter[m].hit.nbDesorbed += desorb;
         f->tmpCounter[m].hit.nbAbsEquiv += static_cast<double>(absorb) * currentParticle.oriRatio;
