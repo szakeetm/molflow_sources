@@ -86,8 +86,8 @@ size_t MolflowGeometry::GetGeometrySize() {
 	for (auto& i : work->IDs) {
 
 		memoryUsage += sizeof(size_t); //ID size
-		memoryUsage += 2*sizeof(bool); //logX,logY interpolation
-		memoryUsage += i.size() * 2 * sizeof(double);
+		memoryUsage += 2*sizeof(bool); //logX,logY interpolation flags
+		memoryUsage += i.values.size() * 2 * sizeof(double);
 	}
 
 	//Parameters
@@ -2173,21 +2173,21 @@ void MolflowGeometry::ImportDesorption_SYN(
 						else {
 							//Convert to outgassing
 							if (mode == 0) {
-								if (source == 0) outgassing = (double)MC * 0.100 / 1.38E-23 / f->sh.temperature;
-								else if (source == 1) outgassing = flux * 0.100 / 1.38E-23 / f->sh.temperature; //Division by 10 because the user will want to see the same outgassing in mbar*l/s
-								else if (source == 2) outgassing = power * 0.100 / 1.38E-23 / f->sh.temperature; //(Outgassing is stored internally in Pa*m3/s, for consistent SI unit calculations)
+								if (source == 0) outgassing = (double)MC * MBARLS_TO_PAM3S / 1.38E-23 / f->sh.temperature;
+								else if (source == 1) outgassing = flux * MBARLS_TO_PAM3S / 1.38E-23 / f->sh.temperature; //Division by 10 because the user will want to see the same outgassing in mbar*l/s
+								else if (source == 2) outgassing = power * MBARLS_TO_PAM3S / 1.38E-23 / f->sh.temperature; //(Outgassing is stored internally in Pa*m3/s, for consistent SI unit calculations)
 							}
 							else if (mode == 1) {
 								double moleculePerPhoton = eta0 * pow(Max(1.0, dose / cutoffdose), alpha);
 								outgassing = flux * moleculePerPhoton;
 							}
 							else if (mode == 2) {
-								double moleculePerPhoton = InterpolateY(dose, convDistr, false, true);
+								double moleculePerPhoton = InterpolateY(dose, convDistr, false, false, true);
 								outgassing = flux * moleculePerPhoton;
 							}
 						}
 						//Apply outgassing
-						//f->outgassingMap[index] = outgassing *0.100; //0.1: mbar*l/s->Pa*m3/s
+						//f->outgassingMap[index] = outgassing *MBARLS_TO_PAM3S; //0.1: mbar*l/s->Pa*m3/s
 						f->outgassingMap[index] = outgassing * 1.38E-23 * f->sh.temperature; //1[Pa*m3/s] = kT [particles/sec]
 
 						//Facet diagnostic info
@@ -2480,6 +2480,8 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 			newParameter.append_attribute("id") = nonCatalogParameters;
 			newParameter.append_attribute("name") = work->parameters[i].name.c_str();
 			newParameter.append_attribute("nbMoments") = (int)work->parameters[i].GetSize();
+			newParameter.append_attribute("logXinterp") = work->parameters[i].logXinterp;
+			newParameter.append_attribute("logYinterp") = work->parameters[i].logYinterp;
 			for (size_t m = 0; m < work->parameters[i].GetSize(); m++) {
 				xml_node newMoment = newParameter.append_child("Moment");
 				newMoment.append_attribute("id") = m;
@@ -2720,6 +2722,12 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 			for (xml_node newParameter : paramNode.children("Parameter")) {
 				Parameter newPar;
 				newPar.name = newParameter.attribute("name").as_string();
+				if (newParameter.attribute("logXinterp")) {
+					newPar.logXinterp = newParameter.attribute("logXinterp").as_bool();
+				} //else set to false by constructor
+				if (newParameter.attribute("logYinterp")) {
+					newPar.logYinterp = newParameter.attribute("logYinterp").as_bool();
+				} //else set to false by constructor
 				for (xml_node newMoment : newParameter.children("Moment")) {
 					newPar.AddPair(std::make_pair(newMoment.attribute("t").as_double(),
 						newMoment.attribute("value").as_double()));
@@ -2985,6 +2993,12 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 			for (xml_node newParameter : paramNode.children("Parameter")) {
 				Parameter newPar;
 				newPar.name = newParameter.attribute("name").as_string();
+				if (newParameter.attribute("logXinterp")) {
+					newPar.logXinterp = newParameter.attribute("logXinterp").as_bool();
+				} //else set to false by constructor
+				if (newParameter.attribute("logYinterp")) {
+					newPar.logYinterp = newParameter.attribute("logYinterp").as_bool();
+				} //else set to false by constructor
 				for (xml_node newMoment : newParameter.children("Moment")) {
 					newPar.AddPair(std::make_pair(newMoment.attribute("t").as_double(),
 						newMoment.attribute("value").as_double()));

@@ -21,6 +21,9 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/GLTypes.h"
 #include <stddef.h> //size_t for gcc
 #include <string>
+#include <vector>
+#include <cereal/cereal.hpp>
+#include <cereal/types/vector.hpp>
 //#include "Buffer_shared.h"
 
 // Desorption type
@@ -57,13 +60,26 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #define MC_MODE 0         // Monte Carlo simulation mode
 #define AC_MODE 1         // Angular coefficient simulation mode
 
+#define MBARLS_TO_PAM3S 0.1 //Multiply by this to convert a value expressed in mbar.l/s to Pa.m3/s
+#define MBAR_TO_PA 100 //Multiply by this to convert a value expressed in mbar to Pa
+
 typedef float ACFLOAT;
 typedef std::pair<std::string,double> UserMoment;
 typedef std::pair<double,double> Moment;
 class IntegratedDesorption {
+	//A cumulative distribution function with time/integrated_desorption pairs
 public:
-	bool logX,logY; //interpolation
+	bool logXinterp,logYinterp; //interpolation, should be the same flags as corresponding parameter
 	std::vector<std::pair<double, double>> values; //Time-cum.desorption pairs
+
+		template<class Archive>
+		void serialize(Archive& archive) {
+		archive(
+			CEREAL_NVP(logXinterp),
+			CEREAL_NVP(logYinterp),
+			CEREAL_NVP(values) //(t,sumQ_until_t) pairs
+		);
+	}
 };
 
 // Density/Hit field stuff

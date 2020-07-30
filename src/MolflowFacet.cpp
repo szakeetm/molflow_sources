@@ -97,7 +97,7 @@ void Facet::LoadGEO(FileReader *file, int version, size_t nbVertex) {
 	hasMesh = file->ReadInt();
 	if (version >= 7) {
 		file->ReadKeyword("outgassing"); file->ReadKeyword(":");
-		sh.outgassing = file->ReadDouble()*0.100; //mbar*l/s -> Pa*m3/s
+		sh.outgassing = file->ReadDouble()*MBARLS_TO_PAM3S; //mbar*l/s -> Pa*m3/s
 
 	}
 	file->ReadKeyword("texDimX"); file->ReadKeyword(":");
