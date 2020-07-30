@@ -1343,9 +1343,9 @@ void Worker::ResetWorkerStats() {
 void Worker::Start() {
     // Sanity checks
     // Is there some desorption in the system? (depends on pre calculation)
-    if(wp.finalOutgassingRate_Pa_m3_sec <= 0.0){
-        throw Error("No desorption facet found");
-    }
+    //if(wp.finalOutgassingRate_Pa_m3_sec <= 0.0){
+    //    throw Error("No desorption facet found");
+    //}
     if (wp.totalDesorbedMolecules <= 0.0)
         throw Error("Total outgassing is zero.");
 
@@ -2022,13 +2022,13 @@ IntegratedDesorption Worker::Generate_ID(int paramId) {
                     //Area under a straight section from (x0,y0) to (x1,y1) on a lin-lin plot: I = (x1-x0) * (y0+y1)/2
                     subsectionDesorbedGas = subsectionTimeInterval * 0.5 * (previousSubsectionValue + subSectionEndValue);
                 }
-                else if (par.logXinterp && !par.logYinterp) { //log-lin: time (X) is logarithmix, outgassing (Y) is linear
-                    double a = subsectionLogTimeInterval;
-                    //double a = log10(subSectionEndTime / previousSubsectionTime); //subSectionEndTime>0
-                    //double m = (subSectionEndValue - previousSubsectionValue) / a; //slope
-                    //From Mathematica: integral of a straight section from (x0,y0) to (x1,y1) on a log-lin plot: I = (x1-x0)y0 + (y1-y0)(x0+x1(a-1))/a where a=log10(x1/x0)
-                    subsectionDesorbedGas = previousSubsectionValue*(subSectionEndTime-previousSubsectionTime)
-                        + (subSectionEndValue-previousSubsectionValue) * (previousSubsectionTime+subSectionEndTime * (a-1)/a);
+                else if (par.logXinterp && !par.logYinterp) { //log-lin: time (X) is logarithmic, outgassing (Y) is linear
+                    //From Mathematica/WolframAlpha: integral of a straight section from (x0,y0) to (x1,y1) on a log10-lin plot: I = (y1-y0)(x0-x1)/ln(x1/x0) - x0y0 + x1y1
+                    double x0=previousSubsectionTime;
+                    double x1=subSectionEndTime;
+                    double y0=previousSubsectionValue;
+                    double y1=subSectionEndValue;
+                    subsectionDesorbedGas = (y1-y0)*(x0-x1)/log(x1/x0) - x0*y0 + x1*y1;
                 }
                 else if (!par.logXinterp && par.logYinterp) { //lin-log: time (X) is linear, outgassing (Y) is logarithmic
                     //Area under a straight section from (x0,y0) to (x1,y1) on a lin-log plot: I = 1/m * (y1-y0) where m=log10(y1/y0)/(x1-x0)

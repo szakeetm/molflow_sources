@@ -161,15 +161,6 @@ ParameterEditor::ParameterEditor(Worker *w):GLWindow() {
   Add(loadCSVbutton);
   cursorX += buttonWidth + hSpace;
 
-  plotLogXtoggle = new GLToggle(0, "LogX plotting");
-  plotLogXtoggle->SetBounds(cursorX, cursorY, plotToggleWidth, compHeight);
-  Add(plotLogXtoggle);
-
-  cursorX += plotToggleWidth;
-  plotLogYtoggle = new GLToggle(0, "LogY plotting");
-  plotLogYtoggle->SetBounds(cursorX, cursorY, plotToggleWidth, compHeight);
-  Add(plotLogYtoggle);
-
   cursorX = wD-2*buttonWidth-2*hSpace;
   plotButton = new GLButton(0, "Plot");
   plotButton->SetBounds(cursorX, cursorY, buttonWidth, compHeight);
@@ -316,8 +307,8 @@ void ParameterEditor::ProcessMessage(GLComponent *src,int message) {
 		RebuildList();
 		break;
 	case MSG_TOGGLE:
-		if (src==plotLogXtoggle) plotArea->GetXAxis()->SetScale(plotLogXtoggle->GetState());
-		else if (src == plotLogYtoggle) plotArea->GetY1Axis()->SetScale(plotLogYtoggle->GetState());
+		if (src==paramLogXtoggle) plotArea->GetXAxis()->SetScale(paramLogXtoggle->GetState());
+		else if (src == paramLogYtoggle) plotArea->GetY1Axis()->SetScale(paramLogYtoggle->GetState());
 		break;
 }
 
@@ -560,5 +551,7 @@ void ParameterEditor::UpdateUserValues() {
 		nameField->SetText(getParam->name.c_str());
 		paramLogXtoggle->SetState(getParam->logXinterp);
 		paramLogYtoggle->SetState(getParam->logYinterp);
+		plotArea->GetXAxis()->SetScale(getParam->logXinterp);
+		plotArea->GetY1Axis()->SetScale(getParam->logYinterp);
 	}
 }
