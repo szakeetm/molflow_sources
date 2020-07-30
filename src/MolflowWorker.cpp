@@ -1344,7 +1344,17 @@ void Worker::Start() {
     // Sanity checks
     // Is there some desorption in the system? (depends on pre calculation)
     if(wp.finalOutgassingRate_Pa_m3_sec <= 0.0){
-        throw Error("No desorption facet found");
+        // Do another check for existing desorp facets, needed in case a desorp parameter's final value is 0
+        bool found = false;
+        size_t nbF = geom->GetNbFacet();
+        size_t i = 0;
+        while (i < nbF && !found) {
+            found = (geom->GetFacet(i)->sh.desorbType != DES_NONE);
+            if (!found) i++;
+        }
+
+        if (!found)
+            throw Error("No desorption facet found");
     }
     if (wp.totalDesorbedMolecules <= 0.0)
         throw Error("Total outgassing is zero.");
