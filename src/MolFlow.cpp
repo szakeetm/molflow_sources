@@ -257,7 +257,6 @@ void MolFlow::LoadParameterCatalog()
 
 			Parameter newParam;
 			newParam.fromCatalog = true;
-			newParam.isLogLog = true; //For now
 			newParam.name = "[catalog] " + csvName;
 
 			std::vector<std::vector<std::string>> table;

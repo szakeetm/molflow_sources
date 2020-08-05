@@ -19,16 +19,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 #include "Parameter.h"
 
-/**
-* \brief Default constructor of a parameter object (distribution)
-*/
-Parameter::Parameter()
-{
-	fromCatalog = false;
-	logXinterp=false; //default: linear
-	logYinterp=false; //default: linear
-	name = "";
-}
+
 
 /*
 StringClass::StringClass()
