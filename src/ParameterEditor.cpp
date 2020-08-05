@@ -70,6 +70,7 @@ ParameterEditor::ParameterEditor(Worker *w):GLWindow() {
   int listHeight = 240;
 
   SetTitle("Edit parameters");
+  SetIconfiable(true);
 
   selectorCombo = new GLCombo(0);
   selectorCombo->SetBounds(cursorX, cursorY, col2 - cursorX - 5, compHeight);
