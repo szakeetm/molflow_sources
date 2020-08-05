@@ -519,6 +519,7 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 				facets[i]->sh.superIdx += static_cast<int>(strIdx);
 			if (facets[i]->sh.superDest > 0) facets[i]->sh.superDest += strIdx;
 		}
+		if (facets[i]->sh.teleportDest>0) facets[i]->sh.teleportDest += sh.nbFacet; //Offset teleport target
 	}
 
 	sh.nbVertex += nbNewVertex;
@@ -3033,6 +3034,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 				facets[idx]->sh.superIdx += structId; //offset structure
 			if (facets[idx]->sh.superDest > 0) facets[idx]->sh.superDest += structId;
 		}
+		if (facets[idx]->sh.teleportDest>0) facets[idx]->sh.teleportDest += sh.nbFacet; //Offset teleport target
 
 		if (isMolflowFile) {
 			//Set param names for interface
