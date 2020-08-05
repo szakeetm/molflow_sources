@@ -335,11 +335,15 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 
 	file->ReadKeyword("totalHit"); file->ReadKeyword(":");
 	file->ReadSizeT();
+	if (version2 >= 10) {
+		file->ReadKeyword("totalHitEquiv"); file->ReadKeyword(":");
+		file->ReadDouble();
+	}
 	file->ReadKeyword("totalDes"); file->ReadKeyword(":");
 	file->ReadSizeT();
 	if (version2 >= 6) {
 		file->ReadKeyword("no_scans"); file->ReadKeyword(":");
-		/*loaded_no_scans = */file->ReadDouble();
+		/*loaded_no_scans =*/ file->ReadDouble();
 	}
 
 	file->ReadKeyword("totalLeak"); file->ReadKeyword(":");
@@ -348,6 +352,12 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 		file->ReadKeyword("totalFlux"); file->ReadKeyword(":");
 		file->ReadDouble();
 		file->ReadKeyword("totalPower"); file->ReadKeyword(":");
+		file->ReadDouble();
+	}
+	if (version2 >= 10) {
+		file->ReadKeyword("totalAbsEquiv"); file->ReadKeyword(":");
+		file->ReadDouble();
+		file->ReadKeyword("totalDist"); file->ReadKeyword(":");
 		file->ReadDouble();
 	}
 	file->ReadKeyword("maxDes"); file->ReadKeyword(":");
