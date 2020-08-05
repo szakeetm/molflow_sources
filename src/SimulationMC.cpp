@@ -1514,13 +1514,21 @@ double Simulation::GenerateDesorptionTime(SubprocessFacet *src) {
 double Simulation::GetStickingAt(SubprocessFacet *f, double time) {
     if (f->sh.sticking_paramId == -1) //constant sticking
         return f->sh.sticking;
-    else return parameters[f->sh.sticking_paramId].InterpolateY(time, false);
+    else {
+        Parameter& par = parameters[f->sh.sticking_paramId];
+        return InterpolateY(time,par.GetValues(),par.logXinterp,par.logYinterp,false);
+    }
+    //else return parameters[f->sh.sticking_paramId].InterpolateY(time, false);
 }
 
 double Simulation::GetOpacityAt(SubprocessFacet *f, double time) {
     if (f->sh.opacity_paramId == -1) //constant sticking
         return f->sh.opacity;
-    else return parameters[f->sh.opacity_paramId].InterpolateY(time, false);
+    else {
+        Parameter& par = parameters[f->sh.opacity_paramId];
+        return InterpolateY(time,par.GetValues(),par.logXinterp,par.logYinterp,false);
+    }
+    //else return parameters[f->sh.opacity_paramId].InterpolateY(time, false);
 }
 
 /**
