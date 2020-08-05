@@ -34,7 +34,7 @@ Simulation::Simulation()
 
 	memset(&tmpGlobalResult, 0, sizeof(GlobalHitBuffer));
 
-	sh.nbSuper = 0;
+	model.sh.nbSuper = 0;
 }
 
 Simulation::~Simulation()= default;
@@ -42,8 +42,8 @@ Simulation::~Simulation()= default;
 int Simulation::ReinitializeParticleLog() {
     tmpParticleLog.clear();
     tmpParticleLog.shrink_to_fit();
-    if (ontheflyParams.enableLogging)
-        tmpParticleLog.reserve(ontheflyParams.logLimit / ontheflyParams.nbProcess);
+    if (model.otfParams.enableLogging)
+        tmpParticleLog.reserve(model.otfParams.logLimit / model.otfParams.nbProcess);
 
     return 0;
 }
@@ -64,7 +64,7 @@ bool Simulation::UpdateOntheflySimuParams(Dataport *loader) {
     inputStream << inputString;
     cereal::BinaryInputArchive inputArchive(inputStream);
 
-    inputArchive(ontheflyParams);
+    inputArchive(model.otfParams);
 
     ReleaseDataport(loader);
 
@@ -126,8 +126,8 @@ bool Simulation::LoadSimulation(Dataport *loader) {
         cereal::BinaryInputArchive inputArchive(inputStream);
 
         //Worker params
-        inputArchive(wp);
-        inputArchive(ontheflyParams);
+        inputArchive(model.wp);
+        inputArchive(model.otfParams);
         inputArchive(CDFs);
         inputArchive(IDs);
         inputArchive(parameters);
@@ -136,13 +136,13 @@ bool Simulation::LoadSimulation(Dataport *loader) {
         //inputArchive(desorptionParameterIDs);
 
         //Geometry
-        inputArchive(sh);
+        inputArchive(model.sh);
         inputArchive(vertices3);
 
-        structures.resize(sh.nbSuper); //Create structures
+        structures.resize(model.sh.nbSuper); //Create structures
 
         //Facets
-        for (size_t i = 0; i < sh.nbFacet; i++) { //Necessary because facets is not (yet) a vector in the interface
+        for (size_t i = 0; i < model.sh.nbFacet; i++) { //Necessary because facets is not (yet) a vector in the interface
             SubprocessFacet f;
             inputArchive(
                     f.sh,
@@ -163,7 +163,7 @@ bool Simulation::LoadSimulation(Dataport *loader) {
             textTotalSize += f.textureSize* (1 + moments.size());
 
             hasVolatile |= f.sh.isVolatile;
-            if ((f.sh.superDest || f.sh.isVolatile) && ((f.sh.superDest - 1) >= sh.nbSuper || f.sh.superDest < 0)) {
+            if ((f.sh.superDest || f.sh.isVolatile) && ((f.sh.superDest - 1) >= model.sh.nbSuper || f.sh.superDest < 0)) {
                 // Geometry error
                 //ClearSimulation();
                 //ReleaseDataport(loader);
@@ -187,12 +187,12 @@ bool Simulation::LoadSimulation(Dataport *loader) {
 
     //Initialize global histogram
     FacetHistogramBuffer hist;
-    hist.Resize(wp.globalHistogramParams);
+    hist.Resize(model.wp.globalHistogramParams);
     tmpGlobalHistograms = std::vector<FacetHistogramBuffer>(1 + moments.size(), hist);
 
     //Reserve particle log
-    if (ontheflyParams.enableLogging)
-        tmpParticleLog.reserve(ontheflyParams.logLimit / ontheflyParams.nbProcess);
+    if (model.otfParams.enableLogging)
+        tmpParticleLog.reserve(model.otfParams.logLimit / model.otfParams.nbProcess);
 
     // Build all AABBTrees
     size_t maxDepth=0;
@@ -205,17 +205,28 @@ bool Simulation::LoadSimulation(Dataport *loader) {
     }
 
     // Initialise simulation
+    /*SimulationModel model;
+    model.structures = structures;
+    model.vertices3 = vertices3;
+    model.otfParams = ontheflyParams;
+    model.sh = sh;
+    model.wp = wp;
+    model.tdParams.CDFs = CDFs;
+    model.tdParams.IDs = IDs;
+    model.tdParams.parameters = parameters;
+    model.tdParams.moments = moments;*/
 
-    //if(!sh.name.empty())
+
+    //if(!model.sh.name.empty())
     //loadOK = true;
     double t1 = GetTick();
-    printf("  Load %s successful\n", sh.name.c_str());
-    printf("  Geometry: %zd vertex %zd facets\n", vertices3.size(), sh.nbFacet);
+    printf("  Load %s successful\n", model.sh.name.c_str());
+    printf("  Geometry: %zd vertex %zd facets\n", vertices3.size(), model.sh.nbFacet);
 
     printf("  Geom size: %d bytes\n", /*(size_t)(buffer - bufferStart)*/0);
-    printf("  Number of stucture: %zd\n", sh.nbSuper);
+    printf("  Number of stucture: %zd\n", model.sh.nbSuper);
     printf("  Global Hit: %zd bytes\n", sizeof(GlobalHitBuffer));
-    printf("  Facet Hit : %zd bytes\n", sh.nbFacet * sizeof(FacetHitBuffer));
+    printf("  Facet Hit : %zd bytes\n", model.sh.nbFacet * sizeof(FacetHitBuffer));
     printf("  Texture   : %zd bytes\n", textTotalSize);
     printf("  Profile   : %zd bytes\n", profTotalSize);
     printf("  Direction : %zd bytes\n", dirTotalSize);
@@ -235,7 +246,7 @@ void Simulation::UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DWORD ti
 size_t Simulation::GetHitsSize() {
     return sizeof(GlobalHitBuffer) + wp.globalHistogramParams.GetDataSize() +
            textTotalSize + profTotalSize + dirTotalSize + angleMapTotalSize + histogramTotalSize
-           + sh.nbFacet * sizeof(FacetHitBuffer) * (1+moments.size());
+           + model.sh.nbFacet * sizeof(FacetHitBuffer) * (1+moments.size());
 }
 
 void Simulation::ResetTmpCounters() {

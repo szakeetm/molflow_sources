@@ -11,6 +11,7 @@
 #include "Parameter.h"
 
 struct SubprocessFacet;
+class SuperStructure;
 
 struct TimeDependentParamters {
     std::vector<Distribution2D> parameters;
@@ -29,7 +30,8 @@ public:
     void CalculateFacetParams(SubprocessFacet* f);
 
         // Geometry Description
-    SubprocessFacet    **facets;    // All facets of this geometry
+    std::vector<std::vector<SubprocessFacet>>    facets;    // All facets of this geometry
+    std::vector<SuperStructure> structures;
     std::vector<Vector3d> vertices3; // Vertices (3D space)
 
     // Simulation Properties
@@ -96,8 +98,8 @@ struct SubprocessFacet{
     std::vector<FacetHitBuffer> tmpCounter; //1+nbMoment
     std::vector<FacetHistogramBuffer> tmpHistograms; //1+nbMoment
 
-    void  ResetCounter();
-    void	ResizeCounter(size_t nbMoments);
+    void ResetCounter();
+    void ResizeCounter(size_t nbMoments);
     bool InitializeOnLoad(const size_t &id, const size_t &nbMoments, size_t &histogramTotalSize);
 
     void InitializeHistogram(const size_t &nbMoments, size_t &histogramTotalSize);
@@ -116,6 +118,18 @@ struct SubprocessFacet{
 
     size_t GetHitsSize(size_t nbMoments) const;
     //void RegisterTransparentPass(SubprocessFacet *facet); //Allows one shared Intersect routine between MolFlow and Synrad
+
+    template<class Archive> void serialize(Archive& archive) {
+        archive(
+            sh,
+            indices,
+            vertices2,
+            outgassingMap,
+            angleMap.pdf,
+            textureCellIncrements
+        );
+    }
+
 };
 
 // Local simulation structure

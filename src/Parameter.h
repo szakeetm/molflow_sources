@@ -31,11 +31,15 @@ public:
 	
 	Parameter();
 
-	template<class Archive>
+	/*template<class Archive>
 	void serialize(Archive & archive)
 	{
-		archive(name,values,isLogLog,fromCatalog);
-	}
+        archive(
+                CEREAL_NVP(values),
+                CEREAL_NVP(isLogLog)
+        );
+        //archive(name,values,isLogLog,fromCatalog);
+	}*/
 };
 
 /*

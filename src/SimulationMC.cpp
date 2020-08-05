@@ -82,7 +82,7 @@ bool Simulation::UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWOR
         gHits->texture_limits[i].max.all = gHits->texture_limits[i].max.moments_only = 0;
     }
 
-    //wp.sMode = MC_MODE;
+    //model.wp.sMode = MC_MODE;
     //for(i=0;i<BOUNCEMAX;i++) gHits->wallHits[i] += wallHits[i];
 
     // Leak
@@ -110,25 +110,25 @@ bool Simulation::UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWOR
 
     for (int m = 0; m < (1 + nbMoments); m++) {
         BYTE *histCurrentMoment =
-                buffer + sizeof(GlobalHitBuffer) + m * wp.globalHistogramParams.GetDataSize();
-        if (wp.globalHistogramParams.recordBounce) {
+                buffer + sizeof(GlobalHitBuffer) + m * model.wp.globalHistogramParams.GetDataSize();
+        if (model.wp.globalHistogramParams.recordBounce) {
             double *nbHitsHistogram = (double *) histCurrentMoment;
-            for (size_t i = 0; i < wp.globalHistogramParams.GetBounceHistogramSize(); i++) {
+            for (size_t i = 0; i < model.wp.globalHistogramParams.GetBounceHistogramSize(); i++) {
                 nbHitsHistogram[i] += tmpGlobalHistograms[m].nbHitsHistogram[i];
             }
         }
-        if (wp.globalHistogramParams.recordDistance) {
+        if (model.wp.globalHistogramParams.recordDistance) {
             double *distanceHistogram = (double *) (histCurrentMoment +
-                                                    wp.globalHistogramParams.GetBouncesDataSize());
-            for (size_t i = 0; i < (wp.globalHistogramParams.GetDistanceHistogramSize()); i++) {
+                                                    model.wp.globalHistogramParams.GetBouncesDataSize());
+            for (size_t i = 0; i < (model.wp.globalHistogramParams.GetDistanceHistogramSize()); i++) {
                 distanceHistogram[i] += tmpGlobalHistograms[m].distanceHistogram[i];
             }
         }
-        if (wp.globalHistogramParams.recordTime) {
+        if (model.wp.globalHistogramParams.recordTime) {
             double *timeHistogram = (double *) (histCurrentMoment +
-                                                wp.globalHistogramParams.GetBouncesDataSize() +
-                                                wp.globalHistogramParams.GetDistanceDataSize());
-            for (size_t i = 0; i < (wp.globalHistogramParams.GetTimeHistogramSize()); i++) {
+                                                model.wp.globalHistogramParams.GetBouncesDataSize() +
+                                                model.wp.globalHistogramParams.GetDistanceDataSize());
+            for (size_t i = 0; i < (model.wp.globalHistogramParams.GetTimeHistogramSize()); i++) {
                 timeHistogram[i] += tmpGlobalHistograms[m].timeHistogram[i];
             }
         }
@@ -137,7 +137,7 @@ bool Simulation::UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWOR
 
     size_t facetHitsSize = (1 + nbMoments) * sizeof(FacetHitBuffer);
     // Facets
-    for (s = 0; s < sh.nbSuper; s++) {
+    for (s = 0; s < model.sh.nbSuper; s++) {
         for (SubprocessFacet &f : structures[s].facets) {
             if (f.isHit) {
 
@@ -168,11 +168,11 @@ bool Simulation::UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWOR
                         TextureCell *shTexture = (TextureCell *) (buffer + (f.sh.hitOffset + facetHitsSize +
                                                                             f.profileSize * (1 + nbMoments) +
                                                                             m * f.textureSize));
-                        //double dCoef = gHits->globalHits.hit.nbDesorbed * 1E4 * wp.gasMass / 1000 / 6E23 * MAGIC_CORRECTION_FACTOR;  //1E4 is conversion from m2 to cm2
+                        //double dCoef = gHits->globalHits.hit.nbDesorbed * 1E4 * model.wp.gasMass / 1000 / 6E23 * MAGIC_CORRECTION_FACTOR;  //1E4 is conversion from m2 to cm2
                         double timeCorrection =
-                                m == 0 ? wp.finalOutgassingRate : (wp.totalDesorbedMolecules) /
+                                m == 0 ? model.wp.finalOutgassingRate : (model.wp.totalDesorbedMolecules) /
                                                                     moments[m-1].second;
-                                                                           //wp.timeWindowSize;
+                                                                           //model.wp.timeWindowSize;
                         //Timecorrection is required to compare constant flow texture values with moment values (for autoscaling)
 
                         for (y = 0; y < f.sh.texHeight; y++) {
@@ -325,8 +325,8 @@ void Simulation::UpdateLog(Dataport *dpLog, DWORD timeout) {
         ParticleLoggerItem *logBuff2 = (ParticleLoggerItem *) (logBuff + 1);
 
         size_t writeNb;
-        if (recordedLogSize > ontheflyParams.logLimit) writeNb = 0;
-        else writeNb = Min(tmpParticleLog.size(), ontheflyParams.logLimit - recordedLogSize);
+        if (recordedLogSize > model.otfParams.logLimit) writeNb = 0;
+        else writeNb = Min(tmpParticleLog.size(), model.otfParams.logLimit - recordedLogSize);
         memcpy(&logBuff2[recordedLogSize], &tmpParticleLog[0],
                writeNb * sizeof(ParticleLoggerItem)); //Knowing that vector memories are contigious
         (*logBuff) += writeNb;
@@ -364,7 +364,7 @@ void Simulation::PerformTeleport(SubprocessFacet *iFacet) {
     } else destIndex = iFacet->sh.teleportDest - 1;
 
     //Look in which superstructure is the destination facet:
-    for (size_t i = 0; i < sh.nbSuper && (!found); i++) {
+    for (size_t i = 0; i < model.sh.nbSuper && (!found); i++) {
         for (size_t j = 0; j < structures[i].facets.size() && (!found); j++) {
             if (destIndex == structures[i].facets[j].globalId) {
                 destination = &(structures[i].facets[j]);
@@ -431,9 +431,9 @@ void Simulation::PerformTeleport(SubprocessFacet *iFacet) {
     //We count a teleport as a local hit, but not as a global one since that would affect the MFP calculation
     /*iFacet->sh.tmpCounter.hit.nbMCHit++;
     iFacet->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity;
-    iFacet->sh.tmpCounter.hit.sum_v_ort += 2.0*(wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
+    iFacet->sh.tmpCounter.hit.sum_v_ort += 2.0*(model.wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
     IncreaseFacetCounter(iFacet, currentParticle.flightTime, 1, 0, 0, 2.0 / ortVelocity,
-                         2.0 * (wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
+                         2.0 * (model.wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
     iFacet->isHit = true;
     /*destination->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / currentParticle.velocity;
     destination->sh.tmpCounter.hit.sum_v_ort += currentParticle.velocity*abs(DOT3(
@@ -446,8 +446,8 @@ void Simulation::PerformTeleport(SubprocessFacet *iFacet) {
 bool Simulation::SimulationMCStep(size_t nbStep) {
 
     // Check end of simulation
-    if (ontheflyParams.desorptionLimit > 0) {
-        if (totalDesorbed >= ontheflyParams.desorptionLimit / ontheflyParams.nbProcess) {
+    if (model.otfParams.desorptionLimit > 0) {
+        if (totalDesorbed >= model.otfParams.desorptionLimit / model.otfParams.nbProcess) {
             //currentParticle.lastHitFacet = nullptr; // reset full particle status or go on from where we left
             return false;
         }
@@ -476,13 +476,13 @@ bool Simulation::SimulationMCStep(size_t nbStep) {
             currentParticle.flightTime +=
                     d / 100.0 / currentParticle.velocity; //conversion from cm to m
 
-            if ((!wp.calcConstantFlow && (currentParticle.flightTime > wp.latestMoment))
-                || (wp.enableDecay &&
+            if ((!model.wp.calcConstantFlow && (currentParticle.flightTime > model.wp.latestMoment))
+                || (model.wp.enableDecay &&
                     (currentParticle.expectedDecayMoment < currentParticle.flightTime))) {
                 //hit time over the measured period - we create a new particle
                 //OR particle has decayed
                 double remainderFlightPath = currentParticle.velocity * 100.0 *
-                                             Min(wp.latestMoment - lastFlightTime,
+                                             Min(model.wp.latestMoment - lastFlightTime,
                                                  currentParticle.expectedDecayMoment -
                                                  lastFlightTime); //distance until the point in space where the particle decayed
                 tmpGlobalResult.distTraveled_total += remainderFlightPath * currentParticle.oriRatio;
@@ -504,7 +504,7 @@ bool Simulation::SimulationMCStep(size_t nbStep) {
                 else { //Not teleport
                     IncreaseDistanceCounters(d * currentParticle.oriRatio);
                     double stickingProbability = GetStickingAt(collidedFacet, currentParticle.flightTime);
-                    if (!ontheflyParams.lowFluxMode) { //Regular stick or bounce
+                    if (!model.otfParams.lowFluxMode) { //Regular stick or bounce
                         if (stickingProbability == 1.0 ||
                             ((stickingProbability > 0.0) && (randomGenerator.rnd() < (stickingProbability)))) {
                             //Absorbed
@@ -526,7 +526,7 @@ bool Simulation::SimulationMCStep(size_t nbStep) {
                                     oriRatioBeforeCollision * (1.0 - stickingProbability); //Reflected part
                         } else
                             currentParticle.oriRatio *= (1.0 - stickingProbability);
-                        if (currentParticle.oriRatio > ontheflyParams.lowFluxCutoff) {
+                        if (currentParticle.oriRatio > model.otfParams.lowFluxCutoff) {
                             PerformBounce(collidedFacet);
                         } else { //eliminate remainder and create new particle
                             if (!StartFromSource())
@@ -570,28 +570,28 @@ bool Simulation::StartFromSource() {
     int nbTry = 0;
 
     // Check end of simulation
-    if (ontheflyParams.desorptionLimit > 0) {
-        if (totalDesorbed >= ontheflyParams.desorptionLimit / ontheflyParams.nbProcess) {
+    if (model.otfParams.desorptionLimit > 0) {
+        if (totalDesorbed >= model.otfParams.desorptionLimit / model.otfParams.nbProcess) {
             //currentParticle.lastHitFacet = nullptr; // reset full particle status or go on from where we left
             return false;
         }
     }
 
     // Select source
-    srcRnd = randomGenerator.rnd() * wp.totalDesorbedMolecules;
+    srcRnd = randomGenerator.rnd() * model.wp.totalDesorbedMolecules;
 
-    while (!found && j < sh.nbSuper) { //Go through superstructures
+    while (!found && j < model.sh.nbSuper) { //Go through superstructures
         i = 0;
         while (!found && i < structures[j].facets.size()) { //Go through facets in a structure
             SubprocessFacet &f = structures[j].facets[i];
             if (f.sh.desorbType != DES_NONE) { //there is some kind of outgassing
                 if (f.sh.useOutgassingFile) { //Using SynRad-generated outgassing map
                     if (f.sh.totalOutgassing > 0.0) {
-                        found = (srcRnd >= sumA) && (srcRnd < (sumA + wp.latestMoment * f.sh.totalOutgassing /
+                        found = (srcRnd >= sumA) && (srcRnd < (sumA + model.wp.latestMoment * f.sh.totalOutgassing /
                                                                       (1.38E-23 * f.sh.temperature)));
                         if (found) {
                             //look for exact position in map
-                            double rndRemainder = (srcRnd - sumA) / wp.latestMoment * (1.38E-23 *
+                            double rndRemainder = (srcRnd - sumA) / model.wp.latestMoment * (1.38E-23 *
                                                                                                 f.sh.temperature); //remainder, should be less than f.sh.totalOutgassing
                             /*double sumB = 0.0;
                             for (w = 0; w < f.sh.outgassingMapWidth && !foundInMap; w++) {
@@ -616,14 +616,14 @@ bool Simulation::StartFromSource() {
                                 return false;
                             }*/
                         }
-                        sumA += wp.latestMoment * f.sh.totalOutgassing / (1.38E-23 * f.sh.temperature);
+                        sumA += model.wp.latestMoment * f.sh.totalOutgassing / (1.38E-23 * f.sh.temperature);
                     }
                 } //end outgassing file block
                 else { //constant or time-dependent outgassing
                     double facetOutgassing =
                             (f.sh.outgassing_paramId >= 0)
                             ? IDs[f.sh.IDid].back().second / (1.38E-23 * f.sh.temperature)
-                            : wp.latestMoment * f.sh.outgassing / (1.38E-23 * f.sh.temperature);
+                            : model.wp.latestMoment * f.sh.outgassing / (1.38E-23 * f.sh.temperature);
                     found = (srcRnd >= sumA) && (srcRnd < (sumA + facetOutgassing));
                     sumA += facetOutgassing;
                 } //end constant or time-dependent outgassing block
@@ -646,14 +646,14 @@ bool Simulation::StartFromSource() {
     //currentParticle.flightTime = desorptionStartTime + (desorptionStopTime - desorptionStartTime)*randomGenerator.rnd();
     currentParticle.flightTime = GenerateDesorptionTime(src);
     currentParticle.lastMomentIndex = 0;
-    if (wp.useMaxwellDistribution) currentParticle.velocity = GenerateRandomVelocity(src->sh.CDFid);
+    if (model.wp.useMaxwellDistribution) currentParticle.velocity = GenerateRandomVelocity(src->sh.CDFid);
     else
         currentParticle.velocity =
-                145.469 * std::sqrt(src->sh.temperature / wp.gasMass);  //sqrt(8*R/PI/1000)=145.47
+                145.469 * std::sqrt(src->sh.temperature / model.wp.gasMass);  //sqrt(8*R/PI/1000)=145.47
     currentParticle.oriRatio = 1.0;
-    if (wp.enableDecay) { //decaying gas
+    if (model.wp.enableDecay) { //decaying gas
         currentParticle.expectedDecayMoment =
-                currentParticle.flightTime + wp.halfLife * 1.44269 * -log(randomGenerator.rnd()); //1.44269=1/ln2
+                currentParticle.flightTime + model.wp.halfLife * 1.44269 * -log(randomGenerator.rnd()); //1.44269=1/ln2
         //Exponential distribution PDF: probability of 't' life = 1/TAU*exp(-t/TAU) where TAU = half_life/ln2
         //Exponential distribution CDF: probability of life shorter than 't" = 1-exp(-t/TAU)
         //Equation: randomGenerator.rnd()=1-exp(-t/TAU)
@@ -722,7 +722,7 @@ bool Simulation::StartFromSource() {
 
     }
 
-    if (src->sh.isMoving && wp.motionType) RecordHit(HIT_MOVING);
+    if (src->sh.isMoving && model.wp.motionType) RecordHit(HIT_MOVING);
     else RecordHit(HIT_DES); //create blue hit point for created particle
 
     //See docs/theta_gen.png for further details on angular distribution generation
@@ -776,9 +776,9 @@ bool Simulation::StartFromSource() {
             currentParticle.velocity * std::abs(Dot(currentParticle.direction, src->sh.N));
     /*src->sh.tmpCounter.hit.nbDesorbed++;
     src->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity; //was 2.0 / ortV
-    src->sh.tmpCounter.hit.sum_v_ort += (wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
+    src->sh.tmpCounter.hit.sum_v_ort += (model.wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
     IncreaseFacetCounter(src, currentParticle.flightTime, 0, 1, 0, 2.0 / ortVelocity,
-                         (wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
+                         (model.wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
     //Desorption doesn't contribute to angular profiles, nor to angle maps
     ProfileFacet(src, currentParticle.flightTime, false, 2.0, 1.0); //was 2.0, 1.0
     LogHit(src);
@@ -1142,10 +1142,10 @@ void Simulation::PerformBounce(SubprocessFacet *iFacet) {
 
     /*iFacet->sh.tmpCounter.hit.nbMCHit++; //hit facet
     iFacet->sh.tmpCounter.hit.sum_1_per_ort_velocity += 1.0 / ortVelocity;
-    iFacet->sh.tmpCounter.hit.sum_v_ort += (wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
+    iFacet->sh.tmpCounter.hit.sum_v_ort += (model.wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
 
     IncreaseFacetCounter(iFacet, currentParticle.flightTime, 1, 0, 0, 1.0 / ortVelocity,
-                         (wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
+                         (model.wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
     currentParticle.nbBounces++;
     if (/*iFacet->texture &&*/ iFacet->sh.countRefl)
         RecordHitOnTexture(iFacet, currentParticle.flightTime, true, 1.0, 1.0);
@@ -1195,16 +1195,16 @@ void Simulation::PerformBounce(SubprocessFacet *iFacet) {
     ortVelocity = currentParticle.velocity * std::abs(Dot(currentParticle.direction, iFacet->sh.N));
 
     /*iFacet->sh.tmpCounter.hit.sum_1_per_ort_velocity += 1.0 / ortVelocity;
-    iFacet->sh.tmpCounter.hit.sum_v_ort += (wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
+    iFacet->sh.tmpCounter.hit.sum_v_ort += (model.wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
     IncreaseFacetCounter(iFacet, currentParticle.flightTime, 0, 0, 0, 1.0 / ortVelocity,
-                         (wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
+                         (model.wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
     if (/*iFacet->texture &&*/ iFacet->sh.countRefl)
         RecordHitOnTexture(iFacet, currentParticle.flightTime, false, 1.0,
                            1.0); //count again for outward velocity
     ProfileFacet(iFacet, currentParticle.flightTime, false, 1.0, 1.0);
     //no direction count on outgoing, neither angle map
 
-    if (iFacet->sh.isMoving && wp.motionType) RecordHit(HIT_MOVING);
+    if (iFacet->sh.isMoving && model.wp.motionType) RecordHit(HIT_MOVING);
     else RecordHit(HIT_REF);
     currentParticle.lastHitFacet = iFacet;
     //nbPHit++;
@@ -1216,7 +1216,7 @@ void Simulation::PerformTransparentPass(SubprocessFacet *iFacet) { //disabled, c
         iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z));
     iFacet->sh.tmpCounter.hit.nbMCHit++;
     iFacet->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / (currentParticle.velocity*directionFactor);
-    iFacet->sh.tmpCounter.hit.sum_v_ort += 2.0*(wp.useMaxwellDistribution ? 1.0 : 1.1781)*currentParticle.velocity*directionFactor;
+    iFacet->sh.tmpCounter.hit.sum_v_ort += 2.0*(model.wp.useMaxwellDistribution ? 1.0 : 1.1781)*currentParticle.velocity*directionFactor;
     iFacet->isHit = true;
     if (iFacet->texture && iFacet->sh.countTrans) RecordHitOnTexture(iFacet, currentParticle.flightTime + iFacet->colDist / 100.0 / currentParticle.velocity,
         true, 2.0, 2.0);
@@ -1238,7 +1238,7 @@ void Simulation::RecordAbsorb(SubprocessFacet *iFacet) {
     double ortVelocity =
             currentParticle.velocity * std::abs(Dot(currentParticle.direction, iFacet->sh.N));
     IncreaseFacetCounter(iFacet, currentParticle.flightTime, 1, 0, 1, 2.0 / ortVelocity,
-                         (wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
+                         (model.wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
     LogHit(iFacet);
     ProfileFacet(iFacet, currentParticle.flightTime, true, 2.0, 1.0); //was 2.0, 1.0
     if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
@@ -1251,21 +1251,21 @@ void Simulation::RecordAbsorb(SubprocessFacet *iFacet) {
 void Simulation::RecordHistograms(SubprocessFacet *iFacet) {
     //Record in global and facet histograms
     size_t binIndex;
-    if (wp.globalHistogramParams.recordBounce) {
-        binIndex = Min(currentParticle.nbBounces / wp.globalHistogramParams.nbBounceBinsize,
-                       wp.globalHistogramParams.GetBounceHistogramSize() - 1);
+    if (model.wp.globalHistogramParams.recordBounce) {
+        binIndex = Min(currentParticle.nbBounces / model.wp.globalHistogramParams.nbBounceBinsize,
+                       model.wp.globalHistogramParams.GetBounceHistogramSize() - 1);
         tmpGlobalHistograms[0].nbHitsHistogram[binIndex] += currentParticle.oriRatio;
     }
-    if (wp.globalHistogramParams.recordDistance) {
+    if (model.wp.globalHistogramParams.recordDistance) {
         binIndex = Min(static_cast<size_t>(currentParticle.distanceTraveled /
-                                           wp.globalHistogramParams.distanceBinsize),
-                       wp.globalHistogramParams.GetDistanceHistogramSize() - 1);
+                                           model.wp.globalHistogramParams.distanceBinsize),
+                       model.wp.globalHistogramParams.GetDistanceHistogramSize() - 1);
         tmpGlobalHistograms[0].distanceHistogram[binIndex] += currentParticle.oriRatio;
     }
-    if (wp.globalHistogramParams.recordTime) {
+    if (model.wp.globalHistogramParams.recordTime) {
         binIndex = Min(static_cast<size_t>(currentParticle.flightTime /
-                                           wp.globalHistogramParams.timeBinsize),
-                       wp.globalHistogramParams.GetTimeHistogramSize() - 1);
+                                           model.wp.globalHistogramParams.timeBinsize),
+                       model.wp.globalHistogramParams.GetTimeHistogramSize() - 1);
         tmpGlobalHistograms[0].timeHistogram[binIndex] += currentParticle.oriRatio;
     }
     if (iFacet->sh.facetHistogramParams.recordBounce) {
@@ -1289,21 +1289,21 @@ void Simulation::RecordHistograms(SubprocessFacet *iFacet) {
     int m = -1;
     if((m = LookupMomentIndex(currentParticle.flightTime, moments, currentParticle.lastMomentIndex)) >= 0){
         currentParticle.lastMomentIndex = m;
-        if (wp.globalHistogramParams.recordBounce) {
-            binIndex = Min(currentParticle.nbBounces / wp.globalHistogramParams.nbBounceBinsize,
-                           wp.globalHistogramParams.GetBounceHistogramSize() - 1);
+        if (model.wp.globalHistogramParams.recordBounce) {
+            binIndex = Min(currentParticle.nbBounces / model.wp.globalHistogramParams.nbBounceBinsize,
+                           model.wp.globalHistogramParams.GetBounceHistogramSize() - 1);
             tmpGlobalHistograms[m].nbHitsHistogram[binIndex] += currentParticle.oriRatio;
         }
-        if (wp.globalHistogramParams.recordDistance) {
+        if (model.wp.globalHistogramParams.recordDistance) {
             binIndex = Min(static_cast<size_t>(currentParticle.distanceTraveled /
-                                               wp.globalHistogramParams.distanceBinsize),
-                           wp.globalHistogramParams.GetDistanceHistogramSize() - 1);
+                                               model.wp.globalHistogramParams.distanceBinsize),
+                           model.wp.globalHistogramParams.GetDistanceHistogramSize() - 1);
             tmpGlobalHistograms[m].distanceHistogram[binIndex] += currentParticle.oriRatio;
         }
-        if (wp.globalHistogramParams.recordTime) {
+        if (model.wp.globalHistogramParams.recordTime) {
             binIndex = Min(static_cast<size_t>(currentParticle.flightTime /
-                                               wp.globalHistogramParams.timeBinsize),
-                           wp.globalHistogramParams.GetTimeHistogramSize() - 1);
+                                               model.wp.globalHistogramParams.timeBinsize),
+                           model.wp.globalHistogramParams.GetTimeHistogramSize() - 1);
             tmpGlobalHistograms[m].timeHistogram[binIndex] += currentParticle.oriRatio;
         }
         if (iFacet->sh.facetHistogramParams.recordBounce) {
@@ -1331,7 +1331,7 @@ void Simulation::RecordHitOnTexture(SubprocessFacet *f, double time, bool countH
     size_t tu = (size_t)(f->colU * f->sh.texWidthD);
     size_t tv = (size_t)(f->colV * f->sh.texHeightD);
     size_t add = tu + tv * (f->sh.texWidth);
-    double ortVelocity = (wp.useMaxwellDistribution ? 1.0 : 1.1781) * currentParticle.velocity *
+    double ortVelocity = (model.wp.useMaxwellDistribution ? 1.0 : 1.1781) * currentParticle.velocity *
                          std::abs(Dot(currentParticle.direction,
                                       f->sh.N)); //surface-orthogonal velocity component
 
@@ -1394,7 +1394,7 @@ void Simulation::ProfileFacet(SubprocessFacet *f, double time, bool countHit, do
             f->profile[0][pos].sum_1_per_ort_velocity +=
                     currentParticle.oriRatio * velocity_factor / ortVelocity;
             f->profile[0][pos].sum_v_ort += currentParticle.oriRatio * ortSpeedFactor *
-                                            (wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity;
+                                            (model.wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity;
             if(m >= 0) {
                 currentParticle.lastMomentIndex = m;
                 if (countHit) f->profile[m][pos].countEquiv += currentParticle.oriRatio;
@@ -1403,7 +1403,7 @@ void Simulation::ProfileFacet(SubprocessFacet *f, double time, bool countHit, do
                 f->profile[m][pos].sum_1_per_ort_velocity +=
                         currentParticle.oriRatio * velocity_factor / ortVelocity;
                 f->profile[m][pos].sum_v_ort += currentParticle.oriRatio * ortSpeedFactor *
-                                                (wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity;
+                                                (model.wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity;
             }
         }
     } else if (countHit && (f->sh.profileType == PROFILE_VELOCITY || f->sh.profileType == PROFILE_ORT_VELOCITY ||
@@ -1429,9 +1429,9 @@ void Simulation::ProfileFacet(SubprocessFacet *f, double time, bool countHit, do
 }
 
 void Simulation::LogHit(SubprocessFacet *f) {
-    if (ontheflyParams.enableLogging &&
-        ontheflyParams.logFacetId == f->globalId &&
-        tmpParticleLog.size() < (ontheflyParams.logLimit / ontheflyParams.nbProcess)) {
+    if (model.otfParams.enableLogging &&
+        model.otfParams.logFacetId == f->globalId &&
+        tmpParticleLog.size() < (model.otfParams.logLimit / model.otfParams.nbProcess)) {
         ParticleLoggerItem log;
         log.facetHitPosition = Vector2d(f->colU, f->colV);
         std::tie(log.hitTheta, log.hitPhi) = CartesianToPolar(currentParticle.direction, f->sh.nU, f->sh.nV,
@@ -1478,16 +1478,16 @@ void Simulation::RecordAngleMap(SubprocessFacet *collidedFacet) {
 
 void Simulation::UpdateVelocity(SubprocessFacet *collidedFacet) {
     if (collidedFacet->sh.accomodationFactor > 0.9999) { //speedup for the most common case: perfect thermalization
-        if (wp.useMaxwellDistribution)
+        if (model.wp.useMaxwellDistribution)
             currentParticle.velocity = GenerateRandomVelocity(collidedFacet->sh.CDFid);
         else
             currentParticle.velocity =
-                    145.469 * std::sqrt(collidedFacet->sh.temperature / wp.gasMass);
+                    145.469 * std::sqrt(collidedFacet->sh.temperature / model.wp.gasMass);
     } else {
         double oldSpeed2 = pow(currentParticle.velocity, 2);
         double newSpeed2;
-        if (wp.useMaxwellDistribution) newSpeed2 = pow(GenerateRandomVelocity(collidedFacet->sh.CDFid), 2);
-        else newSpeed2 = /*145.469*/ 29369.939 * (collidedFacet->sh.temperature / wp.gasMass);
+        if (model.wp.useMaxwellDistribution) newSpeed2 = pow(GenerateRandomVelocity(collidedFacet->sh.CDFid), 2);
+        else newSpeed2 = /*145.469*/ 29369.939 * (collidedFacet->sh.temperature / model.wp.gasMass);
         //sqrt(29369)=171.3766= sqrt(8*R*1000/PI)*3PI/8, that is, the constant part of the v_avg=sqrt(8RT/PI/m/0.001)) found in literature, multiplied by
         //the corrective factor of 3PI/8 that accounts for moving from volumetric speed distribution to wall collision speed distribution
         currentParticle.velocity = std::sqrt(
@@ -1507,7 +1507,7 @@ double Simulation::GenerateDesorptionTime(SubprocessFacet *src) {
         return InterpolateX(randomGenerator.rnd() * IDs[src->sh.IDid].back().second, IDs[src->sh.IDid], false,
                             true); //allow extrapolate
     } else {
-        return randomGenerator.rnd() * wp.latestMoment; //continous desorption between 0 and latestMoment
+        return randomGenerator.rnd() * model.wp.latestMoment; //continous desorption between 0 and latestMoment
     }
 }
 
@@ -1530,12 +1530,12 @@ double Simulation::GetOpacityAt(SubprocessFacet *f, double time) {
 
 void Simulation::TreatMovingFacet() {
     Vector3d localVelocityToAdd;
-    if (wp.motionType == 1) { //Translation
-        localVelocityToAdd = wp.motionVector2; //Fixed translational vector
-    } else if (wp.motionType == 2) { //Rotation
+    if (model.wp.motionType == 1) { //Translation
+        localVelocityToAdd = model.wp.motionVector2; //Fixed translational vector
+    } else if (model.wp.motionType == 2) { //Rotation
         Vector3d distanceVector = 0.01 * (currentParticle.position -
-                                          wp.motionVector1); //distance from base, with cm->m conversion, motionVector1 is rotation base point
-        localVelocityToAdd = CrossProduct(wp.motionVector2, distanceVector); //motionVector2 is rotation axis
+                                          model.wp.motionVector1); //distance from base, with cm->m conversion, motionVector1 is rotation base point
+        localVelocityToAdd = CrossProduct(model.wp.motionVector2, distanceVector); //motionVector2 is rotation axis
     }
     Vector3d oldVelocity, newVelocity;
     oldVelocity = currentParticle.direction * currentParticle.velocity;
@@ -1584,7 +1584,7 @@ void Simulation::RegisterTransparentPass(SubprocessFacet *facet) {
     IncreaseFacetCounter(facet, currentParticle.flightTime +
                                facet->colDist / 100.0 / currentParticle.velocity, 1, 0, 0,
                          2.0 / (currentParticle.velocity * directionFactor),
-                         2.0 * (wp.useMaxwellDistribution ? 1.0 : 1.1781) * currentParticle.velocity *
+                         2.0 * (model.wp.useMaxwellDistribution ? 1.0 : 1.1781) * currentParticle.velocity *
                          directionFactor);
 
     facet->isHit = true;

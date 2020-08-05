@@ -167,6 +167,38 @@ int main(int argc, char *argv[]) {
 
     SimulationController simController = {"molflow", "MFLW", hostProcessId, prIdx, new Simulation()};
 
+    {
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+        const char* dpPrefix = "MFLW";
+#else
+        const char *dpPrefix = "/MFLW"; // creates semaphore as /dev/sem/%s_sema
+#endif
+        sprintf(ctrlDpName, "%sCTRL%s", dpPrefix, argv[1]);
+        sprintf(loadDpName, "%sLOAD%s", dpPrefix, argv[1]);
+        sprintf(hitsDpName, "%sHITS%s", dpPrefix, argv[1]);
+        sprintf(logDpName, "%sLOG%s", dpPrefix, argv[1]);
+    }
+
+    InitTick();
+    simController.controlledLoop();
+
+    return 0;
+
+}
+
+int mainThread(int argc, char *argv[]) {
+
+    if (argc != 3) {
+        printf("Usage: molflowSub peerId index\n");
+        return 1;
+    }
+
+    size_t hostProcessId = atoi(argv[1]);
+    size_t prIdx = atoi(argv[2]);
+
+
+    SimulationController simController = {"molflow", "MFLW", hostProcessId, prIdx, new Simulation()};
+
     //Simulation sHandles = {"molflow", "MFLW", hostProcessId, prIdx};
     //Simulation *sHandle = new Simulation();
 
@@ -181,7 +213,7 @@ int main(int argc, char *argv[]) {
         sprintf(hitsDpName, "%sHITS%s", dpPrefix, argv[1]);
         sprintf(logDpName, "%sLOG%s", dpPrefix, argv[1]);
     }
-    
+
     /*{
         Dataport* dpControl = OpenDataport(ctrlDpName, sizeof(SHCONTROL));
         if (!dpControl) {
@@ -242,4 +274,3 @@ int main(int argc, char *argv[]) {
     return 0;
 
 }
-

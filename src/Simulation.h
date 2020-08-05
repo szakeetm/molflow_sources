@@ -121,6 +121,7 @@ public:
     //Dataport *dpLog;
 
     MersenneTwister randomGenerator;
+    //SimulationModel model;
 
     GlobalHitBuffer tmpGlobalResult; //Global results since last UpdateMCHits
 	std::vector<FacetHistogramBuffer> tmpGlobalHistograms; //Recorded histogram since last UpdateMCHits, 1+nbMoment copies
@@ -133,7 +134,7 @@ public:
 	//std::vector<double> temperatures; //keeping track of all temperatures that have a CDF already generated
 	std::vector<Moment> moments;      //time values (seconds) when a simulation state is measured
 	//std::vector<size_t> desorptionParameterIDs; //time-dependent parameters which are used as desorptions, therefore need to be integrated
-	std::vector<Parameter> parameters; //Time-dependent parameters 
+	std::vector<Distribution2D> parameters; //Time-dependent parameters
 
 
 	// Geometry

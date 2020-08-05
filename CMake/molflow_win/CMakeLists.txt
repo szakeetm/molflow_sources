@@ -100,8 +100,7 @@ set(SRC_FILES ${CPP_DIR_1}/FacetAdvParams.cpp
         ${CPP_DIR_1}/TimeMoments.cpp
         ${CPP_DIR_1}/TimeSettings.cpp
         ${CPP_DIR_1}/TimewisePlotter.cpp
-        ${CPP_DIR_1}/Viewer3DSettings.cpp
-        )
+        ${CPP_DIR_1}/Viewer3DSettings.cpp)
 
 # Add executable to build.
 if(WIN32)

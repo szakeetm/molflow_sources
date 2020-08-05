@@ -5,18 +5,16 @@
 #ifndef MOLFLOW_PROJ_LOADERXML_H
 #define MOLFLOW_PROJ_LOADERXML_H
 
+#include <set>
 #include "GeometrySimu.h"
 #include "PugiXML/pugixml.hpp"
 
-namespace MFLoad {
+namespace FlowIO {
     class Loader {
         std::vector<std::string> parameterList;
 
         std::set<double> temperatureList;
         std::set<size_t> desorptionParameterIDs; //time-dependent parameters which are used as desorptions, therefore need to be integrated
-
-        std::vector<std::vector<std::pair<double, double>>> CDFs; //cumulative distribution function for each temperature
-        std::vector<std::vector<std::pair<double, double>>> IDs; //integrated distribution function for each time-dependent desorption type
 
     protected:
         void PrepareToRun(SimulationModel *model);
@@ -29,21 +27,28 @@ namespace MFLoad {
 
         // ID
         int GetIDId(int paramId);
-        int GenerateNewID(int paramId);
+        int GenerateNewID(int paramId, SimulationModel* model);
         static std::vector<std::pair<double, double>> Generate_ID(int paramId, SimulationModel *model);
 
+        std::vector<std::vector<std::pair<double, double>>> IDs;         //integrated distribution function for each time-dependent desorption type
+        std::vector<std::vector<std::pair<double, double>>> CDFs;        //cumulative distribution function for each temperature
     public:
-        virtual void LoadGeometry(std::string inputFileName, SimulationModel *model) = 0;
-        virtual void LoadSimulationState() = 0;
+        std::vector<SubprocessFacet> loadFacets;
+
+        virtual int LoadGeometry(std::string inputFileName, SimulationModel *model) = 0;
+        virtual int LoadSimulationState(std::string inputFileName, SimulationModel *model, BYTE* buffer) = 0;
+
+        std::ostringstream SerializeForLoader(SimulationModel* model);
+        void MoveFacetsToStructures(SimulationModel* model);
     };
 
     class LoaderXML : public Loader {
 
     protected:
-        void LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices);
+        static void LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices);
     public:
-        void LoadGeometry(std::string inputFileName, SimulationModel *model);
-        void LoadSimulationState();
+        int LoadGeometry(std::string inputFileName, SimulationModel *model) override;
+        int LoadSimulationState(std::string inputFileName, SimulationModel *model, BYTE* buffer) override;
     };
 }
 

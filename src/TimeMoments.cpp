@@ -5,6 +5,7 @@
 #include "TimeMoments.h"
 #include <vector>
 #include <cfloat>
+#include <iostream>
 
 /*!
  * @brief Check for 2 unsorted interval vectors (a and b), if any of the contained intervals (a_i and b_j) overlap
@@ -134,7 +135,7 @@ int TimeMoments::ParseAndCheckUserMoments(std::vector<Moment> *moments, const st
     auto overlapPair = CheckIntervalOverlap(parsedMoments);
     if (overlapPair.first != 0 || overlapPair.second != 0) {
         moments->clear();
-
+        std::cerr << "Overlap in time moments detected! Check in Moments Editor (GUI)!" << std::endl;
         return 1;
         //GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning", GLDLG_OK, GLDLG_ICONWARNING);
     }

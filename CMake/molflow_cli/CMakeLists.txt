@@ -9,6 +9,7 @@ set(PROJECT_NAME molflowCLI)
 # Folders files
 set(CPP_DIR_1 ../../src)
 set(CPP_DIR_2 ../../src_shared)
+set(CPP_DIR_3 ../../src_shared/GLApp)
 
 set(HEADER_DIR_1 ../../src)
 set(HEADER_DIR_2 ../../src_shared)
@@ -78,7 +79,17 @@ set(SRC_FILES
         ${CPP_DIR_1}/GeometrySimu.cpp
         ${CPP_DIR_1}/MolflowBuffer.cpp
         ${CPP_DIR_1}/Parameter.cpp
+
         ${CPP_DIR_2}/Vector.cpp
+        ${CPP_DIR_2}/Distributions.cpp
+
+        ${CPP_DIR_1}/LoaderXML.cpp
+        ${CPP_DIR_1}/WriterXML.cpp
+        ${CPP_DIR_1}/Initializer.cpp
+
+        ${CPP_DIR_3}/MathTools.cpp
+        ${CPP_DIR_1}/TimeMoments.cpp
+
         )
 
 # set the path to the library folder
@@ -88,6 +99,7 @@ set(SRC_FILES
 
 add_executable(${PROJECT_NAME} ${SRC_FILES})
 #target_link_libraries(${PROJECT_NAME} simulator_shared)
+target_link_libraries(${PROJECT_NAME} PRIVATE pugixml)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_1}
