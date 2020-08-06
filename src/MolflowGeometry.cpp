@@ -2574,6 +2574,64 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 			}
 		} //end global node
 
+		
+		bool hasHistogram = work->wp.globalHistogramParams.recordBounce || work->wp.globalHistogramParams.recordDistance;
+			#ifdef MOLFLOW
+			hasHistogram = hasHistogram || work->wp.globalHistogramParams.recordTime;
+			#endif
+			if (hasHistogram) {
+				xml_node histNode = newMoment.append_child("Histograms");
+				//Retrieve histogram map from hits dp
+				BYTE* globalHistogramAddress = buffer+sizeof(GlobalHitBuffer);
+				globalHistogramAddress += m * work->wp.globalHistogramParams.GetDataSize();
+				if (work->wp.globalHistogramParams.recordBounce) {
+					double* nbHitsHistogram = (double*) globalHistogramAddress;
+					xml_node hist = histNode.append_child("Bounces");
+					size_t histSize = work->wp.globalHistogramParams.GetBounceHistogramSize();
+					hist.append_attribute("size")=histSize;
+					hist.append_attribute("nbBounceBinsize")=work->wp.globalHistogramParams.nbBounceBinsize;
+					hist.append_attribute("nbBounceMax")=work->wp.globalHistogramParams.nbBounceMax;
+					for (size_t h=0;h<histSize;h++) {
+						xml_node bin=hist.append_child("Bin");
+						auto value = bin.append_attribute("start");
+						if (h==histSize-1) value = "overRange";
+						else value = h * work->wp.globalHistogramParams.nbBounceBinsize;
+						bin.append_attribute("count") = nbHitsHistogram[h];
+					}
+				}
+				if (work->wp.globalHistogramParams.recordDistance) {
+					double* distanceHistogram = (double*) (globalHistogramAddress + work->wp.globalHistogramParams.GetBouncesDataSize());
+					xml_node hist = histNode.append_child("Distance");
+					size_t histSize = work->wp.globalHistogramParams.GetDistanceHistogramSize();
+					hist.append_attribute("size")=histSize;
+					hist.append_attribute("distanceBinsize")=work->wp.globalHistogramParams.distanceBinsize;
+					hist.append_attribute("distanceMax")=work->wp.globalHistogramParams.distanceMax;
+					for (size_t h=0;h<histSize;h++) {
+						xml_node bin=hist.append_child("Bin");
+						auto value = bin.append_attribute("start");
+						if (h==histSize-1) value = "overRange";
+						else value = h * work->wp.globalHistogramParams.distanceBinsize;
+						bin.append_attribute("count") = distanceHistogram[h];
+					}
+				}
+				if (work->wp.globalHistogramParams.recordTime) {
+					double* timeHistogram = (double*) (globalHistogramAddress + work->wp.globalHistogramParams.GetBouncesDataSize() +
+               work->wp.globalHistogramParams.GetTimeDataSize());
+					xml_node hist = histNode.append_child("Time");
+					size_t histSize = work->wp.globalHistogramParams.GetTimeHistogramSize();
+					hist.append_attribute("size")=histSize;
+					hist.append_attribute("timeBinsize")=work->wp.globalHistogramParams.timeBinsize;
+					hist.append_attribute("timeMax")=work->wp.globalHistogramParams.timeMax;
+					for (size_t h=0;h<histSize;h++) {
+						xml_node bin=hist.append_child("Bin");
+						auto value = bin.append_attribute("start");
+						if (h==histSize-1) value = "overRange";
+						else value = h * work->wp.globalHistogramParams.timeBinsize;
+						bin.append_attribute("count") = timeHistogram[h];
+					}
+				}
+			}
+
 		xml_node facetResultsNode = newMoment.append_child("FacetResults");
 
 		for (int i = 0; i < sh.nbFacet; i++) {
@@ -2605,6 +2663,8 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 			}
 
 			size_t profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + mApp->worker.moments.size())) : 0;
+			
+			//Textures
 			size_t h = f->sh.texHeight;
 			size_t w = f->sh.texWidth;
 
@@ -2635,13 +2695,14 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 				textureNode.append_child("sum_v_ort").append_child(node_cdata).set_value(sumvortText.str().c_str());
 
 			} //end texture
+			size_t textureSize = (1 + (int)work->moments.size())*w*h * sizeof(TextureCell);
 
 			if (f->sh.countDirection && f->dirCache) {
 				xml_node dirNode = newFacetResult.append_child("Directions");
 				dirNode.append_attribute("width") = f->sh.texWidth;
 				dirNode.append_attribute("height") = f->sh.texHeight;
 
-				DirectionCell *dirs = (DirectionCell *)(buffer + f->sh.hitOffset + facetHitsSize + profSize + (1 + (int)work->moments.size())*w*h * sizeof(TextureCell) + m * w*h * sizeof(DirectionCell));
+				DirectionCell *dirs = (DirectionCell *)(buffer + f->sh.hitOffset + facetHitsSize + profSize + textureSize + m * w*h * sizeof(DirectionCell));
 
 				std::stringstream dirText, dirCountText;
 				dirText << std::setprecision(8) << '\n'; //better readability in file
@@ -2661,6 +2722,79 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 				dirNode.append_child("vel.vectors").append_child(node_cdata).set_value(dirText.str().c_str());
 				dirNode.append_child("count").append_child(node_cdata).set_value(dirCountText.str().c_str());
 			} //end directions
+			size_t dirSize = f->sh.countDirection ? (1 + (int)work->moments.size())*w*h * sizeof(DirectionCell) : 0;
+
+			size_t angleMapRecordedDataSize = sizeof(size_t) * (f->sh.anglemapParams.phiWidth *
+                                                                        (f->sh.anglemapParams.thetaLowerRes +
+                                                                         f->sh.anglemapParams.thetaHigherRes));
+
+			//Facet histograms (1 per moment) comes here
+			bool hasHistogram = f->sh.facetHistogramParams.recordBounce || f->sh.facetHistogramParams.recordDistance;
+			#ifdef MOLFLOW
+			hasHistogram = hasHistogram || f->sh.facetHistogramParams.recordTime;
+			#endif
+			if (hasHistogram) {
+				xml_node histNode = newFacetResult.append_child("Histograms");
+				//Retrieve histogram map from hits dp
+				BYTE *histogramAddress = buffer
+                                 + f->sh.hitOffset
+                                 + (1 + work->moments.size()) * sizeof(FacetHitBuffer)
+                                 + (f->sh.isProfile ? PROFILE_SIZE * sizeof(ProfileSlice) * (1 + work->moments.size()) : 0)
+                                 + (f->sh.isTextured ? f->sh.texWidth * f->sh.texHeight * sizeof(TextureCell) *
+                                                       (1 + work->moments.size()) : 0)
+                                 + (f->sh.countDirection ? f->sh.texWidth * f->sh.texHeight * sizeof(DirectionCell) *
+                                                           (1 + work->moments.size()) : 0)
+                                 + sizeof(size_t) * (f->sh.anglemapParams.phiWidth *
+                                                     (f->sh.anglemapParams.thetaLowerRes +
+                                                      f->sh.anglemapParams.thetaHigherRes));
+        				histogramAddress += m * f->sh.facetHistogramParams.GetDataSize();
+				if (f->sh.facetHistogramParams.recordBounce) {
+					double* nbHitsHistogram = (double*) histogramAddress;
+					xml_node hist = histNode.append_child("Bounces");
+					size_t histSize = f->sh.facetHistogramParams.GetBounceHistogramSize();
+					hist.append_attribute("size")=histSize;
+					hist.append_attribute("nbBounceBinsize")=f->sh.facetHistogramParams.nbBounceBinsize;
+					hist.append_attribute("nbBounceMax")=f->sh.facetHistogramParams.nbBounceMax;
+					for (size_t h=0;h<histSize;h++) {
+						xml_node bin=hist.append_child("Bin");
+						auto value = bin.append_attribute("start");
+						if (h==histSize-1) value = "overRange";
+						else value = h * f->sh.facetHistogramParams.nbBounceBinsize;
+						bin.append_attribute("count") = nbHitsHistogram[h];
+					}
+				}
+				if (f->sh.facetHistogramParams.recordDistance) {
+					double* distanceHistogram = (double*) (histogramAddress + f->sh.facetHistogramParams.GetBouncesDataSize());
+					xml_node hist = histNode.append_child("Distance");
+					size_t histSize = f->sh.facetHistogramParams.GetDistanceHistogramSize();
+					hist.append_attribute("size")=histSize;
+					hist.append_attribute("distanceBinsize")=f->sh.facetHistogramParams.distanceBinsize;
+					hist.append_attribute("distanceMax")=f->sh.facetHistogramParams.distanceMax;
+					for (size_t h=0;h<histSize;h++) {
+						xml_node bin=hist.append_child("Bin");
+						auto value = bin.append_attribute("start");
+						if (h==histSize-1) value = "overRange";
+						else value = h * f->sh.facetHistogramParams.distanceBinsize;
+						bin.append_attribute("count") = distanceHistogram[h];
+					}
+				}
+				if (f->sh.facetHistogramParams.recordTime) {
+					double* timeHistogram = (double*) (histogramAddress + f->sh.facetHistogramParams.GetBouncesDataSize() +
+               f->sh.facetHistogramParams.GetTimeDataSize());
+					xml_node hist = histNode.append_child("Time");
+					size_t histSize = f->sh.facetHistogramParams.GetTimeHistogramSize();
+					hist.append_attribute("size")=histSize;
+					hist.append_attribute("timeBinsize")=f->sh.facetHistogramParams.timeBinsize;
+					hist.append_attribute("timeMax")=f->sh.facetHistogramParams.timeMax;
+					for (size_t h=0;h<histSize;h++) {
+						xml_node bin=hist.append_child("Bin");
+						auto value = bin.append_attribute("start");
+						if (h==histSize-1) value = "overRange";
+						else value = h * f->sh.facetHistogramParams.timeBinsize;
+						bin.append_attribute("count") = timeHistogram[h];
+					}
+				}
+			}
 		}
 	}
 
