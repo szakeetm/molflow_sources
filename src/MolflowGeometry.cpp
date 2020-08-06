@@ -2503,6 +2503,22 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 		}
 	}
 	paramNode.append_attribute("nb") = nonCatalogParameters;
+
+	xml_node globalHistNode = simuParamNode.append_child("Global_histograms");
+	xml_node nbBounceNode = globalHistNode.append_child("Bounces");
+	nbBounceNode.append_attribute("record")=work->wp.globalHistogramParams.recordBounce;
+	nbBounceNode.append_attribute("binSize")=work->wp.globalHistogramParams.nbBounceBinsize;
+	nbBounceNode.append_attribute("max")=work->wp.globalHistogramParams.nbBounceMax;
+	xml_node distanceNode = globalHistNode.append_child("Distance");
+	distanceNode.append_attribute("record")=work->wp.globalHistogramParams.recordDistance;
+	distanceNode.append_attribute("binSize")=work->wp.globalHistogramParams.distanceBinsize;
+	distanceNode.append_attribute("max")=work->wp.globalHistogramParams.distanceMax;
+	#ifdef MOLFLOW
+	xml_node timeNode = globalHistNode.append_child("Time");
+	timeNode.append_attribute("record")=work->wp.globalHistogramParams.recordTime;
+	timeNode.append_attribute("binSize")=work->wp.globalHistogramParams.timeBinsize;
+	timeNode.append_attribute("max")=work->wp.globalHistogramParams.timeMax;
+	#endif
 }
 
 /**
@@ -2589,8 +2605,8 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 					xml_node hist = histNode.append_child("Bounces");
 					size_t histSize = work->wp.globalHistogramParams.GetBounceHistogramSize();
 					hist.append_attribute("size")=histSize;
-					hist.append_attribute("nbBounceBinsize")=work->wp.globalHistogramParams.nbBounceBinsize;
-					hist.append_attribute("nbBounceMax")=work->wp.globalHistogramParams.nbBounceMax;
+					hist.append_attribute("binSize")=work->wp.globalHistogramParams.nbBounceBinsize; //redundancy for human-reading or export
+					hist.append_attribute("max")=work->wp.globalHistogramParams.nbBounceMax; //redundancy for human-reading or export
 					for (size_t h=0;h<histSize;h++) {
 						xml_node bin=hist.append_child("Bin");
 						auto value = bin.append_attribute("start");
@@ -2604,8 +2620,8 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 					xml_node hist = histNode.append_child("Distance");
 					size_t histSize = work->wp.globalHistogramParams.GetDistanceHistogramSize();
 					hist.append_attribute("size")=histSize;
-					hist.append_attribute("distanceBinsize")=work->wp.globalHistogramParams.distanceBinsize;
-					hist.append_attribute("distanceMax")=work->wp.globalHistogramParams.distanceMax;
+					hist.append_attribute("binSize")=work->wp.globalHistogramParams.distanceBinsize; //redundancy for human-reading or export
+					hist.append_attribute("max")=work->wp.globalHistogramParams.distanceMax; //redundancy for human-reading or export
 					for (size_t h=0;h<histSize;h++) {
 						xml_node bin=hist.append_child("Bin");
 						auto value = bin.append_attribute("start");
@@ -2620,8 +2636,8 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 					xml_node hist = histNode.append_child("Time");
 					size_t histSize = work->wp.globalHistogramParams.GetTimeHistogramSize();
 					hist.append_attribute("size")=histSize;
-					hist.append_attribute("timeBinsize")=work->wp.globalHistogramParams.timeBinsize;
-					hist.append_attribute("timeMax")=work->wp.globalHistogramParams.timeMax;
+					hist.append_attribute("binSize")=work->wp.globalHistogramParams.timeBinsize; //redundancy for human-reading or export
+					hist.append_attribute("max")=work->wp.globalHistogramParams.timeMax; //redundancy for human-reading or export
 					for (size_t h=0;h<histSize;h++) {
 						xml_node bin=hist.append_child("Bin");
 						auto value = bin.append_attribute("start");
@@ -2753,8 +2769,8 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 					xml_node hist = histNode.append_child("Bounces");
 					size_t histSize = f->sh.facetHistogramParams.GetBounceHistogramSize();
 					hist.append_attribute("size")=histSize;
-					hist.append_attribute("nbBounceBinsize")=f->sh.facetHistogramParams.nbBounceBinsize;
-					hist.append_attribute("nbBounceMax")=f->sh.facetHistogramParams.nbBounceMax;
+					hist.append_attribute("binSize")=f->sh.facetHistogramParams.nbBounceBinsize; //redundancy for human-reading or export
+					hist.append_attribute("max")=f->sh.facetHistogramParams.nbBounceMax; //redundancy for human-reading or export
 					for (size_t h=0;h<histSize;h++) {
 						xml_node bin=hist.append_child("Bin");
 						auto value = bin.append_attribute("start");
@@ -2768,8 +2784,8 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 					xml_node hist = histNode.append_child("Distance");
 					size_t histSize = f->sh.facetHistogramParams.GetDistanceHistogramSize();
 					hist.append_attribute("size")=histSize;
-					hist.append_attribute("distanceBinsize")=f->sh.facetHistogramParams.distanceBinsize;
-					hist.append_attribute("distanceMax")=f->sh.facetHistogramParams.distanceMax;
+					hist.append_attribute("binSize")=f->sh.facetHistogramParams.distanceBinsize; //redundancy for human-reading or export
+					hist.append_attribute("max")=f->sh.facetHistogramParams.distanceMax; //redundancy for human-reading or export
 					for (size_t h=0;h<histSize;h++) {
 						xml_node bin=hist.append_child("Bin");
 						auto value = bin.append_attribute("start");
@@ -2784,8 +2800,8 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 					xml_node hist = histNode.append_child("Time");
 					size_t histSize = f->sh.facetHistogramParams.GetTimeHistogramSize();
 					hist.append_attribute("size")=histSize;
-					hist.append_attribute("timeBinsize")=f->sh.facetHistogramParams.timeBinsize;
-					hist.append_attribute("timeMax")=f->sh.facetHistogramParams.timeMax;
+					hist.append_attribute("binSize")=f->sh.facetHistogramParams.timeBinsize; //redundancy for human-reading or export
+					hist.append_attribute("max")=f->sh.facetHistogramParams.timeMax; //redundancy for human-reading or export
 					for (size_t h=0;h<histSize;h++) {
 						xml_node bin=hist.append_child("Bin");
 						auto value = bin.append_attribute("start");

@@ -1154,6 +1154,22 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 		textureNode.append_child("map").append_child(node_cdata).set_value(angleText.str().c_str());
 
 	} //end angle map
+
+	xml_node histNode = f.append_child("Histograms");
+	xml_node nbBounceNode = histNode.append_child("Bounces");
+	nbBounceNode.append_attribute("record")=sh.facetHistogramParams.recordBounce;
+	nbBounceNode.append_attribute("binSize")=sh.facetHistogramParams.nbBounceBinsize;
+	nbBounceNode.append_attribute("max")=sh.facetHistogramParams.nbBounceMax;
+	xml_node distanceNode = histNode.append_child("Distance");
+	distanceNode.append_attribute("record")=sh.facetHistogramParams.recordDistance;
+	distanceNode.append_attribute("binSize")=sh.facetHistogramParams.distanceBinsize;
+	distanceNode.append_attribute("max")=sh.facetHistogramParams.distanceMax;
+	#ifdef MOLFLOW
+	xml_node timeNode = histNode.append_child("Time");
+	timeNode.append_attribute("record")=sh.facetHistogramParams.recordTime;
+	timeNode.append_attribute("binSize")=sh.facetHistogramParams.timeBinsize;
+	timeNode.append_attribute("max")=sh.facetHistogramParams.timeMax;
+	#endif
 }
 
 
