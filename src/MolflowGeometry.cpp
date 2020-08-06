@@ -3070,15 +3070,15 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 		xml_node distanceNode = globalHistNode.child("Distance");
 		if (distanceNode) {
 			work->wp.globalHistogramParams.recordDistance=true;
-			work->wp.globalHistogramParams.distanceBinsize=distanceNode.attribute("binSize").as_ullong();
-			work->wp.globalHistogramParams.distanceMax=distanceNode.attribute("max").as_ullong();
+			work->wp.globalHistogramParams.distanceBinsize=distanceNode.attribute("binSize").as_double();
+			work->wp.globalHistogramParams.distanceMax=distanceNode.attribute("max").as_double();
 		}
 		#ifdef MOLFLOW
 		xml_node timeNode = globalHistNode.child("Time");
 		if (timeNode) {
 			work->wp.globalHistogramParams.recordTime=true;
-			work->wp.globalHistogramParams.timeBinsize=timeNode.attribute("binSize").as_ullong();
-			work->wp.globalHistogramParams.timeMax=timeNode.attribute("max").as_ullong();
+			work->wp.globalHistogramParams.timeBinsize=timeNode.attribute("binSize").as_double();
+			work->wp.globalHistogramParams.timeMax=timeNode.attribute("max").as_double();
 		}
 		#endif
 	}

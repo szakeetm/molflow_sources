@@ -334,15 +334,15 @@ void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bool& ignor
 		xml_node distanceNode = facetHistNode.child("Distance");
 		if (distanceNode) {
 			sh.facetHistogramParams.recordDistance=true;
-			sh.facetHistogramParams.distanceBinsize=distanceNode.attribute("binSize").as_ullong();
-			sh.facetHistogramParams.distanceMax=distanceNode.attribute("max").as_ullong();
+			sh.facetHistogramParams.distanceBinsize=distanceNode.attribute("binSize").as_double();
+			sh.facetHistogramParams.distanceMax=distanceNode.attribute("max").as_double();
 		}
 		#ifdef MOLFLOW
 		xml_node timeNode = facetHistNode.child("Time");
 		if (timeNode) {
 			sh.facetHistogramParams.recordTime=true;
-			sh.facetHistogramParams.timeBinsize=timeNode.attribute("binSize").as_ullong();
-			sh.facetHistogramParams.timeMax=timeNode.attribute("max").as_ullong();
+			sh.facetHistogramParams.timeBinsize=timeNode.attribute("binSize").as_double();
+			sh.facetHistogramParams.timeMax=timeNode.attribute("max").as_double();
 		}
 		#endif
 	}
