@@ -620,7 +620,7 @@ void GlobalSettings::UpdateOutgassing() {
 	gasMassText->SetText(tmp);
 	sprintf(tmp, "%g", worker->wp.finalOutgassingRate_Pa_m3_sec * 10.00); //10: conversion Pa*m3/sec -> mbar*l/s
 	outgassingGasRateText->SetText(tmp);
-	sprintf(tmp, "%g", worker->wp.finalOutgassingRate); //10: conversion Pa*m3/sec -> mbar*l/s
+	sprintf(tmp, "%g", worker->wp.finalOutgassingRate); //In molecules/sec
 	outgassingMoleculeRateText->SetText(tmp);
 	sprintf(tmp,"Tot.des. molecules [0 to %g s]:",worker->wp.latestMoment);
 	desorbedMoleculesLabel->SetText(tmp);
