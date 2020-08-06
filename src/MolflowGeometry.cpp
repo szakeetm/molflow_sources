@@ -2503,21 +2503,23 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 		}
 	}
 	paramNode.append_attribute("nb") = nonCatalogParameters;
-
 	xml_node globalHistNode = simuParamNode.append_child("Global_histograms");
+	if (work->wp.globalHistogramParams.recordBounce) {
 	xml_node nbBounceNode = globalHistNode.append_child("Bounces");
-	nbBounceNode.attribute("record")=work->wp.globalHistogramParams.recordBounce;
-	nbBounceNode.attribute("binSize")=work->wp.globalHistogramParams.nbBounceBinsize;
-	nbBounceNode.attribute("max")=work->wp.globalHistogramParams.nbBounceMax;
-	xml_node distanceNode = globalHistNode.append_child("Distance");
-	distanceNode.attribute("record")=work->wp.globalHistogramParams.recordDistance;
-	distanceNode.attribute("binSize")=work->wp.globalHistogramParams.distanceBinsize;
-	distanceNode.attribute("max")=work->wp.globalHistogramParams.distanceMax;
+		nbBounceNode.attribute("binSize")=work->wp.globalHistogramParams.nbBounceBinsize;
+		nbBounceNode.attribute("max")=work->wp.globalHistogramParams.nbBounceMax;
+	}
+	if (work->wp.globalHistogramParams.recordDistance) {
+		xml_node distanceNode = globalHistNode.append_child("Distance");
+		distanceNode.attribute("binSize")=work->wp.globalHistogramParams.distanceBinsize;
+		distanceNode.attribute("max")=work->wp.globalHistogramParams.distanceMax;
+	}
 	#ifdef MOLFLOW
-	xml_node timeNode = globalHistNode.append_child("Time");
-	timeNode.attribute("record")=work->wp.globalHistogramParams.recordTime;
-	timeNode.attribute("binSize")=work->wp.globalHistogramParams.timeBinsize;
-	timeNode.attribute("max")=work->wp.globalHistogramParams.timeMax;
+	if (work->wp.globalHistogramParams.recordTime) {
+		xml_node timeNode = globalHistNode.append_child("Time");
+		timeNode.attribute("binSize")=work->wp.globalHistogramParams.timeBinsize;
+		timeNode.attribute("max")=work->wp.globalHistogramParams.timeMax;
+	}
 	#endif
 }
 
@@ -3061,22 +3063,22 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 	if (globalHistNode) { // Molflow version before 2.8 didn't save histograms
 		xml_node nbBounceNode = globalHistNode.child("Bounces");
 		if (nbBounceNode) {
-			work->wp.globalHistogramParams.recordBounce=nbBounceNode.attribute("record").as_bool();
-			work->wp.globalHistogramParams.nbBounceBinsize=nbBounceNode.append_attribute("binSize").as_ullong();
-			work->wp.globalHistogramParams.nbBounceMax=nbBounceNode.append_attribute("max").as_ullong();
+			work->wp.globalHistogramParams.recordBounce=true;
+			work->wp.globalHistogramParams.nbBounceBinsize=nbBounceNode.attribute("binSize").as_ullong();
+			work->wp.globalHistogramParams.nbBounceMax=nbBounceNode.attribute("max").as_ullong();
 		}
 		xml_node distanceNode = globalHistNode.child("Distance");
 		if (distanceNode) {
-			work->wp.globalHistogramParams.recordDistance=distanceNode.append_attribute("record").as_bool();
-			work->wp.globalHistogramParams.distanceBinsize=distanceNode.append_attribute("binSize").as_ullong();
-			work->wp.globalHistogramParams.distanceMax=distanceNode.append_attribute("max").as_ullong();
+			work->wp.globalHistogramParams.recordDistance=true;
+			work->wp.globalHistogramParams.distanceBinsize=distanceNode.attribute("binSize").as_ullong();
+			work->wp.globalHistogramParams.distanceMax=distanceNode.attribute("max").as_ullong();
 		}
 		#ifdef MOLFLOW
 		xml_node timeNode = globalHistNode.child("Time");
 		if (timeNode) {
-			work->wp.globalHistogramParams.recordTime=timeNode.append_attribute("record").as_bool();
-			work->wp.globalHistogramParams.timeBinsize=timeNode.append_attribute("binSize").as_ullong();
-			work->wp.globalHistogramParams.timeMax=timeNode.append_attribute("max").as_ullong();
+			work->wp.globalHistogramParams.recordTime=true;
+			work->wp.globalHistogramParams.timeBinsize=timeNode.attribute("binSize").as_ullong();
+			work->wp.globalHistogramParams.timeMax=timeNode.attribute("max").as_ullong();
 		}
 		#endif
 	}
