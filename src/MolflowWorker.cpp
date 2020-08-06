@@ -554,6 +554,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
     if (!insert) {
         //Clear hits and leaks cache
         ResetMoments();
+        worker.wp.globalHistogramParams = HistogramParams();
 
         //default values
         wp.enableDecay = false;

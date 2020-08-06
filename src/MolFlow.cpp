@@ -2101,6 +2101,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 		worker.wp.halfLife = 1;
 		worker.wp.gasMass = 28;
 		worker.ResetMoments();
+		worker.wp.globalHistogramParams = HistogramParams();
         ResetSimulation(false);
     }
 	catch (Error &e) {
@@ -2175,6 +2176,7 @@ void MolFlow::EmptyGeometry() {
 		worker.wp.halfLife = 1;
 		worker.wp.gasMass = 28;
 		worker.ResetMoments();
+		worker.wp.globalHistogramParams = HistogramParams();
 	}
 	catch (Error &e) {
 		GLMessageBox::Display(e.what(), "Error resetting geometry", GLDLG_OK, GLDLG_ICONERROR);
