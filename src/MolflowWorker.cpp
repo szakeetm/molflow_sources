@@ -1664,7 +1664,7 @@ void Worker::AnalyzeSYNfile(const char *fileName, size_t *nbFacet, size_t *nbTex
 void Worker::PrepareToRun() {
 
     //determine latest moment
-    wp.latestMoment = 1E-10;
+    wp.latestMoment = wp.timeWindowSize * .5;
 
 #if defined(DEBUG) // validate with old method for now
     double latestMoment = 1E-10;
