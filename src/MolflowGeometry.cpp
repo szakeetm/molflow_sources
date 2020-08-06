@@ -3057,7 +3057,6 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 		}
 	}
 
-
 	xml_node globalHistNode = simuParamNode.child("Global_histograms");
 	if (globalHistNode) { // Molflow version before 2.8 didn't save histograms
 		xml_node nbBounceNode = globalHistNode.child("Bounces");
@@ -3418,6 +3417,84 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, BYTE *buffer, Wo
 			}
 		} //end global node
 
+		bool hasHistogram = work->wp.globalHistogramParams.recordBounce || work->wp.globalHistogramParams.recordDistance;
+			#ifdef MOLFLOW
+			hasHistogram = hasHistogram || work->wp.globalHistogramParams.recordTime;
+			#endif
+			if (hasHistogram) {
+				xml_node histNode = newMoment.child("Histograms");
+				if (histNode) { //Versions before 2.8 didn't save histograms
+					//Retrieve histogram map from hits dp
+					BYTE* globalHistogramAddress = buffer+sizeof(GlobalHitBuffer);
+					globalHistogramAddress += m * work->wp.globalHistogramParams.GetDataSize();
+					if (work->wp.globalHistogramParams.recordBounce) {
+						double* nbHitsHistogram = (double*) globalHistogramAddress;
+						xml_node hist = histNode.child("Bounces");
+						if (hist) {
+							size_t histSize = work->wp.globalHistogramParams.GetBounceHistogramSize();
+							size_t saveHistSize = hist.attribute("size").as_ullong();
+							if (histSize == saveHistSize) {
+							//Can do: compare saved with expected size
+							size_t h=0;
+							for (auto bin : hist.children("Bin")) {
+								if (h<histSize) {
+									nbHitsHistogram[h++]=bin.attribute("count").as_double();
+								} else {
+									//Treat errors
+								}
+							}
+							} else {
+								//Treat errors
+							}
+						}
+					}
+					if (work->wp.globalHistogramParams.recordDistance) {
+					double* distanceHistogram = (double*) (globalHistogramAddress + work->wp.globalHistogramParams.GetBouncesDataSize());
+					xml_node hist = histNode.child("Distance");
+						if (hist) {
+							size_t histSize = work->wp.globalHistogramParams.GetDistanceHistogramSize();
+							size_t saveHistSize = hist.attribute("size").as_ullong();
+							if (histSize == saveHistSize) {
+							//Can do: compare saved with expected size
+							size_t h=0;
+							for (auto bin : hist.children("Bin")) {
+								if (h<histSize) {
+									distanceHistogram[h++]=bin.attribute("count").as_double();
+								} else {
+									//Treat errors
+								}
+							}
+							} else {
+								//Treat errors
+							}
+						}
+					}
+					if (work->wp.globalHistogramParams.recordTime) {
+					double* timeHistogram = (double*) (globalHistogramAddress + work->wp.globalHistogramParams.GetBouncesDataSize()
+					+ work->wp.globalHistogramParams.GetDistanceHistogramSize());
+					xml_node hist = histNode.child("Time");
+						if (hist) {
+							size_t histSize = work->wp.globalHistogramParams.GetTimeHistogramSize();
+							size_t saveHistSize = hist.attribute("size").as_ullong();
+							if (histSize == saveHistSize) {
+							//Can do: compare saved with expected size
+							size_t h=0;
+							for (auto bin : hist.children("Bin")) {
+								if (h<histSize) {
+									timeHistogram[h++]=bin.attribute("count").as_double();
+								} else {
+									//Treat errors
+								}
+							}
+							} else {
+								//Treat errors
+							}
+						}
+					}
+				}
+			}
+
+
 		xml_node facetResultsNode = newMoment.child("FacetResults");
 		for (xml_node newFacetResult : facetResultsNode.children("Facet")) {
 			int facetId = newFacetResult.attribute("id").as_int();
@@ -3574,6 +3651,86 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, BYTE *buffer, Wo
 					}
 				}
 			} //end directions
+
+			bool hasHistogram = f->sh.facetHistogramParams.recordBounce || f->sh.facetHistogramParams.recordDistance;
+			#ifdef MOLFLOW
+			hasHistogram = hasHistogram || f->sh.facetHistogramParams.recordTime;
+			#endif
+			if (hasHistogram) {
+				xml_node histNode = newMoment.child("Histograms");
+				if (histNode) { //Versions before 2.8 didn't save histograms
+					//Retrieve histogram map from hits dp
+					BYTE* facetHistogramAddress = buffer + f->sh.hitOffset + facetHitsSize
+					+ profSize + (1 + (int)work->moments.size())*f->sh.texWidth*f->sh.texHeight * sizeof(TextureCell)
+					+ (int)f->sh.countDirection * (1 + (int)work->moments.size()) * f->sh.texWidth*f->sh.texHeight * sizeof(DirectionCell);
+					facetHistogramAddress += m * f->sh.facetHistogramParams.GetDataSize();
+					if (f->sh.facetHistogramParams.recordBounce) {
+						double* nbHitsHistogram = (double*) facetHistogramAddress;
+						xml_node hist = histNode.child("Bounces");
+						if (hist) {
+							size_t histSize = f->sh.facetHistogramParams.GetBounceHistogramSize();
+							size_t saveHistSize = hist.attribute("size").as_ullong();
+							if (histSize == saveHistSize) {
+							//Can do: compare saved with expected size
+							size_t h=0;
+							for (auto bin : hist.children("Bin")) {
+								if (h<histSize) {
+									nbHitsHistogram[h++]=bin.attribute("count").as_double();
+								} else {
+									//Treat errors
+								}
+							}
+							} else {
+								//Treat errors
+							}
+						}
+					}
+					if (f->sh.facetHistogramParams.recordDistance) {
+					double* distanceHistogram = (double*) (facetHistogramAddress + f->sh.facetHistogramParams.GetBouncesDataSize());
+					xml_node hist = histNode.child("Distance");
+						if (hist) {
+							size_t histSize = f->sh.facetHistogramParams.GetDistanceHistogramSize();
+							size_t saveHistSize = hist.attribute("size").as_ullong();
+							if (histSize == saveHistSize) {
+							//Can do: compare saved with expected size
+							size_t h=0;
+							for (auto bin : hist.children("Bin")) {
+								if (h<histSize) {
+									distanceHistogram[h++]=bin.attribute("count").as_double();
+								} else {
+									//Treat errors
+								}
+							}
+							} else {
+								//Treat errors
+							}
+						}
+					}
+					if (f->sh.facetHistogramParams.recordTime) {
+					double* timeHistogram = (double*) (facetHistogramAddress + f->sh.facetHistogramParams.GetBouncesDataSize()
+					+ f->sh.facetHistogramParams.GetDistanceHistogramSize());
+					xml_node hist = histNode.child("Time");
+						if (hist) {
+							size_t histSize = f->sh.facetHistogramParams.GetTimeHistogramSize();
+							size_t saveHistSize = hist.attribute("size").as_ullong();
+							if (histSize == saveHistSize) {
+							//Can do: compare saved with expected size
+							size_t h=0;
+							for (auto bin : hist.children("Bin")) {
+								if (h<histSize) {
+									timeHistogram[h++]=bin.attribute("count").as_double();
+								} else {
+									//Treat errors
+								}
+							}
+							} else {
+								//Treat errors
+							}
+						}
+					}
+				}
+			}
+
 		} //end facetResult
 		m++;
 	} //end moment
