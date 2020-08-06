@@ -323,6 +323,30 @@ void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bool& ignor
 	textureVisible = f.child("ViewSettings").attribute("textureVisible").as_bool();
 	volumeVisible = f.child("ViewSettings").attribute("volumeVisible").as_bool();
 
+	xml_node facetHistNode = f.child("Histograms");
+	if (facetHistNode) { // Molflow version before 2.8 didn't save histograms
+		xml_node nbBounceNode = facetHistNode.child("Bounces");
+		if (nbBounceNode) {
+			sh.facetHistogramParams.recordBounce=nbBounceNode.attribute("record").as_bool();
+			sh.facetHistogramParams.nbBounceBinsize=nbBounceNode.append_attribute("binSize").as_ullong();
+			sh.facetHistogramParams.nbBounceMax=nbBounceNode.append_attribute("max").as_ullong();
+		}
+		xml_node distanceNode = facetHistNode.child("Distance");
+		if (distanceNode) {
+			sh.facetHistogramParams.recordDistance=distanceNode.append_attribute("record").as_bool();
+			sh.facetHistogramParams.distanceBinsize=distanceNode.append_attribute("binSize").as_ullong();
+			sh.facetHistogramParams.distanceMax=distanceNode.append_attribute("max").as_ullong();
+		}
+		#ifdef MOLFLOW
+		xml_node timeNode = facetHistNode.child("Time");
+		if (timeNode) {
+			sh.facetHistogramParams.recordTime=timeNode.append_attribute("record").as_bool();
+			sh.facetHistogramParams.timeBinsize=timeNode.append_attribute("binSize").as_ullong();
+			sh.facetHistogramParams.timeMax=timeNode.append_attribute("max").as_ullong();
+		}
+		#endif
+	}
+
 	UpdateFlags();
 }
 
