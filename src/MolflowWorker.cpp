@@ -1503,7 +1503,7 @@ void Worker::PrepareToRun() {
 
     //determine latest moment
     wp.latestMoment = 1E-10;
-
+    wp.latestMoment = 0.5 * wp.timeWindowSize;
 #if defined(DEBUG) // validate with old method for now
     double latestMoment = 1E-10;
     for (auto & moment : moments)

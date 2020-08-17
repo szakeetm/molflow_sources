@@ -100,13 +100,13 @@ void Simulation::ClearSimulation() {
 
     this->currentParticle = CurrentParticleStatus();
 
-    this->structures.clear();
-    this->CDFs.clear();
-    this->IDs.clear();
-    this->moments.clear();
-    this->parameters.clear();
+    this->model.structures.clear();
+    this->model.tdParams.CDFs.clear();
+    this->model.tdParams.IDs.clear();
+    this->model.tdParams.moments.clear();
+    this->model.tdParams.parameters.clear();
     //this->temperatures.clear();
-    this->vertices3.clear();
+    this->model.vertices3.clear();
 }
 
 bool Simulation::LoadSimulation(Dataport *loader) {
@@ -128,18 +128,19 @@ bool Simulation::LoadSimulation(Dataport *loader) {
         //Worker params
         inputArchive(model.wp);
         inputArchive(model.otfParams);
-        inputArchive(CDFs);
-        inputArchive(IDs);
-        inputArchive(parameters);
+        inputArchive(model.tdParams.CDFs);
+        inputArchive(model.tdParams.IDs);
+        inputArchive(model.tdParams.parameters);
         //inputArchive(temperatures);
-        inputArchive(moments);
+        inputArchive(model.tdParams.moments);
         //inputArchive(desorptionParameterIDs);
 
         //Geometry
         inputArchive(model.sh);
-        inputArchive(vertices3);
+        inputArchive(model.vertices3);
 
-        structures.resize(model.sh.nbSuper); //Create structures
+        model.structures.resize(model.sh.nbSuper); //Create structures
+        //model.tdParams.moments = moments;
 
         //Facets
         for (size_t i = 0; i < model.sh.nbFacet; i++) { //Necessary because facets is not (yet) a vector in the interface
@@ -154,13 +155,13 @@ bool Simulation::LoadSimulation(Dataport *loader) {
             );
 
             //Some initialization
-            if (!f.InitializeOnLoad(i, moments.size(), histogramTotalSize)) return false;
+            if (!f.InitializeOnLoad(i, model.tdParams.moments.size(), histogramTotalSize)) return false;
             // Increase size counters
             //histogramTotalSize += 0;
             angleMapTotalSize += f.angleMapSize;
-            dirTotalSize += f.directionSize* (1 + moments.size());
-            profTotalSize += f.profileSize* (1 + moments.size());
-            textTotalSize += f.textureSize* (1 + moments.size());
+            dirTotalSize += f.directionSize* (1 + model.tdParams.moments.size());
+            profTotalSize += f.profileSize* (1 + model.tdParams.moments.size());
+            textTotalSize += f.textureSize* (1 + model.tdParams.moments.size());
 
             hasVolatile |= f.sh.isVolatile;
             if ((f.sh.superDest || f.sh.isVolatile) && ((f.sh.superDest - 1) >= model.sh.nbSuper || f.sh.superDest < 0)) {
@@ -175,20 +176,48 @@ bool Simulation::LoadSimulation(Dataport *loader) {
             }
 
             if (f.sh.superIdx == -1) { //Facet in all structures
-                for (auto& s : structures) {
+                for (auto& s : model.structures) {
                     s.facets.push_back(f);
                 }
             }
             else {
-                structures[f.sh.superIdx].facets.push_back(f); //Assign to structure
+                model.structures[f.sh.superIdx].facets.push_back(f); //Assign to structure
             }
         }
     }//inputarchive goes out of scope, file released
 
+    // New GlobalSimuState structure for threads
+    {
+        tmpResults = GlobalSimuState();
+
+        std::vector<FacetState>(model.sh.nbFacet).swap(tmpResults.facetStates);
+        for(auto& s : model.structures){
+            for(auto& sFac : s.facets){
+                size_t i = sFac.globalId;
+                if(!tmpResults.facetStates[i].momentResults.empty())
+                    continue; // Skip multiple init when facets exist in all structures
+                FacetMomentSnapshot facetMomentTemplate;
+                facetMomentTemplate.histogram.Resize(sFac.sh.facetHistogramParams);
+                facetMomentTemplate.direction = std::vector<DirectionCell>(sFac.sh.countDirection ? sFac.sh.texWidth*sFac.sh.texHeight : 0);
+                facetMomentTemplate.profile = std::vector<ProfileSlice>(sFac.sh.isProfile ? PROFILE_SIZE : 0);
+                facetMomentTemplate.texture = std::vector<TextureCell>(sFac.sh.isTextured ? sFac.sh.texWidth*sFac.sh.texHeight : 0);
+                //No init for hits
+                tmpResults.facetStates[i].momentResults = std::vector<FacetMomentSnapshot>(1 + model.tdParams.moments.size(), facetMomentTemplate);
+                if (sFac.sh.anglemapParams.record)
+                  tmpResults.facetStates[i].recordedAngleMapPdf = std::vector<size_t>(sFac.sh.anglemapParams.GetMapSize());
+            }
+        }
+
+        //Global histogram
+        FacetHistogramBuffer globalHistTemplate;
+        globalHistTemplate.Resize(model.wp.globalHistogramParams);
+        tmpResults.globalHistograms = std::vector<FacetHistogramBuffer>(1 + model.tdParams.moments.size(), globalHistTemplate);
+        tmpResults.initialized = true;
+    }
     //Initialize global histogram
     FacetHistogramBuffer hist;
     hist.Resize(model.wp.globalHistogramParams);
-    tmpGlobalHistograms = std::vector<FacetHistogramBuffer>(1 + moments.size(), hist);
+    tmpGlobalHistograms = std::vector<FacetHistogramBuffer>(1 + model.tdParams.moments.size(), hist);
 
     //Reserve particle log
     if (model.otfParams.enableLogging)
@@ -196,7 +225,7 @@ bool Simulation::LoadSimulation(Dataport *loader) {
 
     // Build all AABBTrees
     size_t maxDepth=0;
-    for (auto& s : structures) {
+    for (auto& s : model.structures) {
         std::vector<SubprocessFacet*> facetPointers; facetPointers.reserve(s.facets.size());
         for (auto& f : s.facets) {
             facetPointers.push_back(&f);
@@ -221,7 +250,7 @@ bool Simulation::LoadSimulation(Dataport *loader) {
     //loadOK = true;
     double t1 = GetTick();
     printf("  Load %s successful\n", model.sh.name.c_str());
-    printf("  Geometry: %zd vertex %zd facets\n", vertices3.size(), model.sh.nbFacet);
+    printf("  Geometry: %zd vertex %zd facets\n", model.vertices3.size(), model.sh.nbFacet);
 
     printf("  Geom size: %d bytes\n", /*(size_t)(buffer - bufferStart)*/0);
     printf("  Number of stucture: %zd\n", model.sh.nbSuper);
@@ -239,14 +268,14 @@ bool Simulation::LoadSimulation(Dataport *loader) {
 }
 
 void Simulation::UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DWORD timeout) {
-    UpdateMCHits(dpHit, prIdx, moments.size(), timeout);
+    UpdateMCHits(dpHit, prIdx, model.tdParams.moments.size(), timeout);
     if (dpLog) UpdateLog(dpLog, timeout);
 }
 
 size_t Simulation::GetHitsSize() {
     return sizeof(GlobalHitBuffer) + wp.globalHistogramParams.GetDataSize() +
            textTotalSize + profTotalSize + dirTotalSize + angleMapTotalSize + histogramTotalSize
-           + model.sh.nbFacet * sizeof(FacetHitBuffer) * (1+moments.size());
+           + model.sh.nbFacet * sizeof(FacetHitBuffer) * (1+model.tdParams.moments.size());
 }
 
 void Simulation::ResetTmpCounters() {
@@ -259,7 +288,7 @@ void Simulation::ResetTmpCounters() {
         h.Reset();
     }
 
-    for (auto& structure : structures) {
+    for (auto& structure : model.structures) {
         for (auto& f : structure.facets) {
             f.ResetCounter();
             f.isHit = false;
@@ -298,7 +327,7 @@ void Simulation::ResetTmpCounters() {
 void Simulation::ResetSimulation() {
     currentParticle = CurrentParticleStatus();
     totalDesorbed = 0;
-    ResetTmpCounters();
+    ResetTmpCounters(); tmpResults.Reset();
     tmpParticleLog.clear();
 }
 
@@ -308,10 +337,10 @@ bool Simulation::StartSimulation() {
 }
 
 void Simulation::RecordHit(const int &type) {
-    if (tmpGlobalResult.hitCacheSize < HITCACHESIZE) {
-        tmpGlobalResult.hitCache[tmpGlobalResult.hitCacheSize].pos = currentParticle.position;
-        tmpGlobalResult.hitCache[tmpGlobalResult.hitCacheSize].type = type;
-        tmpGlobalResult.hitCacheSize++;
+    if (tmpResults.globalHits.hitCacheSize < HITCACHESIZE) {
+        tmpResults.globalHits.hitCache[tmpResults.globalHits.hitCacheSize].pos = currentParticle.position;
+        tmpResults.globalHits.hitCache[tmpResults.globalHits.hitCacheSize].type = type;
+        tmpResults.globalHits.hitCacheSize++;
     }
 }
 
@@ -320,9 +349,9 @@ void Simulation::RecordLeakPos() {
     // Record leak for debugging
     RecordHit(HIT_REF);
     RecordHit(HIT_LAST);
-    if (tmpGlobalResult.leakCacheSize < LEAKCACHESIZE) {
-        tmpGlobalResult.leakCache[tmpGlobalResult.leakCacheSize].pos = currentParticle.position;
-        tmpGlobalResult.leakCache[tmpGlobalResult.leakCacheSize].dir = currentParticle.direction;
-        tmpGlobalResult.leakCacheSize++;
+    if (tmpResults.globalHits.leakCacheSize < LEAKCACHESIZE) {
+        tmpResults.globalHits.leakCache[tmpResults.globalHits.leakCacheSize].pos = currentParticle.position;
+        tmpResults.globalHits.leakCache[tmpResults.globalHits.leakCacheSize].dir = currentParticle.direction;
+        tmpResults.globalHits.leakCacheSize++;
     }
 }

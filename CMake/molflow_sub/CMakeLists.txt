@@ -86,6 +86,8 @@ set(SRC_FILES ${CPP_DIR_1}/molflowSub.cpp
 
         ${CPP_DIR_2}/SimulationController.cpp
         ${CPP_DIR_3}/MathTools.cpp
+
+        ${CPP_DIR_1}/MolflowHitCounter.cpp
         )
 
 set(HEADER_FILES ${HEADER_DIR_1}/MolflowTypes.h

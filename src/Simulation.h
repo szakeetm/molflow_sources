@@ -76,12 +76,15 @@ public:
     int ReinitializeParticleLog() override;
     bool UpdateOntheflySimuParams(Dataport *loader) override;
 
-    void UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DWORD timeout);
+    void UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DWORD timeout) override;
     bool UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout);
+    bool UpdateMCHits(GlobalSimuState& globState, int prIdx, size_t nbMoments, DWORD timeout);
+    bool UploadHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWORD timeout) override;
+
     void UpdateLog(Dataport *dpLog, DWORD timeout);
 
     void PerformTeleport(SubprocessFacet *iFacet);
-    bool SimulationMCStep(size_t nbStep);
+    bool SimulationMCStep(size_t nbStep) override;
     void IncreaseDistanceCounters(double distanceIncrement);
     bool StartFromSource();
     void PerformBounce(SubprocessFacet *iFacet);
@@ -103,7 +106,7 @@ public:
                               double sum_v_ort);
     void RegisterTransparentPass(SubprocessFacet *facet);
 
-        void ResetTmpCounters();
+	void ResetTmpCounters();
 
     /*void GetState();
     size_t GetLocalState();

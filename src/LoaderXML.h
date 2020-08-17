@@ -6,6 +6,7 @@
 #define MOLFLOW_PROJ_LOADERXML_H
 
 #include <set>
+#include <map>
 #include "GeometrySimu.h"
 #include "PugiXML/pugixml.hpp"
 
@@ -32,6 +33,7 @@ namespace FlowIO {
 
         std::vector<std::vector<std::pair<double, double>>> IDs;         //integrated distribution function for each time-dependent desorption type
         std::vector<std::vector<std::pair<double, double>>> CDFs;        //cumulative distribution function for each temperature
+        std::map<size_t,std::vector<size_t>> angleMapCache;
     public:
         std::vector<SubprocessFacet> loadFacets;
 
@@ -39,16 +41,19 @@ namespace FlowIO {
         virtual int LoadSimulationState(std::string inputFileName, SimulationModel *model, BYTE* buffer) = 0;
 
         std::ostringstream SerializeForLoader(SimulationModel* model);
+        std::ostringstream SerializeResultsForLoader(GlobalSimuState* globState);
         void MoveFacetsToStructures(SimulationModel* model);
     };
 
     class LoaderXML : public Loader {
 
     protected:
-        static void LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices);
+        void LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices);
     public:
         int LoadGeometry(std::string inputFileName, SimulationModel *model) override;
         int LoadSimulationState(std::string inputFileName, SimulationModel *model, BYTE* buffer) override;
+        int LoadSimulationState(std::string inputFileName, SimulationModel *model, GlobalSimuState& globState);
+
     };
 }
 

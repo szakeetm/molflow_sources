@@ -19,11 +19,12 @@ namespace Settings {
 class Initializer {
 private:
     static int parseCommands(int argc, char** argv);
-    static int loadFromXML(SimulationManager *simManager, SimulationModel *model);
+    static int loadFromXML(SimulationManager *simManager, SimulationModel *model, GlobalSimuState *globState);
     static int setSharedStorage();
 
 public:
-    static int init(int argc, char **argv, SimulationManager *simManager, SimulationModel *model);
+    static int init(int argc, char **argv, SimulationManager *simManager, SimulationModel *model,
+                    GlobalSimuState *globState);
 };
 
 

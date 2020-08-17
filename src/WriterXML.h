@@ -22,8 +22,9 @@ namespace FlowIO {
         protected:
             //void SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices);
         public:
-            void SaveGeometry(std::string outputFileName, SimulationModel *model);
-            int SaveSimulationState(std::string outputFileName, SimulationModel *model, BYTE* buffer);
+            void SaveGeometry(std::string outputFileName, SimulationModel *model) override;
+            int SaveSimulationState(std::string outputFileName, SimulationModel *model, BYTE* buffer) override;
+            int SaveSimulationState(std::string outputFileName, SimulationModel *model, GlobalSimuState& globState);
     };
 }
 

@@ -70,6 +70,15 @@ public:
 	double sum_1_per_ort_velocity=0.0;
 	ProfileSlice& operator+=(const ProfileSlice& rhs);
 	ProfileSlice& operator+(const ProfileSlice& rhs);
+    template<class Archive>
+    void serialize(Archive & archive)
+    {
+        archive(
+                countEquiv,
+                sum_v_ort,
+                sum_1_per_ort_velocity
+        );
+    }
 };
 
 class TextureCell {
@@ -79,17 +88,42 @@ public:
 	double sum_1_per_ort_velocity=0.0;
 	TextureCell& operator+=(const TextureCell& rhs);
 	TextureCell& operator+(const TextureCell& rhs);
+    template<class Archive>
+    void serialize(Archive & archive)
+    {
+        archive(
+                countEquiv,
+                sum_v_ort_per_area,
+                sum_1_per_ort_velocity
+        );
+    }
 };
 
 //Texture limit types
 typedef struct {
 	double all;
 	double moments_only;
+    template<class Archive>
+    void serialize(Archive & archive)
+    {
+        archive(
+                all,
+                moments_only
+        );
+    }
 } TEXTURE_MOMENT_TYPE;
 
 typedef struct {
 	TEXTURE_MOMENT_TYPE min;
 	TEXTURE_MOMENT_TYPE max;
+    template<class Archive>
+    void serialize(Archive & archive)
+    {
+        archive(
+                min,
+                max
+        );
+    }
 } TEXTURE_MIN_MAX;
 
 typedef struct {

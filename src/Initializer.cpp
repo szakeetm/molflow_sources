@@ -22,7 +22,8 @@ public:
     }
 };
 
-int Initializer::init(int argc, char **argv, SimulationManager *simManager, SimulationModel *model) {
+int Initializer::init(int argc, char **argv, SimulationManager *simManager, SimulationModel *model,
+                      GlobalSimuState *globState) {
     parseCommands(argc, argv);
 
     simManager->nbCores = Settings::nbCPUCores;
@@ -34,7 +35,7 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
     std::cout << "Active cores: " << simManager->simHandles.size() << std::endl;
     model->otfParams.nbProcess = simManager->nbCores;
 
-    loadFromXML(simManager, model);
+    loadFromXML(simManager, model, globState);
 
 
 
@@ -59,7 +60,7 @@ int Initializer::parseCommands(int argc, char** argv) {
     return 0;
 }
 
-int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *model) {
+int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *model, GlobalSimuState *globState) {
 
     //1. Load Input File (regular XML)
     FlowIO::LoaderXML loader;
@@ -85,30 +86,40 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
         //progressDlg->SetMessage("Creating hit buffer...");
         size_t nbMoments = model->tdParams.moments.size();
 
-        // Calc hitsize to init hit buffer
+        /*// Calc hitsize to init hit buffer
         {
             size_t hitSize = 0;
             hitSize += sizeof(GlobalHitBuffer) + (1 + nbMoments) * model->wp.globalHistogramParams.GetDataSize();
             for (int i = 0; i < model->sh.nbFacet; i++) {
                 hitSize += loader.loadFacets[i].GetHitsSize(nbMoments);
             }
+            hitSize =
             simManager->ReloadHitBuffer(hitSize);
         }
         BYTE* buffer = simManager->GetLockedHitBuffer();
+*/
+        globState->Resize(model->sh.nbFacet, model->tdParams.moments.size(), loader.loadFacets, model->wp.globalHistogramParams);
 
         // 3. init counters with previous results
-        loader.LoadSimulationState(Settings::req_real_file, model, buffer);
-        simManager->UnlockHitBuffer();
+        loader.LoadSimulationState(Settings::req_real_file, model, *globState);
+        //simManager->UnlockHitBuffer();
 
         // temp facets from loader to model 2d (structure, facet)
 
         std::string loaderString = loader.SerializeForLoader(model).str();
+        simManager->ReloadHitBuffer(loader.SerializeResultsForLoader(globState).str().size());
 
         if (simManager->ShareWithSimUnits((BYTE *) loaderString.c_str(), loaderString.size(), LoadType::LOADGEOM)) {
-            std::string errString = "Failed to send params to sub process!\n";
+            std::string errString = "Failed to send [Geometry] to sub process!\n";
             std::cerr << "[Warning (LoadGeom)] " << errString.c_str() << std::endl;
             exit(0);
         }
+
+        /*if (simManager->ShareWithSimUnits((BYTE *) loaderString.c_str(), loaderString.size(),LoadType::LOADHITS)){
+            std::string errString = "Failed to send [Global State] to sub process!\n";
+            std::cerr << "[Warning (LoadHits)] " << errString.c_str() << std::endl;
+            exit(0);
+        }*/
     }
     catch (std::exception& e) {
         std::cerr << "[Warning (LoadGeom)] " << e.what() << std::endl;

@@ -144,4 +144,60 @@ public:
     AABBNODE* aabbTree; // Structure AABB tree
 };
 
+/*!
+ * @brief One instance is the state for one facet for a single moment
+ */
+class FacetMomentSnapshot {
+public:
+    FacetMomentSnapshot& operator+=(const FacetMomentSnapshot& rhs);
+    FacetMomentSnapshot& operator+(const FacetMomentSnapshot& rhs);
+    FacetHitBuffer hits;
+    std::vector<ProfileSlice> profile;
+    std::vector<TextureCell> texture;
+    std::vector<DirectionCell> direction;
+    FacetHistogramBuffer histogram;
+    template<class Archive>
+    void serialize(Archive & archive)
+    {
+        archive(
+                hits,
+                profile,
+                texture,
+                direction,
+                histogram
+        );
+    }
+};
+
+class FacetState {
+public:
+    FacetState& operator+=(const FacetState& rhs);
+    std::vector<size_t> recordedAngleMapPdf; //Not time-dependent
+    std::vector<FacetMomentSnapshot> momentResults; //1+nbMoment
+    template<class Archive>
+    void serialize(Archive & archive)
+    {
+        archive(
+                recordedAngleMapPdf,
+                momentResults
+        );
+    }
+};
+
+class GlobalSimuState { //replaces old hits dataport
+public:
+    GlobalSimuState& operator=(const GlobalSimuState& src);
+    bool initialized = false;
+    void clear();
+    void Resize(size_t nbF, size_t nbMoments, const std::vector<SubprocessFacet> &facets,
+                const HistogramParams &params);
+    void Reset();
+
+#if defined(MOLFLOW)
+    GlobalHitBuffer globalHits;
+    std::vector<FacetHistogramBuffer> globalHistograms; //1+nbMoment
+    std::vector<FacetState> facetStates; //nbFacet
+#endif
+    std::timed_mutex mutex;
+};
 #endif //MOLFLOW_PROJ_GEOMETRYSIMU_H
