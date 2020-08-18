@@ -29,6 +29,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/MathTools.h"
 
 #include "Parameter.h"
+#include <omp.h>
 
 //extern Simulation *sHandle; //delcared in molflowSub.cpp
 
@@ -474,8 +475,10 @@ bool Simulation::UploadHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWORD t
     // Upload
     if(dpHit){
         BYTE* buffer = (BYTE*)dpHit->buff;
-        BYTE* source = (BYTE*)(result.str().data());
-        std::copy(source,source + result.str().size(),buffer);
+        auto resString = result.str();
+        BYTE* source = (BYTE*)(resString.data());
+        auto resultSize =  resString.size();
+        std::copy(source,source + resultSize, buffer);
     }
 
     // Finalize
@@ -633,96 +636,101 @@ bool Simulation::SimulationMCStep(size_t nbStep) {
     }
 
     // Perform simulation steps
-    for (size_t i = 0; i < nbStep; i++) {
+#pragma omp parallel num_threads(4) default(none) private(nbStep)
+    {
+        int index = omp_get_thread_num();
+        printf_s("Hello from thread %d\n", index);
+        for (size_t i = 0; i < nbStep; i++) {
 
-        if (!currentParticle.lastHitFacet)
-            if(!StartFromSource())
-                return false; // desorp limit reached
-        //return (currentParticle.lastHitFacet != nullptr);
+            if (!currentParticle.lastHitFacet)
+                if (!StartFromSource())
+                    return false; // desorp limit reached
+            //return (currentParticle.lastHitFacet != nullptr);
 
-        //Prepare output values
-        auto[found, collidedFacet, d] = Intersect(this, currentParticle.position,
-                                                  currentParticle.direction);
+            //Prepare output values
+            auto[found, collidedFacet, d] = Intersect(this, currentParticle.position,
+                                                      currentParticle.direction);
 
-        if (found) {
+            if (found) {
 
-            // Move particle to intersection point
-            currentParticle.position =
-                    currentParticle.position + d * currentParticle.direction;
-            //currentParticle.distanceTraveled += d;
+                // Move particle to intersection point
+                currentParticle.position =
+                        currentParticle.position + d * currentParticle.direction;
+                //currentParticle.distanceTraveled += d;
 
-            double lastFlightTime = currentParticle.flightTime; //memorize for partial hits
-            currentParticle.flightTime +=
-                    d / 100.0 / currentParticle.velocity; //conversion from cm to m
+                double lastFlightTime = currentParticle.flightTime; //memorize for partial hits
+                currentParticle.flightTime +=
+                        d / 100.0 / currentParticle.velocity; //conversion from cm to m
 
-            if ((!model.wp.calcConstantFlow && (currentParticle.flightTime > model.wp.latestMoment))
-                || (model.wp.enableDecay &&
-                    (currentParticle.expectedDecayMoment < currentParticle.flightTime))) {
-                //hit time over the measured period - we create a new particle
-                //OR particle has decayed
-                double remainderFlightPath = currentParticle.velocity * 100.0 *
-                                             Min(model.wp.latestMoment - lastFlightTime,
-                                                 currentParticle.expectedDecayMoment -
-                                                 lastFlightTime); //distance until the point in space where the particle decayed
-                tmpResults.globalHits.distTraveled_total += remainderFlightPath * currentParticle.oriRatio;
-                RecordHit(HIT_LAST);
-                //distTraveledSinceUpdate += currentParticle.distanceTraveled;
+                if ((!model.wp.calcConstantFlow && (currentParticle.flightTime > model.wp.latestMoment))
+                    || (model.wp.enableDecay &&
+                        (currentParticle.expectedDecayMoment < currentParticle.flightTime))) {
+                    //hit time over the measured period - we create a new particle
+                    //OR particle has decayed
+                    double remainderFlightPath = currentParticle.velocity * 100.0 *
+                                                 Min(model.wp.latestMoment - lastFlightTime,
+                                                     currentParticle.expectedDecayMoment -
+                                                     lastFlightTime); //distance until the point in space where the particle decayed
+                    tmpResults.globalHits.distTraveled_total += remainderFlightPath * currentParticle.oriRatio;
+                    RecordHit(HIT_LAST);
+                    //distTraveledSinceUpdate += currentParticle.distanceTraveled;
+                    if (!StartFromSource())
+                        // desorptionLimit reached
+                        return false;
+                } else { //hit within measured time, particle still alive
+                    if (collidedFacet->sh.teleportDest != 0) { //Teleport
+                        IncreaseDistanceCounters(d * currentParticle.oriRatio);
+                        PerformTeleport(collidedFacet);
+                    }
+                        /*else if ((GetOpacityAt(collidedFacet, currentParticle.flightTime) < 1.0) && (randomGenerator.rnd() > GetOpacityAt(collidedFacet, currentParticle.flightTime))) {
+                            //Transparent pass
+                            tmpResults.globalHits.distTraveled_total += d;
+                            PerformTransparentPass(collidedFacet);
+                        }*/
+                    else { //Not teleport
+                        IncreaseDistanceCounters(d * currentParticle.oriRatio);
+                        double stickingProbability = GetStickingAt(collidedFacet, currentParticle.flightTime);
+                        if (!model.otfParams.lowFluxMode) { //Regular stick or bounce
+                            if (stickingProbability == 1.0 ||
+                                ((stickingProbability > 0.0) && (randomGenerator.rnd() < (stickingProbability)))) {
+                                //Absorbed
+                                RecordAbsorb(collidedFacet);
+                                //distTraveledSinceUpdate += currentParticle.distanceTraveled;
+                                if (!StartFromSource())
+                                    // desorptionLimit reached
+                                    return false;
+                            } else {
+                                //Reflected
+                                PerformBounce(collidedFacet);
+                            }
+                        } else { //Low flux mode
+                            if (stickingProbability > 0.0) {
+                                double oriRatioBeforeCollision = currentParticle.oriRatio; //Local copy
+                                currentParticle.oriRatio *= (stickingProbability); //Sticking part
+                                RecordAbsorb(collidedFacet);
+                                currentParticle.oriRatio =
+                                        oriRatioBeforeCollision * (1.0 - stickingProbability); //Reflected part
+                            } else
+                                currentParticle.oriRatio *= (1.0 - stickingProbability);
+                            if (currentParticle.oriRatio > model.otfParams.lowFluxCutoff) {
+                                PerformBounce(collidedFacet);
+                            } else { //eliminate remainder and create new particle
+                                if (!StartFromSource())
+                                    // desorptionLimit reached
+                                    return false;
+                            }
+                        }
+                    }
+                } //end hit within measured time
+            } //end intersection found
+            else {
+                // No intersection found: Leak
+                tmpResults.globalHits.nbLeakTotal++;
+                RecordLeakPos();
                 if (!StartFromSource())
                     // desorptionLimit reached
                     return false;
-            } else { //hit within measured time, particle still alive
-                if (collidedFacet->sh.teleportDest != 0) { //Teleport
-                    IncreaseDistanceCounters(d * currentParticle.oriRatio);
-                    PerformTeleport(collidedFacet);
-                }
-                    /*else if ((GetOpacityAt(collidedFacet, currentParticle.flightTime) < 1.0) && (randomGenerator.rnd() > GetOpacityAt(collidedFacet, currentParticle.flightTime))) {
-                        //Transparent pass
-                        tmpResults.globalHits.distTraveled_total += d;
-                        PerformTransparentPass(collidedFacet);
-                    }*/
-                else { //Not teleport
-                    IncreaseDistanceCounters(d * currentParticle.oriRatio);
-                    double stickingProbability = GetStickingAt(collidedFacet, currentParticle.flightTime);
-                    if (!model.otfParams.lowFluxMode) { //Regular stick or bounce
-                        if (stickingProbability == 1.0 ||
-                            ((stickingProbability > 0.0) && (randomGenerator.rnd() < (stickingProbability)))) {
-                            //Absorbed
-                            RecordAbsorb(collidedFacet);
-                            //distTraveledSinceUpdate += currentParticle.distanceTraveled;
-                            if (!StartFromSource())
-                                // desorptionLimit reached
-                                return false;
-                        } else {
-                            //Reflected
-                            PerformBounce(collidedFacet);
-                        }
-                    } else { //Low flux mode
-                        if (stickingProbability > 0.0) {
-                            double oriRatioBeforeCollision = currentParticle.oriRatio; //Local copy
-                            currentParticle.oriRatio *= (stickingProbability); //Sticking part
-                            RecordAbsorb(collidedFacet);
-                            currentParticle.oriRatio =
-                                    oriRatioBeforeCollision * (1.0 - stickingProbability); //Reflected part
-                        } else
-                            currentParticle.oriRatio *= (1.0 - stickingProbability);
-                        if (currentParticle.oriRatio > model.otfParams.lowFluxCutoff) {
-                            PerformBounce(collidedFacet);
-                        } else { //eliminate remainder and create new particle
-                            if (!StartFromSource())
-                                // desorptionLimit reached
-                                return false;
-                        }
-                    }
-                }
-            } //end hit within measured time
-        } //end intersection found
-        else {
-            // No intersection found: Leak
-            tmpResults.globalHits.nbLeakTotal++;
-            RecordLeakPos();
-            if (!StartFromSource())
-                // desorptionLimit reached
-                return false;
+            }
         }
     }
     return true;

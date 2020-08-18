@@ -101,7 +101,12 @@ link_directories(${LINK_DIR_1}
         ${LINK_DIR_2}
         )
 
+find_package(OpenMP REQUIRED)
+
 add_executable(${PROJECT_NAME} ${SRC_FILES} ${HEADER_FILES})
+
+target_link_libraries(${PROJECT_NAME} OpenMP::OpenMP_CXX)
+
 target_link_libraries(${PROJECT_NAME} simulator_shared)
 
 target_include_directories(${PROJECT_NAME} PRIVATE

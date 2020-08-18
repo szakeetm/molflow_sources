@@ -10,6 +10,10 @@
 #include "Buffer_shared.h"
 #include "Parameter.h"
 
+#ifdef WIN32
+#include <mutex>
+#endif
+
 struct SubprocessFacet;
 class SuperStructure;
 

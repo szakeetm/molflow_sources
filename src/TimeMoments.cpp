@@ -6,6 +6,7 @@
 #include <vector>
 #include <cfloat>
 #include <iostream>
+#include <algorithm>
 
 /*!
  * @brief Check for 2 unsorted interval vectors (a and b), if any of the contained intervals (a_i and b_j) overlap

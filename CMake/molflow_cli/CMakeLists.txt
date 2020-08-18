@@ -17,6 +17,7 @@ set(HEADER_DIR_3 ../../include)
 
 IF (WIN32)
     # set stuff for windows
+    set(HEADER_DIR_4 ../../include/windows_only)
 
     set(LINK_DIR_1 ../../lib/win/${MY_BUILD_TYPE})
     set(LINK_DIR_2 ../../lib_external/win/${MY_BUILD_TYPE})

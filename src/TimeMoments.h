@@ -5,6 +5,7 @@
 #ifndef MOLFLOW_PROJ_TIMEMOMENTS_H
 #define MOLFLOW_PROJ_TIMEMOMENTS_H
 
+#include <vector>
 #include "MolflowTypes.h"
 
 class TimeMoments {
