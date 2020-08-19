@@ -45,7 +45,8 @@ public:
 	size_t   nbBounces; // Number of hit (current particle) since desorption
     size_t   lastMomentIndex; // Speedup for binary search
 	double   distanceTraveled;
-	double   flightTime;
+    double   generationTime; //Time it was created, constant
+    double   particleTime; //Actual time, incremented after every hit. (Flight time = actual time - generation time)
 
 	double   velocity;
 	double   expectedDecayMoment; //for radioactive gases
