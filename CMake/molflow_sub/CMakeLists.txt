@@ -73,7 +73,6 @@ endif(NOT MSVC)
 
 set(SRC_FILES ${CPP_DIR_1}/molflowSub.cpp
         ${CPP_DIR_1}/MolflowTypes.cpp
-        ${CPP_DIR_1}/MolflowBuffer.cpp
         ${CPP_DIR_1}/Parameter.cpp
         ${CPP_DIR_1}/Simulation.cpp
         #${CPP_DIR_1}/SimulationAC.cpp
