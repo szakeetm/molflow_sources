@@ -887,8 +887,9 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     if(!buffer)
                         throw Error("Cannot access shared hit buffer");
                     geom->LoadXML_simustate(rootNode, buffer, this, progressDlg);
+                    RetrieveHistogramCache(buffer); //So interface gets histogram data for disp.moment right after loading
                     simManager.UnlockHitBuffer();
-                    SendToHitBuffer(); //Send hits without sending facet counters, as they are directly written during the load process (mutiple moments)
+                    SendToHitBuffer(); //Send global hits without sending facet counters, as they are directly written during the load process (mutiple moments)
                     RebuildTextures();
                 }
                 catch (Error &e) {
