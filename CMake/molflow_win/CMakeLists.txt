@@ -244,7 +244,7 @@ elseif(NOT MSVC)
     target_link_libraries(${PROJECT_NAME} PRIVATE libzip) # from ./lib/
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        target_link_libraries(${PROJECT_NAME} c++fs)
+        target_link_libraries(${PROJECT_NAME} PRIVATE c++fs)
     elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
         #don´t add anything for filesystem
     else()

@@ -156,16 +156,20 @@ char *Simulation::GetSimuStatus() {
 
 int main(int argc, char *argv[]) {
 
-    if (argc != 3) {
+    if (argc < 3) {
         printf("Usage: molflowSub peerId index\n");
         return 1;
     }
 
     size_t hostProcessId = atoi(argv[1]);
     size_t prIdx = atoi(argv[2]);
+    size_t nbThreads = 1;
+    if(argc >= 4)
+        nbThreads = atoi(argv[3]);
 
+    printf("molflowSub %zu %zu %zu\n",hostProcessId,prIdx,nbThreads);
 
-    SimulationController simController = {"molflow", "MFLW", hostProcessId, prIdx, new Simulation()};
+    SimulationController simController = {"molflow", "MFLW", hostProcessId, prIdx, new Simulation(nbThreads)};
 
     {
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)

@@ -191,6 +191,7 @@ public:
 class GlobalSimuState { //replaces old hits dataport
 public:
     GlobalSimuState& operator=(const GlobalSimuState& src);
+    GlobalSimuState& operator+=(const GlobalSimuState& src);
     bool initialized = false;
     void clear();
     void Resize(size_t nbF, size_t nbMoments, const std::vector<SubprocessFacet> &facets,
@@ -202,6 +203,6 @@ public:
     std::vector<FacetHistogramBuffer> globalHistograms; //1+nbMoment
     std::vector<FacetState> facetStates; //nbFacet
 #endif
-    std::timed_mutex mutex;
+    //std::timed_mutex mutex;
 };
 #endif //MOLFLOW_PROJ_GEOMETRYSIMU_H

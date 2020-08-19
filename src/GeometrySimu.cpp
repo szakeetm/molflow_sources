@@ -425,6 +425,19 @@ GlobalSimuState& GlobalSimuState::operator=(const GlobalSimuState & src) {
 }
 
 /**
+* \brief Assign operator
+* \param src reference to source object
+* \return address of this
+*/
+GlobalSimuState& GlobalSimuState::operator+=(const GlobalSimuState & src) {
+    //Copy all but mutex
+    facetStates += src.facetStates;
+    globalHistograms += src.globalHistograms;
+    globalHits += src.globalHits;
+    return *this;
+}
+
+/**
 * \brief Clears simulation state
 */
 void GlobalSimuState::clear() {

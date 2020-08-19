@@ -4,7 +4,7 @@
 #include <cstring>
 #include <sstream>
 #include <cereal/archives/binary.hpp>
-
+#include <omp.h>
 /*SuperStructure::SuperStructure()
 {
 	aabbTree = NULL;
@@ -15,7 +15,7 @@ SuperStructure::~SuperStructure()
 	SAFE_DELETE(aabbTree);
 }*/
 
-Simulation::Simulation()
+Simulation::Simulation(size_t nbThreads)
 {
 	totalDesorbed = 0;
 
@@ -27,14 +27,21 @@ Simulation::Simulation()
 
     lastLogUpdateOK = true;
 
-    currentParticle = CurrentParticleStatus();
-	currentParticle.lastHitFacet = nullptr;
 
-	hasVolatile = false;
+    for(auto& particle : currentParticles)
+        particle.lastHitFacet = nullptr;
 
-	memset(&tmpGlobalResult, 0, sizeof(GlobalHitBuffer));
+    hasVolatile = false;
+    for(auto& tmpGlobalResult : tmpGlobalResults)
+	    memset(&tmpGlobalResult.globalHits, 0, sizeof(GlobalHitBuffer));
 
 	model.sh.nbSuper = 0;
+
+	if(nbThreads == 0)
+        this->nbThreads = omp_get_max_threads();
+	else
+	    this->nbThreads = nbThreads;
+    currentParticles.resize(this->nbThreads);// = CurrentParticleStatus();
 }
 
 Simulation::~Simulation()= default;
@@ -98,7 +105,7 @@ void Simulation::ClearSimulation() {
     angleMapTotalSize =
     histogramTotalSize = 0;
 
-    this->currentParticle = CurrentParticleStatus();
+    this->currentParticles.clear();// = CurrentParticleStatus();
 
     this->model.structures.clear();
     this->model.tdParams.CDFs.clear();
@@ -109,7 +116,8 @@ void Simulation::ClearSimulation() {
     this->model.vertices3.clear();
 }
 
-bool Simulation::LoadSimulation(Dataport *loader) {
+// returns hit size or 0 on error
+size_t Simulation::LoadSimulation(Dataport *loader) {
     double t0 = GetTick();
 
     //SetState(PROCESS_STARTING, "Clearing previous simulation");
@@ -172,7 +180,7 @@ bool Simulation::LoadSimulation(Dataport *loader) {
                 err << "Invalid structure (wrong link on F#" << i + 1 << ")";
                 //SetErrorSub(err.str().c_str());
                 std::cerr << err.str() << std::endl;
-                return false;
+                return 0;
             }
 
             if (f.sh.superIdx == -1) { //Facet in all structures
@@ -188,7 +196,7 @@ bool Simulation::LoadSimulation(Dataport *loader) {
 
     // New GlobalSimuState structure for threads
     {
-        tmpResults = GlobalSimuState();
+        GlobalSimuState tmpResults = GlobalSimuState();
 
         std::vector<FacetState>(model.sh.nbFacet).swap(tmpResults.facetStates);
         for(auto& s : model.structures){
@@ -213,12 +221,17 @@ bool Simulation::LoadSimulation(Dataport *loader) {
         globalHistTemplate.Resize(model.wp.globalHistogramParams);
         tmpResults.globalHistograms = std::vector<FacetHistogramBuffer>(1 + model.tdParams.moments.size(), globalHistTemplate);
         tmpResults.initialized = true;
+
+        tmpGlobalResults.resize(nbThreads);
+        for(auto& tmpGlobal : tmpGlobalResults)
+            tmpGlobal = tmpResults;
     }
     //Initialize global histogram
     FacetHistogramBuffer hist;
     hist.Resize(model.wp.globalHistogramParams);
-    tmpGlobalHistograms = std::vector<FacetHistogramBuffer>(1 + model.tdParams.moments.size(), hist);
-
+    for(auto& tmpGlobalState : tmpGlobalResults) {
+        tmpGlobalState.globalHistograms = std::vector<FacetHistogramBuffer>(1 + model.tdParams.moments.size(), hist);
+    }
     //Reserve particle log
     if (model.otfParams.enableLogging)
         tmpParticleLog.reserve(model.otfParams.logLimit / model.otfParams.nbProcess);
@@ -261,15 +274,36 @@ bool Simulation::LoadSimulation(Dataport *loader) {
     printf("  Direction : %zd bytes\n", dirTotalSize);
 
     printf("  Total     : %zd bytes\n", GetHitsSize());
-    printf("  Seed: %lu\n", randomGenerator.GetSeed());
+    //printf("  Seed: %lu\n", randomGenerator.GetSeed());
     printf("  Loading time: %.3f ms\n", (t1 - t0)*1000.0);
-    return true;
+
+    // calc hit port size
+    std::ostringstream result;
+    {
+        cereal::BinaryOutputArchive outputArchive(result);
+
+        outputArchive(
+                cereal::make_nvp("GlobalHits", this->tmpGlobalResults[0].globalHits),
+                cereal::make_nvp("GlobalHistograms", this->tmpGlobalResults[0].globalHistograms),
+                cereal::make_nvp("FacetStates", this->tmpGlobalResults[0].facetStates)
+        );
+    }
+
+    size_t hSize = result.str().size();//simulation->GetHitsSize();
+    return hSize;
 
 }
 
 void Simulation::UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DWORD timeout) {
-    UpdateMCHits(dpHit, prIdx, model.tdParams.moments.size(), timeout);
+    //UpdateMCHits(dpHit, prIdx, model.tdParams.moments.size(), timeout);
+    GlobalSimuState& globSim = tmpGlobalResults[0];
+    UpdateMCHits(globSim, prIdx, model.tdParams.moments.size(), timeout);
+
     if (dpLog) UpdateLog(dpLog, timeout);
+
+    //ResetTmpCounters();
+    for(auto tmpIter = tmpGlobalResults.begin()+1; tmpIter != tmpGlobalResults.end(); ++tmpIter)
+        (*tmpIter).Reset();
 }
 
 size_t Simulation::GetHitsSize() {
@@ -281,11 +315,13 @@ size_t Simulation::GetHitsSize() {
 void Simulation::ResetTmpCounters() {
     //SetState(0, "Resetting local cache...", false, true);
 
-    memset(&tmpGlobalResult, 0, sizeof(GlobalHitBuffer));
+    for(auto& tmpGlobalResult : tmpGlobalResults) {
+        memset(&tmpGlobalResult.globalHits, 0, sizeof(GlobalHitBuffer));
 
-    //Reset global histograms
-    for (auto& h : tmpGlobalHistograms) {
-        h.Reset();
+        //Reset global histograms
+        for (auto &h : tmpGlobalResult.globalHistograms) {
+            h.Reset();
+        }
     }
 
     for (auto& structure : model.structures) {
@@ -325,18 +361,21 @@ void Simulation::ResetTmpCounters() {
 }
 
 void Simulation::ResetSimulation() {
-    currentParticle = CurrentParticleStatus();
+    currentParticles.clear();// = CurrentParticleStatus();
     totalDesorbed = 0;
-    ResetTmpCounters(); tmpResults.Reset();
+    ResetTmpCounters();
+    for(auto& tmpResults : tmpGlobalResults)
+        tmpResults.Reset();
     tmpParticleLog.clear();
 }
 
-bool Simulation::StartSimulation() {
-    if (!currentParticle.lastHitFacet) StartFromSource();
-    return (currentParticle.lastHitFacet != nullptr);
-}
+/*bool Simulation::StartSimulation() {
+    if (!currentParticles.lastHitFacet) StartFromSource();
+    return (currentParticles.lastHitFacet != nullptr);
+}*/
 
-void Simulation::RecordHit(const int &type) {
+void Simulation::RecordHit(const int &type, const CurrentParticleStatus &currentParticle) {
+    GlobalSimuState& tmpResults = tmpGlobalResults[omp_get_thread_num()];
     if (tmpResults.globalHits.hitCacheSize < HITCACHESIZE) {
         tmpResults.globalHits.hitCache[tmpResults.globalHits.hitCacheSize].pos = currentParticle.position;
         tmpResults.globalHits.hitCache[tmpResults.globalHits.hitCacheSize].type = type;
@@ -344,11 +383,12 @@ void Simulation::RecordHit(const int &type) {
     }
 }
 
-void Simulation::RecordLeakPos() {
+void Simulation::RecordLeakPos(const CurrentParticleStatus &currentParticle) {
     // Source region check performed when calling this routine
     // Record leak for debugging
-    RecordHit(HIT_REF);
-    RecordHit(HIT_LAST);
+    RecordHit(HIT_REF, currentParticle);
+    RecordHit(HIT_LAST, currentParticle);
+    GlobalSimuState& tmpResults = tmpGlobalResults[omp_get_thread_num()];
     if (tmpResults.globalHits.leakCacheSize < LEAKCACHESIZE) {
         tmpResults.globalHits.leakCache[tmpResults.globalHits.leakCacheSize].pos = currentParticle.position;
         tmpResults.globalHits.leakCache[tmpResults.globalHits.leakCacheSize].dir = currentParticle.direction;

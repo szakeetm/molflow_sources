@@ -9,6 +9,7 @@
 namespace Settings {
     SimulationManager simManager("molflow","MFLW");
     double nbCPUCores = 0;
+    size_t nbThreadsPerCore = 0;
     uint64_t simDuration = 10;
     std::string req_real_file;
 }
@@ -26,6 +27,7 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
                       GlobalSimuState *globState) {
     parseCommands(argc, argv);
 
+    simManager->nbThreads = Settings::nbThreadsPerCore;
     simManager->nbCores = Settings::nbCPUCores;
     simManager->useCPU = true;
 
@@ -49,6 +51,7 @@ int Initializer::parseCommands(int argc, char** argv) {
     app.formatter(std::make_shared<FlowFormatter>());
 
     // Define options
+    app.add_option("-j,--threads", Settings::nbThreadsPerCore, "# threads per core");
     app.add_option("-p,--procs", Settings::nbCPUCores, "# CPU cores");
     app.add_option("-t,--time", Settings::simDuration, "Simulation duration in seconds");
     app.add_option("-f,--file", Settings::req_real_file, "Require an existing file")

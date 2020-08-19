@@ -101,13 +101,22 @@ link_directories(${LINK_DIR_1}
         ${LINK_DIR_2}
         )
 
-find_package(OpenMP REQUIRED)
+if (APPLE)
+    set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include" CACHE INTERNAL "OpenMP flags for Xcode toolchain.")
+    set(OpenMP_C_LIB_NAMES "omp" CACHE INTERNAL "OpenMP lib name for Xcode toolchain.")
+
+    set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include" CACHE INTERNAL "OpenMP flags for Xcode toolchain.")
+    set(OpenMP_CXX_LIB_NAMES "omp" CACHE INTERNAL "OpenMP lib name for Xcode toolchain.")
+    set(OpenMP_omp_LIBRARY "/usr/local/opt/libomp/lib/libomp.dylib" CACHE INTERNAL "OpenMP lib name for Xcode toolchain.")
+endif()
+
 
 add_executable(${PROJECT_NAME} ${SRC_FILES} ${HEADER_FILES})
 
-target_link_libraries(${PROJECT_NAME} OpenMP::OpenMP_CXX)
+find_package(OpenMP REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
 
-target_link_libraries(${PROJECT_NAME} simulator_shared)
+target_link_libraries(${PROJECT_NAME} PUBLIC simulator_shared)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_1}
@@ -162,7 +171,7 @@ endif(MSVC)
 if(NOT MSVC)
 
     if(APPLE)
-        target_link_libraries(${PROJECT_NAME} "-framework AppKit")
+        target_link_libraries(${PROJECT_NAME} PRIVATE "-framework AppKit")
     else()
         #find_package(X11 REQUIRED)
         #target_include_directories(${PROJECT_NAME} PRIVATE ${X11_INCLUDE_DIRS})
@@ -177,10 +186,10 @@ if(NOT MSVC)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
 
-    target_link_libraries(${PROJECT_NAME} ${GSL_LIBRARIES})
-    target_link_libraries(${PROJECT_NAME} ${CURL_LIBRARIES})
-    target_link_libraries(${PROJECT_NAME} Threads::Threads)
-    target_link_libraries(${PROJECT_NAME} ${X11_LIBRARIES})
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${GSL_LIBRARIES})
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${CURL_LIBRARIES})
+    target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads)
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${X11_LIBRARIES})
 
     #for shared memory
     find_library(LIBRT rt)
@@ -189,7 +198,7 @@ if(NOT MSVC)
     endif()
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        target_link_libraries(${PROJECT_NAME} c++fs)
+        target_link_libraries(${PROJECT_NAME} PRIVATE c++fs)
     elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
         #don´t add anything for filesystem
     else()
