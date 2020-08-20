@@ -75,19 +75,22 @@ set(SRC_FILES ${CPP_DIR_1}/molflowSub.cpp
         ${CPP_DIR_1}/MolflowTypes.cpp
         ${CPP_DIR_1}/MolflowBuffer.cpp
         ${CPP_DIR_1}/Parameter.cpp
-        ${CPP_DIR_1}/Simulation.cpp
         #${CPP_DIR_1}/SimulationAC.cpp
         #${CPP_DIR_1}/SimulationControl.cpp
-        ${CPP_DIR_1}/SimulationMC.cpp
         ${CPP_DIR_1}/GeometrySimu.cpp
 
         ${CPP_DIR_1}/LoaderXML.cpp
         ${CPP_DIR_1}/TimeMoments.cpp
 
+        ${CPP_DIR_1}/Simulation.cpp
+        ${CPP_DIR_1}/SimulationMC.cpp
         ${CPP_DIR_2}/SimulationController.cpp
+        ${CPP_DIR_2}/IntersectAABB_shared.cpp
+
         ${CPP_DIR_3}/MathTools.cpp
 
         ${CPP_DIR_1}/MolflowHitCounter.cpp
+
         )
 
 set(HEADER_FILES ${HEADER_DIR_1}/MolflowTypes.h
@@ -111,7 +114,7 @@ if (APPLE)
 endif()
 
 
-add_executable(${PROJECT_NAME} ${SRC_FILES} ${HEADER_FILES})
+add_library(${PROJECT_NAME} ${SRC_FILES} ${HEADER_FILES})
 
 find_package(OpenMP REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
@@ -151,7 +154,7 @@ if(MSVC)
     # Add Windows Console output
     message(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
     link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
-    target_link_libraries(${PROJECT_NAME}
+    target_link_libraries(${PROJECT_NAME} PUBLIC
             #libgsl.lib
             #libgslcblas.lib
             kernel32.lib
@@ -166,7 +169,7 @@ if(MSVC)
             uuid.lib
             odbc32.lib
             odbccp32.lib)
-    target_link_libraries(${PROJECT_NAME} truncatedgaussian)
+    target_link_libraries(${PROJECT_NAME} PRIVATE truncatedgaussian)
 endif(MSVC)
 if(NOT MSVC)
 

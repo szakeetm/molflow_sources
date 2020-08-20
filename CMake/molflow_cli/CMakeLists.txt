@@ -73,7 +73,6 @@ endif(NOT MSVC)
 
 set(SRC_FILES
         ${CPP_DIR_2}/FlowCLI.cpp
-        ${CPP_DIR_2}/SimulationManager.cpp
         ${CPP_DIR_2}/ShMemory.cpp
         ${CPP_DIR_2}/Process.cpp
 
@@ -94,17 +93,44 @@ set(SRC_FILES
         ${CPP_DIR_1}/MolflowTypes.cpp
         ${CPP_DIR_2}/Buffer_shared.cpp
 
+        ${CPP_DIR_2}/SimulationController.cpp
 
         )
 
 # set the path to the library folder
-#[[link_directories(${LINK_DIR_1}
+link_directories(${LINK_DIR_1}
         ${LINK_DIR_2}
-        )]]
+        )
 
 add_executable(${PROJECT_NAME} ${SRC_FILES})
-#target_link_libraries(${PROJECT_NAME} simulator_shared)
-target_link_libraries(${PROJECT_NAME} PRIVATE pugixml)
+target_link_libraries(${PROJECT_NAME} PRIVATE molflowSub )
+target_link_libraries(${PROJECT_NAME} PUBLIC pugixml)
+
+#[[if(MSVC)
+    # Add Whole Program Optimization and Link Time Code Generation
+    set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/GL")
+    set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/LTCG")
+
+    # Add Windows Console output
+    message(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+    link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+    target_link_libraries(${PROJECT_NAME} PUBLIC
+            libgsl.lib
+            #libgslcblas.lib
+            kernel32.lib
+            user32.lib
+            gdi32.lib
+            winspool.lib
+            comdlg32.lib
+            advapi32.lib
+            shell32.lib
+            ole32.lib
+            oleaut32.lib
+            uuid.lib
+            odbc32.lib
+            odbccp32.lib)
+    target_link_libraries(${PROJECT_NAME} PRIVATE truncatedgaussian)
+endif(MSVC)]]
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_1}

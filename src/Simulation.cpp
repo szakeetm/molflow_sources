@@ -41,7 +41,7 @@ Simulation::Simulation(size_t nbThreads)
         this->nbThreads = omp_get_max_threads();
 	else
 	    this->nbThreads = nbThreads;
-    currentParticles.resize(this->nbThreads);// = CurrentParticleStatus();
+    currentParticles.resize(this->nbThreads, CurrentParticleStatus());// = CurrentParticleStatus();
 }
 
 Simulation::~Simulation()= default;
@@ -105,8 +105,8 @@ void Simulation::ClearSimulation() {
     angleMapTotalSize =
     histogramTotalSize = 0;
 
-    this->currentParticles.clear();// = CurrentParticleStatus();
-
+    //this->currentParticles.clear();// = CurrentParticleStatus();
+    std::vector<CurrentParticleStatus>(this->nbThreads).swap(this->currentParticles);
     this->model.structures.clear();
     this->model.tdParams.CDFs.clear();
     this->model.tdParams.IDs.clear();
@@ -361,7 +361,9 @@ void Simulation::ResetTmpCounters() {
 }
 
 void Simulation::ResetSimulation() {
-    currentParticles.clear();// = CurrentParticleStatus();
+    //currentParticles.clear();// = CurrentParticleStatus();
+    std::vector<CurrentParticleStatus>(this->nbThreads).swap(this->currentParticles);
+
     totalDesorbed = 0;
     ResetTmpCounters();
     for(auto& tmpResults : tmpGlobalResults)

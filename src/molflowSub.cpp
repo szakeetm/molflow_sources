@@ -168,7 +168,6 @@ int main(int argc, char *argv[]) {
         nbThreads = atoi(argv[3]);
 
     printf("molflowSub %zu %zu %zu\n",hostProcessId,prIdx,nbThreads);
-
     SimulationController simController = {"molflow", "MFLW", hostProcessId, prIdx, new Simulation(nbThreads)};
 
     {

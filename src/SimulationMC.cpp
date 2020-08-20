@@ -661,7 +661,7 @@ bool Simulation::SimulationMCStep(size_t nbStep) {
     // Perform simulation steps
     int returnVal = true;
     int allQuit = 0;
-#pragma omp parallel num_threads(nbThreads) default(none) firstprivate(nbStep) shared(model, tmpGlobalResults, currentParticles, returnVal, allQuit)
+#pragma omp parallel num_threads(nbThreads) default(none) firstprivate(nbStep) shared( returnVal, allQuit)
     {
 
 #if defined(_DEBUG)
