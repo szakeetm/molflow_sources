@@ -84,6 +84,7 @@ set(SRC_FILES ${CPP_DIR_1}/molflowSub.cpp
         ${CPP_DIR_1}/LoaderXML.cpp
         ${CPP_DIR_1}/TimeMoments.cpp
 
+        ${CPP_DIR_2}/IntersectAABB_shared.cpp
         ${CPP_DIR_2}/SimulationController.cpp
         ${CPP_DIR_3}/MathTools.cpp
 

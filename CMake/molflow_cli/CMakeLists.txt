@@ -94,6 +94,12 @@ set(SRC_FILES
         ${CPP_DIR_1}/MolflowTypes.cpp
         ${CPP_DIR_2}/Buffer_shared.cpp
 
+        ${CPP_DIR_1}/Simulation.cpp
+        ${CPP_DIR_1}/SimulationMC.cpp
+        ${CPP_DIR_2}/IntersectAABB_shared.cpp
+        ${CPP_DIR_2}/Polygon.cpp
+        ${CPP_DIR_2}/Random.cpp
+
 
         )
 
@@ -101,9 +107,22 @@ set(SRC_FILES
 #[[link_directories(${LINK_DIR_1}
         ${LINK_DIR_2}
         )]]
+if (APPLE)
+    set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include" CACHE INTERNAL "OpenMP flags for Xcode toolchain.")
+    set(OpenMP_C_LIB_NAMES "omp" CACHE INTERNAL "OpenMP lib name for Xcode toolchain.")
+
+    set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include" CACHE INTERNAL "OpenMP flags for Xcode toolchain.")
+    set(OpenMP_CXX_LIB_NAMES "omp" CACHE INTERNAL "OpenMP lib name for Xcode toolchain.")
+    set(OpenMP_omp_LIBRARY "/usr/local/opt/libomp/lib/libomp.dylib" CACHE INTERNAL "OpenMP lib name for Xcode toolchain.")
+endif()
 
 add_executable(${PROJECT_NAME} ${SRC_FILES})
-#target_link_libraries(${PROJECT_NAME} simulator_shared)
+
+find_package(OpenMP REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
+
+
+target_link_libraries(${PROJECT_NAME} PUBLIC simulator_shared)
 target_link_libraries(${PROJECT_NAME} PRIVATE pugixml)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
