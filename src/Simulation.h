@@ -21,8 +21,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 #include <tuple>
 #include <vector>
-#include <SimulationUnit.h>
 
+#include "SimulationUnit.h"
 #include "Buffer_shared.h" //Facetproperties
 #include "SMP.h"
 #include "Vector.h"

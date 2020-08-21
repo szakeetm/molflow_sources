@@ -100,7 +100,13 @@ set(SRC_FILES ${CPP_DIR_1}/FacetAdvParams.cpp
         ${CPP_DIR_1}/TimeMoments.cpp
         ${CPP_DIR_1}/TimeSettings.cpp
         ${CPP_DIR_1}/TimewisePlotter.cpp
-        ${CPP_DIR_1}/Viewer3DSettings.cpp)
+        ${CPP_DIR_1}/Viewer3DSettings.cpp
+        ${HEADER_DIR_2}/SimulationController.cpp
+        ${HEADER_DIR_2}/SimulationManager.cpp
+        ${HEADER_DIR_2}/IntersectAABB_shared.cpp
+
+
+        )
 
 # Add executable to build.
 if(WIN32)

@@ -293,7 +293,8 @@ std::vector<std::pair<double, double>> Loader::Generate_ID(int paramId, Simulati
 
 int LoaderXML::LoadGeometry(const std::string inputFileName, SimulationModel *model) {
     xml_document loadXML;
-    xml_parse_result parseResult = loadXML.load_file(inputFileName.c_str()); //parse xml file directly
+    auto inputFile = inputFileName.c_str();
+    xml_parse_result parseResult = loadXML.load_file(inputFile); //parse xml file directly
     xml_node rootNode = loadXML.child("SimulationEnvironment");
     if(!rootNode){
         std::cerr << "XML file seems to be of older format, please generate a new file with the GUI application!"<<std::endl;
