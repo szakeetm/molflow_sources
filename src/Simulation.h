@@ -65,7 +65,7 @@ public:
     //int controlledLoop();
     int SanityCheckGeom() override;
     void ClearSimulation() override;
-    size_t LoadSimulation(Dataport *loader) override;
+    size_t LoadSimulation() override;
     void ResetSimulation() override;
     //bool StartSimulation();
     //bool SimulationRun();
@@ -77,10 +77,10 @@ public:
     int ReinitializeParticleLog() override;
     bool UpdateOntheflySimuParams(Dataport *loader) override;
 
-    void UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DWORD timeout) override;
+    void UpdateHits(Dataport *dpLog, int prIdx, DWORD timeout) override;
     bool UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout);
     bool UpdateMCHits(GlobalSimuState& globState, int prIdx, size_t nbMoments, DWORD timeout);
-    bool UploadHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWORD timeout) override;
+    //bool UploadHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWORD timeout) override;
 
     void UpdateLog(Dataport *dpLog, DWORD timeout);
 

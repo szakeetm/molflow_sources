@@ -468,6 +468,7 @@ bool Simulation::UpdateMCHits(GlobalSimuState& globState, int prIdx, size_t nbMo
     return true;
 }
 
+/*
 bool Simulation::UploadHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWORD timeout) {
     // Prepare
 #if defined(_DEBUG)
@@ -513,6 +514,7 @@ bool Simulation::UploadHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWORD t
 
     return true;
 }
+*/
 
 void Simulation::UpdateLog(Dataport *dpLog, DWORD timeout) {
     if (tmpParticleLog.size()) {

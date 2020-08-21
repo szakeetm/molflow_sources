@@ -77,15 +77,17 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
     }
 
     // 2. Create simulation dataports
+
+
     try {
 
         simManager->ResetSimulations();
         //progressDlg->SetMessage("Creating Logger...");
-        size_t logDpSize = 0;
+        /*size_t logDpSize = 0;
         if (model->otfParams.enableLogging) {
             logDpSize = sizeof(size_t) + model->otfParams.logLimit * sizeof(ParticleLoggerItem);
         }
-        simManager->ReloadLogBuffer(logDpSize, true);
+        simManager->ReloadLogBuffer(logDpSize, true);*/
         //progressDlg->SetMessage("Creating hit buffer...");
         size_t nbMoments = model->tdParams.moments.size();
 
@@ -107,22 +109,9 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
         loader.LoadSimulationState(Settings::req_real_file, model, *globState);
         //simManager->UnlockHitBuffer();
 
+        loader.InitSimModel(model);
         // temp facets from loader to model 2d (structure, facet)
 
-        std::string loaderString = loader.SerializeForLoader(model).str();
-        simManager->ReloadHitBuffer(loader.SerializeResultsForLoader(globState).str().size());
-
-        if (simManager->ShareWithSimUnits((BYTE *) loaderString.c_str(), loaderString.size(), LoadType::LOADGEOM)) {
-            std::string errString = "Failed to send [Geometry] to sub process!\n";
-            std::cerr << "[Warning (LoadGeom)] " << errString.c_str() << std::endl;
-            exit(0);
-        }
-
-        /*if (simManager->ShareWithSimUnits((BYTE *) loaderString.c_str(), loaderString.size(),LoadType::LOADHITS)){
-            std::string errString = "Failed to send [Global State] to sub process!\n";
-            std::cerr << "[Warning (LoadHits)] " << errString.c_str() << std::endl;
-            exit(0);
-        }*/
     }
     catch (std::exception& e) {
         std::cerr << "[Warning (LoadGeom)] " << e.what() << std::endl;
@@ -130,6 +119,15 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
 
     // Some postprocessing
     loader.MoveFacetsToStructures(model);
-    
+    for(auto& sim : simManager->simUnits){
+        sim.model = *model;
+    }
+
+    if (simManager->ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
+        //CloseLoaderDP();
+        std::string errString = "Failed to send geometry to sub process:\n";
+        errString.append(simManager->GetErrorDetails());
+        throw std::runtime_error(errString);
+    }
     return 0;
 }

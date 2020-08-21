@@ -107,24 +107,24 @@ void Simulation::ClearSimulation() {
 
     //this->currentParticles.clear();// = CurrentParticleStatus();
     std::vector<CurrentParticleStatus>(this->nbThreads).swap(this->currentParticles);
-    this->model.structures.clear();
+    /*this->model.structures.clear();
     this->model.tdParams.CDFs.clear();
     this->model.tdParams.IDs.clear();
     this->model.tdParams.moments.clear();
     this->model.tdParams.parameters.clear();
     //this->temperatures.clear();
-    this->model.vertices3.clear();
+    this->model.vertices3.clear();*/
 }
 
 // returns hit size or 0 on error
-size_t Simulation::LoadSimulation(Dataport *loader) {
+size_t Simulation::LoadSimulation() {
     double t0 = GetTick();
 
     //SetState(PROCESS_STARTING, "Clearing previous simulation");
     ClearSimulation();
 
     //SetState(PROCESS_STARTING, "Loading simulation");
-
+/*
     {
         std::string inputString(loader->size,'\0');
         BYTE* buffer = (BYTE*)loader->buff;
@@ -193,7 +193,7 @@ size_t Simulation::LoadSimulation(Dataport *loader) {
             }
         }
     }//inputarchive goes out of scope, file released
-
+*/
     // New GlobalSimuState structure for threads
     {
         GlobalSimuState tmpResults = GlobalSimuState();
@@ -278,7 +278,7 @@ size_t Simulation::LoadSimulation(Dataport *loader) {
     printf("  Loading time: %.3f ms\n", (t1 - t0)*1000.0);
 
     // calc hit port size
-    std::ostringstream result;
+    /*std::ostringstream result;
     {
         cereal::BinaryOutputArchive outputArchive(result);
 
@@ -289,17 +289,18 @@ size_t Simulation::LoadSimulation(Dataport *loader) {
         );
     }
 
-    size_t hSize = result.str().size();//simulation->GetHitsSize();
-    return hSize;
+    size_t hSize = result.str().size();//simulation->GetHitsSize();*/
+    return 0;
 
 }
 
-void Simulation::UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DWORD timeout) {
+void Simulation::UpdateHits(Dataport *dpLog, int prIdx, DWORD timeout) {
     //UpdateMCHits(dpHit, prIdx, model.tdParams.moments.size(), timeout);
     GlobalSimuState& globSim = tmpGlobalResults[0];
     UpdateMCHits(globSim, prIdx, model.tdParams.moments.size(), timeout);
-
-    if (dpLog) UpdateLog(dpLog, timeout);
+    // only 1 logger
+    /*ParticleLoggerItem& globParticleLog = tmpParticleLog[0];
+    if (dpLog) UpdateLog(dpLog, timeout);*/
 
     //ResetTmpCounters();
     for(auto tmpIter = tmpGlobalResults.begin()+1; tmpIter != tmpGlobalResults.end(); ++tmpIter)
