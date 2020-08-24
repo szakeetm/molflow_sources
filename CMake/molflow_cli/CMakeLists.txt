@@ -123,6 +123,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
 
 
 target_link_libraries(${PROJECT_NAME} PUBLIC simulator_shared)
+target_link_libraries(${PROJECT_NAME} PUBLIC molflowSub)
 target_link_libraries(${PROJECT_NAME} PRIVATE pugixml)
 
 target_include_directories(${PROJECT_NAME} PRIVATE

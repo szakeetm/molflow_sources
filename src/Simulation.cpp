@@ -55,7 +55,7 @@ int Simulation::ReinitializeParticleLog() {
     return 0;
 }
 
-bool Simulation::UpdateOntheflySimuParams(Dataport *loader) {
+/*bool Simulation::UpdateOntheflySimuParams(Dataport *loader) {
     // Connect the dataport
 
 
@@ -76,7 +76,7 @@ bool Simulation::UpdateOntheflySimuParams(Dataport *loader) {
     ReleaseDataport(loader);
 
     return true;
-}
+}*/
 
 // Global handles
 //extern Simulation* sHandle; //Declared at molflowSub.cpp
@@ -294,15 +294,16 @@ size_t Simulation::LoadSimulation() {
 
 }
 
-void Simulation::UpdateHits(Dataport *dpLog, int prIdx, DWORD timeout) {
-    //UpdateMCHits(dpHit, prIdx, model.tdParams.moments.size(), timeout);
+void Simulation::UpdateHits(int prIdx, DWORD timeout) {
     GlobalSimuState& globSim = tmpGlobalResults[0];
     UpdateMCHits(globSim, prIdx, model.tdParams.moments.size(), timeout);
-    // only 1 logger
+    // only 1 , so no reduce necessary
     /*ParticleLoggerItem& globParticleLog = tmpParticleLog[0];
     if (dpLog) UpdateLog(dpLog, timeout);*/
 
     //ResetTmpCounters();
+    // only reset buffers 1..N-1
+    // 0 = global buffer for reduce
     for(auto tmpIter = tmpGlobalResults.begin()+1; tmpIter != tmpGlobalResults.end(); ++tmpIter)
         (*tmpIter).Reset();
 }

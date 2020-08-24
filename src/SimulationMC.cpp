@@ -52,7 +52,7 @@ public:
                                           double lookupValue);
 };
 
-bool Simulation::UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
+/*bool Simulation::UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
 
     BYTE *buffer;
     GlobalHitBuffer *gHits;
@@ -78,10 +78,10 @@ bool Simulation::UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWOR
         //std::cout << "["<<loopInd<<"] "<< gHits->globalHits.hit.nbMCHit << " += "<< tmpGlobalResult.globalHits.hit.nbMCHit<<std::endl;
         gHits->globalHits += tmpGlobalResult.globalHits;
 
-        /*gHits->globalHits.hit.nbMCHit += tmpGlobalResult.globalHits.hit.nbMCHit;
+        *//*gHits->globalHits.hit.nbMCHit += tmpGlobalResult.globalHits.hit.nbMCHit;
         gHits->globalHits.hit.nbHitEquiv += tmpGlobalResult.globalHits.hit.nbHitEquiv;
         gHits->globalHits.hit.nbAbsEquiv += tmpGlobalResult.globalHits.hit.nbAbsEquiv;
-        gHits->globalHits.hit.nbDesorbed += tmpGlobalResult.globalHits.hit.nbDesorbed;*/
+        gHits->globalHits.hit.nbDesorbed += tmpGlobalResult.globalHits.hit.nbDesorbed;*//*
         gHits->distTraveled_total += tmpGlobalResult.distTraveled_total;
         gHits->distTraveledTotal_fullHitsOnly += tmpGlobalResult.distTraveledTotal_fullHitsOnly;
 
@@ -312,7 +312,7 @@ bool Simulation::UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWOR
 #endif
 
     return true;
-}
+}*/
 
 bool Simulation::UpdateMCHits(GlobalSimuState& globState, int prIdx, size_t nbMoments, DWORD timeout) {
 
@@ -516,7 +516,7 @@ bool Simulation::UploadHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWORD t
 }
 */
 
-void Simulation::UpdateLog(Dataport *dpLog, DWORD timeout) {
+/*void Simulation::UpdateLog(Dataport *dpLog, DWORD timeout) {
     if (tmpParticleLog.size()) {
 #if defined(_DEBUG)
         double t0, t1;
@@ -547,7 +547,7 @@ void Simulation::UpdateLog(Dataport *dpLog, DWORD timeout) {
         printf("Update log: %f us\n", (t1 - t0) * 1000000.0);
 #endif
     }
-}
+}*/
 
 // Compute particle teleport
 
@@ -1697,6 +1697,7 @@ Simulation::ProfileFacet(SubprocessFacet *f, double time, bool countHit, double 
 }
 
 void Simulation::LogHit(SubprocessFacet *f, CurrentParticleStatus &currentParticle) {
+    if(omp_get_thread_num() != 0) return; // only let 1 thread update
     if (model.otfParams.enableLogging &&
         model.otfParams.logFacetId == f->globalId &&
         tmpParticleLog.size() < (model.otfParams.logLimit / model.otfParams.nbProcess)) {

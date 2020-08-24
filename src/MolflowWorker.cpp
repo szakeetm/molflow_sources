@@ -94,7 +94,7 @@ extern SynRad*mApp;
 /**
 * \brief Default constructor for a worker
 */
-Worker::Worker() : simManager("molflow", "MFLW"){
+Worker::Worker() : simManager("molflow", "MFLW"), model{} {
 
     //Molflow specific
     temperatures = std::vector<double>();
@@ -106,21 +106,6 @@ Worker::Worker() : simManager("molflow", "MFLW"){
     parameters = std::vector<Parameter>();
     needsReload = true;  //When main and subprocess have different geometries, needs to reload (synchronize)
     displayedMoment = 0; //By default, steady-state is displayed
-    wp.timeWindowSize = 1E-10; //Dirac-delta desorption pulse at t=0
-    wp.useMaxwellDistribution = true;
-    wp.calcConstantFlow = true;
-    wp.gasMass = 28.0;
-    wp.enableDecay = false;
-    wp.halfLife = 1;
-    wp.finalOutgassingRate = wp.finalOutgassingRate_Pa_m3_sec = wp.totalDesorbedMolecules = 0.0;
-    wp.motionType = 0;
-    wp.sMode = MC_MODE;
-
-    ontheflyParams.nbProcess = 0;
-    ontheflyParams.enableLogging = false;
-    ontheflyParams.desorptionLimit = 0;
-    ontheflyParams.lowFluxCutoff = 1E-7;
-    ontheflyParams.lowFluxMode = false;
 
     ResetWorkerStats();
     geom = new MolflowGeometry();
@@ -557,8 +542,8 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
         ResetMoments();
 
         //default values
-        wp.enableDecay = false;
-        wp.gasMass = 28;
+        model.wp.enableDecay = false;
+        model.wp.gasMass = 28;
     }
 
     /*
@@ -690,7 +675,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
                 geom->LoadSYN(f, progressDlg, &version, this);
                 SAFE_DELETE(f);
-                ontheflyParams.desorptionLimit = 0;
+                model.otfParams.desorptionLimit = 0;
             } else { //insert
                 geom->InsertSYN(f, progressDlg, newStr);
                 SAFE_DELETE(f);
@@ -979,7 +964,7 @@ void Worker::InnerStop(float appTime) {
 */
 void Worker::OneACStep() {
 
-    if (ontheflyParams.nbProcess == 0)
+    if (model.otfParams.nbProcess == 0)
         throw Error("No sub process found. (Simulation not available)");
 
     if (!isRunning) {
@@ -1034,7 +1019,7 @@ void Worker::StartStop(float appTime, size_t sMode) {
             //isRunning = true;
             calcAC = false;
 
-            wp.sMode = sMode;
+            model.wp.sMode = sMode;
 
             Start();
         }
@@ -1123,7 +1108,7 @@ void Worker::Update(float appTime) {
 				int nbFacet = geom->GetNbFacet();
 				for (int i = 0; i < nbFacet; i++) {
 					Facet *f = geom->GetFacet(i);
-					f->facetHitCache=(*((FacetHitBuffer*)(buffer + f->wp.hitOffset+displayedMoment*sizeof(FacetHitBuffer))));
+					f->facetHitCache=(*((FacetHitBuffer*)(buffer + f->model.wp.hitOffset+displayedMoment*sizeof(FacetHitBuffer))));
 				}
 				try {
 					if (mApp->needsTexture || mApp->needsDirection) geom->BuildFacetTextures(buffer,mApp->needsTexture,mApp->needsDirection);
@@ -1200,7 +1185,7 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
     progressDlg->SetProgress(0.0);
 
     if (!sendOnly) {
-        if (ontheflyParams.nbProcess == 0 && !geom->IsLoaded()) {
+        if (model.otfParams.nbProcess == 0 && !geom->IsLoaded()) {
             progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
             return;
@@ -1211,8 +1196,8 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
             PrepareToRun();
 
             size_t logDpSize = 0;
-            if (ontheflyParams.enableLogging) {
-                logDpSize = sizeof(size_t) + ontheflyParams.logLimit * sizeof(ParticleLoggerItem);
+            if (model.otfParams.enableLogging) {
+                logDpSize = sizeof(size_t) + model.otfParams.logLimit * sizeof(ParticleLoggerItem);
             }
             size_t hitSize = geom->GetHitsSize(moments.size());
 
@@ -1271,8 +1256,8 @@ std::ostringstream Worker::SerializeForLoader() {
         momentIntervals.emplace_back(std::make_pair(moment.first - (0.5 * moment.second), moment.first + (0.5 * moment.second)));
     }
     outputArchive(
-            CEREAL_NVP(wp),
-            CEREAL_NVP(ontheflyParams),
+            CEREAL_NVP(model.wp),
+            CEREAL_NVP(model.otfParams),
             CEREAL_NVP(CDFs),
             CEREAL_NVP(IDs),
             CEREAL_NVP(parameters),
@@ -1296,7 +1281,7 @@ std::ostringstream Worker::SerializeParamsForLoader() {
     cereal::BinaryOutputArchive outputArchive(result);
 
     outputArchive(
-            CEREAL_NVP(ontheflyParams)
+            CEREAL_NVP(model.otfParams)
     );
     return result;
 }
@@ -1318,7 +1303,7 @@ void Worker::ResetWorkerStats() {
 void Worker::Start() {
     // Sanity checks
     // Is there some desorption in the system? (depends on pre calculation)
-    if(wp.finalOutgassingRate_Pa_m3_sec <= 0.0){
+    if(model.wp.finalOutgassingRate_Pa_m3_sec <= 0.0){
         // Do another check for existing desorp facets, needed in case a desorp parameter's final value is 0
         bool found = false;
         size_t nbF = geom->GetNbFacet();
@@ -1331,7 +1316,7 @@ void Worker::Start() {
         if (!found)
             throw Error("No desorption facet found");
     }
-    if (wp.totalDesorbedMolecules <= 0.0)
+    if (model.wp.totalDesorbedMolecules <= 0.0)
         throw Error("Total outgassing is zero.");
 
     try {
@@ -1365,11 +1350,11 @@ double Worker::GetMoleculesPerTP(size_t moment) {
     if (moment == 0) {
         //Constant flow
         //Each test particle represents a certain real molecule influx per second
-        return wp.finalOutgassingRate / globalHitCache.globalHits.hit.nbDesorbed;
+        return model.wp.finalOutgassingRate / globalHitCache.globalHits.hit.nbDesorbed;
     } else {
         //Time-dependent mode
         //Each test particle represents a certain absolute number of real molecules
-        return (wp.totalDesorbedMolecules / mApp->worker.moments[moment - 1].second) / globalHitCache.globalHits.hit.nbDesorbed;
+        return (model.wp.totalDesorbedMolecules / mApp->worker.moments[moment - 1].second) / globalHitCache.globalHits.hit.nbDesorbed;
     }
 }
 
@@ -1502,8 +1487,8 @@ void Worker::AnalyzeSYNfile(const char *fileName, size_t *nbFacet, size_t *nbTex
 void Worker::PrepareToRun() {
 
     //determine latest moment
-    wp.latestMoment = 1E-10;
-    wp.latestMoment = 0.5 * wp.timeWindowSize;
+    model.wp.latestMoment = 1E-10;
+    model.wp.latestMoment = 0.5 * model.wp.timeWindowSize;
 #if defined(DEBUG) // validate with old method for now
     double latestMoment = 1E-10;
     for (auto & moment : moments)
@@ -1516,8 +1501,8 @@ void Worker::PrepareToRun() {
     }
 #endif
     if(!moments.empty())
-        wp.latestMoment = (moments.end()-1)->first + (moments.end()-1)->second / 2.0;
-    //wp.latestMoment += wp.timeWindowSize / 2.0;
+        model.wp.latestMoment = (moments.end()-1)->first + (moments.end()-1)->second / 2.0;
+    //model.wp.latestMoment += model.wp.timeWindowSize / 2.0;
 
     Geometry *g = GetGeometry();
     //Generate integrated desorption functions
@@ -1638,7 +1623,7 @@ int Worker::GetCDFId(double temperature) {
 int Worker::GenerateNewCDF(double temperature) {
     size_t i = temperatures.size();
     temperatures.push_back(temperature);
-    CDFs.push_back(Generate_CDF(temperature, wp.gasMass, CDF_SIZE));
+    CDFs.push_back(Generate_CDF(temperature, model.wp.gasMass, CDF_SIZE));
     return (int) i;
 }
 
@@ -1674,7 +1659,7 @@ int Worker::GetIDId(int paramId) {
 */
 void Worker::CalcTotalOutgassing() {
     // Compute the outgassing of all source facet
-    wp.totalDesorbedMolecules = wp.finalOutgassingRate_Pa_m3_sec = wp.finalOutgassingRate = 0.0;
+    model.wp.totalDesorbedMolecules = model.wp.finalOutgassingRate_Pa_m3_sec = model.wp.finalOutgassingRate = 0.0;
     Geometry *g = GetGeometry();
 
     for (int i = 0; i < g->GetNbFacet(); i++) {
@@ -1682,23 +1667,23 @@ void Worker::CalcTotalOutgassing() {
         if (f->sh.desorbType != DES_NONE) { //there is a kind of desorption
             if (f->sh.useOutgassingFile) { //outgassing file
                 for (int l = 0; l < (f->sh.outgassingMapWidth * f->sh.outgassingMapHeight); l++) {
-                    wp.totalDesorbedMolecules += wp.latestMoment * f->outgassingMap[l] / (1.38E-23 * f->sh.temperature);
-                    wp.finalOutgassingRate += f->outgassingMap[l] / (1.38E-23 * f->sh.temperature);
-                    wp.finalOutgassingRate_Pa_m3_sec += f->outgassingMap[l];
+                    model.wp.totalDesorbedMolecules += model.wp.latestMoment * f->outgassingMap[l] / (1.38E-23 * f->sh.temperature);
+                    model.wp.finalOutgassingRate += f->outgassingMap[l] / (1.38E-23 * f->sh.temperature);
+                    model.wp.finalOutgassingRate_Pa_m3_sec += f->outgassingMap[l];
                 }
             } else { //regular outgassing
                 if (f->sh.outgassing_paramId == -1) { //constant outgassing
-                    wp.totalDesorbedMolecules += wp.latestMoment * f->sh.outgassing / (1.38E-23 * f->sh.temperature);
-                    wp.finalOutgassingRate +=
+                    model.wp.totalDesorbedMolecules += model.wp.latestMoment * f->sh.outgassing / (1.38E-23 * f->sh.temperature);
+                    model.wp.finalOutgassingRate +=
                             f->sh.outgassing / (1.38E-23 * f->sh.temperature);  //Outgassing molecules/sec
-                    wp.finalOutgassingRate_Pa_m3_sec += f->sh.outgassing;
+                    model.wp.finalOutgassingRate_Pa_m3_sec += f->sh.outgassing;
                 } else { //time-dependent outgassing
-                    wp.totalDesorbedMolecules += IDs[f->sh.IDid].back().second / (1.38E-23 * f->sh.temperature);
+                    model.wp.totalDesorbedMolecules += IDs[f->sh.IDid].back().second / (1.38E-23 * f->sh.temperature);
                     size_t lastIndex = parameters[f->sh.outgassing_paramId].GetSize() - 1;
                     double finalRate_mbar_l_s = parameters[f->sh.outgassing_paramId].GetY(lastIndex);
-                    wp.finalOutgassingRate +=
+                    model.wp.finalOutgassingRate +=
                             finalRate_mbar_l_s * 0.100 / (1.38E-23 * f->sh.temperature); //0.1: mbar*l/s->Pa*m3/s
-                    wp.finalOutgassingRate_Pa_m3_sec += finalRate_mbar_l_s * 0.100;
+                    model.wp.finalOutgassingRate_Pa_m3_sec += finalRate_mbar_l_s * 0.100;
                 }
             }
         }
@@ -1767,7 +1752,7 @@ std::vector<std::pair<double, double>> Worker::Generate_ID(int paramId) {
     size_t indexBeforeLastMoment;
     for (indexBeforeLastMoment = 0; indexBeforeLastMoment < parameters[paramId].GetSize() &&
                                     (parameters[paramId].GetX(indexBeforeLastMoment) <
-                                     wp.latestMoment); indexBeforeLastMoment++);
+                                     model.wp.latestMoment); indexBeforeLastMoment++);
     if (indexBeforeLastMoment >= parameters[paramId].GetSize())
         indexBeforeLastMoment = parameters[paramId].GetSize() - 1; //not found, set as last moment
 
@@ -1801,17 +1786,17 @@ std::vector<std::pair<double, double>> Worker::Generate_ID(int paramId) {
         }
     }
 
-    //wp.latestMoment
-    double valueAtlatestMoment = parameters[paramId].InterpolateY(wp.latestMoment, false);
+    //model.wp.latestMoment
+    double valueAtlatestMoment = parameters[paramId].InterpolateY(model.wp.latestMoment, false);
     if (IsEqual(valueAtlatestMoment, parameters[paramId].GetY(
             indexBeforeLastMoment))) //two equal values follow, simple integration by multiplying
-        ID.push_back(std::make_pair(wp.latestMoment,
+        ID.push_back(std::make_pair(model.wp.latestMoment,
                                     ID.back().second +
-                                    (wp.latestMoment - parameters[paramId].GetX(indexBeforeLastMoment)) *
+                                    (model.wp.latestMoment - parameters[paramId].GetX(indexBeforeLastMoment)) *
                                     parameters[paramId].GetY(indexBeforeLastMoment) * 0.100));
     else { //difficult case, we'll integrate by dividing two 5equal sections
         for (double delta = 0.0; delta < 1.0001; delta += 0.05) {
-            double delta_t = wp.latestMoment - parameters[paramId].GetX(indexBeforeLastMoment);
+            double delta_t = model.wp.latestMoment - parameters[paramId].GetX(indexBeforeLastMoment);
             double time = parameters[paramId].GetX(indexBeforeLastMoment) + delta * delta_t;
             double avg_value = (parameters[paramId].GetY(indexBeforeLastMoment) * 0.100 +
                                 parameters[paramId].InterpolateY(time, false) * 0.100) / 2.0;

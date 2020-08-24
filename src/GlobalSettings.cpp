@@ -280,15 +280,15 @@ void GlobalSettings::Update() {
 	//chkNonIsothermal->SetState(nonIsothermal);
 	UpdateOutgassing();
 
-	gasMassText->SetText(worker->wp.gasMass);
+	gasMassText->SetText(worker->model.wp.gasMass);
 
-	enableDecay->SetState(worker->wp.enableDecay);
-	halfLifeText->SetText(worker->wp.halfLife);
-	halfLifeText->SetEditable(worker->wp.enableDecay);
+	enableDecay->SetState(worker->model.wp.enableDecay);
+	halfLifeText->SetText(worker->model.wp.halfLife);
+	halfLifeText->SetEditable(worker->model.wp.enableDecay);
 
-	cutoffText->SetText(worker->ontheflyParams.lowFluxCutoff);
-	cutoffText->SetEditable(worker->ontheflyParams.lowFluxMode);
-	lowFluxToggle->SetState(worker->ontheflyParams.lowFluxMode);
+	cutoffText->SetText(worker->model.otfParams.lowFluxCutoff);
+	cutoffText->SetEditable(worker->model.otfParams.lowFluxMode);
+	lowFluxToggle->SetState(worker->model.otfParams.lowFluxMode);
 
 	autoSaveText->SetText(mApp->autoSaveFrequency);
 	chkSimuOnly->SetState(mApp->autoSaveSimuOnly);
@@ -475,7 +475,7 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 		else if (src == maxButton) {
 			if (worker->GetGeometry()->IsLoaded()) {
 				char tmp[128];
-				sprintf(tmp, "%zd", worker->ontheflyParams.desorptionLimit);
+				sprintf(tmp, "%zd", worker->model.otfParams.desorptionLimit);
 				char *val = GLInputBox::GetInput(tmp, "Desorption max (0=>endless)", "Edit MAX");
 				if (val) {
                     char* endptr;
@@ -484,7 +484,7 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 						GLMessageBox::Display("Invalid 'maximum desorption' number", "Error", GLDLG_OK, GLDLG_ICONERROR);
 					}
 					else {
-                        worker->ontheflyParams.desorptionLimit = maxDes;
+                        worker->model.otfParams.desorptionLimit = maxDes;
                         worker->ChangeSimuParams(); //Sync with subprocesses
                     }
 				}
@@ -519,10 +519,10 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 				GLMessageBox::Display("Invalid gas mass", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
-			if (std::abs(gm - worker->wp.gasMass) > 1e-7) {
+			if (std::abs(gm - worker->model.wp.gasMass) > 1e-7) {
 				if (mApp->AskToReset()) {
 					worker->needsReload = true;
-					worker->wp.gasMass = gm;
+					worker->model.wp.gasMass = gm;
 					if (worker->GetGeometry()->IsLoaded()) { //check if there are pumps
 						bool hasPump = false;
 						size_t nbFacet = worker->GetGeometry()->GetNbFacet();
@@ -541,11 +541,11 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 				GLMessageBox::Display("Invalid half life", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
-			if ((enableDecay->GetState()==1) != worker->wp.enableDecay || ((enableDecay->GetState()==1) && IsEqual(hl, worker->wp.halfLife))) {
+			if ((enableDecay->GetState()==1) != worker->model.wp.enableDecay || ((enableDecay->GetState()==1) && IsEqual(hl, worker->model.wp.halfLife))) {
 				if (mApp->AskToReset()) {
 					worker->needsReload = true;
-					worker->wp.enableDecay = enableDecay->GetState();
-					if (worker->wp.enableDecay) worker->wp.halfLife = hl;
+					worker->model.wp.enableDecay = enableDecay->GetState();
+					if (worker->model.wp.enableDecay) worker->model.wp.halfLife = hl;
 				}
 			}
 
@@ -555,9 +555,9 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 				return;
 			}
 
-			if (!IsEqual(worker->ontheflyParams.lowFluxCutoff, cutoffnumber) || (int)worker->ontheflyParams.lowFluxMode != lowFluxToggle->GetState()) {
-				worker->ontheflyParams.lowFluxCutoff = cutoffnumber;
-				worker->ontheflyParams.lowFluxMode = lowFluxToggle->GetState();
+			if (!IsEqual(worker->model.otfParams.lowFluxCutoff, cutoffnumber) || (int)worker->model.otfParams.lowFluxMode != lowFluxToggle->GetState()) {
+				worker->model.otfParams.lowFluxCutoff = cutoffnumber;
+				worker->model.otfParams.lowFluxMode = lowFluxToggle->GetState();
 				worker->ChangeSimuParams();
 			}
 
@@ -607,10 +607,10 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 */
 void GlobalSettings::UpdateOutgassing() {
 	char tmp[128];
-	sprintf(tmp, "%g", worker->wp.gasMass);
+	sprintf(tmp, "%g", worker->model.wp.gasMass);
 	gasMassText->SetText(tmp);
-	sprintf(tmp, "%g", worker->wp.finalOutgassingRate_Pa_m3_sec * 10.00); //10: conversion Pa*m3/sec -> mbar*l/s
+	sprintf(tmp, "%g", worker->model.wp.finalOutgassingRate_Pa_m3_sec * 10.00); //10: conversion Pa*m3/sec -> mbar*l/s
 	outgassingText->SetText(tmp);
-	sprintf(tmp, "%.3E", worker->wp.totalDesorbedMolecules);
+	sprintf(tmp, "%.3E", worker->model.wp.totalDesorbedMolecules);
 	influxText->SetText(tmp);
 }

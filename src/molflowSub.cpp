@@ -168,7 +168,10 @@ int main(int argc, char *argv[]) {
         nbThreads = atoi(argv[3]);
 
     printf("molflowSub %zu %zu %zu\n",hostProcessId,prIdx,nbThreads);
-    SimulationController simController = {"molflow", "MFLW", hostProcessId, prIdx, new Simulation(nbThreads)};
+    SubProcInfo pInfo;
+    SimulationController simController = {"molflow", "MFLW", hostProcessId, prIdx, new Simulation(nbThreads),&pInfo};
+    (
+            std::string(), std::string(), 0, 0, nullptr, nullptr);
 
     {
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
@@ -199,8 +202,12 @@ int mainThread(int argc, char *argv[]) {
     size_t hostProcessId = atoi(argv[1]);
     size_t prIdx = atoi(argv[2]);
 
-
-    SimulationController simController = {"molflow", "MFLW", hostProcessId, prIdx, new Simulation()};
+    SubProcInfo pInfo;
+    SimulationController simController = {"molflow", "MFLW", hostProcessId, prIdx, new Simulation(),&pInfo};
+    (std::string(),
+            std::string(), 0,
+            0, nullptr,
+            nullptr);
 
     //Simulation sHandles = {"molflow", "MFLW", hostProcessId, prIdx};
     //Simulation *sHandle = new Simulation();

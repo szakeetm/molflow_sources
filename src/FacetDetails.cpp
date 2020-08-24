@@ -375,11 +375,11 @@ char *FacetDetails::FormatCell(size_t idx,Facet *f,size_t mode) {
 	{
 	double dCoef =  1E4 * worker->GetMoleculesPerTP(worker->displayedMoment)*f->DensityCorrection();  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 	
-	sprintf(ret, "%g", f->facetHitCache.hit.sum_1_per_ort_velocity / f->GetArea()*dCoef*mApp->worker.wp.gasMass / 1000.0 / 6E23);
+	sprintf(ret, "%g", f->facetHitCache.hit.sum_1_per_ort_velocity / f->GetArea()*dCoef*mApp->worker.model.wp.gasMass / 1000.0 / 6E23);
 	break; }
 	case 21: //avg.pressure
 	{
-	double dCoef = 1E4 * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->wp.gasMass / 1000 / 6E23) * 0.0100;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
+	double dCoef = 1E4 * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model.wp.gasMass / 1000 / 6E23) * 0.0100;  //1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 	
 	sprintf(ret, "%g", f->facetHitCache.hit.sum_v_ort*dCoef / f->GetArea());
 	break; }

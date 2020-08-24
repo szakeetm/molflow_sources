@@ -31,9 +31,10 @@ struct TimeDependentParamters {
 
 struct SimulationModel {
 public:
+    SimulationModel() : otfParams(), tdParams(), wp(), sh(){};
     void CalculateFacetParams(SubprocessFacet* f);
 
-        // Geometry Description
+    // Geometry Description
     std::vector<std::vector<SubprocessFacet>>    facets;    // All facets of this geometry
     std::vector<SuperStructure> structures;
     std::vector<Vector3d> vertices3; // Vertices (3D space)

@@ -247,9 +247,9 @@ void PressureEvolution::refreshChart() {
 				break;
 			}
 			case 2: {//Pressure
-				scaleY = 1.0 / nbDes / (f->GetArea() * 1E-4) * worker->wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
-                scaleY *= worker->wp.totalDesorbedMolecules;
-                //scaleY *= worker->wp.totalDesorbedMolecules / worker->wp.timeWindowSize;
+				scaleY = 1.0 / nbDes / (f->GetArea() * 1E-4) * worker->model.wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
+                scaleY *= worker->model.wp.totalDesorbedMolecules;
+                //scaleY *= worker->model.wp.totalDesorbedMolecules / worker->model.wp.timeWindowSize;
 				for (size_t m = 1; m <= Min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
 					FacetHitBuffer* facetHits = (FacetHitBuffer*)(buffer + f->sh.hitOffset + m * sizeof(FacetHitBuffer));
 					v->Add(worker->moments[m - 1].first, facetHits->hit.sum_v_ort*(scaleY/worker->moments[m - 1].second), false);
@@ -258,8 +258,8 @@ void PressureEvolution::refreshChart() {
 			}
 			case 3: {//Particle density
 				scaleY = 1.0 / nbDes / (f->GetArea() * 1E-4);
-                scaleY *= worker->wp.totalDesorbedMolecules;
-                //scaleY *= worker->wp.totalDesorbedMolecules / worker->wp.timeWindowSize;
+                scaleY *= worker->model.wp.totalDesorbedMolecules;
+                //scaleY *= worker->model.wp.totalDesorbedMolecules / worker->model.wp.timeWindowSize;
                 scaleY *= f->DensityCorrection();
 				for (size_t m = 1; m <= Min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
 					FacetHitBuffer* facetHits = (FacetHitBuffer*)(buffer + f->sh.hitOffset + m * sizeof(FacetHitBuffer));
@@ -269,8 +269,8 @@ void PressureEvolution::refreshChart() {
 			}
 			case 4: {//Imp.rate
 				scaleY = 1.0 / nbDes / (f->GetArea() * 1E-4);
-                scaleY *= worker->wp.totalDesorbedMolecules;
-                //scaleY *= worker->wp.totalDesorbedMolecules / worker->wp.timeWindowSize;
+                scaleY *= worker->model.wp.totalDesorbedMolecules;
+                //scaleY *= worker->model.wp.totalDesorbedMolecules / worker->model.wp.timeWindowSize;
                 for (size_t m = 1; m <= Min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
 					FacetHitBuffer* facetHits = (FacetHitBuffer*)(buffer + f->sh.hitOffset + m * sizeof(FacetHitBuffer));
 					v->Add(worker->moments[m - 1].first, facetHits->hit.nbHitEquiv*(scaleY/worker->moments[m - 1].second), false);

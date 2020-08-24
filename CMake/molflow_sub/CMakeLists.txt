@@ -112,7 +112,7 @@ if (APPLE)
 endif()
 
 
-add_executable(${PROJECT_NAME} ${SRC_FILES} ${HEADER_FILES})
+add_library(${PROJECT_NAME} ${SRC_FILES} ${HEADER_FILES})
 
 find_package(OpenMP REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)

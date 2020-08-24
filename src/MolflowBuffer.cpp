@@ -6,6 +6,26 @@
 
 #include "MolflowBuffer.h"
 
+WorkerParams::WorkerParams(){
+    timeWindowSize = 1E-10; //Dirac-delta desorption pulse at t=0
+    useMaxwellDistribution = true;
+    calcConstantFlow = true;
+    gasMass = 28.0;
+    enableDecay = false;
+    halfLife = 1;
+    finalOutgassingRate = finalOutgassingRate_Pa_m3_sec = totalDesorbedMolecules = 0.0;
+    motionType = 0;
+    sMode = MC_MODE;
+}
+
+OntheflySimulationParams::OntheflySimulationParams(){
+    nbProcess = 0;
+    enableLogging = false;
+    desorptionLimit = 0;
+    lowFluxCutoff = 1E-7;
+    lowFluxMode = false;
+}
+
 void FacetHistogramBuffer::Resize(const HistogramParams& params){
     this->nbHitsHistogram.resize(params.recordBounce ? params.GetBounceHistogramSize() : 0); 
     this->nbHitsHistogram.shrink_to_fit();

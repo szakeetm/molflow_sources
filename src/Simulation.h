@@ -75,14 +75,9 @@ public:
     size_t GetHitsSize() override;
 
     int ReinitializeParticleLog() override;
-    bool UpdateOntheflySimuParams(Dataport *loader) override;
 
-    void UpdateHits(Dataport *dpLog, int prIdx, DWORD timeout) override;
-    bool UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout);
+    void UpdateHits(int prIdx, DWORD timeout) override;
     bool UpdateMCHits(GlobalSimuState& globState, int prIdx, size_t nbMoments, DWORD timeout);
-    //bool UploadHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWORD timeout) override;
-
-    void UpdateLog(Dataport *dpLog, DWORD timeout);
 
     void PerformTeleport(SubprocessFacet *iFacet, CurrentParticleStatus &currentParticle);
     bool SimulationMCStep(size_t nbStep) override;

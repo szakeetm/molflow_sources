@@ -98,19 +98,19 @@ MomentsEditor::MomentsEditor(Worker *w) :GLWindow() {
 	windowLabel->SetBounds(15, 275, 170, 25);
 	Add(windowLabel);
 
-	//sprintf(tmp,"%g",work->wp.wp.timeWindowSize);
+	//sprintf(tmp,"%g",work->model.wp.wp.timeWindowSize);
 	windowSizeText = new GLTextField(0, "");
 	windowSizeText->SetBounds(120, 275, 60, 20);
 	Add(windowSizeText);
 
 	useMaxwellToggle = new GLToggle(0, "Use Maxwell-B. speed distr.");
 	useMaxwellToggle->SetBounds(15, 300, wD - 25, 20);
-	//useMaxwellToggle->SetState(work->wp.useMaxwellDistribution);
+	//useMaxwellToggle->SetState(work->model.wp.useMaxwellDistribution);
 	Add(useMaxwellToggle);
 
 	calcConstantFlow = new GLToggle(0, "Calculate constant flow");
 	calcConstantFlow->SetBounds(15, 325, wD - 25, 20);
-	//useMaxwellToggle->SetState(work->wp.useMaxwellDistribution);
+	//useMaxwellToggle->SetState(work->model.wp.useMaxwellDistribution);
 	Add(calcConstantFlow);
 
 	/*GLLabel *valveLabel = new GLLabel("Facets 1,2 open at:                   s");
@@ -189,9 +189,9 @@ void MomentsEditor::ProcessMessage(GLComponent *src, int message) {
 
                 work->moments = moments;
 				work->userMoments = userMoments;
-				work->wp.timeWindowSize = window;
-				work->wp.useMaxwellDistribution = useMaxwellToggle->GetState();
-				work->wp.calcConstantFlow = calcConstantFlow->GetState();
+				work->model.wp.timeWindowSize = window;
+				work->model.wp.useMaxwellDistribution = useMaxwellToggle->GetState();
+				work->model.wp.calcConstantFlow = calcConstantFlow->GetState();
 
 				work->Reload();
 				if (mApp->timeSettings) mApp->timeSettings->RefreshMoments();
@@ -320,10 +320,10 @@ void MomentsEditor::Refresh() {
 	userMoments = work->userMoments;
 	moments = work->moments;
 	char tmp[128];
-	sprintf(tmp, "%g", work->wp.timeWindowSize);
+	sprintf(tmp, "%g", work->model.wp.timeWindowSize);
 	windowSizeText->SetText(tmp);
-	useMaxwellToggle->SetState(work->wp.useMaxwellDistribution);
-	calcConstantFlow->SetState(work->wp.calcConstantFlow);
+	useMaxwellToggle->SetState(work->model.wp.useMaxwellDistribution);
+	calcConstantFlow->SetState(work->model.wp.calcConstantFlow);
 	RebuildList();
 }
 

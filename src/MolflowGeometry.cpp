@@ -118,7 +118,7 @@ void MolflowGeometry::SerializeForLoader(cereal::BinaryOutputArchive& outputArch
 		CEREAL_NVP(vertices3)
 	);
 
-	size_t fOffset = sizeof(GlobalHitBuffer) + (1 + mApp->worker.moments.size())*mApp->worker.wp.globalHistogramParams.GetDataSize(); //calculating offsets for all facets for the hits dataport during the simulation
+	size_t fOffset = sizeof(GlobalHitBuffer) + (1 + mApp->worker.moments.size())*mApp->worker.model.wp.globalHistogramParams.GetDataSize(); //calculating offsets for all facets for the hits dataport during the simulation
 
 	for (size_t i = 0; i < sh.nbFacet; i++) {
 		facets[i]->sh.hitOffset = fOffset; //Marking the offsets for the hits, but here we don't actually send any hits.
@@ -136,7 +136,7 @@ size_t MolflowGeometry::GetHitsSize(const size_t nbMoments) {
 
 	// Compute number of bytes allocated
 	size_t memoryUsage = 0;
-	memoryUsage += sizeof(GlobalHitBuffer) + (1 + nbMoments) * mApp->worker.wp.globalHistogramParams.GetDataSize();
+	memoryUsage += sizeof(GlobalHitBuffer) + (1 + nbMoments) * mApp->worker.model.wp.globalHistogramParams.GetDataSize();
 	for (int i = 0; i < sh.nbFacet; i++) {
 		memoryUsage += facets[i]->GetHitsSize(nbMoments);
 	}
@@ -677,7 +677,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 		worker->globalHitCache.distTraveledTotal_fullHitsOnly = 0.0;
 	}
 	file->ReadKeyword("maxDes"); file->ReadKeyword(":");
-	worker->ontheflyParams.desorptionLimit = file->ReadSizeT();
+	worker->model.otfParams.desorptionLimit = file->ReadSizeT();
 	file->ReadKeyword("nbVertex"); file->ReadKeyword(":");
 	sh.nbVertex = file->ReadInt();
 	file->ReadKeyword("nbFacet"); file->ReadKeyword(":");
@@ -699,7 +699,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 	}
 	if (*version >= 7) {
 		file->ReadKeyword("gasMass"); file->ReadKeyword(":");
-		worker->wp.gasMass = file->ReadDouble();
+		worker->model.wp.gasMass = file->ReadDouble();
 	}
     if (*version >= 16) { //time-dependent version with variable time windows
         file->ReadKeyword("userMoments"); file->ReadKeyword("{");
@@ -737,20 +737,20 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 		/*worker->desorptionStopTime =*/ file->ReadDouble();
 
 		file->ReadKeyword("timeWindow"); file->ReadKeyword(":");
-		worker->wp.timeWindowSize = file->ReadDouble();
+		worker->model.wp.timeWindowSize = file->ReadDouble();
 
 		if(*version < 16){ // use fixed time window for user moments
             for(auto& uMoment : worker->userMoments){
-                uMoment.second = worker->wp.timeWindowSize;
+                uMoment.second = worker->model.wp.timeWindowSize;
             }
         }
 		file->ReadKeyword("useMaxwellian"); file->ReadKeyword(":");
-		worker->wp.useMaxwellDistribution = file->ReadInt();
+		worker->model.wp.useMaxwellDistribution = file->ReadInt();
 	}
 
 	if (*version >= 12) { //2013.aug.22
 		file->ReadKeyword("calcConstantFlow"); file->ReadKeyword(":");
-		worker->wp.calcConstantFlow = file->ReadInt();
+		worker->model.wp.calcConstantFlow = file->ReadInt();
 
 	}
 	if (*version >= 2) {
@@ -997,7 +997,7 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
 		file->ReadDouble();
 	}
 	file->ReadKeyword("maxDes"); file->ReadKeyword(":");
-	worker->ontheflyParams.desorptionLimit = 0; file->ReadSizeT();
+	worker->model.otfParams.desorptionLimit = 0; file->ReadSizeT();
 	file->ReadKeyword("nbVertex"); file->ReadKeyword(":");
 	sh.nbVertex = file->ReadInt();
 	file->ReadKeyword("nbFacet"); file->ReadKeyword(":");
@@ -1399,7 +1399,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, BYTE *buffer, W
 	file->Write("totalAbs:"); file->Write((!crashSave && !saveSelected) ? (size_t)gHits->globalHits.hit.nbAbsEquiv : 0, "\n");
 	file->Write("totalDist_total:"); file->Write((!crashSave && !saveSelected) ? gHits->distTraveled_total : 0, "\n");
 	file->Write("totalDist_fullHitsOnly:"); file->Write((!crashSave && !saveSelected) ? gHits->distTraveledTotal_fullHitsOnly : 0, "\n");
-	file->Write("maxDes:"); file->Write((!crashSave && !saveSelected) ? worker->ontheflyParams.desorptionLimit : 0, "\n");
+	file->Write("maxDes:"); file->Write((!crashSave && !saveSelected) ? worker->model.otfParams.desorptionLimit : 0, "\n");
 
 	auto selectedFacets = GetSelectedFacets();
 	file->Write("nbVertex:"); file->Write(sh.nbVertex, "\n");
@@ -1410,7 +1410,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, BYTE *buffer, W
 	file->Write("nbView:"); file->Write(mApp->nbView, "\n");
 	file->Write("nbSelection:"); file->Write((!saveSelected) ? mApp->selections.size() : 0, "\n");
 
-	file->Write("gasMass:"); file->Write(worker->wp.gasMass, "\n");
+	file->Write("gasMass:"); file->Write(worker->model.wp.gasMass, "\n");
 
 	file->Write("userMoments {\n");
 	file->Write(" nb:"); file->Write((int)worker->userMoments.size());
@@ -1424,9 +1424,9 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, BYTE *buffer, W
 
 	file->Write("desorptionStart:"); file->Write(/*worker->desorptionStartTime*/0.0, "\n");
 	file->Write("desorptionStop:"); file->Write(/*worker->desorptionStopTime*/1.0, "\n");
-	file->Write("timeWindow:"); file->Write(worker->wp.timeWindowSize, "\n");
-	file->Write("useMaxwellian:"); file->Write(worker->wp.useMaxwellDistribution, "\n");
-	file->Write("calcConstantFlow:"); file->Write(worker->wp.calcConstantFlow, "\n");
+	file->Write("timeWindow:"); file->Write(worker->model.wp.timeWindowSize, "\n");
+	file->Write("useMaxwellian:"); file->Write(worker->model.wp.useMaxwellDistribution, "\n");
+	file->Write("calcConstantFlow:"); file->Write(worker->model.wp.calcConstantFlow, "\n");
 
 	file->Write("formulas {\n");
 	if (!saveSelected) {
@@ -1772,14 +1772,14 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, BYTE *b
 								double v_ort_avg = 2.0*texture[index].countEquiv / texture[index].sum_1_per_ort_velocity;
 								double imp_rate = texture[index].countEquiv / f->GetMeshArea(index, true)*dCoef;
 								double rho = 2.0*imp_rate / v_ort_avg;
-								double rho_mass = rho * mApp->worker.wp.gasMass / 1000.0 / 6E23;
+								double rho_mass = rho * mApp->worker.model.wp.gasMass / 1000.0 / 6E23;
 								if (!grouping || texture[index].countEquiv > 0.0) sprintf(tmp, "%g", rho_mass);
 								break;
 							}
 							case 5:  // Pressure [mbar]
 
 								// Lock during update
-								dCoef = 1E4 * (mApp->worker.wp.gasMass / 1000 / 6E23) *0.0100;  //1E4 is conversion from m2 to cm2, 0.01: Pa->mbar
+								dCoef = 1E4 * (mApp->worker.model.wp.gasMass / 1000 / 6E23) *0.0100;  //1E4 is conversion from m2 to cm2, 0.01: Pa->mbar
 								if (sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
 								if (!grouping || texture[index].sum_v_ort_per_area) sprintf(tmp, "%g", texture[index].sum_v_ort_per_area*dCoef);
 								break;
@@ -1905,7 +1905,7 @@ void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, BYTE *buffer, Worker
 					switch (f->sh.profileType) {
 					case PROFILE_U:
 					case PROFILE_V:
-						scaleY = 1.0 / (f->GetArea() / (double)PROFILE_SIZE*1E-4)* worker->wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
+						scaleY = 1.0 / (f->GetArea() / (double)PROFILE_SIZE*1E-4)* worker->model.wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
 						scaleY *= worker->GetMoleculesPerTP(m);
 
 						for (int j = 0; j < PROFILE_SIZE; j++)
@@ -2432,9 +2432,9 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 
 	xml_node simuParamNode = rootNode.append_child("MolflowSimuSettings");
 
-	simuParamNode.append_child("Gas").append_attribute("mass") = work->wp.gasMass;
-	simuParamNode.child("Gas").append_attribute("enableDecay") = (int)work->wp.enableDecay; //backward compatibility: 0 or 1
-	simuParamNode.child("Gas").append_attribute("halfLife") = work->wp.halfLife;
+	simuParamNode.append_child("Gas").append_attribute("mass") = work->model.wp.gasMass;
+	simuParamNode.child("Gas").append_attribute("enableDecay") = (int)work->model.wp.enableDecay; //backward compatibility: 0 or 1
+	simuParamNode.child("Gas").append_attribute("halfLife") = work->model.wp.halfLife;
 
 	xml_node timeSettingsNode = simuParamNode.append_child("TimeSettings");
 
@@ -2447,27 +2447,27 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
         newUserEntry.append_attribute("window") = work->userMoments[i].second;
     }
 
-	timeSettingsNode.append_attribute("timeWindow") = work->wp.timeWindowSize;
-	timeSettingsNode.append_attribute("useMaxwellDistr") = (int)work->wp.useMaxwellDistribution; //backward compatibility: 0 or 1
-	timeSettingsNode.append_attribute("calcConstFlow") = (int)work->wp.calcConstantFlow; //backward compatibility: 0 or 1
+	timeSettingsNode.append_attribute("timeWindow") = work->model.wp.timeWindowSize;
+	timeSettingsNode.append_attribute("useMaxwellDistr") = (int)work->model.wp.useMaxwellDistribution; //backward compatibility: 0 or 1
+	timeSettingsNode.append_attribute("calcConstFlow") = (int)work->model.wp.calcConstantFlow; //backward compatibility: 0 or 1
 
 	xml_node motionNode = simuParamNode.append_child("Motion");
-	motionNode.append_attribute("type") = work->wp.motionType;
-	if (work->wp.motionType == 1) { //fixed motion
+	motionNode.append_attribute("type") = work->model.wp.motionType;
+	if (work->model.wp.motionType == 1) { //fixed motion
 		xml_node v = motionNode.append_child("VelocityVector");
-		v.append_attribute("vx") = work->wp.motionVector2.x;
-		v.append_attribute("vy") = work->wp.motionVector2.y;
-		v.append_attribute("vz") = work->wp.motionVector2.z;
+		v.append_attribute("vx") = work->model.wp.motionVector2.x;
+		v.append_attribute("vy") = work->model.wp.motionVector2.y;
+		v.append_attribute("vz") = work->model.wp.motionVector2.z;
 	}
-	else if (work->wp.motionType == 2) { //rotation
+	else if (work->model.wp.motionType == 2) { //rotation
 		xml_node v = motionNode.append_child("AxisBasePoint");
-		v.append_attribute("x") = work->wp.motionVector1.x;
-		v.append_attribute("y") = work->wp.motionVector1.y;
-		v.append_attribute("z") = work->wp.motionVector1.z;
+		v.append_attribute("x") = work->model.wp.motionVector1.x;
+		v.append_attribute("y") = work->model.wp.motionVector1.y;
+		v.append_attribute("z") = work->model.wp.motionVector1.z;
 		xml_node v2 = motionNode.append_child("RotationVector");
-		v2.append_attribute("x") = work->wp.motionVector2.x;
-		v2.append_attribute("y") = work->wp.motionVector2.y;
-		v2.append_attribute("z") = work->wp.motionVector2.z;
+		v2.append_attribute("x") = work->model.wp.motionVector2.x;
+		v2.append_attribute("y") = work->model.wp.motionVector2.y;
+		v2.append_attribute("z") = work->model.wp.motionVector2.z;
 	}
 
 	xml_node paramNode = simuParamNode.append_child("Parameters");
@@ -2532,7 +2532,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 			hitsNode.append_attribute("totalDist_total") = gHits->distTraveled_total;
 			hitsNode.append_attribute("totalDist_fullHitsOnly") = gHits->distTraveledTotal_fullHitsOnly;
 			hitsNode.append_attribute("totalLeak") = gHits->nbLeakTotal;
-			hitsNode.append_attribute("maxDesorption") = work->ontheflyParams.desorptionLimit;
+			hitsNode.append_attribute("maxDesorption") = work->model.otfParams.desorptionLimit;
 
 			xml_node hitCacheNode = globalNode.append_child("Hit_Cache");
 			hitCacheNode.append_attribute("nb") = work->globalHitCache.hitCacheSize;
@@ -2828,13 +2828,13 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 			}
 		}
 
-		work->wp.gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
-		work->wp.halfLife = simuParamNode.child("Gas").attribute("halfLife").as_double();
+		work->model.wp.gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
+		work->model.wp.halfLife = simuParamNode.child("Gas").attribute("halfLife").as_double();
 		if (simuParamNode.child("Gas").attribute("enableDecay")) {
-			work->wp.enableDecay = simuParamNode.child("Gas").attribute("enableDecay").as_bool();
+			work->model.wp.enableDecay = simuParamNode.child("Gas").attribute("enableDecay").as_bool();
 		}
 		else {
-			work->wp.enableDecay = work->wp.halfLife < 1e100;
+			work->model.wp.enableDecay = work->model.wp.halfLife < 1e100;
 		}
 
 		xml_node timeSettingsNode = simuParamNode.child("TimeSettings");
@@ -2856,33 +2856,33 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 		}
 		*/
 
-		work->wp.timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();
+		work->model.wp.timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();
 		// Default initialization
 		for(auto& uMoment : work->userMoments){
 		    if(uMoment.second == 0.0){
-                uMoment.second = work->wp.timeWindowSize;
+                uMoment.second = work->model.wp.timeWindowSize;
 		    }
 		}
-		work->wp.useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_bool();
-		work->wp.calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_bool();
+		work->model.wp.useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_bool();
+		work->model.wp.calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_bool();
 
 		xml_node motionNode = simuParamNode.child("Motion");
-		work->wp.motionType = motionNode.attribute("type").as_int();
-		if (work->wp.motionType == 1) { //fixed motion
+		work->model.wp.motionType = motionNode.attribute("type").as_int();
+		if (work->model.wp.motionType == 1) { //fixed motion
 			xml_node v = motionNode.child("VelocityVector");
-			work->wp.motionVector2.x = v.attribute("vx").as_double();
-			work->wp.motionVector2.y = v.attribute("vy").as_double();
-			work->wp.motionVector2.z = v.attribute("vz").as_double();
+			work->model.wp.motionVector2.x = v.attribute("vx").as_double();
+			work->model.wp.motionVector2.y = v.attribute("vy").as_double();
+			work->model.wp.motionVector2.z = v.attribute("vz").as_double();
 		}
-		else if (work->wp.motionType == 2) { //rotation
+		else if (work->model.wp.motionType == 2) { //rotation
 			xml_node v = motionNode.child("AxisBasePoint");
-			work->wp.motionVector1.x = v.attribute("x").as_double();
-			work->wp.motionVector1.y = v.attribute("y").as_double();
-			work->wp.motionVector1.z = v.attribute("z").as_double();
+			work->model.wp.motionVector1.x = v.attribute("x").as_double();
+			work->model.wp.motionVector1.y = v.attribute("y").as_double();
+			work->model.wp.motionVector1.z = v.attribute("z").as_double();
 			xml_node v2 = motionNode.child("RotationVector");
-			work->wp.motionVector2.x = v2.attribute("x").as_double();
-			work->wp.motionVector2.y = v2.attribute("y").as_double();
-			work->wp.motionVector2.z = v2.attribute("z").as_double();
+			work->model.wp.motionVector2.x = v2.attribute("x").as_double();
+			work->model.wp.motionVector2.y = v2.attribute("y").as_double();
+			work->model.wp.motionVector2.z = v2.attribute("z").as_double();
 		}
 	}
 
@@ -3091,8 +3091,8 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 		}
 	}
 
-	/*work->wp.gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
-	work->wp.halfLife = simuParamNode.child("Gas").attribute("wp.halfLife").as_double();*/
+	/*work->model.wp.gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
+	work->model.wp.halfLife = simuParamNode.child("Gas").attribute("wp.halfLife").as_double();*/
 
 	/*
 	xml_node timeSettingsNode = simuParamNode.child("TimeSettings");
@@ -3105,9 +3105,9 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 	work->AddMoment(mApp->worker.ParseMoment(tmpExpr));
 
 	}
-	work->wp.wp.timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();
-	work->wp.useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_int();
-	work->wp.calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_int();
+	work->model.wp.wp.timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();
+	work->model.wp.useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_int();
+	work->model.wp.calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_int();
 	*/
 
 	if (newStr) sh.nbSuper += nbNewSuper;
