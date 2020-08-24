@@ -195,8 +195,7 @@ public:
     GlobalSimuState& operator+=(const GlobalSimuState& src);
     bool initialized = false;
     void clear();
-    void Resize(size_t nbF, size_t nbMoments, const std::vector<SubprocessFacet> &facets,
-                const HistogramParams &params);
+    void Resize(const SimulationModel &model);
     void Reset();
 
 #if defined(MOLFLOW)

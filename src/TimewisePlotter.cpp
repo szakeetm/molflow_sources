@@ -253,13 +253,12 @@ void TimewisePlotter::Update(float appTime, bool force) {
 void TimewisePlotter::refreshViews() {
 
 	// Lock during update
-	BYTE *buffer = worker->GetHits();
-	if (!buffer) return;
+	BYTE *buffer_old = worker->GetHits();
+	if (!buffer_old) return;
 	int displayMode = normCombo->GetSelectedIndex();
 	
 
 	Geometry *geom = worker->GetGeometry();
-	GlobalHitBuffer *gHits = (GlobalHitBuffer *)buffer;
 
 	double scaleY;
 
@@ -278,12 +277,13 @@ void TimewisePlotter::refreshViews() {
 		/*int momentIndex;
 		if (m==(nbView-1) && constantFlowToggle->GetState()) momentIndex=0; //Constant flow
 		else momentIndex=m+1; //any other 'normal' moment*/
-		ProfileSlice *profilePtr = (ProfileSlice *)(buffer + f->sh.hitOffset + facetHitsSize + v->userData1*sizeof(ProfileSlice)*PROFILE_SIZE);
-		if (worker->globalHitCache.globalHits.hit.nbDesorbed > 0) {
+		const std::vector<ProfileSlice>& profile = worker->globState.facetStates[profCombo->GetUserValueAt(idx)].momentResults[v->userData1].profile;
+		//ProfileSlice *profilePtr = (ProfileSlice *)(buffer + f->sh.hitOffset + facetHitsSize + v->userData1*sizeof(ProfileSlice)*PROFILE_SIZE);
+		if (worker->globState.globalHits.globalHits.hit.nbDesorbed > 0) {
 			switch (displayMode) {
 			case 0: //Raw data
 				for (int j = 0; j < PROFILE_SIZE; j++)
-					v->Add((double)j, profilePtr[j].countEquiv, false);
+					v->Add((double)j, profile[j].countEquiv, false);
 				break;
 
 			case 1: //Pressure
@@ -294,7 +294,7 @@ void TimewisePlotter::refreshViews() {
 				//if(IsZero(f->wp.opacity)) scaleY*=2; //transparent profiles are profiled only once...
 
 				for (int j = 0; j < PROFILE_SIZE; j++)
-					v->Add((double)j, profilePtr[j].sum_v_ort*scaleY, false);
+					v->Add((double)j, profile[j].sum_v_ort*scaleY, false);
 				break;
 			case 2: //Particle density
 				scaleY =  1.0 / ((f->GetArea() * 1E-4) / (double)PROFILE_SIZE);
@@ -302,7 +302,7 @@ void TimewisePlotter::refreshViews() {
 				scaleY *= f->DensityCorrection();
 
 				for (int j = 0; j < PROFILE_SIZE; j++)
-					v->Add((double)j, profilePtr[j].sum_1_per_ort_velocity*scaleY, false);
+					v->Add((double)j, profile[j].sum_1_per_ort_velocity*scaleY, false);
 				break;
 			case 3: {//Velocity
 				double sum = 0.0;
@@ -312,9 +312,9 @@ void TimewisePlotter::refreshViews() {
 				values.reserve(PROFILE_SIZE);
 				for (int j = 0; j < PROFILE_SIZE; j++) {//count distribution sum
 					if (!correctForGas->GetState())
-						val = profilePtr[j].countEquiv;
+						val = profile[j].countEquiv;
 					else
-						val = profilePtr[j].countEquiv / (((double)j + 0.5)*scaleX); //fnbhit not needed, sum will take care of normalization
+						val = profile[j].countEquiv / (((double)j + 0.5)*scaleX); //fnbhit not needed, sum will take care of normalization
 					sum += val;
 					values.push_back(val);
 				}
@@ -329,9 +329,9 @@ void TimewisePlotter::refreshViews() {
 				values.reserve(PROFILE_SIZE);
 				for (int j = 0; j < PROFILE_SIZE; j++) {//count distribution sum
 					if (!correctForGas->GetState())
-						val = (double)profilePtr[j].countEquiv;
+						val = (double)profile[j].countEquiv;
 					else
-						val = (double)profilePtr[j].countEquiv / sin(((double)j + 0.5)*PI / 2.0 / (double)PROFILE_SIZE); //fnbhit not needed, sum will take care of normalization
+						val = (double)profile[j].countEquiv / sin(((double)j + 0.5)*PI / 2.0 / (double)PROFILE_SIZE); //fnbhit not needed, sum will take care of normalization
 					sum += val;
 					values.push_back(val);
 				}
@@ -342,11 +342,11 @@ void TimewisePlotter::refreshViews() {
 				double max = 1.0;
 				for (int j = 0; j < PROFILE_SIZE; j++)
 				{
-					if (profilePtr[j].countEquiv > max) max = profilePtr[j].countEquiv;
+					if (profile[j].countEquiv > max) max = profile[j].countEquiv;
 				}
 				scaleY = 1.0 / max;
 				for (int j = 0; j < PROFILE_SIZE; j++)
-					v->Add((double)j, profilePtr[j].countEquiv*scaleY, false);
+					v->Add((double)j, profile[j].countEquiv*scaleY, false);
 				break;
 			}
 		}

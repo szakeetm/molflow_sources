@@ -452,11 +452,30 @@ void GlobalSimuState::clear() {
 * \brief Constructs the 'dpHit' structure to hold all results, zero-init
 * \param w Worker handle
 */
-void GlobalSimuState::Resize(size_t nbF, size_t nbMoments, const std::vector<SubprocessFacet> &facets,
-                             const HistogramParams &params) { //Constructs the 'dpHit' structure to hold all results, zero-init
+void GlobalSimuState::Resize(const SimulationModel &model) { //Constructs the 'dpHit' structure to hold all results, zero-init
     //LockMutex(mutex);
+    size_t nbF = model.sh.nbFacet;
+    size_t nbMoments = model.tdParams.moments.size();
     std::vector<FacetState>(nbF).swap(facetStates);
-    for (size_t i = 0; i < nbF; i++) {
+
+    for (int i = 0; i < nbF; i++) {
+        for (auto &s : model.structures) {
+            for (auto &sFac : s.facets) {
+                if (i == sFac.globalId) {
+                    FacetMomentSnapshot facetMomentTemplate;
+                    facetMomentTemplate.histogram.Resize(sFac.sh.facetHistogramParams);
+                    facetMomentTemplate.direction = std::vector<DirectionCell>(sFac.sh.countDirection ? sFac.sh.texWidth*sFac.sh.texHeight : 0);
+                    facetMomentTemplate.profile = std::vector<ProfileSlice>(sFac.sh.isProfile ? PROFILE_SIZE : 0);
+                    facetMomentTemplate.texture = std::vector<TextureCell>(sFac.sh.isTextured ? sFac.sh.texWidth*sFac.sh.texHeight : 0);
+                    //No init for hits
+                    facetStates[i].momentResults = std::vector<FacetMomentSnapshot>(1 + nbMoments, facetMomentTemplate);
+                    if (sFac.sh.anglemapParams.record) facetStates[i].recordedAngleMapPdf = std::vector<size_t>(sFac.sh.anglemapParams.GetMapSize());
+                    break;
+                }
+            }
+        }
+    }
+    /*for (size_t i = 0; i < nbF; i++) {
         const SubprocessFacet& sFac = facets[i];
         FacetMomentSnapshot facetMomentTemplate;
         facetMomentTemplate.histogram.Resize(sFac.sh.facetHistogramParams);
@@ -466,9 +485,10 @@ void GlobalSimuState::Resize(size_t nbF, size_t nbMoments, const std::vector<Sub
         //No init for hits
         facetStates[i].momentResults = std::vector<FacetMomentSnapshot>(1 + nbMoments, facetMomentTemplate);
         if (sFac.sh.anglemapParams.record) facetStates[i].recordedAngleMapPdf = std::vector<size_t>(sFac.sh.anglemapParams.GetMapSize());
-    }
+    }*/
     //Global histogram
-    FacetHistogramBuffer globalHistTemplate; globalHistTemplate.Resize(params);
+
+    FacetHistogramBuffer globalHistTemplate; globalHistTemplate.Resize(model.wp.globalHistogramParams);
     globalHistograms = std::vector<FacetHistogramBuffer>(1 + nbMoments, globalHistTemplate);
     initialized = true;
     //ReleaseMutex(mutex);

@@ -854,8 +854,8 @@ void Facet::Sum_Neighbor(const int& i, const int& j, const double& weight, Textu
 * \param max max value for color scaling
 * \param useColorMap if a 16bit high color map should be used (rainbow)
 */
-void Facet::BuildTexture(TextureCell *texBuffer, int textureMode, double min, double max, bool useColorMap,
-	double dCoeff1, double dCoeff2, double dCoeff3, bool doLog, size_t m) {
+void Facet::BuildTexture(const std::vector<TextureCell> &texBuffer, int textureMode, double min, double max, bool useColorMap,
+                         double dCoeff1, double dCoeff2, double dCoeff3, bool doLog, size_t m) {
 	size_t size = sh.texWidth*sh.texHeight;
 	size_t tSize = texDimW*texDimH;
 	if (size == 0 || tSize == 0) return;

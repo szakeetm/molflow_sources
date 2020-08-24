@@ -694,7 +694,7 @@ int LoaderXML::LoadSimulationState(std::string inputFileName, SimulationModel *m
     */
 
     xml_node minMaxNode = resultNode.child("TextureMinMax");
-    /* //First write to worker->globalhitcache, then sync it to ghits(dphit) with SendToHitBuffer()
+    /* //First write to worker->globState.globalHits, then sync it to ghits(dphit) with SendToHitBuffer()
     gHits->texture_limits[0].min.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("min").as_double();
     gHits->texture_limits[0].max.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("max").as_double();
     gHits->texture_limits[1].min.all = minMaxNode.child("With_constant_flow").child("Density").attribute("min").as_double();
@@ -976,7 +976,7 @@ int LoaderXML::LoadSimulationState(std::string inputFileName, SimulationModel *m
     */
 
     xml_node minMaxNode = resultNode.child("TextureMinMax");
-    /* //First write to worker->globalhitcache, then sync it to ghits(dphit) with SendToHitBuffer()
+    /* //First write to worker->globState.globalHits, then sync it to ghits(dphit) with SendToHitBuffer()
     globState.globalHits.texture_limits[0].min.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("min").as_double();
     globState.globalHits.texture_limits[0].max.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("max").as_double();
     globState.globalHits.texture_limits[1].min.all = minMaxNode.child("With_constant_flow").child("Density").attribute("min").as_double();
@@ -1196,6 +1196,7 @@ int Loader::InitSimModel(SimulationModel* model) {
     model->structures.resize(model->sh.nbSuper); //Create structures
 
 
+    //TODO: Globalize Size values
     size_t fOffset = sizeof(GlobalHitBuffer) + (1 + model->tdParams.moments.size())*model->wp.globalHistogramParams.GetDataSize(); //calculating offsets for all facets for the hits dataport during the simulation
     size_t angleMapTotalSize = 0;
     size_t dirTotalSize = 0;

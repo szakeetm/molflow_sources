@@ -314,60 +314,12 @@ size_t Simulation::GetHitsSize() {
            + model.sh.nbFacet * sizeof(FacetHitBuffer) * (1+model.tdParams.moments.size());
 }
 
-void Simulation::ResetTmpCounters() {
-    //SetState(0, "Resetting local cache...", false, true);
-
-    for(auto& tmpGlobalResult : tmpGlobalResults) {
-        memset(&tmpGlobalResult.globalHits, 0, sizeof(GlobalHitBuffer));
-
-        //Reset global histograms
-        for (auto &h : tmpGlobalResult.globalHistograms) {
-            h.Reset();
-        }
-    }
-
-    for (auto& structure : model.structures) {
-        for (auto& f : structure.facets) {
-            f.ResetCounter();
-            f.isHit = false;
-
-            //Reset facet histograms
-
-            for (auto& t : f.tmpHistograms) {
-                t.Reset();
-            }
-            /*std::vector<TextureCell>(f.texture.size()).swap(f.texture);
-            std::vector<ProfileSlice>(f.profile.size()).swap(f.profile);
-            std::vector<DirectionCell>(f.direction.size()).swap(f.direction);*/
-
-            for (auto& t : f.texture) {
-                std::fill(t.begin(), t.end(), TextureCell());
-            }
-
-
-            for (auto& p : f.profile) {
-                std::fill(p.begin(), p.end(), ProfileSlice());
-            }
-
-
-            for (auto& d : f.direction) {
-                std::fill(d.begin(), d.end(), DirectionCell());
-            }
-
-            if (f.sh.anglemapParams.record) {
-                ZEROVECTOR(f.angleMap.pdf);
-            }
-        }
-    }
-
-}
-
 void Simulation::ResetSimulation() {
     //currentParticles.clear();// = CurrentParticleStatus();
     std::vector<CurrentParticleStatus>(this->nbThreads).swap(this->currentParticles);
 
     totalDesorbed = 0;
-    ResetTmpCounters();
+    //ResetTmpCounters();
     for(auto& tmpResults : tmpGlobalResults)
         tmpResults.Reset();
     tmpParticleLog.clear();

@@ -31,15 +31,6 @@ public:
 	
 	Parameter();
 
-	/*template<class Archive>
-	void serialize(Archive & archive)
-	{
-        archive(
-                CEREAL_NVP(values),
-                CEREAL_NVP(isLogLog)
-        );
-        //archive(name,values,isLogLog,fromCatalog);
-	}*/
 };
 
 /*

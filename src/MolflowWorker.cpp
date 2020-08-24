@@ -234,10 +234,10 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
 
         if (ok) {
             // Get copy of hit buffer, once a load can be initiated
-            BYTE *buffer;
+            BYTE *buffer_old;
             try {
-                buffer = simManager.GetLockedHitBuffer();
-                if(!buffer){
+                buffer_old = simManager.GetLockedHitBuffer();
+                if(!buffer_old){
                     throw Error("Error getting access to hit buffer.");
                 }
             }
@@ -262,7 +262,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                 }
 
                 if (isTXT) {
-                    geom->SaveTXT(f, buffer, saveSelected);
+                    geom->SaveTXT(f, globState, saveSelected);
                 }
                 else if (isGEO || isGEO7Z) {
                     /*
@@ -275,7 +275,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                     HIT hitCache[HITCACHESIZE];
                     if (!crashSave && !saveSelected) GetHHit(hitCache, &nbHHitSave);
                     */
-                    geom->SaveGEO(f, prg, buffer, this, saveSelected, crashSave);
+                    geom->SaveGEO(f, prg, globState, this, saveSelected, crashSave);
                 } else if (isSTL) {
                     geom->SaveSTL(f, prg);
                 } else if (isXML || isXMLzip) {
@@ -296,7 +296,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                             GetHHit(hitCache, &nbHHitSave);
                             */
 
-                            success = geom->SaveXML_simustate(saveDoc, this, buffer, prg, saveSelected);
+                            success = geom->SaveXML_simustate(saveDoc, this, globState, prg, saveSelected);
                             //SAFE_DELETE(buffer);
                         }
                         catch (Error &e) {
@@ -421,10 +421,10 @@ void Worker::ExportProfiles(const char *fn) {
         sprintf(tmp, "Cannot open file for writing %s", fileName.c_str());
         throw Error(tmp);
     }
-    BYTE* buffer = simManager.GetLockedHitBuffer();
-    if(!buffer)
+    BYTE* buffer_old = simManager.GetLockedHitBuffer();
+    if(!buffer_old)
         throw Error("Cannot access shared hit buffer");
-    geom->ExportProfiles(f, isTXT, buffer, this);
+    geom->ExportProfiles(f, isTXT, this);
     simManager.UnlockHitBuffer();
     fclose(f);
 
@@ -723,11 +723,11 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 progressDlg->SetMessage("Reloading worker with new geometry...");
                 RealReload(); //for the loading of textures
 
-                BYTE* buffer = simManager.GetLockedHitBuffer();
-                if(!buffer)
+                BYTE* buffer_old = simManager.GetLockedHitBuffer();
+                if(!buffer_old)
                     throw Error("Cannot access shared hit buffer");
                 if (version >= 8)
-                    geom->LoadProfileGEO(f, buffer, version);
+                    geom->LoadProfileGEO(f, globState, version);
                 simManager.UnlockHitBuffer();
 
                 SendToHitBuffer(); //Global hit counters and hit/leak cache
@@ -842,12 +842,14 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
                     if (ext == "xml" || ext == "zip")
                         progressDlg->SetMessage("Restoring simulation state...");
-                    BYTE* buffer = simManager.GetLockedHitBuffer();
-                    if(!buffer)
+                    BYTE* buffer_old = simManager.GetLockedHitBuffer();
+                    if(!buffer_old)
                         throw Error("Cannot access shared hit buffer");
-                    geom->LoadXML_simustate(rootNode, buffer, this, progressDlg);
+                    geom->LoadXML_simustate(rootNode, globState, this, progressDlg);
+
                     simManager.UnlockHitBuffer();
                     SendToHitBuffer(); //Send hits without sending facet counters, as they are directly written during the load process (mutiple moments)
+                    SendFacetHitCounts(); //Send hits without sending facet counters, as they are directly written during the load process (mutiple moments)
                     RebuildTextures();
                 }
                 catch (Error &e) {
@@ -927,11 +929,11 @@ void Worker::LoadTexturesGEO(FileReader *f, int version) {
     GLProgress *progressDlg = new GLProgress("Loading textures", "Please wait");
     progressDlg->SetProgress(0.0);
     try {
-        BYTE* buffer = simManager.GetLockedHitBuffer();
-        if(!buffer)
+        BYTE* buffer_old = simManager.GetLockedHitBuffer();
+        if(!buffer_old)
             throw Error("Cannot access shared hit buffer");
         progressDlg->SetVisible(true);
-        geom->LoadTexturesGEO(f, progressDlg, buffer, version);
+        geom->LoadTexturesGEO(f, progressDlg, globState, version);
         simManager.UnlockHitBuffer();
         RebuildTextures();
     }
@@ -970,22 +972,6 @@ void Worker::OneACStep() {
     if (!isRunning) {
         if (simManager.ExecuteAndWait(COMMAND_STEPAC, PROCESS_RUN, AC_MODE))
             ThrowSubProcError();
-    }
-
-}
-
-/**
-* \brief Function that executes one step in AC (angular coefficient) mode and updates the interface
-* \param appTime current time of the application
-*/
-void Worker::StepAC(float appTime) {
-
-    try {
-        OneACStep();
-        Update(appTime);
-    }
-    catch (Error &e) {
-        GLMessageBox::Display(e.what(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
     }
 
 }
@@ -1127,51 +1113,151 @@ void Worker::Update(float appTime) {
 }
 */
 
-void Worker::ComputeAC(float appTime) {
-    GLMessageBox::Display("AC Mode has compatibility issues with this version of Molflow!", "ERROR (LoadAC)", GLDLG_OK, GLDLG_ICONWARNING);
-    return;
-
-    try {
-        if (needsReload) RealReload();
+bool Worker::MolflowGeomToSimModel(){
+    auto geom = GetMolflowGeometry();
+    for(int nbV = 0; nbV < geom->GetNbVertex(); ++nbV) {
+        model.vertices3.emplace_back(*geom->GetVertex(nbV));
     }
-    catch (Error &e) {
-        GLMessageBox::Display(e.what(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
-        return;
+    // Parse usermoments to regular moment intervals
+    //model.tdParams.moments = this->moments;
+    model.tdParams.CDFs = this->CDFs;
+    model.tdParams.IDs = this->IDs;
+    for(auto& param : this->parameters)
+        model.tdParams.parameters.emplace_back(param);
+
+    std::vector<Moment> momentIntervals;
+    momentIntervals.reserve(this->moments.size());
+    for(auto& moment : this->moments){
+        momentIntervals.emplace_back(std::make_pair(moment.first - (0.5 * moment.second), moment.first + (0.5 * moment.second)));
     }
-    if (isRunning)
-        throw Error("Already running");
+    model.tdParams.moments = momentIntervals;
 
-    // Send correction map to sub process
-    // (correction map contains area a surface elements)
-    size_t maxElem = geom->GetMaxElemNumber();
-    if (!maxElem)
-        throw Error("Mesh with boundary correction must be enabled on all polygons");
-    size_t dpSize = maxElem * sizeof(SHELEM_OLD);
+    model.sh = *geom->GetGeomProperties();
 
-    /*
-	AccessDataport(loader);
-	geom->CopyElemBuffer((BYTE *)loader->buff);
-	ReleaseDataport(loader);
-	//CopyElemBuffer needs fix
-	*/
+    model.structures.resize(model.sh.nbSuper); //Create structures
+    //TODO: Globalize Size values
+    size_t fOffset = sizeof(GlobalHitBuffer) + (1 + model.tdParams.moments.size())*model.wp.globalHistogramParams.GetDataSize(); //calculating offsets for all facets for the hits dataport during the simulation
+    size_t angleMapTotalSize = 0;
+    size_t dirTotalSize = 0;
+    size_t profTotalSize = 0;
+    size_t textTotalSize = 0;
+    size_t histogramTotalSize = 0;
 
-    // Load Elem area and send AC matrix calculation order
-    // Send command
-    try {
-        if (simManager.ShareWithSimUnits(nullptr, dpSize, LoadType::LOADAC)) {
-            std::string errString = "Failed to send AC geometry to sub process\n";
-            GLMessageBox::Display(errString.c_str(), "Warning (LoadAC)", GLDLG_OK, GLDLG_ICONWARNING);
-            return;
+    bool hasVolatile = false;
+
+    for (size_t facIdx = 0; facIdx < model.sh.nbFacet; facIdx++) {
+        SubprocessFacet sFac;
+        {
+            Facet* facet = geom->GetFacet(facIdx);
+
+            //std::vector<double> outgMapVector(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0);
+            //memcpy(outgMapVector.data(), outgassingMap, sizeof(double)*(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0));
+            size_t mapSize = facet->sh.anglemapParams.GetMapSize();
+            std::vector<size_t> angleMapVector(mapSize);
+            memcpy(angleMapVector.data(), facet->angleMapCache, facet->sh.anglemapParams.GetRecordedDataSize());
+            std::vector<double> textIncVector;
+
+            // Add surface elements area (reciprocal)
+            if (facet->sh.isTextured) {
+                textIncVector.resize(facet->sh.texHeight * facet->sh.texWidth);
+                if (facet->cellPropertiesIds) {
+                    size_t add = 0;
+                    for (size_t j = 0; j < facet->sh.texHeight; j++) {
+                        for (size_t i = 0; i < facet->sh.texWidth; i++) {
+                            double area = facet->GetMeshArea(add, true);
+
+                            if (area > 0.0) {
+                                // Use the sign bit to store isFull flag
+                                textIncVector[add] = 1.0 / area;
+                            } else {
+                                textIncVector[add] = 0.0;
+                            }
+                            add++;
+                        }
+                    }
+                } else {
+
+                    double rw = facet->sh.U.Norme() / (double) (facet->sh.texWidthD);
+                    double rh = facet->sh.V.Norme() / (double) (facet->sh.texHeightD);
+                    double area = rw * rh;
+                    size_t add = 0;
+                    for (int j = 0; j < facet->sh.texHeight; j++) {
+                        for (int i = 0; i < facet->sh.texWidth; i++) {
+                            if (area > 0.0) {
+                                textIncVector[add] = 1.0 / area;
+                            } else {
+                                textIncVector[add] = 0.0;
+                            }
+                            add++;
+                        }
+                    }
+                }
+            }
+            sFac.sh = facet->sh;
+            sFac.indices = facet->indices;
+            sFac.vertices2 = facet->vertices2;
+            sFac.outgassingMap = facet->outgassingMap;
+            sFac.angleMap.pdf = angleMapVector;
+            sFac.textureCellIncrements = textIncVector;
+        }
+        sFac.sh.hitOffset = fOffset; //Marking the offsets for the hits, but here we don't actually send any hits.
+        fOffset += sFac.GetHitsSize(model.tdParams.moments.size());
+
+        std::vector<double> textIncVector;
+        // Add surface elements area (reciprocal)
+        if (sFac.sh.isTextured) {
+            textIncVector.resize(sFac.sh.texHeight*sFac.sh.texWidth);
+
+            double rw = sFac.sh.U.Norme() / (double)(sFac.sh.texWidthD);
+            double rh = sFac.sh.V.Norme() / (double)(sFac.sh.texHeightD);
+            double area = rw * rh;
+            size_t add = 0;
+            for (int j = 0; j < sFac.sh.texHeight; j++) {
+                for (int i = 0; i < sFac.sh.texWidth; i++) {
+                    if (area > 0.0) {
+                        textIncVector[add] = 1.0 / area;
+                    }
+                    else {
+                        textIncVector[add] = 0.0;
+                    }
+                    add++;
+                }
+            }
+        }
+        sFac.textureCellIncrements = textIncVector;
+
+        //Some initialization
+        if (!sFac.InitializeOnLoad(facIdx, model.tdParams.moments.size(), histogramTotalSize)) return false;
+        // Increase size counters
+        //histogramTotalSize += 0;
+        angleMapTotalSize += sFac.angleMapSize;
+        dirTotalSize += sFac.directionSize* (1 + model.tdParams.moments.size());
+        profTotalSize += sFac.profileSize* (1 + model.tdParams.moments.size());
+        textTotalSize += sFac.textureSize* (1 + model.tdParams.moments.size());
+
+        hasVolatile |= sFac.sh.isVolatile;
+
+        if ((sFac.sh.superDest || sFac.sh.isVolatile) && ((sFac.sh.superDest - 1) >= model.sh.nbSuper || sFac.sh.superDest < 0)) {
+            // Geometry error
+            //ClearSimulation();
+            //ReleaseDataport(loader);
+            std::ostringstream err;
+            err << "Invalid structure (wrong link on F#" << facIdx + 1 << ")";
+            //SetErrorSub(err.str().c_str());
+            std::cerr << err.str() << std::endl;
+            return false;
+        }
+
+        if (sFac.sh.superIdx == -1) { //Facet in all structures
+            for (auto& s : model.structures) {
+                s.facets.push_back(sFac);
+            }
+        }
+        else {
+            model.structures[sFac.sh.superIdx].facets.push_back(sFac); //Assign to structure
         }
     }
-    catch (std::exception& e) {
-        GLMessageBox::Display(e.what(), "Error (LoadGeom)", GLDLG_OK, GLDLG_ICONERROR);
-    }
-
-    isRunning = true;
-    calcAC = true;
-    startTime = appTime;
-
+    return true;
 }
 
 /**
@@ -1217,23 +1303,36 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
     }
 
     // Send and Load geometry
-    std::string loaderString = SerializeForLoader().str();
+    //std::string loaderString = SerializeForLoader().str();
     progressDlg->SetMessage("Waiting for subprocesses to load geometry...");
     try {
-        if (simManager.ShareWithSimUnits((BYTE *) loaderString.c_str(), loaderString.size(), LoadType::LOADGEOM)) {
-            std::string errString = "Failed to send params to sub process!\n";
+        if(!MolflowGeomToSimModel()){
+        //if (simManager.ShareWithSimUnits((BYTE *) loaderString.c_str(), loaderString.size(), LoadType::LOADGEOM)) {
+            std::string errString = "Failed to send geometry to sub process!\n";
             GLMessageBox::Display(errString.c_str(), "Warning (LoadGeom)", GLDLG_OK, GLDLG_ICONWARNING);
 
             progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
             return;
         }
+        for(auto& simUnit : simManager.simUnits)
+            simUnit.model = model;
+
+        if (simManager.ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
+            //CloseLoaderDP();
+            std::string errString = "Failed to send geometry to sub process:\n";
+            errString.append(GetErrorDetails());
+            throw std::runtime_error(errString);
+        }
     }
     catch (std::exception& e) {
         GLMessageBox::Display(e.what(), "Error (LoadGeom)", GLDLG_OK, GLDLG_ICONERROR);
     }
 
-
+    progressDlg->SetMessage("Constructing memory structure to store results...");
+    if (!sendOnly) {
+        globState.Resize(model);
+    }
 
     //Old send hits location
     progressDlg->SetMessage("Closing dataport...");
@@ -1292,7 +1391,7 @@ std::ostringstream Worker::SerializeParamsForLoader() {
 */
 void Worker::ResetWorkerStats() {
 
-    memset(&globalHitCache, 0, sizeof(GlobalHitBuffer));
+    memset(&globState.globalHits, 0, sizeof(GlobalHitBuffer));
 
 
 }
@@ -1346,15 +1445,15 @@ void Worker::ResetMoments() {
 * \return amount of physical molecules represented by one test particle
 */
 double Worker::GetMoleculesPerTP(size_t moment) {
-    if (globalHitCache.globalHits.hit.nbDesorbed == 0) return 0; //avoid division by 0
+    if (globState.globalHits.globalHits.hit.nbDesorbed == 0) return 0; //avoid division by 0
     if (moment == 0) {
         //Constant flow
         //Each test particle represents a certain real molecule influx per second
-        return model.wp.finalOutgassingRate / globalHitCache.globalHits.hit.nbDesorbed;
+        return model.wp.finalOutgassingRate / globState.globalHits.globalHits.hit.nbDesorbed;
     } else {
         //Time-dependent mode
         //Each test particle represents a certain absolute number of real molecules
-        return (model.wp.totalDesorbedMolecules / mApp->worker.moments[moment - 1].second) / globalHitCache.globalHits.hit.nbDesorbed;
+        return (model.wp.totalDesorbedMolecules / mApp->worker.moments[moment - 1].second) / globState.globalHits.globalHits.hit.nbDesorbed;
     }
 }
 
@@ -1489,17 +1588,7 @@ void Worker::PrepareToRun() {
     //determine latest moment
     model.wp.latestMoment = 1E-10;
     model.wp.latestMoment = 0.5 * model.wp.timeWindowSize;
-#if defined(DEBUG) // validate with old method for now
-    double latestMoment = 1E-10;
-    for (auto & moment : moments)
-        if (moment.first > latestMoment) latestMoment = moment.first;
 
-    if(!moments.empty() && latestMoment != (moments.end()-1)->first){
-        char tmp[256];
-        sprintf(tmp, R"(Latest moment check differs "%lf" vs. "%lf")", latestMoment, (moments.end()-1)->first);
-        throw Error(tmp);
-    }
-#endif
     if(!moments.empty())
         model.wp.latestMoment = (moments.end()-1)->first + (moments.end()-1)->second / 2.0;
     //model.wp.latestMoment += model.wp.timeWindowSize / 2.0;

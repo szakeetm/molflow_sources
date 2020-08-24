@@ -1126,10 +1126,10 @@ int MolFlow::FrameMove()
 			hitNumber->SetText("");
 		}
 		else {
-			sprintf(tmp, "%s (%s)", FormatInt(worker.globalHitCache.globalHits.hit.nbMCHit, "hit"), FormatPS(hps, "hit"));
+			sprintf(tmp, "%s (%s)", FormatInt(worker.globState.globalHits.globalHits.hit.nbMCHit, "hit"), FormatPS(hps, "hit"));
 			hitNumber->SetText(tmp);
 		}
-		sprintf(tmp, "%s (%s)", FormatInt(worker.globalHitCache.globalHits.hit.nbDesorbed, "des"), FormatPS(dps, "des"));
+		sprintf(tmp, "%s (%s)", FormatInt(worker.globState.globalHits.globalHits.hit.nbDesorbed, "des"), FormatPS(dps, "des"));
 		desNumber->SetText(tmp);
 	}
 
@@ -1424,8 +1424,8 @@ void MolFlow::LoadFile(std::string fileName) {
 		singleACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
 		//resetSimu->SetEnabled(true);
 		ClearFacetParams();
-		nbDesStart = worker.globalHitCache.globalHits.hit.nbDesorbed;
-		nbHitStart = worker.globalHitCache.globalHits.hit.nbMCHit;
+		nbDesStart = worker.globState.globalHits.globalHits.hit.nbDesorbed;
+		nbHitStart = worker.globState.globalHits.globalHits.hit.nbMCHit;
 		AddRecent(filePath.c_str());
 		geom->viewStruct = -1;
 
@@ -1532,8 +1532,8 @@ void MolFlow::InsertGeometry(bool newStr,std::string fileName) {
 		singleACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
 		//resetSimu->SetEnabled(true);
 		//ClearFacetParams();
-		//nbDesStart = worker.globalHitCache.globalHits.hit.nbDesorbed;
-		//nbHitStart = worker.globalHitCache.globalHits.hit.nbMC;
+		//nbDesStart = worker.globState.globalHits.globalHits.hit.nbDesorbed;
+		//nbHitStart = worker.globState.globalHits.globalHits.hit.nbMC;
 		AddRecent(filePath.c_str());
 		geom->viewStruct = -1;
 
@@ -1596,7 +1596,7 @@ void MolFlow::ClearParameters() {
 
 void MolFlow::StartStopSimulation() {
 	
-	if (!(worker.globalHitCache.globalHits.hit.nbMCHit > 0) && !worker.model.wp.calcConstantFlow && worker.moments.size() == 0) {
+	if (!(worker.globState.globalHits.globalHits.hit.nbMCHit > 0) && !worker.model.wp.calcConstantFlow && worker.moments.size() == 0) {
 		bool ok = GLMessageBox::Display("Warning: in the Moments Editor, the option \"Calculate constant flow\" is disabled.\n"
 			"This is useful for time-dependent simulations.\n"
 			"However, you didn't define any moments, suggesting you're using steady-state mode.\n"
@@ -1618,8 +1618,8 @@ void MolFlow::StartStopSimulation() {
 	hps = 0.0;
 	lastHps = hps;
 	lastDps = dps;
-	lastNbHit = worker.globalHitCache.globalHits.hit.nbMCHit;
-	lastNbDes = worker.globalHitCache.globalHits.hit.nbDesorbed;
+	lastNbHit = worker.globState.globalHits.globalHits.hit.nbMCHit;
+	lastNbDes = worker.globState.globalHits.globalHits.hit.nbDesorbed;
 	lastUpdate = 0.0;
 
 }
@@ -2042,19 +2042,9 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		}
 
 		else if (src == compACBtn) {
-			try { lastUpdate = 0.0; worker.ComputeAC(m_fTime); }
-			catch (Error &e) {
-				GLMessageBox::Display((char *)e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
-				return;
-			}
 			break;
 		}
 		else if (src == singleACBtn) {
-			try { lastUpdate = 0.0; worker.StepAC(m_fTime); }
-			catch (Error &e) {
-				GLMessageBox::Display((char *)e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
-				return;
-			}
 			break;
 		}
 		/*else {
@@ -2110,7 +2100,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
         ResetSimulation(false);
         return;
 	}
-	//worker.globalHitCache.globalHits.hit.nbDesorbed = 0; //Already done by ResetWorkerStats
+	//worker.globState.globalHits.globalHits.hit.nbDesorbed = 0; //Already done by ResetWorkerStats
 	//sprintf(tmp,"L|R %g",L/R);
 	worker.SetCurrentFileName("");
 	nbDesStart = 0;
@@ -2664,22 +2654,22 @@ bool MolFlow::EvaluateVariable(VLIST *v) {
 		if (ok) v->value = geom->GetFacet(idx - 1)->sh.area;
 	}
 	else if (iequals(v->name, "SUMDES")) {
-		v->value = (double)worker.globalHitCache.globalHits.hit.nbDesorbed;
+		v->value = (double)worker.globState.globalHits.globalHits.hit.nbDesorbed;
 	}
 	else if (iequals(v->name, "SUMABS")) {
-		v->value = worker.globalHitCache.globalHits.hit.nbAbsEquiv;
+		v->value = worker.globState.globalHits.globalHits.hit.nbAbsEquiv;
 	}
 	else if (iequals(v->name, "SUMMCHIT")) {
-		v->value = (double)worker.globalHitCache.globalHits.hit.nbMCHit;
+		v->value = (double)worker.globState.globalHits.globalHits.hit.nbMCHit;
 	}
 	else if (iequals(v->name, "SUMHIT")) {
-		v->value = worker.globalHitCache.globalHits.hit.nbHitEquiv;
+		v->value = worker.globState.globalHits.globalHits.hit.nbHitEquiv;
 	}
 	else if (iequals(v->name, "MPP")) {
-		v->value = worker.globalHitCache.distTraveled_total / (double)worker.globalHitCache.globalHits.hit.nbDesorbed;
+		v->value = worker.globState.globalHits.distTraveled_total / (double)worker.globState.globalHits.globalHits.hit.nbDesorbed;
 	}
 	else if (iequals(v->name, "MFP")) {
-		v->value = worker.globalHitCache.distTraveledTotal_fullHitsOnly / worker.globalHitCache.globalHits.hit.nbHitEquiv;
+		v->value = worker.globState.globalHits.distTraveledTotal_fullHitsOnly / worker.globState.globalHits.globalHits.hit.nbHitEquiv;
 	}
 	else if (iequals(v->name, "DESAR")) {
 		double sumArea = 0.0;

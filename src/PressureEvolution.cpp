@@ -215,13 +215,13 @@ void PressureEvolution::refreshChart() {
 	//refreshes chart values
 
 	// Lock during update
-	BYTE *buffer = worker->GetHits();
-	if (!buffer) return;
+	BYTE *buffer_old = worker->GetHits();
+	if (!buffer_old) return;
 	int yScaleMode = yScaleCombo->GetSelectedIndex();
 
 	Geometry *geom = worker->GetGeometry();
-	GlobalHitBuffer *gHits = (GlobalHitBuffer *)buffer;
-	double nbDes = (double)gHits->globalHits.hit.nbDesorbed;
+	GlobalHitBuffer& gHits = worker->globState.globalHits;
+	double nbDes = (double)gHits.globalHits.hit.nbDesorbed;
 	double scaleY;
 	size_t facetHitsSize = (1 + worker->moments.size()) * sizeof(FacetHitBuffer);
 
@@ -230,19 +230,18 @@ void PressureEvolution::refreshChart() {
 		if (v->userData1 >= 0 && v->userData1 < geom->GetNbFacet()) {
 			Facet *f = geom->GetFacet(v->userData1);
 			v->Reset();
-			
+
+			auto& facetHits = worker->globState.facetStates[v->userData1].momentResults;
 			switch (yScaleMode) {
 			case 0: { //MC Hits
 				for (size_t m = 1; m <= Min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
-					FacetHitBuffer* facetHits = (FacetHitBuffer*)(buffer + f->sh.hitOffset + m * sizeof(FacetHitBuffer));
-					v->Add(worker->moments[m - 1].first, (double)facetHits->hit.nbMCHit, false);
+					v->Add(worker->moments[m - 1].first, (double)facetHits[m].hits.hit.nbMCHit, false);
 				}
 				break;
 			}
 			case 1: { //Equiv Hits
 				for (size_t m = 1; m <= Min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
-					FacetHitBuffer* facetHits = (FacetHitBuffer*)(buffer + f->sh.hitOffset + m * sizeof(FacetHitBuffer));
-					v->Add(worker->moments[m - 1].first, facetHits->hit.nbHitEquiv, false);
+					v->Add(worker->moments[m - 1].first, facetHits[m].hits.hit.nbHitEquiv, false);
 				}
 				break;
 			}
@@ -251,8 +250,7 @@ void PressureEvolution::refreshChart() {
                 scaleY *= worker->model.wp.totalDesorbedMolecules;
                 //scaleY *= worker->model.wp.totalDesorbedMolecules / worker->model.wp.timeWindowSize;
 				for (size_t m = 1; m <= Min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
-					FacetHitBuffer* facetHits = (FacetHitBuffer*)(buffer + f->sh.hitOffset + m * sizeof(FacetHitBuffer));
-					v->Add(worker->moments[m - 1].first, facetHits->hit.sum_v_ort*(scaleY/worker->moments[m - 1].second), false);
+					v->Add(worker->moments[m - 1].first, facetHits[m].hits.hit.sum_v_ort*(scaleY/worker->moments[m - 1].second), false);
 				}
 				break;
 			}
@@ -262,8 +260,7 @@ void PressureEvolution::refreshChart() {
                 //scaleY *= worker->model.wp.totalDesorbedMolecules / worker->model.wp.timeWindowSize;
                 scaleY *= f->DensityCorrection();
 				for (size_t m = 1; m <= Min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
-					FacetHitBuffer* facetHits = (FacetHitBuffer*)(buffer + f->sh.hitOffset + m * sizeof(FacetHitBuffer));
-					v->Add(worker->moments[m - 1].first, facetHits->hit.sum_1_per_ort_velocity*(scaleY/worker->moments[m - 1].second), false);
+					v->Add(worker->moments[m - 1].first, facetHits[m].hits.hit.sum_1_per_ort_velocity*(scaleY/worker->moments[m - 1].second), false);
 				}
 				break;
 			}
@@ -272,8 +269,7 @@ void PressureEvolution::refreshChart() {
                 scaleY *= worker->model.wp.totalDesorbedMolecules;
                 //scaleY *= worker->model.wp.totalDesorbedMolecules / worker->model.wp.timeWindowSize;
                 for (size_t m = 1; m <= Min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
-					FacetHitBuffer* facetHits = (FacetHitBuffer*)(buffer + f->sh.hitOffset + m * sizeof(FacetHitBuffer));
-					v->Add(worker->moments[m - 1].first, facetHits->hit.nbHitEquiv*(scaleY/worker->moments[m - 1].second), false);
+					v->Add(worker->moments[m - 1].first, facetHits[m].hits.hit.nbHitEquiv*(scaleY/worker->moments[m - 1].second), false);
 				}
 				break;
 			}
@@ -298,11 +294,10 @@ void PressureEvolution::addView(size_t facetId) {
 		bool found = false;
 
 		for (auto v = views.begin(); v != views.end() && !found;v++) {
-			found = ((*v)->userData1 == facetId);
-		}
-		if (found) {
-			GLMessageBox::Display("Facet already on chart", "Error", GLDLG_OK, GLDLG_ICONERROR);
-			return;
+            if ((*v)->userData1 == facetId) { // if facet found on chart
+                GLMessageBox::Display("Facet already on chart", "Error", GLDLG_OK, GLDLG_ICONERROR);
+                return;
+            }
 		}
 		if (worker->moments.size() > 10000) {
 			GLMessageBox::Display("Only the first 10000 moments will be plotted", "Error", GLDLG_OK, GLDLG_ICONWARNING);

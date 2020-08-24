@@ -103,14 +103,16 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
         }
         BYTE* buffer = simManager->GetLockedHitBuffer();
 */
-        globState->Resize(model->sh.nbFacet, model->tdParams.moments.size(), loader.loadFacets, model->wp.globalHistogramParams);
+        loader.InitSimModel(model);
+        // temp facets from loader to model 2d (structure, facet)
+        //
+        globState->Resize(*model);
 
         // 3. init counters with previous results
         loader.LoadSimulationState(Settings::req_real_file, model, *globState);
         //simManager->UnlockHitBuffer();
 
-        loader.InitSimModel(model);
-        // temp facets from loader to model 2d (structure, facet)
+
 
     }
     catch (std::exception& e) {

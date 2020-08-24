@@ -88,14 +88,14 @@ void GeometryViewer::SetBounds(int x, int y, int width, int height) {
 void GeometryViewer::DrawLinesAndHits() {
 
 	// Lines
-	if (showLine && mApp->worker.globalHitCache.hitCacheSize) {
+	if (showLine && mApp->worker.globState.globalHits.hitCacheSize) {
 
 		glDisable(GL_TEXTURE_2D);
 		glDisable(GL_LIGHTING);
 		glDisable(GL_CULL_FACE);
 
 		size_t count = 0;
-		while (count < Min(dispNumHits, mApp->worker.globalHitCache.hitCacheSize) && mApp->worker.globalHitCache.hitCache[count].type != 0) {
+		while (count < Min(dispNumHits, mApp->worker.globState.globalHits.hitCacheSize) && mApp->worker.globState.globalHits.hitCache[count].type != 0) {
 
 			//Regular (green) line color
 			if (mApp->whiteBg) { //whitebg
@@ -111,13 +111,13 @@ void GeometryViewer::DrawLinesAndHits() {
 			}
 
 			glBegin(GL_LINE_STRIP);
-			while (count < Min(dispNumHits, mApp->worker.globalHitCache.hitCacheSize) && mApp->worker.globalHitCache.hitCache[count].type != HIT_ABS) { //While hits are consecutive
+			while (count < Min(dispNumHits, mApp->worker.globState.globalHits.hitCacheSize) && mApp->worker.globState.globalHits.hitCache[count].type != HIT_ABS) { //While hits are consecutive
 
 				//change color in case of teleport
-				if (mApp->worker.globalHitCache.hitCache[count].type == HIT_TELEPORTSOURCE) {
-					glVertex3d(mApp->worker.globalHitCache.hitCache[count].pos.x, mApp->worker.globalHitCache.hitCache[count].pos.y, mApp->worker.globalHitCache.hitCache[count].pos.z); //Draw regular line until TP source
+				if (mApp->worker.globState.globalHits.hitCache[count].type == HIT_TELEPORTSOURCE) {
+					glVertex3d(mApp->worker.globState.globalHits.hitCache[count].pos.x, mApp->worker.globState.globalHits.hitCache[count].pos.y, mApp->worker.globState.globalHits.hitCache[count].pos.z); //Draw regular line until TP source
 					glEnd(); //Finish regular line
-					if (showTP && (count+1)<Min(dispNumHits, mApp->worker.globalHitCache.hitCacheSize) && mApp->worker.globalHitCache.hitCache[count+1].type == HIT_TELEPORTDEST) {
+					if (showTP && (count+1)<Min(dispNumHits, mApp->worker.globState.globalHits.hitCacheSize) && mApp->worker.globState.globalHits.hitCache[count+1].type == HIT_TELEPORTDEST) {
 						//Switch to orange dashed line
 						if (!mApp->whiteBg) {
 							glColor3f(1.0f, 0.7f, 0.2f);
@@ -130,9 +130,9 @@ void GeometryViewer::DrawLinesAndHits() {
 						glLineStipple(1, 0x0101);
 						glEnable(GL_LINE_STIPPLE);
 						glBegin(GL_LINE_STRIP);
-						glVertex3d(mApp->worker.globalHitCache.hitCache[count].pos.x, mApp->worker.globalHitCache.hitCache[count].pos.y, mApp->worker.globalHitCache.hitCache[count].pos.z); //source point
+						glVertex3d(mApp->worker.globState.globalHits.hitCache[count].pos.x, mApp->worker.globState.globalHits.hitCache[count].pos.y, mApp->worker.globState.globalHits.hitCache[count].pos.z); //source point
 						count++;
-						glVertex3d(mApp->worker.globalHitCache.hitCache[count].pos.x, mApp->worker.globalHitCache.hitCache[count].pos.y, mApp->worker.globalHitCache.hitCache[count].pos.z);  //teleport dest.
+						glVertex3d(mApp->worker.globState.globalHits.hitCache[count].pos.x, mApp->worker.globState.globalHits.hitCache[count].pos.y, mApp->worker.globState.globalHits.hitCache[count].pos.z);  //teleport dest.
 						glEnd();
 						glPopAttrib();
 
@@ -150,24 +150,24 @@ void GeometryViewer::DrawLinesAndHits() {
 						//glVertex3d(hitCache[count].pos.x , hitCache[count].pos.y , hitCache[count].pos.z); //source point
 						count++;
 						glBegin(GL_LINE_STRIP);
-						glVertex3d(mApp->worker.globalHitCache.hitCache[count].pos.x, mApp->worker.globalHitCache.hitCache[count].pos.y, mApp->worker.globalHitCache.hitCache[count].pos.z);  //teleport dest.
+						glVertex3d(mApp->worker.globState.globalHits.hitCache[count].pos.x, mApp->worker.globState.globalHits.hitCache[count].pos.y, mApp->worker.globState.globalHits.hitCache[count].pos.z);  //teleport dest.
 
 					}
 				} //end treating teleport 
 
-				if (mApp->worker.globalHitCache.hitCache[count].type == HIT_LAST) { //pen up at cache refresh border
+				if (mApp->worker.globState.globalHits.hitCache[count].type == HIT_LAST) { //pen up at cache refresh border
 									glEnd();
 									count++;
 									glBegin(GL_LINE_STRIP);
 				}
 				else {
-					glVertex3d(mApp->worker.globalHitCache.hitCache[count].pos.x, mApp->worker.globalHitCache.hitCache[count].pos.y, mApp->worker.globalHitCache.hitCache[count].pos.z);
+					glVertex3d(mApp->worker.globState.globalHits.hitCache[count].pos.x, mApp->worker.globState.globalHits.hitCache[count].pos.y, mApp->worker.globState.globalHits.hitCache[count].pos.z);
 					count++;
 				}
 			}
 			//Treat absorption
-			if (count < Min(dispNumHits, mApp->worker.globalHitCache.hitCacheSize) && mApp->worker.globalHitCache.hitCache[count].type != 0) {
-				glVertex3d(mApp->worker.globalHitCache.hitCache[count].pos.x, mApp->worker.globalHitCache.hitCache[count].pos.y, mApp->worker.globalHitCache.hitCache[count].pos.z);
+			if (count < Min(dispNumHits, mApp->worker.globState.globalHits.hitCacheSize) && mApp->worker.globState.globalHits.hitCache[count].type != 0) {
+				glVertex3d(mApp->worker.globState.globalHits.hitCache[count].pos.x, mApp->worker.globState.globalHits.hitCache[count].pos.y, mApp->worker.globState.globalHits.hitCache[count].pos.z);
 				count++;
 			}
 			glEnd();
@@ -196,9 +196,9 @@ void GeometryViewer::DrawLinesAndHits() {
 			glColor3f(0.0f, 1.0f, 0.0f);
 		}
 		glBegin(GL_POINTS);
-		for (size_t i = 0; i < Min(dispNumHits, mApp->worker.globalHitCache.hitCacheSize); i++)
-			if (mApp->worker.globalHitCache.hitCache[i].type == HIT_REF)
-				glVertex3d(mApp->worker.globalHitCache.hitCache[i].pos.x, mApp->worker.globalHitCache.hitCache[i].pos.y, mApp->worker.globalHitCache.hitCache[i].pos.z);
+		for (size_t i = 0; i < Min(dispNumHits, mApp->worker.globState.globalHits.hitCacheSize); i++)
+			if (mApp->worker.globState.globalHits.hitCache[i].type == HIT_REF)
+				glVertex3d(mApp->worker.globState.globalHits.hitCache[i].pos.x, mApp->worker.globState.globalHits.hitCache[i].pos.y, mApp->worker.globState.globalHits.hitCache[i].pos.z);
 		glEnd();
 
 		// Moving Refl
@@ -211,9 +211,9 @@ void GeometryViewer::DrawLinesAndHits() {
 		glColor3f(1.0f, 0.0f, 1.0f);
 		//}
 		glBegin(GL_POINTS);
-		for (size_t i = 0; i < Min(dispNumHits, mApp->worker.globalHitCache.hitCacheSize); i++)
-			if (mApp->worker.globalHitCache.hitCache[i].type == HIT_MOVING)
-				glVertex3d(mApp->worker.globalHitCache.hitCache[i].pos.x, mApp->worker.globalHitCache.hitCache[i].pos.y, mApp->worker.globalHitCache.hitCache[i].pos.z);
+		for (size_t i = 0; i < Min(dispNumHits, mApp->worker.globState.globalHits.hitCacheSize); i++)
+			if (mApp->worker.globState.globalHits.hitCache[i].type == HIT_MOVING)
+				glVertex3d(mApp->worker.globState.globalHits.hitCache[i].pos.x, mApp->worker.globState.globalHits.hitCache[i].pos.y, mApp->worker.globState.globalHits.hitCache[i].pos.z);
 		glEnd();
 
 		// Trans
@@ -221,9 +221,9 @@ void GeometryViewer::DrawLinesAndHits() {
 		glPointSize(pointSize);
 		glColor3f(0.5f, 1.0f, 1.0f);
 		glBegin(GL_POINTS);
-		for (size_t i = 0; i < Min(dispNumHits, mApp->worker.globalHitCache.hitCacheSize); i++)
-			if (mApp->worker.globalHitCache.hitCache[i].type == HIT_TRANS)
-				glVertex3d(mApp->worker.globalHitCache.hitCache[i].pos.x, mApp->worker.globalHitCache.hitCache[i].pos.y, mApp->worker.globalHitCache.hitCache[i].pos.z);
+		for (size_t i = 0; i < Min(dispNumHits, mApp->worker.globState.globalHits.hitCacheSize); i++)
+			if (mApp->worker.globState.globalHits.hitCache[i].type == HIT_TRANS)
+				glVertex3d(mApp->worker.globState.globalHits.hitCache[i].pos.x, mApp->worker.globState.globalHits.hitCache[i].pos.y, mApp->worker.globState.globalHits.hitCache[i].pos.z);
 		glEnd();
 
 		// Teleport
@@ -237,9 +237,9 @@ void GeometryViewer::DrawLinesAndHits() {
 				glColor3f(1.0f, 0.0f, 1.0f);
 			}
 			glBegin(GL_POINTS);
-			for (size_t i = 0; i < Min(dispNumHits, mApp->worker.globalHitCache.hitCacheSize); i++)
-				if (Contains({HIT_TELEPORTSOURCE, HIT_TELEPORTDEST}, mApp->worker.globalHitCache.hitCache[i].type))
-					glVertex3d(mApp->worker.globalHitCache.hitCache[i].pos.x, mApp->worker.globalHitCache.hitCache[i].pos.y, mApp->worker.globalHitCache.hitCache[i].pos.z);
+			for (size_t i = 0; i < Min(dispNumHits, mApp->worker.globState.globalHits.hitCacheSize); i++)
+				if (Contains({HIT_TELEPORTSOURCE, HIT_TELEPORTDEST}, mApp->worker.globState.globalHits.hitCache[i].type))
+					glVertex3d(mApp->worker.globState.globalHits.hitCache[i].pos.x, mApp->worker.globState.globalHits.hitCache[i].pos.y, mApp->worker.globState.globalHits.hitCache[i].pos.z);
 			glEnd();
 		}
 
@@ -247,17 +247,17 @@ void GeometryViewer::DrawLinesAndHits() {
 		glPointSize(pointSize);
 		glColor3f(1.0f, 0.0f, 0.0f);
 		glBegin(GL_POINTS);
-		for (size_t i = 0; i < Min(dispNumHits, mApp->worker.globalHitCache.hitCacheSize); i++)
-			if (mApp->worker.globalHitCache.hitCache[i].type == HIT_ABS)
-				glVertex3d(mApp->worker.globalHitCache.hitCache[i].pos.x, mApp->worker.globalHitCache.hitCache[i].pos.y, mApp->worker.globalHitCache.hitCache[i].pos.z);
+		for (size_t i = 0; i < Min(dispNumHits, mApp->worker.globState.globalHits.hitCacheSize); i++)
+			if (mApp->worker.globState.globalHits.hitCache[i].type == HIT_ABS)
+				glVertex3d(mApp->worker.globState.globalHits.hitCache[i].pos.x, mApp->worker.globState.globalHits.hitCache[i].pos.y, mApp->worker.globState.globalHits.hitCache[i].pos.z);
 		glEnd();
 
 		// Des
 		glColor3f(0.3f, 0.3f, 1.0f);
 		glBegin(GL_POINTS);
-		for (size_t i = 0; i < Min(dispNumHits, mApp->worker.globalHitCache.hitCacheSize); i++)
-			if (mApp->worker.globalHitCache.hitCache[i].type == HIT_DES)
-				glVertex3d(mApp->worker.globalHitCache.hitCache[i].pos.x, mApp->worker.globalHitCache.hitCache[i].pos.y, mApp->worker.globalHitCache.hitCache[i].pos.z);
+		for (size_t i = 0; i < Min(dispNumHits, mApp->worker.globState.globalHits.hitCacheSize); i++)
+			if (mApp->worker.globState.globalHits.hitCache[i].type == HIT_DES)
+				glVertex3d(mApp->worker.globState.globalHits.hitCache[i].pos.x, mApp->worker.globState.globalHits.hitCache[i].pos.y, mApp->worker.globState.globalHits.hitCache[i].pos.z);
 		glEnd();
 
 	}

@@ -368,12 +368,11 @@ void ProfilePlotter::plot() {
 void ProfilePlotter::refreshViews() {
 
 	// Lock during update
-	BYTE *buffer = worker->GetHits();
-	if (!buffer) return;
+	BYTE *buffer_old = worker->GetHits();
+	if (!buffer_old) return;
 	int displayMode = normCombo->GetSelectedIndex();
 
 	Geometry *geom = worker->GetGeometry();
-	GlobalHitBuffer *gHits = (GlobalHitBuffer *)buffer;
 
 	double scaleY;
 
@@ -385,17 +384,17 @@ void ProfilePlotter::refreshViews() {
 			Facet *f = geom->GetFacet(v->userData1);
 
 			v->Reset();
-			ProfileSlice *profilePtr = (ProfileSlice *)(buffer + f->sh.hitOffset + facetHitsSize + worker->displayedMoment*sizeof(ProfileSlice)*PROFILE_SIZE);
+			const std::vector<ProfileSlice>& profile = worker->globState.facetStates[v->userData1].momentResults[worker->displayedMoment].profile;
 
 			//FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->wp.hitOffset+ worker->displayedMoment*sizeof(FacetHitBuffer));
 			//double fnbHit = (double)fCount->hit.nbMCHit;
 			//if (fnbHit == 0.0) fnbHit = 1.0;
-			if (worker->globalHitCache.globalHits.hit.nbDesorbed > 0){
+			if (worker->globState.globalHits.globalHits.hit.nbDesorbed > 0){
 
 				switch (displayMode) {
 				case 0: //Raw data
 					for (int j = 0; j < PROFILE_SIZE; j++)
-						v->Add((double)j, profilePtr[j].countEquiv, false);
+						v->Add((double)j, profile[j].countEquiv, false);
 
 					break;
 
@@ -404,14 +403,14 @@ void ProfilePlotter::refreshViews() {
 					scaleY *= worker->GetMoleculesPerTP(worker->displayedMoment);
 
 					for (int j = 0; j < PROFILE_SIZE; j++)
-						v->Add((double)j, profilePtr[j].sum_v_ort*scaleY, false);
+						v->Add((double)j, profile[j].sum_v_ort*scaleY, false);
 					break;
 				case 2: //Particle density
 					scaleY = 1.0 / ((f->GetArea() * 1E-4) / (double)PROFILE_SIZE);
 					scaleY *= worker->GetMoleculesPerTP(worker->displayedMoment) * f->DensityCorrection();
 					
 					for (int j = 0; j < PROFILE_SIZE; j++)
-						v->Add((double)j, profilePtr[j].sum_1_per_ort_velocity*scaleY, false);
+						v->Add((double)j, profile[j].sum_1_per_ort_velocity*scaleY, false);
 					break;
 				case 3: {//Velocity
 					double sum = 0.0;
@@ -421,9 +420,9 @@ void ProfilePlotter::refreshViews() {
 					values.reserve(PROFILE_SIZE);
 					for (int j = 0; j < PROFILE_SIZE; j++) {//count distribution sum
 						if (!correctForGas->GetState())
-							val = profilePtr[j].countEquiv;
+							val = profile[j].countEquiv;
 						else
-							val = profilePtr[j].countEquiv / (((double)j + 0.5)*scaleX); //fnbhit not needed, sum will take care of normalization
+							val = profile[j].countEquiv / (((double)j + 0.5)*scaleX); //fnbhit not needed, sum will take care of normalization
 						sum += val;
 						values.push_back(val);
 					}
@@ -439,28 +438,31 @@ void ProfilePlotter::refreshViews() {
 					values.reserve(PROFILE_SIZE);
 					for (int j = 0; j < PROFILE_SIZE; j++) {//count distribution sum
 						if (!correctForGas->GetState())
-							val = profilePtr[j].countEquiv;
+							val = profile[j].countEquiv;
 						else
-							val = profilePtr[j].countEquiv / sin(((double)j + 0.5)*PI / 2.0 / (double)PROFILE_SIZE); //fnbhit not needed, sum will take care of normalization
+							val = profile[j].countEquiv / sin(((double)j + 0.5)*PI / 2.0 / (double)PROFILE_SIZE); //fnbhit not needed, sum will take care of normalization
 						sum += val;
 						values.push_back(val);
 					}
 
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j*scaleX, values[j] / sum, false);
-					break; }
-				case 5: //To 1 (max value)
-					double max = 1.0;
-
-					for (int j = 0; j < PROFILE_SIZE; j++)
-					{
-						if (profilePtr[j].countEquiv > max) max = profilePtr[j].countEquiv;
-					}
-					scaleY = 1.0 / (double)max;
-
-					for (int j = 0; j < PROFILE_SIZE; j++)
-						v->Add((double)j, profilePtr[j].countEquiv*scaleY, false);
 					break;
+				}
+				case 5: {//To 1 (max value)
+                    double max = 1.0;
+
+                    for (int j = 0; j < PROFILE_SIZE; j++) {
+                        if (profile[j].countEquiv > max) max = profile[j].countEquiv;
+                    }
+                    scaleY = 1.0 / (double) max;
+
+                    for (int j = 0; j < PROFILE_SIZE; j++)
+                        v->Add((double) j, profile[j].countEquiv * scaleY, false);
+                    break;
+                }
+                default:
+                    break;
 				}
 
 			}
@@ -468,7 +470,7 @@ void ProfilePlotter::refreshViews() {
 		}
 		else {
 
-			if (v->userData1 == -2 && worker->globalHitCache.globalHits.hit.nbDesorbed != 0.0) {
+			if (v->userData1 == -2 && worker->globState.globalHits.globalHits.hit.nbDesorbed != 0.0) {
 
 				// Volatile profile
 				v->Reset();
@@ -476,16 +478,16 @@ void ProfilePlotter::refreshViews() {
 				for (size_t j = 0; j < nb; j++) {
 					Facet *f = geom->GetFacet(j);
 					if (f->sh.isVolatile) {
-						FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->sh.hitOffset+worker->displayedMoment*sizeof(FacetHitBuffer));
+					    const FacetHitBuffer& fCount = worker->globState.facetStates[j].momentResults[worker->displayedMoment].hits;
 						double z = geom->GetVertex(f->indices[0])->z;
-						v->Add(z,fCount->hit.nbAbsEquiv / worker->globalHitCache.globalHits.hit.nbDesorbed, false);
+						v->Add(z,fCount.hit.nbAbsEquiv / worker->globState.globalHits.globalHits.hit.nbDesorbed, false);
 					}
 				}
 				// Last
 				Facet *f = geom->GetFacet(28);
-				FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->sh.hitOffset+worker->displayedMoment*sizeof(FacetHitBuffer));
-				double fnbAbs = fCount->hit.nbAbsEquiv;
-				v->Add(1000.0, fnbAbs / worker->globalHitCache.globalHits.hit.nbDesorbed, false);
+                const FacetHitBuffer& fCount = worker->globState.facetStates[28].momentResults[worker->displayedMoment].hits;
+				double fnbAbs = fCount.hit.nbAbsEquiv;
+				v->Add(1000.0, fnbAbs / worker->globState.globalHits.globalHits.hit.nbDesorbed, false);
 				v->CommitChange();
 
 				//v->Reset();

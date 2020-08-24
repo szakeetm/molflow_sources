@@ -1596,16 +1596,18 @@ void Simulation::RecordHitOnTexture(SubprocessFacet *f, double time, bool countH
                                       f->sh.N)); //surface-orthogonal velocity component
 
     GlobalSimuState& tmpResults = tmpGlobalResults[omp_get_thread_num()];
-    TextureCell& texture = tmpResults.facetStates[f->globalId].momentResults[0].texture[add];
-    if (countHit) texture.countEquiv += currentParticle.oriRatio;
-    texture.sum_1_per_ort_velocity +=
-            currentParticle.oriRatio * velocity_factor / ortVelocity;
-    texture.sum_v_ort_per_area += currentParticle.oriRatio * ortSpeedFactor * ortVelocity *
-                                  f->textureCellIncrements[add]; // sum ortho_velocity[m/s] / cell_area[cm2]
+    {
+        TextureCell &texture = tmpResults.facetStates[f->globalId].momentResults[0].texture[add];
+        if (countHit) texture.countEquiv += currentParticle.oriRatio;
+        texture.sum_1_per_ort_velocity +=
+                currentParticle.oriRatio * velocity_factor / ortVelocity;
+        texture.sum_v_ort_per_area += currentParticle.oriRatio * ortSpeedFactor * ortVelocity *
+                                      f->textureCellIncrements[add]; // sum ortho_velocity[m/s] / cell_area[cm2]
+    }
     int m = -1;
     if((m = LookupMomentIndex(time, model.tdParams.moments, currentParticle.lastMomentIndex)) >= 0){
         currentParticle.lastMomentIndex = m;
-        texture = tmpResults.facetStates[f->globalId].momentResults[m].texture[add];
+        TextureCell& texture = tmpResults.facetStates[f->globalId].momentResults[m].texture[add];
         if (countHit) texture.countEquiv += currentParticle.oriRatio;
         texture.sum_1_per_ort_velocity +=
                 currentParticle.oriRatio * velocity_factor / ortVelocity;
@@ -1620,13 +1622,15 @@ void Simulation::RecordDirectionVector(SubprocessFacet *f, double time, CurrentP
     size_t add = tu + tv * (f->sh.texWidth);
 
     GlobalSimuState& tmpResults = tmpGlobalResults[omp_get_thread_num()];
-    DirectionCell& direction = tmpResults.facetStates[f->globalId].momentResults[0].direction[add];
-    direction.dir += currentParticle.oriRatio * currentParticle.direction * currentParticle.velocity;
-    direction.count++;
+    {
+        DirectionCell &direction = tmpResults.facetStates[f->globalId].momentResults[0].direction[add];
+        direction.dir += currentParticle.oriRatio * currentParticle.direction * currentParticle.velocity;
+        direction.count++;
+    }
     int m = -1;
     if((m = LookupMomentIndex(time, model.tdParams.moments, currentParticle.lastMomentIndex)) >= 0){
         currentParticle.lastMomentIndex = m;
-        direction = tmpResults.facetStates[f->globalId].momentResults[m].direction[add];
+        DirectionCell &direction = tmpResults.facetStates[f->globalId].momentResults[m].direction[add];
         direction.dir += currentParticle.oriRatio * currentParticle.direction * currentParticle.velocity;
         direction.count++;
     }
@@ -1654,17 +1658,19 @@ Simulation::ProfileFacet(SubprocessFacet *f, double time, bool countHit, double 
     } else if (f->sh.profileType == PROFILE_U || f->sh.profileType == PROFILE_V) {
         size_t pos = (size_t)((f->sh.profileType == PROFILE_U ? f->colU : f->colV) * (double) PROFILE_SIZE);
         if (pos >= 0 && pos < PROFILE_SIZE) {
-            ProfileSlice& profile = tmpResults.facetStates[f->globalId].momentResults[0].profile[pos];
-            if (countHit) profile.countEquiv += currentParticle.oriRatio;
-            double ortVelocity = currentParticle.velocity *
-                                 std::abs(Dot(f->sh.N, currentParticle.direction));
-            profile.sum_1_per_ort_velocity +=
-                    currentParticle.oriRatio * velocity_factor / ortVelocity;
-            profile.sum_v_ort += currentParticle.oriRatio * ortSpeedFactor *
-                                 (model.wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity;
+            {
+                ProfileSlice &profile = tmpResults.facetStates[f->globalId].momentResults[0].profile[pos];
+                if (countHit) profile.countEquiv += currentParticle.oriRatio;
+                double ortVelocity = currentParticle.velocity *
+                                     std::abs(Dot(f->sh.N, currentParticle.direction));
+                profile.sum_1_per_ort_velocity +=
+                        currentParticle.oriRatio * velocity_factor / ortVelocity;
+                profile.sum_v_ort += currentParticle.oriRatio * ortSpeedFactor *
+                                     (model.wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity;
+            }
             if(m >= 0) {
                 currentParticle.lastMomentIndex = m;
-                profile = tmpResults.facetStates[f->globalId].momentResults[m].profile[pos];
+                ProfileSlice &profile = tmpResults.facetStates[f->globalId].momentResults[m].profile[pos];
                 if (countHit) profile.countEquiv += currentParticle.oriRatio;
                 double ortVelocity = currentParticle.velocity *
                                      std::abs(Dot(f->sh.N, currentParticle.direction));
@@ -1830,26 +1836,27 @@ void Simulation::IncreaseFacetCounter(SubprocessFacet *f, double time, size_t hi
                                       double sum_1_per_v, double sum_v_ort, CurrentParticleStatus &currentParticle) {
     const double hitEquiv = static_cast<double>(hit) * currentParticle.oriRatio;
     GlobalSimuState& tmpResults = tmpGlobalResults[omp_get_thread_num()];
-    auto& hits = tmpResults.facetStates[f->globalId].momentResults[0].hits.hit;
-    hits.nbMCHit += hit;
-    hits.nbHitEquiv += hitEquiv;
-    hits.nbDesorbed += desorb;
-    hits.nbAbsEquiv += static_cast<double>(absorb) * currentParticle.oriRatio;
-    hits.sum_1_per_ort_velocity += currentParticle.oriRatio * sum_1_per_v;
-    hits.sum_v_ort += currentParticle.oriRatio * sum_v_ort;
-    hits.sum_1_per_velocity += (hitEquiv + static_cast<double>(desorb)) / currentParticle.velocity;
-
+    {
+        FacetHitBuffer &hits = tmpResults.facetStates[f->globalId].momentResults[0].hits;
+        hits.hit.nbMCHit += hit;
+        hits.hit.nbHitEquiv += hitEquiv;
+        hits.hit.nbDesorbed += desorb;
+        hits.hit.nbAbsEquiv += static_cast<double>(absorb) * currentParticle.oriRatio;
+        hits.hit.sum_1_per_ort_velocity += currentParticle.oriRatio * sum_1_per_v;
+        hits.hit.sum_v_ort += currentParticle.oriRatio * sum_v_ort;
+        hits.hit.sum_1_per_velocity += (hitEquiv + static_cast<double>(desorb)) / currentParticle.velocity;
+    }
     int m = -1;
     if((m = LookupMomentIndex(time, model.tdParams.moments, currentParticle.lastMomentIndex)) >= 0){
         currentParticle.lastMomentIndex = m;
-        hits = tmpResults.facetStates[f->globalId].momentResults[m].hits.hit;
-        hits.nbMCHit += hit;
-        hits.nbHitEquiv += hitEquiv;
-        hits.nbDesorbed += desorb;
-        hits.nbAbsEquiv += static_cast<double>(absorb) * currentParticle.oriRatio;
-        hits.sum_1_per_ort_velocity += currentParticle.oriRatio * sum_1_per_v;
-        hits.sum_v_ort += currentParticle.oriRatio * sum_v_ort;
-        hits.sum_1_per_velocity += (hitEquiv + static_cast<double>(desorb)) / currentParticle.velocity;
+        FacetHitBuffer& hits = tmpResults.facetStates[f->globalId].momentResults[m].hits;
+        hits.hit.nbMCHit += hit;
+        hits.hit.nbHitEquiv += hitEquiv;
+        hits.hit.nbDesorbed += desorb;
+        hits.hit.nbAbsEquiv += static_cast<double>(absorb) * currentParticle.oriRatio;
+        hits.hit.sum_1_per_ort_velocity += currentParticle.oriRatio * sum_1_per_v;
+        hits.hit.sum_v_ort += currentParticle.oriRatio * sum_v_ort;
+        hits.hit.sum_1_per_velocity += (hitEquiv + static_cast<double>(desorb)) / currentParticle.velocity;
     }
 }
 

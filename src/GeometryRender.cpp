@@ -50,9 +50,9 @@ extern SynRad*mApp;
 * \param renderDirectionTexture bool value
 * \param sMode which simulation mode was used (monte carlo / angular coefficient)
 */
-void MolflowGeometry::BuildFacetTextures(BYTE *hits, bool renderRegularTexture, bool renderDirectionTexture,size_t sMode) {
+void MolflowGeometry::BuildFacetTextures(GlobalSimuState *texture, bool renderRegularTexture, bool renderDirectionTexture, size_t sMode) {
 
-	GlobalHitBuffer *shGHit = (GlobalHitBuffer *)hits;
+	GlobalHitBuffer *shGHit = &texture->globalHits;
 
 	Worker *w = &(mApp->worker);
 
@@ -142,8 +142,8 @@ void MolflowGeometry::BuildFacetTextures(BYTE *hits, bool renderRegularTexture, 
 			}
 
 			// Retrieve texture from shared memory (every seconds)
-			TextureCell *hits_local = (TextureCell *)((BYTE *)shGHit + (f->sh.hitOffset + facetHitsSize + profSize*(1 + nbMoments) + tSize*mApp->worker.displayedMoment));
-			f->BuildTexture(hits_local, textureMode, min, max, texColormap,
+			//TextureCell *hits_local = (TextureCell *)((BYTE *)shGHit + (f->sh.hitOffset + facetHitsSize + profSize*(1 + nbMoments) + tSize*mApp->worker.displayedMoment));
+			f->BuildTexture(texture->facetStates[i].momentResults[mApp->worker.displayedMoment].texture, textureMode, min, max, texColormap,
 				dCoef_custom[0] * timeCorrection, dCoef_custom[1] * timeCorrection, dCoef_custom[2] * timeCorrection, texLogScale, mApp->worker.displayedMoment);
 		}
 
@@ -156,8 +156,9 @@ void MolflowGeometry::BuildFacetTextures(BYTE *hits, bool renderRegularTexture, 
 			if (shGHit->globalHits.hit.nbDesorbed)
 			iDesorbed = 1.0 / (double)shGHit->globalHits.hit.nbDesorbed;
 			*/
-						
-			DirectionCell *dirs = (DirectionCell *)((BYTE *)shGHit + (f->sh.hitOffset + facetHitsSize + profSize*(1 + nbMoments) + tSize*(1 + nbMoments) + dSize*mApp->worker.displayedMoment));
+
+
+			const std::vector<DirectionCell>& dirs = texture->facetStates[i].momentResults[mApp->worker.displayedMoment].direction;
 			for (size_t j = 0; j < nbElem; j++) {
 				double denominator = (dirs[j].count > 0) ? 1.0 / dirs[j].count : 1.0;
 				f->dirCache[j].dir = dirs[j].dir * denominator;

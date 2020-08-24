@@ -199,11 +199,11 @@ if(NOT MSVC)
     endif()
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        target_link_libraries(${PROJECT_NAME} PRIVATE c++fs)
+        target_link_libraries(${PROJECT_NAME} PRIVATE stdc++)
     elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
         #don´t add anything for filesystem
     else()
-        target_link_libraries(${PROJECT_NAME} stdc++fs)
+        target_link_libraries(${PROJECT_NAME} PRIVATE stdc++fs)
     endif()
 
 endif(NOT MSVC)
