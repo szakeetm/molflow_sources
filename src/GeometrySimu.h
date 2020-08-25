@@ -34,6 +34,9 @@ public:
     SimulationModel() : otfParams(), tdParams(), wp(), sh(){};
     void CalculateFacetParams(SubprocessFacet* f);
 
+    // Sim functions
+    double GetOpacityAt(SubprocessFacet *f, double time) const;
+
     // Geometry Description
     std::vector<std::vector<SubprocessFacet>>    facets;    // All facets of this geometry
     std::vector<SuperStructure> structures;
@@ -66,13 +69,13 @@ struct SubprocessFacet{
 
     std::vector<size_t>      indices;          // Indices (Reference to geometry vertex)
     std::vector<Vector2d> vertices2;        // Vertices (2D plane space, UV coordinates)
-    std::vector<std::vector<TextureCell>>     texture;            // Texture hit recording (taking area, temperature, mass into account), 1+nbMoments
+    //std::vector<std::vector<TextureCell>>     texture;            // Texture hit recording (taking area, temperature, mass into account), 1+nbMoments
     std::vector<double>   textureCellIncrements;              // Texure increment
     std::vector<bool>     largeEnough;      // cells that are NOT too small for autoscaling
     double   fullSizeInc;       // Texture increment of a full texture element
-    std::vector<std::vector<DirectionCell>>     direction;       // Direction field recording (average), 1+nbMoments
+    //std::vector<std::vector<DirectionCell>>     direction;       // Direction field recording (average), 1+nbMoments
     //bool     *fullElem;         // Direction field recording (only on full element)
-    std::vector<std::vector<ProfileSlice>> profile;         // Distribution and hit recording
+    //std::vector<std::vector<ProfileSlice>> profile;         // Distribution and hit recording
     std::vector<double>   outgassingMap; // Cumulative outgassing map when desorption is based on imported file
     double outgassingMapWidthD; //actual outgassing file map width
     double outgassingMapHeightD; //actual outgassing file map height

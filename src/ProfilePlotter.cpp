@@ -368,7 +368,7 @@ void ProfilePlotter::plot() {
 void ProfilePlotter::refreshViews() {
 
 	// Lock during update
-	BYTE *buffer_old = worker->GetHits();
+	bool buffer_old = worker->GetHits();
 	if (!buffer_old) return;
 	int displayMode = normCombo->GetSelectedIndex();
 

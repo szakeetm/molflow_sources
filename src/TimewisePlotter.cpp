@@ -253,7 +253,7 @@ void TimewisePlotter::Update(float appTime, bool force) {
 void TimewisePlotter::refreshViews() {
 
 	// Lock during update
-	BYTE *buffer_old = worker->GetHits();
+	bool buffer_old = worker->GetHits();
 	if (!buffer_old) return;
 	int displayMode = normCombo->GetSelectedIndex();
 	

@@ -51,7 +51,7 @@ bool SubprocessFacet::InitializeDirectionTexture(const size_t &nbMoments)
     if (sh.countDirection) {
         directionSize = sh.texWidth*sh.texHeight * sizeof(DirectionCell);
         try {
-            direction = std::vector<std::vector<DirectionCell>>(1 + nbMoments, std::vector<DirectionCell>(sh.texWidth*sh.texHeight));
+            //direction = std::vector<std::vector<DirectionCell>>(1 + nbMoments, std::vector<DirectionCell>(sh.texWidth*sh.texHeight));
         }
         catch (...) {
             throw std::runtime_error("Not enough memory to load direction textures");
@@ -67,7 +67,7 @@ bool SubprocessFacet::InitializeProfile(const size_t &nbMoments)
     if (sh.isProfile) {
         profileSize = PROFILE_SIZE * sizeof(ProfileSlice);
         try {
-            profile = std::vector<std::vector<ProfileSlice>>(1 + nbMoments, std::vector<ProfileSlice>(PROFILE_SIZE));
+            //profile = std::vector<std::vector<ProfileSlice>>(1 + nbMoments, std::vector<ProfileSlice>(PROFILE_SIZE));
         }
         catch (...) {
             throw std::runtime_error("Not enough memory to load profiles");
@@ -86,7 +86,7 @@ bool SubprocessFacet::InitializeTexture(const size_t &nbMoments)
         largeEnough.resize(nbE);
         textureSize = nbE * sizeof(TextureCell);
         try {
-            texture = std::vector<std::vector<TextureCell>>(1 + nbMoments, std::vector<TextureCell>(nbE));
+            //texture = std::vector<std::vector<TextureCell>>(1 + nbMoments, std::vector<TextureCell>(nbE));
         }
         catch (...) {
             throw std::runtime_error("Not enough memory to load textures");

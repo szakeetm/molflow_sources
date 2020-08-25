@@ -32,8 +32,6 @@ Simulation::Simulation(size_t nbThreads)
         particle.lastHitFacet = nullptr;
 
     hasVolatile = false;
-    for(auto& tmpGlobalResult : tmpGlobalResults)
-	    memset(&tmpGlobalResult.globalHits, 0, sizeof(GlobalHitBuffer));
 
 	model.sh.nbSuper = 0;
 
@@ -226,12 +224,7 @@ size_t Simulation::LoadSimulation() {
         for(auto& tmpGlobal : tmpGlobalResults)
             tmpGlobal = tmpResults;
     }
-    //Initialize global histogram
-    FacetHistogramBuffer hist;
-    hist.Resize(model.wp.globalHistogramParams);
-    for(auto& tmpGlobalState : tmpGlobalResults) {
-        tmpGlobalState.globalHistograms = std::vector<FacetHistogramBuffer>(1 + model.tdParams.moments.size(), hist);
-    }
+
     //Reserve particle log
     if (model.otfParams.enableLogging)
         tmpParticleLog.reserve(model.otfParams.logLimit / model.otfParams.nbProcess);
@@ -331,23 +324,30 @@ void Simulation::ResetSimulation() {
 }*/
 
 void Simulation::RecordHit(const int &type, const CurrentParticleStatus &currentParticle) {
-    GlobalSimuState& tmpResults = tmpGlobalResults[omp_get_thread_num()];
-    if (tmpResults.globalHits.hitCacheSize < HITCACHESIZE) {
-        tmpResults.globalHits.hitCache[tmpResults.globalHits.hitCacheSize].pos = currentParticle.position;
-        tmpResults.globalHits.hitCache[tmpResults.globalHits.hitCacheSize].type = type;
-        tmpResults.globalHits.hitCacheSize++;
+    const int index = omp_get_thread_num();
+    if(index == 0) {
+        GlobalSimuState &tmpResults = *currentParticle.tmpState;
+        if (tmpResults.globalHits.hitCacheSize < HITCACHESIZE) {
+            tmpResults.globalHits.hitCache[tmpResults.globalHits.hitCacheSize].pos = currentParticle.position;
+            tmpResults.globalHits.hitCache[tmpResults.globalHits.hitCacheSize].type = type;
+            tmpResults.globalHits.hitCacheSize++;
+        }
     }
 }
 
 void Simulation::RecordLeakPos(const CurrentParticleStatus &currentParticle) {
     // Source region check performed when calling this routine
     // Record leak for debugging
-    RecordHit(HIT_REF, currentParticle);
-    RecordHit(HIT_LAST, currentParticle);
-    GlobalSimuState& tmpResults = tmpGlobalResults[omp_get_thread_num()];
-    if (tmpResults.globalHits.leakCacheSize < LEAKCACHESIZE) {
-        tmpResults.globalHits.leakCache[tmpResults.globalHits.leakCacheSize].pos = currentParticle.position;
-        tmpResults.globalHits.leakCache[tmpResults.globalHits.leakCacheSize].dir = currentParticle.direction;
-        tmpResults.globalHits.leakCacheSize++;
+
+    const int index = omp_get_thread_num();
+    if(index == 0) {
+        RecordHit(HIT_REF, currentParticle);
+        RecordHit(HIT_LAST, currentParticle);
+        GlobalSimuState &tmpResults = *currentParticle.tmpState;
+        if (tmpResults.globalHits.leakCacheSize < LEAKCACHESIZE) {
+            tmpResults.globalHits.leakCache[tmpResults.globalHits.leakCacheSize].pos = currentParticle.position;
+            tmpResults.globalHits.leakCache[tmpResults.globalHits.leakCacheSize].dir = currentParticle.direction;
+            tmpResults.globalHits.leakCacheSize++;
+        }
     }
 }

@@ -234,7 +234,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
 
         if (ok) {
             // Get copy of hit buffer, once a load can be initiated
-            BYTE *buffer_old;
+            bool buffer_old;
             try {
                 buffer_old = simManager.GetLockedHitBuffer();
                 if(!buffer_old){
@@ -421,7 +421,7 @@ void Worker::ExportProfiles(const char *fn) {
         sprintf(tmp, "Cannot open file for writing %s", fileName.c_str());
         throw Error(tmp);
     }
-    BYTE* buffer_old = simManager.GetLockedHitBuffer();
+    bool buffer_old = simManager.GetLockedHitBuffer();
     if(!buffer_old)
         throw Error("Cannot access shared hit buffer");
     geom->ExportProfiles(f, isTXT, this);
@@ -723,7 +723,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 progressDlg->SetMessage("Reloading worker with new geometry...");
                 RealReload(); //for the loading of textures
 
-                BYTE* buffer_old = simManager.GetLockedHitBuffer();
+                bool buffer_old = simManager.GetLockedHitBuffer();
                 if(!buffer_old)
                     throw Error("Cannot access shared hit buffer");
                 if (version >= 8)
@@ -842,7 +842,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
                     if (ext == "xml" || ext == "zip")
                         progressDlg->SetMessage("Restoring simulation state...");
-                    BYTE* buffer_old = simManager.GetLockedHitBuffer();
+                    bool buffer_old = simManager.GetLockedHitBuffer();
                     if(!buffer_old)
                         throw Error("Cannot access shared hit buffer");
                     geom->LoadXML_simustate(rootNode, globState, this, progressDlg);
@@ -929,7 +929,7 @@ void Worker::LoadTexturesGEO(FileReader *f, int version) {
     GLProgress *progressDlg = new GLProgress("Loading textures", "Please wait");
     progressDlg->SetProgress(0.0);
     try {
-        BYTE* buffer_old = simManager.GetLockedHitBuffer();
+        bool buffer_old = simManager.GetLockedHitBuffer();
         if(!buffer_old)
             throw Error("Cannot access shared hit buffer");
         progressDlg->SetVisible(true);

@@ -50,10 +50,8 @@ extern SynRad*mApp;
 * \param renderDirectionTexture bool value
 * \param sMode which simulation mode was used (monte carlo / angular coefficient)
 */
-void MolflowGeometry::BuildFacetTextures(GlobalSimuState *texture, bool renderRegularTexture, bool renderDirectionTexture, size_t sMode) {
-
-	GlobalHitBuffer *shGHit = &texture->globalHits;
-
+void MolflowGeometry::BuildFacetTextures(GlobalSimuState &globState, bool renderRegularTexture, bool renderDirectionTexture, size_t sMode) {
+	
 	Worker *w = &(mApp->worker);
 
 	int nbMoments = (int)mApp->worker.moments.size();
@@ -70,27 +68,27 @@ void MolflowGeometry::BuildFacetTextures(GlobalSimuState *texture, bool renderRe
 	double min, max;
 
 	if (renderRegularTexture) {
-
+		const GlobalHitBuffer& globHit = globState.globalHits;
 		switch (sMode) {
 
 		case MC_MODE:
 
-			dCoef_custom[0] = 1E4 / (double)shGHit->globalHits.hit.nbDesorbed * mApp->worker.model.wp.gasMass / 1000 / 6E23*0.0100; //multiplied by timecorr*sum_v_ort_per_area: pressure
-			dCoef_custom[1] = 1E4 / (double)shGHit->globalHits.hit.nbDesorbed;
-			dCoef_custom[2] = 1E4 / (double)shGHit->globalHits.hit.nbDesorbed;
+			dCoef_custom[0] = 1E4 / (double)globHit.globalHits.hit.nbDesorbed * mApp->worker.model.wp.gasMass / 1000 / 6E23*0.0100; //multiplied by timecorr*sum_v_ort_per_area: pressure
+			dCoef_custom[1] = 1E4 / (double)globHit.globalHits.hit.nbDesorbed;
+			dCoef_custom[2] = 1E4 / (double)globHit.globalHits.hit.nbDesorbed;
 			timeCorrection = (mApp->worker.displayedMoment == 0) ? mApp->worker.model.wp.finalOutgassingRate : mApp->worker.model.wp.totalDesorbedMolecules / mApp->worker.moments[mApp->worker.displayedMoment - 1].second;
 
 			for (int i = 0; i < 3; i++) {
 				//texture limits already corrected by timeFactor in UpdateMCHits()
-				texture_limits[i].autoscale.min.moments_only = shGHit->texture_limits[i].min.moments_only*dCoef_custom[i];
-				texture_limits[i].autoscale.max.moments_only = shGHit->texture_limits[i].max.moments_only*dCoef_custom[i];
-				texture_limits[i].autoscale.min.all = shGHit->texture_limits[i].min.all*dCoef_custom[i];
-				texture_limits[i].autoscale.max.all = shGHit->texture_limits[i].max.all*dCoef_custom[i];
+				texture_limits[i].autoscale.min.moments_only = globHit.texture_limits[i].min.moments_only*dCoef_custom[i];
+				texture_limits[i].autoscale.max.moments_only = globHit.texture_limits[i].max.moments_only*dCoef_custom[i];
+				texture_limits[i].autoscale.min.all = globHit.texture_limits[i].min.all*dCoef_custom[i];
+				texture_limits[i].autoscale.max.all = globHit.texture_limits[i].max.all*dCoef_custom[i];
 			}
 			break;
 		case AC_MODE:
-			texture_limits[0].autoscale.min.all = shGHit->texture_limits[0].min.all;
-			texture_limits[0].autoscale.max.all = shGHit->texture_limits[0].max.all;
+			texture_limits[0].autoscale.min.all = globHit.texture_limits[0].min.all;
+			texture_limits[0].autoscale.max.all = globHit.texture_limits[0].max.all;
 			break;
 		}
 
@@ -143,7 +141,7 @@ void MolflowGeometry::BuildFacetTextures(GlobalSimuState *texture, bool renderRe
 
 			// Retrieve texture from shared memory (every seconds)
 			//TextureCell *hits_local = (TextureCell *)((BYTE *)shGHit + (f->sh.hitOffset + facetHitsSize + profSize*(1 + nbMoments) + tSize*mApp->worker.displayedMoment));
-			f->BuildTexture(texture->facetStates[i].momentResults[mApp->worker.displayedMoment].texture, textureMode, min, max, texColormap,
+			f->BuildTexture(globState.facetStates[i].momentResults[mApp->worker.displayedMoment].texture, textureMode, min, max, texColormap,
 				dCoef_custom[0] * timeCorrection, dCoef_custom[1] * timeCorrection, dCoef_custom[2] * timeCorrection, texLogScale, mApp->worker.displayedMoment);
 		}
 
@@ -158,7 +156,7 @@ void MolflowGeometry::BuildFacetTextures(GlobalSimuState *texture, bool renderRe
 			*/
 
 
-			const std::vector<DirectionCell>& dirs = texture->facetStates[i].momentResults[mApp->worker.displayedMoment].direction;
+			const std::vector<DirectionCell>& dirs = globState.facetStates[i].momentResults[mApp->worker.displayedMoment].direction;
 			for (size_t j = 0; j < nbElem; j++) {
 				double denominator = (dirs[j].count > 0) ? 1.0 / dirs[j].count : 1.0;
 				f->dirCache[j].dir = dirs[j].dir * denominator;

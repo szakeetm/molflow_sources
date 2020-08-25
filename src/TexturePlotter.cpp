@@ -246,7 +246,7 @@ void TexturePlotter::UpdateTable() {
 
 		case 1: {// MC Hits
 
-			BYTE *buffer_old = worker->GetHits(); //Locks and returns handle
+			bool buffer_old = worker->GetHits(); //Locks and returns handle
 			if (!buffer_old) return;
 			try {
 				
@@ -281,7 +281,7 @@ void TexturePlotter::UpdateTable() {
 		case 2: {// Impingement rate
 
 					 // Lock during update
-			BYTE *buffer_old = worker->GetHits();
+			bool buffer_old = worker->GetHits();
 			if (!buffer_old) return;
 			try {
 				
@@ -317,7 +317,7 @@ void TexturePlotter::UpdateTable() {
 		case 3: {// Particle density [1/m3]
 
 					 // Lock during update
-			BYTE *buffer_old = worker->GetHits();
+			bool buffer_old = worker->GetHits();
 			if (!buffer_old) return;
 			try {
 				
@@ -355,7 +355,7 @@ void TexturePlotter::UpdateTable() {
 		case 4: {// Gas density [kg/m3]
 
 					 // Lock during update
-			BYTE *buffer_old = worker->GetHits();
+			bool buffer_old = worker->GetHits();
 			if (!buffer_old) return;
 			try {
 				
@@ -396,7 +396,7 @@ void TexturePlotter::UpdateTable() {
 		case 5: {// Pressure
 
 					 // Lock during update
-			BYTE *buffer_old = worker->GetHits();
+			bool buffer_old = worker->GetHits();
 			if (!buffer_old) return;
 			try {
 				
@@ -434,7 +434,7 @@ void TexturePlotter::UpdateTable() {
 		case 6: {// Average gas velocity [m/s]
 
 					// Lock during update
-			BYTE *buffer_old = worker->GetHits();
+			bool buffer_old = worker->GetHits();
 			if (!buffer_old) return;
 			try {
 				
@@ -466,7 +466,7 @@ void TexturePlotter::UpdateTable() {
 			break; }
 
 		case 7: {// Gas velocity vector
-			BYTE *buffer_old = worker->GetHits();
+			bool buffer_old = worker->GetHits();
 			if (!buffer_old) return;
 			try {
 				
@@ -508,7 +508,7 @@ void TexturePlotter::UpdateTable() {
 			break; }
 
 		case 8: {// Nb of velocity vectors
-			BYTE *buffer_old = worker->GetHits();
+			bool buffer_old = worker->GetHits();
 			if (!buffer_old) return;
 			try {
 				

@@ -215,7 +215,7 @@ void PressureEvolution::refreshChart() {
 	//refreshes chart values
 
 	// Lock during update
-	BYTE *buffer_old = worker->GetHits();
+	bool buffer_old = worker->GetHits();
 	if (!buffer_old) return;
 	int yScaleMode = yScaleCombo->GetSelectedIndex();
 

@@ -90,7 +90,7 @@ public:
 	
 
 #pragma region GeometryRender.cpp
-	void BuildFacetTextures(GlobalSimuState *texture, bool renderRegularTexture, bool renderDirectionTexture, size_t sMode);
+	void BuildFacetTextures(GlobalSimuState &globState, bool renderRegularTexture, bool renderDirectionTexture, size_t sMode);
 	void BuildFacetDirectionTextures(BYTE *texture);
 #pragma endregion
 
