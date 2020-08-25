@@ -53,14 +53,16 @@ public:
 	int      teleportedFrom;   // We memorize where the particle came from: we can teleport back
 	GlobalSimuState* tmpState;
 	SubprocessFacet *lastHitFacet;     // Last hitted facet
-	std::vector<SubprocessFacet*> transparentHitBuffer; //Storing this buffer simulation-wide is cheaper than recreating it at every Intersect() call
-    MersenneTwister randomGenerator;
+	MersenneTwister randomGenerator;
+    std::vector<SubprocessFacet*> transparentHitBuffer; //Storing this buffer simulation-wide is cheaper than recreating it at every Intersect() call
+    std::vector<SubProcessFacetTempVar> tmpFacetVars; //One per subprocessfacet, for intersect routine
 };
 
 class Simulation : public SimulationUnit {
 public:
 
     Simulation(size_t nbThreads = 0);
+    Simulation(Simulation&& o) noexcept ;
     ~Simulation();
 
     //int controlledLoop();
@@ -163,7 +165,7 @@ public:
 	std::vector<CurrentParticleStatus> currentParticles;
 
 	size_t nbThreads;
-
+    mutable std::timed_mutex tMutex;
 };
 // -- Methods ---------------------------------------------------
 

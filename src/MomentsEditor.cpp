@@ -17,6 +17,9 @@ GNU General Public License for more details.
 
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
+
+#include <cfloat> // DBL_EPSILON
+
 #include "MomentsEditor.h"
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"

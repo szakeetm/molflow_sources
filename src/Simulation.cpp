@@ -15,7 +15,7 @@ SuperStructure::~SuperStructure()
 	SAFE_DELETE(aabbTree);
 }*/
 
-Simulation::Simulation(size_t nbThreads)
+Simulation::Simulation(size_t nbThreads) : tMutex()
 {
 	totalDesorbed = 0;
 
@@ -40,6 +40,27 @@ Simulation::Simulation(size_t nbThreads)
 	else
 	    this->nbThreads = nbThreads;
     currentParticles.resize(this->nbThreads, CurrentParticleStatus());// = CurrentParticleStatus();
+}
+Simulation::Simulation(Simulation&& o) noexcept : tMutex() {
+    totalDesorbed = o.totalDesorbed;
+
+    textTotalSize = o.textTotalSize;
+    profTotalSize = o.profTotalSize;
+    dirTotalSize = o.dirTotalSize;
+    angleMapTotalSize = o.angleMapTotalSize;
+    histogramTotalSize = o.histogramTotalSize;
+
+    lastLogUpdateOK = o.lastLogUpdateOK;
+
+    currentParticles.swap(o.currentParticles);
+    for(auto& particle : o.currentParticles) {
+        particle.lastHitFacet = nullptr;
+    }
+    hasVolatile =  o.hasVolatile;
+
+    model =  o.model;
+
+    nbThreads =  o.nbThreads;
 }
 
 Simulation::~Simulation()= default;
@@ -225,6 +246,10 @@ size_t Simulation::LoadSimulation() {
             tmpGlobal = tmpResults;
     }
 
+    // Init tmp vars per thread
+    for(auto& particle : currentParticles)
+        std::vector<SubProcessFacetTempVar>(model.sh.nbFacet).swap(particle.tmpFacetVars);
+
     //Reserve particle log
     if (model.otfParams.enableLogging)
         tmpParticleLog.reserve(model.otfParams.logLimit / model.otfParams.nbProcess);
@@ -288,12 +313,16 @@ size_t Simulation::LoadSimulation() {
 }
 
 void Simulation::UpdateHits(int prIdx, DWORD timeout) {
+    if (!tMutex.try_lock_for(std::chrono::seconds (10))) {
+        return;
+    }
     GlobalSimuState& globSim = tmpGlobalResults[0];
     UpdateMCHits(globSim, prIdx, model.tdParams.moments.size(), timeout);
     // only 1 , so no reduce necessary
     /*ParticleLoggerItem& globParticleLog = tmpParticleLog[0];
     if (dpLog) UpdateLog(dpLog, timeout);*/
 
+    tMutex.unlock();
     //ResetTmpCounters();
     // only reset buffers 1..N-1
     // 0 = global buffer for reduce

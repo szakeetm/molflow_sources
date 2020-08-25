@@ -7,6 +7,7 @@
 #include <set>
 #include <GLApp/MathTools.h>
 #include <cereal/archives/binary.hpp>
+#include <cmath>
 #include "LoaderXML.h"
 #include "TimeMoments.h"
 #include "File.h"
@@ -432,9 +433,9 @@ int LoaderXML::LoadGeometry(const std::string inputFileName, SimulationModel *mo
             // bool Facet::SetTexture(double width, double height, bool useMesh)
             if (facet.sh.texWidthD * facet.sh.texHeightD > 0.0000001) {
                 const double ceilCutoff = 0.9999999;
-                facet.sh.texWidth = (int) ceil(facet.sh.texWidthD *
+                facet.sh.texWidth = (int) std::ceil(facet.sh.texWidthD *
                                             ceilCutoff); //0.9999999: cut the last few digits (convert rounding error 1.00000001 to 1, not 2)
-                facet.sh.texHeight = (int) ceil(facet.sh.texHeightD * ceilCutoff);
+                facet.sh.texHeight = (int) std::ceil(facet.sh.texHeightD * ceilCutoff);
             } else {
                 facet.sh.texWidth = 0;
                 facet.sh.texHeight = 0;

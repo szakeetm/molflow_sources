@@ -5,6 +5,7 @@
 #include <sstream>
 #include <ProcessControl.h>
 #include <GLApp/MathTools.h>
+#include <cmath>
 #include "GeometrySimu.h"
 
 void ClearSimulation();
@@ -406,7 +407,7 @@ void SimulationModel::CalculateFacetParams(SubprocessFacet* f) {
     }
 
 #if defined(MOLFLOW)
-    f->sh.maxSpeed = 4.0 * sqrt(2.0*8.31*f->sh.temperature / 0.001 / wp.gasMass);
+    f->sh.maxSpeed = 4.0 * std::sqrt(2.0*8.31*f->sh.temperature / 0.001 / wp.gasMass);
 #endif
 }
 

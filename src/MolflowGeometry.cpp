@@ -24,6 +24,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "ProfilePlotter.h"
 #include "versionId.h"
 #include <iomanip>
+#include <cmath>
+#include <cfloat> // DBL_EPSILON
 
 #include <cereal/types/vector.hpp>
 #include <cereal/types/string.hpp>

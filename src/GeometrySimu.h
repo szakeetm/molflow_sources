@@ -81,17 +81,13 @@ struct SubprocessFacet{
     double outgassingMapHeightD; //actual outgassing file map height
     Anglemap angleMap;
 
-    // Temporary var (used in Intersect for collision)
-    double colDist;
-    double colU;
-    double colV;
+    // Used for texture init only
     double rw;
     double rh;
     double iw;
     double ih;
 
     // Temporary var (used in FillHit for hit recording)
-    bool   isHit;
     bool   isReady;         // Volatile state
     size_t    textureSize;   // Texture size (in bytes)
     size_t    profileSize;   // profile size (in bytes)

@@ -71,7 +71,8 @@ endif(NOT MSVC)
 #   --   Add files to project.   --   #
 #######################################
 
-set(SRC_FILES ${CPP_DIR_1}/molflowSub.cpp
+set(SRC_FILES
+        #${CPP_DIR_1}/molflowSub.cpp
         ${CPP_DIR_1}/MolflowTypes.cpp
         ${CPP_DIR_1}/MolflowBuffer.cpp
         ${CPP_DIR_1}/Parameter.cpp
@@ -152,7 +153,7 @@ if(MSVC)
     # Add Windows Console output
     message(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
     link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
-    target_link_libraries(${PROJECT_NAME}
+    target_link_libraries(${PROJECT_NAME} PRIVATE
             #libgsl.lib
             #libgslcblas.lib
             kernel32.lib
@@ -167,7 +168,7 @@ if(MSVC)
             uuid.lib
             odbc32.lib
             odbccp32.lib)
-    target_link_libraries(${PROJECT_NAME} truncatedgaussian)
+    target_link_libraries(${PROJECT_NAME} PUBLIC truncatedgaussian)
 endif(MSVC)
 if(NOT MSVC)
 

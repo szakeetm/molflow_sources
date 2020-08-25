@@ -52,273 +52,10 @@ public:
                                           double lookupValue);
 };
 
-/*bool Simulation::UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWORD timeout) {
-
-    BYTE *buffer;
-    GlobalHitBuffer *gHits;
-    TEXTURE_MIN_MAX texture_limits_old[3];
-    int i, j, s, x, y;
-
-    //SetState(PROCESS_STARTING, "Waiting for 'hits' dataport access...", false, true);
-    bool lastHitUpdateOK = AccessDataportTimed(dpHit, timeout);
-    if (!lastHitUpdateOK) return false; //Timeout, will try again later
-    //SetState(PROCESS_STARTING, "Updating MC hits...", false, true);
-#if defined(_DEBUG)
-    double t0, t1;
-    t0 = GetTick();
-#endif
-
-    buffer = (BYTE *) dpHit->buff;
-    gHits = (GlobalHitBuffer *) buffer;
-
-    // Global hits and leaks: adding local hits to shared memory
-    int loopInd = 0;
-    for(auto& tmpSimuState : tmpGlobalResults) {
-        auto& tmpGlobalResult = tmpSimuState.globalHits;
-        //std::cout << "["<<loopInd<<"] "<< gHits->globalHits.hit.nbMCHit << " += "<< tmpGlobalResult.globalHits.hit.nbMCHit<<std::endl;
-        gHits->globalHits += tmpGlobalResult.globalHits;
-
-        *//*gHits->globalHits.hit.nbMCHit += tmpGlobalResult.globalHits.hit.nbMCHit;
-        gHits->globalHits.hit.nbHitEquiv += tmpGlobalResult.globalHits.hit.nbHitEquiv;
-        gHits->globalHits.hit.nbAbsEquiv += tmpGlobalResult.globalHits.hit.nbAbsEquiv;
-        gHits->globalHits.hit.nbDesorbed += tmpGlobalResult.globalHits.hit.nbDesorbed;*//*
-        gHits->distTraveled_total += tmpGlobalResult.distTraveled_total;
-        gHits->distTraveledTotal_fullHitsOnly += tmpGlobalResult.distTraveledTotal_fullHitsOnly;
-
-        //Memorize current limits, then do a min/max search
-        for (i = 0; i < 3; i++) {
-            texture_limits_old[i] = gHits->texture_limits[i];
-            gHits->texture_limits[i].min.all = gHits->texture_limits[i].min.moments_only = HITMAX;
-            gHits->texture_limits[i].max.all = gHits->texture_limits[i].max.moments_only = 0;
-        }
-
-        //model.wp.sMode = MC_MODE;
-        //for(i=0;i<BOUNCEMAX;i++) gHits->wallHits[i] += wallHits[i];
-
-        // Leak
-        for (size_t leakIndex = 0; leakIndex < tmpGlobalResult.leakCacheSize; leakIndex++)
-            gHits->leakCache[(leakIndex + gHits->lastLeakIndex) %
-                             LEAKCACHESIZE] = tmpGlobalResult.leakCache[leakIndex];
-        gHits->nbLeakTotal += tmpGlobalResult.nbLeakTotal;
-        gHits->lastLeakIndex = (gHits->lastLeakIndex + tmpGlobalResult.leakCacheSize) % LEAKCACHESIZE;
-        gHits->leakCacheSize = Min(LEAKCACHESIZE, gHits->leakCacheSize + tmpGlobalResult.leakCacheSize);
-
-        // HHit (Only prIdx 0)
-        if (prIdx == 0) {
-            for (size_t hitIndex = 0; hitIndex < tmpGlobalResult.hitCacheSize; hitIndex++)
-                gHits->hitCache[(hitIndex + gHits->lastHitIndex) %
-                                HITCACHESIZE] = tmpGlobalResult.hitCache[hitIndex];
-
-            if (tmpGlobalResult.hitCacheSize > 0) {
-                gHits->lastHitIndex = (gHits->lastHitIndex + tmpGlobalResult.hitCacheSize) % HITCACHESIZE;
-                gHits->hitCache[gHits->lastHitIndex].type = HIT_LAST; //Penup (border between blocks of consecutive hits in the hit cache)
-                gHits->hitCacheSize = Min(HITCACHESIZE, gHits->hitCacheSize + tmpGlobalResult.hitCacheSize);
-            }
-        }
-
-        //Global histograms
-
-        for (int m = 0; m < (1 + nbMoments); m++) {
-            BYTE *histCurrentMoment =
-                    buffer + sizeof(GlobalHitBuffer) + m * model.wp.globalHistogramParams.GetDataSize();
-            auto& tmpHistogram = tmpSimuState.globalHistograms[m];
-            if (model.wp.globalHistogramParams.recordBounce) {
-                double *nbHitsHistogram = (double *) histCurrentMoment;
-                for (size_t i = 0; i < model.wp.globalHistogramParams.GetBounceHistogramSize(); i++) {
-                    nbHitsHistogram[i] += tmpHistogram.nbHitsHistogram[i];
-                }
-            }
-            if (model.wp.globalHistogramParams.recordDistance) {
-                double *distanceHistogram = (double *) (histCurrentMoment +
-                                                        model.wp.globalHistogramParams.GetBouncesDataSize());
-                for (size_t i = 0; i < (model.wp.globalHistogramParams.GetDistanceHistogramSize()); i++) {
-                    distanceHistogram[i] += tmpHistogram.distanceHistogram[i];
-                }
-            }
-            if (model.wp.globalHistogramParams.recordTime) {
-                double *timeHistogram = (double *) (histCurrentMoment +
-                                                    model.wp.globalHistogramParams.GetBouncesDataSize() +
-                                                    model.wp.globalHistogramParams.GetDistanceDataSize());
-                for (size_t i = 0; i < (model.wp.globalHistogramParams.GetTimeHistogramSize()); i++) {
-                    timeHistogram[i] += tmpHistogram.timeHistogram[i];
-                }
-            }
-        }
-
-
-        size_t facetHitsSize = (1 + nbMoments) * sizeof(FacetHitBuffer);
-        // Facets
-        for (s = 0; s < model.sh.nbSuper; s++) {
-            for (SubprocessFacet &f : model.structures[s].facets) {
-                if (f.isHit) {
-                    BYTE *bufferStart = buffer + f.sh.hitOffset;
-                    for (int m = 0; m < (1 + nbMoments); m++) {
-                        FacetHitBuffer *facetHitBuffer = (FacetHitBuffer *) (bufferStart + m * sizeof(FacetHitBuffer));
-                        (*facetHitBuffer) += f.tmpCounter[m];
-                    }
-
-                    if (f.sh.isProfile) {
-                        bufferStart = buffer + f.sh.hitOffset + facetHitsSize;
-                        for (int m = 0; m < (1 + nbMoments); m++) {
-                            ProfileSlice *shProfile = (ProfileSlice *) (bufferStart + m * f.profileSize);
-                            for (j = 0; j < PROFILE_SIZE; j++) {
-                                shProfile[j] += f.profile[m][j];
-                            }
-                        }
-                    }
-
-                    if (f.sh.isTextured) {
-                        bufferStart = buffer + (f.sh.hitOffset + facetHitsSize + f.profileSize * (1 + nbMoments));
-                        for (int m = 0; m < (1 + nbMoments); m++) {
-                            TextureCell *shTexture = (TextureCell *) (bufferStart + (m * f.textureSize));
-                            //double dCoef = gHits->globalHits.hit.nbDesorbed * 1E4 * model.wp.gasMass / 1000 / 6E23 * MAGIC_CORRECTION_FACTOR;  //1E4 is conversion from m2 to cm2
-                            double timeCorrection =
-                                    m == 0 ? model.wp.finalOutgassingRate : (model.wp.totalDesorbedMolecules) /
-                                                                            model.tdParams.moments[m - 1].second;
-                            //model.wp.timeWindowSize;
-                            //Timecorrection is required to compare constant flow texture values with moment values (for autoscaling)
-
-                            for (y = 0; y < f.sh.texHeight; y++) {
-                                for (x = 0; x < f.sh.texWidth; x++) {
-                                    size_t add = x + y * f.sh.texWidth;
-
-                                    //Add temporary hit counts
-                                    shTexture[add] += f.texture[m][add];
-
-                                    double val[3];  //pre-calculated autoscaling values (Pressure, imp.rate, density)
-
-                                    val[0] = shTexture[add].sum_v_ort_per_area *
-                                             timeCorrection; //pressure without dCoef_pressure
-                                    val[1] = shTexture[add].countEquiv * f.textureCellIncrements[add] *
-                                             timeCorrection; //imp.rate without dCoef
-                                    val[2] = f.textureCellIncrements[add] * shTexture[add].sum_1_per_ort_velocity *
-                                             timeCorrection; //particle density without dCoef
-
-                                    //Global autoscale
-                                    for (int v = 0; v < 3; v++) {
-                                        if (val[v] > gHits->texture_limits[v].max.all && f.largeEnough[add])
-                                            gHits->texture_limits[v].max.all = val[v];
-
-                                        if (val[v] > 0.0 && val[v] < gHits->texture_limits[v].min.all &&
-                                            f.largeEnough[add])
-                                            gHits->texture_limits[v].min.all = val[v];
-
-                                        //Autoscale ignoring constant flow (moments only)
-                                        if (m != 0) {
-                                            if (val[v] > gHits->texture_limits[v].max.moments_only &&
-                                                f.largeEnough[add])
-                                                gHits->texture_limits[v].max.moments_only = val[v];
-
-                                            if (val[v] > 0.0 && val[v] < gHits->texture_limits[v].min.moments_only &&
-                                                f.largeEnough[add])
-                                                gHits->texture_limits[v].min.moments_only = val[v];
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    if (f.sh.countDirection) {
-                        bufferStart = buffer + (f.sh.hitOffset + facetHitsSize +
-                                                f.profileSize * (1 + nbMoments) +
-                                                f.textureSize * (1 + nbMoments));
-                        for (int m = 0; m < (1 + nbMoments); m++) {
-                            DirectionCell *shDir = (DirectionCell *) (bufferStart + f.directionSize * m);
-                            for (y = 0; y < f.sh.texHeight; y++) {
-                                for (x = 0; x < f.sh.texWidth; x++) {
-                                    size_t add = x + y * f.sh.texWidth;
-                                    shDir[add].dir.x += f.direction[m][add].dir.x;
-                                    shDir[add].dir.y += f.direction[m][add].dir.y;
-                                    shDir[add].dir.z += f.direction[m][add].dir.z;
-                                    //shDir[add].sumSpeed += f.direction[m][add].sumSpeed;
-                                    shDir[add].count += f.direction[m][add].count;
-                                }
-                            }
-                        }
-                    }
-
-                    if (f.sh.anglemapParams.record) {
-                        size_t *shAngleMap = (size_t *) (buffer + f.sh.hitOffset + facetHitsSize +
-                                                         f.profileSize * (1 + nbMoments) +
-                                                         f.textureSize * (1 + nbMoments) +
-                                                         f.directionSize * (1 + nbMoments));
-                        for (y = 0; y < (f.sh.anglemapParams.thetaLowerRes + f.sh.anglemapParams.thetaHigherRes); y++) {
-                            for (x = 0; x < f.sh.anglemapParams.phiWidth; x++) {
-                                size_t add = x + y * f.sh.anglemapParams.phiWidth;
-                                shAngleMap[add] += f.angleMap.pdf[add];
-                            }
-                        }
-                    }
-
-                    //Facet histograms
-
-                    bufferStart = buffer + f.sh.hitOffset + facetHitsSize + f.profileSize * (1 + nbMoments) +
-                                  f.textureSize * (1 + nbMoments) + f.directionSize * (1 + nbMoments);
-                    for (int m = 0; m < (1 + nbMoments); m++) {
-                        size_t angleMapRecordedDataSize = sizeof(size_t) * (f.sh.anglemapParams.phiWidth *
-                                                                            (f.sh.anglemapParams.thetaLowerRes +
-                                                                             f.sh.anglemapParams.thetaHigherRes));
-                        BYTE *histCurrentMoment =
-                                bufferStart + angleMapRecordedDataSize + m * f.sh.facetHistogramParams.GetDataSize();
-                        if (f.sh.facetHistogramParams.recordBounce) {
-                            double *nbHitsHistogram = (double *) histCurrentMoment;
-                            for (size_t i = 0; i < f.sh.facetHistogramParams.GetBounceHistogramSize(); i++) {
-                                nbHitsHistogram[i] += f.tmpHistograms[m].nbHitsHistogram[i];
-                            }
-                        }
-                        if (f.sh.facetHistogramParams.recordDistance) {
-                            double *distanceHistogram = (double *) (histCurrentMoment +
-                                                                    f.sh.facetHistogramParams.GetBouncesDataSize());
-                            for (size_t i = 0; i < (f.sh.facetHistogramParams.GetDistanceHistogramSize()); i++) {
-                                distanceHistogram[i] += f.tmpHistograms[m].distanceHistogram[i];
-                            }
-                        }
-                        if (f.sh.facetHistogramParams.recordTime) {
-                            double *timeHistogram = (double *) (histCurrentMoment +
-                                                                f.sh.facetHistogramParams.GetBouncesDataSize() +
-                                                                f.sh.facetHistogramParams.GetDistanceDataSize());
-                            for (size_t i = 0; i < (f.sh.facetHistogramParams.GetTimeHistogramSize()); i++) {
-                                timeHistogram[i] += f.tmpHistograms[m].timeHistogram[i];
-                            }
-                        }
-                    }
-
-                } // End if(isHit)
-            } // End nbFacet
-        } // End nbSuper
-    }
-    //if there were no textures:
-    for (int v = 0; v < 3; v++) {
-        if (gHits->texture_limits[v].min.all == HITMAX)
-            gHits->texture_limits[v].min.all = texture_limits_old[v].min.all;
-        if (gHits->texture_limits[v].min.moments_only == HITMAX)
-            gHits->texture_limits[v].min.moments_only = texture_limits_old[v].min.moments_only;
-        if (gHits->texture_limits[v].max.all == 0.0)
-            gHits->texture_limits[v].max.all = texture_limits_old[v].max.all;
-        if (gHits->texture_limits[v].max.moments_only == 0.0)
-            gHits->texture_limits[v].max.moments_only = texture_limits_old[v].max.moments_only;
-    }
-
-
-    ReleaseDataport(dpHit);
-
-    //extern char *GetSimuStatus();
-    //SetState(PROCESS_STARTING, GetSimuStatus(), false, true);
-
-#if defined(_DEBUG)
-    t1 = GetTick();
-    printf("Update hits: %f us\n", (t1 - t0) * 1000000.0);
-#endif
-
-    return true;
-}*/
-
 bool Simulation::UpdateMCHits(GlobalSimuState& globState, int prIdx, size_t nbMoments, DWORD timeout) {
-
     TEXTURE_MIN_MAX texture_limits_old[3];
     int i, j, s, x, y;
-#if defined(_DEBUG)
+#if defined(DEBUG)
     double t0, t1;
     t0 = GetTick();
 #endif
@@ -390,55 +127,56 @@ bool Simulation::UpdateMCHits(GlobalSimuState& globState, int prIdx, size_t nbMo
     }
 
     for (s = 0; s < model.sh.nbSuper; s++) {
-        for (SubprocessFacet &f : model.structures[s].facets) {
-            if (f.isHit) {
-                if (f.sh.isTextured) {
-                    for (int m = 0; m < (1 + nbMoments); m++) {
-                        //double dCoef = globState.globalHits.globalHits.hit.nbDesorbed * 1E4 * model.wp.gasMass / 1000 / 6E23 * MAGIC_CORRECTION_FACTOR;  //1E4 is conversion from m2 to cm2
-                        const double timeCorrection =
-                                m == 0 ? model.wp.finalOutgassingRate : (model.wp.totalDesorbedMolecules) /
-                                                                        model.tdParams.moments[m - 1].second;
-                        //model.wp.timeWindowSize;
-                        //Timecorrection is required to compare constant flow texture values with moment values (for autoscaling)
-                        const auto &texture = globState.facetStates[f.globalId].momentResults[m].texture;
-                        const size_t textureSize = texture.size();
-                        for (size_t t = 0; t < textureSize; t++) {
-                            double val[3];  //pre-calculated autoscaling values (Pressure, imp.rate, density)
-                            val[0] = texture[t].sum_v_ort_per_area *
-                                     timeCorrection; //pressure without dCoef_pressure
-                            val[1] = texture[t].countEquiv * f.textureCellIncrements[t] *
-                                     timeCorrection; //imp.rate without dCoef
-                            val[2] = f.textureCellIncrements[t] * texture[t].sum_1_per_ort_velocity *
-                                     timeCorrection; //particle density without dCoef
+        for (const SubprocessFacet &f : model.structures[s].facets) {
+            for(const CurrentParticleStatus& particle : currentParticles) {
+                if (particle.tmpFacetVars[f.globalId].isHit) {
+                    if (f.sh.isTextured) {
+                        for (int m = 0; m < (1 + nbMoments); m++) {
+                            //double dCoef = globState.globalHits.globalHits.hit.nbDesorbed * 1E4 * model.wp.gasMass / 1000 / 6E23 * MAGIC_CORRECTION_FACTOR;  //1E4 is conversion from m2 to cm2
+                            const double timeCorrection =
+                                    m == 0 ? model.wp.finalOutgassingRate : (model.wp.totalDesorbedMolecules) /
+                                                                            model.tdParams.moments[m - 1].second;
+                            //model.wp.timeWindowSize;
+                            //Timecorrection is required to compare constant flow texture values with moment values (for autoscaling)
+                            const auto &texture = globState.facetStates[f.globalId].momentResults[m].texture;
+                            const size_t textureSize = texture.size();
+                            for (size_t t = 0; t < textureSize; t++) {
+                                double val[3];  //pre-calculated autoscaling values (Pressure, imp.rate, density)
+                                val[0] = texture[t].sum_v_ort_per_area *
+                                         timeCorrection; //pressure without dCoef_pressure
+                                val[1] = texture[t].countEquiv * f.textureCellIncrements[t] *
+                                         timeCorrection; //imp.rate without dCoef
+                                val[2] = f.textureCellIncrements[t] * texture[t].sum_1_per_ort_velocity *
+                                         timeCorrection; //particle density without dCoef
 
-                            //Global autoscale
-                            for (int v = 0; v < 3; v++) {
-                                if (val[v] > globState.globalHits.texture_limits[v].max.all && f.largeEnough[t])
-                                    globState.globalHits.texture_limits[v].max.all = val[v];
+                                //Global autoscale
+                                for (int v = 0; v < 3; v++) {
+                                    if (val[v] > globState.globalHits.texture_limits[v].max.all && f.largeEnough[t])
+                                        globState.globalHits.texture_limits[v].max.all = val[v];
 
-                                if (val[v] > 0.0 && val[v] < globState.globalHits.texture_limits[v].min.all &&
-                                    f.largeEnough[t])
-                                    globState.globalHits.texture_limits[v].min.all = val[v];
-
-                                //Autoscale ignoring constant flow (moments only)
-                                if (m != 0) {
-                                    if (val[v] > globState.globalHits.texture_limits[v].max.moments_only &&
+                                    if (val[v] > 0.0 && val[v] < globState.globalHits.texture_limits[v].min.all &&
                                         f.largeEnough[t])
-                                        globState.globalHits.texture_limits[v].max.moments_only = val[v];
+                                        globState.globalHits.texture_limits[v].min.all = val[v];
 
-                                    if (val[v] > 0.0 &&
-                                        val[v] < globState.globalHits.texture_limits[v].min.moments_only &&
-                                        f.largeEnough[t])
-                                        globState.globalHits.texture_limits[v].min.moments_only = val[v];
+                                    //Autoscale ignoring constant flow (moments only)
+                                    if (m != 0) {
+                                        if (val[v] > globState.globalHits.texture_limits[v].max.moments_only &&
+                                            f.largeEnough[t])
+                                            globState.globalHits.texture_limits[v].max.moments_only = val[v];
+
+                                        if (val[v] > 0.0 &&
+                                            val[v] < globState.globalHits.texture_limits[v].min.moments_only &&
+                                            f.largeEnough[t])
+                                            globState.globalHits.texture_limits[v].min.moments_only = val[v];
+                                    }
                                 }
                             }
                         }
                     }
+
+                    //Facet histograms -> with FacetState+=
                 }
-
-                //Facet histograms -> with FacetState+=
-
-            } // End if(isHit)
+                } // End if(isHit)}
         } // End nbFacet
     } // End nbSuper
 
@@ -460,94 +198,13 @@ bool Simulation::UpdateMCHits(GlobalSimuState& globState, int prIdx, size_t nbMo
     //extern char *GetSimuStatus();
     //SetState(PROCESS_STARTING, GetSimuStatus(), false, true);
 
-#if defined(_DEBUG)
+#if defined(DEBUG)
     t1 = GetTick();
-    printf("Update hits (glob): %f us\n", (t1 - t0) * 1000000.0);
+    printf("Update hits (glob): %lf us\n", (t1 - t0) * 1000000.0);
 #endif
 
     return true;
 }
-
-/*
-bool Simulation::UploadHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWORD timeout) {
-    // Prepare
-#if defined(_DEBUG)
-    double t0, t1;
-    t0 = GetTick();
-#endif
-    bool lastHitUpdateOK = AccessDataportTimed(dpHit, timeout);
-    if (!lastHitUpdateOK) return false; //Timeout, will try again later
-
-    // Prepare data
-    std::ostringstream result;
-    {
-        cereal::BinaryOutputArchive outputArchive(result);
-
-        // Reduce to first threads storage and transfer
-        GlobalSimuState& tmpResults = tmpGlobalResults[0];
-        for(size_t ind=1;ind < tmpGlobalResults.size();++ind) {
-            tmpResults += tmpGlobalResults[ind];
-        }
-
-        outputArchive(
-                cereal::make_nvp("GlobalHits", tmpResults.globalHits),
-                cereal::make_nvp("GlobalHistograms", tmpResults.globalHistograms),
-                cereal::make_nvp("FacetStates", tmpResults.facetStates)
-        );
-    }
-
-    // Upload
-    if(dpHit){
-        BYTE* buffer = (BYTE*)dpHit->buff;
-        auto resString = result.str();
-        BYTE* source = (BYTE*)(resString.data());
-        auto resultSize =  resString.size();
-        std::copy(source,source + resultSize, buffer);
-    }
-
-    // Finalize
-    ReleaseDataport(dpHit);
-#if defined(_DEBUG)
-    t1 = GetTick();
-    printf("Upload hits: %f us\n", (t1 - t0) * 1000000.0);
-#endif
-
-    return true;
-}
-*/
-
-/*void Simulation::UpdateLog(Dataport *dpLog, DWORD timeout) {
-    if (tmpParticleLog.size()) {
-#if defined(_DEBUG)
-        double t0, t1;
-        t0 = GetTick();
-#endif
-        //SetState(PROCESS_STARTING, "Waiting for 'dpLog' dataport access...", false, true);
-        lastLogUpdateOK = AccessDataportTimed(dpLog, timeout);
-        //SetState(PROCESS_STARTING, "Updating Log...", false, true);
-        if (!lastLogUpdateOK) return;
-
-        size_t *logBuff = (size_t *) dpLog->buff;
-        size_t recordedLogSize = *logBuff;
-        ParticleLoggerItem *logBuff2 = (ParticleLoggerItem *) (logBuff + 1);
-
-        size_t writeNb;
-        if (recordedLogSize > model.otfParams.logLimit) writeNb = 0;
-        else writeNb = Min(tmpParticleLog.size(), model.otfParams.logLimit - recordedLogSize);
-        memcpy(&logBuff2[recordedLogSize], &tmpParticleLog[0],
-               writeNb * sizeof(ParticleLoggerItem)); //Knowing that vector memories are contigious
-        (*logBuff) += writeNb;
-        ReleaseDataport(dpLog);
-        tmpParticleLog.clear();
-        //extern char *GetSimuStatus();
-        //SetState(PROCESS_STARTING, GetSimuStatus(), false, true);
-
-#if defined(_DEBUG)
-        t1 = GetTick();
-        printf("Update log: %f us\n", (t1 - t0) * 1000000.0);
-#endif
-    }
-}*/
 
 // Compute particle teleport
 
@@ -606,15 +263,15 @@ void Simulation::PerformTeleport(SubprocessFacet *iFacet, CurrentParticleStatus 
                                             iFacet->sh.N);
     currentParticle.direction = PolarToCartesian(destination, inTheta, inPhi, false);
     // Move particle to teleport destination point
-    double u = iFacet->colU;
-    double v = iFacet->colV;
+    double u = currentParticle.tmpFacetVars[iFacet->globalId].colU;
+    double v = currentParticle.tmpFacetVars[iFacet->globalId].colV;
     currentParticle.position = destination->sh.O + u * destination->sh.U + v * destination->sh.V;
     RecordHit(HIT_TELEPORTDEST, currentParticle);
     int nbTry = 0;
     if (!IsInFacet(*destination, u, v)) { //source and destination facets not the same shape, would generate leak
         // Choose a new starting point
         RecordHit(HIT_ABS, currentParticle);
-        bool found = false;
+        found = false;
         while (!found && nbTry < 1000) {
             u = currentParticle.randomGenerator.rnd();
             v = currentParticle.randomGenerator.rnd();
@@ -641,7 +298,7 @@ void Simulation::PerformTeleport(SubprocessFacet *iFacet, CurrentParticleStatus 
     iFacet->sh.tmpCounter.hit.sum_v_ort += 2.0*(model.wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
     IncreaseFacetCounter(iFacet, currentParticle.flightTime, 1, 0, 0, 2.0 / ortVelocity,
                          2.0 * (model.wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity, currentParticle);
-    iFacet->isHit = true;
+    currentParticle.tmpFacetVars[iFacet->globalId].isHit = true;
     /*destination->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / currentParticle.velocity;
     destination->sh.tmpCounter.hit.sum_v_ort += currentParticle.velocity*abs(DOT3(
     currentParticle.direction.x, currentParticle.direction.y, currentParticle.direction.z,
@@ -663,13 +320,12 @@ bool Simulation::SimulationMCStep(size_t nbStep) {
     // Perform simulation steps
     int returnVal = true;
     int allQuit = 0;
+
+    /*if (!tMutex.try_lock_for(std::chrono::seconds (10))) {
+        return false;
+    }*/
 #pragma omp parallel num_threads(nbThreads) default(none) firstprivate(nbStep) shared( returnVal, allQuit)
     {
-
-#if defined(_DEBUG)
-        double t0, t1;
-        t0 = GetTick();
-#endif
 
         const int ompIndex = omp_get_thread_num();
         CurrentParticleStatus& currentParticle = currentParticles[ompIndex];
@@ -700,7 +356,7 @@ bool Simulation::SimulationMCStep(size_t nbStep) {
                         currentParticle.position + d * currentParticle.direction;
                 //currentParticle.distanceTraveled += d;
 
-                double lastFlightTime = currentParticle.flightTime; //memorize for partial hits
+                const double lastFlightTime = currentParticle.flightTime; //memorize for partial hits
                 currentParticle.flightTime +=
                         d / 100.0 / currentParticle.velocity; //conversion from cm to m
 
@@ -709,7 +365,7 @@ bool Simulation::SimulationMCStep(size_t nbStep) {
                         (currentParticle.expectedDecayMoment < currentParticle.flightTime))) {
                     //hit time over the measured period - we create a new particle
                     //OR particle has decayed
-                    double remainderFlightPath = currentParticle.velocity * 100.0 *
+                    const double remainderFlightPath = currentParticle.velocity * 100.0 *
                                                  Min(model.wp.latestMoment - lastFlightTime,
                                                      currentParticle.expectedDecayMoment -
                                                      lastFlightTime); //distance until the point in space where the particle decayed
@@ -733,7 +389,7 @@ bool Simulation::SimulationMCStep(size_t nbStep) {
                         }*/
                     else { //Not teleport
                         IncreaseDistanceCounters(d * currentParticle.oriRatio, currentParticle);
-                        double stickingProbability = GetStickingAt(collidedFacet, currentParticle.flightTime);
+                        const double stickingProbability = GetStickingAt(collidedFacet, currentParticle.flightTime);
                         if (!model.otfParams.lowFluxMode) { //Regular stick or bounce
                             if (stickingProbability == 1.0 ||
                                 ((stickingProbability > 0.0) && (currentParticle.randomGenerator.rnd() < (stickingProbability)))) {
@@ -751,7 +407,7 @@ bool Simulation::SimulationMCStep(size_t nbStep) {
                             }
                         } else { //Low flux mode
                             if (stickingProbability > 0.0) {
-                                double oriRatioBeforeCollision = currentParticle.oriRatio; //Local copy
+                                const double oriRatioBeforeCollision = currentParticle.oriRatio; //Local copy
                                 currentParticle.oriRatio *= (stickingProbability); //Sticking part
                                 RecordAbsorb(collidedFacet, currentParticle);
                                 currentParticle.oriRatio =
@@ -786,6 +442,10 @@ bool Simulation::SimulationMCStep(size_t nbStep) {
 #pragma omp critical
             ++allQuit;
     } // omp parallel
+
+/*
+    tMutex.unlock();
+*/
     return returnVal;
 }
 
@@ -936,8 +596,8 @@ bool Simulation::StartFromSource(CurrentParticleStatus &currentParticle) {
 
             // (U,V) -> (x,y,z)
             currentParticle.position = src->sh.O + u * src->sh.U + v * src->sh.V;
-            src->colU = u;
-            src->colV = v;
+            currentParticle.tmpFacetVars[src->globalId].colU = u;
+            currentParticle.tmpFacetVars[src->globalId].colV = v;
             found = true;
 
         }
@@ -952,11 +612,11 @@ bool Simulation::StartFromSource(CurrentParticleStatus &currentParticle) {
             double u = ((double) mapPositionW + 0.5) / src->outgassingMapWidthD;
             double v = ((double) mapPositionH + 0.5) / src->outgassingMapHeightD;
             currentParticle.position = src->sh.O + u * src->sh.U + v * src->sh.V;
-            src->colU = u;
-            src->colV = v;
+            currentParticle.tmpFacetVars[src->globalId].colU = u;
+            currentParticle.tmpFacetVars[src->globalId].colV = v;
         } else {
-            src->colU = 0.5;
-            src->colV = 0.5;
+            currentParticle.tmpFacetVars[src->globalId].colU = 0.5;
+            currentParticle.tmpFacetVars[src->globalId].colV = 0.5;
             currentParticle.position = model.structures[j].facets[i].sh.center;
         }
 
@@ -1005,7 +665,7 @@ bool Simulation::StartFromSource(CurrentParticleStatus &currentParticle) {
 
     // Count
 
-    src->isHit = true;
+    currentParticle.tmpFacetVars[src->globalId].isHit = true;
     totalDesorbed++;
     currentParticle.tmpState->globalHits.globalHits.hit.nbDesorbed++;
     //nbPHit = 0;
@@ -1583,8 +1243,8 @@ void Simulation::RecordHistograms(SubprocessFacet *iFacet, CurrentParticleStatus
 void Simulation::RecordHitOnTexture(SubprocessFacet *f, double time, bool countHit, double velocity_factor,
                                     double ortSpeedFactor, CurrentParticleStatus &currentParticle) {
 
-    size_t tu = (size_t)(f->colU * f->sh.texWidthD);
-    size_t tv = (size_t)(f->colV * f->sh.texHeightD);
+    size_t tu = (size_t)(currentParticle.tmpFacetVars[f->globalId].colU * f->sh.texWidthD);
+    size_t tv = (size_t)(currentParticle.tmpFacetVars[f->globalId].colV * f->sh.texHeightD);
     size_t add = tu + tv * (f->sh.texWidth);
     double ortVelocity = (model.wp.useMaxwellDistribution ? 1.0 : 1.1781) * currentParticle.velocity *
                          std::abs(Dot(currentParticle.direction,
@@ -1611,8 +1271,8 @@ void Simulation::RecordHitOnTexture(SubprocessFacet *f, double time, bool countH
 }
 
 void Simulation::RecordDirectionVector(SubprocessFacet *f, double time, CurrentParticleStatus &currentParticle) {
-    size_t tu = (size_t)(f->colU * f->sh.texWidthD);
-    size_t tv = (size_t)(f->colV * f->sh.texHeightD);
+    size_t tu = (size_t)(currentParticle.tmpFacetVars[f->globalId].colU * f->sh.texWidthD);
+    size_t tv = (size_t)(currentParticle.tmpFacetVars[f->globalId].colV * f->sh.texHeightD);
     size_t add = tu + tv * (f->sh.texWidth);
 
     {
@@ -1648,7 +1308,7 @@ Simulation::ProfileFacet(SubprocessFacet *f, double time, bool countHit, double 
             currentParticle.tmpState->facetStates[f->globalId].momentResults[m].profile[pos].countEquiv += currentParticle.oriRatio;
         }
     } else if (f->sh.profileType == PROFILE_U || f->sh.profileType == PROFILE_V) {
-        size_t pos = (size_t)((f->sh.profileType == PROFILE_U ? f->colU : f->colV) * (double) PROFILE_SIZE);
+        size_t pos = (size_t)((f->sh.profileType == PROFILE_U ? currentParticle.tmpFacetVars[f->globalId].colU : currentParticle.tmpFacetVars[f->globalId].colV) * (double) PROFILE_SIZE);
         if (pos >= 0 && pos < PROFILE_SIZE) {
             {
                 ProfileSlice &profile = currentParticle.tmpState->facetStates[f->globalId].momentResults[0].profile[pos];
@@ -1700,7 +1360,7 @@ void Simulation::LogHit(SubprocessFacet *f, CurrentParticleStatus &currentPartic
         model.otfParams.logFacetId == f->globalId &&
         tmpParticleLog.size() < (model.otfParams.logLimit / model.otfParams.nbProcess)) {
         ParticleLoggerItem log;
-        log.facetHitPosition = Vector2d(f->colU, f->colV);
+        log.facetHitPosition = Vector2d(currentParticle.tmpFacetVars[f->globalId].colU, currentParticle.tmpFacetVars[f->globalId].colV);
         std::tie(log.hitTheta, log.hitPhi) = CartesianToPolar(currentParticle.direction, f->sh.nU, f->sh.nV,
                                                               f->sh.N);
         log.oriRatio = currentParticle.oriRatio;
@@ -1853,23 +1513,23 @@ void Simulation::IncreaseFacetCounter(SubprocessFacet *f, double time, size_t hi
 void Simulation::RegisterTransparentPass(SubprocessFacet *facet, CurrentParticleStatus &currentParticle) {
     double directionFactor = std::abs(Dot(currentParticle.direction, facet->sh.N));
     IncreaseFacetCounter(facet, currentParticle.flightTime +
-                                facet->colDist / 100.0 / currentParticle.velocity, 1, 0, 0,
+        currentParticle.tmpFacetVars[facet->globalId].colDistTranspPass / 100.0 / currentParticle.velocity, 1, 0, 0,
                          2.0 / (currentParticle.velocity * directionFactor),
                          2.0 * (model.wp.useMaxwellDistribution ? 1.0 : 1.1781) * currentParticle.velocity *
                          directionFactor, currentParticle);
 
-    facet->isHit = true;
+    currentParticle.tmpFacetVars[facet->globalId].isHit = true;
     if (/*facet->texture &&*/ facet->sh.countTrans) {
         RecordHitOnTexture(facet, currentParticle.flightTime +
-                                  facet->colDist / 100.0 / currentParticle.velocity,
+                                   currentParticle.tmpFacetVars[facet->globalId].colDistTranspPass / 100.0 / currentParticle.velocity,
                            true, 2.0, 2.0, currentParticle);
     }
     if (/*facet->direction &&*/ facet->sh.countDirection) {
         RecordDirectionVector(facet, currentParticle.flightTime +
-                                     facet->colDist / 100.0 / currentParticle.velocity, currentParticle);
+                currentParticle.tmpFacetVars[facet->globalId].colDistTranspPass / 100.0 / currentParticle.velocity, currentParticle);
     }
     LogHit(facet, currentParticle);
-    ProfileFacet(facet, currentParticle.flightTime + facet->colDist / 100.0 / currentParticle.velocity,
+    ProfileFacet(facet, currentParticle.flightTime + currentParticle.tmpFacetVars[facet->globalId].colDistTranspPass / 100.0 / currentParticle.velocity,
                  true, 2.0, 2.0, currentParticle);
     if (facet->sh.anglemapParams.record) RecordAngleMap(facet, currentParticle);
 }

@@ -104,9 +104,11 @@ set(SRC_FILES
         )
 
 # set the path to the library folder
-#[[link_directories(${LINK_DIR_1}
+# set the path to the library folder
+link_directories(${LINK_DIR_1}
         ${LINK_DIR_2}
-        )]]
+        )
+
 if (APPLE)
     set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include" CACHE INTERNAL "OpenMP flags for Xcode toolchain.")
     set(OpenMP_C_LIB_NAMES "omp" CACHE INTERNAL "OpenMP lib name for Xcode toolchain.")
@@ -126,6 +128,11 @@ target_link_libraries(${PROJECT_NAME} PUBLIC simulator_shared)
 target_link_libraries(${PROJECT_NAME} PUBLIC molflowSub)
 target_link_libraries(${PROJECT_NAME} PRIVATE pugixml)
 
+if(MSVC)
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+            bzip2.lib
+            )
+endif()
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_1}
         ${HEADER_DIR_2}

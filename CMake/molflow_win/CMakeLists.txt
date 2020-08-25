@@ -152,9 +152,9 @@ if(MSVC)
             )
 
     # Add Windows Console output
-    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    #if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE ${LINK_FLAGS}")
-    endif()
+    #endif()
 
 
     # set the path to the library folder
