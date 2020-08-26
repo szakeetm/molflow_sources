@@ -22,7 +22,7 @@ SuperStructure::~SuperStructure()
 
 bool SubprocessFacet::InitializeOnLoad(const size_t &id, const size_t &nbMoments, size_t &histogramTotalSize) {
     globalId = id;
-    ResizeCounter(nbMoments); //Initialize counter
+    //ResizeCounter(nbMoments); //Initialize counter
     if (!InitializeLinkAndVolatile(id)) return false;
     InitializeOutgassingMap();
     if (!InitializeAngleMap()) return false;
@@ -39,7 +39,7 @@ void SubprocessFacet::InitializeHistogram(const size_t &nbMoments, size_t &histo
     FacetHistogramBuffer hist;
     hist.Resize(sh.facetHistogramParams);
 
-    tmpHistograms = std::vector<FacetHistogramBuffer>(1 + nbMoments, hist);
+    //tmpHistograms = std::vector<FacetHistogramBuffer>(1 + nbMoments, hist);
     histogramTotalSize += (1 + nbMoments) *
                                    (sh.facetHistogramParams.GetBouncesDataSize()
                                     + sh.facetHistogramParams.GetDistanceDataSize()
@@ -232,7 +232,7 @@ bool SubprocessFacet::InitializeLinkAndVolatile(const size_t & id)
     return true;
 }
 
-void SubprocessFacet::ResetCounter() {
+/*void SubprocessFacet::ResetCounter() {
     std::fill(tmpCounter.begin(), tmpCounter.end(), FacetHitBuffer());
 }
 
@@ -241,7 +241,7 @@ void SubprocessFacet::ResizeCounter(size_t nbMoments) {
     tmpCounter.shrink_to_fit();
     tmpHistograms = std::vector<FacetHistogramBuffer>(nbMoments + 1);
     tmpHistograms.shrink_to_fit();
-}
+}*/
 
 /**
 * \brief Constructor for cereal initialization

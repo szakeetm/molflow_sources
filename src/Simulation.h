@@ -21,6 +21,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 #include <tuple>
 #include <vector>
+#include <mutex>
 
 #include "SimulationUnit.h"
 #include "Buffer_shared.h" //Facetproperties
@@ -65,13 +66,10 @@ public:
     Simulation(Simulation&& o) noexcept ;
     ~Simulation();
 
-    //int controlledLoop();
     int SanityCheckGeom() override;
     void ClearSimulation() override;
     size_t LoadSimulation() override;
     void ResetSimulation() override;
-    //bool StartSimulation();
-    //bool SimulationRun();
 
     void RecordHit(const int &type, const CurrentParticleStatus &currentParticle);
     void RecordLeakPos(const CurrentParticleStatus &currentParticle);
@@ -80,7 +78,7 @@ public:
     int ReinitializeParticleLog() override;
 
     void UpdateHits(int prIdx, DWORD timeout) override;
-    bool UpdateMCHits(GlobalSimuState& globState, int prIdx, size_t nbMoments, DWORD timeout);
+    bool UpdateMCHits(GlobalSimuState& globSimuState, int prIdx, size_t nbMoments, DWORD timeout);
 
     void PerformTeleport(SubprocessFacet *iFacet, CurrentParticleStatus &currentParticle);
     bool SimulationMCStep(size_t nbStep) override;
@@ -101,53 +99,16 @@ public:
     double GenerateRandomVelocity(int CDFId, const double rndVal);
     double GenerateDesorptionTime(SubprocessFacet *src, const double rndVal);
     double GetStickingAt(SubprocessFacet *f, double time);
-    double GetOpacityAt(SubprocessFacet *f, double time);
+    //double GetOpacityAt(SubprocessFacet *f, double time);
     void TreatMovingFacet(CurrentParticleStatus &currentParticle);
     void IncreaseFacetCounter(SubprocessFacet *f, double time, size_t hit, size_t desorb, size_t absorb,
                               double sum_1_per_v, double sum_v_ort, CurrentParticleStatus &currentParticle);
     void RegisterTransparentPass(SubprocessFacet *facet, CurrentParticleStatus &currentParticle);
 
-	void ResetTmpCounters();
 
-    /*void GetState();
-    size_t GetLocalState();
-    void SetErrorSub(const char *message);
-    void SetState(size_t state,const char *status,bool changeState = true, bool changeStatus = true);
-    void SetStatus(char *status);
-    char *GetSimuStatus();
-    void SetReady();*/
-
-
-    //bool endState;
-
-    //Dataport *dpControl;
-    //Dataport *dpHit;
-    //Dataport *dpLog;
-
-    //MersenneTwister randomGenerator;
-    //SimulationModel model;
-
-    std::vector<GlobalSimuState> tmpGlobalResults; //Global results since last UpdateMCHits
-	//std::vector<FacetHistogramBuffer> tmpGlobalHistograms; //Recorded histogram since last UpdateMCHits, 1+nbMoment copies
-	std::vector<ParticleLoggerItem> tmpParticleLog; //Recorded particle log since last UpdateMCHits
-
-	//size_t totalDesorbed;           // Total number of desorptions (for this process, not reset on UpdateMCHits)
-
-	std::vector<std::vector<std::pair<double, double>>> CDFs; //cumulative distribution function for each temperature
-	std::vector<std::vector<std::pair<double, double>>> IDs; //integrated distribution function for each time-dependent desorption type
-	//std::vector<double> temperatures; //keeping track of all temperatures that have a CDF already generated
-	std::vector<Moment> moments;      //time values (seconds) when a simulation state is measured
-	//std::vector<size_t> desorptionParameterIDs; //time-dependent parameters which are used as desorptions, therefore need to be integrated
-	std::vector<Distribution2D> parameters; //Time-dependent parameters
-
+	//size_t totalDesorbed;           // Total desorption number (for this process, not reset on UpdateMCHits)
 
 	// Geometry
-	//GeomProperties sh;
-	WorkerParams wp;
-	//OntheflySimulationParams ontheflyParams;
-
-	std::vector<Vector3d>   vertices3;        // Vertices
-	std::vector<SuperStructure> structures; //They contain the facets  
 
 	//double stepPerSec=0.0;  // Avg number of step per sec
 	//Facet size counters
@@ -161,10 +122,15 @@ public:
 	bool lastLogUpdateOK; // Last log update timeout
 	bool hasVolatile;   // Contains volatile facet
 
-	// Particle coordinates (MC)
-	std::vector<CurrentParticleStatus> currentParticles;
+    size_t nbThreads;
 
-	size_t nbThreads;
+    // Particle coordinates (MC)
+	std::vector<CurrentParticleStatus> currentParticles;
+    GlobalSimuState* globState;
+    std::vector<GlobalSimuState> tmpGlobalResults; //Global results since last UpdateMCHits
+    //std::vector<FacetHistogramBuffer> tmpGlobalHistograms; //Recorded histogram since last UpdateMCHits, 1+nbMoment copies
+    std::vector<ParticleLoggerItem> tmpParticleLog; //Recorded particle log since last UpdateMCHits
+
     mutable std::timed_mutex tMutex;
 };
 // -- Methods ---------------------------------------------------

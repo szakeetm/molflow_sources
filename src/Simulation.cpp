@@ -313,11 +313,13 @@ size_t Simulation::LoadSimulation() {
 }
 
 void Simulation::UpdateHits(int prIdx, DWORD timeout) {
+    if(!globState)
+        return;
     if (!tMutex.try_lock_for(std::chrono::seconds (10))) {
         return;
     }
-    GlobalSimuState& globSim = tmpGlobalResults[0];
-    UpdateMCHits(globSim, prIdx, model.tdParams.moments.size(), timeout);
+    //globState = tmpGlobalResults[0];
+    UpdateMCHits(*globState, prIdx, model.tdParams.moments.size(), timeout);
     // only 1 , so no reduce necessary
     /*ParticleLoggerItem& globParticleLog = tmpParticleLog[0];
     if (dpLog) UpdateLog(dpLog, timeout);*/
@@ -326,12 +328,12 @@ void Simulation::UpdateHits(int prIdx, DWORD timeout) {
     //ResetTmpCounters();
     // only reset buffers 1..N-1
     // 0 = global buffer for reduce
-    for(auto tmpIter = tmpGlobalResults.begin()+1; tmpIter != tmpGlobalResults.end(); ++tmpIter)
-        (*tmpIter).Reset();
+    for(auto & tmpGlobalResult : tmpGlobalResults)
+        tmpGlobalResult.Reset();
 }
 
 size_t Simulation::GetHitsSize() {
-    return sizeof(GlobalHitBuffer) + wp.globalHistogramParams.GetDataSize() +
+    return sizeof(GlobalHitBuffer) + model.wp.globalHistogramParams.GetDataSize() +
            textTotalSize + profTotalSize + dirTotalSize + angleMapTotalSize + histogramTotalSize
            + model.sh.nbFacet * sizeof(FacetHitBuffer) * (1+model.tdParams.moments.size());
 }

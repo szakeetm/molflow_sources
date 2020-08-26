@@ -31,8 +31,6 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Parameter.h"
 #include <omp.h>
 
-//extern Simulation *sHandle; //delcared in molflowSub.cpp
-
 class AnglemapGeneration {
 public:
     static double GetTheta(const double& thetaIndex, const AnglemapParams& anglemapParams);
@@ -52,13 +50,13 @@ public:
                                           double lookupValue);
 };
 
-bool Simulation::UpdateMCHits(GlobalSimuState& globState, int prIdx, size_t nbMoments, DWORD timeout) {
+bool Simulation::UpdateMCHits(GlobalSimuState& globSimuState, int prIdx, size_t nbMoments, DWORD timeout) {
     TEXTURE_MIN_MAX texture_limits_old[3];
     int i, j, s, x, y;
-#if defined(DEBUG)
+//#if defined(DEBUG)
     double t0, t1;
-    t0 = GetTick();
-#endif
+    t0 = omp_get_wtime();
+//#endif
     //SetState(PROCESS_STARTING, "Waiting for 'hits' dataport access...", false, true);
     // TODO: Mutex
     //bool lastHitUpdateOK = LockMutex(worker->results.mutex, timeout);
@@ -70,21 +68,20 @@ bool Simulation::UpdateMCHits(GlobalSimuState& globState, int prIdx, size_t nbMo
 
     //Memorize current limits, then do a min/max search
     for (i = 0; i < 3; i++) {
-        texture_limits_old[i] = globState.globalHits.texture_limits[i];
-        globState.globalHits.texture_limits[i].min.all = globState.globalHits.texture_limits[i].min.moments_only = HITMAX;
-        globState.globalHits.texture_limits[i].max.all = globState.globalHits.texture_limits[i].max.moments_only = 0;
+        texture_limits_old[i] = globSimuState.globalHits.texture_limits[i];
+        globSimuState.globalHits.texture_limits[i].min.all = globSimuState.globalHits.texture_limits[i].min.moments_only = HITMAX;
+        globSimuState.globalHits.texture_limits[i].max.all = globSimuState.globalHits.texture_limits[i].max.moments_only = 0;
     }
 
     // Global hits and leaks: adding local hits to shared memory
     /*gHits->globalHits += tmpGlobalResult.globalHits;
     gHits->distTraveled_total += tmpGlobalResult.distTraveled_total;
     gHits->distTraveledTotal_fullHitsOnly += tmpGlobalResult.distTraveledTotal_fullHitsOnly;*/
-    for(auto globIter = tmpGlobalResults.begin()+1;globIter!=tmpGlobalResults.end();++globIter){
+    for(auto & tmpResults : tmpGlobalResults){
     //for(auto& tmpResults : tmpGlobalResults) {
-        const GlobalSimuState& tmpResults = *globIter;
-        globState.globalHits.globalHits += tmpResults.globalHits.globalHits;
-        globState.globalHits.distTraveled_total += tmpResults.globalHits.distTraveled_total;
-        globState.globalHits.distTraveledTotal_fullHitsOnly += tmpResults.globalHits.distTraveledTotal_fullHitsOnly;
+        globSimuState.globalHits.globalHits += tmpResults.globalHits.globalHits;
+        globSimuState.globalHits.distTraveled_total += tmpResults.globalHits.distTraveled_total;
+        globSimuState.globalHits.distTraveledTotal_fullHitsOnly += tmpResults.globalHits.distTraveledTotal_fullHitsOnly;
 
         /*gHits->globalHits.hit.nbMCHit += tmpGlobalResult.globalHits.hit.nbMCHit;
         gHits->globalHits.hit.nbHitEquiv += tmpGlobalResult.globalHits.hit.nbHitEquiv;
@@ -96,34 +93,34 @@ bool Simulation::UpdateMCHits(GlobalSimuState& globState, int prIdx, size_t nbMo
 
         // Leak
         for (size_t leakIndex = 0; leakIndex < tmpResults.globalHits.leakCacheSize; leakIndex++)
-            globState.globalHits.leakCache[(leakIndex + globState.globalHits.lastLeakIndex) %
-                                           LEAKCACHESIZE] = tmpResults.globalHits.leakCache[leakIndex];
-        globState.globalHits.nbLeakTotal += tmpResults.globalHits.nbLeakTotal;
-        globState.globalHits.lastLeakIndex =
-                (globState.globalHits.lastLeakIndex + tmpResults.globalHits.leakCacheSize) % LEAKCACHESIZE;
-        globState.globalHits.leakCacheSize = Min(LEAKCACHESIZE, globState.globalHits.leakCacheSize +
-                                                                tmpResults.globalHits.leakCacheSize);
+            globSimuState.globalHits.leakCache[(leakIndex + globSimuState.globalHits.lastLeakIndex) %
+                                               LEAKCACHESIZE] = tmpResults.globalHits.leakCache[leakIndex];
+        globSimuState.globalHits.nbLeakTotal += tmpResults.globalHits.nbLeakTotal;
+        globSimuState.globalHits.lastLeakIndex =
+                (globSimuState.globalHits.lastLeakIndex + tmpResults.globalHits.leakCacheSize) % LEAKCACHESIZE;
+        globSimuState.globalHits.leakCacheSize = Min(LEAKCACHESIZE, globSimuState.globalHits.leakCacheSize +
+                                                                    tmpResults.globalHits.leakCacheSize);
 
         // HHit (Only prIdx 0)
         if (prIdx == 0) {
             for (size_t hitIndex = 0; hitIndex < tmpResults.globalHits.hitCacheSize; hitIndex++)
-                globState.globalHits.hitCache[(hitIndex + globState.globalHits.lastHitIndex) %
-                                              HITCACHESIZE] = globState.globalHits.hitCache[hitIndex];
+                globSimuState.globalHits.hitCache[(hitIndex + globSimuState.globalHits.lastHitIndex) %
+                                                  HITCACHESIZE] = globSimuState.globalHits.hitCache[hitIndex];
 
             if (tmpResults.globalHits.hitCacheSize > 0) {
-                globState.globalHits.lastHitIndex =
-                        (globState.globalHits.lastHitIndex + tmpResults.globalHits.hitCacheSize) % HITCACHESIZE;
-                globState.globalHits.hitCache[globState.globalHits.lastHitIndex].type = HIT_LAST; //Penup (border between blocks of consecutive hits in the hit cache)
-                globState.globalHits.hitCacheSize = Min(HITCACHESIZE, globState.globalHits.hitCacheSize +
-                                                                      tmpResults.globalHits.hitCacheSize);
+                globSimuState.globalHits.lastHitIndex =
+                        (globSimuState.globalHits.lastHitIndex + tmpResults.globalHits.hitCacheSize) % HITCACHESIZE;
+                globSimuState.globalHits.hitCache[globSimuState.globalHits.lastHitIndex].type = HIT_LAST; //Penup (border between blocks of consecutive hits in the hit cache)
+                globSimuState.globalHits.hitCacheSize = Min(HITCACHESIZE, globSimuState.globalHits.hitCacheSize +
+                                                                          tmpResults.globalHits.hitCacheSize);
             }
         }
 
         //Global histograms
-        globState.globalHistograms += tmpResults.globalHistograms;
+        globSimuState.globalHistograms += tmpResults.globalHistograms;
 
         // Facets
-        globState.facetStates += tmpResults.facetStates;
+        globSimuState.facetStates += tmpResults.facetStates;
     }
 
     for (s = 0; s < model.sh.nbSuper; s++) {
@@ -138,7 +135,7 @@ bool Simulation::UpdateMCHits(GlobalSimuState& globState, int prIdx, size_t nbMo
                                                                             model.tdParams.moments[m - 1].second;
                             //model.wp.timeWindowSize;
                             //Timecorrection is required to compare constant flow texture values with moment values (for autoscaling)
-                            const auto &texture = globState.facetStates[f.globalId].momentResults[m].texture;
+                            const auto &texture = globSimuState.facetStates[f.globalId].momentResults[m].texture;
                             const size_t textureSize = texture.size();
                             for (size_t t = 0; t < textureSize; t++) {
                                 double val[3];  //pre-calculated autoscaling values (Pressure, imp.rate, density)
@@ -151,23 +148,23 @@ bool Simulation::UpdateMCHits(GlobalSimuState& globState, int prIdx, size_t nbMo
 
                                 //Global autoscale
                                 for (int v = 0; v < 3; v++) {
-                                    if (val[v] > globState.globalHits.texture_limits[v].max.all && f.largeEnough[t])
-                                        globState.globalHits.texture_limits[v].max.all = val[v];
+                                    if (val[v] > globSimuState.globalHits.texture_limits[v].max.all && f.largeEnough[t])
+                                        globSimuState.globalHits.texture_limits[v].max.all = val[v];
 
-                                    if (val[v] > 0.0 && val[v] < globState.globalHits.texture_limits[v].min.all &&
+                                    if (val[v] > 0.0 && val[v] < globSimuState.globalHits.texture_limits[v].min.all &&
                                         f.largeEnough[t])
-                                        globState.globalHits.texture_limits[v].min.all = val[v];
+                                        globSimuState.globalHits.texture_limits[v].min.all = val[v];
 
                                     //Autoscale ignoring constant flow (moments only)
                                     if (m != 0) {
-                                        if (val[v] > globState.globalHits.texture_limits[v].max.moments_only &&
+                                        if (val[v] > globSimuState.globalHits.texture_limits[v].max.moments_only &&
                                             f.largeEnough[t])
-                                            globState.globalHits.texture_limits[v].max.moments_only = val[v];
+                                            globSimuState.globalHits.texture_limits[v].max.moments_only = val[v];
 
                                         if (val[v] > 0.0 &&
-                                            val[v] < globState.globalHits.texture_limits[v].min.moments_only &&
+                                            val[v] < globSimuState.globalHits.texture_limits[v].min.moments_only &&
                                             f.largeEnough[t])
-                                            globState.globalHits.texture_limits[v].min.moments_only = val[v];
+                                            globSimuState.globalHits.texture_limits[v].min.moments_only = val[v];
                                     }
                                 }
                             }
@@ -182,14 +179,14 @@ bool Simulation::UpdateMCHits(GlobalSimuState& globState, int prIdx, size_t nbMo
 
     //if there were no textures:
     for (int v = 0; v < 3; v++) {
-        if (globState.globalHits.texture_limits[v].min.all == HITMAX)
-            globState.globalHits.texture_limits[v].min.all = texture_limits_old[v].min.all;
-        if (globState.globalHits.texture_limits[v].min.moments_only == HITMAX)
-            globState.globalHits.texture_limits[v].min.moments_only = texture_limits_old[v].min.moments_only;
-        if (globState.globalHits.texture_limits[v].max.all == 0.0)
-            globState.globalHits.texture_limits[v].max.all = texture_limits_old[v].max.all;
-        if (globState.globalHits.texture_limits[v].max.moments_only == 0.0)
-            globState.globalHits.texture_limits[v].max.moments_only = texture_limits_old[v].max.moments_only;
+        if (globSimuState.globalHits.texture_limits[v].min.all == HITMAX)
+            globSimuState.globalHits.texture_limits[v].min.all = texture_limits_old[v].min.all;
+        if (globSimuState.globalHits.texture_limits[v].min.moments_only == HITMAX)
+            globSimuState.globalHits.texture_limits[v].min.moments_only = texture_limits_old[v].min.moments_only;
+        if (globSimuState.globalHits.texture_limits[v].max.all == 0.0)
+            globSimuState.globalHits.texture_limits[v].max.all = texture_limits_old[v].max.all;
+        if (globSimuState.globalHits.texture_limits[v].max.moments_only == 0.0)
+            globSimuState.globalHits.texture_limits[v].max.moments_only = texture_limits_old[v].max.moments_only;
     }
 
     //ReleaseDataport(dpHit);
@@ -198,10 +195,10 @@ bool Simulation::UpdateMCHits(GlobalSimuState& globState, int prIdx, size_t nbMo
     //extern char *GetSimuStatus();
     //SetState(PROCESS_STARTING, GetSimuStatus(), false, true);
 
-#if defined(DEBUG)
-    t1 = GetTick();
-    printf("Update hits (glob): %lf us\n", (t1 - t0) * 1000000.0);
-#endif
+//#if defined(DEBUG)
+    t1 = omp_get_wtime();
+    printf("Update hits (glob): %lf s\n", (t1 - t0) * 1.0);
+//#endif
 
     return true;
 }
@@ -321,9 +318,9 @@ bool Simulation::SimulationMCStep(size_t nbStep) {
     int returnVal = true;
     int allQuit = 0;
 
-    /*if (!tMutex.try_lock_for(std::chrono::seconds (10))) {
+    if (!tMutex.try_lock_for(std::chrono::seconds (10))) {
         return false;
-    }*/
+    }
 #pragma omp parallel num_threads(nbThreads) default(none) firstprivate(nbStep) shared( returnVal, allQuit)
     {
 
@@ -443,9 +440,9 @@ bool Simulation::SimulationMCStep(size_t nbStep) {
             ++allQuit;
     } // omp parallel
 
-/*
+
     tMutex.unlock();
-*/
+
     return returnVal;
 }
 
@@ -483,7 +480,7 @@ bool Simulation::StartFromSource(CurrentParticleStatus &currentParticle) {
     while (!found && j < model.sh.nbSuper) { //Go through superstructures
         i = 0;
         while (!found && i < model.structures[j].facets.size()) { //Go through facets in a structure
-            SubprocessFacet &f = model.structures[j].facets[i];
+            const SubprocessFacet &f = model.structures[j].facets[i];
             if (f.sh.desorbType != DES_NONE) { //there is some kind of outgassing
                 if (f.sh.useOutgassingFile) { //Using SynRad-generated outgassing map
                     if (f.sh.totalOutgassing > 0.0) {

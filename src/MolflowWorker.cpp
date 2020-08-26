@@ -1419,6 +1419,8 @@ void Worker::Start() {
         throw Error("Total outgassing is zero.");
 
     try {
+        for(auto& simUnit : simManager.simUnits)
+            simUnit.globState = &globState;
         if (simManager.StartSimulation()) {
             isRunning = false;
             throw std::logic_error("Processes are already done!");
