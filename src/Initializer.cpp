@@ -39,7 +39,8 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
 
     loadFromXML(simManager, model, globState);
 
-
+    for(auto& simUnit : simManager->simUnits)
+        simUnit.globState = globState;
 
 
 

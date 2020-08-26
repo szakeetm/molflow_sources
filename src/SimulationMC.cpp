@@ -79,6 +79,10 @@ bool Simulation::UpdateMCHits(GlobalSimuState& globSimuState, int prIdx, size_t 
     gHits->distTraveledTotal_fullHitsOnly += tmpGlobalResult.distTraveledTotal_fullHitsOnly;*/
     for(auto & tmpResults : tmpGlobalResults){
     //for(auto& tmpResults : tmpGlobalResults) {
+#if defined(DEBUG)
+        std::cout << "["<<0<<"] "<< globSimuState.globalHits.globalHits.hit.nbMCHit + tmpResults.globalHits.globalHits.hit.nbMCHit
+                  << " : " << globSimuState.globalHits.globalHits.hit.nbMCHit << " += " << tmpResults.globalHits.globalHits.hit.nbMCHit <<std::endl;
+#endif
         globSimuState.globalHits.globalHits += tmpResults.globalHits.globalHits;
         globSimuState.globalHits.distTraveled_total += tmpResults.globalHits.distTraveled_total;
         globSimuState.globalHits.distTraveledTotal_fullHitsOnly += tmpResults.globalHits.distTraveledTotal_fullHitsOnly;
