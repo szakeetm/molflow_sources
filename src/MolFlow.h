@@ -49,9 +49,9 @@ public:
 	GLTextField   *facetFlowArea;
 	
     
-    void LoadFile(std::string fileName="");
-	void InsertGeometry(bool newStr,std::string fileName="");
-	void SaveFile();
+    void LoadFile(std::string fileName="") override;
+	void InsertGeometry(bool newStr,std::string fileName="") override;
+	void SaveFile() override;
     
 	//void ImportDesorption_DES(); //Deprecated
 	void ExportProfiles();
@@ -59,27 +59,27 @@ public:
 	void ImportAngleMaps();
 	void CopyAngleMapToClipboard();
 	void ClearAngleMapsOnSelection();
-    void ClearFacetParams();
+    void ClearFacetParams() override;
 	
     void ApplyFacetParams();
-	void UpdateFacetParams(bool updateSelection = false);
+	void UpdateFacetParams(bool updateSelection = false) override;
     void StartStopSimulation();
-    void SaveConfig();
-    void LoadConfig();
+    void SaveConfig() override;
+    void LoadConfig() override;
     
-	void PlaceComponents();
-    void UpdateFacetHits(bool allRows=false);
+	void PlaceComponents() override;
+    void UpdateFacetHits(bool allRows=false) override;
 	void QuickPipe();
 	float GetAppTime();
 	void ClearParameters();
-	void UpdatePlotters();
+	void UpdatePlotters() override;
 	void RefreshPlotterCombos();
 
 	//Flow/sticking coeff. conversion
 	void calcFlow();
 	void calcSticking();
 
-	bool EvaluateVariable(VLIST *v);
+	bool EvaluateVariable(VLIST *v) override;
 
 	//char* appTitle;
 

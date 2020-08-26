@@ -71,6 +71,41 @@ elseif(OS_NAME STREQUAL "linux_debian")
     )
 endif ()
 
+#[[add_compile_options(
+        $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
+        -Wall>
+# -Wextra -pedantic
+        #-Werror -Wno-error=uninitialized
+        $<$<CXX_COMPILER_ID:MSVC>:
+        /W4>
+        #/WX
+        )]]
+
+#[[add_compile_options(
+        $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
+        -Wall>
+        $<$<CXX_COMPILER_ID:MSVC>:
+        /W4>)]]
+if(NOT MSVC)
+    add_compile_options(
+            -Wall -Wextra -pedantic
+            #-Werror -Wno-error=uninitialized
+        $<$<CONFIG:RELEASE>:-O3>
+        $<$<CONFIG:DEBUG>:-O0>
+        $<$<CONFIG:DEBUG>:-ggdb3>
+)
+else()
+    add_compile_options(
+            /W4 #/WX
+        $<$<CONFIG:RELEASE>:/GL /O2 /EHsc /O3>
+        $<$<CONFIG:DEBUG>/MDd /Od /EHsc /O0>
+    )
+    # Multi-processor compilation
+    add_compile_options(${PROJECT_NAME}
+        "$<$<CONFIG:Debug>:/MP>"
+        "$<$<CONFIG:Release>:/MP>"
+        )
+endif()
 #disable generation of appname.manifest file
 #alternative: use /MANIFEST:EMBED
 if(MSVC)

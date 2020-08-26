@@ -131,19 +131,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         )
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
-target_compile_options(${PROJECT_NAME} PRIVATE
-        $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
-        -Wall>
-        $<$<CXX_COMPILER_ID:MSVC>:
-        /W4>)
-
-# Multi-processor compilation
-if (MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE
-            "$<$<CONFIG:Debug>:/MP>"
-            "$<$<CONFIG:Release>:/MP>"
-            )
-endif ()
 
 if(MSVC)
     # Add Whole Program Optimization and Link Time Code Generation
