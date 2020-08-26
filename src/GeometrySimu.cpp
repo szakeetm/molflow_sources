@@ -7,6 +7,7 @@
 #include <GLApp/MathTools.h>
 #include <cmath>
 #include "GeometrySimu.h"
+#include "IntersectAABB_shared.h" // include needed for recursive delete of AABBNODE
 
 void ClearSimulation();
 
@@ -17,6 +18,7 @@ SuperStructure::SuperStructure()
 
 SuperStructure::~SuperStructure()
 {
+
     SAFE_DELETE(aabbTree);
 }
 
