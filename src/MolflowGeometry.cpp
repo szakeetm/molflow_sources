@@ -724,7 +724,22 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 		file->ReadKeyword("gasMass"); file->ReadKeyword(":");
 		worker->wp.gasMass = file->ReadDouble();
 	}
-	if (*version >= 10) { //time-dependent version
+    if (*version >= 16) { //time-dependent version with variable time windows
+        file->ReadKeyword("userMoments"); file->ReadKeyword("{");
+        file->ReadKeyword("nb"); file->ReadKeyword(":");
+        int nb = file->ReadInt();
+
+        for (int i = 0; i < nb; i++) {
+            char tmpExpr[512];
+            double tmpWindow;
+            strcpy(tmpExpr, file->ReadString());
+            file->ReadKeyword(":");
+            tmpWindow = file->ReadDouble();
+            worker->userMoments.emplace_back(tmpExpr,tmpWindow);
+        }
+        file->ReadKeyword("}");
+    }
+    else if (*version >= 10) { //time-dependent version with fixed time window length
 		file->ReadKeyword("userMoments"); file->ReadKeyword("{");
 		file->ReadKeyword("nb"); file->ReadKeyword(":");
 		int nb = file->ReadInt();
@@ -732,13 +747,10 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 		for (int i = 0; i < nb; i++) {
 			char tmpExpr[512];
 			strcpy(tmpExpr, file->ReadString());
-			worker->userMoments.push_back(tmpExpr);
-			worker->AddMoment(mApp->worker.ParseMoment(tmpExpr));
+			// Try to set a fixed time window later for GEO versions >= 11
+            worker->userMoments.emplace_back(tmpExpr,0.0);
 		}
 		file->ReadKeyword("}");
-
-		/*for (size_t i = 0; i < wp.nbFacet;i++)
-			facets[i]->ResizeCounter(wp.nbMoments); //Initialize hits counters for facets*/
 	}
 	if (*version >= 11) { //pulse version
 		file->ReadKeyword("desorptionStart"); file->ReadKeyword(":");
@@ -750,10 +762,15 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 		file->ReadKeyword("timeWindow"); file->ReadKeyword(":");
 		worker->wp.timeWindowSize = file->ReadDouble();
 
+		if(*version < 16){ // use fixed time window for user moments
+            for(auto& uMoment : worker->userMoments){
+                uMoment.second = worker->wp.timeWindowSize;
+            }
+        }
 		file->ReadKeyword("useMaxwellian"); file->ReadKeyword(":");
 		worker->wp.useMaxwellDistribution = file->ReadInt();
-
 	}
+
 	if (*version >= 12) { //2013.aug.22
 		file->ReadKeyword("calcConstantFlow"); file->ReadKeyword(":");
 		worker->wp.calcConstantFlow = file->ReadInt();
@@ -867,7 +884,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 				worker->globalHitCache.leakCache[i].dir.z = file->ReadDouble();
 			}
 			else { //Saved file has more leaks than we could load
-				for (int i = 0; i < 6; i++)
+				for (int skipIndex = 0; skipIndex < 6; skipIndex++)
 					file->ReadDouble();
 			}
 		}
@@ -1422,9 +1439,10 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, BYTE *buffer, W
 	file->Write(" nb:"); file->Write((int)worker->userMoments.size());
 	for (size_t u = 0; u < worker->userMoments.size(); u++) {
 		file->Write("\n \"");
-		file->Write(worker->userMoments[u].c_str());
-		file->Write("\"");
-	}
+		file->Write(worker->userMoments[u].first.c_str());
+		file->Write("\" : ");
+        file->Write(worker->userMoments[u].second);
+    }
 	file->Write("\n}\n");
 
 	file->Write("desorptionStart:"); file->Write(/*worker->desorptionStartTime*/0.0, "\n");
@@ -1714,7 +1732,7 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, BYTE *b
 	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++) {
 		if (m == 0) fprintf(file, " moment 0 (Constant Flow){\n");
-		else fprintf(file, " moment %zd (%g s){\n", m, mApp->worker.moments[m - 1]);
+		else fprintf(file, " moment %zd (%g s)[w=%g]{\n", m, mApp->worker.moments[m - 1].first,mApp->worker.moments[m - 1].second);
 		// Facets
 		for (int fInd = 0; fInd < sh.nbFacet; fInd++) {
 			Facet *f = facets[fInd];
@@ -1884,7 +1902,7 @@ void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, BYTE *buffer, Worker
 	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++) {
 		if (m == 0) fputs(" moment 0 (Constant Flow){\n", file);
-		else fprintf(file, " moment %zd (%g s){\n", m, mApp->worker.moments[m - 1]);
+		else fprintf(file, " moment %zd (%g s)[w=%g]{\n", m, mApp->worker.moments[m - 1].first,mApp->worker.moments[m - 1].second);
 		// Facets
 
 		for (int i = 0; i < sh.nbFacet; i++) {
@@ -2448,8 +2466,9 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 	for (size_t i = 0; i < work->userMoments.size(); i++) {
 		xml_node newUserEntry = userMomentsNode.append_child("UserEntry");
 		newUserEntry.append_attribute("id") = i;
-		newUserEntry.append_attribute("content") = work->userMoments[i].c_str();
-	}
+		newUserEntry.append_attribute("content") = work->userMoments[i].first.c_str();
+        newUserEntry.append_attribute("window") = work->userMoments[i].second;
+    }
 
 	timeSettingsNode.append_attribute("timeWindow") = work->wp.timeWindowSize;
 	timeSettingsNode.append_attribute("useMaxwellDistr") = (int)work->wp.useMaxwellDistribution; //backward compatibility: 0 or 1
@@ -2516,10 +2535,14 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 		prg->SetProgress(0.5 + 0.5*(double)m / (1.0 + (double)mApp->worker.moments.size()));
 		xml_node newMoment = momentsNode.append_child("Moment");
 		newMoment.append_attribute("id") = m;
-		if (m == 0)
-			newMoment.append_attribute("time") = "Constant flow";
-		else
-			newMoment.append_attribute("time") = work->moments[m - 1];
+		if (m == 0) {
+            newMoment.append_attribute("time") = "Constant flow";
+            newMoment.append_attribute("timeWindow") = 0;
+        }
+		else {
+            newMoment.append_attribute("time") = work->moments[m - 1].first;
+            newMoment.append_attribute("timeWindow") = work->moments[m - 1].second;
+        }
 
 		if (m == 0) { //Write global results. Later these results will probably be time-dependent as well.
 			xml_node globalNode = newMoment.append_child("Global");
@@ -2843,9 +2866,11 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 		xml_node userMomentsNode = timeSettingsNode.child("UserMoments");
 		for (xml_node newUserEntry : userMomentsNode.children("UserEntry")) {
 			char tmpExpr[512];
+			double tmpWindow = 0.0;
 			strcpy(tmpExpr, newUserEntry.attribute("content").as_string());
-			work->userMoments.push_back(tmpExpr);
-			work->AddMoment(mApp->worker.ParseMoment(tmpExpr));
+			tmpWindow = newUserEntry.attribute("window").as_double();
+            work->userMoments.emplace_back(tmpExpr,tmpWindow);
+            // Add real moments only after fully loading the file, because we only want to throw a warning and not an error
 		}
 
 		/*
@@ -2856,6 +2881,12 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 		*/
 
 		work->wp.timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();
+		// Default initialization
+		for(auto& uMoment : work->userMoments){
+		    if(uMoment.second == 0.0){
+                uMoment.second = work->wp.timeWindowSize;
+		    }
+		}
 		work->wp.useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_bool();
 		work->wp.calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_bool();
 

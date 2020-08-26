@@ -43,6 +43,7 @@ public:
 
 	//Recordings for histogram
 	size_t   nbBounces; // Number of hit (current particle) since desorption
+    size_t   lastMomentIndex; // Speedup for binary search
 	double   distanceTraveled;
 	double   flightTime;
 
@@ -130,7 +131,7 @@ public:
 	std::vector<std::vector<std::pair<double, double>>> CDFs; //cumulative distribution function for each temperature
 	std::vector<std::vector<std::pair<double, double>>> IDs; //integrated distribution function for each time-dependent desorption type
 	//std::vector<double> temperatures; //keeping track of all temperatures that have a CDF already generated
-	std::vector<double> moments;      //time values (seconds) when a simulation state is measured
+	std::vector<Moment> moments;      //time values (seconds) when a simulation state is measured
 	//std::vector<size_t> desorptionParameterIDs; //time-dependent parameters which are used as desorptions, therefore need to be integrated
 	std::vector<Parameter> parameters; //Time-dependent parameters 
 

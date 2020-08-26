@@ -171,7 +171,8 @@ bool Simulation::UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWOR
                         //double dCoef = gHits->globalHits.hit.nbDesorbed * 1E4 * wp.gasMass / 1000 / 6E23 * MAGIC_CORRECTION_FACTOR;  //1E4 is conversion from m2 to cm2
                         double timeCorrection =
                                 m == 0 ? wp.finalOutgassingRate : (wp.totalDesorbedMolecules) /
-                                                                           wp.timeWindowSize;
+                                                                    moments[m-1].second;
+                                                                           //wp.timeWindowSize;
                         //Timecorrection is required to compare constant flow texture values with moment values (for autoscaling)
 
                         for (y = 0; y < f.sh.texHeight; y++) {
@@ -471,7 +472,7 @@ bool Simulation::SimulationMCStep(size_t nbStep) {
                     currentParticle.position + d * currentParticle.direction;
             //currentParticle.distanceTraveled += d;
 
-            double lastFLightTime = currentParticle.flightTime; //memorize for partial hits
+            double lastFlightTime = currentParticle.flightTime; //memorize for partial hits
             currentParticle.flightTime +=
                     d / 100.0 / currentParticle.velocity; //conversion from cm to m
 
@@ -481,9 +482,9 @@ bool Simulation::SimulationMCStep(size_t nbStep) {
                 //hit time over the measured period - we create a new particle
                 //OR particle has decayed
                 double remainderFlightPath = currentParticle.velocity * 100.0 *
-                                             Min(wp.latestMoment - lastFLightTime,
+                                             Min(wp.latestMoment - lastFlightTime,
                                                  currentParticle.expectedDecayMoment -
-                                                 lastFLightTime); //distance until the point in space where the particle decayed
+                                                 lastFlightTime); //distance until the point in space where the particle decayed
                 tmpGlobalResult.distTraveled_total += remainderFlightPath * currentParticle.oriRatio;
                 RecordHit(HIT_LAST);
                 //distTraveledSinceUpdate += currentParticle.distanceTraveled;
@@ -644,6 +645,7 @@ bool Simulation::StartFromSource() {
     //currentParticle.distanceTraveled = 0.0;  //for mean free path calculations
     //currentParticle.flightTime = desorptionStartTime + (desorptionStopTime - desorptionStartTime)*randomGenerator.rnd();
     currentParticle.flightTime = GenerateDesorptionTime(src);
+    currentParticle.lastMomentIndex = 0;
     if (wp.useMaxwellDistribution) currentParticle.velocity = GenerateRandomVelocity(src->sh.CDFid);
     else
         currentParticle.velocity =
@@ -1248,44 +1250,78 @@ void Simulation::RecordAbsorb(SubprocessFacet *iFacet) {
 
 void Simulation::RecordHistograms(SubprocessFacet *iFacet) {
     //Record in global and facet histograms
-    for (size_t m = 0; m <= moments.size(); m++) {
-        if (m == 0 || std::abs(currentParticle.flightTime - moments[m - 1]) <
-                      wp.timeWindowSize / 2.0) {
-            size_t binIndex;
-            if (wp.globalHistogramParams.recordBounce) {
-                binIndex = Min(currentParticle.nbBounces / wp.globalHistogramParams.nbBounceBinsize,
-                               wp.globalHistogramParams.GetBounceHistogramSize() - 1);
-                tmpGlobalHistograms[m].nbHitsHistogram[binIndex] += currentParticle.oriRatio;
-            }
-            if (wp.globalHistogramParams.recordDistance) {
-                binIndex = Min(static_cast<size_t>(currentParticle.distanceTraveled /
-                                                   wp.globalHistogramParams.distanceBinsize),
-                               wp.globalHistogramParams.GetDistanceHistogramSize() - 1);
-                tmpGlobalHistograms[m].distanceHistogram[binIndex] += currentParticle.oriRatio;
-            }
-            if (wp.globalHistogramParams.recordTime) {
-                binIndex = Min(static_cast<size_t>(currentParticle.flightTime /
-                                                   wp.globalHistogramParams.timeBinsize),
-                               wp.globalHistogramParams.GetTimeHistogramSize() - 1);
-                tmpGlobalHistograms[m].timeHistogram[binIndex] += currentParticle.oriRatio;
-            }
-            if (iFacet->sh.facetHistogramParams.recordBounce) {
-                binIndex = Min(currentParticle.nbBounces / iFacet->sh.facetHistogramParams.nbBounceBinsize,
-                               iFacet->sh.facetHistogramParams.GetBounceHistogramSize() - 1);
-                iFacet->tmpHistograms[m].nbHitsHistogram[binIndex] += currentParticle.oriRatio;
-            }
-            if (iFacet->sh.facetHistogramParams.recordDistance) {
-                binIndex = Min(static_cast<size_t>(currentParticle.distanceTraveled /
-                                                   iFacet->sh.facetHistogramParams.distanceBinsize),
-                               iFacet->sh.facetHistogramParams.GetDistanceHistogramSize() - 1);
-                iFacet->tmpHistograms[m].distanceHistogram[binIndex] += currentParticle.oriRatio;
-            }
-            if (iFacet->sh.facetHistogramParams.recordTime) {
-                binIndex = Min(static_cast<size_t>(currentParticle.flightTime /
-                                                   iFacet->sh.facetHistogramParams.timeBinsize),
-                               iFacet->sh.facetHistogramParams.GetTimeHistogramSize() - 1);
-                iFacet->tmpHistograms[m].timeHistogram[binIndex] += currentParticle.oriRatio;
-            }
+    size_t binIndex;
+    if (wp.globalHistogramParams.recordBounce) {
+        binIndex = Min(currentParticle.nbBounces / wp.globalHistogramParams.nbBounceBinsize,
+                       wp.globalHistogramParams.GetBounceHistogramSize() - 1);
+        tmpGlobalHistograms[0].nbHitsHistogram[binIndex] += currentParticle.oriRatio;
+    }
+    if (wp.globalHistogramParams.recordDistance) {
+        binIndex = Min(static_cast<size_t>(currentParticle.distanceTraveled /
+                                           wp.globalHistogramParams.distanceBinsize),
+                       wp.globalHistogramParams.GetDistanceHistogramSize() - 1);
+        tmpGlobalHistograms[0].distanceHistogram[binIndex] += currentParticle.oriRatio;
+    }
+    if (wp.globalHistogramParams.recordTime) {
+        binIndex = Min(static_cast<size_t>(currentParticle.flightTime /
+                                           wp.globalHistogramParams.timeBinsize),
+                       wp.globalHistogramParams.GetTimeHistogramSize() - 1);
+        tmpGlobalHistograms[0].timeHistogram[binIndex] += currentParticle.oriRatio;
+    }
+    if (iFacet->sh.facetHistogramParams.recordBounce) {
+        binIndex = Min(currentParticle.nbBounces / iFacet->sh.facetHistogramParams.nbBounceBinsize,
+                       iFacet->sh.facetHistogramParams.GetBounceHistogramSize() - 1);
+        iFacet->tmpHistograms[0].nbHitsHistogram[binIndex] += currentParticle.oriRatio;
+    }
+    if (iFacet->sh.facetHistogramParams.recordDistance) {
+        binIndex = Min(static_cast<size_t>(currentParticle.distanceTraveled /
+                                           iFacet->sh.facetHistogramParams.distanceBinsize),
+                       iFacet->sh.facetHistogramParams.GetDistanceHistogramSize() - 1);
+        iFacet->tmpHistograms[0].distanceHistogram[binIndex] += currentParticle.oriRatio;
+    }
+    if (iFacet->sh.facetHistogramParams.recordTime) {
+        binIndex = Min(static_cast<size_t>(currentParticle.flightTime /
+                                           iFacet->sh.facetHistogramParams.timeBinsize),
+                       iFacet->sh.facetHistogramParams.GetTimeHistogramSize() - 1);
+        iFacet->tmpHistograms[0].timeHistogram[binIndex] += currentParticle.oriRatio;
+    }
+
+    int m = -1;
+    if((m = LookupMomentIndex(currentParticle.flightTime, moments, currentParticle.lastMomentIndex)) >= 0){
+        currentParticle.lastMomentIndex = m;
+        if (wp.globalHistogramParams.recordBounce) {
+            binIndex = Min(currentParticle.nbBounces / wp.globalHistogramParams.nbBounceBinsize,
+                           wp.globalHistogramParams.GetBounceHistogramSize() - 1);
+            tmpGlobalHistograms[m].nbHitsHistogram[binIndex] += currentParticle.oriRatio;
+        }
+        if (wp.globalHistogramParams.recordDistance) {
+            binIndex = Min(static_cast<size_t>(currentParticle.distanceTraveled /
+                                               wp.globalHistogramParams.distanceBinsize),
+                           wp.globalHistogramParams.GetDistanceHistogramSize() - 1);
+            tmpGlobalHistograms[m].distanceHistogram[binIndex] += currentParticle.oriRatio;
+        }
+        if (wp.globalHistogramParams.recordTime) {
+            binIndex = Min(static_cast<size_t>(currentParticle.flightTime /
+                                               wp.globalHistogramParams.timeBinsize),
+                           wp.globalHistogramParams.GetTimeHistogramSize() - 1);
+            tmpGlobalHistograms[m].timeHistogram[binIndex] += currentParticle.oriRatio;
+        }
+        if (iFacet->sh.facetHistogramParams.recordBounce) {
+            binIndex = Min(currentParticle.nbBounces / iFacet->sh.facetHistogramParams.nbBounceBinsize,
+                           iFacet->sh.facetHistogramParams.GetBounceHistogramSize() - 1);
+            iFacet->tmpHistograms[m].nbHitsHistogram[binIndex] += currentParticle.oriRatio;
+        }
+        if (iFacet->sh.facetHistogramParams.recordDistance) {
+            binIndex = Min(static_cast<size_t>(currentParticle.distanceTraveled /
+                                               iFacet->sh.facetHistogramParams.distanceBinsize),
+                           iFacet->sh.facetHistogramParams.GetDistanceHistogramSize() - 1);
+            iFacet->tmpHistograms[m].distanceHistogram[binIndex] += currentParticle.oriRatio;
+        }
+        if (iFacet->sh.facetHistogramParams.recordTime) {
+            binIndex = Min(static_cast<size_t>(currentParticle.flightTime /
+                                               iFacet->sh.facetHistogramParams.timeBinsize),
+                           iFacet->sh.facetHistogramParams.GetTimeHistogramSize() - 1);
+            iFacet->tmpHistograms[m].timeHistogram[binIndex] += currentParticle.oriRatio;
         }
     }
 }
@@ -1299,14 +1335,19 @@ void Simulation::RecordHitOnTexture(SubprocessFacet *f, double time, bool countH
                          std::abs(Dot(currentParticle.direction,
                                       f->sh.N)); //surface-orthogonal velocity component
 
-    for (size_t m = 0; m <= moments.size(); m++) {
-        if (m == 0 || std::abs(time - moments[m - 1]) < wp.timeWindowSize / 2.0) {
-            if (countHit) f->texture[m][add].countEquiv += currentParticle.oriRatio;
-            f->texture[m][add].sum_1_per_ort_velocity +=
-                    currentParticle.oriRatio * velocity_factor / ortVelocity;
-            f->texture[m][add].sum_v_ort_per_area += currentParticle.oriRatio * ortSpeedFactor * ortVelocity *
-                                                     f->textureCellIncrements[add]; // sum ortho_velocity[m/s] / cell_area[cm2]
-        }
+    if (countHit) f->texture[0][add].countEquiv += currentParticle.oriRatio;
+    f->texture[0][add].sum_1_per_ort_velocity +=
+            currentParticle.oriRatio * velocity_factor / ortVelocity;
+    f->texture[0][add].sum_v_ort_per_area += currentParticle.oriRatio * ortSpeedFactor * ortVelocity *
+                                             f->textureCellIncrements[add]; // sum ortho_velocity[m/s] / cell_area[cm2]
+    int m = -1;
+    if((m = LookupMomentIndex(time, moments, currentParticle.lastMomentIndex)) >= 0){
+        currentParticle.lastMomentIndex = m;
+        if (countHit) f->texture[m][add].countEquiv += currentParticle.oriRatio;
+        f->texture[m][add].sum_1_per_ort_velocity +=
+                currentParticle.oriRatio * velocity_factor / ortVelocity;
+        f->texture[m][add].sum_v_ort_per_area += currentParticle.oriRatio * ortSpeedFactor * ortVelocity *
+                                                 f->textureCellIncrements[add]; // sum ortho_velocity[m/s] / cell_area[cm2]
     }
 }
 
@@ -1315,13 +1356,17 @@ void Simulation::RecordDirectionVector(SubprocessFacet *f, double time) {
     size_t tv = (size_t)(f->colV * f->sh.texHeightD);
     size_t add = tu + tv * (f->sh.texWidth);
 
-    for (size_t m = 0; m <= moments.size(); m++) {
-        if (m == 0 || std::abs(time - moments[m - 1]) < wp.timeWindowSize / 2.0) {
-            f->direction[m][add].dir = f->direction[m][add].dir +
-                                       currentParticle.oriRatio * currentParticle.direction *
-                                       currentParticle.velocity;
-            f->direction[m][add].count++;
-        }
+    f->direction[0][add].dir = f->direction[0][add].dir +
+                               currentParticle.oriRatio * currentParticle.direction *
+                               currentParticle.velocity;
+    f->direction[0][add].count++;
+    int m = -1;
+    if((m = LookupMomentIndex(time, moments, currentParticle.lastMomentIndex)) >= 0){
+        currentParticle.lastMomentIndex = m;
+        f->direction[m][add].dir = f->direction[m][add].dir +
+                                   currentParticle.oriRatio * currentParticle.direction *
+                                   currentParticle.velocity;
+        f->direction[m][add].count++;
     }
 
 }
@@ -1329,30 +1374,36 @@ void Simulation::RecordDirectionVector(SubprocessFacet *f, double time) {
 void Simulation::ProfileFacet(SubprocessFacet *f, double time, bool countHit, double velocity_factor, double ortSpeedFactor) {
 
     size_t nbMoments = moments.size();
-
+    int m = LookupMomentIndex(time, moments, currentParticle.lastMomentIndex);
     if (countHit && f->sh.profileType == PROFILE_ANGULAR) {
         double dot = Dot(f->sh.N, currentParticle.direction);
         double theta = std::acos(std::abs(dot));     // Angle to normal (PI/2 => PI)
         size_t pos = (size_t)(theta / (PI / 2) * ((double) PROFILE_SIZE)); // To Grad
         Saturate(pos, 0, PROFILE_SIZE - 1);
-        for (size_t m = 0; m <= nbMoments; m++) {
-            if (m == 0 || std::abs(time - moments[m - 1]) < wp.timeWindowSize / 2.0) {
-                f->profile[m][pos].countEquiv += currentParticle.oriRatio;
-            }
+        f->profile[0][pos].countEquiv += currentParticle.oriRatio;
+        if(m >= 0){
+            currentParticle.lastMomentIndex = m;
+            f->profile[m][pos].countEquiv += currentParticle.oriRatio;
         }
     } else if (f->sh.profileType == PROFILE_U || f->sh.profileType == PROFILE_V) {
         size_t pos = (size_t)((f->sh.profileType == PROFILE_U ? f->colU : f->colV) * (double) PROFILE_SIZE);
         if (pos >= 0 && pos < PROFILE_SIZE) {
-            for (size_t m = 0; m <= nbMoments; m++) {
-                if (m == 0 || std::abs(time - moments[m - 1]) < wp.timeWindowSize / 2.0) {
-                    if (countHit) f->profile[m][pos].countEquiv += currentParticle.oriRatio;
-                    double ortVelocity = currentParticle.velocity *
-                                         std::abs(Dot(f->sh.N, currentParticle.direction));
-                    f->profile[m][pos].sum_1_per_ort_velocity +=
-                            currentParticle.oriRatio * velocity_factor / ortVelocity;
-                    f->profile[m][pos].sum_v_ort += currentParticle.oriRatio * ortSpeedFactor *
-                                                    (wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity;
-                }
+            if (countHit) f->profile[0][pos].countEquiv += currentParticle.oriRatio;
+            double ortVelocity = currentParticle.velocity *
+                                 std::abs(Dot(f->sh.N, currentParticle.direction));
+            f->profile[0][pos].sum_1_per_ort_velocity +=
+                    currentParticle.oriRatio * velocity_factor / ortVelocity;
+            f->profile[0][pos].sum_v_ort += currentParticle.oriRatio * ortSpeedFactor *
+                                            (wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity;
+            if(m >= 0) {
+                currentParticle.lastMomentIndex = m;
+                if (countHit) f->profile[m][pos].countEquiv += currentParticle.oriRatio;
+                double ortVelocity = currentParticle.velocity *
+                                     std::abs(Dot(f->sh.N, currentParticle.direction));
+                f->profile[m][pos].sum_1_per_ort_velocity +=
+                        currentParticle.oriRatio * velocity_factor / ortVelocity;
+                f->profile[m][pos].sum_v_ort += currentParticle.oriRatio * ortSpeedFactor *
+                                                (wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity;
             }
         }
     } else if (countHit && (f->sh.profileType == PROFILE_VELOCITY || f->sh.profileType == PROFILE_ORT_VELOCITY ||
@@ -1368,10 +1419,10 @@ void Simulation::ProfileFacet(SubprocessFacet *f, double time, bool countHit, do
         size_t pos = (size_t)(dot * currentParticle.velocity / f->sh.maxSpeed *
                               (double) PROFILE_SIZE); //"dot" default value is 1.0
         if (pos >= 0 && pos < PROFILE_SIZE) {
-            for (size_t m = 0; m <= nbMoments; m++) {
-                if (m == 0 || std::abs(time - moments[m - 1]) < wp.timeWindowSize / 2.0) {
-                    f->profile[m][pos].countEquiv += currentParticle.oriRatio;
-                }
+            f->profile[0][pos].countEquiv += currentParticle.oriRatio;
+            if (m >= 0) {
+                currentParticle.lastMomentIndex = m;
+                f->profile[m][pos].countEquiv += currentParticle.oriRatio;
             }
         }
     }
@@ -1505,19 +1556,27 @@ void Simulation::TreatMovingFacet() {
 */
 void Simulation::IncreaseFacetCounter(SubprocessFacet *f, double time, size_t hit, size_t desorb, size_t absorb, double sum_1_per_v,
                           double sum_v_ort) {
-    size_t nbMoments = moments.size();
-    for (size_t m = 0; m <= nbMoments; m++) {
-        if (m == 0 || std::abs(time - moments[m - 1]) < wp.timeWindowSize / 2.0) {
-            f->tmpCounter[m].hit.nbMCHit += hit;
-            double hitEquiv = static_cast<double>(hit) * currentParticle.oriRatio;
-            f->tmpCounter[m].hit.nbHitEquiv += hitEquiv;
-            f->tmpCounter[m].hit.nbDesorbed += desorb;
-            f->tmpCounter[m].hit.nbAbsEquiv += static_cast<double>(absorb) * currentParticle.oriRatio;
-            f->tmpCounter[m].hit.sum_1_per_ort_velocity += currentParticle.oriRatio * sum_1_per_v;
-            f->tmpCounter[m].hit.sum_v_ort += currentParticle.oriRatio * sum_v_ort;
-            f->tmpCounter[m].hit.sum_1_per_velocity +=
-                    (hitEquiv + static_cast<double>(desorb)) / currentParticle.velocity;
-        }
+    f->tmpCounter[0].hit.nbMCHit += hit;
+    double hitEquiv = static_cast<double>(hit) * currentParticle.oriRatio;
+    f->tmpCounter[0].hit.nbHitEquiv += hitEquiv;
+    f->tmpCounter[0].hit.nbDesorbed += desorb;
+    f->tmpCounter[0].hit.nbAbsEquiv += static_cast<double>(absorb) * currentParticle.oriRatio;
+    f->tmpCounter[0].hit.sum_1_per_ort_velocity += currentParticle.oriRatio * sum_1_per_v;
+    f->tmpCounter[0].hit.sum_v_ort += currentParticle.oriRatio * sum_v_ort;
+    f->tmpCounter[0].hit.sum_1_per_velocity += (hitEquiv + static_cast<double>(desorb)) / currentParticle.velocity;
+
+    int m = -1;
+    if((m = LookupMomentIndex(time, moments, currentParticle.lastMomentIndex)) >= 0){
+        currentParticle.lastMomentIndex = m;
+        f->tmpCounter[m].hit.nbMCHit += hit;
+        double hitEquiv = static_cast<double>(hit) * currentParticle.oriRatio;
+        f->tmpCounter[m].hit.nbHitEquiv += hitEquiv;
+        f->tmpCounter[m].hit.nbDesorbed += desorb;
+        f->tmpCounter[m].hit.nbAbsEquiv += static_cast<double>(absorb) * currentParticle.oriRatio;
+        f->tmpCounter[m].hit.sum_1_per_ort_velocity += currentParticle.oriRatio * sum_1_per_v;
+        f->tmpCounter[m].hit.sum_v_ort += currentParticle.oriRatio * sum_v_ort;
+        f->tmpCounter[m].hit.sum_1_per_velocity +=
+                (hitEquiv + static_cast<double>(desorb)) / currentParticle.velocity;
     }
 }
 

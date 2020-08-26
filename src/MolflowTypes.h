@@ -19,6 +19,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 #pragma once
 #include <stddef.h> //size_t for gcc
+#include <string>
 //#include "Buffer_shared.h"
 
 // Desorption type
@@ -56,6 +57,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #define AC_MODE 1         // Angular coefficient simulation mode
 
 typedef float ACFLOAT;
+typedef std::pair<std::string,double> UserMoment;
+typedef std::pair<double,double> Moment;
 
 class ProfileSlice {
 public:

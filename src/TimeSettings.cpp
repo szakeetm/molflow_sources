@@ -149,7 +149,7 @@ void TimeSettings::ProcessMessage(GLComponent *src,int message) {
 		if (id==0)
 			timeLabel->SetText("Constant Flow");
 		else {
-			sprintf(tmp,"t=%gs",work->moments[id-1]);
+			sprintf(tmp,"t=%gs",work->moments[id-1].first);
 			timeLabel->SetText(tmp);
 		}
 		try {

@@ -1809,7 +1809,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			timeSettings->SetVisible(true);
 			break;
 		case MENU_TIME_MOMENTS_EDITOR:
-			if (momentsEditor == NULL || !momentsEditor->IsVisible()) {
+			if (!momentsEditor || !momentsEditor->IsVisible()) {
 				SAFE_DELETE(momentsEditor);
 				momentsEditor = new MomentsEditor(&worker);
 				momentsEditor->Refresh();
@@ -1817,7 +1817,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			}
 			break;
 		case MENU_TIME_PARAMETER_EDITOR:
-			if (parameterEditor == NULL) parameterEditor = new ParameterEditor(&worker);
+			if (!parameterEditor) parameterEditor = new ParameterEditor(&worker);
 			parameterEditor->SetVisible(true);
 			break;
 		case MENU_TIMEWISE_PLOTTER:
@@ -2094,6 +2094,8 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 
 	try {
 		geom->BuildPipe(L, R, 0, step);
+        worker.needsReload = true;
+
 		worker.CalcTotalOutgassing();
 		//default values
 		worker.wp.enableDecay = false;
