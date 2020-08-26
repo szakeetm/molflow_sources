@@ -47,7 +47,6 @@ public:
 
 private:
 
-	//double InterpolateY(double x,const std::vector<std::pair<double,double>>& table,bool limitToBounds=false,bool logarithmic=false);
 	void    LoadConvFile(const char* fileName);
 	void   EnableDisableComponents();
 

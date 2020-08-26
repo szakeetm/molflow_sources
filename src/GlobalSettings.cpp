@@ -168,38 +168,47 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	outgassingLabel->SetBounds(290, 72, 150, 19);
 	simuSettingsPanel->Add(outgassingLabel);
 
-	outgassingText = new GLTextField(0, "");
-	outgassingText->SetBounds(460, 70, 100, 19);
-	outgassingText->SetEditable(false);
-	simuSettingsPanel->Add(outgassingText);
+	outgassingGasRateText = new GLTextField(0, "");
+	outgassingGasRateText->SetBounds(460, 70, 100, 19);
+	outgassingGasRateText->SetEditable(false);
+	simuSettingsPanel->Add(outgassingGasRateText);
 
-	auto *influxLabel = new GLLabel("Total desorbed molecules:");
-	influxLabel->SetBounds(290, 97, 150, 19);
-	simuSettingsPanel->Add(influxLabel);
+	auto *outgassingLabel2 = new GLLabel("Final outgassing rate (1/sec):");
+	outgassingLabel2->SetBounds(290, 97, 150, 19);
+	simuSettingsPanel->Add(outgassingLabel2);
 
-	influxText = new GLTextField(0, "");
-	influxText->SetBounds(460, 95, 100, 19);
-	influxText->SetEditable(false);
-	simuSettingsPanel->Add(influxText);
+	outgassingMoleculeRateText = new GLTextField(0, "");
+	outgassingMoleculeRateText->SetBounds(460, 95, 100, 19);
+	outgassingMoleculeRateText->SetEditable(false);
+	simuSettingsPanel->Add(outgassingMoleculeRateText);
+
+	desorbedMoleculesLabel = new GLLabel("Total desorbed molecules:");
+	desorbedMoleculesLabel->SetBounds(290, 122, 150, 19);
+	simuSettingsPanel->Add(desorbedMoleculesLabel);
+
+	desorbedMoleculesText = new GLTextField(0, "");
+	desorbedMoleculesText->SetBounds(460, 120, 100, 19);
+	desorbedMoleculesText->SetEditable(false);
+	simuSettingsPanel->Add(desorbedMoleculesText);
 
 	recalcButton = new GLButton(0, "Recalc. outgassing");
-	recalcButton->SetBounds(460, 123, 100, 19);
+	recalcButton->SetBounds(460, 148, 100, 19);
 	simuSettingsPanel->Add(recalcButton);
 
 	lowFluxToggle = new GLToggle(0, "Enable low flux mode");
-	lowFluxToggle->SetBounds(290, 150, 120, 19);
+	lowFluxToggle->SetBounds(290, 175, 120, 19);
 	simuSettingsPanel->Add(lowFluxToggle);
 
 	lowFluxInfo = new GLButton(0, "?");
-	lowFluxInfo->SetBounds(420, 150, 20, 19);
+	lowFluxInfo->SetBounds(420, 175, 20, 19);
 	simuSettingsPanel->Add(lowFluxInfo);
 
 	auto *cutoffLabel = new GLLabel("Cutoff ratio:");
-	cutoffLabel->SetBounds(310, 176, 80, 19);
+	cutoffLabel->SetBounds(310, 201, 80, 19);
 	simuSettingsPanel->Add(cutoffLabel);
 
 	cutoffText = new GLTextField(0, "");
-	cutoffText->SetBounds(370, 175, 70, 19);
+	cutoffText->SetBounds(370, 200, 70, 19);
 	cutoffText->SetEditable(false);
 	simuSettingsPanel->Add(cutoffText);
 
@@ -610,7 +619,11 @@ void GlobalSettings::UpdateOutgassing() {
 	sprintf(tmp, "%g", worker->wp.gasMass);
 	gasMassText->SetText(tmp);
 	sprintf(tmp, "%g", worker->wp.finalOutgassingRate_Pa_m3_sec * 10.00); //10: conversion Pa*m3/sec -> mbar*l/s
-	outgassingText->SetText(tmp);
+	outgassingGasRateText->SetText(tmp);
+	sprintf(tmp, "%g", worker->wp.finalOutgassingRate); //In molecules/sec
+	outgassingMoleculeRateText->SetText(tmp);
+	sprintf(tmp,"Tot.des. molecules [0 to %g s]:",worker->wp.latestMoment);
+	desorbedMoleculesLabel->SetText(tmp);
 	sprintf(tmp, "%.3E", worker->wp.totalDesorbedMolecules);
-	influxText->SetText(tmp);
+	desorbedMoleculesText->SetText(tmp);
 }

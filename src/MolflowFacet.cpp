@@ -97,7 +97,7 @@ void Facet::LoadGEO(FileReader *file, int version, size_t nbVertex) {
 	hasMesh = file->ReadInt();
 	if (version >= 7) {
 		file->ReadKeyword("outgassing"); file->ReadKeyword(":");
-		sh.outgassing = file->ReadDouble()*0.100; //mbar*l/s -> Pa*m3/s
+		sh.outgassing = file->ReadDouble()*MBARLS_TO_PAM3S; //mbar*l/s -> Pa*m3/s
 
 	}
 	file->ReadKeyword("texDimX"); file->ReadKeyword(":");
@@ -322,6 +322,30 @@ void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bool& ignor
 
 	textureVisible = f.child("ViewSettings").attribute("textureVisible").as_bool();
 	volumeVisible = f.child("ViewSettings").attribute("volumeVisible").as_bool();
+
+	xml_node facetHistNode = f.child("Histograms");
+	if (facetHistNode) { // Molflow version before 2.8 didn't save histograms
+		xml_node nbBounceNode = facetHistNode.child("Bounces");
+		if (nbBounceNode) {
+			sh.facetHistogramParams.recordBounce=true;
+			sh.facetHistogramParams.nbBounceBinsize=nbBounceNode.attribute("binSize").as_ullong();
+			sh.facetHistogramParams.nbBounceMax=nbBounceNode.attribute("max").as_ullong();
+		}
+		xml_node distanceNode = facetHistNode.child("Distance");
+		if (distanceNode) {
+			sh.facetHistogramParams.recordDistance=true;
+			sh.facetHistogramParams.distanceBinsize=distanceNode.attribute("binSize").as_double();
+			sh.facetHistogramParams.distanceMax=distanceNode.attribute("max").as_double();
+		}
+		#ifdef MOLFLOW
+		xml_node timeNode = facetHistNode.child("Time");
+		if (timeNode) {
+			sh.facetHistogramParams.recordTime=true;
+			sh.facetHistogramParams.timeBinsize=timeNode.attribute("binSize").as_double();
+			sh.facetHistogramParams.timeMax=timeNode.attribute("max").as_double();
+		}
+		#endif
+	}
 
 	UpdateFlags();
 }
@@ -1154,6 +1178,25 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 		textureNode.append_child("map").append_child(node_cdata).set_value(angleText.str().c_str());
 
 	} //end angle map
+
+	xml_node histNode = f.append_child("Histograms");
+	if (sh.facetHistogramParams.recordBounce) {
+		xml_node nbBounceNode = histNode.append_child("Bounces");
+		nbBounceNode.append_attribute("binSize")=sh.facetHistogramParams.nbBounceBinsize;
+		nbBounceNode.append_attribute("max")=sh.facetHistogramParams.nbBounceMax;
+	}
+	if (sh.facetHistogramParams.recordDistance) {
+		xml_node distanceNode = histNode.append_child("Distance");
+		distanceNode.append_attribute("binSize")=sh.facetHistogramParams.distanceBinsize;
+		distanceNode.append_attribute("max")=sh.facetHistogramParams.distanceMax;
+	}
+	#ifdef MOLFLOW
+	if (sh.facetHistogramParams.recordTime) {
+		xml_node timeNode = histNode.append_child("Time");
+		timeNode.append_attribute("binSize")=sh.facetHistogramParams.timeBinsize;
+		timeNode.append_attribute("max")=sh.facetHistogramParams.timeMax;
+	}
+	#endif
 }
 
 

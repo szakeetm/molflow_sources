@@ -257,7 +257,6 @@ void MolFlow::LoadParameterCatalog()
 
 			Parameter newParam;
 			newParam.fromCatalog = true;
-			newParam.isLogLog = true; //For now
 			newParam.name = "[catalog] " + csvName;
 
 			std::vector<std::vector<std::string>> table;
@@ -847,14 +846,14 @@ void MolFlow::ApplyFacetParams() {
 			if (doTemperature) f->sh.temperature = temperature;
 			if (doFlow) {
 				if (!outgassingNotNumber) {
-					f->sh.outgassing = outgassing*0.100; //0.1: mbar*l/s -> Pa*m3/s
+					f->sh.outgassing = outgassing*MBARLS_TO_PAM3S; //0.1: mbar*l/s -> Pa*m3/s
 					f->userOutgassing = "";
 				}
 				else {
 					f->userOutgassing = facetFlow->GetText();
 				}
 			}
-			if (doFlowA/* && !useMapA*/) f->sh.outgassing = flowA*f->GetArea()*0.100;
+			if (doFlowA/* && !useMapA*/) f->sh.outgassing = flowA*f->GetArea()*MBARLS_TO_PAM3S;
 			if (desorbType >= 0) {
 				if (desorbType == 0) f->sh.outgassing = 0.0;
 				if (desorbType != 3) f->sh.desorbTypeN = 0.0;
@@ -1458,7 +1457,6 @@ void MolFlow::LoadFile(std::string fileName) {
 		if (pressureEvolution) pressureEvolution->Reset();
 		if (timewisePlotter) timewisePlotter->Refresh();
 		if (histogramPlotter) histogramPlotter->Reset();
-		if (histogramSettings) histogramSettings->Refresh({});
 		if (profilePlotter) profilePlotter->Refresh();
 		if (texturePlotter) texturePlotter->Update(0.0,true);
 		//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
@@ -2102,6 +2100,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 		worker.wp.halfLife = 1;
 		worker.wp.gasMass = 28;
 		worker.ResetMoments();
+		worker.wp.globalHistogramParams = HistogramParams();
         ResetSimulation(false);
     }
 	catch (Error &e) {
@@ -2176,6 +2175,7 @@ void MolFlow::EmptyGeometry() {
 		worker.wp.halfLife = 1;
 		worker.wp.gasMass = 28;
 		worker.ResetMoments();
+		worker.wp.globalHistogramParams = HistogramParams();
 	}
 	catch (Error &e) {
 		GLMessageBox::Display(e.what(), "Error resetting geometry", GLDLG_OK, GLDLG_ICONERROR);

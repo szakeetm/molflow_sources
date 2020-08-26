@@ -86,7 +86,8 @@ size_t MolflowGeometry::GetGeometrySize() {
 	for (auto& i : work->IDs) {
 
 		memoryUsage += sizeof(size_t); //ID size
-		memoryUsage += i.size() * 2 * sizeof(double);
+		memoryUsage += 2*sizeof(bool); //logX,logY interpolation flags
+		memoryUsage += i.values.size() * 2 * sizeof(double);
 	}
 
 	//Parameters
@@ -357,11 +358,15 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 
 	file->ReadKeyword("totalHit"); file->ReadKeyword(":");
 	file->ReadSizeT();
+	if (version2 >= 10) {
+		file->ReadKeyword("totalHitEquiv"); file->ReadKeyword(":");
+		file->ReadDouble();
+	}
 	file->ReadKeyword("totalDes"); file->ReadKeyword(":");
 	file->ReadSizeT();
 	if (version2 >= 6) {
 		file->ReadKeyword("no_scans"); file->ReadKeyword(":");
-		/*loaded_no_scans = */file->ReadDouble();
+		/*loaded_no_scans =*/ file->ReadDouble();
 	}
 
 	file->ReadKeyword("totalLeak"); file->ReadKeyword(":");
@@ -370,6 +375,12 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 		file->ReadKeyword("totalFlux"); file->ReadKeyword(":");
 		file->ReadDouble();
 		file->ReadKeyword("totalPower"); file->ReadKeyword(":");
+		file->ReadDouble();
+	}
+	if (version2 >= 10) {
+		file->ReadKeyword("totalAbsEquiv"); file->ReadKeyword(":");
+		file->ReadDouble();
+		file->ReadKeyword("totalDist"); file->ReadKeyword(":");
 		file->ReadDouble();
 	}
 	file->ReadKeyword("maxDes"); file->ReadKeyword(":");
@@ -541,6 +552,7 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 				facets[i]->sh.superIdx += static_cast<int>(strIdx);
 			if (facets[i]->sh.superDest > 0) facets[i]->sh.superDest += strIdx;
 		}
+		if (facets[i]->sh.teleportDest>0) facets[i]->sh.teleportDest += sh.nbFacet; //Offset teleport target
 	}
 
 	sh.nbVertex += nbNewVertex;
@@ -2195,21 +2207,21 @@ void MolflowGeometry::ImportDesorption_SYN(
 						else {
 							//Convert to outgassing
 							if (mode == 0) {
-								if (source == 0) outgassing = (double)MC * 0.100 / 1.38E-23 / f->sh.temperature;
-								else if (source == 1) outgassing = flux * 0.100 / 1.38E-23 / f->sh.temperature; //Division by 10 because the user will want to see the same outgassing in mbar*l/s
-								else if (source == 2) outgassing = power * 0.100 / 1.38E-23 / f->sh.temperature; //(Outgassing is stored internally in Pa*m3/s, for consistent SI unit calculations)
+								if (source == 0) outgassing = (double)MC * MBARLS_TO_PAM3S / 1.38E-23 / f->sh.temperature;
+								else if (source == 1) outgassing = flux * MBARLS_TO_PAM3S / 1.38E-23 / f->sh.temperature; //Division by 10 because the user will want to see the same outgassing in mbar*l/s
+								else if (source == 2) outgassing = power * MBARLS_TO_PAM3S / 1.38E-23 / f->sh.temperature; //(Outgassing is stored internally in Pa*m3/s, for consistent SI unit calculations)
 							}
 							else if (mode == 1) {
 								double moleculePerPhoton = eta0 * pow(Max(1.0, dose / cutoffdose), alpha);
 								outgassing = flux * moleculePerPhoton;
 							}
 							else if (mode == 2) {
-								double moleculePerPhoton = InterpolateY(dose, convDistr, false, true);
+								double moleculePerPhoton = InterpolateY(dose, convDistr, false, false, true);
 								outgassing = flux * moleculePerPhoton;
 							}
 						}
 						//Apply outgassing
-						//f->outgassingMap[index] = outgassing *0.100; //0.1: mbar*l/s->Pa*m3/s
+						//f->outgassingMap[index] = outgassing *MBARLS_TO_PAM3S; //0.1: mbar*l/s->Pa*m3/s
 						f->outgassingMap[index] = outgassing * 1.38E-23 * f->sh.temperature; //1[Pa*m3/s] = kT [particles/sec]
 
 						//Facet diagnostic info
@@ -2355,7 +2367,7 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
     }
 	else {
         rootNode = saveDoc.append_child("SimulationEnvironment");
-        rootNode.append_attribute("type") = "molflow";
+        rootNode.attribute("type") = "molflow";
         rootNode.append_attribute("version") = appVersionId;
     }
     xml_node geomNode = rootNode.append_child("Geometry");
@@ -2502,6 +2514,8 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 			newParameter.append_attribute("id") = nonCatalogParameters;
 			newParameter.append_attribute("name") = work->parameters[i].name.c_str();
 			newParameter.append_attribute("nbMoments") = (int)work->parameters[i].GetSize();
+			newParameter.append_attribute("logXinterp") = work->parameters[i].logXinterp;
+			newParameter.append_attribute("logYinterp") = work->parameters[i].logYinterp;
 			for (size_t m = 0; m < work->parameters[i].GetSize(); m++) {
 				xml_node newMoment = newParameter.append_child("Moment");
 				newMoment.append_attribute("id") = m;
@@ -2512,6 +2526,24 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 		}
 	}
 	paramNode.append_attribute("nb") = nonCatalogParameters;
+	xml_node globalHistNode = simuParamNode.append_child("Global_histograms");
+	if (work->wp.globalHistogramParams.recordBounce) {
+	xml_node nbBounceNode = globalHistNode.append_child("Bounces");
+		nbBounceNode.append_attribute("binSize")=work->wp.globalHistogramParams.nbBounceBinsize;
+		nbBounceNode.append_attribute("max")=work->wp.globalHistogramParams.nbBounceMax;
+	}
+	if (work->wp.globalHistogramParams.recordDistance) {
+		xml_node distanceNode = globalHistNode.append_child("Distance");
+		distanceNode.append_attribute("binSize")=work->wp.globalHistogramParams.distanceBinsize;
+		distanceNode.append_attribute("max")=work->wp.globalHistogramParams.distanceMax;
+	}
+	#ifdef MOLFLOW
+	if (work->wp.globalHistogramParams.recordTime) {
+		xml_node timeNode = globalHistNode.append_child("Time");
+		timeNode.append_attribute("binSize")=work->wp.globalHistogramParams.timeBinsize;
+		timeNode.append_attribute("max")=work->wp.globalHistogramParams.timeMax;
+	}
+	#endif
 }
 
 /**
@@ -2583,6 +2615,64 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 			}
 		} //end global node
 
+		
+		bool hasHistogram = work->wp.globalHistogramParams.recordBounce || work->wp.globalHistogramParams.recordDistance;
+			#ifdef MOLFLOW
+			hasHistogram = hasHistogram || work->wp.globalHistogramParams.recordTime;
+			#endif
+			if (hasHistogram) {
+				xml_node histNode = newMoment.append_child("Histograms");
+				//Retrieve histogram map from hits dp
+				BYTE* globalHistogramAddress = buffer+sizeof(GlobalHitBuffer);
+				globalHistogramAddress += m * work->wp.globalHistogramParams.GetDataSize();
+				if (work->wp.globalHistogramParams.recordBounce) {
+					double* nbHitsHistogram = (double*) globalHistogramAddress;
+					xml_node hist = histNode.append_child("Bounces");
+					size_t histSize = work->wp.globalHistogramParams.GetBounceHistogramSize();
+					hist.append_attribute("size")=histSize;
+					hist.append_attribute("binSize")=work->wp.globalHistogramParams.nbBounceBinsize; //redundancy for human-reading or export
+					hist.append_attribute("max")=work->wp.globalHistogramParams.nbBounceMax; //redundancy for human-reading or export
+					for (size_t h=0;h<histSize;h++) {
+						xml_node bin=hist.append_child("Bin");
+						auto value = bin.append_attribute("start");
+						if (h==histSize-1) value = "overRange";
+						else value = h * work->wp.globalHistogramParams.nbBounceBinsize;
+						bin.append_attribute("count") = nbHitsHistogram[h];
+					}
+				}
+				if (work->wp.globalHistogramParams.recordDistance) {
+					double* distanceHistogram = (double*) (globalHistogramAddress + work->wp.globalHistogramParams.GetBouncesDataSize());
+					xml_node hist = histNode.append_child("Distance");
+					size_t histSize = work->wp.globalHistogramParams.GetDistanceHistogramSize();
+					hist.append_attribute("size")=histSize;
+					hist.append_attribute("binSize")=work->wp.globalHistogramParams.distanceBinsize; //redundancy for human-reading or export
+					hist.append_attribute("max")=work->wp.globalHistogramParams.distanceMax; //redundancy for human-reading or export
+					for (size_t h=0;h<histSize;h++) {
+						xml_node bin=hist.append_child("Bin");
+						auto value = bin.append_attribute("start");
+						if (h==histSize-1) value = "overRange";
+						else value = h * work->wp.globalHistogramParams.distanceBinsize;
+						bin.append_attribute("count") = distanceHistogram[h];
+					}
+				}
+				if (work->wp.globalHistogramParams.recordTime) {
+					double* timeHistogram = (double*) (globalHistogramAddress + work->wp.globalHistogramParams.GetBouncesDataSize() +
+               work->wp.globalHistogramParams.GetDistanceDataSize());
+					xml_node hist = histNode.append_child("Time");
+					size_t histSize = work->wp.globalHistogramParams.GetTimeHistogramSize();
+					hist.append_attribute("size")=histSize;
+					hist.append_attribute("binSize")=work->wp.globalHistogramParams.timeBinsize; //redundancy for human-reading or export
+					hist.append_attribute("max")=work->wp.globalHistogramParams.timeMax; //redundancy for human-reading or export
+					for (size_t h=0;h<histSize;h++) {
+						xml_node bin=hist.append_child("Bin");
+						auto value = bin.append_attribute("start");
+						if (h==histSize-1) value = "overRange";
+						else value = h * work->wp.globalHistogramParams.timeBinsize;
+						bin.append_attribute("count") = timeHistogram[h];
+					}
+				}
+			}
+
 		xml_node facetResultsNode = newMoment.append_child("FacetResults");
 
 		for (int i = 0; i < sh.nbFacet; i++) {
@@ -2614,6 +2704,8 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 			}
 
 			size_t profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + mApp->worker.moments.size())) : 0;
+			
+			//Textures
 			size_t h = f->sh.texHeight;
 			size_t w = f->sh.texWidth;
 
@@ -2644,13 +2736,14 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 				textureNode.append_child("sum_v_ort").append_child(node_cdata).set_value(sumvortText.str().c_str());
 
 			} //end texture
+			size_t textureSize = (1 + (int)work->moments.size())*w*h * sizeof(TextureCell);
 
 			if (f->sh.countDirection && f->dirCache) {
 				xml_node dirNode = newFacetResult.append_child("Directions");
 				dirNode.append_attribute("width") = f->sh.texWidth;
 				dirNode.append_attribute("height") = f->sh.texHeight;
 
-				DirectionCell *dirs = (DirectionCell *)(buffer + f->sh.hitOffset + facetHitsSize + profSize + (1 + (int)work->moments.size())*w*h * sizeof(TextureCell) + m * w*h * sizeof(DirectionCell));
+				DirectionCell *dirs = (DirectionCell *)(buffer + f->sh.hitOffset + facetHitsSize + profSize + textureSize + m * w*h * sizeof(DirectionCell));
 
 				std::stringstream dirText, dirCountText;
 				dirText << std::setprecision(8) << '\n'; //better readability in file
@@ -2670,6 +2763,79 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 				dirNode.append_child("vel.vectors").append_child(node_cdata).set_value(dirText.str().c_str());
 				dirNode.append_child("count").append_child(node_cdata).set_value(dirCountText.str().c_str());
 			} //end directions
+			size_t dirSize = f->sh.countDirection ? (1 + (int)work->moments.size())*w*h * sizeof(DirectionCell) : 0;
+
+			size_t angleMapRecordedDataSize = sizeof(size_t) * (f->sh.anglemapParams.phiWidth *
+                                                                        (f->sh.anglemapParams.thetaLowerRes +
+                                                                         f->sh.anglemapParams.thetaHigherRes));
+
+			//Facet histograms (1 per moment) comes here
+			bool hasHistogram = f->sh.facetHistogramParams.recordBounce || f->sh.facetHistogramParams.recordDistance;
+			#ifdef MOLFLOW
+			hasHistogram = hasHistogram || f->sh.facetHistogramParams.recordTime;
+			#endif
+			if (hasHistogram) {
+				xml_node histNode = newFacetResult.append_child("Histograms");
+				//Retrieve histogram map from hits dp
+				BYTE *histogramAddress = buffer
+                                 + f->sh.hitOffset
+                                 + (1 + work->moments.size()) * sizeof(FacetHitBuffer)
+                                 + (f->sh.isProfile ? PROFILE_SIZE * sizeof(ProfileSlice) * (1 + work->moments.size()) : 0)
+                                 + (f->sh.isTextured ? f->sh.texWidth * f->sh.texHeight * sizeof(TextureCell) *
+                                                       (1 + work->moments.size()) : 0)
+                                 + (f->sh.countDirection ? f->sh.texWidth * f->sh.texHeight * sizeof(DirectionCell) *
+                                                           (1 + work->moments.size()) : 0)
+                                 + sizeof(size_t) * (f->sh.anglemapParams.phiWidth *
+                                                     (f->sh.anglemapParams.thetaLowerRes +
+                                                      f->sh.anglemapParams.thetaHigherRes));
+        				histogramAddress += m * f->sh.facetHistogramParams.GetDataSize();
+				if (f->sh.facetHistogramParams.recordBounce) {
+					double* nbHitsHistogram = (double*) histogramAddress;
+					xml_node hist = histNode.append_child("Bounces");
+					size_t histSize = f->sh.facetHistogramParams.GetBounceHistogramSize();
+					hist.append_attribute("size")=histSize;
+					hist.append_attribute("binSize")=f->sh.facetHistogramParams.nbBounceBinsize; //redundancy for human-reading or export
+					hist.append_attribute("max")=f->sh.facetHistogramParams.nbBounceMax; //redundancy for human-reading or export
+					for (size_t h=0;h<histSize;h++) {
+						xml_node bin=hist.append_child("Bin");
+						auto value = bin.append_attribute("start");
+						if (h==histSize-1) value = "overRange";
+						else value = h * f->sh.facetHistogramParams.nbBounceBinsize;
+						bin.append_attribute("count") = nbHitsHistogram[h];
+					}
+				}
+				if (f->sh.facetHistogramParams.recordDistance) {
+					double* distanceHistogram = (double*) (histogramAddress + f->sh.facetHistogramParams.GetBouncesDataSize());
+					xml_node hist = histNode.append_child("Distance");
+					size_t histSize = f->sh.facetHistogramParams.GetDistanceHistogramSize();
+					hist.append_attribute("size")=histSize;
+					hist.append_attribute("binSize")=f->sh.facetHistogramParams.distanceBinsize; //redundancy for human-reading or export
+					hist.append_attribute("max")=f->sh.facetHistogramParams.distanceMax; //redundancy for human-reading or export
+					for (size_t h=0;h<histSize;h++) {
+						xml_node bin=hist.append_child("Bin");
+						auto value = bin.append_attribute("start");
+						if (h==histSize-1) value = "overRange";
+						else value = h * f->sh.facetHistogramParams.distanceBinsize;
+						bin.append_attribute("count") = distanceHistogram[h];
+					}
+				}
+				if (f->sh.facetHistogramParams.recordTime) {
+					double* timeHistogram = (double*) (histogramAddress + f->sh.facetHistogramParams.GetBouncesDataSize() +
+               f->sh.facetHistogramParams.GetDistanceDataSize());
+					xml_node hist = histNode.append_child("Time");
+					size_t histSize = f->sh.facetHistogramParams.GetTimeHistogramSize();
+					hist.append_attribute("size")=histSize;
+					hist.append_attribute("binSize")=f->sh.facetHistogramParams.timeBinsize; //redundancy for human-reading or export
+					hist.append_attribute("max")=f->sh.facetHistogramParams.timeMax; //redundancy for human-reading or export
+					for (size_t h=0;h<histSize;h++) {
+						xml_node bin=hist.append_child("Bin");
+						auto value = bin.append_attribute("start");
+						if (h==histSize-1) value = "overRange";
+						else value = h * f->sh.facetHistogramParams.timeBinsize;
+						bin.append_attribute("count") = timeHistogram[h];
+					}
+				}
+			}
 		}
 	}
 
@@ -2742,6 +2908,12 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 			for (xml_node newParameter : paramNode.children("Parameter")) {
 				Parameter newPar;
 				newPar.name = newParameter.attribute("name").as_string();
+				if (newParameter.attribute("logXinterp")) {
+					newPar.logXinterp = newParameter.attribute("logXinterp").as_bool();
+				} //else set to false by constructor
+				if (newParameter.attribute("logYinterp")) {
+					newPar.logYinterp = newParameter.attribute("logYinterp").as_bool();
+				} //else set to false by constructor
 				for (xml_node newMoment : newParameter.children("Moment")) {
 					newPar.AddPair(std::make_pair(newMoment.attribute("t").as_double(),
 						newMoment.attribute("value").as_double()));
@@ -2910,6 +3082,30 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 		}
 	}
 
+	xml_node globalHistNode = simuParamNode.child("Global_histograms");
+	if (globalHistNode) { // Molflow version before 2.8 didn't save histograms
+		xml_node nbBounceNode = globalHistNode.child("Bounces");
+		if (nbBounceNode) {
+			work->wp.globalHistogramParams.recordBounce=true;
+			work->wp.globalHistogramParams.nbBounceBinsize=nbBounceNode.attribute("binSize").as_ullong();
+			work->wp.globalHistogramParams.nbBounceMax=nbBounceNode.attribute("max").as_ullong();
+		}
+		xml_node distanceNode = globalHistNode.child("Distance");
+		if (distanceNode) {
+			work->wp.globalHistogramParams.recordDistance=true;
+			work->wp.globalHistogramParams.distanceBinsize=distanceNode.attribute("binSize").as_double();
+			work->wp.globalHistogramParams.distanceMax=distanceNode.attribute("max").as_double();
+		}
+		#ifdef MOLFLOW
+		xml_node timeNode = globalHistNode.child("Time");
+		if (timeNode) {
+			work->wp.globalHistogramParams.recordTime=true;
+			work->wp.globalHistogramParams.timeBinsize=timeNode.attribute("binSize").as_double();
+			work->wp.globalHistogramParams.timeMax=timeNode.attribute("max").as_double();
+		}
+		#endif
+	}
+
 	InitializeGeometry();
 	//AdjustProfile();
 	//isLoaded = true; //InitializeGeometry() sets to true
@@ -3007,6 +3203,12 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 			for (xml_node newParameter : paramNode.children("Parameter")) {
 				Parameter newPar;
 				newPar.name = newParameter.attribute("name").as_string();
+				if (newParameter.attribute("logXinterp")) {
+					newPar.logXinterp = newParameter.attribute("logXinterp").as_bool();
+				} //else set to false by constructor
+				if (newParameter.attribute("logYinterp")) {
+					newPar.logYinterp = newParameter.attribute("logYinterp").as_bool();
+				} //else set to false by constructor
 				for (xml_node newMoment : newParameter.children("Moment")) {
 					newPar.AddPair(std::make_pair(newMoment.attribute("t").as_double(),
 						newMoment.attribute("value").as_double()));
@@ -3041,6 +3243,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 				facets[idx]->sh.superIdx += structId; //offset structure
 			if (facets[idx]->sh.superDest > 0) facets[idx]->sh.superDest += structId;
 		}
+		if (facets[idx]->sh.teleportDest>0) facets[idx]->sh.teleportDest += sh.nbFacet; //Offset teleport target
 
 		if (isMolflowFile) {
 			//Set param names for interface
@@ -3173,10 +3376,10 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 * \param progressDlg GLProgress window where visualising of the load progress is shown
 * \return bool showing if loading was successful
 */
-bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, BYTE *buffer, Worker *work, GLProgress *progressDlg) {
+bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, BYTE* buffer, Worker* work, GLProgress* progressDlg) {
 	if (!loadXML.child("MolflowResults")) return false; //simu state not saved with file
 
-	GlobalHitBuffer *gHits = (GlobalHitBuffer *)buffer;
+	GlobalHitBuffer* gHits = (GlobalHitBuffer*)buffer;
 	xml_node resultNode = loadXML.child("MolflowResults");
 	xml_node momentsNode = resultNode.child("Moments");
 	size_t nbMoments = momentsNode.select_nodes("Moment").size(); //Contains constant flow!
@@ -3239,12 +3442,96 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, BYTE *buffer, Wo
 			}
 		} //end global node
 
+		bool hasHistogram = work->wp.globalHistogramParams.recordBounce || work->wp.globalHistogramParams.recordDistance;
+#ifdef MOLFLOW
+		hasHistogram = hasHistogram || work->wp.globalHistogramParams.recordTime;
+#endif
+		if (hasHistogram) {
+			xml_node histNode = newMoment.child("Histograms");
+			if (histNode) { //Versions before 2.8 didn't save histograms
+				//Retrieve histogram map from hits dp
+				BYTE* globalHistogramAddress = buffer + sizeof(GlobalHitBuffer);
+				globalHistogramAddress += m * work->wp.globalHistogramParams.GetDataSize();
+				if (work->wp.globalHistogramParams.recordBounce) {
+					double* nbHitsHistogram = (double*)globalHistogramAddress;
+					xml_node hist = histNode.child("Bounces");
+					if (hist) {
+						size_t histSize = work->wp.globalHistogramParams.GetBounceHistogramSize();
+						size_t saveHistSize = hist.attribute("size").as_ullong();
+						if (histSize == saveHistSize) {
+							//Can do: compare saved with expected size
+							size_t h = 0;
+							for (auto bin : hist.children("Bin")) {
+								if (h < histSize) {
+									nbHitsHistogram[h++] = bin.attribute("count").as_double();
+								}
+								else {
+									//Treat errors
+								}
+							}
+						}
+						else {
+							//Treat errors
+						}
+					}
+				}
+				if (work->wp.globalHistogramParams.recordDistance) {
+					double* distanceHistogram = (double*)(globalHistogramAddress + work->wp.globalHistogramParams.GetBouncesDataSize());
+					xml_node hist = histNode.child("Distance");
+					if (hist) {
+						size_t histSize = work->wp.globalHistogramParams.GetDistanceHistogramSize();
+						size_t saveHistSize = hist.attribute("size").as_ullong();
+						if (histSize == saveHistSize) {
+							//Can do: compare saved with expected size
+							size_t h = 0;
+							for (auto bin : hist.children("Bin")) {
+								if (h < histSize) {
+									distanceHistogram[h++] = bin.attribute("count").as_double();
+								}
+								else {
+									//Treat errors
+								}
+							}
+						}
+						else {
+							//Treat errors
+						}
+					}
+				}
+				if (work->wp.globalHistogramParams.recordTime) {
+					double* timeHistogram = (double*)(globalHistogramAddress + work->wp.globalHistogramParams.GetBouncesDataSize()
+						+ work->wp.globalHistogramParams.GetDistanceDataSize());
+					xml_node hist = histNode.child("Time");
+					if (hist) {
+						size_t histSize = work->wp.globalHistogramParams.GetTimeHistogramSize();
+						size_t saveHistSize = hist.attribute("size").as_ullong();
+						if (histSize == saveHistSize) {
+							//Can do: compare saved with expected size
+							size_t h = 0;
+							for (auto bin : hist.children("Bin")) {
+								if (h < histSize) {
+									timeHistogram[h++] = bin.attribute("count").as_double();
+								}
+								else {
+									//Treat errors
+								}
+							}
+						}
+						else {
+							//Treat errors
+						}
+					}
+				}
+			}
+		}
+
+
 		xml_node facetResultsNode = newMoment.child("FacetResults");
 		for (xml_node newFacetResult : facetResultsNode.children("Facet")) {
 			int facetId = newFacetResult.attribute("id").as_int();
 			Facet* f = GetFacet(facetId);
 			xml_node facetHitNode = newFacetResult.child("Hits");
-			FacetHitBuffer* facetCounter = (FacetHitBuffer *)(buffer + f->sh.hitOffset + m * sizeof(FacetHitBuffer));
+			FacetHitBuffer* facetCounter = (FacetHitBuffer*)(buffer + f->sh.hitOffset + m * sizeof(FacetHitBuffer));
 			if (facetHitNode) { //If there are hit results for the current moment	
 				facetCounter->hit.nbMCHit = facetHitNode.attribute("nbHit").as_llong();
 				if (facetHitNode.attribute("nbHitEquiv")) {
@@ -3291,7 +3578,7 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, BYTE *buffer, Wo
 			//Profiles
 			if (f->sh.isProfile) {
 				xml_node profileNode = newFacetResult.child("Profile");
-				ProfileSlice *profilePtr = (ProfileSlice *)(buffer + f->sh.hitOffset + facetHitsSize + m * sizeof(ProfileSlice)*PROFILE_SIZE);
+				ProfileSlice* profilePtr = (ProfileSlice*)(buffer + f->sh.hitOffset + facetHitsSize + m * sizeof(ProfileSlice) * PROFILE_SIZE);
 				size_t id = 0;
 				for (xml_node slice : profileNode.children("Slice")) {
 					if (slice.attribute("countEquiv")) {
@@ -3309,7 +3596,7 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, BYTE *buffer, Wo
 
 			//Textures
 			int ix, iy;
-			int profSize = (f->sh.isProfile) ? ((int)PROFILE_SIZE * (int)sizeof(ProfileSlice)*(1 + (int)mApp->worker.moments.size())) : 0;
+			int profSize = (f->sh.isProfile) ? ((int)PROFILE_SIZE * (int)sizeof(ProfileSlice) * (1 + (int)mApp->worker.moments.size())) : 0;
 
 			if (f->hasMesh) {
 				xml_node textureNode = newFacetResult.child("Texture");
@@ -3324,7 +3611,7 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, BYTE *buffer, Wo
 					throw Error(msg.str().c_str());
 					}*/ //We'll treat texture size mismatch, see below
 
-				TextureCell *texture = (TextureCell *)(buffer + f->sh.hitOffset + facetHitsSize + profSize + m * f->sh.texWidth*f->sh.texHeight * sizeof(TextureCell));
+				TextureCell* texture = (TextureCell*)(buffer + f->sh.hitOffset + facetHitsSize + profSize + m * f->sh.texWidth * f->sh.texHeight * sizeof(TextureCell));
 				std::stringstream countText, sum1perText, sumvortText;
 				if (textureNode.child("countEquiv")) {
 					countText << textureNode.child_value("countEquiv");
@@ -3337,9 +3624,9 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, BYTE *buffer, Wo
 
 				for (iy = 0; iy < (Min(f->sh.texHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
 					for (ix = 0; ix < (Min(f->sh.texWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
-						countText >> texture[iy*f->sh.texWidth + ix].countEquiv;
-						sum1perText >> texture[iy*f->sh.texWidth + ix].sum_1_per_ort_velocity;
-						sumvortText >> texture[iy*f->sh.texWidth + ix].sum_v_ort_per_area;
+						countText >> texture[iy * f->sh.texWidth + ix].countEquiv;
+						sum1perText >> texture[iy * f->sh.texWidth + ix].sum_1_per_ort_velocity;
+						sumvortText >> texture[iy * f->sh.texWidth + ix].sum_v_ort_per_area;
 
 					}
 					for (int ie = 0; ie < texWidth_file - f->sh.texWidth; ie++) {//Executed if file texture is bigger than expected texture
@@ -3375,9 +3662,9 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, BYTE *buffer, Wo
 					throw Error(msg.str().c_str());
 
 				}
-				DirectionCell *dirs = (DirectionCell *)(buffer + f->sh.hitOffset + facetHitsSize
-					+ profSize + (1 + (int)work->moments.size())*f->sh.texWidth*f->sh.texHeight * sizeof(TextureCell)
-					+ m * f->sh.texWidth*f->sh.texHeight * sizeof(DirectionCell));
+				DirectionCell* dirs = (DirectionCell*)(buffer + f->sh.hitOffset + facetHitsSize
+					+ profSize + (1 + (int)work->moments.size()) * f->sh.texWidth * f->sh.texHeight * sizeof(TextureCell)
+					+ m * f->sh.texWidth * f->sh.texHeight * sizeof(DirectionCell));
 
 				std::stringstream dirText, dirCountText;
 				dirText << dirNode.child_value("vel.vectors");
@@ -3387,14 +3674,100 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, BYTE *buffer, Wo
 					for (int ix = 0; ix < f->sh.texWidth; ix++) {
 						std::string component;
 						std::getline(dirText, component, ',');
-						dirs[iy*f->sh.texWidth + ix].dir.x = std::stod(component);
+						dirs[iy * f->sh.texWidth + ix].dir.x = std::stod(component);
 						std::getline(dirText, component, ',');
-						dirs[iy*f->sh.texWidth + ix].dir.y = std::stod(component);
-						dirText >> dirs[iy*f->sh.texWidth + ix].dir.z;
-						dirCountText >> dirs[iy*f->sh.texWidth + ix].count;
+						dirs[iy * f->sh.texWidth + ix].dir.y = std::stod(component);
+						dirText >> dirs[iy * f->sh.texWidth + ix].dir.z;
+						dirCountText >> dirs[iy * f->sh.texWidth + ix].count;
 					}
 				}
 			} //end directions
+
+			bool hasHistogram = f->sh.facetHistogramParams.recordBounce || f->sh.facetHistogramParams.recordDistance;
+#ifdef MOLFLOW
+			hasHistogram = hasHistogram || f->sh.facetHistogramParams.recordTime;
+#endif
+			if (hasHistogram) {
+				xml_node histNode = newFacetResult.child("Histograms");
+				if (histNode) { //Versions before 2.8 didn't save histograms
+					//Retrieve histogram map from hits dp
+					BYTE* facetHistogramAddress = buffer + f->sh.hitOffset + facetHitsSize
+						+ profSize + (1 + (int)work->moments.size()) * f->sh.texWidth * f->sh.texHeight * sizeof(TextureCell)
+						+ (int)f->sh.countDirection * (1 + (int)work->moments.size()) * f->sh.texWidth * f->sh.texHeight * sizeof(DirectionCell);
+					facetHistogramAddress += m * f->sh.facetHistogramParams.GetDataSize();
+					if (f->sh.facetHistogramParams.recordBounce) {
+						double* nbHitsHistogram = (double*)facetHistogramAddress;
+						xml_node hist = histNode.child("Bounces");
+						if (hist) {
+							size_t histSize = f->sh.facetHistogramParams.GetBounceHistogramSize();
+							size_t saveHistSize = hist.attribute("size").as_ullong();
+							if (histSize == saveHistSize) {
+								//Can do: compare saved with expected size
+								size_t h = 0;
+								for (auto bin : hist.children("Bin")) {
+									if (h < histSize) {
+										nbHitsHistogram[h++] = bin.attribute("count").as_double();
+									}
+									else {
+										//Treat errors
+									}
+								}
+							}
+							else {
+								//Treat errors
+							}
+						}
+					}
+					if (f->sh.facetHistogramParams.recordDistance) {
+						double* distanceHistogram = (double*)(facetHistogramAddress + f->sh.facetHistogramParams.GetBouncesDataSize());
+						xml_node hist = histNode.child("Distance");
+						if (hist) {
+							size_t histSize = f->sh.facetHistogramParams.GetDistanceHistogramSize();
+							size_t saveHistSize = hist.attribute("size").as_ullong();
+							if (histSize == saveHistSize) {
+								//Can do: compare saved with expected size
+								size_t h = 0;
+								for (auto bin : hist.children("Bin")) {
+									if (h < histSize) {
+										distanceHistogram[h++] = bin.attribute("count").as_double();
+									}
+									else {
+										//Treat errors
+									}
+								}
+							}
+							else {
+								//Treat errors
+							}
+						}
+					}
+					if (f->sh.facetHistogramParams.recordTime) {
+						double* timeHistogram = (double*)(facetHistogramAddress + f->sh.facetHistogramParams.GetBouncesDataSize()
+							+ f->sh.facetHistogramParams.GetDistanceDataSize());
+						xml_node hist = histNode.child("Time");
+						if (hist) {
+							size_t histSize = f->sh.facetHistogramParams.GetTimeHistogramSize();
+							size_t saveHistSize = hist.attribute("size").as_ullong();
+							if (histSize == saveHistSize) {
+								//Can do: compare saved with expected size
+								size_t h = 0;
+								for (auto bin : hist.children("Bin")) {
+									if (h < histSize) {
+										timeHistogram[h++] = bin.attribute("count").as_double();
+									}
+									else {
+										//Treat errors
+									}
+								}
+							}
+							else {
+								//Treat errors
+							}
+						}
+					}
+				}
+			}
+
 		} //end facetResult
 		m++;
 	} //end moment

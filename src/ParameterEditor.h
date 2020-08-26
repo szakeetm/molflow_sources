@@ -63,8 +63,10 @@ private:
   GLTitledPanel *editorPanel;
   GLChart *plotArea;
   GLDataView *dataView;
-  GLToggle *logXtoggle;
-  GLToggle *logYtoggle;
+  GLToggle *plotLogXtoggle;
+  GLToggle *plotLogYtoggle;
+  GLToggle *paramLogXtoggle;
+  GLToggle *paramLogYtoggle;
 
   Parameter tempParam;
   std::vector<std::pair<std::string, std::string>> userValues;
