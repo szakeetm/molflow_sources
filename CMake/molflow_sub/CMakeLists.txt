@@ -196,7 +196,7 @@ if(NOT MSVC)
     #for shared memory
     find_library(LIBRT rt)
     if(LIBRT)
-        target_link_libraries(${PROJECT_NAME} ${LIBRT})
+        target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBRT})
     endif()
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
