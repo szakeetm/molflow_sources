@@ -248,13 +248,13 @@ namespace flowgpu {
 
             // in this example we have one SBT entry, and no per-primitive
             // materials:
-            polygonInput[meshID].aabbArray.aabbBuffers   = &(d_aabb[meshID]);
-            polygonInput[meshID].aabbArray.flags         = aabb_input_flags;
-            polygonInput[meshID].aabbArray.numSbtRecords = 1;
-            polygonInput[meshID].aabbArray.numPrimitives = mesh.poly.size();
-            polygonInput[meshID].aabbArray.sbtIndexOffsetBuffer         = 0;
-            polygonInput[meshID].aabbArray.sbtIndexOffsetSizeInBytes    = 0;
-            polygonInput[meshID].aabbArray.primitiveIndexOffset         = 0;
+            polygonInput[meshID].customPrimitiveArray.aabbBuffers   = &(d_aabb[meshID]);
+            polygonInput[meshID].customPrimitiveArray.flags         = aabb_input_flags;
+            polygonInput[meshID].customPrimitiveArray.numSbtRecords = 1;
+            polygonInput[meshID].customPrimitiveArray.numPrimitives = mesh.poly.size();
+            polygonInput[meshID].customPrimitiveArray.sbtIndexOffsetBuffer         = 0;
+            polygonInput[meshID].customPrimitiveArray.sbtIndexOffsetSizeInBytes    = 0;
+            polygonInput[meshID].customPrimitiveArray.primitiveIndexOffset         = 0;
         }
         // ==================================================================
         // BLAS setup
@@ -597,8 +597,10 @@ namespace flowgpu {
         state.pipelineCompileOptions.numAttributeValues = 7; // ret values e.g. by optixReportIntersection
         state.pipelineCompileOptions.exceptionFlags     = OPTIX_EXCEPTION_FLAG_NONE;
         state.pipelineCompileOptions.pipelineLaunchParamsVariableName = "optixLaunchParams";
+        state.pipelineCompileOptions.usesPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE;
 
-        state.pipelineLinkOptions.overrideUsesMotionBlur = false;
+
+        //state.pipelineLinkOptions.overrideUsesMotionBlur = false; // Removed with Optix7.1
         state.pipelineLinkOptions.maxTraceDepth          = 2;
 
         char log[2048];

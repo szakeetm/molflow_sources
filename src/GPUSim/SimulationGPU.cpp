@@ -6,7 +6,7 @@
 #include "SimulationGPU.h"
 #include "ModelReader.h" // TempFacet
 
-#define LAUNCHSIZE 1920*1*1//1024*64*16//1024*128*64
+#define LAUNCHSIZE 1920*64*32//1024*64*16//1024*128*64
 
 SimulationGPU::SimulationGPU()
         : SimulationUnit() {

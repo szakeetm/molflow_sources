@@ -27,6 +27,8 @@ project(${PROJECT_NAME} CUDA CXX)
 #include_directories(${CUDA_DIR_1})
 
 message("CUDA found as " ${CUDA_TOOLKIT_ROOT_DIR})
+message("OptiX found as " ${OptiX_INSTALL_DIR})
+
 #set(CUDA_INCLUDE_DIR "${CUDA_TOOLKIT_ROOT_DIR}/include")
 
 # Definition of Macros

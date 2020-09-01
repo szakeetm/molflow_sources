@@ -71,22 +71,6 @@ namespace flowgpu {
         return ptr;
     }
 
-    constexpr __device__ float origin()      { return 1.0f / 32.0f; }
-    constexpr __device__ float float_scale() { return 1.0f / 65536.0f; }
-    constexpr __device__ float int_scale()   { return 256.0f; }
-    // Normal points outward for rays exiting the surface, else is flipped.
-    static __forceinline__ __device__ float3 offset_ray(const float3 p, const float3 n){
-        int3 of_i(make_int3(int_scale() * n.x, int_scale() * n.y, int_scale() * n.z));
-        float3 p_i(make_float3(
-                int_as_float(float_as_int(p.x)+((p.x < 0) ? -of_i.x : of_i.x)),
-                int_as_float(float_as_int(p.y)+((p.y < 0) ? -of_i.y : of_i.y)),
-                int_as_float(float_as_int(p.z)+((p.z < 0) ? -of_i.z : of_i.z))));
-        return float3(make_float3(
-                fabsf(p.x) < origin() ? p.x+float_scale()*n.x : p_i.x,
-                fabsf(p.y) < origin() ? p.y+float_scale()*n.y : p_i.y,
-                fabsf(p.z) < origin() ? p.z+float_scale()*n.z : p_i.z));
-    }
-
     extern "C" __device__ int point_in_polygon(float u, float v, const flowgpu::Polygon& poly) {
         // Fast method to check if a point is inside a polygon or not.
         // Works with convex and concave polys, orientation independent
@@ -344,27 +328,35 @@ namespace flowgpu {
 #endif
 
         //rayDir = hitData.postHitDir;
-        if(rayGenData->poly[hitData.hitFacetId].facProps.is2sided && rayGenData->poly[hitData.hitFacetId].facProps.opacity == 0.0f){
+        /*if(rayGenData->poly[hitData.hitFacetId].facProps.is2sided && rayGenData->poly[hitData.hitFacetId].facProps.opacity == 0.0f){
             // todo: just offset later, no direction change
             if(bufferIndex == 0) printf(" Self intersection back facet hit %d\n",rayGenData->poly[hitData.hitFacetId].parentIndex);
             rayDir = getNewReverseDirection(hitData, rayGenData->poly[hitData.hitFacetId], randFloat, randInd,
                                             randOffset);
         }
-        else /*if(
+        else *//*if(
                 (hitData.facetHitSide == OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE)
-                )*/{
+                )*//*{
             rayDir = getNewDirection(hitData, rayGenData->poly[hitData.hitFacetId], randFloat, randInd, randOffset);
             if(hitData.facetHitSide != OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE)
                 if(bufferIndex == 0)
                     printf(" Self intersection back facet hit %d\n",rayGenData->poly[hitData.hitFacetId].parentIndex);
 
-        }
+        }*/
         /*else {
             if(bufferIndex == 0) printf(" Self intersection back facet hit %d\n",rayGenData->poly[hitData.hitFacetId].parentIndex);
             rayDir = getNewReverseDirection(hitData, rayGenData->poly[hitData.hitFacetId], randFloat, randInd,
                                             randOffset);
         }*/
         //rayDir = getNewDirection(hitData,rayGenData->poly[hitData.hitFacetId],randFloat,randInd,randOffset);
+
+
+        /*if(hitData.facetHitSide == OPTIX_HIT_KIND_TRIANGLE_BACK_FACE) {
+            hitData.hitPos = offset_ray(hitData.hitPos, -1.0f*rayGenData->poly[hitData.hitFacetId].N);
+        }
+        else{
+            hitData.hitPos = offset_ray_old(hitData.hitPos,1.0f* rayGenData->poly[hitData.hitFacetId].N);
+        }*/
 
         rayOrigin = hitData.hitPos;
         optixLaunchParams.perThreadData.randBufferOffset[bufferIndex] = randOffset; // set value back to buffer
@@ -415,7 +407,7 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
     // increase texture counters for desorption
     // --------------------------------------
     static __forceinline__ __device__
-    void RecordDesorptionTexture(flowgpu::Polygon& poly, MolPRD& hitData, float3 rayOrigin, float3 rayDir){
+    void RecordDesorptionTexture(const flowgpu::Polygon& poly, MolPRD& hitData, float3 rayOrigin, float3 rayDir){
 
         const float velocity_factor = 2.0f;
         const float ortSpeedFactor = 1.0f;
@@ -444,8 +436,8 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
 
         flowgpu::FacetTexture& facetTex = optixLaunchParams.sharedData.facetTextures[poly.texProps.textureOffset];
 
-        unsigned int tu = (unsigned int)(hitLocationU * facetTex.texWidthD);
-        unsigned int tv = (unsigned int)(hitLocationV * facetTex.texHeightD);
+        const unsigned int tu = (unsigned int)(__saturatef(hitLocationU) * facetTex.texWidthD); // saturate for rounding errors that can result for values larger than 1.0
+        const unsigned int tv = (unsigned int)(__saturatef(hitLocationV) * facetTex.texHeightD);
         unsigned int add = tu + tv * (facetTex.texWidth);
         //printf("Hit at %lf , %lf for tex %lf , %lf\n", hitLocationU, hitLocationV, facetTex.texWidthD, facetTex.texHeightD);
 
@@ -468,7 +460,7 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
     // increase texture counters for desorption
     // --------------------------------------
     static __forceinline__ __device__
-    void RecordDesorptionProfile(flowgpu::Polygon& poly, MolPRD& hitData, float3 rayOrigin, float3 rayDir){
+    void RecordDesorptionProfile(const flowgpu::Polygon& poly, MolPRD& hitData, float3 rayOrigin, float3 rayDir){
 
         const float velocity_factor = 2.0f;
         const float ortSpeedFactor = 1.0f;
@@ -496,17 +488,18 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
         unsigned int add = 0;
         if(poly.profProps.profileType == flowgpu::PROFILE_FLAGS::profileU){
             float hitLocationU = detU/det;
-            add = (unsigned int)(hitLocationU * PROFILE_SIZE);
+            add = (unsigned int)(__saturatef(hitLocationU) * PROFILE_SIZE);
         }
         else if(poly.profProps.profileType == flowgpu::PROFILE_FLAGS::profileV){
             float hitLocationV = detV/det;
-            add = (unsigned int)(hitLocationV * PROFILE_SIZE);
+            add = (unsigned int)(__saturatef(hitLocationV) * PROFILE_SIZE);
         }
 
         float ortVelocity = hitData.velocity*fabsf(dot(rayDir, poly.N)); //surface-orthogonal velocity component
 
 #ifdef BOUND_CHECK
-        if(poly.profProps.profileOffset + add < 0 || poly.profProps.profileOffset + add >= optixLaunchParams.simConstants.nbProfSlices){printf("poly.profProps.profileOffset + add %u >= %u is out of bounds\n", poly.profProps.profileOffset + add, optixLaunchParams.simConstants.nbProfSlices);}
+        if(poly.profProps.profileOffset + add < 0 || poly.profProps.profileOffset + add >= optixLaunchParams.simConstants.nbProfSlices){
+            printf("[DES] poly.profProps.profileOffset + add %u >= %u is out of bounds\n", poly.profProps.profileOffset + add, optixLaunchParams.simConstants.nbProfSlices);}
 #endif
         flowgpu::Texel& tex = optixLaunchParams.sharedData.profileSlices[poly.profProps.profileOffset + add];
         atomicAdd(&tex.countEquiv, static_cast<uint32_t>(1));
@@ -514,12 +507,30 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
         atomicAdd(&tex.sum_v_ort_per_area, 1.0f * ortSpeedFactor * ortVelocity * (optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f)); // sum ortho_velocity[m/s] / cell_area[cm2]
     }
 
+static __forceinline__ __device__
+void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& poly, MolPRD& hitData, const float3 rayDir, const float3 rayOrigin)
+{
+#ifdef BOUND_CHECK
+    if(counterIdx < 0 || counterIdx >= optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS){
+            printf("facIndex %u >= %u is out of bounds\n", counterIdx, optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS);
+        }
+#endif
+    increaseHitCounterDesorption(optixLaunchParams.hitCounter[counterIdx],hitData,rayDir, poly.N);
+#ifdef WITH_TEX
+    if (poly.texProps.textureFlags & flowgpu::TEXTURE_FLAGS::countDes)
+            RecordDesorptionTexture(poly, hitData, rayOrigin, rayDir);
+#endif
+#ifdef WITH_PROF
+    if (poly.profProps.profileType != flowgpu::PROFILE_FLAGS::noProfile)
+            RecordDesorptionProfile(poly, hitData, rayOrigin, rayDir);
+#endif
+}
+
     // Calculate new direction, but keep old position
     static __forceinline__ __device__
-    void initMoleculeFromStart(const unsigned int bufferIndex, MolPRD& hitData, float3& rayDir , float3& rayOrigin)
-    {
-        hitData.hitPos = make_float3(-999.9f,-999.9f,-999.9f);
-        hitData.postHitDir = make_float3(-999.9f,-999.9f,-999.9f);
+    void initMoleculeFromStart(const unsigned int bufferIndex, MolPRD& hitData, float3& rayDir , float3& rayOrigin) {
+        hitData.hitPos = make_float3(-999.9f, -999.9f, -999.9f);
+        hitData.postHitDir = make_float3(-999.9f, -999.9f, -999.9f);
         hitData.hitT = -999.0f;
         hitData.velocity = -999.0f;
         hitData.currentDepth = 0;
@@ -529,17 +540,17 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
         hitData.inSystem = NEW_PARTICLE;
         hitData.orientationRatio = 1.0f;
 
-        const RN_T* randFloat = optixLaunchParams.randomNumbers;
-        unsigned int randInd = optixLaunchParams.simConstants.nbRandNumbersPerThread*(bufferIndex);
+        const RN_T *randFloat = optixLaunchParams.randomNumbers;
+        unsigned int randInd = optixLaunchParams.simConstants.nbRandNumbersPerThread * (bufferIndex);
         unsigned int randOffset = optixLaunchParams.perThreadData.randBufferOffset[bufferIndex];
 
 #ifdef WITHTRIANGLES
         const TriangleRayGenData* rayGenData = (TriangleRayGenData*) optixGetSbtDataPointer();
 #else
-        const PolygonRayGenData* rayGenData = (PolygonRayGenData*) optixGetSbtDataPointer();
+        const PolygonRayGenData *rayGenData = (PolygonRayGenData *) optixGetSbtDataPointer();
 #endif
 
-        const int facIndex = getSourceFacet(hitData,rayGenData,randFloat,randInd,randOffset);
+        const int facIndex = getSourceFacet(hitData, rayGenData, randFloat, randInd, randOffset);
 #ifdef BOUND_CHECK
         if(facIndex < 0 || facIndex >= optixLaunchParams.simConstants.nbFacets){
             printf("facIndex %u >= %u is out of bounds\n", facIndex, optixLaunchParams.simConstants.nbFacets);
@@ -548,10 +559,10 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
 /*#ifdef DEBUG
         printf("[%u] generating direction\n", bufferIndex);
 #endif*/
-        rayOrigin = getNewOrigin(hitData,rayGenData,facIndex,randFloat,randInd,randOffset);
-        rayDir = getNewDirection(hitData,rayGenData->poly[facIndex],randFloat,randInd,randOffset);
+        rayOrigin = getNewOrigin(hitData, rayGenData, facIndex, randFloat, randInd, randOffset);
+        rayDir = getNewDirection(hitData, rayGenData->poly[facIndex], randFloat, randInd, randOffset);
 
-        hitData.velocity = getNewVelocity(rayGenData->poly[facIndex],optixLaunchParams.simConstants.gasMass);
+        hitData.velocity = getNewVelocity(rayGenData->poly[facIndex], optixLaunchParams.simConstants.gasMass);
 
         // Write back cached local variables to shared memory
         optixLaunchParams.perThreadData.randBufferOffset[bufferIndex] = randOffset;
@@ -559,25 +570,9 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
         // --------------------------------------
         // increase facet counters for desorption
         // --------------------------------------
-        const unsigned int counterIdx = facIndex + ((bufferIndex)%(CORESPERSM * WARPSCHEDULERS)) * optixLaunchParams.simConstants.nbFacets;
-#ifdef BOUND_CHECK
-        if(counterIdx < 0 || counterIdx >= optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS){
-            printf("facIndex %u >= %u is out of bounds\n", counterIdx, optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS);
-        }
-#endif
-        increaseHitCounterDesorption(optixLaunchParams.hitCounter[counterIdx],hitData,rayDir, rayGenData->poly[facIndex].N);
-#ifdef WITH_TEX
-        if (rayGenData->poly[facIndex].texProps.textureFlags & flowgpu::TEXTURE_FLAGS::countDes)
-            RecordDesorptionTexture(rayGenData->poly[facIndex], hitData, rayOrigin, rayDir);
-#endif
-#ifdef WITH_PROF
-        if (rayGenData->poly[facIndex].profProps.profileType != flowgpu::PROFILE_FLAGS::noProfile)
-            RecordDesorptionProfile(rayGenData->poly[facIndex], hitData, rayOrigin, rayDir);
-#endif
-
-/*#ifdef DEBUG
-        printf("[%u] finished initializing\n", bufferIndex);
-#endif*/
+        const unsigned int counterIdx =
+                facIndex + ((bufferIndex) % (CORESPERSM * WARPSCHEDULERS)) * optixLaunchParams.simConstants.nbFacets;
+        recordDesorption(counterIdx, rayGenData->poly[facIndex], hitData, rayDir, rayOrigin);
     }
 
     //------------------------------------------------------------------------------
@@ -690,11 +685,11 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
             {
                 /*if(bufferIndex == 0)
                     printf("[%d] reverting offset -> %d -> %d\n",bufferIndex,hitData.inSystem, hitData.nbBounces);
-                */facNormal *= (-1.0f);
+                */facNormal *= (-10.0f);
                 //rayOrigin = offset_ray(rayOrigin, (-1.0f) * rayGenData->poly[facIndex].N);
             }
             else{
-                facNormal *= (1.0f);
+                facNormal *= (10.0f);
             }
             rayOrigin = offset_ray(rayOrigin,facNormal);
 
@@ -712,7 +707,7 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
                0.0f,   // rayTime
                OptixVisibilityMask( 255 ),
                OPTIX_RAY_FLAG_DISABLE_ANYHIT
-               /*| OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES*/,//OPTIX_RAY_FLAG_NONE,
+               | OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES,//OPTIX_RAY_FLAG_NONE,
                    RayType::RAY_TYPE_MOLECULE,             // SBT offset
                    RayType::RAY_TYPE_COUNT,               // SBT stride
                    RayType::RAY_TYPE_MOLECULE,             // missSBTIndex

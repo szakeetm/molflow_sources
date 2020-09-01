@@ -16,6 +16,43 @@
 #include <cooperative_groups.h>
 namespace cg = cooperative_groups;
 
+constexpr __device__ float origin()      { return 1.0f / 32.0f; }
+constexpr __device__ float float_scale() { return 1.0f / 65536.0f; }
+constexpr __device__ float int_scale()   { return 256.0f; }
+// Normal points outward for rays exiting the surface, else is flipped.
+static __forceinline__ __device__ float3 offset_ray(const float3 p, const float3 n){
+    int3 of_i(make_int3(int_scale() * n.x, int_scale() * n.y, int_scale() * n.z));
+    float3 p_i(make_float3(
+            int_as_float(float_as_int(p.x)+((p.x < 0) ? -of_i.x : of_i.x)),
+            int_as_float(float_as_int(p.y)+((p.y < 0) ? -of_i.y : of_i.y)),
+            int_as_float(float_as_int(p.z)+((p.z < 0) ? -of_i.z : of_i.z))));
+    return float3(make_float3(
+            fabsf(p.x) < origin() ? p.x+float_scale()*n.x : p_i.x,
+            fabsf(p.y) < origin() ? p.y+float_scale()*n.y : p_i.y,
+            fabsf(p.z) < origin() ? p.z+float_scale()*n.z : p_i.z));
+}
+
+static __forceinline__ __device__ float3 offset_ray_new(const float3 p, const float3 n){
+    int3 of_i(make_int3(int_scale() * n.x, int_scale() * n.y, int_scale() * n.z));
+    float3 p_i(make_float3(
+            int_as_float(float_as_int(p.x)+((p.x < 0) ? -of_i.x : of_i.x)),
+            int_as_float(float_as_int(p.y)+((p.y < 0) ? -of_i.y : of_i.y)),
+            int_as_float(float_as_int(p.z)+((p.z < 0) ? -of_i.z : of_i.z))));
+    return float3(make_float3(p.x+float_scale()*n.x,
+                              p.y+float_scale()*n.y,
+                              p.z+float_scale()*n.z));
+}
+
+// Normal points outward for rays exiting the surface, else is flipped.
+static __forceinline__ __device__ float3 offset_ray_none(const float3 p, const float3 n){
+    int3 of_i(make_int3(int_scale() * n.x, int_scale() * n.y, int_scale() * n.z));
+    float3 p_i(make_float3(
+            int_as_float(float_as_int(p.x)+((p.x < 0) ? -of_i.x : of_i.x)),
+            int_as_float(float_as_int(p.y)+((p.y < 0) ? -of_i.y : of_i.y)),
+            int_as_float(float_as_int(p.z)+((p.z < 0) ? -of_i.z : of_i.z))));
+    return p;
+}
+
 __device__
 int atomicAggInc(int *ptr, int incVal)
 {
@@ -212,7 +249,7 @@ float3 getNewReverseDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& 
     }
     else{
         printf("Unsupported desorption type! %u on %d\n", poly.desProps.desorbType, poly.parentIndex);
-        return;
+        return make_float3(0.0f);
     }
     const float phi = randFloat[(unsigned int)(randInd + randOffset++)] * 2.0f * CUDART_PI_F;
 
@@ -244,7 +281,7 @@ float3 getNewReverseDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& 
     }
     else{
         printf("Unsupported desorption type! %u on %d\n", poly.desProps.desorbType, poly.parentIndex);
-        return;
+        return make_float3(0.0f);
     }
     const float phi = randFloat[(unsigned int)(randInd + randOffset++)] * 2.0 * CUDART_PI_F;
 
