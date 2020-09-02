@@ -38,6 +38,7 @@ class Parameter;
 
 class CurrentParticleStatus {
 public:
+    void Reset();
 	Vector3d position;    // Position
 	Vector3d direction;    // Direction
 	double oriRatio; //Represented ratio of desorbed, used for low flux mode

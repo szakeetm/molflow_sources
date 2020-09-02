@@ -126,6 +126,15 @@ void Simulation::ClearSimulation() {
 
     //this->currentParticles.clear();// = CurrentParticleStatus();
     std::vector<CurrentParticleStatus>(this->nbThreads).swap(this->currentParticles);
+    for(auto& particle : currentParticles)
+        std::vector<SubProcessFacetTempVar>(model.sh.nbFacet).swap(particle.tmpFacetVars);
+
+    totalDesorbed = 0;
+    //ResetTmpCounters();
+    for(auto& tmpResults : tmpGlobalResults)
+        tmpResults.Reset();
+    tmpParticleLog.clear();
+
     /*this->model.structures.clear();
     this->model.tdParams.CDFs.clear();
     this->model.tdParams.IDs.clear();
@@ -284,7 +293,7 @@ size_t Simulation::LoadSimulation() {
     printf("  Geometry: %zd vertex %zd facets\n", model.vertices3.size(), model.sh.nbFacet);
 
     printf("  Geom size: %d bytes\n", /*(size_t)(buffer - bufferStart)*/0);
-    printf("  Number of stucture: %zd\n", model.sh.nbSuper);
+    printf("  Number of structure: %zd\n", model.sh.nbSuper);
     printf("  Global Hit: %zd bytes\n", sizeof(GlobalHitBuffer));
     printf("  Facet Hit : %zd bytes\n", model.sh.nbFacet * sizeof(FacetHitBuffer));
     printf("  Texture   : %zd bytes\n", textTotalSize);
@@ -341,6 +350,8 @@ size_t Simulation::GetHitsSize() {
 void Simulation::ResetSimulation() {
     //currentParticles.clear();// = CurrentParticleStatus();
     std::vector<CurrentParticleStatus>(this->nbThreads).swap(this->currentParticles);
+    for(auto& particle : currentParticles)
+        std::vector<SubProcessFacetTempVar>(model.sh.nbFacet).swap(particle.tmpFacetVars);
 
     totalDesorbed = 0;
     //ResetTmpCounters();

@@ -1114,7 +1114,11 @@ void Worker::Update(float appTime) {
 */
 
 bool Worker::MolflowGeomToSimModel(){
-    auto geom = GetMolflowGeometry();
+    //auto geom = GetMolflowGeometry();
+    // TODO: Proper clear call before for Real reload?
+    model.structures.clear();
+    model.vertices3.clear();
+
     for(int nbV = 0; nbV < geom->GetNbVertex(); ++nbV) {
         model.vertices3.emplace_back(*geom->GetVertex(nbV));
     }
@@ -1202,29 +1206,6 @@ bool Worker::MolflowGeomToSimModel(){
         }
         sFac.sh.hitOffset = fOffset; //Marking the offsets for the hits, but here we don't actually send any hits.
         fOffset += sFac.GetHitsSize(model.tdParams.moments.size());
-
-        std::vector<double> textIncVector;
-        // Add surface elements area (reciprocal)
-        if (sFac.sh.isTextured) {
-            textIncVector.resize(sFac.sh.texHeight*sFac.sh.texWidth);
-
-            double rw = sFac.sh.U.Norme() / (double)(sFac.sh.texWidthD);
-            double rh = sFac.sh.V.Norme() / (double)(sFac.sh.texHeightD);
-            double area = rw * rh;
-            size_t add = 0;
-            for (int j = 0; j < sFac.sh.texHeight; j++) {
-                for (int i = 0; i < sFac.sh.texWidth; i++) {
-                    if (area > 0.0) {
-                        textIncVector[add] = 1.0 / area;
-                    }
-                    else {
-                        textIncVector[add] = 0.0;
-                    }
-                    add++;
-                }
-            }
-        }
-        sFac.textureCellIncrements = textIncVector;
 
         //Some initialization
         if (!sFac.InitializeOnLoad(facIdx, model.tdParams.moments.size(), histogramTotalSize)) return false;
@@ -1391,7 +1372,8 @@ std::ostringstream Worker::SerializeParamsForLoader() {
 */
 void Worker::ResetWorkerStats() {
 
-    memset(&globState.globalHits, 0, sizeof(GlobalHitBuffer));
+    globState.Reset();
+    //memset(&globState.globalHits, 0, sizeof(GlobalHitBuffer));
 
 
 }
