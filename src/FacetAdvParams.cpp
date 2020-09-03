@@ -1108,7 +1108,7 @@ bool FacetAdvParams::ApplyTexture(bool force) {
 		//set textures
 		try {
 			bool needsRemeshing = force || (hadAnyTexture != hasAnyTexture) || (hadDirCount != f->sh.countDirection)
-			        || (doRatio && (!IsZero(geom->GetFacet(sel)->tRatioU - ratioU)) && (!IsZero(geom->GetFacet(sel)->tRatioV - ratioV)));
+			        || (doRatio && ((!IsZero(geom->GetFacet(sel)->tRatioU - ratioU)) || (!IsZero(geom->GetFacet(sel)->tRatioV - ratioV))));
 			if (needsRemeshing) {
                 geom->SetFacetTexture(sel, hasAnyTexture ? (doRatio ? ratioU : f->tRatioU) : 0.0,
                                       hasAnyTexture ? (doRatio ? ratioV : f->tRatioV) : 0.0,
@@ -1788,8 +1788,8 @@ from C. Benvenutti http://cds.cern.ch/record/454180
 			enableBtn->SetState(true);
 			double res;
 			double resV;
+			// Fetch and test for a valid number
 			if (resolutionText->GetNumber(&res) && res != 0.0) {
-
                 lengthText->SetText(1.0 / res);
                 cellsU->SetText(0);
 			}
@@ -1800,6 +1800,7 @@ from C. Benvenutti http://cds.cern.ch/record/454180
                 lengthText2->SetText(lengthText->GetText());
 			}
 
+			// Calculate and display the number of actualy texels for each direction
 			auto selFacets = geom->GetSelectedFacets();
 			if(selFacets.size() == 1) {
                 resolutionText2->GetNumber(&resV);
@@ -1816,10 +1817,25 @@ from C. Benvenutti http://cds.cern.ch/record/454180
 		else if (src == resolutionText2) {
             enableBtn->SetState(true);
             double res;
+            // Fetch and test for a valid number
             if (resolutionText2->GetNumber(&res) && res != 0.0)
                 lengthText2->SetText(1.0 / res);
             else
                 lengthText2->SetText("");
+
+            // Calculate and display the number of actualy texels for each direction
+            auto selFacets = geom->GetSelectedFacets();
+            if(selFacets.size() == 1) {
+                double resU;
+                resolutionText->GetNumber(&resU);
+                auto nbCells = geom->GetFacet(selFacets.front())->GetNbCellForRatio(resU, res);
+                cellsU->SetText(nbCells.first);
+                cellsV->SetText(nbCells.second);
+            }
+            else{ // mixed state
+                cellsU->SetText("...");
+                cellsV->SetText("...");
+            }
             UpdateSizeForRatio();
         }
 		else if (src == lengthText) {
@@ -1838,6 +1854,23 @@ from C. Benvenutti http://cds.cern.ch/record/454180
                 lengthText2->SetText(lengthText->GetText());
                 resolutionText2->SetText(resolutionText->GetText());
             }
+
+            // Calculate and display the number of actualy texels for each direction
+            auto selFacets = geom->GetSelectedFacets();
+            if(selFacets.size() == 1) {
+                double resU;
+                double resV;
+                resolutionText->GetNumber(&resU);
+                resolutionText2->GetNumber(&resV);
+                auto nbCells = geom->GetFacet(selFacets.front())->GetNbCellForRatio(resU, resV);
+                cellsU->SetText(nbCells.first);
+                cellsV->SetText(nbCells.second);
+            }
+            else{ // mixed state
+                cellsU->SetText("...");
+                cellsV->SetText("...");
+            }
+            UpdateSizeForRatio();
 		}
 		else if (src == lengthText2) {
             enableBtn->SetState(true);
@@ -1846,6 +1879,22 @@ from C. Benvenutti http://cds.cern.ch/record/454180
                 resolutionText2->SetText(1.0 / length);}
             else
                 resolutionText2->SetText("");
+
+            // Calculate and display the number of actualy texels for each direction
+            auto selFacets = geom->GetSelectedFacets();
+            if(selFacets.size() == 1) {
+                double resU;
+                double resV;
+                resolutionText->GetNumber(&resU);
+                resolutionText2->GetNumber(&resV);
+                auto nbCells = geom->GetFacet(selFacets.front())->GetNbCellForRatio(resU, resV);
+                cellsU->SetText(nbCells.first);
+                cellsV->SetText(nbCells.second);
+            }
+            else{ // mixed state
+                cellsU->SetText("...");
+                cellsV->SetText("...");
+            }
             UpdateSizeForRatio();
         }
 		else if (src == cellsU || src == cellsV) {
