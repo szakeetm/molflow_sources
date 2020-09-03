@@ -575,6 +575,10 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
         recordDesorption(counterIdx, rayGenData->poly[facIndex], hitData, rayDir, rayOrigin);
     }
 
+
+    const __device__ float offset_val = 1.0f/64.0f;
+    const __device__ float offset_val_n = -1.0f/64.0f;
+
     //------------------------------------------------------------------------------
     // ray gen program - the actual rendering happens in here
     //------------------------------------------------------------------------------
@@ -685,11 +689,11 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
             {
                 /*if(bufferIndex == 0)
                     printf("[%d] reverting offset -> %d -> %d\n",bufferIndex,hitData.inSystem, hitData.nbBounces);
-                */facNormal *= (-10.0f);
+                */facNormal *= (offset_val_n);
                 //rayOrigin = offset_ray(rayOrigin, (-1.0f) * rayGenData->poly[facIndex].N);
             }
             else{
-                facNormal *= (10.0f);
+                facNormal *= (offset_val);
             }
             rayOrigin = offset_ray(rayOrigin,facNormal);
 
