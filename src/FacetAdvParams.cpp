@@ -698,7 +698,8 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	bool hasAngleMapE = true;
 	bool TexVisibleE = true;
 	bool VolVisibleE = true;
-	bool ratioE = true;
+    bool squaredCellsE = true;
+    bool ratioE = true;
     bool ratioVE = true;
     bool teleportE = true;
 	bool accFactorE = true;
@@ -747,6 +748,7 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 		hasAngleMapE = hasAngleMapE && (f0->sh.anglemapParams.hasRecorded == f->sh.anglemapParams.hasRecorded);
 		TexVisibleE = TexVisibleE && f0->textureVisible == f->textureVisible;
 		VolVisibleE = VolVisibleE && f0->volumeVisible == f->volumeVisible;
+        squaredCellsE = squaredCellsE && std::abs(f->tRatioU - f->tRatioV) < 1E-8;
         ratioE = ratioE && std::abs(f0->tRatioU - f->tRatioU) < 1E-8;
         ratioVE = ratioVE && std::abs(f0->tRatioV - f->tRatioV) < 1E-8;
         teleportE = teleportE && (f0->sh.teleportDest == f->sh.teleportDest);
@@ -789,7 +791,8 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	}*/
 
 	enableBtn->AllowMixedState(!isEnabledE); enableBtn->SetState(isEnabledE ? f0->sh.isTextured : 2);
-	recordDesBtn->AllowMixedState(!CountDesE); recordDesBtn->SetState(CountDesE ? f0->sh.countDes : 2);
+    aspectRatioBtn->AllowMixedState(!squaredCellsE); aspectRatioBtn->SetState(squaredCellsE ? IsZero(f0->tRatioU-f0->tRatioV) : 2);
+    recordDesBtn->AllowMixedState(!CountDesE); recordDesBtn->SetState(CountDesE ? f0->sh.countDes : 2);
 	recordAbsBtn->AllowMixedState(!CountAbsE); recordAbsBtn->SetState(CountAbsE ? f0->sh.countAbs : 2);
 	recordReflBtn->AllowMixedState(!CountReflE); recordReflBtn->SetState(CountReflE ? f0->sh.countRefl : 2);
 	recordTransBtn->AllowMixedState(!CountTransE); recordTransBtn->SetState(CountTransE ? f0->sh.countTrans : 2);
@@ -829,7 +832,6 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
                 cellsU->SetText(isEnabledE ? std::to_string(nbCells.first) : "");
                 cellsV->SetText(isEnabledE ? std::to_string(nbCells.second) : "");
                 auto aspectState = IsZero(std::abs(f0->tRatioU-f0->tRatioV));
-                aspectRatioBtn->SetState(aspectState);
                 UpdateSquaredCells(aspectState);
                 cellsU->SetEditable(true);
                 cellsV->SetEditable(!aspectState);
@@ -840,12 +842,15 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 			}
 		}
 		else { //None of the facets have textures
-			resolutionText->SetText("");
+            aspectRatioBtn->SetState(true);
+            resolutionText->SetText("");
 			lengthText->SetText("");
             resolutionText2->SetText("");
             lengthText2->SetText("");
             cellsU->SetText("");
             cellsV->SetText("");
+            cellsU->SetText("");
+            UpdateSquaredCells(aspectRatioBtn->GetState());
         }
 	}
 	else { //Mixed state
@@ -1633,7 +1638,7 @@ void FacetAdvParams::UpdateSquaredCells(bool aspectState) {
         cellsV->SetEditable(false);
     }
     else if(sel.size()==1){
-        cellsU->SetEditable(!aspectState);
+        cellsU->SetEditable(true);
         cellsV->SetEditable(!aspectState);
     }
 
