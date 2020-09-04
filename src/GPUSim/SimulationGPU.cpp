@@ -298,7 +298,7 @@ bool SimulationGPU::SimulationMCStep(size_t nbStep){
         currentDes = gpuSim.RunSimulation();
     //currentDes += nbStep * LAUNCHSIZE;
     bool goOn = this->model->ontheflyParams.desorptionLimit > currentDes;
-#ifdef DESORPEXIT
+#ifdef WITHDESORPEXIT
     goOn = true;
 #endif
     if(this->model->ontheflyParams.desorptionLimit == 0)

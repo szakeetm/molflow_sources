@@ -116,7 +116,7 @@ namespace flowgpu {
         int inSystem;
         int facetHitSide;
         // flags - post launch processing TODO: convert all into one uint32_t ?
-#ifdef DESORPEXIT
+#ifdef WITHDESORPEXIT
         int hasToTerminate;
 #endif
     };

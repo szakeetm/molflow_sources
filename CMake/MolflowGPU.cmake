@@ -8,8 +8,8 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInf
     option(DEBUG_POS "Enable generating hit positions from GPU calculations" ON)
     option(DEBUG_LEAKPOS "Enable generating hit positions for leaks from GPU calculations" ON)
     option(DEBUG_BOUNDS "Enable bound checks for CUDA kernels" ON)
-    option(DEBUG_DESORPEXIT "Enable exit on desorption limit" ON)
 endif()
+option(WITH_DESORPEXIT "Enable exit on desorption limit" ON)
 option(WITH_TRIANGLES "Enable calculations with triangles only" ON)
 option(WITH_TEXTURES "Enable textures" ON)
 option(WITH_PROFILES "Enable profiles" ON)
@@ -24,8 +24,8 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInf
     MESSAGE("[GPU_BUILD_OPTION] DEBUG_POS: ${DEBUG_POS}")
     MESSAGE("[GPU_BUILD_OPTION] DEBUG_LEAKPOS: ${DEBUG_LEAKPOS}")
     MESSAGE("[GPU_BUILD_OPTION] DEBUG_BOUNDS: ${DEBUG_BOUNDS}")
-    MESSAGE("[GPU_BUILD_OPTION] DEBUG_DESORPEXIT: ${DEBUG_DESORPEXIT}")
 endif()
+MESSAGE("[GPU_BUILD_OPTION] WITH_DESORPEXIT: ${WITH_DESORPEXIT}")
 MESSAGE("[GPU_BUILD_OPTION] WITH_TRIANGLES: ${WITH_TRIANGLES}")
 MESSAGE("[GPU_BUILD_OPTION] WITH_TEXTURES: ${WITH_TEXTURES}")
 MESSAGE("[GPU_BUILD_OPTION] WITH_PROFILES: ${WITH_PROFILES}")
@@ -55,9 +55,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInf
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-    if (DEBUG_DESORPEXIT)
-        add_definitions(-DDESORPEXIT)
-    endif (DEBUG_DESORPEXIT)
+
 
     if (DEBUG_MISS)
         add_definitions(-DDEBUGMISS)
@@ -79,6 +77,9 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInf
     endif (DEBUG_BOUNDS)
 ENDIF()
 
+if (WITH_DESORPEXIT)
+    add_definitions(-DWITHDESORPEXIT)
+endif (WITH_DESORPEXIT)
 if (WITH_NBOUNCE)
     add_definitions(-DGPUNBOUNCE)
 endif (WITH_NBOUNCE)

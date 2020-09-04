@@ -576,9 +576,10 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
     }
 
 
-    const __device__ float offset_val = 1.0f/64.0f;
-    const __device__ float offset_val_n = -1.0f/64.0f;
-
+    //const __device__ float offset_val = 1.0f/64.0f;
+    //const __device__ float offset_val_n = -1.0f/64.0f;
+    const __device__ float offset_val = 4.0f/1.0f;
+const __device__ float offset_val_n = -4.0f/1.0f;
     //------------------------------------------------------------------------------
     // ray gen program - the actual rendering happens in here
     //------------------------------------------------------------------------------
@@ -603,7 +604,7 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
         if(bufferIndex == optixLaunchParams.simConstants.size.x - 1)
             printf("[%d] has launch status -> %d\n",bufferIndex,optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem);
 #endif*/
-#ifdef DESORPEXIT
+#ifdef WITHDESORPEXIT
         if(optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hasToTerminate==2){
             return;
         }
@@ -621,7 +622,7 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
                 break;
             }
             case NEW_PARTICLE: {
-#ifdef DESORPEXIT
+#ifdef WITHDESORPEXIT
                 if(optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hasToTerminate==1){
                     optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hasToTerminate=2;
                     return;

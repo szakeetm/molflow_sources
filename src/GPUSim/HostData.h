@@ -36,7 +36,7 @@ struct Texel64 {
 
 struct HostData {
     //std::vector<uint32_t> pixels;
-#ifdef DESORPEXIT
+#ifdef WITHDESORPEXIT
     std::vector<flowgpu::MolPRD> hitData;
 #endif
     std::vector<flowgpu::CuFacetHitCounter> facetHitCounters;

@@ -1319,7 +1319,7 @@ namespace flowgpu {
     /*! download the rendered color buffer and return the total amount of hits (= followed rays) */
     void SimulationOptiX::downloadDataFromDevice(HostData* hostData)
     {
-#ifdef DESORPEXIT
+#ifdef WITHDESORPEXIT
         if(!sim_memory.moleculeBuffer.isNullptr())
             sim_memory.moleculeBuffer.download(hostData->hitData.data(), state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y);
 #endif
@@ -1366,7 +1366,7 @@ namespace flowgpu {
     }
 
     void SimulationOptiX::askForExit(HostData* tempData) {
-#ifdef DESORPEXIT
+#ifdef WITHDESORPEXIT
         sim_memory.moleculeBuffer.upload(tempData->hitData.data(), state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y);
 #endif
     }

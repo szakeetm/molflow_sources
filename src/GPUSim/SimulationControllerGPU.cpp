@@ -104,7 +104,7 @@ unsigned long long int SimulationControllerGPU::GetSimulationData(bool silent) {
     bool printData = false & !silent;
     bool printDataParent = false & !silent;
     bool printCounters = false & !silent;
-#ifdef DESORPEXIT
+#ifdef WITHDESORPEXIT
     printCounters= true;
 #endif
     try {
@@ -112,7 +112,7 @@ unsigned long long int SimulationControllerGPU::GetSimulationData(bool silent) {
         IncreaseGlobalCounters(&data); //increase global counters
         if(printCounters) PrintTotalCounters();
         optixHandle->resetDeviceBuffers(); //reset tmp counters
-#ifdef DESORPEXIT
+#ifdef WITHDESORPEXIT
         if (this->model->ontheflyParams.desorptionLimit > 0) {
             if (GLOB_COUNT::total_des >= this->model->ontheflyParams.desorptionLimit) {
                 bool endCalled = false;
@@ -258,7 +258,7 @@ void SimulationControllerGPU::IncreaseGlobalCounters(HostData* tempData){
 }
 
 void SimulationControllerGPU::Resize(){
-#ifdef DESORPEXIT
+#ifdef WITHDESORPEXIT
     data.hitData.resize(kernelDimensions.x*kernelDimensions.y);
 #endif
 
