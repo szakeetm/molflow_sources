@@ -33,7 +33,7 @@ class Worker;
 
 class FacetAdvParams : public GLWindow {
 private:
-    void UpdateSquaredCells(bool aspectState);
+    void UpdateSquaredCells(int aspectState);
 public:
 
 	// Construction
