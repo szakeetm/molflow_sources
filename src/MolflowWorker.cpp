@@ -46,6 +46,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 #include "GLApp/GLUnitDialog.h"
 #include "GLApp/MathTools.h"
+#include "Helper/StringHelper.h"
 #include "Facet_shared.h"
 //#include "Simulation.h" //SHELEM
 #include "GlobalSettings.h"
