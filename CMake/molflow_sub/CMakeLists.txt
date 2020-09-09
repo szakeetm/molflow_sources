@@ -10,6 +10,7 @@ set(PROJECT_NAME molflowSub)
 set(CPP_DIR_1 ../../src)
 set(CPP_DIR_2 ../../src_shared)
 set(CPP_DIR_3 ../../src_shared/GLApp)
+set(CPP_DIR_HELPER ../../src_shared/Helper)
 
 set(HEADER_DIR_1 ../../src)
 set(HEADER_DIR_2 ../../src_shared)
@@ -81,7 +82,7 @@ set(SRC_FILES ${CPP_DIR_1}/molflowSub.cpp
         ${CPP_DIR_1}/GeometrySimu.cpp
 
         ${CPP_DIR_2}/SimulationController.cpp
-        ${CPP_DIR_3}/MathTools.cpp
+        ${CPP_DIR_HELPER}/MathTools.cpp
         )
 
 set(HEADER_FILES ${HEADER_DIR_1}/MolflowTypes.h
