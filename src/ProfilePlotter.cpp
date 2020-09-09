@@ -25,7 +25,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/GLCombo.h"
 #include "GLApp/GLTextField.h"
 #include "GLApp/GLToggle.h"
-#include "GLApp/MathTools.h"
+#include "Helper/MathTools.h"
 #include "GLApp/GLList.h"
 #include "GLApp/GLChart/GLChart.h"
 #include "Geometry_shared.h"

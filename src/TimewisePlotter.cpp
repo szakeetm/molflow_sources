@@ -21,7 +21,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
 #include "GLApp/GLToggle.h"
-#include "GLApp/MathTools.h"
+#include "Helper/MathTools.h"
 #include "Helper/StringHelper.h"
 #include "GLApp/GLList.h"
 #include "GLApp/GLChart/GLChart.h"

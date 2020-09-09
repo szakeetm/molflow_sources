@@ -33,7 +33,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <stdlib.h>
 #include "Simulation.h"
 #include "IntersectAABB_shared.h"
-#include "GLApp/MathTools.h" //PI
+#include "Helper/MathTools.h" //PI
 #include "Random.h"
 
 extern char *GetSimuStatus();

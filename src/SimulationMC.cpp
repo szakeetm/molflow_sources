@@ -25,7 +25,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Simulation.h"
 #include "IntersectAABB_shared.h"
 #include "Random.h"
-#include "GLApp/MathTools.h"
+#include "Helper/MathTools.h"
 
 #include "Parameter.h"
 

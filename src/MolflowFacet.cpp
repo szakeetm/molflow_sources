@@ -25,7 +25,7 @@ using namespace pugi;
 #include <sstream>
 #include <iomanip> //setprecision
 #include "GLApp/GLToolkit.h"
-#include "GLApp/MathTools.h" //IS_ZERO
+#include "Helper/MathTools.h" //IS_ZERO
 #include "Helper/StringHelper.h"
 #include "GLApp/GLMessageBox.h"
 #include <cstring>
