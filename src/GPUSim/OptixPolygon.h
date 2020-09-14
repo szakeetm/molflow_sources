@@ -11,6 +11,16 @@
 
 namespace flowgpu {
 
+    struct Texel64;
+    struct Texel32;
+
+    // Texel typedef
+#ifdef HIT64
+        using Texel = Texel64;
+#else
+        using Texel = Texel32;
+#endif
+
     enum RayType : uint8_t
     {
         RAY_TYPE_MOLECULE  = 0,
@@ -193,8 +203,16 @@ namespace flowgpu {
         }
     };
 
-    struct Texel {
-        Texel() : countEquiv(0), sum_v_ort_per_area(0.0f), sum_1_per_ort_velocity(0.0f){}
+    struct Texel64 {
+        Texel64() : countEquiv(0), sum_v_ort_per_area(0.0), sum_1_per_ort_velocity(0.0){}
+
+        uint64_t countEquiv;
+        double sum_v_ort_per_area;
+        double sum_1_per_ort_velocity;
+    };
+
+    struct Texel32 {
+        Texel32() : countEquiv(0), sum_v_ort_per_area(0.0f), sum_1_per_ort_velocity(0.0f){}
 
         //TODO: 32bit counter for temporary
         uint32_t countEquiv;

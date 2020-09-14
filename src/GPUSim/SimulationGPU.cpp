@@ -282,7 +282,7 @@ void SimulationGPU::ResetTmpCounters() {
 
     memset(&tmpGlobalResult, 0, sizeof(GlobalHitBuffer));
     GlobalCounter* globalCount = gpuSim.GetGlobalCounter();
-    std::fill(globalCount->facetHitCounters.begin(),globalCount->facetHitCounters.end(), CuFacetHitCounter64());
+    std::fill(globalCount->facetHitCounters.begin(),globalCount->facetHitCounters.end(), flowgpu::CuFacetHitCounter64());
     std::fill(globalCount->leakCounter.begin(),globalCount->leakCounter.end(), 0);
     for(auto& tex : globalCount->textures){
         std::fill(tex.second.begin(),tex.second.end(), Texel64());

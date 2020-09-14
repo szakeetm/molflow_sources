@@ -38,6 +38,16 @@
 #endif
 namespace flowgpu {
 
+    struct CuFacetHitCounter64;
+    struct CuFacetHitCounter32;
+
+    // Texel typedef
+#ifdef HIT64
+    using CuFacetHitCounter = CuFacetHitCounter64;
+#else
+    using CuFacetHitCounter = CuFacetHitCounter32;
+#endif
+
     struct TriangleMeshSBTData {
         float3 *vertex;
         int3 *index;
@@ -133,9 +143,25 @@ namespace flowgpu {
 
     // Facethitbuffer
 
+    struct CuFacetHitCounter64{
+        CuFacetHitCounter64() :
+                nbDesorbed(0) , nbMCHit(0) , nbHitEquiv(0.0) ,
+                nbAbsEquiv(0.0) , sum_1_per_ort_velocity(0.0) ,
+                sum_1_per_velocity(0.0) , sum_v_ort(0.0)
+        {};
+        // Counts
+        uint64_t nbMCHit;                   // Number of hits
+        uint64_t nbDesorbed;                // Number of desorbed molec
+        double nbAbsEquiv;                   // Equivalent number of absorbed molecules
+        double nbHitEquiv;                   //Equivalent number of hits, used for low-flux impingement rate and density calculation
+        double sum_1_per_ort_velocity;       // sum of reciprocials of orthogonal velocity components, used to determine the density, regardless of facet orientation
+        double sum_1_per_velocity;           //For average molecule speed calculation
+        double sum_v_ort;                    // sum of orthogonal speeds of incident velocities, used to determine the pressure
+    };
+
     //TODO: Molflow counter
-    struct CuFacetHitCounter{
-        CuFacetHitCounter() :
+    struct CuFacetHitCounter32{
+        CuFacetHitCounter32() :
         nbDesorbed(0) , nbMCHit(0) , nbHitEquiv(0.0f) ,
         nbAbsEquiv(0.0f) , sum_1_per_ort_velocity(0.0f) ,
         sum_1_per_velocity(0.0f) , sum_v_ort(0.0f)

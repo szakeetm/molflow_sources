@@ -5,8 +5,6 @@
 #ifndef MOLFLOW_PROJ_GPUDEFINES_H
 #define MOLFLOW_PROJ_GPUDEFINES_H
 
-#define RNG64
-
 #define PROFILE_SIZE 100
 // some GPU info we are making use of
 /*#define CORESPERMP 1664 // 13MP * 128 CUDA Cores

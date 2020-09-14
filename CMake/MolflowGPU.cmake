@@ -16,7 +16,10 @@ option(WITH_PROFILES "Enable profiles" ON)
 option(WITH_TRANS "Enable transparent SBT" ON)
 option(WITH_NBOUNCE "Enable NBBOUNCE Counter" ON)
 
-#option(USE_RANDOM_NUMBER_TYPE_64 "Use double instead of float for random numbers" ON)
+option(USE_RANDOM_NUMBER_TYPE_64 "Use double instead of float for random numbers" ON)
+option(USE_COUNTER_TYPE_64 "Use 64bit instead of 32bit precision for the counter structure" OFF)
+MESSAGE("[GPU_BUILD_OPTION] USE_RANDOM_NUMBER_TYPE_64: ${USE_RANDOM_NUMBER_TYPE_64}")
+MESSAGE("[GPU_BUILD_OPTION] USE_COUNTER_TYPE_64: ${USE_COUNTER_TYPE_64}")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
     MESSAGE("[GPU_BUILD_OPTION] DEBUG_MISS: ${DEBUG_MISS}")
@@ -98,6 +101,9 @@ endif (WITH_TRANS)
 if (USE_RANDOM_NUMBER_TYPE_64)
     add_definitions(-DRNG64)
 endif (USE_RANDOM_NUMBER_TYPE_64)
+if (USE_COUNTER_TYPE_64)
+    add_definitions(-DHIT64)
+endif (USE_COUNTER_TYPE_64)
 
 #Flags on CUDA 10 for maximum compatibility
 #set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} " -arch=sm_50 -gencode=arch=compute_50,code=sm_50 -gencode=arch=compute_52,code=sm_52 -gencode=arch=compute_60,code=sm_60 -gencode=arch=compute_61,code=sm_61 -gencode=arch=compute_70,code=sm_70 -gencode=arch=compute_75,code=sm_75 -gencode=arch=compute_75,code=compute_75")
