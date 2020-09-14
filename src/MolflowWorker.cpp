@@ -337,10 +337,30 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                         //mApp->compressProcessHandle=CreateThread(0, 0, ZipThreadProc, 0, 0, 0);
 
                         //Zipper library
-                        if (FileUtils::Exist(fileNameWithZIP)) remove(fileNameWithZIP.c_str());
+                        if (FileUtils::Exist(fileNameWithZIP)) {
+                            try {
+                                remove(fileNameWithZIP.c_str());
+                            }
+                            catch (Error& e) {
+                                SAFE_DELETE(f);
+                                simManager.UnlockHitBuffer();
+                                std::string msg = "Error compressing to \n" + fileNameWithZIP + "\nMaybe file is in use.";
+                                GLMessageBox::Display(e.what(), msg.c_str(), GLDLG_OK, GLDLG_ICONERROR);
+                                return;
+                            }
+                        }
                         ZipFile::AddFile(fileNameWithZIP, fileNameWithXML, FileUtils::GetFilename(fileNameWithXML));
                         //At this point, if no error was thrown, the compression is successful
-                        remove(fileNameWithXML.c_str());
+                        try {
+                            remove(fileNameWithXML.c_str());
+                        }
+                        catch (Error& e) {
+                            SAFE_DELETE(f);
+                            simManager.UnlockHitBuffer();
+                            std::string msg = "Error removing\n" + fileNameWithXML + "\nMaybe file is in use.";
+                            GLMessageBox::Display(e.what(), msg.c_str(), GLDLG_OK, GLDLG_ICONERROR);
+                            return;
+                        }
                     }
                 }
                 simManager.UnlockHitBuffer();
