@@ -24,7 +24,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "ProfilePlotter.h"
 #include "versionId.h"
 #include <iomanip>
-
+#include <fstream>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/string.hpp>
 
@@ -3791,4 +3791,703 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, BYTE* buffer, Wo
 	work->globalHitCache.texture_limits[2].max.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("max").as_double();
 
 	return true;
+}
+
+
+
+/**
+* \brief To load simulation data from a XML file
+* \param fileName_lhs xml input file
+* \param results current simulation results
+* \param work thread worker handling the task
+* \param progressDlg GLProgress window where visualising of the load progress is shown
+* \return bool showing if loading was successful
+*/
+bool Geometry::CompareXML_simustate(const std::string &fileName_lhs, const std::string &fileName_rhs, double cmpThreshold) {
+
+    // init lhs
+    xml_document loadXML;
+    xml_parse_result parseResult;
+    parseResult = loadXML.load_file(fileName_lhs.c_str()); //parse xml file directly
+
+
+    if (!parseResult) {
+        //Parse error
+        std::stringstream err;
+        err << "XML parsed with errors.\n";
+        err << "Error description: " << parseResult.description() << "\n";
+        err << "Error offset: " << parseResult.offset << "\n";
+        throw Error(err.str().c_str());
+    }
+
+    xml_node rootNode_lhs = loadXML;
+    if(appVersionId >= 2680){
+        xml_node envNode = loadXML.child("SimulationEnvironment");
+        if(!envNode.empty())
+            rootNode_lhs = envNode;
+    }
+
+    // init rhs
+    xml_document loadXML_rhs;
+    xml_parse_result parseResult_rhs;
+    parseResult_rhs = loadXML_rhs.load_file(fileName_rhs.c_str()); //parse xml file directly
+
+
+    if (!parseResult_rhs) {
+        //Parse error
+        std::stringstream err;
+        err << "XML parsed with errors.\n";
+        err << "Error description: " << parseResult_rhs.description() << "\n";
+        err << "Error offset: " << parseResult_rhs.offset << "\n";
+        throw Error(err.str().c_str());
+    }
+
+    xml_node rootNode_rhs = loadXML_rhs;
+    if(appVersionId >= 2680){
+        xml_node envNode = loadXML_rhs.child("SimulationEnvironment");
+        if(!envNode.empty())
+            rootNode_rhs = envNode;
+    }
+
+    if (!rootNode_lhs.child("MolflowResults")) return false; //simu state not saved with file
+    xml_node resultNode = rootNode_lhs.child("MolflowResults");
+    xml_node momentsNode = resultNode.child("Moments");
+    if (!rootNode_rhs.child("MolflowResults")) return false; //simu state not saved with file
+    xml_node rhsResults = rootNode_rhs.child("MolflowResults");
+    xml_node rhsMoments = rhsResults.child("Moments");
+
+    std::ofstream cmpFile("myCmp.txt");
+    // Sanity check for moments
+    size_t nbMoments = momentsNode.select_nodes("Moment").size(); //Contains constant flow!
+    if(nbMoments != rhsMoments.select_nodes("Moment").size()){
+        std::cerr << "Files have different nb of moments! Skipping to check only steady state."<<std::endl;
+        nbMoments = std::min(nbMoments,rhsMoments.select_nodes("Moment").size());
+        if(nbMoments < 1){
+            std::cerr << "Couldn't find steady state results for one file. Check will be aborted."<<std::endl;
+            return false;
+        }
+    }
+
+    size_t facetHitsSize = (nbMoments) * sizeof(FacetHitBuffer);
+    size_t m = 0;
+    pugi::xml_named_node_iterator it = momentsNode.children("Moment").begin();
+    pugi::xml_named_node_iterator rhsIt = rhsMoments.children("Moment").begin();
+
+    GlobalHitBuffer lhsGlobHit;
+    GlobalHitBuffer rhsGlobHit;
+
+    for (size_t mIndex = 0; mIndex < nbMoments; ++mIndex) {
+        xml_node newMoment = *(it++);
+        xml_node newMoment_rhs = *(rhsIt++);
+
+        if (m == 0) { //read global results
+            // lhs file
+            xml_node globalNode = newMoment.child("Global");
+            xml_node hitsNode = globalNode.child("Hits");
+
+            lhsGlobHit.globalHits.hit.nbMCHit = hitsNode.attribute("totalHit").as_llong();
+            if (hitsNode.attribute("totalHitEquiv")) {
+                lhsGlobHit.globalHits.hit.nbHitEquiv = hitsNode.attribute("totalHitEquiv").as_double();
+            } else {
+                //Backward compatibility
+                lhsGlobHit.globalHits.hit.nbHitEquiv = static_cast<double>(lhsGlobHit.globalHits.hit.nbMCHit);
+            }
+            lhsGlobHit.globalHits.hit.nbDesorbed = hitsNode.attribute("totalDes").as_llong();
+            if (hitsNode.attribute("totalAbsEquiv")) {
+                lhsGlobHit.globalHits.hit.nbAbsEquiv = hitsNode.attribute("totalAbsEquiv").as_double();
+            } else {
+                //Backward compatibility
+                lhsGlobHit.globalHits.hit.nbAbsEquiv = hitsNode.attribute("totalAbs").as_double();
+            }
+            if (hitsNode.attribute("totalDist_total")) { //if it's in the new format where total/partial are separated
+                lhsGlobHit.distTraveled_total = hitsNode.attribute("totalDist_total").as_double();
+                lhsGlobHit.distTraveledTotal_fullHitsOnly = hitsNode.attribute("totalDist_fullHitsOnly").as_double();
+            } else
+                lhsGlobHit.distTraveled_total = hitsNode.attribute("totalDist").as_double();
+            lhsGlobHit.nbLeakTotal = hitsNode.attribute("totalLeak").as_llong();
+            //work->desorptionLimit=hitsNode.attribute("maxDesorption").as_llong();
+
+            // rhs file
+            globalNode = newMoment_rhs.child("Global");
+            hitsNode = globalNode.child("Hits");
+
+            rhsGlobHit.globalHits.hit.nbMCHit = hitsNode.attribute("totalHit").as_llong();
+            if (hitsNode.attribute("totalHitEquiv")) {
+                rhsGlobHit.globalHits.hit.nbHitEquiv = hitsNode.attribute("totalHitEquiv").as_double();
+            } else {
+                //Backward compatibility
+                lhsGlobHit.globalHits.hit.nbHitEquiv = static_cast<double>(rhsGlobHit.globalHits.hit.nbMCHit);
+            }
+            rhsGlobHit.globalHits.hit.nbDesorbed = hitsNode.attribute("totalDes").as_llong();
+            if (hitsNode.attribute("totalAbsEquiv")) {
+                rhsGlobHit.globalHits.hit.nbAbsEquiv = hitsNode.attribute("totalAbsEquiv").as_double();
+            } else {
+                //Backward compatibility
+                rhsGlobHit.globalHits.hit.nbAbsEquiv = hitsNode.attribute("totalAbs").as_double();
+            }
+            if (hitsNode.attribute("totalDist_total")) { //if it's in the new format where total/partial are separated
+                rhsGlobHit.distTraveled_total = hitsNode.attribute("totalDist_total").as_double();
+                rhsGlobHit.distTraveledTotal_fullHitsOnly = hitsNode.attribute("totalDist_fullHitsOnly").as_double();
+            } else
+                rhsGlobHit.distTraveled_total = hitsNode.attribute("totalDist").as_double();
+            rhsGlobHit.nbLeakTotal = hitsNode.attribute("totalLeak").as_llong();
+
+
+            {
+                double absRatio = lhsGlobHit.globalHits.hit.nbAbsEquiv / lhsGlobHit.globalHits.hit.nbMCHit;
+                double absRatio_rhs = rhsGlobHit.globalHits.hit.nbAbsEquiv / rhsGlobHit.globalHits.hit.nbMCHit;
+                if (!IsEqual(absRatio, absRatio_rhs, cmpThreshold)) {
+                    cmpFile << "[Global][absRatio] has large difference: "<<std::abs(absRatio - absRatio_rhs)<<std::endl;
+                }
+            }
+
+            {
+                double desRatio = (double)lhsGlobHit.globalHits.hit.nbDesorbed / lhsGlobHit.globalHits.hit.nbMCHit;
+                double desRatio_rhs = (double)rhsGlobHit.globalHits.hit.nbDesorbed / rhsGlobHit.globalHits.hit.nbMCHit;
+                if (!IsEqual(desRatio, desRatio_rhs, cmpThreshold)) {
+                    cmpFile << "[Global][desRatio] has large difference: "<<std::abs(desRatio - desRatio_rhs)<<std::endl;
+                }
+            }
+
+            if (!IsEqual(lhsGlobHit.globalHits.hit.sum_v_ort, rhsGlobHit.globalHits.hit.sum_v_ort, cmpThreshold)) {
+                cmpFile << "[Global][sum_v_ort] has large difference: "<<std::abs(lhsGlobHit.globalHits.hit.sum_v_ort - rhsGlobHit.globalHits.hit.sum_v_ort)<<std::endl;
+            }
+            if (!IsEqual(lhsGlobHit.globalHits.hit.sum_1_per_velocity, rhsGlobHit.globalHits.hit.sum_1_per_velocity, cmpThreshold)) {
+                cmpFile << "[Global][sum_1_per_velocity] has large difference: "<<std::abs(lhsGlobHit.globalHits.hit.sum_1_per_velocity - rhsGlobHit.globalHits.hit.sum_1_per_velocity)<<std::endl;
+            }
+            if (!IsEqual(lhsGlobHit.globalHits.hit.sum_1_per_ort_velocity, rhsGlobHit.globalHits.hit.sum_1_per_ort_velocity, cmpThreshold)) {
+                cmpFile << "[Global][sum_1_per_ort_velocity] has large difference: "<<std::abs(lhsGlobHit.globalHits.hit.sum_1_per_ort_velocity - rhsGlobHit.globalHits.hit.sum_1_per_ort_velocity)<<std::endl;
+            }
+        }
+
+        xml_node histNode = newMoment.child("Histograms");
+        xml_node histNode_rhs = newMoment_rhs.child("Histograms");
+
+        if (histNode && histNode_rhs) { //Versions before 2.8 didn't save histograms
+            xml_node hist = histNode.child("Bounces");
+            xml_node hist_rhs = histNode_rhs.child("Bounces");
+
+            if (hist && hist_rhs) {
+                size_t saveHistSize = hist.attribute("size").as_ullong();
+                size_t histSize_rhs = hist_rhs.attribute("size").as_ullong();
+
+                if (saveHistSize == histSize_rhs) {
+                    //Can do: compare saved with expected size
+                    size_t h = 0;
+                    std::vector<double> nbHitsHistogram(saveHistSize, 0.0);
+                    std::vector<double> nbHitsHistogram_rhs(saveHistSize, 0.0);
+
+                    pugi::xml_named_node_iterator binIt = hist.children("Bin").begin();
+                    pugi::xml_named_node_iterator rhsBinIt = hist_rhs.children("Bin").begin();
+
+                    for (size_t hIndex = 0; hIndex < saveHistSize; ++hIndex) {
+                        xml_node bin = *(binIt++);
+                        xml_node rhsBin = *(rhsBinIt++);
+                        nbHitsHistogram[hIndex] = bin.attribute("count").as_double();
+                        nbHitsHistogram_rhs[hIndex] = rhsBin.attribute("count").as_double();
+                    }
+
+                    for (size_t hIndex = 0; hIndex < saveHistSize; ++hIndex) {
+                        if(!IsEqual(nbHitsHistogram[hIndex],nbHitsHistogram_rhs[hIndex], cmpThreshold)){
+                            cmpFile << "[Global][Hist][Bounces][Ind="<<hIndex<<"] has large difference: "<<std::abs(nbHitsHistogram[hIndex] - nbHitsHistogram_rhs[hIndex])<<std::endl;
+                        }
+                    }
+
+                }
+            }
+
+            hist = histNode.child("Distance");
+            hist_rhs = histNode_rhs.child("Distance");
+
+            if (hist && hist_rhs) {
+                size_t saveHistSize = hist.attribute("size").as_ullong();
+                size_t histSize_rhs = hist_rhs.attribute("size").as_ullong();
+
+                if (saveHistSize == histSize_rhs) {
+                    //Can do: compare saved with expected size
+                    size_t h = 0;
+                    std::vector<double> distanceHistogram(saveHistSize, 0.0);
+                    std::vector<double> distanceHistogram_rhs(saveHistSize, 0.0);
+
+                    pugi::xml_named_node_iterator binIt = hist.children("Bin").begin();
+                    pugi::xml_named_node_iterator rhsBinIt = hist_rhs.children("Bin").begin();
+
+                    for (size_t hIndex = 0; hIndex < saveHistSize; ++hIndex) {
+                        xml_node bin = *(binIt++);
+                        xml_node rhsBin = *(rhsBinIt++);
+                        distanceHistogram[hIndex] = bin.attribute("count").as_double();
+                        distanceHistogram_rhs[hIndex] = rhsBin.attribute("count").as_double();
+                    }
+
+                    for (size_t hIndex = 0; hIndex < saveHistSize; ++hIndex) {
+                        if(!IsEqual(distanceHistogram[hIndex],distanceHistogram_rhs[hIndex], cmpThreshold)){
+                            cmpFile << "[Global][Hist][Dist][Ind="<<hIndex<<"] has large difference: "<<std::abs(distanceHistogram[hIndex] - distanceHistogram_rhs[hIndex])<<std::endl;
+                        }
+                    }
+                }
+            }
+
+            hist = histNode.child("Time");
+            hist_rhs = histNode_rhs.child("Time");
+
+            if (hist && hist_rhs) {
+                size_t saveHistSize = hist.attribute("size").as_ullong();
+                size_t histSize_rhs = hist_rhs.attribute("size").as_ullong();
+
+                if (saveHistSize == histSize_rhs) {
+                    //Can do: compare saved with expected size
+                    size_t h = 0;
+                    std::vector<double> timeHistogram(saveHistSize, 0.0);
+                    std::vector<double> timeHistogram_rhs(saveHistSize, 0.0);
+
+                    pugi::xml_named_node_iterator binIt = hist.children("Bin").begin();
+                    pugi::xml_named_node_iterator rhsBinIt = hist_rhs.children("Bin").begin();
+
+                    for (size_t hIndex = 0; hIndex < saveHistSize; ++hIndex) {
+                        xml_node bin = *(binIt++);
+                        xml_node rhsBin = *(rhsBinIt++);
+                        timeHistogram[hIndex] = bin.attribute("count").as_double();
+                        timeHistogram_rhs[hIndex] = rhsBin.attribute("count").as_double();
+                    }
+
+                    for (size_t hIndex = 0; hIndex < saveHistSize; ++hIndex) {
+                        if(!IsEqual(timeHistogram[hIndex],timeHistogram_rhs[hIndex], cmpThreshold)){
+                            cmpFile << "[Global][Hist][Time][Ind="<<hIndex<<"] has large difference: "<<std::abs(timeHistogram[hIndex] - timeHistogram_rhs[hIndex])<<std::endl;
+                        }
+                    }
+                }
+            }
+        } // end hist
+
+
+        xml_node facetResultsNode = newMoment.child("FacetResults");
+        xml_node facetResultsNode_rhs = newMoment_rhs.child("FacetResults");
+
+        if(facetResultsNode && facetResultsNode_rhs) {
+            pugi::xml_node newFacetResult = facetResultsNode.child("Facet");
+            pugi::xml_node newFacetResult_rhs = facetResultsNode_rhs.child("Facet");
+            {
+                // Compare amount of facets
+                int nbFacets = facetResultsNode.last_child().attribute("id").as_int();
+                int nbFacets_rhs = facetResultsNode_rhs.last_child().attribute("id").as_int();
+
+                if(nbFacets <= 0 || nbFacets != nbFacets_rhs){
+                    cmpFile << "[Facets] Mismatch of facet amount: "<<nbFacets << " <> " << nbFacets_rhs << std::endl;
+                }
+            }
+            for(; newFacetResult && newFacetResult_rhs;
+                newFacetResult = newFacetResult.next_sibling("Facet"),
+                newFacetResult_rhs = newFacetResult_rhs.next_sibling("Facet")){
+                int facetId = newFacetResult.attribute("id").as_int();
+                xml_node facetHitNode = newFacetResult.child("Hits");
+                xml_node facetHitNode_rhs = newFacetResult_rhs.child("Hits");
+
+                FacetHitBuffer facetCounter;
+                FacetHitBuffer facetCounter_rhs;
+
+                double scale = 1.0;
+                double scale_rhs = 1.0;
+                double fullScale = 1.0;
+                double fullScale_rhs = 1.0;
+
+                if (facetHitNode && facetHitNode_rhs) { //If there are hit results for the current moment
+
+                    // lhs
+                    facetCounter.hit.nbMCHit = facetHitNode.attribute("nbHit").as_llong();
+                    if (facetHitNode.attribute("nbHitEquiv")) {
+                        facetCounter.hit.nbHitEquiv = facetHitNode.attribute("nbHitEquiv").as_double();
+                    } else {
+                        //Backward compatibility
+                        facetCounter.hit.nbHitEquiv = static_cast<double>(facetCounter.hit.nbMCHit);
+                    }
+                    facetCounter.hit.nbDesorbed = facetHitNode.attribute("nbDes").as_llong();
+                    if (facetHitNode.attribute("nbAbsEquiv")) {
+                        facetCounter.hit.nbAbsEquiv = facetHitNode.attribute("nbAbsEquiv").as_double();
+                    } else {
+                        //Backward compatibility
+                        facetCounter.hit.nbAbsEquiv = facetHitNode.attribute("nbAbs").as_double();
+                    }
+                    facetCounter.hit.sum_v_ort = facetHitNode.attribute("sum_v_ort").as_double();
+                    facetCounter.hit.sum_1_per_ort_velocity = facetHitNode.attribute("sum_1_per_v").as_double();
+                    if (facetHitNode.attribute("sum_v")) {
+                        facetCounter.hit.sum_1_per_velocity = facetHitNode.attribute("sum_v").as_double();
+                    } else {
+                        //Backward compatibility
+                        facetCounter.hit.sum_1_per_velocity = 4.0 * Sqr(facetCounter.hit.nbHitEquiv +
+                                                                         static_cast<double>(facetCounter.hit.nbDesorbed)) /
+                                                               facetCounter.hit.sum_1_per_ort_velocity;
+                    }
+
+                    // rhs
+                    facetCounter_rhs.hit.nbMCHit = facetHitNode_rhs.attribute("nbHit").as_llong();
+                    if (facetHitNode_rhs.attribute("nbHitEquiv")) {
+                        facetCounter_rhs.hit.nbHitEquiv = facetHitNode_rhs.attribute("nbHitEquiv").as_double();
+                    } else {
+                        //Backward compatibility
+                        facetCounter_rhs.hit.nbHitEquiv = static_cast<double>(facetCounter_rhs.hit.nbMCHit);
+                    }
+                    facetCounter_rhs.hit.nbDesorbed = facetHitNode_rhs.attribute("nbDes").as_llong();
+                    if (facetHitNode_rhs.attribute("nbAbsEquiv")) {
+                        facetCounter_rhs.hit.nbAbsEquiv = facetHitNode_rhs.attribute("nbAbsEquiv").as_double();
+                    } else {
+                        //Backward compatibility
+                        facetCounter_rhs.hit.nbAbsEquiv = facetHitNode_rhs.attribute("nbAbs").as_double();
+                    }
+                    facetCounter_rhs.hit.sum_v_ort = facetHitNode_rhs.attribute("sum_v_ort").as_double();
+                    facetCounter_rhs.hit.sum_1_per_ort_velocity = facetHitNode_rhs.attribute("sum_1_per_v").as_double();
+                    if (facetHitNode_rhs.attribute("sum_v")) {
+                        facetCounter_rhs.hit.sum_1_per_velocity = facetHitNode_rhs.attribute("sum_v").as_double();
+                    } else {
+                        //Backward compatibility
+                        facetCounter_rhs.hit.sum_1_per_velocity = 4.0 * Sqr(facetCounter_rhs.hit.nbHitEquiv +
+                                                                        static_cast<double>(facetCounter_rhs.hit.nbDesorbed)) /
+                                                              facetCounter_rhs.hit.sum_1_per_ort_velocity;
+                    }
+
+                    
+                    //cmp
+                    scale = 1.0 / lhsGlobHit.globalHits.hit.nbDesorbed; // getmolpertp
+                    scale_rhs = 1.0 / rhsGlobHit.globalHits.hit.nbDesorbed;
+                    fullScale =  1.0 - (facetCounter.hit.nbAbsEquiv + (double)facetCounter.hit.nbDesorbed) / (facetCounter.hit.nbHitEquiv + (double)facetCounter.hit.nbDesorbed) / 2.0;
+                    fullScale_rhs =  1.0 - (facetCounter_rhs.hit.nbAbsEquiv + (double)facetCounter_rhs.hit.nbDesorbed) / (facetCounter_rhs.hit.nbHitEquiv + (double)facetCounter_rhs.hit.nbDesorbed) / 2.0;
+                    fullScale *= scale;
+                    fullScale_rhs *= scale_rhs;
+
+                    {
+                        double absRatio = facetCounter.hit.nbAbsEquiv / facetCounter.hit.nbMCHit;
+                        double absRatio_rhs = facetCounter_rhs.hit.nbAbsEquiv / facetCounter_rhs.hit.nbMCHit;
+                        if (!IsEqual(absRatio, absRatio_rhs, cmpThreshold)) {
+                            cmpFile << "[Facet]["<<facetId<<"][absRatio] has large difference: "<<std::abs(absRatio - absRatio_rhs)<<std::endl;
+                        }
+                    }
+
+                    {
+                        double desRatio = (double)facetCounter.hit.nbDesorbed / facetCounter.hit.nbMCHit;
+                        double desRatio_rhs = (double)facetCounter_rhs.hit.nbDesorbed / facetCounter_rhs.hit.nbMCHit;
+                        if (!IsEqual(desRatio, desRatio_rhs, cmpThreshold)) {
+                            cmpFile << "[Facet]["<<facetId<<"][desRatio] has large difference: "<<std::abs(desRatio - desRatio_rhs)<<std::endl;
+                        }
+                    }
+
+                    if (!IsEqual(facetCounter.hit.sum_v_ort * scale, facetCounter_rhs.hit.sum_v_ort * scale_rhs, cmpThreshold)) {
+                        cmpFile << "[Facet]["<<facetId<<"][sum_v_ort] has large difference: "<<std::abs(facetCounter.hit.sum_v_ort * scale - facetCounter_rhs.hit.sum_v_ort * scale_rhs)<<std::endl;
+                    }
+                    if (!IsEqual(facetCounter.hit.sum_1_per_velocity * scale, facetCounter_rhs.hit.sum_1_per_velocity* scale_rhs, cmpThreshold)) {
+                        cmpFile << "[Facet]["<<facetId<<"][sum_1_per_velocity] has large difference: "<<std::abs(facetCounter.hit.sum_1_per_velocity * scale - facetCounter_rhs.hit.sum_1_per_velocity * scale_rhs)<<std::endl;
+                    }
+                    if (!IsEqual(facetCounter.hit.sum_1_per_ort_velocity * scale, facetCounter_rhs.hit.sum_1_per_ort_velocity* scale_rhs, cmpThreshold)) {
+                        cmpFile << "[Facet]["<<facetId<<"][sum_1_per_ort_velocity] has large difference: "<<std::abs(facetCounter.hit.sum_1_per_ort_velocity * scale - facetCounter_rhs.hit.sum_1_per_ort_velocity * scale_rhs)<<std::endl;
+                    }
+                }
+
+                //Profiles
+                xml_node profileNode = newFacetResult.child("Profile");
+                xml_node profileNode_rhs = newFacetResult_rhs.child("Profile");
+
+                if(profileNode && profileNode_rhs) {
+                    std::vector<ProfileSlice> profile(PROFILE_SIZE, ProfileSlice());
+                    std::vector<ProfileSlice> profile_rhs(PROFILE_SIZE, ProfileSlice());
+
+                    size_t id = 0;
+                    //lhs
+                    for (xml_node slice : profileNode.children("Slice")) {
+                        if (slice.attribute("countEquiv")) {
+                            profile[id].countEquiv = slice.attribute("countEquiv").as_double();
+                        } else {
+                            //Old format before low-flux
+                            profile[id].countEquiv = static_cast<double>(slice.attribute("count").as_llong());
+                        }
+                        profile[id].sum_1_per_ort_velocity = slice.attribute("sum_1_per_v").as_double();
+                        profile[id].sum_v_ort = slice.attribute("sum_v_ort").as_double();
+                        id++;
+                    }
+                    //rhs
+                    id = 0;
+                    for (xml_node slice : profileNode_rhs.children("Slice")) {
+                        if (slice.attribute("countEquiv")) {
+                            profile_rhs[id].countEquiv = slice.attribute("countEquiv").as_double();
+                        } else {
+                            //Old format before low-flux
+                            profile_rhs[id].countEquiv = static_cast<double>(slice.attribute("count").as_llong());
+                        }
+                        profile_rhs[id].sum_1_per_ort_velocity = slice.attribute("sum_1_per_v").as_double();
+                        profile_rhs[id].sum_v_ort = slice.attribute("sum_v_ort").as_double();
+                        id++;
+                    }
+                    
+                    //cmp
+
+                    for (id = 0; id < profile.size(); ++id) {
+                        if(!IsEqual(profile[id].countEquiv/scale,profile_rhs[id].countEquiv/scale_rhs, cmpThreshold)){
+                            cmpFile << "[Facet]["<<facetId<<"][Profile][Ind="<<id<<"][countEquiv] has large difference: "<<std::abs(profile[id].countEquiv/scale - profile_rhs[id].countEquiv/scale_rhs)<<std::endl;
+                        }
+                    }
+                    for (id = 0; id < profile.size(); ++id) {
+                        if(!IsEqual(profile[id].sum_1_per_ort_velocity * fullScale,profile_rhs[id].sum_1_per_ort_velocity * fullScale_rhs, cmpThreshold)){
+                            cmpFile << "[Facet]["<<facetId<<"][Profile][Ind="<<id<<"][sum_1_per_ort_velocity] has large difference: "<<std::abs(profile[id].sum_1_per_ort_velocity * fullScale - profile_rhs[id].sum_1_per_ort_velocity * fullScale_rhs) / (profile[id].sum_1_per_ort_velocity * fullScale)<<std::endl;
+                        }
+                    }
+                    for (id = 0; id < profile.size(); ++id) {
+                        if(!IsEqual(profile[id].sum_v_ort * scale,profile_rhs[id].sum_v_ort * scale_rhs, cmpThreshold)){
+                            cmpFile << "[Facet]["<<facetId<<"][Profile][Ind="<<id<<"][sum_v_ort] has large difference: "<<std::abs(profile[id].sum_v_ort * scale - profile_rhs[id].sum_v_ort * scale_rhs)<<std::endl;
+                        }
+                    }
+                }
+
+                //Textures
+                xml_node textureNode = newFacetResult.child("Texture");
+                xml_node textureNode_rhs = newFacetResult_rhs.child("Texture");
+
+                if(textureNode && textureNode_rhs) {
+                    int ix, iy;
+
+                    size_t texWidth_file = textureNode.attribute("width").as_llong();
+                    size_t texHeight_file = textureNode.attribute("height").as_llong();
+
+                    if (texWidth_file != textureNode_rhs.attribute("width").as_llong() ||
+                            texHeight_file != textureNode_rhs.attribute("height").as_llong()) {
+                        std::stringstream msg;
+                        std::cerr << "Texture size mismatch on facet " << facetId + 1 <<
+                        ".\nExpected: " <<textureNode_rhs.attribute("width").as_llong() << "x" << textureNode_rhs.attribute("height").as_llong() << "\n"
+                        << "In file: " << textureNode.attribute("width").as_llong() << "x" << textureNode.attribute("height").as_llong();
+                    }
+                    else {
+                        std::vector<TextureCell> texture(texWidth_file * texHeight_file, TextureCell());
+                        std::vector<TextureCell> texture_rhs(texWidth_file * texHeight_file, TextureCell());
+
+                        // lhs
+                        {
+                            std::stringstream countText, sum1perText, sumvortText;
+                            if (textureNode.child("countEquiv")) {
+                                countText << textureNode.child_value("countEquiv");
+                            } else {
+                                countText << textureNode.child_value("count");
+                            }
+                            sum1perText << textureNode.child_value("sum_1_per_v");
+                            sumvortText << textureNode.child_value("sum_v_ort");
+
+                            for (iy = 0; iy < texHeight_file; iy++) { //MIN: If stored texture is larger, don't read extra cells
+                                for (ix = 0; ix < texWidth_file; ix++) { //MIN: If stored texture is larger, don't read extra cells
+                                    countText >> texture[iy * texWidth_file + ix].countEquiv;
+                                    sum1perText >> texture[iy * texWidth_file + ix].sum_1_per_ort_velocity;
+                                    sumvortText >> texture[iy * texWidth_file + ix].sum_v_ort_per_area;
+                                }
+                            }
+                        }
+                        //rhs
+                        {
+                            std::stringstream countText, sum1perText, sumvortText;
+                            if (textureNode_rhs.child("countEquiv")) {
+                                countText << textureNode_rhs.child_value("countEquiv");
+                            } else {
+                                countText << textureNode_rhs.child_value("count");
+                            }
+                            sum1perText << textureNode_rhs.child_value("sum_1_per_v");
+                            sumvortText << textureNode_rhs.child_value("sum_v_ort");
+
+                            for (iy = 0; iy < texHeight_file; iy++) { //MIN: If stored texture is larger, don't read extra cells
+                                for (ix = 0; ix < texWidth_file; ix++) { //MIN: If stored texture is larger, don't read extra cells
+                                    countText >> texture_rhs[iy * texWidth_file + ix].countEquiv;
+                                    sum1perText >> texture_rhs[iy * texWidth_file + ix].sum_1_per_ort_velocity;
+                                    sumvortText >> texture_rhs[iy * texWidth_file + ix].sum_v_ort_per_area;
+                                }
+                            }
+                        }
+
+                        for (iy = 0; iy < texHeight_file; iy++) { //MIN: If stored texture is larger, don't read extra cells
+                            for (ix = 0; ix < texWidth_file; ix++) { //MIN: If stored texture is larger, don't read extra cells
+                                if(!IsEqual(texture[iy * texWidth_file + ix].countEquiv,texture_rhs[iy * texWidth_file + ix].countEquiv, cmpThreshold)){
+                                    cmpFile << "[Facet]["<<facetId<<"][Texture]["<<ix<<","<<iy<<"][countEquiv] has large difference: "<<std::abs(texture[iy * texWidth_file + ix].countEquiv - texture_rhs[iy * texWidth_file + ix].countEquiv)<<std::endl;
+                                }
+                                if(!IsEqual(texture[iy * texWidth_file + ix].sum_1_per_ort_velocity * scale,texture_rhs[iy * texWidth_file + ix].sum_1_per_ort_velocity * scale_rhs, cmpThreshold)){
+                                    cmpFile << "[Facet]["<<facetId<<"][Texture]["<<ix<<","<<iy<<"][sum_1_per_ort_velocity] has large difference: "<<std::abs(texture[iy * texWidth_file + ix].sum_1_per_ort_velocity  * scale - texture_rhs[iy * texWidth_file + ix].sum_1_per_ort_velocity * scale_rhs)<<std::endl;
+                                }
+                                if(!IsEqual(texture[iy * texWidth_file + ix].sum_v_ort_per_area * scale,texture_rhs[iy * texWidth_file + ix].sum_v_ort_per_area * scale_rhs, cmpThreshold)){
+                                    cmpFile << "[Facet]["<<facetId<<"][Texture]["<<ix<<","<<iy<<"][sum_v_ort_per_area] has large difference: "<<std::abs(texture[iy * texWidth_file + ix].sum_v_ort_per_area  * scale - texture_rhs[iy * texWidth_file + ix].sum_v_ort_per_area * scale_rhs)<<std::endl;
+                                }
+                            }
+                        } // end for comp texture
+                    }
+                }
+
+                xml_node dirNode = newFacetResult.child("Directions");
+                xml_node dirNode_rhs = newFacetResult.child("Directions");
+
+                if (dirNode && dirNode_rhs) {
+                    size_t dirWidth_file = dirNode.attribute("width").as_llong();
+                    size_t dirHeight_file = dirNode.attribute("height").as_llong();
+
+                    if (dirWidth_file != dirNode_rhs.attribute("width").as_llong() ||
+                            dirHeight_file != dirNode_rhs.attribute("height").as_llong()) {
+                        std::stringstream msg;
+                        std::cerr << "Texture size mismatch on facet " << facetId + 1 <<
+                                  ".\nExpected: " <<dirNode_rhs.attribute("width").as_llong() << "x" << dirNode_rhs.attribute("height").as_llong() << "\n"
+                                  << "In file: " << dirNode.attribute("width").as_llong() << "x" << dirNode.attribute("height").as_llong();
+                    }
+                    else {
+                        std::vector<DirectionCell> dirs(dirWidth_file * dirHeight_file, DirectionCell());
+                        std::vector<DirectionCell> dirs_rhs(dirWidth_file * dirHeight_file, DirectionCell());
+
+                        //lhs
+                        {
+                            std::stringstream dirText, dirCountText;
+                            dirText << dirNode.child_value("vel.vectors");
+                            dirCountText << dirNode.child_value("count");
+
+                            for (int iy = 0; iy < dirHeight_file; iy++) {
+                                for (int ix = 0; ix < dirWidth_file; ix++) {
+                                    std::string component;
+                                    std::getline(dirText, component, ',');
+                                    dirs[iy * dirWidth_file + ix].dir.x = std::stod(component);
+                                    std::getline(dirText, component, ',');
+                                    dirs[iy * dirWidth_file + ix].dir.y = std::stod(component);
+                                    dirText >> dirs[iy * dirWidth_file + ix].dir.z;
+                                    dirCountText >> dirs[iy * dirWidth_file + ix].count;
+                                }
+                            }
+                        }
+                        //rhs
+                        {
+                            std::stringstream dirText, dirCountText;
+                            dirText << dirNode_rhs.child_value("vel.vectors");
+                            dirCountText << dirNode_rhs.child_value("count");
+
+                            for (int iy = 0; iy < dirHeight_file; iy++) {
+                                for (int ix = 0; ix < dirWidth_file; ix++) {
+                                    std::string component;
+                                    std::getline(dirText, component, ',');
+                                    dirs_rhs[iy * dirWidth_file + ix].dir.x = std::stod(component);
+                                    std::getline(dirText, component, ',');
+                                    dirs_rhs[iy * dirWidth_file + ix].dir.y = std::stod(component);
+                                    dirText >> dirs_rhs[iy * dirWidth_file + ix].dir.z;
+                                    dirCountText >> dirs_rhs[iy * dirWidth_file + ix].count;
+                                }
+                            }
+                        }
+
+                        for (int iy = 0; iy < dirHeight_file; iy++) {
+                            for (int ix = 0; ix < dirWidth_file; ix++) {
+                                if(!IsEqual(dirs[iy * dirWidth_file + ix].count,dirs[iy * dirWidth_file + ix].count, cmpThreshold)){
+                                    cmpFile << "[Facet]["<<facetId<<"][dirs]["<<ix<<","<<iy<<"][count] has large difference: "<<std::abs((int)dirs[iy * dirWidth_file + ix].count - (int)dirs_rhs[iy * dirWidth_file + ix].count)<<std::endl;
+                                }
+                                if(!IsEqual(dirs[iy * dirWidth_file + ix].dir.x,dirs[iy * dirWidth_file + ix].dir.x, cmpThreshold)){
+                                    cmpFile << "[Facet]["<<facetId<<"][dirs]["<<ix<<","<<iy<<"][dir.x] has large difference: "<<std::abs(dirs[iy * dirWidth_file + ix].dir.x - dirs_rhs[iy * dirWidth_file + ix].dir.x)<<std::endl;
+                                }
+                                if(!IsEqual(dirs[iy * dirWidth_file + ix].dir.y,dirs[iy * dirWidth_file + ix].dir.y, cmpThreshold)){
+                                    cmpFile << "[Facet]["<<facetId<<"][dirs]["<<ix<<","<<iy<<"][dir.y] has large difference: "<<std::abs(dirs[iy * dirWidth_file + ix].dir.y - dirs_rhs[iy * dirWidth_file + ix].dir.y)<<std::endl;
+                                }
+                                if(!IsEqual(dirs[iy * dirWidth_file + ix].dir.z,dirs[iy * dirWidth_file + ix].dir.z, cmpThreshold)){
+                                    cmpFile << "[Facet]["<<facetId<<"][dirs]["<<ix<<","<<iy<<"][dir.z] has large difference: "<<std::abs(dirs[iy * dirWidth_file + ix].dir.z - dirs_rhs[iy * dirWidth_file + ix].dir.z)<<std::endl;
+                                }
+                            }
+                        } // end for comp dir
+
+                    }
+                } //end directions
+
+                xml_node histNode = newFacetResult.child("Histograms");
+                xml_node histNode_rhs = newFacetResult_rhs.child("Histograms");
+
+                if (histNode && histNode_rhs) { //Versions before 2.8 didn't save histograms
+                    xml_node hist = histNode.child("Bounces");
+                    xml_node hist_rhs = histNode_rhs.child("Bounces");
+
+                    if (hist && hist_rhs) {
+                        size_t saveHistSize = hist.attribute("size").as_ullong();
+                        size_t histSize_rhs = hist_rhs.attribute("size").as_ullong();
+
+                        if (saveHistSize == histSize_rhs) {
+                            //Can do: compare saved with expected size
+                            size_t h = 0;
+                            std::vector<double> nbHitsHistogram(saveHistSize, 0.0);
+                            std::vector<double> nbHitsHistogram_rhs(saveHistSize, 0.0);
+
+                            pugi::xml_named_node_iterator binIt = hist.children("Bin").begin();
+                            pugi::xml_named_node_iterator rhsBinIt = hist_rhs.children("Bin").begin();
+
+                            for (size_t hIndex = 0; hIndex < saveHistSize; ++hIndex) {
+                                xml_node bin = *(binIt++);
+                                xml_node rhsBin = *(rhsBinIt++);
+                                nbHitsHistogram[hIndex] = bin.attribute("count").as_double();
+                                nbHitsHistogram_rhs[hIndex] = rhsBin.attribute("count").as_double();
+                            }
+
+                            for (size_t hIndex = 0; hIndex < saveHistSize; ++hIndex) {
+                                if(!IsEqual(nbHitsHistogram[hIndex],nbHitsHistogram_rhs[hIndex], cmpThreshold)){
+                                    cmpFile << "[Facet]["<<facetId<<"][Hist][Bounces][Ind="<<hIndex<<"] has large difference: "<<std::abs(nbHitsHistogram[hIndex] - nbHitsHistogram_rhs[hIndex])<<std::endl;
+                                }
+                            }
+
+                        }
+                    }
+
+                    hist = histNode.child("Distance");
+                    hist_rhs = histNode_rhs.child("Distance");
+
+                    if (hist && hist_rhs) {
+                        size_t saveHistSize = hist.attribute("size").as_ullong();
+                        size_t histSize_rhs = hist_rhs.attribute("size").as_ullong();
+
+                        if (saveHistSize == histSize_rhs) {
+                            //Can do: compare saved with expected size
+                            size_t h = 0;
+                            std::vector<double> distanceHistogram(saveHistSize, 0.0);
+                            std::vector<double> distanceHistogram_rhs(saveHistSize, 0.0);
+
+                            pugi::xml_named_node_iterator binIt = hist.children("Bin").begin();
+                            pugi::xml_named_node_iterator rhsBinIt = hist_rhs.children("Bin").begin();
+
+                            for (size_t hIndex = 0; hIndex < saveHistSize; ++hIndex) {
+                                xml_node bin = *(binIt++);
+                                xml_node rhsBin = *(rhsBinIt++);
+                                distanceHistogram[hIndex] = bin.attribute("count").as_double();
+                                distanceHistogram_rhs[hIndex] = rhsBin.attribute("count").as_double();
+                            }
+
+                            for (size_t hIndex = 0; hIndex < saveHistSize; ++hIndex) {
+                                if(!IsEqual(distanceHistogram[hIndex],distanceHistogram_rhs[hIndex], cmpThreshold)){
+                                    cmpFile << "[Facet]["<<facetId<<"][Hist][Dist][Ind="<<hIndex<<"] has large difference: "<<std::abs(distanceHistogram[hIndex] - distanceHistogram_rhs[hIndex])<<std::endl;
+                                }
+                            }
+                        }
+                    }
+
+                    hist = histNode.child("Time");
+                    hist_rhs = histNode_rhs.child("Time");
+
+                    if (hist && hist_rhs) {
+                        size_t saveHistSize = hist.attribute("size").as_ullong();
+                        size_t histSize_rhs = hist_rhs.attribute("size").as_ullong();
+
+                        if (saveHistSize == histSize_rhs) {
+                            //Can do: compare saved with expected size
+                            size_t h = 0;
+                            std::vector<double> timeHistogram(saveHistSize, 0.0);
+                            std::vector<double> timeHistogram_rhs(saveHistSize, 0.0);
+
+                            pugi::xml_named_node_iterator binIt = hist.children("Bin").begin();
+                            pugi::xml_named_node_iterator rhsBinIt = hist_rhs.children("Bin").begin();
+
+                            for (size_t hIndex = 0; hIndex < saveHistSize; ++hIndex) {
+                                xml_node bin = *(binIt++);
+                                xml_node rhsBin = *(rhsBinIt++);
+                                timeHistogram[hIndex] = bin.attribute("count").as_double();
+                                timeHistogram_rhs[hIndex] = rhsBin.attribute("count").as_double();
+                            }
+
+                            for (size_t hIndex = 0; hIndex < saveHistSize; ++hIndex) {
+                                if(!IsEqual(timeHistogram[hIndex],timeHistogram_rhs[hIndex], cmpThreshold)){
+                                    cmpFile << "[Facet]["<<facetId<<"][Hist][Time][Ind="<<hIndex<<"] has large difference: "<<std::abs(timeHistogram[hIndex] - timeHistogram_rhs[hIndex])<<std::endl;
+                                }
+                            }
+                        }
+                    }
+                } // end facet hist
+            } //end facetResult
+        } //end facetResultsNode
+        m++;
+    } //end moment
+    cmpFile.close();
+
+    return true;
 }

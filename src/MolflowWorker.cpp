@@ -1747,9 +1747,9 @@ void Worker::PrepareToRun() {
         } else f->sh.sticking_paramId = -1;
 
         if (f->sh.outgassing_paramId >= 0) { //if time-dependent desorption
-            int id = GetIDId(f->sh.outgassing_paramId);
-            if (id >= 0)
-                f->sh.IDid = id; //we've already generated an integrated des. for this time-dep. outgassing
+            int id_var = GetIDId(f->sh.outgassing_paramId);
+            if (id_var >= 0)
+                f->sh.IDid = id_var; //we've already generated an integrated des. for this time-dep. outgassing
             else
                 f->sh.IDid = GenerateNewID(f->sh.outgassing_paramId); //Convert timedep outg. (PDF) to CDF
         }
