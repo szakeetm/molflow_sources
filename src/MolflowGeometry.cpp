@@ -4218,8 +4218,8 @@ bool Geometry::CompareXML_simustate(const std::string &fileName_lhs, const std::
                     //cmp
 
                     for (id = 0; id < profile.size(); ++id) {
-                        if(!IsEqual(profile[id].countEquiv/scale,profile_rhs[id].countEquiv/scale_rhs, cmpThreshold)){
-                            cmpFile << "[Facet]["<<facetId<<"][Profile][Ind="<<id<<"][countEquiv] has large difference: "<<std::abs(profile[id].countEquiv/scale - profile_rhs[id].countEquiv/scale_rhs)<<std::endl;
+                        if(!IsEqual(profile[id].countEquiv * scale,profile_rhs[id].countEquiv * scale_rhs, cmpThreshold)){
+                            cmpFile << "[Facet]["<<facetId<<"][Profile][Ind="<<id<<"][countEquiv] has large difference: "<<std::abs(profile[id].countEquiv * scale - profile_rhs[id].countEquiv * scale_rhs)/(profile[id].countEquiv * scale)<<std::endl;
                         }
                     }
                     for (id = 0; id < profile.size(); ++id) {
@@ -4229,7 +4229,7 @@ bool Geometry::CompareXML_simustate(const std::string &fileName_lhs, const std::
                     }
                     for (id = 0; id < profile.size(); ++id) {
                         if(!IsEqual(profile[id].sum_v_ort * scale,profile_rhs[id].sum_v_ort * scale_rhs, cmpThreshold)){
-                            cmpFile << "[Facet]["<<facetId<<"][Profile][Ind="<<id<<"][sum_v_ort] has large difference: "<<std::abs(profile[id].sum_v_ort * scale - profile_rhs[id].sum_v_ort * scale_rhs)<<std::endl;
+                            cmpFile << "[Facet]["<<facetId<<"][Profile][Ind="<<id<<"][sum_v_ort] has large difference: "<<std::abs(profile[id].sum_v_ort * scale - profile_rhs[id].sum_v_ort * scale_rhs) / (profile[id].sum_v_ort * scale)<<std::endl;
                         }
                     }
                 }
@@ -4296,14 +4296,14 @@ bool Geometry::CompareXML_simustate(const std::string &fileName_lhs, const std::
 
                         for (iy = 0; iy < texHeight_file; iy++) { //MIN: If stored texture is larger, don't read extra cells
                             for (ix = 0; ix < texWidth_file; ix++) { //MIN: If stored texture is larger, don't read extra cells
-                                if(!IsEqual(texture[iy * texWidth_file + ix].countEquiv,texture_rhs[iy * texWidth_file + ix].countEquiv, cmpThreshold)){
-                                    cmpFile << "[Facet]["<<facetId<<"][Texture]["<<ix<<","<<iy<<"][countEquiv] has large difference: "<<std::abs(texture[iy * texWidth_file + ix].countEquiv - texture_rhs[iy * texWidth_file + ix].countEquiv)<<std::endl;
+                                if(!IsEqual(texture[iy * texWidth_file + ix].countEquiv * scale ,texture_rhs[iy * texWidth_file + ix].countEquiv * scale_rhs, cmpThreshold)){
+                                    cmpFile << "[Facet]["<<facetId<<"][Texture]["<<ix<<","<<iy<<"][countEquiv] has large difference: "<<std::abs(texture[iy * texWidth_file + ix].countEquiv * scale - texture_rhs[iy * texWidth_file + ix].countEquiv * scale_rhs) / (texture[iy * texWidth_file + ix].countEquiv  * scale)<<std::endl;
                                 }
-                                if(!IsEqual(texture[iy * texWidth_file + ix].sum_1_per_ort_velocity * scale,texture_rhs[iy * texWidth_file + ix].sum_1_per_ort_velocity * scale_rhs, cmpThreshold)){
-                                    cmpFile << "[Facet]["<<facetId<<"][Texture]["<<ix<<","<<iy<<"][sum_1_per_ort_velocity] has large difference: "<<std::abs(texture[iy * texWidth_file + ix].sum_1_per_ort_velocity  * scale - texture_rhs[iy * texWidth_file + ix].sum_1_per_ort_velocity * scale_rhs)<<std::endl;
+                                if(!IsEqual(texture[iy * texWidth_file + ix].sum_1_per_ort_velocity * fullScale,texture_rhs[iy * texWidth_file + ix].sum_1_per_ort_velocity * fullScale_rhs, cmpThreshold)){
+                                    cmpFile << "[Facet]["<<facetId<<"][Texture]["<<ix<<","<<iy<<"][sum_1_per_ort_velocity] has large difference: "<<std::abs(texture[iy * texWidth_file + ix].sum_1_per_ort_velocity  * fullScale - texture_rhs[iy * texWidth_file + ix].sum_1_per_ort_velocity * fullScale_rhs) / (texture[iy * texWidth_file + ix].sum_1_per_ort_velocity  * fullScale)<<std::endl;
                                 }
                                 if(!IsEqual(texture[iy * texWidth_file + ix].sum_v_ort_per_area * scale,texture_rhs[iy * texWidth_file + ix].sum_v_ort_per_area * scale_rhs, cmpThreshold)){
-                                    cmpFile << "[Facet]["<<facetId<<"][Texture]["<<ix<<","<<iy<<"][sum_v_ort_per_area] has large difference: "<<std::abs(texture[iy * texWidth_file + ix].sum_v_ort_per_area  * scale - texture_rhs[iy * texWidth_file + ix].sum_v_ort_per_area * scale_rhs)<<std::endl;
+                                    cmpFile << "[Facet]["<<facetId<<"][Texture]["<<ix<<","<<iy<<"][sum_v_ort_per_area] has large difference: "<<std::abs(texture[iy * texWidth_file + ix].sum_v_ort_per_area  * scale - texture_rhs[iy * texWidth_file + ix].sum_v_ort_per_area * scale_rhs) / (texture[iy * texWidth_file + ix].sum_v_ort_per_area  * scale)<<std::endl;
                                 }
                             }
                         } // end for comp texture
