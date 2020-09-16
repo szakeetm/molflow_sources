@@ -1974,8 +1974,8 @@ IntegratedDesorption Worker::Generate_ID(int paramId) {
 
     //Construct integral from 0 to the simulation's latest moment
     //First point: t=0, Q(0)=Q(t0)
-    if (par.GetX(0)>0.0) {
-        ID.push_back(std::make_pair(0.0, 0.0)); //At t=0 no particles have desorbed yet
+    ID.push_back(std::make_pair(0.0, 0.0)); //At t=0 no particles have desorbed yet
+    if (par.GetX(0)>0.0) { //If the user starts later than t=0, copy first user value to t=0    
         myOutgassing.push_back(std::make_pair(0.0,par.GetY(0)));
     }
     //Consecutive points: user-defined points that are before latestMoment
@@ -2000,7 +2000,7 @@ IntegratedDesorption Worker::Generate_ID(int paramId) {
     //Intermediate moments, from first to last user-defined moment
     //We throw away user-defined moments after latestMoment:
     //Example: we sample the system until t=10s but outgassing is defined until t=1000s -> ignore values after 10s
-    for (size_t i = 1; i < myOutgassing.size(); i++) { //i=0 is t=0, skipping
+    for (size_t i = 1; i < myOutgassing.size(); i++) { //myOutgassing[0] is at t=0, skipping
         if (IsEqual(myOutgassing[i].second, myOutgassing[i - 1].second)) {
             //easy case of two equal y0=y1 values, simple integration by multiplying, reducing number of points
             ID.push_back(std::make_pair(myOutgassing[i].first,
