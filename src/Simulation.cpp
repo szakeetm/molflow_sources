@@ -109,14 +109,16 @@ void Simulation::ClearSimulation() {
     this->vertices3.clear();
 }
 
-bool Simulation::LoadSimulation(Dataport *loader) {
+bool Simulation::LoadSimulation(Dataport *loader, char *loadStatus) {
     double t0 = GetTick();
 
     //SetState(PROCESS_STARTING, "Clearing previous simulation");
+    strncpy(loadStatus, "Clearing previous simulation", 127);
+
     ClearSimulation();
 
     //SetState(PROCESS_STARTING, "Loading simulation");
-
+    strncpy(loadStatus, "Loading simulation", 127);
     {
         std::string inputString(loader->size,'\0');
         BYTE* buffer = (BYTE*)loader->buff;
@@ -143,6 +145,11 @@ bool Simulation::LoadSimulation(Dataport *loader) {
 
         //Facets
         for (size_t i = 0; i < sh.nbFacet; i++) { //Necessary because facets is not (yet) a vector in the interface
+            {
+                char tmp[128];
+                sprintf(tmp,"Loading facet #%u / %u", i, sh.nbFacet);
+                strncpy(loadStatus, tmp, 127);
+            }
             SubprocessFacet f;
             inputArchive(
                     f.sh,

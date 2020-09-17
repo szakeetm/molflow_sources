@@ -65,7 +65,7 @@ public:
     //int controlledLoop();
     int SanityCheckGeom() override;
     void ClearSimulation() override;
-    bool LoadSimulation(Dataport *loader) override;
+    bool LoadSimulation(Dataport *loader, char *loadStatus) override;
     void ResetSimulation() override;
     bool StartSimulation();
     bool SimulationRun();
