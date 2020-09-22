@@ -45,7 +45,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/GLMessageBox.h"
 
 #include "GLApp/GLUnitDialog.h"
-#include "GLApp/MathTools.h"
+#include "Helper/MathTools.h"
+#include "Helper/StringHelper.h"
 #include "Facet_shared.h"
 //#include "Simulation.h" //SHELEM
 #include "GlobalSettings.h"
@@ -336,10 +337,30 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                         //mApp->compressProcessHandle=CreateThread(0, 0, ZipThreadProc, 0, 0, 0);
 
                         //Zipper library
-                        if (FileUtils::Exist(fileNameWithZIP)) remove(fileNameWithZIP.c_str());
+                        if (FileUtils::Exist(fileNameWithZIP)) {
+                            try {
+                                remove(fileNameWithZIP.c_str());
+                            }
+                            catch (Error& e) {
+                                SAFE_DELETE(f);
+                                simManager.UnlockHitBuffer();
+                                std::string msg = "Error compressing to \n" + fileNameWithZIP + "\nMaybe file is in use.";
+                                GLMessageBox::Display(e.what(), msg.c_str(), GLDLG_OK, GLDLG_ICONERROR);
+                                return;
+                            }
+                        }
                         ZipFile::AddFile(fileNameWithZIP, fileNameWithXML, FileUtils::GetFilename(fileNameWithXML));
                         //At this point, if no error was thrown, the compression is successful
-                        remove(fileNameWithXML.c_str());
+                        try {
+                            remove(fileNameWithXML.c_str());
+                        }
+                        catch (Error& e) {
+                            SAFE_DELETE(f);
+                            simManager.UnlockHitBuffer();
+                            std::string msg = "Error removing\n" + fileNameWithXML + "\nMaybe file is in use.";
+                            GLMessageBox::Display(e.what(), msg.c_str(), GLDLG_OK, GLDLG_ICONERROR);
+                            return;
+                        }
                     }
                 }
                 simManager.UnlockHitBuffer();
@@ -1978,8 +1999,8 @@ IntegratedDesorption Worker::Generate_ID(int paramId) {
 
     //Construct integral from 0 to the simulation's latest moment
     //First point: t=0, Q(0)=Q(t0)
-    if (par.GetX(0)>0.0) {
-        ID.push_back(std::make_pair(0.0, 0.0)); //At t=0 no particles have desorbed yet
+    ID.push_back(std::make_pair(0.0, 0.0)); //At t=0 no particles have desorbed yet
+    if (par.GetX(0)>0.0) { //If the user starts later than t=0, copy first user value to t=0    
         myOutgassing.push_back(std::make_pair(0.0,par.GetY(0)));
     }
     //Consecutive points: user-defined points that are before latestMoment
@@ -2004,7 +2025,7 @@ IntegratedDesorption Worker::Generate_ID(int paramId) {
     //Intermediate moments, from first to last user-defined moment
     //We throw away user-defined moments after latestMoment:
     //Example: we sample the system until t=10s but outgassing is defined until t=1000s -> ignore values after 10s
-    for (size_t i = 1; i < myOutgassing.size(); i++) { //i=0 is t=0, skipping
+    for (size_t i = 1; i < myOutgassing.size(); i++) { //myOutgassing[0] is at t=0, skipping
         if (IsEqual(myOutgassing[i].second, myOutgassing[i - 1].second)) {
             //easy case of two equal y0=y1 values, simple integration by multiplying, reducing number of points
             ID.push_back(std::make_pair(myOutgassing[i].first,

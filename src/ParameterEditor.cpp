@@ -29,8 +29,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/GLToggle.h"
 #include "GLApp/GLTitledPanel.h"
 #include "GLApp/GLList.h"
-#include "GLApp/MathTools.h"
-
+#include "Helper/MathTools.h"
+#include "Helper/StringHelper.h"
 #include "MolFlow.h"
 //#include "GLApp/GLFileBox.h"
 #include "NativeFileDialog/molflow_wrapper/nfd_wrapper.h"

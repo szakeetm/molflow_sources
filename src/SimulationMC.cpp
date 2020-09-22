@@ -25,7 +25,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Simulation.h"
 #include "IntersectAABB_shared.h"
 #include "Random.h"
-#include "GLApp/MathTools.h"
+#include "Helper/MathTools.h"
 
 #include "Parameter.h"
 
@@ -1287,8 +1287,8 @@ void Simulation::RecordHistograms(SubprocessFacet *iFacet) {
     }
 
     int m = -1;
-    if((m = LookupMomentIndex(currentParticle.particleTime, moments, currentParticle.lastMomentIndex)) >= 0){
-        currentParticle.lastMomentIndex = m;
+    if((m = LookupMomentIndex(currentParticle.particleTime, moments, currentParticle.lastMomentIndex)) > 0){
+        currentParticle.lastMomentIndex = m - 1;
         if (wp.globalHistogramParams.recordBounce) {
             binIndex = Min(currentParticle.nbBounces / wp.globalHistogramParams.nbBounceBinsize,
                            wp.globalHistogramParams.GetBounceHistogramSize() - 1);
@@ -1341,8 +1341,8 @@ void Simulation::RecordHitOnTexture(SubprocessFacet *f, double time, bool countH
     f->texture[0][add].sum_v_ort_per_area += currentParticle.oriRatio * ortSpeedFactor * ortVelocity *
                                              f->textureCellIncrements[add]; // sum ortho_velocity[m/s] / cell_area[cm2]
     int m = -1;
-    if((m = LookupMomentIndex(time, moments, currentParticle.lastMomentIndex)) >= 0){
-        currentParticle.lastMomentIndex = m;
+    if((m = LookupMomentIndex(time, moments, currentParticle.lastMomentIndex)) > 0){
+        currentParticle.lastMomentIndex = m-1;
         if (countHit) f->texture[m][add].countEquiv += currentParticle.oriRatio;
         f->texture[m][add].sum_1_per_ort_velocity +=
                 currentParticle.oriRatio * velocity_factor / ortVelocity;
@@ -1361,8 +1361,8 @@ void Simulation::RecordDirectionVector(SubprocessFacet *f, double time) {
                                currentParticle.velocity;
     f->direction[0][add].count++;
     int m = -1;
-    if((m = LookupMomentIndex(time, moments, currentParticle.lastMomentIndex)) >= 0){
-        currentParticle.lastMomentIndex = m;
+    if((m = LookupMomentIndex(time, moments, currentParticle.lastMomentIndex)) > 0){
+        currentParticle.lastMomentIndex = m-1;
         f->direction[m][add].dir = f->direction[m][add].dir +
                                    currentParticle.oriRatio * currentParticle.direction *
                                    currentParticle.velocity;
@@ -1381,8 +1381,8 @@ void Simulation::ProfileFacet(SubprocessFacet *f, double time, bool countHit, do
         size_t pos = (size_t)(theta / (PI / 2) * ((double) PROFILE_SIZE)); // To Grad
         Saturate(pos, 0, PROFILE_SIZE - 1);
         f->profile[0][pos].countEquiv += currentParticle.oriRatio;
-        if(m >= 0){
-            currentParticle.lastMomentIndex = m;
+        if(m > 0){
+            currentParticle.lastMomentIndex = m-1;
             f->profile[m][pos].countEquiv += currentParticle.oriRatio;
         }
     } else if (f->sh.profileType == PROFILE_U || f->sh.profileType == PROFILE_V) {
@@ -1395,8 +1395,8 @@ void Simulation::ProfileFacet(SubprocessFacet *f, double time, bool countHit, do
                     currentParticle.oriRatio * velocity_factor / ortVelocity;
             f->profile[0][pos].sum_v_ort += currentParticle.oriRatio * ortSpeedFactor *
                                             (wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity;
-            if(m >= 0) {
-                currentParticle.lastMomentIndex = m;
+            if(m > 0) {
+                currentParticle.lastMomentIndex = m-1;
                 if (countHit) f->profile[m][pos].countEquiv += currentParticle.oriRatio;
                 double ortVelocity = currentParticle.velocity *
                                      std::abs(Dot(f->sh.N, currentParticle.direction));
@@ -1420,8 +1420,8 @@ void Simulation::ProfileFacet(SubprocessFacet *f, double time, bool countHit, do
                               (double) PROFILE_SIZE); //"dot" default value is 1.0
         if (pos >= 0 && pos < PROFILE_SIZE) {
             f->profile[0][pos].countEquiv += currentParticle.oriRatio;
-            if (m >= 0) {
-                currentParticle.lastMomentIndex = m;
+            if (m > 0) {
+                currentParticle.lastMomentIndex = m-1;
                 f->profile[m][pos].countEquiv += currentParticle.oriRatio;
             }
         }
@@ -1574,8 +1574,8 @@ void Simulation::IncreaseFacetCounter(SubprocessFacet *f, double time, size_t hi
     f->tmpCounter[0].hit.sum_1_per_velocity += (hitEquiv + static_cast<double>(desorb)) / currentParticle.velocity;
 
     int m = -1;
-    if((m = LookupMomentIndex(time, moments, currentParticle.lastMomentIndex)) >= 0){
-        currentParticle.lastMomentIndex = m;
+    if((m = LookupMomentIndex(time, moments, currentParticle.lastMomentIndex)) > 0){
+        currentParticle.lastMomentIndex = m-1;
         f->tmpCounter[m].hit.nbMCHit += hit;
         double hitEquiv = static_cast<double>(hit) * currentParticle.oriRatio;
         f->tmpCounter[m].hit.nbHitEquiv += hitEquiv;

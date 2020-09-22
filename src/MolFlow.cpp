@@ -30,14 +30,15 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "NativeFileDialog/molflow_wrapper/nfd_wrapper.h"
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLWindowManager.h"
-#include "GLApp/MathTools.h"
+#include "Helper/MathTools.h"
+#include "Helper/StringHelper.h"
 #include "GLApp/GLMenuBar.h"
 #include "GLApp/GLButton.h"
 #include "GLApp/GLLabel.h"
 #include "GLApp/GLCombo.h"
 #include "GLApp/GLTextField.h"
 
-#include "GLApp/MathTools.h"
+#include "Helper/MathTools.h"
 #include "Interface/RecoveryDialog.h"
 #include <vector>
 #include <string>

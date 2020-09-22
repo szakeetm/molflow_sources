@@ -20,7 +20,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "MolflowGeometry.h"
 #include "MolFlow.h"
 #include "Facet_shared.h"
-#include "GLApp/MathTools.h"
+#include "Helper/MathTools.h"
 #include "ProfilePlotter.h"
 #include "versionId.h"
 #include <iomanip>
