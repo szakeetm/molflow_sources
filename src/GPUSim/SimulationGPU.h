@@ -18,7 +18,7 @@ public:
 
     int SanityCheckGeom() override;
     void ClearSimulation() override;
-    bool LoadSimulation(Dataport *loader) override;
+    bool LoadSimulation(Dataport *loader, char *loadStatus) override;
     bool UpdateOntheflySimuParams(Dataport *loader) override;
     int ReinitializeParticleLog() override;
 private:

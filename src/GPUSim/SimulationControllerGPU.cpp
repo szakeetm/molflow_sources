@@ -110,6 +110,7 @@ unsigned long long int SimulationControllerGPU::GetSimulationData(bool silent) {
     try {
         optixHandle->downloadDataFromDevice(&data); //download tmp counters
         IncreaseGlobalCounters(&data); //increase global counters
+
         if(printCounters) PrintTotalCounters();
         optixHandle->resetDeviceBuffers(); //reset tmp counters
 #ifdef WITHDESORPEXIT
@@ -643,6 +644,12 @@ int SimulationControllerGPU::CloseSimulation() {
 int SimulationControllerGPU::ResetSimulation(){
    if(optixHandle)
        optixHandle->resetDeviceData(kernelDimensions);
+
+    GLOB_COUNT::total_des = 0;
+    GLOB_COUNT::total_abs = 0;
+    GLOB_COUNT::total_counter = 0;
+    GLOB_COUNT::total_absd = 0.0;
+    this->Resize();
 
    return 0;
 }

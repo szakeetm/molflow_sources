@@ -27,12 +27,12 @@ void SimulationGPU::ClearSimulation() {
     gpuSim.CloseSimulation();
 }
 
-bool SimulationGPU::LoadSimulation(Dataport *loader) {
+bool SimulationGPU::LoadSimulation(Dataport *loader, char* loadStatus) {
     double t0 = GetTick();
-    //SetState(PROCESS_STARTING, "Clearing previous simulation");
+    strncpy(loadStatus, "Clearing previous simulation", 127);
     ClearSimulation();
 
-    //SetState(PROCESS_STARTING, "Loading simulation");
+    strncpy(loadStatus, "Loading simulation", 127);
 
     {
 
@@ -46,6 +46,7 @@ bool SimulationGPU::LoadSimulation(Dataport *loader) {
     }//inputarchive goes out of scope, file released
 
     // Initialise simulation
+    strncpy(loadStatus, "Loading model into device memory", 127);
 
     //TODO: Better sanity check for startup
     if(model->nbFacets_total>0)
@@ -123,6 +124,7 @@ void SimulationGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWOR
         //if(data.facetHitCounters[i].nbMCHit>0 || data.facetHitCounters[i].nbDesorbed> 0 || data.facetHitCounters[i].nbAbsEquiv>0)
         // facetCounterEveryFile << (i/this->model->nbFacets_total) << " " << (i%this->model->nbFacets_total)+1 << " " << data.facetHitCounters[i].nbMCHit << " " << data.facetHitCounters[i].nbDesorbed << " " << static_cast<unsigned int>(data.facetHitCounters[i].nbAbsEquiv) << std::endl;
     }
+    this->totalDesorbed = gHits->globalHits.hit.nbDesorbed;
 
     //Memorize current limits, then do a min/max search
     for (int i = 0; i < 3; i++) {
