@@ -323,7 +323,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                         }
                     }
 
-                    prg->SetMessage("Writing xml file...");
+                    prg->SetMessage("Writing xml file to disk...");
                     if (success) {
                         if (!saveDoc.save_file(fileNameWithXML.c_str()))
                             throw Error("Error writing XML file."); //successful save
@@ -809,7 +809,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
         try {
             if (ext == "zip") { //compressed in ZIP container
                 //decompress file
-                progressDlg->SetMessage("Decompressing file...");
+                progressDlg->SetMessage("Decompressing zip file...");
 
                 ZipArchive::Ptr zip = ZipFile::Open(fileName);
                 if (zip == nullptr) {
