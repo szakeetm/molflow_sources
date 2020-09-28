@@ -2555,16 +2555,21 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 * \param saveSelected saveSelected if a selection is to be saved (TODO: check if necessary)
 * \return bool if saving is successfull (always is here)
 */
-bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, GLProgress *prg, bool saveSelected) {
+bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, GLProgress *progressDlg, bool saveSelected) {
 	xml_node rootNode = saveDoc.child("SimulationEnvironment");
     xml_node resultNode = rootNode.append_child("MolflowResults");
-	prg->SetMessage("Writing simulation results...");
+	progressDlg->SetTitle("Saving simulation results...");
 	xml_node momentsNode = resultNode.append_child("Moments");
 	momentsNode.append_attribute("nb") = work->moments.size() + 1;
 	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
 	GlobalHitBuffer* gHits = (GlobalHitBuffer*)buffer;
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++) {
-		prg->SetProgress(0.5 + 0.5*(double)m / (1.0 + (double)mApp->worker.moments.size()));
+
+		std::ostringstream msg;
+		msg << "Saving moment " << (m + 1) << "/" << (mApp->worker.moments.size()+1) << "...";
+		progressDlg->SetMessage(msg.str(), false);
+		progressDlg->SetProgress(0.5 + 0.5*(double)m / (1.0 + (double)mApp->worker.moments.size()));
+		
 		xml_node newMoment = momentsNode.append_child("Moment");
 		newMoment.append_attribute("id") = m;
 		if (m == 0) {
@@ -3385,7 +3390,11 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, BYTE* buffer, Wo
 	size_t nbMoments = momentsNode.select_nodes("Moment").size(); //Contains constant flow!
 	size_t facetHitsSize = (nbMoments) * sizeof(FacetHitBuffer);
 	size_t m = 0;
+	progressDlg->SetTitle("Reading simulation results...");
 	for (xml_node newMoment : momentsNode.children("Moment")) {
+		std::ostringstream msg;
+		msg << "Loading moment " << (m + 1) << "/" << (mApp->worker.moments.size()+1) << "...";
+		progressDlg->SetMessage(msg.str(), false);
 		progressDlg->SetProgress((double)m / (double)nbMoments);
 		if (m == 0) { //read global results
 			xml_node globalNode = newMoment.child("Global");
