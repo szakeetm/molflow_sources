@@ -24,6 +24,7 @@ namespace GLOB_COUNT {
 SimulationControllerGPU::SimulationControllerGPU(){
     optixHandle = nullptr;
     model = nullptr;
+    hasEnded = false;
 }
 
 SimulationControllerGPU::~SimulationControllerGPU(){
@@ -130,6 +131,7 @@ unsigned long long int SimulationControllerGPU::GetSimulationData(bool silent) {
                 if(!endCalled) optixHandle->askForExit(&data);
                 if(nbExit >= this->kernelDimensions.x*this->kernelDimensions.y){
                     std::cout << " READY TO EXIT! "<< std::endl;
+                    hasEnded = true;
                 }
             }
         }
@@ -649,7 +651,10 @@ int SimulationControllerGPU::ResetSimulation(){
     GLOB_COUNT::total_abs = 0;
     GLOB_COUNT::total_counter = 0;
     GLOB_COUNT::total_absd = 0.0;
-    this->Resize();
+    hasEnded = false;
+
+    if(!data.hitData.empty()) // only resize if already initialized once
+        this->Resize();
 
    return 0;
 }

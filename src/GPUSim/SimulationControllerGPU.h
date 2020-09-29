@@ -38,6 +38,8 @@ public:
     void PrintTotalCounters();
     void WriteDataToFile(std::string fileName);
     GlobalCounter* GetGlobalCounter() ;
+
+    bool hasEnded;
 };
 
 

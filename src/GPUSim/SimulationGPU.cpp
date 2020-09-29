@@ -6,7 +6,11 @@
 #include "SimulationGPU.h"
 #include "ModelReader.h" // TempFacet
 
-#define LAUNCHSIZE 1920*64*32//1024*64*16//1024*128*64
+#if defined(NDEBUG)
+#define LAUNCHSIZE 1920*64*4//1024*64*16//1024*128*64
+#elif defined(DEBUG)
+#define LAUNCHSIZE 1920*1*1//1024*64*16//1024*128*64
+#endif
 
 SimulationGPU::SimulationGPU()
         : SimulationUnit() {
@@ -301,7 +305,7 @@ bool SimulationGPU::SimulationMCStep(size_t nbStep){
     //currentDes += nbStep * LAUNCHSIZE;
     bool goOn = this->model->ontheflyParams.desorptionLimit > currentDes;
 #ifdef WITHDESORPEXIT
-    goOn = true;
+    goOn = !gpuSim.hasEnded;
 #endif
     if(this->model->ontheflyParams.desorptionLimit == 0)
         goOn = true;

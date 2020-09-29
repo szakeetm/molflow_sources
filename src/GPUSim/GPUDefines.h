@@ -33,5 +33,10 @@ using RN_T = double;
 using RN_T = float;
 #endif
 
+#ifdef HIT64
+using FLOAT_T = double;
+#else
+using FLOAT_T = float;
+#endif
 
 #endif //MOLFLOW_PROJ_GPUDEFINES_H

@@ -593,8 +593,8 @@ namespace flowgpu {
         state.pipelineCompileOptions = {};
         state.pipelineCompileOptions.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
         state.pipelineCompileOptions.usesMotionBlur     = false;
-        state.pipelineCompileOptions.numPayloadValues   = 7; // values that get send as PerRayData
-        state.pipelineCompileOptions.numAttributeValues = 7; // ret values e.g. by optixReportIntersection
+        state.pipelineCompileOptions.numPayloadValues   = 8; // values that get send as PerRayData
+        state.pipelineCompileOptions.numAttributeValues = 8; // ret values e.g. by optixReportIntersection
         state.pipelineCompileOptions.exceptionFlags     = OPTIX_EXCEPTION_FLAG_NONE;
         state.pipelineCompileOptions.pipelineLaunchParamsVariableName = "optixLaunchParams";
         state.pipelineCompileOptions.usesPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE;
@@ -993,6 +993,7 @@ namespace flowgpu {
 
         facet_memory.hitCounterBuffer.upload(hitCounter,nbHCBins*state.launchParams.simConstants.nbFacets);
         facet_memory.missCounterBuffer.upload(missCounter,1);
+
         std::cout << "nbTextures "<<model->facetTex.size() << std::endl;
         std::cout << "nbTexels "<<model->textures.size() << std::endl;
         std::cout << "nbTexInc "<<model->texInc.size() << std::endl;
@@ -1193,6 +1194,7 @@ namespace flowgpu {
         facet_memory.hitCounterBuffer.resize(model->nbFacets_total * CORESPERSM * WARPSCHEDULERS * sizeof(CuFacetHitCounter));
         facet_memory.missCounterBuffer.resize(sizeof(uint32_t));
         //facet_memory.textureBuffer.resize(model->textures.size() * sizeof(TextureCell));
+
 // Texture
         if(!model->textures.empty()){
             facet_memory.textureBuffer.alloc_and_upload(model->facetTex);
@@ -1355,6 +1357,7 @@ namespace flowgpu {
         //sim_memory.moleculeBuffer.download(hit, state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y);
         facet_memory.hitCounterBuffer.initDeviceData(model->nbFacets_total * CORESPERSM * WARPSCHEDULERS * sizeof(flowgpu::CuFacetHitCounter));
         facet_memory.missCounterBuffer.initDeviceData(sizeof(uint32_t));
+
         if(!facet_memory.texelBuffer.isNullptr())
             facet_memory.texelBuffer.initDeviceData(model->textures.size() * sizeof(flowgpu::Texel));
         if(!facet_memory.profileBuffer.isNullptr())
@@ -1421,6 +1424,7 @@ namespace flowgpu {
 
         facet_memory.hitCounterBuffer.free();
         facet_memory.missCounterBuffer.free();
+
         if(!facet_memory.textureBuffer.isNullptr())
             facet_memory.textureBuffer.free();
         if(!facet_memory.texelBuffer.isNullptr())

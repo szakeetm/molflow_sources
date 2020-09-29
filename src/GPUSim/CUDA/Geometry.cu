@@ -1,6 +1,7 @@
 // Created by pbahr
 
 #include <optix_device.h>
+#include "PerRayData.h"
 #include "LaunchParams.h"
 #include "GPUDefines.h" // for NB_RAND
 #include "jetbrains_indexing.h"
@@ -64,21 +65,23 @@ namespace flowgpu {
     static __device__ __inline__ MolPRD getMolPRD()
     {
         MolPRD prd;
-        prd.velocity = int_as_float( optixGetPayload_0() );
-        prd.currentDepth = optixGetPayload_1();
-        prd.inSystem = optixGetPayload_2();
-        prd.hitFacetId = optixGetPayload_3();
-        prd.hitT = int_as_float( optixGetPayload_4() );
+        prd.currentDepth = optixGetPayload_0();
+        prd.inSystem = optixGetPayload_1();
+        prd.hitFacetId = optixGetPayload_2();
+        prd.hitT = int_as_float( optixGetPayload_3() );
+        prd.velocity = int_as_float( optixGetPayload_4() );
+
         return prd;
     }
 
     static __device__ __inline__ void setMolPRD( const MolPRD &prd )
     {
-        optixSetPayload_0( float_as_int(prd.velocity) );
-        optixSetPayload_1( prd.currentDepth );
-        optixSetPayload_2( prd.inSystem );
-        optixSetPayload_3( prd.hitFacetId );
-        optixSetPayload_4( float_as_int(prd.hitT) );
+        optixSetPayload_0( prd.currentDepth );
+        optixSetPayload_1( prd.inSystem );
+        optixSetPayload_2( prd.hitFacetId );
+        optixSetPayload_3( float_as_int(prd.hitT) );
+        optixSetPayload_4( float_as_int(prd.velocity) );
+
     }
 
     //------------------------------------------------------------------------------

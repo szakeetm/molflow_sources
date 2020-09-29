@@ -9,12 +9,46 @@
 #include <math_constants.h>
 #include "cuda_runtime.h"
 #include "helper_math.h"
-
 #include "LaunchParams.h"
 #include "GPUDefines.h"
 
 #include <cooperative_groups.h>
+
+#define EPS32 1e-6f
+
+#define DET33(_11,_12,_13,_21,_22,_23,_31,_32,_33)  \
+  ((_11)*( (_22)*(_33) - (_32)*(_23) ) +            \
+   (_12)*( (_23)*(_31) - (_33)*(_21) ) +            \
+   (_13)*( (_21)*(_32) - (_31)*(_22) ))
+
+#define DOT(v1, v2)  \
+  ((v1.x)*(v2.x) + (v1.y)*(v2.y) + (v1.z)*(v2.z))
+
+#define CROSS(a, b)   \
+  (a.y*b.z - a.z*b.y, a.z*b.x - a.x*b.z, a.x*b.y - a.y*b.x)
+
+#define float3_as_args(u) \
+    reinterpret_cast<uint32_t&>((u).x), \
+    reinterpret_cast<uint32_t&>((u).y), \
+    reinterpret_cast<uint32_t&>((u).z)
+
 namespace cg = cooperative_groups;
+
+static __forceinline__ __device__
+void *unpackPointer( unsigned int i0, unsigned int i1 )
+{
+    const uint64_t uptr = static_cast<uint64_t>( i0 ) << 32 | i1;
+    void*           ptr = reinterpret_cast<void*>( uptr );
+    return ptr;
+}
+
+static __forceinline__ __device__
+void  packPointer( void* ptr, unsigned int& i0, unsigned int& i1 )
+{
+    const uint64_t uptr = reinterpret_cast<uint64_t>( ptr );
+    i0 = uptr >> 32;
+    i1 = uptr & 0x00000000ffffffff;
+}
 
 constexpr __device__ float origin()      { return 1.0f / 32.0f; }
 constexpr __device__ float float_scale() { return 1.0f / 65536.0f; }
@@ -106,9 +140,9 @@ float atomicAggInc(float *ptr, float incVal)
 
 //TODO: Only non maxwell for now
 static __forceinline__ __device__
-float getNewVelocity(const flowgpu::Polygon& poly, const float& gasMass)
+FLOAT_T getNewVelocity(const flowgpu::Polygon& poly, const float& gasMass)
 {
-    return 145.469*sqrt(poly.facProps.temperature / gasMass);
+    return 145.469*sqrt((double)poly.facProps.temperature / gasMass);
 }
 
 //TODO: Only cosine for now
@@ -136,7 +170,7 @@ float3 getNewDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& poly,
     }
     else{
         printf("Unsupported desorption type! %u on %d\n", poly.desProps.desorbType, poly.parentIndex);
-        return;
+        return make_float3(0.0f);
     }
     const float phi = randFloat[(unsigned int)(randInd + randOffset++)] * 2.0f * CUDART_PI_F;
 
@@ -184,7 +218,7 @@ float3 getNewDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& poly,
         }
 #endif*/
 
-    float theta = 0.0f;
+    FLOAT_T theta = 0.0f;
     if(poly.desProps.desorbType == 2 || poly.desProps.desorbType == 0) {
         theta = acos(sqrt(randFloat[(unsigned int) (randInd + randOffset++)]));
     }
@@ -196,13 +230,13 @@ float3 getNewDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& poly,
     }
     else{
         printf("Unsupported desorption type! %u on %d\n", poly.desProps.desorbType, poly.parentIndex);
-        return;
+        return make_float3(0.0f);
     }
-    const float phi = randFloat[(unsigned int)(randInd + randOffset++)] * 2.0 * CUDART_PI_F;
+    const FLOAT_T phi = randFloat[(unsigned int)(randInd + randOffset++)] * 2.0 * CUDART_PI;
 
-    const float u = sinf(theta)*cosf(phi);
-    const float v = sinf(theta)*sinf(phi);
-    const float n = cosf(theta);
+    const float u = sin(theta)*cos(phi);
+    const float v = sin(theta)*sin(phi);
+    const float n = cos(theta);
 
     /*float3 nU = rayGenData->poly[facIndex].nU;
     float3 nV = rayGenData->poly[facIndex].nV;
@@ -269,7 +303,7 @@ float3 getNewReverseDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& 
 {
 
     // generate ray direction
-    float theta = 0.0f;
+    FLOAT_T theta = 0.0;
     if(poly.desProps.desorbType == 2 || poly.desProps.desorbType == 0) {
         theta = acos(sqrt(randFloat[(unsigned int) (randInd + randOffset++)]));
     }
@@ -283,12 +317,12 @@ float3 getNewReverseDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& 
         printf("Unsupported desorption type! %u on %d\n", poly.desProps.desorbType, poly.parentIndex);
         return make_float3(0.0f);
     }
-    const float phi = randFloat[(unsigned int)(randInd + randOffset++)] * 2.0 * CUDART_PI_F;
+    const FLOAT_T phi = randFloat[(unsigned int)(randInd + randOffset++)] * 2.0 * CUDART_PI;
 
 
-    const float u = sinf(theta)*cosf(phi);
-    const float v = sinf(theta)*sinf(phi);
-    const float n = cosf(theta);
+    const float u = sin(theta)*cos(phi);
+    const float v = sin(theta)*sin(phi);
+    const float n = cos(theta);
 
     const float3 nU = poly.nU;
     const float3 nV = poly.nV;
@@ -297,4 +331,31 @@ float3 getNewReverseDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& 
 
     return u*nU + v*nV - n*N;
 }
+
+static __forceinline__ __device__
+float2 getHitLocation(const flowgpu::Polygon& poly, const float3& rayOrigin)
+{
+    const float3 b = rayOrigin - poly.O;
+
+    float det = poly.U.x * poly.V.y - poly.U.y * poly.V.x; // TODO: Pre calculate
+    float detU = b.x * poly.V.y - b.y * poly.V.x;
+    float detV = poly.U.x * b.y - poly.U.y * b.x;
+
+    if(fabsf(det)<=EPS32){
+        det = poly.U.y * poly.V.z - poly.U.z * poly.V.y; // TODO: Pre calculate
+        detU = b.y * poly.V.z - b.z * poly.V.y;
+        detV = poly.U.y * b.z - poly.U.z * b.y;
+        if(fabsf(det)<=EPS32){
+            det = poly.U.z * poly.V.x - poly.U.x * poly.V.z; // TODO: Pre calculate
+            detU = b.z * poly.V.x - b.x * poly.V.z;
+            detV = poly.U.z * b.x - poly.U.x * b.z;
+            if(fabsf(det)<=EPS32){
+                printf("[HitLoc] Dangerous determinant calculated: %lf : %lf : %lf -> %lf : %lf\n",det,detU,detV,detU/det,detV/det);
+            }
+        }
+    }
+
+    return make_float2(detU/det, detV/det); //hitLocationU , hitLocationV
+}
+
 #endif //MOLFLOW_PROJ_COMMONFUNCTIONS_CUH

@@ -19,6 +19,7 @@
 #include "optix7.h"
 #include "OptixPolygon.h"
 #include "GPUDefines.h"
+#include "PerRayData.h"
 
 #ifdef DEBUGCOUNT
 #define NCOUNTBINS 100
@@ -105,30 +106,6 @@ namespace flowgpu {
         SELF_BACK_HIT,
         TRANSPARENT_BACK_HIT,
         END_STATUS
-    };
-    // attributes of the molecule that have effects for tracing or post processing
-    struct MolPRD
-    {
-        // molecule data
-        float velocity;
-        int currentDepth;
-#ifdef GPUNBOUNCE
-        uint32_t nbBounces; //TODO: Check if info is needed
-#endif
-        float orientationRatio; // for low flux mode
-
-        // post hit data
-        float hitT; // distance in molecule path
-        float3 hitPos;
-        float3 postHitDir;
-        int   hitFacetId;
-
-        int inSystem;
-        int facetHitSide;
-        // flags - post launch processing TODO: convert all into one uint32_t ?
-#ifdef WITHDESORPEXIT
-        int hasToTerminate;
-#endif
     };
 
     // Globalhitbuffer

@@ -52,6 +52,7 @@ struct GlobalCounter {
     //std::vector<MolPRD> hitData;
     std::vector<flowgpu::CuFacetHitCounter64> facetHitCounters;
     std::vector<uint64_t> leakCounter;
+
     std::map<uint32_t,std::vector<Texel64>> textures;
     std::map<uint32_t,std::vector<Texel64>> profiles;
 
