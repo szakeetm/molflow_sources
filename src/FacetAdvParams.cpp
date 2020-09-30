@@ -1650,6 +1650,7 @@ void FacetAdvParams::UpdateSquaredCells(int aspectState) {
         lengthText->SetBounds(x, y, 36, 18);
     }
 
+    auto enableState = enableBtn->GetState();
     auto sel = geom->GetSelectedFacets();
     if(!sel.empty()) {
         resolutionText2->SetEditable(!aspectState);
@@ -1659,8 +1660,8 @@ void FacetAdvParams::UpdateSquaredCells(int aspectState) {
         cellsU->SetEditable(false);
         cellsV->SetEditable(false);
         // non mixed, squared are editable, mixed state is not
-        lengthText->SetEditable(aspectState<2);
-        resolutionText->SetEditable(aspectState<2);
+        lengthText->SetEditable(aspectState<2 && enableState<2);
+        resolutionText->SetEditable(aspectState<2 && enableState<2);
     }
     else if(sel.size()==1){
         cellsU->SetEditable(true);
@@ -1689,8 +1690,10 @@ void FacetAdvParams::UpdateToggle(GLComponent *src) {
 		} else if(src==enableBtn) {
 		//boundaryBtn->SetState(enableBtn->GetState());
 		} else */
-
-    if (src == aspectRatioBtn) {
+    if(src == enableBtn) {
+        UpdateSquaredCells(aspectRatioBtn->GetState());
+    }
+    else if (src == aspectRatioBtn) {
         auto aspectState = aspectRatioBtn->GetState();
         UpdateSquaredCells(aspectState);
     }
