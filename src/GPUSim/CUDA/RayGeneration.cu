@@ -404,7 +404,7 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
         const unsigned int tu = (unsigned int)(__saturatef(hitLocation.x) * facetTex.texWidthD); // saturate for rounding errors that can result for values larger than 1.0
         const unsigned int tv = (unsigned int)(__saturatef(hitLocation.y) * facetTex.texHeightD);
         unsigned int add = tu + tv * (facetTex.texWidth);
-        //printf("Hit at %lf , %lf for tex %lf , %lf\n", hitLocationU, hitLocationV, facetTex.texWidthD, facetTex.texHeightD);
+        //printf("Hit at %lf , %lf for tex %lf , %lf\n", hitLocation.x, hitLocation.y, facetTex.texWidthD, facetTex.texHeightD);
 
 #ifdef BOUND_CHECK
         if(facetTex.texelOffset + add < 0 || facetTex.texelOffset + add >= optixLaunchParams.simConstants.nbTexel){printf("facetTex.texelOffset + add %u >= %u is out of bounds\n", facetTex.texelOffset + add, optixLaunchParams.simConstants.nbTexel);}
@@ -546,8 +546,8 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
 
     //const __device__ float offset_val = 1.0f/64.0f;
     //const __device__ float offset_val_n = -1.0f/64.0f;
-    const __device__ float offset_val = 32.0f/1.0f;
-const __device__ float offset_val_n = -32.0f/1.0f;
+    const __device__ float offset_val = 64.0f/1.0f;
+    const __device__ float offset_val_n = -64.0f/1.0f;
     //------------------------------------------------------------------------------
     // ray gen program - the actual rendering happens in here
     //------------------------------------------------------------------------------
