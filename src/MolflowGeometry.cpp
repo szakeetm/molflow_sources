@@ -3803,7 +3803,8 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, BYTE* buffer, Wo
 * \param progressDlg GLProgress window where visualising of the load progress is shown
 * \return bool showing if loading was successful
 */
-bool Geometry::CompareXML_simustate(const std::string &fileName_lhs, const std::string &fileName_rhs, double cmpThreshold) {
+bool Geometry::CompareXML_simustate(const std::string &fileName_lhs, const std::string &fileName_rhs,
+                                    const std::string &fileName_out, double cmpThreshold) {
 
     // init lhs
     xml_document loadXML;
@@ -3856,7 +3857,7 @@ bool Geometry::CompareXML_simustate(const std::string &fileName_lhs, const std::
     xml_node rhsResults = rootNode_rhs.child("MolflowResults");
     xml_node rhsMoments = rhsResults.child("Moments");
 
-    std::ofstream cmpFile("myCmp.txt");
+    std::ofstream cmpFile(fileName_out);
     // Sanity check for moments
     size_t nbMoments = momentsNode.select_nodes("Moment").size(); //Contains constant flow!
     if(nbMoments != rhsMoments.select_nodes("Moment").size()){
@@ -4089,6 +4090,8 @@ bool Geometry::CompareXML_simustate(const std::string &fileName_lhs, const std::
                 double scale_rhs = 1.0;
                 double fullScale = 1.0;
                 double fullScale_rhs = 1.0;
+                double sumHitDes =  1.0;
+                double sumHitDes_rhs =  1.0;
 
                 if (facetHitNode && facetHitNode_rhs) { //If there are hit results for the current moment
 
@@ -4144,14 +4147,29 @@ bool Geometry::CompareXML_simustate(const std::string &fileName_lhs, const std::
                                                               facetCounter_rhs.hit.sum_1_per_ort_velocity;
                     }
 
-                    
+
                     //cmp
                     scale = 1.0 / lhsGlobHit.globalHits.hit.nbDesorbed; // getmolpertp
                     scale_rhs = 1.0 / rhsGlobHit.globalHits.hit.nbDesorbed;
-                    fullScale =  1.0 - (facetCounter.hit.nbAbsEquiv + (double)facetCounter.hit.nbDesorbed) / (facetCounter.hit.nbHitEquiv + (double)facetCounter.hit.nbDesorbed) / 2.0;
-                    fullScale_rhs =  1.0 - (facetCounter_rhs.hit.nbAbsEquiv + (double)facetCounter_rhs.hit.nbDesorbed) / (facetCounter_rhs.hit.nbHitEquiv + (double)facetCounter_rhs.hit.nbDesorbed) / 2.0;
+                    fullScale = 1.0;
+                    if (facetCounter.hit.nbMCHit > 0 || facetCounter.hit.nbDesorbed > 0) {
+                        if (facetCounter.hit.nbAbsEquiv > 0.0 || facetCounter.hit.nbDesorbed > 0) {//otherwise save calculation time
+                            fullScale = 1.0 - (facetCounter.hit.nbAbsEquiv + (double)facetCounter.hit.nbDesorbed) / (facetCounter.hit.nbHitEquiv + (double)facetCounter.hit.nbDesorbed) / 2.0;
+                        }
+                    }
+
+                    fullScale_rhs = 1.0;
+                    if (facetCounter_rhs.hit.nbMCHit > 0 || facetCounter_rhs.hit.nbDesorbed > 0) {
+                        if (facetCounter_rhs.hit.nbAbsEquiv > 0.0 || facetCounter_rhs.hit.nbDesorbed > 0) {//otherwise save calculation time
+                            fullScale_rhs = 1.0 - (facetCounter_rhs.hit.nbAbsEquiv + (double)facetCounter_rhs.hit.nbDesorbed) / (facetCounter_rhs.hit.nbHitEquiv + (double)facetCounter_rhs.hit.nbDesorbed) / 2.0;
+                        }
+                    }
+
                     fullScale *= scale;
                     fullScale_rhs *= scale_rhs;
+
+                    sumHitDes = facetCounter.hit.nbHitEquiv + static_cast<double>(facetCounter.hit.nbDesorbed);
+                    sumHitDes_rhs = facetCounter_rhs.hit.nbHitEquiv + static_cast<double>(facetCounter_rhs.hit.nbDesorbed);
 
                     {
                         double absRatio = facetCounter.hit.nbAbsEquiv / facetCounter.hit.nbMCHit;
@@ -4172,11 +4190,11 @@ bool Geometry::CompareXML_simustate(const std::string &fileName_lhs, const std::
                     if (!IsEqual(facetCounter.hit.sum_v_ort * scale, facetCounter_rhs.hit.sum_v_ort * scale_rhs, cmpThreshold)) {
                         cmpFile << "[Facet]["<<facetId<<"][sum_v_ort] has large difference: "<<std::abs(facetCounter.hit.sum_v_ort * scale - facetCounter_rhs.hit.sum_v_ort * scale_rhs)<<std::endl;
                     }
-                    if (!IsEqual(facetCounter.hit.sum_1_per_velocity * scale, facetCounter_rhs.hit.sum_1_per_velocity* scale_rhs, cmpThreshold)) {
-                        cmpFile << "[Facet]["<<facetId<<"][sum_1_per_velocity] has large difference: "<<std::abs(facetCounter.hit.sum_1_per_velocity * scale - facetCounter_rhs.hit.sum_1_per_velocity * scale_rhs)<<std::endl;
+                    if (!IsEqual(sumHitDes / facetCounter.hit.sum_1_per_velocity, sumHitDes_rhs / facetCounter_rhs.hit.sum_1_per_velocity, cmpThreshold)) {
+                        cmpFile << "[Facet]["<<facetId<<"][sum_1_per_velocity] has large difference: "<<std::abs(sumHitDes / facetCounter.hit.sum_1_per_velocity - sumHitDes_rhs / facetCounter_rhs.hit.sum_1_per_velocity)<< " ===> " << std::abs(sumHitDes / facetCounter.hit.sum_1_per_velocity - sumHitDes_rhs / facetCounter_rhs.hit.sum_1_per_velocity)/(sumHitDes / facetCounter.hit.sum_1_per_velocity) <<std::endl;
                     }
-                    if (!IsEqual(facetCounter.hit.sum_1_per_ort_velocity * scale, facetCounter_rhs.hit.sum_1_per_ort_velocity* scale_rhs, cmpThreshold)) {
-                        cmpFile << "[Facet]["<<facetId<<"][sum_1_per_ort_velocity] has large difference: "<<std::abs(facetCounter.hit.sum_1_per_ort_velocity * scale - facetCounter_rhs.hit.sum_1_per_ort_velocity * scale_rhs)<<std::endl;
+                    if (!IsEqual(facetCounter.hit.sum_1_per_ort_velocity * fullScale, facetCounter_rhs.hit.sum_1_per_ort_velocity* fullScale_rhs, cmpThreshold)) {
+                        cmpFile << "[Facet]["<<facetId<<"][sum_1_per_ort_velocity] has large difference: "<<std::abs(facetCounter.hit.sum_1_per_ort_velocity * fullScale - facetCounter_rhs.hit.sum_1_per_ort_velocity * fullScale_rhs)<< " ===> " << std::abs(facetCounter.hit.sum_1_per_ort_velocity * fullScale - facetCounter_rhs.hit.sum_1_per_ort_velocity * fullScale_rhs)/(facetCounter.hit.sum_1_per_ort_velocity * fullScale) << std::endl;
                     }
                 }
 
@@ -4218,16 +4236,16 @@ bool Geometry::CompareXML_simustate(const std::string &fileName_lhs, const std::
                     //cmp
 
                     for (id = 0; id < profile.size(); ++id) {
-                        if(!IsEqual(profile[id].countEquiv * scale,profile_rhs[id].countEquiv * scale_rhs, cmpThreshold)){
-                            cmpFile << "[Facet]["<<facetId<<"][Profile][Ind="<<id<<"][countEquiv] has large difference: "<<std::abs(profile[id].countEquiv * scale - profile_rhs[id].countEquiv * scale_rhs)/(profile[id].countEquiv * scale)<<std::endl;
+                        if(!IsEqual(profile[id].countEquiv / sumHitDes,profile_rhs[id].countEquiv / sumHitDes_rhs, cmpThreshold)){
+                            cmpFile << "[Facet]["<<facetId<<"][Profile][Ind="<<id<<"][countEquiv] has large difference: "<<std::abs(profile[id].countEquiv / sumHitDes - profile_rhs[id].countEquiv / sumHitDes_rhs)/(profile[id].countEquiv / sumHitDes)<< " : " << std::abs(profile[id].countEquiv / sumHitDes) << " - " << (profile_rhs[id].countEquiv / sumHitDes_rhs) << std::endl;
                         }
                     }
                     for (id = 0; id < profile.size(); ++id) {
-                        if(!IsEqual(profile[id].sum_1_per_ort_velocity * fullScale,profile_rhs[id].sum_1_per_ort_velocity * fullScale_rhs, cmpThreshold)){
-                            cmpFile << "[Facet]["<<facetId<<"][Profile][Ind="<<id<<"][sum_1_per_ort_velocity] has large difference: "<<std::abs(profile[id].sum_1_per_ort_velocity * fullScale - profile_rhs[id].sum_1_per_ort_velocity * fullScale_rhs) / (profile[id].sum_1_per_ort_velocity * fullScale)<<std::endl;
+                        if(!IsEqual(profile[id].sum_1_per_ort_velocity * scale,profile_rhs[id].sum_1_per_ort_velocity * scale_rhs, cmpThreshold)){
+                            cmpFile << "[Facet]["<<facetId<<"][Profile][Ind="<<id<<"][sum_1_per_ort_velocity] has large difference: "<<std::abs(profile[id].sum_1_per_ort_velocity * scale - profile_rhs[id].sum_1_per_ort_velocity * scale_rhs) / (profile[id].sum_1_per_ort_velocity * scale)<<std::endl;
                         }
                     }
-                    for (id = 0; id < profile.size(); ++id) {
+                    for (id = 0; id < profile.size(); ++id) { // export_profiles PROFILE_U/V
                         if(!IsEqual(profile[id].sum_v_ort * scale,profile_rhs[id].sum_v_ort * scale_rhs, cmpThreshold)){
                             cmpFile << "[Facet]["<<facetId<<"][Profile][Ind="<<id<<"][sum_v_ort] has large difference: "<<std::abs(profile[id].sum_v_ort * scale - profile_rhs[id].sum_v_ort * scale_rhs) / (profile[id].sum_v_ort * scale)<<std::endl;
                         }
@@ -4296,14 +4314,14 @@ bool Geometry::CompareXML_simustate(const std::string &fileName_lhs, const std::
 
                         for (iy = 0; iy < texHeight_file; iy++) { //MIN: If stored texture is larger, don't read extra cells
                             for (ix = 0; ix < texWidth_file; ix++) { //MIN: If stored texture is larger, don't read extra cells
-                                if(!IsEqual(texture[iy * texWidth_file + ix].countEquiv * scale ,texture_rhs[iy * texWidth_file + ix].countEquiv * scale_rhs, cmpThreshold)){
-                                    cmpFile << "[Facet]["<<facetId<<"][Texture]["<<ix<<","<<iy<<"][countEquiv] has large difference: "<<std::abs(texture[iy * texWidth_file + ix].countEquiv * scale - texture_rhs[iy * texWidth_file + ix].countEquiv * scale_rhs) / (texture[iy * texWidth_file + ix].countEquiv  * scale)<<std::endl;
+                                if(!IsEqual(texture[iy * texWidth_file + ix].countEquiv / sumHitDes ,texture_rhs[iy * texWidth_file + ix].countEquiv/ sumHitDes_rhs, cmpThreshold)){
+                                    cmpFile << "[Facet]["<<facetId<<"][Texture]["<<ix<<","<<iy<<"][countEquiv] has large rel difference: "<<std::abs(texture[iy * texWidth_file + ix].countEquiv/ sumHitDes - texture_rhs[iy * texWidth_file + ix].countEquiv/ sumHitDes_rhs) / (texture[iy * texWidth_file + ix].countEquiv / sumHitDes)<< " : " << std::abs(texture[iy * texWidth_file + ix].countEquiv / sumHitDes) << " - " << (texture_rhs[iy * texWidth_file + ix].countEquiv / sumHitDes_rhs) <<std::endl;
                                 }
                                 if(!IsEqual(texture[iy * texWidth_file + ix].sum_1_per_ort_velocity * fullScale,texture_rhs[iy * texWidth_file + ix].sum_1_per_ort_velocity * fullScale_rhs, cmpThreshold)){
-                                    cmpFile << "[Facet]["<<facetId<<"][Texture]["<<ix<<","<<iy<<"][sum_1_per_ort_velocity] has large difference: "<<std::abs(texture[iy * texWidth_file + ix].sum_1_per_ort_velocity  * fullScale - texture_rhs[iy * texWidth_file + ix].sum_1_per_ort_velocity * fullScale_rhs) / (texture[iy * texWidth_file + ix].sum_1_per_ort_velocity  * fullScale)<<std::endl;
+                                    cmpFile << "[Facet]["<<facetId<<"][Texture]["<<ix<<","<<iy<<"][sum_1_per_ort_velocity] has large rel difference: "<<std::abs(texture[iy * texWidth_file + ix].sum_1_per_ort_velocity  * fullScale - texture_rhs[iy * texWidth_file + ix].sum_1_per_ort_velocity * fullScale_rhs) / (texture[iy * texWidth_file + ix].sum_1_per_ort_velocity  * fullScale)<<std::endl;
                                 }
                                 if(!IsEqual(texture[iy * texWidth_file + ix].sum_v_ort_per_area * scale,texture_rhs[iy * texWidth_file + ix].sum_v_ort_per_area * scale_rhs, cmpThreshold)){
-                                    cmpFile << "[Facet]["<<facetId<<"][Texture]["<<ix<<","<<iy<<"][sum_v_ort_per_area] has large difference: "<<std::abs(texture[iy * texWidth_file + ix].sum_v_ort_per_area  * scale - texture_rhs[iy * texWidth_file + ix].sum_v_ort_per_area * scale_rhs) / (texture[iy * texWidth_file + ix].sum_v_ort_per_area  * scale)<<std::endl;
+                                    cmpFile << "[Facet]["<<facetId<<"][Texture]["<<ix<<","<<iy<<"][sum_v_ort_per_area] has large rel difference: "<<std::abs(texture[iy * texWidth_file + ix].sum_v_ort_per_area  * scale - texture_rhs[iy * texWidth_file + ix].sum_v_ort_per_area * scale_rhs) / (texture[iy * texWidth_file + ix].sum_v_ort_per_area  * scale)<<std::endl;
                                 }
                             }
                         } // end for comp texture
