@@ -168,12 +168,6 @@ bool Simulation::UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWOR
                         TextureCell *shTexture = (TextureCell *) (buffer + (f.sh.hitOffset + facetHitsSize +
                                                                             f.profileSize * (1 + nbMoments) +
                                                                             m * f.textureSize));
-                        //double dCoef = gHits->globalHits.hit.nbDesorbed * 1E4 * wp.gasMass / 1000 / 6E23 * MAGIC_CORRECTION_FACTOR;  //1E4 is conversion from m2 to cm2
-                        double timeCorrection =
-                                m == 0 ? wp.finalOutgassingRate : (wp.totalDesorbedMolecules) /
-                                                                    moments[m-1].second;
-                                                                           //wp.timeWindowSize;
-                        //Timecorrection is required to compare constant flow texture values with moment values (for autoscaling)
 
                         for (y = 0; y < f.sh.texHeight; y++) {
                             for (x = 0; x < f.sh.texWidth; x++) {
@@ -181,34 +175,6 @@ bool Simulation::UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWOR
 
                                 //Add temporary hit counts
                                 shTexture[add] += f.texture[m][add];
-
-                                double val[3];  //pre-calculated autoscaling values (Pressure, imp.rate, density)
-
-                                val[0] = shTexture[add].sum_v_ort_per_area *
-                                         timeCorrection; //pressure without dCoef_pressure
-                                val[1] = shTexture[add].countEquiv * f.textureCellIncrements[add] *
-                                         timeCorrection; //imp.rate without dCoef
-                                val[2] = f.textureCellIncrements[add] * shTexture[add].sum_1_per_ort_velocity *
-                                         timeCorrection; //particle density without dCoef
-
-                                //Global autoscale
-                                for (int v = 0; v < 3; v++) {
-                                    if (val[v] > gHits->texture_limits[v].max.all && f.largeEnough[add])
-                                        gHits->texture_limits[v].max.all = val[v];
-
-                                    if (val[v] > 0.0 && val[v] < gHits->texture_limits[v].min.all && f.largeEnough[add])
-                                        gHits->texture_limits[v].min.all = val[v];
-
-                                    //Autoscale ignoring constant flow (moments only)
-                                    if (m != 0) {
-                                        if (val[v] > gHits->texture_limits[v].max.moments_only && f.largeEnough[add])
-                                            gHits->texture_limits[v].max.moments_only = val[v];
-
-                                        if (val[v] > 0.0 && val[v] < gHits->texture_limits[v].min.moments_only &&
-                                            f.largeEnough[add])
-                                            gHits->texture_limits[v].min.moments_only = val[v];
-                                    }
-                                }
                             }
                         }
                     }
@@ -282,16 +248,67 @@ bool Simulation::UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWOR
         } // End nbFacet
     } // End nbSuper
 
-    //if there were no textures:
-    for (int v = 0; v < 3; v++) {
-        if (gHits->texture_limits[v].min.all == HITMAX)
-            gHits->texture_limits[v].min.all = texture_limits_old[v].min.all;
-        if (gHits->texture_limits[v].min.moments_only == HITMAX)
-            gHits->texture_limits[v].min.moments_only = texture_limits_old[v].min.moments_only;
-        if (gHits->texture_limits[v].max.all == 0.0)
-            gHits->texture_limits[v].max.all = texture_limits_old[v].max.all;
-        if (gHits->texture_limits[v].max.moments_only == 0.0)
-            gHits->texture_limits[v].max.moments_only = texture_limits_old[v].max.moments_only;
+    // Another loop for a comlete global min/max texture search
+    for (s = 0; s < sh.nbSuper; s++) {
+        for (SubprocessFacet &f : structures[s].facets) {
+
+            if (f.sh.isTextured) {
+                for (int m = 0; m < (1 + nbMoments); m++) {
+                    {
+                        // go on if the facet was never hit before
+                        FacetHitBuffer *facetHitBuffer = (FacetHitBuffer *) (buffer + f.sh.hitOffset +
+                                                                             m * sizeof(FacetHitBuffer));
+                        if (facetHitBuffer->hit.nbMCHit == 0) continue;
+                    }
+
+                    TextureCell *shTexture = (TextureCell *) (buffer + (f.sh.hitOffset + facetHitsSize +
+                                                                        f.profileSize * (1 + nbMoments) +
+                                                                        m * f.textureSize));
+                    //double dCoef = gHits->globalHits.hit.nbDesorbed * 1E4 * wp.gasMass / 1000 / 6E23 * MAGIC_CORRECTION_FACTOR;  //1E4 is conversion from m2 to cm2
+                    double timeCorrection =
+                            m == 0 ? wp.finalOutgassingRate : (wp.totalDesorbedMolecules) /
+                                                              moments[m-1].second;
+                    //wp.timeWindowSize;
+                    //Timecorrection is required to compare constant flow texture values with moment values (for autoscaling)
+
+                    for (y = 0; y < f.sh.texHeight; y++) {
+                        for (x = 0; x < f.sh.texWidth; x++) {
+                            size_t add = x + y * f.sh.texWidth;
+
+                            //Add temporary hit counts
+
+                            if(f.largeEnough[add]) {
+                                double val[3];  //pre-calculated autoscaling values (Pressure, imp.rate, density)
+
+                                val[0] = shTexture[add].sum_v_ort_per_area *
+                                         timeCorrection; //pressure without dCoef_pressure
+                                val[1] = shTexture[add].countEquiv * f.textureCellIncrements[add] *
+                                         timeCorrection; //imp.rate without dCoef
+                                val[2] = f.textureCellIncrements[add] * shTexture[add].sum_1_per_ort_velocity *
+                                         timeCorrection; //particle density without dCoef
+
+                                //Global autoscale
+                                for (int v = 0; v < 3; v++) {
+                                    gHits->texture_limits[v].max.all = std::max(val[v],gHits->texture_limits[v].max.all);
+
+                                    if (val[v] > 0.0) {
+                                        gHits->texture_limits[v].min.all = std::min(val[v],
+                                                                                    gHits->texture_limits[v].min.all);
+                                    }
+                                    //Autoscale ignoring constant flow (moments only)
+                                    if (m != 0) {
+                                        gHits->texture_limits[v].max.moments_only = std::max(val[v],gHits->texture_limits[v].max.moments_only);;
+
+                                        if (val[v] > 0.0)
+                                            gHits->texture_limits[v].min.moments_only = std::min(val[v],gHits->texture_limits[v].min.moments_only);;
+                                    }
+                                }
+                            } // if largeenough
+                        }
+                    }
+                }
+            }
+        }
     }
 
     ReleaseDataport(dpHit);

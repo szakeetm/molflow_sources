@@ -294,7 +294,7 @@ void TextureScaling::ProcessMessage(GLComponent *src,int message) {
 			geom->texture_limits[geom->textureMode].manual.max.all=
 				geom->texAutoScaleIncludeConstantFlow?
 				geom->texture_limits[geom->textureMode].autoscale.max.all
-				:geom->texture_limits[geom->textureMode].autoscale.max.moments_only;texMinText->SetText(texCMinText->GetText());
+				:geom->texture_limits[geom->textureMode].autoscale.max.moments_only;
 			texMinText->SetText(texCMinText->GetText());
 			texMaxText->SetText(texCMaxText->GetText());
 			texAutoScale->SetState(false);

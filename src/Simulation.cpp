@@ -159,6 +159,8 @@ bool Simulation::LoadSimulation(Dataport *loader, char *loadStatus) {
                     f.angleMap.pdf,
                     f.textureCellIncrements
             );
+            f.isHit=false;
+            f.colDist=1E99;
 
             //Some initialization
             if (!f.InitializeOnLoad(i, moments.size(), histogramTotalSize)) return false;
@@ -295,6 +297,12 @@ void Simulation::ResetSimulation() {
     currentParticle = CurrentParticleStatus();
     totalDesorbed = 0;
     ResetTmpCounters();
+    for (auto& structure : structures) {
+        for (auto &f : structure.facets) {
+            f.isHit = false;
+            f.colDist = 1E99;
+        }
+    }
     tmpParticleLog.clear();
 }
 
