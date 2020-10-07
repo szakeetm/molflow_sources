@@ -10,6 +10,7 @@ set(PROJECT_NAME cudaKernel)
 
 set(GPU_DIR_1 ${CMAKE_SOURCE_DIR}/src/GPUSim)
 set(CUDA_DIR_1 ${CMAKE_SOURCE_DIR}/src/GPUSim/CUDA)
+message("GPU full src dir: ${GPU_DIR_1}")
 
 ############## CMake Project ################
 #        The main options of project        #
@@ -70,6 +71,10 @@ set(HEADER_FILES ${HEADER_FILES}
         ${CUDA_DIR_1}/cudaRandom.cuh
         #${GPU_DIR_1}/jetbrains_indexing.h
         )
+
+source_group("sources" FILES ${SRC_FILES})
+source_group("headers" FILES ${HEADER_FILES})
+
 
 add_library(${PROJECT_NAME} STATIC ${SRC_FILES} )
 

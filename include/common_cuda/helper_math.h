@@ -156,6 +156,10 @@ inline __host__ __device__ float3 make_float3(uint3 a)
 {
     return make_float3(float(a.x), float(a.y), float(a.z));
 }
+inline __host__ __device__ float3 make_float3(double3 a)
+{
+    return make_float3(float(a.x), float(a.y), float(a.z));
+}
 
 inline __host__ __device__ int3 make_int3(int s)
 {
@@ -380,6 +384,17 @@ inline __host__ __device__ void operator+=(float3 &a, float3 b)
     a.y += b.y;
     a.z += b.z;
 }
+inline __host__ __device__ double3 operator+(double3 a, double3 b)
+{
+    return make_double3(a.x + b.x, a.y + b.y, a.z + b.z);
+}
+inline __host__ __device__ void operator+=(double3 &a, double3 b)
+{
+    a.x += b.x;
+    a.y += b.y;
+    a.z += b.z;
+}
+
 inline __host__ __device__ float3 operator+(float3 a, float b)
 {
     return make_float3(a.x + b, a.y + b, a.z + b);
@@ -867,6 +882,10 @@ inline __host__ __device__ float3 operator*(float3 a, float b)
 inline __host__ __device__ float3 operator*(float b, float3 a)
 {
     return make_float3(b * a.x, b * a.y, b * a.z);
+}
+inline __host__ __device__ double3 operator*(double b, float3 a)
+{
+    return make_double3(b * a.x, b * a.y, b * a.z);
 }
 inline __host__ __device__ void operator*=(float3 &a, float b)
 {

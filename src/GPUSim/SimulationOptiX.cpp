@@ -35,9 +35,32 @@ extern void destroyRand(curandState_t *states, float *randomNumbers);
 /*! \namespace flowgpu - Molflow GPU code */
 namespace flowgpu {
 
-    extern "C" char geometry_ptx_code[];
-    extern "C" char trace_ptx_code[];
-    extern "C" char ray_ptx_code[];
+    std::string readPTX(std::string const& filename)
+    {
+        std::ifstream inputPtx(filename);
+
+        if (!inputPtx)
+        {
+            std::cerr << "ERROR: readPTX() Failed to open file " << filename << '\n';
+            return std::string();
+        }
+
+        std::stringstream ptx;
+
+        ptx << inputPtx.rdbuf();
+
+        if (inputPtx.fail())
+        {
+            std::cerr << "ERROR: readPTX() Failed to read file " << filename << '\n';
+            return std::string();
+        }
+
+        return ptx.str();
+    }
+
+    //extern "C" char Geometry_ptx[];
+    //extern "C" char trace_ptx_code[];
+    //extern "C" char ray_ptx_code[];
 
     /*! SBT record for a raygen program *//*
     struct __align__( OPTIX_SBT_RECORD_ALIGNMENT ) RaygenRecord
@@ -582,12 +605,12 @@ namespace flowgpu {
       single .cu file, using a single embedded ptx string */
     void SimulationOptiX::createModule()
     {
-        state.moduleCompileOptions.maxRegisterCount  = 50;
+        state.moduleCompileOptions.maxRegisterCount  = 0;
 #ifdef DEBUG
         state.moduleCompileOptions.optLevel          = OPTIX_COMPILE_OPTIMIZATION_LEVEL_0;
-        state.moduleCompileOptions.debugLevel        = OPTIX_COMPILE_DEBUG_LEVEL_LINEINFO;
+        state.moduleCompileOptions.debugLevel        = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
 #else
-        state.moduleCompileOptions.optLevel          = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
+        state.moduleCompileOptions.optLevel          = OPTIX_COMPILE_OPTIMIZATION_LEVEL_3;
         state.moduleCompileOptions.debugLevel        = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
 #endif
         state.pipelineCompileOptions = {};
@@ -596,6 +619,14 @@ namespace flowgpu {
         state.pipelineCompileOptions.numPayloadValues   = 8; // values that get send as PerRayData
         state.pipelineCompileOptions.numAttributeValues = 8; // ret values e.g. by optixReportIntersection
         state.pipelineCompileOptions.exceptionFlags     = OPTIX_EXCEPTION_FLAG_NONE;
+#if defined(NDEBUG)
+        state.pipelineCompileOptions.exceptionFlags        = OPTIX_EXCEPTION_FLAG_NONE;
+#else // DEBUG
+        state.pipelineCompileOptions.exceptionFlags        = OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW |
+                                                       OPTIX_EXCEPTION_FLAG_TRACE_DEPTH |
+                                                       OPTIX_EXCEPTION_FLAG_USER |
+                                                       OPTIX_EXCEPTION_FLAG_DEBUG;
+#endif
         state.pipelineCompileOptions.pipelineLaunchParamsVariableName = "optixLaunchParams";
         state.pipelineCompileOptions.usesPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE;
 
@@ -607,7 +638,9 @@ namespace flowgpu {
         size_t sizeof_log = sizeof( log );
 
         {
-            const std::string ptxCode = geometry_ptx_code;
+            // RAYGENERATION
+            const std::string ptxCode = readPTX("./flowgpu_ptx/Geometry.ptx");
+            //const std::string ptxCode = geometry_ptx_code;
             OPTIX_CHECK(optixModuleCreateFromPTX(state.context,
                                                  &state.moduleCompileOptions,
                                                  &state.pipelineCompileOptions,
@@ -620,7 +653,7 @@ namespace flowgpu {
         }
 
         {
-            const std::string ptxCode = ray_ptx_code;
+            const std::string ptxCode = readPTX("./flowgpu_ptx/RayGeneration.ptx");
             OPTIX_CHECK(optixModuleCreateFromPTX(state.context,
                                                  &state.moduleCompileOptions,
                                                  &state.pipelineCompileOptions,
@@ -633,7 +666,7 @@ namespace flowgpu {
         }
 
         {
-            const std::string ptxCode = trace_ptx_code;
+            const std::string ptxCode = readPTX("./flowgpu_ptx/TraceProcessing.ptx");
             OPTIX_CHECK(optixModuleCreateFromPTX(state.context,
                                                  &state.moduleCompileOptions,
                                                  &state.pipelineCompileOptions,
@@ -778,6 +811,7 @@ namespace flowgpu {
 
         char log[2048];
         size_t sizeof_log = sizeof( log );
+        try{
         OPTIX_CHECK(optixPipelineCreate(state.context,
                                         &state.pipelineCompileOptions,
                                         &state.pipelineLinkOptions,
@@ -786,6 +820,11 @@ namespace flowgpu {
                                         log,&sizeof_log,
                                         &state.pipeline
         ));
+        }
+        catch (std::exception& e) {
+            std::cerr << e.what() << std::endl;
+            Sleep(1000*100);
+        }
         //if (sizeof_log > 1) PRINT(log);
 
         OPTIX_CHECK(optixPipelineSetStackSize

@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "optix7.h"
 #include "OptixPolygon.h"
 #include "GPUDefines.h"
 #include "PerRayData.h"

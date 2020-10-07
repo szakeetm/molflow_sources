@@ -7,6 +7,7 @@
 #ifndef MOLFLOW_PROJ_OPTIXPOLYGON_H
 #define MOLFLOW_PROJ_OPTIXPOLYGON_H
 
+#include <cuda_runtime.h>
 #include <cereal/cereal.hpp>
 
 namespace flowgpu {
@@ -40,23 +41,23 @@ namespace flowgpu {
     };
 
     enum TEXTURE_FLAGS {
-        noTexture = 0,
-        countAbs  = (1 << 0),
-        countRefl           = (1 << 1),
-        countTrans         = (1 << 2),
-        countDirection         = (1 << 3)
-        ,countDes = (1 << 4) // Molflow only
+        noTexture = 0u,
+        countAbs  = (1u << 0u),
+        countRefl           = (1u << 1u),
+        countTrans         = (1u << 2u),
+        countDirection         = (1u << 3u)
+        ,countDes = (1u << 4u) // Molflow only
     };
 
     enum PROFILE_FLAGS {
         noProfile = 0,
-        profileU  = (1 << 0),
-        profileV           = (1 << 1),
+        profileU  = (1u << 0u),
+        profileV           = (1u << 1u),
         // TODO: Not yet implemented
-        profileAngular         = (1 << 2),
-        profileVelocity         = (1 << 3)
-        ,profileOrtVelocity = (1 << 4)
-        ,profileTanVelocity = (1 << 5)
+        profileAngular         = (1u << 2u),
+        profileVelocity         = (1u << 3u)
+        ,profileOrtVelocity = (1u << 4u)
+        ,profileTanVelocity = (1u << 5u)
     };
 
     struct TempFacetProperties { //Formerly SHFACET
@@ -247,14 +248,14 @@ namespace flowgpu {
 
     // TODO: Maybe save some variables (e.g. texture WxH) not with the Polygon to save memory when Facets are actually not textured
     struct TextureProperties{
-        TextureProperties() : textureOffset(0),textureSize(0),textureFlags(TEXTURE_FLAGS::noTexture){}
-        TextureProperties& operator=(const TextureProperties& o){
+        TextureProperties() : textureOffset(0), textureSize(0),textureFlags(TEXTURE_FLAGS::noTexture){}
+        TextureProperties& operator=(const TextureProperties& o) = default;/*(const TextureProperties& o){
             this->textureOffset = o.textureOffset;
             this->textureSize = o.textureSize;
             this->textureFlags = o.textureFlags;
 
             return *this;
-        }
+        }*/
 
         unsigned int textureOffset; // map it to the original polygon index
         unsigned int textureSize; // check ==0 to find if texture exists, could also get its own SBT
@@ -265,13 +266,13 @@ namespace flowgpu {
     // TODO: Maybe save some variables (e.g. texture WxH) not with the Polygon to save memory when Facets are actually not textured
     struct ProfileProperties{
         ProfileProperties() : profileOffset(0), profileType(PROFILE_FLAGS::noProfile){}
-        ProfileProperties& operator=(const ProfileProperties& o){
+        ProfileProperties& operator=(const ProfileProperties& o)=default;/*{
             this->profileOffset = o.profileOffset;
             //this->textureSize = o.textureSize;
             this->profileType = o.profileType;
 
             return *this;
-        }
+        }*/
 
         unsigned int profileOffset; // map it to the original polygon index
         //unsigned int textureSize; // check ==0 to find if texture exists, could also get its own SBT
@@ -281,12 +282,12 @@ namespace flowgpu {
 
     struct DesorpProperties{
         DesorpProperties() : desorbType(0), cosineExponent(-1){}
-        DesorpProperties& operator=(const DesorpProperties& o){
+        DesorpProperties& operator=(const DesorpProperties& o)=default;/*{
             this->desorbType = o.desorbType;
             this->cosineExponent = o.cosineExponent;
 
             return *this;
-        }
+        }*/
 
         uint8_t desorbType; // type of desorption
         float cosineExponent; // for Cosine^N
@@ -294,13 +295,13 @@ namespace flowgpu {
 
     struct SimProperties{
         SimProperties() : stickingFactor(-1.0f), temperature(-1.0f), is2sided(false), opacity(-1.0f){}
-        SimProperties& operator=(const SimProperties& o){
+        SimProperties& operator=(const SimProperties& o)=default;/*{
             this->stickingFactor = o.stickingFactor;
             this->temperature = o.temperature;
             this->is2sided = o.is2sided;
             this->opacity = o.opacity;
             return *this;
-        }
+        }*/
 
         float stickingFactor;
         float temperature;
@@ -327,7 +328,7 @@ namespace flowgpu {
             *this = o;
         }
 
-        ~Polygon(){}
+        ~Polygon()=default;
 
         Polygon& operator=(Polygon&& o){
             if (this != &o)
@@ -365,7 +366,7 @@ namespace flowgpu {
             }
             return *this;
         }
-        Polygon& operator=(const Polygon& o){
+        Polygon& operator=(const Polygon& o)=default;/*{
 
             this->nbVertices = o.nbVertices;
             this->indexOffset = o.indexOffset;
@@ -384,7 +385,7 @@ namespace flowgpu {
             this->desProps = o.desProps;
 
             return *this;
-        }
+        }*/
 
         void copyParametersFrom(const Polygon& o){
 

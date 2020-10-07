@@ -39,8 +39,8 @@ namespace flowgpu {
 
     flowgpu::Model *initializeModel(std::string fileName);
     int parseGeomFromSerialization(flowgpu::Model* model, std::vector<flowgpu::TempFacet>& facets, std::vector<float3>& vertices3d);
-    flowgpu::Model *loadFromExternalSerialization(std::string fileName);
-    flowgpu::Model *loadFromSerialization(std::string inputString);
+    flowgpu::Model *loadFromExternalSerialization(const std::string &fileName);
+    flowgpu::Model *loadFromSerialization(const std::string &inputString);
 
 }
 

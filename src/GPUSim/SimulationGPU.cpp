@@ -3,6 +3,7 @@
 //
 
 #include <cereal/archives/binary.hpp>
+#include <common_cuda/helper_math.h>
 #include "SimulationGPU.h"
 #include "ModelReader.h" // TempFacet
 
@@ -102,7 +103,6 @@ void SimulationGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWOR
 
     BYTE *buffer;
     GlobalHitBuffer *gHits;
-    TEXTURE_MIN_MAX texture_limits_old[3];
 
 #if defined(_DEBUG)
     double t0, t1;
@@ -130,12 +130,6 @@ void SimulationGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWOR
     }
     this->totalDesorbed = gHits->globalHits.hit.nbDesorbed;
 
-    //Memorize current limits, then do a min/max search
-    for (int i = 0; i < 3; i++) {
-        texture_limits_old[i] = gHits->texture_limits[i];
-        gHits->texture_limits[i].min.all = gHits->texture_limits[i].min.moments_only = HITMAX;
-        gHits->texture_limits[i].max.all = gHits->texture_limits[i].max.moments_only = 0;
-    }
 
 #ifdef DEBUGPOS
     // HHit (Only prIdx 0)
@@ -210,6 +204,13 @@ void SimulationGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWOR
 
     //textures
     if(!globalCount->textures.empty()) {
+
+        //Memorize current limits, then do a min/max search
+        for (int i = 0; i < 3; i++) {
+            gHits->texture_limits[i].min.all = gHits->texture_limits[i].min.moments_only = HITMAX;
+            gHits->texture_limits[i].max.all = gHits->texture_limits[i].max.moments_only = 0;
+        }
+
         double timeCorrection = model->wp.finalOutgassingRate;
         for (auto&[id, texels] : globalCount->textures) {
             for (auto &mesh : model->triangle_meshes) {
@@ -218,30 +219,41 @@ void SimulationGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWOR
                     if ((facet.texProps.textureFlags) && (id == facet.parentIndex)) {
                         int bufferOffset_profSize = facet.profProps.profileType ? PROFILE_SIZE * sizeof(ProfileSlice) : 0;
                         TextureCell *shTexture = (TextureCell *) (buffer + (model->tri_facetOffset[id] + sizeof(FacetHitBuffer) + bufferOffset_profSize));
-                        unsigned int width = model->facetTex[facet.texProps.textureOffset].texWidth;
-                        unsigned int height = model->facetTex[facet.texProps.textureOffset].texHeight;
+                        const flowgpu::FacetTexture& texture = model->facetTex[facet.texProps.textureOffset];
+                        const unsigned int width = texture.texWidth;
+                        const unsigned int height = texture.texHeight;
                         for (unsigned int h = 0; h < height; ++h) {
                             for (unsigned int w = 0; w < width; ++w) {
-                                unsigned int index_glob =
-                                        w + h * model->facetTex[facet.texProps.textureOffset].texWidth;
+                                unsigned int index_glob = w + h * texture.texWidth;
 
                                 shTexture[index_glob].countEquiv += texels[index_glob].countEquiv;
                                 shTexture[index_glob].sum_v_ort_per_area += texels[index_glob].sum_v_ort_per_area;
                                 shTexture[index_glob].sum_1_per_ort_velocity += texels[index_glob].sum_1_per_ort_velocity;
 
-                                double val[3];  //pre-calculated autoscaling values (Pressure, imp.rate, density)
-                                val[0] = shTexture[index_glob].sum_v_ort_per_area *
-                                         timeCorrection; //pressure without dCoef_pressure
-                                val[1] = shTexture[index_glob].countEquiv * model->texInc[index_glob + facet.texProps.textureOffset] *
-                                         timeCorrection; //imp.rate without dCoef
-                                val[2] = shTexture[index_glob].sum_1_per_ort_velocity * model->texInc[index_glob + facet.texProps.textureOffset] *
-                                         timeCorrection; //particle density without dCoef
-                                //Global autoscale
-                                for (int v = 0; v < 3; v++) {
-                                    if (val[v] > gHits->texture_limits[v].max.all)
-                                        gHits->texture_limits[v].max.all = val[v];
-                                    if (val[v] > 0.0 && val[v] < gHits->texture_limits[v].min.all)
-                                        gHits->texture_limits[v].min.all = val[v];
+                                const float texelIncrement = model->texInc[index_glob + texture.texelOffset];
+                                const bool largeEnough = texelIncrement < 5.0f * (model->facetTex[facet.texProps.textureOffset].texWidthD * model->facetTex[facet.texProps.textureOffset].texHeightD) / (length(facet.U) * length(facet.V));
+                                if(largeEnough) {
+                                    double val[3];  //pre-calculated autoscaling values (Pressure, imp.rate, density)
+                                    val[0] = shTexture[index_glob].sum_v_ort_per_area *
+                                             timeCorrection; //pressure without dCoef_pressure
+                                    val[1] = shTexture[index_glob].countEquiv *
+                                            texelIncrement*timeCorrection; //imp.rate without dCoef
+                                    val[2] = shTexture[index_glob].sum_1_per_ort_velocity *
+                                            texelIncrement*timeCorrection; //particle density without dCoef
+                                    //Global autoscale
+                                    for (int v = 0; v < 3; v++) {
+                                        if(val[v] > gHits->texture_limits[v].max.all) {
+                                            printf("%d. GMax: %f < %f (%f / %f) [at: %u + %u] \n",v, texelIncrement,  5.0f * (model->facetTex[facet.texProps.textureOffset].texWidthD * model->facetTex[facet.texProps.textureOffset].texHeightD) / (length(facet.U) * length(facet.V)), (model->facetTex[facet.texProps.textureOffset].texWidthD * model->facetTex[facet.texProps.textureOffset].texHeightD) , (length(facet.U) * length(facet.V)), index_glob, facet.texProps.textureOffset);
+                                            printf("%d. GMax: f#%u [%u , %u]\n", v, facet.parentIndex, w, h);
+                                        }
+                                        gHits->texture_limits[v].max.all = std::max(val[v], gHits->texture_limits[v].max.all );
+                                        if (val[v] > 0.0) {
+                                            if(val[v] < gHits->texture_limits[v].min.all)
+                                                printf("%d. GMin: f#%u [%u , %u]\n", v, facet.parentIndex, w, h);
+                                            gHits->texture_limits[v].min.all = std::min(val[v],
+                                                                                        gHits->texture_limits[v].min.all);
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -251,18 +263,6 @@ void SimulationGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWOR
                 }
             }
         }
-    }
-
-    //if there were no textures:
-    for (int v = 0; v < 3; v++) {
-        if (gHits->texture_limits[v].min.all == HITMAX)
-            gHits->texture_limits[v].min.all = texture_limits_old[v].min.all;
-        if (gHits->texture_limits[v].min.moments_only == HITMAX)
-            gHits->texture_limits[v].min.moments_only = texture_limits_old[v].min.moments_only;
-        if (gHits->texture_limits[v].max.all == 0.0)
-            gHits->texture_limits[v].max.all = texture_limits_old[v].max.all;
-        if (gHits->texture_limits[v].max.moments_only == 0.0)
-            gHits->texture_limits[v].max.moments_only = texture_limits_old[v].max.moments_only;
     }
 
     ReleaseDataport(dpHit);

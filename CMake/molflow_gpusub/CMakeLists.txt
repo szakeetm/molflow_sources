@@ -48,7 +48,7 @@ include(${PROJECT_SOURCE_DIR}/configure_optix.cmake)
 
 set(optix_LIBRARY "")
 #message("Optix include " ${OptiX_INCLUDE})
-include_directories(SYSTEM ${OptiX_INCLUDE} )
+#include_directories(SYSTEM ${OptiX_INCLUDE} )
 
 add_executable(${PROJECT_NAME}
         ${GPU_DIR_1}/gpuSub.cpp

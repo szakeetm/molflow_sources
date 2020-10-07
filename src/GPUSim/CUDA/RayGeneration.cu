@@ -1,11 +1,9 @@
 // Created by pbahr
 
-#include <optix_device.h>
 #include <math_constants.h>
 
 #include "LaunchParams.h"
 #include "GPUDefines.h" // for NB_RAND
-#include "jetbrains_indexing.h"
 #include "helper_math.h"
 #include <LaunchParams.h>
 #include "CommonFunctions.cuh"
@@ -227,7 +225,7 @@ namespace flowgpu {
         float3 vertC = rayGenData->vertex[rayGenData->index[facIndex].z];
 
 #ifdef RNG64
-        return (1.0f-r1_sqrt) * vertA + r1_sqrt * (1.0f - r2) * vertB + r1_sqrt * r2 * vertC; //rayGenData
+        return make_float3((1.0 - r1_sqrt) * vertA + r1_sqrt * (1.0 - r2) * vertB + r1_sqrt * r2 * vertC); //rayGenData
 #else
         return (1.0f-r1_sqrt) * vertA + r1_sqrt * (1.0f - r2) * vertB + r1_sqrt * r2 * vertC; //rayGenData
 #endif
@@ -358,7 +356,7 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
     // increase facet counters for desorption
     // --------------------------------------
     static __forceinline__ __device__
-    void increaseHitCounterDesorption(CuFacetHitCounter& hitCounter, const MolPRD hitData, const float3 rayDir, const float3 polyNormal)
+    void increaseHitCounterDesorption(CuFacetHitCounter& hitCounter, const MolPRD &hitData, const float3 &rayDir, const float3 &polyNormal)
     {
 
         //const float hitEquiv = 0.0f; //1.0*prd.orientationRatio; // hit=1.0 (only changed for lowflux mode)
@@ -395,7 +393,7 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
     // increase texture counters for desorption
     // --------------------------------------
     static __forceinline__ __device__
-    void RecordDesorptionTexture(const flowgpu::Polygon& poly, MolPRD& hitData, float3 rayOrigin, float3 rayDir){
+    void RecordDesorptionTexture(const flowgpu::Polygon& poly, const MolPRD& hitData, const float3& rayOrigin, const float3& rayDir){
 
         const float2 hitLocation = getHitLocation(poly,rayOrigin);
 
@@ -437,7 +435,7 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
     // increase texture counters for desorption
     // --------------------------------------
     static __forceinline__ __device__
-    void RecordDesorptionProfile(const flowgpu::Polygon& poly, MolPRD& hitData, float3 rayOrigin, float3 rayDir){
+    void RecordDesorptionProfile(const flowgpu::Polygon& poly, const MolPRD& hitData, const float3& rayOrigin, const float3& rayDir){
 
         const float2 hitLocation = getHitLocation(poly,rayOrigin);
 
@@ -476,7 +474,7 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
     }
 
 static __forceinline__ __device__
-void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& poly, MolPRD& hitData, const float3 rayDir, const float3 rayOrigin)
+void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& poly, const MolPRD& hitData, const float3& rayDir, const float3& rayOrigin)
 {
 #ifdef BOUND_CHECK
     if(counterIdx < 0 || counterIdx >= optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS){

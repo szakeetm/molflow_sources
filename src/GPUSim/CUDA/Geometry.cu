@@ -1,10 +1,8 @@
 // Created by pbahr
 
-#include <optix_device.h>
 #include "PerRayData.h"
 #include "LaunchParams.h"
 #include "GPUDefines.h" // for NB_RAND
-#include "jetbrains_indexing.h"
 #include "helper_math.h"
 
 #define DET33(_11,_12,_13,_21,_22,_23,_31,_32,_33)  \
@@ -441,7 +439,7 @@ namespace flowgpu {
         const double3 ray_orig = make_double3(optixGetWorldRayOrigin());
         //const double3 ray_dir = make_double3(optixGetWorldRayDirection().x,optixGetWorldRayDirection().y,optixGetWorldRayDirection().z);
         //ray_dir = make_double3(-1.0,-1.0,-1.0) * ray_dir;
-        const double3 ray_dir = make_double3(-1.0 * optixGetWorldRayDirection());
+        const double3 ray_dir = make_double3(-1.0f * optixGetWorldRayDirection());
 
         const double ray_tmin = optixGetRayTmin(), ray_tmax = optixGetRayTmax();
 

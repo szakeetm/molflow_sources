@@ -4,21 +4,21 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 # Change if you want modify path or other values. #
 ###################################################
 
-set(PROJECT_NAME flowGPU)
 
+set(PROJECT_NAME flowGPU)
 message(${PROJECT_NAME} " generating in " ${CMAKE_CURRENT_SOURCE_DIR})
 
+include(nvcuda_compile_ptx.cmake)
 
 # Folders files
+set(HEADER_DIR_1 ${PROJECT_SOURCE_DIR}/src)
+set(HEADER_DIR_2 ${PROJECT_SOURCE_DIR}/src_shared)
+set(HEADER_DIR_3 ${PROJECT_SOURCE_DIR}/include)
+set(HEADER_DIR_4 ${PROJECT_SOURCE_DIR}/include/windows_only)
+set(OPTIX_DIR ${PROJECT_SOURCE_DIR}/include/optix)
 
-set(HEADER_DIR_1 ../../src)
-set(HEADER_DIR_2 ../../src_shared)
-set(HEADER_DIR_3 ../../include)
-set(HEADER_DIR_4 ../../include/windows_only)
-set(HEADER_DIR_5 ../../include/common_cuda)
-
-set(GPU_DIR_1 ${CMAKE_SOURCE_DIR}/src/GPUSim)
-set(CUDA_DIR_1 ${CMAKE_SOURCE_DIR}/src/GPUSim/CUDA)
+set(GPU_DIR_1 ${PROJECT_SOURCE_DIR}/src/GPUSim)
+set(CUDA_DIR_1 ${PROJECT_SOURCE_DIR}/src/GPUSim/CUDA)
 
 IF (WIN32)
     # set stuff for windows
@@ -93,26 +93,70 @@ include_directories(${CUDA_DIR_1})
 
 set(common_cuda_dir ${PROJECT_SOURCE_DIR}/../../include/common_cuda/)
 include_directories(SYSTEM ${common_cuda_dir})
-set(common_cuda_dir ${PROJECT_SOURCE_DIR}/../../include/common_cuda/)
 include_directories(SYSTEM ${HEADER_DIR_3})
 
 include(${PROJECT_SOURCE_DIR}/configure_optix.cmake)
 
 set(optix_LIBRARY "")
-#message("Optix include " ${OptiX_INCLUDE})
+message("Optix include " ${OptiX_INCLUDE})
 include_directories(SYSTEM ${OptiX_INCLUDE})
+message("Optix local include " ${OPTIX_DIR})
+include_directories(SYSTEM ${OPTIX_DIR})
 
-cuda_compile_and_embed(geometry_ptx_code ${CUDA_DIR_1}/Geometry.cu)
-cuda_compile_and_embed(trace_ptx_code ${CUDA_DIR_1}/TraceProcessing.cu)
-cuda_compile_and_embed(ray_ptx_code ${CUDA_DIR_1}/RayGeneration.cu)
+# Prefix the shaders with the full path name to allow stepping through errors with F8.
+set( SHADERS
+        # Core shaders.
+        ${CUDA_DIR_1}/Geometry.cu
+        ${CUDA_DIR_1}/TraceProcessing.cu
+        ${CUDA_DIR_1}/RayGeneration.cu
+        )
+
+set( SHADERS_HEADERS
+        ${GPU_DIR_1}/GPUDefines.h
+        ${GPU_DIR_1}/LaunchParams.h
+        ${GPU_DIR_1}/PerRayData.h
+        ${CUDA_DIR_1}/CommonFunctions.cuh
+        )
+
+#cuda_compile_and_embed(geometry_ptx_code ${CUDA_DIR_1}/Geometry.cu)
+#cuda_compile_and_embed(trace_ptx_code ${CUDA_DIR_1}/TraceProcessing.cu)
+#cuda_compile_and_embed(ray_ptx_code ${CUDA_DIR_1}/RayGeneration.cu)
+
+if (WIN32 AND "${CMAKE_GENERATOR}" MATCHES "^(Visual Studio).*")
+    # Set the base folder where the per-project ptx folders get created.
+    set (PTX_TARGET_DIR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$(ConfigurationName)")
+    # Enable multi-processor build on all Visual Studio versions.
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+else()
+    # DAR This should be independent of ${CMAKE_BUILD_TYPE} because that single-configuration generator will not create subfolders, will it?
+    # Otherwise add something with if("${CMAKE_BUILD_TYPE}" STREQUAL "")
+    set (PTX_TARGET_DIR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+endif()
+
+message("GPU include " ${GPU_DIR_1})
+message("Compiling PTX to: ${PTX_TARGET_DIR}")
+
+NVCUDA_COMPILE_PTX( SOURCES ${SHADERS}
+        DEPENDENCIES ${SHADERS_HEADERS}
+        TARGET_PATH "${PTX_TARGET_DIR}/flowgpu_ptx"
+        GENERATED_FILES PTX_SOURCES
+        NVCC_OPTIONS "${cuda_flags}" "-I${OptiX_INCLUDE}" "-I${common_cuda_dir}" "-I${HEADER_DIR_2}" "-I${GPU_DIR_1}" "-I${GPU_DIR_1}/CUDA" "${nvcc_flags}"
+        )
+#"--gpu-architecture=compute_75" "--use_fast_math" "--relocatable-device-code=true" "--generate-line-info"
+add_executable(dummy_ptx ${SHADERS} ${SHADERS_HEADERS}) #for indexing to work properly
+message("Compiled PTX: ${PTX_SOURCES}")
+
+
+source_group("shaders" FILES ${SHADERS})
+source_group("shader_headers" FILES ${SHADERS_HEADERS})
 
 #cuda_compile_and_embed(rng2_ptx_code ${GPU_DIR_1}/cudaRandom.cu)
 
-set(SRC_FILES ${geometry_ptx_code} ${SRC_FILES})
-set(SRC_FILES ${trace_ptx_code} ${SRC_FILES})
-set(SRC_FILES ${ray_ptx_code} ${SRC_FILES})
+#set(SRC_FILES ${geometry_ptx_code} ${SRC_FILES})
+#set(SRC_FILES ${trace_ptx_code} ${SRC_FILES})
+#set(SRC_FILES ${ray_ptx_code} ${SRC_FILES})
 
-add_library(${PROJECT_NAME} ${SRC_FILES})
+add_library(${PROJECT_NAME} ${SRC_FILES} ${PTX_SOURCES})
 
 #set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 
@@ -122,6 +166,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ${common_cuda_dir}
         ${HEADER_DIR_2} # shared buffer for model
         ${HEADER_DIR_3}
+        ${OPTIX_DIR}
         )
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
@@ -154,38 +199,3 @@ target_link_libraries(${PROJECT_NAME}
         ${CUDA_LIBRARIES}
         ${CUDA_CUDA_LIBRARY}
         )
-
-
-# Now create executable
-set(PROJECT_NAME gpuTestsuite)
-set(INCLUDE_DIRECTORIES "")
-add_executable(${PROJECT_NAME}
-        ${GPU_DIR_1}/TestSimulator.cpp
-        ${GPU_DIR_1}/ModelReader.cpp
-        ${HEADER_DIR_1}/GeometrySimu.cpp
-        ${HEADER_DIR_1}/MolflowBuffer.cpp
-        ${HEADER_DIR_1}/Parameter.cpp
-        ${HEADER_DIR_2}/Vector.cpp
-        ${GPU_DIR_1}/Poly2TriConverter.cpp
-        ${GPU_DIR_1}/SimulationControllerGPU.cpp
-        )
-
-target_include_directories(${PROJECT_NAME} PRIVATE
-        ${GPU_DIR_1}
-        ${CUDA_DIR_1}
-        ${common_cuda_dir}
-        #${HEADER_DIR_1}
-        ${HEADER_DIR_2}
-        #${HEADER_DIR_3}
-        #${HEADER_DIR_4}
-        )
-
-target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
-target_link_libraries(${PROJECT_NAME}
-        flowGPU
-        )
-
-if(MSVC)
-    # Add Windows Console output
-    set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE ${LINK_FLAGS}")
-endif(MSVC)

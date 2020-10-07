@@ -498,7 +498,7 @@ namespace flowgpu {
     }
 
     //! Load simulation data (geometry etc.) from Molflow's serialization output
-    flowgpu::Model *loadFromSerialization(std::string inputString) {
+    flowgpu::Model *loadFromSerialization(const std::string &inputString) {
         std::stringstream inputStream;
         inputStream << inputString;
         cereal::BinaryInputArchive inputArchive(inputStream);
@@ -544,31 +544,47 @@ namespace flowgpu {
         std::cout << "#ModelReader: Name: " << model->geomProperties.name << std::endl;
         std::cout << "#ModelReader: #Vertex: " << vertices3d.size() << std::endl;
         std::cout << "#ModelReader: #Facets: " << model->geomProperties.nbFacet << std::endl;
+        size_t nbTexelCount = 0;
         for (int facInd = 0; facInd < facets.size(); ++facInd) {
-            if (!facets[facInd].texelInc.empty())
-                std::cout << "#ModelReader: Facet#" << facInd << " #Texels: " << facets[facInd].texelInc.size()
-                          << std::endl;
-            if (facets[facInd].facetProperties.isTextured)
-                std::cout << "#ModelReader: Facet#" << facInd << " #Texels: " << facets[facInd].texelInc.size()
-                          << std::endl;
+            if ((facets[facInd].texelInc.empty() && facets[facInd].facetProperties.isTextured) || (!facets[facInd].texelInc.empty() && !facets[facInd].facetProperties.isTextured)) {
+                std::cerr << "#ModelReader: [ERROR] Texture flag and texel increments don't align! " << std::endl;
+                _sleep(10000);
+                exit(0);
+            }
+            if (facets[facInd].facetProperties.isTextured) {
+                std::cout << "#ModelReader: Facet#" << facInd << " #Texels: " << facets[facInd].texelInc.size() << std::endl;
+                nbTexelCount += facets[facInd].texelInc.size();
+            }
         }
         for (auto &mesh : model->triangle_meshes) {
             std::cout << "#ModelReader: #Tri " << mesh->poly.size() << std::endl;
             size_t nbProf = 0;
+            size_t nbTex = 0;
+            size_t triCount = 0;
             for (auto &tri : mesh->poly) {
                 if (tri.profProps.profileType != PROFILE_FLAGS::noProfile)
                     ++nbProf;
+                if (tri.texProps.textureFlags != TEXTURE_FLAGS::noTexture) {
+                    ++nbTex;
+                    std::cout << "#ModelReader: Tri#" << triCount++<< "["<<tri.parentIndex << "] #TexOffset: " << tri.texProps.textureOffset << std::endl;
+                }
             }
             std::cout << "#ModelReader: #ProfiledTris " << nbProf << std::endl;
+            std::cout << "#ModelReader: #TexturedTris " << nbTex << std::endl;
         }
 
         std::cout << "#ModelReader: #TextureCells: " << model->textures.size() << std::endl;
 
+        if(nbTexelCount != model->textures.size()){
+            std::cerr << "#ModelReader: [ERROR] Texture count out of sync: " << nbTexelCount << " / " << model->textures.size() << std::endl;
+            _sleep(10000);
+            exit(0);
+        }
         return model;
     }
 
     //! Load simulation data (geometry etc.) from Molflow's serialization file output
-    flowgpu::Model *loadFromExternalSerialization(std::string fileName) {
+    flowgpu::Model *loadFromExternalSerialization(const std::string &fileName) {
         std::ifstream file(fileName);
         cereal::XMLInputArchive inputarchive(file);
 

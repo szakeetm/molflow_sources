@@ -1,34 +1,10 @@
 // Created by pbahr
 
-#include <optix_device.h>
-#include <math_constants.h>
 #include "helper_math.h"
-#include <cooperative_groups.h>
 
-#include "jetbrains_indexing.h"
 #include "LaunchParams.h"
 #include "GPUDefines.h" // for NB_RAND
-#include <LaunchParams.h>
 #include "CommonFunctions.cuh"
-
-namespace cg = cooperative_groups;
-
-#define DET33(_11,_12,_13,_21,_22,_23,_31,_32,_33)  \
-  ((_11)*( (_22)*(_33) - (_32)*(_23) ) +            \
-   (_12)*( (_23)*(_31) - (_33)*(_21) ) +            \
-   (_13)*( (_21)*(_32) - (_31)*(_22) ))
-
-#define DOT(v1, v2)  \
-  ((v1.x)*(v2.x) + (v1.y)*(v2.y) + (v1.z)*(v2.z))
-
-#define CROSS(a, b)   \
-  (a.y*b.z - a.z*b.y, a.z*b.x - a.x*b.z, a.x*b.y - a.y*b.x)
-
-#define float3_as_args(u) \
-    reinterpret_cast<unsigned int&>((u).x), \
-    reinterpret_cast<unsigned int&>((u).y), \
-    reinterpret_cast<unsigned int&>((u).z)
-
 
 using namespace flowgpu;
 
@@ -191,7 +167,7 @@ namespace flowgpu {
     // increase texture counters for absorption (same as desorp)
     // --------------------------------------
     static __forceinline__ __device__
-    void RecordAbsorpTexture(const flowgpu::Polygon &poly, MolPRD &hitData, float3 rayOrigin, float3 rayDir){
+    void RecordAbsorpTexture(const flowgpu::Polygon &poly, MolPRD &hitData, const float3& rayOrigin, const float3& rayDir){
 
         const float2 hitLocation = getHitLocation(poly,rayOrigin);
 
@@ -403,7 +379,7 @@ namespace flowgpu {
     // increase texture counters for absorption (same as desorp)
     // --------------------------------------
     static __forceinline__ __device__
-    void RecordAbsorpProfile(const flowgpu::Polygon &poly, MolPRD &hitData, float3 rayOrigin, float3 rayDir){
+    void RecordAbsorpProfile(const flowgpu::Polygon &poly, MolPRD &hitData, const float3& rayOrigin, const float3& rayDir){
 
         const float2 hitLocation = getHitLocation(poly,rayOrigin);
 
