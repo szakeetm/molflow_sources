@@ -53,6 +53,13 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <unistd.h> //chdir
 #endif
 
+// Plotters
+#include "ProfilePlotter.h"
+#include "PressureEvolution.h"
+#include "TimewisePlotter.h"
+#include "TexturePlotter.h"
+#include "ConvergencePlotter.h"
+
 #include "Interface/Interface.h"
 #include "AppUpdater.h"
 #include "Worker.h"
@@ -64,10 +71,6 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Viewer3DSettings.h"
 #include "TextureScaling.h"
 #include "GlobalSettings.h"
-#include "ProfilePlotter.h"
-#include "PressureEvolution.h"
-#include "TimewisePlotter.h"
-#include "TexturePlotter.h"
 #include "OutgassingMap.h"
 #include "MomentsEditor.h"
 #include "Interface/FacetCoordinates.h"
@@ -220,24 +223,24 @@ MolFlow::MolFlow()
 	mApp = this; //to refer to the app as extern variable
 
 	//Different Molflow implementation:
-	facetAdvParams = NULL;
-	facetDetails = NULL;
-	viewer3DSettings = NULL;
-	textureScaling = NULL;
-	formulaEditor = NULL;
-	globalSettings = NULL;
-	profilePlotter = NULL;
-	texturePlotter = NULL;
+	facetAdvParams = nullptr;
+	facetDetails = nullptr;
+	viewer3DSettings = nullptr;
+	textureScaling = nullptr;
+	formulaEditor = nullptr;
+	globalSettings = nullptr;
+	profilePlotter = nullptr;
+    texturePlotter = nullptr;
 
 	//Molflow only:
-	movement = NULL;
-	timewisePlotter = NULL;
-	pressureEvolution = NULL;
-	outgassingMap = NULL;
-	momentsEditor = NULL;
-	parameterEditor = NULL;
-	importDesorption = NULL;
-	timeSettings = NULL;
+	movement = nullptr;
+	timewisePlotter = nullptr;
+	pressureEvolution = nullptr;
+	outgassingMap = nullptr;
+	momentsEditor = nullptr;
+	parameterEditor = nullptr;
+	importDesorption = nullptr;
+	timeSettings = nullptr;
 
 	useOldXMLFormat = false;
 }
@@ -1718,7 +1721,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			if (!profilePlotter) profilePlotter = new ProfilePlotter();
 			profilePlotter->Display(&worker);
 			break;
-		case MENU_TOOLS_TEXPLOTTER:
+        case MENU_TOOLS_TEXPLOTTER:
 			if (!texturePlotter) texturePlotter = new TexturePlotter();
 			texturePlotter->Display(&worker);
 			break;
@@ -2804,6 +2807,27 @@ bool MolFlow::EvaluateVariable(VLIST *v) {
 	return ok;
 }
 
+bool MolFlow::InitializeFormulas(){
+    bool allOk = true;
+    for (size_t i = 0; i < mApp->formulas_n.size(); i++) {
+
+        // Evaluate variables
+        int nbVar = mApp->formulas_n[i]->GetNbVariable();
+        bool ok = true;
+        for (int j = 0; j < nbVar && ok; j++) {
+            VLIST *v = mApp->formulas_n[i]->GetVariableAt(j);
+            ok = mApp->EvaluateVariable(v);
+        }
+
+        if (ok) {
+            mApp->formulas_n[i]->hasVariableEvalError = false;
+        }
+        else{
+            allOk = false;
+        }
+    }
+    return allOk;
+}
 void MolFlow::UpdatePlotters() {
 	if (pressureEvolution) pressureEvolution->Update(m_fTime, true);
 	if (timewisePlotter) timewisePlotter->Update(m_fTime, true);
@@ -2818,6 +2842,7 @@ void MolFlow::RefreshPlotterCombos() {
 	if (timewisePlotter) timewisePlotter->Refresh();
 	if (profilePlotter) profilePlotter->Refresh();
 	if (histogramPlotter) histogramPlotter->Refresh();
+    if (convergencePlotter) convergencePlotter->Refresh();
 }
 
 void MolFlow::UpdateFacetHits(bool allRows) {

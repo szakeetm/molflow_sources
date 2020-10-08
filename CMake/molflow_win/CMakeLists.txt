@@ -76,7 +76,8 @@ endif(NOT MSVC)
 #   --   Add files to project.   --   #
 #######################################
 
-set(SRC_FILES ${CPP_DIR_1}/FacetAdvParams.cpp
+set(SRC_FILES
+        ${CPP_DIR_1}/FacetAdvParams.cpp
         ${CPP_DIR_1}/FacetDetails.cpp
         ${CPP_DIR_1}/GeometryRender.cpp
         ${CPP_DIR_1}/GeometryViewer.cpp

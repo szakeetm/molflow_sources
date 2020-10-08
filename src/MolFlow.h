@@ -20,6 +20,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #pragma once
 
 #include "Interface/Interface.h"
+
 class Worker;
 class ImportDesorption;
 class TimeSettings;
@@ -80,6 +81,7 @@ public:
 	void calcSticking();
 
 	bool EvaluateVariable(VLIST *v);
+    bool InitializeFormulas() override;
 
 	//char* appTitle;
 
@@ -128,7 +130,7 @@ public:
     TextureScaling  *textureScaling;
 	GlobalSettings	 *globalSettings;
     ProfilePlotter   *profilePlotter;
-	PressureEvolution *pressureEvolution;
+    PressureEvolution *pressureEvolution;
 	TimewisePlotter  *timewisePlotter;
     TexturePlotter   *texturePlotter;
 	OutgassingMap    *outgassingMap;
