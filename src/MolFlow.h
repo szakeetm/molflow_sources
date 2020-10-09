@@ -81,7 +81,6 @@ public:
 	void calcSticking();
 
 	bool EvaluateVariable(VLIST *v);
-    bool InitializeFormulas() override;
 
 	//char* appTitle;
 

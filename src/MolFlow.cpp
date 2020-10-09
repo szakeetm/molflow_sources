@@ -2807,27 +2807,6 @@ bool MolFlow::EvaluateVariable(VLIST *v) {
 	return ok;
 }
 
-bool MolFlow::InitializeFormulas(){
-    bool allOk = true;
-    for (size_t i = 0; i < formula_ptr->formulas_n.size(); i++) {
-
-        // Evaluate variables
-        int nbVar = formula_ptr->formulas_n.at(i)->GetNbVariable();
-        bool ok = true;
-        for (int j = 0; j < nbVar && ok; j++) {
-            VLIST *v = formula_ptr->formulas_n.at(i)->GetVariableAt(j);
-            ok = mApp->EvaluateVariable(v);
-        }
-
-        if (ok) {
-            formula_ptr->formulas_n.at(i)->hasVariableEvalError = false;
-        }
-        else{
-            allOk = false;
-        }
-    }
-    return allOk;
-}
 void MolFlow::UpdatePlotters() {
 	if (pressureEvolution) pressureEvolution->Update(m_fTime, true);
 	if (timewisePlotter) timewisePlotter->Update(m_fTime, true);
