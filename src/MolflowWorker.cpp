@@ -129,6 +129,8 @@ Worker::Worker() : simManager("molflow", "MFLW"){
     stopTime = 0.0f;
     simuTime = 0.0f;
 
+    sampleConvValues = true;
+
     isRunning = false;
     calcAC = false;
     strcpy(fullFileName, "");

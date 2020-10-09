@@ -2809,18 +2809,18 @@ bool MolFlow::EvaluateVariable(VLIST *v) {
 
 bool MolFlow::InitializeFormulas(){
     bool allOk = true;
-    for (size_t i = 0; i < mApp->formulas_n.size(); i++) {
+    for (size_t i = 0; i < formula_ptr->formulas_n.size(); i++) {
 
         // Evaluate variables
-        int nbVar = mApp->formulas_n[i]->GetNbVariable();
+        int nbVar = formula_ptr->formulas_n.at(i)->GetNbVariable();
         bool ok = true;
         for (int j = 0; j < nbVar && ok; j++) {
-            VLIST *v = mApp->formulas_n[i]->GetVariableAt(j);
+            VLIST *v = formula_ptr->formulas_n.at(i)->GetVariableAt(j);
             ok = mApp->EvaluateVariable(v);
         }
 
         if (ok) {
-            mApp->formulas_n[i]->hasVariableEvalError = false;
+            formula_ptr->formulas_n.at(i)->hasVariableEvalError = false;
         }
         else{
             allOk = false;
