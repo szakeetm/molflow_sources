@@ -79,6 +79,7 @@ endif(NOT MSVC)
 set(SRC_FILES
         ${CPP_DIR_1}/FacetAdvParams.cpp
         ${CPP_DIR_1}/FacetDetails.cpp
+        ${CPP_DIR_1}/FormulaEvaluator_MF.cpp
         ${CPP_DIR_1}/GeometryRender.cpp
         ${CPP_DIR_1}/GeometryViewer.cpp
         ${CPP_DIR_1}/GlobalSettings.cpp

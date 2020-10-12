@@ -80,8 +80,6 @@ public:
 	void calcFlow();
 	void calcSticking();
 
-	bool EvaluateVariable(VLIST *v);
-
 	//char* appTitle;
 
 	GLButton      *texturePlotterShortcut;
