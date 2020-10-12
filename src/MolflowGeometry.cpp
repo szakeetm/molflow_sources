@@ -2556,7 +2556,14 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 * \return bool if saving is successfull (always is here)
 */
 bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *buffer, GLProgress *progressDlg, bool saveSelected) {
-	xml_node rootNode = saveDoc.child("SimulationEnvironment");
+    xml_node rootNode;
+    if(mApp->useOldXMLFormat){
+        rootNode = saveDoc;
+    }
+    else {
+        rootNode = saveDoc.child("SimulationEnvironment");
+    }
+
     xml_node resultNode = rootNode.append_child("MolflowResults");
 	progressDlg->SetTitle("Saving simulation results...");
 	xml_node momentsNode = resultNode.append_child("Moments");

@@ -1418,20 +1418,13 @@ void Facet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchive) {
 				}
 			}
 			else {
-
-				double rw = sh.U.Norme() / (double)(sh.texWidthD);
-				double rh = sh.V.Norme() / (double)(sh.texHeightD);
-				double area = rw * rh;
+				const double area = (sh.texWidthD * sh.texHeightD)/(sh.U.Norme() * sh.V.Norme());
+                const double incrementVal = (area > 0.0) ? 1.0 / area : 0.0;
 				size_t add = 0;
 				for (int j = 0; j < sh.texHeight; j++) {
 					for (int i = 0; i < sh.texWidth; i++) {
-						if (area > 0.0) {
-							textIncVector[add] = 1.0 / area;
-						}
-						else {
-							textIncVector[add] = 0.0;
-						}
-						add++;
+                        textIncVector[add] = incrementVal;
+                        ++add;
 					}
 				}
 			}
