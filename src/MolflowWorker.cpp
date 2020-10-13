@@ -55,6 +55,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 
 
+#include "ConvergencePlotter.h"
 
 #if defined(MOLFLOW)
 
@@ -919,6 +920,11 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                         mApp->profilePlotter->SetWorker(this);
                     }
                     mApp->profilePlotter->Reset(); //To avoid trying to display non-loaded simulation results
+                    if (!mApp->convergencePlotter) {
+                        mApp->convergencePlotter = new ConvergencePlotter(this,mApp->formula_ptr);
+                        mApp->convergencePlotter->SetWorker(this);
+                    }
+                    mApp->convergencePlotter->Reset(); //To avoid trying to display non-loaded simulation results
                     GLMessageBox::Display(e.what(), "Error while loading simulation state", GLDLG_CANCEL,
                                           GLDLG_ICONWARNING);
                 }
