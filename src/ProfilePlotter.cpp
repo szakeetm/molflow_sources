@@ -104,7 +104,7 @@ ProfilePlotter::ProfilePlotter() :GLWindow() , views{}{
 	profCombo->SetEditable(true);
     Add(profCombo);
 
-    selFacInput = new GLTextField(0, "1,5-6,9");
+    selFacInput = new GLTextField(0, "...");
     selFacInput->SetEditable(true);
 
     Add(selFacInput);
@@ -224,6 +224,12 @@ void ProfilePlotter::Refresh() {
 	if (nbProf) profCombo->SetSize(nbProf);
     nbProf = 0;
     profCombo->SetValueAt(nbProf, "Select [v] or type ->", (int)-1);
+
+    std::stringstream facetInputText;
+    if(!nb) facetInputText << "...";
+    else if(nb==1) facetInputText << "1";
+    else facetInputText << "1-" << nb;
+    selFacInput->SetText(facetInputText.str());
     nbProf = 1;
     for (size_t i = 0; i < nb; i++) {
 		Facet *f = geom->GetFacet(i);

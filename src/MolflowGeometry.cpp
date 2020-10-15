@@ -22,9 +22,9 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Facet_shared.h"
 #include "Helper/MathTools.h"
 #include "ProfilePlotter.h"
+#include "ConvergencePlotter.h"
 #include "versionId.h"
 #include <iomanip>
-
 #include <cereal/types/vector.hpp>
 #include <cereal/types/string.hpp>
 
@@ -1417,7 +1417,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, BYTE *buffer, W
 	file->Write("nbVertex:"); file->Write(sh.nbVertex, "\n");
 	file->Write("nbFacet:"); file->Write(saveSelected ? selectedFacets.size() : sh.nbFacet, "\n");
 	file->Write("nbSuper:"); file->Write(sh.nbSuper, "\n");
-	file->Write("nbFormula:"); file->Write((!saveSelected) ? mApp->formulas_n.size() : 0, "\n");
+	file->Write("nbFormula:"); file->Write((!saveSelected) ? mApp->formula_ptr->formulas_n.size() : 0, "\n");
 
 	file->Write("nbView:"); file->Write(mApp->nbView, "\n");
 	file->Write("nbSelection:"); file->Write((!saveSelected) ? mApp->selections.size() : 0, "\n");
@@ -1442,7 +1442,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, BYTE *buffer, W
 
 	file->Write("formulas {\n");
 	if (!saveSelected) {
-		for (auto& f : mApp->formulas_n) {
+		for (auto& f : mApp->formula_ptr->formulas_n) {
 			file->Write("  \"");
 			file->Write(f->GetName());
 			file->Write("\" \"");
@@ -2421,13 +2421,13 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 	}
 
 	xml_node formulaNode = interfNode.append_child("Formulas");
-	formulaNode.append_attribute("nb") = (!saveSelected)*(mApp->formulas_n.size());
+	formulaNode.append_attribute("nb") = (!saveSelected)*(mApp->formula_ptr->formulas_n.size());
 	if (!saveSelected) { //don't save formulas when exporting part of the geometry (saveSelected)
-		for (size_t i = 0; i < mApp->formulas_n.size(); i++) {
+		for (size_t i = 0; i < mApp->formula_ptr->formulas_n.size(); i++) {
 			xml_node newFormula = formulaNode.append_child("Formula");
 			newFormula.append_attribute("id") = i;
-			newFormula.append_attribute("name") = mApp->formulas_n[i]->GetName();
-			newFormula.append_attribute("expression") = mApp->formulas_n[i]->GetExpression();
+			newFormula.append_attribute("name") = mApp->formula_ptr->formulas_n.at(i)->GetName();
+			newFormula.append_attribute("expression") = mApp->formula_ptr->formulas_n.at(i)->GetExpression();
 		}
 	}
 
@@ -2441,6 +2441,17 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 			view.append_attribute("facetId") = v;
 		}
 	}
+	
+    if (mApp->convergencePlotter) {
+        std::vector<int> cpViews = mApp->convergencePlotter->GetViews();
+        xml_node convergencePlotterNode = interfNode.append_child("ConvergencePlotter");
+        convergencePlotterNode.append_child("Parameters").append_attribute("logScale") = (int)mApp->convergencePlotter->IsLogScaled(); //backward compatibility: 0 or 1
+        xml_node viewsNode = convergencePlotterNode.append_child("Views");
+        for (int v : cpViews) {
+            xml_node view = viewsNode.append_child("View");
+            view.append_attribute("formulaHash") = v;
+        }
+    }
 
 	xml_node simuParamNode = rootNode.append_child("MolflowSimuSettings");
 
@@ -2844,7 +2855,22 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
 	minMaxNode.child("Moments_only").append_child("Imp.rate").append_attribute("min") = gHits->texture_limits[2].min.moments_only;
 	minMaxNode.child("Moments_only").child("Imp.rate").append_attribute("max") = gHits->texture_limits[2].max.moments_only;
 
-	return true;
+    //Convergence results
+    xml_node convNode = resultNode.append_child("Convergence");
+
+    int formulaId = 0;
+    for(const auto& convVec : mApp->formula_ptr->convergenceValues){
+        std::stringstream convText;
+        for(const auto& convVal : convVec){
+            convText << " " << convVal.first << " " <<convVal.second;
+        }
+        xml_node newConv = convNode.append_child("Formula").append_child(node_cdata);
+        newConv.append_attribute("id") = formulaId;
+        newConv.set_value(convText.str().c_str());
+        formulaId++;
+    }
+
+    return true;
 }
 
 /**
@@ -3013,6 +3039,24 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 			}
 		}
 
+        xml_node cpNode = interfNode.child("ConvergencePlotter");
+        if (cpNode) {
+            if (!mApp->convergencePlotter) {
+                mApp->convergencePlotter = new ConvergencePlotter(work, mApp->formula_ptr);
+                mApp->convergencePlotter->SetWorker(work);
+            }
+            xml_node paramsNode = cpNode.child("Parameters");
+            if (paramsNode && paramsNode.attribute("logScale"))
+                mApp->convergencePlotter->SetLogScaled(paramsNode.attribute("logScale").as_bool());
+            xml_node viewsNode = cpNode.child("Views");
+            if (viewsNode) {
+                std::vector<int> views;
+                for (xml_node view : viewsNode.children("View"))
+                    views.push_back(view.attribute("formulaHash").as_int());
+                mApp->convergencePlotter->SetViews(views);
+            }
+        }
+        
 		work->wp.gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
 		work->wp.halfLife = simuParamNode.child("Gas").attribute("halfLife").as_double();
 		if (simuParamNode.child("Gas").attribute("enableDecay")) {
@@ -3805,6 +3849,65 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, BYTE* buffer, Wo
 	work->globalHitCache.texture_limits[1].max.moments_only = minMaxNode.child("Moments_only").child("Density").attribute("max").as_double();
 	work->globalHitCache.texture_limits[2].min.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("min").as_double();
 	work->globalHitCache.texture_limits[2].max.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("max").as_double();
+
+    xml_node convNode = resultNode.child("Convergence");
+
+    std::stringstream convText;
+    int formulaId = 0;
+    mApp->formula_ptr->convergenceValues.resize(0);
+    for(auto& convVec : convNode.children()){
+        std::stringstream convText;
+        std::vector<std::pair<size_t, double>> vec;
+        convText << convVec.child_value();
+        while(!convText.eof()){
+            size_t nbDes = 0;
+            double convVal = 0.0;
+            convText >> nbDes;
+            convText >> convVal;
+            vec.emplace_back(std::make_pair(nbDes, convVal));
+        }
+        mApp->formula_ptr->convergenceValues.push_back(vec);
+    }
+    //mApp->formula_ptr->convergenceValues[formulaId];
+
+
+    /*if (convNode.child("countEquiv")) {
+        countText << textureNode.child_value("countEquiv");
+    }
+    else {
+        countText << textureNode.child_value("count");
+    }
+    sum1perText << textureNode.child_value("sum_1_per_v");
+    sumvortText << textureNode.child_value("sum_v_ort");
+
+    for (iy = 0; iy < (Min(f->sh.texHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
+        for (ix = 0; ix < (Min(f->sh.texWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
+            countText >> texture[iy * f->sh.texWidth + ix].countEquiv;
+            sum1perText >> texture[iy * f->sh.texWidth + ix].sum_1_per_ort_velocity;
+            sumvortText >> texture[iy * f->sh.texWidth + ix].sum_v_ort_per_area;
+
+        }
+        for (int ie = 0; ie < texWidth_file - f->sh.texWidth; ie++) {//Executed if file texture is bigger than expected texture
+            //Read extra cells from file without doing anything
+            size_t dummy_ll;
+            double dummy_d;
+            countText >> dummy_ll;
+            sum1perText >> dummy_d;
+            sumvortText >> dummy_d;
+
+        }
+    }
+    for (int ie = 0; ie < texHeight_file - f->sh.texHeight; ie++) {//Executed if file texture is bigger than expected texture
+        //Read extra cells ffrom file without doing anything
+        for (int iw = 0; iw < texWidth_file; iw++) {
+            size_t dummy_ll;
+            double dummy_d;
+            countText >> dummy_ll;
+            sum1perText >> dummy_d;
+            sumvortText >> dummy_d;
+        }
+
+    }*/
 
 	return true;
 }
