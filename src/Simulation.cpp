@@ -236,9 +236,12 @@ bool Simulation::LoadSimulation(Dataport *loader, char *loadStatus) {
 
 }
 
-void Simulation::UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DWORD timeout) {
-    UpdateMCHits(dpHit, prIdx, moments.size(), timeout);
-    if (dpLog) UpdateLog(dpLog, timeout);
+bool Simulation::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWORD timeout) {
+    bool lastHitUpdateOK = false;
+    lastHitUpdateOK = UpdateMCHits(dpHit, prIdx, moments.size(), timeout);
+    if (lastHitUpdateOK && dpLog) UpdateLog(dpLog, timeout);
+
+    return lastHitUpdateOK;
 }
 
 size_t Simulation::GetHitsSize() {
