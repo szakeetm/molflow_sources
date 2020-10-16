@@ -24,7 +24,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/GLLabel.h"
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
-#include "GLApp/MathTools.h"
+#include "Helper/MathTools.h"
 #include "GLApp/GLToggle.h"
 #include "GLApp/GLButton.h"
 #include "GLApp/GLTextField.h"
@@ -698,7 +698,8 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	bool hasAngleMapE = true;
 	bool TexVisibleE = true;
 	bool VolVisibleE = true;
-	bool ratioE = true;
+    uint32_t squaredCellsE = std::abs(f0->tRatioU - f0->tRatioV) < 1E-8 ? 1 : 2; // 1==squared cells, 2==non-squared cells, 0==mixed state
+    bool ratioE = true;
     bool ratioVE = true;
     bool teleportE = true;
 	bool accFactorE = true;
@@ -747,6 +748,7 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 		hasAngleMapE = hasAngleMapE && (f0->sh.anglemapParams.hasRecorded == f->sh.anglemapParams.hasRecorded);
 		TexVisibleE = TexVisibleE && f0->textureVisible == f->textureVisible;
 		VolVisibleE = VolVisibleE && f0->volumeVisible == f->volumeVisible;
+        squaredCellsE = squaredCellsE & (std::abs(f->tRatioU - f->tRatioV) < 1E-8 ? 1u : 2u);
         ratioE = ratioE && std::abs(f0->tRatioU - f->tRatioU) < 1E-8;
         ratioVE = ratioVE && std::abs(f0->tRatioV - f->tRatioV) < 1E-8;
         teleportE = teleportE && (f0->sh.teleportDest == f->sh.teleportDest);
@@ -789,7 +791,8 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	}*/
 
 	enableBtn->AllowMixedState(!isEnabledE); enableBtn->SetState(isEnabledE ? f0->sh.isTextured : 2);
-	recordDesBtn->AllowMixedState(!CountDesE); recordDesBtn->SetState(CountDesE ? f0->sh.countDes : 2);
+    aspectRatioBtn->AllowMixedState(!squaredCellsE); aspectRatioBtn->SetState(squaredCellsE ? (squaredCellsE==1) ? 1 : 0 : 2);
+    recordDesBtn->AllowMixedState(!CountDesE); recordDesBtn->SetState(CountDesE ? f0->sh.countDes : 2);
 	recordAbsBtn->AllowMixedState(!CountAbsE); recordAbsBtn->SetState(CountAbsE ? f0->sh.countAbs : 2);
 	recordReflBtn->AllowMixedState(!CountReflE); recordReflBtn->SetState(CountReflE ? f0->sh.countRefl : 2);
 	recordTransBtn->AllowMixedState(!CountTransE); recordTransBtn->SetState(CountTransE ? f0->sh.countTrans : 2);
@@ -823,13 +826,20 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
                 cellsU->SetText(isEnabledE ? "..." : "");
                 cellsV->SetText(isEnabledE ? "..." : "");
             }
+			if(!squaredCellsE){ // mixed state for squared or non-squared cells
+                resolutionText->SetEditable(false);
+                lengthText->SetEditable(false);
+                resolutionText2->SetEditable(false);
+                lengthText2->SetEditable(false);
+                cellsU->SetEditable(false);
+                cellsV->SetEditable(false);
+            }
 			// Allow for cell number input only when one facet is selected
 			if(!multiSelect){
 			    auto nbCells = f0->GetNbCellForRatio(f0->tRatioU,f0->tRatioV);
                 cellsU->SetText(isEnabledE ? std::to_string(nbCells.first) : "");
                 cellsV->SetText(isEnabledE ? std::to_string(nbCells.second) : "");
                 auto aspectState = IsZero(std::abs(f0->tRatioU-f0->tRatioV));
-                aspectRatioBtn->SetState(aspectState);
                 UpdateSquaredCells(aspectState);
                 cellsU->SetEditable(true);
                 cellsV->SetEditable(!aspectState);
@@ -840,21 +850,31 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 			}
 		}
 		else { //None of the facets have textures
-			resolutionText->SetText("");
+            aspectRatioBtn->SetState(true);
+            resolutionText->SetText("");
 			lengthText->SetText("");
             resolutionText2->SetText("");
             lengthText2->SetText("");
             cellsU->SetText("");
             cellsV->SetText("");
+            cellsU->SetText("");
+            UpdateSquaredCells(aspectRatioBtn->GetState());
         }
 	}
 	else { //Mixed state
-		resolutionText->SetText("");
+        resolutionText->SetEditable(false);
+        lengthText->SetEditable(false);
+        resolutionText2->SetEditable(false);
+        lengthText2->SetEditable(false);
+        cellsU->SetEditable(false);
+        cellsV->SetEditable(false);
+
 		lengthText->SetText("");
         resolutionText2->SetText("");
         lengthText2->SetText("");
         cellsU->SetText("");
         cellsV->SetText("");
+
 	}
 
 	if (teleportE) facetTeleport->SetText(f0->sh.teleportDest); else facetTeleport->SetText("...");
@@ -1071,11 +1091,11 @@ bool FacetAdvParams::ApplyTexture(bool force) {
 			//Got a valid number
 			doRatio = true;
 		}
-		else if (resolutionText->GetText()!="..." || resolutionText2->GetText()!="...") { //Not in mixed "..." state
+        else if (resolutionText->GetText()!="..." || resolutionText2->GetText()!="...") { //Not in mixed "..." state
 			GLMessageBox::Display("Invalid texture resolution\nMust be a non-negative number", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return false;
 		}
-		else {
+        else {
 			//Mixed state: leave doRatio as false
 		}
 	}
@@ -1103,12 +1123,16 @@ bool FacetAdvParams::ApplyTexture(bool force) {
 			if (recordDirBtn->GetState() < 2) f->sh.countDirection = recordDirBtn->GetState();
 		}
 
+        if (aspectRatioBtn->GetState() == 1 && !IsZero(f->tRatioU - f->tRatioV)) {
+            f->tRatioV = f->tRatioU;
+        }
+
 		bool hasAnyTexture = f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD || f->sh.countDirection;
 
 		//set textures
 		try {
 			bool needsRemeshing = force || (hadAnyTexture != hasAnyTexture) || (hadDirCount != f->sh.countDirection)
-			        || (doRatio && (!IsZero(geom->GetFacet(sel)->tRatioU - ratioU)) && (!IsZero(geom->GetFacet(sel)->tRatioV - ratioV)));
+			        || (doRatio && ((!IsZero(geom->GetFacet(sel)->tRatioU - ratioU)) || (!IsZero(geom->GetFacet(sel)->tRatioV - ratioV))));
 			if (needsRemeshing) {
                 geom->SetFacetTexture(sel, hasAnyTexture ? (doRatio ? ratioU : f->tRatioU) : 0.0,
                                       hasAnyTexture ? (doRatio ? ratioV : f->tRatioV) : 0.0,
@@ -1133,6 +1157,9 @@ bool FacetAdvParams::ApplyTexture(bool force) {
 
 	if (progressDlg) progressDlg->SetVisible(false);
 	SAFE_DELETE(progressDlg);
+
+	// Update state in case of change
+	UpdateSquaredCells(aspectRatioBtn->GetState());
 	return true;
 }
 
@@ -1606,7 +1633,7 @@ void FacetAdvParams::ApplyDrawSettings() {
 	geom->BuildGLList(); //Re-render facets
 }
 
-void FacetAdvParams::UpdateSquaredCells(bool aspectState) {
+void FacetAdvParams::UpdateSquaredCells(int aspectState) {
     int x,y,w,h;
     if(aspectState){
         resolutionText2->SetText(resolutionText->GetText());
@@ -1623,6 +1650,7 @@ void FacetAdvParams::UpdateSquaredCells(bool aspectState) {
         lengthText->SetBounds(x, y, 36, 18);
     }
 
+    auto enableState = enableBtn->GetState();
     auto sel = geom->GetSelectedFacets();
     if(!sel.empty()) {
         resolutionText2->SetEditable(!aspectState);
@@ -1631,9 +1659,12 @@ void FacetAdvParams::UpdateSquaredCells(bool aspectState) {
     if(sel.size()>1){
         cellsU->SetEditable(false);
         cellsV->SetEditable(false);
+        // non mixed, squared are editable, mixed state is not
+        lengthText->SetEditable(aspectState<2 && enableState<2);
+        resolutionText->SetEditable(aspectState<2 && enableState<2);
     }
     else if(sel.size()==1){
-        cellsU->SetEditable(!aspectState);
+        cellsU->SetEditable(true);
         cellsV->SetEditable(!aspectState);
     }
 
@@ -1641,6 +1672,11 @@ void FacetAdvParams::UpdateSquaredCells(bool aspectState) {
     lengthText2->SetVisible(!aspectState);
     labelXLen->SetVisible(!aspectState);
     labelXRes->SetVisible(!aspectState);
+
+    // Sync negative states to 2nd dimension
+    if(!lengthText->IsEditable()) lengthText2->SetEditable(false);
+    if(!resolutionText->IsEditable()) resolutionText2->SetEditable(false);
+
 }
 
 /**
@@ -1654,8 +1690,10 @@ void FacetAdvParams::UpdateToggle(GLComponent *src) {
 		} else if(src==enableBtn) {
 		//boundaryBtn->SetState(enableBtn->GetState());
 		} else */
-
-    if (src == aspectRatioBtn) {
+    if(src == enableBtn) {
+        UpdateSquaredCells(aspectRatioBtn->GetState());
+    }
+    else if (src == aspectRatioBtn) {
         auto aspectState = aspectRatioBtn->GetState();
         UpdateSquaredCells(aspectState);
     }
@@ -1788,8 +1826,8 @@ from C. Benvenutti http://cds.cern.ch/record/454180
 			enableBtn->SetState(true);
 			double res;
 			double resV;
+			// Fetch and test for a valid number
 			if (resolutionText->GetNumber(&res) && res != 0.0) {
-
                 lengthText->SetText(1.0 / res);
                 cellsU->SetText(0);
 			}
@@ -1800,6 +1838,7 @@ from C. Benvenutti http://cds.cern.ch/record/454180
                 lengthText2->SetText(lengthText->GetText());
 			}
 
+			// Calculate and display the number of actualy texels for each direction
 			auto selFacets = geom->GetSelectedFacets();
 			if(selFacets.size() == 1) {
                 resolutionText2->GetNumber(&resV);
@@ -1816,10 +1855,25 @@ from C. Benvenutti http://cds.cern.ch/record/454180
 		else if (src == resolutionText2) {
             enableBtn->SetState(true);
             double res;
+            // Fetch and test for a valid number
             if (resolutionText2->GetNumber(&res) && res != 0.0)
                 lengthText2->SetText(1.0 / res);
             else
                 lengthText2->SetText("");
+
+            // Calculate and display the number of actualy texels for each direction
+            auto selFacets = geom->GetSelectedFacets();
+            if(selFacets.size() == 1) {
+                double resU;
+                resolutionText->GetNumber(&resU);
+                auto nbCells = geom->GetFacet(selFacets.front())->GetNbCellForRatio(resU, res);
+                cellsU->SetText(nbCells.first);
+                cellsV->SetText(nbCells.second);
+            }
+            else{ // mixed state
+                cellsU->SetText("...");
+                cellsV->SetText("...");
+            }
             UpdateSizeForRatio();
         }
 		else if (src == lengthText) {
@@ -1838,6 +1892,23 @@ from C. Benvenutti http://cds.cern.ch/record/454180
                 lengthText2->SetText(lengthText->GetText());
                 resolutionText2->SetText(resolutionText->GetText());
             }
+
+            // Calculate and display the number of actualy texels for each direction
+            auto selFacets = geom->GetSelectedFacets();
+            if(selFacets.size() == 1) {
+                double resU;
+                double resV;
+                resolutionText->GetNumber(&resU);
+                resolutionText2->GetNumber(&resV);
+                auto nbCells = geom->GetFacet(selFacets.front())->GetNbCellForRatio(resU, resV);
+                cellsU->SetText(nbCells.first);
+                cellsV->SetText(nbCells.second);
+            }
+            else{ // mixed state
+                cellsU->SetText("...");
+                cellsV->SetText("...");
+            }
+            UpdateSizeForRatio();
 		}
 		else if (src == lengthText2) {
             enableBtn->SetState(true);
@@ -1846,6 +1917,22 @@ from C. Benvenutti http://cds.cern.ch/record/454180
                 resolutionText2->SetText(1.0 / length);}
             else
                 resolutionText2->SetText("");
+
+            // Calculate and display the number of actualy texels for each direction
+            auto selFacets = geom->GetSelectedFacets();
+            if(selFacets.size() == 1) {
+                double resU;
+                double resV;
+                resolutionText->GetNumber(&resU);
+                resolutionText2->GetNumber(&resV);
+                auto nbCells = geom->GetFacet(selFacets.front())->GetNbCellForRatio(resU, resV);
+                cellsU->SetText(nbCells.first);
+                cellsV->SetText(nbCells.second);
+            }
+            else{ // mixed state
+                cellsU->SetText("...");
+                cellsV->SetText("...");
+            }
             UpdateSizeForRatio();
         }
 		else if (src == cellsU || src == cellsV) {

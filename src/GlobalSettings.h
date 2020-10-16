@@ -68,8 +68,10 @@ private:
   GLButton    *applyButton;
   GLButton    *recalcButton;
 
-  GLTextField *outgassingText;
-  GLTextField *influxText;
+  GLTextField *outgassingGasRateText;
+  GLTextField *outgassingMoleculeRateText;
+  GLLabel     *desorbedMoleculesLabel;
+  GLTextField *desorbedMoleculesText;
   GLTextField *gasMassText;
   GLToggle    *enableDecay;
   GLTextField *halfLifeText;

@@ -145,14 +145,17 @@ void Simulation::ClearSimulation() {
 }
 
 // returns hit size or 0 on error
-size_t Simulation::LoadSimulation() {
+size_t Simulation::LoadSimulation(char *loadStatus) {
     double t0 = GetTick();
 
     //SetState(PROCESS_STARTING, "Clearing previous simulation");
+    strncpy(loadStatus, "Clearing previous simulation", 127);
+
     ClearSimulation();
 
     //SetState(PROCESS_STARTING, "Loading simulation");
-/*
+    strncpy(loadStatus, "Loading simulation", 127);
+    /*
     {
         std::string inputString(loader->size,'\0');
         BYTE* buffer = (BYTE*)loader->buff;
@@ -180,6 +183,11 @@ size_t Simulation::LoadSimulation() {
 
         //Facets
         for (size_t i = 0; i < model.sh.nbFacet; i++) { //Necessary because facets is not (yet) a vector in the interface
+            {
+                char tmp[128];
+                sprintf(tmp,"Loading facet #%u / %u", i, sh.nbFacet);
+                strncpy(loadStatus, tmp, 127);
+            }
             SubprocessFacet f;
             inputArchive(
                     f.sh,
@@ -189,6 +197,8 @@ size_t Simulation::LoadSimulation() {
                     f.angleMap.pdf,
                     f.textureCellIncrements
             );
+            f.isHit=false;
+            f.colDist=1E99;
 
             //Some initialization
             if (!f.InitializeOnLoad(i, model.tdParams.moments.size(), histogramTotalSize)) return false;
@@ -321,14 +331,17 @@ size_t Simulation::LoadSimulation() {
 
 }
 
-void Simulation::UpdateHits(int prIdx, DWORD timeout) {
-    if(!globState)
-        return;
+bool Simulation::UpdateHits(int prIdx, DWORD timeout) {
+    bool lastHitUpdateOK = false;
+    if(!globState) {
+        return false;
+    }
     if (!tMutex.try_lock_for(std::chrono::seconds (10))) {
-        return;
+        return false;
     }
     //globState = tmpGlobalResults[0];
-    UpdateMCHits(*globState, prIdx, model.tdParams.moments.size(), timeout);
+
+    lastHitUpdateOK = UpdateMCHits(*globState, prIdx, model.tdParams.moments.size(), timeout);
     // only 1 , so no reduce necessary
     /*ParticleLoggerItem& globParticleLog = tmpParticleLog[0];
     if (dpLog) UpdateLog(dpLog, timeout);*/
@@ -339,6 +352,8 @@ void Simulation::UpdateHits(int prIdx, DWORD timeout) {
     // 0 = global buffer for reduce
     for(auto & tmpGlobalResult : tmpGlobalResults)
         tmpGlobalResult.Reset();
+
+    return lastHitUpdateOK;
 }
 
 size_t Simulation::GetHitsSize() {

@@ -10,6 +10,7 @@ set(PROJECT_NAME molflowSub)
 set(CPP_DIR_1 ../../src)
 set(CPP_DIR_2 ../../src_shared)
 set(CPP_DIR_3 ../../src_shared/GLApp)
+set(CPP_DIR_HELPER ../../src_shared/Helper)
 
 set(HEADER_DIR_1 ../../src)
 set(HEADER_DIR_2 ../../src_shared)
@@ -74,7 +75,6 @@ endif(NOT MSVC)
 set(SRC_FILES
         #${CPP_DIR_1}/molflowSub.cpp
         ${CPP_DIR_1}/MolflowTypes.cpp
-        ${CPP_DIR_1}/MolflowBuffer.cpp
         ${CPP_DIR_1}/Parameter.cpp
         ${CPP_DIR_1}/Simulation.cpp
         #${CPP_DIR_1}/SimulationAC.cpp
@@ -87,7 +87,7 @@ set(SRC_FILES
 
         ${CPP_DIR_2}/IntersectAABB_shared.cpp
         ${CPP_DIR_2}/SimulationController.cpp
-        ${CPP_DIR_3}/MathTools.cpp
+        ${CPP_DIR_HELPER}/MathTools.cpp
 
         ${CPP_DIR_1}/MolflowHitCounter.cpp
         )

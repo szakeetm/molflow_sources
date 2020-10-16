@@ -47,7 +47,8 @@ public:
 	size_t   nbBounces; // Number of hit (current particle) since desorption
     size_t   lastMomentIndex; // Speedup for binary search
 	double   distanceTraveled;
-	double   flightTime;
+    double   generationTime; //Time it was created, constant
+    double   particleTime; //Actual time, incremented after every hit. (Flight time = actual time - generation time)
 
 	double   velocity;
 	double   expectedDecayMoment; //for radioactive gases
@@ -69,7 +70,7 @@ public:
 
     int SanityCheckGeom() override;
     void ClearSimulation() override;
-    size_t LoadSimulation() override;
+    size_t LoadSimulation(char *loadStatus) override;
     void ResetSimulation() override;
 
     void RecordHit(const int &type, const CurrentParticleStatus &currentParticle);
@@ -78,7 +79,7 @@ public:
 
     int ReinitializeParticleLog() override;
 
-    void UpdateHits(int prIdx, DWORD timeout) override;
+    bool UpdateHits(int prIdx, DWORD timeout) override;
     bool UpdateMCHits(GlobalSimuState& globSimuState, int prIdx, size_t nbMoments, DWORD timeout);
 
     void PerformTeleport(SubprocessFacet *iFacet, CurrentParticleStatus &currentParticle);

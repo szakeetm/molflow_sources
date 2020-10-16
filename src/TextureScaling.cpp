@@ -22,7 +22,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "MolflowGeometry.h"
 #include "Worker.h"
 #include "GLApp/GLMessageBox.h"
-#include "GLApp/MathTools.h"
+#include "Helper/MathTools.h"
 #include "GLApp/GLButton.h"
 #include "GLApp/GLTextField.h"
 #include "GLApp/GLLabel.h"
@@ -294,7 +294,7 @@ void TextureScaling::ProcessMessage(GLComponent *src,int message) {
 			geom->texture_limits[geom->textureMode].manual.max.all=
 				geom->texAutoScaleIncludeConstantFlow?
 				geom->texture_limits[geom->textureMode].autoscale.max.all
-				:geom->texture_limits[geom->textureMode].autoscale.max.moments_only;texMinText->SetText(texCMinText->GetText());
+				:geom->texture_limits[geom->textureMode].autoscale.max.moments_only;
 			texMinText->SetText(texCMinText->GetText());
 			texMaxText->SetText(texCMaxText->GetText());
 			texAutoScale->SetState(false);

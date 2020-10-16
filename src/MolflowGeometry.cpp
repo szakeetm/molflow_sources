@@ -20,8 +20,9 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "MolflowGeometry.h"
 #include "MolFlow.h"
 #include "Facet_shared.h"
-#include "GLApp/MathTools.h"
+#include "Helper/MathTools.h"
 #include "ProfilePlotter.h"
+#include "ConvergencePlotter.h"
 #include "versionId.h"
 #include <iomanip>
 #include <cmath>
@@ -88,7 +89,8 @@ size_t MolflowGeometry::GetGeometrySize() {
 	for (auto& i : work->IDs) {
 
 		memoryUsage += sizeof(size_t); //ID size
-		memoryUsage += i.size() * 2 * sizeof(double);
+		memoryUsage += 2*sizeof(bool); //logX,logY interpolation flags
+		memoryUsage += i.values.size() * 2 * sizeof(double);
 	}
 
 	//Parameters
@@ -336,11 +338,15 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 
 	file->ReadKeyword("totalHit"); file->ReadKeyword(":");
 	file->ReadSizeT();
+	if (version2 >= 10) {
+		file->ReadKeyword("totalHitEquiv"); file->ReadKeyword(":");
+		file->ReadDouble();
+	}
 	file->ReadKeyword("totalDes"); file->ReadKeyword(":");
 	file->ReadSizeT();
 	if (version2 >= 6) {
 		file->ReadKeyword("no_scans"); file->ReadKeyword(":");
-		/*loaded_no_scans = */file->ReadDouble();
+		/*loaded_no_scans =*/ file->ReadDouble();
 	}
 
 	file->ReadKeyword("totalLeak"); file->ReadKeyword(":");
@@ -349,6 +355,12 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 		file->ReadKeyword("totalFlux"); file->ReadKeyword(":");
 		file->ReadDouble();
 		file->ReadKeyword("totalPower"); file->ReadKeyword(":");
+		file->ReadDouble();
+	}
+	if (version2 >= 10) {
+		file->ReadKeyword("totalAbsEquiv"); file->ReadKeyword(":");
+		file->ReadDouble();
+		file->ReadKeyword("totalDist"); file->ReadKeyword(":");
 		file->ReadDouble();
 	}
 	file->ReadKeyword("maxDes"); file->ReadKeyword(":");
@@ -520,6 +532,7 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 				facets[i]->sh.superIdx += static_cast<int>(strIdx);
 			if (facets[i]->sh.superDest > 0) facets[i]->sh.superDest += strIdx;
 		}
+		if (facets[i]->sh.teleportDest>0) facets[i]->sh.teleportDest += sh.nbFacet; //Offset teleport target
 	}
 
 	sh.nbVertex += nbNewVertex;
@@ -1366,7 +1379,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, GlobalSimuState
 	// Globals
 	//BYTE *buffer;
 	//if (!crashSave && !saveSelected) buffer = (BYTE *)buffer->buff;
-	
+
 	double dCoef = 1.0;
 	int ix, iy;
 
@@ -1404,7 +1417,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, GlobalSimuState
 	file->Write("nbVertex:"); file->Write(sh.nbVertex, "\n");
 	file->Write("nbFacet:"); file->Write(saveSelected ? selectedFacets.size() : sh.nbFacet, "\n");
 	file->Write("nbSuper:"); file->Write(sh.nbSuper, "\n");
-	file->Write("nbFormula:"); file->Write((!saveSelected) ? mApp->formulas_n.size() : 0, "\n");
+	file->Write("nbFormula:"); file->Write((!saveSelected) ? mApp->formula_ptr->formulas_n.size() : 0, "\n");
 
 	file->Write("nbView:"); file->Write(mApp->nbView, "\n");
 	file->Write("nbSelection:"); file->Write((!saveSelected) ? mApp->selections.size() : 0, "\n");
@@ -1429,7 +1442,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, GlobalSimuState
 
 	file->Write("formulas {\n");
 	if (!saveSelected) {
-		for (auto& f : mApp->formulas_n) {
+		for (auto& f : mApp->formula_ptr->formulas_n) {
 			file->Write("  \"");
 			file->Write(f->GetName());
 			file->Write("\" \"");
@@ -1729,7 +1742,7 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, GlobalS
 
 					const std::vector<TextureCell>& texture = globState.facetStates[fInd].momentResults[m].texture;
 					const std::vector<DirectionCell>& dirs = globState.facetStates[fInd].momentResults[m].direction;
-					
+
 					for (size_t i = 0; i < w; i++) {
 						for (size_t j = 0; j < h; j++) {
 							size_t index = i + j * w;
@@ -2163,21 +2176,21 @@ void MolflowGeometry::ImportDesorption_SYN(
 						else {
 							//Convert to outgassing
 							if (mode == 0) {
-								if (source == 0) outgassing = (double)MC * 0.100 / 1.38E-23 / f->sh.temperature;
-								else if (source == 1) outgassing = flux * 0.100 / 1.38E-23 / f->sh.temperature; //Division by 10 because the user will want to see the same outgassing in mbar*l/s
-								else if (source == 2) outgassing = power * 0.100 / 1.38E-23 / f->sh.temperature; //(Outgassing is stored internally in Pa*m3/s, for consistent SI unit calculations)
+								if (source == 0) outgassing = (double)MC * MBARLS_TO_PAM3S / 1.38E-23 / f->sh.temperature;
+								else if (source == 1) outgassing = flux * MBARLS_TO_PAM3S / 1.38E-23 / f->sh.temperature; //Division by 10 because the user will want to see the same outgassing in mbar*l/s
+								else if (source == 2) outgassing = power * MBARLS_TO_PAM3S / 1.38E-23 / f->sh.temperature; //(Outgassing is stored internally in Pa*m3/s, for consistent SI unit calculations)
 							}
 							else if (mode == 1) {
 								double moleculePerPhoton = eta0 * pow(Max(1.0, dose / cutoffdose), alpha);
 								outgassing = flux * moleculePerPhoton;
 							}
 							else if (mode == 2) {
-								double moleculePerPhoton = InterpolateY(dose, convDistr, false, true);
+								double moleculePerPhoton = InterpolateY(dose, convDistr, false, false, true);
 								outgassing = flux * moleculePerPhoton;
 							}
 						}
 						//Apply outgassing
-						//f->outgassingMap[index] = outgassing *0.100; //0.1: mbar*l/s->Pa*m3/s
+						//f->outgassingMap[index] = outgassing *MBARLS_TO_PAM3S; //0.1: mbar*l/s->Pa*m3/s
 						f->outgassingMap[index] = outgassing * 1.38E-23 * f->sh.temperature; //1[Pa*m3/s] = kT [particles/sec]
 
 						//Facet diagnostic info
@@ -2323,7 +2336,7 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
     }
 	else {
         rootNode = saveDoc.append_child("SimulationEnvironment");
-        rootNode.append_attribute("type") = "molflow";
+        rootNode.attribute("type") = "molflow";
         rootNode.append_attribute("version") = appVersionId;
     }
     xml_node geomNode = rootNode.append_child("Geometry");
@@ -2400,13 +2413,13 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 	}
 
 	xml_node formulaNode = interfNode.append_child("Formulas");
-	formulaNode.append_attribute("nb") = (!saveSelected)*(mApp->formulas_n.size());
+	formulaNode.append_attribute("nb") = (!saveSelected)*(mApp->formula_ptr->formulas_n.size());
 	if (!saveSelected) { //don't save formulas when exporting part of the geometry (saveSelected)
-		for (size_t i = 0; i < mApp->formulas_n.size(); i++) {
+		for (size_t i = 0; i < mApp->formula_ptr->formulas_n.size(); i++) {
 			xml_node newFormula = formulaNode.append_child("Formula");
 			newFormula.append_attribute("id") = i;
-			newFormula.append_attribute("name") = mApp->formulas_n[i]->GetName();
-			newFormula.append_attribute("expression") = mApp->formulas_n[i]->GetExpression();
+			newFormula.append_attribute("name") = mApp->formula_ptr->formulas_n.at(i)->GetName();
+			newFormula.append_attribute("expression") = mApp->formula_ptr->formulas_n.at(i)->GetExpression();
 		}
 	}
 
@@ -2420,6 +2433,17 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 			view.append_attribute("facetId") = v;
 		}
 	}
+
+    if (mApp->convergencePlotter) {
+        std::vector<int> cpViews = mApp->convergencePlotter->GetViews();
+        xml_node convergencePlotterNode = interfNode.append_child("ConvergencePlotter");
+        convergencePlotterNode.append_child("Parameters").append_attribute("logScale") = (int)mApp->convergencePlotter->IsLogScaled(); //backward compatibility: 0 or 1
+        xml_node viewsNode = convergencePlotterNode.append_child("Views");
+        for (int v : cpViews) {
+            xml_node view = viewsNode.append_child("View");
+            view.append_attribute("formulaHash") = v;
+        }
+    }
 
 	xml_node simuParamNode = rootNode.append_child("MolflowSimuSettings");
 
@@ -2470,6 +2494,8 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 			newParameter.append_attribute("id") = nonCatalogParameters;
 			newParameter.append_attribute("name") = work->parameters[i].name.c_str();
 			newParameter.append_attribute("nbMoments") = (int)work->parameters[i].GetSize();
+			newParameter.append_attribute("logXinterp") = work->parameters[i].logXinterp;
+			newParameter.append_attribute("logYinterp") = work->parameters[i].logYinterp;
 			for (size_t m = 0; m < work->parameters[i].GetSize(); m++) {
 				xml_node newMoment = newParameter.append_child("Moment");
 				newMoment.append_attribute("id") = m;
@@ -2480,6 +2506,24 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 		}
 	}
 	paramNode.append_attribute("nb") = nonCatalogParameters;
+	xml_node globalHistNode = simuParamNode.append_child("Global_histograms");
+	if (work->wp.globalHistogramParams.recordBounce) {
+	xml_node nbBounceNode = globalHistNode.append_child("Bounces");
+		nbBounceNode.append_attribute("binSize")=work->wp.globalHistogramParams.nbBounceBinsize;
+		nbBounceNode.append_attribute("max")=work->wp.globalHistogramParams.nbBounceMax;
+	}
+	if (work->wp.globalHistogramParams.recordDistance) {
+		xml_node distanceNode = globalHistNode.append_child("Distance");
+		distanceNode.append_attribute("binSize")=work->wp.globalHistogramParams.distanceBinsize;
+		distanceNode.append_attribute("max")=work->wp.globalHistogramParams.distanceMax;
+	}
+	#ifdef MOLFLOW
+	if (work->wp.globalHistogramParams.recordTime) {
+		xml_node timeNode = globalHistNode.append_child("Time");
+		timeNode.append_attribute("binSize")=work->wp.globalHistogramParams.timeBinsize;
+		timeNode.append_attribute("max")=work->wp.globalHistogramParams.timeMax;
+	}
+	#endif
 }
 
 /**
@@ -2491,15 +2535,26 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 * \param saveSelected saveSelected if a selection is to be saved (TODO: check if necessary)
 * \return bool if saving is successfull (always is here)
 */
-bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSimuState &globState, GLProgress *prg, bool saveSelected) {
-	xml_node rootNode = saveDoc.child("SimulationEnvironment");
+bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSimuState &globState, GLProgress *progressDlg, bool saveSelected) {
+    xml_node rootNode;
+    if(mApp->useOldXMLFormat){
+        rootNode = saveDoc;
+    }
+    else {
+        rootNode = saveDoc.child("SimulationEnvironment");
+    }
     xml_node resultNode = rootNode.append_child("MolflowResults");
-	prg->SetMessage("Writing simulation results...");
+	progressDlg->SetTitle("Saving simulation results...");
 	xml_node momentsNode = resultNode.append_child("Moments");
 	momentsNode.append_attribute("nb") = work->moments.size() + 1;
 	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++) {
-		prg->SetProgress(0.5 + 0.5*(double)m / (1.0 + (double)mApp->worker.moments.size()));
+
+		std::ostringstream msg;
+		msg << "Saving moment " << (m + 1) << "/" << (mApp->worker.moments.size()+1) << "...";
+		progressDlg->SetMessage(msg.str(), false);
+		progressDlg->SetProgress(0.5 + 0.5*(double)m / (1.0 + (double)mApp->worker.moments.size()));
+
 		xml_node newMoment = momentsNode.append_child("Moment");
 		newMoment.append_attribute("id") = m;
 		if (m == 0) {
@@ -2550,6 +2605,64 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSi
 			}
 		} //end global node
 
+
+		bool hasHistogram = work->wp.globalHistogramParams.recordBounce || work->wp.globalHistogramParams.recordDistance;
+			#ifdef MOLFLOW
+			hasHistogram = hasHistogram || work->wp.globalHistogramParams.recordTime;
+			#endif
+			if (hasHistogram) {
+				xml_node histNode = newMoment.append_child("Histograms");
+				//Retrieve histogram map from hits dp
+				BYTE* globalHistogramAddress = buffer+sizeof(GlobalHitBuffer);
+				globalHistogramAddress += m * work->wp.globalHistogramParams.GetDataSize();
+				if (work->wp.globalHistogramParams.recordBounce) {
+					double* nbHitsHistogram = (double*) globalHistogramAddress;
+					xml_node hist = histNode.append_child("Bounces");
+					size_t histSize = work->wp.globalHistogramParams.GetBounceHistogramSize();
+					hist.append_attribute("size")=histSize;
+					hist.append_attribute("binSize")=work->wp.globalHistogramParams.nbBounceBinsize; //redundancy for human-reading or export
+					hist.append_attribute("max")=work->wp.globalHistogramParams.nbBounceMax; //redundancy for human-reading or export
+					for (size_t h=0;h<histSize;h++) {
+						xml_node bin=hist.append_child("Bin");
+						auto value = bin.append_attribute("start");
+						if (h==histSize-1) value = "overRange";
+						else value = h * work->wp.globalHistogramParams.nbBounceBinsize;
+						bin.append_attribute("count") = nbHitsHistogram[h];
+					}
+				}
+				if (work->wp.globalHistogramParams.recordDistance) {
+					double* distanceHistogram = (double*) (globalHistogramAddress + work->wp.globalHistogramParams.GetBouncesDataSize());
+					xml_node hist = histNode.append_child("Distance");
+					size_t histSize = work->wp.globalHistogramParams.GetDistanceHistogramSize();
+					hist.append_attribute("size")=histSize;
+					hist.append_attribute("binSize")=work->wp.globalHistogramParams.distanceBinsize; //redundancy for human-reading or export
+					hist.append_attribute("max")=work->wp.globalHistogramParams.distanceMax; //redundancy for human-reading or export
+					for (size_t h=0;h<histSize;h++) {
+						xml_node bin=hist.append_child("Bin");
+						auto value = bin.append_attribute("start");
+						if (h==histSize-1) value = "overRange";
+						else value = h * work->wp.globalHistogramParams.distanceBinsize;
+						bin.append_attribute("count") = distanceHistogram[h];
+					}
+				}
+				if (work->wp.globalHistogramParams.recordTime) {
+					double* timeHistogram = (double*) (globalHistogramAddress + work->wp.globalHistogramParams.GetBouncesDataSize() +
+               work->wp.globalHistogramParams.GetDistanceDataSize());
+					xml_node hist = histNode.append_child("Time");
+					size_t histSize = work->wp.globalHistogramParams.GetTimeHistogramSize();
+					hist.append_attribute("size")=histSize;
+					hist.append_attribute("binSize")=work->wp.globalHistogramParams.timeBinsize; //redundancy for human-reading or export
+					hist.append_attribute("max")=work->wp.globalHistogramParams.timeMax; //redundancy for human-reading or export
+					for (size_t h=0;h<histSize;h++) {
+						xml_node bin=hist.append_child("Bin");
+						auto value = bin.append_attribute("start");
+						if (h==histSize-1) value = "overRange";
+						else value = h * work->wp.globalHistogramParams.timeBinsize;
+						bin.append_attribute("count") = timeHistogram[h];
+					}
+				}
+			}
+
 		xml_node facetResultsNode = newMoment.append_child("FacetResults");
 
 		for (int i = 0; i < sh.nbFacet; i++) {
@@ -2581,6 +2694,8 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSi
 			}
 
 			size_t profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + mApp->worker.moments.size())) : 0;
+
+			//Textures
 			size_t h = f->sh.texHeight;
 			size_t w = f->sh.texWidth;
 
@@ -2611,6 +2726,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSi
 				textureNode.append_child("sum_v_ort").append_child(node_cdata).set_value(sumvortText.str().c_str());
 
 			} //end texture
+			size_t textureSize = (1 + (int)work->moments.size())*w*h * sizeof(TextureCell);
 
 			if (f->sh.countDirection && f->dirCache) {
 				xml_node dirNode = newFacetResult.append_child("Directions");
@@ -2637,6 +2753,79 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSi
 				dirNode.append_child("vel.vectors").append_child(node_cdata).set_value(dirText.str().c_str());
 				dirNode.append_child("count").append_child(node_cdata).set_value(dirCountText.str().c_str());
 			} //end directions
+			size_t dirSize = f->sh.countDirection ? (1 + (int)work->moments.size())*w*h * sizeof(DirectionCell) : 0;
+
+			size_t angleMapRecordedDataSize = sizeof(size_t) * (f->sh.anglemapParams.phiWidth *
+                                                                        (f->sh.anglemapParams.thetaLowerRes +
+                                                                         f->sh.anglemapParams.thetaHigherRes));
+
+			//Facet histograms (1 per moment) comes here
+			bool hasHistogram = f->sh.facetHistogramParams.recordBounce || f->sh.facetHistogramParams.recordDistance;
+			#ifdef MOLFLOW
+			hasHistogram = hasHistogram || f->sh.facetHistogramParams.recordTime;
+			#endif
+			if (hasHistogram) {
+				xml_node histNode = newFacetResult.append_child("Histograms");
+				//Retrieve histogram map from hits dp
+				BYTE *histogramAddress = buffer
+                                 + f->sh.hitOffset
+                                 + (1 + work->moments.size()) * sizeof(FacetHitBuffer)
+                                 + (f->sh.isProfile ? PROFILE_SIZE * sizeof(ProfileSlice) * (1 + work->moments.size()) : 0)
+                                 + (f->sh.isTextured ? f->sh.texWidth * f->sh.texHeight * sizeof(TextureCell) *
+                                                       (1 + work->moments.size()) : 0)
+                                 + (f->sh.countDirection ? f->sh.texWidth * f->sh.texHeight * sizeof(DirectionCell) *
+                                                           (1 + work->moments.size()) : 0)
+                                 + sizeof(size_t) * (f->sh.anglemapParams.phiWidth *
+                                                     (f->sh.anglemapParams.thetaLowerRes +
+                                                      f->sh.anglemapParams.thetaHigherRes));
+        				histogramAddress += m * f->sh.facetHistogramParams.GetDataSize();
+				if (f->sh.facetHistogramParams.recordBounce) {
+					double* nbHitsHistogram = (double*) histogramAddress;
+					xml_node hist = histNode.append_child("Bounces");
+					size_t histSize = f->sh.facetHistogramParams.GetBounceHistogramSize();
+					hist.append_attribute("size")=histSize;
+					hist.append_attribute("binSize")=f->sh.facetHistogramParams.nbBounceBinsize; //redundancy for human-reading or export
+					hist.append_attribute("max")=f->sh.facetHistogramParams.nbBounceMax; //redundancy for human-reading or export
+					for (size_t h=0;h<histSize;h++) {
+						xml_node bin=hist.append_child("Bin");
+						auto value = bin.append_attribute("start");
+						if (h==histSize-1) value = "overRange";
+						else value = h * f->sh.facetHistogramParams.nbBounceBinsize;
+						bin.append_attribute("count") = nbHitsHistogram[h];
+					}
+				}
+				if (f->sh.facetHistogramParams.recordDistance) {
+					double* distanceHistogram = (double*) (histogramAddress + f->sh.facetHistogramParams.GetBouncesDataSize());
+					xml_node hist = histNode.append_child("Distance");
+					size_t histSize = f->sh.facetHistogramParams.GetDistanceHistogramSize();
+					hist.append_attribute("size")=histSize;
+					hist.append_attribute("binSize")=f->sh.facetHistogramParams.distanceBinsize; //redundancy for human-reading or export
+					hist.append_attribute("max")=f->sh.facetHistogramParams.distanceMax; //redundancy for human-reading or export
+					for (size_t h=0;h<histSize;h++) {
+						xml_node bin=hist.append_child("Bin");
+						auto value = bin.append_attribute("start");
+						if (h==histSize-1) value = "overRange";
+						else value = h * f->sh.facetHistogramParams.distanceBinsize;
+						bin.append_attribute("count") = distanceHistogram[h];
+					}
+				}
+				if (f->sh.facetHistogramParams.recordTime) {
+					double* timeHistogram = (double*) (histogramAddress + f->sh.facetHistogramParams.GetBouncesDataSize() +
+               f->sh.facetHistogramParams.GetDistanceDataSize());
+					xml_node hist = histNode.append_child("Time");
+					size_t histSize = f->sh.facetHistogramParams.GetTimeHistogramSize();
+					hist.append_attribute("size")=histSize;
+					hist.append_attribute("binSize")=f->sh.facetHistogramParams.timeBinsize; //redundancy for human-reading or export
+					hist.append_attribute("max")=f->sh.facetHistogramParams.timeMax; //redundancy for human-reading or export
+					for (size_t h=0;h<histSize;h++) {
+						xml_node bin=hist.append_child("Bin");
+						auto value = bin.append_attribute("start");
+						if (h==histSize-1) value = "overRange";
+						else value = h * f->sh.facetHistogramParams.timeBinsize;
+						bin.append_attribute("count") = timeHistogram[h];
+					}
+				}
+			}
 		}
 	}
 
@@ -2656,7 +2845,22 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSi
 	minMaxNode.child("Moments_only").append_child("Imp.rate").append_attribute("min") = globState.globalHits.texture_limits[2].min.moments_only;
 	minMaxNode.child("Moments_only").child("Imp.rate").append_attribute("max") = globState.globalHits.texture_limits[2].max.moments_only;
 
-	return true;
+    //Convergence results
+    xml_node convNode = resultNode.append_child("Convergence");
+
+    int formulaId = 0;
+    for(const auto& convVec : mApp->formula_ptr->convergenceValues){
+        std::stringstream convText;
+        for(const auto& convVal : convVec){
+            convText << " " << convVal.first << " " <<convVal.second;
+        }
+        xml_node newConv = convNode.append_child("Formula").append_child(node_cdata);
+        newConv.append_attribute("id") = formulaId;
+        newConv.set_value(convText.str().c_str());
+        formulaId++;
+    }
+
+    return true;
 }
 
 /**
@@ -2708,6 +2912,12 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 			for (xml_node newParameter : paramNode.children("Parameter")) {
 				Parameter newPar;
 				newPar.name = newParameter.attribute("name").as_string();
+				if (newParameter.attribute("logXinterp")) {
+					newPar.logXinterp = newParameter.attribute("logXinterp").as_bool();
+				} //else set to false by constructor
+				if (newParameter.attribute("logYinterp")) {
+					newPar.logYinterp = newParameter.attribute("logYinterp").as_bool();
+				} //else set to false by constructor
 				for (xml_node newMoment : newParameter.children("Moment")) {
 					newPar.AddPair(std::make_pair(newMoment.attribute("t").as_double(),
 						newMoment.attribute("value").as_double()));
@@ -2818,6 +3028,24 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 			}
 		}
 
+        xml_node cpNode = interfNode.child("ConvergencePlotter");
+        if (cpNode) {
+            if (!mApp->convergencePlotter) {
+                mApp->convergencePlotter = new ConvergencePlotter(work, mApp->formula_ptr);
+                mApp->convergencePlotter->SetWorker(work);
+            }
+            xml_node paramsNode = cpNode.child("Parameters");
+            if (paramsNode && paramsNode.attribute("logScale"))
+                mApp->convergencePlotter->SetLogScaled(paramsNode.attribute("logScale").as_bool());
+            xml_node viewsNode = cpNode.child("Views");
+            if (viewsNode) {
+                std::vector<int> views;
+                for (xml_node view : viewsNode.children("View"))
+                    views.push_back(view.attribute("formulaHash").as_int());
+                mApp->convergencePlotter->SetViews(views);
+            }
+        }
+
 		work->model.wp.gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
 		work->model.wp.halfLife = simuParamNode.child("Gas").attribute("halfLife").as_double();
 		if (simuParamNode.child("Gas").attribute("enableDecay")) {
@@ -2874,6 +3102,30 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 			work->model.wp.motionVector2.y = v2.attribute("y").as_double();
 			work->model.wp.motionVector2.z = v2.attribute("z").as_double();
 		}
+	}
+
+	xml_node globalHistNode = simuParamNode.child("Global_histograms");
+	if (globalHistNode) { // Molflow version before 2.8 didn't save histograms
+		xml_node nbBounceNode = globalHistNode.child("Bounces");
+		if (nbBounceNode) {
+			work->wp.globalHistogramParams.recordBounce=true;
+			work->wp.globalHistogramParams.nbBounceBinsize=nbBounceNode.attribute("binSize").as_ullong();
+			work->wp.globalHistogramParams.nbBounceMax=nbBounceNode.attribute("max").as_ullong();
+		}
+		xml_node distanceNode = globalHistNode.child("Distance");
+		if (distanceNode) {
+			work->wp.globalHistogramParams.recordDistance=true;
+			work->wp.globalHistogramParams.distanceBinsize=distanceNode.attribute("binSize").as_double();
+			work->wp.globalHistogramParams.distanceMax=distanceNode.attribute("max").as_double();
+		}
+		#ifdef MOLFLOW
+		xml_node timeNode = globalHistNode.child("Time");
+		if (timeNode) {
+			work->wp.globalHistogramParams.recordTime=true;
+			work->wp.globalHistogramParams.timeBinsize=timeNode.attribute("binSize").as_double();
+			work->wp.globalHistogramParams.timeMax=timeNode.attribute("max").as_double();
+		}
+		#endif
 	}
 
 	InitializeGeometry();
@@ -2973,6 +3225,12 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 			for (xml_node newParameter : paramNode.children("Parameter")) {
 				Parameter newPar;
 				newPar.name = newParameter.attribute("name").as_string();
+				if (newParameter.attribute("logXinterp")) {
+					newPar.logXinterp = newParameter.attribute("logXinterp").as_bool();
+				} //else set to false by constructor
+				if (newParameter.attribute("logYinterp")) {
+					newPar.logYinterp = newParameter.attribute("logYinterp").as_bool();
+				} //else set to false by constructor
 				for (xml_node newMoment : newParameter.children("Moment")) {
 					newPar.AddPair(std::make_pair(newMoment.attribute("t").as_double(),
 						newMoment.attribute("value").as_double()));
@@ -3007,6 +3265,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 				facets[idx]->sh.superIdx += structId; //offset structure
 			if (facets[idx]->sh.superDest > 0) facets[idx]->sh.superDest += structId;
 		}
+		if (facets[idx]->sh.teleportDest>0) facets[idx]->sh.teleportDest += sh.nbFacet; //Offset teleport target
 
 		if (isMolflowFile) {
 			//Set param names for interface
@@ -3139,7 +3398,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 * \param progressDlg GLProgress window where visualising of the load progress is shown
 * \return bool showing if loading was successful
 */
-bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState &globState, Worker *work, GLProgress *progressDlg) {
+bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState &globState, Worker* work, GLProgress* progressDlg) {
 	if (!loadXML.child("MolflowResults")) return false; //simu state not saved with file
 
 	xml_node resultNode = loadXML.child("MolflowResults");
@@ -3147,7 +3406,11 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState 
 	size_t nbMoments = momentsNode.select_nodes("Moment").size(); //Contains constant flow!
 	size_t facetHitsSize = (nbMoments) * sizeof(FacetHitBuffer);
 	size_t m = 0;
+	progressDlg->SetTitle("Reading simulation results...");
 	for (xml_node newMoment : momentsNode.children("Moment")) {
+		std::ostringstream msg;
+		msg << "Loading moment " << (m + 1) << "/" << (mApp->worker.moments.size()+1) << "...";
+		progressDlg->SetMessage(msg.str(), false);
 		progressDlg->SetProgress((double)m / (double)nbMoments);
 		if (m == 0) { //read global results
 			xml_node globalNode = newMoment.child("Global");
@@ -3203,6 +3466,90 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState 
 				}
 			}
 		} //end global node
+
+		bool hasHistogram = work->wp.globalHistogramParams.recordBounce || work->wp.globalHistogramParams.recordDistance;
+#ifdef MOLFLOW
+		hasHistogram = hasHistogram || work->wp.globalHistogramParams.recordTime;
+#endif
+		if (hasHistogram) {
+			xml_node histNode = newMoment.child("Histograms");
+			if (histNode) { //Versions before 2.8 didn't save histograms
+				//Retrieve histogram map from hits dp
+				BYTE* globalHistogramAddress = buffer + sizeof(GlobalHitBuffer);
+				globalHistogramAddress += m * work->wp.globalHistogramParams.GetDataSize();
+				if (work->wp.globalHistogramParams.recordBounce) {
+					double* nbHitsHistogram = (double*)globalHistogramAddress;
+					xml_node hist = histNode.child("Bounces");
+					if (hist) {
+						size_t histSize = work->wp.globalHistogramParams.GetBounceHistogramSize();
+						size_t saveHistSize = hist.attribute("size").as_ullong();
+						if (histSize == saveHistSize) {
+							//Can do: compare saved with expected size
+							size_t h = 0;
+							for (auto bin : hist.children("Bin")) {
+								if (h < histSize) {
+									nbHitsHistogram[h++] = bin.attribute("count").as_double();
+								}
+								else {
+									//Treat errors
+								}
+							}
+						}
+						else {
+							//Treat errors
+						}
+					}
+				}
+				if (work->wp.globalHistogramParams.recordDistance) {
+					double* distanceHistogram = (double*)(globalHistogramAddress + work->wp.globalHistogramParams.GetBouncesDataSize());
+					xml_node hist = histNode.child("Distance");
+					if (hist) {
+						size_t histSize = work->wp.globalHistogramParams.GetDistanceHistogramSize();
+						size_t saveHistSize = hist.attribute("size").as_ullong();
+						if (histSize == saveHistSize) {
+							//Can do: compare saved with expected size
+							size_t h = 0;
+							for (auto bin : hist.children("Bin")) {
+								if (h < histSize) {
+									distanceHistogram[h++] = bin.attribute("count").as_double();
+								}
+								else {
+									//Treat errors
+								}
+							}
+						}
+						else {
+							//Treat errors
+						}
+					}
+				}
+				if (work->wp.globalHistogramParams.recordTime) {
+					double* timeHistogram = (double*)(globalHistogramAddress + work->wp.globalHistogramParams.GetBouncesDataSize()
+						+ work->wp.globalHistogramParams.GetDistanceDataSize());
+					xml_node hist = histNode.child("Time");
+					if (hist) {
+						size_t histSize = work->wp.globalHistogramParams.GetTimeHistogramSize();
+						size_t saveHistSize = hist.attribute("size").as_ullong();
+						if (histSize == saveHistSize) {
+							//Can do: compare saved with expected size
+							size_t h = 0;
+							for (auto bin : hist.children("Bin")) {
+								if (h < histSize) {
+									timeHistogram[h++] = bin.attribute("count").as_double();
+								}
+								else {
+									//Treat errors
+								}
+							}
+						}
+						else {
+							//Treat errors
+						}
+					}
+				}
+			}
+		}
+
 
 		xml_node facetResultsNode = newMoment.child("FacetResults");
 		for (xml_node newFacetResult : facetResultsNode.children("Facet")) {
@@ -3274,7 +3621,7 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState 
 
 			//Textures
 			int ix, iy;
-			int profSize = (f->sh.isProfile) ? ((int)PROFILE_SIZE * (int)sizeof(ProfileSlice)*(1 + (int)mApp->worker.moments.size())) : 0;
+			int profSize = (f->sh.isProfile) ? ((int)PROFILE_SIZE * (int)sizeof(ProfileSlice) * (1 + (int)mApp->worker.moments.size())) : 0;
 
 			if (f->hasMesh) {
 				xml_node textureNode = newFacetResult.child("Texture");
@@ -3302,9 +3649,9 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState 
 
 				for (iy = 0; iy < (Min(f->sh.texHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
 					for (ix = 0; ix < (Min(f->sh.texWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
-						countText >> texture[iy*f->sh.texWidth + ix].countEquiv;
-						sum1perText >> texture[iy*f->sh.texWidth + ix].sum_1_per_ort_velocity;
-						sumvortText >> texture[iy*f->sh.texWidth + ix].sum_v_ort_per_area;
+						countText >> texture[iy * f->sh.texWidth + ix].countEquiv;
+						sum1perText >> texture[iy * f->sh.texWidth + ix].sum_1_per_ort_velocity;
+						sumvortText >> texture[iy * f->sh.texWidth + ix].sum_v_ort_per_area;
 
 					}
 					for (int ie = 0; ie < texWidth_file - f->sh.texWidth; ie++) {//Executed if file texture is bigger than expected texture
@@ -3350,14 +3697,100 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState 
 					for (int ix = 0; ix < f->sh.texWidth; ix++) {
 						std::string component;
 						std::getline(dirText, component, ',');
-						dirs[iy*f->sh.texWidth + ix].dir.x = std::stod(component);
+						dirs[iy * f->sh.texWidth + ix].dir.x = std::stod(component);
 						std::getline(dirText, component, ',');
-						dirs[iy*f->sh.texWidth + ix].dir.y = std::stod(component);
-						dirText >> dirs[iy*f->sh.texWidth + ix].dir.z;
-						dirCountText >> dirs[iy*f->sh.texWidth + ix].count;
+						dirs[iy * f->sh.texWidth + ix].dir.y = std::stod(component);
+						dirText >> dirs[iy * f->sh.texWidth + ix].dir.z;
+						dirCountText >> dirs[iy * f->sh.texWidth + ix].count;
 					}
 				}
 			} //end directions
+
+			bool hasHistogram = f->sh.facetHistogramParams.recordBounce || f->sh.facetHistogramParams.recordDistance;
+#ifdef MOLFLOW
+			hasHistogram = hasHistogram || f->sh.facetHistogramParams.recordTime;
+#endif
+			if (hasHistogram) {
+				xml_node histNode = newFacetResult.child("Histograms");
+				if (histNode) { //Versions before 2.8 didn't save histograms
+					//Retrieve histogram map from hits dp
+					BYTE* facetHistogramAddress = buffer + f->sh.hitOffset + facetHitsSize
+						+ profSize + (1 + (int)work->moments.size()) * f->sh.texWidth * f->sh.texHeight * sizeof(TextureCell)
+						+ (int)f->sh.countDirection * (1 + (int)work->moments.size()) * f->sh.texWidth * f->sh.texHeight * sizeof(DirectionCell);
+					facetHistogramAddress += m * f->sh.facetHistogramParams.GetDataSize();
+					if (f->sh.facetHistogramParams.recordBounce) {
+						double* nbHitsHistogram = (double*)facetHistogramAddress;
+						xml_node hist = histNode.child("Bounces");
+						if (hist) {
+							size_t histSize = f->sh.facetHistogramParams.GetBounceHistogramSize();
+							size_t saveHistSize = hist.attribute("size").as_ullong();
+							if (histSize == saveHistSize) {
+								//Can do: compare saved with expected size
+								size_t h = 0;
+								for (auto bin : hist.children("Bin")) {
+									if (h < histSize) {
+										nbHitsHistogram[h++] = bin.attribute("count").as_double();
+									}
+									else {
+										//Treat errors
+									}
+								}
+							}
+							else {
+								//Treat errors
+							}
+						}
+					}
+					if (f->sh.facetHistogramParams.recordDistance) {
+						double* distanceHistogram = (double*)(facetHistogramAddress + f->sh.facetHistogramParams.GetBouncesDataSize());
+						xml_node hist = histNode.child("Distance");
+						if (hist) {
+							size_t histSize = f->sh.facetHistogramParams.GetDistanceHistogramSize();
+							size_t saveHistSize = hist.attribute("size").as_ullong();
+							if (histSize == saveHistSize) {
+								//Can do: compare saved with expected size
+								size_t h = 0;
+								for (auto bin : hist.children("Bin")) {
+									if (h < histSize) {
+										distanceHistogram[h++] = bin.attribute("count").as_double();
+									}
+									else {
+										//Treat errors
+									}
+								}
+							}
+							else {
+								//Treat errors
+							}
+						}
+					}
+					if (f->sh.facetHistogramParams.recordTime) {
+						double* timeHistogram = (double*)(facetHistogramAddress + f->sh.facetHistogramParams.GetBouncesDataSize()
+							+ f->sh.facetHistogramParams.GetDistanceDataSize());
+						xml_node hist = histNode.child("Time");
+						if (hist) {
+							size_t histSize = f->sh.facetHistogramParams.GetTimeHistogramSize();
+							size_t saveHistSize = hist.attribute("size").as_ullong();
+							if (histSize == saveHistSize) {
+								//Can do: compare saved with expected size
+								size_t h = 0;
+								for (auto bin : hist.children("Bin")) {
+									if (h < histSize) {
+										timeHistogram[h++] = bin.attribute("count").as_double();
+									}
+									else {
+										//Treat errors
+									}
+								}
+							}
+							else {
+								//Treat errors
+							}
+						}
+					}
+				}
+			}
+
 		} //end facetResult
 		m++;
 	} //end moment
@@ -3402,6 +3835,65 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState 
 	globState.globalHits.texture_limits[1].max.moments_only = minMaxNode.child("Moments_only").child("Density").attribute("max").as_double();
 	globState.globalHits.texture_limits[2].min.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("min").as_double();
 	globState.globalHits.texture_limits[2].max.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("max").as_double();
+
+    xml_node convNode = resultNode.child("Convergence");
+
+    std::stringstream convText;
+    int formulaId = 0;
+    mApp->formula_ptr->convergenceValues.resize(0);
+    for(auto& convVec : convNode.children()){
+        std::stringstream convText;
+        std::vector<std::pair<size_t, double>> vec;
+        convText << convVec.child_value();
+        while(!convText.eof()){
+            size_t nbDes = 0;
+            double convVal = 0.0;
+            convText >> nbDes;
+            convText >> convVal;
+            vec.emplace_back(std::make_pair(nbDes, convVal));
+        }
+        mApp->formula_ptr->convergenceValues.push_back(vec);
+    }
+    //mApp->formula_ptr->convergenceValues[formulaId];
+
+
+    /*if (convNode.child("countEquiv")) {
+        countText << textureNode.child_value("countEquiv");
+    }
+    else {
+        countText << textureNode.child_value("count");
+    }
+    sum1perText << textureNode.child_value("sum_1_per_v");
+    sumvortText << textureNode.child_value("sum_v_ort");
+
+    for (iy = 0; iy < (Min(f->sh.texHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
+        for (ix = 0; ix < (Min(f->sh.texWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
+            countText >> texture[iy * f->sh.texWidth + ix].countEquiv;
+            sum1perText >> texture[iy * f->sh.texWidth + ix].sum_1_per_ort_velocity;
+            sumvortText >> texture[iy * f->sh.texWidth + ix].sum_v_ort_per_area;
+
+        }
+        for (int ie = 0; ie < texWidth_file - f->sh.texWidth; ie++) {//Executed if file texture is bigger than expected texture
+            //Read extra cells from file without doing anything
+            size_t dummy_ll;
+            double dummy_d;
+            countText >> dummy_ll;
+            sum1perText >> dummy_d;
+            sumvortText >> dummy_d;
+
+        }
+    }
+    for (int ie = 0; ie < texHeight_file - f->sh.texHeight; ie++) {//Executed if file texture is bigger than expected texture
+        //Read extra cells ffrom file without doing anything
+        for (int iw = 0; iw < texWidth_file; iw++) {
+            size_t dummy_ll;
+            double dummy_d;
+            countText >> dummy_ll;
+            sum1perText >> dummy_d;
+            sumvortText >> dummy_d;
+        }
+
+    }*/
 
 	return true;
 }
