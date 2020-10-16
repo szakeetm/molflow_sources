@@ -244,7 +244,8 @@ MolFlow::MolFlow()
 	timeSettings = nullptr;
 
 	useOldXMLFormat = false;
-    formula_ptr = std::make_shared<Formulas>((FormulaEvaluator*) new FormulaEvaluator_MF(&worker,(MolflowGeometry*)worker.GetGeometry(),&selections));
+	FormulaEvaluator* eval = new FormulaEvaluator_MF(&worker,(MolflowGeometry*)worker.GetGeometry(),&selections);
+    formula_ptr = std::make_shared<Formulas>(eval);
 }
 
 // Name: OneTimeSceneInit()
@@ -1464,7 +1465,8 @@ void MolFlow::LoadFile(std::string fileName) {
 		if (timewisePlotter) timewisePlotter->Refresh();
 		if (histogramPlotter) histogramPlotter->Reset();
 		if (profilePlotter) profilePlotter->Refresh();
-		if (texturePlotter) texturePlotter->Update(0.0,true);
+        if (convergencePlotter) convergencePlotter->Refresh();
+        if (texturePlotter) texturePlotter->Update(0.0,true);
 		//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 		if (textureScaling) textureScaling->Update();
 		if (outgassingMap) outgassingMap->Update(m_fTime, true);

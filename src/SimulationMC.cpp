@@ -258,7 +258,7 @@ bool Simulation::UpdateMCHits(Dataport *dpHit, int prIdx, size_t nbMoments, DWOR
                         // go on if the facet was never hit before
                         FacetHitBuffer *facetHitBuffer = (FacetHitBuffer *) (buffer + f.sh.hitOffset +
                                                                              m * sizeof(FacetHitBuffer));
-                        if (facetHitBuffer->hit.nbMCHit == 0) continue;
+                        if (facetHitBuffer->hit.nbMCHit == 0 && facetHitBuffer->hit.nbDesorbed == 0) continue;
                     }
 
                     TextureCell *shTexture = (TextureCell *) (buffer + (f.sh.hitOffset + facetHitsSize +
