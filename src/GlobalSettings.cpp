@@ -622,7 +622,7 @@ void GlobalSettings::UpdateOutgassing() {
 	outgassingGasRateText->SetText(tmp);
 	sprintf(tmp, "%g", worker->model.wp.finalOutgassingRate); //In molecules/sec
 	outgassingMoleculeRateText->SetText(tmp);
-	sprintf(tmp,"Tot.des. molecules [0 to %g s]:",worker->wp.latestMoment);
+	sprintf(tmp,"Tot.des. molecules [0 to %g s]:",worker->model.wp.latestMoment);
 	desorbedMoleculesLabel->SetText(tmp);
 	sprintf(tmp, "%.3E", worker->model.wp.totalDesorbedMolecules);
 	desorbedMoleculesText->SetText(tmp);

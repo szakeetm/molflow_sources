@@ -41,7 +41,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
     else if ((idx = GetVariable(v->name, "P")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
         if (ok) v->value = geom->GetFacet(idx - 1)->facetHitCache.hit.sum_v_ort *
-                           worker->GetMoleculesPerTP(worker->displayedMoment)*1E4 / geom->GetFacet(idx - 1)->GetArea() * (worker->wp.gasMass / 1000 / 6E23)*0.0100;
+                           worker->GetMoleculesPerTP(worker->displayedMoment)*1E4 / geom->GetFacet(idx - 1)->GetArea() * (worker->model.wp.gasMass / 1000 / 6E23)*0.0100;
     }
     else if ((idx = GetVariable(v->name, "DEN")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
@@ -73,22 +73,22 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
         if (ok) v->value = geom->GetFacet(idx - 1)->sh.area;
     }
     else if (iequals(v->name, "SUMDES")) {
-        v->value = (double)worker->globalHitCache.globalHits.hit.nbDesorbed;
+        v->value = (double)worker->globState.globalHits.globalHits.hit.nbDesorbed;
     }
     else if (iequals(v->name, "SUMABS")) {
-        v->value = worker->globalHitCache.globalHits.hit.nbAbsEquiv;
+        v->value = worker->globState.globalHits.globalHits.hit.nbAbsEquiv;
     }
     else if (iequals(v->name, "SUMMCHIT")) {
-        v->value = (double)worker->globalHitCache.globalHits.hit.nbMCHit;
+        v->value = (double)worker->globState.globalHits.globalHits.hit.nbMCHit;
     }
     else if (iequals(v->name, "SUMHIT")) {
-        v->value = worker->globalHitCache.globalHits.hit.nbHitEquiv;
+        v->value = worker->globState.globalHits.globalHits.hit.nbHitEquiv;
     }
     else if (iequals(v->name, "MPP")) {
-        v->value = worker->globalHitCache.distTraveled_total / (double)worker->globalHitCache.globalHits.hit.nbDesorbed;
+        v->value = worker->globState.globalHits.distTraveled_total / (double)worker->globState.globalHits.globalHits.hit.nbDesorbed;
     }
     else if (iequals(v->name, "MFP")) {
-        v->value = worker->globalHitCache.distTraveledTotal_fullHitsOnly / worker->globalHitCache.globalHits.hit.nbHitEquiv;
+        v->value = worker->globState.globalHits.distTraveledTotal_fullHitsOnly / worker->globState.globalHits.globalHits.hit.nbHitEquiv;
     }
     else if (iequals(v->name, "DESAR")) {
         double sumArea = 0.0;
@@ -108,16 +108,16 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
         v->value = sumArea;
     }
     else if (iequals(v->name, "QCONST")) {
-        v->value = worker->wp.finalOutgassingRate_Pa_m3_sec*10.00; //10: Pa*m3/sec -> mbar*l/s
+        v->value = worker->model.wp.finalOutgassingRate_Pa_m3_sec*10.00; //10: Pa*m3/sec -> mbar*l/s
     }
     else if (iequals(v->name, "QCONST_N")) {
-        v->value = worker->wp.finalOutgassingRate;
+        v->value = worker->model.wp.finalOutgassingRate;
     }
     else if (iequals(v->name, "NTOT")) {
-        v->value = worker->wp.totalDesorbedMolecules;
+        v->value = worker->model.wp.totalDesorbedMolecules;
     }
     else if (iequals(v->name, "GASMASS")) {
-        v->value = worker->wp.gasMass;
+        v->value = worker->model.wp.gasMass;
     }
     else if (iequals(v->name, "KB")) {
         v->value = 1.3806504e-23;
@@ -192,7 +192,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
             }
             else if (Contains({ "P", "p" }, tokens[0])) {
                 sumD+= geom->GetFacet(sel)->facetHitCache.hit.sum_v_ort *
-                       (worker->wp.gasMass / 1000 / 6E23)*0.0100;
+                       (worker->model.wp.gasMass / 1000 / 6E23)*0.0100;
                 sumArea += geom->GetFacet(sel)->GetArea();
             } else if (Contains({ "DEN", "den" }, tokens[0])) {
                 Facet *f = geom->GetFacet(sel);

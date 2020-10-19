@@ -2,8 +2,6 @@
 // Created by Pascal Baehr on 22.04.20.
 //
 
-#include <Buffer_shared.h>
-
 #include "MolflowBuffer.h"
 
 WorkerParams::WorkerParams(){

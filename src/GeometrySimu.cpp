@@ -4,7 +4,7 @@
 
 #include <sstream>
 #include <ProcessControl.h>
-#include <GLApp/MathTools.h>
+#include <Helper/MathTools.h>
 #include <cmath>
 #include "GeometrySimu.h"
 #include "IntersectAABB_shared.h" // include needed for recursive delete of AABBNODE

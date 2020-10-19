@@ -83,7 +83,6 @@ set(SRC_FILES
         ${CPP_DIR_1}/WriterXML.cpp
         ${CPP_DIR_1}/Initializer.cpp
 
-        ${CPP_DIR_3}/MathTools.cpp
         ${CPP_DIR_1}/TimeMoments.cpp
 
         ${CPP_DIR_1}/MolflowTypes.cpp

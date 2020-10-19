@@ -562,7 +562,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
     if (!insert) {
         //Clear hits and leaks cache
         ResetMoments();
-        wp.globalHistogramParams = HistogramParams();
+        model.wp.globalHistogramParams = HistogramParams();
 
         //default values
         model.wp.enableDecay = false;
@@ -869,7 +869,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     if(!buffer_old)
                         throw Error("Cannot access shared hit buffer");
                     geom->LoadXML_simustate(rootNode, globState, this, progressDlg);
-                    RetrieveHistogramCache(buffer); //So interface gets histogram data for disp.moment right after loading
+                    RetrieveHistogramCache(); //So interface gets histogram data for disp.moment right after loading
                     simManager.UnlockHitBuffer();
                     SendToHitBuffer(); //Send global hits without sending facet counters, as they are directly written during the load process (mutiple moments)
                     SendFacetHitCounts(); //Send hits without sending facet counters, as they are directly written during the load process (mutiple moments)
@@ -1153,7 +1153,13 @@ bool Worker::MolflowGeomToSimModel(){
     // Parse usermoments to regular moment intervals
     //model.tdParams.moments = this->moments;
     model.tdParams.CDFs = this->CDFs;
-    model.tdParams.IDs = this->IDs;
+    //        model.tdParams.IDs = this->IDs;
+    {
+        model.tdParams.IDs.clear();
+        for(auto& id : this->IDs){
+            model.tdParams.IDs.push_back(id.values);
+        }
+    }
     for(auto& param : this->parameters)
         model.tdParams.parameters.emplace_back(param);
 
@@ -1890,10 +1896,10 @@ IntegratedDesorption Worker::Generate_ID(int paramId) {
 
         if (lastUserMomentBeforeLatestMoment) {
             //Create last point equal to last outgassing
-            myOutgassing.push_back(std::make_pair(wp.latestMoment,myOutgassing.back().second));
-        } else if (!IsEqual(myOutgassing.back().first,wp.latestMoment)) {
-            myOutgassing.push_back(std::make_pair(wp.latestMoment,
-            InterpolateY(wp.latestMoment,valuesCopy,par.logXinterp,par.logYinterp)));
+            myOutgassing.push_back(std::make_pair(model.wp.latestMoment,myOutgassing.back().second));
+        } else if (!IsEqual(myOutgassing.back().first,model.wp.latestMoment)) {
+            myOutgassing.push_back(std::make_pair(model.wp.latestMoment,
+            InterpolateY(model.wp.latestMoment,valuesCopy,par.logXinterp,par.logYinterp)));
         }
     } //values copy goes out of scope
 
