@@ -2885,7 +2885,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
     for(const auto& convVec : mApp->formula_ptr->convergenceValues){
         std::stringstream convText;
         for(const auto& convVal : convVec){
-            convText << " " << convVal.first << " " <<convVal.second;
+            convText << "\n" << convVal.first << " " << convVal.second;
         }
         xml_node newConv = convNode.append_child("Formula").append_child(node_cdata);
         newConv.append_attribute("id") = formulaId;
@@ -3887,6 +3887,7 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, BYTE* buffer, Wo
             double convVal = 0.0;
             convText >> nbDes;
             convText >> convVal;
+            //if(nbDes < vec[vec.size()-1].first) break; // skip if data is malformed (desorptions should increase)
             vec.emplace_back(std::make_pair(nbDes, convVal));
         }
         mApp->formula_ptr->convergenceValues.push_back(vec);
