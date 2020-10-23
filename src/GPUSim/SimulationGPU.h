@@ -25,7 +25,7 @@ private:
     size_t GetHitsSize() override;
 
     void ResetTmpCounters();
-    void UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DWORD timeout) override;
+    bool UpdateHits(Dataport *dpHit, Dataport* dpLog,int prIdx, DWORD timeout) override;
 public:
     void ResetSimulation() override;
     bool SimulationMCStep(size_t nbStep) override;

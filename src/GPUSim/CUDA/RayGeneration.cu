@@ -544,8 +544,8 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
 
     //const __device__ float offset_val = 1.0f/64.0f;
     //const __device__ float offset_val_n = -1.0f/64.0f;
-    const __device__ float offset_val = 64.0f/1.0f;
-    const __device__ float offset_val_n = -64.0f/1.0f;
+    const __device__ float offset_val = 1.0f/1.0f;
+    const __device__ float offset_val_n = -1.0f/1.0f;
     //------------------------------------------------------------------------------
     // ray gen program - the actual rendering happens in here
     //------------------------------------------------------------------------------

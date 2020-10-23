@@ -218,7 +218,7 @@ float3 getNewDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& poly,
         }
 #endif*/
 
-    FLOAT_T theta = 0.0f;
+    FLOAT_T theta = 0.0;
     if(poly.desProps.desorbType == 2 || poly.desProps.desorbType == 0) {
         theta = acos(sqrt(randFloat[(unsigned int) (randInd + randOffset++)]));
     }

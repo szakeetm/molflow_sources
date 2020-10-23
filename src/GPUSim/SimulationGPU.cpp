@@ -8,7 +8,7 @@
 #include "ModelReader.h" // TempFacet
 
 #if defined(NDEBUG)
-#define LAUNCHSIZE 1920*64*1//1024*64*16//1024*128*64
+#define LAUNCHSIZE 1920*16*1//1024*64*16//1024*128*64
 #elif defined(DEBUG)
 #define LAUNCHSIZE 1920*1*1//1024*64*16//1024*128*64
 #endif
@@ -94,7 +94,7 @@ bool SimulationGPU::UpdateOntheflySimuParams(Dataport *loader) {
     return true;
 }
 
-void SimulationGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWORD timeout) {
+bool SimulationGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWORD timeout) {
     //UpdateMCHits(dpHit, prIdx, moments.size(), timeout);
     //if (dpLog) UpdateLog(dpLog, timeout);
     //std::cout << "#SimulationGPU: Updating hits"<<std::endl;
@@ -111,7 +111,7 @@ void SimulationGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWOR
     //SetState(PROCESS_STARTING, "Waiting for 'hits' dataport access...", false, true);
     bool lastHitUpdateOK = AccessDataportTimed(dpHit, timeout);
     //SetState(PROCESS_STARTING, "Updating MC hits...", false, true);
-    if (!lastHitUpdateOK) return; //Timeout, will try again later
+    if (!lastHitUpdateOK) return false; //Timeout, will try again later
 
     buffer = (BYTE *) dpHit->buff;
     gHits = (GlobalHitBuffer *) buffer;
@@ -275,6 +275,8 @@ void SimulationGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWOR
     t1 = GetTick();
     printf("Update hits: %f us\n", (t1 - t0) * 1000000.0);
 #endif
+
+    return true;
 }
 
 size_t SimulationGPU::GetHitsSize() {
