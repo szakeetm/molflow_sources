@@ -2861,10 +2861,10 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
     int formulaId = 0;
     for(const auto& formulaVec : mApp->formula_ptr->convergenceValues){
         std::stringstream convText;
-        convText.precision(10);
+        convText << std::setprecision(10) << '\n';
         convText << std::scientific;
         for(const auto& convVal : formulaVec.conv_vec){
-            convText << "\n" << convVal.first << "\t" << convVal.second;
+            convText << convVal.first << "\t" << convVal.second << "\n";
         }
         xml_node newFormulaNode = convNode.append_child("ConvData");
         newFormulaNode.append_attribute("Formula") = mApp->formula_ptr->formulas_n[formulaId]->GetExpression();
@@ -3866,6 +3866,7 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, BYTE* buffer, Wo
             size_t nbDes = 0;
             double convVal = 0.0;
             convText >> nbDes;
+			if (convText.eof()) break; //Last line "\n"
             convText >> convVal;
             //if(nbDes < vec[vec.size()-1].first) break; // skip if data is malformed (desorptions should increase)
             vec.emplace_back(std::make_pair(nbDes, convVal));
