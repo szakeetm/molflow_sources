@@ -2866,8 +2866,9 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
         for(const auto& convVal : formulaVec.conv_vec){
             convText << "\n" << convVal.first << "\t" << convVal.second;
         }
-        xml_node newConv = convNode.append_child("Formula").append_child(node_cdata);
-        newConv.append_attribute("id") = formulaId;
+        xml_node newFormulaNode = convNode.append_child("ConvData");
+        newFormulaNode.append_attribute("Formula") = mApp->formula_ptr->formulas_n[formulaId]->GetExpression();
+        xml_node newConv = newFormulaNode.append_child(node_cdata);
         newConv.set_value(convText.str().c_str());
         formulaId++;
     }
