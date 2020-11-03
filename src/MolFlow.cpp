@@ -1612,16 +1612,11 @@ void MolFlow::StartStopSimulation() {
 	
 	worker.StartStop(m_fTime, modeCombo->GetSelectedIndex());
 	if (!worker.isRunning) { //Force update on simulation stop
-		UpdatePlotters();
+        formula_ptr->UpdateFormulaValues(worker.globalHitCache.globalHits.hit.nbDesorbed);
+        UpdatePlotters();
 		//if (autoUpdateFormulas) UpdateFormula();
-		if (autoUpdateFormulas && formulaEditor && formulaEditor->IsVisible()) formulaEditor->ReEvaluate();
+		if (autoUpdateFormulas && formulaEditor && formulaEditor->IsVisible()) formulaEditor->UpdateValues();
 		if (particleLogger && particleLogger->IsVisible()) particleLogger->UpdateStatus();
-        if (!formula_ptr->formulas_n.empty()) {
-            if (autoUpdateFormulas && formulaEditor && convergencePlotter && formula_ptr->sampleConvValues) {
-                formula_ptr->InitializeFormulas();
-                convergencePlotter->Update(lastAppTime);
-            }
-        }
 	}
 
 	// Frame rate measurement
@@ -2627,6 +2622,7 @@ void MolFlow::UpdatePlotters() {
 	if (profilePlotter) profilePlotter->Update(m_fTime, true);
 	if (texturePlotter) texturePlotter->Update(m_fTime, true);
 	if (histogramPlotter) histogramPlotter->Update(m_fTime,true);
+	if (convergencePlotter) convergencePlotter->Update(m_fTime);
 }
 
 void MolFlow::RefreshPlotterCombos() {
