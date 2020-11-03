@@ -1616,6 +1616,12 @@ void MolFlow::StartStopSimulation() {
 		//if (autoUpdateFormulas) UpdateFormula();
 		if (autoUpdateFormulas && formulaEditor && formulaEditor->IsVisible()) formulaEditor->ReEvaluate();
 		if (particleLogger && particleLogger->IsVisible()) particleLogger->UpdateStatus();
+        if (!formula_ptr->formulas_n.empty()) {
+            if (autoUpdateFormulas && formulaEditor && convergencePlotter && formula_ptr->sampleConvValues) {
+                formula_ptr->InitializeFormulas();
+                convergencePlotter->Update(lastAppTime);
+            }
+        }
 	}
 
 	// Frame rate measurement
