@@ -2882,13 +2882,16 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, BYTE *bu
     xml_node convNode = resultNode.append_child("Convergence");
 
     int formulaId = 0;
-    for(const auto& convVec : mApp->formula_ptr->convergenceValues){
+    for(const auto& formulaVec : mApp->formula_ptr->convergenceValues){
         std::stringstream convText;
-        for(const auto& convVal : convVec){
-            convText << "\n" << convVal.first << " " << convVal.second;
+        convText.precision(10);
+        convText << std::scientific;
+        for(const auto& convVal : formulaVec.conv_vec){
+            convText << "\n" << convVal.first << "\t" << convVal.second;
         }
-        xml_node newConv = convNode.append_child("Formula").append_child(node_cdata);
-        newConv.append_attribute("id") = formulaId;
+        xml_node newFormulaNode = convNode.append_child("ConvData");
+        newFormulaNode.append_attribute("Formula") = mApp->formula_ptr->formulas_n[formulaId]->GetExpression();
+        xml_node newConv = newFormulaNode.append_child(node_cdata);
         newConv.set_value(convText.str().c_str());
         formulaId++;
     }
@@ -3876,11 +3879,11 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, BYTE* buffer, Wo
     xml_node convNode = resultNode.child("Convergence");
 
     std::stringstream convText;
-    int formulaId = 0;
     mApp->formula_ptr->convergenceValues.resize(0);
     for(auto& convVec : convNode.children()){
         std::stringstream convText;
-        std::vector<std::pair<size_t, double>> vec;
+        ConvergenceData convData;
+        std::vector<std::pair<size_t, double>>& vec = convData.conv_vec;
         convText << convVec.child_value();
         while(!convText.eof()){
             size_t nbDes = 0;
@@ -3890,7 +3893,7 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, BYTE* buffer, Wo
             //if(nbDes < vec[vec.size()-1].first) break; // skip if data is malformed (desorptions should increase)
             vec.emplace_back(std::make_pair(nbDes, convVal));
         }
-        mApp->formula_ptr->convergenceValues.push_back(vec);
+        mApp->formula_ptr->convergenceValues.push_back(convData);
     }
     //mApp->formula_ptr->convergenceValues[formulaId];
 
