@@ -193,11 +193,6 @@ void TexturePlotter::Update(float appTime, bool force) {
 		return;
 	}
 
-	if ((appTime - lastUpdate > 1.0f)) {
-		if (worker->isRunning) UpdateTable();
-		lastUpdate = appTime;
-	}
-
 }
 
 /**
