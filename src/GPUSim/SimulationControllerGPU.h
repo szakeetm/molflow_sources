@@ -30,6 +30,7 @@ public:
     uint64_t RunSimulation();
     int CloseSimulation();
     int ResetSimulation();
+    void AllowNewParticles();
 
     unsigned long long int GetSimulationData(bool silent = true);
     void IncreaseGlobalCounters(HostData* tempData);

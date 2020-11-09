@@ -567,6 +567,7 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
         MolPRD& hitData = optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex];
 
 #ifdef WITHDESORPEXIT
+        if(bufferIndex==0) printf("Terminate state %d\n", hitData.hasToTerminate);
         if(hitData.hasToTerminate==2){
             return;
         }
@@ -654,7 +655,7 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
             else{
                 facNormal *= (offset_val);
             }
-            rayOrigin = offset_ray(rayOrigin,facNormal);
+            //rayOrigin = offset_ray(rayOrigin,facNormal);
 
             //}
 

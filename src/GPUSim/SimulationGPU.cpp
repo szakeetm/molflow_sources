@@ -8,7 +8,7 @@
 #include "ModelReader.h" // TempFacet
 
 #if defined(NDEBUG)
-#define LAUNCHSIZE 1920*16*1//1024*64*16//1024*128*64
+#define LAUNCHSIZE 1920*1*1//1024*64*16//1024*128*64
 #elif defined(DEBUG)
 #define LAUNCHSIZE 1920*1*1//1024*64*16//1024*128*64
 #endif
@@ -87,9 +87,14 @@ bool SimulationGPU::UpdateOntheflySimuParams(Dataport *loader) {
     cereal::BinaryInputArchive inputArchive(inputStream);
 
     inputArchive(ontheflyParams);
-    model->ontheflyParams = ontheflyParams;
-
     ReleaseDataport(loader);
+
+    // Allow new particles when desorptionlimit has changed
+    auto oldDesLimit = model->ontheflyParams.desorptionLimit;
+    model->ontheflyParams = ontheflyParams;
+    if(model->ontheflyParams.desorptionLimit != oldDesLimit) {
+        gpuSim.AllowNewParticles();
+    }
 
     return true;
 }

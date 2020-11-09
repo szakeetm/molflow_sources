@@ -16,8 +16,8 @@ option(WITH_PROFILES "Enable profiles" ON)
 option(WITH_TRANS "Enable transparent SBT" ON)
 option(WITH_NBOUNCE "Enable NBBOUNCE Counter" ON)
 
-option(USE_RANDOM_NUMBER_TYPE_64 "Use double instead of float for random numbers" OFF)
-option(USE_COUNTER_TYPE_64 "Use 64bit instead of 32bit precision for the counter structure" OFF)
+option(USE_RANDOM_NUMBER_TYPE_64 "Use double instead of float for random numbers" ON)
+option(USE_COUNTER_TYPE_64 "Use 64bit instead of 32bit precision for the counter structure" ON)
 MESSAGE("[GPU_BUILD_OPTION] USE_RANDOM_NUMBER_TYPE_64: ${USE_RANDOM_NUMBER_TYPE_64}")
 MESSAGE("[GPU_BUILD_OPTION] USE_COUNTER_TYPE_64: ${USE_COUNTER_TYPE_64}")
 

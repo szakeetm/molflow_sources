@@ -1407,7 +1407,7 @@ namespace flowgpu {
 #endif
     }
 
-    void SimulationOptiX::askForExit(HostData* tempData) {
+    void SimulationOptiX::updateHostData(HostData* tempData) {
 #ifdef WITHDESORPEXIT
         sim_memory.moleculeBuffer.upload(tempData->hitData.data(), state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y);
 #endif

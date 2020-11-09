@@ -96,6 +96,24 @@ uint64_t SimulationControllerGPU::RunSimulation() {
 }
 
 /**
+ * Allow new particles, if new desorption limit (if any) is not yet reached
+ */
+void SimulationControllerGPU::AllowNewParticles() {
+#ifdef WITHDESORPEXIT
+    if (this->model->ontheflyParams.desorptionLimit > 0 && GLOB_COUNT::total_des >= this->model->ontheflyParams.desorptionLimit) return;
+    optixHandle->downloadDataFromDevice(&data); //download tmp counters
+    for (auto &particle : data.hitData) {
+        particle.hasToTerminate = 0;
+    }
+    optixHandle->updateHostData(&data);
+
+    hasEnded = false;
+#endif
+
+    return;
+}
+
+/**
  * Fetch simulation data from the device
  * @return 1=could not load GPU Sim, 0=successfully loaded
  */
@@ -128,7 +146,7 @@ unsigned long long int SimulationControllerGPU::GetSimulationData(bool silent) {
                     if(endCalled && particle.hasToTerminate == 2)
                         nbExit++;
                 }
-                if(!endCalled) optixHandle->askForExit(&data);
+                if(!endCalled) optixHandle->updateHostData(&data);
                 if(nbExit >= this->kernelDimensions.x*this->kernelDimensions.y){
                     std::cout << " READY TO EXIT! "<< std::endl;
                     hasEnded = true;

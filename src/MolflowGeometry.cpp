@@ -314,6 +314,43 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 	catch (...) {
 		throw Error("Unspecified Error while building pipe");
 	}
+
+#ifdef GPUCOMPABILITY
+    // Normalize to distance [0,1]
+    Vector3d vecMin(std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max());
+    Vector3d vecMax(std::numeric_limits<double>::min(),std::numeric_limits<double>::min(),std::numeric_limits<double>::min());
+    double cordMin = std::numeric_limits<double>::max();
+    double cordMax = std::numeric_limits<double>::min();
+    double rangeMin = -1.0 * std::pow(2.0 , -8.0);
+    double rangeMax = 1.0 * std::pow(2.0 , -8.0);
+
+    // Shift to center
+    for(int v = 0; v < sh.nbVertex; ++v){
+        vertices3[v].z = vertices3[v].z - 0.5 * L;
+    }
+
+    for(int v = 0; v < sh.nbVertex; ++v){
+        vecMin.x = std::min(vecMin.x, vertices3[v].x);
+        vecMin.y = std::min(vecMin.y, vertices3[v].y);
+        vecMin.z = std::min(vecMin.z, vertices3[v].z);
+        vecMax.x = std::max(vecMax.x, vertices3[v].x);
+        vecMax.y = std::max(vecMax.y, vertices3[v].y);
+        vecMax.z = std::max(vecMax.z, vertices3[v].z);
+
+        cordMin = std::min(cordMin, vertices3[v].x);
+        cordMin = std::min(cordMin, vertices3[v].y);
+        cordMin = std::min(cordMin, vertices3[v].z);
+        cordMax = std::max(cordMax, vertices3[v].x);
+        cordMax = std::max(cordMax, vertices3[v].y);
+        cordMax = std::max(cordMax, vertices3[v].z);
+    }
+    for(int v = 0; v < sh.nbVertex; ++v){
+        double normFactor = (rangeMax - rangeMin) / (cordMax - cordMin);
+        vertices3[v].x = (vertices3[v].x - cordMin) * normFactor + rangeMin;
+        vertices3[v].y = (vertices3[v].y - cordMin) * normFactor + rangeMin;
+        vertices3[v].z = (vertices3[v].z - cordMin) * normFactor + rangeMin;
+    }
+#endif
 	InitializeGeometry();
 	//isLoaded = true; //InitializeGeometry() sets to true
 
