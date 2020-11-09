@@ -209,8 +209,8 @@ int main(int argc, char* argv[])
 	try {
 		mApp->Run();
 	}
-	catch (Error &e) {
-		mApp->CrashHandler(&e);
+	catch(std::exception &e) {
+		mApp->CrashHandler(e);
 	}
 	delete mApp;
 	return 0;
@@ -273,7 +273,7 @@ void MolFlow::LoadParameterCatalog()
 				table = worker.ImportCSV_string(f);
 				SAFE_DELETE(f);
 			}
-			catch (Error &e) {
+			catch(std::exception &e) {
 				char errMsg[512];
 				sprintf(errMsg, "Failed to load CSV file.\n%s", e.what());
 				//GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR); //Can't display dialog window: interface not yet initialized
@@ -881,7 +881,7 @@ void MolFlow::ApplyFacetParams() {
 
 	// Mark "needsReload" to sync changes with workers on next simulation start
 	try { worker.Reload(); }
-	catch (Error &e) {
+	catch (std::exception &e) {
 		GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 		return;
 	}
@@ -1223,7 +1223,7 @@ void MolFlow::ExportProfiles() {
 		try {
 			worker.ExportProfiles(saveFile.c_str());
 		}
-		catch (Error &e) {
+		catch(std::exception &e) {
 			char errMsg[512];
 			sprintf(errMsg, "%s\nFile:%s", e.what(), saveFile.c_str());
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1243,7 +1243,7 @@ void MolFlow::ExportAngleMaps() {
                 return;
             }
 		}
-		catch (Error &e) {
+		catch(std::exception &e) {
 			char errMsg[512];
 			sprintf(errMsg, "%s\nFile:%s", e.what(), profFile.c_str());
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1275,7 +1275,7 @@ void MolFlow::ImportAngleMaps(){
 			worker.GetGeometry()->GetFacet(selFacets[i])->ImportAngleMap(table);
 			worker.Reload();
 		}
-		catch (Error &e) {
+		catch(std::exception &e) {
 				char errMsg[512];
 				sprintf(errMsg, "%s\nFile:%s", e.what(), fileNames[i].c_str());
 				GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1321,7 +1321,7 @@ void MolFlow::CopyAngleMapToClipboard()
 			GLToolkit::CopyTextToClipboard(map);
 
 		}
-		catch (Error &e) {
+		catch(std::exception &e) {
 			GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 		}
 }
@@ -1349,7 +1349,7 @@ void MolFlow::ImportDesorption_DES() {
 		try {
 			worker.ImportDesorption_DES(fn->fullName);
 		}
-		catch (Error &e) {
+		catch(std::exception &e) {
 			char errMsg[512];
 			sprintf(errMsg, "%s\nFile:%s", e.what(), fn->fullName);
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1373,7 +1373,7 @@ void MolFlow::SaveFile() {
 			worker.SaveGeometry(worker.fullFileName, progressDlg2, false);
 			ResetAutoSaveTimer();
 		}
-		catch (Error &e) {
+		catch(std::exception &e) {
 			char errMsg[512];
 			sprintf(errMsg, "%s\nFile:%s", e.what(), worker.GetCurrentFileName());
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1479,7 +1479,7 @@ void MolFlow::LoadFile(std::string fileName) {
 		if (formulaEditor) formulaEditor->Refresh();
 		if (parameterEditor) parameterEditor->Refresh();
 	}
-	catch (Error &e) {
+	catch(std::exception &e) {
 
 		char errMsg[512];
 		sprintf(errMsg, "%s\nFile:%s", e.what(), fileShortName.c_str());
@@ -1576,7 +1576,7 @@ void MolFlow::InsertGeometry(bool newStr,std::string fileName) {
 		if (formulaEditor) formulaEditor->Refresh();
 		if (parameterEditor) parameterEditor->Refresh();
 	}
-	catch (Error &e) {
+	catch(std::exception &e) {
 
 		char errMsg[512];
 		sprintf(errMsg, "%s\nFile:%s", e.what(), fileShortName.c_str());
@@ -1850,7 +1850,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 						if (vertexCoordinates) vertexCoordinates->Update();
 						// Send to sub process
 						try { worker.Reload(); }
-						catch (Error &e) {
+						catch(std::exception &e) {
 							GLMessageBox::Display(e.what(), "Error reloading worker", GLDLG_OK, GLDLG_ICONERROR);
 						}
 					}
@@ -2051,7 +2051,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 
 		else if (src == compACBtn) {
 			try { lastUpdate = 0.0; worker.ComputeAC(m_fTime); }
-			catch (Error &e) {
+			catch(std::exception &e) {
 				GLMessageBox::Display((char *)e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
@@ -2059,7 +2059,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		}
 		else if (src == singleACBtn) {
 			try { lastUpdate = 0.0; worker.StepAC(m_fTime); }
-			catch (Error &e) {
+			catch(std::exception &e) {
 				GLMessageBox::Display((char *)e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
@@ -2113,7 +2113,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 		worker.wp.globalHistogramParams = HistogramParams();
         ResetSimulation(false);
     }
-	catch (Error &e) {
+	catch(std::exception &e) {
 		GLMessageBox::Display((char *)e.what(), "Error building pipe", GLDLG_OK, GLDLG_ICONERROR);
 		geom->Clear();
         ResetSimulation(false);
@@ -2187,7 +2187,7 @@ void MolFlow::EmptyGeometry() {
 		worker.ResetMoments();
 		worker.wp.globalHistogramParams = HistogramParams();
 	}
-	catch (Error &e) {
+	catch(std::exception &e) {
 		GLMessageBox::Display(e.what(), "Error resetting geometry", GLDLG_OK, GLDLG_ICONERROR);
 		geom->Clear();
 		return;
@@ -2553,7 +2553,7 @@ void MolFlow::SaveConfig() {
         f->Write("highlightNonplanarFacets:"); f->Write(highlightNonplanarFacets, "\n");
         f->Write("useOldXMLFormat:"); f->Write(useOldXMLFormat, "\n");
     }
-	catch (Error &err) {
+	catch(std::exception &err) {
 		GLMessageBox::Display(err.what(), "Error saving config file", GLDLG_OK, GLDLG_ICONWARNING);
 	}
 
@@ -2601,9 +2601,9 @@ void MolFlow::calcSticking() {
 	return;
 }
 
-void MolFlow::CrashHandler(Error *e) {
+void MolFlow::CrashHandler(std::exception& e) {
 	char tmp[1024];
-	sprintf(tmp, "Well, that's emberassing. Molflow crashed and will exit now.\nBefore that, an autosave will be attempted.\nHere is the error info:\n\n%s", e->what());
+	sprintf(tmp, "Well, that's embarassing. Molflow crashed and will exit now.\nBefore that, an autosave will be attempted.\nHere is the error info:\n\n%s", e.what());
 	GLMessageBox::Display(tmp, "Main crash handler", GLDLG_OK, GLDGL_ICONDEAD);
 	try {
 		if (AutoSave(true))
@@ -2611,9 +2611,9 @@ void MolFlow::CrashHandler(Error *e) {
 		else
 			GLMessageBox::Display("Sorry, I couldn't even autosave.", "Main crash handler", GLDLG_OK, GLDGL_ICONDEAD);
 	}
-	catch (Error &e) {
-		e.what();
-		GLMessageBox::Display("Sorry, I couldn't even autosave.", "Main crash handler", GLDLG_OK, GLDGL_ICONDEAD);
+	catch(std::exception &err) {
+        sprintf(tmp, "Sorry, I couldn't even autosave:\n\n%s", err.what());
+        GLMessageBox::Display(tmp, "Main crash handler", GLDLG_OK, GLDGL_ICONDEAD);
 	}
 }
 
@@ -2712,7 +2712,7 @@ void MolFlow::UpdateFacetHits(bool allRows) {
 
 		}
 	}
-	catch (Error &e) {
+	catch(std::exception &e) {
 		char errMsg[512];
 		sprintf(errMsg, "%s\nError while updating facet hits", e.what());
 		GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
