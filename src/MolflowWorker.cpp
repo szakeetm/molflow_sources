@@ -130,7 +130,6 @@ Worker::Worker() : simManager("molflow", "MFLW"){
     stopTime = 0.0f;
     simuTime = 0.0f;
 
-    isRunning = false;
     calcAC = false;
     strcpy(fullFileName, "");
 }
@@ -1023,7 +1022,6 @@ void Worker::InnerStop(float appTime) {
 
     stopTime = appTime;
     simuTime += appTime - startTime;
-    isRunning = false;
     calcAC = false;
 
 }
@@ -1036,7 +1034,7 @@ void Worker::OneACStep() {
     if (ontheflyParams.nbProcess == 0)
         throw Error("No sub process found. (Simulation not available)");
 
-    if (!isRunning) {
+    if (!IsRunning()) {
         if (simManager.ExecuteAndWait(COMMAND_STEPAC, PROCESS_RUN, AC_MODE))
             ThrowSubProcError();
     }
@@ -1066,7 +1064,7 @@ void Worker::StepAC(float appTime) {
 */
 void Worker::StartStop(float appTime, size_t sMode) {
 
-    if (isRunning) {
+    if (IsRunning()) {
 
         // Stop
         InnerStop(appTime);
@@ -1107,6 +1105,9 @@ void Worker::StartStop(float appTime, size_t sMode) {
     }
 }
 
+bool Worker::IsRunning(){
+    return simManager.GetRunningStatus();
+}
 /**
 * \brief Function that inserts a list of new paramters at the beginning of the catalog parameters
 * \param newParams vector containing new parameters to be inserted
@@ -1207,7 +1208,7 @@ void Worker::ComputeAC(float appTime) {
         GLMessageBox::Display(e.what(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
         return;
     }
-    if (isRunning)
+    if (IsRunning())
         throw Error("Already running");
 
     // Send correction map to sub process
@@ -1237,7 +1238,6 @@ void Worker::ComputeAC(float appTime) {
         GLMessageBox::Display(e.what(), "Error (LoadGeom)", GLDLG_OK, GLDLG_ICONERROR);
     }
 
-    isRunning = true;
     calcAC = true;
     startTime = appTime;
 
@@ -1380,14 +1380,12 @@ void Worker::Start() {
 
     try {
         if (simManager.StartSimulation()) {
-            isRunning = false;
             throw std::logic_error("Processes are already done!");
         }
     }
     catch (std::exception& e) {
         throw Error(e.what());
     }
-    isRunning = true;
 }
 
 /*

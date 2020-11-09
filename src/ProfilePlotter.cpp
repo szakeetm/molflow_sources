@@ -285,10 +285,6 @@ void ProfilePlotter::Update(float appTime, bool force) {
 		lastUpdate = appTime;
 		return;
 	}
-	else if ((appTime - lastUpdate > 1.0f) && nbView) {
-		if (worker->isRunning) refreshViews();
-		lastUpdate = appTime;
-	}
 
 }
 
@@ -323,7 +319,6 @@ void ProfilePlotter::plot() {
 		return;
 	}
 
-	Geometry *geom = worker->GetGeometry();
 	GLDataView *v;
 
 	// Check that view is not already added
@@ -373,13 +368,14 @@ void ProfilePlotter::plot() {
 */
 void ProfilePlotter::refreshViews() {
 
+    if(!nbView) return;
+
 	// Lock during update
 	BYTE *buffer = worker->GetHits();
 	if (!buffer) return;
 	int displayMode = normCombo->GetSelectedIndex();
 
 	Geometry *geom = worker->GetGeometry();
-	GlobalHitBuffer *gHits = (GlobalHitBuffer *)buffer;
 
 	double scaleY;
 
@@ -455,18 +451,22 @@ void ProfilePlotter::refreshViews() {
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j*scaleX, values[j] / sum, false);
 					break; }
-				case 5: //To 1 (max value)
-					double max = 1.0;
+				case 5: {//To 1 (max value)
+                    double max = 1.0;
 
-					for (int j = 0; j < PROFILE_SIZE; j++)
-					{
-						if (profilePtr[j].countEquiv > max) max = profilePtr[j].countEquiv;
-					}
-					scaleY = 1.0 / (double)max;
+                    for (int j = 0; j < PROFILE_SIZE; j++) {
+                        if (profilePtr[j].countEquiv > max) max = profilePtr[j].countEquiv;
+                    }
+                    scaleY = 1.0 / (double) max;
 
-					for (int j = 0; j < PROFILE_SIZE; j++)
-						v->Add((double)j, profilePtr[j].countEquiv*scaleY, false);
-					break;
+                    for (int j = 0; j < PROFILE_SIZE; j++)
+                        v->Add((double) j, profilePtr[j].countEquiv * scaleY, false);
+                    break;
+                }
+                default:
+                    // Unknown display mode, reset to RAW data
+                    normCombo->SetSelectedIndex(0);
+                    break;
 				}
 
 			}
@@ -513,7 +513,6 @@ void ProfilePlotter::refreshViews() {
 int ProfilePlotter::addView(int facet) {
 
 	char tmp[128];
-	Geometry *geom = worker->GetGeometry();
 
 	// Check that view is not already added
 	bool found = false;
@@ -554,8 +553,6 @@ int ProfilePlotter::addView(int facet) {
 * \return 0 if okay, 1 if not plotted
 */
 int ProfilePlotter::remView(int facet) {
-
-	Geometry *geom = worker->GetGeometry();
 
 	bool found = false;
 	int i = 0;
@@ -620,7 +617,7 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
 			int idx = profCombo->GetSelectedIndex();
 			if(idx >= 0) {
                 geom->UnselectAll();
-                size_t facetRow = 0;
+                size_t facetRow;
                 if (idx > 0) { //Something selected, facets start with idx==1, custom input is idx==0 (not -1)
                     int facetId = profCombo->GetUserValueAt(idx);
                     geom->GetFacet(facetId)->selected = true;
@@ -774,6 +771,9 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
             applyFacetHighlighting();
         }
 		break;
+
+    default:
+        break;
 	}
     //this->worker->GetGeometry()->SetPlottedFacets(plottedFacets);
 	GLWindow::ProcessMessage(src, message);

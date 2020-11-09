@@ -181,7 +181,7 @@ void OutgassingMap::Update(float appTime,bool force) {
   }
 
   if( (appTime-lastUpdate>1.0f) ) {
-    if(worker->isRunning) UpdateTable();
+    if(worker->IsRunning()) UpdateTable();
     lastUpdate = appTime;
   }
 

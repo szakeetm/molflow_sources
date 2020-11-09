@@ -1114,8 +1114,9 @@ worker.ReleaseHits();
 //       the scene.
 
 int MolFlow::FrameMove()
-{	
-	if (worker.isRunning && ((m_fTime - lastUpdate) >= 1.0f)) {
+{
+    bool runningState = worker.IsRunning();
+	if (runningState && ((m_fTime - lastUpdate) >= 1.0f)) {
 		if (textureScaling) textureScaling->Update();
 		//if (formulaEditor && formulaEditor->IsVisible()) formulaEditor->Refresh(); //Interface::Framemove does it already
 	}
@@ -1123,7 +1124,7 @@ int MolFlow::FrameMove()
 	char tmp[256];
 	if (globalSettings) globalSettings->SMPUpdate();
 
-	if ((m_fTime - worker.startTime <= 2.0f) && worker.isRunning) {
+	if ((m_fTime - worker.startTime <= 2.0f) && runningState) {
 		hitNumber->SetText("Starting...");
 		desNumber->SetText("Starting...");
 	}
@@ -1611,7 +1612,7 @@ void MolFlow::StartStopSimulation() {
 	}
 	
 	worker.StartStop(m_fTime, modeCombo->GetSelectedIndex());
-	if (!worker.isRunning) { //Force update on simulation stop
+	if (!worker.IsRunning()) { //Force update on simulation stop
         formula_ptr->UpdateFormulaValues(worker.globalHitCache.globalHits.hit.nbDesorbed);
         UpdatePlotters();
 		//if (autoUpdateFormulas) UpdateFormula();
@@ -1750,7 +1751,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			if (selectedFacets.empty()) return; //Nothing selected
 			if (GLMessageBox::Display("Remove selected facets?", "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONINFO) == GLDLG_OK) {
 				if (AskToReset()) {
-					if (worker.isRunning) worker.Stop_Public();
+					if (worker.IsRunning()) worker.Stop_Public();
 					geom->RemoveFacets(selectedFacets);
 					worker.CalcTotalOutgassing();
 					//geom->CheckIsolatedVertex();
@@ -1835,7 +1836,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			if (geom->IsLoaded()) {
 				if (GLMessageBox::Display("Remove Selected vertices?\nNote: It will also affect facets that contain them!", "Question", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONINFO) == GLDLG_OK) {
 					if (AskToReset()) {
-						if (worker.isRunning) worker.Stop_Public();
+						if (worker.IsRunning()) worker.Stop_Public();
 						geom->RemoveSelectedVertex();
 						worker.CalcTotalOutgassing();
 						geom->Rebuild(); //Will recalculate facet parameters
@@ -1990,7 +1991,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		if (src == startSimu) {
 			changedSinceSave = true;
 			StartStopSimulation();
-			resetSimu->SetEnabled(!worker.isRunning);
+			resetSimu->SetEnabled(!worker.IsRunning());
 		}
 
 		else if (src == facetApplyBtn) {
@@ -2617,11 +2618,12 @@ void MolFlow::CrashHandler(Error *e) {
 }
 
 void MolFlow::UpdatePlotters() {
-	if (pressureEvolution) pressureEvolution->Update(m_fTime, true);
-	if (timewisePlotter) timewisePlotter->Update(m_fTime, true);
-	if (profilePlotter) profilePlotter->Update(m_fTime, true);
-	if (texturePlotter) texturePlotter->Update(m_fTime, true);
-	if (histogramPlotter) histogramPlotter->Update(m_fTime,true);
+    const bool forceUpdate = true; //worker.IsRunning();
+	if (pressureEvolution) pressureEvolution->Update(m_fTime, forceUpdate);
+	if (timewisePlotter) timewisePlotter->Update(m_fTime, forceUpdate);
+	if (profilePlotter) profilePlotter->Update(m_fTime, forceUpdate);
+	if (texturePlotter) texturePlotter->Update(m_fTime, forceUpdate);
+	if (histogramPlotter) histogramPlotter->Update(m_fTime, forceUpdate);
 	if (convergencePlotter) convergencePlotter->Update(m_fTime);
 }
 
