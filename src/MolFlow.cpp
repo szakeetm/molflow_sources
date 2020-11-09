@@ -184,7 +184,7 @@ MolFlow *mApp;
 //INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, INT) //Can be replaced with main() if including SDL2Main.lib
 int main(int argc, char* argv[])
 {
-	MolFlow *mApp = new MolFlow();
+	mApp = new MolFlow();
 
 #ifndef _WIN32
 	//Change working directory to executable path (if launched by dbl-click)

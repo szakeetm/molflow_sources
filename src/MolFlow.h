@@ -44,7 +44,8 @@ class MolFlow : public Interface
 {
 public:
     MolFlow();
-	
+    virtual ~MolFlow() = default;
+
 	//Public textfields so we can disable them from "Advanced facet parameters":
 	GLTextField   *facetFlow;
 	GLTextField   *facetFlowArea;
