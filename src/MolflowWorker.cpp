@@ -1109,9 +1109,6 @@ void Worker::StartStop(float appTime, size_t sMode) {
     }
 }
 
-bool Worker::IsRunning(){
-    return simManager.GetRunningStatus();
-}
 /**
 * \brief Function that inserts a list of new paramters at the beginning of the catalog parameters
 * \param newParams vector containing new parameters to be inserted
