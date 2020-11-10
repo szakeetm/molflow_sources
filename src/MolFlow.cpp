@@ -1613,7 +1613,7 @@ void MolFlow::StartStopSimulation() {
 	
 	worker.StartStop(m_fTime, modeCombo->GetSelectedIndex());
 	if (!worker.IsRunning()) { //Force update on simulation stop
-        formula_ptr->UpdateFormulaValues(worker.globalHitCache.globalHits.hit.nbDesorbed);
+        formula_ptr->UpdateFormulaValues(worker.globState.globalHits.globalHits.hit.nbDesorbed);
         UpdatePlotters();
 		//if (autoUpdateFormulas) UpdateFormula();
 		if (autoUpdateFormulas && formulaEditor && formulaEditor->IsVisible()) formulaEditor->UpdateValues();

@@ -161,11 +161,11 @@ void TimeSettings::ProcessMessage(GLComponent *src,int message) {
 	  if (mApp->facetDetails) mApp->facetDetails->Update();
 		//if (mApp->autoUpdateFormulas) mApp->UpdateFormula();
         if (mApp->autoUpdateFormulas && mApp->formulaEditor && mApp->formulaEditor->IsVisible()) {
-            mApp->formula_ptr->UpdateFormulaValues(work->globalHitCache.globalHits.hit.nbDesorbed);
+            mApp->formula_ptr->UpdateFormulaValues(work->globState.globalHits.globalHits.hit.nbDesorbed);
             mApp->formulaEditor->UpdateValues();
         }
     } else if (src==editButton) {
-		if( mApp->momentsEditor==NULL ) mApp->momentsEditor = new MomentsEditor(work);
+		if( mApp->momentsEditor==nullptr ) mApp->momentsEditor = new MomentsEditor(work);
 		mApp->momentsEditor->Refresh();
 		//momentsEditor->Display(work,momentsEditor->GetSelectedIndex());
 		mApp->momentsEditor->SetVisible(true);
