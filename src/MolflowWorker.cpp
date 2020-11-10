@@ -116,7 +116,6 @@ Worker::Worker() : simManager("molflow", "MFLW"), model{} {
     stopTime = 0.0f;
     simuTime = 0.0f;
 
-    isRunning = false;
     calcAC = false;
     strcpy(fullFileName, "");
 }
@@ -144,7 +143,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
     try {
         if (needsReload && (!crashSave && !saveSelected)) RealReload();
     }
-    catch (Error &e) {
+    catch (std::exception &e) {
         char errMsg[512];
         sprintf(errMsg, "Error reloading worker. Trying safe save (geometry only):\n%s", e.what());
         GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -240,10 +239,10 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
             try {
                 buffer_old = simManager.GetLockedHitBuffer();
                 if(!buffer_old){
-                    throw Error("Error getting access to hit buffer.");
+                    throw std::runtime_error("Error getting access to hit buffer.");
                 }
             }
-            catch (Error &e) {
+            catch (std::exception &e) {
                 GLMessageBox::Display(e.what(), "Error getting access to hit buffer.", GLDLG_OK, GLDLG_ICONERROR);
                 return;
             }
@@ -257,7 +256,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                     } else if (!(isXML || isXMLzip))
                         f = new FileWriter(fileName); //Txt, stl, geo, etc...
                 }
-                catch (Error &e) {
+                catch (std::exception &e) {
                     SAFE_DELETE(f);
                     GLMessageBox::Display(e.what(), "Error writing file.", GLDLG_OK, GLDLG_ICONERROR);
                     return;
@@ -301,7 +300,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                             success = geom->SaveXML_simustate(saveDoc, this, globState, prg, saveSelected);
                             //SAFE_DELETE(buffer);
                         }
-                        catch (Error &e) {
+                        catch (std::exception &e) {
                             SAFE_DELETE(f);
                             simManager.UnlockHitBuffer();
                             GLMessageBox::Display(e.what(), "Error saving simulation state.", GLDLG_OK,
@@ -313,10 +312,10 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                     prg->SetMessage("Writing xml file to disk...");
                     if (success) {
                         if (!saveDoc.save_file(fileNameWithXML.c_str()))
-                            throw Error("Error writing XML file."); //successful save
+                            throw std::runtime_error("Error writing XML file."); //successful save
                     } else {
                         if (!geom_only.save_file(fileNameWithXML.c_str()))
-                            throw Error("Error writing XML file."); //simu state error
+                            throw std::runtime_error("Error writing XML file."); //simu state error
                     } //saveDoc goes out of scope for the compress duration
                     if (isXMLzip) {
                         prg->SetProgress(0.75);
@@ -328,7 +327,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                             try {
                                 remove(fileNameWithZIP.c_str());
                             }
-                            catch (Error& e) {
+                            catch (std::exception& e) {
                                 SAFE_DELETE(f);
                                 simManager.UnlockHitBuffer();
                                 std::string msg = "Error compressing to \n" + fileNameWithZIP + "\nMaybe file is in use.";
@@ -341,7 +340,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                         try {
                             remove(fileNameWithXML.c_str());
                         }
-                        catch (Error& e) {
+                        catch (std::exception& e) {
                             SAFE_DELETE(f);
                             simManager.UnlockHitBuffer();
                             std::string msg = "Error removing\n" + fileNameWithXML + "\nMaybe file is in use.";
@@ -359,7 +358,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
         }
     } else {
         SAFE_DELETE(f);
-        throw Error("SaveGeometry(): Invalid file extension [only xml,zip,geo,geo7z,txt,stl or str]");
+        throw std::runtime_error("SaveGeometry(): Invalid file extension [only xml,zip,geo,geo7z,txt,stl or str]");
     }
 
     SAFE_DELETE(f);
@@ -441,11 +440,11 @@ void Worker::ExportProfiles(const char *fn) {
     if (!f) {
         char tmp[256];
         sprintf(tmp, "Cannot open file for writing %s", fileName.c_str());
-        throw Error(tmp);
+        throw std::runtime_error(tmp);
     }
     bool buffer_old = simManager.GetLockedHitBuffer();
     if(!buffer_old)
-        throw Error("Cannot access shared hit buffer");
+        throw std::runtime_error("Cannot access shared hit buffer");
     geom->ExportProfiles(f, isTXT, this);
     simManager.UnlockHitBuffer();
     fclose(f);
@@ -497,7 +496,7 @@ std::vector<std::string> Worker::ExportAngleMaps(std::string fileName, bool save
         file.open(saveFileName);
         if (!file.is_open()) {
             std::string tmp = "Cannot open file for writing " + saveFileName;
-            throw Error(tmp.c_str());
+            throw std::runtime_error(tmp.c_str());
         }
         file << geom->GetFacet(facetIndex)->GetAngleMap(1);
         file.close();
@@ -540,7 +539,11 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
     if (!insert) {
         needsReload = true;
     } else {
-        RealReload();
+        try {
+            RealReload();
+        } catch(std::exception& e){
+            GLMessageBox::Display(e.what(), "Error (Reloading Geometry)", GLDLG_OK, GLDLG_ICONERROR);
+        }
     }
     //char CWD[MAX_PATH];
     //_getcwd(CWD, MAX_PATH);
@@ -549,7 +552,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
     if (ext == "")
 
-        throw Error("LoadGeometry(): No file extension, can't determine type");
+        throw std::runtime_error("LoadGeometry(): No file extension, can't determine type");
 
     // Read a file
     FileReader *f = NULL;
@@ -603,7 +606,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             }
         }
 
-        catch (Error &e) {
+        catch (std::exception &e) {
             if (!insert) geom->Clear();
             SAFE_DELETE(f);
             progressDlg->SetVisible(false);
@@ -652,7 +655,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 }
             }
         }
-        catch (Error &e) {
+        catch (std::exception &e) {
             if (!insert) geom->Clear();
             SAFE_DELETE(f);
             progressDlg->SetVisible(false);
@@ -662,7 +665,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
         }
 
     } else if (ext == "str" || ext == "STR") {
-        if (insert) throw Error("STR file inserting is not supported.");
+        if (insert) throw std::runtime_error("STR file inserting is not supported.");
         try {
             f = new FileReader(fileName);
             progressDlg->SetVisible(true);
@@ -673,7 +676,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             strcpy(fullFileName, fileName.c_str());
         }
 
-        catch (Error &e) {
+        catch (std::exception &e) {
             geom->Clear();
             SAFE_DELETE(f);
             progressDlg->SetVisible(false);
@@ -709,7 +712,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             if (!insert) strcpy(fullFileName, fileName.c_str());
         }
 
-        catch (Error &e) {
+        catch (std::exception &e) {
             if (!insert) geom->Clear();
 
             SAFE_DELETE(f);
@@ -748,7 +751,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
                 bool buffer_old = simManager.GetLockedHitBuffer();
                 if(!buffer_old)
-                    throw Error("Cannot access shared hit buffer");
+                    throw std::runtime_error("Cannot access shared hit buffer");
                 if (version >= 8)
                     geom->LoadProfileGEO(f, globState, version);
                 simManager.UnlockHitBuffer();
@@ -767,7 +770,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             SAFE_DELETE(f);
         }
 
-        catch (Error &e) {
+        catch (std::exception &e) {
             if (!insert) geom->Clear();
             SAFE_DELETE(f);
             //if (isGEO7Z) remove(tmp2);
@@ -787,7 +790,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
                 ZipArchive::Ptr zip = ZipFile::Open(fileName);
                 if (zip == nullptr) {
-                    throw Error("Can't open ZIP file");
+                    throw std::runtime_error("Can't open ZIP file");
                 }
                 size_t numitems = zip->GetEntriesCount();
                 bool notFoundYet = true;
@@ -822,7 +825,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     }
                 }*/
                 if (notFoundYet) {
-                    throw Error("Didn't find any XML file in the ZIP file.");
+                    throw std::runtime_error("Didn't find any XML file in the ZIP file.");
                 }
 
             }
@@ -837,7 +840,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 err << "XML parsed with errors.\n";
                 err << "Error description: " << parseResult.description() << "\n";
                 err << "Error offset: " << parseResult.offset << "\n";
-                throw Error(err.str().c_str());
+                throw std::runtime_error(err.str().c_str());
             }
 
             progressDlg->SetMessage("Building geometry...");
@@ -867,7 +870,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                         progressDlg->SetMessage("Restoring simulation state...");
                     bool buffer_old = simManager.GetLockedHitBuffer();
                     if(!buffer_old)
-                        throw Error("Cannot access shared hit buffer");
+                        throw std::runtime_error("Cannot access shared hit buffer");
                     geom->LoadXML_simustate(rootNode, globState, this, progressDlg);
                     RetrieveHistogramCache(); //So interface gets histogram data for disp.moment right after loading
                     simManager.UnlockHitBuffer();
@@ -875,7 +878,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     SendFacetHitCounts(); //Send hits without sending facet counters, as they are directly written during the load process (mutiple moments)
                     RebuildTextures();
                 }
-                catch (Error &e) {
+                catch (std::exception &e) {
                     if (!mApp->profilePlotter) {
                         mApp->profilePlotter = new ProfilePlotter();
                         mApp->profilePlotter->SetWorker(this);
@@ -897,7 +900,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 Reload();
             }
         }
-        catch (Error &e) {
+        catch (std::exception &e) {
             if (!insert) geom->Clear();
             progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
@@ -905,7 +908,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
         }
 
     } else if (ext == "ase" || ext == "ASE") {
-        if (insert) throw Error("ASE file inserting is not supported.");
+        if (insert) throw std::runtime_error("ASE file inserting is not supported.");
         try {
             ResetWorkerStats();
             f = new FileReader(fileName);
@@ -916,7 +919,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             strcpy(fullFileName, fileName.c_str());
 
         }
-        catch (Error &e) {
+        catch (std::exception &e) {
             geom->Clear();
             SAFE_DELETE(f);
             progressDlg->SetVisible(false);
@@ -926,7 +929,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
     } else {
         progressDlg->SetVisible(false);
         SAFE_DELETE(progressDlg);
-        throw Error("LoadGeometry(): Invalid file extension [Only xml,zip,geo,geo7z,syn.syn7z,txt,ase,stl or str]");
+        throw std::runtime_error("LoadGeometry(): Invalid file extension [Only xml,zip,geo,geo7z,syn.syn7z,txt,ase,stl or str]");
     }
     if (!insert) {
         CalcTotalOutgassing();
@@ -959,13 +962,13 @@ void Worker::LoadTexturesGEO(FileReader *f, int version) {
     try {
         bool buffer_old = simManager.GetLockedHitBuffer();
         if(!buffer_old)
-            throw Error("Cannot access shared hit buffer");
+            throw std::runtime_error("Cannot access shared hit buffer");
         progressDlg->SetVisible(true);
         geom->LoadTexturesGEO(f, progressDlg, globState, version);
         simManager.UnlockHitBuffer();
         RebuildTextures();
     }
-    catch (Error &e) {
+    catch (std::exception &e) {
         char tmp[256];
         sprintf(tmp,
                 "Couldn't load some textures. To avoid continuing a partially loaded state, it is recommended to reset the simulation.\n%s",
@@ -984,7 +987,6 @@ void Worker::InnerStop(float appTime) {
 
     stopTime = appTime;
     simuTime += appTime - startTime;
-    isRunning = false;
     calcAC = false;
 
 }
@@ -995,9 +997,9 @@ void Worker::InnerStop(float appTime) {
 void Worker::OneACStep() {
 
     if (model.otfParams.nbProcess == 0)
-        throw Error("No sub process found. (Simulation not available)");
+        throw std::runtime_error("No sub process found. (Simulation not available)");
 
-    if (!isRunning) {
+    if (!IsRunning()) {
         if (simManager.ExecuteAndWait(COMMAND_STEPAC, PROCESS_RUN, AC_MODE))
             ThrowSubProcError();
     }
@@ -1011,7 +1013,7 @@ void Worker::OneACStep() {
 */
 void Worker::StartStop(float appTime, size_t sMode) {
 
-    if (isRunning) {
+    if (IsRunning()) {
 
         // Stop
         InnerStop(appTime);
@@ -1020,7 +1022,7 @@ void Worker::StartStop(float appTime, size_t sMode) {
             Update(appTime);
         }
 
-        catch (Error &e) {
+        catch (std::exception &e) {
             GLMessageBox::Display(e.what(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
             return;
         }
@@ -1037,7 +1039,7 @@ void Worker::StartStop(float appTime, size_t sMode) {
 
             Start();
         }
-        catch (Error &e) {
+        catch (std::exception &e) {
             //isRunning = false;
             GLMessageBox::Display(e.what(), "Error (Start)", GLDLG_OK, GLDLG_ICONERROR);
             return;
@@ -1313,7 +1315,9 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
             GLMessageBox::Display(e.what(), "Error (Full reload)", GLDLG_OK, GLDLG_ICONWARNING);
             progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
-            throw Error(e.what());
+            std::stringstream err;
+            err << "Error (Full reload) " << e.what();
+            throw std::runtime_error(err.str());
         }
     }
 
@@ -1432,20 +1436,18 @@ void Worker::Start() {
             throw Error("No desorption facet found");
     }
     if (model.wp.totalDesorbedMolecules <= 0.0)
-        throw Error("Total outgassing is zero.");
+        throw std::runtime_error("Total outgassing is zero.");
 
     try {
         for(auto& simUnit : simManager.simUnits)
             simUnit.globState = &globState;
         if (simManager.StartSimulation()) {
-            isRunning = false;
             throw std::logic_error("Processes are already done!");
         }
     }
     catch (std::exception& e) {
-        throw Error(e.what());
+        throw e;
     }
-    isRunning = true;
 }
 
 /**
@@ -1505,11 +1507,11 @@ void Worker::ImportDesorption_SYN(const char *fileName, const size_t &source, co
                                   GLProgress *prg) {
     std::string ext = FileUtils::GetExtension(fileName);
     if (!Contains({"syn7z", "syn"}, ext))
-        throw Error("ImportDesorption_SYN(): Invalid file extension [Only syn, syn7z]");
+        throw std::runtime_error("ImportDesorption_SYN(): Invalid file extension [Only syn, syn7z]");
 
     // Read a file
 
-    FileReader *f = NULL;
+    FileReader *f = nullptr;
 
     GLProgress *progressDlg = new GLProgress("Analyzing SYN file...", "Please wait");
     progressDlg->SetProgress(0.0);
@@ -1531,7 +1533,7 @@ void Worker::ImportDesorption_SYN(const char *fileName, const size_t &source, co
             SAFE_DELETE(f);
 
         }
-        catch (Error &e) {
+        catch (std::exception &e) {
 
             SAFE_DELETE(f);
             progressDlg->SetVisible(false);
@@ -1556,10 +1558,10 @@ void Worker::AnalyzeSYNfile(const char *fileName, size_t *nbFacet, size_t *nbTex
     bool isSYN7Z = (ext == "syn7z") || (ext == "SYN7Z");
 
     if (!(isSYN || isSYN7Z))
-        throw Error("AnalyzeSYNfile(): Invalid file extension [Only syn, syn7z]");
+        throw std::runtime_error("AnalyzeSYNfile(): Invalid file extension [Only syn, syn7z]");
 
     // Read a file
-    FileReader *f = NULL;
+    FileReader *f = nullptr;
 
     GLProgress *progressDlg = new GLProgress("Analyzing SYN file...", "Please wait");
     progressDlg->SetProgress(0.0);
@@ -1581,7 +1583,7 @@ void Worker::AnalyzeSYNfile(const char *fileName, size_t *nbFacet, size_t *nbTex
             SAFE_DELETE(f);
 
         }
-        catch (Error &e) {
+        catch (std::exception &e) {
             SAFE_DELETE(f);
             progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
@@ -1630,7 +1632,7 @@ void Worker::PrepareToRun() {
                 char tmp[256];
                 sprintf(tmp, "Facet #%zd: Outgassing parameter \"%s\" isn't defined.", i + 1,
                         f->userOutgassing.c_str());
-                throw Error(tmp);
+                throw std::runtime_error(tmp);
             } else f->sh.outgassing_paramId = id;
         } else f->sh.outgassing_paramId = -1;
 
@@ -1639,7 +1641,7 @@ void Worker::PrepareToRun() {
             if (id == -1) { //parameter not found
                 char tmp[256];
                 sprintf(tmp, "Facet #%zd: Opacity parameter \"%s\" isn't defined.", i + 1, f->userOpacity.c_str());
-                throw Error(tmp);
+                throw std::runtime_error(tmp);
             } else f->sh.opacity_paramId = id;
         } else f->sh.opacity_paramId = -1;
 
@@ -1648,7 +1650,7 @@ void Worker::PrepareToRun() {
             if (id == -1) { //parameter not found
                 char tmp[256];
                 sprintf(tmp, "Facet #%zd: Sticking parameter \"%s\" isn't defined.", i + 1, f->userSticking.c_str());
-                throw Error(tmp);
+                throw std::runtime_error(tmp);
             } else f->sh.sticking_paramId = id;
         } else f->sh.sticking_paramId = -1;
 
@@ -1672,12 +1674,12 @@ void Worker::PrepareToRun() {
 			if (!f->sh.anglemapParams.hasRecorded) {
                 char tmp[256];
                 sprintf(tmp, "Facet #%zd: Uses angle map desorption but doesn't have a recorded angle map.", i + 1);
-                throw Error(tmp);
+                throw std::runtime_error(tmp);
             }
             if (f->sh.anglemapParams.record) {
                 char tmp[256];
                 sprintf(tmp, "Facet #%zd: Can't RECORD and USE angle map desorption at the same time.", i + 1);
-                throw Error(tmp);
+                throw std::runtime_error(tmp);
             }
         }
 
@@ -1689,7 +1691,7 @@ void Worker::PrepareToRun() {
                 if (!f->angleMapCache) {
                     std::stringstream tmp;
                     tmp << "Not enough memory for incident angle map on facet " << i + 1;
-                    throw Error(tmp.str().c_str());
+                    throw std::runtime_error(tmp.str().c_str());
                 }
                 //Set values to zero
                 memset(f->angleMapCache, 0, f->sh.anglemapParams.GetDataSize());

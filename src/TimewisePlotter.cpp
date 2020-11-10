@@ -240,18 +240,14 @@ void TimewisePlotter::Update(float appTime, bool force) {
 		lastUpdate = appTime;
 		return;
 	}
-
-	if ((appTime - lastUpdate > 1.0f || force) && nbView) {
-		if (worker->isRunning) refreshViews();
-		lastUpdate = appTime;
-	}
-
 }
 
 /**
 * \brief Refreshes view by updating the data for the plot depending on the selected normalisation mode
 */
 void TimewisePlotter::refreshViews() {
+
+    if(!nbView) return;
 
 	// Lock during update
 	bool buffer_old = worker->GetHits();

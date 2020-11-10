@@ -200,12 +200,6 @@ void PressureEvolution::Update(float appTime, bool force) {
 		lastUpdate = appTime;
 		return;
 	}
-
-	if ((appTime - lastUpdate > 1.0f || force) && views.size() > 0) {
-		if (worker->isRunning) refreshChart();
-		lastUpdate = appTime;
-	}
-
 }
 
 /**
@@ -213,6 +207,7 @@ void PressureEvolution::Update(float appTime, bool force) {
 */
 void PressureEvolution::refreshChart() {
 	//refreshes chart values
+    if(views.empty()) return;
 
 	// Lock during update
 	bool buffer_old = worker->GetHits();
