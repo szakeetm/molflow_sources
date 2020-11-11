@@ -56,9 +56,12 @@ bool Simulation::UpdateMCHits(GlobalSimuState& globSimuState, int prIdx, size_t 
 //#if defined(DEBUG)
     double t0, t1;
     t0 = omp_get_wtime();
+    if (!globSimuState.tMutex.try_lock_for(std::chrono::milliseconds (timeout))) {
+        return false;
+    }
 //#endif
     //SetState(PROCESS_STARTING, "Waiting for 'hits' dataport access...", false, true);
-    // TODO: Mutex
+
     //bool lastHitUpdateOK = LockMutex(worker->results.mutex, timeout);
     //if (!lastHitUpdateOK) return false; //Timeout, will try again later
     //SetState(PROCESS_STARTING, "Updating MC hits...", false, true);
@@ -70,7 +73,11 @@ bool Simulation::UpdateMCHits(GlobalSimuState& globSimuState, int prIdx, size_t 
     /*gHits->globalHits += tmpGlobalResult.globalHits;
     gHits->distTraveled_total += tmpGlobalResult.distTraveled_total;
     gHits->distTraveledTotal_fullHitsOnly += tmpGlobalResult.distTraveledTotal_fullHitsOnly;*/
-    for (auto &tmpResults : tmpGlobalResults) {
+
+    {
+        auto& tmpResults = tmpGlobalResults[prIdx];
+
+    //for (auto &tmpResults : tmpGlobalResults) {
         //for(auto& tmpResults : tmpGlobalResults) {
 #if defined(DEBUG)
         std::cout << "[" << 0 << "] "
@@ -81,6 +88,10 @@ bool Simulation::UpdateMCHits(GlobalSimuState& globSimuState, int prIdx, size_t 
         globSimuState.globalHits.globalHits += tmpResults.globalHits.globalHits;
         globSimuState.globalHits.distTraveled_total += tmpResults.globalHits.distTraveled_total;
         globSimuState.globalHits.distTraveledTotal_fullHitsOnly += tmpResults.globalHits.distTraveledTotal_fullHitsOnly;
+
+        // Update too late
+        totalDesorbed += tmpResults.globalHits.globalHits.hit.nbDesorbed;
+
 
         /*gHits->globalHits.hit.nbMCHit += tmpGlobalResult.globalHits.hit.nbMCHit;
         gHits->globalHits.hit.nbHitEquiv += tmpGlobalResult.globalHits.hit.nbHitEquiv;
@@ -122,29 +133,30 @@ bool Simulation::UpdateMCHits(GlobalSimuState& globSimuState, int prIdx, size_t 
         globSimuState.facetStates += tmpResults.facetStates;
     }
 
-    // Another loop for a comlete global min/max texture search
-    for (s = 0; s < model.sh.nbSuper; s++) {
-        for (const SubprocessFacet &f : model.structures[s].facets) {
-            if (f.sh.isTextured) {
-                for (int m = 0; m < (1 + nbMoments); m++) {
-                    {
-                        // go on if the facet was never hit before
-                        auto& facetHitBuffer = globSimuState.facetStates[f.globalId].momentResults[m].hits;
-                        if (facetHitBuffer.hit.nbMCHit == 0 && facetHitBuffer.hit.nbDesorbed == 0) continue;
-                    }
+    if(prIdx == 0) {
+        // Another loop for a comlete global min/max texture search
+        for (s = 0; s < model.sh.nbSuper; s++) {
+            for (const SubprocessFacet &f : model.structures[s].facets) {
+                if (f.sh.isTextured) {
+                    for (int m = 0; m < (1 + nbMoments); m++) {
+                        {
+                            // go on if the facet was never hit before
+                            auto &facetHitBuffer = globSimuState.facetStates[f.globalId].momentResults[m].hits;
+                            if (facetHitBuffer.hit.nbMCHit == 0 && facetHitBuffer.hit.nbDesorbed == 0) continue;
+                        }
 
-                    //double dCoef = globState.globalHits.globalHits.hit.nbDesorbed * 1E4 * model.wp.gasMass / 1000 / 6E23 * MAGIC_CORRECTION_FACTOR;  //1E4 is conversion from m2 to cm2
-                    const double timeCorrection =
-                            m == 0 ? model.wp.finalOutgassingRate : (model.wp.totalDesorbedMolecules) /
-                                                                    model.tdParams.moments[m - 1].second;
-                    //model.wp.timeWindowSize;
-                    //Timecorrection is required to compare constant flow texture values with moment values (for autoscaling)
-                    const auto &texture = globSimuState.facetStates[f.globalId].momentResults[m].texture;
-                    const size_t textureSize = texture.size();
-                    for (size_t t = 0; t < textureSize; t++) {
+                        //double dCoef = globState.globalHits.globalHits.hit.nbDesorbed * 1E4 * model.wp.gasMass / 1000 / 6E23 * MAGIC_CORRECTION_FACTOR;  //1E4 is conversion from m2 to cm2
+                        const double timeCorrection =
+                                m == 0 ? model.wp.finalOutgassingRate : (model.wp.totalDesorbedMolecules) /
+                                                                        model.tdParams.moments[m - 1].second;
+                        //model.wp.timeWindowSize;
+                        //Timecorrection is required to compare constant flow texture values with moment values (for autoscaling)
+                        const auto &texture = globSimuState.facetStates[f.globalId].momentResults[m].texture;
+                        const size_t textureSize = texture.size();
+                        for (size_t t = 0; t < textureSize; t++) {
                             //Add temporary hit counts
 
-                            if(f.largeEnough[t]) {
+                            if (f.largeEnough[t]) {
                                 double val[3];  //pre-calculated autoscaling values (Pressure, imp.rate, density)
 
                                 val[0] = texture[t].sum_v_ort_per_area *
@@ -156,18 +168,22 @@ bool Simulation::UpdateMCHits(GlobalSimuState& globSimuState, int prIdx, size_t 
 
                                 //Global autoscale
                                 for (int v = 0; v < 3; v++) {
-                                    globSimuState.globalHits.texture_limits[v].max.all = std::max(val[v],globSimuState.globalHits.texture_limits[v].max.all);
+                                    globSimuState.globalHits.texture_limits[v].max.all = std::max(val[v],
+                                                                                                  globSimuState.globalHits.texture_limits[v].max.all);
 
                                     if (val[v] > 0.0) {
                                         globSimuState.globalHits.texture_limits[v].min.all = std::min(val[v],
-                                                                                    globSimuState.globalHits.texture_limits[v].min.all);
+                                                                                                      globSimuState.globalHits.texture_limits[v].min.all);
                                     }
                                     //Autoscale ignoring constant flow (moments only)
                                     if (m != 0) {
-                                        globSimuState.globalHits.texture_limits[v].max.moments_only = std::max(val[v],globSimuState.globalHits.texture_limits[v].max.moments_only);;
+                                        globSimuState.globalHits.texture_limits[v].max.moments_only = std::max(val[v],
+                                                                                                               globSimuState.globalHits.texture_limits[v].max.moments_only);;
 
                                         if (val[v] > 0.0)
-                                            globSimuState.globalHits.texture_limits[v].min.moments_only = std::min(val[v],globSimuState.globalHits.texture_limits[v].min.moments_only);;
+                                            globSimuState.globalHits.texture_limits[v].min.moments_only = std::min(
+                                                    val[v],
+                                                    globSimuState.globalHits.texture_limits[v].min.moments_only);;
                                     }
                                 }
                             } // if largeenough
@@ -176,17 +192,18 @@ bool Simulation::UpdateMCHits(GlobalSimuState& globSimuState, int prIdx, size_t 
                 }
             }
         }
-
+    }
     //ReleaseDataport(dpHit);
     //TODO: //ReleaseMutex(worker->results.mutex);
+    globSimuState.tMutex.unlock();
 
     //extern char *GetSimuStatus();
     //SetState(PROCESS_STARTING, GetSimuStatus(), false, true);
 
 //#if defined(DEBUG)
     t1 = omp_get_wtime();
-    printf("Update hits (glob): %lf s\n", (t1 - t0) * 1.0);
-//#endif
+    printf("Update hits (glob): %lf s [%d of %lu]\n", (t1 - t0) * 1.0,  prIdx, tmpGlobalResults.size());
+    //#endif
 
     return true;
 }
@@ -304,20 +321,19 @@ bool Simulation::SimulationMCStep(size_t nbStep) {
 
     // Perform simulation steps
     int returnVal = true;
-    int allQuit = 0;
+    //int allQuit = 0;
 
-    if (!tMutex.try_lock_for(std::chrono::seconds (10))) {
-        return false;
-    }
-#pragma omp parallel num_threads(nbThreads) default(none) firstprivate(nbStep) shared( returnVal, allQuit)
+//#pragma omp parallel num_threads(nbThreads) default(none) firstprivate(nbStep) shared( returnVal, allQuit)
     {
 
         const int ompIndex = omp_get_thread_num();
+        //printf("Simthread %i of %i (%i).\n", ompIndex, omp_get_num_threads(), omp_get_max_threads());
+
         CurrentParticleStatus& currentParticle = currentParticles[ompIndex];
-        currentParticle.tmpState = &tmpGlobalResults.at(omp_get_thread_num());
+        currentParticle.tmpState = &tmpGlobalResults.at(ompIndex);
 
         size_t i;
-        for (i = 0; i < nbStep && allQuit <= 0; i++) {
+        for (i = 0; i < nbStep /*&& allQuit <= 0*/; i++) {
             if (!currentParticle.lastHitFacet)
                 if (!StartFromSource(currentParticle)) {
                     returnVal = false; // desorp limit reached
@@ -424,12 +440,9 @@ bool Simulation::SimulationMCStep(size_t nbStep) {
             }
         }
 
-#pragma omp critical
-            ++allQuit;
+/*#pragma omp critical
+            ++allQuit;*/
     } // omp parallel
-
-
-    tMutex.unlock();
 
     return returnVal;
 }
@@ -651,7 +664,10 @@ bool Simulation::StartFromSource(CurrentParticleStatus &currentParticle) {
     // Count
 
     currentParticle.tmpFacetVars[src->globalId].isHit = true;
-    totalDesorbed++;
+/*#pragma omp critical
+    {
+        totalDesorbed++;
+    }*/
     currentParticle.tmpState->globalHits.globalHits.hit.nbDesorbed++;
     //nbPHit = 0;
 

@@ -73,22 +73,22 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
         if (ok) v->value = geom->GetFacet(idx - 1)->sh.area;
     }
     else if (iequals(v->name, "SUMDES")) {
-        v->value = (double)worker->globState.globalHits.globalHits.hit.nbDesorbed;
+        v->value = (double)worker->globalHitCache.globalHits.hit.nbDesorbed;
     }
     else if (iequals(v->name, "SUMABS")) {
-        v->value = worker->globState.globalHits.globalHits.hit.nbAbsEquiv;
+        v->value = worker->globalHitCache.globalHits.hit.nbAbsEquiv;
     }
     else if (iequals(v->name, "SUMMCHIT")) {
-        v->value = (double)worker->globState.globalHits.globalHits.hit.nbMCHit;
+        v->value = (double)worker->globalHitCache.globalHits.hit.nbMCHit;
     }
     else if (iequals(v->name, "SUMHIT")) {
-        v->value = worker->globState.globalHits.globalHits.hit.nbHitEquiv;
+        v->value = worker->globalHitCache.globalHits.hit.nbHitEquiv;
     }
     else if (iequals(v->name, "MPP")) {
-        v->value = worker->globState.globalHits.distTraveled_total / (double)worker->globState.globalHits.globalHits.hit.nbDesorbed;
+        v->value = worker->globalHitCache.distTraveled_total / (double)worker->globalHitCache.globalHits.hit.nbDesorbed;
     }
     else if (iequals(v->name, "MFP")) {
-        v->value = worker->globState.globalHits.distTraveledTotal_fullHitsOnly / worker->globState.globalHits.globalHits.hit.nbHitEquiv;
+        v->value = worker->globalHitCache.distTraveledTotal_fullHitsOnly / worker->globalHitCache.globalHits.hit.nbHitEquiv;
     }
     else if (iequals(v->name, "DESAR")) {
         double sumArea = 0.0;

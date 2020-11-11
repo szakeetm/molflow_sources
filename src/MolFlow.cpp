@@ -1133,10 +1133,10 @@ int MolFlow::FrameMove()
 			hitNumber->SetText("");
 		}
 		else {
-			sprintf(tmp, "%s (%s)", FormatInt(worker.globState.globalHits.globalHits.hit.nbMCHit, "hit"), FormatPS(hps, "hit"));
+			sprintf(tmp, "%s (%s)", FormatInt(worker.globalHitCache.globalHits.hit.nbMCHit, "hit"), FormatPS(hps, "hit"));
 			hitNumber->SetText(tmp);
 		}
-		sprintf(tmp, "%s (%s)", FormatInt(worker.globState.globalHits.globalHits.hit.nbDesorbed, "des"), FormatPS(dps, "des"));
+		sprintf(tmp, "%s (%s)", FormatInt(worker.globalHitCache.globalHits.hit.nbDesorbed, "des"), FormatPS(dps, "des"));
 		desNumber->SetText(tmp);
 	}
 
@@ -1431,8 +1431,8 @@ void MolFlow::LoadFile(std::string fileName) {
 		singleACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
 		//resetSimu->SetEnabled(true);
 		ClearFacetParams();
-		nbDesStart = worker.globState.globalHits.globalHits.hit.nbDesorbed;
-		nbHitStart = worker.globState.globalHits.globalHits.hit.nbMCHit;
+		nbDesStart = worker.globalHitCache.globalHits.hit.nbDesorbed;
+		nbHitStart = worker.globalHitCache.globalHits.hit.nbMCHit;
 		AddRecent(filePath.c_str());
 		geom->viewStruct = -1;
 
@@ -1603,7 +1603,7 @@ void MolFlow::ClearParameters() {
 
 void MolFlow::StartStopSimulation() {
 	
-	if (!(worker.globState.globalHits.globalHits.hit.nbMCHit > 0) && !worker.model.wp.calcConstantFlow && worker.moments.size() == 0) {
+	if (!(worker.globalHitCache.globalHits.hit.nbMCHit > 0) && !worker.model.wp.calcConstantFlow && worker.moments.size() == 0) {
 		bool ok = GLMessageBox::Display("Warning: in the Moments Editor, the option \"Calculate constant flow\" is disabled.\n"
 			"This is useful for time-dependent simulations.\n"
 			"However, you didn't define any moments, suggesting you're using steady-state mode.\n"
@@ -1613,7 +1613,7 @@ void MolFlow::StartStopSimulation() {
 	
 	worker.StartStop(m_fTime, modeCombo->GetSelectedIndex());
 	if (!worker.IsRunning()) { //Force update on simulation stop
-        formula_ptr->UpdateFormulaValues(worker.globState.globalHits.globalHits.hit.nbDesorbed);
+        formula_ptr->UpdateFormulaValues(worker.globalHitCache.globalHits.hit.nbDesorbed);
         UpdatePlotters();
 		//if (autoUpdateFormulas) UpdateFormula();
 		if (autoUpdateFormulas && formulaEditor && formulaEditor->IsVisible()) formulaEditor->UpdateValues();
@@ -1626,8 +1626,8 @@ void MolFlow::StartStopSimulation() {
 	hps = 0.0;
 	lastHps = hps;
 	lastDps = dps;
-	lastNbHit = worker.globState.globalHits.globalHits.hit.nbMCHit;
-	lastNbDes = worker.globState.globalHits.globalHits.hit.nbDesorbed;
+	lastNbHit = worker.globalHitCache.globalHits.hit.nbMCHit;
+	lastNbDes = worker.globalHitCache.globalHits.hit.nbDesorbed;
 	lastUpdate = 0.0;
 
 }

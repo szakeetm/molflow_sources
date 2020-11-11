@@ -1465,15 +1465,15 @@ void Worker::ResetMoments() {
 * \return amount of physical molecules represented by one test particle
 */
 double Worker::GetMoleculesPerTP(size_t moment) {
-    if (globState.globalHits.globalHits.hit.nbDesorbed == 0) return 0; //avoid division by 0
+    if (globalHitCache.globalHits.hit.nbDesorbed == 0) return 0; //avoid division by 0
     if (moment == 0) {
         //Constant flow
         //Each test particle represents a certain real molecule influx per second
-        return model.wp.finalOutgassingRate / globState.globalHits.globalHits.hit.nbDesorbed;
+        return model.wp.finalOutgassingRate / globalHitCache.globalHits.hit.nbDesorbed;
     } else {
         //Time-dependent mode
         //Each test particle represents a certain absolute number of real molecules
-        return (model.wp.totalDesorbedMolecules / mApp->worker.moments[moment - 1].second) / globState.globalHits.globalHits.hit.nbDesorbed;
+        return (model.wp.totalDesorbedMolecules / mApp->worker.moments[moment - 1].second) / globalHitCache.globalHits.hit.nbDesorbed;
     }
 }
 

@@ -215,7 +215,7 @@ void PressureEvolution::refreshChart() {
 	int yScaleMode = yScaleCombo->GetSelectedIndex();
 
 	Geometry *geom = worker->GetGeometry();
-	GlobalHitBuffer& gHits = worker->globState.globalHits;
+	GlobalHitBuffer& gHits = worker->globalHitCache;
 	double nbDes = (double)gHits.globalHits.hit.nbDesorbed;
 	double scaleY;
 	size_t facetHitsSize = (1 + worker->moments.size()) * sizeof(FacetHitBuffer);

@@ -34,6 +34,7 @@ Simulation::Simulation(size_t nbThreads) : tMutex()
     hasVolatile = false;
 
 	model.sh.nbSuper = 0;
+    globState = nullptr;
 
 	if(nbThreads == 0)
         this->nbThreads = omp_get_max_threads();
@@ -42,6 +43,7 @@ Simulation::Simulation(size_t nbThreads) : tMutex()
     currentParticles.resize(this->nbThreads, CurrentParticleStatus());// = CurrentParticleStatus();
 }
 Simulation::Simulation(Simulation&& o) noexcept : tMutex() {
+
     totalDesorbed = o.totalDesorbed;
 
     textTotalSize = o.textTotalSize;
@@ -59,7 +61,7 @@ Simulation::Simulation(Simulation&& o) noexcept : tMutex() {
     hasVolatile =  o.hasVolatile;
 
     model =  o.model;
-
+    globState = o.globState;
     nbThreads =  o.nbThreads;
 }
 
@@ -332,26 +334,24 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
 }
 
 bool Simulation::UpdateHits(int prIdx, DWORD timeout) {
-    bool lastHitUpdateOK = false;
     if(!globState) {
         return false;
     }
-    if (!tMutex.try_lock_for(std::chrono::seconds (10))) {
-        return false;
-    }
+
     //globState = tmpGlobalResults[0];
 
-    lastHitUpdateOK = UpdateMCHits(*globState, prIdx, model.tdParams.moments.size(), timeout);
+    bool lastHitUpdateOK = UpdateMCHits(*globState, prIdx, model.tdParams.moments.size(), timeout);
     // only 1 , so no reduce necessary
     /*ParticleLoggerItem& globParticleLog = tmpParticleLog[0];
     if (dpLog) UpdateLog(dpLog, timeout);*/
 
-    tMutex.unlock();
+    // At last delete tmpCache
+    tmpGlobalResults[prIdx].Reset();
     //ResetTmpCounters();
     // only reset buffers 1..N-1
     // 0 = global buffer for reduce
-    for(auto & tmpGlobalResult : tmpGlobalResults)
-        tmpGlobalResult.Reset();
+    /*for(auto & tmpGlobalResult : tmpGlobalResults)
+        tmpGlobalResult.Reset();*/
 
     return lastHitUpdateOK;
 }
