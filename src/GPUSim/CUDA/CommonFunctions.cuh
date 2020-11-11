@@ -14,7 +14,7 @@
 
 #include <cooperative_groups.h>
 
-#define EPS32 1e-6f
+#define EPS32 1e-12f
 
 #define DET33(_11,_12,_13,_21,_22,_23,_31,_32,_33)  \
   ((_11)*( (_22)*(_33) - (_32)*(_23) ) +            \
@@ -349,9 +349,11 @@ float2 getHitLocation(const flowgpu::Polygon& poly, const float3& rayOrigin)
             det = poly.U.z * poly.V.x - poly.U.x * poly.V.z; // TODO: Pre calculate
             detU = b.z * poly.V.x - b.x * poly.V.z;
             detV = poly.U.z * b.x - poly.U.x * b.z;
+#ifdef DEBUG
             if(fabsf(det)<=EPS32){
-                printf("[HitLoc] Dangerous determinant calculated: %lf : %lf : %lf -> %lf : %lf\n",det,detU,detV,detU/det,detV/det);
+                    printf("[HitLoc] Dangerous determinant calculated: %e : %e : %e -> %e : %e\n",det,detU,detV,detU/det,detV/det);
             }
+#endif
         }
     }
 

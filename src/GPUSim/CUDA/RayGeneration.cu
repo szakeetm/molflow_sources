@@ -567,7 +567,6 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
         MolPRD& hitData = optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex];
 
 #ifdef WITHDESORPEXIT
-        if(bufferIndex==0) printf("Terminate state %d\n", hitData.hasToTerminate);
         if(hitData.hasToTerminate==2){
             return;
         }

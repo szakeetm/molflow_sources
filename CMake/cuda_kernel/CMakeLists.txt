@@ -96,7 +96,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 #set(CMAKE_CUDA_FLAGS "-arch=sm_70 -gencode=arch=compute_70,code=sm_70 -gencode=arch=compute_75,code=sm_75 -gencode=arch=compute_75,code=compute_75 --default-stream per-thread")
 #target_link_options(${PROJECT_NAME} PUBLIC -arch=sm_70 -gencode=arch=compute_70,code=sm_70 -gencode=arch=compute_75,code=sm_75 -gencode=arch=compute_75,code=compute_75)
 
-MESSAGE("[NVCC] Flags: ${cuda_flags}")
+MESSAGE("[CUDA] Flags: ${cuda_flags}")
+MESSAGE("[NVCC] Flags: ${nvcc_flags}")
 
 # https://docs.nvidia.com/cuda/pascal-compatibility-guide/index.html
 target_compile_options(${PROJECT_NAME} PUBLIC
