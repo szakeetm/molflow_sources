@@ -57,11 +57,12 @@ Simulation::Simulation(Simulation&& o) noexcept : tMutex() {
     currentParticles.swap(o.currentParticles);
     for(auto& particle : o.currentParticles) {
         particle.lastHitFacet = nullptr;
+        particle.model = SimulationModel();
     }
     hasVolatile =  o.hasVolatile;
 
-    model =  o.model;
-    globState = o.globState;
+    model = std::move(o.model);
+    globState = std::move(o.globState);
     nbThreads =  o.nbThreads;
 }
 
@@ -128,13 +129,15 @@ void Simulation::ClearSimulation() {
 
     //this->currentParticles.clear();// = CurrentParticleStatus();
     std::vector<CurrentParticleStatus>(this->nbThreads).swap(this->currentParticles);
-    for(auto& particle : currentParticles)
+    for(auto& particle : currentParticles) {
         std::vector<SubProcessFacetTempVar>(model.sh.nbFacet).swap(particle.tmpFacetVars);
-
+        particle.tmpState.Reset();
+        particle.model = model;
+    }
     totalDesorbed = 0;
     //ResetTmpCounters();
-    for(auto& tmpResults : tmpGlobalResults)
-        tmpResults.Reset();
+    /*for(auto& tmpResults : tmpGlobalResults)
+        tmpResults.Reset();*/
     tmpParticleLog.clear();
 
     /*this->model.structures.clear();
@@ -157,83 +160,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
 
     //SetState(PROCESS_STARTING, "Loading simulation");
     strncpy(loadStatus, "Loading simulation", 127);
-    /*
-    {
-        std::string inputString(loader->size,'\0');
-        BYTE* buffer = (BYTE*)loader->buff;
-        std::copy(buffer, buffer + loader->size, inputString.begin());
-        std::stringstream inputStream;
-        inputStream << inputString;
-        cereal::BinaryInputArchive inputArchive(inputStream);
 
-        //Worker params
-        inputArchive(model.wp);
-        inputArchive(model.otfParams);
-        inputArchive(model.tdParams.CDFs);
-        inputArchive(model.tdParams.IDs);
-        inputArchive(model.tdParams.parameters);
-        //inputArchive(temperatures);
-        inputArchive(model.tdParams.moments);
-        //inputArchive(desorptionParameterIDs);
-
-        //Geometry
-        inputArchive(model.sh);
-        inputArchive(model.vertices3);
-
-        model.structures.resize(model.sh.nbSuper); //Create structures
-        //model.tdParams.moments = moments;
-
-        //Facets
-        for (size_t i = 0; i < model.sh.nbFacet; i++) { //Necessary because facets is not (yet) a vector in the interface
-            {
-                char tmp[128];
-                sprintf(tmp,"Loading facet #%u / %u", i, sh.nbFacet);
-                strncpy(loadStatus, tmp, 127);
-            }
-            SubprocessFacet f;
-            inputArchive(
-                    f.sh,
-                    f.indices,
-                    f.vertices2,
-                    f.outgassingMap,
-                    f.angleMap.pdf,
-                    f.textureCellIncrements
-            );
-            f.isHit=false;
-            f.colDist=1E99;
-
-            //Some initialization
-            if (!f.InitializeOnLoad(i, model.tdParams.moments.size(), histogramTotalSize)) return false;
-            // Increase size counters
-            //histogramTotalSize += 0;
-            angleMapTotalSize += f.angleMapSize;
-            dirTotalSize += f.directionSize* (1 + model.tdParams.moments.size());
-            profTotalSize += f.profileSize* (1 + model.tdParams.moments.size());
-            textTotalSize += f.textureSize* (1 + model.tdParams.moments.size());
-
-            hasVolatile |= f.sh.isVolatile;
-            if ((f.sh.superDest || f.sh.isVolatile) && ((f.sh.superDest - 1) >= model.sh.nbSuper || f.sh.superDest < 0)) {
-                // Geometry error
-                //ClearSimulation();
-                //ReleaseDataport(loader);
-                std::ostringstream err;
-                err << "Invalid structure (wrong link on F#" << i + 1 << ")";
-                //SetErrorSub(err.str().c_str());
-                std::cerr << err.str() << std::endl;
-                return 0;
-            }
-
-            if (f.sh.superIdx == -1) { //Facet in all structures
-                for (auto& s : model.structures) {
-                    s.facets.push_back(f);
-                }
-            }
-            else {
-                model.structures[f.sh.superIdx].facets.push_back(f); //Assign to structure
-            }
-        }
-    }//inputarchive goes out of scope, file released
-*/
     // New GlobalSimuState structure for threads
     {
         GlobalSimuState tmpResults = GlobalSimuState();
@@ -262,14 +189,12 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
         tmpResults.globalHistograms = std::vector<FacetHistogramBuffer>(1 + model.tdParams.moments.size(), globalHistTemplate);
         tmpResults.initialized = true;
 
-        tmpGlobalResults.resize(nbThreads);
-        for(auto& tmpGlobal : tmpGlobalResults)
-            tmpGlobal = tmpResults;
+        for(auto& particle : currentParticles) {
+            // Init tmp vars per thread
+            std::vector<SubProcessFacetTempVar>(model.sh.nbFacet).swap(particle.tmpFacetVars);
+            particle.tmpState = tmpResults;
+        }
     }
-
-    // Init tmp vars per thread
-    for(auto& particle : currentParticles)
-        std::vector<SubProcessFacetTempVar>(model.sh.nbFacet).swap(particle.tmpFacetVars);
 
     //Reserve particle log
     if (model.otfParams.enableLogging)
@@ -282,7 +207,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
         for (auto& f : s.facets) {
             facetPointers.push_back(&f);
         }
-        s.aabbTree = BuildAABBTree(facetPointers, 0, maxDepth);
+        s.aabbTree = std::make_shared<AABBNODE>(*BuildAABBTree(facetPointers, 0, maxDepth));
     }
 
     // Initialise simulation
@@ -297,6 +222,9 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     model.tdParams.parameters = parameters;
     model.tdParams.moments = moments;*/
 
+    for(auto& particle : currentParticles) {
+        particle.model = model;
+    }
 
     //if(!model.sh.name.empty())
     //loadOK = true;
@@ -340,13 +268,13 @@ bool Simulation::UpdateHits(int prIdx, DWORD timeout) {
 
     //globState = tmpGlobalResults[0];
 
-    bool lastHitUpdateOK = UpdateMCHits(*globState, prIdx, model.tdParams.moments.size(), timeout);
+    bool lastHitUpdateOK = currentParticles[prIdx].UpdateMCHits(*globState, model.tdParams.moments.size(), timeout);
     // only 1 , so no reduce necessary
     /*ParticleLoggerItem& globParticleLog = tmpParticleLog[0];
     if (dpLog) UpdateLog(dpLog, timeout);*/
 
     // At last delete tmpCache
-    tmpGlobalResults[prIdx].Reset();
+    currentParticles[prIdx].tmpState.Reset();
     //ResetTmpCounters();
     // only reset buffers 1..N-1
     // 0 = global buffer for reduce
@@ -365,13 +293,14 @@ size_t Simulation::GetHitsSize() {
 void Simulation::ResetSimulation() {
     //currentParticles.clear();// = CurrentParticleStatus();
     std::vector<CurrentParticleStatus>(this->nbThreads).swap(this->currentParticles);
-    for(auto& particle : currentParticles)
+    for(auto& particle : currentParticles) {
         std::vector<SubProcessFacetTempVar>(model.sh.nbFacet).swap(particle.tmpFacetVars);
-
+        particle.tmpState.Reset();
+        particle.model = model;
+    }
     totalDesorbed = 0;
-    //ResetTmpCounters();
-    for(auto& tmpResults : tmpGlobalResults)
-        tmpResults.Reset();
+
+
     tmpParticleLog.clear();
 }
 
@@ -380,31 +309,22 @@ void Simulation::ResetSimulation() {
     return (currentParticles.lastHitFacet != nullptr);
 }*/
 
-void Simulation::RecordHit(const int &type, const CurrentParticleStatus &currentParticle) {
-    const int index = omp_get_thread_num();
-    if(index == 0) {
-        GlobalSimuState &tmpResults = *currentParticle.tmpState;
-        if (tmpResults.globalHits.hitCacheSize < HITCACHESIZE) {
-            tmpResults.globalHits.hitCache[tmpResults.globalHits.hitCacheSize].pos = currentParticle.position;
-            tmpResults.globalHits.hitCache[tmpResults.globalHits.hitCacheSize].type = type;
-            tmpResults.globalHits.hitCacheSize++;
-        }
+void CurrentParticleStatus::RecordHit(const int &type) {
+    if (tmpState.globalHits.hitCacheSize < HITCACHESIZE) {
+        tmpState.globalHits.hitCache[tmpState.globalHits.hitCacheSize].pos = position;
+        tmpState.globalHits.hitCache[tmpState.globalHits.hitCacheSize].type = type;
+        ++tmpState.globalHits.hitCacheSize;
     }
 }
 
-void Simulation::RecordLeakPos(const CurrentParticleStatus &currentParticle) {
+void CurrentParticleStatus::RecordLeakPos() {
     // Source region check performed when calling this routine
     // Record leak for debugging
-
-    const int index = omp_get_thread_num();
-    if(index == 0) {
-        RecordHit(HIT_REF, currentParticle);
-        RecordHit(HIT_LAST, currentParticle);
-        GlobalSimuState &tmpResults = *currentParticle.tmpState;
-        if (tmpResults.globalHits.leakCacheSize < LEAKCACHESIZE) {
-            tmpResults.globalHits.leakCache[tmpResults.globalHits.leakCacheSize].pos = currentParticle.position;
-            tmpResults.globalHits.leakCache[tmpResults.globalHits.leakCacheSize].dir = currentParticle.direction;
-            tmpResults.globalHits.leakCacheSize++;
-        }
+    RecordHit(HIT_REF);
+    RecordHit(HIT_LAST);
+    if (tmpState.globalHits.leakCacheSize < LEAKCACHESIZE) {
+        tmpState.globalHits.leakCache[tmpState.globalHits.leakCacheSize].pos = position;
+        tmpState.globalHits.leakCache[tmpState.globalHits.leakCacheSize].dir = direction;
+        ++tmpState.globalHits.leakCacheSize;
     }
 }

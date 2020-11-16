@@ -12,12 +12,15 @@
 
 #ifdef WIN32
 #include <mutex>
+#elif defined(__LINUX_DEBIAN) || defined(__LINUX_FEDORA)
+#include <mutex>
 #endif
 
 struct SubprocessFacet;
 class SuperStructure;
 
 struct TimeDependentParamters {
+    TimeDependentParamters(){}
     std::vector<Distribution2D> parameters;
 
     std::vector<std::vector<std::pair<double, double>>> CDFs; //cumulative distribution function for each temperature
@@ -31,11 +34,53 @@ struct TimeDependentParamters {
 
 struct SimulationModel {
 public:
-    SimulationModel() : otfParams(), tdParams(), wp(), sh(){};
+    SimulationModel() : otfParams(), tdParams(), wp(), sh(), m(){};
+    SimulationModel(SimulationModel&& o)  noexcept : m(){
+        facets = std::move(o.facets);
+        structures = std::move(o.structures);
+        vertices3 = std::move(o.vertices3);
+        otfParams = o.otfParams;
+        tdParams = std::move(o.tdParams);
+        wp = o.wp;
+        sh = std::move(o.sh);
+    };
+    SimulationModel(const SimulationModel& o) : m(){
+        facets = o.facets;
+        structures = o.structures;
+        vertices3 = o.vertices3;
+        otfParams = o.otfParams;
+        tdParams = o.tdParams;
+        wp = o.wp;
+        sh = o.sh;
+    };
+    SimulationModel& operator=(const SimulationModel& o){
+        facets = o.facets;
+        structures = o.structures;
+        vertices3 = o.vertices3;
+        otfParams = o.otfParams;
+        tdParams = o.tdParams;
+        wp = o.wp;
+        sh = o.sh;
+
+        return *this;
+    };
+    SimulationModel& operator=(const SimulationModel&& o){
+        facets = std::move(o.facets);
+        structures = std::move(o.structures);
+        vertices3 = std::move(o.vertices3);
+        otfParams = std::move(o.otfParams);
+        tdParams = std::move(o.tdParams);
+        wp = o.wp;
+        sh = o.sh;
+
+        return *this;
+    };
+
     void CalculateFacetParams(SubprocessFacet* f);
 
     // Sim functions
     double GetOpacityAt(SubprocessFacet *f, double time) const;
+    double GetStickingAt(SubprocessFacet *f, double time) const;
 
     // Geometry Description
     std::vector<std::vector<SubprocessFacet>>    facets;    // All facets of this geometry
@@ -49,6 +94,7 @@ public:
 
     // Geometry Properties
     GeomProperties sh;
+    std::mutex m;
 };
 
 class Anglemap {
@@ -140,7 +186,7 @@ public:
     SuperStructure();
     ~SuperStructure();
     std::vector<SubprocessFacet>  facets;   // Facet handles
-    AABBNODE* aabbTree; // Structure AABB tree
+    std::shared_ptr<AABBNODE> aabbTree; // Structure AABB tree
 };
 
 /*!
@@ -187,7 +233,12 @@ class GlobalSimuState { //replaces old hits dataport
 public:
     GlobalSimuState& operator=(const GlobalSimuState& src);
     GlobalSimuState& operator+=(const GlobalSimuState& src);
-    GlobalSimuState(GlobalSimuState&&) = default;
+    GlobalSimuState(GlobalSimuState&& rhs) : tMutex() {
+        globalHits = std::move(rhs.globalHits);
+        globalHistograms = std::move(rhs.globalHistograms);
+        facetStates = std::move(rhs.facetStates);
+        initialized = std::move(rhs.initialized);
+    };
     GlobalSimuState(const GlobalSimuState& rhs) {
         globalHits = rhs.globalHits;
         globalHistograms = rhs.globalHistograms;

@@ -13,13 +13,13 @@ void ClearSimulation();
 
 SuperStructure::SuperStructure()
 {
-    aabbTree = NULL;
+    //aabbTree = NULL;
 }
 
 SuperStructure::~SuperStructure()
 {
 
-    SAFE_DELETE(aabbTree);
+    //SAFE_DELETE(aabbTree);
 }
 
 bool SubprocessFacet::InitializeOnLoad(const size_t &id, const size_t &nbMoments, size_t &histogramTotalSize) {
@@ -442,10 +442,12 @@ GlobalSimuState& GlobalSimuState::operator+=(const GlobalSimuState & src) {
 */
 void GlobalSimuState::clear() {
     //LockMutex(mutex);
+    tMutex.lock();
     globalHits = GlobalHitBuffer();
     globalHistograms.clear();
     facetStates.clear();
     //ReleaseMutex(mutex);
+    tMutex.unlock();
 }
 
 /**
@@ -454,6 +456,7 @@ void GlobalSimuState::clear() {
 */
 void GlobalSimuState::Resize(const SimulationModel &model) { //Constructs the 'dpHit' structure to hold all results, zero-init
     //LockMutex(mutex);
+    tMutex.lock();
     size_t nbF = model.sh.nbFacet;
     size_t nbMoments = model.tdParams.moments.size();
     std::vector<FacetState>(nbF).swap(facetStates);
@@ -492,6 +495,7 @@ void GlobalSimuState::Resize(const SimulationModel &model) { //Constructs the 'd
     globalHistograms = std::vector<FacetHistogramBuffer>(1 + nbMoments, globalHistTemplate);
     initialized = true;
     //ReleaseMutex(mutex);
+    tMutex.unlock();
 }
 
 /**
@@ -499,6 +503,7 @@ void GlobalSimuState::Resize(const SimulationModel &model) { //Constructs the 'd
 */
 void GlobalSimuState::Reset() {
     //LockMutex(mutex);
+    tMutex.lock();
     for (auto& h : globalHistograms) {
         ZEROVECTOR(h.distanceHistogram);
         ZEROVECTOR(h.nbHitsHistogram);
@@ -517,6 +522,7 @@ void GlobalSimuState::Reset() {
             memset(&(m.hits), 0, sizeof(m.hits));
         }
     }
+    tMutex.unlock();
     //ReleaseMutex(mutex);
 }
 

@@ -25,6 +25,9 @@ public:
 
 int Initializer::init(int argc, char **argv, SimulationManager *simManager, SimulationModel *model,
                       GlobalSimuState *globState) {
+
+    std::setlocale(LC_ALL, "de_DE.UTF-8");
+
     parseCommands(argc, argv);
 
     simManager->nbThreads = Settings::nbThreadsPerCore;
@@ -72,8 +75,10 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
     // Geometry
     // Settings
     // Previous results
+    model->m.lock();
     if(loader.LoadGeometry(Settings::req_real_file, model)){
         std::cerr << "[Error (LoadGeom)] Please check the input file!" << std::endl;
+        model->m.unlock();
         exit(0);
     }
 
@@ -121,16 +126,18 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
     }
 
     // Some postprocessing
-    loader.MoveFacetsToStructures(model);
+    //loader.MoveFacetsToStructures(model);
     for(auto& sim : simManager->simUnits){
         sim.model = *model;
     }
 
     if (simManager->ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
         //CloseLoaderDP();
+        model->m.unlock();
         std::string errString = "Failed to send geometry to sub process:\n";
         errString.append(simManager->GetErrorDetails());
         throw std::runtime_error(errString);
     }
+    model->m.unlock();
     return 0;
 }

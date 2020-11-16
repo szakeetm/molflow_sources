@@ -35,8 +35,6 @@ ELSE()
     ENDIF()
 ENDIF()
 
-
-
 ############## CMake Project ################
 #        The main options of project        #
 #############################################
