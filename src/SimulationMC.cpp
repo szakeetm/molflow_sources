@@ -319,7 +319,7 @@ bool CurrentParticleStatus::SimulationMCStep(size_t nbStep, size_t threadNum) {
 
     // Check end of simulation
     if (model->otfParams.desorptionLimit > 0) {
-        if (tmpState.globalHits.globalHits.hit.nbDesorbed >=
+        if (model->wp.totalDesorbedMolecules >=
             model->otfParams.desorptionLimit / model->otfParams.nbProcess) {
             //lastHitFacet = nullptr; // reset full particle status or go on from where we left
             return false;

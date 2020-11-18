@@ -90,7 +90,7 @@ public:
 class Simulation : public SimulationUnit {
 public:
 
-    Simulation(size_t nbThreads = 0);
+    Simulation();
     Simulation(Simulation&& o) noexcept ;
     ~Simulation();
 
@@ -144,8 +144,6 @@ public:
 	//bool lastHitUpdateOK;  // Last hit update timeout
 	bool lastLogUpdateOK; // Last log update timeout
 	bool hasVolatile;   // Contains volatile facet
-
-    size_t nbThreads;
 
     // Particle coordinates (MC)
 	//std::vector<CurrentParticleStatus> currentParticles;

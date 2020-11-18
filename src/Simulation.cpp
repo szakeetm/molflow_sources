@@ -15,7 +15,7 @@ SuperStructure::~SuperStructure()
 	SAFE_DELETE(aabbTree);
 }*/
 
-Simulation::Simulation(size_t nbThreads) : tMutex()
+Simulation::Simulation() : tMutex()
 {
 	totalDesorbed = 0;
 
@@ -35,10 +35,6 @@ Simulation::Simulation(size_t nbThreads) : tMutex()
 	model.sh.nbSuper = 0;
     globState = nullptr;
 
-	if(nbThreads == 0)
-        this->nbThreads = omp_get_max_threads();
-	else
-	    this->nbThreads = nbThreads;
     //currentParticles.resize(1, CurrentParticleStatus());// = CurrentParticleStatus();
 }
 Simulation::Simulation(Simulation&& o) noexcept : tMutex() {
@@ -62,7 +58,6 @@ Simulation::Simulation(Simulation&& o) noexcept : tMutex() {
     hasVolatile =  o.hasVolatile;
 
     globState = o.globState;
-    nbThreads =  o.nbThreads;
 }
 
 Simulation::~Simulation()= default;
