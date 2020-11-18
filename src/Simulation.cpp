@@ -28,8 +28,7 @@ Simulation::Simulation(size_t nbThreads) : tMutex()
     lastLogUpdateOK = true;
 
 
-    for(auto& particle : currentParticles)
-        particle.lastHitFacet = nullptr;
+    currentParticle.lastHitFacet = nullptr;
 
     hasVolatile = false;
 
@@ -40,7 +39,7 @@ Simulation::Simulation(size_t nbThreads) : tMutex()
         this->nbThreads = omp_get_max_threads();
 	else
 	    this->nbThreads = nbThreads;
-    currentParticles.resize(this->nbThreads, CurrentParticleStatus());// = CurrentParticleStatus();
+    //currentParticles.resize(1, CurrentParticleStatus());// = CurrentParticleStatus();
 }
 Simulation::Simulation(Simulation&& o) noexcept : tMutex() {
 
@@ -54,15 +53,15 @@ Simulation::Simulation(Simulation&& o) noexcept : tMutex() {
 
     lastLogUpdateOK = o.lastLogUpdateOK;
 
-    currentParticles.swap(o.currentParticles);
-    for(auto& particle : o.currentParticles) {
-        particle.lastHitFacet = nullptr;
-        particle.model = SimulationModel();
-    }
+    model = o.model;
+
+    currentParticle = o.currentParticle;
+    currentParticle.lastHitFacet = nullptr;
+    currentParticle.model = &model;
+
     hasVolatile =  o.hasVolatile;
 
-    model = std::move(o.model);
-    globState = std::move(o.globState);
+    globState = o.globState;
     nbThreads =  o.nbThreads;
 }
 
@@ -128,12 +127,12 @@ void Simulation::ClearSimulation() {
     histogramTotalSize = 0;
 
     //this->currentParticles.clear();// = CurrentParticleStatus();
-    std::vector<CurrentParticleStatus>(this->nbThreads).swap(this->currentParticles);
-    for(auto& particle : currentParticles) {
-        std::vector<SubProcessFacetTempVar>(model.sh.nbFacet).swap(particle.tmpFacetVars);
-        particle.tmpState.Reset();
-        particle.model = model;
-    }
+    //std::vector<CurrentParticleStatus>(this->nbThreads).swap(this->currentParticles);
+
+    std::vector<SubProcessFacetTempVar>(model.sh.nbFacet).swap(currentParticle.tmpFacetVars);
+    currentParticle.tmpState.Reset();
+    currentParticle.model = &model;
+
     totalDesorbed = 0;
     //ResetTmpCounters();
     /*for(auto& tmpResults : tmpGlobalResults)
@@ -189,11 +188,11 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
         tmpResults.globalHistograms = std::vector<FacetHistogramBuffer>(1 + model.tdParams.moments.size(), globalHistTemplate);
         tmpResults.initialized = true;
 
-        for(auto& particle : currentParticles) {
-            // Init tmp vars per thread
-            std::vector<SubProcessFacetTempVar>(model.sh.nbFacet).swap(particle.tmpFacetVars);
-            particle.tmpState = tmpResults;
-        }
+
+        // Init tmp vars per thread
+        std::vector<SubProcessFacetTempVar>(model.sh.nbFacet).swap(currentParticle.tmpFacetVars);
+        currentParticle.tmpState = tmpResults;
+
     }
 
     //Reserve particle log
@@ -209,22 +208,10 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
         }
         s.aabbTree = std::make_shared<AABBNODE>(*BuildAABBTree(facetPointers, 0, maxDepth));
     }
+    currentParticle.model = &model;
 
     // Initialise simulation
-    /*SimulationModel model;
-    model.structures = structures;
-    model.vertices3 = vertices3;
-    model.otfParams = ontheflyParams;
-    model.sh = sh;
-    model.wp = wp;
-    model.tdParams.CDFs = CDFs;
-    model.tdParams.IDs = IDs;
-    model.tdParams.parameters = parameters;
-    model.tdParams.moments = moments;*/
 
-    for(auto& particle : currentParticles) {
-        particle.model = model;
-    }
 
     //if(!model.sh.name.empty())
     //loadOK = true;
@@ -261,20 +248,19 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
 
 }
 
-bool Simulation::UpdateHits(int prIdx, DWORD timeout) {
+bool CurrentParticleStatus::UpdateHits(GlobalSimuState* globState, DWORD timeout) {
     if(!globState) {
         return false;
     }
 
     //globState = tmpGlobalResults[0];
-
-    bool lastHitUpdateOK = currentParticles[prIdx].UpdateMCHits(*globState, model.tdParams.moments.size(), timeout);
+    bool lastHitUpdateOK = UpdateMCHits(*globState, model->tdParams.moments.size(), timeout);
     // only 1 , so no reduce necessary
     /*ParticleLoggerItem& globParticleLog = tmpParticleLog[0];
     if (dpLog) UpdateLog(dpLog, timeout);*/
 
     // At last delete tmpCache
-    currentParticles[prIdx].tmpState.Reset();
+    tmpState.Reset();
     //ResetTmpCounters();
     // only reset buffers 1..N-1
     // 0 = global buffer for reduce
@@ -292,12 +278,11 @@ size_t Simulation::GetHitsSize() {
 
 void Simulation::ResetSimulation() {
     //currentParticles.clear();// = CurrentParticleStatus();
-    std::vector<CurrentParticleStatus>(this->nbThreads).swap(this->currentParticles);
-    for(auto& particle : currentParticles) {
-        std::vector<SubProcessFacetTempVar>(model.sh.nbFacet).swap(particle.tmpFacetVars);
-        particle.tmpState.Reset();
-        particle.model = model;
-    }
+    //std::vector<CurrentParticleStatus>(this->nbThreads).swap(this->currentParticles);
+    std::vector<SubProcessFacetTempVar>(model.sh.nbFacet).swap(currentParticle.tmpFacetVars);
+    currentParticle.tmpState.Reset();
+    currentParticle.model = &model;
+
     totalDesorbed = 0;
 
 

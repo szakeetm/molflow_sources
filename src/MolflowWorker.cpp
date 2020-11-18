@@ -1335,7 +1335,7 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
             return;
         }
         for(auto& simUnit : simManager.simUnits)
-            simUnit.model = model;
+            simUnit->model = model;
 
         if (simManager.ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
             //CloseLoaderDP();
@@ -1440,7 +1440,7 @@ void Worker::Start() {
 
     try {
         for(auto& simUnit : simManager.simUnits)
-            simUnit.globState = &globState;
+            simUnit->globState = &globState;
         if (simManager.StartSimulation()) {
             throw std::logic_error("Processes are already done!");
         }

@@ -33,17 +33,23 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 class AnglemapGeneration {
 public:
-    static double GetTheta(const double& thetaIndex, const AnglemapParams& anglemapParams);
-    static double GetPhi(const double& phiIndex, const AnglemapParams& anglemapParams);
+    static double GetTheta(const double &thetaIndex, const AnglemapParams &anglemapParams);
+
+    static double GetPhi(const double &phiIndex, const AnglemapParams &anglemapParams);
+
     static double GetPhipdfValue(const double &thetaIndex, const int &phiLowerIndex,
                                  const AnglemapParams &anglemapParams, const std::vector<size_t> &angleMapPDF);
+
     static double GetPhiCDFValue(const double &thetaIndex, const int &phiLowerIndex,
                                  const AnglemapParams &anglemapParams, const Anglemap &anglemap);
+
     static double GetPhiCDFSum(const double &thetaIndex, const AnglemapParams &anglemapParams,
                                const Anglemap &anglemap);
+
     static std::tuple<double, int, double>
     GenerateThetaFromAngleMap(const AnglemapParams &anglemapParams, const Anglemap &anglemap,
                               const double lookupValue);
+
     static double GeneratePhiFromAngleMap(const int &thetaLowerIndex, const double &thetaOvershoot,
                                           const AnglemapParams &anglemapParams, Anglemap &anglemap,
                                           const std::vector<size_t> &angleMapPDF,
@@ -56,7 +62,7 @@ bool CurrentParticleStatus::UpdateMCHits(GlobalSimuState &globSimuState, size_t 
 //#if defined(DEBUG)
     double t0, t1;
     t0 = omp_get_wtime();
-    if (!globSimuState.tMutex.try_lock_for(std::chrono::milliseconds (timeout))) {
+    if (!globSimuState.tMutex.try_lock_for(std::chrono::milliseconds(timeout))) {
         return false;
     }
 //#endif
@@ -77,7 +83,7 @@ bool CurrentParticleStatus::UpdateMCHits(GlobalSimuState &globSimuState, size_t 
     {
         //auto& tmpState = currentParticles[prIdx].tmpState;
 
-    //for (auto &tmpState : tmpGlobalResults) {
+        //for (auto &tmpState : tmpGlobalResults) {
         //for(auto& tmpState : tmpGlobalResults) {
 /*#if defined(DEBUG)
         std::cout << "[" << 0 << "] "
@@ -98,7 +104,7 @@ bool CurrentParticleStatus::UpdateMCHits(GlobalSimuState &globSimuState, size_t 
         gHits->globalHits.hit.nbAbsEquiv += tmpGlobalResult.globalHits.hit.nbAbsEquiv;
         gHits->globalHits.hit.nbDesorbed += tmpGlobalResult.globalHits.hit.nbDesorbed;*/
 
-        //model.wp.sMode = MC_MODE;
+        //model->wp.sMode = MC_MODE;
         //for(i=0;i<BOUNCEMAX;i++) globState.globalHits.wallHits[i] += wallHits[i];
 
         // Leak
@@ -133,10 +139,10 @@ bool CurrentParticleStatus::UpdateMCHits(GlobalSimuState &globSimuState, size_t 
         globSimuState.facetStates += tmpState.facetStates;
     }
 
-    if(particleId == 0) {
+    if (particleId == 0) {
         // Another loop for a comlete global min/max texture search
-        for (s = 0; s < model.sh.nbSuper; s++) {
-            for (const SubprocessFacet &f : model.structures[s].facets) {
+        for (s = 0; s < model->sh.nbSuper; s++) {
+            for (const SubprocessFacet &f : model->structures[s].facets) {
                 if (f.sh.isTextured) {
                     for (int m = 0; m < (1 + nbMoments); m++) {
                         {
@@ -145,11 +151,11 @@ bool CurrentParticleStatus::UpdateMCHits(GlobalSimuState &globSimuState, size_t 
                             if (facetHitBuffer.hit.nbMCHit == 0 && facetHitBuffer.hit.nbDesorbed == 0) continue;
                         }
 
-                        //double dCoef = globState.globalHits.globalHits.hit.nbDesorbed * 1E4 * model.wp.gasMass / 1000 / 6E23 * MAGIC_CORRECTION_FACTOR;  //1E4 is conversion from m2 to cm2
+                        //double dCoef = globState.globalHits.globalHits.hit.nbDesorbed * 1E4 * model->wp.gasMass / 1000 / 6E23 * MAGIC_CORRECTION_FACTOR;  //1E4 is conversion from m2 to cm2
                         const double timeCorrection =
-                                m == 0 ? model.wp.finalOutgassingRate : (model.wp.totalDesorbedMolecules) /
-                                                                        model.tdParams.moments[m - 1].second;
-                        //model.wp.timeWindowSize;
+                                m == 0 ? model->wp.finalOutgassingRate : (model->wp.totalDesorbedMolecules) /
+                                                                        model->tdParams.moments[m - 1].second;
+                        //model->wp.timeWindowSize;
                         //Timecorrection is required to compare constant flow texture values with moment values (for autoscaling)
                         const auto &texture = globSimuState.facetStates[f.globalId].momentResults[m].texture;
                         const size_t textureSize = texture.size();
@@ -202,7 +208,7 @@ bool CurrentParticleStatus::UpdateMCHits(GlobalSimuState &globSimuState, size_t 
 
 //#if defined(DEBUG)
     t1 = omp_get_wtime();
-    printf("Update hits (glob): %lf s [%d]\n", (t1 - t0) * 1.0,  particleId);
+    printf("Update hits (glob): %lf s [%zu]\n", (t1 - t0) * 1.0, particleId);
     //#endif
 
     return true;
@@ -211,7 +217,7 @@ bool CurrentParticleStatus::UpdateMCHits(GlobalSimuState &globSimuState, size_t 
 // Compute particle teleport
 
 void CurrentParticleStatus::PerformTeleport(SubprocessFacet *iFacet) {
-    
+
     //Search destination
     SubprocessFacet *destination;
     bool found = false;
@@ -223,17 +229,17 @@ void CurrentParticleStatus::PerformTeleport(SubprocessFacet *iFacet) {
             /*char err[128];
             sprintf(err, "Facet %d tried to teleport to the facet where the particle came from, but there is no such facet.", iFacet->globalId + 1);
             SetErrorSub(err);*/
-            if(particleId==0)RecordHit(HIT_REF);
+            if (particleId == 0)RecordHit(HIT_REF);
             lastHitFacet = iFacet;
             return; //LEAK
         }
     } else destIndex = iFacet->sh.teleportDest - 1;
 
     //Look in which superstructure is the destination facet:
-    for (size_t i = 0; i < model.sh.nbSuper && (!found); i++) {
-        for (size_t j = 0; j < model.structures[i].facets.size() && (!found); j++) {
-            if (destIndex == model.structures[i].facets[j].globalId) {
-                destination = &(model.structures[i].facets[j]);
+    for (size_t i = 0; i < model->sh.nbSuper && (!found); i++) {
+        for (size_t j = 0; j < model->structures[i].facets.size() && (!found); j++) {
+            if (destIndex == model->structures[i].facets[j].globalId) {
+                destination = &(model->structures[i].facets[j]);
                 if (destination->sh.superIdx != -1) {
                     structureId = destination->sh.superIdx; //change current superstructure, unless the target is a universal facet
                 }
@@ -246,12 +252,12 @@ void CurrentParticleStatus::PerformTeleport(SubprocessFacet *iFacet) {
         /*char err[128];
         sprintf(err, "Teleport destination of facet %d not found (facet %d does not exist)", iFacet->globalId + 1, iFacet->sh.teleportDest);
         SetErrorSub(err);*/
-        if(particleId==0)RecordHit(HIT_REF);
+        if (particleId == 0)RecordHit(HIT_REF);
         lastHitFacet = iFacet;
         return; //LEAK
     }
     // Count this hit as a transparent pass
-    if(particleId==0)RecordHit(HIT_TELEPORTSOURCE);
+    if (particleId == 0)RecordHit(HIT_TELEPORTSOURCE);
     if (/*iFacet->texture && */iFacet->sh.countTrans)
         RecordHitOnTexture(iFacet, particleTime, true, 2.0, 2.0);
     if (/*iFacet->direction && */iFacet->sh.countDirection)
@@ -268,11 +274,11 @@ void CurrentParticleStatus::PerformTeleport(SubprocessFacet *iFacet) {
     double u = tmpFacetVars[iFacet->globalId].colU;
     double v = tmpFacetVars[iFacet->globalId].colV;
     position = destination->sh.O + u * destination->sh.U + v * destination->sh.V;
-    if(particleId==0)RecordHit(HIT_TELEPORTDEST);
+    if (particleId == 0)RecordHit(HIT_TELEPORTDEST);
     int nbTry = 0;
     if (!IsInFacet(*destination, u, v)) { //source and destination facets not the same shape, would generate leak
         // Choose a new starting point
-        if(particleId==0)RecordHit(HIT_ABS);
+        if (particleId == 0)RecordHit(HIT_ABS);
         found = false;
         while (!found && nbTry < 1000) {
             u = randomGenerator.rnd();
@@ -280,7 +286,7 @@ void CurrentParticleStatus::PerformTeleport(SubprocessFacet *iFacet) {
             if (IsInFacet(*destination, u, v)) {
                 found = true;
                 position = destination->sh.O + u * destination->sh.U + v * destination->sh.V;
-                if(particleId==0)RecordHit(HIT_DES);
+                if (particleId == 0)RecordHit(HIT_DES);
             }
         }
         nbTry++;
@@ -297,9 +303,9 @@ void CurrentParticleStatus::PerformTeleport(SubprocessFacet *iFacet) {
     //We count a teleport as a local hit, but not as a global one since that would affect the MFP calculation
     /*iFacet->sh.tmpCounter.hit.nbMCHit++;
     iFacet->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity;
-    iFacet->sh.tmpCounter.hit.sum_v_ort += 2.0*(model.wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
+    iFacet->sh.tmpCounter.hit.sum_v_ort += 2.0*(model->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
     IncreaseFacetCounter(iFacet, particleTime, 1, 0, 0, 2.0 / ortVelocity,
-                         2.0 * (model.wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
+                         2.0 * (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
     tmpFacetVars[iFacet->globalId].isHit = true;
     /*destination->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / velocity;
     destination->sh.tmpCounter.hit.sum_v_ort += velocity*abs(DOT3(
@@ -312,8 +318,9 @@ void CurrentParticleStatus::PerformTeleport(SubprocessFacet *iFacet) {
 bool CurrentParticleStatus::SimulationMCStep(size_t nbStep, size_t threadNum) {
 
     // Check end of simulation
-    if (model.otfParams.desorptionLimit > 0) {
-        if (tmpState.globalHits.globalHits.hit.nbDesorbed >= model.otfParams.desorptionLimit / model.otfParams.nbProcess) {
+    if (model->otfParams.desorptionLimit > 0) {
+        if (tmpState.globalHits.globalHits.hit.nbDesorbed >=
+            model->otfParams.desorptionLimit / model->otfParams.nbProcess) {
             //lastHitFacet = nullptr; // reset full particle status or go on from where we left
             return false;
         }
@@ -345,7 +352,7 @@ bool CurrentParticleStatus::SimulationMCStep(size_t nbStep, size_t threadNum) {
 
             if (found) {
                 // Second pass for transparent hits
-                for (const auto& tpFacet : transparentHitBuffer){
+                for (const auto &tpFacet : transparentHitBuffer) {
                     if (tpFacet) {
                         RegisterTransparentPass(tpFacet);
                     }
@@ -359,17 +366,17 @@ bool CurrentParticleStatus::SimulationMCStep(size_t nbStep, size_t threadNum) {
                 particleTime +=
                         d / 100.0 / velocity; //conversion from cm to m
 
-                if ((!model.wp.calcConstantFlow && (particleTime > model.wp.latestMoment))
-                    || (model.wp.enableDecay &&
+                if ((!model->wp.calcConstantFlow && (particleTime > model->wp.latestMoment))
+                    || (model->wp.enableDecay &&
                         (expectedDecayMoment < particleTime))) {
                     //hit time over the measured period - we create a new particle
                     //OR particle has decayed
                     const double remainderFlightPath = velocity * 100.0 *
-                                                 Min(model.wp.latestMoment - lastParticleTime,
-                                                     expectedDecayMoment -
-                                                     lastParticleTime); //distance until the point in space where the particle decayed
+                                                       Min(model->wp.latestMoment - lastParticleTime,
+                                                           expectedDecayMoment -
+                                                           lastParticleTime); //distance until the point in space where the particle decayed
                     tmpState.globalHits.distTraveled_total += remainderFlightPath * oriRatio;
-                    if(particleId==0)RecordHit(HIT_LAST);
+                    if (particleId == 0)RecordHit(HIT_LAST);
                     //distTraveledSinceUpdate += distanceTraveled;
                     if (!StartFromSource()) {
                         // desorptionLimit reached
@@ -388,8 +395,8 @@ bool CurrentParticleStatus::SimulationMCStep(size_t nbStep, size_t threadNum) {
                         }*/
                     else { //Not teleport
                         IncreaseDistanceCounters(d * oriRatio);
-                        const double stickingProbability = model.GetStickingAt(collidedFacet, particleTime);
-                        if (!model.otfParams.lowFluxMode) { //Regular stick or bounce
+                        const double stickingProbability = model->GetStickingAt(collidedFacet, particleTime);
+                        if (!model->otfParams.lowFluxMode) { //Regular stick or bounce
                             if (stickingProbability == 1.0 ||
                                 ((stickingProbability > 0.0) && (randomGenerator.rnd() < (stickingProbability)))) {
                                 //Absorbed
@@ -413,7 +420,7 @@ bool CurrentParticleStatus::SimulationMCStep(size_t nbStep, size_t threadNum) {
                                         oriRatioBeforeCollision * (1.0 - stickingProbability); //Reflected part
                             } else
                                 oriRatio *= (1.0 - stickingProbability);
-                            if (oriRatio > model.otfParams.lowFluxCutoff) {
+                            if (oriRatio > model->otfParams.lowFluxCutoff) {
                                 PerformBounce(collidedFacet);
                             } else { //eliminate remainder and create new particle
                                 if (!StartFromSource()) {
@@ -429,7 +436,7 @@ bool CurrentParticleStatus::SimulationMCStep(size_t nbStep, size_t threadNum) {
             else {
                 // No intersection found: Leak
                 tmpState.globalHits.nbLeakTotal++;
-                if(particleId==0)RecordLeakPos();
+                if (particleId == 0)RecordLeakPos();
                 if (!StartFromSource()) {
                     // desorptionLimit reached
                     returnVal = false;
@@ -466,29 +473,30 @@ bool CurrentParticleStatus::StartFromSource() {
     int nbTry = 0;
 
     // Check end of simulation
-    if (model.otfParams.desorptionLimit > 0) {
-        if (tmpState.globalHits.globalHits.hit.nbDesorbed >= model.otfParams.desorptionLimit / model.otfParams.nbProcess) {
+    if (model->otfParams.desorptionLimit > 0) {
+        if (tmpState.globalHits.globalHits.hit.nbDesorbed >=
+            model->otfParams.desorptionLimit / model->otfParams.nbProcess) {
             //lastHitFacet = nullptr; // reset full particle status or go on from where we left
             return false;
         }
     }
 
     // Select source
-    srcRnd = randomGenerator.rnd() * model.wp.totalDesorbedMolecules;
+    srcRnd = randomGenerator.rnd() * model->wp.totalDesorbedMolecules;
 
-    while (!found && j < model.sh.nbSuper) { //Go through superstructures
+    while (!found && j < model->sh.nbSuper) { //Go through superstructures
         i = 0;
-        while (!found && i < model.structures[j].facets.size()) { //Go through facets in a structure
-            const SubprocessFacet &f = model.structures[j].facets[i];
+        while (!found && i < model->structures[j].facets.size()) { //Go through facets in a structure
+            const SubprocessFacet &f = model->structures[j].facets[i];
             if (f.sh.desorbType != DES_NONE) { //there is some kind of outgassing
                 if (f.sh.useOutgassingFile) { //Using SynRad-generated outgassing map
                     if (f.sh.totalOutgassing > 0.0) {
-                        found = (srcRnd >= sumA) && (srcRnd < (sumA + model.wp.latestMoment * f.sh.totalOutgassing /
+                        found = (srcRnd >= sumA) && (srcRnd < (sumA + model->wp.latestMoment * f.sh.totalOutgassing /
                                                                       (1.38E-23 * f.sh.temperature)));
                         if (found) {
                             //look for exact position in map
-                            double rndRemainder = (srcRnd - sumA) / model.wp.latestMoment * (1.38E-23 *
-                                                                                                f.sh.temperature); //remainder, should be less than f.sh.totalOutgassing
+                            double rndRemainder = (srcRnd - sumA) / model->wp.latestMoment * (1.38E-23 *
+                                                                                             f.sh.temperature); //remainder, should be less than f.sh.totalOutgassing
                             /*double sumB = 0.0;
                             for (w = 0; w < f.sh.outgassingMapWidth && !foundInMap; w++) {
                                 for (h = 0; h < f.sh.outgassingMapHeight && !foundInMap; h++) {
@@ -504,7 +512,7 @@ bool CurrentParticleStatus::StartFromSource() {
                             int outgLowerIndex = my_lower_bound(lookupValue,
                                                                 f.outgassingMap); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
                             outgLowerIndex++;
-                            mapPositionH = (size_t)((double) outgLowerIndex / (double) f.sh.outgassingMapWidth);
+                            mapPositionH = (size_t) ((double) outgLowerIndex / (double) f.sh.outgassingMapWidth);
                             mapPositionW = (size_t) outgLowerIndex - mapPositionH * f.sh.outgassingMapWidth;
                             foundInMap = true;
                             /*if (!foundInMap) {
@@ -512,14 +520,14 @@ bool CurrentParticleStatus::StartFromSource() {
                                 return false;
                             }*/
                         }
-                        sumA += model.wp.latestMoment * f.sh.totalOutgassing / (1.38E-23 * f.sh.temperature);
+                        sumA += model->wp.latestMoment * f.sh.totalOutgassing / (1.38E-23 * f.sh.temperature);
                     }
                 } //end outgassing file block
                 else { //constant or time-dependent outgassing
                     double facetOutgassing =
                             ((f.sh.outgassing_paramId >= 0)
-                            ? model.tdParams.IDs[f.sh.IDid].back().second
-                            : model.wp.latestMoment * f.sh.outgassing) / (1.38E-23 * f.sh.temperature);
+                             ? model->tdParams.IDs[f.sh.IDid].back().second
+                             : model->wp.latestMoment * f.sh.outgassing) / (1.38E-23 * f.sh.temperature);
                     found = (srcRnd >= sumA) && (srcRnd < (sumA + facetOutgassing));
                     sumA += facetOutgassing;
                 } //end constant or time-dependent outgassing block
@@ -535,21 +543,21 @@ bool CurrentParticleStatus::StartFromSource() {
         //SetErrorSub("No starting point, aborting");
         return false;
     }
-    src = &(model.structures[j].facets[i]);
+    src = &(model->structures[j].facets[i]);
 
     lastHitFacet = src;
     //distanceTraveled = 0.0;  //for mean free path calculations
     //particleTime = desorptionStartTime + (desorptionStopTime - desorptionStartTime)*randomGenerator.rnd();
     particleTime = generationTime = GenerateDesorptionTime(src, randomGenerator.rnd());
     lastMomentIndex = 0;
-    if (model.wp.useMaxwellDistribution) velocity = GenerateRandomVelocity(src->sh.CDFid, randomGenerator.rnd());
+    if (model->wp.useMaxwellDistribution) velocity = GenerateRandomVelocity(src->sh.CDFid, randomGenerator.rnd());
     else
         velocity =
-                145.469 * std::sqrt(src->sh.temperature / model.wp.gasMass);  //sqrt(8*R/PI/1000)=145.47
+                145.469 * std::sqrt(src->sh.temperature / model->wp.gasMass);  //sqrt(8*R/PI/1000)=145.47
     oriRatio = 1.0;
-    if (model.wp.enableDecay) { //decaying gas
+    if (model->wp.enableDecay) { //decaying gas
         expectedDecayMoment =
-                particleTime + model.wp.halfLife * 1.44269 * -log(randomGenerator.rnd()); //1.44269=1/ln2
+                particleTime + model->wp.halfLife * 1.44269 * -log(randomGenerator.rnd()); //1.44269=1/ln2
         //Exponential distribution PDF: probability of 't' life = 1/TAU*exp(-t/TAU) where TAU = half_life/ln2
         //Exponential distribution CDF: probability of life shorter than 't" = 1-exp(-t/TAU)
         //Equation: randomGenerator.rnd()=1-exp(-t/TAU)
@@ -573,7 +581,8 @@ bool CurrentParticleStatus::StartFromSource() {
                 u = ((double) mapPositionW + randomGenerator.rnd()) / src->outgassingMapWidthD;
             } else {
                 //Last element, prevent from going out of facet
-                u = ((double) mapPositionW + randomGenerator.rnd() * (src->outgassingMapWidthD - (src->sh.outgassingMapWidth - 1))) /
+                u = ((double) mapPositionW +
+                     randomGenerator.rnd() * (src->outgassingMapWidthD - (src->sh.outgassingMapWidth - 1))) /
                     src->outgassingMapWidthD;
             }
             if (mapPositionH < (src->sh.outgassingMapHeight - 1)) {
@@ -581,7 +590,8 @@ bool CurrentParticleStatus::StartFromSource() {
                 v = ((double) mapPositionH + randomGenerator.rnd()) / src->outgassingMapHeightD;
             } else {
                 //Last element, prevent from going out of facet
-                v = ((double) mapPositionH + randomGenerator.rnd() * (src->outgassingMapHeightD - (src->sh.outgassingMapHeight - 1))) /
+                v = ((double) mapPositionH +
+                     randomGenerator.rnd() * (src->outgassingMapHeightD - (src->sh.outgassingMapHeight - 1))) /
                     src->outgassingMapHeightD;
             }
         } else {
@@ -613,27 +623,31 @@ bool CurrentParticleStatus::StartFromSource() {
         } else {
             tmpFacetVars[src->globalId].colU = 0.5;
             tmpFacetVars[src->globalId].colV = 0.5;
-            position = model.structures[j].facets[i].sh.center;
+            position = model->structures[j].facets[i].sh.center;
         }
 
     }
-    
-    if (src->sh.isMoving && model.wp.motionType) if(particleId==0)RecordHit(HIT_MOVING);
-    else if(particleId==0)RecordHit(HIT_DES); //create blue hit point for created particle
+
+    if (src->sh.isMoving && model->wp.motionType)
+        if (particleId == 0)RecordHit(HIT_MOVING);
+        else if (particleId == 0)RecordHit(HIT_DES); //create blue hit point for created particle
 
     //See docs/theta_gen.png for further details on angular distribution generation
     switch (src->sh.desorbType) {
         case DES_UNIFORM:
-            direction = PolarToCartesian(src, std::acos(randomGenerator.rnd()), randomGenerator.rnd() * 2.0 * PI, reverse);
+            direction = PolarToCartesian(src, std::acos(randomGenerator.rnd()), randomGenerator.rnd() * 2.0 * PI,
+                                         reverse);
             break;
         case DES_NONE: //for file-based
         case DES_COSINE:
-            direction = PolarToCartesian(src, std::acos(std::sqrt(randomGenerator.rnd())), randomGenerator.rnd() * 2.0 * PI,
-                                                          reverse);
+            direction = PolarToCartesian(src, std::acos(std::sqrt(randomGenerator.rnd())),
+                                         randomGenerator.rnd() * 2.0 * PI,
+                                         reverse);
             break;
         case DES_COSINE_N:
             direction = PolarToCartesian(src, std::acos(
-                    std::pow(randomGenerator.rnd(), 1.0 / (src->sh.desorbTypeN + 1.0))), randomGenerator.rnd() * 2.0 * PI, reverse);
+                    std::pow(randomGenerator.rnd(), 1.0 / (src->sh.desorbTypeN + 1.0))),
+                                         randomGenerator.rnd() * 2.0 * PI, reverse);
             break;
         case DES_ANGLEMAP: {
             auto[theta, thetaLowerIndex, thetaOvershoot] = AnglemapGeneration::GenerateThetaFromAngleMap(
@@ -642,7 +656,8 @@ bool CurrentParticleStatus::StartFromSource() {
                                                                    src->sh.anglemapParams, src->angleMap,
                                                                    tmpState.facetStates[src->globalId].recordedAngleMapPdf,
                                                                    randomGenerator.rnd());
-            direction = PolarToCartesian(src, PI - theta, phi, false); //angle map contains incident angle (between N and source dir) and theta is dir (between N and dest dir)
+            direction = PolarToCartesian(src, PI - theta, phi,
+                                         false); //angle map contains incident angle (between N and source dir) and theta is dir (between N and dest dir)
 
         }
     }
@@ -677,9 +692,9 @@ bool CurrentParticleStatus::StartFromSource() {
             velocity * std::abs(Dot(direction, src->sh.N));
     /*src->sh.tmpCounter.hit.nbDesorbed++;
     src->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity; //was 2.0 / ortV
-    src->sh.tmpCounter.hit.sum_v_ort += (model.wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
+    src->sh.tmpCounter.hit.sum_v_ort += (model->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
     IncreaseFacetCounter(src, particleTime, 0, 1, 0, 2.0 / ortVelocity,
-                         (model.wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
+                         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
     //Desorption doesn't contribute to angular profiles, nor to angle maps
     ProfileFacet(src, particleTime, false, 2.0, 1.0); //was 2.0, 1.0
     //TODO:: if(particleId==0) LogHit(src, model, tmpParticleLog);
@@ -689,7 +704,7 @@ bool CurrentParticleStatus::StartFromSource() {
 
     // Reset volatile state
     /*if (hasVolatile) {
-        for (auto &s : model.structures) {
+        for (auto &s : model->structures) {
             for (auto &f : s.facets) {
                 f.isReady = true;
             }
@@ -724,7 +739,7 @@ AnglemapGeneration::GenerateThetaFromAngleMap(const AnglemapParams &anglemapPara
         if (/*true || */anglemap.phi_CDFsums[thetaLowerIndex] == anglemap.phi_CDFsums[thetaLowerIndex + 1]) {
             //The pdf's slope is 0, linear interpolation
             thetaOvershoot = (lookupValue - anglemap.theta_CDF[thetaLowerIndex]) /
-                    (anglemap.theta_CDF[thetaLowerIndex + 1] - anglemap.theta_CDF[thetaLowerIndex]);
+                             (anglemap.theta_CDF[thetaLowerIndex + 1] - anglemap.theta_CDF[thetaLowerIndex]);
             theta = GetTheta((double) thetaLowerIndex + 0.5 + thetaOvershoot, anglemapParams);
         } else {
             //2nd degree interpolation
@@ -741,7 +756,8 @@ AnglemapGeneration::GenerateThetaFromAngleMap(const AnglemapParams &anglemapPara
             double c = anglemap.theta_CDF[thetaLowerIndex]; //CDF value at lower index
             double b = (double) anglemap.phi_CDFsums[thetaLowerIndex] / (double) anglemap.theta_CDFsum /
                        thetaStep; //pdf value at lower index
-            double a = 0.5 * ((double) (anglemap.phi_CDFsums[thetaLowerIndex + 1]) - (double) anglemap.phi_CDFsums[thetaLowerIndex]) /
+            double a = 0.5 * ((double) (anglemap.phi_CDFsums[thetaLowerIndex + 1]) -
+                              (double) anglemap.phi_CDFsums[thetaLowerIndex]) /
                        (double) anglemap.theta_CDFsum / Sqr(thetaStep); //pdf slope at lower index
             double dy = lookupValue - c;
 
@@ -780,7 +796,7 @@ double AnglemapGeneration::GeneratePhiFromAngleMap(const int &thetaLowerIndex, c
     } else if (thetaLowerIndex ==
                (anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes - 1)) { //last theta half section
         lookupValue += anglemap.phi_CDFs[thetaLowerIndex *
-                                anglemapParams.phiWidth]; //periodic BCs over -PI...PI, can be larger than 1
+                                         anglemapParams.phiWidth]; //periodic BCs over -PI...PI, can be larger than 1
         phiLowerIndex = my_lower_bound(lookupValue, &anglemap.phi_CDFs[thetaLowerIndex * anglemapParams.phiWidth],
                                        anglemapParams.phiWidth); //take entirely the phi ditro belonging to latest theta
         weigh = thetaOvershoot; // [0 - 0.5], will add 0.5 when evaluating thetaIndex
@@ -804,7 +820,8 @@ double AnglemapGeneration::GeneratePhiFromAngleMap(const int &thetaLowerIndex, c
         }
         lookupValue += Weigh((double) anglemap.phi_CDFs[thetaLowerIndex * anglemapParams.phiWidth],
                              (double) anglemap.phi_CDFs[(thetaLowerIndex + 1) * anglemapParams.phiWidth], weigh);
-        phiLowerIndex = weighed_lower_bound_X(lookupValue, weigh, &anglemap.phi_CDFs[thetaLowerIndex * anglemapParams.phiWidth],
+        phiLowerIndex = weighed_lower_bound_X(lookupValue, weigh,
+                                              &anglemap.phi_CDFs[thetaLowerIndex * anglemapParams.phiWidth],
                                               &anglemap.phi_CDFs[(thetaLowerIndex + 1) * anglemapParams.phiWidth],
                                               anglemapParams.phiWidth);
     }
@@ -813,7 +830,8 @@ double AnglemapGeneration::GeneratePhiFromAngleMap(const int &thetaLowerIndex, c
     double thetaIndex = (double) thetaLowerIndex + 0.5 + weigh;
     if (phiLowerIndex == -1) { //first half section
         DEBUG_BREAK; //should not happen since we shifted the lookup value with first value
-        phiOvershoot = 0.5 + 0.5 * lookupValue / GetPhiCDFValue(thetaIndex, 0, anglemapParams, anglemap); //between 0.5 and 1
+        phiOvershoot =
+                0.5 + 0.5 * lookupValue / GetPhiCDFValue(thetaIndex, 0, anglemapParams, anglemap); //between 0.5 and 1
         phi = GetPhi((double) phiLowerIndex + 0.5 + phiOvershoot, anglemapParams); //between 0 and the first section end
     }
         /*else if (phiLowerIndex == (anglemapParams.phiWidth - 1)) { //last half section
@@ -843,10 +861,10 @@ double AnglemapGeneration::GeneratePhiFromAngleMap(const int &thetaLowerIndex, c
             double phiStep = 2.0 * PI / (double) anglemapParams.phiWidth;
             double c = GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap); //CDF value at lower index
             double b = GetPhipdfValue(thetaIndex, phiLowerIndex, anglemapParams, angleMapPDF) /
-                    GetPhiCDFSum(thetaIndex, anglemapParams, anglemap) / phiStep; //pdf value at lower index
+                       GetPhiCDFSum(thetaIndex, anglemapParams, anglemap) / phiStep; //pdf value at lower index
             double a = 0.5 * (GetPhipdfValue(thetaIndex, phiLowerIndex + 1, anglemapParams, angleMapPDF) -
                               GetPhipdfValue(thetaIndex, phiLowerIndex, anglemapParams, angleMapPDF)) /
-                    GetPhiCDFSum(thetaIndex, anglemapParams, anglemap) / Sqr(phiStep); //pdf slope at lower index
+                       GetPhiCDFSum(thetaIndex, anglemapParams, anglemap) / Sqr(phiStep); //pdf slope at lower index
             double dy = lookupValue - c;
 
             double D = Sqr(b) + 4 * a *
@@ -856,7 +874,7 @@ double AnglemapGeneration::GeneratePhiFromAngleMap(const int &thetaLowerIndex, c
                                                              anglemap))
                                / (GetPhiCDFValue(thetaIndex, (int) IDX(phiLowerIndex + 1, anglemapParams.phiWidth),
                                                  anglemapParams, anglemap) -
-                        GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap));
+                                  GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap));
             } else {
                 double dx = (-b + sqrt(Sqr(b) + 4 * a * dy)) /
                             (2 * a); //Since b>=0 it's the + branch of the +- that is valid for us
@@ -916,9 +934,9 @@ AnglemapGeneration::GetPhipdfValue(const double &thetaIndex, const int &phiLower
         size_t thetaLowerIndex = (size_t) (thetaIndex - 0.5);
         double thetaOvershoot = thetaIndex - 0.5 - (double) thetaLowerIndex;
         double valueFromLowerpdf = (double) angleMapPDF[anglemapParams.phiWidth * thetaLowerIndex +
-                                                            IDX(phiLowerIndex, anglemapParams.phiWidth)];
+                                                        IDX(phiLowerIndex, anglemapParams.phiWidth)];
         double valueFromHigherpdf = (double) angleMapPDF[anglemapParams.phiWidth * (thetaLowerIndex + 1) +
-                                                             IDX(phiLowerIndex, anglemapParams.phiWidth)];
+                                                         IDX(phiLowerIndex, anglemapParams.phiWidth)];
         return Weigh(valueFromLowerpdf, valueFromHigherpdf, thetaOvershoot);
     }
 }
@@ -935,22 +953,26 @@ double
 AnglemapGeneration::GetPhiCDFValue(const double &thetaIndex, const int &phiLowerIndex,
                                    const AnglemapParams &anglemapParams, const Anglemap &anglemap) {
     if (thetaIndex < 0.5) {
-        return (phiLowerIndex < anglemapParams.phiWidth) ? anglemap.phi_CDFs[phiLowerIndex] : 1.0 + anglemap.phi_CDFs[0];
+        return (phiLowerIndex < anglemapParams.phiWidth) ? anglemap.phi_CDFs[phiLowerIndex] : 1.0 +
+                                                                                              anglemap.phi_CDFs[0];
     } else if (thetaIndex > (double) (anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes) - 0.5) {
         return (phiLowerIndex < anglemapParams.phiWidth) ? anglemap.phi_CDFs[
                 anglemapParams.phiWidth * (anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes - 1) +
                 phiLowerIndex] : 1.0 + anglemap.phi_CDFs[anglemapParams.phiWidth *
-                                                (anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes - 1)];
+                                                         (anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes -
+                                                          1)];
     } else {
         size_t thetaLowerIndex = (size_t) (thetaIndex - 0.5);
         double thetaOvershoot = thetaIndex - 0.5 - (double) thetaLowerIndex;
         double valueFromLowerCDF = (phiLowerIndex < anglemapParams.phiWidth) ? anglemap.phi_CDFs[
-                anglemapParams.phiWidth * thetaLowerIndex + phiLowerIndex] : 1.0 + anglemap.phi_CDFs[anglemapParams.phiWidth *
-                                                                                            (thetaLowerIndex)];
+                anglemapParams.phiWidth * thetaLowerIndex + phiLowerIndex] : 1.0 +
+                                                                             anglemap.phi_CDFs[anglemapParams.phiWidth *
+                                                                                               (thetaLowerIndex)];
         double valueFromHigherCDF = (phiLowerIndex < anglemapParams.phiWidth) ? anglemap.phi_CDFs[
                 anglemapParams.phiWidth * (thetaLowerIndex + 1) + phiLowerIndex] : 1.0 +
-                anglemap.phi_CDFs[anglemapParams.phiWidth *
-                                                                                            (thetaLowerIndex + 1)];
+                                                                                   anglemap.phi_CDFs[
+                                                                                           anglemapParams.phiWidth *
+                                                                                           (thetaLowerIndex + 1)];
         return Weigh(valueFromLowerCDF, valueFromHigherCDF, thetaOvershoot);
     }
 
@@ -994,11 +1016,11 @@ void CurrentParticleStatus::PerformBounce(SubprocessFacet *iFacet) {
         IncreaseFacetCounter(iFacet, particleTime, 1, 0, 0, 0, 0);
         structureId = iFacet->sh.superDest - 1;
         if (iFacet->sh.isMoving) { //A very special case where link facets can be used as transparent but moving facets
-            if(particleId==0)RecordHit(HIT_MOVING);
+            if (particleId == 0)RecordHit(HIT_MOVING);
             TreatMovingFacet();
         } else {
             // Count this hit as a transparent pass
-            if(particleId==0)RecordHit(HIT_TRANS);
+            if (particleId == 0)RecordHit(HIT_TRANS);
         }
         //TODO: if(particleId==0)LogHit(iFacet, model, tmpParticleLog);
         ProfileFacet(iFacet, particleTime, true, 2.0, 2.0);
@@ -1043,10 +1065,10 @@ void CurrentParticleStatus::PerformBounce(SubprocessFacet *iFacet) {
 
     /*iFacet->sh.tmpCounter.hit.nbMCHit++; //hit facet
     iFacet->sh.tmpCounter.hit.sum_1_per_ort_velocity += 1.0 / ortVelocity;
-    iFacet->sh.tmpCounter.hit.sum_v_ort += (model.wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
+    iFacet->sh.tmpCounter.hit.sum_v_ort += (model->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
 
     IncreaseFacetCounter(iFacet, particleTime, 1, 0, 0, 1.0 / ortVelocity,
-                         (model.wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
+                         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
     nbBounces++;
     if (/*iFacet->texture &&*/ iFacet->sh.countRefl)
         RecordHitOnTexture(iFacet, particleTime, true, 1.0, 1.0);
@@ -1065,15 +1087,17 @@ void CurrentParticleStatus::PerformBounce(SubprocessFacet *iFacet) {
     }
 
     if (iFacet->sh.reflection.diffusePart > 0.999999) { //Speedup branch for most common, diffuse case
-        direction = PolarToCartesian(iFacet, std::acos(std::sqrt(randomGenerator.rnd())), randomGenerator.rnd() * 2.0 * PI,
-                                                      revert);
+        direction = PolarToCartesian(iFacet, std::acos(std::sqrt(randomGenerator.rnd())),
+                                     randomGenerator.rnd() * 2.0 * PI,
+                                     revert);
     } else {
         double reflTypeRnd = randomGenerator.rnd();
         if (reflTypeRnd < iFacet->sh.reflection.diffusePart) {
             //diffuse reflection
             //See docs/theta_gen.png for further details on angular distribution generation
-            direction = PolarToCartesian(iFacet, std::acos(std::sqrt(randomGenerator.rnd())), randomGenerator.rnd() * 2.0 * PI,
-                                                          revert);
+            direction = PolarToCartesian(iFacet, std::acos(std::sqrt(randomGenerator.rnd())),
+                                         randomGenerator.rnd() * 2.0 * PI,
+                                         revert);
         } else if (reflTypeRnd < (iFacet->sh.reflection.diffusePart + iFacet->sh.reflection.specularPart)) {
             //specular reflection
             auto[inTheta, inPhi] = CartesianToPolar(direction, iFacet->sh.nU, iFacet->sh.nV,
@@ -1083,7 +1107,8 @@ void CurrentParticleStatus::PerformBounce(SubprocessFacet *iFacet) {
         } else {
             //Cos^N reflection
             direction = PolarToCartesian(iFacet, std::acos(
-                    std::pow(randomGenerator.rnd(), 1.0 / (iFacet->sh.reflection.cosineExponent + 1.0))), randomGenerator.rnd() * 2.0 * PI, revert);
+                    std::pow(randomGenerator.rnd(), 1.0 / (iFacet->sh.reflection.cosineExponent + 1.0))),
+                                         randomGenerator.rnd() * 2.0 * PI, revert);
         }
     }
 
@@ -1096,31 +1121,30 @@ void CurrentParticleStatus::PerformBounce(SubprocessFacet *iFacet) {
     ortVelocity = velocity * std::abs(Dot(direction, iFacet->sh.N));
 
     /*iFacet->sh.tmpCounter.hit.sum_1_per_ort_velocity += 1.0 / ortVelocity;
-    iFacet->sh.tmpCounter.hit.sum_v_ort += (model.wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
+    iFacet->sh.tmpCounter.hit.sum_v_ort += (model->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
     IncreaseFacetCounter(iFacet, particleTime, 0, 0, 0, 1.0 / ortVelocity,
-                         (model.wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
+                         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
     if (/*iFacet->texture &&*/ iFacet->sh.countRefl)
         RecordHitOnTexture(iFacet, particleTime, false, 1.0,
                            1.0); //count again for outward velocity
     ProfileFacet(iFacet, particleTime, false, 1.0, 1.0);
     //no direction count on outgoing, neither angle map
 
-    if (iFacet->sh.isMoving && model.wp.motionType) {
+    if (iFacet->sh.isMoving && model->wp.motionType) {
         if (particleId == 0)
             RecordHit(HIT_MOVING);
-    }
-    else if(particleId==0)RecordHit(HIT_REF);
+    } else if (particleId == 0)RecordHit(HIT_REF);
     lastHitFacet = iFacet;
     //nbPHit++;
 }
 
-void Simulation::PerformTransparentPass(SubprocessFacet *iFacet) { //disabled, caused finding hits with the same facet
-    /*double directionFactor = abs(DOT3(
+/*void Simulation::PerformTransparentPass(SubprocessFacet *iFacet) { //disabled, caused finding hits with the same facet
+    *//*double directionFactor = abs(DOT3(
         direction.x, direction.y, direction.z,
         iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z));
     iFacet->sh.tmpCounter.hit.nbMCHit++;
     iFacet->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / (velocity*directionFactor);
-    iFacet->sh.tmpCounter.hit.sum_v_ort += 2.0*(model.wp.useMaxwellDistribution ? 1.0 : 1.1781)*velocity*directionFactor;
+    iFacet->sh.tmpCounter.hit.sum_v_ort += 2.0*(model->wp.useMaxwellDistribution ? 1.0 : 1.1781)*velocity*directionFactor;
     iFacet->isHit = true;
     if (iFacet->texture && iFacet->sh.countTrans) RecordHitOnTexture(iFacet, particleTime + iFacet->colDist / 100.0 / velocity,
         true, 2.0, 2.0);
@@ -1128,8 +1152,8 @@ void Simulation::PerformTransparentPass(SubprocessFacet *iFacet) { //disabled, c
     ProfileFacet(iFacet, particleTime + iFacet->colDist / 100.0 / velocity,
         true, 2.0, 2.0);
     RecordHit(HIT_TRANS);
-    lastHit = iFacet;*/
-}
+    lastHit = iFacet;*//*
+}*/
 
 void CurrentParticleStatus::RecordAbsorb(SubprocessFacet *iFacet) {
     tmpState.globalHits.globalHits.hit.nbMCHit++; //global
@@ -1138,11 +1162,11 @@ void CurrentParticleStatus::RecordAbsorb(SubprocessFacet *iFacet) {
 
     RecordHistograms(iFacet);
 
-    if(particleId==0)RecordHit(HIT_ABS);
+    if (particleId == 0)RecordHit(HIT_ABS);
     double ortVelocity =
             velocity * std::abs(Dot(direction, iFacet->sh.N));
     IncreaseFacetCounter(iFacet, particleTime, 1, 0, 1, 2.0 / ortVelocity,
-                         (model.wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
+                         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
     //TODO: if(particleId==0)LogHit(iFacet, model, tmpParticleLog);
     ProfileFacet(iFacet, particleTime, true, 2.0, 1.0); //was 2.0, 1.0
     if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
@@ -1156,16 +1180,16 @@ void CurrentParticleStatus::RecordHistograms(SubprocessFacet *iFacet) {
     //Record in global and facet histograms
     size_t binIndex;
 
-    auto& tmpGlobalHistograms = tmpState.globalHistograms;
-    auto& facetHistogram = tmpState.facetStates[iFacet->globalId].momentResults;
-    auto& globHistParams = model.wp.globalHistogramParams;
-    auto& facHistParams = iFacet->sh.facetHistogramParams;
+    auto &tmpGlobalHistograms = tmpState.globalHistograms;
+    auto &facetHistogram = tmpState.facetStates[iFacet->globalId].momentResults;
+    auto &globHistParams = model->wp.globalHistogramParams;
+    auto &facHistParams = iFacet->sh.facetHistogramParams;
 
-    int moments[2] = {0,-1};
-    moments[1] = LookupMomentIndex(particleTime, model.tdParams.moments,
-                              lastMomentIndex);
-    for(auto&m : moments) {
-        if(m <= 0) return;
+    int moments[2] = {0, -1};
+    moments[1] = LookupMomentIndex(particleTime, model->tdParams.moments,
+                                   lastMomentIndex);
+    for (auto &m : moments) {
+        if (m <= 0) return;
 
         if (globHistParams.recordBounce) {
             binIndex = Min(nbBounces / globHistParams.nbBounceBinsize,
@@ -1204,13 +1228,14 @@ void CurrentParticleStatus::RecordHistograms(SubprocessFacet *iFacet) {
     }
 }
 
-void CurrentParticleStatus::RecordHitOnTexture(const SubprocessFacet *f, double time, bool countHit, double velocity_factor,
-                                               double ortSpeedFactor) {
+void
+CurrentParticleStatus::RecordHitOnTexture(const SubprocessFacet *f, double time, bool countHit, double velocity_factor,
+                                          double ortSpeedFactor) {
 
-    size_t tu = (size_t)(tmpFacetVars[f->globalId].colU * f->sh.texWidthD);
-    size_t tv = (size_t)(tmpFacetVars[f->globalId].colV * f->sh.texHeightD);
+    size_t tu = (size_t) (tmpFacetVars[f->globalId].colU * f->sh.texWidthD);
+    size_t tv = (size_t) (tmpFacetVars[f->globalId].colV * f->sh.texHeightD);
     size_t add = tu + tv * (f->sh.texWidth);
-    double ortVelocity = (model.wp.useMaxwellDistribution ? 1.0 : 1.1781) * velocity *
+    double ortVelocity = (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * velocity *
                          std::abs(Dot(direction,
                                       f->sh.N)); //surface-orthogonal velocity component
 
@@ -1223,9 +1248,9 @@ void CurrentParticleStatus::RecordHitOnTexture(const SubprocessFacet *f, double 
                                       f->textureCellIncrements[add]; // sum ortho_velocity[m/s] / cell_area[cm2]
     }
     int m = -1;
-    if((m = LookupMomentIndex(time, model.tdParams.moments, lastMomentIndex)) > 0){
-        lastMomentIndex = m-1;
-        TextureCell& texture = tmpState.facetStates[f->globalId].momentResults[m].texture[add];
+    if ((m = LookupMomentIndex(time, model->tdParams.moments, lastMomentIndex)) > 0) {
+        lastMomentIndex = m - 1;
+        TextureCell &texture = tmpState.facetStates[f->globalId].momentResults[m].texture[add];
         if (countHit) texture.countEquiv += oriRatio;
         texture.sum_1_per_ort_velocity +=
                 oriRatio * velocity_factor / ortVelocity;
@@ -1235,8 +1260,8 @@ void CurrentParticleStatus::RecordHitOnTexture(const SubprocessFacet *f, double 
 }
 
 void CurrentParticleStatus::RecordDirectionVector(const SubprocessFacet *f, double time) {
-    size_t tu = (size_t)(tmpFacetVars[f->globalId].colU * f->sh.texWidthD);
-    size_t tv = (size_t)(tmpFacetVars[f->globalId].colV * f->sh.texHeightD);
+    size_t tu = (size_t) (tmpFacetVars[f->globalId].colU * f->sh.texWidthD);
+    size_t tv = (size_t) (tmpFacetVars[f->globalId].colV * f->sh.texHeightD);
     size_t add = tu + tv * (f->sh.texWidth);
 
     {
@@ -1245,8 +1270,8 @@ void CurrentParticleStatus::RecordDirectionVector(const SubprocessFacet *f, doub
         dirCell.count++;
     }
     int m = -1;
-    if((m = LookupMomentIndex(time, model.tdParams.moments, lastMomentIndex)) > 0){
-        lastMomentIndex = m-1;
+    if ((m = LookupMomentIndex(time, model->tdParams.moments, lastMomentIndex)) > 0) {
+        lastMomentIndex = m - 1;
         DirectionCell &dirCell = tmpState.facetStates[f->globalId].momentResults[m].direction[add];
         dirCell.dir += oriRatio * direction * velocity;
         dirCell.count++;
@@ -1255,23 +1280,26 @@ void CurrentParticleStatus::RecordDirectionVector(const SubprocessFacet *f, doub
 }
 
 void
-CurrentParticleStatus::ProfileFacet(const SubprocessFacet *f, double time, bool countHit, double velocity_factor, double ortSpeedFactor) {
+CurrentParticleStatus::ProfileFacet(const SubprocessFacet *f, double time, bool countHit, double velocity_factor,
+                                    double ortSpeedFactor) {
 
-    size_t nbMoments = model.tdParams.moments.size();
-    int m = LookupMomentIndex(time, model.tdParams.moments, lastMomentIndex);
+    size_t nbMoments = model->tdParams.moments.size();
+    int m = LookupMomentIndex(time, model->tdParams.moments, lastMomentIndex);
     if (countHit && f->sh.profileType == PROFILE_ANGULAR) {
         double dot = Dot(f->sh.N, direction);
         double theta = std::acos(std::abs(dot));     // Angle to normal (PI/2 => PI)
-        size_t pos = (size_t)(theta / (PI / 2) * ((double) PROFILE_SIZE)); // To Grad
+        size_t pos = (size_t) (theta / (PI / 2) * ((double) PROFILE_SIZE)); // To Grad
         Saturate(pos, 0, PROFILE_SIZE - 1);
 
         tmpState.facetStates[f->globalId].momentResults[0].profile[pos].countEquiv += oriRatio;
-        if(m > 0){
-            lastMomentIndex = m-1;
+        if (m > 0) {
+            lastMomentIndex = m - 1;
             tmpState.facetStates[f->globalId].momentResults[m].profile[pos].countEquiv += oriRatio;
         }
     } else if (f->sh.profileType == PROFILE_U || f->sh.profileType == PROFILE_V) {
-        size_t pos = (size_t)((f->sh.profileType == PROFILE_U ? tmpFacetVars[f->globalId].colU : tmpFacetVars[f->globalId].colV) * (double) PROFILE_SIZE);
+        size_t pos = (size_t) (
+                (f->sh.profileType == PROFILE_U ? tmpFacetVars[f->globalId].colU : tmpFacetVars[f->globalId].colV) *
+                (double) PROFILE_SIZE);
         if (pos >= 0 && pos < PROFILE_SIZE) {
             {
                 ProfileSlice &profile = tmpState.facetStates[f->globalId].momentResults[0].profile[pos];
@@ -1281,10 +1309,10 @@ CurrentParticleStatus::ProfileFacet(const SubprocessFacet *f, double time, bool 
                 profile.sum_1_per_ort_velocity +=
                         oriRatio * velocity_factor / ortVelocity;
                 profile.sum_v_ort += oriRatio * ortSpeedFactor *
-                                     (model.wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity;
+                                     (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity;
             }
-            if(m > 0) {
-                lastMomentIndex = m-1;
+            if (m > 0) {
+                lastMomentIndex = m - 1;
                 ProfileSlice &profile = tmpState.facetStates[f->globalId].momentResults[m].profile[pos];
                 if (countHit) profile.countEquiv += oriRatio;
                 double ortVelocity = velocity *
@@ -1292,7 +1320,7 @@ CurrentParticleStatus::ProfileFacet(const SubprocessFacet *f, double time, bool 
                 profile.sum_1_per_ort_velocity +=
                         oriRatio * velocity_factor / ortVelocity;
                 profile.sum_v_ort += oriRatio * ortSpeedFactor *
-                                     (model.wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity;
+                                     (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity;
             }
         }
     } else if (countHit && (f->sh.profileType == PROFILE_VELOCITY || f->sh.profileType == PROFILE_ORT_VELOCITY ||
@@ -1305,12 +1333,12 @@ CurrentParticleStatus::ProfileFacet(const SubprocessFacet *f, double time, bool 
         } else { //Tangential
             dot = std::sqrt(1 - Sqr(std::abs(Dot(f->sh.N, direction))));  //tangential
         }
-        size_t pos = (size_t)(dot * velocity / f->sh.maxSpeed *
-                              (double) PROFILE_SIZE); //"dot" default value is 1.0
+        size_t pos = (size_t) (dot * velocity / f->sh.maxSpeed *
+                               (double) PROFILE_SIZE); //"dot" default value is 1.0
         if (pos >= 0 && pos < PROFILE_SIZE) {
             tmpState.facetStates[f->globalId].momentResults[0].profile[pos].countEquiv += oriRatio;
             if (m > 0) {
-                lastMomentIndex = m-1;
+                lastMomentIndex = m - 1;
                 tmpState.facetStates[f->globalId].momentResults[m].profile[pos].countEquiv += oriRatio;
             }
         }
@@ -1320,9 +1348,9 @@ CurrentParticleStatus::ProfileFacet(const SubprocessFacet *f, double time, bool 
 void
 CurrentParticleStatus::LogHit(SubprocessFacet *f, std::vector<ParticleLoggerItem> &tmpParticleLog) {
     //if(omp_get_thread_num() != 0) return; // only let 1 thread update
-    if (model.otfParams.enableLogging &&
-        model.otfParams.logFacetId == f->globalId &&
-        tmpParticleLog.size() < (model.otfParams.logLimit / model.otfParams.nbProcess)) {
+    if (model->otfParams.enableLogging &&
+        model->otfParams.logFacetId == f->globalId &&
+        tmpParticleLog.size() < (model->otfParams.logLimit / model->otfParams.nbProcess)) {
         ParticleLoggerItem log;
         log.facetHitPosition = Vector2d(tmpFacetVars[f->globalId].colU, tmpFacetVars[f->globalId].colV);
         std::tie(log.hitTheta, log.hitPhi) = CartesianToPolar(direction, f->sh.nU, f->sh.nV,
@@ -1345,43 +1373,44 @@ void CurrentParticleStatus::RecordAngleMap(const SubprocessFacet *collidedFacet)
     size_t thetaIndex;
     if (inTheta < collidedFacet->sh.anglemapParams.thetaLimit) {
         if (collidedFacet->sh.anglemapParams.thetaLowerRes > 0) {
-            thetaIndex = (size_t)(inTheta / collidedFacet->sh.anglemapParams.thetaLimit *
-                                  (double) collidedFacet->sh.anglemapParams.thetaLowerRes);
+            thetaIndex = (size_t) (inTheta / collidedFacet->sh.anglemapParams.thetaLimit *
+                                   (double) collidedFacet->sh.anglemapParams.thetaLowerRes);
         } else {
             countTheta = false;
         }
     } else {
         if (collidedFacet->sh.anglemapParams.thetaHigherRes > 0) {
             thetaIndex = collidedFacet->sh.anglemapParams.thetaLowerRes +
-                         (size_t)((inTheta - collidedFacet->sh.anglemapParams.thetaLimit)
-                                  / (PI / 2.0 - collidedFacet->sh.anglemapParams.thetaLimit) *
-                                  (double) collidedFacet->sh.anglemapParams.thetaHigherRes);
+                         (size_t) ((inTheta - collidedFacet->sh.anglemapParams.thetaLimit)
+                                   / (PI / 2.0 - collidedFacet->sh.anglemapParams.thetaLimit) *
+                                   (double) collidedFacet->sh.anglemapParams.thetaHigherRes);
         } else {
             countTheta = false;
         }
     }
     if (countTheta) {
-        size_t phiIndex = (size_t)((inPhi + 3.1415926) / (2.0 * PI) *
-                                   (double) collidedFacet->sh.anglemapParams.phiWidth); //Phi: -PI..PI , and shifting by a number slightly smaller than PI to store on interval [0,2PI[
+        size_t phiIndex = (size_t) ((inPhi + 3.1415926) / (2.0 * PI) *
+                                    (double) collidedFacet->sh.anglemapParams.phiWidth); //Phi: -PI..PI , and shifting by a number slightly smaller than PI to store on interval [0,2PI[
 
-        auto& angleMap = tmpState.facetStates[collidedFacet->globalId].recordedAngleMapPdf;
+        auto &angleMap = tmpState.facetStates[collidedFacet->globalId].recordedAngleMapPdf;
         angleMap[thetaIndex * collidedFacet->sh.anglemapParams.phiWidth + phiIndex]++;
     }
 }
 
 void CurrentParticleStatus::UpdateVelocity(const SubprocessFacet *collidedFacet) {
     if (collidedFacet->sh.accomodationFactor > 0.9999) { //speedup for the most common case: perfect thermalization
-        if (model.wp.useMaxwellDistribution)
+        if (model->wp.useMaxwellDistribution)
             velocity = GenerateRandomVelocity(collidedFacet->sh.CDFid, randomGenerator.rnd());
         else
             velocity =
-                    145.469 * std::sqrt(collidedFacet->sh.temperature / model.wp.gasMass);
+                    145.469 * std::sqrt(collidedFacet->sh.temperature / model->wp.gasMass);
     } else {
         double oldSpeed2 = pow(velocity, 2);
         double newSpeed2;
-        if (model.wp.useMaxwellDistribution) newSpeed2 = pow(GenerateRandomVelocity(collidedFacet->sh.CDFid,
-                                                                                    randomGenerator.rnd()), 2);
-        else newSpeed2 = /*145.469*/ 29369.939 * (collidedFacet->sh.temperature / model.wp.gasMass);
+        if (model->wp.useMaxwellDistribution)
+            newSpeed2 = pow(GenerateRandomVelocity(collidedFacet->sh.CDFid,
+                                                   randomGenerator.rnd()), 2);
+        else newSpeed2 = /*145.469*/ 29369.939 * (collidedFacet->sh.temperature / model->wp.gasMass);
         //sqrt(29369)=171.3766= sqrt(8*R*1000/PI)*3PI/8, that is, the constant part of the v_avg=sqrt(8RT/PI/m/0.001)) found in literature, multiplied by
         //the corrective factor of 3PI/8 that accounts for moving from volumetric speed distribution to wall collision speed distribution
         velocity = std::sqrt(
@@ -1392,16 +1421,16 @@ void CurrentParticleStatus::UpdateVelocity(const SubprocessFacet *collidedFacet)
 double CurrentParticleStatus::GenerateRandomVelocity(int CDFId, const double rndVal) {
     //return FastLookupY(randomGenerator.rnd(),CDFs[CDFId],false);
     //double r = randomGenerator.rnd();
-    double v = InterpolateX(rndVal, model.tdParams.CDFs[CDFId], false, false, true); //Allow extrapolate
+    double v = InterpolateX(rndVal, model->tdParams.CDFs[CDFId], false, false, true); //Allow extrapolate
     return v;
 }
 
 double CurrentParticleStatus::GenerateDesorptionTime(const SubprocessFacet *src, const double rndVal) {
     if (src->sh.outgassing_paramId >= 0) { //time-dependent desorption
-        return InterpolateX(rndVal * model.tdParams.IDs[src->sh.IDid].back().second, model.tdParams.IDs[src->sh.IDid],
-        false, false, true); //allow extrapolate
+        return InterpolateX(rndVal * model->tdParams.IDs[src->sh.IDid].back().second, model->tdParams.IDs[src->sh.IDid],
+                            false, false, true); //allow extrapolate
     } else {
-        return rndVal * model.wp.latestMoment; //continous desorption between 0 and latestMoment
+        return rndVal * model->wp.latestMoment; //continous desorption between 0 and latestMoment
     }
 }
 
@@ -1409,18 +1438,18 @@ double SimulationModel::GetStickingAt(SubprocessFacet *f, double time) const {
     if (f->sh.sticking_paramId == -1) //constant sticking
         return f->sh.sticking;
     else {
-        auto& par = tdParams.parameters[f->sh.sticking_paramId];
-        return InterpolateY(time,par.GetValues(),par.logXinterp,par.logYinterp,false);
+        auto &par = tdParams.parameters[f->sh.sticking_paramId];
+        return InterpolateY(time, par.GetValues(), par.logXinterp, par.logYinterp, false);
     }
-    //else return model.tdParams.parameters[f->sh.sticking_paramId].InterpolateY(time, false);
+    //else return model->tdParams.parameters[f->sh.sticking_paramId].InterpolateY(time, false);
 }
 
-double SimulationModel::GetOpacityAt(SubprocessFacet *f, double time) const{
+double SimulationModel::GetOpacityAt(SubprocessFacet *f, double time) const {
     if (f->sh.opacity_paramId == -1) //constant sticking
         return f->sh.opacity;
     else {
-        auto& par = tdParams.parameters[f->sh.opacity_paramId];
-        return InterpolateY(time,par.GetValues(),par.logXinterp,par.logYinterp,false);
+        auto &par = tdParams.parameters[f->sh.opacity_paramId];
+        return InterpolateY(time, par.GetValues(), par.logXinterp, par.logYinterp, false);
     }
     //else return this->tdParams.parameters[f->sh.opacity_paramId].InterpolateY(time, false);
 }
@@ -1432,12 +1461,12 @@ double SimulationModel::GetOpacityAt(SubprocessFacet *f, double time) const{
 
 void CurrentParticleStatus::TreatMovingFacet() {
     Vector3d localVelocityToAdd;
-    if (model.wp.motionType == 1) { //Translation
-        localVelocityToAdd = model.wp.motionVector2; //Fixed translational vector
-    } else if (model.wp.motionType == 2) { //Rotation
+    if (model->wp.motionType == 1) { //Translation
+        localVelocityToAdd = model->wp.motionVector2; //Fixed translational vector
+    } else if (model->wp.motionType == 2) { //Rotation
         Vector3d distanceVector = 0.01 * (position -
-                                          model.wp.motionVector1); //distance from base, with cm->m conversion, motionVector1 is rotation base point
-        localVelocityToAdd = CrossProduct(model.wp.motionVector2, distanceVector); //motionVector2 is rotation axis
+                                          model->wp.motionVector1); //distance from base, with cm->m conversion, motionVector1 is rotation base point
+        localVelocityToAdd = CrossProduct(model->wp.motionVector2, distanceVector); //motionVector2 is rotation axis
     }
     Vector3d oldVelocity, newVelocity;
     oldVelocity = direction * velocity;
@@ -1457,7 +1486,8 @@ void CurrentParticleStatus::TreatMovingFacet() {
 * \param sum_v_ort orthogonal momentum change to add
 */
 void
-CurrentParticleStatus::IncreaseFacetCounter(const SubprocessFacet *f, double time, size_t hit, size_t desorb, size_t absorb,
+CurrentParticleStatus::IncreaseFacetCounter(const SubprocessFacet *f, double time, size_t hit, size_t desorb,
+                                            size_t absorb,
                                             double sum_1_per_v, double sum_v_ort) {
     const double hitEquiv = static_cast<double>(hit) * oriRatio;
     {
@@ -1471,9 +1501,9 @@ CurrentParticleStatus::IncreaseFacetCounter(const SubprocessFacet *f, double tim
         hits.hit.sum_1_per_velocity += (hitEquiv + static_cast<double>(desorb)) / velocity;
     }
     int m = -1;
-    if((m = LookupMomentIndex(time, model.tdParams.moments, lastMomentIndex)) > 0){
-        lastMomentIndex = m-1;
-        FacetHitBuffer& hits = tmpState.facetStates[f->globalId].momentResults[m].hits;
+    if ((m = LookupMomentIndex(time, model->tdParams.moments, lastMomentIndex)) > 0) {
+        lastMomentIndex = m - 1;
+        FacetHitBuffer &hits = tmpState.facetStates[f->globalId].momentResults[m].hits;
         hits.hit.nbMCHit += hit;
         hits.hit.nbHitEquiv += hitEquiv;
         hits.hit.nbDesorbed += desorb;
@@ -1487,20 +1517,20 @@ CurrentParticleStatus::IncreaseFacetCounter(const SubprocessFacet *f, double tim
 void CurrentParticleStatus::RegisterTransparentPass(SubprocessFacet *facet) {
     double directionFactor = std::abs(Dot(direction, facet->sh.N));
     IncreaseFacetCounter(facet, particleTime +
-        tmpFacetVars[facet->globalId].colDistTranspPass / 100.0 / velocity, 1, 0, 0,
+                                tmpFacetVars[facet->globalId].colDistTranspPass / 100.0 / velocity, 1, 0, 0,
                          2.0 / (velocity * directionFactor),
-                         2.0 * (model.wp.useMaxwellDistribution ? 1.0 : 1.1781) * velocity *
+                         2.0 * (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * velocity *
                          directionFactor);
 
     tmpFacetVars[facet->globalId].isHit = true;
     if (/*facet->texture &&*/ facet->sh.countTrans) {
         RecordHitOnTexture(facet, particleTime +
-                                   tmpFacetVars[facet->globalId].colDistTranspPass / 100.0 / velocity,
+                                  tmpFacetVars[facet->globalId].colDistTranspPass / 100.0 / velocity,
                            true, 2.0, 2.0);
     }
     if (/*facet->direction &&*/ facet->sh.countDirection) {
         RecordDirectionVector(facet, particleTime +
-                tmpFacetVars[facet->globalId].colDistTranspPass / 100.0 / velocity);
+                                     tmpFacetVars[facet->globalId].colDistTranspPass / 100.0 / velocity);
     }
     //TODO::if(particleId==0)LogHit(facet, model, tmpParticleLog);
     ProfileFacet(facet, particleTime +

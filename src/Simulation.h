@@ -60,6 +60,7 @@ public:
     void RecordAbsorb(SubprocessFacet *iFacet);
     void PerformBounce(SubprocessFacet *iFacet);
     void RecordHistograms(SubprocessFacet *iFacet);
+    bool UpdateHits(GlobalSimuState* globState, DWORD timeout);
 
     void Reset(){};
 	Vector3d position;    // Position
@@ -81,7 +82,7 @@ public:
 	GlobalSimuState tmpState;
 	SubprocessFacet *lastHitFacet;     // Last hitted facet
 	MersenneTwister randomGenerator;
-	SimulationModel model;
+	SimulationModel *model;
     std::vector<SubprocessFacet*> transparentHitBuffer; //Storing this buffer simulation-wide is cheaper than recreating it at every Intersect() call
     std::vector<SubProcessFacetTempVar> tmpFacetVars; //One per subprocessfacet, for intersect routine
 };
@@ -101,8 +102,8 @@ public:
     size_t GetHitsSize() override;
 
     int ReinitializeParticleLog() override;
-
-    bool UpdateHits(int prIdx, DWORD timeout) override;
+    CurrentParticleStatus* GetParticle() override {return &currentParticle;} ;
+    //bool UpdateHits(int prIdx, DWORD timeout) override;
     //bool UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, DWORD timeout);
 
     //void PerformTeleport(SubprocessFacet *iFacet, const SimulationModel &model);
@@ -110,7 +111,7 @@ public:
     //void IncreaseDistanceCounters(double distanceIncrement, CurrentParticleStatus &currentParticle);
     //bool StartFromSource(CurrentParticleStatus &currentParticle);
     //void PerformBounce(SubprocessFacet *iFacet, const SimulationModel &model);
-    void PerformTransparentPass(SubprocessFacet *iFacet); //disabled
+    //void PerformTransparentPass(SubprocessFacet *iFacet); //disabled
     //void RecordAbsorb(SubprocessFacet *iFacet, const SimulationModel &model);
     //void RecordHistograms(SubprocessFacet *iFacet, const SimulationModel &model);
     //void RecordHitOnTexture(SubprocessFacet *f, double time, bool countHit, double velocity_factor,double ortSpeedFactor);
@@ -119,9 +120,9 @@ public:
     //void LogHit(SubprocessFacet *f, const SimulationModel &model, std::vector<ParticleLoggerItem> &tmpParticleLog);
     //void RecordAngleMap(SubprocessFacet *collidedFacet);
     //void UpdateVelocity(SubprocessFacet *collidedFacet, const SimulationModel &model);
-    static double GenerateRandomVelocity(int CDFId, const double rndVal, const SimulationModel &model);
-    static double GenerateDesorptionTime(const SubprocessFacet *src, const double rndVal, const SimulationModel &model);
-    static double GetStickingAt(SubprocessFacet *f, double time, const SimulationModel &model);
+    //static double GenerateRandomVelocity(int CDFId, const double rndVal, const SimulationModel &model);
+    //static double GenerateDesorptionTime(const SubprocessFacet *src, const double rndVal, const SimulationModel &model);
+    //static double GetStickingAt(SubprocessFacet *f, double time, const SimulationModel &model);
     //double GetOpacityAt(SubprocessFacet *f, double time);
     //void TreatMovingFacet(const SimulationModel &model);
     //void IncreaseFacetCounter(SubprocessFacet *f, double time, size_t hit, size_t desorb, size_t absorb, double sum_1_per_v, double sum_v_ort, CurrentParticleStatus &currentParticle);
@@ -148,9 +149,9 @@ public:
 
     // Particle coordinates (MC)
 	//std::vector<CurrentParticleStatus> currentParticles;
-    GlobalSimuState* globState;
     //std::vector<FacetHistogramBuffer> tmpGlobalHistograms; //Recorded histogram since last UpdateMCHits, 1+nbMoment copies
     std::vector<ParticleLoggerItem> tmpParticleLog; //Recorded particle log since last UpdateMCHits
+    CurrentParticleStatus currentParticle;
 
     mutable std::timed_mutex tMutex;
 };
