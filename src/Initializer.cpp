@@ -26,8 +26,11 @@ public:
 int Initializer::init(int argc, char **argv, SimulationManager *simManager, SimulationModel *model,
                       GlobalSimuState *globState) {
 
+/*#if defined(WIN32)
+    setlocale(LC_ALL, "de_DE.UTF-8");
+#else
     std::setlocale(LC_ALL, "de_DE.UTF-8");
-
+#endif*/
     parseCommands(argc, argv);
 
     simManager->nbThreads = Settings::nbThreadsPerCore;
@@ -43,7 +46,7 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
     loadFromXML(simManager, model, globState);
 
     for(auto& simUnit : simManager->simUnits)
-        simUnit.globState = globState;
+        simUnit->globState = globState;
 
 
 
@@ -128,7 +131,7 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
     // Some postprocessing
     //loader.MoveFacetsToStructures(model);
     for(auto& sim : simManager->simUnits){
-        sim.model = *model;
+        sim->model = *model;
     }
 
     if (simManager->ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {

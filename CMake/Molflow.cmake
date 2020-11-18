@@ -95,16 +95,19 @@ if(NOT MSVC)
         $<$<CONFIG:DEBUG>:-ggdb3>
 )
 else()
+    #/WX
     add_compile_options(
-            /W4 #/WX
-        $<$<CONFIG:RELEASE>:/GL /O2 /EHsc /O3>
-        $<$<CONFIG:DEBUG>/MDd /Od /EHsc /O0>
+        /W4
+    )
+    add_compile_options(
+        "$<$<CONFIG:Release>:/GL;/O2;/EHsc>"
+        "$<$<CONFIG:Debug>:/MDd;/Od;/EHsc>"
     )
     # Multi-processor compilation
-    add_compile_options(${PROJECT_NAME}
+    add_compile_options(
         "$<$<CONFIG:Debug>:/MP>"
         "$<$<CONFIG:Release>:/MP>"
-        )
+    )
 endif()
 #disable generation of appname.manifest file
 #alternative: use /MANIFEST:EMBED
