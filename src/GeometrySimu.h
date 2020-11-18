@@ -10,17 +10,14 @@
 #include "Buffer_shared.h"
 #include "Parameter.h"
 
-#ifdef WIN32
 #include <mutex>
-#elif defined(__LINUX_DEBIAN) || defined(__LINUX_FEDORA)
-#include <mutex>
-#endif
+
 
 struct SubprocessFacet;
 class SuperStructure;
 
 struct TimeDependentParamters {
-    TimeDependentParamters(){}
+    TimeDependentParamters()= default;
     std::vector<Distribution2D> parameters;
 
     std::vector<std::vector<std::pair<double, double>>> CDFs; //cumulative distribution function for each temperature
@@ -64,12 +61,12 @@ public:
 
         return *this;
     };
-    SimulationModel& operator=(const SimulationModel&& o){
+    SimulationModel& operator=(SimulationModel&& o) noexcept {
         facets = std::move(o.facets);
         structures = std::move(o.structures);
         vertices3 = std::move(o.vertices3);
-        otfParams = std::move(o.otfParams);
         tdParams = std::move(o.tdParams);
+        otfParams = o.otfParams;
         wp = o.wp;
         sh = o.sh;
 
@@ -109,7 +106,7 @@ public:
 // Local facet structure
 struct SubprocessFacet{
     SubprocessFacet();
-    SubprocessFacet(size_t nbIndex);
+    explicit SubprocessFacet(size_t nbIndex);
 
     FacetProperties sh;
 
@@ -126,7 +123,6 @@ struct SubprocessFacet{
 
     // Used for texture init only
     double rw;
-    double rh;
     double iw;
     double ih;
 
@@ -147,7 +143,7 @@ struct SubprocessFacet{
     //void ResizeCounter(size_t nbMoments);
     bool InitializeOnLoad(const size_t &id, const size_t &nbMoments, size_t &histogramTotalSize);
 
-    void InitializeHistogram(const size_t &nbMoments, size_t &histogramTotalSize);
+    void InitializeHistogram(const size_t &nbMoments, size_t &histogramTotalSize) const;
 
     bool InitializeDirectionTexture(const size_t &nbMoments);
 
@@ -161,7 +157,7 @@ struct SubprocessFacet{
 
     bool InitializeLinkAndVolatile(const size_t & id);
 
-    size_t GetHitsSize(size_t nbMoments) const;
+    [[nodiscard]] size_t GetHitsSize(size_t nbMoments) const;
     //void RegisterTransparentPass(SubprocessFacet *facet); //Allows one shared Intersect routine between MolFlow and Synrad
 
     template<class Archive> void serialize(Archive& archive) {
@@ -233,11 +229,11 @@ class GlobalSimuState { //replaces old hits dataport
 public:
     GlobalSimuState& operator=(const GlobalSimuState& src);
     GlobalSimuState& operator+=(const GlobalSimuState& src);
-    GlobalSimuState(GlobalSimuState&& rhs) : tMutex() {
-        globalHits = std::move(rhs.globalHits);
+    GlobalSimuState(GlobalSimuState&& rhs)  noexcept : tMutex() {
         globalHistograms = std::move(rhs.globalHistograms);
         facetStates = std::move(rhs.facetStates);
-        initialized = std::move(rhs.initialized);
+        globalHits = rhs.globalHits;
+        initialized = rhs.initialized;
     };
     GlobalSimuState(const GlobalSimuState& rhs) {
         globalHits = rhs.globalHits;

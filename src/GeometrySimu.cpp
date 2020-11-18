@@ -3,13 +3,10 @@
 //
 
 #include <sstream>
-#include <ProcessControl.h>
 #include <Helper/MathTools.h>
 #include <cmath>
 #include "GeometrySimu.h"
 #include "IntersectAABB_shared.h" // include needed for recursive delete of AABBNODE
-
-void ClearSimulation();
 
 SuperStructure::SuperStructure()
 {
@@ -36,7 +33,7 @@ bool SubprocessFacet::InitializeOnLoad(const size_t &id, const size_t &nbMoments
     return true;
 }
 
-void SubprocessFacet::InitializeHistogram(const size_t &nbMoments, size_t &histogramTotalSize)
+void SubprocessFacet::InitializeHistogram(const size_t &nbMoments, size_t &histogramTotalSize) const
 {
     FacetHistogramBuffer hist;
     hist.Resize(sh.facetHistogramParams);
@@ -103,7 +100,7 @@ bool SubprocessFacet::InitializeTexture(const size_t &nbMoments)
         iw = 1.0 / (double)sh.texWidthD;
         ih = 1.0 / (double)sh.texHeightD;
         rw = sh.U.Norme() * iw;
-        rh = sh.V.Norme() * ih;
+        //rh = sh.V.Norme() * ih;
     }
     else textureSize = 0;
     return true;
@@ -291,7 +288,7 @@ void SimulationModel::CalculateFacetParams(SubprocessFacet* f) {
     Vector3d v1;
     Vector3d v2;
     bool consecutive = true;
-    int ind = 2;
+    size_t ind = 2;
 
     // TODO: Handle possible collinear consequtive vectors
     size_t i0 = f->indices[0];
@@ -324,10 +321,10 @@ void SimulationModel::CalculateFacetParams(SubprocessFacet* f) {
     f->sh.center = 0.5 * (f->sh.bb.max + f->sh.bb.min);
 
     // Plane equation
-    double A = f->sh.N.x;
-    double B = f->sh.N.y;
-    double C = f->sh.N.z;
-    double D = -Dot(f->sh.N, p0);
+    //double A = f->sh.N.x;
+    //double B = f->sh.N.y;
+    //double C = f->sh.N.z;
+    //double D = -Dot(f->sh.N, p0);
 
     Vector3d p1 = vertices3[f->indices[1]];
 
@@ -461,7 +458,7 @@ void GlobalSimuState::Resize(const SimulationModel &model) { //Constructs the 'd
     size_t nbMoments = model.tdParams.moments.size();
     std::vector<FacetState>(nbF).swap(facetStates);
 
-    for (int i = 0; i < nbF; i++) {
+    for (size_t i = 0; i < nbF; i++) {
         for (auto &s : model.structures) {
             for (auto &sFac : s.facets) {
                 if (i == sFac.globalId) {
