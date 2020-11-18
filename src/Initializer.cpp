@@ -26,11 +26,11 @@ public:
 int Initializer::init(int argc, char **argv, SimulationManager *simManager, SimulationModel *model,
                       GlobalSimuState *globState) {
 
-/*#if defined(WIN32)
+#if defined(WIN32)
     setlocale(LC_ALL, "de_DE.UTF-8");
 #else
     std::setlocale(LC_ALL, "de_DE.UTF-8");
-#endif*/
+#endif
     parseCommands(argc, argv);
 
     simManager->nbThreads = Settings::nbThreadsPerCore;

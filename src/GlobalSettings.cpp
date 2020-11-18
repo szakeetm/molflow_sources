@@ -335,7 +335,7 @@ void GlobalSettings::SMPUpdate() {
 	memset(states, 0, MAX_PROCESS * sizeof(int));
 	worker->GetProcStatus(states, statusStrings);
 
-    std::vector<SubProcInfo> procInfo;
+    ProcComm procInfo;
     worker->GetProcStatus(procInfo);
 
     processList->ResetValues();
@@ -373,8 +373,11 @@ void GlobalSettings::SMPUpdate() {
 #endif
 
     size_t i = 1;
-	for (auto& proc : procInfo) {
-		DWORD pid = proc.procId;
+
+    //for (auto& proc : procInfo.subProcInfo) {
+    {
+        auto& proc = procInfo.subProcInfo[0];
+        DWORD pid = proc.procId;
 		sprintf(tmp, "Subproc.%lu", i);
 		processList->SetValueAt(0, i, tmp);
 		sprintf(tmp, "%d", pid);
