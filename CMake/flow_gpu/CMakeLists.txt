@@ -108,6 +108,7 @@ set( SHADERS
         # Core shaders.
         ${CUDA_DIR_1}/Geometry.cu
         ${CUDA_DIR_1}/TraceProcessing.cu
+        ${CUDA_DIR_1}/TraceProcessing_polygon.cu
         ${CUDA_DIR_1}/RayGeneration.cu
         )
 

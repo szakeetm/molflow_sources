@@ -1,4 +1,4 @@
-//
+    //
 // Created by pbahr on 18/05/2020.
 //
 
@@ -8,7 +8,7 @@
 #include "ModelReader.h" // TempFacet
 
 #if defined(NDEBUG)
-#define LAUNCHSIZE 1920*64*2//1024*64*16//1024*128*64
+#define LAUNCHSIZE 64*1*1//1024*64*16//1024*128*64
 #elif defined(DEBUG)
 #define LAUNCHSIZE 1920*1*1//1024*64*16//1024*128*64
 #endif

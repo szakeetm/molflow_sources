@@ -696,7 +696,7 @@ namespace flowgpu {
         const unsigned int missIndex = bufferIndex*NMISSES;
         optixLaunchParams.perThreadData.missBuffer[missIndex] = 0;
 #endif
-        const int facetHitKind = optixGetHitKind();
+        const unsigned int facetHitKind = optixGetHitKind();
 
         /*if(fbIndex==0)
             printf("--- start post processing ---\n");*/

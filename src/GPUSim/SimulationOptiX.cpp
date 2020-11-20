@@ -756,12 +756,13 @@ namespace flowgpu {
         pgDesc.hitgroup.moduleIS            = state.modules.geometryModule;
         pgDesc.hitgroup.entryFunctionNameIS = "__intersection__polygon";
         pgDesc.hitgroup.moduleCH            = state.modules.traceModule;
-        pgDesc.hitgroup.entryFunctionNameCH = "__closesthit__molecule";
+        pgDesc.hitgroup.entryFunctionNameCH = "__closesthit__molecule_polygon";
 #endif
 
         pgDesc.hitgroup.moduleAH            = state.modules.traceModule;
         pgDesc.hitgroup.entryFunctionNameAH = "__anyhit__molecule";
 
+        try{
         OPTIX_CHECK(optixProgramGroupCreate(state.context,
                                             &pgDesc,
                                             1,
@@ -769,7 +770,12 @@ namespace flowgpu {
                                             log,&sizeof_log,
                                             &pgHitgroup[FacetType::FACET_TYPE_SOLID]
         ));
-        //if (sizeof_log > 1) PRINT(log);
+        }
+        catch (std::exception& ex) {
+            std::cerr << ex.what() << std::endl;
+            Sleep(10000);
+        }
+        if (sizeof_log > 1) PRINT(log);
         programGroups.push_back(pgHitgroup[FacetType::FACET_TYPE_SOLID]);
 
 #ifdef WITH_TRANS
@@ -780,7 +786,7 @@ namespace flowgpu {
 #else
         pgDesc.hitgroup.moduleCH            = state.modules.traceModule;
         pgDesc.hitgroup.entryFunctionNameCH = "__closesthit__transparent";
-        std::err << "Transparent polygons (nbVert > 3) not yet supported!" << std::endl;
+        std::cerr << "Transparent polygons (nbVert > 3) not yet supported!" << std::endl;
 #endif
 
         OPTIX_CHECK(optixProgramGroupCreate(state.context,
