@@ -44,7 +44,8 @@ class MolFlow : public Interface
 {
 public:
     MolFlow();
-	
+    virtual ~MolFlow() = default;
+
 	//Public textfields so we can disable them from "Advanced facet parameters":
 	GLTextField   *facetFlow;
 	GLTextField   *facetFlowArea;
@@ -140,7 +141,7 @@ public:
     //void LogProfile();
     void BuildPipe(double ratio,int steps = 0) override;
 	void EmptyGeometry() override;
-	void CrashHandler(Error *e);
+	void CrashHandler(std::exception& e);
 	
 protected:
 	void LoadParameterCatalog();
