@@ -121,7 +121,7 @@ bool CurrentParticleStatus::UpdateMCHits(GlobalSimuState &globSimuState, size_t 
         if (particleId == 0) {
             for (size_t hitIndex = 0; hitIndex < tmpState.globalHits.hitCacheSize; hitIndex++)
                 globSimuState.globalHits.hitCache[(hitIndex + globSimuState.globalHits.lastHitIndex) %
-                                                  HITCACHESIZE] = globSimuState.globalHits.hitCache[hitIndex];
+                                                  HITCACHESIZE] = tmpState.globalHits.hitCache[hitIndex];
 
             if (tmpState.globalHits.hitCacheSize > 0) {
                 globSimuState.globalHits.lastHitIndex =

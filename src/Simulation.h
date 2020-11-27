@@ -62,7 +62,7 @@ public:
     void RecordHistograms(SubprocessFacet *iFacet);
     bool UpdateHits(GlobalSimuState* globState, DWORD timeout);
 
-    void Reset(){};
+    void Reset();
 	Vector3d position;    // Position
 	Vector3d direction;    // Direction
 	double oriRatio; //Represented ratio of desorbed, used for low flux mode

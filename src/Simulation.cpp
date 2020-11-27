@@ -271,15 +271,39 @@ size_t Simulation::GetHitsSize() {
            + model.sh.nbFacet * sizeof(FacetHitBuffer) * (1+model.tdParams.moments.size());
 }
 
+void CurrentParticleStatus::Reset() {
+    position = Vector3d();
+    direction = Vector3d();
+    oriRatio = 0.0;
+
+    nbBounces = 0;
+    lastMomentIndex = 0;
+    particleId = 0;
+    distanceTraveled = 0;
+    generationTime = 0;
+    particleTime = 0;
+    teleportedFrom = -1;
+
+    velocity = 0.0;
+    expectedDecayMoment = 0.0;
+    structureId = -1;
+
+    tmpState.Reset();
+    lastHitFacet = nullptr;
+    randomGenerator.SetSeed(GetSeed());
+    model = nullptr;
+    transparentHitBuffer.clear();
+    tmpFacetVars.clear();
+}
+
 void Simulation::ResetSimulation() {
     //currentParticles.clear();// = CurrentParticleStatus();
     //std::vector<CurrentParticleStatus>(this->nbThreads).swap(this->currentParticles);
+    currentParticle.Reset();
     std::vector<SubProcessFacetTempVar>(model.sh.nbFacet).swap(currentParticle.tmpFacetVars);
-    currentParticle.tmpState.Reset();
     currentParticle.model = &model;
 
     totalDesorbed = 0;
-
 
     tmpParticleLog.clear();
 }
