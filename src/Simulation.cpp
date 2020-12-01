@@ -157,7 +157,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
 
     // New GlobalSimuState structure for threads
     {
-        GlobalSimuState* tmpResults = new GlobalSimuState;
+        auto tmpResults = new GlobalSimuState;
 
         std::vector<FacetState>(model.sh.nbFacet).swap(tmpResults->facetStates);
         for(auto& s : model.structures){
@@ -226,19 +226,6 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     //printf("  Seed: %lu\n", randomGenerator.GetSeed());
     printf("  Loading time: %.3f ms\n", (t1 - t0)*1000.0);
 
-    // calc hit port size
-    /*std::ostringstream result;
-    {
-        cereal::BinaryOutputArchive outputArchive(result);
-
-        outputArchive(
-                cereal::make_nvp("GlobalHits", this->tmpGlobalResults[0].globalHits),
-                cereal::make_nvp("GlobalHistograms", this->tmpGlobalResults[0].globalHistograms),
-                cereal::make_nvp("FacetStates", this->tmpGlobalResults[0].facetStates)
-        );
-    }
-
-    size_t hSize = result.str().size();//simulation->GetHitsSize();*/
     return 0;
 
 }
