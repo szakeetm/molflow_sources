@@ -1677,7 +1677,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		case MENU_FILE_EXPORTTEXTURE_AVG_V:
 			ExportTextures(0, 6); break;
 		case MENU_FILE_EXPORTTEXTURE_V_VECTOR:
-			ExportTextures(1, 7); break;
+			ExportTextures(0, 7); break;
 		case MENU_FILE_EXPORTTEXTURE_N_VECTORS:
 			ExportTextures(0, 8); break;
 		case MENU_FILE_EXPORTTEXTURE_AREA_COORD:
