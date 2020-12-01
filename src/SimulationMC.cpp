@@ -208,7 +208,7 @@ bool CurrentParticleStatus::UpdateMCHits(GlobalSimuState &globSimuState, size_t 
 
 //#if defined(DEBUG)
     t1 = omp_get_wtime();
-    printf("Update hits (glob): %lf s [%zu]\n", (t1 - t0) * 1.0, particleId);
+    //printf("Update hits (glob): %lf s [%zu]\n", (t1 - t0) * 1.0, particleId);
     //#endif
 
     return true;

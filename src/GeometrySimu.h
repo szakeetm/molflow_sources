@@ -32,6 +32,8 @@ struct TimeDependentParamters {
 struct SimulationModel {
 public:
     SimulationModel() : otfParams(), tdParams(), wp(), sh(), m(){};
+    ~SimulationModel();
+
     SimulationModel(SimulationModel&& o)  noexcept : m(){
         facets = std::move(o.facets);
         structures = std::move(o.structures);
@@ -159,17 +161,6 @@ struct SubprocessFacet{
 
     [[nodiscard]] size_t GetHitsSize(size_t nbMoments) const;
     //void RegisterTransparentPass(SubprocessFacet *facet); //Allows one shared Intersect routine between MolFlow and Synrad
-
-    template<class Archive> void serialize(Archive& archive) {
-        archive(
-            sh,
-            indices,
-            vertices2,
-            outgassingMap,
-            angleMap.pdf,
-            textureCellIncrements
-        );
-    }
 
 };
 

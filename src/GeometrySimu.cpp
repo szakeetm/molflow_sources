@@ -15,8 +15,7 @@ SuperStructure::SuperStructure()
 
 SuperStructure::~SuperStructure()
 {
-
-    //SAFE_DELETE(aabbTree);
+    aabbTree.reset();
 }
 
 bool SubprocessFacet::InitializeOnLoad(const size_t &id, const size_t &nbMoments, size_t &histogramTotalSize) {
@@ -405,6 +404,10 @@ void SimulationModel::CalculateFacetParams(SubprocessFacet* f) {
 #if defined(MOLFLOW)
     f->sh.maxSpeed = 4.0 * std::sqrt(2.0*8.31*f->sh.temperature / 0.001 / wp.gasMass);
 #endif
+}
+
+SimulationModel::~SimulationModel() {
+
 }
 
 /**

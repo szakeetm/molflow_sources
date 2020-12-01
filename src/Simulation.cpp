@@ -60,8 +60,6 @@ Simulation::Simulation(Simulation&& o) noexcept : tMutex() {
     globState = o.globState;
 }
 
-Simulation::~Simulation()= default;
-
 int Simulation::ReinitializeParticleLog() {
     tmpParticleLog.clear();
     tmpParticleLog.shrink_to_fit();
@@ -197,11 +195,15 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     // Build all AABBTrees
     size_t maxDepth=0;
     for (auto& s : model.structures) {
+        if(s.aabbTree) s.aabbTree.reset();
         std::vector<SubprocessFacet*> facetPointers; facetPointers.reserve(s.facets.size());
         for (auto& f : s.facets) {
             facetPointers.push_back(&f);
         }
-        s.aabbTree = std::make_shared<AABBNODE>(*BuildAABBTree(facetPointers, 0, maxDepth));
+        AABBNODE* tree = BuildAABBTree(facetPointers, 0, maxDepth);
+        s.aabbTree = std::make_shared<AABBNODE>(*tree);
+        tree = nullptr;
+        //delete tree; // pointer unnecessary because of make_shared
     }
     currentParticle.model = &model;
 

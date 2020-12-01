@@ -92,7 +92,7 @@ public:
 
     Simulation();
     Simulation(Simulation&& o) noexcept ;
-    ~Simulation();
+    virtual ~Simulation() = default;
 
     int SanityCheckGeom() override;
     void ClearSimulation() override;
