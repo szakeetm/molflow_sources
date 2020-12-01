@@ -1334,8 +1334,7 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
             SAFE_DELETE(progressDlg);
             return;
         }
-        for(auto& simUnit : simManager.simUnits)
-            simUnit->model = model;
+        simManager.ForwardSimModel(&model);
 
         if (simManager.ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
             //CloseLoaderDP();
@@ -1439,8 +1438,8 @@ void Worker::Start() {
         throw std::runtime_error("Total outgassing is zero.");
 
     try {
-        for(auto& simUnit : simManager.simUnits)
-            simUnit->globState = &globState;
+        simManager.ForwardGlobalCounter(&globState);
+
         if (simManager.StartSimulation()) {
             throw std::logic_error("Processes are already done!");
         }

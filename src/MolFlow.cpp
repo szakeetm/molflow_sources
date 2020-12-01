@@ -375,7 +375,7 @@ int MolFlow::OneTimeSceneInit()
 	menu->GetSubMenu("Time")->Add("Timewise plotter", MENU_TIMEWISE_PLOTTER);
 	menu->GetSubMenu("Time")->Add("Pressure evolution", MENU_TIME_PRESSUREEVOLUTION);
 
-	showFilter = new GLToggle(0, "Filtering");
+	showFilter = nullptr; //new GLToggle(0, "Filtering");
 	//togglePanel->Add(showFilter);
 
 	viewerMoreButton = new GLButton(0, "<< View");
@@ -403,7 +403,7 @@ int MolFlow::OneTimeSceneInit()
 	simuPanel->Add(statusSimu);
 	*/
 
-	modeLabel = new GLLabel("Mode");
+	modeLabel = nullptr; //new GLLabel("Mode");
 	//simuPanel->Add(modeLabel);
 
 	modeCombo = new GLCombo(0);
@@ -414,12 +414,14 @@ int MolFlow::OneTimeSceneInit()
 	modeCombo->SetSelectedIndex(0);
 	//simuPanel->Add(modeCombo);
 
-	compACBtn = new GLButton(0, "Calc AC");
-	compACBtn->SetEnabled(false);
+	compACBtn = nullptr;
+	/*new GLButton(0, "Calc AC");
+	compACBtn->SetEnabled(false);*/
 	//simuPanel->Add(compACBtn);
 
-	singleACBtn = new GLButton(0, "1");
-	singleACBtn->SetEnabled(false);
+	singleACBtn = nullptr;
+	/*new GLButton(0, "1");
+	singleACBtn->SetEnabled(false);*/
 	//simuPanel->Add(singleACBtn);
 
 	inputPanel = new GLTitledPanel("Particles in");
@@ -609,9 +611,9 @@ void MolFlow::PlaceComponents() {
 	simuPanel->SetCompBounds(startSimu, 58, 20, 66, 19);
 	simuPanel->SetCompBounds(resetSimu, 128, 20, 66, 19);
 	//simuPanel->SetCompBounds(statusSimu,175,20,20,19);
-	simuPanel->SetCompBounds(modeLabel, 5, 45, 30, 18);
+	//simuPanel->SetCompBounds(modeLabel, 5, 45, 30, 18);
 	simuPanel->SetCompBounds(modeCombo, 40, 45, 85, 18);
-	simuPanel->SetCompBounds(compACBtn, 130, 45, 65, 19);
+	//simuPanel->SetCompBounds(compACBtn, 130, 45, 65, 19);
 	simuPanel->SetCompBounds(autoFrameMoveToggle, 5, 45, 65, 19);
 	simuPanel->SetCompBounds(forceFrameMoveButton, 128, 45, 66, 19);
 
@@ -1427,8 +1429,8 @@ void MolFlow::LoadFile(std::string fileName) {
 
 		//UpdateModelParams();
 		startSimu->SetEnabled(true);
-		compACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
-		singleACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
+		//compACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
+		//singleACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
 		//resetSimu->SetEnabled(true);
 		ClearFacetParams();
 		nbDesStart = worker.globalHitCache.globalHits.hit.nbDesorbed;
@@ -1535,8 +1537,8 @@ void MolFlow::InsertGeometry(bool newStr,std::string fileName) {
 		//UpdateModelParams();
 		startSimu->SetEnabled(true);
 
-		compACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
-		singleACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
+		//compACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
+		//singleACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
 		//resetSimu->SetEnabled(true);
 		//ClearFacetParams();
 		//nbDesStart = worker.globState.globalHits.globalHits.hit.nbDesorbed;
@@ -1959,9 +1961,9 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		}
 		else if (src == modeCombo) {
 
-			compACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
+			//compACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
 
-			singleACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
+			//singleACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
 			UpdateFacetHits();
 		}
 		break;
@@ -2120,7 +2122,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	
 	//UpdateModelParams();
 	startSimu->SetEnabled(true);
-	compACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
+	//compACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
 	//resetSimu->SetEnabled(true);
 	ClearFacetParams();
 	ClearFormulas();
@@ -2191,7 +2193,7 @@ void MolFlow::EmptyGeometry() {
 
 	//UpdateModelParams();
 	startSimu->SetEnabled(true);
-	compACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
+	//compACBtn->SetEnabled(modeCombo->GetSelectedIndex() == 1);
 	//resetSimu->SetEnabled(true);
 	ClearFacetParams();
 	ClearFormulas();

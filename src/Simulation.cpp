@@ -157,13 +157,13 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
 
     // New GlobalSimuState structure for threads
     {
-        GlobalSimuState tmpResults = GlobalSimuState();
+        GlobalSimuState* tmpResults = new GlobalSimuState;
 
-        std::vector<FacetState>(model.sh.nbFacet).swap(tmpResults.facetStates);
+        std::vector<FacetState>(model.sh.nbFacet).swap(tmpResults->facetStates);
         for(auto& s : model.structures){
             for(auto& sFac : s.facets){
                 size_t i = sFac.globalId;
-                if(!tmpResults.facetStates[i].momentResults.empty())
+                if(!tmpResults->facetStates[i].momentResults.empty())
                     continue; // Skip multiple init when facets exist in all structures
                 FacetMomentSnapshot facetMomentTemplate;
                 facetMomentTemplate.histogram.Resize(sFac.sh.facetHistogramParams);
@@ -171,23 +171,23 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
                 facetMomentTemplate.profile = std::vector<ProfileSlice>(sFac.sh.isProfile ? PROFILE_SIZE : 0);
                 facetMomentTemplate.texture = std::vector<TextureCell>(sFac.sh.isTextured ? sFac.sh.texWidth*sFac.sh.texHeight : 0);
                 //No init for hits
-                tmpResults.facetStates[i].momentResults = std::vector<FacetMomentSnapshot>(1 + model.tdParams.moments.size(), facetMomentTemplate);
+                tmpResults->facetStates[i].momentResults = std::vector<FacetMomentSnapshot>(1 + model.tdParams.moments.size(), facetMomentTemplate);
                 if (sFac.sh.anglemapParams.record)
-                  tmpResults.facetStates[i].recordedAngleMapPdf = std::vector<size_t>(sFac.sh.anglemapParams.GetMapSize());
+                  tmpResults->facetStates[i].recordedAngleMapPdf = std::vector<size_t>(sFac.sh.anglemapParams.GetMapSize());
             }
         }
 
         //Global histogram
         FacetHistogramBuffer globalHistTemplate;
         globalHistTemplate.Resize(model.wp.globalHistogramParams);
-        tmpResults.globalHistograms = std::vector<FacetHistogramBuffer>(1 + model.tdParams.moments.size(), globalHistTemplate);
-        tmpResults.initialized = true;
+        tmpResults->globalHistograms = std::vector<FacetHistogramBuffer>(1 + model.tdParams.moments.size(), globalHistTemplate);
+        tmpResults->initialized = true;
 
 
         // Init tmp vars per thread
         std::vector<SubProcessFacetTempVar>(model.sh.nbFacet).swap(currentParticle.tmpFacetVars);
-        currentParticle.tmpState = tmpResults;
-
+        currentParticle.tmpState = *tmpResults;
+        delete tmpResults;
     }
 
     //Reserve particle log

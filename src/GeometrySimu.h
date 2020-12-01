@@ -242,6 +242,12 @@ public:
         initialized = rhs.initialized;
     };
     GlobalSimuState() = default;
+    ~GlobalSimuState() {
+#if defined(MOLFLOW)
+        globalHistograms.clear();
+        facetStates.clear();
+#endif
+    }
     bool initialized = false;
     void clear();
     void Resize(const SimulationModel &model);

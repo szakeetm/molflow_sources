@@ -37,16 +37,16 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
     simManager->nbCores = Settings::nbCPUCores;
     simManager->useCPU = true;
 
-    if(simManager->InitSimUnits())
-        std::cout << "Error: Initialising subprocesses: " << simManager->simHandles.size() << std::endl;
-
-    std::cout << "Active cores: " << simManager->simHandles.size() << std::endl;
+    if(simManager->InitSimUnits()) {
+        std::cout << "Error: Initialising subprocesses: " << simManager->nbCores << std::endl;
+        return 1;
+    }
+    std::cout << "Active cores: " << simManager->nbCores << std::endl;
     model->otfParams.nbProcess = simManager->nbCores;
 
     loadFromXML(simManager, model, globState);
 
-    for(auto& simUnit : simManager->simUnits)
-        simUnit->globState = globState;
+    simManager->ForwardGlobalCounter(globState);
 
 
 
@@ -130,9 +130,7 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
 
     // Some postprocessing
     //loader.MoveFacetsToStructures(model);
-    for(auto& sim : simManager->simUnits){
-        sim->model = *model;
-    }
+    simManager->ForwardSimModel(model);
 
     if (simManager->ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
         //CloseLoaderDP();

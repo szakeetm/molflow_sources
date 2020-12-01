@@ -373,10 +373,9 @@ void GlobalSettings::SMPUpdate() {
 #endif
 
     size_t i = 1;
-
-    //for (auto& proc : procInfo.subProcInfo) {
+    for (auto& proc : procInfo.subProcInfo)
     {
-        auto& proc = procInfo.subProcInfo[0];
+        //auto& proc = procInfo.subProcInfo[0];
         DWORD pid = proc.procId;
 		sprintf(tmp, "Subproc.%lu", i);
 		processList->SetValueAt(0, i, tmp);
@@ -422,7 +421,9 @@ void GlobalSettings::SMPUpdate() {
             //processList->SetValueAt(4, i, tmp);
 
             // State/Status
-            std::stringstream tmp_ss; tmp_ss << "[" << prStates[states[i-1]] << "] " << statusStrings[i-1];
+
+            std::stringstream tmp_ss; //tmp_ss << "[" << prStates[states[i-1]] << "] " << statusStrings[i-1];
+            tmp_ss << "[" << prStates[proc.slaveState] << "] " << proc.statusString;
             processList->SetValueAt(4, i, tmp_ss.str().c_str());
         }
 #endif
