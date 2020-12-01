@@ -1735,7 +1735,6 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, BYTE *b
 
 					char tmp[256];
 					char out[512];
-					double dCoef = 1.0;
 					if (!buffer) return;
 					GlobalHitBuffer *shGHit = (GlobalHitBuffer *)buffer;
 					size_t nbMoments = mApp->worker.moments.size();
@@ -1747,9 +1746,9 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, BYTE *b
 					if (f->cellPropertiesIds) texture = (TextureCell *)((BYTE *)buffer + (f->sh.hitOffset + facetHitsSize + profSize + m * tSize));
 					if (f->sh.countDirection) dirs = (DirectionCell *)((BYTE *)buffer + (f->sh.hitOffset + facetHitsSize + profSize * (1 + nbMoments) + tSize * (1 + nbMoments) + m * dSize));
 
-					for (size_t i = 0; i < w; i++) {
-						for (size_t j = 0; j < h; j++) {
-							size_t index = i + j * w;
+					for (size_t r = 0; r < h; r++) {
+						for (size_t c = 0; c < w; c++) {
+							size_t index = c + r * w;
 							tmp[0] = out[0] = 0;
 							switch (mode) {
 
@@ -1758,54 +1757,69 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, BYTE *b
 								break;
 
 							case 1: //MC Hits
-								if (!grouping || texture[index].countEquiv > 0.0) sprintf(tmp, "%g", texture[index].countEquiv);
+								
+								if (!grouping || texture[index].countEquiv > 0.0) {
+									double val = GetPhysicalValue(f, PhysicalMode::MCHits, 1.0, 1.0, 1.0, (int)index, (BYTE*)texture).value;
+							
+									sprintf(tmp, "%g", val);
+								}
 								break;
 
 							case 2: //Impingement rate
-								dCoef = 1E4; //1E4: conversion m2->cm2
-								if (sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
-								if (!grouping || texture[index].countEquiv > 0.0) sprintf(tmp, "%g", texture[i + j * w].countEquiv / f->GetMeshArea(i + j * w, true)*dCoef);
+								
+								if (!grouping || texture[index].countEquiv > 0.0) {
+									double moleculesPerTP = (mApp->worker.wp.sMode == MC_MODE) ? mApp->worker.GetMoleculesPerTP(m) : 1.0;
+									double val = GetPhysicalValue(f, PhysicalMode::ImpingementRate, moleculesPerTP,1.0, mApp->worker.wp.gasMass, (int)index, (BYTE*)texture).value;
+							
+									sprintf(tmp, "%g", val);
+								}
 								break;
 
 							case 3: //Particle density
 							{
-								dCoef = 1E4; //1E4: conversion m2->cm2
-								if (sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
-								double v_ort_avg = 2.0*texture[index].countEquiv / texture[index].sum_1_per_ort_velocity;
-								double imp_rate = texture[index].countEquiv / f->GetMeshArea(index, true)*dCoef;
-								double rho = 2.0*imp_rate / v_ort_avg;
-								if (!grouping || texture[index].countEquiv > 0.0) sprintf(tmp, "%g", rho);
+								
+								if (!grouping || texture[index].countEquiv > 0.0) {
+									double moleculesPerTP = (mApp->worker.wp.sMode == MC_MODE) ? mApp->worker.GetMoleculesPerTP(m) : 1.0;
+									double densityCorrection = f->DensityCorrection();
+									double rho = GetPhysicalValue(f, PhysicalMode::ParticleDensity, moleculesPerTP, densityCorrection, mApp->worker.wp.gasMass, (int)index, (BYTE*)texture).value;
+								
+									sprintf(tmp, "%g", rho);
+								}
 								break;
 							}
 							case 4: //Gas density
 							{
-								dCoef = 1E4; //1E4: conversion m2->cm2
-								if (sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
-								double v_ort_avg = 2.0*texture[index].countEquiv / texture[index].sum_1_per_ort_velocity;
-								double imp_rate = texture[index].countEquiv / f->GetMeshArea(index, true)*dCoef;
-								double rho = 2.0*imp_rate / v_ort_avg;
-								double rho_mass = rho * mApp->worker.wp.gasMass / 1000.0 / 6E23;
-								if (!grouping || texture[index].countEquiv > 0.0) sprintf(tmp, "%g", rho_mass);
+								if (!grouping || texture[index].countEquiv > 0.0) {
+									double moleculesPerTP = (mApp->worker.wp.sMode == MC_MODE) ? mApp->worker.GetMoleculesPerTP(m) : 1.0;
+								double densityCorrection = f->DensityCorrection();
+								double rho_mass = GetPhysicalValue(f, PhysicalMode::GasDensity, moleculesPerTP, densityCorrection, mApp->worker.wp.gasMass, (int)index, (BYTE*)texture).value;
+								
+									sprintf(tmp, "%g", rho_mass);
+								}
 								break;
 							}
 							case 5:  // Pressure [mbar]
 
-								// Lock during update
-								dCoef = 1E4 * (mApp->worker.wp.gasMass / 1000 / 6E23) *0.0100;  //1E4 is conversion from m2 to cm2, 0.01: Pa->mbar
-								if (sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
-								if (!grouping || texture[index].sum_v_ort_per_area) sprintf(tmp, "%g", texture[index].sum_v_ort_per_area*dCoef);
+								if (!grouping || texture[index].sum_v_ort_per_area) {
+									double moleculesPerTP = (mApp->worker.wp.sMode == MC_MODE) ? mApp->worker.GetMoleculesPerTP(m) : 1.0;
+									double p = GetPhysicalValue(f, PhysicalMode::Pressure, moleculesPerTP, 1.0, mApp->worker.wp.gasMass, (int)index, (BYTE*)texture).value;
+									sprintf(tmp, "%g", p);
+								}
 								break;
 
 							case 6: // Average velocity
-								if (!grouping || texture[index].countEquiv > 0.0) sprintf(tmp, "%g", 2.0*texture[i + j * w].countEquiv / texture[i + j * w].sum_1_per_ort_velocity);
+								
+								if (!grouping || texture[index].countEquiv > 0.0) {
+									double val = GetPhysicalValue(f, PhysicalMode::AvgGasVelocity, 1.0, 1.0, 1.0, (int)index, (BYTE*)texture).value;
+									sprintf(tmp, "%g", val);
+								};
 								break;
 
 							case 7: // Velocity vector
 								if (f->sh.countDirection) {
+									Vector3d v_vect = GetPhysicalValue(f, PhysicalMode::GasVelocityVector, 1.0, 1.0, 1.0, (int)index, (BYTE*)dirs).vect;
 									sprintf(tmp, "%g,%g,%g",
-										dirs[i + j * w].dir.x,
-										dirs[i + j * w].dir.y,
-										dirs[i + j * w].dir.z);
+									v_vect.x, v_vect.y, v_vect.z);
 								}
 								else {
 									sprintf(tmp, "Direction not recorded");
@@ -1814,7 +1828,8 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, BYTE *b
 
 							case 8: // Velocity vector Count
 								if (f->sh.countDirection) {
-									sprintf(tmp, "%zd", dirs[i + j * w].count);
+									size_t count = GetPhysicalValue(f, PhysicalMode::NbVelocityVectors, 1.0, 1.0, 1.0, (int)index, (BYTE*)dirs).count;
+									sprintf(tmp, "%zd", count);	
 								}
 								else {
 
@@ -1826,7 +1841,7 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, BYTE *b
                                     break;
                             } //end switch
 
-							if (grouping == 1 && tmp && tmp[0]) {
+							if (grouping == 1  && tmp[0]) {
 								Vector2d facetCenter = f->GetMeshCenter(index);
 								sprintf(out, "%g\t%g\t%g\t%s\t\n",
 									f->sh.O.x + facetCenter.u*f->sh.U.x + facetCenter.v*f->sh.V.x,
@@ -1837,7 +1852,7 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, BYTE *b
 							else sprintf(out, "%s", tmp);
 
 							if (out) fprintf(file, "%s", out);
-							if (j < w - 1 && grouping == 0)
+							if (c < w - 1 && grouping == 0)
 								fprintf(file, "\t");
 						} //h
 						if (grouping == 0) fprintf(file, "\n");
@@ -1917,8 +1932,8 @@ void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, BYTE *buffer, Worker
 					switch (f->sh.profileType) {
 					case PROFILE_U:
 					case PROFILE_V:
-						scaleY = 1.0 / (f->GetArea() / (double)PROFILE_SIZE*1E-4)* worker->wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
-						scaleY *= worker->GetMoleculesPerTP(m);
+						scaleY = 1.0 / (f->GetArea() / (double)PROFILE_SIZE*1E-4)* mApp->worker.wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
+						scaleY *= mApp->worker.GetMoleculesPerTP(m);
 
 						for (int j = 0; j < PROFILE_SIZE; j++)
 							line << prof[j].sum_v_ort*scaleY << sep;
