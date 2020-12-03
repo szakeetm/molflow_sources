@@ -40,6 +40,19 @@
             "externalConsole": false,
             "MIMode": "lldb",
             "preLaunchTask": "CMake Make Release Build with clang"
+        },
+        {
+            "name": "(RelWithDebInfo) Launch RelWithDebInfo",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build_RelWithDebInfo/bin/mac/release/molflow",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb",
+            "preLaunchTask": "CMake Make RelWithDebInfo Build with clang"
         }
     ]
 }
