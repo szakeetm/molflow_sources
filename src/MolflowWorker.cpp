@@ -1971,32 +1971,34 @@ IntegratedDesorption Worker::Generate_ID(int paramId) {
     //Construct integral from 0 to the simulation's latest moment
     //First point: t=0, Q(0)=Q(t0)
     ID.push_back(std::make_pair(0.0, 0.0)); //At t=0 no particles have desorbed yet
-    if (par.GetX(0)>0.0) { //If the user starts later than t=0, copy first user value to t=0    
+    
+    if (par.GetX(0)>0.0) { //If the user starts later than t=0, copy first user value to t=0 (const extrapolation)    
         myOutgassing.push_back(std::make_pair(0.0,par.GetY(0)));
+    } else { //user has set an outgassing at t=0, so just copy it to myOutgassing
+        myOutgassing.push_back(par.GetValues()[0]);
     }
     //Consecutive points: user-defined points that are before latestMoment
-    {
-        auto valuesCopy = par.GetValues();
-        if (lastUserMomentBeforeLatestMoment) {
-            myOutgassing.insert(myOutgassing.end(),valuesCopy.begin(),valuesCopy.end());
-        } else if (indexAfterLatestMoment>0) {
-            myOutgassing.insert(myOutgassing.end(),valuesCopy.begin(),valuesCopy.begin()+indexAfterLatestMoment-1);
-        }
-    
-
-        if (lastUserMomentBeforeLatestMoment) {
-            //Create last point equal to last outgassing
-            myOutgassing.push_back(std::make_pair(wp.latestMoment,myOutgassing.back().second));
-        } else if (!IsEqual(myOutgassing.back().first,wp.latestMoment)) {
-            myOutgassing.push_back(std::make_pair(wp.latestMoment,
-            InterpolateY(wp.latestMoment,valuesCopy,par.logXinterp,par.logYinterp)));
-        }
-    } //values copy goes out of scope
-
-    //Intermediate moments, from first to last user-defined moment
     //We throw away user-defined moments after latestMoment:
     //Example: we sample the system until t=10s but outgassing is defined until t=1000s -> ignore values after 10s
-    for (size_t i = 1; i < myOutgassing.size(); i++) { //myOutgassing[0] is at t=0, skipping
+    {
+        const auto& valuesCopy = par.GetValues();
+        if (lastUserMomentBeforeLatestMoment) {
+            myOutgassing.insert(myOutgassing.end(),valuesCopy.begin(),valuesCopy.end()); //copy all values...
+            myOutgassing.push_back(std::make_pair(wp.latestMoment,myOutgassing.back().second)); //...and create last point equal to last outgassing (const extrapolation)
+        } else {
+             if (indexAfterLatestMoment>0) {
+                myOutgassing.insert(myOutgassing.end(),valuesCopy.begin(),valuesCopy.begin()+indexAfterLatestMoment-1); //copy values that are before latestMoment
+             }
+             if (!IsEqual(myOutgassing.back().first,wp.latestMoment)) { //if interpolation is needed
+                myOutgassing.push_back(std::make_pair(wp.latestMoment,
+                InterpolateY(wp.latestMoment,valuesCopy,par.logXinterp,par.logYinterp))); //interpolate outgassing value to t=latestMoment
+            }
+        }
+
+    } //valuesCopy goes out of scope
+
+    //Intermediate moments, from first to t=latestMoment
+    for (size_t i = 1; i < myOutgassing.size(); i++) { //myOutgassing[0] is always at t=0, skipping
         if (IsEqual(myOutgassing[i].second, myOutgassing[i - 1].second)) {
             //easy case of two equal y0=y1 values, simple integration by multiplying, reducing number of points
             ID.push_back(std::make_pair(myOutgassing[i].first,
