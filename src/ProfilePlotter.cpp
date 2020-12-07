@@ -141,6 +141,9 @@ ProfilePlotter::ProfilePlotter() :GLWindow() , views{}{
     useProfColToggle = new GLToggle(0, "Identify profiles in geometry");
     Add(useProfColToggle);
 
+	selectPlottedButton = new GLButton(0, "Select plotted facets");
+	Add(selectPlottedButton);
+
 	warningLabel = new GLLabel("Profiles can only be used on rectangular facets.");
 	Add(warningLabel);
 
@@ -198,6 +201,7 @@ void ProfilePlotter::SetBounds(int x, int y, int w, int h) {
     fixedLineWidthField->SetBounds(206, h - 70, 30, 19);
     fixedLineWidthButton->SetBounds(240, h - 70, 100, 19);
     useProfColToggle->SetBounds(350, h - 70, 105, 19);
+	selectPlottedButton->SetBounds(w-130,h-70,120,19);
 
     formulaText->SetBounds(7, h - 45, 350, 19);
 	formulaBtn->SetBounds(360, h - 45, 120, 19);;
@@ -701,9 +705,12 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
                     }
 
                     for (const auto &facetId : facetIds) {
-                        if(remView(facetId)){
+                        /*
+						if(remView(facetId)){
                             GLMessageBox::Display("Profile not plotted", "Error", GLDLG_OK, GLDLG_ICONERROR);
                         }
+						*/ //Commented out: one wrong click on empty plotter can cause infinite error messages
+						remView(facetId); //Try to remove, fail silently
                     }
                 }
                 refreshViews();
@@ -725,7 +732,15 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
                 GLDataView *v = views[viewId];
                 v->SetLineWidth(linW);
             }
-        }
+        }  else if (src == selectPlottedButton) {
+			std::vector<size_t> plottedFacetIds;
+			for(int viewId = 0; viewId < nbView; viewId++){
+                GLDataView *v = views[viewId];
+				plottedFacetIds.push_back(v->userData1);
+			}
+			geom->UnselectAll();
+			geom->SetSelection(plottedFacetIds,false,false);
+		}
 		break;
 	case MSG_COMBO:
 		if (src == normCombo) {

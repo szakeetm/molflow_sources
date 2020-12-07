@@ -20,6 +20,23 @@
 		},
 		{
 			"type": "shell",
+			"label": "CMake Make RelWithDebInfo Build with clang",
+			"command": "/usr/local/bin/cmake",
+			"args": ["--build",
+				"${workspaceRoot}/build_RelWithDebInfo",
+				"--config","RelWithDebInfo",
+				"--target","molflow",
+				"-j8"],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": [
+				"$gcc"
+			]
+		},
+		{
+			"type": "shell",
 			"label": "CMake Make Debug Build with clang",
 			"command": "/usr/local/bin/cmake",
 			"args": ["--build",

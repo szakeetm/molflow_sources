@@ -445,7 +445,7 @@ void GlobalSettings::RestartProc() {
 	}
 	else {
 			if (nbProc <= 0 || nbProc > MAX_PROCESS) {
-				GLMessageBox::Display("Invalid process number [1..32]", "Error", GLDLG_OK, GLDLG_ICONERROR);
+				GLMessageBox::Display("Invalid process number [1..64]", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			}
 			else {
 				try {

@@ -1721,17 +1721,16 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, GlobalS
 		if (m == 0) fprintf(file, " moment 0 (Constant Flow){\n");
 		else fprintf(file, " moment %zd (%g s)[w=%g]{\n", m, mApp->worker.moments[m - 1].first,mApp->worker.moments[m - 1].second);
 		// Facets
-		for (int fInd = 0; fInd < sh.nbFacet; fInd++) {
+		for (size_t fInd = 0; fInd < sh.nbFacet; fInd++) {
 			Facet *f = facets[fInd];
 
 			if (f->selected) {
-				if (grouping == 0) fprintf(file, "FACET%d\n", fInd + 1); //mode 10: special ANSYS export
+				if (grouping == 0) fprintf(file, "FACET%lu\n", fInd + 1u); //mode 10: special ANSYS export
 
 				if (f->cellPropertiesIds || f->sh.countDirection) {
 
 					char tmp[256];
 					char out[512];
-					double dCoef = 1.0;
 					if (!globState.initialized) return;
 					size_t nbMoments = mApp->worker.moments.size();
 					size_t profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + nbMoments)) : 0;
@@ -1740,12 +1739,13 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, GlobalS
 					size_t tSize = w * h * sizeof(TextureCell);
 					size_t dSize = w * h * sizeof(DirectionCell);
 
-					const std::vector<TextureCell>& texture = globState.facetStates[fInd].momentResults[m].texture;
+                    const auto& facetSnapshot = globState.facetStates[fInd].momentResults[m];
+                    const std::vector<TextureCell>& texture = globState.facetStates[fInd].momentResults[m].texture;
 					const std::vector<DirectionCell>& dirs = globState.facetStates[fInd].momentResults[m].direction;
 
-					for (size_t i = 0; i < w; i++) {
-						for (size_t j = 0; j < h; j++) {
-							size_t index = i + j * w;
+					for (size_t r = 0; r < h; r++) {
+						for (size_t c = 0; c < w; c++) {
+							size_t index = c + r * w;
 							tmp[0] = out[0] = 0;
 							switch (mode) {
 
@@ -1754,54 +1754,69 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, GlobalS
 								break;
 
 							case 1: //MC Hits
-								if (!grouping || texture.at(index).countEquiv > 0.0) sprintf(tmp, "%g", texture.at(index).countEquiv);
+
+								if (!grouping || texture[index].countEquiv > 0.0) {
+                                    double val = GetPhysicalValue(f, PhysicalMode::MCHits, 1.0, 1.0, 1.0, (int)index, facetSnapshot).value;
+
+									sprintf(tmp, "%g", val);
+								}
 								break;
 
 							case 2: //Impingement rate
-								dCoef = 1E4; //1E4: conversion m2->cm2
-								if (sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
-								if (!grouping || texture.at(index).countEquiv > 0.0) sprintf(tmp, "%g", texture.at(i + j * w).countEquiv / f->GetMeshArea(i + j * w, true)*dCoef);
+
+								if (!grouping || texture[index].countEquiv > 0.0) {
+									double moleculesPerTP = (mApp->worker.model.wp.sMode == MC_MODE) ? mApp->worker.GetMoleculesPerTP(m) : 1.0;
+									double val = GetPhysicalValue(f, PhysicalMode::ImpingementRate, moleculesPerTP,1.0, mApp->worker.model.wp.gasMass, (int)index, facetSnapshot).value;
+
+									sprintf(tmp, "%g", val);
+								}
 								break;
 
 							case 3: //Particle density
 							{
-								dCoef = 1E4; //1E4: conversion m2->cm2
-								if (sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
-								double v_ort_avg = 2.0*texture.at(index).countEquiv / texture.at(index).sum_1_per_ort_velocity;
-								double imp_rate = texture.at(index).countEquiv / f->GetMeshArea(index, true)*dCoef;
-								double rho = 2.0*imp_rate / v_ort_avg;
-								if (!grouping || texture.at(index).countEquiv > 0.0) sprintf(tmp, "%g", rho);
+
+								if (!grouping || texture[index].countEquiv > 0.0) {
+									double moleculesPerTP = (mApp->worker.model.wp.sMode == MC_MODE) ? mApp->worker.GetMoleculesPerTP(m) : 1.0;
+									double densityCorrection = f->DensityCorrection();
+									double rho = GetPhysicalValue(f, PhysicalMode::ParticleDensity, moleculesPerTP, densityCorrection, mApp->worker.model.wp.gasMass, (int)index, facetSnapshot).value;
+
+									sprintf(tmp, "%g", rho);
+								}
 								break;
 							}
 							case 4: //Gas density
 							{
-								dCoef = 1E4; //1E4: conversion m2->cm2
-								if (sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
-								double v_ort_avg = 2.0*texture.at(index).countEquiv / texture.at(index).sum_1_per_ort_velocity;
-								double imp_rate = texture.at(index).countEquiv / f->GetMeshArea(index, true)*dCoef;
-								double rho = 2.0*imp_rate / v_ort_avg;
-								double rho_mass = rho * mApp->worker.model.wp.gasMass / 1000.0 / 6E23;
-								if (!grouping || texture.at(index).countEquiv > 0.0) sprintf(tmp, "%g", rho_mass);
+								if (!grouping || texture[index].countEquiv > 0.0) {
+									double moleculesPerTP = (mApp->worker.model.wp.sMode == MC_MODE) ? mApp->worker.GetMoleculesPerTP(m) : 1.0;
+                                    double densityCorrection = f->DensityCorrection();
+                                    double rho_mass = GetPhysicalValue(f, PhysicalMode::GasDensity, moleculesPerTP, densityCorrection, mApp->worker.model.wp.gasMass, (int)index, facetSnapshot).value;
+
+									sprintf(tmp, "%g", rho_mass);
+								}
 								break;
 							}
 							case 5:  // Pressure [mbar]
 
-								// Lock during update
-								dCoef = 1E4 * (mApp->worker.model.wp.gasMass / 1000 / 6E23) *0.0100;  //1E4 is conversion from m2 to cm2, 0.01: Pa->mbar
-								if (sMode == MC_MODE) dCoef *= mApp->worker.GetMoleculesPerTP(m);
-								if (!grouping || texture.at(index).sum_v_ort_per_area) sprintf(tmp, "%g", texture.at(index).sum_v_ort_per_area*dCoef);
+								if (!grouping || texture[index].sum_v_ort_per_area != 0.0) {
+									double moleculesPerTP = (mApp->worker.model.wp.sMode == MC_MODE) ? mApp->worker.GetMoleculesPerTP(m) : 1.0;
+									double p = GetPhysicalValue(f, PhysicalMode::Pressure, moleculesPerTP, 1.0, mApp->worker.model.wp.gasMass, (int)index, facetSnapshot).value;
+									sprintf(tmp, "%g", p);
+								}
 								break;
 
 							case 6: // Average velocity
-								if (!grouping || texture.at(index).countEquiv > 0.0) sprintf(tmp, "%g", 2.0*texture.at(i + j * w).countEquiv / texture.at(i + j * w).sum_1_per_ort_velocity);
+
+								if (!grouping || texture[index].countEquiv > 0.0) {
+									double val = GetPhysicalValue(f, PhysicalMode::AvgGasVelocity, 1.0, 1.0, 1.0, (int)index, facetSnapshot).value;
+									sprintf(tmp, "%g", val);
+								};
 								break;
 
 							case 7: // Velocity vector
 								if (f->sh.countDirection) {
+									Vector3d v_vect = GetPhysicalValue(f, PhysicalMode::GasVelocityVector, 1.0, 1.0, 1.0, (int)index, facetSnapshot).vect;
 									sprintf(tmp, "%g,%g,%g",
-                                            dirs.at(i + j * w).dir.x,
-                                            dirs.at(i + j * w).dir.y,
-                                            dirs.at(i + j * w).dir.z);
+									v_vect.x, v_vect.y, v_vect.z);
 								}
 								else {
 									sprintf(tmp, "Direction not recorded");
@@ -1810,7 +1825,8 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, GlobalS
 
 							case 8: // Velocity vector Count
 								if (f->sh.countDirection) {
-									sprintf(tmp, "%zd", dirs.at(i + j * w).count);
+									size_t count = GetPhysicalValue(f, PhysicalMode::NbVelocityVectors, 1.0, 1.0, 1.0, (int)index, facetSnapshot).count;
+									sprintf(tmp, "%zd", count);
 								}
 								else {
 
@@ -1822,7 +1838,7 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, GlobalS
                                     break;
                             } //end switch
 
-							if (grouping == 1 && tmp && tmp[0]) {
+							if (grouping == 1  && tmp[0]) {
 								Vector2d facetCenter = f->GetMeshCenter(index);
 								sprintf(out, "%g\t%g\t%g\t%s\t\n",
 									f->sh.O.x + facetCenter.u*f->sh.U.x + facetCenter.v*f->sh.V.x,
@@ -1833,7 +1849,7 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, GlobalS
 							else sprintf(out, "%s", tmp);
 
 							if (out) fprintf(file, "%s", out);
-							if (j < w - 1 && grouping == 0)
+							if (c < w - 1 && grouping == 0)
 								fprintf(file, "\t");
 						} //h
 						if (grouping == 0) fprintf(file, "\n");
