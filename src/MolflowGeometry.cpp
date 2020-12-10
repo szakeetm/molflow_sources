@@ -27,6 +27,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <iomanip>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/string.hpp>
+#include <Helper/StringHelper.h>
 
 /*
 //Leak detection
@@ -3870,64 +3871,46 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, BYTE* buffer, Wo
 
     xml_node convNode = resultNode.child("Convergence");
 
-    std::stringstream convText;
     mApp->formula_ptr->convergenceValues.resize(0);
     for(auto& convVec : convNode.children()){
         std::stringstream convText;
         ConvergenceData convData;
         std::vector<std::pair<size_t, double>>& vec = convData.conv_vec;
         convText << convVec.child_value();
+        // get length of file:
+        convText.seekg (0, std::stringstream::end);
+        int length = convText.tellg();
+        convText.seekg (0, std::stringstream::beg);
+        if(convText.peek() == '\n') {
+            char nl;
+            convText.get(nl);
+        }
+        std::string line;
         while(!convText.eof()){
+            std::getline(convText, line);
+            size_t posOfTab = line.find ('\t');
+            //std::string second = pieces.substr(pos + 1);
+
+            if (posOfTab==std::string::npos)
+                continue;
             size_t nbDes = 0;
             double convVal = 0.0;
-            convText >> nbDes;
-			if (convText.eof()) break; //Last line "\n"
-            convText >> convVal;
+            try{
+                nbDes = stringToNumber<size_t>(line.substr(0, posOfTab));
+                convVal = stringToNumber<double>(line.substr(posOfTab+1));
+            }
+            catch (std::exception& e){
+                // Just write an error and move to next line e.g. when fail on inf/nan
+                std::cerr << "[XML][Convergence] Parsing error: "<<e.what()<< std::endl;
+                continue;
+            }
+
             //if(nbDes < vec[vec.size()-1].first) break; // skip if data is malformed (desorptions should increase)
             vec.emplace_back(std::make_pair(nbDes, convVal));
         }
         mApp->formula_ptr->convergenceValues.push_back(convData);
     }
     //mApp->formula_ptr->convergenceValues[formulaId];
-
-
-    /*if (convNode.child("countEquiv")) {
-        countText << textureNode.child_value("countEquiv");
-    }
-    else {
-        countText << textureNode.child_value("count");
-    }
-    sum1perText << textureNode.child_value("sum_1_per_v");
-    sumvortText << textureNode.child_value("sum_v_ort");
-
-    for (iy = 0; iy < (Min(f->sh.texHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
-        for (ix = 0; ix < (Min(f->sh.texWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
-            countText >> texture[iy * f->sh.texWidth + ix].countEquiv;
-            sum1perText >> texture[iy * f->sh.texWidth + ix].sum_1_per_ort_velocity;
-            sumvortText >> texture[iy * f->sh.texWidth + ix].sum_v_ort_per_area;
-
-        }
-        for (int ie = 0; ie < texWidth_file - f->sh.texWidth; ie++) {//Executed if file texture is bigger than expected texture
-            //Read extra cells from file without doing anything
-            size_t dummy_ll;
-            double dummy_d;
-            countText >> dummy_ll;
-            sum1perText >> dummy_d;
-            sumvortText >> dummy_d;
-
-        }
-    }
-    for (int ie = 0; ie < texHeight_file - f->sh.texHeight; ie++) {//Executed if file texture is bigger than expected texture
-        //Read extra cells ffrom file without doing anything
-        for (int iw = 0; iw < texWidth_file; iw++) {
-            size_t dummy_ll;
-            double dummy_d;
-            countText >> dummy_ll;
-            sum1perText >> dummy_d;
-            sumvortText >> dummy_d;
-        }
-
-    }*/
 
 	return true;
 }
