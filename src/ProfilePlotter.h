@@ -91,7 +91,7 @@ private:
     GLButton    *fixedLineWidthButton;
     GLTextField    *fixedLineWidthField;
     GLToggle    *useProfColToggle;
-
+    GLButton    *selectPlottedButton;
 
     GLDataView  *views[MAX_VIEWS];
   int          nbView;
