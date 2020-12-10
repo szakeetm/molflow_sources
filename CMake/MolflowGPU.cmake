@@ -13,7 +13,7 @@ option(WITH_DESORPEXIT "Enable exit on desorption limit" ON)
 option(WITH_TRIANGLES "Enable calculations with triangles only" OFF)
 option(WITH_TEXTURES "Enable textures" ON)
 option(WITH_PROFILES "Enable profiles" ON)
-option(WITH_TRANS "Enable transparent SBT" ON)
+option(WITH_TRANS "Enable transparent SBT" OFF)
 option(WITH_NBOUNCE "Enable NBBOUNCE Counter" ON)
 
 set(USE_RANDOM_NUMBER_TYPE_64 ON)
@@ -62,7 +62,7 @@ endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
 
-
+    set(nvcc_flags ${nvcc_flags} -lineinfo)
     if (DEBUG_MISS)
         add_definitions(-DDEBUGMISS)
         set(nvcc_flags ${nvcc_flags} -DDEBUGMISS)

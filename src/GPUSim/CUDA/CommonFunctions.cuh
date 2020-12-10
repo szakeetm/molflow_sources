@@ -21,6 +21,11 @@
    (_12)*( (_23)*(_31) - (_33)*(_21) ) +            \
    (_13)*( (_21)*(_32) - (_31)*(_22) ))
 
+#define DET33_ROW(_1,_2,_3)  \
+  ((_1.x)*( (_2.y)*(_3.z) - (_2.z)*(_3.y) ) +            \
+   (_2.x)*( (_3.y)*(_1.z) - (_3.z)*(_1.y) ) +            \
+   (_3.x)*( (_1.y)*(_2.z) - (_1.z)*(_2.y) ))
+
 #define DOT(v1, v2)  \
   ((v1.x)*(v2.x) + (v1.y)*(v2.y) + (v1.z)*(v2.z))
 
@@ -31,8 +36,28 @@
     reinterpret_cast<uint32_t&>((u).x), \
     reinterpret_cast<uint32_t&>((u).y), \
     reinterpret_cast<uint32_t&>((u).z)
+#ifdef DEBUG
+#define DEBUG 1
+#endif
+#if defined(DEBUG) && DEBUG > 0
+#define DEBUG_PRINT(fmt, ...) printf("DEBUG: %s:%d:%s(): " fmt, __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#else
+#define DEBUG_PRINT(fmt, ...) /* Don't do anything in release builds */
+#endif
+
 
 namespace cg = cooperative_groups;
+
+static __forceinline__ __device__
+unsigned int getWorkIndex()
+{
+    const unsigned int ix = optixGetLaunchIndex().x;
+    const unsigned int iy = optixGetLaunchIndex().y;
+    const unsigned int fbIndex = ix + iy *optixGetLaunchDimensions().x;
+    //const unsigned int fbIndex = ix+iy*optixLaunchParams.simConstants.size.x;
+    //const unsigned int fbIndex = blockDim.x * blockIdx.x + threadIdx.x;
+    return fbIndex;
+}
 
 static __forceinline__ __device__
 void *unpackPointer( unsigned int i0, unsigned int i1 )
@@ -138,6 +163,43 @@ float atomicAggInc(float *ptr, float incVal)
     return prev;
 }
 
+static __forceinline__ __device__
+double3 getOrigin_double(
+#ifdef WITHTRIANGLES
+        const flowgpu::TriangleRayGenData* rayGenData,
+#else
+                    const flowgpu::PolygonRayGenData* rayGenData,
+#endif
+                    const int& facIndex,
+                    const double rnd1, const double rnd2)
+{
+
+#ifdef WITHTRIANGLES
+
+    double r1_sqrt =
+                #ifdef RNG64
+                    sqrt((double)rnd1);
+                #else
+                    sqrtf(rnd1);
+                #endif
+
+        double r2 = rnd2;
+
+        double3 vertA = rayGenData->vertex[rayGenData->index[facIndex].x];
+        double3 vertB = rayGenData->vertex[rayGenData->index[facIndex].y];
+        double3 vertC = rayGenData->vertex[rayGenData->index[facIndex].z];
+
+        return make_double3((1.0 - r1_sqrt) * vertA + r1_sqrt * (1.0 - r2) * vertB + r1_sqrt * r2 * vertC); //rayGenData
+
+#else //WITHTRIANGLES
+
+    // start position of particle (U,V) -> (x,y,z)
+    double uDir = rnd1, vDir = rnd2;
+
+    return rayGenData->poly[facIndex].Ox64 + uDir * rayGenData->poly[facIndex].Ux64 + vDir * rayGenData->poly[facIndex].Vx64;
+#endif //WITHTRIANGLES
+    }
+
 //TODO: Only non maxwell for now
 static __forceinline__ __device__
 FLOAT_T getNewVelocity(const flowgpu::Polygon& poly, const float& gasMass)
@@ -157,6 +219,9 @@ float3 getNewDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& poly,
             printf("randInd %u is out of bounds\n", randInd + randOffset);
         }
 #endif*/
+
+    hitData.rndDirection[0] = randFloat[(unsigned int) (randInd + randOffset)];
+    hitData.rndDirection[1] = randFloat[(unsigned int) (randInd + randOffset+1)];
 
     float theta = 0.0f;
     if(poly.desProps.desorbType == 2 || poly.desProps.desorbType == 0) {
@@ -217,6 +282,8 @@ float3 getNewDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& poly,
             printf("randInd %u is out of bounds\n", randInd + randOffset);
         }
 #endif*/
+    hitData.rndDirection[0] = randFloat[(unsigned int) (randInd + randOffset)];
+    hitData.rndDirection[1] = randFloat[(unsigned int) (randInd + randOffset+1)];
 
     FLOAT_T theta = 0.0;
     if(poly.desProps.desorbType == 2 || poly.desProps.desorbType == 0) {
@@ -263,6 +330,38 @@ float3 getNewDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& poly,
     if (rayDir.y != 0.0) rayDir.y = 1.0 / rayDir.y;
     if (rayDir.z != 0.0) rayDir.z = 1.0 / rayDir.z;
     rayDir = float3(-1.0f,-1.0f,-1.0f) * rayDir;*/
+}
+
+static __forceinline__ __device__
+double3 getDirection_double(flowgpu::MolPRD& hitData, const flowgpu::Polygon& poly,
+                       const double rnd1, const double rnd2)
+{
+    double theta = 0.0;
+    if(poly.desProps.desorbType == 2 || poly.desProps.desorbType == 0) {
+        theta = acos(sqrt(rnd1));
+    }
+    else if (poly.desProps.desorbType == 3) {
+        theta = acos(pow(rnd1, (1.0 / (poly.desProps.cosineExponent + 1.0))));
+    }
+    else if (poly.desProps.desorbType == 1) {
+        theta = acos(rnd1);
+    }
+    else{
+        printf("Unsupported desorption type! %u on %d , %d\n", poly.desProps.desorbType, hitData.hitFacetId, poly.parentIndex);
+        return make_double3(0.0,0.0,0.0);
+    }
+    const double phi = rnd2 * 2.0 * CUDART_PI;
+
+    const double u = sin(theta)*cos(phi);
+    const double v = sin(theta)*sin(phi);
+    const double n = cos(theta);
+
+    const double3 nU = poly.nUx64;
+    const double3 nV = poly.nVx64;
+    const double3 N = poly.Nx64;
+
+    //DEBUG_PRINT("Double Dir: %lf * [%lf,%lf,%lf] + %lf * [%lf,%lf,%lf] + %lf * [%lf,%lf,%lf]\n", u,nU.x , nU.y , nU.z ,v,nV.x , nV.y , nV.z , n,N.x , N.y , N.z);
+    return u*nU + v*nV + n*N;
 }
 
 //TODO: Only cosine for now

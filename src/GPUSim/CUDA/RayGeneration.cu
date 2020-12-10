@@ -68,9 +68,10 @@ namespace flowgpu {
         //printf("[%d] poly second vec2 %4.2f , %4.2f\n",threadIdx.x,rayGenData->vertex2[1].x,rayGenData->vertex2[1].y);
 
 #ifdef BOUND_CHECK
+/*
         if(poly.indexOffset < 0 || poly.indexOffset+poly.nbVertices >= optixLaunchParams.simConstants.nbVertices){
             printf("[%d] indexOffset %u -- %u >= %u is out of bounds\n", poly.parentIndex, poly.indexOffset, poly.indexOffset+poly.nbVertices, optixLaunchParams.simConstants.nbVertices);
-        }
+        }*/
 #endif
         for (int j = 0; j < nbSizeMinusOne; j++) {
             const float2& p1 = polyPoints[poly.indexOffset + j];
@@ -133,7 +134,7 @@ namespace flowgpu {
             printf("randInd %u is out of bounds\n", randInd + randOffset);
         }
         else if(randFloat[(unsigned int)(randInd + randOffset)] < 0.0 || randFloat[(unsigned int)(randInd + randOffset)] > 1.0){
-            printf("randFloat %lf is out of bounds\n", randFloat[(unsigned int)(randInd + randOffset)]);
+            printf("randFloat %lf is out of bounds [%u + %u]\n", randFloat[(unsigned int)(randInd + randOffset)], randInd, randOffset);
         }
 #endif
         float facetRnd = randFloat[(unsigned int)(randInd + randOffset++)];
@@ -195,6 +196,8 @@ namespace flowgpu {
             printf("randInd %u is out of bounds\n", randInd + randOffset);
         }
 #endif
+        hitData.rndOrigin[0] = randFloat[(unsigned int)(randInd + randOffset)];
+        hitData.rndOrigin[1] = randFloat[(unsigned int)(randInd + randOffset+1)];
 
         RN_T r1_sqrt =
                 #ifdef RNG64
@@ -263,6 +266,9 @@ namespace flowgpu {
             uDir = 0.5;
             vDir = 0.5;
         }
+
+        hitData.rndOrigin[0] = uDir;
+        hitData.rndOrigin[1] = vDir;
 
         //rayOrigin =
         return rayGenData->poly[facIndex].O + uDir * rayGenData->poly[facIndex].U + vDir * rayGenData->poly[facIndex].V;
@@ -505,6 +511,10 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
 #endif
         hitData.inSystem = NEW_PARTICLE;
         hitData.orientationRatio = 1.0f;
+        hitData.rndOrigin[0] = -999999.9;
+        hitData.rndOrigin[1] = -999999.9;
+        hitData.rndDirection[0] = -999999.9;
+        hitData.rndDirection[1] = -999999.9;
 
         const RN_T *randFloat = optixLaunchParams.randomNumbers;
         unsigned int randInd = optixLaunchParams.simConstants.nbRandNumbersPerThread * (bufferIndex);
@@ -525,6 +535,7 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
 /*#ifdef DEBUG
         printf("[%u] generating direction\n", bufferIndex);
 #endif*/
+
         rayOrigin = getNewOrigin(hitData, rayGenData, facIndex, randFloat, randInd, randOffset);
         rayDir = getNewDirection(hitData, rayGenData->poly[facIndex], randFloat, randInd, randOffset);
 
@@ -553,12 +564,11 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
     {
         //TODO: use thrust::random or curand
 
-        const uint2 launchIndex = make_uint2(optixGetLaunchIndex());
-        const unsigned int bufferIndex = launchIndex.x + launchIndex.y * optixLaunchParams.simConstants.size.x;
+        const unsigned int bufferIndex = getWorkIndex();
 
 #ifdef BOUND_CHECK
         if(bufferIndex < 0 || bufferIndex >= optixLaunchParams.simConstants.nbRandNumbersPerThread * optixLaunchParams.simConstants.size.x * optixLaunchParams.simConstants.size.y){
-            printf("bufferIndex %u is out of bounds\n", bufferIndex);
+            printf("bufferIndex %u > %u is out of bounds\n", bufferIndex,optixLaunchParams.simConstants.nbRandNumbersPerThread * optixLaunchParams.simConstants.size.x * optixLaunchParams.simConstants.size.y);
         }
 #endif
         float3 rayOrigin;
@@ -662,7 +672,12 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
 
         int hi_vel = __double2hiint(hitData.velocity);
         int lo_vel = __double2loint(hitData.velocity);
+        if(isnan(rayDir.x)) {
+            unsigned int randInd = optixLaunchParams.simConstants.nbRandNumbersPerThread*(bufferIndex);
+            unsigned int randOffset = optixLaunchParams.perThreadData.randBufferOffset[bufferIndex];
 
+            DEBUG_PRINT("[%d] ray dir NaN -> %d / %d + %d\n",bufferIndex,hitData.inSystem, randInd, randOffset);
+        }
         optixTrace(optixLaunchParams.traversable,
                rayOrigin,
                rayDir,

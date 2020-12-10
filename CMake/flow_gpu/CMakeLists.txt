@@ -67,6 +67,11 @@ endif(NOT MSVC)
 
 #find_library(PROTOBUF_LIBRARY bzip2 HINTS ${LINK_DIR_2})
 
+get_directory_property( DirDefs DIRECTORY ${CMAKE_SOURCE_DIR} COMPILE_DEFINITIONS )
+
+foreach( d ${DirDefs} )
+message( STATUS "Found Define: " ${d} )
+endforeach()
 
 #message(${EXECUTABLE_OUTPUT_PATH})
 
@@ -106,6 +111,7 @@ include_directories(SYSTEM ${OPTIX_DIR})
 # Prefix the shaders with the full path name to allow stepping through errors with F8.
 set( SHADERS
         # Core shaders.
+        ${CUDA_DIR_1}/Exception.cu
         ${CUDA_DIR_1}/Geometry.cu
         ${CUDA_DIR_1}/TraceProcessing.cu
         ${CUDA_DIR_1}/TraceProcessing_polygon.cu

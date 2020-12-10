@@ -307,7 +307,7 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 			}
 		}
 	}
-	catch (std::bad_alloc) {
+	catch (std::bad_alloc&) {
 		Clear();
 		throw Error("Couldn't reserve memory for the facets");
 	}
@@ -315,7 +315,7 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 		throw Error("Unspecified Error while building pipe");
 	}
 
-#ifdef GPUCOMPABILITY
+/*#ifdef GPUCOMPABILITY
     // Normalize to distance [0,1]
     Vector3d vecMin(std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max());
     Vector3d vecMax(std::numeric_limits<double>::min(),std::numeric_limits<double>::min(),std::numeric_limits<double>::min());
@@ -350,7 +350,7 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
         vertices3[v].y = (vertices3[v].y - cordMin) * normFactor + rangeMin;
         vertices3[v].z = (vertices3[v].z - cordMin) * normFactor + rangeMin;
     }
-#endif
+#endif*/
 	InitializeGeometry();
 	//isLoaded = true; //InitializeGeometry() sets to true
 

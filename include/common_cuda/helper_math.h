@@ -1269,6 +1269,12 @@ inline __device__ __host__ float clamp(float f, float a, float b)
 {
     return fmaxf(a, fminf(f, b));
 }
+
+inline __device__ __host__ double clamp(double f, double a, double b)
+{
+    return fmax(a, fmin(f, b));
+}
+
 inline __device__ __host__ int clamp(int f, int a, int b)
 {
     return max(a, min(f, b));
@@ -1425,7 +1431,18 @@ inline __host__ __device__ float length(float4 v)
 {
     return sqrtf(dot(v, v));
 }
-
+inline __host__ __device__ double length(double2 v)
+{
+    return sqrtf(dot(v, v));
+}
+inline __host__ __device__ double length(double3 v)
+{
+    return sqrtf(dot(v, v));
+}
+inline __host__ __device__ double length(double4 v)
+{
+    return sqrtf(dot(v, v));
+}
 ////////////////////////////////////////////////////////////////////////////////
 // normalize
 ////////////////////////////////////////////////////////////////////////////////
@@ -1582,6 +1599,27 @@ inline __device__ __host__ float4 smoothstep(float4 a, float4 b, float4 x)
 inline __device__ __host__ double3 make_double3(float3 rhs)
 {
     return make_double3(rhs.x,rhs.y,rhs.z);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// cosine similarity
+////////////////////////////////////////////////////////////////////////////////
+inline __host__ __device__ float cosine_sim(float3 a, float3 b)
+{
+    float numerator = a.x*b.x + a.y*b.y + a.z*b.z;
+    float denominator = length(a) * length(b);
+
+    if(denominator < 1e-6) return 1.0f;
+    return numerator / denominator;
+}
+
+inline __host__ __device__ double cosine_sim(double3 a, double3 b)
+{
+    double numerator = a.x*b.x + a.y*b.y + a.z*b.z;
+    double denominator = length(a) * length(b);
+
+    if(denominator < 1e-8) return 1.0;
+    return numerator / denominator;
 }
 
 #if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 600

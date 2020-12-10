@@ -74,6 +74,7 @@ namespace flowgpu {
     struct PolygonRayGenData {
         float3 *vertex;
         float2 *vertex2;
+        double2 *vertex2x64;
         uint32_t *index;
         flowgpu::Polygon *poly;
 
@@ -92,6 +93,7 @@ namespace flowgpu {
     struct PolygonMeshSBTData {
         float3 *vertex;
         float2 *vertex2;
+        double2 *vertex2x64;
         uint32_t *index;
         flowgpu::Polygon *poly;
     };

@@ -14,9 +14,14 @@
 
 #define MAX_DEPTH 0 // 0=no recursion
 #define SCENE_EPSILON 1.e-6f // 0=no recursion
-#define NB_RAND 8 // for triangle, make it a factor of 8
 
-#define NB_INPOLYCHECKS 0 //0=always use middle point
+#define NB_INPOLYCHECKS 5u //0=always use middle point
+// for triangle, make it a factor of 8
+#ifdef WITHTRIANGLES
+#define NB_RAND 8u
+#else
+#define NB_RAND (8u + NB_INPOLYCHECKS*2u)
+#endif
 
 #ifdef DEBUGCOUNT
 //#define NCOUNTBINS 100

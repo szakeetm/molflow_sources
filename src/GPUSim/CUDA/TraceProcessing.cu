@@ -689,8 +689,8 @@ namespace flowgpu {
         const float3 ray_dir  = optixGetWorldRayDirection();
         const float  ray_t    = optixGetRayTmax();
 
-        const uint2 launchIndex = make_uint2(optixGetLaunchIndex());
-        const unsigned int bufferIndex = launchIndex.x + launchIndex.y * optixLaunchParams.simConstants.size.x;
+        //const uint2 launchIndex = make_uint2(optixGetLaunchIndex());
+        const unsigned int bufferIndex = getWorkIndex();
 
 #ifdef DEBUGMISS
         const unsigned int missIndex = bufferIndex*NMISSES;
@@ -911,8 +911,8 @@ if(prd.inSystem == 4)
         const float3 ray_dir  = optixGetWorldRayDirection();
         const float  ray_t    = optixGetRayTmax();
 
-        const uint2 launchIndex = make_uint2(optixGetLaunchIndex());
-        const unsigned int bufferIndex = launchIndex.x + launchIndex.y * optixLaunchParams.simConstants.size.x;
+        //const uint2 launchIndex = make_uint2(optixGetLaunchIndex());
+        const unsigned int bufferIndex = getWorkIndex();
 
         /*#ifdef DEBUG
             printf("[%u] transparent hit detected\n", bufferIndex);
@@ -1097,19 +1097,19 @@ if(prd.inSystem == 4)
 
 
 #if not defined(GPUNBOUNCE)
-        printf("--------------------(%d) miss[%d -> %d -> %d][%d] "
+        DEBUG_PRINT("--------------------(%d) miss[%d -> %d -> %d][%d] "
                "(%12.10f , %12.10f , %12.10f) --> (%12.10f , %12.10f , %12.10f) = %e \n",
                prd.inSystem, fbIndex, prd.hitFacetId, sbtData.poly[prd.hitFacetId].parentIndex, missIndex,
                ray_orig.x, ray_orig.y , ray_orig.z , ray_dir.x, ray_dir.y , ray_dir.z, ray_t);
 #else
-        printf("--------------------(%d , %d) miss[%d -> %d -> %d][%d] "
+        DEBUG_PRINT("--------------------(%d , %d) miss[%d -> %d -> %d][%d] "
                "(%12.10f , %12.10f , %12.10f) --> (%12.10f , %12.10f , %12.10f) = %e \n",
                prd.inSystem, prd.nbBounces, fbIndex, prd.hitFacetId, sbtData.poly[prd.hitFacetId].parentIndex, missIndex,
                ray_orig.x, ray_orig.y , ray_orig.z , ray_dir.x, ray_dir.y , ray_dir.z, ray_t);
 #endif
 
         for(int i=missIndex+1; i <= missIndex+optixLaunchParams.perThreadData.missBuffer[missIndex];i++){
-            printf("-------------------- miss[%d -> %d -> %d] at %d\n",
+            DEBUG_PRINT("-------------------- miss[%d -> %d -> %d] at %d\n",
                     blockDim.x * blockIdx.x + threadIdx.x,
                     missIndex,
                     optixLaunchParams.perThreadData.missBuffer[missIndex],
@@ -1138,11 +1138,11 @@ optixLaunchParams.perThreadData.currentMoleculeData[fbIndex].postHitDir = prd.po
 
 
 #if not defined(GPUNBOUNCE)
-        printf("--------------------(%d) miss[%d -> %d] (%12.10f , %12.10f , %12.10f) --> (%12.10f , %12.10f , %12.10f) = %e \n",
+            DEBUG_PRINT("--------------------(%d) miss[%d -> %d] (%12.10f , %12.10f , %12.10f) --> (%12.10f , %12.10f , %12.10f) = %e \n",
                prd.inSystem, fbIndex, prd.hitFacetId,
                ray_orig.x, ray_orig.y , ray_orig.z , ray_dir.x, ray_dir.y , ray_dir.z, ray_t);
 #else
-        printf("--------------------(%d , %d) miss[%d -> %d] (%12.10f , %12.10f , %12.10f) --> (%12.10f , %12.10f , %12.10f) = %e \n",
+            DEBUG_PRINT("--------------------(%d , %d) miss[%d -> %d] (%12.10f , %12.10f , %12.10f) --> (%12.10f , %12.10f , %12.10f) = %e \n",
                prd.inSystem, prd.nbBounces, fbIndex, prd.hitFacetId,
                ray_orig.x, ray_orig.y , ray_orig.z , ray_dir.x, ray_dir.y , ray_dir.z, ray_t);
 #endif

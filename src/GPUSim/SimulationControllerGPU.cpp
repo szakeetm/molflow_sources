@@ -79,7 +79,7 @@ uint64_t SimulationControllerGPU::RunSimulation() {
     try {
         // for testing only generate and upload random numbers once
         // generate new numbers whenever necessary, recursion = TraceProcessing only, poly checks only for ray generation with polygons
-        if(runCount%(NB_RAND/(8+MAX_DEPTH*2+NB_INPOLYCHECKS*2))==0){
+        if(1){//if(runCount%(NB_RAND/(8+MAX_DEPTH*2+NB_INPOLYCHECKS*2))==0){
 #ifdef DEBUG
             //std::cout << "#flowgpu: generating random numbers at run #" << runCount << std::endl;
 #endif
@@ -228,12 +228,34 @@ void SimulationControllerGPU::IncreaseGlobalCounters(HostData* tempData){
     //textures
     if(!tempData->texels.empty()) {
         for (auto&[id, texels] : globalCounter.textures) {
+            // First check triangles
             for (auto &mesh : model->triangle_meshes) {
                 int parentFacetId = -1;
                 for (auto &facet : mesh->poly) {
                     if(parentFacetId == facet.parentIndex) break;
                     if ((facet.texProps.textureFlags) && (id == facet.parentIndex)) {
                         parentFacetId = id;
+                        unsigned int width = model->facetTex[facet.texProps.textureOffset].texWidth;
+                        unsigned int height = model->facetTex[facet.texProps.textureOffset].texHeight;
+                        for (unsigned int h = 0; h < height; ++h) {
+                            for (unsigned int w = 0; w < width; ++w) {
+                                unsigned int index_glob =
+                                        w + h * model->facetTex[facet.texProps.textureOffset].texWidth;
+                                unsigned int index_tmp =
+                                        index_glob + model->facetTex[facet.texProps.textureOffset].texelOffset;
+
+                                texels[index_glob].countEquiv += tempData->texels[index_tmp].countEquiv;
+                                texels[index_glob].sum_v_ort_per_area += tempData->texels[index_tmp].sum_v_ort_per_area;
+                                texels[index_glob].sum_1_per_ort_velocity += tempData->texels[index_tmp].sum_1_per_ort_velocity;
+                            }
+                        }
+                    }
+                }
+            }
+            // Next check polygon
+            for (auto &mesh : model->poly_meshes) {
+                for (auto &facet : mesh->poly) {
+                    if ((facet.texProps.textureFlags)) {
                         unsigned int width = model->facetTex[facet.texProps.textureOffset].texWidth;
                         unsigned int height = model->facetTex[facet.texProps.textureOffset].texHeight;
                         for (unsigned int h = 0; h < height; ++h) {
@@ -263,6 +285,21 @@ void SimulationControllerGPU::IncreaseGlobalCounters(HostData* tempData){
                     if(parentFacetId == facet.parentIndex) break;
                     if ((facet.profProps.profileType != flowgpu::PROFILE_FLAGS::noProfile) && (id == facet.parentIndex)) {
                         parentFacetId = id;
+                        for (unsigned int s = 0; s < PROFILE_SIZE; ++s) {
+                            unsigned int index_tmp = s + facet.profProps.profileOffset;
+
+                            profiles[s].countEquiv += tempData->profileSlices[index_tmp].countEquiv;
+                            profiles[s].sum_v_ort_per_area += tempData->profileSlices[index_tmp].sum_v_ort_per_area;
+                            profiles[s].sum_1_per_ort_velocity += tempData->profileSlices[index_tmp].sum_1_per_ort_velocity;
+
+                        }
+                    }
+                }
+            }
+
+            for (auto &mesh : model->poly_meshes) {
+                for (auto &facet : mesh->poly) {
+                    if ((facet.profProps.profileType != flowgpu::PROFILE_FLAGS::noProfile)) {
                         for (unsigned int s = 0; s < PROFILE_SIZE; ++s) {
                             unsigned int index_tmp = s + facet.profProps.profileOffset;
 
@@ -307,6 +344,29 @@ void SimulationControllerGPU::Resize(){
 
 
     for(auto& mesh : model->triangle_meshes) {
+        int lastTexture = -1;
+        int lastProfile = -1;
+        for (auto &facet : mesh->poly) {
+
+            // has texture?
+            if ((facet.texProps.textureFlags) &&
+                (lastTexture < (int) facet.parentIndex)) { // prevent duplicates
+                unsigned int width = model->facetTex[facet.texProps.textureOffset].texWidth;
+                unsigned int height = model->facetTex[facet.texProps.textureOffset].texHeight;
+                std::vector<Texel64> texels(width*height);
+                globalCounter.textures.insert(std::pair<uint32_t,std::vector<Texel64>>(facet.parentIndex,std::move(texels)));
+            }
+
+            // has profile?
+            if ((facet.profProps.profileType != flowgpu::PROFILE_FLAGS::noProfile) &&
+                (lastProfile < (int) facet.parentIndex)) {
+                std::vector<Texel64> texels(PROFILE_SIZE);
+                globalCounter.profiles.insert(std::pair<uint32_t,std::vector<Texel64>>(facet.parentIndex,std::move(texels)));
+            }
+        }
+    }
+
+    for(auto& mesh : model->poly_meshes) {
         int lastTexture = -1;
         int lastProfile = -1;
         for (auto &facet : mesh->poly) {
@@ -493,10 +553,10 @@ void SimulationControllerGPU::PrintTotalCounters()
         GLOB_COUNT::total_absd += globalCounter.facetHitCounters[i].nbAbsEquiv; // let misses count as 0 (-1+1)
     }
 
-    std::cout << " total hits >>> "<< GLOB_COUNT::total_counter<<std::endl;
-    std::cout << " total  des >>> "<< GLOB_COUNT::total_des<<std::endl;
-    std::cout << " total  abs >>> "<< static_cast<unsigned long long int>(GLOB_COUNT::total_absd) <<std::endl;
-    std::cout << " total miss >>> "<< *globalCounter.leakCounter.data()<< " -- miss/hit ratio: "<<static_cast<double>(*globalCounter.leakCounter.data()) / GLOB_COUNT::total_counter <<std::endl;
+    std::cout << " total hits >>> "<< GLOB_COUNT::total_counter;
+    std::cout << " /\\ total  des >>> "<< GLOB_COUNT::total_des;
+    std::cout << " /\\ total  abs >>> "<< static_cast<unsigned long long int>(GLOB_COUNT::total_absd);
+    std::cout << " /\\ total miss >>> "<< *globalCounter.leakCounter.data()<< " -- miss/hit ratio: "<<static_cast<double>(*globalCounter.leakCounter.data()) / GLOB_COUNT::total_counter <<std::endl;
 }
 
 /*! download the rendered color buffer and return the total amount of hits (= followed rays) */

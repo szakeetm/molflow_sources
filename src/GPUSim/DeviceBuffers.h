@@ -12,6 +12,7 @@ namespace flowgpu {
         CUDABuffer raygenRecordsBuffer;
         CUDABuffer missRecordsBuffer;
         CUDABuffer hitgroupRecordsBuffer;
+        CUDABuffer exceptionRecordsBuffer;
     };
 
 
@@ -51,6 +52,7 @@ namespace flowgpu {
         std::vector<CUDABuffer> aabbBuffer;
         std::vector<CUDABuffer> vertexBuffer;
         std::vector<CUDABuffer> vertex2Buffer;
+        std::vector<CUDABuffer> vertex2x64Buffer;
         std::vector<CUDABuffer> indexBuffer;
         std::vector<CUDABuffer> sbtIndexBuffer;
         std::vector<CUDABuffer> polyBuffer;

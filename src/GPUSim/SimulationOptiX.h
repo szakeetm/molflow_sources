@@ -53,6 +53,7 @@ namespace flowgpu {
             OptixModule                 geometryModule        = 0;
             OptixModule                 rayModule             = 0;
             OptixModule                 traceModule           = 0;
+            OptixModule                 exceptionModule       = 0;
         } modules;
 
         OptixModuleCompileOptions   moduleCompileOptions;
@@ -62,6 +63,7 @@ namespace flowgpu {
         OptixProgramGroup           raygenPG            = 0;
         OptixProgramGroup           missPG              = 0;
         std::vector<OptixProgramGroup>           hitgroupPG;
+        OptixProgramGroup           exceptionPG         = 0;
 
 
         /*!  and the SBT built around them */
@@ -142,6 +144,8 @@ namespace flowgpu {
 
         /*! does all setup for the hitgroup program(s) we are going to use */
         void createHitgroupPrograms(std::vector<OptixProgramGroup> &programGroups);
+
+        void createExceptionPrograms(std::vector<OptixProgramGroup> &programGroups);
 
         /*! assembles the full pipeline of all programs */
         void createPipeline(std::vector<OptixProgramGroup> &programGroups);

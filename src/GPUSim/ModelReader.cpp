@@ -51,6 +51,13 @@ inline void vector3d_to_float3(float3 &t, const Vector3d &o) {
     return;
 }
 
+inline void vector3d_to_double3(double3 &t, const Vector3d &o) {
+    t.x = o.x;
+    t.y = o.y;
+    t.z = o.z;
+
+    return;
+}
 
 /*! \namespace flowgeom - Molflow Geometry code */
 namespace flowgpu {
@@ -82,16 +89,16 @@ namespace flowgpu {
 #else
         model->poly_meshes.push_back(new flowgpu::PolygonMesh());
         archive(
-                cereal::make_nvp("poly", model->poly_meshes[0]->poly) ,
-                cereal::make_nvp("facetProbabilities", model->poly_meshes[0]->facetProbabilities) ,
-                cereal::make_nvp("cdfs", model->poly_meshes[0]->cdfs) ,
-                cereal::make_nvp("vertices2d", model->poly_meshes[0]->vertices2d) ,
-                cereal::make_nvp("vertices3d", model->poly_meshes[0]->vertices3d) ,
-                cereal::make_nvp("indices", model->poly_meshes[0]->indices) ,
-                cereal::make_nvp("nbFacets", model->poly_meshes[0]->nbFacets) ,
-                cereal::make_nvp("nbVertices", model->poly_meshes[0]->nbVertices) ,
-                cereal::make_nvp("nbFacetsTotal", model->nbFacets_total) ,
-                cereal::make_nvp("nbVerticesTotal", model->nbVertices_total) ,
+                cereal::make_nvp("poly", model->poly_meshes[0]->poly),
+                cereal::make_nvp("facetProbabilities", model->poly_meshes[0]->facetProbabilities),
+                cereal::make_nvp("cdfs", model->poly_meshes[0]->cdfs),
+                cereal::make_nvp("vertices2d", model->poly_meshes[0]->vertices2d),
+                cereal::make_nvp("vertices3d", model->poly_meshes[0]->vertices3d),
+                cereal::make_nvp("indices", model->poly_meshes[0]->indices),
+                cereal::make_nvp("nbFacets", model->poly_meshes[0]->nbFacets),
+                cereal::make_nvp("nbVertices", model->poly_meshes[0]->nbVertices),
+                cereal::make_nvp("nbFacetsTotal", model->nbFacets_total),
+                cereal::make_nvp("nbVerticesTotal", model->nbVertices_total),
                 cereal::make_nvp("useMaxwellDistribution", model->parametersGlobal.useMaxwellDistribution)
         );
 #endif
@@ -139,6 +146,15 @@ namespace flowgpu {
             vector3d_to_float3(polygon.nU, temp.facetProperties.nU);
             vector3d_to_float3(polygon.nV, temp.facetProperties.nV);
             vector3d_to_float3(polygon.N, temp.facetProperties.N);
+
+            vector3d_to_double3(polygon.Ox64, temp.facetProperties.O);
+            vector3d_to_double3(polygon.Ux64, temp.facetProperties.U);
+            vector3d_to_double3(polygon.Vx64, temp.facetProperties.V);
+            vector3d_to_double3(polygon.Nuvx64, temp.facetProperties.Nuv);
+            vector3d_to_double3(polygon.nUx64, temp.facetProperties.U);
+            vector3d_to_double3(polygon.nVx64, temp.facetProperties.V);
+            vector3d_to_double3(polygon.Nx64, temp.facetProperties.N);
+
             /*polygon.O = temp.facetProperties.O;
             polygon.U = temp.facetProperties.U;
             polygon.V = temp.facetProperties.V;
@@ -148,13 +164,35 @@ namespace flowgpu {
             polygon.N = temp.facetProperties.N;*/
 
             polygon.parentIndex = i;
+            vertCount += polygon.nbVertices;
 
             convertedPolygons.push_back(std::move(polygon));
 
-            vertCount += polygon.nbVertices;
         }
 
     }
+
+    //! Calculate outgassing values in relation to (tri_area / poly_area)
+    void CalculateRelativePolygonOutgassing(const std::vector<TempFacet> &facets, flowgpu::PolygonMesh *polyMesh) {
+        float fullOutgassing = 0;
+        int facetIndex = 0;
+        for (auto &facet : polyMesh->poly) {
+
+            // outgassing of a triangle is only a percentage of the original polygon's
+
+            float fullOutgassing_inc = fullOutgassing +
+                                       (facets[facet.parentIndex].facetProperties.outgassing) /
+                                       (1.38E-23 * facets[facet.parentIndex].facetProperties.temperature);
+            polyMesh->facetProbabilities.push_back(make_float2(fullOutgassing, fullOutgassing_inc));
+            fullOutgassing = fullOutgassing_inc;
+
+            ++facetIndex;
+        }
+        for (auto &facetProb : polyMesh->facetProbabilities) {
+            facetProb.x /= fullOutgassing; // normalize to [0,1]
+            facetProb.y /= fullOutgassing; // normalize to [0,1]
+        }
+    };
 
     //! Calculate outgassing values in relation to (tri_area / poly_area)
     void CalculateRelativeTriangleOutgassing(const std::vector<TempFacet> &facets, flowgpu::TriangleMesh *triMesh) {
@@ -265,6 +303,8 @@ namespace flowgpu {
             }
             for (auto vert : facet.vertices2) {
                 polyMesh->vertices2d.push_back(make_float2(vert.u, vert.v));
+                polyMesh->vertices2d64.push_back(make_double2(vert.u, vert.v));
+
             }
         }
         polyMesh->vertices3d = vertices3d;
@@ -272,6 +312,7 @@ namespace flowgpu {
         polyMesh->nbFacets = model->geomProperties.nbFacet;
         polyMesh->nbVertices = model->geomProperties.nbVertex;
 
+#ifdef WITHTRIANGLES
         // Now create Triangle Mesh
         flowgpu::TriangleMesh *triMesh = new flowgpu::TriangleMesh();
         try {
@@ -287,10 +328,13 @@ namespace flowgpu {
 
         triMesh->cdfs.push_back(0);
 
-        if (!polyMesh->poly.empty())
-            model->poly_meshes.push_back(polyMesh);
         model->triangle_meshes.push_back(triMesh);
+#endif
 
+        if (!polyMesh->poly.empty()) {
+            polyMesh->cdfs.push_back(0);
+            model->poly_meshes.push_back(polyMesh);
+        }
         for (auto &polyMesh : model->poly_meshes) {
             model->nbFacets_total += polyMesh->nbFacets;
             model->nbVertices_total += polyMesh->nbVertices;
@@ -306,9 +350,12 @@ namespace flowgpu {
             model->tri_facetOffset.emplace_back(facet.facetProperties.hitOffset);
         }
 
+#ifdef WITHTRIANGLES
         //--- Calculate outgassing values in relation to (tri_area / poly_area)
         CalculateRelativeTriangleOutgassing(facets, triMesh);
-
+#else
+        CalculateRelativePolygonOutgassing(facets, polyMesh);
+#endif
         for (auto &mesh : model->poly_meshes) {
             std::vector<flowgpu::FacetType> sbtIndices; // Facet Type
             for (auto &polygon : mesh->poly) {
@@ -546,13 +593,15 @@ namespace flowgpu {
         std::cout << "#ModelReader: #Facets: " << model->geomProperties.nbFacet << std::endl;
         size_t nbTexelCount = 0;
         for (int facInd = 0; facInd < facets.size(); ++facInd) {
-            if ((facets[facInd].texelInc.empty() && facets[facInd].facetProperties.isTextured) || (!facets[facInd].texelInc.empty() && !facets[facInd].facetProperties.isTextured)) {
+            if ((facets[facInd].texelInc.empty() && facets[facInd].facetProperties.isTextured) ||
+                (!facets[facInd].texelInc.empty() && !facets[facInd].facetProperties.isTextured)) {
                 std::cerr << "#ModelReader: [ERROR] Texture flag and texel increments don't align! " << std::endl;
                 _sleep(10000);
                 exit(0);
             }
             if (facets[facInd].facetProperties.isTextured) {
-                std::cout << "#ModelReader: Facet#" << facInd << " #Texels: " << facets[facInd].texelInc.size() << std::endl;
+                std::cout << "#ModelReader: Facet#" << facInd << " #Texels: " << facets[facInd].texelInc.size()
+                          << std::endl;
                 nbTexelCount += facets[facInd].texelInc.size();
             }
         }
@@ -566,7 +615,8 @@ namespace flowgpu {
                     ++nbProf;
                 if (tri.texProps.textureFlags != TEXTURE_FLAGS::noTexture) {
                     ++nbTex;
-                    std::cout << "#ModelReader: Tri#" << triCount++<< "["<<tri.parentIndex << "] #TexOffset: " << tri.texProps.textureOffset << std::endl;
+                    std::cout << "#ModelReader: Tri#" << triCount++ << "[" << tri.parentIndex << "] #TexOffset: "
+                              << tri.texProps.textureOffset << std::endl;
                 }
             }
             std::cout << "#ModelReader: #ProfiledTris " << nbProf << std::endl;
@@ -575,8 +625,9 @@ namespace flowgpu {
 
         std::cout << "#ModelReader: #TextureCells: " << model->textures.size() << std::endl;
 
-        if(nbTexelCount != model->textures.size()){
-            std::cerr << "#ModelReader: [ERROR] Texture count out of sync: " << nbTexelCount << " / " << model->textures.size() << std::endl;
+        if (nbTexelCount != model->textures.size()) {
+            std::cerr << "#ModelReader: [ERROR] Texture count out of sync: " << nbTexelCount << " / "
+                      << model->textures.size() << std::endl;
             _sleep(10000);
             exit(0);
         }

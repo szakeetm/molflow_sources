@@ -72,7 +72,7 @@ namespace flowgpu {
         size_t    superDest;      // Super structure destination index (Indexed from 1, 0=>current)
         int	 teleportDest;   // Teleport destination facet id (for periodic boundary condition) (Indexed from 1, 0=>none, -1=>teleport to where it came from)
 
-        bool   countAbs;       // Count absoprtion (MC texture)
+        bool   countAbs;       // Count absorption (MC texture)
         bool   countRefl;      // Count reflection (MC texture)
         bool   countTrans;     // Count transparent (MC texture)
         bool   countDirection;
@@ -281,13 +281,8 @@ namespace flowgpu {
     };
 
     struct DesorpProperties{
-        DesorpProperties() : desorbType(0), cosineExponent(-1){}
-        DesorpProperties& operator=(const DesorpProperties& o)=default;/*{
-            this->desorbType = o.desorbType;
-            this->cosineExponent = o.cosineExponent;
-
-            return *this;
-        }*/
+        DesorpProperties() : desorbType(0u), cosineExponent(-1.0f){}
+        DesorpProperties& operator=(const DesorpProperties& o)= default;
 
         uint8_t desorbType; // type of desorption
         float cosineExponent; // for Cosine^N
@@ -339,9 +334,19 @@ namespace flowgpu {
                 this->U = o.U;
                 this->V = o.V;
                 this->Nuv = o.Nuv;
+
+                this->Ox64 = o.Ox64;
+                this->Ux64 = o.Ux64;
+                this->Vx64 = o.Vx64;
+                this->Nuvx64 = o.Nuvx64;
+
                 this->nU = o.nU;
                 this->nV = o.nV;
                 this->N = o.N;
+                this->nUx64 = o.nUx64;
+                this->nVx64 = o.nVx64;
+                this->Nx64 = o.Nx64;
+
                 this->parentIndex = o.parentIndex;
                 this->texProps = o.texProps;
                 this->profProps = o.profProps;
@@ -354,9 +359,19 @@ namespace flowgpu {
                 o.U = float3();
                 o.V = float3();
                 o.Nuv = float3();
+
+                o.Ox64 = double3();
+                o.Ux64 = double3();
+                o.Vx64 = double3();
+                o.Nuvx64 = double3();
+
                 o.nU = float3();
                 o.nV = float3();
                 o.N = float3();
+                o.nUx64 = double3();
+                o.nVx64 = double3();
+                o.Nx64 = double3();
+
                 o.parentIndex = std::numeric_limits<unsigned int>::max();
                 o.texProps = TextureProperties();
                 o.profProps = ProfileProperties();
@@ -397,6 +412,11 @@ namespace flowgpu {
             this->nU = o.nU;
             this->nV = o.nV;
 
+            this->Ox64 = o.Ox64;
+            this->Ux64 = o.Ux64;
+            this->Vx64 = o.Vx64;
+            this->Nuvx64 = o.Nuvx64;
+
             this->parentIndex = o.parentIndex;
             this->texProps = o.texProps;
             this->profProps = o.profProps;
@@ -423,10 +443,19 @@ namespace flowgpu {
         float3 V;
         float3 Nuv;
 
+        double3 Ox64;
+        double3 Ux64;
+        double3 Vx64;
+        double3 Nuvx64;
+
         // normalized facet vectors
         float3 nU;
         float3 nV;
         float3 N;
+
+        double3 nUx64;
+        double3 nVx64;
+        double3 Nx64;
 
         template<class Archive>
         void serialize(Archive & archive)

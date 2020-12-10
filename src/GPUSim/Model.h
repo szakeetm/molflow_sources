@@ -57,6 +57,8 @@ namespace flowgpu {
 
         std::vector<uint32_t> indices;
         std::vector<float2> vertices2d;
+        std::vector<double2> vertices2d64;
+
     };
 
     struct MolflowGlobal{

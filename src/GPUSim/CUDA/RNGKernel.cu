@@ -10,7 +10,6 @@
 
 #include "RandomWrapper.h"
 #include "stdio.h"
-#define NB_RAND 10
 
 /*thrust::host_vector<int> random_vector(size_t N)
 {
