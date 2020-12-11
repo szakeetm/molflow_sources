@@ -51,11 +51,13 @@ namespace flowgpu {
     struct TriangleMeshSBTData {
         float3 *vertex;
         int3 *index;
+        float2* texcoord;
         flowgpu::Polygon *poly;
     };
 
     struct TriangleRayGenData {
         float3 *vertex;
+        double3 *vertex64;
         int3 *index;
         flowgpu::Polygon *poly;
 

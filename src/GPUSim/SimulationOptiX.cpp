@@ -374,6 +374,8 @@ namespace flowgpu {
         // All buffers that should be uploaded to device memory
         //memory.aabbBuffer.resize(model->triangle_meshes.size());
         tri_memory.vertexBuffer.resize(model->triangle_meshes.size());
+        tri_memory.texcoordBuffer.resize(model->triangle_meshes.size());
+
         //memory.vertex2Buffer.resize(model->triangle_meshes.size());
         tri_memory.indexBuffer.resize(model->triangle_meshes.size());
         tri_memory.sbtIndexBuffer.resize(model->triangle_meshes.size());
@@ -1010,6 +1012,8 @@ namespace flowgpu {
 
         for (int meshID = 0; meshID < (int) model->triangle_meshes.size(); meshID++) {
             TriangleMesh &mesh = *model->triangle_meshes[meshID];
+
+            tri_memory.texcoordBuffer[meshID].alloc_and_upload(mesh.texCoords);
             tri_memory.polyBuffer[meshID].alloc_and_upload(mesh.poly);
             tri_memory.cdfBuffer[meshID].alloc_and_upload(mesh.cdfs);
             tri_memory.facprobBuffer[meshID].alloc_and_upload(mesh.facetProbabilities);
@@ -1023,7 +1027,6 @@ namespace flowgpu {
             RaygenRecordTri rec;
             OPTIX_CHECK(optixSbtRecordPackHeader(state.raygenPG, &rec));
             rec.data.vertex = (float3 *) tri_memory.vertexBuffer[0].d_pointer();
-            rec.data.index = (int3 *) tri_memory.indexBuffer[0].d_pointer();
             rec.data.index = (int3 *) tri_memory.indexBuffer[0].d_pointer();
             rec.data.poly = (flowgpu::Polygon *) tri_memory.polyBuffer[0].d_pointer();
             rec.data.cdfs = (float *) tri_memory.cdfBuffer[0].d_pointer();
@@ -1048,6 +1051,8 @@ namespace flowgpu {
             rec.data.vertex = (float3 *) tri_memory.vertexBuffer[0].d_pointer();
             rec.data.index = (int3 *) tri_memory.indexBuffer[0].d_pointer();
             rec.data.poly = (flowgpu::Polygon *) tri_memory.polyBuffer[0].d_pointer();
+            //rec.data.texcoord = (float2 *) tri_memory.texcoordBuffer[0].d_pointer();
+
             //missRecords.push_back(rec);
             sbt_memory.missRecordsBuffer.alloc(sizeof(rec));
             sbt_memory.missRecordsBuffer.upload(&rec, 1);
@@ -1071,6 +1076,8 @@ namespace flowgpu {
             hitgroupRecords[FacetType::FACET_TYPE_SOLID].data.vertex = (float3 *) tri_memory.vertexBuffer[meshID].d_pointer();
             hitgroupRecords[FacetType::FACET_TYPE_SOLID].data.index = (int3 *) tri_memory.indexBuffer[meshID].d_pointer();
             hitgroupRecords[FacetType::FACET_TYPE_SOLID].data.poly = (flowgpu::Polygon *) tri_memory.polyBuffer[meshID].d_pointer();
+            hitgroupRecords[FacetType::FACET_TYPE_SOLID].data.texcoord =  (float2 *) tri_memory.texcoordBuffer[meshID].d_pointer();
+
             //hitgroupRecords.push_back(rec);
 
 #ifdef WITH_TRANS
@@ -1079,6 +1086,8 @@ namespace flowgpu {
             hitgroupRecords[FacetType::FACET_TYPE_TRANS].data.vertex = (float3 *) tri_memory.vertexBuffer[meshID].d_pointer();
             hitgroupRecords[FacetType::FACET_TYPE_TRANS].data.index = (int3 *) tri_memory.indexBuffer[meshID].d_pointer();
             hitgroupRecords[FacetType::FACET_TYPE_TRANS].data.poly = (flowgpu::Polygon *) tri_memory.polyBuffer[meshID].d_pointer();
+            hitgroupRecords[FacetType::FACET_TYPE_TRANS].data.texcoord =  (float2 *) tri_memory.texcoordBuffer[meshID].d_pointer();
+
             //hitgroupRecords.push_back(rec); // TODO: for now use the same data for all facet types
 #endif
         }
@@ -1524,6 +1533,7 @@ try{
 
         for (int meshID = 0; meshID < model->triangle_meshes.size(); meshID++) {
             tri_memory.vertexBuffer[meshID].free();
+            tri_memory.texcoordBuffer[meshID].free();
             tri_memory.indexBuffer[meshID].free();
             tri_memory.sbtIndexBuffer[meshID].free();
             tri_memory.polyBuffer[meshID].free();

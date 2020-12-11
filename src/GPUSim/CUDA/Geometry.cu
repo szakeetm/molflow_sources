@@ -437,7 +437,7 @@ namespace flowgpu {
         {
             MolPRD& hitData = optixLaunchParams.perThreadData.currentMoleculeData[fbIndex];
 #ifdef WITHTRIANGLES
-            const flowgpu::TriangleRayGenData* rayGenData = (flowgpu::riangleRayGenData*) optixGetSbtDataPointer();
+            const flowgpu::TriangleRayGenData* rayGenData = (flowgpu::TriangleRayGenData*) optixGetSbtDataPointer();
 #else
             const flowgpu::PolygonRayGenData* rayGenData = (flowgpu::PolygonRayGenData*) optixGetSbtDataPointer();
 #endif

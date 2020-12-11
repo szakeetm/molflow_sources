@@ -169,17 +169,18 @@ namespace flowgpu {
     static __forceinline__ __device__
     void RecordAbsorpTexture(const flowgpu::Polygon &poly, MolPRD &hitData, const float3& rayOrigin, const float3& rayDir){
 
-        const float2 hitLocation = getHitLocation(poly,rayOrigin);
+        const flowgpu::TriangleMeshSBTData &sbtData = *(const flowgpu::TriangleMeshSBTData*)optixGetSbtDataPointer();
+        const float2 hitLocation = getHitLocation(optixGetTriangleBarycentrics(), sbtData.texcoord, optixGetPrimitiveIndex() * 3);
 
         flowgpu::FacetTexture& facetTex = optixLaunchParams.sharedData.facetTextures[poly.texProps.textureOffset];
 
-        const unsigned int tu = (unsigned int)(__saturatef(hitLocation.x) * facetTex.texWidthD); // saturate for rounding errors that can result for values larger than 1.0
-        const unsigned int tv = (unsigned int)(__saturatef(hitLocation.y) * facetTex.texHeightD);
+        const auto tu = (unsigned int)(__saturatef(hitLocation.x) * facetTex.texWidthD); // saturate for rounding errors that can result for values larger than 1.0
+        const auto tv = (unsigned int)(__saturatef(hitLocation.y) * facetTex.texHeightD);
         unsigned int add = tu + tv * (facetTex.texWidth);
 
         //printf("Hit at %lf , %lf for tex %lf , %lf\n", hitLocation.x, hitLocation.y, facetTex.texWidthD, facetTex.texHeightD);
 #ifdef BOUND_CHECK
-        if(facetTex.texelOffset + add < 0 || facetTex.texelOffset + add >= optixLaunchParams.simConstants.nbTexel){
+        if(facetTex.texelOffset + add >= optixLaunchParams.simConstants.nbTexel){
             printf("[ABS] facetTex.texelOffset + add %u + %u>= %u is out of bounds [%u , %u] - [%d , %d] (%lf * %lf)x(%12.10lf * %12.10lf)\n", facetTex.texelOffset, add, optixLaunchParams.simConstants.nbTexel,tu,tv,facetTex.texWidth,facetTex.texHeight, hitLocation.x, facetTex.texWidthD, hitLocation.y, facetTex.texHeightD);}
 #endif
         flowgpu::Texel& tex = optixLaunchParams.sharedData.texels[facetTex.texelOffset + add];
@@ -210,17 +211,18 @@ namespace flowgpu {
     static __forceinline__ __device__
     unsigned int RecordBounceTexture(const flowgpu::Polygon& poly, MolPRD& hitData, const float3& rayOrigin, const float3& rayDir){
 
-        const float2 hitLocation = getHitLocation(poly,rayOrigin);
+        const flowgpu::TriangleMeshSBTData &sbtData = *(const flowgpu::TriangleMeshSBTData*)optixGetSbtDataPointer();
+        const float2 hitLocation = getHitLocation(optixGetTriangleBarycentrics(), sbtData.texcoord, optixGetPrimitiveIndex() * 3);
 
         flowgpu::FacetTexture& facetTex = optixLaunchParams.sharedData.facetTextures[poly.texProps.textureOffset];
 
-        const unsigned int tu = (unsigned int)(__saturatef(hitLocation.x) * facetTex.texWidthD); // saturate for rounding errors that can result for values larger than 1.0
-        const unsigned int tv = (unsigned int)(__saturatef(hitLocation.y) * facetTex.texHeightD);
+        const auto tu = (unsigned int)(__saturatef(hitLocation.x) * facetTex.texWidthD); // saturate for rounding errors that can result for values larger than 1.0
+        const auto tv = (unsigned int)(__saturatef(hitLocation.y) * facetTex.texHeightD);
         unsigned int add = tu + tv * (facetTex.texWidth);
 
         //printf("Pre Bounce Tex: %f = %f * %f * %f\n",ortVelocity,(optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f) ,hitData.velocity,fabsf(dot(rayDir, poly.N)));
 #ifdef BOUND_CHECK
-        if(facetTex.texelOffset + add < 0 || facetTex.texelOffset + add >= optixLaunchParams.simConstants.nbTexel){
+        if(facetTex.texelOffset + add >= optixLaunchParams.simConstants.nbTexel){
             printf("[HIT] facetTex.texelOffset + add %u + %u>= %u is out of bounds [%u , %u] - [%d , %d] (%lf * %lf)x(%12.10lf * %12.10lf)\n", facetTex.texelOffset, add, optixLaunchParams.simConstants.nbTexel,tu,tv,facetTex.texWidth,facetTex.texHeight, hitLocation.x, facetTex.texWidthD, hitLocation.y, facetTex.texHeightD);}
 #endif
         flowgpu::Texel& tex = optixLaunchParams.sharedData.texels[facetTex.texelOffset + add];
@@ -265,7 +267,8 @@ namespace flowgpu {
     static __forceinline__ __device__
     void RecordTransparentTexture(const flowgpu::Polygon& poly, MolPRD& hitData, const float3& rayOrigin, const float3& rayDir){
 
-        const float2 hitLocation = getHitLocation(poly,rayOrigin);
+        const flowgpu::TriangleMeshSBTData &sbtData = *(const flowgpu::TriangleMeshSBTData*)optixGetSbtDataPointer();
+        const float2 hitLocation = getHitLocation(optixGetTriangleBarycentrics(), sbtData.texcoord, optixGetPrimitiveIndex() * 3);
 
         flowgpu::FacetTexture& facetTex = optixLaunchParams.sharedData.facetTextures[poly.texProps.textureOffset];
 
@@ -275,7 +278,7 @@ namespace flowgpu {
         const unsigned int add = tu + tv * (facetTex.texWidth);
 
 #ifdef BOUND_CHECK
-        if(facetTex.texelOffset + add < 0 || facetTex.texelOffset + add >= optixLaunchParams.simConstants.nbTexel){
+        if(facetTex.texelOffset + add >= optixLaunchParams.simConstants.nbTexel){
             //float fixHitU = detU/__saturatef(det);
             //float fixHitV = detV/__saturatef(det);
             const unsigned int fixTU = (unsigned int)(__saturatef(hitLocation.x) * facetTex.texWidthD);
@@ -381,7 +384,8 @@ namespace flowgpu {
     static __forceinline__ __device__
     void RecordAbsorpProfile(const flowgpu::Polygon &poly, MolPRD &hitData, const float3& rayOrigin, const float3& rayDir){
 
-        const float2 hitLocation = getHitLocation(poly,rayOrigin);
+        const flowgpu::TriangleMeshSBTData &sbtData = *(const flowgpu::TriangleMeshSBTData*)optixGetSbtDataPointer();
+        const float2 hitLocation = getHitLocation(optixGetTriangleBarycentrics(), sbtData.texcoord, optixGetPrimitiveIndex() * 3);
 
         unsigned int add = 0;
         if(poly.profProps.profileType == flowgpu::PROFILE_FLAGS::profileU){
@@ -394,7 +398,7 @@ namespace flowgpu {
         //printf("Hit at %lf , %lf for tex %lf , %lf\n", hitLocation.x, hitLocation.y, facetTex.texWidthD, facetTex.texHeightD);
 
 #ifdef BOUND_CHECK
-        if(poly.profProps.profileOffset + add < 0 || poly.profProps.profileOffset + add >= optixLaunchParams.simConstants.nbProfSlices){
+        if(poly.profProps.profileOffset + add >= optixLaunchParams.simConstants.nbProfSlices){
             printf("[ABS] poly.profProps.profileOffset + add %u >= %u is out of bounds\n", poly.profProps.profileOffset + add, optixLaunchParams.simConstants.nbProfSlices);}
 #endif
         flowgpu::Texel& tex = optixLaunchParams.sharedData.profileSlices[poly.profProps.profileOffset + add];
@@ -424,11 +428,13 @@ namespace flowgpu {
     static __forceinline__ __device__
     unsigned int RecordBounceProfile(const flowgpu::Polygon& poly, MolPRD& hitData, const float3& rayOrigin, const float3& rayDir){
 
-        const float2 hitLocation = getHitLocation(poly,rayOrigin);
+        const flowgpu::TriangleMeshSBTData &sbtData = *(const flowgpu::TriangleMeshSBTData*)optixGetSbtDataPointer();
+        const float2 hitLocation = getHitLocation(optixGetTriangleBarycentrics(), sbtData.texcoord, optixGetPrimitiveIndex() * 3);
 
         unsigned int add = 0;
         if(poly.profProps.profileType == flowgpu::PROFILE_FLAGS::profileU){
             add = (unsigned int)(__saturatef(hitLocation.x) * PROFILE_SIZE);
+
         }
         else if(poly.profProps.profileType == flowgpu::PROFILE_FLAGS::profileV){
             add = (unsigned int)(__saturatef(hitLocation.y) * PROFILE_SIZE);
@@ -436,8 +442,9 @@ namespace flowgpu {
 
         //printf("Pre Bounce Tex: %f = %f * %f * %f\n",ortVelocity,(optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f) ,hitData.velocity,fabsf(dot(rayDir, poly.N)));
 #ifdef BOUND_CHECK
-        if(poly.profProps.profileOffset + add < 0 || poly.profProps.profileOffset + add >= optixLaunchParams.simConstants.nbProfSlices){
-            printf("[HIT] poly.profProps.profileOffset + add %u [%lf -> %lf] >= %u is out of bounds\n", poly.profProps.profileOffset + add, hitLocation.x, __saturatef(hitLocation.x), optixLaunchParams.simConstants.nbProfSlices);}
+        if(poly.profProps.profileOffset + add >= optixLaunchParams.simConstants.nbProfSlices){
+            printf("[HIT] poly.profProps.profileOffset + add %u [%lf -> %lf] >= %u is out of bounds\n", poly.profProps.profileOffset + add, hitLocation.x, __saturatef(hitLocation.x), optixLaunchParams.simConstants.nbProfSlices);
+        }
 #endif
         flowgpu::Texel& tex = optixLaunchParams.sharedData.profileSlices[poly.profProps.profileOffset + add];
 
@@ -499,7 +506,8 @@ namespace flowgpu {
     static __forceinline__ __device__
     unsigned int RecordTransparentProfile(const flowgpu::Polygon& poly, MolPRD& hitData, const float3& rayOrigin, const float3& rayDir){
 
-        const float2 hitLocation = getHitLocation(poly,rayOrigin);
+        const flowgpu::TriangleMeshSBTData &sbtData = *(const flowgpu::TriangleMeshSBTData*)optixGetSbtDataPointer();
+        const float2 hitLocation = getHitLocation(optixGetTriangleBarycentrics(), sbtData.texcoord, optixGetPrimitiveIndex() * 3);
 
         unsigned int add = 0;
         if(poly.profProps.profileType == flowgpu::PROFILE_FLAGS::profileU){
@@ -511,7 +519,7 @@ namespace flowgpu {
 
         //printf("Pre Bounce Tex: %f = %f * %f * %f\n",ortVelocity,(optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f) ,hitData.velocity,fabsf(dot(rayDir, poly.N)));
 #ifdef BOUND_CHECK
-        if(poly.profProps.profileOffset + add < 0 || poly.profProps.profileOffset + add >= optixLaunchParams.simConstants.nbProfSlices){
+        if(poly.profProps.profileOffset + add >= optixLaunchParams.simConstants.nbProfSlices){
             printf("[TRA] poly.profProps.profileOffset + add %u >= %u is out of bounds\n", poly.profProps.profileOffset + add, optixLaunchParams.simConstants.nbProfSlices);}
 #endif
         flowgpu::Texel& tex = optixLaunchParams.sharedData.profileSlices[poly.profProps.profileOffset + add];
@@ -541,7 +549,7 @@ namespace flowgpu {
     }
 
     static __forceinline__ __device__
-    void recordAbsorption(const unsigned int& counterIdx, const flowgpu::Polygon& poly, MolPRD& prd, const const float3& rayDir, const float3 rayOrigin)
+    void recordAbsorption(const unsigned int& counterIdx, const flowgpu::Polygon& poly, MolPRD& prd, const float3& rayDir, const float3 rayOrigin)
     {
 #ifdef HIT64
         const FLOAT_T velFactor = optixLaunchParams.simConstants.useMaxwell ? 1.0 : 1.1781;
@@ -557,7 +565,7 @@ namespace flowgpu {
 #endif
 
 #ifdef BOUND_CHECK
-        if(counterIdx < 0 || counterIdx >= optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS){
+        if(counterIdx >= optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS){
             printf("facIndex %u >= %u is out of bounds\n", counterIdx, optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS);
         }
 #endif
@@ -576,7 +584,7 @@ namespace flowgpu {
     }
 
     static __forceinline__ __device__
-    void recordBounce(const unsigned int& bufferIndex, const unsigned int& counterIdx, const flowgpu::Polygon& poly, MolPRD& prd, const const float3& rayDir, const float3 rayOrigin,
+    void recordBounce(const unsigned int& bufferIndex, const unsigned int& counterIdx, const flowgpu::Polygon& poly, MolPRD& prd, const float3& rayDir, const float3 rayOrigin,
                       const RN_T* randFloat, unsigned int& randInd, unsigned int& randOffset)
     {
         // TODO: Save somewhere as a shared constant instead of repetively evaluating
@@ -593,7 +601,7 @@ namespace flowgpu {
 #endif
 
 #ifdef BOUND_CHECK
-        if(counterIdx < 0 || counterIdx >= optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS){
+        if(counterIdx >= optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS){
             printf("facIndex %u >= %u is out of bounds\n", counterIdx, optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS);
         }
 #endif
@@ -1096,7 +1104,7 @@ if(prd.inSystem == 4)
         const TriangleMeshSBTData &sbtData = *(const TriangleMeshSBTData*)optixGetSbtDataPointer();
 
 
-#if not defined(GPUNBOUNCE)
+#if !defined(GPUNBOUNCE)
         DEBUG_PRINT("--------------------(%d) miss[%d -> %d -> %d][%d] "
                "(%12.10f , %12.10f , %12.10f) --> (%12.10f , %12.10f , %12.10f) = %e \n",
                prd.inSystem, fbIndex, prd.hitFacetId, sbtData.poly[prd.hitFacetId].parentIndex, missIndex,
@@ -1137,7 +1145,7 @@ optixLaunchParams.perThreadData.currentMoleculeData[fbIndex].postHitDir = prd.po
 
 
 
-#if not defined(GPUNBOUNCE)
+#if !defined(GPUNBOUNCE)
             DEBUG_PRINT("--------------------(%d) miss[%d -> %d] (%12.10f , %12.10f , %12.10f) --> (%12.10f , %12.10f , %12.10f) = %e \n",
                prd.inSystem, fbIndex, prd.hitFacetId,
                ray_orig.x, ray_orig.y , ray_orig.z , ray_dir.x, ray_dir.y , ray_dir.z, ray_t);

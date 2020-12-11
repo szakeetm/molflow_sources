@@ -10,7 +10,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInf
     option(DEBUG_BOUNDS "Enable bound checks for CUDA kernels" ON)
 endif()
 option(WITH_DESORPEXIT "Enable exit on desorption limit" ON)
-option(WITH_TRIANGLES "Enable calculations with triangles only" OFF)
+option(WITH_TRIANGLES "Enable calculations with triangles only" ON)
 option(WITH_TEXTURES "Enable textures" ON)
 option(WITH_PROFILES "Enable profiles" ON)
 option(WITH_TRANS "Enable transparent SBT" OFF)

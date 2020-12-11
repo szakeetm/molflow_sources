@@ -275,18 +275,8 @@ bool SimulationGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWOR
                                             texelIncrement*timeCorrection; //particle density without dCoef
                                     //Global autoscale
                                     for (int v = 0; v < 3; v++) {
-#if defined(DEBUG)
-                                        if(val[v] > gHits->texture_limits[v].max.all) {
-                                            printf("%d. GMax: %f < %f (%f / %f) [at: %u + %u] \n",v, texelIncrement,  5.0f * (model->facetTex[facet.texProps.textureOffset].texWidthD * model->facetTex[facet.texProps.textureOffset].texHeightD) / (length(facet.U) * length(facet.V)), (model->facetTex[facet.texProps.textureOffset].texWidthD * model->facetTex[facet.texProps.textureOffset].texHeightD) , (length(facet.U) * length(facet.V)), index_glob, facet.texProps.textureOffset);
-                                            printf("%d. GMax: f#%u [%u , %u]\n", v, facet.parentIndex, w, h);
-                                        }
-#endif
                                         gHits->texture_limits[v].max.all = std::max(val[v], gHits->texture_limits[v].max.all );
                                         if (val[v] > 0.0) {
-#if defined(DEBUG)
-                                            if(val[v] < gHits->texture_limits[v].min.all)
-                                                printf("%d. GMin: f#%u [%u , %u]\n", v, facet.parentIndex, w, h);
-#endif
                                             gHits->texture_limits[v].min.all = std::min(val[v],
                                                                                         gHits->texture_limits[v].min.all);
                                         }

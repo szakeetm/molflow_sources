@@ -130,7 +130,7 @@ namespace flowgpu {
                        const RN_T* randFloat, unsigned int& randInd, unsigned int& randOffset)
     {
 #ifdef BOUND_CHECK
-        if(randInd + randOffset < 0 || randInd + randOffset >= optixLaunchParams.simConstants.nbRandNumbersPerThread*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y){
+        if(randInd + randOffset >= optixLaunchParams.simConstants.nbRandNumbersPerThread*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y){
             printf("randInd %u is out of bounds\n", randInd + randOffset);
         }
         else if(randFloat[(unsigned int)(randInd + randOffset)] < 0.0 || randFloat[(unsigned int)(randInd + randOffset)] > 1.0){
@@ -192,7 +192,7 @@ namespace flowgpu {
 #ifdef WITHTRIANGLES
 
 #ifdef BOUND_CHECK
-        if(randInd + randOffset < 0 || randInd + randOffset >= optixLaunchParams.simConstants.nbRandNumbersPerThread*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y){
+        if(randInd + randOffset >= optixLaunchParams.simConstants.nbRandNumbersPerThread*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y){
             printf("randInd %u is out of bounds\n", randInd + randOffset);
         }
 #endif
@@ -208,7 +208,7 @@ namespace flowgpu {
 
 
 #ifdef BOUND_CHECK
-        if(randInd + randOffset < 0 || randInd + randOffset >= optixLaunchParams.simConstants.nbRandNumbersPerThread*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y){
+        if(randInd + randOffset >= optixLaunchParams.simConstants.nbRandNumbersPerThread*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y){
             printf("randInd %u is out of bounds\n", randInd + randOffset);
         }
 #endif
@@ -401,7 +401,7 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
     static __forceinline__ __device__
     void RecordDesorptionTexture(const flowgpu::Polygon& poly, const MolPRD& hitData, const float3& rayOrigin, const float3& rayDir){
 
-        const float2 hitLocation = getHitLocation(poly,rayOrigin);
+        const float2 hitLocation = getHitLocation_old(poly,rayOrigin);
 
         flowgpu::FacetTexture& facetTex = optixLaunchParams.sharedData.facetTextures[poly.texProps.textureOffset];
 
@@ -411,7 +411,7 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
         //printf("Hit at %lf , %lf for tex %lf , %lf\n", hitLocation.x, hitLocation.y, facetTex.texWidthD, facetTex.texHeightD);
 
 #ifdef BOUND_CHECK
-        if(facetTex.texelOffset + add < 0 || facetTex.texelOffset + add >= optixLaunchParams.simConstants.nbTexel){printf("facetTex.texelOffset + add %u >= %u is out of bounds\n", facetTex.texelOffset + add, optixLaunchParams.simConstants.nbTexel);}
+        if(facetTex.texelOffset + add >= optixLaunchParams.simConstants.nbTexel){printf("facetTex.texelOffset + add %u >= %u is out of bounds\n", facetTex.texelOffset + add, optixLaunchParams.simConstants.nbTexel);}
 #endif
 
         flowgpu::Texel& tex = optixLaunchParams.sharedData.texels[facetTex.texelOffset + add];
@@ -443,7 +443,7 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
     static __forceinline__ __device__
     void RecordDesorptionProfile(const flowgpu::Polygon& poly, const MolPRD& hitData, const float3& rayOrigin, const float3& rayDir){
 
-        const float2 hitLocation = getHitLocation(poly,rayOrigin);
+        const float2 hitLocation = getHitLocation_old(poly,rayOrigin);
 
         unsigned int add = 0;
         if(poly.profProps.profileType == flowgpu::PROFILE_FLAGS::profileU){
@@ -455,7 +455,7 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
 
 
 #ifdef BOUND_CHECK
-        if(poly.profProps.profileOffset + add < 0 || poly.profProps.profileOffset + add >= optixLaunchParams.simConstants.nbProfSlices){
+        if(poly.profProps.profileOffset + add >= optixLaunchParams.simConstants.nbProfSlices){
             printf("[DES] poly.profProps.profileOffset + add %u >= %u is out of bounds\n", poly.profProps.profileOffset + add, optixLaunchParams.simConstants.nbProfSlices);}
 #endif
         flowgpu::Texel& tex = optixLaunchParams.sharedData.profileSlices[poly.profProps.profileOffset + add];
@@ -483,7 +483,7 @@ static __forceinline__ __device__
 void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& poly, const MolPRD& hitData, const float3& rayDir, const float3& rayOrigin)
 {
 #ifdef BOUND_CHECK
-    if(counterIdx < 0 || counterIdx >= optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS){
+    if(counterIdx >= optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS){
             printf("facIndex %u >= %u is out of bounds\n", counterIdx, optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS);
         }
 #endif
@@ -567,7 +567,7 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
         const unsigned int bufferIndex = getWorkIndex();
 
 #ifdef BOUND_CHECK
-        if(bufferIndex < 0 || bufferIndex >= optixLaunchParams.simConstants.nbRandNumbersPerThread * optixLaunchParams.simConstants.size.x * optixLaunchParams.simConstants.size.y){
+        if(bufferIndex >= optixLaunchParams.simConstants.nbRandNumbersPerThread * optixLaunchParams.simConstants.size.x * optixLaunchParams.simConstants.size.y){
             printf("bufferIndex %u > %u is out of bounds\n", bufferIndex,optixLaunchParams.simConstants.nbRandNumbersPerThread * optixLaunchParams.simConstants.size.x * optixLaunchParams.simConstants.size.y);
         }
 #endif
@@ -640,7 +640,7 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
 
             uint32_t facIndex = hitData.hitFacetId;
 #ifdef BOUND_CHECK
-            if(facIndex < 0 || facIndex >= optixLaunchParams.simConstants.nbFacets){
+            if(facIndex >= optixLaunchParams.simConstants.nbFacets){
                 printf("[RayOffset] facIndex %u >= %u is out of bounds (%u)\n", facIndex, optixLaunchParams.simConstants.nbFacets, hitData.inSystem);
             }
 #endif

@@ -40,6 +40,7 @@ namespace flowgpu {
     /*! one buffer per input mesh */
     struct DeviceTriangleMemory {
         std::vector<CUDABuffer> vertexBuffer;
+        std::vector<CUDABuffer> texcoordBuffer;
         std::vector<CUDABuffer> indexBuffer;
         std::vector<CUDABuffer> sbtIndexBuffer;
         std::vector<CUDABuffer> polyBuffer;

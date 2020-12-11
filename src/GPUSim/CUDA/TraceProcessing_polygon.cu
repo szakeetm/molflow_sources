@@ -1051,7 +1051,7 @@ if(prd.inSystem == 4)
 #endif
 
 #ifdef WITHTRIANGLES
-        const flowgpu::TriangleRayGenData* rayGenData = (flowgpu::riangleRayGenData*) optixGetSbtDataPointer();
+        const flowgpu::TriangleRayGenData* rayGenData = (flowgpu::TriangleRayGenData*) optixGetSbtDataPointer();
 #else
         const flowgpu::PolygonRayGenData* rayGenData = (flowgpu::PolygonRayGenData*) optixGetSbtDataPointer();
 #endif

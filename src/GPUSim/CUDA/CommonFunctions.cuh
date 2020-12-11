@@ -185,11 +185,12 @@ double3 getOrigin_double(
 
         double r2 = rnd2;
 
-        double3 vertA = rayGenData->vertex[rayGenData->index[facIndex].x];
-        double3 vertB = rayGenData->vertex[rayGenData->index[facIndex].y];
-        double3 vertC = rayGenData->vertex[rayGenData->index[facIndex].z];
+        double3 vertA = rayGenData->vertex64[rayGenData->index[facIndex].x];
+        double3 vertB = rayGenData->vertex64[rayGenData->index[facIndex].y];
+        double3 vertC = rayGenData->vertex64[rayGenData->index[facIndex].z];
 
-        return make_double3((1.0 - r1_sqrt) * vertA + r1_sqrt * (1.0 - r2) * vertB + r1_sqrt * r2 * vertC); //rayGenData
+        double3 ret = (1.0 - r1_sqrt) * vertA + r1_sqrt * (1.0 - r2) * vertB + r1_sqrt * r2 * vertC;
+        return ret; //rayGenData
 
 #else //WITHTRIANGLES
 
@@ -432,7 +433,21 @@ float3 getNewReverseDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& 
 }
 
 static __forceinline__ __device__
-float2 getHitLocation(const flowgpu::Polygon& poly, const float3& rayOrigin)
+float2 getHitLocation(const float2 barycentrics, float2* texCoord, unsigned int texIndex)
+{
+    const float u = barycentrics.x; // beta and gamma
+    const float v = barycentrics.y; // and gamma
+    const float w = 1.0f - u - v; // and alpha
+
+    float2 tex = w * texCoord[texIndex]
+                 +         u * texCoord[texIndex+1]
+                 +         v * texCoord[texIndex+2];
+
+    return tex; //hitLocationU , hitLocationV
+}
+
+static __forceinline__ __device__
+float2 getHitLocation_old(const flowgpu::Polygon& poly, const float3& rayOrigin)
 {
     const float3 b = rayOrigin - poly.O;
 

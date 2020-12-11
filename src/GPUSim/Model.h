@@ -47,6 +47,8 @@ namespace flowgpu {
         //std::vector<float3> normal;
         //std::vector<int3> index;
         std::vector<int3> indices;
+        std::vector<float2> texCoords;
+
         // material data:
         //float3              diffuse;
     };
