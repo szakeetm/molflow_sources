@@ -22,10 +22,10 @@ namespace flowgpu {
         float hitT; // distance in molecule path
         float3 hitPos;
         float3 postHitDir;
-        int hitFacetId;
+        unsigned int hitFacetId;
 
         int inSystem;
-        int facetHitSide;
+        unsigned int facetHitSide;
 
         double rndOrigin[2]{};
         double rndDirection[2]{};
@@ -35,14 +35,13 @@ namespace flowgpu {
 #endif
     };
 
-// Alias the PerRayData pointer and an uint2 for the payload split and merge operations. Generates just move instructions.
+    // Alias the PerRayData pointer and an uint2 for the payload split and merge operations. Generates just move instructions.
     typedef union {
         MolPRD *ptr;
         uint2 dat;
     } Payload;
 
     __forceinline__ __device__
-
     uint2 splitPointer(MolPRD *ptr) {
         Payload payload;
 
@@ -52,7 +51,6 @@ namespace flowgpu {
     }
 
     __forceinline__ __device__
-
     MolPRD *mergePointer(unsigned int p0, unsigned int p1) {
         Payload payload;
 

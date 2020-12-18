@@ -15,14 +15,6 @@ namespace flowgpu {
         optixLaunch) */
     extern "C" __constant__ LaunchParams optixLaunchParams;
 
-    template<typename T>
-    static __forceinline__ __device__ T *getPRD()
-    {
-        const unsigned int u0 = optixGetPayload_0();
-        const unsigned int u1 = optixGetPayload_1();
-        return reinterpret_cast<T*>( unpackPointer( u0, u1 ) );
-    }
-
     static __device__ __inline__ MolPRD getMolPRD()
     {
         MolPRD prd;
@@ -731,64 +723,63 @@ namespace flowgpu {
         /*if(fbIndex==0)
             printf("--- start post processing ---\n");*/
 
+#ifdef PAYLOAD_DIRECT
         MolPRD prd = getMolPRD();
-        //printf("[%d] -- %d Bounces loaded----- \n",ix, prd.currentDepth);
-
-/*#ifdef DEBUG
-        printf("[%u] normal hit detected -> %u\n", bufferIndex, prd.inSystem);
-#endif*/
+#else
+        MolPRD* prd = mergePointer(optixGetPayload_0(), optixGetPayload_1());
+#endif
 
         // self intersection
-        if(prd.hitFacetId == optixGetPrimitiveIndex()){
+        if(prd->hitFacetId == optixGetPrimitiveIndex()){
 #ifdef DEBUG
-            DEBUG_PRINT("[%d] source and goal facet equal %d : %8.6f,%8.6f,%8.6f -> %8.6f,%8.6f,%8.6f : [%.5e .. %.5e] (tri)\n",(blockDim.x * blockIdx.x + threadIdx.x), prd.hitFacetId, ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z, optixGetRayTmin(),ray_t);
+            DEBUG_PRINT("[%d] source and goal facet equal %d : %8.6f,%8.6f,%8.6f -> %8.6f,%8.6f,%8.6f : [%.5e .. %.5e] (tri)\n",(blockDim.x * blockIdx.x + threadIdx.x), prd->hitFacetId, ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z, optixGetRayTmin(),ray_t);
 /*
-if(prd.inSystem == 4)
-                printf("[%d] [backface] source and goal facet equal %d : %8.6f,%8.6f,%8.6f -> %8.6f,%8.6f,%8.6f : [%.5e .. %.5e] (tri)\n",(blockDim.x * blockIdx.x + threadIdx.x), prd.hitFacetId, ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z, optixGetRayTmin(),ray_t);
+if(prd->inSystem == 4)
+                printf("[%d] [backface] source and goal facet equal %d : %8.6f,%8.6f,%8.6f -> %8.6f,%8.6f,%8.6f : [%.5e .. %.5e] (tri)\n",(blockDim.x * blockIdx.x + threadIdx.x), prd->hitFacetId, ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z, optixGetRayTmin(),ray_t);
 */
 
 #endif
-            prd.facetHitSide = facetHitKind;
+            prd->facetHitSide = facetHitKind;
             if(facetHitKind == OPTIX_HIT_KIND_TRIANGLE_BACK_FACE) {
-                prd.inSystem = SELF_INTERSECTION;
+                prd->inSystem = SELF_INTERSECTION;
                 /*if(bufferIndex==0)
-                    printf("[%u] back self hit detected -> %u -> %u for n=%d\n", bufferIndex, prd.inSystem, sbtData.poly[prd.hitFacetId].parentIndex,prd.nbBounces);
+                    printf("[%u] back self hit detected -> %u -> %u for n=%d\n", bufferIndex, prd->inSystem, sbtData.poly[prd->hitFacetId].parentIndex,prd->nbBounces);
             */}
             else{
-                prd.inSystem = SELF_INTERSECTION;
+                prd->inSystem = SELF_INTERSECTION;
             }
-            const flowgpu::Polygon& poly  = sbtData.poly[prd.hitFacetId];
+            const flowgpu::Polygon& poly  = sbtData.poly[prd->hitFacetId];
 
 
-            prd.hitPos = ray_orig;
-            optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos = prd.hitPos;
-            prd.postHitDir = ray_dir;
-            optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].postHitDir = prd.postHitDir;
+            prd->hitPos = ray_orig;
+            //optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos = prd->hitPos;
+            prd->postHitDir = ray_dir;
+            //optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].postHitDir = prd->postHitDir;
 
             //prd.currentDepth = 0;
-            setMolPRD(prd);
+            //setMolPRD(prd);
             return;
         }
 
 
-        prd.hitT = ray_t;
-        prd.hitPos = ray_orig + ray_t * ray_dir;
-        prd.hitFacetId = optixGetPrimitiveIndex();
-        prd.facetHitSide = facetHitKind;
+        prd->hitT = ray_t;
+        prd->hitPos = ray_orig + ray_t * ray_dir;
+        prd->hitFacetId = optixGetPrimitiveIndex();
+        prd->facetHitSide = facetHitKind;
 
         // first add facet hits
-        const unsigned int counterIdx = prd.hitFacetId + (bufferIndex%(CORESPERSM * WARPSCHEDULERS)) * optixLaunchParams.simConstants.nbFacets;
+        const unsigned int counterIdx = prd->hitFacetId + (bufferIndex%(CORESPERSM * WARPSCHEDULERS)) * optixLaunchParams.simConstants.nbFacets;
 
         //Register (orthogonal) velocity
-        const flowgpu::Polygon& poly  = sbtData.poly[prd.hitFacetId];
+        const flowgpu::Polygon& poly  = sbtData.poly[prd->hitFacetId];
 
         // replace like with self intersection, but keep position etc.
         if(facetHitKind == OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE) {
-            //prd.inSystem = TRANSPARENT_HIT;
+            //prd->inSystem = TRANSPARENT_HIT;
         }
         else
         if(bufferIndex==0)
-            printf("[%u] back hit detected -> Mol: %u on F#%u\n", bufferIndex, prd.inSystem, poly.parentIndex);
+            printf("[%u] back hit detected -> Mol: %u on F#%u\n", bufferIndex, prd->inSystem, poly.parentIndex);
 
         // TODO: Consider maxwelldistribution or not and oriRatio for lowFlux and desorbtion/absorbtion
         //IncreaseFacetCounter(
@@ -800,34 +791,34 @@ if(prd.inSystem == 4)
 
 #ifdef HIT64
         const FLOAT_T velFactor = optixLaunchParams.simConstants.useMaxwell ? 1.0 : 1.1781;
-        const FLOAT_T ortVelocity = prd.velocity*fabsf(dot(ray_dir, poly.N));
-        const FLOAT_T hitEquiv = 1.0; //1.0*prd.orientationRatio; // hit=1.0 (only changed for lowflux mode)
-        const FLOAT_T absEquiv = 1.0; //1.0*prd.orientationRatio; // hit=1.0 (only changed for lowflux mode)
+        const FLOAT_T ortVelocity = prd->velocity*fabsf(dot(ray_dir, poly.N));
+        const FLOAT_T hitEquiv = 1.0; //1.0*prd->orientationRatio; // hit=1.0 (only changed for lowflux mode)
+        const FLOAT_T absEquiv = 1.0; //1.0*prd->orientationRatio; // hit=1.0 (only changed for lowflux mode)
 #else
         const float velFactor = optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f;
-        const float ortVelocity = prd.velocity*fabsf(dot(ray_dir, poly.N));
-        const float hitEquiv = 1.0f; //1.0*prd.orientationRatio; // hit=1.0 (only changed for lowflux mode)
-        const float absEquiv = 1.0f; //1.0*prd.orientationRatio; // hit=1.0 (only changed for lowflux mode)
-
+        const float ortVelocity = prd->velocity*fabsf(dot(ray_dir, poly.N));
+        const float hitEquiv = 1.0f; //1.0*prd->orientationRatio; // hit=1.0 (only changed for lowflux mode)
+        const float absEquiv = 1.0f; //1.0*prd->orientationRatio; // hit=1.0 (only changed for lowflux mode)
 #endif
 
 #ifndef WITH_TRANS
         if(poly.facProps.is2sided && poly.facProps.opacity == 0){
         //if(poly.facProps.is2sided){
 #ifdef DEBUG
-            printf("[%d] 2sided facet hit %d / %d : %8.6f,%8.6f,%8.6f -> %8.6f,%8.6f,%8.6f : [%.5e .. %.5e] (tri)\n",(blockDim.x * blockIdx.x + threadIdx.x), prd.hitFacetId, poly.parentIndex, ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z, optixGetRayTmin(),ray_t);
+            printf("[%d] 2sided facet hit %d / %d : %8.6f,%8.6f,%8.6f -> %8.6f,%8.6f,%8.6f : [%.5e .. %.5e] (tri)\n",(blockDim.x * blockIdx.x + threadIdx.x), prd->hitFacetId, poly.parentIndex, ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z, optixGetRayTmin(),ray_t);
 #endif
             // replace like with self intersection, but keep position etc.
-            prd.inSystem = TRANSPARENT_HIT;
+            prd->inSystem = TRANSPARENT_HIT;
 
-            optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos = prd.hitPos;
-            optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].postHitDir = ray_dir;
+            prd->postHitDir = ray_dir;
+            //optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos = prd->hitPos;
+            //optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].postHitDir = ray_dir;
 
-            increaseTransparentCounter(optixLaunchParams.hitCounter[counterIdx], hitEquiv, ortVelocity, velFactor, prd.velocity);
+            increaseTransparentCounter(optixLaunchParams.hitCounter[counterIdx], hitEquiv, ortVelocity, velFactor, prd->velocity);
             if (poly.texProps.textureFlags & flowgpu::TEXTURE_FLAGS::countTrans) {
-                RecordTransparentTexture(poly, prd, prd.hitPos, ray_dir);
+                RecordTransparentTexture(poly, *prd, prd->hitPos, ray_dir);
             }
-            setMolPRD(prd);
+            //setMolPRD(prd);
             return;
         }
 #endif // WITH_TRANS
@@ -851,16 +842,16 @@ if(prd.inSystem == 4)
             //-------- ABSORPTION ------
             //--------------------------
 
-            recordAbsorption(counterIdx,poly,prd, ray_dir, prd.hitPos);
+            recordAbsorption(counterIdx,poly,*prd, ray_dir, prd->hitPos);
 #ifdef RNG_BULKED
             optixLaunchParams.perThreadData.randBufferOffset[bufferIndex] = randOffset;
 #endif
-            prd.inSystem = NEW_PARTICLE;
-            prd.currentDepth = 0;
+            prd->inSystem = NEW_PARTICLE;
+            prd->currentDepth = 0;
 #ifdef GPUNBOUNCE
-            optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].nbBounces = prd.nbBounces = 0;
+            /*optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].nbBounces =*/ prd->nbBounces = 0;
 #endif
-            setMolPRD(prd);
+            //setMolPRD(prd);
             return;
         }
         // Process a memory error
@@ -877,26 +868,26 @@ if(prd.inSystem == 4)
             //-------- REFLECTION ------
             //--------------------------
 #ifdef RNG_BULKED
-            recordBounce(bufferIndex, counterIdx, poly, prd, ray_dir, prd.hitPos, randFloat, randInd, randOffset);
+            recordBounce(bufferIndex, counterIdx, poly, *prd, ray_dir, prd->hitPos, randFloat, randInd, randOffset);
             // Write temporary local variables back to shared memory
             optixLaunchParams.perThreadData.randBufferOffset[bufferIndex] = randOffset;
 #else
-            recordBounce(bufferIndex, counterIdx, poly, prd, ray_dir, prd.hitPos, optixLaunchParams.randomNumbers);
+            recordBounce(bufferIndex, counterIdx, poly, prd, ray_dir, prd->hitPos, optixLaunchParams.randomNumbers);
 #endif
-            optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].facetHitSide = prd.facetHitSide;
 
-            optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos = prd.hitPos;
-            optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].postHitDir = prd.postHitDir;
-
+            /*optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].facetHitSide = prd->facetHitSide;
+            optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos = prd->hitPos;
+            optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].postHitDir = prd->postHitDir;
+            */
 
             // No recursion or end of recursion
-            if(prd.currentDepth >= optixLaunchParams.simConstants.maxDepth){
-                //printf("-- [%d] Max Bounces reached on depth %d, resetting for next call ... ----- \n",fbIndex, prd.currentDepth);
-                prd.currentDepth = 0;
+            if(prd->currentDepth >= optixLaunchParams.simConstants.maxDepth){
+                //printf("-- [%d] Max Bounces reached on depth %d, resetting for next call ... ----- \n",fbIndex, prd->currentDepth);
+                prd->currentDepth = 0;
             }
             // WITH RECURSION
             else {
-                ++prd.currentDepth;
+                ++prd->currentDepth;
 
 #ifdef DEBUGPOS
     if(bufferIndex==0){
@@ -904,22 +895,28 @@ if(prd.inSystem == 4)
         if(posIndexOff<NBPOSCOUNTS){
             const unsigned int posIndex = bufferIndex*NBPOSCOUNTS+posIndexOff;
             //printf("[%d] my pos is %d\n", (unsigned int)(ix+iy*optixLaunchParams.simConstants.size.x), posIndex);
-            optixLaunchParams.perThreadData.positionsBuffer_debug[posIndex] = prd.hitPos;
+            optixLaunchParams.perThreadData.positionsBuffer_debug[posIndex] = prd->hitPos;
         }
     }
 #endif
 
-                int hi_vel = __double2hiint(prd.velocity);
-                int lo_vel = __double2loint(prd.velocity);
+#ifdef PAYLOAD_DIRECT
+                int hi_vel = __double2hiint(prd->velocity);
+                int lo_vel = __double2loint(prd->velocity);
+#endif
 
 #if defined(DEBUG) && defined(RNG_BULKED)
                 if(isnan(optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].postHitDir.x)) {
                     unsigned int randInd = optixLaunchParams.simConstants.nbRandNumbersPerThread*(bufferIndex);
                     unsigned int randOffset = optixLaunchParams.perThreadData.randBufferOffset[bufferIndex];
 
-                    DEBUG_PRINT("TP[%d][%d] ray dir NaN -> %d / %d + %d\n",bufferIndex,prd.currentDepth, prd.inSystem, randInd, randOffset);
+                    DEBUG_PRINT("TP[%d][%d] ray dir NaN -> %d / %d + %d\n",bufferIndex,prd->currentDepth, prd->inSystem, randInd, randOffset);
                 }
 #endif
+
+                // Pass the current payload registers through to the shadow ray.
+                unsigned int p0 = optixGetPayload_0();
+                unsigned int p1 = optixGetPayload_1();
                 optixTrace(optixLaunchParams.traversable,
                            optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos,
                            optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].postHitDir,
@@ -932,21 +929,26 @@ if(prd.inSystem == 4)
                            RayType::RAY_TYPE_MOLECULE,             // SBT offset
                            RayType::RAY_TYPE_COUNT,               // SBT stride
                            RayType::RAY_TYPE_MOLECULE,             // missSBTIndex
-                        //u0, u1 , u2, u3);
-                        //float3_as_args(hitData.hitPos),
-                           reinterpret_cast<unsigned int&>(prd.currentDepth),
-                           reinterpret_cast<unsigned int&>(prd.inSystem),
-                        /* Can't use float_as_int() because it returns rvalue but payload requires a lvalue */
-                           reinterpret_cast<unsigned int&>(prd.hitFacetId),
-                           reinterpret_cast<unsigned int&>(prd.hitT),
-                           reinterpret_cast<unsigned int&>( hi_vel ),
-                        reinterpret_cast<unsigned int&>( lo_vel ),
-                        reinterpret_cast<unsigned int&>(prd.nbBounces),
-                        reinterpret_cast<unsigned int&>(prd.facetHitSide)
+#ifdef PAYLOAD_DIRECT
+                        // direct
+               reinterpret_cast<unsigned int&>(hitData.currentDepth),
+               reinterpret_cast<unsigned int&>(hitData.inSystem),
+               reinterpret_cast<unsigned int&>(hitData.hitFacetId),
+               reinterpret_cast<unsigned int&>(hitData.hitT),
+               reinterpret_cast<unsigned int&>( hi_vel ),
+               reinterpret_cast<unsigned int&>( lo_vel ),
+               reinterpret_cast<unsigned int&>(hitData.nbBounces),
+               reinterpret_cast<unsigned int&>(hitData.facetHitSide)
+#else
+                        // ptr
+                           p0, p1
+#endif
                 );
-                prd.velocity = __hiloint2double(hi_vel,lo_vel );
+#ifdef PAYLOAD_DIRECT
+                prd->velocity = __hiloint2double(hi_vel,lo_vel );
+#endif
             }
-            setMolPRD(prd);
+            //setMolPRD(prd);
         } // end bounce
     }
 

@@ -29,22 +29,6 @@ namespace flowgpu {
         optixLaunch) */
     extern "C" __constant__ LaunchParams optixLaunchParams;
 
-    static __forceinline__ __device__
-    void *getRayOriginPolygon( unsigned int i0, unsigned int i1 )
-    {
-        const uint64_t uptr = static_cast<uint64_t>( i0 ) << 32 | i1;
-        void*           ptr = reinterpret_cast<void*>( uptr );
-        return ptr;
-    }
-
-    static __forceinline__ __device__
-    void *getRayOriginTriangle( unsigned int i0, unsigned int i1 )
-    {
-        const uint64_t uptr = static_cast<uint64_t>( i0 ) << 32 | i1;
-        void*           ptr = reinterpret_cast<void*>( uptr );
-        return ptr;
-    }
-
     extern "C" __device__ int point_in_polygon(float u, float v, const flowgpu::Polygon& poly) {
         // Fast method to check if a point is inside a polygon or not.
         // Works with convex and concave polys, orientation independent
@@ -62,10 +46,6 @@ namespace flowgpu {
         float2 p;
         p.x = u;
         p.y = v;
-
-        //printf("[%d] poly check with %d vert at poly offset %d for p %4.2f %4.2f\n",threadIdx.x,poly.nbVertices,poly.yertOffset,p.x,p.y);
-        //printf("[%d] poly first vec2 %4.2f , %4.2f\n",threadIdx.x,rayGenData->vertex2[0].x,rayGenData->vertex2[0].y);
-        //printf("[%d] poly second vec2 %4.2f , %4.2f\n",threadIdx.x,rayGenData->vertex2[1].x,rayGenData->vertex2[1].y);
 
 #ifdef BOUND_CHECK
 /*
@@ -111,7 +91,6 @@ namespace flowgpu {
             n_found++;
         }
 
-        //printf("[%d] found %d / updown %d = %d\n",threadIdx.x,n_found,n_updown,((n_found / 2) & 1) ^ ((n_updown / 2) & 1));
         if(((n_found / 2) & 1) ^ ((n_updown / 2) & 1)){
             return 1;
         }
@@ -699,8 +678,10 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
 
         }
 
+#ifdef PAYLOAD_DIRECT
         int hi_vel = __double2hiint(hitData.velocity);
         int lo_vel = __double2loint(hitData.velocity);
+#endif
 #ifdef DEBUG
         if(isnan(rayDir.x)) {
             unsigned int randInd = optixLaunchParams.simConstants.nbRandNumbersPerThread*(bufferIndex);
@@ -710,6 +691,7 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
         }
 #endif
 
+        uint2 payload = splitPointer(&hitData);
         optixTrace(optixLaunchParams.traversable,
                rayOrigin,
                rayDir,
@@ -724,19 +706,30 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
                    RayType::RAY_TYPE_MOLECULE,             // missSBTIndex
                //u0, u1 , u2, u3);
                //float3_as_args(hitData.hitPos),
+
+#ifdef PAYLOAD_DIRECT
+               // direct
                reinterpret_cast<unsigned int&>(hitData.currentDepth),
                reinterpret_cast<unsigned int&>(hitData.inSystem),
-            /* Can't use float_as_int() because it returns rvalue but payload requires a lvalue */
                reinterpret_cast<unsigned int&>(hitData.hitFacetId),
                reinterpret_cast<unsigned int&>(hitData.hitT),
                reinterpret_cast<unsigned int&>( hi_vel ),
                reinterpret_cast<unsigned int&>( lo_vel ),
                reinterpret_cast<unsigned int&>(hitData.nbBounces),
                reinterpret_cast<unsigned int&>(hitData.facetHitSide)
+#else
+                // ptr
+                   payload.x, payload.y
+#endif
         );
 
+        // update particle state in memory after ray generation
+        optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex] = hitData;
+
         //hitData.hitPos = hitData.hitOri + hitData.hitT * hitData.hitDir;
+#ifdef PAYLOAD_DIRECT
         hitData.velocity = __hiloint2double(hi_vel,lo_vel );
+#endif
 #if defined(DEBUG) && defined(GPUNBOUNCE)
         if(bufferIndex == optixLaunchParams.simConstants.size.x - 1 && (hitData.nbBounces % (int)1e4 == 1e4 - 1))
             printf("[%d] has new launch status -> %d and bounces %d / %d\n",bufferIndex,hitData.inSystem,optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].nbBounces,hitData.nbBounces);
