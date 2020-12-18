@@ -34,6 +34,18 @@ extern void destroyRand(curandState_t *states, float *randomNumbers);
 #include <fstream>
 #include <ctime>
 
+// Helper functions
+inline void ProcessSleep(const unsigned int milliseconds) {
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+    Sleep(milliseconds);
+#else
+    struct timespec tv;
+    tv.tv_sec = milliseconds / 1000;
+    tv.tv_nsec = (milliseconds % 1000) * 1000000;
+    nanosleep(&tv, nullptr);
+#endif
+}
+
 /*! \namespace flowgpu - Molflow GPU code */
 namespace flowgpu {
 
@@ -210,7 +222,7 @@ namespace flowgpu {
     }
     catch (std::exception &ex) {
         std::cerr << ex.what() << std::endl;
-        Sleep(10000);
+        ProcessSleep(10000);
     }
         std::cout << "#flowgpu: context, module, pipeline, etc, all set up ..." << std::endl;
 
@@ -795,7 +807,7 @@ namespace flowgpu {
         }
         catch (std::exception &ex) {
             std::cerr << ex.what() << std::endl;
-            Sleep(10000);
+            ProcessSleep(10000);
         }
         if (sizeof_log > 1) PRINT(log);
         programGroups.push_back(pgHitgroup[FacetType::FACET_TYPE_SOLID]);
@@ -850,7 +862,7 @@ namespace flowgpu {
         }
         catch (std::exception &ex) {
             std::cerr << ex.what() << std::endl;
-            Sleep(10000);
+            ProcessSleep(10000);
         }
         if (sizeof_log > 1) PRINT(log);
         programGroups.push_back(pgExgroup);
@@ -881,7 +893,7 @@ namespace flowgpu {
         }
         catch (std::exception &e) {
             std::cerr << e.what() << std::endl;
-            Sleep(1000 * 100);
+            ProcessSleep(1000 * 100);
         }
         //if (sizeof_log > 1) PRINT(log);
 
@@ -1240,7 +1252,7 @@ try{
     }
     catch (std::exception &ex) {
         std::cerr << ex.what() << std::endl;
-        Sleep(10000);
+        ProcessSleep(10000);
     }
         //delete[] randomNumbers;
     }

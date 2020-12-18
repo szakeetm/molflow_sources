@@ -9,6 +9,7 @@
 
 #include <cuda_runtime.h>
 #include <cereal/cereal.hpp>
+#include <limits>
 
 namespace flowgpu {
 

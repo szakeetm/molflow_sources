@@ -866,7 +866,6 @@ namespace flowgpu {
             if ((facets[facInd].texelInc.empty() && facets[facInd].facetProperties.isTextured) ||
                 (!facets[facInd].texelInc.empty() && !facets[facInd].facetProperties.isTextured)) {
                 std::cerr << "#ModelReader: [ERROR] Texture flag and texel increments don't align! " << std::endl;
-                _sleep(10000);
                 exit(0);
             }
             if (facets[facInd].facetProperties.isTextured) {
@@ -898,7 +897,6 @@ namespace flowgpu {
         if (nbTexelCount != model->textures.size()) {
             std::cerr << "#ModelReader: [ERROR] Texture count out of sync: " << nbTexelCount << " / "
                       << model->textures.size() << std::endl;
-            _sleep(10000);
             exit(0);
         }
         return model;
