@@ -31,7 +31,7 @@ public:
     int CloseSimulation();
     int ResetSimulation();
     void AllowNewParticles();
-
+    void CheckAndBlockDesorption();
     unsigned long long int GetSimulationData(bool silent = true);
     void IncreaseGlobalCounters(HostData* tempData);
     void PrintData();

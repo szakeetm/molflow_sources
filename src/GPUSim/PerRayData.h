@@ -24,14 +24,14 @@ namespace flowgpu {
         float3 postHitDir;
         unsigned int hitFacetId;
 
-        int inSystem;
+        unsigned int inSystem;
         unsigned int facetHitSide;
 
         double rndOrigin[2]{};
         double rndDirection[2]{};
         // flags - post launch processing TODO: convert all into one uint32_t ?
 #ifdef WITHDESORPEXIT
-        int hasToTerminate;
+        unsigned int hasToTerminate;
 #endif
     };
 

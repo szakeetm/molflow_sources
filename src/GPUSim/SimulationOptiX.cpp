@@ -629,7 +629,11 @@ namespace flowgpu {
         state.pipelineCompileOptions = {};
         state.pipelineCompileOptions.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
         state.pipelineCompileOptions.usesMotionBlur = 0;
-        state.pipelineCompileOptions.numPayloadValues = 2; // values that get send as PerRayData
+#if defined(PAYLOAD_DIRECT)
+        state.pipelineCompileOptions.numPayloadValues = 8; // values that get send as PerRayData
+#else
+        state.pipelineCompileOptions.numPayloadValues = 2; // just a packed pointer, send as PerRayData
+#endif
 #if defined(WITHTRIANGLES)
         state.pipelineCompileOptions.numAttributeValues = 2; // default, don't have custom routines
 #else

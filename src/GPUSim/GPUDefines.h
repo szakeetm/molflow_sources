@@ -36,6 +36,9 @@
 // Whether to use Ad hoc RNG or Bulk generation for GPU random numbers
 #define RNG_BULKED 1
 
+// Whether to use Ad hoc RNG or Bulk generation for GPU random numbers
+#define PAYLOAD_DIRECT 1
+
 // Random Number typedef
 #ifdef RNG64
 using RN_T = double;

@@ -75,6 +75,7 @@ int main(int argc, char **argv) {
     std::string fileName = "test_geom.xml"; // Input file
 #endif
 
+    size_t nbDes = 0;               // Number of desorptions: 0=use other end condition
     size_t nbLoops = 1;               // Number of Simulation loops
     size_t launchSize = 1;                  // Kernel launch size
     bool silentMode = false;
@@ -114,6 +115,12 @@ int main(int argc, char **argv) {
             } else {
                 printUsageAndExit( argv[0] );
             }
+        } else if ( strcmp( argv[i], "--ndes") == 0  || strcmp( argv[i], "-d" ) == 0 ) {
+            if( i < argc-1 ) {
+                nbDes = atoi(argv[++i]);
+            } else {
+                printUsageAndExit( argv[0] );
+            }
         } else if ( strcmp( argv[i], "--quiet") == 0  || strcmp( argv[i], "-q" ) == 0 ) {
             silentMode = true;
         } else {
@@ -129,6 +136,8 @@ int main(int argc, char **argv) {
     //delete model;
     //model = test;
 
+    // Set desorption limit if used
+    model->ontheflyParams.desorptionLimit = nbDes;
     std::cout << "#GPUTestsuite: Loading simulation with kernel size: " << launchSize << std::endl;
     gpuSim.LoadSimulation(model, launchSize);
 
@@ -146,7 +155,7 @@ int main(int argc, char **argv) {
     /*double raysPerSecondSum = 0.0;
     uint64_t nRaysSum = 0.0;*/
 
-    for(size_t i = 0; i < nbLoops; ++i){
+    for(size_t i = 0; i < nbLoops && !gpuSim.hasEnded; ++i){
         //auto start = std::chrono::high_resolution_clock::now();
 
         gpuSim.RunSimulation();
@@ -163,29 +172,11 @@ int main(int argc, char **argv) {
             raysPerSecondMax = std::max(raysPerSecondMax,rpsRun);
             //raysPerSecondSum += rpsRun;
             std::cout << "--- Run #"<<i+1<< " \t- Elapsed Time: " << elapsed.count()/1000.0 << " s \t--- " << rpsRun << " MRay/s ---" << std::endl;
-
-            /*auto tdat0 = std::chrono::steady_clock::now();
-            gpuSim.GetSimulationData();
-            std::chrono::duration<double,std::milli> tdiffdat = std::chrono::steady_clock::now() - tdat0;
-            std::cout << "--- Data#"<<i+1<< " \t- Elapsed Time: " << tdiffdat.count() << " ms \t--- " << std::endl;
-*/
-            /*// 1. method
-            double rpsRun = (double)launchSize * printPerNRuns / elapsed.count() / 1000.0;
-            raysPerSecondMax = std::max(raysPerSecondMax,rpsRun);
-            raysPerSecondSum += rpsRun;
-            std::cout << "--- Run #"<<i+1<< " \t- Elapsed Time: " << elapsed.count() << " ms \t--- " << rpsRun << " MRay/s ---" << std::endl;
-
-            // 2. method
-            uint64_t nRays = gpuSim.GetSimulationData();
-            nRaysSum += nRays;
-            double raysPerSecond = (double)(nRays)/(elapsed.count())/1000.0;
-            std::cout << "--- Run #"<<i+1<< " \t- Elapsed Time: " << elapsed.count() << " ms \t--- " << raysPerSecond << " MRay/s (fixed) ---" << std::endl;
-            */
+            printf("--- Trans Prob: %e\n",gpuSim.GetTransProb(1u));
         }
     }
     auto finish_total = std::chrono::steady_clock::now();
     gpuSim.GetSimulationData(false);
-    printf("Trans Prob: %lf\n",gpuSim.GetTransProb(1u));
     std::chrono::duration<double> elapsed = finish_total - start_total;
     std::cout << "--         Total Elapsed Time: " << elapsed.count() / 60.0 << " min ---" << std::endl;
     std::cout << "--         Avg. Rays per second: " << (double)launchSize*nbLoops/elapsed.count()/1.0e6 << " MRay/s ---" << std::endl;

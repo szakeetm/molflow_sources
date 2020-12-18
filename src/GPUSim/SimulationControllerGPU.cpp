@@ -116,6 +116,32 @@ void SimulationControllerGPU::AllowNewParticles() {
     return;
 }
 
+void SimulationControllerGPU::CheckAndBlockDesorption() {
+#ifdef WITHDESORPEXIT
+    if (this->model->ontheflyParams.desorptionLimit > 0) {
+        if (GLOB_COUNT::total_des >= this->model->ontheflyParams.desorptionLimit) {
+            bool endCalled = false;
+            size_t nbExit = 0;
+
+            for(auto& particle : data.hitData){
+                if(particle.hasToTerminate > 0)
+                    endCalled = true;
+                else
+                    particle.hasToTerminate = 1;
+                if(endCalled && particle.hasToTerminate == 2)
+                    nbExit++;
+            }
+            if(!endCalled) optixHandle->updateHostData(&data);
+            if(nbExit >= this->kernelDimensions.x*this->kernelDimensions.y){
+                std::cout << " READY TO EXIT! "<< std::endl;
+                hasEnded = true;
+            }
+        }
+    }
+#endif
+
+return;
+}
 /**
  * Fetch simulation data from the device
  * @return 1=could not load GPU Sim, 0=successfully loaded
@@ -127,7 +153,7 @@ double SimulationControllerGPU::GetTransProb(size_t polyIndex) {
         unsigned int facIndex = i%this->model->nbFacets_total;
         unsigned int facParent = model->triangle_meshes[0]->poly[facIndex].parentIndex;
         if(facParent==polyIndex)
-            sumAbs += data.facetHitCounters[i].nbAbsEquiv; // let misses count as 0 (-1+1)
+            sumAbs += this->globalCounter.facetHitCounters[i].nbAbsEquiv; // let misses count as 0 (-1+1)
     }
 
     return sumAbs / (double) GLOB_COUNT::total_des;
@@ -152,28 +178,9 @@ unsigned long long int SimulationControllerGPU::GetSimulationData(bool silent) {
 
         if(printCounters) PrintTotalCounters();
         optixHandle->resetDeviceBuffers(); //reset tmp counters
-#ifdef WITHDESORPEXIT
-        if (this->model->ontheflyParams.desorptionLimit > 0) {
-            if (GLOB_COUNT::total_des >= this->model->ontheflyParams.desorptionLimit) {
-                bool endCalled = false;
-                size_t nbExit = 0;
 
-                for(auto& particle : data.hitData){
-                    if(particle.hasToTerminate > 0)
-                        endCalled = true;
-                    else
-                        particle.hasToTerminate = 1;
-                    if(endCalled && particle.hasToTerminate == 2)
-                        nbExit++;
-                }
-                if(!endCalled) optixHandle->updateHostData(&data);
-                if(nbExit >= this->kernelDimensions.x*this->kernelDimensions.y){
-                    std::cout << " READY TO EXIT! "<< std::endl;
-                    hasEnded = true;
-                }
-            }
-        }
-#endif
+        CheckAndBlockDesorption();
+
         if(writeData) WriteDataToFile("hitcounters.txt");
         if(printData) PrintData();
         if(printDataParent) PrintDataForParent();
@@ -573,6 +580,9 @@ void SimulationControllerGPU::PrintData()
 /*! download the rendered color buffer and return the total amount of hits (= followed rays) */
 void SimulationControllerGPU::PrintTotalCounters()
 {
+    GLOB_COUNT::total_counter = 0;
+    GLOB_COUNT::total_des = 0;
+    GLOB_COUNT::total_absd = 0.0;
 
     for(unsigned int i = 0; i < globalCounter.facetHitCounters.size(); i++) {
         GLOB_COUNT::total_counter += globalCounter.facetHitCounters[i].nbMCHit; // let misses count as 0 (-1+1)

@@ -681,6 +681,8 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
 #ifdef PAYLOAD_DIRECT
         int hi_vel = __double2hiint(hitData.velocity);
         int lo_vel = __double2loint(hitData.velocity);
+#else
+        uint2 payload = splitPointer(&hitData);
 #endif
 #ifdef DEBUG
         if(isnan(rayDir.x)) {
@@ -691,7 +693,7 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
         }
 #endif
 
-        uint2 payload = splitPointer(&hitData);
+
         optixTrace(optixLaunchParams.traversable,
                rayOrigin,
                rayDir,
@@ -723,12 +725,12 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
 #endif
         );
 
-        // update particle state in memory after ray generation
-        optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex] = hitData;
-
         //hitData.hitPos = hitData.hitOri + hitData.hitT * hitData.hitDir;
 #ifdef PAYLOAD_DIRECT
         hitData.velocity = __hiloint2double(hi_vel,lo_vel );
+#else
+        // update particle state in memory after ray generation
+        optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex] = hitData;
 #endif
 #if defined(DEBUG) && defined(GPUNBOUNCE)
         if(bufferIndex == optixLaunchParams.simConstants.size.x - 1 && (hitData.nbBounces % (int)1e4 == 1e4 - 1))
