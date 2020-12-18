@@ -156,9 +156,10 @@ int main(int argc, char **argv) {
             std::chrono::duration<double,std::milli> elapsed = t1 - t0;
             t0 = t1;
 
-            gpuSim.GetSimulationData();
+            uint64_t nbHits = gpuSim.GetSimulationData();
             static const uint64_t nRays = launchSize * printPerNRuns;
-            double rpsRun = (double)nRays / elapsed.count() / 1000.0;
+            //double rpsRun = (double)nRays / elapsed.count() / 1000.0;
+            double rpsRun = (double)(nbHits) / elapsed.count() / 1000.0;
             raysPerSecondMax = std::max(raysPerSecondMax,rpsRun);
             //raysPerSecondSum += rpsRun;
             std::cout << "--- Run #"<<i+1<< " \t- Elapsed Time: " << elapsed.count()/1000.0 << " s \t--- " << rpsRun << " MRay/s ---" << std::endl;
@@ -186,7 +187,7 @@ int main(int argc, char **argv) {
     gpuSim.GetSimulationData(false);
     std::chrono::duration<double> elapsed = finish_total - start_total;
     std::cout << "--         Total Elapsed Time: " << elapsed.count() / 60.0 << " min ---" << std::endl;
-    std::cout << "--         Avg. Rays per second: " << (double)launchSize*nbLoops/elapsed.count()/1e6 << " MRay/s ---" << std::endl;
+    std::cout << "--         Avg. Rays per second: " << (double)launchSize*nbLoops/elapsed.count()/1.0e6 << " MRay/s ---" << std::endl;
     //std::cout << "--         Avg. Rays per second: " << raysPerSecondSum/(nbLoops/printPerNRuns) << " MRay/s ---" << std::endl;
     std::cout << "--         Max  Rays per second: " << raysPerSecondMax << " MRay/s ---" << std::endl;
 

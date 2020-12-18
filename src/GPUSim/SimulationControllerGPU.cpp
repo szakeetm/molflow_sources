@@ -79,12 +79,15 @@ uint64_t SimulationControllerGPU::RunSimulation() {
     try {
         // for testing only generate and upload random numbers once
         // generate new numbers whenever necessary, recursion = TraceProcessing only, poly checks only for ray generation with polygons
-        if(1){//if(runCount%(NB_RAND/(8+MAX_DEPTH*2+NB_INPOLYCHECKS*2))==0){
+        //if(1){
+#ifdef RNG_BULKED
+        if(runCount%(RAND_GEN_STEP)==0){
 #ifdef DEBUG
             //std::cout << "#flowgpu: generating random numbers at run #" << runCount << std::endl;
 #endif
             optixHandle->generateRand();
         }
+#endif //RNG_BULKED
         optixHandle->launchMolecules();
         ++runCount;
     } catch (std::runtime_error& e) {
@@ -157,7 +160,10 @@ unsigned long long int SimulationControllerGPU::GetSimulationData(bool silent) {
         if(writeData) WriteDataToFile("hitcounters.txt");
         if(printData) PrintData();
         if(printDataParent) PrintDataForParent();
-        return 0;//GetTotalHits();
+
+        GlobalHitBuffer *gHits;
+
+        return GetTotalHits();
     } catch (std::runtime_error& e) {
         std::cout << MF_TERMINAL_RED << "FATAL ERROR: " << e.what()
                   << MF_TERMINAL_DEFAULT << std::endl;
@@ -226,6 +232,7 @@ void SimulationControllerGPU::IncreaseGlobalCounters(HostData* tempData){
     globalCounter.leakCounter[0] += tempData->leakCounter[0];
 
     //textures
+#ifdef WITH_TEX
     if(!tempData->texels.empty()) {
         for (auto&[id, texels] : globalCounter.textures) {
             // First check triangles
@@ -275,7 +282,8 @@ void SimulationControllerGPU::IncreaseGlobalCounters(HostData* tempData){
             }
         }
     }
-
+#endif // WITH_TEX
+#ifdef WITH_PROF
     //profiles
     if(!tempData->profileSlices.empty()) {
         for (auto&[id, profiles] : globalCounter.profiles) {
@@ -313,6 +321,10 @@ void SimulationControllerGPU::IncreaseGlobalCounters(HostData* tempData){
             }
         }
     }
+#endif // WITH_PROF
+
+    printf("Trans Prob: %lf\n",(double)globalCounter.facetHitCounters[1].nbAbsEquiv / (double)(this->globalCounter.facetHitCounters[0].nbDesorbed + this->globalCounter.facetHitCounters[1].nbDesorbed));
+
 }
 
 void SimulationControllerGPU::Resize(){
@@ -697,8 +709,8 @@ void SimulationControllerGPU::WriteDataToFile(std::string fileName)
 unsigned long long int SimulationControllerGPU::GetTotalHits(){
 
     unsigned long long int total_counter = 0;
-    for(unsigned int i = 0; i < data.facetHitCounters.size(); i++) {
-        total_counter += data.facetHitCounters[i].nbMCHit; // let misses count as 0 (-1+1)
+    for(auto & facetHitCounter : data.facetHitCounters) {
+        total_counter += facetHitCounter.nbMCHit; // let misses count as 0 (-1+1)
     }
 
     return total_counter;

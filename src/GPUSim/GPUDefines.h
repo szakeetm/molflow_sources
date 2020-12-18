@@ -18,10 +18,12 @@
 #define NB_INPOLYCHECKS 5u //0=always use middle point
 // for triangle, make it a factor of 8
 #ifdef WITHTRIANGLES
-#define NB_RAND 8u
+#define NB_RAND_STEP (8u + MAX_DEPTH*2u)
 #else
-#define NB_RAND (8u + NB_INPOLYCHECKS*2u)
+#define NB_RAND_STEP (8u + NB_INPOLYCHECKS*2u + MAX_DEPTH*2u)
 #endif
+#define RAND_GEN_STEP (1u)
+#define NB_RAND (RAND_GEN_STEP*NB_RAND_STEP)
 
 #ifdef DEBUGCOUNT
 //#define NCOUNTBINS 100
@@ -30,6 +32,9 @@
 #ifdef DEBUGMISS
 #define NMISSES 10
 #endif
+
+// Whether to use Ad hoc RNG or Bulk generation for GPU random numbers
+#define RNG_BULKED 1
 
 // Random Number typedef
 #ifdef RNG64

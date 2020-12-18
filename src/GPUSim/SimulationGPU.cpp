@@ -196,6 +196,8 @@ bool SimulationGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWOR
         facetHitBuffer->hit.sum_1_per_ort_velocity += globalCount->facetHitCounters[i].sum_1_per_ort_velocity;
     } // End nbFacet
 #endif
+
+#ifdef WITH_PROF
     //profiles
     if(!globalCount->profiles.empty()) {
         double timeCorrection = model->wp.finalOutgassingRate;
@@ -233,7 +235,8 @@ bool SimulationGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWOR
             }
         }
     }
-
+#endif // WITH_PROF
+#ifdef WITH_TEX
     //textures
     if(!globalCount->textures.empty()) {
 
@@ -335,6 +338,7 @@ bool SimulationGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWOR
             }
         }
     }
+#endif // WITH_TEX
 
     ReleaseDataport(dpHit);
 

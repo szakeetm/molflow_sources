@@ -272,7 +272,7 @@ int Poly2TriConverter::PolygonsToTriangles(flowgpu::PolygonMesh *polygonMesh, fl
 
     for (auto deleteIndex = deletePoly.rbegin(); deleteIndex != deletePoly.rend(); ++deleteIndex) {
         auto toDelete = polygons.begin() + (*deleteIndex);
-        std::cout << "Deleting Tri# "<<toDelete->parentIndex<< " from PolyList: #"<<(*deleteIndex)<<std::endl;
+        //std::cout << "Deleting Tri# "<<toDelete->parentIndex<< " from PolyList: #"<<(*deleteIndex)<<std::endl;
         polygons.erase(toDelete);
     }
 

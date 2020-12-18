@@ -99,7 +99,7 @@ namespace flowgpu {
     };*/
 
     struct Model {
-        Model() : nbFacets_total(), nbVertices_total(), parametersGlobal(){};
+        Model() : ontheflyParams{}, nbFacets_total(), nbVertices_total(), parametersGlobal(), nbTexel_total{}, nbProfSlices_total{}{};
         Model(const Model&) = delete;
         ~Model()
         {
@@ -124,10 +124,9 @@ namespace flowgpu {
 
         uint32_t nbFacets_total;
         uint32_t nbVertices_total;
-#ifdef BOUND_CHECK
         uint32_t nbTexel_total;
         uint32_t nbProfSlices_total;
-#endif
+
         //! bounding box of all vertices in the model
         //float3 bounds.lower;
         //float3 bounds.upper;

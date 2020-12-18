@@ -312,7 +312,11 @@ namespace flowgpu {
 
     static __forceinline__ __device__
     void recordBounce(const unsigned int& bufferIndex, const unsigned int& counterIdx, const flowgpu::Polygon& poly, MolPRD& prd, const const float3& rayDir, const float3 rayOrigin,
-                      const RN_T* randFloat, unsigned int& randInd, unsigned int& randOffset)
+#ifdef RNG_BULKED
+            const RN_T* randFloat, unsigned int& randInd, unsigned int& randOffset)
+#else
+            curandState_t* states)
+#endif
     {
         // TODO: Save somewhere as a shared constant instead of repetively evaluating
 #ifdef HIT64
@@ -363,13 +367,21 @@ namespace flowgpu {
         prd.velocity = getNewVelocity(poly, optixLaunchParams.simConstants.gasMass);
         if(prd.facetHitSide == OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE || prd.inSystem != TRANSPARENT_HIT) {
             //if (bufferIndex == 0 && poly.parentIndex == 102) printf("[%d] Front direction!\n", poly.parentIndex);
+#ifdef RNG_BULKED
             prd.postHitDir = getNewDirection(prd, poly, randFloat, randInd, randOffset);
+#else
+            prd.postHitDir = getNewDirection(prd, poly, states);
+#endif
         }
         else {
             /*if (bufferIndex == 0)
                 printf("[%d] Back direction!\n", poly.parentIndex);*/
             //else if (bufferIndex == 0 && poly.parentIndex != 102) printf("[%d] Back direction!\n", poly.parentIndex);
+#ifdef RNG_BULKED
             prd.postHitDir = getNewReverseDirection(prd, poly, randFloat, randInd, randOffset);
+#else
+            prd.postHitDir = getNewReverseDirection(prd, poly, states);
+#endif
             //prd.inSystem = ACTIVE_PARTIC;
         }
 
@@ -499,18 +511,30 @@ if(prd.inSystem == 4)
 
 #endif
 
+#ifdef RNG_BULKED
         const RN_T* randFloat = optixLaunchParams.randomNumbers;
         unsigned int randInd = NB_RAND*(bufferIndex);
         unsigned int randOffset = optixLaunchParams.perThreadData.randBufferOffset[bufferIndex];
+#endif
+
 
         //TODO: AtomicAdd for smaller hitCounter structure, just per threadIdx
-        if(poly.facProps.stickingFactor>=0.99999f || ((poly.facProps.stickingFactor > 0.0f) && (randFloat[(unsigned int)(randInd + randOffset++)] < (poly.facProps.stickingFactor)))){
+        if(poly.facProps.stickingFactor>=0.99999f || ((poly.facProps.stickingFactor > 0.0f) && (
+#ifdef RNG_BULKED
+        randFloat[(unsigned int)(randInd + randOffset++)]
+#else
+        generate_rand(optixLaunchParams.randomNumbers, bufferIndex)
+#endif
+
+        < (poly.facProps.stickingFactor)))){
             //--------------------------
             //-------- ABSORPTION ------
             //--------------------------
 
             recordAbsorption(counterIdx,poly,prd, ray_dir, prd.hitPos);
+#ifdef RNG_BULKED
             optixLaunchParams.perThreadData.randBufferOffset[bufferIndex] = randOffset;
+#endif
 
             prd.inSystem = NEW_PARTICLE;
             prd.currentDepth = 0;
@@ -532,15 +556,17 @@ if(prd.inSystem == 4)
             //--------------------------
             //-------- REFLECTION ------
             //--------------------------
+#ifdef RNG_BULKED
             recordBounce(bufferIndex, counterIdx, poly, prd, ray_dir, prd.hitPos, randFloat, randInd, randOffset);
-
+            // Write temporary local variables back to shared memory
+            optixLaunchParams.perThreadData.randBufferOffset[bufferIndex] = randOffset;
+#else
+            recordBounce(bufferIndex, counterIdx, poly, prd, ray_dir, prd.hitPos, optixLaunchParams.randomNumbers);
+#endif
             optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].facetHitSide = prd.facetHitSide;
 
             optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos = prd.hitPos;
             optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].postHitDir = prd.postHitDir;
-
-            // Write temporary local variables back to shared memory
-            optixLaunchParams.perThreadData.randBufferOffset[bufferIndex] = randOffset;
 
             optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].rndDirection[0] = prd.rndDirection[0];
             optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].rndDirection[1] = prd.rndDirection[1];

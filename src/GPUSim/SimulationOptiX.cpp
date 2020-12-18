@@ -605,7 +605,7 @@ namespace flowgpu {
       to use. in this simple example, we use a single module from a
       single .cu file, using a single embedded ptx string */
     void SimulationOptiX::createModule() {
-        state.moduleCompileOptions.maxRegisterCount = 0;
+        state.moduleCompileOptions.maxRegisterCount = OPTIX_COMPILE_DEFAULT_MAX_REGISTER_COUNT; // Do not limit the amount of registers.
 #ifdef DEBUG
         state.moduleCompileOptions.optLevel = OPTIX_COMPILE_OPTIMIZATION_LEVEL_0;
         state.moduleCompileOptions.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
@@ -615,7 +615,7 @@ namespace flowgpu {
 #endif
         state.pipelineCompileOptions = {};
         state.pipelineCompileOptions.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
-        state.pipelineCompileOptions.usesMotionBlur = false;
+        state.pipelineCompileOptions.usesMotionBlur = 0;
         state.pipelineCompileOptions.numPayloadValues = 8; // values that get send as PerRayData
         state.pipelineCompileOptions.numAttributeValues = 8; // ret values e.g. by optixReportIntersection
 #if defined(NDEBUG)
@@ -629,15 +629,22 @@ namespace flowgpu {
         state.pipelineCompileOptions.pipelineLaunchParamsVariableName = "optixLaunchParams";
         state.pipelineCompileOptions.usesPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE;
 
+        state.pipelineLinkOptions = {};
+
 
         //state.pipelineLinkOptions.overrideUsesMotionBlur = false; // Removed with Optix7.1
-        state.pipelineLinkOptions.maxTraceDepth = 2;
+        state.pipelineLinkOptions.maxTraceDepth = (state.launchParams.simConstants.maxDepth == 0) ? 2 : state.launchParams.simConstants.maxDepth+1;
+#if defined(NDEBUG)
+        state.pipelineLinkOptions.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
+#else // DEBUG
+        state.pipelineLinkOptions.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
+#endif
 
         char log[2048];
         size_t sizeof_log = sizeof(log);
 
+#if !defined(WITHTRIANGLES)
         {
-            // RAYGENERATION
             const std::string ptxCode = readPTX("./flowgpu_ptx/Geometry.ptx");
             //const std::string ptxCode = geometry_ptx_code;
             OPTIX_CHECK(optixModuleCreateFromPTX(state.context,
@@ -650,7 +657,7 @@ namespace flowgpu {
             ));
             //if (sizeof_log > 1) PRINT(log);
         }
-
+#endif
         {
             const std::string ptxCode = readPTX("./flowgpu_ptx/RayGeneration.ptx");
             OPTIX_CHECK(optixModuleCreateFromPTX(state.context,
@@ -680,7 +687,7 @@ namespace flowgpu {
                                                  log, &sizeof_log,
                                                  &state.modules.traceModule
             ));
-            if (sizeof_log > 1) PRINT(log);
+            //if (sizeof_log > 1) PRINT(log);
         }
 
         {
@@ -693,7 +700,7 @@ namespace flowgpu {
                                                  log, &sizeof_log,
                                                  &state.modules.exceptionModule
             ));
-            if (sizeof_log > 1) PRINT(log);
+            //if (sizeof_log > 1) PRINT(log);
         }
     }
 
@@ -719,7 +726,7 @@ namespace flowgpu {
                                             log, &sizeof_log,
                                             &pgRayGen
         ));
-        //if (sizeof_log > 1) PRINT(log);
+        if (sizeof_log > 1) PRINT(log);
 
         programGroups.push_back(pgRayGen);
         state.raygenPG = pgRayGen;
@@ -746,7 +753,7 @@ namespace flowgpu {
                                             log, &sizeof_log,
                                             &pgMiss
         ));
-        //if (sizeof_log > 1) PRINT(log);
+        if (sizeof_log > 1) PRINT(log);
 
         programGroups.push_back(pgMiss);
         state.missPG = pgMiss;
@@ -1252,9 +1259,9 @@ try{
         delete[] randomNumbers;
         delete[] randomOffset;*/
 
+#ifdef RNG_BULKED
         const unsigned int launchSize = state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y;
         const unsigned int nbRand = NB_RAND * launchSize;
-
         //CUDABuffer stateBuff, randomBuff;
         //curandState_t *states;
         //TODO: Try upload or host API
@@ -1269,8 +1276,8 @@ try{
         //std::cout<< " --- ---------- --- " << std::endl;
         //crng::initializeRand(launchSize, stateBuff.d_ptr, randomBuff.d_ptr);
         //crng::generateRand(launchSize, (curandState_t *)stateBuff.d_ptr, (float*)randomBuff.d_ptr);
-        state.launchParams.randomNumbers = (RN_T *) sim_memory.randBuffer.d_ptr;
 
+        state.launchParams.randomNumbers = (RN_T *) sim_memory.randBuffer.d_ptr;
         //randBuffer.upload(randomNumbers,nbRand);
 
         /*uint32_t *randomOffset = new uint32_t[launchSize]();
@@ -1279,6 +1286,10 @@ try{
         crng::offsetBufferZeroInit(launchSize, (void *) sim_memory.randOffsetBuffer.d_ptr);
 
         //state.launchParamsBuffer.upload(&launchParams,1);
+#else
+        state.launchParams.randomNumbers = (curandState_t *) sim_memory.randBuffer.d_ptr;
+#endif
+
 
     }
 
@@ -1317,8 +1328,12 @@ try{
         // TODO: one counter per thread is a problem for memory
         sim_memory.moleculeBuffer.resize(newSize.x * newSize.y * sizeof(MolPRD));
         sim_memory.moleculeBuffer.initDeviceData(newSize.x * newSize.y * sizeof(MolPRD));
+#ifdef RNG_BULKED
         sim_memory.randBuffer.resize(nbRand * newSize.x * newSize.y * sizeof(RN_T));
         sim_memory.randOffsetBuffer.resize(newSize.x * newSize.y * sizeof(uint32_t));
+#else
+        sim_memory.randBuffer.resize(newSize.x * newSize.y * sizeof(curandState_t));
+#endif
         facet_memory.hitCounterBuffer.resize(
                 model->nbFacets_total * CORESPERSM * WARPSCHEDULERS * sizeof(CuFacetHitCounter));
         facet_memory.missCounterBuffer.resize(sizeof(uint32_t));
@@ -1354,13 +1369,20 @@ try{
 
         state.launchParams.perThreadData.currentMoleculeData = (MolPRD *) sim_memory.moleculeBuffer.d_pointer();
         state.launchParams.perThreadData.randBufferOffset = (uint32_t *) sim_memory.randOffsetBuffer.d_pointer();
+#ifdef RNG_BULKED
 #ifdef DEBUG
         crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr);
 #else
         crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr,  time(NULL));
-#endif
-        //crng::initializeRandHost(newSize.x * newSize.y, (float **) &randBuffer.d_ptr);
+#endif // DEBUG
         state.launchParams.randomNumbers = (RN_T *) sim_memory.randBuffer.d_pointer();
+#else
+        crng::initializeRandDevice_ref(newSize.x * newSize.y, sim_memory.randBuffer.d_ptr,  time(NULL));
+        state.launchParams.randomNumbers = (curandState_t *) sim_memory.randBuffer.d_pointer();
+        crng::generateRandDevice(newSize.x * newSize.y,(curandState_t *) sim_memory.randBuffer.d_pointer());
+        crng::generateRandDevice(newSize.x * newSize.y,(curandState_t *) state.launchParams.randomNumbers);
+#endif // RNG_BULKED
+        //crng::initializeRandHost(newSize.x * newSize.y, (float **) &randBuffer.d_ptr);
         state.launchParams.hitCounter = (CuFacetHitCounter *) facet_memory.hitCounterBuffer.d_pointer();
         state.launchParams.sharedData.missCounter = (uint32_t *) facet_memory.missCounterBuffer.d_pointer();
 
@@ -1417,16 +1439,23 @@ try{
         // resize our cuda frame buffer
         sim_memory.moleculeBuffer.resize(newSize.x * newSize.y * sizeof(MolPRD));
         sim_memory.moleculeBuffer.initDeviceData(newSize.x * newSize.y * sizeof(MolPRD));
+#ifdef RNG_BULKED
         sim_memory.randBuffer.resize(nbRand * newSize.x * newSize.y * sizeof(RN_T));
         sim_memory.randOffsetBuffer.resize(newSize.x * newSize.y * sizeof(uint32_t));
-
 
         crng::destroyRandHost((RN_T **) &sim_memory.randBuffer.d_ptr);
 #ifdef DEBUG
         crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr);
 #else
         crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr,  time(NULL));
-#endif
+#endif // DEBUG
+#else
+        sim_memory.randBuffer.resize(newSize.x * newSize.y * sizeof(curandState_t));
+        crng::destroyRandDevice((curandState_t **) &sim_memory.randBuffer.d_ptr);
+        crng::initializeRandDevice_ref(newSize.x * newSize.y, sim_memory.randBuffer.d_ptr,  time(NULL));
+#endif // RNG_BULKED
+
+
 
 #ifdef DEBUGPOS
         memory_debug.posBuffer.resize(1 * NBPOSCOUNTS * sizeof(float3));
@@ -1518,8 +1547,12 @@ try{
             OPTIX_CHECK(optixProgramGroupDestroy(hitPG));
         OPTIX_CHECK(optixProgramGroupDestroy(state.exceptionPG));
         OPTIX_CHECK(optixModuleDestroy(state.modules.rayModule));
+#if !defined(WITHTRIANGLES)
         OPTIX_CHECK(optixModuleDestroy(state.modules.geometryModule));
+#endif
         OPTIX_CHECK(optixModuleDestroy(state.modules.traceModule));
+        OPTIX_CHECK(optixModuleDestroy(state.modules.exceptionModule));
+
         OPTIX_CHECK(optixDeviceContextDestroy(state.context));
 
         CUDA_CHECK(cudaStreamDestroy(state.stream));
@@ -1566,9 +1599,12 @@ try{
         sbt_memory.hitgroupRecordsBuffer.free();
 
         sim_memory.moleculeBuffer.free();
+#ifdef RNG_BULKED
         crng::destroyRandHost((RN_T **) &sim_memory.randBuffer.d_ptr);
         sim_memory.randOffsetBuffer.free();
-
+#else
+        crng::destroyRandDevice((curandState_t **) &sim_memory.randBuffer.d_ptr);
+#endif
         facet_memory.hitCounterBuffer.free();
         facet_memory.missCounterBuffer.free();
 

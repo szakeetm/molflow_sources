@@ -4,6 +4,7 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 # Change if you want modify path or other values. #
 ###################################################
 set(PROJECT_NAME gpuSub)
+
 project(${PROJECT_NAME} CUDA CXX)
 
 # Folders files
