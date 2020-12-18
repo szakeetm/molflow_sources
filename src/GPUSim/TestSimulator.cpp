@@ -185,6 +185,7 @@ int main(int argc, char **argv) {
     }
     auto finish_total = std::chrono::steady_clock::now();
     gpuSim.GetSimulationData(false);
+    printf("Trans Prob: %lf\n",gpuSim.GetTransProb(1u));
     std::chrono::duration<double> elapsed = finish_total - start_total;
     std::cout << "--         Total Elapsed Time: " << elapsed.count() / 60.0 << " min ---" << std::endl;
     std::cout << "--         Avg. Rays per second: " << (double)launchSize*nbLoops/elapsed.count()/1.0e6 << " MRay/s ---" << std::endl;

@@ -120,6 +120,23 @@ void SimulationControllerGPU::AllowNewParticles() {
  * Fetch simulation data from the device
  * @return 1=could not load GPU Sim, 0=successfully loaded
  */
+double SimulationControllerGPU::GetTransProb(size_t polyIndex) {
+
+    double sumAbs = 0;
+    for(unsigned int i = 0; i < globalCounter.facetHitCounters.size(); i++) {
+        unsigned int facIndex = i%this->model->nbFacets_total;
+        unsigned int facParent = model->triangle_meshes[0]->poly[facIndex].parentIndex;
+        if(facParent==polyIndex)
+            sumAbs += data.facetHitCounters[i].nbAbsEquiv; // let misses count as 0 (-1+1)
+    }
+
+    return sumAbs / (double) GLOB_COUNT::total_des;
+}
+
+/**
+ * Fetch simulation data from the device
+ * @return 1=could not load GPU Sim, 0=successfully loaded
+ */
 unsigned long long int SimulationControllerGPU::GetSimulationData(bool silent) {
 
     bool writeData = false;
@@ -322,8 +339,6 @@ void SimulationControllerGPU::IncreaseGlobalCounters(HostData* tempData){
         }
     }
 #endif // WITH_PROF
-
-    printf("Trans Prob: %lf\n",(double)globalCounter.facetHitCounters[1].nbAbsEquiv / (double)(this->globalCounter.facetHitCounters[0].nbDesorbed + this->globalCounter.facetHitCounters[1].nbDesorbed));
 
 }
 
