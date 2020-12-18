@@ -250,7 +250,7 @@ endif()]]
 if(MSVC)
     # Add Whole Program Optimization and Link Time Code Generation
     set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/GL")
-    set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/LTCG")
+    #set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/LTCG")
 
     # Add Windows Console output
     message(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})

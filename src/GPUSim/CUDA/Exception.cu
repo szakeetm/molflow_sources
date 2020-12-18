@@ -26,7 +26,7 @@ namespace flowgpu {
         printf("Exception %d [%#08x] at (%u, %u)\n", theExceptionCode, theExceptionCode, theLaunchIndex.x, theLaunchIndex.y);
 
 
-        const unsigned int fbIndex = blockDim.x * blockIdx.x + threadIdx.x;
+        const unsigned int fbIndex = getWorkIndex();
         atomicAdd(optixLaunchParams.sharedData.missCounter, 1);
         MolPRD& prd = optixLaunchParams.perThreadData.currentMoleculeData[fbIndex];
 

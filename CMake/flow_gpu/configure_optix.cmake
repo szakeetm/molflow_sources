@@ -24,7 +24,7 @@ message("Module Path is " ${CMAKE_MODULE_PATH})
 
 
 find_package(CUDA 10.1 REQUIRED)
-find_package(OptiX REQUIRED VERSION 7.1)
+find_package(OptiX 7.1 EXACT)
 
 #include_directories(${CUDA_TOOLKIT_INCLUDE})
 if (CUDA_TOOLKIT_ROOT_DIR)

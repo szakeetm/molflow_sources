@@ -13,6 +13,7 @@
 #include "GPUDefines.h"
 
 #include <cooperative_groups.h>
+#include <curand_kernel.h>
 
 #define EPS32 1e-12f
 
@@ -45,8 +46,27 @@
 #define DEBUG_PRINT(fmt, ...) /* Don't do anything in release builds */
 #endif
 
+// out of bounds print
+#if defined(BOUND_CHECK) && defined(DEBUG)
+#define OOB_CHECK(name, val, upper_bound) if(val >= upper_bound){printf("OutOfBounds: [%s] %u >= %u  : %s:%d:%s()\n", name, val, upper_bound, __FILE__, __LINE__, __func__);}
+#else
+#define OOB_CHECK(name, val, upper_bound) /* Don't do anything in release builds */
+#endif
 
 namespace cg = cooperative_groups;
+
+/* this GPU kernel takes an array of states, and an array of ints, and puts a random int into each */
+static __forceinline__ __device__ RN_T generate_rand(curandState_t* states, unsigned int id) {
+    /* Copy state to local memory for efficiency */
+    curandState_t localState = states[id];
+    /* curand works like rand - except that it takes a state as a parameter */
+    RN_T rnd = curand_uniform(&localState);
+
+    /* Copy state back to global memory */
+    states[id] = localState;
+
+    return rnd;
+}
 
 static __forceinline__ __device__
 unsigned int getWorkIndex()
@@ -211,7 +231,11 @@ FLOAT_T getNewVelocity(const flowgpu::Polygon& poly, const float& gasMass)
 //TODO: Only cosine for now
 static __forceinline__ __device__
 float3 getNewDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& poly,
-                       const float* randFloat, unsigned int& randInd, unsigned int& randOffset)
+#ifdef RNG_BULKED
+                       const FLOAT_T* randFloat, unsigned int& randInd, unsigned int& randOffset)
+#else
+                        curandState_t* states)
+#endif
 {
 
     // generate ray direction
@@ -221,90 +245,60 @@ float3 getNewDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& poly,
         }
 #endif*/
 
-    hitData.rndDirection[0] = randFloat[(unsigned int) (randInd + randOffset)];
-    hitData.rndDirection[1] = randFloat[(unsigned int) (randInd + randOffset+1)];
 
-    float theta = 0.0f;
+#ifdef RNG_BULKED
+    hitData.rndDirection[0] = randFloat[(unsigned int) (randInd + randOffset++)];
+    hitData.rndDirection[1] = randFloat[(unsigned int) (randInd + randOffset++)];
+#else
+    hitData.rndDirection[0] = generate_rand(states, getWorkIndex());
+    hitData.rndDirection[1] = generate_rand(states, getWorkIndex());
+#endif
+
+
+    FLOAT_T theta = 0.0f;
+#ifdef RNG64
     if(poly.desProps.desorbType == 2 || poly.desProps.desorbType == 0) {
-        theta = acosf(sqrtf((double) randFloat[(unsigned int) (randInd + randOffset++)]));
+        theta = acosf(sqrtf((double) hitData.rndDirection[0]));
     }
     else if (poly.desProps.desorbType == 3) {
-        theta = acosf(powf((double) randFloat[(unsigned int) (randInd + randOffset++)], (1.0f / (poly.desProps.cosineExponent + 1.0f))));
+        theta = acosf(powf((double) hitData.rndDirection[0], (1.0f / (poly.desProps.cosineExponent + 1.0f))));
     }
     else if (poly.desProps.desorbType == 1) {
-        theta = acosf((double) randFloat[(unsigned int) (randInd + randOffset++)]);
+        theta = acosf((double) hitData.rndDirection[0]);
     }
+#else
+    if(poly.desProps.desorbType == 2 || poly.desProps.desorbType == 0) {
+        theta = acos(sqrt(hitData.rndDirection[0]));
+    }
+    else if (poly.desProps.desorbType == 3) {
+        theta = acos(pow(hitData.rndDirection[0], (1.0 / (poly.desProps.cosineExponent + 1.0))));
+    }
+    else if (poly.desProps.desorbType == 1) {
+        theta = acos(hitData.rndDirection[0]);
+    }
+#endif
     else{
         printf("Unsupported desorption type! %u on %d\n", poly.desProps.desorbType, poly.parentIndex);
         return make_float3(0.0f);
     }
-    const float phi = randFloat[(unsigned int)(randInd + randOffset++)] * 2.0f * CUDART_PI_F;
 
-    const float u = sinf(theta)*cosf(phi);
-    const float v = sinf(theta)*sinf(phi);
-    const float n = cosf(theta);
+    const FLOAT_T phi = hitData.rndDirection[1] *
+#ifdef HIT64
+                        2.0 * CUDART_PI;
+#else
+                        2.0f * CUDART_PI_F;
+#endif
 
-    /*float3 nU = rayGenData->poly[facIndex].nU;
-    float3 nV = rayGenData->poly[facIndex].nV;
-    float3 N = rayGenData->poly[facIndex].N;*/
-    const float3 nU = poly.nU;
-    const float3 nV = poly.nV;
-    const float3 N = poly.N;
-
-    float3 rayDir = u*nU + v*nV + n*N;
-    /*if ((randFloat[(unsigned int)(randInd + randOffset-2)] == 1.0f ||
-            randFloat[(unsigned int)(randInd + randOffset - 1)] == 1.0f) ||
-            (randFloat[(unsigned int)(randInd + randOffset-2)] == 0.0f ||
-             randFloat[(unsigned int)(randInd + randOffset - 1)] == 0.0f) ||
-            (rayDir.x==0.0f && rayDir.y==0.0f && rayDir.z==1.0f)){
-        printf("[%d] Ray dir like normal: [%u , %u] {%lf, %lf}{0x%0x, 0x%0x} ( %lf , %lf ) - %lf , %lf , %lf -> %lf , %lf , %lf\n",
-               hitData.inSystem,randInd + randOffset-2,randInd + randOffset-1,
-               randFloat[(unsigned int)(randInd + randOffset-2)] ,
-               randFloat[(unsigned int)(randInd + randOffset - 1)] ,
-               randFloat[(unsigned int)(randInd + randOffset-2)] ,
-               randFloat[(unsigned int)(randInd + randOffset - 1)] ,phi,theta,u,v,n, rayDir.x,rayDir.y,rayDir.z);
-    }*/
-
-    return u*nU + v*nV + n*N;
-    /*if (rayDir.x != 0.0) rayDir.x = 1.0 / rayDir.x;
-    if (rayDir.y != 0.0) rayDir.y = 1.0 / rayDir.y;
-    if (rayDir.z != 0.0) rayDir.z = 1.0 / rayDir.z;
-    rayDir = float3(-1.0f,-1.0f,-1.0f) * rayDir;*/
-}
-
-static __forceinline__ __device__
-float3 getNewDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& poly,
-                       const double* randFloat, unsigned int& randInd, unsigned int& randOffset)
-{
-
-    // generate ray direction
-/*#ifdef BOUND_CHECK
-    if(randInd + randOffset < 0 || randInd + randOffset >= optixLaunchParams.simConstants.nbRandNumbersPerThread*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y){
-            printf("randInd %u is out of bounds\n", randInd + randOffset);
-        }
-#endif*/
-    hitData.rndDirection[0] = randFloat[(unsigned int) (randInd + randOffset)];
-    hitData.rndDirection[1] = randFloat[(unsigned int) (randInd + randOffset+1)];
-
-    FLOAT_T theta = 0.0;
-    if(poly.desProps.desorbType == 2 || poly.desProps.desorbType == 0) {
-        theta = acos(sqrt(randFloat[(unsigned int) (randInd + randOffset++)]));
-    }
-    else if (poly.desProps.desorbType == 3) {
-        theta = acos(pow(randFloat[(unsigned int) (randInd + randOffset++)], (1.0 / (poly.desProps.cosineExponent + 1.0))));
-    }
-    else if (poly.desProps.desorbType == 1) {
-        theta = acos(randFloat[(unsigned int) (randInd + randOffset++)]);
-    }
-    else{
-        printf("Unsupported desorption type! %u on %d\n", poly.desProps.desorbType, poly.parentIndex);
-        return make_float3(0.0f);
-    }
-    const FLOAT_T phi = randFloat[(unsigned int)(randInd + randOffset++)] * 2.0 * CUDART_PI;
-
+#ifdef RNG64
     const float u = sin(theta)*cos(phi);
     const float v = sin(theta)*sin(phi);
     const float n = cos(theta);
+#else
+    const float u = sinf(theta)*cosf(phi);
+    const float v = sinf(theta)*sinf(phi);
+    const float n = cosf(theta);
+#endif
+
 
     /*float3 nU = rayGenData->poly[facIndex].nU;
     float3 nV = rayGenData->poly[facIndex].nV;
@@ -312,19 +306,6 @@ float3 getNewDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& poly,
     const float3 nU = poly.nU;
     const float3 nV = poly.nV;
     const float3 N = poly.N;
-
-    /*if ((randFloat[(unsigned int)(randInd + randOffset-2)] == 1.0f ||
-         randFloat[(unsigned int)(randInd + randOffset - 1)] == 1.0f) ||
-        (randFloat[(unsigned int)(randInd + randOffset-2)] == 0.0f ||
-         randFloat[(unsigned int)(randInd + randOffset - 1)] == 0.0f) ||
-        (rayDir.x==0.0f && rayDir.y==0.0f && rayDir.z==1.0f)){
-        printf("[%d] Ray dir like normal: [%u , %u] {%lf, %lf}{0x%0x, 0x%0x} ( %lf , %lf ) - %lf , %lf , %lf -> %lf , %lf , %lf\n",
-               hitData.inSystem,randInd + randOffset-2,randInd + randOffset-1,
-               randFloat[(unsigned int)(randInd + randOffset-2)] ,
-               randFloat[(unsigned int)(randInd + randOffset - 1)] ,
-               randFloat[(unsigned int)(randInd + randOffset-2)] ,
-               randFloat[(unsigned int)(randInd + randOffset - 1)] ,phi,theta,u,v,n, rayDir.x,rayDir.y,rayDir.z);
-    }*/
 
     return u*nU + v*nV + n*N;
     /*if (rayDir.x != 0.0) rayDir.x = 1.0 / rayDir.x;
@@ -368,70 +349,64 @@ double3 getDirection_double(flowgpu::MolPRD& hitData, const flowgpu::Polygon& po
 //TODO: Only cosine for now
 static __forceinline__ __device__
 float3 getNewReverseDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& poly,
-                       const float* randFloat, unsigned int& randInd, unsigned int& randOffset)
-{
-    // generate ray direction
-    float theta = 0.0f;
-    if(poly.desProps.desorbType == 2 || poly.desProps.desorbType == 0) {
-        theta = acosf(sqrtf((double) randFloat[(unsigned int) (randInd + randOffset++)]));
-    }
-    else if (poly.desProps.desorbType == 3) {
-        theta = acosf(powf((double) randFloat[(unsigned int) (randInd + randOffset++)], (1.0f / (poly.desProps.cosineExponent + 1.0f))));
-    }
-    else if (poly.desProps.desorbType == 1) {
-        theta = acosf((double) randFloat[(unsigned int) (randInd + randOffset++)]);
-    }
-    else{
-        printf("Unsupported desorption type! %u on %d\n", poly.desProps.desorbType, poly.parentIndex);
-        return make_float3(0.0f);
-    }
-    const float phi = randFloat[(unsigned int)(randInd + randOffset++)] * 2.0f * CUDART_PI_F;
-
-    const float u = sinf(theta)*cosf(phi);
-    const float v = sinf(theta)*sinf(phi);
-    const float n = cosf(theta);
-    const float3 nU = poly.nU;
-    const float3 nV = poly.nV;
-    const float3 N = poly.N;
-
-    return u*nU + v*nV - n*N;
-}
-
-static __forceinline__ __device__
-float3 getNewReverseDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& poly,
-                       const double* randFloat, unsigned int& randInd, unsigned int& randOffset)
+#ifdef RNG_BULKED
+                              const RN_T* randFloat, unsigned int& randInd, unsigned int& randOffset)
+#else
+                              curandState_t* states)
+#endif
 {
 
     // generate ray direction
     FLOAT_T theta = 0.0;
+#ifdef RNG64
     if(poly.desProps.desorbType == 2 || poly.desProps.desorbType == 0) {
-        theta = acos(sqrt(randFloat[(unsigned int) (randInd + randOffset++)]));
+        theta = acos(sqrt(hitData.rndDirection[0]));
     }
     else if (poly.desProps.desorbType == 3) {
-        theta = acos(pow(randFloat[(unsigned int) (randInd + randOffset++)], (1.0 / (poly.desProps.cosineExponent + 1.0))));
+        theta = acos(pow(hitData.rndDirection[0], (1.0 / (poly.desProps.cosineExponent + 1.0))));
     }
     else if (poly.desProps.desorbType == 1) {
-        theta = acos(randFloat[(unsigned int) (randInd + randOffset++)]);
+        theta = acos(hitData.rndDirection[0]);
     }
+#else
+    if(poly.desProps.desorbType == 2 || poly.desProps.desorbType == 0) {
+        theta = acosf(sqrtf((double) hitData.rndDirection[0]));
+    }
+    else if (poly.desProps.desorbType == 3) {
+        theta = acosf(powf((double) hitData.rndDirection[0], (1.0f / (poly.desProps.cosineExponent + 1.0f))));
+    }
+    else if (poly.desProps.desorbType == 1) {
+        theta = acosf((double) hitData.rndDirection[0]);
+    }
+#endif
     else{
         printf("Unsupported desorption type! %u on %d\n", poly.desProps.desorbType, poly.parentIndex);
         return make_float3(0.0f);
     }
-    const FLOAT_T phi = randFloat[(unsigned int)(randInd + randOffset++)] * 2.0 * CUDART_PI;
+    const FLOAT_T phi = hitData.rndDirection[1] *
+#ifdef HIT64
+            2.0 * CUDART_PI;
+#else
+            2.0f * CUDART_PI_F;
+#endif
 
-
+#ifdef RNG64
     const float u = sin(theta)*cos(phi);
     const float v = sin(theta)*sin(phi);
     const float n = cos(theta);
-
+#else
+    const float u = sinf(theta)*cosf(phi);
+    const float v = sinf(theta)*sinf(phi);
+    const float n = cosf(theta);
+#endif
     const float3 nU = poly.nU;
     const float3 nV = poly.nV;
     const float3 N = poly.N; // reverse normal
 
-
     return u*nU + v*nV - n*N;
 }
 
+// Transform barycentrics to UV coordinates via texture coordinates
 static __forceinline__ __device__
 float2 getHitLocation(const float2 barycentrics, float2* texCoord, unsigned int texIndex)
 {
@@ -446,21 +421,23 @@ float2 getHitLocation(const float2 barycentrics, float2* texCoord, unsigned int 
     return tex; //hitLocationU , hitLocationV
 }
 
+// Transformation to UV coordinates via Cramer's rule
+// without direction info
 static __forceinline__ __device__
 float2 getHitLocation_old(const flowgpu::Polygon& poly, const float3& rayOrigin)
 {
     const float3 b = rayOrigin - poly.O;
 
-    float det = poly.U.x * poly.V.y - poly.U.y * poly.V.x; // TODO: Pre calculate
+    float det = poly.U.x * poly.V.y - poly.U.y * poly.V.x; // Could be precalculated
     float detU = b.x * poly.V.y - b.y * poly.V.x;
     float detV = poly.U.x * b.y - poly.U.y * b.x;
 
     if(fabsf(det)<=EPS32){
-        det = poly.U.y * poly.V.z - poly.U.z * poly.V.y; // TODO: Pre calculate
+        det = poly.U.y * poly.V.z - poly.U.z * poly.V.y;
         detU = b.y * poly.V.z - b.z * poly.V.y;
         detV = poly.U.y * b.z - poly.U.z * b.y;
         if(fabsf(det)<=EPS32){
-            det = poly.U.z * poly.V.x - poly.U.x * poly.V.z; // TODO: Pre calculate
+            det = poly.U.z * poly.V.x - poly.U.x * poly.V.z;
             detU = b.z * poly.V.x - b.x * poly.V.z;
             detV = poly.U.z * b.x - poly.U.x * b.z;
 #ifdef DEBUG

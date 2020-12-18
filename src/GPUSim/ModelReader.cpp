@@ -509,13 +509,13 @@ namespace flowgpu {
                             if (triangle.parentIndex == facetInd) {
                                 // TODO: Map Texcoords
 
-                                std::cout << triangle.parentIndex << " | " << triInd << " => ";
+                                /*std::cout << triangle.parentIndex << " | " << triInd << " => ";
                                 std::cout << " Origin " << triangle.O.x << " , " << triangle.O.y << " , "
                                           << triangle.O.z << " => ";
                                 std::cout << " U " << triangle.U.x << " , " << triangle.U.y << " , " << triangle.U.z
                                           << " => ";
                                 std::cout << " V " << triangle.V.x << " , " << triangle.V.y << " , " << triangle.V.z
-                                          << " => ";
+                                          << " => ";*/
                                 //facetTex. = destination->sh.O + u * destination->sh.U + v * destination->sh.V;
                                 /*float3 c1 = (triMesh->vertices3d[triMesh->indices[triInd].x] - facetTex.bbMin) /
                                             (facetTex.bbMax - facetTex.bbMin);
@@ -729,13 +729,13 @@ namespace flowgpu {
                                             make_float2(static_cast<float>(u), static_cast<float>(v)));
                                 }
 
-                                float2 tex = *(triMesh->texCoords.rbegin() + 2);
+                                /*float2 tex = *(triMesh->texCoords.rbegin() + 2);
                                 std::cout << "["<<triMesh->texCoords.size()<<"] " << tex.x << " , " << tex.y << " | ";
                                 tex = *(triMesh->texCoords.rbegin() + 1);
                                 std::cout << tex.x << " , " << tex.y << " | ";
                                 tex = *(triMesh->texCoords.rbegin());
                                 std::cout << tex.x << " , " << tex.y << " | ";
-                                std::cout << "---" << std::endl;
+                                std::cout << "---" << std::endl;*/
                             }
                             triInd++;
                         }

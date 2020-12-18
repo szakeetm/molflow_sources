@@ -20,6 +20,10 @@
 #include "GPUDefines.h"
 #include "PerRayData.h"
 
+#if !defined(RNG_BULKED)
+#include <curand_kernel.h>
+#endif
+
 #ifdef DEBUGCOUNT
 #define NCOUNTBINS 100
 #define NBCOUNTS 100
@@ -204,7 +208,11 @@ namespace flowgpu {
 #endif
         } simConstants;
 
+#if defined(RNG_BULKED)
         RN_T* randomNumbers;
+#else
+        curandState_t* randomNumbers;
+#endif
         CuFacetHitCounter* hitCounter;
 
 #ifdef DEBUGCOUNT
