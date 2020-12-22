@@ -28,6 +28,155 @@ int SimulationGPU::SanityCheckGeom() {
     return 0;
 }
 
+inline void updateTextureLimit(GlobalHitBuffer *gHits, GlobalCounter* globalCount, flowgpu::Model* model) {
+    //textures
+    if(!globalCount->textures.empty()) {
+
+        //Memorize current limits, then do a min/max search
+        for (int i = 0; i < 3; i++) {
+            gHits->texture_limits[i].min.all = gHits->texture_limits[i].min.moments_only = HITMAX;
+            gHits->texture_limits[i].max.all = gHits->texture_limits[i].max.moments_only = 0;
+        }
+
+        double timeCorrection = model->wp.finalOutgassingRate;
+        for (auto&[id, texels] : globalCount->textures) {
+            // triangles
+            for (auto &mesh : model->triangle_meshes) {
+                int previousId = 0;
+                for (auto &facet : mesh->poly) {
+                    if ((facet.texProps.textureFlags) && (id == facet.parentIndex)) {
+                        int bufferOffset_profSize = facet.profProps.profileType ? PROFILE_SIZE * sizeof(ProfileSlice) : 0;
+                        TextureCell *shTexture = (TextureCell *) ((BYTE*)gHits + (model->tri_facetOffset[id] + sizeof(FacetHitBuffer) + bufferOffset_profSize));
+                        const flowgpu::FacetTexture& texture = model->facetTex[facet.texProps.textureOffset];
+                        const unsigned int width = texture.texWidth;
+                        const unsigned int height = texture.texHeight;
+                        for (unsigned int h = 0; h < height; ++h) {
+                            for (unsigned int w = 0; w < width; ++w) {
+                                unsigned int index_glob = w + h * texture.texWidth;
+
+                                shTexture[index_glob].countEquiv += texels[index_glob].countEquiv;
+                                shTexture[index_glob].sum_v_ort_per_area += texels[index_glob].sum_v_ort_per_area;
+                                shTexture[index_glob].sum_1_per_ort_velocity += texels[index_glob].sum_1_per_ort_velocity;
+
+                                const float texelIncrement = model->texInc[index_glob + texture.texelOffset];
+                                const bool largeEnough = texelIncrement < 5.0f * (model->facetTex[facet.texProps.textureOffset].texWidthD * model->facetTex[facet.texProps.textureOffset].texHeightD) / (length(facet.U) * length(facet.V));
+                                if(largeEnough) {
+                                    double val[3];  //pre-calculated autoscaling values (Pressure, imp.rate, density)
+                                    val[0] = shTexture[index_glob].sum_v_ort_per_area *
+                                             timeCorrection; //pressure without dCoef_pressure
+                                    val[1] = shTexture[index_glob].countEquiv *
+                                            texelIncrement*timeCorrection; //imp.rate without dCoef
+                                    val[2] = shTexture[index_glob].sum_1_per_ort_velocity *
+                                            texelIncrement*timeCorrection; //particle density without dCoef
+                                    //Global autoscale
+                                    for (int v = 0; v < 3; v++) {
+                                        gHits->texture_limits[v].max.all = std::max(val[v], gHits->texture_limits[v].max.all );
+                                        if (val[v] > 0.0) {
+                                            gHits->texture_limits[v].min.all = std::min(val[v],
+                                                                                        gHits->texture_limits[v].min.all);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        break; //Only need 1 facet for texture position data
+                    }
+                }
+            }
+
+            // polygons
+            for (auto &mesh : model->poly_meshes) {
+                for (auto &facet : mesh->poly) {
+                    if ((facet.texProps.textureFlags)) {
+                        int bufferOffset_profSize = facet.profProps.profileType ? PROFILE_SIZE * sizeof(ProfileSlice) : 0;
+                        TextureCell *shTexture = (TextureCell *) ((BYTE*)gHits + (model->tri_facetOffset[id] + sizeof(FacetHitBuffer) + bufferOffset_profSize));
+                        const flowgpu::FacetTexture& texture = model->facetTex[facet.texProps.textureOffset];
+                        const unsigned int width = texture.texWidth;
+                        const unsigned int height = texture.texHeight;
+                        for (unsigned int h = 0; h < height; ++h) {
+                            for (unsigned int w = 0; w < width; ++w) {
+                                unsigned int index_glob = w + h * texture.texWidth;
+
+                                shTexture[index_glob].countEquiv += texels[index_glob].countEquiv;
+                                shTexture[index_glob].sum_v_ort_per_area += texels[index_glob].sum_v_ort_per_area;
+                                shTexture[index_glob].sum_1_per_ort_velocity += texels[index_glob].sum_1_per_ort_velocity;
+
+                                const float texelIncrement = model->texInc[index_glob + texture.texelOffset];
+                                const bool largeEnough = texelIncrement < 5.0f * (model->facetTex[facet.texProps.textureOffset].texWidthD * model->facetTex[facet.texProps.textureOffset].texHeightD) / (length(facet.U) * length(facet.V));
+                                if(largeEnough) {
+                                    double val[3];  //pre-calculated autoscaling values (Pressure, imp.rate, density)
+                                    val[0] = shTexture[index_glob].sum_v_ort_per_area *
+                                             timeCorrection; //pressure without dCoef_pressure
+                                    val[1] = shTexture[index_glob].countEquiv *
+                                             texelIncrement*timeCorrection; //imp.rate without dCoef
+                                    val[2] = shTexture[index_glob].sum_1_per_ort_velocity *
+                                             texelIncrement*timeCorrection; //particle density without dCoef
+                                    //Global autoscale
+                                    for (int v = 0; v < 3; v++) {
+                                        gHits->texture_limits[v].max.all = std::max(val[v], gHits->texture_limits[v].max.all );
+                                        if (val[v] > 0.0) {
+                                            gHits->texture_limits[v].min.all = std::min(val[v],
+                                                                                        gHits->texture_limits[v].min.all);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        break; //Only need 1 facet for texture position data
+                    }
+                }
+            }
+        }
+    }
+}
+
+inline void updateTextureBuffer(GlobalHitBuffer *gHits, GlobalCounter* globalCount, flowgpu::Model* model){
+
+}
+
+inline void updateProfileBuffer(GlobalHitBuffer *gHits, GlobalCounter* globalCount, flowgpu::Model* model){
+    //profiles
+    if(!globalCount->profiles.empty()) {
+        double timeCorrection = model->wp.finalOutgassingRate;
+        for (auto&[id, profiles] : globalCount->profiles) {
+            // triangles
+            for (auto &mesh : model->triangle_meshes) {
+                int previousId = 0;
+                for (auto &facet : mesh->poly) {
+                    if ((facet.profProps.profileType != flowgpu::PROFILE_FLAGS::noProfile) && (id == facet.parentIndex)) {
+                        ProfileSlice *shProfile = (ProfileSlice *) ((BYTE*)gHits + (model->tri_facetOffset[id] + sizeof(FacetHitBuffer)));
+                        for (unsigned int s = 0; s < PROFILE_SIZE; ++s) {
+                            shProfile[s].countEquiv += profiles[s].countEquiv;
+                            shProfile[s].sum_v_ort += profiles[s].sum_v_ort_per_area;
+                            shProfile[s].sum_1_per_ort_velocity += profiles[s].sum_1_per_ort_velocity;
+                        }
+
+                        break; //Only need 1 facet for texture position data
+                    }
+                }
+            }
+            //polygons
+            for (auto &mesh : model->poly_meshes) {
+                for (auto &facet : mesh->poly) {
+                    if ((facet.profProps.profileType != flowgpu::PROFILE_FLAGS::noProfile)) {
+                        ProfileSlice *shProfile = (ProfileSlice *) ((BYTE*)gHits + (model->tri_facetOffset[id] + sizeof(FacetHitBuffer)));
+                        for (unsigned int s = 0; s < PROFILE_SIZE; ++s) {
+                            shProfile[s].countEquiv += profiles[s].countEquiv;
+                            shProfile[s].sum_v_ort += profiles[s].sum_v_ort_per_area;
+                            shProfile[s].sum_1_per_ort_velocity += profiles[s].sum_1_per_ort_velocity;
+                        }
+
+                        break; //Only need 1 facet for texture position data
+                    }
+                }
+            }
+        }
+    }
+}
+
+
 void SimulationGPU::ClearSimulation() {
     gpuSim.CloseSimulation();
 }
@@ -129,12 +278,8 @@ bool SimulationGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWOR
         gHits->globalHits.hit.sum_v_ort += globalCount->facetHitCounters[i].sum_v_ort; // let misses count as 0 (-1+1)
         gHits->globalHits.hit.sum_1_per_velocity += globalCount->facetHitCounters[i].sum_1_per_velocity; // let misses count as 0 (-1+1)
         gHits->globalHits.hit.sum_1_per_ort_velocity += globalCount->facetHitCounters[i].sum_1_per_ort_velocity; // let misses count as 0 (-1+1)
-
-        //if(data.facetHitCounters[i].nbMCHit>0 || data.facetHitCounters[i].nbDesorbed> 0 || data.facetHitCounters[i].nbAbsEquiv>0)
-        // facetCounterEveryFile << (i/this->model->nbFacets_total) << " " << (i%this->model->nbFacets_total)+1 << " " << data.facetHitCounters[i].nbMCHit << " " << data.facetHitCounters[i].nbDesorbed << " " << static_cast<unsigned int>(data.facetHitCounters[i].nbAbsEquiv) << std::endl;
     }
     this->totalDesorbed = gHits->globalHits.hit.nbDesorbed;
-
 
 #ifdef DEBUGPOS
     // HHit (Only prIdx 0)
@@ -198,147 +343,12 @@ bool SimulationGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWOR
 #endif
 
 #ifdef WITH_PROF
-    //profiles
-    if(!globalCount->profiles.empty()) {
-        double timeCorrection = model->wp.finalOutgassingRate;
-        for (auto&[id, profiles] : globalCount->profiles) {
-            // triangles
-            for (auto &mesh : model->triangle_meshes) {
-                int previousId = 0;
-                for (auto &facet : mesh->poly) {
-                    if ((facet.profProps.profileType != flowgpu::PROFILE_FLAGS::noProfile) && (id == facet.parentIndex)) {
-                        ProfileSlice *shProfile = (ProfileSlice *) (buffer + (model->tri_facetOffset[id] + sizeof(FacetHitBuffer)));
-                        for (unsigned int s = 0; s < PROFILE_SIZE; ++s) {
-                            shProfile[s].countEquiv += profiles[s].countEquiv;
-                            shProfile[s].sum_v_ort += profiles[s].sum_v_ort_per_area;
-                            shProfile[s].sum_1_per_ort_velocity += profiles[s].sum_1_per_ort_velocity;
-                        }
-
-                        break; //Only need 1 facet for texture position data
-                    }
-                }
-            }
-            //polygons
-            for (auto &mesh : model->poly_meshes) {
-                for (auto &facet : mesh->poly) {
-                    if ((facet.profProps.profileType != flowgpu::PROFILE_FLAGS::noProfile)) {
-                        ProfileSlice *shProfile = (ProfileSlice *) (buffer + (model->tri_facetOffset[id] + sizeof(FacetHitBuffer)));
-                        for (unsigned int s = 0; s < PROFILE_SIZE; ++s) {
-                            shProfile[s].countEquiv += profiles[s].countEquiv;
-                            shProfile[s].sum_v_ort += profiles[s].sum_v_ort_per_area;
-                            shProfile[s].sum_1_per_ort_velocity += profiles[s].sum_1_per_ort_velocity;
-                        }
-
-                        break; //Only need 1 facet for texture position data
-                    }
-                }
-            }
-        }
-    }
+    updateProfileBuffer(gHits, globalCount, model);
 #endif // WITH_PROF
+
 #ifdef WITH_TEX
-    //textures
-    if(!globalCount->textures.empty()) {
-
-        //Memorize current limits, then do a min/max search
-        for (int i = 0; i < 3; i++) {
-            gHits->texture_limits[i].min.all = gHits->texture_limits[i].min.moments_only = HITMAX;
-            gHits->texture_limits[i].max.all = gHits->texture_limits[i].max.moments_only = 0;
-        }
-
-        double timeCorrection = model->wp.finalOutgassingRate;
-        for (auto&[id, texels] : globalCount->textures) {
-            // triangles
-            for (auto &mesh : model->triangle_meshes) {
-                int previousId = 0;
-                for (auto &facet : mesh->poly) {
-                    if ((facet.texProps.textureFlags) && (id == facet.parentIndex)) {
-                        int bufferOffset_profSize = facet.profProps.profileType ? PROFILE_SIZE * sizeof(ProfileSlice) : 0;
-                        TextureCell *shTexture = (TextureCell *) (buffer + (model->tri_facetOffset[id] + sizeof(FacetHitBuffer) + bufferOffset_profSize));
-                        const flowgpu::FacetTexture& texture = model->facetTex[facet.texProps.textureOffset];
-                        const unsigned int width = texture.texWidth;
-                        const unsigned int height = texture.texHeight;
-                        for (unsigned int h = 0; h < height; ++h) {
-                            for (unsigned int w = 0; w < width; ++w) {
-                                unsigned int index_glob = w + h * texture.texWidth;
-
-                                shTexture[index_glob].countEquiv += texels[index_glob].countEquiv;
-                                shTexture[index_glob].sum_v_ort_per_area += texels[index_glob].sum_v_ort_per_area;
-                                shTexture[index_glob].sum_1_per_ort_velocity += texels[index_glob].sum_1_per_ort_velocity;
-
-                                const float texelIncrement = model->texInc[index_glob + texture.texelOffset];
-                                const bool largeEnough = texelIncrement < 5.0f * (model->facetTex[facet.texProps.textureOffset].texWidthD * model->facetTex[facet.texProps.textureOffset].texHeightD) / (length(facet.U) * length(facet.V));
-                                if(largeEnough) {
-                                    double val[3];  //pre-calculated autoscaling values (Pressure, imp.rate, density)
-                                    val[0] = shTexture[index_glob].sum_v_ort_per_area *
-                                             timeCorrection; //pressure without dCoef_pressure
-                                    val[1] = shTexture[index_glob].countEquiv *
-                                            texelIncrement*timeCorrection; //imp.rate without dCoef
-                                    val[2] = shTexture[index_glob].sum_1_per_ort_velocity *
-                                            texelIncrement*timeCorrection; //particle density without dCoef
-                                    //Global autoscale
-                                    for (int v = 0; v < 3; v++) {
-                                        gHits->texture_limits[v].max.all = std::max(val[v], gHits->texture_limits[v].max.all );
-                                        if (val[v] > 0.0) {
-                                            gHits->texture_limits[v].min.all = std::min(val[v],
-                                                                                        gHits->texture_limits[v].min.all);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        break; //Only need 1 facet for texture position data
-                    }
-                }
-            }
-
-            // polygons
-            for (auto &mesh : model->poly_meshes) {
-                for (auto &facet : mesh->poly) {
-                    if ((facet.texProps.textureFlags)) {
-                        int bufferOffset_profSize = facet.profProps.profileType ? PROFILE_SIZE * sizeof(ProfileSlice) : 0;
-                        TextureCell *shTexture = (TextureCell *) (buffer + (model->tri_facetOffset[id] + sizeof(FacetHitBuffer) + bufferOffset_profSize));
-                        const flowgpu::FacetTexture& texture = model->facetTex[facet.texProps.textureOffset];
-                        const unsigned int width = texture.texWidth;
-                        const unsigned int height = texture.texHeight;
-                        for (unsigned int h = 0; h < height; ++h) {
-                            for (unsigned int w = 0; w < width; ++w) {
-                                unsigned int index_glob = w + h * texture.texWidth;
-
-                                shTexture[index_glob].countEquiv += texels[index_glob].countEquiv;
-                                shTexture[index_glob].sum_v_ort_per_area += texels[index_glob].sum_v_ort_per_area;
-                                shTexture[index_glob].sum_1_per_ort_velocity += texels[index_glob].sum_1_per_ort_velocity;
-
-                                const float texelIncrement = model->texInc[index_glob + texture.texelOffset];
-                                const bool largeEnough = texelIncrement < 5.0f * (model->facetTex[facet.texProps.textureOffset].texWidthD * model->facetTex[facet.texProps.textureOffset].texHeightD) / (length(facet.U) * length(facet.V));
-                                if(largeEnough) {
-                                    double val[3];  //pre-calculated autoscaling values (Pressure, imp.rate, density)
-                                    val[0] = shTexture[index_glob].sum_v_ort_per_area *
-                                             timeCorrection; //pressure without dCoef_pressure
-                                    val[1] = shTexture[index_glob].countEquiv *
-                                             texelIncrement*timeCorrection; //imp.rate without dCoef
-                                    val[2] = shTexture[index_glob].sum_1_per_ort_velocity *
-                                             texelIncrement*timeCorrection; //particle density without dCoef
-                                    //Global autoscale
-                                    for (int v = 0; v < 3; v++) {
-                                        gHits->texture_limits[v].max.all = std::max(val[v], gHits->texture_limits[v].max.all );
-                                        if (val[v] > 0.0) {
-                                            gHits->texture_limits[v].min.all = std::min(val[v],
-                                                                                        gHits->texture_limits[v].min.all);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        break; //Only need 1 facet for texture position data
-                    }
-                }
-            }
-        }
-    }
-#endif // WITH_TEX
+    updateTextureLimit(gHits, globalCount, model);
+#endif
 
     ReleaseDataport(dpHit);
 

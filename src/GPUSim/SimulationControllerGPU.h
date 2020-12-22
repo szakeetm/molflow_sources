@@ -10,6 +10,16 @@
 #include "SimulationOptiX.h"
 #include "HostData.h"
 
+struct RuntimeFigures {
+    uint32_t runCount {0};
+    uint32_t runCountNoEnd {0};
+    double desPerRun {0.0};
+    unsigned long long int total_counter = 0;
+    unsigned long long int total_abs = 0;
+    double total_absd = 0;
+    unsigned long long int total_des = 0;
+};
+
 class SimulationControllerGPU {
 protected:
     //flowgpu::SampleWindow* window;
@@ -32,6 +42,7 @@ public:
     int ResetSimulation();
     void AllowNewParticles();
     void CheckAndBlockDesorption();
+    void CheckAndBlockDesorption_exact();
     unsigned long long int GetSimulationData(bool silent = true);
     void IncreaseGlobalCounters(HostData* tempData);
     void PrintData();
@@ -41,7 +52,12 @@ public:
     GlobalCounter* GetGlobalCounter() ;
     double GetTransProb(size_t polyIndex);
 
-    bool hasEnded;
+    void CalcRuntimeFigures();
+    int RemainingStepsUntilStop();
+
+    RuntimeFigures figures;
+    bool hasEnded{false};
+    bool endCalled{false};
 };
 
 

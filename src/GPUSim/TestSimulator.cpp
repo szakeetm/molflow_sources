@@ -20,6 +20,7 @@ void printUsageAndExit( const char* argv0 )
     fprintf( stderr, "         --size  | -s <launchsize>      Set kernel launch size\n" );
     fprintf( stderr, "         --size=<width>x<height>[x<depth>]\n" );
     fprintf( stderr, "         --loop  | -l <nbLoops>         Set number of simulation loops\n" );
+    fprintf( stderr, "         --ndes  | -d <nbDesorptions>   Set number of desorptions for sim. end\n" );
     fprintf( stderr, "         --nhit  | -n <nbHits>          Set approx. number of hits for the simulation\n" );
     fprintf( stderr, "         --quiet | -q                   Set terminal output messages to a minimum\n" );
     //fprintf( stderr, "         --dim=<width>x<height>        Set image dimensions; defaults to 512x384\n" );
@@ -67,6 +68,36 @@ void parseSize( const char* arg, size_t& kernelSize )
     throw;
 }
 
+void parseDesLimits( const char* arg, std::list<size_t>& limits )
+{
+
+    // look for an 'x': <width>x<height>
+    size_t lim_end = strchr( arg, ';' ) - arg;
+    size_t lim_begin = 0;
+
+    while( lim_begin < strlen( arg ) )
+    {
+        // find the beginning of the height string/
+        //const char *this_arg = &arg[next_begin];
+
+        // copy width to null-terminated string
+        char this_arg[32];
+        strncpy( this_arg, &arg[lim_begin], lim_end-lim_begin );
+
+        // terminate the width string
+        this_arg[lim_end-lim_begin] = '\0';
+
+        limits.emplace_back(strtoull(this_arg,nullptr,10));
+        lim_begin = lim_end + 1;
+        lim_end = strchr( &arg[lim_end]+1, ';' ) - arg;
+        lim_end = std::min(lim_end,strlen(arg));
+    }
+    if(!limits.empty())
+        return;
+    std::cout << "#GPUTestsuite: Failed to parse desorption limits from string '" << std::string( arg ) << "'"  << std::endl;
+    throw;
+}
+
 int main(int argc, char **argv) {
 
 #ifdef WITHTRIANGLES
@@ -75,12 +106,16 @@ int main(int argc, char **argv) {
     std::string fileName = "test_geom.xml"; // Input file
 #endif
 
-    size_t nbDes = 0;               // Number of desorptions: 0=use other end condition
+    std::list<size_t> limits; // Number of desorptions: empty=use other end condition
     size_t nbLoops = 1;               // Number of Simulation loops
     size_t launchSize = 1;                  // Kernel launch size
+    size_t nPrints = 10;
+    size_t printPerN = 10000;
     bool silentMode = false;
 
+
     for(int i = 1; i < argc; ++i ) {
+        char* p;
         if( strcmp( argv[i], "--help" ) == 0 || strcmp( argv[i], "-h" ) == 0 ) {
             printUsageAndExit( argv[0] );
         } else if( strcmp( argv[i], "--file" ) == 0 || strcmp( argv[i], "-f" ) == 0 ) {
@@ -95,29 +130,46 @@ int main(int argc, char **argv) {
             }
         } else if ( strcmp( argv[i], "--size") == 0 || strcmp( argv[i], "-s" ) == 0 ) {
             if( i < argc-1 ) {
-                launchSize = atoi(argv[++i]);
+                launchSize = strtoul(argv[++i],&p,10);
             } else {
                 printUsageAndExit( argv[0] );
             }
         } else if ( strncmp( argv[i], "--size=", 7 ) == 0 ) {
-                const char *size_arg = &argv[i][7];
-                parseSize(size_arg, launchSize);
-
+            const char *size_arg = &argv[i][7];
+            parseSize(size_arg, launchSize);
         } else if ( strcmp( argv[i], "--loop") == 0  || strcmp( argv[i], "-l" ) == 0 ) {
             if( i < argc-1 ) {
-                nbLoops = atoi(argv[++i]);
+                nbLoops = strtoul(argv[++i],&p,10);
             } else {
                 printUsageAndExit( argv[0] );
             }
         } else if ( strcmp( argv[i], "--nhit") == 0  || strcmp( argv[i], "-n" ) == 0 ) {
             if( i < argc-1 ) {
-                nbLoops = (size_t)(atof(argv[++i]) / launchSize);
+                nbLoops = (size_t)(strtoul(argv[++i],&p,10) / launchSize);
             } else {
                 printUsageAndExit( argv[0] );
             }
-        } else if ( strcmp( argv[i], "--ndes") == 0  || strcmp( argv[i], "-d" ) == 0 ) {
+        } else if ( strncmp( argv[i], "--ndes=",7) == 0  || strcmp( argv[i], "-d" ) == 0 ) {
+            if ( strncmp( argv[i], "--ndes=",7) == 0) {
+                const char *size_arg = &argv[i][7];
+                parseDesLimits(size_arg, limits);
+                //++i;
+                for(auto& lim : limits) std::cout << " lim : "<< lim << std::endl;
+            }
+            else if( i < argc-1 ) {
+                limits.emplace_back(strtoul(argv[++i],&p,10));
+            } else {
+                printUsageAndExit( argv[0] );
+            }
+        } else if ( strcmp( argv[i], "--nprints") == 0  || strcmp( argv[i], "-i" ) == 0 ) {
             if( i < argc-1 ) {
-                nbDes = atoi(argv[++i]);
+                nPrints = strtoul(argv[++i],&p,10);
+            } else {
+                printUsageAndExit( argv[0] );
+            }
+        } else if ( strcmp( argv[i], "--printevery") == 0  || strcmp( argv[i], "-j" ) == 0 ) {
+            if( i < argc-1 ) {
+                printPerN = strtoul(argv[++i],&p,10);
             } else {
                 printUsageAndExit( argv[0] );
             }
@@ -137,15 +189,21 @@ int main(int argc, char **argv) {
     //model = test;
 
     // Set desorption limit if used
-    model->ontheflyParams.desorptionLimit = nbDes;
+    if(!limits.empty()) {
+        model->ontheflyParams.desorptionLimit = limits.front();
+        limits.pop_front();
+    }
+    else{
+        model->ontheflyParams.desorptionLimit = 0;
+    }
+
     std::cout << "#GPUTestsuite: Loading simulation with kernel size: " << launchSize << std::endl;
     gpuSim.LoadSimulation(model, launchSize);
 
     std::cout << "#GPUTestsuite: Starting simulation with " << launchSize << " threads per launch => " << nbLoops << " runs "<<std::endl;
 
-    const uint64_t nPrints = 10;
     //const int printPerNRuns = std::max(1, static_cast<int>(nbLoops/nPrints)); // prevent n%0 operation
-    uint64_t printPerNRuns = std::min(static_cast<uint64_t>(10000), static_cast<uint64_t>(nbLoops/nPrints)); // prevent n%0 operation
+    uint64_t printPerNRuns = std::min(static_cast<uint64_t>(printPerN), static_cast<uint64_t>(nbLoops/nPrints)); // prevent n%0 operation
     printPerNRuns = std::max(printPerNRuns, static_cast<uint64_t>(1));
 
     auto start_total = std::chrono::steady_clock::now();
@@ -155,23 +213,41 @@ int main(int argc, char **argv) {
     /*double raysPerSecondSum = 0.0;
     uint64_t nRaysSum = 0.0;*/
 
-    for(size_t i = 0; i < nbLoops && !gpuSim.hasEnded; ++i){
+    size_t refreshForStop = 0;
+    size_t loopN;
+    for(loopN = 0; loopN < nbLoops && !gpuSim.hasEnded; ++loopN){
         //auto start = std::chrono::high_resolution_clock::now();
 
         gpuSim.RunSimulation();
-
-        if(!silentMode && (i+1)%printPerNRuns==0){
+        if((!silentMode && (loopN + 1) % printPerNRuns == 0) || refreshForStop <= loopN){
             auto t1 = std::chrono::steady_clock::now();
             std::chrono::duration<double,std::milli> elapsed = t1 - t0;
             t0 = t1;
 
             uint64_t nbHits = gpuSim.GetSimulationData();
+
+            if(model->ontheflyParams.desorptionLimit != 0) {
+                // add remaining steps to current loop count, this is the new approx. stop until desorption limit is reached
+               refreshForStop = loopN + gpuSim.RemainingStepsUntilStop();
+               std::cout << " Stopping at " << loopN << " / " << refreshForStop << std::endl;
+            }
+            if(gpuSim.hasEnded){
+                // if there is a next des limit, handle that
+                if(!limits.empty()) {
+                    model->ontheflyParams.desorptionLimit = limits.front();
+                    limits.pop_front();
+                    gpuSim.hasEnded = false;
+                    gpuSim.endCalled = false;
+                    gpuSim.AllowNewParticles();
+                    std::cout << " Handling next des limit " << model->ontheflyParams.desorptionLimit << std::endl;
+                }
+            }
             static const uint64_t nRays = launchSize * printPerNRuns;
             //double rpsRun = (double)nRays / elapsed.count() / 1000.0;
             double rpsRun = (double)(nbHits) / elapsed.count() / 1000.0;
             raysPerSecondMax = std::max(raysPerSecondMax,rpsRun);
             //raysPerSecondSum += rpsRun;
-            std::cout << "--- Run #"<<i+1<< " \t- Elapsed Time: " << elapsed.count()/1000.0 << " s \t--- " << rpsRun << " MRay/s ---" << std::endl;
+            std::cout << "--- Run #" << loopN + 1 << " \t- Elapsed Time: " << elapsed.count() / 1000.0 << " s \t--- " << rpsRun << " MRay/s ---" << std::endl;
             printf("--- Trans Prob: %e\n",gpuSim.GetTransProb(1u));
         }
     }
@@ -179,7 +255,7 @@ int main(int argc, char **argv) {
     gpuSim.GetSimulationData(false);
     std::chrono::duration<double> elapsed = finish_total - start_total;
     std::cout << "--         Total Elapsed Time: " << elapsed.count() / 60.0 << " min ---" << std::endl;
-    std::cout << "--         Avg. Rays per second: " << (double)launchSize*nbLoops/elapsed.count()/1.0e6 << " MRay/s ---" << std::endl;
+    std::cout << "--         Avg. Rays per second: " << (double)gpuSim.figures.total_counter*loopN/elapsed.count()/1.0e6 << " MRay/s ---" << std::endl;
     //std::cout << "--         Avg. Rays per second: " << raysPerSecondSum/(nbLoops/printPerNRuns) << " MRay/s ---" << std::endl;
     std::cout << "--         Max  Rays per second: " << raysPerSecondMax << " MRay/s ---" << std::endl;
 

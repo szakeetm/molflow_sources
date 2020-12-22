@@ -14,13 +14,6 @@
 #include "helper_math.h"
 #include "GPUDefines.h"
 
-namespace GLOB_COUNT {
-    unsigned long long int total_counter = 0;
-    unsigned long long int total_abs = 0;
-    double total_absd = 0;
-    unsigned long long int total_des = 0;
-}
-
 SimulationControllerGPU::SimulationControllerGPU(){
     optixHandle = nullptr;
     model = nullptr;
@@ -73,7 +66,6 @@ int SimulationControllerGPU::LoadSimulation(flowgpu::Model* loaded_model, size_t
  * Init random numbers and start RT launch
  * @return 1=could not load GPU Sim, 0=successfully loaded
  */
-static uint32_t runCount = 0;
 uint64_t SimulationControllerGPU::RunSimulation() {
 
     try {
@@ -81,7 +73,7 @@ uint64_t SimulationControllerGPU::RunSimulation() {
         // generate new numbers whenever necessary, recursion = TraceProcessing only, poly checks only for ray generation with polygons
         //if(1){
 #ifdef RNG_BULKED
-        if(runCount%(RAND_GEN_STEP)==0){
+        if(figures.runCount%(RAND_GEN_STEP)==0){
 #ifdef DEBUG
             //std::cout << "#flowgpu: generating random numbers at run #" << runCount << std::endl;
 #endif
@@ -89,13 +81,29 @@ uint64_t SimulationControllerGPU::RunSimulation() {
         }
 #endif //RNG_BULKED
         optixHandle->launchMolecules();
-        ++runCount;
+        ++figures.runCount;
+        if(!endCalled && !hasEnded)
+            ++figures.runCountNoEnd;
     } catch (std::runtime_error& e) {
         std::cout << MF_TERMINAL_RED << "FATAL ERROR: " << e.what()
                   << MF_TERMINAL_DEFAULT << std::endl;
         exit(1);
     }
-    return GLOB_COUNT::total_des;
+    return figures.total_des;
+}
+
+int SimulationControllerGPU::RemainingStepsUntilStop(){
+    uint64_t diffDes = 1u;
+    if(model->ontheflyParams.desorptionLimit > figures.total_des)
+        diffDes = model->ontheflyParams.desorptionLimit - figures.total_des;
+    size_t remainingDes = diffDes;
+
+    size_t remainingSteps = std::floor(remainingDes / figures.desPerRun);
+    /*printf("DesLim %zu - Globcount %llu\n",model->ontheflyParams.desorptionLimit, figures.total_des);
+    printf("[ %lf ] Remaining des: %zu (%zu - %llu) --> %lu\n",figures.desPerRun, remainingDes, model->ontheflyParams.desorptionLimit, figures.total_des,remainingSteps);
+    std::cout << figures.desPerRun<< " ] Remaining des --> "<<remainingDes << " --> " << remainingSteps << std::endl;
+    */
+    return remainingSteps;
 }
 
 /**
@@ -103,7 +111,7 @@ uint64_t SimulationControllerGPU::RunSimulation() {
  */
 void SimulationControllerGPU::AllowNewParticles() {
 #ifdef WITHDESORPEXIT
-    if (this->model->ontheflyParams.desorptionLimit > 0 && GLOB_COUNT::total_des >= this->model->ontheflyParams.desorptionLimit) return;
+    if (this->model->ontheflyParams.desorptionLimit > 0 && figures.total_des >= this->model->ontheflyParams.desorptionLimit) return;
     optixHandle->downloadDataFromDevice(&data); //download tmp counters
     for (auto &particle : data.hitData) {
         particle.hasToTerminate = 0;
@@ -119,8 +127,8 @@ void SimulationControllerGPU::AllowNewParticles() {
 void SimulationControllerGPU::CheckAndBlockDesorption() {
 #ifdef WITHDESORPEXIT
     if (this->model->ontheflyParams.desorptionLimit > 0) {
-        if (GLOB_COUNT::total_des >= this->model->ontheflyParams.desorptionLimit) {
-            bool endCalled = false;
+        if (figures.total_des >= this->model->ontheflyParams.desorptionLimit) {
+            endCalled = false;
             size_t nbExit = 0;
 
             for(auto& particle : data.hitData){
@@ -142,6 +150,43 @@ void SimulationControllerGPU::CheckAndBlockDesorption() {
 
 return;
 }
+
+void SimulationControllerGPU::CheckAndBlockDesorption_exact() {
+#ifdef WITHDESORPEXIT
+    size_t nThreads = this->kernelDimensions.x*this->kernelDimensions.y;
+    if (this->model->ontheflyParams.desorptionLimit > 0) {
+        if (figures.total_des + nThreads >= this->model->ontheflyParams.desorptionLimit) {
+            size_t desToStop =
+            (model->ontheflyParams.desorptionLimit > figures.total_des) ? (int64_t)model->ontheflyParams.desorptionLimit - figures.total_des : 0;
+            endCalled = false;
+            size_t nbExit = 0;
+            size_t nbTerm = 0;
+
+            for(int p = 0; p < data.hitData.size() - desToStop; ++p){
+                auto& particle = data.hitData[p];
+                if(particle.hasToTerminate > 0)
+                    endCalled = true;
+                else {
+                    particle.hasToTerminate = 1;
+                    ++nbTerm;
+                }
+                if(endCalled && particle.hasToTerminate == 2)
+                    nbExit++;
+            }
+            if(nbTerm) optixHandle->updateHostData(&data);
+            if(nbExit >= nThreads){
+                std::cout << " READY TO EXIT! "<< std::endl;
+                hasEnded = true;
+            }
+            //printf("Block: %llu [%zu / %zu / %zu / %zu / %zu]\n", desToStop, nbTerm, nbExit, nThreads, data.hitData.size(), data.hitData.size() - desToStop);
+
+        }
+    }
+#endif
+
+    return;
+}
+
 /**
  * Fetch simulation data from the device
  * @return 1=could not load GPU Sim, 0=successfully loaded
@@ -156,7 +201,13 @@ double SimulationControllerGPU::GetTransProb(size_t polyIndex) {
             sumAbs += this->globalCounter.facetHitCounters[i].nbAbsEquiv; // let misses count as 0 (-1+1)
     }
 
-    return sumAbs / (double) GLOB_COUNT::total_des;
+    return sumAbs / (double) figures.total_des;
+}
+
+
+void SimulationControllerGPU::CalcRuntimeFigures() {
+    figures.desPerRun = (double) figures.total_des / figures.runCountNoEnd;
+    printf(" DPR --> %lf [%llu / %u]\n", figures.desPerRun, figures.total_des, figures.runCountNoEnd);
 }
 
 /**
@@ -179,13 +230,12 @@ unsigned long long int SimulationControllerGPU::GetSimulationData(bool silent) {
         if(printCounters) PrintTotalCounters();
         optixHandle->resetDeviceBuffers(); //reset tmp counters
 
-        CheckAndBlockDesorption();
-
+        //CheckAndBlockDesorption();
+        CheckAndBlockDesorption_exact();
         if(writeData) WriteDataToFile("hitcounters.txt");
         if(printData) PrintData();
         if(printDataParent) PrintDataForParent();
-
-        GlobalHitBuffer *gHits;
+        CalcRuntimeFigures();
 
         return GetTotalHits();
     } catch (std::runtime_error& e) {
@@ -580,20 +630,20 @@ void SimulationControllerGPU::PrintData()
 /*! download the rendered color buffer and return the total amount of hits (= followed rays) */
 void SimulationControllerGPU::PrintTotalCounters()
 {
-    GLOB_COUNT::total_counter = 0;
-    GLOB_COUNT::total_des = 0;
-    GLOB_COUNT::total_absd = 0.0;
+    figures.total_counter = 0;
+    figures.total_des = 0;
+    figures.total_absd = 0.0;
 
     for(unsigned int i = 0; i < globalCounter.facetHitCounters.size(); i++) {
-        GLOB_COUNT::total_counter += globalCounter.facetHitCounters[i].nbMCHit; // let misses count as 0 (-1+1)
-        GLOB_COUNT::total_des += globalCounter.facetHitCounters[i].nbDesorbed; // let misses count as 0 (-1+1)
-        GLOB_COUNT::total_absd += globalCounter.facetHitCounters[i].nbAbsEquiv; // let misses count as 0 (-1+1)
+        figures.total_counter += globalCounter.facetHitCounters[i].nbMCHit; // let misses count as 0 (-1+1)
+        figures.total_des += globalCounter.facetHitCounters[i].nbDesorbed; // let misses count as 0 (-1+1)
+        figures.total_absd += globalCounter.facetHitCounters[i].nbAbsEquiv; // let misses count as 0 (-1+1)
     }
 
-    std::cout << " total hits >>> "<< GLOB_COUNT::total_counter;
-    std::cout << " /\\ total  des >>> "<< GLOB_COUNT::total_des;
-    std::cout << " /\\ total  abs >>> "<< static_cast<unsigned long long int>(GLOB_COUNT::total_absd);
-    std::cout << " /\\ total miss >>> "<< *globalCounter.leakCounter.data()<< " -- miss/hit ratio: "<<static_cast<double>(*globalCounter.leakCounter.data()) / GLOB_COUNT::total_counter <<std::endl;
+    std::cout << " total hits >>> "<< figures.total_counter;
+    std::cout << " /\\ total  des >>> "<< figures.total_des;
+    std::cout << " /\\ total  abs >>> "<< static_cast<unsigned long long int>(figures.total_absd);
+    std::cout << " /\\ total miss >>> "<< *globalCounter.leakCounter.data()<< " -- miss/hit ratio: "<<static_cast<double>(*globalCounter.leakCounter.data()) / figures.total_counter <<std::endl;
 }
 
 /*! download the rendered color buffer and return the total amount of hits (= followed rays) */
@@ -737,7 +787,6 @@ unsigned long long int SimulationControllerGPU::GetTotalHits(){
     for(auto & facetHitCounter : data.facetHitCounters) {
         total_counter += facetHitCounter.nbMCHit; // let misses count as 0 (-1+1)
     }
-
     return total_counter;
 }
 /**
@@ -762,10 +811,10 @@ int SimulationControllerGPU::ResetSimulation(){
    if(optixHandle)
        optixHandle->resetDeviceData(kernelDimensions);
 
-    GLOB_COUNT::total_des = 0;
-    GLOB_COUNT::total_abs = 0;
-    GLOB_COUNT::total_counter = 0;
-    GLOB_COUNT::total_absd = 0.0;
+    figures.total_des = 0;
+    figures.total_abs = 0;
+    figures.total_counter = 0;
+    figures.total_absd = 0.0;
     hasEnded = false;
 
     if(!data.hitData.empty()) // only resize if already initialized once

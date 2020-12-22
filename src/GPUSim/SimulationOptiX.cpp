@@ -584,6 +584,58 @@ namespace flowgpu {
         fprintf(stderr, "[%2d][%12s]: %s\n", (int) level, tag, message);
     }
 
+    void printDevProp(cudaDeviceProp devProp)
+    {   printf("%s\n", devProp.name);
+        printf("Major revision number:         %d\n", devProp.major);
+        printf("Minor revision number:         %d\n", devProp.minor);
+        printf("Total global memory:           %u", devProp.totalGlobalMem);
+        printf(" bytes\n");
+        printf("Number of multiprocessors:     %d\n", devProp.multiProcessorCount);
+        printf("Total amount of shared memory per block: %u\n",devProp.sharedMemPerBlock);
+        printf("Total registers per block:     %d\n", devProp.regsPerBlock);
+        printf("Warp size:                     %d\n", devProp.warpSize);
+        printf("Maximum memory pitch:          %u\n", devProp.memPitch);
+        printf("Total amount of constant memory:         %u\n",   devProp.totalConstMem);
+        return;
+    }
+
+    // from https://stackoverflow.com/questions/32530604/how-can-i-get-number-of-cores-in-cuda-device
+    int getSPcores(cudaDeviceProp devProp)
+    {
+        int cores = 0;
+        int mp = devProp.multiProcessorCount;
+        switch (devProp.major){
+            case 2: // Fermi
+                if (devProp.minor == 1) cores = mp * 48;
+                else cores = mp * 32;
+                break;
+            case 3: // Kepler
+                cores = mp * 192;
+                break;
+            case 5: // Maxwell
+                cores = mp * 128;
+                break;
+            case 6: // Pascal
+                if ((devProp.minor == 1) || (devProp.minor == 2)) cores = mp * 128;
+                else if (devProp.minor == 0) cores = mp * 64;
+                else printf("Unknown device type\n");
+                break;
+            case 7: // Volta and Turing
+                if ((devProp.minor == 0) || (devProp.minor == 5)) cores = mp * 64;
+                else printf("Unknown device type\n");
+                break;
+            case 8: // Ampere
+                if (devProp.minor == 0) cores = mp * 64;
+                else if (devProp.minor == 6) cores = mp * 128;
+                else printf("Unknown device type\n");
+                break;
+            default:
+                printf("Unknown device type\n");
+                break;
+        }
+        return cores;
+    }
+
     /*! creates and configures a optix device context (in this simple
       example, only for the primary GPU device) */
     void SimulationOptiX::createContext() {
@@ -600,7 +652,8 @@ namespace flowgpu {
         }
 #endif
         cudaGetDeviceProperties(&state.deviceProps, deviceID);
-        std::cout << "#flowgpu: running on device: " << state.deviceProps.name << std::endl;
+        std::cout << "#flowgpu: running on device: " << state.deviceProps.name;
+        std::cout << " with " <<         getSPcores(state.deviceProps) << " cores" << std::endl;
 
         CUresult cuRes = cuCtxGetCurrent(&state.cudaContext);
         if (cuRes != CUDA_SUCCESS)
@@ -1394,7 +1447,7 @@ try{
 #ifdef DEBUG
         crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr);
 #else
-        crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr,  time(NULL));
+        crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr,  42424242);
 #endif // DEBUG
         state.launchParams.randomNumbers = (RN_T *) sim_memory.randBuffer.d_pointer();
 #else
@@ -1468,7 +1521,7 @@ try{
 #ifdef DEBUG
         crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr);
 #else
-        crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr,  time(NULL));
+        crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr,  42424242);
 #endif // DEBUG
 #else
         sim_memory.randBuffer.resize(newSize.x * newSize.y * sizeof(curandState_t));
