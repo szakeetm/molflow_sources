@@ -98,11 +98,17 @@ int SimulationControllerGPU::RemainingStepsUntilStop(){
         diffDes = model->ontheflyParams.desorptionLimit - figures.total_des;
     size_t remainingDes = diffDes;
 
-    size_t remainingSteps = std::floor(remainingDes / figures.desPerRun);
-    /*printf("DesLim %zu - Globcount %llu\n",model->ontheflyParams.desorptionLimit, figures.total_des);
-    printf("[ %lf ] Remaining des: %zu (%zu - %llu) --> %lu\n",figures.desPerRun, remainingDes, model->ontheflyParams.desorptionLimit, figures.total_des,remainingSteps);
+    // Minimum 100 steps, to not spam single steps on desorption stop
+    // TODO : find more elegant way
+    size_t remainingSteps = 100;
+    if(diffDes >= 1) remainingSteps = std::ceil(0.9 * remainingDes / figures.desPerRun);
+    if(endCalled){
+        remainingSteps = std::ceil(0.9 * remainingDes / figures.desPerRun_stop);
+    }
+    /*printf("[ %lf ] Remaining des: %zu (%zu - %llu) --> %lu\n",figures.desPerRun, remainingDes, model->ontheflyParams.desorptionLimit, figures.total_des,remainingSteps);
     std::cout << figures.desPerRun<< " ] Remaining des --> "<<remainingDes << " --> " << remainingSteps << std::endl;
-    */
+    std::cout << figures.desPerRun_stop<< " ] Remaining des --> "<<remainingDes << " --> " << remainingSteps << std::endl;
+*/
     return remainingSteps;
 }
 
@@ -151,7 +157,8 @@ void SimulationControllerGPU::CheckAndBlockDesorption() {
 return;
 }
 
-void SimulationControllerGPU::CheckAndBlockDesorption_exact() {
+static uint64_t prevExitCount = 0;
+void SimulationControllerGPU::CheckAndBlockDesorption_exact(double threshold) {
 #ifdef WITHDESORPEXIT
     size_t nThreads = this->kernelDimensions.x*this->kernelDimensions.y;
     if (this->model->ontheflyParams.desorptionLimit > 0) {
@@ -173,8 +180,13 @@ void SimulationControllerGPU::CheckAndBlockDesorption_exact() {
                 if(endCalled && particle.hasToTerminate == 2)
                     nbExit++;
             }
+            if(nbExit){
+                figures.exitCount += nbExit - prevExitCount;
+                prevExitCount = nbExit;
+            }
             if(nbTerm) optixHandle->updateHostData(&data);
-            if(nbExit >= nThreads){
+            if(nbExit >= nThreads * threshold){
+                prevExitCount = 0;
                 std::cout << " READY TO EXIT! "<< std::endl;
                 hasEnded = true;
             }
@@ -206,8 +218,13 @@ double SimulationControllerGPU::GetTransProb(size_t polyIndex) {
 
 
 void SimulationControllerGPU::CalcRuntimeFigures() {
-    figures.desPerRun = (double) figures.total_des / figures.runCountNoEnd;
-    printf(" DPR --> %lf [%llu / %u]\n", figures.desPerRun, figures.total_des, figures.runCountNoEnd);
+    figures.desPerRun = (double) (figures.total_des - figures.ndes_stop) / figures.runCountNoEnd;
+    figures.desPerRun_stop = (double) (figures.exitCount) / (figures.runCount-figures.runCountNoEnd);
+/*
+    printf(" DPR --> %lf [%llu / %u]\n", figures.desPerRun, figures.total_des - figures.ndes_stop, figures.runCountNoEnd);
+    printf("sDPR --> %lf [%llu / %u]\n", (double) figures.exitCount / (figures.runCount-figures.runCountNoEnd), figures.ndes_stop, figures.runCount-figures.runCountNoEnd);
+*/
+
 }
 
 /**
@@ -231,7 +248,7 @@ unsigned long long int SimulationControllerGPU::GetSimulationData(bool silent) {
         optixHandle->resetDeviceBuffers(); //reset tmp counters
 
         //CheckAndBlockDesorption();
-        CheckAndBlockDesorption_exact();
+        CheckAndBlockDesorption_exact(0.99);
         if(writeData) WriteDataToFile("hitcounters.txt");
         if(printData) PrintData();
         if(printDataParent) PrintDataForParent();
@@ -630,18 +647,23 @@ void SimulationControllerGPU::PrintData()
 /*! download the rendered color buffer and return the total amount of hits (= followed rays) */
 void SimulationControllerGPU::PrintTotalCounters()
 {
+    uint64_t prevDes = figures.total_des;
     figures.total_counter = 0;
     figures.total_des = 0;
+    //figures.ndes_stop = 0;
     figures.total_absd = 0.0;
 
     for(unsigned int i = 0; i < globalCounter.facetHitCounters.size(); i++) {
         figures.total_counter += globalCounter.facetHitCounters[i].nbMCHit; // let misses count as 0 (-1+1)
+        //if(endCalled) figures.ndes_stop += globalCounter.facetHitCounters[i].nbDesorbed;
         figures.total_des += globalCounter.facetHitCounters[i].nbDesorbed; // let misses count as 0 (-1+1)
         figures.total_absd += globalCounter.facetHitCounters[i].nbAbsEquiv; // let misses count as 0 (-1+1)
     }
+    if(endCalled)
+        figures.ndes_stop += figures.total_des - prevDes;
 
     std::cout << " total hits >>> "<< figures.total_counter;
-    std::cout << " /\\ total  des >>> "<< figures.total_des;
+    std::cout << " /\\ total  des >>> "<< figures.total_des << " ("<<figures.ndes_stop<<")";
     std::cout << " /\\ total  abs >>> "<< static_cast<unsigned long long int>(figures.total_absd);
     std::cout << " /\\ total miss >>> "<< *globalCounter.leakCounter.data()<< " -- miss/hit ratio: "<<static_cast<double>(*globalCounter.leakCounter.data()) / figures.total_counter <<std::endl;
 }

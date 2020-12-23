@@ -6,6 +6,7 @@
 // debug output
 #include <fstream>
 
+#include <list>
 #include <chrono>
 #include <algorithm>
 #include <iostream>
@@ -72,8 +73,9 @@ void parseDesLimits( const char* arg, std::list<size_t>& limits )
 {
 
     // look for an 'x': <width>x<height>
-    size_t lim_end = strchr( arg, ';' ) - arg;
+    size_t lim_end = strchr( arg, 'x' ) - arg;
     size_t lim_begin = 0;
+    lim_end = std::min(lim_end,strlen(arg));
 
     while( lim_begin < strlen( arg ) )
     {
@@ -89,7 +91,7 @@ void parseDesLimits( const char* arg, std::list<size_t>& limits )
 
         limits.emplace_back(strtoull(this_arg,nullptr,10));
         lim_begin = lim_end + 1;
-        lim_end = strchr( &arg[lim_end]+1, ';' ) - arg;
+        lim_end = strchr( &arg[lim_end]+1, 'x' ) - arg;
         lim_end = std::min(lim_end,strlen(arg));
     }
     if(!limits.empty())

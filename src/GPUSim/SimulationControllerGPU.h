@@ -14,10 +14,14 @@ struct RuntimeFigures {
     uint32_t runCount {0};
     uint32_t runCountNoEnd {0};
     double desPerRun {0.0};
+    double desPerRun_stop {0.0};
+
     unsigned long long int total_counter = 0;
     unsigned long long int total_abs = 0;
     double total_absd = 0;
     unsigned long long int total_des = 0;
+    uint64_t ndes_stop = 0;
+    uint64_t exitCount = 0;
 };
 
 class SimulationControllerGPU {
@@ -42,7 +46,7 @@ public:
     int ResetSimulation();
     void AllowNewParticles();
     void CheckAndBlockDesorption();
-    void CheckAndBlockDesorption_exact();
+    void CheckAndBlockDesorption_exact(double threshold);
     unsigned long long int GetSimulationData(bool silent = true);
     void IncreaseGlobalCounters(HostData* tempData);
     void PrintData();
