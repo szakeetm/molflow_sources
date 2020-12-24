@@ -575,6 +575,19 @@ namespace flowgpu {
             RecordAbsorpProfile(poly, prd, rayOrigin, rayDir);
         }
 #endif
+
+// terminate if exit has been called
+#ifdef WITHDESORPEXIT
+#ifdef PAYLOAD_DIRECT
+        if(optixLaunchParams.perThreadData.currentMoleculeData[getWorkIndex()].hasToTerminate==1){
+            optixLaunchParams.perThreadData.currentMoleculeData[getWorkIndex()].hasToTerminate=2;
+        }
+#else
+        if(prd.hasToTerminate==1){
+            prd.hasToTerminate=2;
+        }
+#endif //PAYLOAD_DIRECT
+#endif
     }
 
     static __forceinline__ __device__
@@ -1254,6 +1267,20 @@ optixLaunchParams.perThreadData.currentMoleculeData[fbIndex].postHitDir = prd->p
             prd->inSystem = NEW_PARTICLE;
 #if defined(GPUNBOUNCE)
         prd->nbBounces = 0;
+#endif
+
+        // terminate if exit has been called
+// terminate if exit has been called
+#ifdef WITHDESORPEXIT
+#ifdef PAYLOAD_DIRECT
+        if(optixLaunchParams.perThreadData.currentMoleculeData[getWorkIndex()].hasToTerminate==1){
+            optixLaunchParams.perThreadData.currentMoleculeData[getWorkIndex()].hasToTerminate=2;
+        }
+#else
+        if(prd->hasToTerminate==1){
+            prd->hasToTerminate=2;
+        }
+#endif //PAYLOAD_DIRECT
 #endif
         /*}
         else{

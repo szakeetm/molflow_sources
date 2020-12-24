@@ -93,7 +93,7 @@ uint64_t SimulationControllerGPU::RunSimulation() {
 }
 
 int SimulationControllerGPU::RemainingStepsUntilStop(){
-    uint64_t diffDes = 1u;
+    uint64_t diffDes = 0u;
     if(model->ontheflyParams.desorptionLimit > figures.total_des)
         diffDes = model->ontheflyParams.desorptionLimit - figures.total_des;
     size_t remainingDes = diffDes;
@@ -103,7 +103,11 @@ int SimulationControllerGPU::RemainingStepsUntilStop(){
     size_t remainingSteps = 100;
     if(diffDes >= 1) remainingSteps = std::ceil(0.9 * remainingDes / figures.desPerRun);
     if(endCalled){
-        remainingSteps = std::ceil(0.9 * remainingDes / figures.desPerRun_stop);
+        // TODO: replace  kernelDimensions.x*kernelDimensions.y
+        if(diffDes >= 0)
+            remainingSteps = std::ceil(0.9 * kernelDimensions.x*kernelDimensions.y / figures.desPerRun_stop);
+        if(remainingSteps < 100)
+            remainingSteps = 100;
     }
     /*printf("[ %lf ] Remaining des: %zu (%zu - %llu) --> %lu\n",figures.desPerRun, remainingDes, model->ontheflyParams.desorptionLimit, figures.total_des,remainingSteps);
     std::cout << figures.desPerRun<< " ] Remaining des --> "<<remainingDes << " --> " << remainingSteps << std::endl;
@@ -165,26 +169,57 @@ void SimulationControllerGPU::CheckAndBlockDesorption_exact(double threshold) {
         if (figures.total_des + nThreads >= this->model->ontheflyParams.desorptionLimit) {
             size_t desToStop =
             (model->ontheflyParams.desorptionLimit > figures.total_des) ? (int64_t)model->ontheflyParams.desorptionLimit - figures.total_des : 0;
-            endCalled = false;
+            //endCalled = false;
             size_t nbExit = 0;
             size_t nbTerm = 0;
 
-            for(int p = 0; p < data.hitData.size() - desToStop; ++p){
+            // 1. Set already terminated particles back to active
+            // 2. set remaining active particles to terminate
+            // that way there will never be inactive particles reaching full desorption limit
+            int pInd = 0;
+            auto desLim = desToStop;
+            if(endCalled) {
+                while (desLim > 0 && pInd < data.hitData.size()) {
+                    auto &particle = data.hitData[pInd];
+                    if (particle.hasToTerminate == 2) {
+                        particle.hasToTerminate = 1;
+                        --desLim;
+                    } else if (particle.hasToTerminate == 1) {
+                        ++nbTerm;
+                    } else if (particle.hasToTerminate == 0) {
+                        particle.hasToTerminate = 1;
+                    }
+                    ++pInd;
+                }
+            }
+            else{
+                for(auto& particle : data.hitData){
+                    particle.hasToTerminate = 1;
+                }
+                pInd = desToStop;
+                endCalled = true;
+            }
+
+            // set remainders
+            for(int p = pInd; p < data.hitData.size();++p){
                 auto& particle = data.hitData[p];
-                if(particle.hasToTerminate > 0)
-                    endCalled = true;
-                else {
+                if(particle.hasToTerminate == 0) {
                     particle.hasToTerminate = 1;
                     ++nbTerm;
                 }
-                if(endCalled && particle.hasToTerminate == 2)
+                else if(particle.hasToTerminate == 2){
                     nbExit++;
+                }
+                else {
+                    endCalled = true;
+                }
             }
+
             if(nbExit){
                 figures.exitCount += nbExit - prevExitCount;
                 prevExitCount = nbExit;
             }
-            if(nbTerm) optixHandle->updateHostData(&data);
+            if(endCalled) optixHandle->updateHostData(&data);
             if(nbExit >= nThreads * threshold){
                 prevExitCount = 0;
                 std::cout << " READY TO EXIT! "<< std::endl;
@@ -248,7 +283,7 @@ unsigned long long int SimulationControllerGPU::GetSimulationData(bool silent) {
         optixHandle->resetDeviceBuffers(); //reset tmp counters
 
         //CheckAndBlockDesorption();
-        CheckAndBlockDesorption_exact(0.99);
+        CheckAndBlockDesorption_exact(1.00);
         if(writeData) WriteDataToFile("hitcounters.txt");
         if(printData) PrintData();
         if(printDataParent) PrintDataForParent();

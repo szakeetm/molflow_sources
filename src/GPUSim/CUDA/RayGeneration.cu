@@ -602,12 +602,12 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
                 break;
             }
             case NEW_PARTICLE: {
-#ifdef WITHDESORPEXIT
+/*#ifdef WITHDESORPEXIT
                 if(hitData.hasToTerminate==1){
                     hitData.hasToTerminate=2;
                     return;
                 }
-#endif
+#endif*/
                 /*
                  * start from a source
                  */

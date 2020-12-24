@@ -36,7 +36,7 @@
 // Whether to use Ad hoc RNG or Bulk generation for GPU random numbers
 #define RNG_BULKED 1
 
-// Whether to use Ad hoc RNG or Bulk generation for GPU random numbers
+// defined = use direct payloads, else use ptr
 #define PAYLOAD_DIRECT 1
 
 // Random Number typedef
