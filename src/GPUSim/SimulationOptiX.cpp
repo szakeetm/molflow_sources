@@ -1447,11 +1447,11 @@ try{
 #ifdef DEBUG
         crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr);
 #else
-        crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr,  42424242);
+        crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr,  time(nullptr));
 #endif // DEBUG
         state.launchParams.randomNumbers = (RN_T *) sim_memory.randBuffer.d_pointer();
 #else
-        crng::initializeRandDevice_ref(newSize.x * newSize.y, sim_memory.randBuffer.d_ptr,  time(NULL));
+        crng::initializeRandDevice_ref(newSize.x * newSize.y, sim_memory.randBuffer.d_ptr,  time(nullptr));
         state.launchParams.randomNumbers = (curandState_t *) sim_memory.randBuffer.d_pointer();
         crng::generateRandDevice(newSize.x * newSize.y,(curandState_t *) sim_memory.randBuffer.d_pointer());
         crng::generateRandDevice(newSize.x * newSize.y,(curandState_t *) state.launchParams.randomNumbers);
@@ -1521,12 +1521,12 @@ try{
 #ifdef DEBUG
         crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr);
 #else
-        crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr,  42424242);
+        crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr,  time(nullptr));
 #endif // DEBUG
 #else
         sim_memory.randBuffer.resize(newSize.x * newSize.y * sizeof(curandState_t));
         crng::destroyRandDevice((curandState_t **) &sim_memory.randBuffer.d_ptr);
-        crng::initializeRandDevice_ref(newSize.x * newSize.y, sim_memory.randBuffer.d_ptr,  time(NULL));
+        crng::initializeRandDevice_ref(newSize.x * newSize.y, sim_memory.randBuffer.d_ptr,  time(nullptr));
 #endif // RNG_BULKED
 
 
