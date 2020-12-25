@@ -89,7 +89,7 @@ void parseDesLimits( const char* arg, std::list<size_t>& limits )
         // terminate the width string
         this_arg[lim_end-lim_begin] = '\0';
 
-        limits.emplace_back(strtoull(this_arg,nullptr,10));
+        limits.emplace_back(strtod(this_arg,nullptr));
         lim_begin = lim_end + 1;
         lim_end = strchr( &arg[lim_end]+1, 'x' ) - arg;
         lim_end = std::min(lim_end,strlen(arg));
