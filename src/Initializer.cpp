@@ -26,10 +26,10 @@ public:
 int Initializer::init(int argc, char **argv, SimulationManager *simManager, SimulationModel *model,
                       GlobalSimuState *globState) {
 
-#if defined(WIN32)
-    setlocale(LC_ALL, "de_DE.UTF-8");
+#if defined(WIN32) || defined(__APPLE__)
+    setlocale(LC_ALL, "C");
 #else
-    std::setlocale(LC_ALL, "de_DE.UTF-8");
+    std::setlocale(LC_ALL, "C");
 #endif
     parseCommands(argc, argv);
 
