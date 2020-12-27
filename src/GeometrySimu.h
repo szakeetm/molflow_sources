@@ -232,7 +232,9 @@ public:
         facetStates = rhs.facetStates;
         initialized = rhs.initialized;
     };
-    GlobalSimuState() = default;
+    GlobalSimuState() : globalHits(), tMutex() {
+
+    };
     ~GlobalSimuState() {
 #if defined(MOLFLOW)
         globalHistograms.clear();
