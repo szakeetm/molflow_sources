@@ -15,6 +15,7 @@ namespace Settings {
     extern double nbCPUCores;
     extern size_t nbThreadsPerCore;
     extern uint64_t simDuration;
+    extern uint64_t autoSaveDuration;
     extern std::list<uint64_t> desLimit;
     extern bool resetOnStart;
     extern std::string req_real_file;

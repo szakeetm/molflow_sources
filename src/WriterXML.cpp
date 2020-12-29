@@ -19,7 +19,12 @@ void setWriteProgress(double newProgress) {
 }
 
 void reportWriteStatus(const std::string& statusString) {
-    printf("[Writer at %3.2lf%%] %s", writeProgress , statusString.c_str());
+    auto time_point = std::chrono::system_clock::now();
+    std::time_t now_c = std::chrono::system_clock::to_time_t(time_point);
+    char s[256];
+    struct tm * p = localtime(&now_c);
+    strftime(s, 256, "%F_%T", p);
+    printf("[%s][Writer at %3.2lf%%] %s\n", s, writeProgress , statusString.c_str());
 }
 
 void WriterXML::SaveGeometry(const std::string& outputFileName, SimulationModel *model) {

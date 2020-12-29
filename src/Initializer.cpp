@@ -11,6 +11,7 @@ namespace Settings {
     double nbCPUCores = 0;
     size_t nbThreadsPerCore = 0;
     uint64_t simDuration = 10;
+    uint64_t autoSaveDuration = 600; // default: autosave every 600s=10min
     std::list<uint64_t> desLimit;
     bool resetOnStart = false;
     std::string req_real_file;
@@ -80,6 +81,8 @@ int Initializer::parseCommands(int argc, char** argv) {
     app.add_option("-f,--file", Settings::req_real_file, "Require an existing file")
             ->required()
             ->check(CLI::ExistingFile);
+    app.add_option("-a", Settings::autoSaveDuration, "Seconds for autosave if not zero.");
+
     app.add_flag("-r,--reset", Settings::resetOnStart, "Resets simulation status loaded from while");
     CLI11_PARSE(app, argc, argv);
 
