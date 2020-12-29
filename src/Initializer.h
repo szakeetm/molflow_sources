@@ -5,6 +5,7 @@
 #ifndef MOLFLOW_PROJ_INITIALIZER_H
 #define MOLFLOW_PROJ_INITIALIZER_H
 
+#include <list>
 #include <string>
 #include <SimulationManager.h>
 #include "GeometrySimu.h"
@@ -14,13 +15,16 @@ namespace Settings {
     extern double nbCPUCores;
     extern size_t nbThreadsPerCore;
     extern uint64_t simDuration;
+    extern std::list<uint64_t> desLimit;
+    extern bool resetOnStart;
     extern std::string req_real_file;
 }
 
 class Initializer {
 private:
     static int parseCommands(int argc, char** argv);
-    static int loadFromXML(SimulationManager *simManager, SimulationModel *model, GlobalSimuState *globState);
+    static int loadFromXML(SimulationManager *simManager, SimulationModel *model, GlobalSimuState *globState,
+                           bool loadState);
     static int setSharedStorage();
 
 public:

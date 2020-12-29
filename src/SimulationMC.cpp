@@ -91,6 +91,7 @@ bool CurrentParticleStatus::UpdateMCHits(GlobalSimuState &globSimuState, size_t 
                   << " : " << globSimuState.globalHits.globalHits.hit.nbMCHit << " += "
                   << tmpState.globalHits.globalHits.hit.nbMCHit << std::endl;
 #endif*/
+        //printf("UP![%zu] %lu + %zu = %zu\n", particleId, tmpState.globalHits.globalHits.hit.nbDesorbed, globSimuState.globalHits.globalHits.hit.nbDesorbed, tmpState.globalHits.globalHits.hit.nbDesorbed + globSimuState.globalHits.globalHits.hit.nbDesorbed);
         globSimuState.globalHits.globalHits += tmpState.globalHits.globalHits;
         globSimuState.globalHits.distTraveled_total += tmpState.globalHits.distTraveled_total;
         globSimuState.globalHits.distTraveledTotal_fullHitsOnly += tmpState.globalHits.distTraveledTotal_fullHitsOnly;
@@ -315,16 +316,16 @@ void CurrentParticleStatus::PerformTeleport(SubprocessFacet *iFacet) {
 
 // Perform nbStep simulation steps (a step is a bounce)
 
-bool CurrentParticleStatus::SimulationMCStep(size_t nbStep, size_t threadNum) {
+bool CurrentParticleStatus::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainingDes) {
 
     // Check end of simulation
-    if (model->otfParams.desorptionLimit > 0) {
+    /*if (model->otfParams.desorptionLimit > 0) {
         if (model->wp.totalDesorbedMolecules >=
             model->otfParams.desorptionLimit / model->otfParams.nbProcess) {
             //lastHitFacet = nullptr; // reset full particle status or go on from where we left
             return false;
         }
-    }
+    }*/
 
     // Perform simulation steps
     int returnVal = true;
@@ -338,12 +339,20 @@ bool CurrentParticleStatus::SimulationMCStep(size_t nbStep, size_t threadNum) {
 
         particleId = ompIndex;
         size_t i;
+
+        // start new particle when no previous hit facet was saved
+        bool insertNewParticle = !lastHitFacet;
         for (i = 0; i < nbStep /*&& allQuit <= 0*/; i++) {
-            if (!lastHitFacet)
-                if (!StartFromSource()) {
+            if (insertNewParticle) {
+                // quit on desorp error or limit reached
+                if(!StartFromSource() || remainingDes-1==0){
                     returnVal = false; // desorp limit reached
                     break;
                 }
+                insertNewParticle = false;
+                --remainingDes;
+            }
+
             //return (lastHitFacet != nullptr);
 
             //Prepare output values
@@ -378,11 +387,8 @@ bool CurrentParticleStatus::SimulationMCStep(size_t nbStep, size_t threadNum) {
                     tmpState.globalHits.distTraveled_total += remainderFlightPath * oriRatio;
                     if (particleId == 0)RecordHit(HIT_LAST);
                     //distTraveledSinceUpdate += distanceTraveled;
-                    if (!StartFromSource()) {
-                        // desorptionLimit reached
-                        returnVal = false;
-                        break;
-                    }
+                    insertNewParticle = true;
+                    lastHitFacet=nullptr;
                 } else { //hit within measured time, particle still alive
                     if (collidedFacet->sh.teleportDest != 0) { //Teleport
                         IncreaseDistanceCounters(d * oriRatio);
@@ -402,11 +408,8 @@ bool CurrentParticleStatus::SimulationMCStep(size_t nbStep, size_t threadNum) {
                                 //Absorbed
                                 RecordAbsorb(collidedFacet);
                                 //distTraveledSinceUpdate += distanceTraveled;
-                                if (!StartFromSource()) {
-                                    // desorptionLimit reached
-                                    returnVal = false;
-                                    break;
-                                }
+                                insertNewParticle = true;
+                                lastHitFacet=nullptr;
                             } else {
                                 //Reflected
                                 PerformBounce(collidedFacet);
@@ -423,11 +426,8 @@ bool CurrentParticleStatus::SimulationMCStep(size_t nbStep, size_t threadNum) {
                             if (oriRatio > model->otfParams.lowFluxCutoff) {
                                 PerformBounce(collidedFacet);
                             } else { //eliminate remainder and create new particle
-                                if (!StartFromSource()) {
-                                    // desorptionLimit reached
-                                    returnVal = false;
-                                    break;
-                                }
+                                insertNewParticle = true;
+                                lastHitFacet=nullptr;
                             }
                         }
                     }
@@ -437,11 +437,8 @@ bool CurrentParticleStatus::SimulationMCStep(size_t nbStep, size_t threadNum) {
                 // No intersection found: Leak
                 tmpState.globalHits.nbLeakTotal++;
                 if (particleId == 0)RecordLeakPos();
-                if (!StartFromSource()) {
-                    // desorptionLimit reached
-                    returnVal = false;
-                    break;
-                }
+                insertNewParticle = true;
+                lastHitFacet=nullptr;
             }
         }
 
@@ -473,13 +470,13 @@ bool CurrentParticleStatus::StartFromSource() {
     int nbTry = 0;
 
     // Check end of simulation
-    if (model->otfParams.desorptionLimit > 0) {
+    /*if (model->otfParams.desorptionLimit > 0) {
         if (tmpState.globalHits.globalHits.hit.nbDesorbed >=
             model->otfParams.desorptionLimit / model->otfParams.nbProcess) {
             //lastHitFacet = nullptr; // reset full particle status or go on from where we left
             return false;
         }
-    }
+    }*/
 
     // Select source
     srcRnd = randomGenerator.rnd() * model->wp.totalDesorbedMolecules;

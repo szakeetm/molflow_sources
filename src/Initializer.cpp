@@ -11,6 +11,8 @@ namespace Settings {
     double nbCPUCores = 0;
     size_t nbThreadsPerCore = 0;
     uint64_t simDuration = 10;
+    std::list<uint64_t> desLimit;
+    bool resetOnStart = false;
     std::string req_real_file;
 }
 
@@ -42,9 +44,21 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
         return 1;
     }
     std::cout << "Active cores: " << simManager->nbCores << std::endl;
-    model->otfParams.nbProcess = simManager->nbCores;
+    model->otfParams.nbProcess = simManager->nbThreads;
+    //model->otfParams.desorptionLimit = Settings::desLimit.front();
 
-    loadFromXML(simManager, model, globState);
+    // Set desorption limit if used
+    if(!Settings::desLimit.empty()) {
+        model->otfParams.desorptionLimit = Settings::desLimit.front();
+        Settings::desLimit.pop_front();
+    }
+    else{
+        model->otfParams.desorptionLimit = 0;
+    }
+
+    loadFromXML(simManager, model, globState, !Settings::resetOnStart);
+    std::cout << "Start with "<< globState->globalHits.globalHits.hit.nbMCHit
+              << " : " << globState->globalHits.globalHits.hit.nbDesorbed << " // "<< Settings::resetOnStart << std::endl;
 
     simManager->ForwardGlobalCounter(globState);
 
@@ -57,20 +71,26 @@ int Initializer::parseCommands(int argc, char** argv) {
     CLI::App app{"Molflow+/Synrad+ Simulation Management"};
     app.formatter(std::make_shared<FlowFormatter>());
 
+    std::vector<double> limits;
     // Define options
     app.add_option("-j,--threads", Settings::nbThreadsPerCore, "# threads per core");
     app.add_option("-p,--procs", Settings::nbCPUCores, "# CPU cores");
     app.add_option("-t,--time", Settings::simDuration, "Simulation duration in seconds");
+    app.add_option("-d,--ndes", limits, "Desorption limit for simulation end");
     app.add_option("-f,--file", Settings::req_real_file, "Require an existing file")
             ->required()
             ->check(CLI::ExistingFile);
+    app.add_flag("-r,--reset", Settings::resetOnStart, "Resets simulation status loaded from while");
     CLI11_PARSE(app, argc, argv);
 
     std::cout << "Number used CPU cores: " << Settings::nbCPUCores << std::endl;
+    for(auto& lim : limits)
+        Settings::desLimit.emplace_back(lim);
     return 0;
 }
 
-int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *model, GlobalSimuState *globState) {
+int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *model, GlobalSimuState *globState,
+                             bool loadState) {
 
     //1. Load Input File (regular XML)
     FlowIO::LoaderXML loader;
@@ -118,7 +138,8 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
         globState->Resize(*model);
 
         // 3. init counters with previous results
-        loader.LoadSimulationState(Settings::req_real_file, model, *globState);
+        if(loadState)
+            loader.LoadSimulationState(Settings::req_real_file, model, *globState);
         //simManager->UnlockHitBuffer();
 
 

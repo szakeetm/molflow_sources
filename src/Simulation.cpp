@@ -213,6 +213,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     //if(!model.sh.name.empty())
     //loadOK = true;
     double t1 = GetTick();
+
     printf("  Load %s successful\n", model.sh.name.c_str());
     printf("  Geometry: %zd vertex %zd facets\n", model.vertices3.size(), model.sh.nbFacet);
 

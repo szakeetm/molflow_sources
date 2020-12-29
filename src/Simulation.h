@@ -41,7 +41,7 @@ public:
     double GenerateRandomVelocity(int CDFId, const double rndVal);
     double GenerateDesorptionTime(const SubprocessFacet *src, const double rndVal);
     void IncreaseDistanceCounters(double distanceIncrement);
-    bool SimulationMCStep(size_t nbStep, size_t threadNum);
+    bool SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainingDes);
     bool StartFromSource();
     bool UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, DWORD timeout);
     void RecordHitOnTexture(const SubprocessFacet *f, double time, bool countHit, double velocity_factor, double ortSpeedFactor);
