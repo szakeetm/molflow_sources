@@ -16,6 +16,7 @@ namespace Settings {
     extern size_t nbThreadsPerCore;
     extern uint64_t simDuration;
     extern uint64_t autoSaveDuration;
+    extern bool loadAutosave;
     extern std::list<uint64_t> desLimit;
     extern bool resetOnStart;
     extern std::string req_real_file;

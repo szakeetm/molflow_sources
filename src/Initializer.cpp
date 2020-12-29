@@ -12,6 +12,7 @@ namespace Settings {
     size_t nbThreadsPerCore = 0;
     uint64_t simDuration = 10;
     uint64_t autoSaveDuration = 600; // default: autosave every 600s=10min
+    bool loadAutosave = false;
     std::list<uint64_t> desLimit;
     bool resetOnStart = false;
     std::string req_real_file;
@@ -81,7 +82,8 @@ int Initializer::parseCommands(int argc, char** argv) {
     app.add_option("-f,--file", Settings::req_real_file, "Require an existing file")
             ->required()
             ->check(CLI::ExistingFile);
-    app.add_option("-a", Settings::autoSaveDuration, "Seconds for autosave if not zero.");
+    app.add_option("-a", Settings::autoSaveDuration, "Seconds for autosave if not zero");
+    app.add_flag("--loadAutosave", Settings::loadAutosave, "Whether autosave_ file should be used if exists");
 
     app.add_flag("-r,--reset", Settings::resetOnStart, "Resets simulation status loaded from while");
     CLI11_PARSE(app, argc, argv);
@@ -141,10 +143,21 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
         globState->Resize(*model);
 
         // 3. init counters with previous results
-        if(loadState)
-            loader.LoadSimulationState(Settings::req_real_file, model, *globState);
-        //simManager->UnlockHitBuffer();
+        if(loadState) {
 
+            if(Settings::loadAutosave){
+                std::string fileName = std::filesystem::path(Settings::req_real_file).filename();
+                std::string autoSavePrefix = "autosave_";
+                fileName = autoSavePrefix + fileName;
+                if(std::filesystem::exists(fileName)) {
+                    std::cout << "Found autosave file! Loading simulation state..." << std::endl;
+                    loader.LoadSimulationState(autoSavePrefix+fileName, model, *globState);
+                }
+            }
+            else {
+                loader.LoadSimulationState(Settings::req_real_file, model, *globState);
+            }
+        }
 
 
     }
