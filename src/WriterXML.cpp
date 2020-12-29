@@ -22,7 +22,7 @@ void reportWriteStatus(const std::string& statusString) {
     printf("[Writer at %3.2lf%%] %s", writeProgress , statusString.c_str());
 }
 
-void WriterXML::SaveGeometry(std::string outputFileName, SimulationModel *model) {
+void WriterXML::SaveGeometry(const std::string& outputFileName, SimulationModel *model) {
     xml_document saveDoc;
     xml_node rootNode;
     if(useOldXMLFormat){
@@ -79,7 +79,7 @@ int WriterXML::SaveSimulationState(std::string outputFileName, SimulationModel *
             xml_node hitCacheNode = globalNode.append_child("Hit_Cache");
             hitCacheNode.append_attribute("nb") = gHits->hitCacheSize;
 
-            for (int i = 0; i < gHits->hitCacheSize; i++) {
+            for (size_t i = 0; i < gHits->hitCacheSize; i++) {
                 xml_node newHit = hitCacheNode.append_child("Hit");
                 newHit.append_attribute("id") = i;
                 newHit.append_attribute("posX") = gHits->hitCache[i].pos.x;
@@ -104,7 +104,7 @@ int WriterXML::SaveSimulationState(std::string outputFileName, SimulationModel *
 
         xml_node facetResultsNode = newMoment.append_child("FacetResults");
 
-        for (int i = 0; i < model->sh.nbFacet; i++) {
+        for (size_t i = 0; i < model->sh.nbFacet; i++) {
             SubprocessFacet* subFac = nullptr;
 
             for(auto& s : model->structures){
@@ -229,7 +229,7 @@ int WriterXML::SaveSimulationState(std::string outputFileName, SimulationModel *
     return 0;
 }
 
-int WriterXML::SaveSimulationState(std::string outputFileName, SimulationModel *model, GlobalSimuState& globState) {
+int WriterXML::SaveSimulationState(const std::string& outputFileName, SimulationModel *model, GlobalSimuState& globState) {
     xml_document saveDoc;
     xml_parse_result parseResult = saveDoc.load_file(outputFileName.c_str()); //parse xml file directly
 
@@ -271,7 +271,7 @@ int WriterXML::SaveSimulationState(std::string outputFileName, SimulationModel *
             xml_node hitCacheNode = globalNode.append_child("Hit_Cache");
             hitCacheNode.append_attribute("nb") = globState.globalHits.hitCacheSize;
 
-            for (int i = 0; i < globState.globalHits.hitCacheSize; i++) {
+            for (size_t i = 0; i < globState.globalHits.hitCacheSize; i++) {
                 xml_node newHit = hitCacheNode.append_child("Hit");
                 newHit.append_attribute("id") = i;
                 newHit.append_attribute("posX") = globState.globalHits.hitCache[i].pos.x;
@@ -282,7 +282,7 @@ int WriterXML::SaveSimulationState(std::string outputFileName, SimulationModel *
 
             xml_node leakCacheNode = globalNode.append_child("Leak_Cache");
             leakCacheNode.append_attribute("nb") = globState.globalHits.leakCacheSize;
-            for (int i = 0; i < globState.globalHits.leakCacheSize; i++) {
+            for (size_t i = 0; i < globState.globalHits.leakCacheSize; i++) {
                 xml_node newLeak = leakCacheNode.append_child("Leak");
                 newLeak.append_attribute("id") = i;
                 newLeak.append_attribute("posX") = globState.globalHits.leakCache[i].pos.x;
@@ -296,7 +296,7 @@ int WriterXML::SaveSimulationState(std::string outputFileName, SimulationModel *
 
         xml_node facetResultsNode = newMoment.append_child("FacetResults");
 
-        for (int i = 0; i < model->sh.nbFacet; i++) {
+        for (size_t i = 0; i < model->sh.nbFacet; i++) {
             SubprocessFacet* subFac = nullptr;
 
             for(auto& s : model->structures){
