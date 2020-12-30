@@ -59,8 +59,6 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
     }
 
     loadFromXML(simManager, model, globState, !Settings::resetOnStart);
-    std::cout << "Start with "<< globState->globalHits.globalHits.hit.nbMCHit
-              << " : " << globState->globalHits.globalHits.hit.nbDesorbed << " // "<< Settings::resetOnStart << std::endl;
 
     simManager->ForwardGlobalCounter(globState);
 
