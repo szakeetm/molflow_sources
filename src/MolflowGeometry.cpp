@@ -292,6 +292,14 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 	catch (...) {
 		throw Error("Unspecified Error while building pipe");
 	}
+
+    // Vertices
+    for (int i = 0; i < vertices3.size(); i++) {
+        vertices3[i].x = static_cast<float>(vertices3[i].x);
+        vertices3[i].y = static_cast<float>(vertices3[i].y);
+        vertices3[i].z = static_cast<float>(vertices3[i].z);
+    }
+
 	InitializeGeometry();
 	//isLoaded = true; //InitializeGeometry() sets to true
 
