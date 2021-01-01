@@ -112,7 +112,7 @@ int main(int argc, char **argv) {
     size_t nbLoops = 1;               // Number of Simulation loops
     size_t launchSize = 1;                  // Kernel launch size
     size_t nPrints = 10;
-    size_t printPerN = 10000;
+    size_t printPerN = 100000;
     bool silentMode = false;
 
 

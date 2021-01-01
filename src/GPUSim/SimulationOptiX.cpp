@@ -1185,7 +1185,7 @@ namespace flowgpu {
     /*! upload some parts only on start */
     void SimulationOptiX::initSimulation() {
         const uint32_t launchSize = state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y;
-        const uint32_t nbHCBins = CORESPERSM * WARPSCHEDULERS;
+        const uint32_t nbHCBins = EXTRAFACETCOUNTERS;
 
         CuFacetHitCounter *hitCounter = new CuFacetHitCounter[nbHCBins * state.launchParams.simConstants.nbFacets]();
         uint32_t *missCounter = new uint32_t(0);
@@ -1409,7 +1409,7 @@ try{
         sim_memory.randBuffer.resize(newSize.x * newSize.y * sizeof(curandState_t));
 #endif
         facet_memory.hitCounterBuffer.resize(
-                model->nbFacets_total * CORESPERSM * WARPSCHEDULERS * sizeof(CuFacetHitCounter));
+                model->nbFacets_total * EXTRAFACETCOUNTERS * sizeof(CuFacetHitCounter));
         facet_memory.missCounterBuffer.resize(sizeof(uint32_t));
         //facet_memory.textureBuffer.resize(model->textures.size() * sizeof(TextureCell));
 
@@ -1557,7 +1557,7 @@ try{
                                                                          state.launchParams.simConstants.size.y);
 #endif
         facet_memory.hitCounterBuffer.download(hostData->facetHitCounters.data(),
-                                               model->nbFacets_total * CORESPERSM * WARPSCHEDULERS);
+                                               model->nbFacets_total * EXTRAFACETCOUNTERS);
         facet_memory.missCounterBuffer.download(hostData->leakCounter.data(), 1);
 
         if (!facet_memory.texelBuffer.isNullptr())
@@ -1593,7 +1593,7 @@ try{
     void SimulationOptiX::resetDeviceBuffers() {
         //sim_memory.moleculeBuffer.download(hit, state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y);
         facet_memory.hitCounterBuffer.initDeviceData(
-                model->nbFacets_total * CORESPERSM * WARPSCHEDULERS * sizeof(flowgpu::CuFacetHitCounter));
+                model->nbFacets_total * EXTRAFACETCOUNTERS * sizeof(flowgpu::CuFacetHitCounter));
         facet_memory.missCounterBuffer.initDeviceData(sizeof(uint32_t));
 
         if (!facet_memory.texelBuffer.isNullptr())

@@ -368,7 +368,7 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
         //const float absEquiv = 0.0f; //1.0*prd.orientationRatio; // hit=1.0 (only changed for lowflux mode)
         //atomicAdd(&optixLaunchParams.hitCounter[counterIdx].nbMCHit,1);
         //++optixLaunchParams.hitCounter[counterIdx].nbMCHit;
-        //const unsigned int counterIdx = facIndex + ((bufferIndex)%(CORESPERMP*WARPSCHEDULERS))*optixLaunchParams.simConstants.nbFacets;
+        //const unsigned int counterIdx = facIndex + ((bufferIndex)%(EXTRAFACETCOUNTERS))*optixLaunchParams.simConstants.nbFacets;
 
         //atomicAdd(&hitCounter.nbMCHit, static_cast<uint32_t>(0));
         //atomicAdd(&hitCounter.nbHitEquiv, 0.0f);
@@ -482,8 +482,8 @@ static __forceinline__ __device__
 void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& poly, const MolPRD& hitData, const float3& rayDir, const float3& rayOrigin)
 {
 #ifdef BOUND_CHECK
-    if(counterIdx >= optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS){
-            printf("facIndex %u >= %u is out of bounds\n", counterIdx, optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS);
+    if(counterIdx >= optixLaunchParams.simConstants.nbFacets * EXTRAFACETCOUNTERS){
+            printf("facIndex %u >= %u is out of bounds\n", counterIdx, optixLaunchParams.simConstants.nbFacets * EXTRAFACETCOUNTERS);
         }
 #endif
     increaseHitCounterDesorption(optixLaunchParams.hitCounter[counterIdx],hitData,rayDir, poly.N);
@@ -556,7 +556,7 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
         // increase facet counters for desorption
         // --------------------------------------
         const unsigned int counterIdx =
-                facIndex + ((bufferIndex) % (CORESPERSM * WARPSCHEDULERS)) * optixLaunchParams.simConstants.nbFacets;
+                facIndex + ((bufferIndex) % (EXTRAFACETCOUNTERS)) * optixLaunchParams.simConstants.nbFacets;
         recordDesorption(counterIdx, rayGenData->poly[facIndex], hitData, rayDir, rayOrigin);
     }
 

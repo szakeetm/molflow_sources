@@ -559,8 +559,8 @@ namespace flowgpu {
 #endif
 
 #ifdef BOUND_CHECK
-        if(counterIdx >= optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS){
-            printf("facIndex %u >= %u is out of bounds\n", counterIdx, optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS);
+        if(counterIdx >= optixLaunchParams.simConstants.nbFacets * EXTRAFACETCOUNTERS){
+            printf("facIndex %u >= %u is out of bounds\n", counterIdx, optixLaunchParams.simConstants.nbFacets * EXTRAFACETCOUNTERS);
         }
 #endif
         increaseHitCounterAbsorp(optixLaunchParams.hitCounter[counterIdx], hitEquiv, absEquiv, ortVelocity, velFactor, prd.velocity);
@@ -612,8 +612,8 @@ namespace flowgpu {
 #endif
 
 #ifdef BOUND_CHECK
-        if(counterIdx >= optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS){
-            printf("facIndex %u >= %u is out of bounds\n", counterIdx, optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS);
+        if(counterIdx >= optixLaunchParams.simConstants.nbFacets * EXTRAFACETCOUNTERS){
+            printf("facIndex %u >= %u is out of bounds\n", counterIdx, optixLaunchParams.simConstants.nbFacets * EXTRAFACETCOUNTERS);
         }
 #endif
         // 1. Increment counters
@@ -785,7 +785,7 @@ if(prd->inSystem == 4)
         prd->facetHitSide = facetHitKind;
 
         // first add facet hits
-        const unsigned int counterIdx = prd->hitFacetId + (bufferIndex%(CORESPERSM * WARPSCHEDULERS)) * optixLaunchParams.simConstants.nbFacets;
+        const unsigned int counterIdx = prd->hitFacetId + (bufferIndex%(EXTRAFACETCOUNTERS)) * optixLaunchParams.simConstants.nbFacets;
 
         //Register (orthogonal) velocity
         const flowgpu::Polygon& poly  = sbtData.poly[prd->hitFacetId];
@@ -1034,7 +1034,7 @@ if(prd->inSystem == 4)
         prd.hitPos = ray_orig + ray_t * ray_dir;
 
         // first add facet hits
-        const unsigned int counterIdx = hitFacetId + (bufferIndex%(CORESPERSM * WARPSCHEDULERS)) * optixLaunchParams.simConstants.nbFacets;
+        const unsigned int counterIdx = hitFacetId + (bufferIndex%(EXTRAFACETCOUNTERS)) * optixLaunchParams.simConstants.nbFacets;
 
         //Register (orthogonal) velocity
         const flowgpu::Polygon& poly  = sbtData.poly[hitFacetId];

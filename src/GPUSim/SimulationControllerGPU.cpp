@@ -462,7 +462,7 @@ void SimulationControllerGPU::Resize(){
     data.leakCounter.clear();
 
     //data.hit.resize(kernelDimensions.x*kernelDimensions.y);
-    data.facetHitCounters.resize(model->nbFacets_total * CORESPERSM * WARPSCHEDULERS);
+    data.facetHitCounters.resize(model->nbFacets_total * EXTRAFACETCOUNTERS);
     data.texels.resize(model->textures.size());
     data.profileSlices.resize(model->profiles.size());
     data.leakCounter.resize(1);

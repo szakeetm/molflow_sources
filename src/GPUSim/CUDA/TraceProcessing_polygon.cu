@@ -292,8 +292,8 @@ namespace flowgpu {
 #endif
 
 #ifdef BOUND_CHECK
-        if(counterIdx < 0 || counterIdx >= optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS){
-            printf("facIndex %u >= %u is out of bounds\n", counterIdx, optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS);
+        if(counterIdx < 0 || counterIdx >= optixLaunchParams.simConstants.nbFacets * EXTRAFACETCOUNTERS){
+            printf("facIndex %u >= %u is out of bounds\n", counterIdx, optixLaunchParams.simConstants.nbFacets * EXTRAFACETCOUNTERS);
         }
 #endif
         increaseHitCounterAbsorp(optixLaunchParams.hitCounter[counterIdx], hitEquiv, absEquiv, ortVelocity, velFactor, prd.velocity);
@@ -332,8 +332,8 @@ namespace flowgpu {
 #endif
 
 #ifdef BOUND_CHECK
-        if(counterIdx < 0 || counterIdx >= optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS){
-            printf("facIndex %u >= %u is out of bounds\n", counterIdx, optixLaunchParams.simConstants.nbFacets * CORESPERSM * WARPSCHEDULERS);
+        if(counterIdx < 0 || counterIdx >= optixLaunchParams.simConstants.nbFacets * EXTRAFACETCOUNTERS){
+            printf("facIndex %u >= %u is out of bounds\n", counterIdx, optixLaunchParams.simConstants.nbFacets * EXTRAFACETCOUNTERS);
         }
 #endif
         // 1. Increment counters
@@ -493,7 +493,7 @@ if(prd.inSystem == 4)
         //TODO: Check if counters can be used on threads instead of launch id
         //const unsigned int counterIdx = prd.hitFacetId+ix*optixLaunchParams.simConstants.nbFacets+iy*optixLaunchParams.simConstants.nbFacets*optixLaunchParams.simConstants.size.x;
         //const unsigned int counterIdx = prd.hitFacetId + (blockDim.x * blockIdx.x + threadIdx.x)*optixLaunchParams.simConstants.nbFacets;
-        const unsigned int counterIdx = prd.hitFacetId + (bufferIndex%(CORESPERSM * WARPSCHEDULERS)) * optixLaunchParams.simConstants.nbFacets;
+        const unsigned int counterIdx = prd.hitFacetId + (bufferIndex%(EXTRAFACETCOUNTERS)) * optixLaunchParams.simConstants.nbFacets;
 
         //Register (orthogonal) velocity
         const flowgpu::Polygon& poly  = sbtData.poly[prd.hitFacetId];
