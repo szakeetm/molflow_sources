@@ -113,6 +113,7 @@ int main(int argc, char **argv) {
     size_t launchSize = 1;                  // Kernel launch size
     size_t nPrints = 10;
     size_t printPerN = 100000;
+    double timeLimit = 0.0;
     bool silentMode = false;
 
 
@@ -169,6 +170,12 @@ int main(int argc, char **argv) {
             } else {
                 printUsageAndExit( argv[0] );
             }
+        } else if ( strcmp( argv[i], "--time") == 0  || strcmp( argv[i], "-t" ) == 0 ) {
+            if( i < argc-1 ) {
+                timeLimit = strtod(argv[++i],&p);
+            } else {
+                printUsageAndExit( argv[0] );
+            }
         } else if ( strcmp( argv[i], "--printevery") == 0  || strcmp( argv[i], "-j" ) == 0 ) {
             if( i < argc-1 ) {
                 printPerN = strtoul(argv[++i],&p,10);
@@ -221,6 +228,12 @@ int main(int argc, char **argv) {
         //auto start = std::chrono::high_resolution_clock::now();
 
         gpuSim.RunSimulation();
+
+        auto t1 = std::chrono::steady_clock::now();
+        std::chrono::duration<double,std::ratio<60,1>> elapsedMinutes = t1 - start_total;
+        if(timeLimit >= 1e-6 && elapsedMinutes.count() >= timeLimit)
+            gpuSim.hasEnded = true;
+
         if((!silentMode && (loopN + 1) % printPerNRuns == 0) || refreshForStop <= loopN){
             auto t1 = std::chrono::steady_clock::now();
             std::chrono::duration<double,std::milli> elapsed = t1 - t0;
@@ -256,7 +269,10 @@ int main(int argc, char **argv) {
     auto finish_total = std::chrono::steady_clock::now();
     gpuSim.GetSimulationData(false);
     std::chrono::duration<double> elapsed = finish_total - start_total;
-    std::cout << "--         Total Elapsed Time: " << elapsed.count() / 60.0 << " min ---" << std::endl;
+    if(elapsed.count() / 60.0 >= 1.0)
+        std::cout << "--         Total Elapsed Time: " << elapsed.count() / 60.0 << " min ---" << std::endl;
+    else
+        std::cout << "--         Total Elapsed Time: " << elapsed.count() << " sec ---" << std::endl;
     std::cout << "--         Avg. Rays per second: " << (double)gpuSim.figures.total_counter*loopN/elapsed.count()/1.0e6 << " MRay/s ---" << std::endl;
     //std::cout << "--         Avg. Rays per second: " << raysPerSecondSum/(nbLoops/printPerNRuns) << " MRay/s ---" << std::endl;
     std::cout << "--         Max  Rays per second: " << raysPerSecondMax << " MRay/s ---" << std::endl;
