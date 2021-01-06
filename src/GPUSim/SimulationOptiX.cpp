@@ -953,26 +953,32 @@ namespace flowgpu {
             ));
         }
         catch (std::exception &e) {
-            std::cerr << e.what() << std::endl;
+            std::cerr << "[optixPipelineCreate] " << e.what() << std::endl;
             ProcessSleep(1000 * 100);
         }
-        //if (sizeof_log > 1) PRINT(log);
+        if (sizeof_log > 1) PRINT(log);
 
-        OPTIX_CHECK(optixPipelineSetStackSize
-                            (/* [in] The pipeline to configure the stack size for */
-                                    state.pipeline,
-                                    /* [in] The direct stack size requirement for direct
-                                       callables invoked from IS or AH. */
-                                    2 * 1024,
-                                    /* [in] The direct stack size requirement for direct
-                                       callables invoked from RG, MS, or CH.  */
-                                    2 * 1024,
-                                    /* [in] The continuation stack requirement. */
-                                    2 * 1024,
-                                    /* [in] The maximum depth of a traversable graph
-                                       passed to trace. */
-                                    1));
-        //if (sizeof_log > 1) PRINT(log);
+        try {
+            OPTIX_CHECK(optixPipelineSetStackSize
+                                (/* [in] The pipeline to configure the stack size for */
+                                        state.pipeline,
+                                        /* [in] The direct stack size requirement for direct
+                                           callables invoked from IS or AH. */
+                                        2 * 1024,
+                                        /* [in] The direct stack size requirement for direct
+                                           callables invoked from RG, MS, or CH.  */
+                                        2 * 1024,
+                                        /* [in] The continuation stack requirement. */
+                                        2 * 1024,
+                                        /* [in] The maximum depth of a traversable graph
+                                           passed to trace. */
+                                        1));
+        }
+        catch (std::exception &e) {
+            std::cerr << "[optixPipelineSetStackSize] " << e.what() << std::endl;
+            ProcessSleep(1000 * 100);
+        }
+        if (sizeof_log > 1) PRINT(log);
     }
 
 

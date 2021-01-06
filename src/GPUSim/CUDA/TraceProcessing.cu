@@ -1185,7 +1185,7 @@ if(prd->inSystem == 4)
         const float  ray_t    = optixGetRayTmax();
 
 
-        const unsigned int fbIndex = blockDim.x * blockIdx.x + threadIdx.x;
+        const unsigned int fbIndex = getWorkIndex();
         const unsigned int missIndex = fbIndex*NMISSES;
         const TriangleMeshSBTData &sbtData = *(const TriangleMeshSBTData*)optixGetSbtDataPointer();
 
@@ -1227,7 +1227,7 @@ optixLaunchParams.perThreadData.currentMoleculeData[fbIndex].postHitDir = prd->p
             const float  ray_t    = optixGetRayTmax();
 
 
-            const unsigned int fbIndex = blockDim.x * blockIdx.x + threadIdx.x;
+            const unsigned int fbIndex = getWorkIndex();
 
 
 
@@ -1241,9 +1241,9 @@ optixLaunchParams.perThreadData.currentMoleculeData[fbIndex].postHitDir = prd->p
                ray_orig.x, ray_orig.y , ray_orig.z , ray_dir.x, ray_dir.y , ray_dir.z, ray_t);
 #endif
 
-        const unsigned int posIndexOff = optixLaunchParams.perThreadData.leakPosOffsetBuffer_debug[(unsigned int)(blockDim.x * blockIdx.x + threadIdx.x)]++;
+        const unsigned int posIndexOff = optixLaunchParams.perThreadData.leakPosOffsetBuffer_debug[fbIndex]++;
             if(posIndexOff<NBCOUNTS){
-                const unsigned int posIndex = (blockDim.x * blockIdx.x + threadIdx.x)*NBCOUNTS+posIndexOff;
+                const unsigned int posIndex = (fbIndex)*NBCOUNTS+posIndexOff;
                 //printf("[%d] my pos is %d\n", (unsigned int)(fbIndex), posIndex);
                 optixLaunchParams.perThreadData.leakPositionsBuffer_debug[posIndex] = ray_orig;
                 optixLaunchParams.perThreadData.leakDirectionsBuffer_debug[posIndex] = ray_dir;
@@ -1269,7 +1269,6 @@ optixLaunchParams.perThreadData.currentMoleculeData[fbIndex].postHitDir = prd->p
         prd->nbBounces = 0;
 #endif
 
-        // terminate if exit has been called
 // terminate if exit has been called
 #ifdef WITHDESORPEXIT
 #ifdef PAYLOAD_DIRECT

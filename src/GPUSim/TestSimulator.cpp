@@ -234,7 +234,7 @@ int main(int argc, char **argv) {
         if(timeLimit >= 1e-6 && elapsedMinutes.count() >= timeLimit)
             gpuSim.hasEnded = true;
 
-        if((!silentMode && (loopN + 1) % printPerNRuns == 0) || refreshForStop <= loopN){
+        if((!silentMode && (loopN + 1) % printPerNRuns == 0) || refreshForStop <= loopN || gpuSim.hasEnded){
             auto t1 = std::chrono::steady_clock::now();
             std::chrono::duration<double,std::milli> elapsed = t1 - t0;
             t0 = t1;

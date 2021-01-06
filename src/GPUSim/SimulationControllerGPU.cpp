@@ -239,7 +239,7 @@ void SimulationControllerGPU::CheckAndBlockDesorption_exact(double threshold) {
  * @return 1=could not load GPU Sim, 0=successfully loaded
  */
 double SimulationControllerGPU::GetTransProb(size_t polyIndex) {
-
+#if defined(WITHTRIANGLES)
     double sumAbs = 0;
     for(unsigned int i = 0; i < globalCounter.facetHitCounters.size(); i++) {
         unsigned int facIndex = i%this->model->nbFacets_total;
@@ -249,6 +249,17 @@ double SimulationControllerGPU::GetTransProb(size_t polyIndex) {
     }
 
     return sumAbs / (double) figures.total_des;
+#else
+    double sumAbs = 0;
+    for(unsigned int i = 0; i < globalCounter.facetHitCounters.size(); i++) {
+        unsigned int facIndex = i%this->model->nbFacets_total;
+        unsigned int facParent = model->poly_meshes[0]->poly[facIndex].parentIndex;
+        if(facParent==polyIndex)
+            sumAbs += this->globalCounter.facetHitCounters[i].nbAbsEquiv; // let misses count as 0 (-1+1)
+    }
+
+    return sumAbs / (double) figures.total_des;
+#endif
 }
 
 
