@@ -142,6 +142,14 @@ bool CurrentParticleStatus::UpdateMCHits(GlobalSimuState &globSimuState, size_t 
 
     if (particleId == 0) {
         // Another loop for a comlete global min/max texture search
+
+        // first get tmp limit
+        TEXTURE_MIN_MAX limits[3];
+        for(auto& lim : limits){
+            lim.max.all = lim.max.moments_only = 0;
+            lim.min.all = lim.min.moments_only = HITMAX;
+        }
+
         for (s = 0; s < model->sh.nbSuper; s++) {
             for (const SubprocessFacet &f : model->structures[s].facets) {
                 if (f.sh.isTextured) {
@@ -175,22 +183,17 @@ bool CurrentParticleStatus::UpdateMCHits(GlobalSimuState &globSimuState, size_t 
 
                                 //Global autoscale
                                 for (int v = 0; v < 3; v++) {
-                                    globSimuState.globalHits.texture_limits[v].max.all = std::max(val[v],
-                                                                                                  globSimuState.globalHits.texture_limits[v].max.all);
+                                    limits[v].max.all = std::max(val[v],limits[v].max.all);
 
                                     if (val[v] > 0.0) {
-                                        globSimuState.globalHits.texture_limits[v].min.all = std::min(val[v],
-                                                                                                      globSimuState.globalHits.texture_limits[v].min.all);
+                                        limits[v].min.all = std::min(val[v],limits[v].min.all);
                                     }
                                     //Autoscale ignoring constant flow (moments only)
                                     if (m != 0) {
-                                        globSimuState.globalHits.texture_limits[v].max.moments_only = std::max(val[v],
-                                                                                                               globSimuState.globalHits.texture_limits[v].max.moments_only);;
+                                        limits[v].max.moments_only = std::max(val[v],limits[v].max.moments_only);;
 
                                         if (val[v] > 0.0)
-                                            globSimuState.globalHits.texture_limits[v].min.moments_only = std::min(
-                                                    val[v],
-                                                    globSimuState.globalHits.texture_limits[v].min.moments_only);;
+                                            limits[v].min.moments_only = std::min(val[v],limits[v].min.moments_only);;
                                     }
                                 }
                             } // if largeenough
@@ -199,6 +202,11 @@ bool CurrentParticleStatus::UpdateMCHits(GlobalSimuState &globSimuState, size_t 
                 }
             }
         }
+        // Last put temp limits into global struct
+        for(int v = 0; v < 3; ++v) {
+            globSimuState.globalHits.texture_limits[v] = limits[v];
+        }
+
     }
     //ReleaseDataport(dpHit);
     //TODO: //ReleaseMutex(worker->results.mutex);
