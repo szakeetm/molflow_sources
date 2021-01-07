@@ -1220,9 +1220,10 @@ int Loader::InitSimModel(SimulationModel* model) {
             double rw = sFac.sh.U.Norme() / (double)(sFac.sh.texWidthD);
             double rh = sFac.sh.V.Norme() / (double)(sFac.sh.texHeightD);
             double area = rw * rh;
+            area *= (sFac.sh.is2sided) ? 2.0 : 1.0;
             size_t add = 0;
-            for (int j = 0; j < sFac.sh.texHeight; j++) {
-                for (int i = 0; i < sFac.sh.texWidth; i++) {
+            for (size_t j = 0; j < sFac.sh.texHeight; j++) {
+                for (size_t i = 0; i < sFac.sh.texWidth; i++) {
                     if (area > 0.0) {
                         textIncVector[add] = 1.0 / area;
                     }
