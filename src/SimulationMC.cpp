@@ -415,7 +415,8 @@ bool CurrentParticleStatus::SimulationMCStep(size_t nbStep, size_t threadNum, si
                                 ((stickingProbability > 0.0) && (randomGenerator.rnd() < (stickingProbability)))) {
                                 //Absorbed
                                 RecordAbsorb(collidedFacet);
-                                //distTraveledSinceUpdate += distanceTraveled;
+                                //currentParticle.lastHitFacet = nullptr; // null facet in case we reached des limit and want to go on, prevents leak
+                            //distTraveledSinceUpdate += distanceTraveled;
                                 insertNewParticle = true;
                                 lastHitFacet=nullptr;
                             } else {
