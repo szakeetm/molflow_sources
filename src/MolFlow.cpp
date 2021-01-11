@@ -1147,7 +1147,11 @@ int MolFlow::FrameMove()
 	else {
 		sprintf(tmp, "Running: %s", FormatTime(worker.simuTime + (m_fTime - worker.startTime)));
 	}
-	return GL_OK;
+
+	// Save previous state to react to changes
+    prevRunningState = runningState;
+
+    return GL_OK;
 }
 
 // Name: RestoreDeviceObjects()

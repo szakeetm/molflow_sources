@@ -526,6 +526,7 @@ bool Simulation::SimulationMCStep(size_t nbStep) {
                             ((stickingProbability > 0.0) && (randomGenerator.rnd() < (stickingProbability)))) {
                             //Absorbed
                             RecordAbsorb(collidedFacet);
+                            currentParticle.lastHitFacet = nullptr; // null facet in case we reached des limit and want to go on, prevents leak
                             //distTraveledSinceUpdate += currentParticle.distanceTraveled;
                             if (!StartFromSource())
                                 // desorptionLimit reached
