@@ -308,7 +308,7 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 				return;
 			}
 
-			if( mode==MODE_EQUATION && !eta0Text->GetNumber(&eta0) || !(eta0>=0.0)) {
+			if( mode==MODE_EQUATION && (!eta0Text->GetNumber(&eta0) || eta0<0.0)) {
 				GLMessageBox::Display("Invalid number in ETA0 (conversion coefficient) field.","Error",GLDLG_OK,GLDLG_ICONERROR);
 				return;
 			}
