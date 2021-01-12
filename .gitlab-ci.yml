@@ -1,0 +1,94 @@
+stages:
+  - build
+  - build-artifact
+
+build-windows-master:
+  stage: build
+  before_script:
+    - git submodule sync --recursive
+    - git submodule update --init --recursive
+  script:
+    - echo "Building Windows Master"
+    - Set-Variable -Name "buildpath" -Value (($pwd).path + "\build")
+    - mkdir -P $buildpath
+    - cd $buildpath
+    - echo "Init project in:"+($pwd).path
+    - C:\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -DCMAKE_BUILD_TYPE=RELEASE -G Ninja $buildpath\..
+    - echo "Starting build in:" + ($buildpath).path
+    - C:\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe --build $buildpath --target molflow --config Release -- -j 4
+    - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
+    - Set-Variable -Name "fname" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
+    - Set-Variable -Name "outputpath" -Value ($buildpath + "\bin\win\release")
+    - echo $fname
+    - New-Item -Path "C:\MOLFLOW_CI" -Name $fname -ItemType "directory" -Force
+    - Copy-Item $outputpath -Destination C:\MOLFLOW_CI\$fname\ -Recurse -Force
+  after_script:
+    - echo "Finished"
+  tags:
+    - windows
+  only:
+    - master
+
+build-linux-master:
+  stage: build
+  before_script:
+    - whoami
+    - git submodule sync --recursive
+    - git submodule update --init --recursive
+  script:
+    - echo "Building Linux Master"
+    - buildpath=$(pwd)"/build"
+    - mkdir -p $buildpath
+    - cd $buildpath
+    - echo "Init project in:" $(pwd)
+    - cmake -DCMAKE_BUILD_TYPE=RELEASE $buildpath/..
+    - echo "Starting build in:" $buildpath
+    - cmake --build $buildpath --target molflow --config Release -- -j 4
+    - export DATE=`date +%Y_%m_%d`
+    - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - export outputpath=$buildpath"/bin/linux_debian/release"
+    - echo $FNAME
+    - mkdir -p ~/MOLFLOW_CI'/'$fname
+    - cp -r $outputpath/* ~/MOLFLOW_CI'/'$fname'/'
+    - ls ~/
+    - ls ~/MOLFLOW_CI'/'
+    - ls ~/MOLFLOW_CI'/'$fname'/'
+
+  after_script:
+    - echo "Finished"
+  tags:
+    - linux
+  only:
+    - master
+
+build-artifact-windows-master:
+  stage: build-artifact
+  script:
+    - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
+    - Set-Variable -Name "fname" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
+    - echo $fname
+    - Compress-Archive -Path C:\MOLFLOW_CI\$fname\ -DestinationPath .\artifact.zip
+  artifacts:
+    paths:
+      - .\artifact.zip
+    expire_in: 54 weeks
+  tags:
+    - windows
+  only:
+    - master
+
+build-artifact-linux-master:
+  stage: build-artifact
+  script:
+    - export DATE=`date +%Y_%m_%d`
+    - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - echo $FNAME
+    - 7za a ./molflow_linux.zip ~/MOLFLOW_CI'/'$fname'/'
+  artifacts:
+    paths:
+      - ./molflow_linux.zip
+    expire_in: 54 weeks
+  tags:
+    - linux
+  only:
+    - master
