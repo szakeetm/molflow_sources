@@ -26,17 +26,15 @@ build-windows-master:
     - echo "Finished"
   tags:
     - windows
-  only:
-    - master
 
-build-linux-master:
+build-debian-master:
   stage: build
   before_script:
     - whoami
     - git submodule sync --recursive
     - git submodule update --init --recursive
   script:
-    - echo "Building Linux Master"
+    - echo "Building Debian Master"
     - buildpath=$(pwd)"/build"
     - mkdir -p $buildpath
     - cd $buildpath
@@ -53,13 +51,40 @@ build-linux-master:
     - ls ~/
     - ls ~/MOLFLOW_CI'/'
     - ls ~/MOLFLOW_CI'/'$fname'/'
-
   after_script:
     - echo "Finished"
   tags:
-    - linux
-  only:
-    - master
+    - debian
+
+build-fedora-master:
+  stage: build
+  before_script:
+    - whoami
+    - git submodule sync --recursive
+    - git submodule update --init --recursive
+  script:
+    - echo "Building Fedora Master"
+    - neofetch
+    - buildpath=$(pwd)"/build"
+    - mkdir -p $buildpath
+    - cd $buildpath
+    - echo "Init project in:" $(pwd)
+    - cmake -DCMAKE_BUILD_TYPE=RELEASE $buildpath/..
+    - echo "Starting build in:" $buildpath
+    - cmake --build $buildpath --target molflow --config Release -- -j 4
+    - export DATE=`date +%Y_%m_%d`
+    - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - export outputpath=$buildpath"/bin/linux_debian/release"
+    - echo $FNAME
+    - mkdir -p ~/MOLFLOW_CI'/'$fname
+    - cp -r $outputpath/* ~/MOLFLOW_CI'/'$fname'/'
+    - ls ~/
+    - ls ~/MOLFLOW_CI'/'
+    - ls ~/MOLFLOW_CI'/'$fname'/'
+  after_script:
+    - echo "Finished"
+  tags:
+    - fedora
 
 build-artifact-windows-master:
   stage: build-artifact
@@ -77,18 +102,34 @@ build-artifact-windows-master:
   only:
     - master
 
-build-artifact-linux-master:
+build-artifact-debian-master:
   stage: build-artifact
   script:
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - echo $FNAME
-    - 7za a ./molflow_linux.zip ~/MOLFLOW_CI'/'$fname'/'
+    - 7za a ./molflow_debian.zip ~/MOLFLOW_CI'/'$fname'/'
   artifacts:
     paths:
-      - ./molflow_linux.zip
+      - ./molflow_debian.zip
     expire_in: 54 weeks
   tags:
-    - linux
+    - debian
+  only:
+    - master
+
+build-artifact-fedora-master:
+  stage: build-artifact
+  script:
+    - export DATE=`date +%Y_%m_%d`
+    - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - echo $FNAME
+    - 7za a ./molflow_fedora.zip ~/MOLFLOW_CI'/'$fname'/'
+  artifacts:
+    paths:
+      - ./molflow_fedora.zip
+    expire_in: 54 weeks
+  tags:
+    - fedora
   only:
     - master
