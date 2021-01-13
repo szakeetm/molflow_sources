@@ -29,8 +29,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Vector.h"
 #include "Random.h"
 #include "ProcessControl.h"
-#include "GeometrySimu.h"
 #include "SimulationController.h"
+#include <../src/GeometrySimu.h>
 
 class Parameter;
 

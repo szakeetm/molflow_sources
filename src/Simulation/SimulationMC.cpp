@@ -224,7 +224,6 @@ bool CurrentParticleStatus::UpdateMCHits(GlobalSimuState &globSimuState, size_t 
 }
 
 // Compute particle teleport
-
 void CurrentParticleStatus::PerformTeleport(SubprocessFacet *iFacet) {
 
     //Search destination

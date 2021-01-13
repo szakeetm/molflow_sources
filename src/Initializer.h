@@ -11,7 +11,6 @@
 #include "GeometrySimu.h"
 
 namespace Settings {
-    extern SimulationManager simManager;
     extern double nbCPUCores;
     extern size_t nbThreadsPerCore;
     extern uint64_t simDuration;

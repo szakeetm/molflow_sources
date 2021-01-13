@@ -49,9 +49,9 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Helper/StringHelper.h"
 #include "Facet_shared.h"
 //#include "Simulation.h" //SHELEM
-#include "GlobalSettings.h"
-#include "FacetAdvParams.h"
-#include "ProfilePlotter.h"
+#include "Interface/GlobalSettings.h"
+#include "Interface/FacetAdvParams.h"
+#include "Interface/ProfilePlotter.h"
 
 
 

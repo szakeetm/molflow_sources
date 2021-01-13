@@ -4,10 +4,9 @@
 
 #include "Initializer.h"
 #include "CLI11/CLI11.hpp"
-#include "LoaderXML.h"
+#include "IO/LoaderXML.h"
 
 namespace Settings {
-    SimulationManager simManager("molflow","MFLW");
     double nbCPUCores = 0;
     size_t nbThreadsPerCore = 0;
     uint64_t simDuration = 10;
@@ -62,8 +61,6 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
 
     simManager->ForwardGlobalCounter(globState);
 
-
-
     return 0;
 }
 
@@ -80,11 +77,14 @@ int Initializer::parseCommands(int argc, char** argv) {
     app.add_option("-f,--file", Settings::req_real_file, "Require an existing file")
             ->required()
             ->check(CLI::ExistingFile);
-    app.add_option("-a", Settings::autoSaveDuration, "Seconds for autosave if not zero");
+    app.add_option("-a,--autosaveDuration", Settings::autoSaveDuration, "Seconds for autosave if not zero");
     app.add_flag("--loadAutosave", Settings::loadAutosave, "Whether autosave_ file should be used if exists");
 
     app.add_flag("-r,--reset", Settings::resetOnStart, "Resets simulation status loaded from while");
+    app.set_config("--config");
     CLI11_PARSE(app, argc, argv);
+
+    //std::cout<<app.config_to_str(true,true);
 
     std::cout << "Number used CPU cores: " << Settings::nbCPUCores << std::endl;
     for(auto& lim : limits)

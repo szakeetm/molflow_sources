@@ -8,6 +8,8 @@ set(PROJECT_NAME molflowCLI)
 
 # Folders files
 set(CPP_DIR_1 ../../src)
+set(SIMU_DIR ../../src/Simulation)
+set(IO_DIR ../../src/IO)
 set(CPP_DIR_2 ../../src_shared)
 set(CPP_DIR_3 ../../src_shared/GLApp)
 
@@ -79,8 +81,8 @@ set(SRC_FILES
         ${CPP_DIR_2}/Vector.cpp
         ${CPP_DIR_2}/Distributions.cpp
 
-        ${CPP_DIR_1}/LoaderXML.cpp
-        ${CPP_DIR_1}/WriterXML.cpp
+        ${IO_DIR}/LoaderXML.cpp
+        ${IO_DIR}/WriterXML.cpp
         ${CPP_DIR_1}/Initializer.cpp
 
         ${CPP_DIR_1}/TimeMoments.cpp
@@ -88,8 +90,8 @@ set(SRC_FILES
         ${CPP_DIR_1}/MolflowTypes.cpp
         ${CPP_DIR_2}/Buffer_shared.cpp
 
-        ${CPP_DIR_1}/Simulation.cpp
-        ${CPP_DIR_1}/SimulationMC.cpp
+        ${SIMU_DIR}/Simulation.cpp
+        ${SIMU_DIR}/SimulationMC.cpp
         ${CPP_DIR_2}/IntersectAABB_shared.cpp
         ${CPP_DIR_2}/Polygon.cpp
         ${CPP_DIR_2}/Random.cpp

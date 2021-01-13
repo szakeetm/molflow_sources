@@ -8,6 +8,7 @@ set(PROJECT_NAME molflow)
 
 # Folders files
 set(CPP_DIR_1 ../../src)
+set(UI_DIR ../../src/Interface)
 set(HEADER_DIR_1 ../../src)
 set(HEADER_DIR_2 ../../src_shared)
 #set(HEADER_DIR_3 ../../src_shared/GLApp)
@@ -86,32 +87,33 @@ if (APPLE)
 endif()
 
 set(SRC_FILES
-        ${CPP_DIR_1}/FacetAdvParams.cpp
-        ${CPP_DIR_1}/FacetDetails.cpp
+        ${UI_DIR}/FacetAdvParams.cpp
+        ${UI_DIR}/FacetDetails.cpp
         ${CPP_DIR_1}/FormulaEvaluator_MF.cpp
-        ${CPP_DIR_1}/GeometryRender.cpp
-        ${CPP_DIR_1}/GeometryViewer.cpp
-        ${CPP_DIR_1}/GlobalSettings.cpp
-        ${CPP_DIR_1}/ImportDesorption.cpp
+        ${UI_DIR}/GeometryRender.cpp
+        ${UI_DIR}/GeometryViewer.cpp
+        ${UI_DIR}/GlobalSettings.cpp
+        ${UI_DIR}/ImportDesorption.cpp
         ${CPP_DIR_1}/MolFlow.cpp
         ${CPP_DIR_1}/MolflowBuffer.cpp
+        ${CPP_DIR_1}/GeometrySimu.cpp
         ${CPP_DIR_1}/MolflowFacet.cpp
         ${CPP_DIR_1}/MolflowGeometry.cpp
         ${CPP_DIR_1}/MolflowTypes.cpp
         ${CPP_DIR_1}/MolflowWorker.cpp
-        ${CPP_DIR_1}/MomentsEditor.cpp
-        ${CPP_DIR_1}/Movement.cpp
-        ${CPP_DIR_1}/OutgassingMap.cpp
+        ${UI_DIR}/MomentsEditor.cpp
+        ${UI_DIR}/Movement.cpp
+        ${UI_DIR}/OutgassingMap.cpp
         ${CPP_DIR_1}/Parameter.cpp
-        ${CPP_DIR_1}/ParameterEditor.cpp
-        ${CPP_DIR_1}/PressureEvolution.cpp
-        ${CPP_DIR_1}/ProfilePlotter.cpp
-        ${CPP_DIR_1}/TexturePlotter.cpp
-        ${CPP_DIR_1}/TextureScaling.cpp
+        ${UI_DIR}/ParameterEditor.cpp
+        ${UI_DIR}/PressureEvolution.cpp
+        ${UI_DIR}/ProfilePlotter.cpp
+        ${UI_DIR}/TexturePlotter.cpp
+        ${UI_DIR}/TextureScaling.cpp
         ${CPP_DIR_1}/TimeMoments.cpp
-        ${CPP_DIR_1}/TimeSettings.cpp
-        ${CPP_DIR_1}/TimewisePlotter.cpp
-        ${CPP_DIR_1}/Viewer3DSettings.cpp
+        ${UI_DIR}/TimeSettings.cpp
+        ${UI_DIR}/TimewisePlotter.cpp
+        ${UI_DIR}/Viewer3DSettings.cpp
         ${HEADER_DIR_2}/SimulationController.cpp
         ${HEADER_DIR_2}/SimulationManager.cpp
         ${HEADER_DIR_2}/IntersectAABB_shared.cpp
@@ -131,6 +133,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC molflowSub)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_1}
+        ${UI_DIR}
         ${HEADER_DIR_2}
         ${HEADER_DIR_3}
         ${HEADER_DIR_4}

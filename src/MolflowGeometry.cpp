@@ -21,7 +21,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "MolFlow.h"
 #include "Facet_shared.h"
 #include "Helper/MathTools.h"
-#include "ProfilePlotter.h"
+#include "Interface/ProfilePlotter.h"
 #include "ConvergencePlotter.h"
 #include "versionId.h"
 #include <iomanip>

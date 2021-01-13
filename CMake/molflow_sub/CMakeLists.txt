@@ -8,6 +8,8 @@ set(PROJECT_NAME molflowSub)
 
 # Folders files
 set(CPP_DIR_1 ../../src)
+set(SIMU_DIR ../../src/Simulation)
+set(IO_DIR ../../src/IO)
 set(CPP_DIR_2 ../../src_shared)
 set(CPP_DIR_3 ../../src_shared/GLApp)
 set(CPP_DIR_HELPER ../../src_shared/Helper)
@@ -74,13 +76,13 @@ set(SRC_FILES
         #${CPP_DIR_1}/molflowSub.cpp
         ${CPP_DIR_1}/MolflowTypes.cpp
         ${CPP_DIR_1}/Parameter.cpp
-        ${CPP_DIR_1}/Simulation.cpp
+        ${SIMU_DIR}/Simulation.cpp
         #${CPP_DIR_1}/SimulationAC.cpp
         #${CPP_DIR_1}/SimulationControl.cpp
-        ${CPP_DIR_1}/SimulationMC.cpp
+        ${SIMU_DIR}/SimulationMC.cpp
         ${CPP_DIR_1}/GeometrySimu.cpp
 
-        ${CPP_DIR_1}/LoaderXML.cpp
+        ${IO_DIR}/LoaderXML.cpp
         ${CPP_DIR_1}/TimeMoments.cpp
 
         ${CPP_DIR_2}/IntersectAABB_shared.cpp
@@ -92,7 +94,7 @@ set(SRC_FILES
 
 set(HEADER_FILES ${HEADER_DIR_1}/MolflowTypes.h
         ${HEADER_DIR_1}/Parameter.h
-        ${HEADER_DIR_1}/Simulation.h
+        ${SIMU_DIR}/Simulation.h
         ${HEADER_DIR_2}/SimulationController.h
         )
 
