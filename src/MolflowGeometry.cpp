@@ -2202,7 +2202,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 								outgassing = flux * moleculePerPhoton;
 							}
 							else if (mode == 2) {
-								double moleculePerPhoton = InterpolateY(dose, convDistr, false, false, true);
+								double moleculePerPhoton = InterpolateY(dose, convDistr, true, true, true);
 								outgassing = flux * moleculePerPhoton;
 							}
 						}
