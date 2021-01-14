@@ -15,13 +15,13 @@ build-windows-master:
     - echo "Init project in:"+($pwd).path
     - C:\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -DCMAKE_BUILD_TYPE=RELEASE -G Ninja $buildpath\..
     - echo "Starting build in:" + ($buildpath).path
-    - C:\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe --build $buildpath --target molflow --config Release -- -j 4
+    - C:\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe --build $buildpath --config Release -- -j 4
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
-    - Set-Variable -Name "fname" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
+    - Set-Variable -Name "FNAME" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - Set-Variable -Name "outputpath" -Value ($buildpath + "\bin\win\release")
-    - echo $fname
-    - New-Item -Path "C:\MOLFLOW_CI" -Name $fname -ItemType "directory" -Force
-    - Copy-Item $outputpath -Destination C:\MOLFLOW_CI\$fname\ -Recurse -Force
+    - echo $FNAME
+    - New-Item -Path "C:\MOLFLOW_CI" -Name $FNAME -ItemType "directory" -Force
+    - Copy-Item $outputpath -Destination C:\MOLFLOW_CI\$FNAME\ -Recurse -Force
   after_script:
     - echo "Finished"
   tags:
@@ -41,16 +41,16 @@ build-debian-master:
     - echo "Init project in:" $(pwd)
     - cmake -DCMAKE_BUILD_TYPE=RELEASE $buildpath/..
     - echo "Starting build in:" $buildpath
-    - cmake --build $buildpath --target molflow --config Release -- -j 4
+    - cmake --build $buildpath --config Release -- -j 4
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - export outputpath=$buildpath"/bin/linux_debian/release"
     - echo $FNAME
-    - mkdir -p ~/MOLFLOW_CI'/'$fname
-    - cp -r $outputpath/* ~/MOLFLOW_CI'/'$fname'/'
+    - mkdir -p ~/MOLFLOW_CI'/'$FNAME
+    - cp -r $outputpath/* ~/MOLFLOW_CI'/'$FNAME'/'
     - ls ~/
     - ls ~/MOLFLOW_CI'/'
-    - ls ~/MOLFLOW_CI'/'$fname'/'
+    - ls ~/MOLFLOW_CI'/'$FNAME'/'
   after_script:
     - echo "Finished"
   tags:
@@ -71,16 +71,16 @@ build-fedora-master:
     - echo "Init project in:" $(pwd)
     - cmake -DCMAKE_BUILD_TYPE=RELEASE $buildpath/..
     - echo "Starting build in:" $buildpath
-    - cmake --build $buildpath --target molflow --config Release -- -j 4
+    - cmake --build $buildpath --config Release -- -j 4
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - export outputpath=$buildpath"/bin/linux_debian/release"
     - echo $FNAME
-    - mkdir -p ~/MOLFLOW_CI'/'$fname
-    - cp -r $outputpath/* ~/MOLFLOW_CI'/'$fname'/'
+    - mkdir -p ~/MOLFLOW_CI'/'$FNAME
+    - cp -r $outputpath/* ~/MOLFLOW_CI'/'$FNAME'/'
     - ls ~/
     - ls ~/MOLFLOW_CI'/'
-    - ls ~/MOLFLOW_CI'/'$fname'/'
+    - ls ~/MOLFLOW_CI'/'$FNAME'/'
   after_script:
     - echo "Finished"
   tags:
@@ -90,9 +90,9 @@ build-artifact-windows-master:
   stage: build-artifact
   script:
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
-    - Set-Variable -Name "fname" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
-    - echo $fname
-    - Compress-Archive -Path C:\MOLFLOW_CI\$fname\ -DestinationPath .\molflow_windows.zip
+    - Set-Variable -Name "FNAME" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
+    - echo $FNAME
+    - Compress-Archive -Path C:\MOLFLOW_CI\$FNAME\ -DestinationPath .\molflow_windows.zip
   artifacts:
     paths:
       - .\molflow_windows.zip
@@ -108,7 +108,7 @@ build-artifact-debian-master:
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - echo $FNAME
-    - 7za a ./molflow_debian.zip ~/MOLFLOW_CI'/'$fname'/'
+    - 7za a ./molflow_debian.zip ~/MOLFLOW_CI'/'$FNAME'/'
   artifacts:
     paths:
       - ./molflow_debian.zip
@@ -124,7 +124,7 @@ build-artifact-fedora-master:
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - echo $FNAME
-    - 7za a ./molflow_fedora.zip ~/MOLFLOW_CI'/'$fname'/'
+    - 7za a ./molflow_fedora.zip ~/MOLFLOW_CI'/'$FNAME'/'
   artifacts:
     paths:
       - ./molflow_fedora.zip
@@ -138,9 +138,9 @@ build-artifact-windows-branch:
   stage: build-artifact
   script:
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
-    - Set-Variable -Name "fname" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
-    - echo $fname
-    - Compress-Archive -Path C:\MOLFLOW_CI\$fname\ -DestinationPath .\molflow_windows.zip
+    - Set-Variable -Name "FNAME" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
+    - echo $FNAME
+    - Compress-Archive -Path C:\MOLFLOW_CI\$FNAME\ -DestinationPath .\molflow_windows.zip
   artifacts:
     paths:
       - .\molflow_windows.zip
@@ -159,7 +159,7 @@ build-artifact-debian-branch:
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - echo $FNAME
-    - 7za a ./molflow_debian.zip ~/MOLFLOW_CI'/'$fname'/'
+    - 7za a ./molflow_debian.zip ~/MOLFLOW_CI'/'$FNAME'/'
   artifacts:
     paths:
       - ./molflow_debian.zip
@@ -178,7 +178,7 @@ build-artifact-fedora-branch:
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - echo $FNAME
-    - 7za a ./molflow_fedora.zip ~/MOLFLOW_CI'/'$fname'/'
+    - 7za a ./molflow_fedora.zip ~/MOLFLOW_CI'/'$FNAME'/'
   artifacts:
     paths:
       - ./molflow_fedora.zip
