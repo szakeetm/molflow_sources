@@ -144,7 +144,7 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
         if(loadState) {
 
             if(Settings::loadAutosave){
-                std::string fileName = std::filesystem::path(Settings::req_real_file).filename();
+                std::string fileName = std::filesystem::path(Settings::req_real_file).filename().string();
                 std::string autoSavePrefix = "autosave_";
                 fileName = autoSavePrefix + fileName;
                 if(std::filesystem::exists(fileName)) {
