@@ -15,7 +15,7 @@ build-windows-master:
     - echo "Init project in:"+($pwd).path
     - C:\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe -DCMAKE_BUILD_TYPE=RELEASE -G Ninja $buildpath\..
     - echo "Starting build in:" + ($buildpath).path
-    - C:\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe --build $buildpath --target molflow --config Release -- -j 4
+    - C:\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe --build $buildpath --config Release -- -j 4
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
     - Set-Variable -Name "FNAME" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - Set-Variable -Name "outputpath" -Value ($buildpath + "\bin\win\release")
@@ -41,7 +41,7 @@ build-debian-master:
     - echo "Init project in:" $(pwd)
     - cmake -DCMAKE_BUILD_TYPE=RELEASE $buildpath/..
     - echo "Starting build in:" $buildpath
-    - cmake --build $buildpath --target molflow --config Release -- -j 4
+    - cmake --build $buildpath --config Release -- -j 4
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - export outputpath=$buildpath"/bin/linux_debian/release"
@@ -71,7 +71,7 @@ build-fedora-master:
     - echo "Init project in:" $(pwd)
     - cmake -DCMAKE_BUILD_TYPE=RELEASE $buildpath/..
     - echo "Starting build in:" $buildpath
-    - cmake --build $buildpath --target molflow --config Release -- -j 4
+    - cmake --build $buildpath --config Release -- -j 4
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - export outputpath=$buildpath"/bin/linux_debian/release"
