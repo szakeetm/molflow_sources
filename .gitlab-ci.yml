@@ -1,5 +1,6 @@
 stages:
   - build
+  - test
   - build-artifact
 
 build-windows-master:
@@ -85,6 +86,24 @@ build-fedora-master:
     - echo "Finished"
   tags:
     - fedora
+
+test-debian:
+  stage: test
+  before_script:
+    - whoami
+  script:
+    - echo "Testing Debian Master"
+    - export DATE=`date +%Y_%m_%d`
+    - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - ~/MOLFLOW_CI'/'$FNAME'/testsuit' --gtest_output="xml:report.xml"
+  after_script:
+    - echo "Finished"
+  artifacts:
+    when: always
+    reports:
+      junit: report.xml
+  tags:
+    - debian
 
 build-artifact-windows-master:
   stage: build-artifact

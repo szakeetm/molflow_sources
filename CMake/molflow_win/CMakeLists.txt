@@ -128,7 +128,7 @@ else()
     add_executable(${PROJECT_NAME} ${SRC_FILES})
 endif()
 
-target_link_libraries(${PROJECT_NAME} PUBLIC simulator_shared)
+target_link_libraries(${PROJECT_NAME} PUBLIC shared_interface)
 target_link_libraries(${PROJECT_NAME} PUBLIC molflowSub)
 
 target_include_directories(${PROJECT_NAME} PRIVATE

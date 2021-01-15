@@ -118,7 +118,7 @@ add_library(${PROJECT_NAME} ${SRC_FILES} ${HEADER_FILES})
 find_package(OpenMP REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
 
-target_link_libraries(${PROJECT_NAME} PUBLIC simulator_shared)
+target_link_libraries(${PROJECT_NAME} PUBLIC shared_simulator)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_1}

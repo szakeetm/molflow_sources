@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.12.2 FATAL_ERROR)
 # Change if you want modify path or other values. #
 ###################################################
 
-set(PROJECT_NAME molflowCLI)
+set(PROJECT_NAME molflowSim)
 
 # Folders files
 set(CPP_DIR_1 ../../src)
@@ -69,7 +69,6 @@ endif(NOT MSVC)
 #######################################
 
 set(SRC_FILES
-        ${CPP_DIR_2}/FlowCLI.cpp
         ${CPP_DIR_2}/SimulationManager.cpp
         ${CPP_DIR_2}/ShMemory.cpp
         ${CPP_DIR_2}/Process.cpp
@@ -114,7 +113,7 @@ if (APPLE)
     set(OpenMP_omp_LIBRARY "/usr/local/opt/libomp/lib/libomp.dylib" CACHE INTERNAL "OpenMP lib name for Xcode toolchain.")
 endif()
 
-add_executable(${PROJECT_NAME} ${SRC_FILES})
+add_library(${PROJECT_NAME} ${SRC_FILES})
 
 find_package(OpenMP REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
