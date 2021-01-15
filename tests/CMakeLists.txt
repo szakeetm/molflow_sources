@@ -34,6 +34,8 @@ if (CMAKE_VERSION VERSION_LESS 2.8.11)
     include_directories("${gtest_SOURCE_DIR}/include")
 endif()
 
+link_directories(${LINK_DIR_1} ${LINK_DIR_2})
+
 # Now simply link against gtest or gtest_main as needed. Eg
 add_executable(testsuit simulation_testsuit.cpp)
 target_link_libraries(testsuit gtest_main molflowSim)

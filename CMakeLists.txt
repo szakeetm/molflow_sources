@@ -88,9 +88,9 @@ ELSE()
     #add_subdirectory(CMake/molflow_testsuit)
 ENDIF(WIN32)
 
-add_dependencies(molflow molflowSub compress)
+add_dependencies(molflow shared_simulator shared_interface compress)
 #IF(NOT WIN32)
-add_dependencies(molflowCLI molflowSub)
+add_dependencies(molflowCLI molflowSim)
 #ENDIF()
 
 option(USE_TESTS "Build the tests" ON)

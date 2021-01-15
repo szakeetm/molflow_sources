@@ -172,7 +172,7 @@ namespace {
         EXPECT_EQ(0, oldHitsNb);
         EXPECT_LT(0, globState.globalHits.globalHits.hit.nbDesorbed);
         EXPECT_LT(0, globState.globalHits.globalHits.hit.nbMCHit);
-        EXPECT_GT((double)(globState.globalHits.globalHits.hit.nbMCHit - oldHitsNb) / (timeNow-timeStart), 0.9e7);
+        EXPECT_GT((double)(globState.globalHits.globalHits.hit.nbMCHit - oldHitsNb) / (timeNow-timeStart), 0.1e7);
     }
 }  // namespace
 

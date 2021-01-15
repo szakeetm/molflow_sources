@@ -120,14 +120,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
 
 
 target_link_libraries(${PROJECT_NAME} PUBLIC shared_simulator)
-target_link_libraries(${PROJECT_NAME} PUBLIC molflowSub)
-target_link_libraries(${PROJECT_NAME} PRIVATE pugixml)
+#target_link_libraries(${PROJECT_NAME} PUBLIC molflowSub)
+target_link_libraries(${PROJECT_NAME} PRIVATE pugixml truncatedgaussian)
 
-if(MSVC)
-    target_link_libraries(${PROJECT_NAME} PRIVATE
-            bzip2.lib
-            )
-endif()
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_1}
         ${HEADER_DIR_2}
