@@ -117,6 +117,8 @@ test-windows:
     - Set-Variable -Name "FNAME" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - Write-Host $FNAME
     - Set-Location C:\MOLFLOW_CI\$FNAME\
+    - pwd
+    - ls C:\MOLFLOW_CI\$FNAME\
     - $AllArgs = @("--gtest_output='xml:report.xml'")
     - powershell.exe -c "./testsuit.exe $AllArgs"
   after_script:
