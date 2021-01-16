@@ -118,7 +118,7 @@ test-windows:
     - Write-Host $FNAME
     - Set-Location C:\MOLFLOW_CI\$FNAME\
     - $AllArgs = @("--gtest_output='xml:report.xml'")
-    - ./testsuit.exe $AllArgs
+    - powershell.exe -c "./testsuit.exe $AllArgs"
   after_script:
     - Write-Host "Finished"
   artifacts:
