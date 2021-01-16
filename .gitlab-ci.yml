@@ -56,6 +56,7 @@ build-debian-master:
     - echo "Finished"
   tags:
     - debian
+    - fedora
 
 build-fedora-master:
   stage: build
@@ -105,7 +106,6 @@ test-debian:
       junit: report.xml
   tags:
     - debian
-    - fedora
 
 test-windows:
   stage: test
@@ -118,7 +118,7 @@ test-windows:
     - Write-Host $FNAME
     - Set-Location C:\MOLFLOW_CI\$FNAME\
     - $AllArgs = @("--gtest_output='xml:report.xml'")
-    - & "./testsuit.exe" $AllArgs
+    - ./testsuit.exe $AllArgs
   after_script:
     - Write-Host "Finished"
   artifacts:
