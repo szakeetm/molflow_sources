@@ -56,7 +56,6 @@ build-debian-master:
     - echo "Finished"
   tags:
     - debian
-    - fedora
 
 build-fedora-master:
   stage: build
@@ -106,6 +105,7 @@ test-debian:
       junit: report.xml
   tags:
     - debian
+    - fedora
 
 test-windows:
   stage: test
