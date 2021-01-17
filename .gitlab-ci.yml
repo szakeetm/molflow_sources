@@ -131,6 +131,7 @@ test-windows:
   stage: test
   before_script:
     - whoami
+    - pwd
   script:
     - Write-Host "Testing Windows Master"
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
@@ -141,13 +142,13 @@ test-windows:
     - ls C:\MOLFLOW_CI\$FNAME\
     - $AllArgs = @("--gtest_output='xml:report.xml'")
     - powershell.exe -c "./testsuit.exe $AllArgs"
-    - Move-Item -Path report.xml -Destination ~/report.xml
+    - Move-Item -Path report.xml -Destination C:\MOLFLOW_CI\report.xml
   after_script:
     - Write-Host "Finished"
   artifacts:
     when: always
     reports:
-      junit: ~/report.xml
+      junit: C:\MOLFLOW_CI\report.xml
   tags:
     - windows
 
