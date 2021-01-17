@@ -103,7 +103,7 @@ test-debian:
   artifacts:
     when: always
     reports:
-      junit: report.xml
+      junit: ~/report.xml
   tags:
     - debian
 
@@ -123,7 +123,7 @@ test-fedora:
   artifacts:
     when: always
     reports:
-      junit: report.xml
+      junit: ~/report.xml
   tags:
     - fedora
 
@@ -147,7 +147,7 @@ test-windows:
   artifacts:
     when: always
     reports:
-      junit: report.xml
+      junit: ~/report.xml
   tags:
     - windows
 
