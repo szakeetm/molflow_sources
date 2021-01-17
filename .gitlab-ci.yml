@@ -6,10 +6,10 @@ stages:
 build-windows-master:
   stage: build
   before_script:
+    - echo "Building Windows Master"
     - git submodule sync --recursive
     - git submodule update --init --recursive
   script:
-    - echo "Building Windows Master"
     - Set-Variable -Name "buildpath" -Value (($pwd).path + "\build")
     - mkdir -P $buildpath
     - cd $buildpath
@@ -60,28 +60,23 @@ build-debian-master:
 build-fedora-master:
   stage: build
   before_script:
-    - whoami
+    - neofetch
+    - echo "Building Fedora Master"
+    - echo "Init project in:" $(pwd)
     - git submodule sync --recursive
     - git submodule update --init --recursive
   script:
-    - echo "Building Fedora Master"
-    - neofetch
     - buildpath=$(pwd)"/build"
     - mkdir -p $buildpath
     - cd $buildpath
-    - echo "Init project in:" $(pwd)
     - cmake -DCMAKE_BUILD_TYPE=RELEASE $buildpath/..
     - echo "Starting build in:" $buildpath
     - cmake --build $buildpath --config Release -- -j 4
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - export outputpath=$buildpath"/bin/linux_debian/release"
-    - echo $FNAME
     - mkdir -p ~/MOLFLOW_CI'/'$FNAME
     - cp -r $outputpath/* ~/MOLFLOW_CI'/'$FNAME'/'
-    - ls ~/
-    - ls ~/MOLFLOW_CI'/'
-    - ls ~/MOLFLOW_CI'/'$FNAME'/'
   after_script:
     - echo "Finished"
   tags:
@@ -90,65 +85,61 @@ build-fedora-master:
 test-debian:
   stage: test
   before_script:
-    - whoami
-  script:
     - echo "Testing Debian Master"
+  script:
+    - export PROJPATH = $(pwd)
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - cd ~/MOLFLOW_CI'/'$FNAME'/'
     - ./testsuit --gtest_output="xml:report.xml"
-    - mv report.xml ~/report.xml
+    - mv report.xml $PROJPATH"/report.xml"
   after_script:
     - echo "Finished"
   artifacts:
     when: always
     reports:
-      junit: ~/report.xml
+      junit: ./report.xml
   tags:
     - debian
 
 test-fedora:
   stage: test
   before_script:
-    - whoami
-  script:
     - echo "Testing Fedora Master"
+  script:
+    - export PROJPATH = $(pwd)
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - cd ~/MOLFLOW_CI'/'$FNAME'/'
     - ./testsuit --gtest_output="xml:report.xml"
-    - mv report.xml ~/report.xml
+    - mv report.xml $PROJPATH"/report.xml"
   after_script:
     - echo "Finished"
   artifacts:
     when: always
     reports:
-      junit: ~/report.xml
+      junit: ./report.xml
   tags:
     - fedora
 
 test-windows:
   stage: test
   before_script:
-    - whoami
-    - pwd
-  script:
     - Write-Host "Testing Windows Master"
+  script:
+    - Set-Variable -Name "PROJPATH" -Value (($pwd).path)
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
     - Set-Variable -Name "FNAME" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
-    - Write-Host $FNAME
     - Set-Location C:\MOLFLOW_CI\$FNAME\
-    - pwd
-    - ls C:\MOLFLOW_CI\$FNAME\
     - $AllArgs = @("--gtest_output='xml:report.xml'")
     - powershell.exe -c "./testsuit.exe $AllArgs"
-    - Move-Item -Path report.xml -Destination C:\MOLFLOW_CI\report.xml
+    - Move-Item -Path report.xml -Destination (($PROJPATH) + "\report.xml")
   after_script:
     - Write-Host "Finished"
   artifacts:
     when: always
     reports:
-      junit: C:\MOLFLOW_CI\report.xml
+      junit: .\report.xml
   tags:
     - windows
 
