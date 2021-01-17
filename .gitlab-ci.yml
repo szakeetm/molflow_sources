@@ -46,7 +46,6 @@ build-debian-master:
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - export outputpath=$buildpath"/bin/linux_debian/release"
-    - echo $FNAME
     - mkdir -p ~/MOLFLOW_CI'/'$FNAME
     - cp -r $outputpath/* ~/MOLFLOW_CI'/'$FNAME'/'
     - ls ~/
@@ -87,7 +86,7 @@ test-debian:
   before_script:
     - echo "Testing Debian Master"
   script:
-    - export PROJPATH = $(pwd)
+    - export PROJPATH=$(pwd)
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - cd ~/MOLFLOW_CI'/'$FNAME'/'
@@ -107,7 +106,7 @@ test-fedora:
   before_script:
     - echo "Testing Fedora Master"
   script:
-    - export PROJPATH = $(pwd)
+    - export PROJPATH=$(pwd)
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - cd ~/MOLFLOW_CI'/'$FNAME'/'
