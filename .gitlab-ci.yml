@@ -86,17 +86,49 @@ build-fedora-master:
   tags:
     - fedora
 
+build-macos-master:
+  stage: build
+  before_script:
+    - whoami
+    - git submodule sync --recursive
+    - git submodule update --init --recursive
+  script:
+    - echo "Building MacOS Master"
+    - buildpath=$(pwd)"/build"
+    - mkdir -p $buildpath
+    - cd $buildpath
+    - echo "Init project in:" $(pwd)
+    - cmake -DCMAKE_BUILD_TYPE=RELEASE $buildpath/..
+    - echo "Starting build in:" $buildpath
+    - cmake --build $buildpath --config Release -- -j 4
+    - export DATE=`date +%Y_%m_%d`
+    - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - export outputpath=$buildpath"/bin/mac/release"
+    - echo $FNAME
+    - mkdir -p ~/MOLFLOW_CI'/'$FNAME
+    - cp -r $outputpath/* ~/MOLFLOW_CI'/'$FNAME'/'
+    - ls ~/
+    - ls ~/MOLFLOW_CI/
+    - ls ~/MOLFLOW_CI/$FNAME/
+  when: manual
+  after_script:
+    - echo "Finished"
+  tags:
+    - macos
+
 build-artifact-windows-master:
   stage: build-artifact
   script:
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
     - Set-Variable -Name "FNAME" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - echo $FNAME
-    - Compress-Archive -Path C:\MOLFLOW_CI\$FNAME\ -DestinationPath .\molflow_windows.zip
+    - Compress-Archive -Path C:\MOLFLOW_CI\$FNAME\* -DestinationPath .\molflow_windows.zip
   artifacts:
     paths:
       - .\molflow_windows.zip
     expire_in: 54 weeks
+  needs:
+      - job: build-windows-master
   tags:
     - windows
   only:
@@ -106,13 +138,15 @@ build-artifact-debian-master:
   stage: build-artifact
   script:
     - export DATE=`date +%Y_%m_%d`
-    - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - export FNAME=master/$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - echo $FNAME
-    - 7za a ./molflow_debian.zip ~/MOLFLOW_CI'/'$FNAME'/'
+    - 7za a ./molflow_debian.zip ~/MOLFLOW_CI/$FNAME/*
   artifacts:
     paths:
       - ./molflow_debian.zip
     expire_in: 54 weeks
+  needs:
+    - job: build-debian-master
   tags:
     - debian
   only:
@@ -124,13 +158,33 @@ build-artifact-fedora-master:
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - echo $FNAME
-    - 7za a ./molflow_fedora.zip ~/MOLFLOW_CI'/'$FNAME'/'
+    - 7za a ./molflow_fedora.zip ~/MOLFLOW_CI/$FNAME/*
   artifacts:
     paths:
       - ./molflow_fedora.zip
     expire_in: 54 weeks
+  needs:
+    - job: build-fedora-master
   tags:
     - fedora
+  only:
+    - master
+
+build-artifact-macos-master:
+  stage: build-artifact
+  script:
+    - export DATE=`date +%Y_%m_%d`
+    - export FNAME=master/$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - echo $FNAME
+    - 7za a ./molflow_mac.zip ~/MOLFLOW_CI/$FNAME/*
+  artifacts:
+    paths:
+      - ./molflow_macos.zip
+    expire_in: 54 weeks
+  needs:
+    - job: build-macos-master
+  tags:
+    - macos
   only:
     - master
 
@@ -140,11 +194,13 @@ build-artifact-windows-branch:
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
     - Set-Variable -Name "FNAME" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - echo $FNAME
-    - Compress-Archive -Path C:\MOLFLOW_CI\$FNAME\ -DestinationPath .\molflow_windows.zip
+    - Compress-Archive -Path C:\MOLFLOW_CI\$FNAME\* -DestinationPath .\molflow_windows.zip
   artifacts:
     paths:
       - .\molflow_windows.zip
     expire_in: 4 weeks
+  needs:
+    - job: build-windows-master
   tags:
     - windows
   only:
@@ -159,11 +215,13 @@ build-artifact-debian-branch:
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - echo $FNAME
-    - 7za a ./molflow_debian.zip ~/MOLFLOW_CI'/'$FNAME'/'
+    - 7za a ./molflow_debian.zip ~/MOLFLOW_CI/$FNAME/*
   artifacts:
     paths:
       - ./molflow_debian.zip
     expire_in: 4 weeks
+  needs:
+    - job: build-debian-master
   tags:
     - debian
   only:
@@ -178,13 +236,36 @@ build-artifact-fedora-branch:
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - echo $FNAME
-    - 7za a ./molflow_fedora.zip ~/MOLFLOW_CI'/'$FNAME'/'
+    - 7za a ./molflow_fedora.zip ~/MOLFLOW_CI/$FNAME/*
   artifacts:
     paths:
       - ./molflow_fedora.zip
     expire_in: 4 weeks
+  needs:
+    - job: build-fedora-master
   tags:
     - fedora
+  only:
+    - branches
+  except:
+    - master
+    - tags
+
+build-artifact-macos-branch:
+  stage: build-artifact
+  script:
+    - export DATE=`date +%Y_%m_%d`
+    - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - echo $FNAME
+    - 7za a ./molflow_mac.zip ~/MOLFLOW_CI/$FNAME/*
+  artifacts:
+    paths:
+      - ./molflow_mac.zip
+    expire_in: 4 weeks
+  needs:
+    - job: build-macos-master
+  tags:
+    - macos
   only:
     - branches
   except:
