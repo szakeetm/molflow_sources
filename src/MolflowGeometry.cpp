@@ -115,7 +115,14 @@ size_t MolflowGeometry::GetGeometrySize() {
 * \param outputarchive reference to the binary archive
 */
 void MolflowGeometry::SerializeForLoader(cereal::BinaryOutputArchive& outputArchive) {
-	outputArchive(
+    // Vertices
+    for (int i = 0; i < vertices3.size(); i++) {
+        vertices3[i].x = static_cast<float>(vertices3[i].x);
+        vertices3[i].y = static_cast<float>(vertices3[i].y);
+        vertices3[i].z = static_cast<float>(vertices3[i].z);
+    }
+
+    outputArchive(
 		CEREAL_NVP(sh),
 		CEREAL_NVP(vertices3)
 	);
@@ -2922,7 +2929,12 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 		vertices3[idx].x = vertex.attribute("x").as_double();
 		vertices3[idx].y = vertex.attribute("y").as_double();
 		vertices3[idx].z = vertex.attribute("z").as_double();
-		vertices3[idx].selected = false;
+        // Vertices to float
+        vertices3[idx].x = static_cast<float>(vertices3[idx].x);
+        vertices3[idx].y = static_cast<float>(vertices3[idx].y);
+        vertices3[idx].z = static_cast<float>(vertices3[idx].z);
+
+        vertices3[idx].selected = false;
 		idx++;
 
 	}

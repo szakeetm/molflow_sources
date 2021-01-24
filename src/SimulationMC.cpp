@@ -479,6 +479,12 @@ bool Simulation::SimulationMCStep(size_t nbStep) {
         //return (currentParticle.lastHitFacet != nullptr);
 
         //Prepare output values
+
+        
+        currentParticle.direction.x = static_cast<float>(currentParticle.direction.x);
+        currentParticle.direction.y = static_cast<float>(currentParticle.direction.y);
+        currentParticle.direction.z = static_cast<float>(currentParticle.direction.z);
+
         auto[found, collidedFacet, d] = Intersect(this, currentParticle.position,
                                                   currentParticle.direction);
 
