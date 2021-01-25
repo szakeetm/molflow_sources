@@ -18,7 +18,8 @@ namespace Settings {
     extern bool loadAutosave;
     extern std::list<uint64_t> desLimit;
     extern bool resetOnStart;
-    extern std::string req_real_file;
+    extern std::string inputFile;
+    extern std::string paramFile;
 }
 
 class Initializer {

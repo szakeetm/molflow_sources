@@ -84,6 +84,7 @@ set(SRC_FILES
         ${IO_DIR}/LoaderXML.cpp
         ${IO_DIR}/WriterXML.cpp
         ${CPP_DIR_1}/Initializer.cpp
+        ${CPP_DIR_1}/ParameterParser.cpp
 
         ${CPP_DIR_1}/TimeMoments.cpp
 

@@ -5,6 +5,7 @@
 #include "Initializer.h"
 #include "CLI11/CLI11.hpp"
 #include "IO/LoaderXML.h"
+#include "ParameterParser.h"
 
 namespace Settings {
     double nbCPUCores = 0;
@@ -14,7 +15,8 @@ namespace Settings {
     bool loadAutosave = false;
     std::list<uint64_t> desLimit;
     bool resetOnStart = false;
-    std::string req_real_file;
+    std::string inputFile;
+    std::string paramFile;
 }
 
 class FlowFormatter : public CLI::Formatter {
@@ -57,6 +59,12 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
     }
 
     loadFromXML(simManager, model, globState, !Settings::resetOnStart);
+    if(!Settings::paramFile.empty()){
+        // Sweep parameters from file
+        ParameterParser::Parse(Settings::paramFile);
+        ParameterParser::ChangeSimuParams(model->wp);
+        ParameterParser::ChangeFacetParams(model->facets);
+    }
 
     simManager->ForwardGlobalCounter(globState);
 
@@ -73,11 +81,13 @@ int Initializer::parseCommands(int argc, char** argv) {
     app.add_option("-p,--procs", Settings::nbCPUCores, "# CPU cores");
     app.add_option("-t,--time", Settings::simDuration, "Simulation duration in seconds");
     app.add_option("-d,--ndes", limits, "Desorption limit for simulation end");
-    app.add_option("-f,--file", Settings::req_real_file, "Require an existing file")
+    app.add_option("-f,--file", Settings::inputFile, "Required input file (XML only)")
             ->required()
             ->check(CLI::ExistingFile);
     app.add_option("-a,--autosaveDuration", Settings::autoSaveDuration, "Seconds for autosave if not zero");
     app.add_flag("--loadAutosave", Settings::loadAutosave, "Whether autosave_ file should be used if exists");
+    app.add_option("--setParams", Settings::paramFile, "Parameter file for ad hoc change of the given geometry parameters")
+            ->check(CLI::ExistingFile);
 
     app.add_flag("-r,--reset", Settings::resetOnStart, "Resets simulation status loaded from while");
     app.set_config("--config");
@@ -101,7 +111,7 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
     // Settings
     // Previous results
     model->m.lock();
-    if(loader.LoadGeometry(Settings::req_real_file, model)){
+    if(loader.LoadGeometry(Settings::inputFile, model)){
         std::cerr << "[Error (LoadGeom)] Please check the input file!" << std::endl;
         model->m.unlock();
         exit(0);
@@ -143,7 +153,7 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
         if(loadState) {
 
             if(Settings::loadAutosave){
-                std::string fileName = std::filesystem::path(Settings::req_real_file).filename().string();
+                std::string fileName = std::filesystem::path(Settings::inputFile).filename().string();
                 std::string autoSavePrefix = "autosave_";
                 fileName = autoSavePrefix + fileName;
                 if(std::filesystem::exists(fileName)) {
@@ -152,7 +162,7 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
                 }
             }
             else {
-                loader.LoadSimulationState(Settings::req_real_file, model, *globState);
+                loader.LoadSimulationState(Settings::inputFile, model, *globState);
             }
         }
 
@@ -212,14 +222,14 @@ std::string Initializer::getAutosaveFile(){
     std::string autoSave;
     if(Settings::autoSaveDuration > 0)
     {
-        autoSave = std::filesystem::path(Settings::req_real_file).filename().string();
+        autoSave = std::filesystem::path(Settings::inputFile).filename().string();
 
         std::string autoSavePrefix = "autosave_";
         if(autoSave.size() > autoSavePrefix.size() && std::search(autoSave.begin(), autoSave.begin()+autoSavePrefix.size(), autoSavePrefix.begin(), autoSavePrefix.end()) == autoSave.begin())
         {
-            autoSave = std::filesystem::path(Settings::req_real_file).filename().string();
-            Settings::req_real_file = autoSave.substr( autoSavePrefix.size(), autoSave.size() - autoSavePrefix.size());
-            std::cout << "Using autosave file " << autoSave << " for "<<Settings::req_real_file<<'\n';
+            autoSave = std::filesystem::path(Settings::inputFile).filename().string();
+            Settings::inputFile = autoSave.substr(autoSavePrefix.size(), autoSave.size() - autoSavePrefix.size());
+            std::cout << "Using autosave file " << autoSave << " for " << Settings::inputFile << '\n';
         }
         else {
             // create autosavefile from copy of original
@@ -228,7 +238,7 @@ std::string Initializer::getAutosaveFile(){
             autoSave = autosaveFile.str();
 
             try {
-                std::filesystem::copy_file(Settings::req_real_file, autoSave,
+                std::filesystem::copy_file(Settings::inputFile, autoSave,
                                            std::filesystem::copy_options::overwrite_existing);
             } catch (std::filesystem::filesystem_error &e) {
                 std::cout << "Could not copy file: " << e.what() << '\n';
