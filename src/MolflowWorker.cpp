@@ -943,6 +943,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
         */
     }
 
+    globalHitCache = globState.globalHits;
     progressDlg->SetVisible(false);
     SAFE_DELETE(progressDlg);
     if (insert) {
