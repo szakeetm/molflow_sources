@@ -901,7 +901,7 @@ if(prd->inSystem == 4)
             // Write temporary local variables back to shared memory
             optixLaunchParams.perThreadData.randBufferOffset[bufferIndex] = randOffset;
 #else
-            recordBounce(bufferIndex, counterIdx, poly, prd, ray_dir, prd->hitPos, optixLaunchParams.randomNumbers);
+            recordBounce(bufferIndex, counterIdx, poly, *prd, ray_dir, prd->hitPos, optixLaunchParams.randomNumbers);
 #endif
 
 #ifdef PAYLOAD_DIRECT
