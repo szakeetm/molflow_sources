@@ -701,8 +701,7 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
                1e20f,  // tmax
                0.0f,   // rayTime
                OptixVisibilityMask( 255 ),
-               OPTIX_RAY_FLAG_DISABLE_ANYHIT
-               | OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES,//OPTIX_RAY_FLAG_NONE,
+                   RAY_FLAGS,
                    RayType::RAY_TYPE_MOLECULE,             // SBT offset
                    RayType::RAY_TYPE_COUNT,               // SBT stride
                    RayType::RAY_TYPE_MOLECULE,             // missSBTIndex

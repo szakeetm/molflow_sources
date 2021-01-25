@@ -232,7 +232,7 @@ int main(int argc, char **argv) {
     /*double raysPerSecondSum = 0.0;
     uint64_t nRaysSum = 0.0;*/
 
-    size_t refreshForStop = 0;
+    size_t refreshForStop = std::numeric_limits<size_t>::max();
     size_t loopN;
     for(loopN = 0; loopN < nbLoops && !gpuSim.hasEnded; ++loopN){
         //auto start = std::chrono::high_resolution_clock::now();

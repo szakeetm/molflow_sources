@@ -954,8 +954,7 @@ if(prd->inSystem == 4)
                            1e20f,  // tmax
                            0.0f,   // rayTime
                            OptixVisibilityMask(255),
-                           OPTIX_RAY_FLAG_DISABLE_ANYHIT
-                           | OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES,//OPTIX_RAY_FLAG_NONE,
+                           RAY_FLAGS,
                            RayType::RAY_TYPE_MOLECULE,             // SBT offset
                            RayType::RAY_TYPE_COUNT,               // SBT stride
                            RayType::RAY_TYPE_MOLECULE,             // missSBTIndex
@@ -1267,6 +1266,19 @@ optixLaunchParams.perThreadData.currentMoleculeData[fbIndex].postHitDir = prd->p
             prd->inSystem = NEW_PARTICLE;
 #if defined(GPUNBOUNCE)
         prd->nbBounces = 0;
+#endif
+
+// terminate if exit has been called
+#ifdef WITHDESORPEXIT
+#ifdef PAYLOAD_DIRECT
+        if(optixLaunchParams.perThreadData.currentMoleculeData[getWorkIndex()].hasToTerminate==1){
+            optixLaunchParams.perThreadData.currentMoleculeData[getWorkIndex()].hasToTerminate=2;
+        }
+#else
+        if(prd->hasToTerminate==1){
+            prd->hasToTerminate=2;
+        }
+#endif //PAYLOAD_DIRECT
 #endif
         /*}
         else{

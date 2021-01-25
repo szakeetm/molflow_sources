@@ -1454,7 +1454,7 @@ try{
 #ifdef DEBUG
         crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr, nbRand);
 #else
-        crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr,  time(nullptr));
+        crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr,  nbRand, time(nullptr));
 #endif // DEBUG
         state.launchParams.randomNumbers = (RN_T *) sim_memory.randBuffer.d_pointer();
 #else
@@ -1528,7 +1528,7 @@ try{
 #ifdef DEBUG
         crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr, nbRand);
 #else
-        crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr,  time(nullptr));
+        crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr,  nbRand, time(nullptr));
 #endif // DEBUG
 #else // RNG_BULKED
         sim_memory.randBuffer.resize(newSize.x * newSize.y * sizeof(curandState_t));

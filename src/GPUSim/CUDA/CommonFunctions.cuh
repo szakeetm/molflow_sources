@@ -15,6 +15,9 @@
 #include <cooperative_groups.h>
 #include <curand_kernel.h>
 
+#define RAY_FLAGS OPTIX_RAY_FLAG_NONE \
+                    | OPTIX_RAY_FLAG_DISABLE_ANYHIT \
+                    | OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES
 #define EPS32 1e-12f
 
 #define DET33(_11,_12,_13,_21,_22,_23,_31,_32,_33)  \
