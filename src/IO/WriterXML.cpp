@@ -24,7 +24,7 @@ void reportWriteStatus(const std::string& statusString) {
     char s[256];
     struct tm * p = localtime(&now_c);
     strftime(s, 256, "%F_%T", p);
-    printf("[%s][Writer at %3.2lf%%] %s\n", s, writeProgress , statusString.c_str());
+    printf("[%s] %s\n", s , statusString.c_str());
 }
 
 void WriterXML::SaveGeometry(const std::string& outputFileName, SimulationModel *model) {

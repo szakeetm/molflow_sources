@@ -27,8 +27,9 @@ private:
     static int loadFromXML(SimulationManager *simManager, SimulationModel *model, GlobalSimuState *globState,
                            bool loadState);
     static int setSharedStorage();
-
+    static int initDesLimit(SimulationModel& model, GlobalSimuState& globState);
 public:
+    static std::string getAutosaveFile();
     static int init(int argc, char **argv, SimulationManager *simManager, SimulationModel *model,
                     GlobalSimuState *globState);
 };

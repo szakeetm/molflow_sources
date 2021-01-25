@@ -49,9 +49,8 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
     //model->otfParams.desorptionLimit = Settings::desLimit.front();
 
     // Set desorption limit if used
-    if(!Settings::desLimit.empty()) {
-        model->otfParams.desorptionLimit = Settings::desLimit.front();
-        Settings::desLimit.pop_front();
+    if(initDesLimit(*model,*globState)) {
+        exit(0);
     }
     else{
         model->otfParams.desorptionLimit = 0;
@@ -176,4 +175,66 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
     }
     model->m.unlock();
     return 0;
+}
+
+int Initializer::initDesLimit(SimulationModel& model, GlobalSimuState& globState){
+    model.otfParams.desorptionLimit = 0;
+
+    // Skip desorptions if limit was already reached
+    if(!Settings::desLimit.empty())
+    {
+        size_t oldDesNb = globState.globalHits.globalHits.hit.nbDesorbed;
+        size_t listSize = Settings::desLimit.size();
+        for(size_t l = 0; l < listSize; ++l) {
+            model.otfParams.desorptionLimit = Settings::desLimit.front();
+            Settings::desLimit.pop_front();
+
+            if (oldDesNb > model.otfParams.desorptionLimit){
+                printf("Skipping desorption limit: %zu\n", model.otfParams.desorptionLimit);
+            }
+            else{
+                printf("Starting with desorption limit: %zu from %zu\n", model.otfParams.desorptionLimit , oldDesNb);
+                return 0;
+            }
+        }
+        if(Settings::desLimit.empty()){
+            printf("All given desorption limits have been reached. Consider resetting the simulation results from the input file (--reset): Starting desorption %zu\n", oldDesNb);
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+// TODO: Combine with loadXML function
+std::string Initializer::getAutosaveFile(){
+    // Create copy of input file for autosave
+    std::string autoSave;
+    if(Settings::autoSaveDuration > 0)
+    {
+        autoSave = std::filesystem::path(Settings::req_real_file).filename().string();
+
+        std::string autoSavePrefix = "autosave_";
+        if(autoSave.size() > autoSavePrefix.size() && std::search(autoSave.begin(), autoSave.begin()+autoSavePrefix.size(), autoSavePrefix.begin(), autoSavePrefix.end()) == autoSave.begin())
+        {
+            autoSave = std::filesystem::path(Settings::req_real_file).filename().string();
+            Settings::req_real_file = autoSave.substr( autoSavePrefix.size(), autoSave.size() - autoSavePrefix.size());
+            std::cout << "Using autosave file " << autoSave << " for "<<Settings::req_real_file<<'\n';
+        }
+        else {
+            // create autosavefile from copy of original
+            std::stringstream autosaveFile;
+            autosaveFile << autoSavePrefix<< autoSave;
+            autoSave = autosaveFile.str();
+
+            try {
+                std::filesystem::copy_file(Settings::req_real_file, autoSave,
+                                           std::filesystem::copy_options::overwrite_existing);
+            } catch (std::filesystem::filesystem_error &e) {
+                std::cout << "Could not copy file: " << e.what() << '\n';
+            }
+        }
+    }
+
+    return autoSave;
 }
