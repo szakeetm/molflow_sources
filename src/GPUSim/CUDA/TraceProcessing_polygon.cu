@@ -535,7 +535,7 @@ if(prd->inSystem == 4)
 
 #ifdef RNG_BULKED
         const RN_T* randFloat = optixLaunchParams.randomNumbers;
-        unsigned int randInd = NB_RAND*(bufferIndex);
+        unsigned int randInd = NB_RAND(optixLaunchParams.simConstants.maxDepth)*(bufferIndex);
         unsigned int randOffset = optixLaunchParams.perThreadData.randBufferOffset[bufferIndex];
 #endif
 

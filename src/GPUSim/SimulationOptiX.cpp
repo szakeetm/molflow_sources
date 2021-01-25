@@ -1341,14 +1341,15 @@ try{
 
 #ifdef RNG_BULKED
         const unsigned int launchSize = state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y;
-        const unsigned int nbRand = NB_RAND * launchSize;
+        const unsigned int nbRandperThread = NB_RAND(state.launchParams.simConstants.maxDepth);
+        const unsigned int nbRand = nbRandperThread * launchSize;
         //CUDABuffer stateBuff, randomBuff;
         //curandState_t *states;
         //TODO: Try upload or host API
         //printf( "Pre : %p --> %p \n", (void*)randBuffer.d_ptr, (void*)&randBuffer.d_ptr);
         //crng::testRand(&randomBuff.d_ptr, launchSize);
         //crng::initializeRandHost(launchSize, (float**) &randomBuff.d_ptr);
-        crng::generateRandHost(launchSize, (RN_T *) sim_memory.randBuffer.d_ptr);
+        crng::generateRandHost(launchSize, (RN_T *) sim_memory.randBuffer.d_ptr, nbRandperThread);
         //printf( "Post: %p --> %p --> %p\n", (void*)randBuffer.d_ptr, (void*)&randBuffer.d_ptr, randBuffer.d_pointer());
 
         //std::cout<< " --- print Rand --- " << std::endl;
@@ -1376,7 +1377,7 @@ try{
 
     void SimulationOptiX::resetDeviceData(const uint2 &newSize) {
 
-        const uint32_t nbRand = NB_RAND;
+        const uint32_t nbRand = NB_RAND(state.launchParams.simConstants.maxDepth);
 
         // resize our cuda frame buffer
         if (!sim_memory.moleculeBuffer.d_pointer())
@@ -1402,7 +1403,7 @@ try{
 
     void SimulationOptiX::initLaunchParams(const uint2 &newSize) {
 
-        const uint32_t nbRand = NB_RAND;
+        const uint32_t nbRand = NB_RAND(model->parametersGlobal.recursiveMaxDepth);
 
         // resize our cuda frame buffer
         // TODO: one counter per thread is a problem for memory
@@ -1437,7 +1438,7 @@ try{
         state.launchParams.simConstants.gasMass = model->wp.gasMass;//model->parametersGlobal.gasMass;
         state.launchParams.simConstants.nbRandNumbersPerThread = nbRand;
         state.launchParams.simConstants.scene_epsilon = SCENE_EPSILON;
-        state.launchParams.simConstants.maxDepth = MAX_DEPTH;
+        state.launchParams.simConstants.maxDepth = model->parametersGlobal.recursiveMaxDepth;
         state.launchParams.simConstants.size = newSize;
         state.launchParams.simConstants.nbFacets = model->nbFacets_total;
         // TODO: Total nb for indices and vertices
@@ -1451,7 +1452,7 @@ try{
         state.launchParams.perThreadData.randBufferOffset = (uint32_t *) sim_memory.randOffsetBuffer.d_pointer();
 #ifdef RNG_BULKED
 #ifdef DEBUG
-        crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr);
+        crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr, nbRand);
 #else
         crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr,  time(nullptr));
 #endif // DEBUG
@@ -1513,7 +1514,7 @@ try{
     /*! resize buffers to given amount of threads */
     // initlaunchparams
     void SimulationOptiX::resize(const uint2 &newSize) {
-        const uint32_t nbRand = NB_RAND;
+        const uint32_t nbRand = NB_RAND(state.launchParams.simConstants.maxDepth);
         state.launchParams.simConstants.size = newSize;
 
         // resize our cuda frame buffer
@@ -1525,11 +1526,11 @@ try{
 
         crng::destroyRandHost((RN_T **) &sim_memory.randBuffer.d_ptr);
 #ifdef DEBUG
-        crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr);
+        crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr, nbRand);
 #else
         crng::initializeRandHost(newSize.x * newSize.y, (RN_T **) &sim_memory.randBuffer.d_ptr,  time(nullptr));
 #endif // DEBUG
-#else
+#else // RNG_BULKED
         sim_memory.randBuffer.resize(newSize.x * newSize.y * sizeof(curandState_t));
         crng::destroyRandDevice((curandState_t **) &sim_memory.randBuffer.d_ptr);
         crng::initializeRandDevice_ref(newSize.x * newSize.y, sim_memory.randBuffer.d_ptr,  time(nullptr));

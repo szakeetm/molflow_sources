@@ -19,12 +19,14 @@
 #define NB_INPOLYCHECKS 5u //0=always use middle point
 // for triangle, make it a factor of 8
 #ifdef WITHTRIANGLES
-#define NB_RAND_STEP (8u + MAX_DEPTH*2u)
+//#define NB_RAND_STEP (8u + MAX_DEPTH*2u)
+#define NB_RAND_STEP(d) (8u + d*2u)
 #else
-#define NB_RAND_STEP (8u + NB_INPOLYCHECKS*2u + MAX_DEPTH*2u)
+//#define NB_RAND_STEP (8u + NB_INPOLYCHECKS*2u + MAX_DEPTH*2u)
+#define NB_RAND_STEP(d) (8u + NB_INPOLYCHECKS*2u + d*2u)
 #endif
 #define RAND_GEN_STEP (1u)
-#define NB_RAND (RAND_GEN_STEP*NB_RAND_STEP)
+#define NB_RAND(d) (RAND_GEN_STEP*NB_RAND_STEP(d))
 
 #ifdef DEBUGCOUNT
 //#define NCOUNTBINS 100

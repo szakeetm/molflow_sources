@@ -9,7 +9,7 @@
 #include <curand.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "GPUDefines.h" // for NB_RAND
+//#include "GPUDefines.h" // for NB_RAND
 
 #define CUDA_CALL(x) do { if((x)!=cudaSuccess) { \
     printf("Error at %s:%d\n",__FILE__,__LINE__);\
@@ -43,12 +43,12 @@ __global__ void randoms_bits(curandState_t *states, unsigned int *numbers) {
 }
 
 /* this GPU kernel takes an array of states, and an array of ints, and puts a random int into each */
-__global__ void random_floats(curandState_t *states, RN_T *numbers) {
+__global__ void random_floats(curandState_t *states, RN_T *numbers, size_t nb_rand) {
     const int id = threadIdx.x + blockIdx.x * 1;
     /* Copy state to local memory for efficiency */
     curandState localState = states[id];
     /* curand works like rand - except that it takes a state as a parameter */
-    for (int offset = 0; offset < NB_RAND; offset++)
+    for (int offset = 0; offset < nb_rand; offset++)
         numbers[id + offset] = curand_uniform(&localState);
 
     /* Copy state back to global memory */
@@ -86,7 +86,7 @@ namespace crng {
 */
     curandGenerator_t gen;
 
-    int initializeRandHost(unsigned int kernelSize, RN_T **randomNumbersPtr, unsigned int seed) {
+    int initializeRandHost(unsigned int kernelSize, RN_T **randomNumbersPtr, size_t nb_rand, unsigned int seed) {
         //curandGenerator_t gen;
         /*float *//**devData,*//* *hostData;
 
@@ -105,12 +105,12 @@ namespace crng {
 #endif
 
         /* Allocate n floats on device */
-        CUDA_CALL(cudaMalloc((void **) randomNumbersPtr, NB_RAND * kernelSize * sizeof(RN_T)));
+        CUDA_CALL(cudaMalloc((void **) randomNumbersPtr, nb_rand * kernelSize * sizeof(RN_T)));
         //printf("Allocating size for %d random number\n",NB_RAND*kernelSize);
 
         /* Create pseudo-random number generator */
 #ifdef DEBUG
-        printf("Allocating size for %d random number\n", NB_RAND * kernelSize);
+        printf("Allocating size for %d (%d RN x %d T) random numbers\n", nb_rand * kernelSize, nb_rand, kernelSize);
         CURAND_CALL(curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT));
 #else
         CURAND_CALL(curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_XORWOW));
@@ -202,12 +202,12 @@ namespace crng {
         return EXIT_SUCCESS;
     }*/
 
-    int generateRandHost(unsigned int kernelSize, RN_T *randomNumbers) {
+    int generateRandHost(unsigned int kernelSize, RN_T *randomNumbers, size_t nb_rand) {
         /* Generate n floats on device */
 #ifdef RNG64
-        CURAND_CALL(curandGenerateUniformDouble(gen, randomNumbers, NB_RAND*kernelSize));
+        CURAND_CALL(curandGenerateUniformDouble(gen, randomNumbers, nb_rand*kernelSize));
 #else
-        CURAND_CALL(curandGenerateUniform(gen, randomNumbers, NB_RAND * kernelSize));
+        CURAND_CALL(curandGenerateUniform(gen, randomNumbers, nb_rand * kernelSize));
 #endif
 
         //CURAND_CALL(curandGenerate(gen, (unsigned int*)randomNumbers, NB_RAND*kernelSize));
@@ -330,7 +330,7 @@ namespace crng {
         return EXIT_SUCCESS;
     }*/
 
-    int initializeStatesAndRand(unsigned int kernelSize, void *states, void *randomNumbers) {
+    int initializeStatesAndRand(unsigned int kernelSize, void *states, void *randomNumbers, size_t nb_rand) {
         /* CUDA's random number library uses curandState_t to keep track of the seed value
          we will store a random state for every thread  */
 
@@ -341,14 +341,14 @@ namespace crng {
         /* we have to initialize the state */
         generate_kernel <<< kernelSize, 1 >>>(seed, (curandState_t *) states);
 
-        CUDA_CALL(cudaMalloc((void **) &randomNumbers, NB_RAND * kernelSize * sizeof(RN_T))); // 10 rand per thread
+        CUDA_CALL(cudaMalloc((void **) &randomNumbers, nb_rand * kernelSize * sizeof(RN_T))); // 10 rand per thread
         /* Set results to 0 */
-        CUDA_CALL(cudaMemset((float *) randomNumbers, 0.0f, NB_RAND * kernelSize * sizeof(RN_T)));
+        CUDA_CALL(cudaMemset((float *) randomNumbers, 0.0f, nb_rand * kernelSize * sizeof(RN_T)));
 
         return EXIT_SUCCESS;
     }
 
-    int initializeRand(unsigned int kernelSize, curandState_t *states, RN_T *randomNumbers) {
+    int initializeRand(unsigned int kernelSize, curandState_t *states, RN_T *randomNumbers, size_t nb_rand) {
         /* CUDA's random number library uses curandState_t to keep track of the seed value
          we will store a random state for every thread  */
 
@@ -359,16 +359,16 @@ namespace crng {
         /* we have to initialize the state */
         generate_kernel<<< kernelSize, 1 >>>(seed, states);
 
-        CUDA_CALL(cudaMalloc((void **) &randomNumbers, NB_RAND * kernelSize * sizeof(RN_T))); // 10 rand per thread
+        CUDA_CALL(cudaMalloc((void **) &randomNumbers, nb_rand * kernelSize * sizeof(RN_T))); // 10 rand per thread
         /* Set results to 0 */
-        CUDA_CALL(cudaMemset(randomNumbers, 0.0f, NB_RAND * kernelSize * sizeof(RN_T)));
+        CUDA_CALL(cudaMemset(randomNumbers, 0.0f, nb_rand * kernelSize * sizeof(RN_T)));
 
         return EXIT_SUCCESS;
     }
 
-    void generateRand(unsigned int kernelSize, curandState_t *states, RN_T *randomNumbers) {
+    void generateRand(unsigned int kernelSize, curandState_t *states, RN_T *randomNumbers, size_t nb_rand) {
         /* invoke the kernel to get some random numbers */
-        random_floats<<< kernelSize, 1 >>>(states, randomNumbers);
+        random_floats<<< kernelSize, 1 >>>(states, randomNumbers, nb_rand);
     }
 
     void generateRandDevice(unsigned int kernelSize, curandState_t *states) {

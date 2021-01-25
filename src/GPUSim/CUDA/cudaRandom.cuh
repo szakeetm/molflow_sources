@@ -23,14 +23,14 @@ namespace crng {
     __host__ int  initializeRandDevice_ref(unsigned int kernelSize, void *&states, unsigned int seed = 1234ULL);
 
     __host__ void generateRandDevice(unsigned int kernelSize, curandState_t *states);
-    __host__ void generateRand(unsigned int kernelSize, curandState_t *states, float *randomNumbers);
+    __host__ void generateRand(unsigned int kernelSize, curandState_t *states, float *randomNumbers, size_t nb_rand);
     __host__ void destroyRand(curandState_t *states, float *randomNumbers);
     __host__ int  testRand(void** devData, size_t n);
     __host__ int  printDevDataAtHost(void* devData, size_t n);
 
     // float
-    __host__ int initializeRandHost(unsigned int kernelSize, RN_T **randomNumbersPtr, unsigned int seed = 1234ULL);
-    __host__ int  generateRandHost(unsigned int kernelSize, RN_T *randomNumbers);
+    __host__ int initializeRandHost(unsigned int kernelSize, RN_T **randomNumbersPtr, size_t nb_rand, unsigned int seed = 1234ULL);
+    __host__ int  generateRandHost(unsigned int kernelSize, RN_T *randomNumbers, size_t nb_rand);
     __host__ int  destroyRandHost(RN_T **randomNumbersPtr);
     __host__ int  destroyRandDevice(curandState_t **states);
 

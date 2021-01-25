@@ -115,7 +115,7 @@ int main(int argc, char **argv) {
     size_t printPerN = 100000;
     double timeLimit = 0.0;
     bool silentMode = false;
-
+    flowgpu::MolflowGlobal simParams{};
 
     for(int i = 1; i < argc; ++i ) {
         char* p;
@@ -182,6 +182,14 @@ int main(int argc, char **argv) {
             } else {
                 printUsageAndExit( argv[0] );
             }
+        } else if ( strcmp( argv[i], "--depth") == 0) {
+            if( i < argc-1 ) {
+                simParams.recursiveMaxDepth = strtoul(argv[++i],&p,10);
+            } else {
+                printUsageAndExit( argv[0] );
+            }
+        } else if ( strcmp( argv[i], "--directRand") == 0) {
+            simParams.randomNumberMethod = true;
         } else if ( strcmp( argv[i], "--quiet") == 0  || strcmp( argv[i], "-q" ) == 0 ) {
             silentMode = true;
         } else {
@@ -205,6 +213,8 @@ int main(int argc, char **argv) {
     else{
         model->ontheflyParams.desorptionLimit = 0;
     }
+    // Get parsed methods etc
+    model->parametersGlobal = simParams;
 
     std::cout << "#GPUTestsuite: Loading simulation with kernel size: " << launchSize << std::endl;
     gpuSim.LoadSimulation(model, launchSize);

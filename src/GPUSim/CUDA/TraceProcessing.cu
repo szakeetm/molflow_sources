@@ -849,7 +849,7 @@ if(prd->inSystem == 4)
 
 #ifdef RNG_BULKED
         const RN_T* randFloat = optixLaunchParams.randomNumbers;
-        unsigned int randInd = NB_RAND*(bufferIndex);
+        unsigned int randInd = NB_RAND(optixLaunchParams.simConstants.maxDepth)*(bufferIndex);
         unsigned int randOffset = optixLaunchParams.perThreadData.randBufferOffset[bufferIndex];
 #endif
 
@@ -1267,19 +1267,6 @@ optixLaunchParams.perThreadData.currentMoleculeData[fbIndex].postHitDir = prd->p
             prd->inSystem = NEW_PARTICLE;
 #if defined(GPUNBOUNCE)
         prd->nbBounces = 0;
-#endif
-
-// terminate if exit has been called
-#ifdef WITHDESORPEXIT
-#ifdef PAYLOAD_DIRECT
-        if(optixLaunchParams.perThreadData.currentMoleculeData[getWorkIndex()].hasToTerminate==1){
-            optixLaunchParams.perThreadData.currentMoleculeData[getWorkIndex()].hasToTerminate=2;
-        }
-#else
-        if(prd->hasToTerminate==1){
-            prd->hasToTerminate=2;
-        }
-#endif //PAYLOAD_DIRECT
 #endif
         /*}
         else{
