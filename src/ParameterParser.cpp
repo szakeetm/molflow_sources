@@ -3,7 +3,7 @@
 //
 
 #include "ParameterParser.h"
-
+#include "Helper/StringHelper.h"
 #include <fstream>
 #include <sstream>
 #include <vector>
@@ -35,10 +35,14 @@ void parseFacet(std::istringstream& facetString){
     std::getline(facetString, id_str, '.');
     std::getline(facetString, param_str, '=');
     std::getline(facetString, paramVal_str);
-    size_t id= std::strtoul(id_str.c_str(),nullptr,10);
+    std::vector<size_t> id_range;
+    // For now get facet list for all combinations, check for valid ids later
+    // facet list returns indices [0,inf], input is given by [1,inf]
+    splitFacetList(id_range, id_str, 1e7);
     auto param = (Parameters::FacetParam) std::strtoul(param_str.c_str(),nullptr,10);
     double paramVal = std::strtod(paramVal_str.c_str(),nullptr);
-    Parameters::facetParams.emplace_back(std::make_tuple(id, param, paramVal));
+    for(auto& id : id_range)
+        Parameters::facetParams.emplace_back(std::make_tuple(id, param, paramVal));
     //printf("[Facet #%s] %s = %s\n", id.c_str(), param.c_str(), paramVal.c_str());
 }
 
@@ -75,10 +79,13 @@ void ParameterParser::Parse(const std::string& paramFile){
 
         if( optionType == "facet" ) {
             parseFacet(lineStream);
-            printf("[%zu] Parsing %s\n", i, lineStream.str().c_str());
+            //printf("[%zu] Parsing %s\n", i, lineStream.str().c_str());
+        }
+        else if( optionType == "simulation" ) {
+            parseSimu(lineStream);
         }
         else {
-            printf("[%zu] Unknown input\n", i);
+            printf("[Line #%zu] Unknown input\n", i);
         }
         ++i;
     }
@@ -92,6 +99,8 @@ void ParameterParser::ChangeSimuParams(WorkerParams& params){
             params.gasMass = std::get<1>(par);
         else if(std::get<0>(par) == Parameters::SimuParam::halfLife)
             params.halfLife = std::get<1>(par);
+        else
+            std::cerr << "Unknown SimuParam " << std::get<0>(par) << std::endl;
     }
 }
 
@@ -108,6 +117,8 @@ void ParameterParser::ChangeFacetParams(std::vector<SubprocessFacet> &facets) {
                 facet.sh.sticking = std::get<2>(par);
             else if (std::get<1>(par) == Parameters::FacetParam::temperature)
                 facet.sh.temperature = std::get<2>(par);
+            else
+                std::cerr << "Unknown FacetParam " << std::get<1>(par) << std::endl;
         }
     }
 }
