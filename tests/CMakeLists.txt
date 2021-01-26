@@ -36,12 +36,14 @@ endif()
 
 link_directories(${LINK_DIR_1} ${LINK_DIR_2})
 
+set(EXTRA_SRC
+        ../src/ParameterParser.cpp)
 # Now simply link against gtest or gtest_main as needed. Eg
-add_executable(testsuit simulation_testsuit.cpp)
-target_link_libraries(testsuit gtest_main molflowSim)
+add_executable(testsuite simulation_testsuite.cpp ${EXTRA_SRC})
+target_link_libraries(testsuite gtest_main molflowSim)
 
-target_include_directories(testsuit PRIVATE ../include ../src_shared)
-target_compile_features(testsuit PRIVATE cxx_std_17)
-add_test(NAME example_test COMMAND testsuit)
+target_include_directories(testsuite PRIVATE ../include ../src_shared)
+target_compile_features(testsuite PRIVATE cxx_std_17)
+add_test(NAME example_test COMMAND testsuite)
 
 file(COPY ./simulation.cfg ./test_lr1000_pipe.xml DESTINATION ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})
