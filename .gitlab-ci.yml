@@ -90,7 +90,7 @@ test-debian:
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - cd ~/MOLFLOW_CI'/'$FNAME'/'
-    - ./testsuit --gtest_output="xml:report.xml"
+    - ./testsuite --gtest_output="xml:report.xml"
     - mv report.xml $PROJPATH"/report.xml"
   after_script:
     - echo "Finished"
@@ -110,7 +110,7 @@ test-fedora:
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - cd ~/MOLFLOW_CI'/'$FNAME'/'
-    - ./testsuit --gtest_output="xml:report.xml"
+    - ./testsuite --gtest_output="xml:report.xml"
     - mv report.xml $PROJPATH"/report.xml"
   after_script:
     - echo "Finished"
@@ -131,7 +131,7 @@ test-windows:
     - Set-Variable -Name "FNAME" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - Set-Location C:\MOLFLOW_CI\$FNAME\
     - $AllArgs = @("--gtest_output='xml:report.xml'")
-    - powershell.exe -c "./testsuit.exe $AllArgs"
+    - powershell.exe -c "./testsuite.exe $AllArgs"
     - Move-Item -Path report.xml -Destination (($PROJPATH) + "\report.xml")
   after_script:
     - Write-Host "Finished"
