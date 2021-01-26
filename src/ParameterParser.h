@@ -16,7 +16,7 @@ public:
 
     static void ChangeSimuParams(WorkerParams& params);
 
-    static void ChangeFacetParams(std::vector<std::vector<SubprocessFacet>>& facets);
+    static void ChangeFacetParams(std::vector<SubprocessFacet> &facets);
 };
 
 

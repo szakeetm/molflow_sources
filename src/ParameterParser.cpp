@@ -95,18 +95,19 @@ void ParameterParser::ChangeSimuParams(WorkerParams& params){
     }
 }
 
-void ParameterParser::ChangeFacetParams(std::vector<std::vector<SubprocessFacet>>& facets) {
+void ParameterParser::ChangeFacetParams(std::vector<SubprocessFacet> &facets) {
     for(auto& par : Parameters::facetParams){
         size_t id = std::get<0>(par);
         if(id < facets.size()) {
+            auto& facet = facets[id];
             if (std::get<1>(par) == Parameters::FacetParam::opacity)
-                facets[0][id].sh.opacity = std::get<2>(par);
+                facet.sh.opacity = std::get<2>(par);
             else if (std::get<1>(par) == Parameters::FacetParam::outgassing)
-                facets[0][id].sh.outgassing = std::get<2>(par);
+                facet.sh.outgassing = std::get<2>(par);
             else if (std::get<1>(par) == Parameters::FacetParam::sticking)
-                facets[0][id].sh.sticking = std::get<2>(par);
+                facet.sh.sticking = std::get<2>(par);
             else if (std::get<1>(par) == Parameters::FacetParam::temperature)
-                facets[0][id].sh.temperature = std::get<2>(par);
+                facet.sh.temperature = std::get<2>(par);
         }
     }
 }

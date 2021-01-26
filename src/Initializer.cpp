@@ -117,6 +117,10 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
         exit(0);
     }
 
+    std::cout << "[LoadGeom] Loaded geometry of " << sizeof(*model) << " / "  << model->size() << " bytes!" << std::endl;
+
+    model->facets = std::move(loader.loadFacets);
+
     // 2. Create simulation dataports
 
 
@@ -131,26 +135,16 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
         simManager->ReloadLogBuffer(logDpSize, true);*/
         //progressDlg->SetMessage("Creating hit buffer...");
         size_t nbMoments = model->tdParams.moments.size();
-
-        /*// Calc hitsize to init hit buffer
-        {
-            size_t hitSize = 0;
-            hitSize += sizeof(GlobalHitBuffer) + (1 + nbMoments) * model->wp.globalHistogramParams.GetDataSize();
-            for (int i = 0; i < model->sh.nbFacet; i++) {
-                hitSize += loader.loadFacets[i].GetHitsSize(nbMoments);
-            }
-            hitSize =
-            simManager->ReloadHitBuffer(hitSize);
-        }
-        BYTE* buffer = simManager->GetLockedHitBuffer();
-*/
-        loader.InitSimModel(model);
+        std::cout << "[LoadGeom] Initializing geometry!" << std::endl;
+        initSimModel(model);
         // temp facets from loader to model 2d (structure, facet)
         //
+        std::cout << "[LoadGeom] Resizing state!" << std::endl;
         globState->Resize(*model);
 
         // 3. init counters with previous results
         if(loadState) {
+            std::cout << "[LoadGeom] Initializing previous simulation state!" << std::endl;
 
             if(Settings::loadAutosave){
                 std::string fileName = std::filesystem::path(Settings::inputFile).filename().string();
@@ -174,6 +168,8 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
 
     // Some postprocessing
     //loader.MoveFacetsToStructures(model);
+    std::cout << "[LoadGeom] Forwarding model to simulation units!" << std::endl;
+
     simManager->ForwardSimModel(model);
 
     if (simManager->ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
@@ -247,4 +243,98 @@ std::string Initializer::getAutosaveFile(){
     }
 
     return autoSave;
+}
+
+/**
+* \brief Serialization function for a binary cereal archive for the worker attributes
+* \return output string stream containing the result of the archiving
+*/
+int Initializer::initSimModel(SimulationModel* model) {
+
+
+    std::vector<Moment> momentIntervals;
+    momentIntervals.reserve(model->tdParams.moments.size());
+    for(auto& moment : model->tdParams.moments){
+        momentIntervals.emplace_back(std::make_pair(moment.first - (0.5 * moment.second), moment.first + (0.5 * moment.second)));
+    }
+
+    model->tdParams.moments = momentIntervals;
+
+
+    model->structures.resize(model->sh.nbSuper); //Create structures
+
+
+    //TODO: Globalize Size values
+    size_t fOffset = sizeof(GlobalHitBuffer) + (1 + model->tdParams.moments.size())*model->wp.globalHistogramParams.GetDataSize(); //calculating offsets for all facets for the hits dataport during the simulation
+    size_t angleMapTotalSize = 0;
+    size_t dirTotalSize = 0;
+    size_t profTotalSize = 0;
+    size_t textTotalSize = 0;
+    size_t histogramTotalSize = 0;
+
+    bool hasVolatile = false;
+
+    auto& loadFacets = model->facets;
+    for (size_t facIdx = 0; facIdx < model->sh.nbFacet; facIdx++) {
+        SubprocessFacet& sFac = loadFacets[facIdx];
+        sFac.sh.hitOffset = fOffset; //Marking the offsets for the hits, but here we don't actually send any hits.
+        fOffset += sFac.GetHitsSize(model->tdParams.moments.size());
+
+        std::vector<double> textIncVector;
+        // Add surface elements area (reciprocal)
+        if (sFac.sh.isTextured) {
+            textIncVector.resize(sFac.sh.texHeight*sFac.sh.texWidth);
+
+            double rw = sFac.sh.U.Norme() / (double)(sFac.sh.texWidthD);
+            double rh = sFac.sh.V.Norme() / (double)(sFac.sh.texHeightD);
+            double area = rw * rh;
+            area *= (sFac.sh.is2sided) ? 2.0 : 1.0;
+            size_t add = 0;
+            for (size_t j = 0; j < sFac.sh.texHeight; j++) {
+                for (size_t i = 0; i < sFac.sh.texWidth; i++) {
+                    if (area > 0.0) {
+                        textIncVector[add] = 1.0 / area;
+                    }
+                    else {
+                        textIncVector[add] = 0.0;
+                    }
+                    add++;
+                }
+            }
+        }
+        sFac.textureCellIncrements = textIncVector;
+
+        //Some initialization
+        if (!sFac.InitializeOnLoad(facIdx, model->tdParams.moments.size(), histogramTotalSize)) return false;
+        // Increase size counters
+        //histogramTotalSize += 0;
+        angleMapTotalSize += sFac.angleMapSize;
+        dirTotalSize += sFac.directionSize* (1 + model->tdParams.moments.size());
+        profTotalSize += sFac.profileSize* (1 + model->tdParams.moments.size());
+        textTotalSize += sFac.textureSize* (1 + model->tdParams.moments.size());
+
+        hasVolatile |= sFac.sh.isVolatile;
+
+        if ((sFac.sh.superDest || sFac.sh.isVolatile) && ((sFac.sh.superDest - 1) >= model->sh.nbSuper || sFac.sh.superDest < 0)) {
+            // Geometry error
+            //ClearSimulation();
+            //ReleaseDataport(loader);
+            std::ostringstream err;
+            err << "Invalid structure (wrong link on F#" << facIdx + 1 << ")";
+            //SetErrorSub(err.str().c_str());
+            std::cerr << err.str() << std::endl;
+            return 1;
+        }
+
+        if (sFac.sh.superIdx == -1) { //Facet in all structures
+            for (auto& s : model->structures) {
+                s.facets.push_back(sFac);
+            }
+        }
+        else {
+            model->structures[sFac.sh.superIdx].facets.push_back(sFac); //Assign to structure
+        }
+    }
+
+    return 0;
 }

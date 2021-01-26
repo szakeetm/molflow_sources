@@ -40,7 +40,6 @@ namespace FlowIO {
         virtual int LoadGeometry(std::string inputFileName, SimulationModel *model) = 0;
         virtual int LoadSimulationState(std::string inputFileName, SimulationModel *model, BYTE* buffer) = 0;
 
-        int InitSimModel(SimulationModel* model);
         std::ostringstream SerializeForLoader(SimulationModel* model);
         std::ostringstream SerializeResultsForLoader(GlobalSimuState* globState);
         void MoveFacetsToStructures(SimulationModel* model);
@@ -54,7 +53,7 @@ namespace FlowIO {
         int LoadGeometry(std::string inputFileName, SimulationModel *model) override;
 
         int LoadSimulationState(std::string inputFileName, SimulationModel *model, BYTE* buffer) override;
-        int LoadSimulationState(std::string inputFileName, SimulationModel *model, GlobalSimuState& globState);
+        int LoadSimulationState(const std::string& inputFileName, SimulationModel *model, GlobalSimuState& globState);
 
     };
 }

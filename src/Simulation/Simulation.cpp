@@ -213,21 +213,22 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     //if(!model.sh.name.empty())
     //loadOK = true;
     double t1 = GetTick();
-    printf("  Load %s successful\n", model.sh.name.c_str());
-    printf("  Geometry: %zd vertex %zd facets\n", model.vertices3.size(), model.sh.nbFacet);
+    if(omp_get_thread_num() == 0) {
+        printf("  Load %s successful\n", model.sh.name.c_str());
+        printf("  Geometry: %zd vertex %zd facets\n", model.vertices3.size(), model.sh.nbFacet);
 
-    printf("  Geom size: %d bytes\n", /*(size_t)(buffer - bufferStart)*/0);
-    printf("  Number of structure: %zd\n", model.sh.nbSuper);
-    printf("  Global Hit: %zd bytes\n", sizeof(GlobalHitBuffer));
-    printf("  Facet Hit : %zd bytes\n", model.sh.nbFacet * sizeof(FacetHitBuffer));
-    printf("  Texture   : %zd bytes\n", textTotalSize);
-    printf("  Profile   : %zd bytes\n", profTotalSize);
-    printf("  Direction : %zd bytes\n", dirTotalSize);
+        printf("  Geom size: %d bytes\n", /*(size_t)(buffer - bufferStart)*/0);
+        printf("  Number of structure: %zd\n", model.sh.nbSuper);
+        printf("  Global Hit: %zd bytes\n", sizeof(GlobalHitBuffer));
+        printf("  Facet Hit : %zd bytes\n", model.sh.nbFacet * sizeof(FacetHitBuffer));
+        printf("  Texture   : %zd bytes\n", textTotalSize);
+        printf("  Profile   : %zd bytes\n", profTotalSize);
+        printf("  Direction : %zd bytes\n", dirTotalSize);
 
-    printf("  Total     : %zd bytes\n", GetHitsSize());
-    //printf("  Seed: %lu\n", randomGenerator.GetSeed());
-    printf("  Loading time: %.3f ms\n", (t1 - t0)*1000.0);
-
+        printf("  Total     : %zd bytes\n", GetHitsSize());
+        //printf("  Seed: %lu\n", randomGenerator.GetSeed());
+        printf("  Loading time: %.3f ms\n", (t1 - t0) * 1000.0);
+    }
     return 0;
 
 }

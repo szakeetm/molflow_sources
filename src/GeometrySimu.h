@@ -52,6 +52,19 @@ public:
         wp = o.wp;
         sh = o.sh;
     };
+
+    size_t size(){
+        size_t modelSize = 0;
+        modelSize += facets.capacity();
+        modelSize += structures.capacity();
+        modelSize += vertices3.capacity();
+        modelSize += sizeof(otfParams);
+        modelSize += sizeof(tdParams);
+        modelSize += sizeof(wp);
+        modelSize += sizeof(sh);
+
+        return modelSize;
+    }
     SimulationModel& operator=(const SimulationModel& o){
         facets = o.facets;
         structures = o.structures;
@@ -82,7 +95,7 @@ public:
     double GetStickingAt(SubprocessFacet *f, double time) const;
 
     // Geometry Description
-    std::vector<std::vector<SubprocessFacet>>    facets;    // All facets of this geometry
+    std::vector<SubprocessFacet>    facets;    // All facets of this geometry
     std::vector<SuperStructure> structures;
     std::vector<Vector3d> vertices3; // Vertices (3D space)
 
