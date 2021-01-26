@@ -16,6 +16,7 @@ namespace Settings {
     std::list<uint64_t> desLimit;
     bool resetOnStart = false;
     std::string inputFile;
+    std::string outputFile;
     std::string paramFile;
 }
 
@@ -84,6 +85,7 @@ int Initializer::parseCommands(int argc, char** argv) {
     app.add_option("-f,--file", Settings::inputFile, "Required input file (XML only)")
             ->required()
             ->check(CLI::ExistingFile);
+    app.add_option("-o,--output", Settings::outputFile, "Output file if different from input file");
     app.add_option("-a,--autosaveDuration", Settings::autoSaveDuration, "Seconds for autosave if not zero");
     app.add_flag("--loadAutosave", Settings::loadAutosave, "Whether autosave_ file should be used if exists");
     app.add_option("--setParams", Settings::paramFile, "Parameter file for ad hoc change of the given geometry parameters")

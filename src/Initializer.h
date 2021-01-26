@@ -19,6 +19,7 @@ namespace Settings {
     extern std::list<uint64_t> desLimit;
     extern bool resetOnStart;
     extern std::string inputFile;
+    extern std::string outputFile;
     extern std::string paramFile;
 }
 

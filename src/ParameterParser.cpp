@@ -24,6 +24,17 @@ namespace Parameters {
         halfLife
     };
 
+    static std::unordered_map<std::string,FacetParam> const tableFac = {
+            {"opacity",FacetParam::opacity},
+            {"temperature",FacetParam::temperature},
+            {"sticking",FacetParam::sticking},
+            {"outgassing",FacetParam::outgassing}
+    };
+    static std::unordered_map<std::string,SimuParam> const tableSim = {
+            {"mass",SimuParam::mass},
+            {"enableDecay",SimuParam::enableDecay},
+            {"halfLife",SimuParam::halfLife}
+    };
     std::vector<std::tuple<size_t, FacetParam, double>> facetParams;
     std::vector<std::tuple<SimuParam, double>> simuParams;
 }
@@ -39,7 +50,7 @@ void parseFacet(std::istringstream& facetString){
     // For now get facet list for all combinations, check for valid ids later
     // facet list returns indices [0,inf], input is given by [1,inf]
     splitFacetList(id_range, id_str, 1e7);
-    auto param = (Parameters::FacetParam) std::strtoul(param_str.c_str(),nullptr,10);
+    auto param = Parameters::tableFac.find(param_str)->second;
     double paramVal = std::strtod(paramVal_str.c_str(),nullptr);
     for(auto& id : id_range)
         Parameters::facetParams.emplace_back(std::make_tuple(id, param, paramVal));
@@ -51,7 +62,7 @@ void parseSimu(std::istringstream& facetString){
     std::string paramVal_str;
     std::getline(facetString, param_str, '=');
     std::getline(facetString, paramVal_str);
-    auto param = (Parameters::SimuParam) std::strtoul(param_str.c_str(),nullptr,10);
+    auto param = Parameters::tableSim.find(param_str)->second;
     double paramVal = std::strtod(paramVal_str.c_str(),nullptr);
     Parameters::simuParams.emplace_back(std::make_tuple(param, paramVal));
     //printf("[Facet #%s] %s = %s\n", id.c_str(), param.c_str(), paramVal.c_str());

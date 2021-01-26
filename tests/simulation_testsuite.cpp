@@ -6,9 +6,16 @@
 #include "../src_shared/SimulationManager.h"
 #include "gtest/gtest.h"
 #include "../src/Initializer.h"
+#include "../src/ParameterParser.h"
+
 //#define MOLFLOW_PATH ""
 
 #include <filesystem>
+#include <fstream>
+
+// hash time to create random file name
+#include <ctime>
+#include <functional>
 
 namespace {
 
@@ -173,6 +180,44 @@ namespace {
         EXPECT_LT(0, globState.globalHits.globalHits.hit.nbDesorbed);
         EXPECT_LT(0, globState.globalHits.globalHits.hit.nbMCHit);
         EXPECT_GT((double)(globState.globalHits.globalHits.hit.nbMCHit - oldHitsNb) / (timeNow-timeStart), 0.1e7);
+    }
+
+    TEST(ParameterParsing, Sweep) {
+
+        // generate hash name for tmp working file
+        std::string paramFile = std::to_string(std::hash<time_t>()(time(nullptr))) + ".cfg";
+        std::ofstream outfile (paramFile);
+
+        outfile << "facet.42.opacity=0.5\n"
+                   "facet.3.sticking=10.01\n"
+                   "facet.50-90.outgassing=42e5\n"
+                   "facet.100.temperature=290.92\n"
+                   "simulation.mass=42.42";
+        outfile.close();
+        ParameterParser::Parse(paramFile);
+
+        WorkerParams wp;
+        ASSERT_FALSE(std::abs(wp.gasMass - 42.42) < 1e-5);
+        ParameterParser::ChangeSimuParams(wp);
+        ASSERT_TRUE(std::abs(wp.gasMass - 42.42) < 1e-5);
+
+
+        std::vector<SubprocessFacet> facets(200);
+        ASSERT_FALSE(std::abs(facets[41].sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[2].sh.sticking - 10.01) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[49].sh.outgassing - 42e5) < 1e-5); // first
+        ASSERT_FALSE(std::abs(facets[69].sh.outgassing - 42e5) < 1e-5); // mid
+        ASSERT_FALSE(std::abs(facets[89].sh.outgassing - 42e5) < 1e-5); // last
+        ASSERT_FALSE(std::abs(facets[99].sh.temperature - 290.92) < 1e-5);
+        ParameterParser::ChangeFacetParams(facets);
+        ASSERT_DOUBLE_EQ(facets[41].sh.opacity, 0.5);
+        ASSERT_DOUBLE_EQ(facets[2].sh.sticking, 10.01);
+        ASSERT_DOUBLE_EQ(facets[49].sh.outgassing, 42e5); // first
+        ASSERT_DOUBLE_EQ(facets[69].sh.outgassing, 42e5); // mid
+        ASSERT_DOUBLE_EQ(facets[89].sh.outgassing, 42e5); // last
+        ASSERT_DOUBLE_EQ(facets[99].sh.temperature, 290.92);
+
+        std::filesystem::remove(paramFile);
     }
 }  // namespace
 
