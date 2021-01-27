@@ -98,6 +98,11 @@ int Initializer::parseCommands(int argc, char** argv) {
     //std::cout<<app.config_to_str(true,true);
 
     std::cout << "Number used CPU cores: " << Settings::nbCPUCores << std::endl;
+
+    // Save to inputfile
+    if(Settings::outputFile.empty())
+        Settings::outputFile = Settings::inputFile;
+
     for(auto& lim : limits)
         Settings::desLimit.emplace_back(lim);
     return 0;
