@@ -114,25 +114,6 @@ size_t MolflowGeometry::GetGeometrySize() {
 }
 
 /**
-* \brief Serializes data of the complete geometry into a cereal binary archive
-* \param outputarchive reference to the binary archive
-*/
-void MolflowGeometry::SerializeForLoader(cereal::BinaryOutputArchive& outputArchive) {
-	outputArchive(
-		CEREAL_NVP(sh),
-		CEREAL_NVP(vertices3)
-	);
-
-	size_t fOffset = sizeof(GlobalHitBuffer) + (1 + mApp->worker.moments.size())*mApp->worker.model.wp.globalHistogramParams.GetDataSize(); //calculating offsets for all facets for the hits dataport during the simulation
-
-	for (size_t i = 0; i < sh.nbFacet; i++) {
-		facets[i]->sh.hitOffset = fOffset; //Marking the offsets for the hits, but here we don't actually send any hits.
-		fOffset += facets[i]->GetHitsSize(mApp->worker.moments.size());
-		facets[i]->SerializeForLoader(outputArchive);
-	}
-}
-
-/**
 * \brief Compute number of bytes allocated from the hits size of all facets
 * \param nbMoments vector containing all moments
 * \return calculated size of memory usage from all facet hits in the geometry

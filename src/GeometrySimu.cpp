@@ -461,17 +461,44 @@ void GlobalSimuState::Resize(const SimulationModel &model) { //Constructs the 'd
     size_t nbMoments = model.tdParams.moments.size();
     std::vector<FacetState>(nbF).swap(facetStates);
 
-    for (size_t i = 0; i < nbF; i++) {
-        auto &sFac = model.facets[i];
-        if(sFac.globalId != i) exit(0);
-        FacetMomentSnapshot facetMomentTemplate;
-        facetMomentTemplate.histogram.Resize(sFac.sh.facetHistogramParams);
-        facetMomentTemplate.direction = std::vector<DirectionCell>(sFac.sh.countDirection ? sFac.sh.texWidth*sFac.sh.texHeight : 0);
-        facetMomentTemplate.profile = std::vector<ProfileSlice>(sFac.sh.isProfile ? PROFILE_SIZE : 0);
-        facetMomentTemplate.texture = std::vector<TextureCell>(sFac.sh.isTextured ? sFac.sh.texWidth*sFac.sh.texHeight : 0);
-        //No init for hits
-        facetStates[i].momentResults = std::vector<FacetMomentSnapshot>(1 + nbMoments, facetMomentTemplate);
-        if (sFac.sh.anglemapParams.record) facetStates[i].recordedAngleMapPdf = std::vector<size_t>(sFac.sh.anglemapParams.GetMapSize());
+    if(!model.facets.empty()) {
+        for (size_t i = 0; i < nbF; i++) {
+            auto &sFac = model.facets[i];
+            if (sFac.globalId != i) exit(0);
+            FacetMomentSnapshot facetMomentTemplate;
+            facetMomentTemplate.histogram.Resize(sFac.sh.facetHistogramParams);
+            facetMomentTemplate.direction = std::vector<DirectionCell>(
+                    sFac.sh.countDirection ? sFac.sh.texWidth * sFac.sh.texHeight : 0);
+            facetMomentTemplate.profile = std::vector<ProfileSlice>(sFac.sh.isProfile ? PROFILE_SIZE : 0);
+            facetMomentTemplate.texture = std::vector<TextureCell>(
+                    sFac.sh.isTextured ? sFac.sh.texWidth * sFac.sh.texHeight : 0);
+            //No init for hits
+            facetStates[i].momentResults = std::vector<FacetMomentSnapshot>(1 + nbMoments, facetMomentTemplate);
+            if (sFac.sh.anglemapParams.record)
+                facetStates[i].recordedAngleMapPdf = std::vector<size_t>(sFac.sh.anglemapParams.GetMapSize());
+        }
+    }
+    else if(!model.structures.empty()){
+        for (size_t i = 0; i < nbF; i++) {
+            for (auto &s : model.structures) {
+                for (auto &sFac : s.facets) {
+                    if (i == sFac.globalId) {
+                        FacetMomentSnapshot facetMomentTemplate;
+                        facetMomentTemplate.histogram.Resize(sFac.sh.facetHistogramParams);
+                        facetMomentTemplate.direction = std::vector<DirectionCell>(
+                                sFac.sh.countDirection ? sFac.sh.texWidth * sFac.sh.texHeight : 0);
+                        facetMomentTemplate.profile = std::vector<ProfileSlice>(sFac.sh.isProfile ? PROFILE_SIZE : 0);
+                        facetMomentTemplate.texture = std::vector<TextureCell>(
+                                sFac.sh.isTextured ? sFac.sh.texWidth * sFac.sh.texHeight : 0);
+                        //No init for hits
+                        facetStates[i].momentResults = std::vector<FacetMomentSnapshot>(1 + nbMoments, facetMomentTemplate);
+                        if (sFac.sh.anglemapParams.record)
+                            facetStates[i].recordedAngleMapPdf = std::vector<size_t>(sFac.sh.anglemapParams.GetMapSize());
+                        break;
+                    }
+                }
+            }
+        }
     }
     /*for (size_t i = 0; i < nbF; i++) {
         const SubprocessFacet& sFac = facets[i];

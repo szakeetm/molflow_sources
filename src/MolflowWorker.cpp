@@ -1177,7 +1177,6 @@ bool Worker::MolflowGeomToSimModel(){
 
     model.structures.resize(model.sh.nbSuper); //Create structures
     //TODO: Globalize Size values
-    size_t fOffset = sizeof(GlobalHitBuffer) + (1 + model.tdParams.moments.size())*model.wp.globalHistogramParams.GetDataSize(); //calculating offsets for all facets for the hits dataport during the simulation
     size_t angleMapTotalSize = 0;
     size_t dirTotalSize = 0;
     size_t profTotalSize = 0;
@@ -1241,8 +1240,6 @@ bool Worker::MolflowGeomToSimModel(){
             sFac.angleMap.pdf = angleMapVector;
             sFac.textureCellIncrements = textIncVector;
         }
-        sFac.sh.hitOffset = fOffset; //Marking the offsets for the hits, but here we don't actually send any hits.
-        fOffset += sFac.GetHitsSize(model.tdParams.moments.size());
 
         //Some initialization
         if (!sFac.InitializeOnLoad(facIdx, model.tdParams.moments.size(), histogramTotalSize)) return false;
@@ -1358,36 +1355,6 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
     needsReload = false;
     progressDlg->SetVisible(false);
     SAFE_DELETE(progressDlg);
-}
-
-/**
-* \brief Serialization function for a binary cereal archive for the worker attributes
-* \return output string stream containing the result of the archiving
-*/
-std::ostringstream Worker::SerializeForLoader() {
-    std::ostringstream result;
-    cereal::BinaryOutputArchive outputArchive(result);
-
-    std::vector<Moment> momentIntervals;
-    momentIntervals.reserve(moments.size());
-    for(auto& moment : moments){
-        momentIntervals.emplace_back(std::make_pair(moment.first - (0.5 * moment.second), moment.first + (0.5 * moment.second)));
-    }
-    outputArchive(
-            CEREAL_NVP(model.wp),
-            CEREAL_NVP(model.otfParams),
-            CEREAL_NVP(CDFs),
-            CEREAL_NVP(IDs),
-            CEREAL_NVP(parameters),
-            //CEREAL_NVP(temperatures),
-            //CEREAL_NVP(moments)
-            cereal::make_nvp("moments",momentIntervals)
-            //CEREAL_NVP(desorptionParameterIDs)
-    ); //Worker
-
-    geom->SerializeForLoader(outputArchive);
-
-    return result;
 }
 
 /**

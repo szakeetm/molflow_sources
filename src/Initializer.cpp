@@ -272,7 +272,6 @@ int Initializer::initSimModel(SimulationModel* model) {
 
 
     //TODO: Globalize Size values
-    size_t fOffset = sizeof(GlobalHitBuffer) + (1 + model->tdParams.moments.size())*model->wp.globalHistogramParams.GetDataSize(); //calculating offsets for all facets for the hits dataport during the simulation
     size_t angleMapTotalSize = 0;
     size_t dirTotalSize = 0;
     size_t profTotalSize = 0;
@@ -284,8 +283,6 @@ int Initializer::initSimModel(SimulationModel* model) {
     auto& loadFacets = model->facets;
     for (size_t facIdx = 0; facIdx < model->sh.nbFacet; facIdx++) {
         SubprocessFacet& sFac = loadFacets[facIdx];
-        sFac.sh.hitOffset = fOffset; //Marking the offsets for the hits, but here we don't actually send any hits.
-        fOffset += sFac.GetHitsSize(model->tdParams.moments.size());
 
         std::vector<double> textIncVector;
         // Add surface elements area (reciprocal)

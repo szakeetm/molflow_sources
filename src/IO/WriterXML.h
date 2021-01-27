@@ -15,7 +15,6 @@ namespace FlowIO {
 
     public:
         //virtual void SaveGeometry(std::string outputFileName, SimulationModel *model) = 0;
-        virtual int SaveSimulationState(std::string outputFileName, SimulationModel *model, BYTE* buffer) = 0;
     };
 
     class WriterXML : public Writer {
@@ -24,7 +23,6 @@ namespace FlowIO {
         public:
             //void SaveGeometry(std::string outputFileName, SimulationModel *model) override;
             static void SaveGeometry(const std::string& outputFileName, SimulationModel *model);
-            int SaveSimulationState(std::string outputFileName, SimulationModel *model, BYTE* buffer) override;
             static int SaveSimulationState(const std::string& outputFileName, SimulationModel *model, GlobalSimuState& globState);
     };
 }

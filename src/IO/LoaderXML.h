@@ -38,10 +38,7 @@ namespace FlowIO {
         std::vector<SubprocessFacet> loadFacets;
 
         virtual int LoadGeometry(std::string inputFileName, SimulationModel *model) = 0;
-        virtual int LoadSimulationState(std::string inputFileName, SimulationModel *model, BYTE* buffer) = 0;
 
-        std::ostringstream SerializeForLoader(SimulationModel* model);
-        std::ostringstream SerializeResultsForLoader(GlobalSimuState* globState);
         void MoveFacetsToStructures(SimulationModel* model);
     };
 
@@ -51,8 +48,6 @@ namespace FlowIO {
         void LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices);
     public:
         int LoadGeometry(std::string inputFileName, SimulationModel *model) override;
-
-        int LoadSimulationState(std::string inputFileName, SimulationModel *model, BYTE* buffer) override;
         int LoadSimulationState(const std::string& inputFileName, SimulationModel *model, GlobalSimuState& globState);
 
     };
