@@ -12,7 +12,7 @@
 
 namespace Settings {
     extern double nbCPUCores;
-    extern size_t nbThreadsPerCore;
+    extern size_t nbThreads;
     extern uint64_t simDuration;
     extern uint64_t autoSaveDuration;
     extern bool loadAutosave;

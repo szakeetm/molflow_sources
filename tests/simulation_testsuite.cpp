@@ -30,17 +30,17 @@ namespace {
         {
             SimulationManager simMan("molflow","MFLW");
             simMan.useCPU = true;
-            simMan.nbCores = 0;
+            simMan.nbThreads = 0;
             simMan.InitSimUnits();
-            EXPECT_EQ(0, simMan.nbCores);
+            EXPECT_EQ(0, simMan.nbThreads);
         }
 
         {
             SimulationManager simMan("molflow","MFLW");
             simMan.useCPU = true;
-            simMan.nbCores = 1; // more not possible,
+            simMan.nbThreads = 1; // more not possible,
             simMan.InitSimUnits();
-            EXPECT_EQ(1, simMan.nbCores);
+            EXPECT_EQ(1, simMan.nbThreads);
         }
     }
 
@@ -48,11 +48,11 @@ namespace {
         {
             SimulationManager simMan("molflow","MFLW");
             simMan.useCPU = true;
-            simMan.nbCores = 1;
+            simMan.nbThreads = 1;
             simMan.InitSimUnits();
-            EXPECT_EQ(1, simMan.nbCores);
+            EXPECT_EQ(1, simMan.nbThreads);
             simMan.KillAllSimUnits();
-            EXPECT_EQ(0, simMan.nbCores);
+            EXPECT_EQ(0, simMan.nbThreads);
         }
     }
 

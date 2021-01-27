@@ -9,7 +9,7 @@
 
 namespace Settings {
     double nbCPUCores = 0;
-    size_t nbThreadsPerCore = 0;
+    size_t nbThreads = 0;
     uint64_t simDuration = 10;
     uint64_t autoSaveDuration = 600; // default: autosave every 600s=10min
     bool loadAutosave = false;
@@ -39,15 +39,14 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
 #endif
     parseCommands(argc, argv);
 
-    simManager->nbThreads = Settings::nbThreadsPerCore;
-    simManager->nbCores = Settings::nbCPUCores;
+    simManager->nbThreads = Settings::nbThreads;
     simManager->useCPU = true;
 
     if(simManager->InitSimUnits()) {
-        std::cout << "Error: Initialising subprocesses: " << simManager->nbCores << std::endl;
+        std::cout << "Error: Initialising simulation unit: " << simManager->nbThreads << std::endl;
         return 1;
     }
-    std::cout << "Active cores: " << simManager->nbCores << std::endl;
+    std::cout << "Active cores: " << simManager->nbThreads << std::endl;
     model->otfParams.nbProcess = simManager->nbThreads;
     //model->otfParams.desorptionLimit = Settings::desLimit.front();
 
@@ -78,7 +77,7 @@ int Initializer::parseCommands(int argc, char** argv) {
 
     std::vector<double> limits;
     // Define options
-    app.add_option("-j,--threads", Settings::nbThreadsPerCore, "# threads per core");
+    app.add_option("-j,--threads", Settings::nbThreads, "# threads per core");
     app.add_option("-p,--procs", Settings::nbCPUCores, "# CPU cores");
     app.add_option("-t,--time", Settings::simDuration, "Simulation duration in seconds");
     app.add_option("-d,--ndes", limits, "Desorption limit for simulation end");
