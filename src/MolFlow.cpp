@@ -49,6 +49,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include "direct.h"
 #include <io.h>
+#include <Helper/FormatHelper.h>
+
 #else
 #include <unistd.h> //chdir
 #endif
@@ -1085,7 +1087,7 @@ double nbAbs = (double)gHits->globalHits.hit.nbAbsEquiv;
 double nbDes = (double)gHits->globalHits.hit.nbDesorbed;
 double nbMCHit = (double)gHits->globalHits.hit.nbMCHit;
 
-fprintf(file,"Time:%s Sticking=%g Des=%g\n",FormatTime(worker.simuTime),(double)nbSt/10.0,nbDes);
+fprintf(file,"Time:%s Sticking=%g Des=%g\n",formatTime(worker.simuTime),(double)nbSt/10.0,nbDes);
 
 // Volatile profile
 int nb = geom->GetNbFacet();
@@ -1135,19 +1137,19 @@ int MolFlow::FrameMove()
 			hitNumber->SetText("");
 		}
 		else {
-			sprintf(tmp, "%s (%s)", FormatInt(worker.globalHitCache.globalHits.hit.nbMCHit, "hit"), FormatPS(hps, "hit"));
+			sprintf(tmp, "%s (%s)", Util::formatInt(worker.globalHitCache.globalHits.hit.nbMCHit, "hit"), Util::formatPs(hps, "hit"));
 			hitNumber->SetText(tmp);
 		}
-		sprintf(tmp, "%s (%s)", FormatInt(worker.globalHitCache.globalHits.hit.nbDesorbed, "des"), FormatPS(dps, "des"));
+		sprintf(tmp, "%s (%s)", Util::formatInt(worker.globalHitCache.globalHits.hit.nbDesorbed, "des"), Util::formatPs(dps, "des"));
 		desNumber->SetText(tmp);
 	}
 
 	if (worker.calcAC) {
-		sprintf(tmp, "Calc AC: %s (%zd %%)", FormatTime(worker.simuTime + (m_fTime - worker.startTime)),
-			worker.calcACprg);
+		sprintf(tmp, "Calc AC: %s (%zd %%)", Util::formatTime(worker.simuTime + (m_fTime - worker.startTime)),
+                worker.calcACprg);
 	}
 	else {
-		sprintf(tmp, "Running: %s", FormatTime(worker.simuTime + (m_fTime - worker.startTime)));
+		sprintf(tmp, "Running: %s", Util::formatTime(worker.simuTime + (m_fTime - worker.startTime)));
 	}
 
 	// Save previous state to react to changes
