@@ -32,13 +32,14 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/GLWindowManager.h"
 #include "Helper/MathTools.h"
 #include "Helper/StringHelper.h"
+#include <Helper/FormatHelper.h>
+
 #include "GLApp/GLMenuBar.h"
 #include "GLApp/GLButton.h"
 #include "GLApp/GLLabel.h"
 #include "GLApp/GLCombo.h"
 #include "GLApp/GLTextField.h"
 
-#include "Helper/MathTools.h"
 #include "Interface/RecoveryDialog.h"
 #include <vector>
 #include <string>
@@ -49,10 +50,10 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #include "direct.h"
 #include <io.h>
-#include <Helper/FormatHelper.h>
 
 #else
 #include <unistd.h> //chdir
+
 #endif
 
 // Plotters
