@@ -32,7 +32,7 @@ namespace {
             simMan.useCPU = true;
             simMan.nbThreads = 0;
             simMan.InitSimUnits();
-            EXPECT_EQ(0, simMan.nbThreads);
+            EXPECT_NE(0, simMan.nbThreads);
         }
 
         {
