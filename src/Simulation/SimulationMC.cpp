@@ -97,7 +97,7 @@ bool CurrentParticleStatus::UpdateMCHits(GlobalSimuState &globSimuState, size_t 
         globSimuState.globalHits.distTraveledTotal_fullHitsOnly += tmpState.globalHits.distTraveledTotal_fullHitsOnly;
 
         // Update too late
-        //totalDesorbed += tmpState.globalHits.globalHits.hit.nbDesorbed;
+        totalDesorbed += tmpState.globalHits.globalHits.hit.nbDesorbed;
 
 
         /*gHits->globalHits.hit.nbMCHit += tmpGlobalResult.globalHits.hit.nbMCHit;

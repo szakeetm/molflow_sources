@@ -125,7 +125,7 @@ void Simulation::ClearSimulation() {
     std::vector<SubProcessFacetTempVar>(model.sh.nbFacet).swap(currentParticle.tmpFacetVars);
     currentParticle.tmpState.Reset();
     currentParticle.model = &model;
-
+    currentParticle.totalDesorbed = 0;
     totalDesorbed = 0;
     //ResetTmpCounters();
     /*for(auto& tmpResults : tmpGlobalResults)
@@ -294,6 +294,7 @@ void Simulation::ResetSimulation() {
     currentParticle.model = &model;
 
     totalDesorbed = 0;
+    currentParticle.totalDesorbed = 0;
 
     tmpParticleLog.clear();
 }

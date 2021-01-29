@@ -68,6 +68,7 @@ public:
 	double oriRatio; //Represented ratio of desorbed, used for low flux mode
 
 	//Recordings for histogram
+	uint64_t totalDesorbed;
 	size_t   nbBounces; // Number of hit (current particle) since desorption
     size_t   lastMomentIndex; // Speedup for binary search
     size_t particleId;

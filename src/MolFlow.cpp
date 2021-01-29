@@ -1121,6 +1121,7 @@ worker.ReleaseHits();
 int MolFlow::FrameMove()
 {
     bool runningState = worker.IsRunning();
+    double elapsedTime = worker.simuTimer.Elapsed();
 	if (runningState && ((m_fTime - lastUpdate) >= 1.0f)) {
 		if (textureScaling) textureScaling->Update();
 		//if (formulaEditor && formulaEditor->IsVisible()) formulaEditor->Refresh(); //Interface::Framemove does it already
@@ -1129,7 +1130,7 @@ int MolFlow::FrameMove()
 	char tmp[256];
 	if (globalSettings) globalSettings->SMPUpdate();
 
-	if ((m_fTime - worker.startTime <= 2.0f) && runningState) {
+	if ((elapsedTime <= 2.0f) && runningState) {
 		hitNumber->SetText("Starting...");
 		desNumber->SetText("Starting...");
 	}
@@ -1146,11 +1147,11 @@ int MolFlow::FrameMove()
 	}
 
 	if (worker.calcAC) {
-		sprintf(tmp, "Calc AC: %s (%zd %%)", Util::formatTime(worker.simuTime + (m_fTime - worker.startTime)),
+		sprintf(tmp, "Calc AC: %s (%zd %%)", Util::formatTime(worker.simuTimer.Elapsed()),
                 worker.calcACprg);
 	}
 	else {
-		sprintf(tmp, "Running: %s", Util::formatTime(worker.simuTime + (m_fTime - worker.startTime)));
+		sprintf(tmp, "Running: %s", Util::formatTime(worker.simuTimer.Elapsed()));
 	}
 
 	// Save previous state to react to changes

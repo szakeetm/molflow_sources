@@ -112,9 +112,10 @@ Worker::Worker() : simManager("molflow", "MFLW"), model{} {
     ResetWorkerStats();
     geom = new MolflowGeometry();
 
-    startTime = 0.0f;
-    stopTime = 0.0f;
-    simuTime = 0.0f;
+    simuTimer.ReInit();
+    //startTime = 0.0f;
+    //stopTime = 0.0f;
+    //simuTime = 0.0f;
 
     calcAC = false;
     strcpy(fullFileName, "");
@@ -986,8 +987,9 @@ void Worker::LoadTexturesGEO(FileReader *f, int version) {
 */
 void Worker::InnerStop(float appTime) {
 
-    stopTime = appTime;
-    simuTime += appTime - startTime;
+    simuTimer.Stop();
+    //stopTime = appTime;
+    //simuTime += appTime - startTime;
     calcAC = false;
 
 }
@@ -1032,7 +1034,8 @@ void Worker::StartStop(float appTime, size_t sMode) {
         // Start
         try {
             if (needsReload) RealReload(); //Synchronize subprocesses to main process
-            startTime = appTime;
+            simuTimer.Start();
+            //startTime = appTime;
             //isRunning = true;
             calcAC = false;
 
