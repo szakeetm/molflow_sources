@@ -16,10 +16,124 @@
 // hash time to create random file name
 #include <ctime>
 #include <functional>
+#include <Helper/Chronometer.h>
+
+#ifndef GIT_COMMIT_HASH
+#define GIT_COMMIT_HASH "?"
+#endif
 
 namespace {
 
-// Tests factorial of positive numbers.
+    class SimulationFixture : public ::testing::TestWithParam<std::string> {
+    protected:
+        SimulationFixture() {
+            // You can do set-up work for each test here.
+        }
+
+        ~SimulationFixture() override {
+            // You can do clean-up work that doesn't throw exceptions here.
+        }
+
+        void SetUp() override {
+            // Code here will be called immediately after the constructor (right
+            // before each test).
+        }
+
+        void TearDown() override {
+            // Code here will be called immediately after each test (right
+            // before the destructor).
+        }
+
+        // Objects declared here can be used by all tests in the test suite for Foo.
+    };
+
+    INSTANTIATE_TEST_CASE_P(
+            Performance,
+            SimulationFixture,
+            ::testing::Values(
+                    "test_lr1000_pipe.xml", "test_lr10_pipe_tex.xml"
+            ));
+
+    TEST_P(SimulationFixture, PerformanceOkay) {
+        std::string testFile = GetParam();
+        printf("Filename: %s\n",testFile.c_str());
+        size_t nbFails = 0;
+        bool fastEnough = false;
+        do {
+            SimulationManager simManager("molflow", "MFLW");
+            SimulationModel model{};
+            GlobalSimuState globState{};
+
+            std::vector<char *> argv = {"tester", "--config", "simulation.cfg", "--reset", "--file"};
+            char * fileName_c = new char[testFile.size() + 1];
+            std::copy(testFile.begin(), testFile.end(), fileName_c);
+            fileName_c[testFile.size()] = '\0';
+            argv.push_back(fileName_c);
+            char **args = argv.data();
+            Initializer::init(argv.size(), (args), &simManager, &model, &globState);
+            delete[] fileName_c;
+
+            size_t oldHitsNb = globState.globalHits.globalHits.hit.nbMCHit;
+            size_t oldDesNb = globState.globalHits.globalHits.hit.nbDesorbed;
+
+            EXPECT_NO_THROW(simManager.StartSimulation());
+
+            Chronometer simTimer;
+            simTimer.Start();
+            double elapsedTime;
+
+            bool endCondition = false;
+            do {
+                ProcessSleep(1000);
+                elapsedTime = simTimer.Elapsed();
+                if (model.otfParams.desorptionLimit != 0)
+                    endCondition = globState.globalHits.globalHits.hit.nbDesorbed >= model.otfParams.desorptionLimit;
+                // Check for potential time end
+                if (Settings::simDuration > 0) {
+                    endCondition |= elapsedTime >= Settings::simDuration;
+                }
+            } while (!endCondition);
+            simTimer.Stop();
+
+            // Stop and copy results
+            simManager.StopSimulation();
+            simManager.KillAllSimUnits();
+
+            double hitPS = (double) (globState.globalHits.globalHits.hit.nbMCHit - oldHitsNb) / (elapsedTime);
+            EXPECT_EQ(0, oldDesNb);
+            EXPECT_EQ(0, oldHitsNb);
+            EXPECT_LT(0, globState.globalHits.globalHits.hit.nbDesorbed);
+            EXPECT_LT(0, globState.globalHits.globalHits.hit.nbMCHit);
+
+            double prev = -1;
+            std::string testName(::testing::UnitTest::GetInstance()->current_test_info()->name());
+            std::string timeRecFile = "./time_record_" + testFile.substr(0,testFile.size() - 4) + ".txt";
+            {
+                std::ifstream ifs(timeRecFile);
+                std::string fromCommit;
+                ifs >> fromCommit;
+                ifs >> prev;
+            }
+            if (prev < 0) prev = 0.2e7;
+
+            //EXPECT_GT(hitPS, 0.9 * prev);
+            fastEnough = hitPS > 0.9 * prev;
+            if(!fastEnough) {
+                ++nbFails;
+            }
+
+            printf("Current Hit/s: %e vs. Prev Hit/s: %e\n", hitPS, prev);
+
+            if (hitPS > prev) {
+                std::string hash = GIT_COMMIT_HASH;
+                std::ofstream ofs(timeRecFile);
+                ofs << hash.substr(0, 8) << ' ' << hitPS << std::endl;
+            }
+        } while (!fastEnough && nbFails < 3);
+        EXPECT_LT(nbFails, 3);
+    }
+
+    // Tests factorial of positive numbers.
     TEST(SubProcessInit, Zero) {
 
         {
@@ -54,132 +168,6 @@ namespace {
             simMan.KillAllSimUnits();
             EXPECT_EQ(0, simMan.nbThreads);
         }
-    }
-
-    /*TEST(RunningSimu, Run) {
-        SimulationManager simManager("molflow","MFLW");
-        SimulationModel model{};
-        GlobalSimuState globState{};
-
-        std::vector<char*> argv = {"tester", "--config", "simulation.cfg", "--reset"};
-        char** args = argv.data();
-
-        Initializer::init(argv.size(), (args), &simManager, &model, &globState);
-        size_t oldHitsNb = globState.globalHits.globalHits.hit.nbMCHit;
-        size_t oldDesNb = globState.globalHits.globalHits.hit.nbDesorbed;
-
-        // Skip desorptions if limit was already reached
-        if(!Settings::desLimit.empty())
-        {
-            size_t listSize = Settings::desLimit.size();
-            for(size_t l = 0; l < listSize; ++l) {
-                if (oldDesNb > Settings::desLimit.front()){
-                    printf("Skipping desorption limit: %lu\n",Settings::desLimit.front());
-                    Settings::desLimit.pop_front();
-                }
-                else{
-                    printf("Starting with desorption limit: %lu from %zu\n",Settings::desLimit.front(), oldDesNb);
-                    model.otfParams.desorptionLimit = Settings::desLimit.front();
-                    simManager.ForwardOtfParams(&model.otfParams);
-                    break;
-                }
-            }
-            if(Settings::desLimit.empty()){
-                exit(0);
-            }
-        }
-
-        try {
-            simManager.StartSimulation();
-        }
-        catch (std::runtime_error& e) {
-            exit(0);
-        }
-
-        double timeNow = omp_get_wtime();
-        double timeStart = omp_get_wtime();
-        double timeEnd = (Settings::simDuration > 0) ? timeStart + 1.0 * Settings::simDuration : std::numeric_limits<double>::max();
-
-        bool endCondition = false;
-        do {
-            ProcessSleep(1000);
-            timeNow = omp_get_wtime();
-            if(model.otfParams.desorptionLimit != 0)
-                endCondition = globState.globalHits.globalHits.hit.nbDesorbed>= model.otfParams.desorptionLimit;
-        } while(timeNow < timeEnd && !endCondition);
-
-        // Stop and copy results
-        simManager.StopSimulation();
-        simManager.KillAllSimUnits();
-
-        EXPECT_EQ(0, oldDesNb);
-        EXPECT_EQ(0, oldHitsNb);
-        EXPECT_LT(0, globState.globalHits.globalHits.hit.nbDesorbed);
-        EXPECT_LT(0, globState.globalHits.globalHits.hit.nbMCHit);
-
-    }*/
-
-    TEST(Performance, Pipe100) {
-        SimulationManager simManager("molflow","MFLW");
-        SimulationModel model{};
-        GlobalSimuState globState{};
-
-        std::vector<char*> argv = {"tester", "--config", "simulation.cfg", "--reset"};
-        char** args = argv.data();
-
-        Initializer::init(argv.size(), (args), &simManager, &model, &globState);
-        size_t oldHitsNb = globState.globalHits.globalHits.hit.nbMCHit;
-        size_t oldDesNb = globState.globalHits.globalHits.hit.nbDesorbed;
-
-        // Skip desorptions if limit was already reached
-        if(!Settings::desLimit.empty()) {
-            size_t listSize = Settings::desLimit.size();
-            for(size_t l = 0; l < listSize; ++l) {
-                if (oldDesNb > Settings::desLimit.front()){
-                    printf("Skipping desorption limit: %lu\n",Settings::desLimit.front());
-                    Settings::desLimit.pop_front();
-                }
-                else{
-                    printf("Starting with desorption limit: %lu from %zu\n",Settings::desLimit.front(), oldDesNb);
-                    model.otfParams.desorptionLimit = Settings::desLimit.front();
-                    simManager.ForwardOtfParams(&model.otfParams);
-                    break;
-                }
-            }
-            if(Settings::desLimit.empty()){
-                exit(0);
-            }
-        }
-
-        try {
-            simManager.StartSimulation();
-        }
-        catch (std::runtime_error& e) {
-            exit(0);
-        }
-
-        double timeNow = omp_get_wtime();
-        double timeStart = omp_get_wtime();
-        double timeEnd = (Settings::simDuration > 0) ? timeStart + 1.0 * Settings::simDuration : std::numeric_limits<double>::max();
-
-        bool endCondition = false;
-        do {
-            ProcessSleep(1000);
-            timeNow = omp_get_wtime();
-            if(model.otfParams.desorptionLimit != 0)
-                endCondition = globState.globalHits.globalHits.hit.nbDesorbed>= model.otfParams.desorptionLimit;
-        } while(timeNow < timeEnd && !endCondition);
-
-        // Stop and copy results
-        simManager.StopSimulation();
-        simManager.KillAllSimUnits();
-
-        printf("Hit/s => %e\n", (double)(globState.globalHits.globalHits.hit.nbMCHit - oldHitsNb) / (timeNow-timeStart));
-        EXPECT_EQ(0, oldDesNb);
-        EXPECT_EQ(0, oldHitsNb);
-        EXPECT_LT(0, globState.globalHits.globalHits.hit.nbDesorbed);
-        EXPECT_LT(0, globState.globalHits.globalHits.hit.nbMCHit);
-        EXPECT_GT((double)(globState.globalHits.globalHits.hit.nbMCHit - oldHitsNb) / (timeNow-timeStart), 0.1e7);
     }
 
     TEST(ParameterParsing, Sweep) {
@@ -223,7 +211,6 @@ namespace {
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
-
 
 
     return RUN_ALL_TESTS();

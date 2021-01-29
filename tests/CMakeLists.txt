@@ -34,6 +34,21 @@ if (CMAKE_VERSION VERSION_LESS 2.8.11)
     include_directories("${gtest_SOURCE_DIR}/include")
 endif()
 
+# Get the current working branch
+execute_process(
+        COMMAND git rev-parse --abbrev-ref HEAD
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_BRANCH
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+# Get the latest commit hash
+execute_process(
+        COMMAND git rev-parse HEAD
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_COMMIT_HASH
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+
 link_directories(${LINK_DIR_1} ${LINK_DIR_2})
 
 set(EXTRA_SRC
@@ -41,9 +56,11 @@ set(EXTRA_SRC
 # Now simply link against gtest or gtest_main as needed. Eg
 add_executable(testsuite simulation_testsuite.cpp ${EXTRA_SRC})
 target_link_libraries(testsuite gtest_main molflowSim)
+target_compile_definitions(testsuite PRIVATE
+        "-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
 
 target_include_directories(testsuite PRIVATE ../include ../src_shared)
 target_compile_features(testsuite PRIVATE cxx_std_17)
 add_test(NAME example_test COMMAND testsuite)
 
-file(COPY ./simulation.cfg ./test_lr1000_pipe.xml DESTINATION ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})
+file(COPY ./simulation.cfg ./simulation_tex.cfg ./test_lr1000_pipe.xml ./test_lr10_pipe_tex.xml DESTINATION ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})
