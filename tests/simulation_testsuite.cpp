@@ -114,7 +114,7 @@ namespace {
                 ifs >> fromCommit;
                 ifs >> prev;
             }
-            if (prev < 0) prev = 0.2e7;
+            if (prev < 0) prev = 1e5;
 
             //EXPECT_GT(hitPS, 0.9 * prev);
             fastEnough = hitPS > 0.9 * prev;
