@@ -287,7 +287,7 @@ void TexturePlotter::UpdateTable() {
 
                 /*if (shGHit->sMode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
                     / worker->model.wp.wp.timeWindowSize));*/
-					double moleculesPerTP = (worker->model.wp.sMode == MC_MODE) ? mApp->worker.GetMoleculesPerTP(worker->displayedMoment) : 1.0;
+					double moleculesPerTP = mApp->worker.GetMoleculesPerTP(worker->displayedMoment);
 					for (size_t i = 0; i < w; i++) {
 						for (size_t j = 0; j < h; j++) {
 							PhysicalValue val = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::ImpingementRate, moleculesPerTP,1.0, worker->model.wp.gasMass, (int)(i + j * w), facetSnapshot);
@@ -321,7 +321,7 @@ void TexturePlotter::UpdateTable() {
 					//TextureCell *texture = (TextureCell *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
                 const auto& facetSnapshot = worker->globState.facetStates[selFacetId].momentResults[mApp->worker.displayedMoment];
 
-                double moleculesPerTP = (worker->model.wp.sMode == MC_MODE) ? mApp->worker.GetMoleculesPerTP(worker->displayedMoment) : 1.0;
+                double moleculesPerTP = mApp->worker.GetMoleculesPerTP(worker->displayedMoment);
 					double densityCorrection = selFacet->DensityCorrection();
 
 					for (size_t i = 0; i < w; i++) {
@@ -359,7 +359,7 @@ void TexturePlotter::UpdateTable() {
 					//TextureCell *texture = (TextureCell *)((BYTE *)buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
                 const auto& facetSnapshot = worker->globState.facetStates[selFacetId].momentResults[mApp->worker.displayedMoment];
 
-                double moleculesPerTP = (worker->model.wp.sMode == MC_MODE) ? mApp->worker.GetMoleculesPerTP(worker->displayedMoment) : 1.0;
+                double moleculesPerTP = mApp->worker.GetMoleculesPerTP(worker->displayedMoment);
 					double densityCorrection = selFacet->DensityCorrection();
 
 					for (size_t i = 0; i < w; i++) {
@@ -399,7 +399,7 @@ void TexturePlotter::UpdateTable() {
 					//TextureCell *texture = (TextureCell *)(buffer + (selFacet->sh.hitOffset + facetHitsSize + profSize + mApp->worker.displayedMoment*w*h * sizeof(TextureCell)));
                 const auto& facetSnapshot = worker->globState.facetStates[selFacetId].momentResults[mApp->worker.displayedMoment];
 
-                double moleculesPerTP = (worker->model.wp.sMode == MC_MODE) ? mApp->worker.GetMoleculesPerTP(worker->displayedMoment) : 1.0;
+                double moleculesPerTP = mApp->worker.GetMoleculesPerTP(worker->displayedMoment);
 
 					for (size_t i = 0; i < w; i++) {
 						for (size_t j = 0; j < h; j++) {

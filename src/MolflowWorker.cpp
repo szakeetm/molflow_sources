@@ -117,7 +117,6 @@ Worker::Worker() : simManager("molflow", "MFLW"), model{} {
     //stopTime = 0.0f;
     //simuTime = 0.0f;
 
-    calcAC = false;
     strcpy(fullFileName, "");
 }
 
@@ -986,27 +985,7 @@ void Worker::LoadTexturesGEO(FileReader *f, int version) {
 * \param appTime current time of the application
 */
 void Worker::InnerStop(float appTime) {
-
     simuTimer.Stop();
-    //stopTime = appTime;
-    //simuTime += appTime - startTime;
-    calcAC = false;
-
-}
-
-/**
-* \brief Function that starts exactly one simulation step for AC (angular coefficient) mode
-*/
-void Worker::OneACStep() {
-
-    if (model.otfParams.nbProcess == 0)
-        throw std::runtime_error("No sub process found. (Simulation not available)");
-
-    if (!IsRunning()) {
-        if (simManager.ExecuteAndWait(COMMAND_STEPAC, PROCESS_RUN, AC_MODE))
-            ThrowSubProcError();
-    }
-
 }
 
 /**
@@ -1014,7 +993,7 @@ void Worker::OneACStep() {
 * \param appTime current time of the application
 * \param sMode simulation mode (MC/AC)
 */
-void Worker::StartStop(float appTime, size_t sMode) {
+void Worker::StartStop(float appTime) {
 
     if (IsRunning()) {
 
@@ -1035,12 +1014,6 @@ void Worker::StartStop(float appTime, size_t sMode) {
         try {
             if (needsReload) RealReload(); //Synchronize subprocesses to main process
             simuTimer.Start();
-            //startTime = appTime;
-            //isRunning = true;
-            calcAC = false;
-
-            model.wp.sMode = sMode;
-
             Start();
         }
         catch (std::exception &e) {

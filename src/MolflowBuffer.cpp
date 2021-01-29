@@ -13,7 +13,6 @@ WorkerParams::WorkerParams(){
     halfLife = 1;
     finalOutgassingRate = finalOutgassingRate_Pa_m3_sec = totalDesorbedMolecules = 0.0;
     motionType = 0;
-    sMode = MC_MODE;
 }
 
 OntheflySimulationParams::OntheflySimulationParams(){

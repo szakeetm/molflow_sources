@@ -1693,7 +1693,8 @@ void MolflowGeometry::SaveTXT(FileWriter *file, GlobalSimuState &globState, bool
 * \param saveSelected if a selection is to be saved (TODO: chefk if actually used)
 * \param sMode simulation mode
 */
-void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, GlobalSimuState &globState, bool saveSelected, size_t sMode) {
+void
+MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, GlobalSimuState &globState, bool saveSelected) {
 
 
 	if (grouping == 1) fprintf(file, "X_coord_cm\tY_coord_cm\tZ_coord_cm\tValue\t\n"); //mode 10: special ANSYS export
@@ -1747,7 +1748,7 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, GlobalS
 							case 2: //Impingement rate
 
 								if (!grouping || texture[index].countEquiv > 0.0) {
-									double moleculesPerTP = (mApp->worker.model.wp.sMode == MC_MODE) ? mApp->worker.GetMoleculesPerTP(m) : 1.0;
+									double moleculesPerTP = mApp->worker.GetMoleculesPerTP(m);
 									double val = GetPhysicalValue(f, PhysicalMode::ImpingementRate, moleculesPerTP,1.0, mApp->worker.model.wp.gasMass, (int)index, facetSnapshot).value;
 
 									sprintf(tmp, "%g", val);
@@ -1758,7 +1759,7 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, GlobalS
 							{
 
 								if (!grouping || texture[index].countEquiv > 0.0) {
-									double moleculesPerTP = (mApp->worker.model.wp.sMode == MC_MODE) ? mApp->worker.GetMoleculesPerTP(m) : 1.0;
+									double moleculesPerTP = mApp->worker.GetMoleculesPerTP(m);
 									double densityCorrection = f->DensityCorrection();
 									double rho = GetPhysicalValue(f, PhysicalMode::ParticleDensity, moleculesPerTP, densityCorrection, mApp->worker.model.wp.gasMass, (int)index, facetSnapshot).value;
 
@@ -1769,7 +1770,7 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, GlobalS
 							case 4: //Gas density
 							{
 								if (!grouping || texture[index].countEquiv > 0.0) {
-									double moleculesPerTP = (mApp->worker.model.wp.sMode == MC_MODE) ? mApp->worker.GetMoleculesPerTP(m) : 1.0;
+									double moleculesPerTP = mApp->worker.GetMoleculesPerTP(m);
                                     double densityCorrection = f->DensityCorrection();
                                     double rho_mass = GetPhysicalValue(f, PhysicalMode::GasDensity, moleculesPerTP, densityCorrection, mApp->worker.model.wp.gasMass, (int)index, facetSnapshot).value;
 
@@ -1780,7 +1781,7 @@ void MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, GlobalS
 							case 5:  // Pressure [mbar]
 
 								if (!grouping || texture[index].sum_v_ort_per_area != 0.0) {
-									double moleculesPerTP = (mApp->worker.model.wp.sMode == MC_MODE) ? mApp->worker.GetMoleculesPerTP(m) : 1.0;
+									double moleculesPerTP = mApp->worker.GetMoleculesPerTP(m);
 									double p = GetPhysicalValue(f, PhysicalMode::Pressure, moleculesPerTP, 1.0, mApp->worker.model.wp.gasMass, (int)index, facetSnapshot).value;
 									sprintf(tmp, "%g", p);
 								}

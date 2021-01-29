@@ -58,7 +58,7 @@ public:
 
 	// Save
 	void SaveTXT(FileWriter *file, GlobalSimuState &globState, bool saveSelected);
-	void ExportTextures(FILE *file, int grouping, int mode, GlobalSimuState &globState, bool saveSelected, size_t sMode);
+	void ExportTextures(FILE *file, int grouping, int mode, GlobalSimuState &globState, bool saveSelected);
 	void ExportProfiles(FILE *file, int isTXT, Worker *worker);
 	void SaveGEO(FileWriter *file, GLProgress *prg, GlobalSimuState &globState, Worker *worker,
                  bool saveSelected, bool crashSave = false);
@@ -90,7 +90,7 @@ public:
 	
 
 #pragma region GeometryRender.cpp
-	void BuildFacetTextures(GlobalSimuState &globState, bool renderRegularTexture, bool renderDirectionTexture, size_t sMode);
+	void BuildFacetTextures(GlobalSimuState &globState, bool renderRegularTexture, bool renderDirectionTexture);
 	void BuildFacetDirectionTextures(BYTE *texture);
 #pragma endregion
 

@@ -22,7 +22,6 @@ struct MolflowWorkerParams : public WorkerParams {
     int motionType;
     Vector3d motionVector1; //base point for rotation
     Vector3d motionVector2; //rotation vector or velocity vector
-    size_t    sMode;                // Simu mode (MC_MODE or AC_MODE)
 };
 
 #endif //MOLFLOW_PROJ_MOLFLOWBUFFER_H

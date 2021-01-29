@@ -417,16 +417,6 @@ int MolFlow::OneTimeSceneInit()
 	modeCombo->SetSelectedIndex(0);
 	//simuPanel->Add(modeCombo);
 
-	compACBtn = nullptr;
-	/*new GLButton(0, "Calc AC");
-	compACBtn->SetEnabled(false);*/
-	//simuPanel->Add(compACBtn);
-
-	singleACBtn = nullptr;
-	/*new GLButton(0, "1");
-	singleACBtn->SetEnabled(false);*/
-	//simuPanel->Add(singleACBtn);
-
 	inputPanel = new GLTitledPanel("Particles in");
 	facetPanel->Add(inputPanel);
 
@@ -1135,24 +1125,14 @@ int MolFlow::FrameMove()
 		desNumber->SetText("Starting...");
 	}
 	else {
-		if (worker.model.wp.sMode == AC_MODE) {
-			hitNumber->SetText("");
-		}
-		else {
-			sprintf(tmp, "%s (%s)", Util::formatInt(worker.globalHitCache.globalHits.hit.nbMCHit, "hit"), Util::formatPs(hps, "hit"));
-			hitNumber->SetText(tmp);
-		}
+        sprintf(tmp, "%s (%s)", Util::formatInt(worker.globalHitCache.globalHits.hit.nbMCHit, "hit"), Util::formatPs(hps, "hit"));
+        hitNumber->SetText(tmp);
 		sprintf(tmp, "%s (%s)", Util::formatInt(worker.globalHitCache.globalHits.hit.nbDesorbed, "des"), Util::formatPs(dps, "des"));
 		desNumber->SetText(tmp);
 	}
 
-	if (worker.calcAC) {
-		sprintf(tmp, "Calc AC: %s (%zd %%)", Util::formatTime(worker.simuTimer.Elapsed()),
-                worker.calcACprg);
-	}
-	else {
-		sprintf(tmp, "Running: %s", Util::formatTime(worker.simuTimer.Elapsed()));
-	}
+    sprintf(tmp, "Running: %s", Util::formatTime(worker.simuTimer.Elapsed()));
+
 
 	// Save previous state to react to changes
     prevRunningState = runningState;
@@ -1620,8 +1600,8 @@ void MolFlow::StartStopSimulation() {
 			"\nDo you want to continue?\n", "Strange time settings", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) == GLDLG_OK;
 		if (!ok) return;
 	}
-	
-	worker.StartStop(m_fTime, modeCombo->GetSelectedIndex());
+
+    worker.StartStop(m_fTime);
 	if (!worker.IsRunning()) { //Force update on simulation stop
         formula_ptr->UpdateFormulaValues(worker.globalHitCache.globalHits.hit.nbDesorbed);
         UpdatePlotters();
@@ -2057,13 +2037,6 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			}
 			facetAdvParams->SetVisible(!facetAdvParams->IsVisible());
 			facetAdvParams->Reposition();
-		}
-
-		else if (src == compACBtn) {
-			break;
-		}
-		else if (src == singleACBtn) {
-			break;
 		}
 		/*else {
 			ProcessFormulaButtons(src);

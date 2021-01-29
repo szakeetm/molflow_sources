@@ -50,7 +50,8 @@ extern SynRad*mApp;
 * \param renderDirectionTexture bool value
 * \param sMode which simulation mode was used (monte carlo / angular coefficient)
 */
-void MolflowGeometry::BuildFacetTextures(GlobalSimuState &globState, bool renderRegularTexture, bool renderDirectionTexture, size_t sMode) {
+void MolflowGeometry::BuildFacetTextures(GlobalSimuState &globState, bool renderRegularTexture,
+                                         bool renderDirectionTexture) {
 	
 	Worker *w = &(mApp->worker);
 
@@ -69,15 +70,11 @@ void MolflowGeometry::BuildFacetTextures(GlobalSimuState &globState, bool render
 
 	if (renderRegularTexture) {
 		const GlobalHitBuffer& globHit = globState.globalHits;
-		switch (sMode) {
-
-		case MC_MODE:
-
+		{
 			dCoef_custom[0] = 1E4 / (double)globHit.globalHits.hit.nbDesorbed * mApp->worker.model.wp.gasMass / 1000 / 6E23*0.0100; //multiplied by timecorr*sum_v_ort_per_area: pressure
 			dCoef_custom[1] = 1E4 / (double)globHit.globalHits.hit.nbDesorbed;
 			dCoef_custom[2] = 1E4 / (double)globHit.globalHits.hit.nbDesorbed;
 			timeCorrection = (mApp->worker.displayedMoment == 0) ? mApp->worker.model.wp.finalOutgassingRate : mApp->worker.model.wp.totalDesorbedMolecules / mApp->worker.moments[mApp->worker.displayedMoment - 1].second;
-
 			for (int i = 0; i < 3; i++) {
 				//texture limits already corrected by timeFactor in UpdateMCHits()
 				texture_limits[i].autoscale.min.moments_only = globHit.texture_limits[i].min.moments_only*dCoef_custom[i];
@@ -85,11 +82,6 @@ void MolflowGeometry::BuildFacetTextures(GlobalSimuState &globState, bool render
 				texture_limits[i].autoscale.min.all = globHit.texture_limits[i].min.all*dCoef_custom[i];
 				texture_limits[i].autoscale.max.all = globHit.texture_limits[i].max.all*dCoef_custom[i];
 			}
-			break;
-		case AC_MODE:
-			texture_limits[0].autoscale.min.all = globHit.texture_limits[0].min.all;
-			texture_limits[0].autoscale.max.all = globHit.texture_limits[0].max.all;
-			break;
 		}
 
 		if (!texAutoScale) { //manual values

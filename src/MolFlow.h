@@ -107,9 +107,6 @@ public:
     GLLabel       *facetReLabel;
     GLToggle       *facetFILabel;
 	GLToggle      *facetFIAreaLabel;
-    //GLLabel       *facetMLabel;
-	GLButton      *compACBtn;
-	GLButton      *singleACBtn;
 
 	GLButton      *profilePlotterBtn;
 	GLButton      *texturePlotterBtn;
