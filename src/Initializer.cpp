@@ -120,18 +120,15 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
     if(loader.LoadGeometry(Settings::inputFile, model)){
         std::cerr << "[Error (LoadGeom)] Please check the input file!" << std::endl;
         model->m.unlock();
-        exit(0);
+        return 1;
     }
 
-    std::cout << "[LoadGeom] Loaded geometry of " << sizeof(*model) << " / "  << model->size() << " bytes!" << std::endl;
+    std::cout << "[LoadGeom] Loaded geometry of " << model->size() << " bytes!" << std::endl;
 
     model->facets = std::move(loader.loadFacets);
 
     // 2. Create simulation dataports
-
-
     try {
-
         simManager->ResetSimulations();
         //progressDlg->SetMessage("Creating Logger...");
         /*size_t logDpSize = 0;

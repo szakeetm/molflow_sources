@@ -27,86 +27,26 @@ struct TimeDependentParamters {
     std::vector<double> temperatures; //keeping track of all temperatures that have a CDF already generated
     std::vector<size_t> desorptionParameterIDs; //time-dependent parameters which are used as desorptions, therefore need to be integrated
 */
-};
+    size_t GetMemSize(){
+        size_t sum = 0;
+        for(auto& par : parameters){
+            sum += par.GetMemSize();
+        }
+        sum += sizeof(std::vector<std::vector<std::pair<double, double>>>);
+        for(auto& vec : CDFs){
+            sum += sizeof(std::vector<std::pair<double, double>>);
+            sum += sizeof(std::pair<double,double>) * vec.capacity();
+        }
+        sum += sizeof(std::vector<std::vector<std::pair<double, double>>>);
+        for(auto& vec : IDs){
+            sum += sizeof(std::vector<std::pair<double, double>>);
+            sum += sizeof(std::pair<double,double>) * vec.capacity();
+        }
+        sum += sizeof(std::vector<Moment>);
+        sum += sizeof(Moment) * moments.capacity();
 
-struct SimulationModel {
-public:
-    SimulationModel() : otfParams(), tdParams(), wp(), sh(), m(){};
-    ~SimulationModel();
-
-    SimulationModel(SimulationModel&& o)  noexcept : m(){
-        facets = std::move(o.facets);
-        structures = std::move(o.structures);
-        vertices3 = std::move(o.vertices3);
-        otfParams = o.otfParams;
-        tdParams = std::move(o.tdParams);
-        wp = o.wp;
-        sh = std::move(o.sh);
-    };
-    SimulationModel(const SimulationModel& o) : m(){
-        facets = o.facets;
-        structures = o.structures;
-        vertices3 = o.vertices3;
-        otfParams = o.otfParams;
-        tdParams = o.tdParams;
-        wp = o.wp;
-        sh = o.sh;
-    };
-
-    size_t size(){
-        size_t modelSize = 0;
-        modelSize += facets.capacity();
-        modelSize += structures.capacity();
-        modelSize += vertices3.capacity();
-        modelSize += sizeof(otfParams);
-        modelSize += sizeof(tdParams);
-        modelSize += sizeof(wp);
-        modelSize += sizeof(sh);
-
-        return modelSize;
+        return sum;
     }
-    SimulationModel& operator=(const SimulationModel& o){
-        facets = o.facets;
-        structures = o.structures;
-        vertices3 = o.vertices3;
-        otfParams = o.otfParams;
-        tdParams = o.tdParams;
-        wp = o.wp;
-        sh = o.sh;
-
-        return *this;
-    };
-    SimulationModel& operator=(SimulationModel&& o) noexcept {
-        facets = std::move(o.facets);
-        structures = std::move(o.structures);
-        vertices3 = std::move(o.vertices3);
-        tdParams = std::move(o.tdParams);
-        otfParams = o.otfParams;
-        wp = o.wp;
-        sh = o.sh;
-
-        return *this;
-    };
-
-    void CalculateFacetParams(SubprocessFacet* f);
-
-    // Sim functions
-    double GetOpacityAt(SubprocessFacet *f, double time) const;
-    double GetStickingAt(SubprocessFacet *f, double time) const;
-
-    // Geometry Description
-    std::vector<SubprocessFacet>    facets;    // All facets of this geometry
-    std::vector<SuperStructure> structures;
-    std::vector<Vector3d> vertices3; // Vertices (3D space)
-
-    // Simulation Properties
-    OntheflySimulationParams otfParams;
-    TimeDependentParamters tdParams;
-    WorkerParams wp;
-
-    // Geometry Properties
-    GeomProperties sh;
-    std::mutex m;
 };
 
 class Anglemap {
@@ -116,6 +56,16 @@ public:
     std::vector<size_t>   phi_CDFsums; // since CDF runs only to the middle of the last segment, for each theta a line sum is stored here. Also a pdf for theta
     std::vector<double>   theta_CDF;	  // Theta CDF, not normalized. nth value is the CDF at the end of region n (beginning of first section is always 0)
     size_t   theta_CDFsum; // since theta CDF only runs till the middle of the last segment, the map sum is here
+
+    [[nodiscard]] size_t GetMemSize() const{
+        size_t sum = 0;
+        sum += sizeof (Anglemap);
+        sum += sizeof (size_t) * pdf.capacity();
+        sum += sizeof (double) * phi_CDFs.capacity();
+        sum += sizeof (size_t) * phi_CDFsums.capacity();
+        sum += sizeof (double) * theta_CDF.capacity();
+        return sum;
+    }
 };
 
 // Local facet structure
@@ -173,6 +123,8 @@ struct SubprocessFacet{
     bool InitializeLinkAndVolatile(const size_t & id);
 
     [[nodiscard]] size_t GetHitsSize(size_t nbMoments) const;
+    [[nodiscard]] size_t GetMemSize() const;
+
     //void RegisterTransparentPass(SubprocessFacet *facet); //Allows one shared Intersect routine between MolFlow and Synrad
 
 };
@@ -187,6 +139,99 @@ public:
     ~SuperStructure();
     std::vector<SubprocessFacet>  facets;   // Facet handles
     std::shared_ptr<AABBNODE> aabbTree; // Structure AABB tree
+    size_t GetMemSize(){
+        size_t sum = 0;
+        sum += sizeof (facets);
+        for(auto& fac : facets)
+            sum += fac.GetMemSize();
+        sum += sizeof (aabbTree);
+        return sum;
+    }
+};
+
+struct SimulationModel {
+public:
+    SimulationModel() : otfParams(), tdParams(), wp(), sh(), m(){};
+    ~SimulationModel();
+
+    SimulationModel(SimulationModel&& o)  noexcept : m(){
+        facets = std::move(o.facets);
+        structures = std::move(o.structures);
+        vertices3 = std::move(o.vertices3);
+        otfParams = o.otfParams;
+        tdParams = std::move(o.tdParams);
+        wp = o.wp;
+        sh = std::move(o.sh);
+    };
+    SimulationModel(const SimulationModel& o) : m(){
+        facets = o.facets;
+        structures = o.structures;
+        vertices3 = o.vertices3;
+        otfParams = o.otfParams;
+        tdParams = o.tdParams;
+        wp = o.wp;
+        sh = o.sh;
+    };
+
+    size_t size(){
+        size_t modelSize = 0;
+        modelSize += facets.capacity();
+        for(auto& fac : facets)
+            modelSize += fac.GetMemSize();
+        modelSize += structures.capacity();
+        for(auto& struc : structures)
+            modelSize += struc.GetMemSize();
+        modelSize += sizeof(std::vector<Vector3d>) + sizeof(Vector3d) * vertices3.capacity();
+        modelSize += tdParams.GetMemSize();
+        modelSize += sizeof(otfParams);
+        modelSize += sizeof(wp);
+        modelSize += sizeof(sh);
+        modelSize += sizeof(m);
+
+        return modelSize;
+    }
+    SimulationModel& operator=(const SimulationModel& o){
+        facets = o.facets;
+        structures = o.structures;
+        vertices3 = o.vertices3;
+        otfParams = o.otfParams;
+        tdParams = o.tdParams;
+        wp = o.wp;
+        sh = o.sh;
+
+        return *this;
+    };
+    SimulationModel& operator=(SimulationModel&& o) noexcept {
+        facets = std::move(o.facets);
+        structures = std::move(o.structures);
+        vertices3 = std::move(o.vertices3);
+        tdParams = std::move(o.tdParams);
+        otfParams = o.otfParams;
+        wp = o.wp;
+        sh = o.sh;
+
+        return *this;
+    };
+
+    void CalculateFacetParams(SubprocessFacet* f);
+
+    // Sim functions
+    double GetOpacityAt(SubprocessFacet *f, double time) const;
+    double GetStickingAt(SubprocessFacet *f, double time) const;
+
+    // Geometry Description
+    std::vector<SubprocessFacet>    facets;    // All facets of this geometry
+    std::vector<SuperStructure> structures;
+    std::vector<Vector3d> vertices3; // Vertices (3D space)
+
+    // Simulation Properties
+    OntheflySimulationParams otfParams;
+    TimeDependentParamters tdParams;
+    WorkerParams wp;
+
+    // Geometry Properties
+    GeomProperties sh;
+    std::mutex m;
 };
 
 /*!

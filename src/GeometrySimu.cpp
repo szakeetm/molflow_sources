@@ -277,6 +277,18 @@ size_t SubprocessFacet::GetHitsSize(size_t nbMoments) const { //for hits datapor
 
 }
 
+size_t SubprocessFacet::GetMemSize() const {
+    size_t sum = 0;
+    sum += sizeof (SubprocessFacet);
+    sum += sizeof (size_t) * indices.capacity();
+    sum += sizeof (Vector2d) * vertices2.capacity();
+    sum += sizeof (double) * textureCellIncrements.capacity();
+    sum += sizeof (bool) * largeEnough.capacity();
+    sum += sizeof (double) * outgassingMap.capacity();
+    sum += angleMap.GetMemSize();
+    return sum;
+}
+
 /*!
  * @brief Calculates various facet parameters without sanity checking @see Geometry::CalculateFacetParams(Facet* f)
  * @param f individual subprocess facet
@@ -441,12 +453,11 @@ GlobalSimuState& GlobalSimuState::operator+=(const GlobalSimuState & src) {
 * \brief Clears simulation state
 */
 void GlobalSimuState::clear() {
-    //LockMutex(mutex);
     tMutex.lock();
     globalHits = GlobalHitBuffer();
     globalHistograms.clear();
     facetStates.clear();
-    //ReleaseMutex(mutex);
+    initialized = false;
     tMutex.unlock();
 }
 
