@@ -146,21 +146,6 @@ size_t MolflowGeometry::GetMaxElemNumber() {
 
 }
 
-/*void MolflowGeometry::CopyElemBuffer(BYTE *buffer) {
-
-	int idx = 0;
-	for (int i = 0; i < wp.nbFacet; i++) {
-		Facet *f = facets[i];
-
-		//int sz = f->wp.texWidth * f->wp.texHeight * sizeof(SHELEM);
-		//memcpy(buffer + idx, f->mesh, sz);
-		//idx += sz;
-
-		//To fix
-	}
-
-}*/
-
 /**
 * \brief Testing purpose function, construct a PIPE
 * \param L length
@@ -186,7 +171,6 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 
 	sh.nbSuper = 1;
 	strName[0] = strdup("Pipe");
-	//strFileName[0] = strdup("pipe.txt");
 
 	if (!(facets = (Facet **)malloc(sh.nbFacet * sizeof(Facet *))))
 		throw Error("Couldn't allocate memory for facets");
@@ -277,8 +261,6 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 		throw Error("Unspecified Error while building pipe");
 	}
 	InitializeGeometry();
-	//isLoaded = true; //InitializeGeometry() sets to true
-
 }
 
 /**
@@ -426,13 +408,6 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 	facets = (Facet **)realloc(facets, (nbNewFacets + sh.nbFacet) * sizeof(Facet **));
 	memset(facets + sh.nbFacet, 0, nbNewFacets * sizeof(Facet *));
 
-	/*
-	InterfaceVertex *tmp_vertices3 = (InterfaceVertex *)malloc((nbNewVertex + wp.nbVertex) * sizeof(InterfaceVertex));
-	memmove(tmp_vertices3, *vertices3, (wp.nbVertex)*sizeof(Vector3d));
-	memset(tmp_vertices3 + wp.nbVertex, 0, nbNewVertex * sizeof(Vector3d));
-	SAFE_FREE(*vertices3);
-	*vertices3 = tmp_vertices3;
-	*/
 	vertices3.resize(nbNewVertex + sh.nbVertex);
 
 	// Read geometry vertices

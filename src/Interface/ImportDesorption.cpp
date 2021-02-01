@@ -341,7 +341,7 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 				GLMessageBox::Display(errMsg,"Error",GLDLG_OK,GLDLG_ICONERROR);
 			}
 			work->CalcTotalOutgassing();
-			mApp->UpdateFacetParams();
+			mApp->UpdateFacetParams(false);
 			// Send to sub process
 			try { work->Reload(); } catch(Error &e) {
 				GLMessageBox::Display(e.what(),"Error reloading worker",GLDLG_OK,GLDLG_ICONERROR);

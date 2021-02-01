@@ -223,23 +223,23 @@ FacetDetails::FacetDetails():GLWindow() {
 void FacetDetails::PlaceComponents() {
 
   // Show toggle panel
-  int nbW = (width-20)/80;
+  int nbW = (_width - 20) / 80;
   int nbL = (NB_FDCOLUMN-1)/nbW + (((NB_FDCOLUMN-1)%nbW)?1:0);
   int hp;
   if(!sPanel->IsClosed())
     hp = 20*(nbL+1);
   else
     hp = 20;
-  sPanel->SetBounds(5,height-(hp+52),width-10,hp);
+  sPanel->SetBounds(5, _height - (hp + 52), _width - 10, hp);
   for(size_t i=0;i<NB_FDCOLUMN;i++)
     sPanel->SetCompBounds(show[i],5+80*(((int)i-1)%nbW),18+20*(((int)i-1)/nbW),85,19);
 
-  facetListD->SetBounds(5,5,width-10,height-(62+hp));
+  facetListD->SetBounds(5, 5, _width - 10, _height - (62 + hp));
 
-  checkAllButton->SetBounds(5,height-45,90,19);
-  uncheckAllButton->SetBounds(100,height-45,90,19);
-  updateButton->SetBounds(195,height-45,90,19);
-  dismissButton->SetBounds(width-100,height-45,90,19);
+  checkAllButton->SetBounds(5, _height - 45, 90, 19);
+  uncheckAllButton->SetBounds(100, _height - 45, 90, 19);
+  updateButton->SetBounds(195, _height - 45, 90, 19);
+  dismissButton->SetBounds(_width - 100, _height - 45, 90, 19);
 
 }
 

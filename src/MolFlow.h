@@ -51,8 +51,8 @@ public:
 	GLTextField   *facetFlowArea;
 	
     
-    void LoadFile(std::string fileName="") override;
-	void InsertGeometry(bool newStr,std::string fileName="") override;
+    void LoadFile(const std::string &fileName) override;
+	void InsertGeometry(bool newStr, const std::string &fileName) override;
 	void SaveFile() override;
     
 	//void ImportDesorption_DES(); //Deprecated
@@ -64,15 +64,13 @@ public:
     void ClearFacetParams() override;
 	
     void ApplyFacetParams();
-	void UpdateFacetParams(bool updateSelection = false) override;
+	void UpdateFacetParams(bool updateSelection) override;
     void StartStopSimulation();
     void SaveConfig() override;
     void LoadConfig() override;
     
 	void PlaceComponents() override;
-    void UpdateFacetHits(bool allRows=false) override;
-	void QuickPipe();
-	float GetAppTime();
+    void UpdateFacetHits(bool allRows) override;
 	void ClearParameters();
 	void UpdatePlotters() override;
 	void RefreshPlotterCombos();
@@ -81,21 +79,12 @@ public:
 	void calcFlow();
 	void calcSticking();
 
-	//char* appTitle;
-
-	GLButton      *texturePlotterShortcut;
-	GLButton      *profilePlotterShortcut;
-    //GLButton      *statusSimu;
-    
-	
     GLTextField   *facetSticking;
 	
     GLCombo       *facetDesType;
 	GLTextField   *facetDesTypeN;
     GLCombo       *facetRecType;
-	GLLabel       *facetUseDesFileLabel;
-	GLLabel       *modeLabel;
-	
+
 	GLLabel       *facetPumpingLabel;
 	GLTextField   *facetPumping;	
     GLLabel       *facetSLabel;
@@ -136,7 +125,7 @@ public:
     // Testing
     //int     nbSt;
     //void LogProfile();
-    void BuildPipe(double ratio,int steps = 0) override;
+    void BuildPipe(double ratio,int steps) override;
 	void EmptyGeometry() override;
 	void CrashHandler(std::exception& e);
 	

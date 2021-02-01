@@ -117,16 +117,16 @@ OutgassingMap::OutgassingMap():GLWindow() {
 */
 void OutgassingMap::PlaceComponents() {
 
-  mapList->SetBounds(5,5,width-15,height-55);
+  mapList->SetBounds(5, 5, _width - 15, _height - 55);
   //saveButton->SetBounds(10,height-45,70,19);
-  explodeButton->SetBounds(10,height-45,70,19);
-  sizeButton->SetBounds(90,height-45,70,19);
-  pasteButton->SetBounds(170,height-45,70,19);
+  explodeButton->SetBounds(10, _height - 45, 70, 19);
+  sizeButton->SetBounds(90, _height - 45, 70, 19);
+  pasteButton->SetBounds(170, _height - 45, 70, 19);
   //maxButton->SetBounds(170,height-45,70,19);
-  desLabel->SetBounds(270,height-45,30,19);
-  desCombo->SetBounds(370,height-45,80,19);
-  cancelButton->SetBounds(width-90,height-45,80,19);
-  exponentText->SetBounds(450,height-45,50,19);
+  desLabel->SetBounds(270, _height - 45, 30, 19);
+  desCombo->SetBounds(370, _height - 45, 80, 19);
+  cancelButton->SetBounds(_width - 90, _height - 45, 80, 19);
+  exponentText->SetBounds(450, _height - 45, 50, 19);
 }
 
 /**

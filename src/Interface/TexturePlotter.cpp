@@ -124,14 +124,14 @@ TexturePlotter::TexturePlotter() :GLWindow() {
 */
 void TexturePlotter::PlaceComponents() {
 
-	mapList->SetBounds(5, 5, width - 15, height - 80);
-	saveButton->SetBounds(10, height - 70, 70, 19);
-	sizeButton->SetBounds(10, height - 45, 70, 19);
-	autoSizeOnUpdate->SetBounds(90, height - 45, 120, 19);
-	maxButton->SetBounds(90, height - 70, 70, 19);
-	viewLabel->SetBounds(320, height - 70, 30, 19);
-	viewCombo->SetBounds(350, height - 70, 130, 19);
-	cancelButton->SetBounds(width - 90, height - 45, 80, 19);
+	mapList->SetBounds(5, 5, _width - 15, _height - 80);
+	saveButton->SetBounds(10, _height - 70, 70, 19);
+	sizeButton->SetBounds(10, _height - 45, 70, 19);
+	autoSizeOnUpdate->SetBounds(90, _height - 45, 120, 19);
+	maxButton->SetBounds(90, _height - 70, 70, 19);
+	viewLabel->SetBounds(320, _height - 70, 30, 19);
+	viewCombo->SetBounds(350, _height - 70, 130, 19);
+	cancelButton->SetBounds(_width - 90, _height - 45, 80, 19);
 
 }
 
