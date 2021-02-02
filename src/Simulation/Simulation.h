@@ -104,6 +104,8 @@ public:
 
     int ReinitializeParticleLog() override;
     CurrentParticleStatus* GetParticle() override {return &currentParticle;} ;
+    CurrentParticleStatus* GetParticle(size_t i) override {if(i < particles.size()) return &particles.at(i); else return nullptr;} ;
+    void SetNParticle(size_t n) override {particles.clear(); particles.resize(n);};
     //bool UpdateHits(int prIdx, DWORD timeout) override;
     //bool UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, DWORD timeout);
 
@@ -151,7 +153,7 @@ public:
     //std::vector<FacetHistogramBuffer> tmpGlobalHistograms; //Recorded histogram since last UpdateMCHits, 1+nbMoment copies
     std::vector<ParticleLoggerItem> tmpParticleLog; //Recorded particle log since last UpdateMCHits
     CurrentParticleStatus currentParticle;
-
+    std::vector<CurrentParticleStatus> particles;
     mutable std::timed_mutex tMutex;
 };
 // -- Methods ---------------------------------------------------

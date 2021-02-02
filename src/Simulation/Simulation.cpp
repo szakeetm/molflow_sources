@@ -27,7 +27,8 @@ Simulation::Simulation() : tMutex()
 
     lastLogUpdateOK = true;
 
-
+    for(auto& particle : particles)
+        particle.lastHitFacet = nullptr;
     currentParticle.lastHitFacet = nullptr;
 
     hasVolatile = false;
@@ -51,6 +52,11 @@ Simulation::Simulation(Simulation&& o) noexcept : tMutex() {
 
     model = o.model;
 
+    particles = o.particles;
+    for(auto& particle : particles) {
+        particle.lastHitFacet = nullptr;
+        particle.model = &model;
+    }
     currentParticle = o.currentParticle;
     currentParticle.lastHitFacet = nullptr;
     currentParticle.model = &model;
@@ -121,11 +127,12 @@ void Simulation::ClearSimulation() {
 
     //this->currentParticles.clear();// = CurrentParticleStatus();
     //std::vector<CurrentParticleStatus>(this->nbThreads).swap(this->currentParticles);
-
-    std::vector<SubProcessFacetTempVar>(model.sh.nbFacet).swap(currentParticle.tmpFacetVars);
-    currentParticle.tmpState.Reset();
-    currentParticle.model = &model;
-    currentParticle.totalDesorbed = 0;
+    for(auto& particle : particles) {
+        std::vector<SubProcessFacetTempVar>(model.sh.nbFacet).swap(particle.tmpFacetVars);
+        particle.tmpState.Reset();
+        particle.model = &model;
+        particle.totalDesorbed = 0;
+    }
     totalDesorbed = 0;
     //ResetTmpCounters();
     /*for(auto& tmpResults : tmpGlobalResults)
@@ -151,8 +158,9 @@ size_t Simulation::LoadSimulation(SimulationModel *simModel, char *loadStatus) {
     if(!simModel) simModel = &this->model;
     
     // New GlobalSimuState structure for threads
+    for(auto& particle : particles)
     {
-        auto& tmpResults = currentParticle.tmpState;
+        auto& tmpResults = particle.tmpState;
 
         std::vector<FacetState>(simModel->sh.nbFacet).swap(tmpResults.facetStates);
         for(auto& s : simModel->structures){
@@ -180,7 +188,7 @@ size_t Simulation::LoadSimulation(SimulationModel *simModel, char *loadStatus) {
 
 
         // Init tmp vars per thread
-        std::vector<SubProcessFacetTempVar>(simModel->sh.nbFacet).swap(currentParticle.tmpFacetVars);
+        std::vector<SubProcessFacetTempVar>(simModel->sh.nbFacet).swap(particle.tmpFacetVars);
         //currentParticle.tmpState = *tmpResults;
         //delete tmpResults;
     }
@@ -202,7 +210,8 @@ size_t Simulation::LoadSimulation(SimulationModel *simModel, char *loadStatus) {
         tree = nullptr;
         //delete tree; // pointer unnecessary because of make_shared
     }
-    currentParticle.model = simModel;
+    for(auto& particle : particles)
+        particle.model = simModel;
 
     // Initialise simulation
 
@@ -288,10 +297,16 @@ void Simulation::ResetSimulation() {
     currentParticle.Reset();
     std::vector<SubProcessFacetTempVar>(model.sh.nbFacet).swap(currentParticle.tmpFacetVars);
     currentParticle.model = &model;
-
-    totalDesorbed = 0;
     currentParticle.totalDesorbed = 0;
 
+    for(auto& particle : particles) {
+        particle.Reset();
+        std::vector<SubProcessFacetTempVar>(model.sh.nbFacet).swap(particle.tmpFacetVars);
+        particle.model = &model;
+        particle.totalDesorbed = 0;
+    }
+
+    totalDesorbed = 0;
     tmpParticleLog.clear();
 }
 
