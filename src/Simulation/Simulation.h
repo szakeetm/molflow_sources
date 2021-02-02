@@ -97,7 +97,7 @@ public:
 
     int SanityCheckGeom() override;
     void ClearSimulation() override;
-    size_t LoadSimulation(char *loadStatus) override;
+    size_t LoadSimulation(SimulationModel *simModel, char *loadStatus) override;
     void ResetSimulation() override;
 
     size_t GetHitsSize() override;

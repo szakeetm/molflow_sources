@@ -249,11 +249,10 @@ std::string Initializer::getAutosaveFile(){
 }
 
 /**
-* \brief Serialization function for a binary cereal archive for the worker attributes
-* \return output string stream containing the result of the archiving
+* \brief Prepares data structures for use in simulation
+* \return error code: 0=no error, 1=error
 */
 int Initializer::initSimModel(SimulationModel* model) {
-
 
     std::vector<Moment> momentIntervals;
     momentIntervals.reserve(model->tdParams.moments.size());

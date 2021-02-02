@@ -141,24 +141,21 @@ void Simulation::ClearSimulation() {
     this->model.vertices3.clear();*/
 }
 
-// returns hit size or 0 on error
-size_t Simulation::LoadSimulation(char *loadStatus) {
+size_t Simulation::LoadSimulation(SimulationModel *simModel, char *loadStatus) {
     double t0 = GetTick();
 
-    //SetState(PROCESS_STARTING, "Clearing previous simulation");
     strncpy(loadStatus, "Clearing previous simulation", 127);
-
     ClearSimulation();
-
-    //SetState(PROCESS_STARTING, "Loading simulation");
     strncpy(loadStatus, "Loading simulation", 127);
-
+    
+    if(!simModel) simModel = &this->model;
+    
     // New GlobalSimuState structure for threads
     {
         auto& tmpResults = currentParticle.tmpState;
 
-        std::vector<FacetState>(model.sh.nbFacet).swap(tmpResults.facetStates);
-        for(auto& s : model.structures){
+        std::vector<FacetState>(simModel->sh.nbFacet).swap(tmpResults.facetStates);
+        for(auto& s : simModel->structures){
             for(auto& sFac : s.facets){
                 size_t i = sFac.globalId;
                 if(!tmpResults.facetStates[i].momentResults.empty())
@@ -169,7 +166,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
                 facetMomentTemplate.profile = std::vector<ProfileSlice>(sFac.sh.isProfile ? PROFILE_SIZE : 0);
                 facetMomentTemplate.texture = std::vector<TextureCell>(sFac.sh.isTextured ? sFac.sh.texWidth*sFac.sh.texHeight : 0);
                 //No init for hits
-                tmpResults.facetStates[i].momentResults = std::vector<FacetMomentSnapshot>(1 + model.tdParams.moments.size(), facetMomentTemplate);
+                tmpResults.facetStates[i].momentResults = std::vector<FacetMomentSnapshot>(1 + simModel->tdParams.moments.size(), facetMomentTemplate);
                 if (sFac.sh.anglemapParams.record)
                   tmpResults.facetStates[i].recordedAngleMapPdf = std::vector<size_t>(sFac.sh.anglemapParams.GetMapSize());
             }
@@ -177,24 +174,24 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
 
         //Global histogram
         FacetHistogramBuffer globalHistTemplate;
-        globalHistTemplate.Resize(model.wp.globalHistogramParams);
-        tmpResults.globalHistograms = std::vector<FacetHistogramBuffer>(1 + model.tdParams.moments.size(), globalHistTemplate);
+        globalHistTemplate.Resize(simModel->wp.globalHistogramParams);
+        tmpResults.globalHistograms = std::vector<FacetHistogramBuffer>(1 + simModel->tdParams.moments.size(), globalHistTemplate);
         tmpResults.initialized = true;
 
 
         // Init tmp vars per thread
-        std::vector<SubProcessFacetTempVar>(model.sh.nbFacet).swap(currentParticle.tmpFacetVars);
+        std::vector<SubProcessFacetTempVar>(simModel->sh.nbFacet).swap(currentParticle.tmpFacetVars);
         //currentParticle.tmpState = *tmpResults;
         //delete tmpResults;
     }
 
     //Reserve particle log
-    if (model.otfParams.enableLogging)
-        tmpParticleLog.reserve(model.otfParams.logLimit / model.otfParams.nbProcess);
+    if (simModel->otfParams.enableLogging)
+        tmpParticleLog.reserve(simModel->otfParams.logLimit / simModel->otfParams.nbProcess);
 
     // Build all AABBTrees
     size_t maxDepth=0;
-    for (auto& s : model.structures) {
+    for (auto& s : simModel->structures) {
         if(s.aabbTree) s.aabbTree.reset();
         std::vector<SubprocessFacet*> facetPointers; facetPointers.reserve(s.facets.size());
         for (auto& f : s.facets) {
@@ -205,7 +202,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
         tree = nullptr;
         //delete tree; // pointer unnecessary because of make_shared
     }
-    currentParticle.model = &model;
+    currentParticle.model = simModel;
 
     // Initialise simulation
 
@@ -214,23 +211,22 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     //loadOK = true;
     double t1 = GetTick();
     if(omp_get_thread_num() == 0) {
-        printf("  Load %s successful\n", model.sh.name.c_str());
-        printf("  Geometry: %zd vertex %zd facets\n", model.vertices3.size(), model.sh.nbFacet);
+        printf("  Load %s successful\n", simModel->sh.name.c_str());
+        printf("  Geometry: %zd vertex %zd facets\n", simModel->vertices3.size(), simModel->sh.nbFacet);
 
-        printf("  Geom size: %d bytes\n", /*(size_t)(buffer - bufferStart)*/0);
-        printf("  Number of structure: %zd\n", model.sh.nbSuper);
+        printf("  Geom size: %zu bytes\n", simModel->size());
+        printf("  Number of structure: %zd\n", simModel->sh.nbSuper);
         printf("  Global Hit: %zd bytes\n", sizeof(GlobalHitBuffer));
-        printf("  Facet Hit : %zd bytes\n", model.sh.nbFacet * sizeof(FacetHitBuffer));
-        printf("  Texture   : %zd bytes\n", textTotalSize);
+        printf("  Facet Hit : %zd bytes\n", simModel->sh.nbFacet * sizeof(FacetHitBuffer));
+/*        printf("  Texture   : %zd bytes\n", textTotalSize);
         printf("  Profile   : %zd bytes\n", profTotalSize);
-        printf("  Direction : %zd bytes\n", dirTotalSize);
+        printf("  Direction : %zd bytes\n", dirTotalSize);*/
 
         printf("  Total     : %zd bytes\n", GetHitsSize());
         //printf("  Seed: %lu\n", randomGenerator.GetSeed());
         printf("  Loading time: %.3f ms\n", (t1 - t0) * 1000.0);
     }
     return 0;
-
 }
 
 bool CurrentParticleStatus::UpdateHits(GlobalSimuState* globState, DWORD timeout) {
