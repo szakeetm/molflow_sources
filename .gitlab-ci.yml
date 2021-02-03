@@ -136,15 +136,15 @@ build-artifact-windows-master:
 
 .artifact-unix:
   stage: build-artifact
-    script:
-      - export DATE=`date +%Y_%m_%d`
-      - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
-      - echo $FNAME
-      - 7za a ./molflow_$OS_NAME.zip ~/MOLFLOW_CI/$FNAME/*
-    artifacts:
-      paths:
-        - ./molflow_$OS_NAME.zip
-      expire_in: 4 weeks
+  script:
+    - export DATE=`date +%Y_%m_%d`
+    - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - echo $FNAME
+    - 7za a ./molflow_$OS_NAME.zip ~/MOLFLOW_CI/$FNAME/*
+  artifacts:
+    paths:
+      - ./molflow_$OS_NAME.zip
+    expire_in: 4 weeks
 
 build-artifact-debian-master:
   extends: .artifact-unix
