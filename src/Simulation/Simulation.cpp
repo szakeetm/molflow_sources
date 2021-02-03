@@ -29,7 +29,6 @@ Simulation::Simulation() : tMutex()
 
     for(auto& particle : particles)
         particle.lastHitFacet = nullptr;
-    currentParticle.lastHitFacet = nullptr;
 
     hasVolatile = false;
 
@@ -57,9 +56,6 @@ Simulation::Simulation(Simulation&& o) noexcept : tMutex() {
         particle.lastHitFacet = nullptr;
         particle.model = &model;
     }
-    currentParticle = o.currentParticle;
-    currentParticle.lastHitFacet = nullptr;
-    currentParticle.model = &model;
 
     hasVolatile =  o.hasVolatile;
 
@@ -294,10 +290,6 @@ void CurrentParticleStatus::Reset() {
 void Simulation::ResetSimulation() {
     //currentParticles.clear();// = CurrentParticleStatus();
     //std::vector<CurrentParticleStatus>(this->nbThreads).swap(this->currentParticles);
-    currentParticle.Reset();
-    std::vector<SubProcessFacetTempVar>(model.sh.nbFacet).swap(currentParticle.tmpFacetVars);
-    currentParticle.model = &model;
-    currentParticle.totalDesorbed = 0;
 
     for(auto& particle : particles) {
         particle.Reset();
