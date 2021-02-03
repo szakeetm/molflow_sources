@@ -95,7 +95,7 @@ build-artifact-windows-master:
     - Compress-Archive -Path ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\*") -DestinationPath (".\" + ($APP_NAME) + "_windows.zip")
   artifacts:
     paths:
-      - .\$(APP_NAME)_windows.zip
+      - .\\$APP_NAME\_windows.zip
     expire_in: 54 weeks
   needs:
     - job: build-windows-master
@@ -117,7 +117,7 @@ build-artifact-windows-master:
     - 7za a ./$APP_NAME'_'$OS_NAME'.zip' ~/$APP_NAME_CAPS'_CI/'$FNAME'/*'
   artifacts:
     paths:
-      - ./$(APP_NAME)_$OS_NAME.zip
+      - ./$APP_NAME\_$OS_NAME.zip
     expire_in: 4 weeks
 
 build-artifact-debian-master:
@@ -165,7 +165,7 @@ build-artifact-windows-branch:
     - Compress-Archive -Path ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\*") -DestinationPath (".\" + ($APP_NAME) + "_windows.zip")
   artifacts:
     paths:
-      - .\($APP_NAME)_windows.zip
+      - .\\$APP_NAME\_windows.zip
     expire_in: 4 weeks
   needs:
     - job: build-windows-master
