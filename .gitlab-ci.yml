@@ -112,11 +112,13 @@ build-macos-master:
     - ls ~/
     - ls ~/MOLFLOW_CI/
     - ls ~/MOLFLOW_CI/$FNAME/
-  when: manual
   after_script:
     - echo "Finished"
   tags:
     - macos
+  rules:
+    - if: $CI_JOB_STAGE # always there
+      when: manual
 
 build-artifact-windows-master:
   stage: build-artifact
@@ -130,7 +132,7 @@ build-artifact-windows-master:
       - .\molflow_windows.zip
     expire_in: 54 weeks
   needs:
-      - job: build-windows-master
+    - job: build-windows-master
   tags:
     - windows
   only:
@@ -181,6 +183,9 @@ build-artifact-macos-master:
     - macos
   only:
     - master
+  rules:
+    - if: $CI_JOB_STAGE # always there
+      when: manual
 
 build-artifact-windows-branch:
   stage: build-artifact
@@ -218,7 +223,7 @@ build-artifact-debian-branch:
     - tags
   artifacts:
     expire_in: 4 weeks
-  
+
 build-artifact-fedora-branch:
   extends: .artifact-unix
   variables:
@@ -251,7 +256,6 @@ build-artifact-macos-branch:
     - tags
   artifacts:
     expire_in: 4 weeks
-  when: manual
-  allow_failure: true
-
-
+  rules:
+    - if: $CI_JOB_STAGE # always there
+      when: manual
