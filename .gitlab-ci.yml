@@ -95,7 +95,7 @@ build-macos-master:
     - Compress-Archive -Path ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\*") -DestinationPath (".\" + ($APP_NAME) + "_windows.zip")
   artifacts:
     paths:
-      - .\$APP_NAME\_windows.zip
+      - .\($APP_NAME)_windows.zip
 
 .artifact-unix:
   stage: build-artifact
