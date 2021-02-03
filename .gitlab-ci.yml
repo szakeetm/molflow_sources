@@ -86,7 +86,7 @@ build-macos-master:
   when: manual
   allow_failure: true
 
-build-artifact-windows-master:
+.artifact-windows:
   stage: build-artifact
   script:
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
@@ -95,14 +95,7 @@ build-artifact-windows-master:
     - Compress-Archive -Path ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\*") -DestinationPath (".\" + ($APP_NAME) + "_windows.zip")
   artifacts:
     paths:
-      - .\\$APP_NAME\_windows.zip
-    expire_in: 54 weeks
-  needs:
-    - job: build-windows-master
-  tags:
-    - windows
-  only:
-    - master
+      - .\$APP_NAME\_windows.zip
 
 .artifact-unix:
   stage: build-artifact
@@ -118,10 +111,22 @@ build-artifact-windows-master:
   artifacts:
     paths:
       - ./$APP_NAME\_$OS_NAME.zip
-    expire_in: 4 weeks
+
+build-artifact-windows-master:
+  extends: .artifact-windows
+  artifacts:
+    expire_in: 54 weeks
+  needs:
+    - job: build-windows-master
+  tags:
+    - windows
+  only:
+    - master
 
 build-artifact-debian-master:
   extends: .artifact-unix
+  artifacts:
+    expire_in: 54 weeks
   variables:
     OS_NAME: "debian"
   needs:
@@ -133,6 +138,8 @@ build-artifact-debian-master:
 
 build-artifact-fedora-master:
   extends: .artifact-unix
+  artifacts:
+    expire_in: 54 weeks
   variables:
     OS_NAME: "fedora"
   needs:
@@ -145,6 +152,8 @@ build-artifact-fedora-master:
 build-artifact-macos-master:
   extends: .artifact-unix
   stage: optional-artifact
+  artifacts:
+    expire_in: 54 weeks
   variables:
     OS_NAME: "mac"
   needs:
@@ -157,16 +166,7 @@ build-artifact-macos-master:
   allow_failure: true
 
 build-artifact-windows-branch:
-  stage: build-artifact
-  script:
-    - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
-    - Set-Variable -Name "FNAME" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
-    - echo $FNAME
-    - Compress-Archive -Path ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\*") -DestinationPath (".\" + ($APP_NAME) + "_windows.zip")
-  artifacts:
-    paths:
-      - .\\$APP_NAME\_windows.zip
-    expire_in: 4 weeks
+  extends: .artifact-windows
   needs:
     - job: build-windows-master
   tags:
@@ -176,6 +176,8 @@ build-artifact-windows-branch:
   except:
     - master
     - tags
+  artifacts:
+    expire_in: 4 weeks
 
 build-artifact-debian-branch:
   extends: .artifact-unix
