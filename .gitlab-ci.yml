@@ -116,9 +116,7 @@ build-macos-master:
     - echo "Finished"
   tags:
     - macos
-  rules:
-    - if: $CI_JOB_STAGE # always there
-      when: manual
+  when: manual
 
 build-artifact-windows-master:
   stage: build-artifact
@@ -183,9 +181,7 @@ build-artifact-macos-master:
     - macos
   only:
     - master
-  rules:
-    - if: $CI_JOB_STAGE # always there
-      when: manual
+  when: manual
 
 build-artifact-windows-branch:
   stage: build-artifact
@@ -256,6 +252,4 @@ build-artifact-macos-branch:
     - tags
   artifacts:
     expire_in: 4 weeks
-  rules:
-    - if: $CI_JOB_STAGE # always there
-      when: manual
+  when: manual
