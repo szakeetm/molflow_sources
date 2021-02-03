@@ -26,7 +26,7 @@ build-windows-master:
     - Set-Variable -Name "outputpath" -Value ($buildpath + "\bin\win\release")
     - echo $FNAME
     - New-Item -Path ("C:\" + ($APP_NAME_CAPS) + "_CI") -Name $FNAME -ItemType "directory" -Force
-    - Copy-Item $outputpath -Destination ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) "\") -Recurse -Force
+    - Copy-Item $outputpath -Destination ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\") -Recurse -Force
   after_script:
     - echo "Finished"
   tags:
@@ -54,7 +54,7 @@ build-windows-master:
     - mkdir -p '~/'$APP_NAME_CAPS'_CI/$FNAME'
     - cp -r $outputpath/* '~/'$APP_NAME_CAPS'_CI/$FNAME/'
     - ls ~/
-    - ls '~/'$APP_NAME_CAPS'/'
+    - ls '~/'$APP_NAME_CAPS'_CI/'
     - ls '~/'$APP_NAME_CAPS'_CI/$FNAME/'
   after_script:
     - echo "Finished"
@@ -92,10 +92,10 @@ build-artifact-windows-master:
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
     - Set-Variable -Name "FNAME" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - echo $FNAME
-    - Compress-Archive -Path C:\MOLFLOW_CI\$FNAME\* -DestinationPath .\molflow_windows.zip
+    - Compress-Archive -Path ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\*") -DestinationPath (".\" + ($APP_NAME) + "_windows.zip")
   artifacts:
     paths:
-      - .\molflow_windows.zip
+      - .\($APP_NAME)_windows.zip
     expire_in: 54 weeks
   needs:
     - job: build-windows-master
@@ -158,10 +158,10 @@ build-artifact-windows-branch:
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
     - Set-Variable -Name "FNAME" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - echo $FNAME
-    - Compress-Archive -Path C:\MOLFLOW_CI\$FNAME\* -DestinationPath .\molflow_windows.zip
-  artifacts:
-    paths:
-      - .\molflow_windows.zip
+    - Compress-Archive -Path ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\*") -DestinationPath (".\" + ($APP_NAME) + "_windows.zip")
+    artifacts:
+      paths:
+        - .\($APP_NAME)_windows.zip
     expire_in: 4 weeks
   needs:
     - job: build-windows-master
