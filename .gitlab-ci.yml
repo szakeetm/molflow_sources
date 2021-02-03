@@ -114,7 +114,7 @@ build-artifact-windows-master:
     - ls ~/
     - ls ~/$APP_NAME_CAPS'_CI/'
     - ls ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
-    - 7za a ./$APP_NAME'_'$OS_NAME'.zip' '~/'$APP_NAME_CAPS'_CI/'$FNAME'/*'
+    - 7za a ./$APP_NAME'_'$OS_NAME'.zip' ~/$APP_NAME_CAPS'_CI/'$FNAME'/*'
   artifacts:
     paths:
       - ./$(APP_NAME)_$OS_NAME.zip
