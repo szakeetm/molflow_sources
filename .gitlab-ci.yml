@@ -73,11 +73,12 @@ build-fedora-master:
     - fedora
 
 build-macos-master:
-  stage: optional-build
   extends: .build-unix
+  stage: optional-build
   variables:
     OS_NAME: "mac"
     OS_FULL_NAME: "mac"
+  needs: []
   tags:
     - macos
   when: manual
