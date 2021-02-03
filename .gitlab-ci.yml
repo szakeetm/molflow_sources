@@ -1,7 +1,6 @@
 stages:
   - build
   - build-artifact
-  - optional-build
   - optional-artifact
 
 build-windows-master:
@@ -74,7 +73,6 @@ build-fedora-master:
 
 build-macos-master:
   extends: .build-unix
-  stage: optional-build
   variables:
     OS_NAME: "mac"
     OS_FULL_NAME: "mac"
