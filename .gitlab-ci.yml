@@ -179,7 +179,7 @@ build-artifact-macos-master:
     - 7za a ./molflow_mac.zip ~/MOLFLOW_CI/$FNAME/*
   artifacts:
     paths:
-      - ./molflow_macos.zip
+      - ./molflow_mac.zip
     expire_in: 54 weeks
   needs:
     - job: build-macos-master
@@ -255,7 +255,7 @@ build-artifact-macos-branch:
   stage: build-artifact
   script:
     - export DATE=`date +%Y_%m_%d`
-    - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - export FNAME=master/$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - echo $FNAME
     - 7za a ./molflow_mac.zip ~/MOLFLOW_CI/$FNAME/*
   artifacts:
