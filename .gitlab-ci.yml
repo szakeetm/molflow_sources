@@ -159,9 +159,9 @@ build-artifact-windows-branch:
     - Set-Variable -Name "FNAME" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - echo $FNAME
     - Compress-Archive -Path ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\*") -DestinationPath (".\" + ($APP_NAME) + "_windows.zip")
-    artifacts:
-      paths:
-        - .\($APP_NAME)_windows.zip
+  artifacts:
+    paths:
+      - .\($APP_NAME)_windows.zip
     expire_in: 4 weeks
   needs:
     - job: build-windows-master
