@@ -177,6 +177,7 @@ build-artifact-macos-master:
     - export FNAME=master/$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - echo $FNAME
     - 7za a ./molflow_mac.zip ~/MOLFLOW_CI/$FNAME/*
+  allow_failure: true
   artifacts:
     paths:
       - ./molflow_mac.zip
@@ -258,6 +259,7 @@ build-artifact-macos-branch:
     - export FNAME=master/$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - echo $FNAME
     - 7za a ./molflow_mac.zip ~/MOLFLOW_CI/$FNAME/*
+  allow_failure: true
   artifacts:
     paths:
       - ./molflow_mac.zip
