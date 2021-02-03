@@ -1,6 +1,8 @@
 stages:
   - build
   - build-artifact
+  - optional-build
+  - optional-artifact
 
 build-windows-master:
   stage: build
@@ -87,7 +89,7 @@ build-fedora-master:
     - fedora
 
 build-macos-master:
-  stage: build
+  stage: optional-build
   before_script:
     - whoami
     - git submodule sync --recursive
@@ -170,6 +172,7 @@ build-artifact-fedora-master:
 
 build-artifact-macos-master:
   extends: .artifact-unix
+  stage: optional-artifact
   variables:
     OS_NAME: "mac"
   needs:
@@ -201,16 +204,9 @@ build-artifact-windows-branch:
     - tags
 
 build-artifact-debian-branch:
-  stage: build-artifact
-  script:
-    - export DATE=`date +%Y_%m_%d`
-    - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
-    - echo $FNAME
-    - 7za a ./molflow_debian.zip ~/MOLFLOW_CI/$FNAME/*
-  artifacts:
-    paths:
-      - ./molflow_debian.zip
-    expire_in: 4 weeks
+  extends: .artifact-unix
+  variables:
+    OS_NAME: "debian"
   needs:
     - job: build-debian-master
   tags:
@@ -220,18 +216,13 @@ build-artifact-debian-branch:
   except:
     - master
     - tags
+  artifacts:
+    expire_in: 4 weeks
   
 build-artifact-fedora-branch:
-  stage: build-artifact
-  script:
-    - export DATE=`date +%Y_%m_%d`
-    - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
-    - echo $FNAME
-    - 7za a ./molflow_fedora.zip ~/MOLFLOW_CI/$FNAME/*
-  artifacts:
-    paths:
-      - ./molflow_fedora.zip
-    expire_in: 4 weeks
+  extends: .artifact-unix
+  variables:
+    OS_NAME: "fedora"
   needs:
     - job: build-fedora-master
   tags:
@@ -241,19 +232,14 @@ build-artifact-fedora-branch:
   except:
     - master
     - tags
+  artifacts:
+    expire_in: 4 weeks
 
 build-artifact-macos-branch:
-  stage: build-artifact
-  script:
-    - export DATE=`date +%Y_%m_%d`
-    - export FNAME=master/$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
-    - echo $FNAME
-    - 7za a ./molflow_mac.zip ~/MOLFLOW_CI/$FNAME/*
-  when: manual
-  artifacts:
-    paths:
-      - ./molflow_mac.zip
-    expire_in: 4 weeks
+  extends: .artifact-unix
+  stage: optional-artifact
+  variables:
+    OS_NAME: "mac"
   needs:
     - job: build-macos-master
   tags:
@@ -263,3 +249,9 @@ build-artifact-macos-branch:
   except:
     - master
     - tags
+  artifacts:
+    expire_in: 4 weeks
+  when: manual
+  allow_failure: true
+
+
