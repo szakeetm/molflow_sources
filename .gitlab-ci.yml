@@ -87,51 +87,51 @@ build-macos-master:
   when: manual
   allow_failure: true
 
-test-debian:
+.test-unix:
   stage: test
   before_script:
-    - echo "Testing Debian Master"
-    - mkdir -p ~/MOLFLOW_CI/PerfoTestResults/
+    - whoami
+    - echo "Testing $OS_NAME Master"
+    - mkdir -p ~/$APP_NAME_CAPS'_CI/'PerfoTestResults/
   script:
     - export PROJPATH=$(pwd)
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
-    - cd ~/MOLFLOW_CI'/'$FNAME'/'
-    - mv ~/MOLFLOW_CI/PerfoTestResults/time_record_* . || true
+    - cd ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
+    - mv ~/$APP_NAME_CAPS'_CI/'PerfoTestResults/time_record_* . || true
     - ./testsuite --gtest_output="xml:report.xml"
     - mv report.xml $PROJPATH"/report.xml"
-    - mv ./time_record_* ~/MOLFLOW_CI/PerfoTestResults/
+    - mv ./time_record_* ~/$APP_NAME_CAPS'_CI/PerfoTestResults/'
   after_script:
     - echo "Finished"
   artifacts:
     when: always
     reports:
       junit: ./report.xml
+    expire_in: 4 weeks
+
+test-debian:
+  extends: .test-unix
+  variables:
+    OS_NAME: "debian"
   tags:
     - debian
 
 test-fedora:
-  stage: test
-  before_script:
-    - echo "Testing Fedora Master"
-    - mkdir -p ~/MOLFLOW_CI/PerfoTestResults/
-  script:
-    - export PROJPATH=$(pwd)
-    - export DATE=`date +%Y_%m_%d`
-    - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
-    - cd ~/MOLFLOW_CI'/'$FNAME'/'
-    - mv ~/MOLFLOW_CI/PerfoTestResults/time_record_* . || true
-    - ./testsuite --gtest_output="xml:report.xml"
-    - mv report.xml $PROJPATH"/report.xml"
-    - mv ./time_record_* ~/MOLFLOW_CI/PerfoTestResults/
-  after_script:
-    - echo "Finished"
-  artifacts:
-    when: always
-    reports:
-      junit: ./report.xml
+  extends: .test-unix
+  variables:
+    OS_NAME: "fedora"
   tags:
     - fedora
+
+test-macos:
+  extends: .test-unix
+  variables:
+    OS_NAME: "mac"
+  tags:
+    - macos
+  when: manual
+  allow_failure: true
 
 test-windows:
   stage: test
@@ -141,7 +141,7 @@ test-windows:
     - Set-Variable -Name "PROJPATH" -Value (($pwd).path)
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
     - Set-Variable -Name "FNAME" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
-    - Set-Location C:\MOLFLOW_CI\$FNAME\
+    - Set-Location ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\")
     - $AllArgs = @("--gtest_output='xml:report.xml'")
     - powershell.exe -c "./testsuite.exe $AllArgs"
     - Move-Item -Path report.xml -Destination (($PROJPATH) + "\report.xml")
@@ -151,6 +151,7 @@ test-windows:
     when: always
     reports:
       junit: .\report.xml
+    expire_in: 4 weeks
   tags:
     - windows
 
