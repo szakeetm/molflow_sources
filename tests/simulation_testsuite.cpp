@@ -47,7 +47,7 @@ namespace {
         // Objects declared here can be used by all tests in the test suite for Foo.
     };
 
-    INSTANTIATE_TEST_CASE_P(
+    INSTANTIATE_TEST_SUITE_P(
             Performance,
             SimulationFixture,
             ::testing::Values(
@@ -117,7 +117,7 @@ namespace {
             if (prev < 0) prev = 1e5;
 
             //EXPECT_GT(hitPS, 0.9 * prev);
-            fastEnough = hitPS > 0.9 * prev;
+            fastEnough = hitPS > 0.95 * prev;
             if(!fastEnough) {
                 ++nbFails;
             }
@@ -129,8 +129,8 @@ namespace {
                 std::ofstream ofs(timeRecFile);
                 ofs << hash.substr(0, 8) << ' ' << hitPS << std::endl;
             }
-        } while (!fastEnough && nbFails < 3);
-        EXPECT_LT(nbFails, 3);
+        } while (!fastEnough && nbFails < 20);
+        EXPECT_LT(nbFails, 20);
     }
 
     // Tests factorial of positive numbers.
