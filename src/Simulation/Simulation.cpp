@@ -234,58 +234,13 @@ size_t Simulation::LoadSimulation(SimulationModel *simModel, char *loadStatus) {
     return 0;
 }
 
-bool CurrentParticleStatus::UpdateHits(GlobalSimuState* globState, DWORD timeout) {
-    if(!globState) {
-        return false;
-    }
-
-    //globState = tmpGlobalResults[0];
-    bool lastHitUpdateOK = UpdateMCHits(*globState, model->tdParams.moments.size(), timeout);
-    // only 1 , so no reduce necessary
-    /*ParticleLoggerItem& globParticleLog = tmpParticleLog[0];
-    if (dpLog) UpdateLog(dpLog, timeout);*/
-
-    // At last delete tmpCache
-    tmpState.Reset();
-    //ResetTmpCounters();
-    // only reset buffers 1..N-1
-    // 0 = global buffer for reduce
-    /*for(auto & tmpGlobalResult : tmpGlobalResults)
-        tmpGlobalResult.Reset();*/
-
-    return lastHitUpdateOK;
-}
-
 size_t Simulation::GetHitsSize() {
     return sizeof(GlobalHitBuffer) + model.wp.globalHistogramParams.GetDataSize() +
            textTotalSize + profTotalSize + dirTotalSize + angleMapTotalSize + histogramTotalSize
            + model.sh.nbFacet * sizeof(FacetHitBuffer) * (1+model.tdParams.moments.size());
 }
 
-void CurrentParticleStatus::Reset() {
-    position = Vector3d();
-    direction = Vector3d();
-    oriRatio = 0.0;
 
-    nbBounces = 0;
-    lastMomentIndex = 0;
-    particleId = 0;
-    distanceTraveled = 0;
-    generationTime = 0;
-    particleTime = 0;
-    teleportedFrom = -1;
-
-    velocity = 0.0;
-    expectedDecayMoment = 0.0;
-    structureId = -1;
-
-    tmpState.Reset();
-    lastHitFacet = nullptr;
-    randomGenerator.SetSeed(GetSeed());
-    model = nullptr;
-    transparentHitBuffer.clear();
-    tmpFacetVars.clear();
-}
 
 void Simulation::ResetSimulation() {
     //currentParticles.clear();// = CurrentParticleStatus();
@@ -306,23 +261,3 @@ void Simulation::ResetSimulation() {
     if (!currentParticles.lastHitFacet) StartFromSource();
     return (currentParticles.lastHitFacet != nullptr);
 }*/
-
-void CurrentParticleStatus::RecordHit(const int &type) {
-    if (tmpState.globalHits.hitCacheSize < HITCACHESIZE) {
-        tmpState.globalHits.hitCache[tmpState.globalHits.hitCacheSize].pos = position;
-        tmpState.globalHits.hitCache[tmpState.globalHits.hitCacheSize].type = type;
-        ++tmpState.globalHits.hitCacheSize;
-    }
-}
-
-void CurrentParticleStatus::RecordLeakPos() {
-    // Source region check performed when calling this routine
-    // Record leak for debugging
-    RecordHit(HIT_REF);
-    RecordHit(HIT_LAST);
-    if (tmpState.globalHits.leakCacheSize < LEAKCACHESIZE) {
-        tmpState.globalHits.leakCache[tmpState.globalHits.leakCacheSize].pos = position;
-        tmpState.globalHits.leakCache[tmpState.globalHits.leakCacheSize].dir = direction;
-        ++tmpState.globalHits.leakCacheSize;
-    }
-}
