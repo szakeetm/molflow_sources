@@ -17,7 +17,7 @@ GNU General Public License for more details.
 
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
-#include "OutgassingMap.h"
+#include "OutgassingMapWindow.h"
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
 //#include "GLApp/GLFileBox.h"
@@ -37,7 +37,7 @@ extern MolFlow *mApp;
 /**
 * \brief Constructor with initialisation for Outgassing map window (Facet/Convert to outgassing map)
 */
-OutgassingMap::OutgassingMap():GLWindow() {
+OutgassingMapWindow::OutgassingMapWindow(): GLWindow() {
 
   int wD = 600;
   int hD = 300;
@@ -115,7 +115,7 @@ OutgassingMap::OutgassingMap():GLWindow() {
 /**
 * \brief Places all components (buttons, text etc.) at the right position inside the window
 */
-void OutgassingMap::PlaceComponents() {
+void OutgassingMapWindow::PlaceComponents() {
 
   mapList->SetBounds(5, 5, _width - 15, _height - 55);
   //saveButton->SetBounds(10,height-45,70,19);
@@ -136,7 +136,7 @@ void OutgassingMap::PlaceComponents() {
 * \param w width of the window
 * \param h height of the window
 */
-void OutgassingMap::SetBounds(int x,int y,int w,int h) {
+void OutgassingMapWindow::SetBounds(int x, int y, int w, int h) {
 
   GLWindow::SetBounds(x,y,w,h);
   PlaceComponents();
@@ -146,7 +146,7 @@ void OutgassingMap::SetBounds(int x,int y,int w,int h) {
 /**
 * \brief Sets lowest selected facet id in the title
 */
-void OutgassingMap::GetSelected() {
+void OutgassingMapWindow::GetSelected() {
 
   if(!worker) return;
 
@@ -170,7 +170,7 @@ void OutgassingMap::GetSelected() {
 * \param appTime current time of the application
 * \param force if table should be updated no matter what
 */
-void OutgassingMap::Update(float appTime,bool force) {
+void OutgassingMapWindow::Update(float appTime, bool force) {
 
   if(!IsVisible()) return;
 
@@ -190,7 +190,7 @@ void OutgassingMap::Update(float appTime,bool force) {
 /**
 * \brief Updates the values inside the table if a profile is set
 */
-void OutgassingMap::UpdateTable() {
+void OutgassingMapWindow::UpdateTable() {
 	//maxValue=0.0f;
 	//double scale;
   GetSelected();
@@ -233,7 +233,7 @@ void OutgassingMap::UpdateTable() {
 * \brief Displays the window
 * \param w worker handle
 */
-void OutgassingMap::Display(Worker *w) {
+void OutgassingMapWindow::Display(Worker *w) {
 
   worker = w;
   UpdateTable();
@@ -244,14 +244,14 @@ void OutgassingMap::Display(Worker *w) {
 /**
 * \brief Close the window
 */
-void OutgassingMap::Close() {
+void OutgassingMapWindow::Close() {
   worker = NULL;
   if(selFacet) selFacet->UnselectElem();
   mapList->Clear();
 }
 
 /*
-void OutgassingMap::SaveFile() {
+void OutgassingMapWindow::SaveFile() {
 
   if(!selFacet) return;
 
@@ -298,7 +298,7 @@ void OutgassingMap::SaveFile() {
 * \param src Exact source of the call
 * \param message Type of the source (button)
 */
-void OutgassingMap::ProcessMessage(GLComponent *src,int message) {
+void OutgassingMapWindow::ProcessMessage(GLComponent *src, int message) {
 
   switch(message) {
 

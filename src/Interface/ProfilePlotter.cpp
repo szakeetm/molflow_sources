@@ -236,7 +236,7 @@ void ProfilePlotter::Refresh() {
     selFacInput->SetText(facetInputText.str());
     nbProf = 1;
     for (size_t i = 0; i < nb; i++) {
-		Facet *f = geom->GetFacet(i);
+		InterfaceFacet *f = geom->GetFacet(i);
 		if (f->sh.isProfile) {
 			char tmp[128];
 			sprintf(tmp, "F#%zd %s", i + 1, profType[f->sh.profileType]);
@@ -388,7 +388,7 @@ void ProfilePlotter::refreshViews() {
 
 		GLDataView *v = views[i];
 		if (v->userData1 >= 0 && v->userData1 < geom->GetNbFacet()) {
-			Facet *f = geom->GetFacet(v->userData1);
+			InterfaceFacet *f = geom->GetFacet(v->userData1);
 
 			v->Reset();
 			const std::vector<ProfileSlice>& profile = worker->globState.facetStates[v->userData1].momentResults[worker->displayedMoment].profile;
@@ -485,7 +485,7 @@ void ProfilePlotter::refreshViews() {
 				v->Reset();
 				size_t nb = geom->GetNbFacet();
 				for (size_t j = 0; j < nb; j++) {
-					Facet *f = geom->GetFacet(j);
+					InterfaceFacet *f = geom->GetFacet(j);
 					if (f->sh.isVolatile) {
 					    const FacetHitBuffer& fCount = worker->globState.facetStates[j].momentResults[worker->displayedMoment].hits;
 						double z = geom->GetVertex(f->indices[0])->z;
@@ -493,7 +493,7 @@ void ProfilePlotter::refreshViews() {
 					}
 				}
 				// Last
-				Facet *f = geom->GetFacet(28);
+				InterfaceFacet *f = geom->GetFacet(28);
                 const FacetHitBuffer& fCount = worker->globState.facetStates[28].momentResults[worker->displayedMoment].hits;
 				double fnbAbs = fCount.hit.nbAbsEquiv;
 				v->Add(1000.0, fnbAbs / worker->globalHitCache.globalHits.hit.nbDesorbed, false);

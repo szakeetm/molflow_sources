@@ -34,7 +34,7 @@ class ProfilePlotter;
 class PressureEvolution;
 class TimewisePlotter;
 class TexturePlotter;
-class OutgassingMap;
+class OutgassingMapWindow;
 class MomentsEditor;
 class ParameterEditor;
 
@@ -117,7 +117,7 @@ public:
     PressureEvolution *pressureEvolution;
 	TimewisePlotter  *timewisePlotter;
     TexturePlotter   *texturePlotter;
-	OutgassingMap    *outgassingMap;
+	OutgassingMapWindow    *outgassingMapWindow;
 	MomentsEditor    *momentsEditor;
 	ParameterEditor  *parameterEditor;
 	char *nbF;

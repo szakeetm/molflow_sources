@@ -64,7 +64,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Interface/Viewer3DSettings.h"
 #include "Interface/TextureScaling.h"
 #include "Interface/GlobalSettings.h"
-#include "Interface/OutgassingMap.h"
+#include "Interface/OutgassingMapWindow.h"
 #include "Interface/MomentsEditor.h"
 #include "Interface/FacetCoordinates.h"
 #include "Interface/VertexCoordinates.h"
@@ -227,7 +227,7 @@ MolFlow::MolFlow()
 	movement = nullptr;
 	timewisePlotter = nullptr;
 	pressureEvolution = nullptr;
-	outgassingMap = nullptr;
+    outgassingMapWindow = nullptr;
 	momentsEditor = nullptr;
 	parameterEditor = nullptr;
 	importDesorption = nullptr;
@@ -784,7 +784,7 @@ void MolFlow::ApplyFacetParams() {
 
 	// Update facets (local)
 	for (int i = 0; i < nbFacet; i++) {
-		Facet *f = geom->GetFacet(i);
+		InterfaceFacet *f = geom->GetFacet(i);
 		if (f->selected) {
 			if (doSticking) {
 				if (!stickingNotNumber) {
@@ -863,8 +863,8 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 
 	if (nbSel > 0) {
 
-		Facet *f0;
-		Facet *f;
+		InterfaceFacet *f0;
+		InterfaceFacet *f;
 
 		
 
@@ -1018,7 +1018,7 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 	if (facetDetails) facetDetails->Update();
 	if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 	if (texturePlotter) texturePlotter->Update(m_fTime, true); //Facet change
-	if (outgassingMap) outgassingMap->Update(m_fTime, true);
+	if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
 	if (histogramSettings) histogramSettings->Refresh(selectedFacets);
 }
 
@@ -1079,7 +1079,7 @@ int MolFlow::RestoreDeviceObjects()
 	RVALIDATE_DLG(importDesorption);
 	RVALIDATE_DLG(timeSettings);
 	RVALIDATE_DLG(movement);
-	RVALIDATE_DLG(outgassingMap);
+	RVALIDATE_DLG(outgassingMapWindow);
 	RVALIDATE_DLG(parameterEditor);
 	RVALIDATE_DLG(pressureEvolution);
 	RVALIDATE_DLG(timewisePlotter);
@@ -1108,7 +1108,7 @@ int MolFlow::InvalidateDeviceObjects()
 	IVALIDATE_DLG(importDesorption);
 	IVALIDATE_DLG(timeSettings);
 	IVALIDATE_DLG(movement);
-	IVALIDATE_DLG(outgassingMap);
+	IVALIDATE_DLG(outgassingMapWindow);
 	IVALIDATE_DLG(parameterEditor);
 	IVALIDATE_DLG(pressureEvolution);
 	IVALIDATE_DLG(timewisePlotter);
@@ -1198,7 +1198,7 @@ void MolFlow::CopyAngleMapToClipboard()
 	size_t angleMapFacetIndex;
 	bool found = false;
 	for (size_t i = 0; i < geom->GetNbFacet(); i++) {
-		Facet* f = geom->GetFacet(i);
+		InterfaceFacet* f = geom->GetFacet(i);
 		if (f->selected && f->sh.anglemapParams.hasRecorded) {
 			if (found) {
 				GLMessageBox::Display("More than one facet with recorded angle map selected", "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1238,7 +1238,7 @@ void MolFlow::ClearAngleMapsOnSelection() {
 	//if (AskToReset()) {
 		Geometry *geom = worker.GetGeometry();
 		for (size_t i = 0; i < geom->GetNbFacet(); i++) {
-			Facet* f = geom->GetFacet(i);
+			InterfaceFacet* f = geom->GetFacet(i);
 			if (f->selected && f->sh.anglemapParams.hasRecorded) {
 				SAFE_FREE(f->angleMapCache);
 				f->sh.anglemapParams.hasRecorded = false;
@@ -1379,7 +1379,7 @@ void MolFlow::LoadFile(const std::string &fileName) {
         if (texturePlotter) texturePlotter->Update(0.0,true);
 		//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 		if (textureScaling) textureScaling->Update();
-		if (outgassingMap) outgassingMap->Update(m_fTime, true);
+		if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
 		if (facetDetails) facetDetails->Update();
 		if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 		if (vertexCoordinates) vertexCoordinates->Update();
@@ -1480,7 +1480,7 @@ void MolFlow::InsertGeometry(bool newStr, const std::string &fileName) {
 		RefreshPlotterCombos();
 		//UpdatePlotters();
 		
-		if (outgassingMap) outgassingMap->Update(m_fTime, true);
+		if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
 		if (facetDetails) facetDetails->Update();
 		if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 		if (vertexCoordinates) vertexCoordinates->Update();
@@ -1653,8 +1653,8 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			break;
 
 		case MENU_FACET_OUTGASSINGMAP:
-			if (!outgassingMap) outgassingMap = new OutgassingMap();
-			outgassingMap->Display(&worker);
+			if (!outgassingMapWindow) outgassingMapWindow = new OutgassingMapWindow();
+			outgassingMapWindow->Display(&worker);
 			break;
 		case MENU_FACET_REMOVESEL:
 		{
@@ -1689,7 +1689,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 		case MENU_FACET_SELECTREFL:
 			geom->UnselectAll();
 			for (int i = 0; i < geom->GetNbFacet(); i++) {
-				Facet *f = geom->GetFacet(i);
+				InterfaceFacet *f = geom->GetFacet(i);
 				if (f->sh.desorbType == DES_NONE && f->sh.sticking == 0.0 && f->sh.opacity > 0.0)
 					geom->SelectFacet(i);
 			}
@@ -2018,7 +2018,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 	if (texturePlotter) texturePlotter->Update(0.0, true);
 	//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 	if (textureScaling) textureScaling->Update();
-	if (outgassingMap) outgassingMap->Update(m_fTime, true);
+	if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
 	if (facetDetails) facetDetails->Update();
 	if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 	if (vertexCoordinates) vertexCoordinates->Update();
@@ -2088,7 +2088,7 @@ void MolFlow::EmptyGeometry() {
 	if (histogramPlotter) histogramPlotter->Reset();
 	if (texturePlotter) texturePlotter->Update(0.0, true);
 	//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
-	if (outgassingMap) outgassingMap->Update(m_fTime, true);
+	if (outgassingMapWindow) outgassingMapWindow->Update(m_fTime, true);
 	if (movement) movement->Update();
 	if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 	if (formulaEditor) formulaEditor->Refresh();
@@ -2524,7 +2524,7 @@ void MolFlow::UpdateFacetHits(bool allRows) {
 					GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 					AutoSave();
 				}
-				Facet *f = geom->GetFacet(facetId);
+				InterfaceFacet *f = geom->GetFacet(facetId);
 				sprintf(tmp, "%d", facetId + 1);
 				facetList->SetValueAt(0, i, tmp);
 

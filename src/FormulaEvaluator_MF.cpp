@@ -46,7 +46,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
     else if ((idx = GetVariable(v->name, "DEN")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
         if (ok) {
-            Facet *f = geom->GetFacet(idx - 1);
+            InterfaceFacet *f = geom->GetFacet(idx - 1);
             v->value = f->DensityCorrection() * f->facetHitCache.hit.sum_1_per_ort_velocity /
                        f->GetArea() *
                        worker->GetMoleculesPerTP(worker->displayedMoment)*1E4;
@@ -93,7 +93,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
     else if (iequals(v->name, "DESAR")) {
         double sumArea = 0.0;
         for (int i2 = 0; i2 < geom->GetNbFacet(); i2++) {
-            Facet *f_tmp = geom->GetFacet(i2);
+            InterfaceFacet *f_tmp = geom->GetFacet(i2);
             if (f_tmp->sh.desorbType) sumArea += f_tmp->GetArea();
         }
         v->value = sumArea;
@@ -102,7 +102,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
         double sumArea = 0.0;
 
         for (int i2 = 0; i2 < geom->GetNbFacet(); i2++) {
-            Facet *f_tmp = geom->GetFacet(i2);
+            InterfaceFacet *f_tmp = geom->GetFacet(i2);
             if (f_tmp->sh.sticking > 0.0) sumArea += f_tmp->GetArea()*f_tmp->sh.opacity;
         }
         v->value = sumArea;
@@ -195,7 +195,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
                        (worker->model.wp.gasMass / 1000 / 6E23)*0.0100;
                 sumArea += geom->GetFacet(sel)->GetArea();
             } else if (Contains({ "DEN", "den" }, tokens[0])) {
-                Facet *f = geom->GetFacet(sel);
+                InterfaceFacet *f = geom->GetFacet(sel);
                 sumD += f->DensityCorrection() * f->facetHitCache.hit.sum_1_per_ort_velocity;
                 sumArea += geom->GetFacet(sel)->GetArea();
             } else if (Contains({ "Z", "z" }, tokens[0])) {

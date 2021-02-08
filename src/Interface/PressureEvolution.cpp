@@ -223,7 +223,7 @@ void PressureEvolution::refreshChart() {
 	for (auto& v : views) {
 
 		if (v->userData1 >= 0 && v->userData1 < geom->GetNbFacet()) {
-			Facet *f = geom->GetFacet(v->userData1);
+			InterfaceFacet *f = geom->GetFacet(v->userData1);
 			v->Reset();
 
 			auto& facetHits = worker->globState.facetStates[v->userData1].momentResults;

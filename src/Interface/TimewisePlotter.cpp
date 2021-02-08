@@ -182,7 +182,7 @@ void TimewisePlotter::Refresh() {
 	if (nbProf) profCombo->SetSize(nbProf);
 	nbProf = 0;
 	for (size_t i = 0; i < nb; i++) {
-		Facet *f = geom->GetFacet(i);
+		InterfaceFacet *f = geom->GetFacet(i);
 		if (f->sh.isProfile) {
 			char tmp[128];
 			sprintf(tmp, "F#%zd %s", i + 1, profType[f->sh.profileType]);
@@ -267,7 +267,7 @@ void TimewisePlotter::refreshViews() {
 		if (v->userData1<0 || v->userData1>worker->moments.size()) continue; //invalid moment
 		int idx = profCombo->GetSelectedIndex();
 		if (idx < 0) return;
-		Facet *f = geom->GetFacet(profCombo->GetUserValueAt(idx));
+		InterfaceFacet *f = geom->GetFacet(profCombo->GetUserValueAt(idx));
 		v->Reset();
 		//FacetHitBuffer *fCount = (FacetHitBuffer *)(buffer + f->wp.hitOffset);
 		//double fnbHit = (double)fCount->hit.nbMCHit;
@@ -364,7 +364,7 @@ void TimewisePlotter::addView(int facet) {
 	char tmp[128];
 	Geometry *geom = worker->GetGeometry();
 
-	Facet *f = geom->GetFacet(facet);
+	InterfaceFacet *f = geom->GetFacet(facet);
 
 	if (constantFlowToggle->GetState()) { //add constant flow
 		GLDataView *v = new GLDataView();

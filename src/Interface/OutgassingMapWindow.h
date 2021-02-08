@@ -29,14 +29,14 @@ class GLTextField;
 class Geometry;
 class GeometryViewer;
 class Worker;
-class Facet;
+class InterfaceFacet;
 
-class OutgassingMap : public GLWindow {
+class OutgassingMapWindow : public GLWindow {
 
 public:
 
   // Construction
-  OutgassingMap();
+  OutgassingMapWindow();
 
   // Component methods
   void Display(Worker *w);
@@ -55,7 +55,7 @@ private:
   void SaveFile();
 
   Worker       *worker;
-  Facet        *selFacet;
+  InterfaceFacet        *selFacet;
   float        lastUpdate;
   float			maxValue;
   int			maxX,maxY;
