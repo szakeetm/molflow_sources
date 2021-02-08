@@ -104,7 +104,7 @@ void MolflowGeometry::BuildFacetTextures(GlobalSimuState &globState, bool render
 			prg->SetVisible(true);
 		}
 		prg->SetProgress((double)i / (double)sh.nbFacet);
-		Facet *f = facets[i];
+		InterfaceFacet *f = facets[i];
 
 		size_t profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)) : 0;
 		size_t nbElem = f->sh.texWidth*f->sh.texHeight;

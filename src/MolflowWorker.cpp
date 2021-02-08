@@ -103,7 +103,7 @@ Worker::Worker() : simManager("molflow", "MFLW"), model{} {
     desorptionParameterIDs = std::vector<size_t>();
     moments = std::vector<Moment>();
     userMoments = std::vector<UserMoment>(); //strings describing moments, to be parsed
-    CDFs = std::vector<std::vector<std::pair<double, double>>>();
+    CDFs = std::vector<std::vector<CDF_p>>();
     IDs = std::vector<IntegratedDesorption>();
     parameters = std::vector<Parameter>();
     needsReload = true;  //When main and subprocess have different geometries, needs to reload (synchronize)
@@ -463,7 +463,7 @@ std::vector<std::string> Worker::ExportAngleMaps(std::string fileName, bool save
     Geometry *geom = GetGeometry();
     std::vector<size_t> angleMapFacetIndices;
     for (size_t i = 0; i < geom->GetNbFacet(); i++) {
-        Facet *f = geom->GetFacet(i);
+        InterfaceFacet *f = geom->GetFacet(i);
         // saveAll facets e.g. when auto saving or just when selected
         if ((saveAll || f->selected) && f->sh.anglemapParams.hasRecorded){
             angleMapFacetIndices.push_back(i);
@@ -506,8 +506,7 @@ std::vector<std::string> Worker::ExportAngleMaps(std::string fileName, bool save
     return listOfFiles; // false if angleMapFacetIndices.size() == 0
 }
 
-// TODO: Without use yet
-bool Worker::ImportAngleMaps(std::string fileName) {
+[[maybe_unused]] bool Worker::ImportAngleMaps(std::string fileName) {
 
     for (auto &p : std::filesystem::directory_iterator("")) {
         std::stringstream fileName;
@@ -1136,7 +1135,7 @@ bool Worker::MolflowGeomToSimModel(){
     {
         model.tdParams.IDs.clear();
         for(auto& id : this->IDs){
-            model.tdParams.IDs.push_back(id.values);
+            model.tdParams.IDs.push_back(id.GetValues());
         }
     }
     for(auto& param : this->parameters)
@@ -1164,10 +1163,10 @@ bool Worker::MolflowGeomToSimModel(){
     for (size_t facIdx = 0; facIdx < model.sh.nbFacet; facIdx++) {
         SubprocessFacet sFac;
         {
-            Facet* facet = geom->GetFacet(facIdx);
+            InterfaceFacet* facet = geom->GetFacet(facIdx);
 
             //std::vector<double> outgMapVector(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0);
-            //memcpy(outgMapVector.data(), outgassingMap, sizeof(double)*(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0));
+            //memcpy(outgMapVector.data(), outgassingMapWindow, sizeof(double)*(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0));
             size_t mapSize = facet->sh.anglemapParams.GetMapSize();
             std::vector<size_t> angleMapVector(mapSize);
             memcpy(angleMapVector.data(), facet->angleMapCache, facet->sh.anglemapParams.GetRecordedDataSize());
@@ -1212,20 +1211,20 @@ bool Worker::MolflowGeomToSimModel(){
             sFac.sh = facet->sh;
             sFac.indices = facet->indices;
             sFac.vertices2 = facet->vertices2;
-            sFac.outgassingMap = facet->outgassingMap;
+            sFac.ogMap = facet->ogMap;
             sFac.angleMap.pdf = angleMapVector;
             sFac.textureCellIncrements = textIncVector;
         }
 
         //Some initialization
-        if (!sFac.InitializeOnLoad(facIdx, model.tdParams.moments.size(), histogramTotalSize)) return false;
+        if (!sFac.InitializeOnLoad(facIdx, model.tdParams.moments.size())) return false;
         // Increase size counters
         //histogramTotalSize += 0;
-        angleMapTotalSize += sFac.angleMapSize;
+        /*angleMapTotalSize += sFac.angleMapSize;
         dirTotalSize += sFac.directionSize* (1 + model.tdParams.moments.size());
         profTotalSize += sFac.profileSize* (1 + model.tdParams.moments.size());
         textTotalSize += sFac.textureSize* (1 + model.tdParams.moments.size());
-
+*/
         hasVolatile |= sFac.sh.isVolatile;
 
         if ((sFac.sh.superDest || sFac.sh.isVolatile) && ((sFac.sh.superDest - 1) >= model.sh.nbSuper || sFac.sh.superDest < 0)) {
@@ -1560,13 +1559,13 @@ void Worker::PrepareToRun() {
 
     temperatures = std::vector<double>();
     desorptionParameterIDs = std::vector<size_t>();
-    CDFs = std::vector<std::vector<std::pair<double, double>>>();
+    CDFs = std::vector<std::vector<CDF_p>>();
     IDs = std::vector<IntegratedDesorption>();
 
     bool needsAngleMapStatusRefresh = false;
 
     for (size_t i = 0; i < g->GetNbFacet(); i++) {
-        Facet *f = g->GetFacet(i);
+        InterfaceFacet *f = g->GetFacet(i);
 
         //match parameters
         if (f->userOutgassing.length() > 0) {
@@ -1715,13 +1714,13 @@ void Worker::CalcTotalOutgassing() {
     Geometry *g = GetGeometry();
 
     for (int i = 0; i < g->GetNbFacet(); i++) {
-        Facet *f = g->GetFacet(i);
+        InterfaceFacet *f = g->GetFacet(i);
         if (f->sh.desorbType != DES_NONE) { //there is a kind of desorption
             if (f->sh.useOutgassingFile) { //outgassing file
-                for (int l = 0; l < (f->sh.outgassingMapWidth * f->sh.outgassingMapHeight); l++) {
-                    model.wp.totalDesorbedMolecules += model.wp.latestMoment * f->outgassingMap[l] / (1.38E-23 * f->sh.temperature);
-                    model.wp.finalOutgassingRate += f->outgassingMap[l] / (1.38E-23 * f->sh.temperature);
-                    model.wp.finalOutgassingRate_Pa_m3_sec += f->outgassingMap[l];
+                for (int l = 0; l < (f->ogMap.outgassingMapWidth * f->ogMap.outgassingMapHeight); l++) {
+                    model.wp.totalDesorbedMolecules += model.wp.latestMoment * f->ogMap.outgassingMap[l] / (1.38E-23 * f->sh.temperature);
+                    model.wp.finalOutgassingRate += f->ogMap.outgassingMap[l] / (1.38E-23 * f->sh.temperature);
+                    model.wp.finalOutgassingRate_Pa_m3_sec += f->ogMap.outgassingMap[l];
                 }
             } else { //regular outgassing
                 if (f->sh.outgassing_paramId == -1) { //constant outgassing
@@ -1730,7 +1729,7 @@ void Worker::CalcTotalOutgassing() {
                             f->sh.outgassing / (1.38E-23 * f->sh.temperature);  //Outgassing molecules/sec
                     model.wp.finalOutgassingRate_Pa_m3_sec += f->sh.outgassing;
                 } else { //time-dependent outgassing
-                    double lastValue = IDs[f->sh.IDid].values.back().second;
+                    double lastValue = IDs[f->sh.IDid].GetValues().back().second;
                     model.wp.totalDesorbedMolecules += lastValue / (1.38E-23 * f->sh.temperature);
                     size_t lastIndex = parameters[f->sh.outgassing_paramId].GetSize() - 1;
                     double finalRate_mbar_l_s = parameters[f->sh.outgassing_paramId].GetY(lastIndex);
@@ -1941,7 +1940,7 @@ IntegratedDesorption Worker::Generate_ID(int paramId) {
     IntegratedDesorption result;
     result.logXinterp=par.logXinterp;
     result.logYinterp=par.logYinterp;
-    result.values=ID;
+    result.SetValues(ID, false);
     return result;
 
 }

@@ -27,7 +27,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/GLTitledPanel.h"
 #include "Worker.h"
 
-class Facet;
+class InterfaceFacet;
 
 #define NB_FDCOLUMN 27
 
@@ -48,9 +48,9 @@ public:
 
 private:
 
-  char *GetCountStr(Facet *f);
+  char *GetCountStr(InterfaceFacet *f);
   void UpdateTable();
-  char *FormatCell(size_t idx,Facet *f, size_t mode);
+  char *FormatCell(size_t idx, InterfaceFacet *f, size_t mode);
   void PlaceComponents();
 
   Worker      *worker;

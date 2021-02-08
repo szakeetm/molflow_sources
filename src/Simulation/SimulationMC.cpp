@@ -505,7 +505,7 @@ bool CurrentParticleStatus::StartFromSource() {
                             /*double sumB = 0.0;
                             for (w = 0; w < f.sh.outgassingMapWidth && !foundInMap; w++) {
                                 for (h = 0; h < f.sh.outgassingMapHeight && !foundInMap; h++) {
-                                    double cellOutgassing = f.outgassingMap[h*f.sh.outgassingMapWidth + w];
+                                    double cellOutgassing = f.outgassingMapWindow[h*f.sh.outgassingMapWidth + w];
                                     if (cellOutgassing > 0.0) {
                                         foundInMap = (rndRemainder >= sumB) && (rndRemainder < (sumB + cellOutgassing));
                                         if (foundInMap) mapPositionW = w; mapPositionH = h;
@@ -515,10 +515,10 @@ bool CurrentParticleStatus::StartFromSource() {
                             }*/
                             double lookupValue = rndRemainder;
                             int outgLowerIndex = my_lower_bound(lookupValue,
-                                                                f.outgassingMap); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
+                                                                f.ogMap.outgassingMap); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
                             outgLowerIndex++;
-                            mapPositionH = (size_t) ((double) outgLowerIndex / (double) f.sh.outgassingMapWidth);
-                            mapPositionW = (size_t) outgLowerIndex - mapPositionH * f.sh.outgassingMapWidth;
+                            mapPositionH = (size_t) ((double) outgLowerIndex / (double) f.ogMap.outgassingMapWidth);
+                            mapPositionW = (size_t) outgLowerIndex - mapPositionH * f.ogMap.outgassingMapWidth;
                             foundInMap = true;
                             /*if (!foundInMap) {
                                 SetErrorSub("Starting point not found in imported desorption map");
@@ -581,23 +581,24 @@ bool CurrentParticleStatus::StartFromSource() {
         double u, v;
 
         if (foundInMap) {
-            if (mapPositionW < (src->sh.outgassingMapWidth - 1)) {
+            auto& ogMap = src->ogMap;
+            if (mapPositionW < (ogMap.outgassingMapWidth - 1)) {
                 //Somewhere in the middle of the facet
-                u = ((double) mapPositionW + randomGenerator.rnd()) / src->outgassingMapWidthD;
+                u = ((double) mapPositionW + randomGenerator.rnd()) / ogMap.outgassingMapWidthD;
             } else {
                 //Last element, prevent from going out of facet
                 u = ((double) mapPositionW +
-                     randomGenerator.rnd() * (src->outgassingMapWidthD - (src->sh.outgassingMapWidth - 1))) /
-                    src->outgassingMapWidthD;
+                     randomGenerator.rnd() * (ogMap.outgassingMapWidthD - (ogMap.outgassingMapWidth - 1.0))) /
+                        ogMap.outgassingMapWidthD;
             }
-            if (mapPositionH < (src->sh.outgassingMapHeight - 1)) {
+            if (mapPositionH < (ogMap.outgassingMapHeight - 1)) {
                 //Somewhere in the middle of the facet
-                v = ((double) mapPositionH + randomGenerator.rnd()) / src->outgassingMapHeightD;
+                v = ((double) mapPositionH + randomGenerator.rnd()) / ogMap.outgassingMapHeightD;
             } else {
                 //Last element, prevent from going out of facet
                 v = ((double) mapPositionH +
-                     randomGenerator.rnd() * (src->outgassingMapHeightD - (src->sh.outgassingMapHeight - 1))) /
-                    src->outgassingMapHeightD;
+                     randomGenerator.rnd() * (ogMap.outgassingMapHeightD - (ogMap.outgassingMapHeight - 1.0))) /
+                        ogMap.outgassingMapHeightD;
             }
         } else {
             u = randomGenerator.rnd();
@@ -620,8 +621,8 @@ bool CurrentParticleStatus::StartFromSource() {
         if (foundInMap) {
             //double uLength = sqrt(pow(src->sh.U.x, 2) + pow(src->sh.U.y, 2) + pow(src->sh.U.z, 2));
             //double vLength = sqrt(pow(src->sh.V.x, 2) + pow(src->sh.V.y, 2) + pow(src->sh.V.z, 2));
-            double u = ((double) mapPositionW + 0.5) / src->outgassingMapWidthD;
-            double v = ((double) mapPositionH + 0.5) / src->outgassingMapHeightD;
+            double u = ((double) mapPositionW + 0.5) / src->ogMap.outgassingMapWidthD;
+            double v = ((double) mapPositionH + 0.5) / src->ogMap.outgassingMapHeightD;
             position = src->sh.O + u * src->sh.U + v * src->sh.V;
             tmpFacetVars[src->globalId].colU = u;
             tmpFacetVars[src->globalId].colV = v;
@@ -630,12 +631,14 @@ bool CurrentParticleStatus::StartFromSource() {
             tmpFacetVars[src->globalId].colV = 0.5;
             position = model->structures[j].facets[i].sh.center;
         }
-
     }
 
-    if (src->sh.isMoving && model->wp.motionType)
-        if (particleId == 0)RecordHit(HIT_MOVING);
-        else if (particleId == 0)RecordHit(HIT_DES); //create blue hit point for created particle
+    if (src->sh.isMoving && model->wp.motionType) {
+        if (particleId == 0)
+            RecordHit(HIT_MOVING);
+    }
+    else if (particleId == 0)
+        RecordHit(HIT_DES); //create blue hit point for created particle
 
     //See docs/theta_gen.png for further details on angular distribution generation
     switch (src->sh.desorbType) {

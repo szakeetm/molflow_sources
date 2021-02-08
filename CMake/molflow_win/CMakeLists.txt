@@ -103,7 +103,7 @@ set(SRC_FILES
         ${CPP_DIR_1}/MolflowWorker.cpp
         ${UI_DIR}/MomentsEditor.cpp
         ${UI_DIR}/Movement.cpp
-        ${UI_DIR}/OutgassingMap.cpp
+        ${UI_DIR}/OutgassingMapWindow.cpp
         ${CPP_DIR_1}/Parameter.cpp
         ${UI_DIR}/ParameterEditor.cpp
         ${UI_DIR}/PressureEvolution.cpp

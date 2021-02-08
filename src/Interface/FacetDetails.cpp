@@ -262,7 +262,7 @@ void FacetDetails::SetBounds(int x,int y,int w,int h) {
 * \param f Pointer to a facet
 * \return char pointer taking a string with the count value(s)
 */
-char *FacetDetails::GetCountStr(Facet *f) {
+char *FacetDetails::GetCountStr(InterfaceFacet *f) {
   static char ret[128];
   strcpy(ret,"");
   if(f->sh.countDes) strcat(ret,"DES");
@@ -279,7 +279,7 @@ char *FacetDetails::GetCountStr(Facet *f) {
 * \param mode which kind of value has to be evaluated and printed
 * \return char pointer taking a string with the count value(s)
 */
-char *FacetDetails::FormatCell(size_t idx,Facet *f,size_t mode) {
+char *FacetDetails::FormatCell(size_t idx, InterfaceFacet *f, size_t mode) {
   static char ret[512];
   strcpy(ret,"");
 
@@ -448,7 +448,7 @@ void FacetDetails::UpdateTable() {
 
   size_t nbS = 0;
   for(auto& sel:selectedFacets) {
-    Facet *f = geom->GetFacet(sel);
+    InterfaceFacet *f = geom->GetFacet(sel);
     for(size_t j=0;j<nbCol;j++)
         facetListD->SetValueAt(j,nbS,FormatCell(sel,f,shown[j]));
 	nbS++;

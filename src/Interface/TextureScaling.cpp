@@ -157,7 +157,7 @@ void TextureScaling::UpdateSize() {
 	size_t swap = 0;
 	size_t nbFacet = geom->GetNbFacet();
 	for(size_t i=0;i<nbFacet;i++) {
-		Facet *f = geom->GetFacet(i);
+		InterfaceFacet *f = geom->GetFacet(i);
 		if(f->sh.isTextured) {
 			swap += f->GetTexSwapSize(colormapBtn->GetState());
 		}

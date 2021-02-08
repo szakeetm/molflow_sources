@@ -24,6 +24,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <vector>
 #include <cereal/cereal.hpp>
 #include <cereal/types/vector.hpp>
+#include <Distributions.h>
 //#include "Buffer_shared.h"
 
 // Desorption type
@@ -66,20 +67,20 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 typedef float ACFLOAT;
 typedef std::pair<std::string,double> UserMoment;
 typedef std::pair<double,double> Moment;
-class IntegratedDesorption {
-	//A cumulative distribution function with time/integrated_desorption pairs
-public:
-	bool logXinterp,logYinterp; //interpolation, should be the same flags as corresponding parameter
-	std::vector<std::pair<double, double>> values; //Time-cum.desorption pairs
+typedef std::pair<double,double> ID_p;
+typedef std::pair<double,double> CDF_p;
 
-		template<class Archive>
-		void serialize(Archive& archive) {
-		archive(
-			CEREAL_NVP(logXinterp),
-			CEREAL_NVP(logYinterp),
-			CEREAL_NVP(values) //(t,sumQ_until_t) pairs
-		);
-	}
+class IntegratedDesorption : public Distribution2D {
+
+};
+
+struct OutgassingMap {
+    size_t   outgassingMapWidth; //rounded up outgassing file map width
+    size_t   outgassingMapHeight; //rounded up outgassing file map height
+    double outgassingMapWidthD; //actual outgassing file map width
+    double outgassingMapHeightD; //actual outgassing file map height
+    double outgassingFileRatio; //desorption file's sample/unit ratio
+    std::vector<double>   outgassingMap; // Cumulative outgassing map when desorption is based on imported file
 };
 
 // Density/Hit field stuff

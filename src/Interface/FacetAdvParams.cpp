@@ -457,7 +457,7 @@ void FacetAdvParams::UpdateSize() {
 		if (recordACBtn->GetState()) {
 
 			for (size_t i = 0; i < nbFacet; i++) {
-				Facet *f = geom->GetFacet(i);
+				InterfaceFacet *f = geom->GetFacet(i);
 				if (f->sh.opacity == 1.0) {
                     auto nbCells = f->GetNbCell();
                     cell += (size_t)(nbCells.first * nbCells.second);
@@ -470,7 +470,7 @@ void FacetAdvParams::UpdateSize() {
 		else {
 
 			for (size_t i = 0; i < nbFacet; i++) {
-				Facet *f = geom->GetFacet(i);
+				InterfaceFacet *f = geom->GetFacet(i);
                 auto nbCells = f->GetNbCell();
                 cell += (size_t)(nbCells.first * nbCells.second);
 				ram += (size_t)f->GetTexRamSize(1 + worker->moments.size());
@@ -521,7 +521,7 @@ void FacetAdvParams::UpdateSizeForRatio() {
 	if (recordACBtn->GetState()) {
 
 		for (size_t i = 0; i < nbFacet; i++) {
-			Facet *f = geom->GetFacet(i);
+			InterfaceFacet *f = geom->GetFacet(i);
 			//if(f->wp.opacity==1.0) {
 			if (f->selected) {
 			    auto nbCells = f->GetNbCellForRatio(ratioU, ratioV);
@@ -541,7 +541,7 @@ void FacetAdvParams::UpdateSizeForRatio() {
 	else {
 
 		for (size_t i = 0; i < nbFacet; i++) {
-			Facet *f = geom->GetFacet(i);
+			InterfaceFacet *f = geom->GetFacet(i);
 			if (f->selected) {
                 auto nbCells = f->GetNbCellForRatio(ratioU, ratioV);
                 cell += (size_t)(nbCells.first * nbCells.second);
@@ -576,7 +576,7 @@ std::pair<double,double> FacetAdvParams::GetRatioForNbCell(size_t nbCellsU, size
 
     if(selFacets.size() == 1) {
         for (auto &sel : selFacets) {
-            Facet *f = geom->GetFacet(sel);
+            InterfaceFacet *f = geom->GetFacet(sel);
             if (f->selected) {
                 double nU = f->sh.U.Norme();
                 double nV = f->sh.V.Norme();
@@ -681,7 +681,7 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 		return;
 	}
 
-	Facet* f0 = geom->GetFacet(selection[0]);
+	InterfaceFacet* f0 = geom->GetFacet(selection[0]);
 
 	bool isEnabledE = true;
 	bool isBoundE = true;
@@ -728,7 +728,7 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	sumAngleMapSize = f0->sh.anglemapParams.GetRecordedMapSize();
 	
 	for (size_t i = 1; i < selection.size(); i++) {
-		Facet *f = geom->GetFacet(selection[i]);
+		InterfaceFacet *f = geom->GetFacet(selection[i]);
 		double fArea = f->GetArea();
 		sumArea += fArea;
 		sumOutgassing += f->sh.totalOutgassing;
@@ -1107,7 +1107,7 @@ bool FacetAdvParams::ApplyTexture(bool force) {
 	progressDlg->SetProgress(0.0);
 	int count = 0;
 	for (auto& sel : selectedFacets) {
-		Facet *f = geom->GetFacet(sel);
+		InterfaceFacet *f = geom->GetFacet(sel);
 		bool hadAnyTexture = f->sh.countDes || f->sh.countAbs || f->sh.countRefl || f->sh.countTrans || f->sh.countACD || f->sh.countDirection;
 		bool hadDirCount = f->sh.countDirection;
 
@@ -1497,7 +1497,7 @@ bool FacetAdvParams::Apply() {
 	progressDlg->SetProgress(0.0);
 	int count = 0;
 	for (auto& sel:selectedFacets) {
-		Facet *f = geom->GetFacet(sel);
+		InterfaceFacet *f = geom->GetFacet(sel);
 		/*
 		bool hadAnyTexture = f->wp.countDes || f->wp.countAbs || f->wp.countRefl || f->wp.countTrans || f->wp.countACD || f->wp.countDirection;
 		bool hadDirCount = f->wp.countDirection;
@@ -1620,7 +1620,7 @@ void FacetAdvParams::ApplyDrawSettings() {
 
 	for (int i = 0; i < geom->GetNbFacet(); i++) {
 
-		Facet *f = geom->GetFacet(i);
+		InterfaceFacet *f = geom->GetFacet(i);
 		if (f->selected) {
 
 			if (showTexture->GetState() < 2) f->textureVisible = showTexture->GetState();
@@ -1946,7 +1946,7 @@ from C. Benvenutti http://cds.cern.ch/record/454180
                     if(selected.size() == 1) {
                         //apply same ratio for both cells
                         auto ratio = GetRatioForNbCell(nbCellsU, nbCellsU);
-                        Facet* fac = geom->GetFacet(selected.front());
+                        InterfaceFacet* fac = geom->GetFacet(selected.front());
                         auto nbCells = fac->GetNbCellForRatio(ratio.first,ratio.first);
                         cellsV->SetText(nbCells.second);
                     }

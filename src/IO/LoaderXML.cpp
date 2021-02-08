@@ -109,10 +109,11 @@ void Loader::CalcTotalOutgassing(SimulationModel* model) {
         SubprocessFacet& facet = loadFacets[i];
         if (facet.sh.desorbType != DES_NONE) { //there is a kind of desorption
             if (facet.sh.useOutgassingFile) { //outgassing file
-                for (int l = 0; l < (facet.sh.outgassingMapWidth * facet.sh.outgassingMapHeight); l++) {
-                    totalDesorbedMolecules += latestMoment * facet.outgassingMap[l] / (1.38E-23 * facet.sh.temperature);
-                    finalOutgassingRate += facet.outgassingMap[l] / (1.38E-23 * facet.sh.temperature);
-                    finalOutgassingRate_Pa_m3_sec += facet.outgassingMap[l];
+                auto& ogMap = facet.ogMap;
+                for (int l = 0; l < (ogMap.outgassingMapWidth * ogMap.outgassingMapHeight); l++) {
+                    totalDesorbedMolecules += latestMoment * ogMap.outgassingMap[l] / (1.38E-23 * facet.sh.temperature);
+                    finalOutgassingRate += ogMap.outgassingMap[l] / (1.38E-23 * facet.sh.temperature);
+                    finalOutgassingRate_Pa_m3_sec += ogMap.outgassingMap[l];
                 }
             } else { //regular outgassing
                 if (facet.sh.outgassing_paramId == -1) { //constant outgassing
@@ -825,9 +826,9 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
 
     xml_node outgNode = facetNode.child("DynamicOutgassing");
     if ((hasOutgassingFile) && outgNode && outgNode.child("map")) {
-        facet->sh.outgassingMapWidth = outgNode.attribute("width").as_int();
-        facet->sh.outgassingMapHeight = outgNode.attribute("height").as_int();
-        facet->sh.outgassingFileRatio = outgNode.attribute("ratio").as_double();
+        facet->ogMap.outgassingMapWidth = outgNode.attribute("width").as_int();
+        facet->ogMap.outgassingMapHeight = outgNode.attribute("height").as_int();
+        facet->ogMap.outgassingFileRatio = outgNode.attribute("ratio").as_double();
         double totalDose = outgNode.attribute("totalDose").as_double();
         facet->sh.totalOutgassing = outgNode.attribute("totalOutgassing").as_double();
         double totalFlux = outgNode.attribute("totalFlux").as_double();
@@ -836,12 +837,14 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
 
         std::stringstream outgText;
         outgText << outgNode.child_value("map");
-        std::vector<double>(facet->sh.outgassingMapWidth*facet->sh.outgassingMapHeight).swap(facet->outgassingMap);
 
-        for (int iy = 0; iy < facet->sh.outgassingMapHeight; iy++) {
-            for (int ix = 0; ix < facet->sh.outgassingMapWidth; ix++) {
-                outgText >> facet->outgassingMap[iy*facet->sh.outgassingMapWidth + ix];
-                sum += facet->outgassingMap[iy*facet->sh.outgassingMapWidth + ix];
+        auto& ogMap = facet->ogMap;
+        std::vector<double>(ogMap.outgassingMapWidth*ogMap.outgassingMapHeight).swap(ogMap.outgassingMap);
+
+        for (int iy = 0; iy < ogMap.outgassingMapHeight; iy++) {
+            for (int ix = 0; ix < ogMap.outgassingMapWidth; ix++) {
+                outgText >> ogMap.outgassingMap[iy*ogMap.outgassingMapWidth + ix];
+                sum += ogMap.outgassingMap[iy*ogMap.outgassingMapWidth + ix];
             }
         }
     }

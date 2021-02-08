@@ -26,11 +26,13 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 class Parameter:public Distribution2D {
 public:
-	std::string name="";
+    Parameter() {
+        fromCatalog=false;
+        logXinterp = false;
+        logYinterp = false;
+    }
+	std::string name;
 	bool fromCatalog=false;
-	bool logXinterp=false;
-	bool logYinterp=false;
-
 };
 
 /*

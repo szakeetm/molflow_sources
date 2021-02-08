@@ -11,6 +11,7 @@
 #include "Parameter.h"
 
 #include <mutex>
+#include <FacetData.h>
 
 
 struct SubprocessFacet;
@@ -20,8 +21,8 @@ struct TimeDependentParamters {
     TimeDependentParamters()= default;
     std::vector<Distribution2D> parameters;
 
-    std::vector<std::vector<std::pair<double, double>>> CDFs; //cumulative distribution function for each temperature
-    std::vector<std::vector<std::pair<double, double>>> IDs; //integrated distribution function for each time-dependent desorption type
+    std::vector<std::vector<CDF_p>> CDFs; //cumulative distribution function for each temperature
+    std::vector<std::vector<ID_p>> IDs; //integrated distribution function for each time-dependent desorption type
     std::vector<Moment> moments;             //moments when a time-dependent simulation state is recorded
     /*std::vector<UserMoment> userMoments;    //user-defined text values for defining time moments (can be time or time series)
     std::vector<double> temperatures; //keeping track of all temperatures that have a CDF already generated
@@ -32,14 +33,14 @@ struct TimeDependentParamters {
         for(auto& par : parameters){
             sum += par.GetMemSize();
         }
-        sum += sizeof(std::vector<std::vector<std::pair<double, double>>>);
+        sum += sizeof(std::vector<std::vector<CDF_p>>);
         for(auto& vec : CDFs){
-            sum += sizeof(std::vector<std::pair<double, double>>);
+            sum += sizeof(std::vector<CDF_p>);
             sum += sizeof(std::pair<double,double>) * vec.capacity();
         }
-        sum += sizeof(std::vector<std::vector<std::pair<double, double>>>);
+        sum += sizeof(std::vector<std::vector<ID_p>>);
         for(auto& vec : IDs){
-            sum += sizeof(std::vector<std::pair<double, double>>);
+            sum += sizeof(std::vector<ID_p>);
             sum += sizeof(std::pair<double,double>) * vec.capacity();
         }
         sum += sizeof(std::vector<Moment>);
@@ -69,35 +70,18 @@ public:
 };
 
 // Local facet structure
-struct SubprocessFacet{
+struct SubprocessFacet : public Facet {
     SubprocessFacet();
     explicit SubprocessFacet(size_t nbIndex);
 
-    FacetProperties sh;
-
-    std::vector<size_t>      indices;          // Indices (Reference to geometry vertex)
-    std::vector<Vector2d> vertices2;        // Vertices (2D plane space, UV coordinates)
     std::vector<double>   textureCellIncrements;              // Texure increment
     std::vector<bool>     largeEnough;      // cells that are NOT too small for autoscaling
-    double   fullSizeInc;       // Texture increment of a full texture element
-    std::vector<double>   outgassingMap; // Cumulative outgassing map when desorption is based on imported file
-    double outgassingMapWidthD; //actual outgassing file map width
-    double outgassingMapHeightD; //actual outgassing file map height
+    OutgassingMap ogMap;
 
     Anglemap angleMap; //TODO: -> GeneratingAngleMap from 2.7
 
-    // Used for texture init only
-    double rw;
-    double iw;
-    double ih;
-
     // Temporary var (used in FillHit for hit recording)
     bool   isReady;         // Volatile state
-    size_t    textureSize;   // Texture size (in bytes)
-    size_t    profileSize;   // profile size (in bytes)
-    size_t    directionSize; // direction field size (in bytes)
-    size_t    angleMapSize;  // incidentangle map size (in bytes)
-
     size_t globalId; //Global index (to identify when superstructures are present)
 
     // Facet hit counters
@@ -106,17 +90,17 @@ struct SubprocessFacet{
 
     //void ResetCounter();
     //void ResizeCounter(size_t nbMoments);
-    bool InitializeOnLoad(const size_t &id, const size_t &nbMoments, size_t &histogramTotalSize);
+    bool InitializeOnLoad(const size_t &id, const size_t &nbMoments);
 
-    void InitializeHistogram(const size_t &nbMoments, size_t &histogramTotalSize) const;
+    size_t InitializeHistogram(const size_t &nbMoments) const;
 
-    bool InitializeDirectionTexture(const size_t &nbMoments);
+    size_t InitializeDirectionTexture(const size_t &nbMoments);
 
-    bool InitializeProfile(const size_t &nbMoments);
+    size_t InitializeProfile(const size_t &nbMoments);
 
-    bool InitializeTexture(const size_t &nbMoments);
+    size_t InitializeTexture(const size_t &nbMoments);
 
-    bool InitializeAngleMap();
+    size_t InitializeAngleMap();
 
     void InitializeOutgassingMap();
 

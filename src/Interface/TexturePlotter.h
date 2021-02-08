@@ -29,7 +29,7 @@ class GLToggle;
 class Geometry;
 class GeometryViewer;
 class Worker;
-class Facet;
+class InterfaceFacet;
 
 class TexturePlotter : public GLWindow {
 
@@ -55,7 +55,7 @@ private:
   void SaveFile();
 
   Worker       *worker;
-  Facet*      selFacet;
+  InterfaceFacet*      selFacet;
   int         selFacetId;
   float        lastUpdate;
   double    	maxValue;

@@ -42,7 +42,7 @@ extern std::vector<int> colorMap;
 * \param version version of the geometry description
 * \param nbVertex number of facets contained in the geometry
 */
-void Facet::LoadGEO(FileReader *file, int version, size_t nbVertex) {
+void InterfaceFacet::LoadGEO(FileReader *file, int version, size_t nbVertex) {
 
 	file->ReadKeyword("indices"); file->ReadKeyword(":");
 	for (int i = 0; i < sh.nbIndex; i++) {
@@ -170,7 +170,7 @@ void Facet::LoadGEO(FileReader *file, int version, size_t nbVertex) {
 * \param ignoreSumMismatch if total dynamic outgasing can be different from sum of dynamic outgassing cells
 * \param vertexOffset offset for the vertex id
 */
-void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bool& ignoreSumMismatch, size_t vertexOffset) {
+void InterfaceFacet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bool& ignoreSumMismatch, size_t vertexOffset) {
 	int idx = 0;
 	int facetId = f.attribute("id").as_int();
 	for (xml_node indice : f.child("Indices").children("Indice")) {
@@ -266,9 +266,9 @@ void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bool& ignor
 
 		xml_node outgNode = f.child("DynamicOutgassing");
 		if ((hasOutgassingFile) && outgNode && outgNode.child("map")) {
-			sh.outgassingMapWidth = outgNode.attribute("width").as_int();
-			sh.outgassingMapHeight = outgNode.attribute("height").as_int();
-			sh.outgassingFileRatio = outgNode.attribute("ratio").as_double();
+			ogMap.outgassingMapWidth = outgNode.attribute("width").as_int();
+			ogMap.outgassingMapHeight = outgNode.attribute("height").as_int();
+			ogMap.outgassingFileRatio = outgNode.attribute("ratio").as_double();
 			totalDose = outgNode.attribute("totalDose").as_double();
 			sh.totalOutgassing = outgNode.attribute("totalOutgassing").as_double();
 			totalFlux = outgNode.attribute("totalFlux").as_double();
@@ -277,12 +277,12 @@ void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bool& ignor
 
 			std::stringstream outgText;
 			outgText << outgNode.child_value("map");
-			std::vector<double>(sh.outgassingMapWidth*sh.outgassingMapHeight).swap(outgassingMap);
+			std::vector<double>(ogMap.outgassingMapWidth*ogMap.outgassingMapHeight).swap(ogMap.outgassingMap);
 
-			for (int iy = 0; iy < sh.outgassingMapHeight; iy++) {
-				for (int ix = 0; ix < sh.outgassingMapWidth; ix++) {
-					outgText >> outgassingMap[iy*sh.outgassingMapWidth + ix];
-					sum += outgassingMap[iy*sh.outgassingMapWidth + ix];
+			for (int iy = 0; iy < ogMap.outgassingMapHeight; iy++) {
+				for (int ix = 0; ix < ogMap.outgassingMapWidth; ix++) {
+					outgText >> ogMap.outgassingMap[iy*ogMap.outgassingMapWidth + ix];
+					sum += ogMap.outgassingMap[iy*ogMap.outgassingMapWidth + ix];
 				}
 			}
 			if (!ignoreSumMismatch && !IsEqual(sum, sh.totalOutgassing)) {
@@ -357,7 +357,7 @@ void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bool& ignor
 * \param version version of the syn description
 * \param nbVertex number of facets contained in the geometry
 */
-void Facet::LoadSYN(FileReader *file, int version, size_t nbVertex) {
+void InterfaceFacet::LoadSYN(FileReader *file, int version, size_t nbVertex) {
 
 	file->ReadKeyword("indices"); file->ReadKeyword(":");
 	for (size_t i = 0; i < sh.nbIndex; i++) {
@@ -467,7 +467,7 @@ void Facet::LoadSYN(FileReader *file, int version, size_t nbVertex) {
 * \brief Function for loading the geometry data of single facets from a TXT file
 * \param file filename of the TXT file
 */
-void Facet::LoadTXT(FileReader *file) {
+void InterfaceFacet::LoadTXT(FileReader *file) {
 
 	// Opacity parameters descripton (TXT format)
 	// -4    => Pressure profile (1 sided)
@@ -567,7 +567,7 @@ void Facet::LoadTXT(FileReader *file) {
 * \brief Function for saving the geometry data of single facets into a TXT file
 * \param file filename of the TXT file
 */
-void Facet::SaveTXT(FileWriter *file) {
+void InterfaceFacet::SaveTXT(FileWriter *file) {
 
 	if (!sh.superDest)
 		file->Write(sh.sticking, "\n");
@@ -609,7 +609,7 @@ void Facet::SaveTXT(FileWriter *file) {
 * \param file filename of the GEO file
 * \param idx index of the facet
 */
-void Facet::SaveGEO(FileWriter *file, int idx) {
+void InterfaceFacet::SaveGEO(FileWriter *file, int idx) {
 
 	char tmp[256];
 
@@ -678,7 +678,7 @@ void Facet::SaveGEO(FileWriter *file, int idx) {
 * \brief Calculates the geometry size for a single facet which is necessary for loader dataport
 * \return calculated size of the facet geometry
 */
-size_t Facet::GetGeometrySize()  { //for loader dataport
+size_t InterfaceFacet::GetGeometrySize()  { //for loader dataport
 
 	size_t s = sizeof(FacetProperties)
 		+ (sh.nbIndex * sizeof(size_t)) //indices
@@ -686,7 +686,7 @@ size_t Facet::GetGeometrySize()  { //for loader dataport
 
 	// Size of the 'element area' array passed to the geometry buffer
 	if (sh.isTextured) s += sizeof(double)*sh.texWidth*sh.texHeight; //incbuff
-	if (sh.useOutgassingFile ) s += sizeof(double)*sh.outgassingMapWidth*sh.outgassingMapHeight;
+	if (sh.useOutgassingFile ) s += sizeof(double)*ogMap.outgassingMapWidth*ogMap.outgassingMapHeight;
 	s += sh.anglemapParams.GetRecordedDataSize();
 	return s;
 
@@ -697,7 +697,7 @@ size_t Facet::GetGeometrySize()  { //for loader dataport
 * \param nbMoments amount of moments
 * \return calculated size of the facet hits
 */
-size_t Facet::GetHitsSize(size_t nbMoments)  { //for hits dataport
+size_t InterfaceFacet::GetHitsSize(size_t nbMoments)  { //for hits dataport
 
 	return   (1 + nbMoments)*(
 		sizeof(FacetHitBuffer) +
@@ -714,7 +714,7 @@ size_t Facet::GetHitsSize(size_t nbMoments)  { //for hits dataport
 * \param nbMoments amount of moments
 * \return calculated size of the texture RAM usage
 */
-size_t Facet::GetTexRamSize(size_t nbMoments)  {
+size_t InterfaceFacet::GetTexRamSize(size_t nbMoments)  {
 	//Values
 	size_t sizePerCell = sizeof(TextureCell)*nbMoments; //TextureCell: long + 2*double
 	if (sh.countDirection) sizePerCell += sizeof(DirectionCell)*nbMoments; //DirectionCell: Vector3d + long
@@ -730,7 +730,7 @@ size_t Facet::GetTexRamSize(size_t nbMoments)  {
 * \param nbMoments amount of moments
 * \return calculated size of the texture RAM usage
 */
-size_t Facet::GetTexRamSizeForCellNumber(int width, int height, bool useMesh, bool countDir, size_t nbMoments)  {
+size_t InterfaceFacet::GetTexRamSizeForCellNumber(int width, int height, bool useMesh, bool countDir, size_t nbMoments)  {
 
     //Values
     size_t sizePerCell = sizeof(TextureCell)*nbMoments; //TextureCell: long + 2*double
@@ -749,7 +749,7 @@ size_t Facet::GetTexRamSizeForCellNumber(int width, int height, bool useMesh, bo
 * \param nbMoments amount of moments
 * \return calculated size of the texture RAM usage
 */
-size_t Facet::GetTexRamSizeForRatio(double ratio, size_t nbMoments) {
+size_t InterfaceFacet::GetTexRamSizeForRatio(double ratio, size_t nbMoments) {
 	double nU = sh.U.Norme();
 	double nV = sh.V.Norme();
 	double width = nU*ratio;
@@ -782,7 +782,7 @@ size_t Facet::GetTexRamSizeForRatio(double ratio, size_t nbMoments) {
 * \param nbMoments amount of moments
 * \return calculated size of the texture RAM usage
 */
-size_t Facet::GetTexRamSizeForRatio(double ratioU, double ratioV, size_t nbMoments)  {
+size_t InterfaceFacet::GetTexRamSizeForRatio(double ratioU, double ratioV, size_t nbMoments)  {
     double nU = sh.U.Norme();
     double nV = sh.V.Norme();
     double width = nU*ratioU;
@@ -817,7 +817,7 @@ size_t Facet::GetTexRamSizeForRatio(double ratioU, double ratioV, size_t nbMomen
 * \param scaleF scaling factor
 * \return smoothing factor
 */
-double Facet::GetSmooth(int i, int j, TextureCell *texBuffer, int textureMode, double scaleF) {
+double InterfaceFacet::GetSmooth(int i, int j, TextureCell *texBuffer, int textureMode, double scaleF) {
 
 	double W = 0.0;
 	double sum = 0.0;
@@ -852,7 +852,7 @@ double Facet::GetSmooth(int i, int j, TextureCell *texBuffer, int textureMode, d
 * \param sum pointer to an existing sum counter
 * \param totalWeight pointer to an existing counter for the total weight
 */
-void Facet::Sum_Neighbor(const int& i, const int& j, const double& weight, TextureCell *texBuffer, const int& textureMode, const double& scaleF, double *sum, double *totalWeight) {
+void InterfaceFacet::Sum_Neighbor(const int& i, const int& j, const double& weight, TextureCell *texBuffer, const int& textureMode, const double& scaleF, double *sum, double *totalWeight) {
 												
 	if( i>=0 && i<sh.texWidth && j>=0 && j<sh.texHeight ) {								
 		size_t add = (size_t)i+(size_t)j*sh.texWidth;												
@@ -879,8 +879,8 @@ void Facet::Sum_Neighbor(const int& i, const int& j, const double& weight, Textu
 * \param max max value for color scaling
 * \param useColorMap if a 16bit high color map should be used (rainbow)
 */
-void Facet::BuildTexture(const std::vector<TextureCell> &texBuffer, int textureMode, double min, double max, bool useColorMap,
-                         double dCoeff1, double dCoeff2, double dCoeff3, bool doLog, size_t m) {
+void InterfaceFacet::BuildTexture(const std::vector<TextureCell> &texBuffer, int textureMode, double min, double max, bool useColorMap,
+                                  double dCoeff1, double dCoeff2, double dCoeff3, bool doLog, size_t m) {
 	size_t size = sh.texWidth*sh.texHeight;
 	size_t tSize = texDimW*texDimH;
 	if (size == 0 || tSize == 0) return;
@@ -1017,7 +1017,7 @@ void Facet::BuildTexture(const std::vector<TextureCell> &texBuffer, int textureM
 /**
 * \brief Converts the desorption type of a facet if it's from a particular type (TODO: check if this implies unneeded backwards compatibility)
 */
-void Facet::ConvertOldDesorbType() {
+void InterfaceFacet::ConvertOldDesorbType() {
 	if (sh.desorbType >= 3 && sh.desorbType <= 5) {
 		sh.desorbTypeN = (double)(sh.desorbType - 1);
 		sh.desorbType = DES_COSINE_N;
@@ -1028,7 +1028,7 @@ void Facet::ConvertOldDesorbType() {
 * \brief To save facet data for the geometry in XML
 * \param f XML node representing a facet
 */
-void  Facet::SaveXML_geom(pugi::xml_node f) {
+void  InterfaceFacet::SaveXML_geom(pugi::xml_node f) {
 	xml_node e = f.append_child("Sticking");
 	e.append_attribute("constValue") = sh.sticking;
 	e.append_attribute("parameterId") = sh.sticking_paramId;
@@ -1142,18 +1142,18 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 
 	if (hasOutgassingFile) {
 		xml_node textureNode = f.append_child("DynamicOutgassing");
-		textureNode.append_attribute("width") = sh.outgassingMapWidth;
-		textureNode.append_attribute("height") = sh.outgassingMapHeight;
-		textureNode.append_attribute("ratio") = sh.outgassingFileRatio;
+		textureNode.append_attribute("width") = ogMap.outgassingMapWidth;
+		textureNode.append_attribute("height") = ogMap.outgassingMapHeight;
+		textureNode.append_attribute("ratio") = ogMap.outgassingFileRatio;
 		textureNode.append_attribute("totalDose") = totalDose;
 		textureNode.append_attribute("totalOutgassing") = sh.totalOutgassing;
 		textureNode.append_attribute("totalFlux") = totalFlux;
 
 		std::stringstream outgText; outgText << std::setprecision(8);
 		outgText << '\n'; //better readability in file
-		for (int iy = 0; iy < sh.outgassingMapHeight; iy++) {
-			for (int ix = 0; ix < sh.outgassingMapWidth; ix++) {
-				outgText << outgassingMap[iy*sh.outgassingMapWidth + ix] << '\t';
+		for (int iy = 0; iy < ogMap.outgassingMapHeight; iy++) {
+			for (int ix = 0; ix < ogMap.outgassingMapWidth; ix++) {
+				outgText << ogMap.outgassingMap[iy*ogMap.outgassingMapWidth + ix] << '\t';
 			}
 			outgText << '\n';
 		}
@@ -1206,7 +1206,7 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 * \param formatId ID that describes the seperator for the angle map string
 * \return string describing the angle map
 */
-std::string Facet::GetAngleMap(size_t formatId)
+std::string InterfaceFacet::GetAngleMap(size_t formatId)
 {
 	std::stringstream result; result << std::setprecision(8);
 	char separator;
@@ -1241,7 +1241,7 @@ std::string Facet::GetAngleMap(size_t formatId)
 * \brief Function that imports an angle map from a table
 * \param table reference of a 2D vector structure of strings
 */
-void Facet::ImportAngleMap(const std::vector<std::vector<std::string>>& table)
+void InterfaceFacet::ImportAngleMap(const std::vector<std::vector<std::string>>& table)
 {
 	size_t phiWidth, thetaLowerRes, thetaHigherRes;
 	double thetaLimit;
@@ -1368,7 +1368,7 @@ void Facet::ImportAngleMap(const std::vector<std::vector<std::string>>& table)
 * \brief Function that calculates a density correction factor [0..1] (with 1.0 = no correction)
 * \return correction factor value [0..1]
 */
-double Facet::DensityCorrection() {
+double InterfaceFacet::DensityCorrection() {
 	//Correction for double-density effect (measuring density on desorbing/absorbing facets):
 
 	//Normally a facet only sees half of the particles (those moving towards it). So it multiplies the "seen" density by two.
@@ -1388,10 +1388,10 @@ double Facet::DensityCorrection() {
 * \brief Serializes data from facet into a cereal binary archive
 * \param outputarchive reference to the binary archive
 */
-void Facet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchive) {
+void InterfaceFacet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchive) {
 
-		//std::vector<double> outgMapVector(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0);
-		//memcpy(outgMapVector.data(), outgassingMap, sizeof(double)*(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0));
+		//std::vector<double> outgMapVector(sh.useOutgassingFile ? ogMap.outgassingMapWidth*ogMap.outgassingMapHeight : 0);
+		//memcpy(outgMapVector.data(), outgassingMapWindow, sizeof(double)*(sh.useOutgassingFile ? ogMap.outgassingMapWidth*ogMap.outgassingMapHeight : 0));
         size_t mapSize = sh.anglemapParams.GetMapSize();
         std::vector<size_t> angleMapVector(mapSize);
         memcpy(angleMapVector.data(), angleMapCache, sh.anglemapParams.GetRecordedDataSize());
@@ -1435,9 +1435,9 @@ void Facet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchive) {
 			CEREAL_NVP(indices),
 			CEREAL_NVP(vertices2)
 #if defined(MOLFLOW)
-			, CEREAL_NVP(outgassingMap)
-			, CEREAL_NVP(angleMapVector)
-			, CEREAL_NVP(textIncVector)
+                , CEREAL_NVP(ogMap.outgassingMap)
+                , CEREAL_NVP(angleMapVector)
+                , CEREAL_NVP(textIncVector)
 #endif
 		);
 	

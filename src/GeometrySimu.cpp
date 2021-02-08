@@ -18,35 +18,38 @@ SuperStructure::~SuperStructure()
     aabbTree.reset();
 }
 
-bool SubprocessFacet::InitializeOnLoad(const size_t &id, const size_t &nbMoments, size_t &histogramTotalSize) {
+bool SubprocessFacet::InitializeOnLoad(const size_t &id, const size_t &nbMoments) {
     globalId = id;
     //ResizeCounter(nbMoments); //Initialize counter
     if (!InitializeLinkAndVolatile(id)) return false;
     InitializeOutgassingMap();
-    if (!InitializeAngleMap()) return false;
-    if (!InitializeTexture(nbMoments)) return false;
-    if (!InitializeProfile(nbMoments)) return false;
-    if (!InitializeDirectionTexture(nbMoments)) return false;
-    InitializeHistogram(nbMoments, histogramTotalSize);
+    InitializeAngleMap();
+    InitializeTexture(nbMoments);
+    InitializeProfile(nbMoments);
+    InitializeDirectionTexture(nbMoments);
+    InitializeHistogram(nbMoments);
 
     return true;
 }
 
-void SubprocessFacet::InitializeHistogram(const size_t &nbMoments, size_t &histogramTotalSize) const
+size_t SubprocessFacet::InitializeHistogram(const size_t &nbMoments) const
 {
-    FacetHistogramBuffer hist;
-    hist.Resize(sh.facetHistogramParams);
-
+    //FacetHistogramBuffer hist;
+    //hist.Resize(sh.facetHistogramParams);
     //tmpHistograms = std::vector<FacetHistogramBuffer>(1 + nbMoments, hist);
-    histogramTotalSize += (1 + nbMoments) *
+    size_t histSize = (1 + nbMoments) *
                                    (sh.facetHistogramParams.GetBouncesDataSize()
                                     + sh.facetHistogramParams.GetDistanceDataSize()
                                     + sh.facetHistogramParams.GetTimeDataSize());
+
+    return histSize;
 }
 
-bool SubprocessFacet::InitializeDirectionTexture(const size_t &nbMoments)
+size_t SubprocessFacet::InitializeDirectionTexture(const size_t &nbMoments)
 {
-    //Direction
+    size_t directionSize = 0;
+
+        //Direction
     if (sh.countDirection) {
         directionSize = sh.texWidth*sh.texHeight * sizeof(DirectionCell);
         try {
@@ -56,12 +59,14 @@ bool SubprocessFacet::InitializeDirectionTexture(const size_t &nbMoments)
             throw std::runtime_error("Not enough memory to load direction textures");
         }
     }
-    else directionSize = 0;
-    return true;
+    else
+        directionSize = 0;
+    return directionSize;
 }
 
-bool SubprocessFacet::InitializeProfile(const size_t &nbMoments)
-{
+size_t SubprocessFacet::InitializeProfile(const size_t &nbMoments)
+{    size_t profileSize = 0;
+
     //Profiles
     if (sh.isProfile) {
         profileSize = PROFILE_SIZE * sizeof(ProfileSlice);
@@ -73,43 +78,47 @@ bool SubprocessFacet::InitializeProfile(const size_t &nbMoments)
             return false;
         }
     }
-    else profileSize = 0;
-    return true;
+    else
+        profileSize = 0;
+    return profileSize;
 }
 
-bool SubprocessFacet::InitializeTexture(const size_t &nbMoments)
+size_t SubprocessFacet::InitializeTexture(const size_t &nbMoments)
 {
+    size_t textureSize = 0;
     //Textures
     if (sh.isTextured) {
         size_t nbE = sh.texWidth*sh.texHeight;
         largeEnough.resize(nbE);
         textureSize = nbE * sizeof(TextureCell);
-        try {
-            //texture = std::vector<std::vector<TextureCell>>(1 + nbMoments, std::vector<TextureCell>(nbE));
+        /*try {
+            texture = std::vector<std::vector<TextureCell>>(1 + nbMoments, std::vector<TextureCell>(nbE));
         }
         catch (...) {
             throw std::runtime_error("Not enough memory to load textures");
             return false;
-        }
-        fullSizeInc = (sh.texWidthD * sh.texHeightD) / (sh.U.Norme() * sh.V.Norme());
+        }*/
+        // Texture increment of a full texture element
+        double fullSizeInc = (sh.texWidthD * sh.texHeightD) / (sh.U.Norme() * sh.V.Norme());
         for (size_t j = 0; j < nbE; j++) { //second pass, filter out very small cells
             largeEnough[j] = textureCellIncrements[j] < (5.0*fullSizeInc);
         }
 
-        iw = 1.0 / (double)sh.texWidthD;
-        ih = 1.0 / (double)sh.texHeightD;
-        rw = sh.U.Norme() * iw;
-        //rh = sh.V.Norme() * ih;
+        //double iw = 1.0 / (double)sh.texWidthD;
+        //double ih = 1.0 / (double)sh.texHeightD;
+        //double rw = sh.U.Norme() * iw;
+        //double rh = sh.V.Norme() * ih;
     }
-    else textureSize = 0;
-    return true;
+    else
+        textureSize = 0;
+    return textureSize;
 }
 
 
-bool SubprocessFacet::InitializeAngleMap()
+size_t SubprocessFacet::InitializeAngleMap()
 {
     //Incident angle map
-    angleMapSize = 0;
+    size_t angleMapSize = 0;
     if (sh.desorbType == DES_ANGLEMAP) { //Use mode
         //if (angleMapCache.empty()) throw Error(("Facet " + std::to_string(globalId + 1) + ": should generate by angle map but has none recorded.").c_str());
 
@@ -193,21 +202,21 @@ bool SubprocessFacet::InitializeAngleMap()
 
     if(sh.anglemapParams.record)
         angleMapSize += sh.anglemapParams.GetDataSize();
-    return true;
+    return angleMapSize;
 }
 
 void SubprocessFacet::InitializeOutgassingMap()
 {
     if (sh.useOutgassingFile) {
         //Precalc actual outgassing map width and height for faster generation:
-        outgassingMapWidthD = sh.U.Norme() * sh.outgassingFileRatio;
-        outgassingMapHeightD = sh.V.Norme() * sh.outgassingFileRatio;
-        size_t nbE = sh.outgassingMapWidth*sh.outgassingMapHeight;
+        ogMap.outgassingMapWidthD = sh.U.Norme() * ogMap.outgassingFileRatio;
+        ogMap.outgassingMapHeightD = sh.V.Norme() * ogMap.outgassingFileRatio;
+        size_t nbE = ogMap.outgassingMapWidth*ogMap.outgassingMapHeight;
         // TODO: Check with molflow_threaded e10c2a6f and 66b89ac7 if right
         // making a copy shouldn't be necessary as i will never get changed before use
-        //outgassingMap = facetRef->outgassingMap; //init by copying pdf
+        //outgassingMapWindow = facetRef->outgassingMapWindow; //init by copying pdf
         for (size_t i = 1; i < nbE; i++) {
-            outgassingMap[i] = outgassingMap[i - 1] + outgassingMap[i]; //Convert p.d.f to cumulative distr.
+            ogMap.outgassingMap[i] = ogMap.outgassingMap[i - 1] + ogMap.outgassingMap[i]; //Convert p.d.f to cumulative distr.
         }
     }
 }
@@ -241,24 +250,18 @@ void SubprocessFacet::ResizeCounter(size_t nbMoments) {
 /**
 * \brief Constructor for cereal initialization
 */
-SubprocessFacet::SubprocessFacet() : sh(0) {
-    // Empty constructor for use with cereal
+SubprocessFacet::SubprocessFacet() : Facet() {
+    isReady = false;
+    globalId = 0;
 }
 
 /**
 * \brief Constructor with initialisation based on the number of indices/facets
 * \param nbIndex number of indices/facets
 */
-SubprocessFacet::SubprocessFacet(size_t nbIndex) : sh(nbIndex) {
-
+SubprocessFacet::SubprocessFacet(size_t nbIndex) : Facet(nbIndex) {
         indices.resize(nbIndex);                    // Ref to Geometry Vector3d
         vertices2.resize(nbIndex);
-        //wp.isOpaque = true;
-
-#if defined(MOLFLOW)
-        //outgassingMap = NULL;
-#endif
-
 }
 
 /**
@@ -284,7 +287,7 @@ size_t SubprocessFacet::GetMemSize() const {
     sum += sizeof (Vector2d) * vertices2.capacity();
     sum += sizeof (double) * textureCellIncrements.capacity();
     sum += sizeof (bool) * largeEnough.capacity();
-    sum += sizeof (double) * outgassingMap.capacity();
+    sum += sizeof (double) * ogMap.outgassingMap.capacity();
     sum += angleMap.GetMemSize();
     return sum;
 }

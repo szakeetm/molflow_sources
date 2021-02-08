@@ -265,14 +265,6 @@ int Initializer::initSimModel(SimulationModel* model) {
 
     model->structures.resize(model->sh.nbSuper); //Create structures
 
-
-    //TODO: Globalize Size values
-    size_t angleMapTotalSize = 0;
-    size_t dirTotalSize = 0;
-    size_t profTotalSize = 0;
-    size_t textTotalSize = 0;
-    size_t histogramTotalSize = 0;
-
     bool hasVolatile = false;
 
     auto& loadFacets = model->facets;
@@ -304,13 +296,7 @@ int Initializer::initSimModel(SimulationModel* model) {
         sFac.textureCellIncrements = textIncVector;
 
         //Some initialization
-        if (!sFac.InitializeOnLoad(facIdx, model->tdParams.moments.size(), histogramTotalSize)) return false;
-        // Increase size counters
-        //histogramTotalSize += 0;
-        angleMapTotalSize += sFac.angleMapSize;
-        dirTotalSize += sFac.directionSize* (1 + model->tdParams.moments.size());
-        profTotalSize += sFac.profileSize* (1 + model->tdParams.moments.size());
-        textTotalSize += sFac.textureSize* (1 + model->tdParams.moments.size());
+        if (!sFac.InitializeOnLoad(facIdx, model->tdParams.moments.size())) return false;
 
         hasVolatile |= sFac.sh.isVolatile;
 

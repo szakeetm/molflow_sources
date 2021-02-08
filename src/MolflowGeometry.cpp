@@ -91,7 +91,7 @@ size_t MolflowGeometry::GetGeometrySize() {
 
 		memoryUsage += sizeof(size_t); //ID size
 		memoryUsage += 2*sizeof(bool); //logX,logY interpolation flags
-		memoryUsage += i.values.size() * 2 * sizeof(double);
+		memoryUsage += i.GetSize() * 2 * sizeof(double);
 	}
 
 	//Parameters
@@ -138,7 +138,7 @@ size_t MolflowGeometry::GetMaxElemNumber() {
 
 	size_t nbElem = 0;
 	for (size_t i = 0; i < sh.nbFacet; i++) {
-		Facet *f = facets[i];
+		InterfaceFacet *f = facets[i];
 		if (f->cellPropertiesIds) nbElem += f->sh.texWidth*f->sh.texHeight;
 		else          return 0;
 	}
@@ -172,9 +172,9 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 	sh.nbSuper = 1;
 	strName[0] = strdup("Pipe");
 
-	if (!(facets = (Facet **)malloc(sh.nbFacet * sizeof(Facet *))))
+	if (!(facets = (InterfaceFacet **)malloc(sh.nbFacet * sizeof(InterfaceFacet *))))
 		throw Error("Couldn't allocate memory for facets");
-	memset(facets, 0, sh.nbFacet * sizeof(Facet *));
+	memset(facets, 0, sh.nbFacet * sizeof(InterfaceFacet *));
 
 	// Vertices
 	for (int i = 0; i < step; i++) {
@@ -189,14 +189,14 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 
 	try {
 		// Cap facet
-		facets[0 + nbTF] = new Facet(step);
+		facets[0 + nbTF] = new InterfaceFacet(step);
 		facets[0 + nbTF]->sh.sticking = 1.0;
 		facets[0 + nbTF]->sh.desorbType = DES_COSINE;
 		facets[0 + nbTF]->sh.outgassing = 1.0;
 		for (int i = 0; i < step; i++)
 			facets[0 + nbTF]->indices[i] = 2 * i + nbTV;
 
-		facets[1 + nbTF] = new Facet(step);
+		facets[1 + nbTF] = new InterfaceFacet(step);
 		facets[1 + nbTF]->sh.sticking = 1.0;
 		facets[1 + nbTF]->sh.desorbType = DES_NONE;
 		for (int i = 0; i < step; i++)
@@ -204,7 +204,7 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 
 		// Wall facet
 		for (int i = 0; i < step; i++) {
-			facets[i + 2 + nbTF] = new Facet(4);
+			facets[i + 2 + nbTF] = new InterfaceFacet(4);
 			//facets[i + 2 + nbTF]->wp.reflection.diffusePart = 1.0; //constructor does this already
 			//facets[i + 2 + nbTF]->wp.reflection.specularPart = 0.0; //constructor does this already
 			facets[i + 2 + nbTF]->sh.sticking = s;
@@ -241,7 +241,7 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 				vertices3[idx + 3].y = -R;
 				vertices3[idx + 3].z = z;
 
-				facets[9 * d + i] = new Facet(4);
+				facets[9 * d + i] = new InterfaceFacet(4);
 				facets[9 * d + i]->sh.sticking = 0.0;
 				facets[9 * d + i]->sh.opacity = 0.0;
 				facets[9 * d + i]->sh.isVolatile = true;
@@ -405,8 +405,8 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 	file->ReadKeyword("}");
 
 	// Reallocate memory
-	facets = (Facet **)realloc(facets, (nbNewFacets + sh.nbFacet) * sizeof(Facet **));
-	memset(facets + sh.nbFacet, 0, nbNewFacets * sizeof(Facet *));
+	facets = (InterfaceFacet **)realloc(facets, (nbNewFacets + sh.nbFacet) * sizeof(InterfaceFacet **));
+	memset(facets + sh.nbFacet, 0, nbNewFacets * sizeof(InterfaceFacet *));
 
 	vertices3.resize(nbNewVertex + sh.nbVertex);
 
@@ -473,7 +473,7 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 			throw Error(errMsg);
 		}
 
-		facets[i] = new Facet(nb);
+		facets[i] = new InterfaceFacet(nb);
 		facets[i]->LoadSYN(file, version2, nbNewVertex);
 		facets[i]->selected = true;
 		for (size_t j = 0; j < nb; j++)
@@ -533,7 +533,7 @@ void MolflowGeometry::SaveProfileGEO(FileWriter *file, GlobalSimuState &globStat
 
 		for (int j = 0; j < PROFILE_SIZE; j++) {
 			for (int i = 0; i < nbProfile; i++) { //doesn't execute when crashSave or saveSelected...
-				Facet *f = GetFacet(profileFacet[i]);
+				InterfaceFacet *f = GetFacet(profileFacet[i]);
 				const std::vector<ProfileSlice>& pr = globState.facetStates[profileFacet[i]].momentResults[m].profile;
 				//char tmp2[128];
 				file->Write(static_cast<size_t>(pr[j].countEquiv), "\t"); //Backwards compatibility
@@ -579,7 +579,7 @@ void MolflowGeometry::LoadProfileGEO(FileReader *file, GlobalSimuState &globStat
 
 		for (int j = 0; j < PROFILE_SIZE; j++) {
 			for (int i = 0; i < nbProfile; i++) {
-				Facet *f = GetFacet(profileFacet[i]);
+				InterfaceFacet *f = GetFacet(profileFacet[i]);
 				std::vector<ProfileSlice>& pr = globState.facetStates[profileFacet[i]].momentResults[m].profile;
 				pr[j].countEquiv = static_cast<double>(file->ReadSizeT());
 				if (version >= 13) pr[j].sum_1_per_ort_velocity = file->ReadDouble();
@@ -796,8 +796,8 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 	file->ReadKeyword("}");
 
 	// Allocate memory
-	facets = (Facet **)malloc(sh.nbFacet * sizeof(Facet *));
-	memset(facets, 0, sh.nbFacet * sizeof(Facet *));
+	facets = (InterfaceFacet **)malloc(sh.nbFacet * sizeof(InterfaceFacet *));
+	memset(facets, 0, sh.nbFacet * sizeof(InterfaceFacet *));
 	std::vector<InterfaceVertex>(sh.nbVertex).swap(vertices3);
 
 	// Read vertices
@@ -879,7 +879,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 			throw Error(errMsg);
 		}
 		prg->SetProgress((float)i / sh.nbFacet);
-		facets[i] = new Facet(nbI);
+		facets[i] = new InterfaceFacet(nbI);
 		facets[i]->LoadGEO(file, *version, sh.nbVertex);
 		file->ReadKeyword("}");
 	}
@@ -894,7 +894,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 	for (int i = 0; i < sh.nbFacet; i++) {
 		double p = (double)i / (double)sh.nbFacet;
 		prg->SetProgress(p);
-		Facet *f = facets[i];
+		InterfaceFacet *f = facets[i];
 		if (!f->SetTexture(f->sh.texWidthD, f->sh.texHeightD, f->hasMesh)) {
 			char errMsg[512];
 			sprintf(errMsg, "Not enough memory to build mesh on Facet %d. ", i + 1);
@@ -1060,8 +1060,8 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
 	file->ReadKeyword("}");
 
 	// Allocate memory
-	facets = (Facet **)malloc(sh.nbFacet * sizeof(Facet *));
-	memset(facets, 0, sh.nbFacet * sizeof(Facet *));
+	facets = (InterfaceFacet **)malloc(sh.nbFacet * sizeof(InterfaceFacet *));
+	memset(facets, 0, sh.nbFacet * sizeof(InterfaceFacet *));
 	vertices3.resize(sh.nbVertex); vertices3.shrink_to_fit();
 
 	// Read vertices
@@ -1141,7 +1141,7 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
 			throw Error(errMsg);
 		}
 		prg->SetProgress((float)i / sh.nbFacet);
-		facets[i] = new Facet(nbI);
+		facets[i] = new InterfaceFacet(nbI);
 		facets[i]->LoadSYN(file, *version, sh.nbVertex);
 		file->ReadKeyword("}");
 	}
@@ -1157,7 +1157,7 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
 	for (int i = 0; i < sh.nbFacet; i++) {
 		double p = (double)i / (double)sh.nbFacet;
 		prg->SetProgress(p);
-		Facet *f = facets[i];
+		InterfaceFacet *f = facets[i];
 		//f->SetTexture(f->wp.texWidthD,f->wp.texHeightD,f->hasMesh);
 		BuildFacetList(f);
 		//double nU = &(f->wp.U).Norme();
@@ -1238,7 +1238,7 @@ bool MolflowGeometry::LoadTexturesGEO(FileReader *file, GLProgress *prg, GlobalS
 				//}
 
 				for (int i = 0; i < sh.nbFacet; i++) {
-					Facet *f = facets[i];
+					InterfaceFacet *f = facets[i];
 					if (f->hasMesh/* || version<8*/) {
 						prg->SetProgress((double)(i + m * sh.nbFacet) / (double)(mApp->worker.moments.size()*sh.nbFacet)*0.33 + 0.66);
 						file->ReadKeyword("texture_facet");
@@ -1557,7 +1557,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, GlobalSimuState
 		file->Write(tmp);
 		for (size_t i = 0; i < sh.nbFacet; i++) {
 			prg->SetProgress((double)(i + m * sh.nbFacet) / (double)(mApp->worker.moments.size()*sh.nbFacet)*0.33 + 0.66);
-			Facet *f = facets[i];
+			InterfaceFacet *f = facets[i];
 			if (f->hasMesh) {
 				size_t h = f->sh.texHeight;
 				size_t w = f->sh.texWidth;
@@ -1621,7 +1621,7 @@ void MolflowGeometry::SaveTXT(FileWriter *file, GlobalSimuState &globState, bool
 
 	// Facets
 	for (int i = 0; i < sh.nbFacet; i++) {
-		Facet *f = facets[i];
+		InterfaceFacet *f = facets[i];
 		int j;
 		if (saveSelected) {
 			if (f->selected) {
@@ -1643,7 +1643,7 @@ void MolflowGeometry::SaveTXT(FileWriter *file, GlobalSimuState &globState, bool
 	for (int i = 0; i < sh.nbFacet; i++) {
 
 		// Update facet hits from shared mem
-		Facet *f = facets[i];
+		InterfaceFacet *f = facets[i];
 		/*FacetHitBuffer *shF = (FacetHitBuffer *)(buffer + f->wp.hitOffset);
 		memcpy(&(f->wp.tmpCounter), shF, sizeof(FacetHitBuffer));*/
 		if (saveSelected) {
@@ -1680,7 +1680,7 @@ MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, GlobalSimuSt
 		else fprintf(file, " moment %zd (%g s)[w=%g]{\n", m, mApp->worker.moments[m - 1].first,mApp->worker.moments[m - 1].second);
 		// Facets
 		for (size_t fInd = 0; fInd < sh.nbFacet; fInd++) {
-			Facet *f = facets[fInd];
+			InterfaceFacet *f = facets[fInd];
 
 			if (f->selected) {
 				if (grouping == 0) fprintf(file, "FACET%lu\n", fInd + 1u); //mode 10: special ANSYS export
@@ -1865,7 +1865,7 @@ void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, Worker *worker) {
 		// Facets
 
 		for (int i = 0; i < sh.nbFacet; i++) {
-			Facet *f = facets[i];
+			InterfaceFacet *f = facets[i];
 
 			if (f->selected) {
 				std::ostringstream line;
@@ -1957,11 +1957,11 @@ void MolflowGeometry::ImportDesorption_DES(FileReader *file) {
 		double nV = f->wp.V.Norme();
 		size_t w = f->wp.outgassingMapWidth = (size_t)ceil(nU*ratio); //double precision written to file
 		size_t h = f->wp.outgassingMapHeight = (size_t)ceil(nV*ratio); //double precision written to file
-		f->outgassingMap = (double*)malloc(w*h*sizeof(double));
-		if (!f->outgassingMap) throw Error("Not enough memory to store outgassing map.");
+		f->outgassingMapWindow = (double*)malloc(w*h*sizeof(double));
+		if (!f->outgassingMapWindow) throw Error("Not enough memory to store outgassing map.");
 		for (int i = 0; i < w; i++) {
 			for (int j = 0; j < h; j++) {
-				f->outgassingMap[i + j*w] = file->ReadDouble();
+				f->outgassingMapWindow[i + j*w] = file->ReadDouble();
 			}
 		}
 		file->ReadKeyword("}");
@@ -2081,7 +2081,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 	for (size_t i = 0; i < Min(nbNewFacet, GetNbFacet()); i++) {
 		prg->SetProgress(0.5 + 0.5*(double)i / (double)Min(nbNewFacet, GetNbFacet()));
 		if (!IsZero(xdims[i])) { //has texture
-			Facet *f = GetFacet(i);
+			InterfaceFacet *f = GetFacet(i);
 
 			if (f->selected) {
 				f->hasOutgassingFile = true;
@@ -2102,13 +2102,13 @@ void MolflowGeometry::ImportDesorption_SYN(
 			file->ReadKeyword("{");
 
 			size_t ix, iy;
-			f->sh.outgassingMapWidth = (size_t)ceil(xdims[i] * 0.9999999);
-			f->sh.outgassingMapHeight = (size_t)ceil(ydims[i] * 0.9999999);
+			f->ogMap.outgassingMapWidth = (size_t)ceil(xdims[i] * 0.9999999);
+			f->ogMap.outgassingMapHeight = (size_t)ceil(ydims[i] * 0.9999999);
 
 			if (f->selected) {
-				f->sh.outgassingFileRatio = xdims[i] / f->sh.U.Norme();
+				f->ogMap.outgassingFileRatio = xdims[i] / f->sh.U.Norme();
 				try {
-					std::vector<double>(f->sh.outgassingMapWidth*f->sh.outgassingMapHeight).swap(f->outgassingMap);
+					std::vector<double>(f->ogMap.outgassingMapWidth*f->ogMap.outgassingMapHeight).swap(f->ogMap.outgassingMap);
 				}
 				catch (...) {
 					throw Error("Not enough memory to store outgassing map.");
@@ -2123,13 +2123,13 @@ void MolflowGeometry::ImportDesorption_SYN(
 				file->ReadKeyword("height"); file->ReadKeyword(":"); texHeight_file = file->ReadInt();
 			}
 			else {
-				texWidth_file = f->sh.outgassingMapWidth;
-				texHeight_file = f->sh.outgassingMapHeight;
+				texWidth_file = f->ogMap.outgassingMapWidth;
+				texHeight_file = f->ogMap.outgassingMapHeight;
 			}
 
-			for (iy = 0; iy < (Min(f->sh.outgassingMapHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
-				for (ix = 0; ix < (Min(f->sh.outgassingMapWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
-					size_t index = iy * f->sh.outgassingMapWidth + ix;
+			for (iy = 0; iy < (Min(f->ogMap.outgassingMapHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
+				for (ix = 0; ix < (Min(f->ogMap.outgassingMapWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
+					size_t index = iy * f->ogMap.outgassingMapWidth + ix;
 					//Read original values
 					size_t MC = file->ReadSizeT();
 					double cellArea = 1.0;
@@ -2164,17 +2164,17 @@ void MolflowGeometry::ImportDesorption_SYN(
 							}
 						}
 						//Apply outgassing
-						//f->outgassingMap[index] = outgassing *MBARLS_TO_PAM3S; //0.1: mbar*l/s->Pa*m3/s
-						f->outgassingMap[index] = outgassing * 1.38E-23 * f->sh.temperature; //1[Pa*m3/s] = kT [particles/sec]
+						//f->outgassingMapWindow[index] = outgassing *MBARLS_TO_PAM3S; //0.1: mbar*l/s->Pa*m3/s
+						f->ogMap.outgassingMap[index] = outgassing * 1.38E-23 * f->sh.temperature; //1[Pa*m3/s] = kT [particles/sec]
 
 						//Facet diagnostic info
 						f->totalDose += flux * time;
 						f->totalFlux += flux;
-						f->sh.totalOutgassing += f->outgassingMap[index];
+						f->sh.totalOutgassing += f->ogMap.outgassingMap[index];
 
 					} //if selected
 				}
-				for (size_t ie = 0; ie < texWidth_file - f->sh.outgassingMapWidth; ie++) {//Executed if file texture is bigger than expected texture
+				for (size_t ie = 0; ie < texWidth_file - f->ogMap.outgassingMapWidth; ie++) {//Executed if file texture is bigger than expected texture
 					//Read extra cells from file without doing anything
 					//Read original values
 					file->ReadSizeT(); //MC
@@ -2183,7 +2183,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 					file->ReadDouble(); //power
 				}
 			}
-			for (size_t ie = 0; ie < texHeight_file - f->sh.outgassingMapHeight; ie++) {//Executed if file texture is bigger than expected texture
+			for (size_t ie = 0; ie < texHeight_file - f->ogMap.outgassingMapHeight; ie++) {//Executed if file texture is bigger than expected texture
 				//Read extra cells ffrom file without doing anything
 				for (size_t iw = 0; iw < texWidth_file; iw++) {
 					//Read original values
@@ -2638,7 +2638,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSi
 		xml_node facetResultsNode = newMoment.append_child("FacetResults");
 
 		for (int i = 0; i < sh.nbFacet; i++) {
-			Facet *f = GetFacet(i);
+			InterfaceFacet *f = GetFacet(i);
 			xml_node newFacetResult = facetResultsNode.append_child("Facet");
 			newFacetResult.append_attribute("id") = i;
 
@@ -2893,8 +2893,8 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 
 	//Facets
 	sh.nbFacet = geomNode.child("Facets").select_nodes("Facet").size();
-	facets = (Facet **)malloc(sh.nbFacet * sizeof(Facet *));
-	memset(facets, 0, sh.nbFacet * sizeof(Facet *));
+	facets = (InterfaceFacet **)malloc(sh.nbFacet * sizeof(InterfaceFacet *));
+	memset(facets, 0, sh.nbFacet * sizeof(InterfaceFacet *));
 	idx = 0;
 	bool ignoreSumMismatch = false;
 	for (xml_node facetNode : geomNode.child("Facets").children("Facet")) {
@@ -2905,7 +2905,7 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 			throw Error(errMsg);
 		}
 
-		facets[idx] = new Facet(nbIndex);
+		facets[idx] = new InterfaceFacet(nbIndex);
 		facets[idx]->LoadXML(facetNode, sh.nbVertex, isMolflowFile, ignoreSumMismatch);
 
 		if (isMolflowFile) {
@@ -3101,7 +3101,7 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 		double p = (double)i / (double)sh.nbFacet;
 
 		progressDlg->SetProgress(p);
-		Facet *f = facets[i];
+		InterfaceFacet *f = facets[i];
 		if (!f->SetTexture(f->sh.texWidthD, f->sh.texHeightD, f->hasMesh)) {
 			char errMsg[512];
 			sprintf(errMsg, "Not enough memory to build mesh on Facet %zd. ", i + 1);
@@ -3142,8 +3142,8 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 	size_t nbNewFacets = geomNode.child("Facets").select_nodes("Facet").size();
 
 	// reallocate memory
-	facets = (Facet **)realloc(facets, (nbNewFacets + sh.nbFacet) * sizeof(Facet **));
-	memset(facets + sh.nbFacet, 0, nbNewFacets * sizeof(Facet *));
+	facets = (InterfaceFacet **)realloc(facets, (nbNewFacets + sh.nbFacet) * sizeof(InterfaceFacet **));
+	memset(facets + sh.nbFacet, 0, nbNewFacets * sizeof(InterfaceFacet *));
 
 	/*
 	InterfaceVertex *tmp_vertices3 = (InterfaceVertex *)malloc((nbNewVertex + wp.nbVertex) * sizeof(InterfaceVertex));
@@ -3214,7 +3214,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 			sprintf(errMsg, "Facet %zd has only %zd vertices. ", idx + 1, nbIndex);
 			throw Error(errMsg);
 		}
-		facets[idx] = new Facet(nbIndex);
+		facets[idx] = new InterfaceFacet(nbIndex);
 		facets[idx]->LoadXML(facetNode, sh.nbVertex + nbNewVertex, isMolflowFile, ignoreSumMismatch, sh.nbVertex);
 		facets[idx]->selected = true;
 
@@ -3334,7 +3334,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 		double p = (double)(sh.nbFacet-i) / (double)nbNewFacets;
 
 		progressDlg->SetProgress(p);
-		Facet *f = facets[i];
+		InterfaceFacet *f = facets[i];
 		if (!f->SetTexture(f->sh.texWidthD, f->sh.texHeightD, f->hasMesh)) {
 			char errMsg[512];
 			sprintf(errMsg, "Not enough memory to build mesh on Facet %zd. ", i + 1);
@@ -3515,7 +3515,7 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState 
 		xml_node facetResultsNode = newMoment.child("FacetResults");
 		for (xml_node newFacetResult : facetResultsNode.children("Facet")) {
 			int facetId = newFacetResult.attribute("id").as_int();
-			Facet* f = GetFacet(facetId);
+			InterfaceFacet* f = GetFacet(facetId);
 			xml_node facetHitNode = newFacetResult.child("Hits");
 			FacetHitBuffer& facetCounter = globState.facetStates[facetId].momentResults[m].hits;
 			if (facetHitNode) { //If there are hit results for the current moment	
