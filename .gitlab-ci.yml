@@ -26,7 +26,7 @@ build-windows-master:
     - Set-Variable -Name "outputpath" -Value ($buildpath + "\bin\win\release")
     - echo $FNAME
     - New-Item -Path ("C:\" + ($APP_NAME_CAPS) + "_CI") -Name $FNAME -ItemType "directory" -Force
-    - Copy-Item $outputpath -Destination ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\") -Recurse -Force
+    - Copy-Item  (($outputpath) + "\*") -Destination ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\") -Recurse -Force
   after_script:
     - echo "Finished"
   tags:
