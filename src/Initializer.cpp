@@ -8,7 +8,6 @@
 #include "ParameterParser.h"
 
 namespace Settings {
-    double nbCPUCores = 0;
     size_t nbThreads = 0;
     uint64_t simDuration = 10;
     uint64_t autoSaveDuration = 600; // default: autosave every 600s=10min
@@ -77,8 +76,7 @@ int Initializer::parseCommands(int argc, char** argv) {
 
     std::vector<double> limits;
     // Define options
-    app.add_option("-j,--threads", Settings::nbThreads, "# threads per core");
-    app.add_option("-p,--procs", Settings::nbCPUCores, "# CPU cores");
+    app.add_option("-j,--threads", Settings::nbThreads, "# Threads to be deployed");
     app.add_option("-t,--time", Settings::simDuration, "Simulation duration in seconds");
     app.add_option("-d,--ndes", limits, "Desorption limit for simulation end");
     app.add_option("-f,--file", Settings::inputFile, "Required input file (XML only)")
@@ -96,7 +94,7 @@ int Initializer::parseCommands(int argc, char** argv) {
 
     //std::cout<<app.config_to_str(true,true);
 
-    std::cout << "Number used CPU cores: " << Settings::nbCPUCores << std::endl;
+    std::cout << "Number used threads: " << Settings::nbThreads << std::endl;
 
     // Save to inputfile
     if(Settings::outputFile.empty())
