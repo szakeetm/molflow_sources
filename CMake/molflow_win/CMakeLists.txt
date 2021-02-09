@@ -129,7 +129,7 @@ else()
 endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC shared_interface)
-target_link_libraries(${PROJECT_NAME} PUBLIC molflowSub)
+target_link_libraries(${PROJECT_NAME} PUBLIC molflowSim)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_1}
