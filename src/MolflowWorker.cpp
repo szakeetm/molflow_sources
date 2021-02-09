@@ -1222,14 +1222,9 @@ bool Worker::MolflowGeomToSimModel(){
         }
 
         //Some initialization
-        if (!sFac.InitializeOnLoad(facIdx, model.tdParams.moments.size())) return false;
-        // Increase size counters
-        //histogramTotalSize += 0;
-        /*angleMapTotalSize += sFac.angleMapSize;
-        dirTotalSize += sFac.directionSize* (1 + model.tdParams.moments.size());
-        profTotalSize += sFac.profileSize* (1 + model.tdParams.moments.size());
-        textTotalSize += sFac.textureSize* (1 + model.tdParams.moments.size());
-*/
+        if (!sFac.InitializeOnLoad(facIdx, model.tdParams.moments.size()))
+            return false;
+
         hasVolatile |= sFac.sh.isVolatile;
 
         if ((sFac.sh.superDest || sFac.sh.isVolatile) && ((sFac.sh.superDest - 1) >= model.sh.nbSuper || sFac.sh.superDest < 0)) {
@@ -1243,14 +1238,7 @@ bool Worker::MolflowGeomToSimModel(){
             return false;
         }
 
-/*        if (sFac.sh.superIdx == -1) { //Facet in all structures
-            for (auto& s : model.structures) {
-                s.facets.push_back(sFac);
-            }
-        }
-        else {
-            model.structures[sFac.sh.superIdx].facets.push_back(sFac); //Assign to structure
-        }*/
+        model.facets.push_back(sFac);
     }
     return true;
 }
