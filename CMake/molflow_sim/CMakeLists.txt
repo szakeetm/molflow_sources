@@ -94,6 +94,8 @@ set(SRC_FILES
         ${SIMU_DIR}/Particle.cpp
         ${SIMU_DIR}/Physics.cpp
         ${SIMU_DIR}/AnglemapGeneration.cpp
+        ${SIMU_DIR}/CDFGeneration.cpp
+        ${SIMU_DIR}/IDGeneration.cpp
 
         ${CPP_DIR_2}/IntersectAABB_shared.cpp
         ${CPP_DIR_2}/Polygon.cpp

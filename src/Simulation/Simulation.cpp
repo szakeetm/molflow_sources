@@ -159,21 +159,19 @@ size_t Simulation::LoadSimulation(SimulationModel *simModel, char *loadStatus) {
         auto& tmpResults = particle.tmpState;
 
         std::vector<FacetState>(simModel->sh.nbFacet).swap(tmpResults.facetStates);
-        for(auto& s : simModel->structures){
-            for(auto& sFac : s.facets){
-                size_t i = sFac.globalId;
-                if(!tmpResults.facetStates[i].momentResults.empty())
-                    continue; // Skip multiple init when facets exist in all structures
-                FacetMomentSnapshot facetMomentTemplate;
-                facetMomentTemplate.histogram.Resize(sFac.sh.facetHistogramParams);
-                facetMomentTemplate.direction = std::vector<DirectionCell>(sFac.sh.countDirection ? sFac.sh.texWidth*sFac.sh.texHeight : 0);
-                facetMomentTemplate.profile = std::vector<ProfileSlice>(sFac.sh.isProfile ? PROFILE_SIZE : 0);
-                facetMomentTemplate.texture = std::vector<TextureCell>(sFac.sh.isTextured ? sFac.sh.texWidth*sFac.sh.texHeight : 0);
-                //No init for hits
-                tmpResults.facetStates[i].momentResults = std::vector<FacetMomentSnapshot>(1 + simModel->tdParams.moments.size(), facetMomentTemplate);
-                if (sFac.sh.anglemapParams.record)
-                  tmpResults.facetStates[i].recordedAngleMapPdf = std::vector<size_t>(sFac.sh.anglemapParams.GetMapSize());
-            }
+        for(auto& sFac : simModel->facets){
+            size_t i = sFac.globalId;
+            if(!tmpResults.facetStates[i].momentResults.empty())
+                continue; // Skip multiple init when facets exist in all structures
+            FacetMomentSnapshot facetMomentTemplate;
+            facetMomentTemplate.histogram.Resize(sFac.sh.facetHistogramParams);
+            facetMomentTemplate.direction = std::vector<DirectionCell>(sFac.sh.countDirection ? sFac.sh.texWidth*sFac.sh.texHeight : 0);
+            facetMomentTemplate.profile = std::vector<ProfileSlice>(sFac.sh.isProfile ? PROFILE_SIZE : 0);
+            facetMomentTemplate.texture = std::vector<TextureCell>(sFac.sh.isTextured ? sFac.sh.texWidth*sFac.sh.texHeight : 0);
+            //No init for hits
+            tmpResults.facetStates[i].momentResults = std::vector<FacetMomentSnapshot>(1 + simModel->tdParams.moments.size(), facetMomentTemplate);
+            if (sFac.sh.anglemapParams.record)
+              tmpResults.facetStates[i].recordedAngleMapPdf = std::vector<size_t>(sFac.sh.anglemapParams.GetMapSize());
         }
 
         //Global histogram
@@ -193,17 +191,33 @@ size_t Simulation::LoadSimulation(SimulationModel *simModel, char *loadStatus) {
     if (simModel->otfParams.enableLogging)
         tmpParticleLog.reserve(simModel->otfParams.logLimit / simModel->otfParams.nbProcess);
 
+
+
+
+
+    std::vector<std::vector<SubprocessFacet*>> facetPointers;
+    facetPointers.resize(model.sh.nbSuper);
+    for (size_t s = 0; s < model.sh.nbSuper; ++s) {
+        for(auto& sFac : model.facets){
+            // TODO: Build structures
+            if (sFac.sh.superIdx == -1) { //Facet in all structures
+                for (auto& fp_vec : facetPointers) {
+                    fp_vec.push_back(&sFac);
+                }
+            }
+            else {
+                facetPointers[sFac.sh.superIdx].push_back(&sFac); //Assign to structure
+            }
+        }
+    }
     // Build all AABBTrees
     size_t maxDepth=0;
-    for (auto& s : simModel->structures) {
-        if(s.aabbTree) s.aabbTree.reset();
-        std::vector<SubprocessFacet*> facetPointers; facetPointers.reserve(s.facets.size());
-        for (auto& f : s.facets) {
-            facetPointers.push_back(&f);
-        }
-        AABBNODE* tree = BuildAABBTree(facetPointers, 0, maxDepth);
-        s.aabbTree = std::make_shared<AABBNODE>(*tree);
-        tree = nullptr;
+    for (size_t s = 0; s < model.sh.nbSuper; ++s) {
+        auto& structure = model.structures[s];
+        if(structure.aabbTree)
+            structure.aabbTree.reset();
+        AABBNODE* tree = BuildAABBTree(facetPointers[s], 0, maxDepth);
+        structure.aabbTree = std::make_shared<AABBNODE>(*tree);
         //delete tree; // pointer unnecessary because of make_shared
     }
     for(auto& particle : particles)

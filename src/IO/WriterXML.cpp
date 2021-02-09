@@ -112,18 +112,15 @@ int WriterXML::SaveSimulationState(const std::string& outputFileName, Simulation
         for (size_t i = 0; i < model->sh.nbFacet; i++) {
             SubprocessFacet* subFac = nullptr;
 
-            for(auto& s : model->structures){
-                for(auto& fac : s.facets){
-                    if(i == fac.globalId){
-                        subFac = &fac;
-                        break;
-                    }
+            for(auto& fac : model->facets){
+                if(i == fac.globalId){
+                    subFac = &fac;
+                    break;
                 }
-                if(subFac) break;
             }
 
             if(!subFac){
-                std::cerr << "Facet "<<i<< " not found in structures!" << std::endl;
+                std::cerr << "Facet "<<i<< " not found in model!" << std::endl;
                 continue;
             }
 

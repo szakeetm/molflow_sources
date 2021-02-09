@@ -1546,7 +1546,7 @@ bool FacetAdvParams::Apply() {
 		if (doAngleMapWidth) {
 			if (angleMapWidth != f->sh.anglemapParams.phiWidth) {
 				//Delete recorded map, will make a new
-				SAFE_FREE(f->angleMapCache);
+				f->angleMapCache.empty();
 				f->sh.anglemapParams.hasRecorded = false;
 				f->sh.anglemapParams.phiWidth = angleMapWidth;
 			}
@@ -1554,7 +1554,7 @@ bool FacetAdvParams::Apply() {
 		if (doAngleMapLowRes) {
 			if (angleMapLowRes != f->sh.anglemapParams.thetaLowerRes) {
 				//Delete recorded map, will make a new
-				SAFE_FREE(f->angleMapCache);
+                f->angleMapCache.empty();
 				f->sh.anglemapParams.hasRecorded = false;
 				f->sh.anglemapParams.thetaLowerRes = angleMapLowRes;
 			}
@@ -1562,7 +1562,7 @@ bool FacetAdvParams::Apply() {
 		if (doAngleMapHiRes) {
 			if (angleMapHiRes != f->sh.anglemapParams.thetaHigherRes) {
 				//Delete recorded map, will make a new
-				SAFE_FREE(f->angleMapCache);
+                f->angleMapCache.empty();
 				f->sh.anglemapParams.hasRecorded = false;
 				f->sh.anglemapParams.thetaHigherRes = angleMapHiRes;
 			}
@@ -1570,7 +1570,7 @@ bool FacetAdvParams::Apply() {
 		if (doAngleMapThetaLimit) {
 			if (!IsEqual(angleMapThetaLimit,f->sh.anglemapParams.thetaLimit)) {
 				//Delete recorded map, will make a new
-				SAFE_FREE(f->angleMapCache);
+                f->angleMapCache.empty();
 				f->sh.anglemapParams.hasRecorded = false;
 				f->sh.anglemapParams.thetaLimit = angleMapThetaLimit;
 			}

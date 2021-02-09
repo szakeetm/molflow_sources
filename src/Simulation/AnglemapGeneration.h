@@ -9,26 +9,25 @@
 #include <MolflowTypes.h>
 #include <GeometrySimu.h>
 
-class AnglemapGeneration {
-public:
-    static double GetTheta(const double &thetaIndex, const AnglemapParams &anglemapParams);
+namespace AnglemapGeneration {
+    double GetTheta(const double &thetaIndex, const AnglemapParams &anglemapParams);
 
-    static double GetPhi(const double &phiIndex, const AnglemapParams &anglemapParams);
+    double GetPhi(const double &phiIndex, const AnglemapParams &anglemapParams);
 
-    static double GetPhipdfValue(const double &thetaIndex, const int &phiLowerIndex,
+    double GetPhipdfValue(const double &thetaIndex, const int &phiLowerIndex,
                                  const AnglemapParams &anglemapParams, const std::vector<size_t> &angleMapPDF);
 
-    static double GetPhiCDFValue(const double &thetaIndex, const int &phiLowerIndex,
+    double GetPhiCDFValue(const double &thetaIndex, const int &phiLowerIndex,
                                  const AnglemapParams &anglemapParams, const Anglemap &anglemap);
 
-    static double GetPhiCDFSum(const double &thetaIndex, const AnglemapParams &anglemapParams,
+    double GetPhiCDFSum(const double &thetaIndex, const AnglemapParams &anglemapParams,
                                const Anglemap &anglemap);
 
-    static std::tuple<double, int, double>
+    std::tuple<double, int, double>
     GenerateThetaFromAngleMap(const AnglemapParams &anglemapParams, const Anglemap &anglemap,
-                              const double lookupValue);
+                              double lookupValue);
 
-    static double GeneratePhiFromAngleMap(const int &thetaLowerIndex, const double &thetaOvershoot,
+    double GeneratePhiFromAngleMap(const int &thetaLowerIndex, const double &thetaOvershoot,
                                           const AnglemapParams &anglemapParams, Anglemap &anglemap,
                                           const std::vector<size_t> &angleMapPDF,
                                           double lookupValue);

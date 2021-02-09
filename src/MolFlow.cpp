@@ -1240,7 +1240,7 @@ void MolFlow::ClearAngleMapsOnSelection() {
 		for (size_t i = 0; i < geom->GetNbFacet(); i++) {
 			InterfaceFacet* f = geom->GetFacet(i);
 			if (f->selected && f->sh.anglemapParams.hasRecorded) {
-				SAFE_FREE(f->angleMapCache);
+				f->angleMapCache.clear();
 				f->sh.anglemapParams.hasRecorded = false;
 			}
 		}

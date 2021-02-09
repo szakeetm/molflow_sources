@@ -123,8 +123,6 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
 
     std::cout << "[LoadGeom] Loaded geometry of " << model->size() << " bytes!" << std::endl;
 
-    model->facets = std::move(loader.loadFacets);
-
     // 2. Create simulation dataports
     try {
         simManager->ResetSimulations();
@@ -307,15 +305,6 @@ int Initializer::initSimModel(SimulationModel* model) {
             //SetErrorSub(err.str().c_str());
             std::cerr << err.str() << std::endl;
             return 1;
-        }
-
-        if (sFac.sh.superIdx == -1) { //Facet in all structures
-            for (auto& s : model->structures) {
-                s.facets.push_back(sFac);
-            }
-        }
-        else {
-            model->structures[sFac.sh.superIdx].facets.push_back(sFac); //Assign to structure
         }
     }
 

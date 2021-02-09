@@ -15,7 +15,7 @@ using namespace MFSim;
 
 bool Particle::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, DWORD timeout) {
     TEXTURE_MIN_MAX texture_limits_old[3];
-    int i, j, s, x, y;
+    int i, j, x, y;
 //#if defined(DEBUG)
     Chronometer timer;
     timer.Start();
@@ -108,58 +108,58 @@ bool Particle::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, DW
             lim.min.all = lim.min.moments_only = HITMAX;
         }
 
-        for (s = 0; s < model->sh.nbSuper; s++) {
-            for (const SubprocessFacet &f : model->structures[s].facets) {
-                if (f.sh.isTextured) {
-                    for (int m = 0; m < (1 + nbMoments); m++) {
-                        {
-                            // go on if the facet was never hit before
-                            auto &facetHitBuffer = globSimuState.facetStates[f.globalId].momentResults[m].hits;
-                            if (facetHitBuffer.hit.nbMCHit == 0 && facetHitBuffer.hit.nbDesorbed == 0) continue;
-                        }
 
-                        //double dCoef = globState.globalHits.globalHits.hit.nbDesorbed * 1E4 * model->wp.gasMass / 1000 / 6E23 * MAGIC_CORRECTION_FACTOR;  //1E4 is conversion from m2 to cm2
-                        const double timeCorrection =
-                                m == 0 ? model->wp.finalOutgassingRate : (model->wp.totalDesorbedMolecules) /
-                                                                         model->tdParams.moments[m - 1].second;
-                        //model->wp.timeWindowSize;
-                        //Timecorrection is required to compare constant flow texture values with moment values (for autoscaling)
-                        const auto &texture = globSimuState.facetStates[f.globalId].momentResults[m].texture;
-                        const size_t textureSize = texture.size();
-                        for (size_t t = 0; t < textureSize; t++) {
-                            //Add temporary hit counts
+        for (const SubprocessFacet &subF : model->facets) {
+            if (subF.sh.isTextured) {
+                for (size_t m = 0; m < (1 + nbMoments); m++) {
+                    {
+                        // go on if the facet was never hit before
+                        auto &facetHitBuffer = globSimuState.facetStates[subF.globalId].momentResults[m].hits;
+                        if (facetHitBuffer.hit.nbMCHit == 0 && facetHitBuffer.hit.nbDesorbed == 0) continue;
+                    }
 
-                            if (f.largeEnough[t]) {
-                                double val[3];  //pre-calculated autoscaling values (Pressure, imp.rate, density)
+                    //double dCoef = globState.globalHits.globalHits.hit.nbDesorbed * 1E4 * model->wp.gasMass / 1000 / 6E23 * MAGIC_CORRECTION_FACTOR;  //1E4 is conversion from m2 to cm2
+                    const double timeCorrection =
+                            m == 0 ? model->wp.finalOutgassingRate : (model->wp.totalDesorbedMolecules) /
+                                                                     model->tdParams.moments[m - 1].second;
+                    //model->wp.timeWindowSize;
+                    //Timecorrection is required to compare constant flow texture values with moment values (for autoscaling)
+                    const auto &texture = globSimuState.facetStates[subF.globalId].momentResults[m].texture;
+                    const size_t textureSize = texture.size();
+                    for (size_t t = 0; t < textureSize; t++) {
+                        //Add temporary hit counts
 
-                                val[0] = texture[t].sum_v_ort_per_area *
-                                         timeCorrection; //pressure without dCoef_pressure
-                                val[1] = texture[t].countEquiv * f.textureCellIncrements[t] *
-                                         timeCorrection; //imp.rate without dCoef
-                                val[2] = f.textureCellIncrements[t] * texture[t].sum_1_per_ort_velocity *
-                                         timeCorrection; //particle density without dCoef
+                        if (subF.largeEnough[t]) {
+                            double val[3];  //pre-calculated autoscaling values (Pressure, imp.rate, density)
 
-                                //Global autoscale
-                                for (int v = 0; v < 3; v++) {
-                                    limits[v].max.all = std::max(val[v],limits[v].max.all);
+                            val[0] = texture[t].sum_v_ort_per_area *
+                                     timeCorrection; //pressure without dCoef_pressure
+                            val[1] = texture[t].countEquiv * subF.textureCellIncrements[t] *
+                                     timeCorrection; //imp.rate without dCoef
+                            val[2] = subF.textureCellIncrements[t] * texture[t].sum_1_per_ort_velocity *
+                                     timeCorrection; //particle density without dCoef
 
-                                    if (val[v] > 0.0) {
-                                        limits[v].min.all = std::min(val[v],limits[v].min.all);
-                                    }
-                                    //Autoscale ignoring constant flow (moments only)
-                                    if (m != 0) {
-                                        limits[v].max.moments_only = std::max(val[v],limits[v].max.moments_only);;
+                            //Global autoscale
+                            for (int v = 0; v < 3; v++) {
+                                limits[v].max.all = std::max(val[v],limits[v].max.all);
 
-                                        if (val[v] > 0.0)
-                                            limits[v].min.moments_only = std::min(val[v],limits[v].min.moments_only);;
-                                    }
+                                if (val[v] > 0.0) {
+                                    limits[v].min.all = std::min(val[v],limits[v].min.all);
                                 }
-                            } // if largeenough
-                        }
+                                //Autoscale ignoring constant flow (moments only)
+                                if (m != 0) {
+                                    limits[v].max.moments_only = std::max(val[v],limits[v].max.moments_only);;
+
+                                    if (val[v] > 0.0)
+                                        limits[v].min.moments_only = std::min(val[v],limits[v].min.moments_only);;
+                                }
+                            }
+                        } // if largeenough
                     }
                 }
             }
         }
+
         // Last put temp limits into global struct
         for(int v = 0; v < 3; ++v) {
             globSimuState.globalHits.texture_limits[v] = limits[v];
@@ -203,18 +203,19 @@ void Particle::PerformTeleport(SubprocessFacet *iFacet) {
     } else destIndex = iFacet->sh.teleportDest - 1;
 
     //Look in which superstructure is the destination facet:
-    for (size_t i = 0; i < model->sh.nbSuper && (!found); i++) {
-        for (size_t j = 0; j < model->structures[i].facets.size() && (!found); j++) {
-            if (destIndex == model->structures[i].facets[j].globalId) {
-                destination = &(model->structures[i].facets[j]);
-                if (destination->sh.superIdx != -1) {
-                    structureId = destination->sh.superIdx; //change current superstructure, unless the target is a universal facet
-                }
-                teleportedFrom = (int) iFacet->globalId; //memorize where the particle came from
-                found = true;
+    size_t facId = 0;
+    for(auto& sFac : model->facets){
+        if (destIndex == static_cast<int>(sFac.globalId)) {
+            destination = &(sFac);
+            if (destination->sh.superIdx != -1) {
+                structureId = destination->sh.superIdx; //change current superstructure, unless the target is a universal facet
             }
+            teleportedFrom = static_cast<int>(iFacet->globalId); //memorize where the particle came from
+            found = true;
+            break;
         }
     }
+
     if (!found) {
         /*char err[128];
         sprintf(err, "Teleport destination of facet %d not found (facet %d does not exist)", iFacet->globalId + 1, iFacet->sh.teleportDest);
@@ -418,7 +419,6 @@ bool Particle::StartFromSource() {
     bool foundInMap = false;
     bool reverse;
     size_t mapPositionW, mapPositionH;
-    SubprocessFacet *src = nullptr;
     double srcRnd;
     double sumA = 0.0;
     size_t i = 0, j = 0;
@@ -436,67 +436,66 @@ bool Particle::StartFromSource() {
     // Select source
     srcRnd = randomGenerator.rnd() * model->wp.totalDesorbedMolecules;
 
-    while (!found && j < model->sh.nbSuper) { //Go through superstructures
-        i = 0;
-        while (!found && i < model->structures[j].facets.size()) { //Go through facets in a structure
-            const SubprocessFacet &f = model->structures[j].facets[i];
-            if (f.sh.desorbType != DES_NONE) { //there is some kind of outgassing
-                if (f.sh.useOutgassingFile) { //Using SynRad-generated outgassing map
-                    if (f.sh.totalOutgassing > 0.0) {
-                        found = (srcRnd >= sumA) && (srcRnd < (sumA + model->wp.latestMoment * f.sh.totalOutgassing /
-                                                                      (1.38E-23 * f.sh.temperature)));
-                        if (found) {
-                            //look for exact position in map
-                            double rndRemainder = (srcRnd - sumA) / model->wp.latestMoment * (1.38E-23 *
-                                                                                              f.sh.temperature); //remainder, should be less than f.sh.totalOutgassing
-                            /*double sumB = 0.0;
-                            for (w = 0; w < f.sh.outgassingMapWidth && !foundInMap; w++) {
-                                for (h = 0; h < f.sh.outgassingMapHeight && !foundInMap; h++) {
-                                    double cellOutgassing = f.outgassingMap[h*f.sh.outgassingMapWidth + w];
-                                    if (cellOutgassing > 0.0) {
-                                        foundInMap = (rndRemainder >= sumB) && (rndRemainder < (sumB + cellOutgassing));
-                                        if (foundInMap) mapPositionW = w; mapPositionH = h;
-                                        sumB += cellOutgassing;
-                                    }
+    i = 0;
+    for(auto& f : model->facets) { //Go through facets in a structure
+        if (f.sh.desorbType != DES_NONE) { //there is some kind of outgassing
+            if (f.sh.useOutgassingFile) { //Using SynRad-generated outgassing map
+                if (f.sh.totalOutgassing > 0.0) {
+                    found = (srcRnd >= sumA) && (srcRnd < (sumA + model->wp.latestMoment * f.sh.totalOutgassing /
+                                                                  (1.38E-23 * f.sh.temperature)));
+                    if (found) {
+                        //look for exact position in map
+                        double rndRemainder = (srcRnd - sumA) / model->wp.latestMoment * (1.38E-23 *
+                                                                                          f.sh.temperature); //remainder, should be less than f.sh.totalOutgassing
+                        /*double sumB = 0.0;
+                        for (w = 0; w < f.sh.outgassingMapWidth && !foundInMap; w++) {
+                            for (h = 0; h < f.sh.outgassingMapHeight && !foundInMap; h++) {
+                                double cellOutgassing = f.outgassingMap[h*f.sh.outgassingMapWidth + w];
+                                if (cellOutgassing > 0.0) {
+                                    foundInMap = (rndRemainder >= sumB) && (rndRemainder < (sumB + cellOutgassing));
+                                    if (foundInMap) mapPositionW = w; mapPositionH = h;
+                                    sumB += cellOutgassing;
                                 }
-                            }*/
-                            double lookupValue = rndRemainder;
-                            int outgLowerIndex = my_lower_bound(lookupValue,
-                                                                f.ogMap.outgassingMap); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
-                            outgLowerIndex++;
-                            mapPositionH = (size_t) ((double) outgLowerIndex / (double) f.ogMap.outgassingMapWidth);
-                            mapPositionW = (size_t) outgLowerIndex - mapPositionH * f.ogMap.outgassingMapWidth;
-                            foundInMap = true;
-                            /*if (!foundInMap) {
-                                SetErrorSub("Starting point not found in imported desorption map");
-                                return false;
-                            }*/
-                        }
-                        sumA += model->wp.latestMoment * f.sh.totalOutgassing / (1.38E-23 * f.sh.temperature);
+                            }
+                        }*/
+                        double lookupValue = rndRemainder;
+                        int outgLowerIndex = my_lower_bound(lookupValue,
+                                                            f.ogMap.outgassingMap); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
+                        outgLowerIndex++;
+                        mapPositionH = (size_t) ((double) outgLowerIndex / (double) f.ogMap.outgassingMapWidth);
+                        mapPositionW = (size_t) outgLowerIndex - mapPositionH * f.ogMap.outgassingMapWidth;
+                        foundInMap = true;
+                        /*if (!foundInMap) {
+                            SetErrorSub("Starting point not found in imported desorption map");
+                            return false;
+                        }*/
                     }
-                } //end outgassing file block
-                else { //constant or time-dependent outgassing
-                    double facetOutgassing =
-                            ((f.sh.outgassing_paramId >= 0)
-                             ? model->tdParams.IDs[f.sh.IDid].back().second
-                             : model->wp.latestMoment * f.sh.outgassing) / (1.38E-23 * f.sh.temperature);
-                    found = (srcRnd >= sumA) && (srcRnd < (sumA + facetOutgassing));
-                    sumA += facetOutgassing;
-                } //end constant or time-dependent outgassing block
-            } //end 'there is some kind of outgassing'
-            if (!found) i++;
-            if (f.sh.is2sided) reverse = randomGenerator.rnd() > 0.5;
-            else reverse = false;
-        }
-        if (!found) j++;
-    }
+                    sumA += model->wp.latestMoment * f.sh.totalOutgassing / (1.38E-23 * f.sh.temperature);
+                }
+            } //end outgassing file block
+            else { //constant or time-dependent outgassing
+                double facetOutgassing =
+                        ((f.sh.outgassing_paramId >= 0)
+                         ? model->tdParams.IDs[f.sh.IDid].back().second
+                         : model->wp.latestMoment * f.sh.outgassing) / (1.38E-23 * f.sh.temperature);
+                found = (srcRnd >= sumA) && (srcRnd < (sumA + facetOutgassing));
+                sumA += facetOutgassing;
+            } //end constant or time-dependent outgassing block
+        } //end 'there is some kind of outgassing'
+        if (!found) i++;
+        if (f.sh.is2sided) reverse = randomGenerator.rnd() > 0.5;
+        else reverse = false;
+
+        if(found) break;
+    } // facet loop
+
     if (!found) {
         std::cerr << "No starting point, aborting" << std::endl;
         //SetErrorSub("No starting point, aborting");
         return false;
     }
-    src = &(model->structures[j].facets[i]);
 
+    SubprocessFacet *src = &(model->facets[i]);
     lastHitFacet = src;
     //distanceTraveled = 0.0;  //for mean free path calculations
     //particleTime = desorptionStartTime + (desorptionStopTime - desorptionStartTime)*randomGenerator.rnd();
@@ -576,7 +575,7 @@ bool Particle::StartFromSource() {
         } else {
             tmpFacetVars[src->globalId].colU = 0.5;
             tmpFacetVars[src->globalId].colV = 0.5;
-            position = model->structures[j].facets[i].sh.center;
+            position = src->sh.center;
         }
 
     }

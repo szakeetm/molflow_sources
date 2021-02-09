@@ -306,10 +306,18 @@ void InterfaceFacet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bo
 
 			std::stringstream angleText;
 			angleText << angleMapNode.child_value("map");
-			angleMapCache = (size_t*)malloc(sh.anglemapParams.GetDataSize());
 
-			for (int iy = 0; iy < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); iy++) {
-				for (int ix = 0; ix < sh.anglemapParams.phiWidth; ix++) {
+            try {
+                angleMapCache.resize(sh.anglemapParams.GetMapSize());
+            }
+            catch(...) {
+                std::stringstream err;
+                err << "Not enough memory for incident angle map on facet ";
+                throw Error(err.str().c_str());
+            }
+
+			for (size_t iy = 0; iy < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); iy++) {
+				for (size_t ix = 0; ix < sh.anglemapParams.phiWidth; ix++) {
 					angleText >> angleMapCache[iy*sh.anglemapParams.phiWidth + ix];
 				}
 			}
@@ -1284,7 +1292,7 @@ void InterfaceFacet::ImportAngleMap(const std::vector<std::vector<std::string>>&
 		}
 		if (spacingTypes == 1) {
 			//might fill whole 0..PI/2 range, but maybe only lower or only upper res
-			double lastTheta = currentSpacing * (table.size() - 1);
+			double lastTheta = currentSpacing * (table.size() - 1.0);
 			if (IsEqual(lastTheta, PI / 2, 1E-3)) { //fills whole range
 				thetaLimit = PI / 2;
 				thetaLowerRes = table.size() - 1;
@@ -1305,10 +1313,19 @@ void InterfaceFacet::ImportAngleMap(const std::vector<std::vector<std::string>>&
 		else thetaHigherRes = table.size() - 1 - thetaLowerRes;
 
 		//Fill table
-		angleMapCache = (size_t*)malloc(phiWidth * (thetaLowerRes + thetaHigherRes) * sizeof(size_t));
 
-		for (int iy = 0; iy < (thetaLowerRes + thetaHigherRes); iy++) {
-			for (int ix = 0; ix < phiWidth; ix++) {
+        //Initialize angle map and Set values to zero
+        try {
+            angleMapCache.resize(phiWidth * (thetaLowerRes + thetaHigherRes),0);
+        }
+        catch(...) {
+            std::stringstream err;
+            err << "Not enough memory for incident angle map on facet ";
+            throw Error(err.str().c_str());
+        }
+
+		for (size_t iy = 0; iy < (thetaLowerRes + thetaHigherRes); iy++) {
+			for (size_t ix = 0; ix < phiWidth; ix++) {
 				size_t cellSize;
 				try {
 					angleMapCache[iy*phiWidth + ix] = std::stoi(table[iy+1][ix+1], &cellSize); //convert to double
@@ -1332,11 +1349,19 @@ void InterfaceFacet::ImportAngleMap(const std::vector<std::vector<std::string>>&
 		phiWidth = table[0].size(); //row width
 		thetaLimit = PI/2.0;
 
-		//Fill table
-		angleMapCache = (size_t*)malloc(phiWidth * (thetaLowerRes + thetaHigherRes) * sizeof(size_t));
 
-		for (int iy = 0; iy < (thetaLowerRes + thetaHigherRes); iy++) {
-			for (int ix = 0; ix < phiWidth; ix++) {
+        //Fill table
+        try {
+            angleMapCache.resize(phiWidth * (thetaLowerRes + thetaHigherRes), 0);
+        }
+        catch(...) {
+            std::stringstream err;
+            err << "Not enough memory for incident angle map on facet ";
+            throw Error(err.str().c_str());
+        }
+
+		for (size_t iy = 0; iy < (thetaLowerRes + thetaHigherRes); iy++) {
+			for (size_t ix = 0; ix < phiWidth; ix++) {
 				size_t cellSize;
 				try {
 					angleMapCache[iy*phiWidth + ix] = std::stoi(table[iy][ix], &cellSize); //convert to double
@@ -1394,7 +1419,7 @@ void InterfaceFacet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchi
 		//memcpy(outgMapVector.data(), outgassingMapWindow, sizeof(double)*(sh.useOutgassingFile ? ogMap.outgassingMapWidth*ogMap.outgassingMapHeight : 0));
         size_t mapSize = sh.anglemapParams.GetMapSize();
         std::vector<size_t> angleMapVector(mapSize);
-        memcpy(angleMapVector.data(), angleMapCache, sh.anglemapParams.GetRecordedDataSize());
+        memcpy(angleMapVector.data(), angleMapCache.data(), sh.anglemapParams.GetRecordedDataSize());
         std::vector<double> textIncVector;
 
 		// Add surface elements area (reciprocal)

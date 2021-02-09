@@ -5,6 +5,9 @@
 #include <sstream>
 #include <Helper/MathTools.h>
 #include <cmath>
+#include <set>
+#include <Simulation/CDFGeneration.h>
+#include <Simulation/IDGeneration.h>
 #include "GeometrySimu.h"
 #include "IntersectAABB_shared.h" // include needed for recursive delete of AABBNODE
 
@@ -421,6 +424,129 @@ void SimulationModel::CalculateFacetParams(SubprocessFacet* f) {
 #endif
 }
 
+/**
+* \brief Do calculations necessary before launching simulation
+* determine latest moment
+* Generate integrated desorption functions
+* match parameters
+* Generate speed distribution functions
+* Angle map
+*/
+void SimulationModel::PrepareToRun() {
+
+    if(sh.nbFacet != facets.size()) {
+        std::cerr << "Facet structure not properly initialized, size mismatch: " << sh.nbFacet << " / " << facets.size() << std::endl;
+        exit(0);
+    }
+    //determine latest moment
+    wp.latestMoment = 1E-10;
+    if(!tdParams.moments.empty())
+        wp.latestMoment = (tdParams.moments.end()-1)->first + (tdParams.moments.end()-1)->second / 2.0;
+
+    //Check and calculate various facet properties for time dependent simulations (CDF, ID )
+    for (size_t i = 0; i < sh.nbFacet; i++) {
+        SubprocessFacet& facet = facets[i];
+        // TODO: Find a solution to integrate catalog parameters
+        if(facet.sh.outgassing_paramId >= (int) tdParams.parameters.size()){
+            char tmp[256];
+            sprintf(tmp, "Facet #%zd: Outgassing parameter \"%d\" isn't defined.", i + 1, facet.sh.outgassing_paramId);
+            throw Error(tmp);
+        }
+        if(facet.sh.opacity_paramId >= (int) tdParams.parameters.size()){
+            char tmp[256];
+            sprintf(tmp, "Facet #%zd: Opacity parameter \"%d\" isn't defined.", i + 1, facet.sh.opacity_paramId);
+            throw Error(tmp);
+        }
+        if(facet.sh.sticking_paramId >= (int) tdParams.parameters.size()){
+            char tmp[256];
+            sprintf(tmp, "Facet #%zd: Sticking parameter \"%d\" isn't defined.", i + 1, facet.sh.sticking_paramId);
+            throw Error(tmp);
+        }
+
+        if (facet.sh.outgassing_paramId >= 0) { //if time-dependent desorption
+            std::set<size_t> desorptionParameterIDs;
+            int id = IDGeneration::GetIDId(desorptionParameterIDs, facet.sh.outgassing_paramId);
+            if (id >= 0)
+                facet.sh.IDid = id; //we've already generated an ID for this temperature
+            else {
+                auto[id, id_vec] = IDGeneration::GenerateNewID(desorptionParameterIDs, facet.sh.outgassing_paramId, this);
+                facet.sh.CDFid = id;
+                tdParams.IDs.emplace_back(id_vec);
+            }
+        }
+
+        // Generate speed distribution functions
+        std::set<double> temperatureList;
+        int id = CDFGeneration::GetCDFId(temperatureList, facet.sh.temperature);
+        if (id >= 0)
+            facet.sh.CDFid = id; //we've already generated a CDF for this temperature
+        else {
+            auto[id, cdf_vec] = CDFGeneration::GenerateNewCDF(temperatureList, facet.sh.temperature, wp.gasMass);
+            facet.sh.CDFid = id;
+            tdParams.CDFs.emplace_back(cdf_vec);
+        }
+        //Angle map
+        if (facet.sh.desorbType == DES_ANGLEMAP) {
+            if (!facet.sh.anglemapParams.hasRecorded) {
+                char tmp[256];
+                sprintf(tmp, "Facet #%zd: Uses angle map desorption but doesn't have a recorded angle map.", i + 1);
+                throw Error(tmp);
+            }
+            if (facet.sh.anglemapParams.record) {
+                char tmp[256];
+                sprintf(tmp, "Facet #%zd: Can't RECORD and USE angle map desorption at the same time.", i + 1);
+                throw Error(tmp);
+            }
+        }
+    }
+
+    CalcTotalOutgassing();
+}
+
+/**
+* \brief Compute the outgassing of all source facet depending on the mode (file, regular, time-dependent) and set it to the global settings
+*/
+void SimulationModel::CalcTotalOutgassing() {
+    // Compute the outgassing of all source facet
+    double totalDesorbedMolecules = 0.0;
+    double finalOutgassingRate_Pa_m3_sec = 0.0;
+    double finalOutgassingRate = 0.0;
+
+    const double latestMoment = wp.latestMoment;
+
+    for (size_t i = 0; i < sh.nbFacet; i++) {
+        SubprocessFacet& facet = facets[i];
+        if (facet.sh.desorbType != DES_NONE) { //there is a kind of desorption
+            if (facet.sh.useOutgassingFile) { //outgassing file
+                auto& ogMap = facet.ogMap;
+                for (size_t l = 0; l < (ogMap.outgassingMapWidth * ogMap.outgassingMapHeight); l++) {
+                    totalDesorbedMolecules += latestMoment * ogMap.outgassingMap[l] / (1.38E-23 * facet.sh.temperature);
+                    finalOutgassingRate += ogMap.outgassingMap[l] / (1.38E-23 * facet.sh.temperature);
+                    finalOutgassingRate_Pa_m3_sec += ogMap.outgassingMap[l];
+                }
+            } else { //regular outgassing
+                if (facet.sh.outgassing_paramId == -1) { //constant outgassing
+                    totalDesorbedMolecules += latestMoment * facet.sh.outgassing / (1.38E-23 * facet.sh.temperature);
+                    finalOutgassingRate +=
+                            facet.sh.outgassing / (1.38E-23 * facet.sh.temperature);  //Outgassing molecules/sec
+                    finalOutgassingRate_Pa_m3_sec += facet.sh.outgassing;
+                } else { //time-dependent outgassing
+                    totalDesorbedMolecules += tdParams.IDs[facet.sh.IDid].back().second / (1.38E-23 * facet.sh.temperature);
+                    size_t lastIndex = tdParams.parameters[facet.sh.outgassing_paramId].GetSize() - 1;
+                    double finalRate_mbar_l_s = tdParams.parameters[facet.sh.outgassing_paramId].GetY(lastIndex);
+                    finalOutgassingRate +=
+                            finalRate_mbar_l_s * 0.100 / (1.38E-23 * facet.sh.temperature); //0.1: mbar*l/s->Pa*m3/s
+                    finalOutgassingRate_Pa_m3_sec += finalRate_mbar_l_s * 0.100;
+                }
+            }
+        }
+    }
+
+    wp.totalDesorbedMolecules = totalDesorbedMolecules;
+    wp.finalOutgassingRate_Pa_m3_sec = finalOutgassingRate_Pa_m3_sec;
+    wp.finalOutgassingRate = finalOutgassingRate;
+}
+
 SimulationModel::~SimulationModel() {
 
 }
@@ -478,7 +604,10 @@ void GlobalSimuState::Resize(const SimulationModel &model) { //Constructs the 'd
     if(!model.facets.empty()) {
         for (size_t i = 0; i < nbF; i++) {
             auto &sFac = model.facets[i];
-            if (sFac.globalId != i) exit(0);
+            if (sFac.globalId != i) {
+                std::cerr << "Facet ID mismatch! : " << sFac.globalId << " / " << i << std::endl;
+                exit(0);
+            }
             FacetMomentSnapshot facetMomentTemplate;
             facetMomentTemplate.histogram.Resize(sFac.sh.facetHistogramParams);
             facetMomentTemplate.direction = std::vector<DirectionCell>(
@@ -490,28 +619,6 @@ void GlobalSimuState::Resize(const SimulationModel &model) { //Constructs the 'd
             facetStates[i].momentResults = std::vector<FacetMomentSnapshot>(1 + nbMoments, facetMomentTemplate);
             if (sFac.sh.anglemapParams.record)
                 facetStates[i].recordedAngleMapPdf = std::vector<size_t>(sFac.sh.anglemapParams.GetMapSize());
-        }
-    }
-    else if(!model.structures.empty()){
-        for (size_t i = 0; i < nbF; i++) {
-            for (auto &s : model.structures) {
-                for (auto &sFac : s.facets) {
-                    if (i == sFac.globalId) {
-                        FacetMomentSnapshot facetMomentTemplate;
-                        facetMomentTemplate.histogram.Resize(sFac.sh.facetHistogramParams);
-                        facetMomentTemplate.direction = std::vector<DirectionCell>(
-                                sFac.sh.countDirection ? sFac.sh.texWidth * sFac.sh.texHeight : 0);
-                        facetMomentTemplate.profile = std::vector<ProfileSlice>(sFac.sh.isProfile ? PROFILE_SIZE : 0);
-                        facetMomentTemplate.texture = std::vector<TextureCell>(
-                                sFac.sh.isTextured ? sFac.sh.texWidth * sFac.sh.texHeight : 0);
-                        //No init for hits
-                        facetStates[i].momentResults = std::vector<FacetMomentSnapshot>(1 + nbMoments, facetMomentTemplate);
-                        if (sFac.sh.anglemapParams.record)
-                            facetStates[i].recordedAngleMapPdf = std::vector<size_t>(sFac.sh.anglemapParams.GetMapSize());
-                        break;
-                    }
-                }
-            }
         }
     }
     /*for (size_t i = 0; i < nbF; i++) {

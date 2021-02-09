@@ -50,7 +50,7 @@ struct TimeDependentParamters {
     }
 };
 
-class Anglemap {
+struct Anglemap {
 public:
     std::vector<size_t>   pdf;		  // Incident angle distribution, phi and theta, not normalized. Used either for recording or for 2nd order interpolation
     std::vector<double>   phi_CDFs;    // A table containing phi distributions for each theta, starting from 0 for every line (1 line = 1 theta value). For speed we keep it in one memory block, 1 pointer
@@ -121,13 +121,13 @@ class SuperStructure {
 public:
     SuperStructure();
     ~SuperStructure();
-    std::vector<SubprocessFacet>  facets;   // Facet handles
+    //std::vector<SubprocessFacet>  facets;   // Facet handles
     std::shared_ptr<AABBNODE> aabbTree; // Structure AABB tree
     size_t GetMemSize(){
         size_t sum = 0;
-        sum += sizeof (facets);
+        /*sum += sizeof (facets);
         for(auto& fac : facets)
-            sum += fac.GetMemSize();
+            sum += fac.GetMemSize();*/
         sum += sizeof (aabbTree);
         return sum;
     }
@@ -197,6 +197,8 @@ public:
         return *this;
     };
 
+    void PrepareToRun();
+    void CalcTotalOutgassing();
     void CalculateFacetParams(SubprocessFacet* f);
 
     // Sim functions

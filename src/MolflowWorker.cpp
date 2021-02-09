@@ -1169,7 +1169,12 @@ bool Worker::MolflowGeomToSimModel(){
             //memcpy(outgMapVector.data(), outgassingMapWindow, sizeof(double)*(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0));
             size_t mapSize = facet->sh.anglemapParams.GetMapSize();
             std::vector<size_t> angleMapVector(mapSize);
-            memcpy(angleMapVector.data(), facet->angleMapCache, facet->sh.anglemapParams.GetRecordedDataSize());
+            if(facet->angleMapCache.size() != facet->sh.anglemapParams.GetRecordedDataSize()){
+                std::cerr << "Recorded Data Size is different from actual size: "<<facet->angleMapCache.size() << " / " << facet->sh.anglemapParams.GetRecordedDataSize() << std::endl;
+                return false;
+            }
+            memcpy(angleMapVector.data(), facet->angleMapCache.data(), facet->sh.anglemapParams.GetRecordedDataSize());
+
             std::vector<double> textIncVector;
 
             // Add surface elements area (reciprocal)
@@ -1628,15 +1633,15 @@ void Worker::PrepareToRun() {
         //First worker::update will do it
 		if (f->sh.anglemapParams.record) {
 			if (!f->sh.anglemapParams.hasRecorded) {
-                //Initialize angle map
-                f->angleMapCache = (size_t*)malloc(f->sh.anglemapParams.GetDataSize());
-                if (!f->angleMapCache) {
+                //Initialize angle map and Set values to zero
+                try {
+                    f->angleMapCache.resize(f->sh.anglemapParams.GetMapSize(), 0);
+                }
+                catch(...) {
                     std::stringstream tmp;
                     tmp << "Not enough memory for incident angle map on facet " << i + 1;
                     throw std::runtime_error(tmp.str().c_str());
                 }
-                //Set values to zero
-                memset(f->angleMapCache, 0, f->sh.anglemapParams.GetDataSize());
                 f->sh.anglemapParams.hasRecorded = true;
                 if (f->selected) needsAngleMapStatusRefresh = true;
             }

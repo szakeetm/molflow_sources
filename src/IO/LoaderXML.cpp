@@ -12,8 +12,6 @@
 #include "TimeMoments.h"
 #include "File.h"
 
-constexpr size_t cdf_size = 100; //points in a cumulative distribution function
-
 using namespace pugi;
 using namespace FlowIO;
 
@@ -24,273 +22,6 @@ void setLoadProgress(double newProgress) {
 
 void reportLoadStatus(const std::string& statusString) {
     printf("[Loader at %lf3.2%%] %s", loadProgress , statusString.c_str());
-}
-
-/**
-* \brief Do calculations necessary before launching simulation
-* determine latest moment
-* Generate integrated desorption functions
-* match parameters
-* Generate speed distribution functions
-* Angle map
-*/
-void Loader::PrepareToRun(SimulationModel *model) {
-    //determine latest moment
-    model->wp.latestMoment = 1E-10;
-    if(!model->tdParams.moments.empty())
-        model->wp.latestMoment = (model->tdParams.moments.end()-1)->first + (model->tdParams.moments.end()-1)->second / 2.0;
-
-    //Check and calculate various facet properties for time dependent simulations (CDF, ID )
-    for (size_t i = 0; i < model->sh.nbFacet; i++) {
-        SubprocessFacet& facet = loadFacets[i];
-        // TODO: Find a solution to integrate catalog parameters
-        if(facet.sh.outgassing_paramId >= (int) model->tdParams.parameters.size()){
-            char tmp[256];
-            sprintf(tmp, "Facet #%zd: Outgassing parameter \"%d\" isn't defined.", i + 1, facet.sh.outgassing_paramId);
-            throw Error(tmp);
-        }
-        if(facet.sh.opacity_paramId >= (int) model->tdParams.parameters.size()){
-            char tmp[256];
-            sprintf(tmp, "Facet #%zd: Opacity parameter \"%d\" isn't defined.", i + 1, facet.sh.opacity_paramId);
-            throw Error(tmp);
-        }
-        if(facet.sh.sticking_paramId >= (int) model->tdParams.parameters.size()){
-            char tmp[256];
-            sprintf(tmp, "Facet #%zd: Sticking parameter \"%d\" isn't defined.", i + 1, facet.sh.sticking_paramId);
-            throw Error(tmp);
-        }
-
-        if (facet.sh.outgassing_paramId >= 0) { //if time-dependent desorption
-            int id = GetIDId(facet.sh.outgassing_paramId);
-            if (id >= 0)
-                facet.sh.IDid = id; //we've already generated an ID for this temperature
-            else
-                facet.sh.IDid = GenerateNewID(facet.sh.outgassing_paramId, model);
-        }
-
-        // Generate speed distribution functions
-        // into Loader-wide std::set<double> temperatureList;
-        int id = GetCDFId(facet.sh.temperature);
-        if (id >= 0)
-            facet.sh.CDFid = id; //we've already generated a CDF for this temperature
-        else
-            facet.sh.CDFid = GenerateNewCDF(facet.sh.temperature, model->wp.gasMass);
-
-        //Angle map
-        if (facet.sh.desorbType == DES_ANGLEMAP) {
-            if (!facet.sh.anglemapParams.hasRecorded) {
-                char tmp[256];
-                sprintf(tmp, "Facet #%zd: Uses angle map desorption but doesn't have a recorded angle map.", i + 1);
-                throw Error(tmp);
-            }
-            if (facet.sh.anglemapParams.record) {
-                char tmp[256];
-                sprintf(tmp, "Facet #%zd: Can't RECORD and USE angle map desorption at the same time.", i + 1);
-                throw Error(tmp);
-            }
-        }
-    }
-
-    CalcTotalOutgassing(model);
-}
-
-/**
-* \brief Compute the outgassing of all source facet depending on the mode (file, regular, time-dependent) and set it to the global settings
-*/
-void Loader::CalcTotalOutgassing(SimulationModel* model) {
-    // Compute the outgassing of all source facet
-    double totalDesorbedMolecules = 0.0;
-    double finalOutgassingRate_Pa_m3_sec = 0.0;
-    double finalOutgassingRate = 0.0;
-
-    const double latestMoment = model->wp.latestMoment;
-
-    for (int i = 0; i < model->sh.nbFacet; i++) {
-        SubprocessFacet& facet = loadFacets[i];
-        if (facet.sh.desorbType != DES_NONE) { //there is a kind of desorption
-            if (facet.sh.useOutgassingFile) { //outgassing file
-                auto& ogMap = facet.ogMap;
-                for (int l = 0; l < (ogMap.outgassingMapWidth * ogMap.outgassingMapHeight); l++) {
-                    totalDesorbedMolecules += latestMoment * ogMap.outgassingMap[l] / (1.38E-23 * facet.sh.temperature);
-                    finalOutgassingRate += ogMap.outgassingMap[l] / (1.38E-23 * facet.sh.temperature);
-                    finalOutgassingRate_Pa_m3_sec += ogMap.outgassingMap[l];
-                }
-            } else { //regular outgassing
-                if (facet.sh.outgassing_paramId == -1) { //constant outgassing
-                    totalDesorbedMolecules += latestMoment * facet.sh.outgassing / (1.38E-23 * facet.sh.temperature);
-                    finalOutgassingRate +=
-                            facet.sh.outgassing / (1.38E-23 * facet.sh.temperature);  //Outgassing molecules/sec
-                    finalOutgassingRate_Pa_m3_sec += facet.sh.outgassing;
-                } else { //time-dependent outgassing
-                    totalDesorbedMolecules += IDs[facet.sh.IDid].back().second / (1.38E-23 * facet.sh.temperature);
-                    size_t lastIndex = model->tdParams.parameters[facet.sh.outgassing_paramId].GetSize() - 1;
-                    double finalRate_mbar_l_s = model->tdParams.parameters[facet.sh.outgassing_paramId].GetY(lastIndex);
-                    finalOutgassingRate +=
-                            finalRate_mbar_l_s * 0.100 / (1.38E-23 * facet.sh.temperature); //0.1: mbar*l/s->Pa*m3/s
-                    finalOutgassingRate_Pa_m3_sec += finalRate_mbar_l_s * 0.100;
-                }
-            }
-        }
-    }
-
-    model->wp.totalDesorbedMolecules = totalDesorbedMolecules;
-    model->wp.finalOutgassingRate_Pa_m3_sec = finalOutgassingRate_Pa_m3_sec;
-    model->wp.finalOutgassingRate = finalOutgassingRate;
-}
-
-/**
-* \brief Get ID (if it exists) of the Commulative Distribution Function (CFD) for a particular temperature (bin)
-* \param temperature temperature for the CFD
-* \return ID of the CFD
-*/
-int Loader::GetCDFId(double temperature) {
-    if(!temperatureList.empty()) {
-        auto lowerBound = std::lower_bound(temperatureList.begin(), temperatureList.end(), temperature);
-        if(lowerBound == temperatureList.begin())
-            return -1;
-        --lowerBound; //even temperatureList.end() can be a bound
-
-        if (std::abs(temperature - *lowerBound) > 1E-5) {
-            return std::distance(temperatureList.begin(), lowerBound);
-        }
-    }
-    return -1;
-}
-
-/**
-* \brief Generate a new Commulative Distribution Function (CFD) for a particular temperature (bin)
-* \param temperature for the CFD
-* \return Previous size of temperatures vector, which determines new ID
-*/
-int Loader::GenerateNewCDF(const double temperature, const double gasMass) {
-    size_t i = temperatureList.size();
-    temperatureList.emplace(temperature);
-    CDFs.emplace_back(Generate_CDF(temperature, gasMass, cdf_size));
-    return (int) i;
-}
-
-/**
-* \brief Generate cumulative distribution function (CFD) for the velocity
-* \param gasTempKelvins gas temperature in Kelvin
-* \param gasMassGramsPerMol molar gas mass in grams per mol
-* \param size amount of points/bins of the CFD
-* \return CFD as a Vector containing a pair of double values (x value = speed_bin, y value = cumulated value)
-*/
-std::vector<std::pair<double, double>>
-Loader::Generate_CDF(double gasTempKelvins, double gasMassGramsPerMol, size_t size) {
-    std::vector<std::pair<double, double>> cdf;
-    cdf.reserve(size);
-    constexpr double Kb = 1.38E-23;
-    constexpr double R = 8.3144621;
-    const double a = std::sqrt(Kb * gasTempKelvins /
-                    (gasMassGramsPerMol * 1.67E-27)); //distribution a parameter. Converting molar mass to atomic mass
-
-    //Generate cumulative distribution function
-    double mostProbableSpeed = std::sqrt(2.0 * R * gasTempKelvins / (gasMassGramsPerMol / 1000.0));
-    double binSize = 4.0 * mostProbableSpeed / (double) size; //distribution generated between 0 and 4*V_prob
-
-    for (size_t i = 0; i < size; i++) {
-        double x = (double) i * binSize;
-        double x_square_per_2_a_square = std::pow(x, 2.0) / (2.0 * std::pow(a, 2.0));
-        cdf.emplace_back(std::make_pair(x, 1.0 - std::exp(-x_square_per_2_a_square) * (x_square_per_2_a_square + 1.0)));
-    }
-
-    return cdf;
-}
-
-/**
-* \brief Get ID (if it exists) of the integrated desorption (ID) function for a particular paramId
-* \param paramId parameter ID
-* \return Id of the integrated desorption function
-*/
-int Loader::GetIDId(int paramId) {
-    if(!desorptionParameterIDs.empty()) {
-        auto lowerBound = std::lower_bound(desorptionParameterIDs.begin(), desorptionParameterIDs.end(), paramId);
-        if(lowerBound == desorptionParameterIDs.begin())
-            return -1;
-        --lowerBound; //even temperatureList.end() can be a bound
-
-        if (paramId == *lowerBound) {
-            return std::distance(desorptionParameterIDs.begin(), lowerBound);
-        }
-    }
-    return -1;
-}
-
-/**
-* \brief Generate a new ID (integrated desorption) for desorption parameter for time-dependent simulations
-* \param paramId parameter ID
-* \return Previous size of IDs vector, which determines new id in the vector
-*/
-int Loader::GenerateNewID(int paramId, SimulationModel* model) {
-    size_t i = desorptionParameterIDs.size();
-    desorptionParameterIDs.insert(paramId);
-    IDs.push_back(Generate_ID(paramId,model));
-    return (int) i;
-}
-
-/**
-* \brief Generate integrated desorption (ID) function
-* \param paramId parameter identifier
-* \return ID as a Vector containing a pair of double values (x value = moment, y value = desorption value)
-*/
-std::vector<std::pair<double, double>> Loader::Generate_ID(int paramId, SimulationModel *model) {
-    std::vector<std::pair<double, double>> newID;
-    //First, let's check at which index is the latest moment
-    size_t indexBeforeLastMoment;
-    for (indexBeforeLastMoment = 0; indexBeforeLastMoment < model->tdParams.parameters[paramId].GetSize() &&
-                                    (model->tdParams.parameters[paramId].GetX(indexBeforeLastMoment) <
-                                     model->wp.latestMoment); indexBeforeLastMoment++);
-    if (indexBeforeLastMoment >= model->tdParams.parameters[paramId].GetSize())
-        indexBeforeLastMoment = model->tdParams.parameters[paramId].GetSize() - 1; //not found, set as last moment
-
-//Construct integral from 0 to latest moment
-//Zero
-    newID.emplace_back(0.0, 0.0);
-
-    //First moment
-    newID.emplace_back(model->tdParams.parameters[paramId].GetX(0),
-                                model->tdParams.parameters[paramId].GetX(0) * model->tdParams.parameters[paramId].GetY(0) *
-                                0.100); //for the first moment (0.1: mbar*l/s -> Pa*m3/s)
-
-    //Intermediate moments
-    for (size_t pos = 1; pos <= indexBeforeLastMoment; pos++) {
-        if (IsEqual(model->tdParams.parameters[paramId].GetY(pos),
-                    model->tdParams.parameters[paramId].GetY(pos - 1))) //two equal values follow, simple integration by multiplying
-            newID.emplace_back(model->tdParams.parameters[paramId].GetX(pos),
-                               newID.back().second +
-                                        (model->tdParams.parameters[paramId].GetX(pos) - model->tdParams.parameters[paramId].GetX(pos - 1)) *
-                                        model->tdParams.parameters[paramId].GetY(pos) * 0.100);
-        else { //difficult case, we'll integrate by dividing to 20 equal sections
-            for (double delta = 0.05; delta < 1.0001; delta += 0.05) {
-                double delta_t = model->tdParams.parameters[paramId].GetX(pos) - model->tdParams.parameters[paramId].GetX(pos - 1);
-                double time = model->tdParams.parameters[paramId].GetX(pos - 1) + delta * delta_t;
-                double avg_value = (model->tdParams.parameters[paramId].InterpolateY(time - 0.05 * delta_t, false) +
-                                    model->tdParams.parameters[paramId].InterpolateY(time, false)) * 0.100 / 2.0;
-                newID.emplace_back(time, newID.back().second + 0.05 * delta_t * avg_value);
-            }
-        }
-    }
-
-    //wp.latestMoment
-    double valueAtLatestMoment = model->tdParams.parameters[paramId].InterpolateY(model->wp.latestMoment, false);
-    if (IsEqual(valueAtLatestMoment, model->tdParams.parameters[paramId].GetY(
-            indexBeforeLastMoment))) //two equal values follow, simple integration by multiplying
-        newID.emplace_back(model->wp.latestMoment,
-                           newID.back().second +
-                                    (model->wp.latestMoment - model->tdParams.parameters[paramId].GetX(indexBeforeLastMoment)) *
-                                    model->tdParams.parameters[paramId].GetY(indexBeforeLastMoment) * 0.100);
-    else { //difficult case, we'll integrate by dividing two 5equal sections
-        for (double delta = 0.0; delta < 1.0001; delta += 0.05) {
-            double delta_t = model->wp.latestMoment - model->tdParams.parameters[paramId].GetX(indexBeforeLastMoment);
-            double time = model->tdParams.parameters[paramId].GetX(indexBeforeLastMoment) + delta * delta_t;
-            double avg_value = (model->tdParams.parameters[paramId].GetY(indexBeforeLastMoment) * 0.100 +
-                                model->tdParams.parameters[paramId].InterpolateY(time, false) * 0.100) / 2.0;
-            newID.emplace_back(time, newID.back().second + 0.05 * delta_t * avg_value);
-        }
-    }
-
-    return newID;
 }
 
 int LoaderXML::LoadGeometry(const std::string inputFileName, SimulationModel *model) {
@@ -349,6 +80,7 @@ int LoaderXML::LoadGeometry(const std::string inputFileName, SimulationModel *mo
     //memset(loadFacets, 0, model->sh.nbFacet * sizeof(SubprocessFacet *));
     idx = 0;
     bool ignoreSumMismatch = false;
+    std::vector<SubprocessFacet> loadFacets; // tmp facet holder
     for (xml_node facetNode : geomNode.child("Facets").children("Facet")) {
         size_t nbIndex = facetNode.child("Indices").select_nodes("Indice").size();
         if (nbIndex < 3) {
@@ -441,10 +173,11 @@ int LoaderXML::LoadGeometry(const std::string inputFileName, SimulationModel *mo
             }
     
         }
-    PrepareToRun(model);
 
     model->tdParams.IDs = this->IDs;
     model->tdParams.CDFs = this->CDFs;
+    model->facets = std::move(loadFacets);
+    model->PrepareToRun();
 
     return 0;
 }
@@ -841,8 +574,8 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
         auto& ogMap = facet->ogMap;
         std::vector<double>(ogMap.outgassingMapWidth*ogMap.outgassingMapHeight).swap(ogMap.outgassingMap);
 
-        for (int iy = 0; iy < ogMap.outgassingMapHeight; iy++) {
-            for (int ix = 0; ix < ogMap.outgassingMapWidth; ix++) {
+        for (size_t iy = 0; iy < ogMap.outgassingMapHeight; iy++) {
+            for (size_t ix = 0; ix < ogMap.outgassingMapWidth; ix++) {
                 outgText >> ogMap.outgassingMap[iy*ogMap.outgassingMapWidth + ix];
                 sum += ogMap.outgassingMap[iy*ogMap.outgassingMapWidth + ix];
             }
@@ -861,11 +594,14 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
         std::stringstream angleText;
         angleText << angleMapNode.child_value("map");
 
+
+        //std::map<size_t,std::vector<size_t>> angleMapCache;
         //size_t* angleMapCache = (size_t*)malloc(facet->sh.anglemapParams.GetDataSize());
-        angleMapCache.emplace(std::make_pair(facet->globalId,std::vector<size_t>()));
-        auto& angleMap = angleMapCache.at(facet->globalId);
-        for (int iy = 0; iy < (facet->sh.anglemapParams.thetaLowerRes + facet->sh.anglemapParams.thetaHigherRes); iy++) {
-            for (int ix = 0; ix < facet->sh.anglemapParams.phiWidth; ix++) {
+        //angleMapCache.emplace(std::make_pair(facet->globalId,std::vector<size_t>()));
+        auto& angleMap = facet->angleMap.pdf;
+        angleMap.clear(); angleMap.resize( facet->sh.anglemapParams.phiWidth * (facet->sh.anglemapParams.thetaLowerRes + facet->sh.anglemapParams.thetaHigherRes));
+        for (size_t iy = 0; iy < (facet->sh.anglemapParams.thetaLowerRes + facet->sh.anglemapParams.thetaHigherRes); iy++) {
+            for (size_t ix = 0; ix < facet->sh.anglemapParams.phiWidth; ix++) {
                 angleText >> angleMap[iy*facet->sh.anglemapParams.phiWidth + ix];
             }
         }
@@ -887,6 +623,7 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
     facet->sh.isTextured = ((facet->sh.texWidthD * facet->sh.texHeightD) > 0);
 }
 
+/*
 void Loader::MoveFacetsToStructures(SimulationModel* model) {
     model->structures.resize(model->sh.nbSuper);
     for (size_t i = 0; i < model->sh.nbFacet; i++) { //Necessary because facets is not (yet) a vector in the interface
@@ -900,4 +637,4 @@ void Loader::MoveFacetsToStructures(SimulationModel* model) {
             model->structures[loadFacets[i].sh.superIdx].facets.back().globalId = i;
         }
     }
-}
+}*/
