@@ -9,16 +9,15 @@
 #include "../GeometrySimu.h"
 #include "SimulationUnit.h"
 #include <Random.h>
-#include "SMP.h"
 
 struct SubProcessFacetTempVar;
 
 namespace MFSim {
     class Particle {
     public:
-        double GenerateRandomVelocity(int CDFId, const double rndVal);
+        //double GenerateRandomVelocity(int CDFId, const double rndVal);
 
-        double GenerateDesorptionTime(const SubprocessFacet *src, const double rndVal);
+        //double GenerateDesorptionTime(const SubprocessFacet *src, const double rndVal);
 
         void IncreaseDistanceCounters(double distanceIncrement);
 
@@ -37,8 +36,6 @@ namespace MFSim {
         void RecordHit(const int &type);
 
         void RecordLeakPos();
-
-        void TreatMovingFacet();
 
         void IncreaseFacetCounter(const SubprocessFacet *f, double time, size_t hit, size_t desorb, size_t absorb,
                                   double sum_1_per_v, double sum_v_ort);
@@ -61,7 +58,7 @@ namespace MFSim {
 
         void RecordHistograms(SubprocessFacet *iFacet);
 
-        bool UpdateHits(GlobalSimuState *globState, DWORD timeout);
+        bool UpdateHits(GlobalSimuState *globState, size_t timeout);
 
         void Reset();
 

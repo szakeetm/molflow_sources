@@ -51,8 +51,16 @@ public:
     size_t GetHitsSize() override;
 
     int ReinitializeParticleLog() override;
-    MFSim::Particle * GetParticle(size_t i) override {if(i < particles.size()) return &particles.at(i); else return nullptr;} ;
-    void SetNParticle(size_t n) override {particles.clear(); particles.resize(n);};
+    MFSim::Particle * GetParticle(size_t i) override {
+        if(i < particles.size())
+            return &particles.at(i);
+        else
+            return nullptr;
+    };
+    void SetNParticle(size_t n) override {
+        particles.clear();
+        particles.resize(n);
+    };
 
 	//size_t totalDesorbed;           // Total desorption number (for this process, not reset on UpdateMCHits)
 

@@ -92,6 +92,7 @@ set(SRC_FILES
         ${SIMU_DIR}/Simulation.cpp
         ${SIMU_DIR}/SimulationMC.cpp
         ${SIMU_DIR}/Particle.cpp
+        ${SIMU_DIR}/Physics.cpp
         ${SIMU_DIR}/AnglemapGeneration.cpp
 
         ${CPP_DIR_2}/IntersectAABB_shared.cpp

@@ -9,6 +9,7 @@
 #include <sstream>
 #include "Particle.h"
 #include "AnglemapGeneration.h"
+#include "Physics.h"
 
 using namespace MFSim;
 
@@ -279,18 +280,8 @@ void Particle::PerformTeleport(SubprocessFacet *iFacet) {
     destination->sh.N.x, destination->sh.N.y, destination->sh.N.z));*/
 }
 
-// Perform nbStep simulation steps (a step is a bounce)
-
+// Perform nbStep simulation steps (a step is a bounce) or remainingDes desorptions
 bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainingDes) {
-
-    // Check end of simulation
-    /*if (model->otfParams.desorptionLimit > 0) {
-        if (model->wp.totalDesorbedMolecules >=
-            model->otfParams.desorptionLimit / model->otfParams.nbProcess) {
-            //lastHitFacet = nullptr; // reset full particle status or go on from where we left
-            return false;
-        }
-    }*/
 
     // Perform simulation steps
     int returnVal = true;
@@ -298,9 +289,7 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
 
 //#pragma omp parallel num_threads(nbThreads) default(none) firstprivate(nbStep) shared( returnVal, allQuit)
     {
-
         const int ompIndex = threadNum;//omp_get_thread_num();
-        //printf("Simthread %i of %i (%i).\n", ompIndex, omp_get_num_threads(), omp_get_max_threads());
 
         particleId = ompIndex;
         size_t i;
@@ -322,7 +311,7 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
 
             //Prepare output values
             auto[found, collidedFacet, d] = Intersect(*this, position,
-                                                      direction);
+                                                      direction, model->structures[structureId].aabbTree.get());
 
             if (found) {
                 // Second pass for transparent hits
@@ -432,7 +421,7 @@ bool Particle::StartFromSource() {
     SubprocessFacet *src = nullptr;
     double srcRnd;
     double sumA = 0.0;
-    int i = 0, j = 0;
+    size_t i = 0, j = 0;
     int nbTry = 0;
 
     // Check end of simulation
@@ -473,10 +462,10 @@ bool Particle::StartFromSource() {
                             }*/
                             double lookupValue = rndRemainder;
                             int outgLowerIndex = my_lower_bound(lookupValue,
-                                                                f.outgassingMap); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
+                                                                f.ogMap.outgassingMap); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
                             outgLowerIndex++;
-                            mapPositionH = (size_t) ((double) outgLowerIndex / (double) f.sh.outgassingMapWidth);
-                            mapPositionW = (size_t) outgLowerIndex - mapPositionH * f.sh.outgassingMapWidth;
+                            mapPositionH = (size_t) ((double) outgLowerIndex / (double) f.ogMap.outgassingMapWidth);
+                            mapPositionW = (size_t) outgLowerIndex - mapPositionH * f.ogMap.outgassingMapWidth;
                             foundInMap = true;
                             /*if (!foundInMap) {
                                 SetErrorSub("Starting point not found in imported desorption map");
@@ -511,9 +500,9 @@ bool Particle::StartFromSource() {
     lastHitFacet = src;
     //distanceTraveled = 0.0;  //for mean free path calculations
     //particleTime = desorptionStartTime + (desorptionStopTime - desorptionStartTime)*randomGenerator.rnd();
-    particleTime = generationTime = GenerateDesorptionTime(src, randomGenerator.rnd());
+    particleTime = generationTime = Physics::GenerateDesorptionTime(model->tdParams.IDs, src, randomGenerator.rnd(), model->wp.latestMoment);
     lastMomentIndex = 0;
-    if (model->wp.useMaxwellDistribution) velocity = GenerateRandomVelocity(src->sh.CDFid, randomGenerator.rnd());
+    if (model->wp.useMaxwellDistribution) velocity = Physics::GenerateRandomVelocity(model->tdParams.CDFs, src->sh.CDFid, randomGenerator.rnd());
     else
         velocity =
                 145.469 * std::sqrt(src->sh.temperature / model->wp.gasMass);  //sqrt(8*R/PI/1000)=145.47
@@ -537,25 +526,25 @@ bool Particle::StartFromSource() {
     // Choose a starting point
     while (!found && nbTry < 1000) {
         double u, v;
-
         if (foundInMap) {
-            if (mapPositionW < (src->sh.outgassingMapWidth - 1)) {
+            auto& outgMap = src->ogMap;
+            if (mapPositionW < (outgMap.outgassingMapWidth - 1)) {
                 //Somewhere in the middle of the facet
-                u = ((double) mapPositionW + randomGenerator.rnd()) / src->outgassingMapWidthD;
+                u = ((double) mapPositionW + randomGenerator.rnd()) / outgMap.outgassingMapWidthD;
             } else {
                 //Last element, prevent from going out of facet
                 u = ((double) mapPositionW +
-                     randomGenerator.rnd() * (src->outgassingMapWidthD - (src->sh.outgassingMapWidth - 1))) /
-                    src->outgassingMapWidthD;
+                     randomGenerator.rnd() * (outgMap.outgassingMapWidthD - (outgMap.outgassingMapWidth - 1.0))) /
+                        outgMap.outgassingMapWidthD;
             }
-            if (mapPositionH < (src->sh.outgassingMapHeight - 1)) {
+            if (mapPositionH < (outgMap.outgassingMapHeight - 1)) {
                 //Somewhere in the middle of the facet
-                v = ((double) mapPositionH + randomGenerator.rnd()) / src->outgassingMapHeightD;
+                v = ((double) mapPositionH + randomGenerator.rnd()) / outgMap.outgassingMapHeightD;
             } else {
                 //Last element, prevent from going out of facet
                 v = ((double) mapPositionH +
-                     randomGenerator.rnd() * (src->outgassingMapHeightD - (src->sh.outgassingMapHeight - 1))) /
-                    src->outgassingMapHeightD;
+                     randomGenerator.rnd() * (outgMap.outgassingMapHeightD - (outgMap.outgassingMapHeight - 1.0))) /
+                        outgMap.outgassingMapHeightD;
             }
         } else {
             u = randomGenerator.rnd();
@@ -576,10 +565,11 @@ bool Particle::StartFromSource() {
     if (!found) {
         // Get the center, if the center is not included in the facet, a leak is generated.
         if (foundInMap) {
+            auto& outgMap = src->ogMap;
             //double uLength = sqrt(pow(src->sh.U.x, 2) + pow(src->sh.U.y, 2) + pow(src->sh.U.z, 2));
             //double vLength = sqrt(pow(src->sh.V.x, 2) + pow(src->sh.V.y, 2) + pow(src->sh.V.z, 2));
-            double u = ((double) mapPositionW + 0.5) / src->outgassingMapWidthD;
-            double v = ((double) mapPositionH + 0.5) / src->outgassingMapHeightD;
+            double u = ((double) mapPositionW + 0.5) / outgMap.outgassingMapWidthD;
+            double v = ((double) mapPositionH + 0.5) / outgMap.outgassingMapHeightD;
             position = src->sh.O + u * src->sh.U + v * src->sh.V;
             tmpFacetVars[src->globalId].colU = u;
             tmpFacetVars[src->globalId].colV = v;
@@ -649,7 +639,7 @@ bool Particle::StartFromSource() {
     //nbPHit = 0;
 
     if (src->sh.isMoving) {
-        TreatMovingFacet();
+        Physics::TreatMovingFacet(model, position, direction, velocity);
     }
 
     double ortVelocity =
@@ -695,7 +685,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
         structureId = iFacet->sh.superDest - 1;
         if (iFacet->sh.isMoving) { //A very special case where link facets can be used as transparent but moving facets
             if (particleId == 0)RecordHit(HIT_MOVING);
-            TreatMovingFacet();
+            Physics::TreatMovingFacet(model, position, direction, velocity);
         } else {
             // Count this hit as a transparent pass
             if (particleId == 0)RecordHit(HIT_TRANS);
@@ -791,7 +781,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
     }
 
     if (iFacet->sh.isMoving) {
-        TreatMovingFacet();
+        Physics::TreatMovingFacet(model, position, direction, velocity);
     }
 
     //Texture/Profile outgoing particle
@@ -1078,7 +1068,7 @@ void Particle::RecordAngleMap(const SubprocessFacet *collidedFacet) {
 void Particle::UpdateVelocity(const SubprocessFacet *collidedFacet) {
     if (collidedFacet->sh.accomodationFactor > 0.9999) { //speedup for the most common case: perfect thermalization
         if (model->wp.useMaxwellDistribution)
-            velocity = GenerateRandomVelocity(collidedFacet->sh.CDFid, randomGenerator.rnd());
+            velocity = Physics::GenerateRandomVelocity(model->tdParams.CDFs, collidedFacet->sh.CDFid, randomGenerator.rnd());
         else
             velocity =
                     145.469 * std::sqrt(collidedFacet->sh.temperature / model->wp.gasMass);
@@ -1086,7 +1076,7 @@ void Particle::UpdateVelocity(const SubprocessFacet *collidedFacet) {
         double oldSpeed2 = pow(velocity, 2);
         double newSpeed2;
         if (model->wp.useMaxwellDistribution)
-            newSpeed2 = pow(GenerateRandomVelocity(collidedFacet->sh.CDFid,
+            newSpeed2 = pow(Physics::GenerateRandomVelocity(model->tdParams.CDFs,collidedFacet->sh.CDFid,
                                                    randomGenerator.rnd()), 2);
         else newSpeed2 = /*145.469*/ 29369.939 * (collidedFacet->sh.temperature / model->wp.gasMass);
         //sqrt(29369)=171.3766= sqrt(8*R*1000/PI)*3PI/8, that is, the constant part of the v_avg=sqrt(8RT/PI/m/0.001)) found in literature, multiplied by
@@ -1096,7 +1086,7 @@ void Particle::UpdateVelocity(const SubprocessFacet *collidedFacet) {
     }
 }
 
-double Particle::GenerateRandomVelocity(int CDFId, const double rndVal) {
+/*double Particle::GenerateRandomVelocity(int CDFId, const double rndVal) {
     //return FastLookupY(randomGenerator.rnd(),CDFs[CDFId],false);
     //double r = randomGenerator.rnd();
     double v = InterpolateX(rndVal, model->tdParams.CDFs[CDFId], false, false, true); //Allow extrapolate
@@ -1110,26 +1100,9 @@ double Particle::GenerateDesorptionTime(const SubprocessFacet *src, const double
     } else {
         return rndVal * model->wp.latestMoment; //continous desorption between 0 and latestMoment
     }
-}
+}*/
 
-/**
-* \brief Updates particle direction and velocity if we are dealing with a moving facet (translated or rotated)
-*/
-void Particle::TreatMovingFacet() {
-    Vector3d localVelocityToAdd;
-    if (model->wp.motionType == 1) { //Translation
-        localVelocityToAdd = model->wp.motionVector2; //Fixed translational vector
-    } else if (model->wp.motionType == 2) { //Rotation
-        Vector3d distanceVector = 0.01 * (position -
-                                          model->wp.motionVector1); //distance from base, with cm->m conversion, motionVector1 is rotation base point
-        localVelocityToAdd = CrossProduct(model->wp.motionVector2, distanceVector); //motionVector2 is rotation axis
-    }
-    Vector3d oldVelocity, newVelocity;
-    oldVelocity = direction * velocity;
-    newVelocity = oldVelocity + localVelocityToAdd;
-    direction = newVelocity.Normalized();
-    velocity = newVelocity.Norme();
-}
+
 
 /**
 * \brief Increase facet counter on a hit, pass etc.
@@ -1221,7 +1194,7 @@ void Particle::Reset() {
     tmpFacetVars.clear();
 }
 
-bool Particle::UpdateHits(GlobalSimuState* globState, DWORD timeout) {
+bool Particle::UpdateHits(GlobalSimuState* globState, size_t timeout) {
     if(!globState) {
         return false;
     }

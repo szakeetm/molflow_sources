@@ -91,8 +91,8 @@ set(SRC_FILES
         ${CPP_DIR_1}/MolflowTypes.cpp
         ${CPP_DIR_2}/Buffer_shared.cpp
 
-        ${SIMU_DIR}/Simulation.cpp
-        ${SIMU_DIR}/SimulationMC.cpp
+        #${SIMU_DIR}/Simulation.cpp
+        #${SIMU_DIR}/SimulationMC.cpp
         ${CPP_DIR_2}/IntersectAABB_shared.cpp
         ${CPP_DIR_2}/Polygon.cpp
         ${CPP_DIR_2}/Random.cpp
@@ -122,7 +122,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
 
 
 target_link_libraries(${PROJECT_NAME} PUBLIC shared_simulator)
-target_link_libraries(${PROJECT_NAME} PUBLIC molflowSub)
+target_link_libraries(${PROJECT_NAME} PUBLIC molflowSim)
 target_link_libraries(${PROJECT_NAME} PRIVATE pugixml)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
