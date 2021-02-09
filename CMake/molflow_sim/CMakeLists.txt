@@ -82,6 +82,8 @@ set(SRC_FILES
 
         ${IO_DIR}/LoaderXML.cpp
         ${IO_DIR}/WriterXML.cpp
+
+        ${CPP_DIR_1}/ParameterParser.cpp
         ${CPP_DIR_1}/Initializer.cpp
 
         ${CPP_DIR_1}/TimeMoments.cpp
@@ -97,6 +99,8 @@ set(SRC_FILES
         ${SIMU_DIR}/CDFGeneration.cpp
         ${SIMU_DIR}/IDGeneration.cpp
 
+        ${CPP_DIR_2}/SimulationController.cpp
+        ${CPP_DIR_2}/SimulationManager.cpp
         ${CPP_DIR_2}/IntersectAABB_shared.cpp
         ${CPP_DIR_2}/Polygon.cpp
         ${CPP_DIR_2}/Random.cpp

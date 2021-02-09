@@ -52,7 +52,8 @@ execute_process(
 link_directories(${LINK_DIR_1} ${LINK_DIR_2})
 
 set(EXTRA_SRC
-        ../src/ParameterParser.cpp)
+
+        )
 # Now simply link against gtest or gtest_main as needed. Eg
 add_executable(testsuite simulation_testsuite.cpp ${EXTRA_SRC})
 target_link_libraries(testsuite gtest_main molflowSim)

@@ -114,11 +114,6 @@ set(SRC_FILES
         ${UI_DIR}/TimeSettings.cpp
         ${UI_DIR}/TimewisePlotter.cpp
         ${UI_DIR}/Viewer3DSettings.cpp
-        ${HEADER_DIR_2}/SimulationController.cpp
-        ${HEADER_DIR_2}/SimulationManager.cpp
-        ${HEADER_DIR_2}/IntersectAABB_shared.cpp
-
-
         )
 
 # Add executable to build.

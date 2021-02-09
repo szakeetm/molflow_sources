@@ -1243,14 +1243,14 @@ bool Worker::MolflowGeomToSimModel(){
             return false;
         }
 
-        if (sFac.sh.superIdx == -1) { //Facet in all structures
+/*        if (sFac.sh.superIdx == -1) { //Facet in all structures
             for (auto& s : model.structures) {
                 s.facets.push_back(sFac);
             }
         }
         else {
             model.structures[sFac.sh.superIdx].facets.push_back(sFac); //Assign to structure
-        }
+        }*/
     }
     return true;
 }
