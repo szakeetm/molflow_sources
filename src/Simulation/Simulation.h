@@ -67,19 +67,13 @@ public:
 	// Geometry
 
 	//double stepPerSec=0.0;  // Avg number of step per sec
-	//Facet size counters
-	size_t textTotalSize;  // Texture total size
-	size_t profTotalSize;  // Profile total size
-	size_t dirTotalSize;   // Direction field total size
-	size_t angleMapTotalSize;
-	size_t histogramTotalSize;
 	//bool loadOK;        // Load OK flag
 	//bool lastHitUpdateOK;  // Last hit update timeout
 	bool lastLogUpdateOK; // Last log update timeout
 	bool hasVolatile;   // Contains volatile facet
 
     // Particle coordinates (MC)//std::vector<FacetHistogramBuffer> tmpGlobalHistograms; //Recorded histogram since last UpdateMCHits, 1+nbMoment copies
-    std::vector<ParticleLoggerItem> tmpParticleLog; //Recorded particle log since last UpdateMCHits
+    //ParticleLog tmpParticleLog; //Recorded particle log since last UpdateMCHits
     std::vector<MFSim::Particle> particles;
     mutable std::timed_mutex tMutex;
 };

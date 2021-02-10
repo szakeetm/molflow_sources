@@ -19,12 +19,6 @@ Simulation::Simulation() : tMutex()
 {
 	totalDesorbed = 0;
 
-    textTotalSize =
-    profTotalSize =
-    dirTotalSize =
-    angleMapTotalSize =
-    histogramTotalSize = 0;
-
     lastLogUpdateOK = true;
 
     for(auto& particle : particles)
@@ -34,18 +28,13 @@ Simulation::Simulation() : tMutex()
 
 	model.sh.nbSuper = 0;
     globState = nullptr;
+    globParticleLog = nullptr;
 
     //currentParticles.resize(1, CurrentParticleStatus());// = CurrentParticleStatus();
 }
 Simulation::Simulation(Simulation&& o) noexcept : tMutex() {
 
     totalDesorbed = o.totalDesorbed;
-
-    textTotalSize = o.textTotalSize;
-    profTotalSize = o.profTotalSize;
-    dirTotalSize = o.dirTotalSize;
-    angleMapTotalSize = o.angleMapTotalSize;
-    histogramTotalSize = o.histogramTotalSize;
 
     lastLogUpdateOK = o.lastLogUpdateOK;
 
@@ -60,14 +49,25 @@ Simulation::Simulation(Simulation&& o) noexcept : tMutex() {
     hasVolatile =  o.hasVolatile;
 
     globState = o.globState;
+    globParticleLog = o.globParticleLog;
+
 }
 
 int Simulation::ReinitializeParticleLog() {
-    tmpParticleLog.clear();
+    /*tmpParticleLog.clear();
     tmpParticleLog.shrink_to_fit();
-    if (model.otfParams.enableLogging)
-        tmpParticleLog.reserve(model.otfParams.logLimit / model.otfParams.nbProcess);
+    if (model.otfParams.enableLogging) {
+        tmpParticleLog.reserve(model.otfParams.logLimit*//* / model.otfParams.nbProcess*//*);
+    }*/
 
+    auto particle = GetParticle(0);
+    if(particle) {
+        particle->tmpParticleLog.clear();
+        particle->tmpParticleLog.pLog.shrink_to_fit();
+        if (model.otfParams.enableLogging) {
+            particle->tmpParticleLog.pLog.reserve(model.otfParams.logLimit/* / model.otfParams.nbProcess*/);
+        }
+    }
     return 0;
 }
 
@@ -115,12 +115,6 @@ void Simulation::ClearSimulation() {
 
     //loadOK = false;
 
-    textTotalSize =
-    profTotalSize =
-    dirTotalSize =
-    angleMapTotalSize =
-    histogramTotalSize = 0;
-
     //this->currentParticles.clear();// = CurrentParticleStatus();
     //std::vector<CurrentParticleStatus>(this->nbThreads).swap(this->currentParticles);
     for(auto& particle : particles) {
@@ -133,7 +127,11 @@ void Simulation::ClearSimulation() {
     //ResetTmpCounters();
     /*for(auto& tmpResults : tmpGlobalResults)
         tmpResults.Reset();*/
-    tmpParticleLog.clear();
+    //tmpParticleLog.clear();
+
+    auto particle = GetParticle(0);
+    if(particle)
+        particle->tmpParticleLog.clear();
 
     /*this->model.structures.clear();
     this->model.tdParams.CDFs.clear();
@@ -188,12 +186,7 @@ size_t Simulation::LoadSimulation(SimulationModel *simModel, char *loadStatus) {
     }
 
     //Reserve particle log
-    if (simModel->otfParams.enableLogging)
-        tmpParticleLog.reserve(simModel->otfParams.logLimit / simModel->otfParams.nbProcess);
-
-
-
-
+    ReinitializeParticleLog();
 
     std::vector<std::vector<SubprocessFacet*>> facetPointers;
     facetPointers.resize(model.sh.nbSuper);
@@ -250,7 +243,6 @@ size_t Simulation::LoadSimulation(SimulationModel *simModel, char *loadStatus) {
 
 size_t Simulation::GetHitsSize() {
     return sizeof(GlobalHitBuffer) + model.wp.globalHistogramParams.GetDataSize() +
-           textTotalSize + profTotalSize + dirTotalSize + angleMapTotalSize + histogramTotalSize
            + model.sh.nbFacet * sizeof(FacetHitBuffer) * (1+model.tdParams.moments.size());
 }
 
@@ -268,7 +260,11 @@ void Simulation::ResetSimulation() {
     }
 
     totalDesorbed = 0;
-    tmpParticleLog.clear();
+    //tmpParticleLog.clear();
+
+    auto particle = GetParticle(0);
+    if(particle)
+        particle->tmpParticleLog.clear();
 }
 
 /*bool Simulation::StartSimulation() {

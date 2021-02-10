@@ -1264,18 +1264,12 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
             progressDlg->SetMessage("Do preliminary calculations...");
             PrepareToRun();
 
-            size_t logDpSize = 0;
-            if (model.otfParams.enableLogging) {
-                logDpSize = sizeof(size_t) + model.otfParams.logLimit * sizeof(ParticleLoggerItem);
-            }
-            size_t hitSize = geom->GetHitsSize(moments.size());
-
             progressDlg->SetMessage("Asking subprocesses to clear geometry...");
             simManager.ResetSimulations();
-            progressDlg->SetMessage("Creating Logger...");
-            simManager.ReloadLogBuffer(logDpSize, true);
+            progressDlg->SetMessage("Clearing Logger...");
+            particleLog.clear();
             progressDlg->SetMessage("Creating hit buffer...");
-            simManager.ReloadHitBuffer(hitSize);
+            simManager.ResetHits();
         }
         catch (std::exception &e) {
             GLMessageBox::Display(e.what(), "Error (Full reload)", GLDLG_OK, GLDLG_ICONWARNING);
@@ -1284,6 +1278,17 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
             std::stringstream err;
             err << "Error (Full reload) " << e.what();
             throw std::runtime_error(err.str());
+        }
+
+        if (model.otfParams.enableLogging) {
+            try {
+                particleLog.resize(model.otfParams.logLimit);
+            }
+            catch (...) {
+                progressDlg->SetVisible(false);
+                SAFE_DELETE(progressDlg);
+                throw Error("Failed to create 'Particle Log' vector.\nMost probably out of memory.\nReduce number of logged particles in Particle Logger.");
+            }
         }
     }
 
@@ -1346,6 +1351,7 @@ std::ostringstream Worker::SerializeParamsForLoader() {
 void Worker::ResetWorkerStats() {
 
     globState.Reset();
+    particleLog.clear();
     //memset(&globState.globalHits, 0, sizeof(GlobalHitBuffer));
 
 
@@ -1374,7 +1380,7 @@ void Worker::Start() {
         throw std::runtime_error("Total outgassing is zero.");
 
     try {
-        simManager.ForwardGlobalCounter(&globState);
+        simManager.ForwardGlobalCounter(&globState, &particleLog);
 
         if (simManager.StartSimulation()) {
             throw std::logic_error("Processes are already done!");

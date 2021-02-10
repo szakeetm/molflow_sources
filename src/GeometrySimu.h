@@ -297,4 +297,29 @@ public:
 #endif
     mutable std::timed_mutex tMutex;
 };
+
+struct ParticleLog {
+public:
+    ParticleLog& operator=(const ParticleLog& src){
+        pLog = src.pLog;
+        return *this;
+    }
+    ParticleLog(ParticleLog&& rhs)  noexcept : tMutex() {
+        pLog = std::move(pLog);
+    };
+    ParticleLog(const ParticleLog& rhs) {
+        pLog = rhs.pLog;
+    };
+    ParticleLog() : tMutex() {
+
+    };
+    void resize(size_t nbLogs){
+        std::vector<ParticleLoggerItem>(nbLogs).swap(pLog);
+    };
+    void clear(){
+        pLog.clear();
+    };
+    std::vector<ParticleLoggerItem> pLog;
+    mutable std::timed_mutex tMutex;
+};
 #endif //MOLFLOW_PROJ_GEOMETRYSIMU_H

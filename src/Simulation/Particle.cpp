@@ -225,13 +225,13 @@ void Particle::PerformTeleport(SubprocessFacet *iFacet) {
         return; //LEAK
     }
     // Count this hit as a transparent pass
-    if (particleId == 0)RecordHit(HIT_TELEPORTSOURCE);
+    if (particleId == 0) RecordHit(HIT_TELEPORTSOURCE);
     if (/*iFacet->texture && */iFacet->sh.countTrans)
         RecordHitOnTexture(iFacet, particleTime, true, 2.0, 2.0);
     if (/*iFacet->direction && */iFacet->sh.countDirection)
         RecordDirectionVector(iFacet, particleTime);
     ProfileFacet(iFacet, particleTime, true, 2.0, 2.0);
-    //TODO: if(particleId==0)LogHit(iFacet, model, tmpParticleLog);
+    if(particleId == 0) LogHit(iFacet);
     if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
 
     // Relaunch particle from new facet
@@ -650,7 +650,7 @@ bool Particle::StartFromSource() {
                          (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
     //Desorption doesn't contribute to angular profiles, nor to angle maps
     ProfileFacet(src, particleTime, false, 2.0, 1.0); //was 2.0, 1.0
-    //TODO:: if(particleId==0) LogHit(src, model, tmpParticleLog);
+    if(particleId == 0) LogHit(src);
     if (/*src->texture && */src->sh.countDes)
         RecordHitOnTexture(src, particleTime, true, 2.0, 1.0); //was 2.0, 1.0
     //if (src->direction && src->sh.countDirection) RecordDirectionVector(src, particleTime);
@@ -689,7 +689,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
             // Count this hit as a transparent pass
             if (particleId == 0)RecordHit(HIT_TRANS);
         }
-        //TODO: if(particleId==0)LogHit(iFacet, model, tmpParticleLog);
+        if(particleId == 0) LogHit(iFacet);
         ProfileFacet(iFacet, particleTime, true, 2.0, 2.0);
         if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
         if (/*iFacet->texture &&*/ iFacet->sh.countTrans)
@@ -707,7 +707,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
         if (iFacet->isReady) {
             IncreaseFacetCounter(iFacet, particleTime, 0, 0, 1, 0, 0);
             iFacet->isReady = false;
-            //TODO::if(particleId==0)LogHit(iFacet, model, tmpParticleLog);
+            if(particleId == 0) LogHit(iFacet);
             ProfileFacet(iFacet, particleTime, true, 2.0, 1.0);
             if (/*iFacet->texture && */iFacet->sh.countAbs)
                 RecordHitOnTexture(iFacet, particleTime, true, 2.0, 1.0);
@@ -741,7 +741,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
         RecordHitOnTexture(iFacet, particleTime, true, 1.0, 1.0);
     if (/*iFacet->direction &&*/ iFacet->sh.countDirection)
         RecordDirectionVector(iFacet, particleTime);
-    //TODO::if(particleId==0)LogHit(iFacet, model, tmpParticleLog);
+    if(particleId == 0) LogHit(iFacet);
     ProfileFacet(iFacet, particleTime, true, 1.0, 1.0);
     if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
 
@@ -829,12 +829,12 @@ void Particle::RecordAbsorb(SubprocessFacet *iFacet) {
 
     RecordHistograms(iFacet);
 
-    if (particleId == 0)RecordHit(HIT_ABS);
+    if (particleId == 0) RecordHit(HIT_ABS);
     double ortVelocity =
             velocity * std::abs(Dot(direction, iFacet->sh.N));
     IncreaseFacetCounter(iFacet, particleTime, 1, 0, 1, 2.0 / ortVelocity,
                          (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
-    //TODO: if(particleId==0)LogHit(iFacet, model, tmpParticleLog);
+    if(particleId == 0) LogHit(iFacet);
     ProfileFacet(iFacet, particleTime, true, 2.0, 1.0); //was 2.0, 1.0
     if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
     if (/*iFacet->texture &&*/ iFacet->sh.countAbs)
@@ -1013,20 +1013,19 @@ Particle::ProfileFacet(const SubprocessFacet *f, double time, bool countHit, dou
 }
 
 void
-Particle::LogHit(SubprocessFacet *f, std::vector<ParticleLoggerItem> &tmpParticleLog) {
+Particle::LogHit(SubprocessFacet *f) {
     //if(omp_get_thread_num() != 0) return; // only let 1 thread update
     if (model->otfParams.enableLogging &&
         model->otfParams.logFacetId == f->globalId &&
-        tmpParticleLog.size() < (model->otfParams.logLimit / model->otfParams.nbProcess)) {
+        tmpParticleLog.pLog.size() < tmpParticleLog.pLog.capacity()) {
         ParticleLoggerItem log;
         log.facetHitPosition = Vector2d(tmpFacetVars[f->globalId].colU, tmpFacetVars[f->globalId].colV);
-        std::tie(log.hitTheta, log.hitPhi) = CartesianToPolar(direction, f->sh.nU, f->sh.nV,
-                                                              f->sh.N);
+        std::tie(log.hitTheta, log.hitPhi) = CartesianToPolar(direction, f->sh.nU, f->sh.nV, f->sh.N);
         log.oriRatio = oriRatio;
         log.particleDecayMoment = expectedDecayMoment;
         log.time = particleTime;
         log.velocity = velocity;
-        tmpParticleLog.push_back(log);
+        tmpParticleLog.pLog.push_back(log);
     }
 }
 
@@ -1160,7 +1159,7 @@ void Particle::RegisterTransparentPass(SubprocessFacet *facet) {
         RecordDirectionVector(facet, particleTime +
                                      tmpFacetVars[facet->globalId].colDistTranspPass / 100.0 / velocity);
     }
-    //TODO::if(particleId==0)LogHit(facet, model, tmpParticleLog);
+    if(particleId == 0) LogHit(facet);
     ProfileFacet(facet, particleTime +
                         tmpFacetVars[facet->globalId].colDistTranspPass / 100.0 /
                         velocity,
@@ -1193,7 +1192,7 @@ void Particle::Reset() {
     tmpFacetVars.clear();
 }
 
-bool Particle::UpdateHits(GlobalSimuState* globState, size_t timeout) {
+bool Particle::UpdateHits(GlobalSimuState *globState, ParticleLog *particleLog, size_t timeout) {
     if(!globState) {
         return false;
     }
@@ -1201,8 +1200,7 @@ bool Particle::UpdateHits(GlobalSimuState* globState, size_t timeout) {
     //globState = tmpGlobalResults[0];
     bool lastHitUpdateOK = UpdateMCHits(*globState, model->tdParams.moments.size(), timeout);
     // only 1 , so no reduce necessary
-    /*ParticleLoggerItem& globParticleLog = tmpParticleLog[0];
-    if (dpLog) UpdateLog(dpLog, timeout);*/
+    if (particleLog) UpdateLog(particleLog, timeout);
 
     // At last delete tmpCache
     tmpState.Reset();
@@ -1215,6 +1213,25 @@ bool Particle::UpdateHits(GlobalSimuState* globState, size_t timeout) {
     return lastHitUpdateOK;
 }
 
+bool Particle::UpdateLog(ParticleLog *globalLog, size_t timeout){
+    if (!tmpParticleLog.pLog.empty()) {
+        //if (!LockMutex(worker->logMutex, timeout)) return false;
+        if (!globalLog->tMutex.try_lock_for(std::chrono::milliseconds(timeout))) {
+            return false;
+        }
+        size_t writeNb = model->otfParams.logLimit - globalLog->pLog.size();
+        Saturate(writeNb, 0, tmpParticleLog.pLog.size());
+        globalLog->pLog.insert(globalLog->pLog.begin(), tmpParticleLog.pLog.begin(), tmpParticleLog.pLog.begin() + writeNb);
+        //myLogTarget = (model->otfParams.logLimit - globalLog->size()) / model->otfParams.nbProcess + 1; //+1 to avoid all threads rounding down
+        globalLog->tMutex.unlock();
+        tmpParticleLog.clear();
+        tmpParticleLog.pLog.shrink_to_fit();
+        tmpParticleLog.pLog.reserve(std::max(model->otfParams.logLimit - globalLog->pLog.size(), (size_t)0u));
+        //SetLocalAndMasterState(0, GetMyStatusAsText(), false, true);
+    }
+
+    return true;
+}
 void Particle::RecordHit(const int &type) {
     if (tmpState.globalHits.hitCacheSize < HITCACHESIZE) {
         tmpState.globalHits.hitCache[tmpState.globalHits.hitCacheSize].pos = position;

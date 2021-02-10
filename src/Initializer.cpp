@@ -65,7 +65,7 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
         ParameterParser::ChangeFacetParams(model->facets);
     }
 
-    simManager->ForwardGlobalCounter(globState);
+    simManager->ForwardGlobalCounter(globState, nullptr);
 
     return 0;
 }
@@ -132,6 +132,7 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
             logDpSize = sizeof(size_t) + model->otfParams.logLimit * sizeof(ParticleLoggerItem);
         }
         simManager->ReloadLogBuffer(logDpSize, true);*/
+
         //progressDlg->SetMessage("Creating hit buffer...");
         size_t nbMoments = model->tdParams.moments.size();
         std::cout << "[LoadGeom] Initializing geometry!" << std::endl;

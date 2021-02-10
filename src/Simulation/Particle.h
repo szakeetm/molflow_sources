@@ -42,7 +42,7 @@ namespace MFSim {
 
         void UpdateVelocity(const SubprocessFacet *collidedFacet);
 
-        void LogHit(SubprocessFacet *f, std::vector <ParticleLoggerItem> &tmpParticleLog);
+        void LogHit(SubprocessFacet *f);
 
         void RecordDirectionVector(const SubprocessFacet *f, double time);
 
@@ -58,7 +58,8 @@ namespace MFSim {
 
         void RecordHistograms(SubprocessFacet *iFacet);
 
-        bool UpdateHits(GlobalSimuState *globState, size_t timeout);
+        bool UpdateHits(GlobalSimuState *globState, ParticleLog *particleLog, size_t timeout);
+        bool UpdateLog(ParticleLog *globalLog, size_t timeout);
 
         void Reset();
 
@@ -80,6 +81,7 @@ namespace MFSim {
         double expectedDecayMoment; //for radioactive gases
         size_t structureId;        // Current structure
         GlobalSimuState tmpState;
+        ParticleLog tmpParticleLog;
         SubprocessFacet *lastHitFacet;     // Last hitted facet
         MersenneTwister randomGenerator;
         SimulationModel *model;
