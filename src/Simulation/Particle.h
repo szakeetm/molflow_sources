@@ -10,7 +10,19 @@
 #include "SimulationUnit.h"
 #include <Random.h>
 
-struct SubProcessFacetTempVar;
+struct SubProcessFacetTempVar {
+    // Temporary var (used in Intersect for collision)
+    SubProcessFacetTempVar(){
+        colDistTranspPass=1.0E99;
+        colU = 0.0;
+        colV = 0.0;
+        fac = nullptr;
+    }
+    double colDistTranspPass;
+    double colU;
+    double colV;
+    SubprocessFacet* fac;
+};
 
 namespace MFSim {
     class Particle {
@@ -27,34 +39,34 @@ namespace MFSim {
 
         bool UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, DWORD timeout);
 
-        void RecordHitOnTexture(const SubprocessFacet *f, double time, bool countHit, double velocity_factor,
+        void RecordHitOnTexture(const SubProcessFacetTempVar &hitEvent, double time, bool countHit, double velocity_factor,
                                 double ortSpeedFactor);
 
-        void ProfileFacet(const SubprocessFacet *f, double time, bool countHit, double velocity_factor,
+        void ProfileFacet(const SubProcessFacetTempVar &hitEvent, double time, bool countHit, double velocity_factor,
                           double ortSpeedFactor);
 
         void RecordHit(const int &type);
 
         void RecordLeakPos();
 
-        void IncreaseFacetCounter(const SubprocessFacet *f, double time, size_t hit, size_t desorb, size_t absorb,
+        void IncreaseFacetCounter(size_t facetId, double time, size_t hit, size_t desorb, size_t absorb,
                                   double sum_1_per_v, double sum_v_ort);
 
         void UpdateVelocity(const SubprocessFacet *collidedFacet);
 
-        void LogHit(SubprocessFacet *f);
+        void LogHit(const SubProcessFacetTempVar &hitEvent);
 
-        void RecordDirectionVector(const SubprocessFacet *f, double time);
+        void RecordDirectionVector(const SubProcessFacetTempVar &hitEvent, double time);
 
         void RecordAngleMap(const SubprocessFacet *collidedFacet);
 
-        void PerformTeleport(SubprocessFacet *iFacet);
+        void PerformTeleport(const SubProcessFacetTempVar &hitEvent);
 
-        void RegisterTransparentPass(SubprocessFacet *facet);
+        void RegisterTransparentPass(const SubProcessFacetTempVar &hitEvent);
 
-        void RecordAbsorb(SubprocessFacet *iFacet);
+        void RecordAbsorb(const SubProcessFacetTempVar &hitEvent);
 
-        void PerformBounce(SubprocessFacet *iFacet);
+        void PerformBounce(const SubProcessFacetTempVar &hitEvent);
 
         void RecordHistograms(SubprocessFacet *iFacet);
 
@@ -85,8 +97,8 @@ namespace MFSim {
         SubprocessFacet *lastHitFacet;     // Last hitted facet
         MersenneTwister randomGenerator;
         SimulationModel *model;
-        std::vector<SubprocessFacet *> transparentHitBuffer; //Storing this buffer simulation-wide is cheaper than recreating it at every Intersect() call
-        std::vector <SubProcessFacetTempVar> tmpFacetVars; //One per subprocessfacet, for intersect routine
+        std::vector<SubProcessFacetTempVar> transparentHitBuffer; //Storing this buffer simulation-wide is cheaper than recreating it at every Intersect() call
+        SubProcessFacetTempVar tmpFacetVars; //One per subprocessfacet, for intersect routine
     };
 }
 
