@@ -1193,11 +1193,8 @@ void Particle::Reset() {
 }
 
 bool Particle::UpdateHits(GlobalSimuState *globState, ParticleLog *particleLog, size_t timeout) {
-    if(!globState) {
-        return false;
-    }
+    /*if(!globState) return false; // checked before simulation start */
 
-    //globState = tmpGlobalResults[0];
     bool lastHitUpdateOK = UpdateMCHits(*globState, model->tdParams.moments.size(), timeout);
     // only 1 , so no reduce necessary
     if (particleLog) UpdateLog(particleLog, timeout);
