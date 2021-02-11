@@ -17,6 +17,7 @@
 #include <ctime>
 #include <functional>
 #include <Helper/Chronometer.h>
+#include <numeric>
 
 #ifndef GIT_COMMIT_HASH
 #define GIT_COMMIT_HASH "?"
@@ -54,12 +55,118 @@ namespace {
                     "test_lr1000_pipe.xml", "test_lr10_pipe_tex.xml"
             ));
 
+
+    struct Stats {
+        std::string commitHash;
+        double min{-1.0}, max{-1.0}, avg{-1.0}, med{-1.0};
+        friend std::istream& operator>>(std::istream& is, Stats& r)       {
+            // Get current position
+            int len = is.tellg();
+            char line[256];
+            is.getline(line, 256);
+            // Return to position before "Read line".
+            is.seekg(len ,std::ios_base::beg);
+
+            size_t countDelimiter = 0;
+            size_t pos = 0;
+            while((line[pos] != '\n' && line[pos] != '\0') && pos < 256){
+                if(line[pos] == ' ' || line[pos] == '\t') {
+                    ++countDelimiter;
+                }
+                ++pos;
+            }
+
+            r = Stats();
+            if (countDelimiter == 4){
+                is >> r.commitHash >> r.max >> r.min >> r.med >> r.avg;
+                is.getline(line, 256);
+                return is;
+            }
+            else if(countDelimiter == 1) {
+                is >> r.commitHash >> r.max;
+                is.getline(line, 256);
+                //is.getline(line, 256);
+                return is;
+            }
+            else { // unknown format, skip line
+                is.getline(line, 256);
+                return is;
+            }
+        }
+        friend std::ostream& operator<<(std::ostream& os, Stats const& r) {
+            return os << r.commitHash << "\t" << std::scientific << std::setprecision(8) << r.max << "\t" << r.min << "\t" << r.med << "\t" << r.avg;
+        }
+
+        bool operator<(Stats const& other) const {
+            return other.max < max;
+        }
+
+        /*Stats& operator=(const OldStats& src){
+            commitHash = src.commitHash;
+            max = src.max;
+            min = src.min;
+            avg = src.avg;
+            med = src.med;
+
+            return *this;
+        }*/
+    };
+
+    /*struct OldStats {
+        std::string commitHash;
+        double min{-1.0}, max{-1.0}, avg{-1.0}, med{-1.0};
+        friend std::istream& operator>>(std::istream& is, OldStats& r)       {
+
+            // Get current position
+            int len = is.tellg();
+            char line[256];
+            is.getline(line, 256);
+            // Return to position before "Read line".
+            is.seekg(len ,std::ios_base::beg);
+
+            size_t countDelimiter = 0;
+            size_t pos = 0;
+            while((line[pos] != '\n' && line[pos] != '\0') && pos < 256 && countDelimiter < 2){
+                if(line[pos] == ' ' || line[pos] == '\t') {
+                    ++countDelimiter;
+                }
+                ++pos;
+            }
+            if(countDelimiter >= 2) {
+                is >> r.commitHash >> r.max;
+                is.getline(line, 256);
+                return is;
+            }
+            else
+                return is >> r.commitHash >> r.max >> r.min >> r.med >> r.avg;
+        }
+
+        bool operator<(OldStats const& other) const {
+            return other.max < max;
+        }
+
+        //implicit conversion
+        operator Stats() const {
+            Stats newStat;
+            newStat.commitHash = commitHash;
+            newStat.max = max;
+            newStat.min = min;
+            newStat.avg = avg;
+            newStat.med = med;
+        return newStat; }
+
+    };*/
+
     TEST_P(SimulationFixture, PerformanceOkay) {
         std::string testFile = GetParam();
         printf("Filename: %s\n",testFile.c_str());
         size_t nbFails = 0;
         bool fastEnough = false;
-        do {
+        const size_t nRuns = 10;
+        const size_t keepNEntries = 20;
+        const size_t runForTSec = 20;
+        std::vector<double> perfTimes;
+        for(size_t runNb = 0; runNb < nRuns; ++runNb){
             SimulationManager simManager("molflow", "MFLW");
             SimulationModel model{};
             GlobalSimuState globState{};
@@ -99,38 +206,71 @@ namespace {
             simManager.StopSimulation();
             simManager.KillAllSimUnits();
 
-            double hitPS = (double) (globState.globalHits.globalHits.hit.nbMCHit - oldHitsNb) / (elapsedTime);
+            perfTimes.emplace_back((double) (globState.globalHits.globalHits.hit.nbMCHit - oldHitsNb) / (elapsedTime));
             EXPECT_EQ(0, oldDesNb);
             EXPECT_EQ(0, oldHitsNb);
             EXPECT_LT(0, globState.globalHits.globalHits.hit.nbDesorbed);
             EXPECT_LT(0, globState.globalHits.globalHits.hit.nbMCHit);
 
-            double prev = -1;
+            printf("[Run %zu/%zu] Current Hit/s: %e\n", runNb, nRuns, perfTimes.back());
+        };
+
+        // Compare to old performance values here
+
+        if(!perfTimes.empty()) {
+            std::sort(perfTimes.begin(), perfTimes.end());
+
+            Stats currentRun;
+            currentRun.commitHash = GIT_COMMIT_HASH;
+            currentRun.commitHash = currentRun.commitHash.substr(0,8); // only first 8 hex digits
+            currentRun.min = perfTimes.front();
+            currentRun.max = perfTimes.back();
+            double sum = std::accumulate(perfTimes.begin(), perfTimes.end(), 0.0);
+            currentRun.avg = sum / perfTimes.size();
+            currentRun.med = (perfTimes.size() % 2 == 0)
+                             ? (perfTimes[perfTimes.size() / 2 - 1] + perfTimes[perfTimes.size() / 2]) / 2
+                             : perfTimes[perfTimes.size() / 2];
+
+            std::vector<Stats> prevRun;
             std::string testName(::testing::UnitTest::GetInstance()->current_test_info()->name());
-            std::string timeRecFile = "./time_record_" + testFile.substr(0,testFile.size() - 4) + ".txt";
+            std::string timeRecFile = "./time_record_" + testFile.substr(0, testFile.size() - 4) + ".txt";
             {
                 std::ifstream ifs(timeRecFile);
-                std::string fromCommit;
-                ifs >> fromCommit;
-                ifs >> prev;
-            }
-            if (prev < 0) prev = 1e5;
-
-            //EXPECT_GT(hitPS, 0.9 * prev);
-            fastEnough = hitPS > 0.95 * prev;
-            if(!fastEnough) {
-                ++nbFails;
+                //prevRun.insert( prevRun.begin(), std::istream_iterator<OldStats>(ifs), std::istream_iterator<OldStats>() );
+                prevRun.insert( prevRun.begin(), std::istream_iterator<Stats>(ifs), std::istream_iterator<Stats>() );
+                //ifs >> prevRun;
+                /*ifs >> fromCommit;
+                ifs >> prevRun.max;
+                ifs >> prevRun.min;
+                ifs >> prevRun.med;
+                ifs >> prevRun.avg;*/
             }
 
-            printf("Current Hit/s: %e vs. Prev Hit/s: %e\n", hitPS, prev);
-
-            if (hitPS > prev) {
-                std::string hash = GIT_COMMIT_HASH;
+            // Check either
+            fastEnough = currentRun.max >= 0.95 * prevRun.front().max;
+            if(fastEnough)
+                EXPECT_GE(currentRun.max, 0.95 * prevRun.front().max);
+            else
+                EXPECT_GE(currentRun.med, 0.95 * prevRun.front().med);
+            {
+                // Keep top 20 in list
+                prevRun.push_back(currentRun);
+                std::sort(prevRun.begin(), prevRun.end());
+                for(auto iter_o = prevRun.begin(); iter_o != prevRun.end(); ++iter_o) {
+                    for(auto iter_i = iter_o+1; iter_i != prevRun.end(); ++iter_i) { // "slower entry"
+                        if(iter_i->commitHash == iter_o->commitHash){
+                            prevRun.erase(iter_i--); // remove outer entry, as it is slower
+                        }
+                    }
+                }
                 std::ofstream ofs(timeRecFile);
-                ofs << hash.substr(0, 8) << ' ' << hitPS << std::endl;
+                for(size_t lineN = 0; lineN < std::min(prevRun.size(), keepNEntries); ++lineN) {
+                    if(!prevRun[lineN].commitHash.empty())
+                        ofs << prevRun[lineN] << std::endl;
+                }
             }
-        } while (!fastEnough && nbFails < 20);
-        EXPECT_LT(nbFails, 20);
+
+        }
     }
 
     // Tests factorial of positive numbers.
