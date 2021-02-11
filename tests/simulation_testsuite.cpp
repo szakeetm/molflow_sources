@@ -231,9 +231,13 @@ namespace {
                              ? (perfTimes[perfTimes.size() / 2 - 1] + perfTimes[perfTimes.size() / 2]) / 2
                              : perfTimes[perfTimes.size() / 2];
 
+            std::cout << "Current Run: "<< currentRun << std::endl;
+
             std::vector<Stats> prevRun;
             std::string testName(::testing::UnitTest::GetInstance()->current_test_info()->name());
             std::string timeRecFile = "./time_record_" + testFile.substr(0, testFile.size() - 4) + ".txt";
+
+            if(std::filesystem::exists(timeRecFile))
             {
                 std::ifstream ifs(timeRecFile);
                 //prevRun.insert( prevRun.begin(), std::istream_iterator<OldStats>(ifs), std::istream_iterator<OldStats>() );
@@ -244,14 +248,19 @@ namespace {
                 ifs >> prevRun.min;
                 ifs >> prevRun.med;
                 ifs >> prevRun.avg;*/
+
+
+                // Check either, only if previous results could be found
+                fastEnough = currentRun.max >= 0.95 * prevRun.front().max;
+
+                if(!fastEnough && currentRun.med > 0.0) { // check to prevent free pass for old entries with only max
+                    EXPECT_GE(currentRun.med, 0.95 * prevRun.front().med);
+                }
+                else {
+                    EXPECT_GE(currentRun.max, 0.95 * prevRun.front().max);
+                }
             }
 
-            // Check either
-            fastEnough = currentRun.max >= 0.95 * prevRun.front().max;
-            if(fastEnough)
-                EXPECT_GE(currentRun.max, 0.95 * prevRun.front().max);
-            else
-                EXPECT_GE(currentRun.med, 0.95 * prevRun.front().med);
             {
                 // Keep top 20 in list
                 prevRun.push_back(currentRun);
