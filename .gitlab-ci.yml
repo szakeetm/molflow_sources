@@ -137,7 +137,7 @@ test-windows:
   stage: test
   before_script:
     - Write-Host "Testing Windows Master"
-    - mkdir -P ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\")
+    - mkdir -Force -P ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\")
   script:
     - Set-Variable -Name "PROJPATH" -Value (($pwd).path)
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
