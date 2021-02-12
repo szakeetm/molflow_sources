@@ -260,7 +260,7 @@ namespace {
                     EXPECT_GE(currentRun.max, prevRun.front().med);
                 }
                 else { // check to prevent free pass for old entries with only max
-                    EXPECT_GE(currentRun.med, 0.95 * prevRun.front().med);
+                    EXPECT_GE(currentRun.max, 0.95 * prevRun.front().max);
                 }
             }
 
