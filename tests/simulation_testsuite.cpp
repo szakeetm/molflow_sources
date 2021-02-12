@@ -249,11 +249,11 @@ namespace {
                 ifs >> prevRun.med;
                 ifs >> prevRun.avg;*/
 
-
+                std::cout << "Prev Run: "<< prevRun.front() << std::endl;
                 // Check either, only if previous results could be found
                 fastEnough = currentRun.max >= 0.95 * prevRun.front().max;
 
-                if(!fastEnough && currentRun.med > 0.0) { // check to prevent free pass for old entries with only max
+                if(!fastEnough && prevRun.front().med > 0.0) { // check to prevent free pass for old entries with only max
                     EXPECT_GE(currentRun.med, 0.95 * prevRun.front().med);
                 }
                 else {
