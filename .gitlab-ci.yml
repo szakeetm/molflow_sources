@@ -138,6 +138,7 @@ test-windows:
   before_script:
     - Write-Host "Testing Windows Master"
     - mkdir -Force -P ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\")
+    - Move-Item -Force ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\time_record_*") (".\")
   script:
     - Set-Variable -Name "PROJPATH" -Value (($pwd).path)
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
@@ -146,7 +147,7 @@ test-windows:
     - $AllArgs = @("--gtest_output='xml:report.xml'")
     - powershell.exe -c "./testsuite.exe $AllArgs"
     - Move-Item -Path report.xml -Destination (($PROJPATH) + "\report.xml")
-    - Move-Item (".\time_record_*") ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\")
+    - Move-Item -Force (".\time_record_*") ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\")
   after_script:
     - Write-Host "Finished"
   artifacts:
