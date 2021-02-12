@@ -259,7 +259,7 @@ namespace {
                 else if(prevRun.front().med > 0.0 && currentRun.max > prevRun.front().med){
                     EXPECT_GE(currentRun.max, prevRun.front().med);
                 }
-                else if(fastEnough) { // check to prevent free pass for old entries with only max
+                else { // check to prevent free pass for old entries with only max
                     EXPECT_GE(currentRun.med, 0.95 * prevRun.front().med);
                 }
             }
