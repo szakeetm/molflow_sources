@@ -138,12 +138,12 @@ test-windows:
   before_script:
     - Write-Host "Testing Windows Master"
     - mkdir -Force -P ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\")
-    - Move-Item -Force ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\time_record_*") (".\")
   script:
     - Set-Variable -Name "PROJPATH" -Value (($pwd).path)
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
     - Set-Variable -Name "FNAME" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - Set-Location ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\")
+    - Move-Item -Force ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\time_record_*") (".\")
     - $AllArgs = @("--gtest_output='xml:report.xml'")
     - powershell.exe -c "./testsuite.exe $AllArgs"
     - Move-Item -Path report.xml -Destination (($PROJPATH) + "\report.xml")
