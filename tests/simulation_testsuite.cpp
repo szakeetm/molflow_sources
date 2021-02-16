@@ -52,7 +52,7 @@ namespace {
             Performance,
             SimulationFixture,
             ::testing::Values(
-                    "test_lr1000_pipe.xml", "test_lr10_pipe_tex.xml"
+                    "test_lr1000_pipe.xml", "test_lr10_pipe_tex.xml", "test_lr10_pipe_prof.xml", "test_lr10_pipe_trans.xml"
             ));
 
 
