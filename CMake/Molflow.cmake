@@ -20,10 +20,10 @@ ELSE()
 ENDIF()
 
 # Output Variables
-set(OUTPUT_BIN_DEBUG ${OS_RELPATH}/bin/${OS_NAME}/debug)
-set(OUTPUT_BIN_REL ${OS_RELPATH}/bin/${OS_NAME}/release)
-set(OUTPUT_LIB_DEBUG ${OS_RELPATH}/lib/${OS_NAME}/debug)
-set(OUTPUT_LIB_REL ${OS_RELPATH}/lib/${OS_NAME}/release)
+set(OUTPUT_BIN_DEBUG ${OS_RELPATH}/bin/)
+set(OUTPUT_BIN_REL ${OS_RELPATH}/bin/)
+set(OUTPUT_LIB_DEBUG ${OS_RELPATH}/lib/)
+set(OUTPUT_LIB_REL ${OS_RELPATH}/lib/)
 
 ############## Artefacts Output #################
 # Defines outputs , depending Debug or Release. #
