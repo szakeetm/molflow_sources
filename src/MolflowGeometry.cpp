@@ -2637,7 +2637,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSi
 
 		xml_node facetResultsNode = newMoment.append_child("FacetResults");
 
-		for (int i = 0; i < sh.nbFacet; i++) {
+		for (size_t i = 0; i < sh.nbFacet; i++) {
 			InterfaceFacet *f = GetFacet(i);
 			xml_node newFacetResult = facetResultsNode.append_child("Facet");
 			newFacetResult.append_attribute("id") = i;
@@ -2656,7 +2656,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSi
 				xml_node profileNode = newFacetResult.append_child("Profile");
 				profileNode.append_attribute("size") = PROFILE_SIZE;
 				const std::vector<ProfileSlice>& pr = globState.facetStates[i].momentResults[m].profile;
-				for (int p = 0; p < PROFILE_SIZE; p++) {
+				for (size_t p = 0; p < std::min(PROFILE_SIZE, globState.facetStates[i].momentResults[m].profile.size()); p++) {
 					xml_node slice = profileNode.append_child("Slice");
 					slice.append_attribute("id") = p;
 					slice.append_attribute("countEquiv") = pr[p].countEquiv;

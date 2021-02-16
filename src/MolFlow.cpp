@@ -835,11 +835,8 @@ void MolFlow::ApplyFacetParams() {
 	}
 
 	// Mark "needsReload" to sync changes with workers on next simulation start
-	try { worker.Reload(); }
-	catch (std::exception &e) {
-		GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
-		return;
-	}
+	worker.Reload();
+
 	worker.CalcTotalOutgassing();
 	UpdateFacetParams(false);
 	if (profilePlotter) profilePlotter->Refresh();
@@ -1760,10 +1757,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 						if (facetCoordinates) facetCoordinates->UpdateFromSelection();
 						if (vertexCoordinates) vertexCoordinates->Update();
 						// Send to sub process
-						try { worker.Reload(); }
-						catch(std::exception &e) {
-							GLMessageBox::Display(e.what(), "Error reloading worker", GLDLG_OK, GLDLG_ICONERROR);
-						}
+						worker.Reload();
 					}
 				}
 

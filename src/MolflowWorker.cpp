@@ -1123,6 +1123,7 @@ bool Worker::MolflowGeomToSimModel(){
     //auto geom = GetMolflowGeometry();
     // TODO: Proper clear call before for Real reload?
     model.structures.clear();
+    model.facets.clear();
     model.vertices3.clear();
 
     for(int nbV = 0; nbV < geom->GetNbVertex(); ++nbV) {

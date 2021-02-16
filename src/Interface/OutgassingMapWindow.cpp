@@ -365,9 +365,10 @@ void OutgassingMapWindow::ProcessMessage(GLComponent *src, int message) {
 					  mApp->UpdateFacetParams(true);
 					  worker->CalcTotalOutgassing();
 					  // Send to sub process
-					  worker->Reload(); } catch(Error &e) {
-						  GLMessageBox::Display(e.what(),"Error exploding facet (not enough memory?)",GLDLG_OK,GLDLG_ICONERROR);
-					}
+					  worker->Reload();
+				  } catch(Error &e) {
+				      GLMessageBox::Display(e.what(),"Error exploding facet (not enough memory?)",GLDLG_OK,GLDLG_ICONERROR);
+				  }
 				}
 				        Close();
         GLWindow::ProcessMessage(NULL,MSG_CLOSE);
