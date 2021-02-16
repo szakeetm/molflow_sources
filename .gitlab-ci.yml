@@ -156,8 +156,6 @@ build-artifact-macos-master:
     expire_in: 54 weeks
   variables:
     OS_NAME: "mac"
-  needs:
-    - job: build-macos-master
   tags:
     - macos
   only:
