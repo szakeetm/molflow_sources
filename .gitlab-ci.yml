@@ -23,10 +23,10 @@ build-windows-master:
     - C:\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe --build $buildpath --config Release -- -j 4
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
     - Set-Variable -Name "FNAME" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
-    - Set-Variable -Name "outputpath" -Value ($buildpath + "\bin\win\release")
+    - Set-Variable -Name "outputpath" -Value ($buildpath + "\bin")
     - echo $FNAME
     - New-Item -Path ("C:\" + ($APP_NAME_CAPS) + "_CI") -Name $FNAME -ItemType "directory" -Force
-    - Copy-Item  (($outputpath) + "\*") -Destination ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\") -Recurse -Force
+    - Copy-Item (($outputpath) + "\*") -Destination ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\") -Recurse -Force
   after_script:
     - echo "Finished"
   tags:
@@ -49,7 +49,7 @@ build-windows-master:
     - cmake --build $buildpath --config Release -- -j 4
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
-    - export outputpath=$buildpath'/bin/'$OS_FULL_NAME'/release'
+    - export outputpath=$buildpath'/bin/'
     - echo $FNAME
     - mkdir -p ~/$APP_NAME_CAPS'_CI/'$FNAME
     - cp -r $outputpath/* ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
@@ -92,7 +92,7 @@ build-macos-master:
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
     - Set-Variable -Name "FNAME" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - echo $FNAME
-    - Compress-Archive -Path ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\*") -DestinationPath (".\" + ($APP_NAME) + "_windows.zip")
+    - Compress-Archive -Path ("C:/" + ($APP_NAME_CAPS) + "_CI/" + ($FNAME) + "/*") -DestinationPath ("./" + ($APP_NAME) + "_windows.zip")
   artifacts:
     paths:
       - ./${APP_NAME}_windows.zip
@@ -156,8 +156,6 @@ build-artifact-macos-master:
     expire_in: 54 weeks
   variables:
     OS_NAME: "mac"
-  needs:
-    - job: build-macos-master
   tags:
     - macos
   only:
