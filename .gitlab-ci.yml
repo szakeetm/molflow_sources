@@ -88,17 +88,24 @@ build-macos-master:
 
 .artifact-windows:
   stage: build-artifact
+  before_script:
+    - Remove-item ("./" + ($APP_NAME) + "_windows/*") -Recurse -Force -ErrorAction SilentlyContinue
+    - mkdir -P ("./" + ($APP_NAME) + "_windows")
   script:
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
     - Set-Variable -Name "FNAME" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - echo $FNAME
-    - Compress-Archive -Path ("C:/" + ($APP_NAME_CAPS) + "_CI/" + ($FNAME) + "/*") -DestinationPath ("./" + ($APP_NAME) + "_windows.zip")
+    - Copy-Item ("C:/" + ($APP_NAME_CAPS) + "_CI/" + ($FNAME) + "/*") -Destination ("./" + ($APP_NAME) + "_windows") -Recurse -Force
   artifacts:
+    name: ${APP_NAME}_windows
     paths:
-      - ./${APP_NAME}_windows.zip
+      - ./${APP_NAME}_windows
 
 .artifact-unix:
   stage: build-artifact
+  before_script:
+    - rm -rf ~/$APP_NAME'_'$OS_NAME
+    - mkdir -p ~/$APP_NAME'_'$OS_NAME
   script:
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
@@ -107,10 +114,11 @@ build-macos-master:
     - ls ~/
     - ls ~/$APP_NAME_CAPS'_CI/'
     - ls ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
-    - 7za a ./$APP_NAME'_'$OS_NAME'.zip' ~/$APP_NAME_CAPS'_CI/'$FNAME'/*'
+    - cp ~/$APP_NAME_CAPS'_CI/'$FNAME'/*' ./${APP_NAME}_${$OS_NAME}
   artifacts:
+    name: ${APP_NAME}_${$OS_NAME}
     paths:
-      - ./$APP_NAME\_$OS_NAME.zip
+      - ./${APP_NAME}_${$OS_NAME}
 
 build-artifact-windows-master:
   extends: .artifact-windows
