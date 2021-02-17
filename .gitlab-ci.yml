@@ -89,8 +89,8 @@ build-macos-master:
 .artifact-windows:
   stage: build-artifact
   before_script:
-    - Get-ChildItem ("./" + ($APP_NAME) + "_windows/") | Remove-Item -Recurse -Force
     - mkdir -P ("./" + ($APP_NAME) + "_windows")
+    - Get-ChildItem ("./" + ($APP_NAME) + "_windows/") | Remove-Item -Recurse -Force
   script:
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
     - Set-Variable -Name "FNAME" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
@@ -114,7 +114,7 @@ build-macos-master:
     - ls ~/
     - ls ~/$APP_NAME_CAPS'_CI/'
     - ls ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
-    - cp ~/$APP_NAME_CAPS'_CI/'$FNAME'/*' ./$APP_NAME'_'$OS_NAME
+    - cp ~/$APP_NAME_CAPS'_CI/'$FNAME'/'* ./$APP_NAME'_'$OS_NAME
   artifacts:
     name: ${APP_NAME}_${OS_NAME}
     paths:
