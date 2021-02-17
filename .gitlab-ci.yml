@@ -44,7 +44,7 @@ build-windows-master:
     - mkdir -p $buildpath
     - cd $buildpath
     - echo "Init project in:" $(pwd)
-    - cmake -DCMAKE_BUILD_TYPE=RELEASE $buildpath/..
+    - cmake -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=RELEASE $buildpath/..
     - echo "Starting build in:" $buildpath
     - cmake --build $buildpath --config Release -- -j 4
     - export DATE=`date +%Y_%m_%d`
