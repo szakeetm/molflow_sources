@@ -1170,8 +1170,8 @@ bool Worker::MolflowGeomToSimModel(){
             //memcpy(outgMapVector.data(), outgassingMapWindow, sizeof(double)*(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0));
             size_t mapSize = facet->sh.anglemapParams.GetMapSize();
             std::vector<size_t> angleMapVector(mapSize);
-            if(facet->angleMapCache.size() != facet->sh.anglemapParams.GetRecordedDataSize()){
-                std::cerr << "Recorded Data Size is different from actual size: "<<facet->angleMapCache.size() << " / " << facet->sh.anglemapParams.GetRecordedDataSize() << std::endl;
+            if(facet->angleMapCache.size() != facet->sh.anglemapParams.GetRecordedMapSize()){
+                std::cerr << "Recorded Data Size is different from actual size: "<<facet->angleMapCache.size() << " / " << facet->sh.anglemapParams.GetRecordedMapSize() << std::endl;
                 return false;
             }
             memcpy(angleMapVector.data(), facet->angleMapCache.data(), facet->sh.anglemapParams.GetRecordedDataSize());
