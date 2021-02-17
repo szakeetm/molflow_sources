@@ -334,7 +334,7 @@ namespace {
                    "facet.100.temperature=290.92\n"
                    "simulation.mass=42.42";
         outfile.close();
-        ParameterParser::Parse(paramFile);
+        ParameterParser::Parse(paramFile, std::vector<SelectionGroup>());
 
         WorkerParams wp;
         ASSERT_FALSE(std::abs(wp.gasMass - 42.42) < 1e-5);
@@ -356,6 +356,49 @@ namespace {
         ASSERT_DOUBLE_EQ(facets[69].sh.outgassing, 42e5); // mid
         ASSERT_DOUBLE_EQ(facets[89].sh.outgassing, 42e5); // last
         ASSERT_DOUBLE_EQ(facets[99].sh.temperature, 290.92);
+
+        std::filesystem::remove(paramFile);
+    }
+
+    TEST(ParameterParsing, Group) {
+
+        // generate hash name for tmp working file
+        std::string paramFile = std::to_string(std::hash<time_t>()(time(nullptr))) + ".cfg";
+        std::ofstream outfile (paramFile);
+
+        std::vector<SelectionGroup> selections;
+        SelectionGroup group;
+        group.name = "ValidSelection";
+        group.selection = {5,8,9};
+        selections.push_back(group);
+        group.name = "InvalidSelection";
+        group.selection = {1,2,3,4};
+        selections.push_back(group);
+        group.name = "NotValid";
+        group.selection = {10,11,12};
+        selections.push_back(group);
+        outfile << "facet.\"NotValid\".opacity=0.3\n"
+                   "facet.\"ValidSelection\".opacity=0.5\n"
+                   "facet.\"InvalidSelection\".opacity=0.8\n";
+        outfile.close();
+        ParameterParser::Parse(paramFile, selections);
+
+        std::vector<SubprocessFacet> facets(200);
+        ASSERT_FALSE(std::abs(facets[4].sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[5].sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[6].sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[7].sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[8].sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[9].sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[10].sh.opacity - 0.5) < 1e-5);
+        ParameterParser::ChangeFacetParams(facets);
+        ASSERT_FALSE(std::abs(facets[4].sh.opacity - 0.5) < 1e-5);
+        ASSERT_DOUBLE_EQ(facets[5].sh.opacity, 0.5);
+        ASSERT_FALSE(std::abs(facets[6].sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[7].sh.opacity - 0.5) < 1e-5);
+        ASSERT_DOUBLE_EQ(facets[8].sh.opacity, 0.5);
+        ASSERT_DOUBLE_EQ(facets[9].sh.opacity, 0.5);
+        ASSERT_FALSE(std::abs(facets[10].sh.opacity - 0.5) < 1e-5);
 
         std::filesystem::remove(paramFile);
     }

@@ -39,7 +39,7 @@ namespace Parameters {
     std::vector<std::tuple<SimuParam, double>> simuParams;
 }
 
-void parseFacet(std::istringstream& facetString){
+void parseFacet(std::istringstream &facetString, const std::vector<SelectionGroup> &selections) {
     std::string id_str;
     std::string param_str;
     std::string paramVal_str;
@@ -47,9 +47,26 @@ void parseFacet(std::istringstream& facetString){
     std::getline(facetString, param_str, '=');
     std::getline(facetString, paramVal_str);
     std::vector<size_t> id_range;
-    // For now get facet list for all combinations, check for valid ids later
-    // facet list returns indices [0,inf], input is given by [1,inf]
-    splitFacetList(id_range, id_str, 1e7);
+
+    if(id_str.find('\"') != std::string::npos){ // selection
+        id_str.erase (std::remove(id_str.begin(), id_str.end(), '\"'), id_str.end());
+        for(const auto& sel : selections){
+            if(sel.name == id_str) {
+                id_range = sel.selection;
+                break;
+            }
+        }
+    }
+    else { // facet id or range
+        // facet list returns indices [0,inf], input is given by [1,inf]
+
+        try {
+            splitFacetList(id_range, id_str,
+                           1e7); // For now get facet list for all combinations, check for valid ids later
+        } catch (std::exception& e) {
+            std::cerr << "[" << __FUNCTION__ << "] Could not parse facet id or range:"<<std::endl <<"\t"<<id_str<<std::endl;
+        }
+    }
     auto param = Parameters::tableFac.find(param_str)->second;
     double paramVal = std::strtod(paramVal_str.c_str(),nullptr);
     for(auto& id : id_range)
@@ -77,7 +94,7 @@ void parseFacet(const std::string& facetString){
     printf("[Facet #%s] %s = %s\n", id.c_str(), param.c_str(), paramVal.c_str());
 }
 
-void ParameterParser::Parse(const std::string& paramFile){
+void ParameterParser::Parse(const std::string &paramFile, const std::vector<SelectionGroup> &selections) {
     //convDistr=std::vector<std::pair<double,double>>();
 
     std::ifstream inputFileStream(paramFile);
@@ -89,7 +106,7 @@ void ParameterParser::Parse(const std::string& paramFile){
         std::getline(lineStream, optionType, '.');
 
         if( optionType == "facet" ) {
-            parseFacet(lineStream);
+            parseFacet(lineStream, selections);
             //printf("[%zu] Parsing %s\n", i, lineStream.str().c_str());
         }
         else if( optionType == "simulation" ) {

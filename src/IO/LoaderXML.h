@@ -7,6 +7,7 @@
 
 #include <set>
 #include <map>
+#include <GeometryTypes.h>
 #include "GeometrySimu.h"
 #include "PugiXML/pugixml.hpp"
 
@@ -25,7 +26,8 @@ namespace FlowIO {
         void LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices);
     public:
         int LoadGeometry(std::string inputFileName, SimulationModel *model) override;
-        int LoadSimulationState(const std::string& inputFileName, SimulationModel *model, GlobalSimuState& globState);
+        static std::vector<SelectionGroup> LoadSelections(const std::string& inputFileName);
+        static int LoadSimulationState(const std::string& inputFileName, SimulationModel *model, GlobalSimuState& globState);
     };
 }
 

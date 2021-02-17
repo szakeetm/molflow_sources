@@ -59,8 +59,10 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
 
     loadFromXML(simManager, model, globState, !Settings::resetOnStart);
     if(!Settings::paramFile.empty()){
-        // Sweep parameters from file
-        ParameterParser::Parse(Settings::paramFile);
+        // 1. Load selection groups in case we need them for parsing
+        std::vector<SelectionGroup> selGroups = FlowIO::LoaderXML::LoadSelections(Settings::inputFile);
+        // 2. Sweep parameters from file
+        ParameterParser::Parse(Settings::paramFile, selGroups);
         ParameterParser::ChangeSimuParams(model->wp);
         ParameterParser::ChangeFacetParams(model->facets);
     }

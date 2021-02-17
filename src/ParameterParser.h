@@ -9,10 +9,11 @@
 #include <string>
 #include <Buffer_shared.h>
 #include "GeometrySimu.h"
+#include "GeometryTypes.h"
 
 class ParameterParser {
 public:
-    static void Parse(const std::string& paramFile);
+    static void Parse(const std::string &paramFile, const std::vector<SelectionGroup> &selections);
 
     static void ChangeSimuParams(WorkerParams& params);
 

@@ -182,6 +182,35 @@ int LoaderXML::LoadGeometry(const std::string inputFileName, SimulationModel *mo
     return 0;
 }
 
+std::vector<SelectionGroup> LoaderXML::LoadSelections(const std::string& inputFileName) {
+    std::vector<SelectionGroup> selGroup;
+
+    xml_document loadXML;
+    auto inputFile = inputFileName.c_str();
+    xml_parse_result parseResult = loadXML.load_file(inputFile); //parse xml file directly
+    xml_node rootNode = loadXML.child("SimulationEnvironment");
+    if(!rootNode){
+        std::cerr << "XML file seems to be of older format, please generate a new file with the GUI application!"<<std::endl;
+        return selGroup;
+    }
+
+    xml_node interfNode = loadXML.child("Interface");
+    xml_node selNode = interfNode.child("Selections");
+    //int nbS = selNode.select_nodes("Selection").size();
+
+    selGroup.reserve(std::distance(selNode.children("Selection").begin(),selNode.children("Selection").end()));
+    for (xml_node sNode : selNode.children("Selection")) {
+        SelectionGroup s;
+        s.name = strdup(sNode.attribute("name").as_string());
+        s.selection.reserve(sNode.select_nodes("selItem").size());
+        for (xml_node iNode : sNode.children("selItem"))
+            s.selection.push_back(iNode.attribute("facet").as_llong());
+        selGroup.push_back(s);
+    }
+
+    return selGroup;
+}
+
 int LoaderXML::LoadSimulationState(const std::string& inputFileName, SimulationModel *model, GlobalSimuState& globState){
     xml_document loadXML;
     xml_parse_result parseResult = loadXML.load_file(inputFileName.c_str()); //parse xml file directly
