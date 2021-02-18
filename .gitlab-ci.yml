@@ -248,8 +248,6 @@ build-artifact-windows-tags:
   extends:
     - .artifact-windows
     - .artifact-prop-tags
-  needs:
-    - job: build-windows-master
   tags:
     - windows
 
@@ -259,8 +257,6 @@ build-artifact-debian-tags:
     - .artifact-prop-tags
   variables:
     OS_NAME: "debian"
-  needs:
-    - job: build-debian-master
   tags:
     - debian
 
@@ -270,8 +266,6 @@ build-artifact-fedora-tags:
     - .artifact-prop-tags
   variables:
     OS_NAME: "fedora"
-  needs:
-    - job: build-fedora-master
   tags:
     - fedora
 
@@ -281,7 +275,5 @@ build-artifact-macos-tags:
   extends:
     - .artifact-unix
     - .artifact-prop-tags
-  needs:
-    - job: build-macos-master
   tags:
     - macos
