@@ -240,6 +240,8 @@ build-artifact-macos-branch:
     - .artifact-unix
     - .artifact-prop-branch
   stage: optional-artifact
+  needs:
+    - job: build-macos-master
   variables:
     OS_NAME: "mac"
   tags:
