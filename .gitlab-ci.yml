@@ -3,9 +3,24 @@ variables:
   APP_NAME_CAPS: "MOLFLOW"
 
 stages:
+  - prepare
   - build
   - build-artifact
   - optional-artifact
+
+prepare_job:
+  stage: prepare                                              # This stage must run before the release stage
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: always                                             # Do not run this job when a tag is created manually
+  script:
+    - COMMIT_TAG=${CI_COMMIT_TAG:1} # trim v at beginning
+    - echo "TAG_SUFFIX=_$COMMIT_TAG" >> variables.env             # and append to the variables.env file
+  artifacts:
+    reports:
+      dotenv: variables.env
+  tags:
+    - linux
 
 build-windows-master:
   stage: build
@@ -83,22 +98,46 @@ build-macos-master:
   needs: []
   tags:
     - macos
-  when: manual
-  allow_failure: true
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+      when: manual
+      allow_failure: true
+    - if: '$CI_COMMIT_TAG'
+      when: manual
+      allow_failure: false
 
 .artifact-windows:
+  variables:
+    TAG_SUFFIX: ""
   stage: build-artifact
+  before_script:
+    - mkdir -P ("./" + ($APP_NAME) + "_win" + ($TAG_SUFFIX))
+    - Get-ChildItem ("./" + ($APP_NAME) + "_win" + ($TAG_SUFFIX)) | Remove-Item -Recurse -Force
   script:
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
     - Set-Variable -Name "FNAME" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - echo $FNAME
-    - Compress-Archive -Path ("C:/" + ($APP_NAME_CAPS) + "_CI/" + ($FNAME) + "/*") -DestinationPath ("./" + ($APP_NAME) + "_windows.zip")
+    - echo $TAG_SUFFIX
+    - echo $CI_COMMIT_TAG
+    - echo $env:CI_COMMIT_TAG
+    - Copy-Item ("C:/" + ($APP_NAME_CAPS) + "_CI/" + ($FNAME) + "/*") -Destination ("./" + ($APP_NAME) + "_win" + ($TAG_SUFFIX)) -Recurse -Force
+  rules:
+    - if: '($CI_COMMIT_TAG)'
+      variables:
+        TAG_SUFFIX: "_${CI_COMMIT_TAG}"
   artifacts:
+    name: ${APP_NAME}_win${TAG_SUFFIX}
     paths:
-      - ./${APP_NAME}_windows.zip
+      - ./${APP_NAME}_win${TAG_SUFFIX}
+
 
 .artifact-unix:
+  variables:
+    TAG_SUFFIX: ""
   stage: build-artifact
+  before_script:
+    - rm -rf ./$APP_NAME'_'$OS_NAME$TAG_SUFFIX
+    - mkdir -p ./$APP_NAME'_'$OS_NAME$TAG_SUFFIX
   script:
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
@@ -107,121 +146,171 @@ build-macos-master:
     - ls ~/
     - ls ~/$APP_NAME_CAPS'_CI/'
     - ls ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
-    - 7za a ./$APP_NAME'_'$OS_NAME'.zip' ~/$APP_NAME_CAPS'_CI/'$FNAME'/*'
+    - cp -r ~/$APP_NAME_CAPS'_CI/'$FNAME'/'* ./$APP_NAME'_'$OS_NAME$TAG_SUFFIX
+  rules:
+    - if: '($CI_COMMIT_TAG)'
+      variables:
+        TAG_SUFFIX: "_${CI_COMMIT_TAG}"
   artifacts:
+    name: ${APP_NAME}_${OS_NAME}${TAG_SUFFIX}
     paths:
-      - ./$APP_NAME\_$OS_NAME.zip
+      - ./${APP_NAME}_${OS_NAME}${TAG_SUFFIX}
+
+.artifact-prop-master:
+  artifacts:
+    expire_in: 8 weeks
+  rules:
+    - if: '($CI_COMMIT_BRANCH == "master" && $OS_NAME != "mac")'
+      when: always
+    - if: '($CI_COMMIT_BRANCH == "master" && $OS_NAME == "mac")'
+      when: manual
+      allow_failure: true
+
+.artifact-prop-branch:
+  artifacts:
+    expire_in: 2 weeks
+  rules:
+    - if: '($CI_COMMIT_BRANCH != "master" && $CI_COMMIT_TAG == null && $OS_NAME != "mac")'
+      when: always
+    - if: '($CI_COMMIT_BRANCH != "master" && $CI_COMMIT_TAG == null && $OS_NAME == "mac")'
+      when: manual
+      allow_failure: true
+
+.artifact-prop-tags:
+  artifacts:
+    expire_in: 5 yrs
+  rules:
+    - if: '($CI_COMMIT_TAG)'
+      when: always
 
 build-artifact-windows-master:
-  extends: .artifact-windows
-  artifacts:
-    expire_in: 54 weeks
+  extends:
+    - .artifact-windows
+    - .artifact-prop-master
   needs:
     - job: build-windows-master
   tags:
     - windows
-  only:
-    - master
 
 build-artifact-debian-master:
-  extends: .artifact-unix
-  artifacts:
-    expire_in: 54 weeks
+  extends:
+    - .artifact-unix
+    - .artifact-prop-master
   variables:
     OS_NAME: "debian"
   needs:
     - job: build-debian-master
   tags:
     - debian
-  only:
-    - master
 
 build-artifact-fedora-master:
-  extends: .artifact-unix
-  artifacts:
-    expire_in: 54 weeks
+  extends:
+    - .artifact-unix
+    - .artifact-prop-master
   variables:
     OS_NAME: "fedora"
   needs:
     - job: build-fedora-master
   tags:
     - fedora
-  only:
-    - master
 
 build-artifact-macos-master:
-  extends: .artifact-unix
+  extends:
+    - .artifact-unix
+    - .artifact-prop-master
   stage: optional-artifact
-  artifacts:
-    expire_in: 54 weeks
   variables:
     OS_NAME: "mac"
   tags:
     - macos
-  only:
-    - master
-  when: manual
-  allow_failure: true
 
 build-artifact-windows-branch:
-  extends: .artifact-windows
+  extends:
+    - .artifact-windows
+    - .artifact-prop-branch
   needs:
     - job: build-windows-master
   tags:
     - windows
-  only:
-    - branches
-  except:
-    - master
-    - tags
-  artifacts:
-    expire_in: 4 weeks
 
 build-artifact-debian-branch:
-  extends: .artifact-unix
+  extends:
+    - .artifact-unix
+    - .artifact-prop-branch
   variables:
     OS_NAME: "debian"
   needs:
     - job: build-debian-master
   tags:
     - debian
-  only:
-    - branches
-  except:
-    - master
-    - tags
-  artifacts:
-    expire_in: 4 weeks
 
 build-artifact-fedora-branch:
-  extends: .artifact-unix
+  extends:
+    - .artifact-unix
+    - .artifact-prop-branch
   variables:
     OS_NAME: "fedora"
   needs:
     - job: build-fedora-master
   tags:
     - fedora
-  only:
-    - branches
-  except:
-    - master
-    - tags
-  artifacts:
-    expire_in: 4 weeks
 
 build-artifact-macos-branch:
-  extends: .artifact-unix
-  stage: optional-artifact
   variables:
     OS_NAME: "mac"
+  extends:
+    - .artifact-unix
+    - .artifact-prop-branch
+  stage: optional-artifact
   tags:
     - macos
-  only:
-    - branches
-  except:
-    - master
-    - tags
-  artifacts:
-    expire_in: 4 weeks
-  when: manual
-  allow_failure: true
+
+build-artifact-windows-tags:
+  extends:
+    - .artifact-windows
+    - .artifact-prop-tags
+  needs:
+    - job: build-windows-master
+    - job: prepare_job
+      artifacts: true
+  tags:
+    - windows
+
+build-artifact-debian-tags:
+  extends:
+    - .artifact-unix
+    - .artifact-prop-tags
+  needs:
+    - job: build-debian-master
+    - job: prepare_job
+      artifacts: true
+  variables:
+    OS_NAME: "debian"
+  tags:
+    - debian
+
+build-artifact-fedora-tags:
+  extends:
+    - .artifact-unix
+    - .artifact-prop-tags
+  needs:
+    - job: build-fedora-master
+    - job: prepare_job
+      artifacts: true
+  variables:
+    OS_NAME: "fedora"
+  tags:
+    - fedora
+
+build-artifact-macos-tags:
+  variables:
+    OS_NAME: "mac"
+  extends:
+    - .artifact-unix
+    - .artifact-prop-tags
+  needs:
+    - job: build-macos-master
+    - job: prepare_job
+      artifacts: true
+  tags:
+    - macos
