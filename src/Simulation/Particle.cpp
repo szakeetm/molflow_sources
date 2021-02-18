@@ -856,7 +856,7 @@ void Particle::RecordHistograms(SubprocessFacet *iFacet) {
     moments[1] = LookupMomentIndex(particleTime, model->tdParams.moments,
                                    lastMomentIndex);
     for (auto &m : moments) {
-        if (m <= 0) return;
+        if (m < 0) return;
 
         if (globHistParams.recordBounce) {
             binIndex = Min(nbBounces / globHistParams.nbBounceBinsize,
