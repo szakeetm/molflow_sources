@@ -474,7 +474,7 @@ int LoaderXML::LoadSimulationState(const std::string& inputFileName, SimulationM
     globState.globalHits.texture_limits[2].max.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("max").as_double();
     */
 
-    globState.globalHits.texture_limits[0].min.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("min").as_double();
+    /*globState.globalHits.texture_limits[0].min.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("min").as_double();
     globState.globalHits.texture_limits[0].max.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("max").as_double();
     globState.globalHits.texture_limits[1].min.all = minMaxNode.child("With_constant_flow").child("Density").attribute("min").as_double();
     globState.globalHits.texture_limits[1].max.all = minMaxNode.child("With_constant_flow").child("Density").attribute("max").as_double();
@@ -485,8 +485,7 @@ int LoaderXML::LoadSimulationState(const std::string& inputFileName, SimulationM
     globState.globalHits.texture_limits[1].min.moments_only = minMaxNode.child("Moments_only").child("Density").attribute("min").as_double();
     globState.globalHits.texture_limits[1].max.moments_only = minMaxNode.child("Moments_only").child("Density").attribute("max").as_double();
     globState.globalHits.texture_limits[2].min.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("min").as_double();
-    globState.globalHits.texture_limits[2].max.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("max").as_double();
-
+    globState.globalHits.texture_limits[2].max.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("max").as_double();*/
 
     //TODO: globState.globalHits. = this->angleMapCache;
 

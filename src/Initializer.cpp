@@ -154,11 +154,11 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
                 fileName = autoSavePrefix + fileName;
                 if(std::filesystem::exists(fileName)) {
                     std::cout << "Found autosave file! Loading simulation state..." << std::endl;
-                    loader.LoadSimulationState(fileName, model, *globState);
+                    FlowIO::LoaderXML::LoadSimulationState(fileName, model, *globState);
                 }
             }
             else {
-                loader.LoadSimulationState(Settings::inputFile, model, *globState);
+                FlowIO::LoaderXML::LoadSimulationState(Settings::inputFile, model, *globState);
             }
         }
 

@@ -219,19 +219,19 @@ int WriterXML::SaveSimulationState(const std::string& outputFileName, Simulation
 
     //Texture Min/Max
     xml_node minMaxNode = resultNode.append_child("TextureMinMax");
-    minMaxNode.append_child("With_constant_flow").append_child("Pressure").append_attribute("min") = globState.globalHits.texture_limits[0].min.all;
-    minMaxNode.child("With_constant_flow").child("Pressure").append_attribute("max") = globState.globalHits.texture_limits[0].max.all;
-    minMaxNode.child("With_constant_flow").append_child("Density").append_attribute("min") = globState.globalHits.texture_limits[1].min.all;
-    minMaxNode.child("With_constant_flow").child("Density").append_attribute("max") = globState.globalHits.texture_limits[1].max.all;
-    minMaxNode.child("With_constant_flow").append_child("Imp.rate").append_attribute("min") = globState.globalHits.texture_limits[2].min.all;
-    minMaxNode.child("With_constant_flow").child("Imp.rate").append_attribute("max") = globState.globalHits.texture_limits[2].max.all;
+    minMaxNode.append_child("With_constant_flow").append_child("Pressure").append_attribute("min") = 0.0;
+    minMaxNode.child("With_constant_flow").child("Pressure").append_attribute("max") = 0.0;
+    minMaxNode.child("With_constant_flow").append_child("Density").append_attribute("min") = 0.0;
+    minMaxNode.child("With_constant_flow").child("Density").append_attribute("max") = 0.0;
+    minMaxNode.child("With_constant_flow").append_child("Imp.rate").append_attribute("min") = 0.0;
+    minMaxNode.child("With_constant_flow").child("Imp.rate").append_attribute("max") = 0.0;
 
-    minMaxNode.append_child("Moments_only").append_child("Pressure").append_attribute("min") = globState.globalHits.texture_limits[0].min.moments_only;
-    minMaxNode.child("Moments_only").child("Pressure").append_attribute("max") = globState.globalHits.texture_limits[0].max.moments_only;
-    minMaxNode.child("Moments_only").append_child("Density").append_attribute("min") = globState.globalHits.texture_limits[1].min.moments_only;
-    minMaxNode.child("Moments_only").child("Density").append_attribute("max") = globState.globalHits.texture_limits[1].max.moments_only;
-    minMaxNode.child("Moments_only").append_child("Imp.rate").append_attribute("min") = globState.globalHits.texture_limits[2].min.moments_only;
-    minMaxNode.child("Moments_only").child("Imp.rate").append_attribute("max") = globState.globalHits.texture_limits[2].max.moments_only;
+    minMaxNode.append_child("Moments_only").append_child("Pressure").append_attribute("min") = 0.0;
+    minMaxNode.child("Moments_only").child("Pressure").append_attribute("max") = 0.0;
+    minMaxNode.child("Moments_only").append_child("Density").append_attribute("min") = 0.0;
+    minMaxNode.child("Moments_only").child("Density").append_attribute("max") = 0.0;
+    minMaxNode.child("Moments_only").append_child("Imp.rate").append_attribute("min") = 0.0;
+    minMaxNode.child("Moments_only").child("Imp.rate").append_attribute("max") = 0.0;
 
     if (!saveDoc.save_file(outputFileName.c_str()))
         throw Error("Error writing XML file."); //successful save

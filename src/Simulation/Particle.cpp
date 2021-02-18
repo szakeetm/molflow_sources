@@ -14,42 +14,21 @@
 using namespace MFSim;
 
 bool Particle::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, DWORD timeout) {
-    TEXTURE_MIN_MAX texture_limits_old[3];
     int i, j, x, y;
-//#if defined(DEBUG)
+
     Chronometer timer;
     timer.Start();
 
     if (!globSimuState.tMutex.try_lock_for(std::chrono::milliseconds(timeout))) {
         return false;
     }
-//#endif
+
     //SetState(PROCESS_STARTING, "Waiting for 'hits' dataport access...", false, true);
 
-    //bool lastHitUpdateOK = LockMutex(worker->results.mutex, timeout);
-    //if (!lastHitUpdateOK) return false; //Timeout, will try again later
     //SetState(PROCESS_STARTING, "Updating MC hits...", false, true);
 
-    //buffer = (BYTE *) dpHit->buff;
-    //gHits = (GlobalHitBuffer *) buffer;
-
     // Global hits and leaks: adding local hits to shared memory
-    /*gHits->globalHits += tmpGlobalResult.globalHits;
-    gHits->distTraveled_total += tmpGlobalResult.distTraveled_total;
-    gHits->distTraveledTotal_fullHitsOnly += tmpGlobalResult.distTraveledTotal_fullHitsOnly;*/
-
     {
-        //auto& tmpState = currentParticles[prIdx].tmpState;
-
-        //for (auto &tmpState : tmpGlobalResults) {
-        //for(auto& tmpState : tmpGlobalResults) {
-/*#if defined(DEBUG)
-        std::cout << "[" << 0 << "] "
-                  << globSimuState.globalHits.globalHits.hit.nbMCHit + tmpState.globalHits.globalHits.hit.nbMCHit
-                  << " : " << globSimuState.globalHits.globalHits.hit.nbMCHit << " += "
-                  << tmpState.globalHits.globalHits.hit.nbMCHit << std::endl;
-#endif*/
-        //printf("UP![%zu] %lu + %zu = %zu\n", particleId, tmpState.globalHits.globalHits.hit.nbDesorbed, globSimuState.globalHits.globalHits.hit.nbDesorbed, tmpState.globalHits.globalHits.hit.nbDesorbed + globSimuState.globalHits.globalHits.hit.nbDesorbed);
         globSimuState.globalHits.globalHits += tmpState.globalHits.globalHits;
         globSimuState.globalHits.distTraveled_total += tmpState.globalHits.distTraveled_total;
         globSimuState.globalHits.distTraveledTotal_fullHitsOnly += tmpState.globalHits.distTraveledTotal_fullHitsOnly;
@@ -97,83 +76,12 @@ bool Particle::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, DW
         // Facets
         globSimuState.facetStates += tmpState.facetStates;
     }
-
-    if (particleId == 0) {
-        // Another loop for a comlete global min/max texture search
-
-        // first get tmp limit
-        TEXTURE_MIN_MAX limits[3];
-        for(auto& lim : limits){
-            lim.max.all = lim.max.moments_only = 0;
-            lim.min.all = lim.min.moments_only = HITMAX;
-        }
-
-
-        for (const SubprocessFacet &subF : model->facets) {
-            if (subF.sh.isTextured) {
-                for (size_t m = 0; m < (1 + nbMoments); m++) {
-                    {
-                        // go on if the facet was never hit before
-                        auto &facetHitBuffer = globSimuState.facetStates[subF.globalId].momentResults[m].hits;
-                        if (facetHitBuffer.hit.nbMCHit == 0 && facetHitBuffer.hit.nbDesorbed == 0) continue;
-                    }
-
-                    //double dCoef = globState.globalHits.globalHits.hit.nbDesorbed * 1E4 * model->wp.gasMass / 1000 / 6E23 * MAGIC_CORRECTION_FACTOR;  //1E4 is conversion from m2 to cm2
-                    const double timeCorrection =
-                            m == 0 ? model->wp.finalOutgassingRate : (model->wp.totalDesorbedMolecules) /
-                                                                     model->tdParams.moments[m - 1].second;
-                    //model->wp.timeWindowSize;
-                    //Timecorrection is required to compare constant flow texture values with moment values (for autoscaling)
-                    const auto &texture = globSimuState.facetStates[subF.globalId].momentResults[m].texture;
-                    const size_t textureSize = texture.size();
-                    for (size_t t = 0; t < textureSize; t++) {
-                        //Add temporary hit counts
-
-                        if (subF.largeEnough[t]) {
-                            double val[3];  //pre-calculated autoscaling values (Pressure, imp.rate, density)
-
-                            val[0] = texture[t].sum_v_ort_per_area *
-                                     timeCorrection; //pressure without dCoef_pressure
-                            val[1] = texture[t].countEquiv * subF.textureCellIncrements[t] *
-                                     timeCorrection; //imp.rate without dCoef
-                            val[2] = subF.textureCellIncrements[t] * texture[t].sum_1_per_ort_velocity *
-                                     timeCorrection; //particle density without dCoef
-
-                            //Global autoscale
-                            for (int v = 0; v < 3; v++) {
-                                limits[v].max.all = std::max(val[v],limits[v].max.all);
-
-                                if (val[v] > 0.0) {
-                                    limits[v].min.all = std::min(val[v],limits[v].min.all);
-                                }
-                                //Autoscale ignoring constant flow (moments only)
-                                if (m != 0) {
-                                    limits[v].max.moments_only = std::max(val[v],limits[v].max.moments_only);;
-
-                                    if (val[v] > 0.0)
-                                        limits[v].min.moments_only = std::min(val[v],limits[v].min.moments_only);;
-                                }
-                            }
-                        } // if largeenough
-                    }
-                }
-            }
-        }
-
-        // Last put temp limits into global struct
-        for(int v = 0; v < 3; ++v) {
-            globSimuState.globalHits.texture_limits[v] = limits[v];
-        }
-
-    }
-    //ReleaseDataport(dpHit);
-    //TODO: //ReleaseMutex(worker->results.mutex);
     globSimuState.tMutex.unlock();
 
     //extern char *GetSimuStatus();
     //SetState(PROCESS_STARTING, GetSimuStatus(), false, true);
 
-//#if defined(DEBUG)
+    //#if defined(DEBUG)
     timer.Stop();
 
     //printf("Update hits (glob): %lf s [%zu]\n", (t1 - t0) * 1.0, particleId);
