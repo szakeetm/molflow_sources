@@ -247,6 +247,7 @@ build-artifact-fedora-branch:
 build-artifact-macos-branch:
   variables:
     OS_NAME: "mac"
+  needs: []
   extends:
     - .artifact-unix
     - .artifact-prop-branch-mac
