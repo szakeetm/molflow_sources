@@ -138,8 +138,9 @@ build-macos-master:
   artifacts:
     expire_in: 8 weeks
   rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
-    - if: '$OS_NAME == "mac"'
+    - if: '($CI_COMMIT_BRANCH == "master" && $OS_NAME != "mac")'
+      when: always
+    - if: '($CI_COMMIT_BRANCH == "master" && $OS_NAME == "mac")'
       when: manual
       allow_failure: true
 
@@ -147,8 +148,9 @@ build-macos-master:
   artifacts:
     expire_in: 2 weeks
   rules:
-    - if: '($CI_COMMIT_BRANCH != "master" && $CI_COMMIT_BRANCH && $CI_COMMIT_TAG != null)'
-    - if: '$OS_NAME == "mac"'
+    - if: '($CI_COMMIT_BRANCH != "master" && $CI_COMMIT_BRANCH && $CI_COMMIT_TAG != null && $OS_NAME != "mac")'
+      when: always
+    - if: '($CI_COMMIT_BRANCH != "master" && $CI_COMMIT_BRANCH && $CI_COMMIT_TAG != null && $OS_NAME == "mac")'
       when: manual
       allow_failure: true
 
@@ -156,8 +158,9 @@ build-macos-master:
   artifacts:
     expire_in: 5 yrs
   rules:
-    - if: $CI_COMMIT_TAG
-    - if: '$OS_NAME == "mac"'
+    - if: '($CI_COMMIT_TAG && $OS_NAME != "mac")'
+      when: always
+    - if: '($CI_COMMIT_TAG && $OS_NAME == "mac")'
       when: manual
 
 build-artifact-windows-master:
