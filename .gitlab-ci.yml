@@ -276,11 +276,11 @@ build-artifact-fedora-tags:
     - fedora
 
 build-artifact-macos-tags:
+  variables:
+    OS_NAME: "mac"
   extends:
     - .artifact-unix
     - .artifact-prop-tags
-  variables:
-    OS_NAME: "mac"
   needs:
     - job: build-macos-master
   tags:
