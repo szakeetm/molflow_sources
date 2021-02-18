@@ -249,7 +249,7 @@ build-artifact-macos-branch:
     OS_NAME: "mac"
   extends:
     - .artifact-unix
-    - .artifact-prop-branch-mac
+    - .artifact-prop-branch
   stage: optional-artifact
   tags:
     - macos
