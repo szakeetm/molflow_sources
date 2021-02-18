@@ -83,8 +83,9 @@ build-macos-master:
   needs: []
   tags:
     - macos
-  when: manual
-  allow_failure: true
+  rules:
+    - when: manual
+    - allow_failure: true
 
 .artifact-windows:
   variables:
@@ -133,179 +134,152 @@ build-macos-master:
       variables:
         TAG_SUFFIX: "_${CI_COMMIT_TAG}"
 
-build-artifact-windows-master:
-  extends: .artifact-windows
+.artifact-prop-master:
   artifacts:
     expire_in: 8 weeks
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+
+.artifact-prop-branch:
+  artifacts:
+    expire_in: 2 weeks
+  rules:
+    - if: '($CI_COMMIT_BRANCH != "master" && $CI_COMMIT_BRANCH && $CI_COMMIT_TAG != null)'
+
+.artifact-prop-tags:
+  artifacts:
+    expire_in: 5 yrs
+  rules:
+    - if: $CI_COMMIT_TAG
+
+build-artifact-windows-master:
+  extends:
+    - .artifact-windows
+    - .artifact-prop-master
   needs:
     - job: build-windows-master
   tags:
     - windows
-  only:
-    - master
 
 build-artifact-debian-master:
-  extends: .artifact-unix
-  artifacts:
-    expire_in: 8 weeks
+  extends:
+    - .artifact-unix
+    - .artifact-prop-master
   variables:
     OS_NAME: "debian"
   needs:
     - job: build-debian-master
   tags:
     - debian
-  only:
-    - master
 
 build-artifact-fedora-master:
-  extends: .artifact-unix
-  artifacts:
-    expire_in: 8 weeks
+  extends:
+    - .artifact-unix
+    - .artifact-prop-master
   variables:
     OS_NAME: "fedora"
   needs:
     - job: build-fedora-master
   tags:
     - fedora
-  only:
-    - master
 
 build-artifact-macos-master:
-  extends: .artifact-unix
+  extends:
+    - .artifact-unix
+    - .artifact-prop-master
   stage: optional-artifact
-  artifacts:
-    expire_in: 8 weeks
   variables:
     OS_NAME: "mac"
   tags:
     - macos
-  only:
-    - master
-  when: manual
-  allow_failure: true
+  rules:
+    - when: manual
+    - allow_failure: true
 
 build-artifact-windows-branch:
-  extends: .artifact-windows
+  extends:
+    - .artifact-windows
+    - .artifact-prop-branch
   needs:
     - job: build-windows-master
   tags:
     - windows
-  only:
-    - branches
-  except:
-    - master
-    - tags
-  artifacts:
-    expire_in: 2 weeks
 
 build-artifact-debian-branch:
-  extends: .artifact-unix
+  extends:
+    - .artifact-unix
+    - .artifact-prop-branch
   variables:
     OS_NAME: "debian"
   needs:
     - job: build-debian-master
   tags:
     - debian
-  only:
-    - branches
-  except:
-    - master
-    - tags
-  artifacts:
-    expire_in: 2 weeks
 
 build-artifact-fedora-branch:
-  extends: .artifact-unix
+  extends:
+    - .artifact-unix
+    - .artifact-prop-branch
   variables:
     OS_NAME: "fedora"
   needs:
     - job: build-fedora-master
   tags:
     - fedora
-  only:
-    - branches
-  except:
-    - master
-    - tags
-  artifacts:
-    expire_in: 2 weeks
 
 build-artifact-macos-branch:
-  extends: .artifact-unix
+  extends:
+    - .artifact-unix
+    - .artifact-prop-branch
   stage: optional-artifact
   variables:
     OS_NAME: "mac"
   tags:
     - macos
-  only:
-    - branches
-  except:
-    - master
-    - tags
-  artifacts:
-    expire_in: 2 weeks
-  when: manual
-  allow_failure: true
+  rules:
+    - when: manual
+    - allow_failure: true
 
 build-artifact-windows-tags:
-  extends: .artifact-windows
+  extends:
+    - .artifact-windows
+    - .artifact-prop-tags
   needs:
     - job: build-windows-master
   tags:
     - windows
-  only:
-    - tags
-  except:
-    - master
-    - branches
-  artifacts:
-    expire_in: 5 yrs
 
 build-artifact-debian-tags:
-  extends: .artifact-unix
+  extends:
+    - .artifact-unix
+    - .artifact-prop-tags
   variables:
     OS_NAME: "debian"
   needs:
     - job: build-debian-master
   tags:
     - debian
-  only:
-    - tags
-  except:
-    - master
-    - branches
-  artifacts:
-    expire_in: 5 yrs
 
 build-artifact-fedora-tags:
-  extends: .artifact-unix
+  extends:
+    - .artifact-unix
+    - .artifact-prop-tags
   variables:
     OS_NAME: "fedora"
   needs:
     - job: build-fedora-master
   tags:
     - fedora
-  only:
-    - tags
-  except:
-    - master
-    - branches
-  artifacts:
-    expire_in: 5 yrs
 
 build-artifact-macos-tags:
-  extends: .artifact-unix
+  extends:
+    - .artifact-unix
+    - .artifact-prop-tags
   variables:
     OS_NAME: "mac"
   needs:
     - job: build-macos-master
   tags:
     - macos
-  only:
-    - tags
-  except:
-    - master
-    - branches
-  artifacts:
-    expire_in: 5 yrs
-  when: manual
+  rules:
+    - when: manual
