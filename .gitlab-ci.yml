@@ -154,6 +154,14 @@ build-macos-master:
       when: manual
       allow_failure: true
 
+.artifact-prop-branch-mac:
+  artifacts:
+    expire_in: 2 weeks
+  rules:
+    - if: '($CI_COMMIT_BRANCH != "master" && $CI_COMMIT_TAG == null)'
+      when: manual
+      allow_failure: true
+
 .artifact-prop-tags:
   artifacts:
     expire_in: 5 yrs
@@ -238,10 +246,8 @@ build-artifact-fedora-branch:
 build-artifact-macos-branch:
   extends:
     - .artifact-unix
-    - .artifact-prop-branch
+    - .artifact-prop-branch-mac
   stage: optional-artifact
-  needs:
-    - job: build-macos-master
   variables:
     OS_NAME: "mac"
   tags:
