@@ -84,8 +84,9 @@ build-macos-master:
   tags:
     - macos
   rules:
-    - when: manual
-    - allow_failure: true
+    - if: '$CI_COMMIT_BRANCH'
+      when: manual
+      allow_failure: true
 
 .artifact-windows:
   variables:
@@ -244,12 +245,12 @@ build-artifact-fedora-branch:
     - fedora
 
 build-artifact-macos-branch:
+  variables:
+    OS_NAME: "mac"
   extends:
     - .artifact-unix
     - .artifact-prop-branch-mac
   stage: optional-artifact
-  variables:
-    OS_NAME: "mac"
   tags:
     - macos
 
