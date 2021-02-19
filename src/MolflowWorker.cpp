@@ -96,7 +96,7 @@ extern SynRad*mApp;
 /**
 * \brief Default constructor for a worker
 */
-Worker::Worker() : simManager("molflow", "MFLW"), model{} {
+Worker::Worker() : simManager(), model{} {
 
     //Molflow specific
     temperatures = std::vector<double>();

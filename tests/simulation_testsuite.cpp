@@ -167,7 +167,7 @@ namespace {
         const size_t runForTSec = 20;
         std::vector<double> perfTimes;
         for(size_t runNb = 0; runNb < nRuns; ++runNb){
-            SimulationManager simManager("molflow", "MFLW");
+            SimulationManager simManager();
             SimulationModel model{};
             GlobalSimuState globState{};
 
@@ -289,12 +289,12 @@ namespace {
     TEST(SubProcessInit, Zero) {
 
         {
-            SimulationManager simMan("molflow","MFLW");
+            SimulationManager simMan();
             EXPECT_EQ(0, simMan.InitSimUnits());
         }
 
         {
-            SimulationManager simMan("molflow","MFLW");
+            SimulationManager simMan();
             simMan.useCPU = true;
             simMan.nbThreads = 0;
             simMan.InitSimUnits();
@@ -302,7 +302,7 @@ namespace {
         }
 
         {
-            SimulationManager simMan("molflow","MFLW");
+            SimulationManager simMan();
             simMan.useCPU = true;
             simMan.nbThreads = 1; // more not possible,
             simMan.InitSimUnits();
@@ -312,7 +312,7 @@ namespace {
 
     TEST(SubProcessCreateAndKill, CPU) {
         {
-            SimulationManager simMan("molflow","MFLW");
+            SimulationManager simMan();
             simMan.useCPU = true;
             simMan.nbThreads = 1;
             simMan.InitSimUnits();
