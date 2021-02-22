@@ -7,6 +7,7 @@
 
 #include <string>
 #include "GeometrySimu.h"
+#include "PugiXML/pugixml.hpp"
 
 namespace FlowIO {
 
@@ -19,11 +20,11 @@ namespace FlowIO {
 
     class WriterXML : public Writer {
         protected:
-            //void SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices);
         public:
-            //void SaveGeometry(std::string outputFileName, SimulationModel *model) override;
+        //void SaveGeometry(std::string outputFileName, SimulationModel *model) override;
             static void SaveGeometry(const std::string& outputFileName, SimulationModel *model);
             static int SaveSimulationState(const std::string& outputFileName, SimulationModel *model, GlobalSimuState& globState);
+        static void SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices);
     };
 }
 

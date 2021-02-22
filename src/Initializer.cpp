@@ -123,11 +123,22 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
         return 1;
     }
 
+    //TODO: Load parameters from catalog explicitly?
+    // For GUI
+    // work->InsertParametersBeforeCatalog(loadedParams);
+    // Load viewsettings for each facet
+
     std::cout << "[LoadGeom] Loaded geometry of " << model->size() << " bytes!" << std::endl;
+
+    //InitializeGeometry();
+    model->InitialiseFacets();
+    model->PrepareToRun();
+
+    std::cout << "[LoadGeom] Initializing geometry!" << std::endl;
+    initSimModel(model);
 
     // 2. Create simulation dataports
     try {
-        simManager->ResetSimulations();
         //progressDlg->SetMessage("Creating Logger...");
         /*size_t logDpSize = 0;
         if (model->otfParams.enableLogging) {
@@ -135,12 +146,6 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
         }
         simManager->ReloadLogBuffer(logDpSize, true);*/
 
-        //progressDlg->SetMessage("Creating hit buffer...");
-        size_t nbMoments = model->tdParams.moments.size();
-        std::cout << "[LoadGeom] Initializing geometry!" << std::endl;
-        initSimModel(model);
-        // temp facets from loader to model 2d (structure, facet)
-        //
         std::cout << "[LoadGeom] Resizing state!" << std::endl;
         globState->Resize(*model);
 
@@ -168,10 +173,9 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
         std::cerr << "[Warning (LoadGeom)] " << e.what() << std::endl;
     }
 
-    // Some postprocessing
-    //loader.MoveFacetsToStructures(model);
+    // Prepare simulation unit
     std::cout << "[LoadGeom] Forwarding model to simulation units!" << std::endl;
-
+    simManager->ResetSimulations();
     simManager->ForwardSimModel(model);
 
     if (simManager->ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {

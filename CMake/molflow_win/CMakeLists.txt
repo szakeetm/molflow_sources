@@ -114,7 +114,7 @@ set(SRC_FILES
         ${UI_DIR}/TimeSettings.cpp
         ${UI_DIR}/TimewisePlotter.cpp
         ${UI_DIR}/Viewer3DSettings.cpp
-        )
+        ../../src/IO/InterfaceXML.cpp ../../src/IO/InterfaceXML.h)
 
 # Add executable to build.
 if(WIN32)

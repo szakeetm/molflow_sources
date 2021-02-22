@@ -198,6 +198,7 @@ public:
     };
 
     void PrepareToRun();
+    int InitialiseFacets();
     void CalcTotalOutgassing();
     void CalculateFacetParams(SubprocessFacet* f);
 

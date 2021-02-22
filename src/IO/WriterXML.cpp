@@ -39,7 +39,26 @@ void WriterXML::SaveGeometry(const std::string& outputFileName, SimulationModel 
         rootNode.append_attribute("version") = appVersionId;
     }
     xml_node geomNode = rootNode.append_child("Geometry");
+    geomNode.append_child("Vertices").append_attribute("nb") = model->vertices3.size(); //creates Vertices node, adds nb attribute and sets its value to wp.nbVertex
+    for (int i = 0; i < model->vertices3.size(); i++) {
+        //prg->SetProgress(0.166*((double)i / (double)model->vertices3.size()));
+        xml_node v = geomNode.child("Vertices").append_child("Vertex");
+        v.append_attribute("id") = i;
+        v.append_attribute("x") = model->vertices3[i].x;
+        v.append_attribute("y") = model->vertices3[i].y;
+        v.append_attribute("z") = model->vertices3[i].z;
+    }
 
+    geomNode.append_child("Facets");
+    geomNode.child("Facets").append_attribute("nb") = model->facets.size();
+    for (int i = 0, k = 0; i < model->facets.size(); i++) {
+        //prg->SetProgress(0.166 + ((double)i / (double)model->facets.size()) *0.166);
+        //if (!saveSelected || model->facets[i]->selected) {
+            xml_node f = geomNode.child("Facets").append_child("Facet");
+            f.append_attribute("id") = i;
+            SaveFacet(f, &model->facets[i], model->vertices3.size()); //model->facets[i]->SaveXML_geom(f);
+        //}
+    }
 }
 
 int WriterXML::SaveSimulationState(const std::string& outputFileName, SimulationModel *model, GlobalSimuState& globState) {
@@ -107,6 +126,61 @@ int WriterXML::SaveSimulationState(const std::string& outputFileName, Simulation
             }
         } //end global node
 
+        bool hasHistogram = model->wp.globalHistogramParams.recordBounce || model->wp.globalHistogramParams.recordDistance;
+#ifdef MOLFLOW
+        hasHistogram = hasHistogram || model->wp.globalHistogramParams.recordTime;
+#endif
+        if (hasHistogram) {
+            xml_node histNode = newMoment.append_child("Histograms");
+            //Retrieve histogram map from hits dp
+            auto& globalHist = globState.globalHistograms[m];
+            if (model->wp.globalHistogramParams.recordBounce) {
+                auto& nbHitsHistogram = globalHist.nbHitsHistogram;
+                xml_node hist = histNode.append_child("Bounces");
+                size_t histSize = model->wp.globalHistogramParams.GetBounceHistogramSize();
+                hist.append_attribute("size")=histSize;
+                hist.append_attribute("binSize")=model->wp.globalHistogramParams.nbBounceBinsize; //redundancy for human-reading or export
+                hist.append_attribute("max")=model->wp.globalHistogramParams.nbBounceMax; //redundancy for human-reading or export
+                for (size_t h=0;h<histSize;h++) {
+                    xml_node bin=hist.append_child("Bin");
+                    auto value = bin.append_attribute("start");
+                    if (h==histSize-1) value = "overRange";
+                    else value = h * model->wp.globalHistogramParams.nbBounceBinsize;
+                    bin.append_attribute("count") = nbHitsHistogram[h];
+                }
+            }
+            if (model->wp.globalHistogramParams.recordDistance) {
+                auto& distanceHistogram = globalHist.distanceHistogram;
+                xml_node hist = histNode.append_child("Distance");
+                size_t histSize = model->wp.globalHistogramParams.GetDistanceHistogramSize();
+                hist.append_attribute("size")=histSize;
+                hist.append_attribute("binSize")=model->wp.globalHistogramParams.distanceBinsize; //redundancy for human-reading or export
+                hist.append_attribute("max")=model->wp.globalHistogramParams.distanceMax; //redundancy for human-reading or export
+                for (size_t h=0;h<histSize;h++) {
+                    xml_node bin=hist.append_child("Bin");
+                    auto value = bin.append_attribute("start");
+                    if (h==histSize-1) value = "overRange";
+                    else value = h * model->wp.globalHistogramParams.distanceBinsize;
+                    bin.append_attribute("count") = distanceHistogram[h];
+                }
+            }
+            if (model->wp.globalHistogramParams.recordTime) {
+                auto& timeHistogram = globalHist.timeHistogram;
+                xml_node hist = histNode.append_child("Time");
+                size_t histSize = model->wp.globalHistogramParams.GetTimeHistogramSize();
+                hist.append_attribute("size")=histSize;
+                hist.append_attribute("binSize")=model->wp.globalHistogramParams.timeBinsize; //redundancy for human-reading or export
+                hist.append_attribute("max")=model->wp.globalHistogramParams.timeMax; //redundancy for human-reading or export
+                for (size_t h=0;h<histSize;h++) {
+                    xml_node bin=hist.append_child("Bin");
+                    auto value = bin.append_attribute("start");
+                    if (h==histSize-1) value = "overRange";
+                    else value = h * model->wp.globalHistogramParams.timeBinsize;
+                    bin.append_attribute("count") = timeHistogram[h];
+                }
+            }
+        }
+        
         xml_node facetResultsNode = newMoment.append_child("FacetResults");
 
         for (size_t i = 0; i < model->sh.nbFacet; i++) {
@@ -118,7 +192,6 @@ int WriterXML::SaveSimulationState(const std::string& outputFileName, Simulation
                     break;
                 }
             }
-
             if(!subFac){
                 std::cerr << "Facet "<<i<< " not found in model!" << std::endl;
                 continue;
@@ -156,8 +229,8 @@ int WriterXML::SaveSimulationState(const std::string& outputFileName, Simulation
             }
 
             size_t profSize = (subFac->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + model->tdParams.moments.size())) : 0;
-            size_t h = subFac->sh.texHeight;
-            size_t w = subFac->sh.texWidth;
+            size_t height = subFac->sh.texHeight;
+            size_t width = subFac->sh.texWidth;
 
             if (subFac->sh.texWidth * subFac->sh.texHeight > 0) {
                 xml_node textureNode = newFacetResult.append_child("Texture");
@@ -172,8 +245,8 @@ int WriterXML::SaveSimulationState(const std::string& outputFileName, Simulation
                 sum1perText << std::setprecision(8) << '\n';
                 sumvortText << std::setprecision(8) << '\n';
 
-                for (size_t iy = 0; iy < h; iy++) {
-                    for (size_t ix = 0; ix < w; ix++) {
+                for (size_t iy = 0; iy < height; iy++) {
+                    for (size_t ix = 0; ix < width; ix++) {
                         countText << texture[iy*subFac->sh.texWidth + ix].countEquiv << '\t';
                         sum1perText << texture[iy*subFac->sh.texWidth + ix].sum_1_per_ort_velocity << '\t';
                         sumvortText << texture[iy*subFac->sh.texWidth + ix].sum_v_ort_per_area << '\t';
@@ -200,8 +273,8 @@ int WriterXML::SaveSimulationState(const std::string& outputFileName, Simulation
                 dirText << std::setprecision(8) << '\n'; //better readability in file
                 dirCountText << '\n';
 
-                for (size_t iy = 0; iy < h; iy++) {
-                    for (size_t ix = 0; ix < w; ix++) {
+                for (size_t iy = 0; iy < height; iy++) {
+                    for (size_t ix = 0; ix < width; ix++) {
                         dirText << dirs[iy*subFac->sh.texWidth + ix].dir.x << ",";
                         dirText << dirs[iy*subFac->sh.texWidth + ix].dir.y << ",";
                         dirText << dirs[iy*subFac->sh.texWidth + ix].dir.z << "\t";
@@ -214,9 +287,66 @@ int WriterXML::SaveSimulationState(const std::string& outputFileName, Simulation
                 dirNode.append_child("vel.vectors").append_child(node_cdata).set_value(dirText.str().c_str());
                 dirNode.append_child("count").append_child(node_cdata).set_value(dirCountText.str().c_str());
             } //end directions
+            
+            //Facet histograms (1 per moment) comes here
+            bool hasHistogram = subFac->sh.facetHistogramParams.recordBounce || subFac->sh.facetHistogramParams.recordDistance;
+#ifdef MOLFLOW
+            hasHistogram = hasHistogram || subFac->sh.facetHistogramParams.recordTime;
+#endif
+            if (hasHistogram) {
+                xml_node histNode = newFacetResult.append_child("Histograms");
+                //Retrieve histogram map from hits dp
+                auto& histogram = globState.facetStates[i].momentResults[m].histogram;
+                if (subFac->sh.facetHistogramParams.recordBounce) {
+                    auto& nbHitsHistogram = histogram.nbHitsHistogram;
+                    xml_node hist = histNode.append_child("Bounces");
+                    size_t histSize = subFac->sh.facetHistogramParams.GetBounceHistogramSize();
+                    hist.append_attribute("size")=histSize;
+                    hist.append_attribute("binSize")=subFac->sh.facetHistogramParams.nbBounceBinsize; //redundancy for human-reading or export
+                    hist.append_attribute("max")=subFac->sh.facetHistogramParams.nbBounceMax; //redundancy for human-reading or export
+                    for (size_t h=0;h<histSize;h++) {
+                        xml_node bin=hist.append_child("Bin");
+                        auto value = bin.append_attribute("start");
+                        if (h==histSize-1) value = "overRange";
+                        else value = h * subFac->sh.facetHistogramParams.nbBounceBinsize;
+                        bin.append_attribute("count") = nbHitsHistogram[h];
+                    }
+                }
+                if (subFac->sh.facetHistogramParams.recordDistance) {
+                    auto& distanceHistogram = histogram.distanceHistogram;
+                    xml_node hist = histNode.append_child("Distance");
+                    size_t histSize = subFac->sh.facetHistogramParams.GetDistanceHistogramSize();
+                    hist.append_attribute("size")=histSize;
+                    hist.append_attribute("binSize")=subFac->sh.facetHistogramParams.distanceBinsize; //redundancy for human-reading or export
+                    hist.append_attribute("max")=subFac->sh.facetHistogramParams.distanceMax; //redundancy for human-reading or export
+                    for (size_t h=0;h<histSize;h++) {
+                        xml_node bin=hist.append_child("Bin");
+                        auto value = bin.append_attribute("start");
+                        if (h==histSize-1) value = "overRange";
+                        else value = h * subFac->sh.facetHistogramParams.distanceBinsize;
+                        bin.append_attribute("count") = distanceHistogram[h];
+                    }
+                }
+                if (subFac->sh.facetHistogramParams.recordTime) {
+                    auto& timeHistogram = histogram.timeHistogram;
+                    xml_node hist = histNode.append_child("Time");
+                    size_t histSize = subFac->sh.facetHistogramParams.GetTimeHistogramSize();
+                    hist.append_attribute("size")=histSize;
+                    hist.append_attribute("binSize")=subFac->sh.facetHistogramParams.timeBinsize; //redundancy for human-reading or export
+                    hist.append_attribute("max")=subFac->sh.facetHistogramParams.timeMax; //redundancy for human-reading or export
+                    for (size_t h=0;h<histSize;h++) {
+                        xml_node bin=hist.append_child("Bin");
+                        auto value = bin.append_attribute("start");
+                        if (h==histSize-1) value = "overRange";
+                        else value = h * subFac->sh.facetHistogramParams.timeBinsize;
+                        bin.append_attribute("count") = timeHistogram[h];
+                    }
+                }
+            }
+
         }
     }
-
+    
     //Texture Min/Max
     xml_node minMaxNode = resultNode.append_child("TextureMinMax");
     minMaxNode.append_child("With_constant_flow").append_child("Pressure").append_attribute("min") = 0.0;
@@ -236,4 +366,180 @@ int WriterXML::SaveSimulationState(const std::string& outputFileName, Simulation
     if (!saveDoc.save_file(outputFileName.c_str()))
         throw Error("Error writing XML file."); //successful save
     return 0;
+}
+
+/**
+* \brief To save facet data for the geometry in XML
+* \param facetNode XML node representing a facet
+*/
+void WriterXML::SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices){
+    xml_node e = facetNode.append_child("Sticking");
+    e.append_attribute("constValue") = facet->sh.sticking;
+    e.append_attribute("parameterId") = facet->sh.sticking_paramId;
+
+    e = facetNode.append_child("Opacity");
+    e.append_attribute("constValue") = facet->sh.opacity;
+    e.append_attribute("parameterId") = facet->sh.opacity_paramId;
+    e.append_attribute("is2sided") = (int)facet->sh.is2sided; //backward compatibility: 0 or 1
+
+    e = facetNode.append_child("Outgassing");
+    e.append_attribute("constValue") = facet->sh.outgassing;
+    e.append_attribute("parameterId") = facet->sh.outgassing_paramId;
+    e.append_attribute("desType") = facet->sh.desorbType;
+    e.append_attribute("desExponent") = facet->sh.desorbTypeN;
+    e.append_attribute("hasOutgassingFile") = (int)facet->sh.useOutgassingFile;//TODO:(int)hasOutgassingFile; //backward compatibility: 0 or 1
+    e.append_attribute("useOutgassingFile") = (int)facet->sh.useOutgassingFile; //backward compatibility: 0 or 1
+
+    e = facetNode.append_child("Temperature");
+    e.append_attribute("value") = facet->sh.temperature;
+    e.append_attribute("accFactor") = facet->sh.accomodationFactor;
+
+    e = facetNode.append_child("Reflection");
+
+    e.append_attribute("diffusePart") = facet->sh.reflection.diffusePart;
+    e.append_attribute("specularPart") = facet->sh.reflection.specularPart;
+    e.append_attribute("cosineExponent") = facet->sh.reflection.cosineExponent;
+
+    //For backward compatibility
+    if (facet->sh.reflection.diffusePart > 0.99) {
+        e.append_attribute("type") = REFLECTION_DIFFUSE;
+    }
+    else if (facet->sh.reflection.specularPart > 0.99) {
+        e.append_attribute("type") = REFLECTION_SPECULAR;
+    }
+    else
+        e.append_attribute("type") = REFLECTION_UNIFORM;
+
+    e.append_attribute("enableSojournTime") = (int)facet->sh.enableSojournTime; //backward compatibility: 0 or 1
+    e.append_attribute("sojournFreq") = facet->sh.sojournFreq;
+    e.append_attribute("sojournE") = facet->sh.sojournE;
+
+    e = facetNode.append_child("Structure");
+    e.append_attribute("inStructure") = facet->sh.superIdx;
+    e.append_attribute("linksTo") = facet->sh.superDest;
+
+    e = facetNode.append_child("Teleport");
+    e.append_attribute("target") = facet->sh.teleportDest;
+
+    e = facetNode.append_child("Motion");
+    e.append_attribute("isMoving") = (int)facet->sh.isMoving; //backward compatibility: 0 or 1
+
+    e = facetNode.append_child("Recordings");
+    xml_node t = e.append_child("Profile");
+    t.append_attribute("type") = facet->sh.profileType;
+    switch (facet->sh.profileType) {
+        case 0:
+            t.append_attribute("name") = "none";
+            break;
+        case 1:
+            t.append_attribute("name") = "pressure u";
+            break;
+        case 2:
+            t.append_attribute("name") = "pressure v";
+            break;
+        case 3:
+            t.append_attribute("name") = "angular";
+            break;
+        case 4:
+            t.append_attribute("name") = "speed";
+            break;
+        case 5:
+            t.append_attribute("name") = "ortho.v";
+            break;
+        case 6:
+            t.append_attribute("name") = "tang.v.";
+            break;
+    }
+    t = e.append_child("Texture");
+    //assert(!(cellPropertiesIds == NULL && (facet->sh.countAbs || facet->sh.countDes || facet->sh.countRefl || facet->sh.countTrans))); //Count texture on non-existent texture
+
+    t.append_attribute("hasMesh") = (facet->sh.countAbs || facet->sh.countDes || facet->sh.countRefl || facet->sh.countTrans);
+    t.append_attribute("texDimX") = facet->sh.texWidthD;
+    t.append_attribute("texDimY") = facet->sh.texHeightD;
+    t.append_attribute("countDes") = (int)facet->sh.countDes; //backward compatibility: 0 or 1
+    t.append_attribute("countAbs") = (int)facet->sh.countAbs; //backward compatibility: 0 or 1
+    t.append_attribute("countRefl") = (int)facet->sh.countRefl; //backward compatibility: 0 or 1
+    t.append_attribute("countTrans") = (int)facet->sh.countTrans; //backward compatibility: 0 or 1
+    t.append_attribute("countDir") = (int)facet->sh.countDirection; //backward compatibility: 0 or 1
+    t.append_attribute("countAC") = (int)facet->sh.countACD; //backward compatibility: 0 or 1
+
+    if (facet->sh.anglemapParams.record) {
+        t = e.append_child("IncidentAngleMap");
+        t.append_attribute("record") = facet->sh.anglemapParams.record;
+        t.append_attribute("phiWidth") = facet->sh.anglemapParams.phiWidth;
+        t.append_attribute("thetaLimit") = facet->sh.anglemapParams.thetaLimit;
+        t.append_attribute("thetaLowerRes") = facet->sh.anglemapParams.thetaLowerRes;
+        t.append_attribute("thetaHigherRes") = facet->sh.anglemapParams.thetaHigherRes;
+    }
+
+    //e = f.append_child("ViewSettings");
+
+    //e.append_attribute("textureVisible") = (int)textureVisible; //backward compatibility: 0 or 1
+    //e.append_attribute("volumeVisible") = (int)volumeVisible; //backward compatibility: 0 or 1
+
+    facetNode.append_child("Indices").append_attribute("nb") = facet->sh.nbIndex;
+    for (size_t i = 0; i < facet->sh.nbIndex; i++) {
+        xml_node indice = facetNode.child("Indices").append_child("Indice");
+        indice.append_attribute("id") = i;
+        indice.append_attribute("vertex") = facet->indices[i];
+    }
+
+    if (facet->sh.useOutgassingFile) { // hasOutgassingFile
+        xml_node textureNode = facetNode.append_child("DynamicOutgassing");
+        textureNode.append_attribute("width") = facet->ogMap.outgassingMapWidth;
+        textureNode.append_attribute("height") = facet->ogMap.outgassingMapHeight;
+        textureNode.append_attribute("ratio") = facet->ogMap.outgassingFileRatio;
+        //textureNode.append_attribute("totalDose") = facet->totalDose;
+        textureNode.append_attribute("totalOutgassing") = facet->sh.totalOutgassing;
+        //textureNode.append_attribute("totalFlux") = facet->totalFlux;
+
+        std::stringstream outgText; outgText << std::setprecision(8);
+        outgText << '\n'; //better readability in file
+        for (int iy = 0; iy < facet->ogMap.outgassingMapHeight; iy++) {
+            for (int ix = 0; ix < facet->ogMap.outgassingMapWidth; ix++) {
+                outgText << facet->ogMap.outgassingMap[iy*facet->ogMap.outgassingMapWidth + ix] << '\t';
+            }
+            outgText << '\n';
+        }
+        textureNode.append_child("map").append_child(node_cdata).set_value(outgText.str().c_str());
+
+    } //end texture
+
+    if (facet->sh.anglemapParams.hasRecorded) {
+        xml_node textureNode = facetNode.append_child("IncidentAngleMap");
+        textureNode.append_attribute("angleMapPhiWidth") = facet->sh.anglemapParams.phiWidth;
+        textureNode.append_attribute("angleMapThetaLimit") = facet->sh.anglemapParams.thetaLimit;
+        textureNode.append_attribute("angleMapThetaLowerRes") = facet->sh.anglemapParams.thetaLowerRes;
+        textureNode.append_attribute("angleMapThetaHigherRes") = facet->sh.anglemapParams.thetaHigherRes;
+
+        std::stringstream angleText;
+        angleText << '\n'; //better readability in file
+        for (int iy = 0; iy < (facet->sh.anglemapParams.thetaLowerRes + facet->sh.anglemapParams.thetaHigherRes); iy++) {
+            for (int ix = 0; ix < facet->sh.anglemapParams.phiWidth; ix++) {
+                angleText << facet->angleMap.pdf[iy*facet->sh.anglemapParams.phiWidth + ix] << '\t';
+            }
+            angleText << '\n';
+        }
+        textureNode.append_child("map").append_child(node_cdata).set_value(angleText.str().c_str());
+
+    } //end angle map
+
+    xml_node histNode = facetNode.append_child("Histograms");
+    if (facet->sh.facetHistogramParams.recordBounce) {
+        xml_node nbBounceNode = histNode.append_child("Bounces");
+        nbBounceNode.append_attribute("binSize")=facet->sh.facetHistogramParams.nbBounceBinsize;
+        nbBounceNode.append_attribute("max")=facet->sh.facetHistogramParams.nbBounceMax;
+    }
+    if (facet->sh.facetHistogramParams.recordDistance) {
+        xml_node distanceNode = histNode.append_child("Distance");
+        distanceNode.append_attribute("binSize")=facet->sh.facetHistogramParams.distanceBinsize;
+        distanceNode.append_attribute("max")=facet->sh.facetHistogramParams.distanceMax;
+    }
+#ifdef MOLFLOW
+    if (facet->sh.facetHistogramParams.recordTime) {
+        xml_node timeNode = histNode.append_child("Time");
+        timeNode.append_attribute("binSize")=facet->sh.facetHistogramParams.timeBinsize;
+        timeNode.append_attribute("max")=facet->sh.facetHistogramParams.timeMax;
+    }
+#endif
 }

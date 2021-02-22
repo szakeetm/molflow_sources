@@ -295,6 +295,34 @@ size_t SubprocessFacet::GetMemSize() const {
     return sum;
 }
 
+/**
+* \brief Initialises geometry properties that haven't been loaded from file
+* \return error code: 0=no error, 1=error
+*/
+int SimulationModel::InitialiseFacets() {
+    for (auto& facet : facets) {
+        // Main facet params
+        // Current facet
+        //SubprocessFacet *f = model->facets[i];
+        CalculateFacetParams(&facet);
+
+        // Set some texture parameters
+        // bool Facet::SetTexture(double width, double height, bool useMesh)
+        if (facet.sh.texWidthD * facet.sh.texHeightD > 0.0000001) {
+            const double ceilCutoff = 0.9999999;
+            facet.sh.texWidth = (int) std::ceil(facet.sh.texWidthD *
+                                                ceilCutoff); //0.9999999: cut the last few digits (convert rounding error 1.00000001 to 1, not 2)
+            facet.sh.texHeight = (int) std::ceil(facet.sh.texHeightD * ceilCutoff);
+        } else {
+            facet.sh.texWidth = 0;
+            facet.sh.texHeight = 0;
+            facet.sh.texWidthD = 0.0;
+            facet.sh.texHeightD = 0.0;
+        }
+    }
+
+    return 0;
+}
 /*!
  * @brief Calculates various facet parameters without sanity checking @see Geometry::CalculateFacetParams(Facet* f)
  * @param f individual subprocess facet

@@ -38,6 +38,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 //#include <cereal/archives/xml.hpp>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/string.hpp>
+#include <IO/InterfaceXML.h>
 
 #include "MolflowGeometry.h"
 #include "Worker.h"
@@ -781,6 +782,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
     } else if (ext == "xml" || ext == "zip") { //XML file, optionally in ZIP container
         xml_document loadXML;
         xml_parse_result parseResult;
+        std::string parseFileName = fileName;
         progressDlg->SetVisible(true);
         try {
             if (ext == "zip") { //compressed in ZIP container
@@ -802,11 +804,8 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
                         FileUtils::CreateDir("tmp");// If doesn't exist yet
 
-                        std::string tmpFileName = "tmp/" + zipFileName;
-                        ZipFile::ExtractFile(fileName, zipFileName, tmpFileName);
-                        progressDlg->SetMessage("Reading and parsing XML file...");
-
-                        parseResult = loadXML.load_file(tmpFileName.c_str()); //load and parse it
+                        parseFileName = "tmp/" + zipFileName;
+                        ZipFile::ExtractFile(fileName, zipFileName, parseFileName);
                     }
                     /*else if(FileUtils::GetExtension(zipFileName) == "csv"){ // otherwise extract angle maps
                         ZipFile::ExtractFile(fileName, zipFileName, zipFileName);
@@ -828,9 +827,10 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 }
 
             }
-            else {
-                parseResult = loadXML.load_file(fileName.c_str()); //parse xml file directly
-            }
+
+            progressDlg->SetMessage("Reading and parsing XML file...");
+            // Parse zip file name or original
+            parseResult = loadXML.load_file(parseFileName.c_str()); //parse xml file directly
 
             ResetWorkerStats();
             if (!parseResult) {
@@ -852,6 +852,24 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
             if (!insert) {
                 geom->LoadXML_geom(rootNode, this, progressDlg);
+
+                FlowIO::LoaderInterfaceXML loader;
+                loader.LoadGeometry(parseFileName, &model);
+                userMoments = loader.userMoments;
+                xml_node interfNode = rootNode.child("Interface");
+                loader.LoadInterface(interfNode, mApp);
+                InsertParametersBeforeCatalog(loader.loadedParams);
+                if(loader.facetViewSettings.size() == GetGeometry()->GetNbFacet()) {
+                    for (size_t facetId = 0; facetId < GetGeometry()->GetNbFacet(); facetId++) {
+                        auto facet = GetGeometry()->GetFacet(facetId);
+                        facet->textureVisible = std::get<0>(loader.facetViewSettings[facetId]);
+                        facet->volumeVisible = std::get<1>(loader.facetViewSettings[facetId]);
+                    }
+                }
+                else {
+                    std::cerr << "Amount of view settings doesn't equal number of facets: "<<loader.facetViewSettings.size() << " <> " << GetGeometry()->GetNbFacet() << std::endl;
+                }
+
                 // Add moments only after user Moments are completely initialized
                 if(TimeMoments::ParseAndCheckUserMoments(&moments, userMoments)){
                     GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning", GLDLG_OK, GLDLG_ICONWARNING);
@@ -1139,6 +1157,8 @@ bool Worker::MolflowGeomToSimModel(){
             model.tdParams.IDs.push_back(id.GetValues());
         }
     }
+
+    model.tdParams.parameters.clear();
     for(auto& param : this->parameters)
         model.tdParams.parameters.emplace_back(param);
 
