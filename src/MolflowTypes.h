@@ -19,12 +19,15 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 #pragma once
 #include "GLApp/GLTypes.h"
+#include "Parameter.h"
 #include <stddef.h> //size_t for gcc
 #include <string>
 #include <vector>
 #include <cereal/cereal.hpp>
 #include <cereal/types/vector.hpp>
 #include <Distributions.h>
+#include "GeometryTypes.h" // SelectionGroup
+
 //#include "Buffer_shared.h"
 
 // Desorption type
@@ -69,6 +72,13 @@ typedef std::pair<std::string,double> UserMoment;
 typedef std::pair<double,double> Moment;
 typedef std::pair<double,double> ID_p;
 typedef std::pair<double,double> CDF_p;
+
+struct UserInput {
+    std::vector<SelectionGroup> selections;
+    std::vector<std::tuple<bool, bool>> facetViewSettings;
+    std::vector<UserMoment> userMoments;
+    std::vector<Parameter> parameters;
+};
 
 class IntegratedDesorption : public Distribution2D {
 

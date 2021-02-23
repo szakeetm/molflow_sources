@@ -750,7 +750,9 @@ FacetMomentSnapshot& FacetMomentSnapshot::operator+(const FacetMomentSnapshot & 
 * \return address of this (lhs)
 */
 FacetState& FacetState::operator+=(const FacetState & rhs) {
-    this->recordedAngleMapPdf += rhs.recordedAngleMapPdf;
+    // Check in case simulation pdf is empty (record==false) but global pdf is not (hasRecorded==true)
+    if(this->recordedAngleMapPdf.size() == rhs.recordedAngleMapPdf.size())
+        this->recordedAngleMapPdf += rhs.recordedAngleMapPdf;
     this->momentResults += rhs.momentResults;
     return *this;
 }

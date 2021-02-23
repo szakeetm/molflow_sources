@@ -83,12 +83,12 @@ int LoaderXML::LoadGeometry(const std::string inputFileName, SimulationModel *mo
                     newPar.AddPair(std::make_pair(newMoment.attribute("t").as_double(),
                                                   newMoment.attribute("value").as_double()));
                 }
-                loadedParams.push_back(newPar);
+                uInput.parameters.push_back(newPar);
             }
         }
         //TODO: Load parameters from catalog explicitly?
         //work->InsertParametersBeforeCatalog(loadedParams);
-        model->tdParams.parameters.insert(model->tdParams.parameters.end(),loadedParams.begin(),loadedParams.end());
+        model->tdParams.parameters.insert(model->tdParams.parameters.end(),uInput.parameters.begin(),uInput.parameters.end());
     }
 
     //Facets , load for now via temp pointers and convert to vector afterwards
@@ -111,10 +111,10 @@ int LoaderXML::LoadGeometry(const std::string inputFileName, SimulationModel *mo
         LoadFacet(facetNode, &loadFacets[idx], model->sh.nbVertex);
 
         //Set param names for interface
-        if (facets[idx]->sh.sticking_paramId > -1) facets[idx]->userSticking = work->parameters[facets[idx]->sh.sticking_paramId].name;
+        /*if (facets[idx]->sh.sticking_paramId > -1) facets[idx]->userSticking = work->parameters[facets[idx]->sh.sticking_paramId].name;
         if (facets[idx]->sh.opacity_paramId > -1) facets[idx]->userOpacity = work->parameters[facets[idx]->sh.opacity_paramId].name;
         if (facets[idx]->sh.outgassing_paramId > -1) facets[idx]->userOutgassing = work->parameters[facets[idx]->sh.outgassing_paramId].name;
-
+*/
         idx++;
     }
 
@@ -134,7 +134,7 @@ int LoaderXML::LoadGeometry(const std::string inputFileName, SimulationModel *mo
     model->wp.useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_bool();
     model->wp.calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_bool();
 
-    userMoments.clear();
+    //uInput.userMoments.clear();
     xml_node userMomentsNode = timeSettingsNode.child("UserMoments");
     for (xml_node newUserEntry : userMomentsNode.children("UserEntry")) {
         char tmpExpr[512];
@@ -144,9 +144,9 @@ int LoaderXML::LoadGeometry(const std::string inputFileName, SimulationModel *mo
         if(tmpWindow==0.0){
             tmpWindow = model->wp.timeWindowSize;
         }
-        userMoments.emplace_back(tmpExpr,tmpWindow);
+        uInput.userMoments.emplace_back(tmpExpr,tmpWindow);
     }
-    if(TimeMoments::ParseAndCheckUserMoments(&model->tdParams.moments, userMoments)){
+    if(TimeMoments::ParseAndCheckUserMoments(&model->tdParams.moments, uInput.userMoments)){
         return 1;
     }
 
@@ -798,7 +798,7 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
     std::tuple<bool,bool> viewSettings; // texture, volume visible
     bool textureVisible = facetNode.child("ViewSettings").attribute("textureVisible").as_bool();
     bool volumeVisible = facetNode.child("ViewSettings").attribute("volumeVisible").as_bool();
-    facetViewSettings.emplace_back(std::make_tuple(textureVisible, volumeVisible));
+    uInput.facetViewSettings.emplace_back(std::make_tuple(textureVisible, volumeVisible));
 
     xml_node facetHistNode = facetNode.child("Histograms");
     if (facetHistNode) { // Molflow version before 2.8 didn't save histograms

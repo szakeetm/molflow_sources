@@ -29,9 +29,7 @@ namespace FlowIO {
         static std::vector<SelectionGroup> LoadSelections(const std::string& inputFileName);
         static int LoadSimulationState(const std::string& inputFileName, SimulationModel *model, GlobalSimuState& globState);
 
-        std::vector<Parameter> loadedParams;
-        std::vector<std::tuple<bool, bool>> facetViewSettings;
-        std::vector<UserMoment> userMoments;
+        UserInput uInput;
     };
 }
 

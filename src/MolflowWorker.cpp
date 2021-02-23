@@ -758,6 +758,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
                 SendToHitBuffer(); //Global hit counters and hit/leak cache
                 SendFacetHitCounts(); // From facetHitCache to dpHit's const.flow counter
+                SendAngleMaps();
 
                 progressDlg->SetMessage("Loading textures...");
                 LoadTexturesGEO(f, version);
@@ -855,19 +856,19 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
                 FlowIO::LoaderInterfaceXML loader;
                 loader.LoadGeometry(parseFileName, &model);
-                userMoments = loader.userMoments;
+                userMoments = loader.uInput.userMoments;
                 xml_node interfNode = rootNode.child("Interface");
                 loader.LoadInterface(interfNode, mApp);
-                InsertParametersBeforeCatalog(loader.loadedParams);
-                if(loader.facetViewSettings.size() == GetGeometry()->GetNbFacet()) {
+                InsertParametersBeforeCatalog(loader.uInput.parameters);
+                if(loader.uInput.facetViewSettings.size() == GetGeometry()->GetNbFacet()) {
                     for (size_t facetId = 0; facetId < GetGeometry()->GetNbFacet(); facetId++) {
                         auto facet = GetGeometry()->GetFacet(facetId);
-                        facet->textureVisible = std::get<0>(loader.facetViewSettings[facetId]);
-                        facet->volumeVisible = std::get<1>(loader.facetViewSettings[facetId]);
+                        facet->textureVisible = std::get<0>(loader.uInput.facetViewSettings[facetId]);
+                        facet->volumeVisible = std::get<1>(loader.uInput.facetViewSettings[facetId]);
                     }
                 }
                 else {
-                    std::cerr << "Amount of view settings doesn't equal number of facets: "<<loader.facetViewSettings.size() << " <> " << GetGeometry()->GetNbFacet() << std::endl;
+                    std::cerr << "Amount of view settings doesn't equal number of facets: "<<loader.uInput.facetViewSettings.size() << " <> " << GetGeometry()->GetNbFacet() << std::endl;
                 }
 
                 // Add moments only after user Moments are completely initialized
@@ -893,6 +894,8 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     simManager.UnlockHitBuffer();
                     SendToHitBuffer(); //Send global hits without sending facet counters, as they are directly written during the load process (mutiple moments)
                     SendFacetHitCounts(); //Send hits without sending facet counters, as they are directly written during the load process (mutiple moments)
+                    SendAngleMaps();
+
                     RebuildTextures();
                 }
                 catch (std::exception &e) {
@@ -1136,6 +1139,28 @@ void Worker::Update(float appTime) {
 
 }
 */
+
+/**
+* \brief Saves current AngleMap from cache to results
+*/
+void Worker::SendAngleMaps() {
+    size_t nbFacet = geom->GetNbFacet();
+    std::vector<std::vector<size_t>> angleMapCaches;
+    for (size_t i = 0; i < nbFacet; i++) {
+        InterfaceFacet *f = geom->GetFacet(i);
+        angleMapCaches.push_back(f->angleMapCache);
+    }
+
+    if(globState.facetStates.size() != angleMapCaches.size())
+        return;
+    if(!globState.tMutex.try_lock_for(std::chrono::seconds(10)))
+        return;
+    for (size_t i = 0; i < angleMapCaches.size(); i++) {
+        globState.facetStates[i].recordedAngleMapPdf = angleMapCaches[i];
+    }
+    globState.tMutex.unlock();
+
+}
 
 bool Worker::MolflowGeomToSimModel(){
     //auto geom = GetMolflowGeometry();

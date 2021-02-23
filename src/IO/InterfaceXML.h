@@ -14,6 +14,7 @@ namespace FlowIO{
         class LoaderInterfaceXML :
         public LoaderXML {
         public:
+            LoaderInterfaceXML() : LoaderXML() {};
             void LoadInterface(pugi::xml_node interfaceNode, MolFlow *mApp);
         };
 

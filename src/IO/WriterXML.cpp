@@ -40,7 +40,7 @@ void WriterXML::SaveGeometry(const std::string& outputFileName, SimulationModel 
     }
     xml_node geomNode = rootNode.append_child("Geometry");
     geomNode.append_child("Vertices").append_attribute("nb") = model->vertices3.size(); //creates Vertices node, adds nb attribute and sets its value to wp.nbVertex
-    for (int i = 0; i < model->vertices3.size(); i++) {
+    for (size_t i = 0; i < model->vertices3.size(); i++) {
         //prg->SetProgress(0.166*((double)i / (double)model->vertices3.size()));
         xml_node v = geomNode.child("Vertices").append_child("Vertex");
         v.append_attribute("id") = i;
@@ -51,7 +51,7 @@ void WriterXML::SaveGeometry(const std::string& outputFileName, SimulationModel 
 
     geomNode.append_child("Facets");
     geomNode.child("Facets").append_attribute("nb") = model->facets.size();
-    for (int i = 0, k = 0; i < model->facets.size(); i++) {
+    for (size_t i = 0; i < model->facets.size(); i++) {
         //prg->SetProgress(0.166 + ((double)i / (double)model->facets.size()) *0.166);
         //if (!saveSelected || model->facets[i]->selected) {
             xml_node f = geomNode.child("Facets").append_child("Facet");
@@ -60,15 +60,97 @@ void WriterXML::SaveGeometry(const std::string& outputFileName, SimulationModel 
         //}
     }
 
-    geomNode.append_child("Structures").append_attribute("nb") = sh.nbSuper;
+    geomNode.append_child("Structures").append_attribute("nb") = model->sh.nbSuper;
 
-    model->structures;
-    for (int i = 0, k = 0; i < model->sh.nbSuper; i++) {
-        xml_node s = geomNode.child("Structures").append_child("Structure");
-        s.append_attribute("id") = i;
-        s.append_attribute("name") = (strName) ? strName[i] : "";
+    if(model->structures.size() == model->sh.nbSuper) {
+        for (size_t i = 0; i < model->sh.nbSuper; i++) {
+            xml_node s = geomNode.child("Structures").append_child("Structure");
+            s.append_attribute("id") = i;
+            s.append_attribute("name") = model->structures[i].strName.c_str();
 
+        }
     }
+
+    // Simulation Settings
+    xml_node simuParamNode = rootNode.append_child("MolflowSimuSettings");
+
+    simuParamNode.append_child("Gas").append_attribute("mass") = model->wp.gasMass;
+    simuParamNode.child("Gas").append_attribute("enableDecay") = (int)model->wp.enableDecay; //backward compatibility: 0 or 1
+    simuParamNode.child("Gas").append_attribute("halfLife") = model->wp.halfLife;
+
+    xml_node timeSettingsNode = simuParamNode.append_child("TimeSettings");
+
+    xml_node userMomentsNode = timeSettingsNode.append_child("UserMoments");
+    userMomentsNode.append_attribute("nb") = uInput.userMoments.size();
+    for (size_t i = 0; i < uInput.userMoments.size(); i++) {
+        xml_node newUserEntry = userMomentsNode.append_child("UserEntry");
+        newUserEntry.append_attribute("id") = i;
+        newUserEntry.append_attribute("content") = uInput.userMoments[i].first.c_str();
+        newUserEntry.append_attribute("window") = uInput.userMoments[i].second;
+    }
+
+    timeSettingsNode.append_attribute("timeWindow") = model->wp.timeWindowSize;
+    timeSettingsNode.append_attribute("useMaxwellDistr") = (int)model->wp.useMaxwellDistribution; //backward compatibility: 0 or 1
+    timeSettingsNode.append_attribute("calcConstFlow") = (int)model->wp.calcConstantFlow; //backward compatibility: 0 or 1
+
+    xml_node motionNode = simuParamNode.append_child("Motion");
+    motionNode.append_attribute("type") = model->wp.motionType;
+    if (model->wp.motionType == 1) { //fixed motion
+        xml_node v = motionNode.append_child("VelocityVector");
+        v.append_attribute("vx") = model->wp.motionVector2.x;
+        v.append_attribute("vy") = model->wp.motionVector2.y;
+        v.append_attribute("vz") = model->wp.motionVector2.z;
+    }
+    else if (model->wp.motionType == 2) { //rotation
+        xml_node v = motionNode.append_child("AxisBasePoint");
+        v.append_attribute("x") = model->wp.motionVector1.x;
+        v.append_attribute("y") = model->wp.motionVector1.y;
+        v.append_attribute("z") = model->wp.motionVector1.z;
+        xml_node v2 = motionNode.append_child("RotationVector");
+        v2.append_attribute("x") = model->wp.motionVector2.x;
+        v2.append_attribute("y") = model->wp.motionVector2.y;
+        v2.append_attribute("z") = model->wp.motionVector2.z;
+    }
+
+    xml_node paramNode = simuParamNode.append_child("Parameters");
+    size_t nonCatalogParameters = 0;
+
+    for (size_t i = 0; i < uInput.parameters.size(); i++) {
+        if (!uInput.parameters[i].fromCatalog) { //Don't save catalog parameters
+            xml_node newParameter = paramNode.append_child("Parameter");
+            newParameter.append_attribute("id") = nonCatalogParameters;
+            newParameter.append_attribute("name") = uInput.parameters[i].name.c_str();
+            newParameter.append_attribute("nbMoments") = (int)uInput.parameters[i].GetSize();
+            newParameter.append_attribute("logXinterp") = uInput.parameters[i].logXinterp;
+            newParameter.append_attribute("logYinterp") = uInput.parameters[i].logYinterp;
+            for (size_t m = 0; m < uInput.parameters[i].GetSize(); m++) {
+                xml_node newMoment = newParameter.append_child("Moment");
+                newMoment.append_attribute("id") = m;
+                newMoment.append_attribute("t") = uInput.parameters[i].GetX(m);
+                newMoment.append_attribute("value") = uInput.parameters[i].GetY(m);
+            }
+            nonCatalogParameters++;
+        }
+    }
+    paramNode.append_attribute("nb") = nonCatalogParameters;
+    xml_node globalHistNode = simuParamNode.append_child("Global_histograms");
+    if (model->wp.globalHistogramParams.recordBounce) {
+        xml_node nbBounceNode = globalHistNode.append_child("Bounces");
+        nbBounceNode.append_attribute("binSize")=model->wp.globalHistogramParams.nbBounceBinsize;
+        nbBounceNode.append_attribute("max")=model->wp.globalHistogramParams.nbBounceMax;
+    }
+    if (model->wp.globalHistogramParams.recordDistance) {
+        xml_node distanceNode = globalHistNode.append_child("Distance");
+        distanceNode.append_attribute("binSize")=model->wp.globalHistogramParams.distanceBinsize;
+        distanceNode.append_attribute("max")=model->wp.globalHistogramParams.distanceMax;
+    }
+#ifdef MOLFLOW
+    if (model->wp.globalHistogramParams.recordTime) {
+        xml_node timeNode = globalHistNode.append_child("Time");
+        timeNode.append_attribute("binSize")=model->wp.globalHistogramParams.timeBinsize;
+        timeNode.append_attribute("max")=model->wp.globalHistogramParams.timeMax;
+    }
+#endif
 }
 
 int WriterXML::SaveSimulationState(const std::string& outputFileName, SimulationModel *model, GlobalSimuState& globState) {

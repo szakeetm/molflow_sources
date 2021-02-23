@@ -119,7 +119,7 @@ namespace FlowIO {
             newSel.append_attribute("id") = i;
             newSel.append_attribute("name") = mApp->selections[i].name.c_str();
             newSel.append_attribute("nb") = mApp->selections[i].selection.size();
-            for (int j = 0; j < mApp->selections[i].selection.size(); j++) {
+            for (size_t j = 0; j < mApp->selections[i].selection.size(); j++) {
                 xml_node newItem = newSel.append_child("selItem");
                 newItem.append_attribute("id") = j;
                 newItem.append_attribute("facet") = mApp->selections[i].selection[j];
