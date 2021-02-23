@@ -52,6 +52,16 @@ int LoaderXML::LoadGeometry(const std::string inputFileName, SimulationModel *mo
 
     //Structures
     model->sh.nbSuper = geomNode.child("Structures").select_nodes("Structure").size();
+    idx = 0;
+    model->structures.resize(model->sh.nbSuper);
+    for (xml_node structure : geomNode.child("Structures").children("Structure")) {
+        model->structures[idx].strName = strdup(structure.attribute("name").value());
+        // For backward compatibilty with STR
+        char tmp[256];
+        sprintf(tmp, "%s.txt", model->structures[idx].strName.c_str());
+        model->structures[idx].strFileName = strdup(tmp);
+        idx++;
+    }
 
     //Parameters (needs to precede facets)
     xml_node simuParamNode = rootNode.child("MolflowSimuSettings");
@@ -99,6 +109,12 @@ int LoaderXML::LoadGeometry(const std::string inputFileName, SimulationModel *mo
 
         loadFacets.emplace_back(SubprocessFacet(nbIndex));
         LoadFacet(facetNode, &loadFacets[idx], model->sh.nbVertex);
+
+        //Set param names for interface
+        if (facets[idx]->sh.sticking_paramId > -1) facets[idx]->userSticking = work->parameters[facets[idx]->sh.sticking_paramId].name;
+        if (facets[idx]->sh.opacity_paramId > -1) facets[idx]->userOpacity = work->parameters[facets[idx]->sh.opacity_paramId].name;
+        if (facets[idx]->sh.outgassing_paramId > -1) facets[idx]->userOutgassing = work->parameters[facets[idx]->sh.outgassing_paramId].name;
+
         idx++;
     }
 

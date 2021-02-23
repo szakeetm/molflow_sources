@@ -59,6 +59,16 @@ void WriterXML::SaveGeometry(const std::string& outputFileName, SimulationModel 
             SaveFacet(f, &model->facets[i], model->vertices3.size()); //model->facets[i]->SaveXML_geom(f);
         //}
     }
+
+    geomNode.append_child("Structures").append_attribute("nb") = sh.nbSuper;
+
+    model->structures;
+    for (int i = 0, k = 0; i < model->sh.nbSuper; i++) {
+        xml_node s = geomNode.child("Structures").append_child("Structure");
+        s.append_attribute("id") = i;
+        s.append_attribute("name") = (strName) ? strName[i] : "";
+
+    }
 }
 
 int WriterXML::SaveSimulationState(const std::string& outputFileName, SimulationModel *model, GlobalSimuState& globState) {
