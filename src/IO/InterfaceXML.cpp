@@ -18,7 +18,7 @@ namespace FlowIO {
 
         for (xml_node sNode : selNode.children("Selection")) {
             SelectionGroup s;
-            s.name = strdup(sNode.attribute("name").as_string());
+            s.name = sNode.attribute("name").as_string();
             s.selection.reserve(sNode.select_nodes("selItem").size());
             for (xml_node iNode : sNode.children("selItem"))
                 s.selection.push_back(iNode.attribute("facet").as_llong());
@@ -28,7 +28,7 @@ namespace FlowIO {
         xml_node viewNode = interfNode.child("Views");
         for (xml_node newView : viewNode.children("View")) {
             AVIEW v;
-            v.name = strdup(newView.attribute("name").as_string());
+            v.name = newView.attribute("name").as_string();
             v.projMode = newView.attribute("projMode").as_int();
             v.camAngleOx = newView.attribute("camAngleOx").as_double();
             v.camAngleOy = newView.attribute("camAngleOy").as_double();
@@ -59,7 +59,7 @@ namespace FlowIO {
             v.vRight = newView.attribute("vRight").as_double();
             v.vTop = newView.attribute("vTop").as_double();
             v.vBottom = newView.attribute("vBottom").as_double();
-            mApp->AddView(v.name, v);
+            mApp->AddView(v.name.c_str(), v);
 
         }
 
@@ -132,7 +132,7 @@ namespace FlowIO {
                         !saveSelected; i++) { //don't save views when exporting part of the geometry (saveSelected)
             xml_node newView = viewNode.append_child("View");
             newView.append_attribute("id") = i;
-            newView.append_attribute("name") = mApp->views[i].name;
+            newView.append_attribute("name") = mApp->views[i].name.c_str();
             newView.append_attribute("projMode") = mApp->views[i].projMode;
             newView.append_attribute("camAngleOx") = mApp->views[i].camAngleOx;
             newView.append_attribute("camAngleOy") = mApp->views[i].camAngleOy;

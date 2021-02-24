@@ -463,7 +463,7 @@ bool ParameterEditor::ValidateInput() {
 		}
 		if (selectorCombo->GetSelectedIndex() == 0) {
 			for (auto& p : work->parameters) {
-				if (tempName.compare(p.name) == 0) {
+				if (tempName == p.name) {
 					GLMessageBox::Display("This parameter name is already used", "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
 					return false;
 				}

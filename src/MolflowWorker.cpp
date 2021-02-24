@@ -852,17 +852,23 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             }
 
             if (!insert) {
-                geom->LoadXML_geom(rootNode, this, progressDlg);
+                //geom->LoadXML_geom(rootNode, this, progressDlg);
 
+                geom->Clear();
                 FlowIO::LoaderInterfaceXML loader;
                 loader.LoadGeometry(parseFileName, &model);
                 userMoments = loader.uInput.userMoments;
                 xml_node interfNode = rootNode.child("Interface");
                 loader.LoadInterface(interfNode, mApp);
                 InsertParametersBeforeCatalog(loader.uInput.parameters);
-                if(loader.uInput.facetViewSettings.size() == GetGeometry()->GetNbFacet()) {
-                    for (size_t facetId = 0; facetId < GetGeometry()->GetNbFacet(); facetId++) {
-                        auto facet = GetGeometry()->GetFacet(facetId);
+
+                // Move actual geom to interface geom
+                geom->InitInterfaceVertices(model.vertices3);
+                geom->InitInterfaceFacets(model.facets, this);
+
+                if(loader.uInput.facetViewSettings.size() == geom->GetNbFacet()) {
+                    for (size_t facetId = 0; facetId < geom->GetNbFacet(); facetId++) {
+                        auto facet = geom->GetFacet(facetId);
                         facet->textureVisible = std::get<0>(loader.uInput.facetViewSettings[facetId]);
                         facet->volumeVisible = std::get<1>(loader.uInput.facetViewSettings[facetId]);
                     }
@@ -877,6 +883,14 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     return;
                 }
 
+                // Init after load stage
+                geom->InitializeGeometry();
+                //AdjustProfile();
+                //isLoaded = true; //InitializeGeometry() sets to true
+                progressDlg->SetMessage("Building mesh...");
+                geom->InitializeMesh();
+                // end init
+
                 geom->UpdateName(fileName.c_str());
 
                 progressDlg->SetMessage("Reloading worker with new geometry...");
@@ -889,7 +903,11 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     bool buffer_old = simManager.GetLockedHitBuffer();
                     if(!buffer_old)
                         throw std::runtime_error("Cannot access shared hit buffer");
-                    geom->LoadXML_simustate(rootNode, globState, this, progressDlg);
+                    //geom->LoadXML_simustate(rootNode, globState, this, progressDlg);
+                    loader.LoadSimulationState(parseFileName, &model, globState);
+                    CalculateTextureLimits(); // Load texture limits on init
+
+                    // actually loads all caches
                     RetrieveHistogramCache(); //So interface gets histogram data for disp.moment right after loading
                     simManager.UnlockHitBuffer();
                     SendToHitBuffer(); //Send global hits without sending facet counters, as they are directly written during the load process (mutiple moments)

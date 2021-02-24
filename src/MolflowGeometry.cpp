@@ -2368,7 +2368,7 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 	for (int i = 0; (i < mApp->nbView) && !saveSelected; i++) { //don't save views when exporting part of the geometry (saveSelected)
 		xml_node newView = viewNode.append_child("View");
 		newView.append_attribute("id") = i;
-		newView.append_attribute("name") = mApp->views[i].name;
+		newView.append_attribute("name") = mApp->views[i].name.c_str();
 		newView.append_attribute("projMode") = mApp->views[i].projMode;
 		newView.append_attribute("camAngleOx") = mApp->views[i].camAngleOx;
 		newView.append_attribute("camAngleOy") = mApp->views[i].camAngleOy;
@@ -2934,7 +2934,7 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 	xml_node viewNode = interfNode.child("Views");
 	for (xml_node newView : viewNode.children("View")) {
 		AVIEW v;
-		v.name = strdup(newView.attribute("name").as_string());
+		v.name = newView.attribute("name").as_string();
 		v.projMode = newView.attribute("projMode").as_int();
 		v.camAngleOx = newView.attribute("camAngleOx").as_double();
 		v.camAngleOy = newView.attribute("camAngleOy").as_double();
@@ -2965,7 +2965,7 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 		v.vRight = newView.attribute("vRight").as_double();
 		v.vTop = newView.attribute("vTop").as_double();
 		v.vBottom = newView.attribute("vBottom").as_double();
-		mApp->AddView(v.name, v);
+		mApp->AddView(v.name.c_str(), v);
 
 	}
 
@@ -3091,33 +3091,6 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 		#endif
 	}
 
-	InitializeGeometry();
-	//AdjustProfile();
-	//isLoaded = true; //InitializeGeometry() sets to true
-
-	// Update mesh
-	progressDlg->SetMessage("Building mesh...");
-	for (size_t i = 0; i < sh.nbFacet; i++) {
-		double p = (double)i / (double)sh.nbFacet;
-
-		progressDlg->SetProgress(p);
-		InterfaceFacet *f = facets[i];
-		if (!f->SetTexture(f->sh.texWidthD, f->sh.texHeightD, f->hasMesh)) {
-			char errMsg[512];
-			sprintf(errMsg, "Not enough memory to build mesh on Facet %zd. ", i + 1);
-			throw Error(errMsg);
-		}
-		BuildFacetList(f);
-		const double nU = f->sh.U.Norme();
-        const double nV = f->sh.V.Norme();
-
-        f->tRatioU = f->sh.texWidthD / nU;
-        f->tRatioV = f->sh.texHeightD / nV;
-
-        if(std::abs(f->tRatioU - f->tRatioV) <= DBL_EPSILON){
-            f->tRatioV = f->tRatioU;
-        }
-    }
 }
 
 /**
@@ -3255,7 +3228,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 	xml_node viewNode = interfNode.child("Views");
 	for (xml_node newView : selNode.children("View")) {
 		AVIEW v;
-		v.name = strdup(newView.attribute("name").as_string());
+		v.name = newView.attribute("name").as_string();
 		v.projMode = newView.attribute("projMode").as_int();
 		v.camAngleOx = newView.attribute("camAngleOx").as_double();
 		v.camAngleOy = newView.attribute("camAngleOy").as_double();
@@ -3286,7 +3259,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 		v.vRight = newView.attribute("vRight").as_double();
 		v.vTop = newView.attribute("vTop").as_double();
 		v.vBottom = newView.attribute("vBottom").as_double();
-		mApp->AddView(v.name, v);
+		mApp->AddView(v.name.c_str(), v);
 	}
 
 	sh.nbVertex += nbNewVertex;

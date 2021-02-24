@@ -55,11 +55,11 @@ int LoaderXML::LoadGeometry(const std::string inputFileName, SimulationModel *mo
     idx = 0;
     model->structures.resize(model->sh.nbSuper);
     for (xml_node structure : geomNode.child("Structures").children("Structure")) {
-        model->structures[idx].strName = strdup(structure.attribute("name").value());
+        model->structures[idx].strName = structure.attribute("name").value();
         // For backward compatibilty with STR
         char tmp[256];
         sprintf(tmp, "%s.txt", model->structures[idx].strName.c_str());
-        model->structures[idx].strFileName = strdup(tmp);
+        model->structures[idx].strFileName = tmp;
         idx++;
     }
 
@@ -619,8 +619,8 @@ int LoaderXML::LoadSimulationState(const std::string& inputFileName, SimulationM
         m++;
     } //end moment
 
-    xml_node minMaxNode = resultNode.child("TextureMinMax");
-    /*globState.globalHits.texture_limits[0].min.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("min").as_double();
+    /*xml_node minMaxNode = resultNode.child("TextureMinMax");
+    globState.globalHits.texture_limits[0].min.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("min").as_double();
     globState.globalHits.texture_limits[0].max.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("max").as_double();
     globState.globalHits.texture_limits[1].min.all = minMaxNode.child("With_constant_flow").child("Density").attribute("min").as_double();
     globState.globalHits.texture_limits[1].max.all = minMaxNode.child("With_constant_flow").child("Density").attribute("max").as_double();
