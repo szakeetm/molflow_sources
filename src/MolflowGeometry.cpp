@@ -139,7 +139,7 @@ size_t MolflowGeometry::GetMaxElemNumber() {
 	size_t nbElem = 0;
 	for (size_t i = 0; i < sh.nbFacet; i++) {
 		InterfaceFacet *f = facets[i];
-		if (f->cellPropertiesIds) nbElem += f->sh.texWidth*f->sh.texHeight;
+		if (!f->cellPropertiesIds.empty()) nbElem += f->sh.texWidth*f->sh.texHeight;
 		else          return 0;
 	}
 	return nbElem;
@@ -1685,7 +1685,7 @@ MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, GlobalSimuSt
 			if (f->selected) {
 				if (grouping == 0) fprintf(file, "FACET%lu\n", fInd + 1u); //mode 10: special ANSYS export
 
-				if (f->cellPropertiesIds || f->sh.countDirection) {
+				if (!f->cellPropertiesIds.empty() || f->sh.countDirection) {
 
 					char tmp[256];
 					char out[512];

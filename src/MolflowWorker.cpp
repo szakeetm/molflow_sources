@@ -24,20 +24,21 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <direct.h>
 #include <process.h>
 #include "SMP.h"
+
 #else
 
 #endif
 
 #include <cmath>
-#include <cstdlib>
+//#include <cstdlib>
 #include <fstream>
-#include <istream>
+//#include <istream>
 #include <filesystem>
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/utility.hpp>
-//#include <cereal/archives/xml.hpp>
+/*//#include <cereal/archives/xml.hpp>
 #include <cereal/types/vector.hpp>
-#include <cereal/types/string.hpp>
+#include <cereal/types/string.hpp>*/
 #include <IO/InterfaceXML.h>
 
 #include "MolflowGeometry.h"
@@ -55,7 +56,6 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Interface/ProfilePlotter.h"
 
 
-
 #include "ConvergencePlotter.h"
 
 #if defined(MOLFLOW)
@@ -69,10 +69,10 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #endif
 
 #include "ziplib/ZipArchive.h"
-#include "ziplib/ZipArchiveEntry.h"
+//#include "ziplib/ZipArchiveEntry.h"
 #include "ziplib/ZipFile.h"
-#include "File.h" //File utils (Get extension, etc)
-#include "ProcessControl.h"
+//#include "File.h" //File utils (Get extension, etc)
+//#include "ProcessControl.h"
 #include "versionId.h"
 #include "TimeMoments.h"
 
@@ -108,7 +108,9 @@ Worker::Worker() : simManager(), model{} {
     IDs = std::vector<IntegratedDesorption>();
     parameters = std::vector<Parameter>();
     needsReload = true;  //When main and subprocess have different geometries, needs to reload (synchronize)
+    abortRequested = false;
     displayedMoment = 0; //By default, steady-state is displayed
+    fullFileName = "";
 
     ResetWorkerStats();
     geom = new MolflowGeometry();
@@ -118,7 +120,7 @@ Worker::Worker() : simManager(), model{} {
     //stopTime = 0.0f;
     //simuTime = 0.0f;
 
-    strcpy(fullFileName, "");
+    fullFileName = "";
 }
 
 /**
@@ -174,7 +176,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
 
     // Read a file
 
-    FileWriter *f = NULL;
+    FileWriter *f = nullptr;
     bool isTXT = Contains({"txt", "TXT"}, ext);
     bool isSTR = Contains({"str", "STR"}, ext);
     bool isGEO = ext == "geo";
@@ -188,8 +190,9 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
         //Check (using native handle) if background compressor is still alive
         if ((isGEO7Z) && WAIT_TIMEOUT == WaitForSingleObject(mApp->compressProcessHandle, 0)) {
             GLMessageBox::Display("Compressing a previous save file is in progress. Wait until that finishes "
-                "or close process \"compress.exe\"\nIf this was an autosave attempt,"
-                "you have to lower the autosave frequency.", "Can't save right now.", GLDLG_OK, GLDLG_ICONERROR);
+                                  "or close process \"compress.exe\"\nIf this was an autosave attempt,"
+                                  "you have to lower the autosave frequency.", "Can't save right now.", GLDLG_OK,
+                                  GLDLG_ICONERROR);
             return;
         }
 #endif
@@ -239,7 +242,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
             bool buffer_old;
             try {
                 buffer_old = simManager.GetLockedHitBuffer();
-                if(!buffer_old){
+                if (!buffer_old) {
                     throw std::runtime_error("Error getting access to hit buffer.");
                 }
             }
@@ -253,7 +256,8 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
             } else {
                 try {
                     if (isGEO7Z) {
-                        f = new FileWriter(fileNameWithGeo); //We first write a GEO file, then compress it to GEO7Z later
+                        f = new FileWriter(
+                                fileNameWithGeo); //We first write a GEO file, then compress it to GEO7Z later
                     } else if (!(isXML || isXMLzip))
                         f = new FileWriter(fileName); //Txt, stl, geo, etc...
                 }
@@ -265,8 +269,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
 
                 if (isTXT) {
                     geom->SaveTXT(f, globState, saveSelected);
-                }
-                else if (isGEO || isGEO7Z) {
+                } else if (isGEO || isGEO7Z) {
                     /*
                     // Retrieve leak cache
                     int nbLeakSave, nbHHitSave;
@@ -285,8 +288,8 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                     //geom->SaveXML_geometry(saveDoc, this, prg, saveSelected);
                     FlowIO::WriterInterfaceXML writer;
                     writer.uInput = this->uInput;
-                    writer.SaveGeometry(saveDoc, &model);
-                    writer.WriteInterface(saveDoc, mApp, saveSelected);
+                    writer.SaveGeometry(saveDoc, &model, mApp->useOldXMLFormat);
+                    FlowIO::WriterInterfaceXML::WriteInterface(saveDoc, mApp, saveSelected);
 
                     xml_document geom_only;
                     geom_only.reset(saveDoc);
@@ -323,10 +326,11 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                             try {
                                 remove(fileNameWithZIP.c_str());
                             }
-                            catch (std::exception& e) {
+                            catch (std::exception &e) {
                                 SAFE_DELETE(f);
                                 simManager.UnlockHitBuffer();
-                                std::string msg = "Error compressing to \n" + fileNameWithZIP + "\nMaybe file is in use.";
+                                std::string msg =
+                                        "Error compressing to \n" + fileNameWithZIP + "\nMaybe file is in use.";
                                 GLMessageBox::Display(e.what(), msg.c_str(), GLDLG_OK, GLDLG_ICONERROR);
                                 return;
                             }
@@ -336,7 +340,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                         try {
                             remove(fileNameWithXML.c_str());
                         }
-                        catch (std::exception& e) {
+                        catch (std::exception &e) {
                             SAFE_DELETE(f);
                             simManager.UnlockHitBuffer();
                             std::string msg = "Error removing\n" + fileNameWithXML + "\nMaybe file is in use.";
@@ -372,11 +376,11 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
             std::ostringstream tmp;
             tmp << compressorName << " \"" << fileNameWithGeo << "\" Geometry.geo";
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
-            char* command[1];
+            char *command[1];
             command[0] = new char[512];
             sprintf(command[0], "%s", tmp.str().c_str());
             size_t procId = StartProc(command, STARTPROC_BACKGROUND);
-            mApp->compressProcessHandle = OpenProcess(PROCESS_ALL_ACCESS, true, (unsigned long)procId);
+            mApp->compressProcessHandle = OpenProcess(PROCESS_ALL_ACCESS, true, (unsigned long) procId);
 
             delete[] command[0];
 #else
@@ -390,8 +394,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                                   "Compressor not found", GLDLG_OK, GLDLG_ICONERROR);
             fileName = fileNameWithGeo;
         }
-    }
-    else if (ok && isGEO) {
+    } else if (ok && isGEO) {
         fileName = fileNameWithGeo;
     }
     if (!autoSave && !saveSelected && !isSTL) { //STL file is just a copy
@@ -418,9 +421,8 @@ void Worker::ExportProfiles(const char *fn) {
 
     std::string fileName = fn;
     char tmp[512];
-
     // Read a file
-    FILE *f = NULL;
+    FILE *f = nullptr;
 
     if (FileUtils::GetExtension(fileName).empty()) {
         fileName += ".csv"; //set to default CSV format
@@ -434,12 +436,11 @@ void Worker::ExportProfiles(const char *fn) {
 
     f = fopen(fileName.c_str(), "w");
     if (!f) {
-        char tmp[256];
         sprintf(tmp, "Cannot open file for writing %s", fileName.c_str());
         throw std::runtime_error(tmp);
     }
     bool buffer_old = simManager.GetLockedHitBuffer();
-    if(!buffer_old)
+    if (!buffer_old)
         throw std::runtime_error("Cannot access shared hit buffer");
     geom->ExportProfiles(f, isTXT, this);
     simManager.UnlockHitBuffer();
@@ -453,7 +454,7 @@ void Worker::ExportProfiles(const char *fn) {
  * \param saveAll true if all files -- otherwise only selected -- should be saved
  * \return Vector with strings containing the file names of all angle map files
 */
-std::vector<std::string> Worker::ExportAngleMaps(std::string fileName, bool saveAll) {
+std::vector<std::string> Worker::ExportAngleMaps(const std::string &fileName, bool saveAll) {
     bool overwriteAll = false;
 
     Geometry *geom = GetGeometry();
@@ -461,7 +462,7 @@ std::vector<std::string> Worker::ExportAngleMaps(std::string fileName, bool save
     for (size_t i = 0; i < geom->GetNbFacet(); i++) {
         InterfaceFacet *f = geom->GetFacet(i);
         // saveAll facets e.g. when auto saving or just when selected
-        if ((saveAll || f->selected) && f->sh.anglemapParams.hasRecorded){
+        if ((saveAll || f->selected) && f->sh.anglemapParams.hasRecorded) {
             angleMapFacetIndices.push_back(i);
         }
     }
@@ -480,7 +481,7 @@ std::vector<std::string> Worker::ExportAngleMaps(std::string fileName, bool save
         if (FileUtils::Exist(saveFileName)) {
             if (!overwriteAll) {
                 std::vector<std::string> buttons = {"Cancel", "Overwrite"};
-                if (angleMapFacetIndices.size() > 1) buttons.push_back("Overwrite All");
+                if (angleMapFacetIndices.size() > 1) buttons.emplace_back("Overwrite All");
                 int answer = GLMessageBox::Display("Overwrite existing file ?\n" + saveFileName, "Question", buttons,
                                                    GLDLG_ICONWARNING);
                 if (answer == 0) break; //User cancel
@@ -502,12 +503,12 @@ std::vector<std::string> Worker::ExportAngleMaps(std::string fileName, bool save
     return listOfFiles; // false if angleMapFacetIndices.size() == 0
 }
 
-[[maybe_unused]] bool Worker::ImportAngleMaps(std::string fileName) {
+[[maybe_unused]] bool Worker::ImportAngleMaps(const std::string &fileName) {
 
     for (auto &p : std::filesystem::directory_iterator("")) {
-        std::stringstream fileName;
-        fileName << p.path().string();
-        if (FileUtils::GetExtension(fileName.str()) == "csv") std::cout << p.path() << '\n';
+        std::stringstream ssFileName;
+        ssFileName << p.path().string();
+        if (FileUtils::GetExtension(ssFileName.str()) == "csv") std::cout << p.path() << '\n';
     }
 
     return true; // false if angleMapFacetIndices.size() == 0
@@ -536,7 +537,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
     } else {
         try {
             RealReload();
-        } catch(std::exception& e){
+        } catch (std::exception &e) {
             GLMessageBox::Display(e.what(), "Error (Reloading Geometry)", GLDLG_OK, GLDLG_ICONERROR);
         }
     }
@@ -545,13 +546,13 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
     std::string ext = FileUtils::GetExtension(fileName);
 
-    if (ext == "")
+    if (ext.empty())
 
         throw std::runtime_error("LoadGeometry(): No file extension, can't determine type");
 
     // Read a file
-    FileReader *f = NULL;
-    GLProgress *progressDlg = new GLProgress("Reading file...", "Please wait");
+    FileReader *f = nullptr;
+    auto *progressDlg = new GLProgress("Reading file...", "Please wait");
     progressDlg->SetVisible(true);
     progressDlg->SetProgress(0.0);
 
@@ -592,7 +593,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 geom->LoadTXT(f, progressDlg, this);
                 SAFE_DELETE(f);
                 //RealReload();
-                strcpy(fullFileName, fileName.c_str());
+                fullFileName = fileName;
             } else { //insert
 
                 geom->InsertTXT(f, progressDlg, newStr);
@@ -631,6 +632,8 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 case GLDLG_FOOT:
                     scaleFactor = 30.48;
                     break;
+                default:
+                    break;
             }
             if (ret != GLDLG_CANCEL_U) {
                 progressDlg->SetMessage("Resetting worker...");
@@ -640,7 +643,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 if (!insert) {
                     geom->LoadSTL(f, progressDlg, scaleFactor);
                     SAFE_DELETE(f);
-                    strcpy(fullFileName, fileName.c_str());
+                    fullFileName = fileName;
                     mApp->DisplayCollapseDialog();
                 } else { //insert
                     mApp->changedSinceSave = true;
@@ -668,7 +671,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             SAFE_DELETE(f);
             //RealReload();
 
-            strcpy(fullFileName, fileName.c_str());
+            fullFileName = fileName;
         }
 
         catch (std::exception &e) {
@@ -704,7 +707,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
             progressDlg->SetMessage("Reloading worker with new geometry...");
             Reload();
-            if (!insert) strcpy(fullFileName, fileName.c_str());
+            if (!insert) fullFileName = fileName;
         }
 
         catch (std::exception &e) {
@@ -736,8 +739,9 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 geom->LoadGEO(f, progressDlg, &version, this);
 
                 // Add moments only after user Moments are completely initialized
-                if(TimeMoments::ParseAndCheckUserMoments(&moments, userMoments)){
-                    GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning", GLDLG_OK, GLDLG_ICONWARNING);
+                if (TimeMoments::ParseAndCheckUserMoments(&moments, userMoments)) {
+                    GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning",
+                                          GLDLG_OK, GLDLG_ICONWARNING);
                     return;
                 }
 
@@ -745,7 +749,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 RealReload(); //for the loading of textures
 
                 bool buffer_old = simManager.GetLockedHitBuffer();
-                if(!buffer_old)
+                if (!buffer_old)
                     throw std::runtime_error("Cannot access shared hit buffer");
                 if (version >= 8)
                     geom->LoadProfileGEO(f, globState, version);
@@ -757,7 +761,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
                 progressDlg->SetMessage("Loading textures...");
                 LoadTexturesGEO(f, version);
-                strcpy(fullFileName, fileName.c_str());
+                fullFileName = fileName;
             } else { //insert
                 mApp->changedSinceSave = true;
                 geom->InsertGEO(f, progressDlg, newStr);
@@ -839,10 +843,10 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             }
 
             progressDlg->SetMessage("Building geometry...");
-            xml_node rootNode = loadXML;
-            if(appVersionId >= 2680){
+            xml_node rootNode = loadXML.root();
+            if (appVersionId >= 2680) {
                 xml_node envNode = loadXML.child("SimulationEnvironment");
-                if(!envNode.empty())
+                if (!envNode.empty())
                     rootNode = envNode;
             }
 
@@ -854,7 +858,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 loader.LoadGeometry(parseFileName, &model);
                 userMoments = loader.uInput.userMoments;
                 xml_node interfNode = rootNode.child("Interface");
-                loader.LoadInterface(interfNode, mApp);
+                FlowIO::LoaderInterfaceXML::LoadInterface(interfNode, mApp);
                 InsertParametersBeforeCatalog(loader.uInput.parameters);
 
                 *geom->GetGeomProperties() = model.sh;
@@ -863,20 +867,22 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 geom->InitInterfaceVertices(model.vertices3);
                 geom->InitInterfaceFacets(model.facets, this);
 
-                if(loader.uInput.facetViewSettings.size() == geom->GetNbFacet()) {
+                if (loader.uInput.facetViewSettings.size() == geom->GetNbFacet()) {
                     for (size_t facetId = 0; facetId < geom->GetNbFacet(); facetId++) {
                         auto facet = geom->GetFacet(facetId);
                         facet->textureVisible = std::get<0>(loader.uInput.facetViewSettings[facetId]);
                         facet->volumeVisible = std::get<1>(loader.uInput.facetViewSettings[facetId]);
                     }
-                }
-                else {
-                    std::cerr << "Amount of view settings doesn't equal number of facets: "<<loader.uInput.facetViewSettings.size() << " <> " << GetGeometry()->GetNbFacet() << std::endl;
+                } else {
+                    std::cerr << "Amount of view settings doesn't equal number of facets: "
+                              << loader.uInput.facetViewSettings.size() << " <> " << GetGeometry()->GetNbFacet()
+                              << std::endl;
                 }
 
                 // Add moments only after user Moments are completely initialized
-                if(TimeMoments::ParseAndCheckUserMoments(&moments, userMoments)){
-                    GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning", GLDLG_OK, GLDLG_ICONWARNING);
+                if (TimeMoments::ParseAndCheckUserMoments(&moments, userMoments)) {
+                    GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning",
+                                          GLDLG_OK, GLDLG_ICONWARNING);
                     return;
                 }
 
@@ -894,15 +900,15 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 progressDlg->SetMessage("Reloading worker with new geometry...");
                 try {
                     RealReload(); //To create the dpHit dataport for the loading of textures, profiles, etc...
-                    strcpy(fullFileName, fileName.c_str());
+                    fullFileName = fileName;
 
                     if (ext == "xml" || ext == "zip")
                         progressDlg->SetMessage("Restoring simulation state...");
                     bool buffer_old = simManager.GetLockedHitBuffer();
-                    if(!buffer_old)
+                    if (!buffer_old)
                         throw std::runtime_error("Cannot access shared hit buffer");
                     //geom->LoadXML_simustate(rootNode, globState, this, progressDlg);
-                    loader.LoadSimulationState(parseFileName, &model, globState);
+                    FlowIO::LoaderInterfaceXML::LoadSimulationState(parseFileName, &model, globState);
                     CalculateTextureLimits(); // Load texture limits on init
 
                     // actually loads all caches
@@ -921,7 +927,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     }
                     mApp->profilePlotter->Reset(); //To avoid trying to display non-loaded simulation results
                     if (!mApp->convergencePlotter) {
-                        mApp->convergencePlotter = new ConvergencePlotter(this,mApp->formula_ptr);
+                        mApp->convergencePlotter = new ConvergencePlotter(this, mApp->formula_ptr);
                         mApp->convergencePlotter->SetWorker(this);
                     }
                     mApp->convergencePlotter->Reset(); //To avoid trying to display non-loaded simulation results
@@ -952,7 +958,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             geom->LoadASE(f, progressDlg);
             SAFE_DELETE(f);
             //RealReload();
-            strcpy(fullFileName, fileName.c_str());
+            fullFileName = fileName;
 
         }
         catch (std::exception &e) {
@@ -965,7 +971,8 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
     } else {
         progressDlg->SetVisible(false);
         SAFE_DELETE(progressDlg);
-        throw std::runtime_error("LoadGeometry(): Invalid file extension [Only xml,zip,geo,geo7z,syn.syn7z,txt,ase,stl or str]");
+        throw std::runtime_error(
+                "LoadGeometry(): Invalid file extension [Only xml,zip,geo,geo7z,syn.syn7z,txt,ase,stl or str]");
     }
     if (!insert) {
         CalcTotalOutgassing();
@@ -994,11 +1001,11 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 * \param version version of the GEO data description
 */
 void Worker::LoadTexturesGEO(FileReader *f, int version) {
-    GLProgress *progressDlg = new GLProgress("Loading textures", "Please wait");
+    auto *progressDlg = new GLProgress("Loading textures", "Please wait");
     progressDlg->SetProgress(0.0);
     try {
         bool buffer_old = simManager.GetLockedHitBuffer();
-        if(!buffer_old)
+        if (!buffer_old)
             throw std::runtime_error("Cannot access shared hit buffer");
         progressDlg->SetVisible(true);
         geom->LoadTexturesGEO(f, progressDlg, globState, version);
@@ -1167,9 +1174,9 @@ void Worker::SendAngleMaps() {
         angleMapCaches.push_back(f->angleMapCache);
     }
 
-    if(globState.facetStates.size() != angleMapCaches.size())
+    if (globState.facetStates.size() != angleMapCaches.size())
         return;
-    if(!globState.tMutex.try_lock_for(std::chrono::seconds(10)))
+    if (!globState.tMutex.try_lock_for(std::chrono::seconds(10)))
         return;
     for (size_t i = 0; i < angleMapCaches.size(); i++) {
         globState.facetStates[i].recordedAngleMapPdf = angleMapCaches[i];
@@ -1178,14 +1185,14 @@ void Worker::SendAngleMaps() {
 
 }
 
-bool Worker::MolflowGeomToSimModel(){
+bool Worker::MolflowGeomToSimModel() {
     //auto geom = GetMolflowGeometry();
     // TODO: Proper clear call before for Real reload?
     model.structures.clear();
     model.facets.clear();
     model.vertices3.clear();
 
-    for(int nbV = 0; nbV < geom->GetNbVertex(); ++nbV) {
+    for (size_t nbV = 0; nbV < geom->GetNbVertex(); ++nbV) {
         model.vertices3.emplace_back(*geom->GetVertex(nbV));
     }
     // Parse usermoments to regular moment intervals
@@ -1194,45 +1201,41 @@ bool Worker::MolflowGeomToSimModel(){
     //        model.tdParams.IDs = this->IDs;
     {
         model.tdParams.IDs.clear();
-        for(auto& id : this->IDs){
+        for (auto &id : this->IDs) {
             model.tdParams.IDs.push_back(id.GetValues());
         }
     }
 
     model.tdParams.parameters.clear();
-    for(auto& param : this->parameters)
+    for (auto &param : this->parameters)
         model.tdParams.parameters.emplace_back(param);
 
     std::vector<Moment> momentIntervals;
     momentIntervals.reserve(this->moments.size());
-    for(auto& moment : this->moments){
-        momentIntervals.emplace_back(std::make_pair(moment.first - (0.5 * moment.second), moment.first + (0.5 * moment.second)));
+    for (auto &moment : this->moments) {
+        momentIntervals.emplace_back(
+                std::make_pair(moment.first - (0.5 * moment.second), moment.first + (0.5 * moment.second)));
     }
     model.tdParams.moments = momentIntervals;
 
     model.sh = *geom->GetGeomProperties();
 
     model.structures.resize(model.sh.nbSuper); //Create structures
-    //TODO: Globalize Size values
-    size_t angleMapTotalSize = 0;
-    size_t dirTotalSize = 0;
-    size_t profTotalSize = 0;
-    size_t textTotalSize = 0;
-    size_t histogramTotalSize = 0;
 
     bool hasVolatile = false;
 
     for (size_t facIdx = 0; facIdx < model.sh.nbFacet; facIdx++) {
         SubprocessFacet sFac;
         {
-            InterfaceFacet* facet = geom->GetFacet(facIdx);
+            InterfaceFacet *facet = geom->GetFacet(facIdx);
 
             //std::vector<double> outgMapVector(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0);
             //memcpy(outgMapVector.data(), outgassingMapWindow, sizeof(double)*(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0));
             size_t mapSize = facet->sh.anglemapParams.GetMapSize();
             std::vector<size_t> angleMapVector(mapSize);
-            if(facet->angleMapCache.size() != facet->sh.anglemapParams.GetRecordedMapSize()){
-                std::cerr << "Recorded Data Size is different from actual size: "<<facet->angleMapCache.size() << " / " << facet->sh.anglemapParams.GetRecordedMapSize() << std::endl;
+            if (facet->angleMapCache.size() != facet->sh.anglemapParams.GetRecordedMapSize()) {
+                std::cerr << "Recorded Data Size is different from actual size: " << facet->angleMapCache.size()
+                          << " / " << facet->sh.anglemapParams.GetRecordedMapSize() << std::endl;
                 return false;
             }
             memcpy(angleMapVector.data(), facet->angleMapCache.data(), facet->sh.anglemapParams.GetRecordedDataSize());
@@ -1242,7 +1245,7 @@ bool Worker::MolflowGeomToSimModel(){
             // Add surface elements area (reciprocal)
             if (facet->sh.isTextured) {
                 textIncVector.resize(facet->sh.texHeight * facet->sh.texWidth);
-                if (facet->cellPropertiesIds) {
+                if (!facet->cellPropertiesIds.empty()) {
                     size_t add = 0;
                     for (size_t j = 0; j < facet->sh.texHeight; j++) {
                         for (size_t i = 0; i < facet->sh.texWidth; i++) {
@@ -1259,8 +1262,8 @@ bool Worker::MolflowGeomToSimModel(){
                     }
                 } else {
 
-                    double rw = facet->sh.U.Norme() / (double) (facet->sh.texWidthD);
-                    double rh = facet->sh.V.Norme() / (double) (facet->sh.texHeightD);
+                    double rw = facet->sh.U.Norme() / facet->sh.texWidthD;
+                    double rh = facet->sh.V.Norme() / facet->sh.texHeightD;
                     double area = rw * rh;
                     size_t add = 0;
                     for (int j = 0; j < facet->sh.texHeight; j++) {
@@ -1289,7 +1292,8 @@ bool Worker::MolflowGeomToSimModel(){
 
         hasVolatile |= sFac.sh.isVolatile;
 
-        if ((sFac.sh.superDest || sFac.sh.isVolatile) && ((sFac.sh.superDest - 1) >= model.sh.nbSuper || sFac.sh.superDest < 0)) {
+        if ((sFac.sh.superDest || sFac.sh.isVolatile) &&
+            ((sFac.sh.superDest - 1) >= model.sh.nbSuper || sFac.sh.superDest < 0)) {
             // Geometry error
             //ClearSimulation();
             //ReleaseDataport(loader);
@@ -1310,8 +1314,8 @@ bool Worker::MolflowGeomToSimModel(){
 * \param sendOnly if only certain parts should be reloaded (geometry reloading / ray tracing tree)
 */
 void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
-    GLProgress *progressDlg = new GLProgress("Performing preliminary calculations on geometry...",
-                                             "Passing Geometry to workers");
+    auto *progressDlg = new GLProgress("Performing preliminary calculations on geometry...",
+                                       "Passing Geometry to workers");
     progressDlg->SetVisible(true);
     progressDlg->SetProgress(0.0);
 
@@ -1349,7 +1353,8 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
             catch (...) {
                 progressDlg->SetVisible(false);
                 SAFE_DELETE(progressDlg);
-                throw Error("Failed to create 'Particle Log' vector.\nMost probably out of memory.\nReduce number of logged particles in Particle Logger.");
+                throw Error(
+                        "Failed to create 'Particle Log' vector.\nMost probably out of memory.\nReduce number of logged particles in Particle Logger.");
             }
         }
     }
@@ -1358,8 +1363,8 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
     //std::string loaderString = SerializeForLoader().str();
     progressDlg->SetMessage("Waiting for subprocesses to load geometry...");
     try {
-        if(!MolflowGeomToSimModel()){
-        //if (simManager.ShareWithSimUnits((BYTE *) loaderString.c_str(), loaderString.size(), LoadType::LOADGEOM)) {
+        if (!MolflowGeomToSimModel()) {
+            //if (simManager.ShareWithSimUnits((BYTE *) loaderString.c_str(), loaderString.size(), LoadType::LOADGEOM)) {
             std::string errString = "Failed to send geometry to sub process!\n";
             GLMessageBox::Display(errString.c_str(), "Warning (LoadGeom)", GLDLG_OK, GLDLG_ICONWARNING);
 
@@ -1376,7 +1381,7 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
             throw std::runtime_error(errString);
         }
     }
-    catch (std::exception& e) {
+    catch (std::exception &e) {
         GLMessageBox::Display(e.what(), "Error (LoadGeom)", GLDLG_OK, GLDLG_ICONERROR);
     }
 
@@ -1425,7 +1430,7 @@ void Worker::ResetWorkerStats() {
 void Worker::Start() {
     // Sanity checks
     // Is there some desorption in the system? (depends on pre calculation)
-    if(model.wp.finalOutgassingRate_Pa_m3_sec <= 0.0){
+    if (model.wp.finalOutgassingRate_Pa_m3_sec <= 0.0) {
         // Do another check for existing desorp facets, needed in case a desorp parameter's final value is 0
         bool found = false;
         size_t nbF = geom->GetNbFacet();
@@ -1448,7 +1453,7 @@ void Worker::Start() {
             throw std::logic_error("Processes are already done!");
         }
     }
-    catch (std::exception& e) {
+    catch (std::exception &e) {
         throw e;
     }
 }
@@ -1467,7 +1472,7 @@ void Worker::ResetMoments() {
 * \param moment if there is constant flow or time-dependent mode
 * \return amount of physical molecules represented by one test particle
 */
-double Worker::GetMoleculesPerTP(size_t moment) {
+double Worker::GetMoleculesPerTP(size_t moment) const {
     if (globalHitCache.globalHits.hit.nbDesorbed == 0) return 0; //avoid division by 0
     if (moment == 0) {
         //Constant flow
@@ -1476,7 +1481,8 @@ double Worker::GetMoleculesPerTP(size_t moment) {
     } else {
         //Time-dependent mode
         //Each test particle represents a certain absolute number of real molecules
-        return (model.wp.totalDesorbedMolecules / mApp->worker.moments[moment - 1].second) / globalHitCache.globalHits.hit.nbDesorbed;
+        return (model.wp.totalDesorbedMolecules / mApp->worker.moments[moment - 1].second) /
+               globalHitCache.globalHits.hit.nbDesorbed;
     }
 }
 
@@ -1516,7 +1522,7 @@ void Worker::ImportDesorption_SYN(const char *fileName, const size_t &source, co
 
     FileReader *f = nullptr;
 
-    GLProgress *progressDlg = new GLProgress("Analyzing SYN file...", "Please wait");
+    auto *progressDlg = new GLProgress("Analyzing SYN file...", "Please wait");
     progressDlg->SetProgress(0.0);
     progressDlg->SetVisible(true);
     bool isSYN7Z = (iequals(ext, "syn7z"));
@@ -1566,7 +1572,7 @@ void Worker::AnalyzeSYNfile(const char *fileName, size_t *nbFacet, size_t *nbTex
     // Read a file
     FileReader *f = nullptr;
 
-    GLProgress *progressDlg = new GLProgress("Analyzing SYN file...", "Please wait");
+    auto *progressDlg = new GLProgress("Analyzing SYN file...", "Please wait");
     progressDlg->SetProgress(0.0);
     progressDlg->SetVisible(true);
 
@@ -1611,8 +1617,8 @@ void Worker::PrepareToRun() {
     //determine latest moment
     model.wp.latestMoment = model.wp.timeWindowSize * .5;
 
-    if(!moments.empty())
-        model.wp.latestMoment = (moments.end()-1)->first + (moments.end()-1)->second / 2.0;
+    if (!moments.empty())
+        model.wp.latestMoment = (moments.end() - 1)->first + (moments.end() - 1)->second / 2.0;
     //model.wp.latestMoment += model.wp.timeWindowSize / 2.0;
 
     Geometry *g = GetGeometry();
@@ -1658,11 +1664,12 @@ void Worker::PrepareToRun() {
         } else f->sh.sticking_paramId = -1;
 
         if (f->sh.outgassing_paramId >= 0) { //if time-dependent desorption
-            int id = GetIDId(f->sh.outgassing_paramId);
+            int id = GetIDId(static_cast<size_t>(f->sh.outgassing_paramId));
             if (id >= 0)
                 f->sh.IDid = id; //we've already generated an integrated des. for this time-dep. outgassing
             else
-                f->sh.IDid = GenerateNewID(f->sh.outgassing_paramId); //Convert timedep outg. (PDF) to CDF
+                f->sh.IDid = GenerateNewID(
+                        static_cast<size_t>(f->sh.outgassing_paramId)); //Convert timedep outg. (PDF) to CDF
         }
 
         //Generate speed distribution functions
@@ -1674,7 +1681,7 @@ void Worker::PrepareToRun() {
 
         //Angle map
         if (f->sh.desorbType == DES_ANGLEMAP) {
-			if (!f->sh.anglemapParams.hasRecorded) {
+            if (!f->sh.anglemapParams.hasRecorded) {
                 char tmp[256];
                 sprintf(tmp, "Facet #%zd: Uses angle map desorption but doesn't have a recorded angle map.", i + 1);
                 throw std::runtime_error(tmp);
@@ -1687,13 +1694,13 @@ void Worker::PrepareToRun() {
         }
 
         //First worker::update will do it
-		if (f->sh.anglemapParams.record) {
-			if (!f->sh.anglemapParams.hasRecorded) {
+        if (f->sh.anglemapParams.record) {
+            if (!f->sh.anglemapParams.hasRecorded) {
                 //Initialize angle map and Set values to zero
                 try {
                     f->angleMapCache.resize(f->sh.anglemapParams.GetMapSize(), 0);
                 }
-                catch(...) {
+                catch (...) {
                     std::stringstream tmp;
                     tmp << "Not enough memory for incident angle map on facet " << i + 1;
                     throw std::runtime_error(tmp.str().c_str());
@@ -1701,7 +1708,7 @@ void Worker::PrepareToRun() {
                 f->sh.anglemapParams.hasRecorded = true;
                 if (f->selected) needsAngleMapStatusRefresh = true;
             }
-		}
+        }
 
     }
 
@@ -1743,7 +1750,7 @@ int Worker::GenerateNewCDF(double temperature) {
 * \param paramId parameter ID
 * \return Previous size of IDs vector, which determines new id in the vector
 */
-int Worker::GenerateNewID(int paramId) {
+int Worker::GenerateNewID(size_t paramId) {
     //This function is called if parameter with index paramId doesn't yet have a cumulative des. function
     size_t i = desorptionParameterIDs.size();
     desorptionParameterIDs.push_back(paramId); //mark that i.th integrated des. belongs to paramId
@@ -1756,7 +1763,7 @@ int Worker::GenerateNewID(int paramId) {
 * \param paramId parameter ID
 * \return Id of the integrated desorption function
 */
-int Worker::GetIDId(int paramId) {
+int Worker::GetIDId(size_t paramId) {
 
     int i;
     for (i = 0; i < (int) desorptionParameterIDs.size() &&
@@ -1774,18 +1781,20 @@ void Worker::CalcTotalOutgassing() {
     model.wp.totalDesorbedMolecules = model.wp.finalOutgassingRate_Pa_m3_sec = model.wp.finalOutgassingRate = 0.0;
     Geometry *g = GetGeometry();
 
-    for (int i = 0; i < g->GetNbFacet(); i++) {
+    for (size_t i = 0; i < g->GetNbFacet(); i++) {
         InterfaceFacet *f = g->GetFacet(i);
         if (f->sh.desorbType != DES_NONE) { //there is a kind of desorption
             if (f->sh.useOutgassingFile) { //outgassing file
                 for (int l = 0; l < (f->ogMap.outgassingMapWidth * f->ogMap.outgassingMapHeight); l++) {
-                    model.wp.totalDesorbedMolecules += model.wp.latestMoment * f->ogMap.outgassingMap[l] / (1.38E-23 * f->sh.temperature);
+                    model.wp.totalDesorbedMolecules +=
+                            model.wp.latestMoment * f->ogMap.outgassingMap[l] / (1.38E-23 * f->sh.temperature);
                     model.wp.finalOutgassingRate += f->ogMap.outgassingMap[l] / (1.38E-23 * f->sh.temperature);
                     model.wp.finalOutgassingRate_Pa_m3_sec += f->ogMap.outgassingMap[l];
                 }
             } else { //regular outgassing
                 if (f->sh.outgassing_paramId == -1) { //constant outgassing
-                    model.wp.totalDesorbedMolecules += model.wp.latestMoment * f->sh.outgassing / (1.38E-23 * f->sh.temperature);
+                    model.wp.totalDesorbedMolecules +=
+                            model.wp.latestMoment * f->sh.outgassing / (1.38E-23 * f->sh.temperature);
                     model.wp.finalOutgassingRate +=
                             f->sh.outgassing / (1.38E-23 * f->sh.temperature);  //Outgassing molecules/sec
                     model.wp.finalOutgassingRate_Pa_m3_sec += f->sh.outgassing;
@@ -1795,7 +1804,8 @@ void Worker::CalcTotalOutgassing() {
                     size_t lastIndex = parameters[f->sh.outgassing_paramId].GetSize() - 1;
                     double finalRate_mbar_l_s = parameters[f->sh.outgassing_paramId].GetY(lastIndex);
                     model.wp.finalOutgassingRate +=
-                            finalRate_mbar_l_s * MBARLS_TO_PAM3S / (1.38E-23 * f->sh.temperature); //0.1: mbar*l/s->Pa*m3/s
+                            finalRate_mbar_l_s * MBARLS_TO_PAM3S /
+                            (1.38E-23 * f->sh.temperature); //0.1: mbar*l/s->Pa*m3/s
                     model.wp.finalOutgassingRate_Pa_m3_sec += finalRate_mbar_l_s * MBARLS_TO_PAM3S;
                 }
             }
@@ -1819,7 +1829,8 @@ Worker::Generate_CDF(double gasTempKelvins, double gasMassGramsPerMol, size_t si
     constexpr double Kb = 1.38E-23;
     constexpr double R = 8.3144621;
     const double a = sqrt(Kb * gasTempKelvins /
-                    (gasMassGramsPerMol * 1.67E-27)); //distribution a parameter. Converting molar mass to atomic mass
+                          (gasMassGramsPerMol *
+                           1.67E-27)); //distribution a parameter. Converting molar mass to atomic mass
 
     //Generate cumulative distribution function
     double mostProbableSpeed = sqrt(2 * R * gasTempKelvins / (gasMassGramsPerMol / 1000.0));
@@ -1859,7 +1870,7 @@ Worker::Generate_CDF(double gasTempKelvins, double gasMassGramsPerMol, size_t si
 * \param paramId outgassing parameter index (parameters can be lin/lin, log-lin, lin-log or log-log, each requiring different integration method)
 * \return Integrated desorption: class containing a Vector containing a pair of double values (x value = time moment, y value = cumulative desorption value)
 */
-IntegratedDesorption Worker::Generate_ID(int paramId) {
+IntegratedDesorption Worker::Generate_ID(size_t paramId) {
 
     std::vector<std::pair<double, double>> ID; //time-cumulative desorption pairs. Can have more points than the corresponding outgassing (some sections are divided to subsections)
 
@@ -1867,14 +1878,14 @@ IntegratedDesorption Worker::Generate_ID(int paramId) {
     //Beginning: Add a point at t=0, with the first outgassing value (assuming constant outgassing from 0 to t1 - const. extrap.)
     //End: if latestMoment is after the last user-defined moment, copy last user value to latestMoment (constant extrapolation)
     //     if latestMoment is before, create a new point at latestMoment with interpolated outgassing value and throw away the rest (don't generate particles after latestMoment)
-    std::vector<std::pair<double,double>> myOutgassing; //modified parameter
+    std::vector<std::pair<double, double>> myOutgassing; //modified parameter
 
     //First, let's check at which index is the latest moment
     size_t indexAfterLatestMoment;
-    Parameter& par = parameters[paramId]; //we'll reference it a lot
+    Parameter &par = parameters[paramId]; //we'll reference it a lot
     for (indexAfterLatestMoment = 0; indexAfterLatestMoment < par.GetSize() &&
-                                    (par.GetX(indexAfterLatestMoment) <
-                                     model.wp.latestMoment); indexAfterLatestMoment++); //loop exits after first index after latestMoment
+                                     (par.GetX(indexAfterLatestMoment) <
+                                      model.wp.latestMoment); indexAfterLatestMoment++); //loop exits after first index after latestMoment
     bool lastUserMomentBeforeLatestMoment;
     if (indexAfterLatestMoment >= par.GetSize()) {
         indexAfterLatestMoment = par.GetSize() - 1; //not found, set as last moment
@@ -1885,9 +1896,9 @@ IntegratedDesorption Worker::Generate_ID(int paramId) {
 
     //Construct integral from 0 to the simulation's latest moment
     //First point: t=0, Q(0)=Q(t0)
-    ID.push_back(std::make_pair(0.0, 0.0)); //At t=0 no particles have desorbed yet
-    if (par.GetX(0)>0.0) { //If the user starts later than t=0, copy first user value to t=0(const extrapolation)
-        myOutgassing.push_back(std::make_pair(0.0,par.GetY(0)));
+    ID.emplace_back(0.0, 0.0); //At t=0 no particles have desorbed yet
+    if (par.GetX(0) > 0.0) { //If the user starts later than t=0, copy first user value to t=0(const extrapolation)
+        myOutgassing.emplace_back(0.0, par.GetY(0));
     } else { //user has set an outgassing at t=0, so just copy it to myOutgassing
         myOutgassing.push_back(par.GetValues()[0]);
     }
@@ -1895,17 +1906,21 @@ IntegratedDesorption Worker::Generate_ID(int paramId) {
     //We throw away user-defined moments after latestMoment:
     //Example: we sample the system until t=10s but outgassing is defined until t=1000s -> ignore values after 10s
     {
-        const auto& valuesCopy = par.GetValues();
+        const auto &valuesCopy = par.GetValues();
         if (lastUserMomentBeforeLatestMoment) {
-            myOutgassing.insert(myOutgassing.end(),valuesCopy.begin(),valuesCopy.end()); //copy all values...
-            myOutgassing.push_back(std::make_pair(model.wp.latestMoment,myOutgassing.back().second)); //...and create last point equal to last outgassing (const extrapolation)
+            myOutgassing.insert(myOutgassing.end(), valuesCopy.begin(), valuesCopy.end()); //copy all values...
+            myOutgassing.emplace_back(model.wp.latestMoment,
+                                      myOutgassing.back().second); //...and create last point equal to last outgassing (const extrapolation)
         } else {
-             if (indexAfterLatestMoment>0) {
-                myOutgassing.insert(myOutgassing.end(),valuesCopy.begin(),valuesCopy.begin()+indexAfterLatestMoment-1); //copy values that are before latestMoment
-             }
-             if (!IsEqual(myOutgassing.back().first,model.wp.latestMoment)) { //if interpolation is needed
-                myOutgassing.push_back(std::make_pair(model.wp.latestMoment,
-                InterpolateY(model.wp.latestMoment,valuesCopy,par.logXinterp,par.logYinterp))); //interpolate outgassing value to t=latestMoment
+            if (indexAfterLatestMoment > 0) {
+                myOutgassing.insert(myOutgassing.end(), valuesCopy.begin(),
+                                    valuesCopy.begin() + indexAfterLatestMoment -
+                                    1); //copy values that are before latestMoment
+            }
+            if (!IsEqual(myOutgassing.back().first, model.wp.latestMoment)) { //if interpolation is needed
+                myOutgassing.emplace_back(model.wp.latestMoment,
+                                          InterpolateY(model.wp.latestMoment, valuesCopy, par.logXinterp,
+                                                       par.logYinterp)); //interpolate outgassing value to t=latestMoment
             }
         }
 
@@ -1915,92 +1930,104 @@ IntegratedDesorption Worker::Generate_ID(int paramId) {
     for (size_t i = 1; i < myOutgassing.size(); i++) { //myOutgassing[0] is always at t=0, skipping
         if (IsEqual(myOutgassing[i].second, myOutgassing[i - 1].second)) {
             //easy case of two equal y0=y1 values, simple integration by multiplying, reducing number of points
-            ID.push_back(std::make_pair(myOutgassing[i].first,
-                ID.back().second +
-                (myOutgassing[i].first - myOutgassing[i - 1].first) *
-                myOutgassing[i].second * MBARLS_TO_PAM3S)); //integral = y1*(x1-x0)
-        }
-        else { //we need to split the user-defined section to 10 subsections, and integrate each
-               //(terminology: section is between two consecutive user-defined time-value pairs)
+            ID.emplace_back(myOutgassing[i].first,
+                            ID.back().second +
+                            (myOutgassing[i].first - myOutgassing[i - 1].first) *
+                            myOutgassing[i].second * MBARLS_TO_PAM3S); //integral = y1*(x1-x0)
+        } else { //we need to split the user-defined section to 10 subsections, and integrate each
+            //(terminology: section is between two consecutive user-defined time-value pairs)
             const int nbSteps = 10; //change here
             double sectionStartTime = myOutgassing[i - 1].first;
             double sectionEndTime = myOutgassing[i].first;
             double sectionTimeInterval = sectionEndTime - sectionStartTime;
             double sectionDelta = 1.0 / nbSteps;
-            double subsectionTimeInterval,subsectionLogTimeInterval;
+            double subsectionTimeInterval, subsectionLogTimeInterval;
             double logSectionStartTime, logSectionEndTime, logSectionTimeInterval;
+
+            subsectionTimeInterval = subsectionLogTimeInterval =
+            logSectionStartTime = logSectionEndTime = logSectionTimeInterval = 0.0;
+
             if (par.logXinterp) { //time is logarithmic
                 if (sectionStartTime == 0) logSectionStartTime = -99;
                 else logSectionStartTime = log10(sectionStartTime);
                 logSectionEndTime = log10(sectionEndTime);
                 logSectionTimeInterval = logSectionEndTime - logSectionStartTime;
                 subsectionLogTimeInterval = logSectionTimeInterval * sectionDelta;
-            }
-            else {
+            } else {
                 subsectionTimeInterval = sectionTimeInterval * sectionDelta;
             }
-            double previousSubsectionValue = myOutgassing[i - 1].second; //Points to start of section, will be updated to point to start of subsections
+            double previousSubsectionValue = myOutgassing[i -
+                                                          1].second; //Points to start of section, will be updated to point to start of subsections
             double previousSubsectionTime = sectionStartTime;
-            for (double sectionFraction = sectionDelta; sectionFraction < 1.0001; sectionFraction += sectionDelta) { //sectionFraction: where we are within the section [0..1]
+
+            double sectionFraction = sectionDelta;
+            while (sectionFraction < 1.0001) {
+                //for (double sectionFraction = sectionDelta; sectionFraction < 1.0001; sectionFraction += sectionDelta) { //sectionFraction: where we are within the section [0..1]
                 double subSectionEndTime;
                 if (!par.logXinterp) {
                     //linX: Distribute sampled points evenly
                     subSectionEndTime = sectionStartTime + sectionFraction * sectionTimeInterval;
-                }
-                else {
+                } else {
                     //logX: Distribute sampled points logarithmically
                     subSectionEndTime = Pow10(logSectionStartTime + sectionFraction * logSectionTimeInterval);
                 }
-                double subSectionEndValue = InterpolateY(subSectionEndTime,myOutgassing,par.logXinterp,par.logYinterp);
+                double subSectionEndValue = InterpolateY(subSectionEndTime, myOutgassing, par.logXinterp,
+                                                         par.logYinterp);
                 double subsectionDesorbedGas; //desorbed gas in this subsection, in mbar*l/s, will be converted to Pa*m3/s when adding to ID
                 if (!par.logXinterp && !par.logYinterp) { //lin-lin interpolation
                     //Area under a straight section from (x0,y0) to (x1,y1) on a lin-lin plot: I = (x1-x0) * (y0+y1)/2
-                    subsectionDesorbedGas = subsectionTimeInterval * 0.5 * (previousSubsectionValue + subSectionEndValue);
-                }
-                else if (par.logXinterp && !par.logYinterp) { //log-lin: time (X) is logarithmic, outgassing (Y) is linear
+                    subsectionDesorbedGas =
+                            subsectionTimeInterval * 0.5 * (previousSubsectionValue + subSectionEndValue);
+                } else if (par.logXinterp &&
+                           !par.logYinterp) { //log-lin: time (X) is logarithmic, outgassing (Y) is linear
                     //From Mathematica/WolframAlpha: integral of a straight section from (x0,y0) to (x1,y1) on a log10-lin plot: I = (y1-y0)(x0-x1)/ln(x1/x0) - x0y0 + x1y1
-                    double x0=previousSubsectionTime;
-                    double x1=subSectionEndTime;
-                    double y0=previousSubsectionValue;
-                    double y1=subSectionEndValue;
-                    subsectionDesorbedGas = (y1-y0)*(x0-x1)/log(x1/x0) - x0*y0 + x1*y1;
-                }
-                else if (!par.logXinterp && par.logYinterp) { //lin-log: time (X) is linear, outgassing (Y) is logarithmic
+                    double x0 = previousSubsectionTime;
+                    double x1 = subSectionEndTime;
+                    double y0 = previousSubsectionValue;
+                    double y1 = subSectionEndValue;
+                    subsectionDesorbedGas = (y1 - y0) * (x0 - x1) / log(x1 / x0) - x0 * y0 + x1 * y1;
+                } else if (!par.logXinterp &&
+                           par.logYinterp) { //lin-log: time (X) is linear, outgassing (Y) is logarithmic
                     //Area under a straight section from (x0,y0) to (x1,y1) on a lin-log plot: I = 1/m * (y1-y0) where m=log10(y1/y0)/(x1-x0)
-                    double logSubSectionEndValue = (subSectionEndValue>0.0) ? log10(subSectionEndValue) : -99;
-                    double logPreviousSubSectionValue = (previousSubsectionTime>0.0) ? log10(previousSubsectionValue) : -99;
+                    double logSubSectionEndValue = (subSectionEndValue > 0.0) ? log10(subSectionEndValue) : -99;
+                    double logPreviousSubSectionValue = (previousSubsectionTime > 0.0) ? log10(previousSubsectionValue)
+                                                                                       : -99;
                     //I = (x2-x1)*(y2-y1)*log10(exp(1))/(log10(y2)-log10(y1)) from https://fr.mathworks.com/matlabcentral/answers/404930-finding-the-area-under-a-semilogy-plot-with-straight-line-segments
-                    subsectionDesorbedGas = subsectionTimeInterval*(subSectionEndValue-previousSubsectionValue)
-                        * log10(exp(1))/(logSubSectionEndValue-logPreviousSubSectionValue);
-                }
-                else { //log-log
+                    subsectionDesorbedGas = subsectionTimeInterval * (subSectionEndValue - previousSubsectionValue)
+                                            * log10(exp(1)) / (logSubSectionEndValue - logPreviousSubSectionValue);
+                } else { //log-log
                     //Area under a straight section from (x0,y0) to (x1,y1) on a log-log plot:
                     //I = (y0/(x0^m))/(m+1) * (x1^(m+1)-x0^(m+1)) if m!=-1
                     //I = x0*y0*log10(x1/x0) if m==-1
                     //where m= log10(y1/y0) / log10(x1/x0)
-                    double logSubSectionEndValue = (subSectionEndValue>0.0) ? log10(subSectionEndValue) : -99;
-                    double logPreviousSubSectionValue = (previousSubsectionTime>0.0) ? log10(previousSubsectionValue) : -99;
-                    double m = (logSubSectionEndValue-logPreviousSubSectionValue) / subsectionLogTimeInterval; //slope
+                    double logSubSectionEndValue = (subSectionEndValue > 0.0) ? log10(subSectionEndValue) : -99;
+                    double logPreviousSubSectionValue = (previousSubsectionTime > 0.0) ? log10(previousSubsectionValue)
+                                                                                       : -99;
+                    double m = (logSubSectionEndValue - logPreviousSubSectionValue) / subsectionLogTimeInterval; //slope
                     if (m != -1.0) {
-                        subsectionDesorbedGas = previousSubsectionValue / pow(previousSubsectionTime, m) / (m + 1.0) * (pow(subSectionEndTime, m + 1.0) - pow(previousSubsectionTime, m + 1.0));
-                    }
-                    else { //m==-1
-                        subsectionDesorbedGas = previousSubsectionTime * previousSubsectionValue * subsectionLogTimeInterval;
+                        subsectionDesorbedGas = previousSubsectionValue / pow(previousSubsectionTime, m) / (m + 1.0) *
+                                                (pow(subSectionEndTime, m + 1.0) -
+                                                 pow(previousSubsectionTime, m + 1.0));
+                    } else { //m==-1
+                        subsectionDesorbedGas =
+                                previousSubsectionTime * previousSubsectionValue * subsectionLogTimeInterval;
                     }
                 }
 
-                ID.push_back(std::make_pair(subSectionEndTime,ID.back().second + subsectionDesorbedGas * MBARLS_TO_PAM3S ));
+                ID.emplace_back(subSectionEndTime, ID.back().second + subsectionDesorbedGas * MBARLS_TO_PAM3S);
 
                 //Cache end values for next iteration
                 previousSubsectionValue = subSectionEndValue;
                 previousSubsectionTime = subSectionEndTime;
+
+                sectionFraction += sectionDelta;
             } //end subsection loop
         }
     } //end section loop
 
     IntegratedDesorption result;
-    result.logXinterp=par.logXinterp;
-    result.logYinterp=par.logYinterp;
+    result.logXinterp = par.logXinterp;
+    result.logYinterp = par.logYinterp;
     result.SetValues(ID, false);
     return result;
 
@@ -2011,9 +2038,9 @@ IntegratedDesorption Worker::Generate_ID(int paramId) {
 * \param name name of the parameter that shall be looked up
 * \return ID corresponding to the found parameter
 */
-int Worker::GetParamId(const std::string name) {
+int Worker::GetParamId(const std::string &name) {
     int foundId = -1;
     for (int i = 0; foundId == -1 && i < (int) parameters.size(); i++)
-        if (name.compare(parameters[i].name) == 0) foundId = i;
+        if (name == parameters[i].name) foundId = i;
     return foundId;
 }

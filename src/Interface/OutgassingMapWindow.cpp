@@ -200,7 +200,7 @@ void OutgassingMapWindow::UpdateTable() {
   }
 
   //SHELEM *mesh = selFacet->mesh;
-  if( selFacet->cellPropertiesIds ) {
+  if( !selFacet->cellPropertiesIds.empty() ) {
 
     char tmp[256];
 	size_t w = selFacet->sh.texWidth;

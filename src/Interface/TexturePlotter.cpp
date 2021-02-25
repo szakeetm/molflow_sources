@@ -206,13 +206,13 @@ void TexturePlotter::UpdateTable() {
 	maxValue = 0.0f;
 	//double scale;
 	GetSelected();
-	if (!selFacet || !selFacet->cellPropertiesIds) {
+	if (!selFacet || selFacet->cellPropertiesIds.empty()) {
 		mapList->Clear();
 		return;
 	}
 
 	//SHELEM *mesh = selFacet->mesh;
-	if (selFacet->cellPropertiesIds) {
+	if (!selFacet->cellPropertiesIds.empty()) {
 
 		char tmp[256];
 		size_t w = selFacet->sh.texWidth;

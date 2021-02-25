@@ -1267,7 +1267,7 @@ void MolFlow::ImportDesorption_DES() {
 */
 
 void MolFlow::SaveFile() {
-	if (strlen(worker.fullFileName) > 0) {
+	if (!worker.fullFileName.empty()) {
 
 		auto *progressDlg2 = new GLProgress("Saving...", "Please wait");
 		progressDlg2->SetProgress(0.5);
@@ -1280,7 +1280,7 @@ void MolFlow::SaveFile() {
 		}
 		catch(std::exception &e) {
 			char errMsg[512];
-			sprintf(errMsg, "%s\nFile:%s", e.what(), worker.GetCurrentFileName());
+			sprintf(errMsg, "%s\nFile:%s", e.what(), worker.GetCurrentFileName().c_str());
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 		}
 		progressDlg2->SetVisible(false);

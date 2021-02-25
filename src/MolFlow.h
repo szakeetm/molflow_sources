@@ -38,10 +38,9 @@ class OutgassingMapWindow;
 class MomentsEditor;
 class ParameterEditor;
 
-class Error;
+struct Error;
 
-class MolFlow : public Interface
-{
+class MolFlow : public Interface {
 public:
     MolFlow();
     virtual ~MolFlow() = default;

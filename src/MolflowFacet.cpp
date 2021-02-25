@@ -650,7 +650,7 @@ void InterfaceFacet::SaveGEO(FileWriter *file, int idx) {
 	file->Write("  superDest:"); file->Write(sh.superDest, "\n");
 	file->Write("  superIdx:"); file->Write(sh.superIdx, "\n");
 	file->Write("  is2sided:"); file->Write(sh.is2sided, "\n");
-	file->Write("  mesh:"); file->Write((cellPropertiesIds != NULL), "\n");
+	file->Write("  mesh:"); file->Write((!cellPropertiesIds.empty()), "\n");
 
 	file->Write("  outgassing:"); file->Write(sh.outgassing*10.00, "\n"); //Pa*m3/s -> mbar*l/s for compatibility with old versions
 	file->Write("  texDimX:"); file->Write(sh.texWidthD, "\n");
@@ -1115,9 +1115,9 @@ void  InterfaceFacet::SaveXML_geom(pugi::xml_node f) {
 		break;
 	}
 	t = e.append_child("Texture");
-	assert(!(cellPropertiesIds == NULL && (sh.countAbs || sh.countDes || sh.countRefl || sh.countTrans))); //Count texture on non-existent texture
+	assert(!(cellPropertiesIds.empty() && (sh.countAbs || sh.countDes || sh.countRefl || sh.countTrans))); //Count texture on non-existent texture
 
-	t.append_attribute("hasMesh") = cellPropertiesIds != NULL;
+	t.append_attribute("hasMesh") = !cellPropertiesIds.empty();
 	t.append_attribute("texDimX") = sh.texWidthD;
 	t.append_attribute("texDimY") = sh.texHeightD;
 	t.append_attribute("countDes") = (int)sh.countDes; //backward compatibility: 0 or 1
@@ -1425,7 +1425,7 @@ void InterfaceFacet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchi
 		// Add surface elements area (reciprocal)
 		if (sh.isTextured) {
 			textIncVector.resize(sh.texHeight*sh.texWidth);
-			if (cellPropertiesIds) {
+			if (!cellPropertiesIds.empty()) {
 				size_t add = 0;
 				for (size_t j = 0; j < sh.texHeight; j++) {
 					for (size_t i = 0; i < sh.texWidth; i++) {

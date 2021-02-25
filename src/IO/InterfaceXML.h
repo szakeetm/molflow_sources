@@ -15,13 +15,13 @@ namespace FlowIO{
         public LoaderXML {
         public:
             LoaderInterfaceXML() : LoaderXML() {};
-            void LoadInterface(pugi::xml_node interfaceNode, MolFlow *mApp);
+            static void LoadInterface(pugi::xml_node interfaceNode, MolFlow *mApp);
         };
 
         class WriterInterfaceXML :
         public WriterXML {
         public:
-            void WriteInterface(pugi::xml_node saveDoc, MolFlow *mApp, bool saveSelected);
+            static void WriteInterface(pugi::xml_document &saveDoc, MolFlow *mApp, bool saveSelected);
         };
 }
 #endif //MOLFLOW_PROJ_INTERFACEXML_H

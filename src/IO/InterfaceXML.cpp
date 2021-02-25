@@ -110,11 +110,11 @@ namespace FlowIO {
         // return;
     }
 
-    void WriterInterfaceXML::WriteInterface(xml_node saveDoc, MolFlow *mApp, bool saveSelected) {
+    void WriterInterfaceXML::WriteInterface(xml_document &saveDoc, MolFlow *mApp, bool saveSelected) {
 
         xml_node rootNode;
         if(mApp->useOldXMLFormat){
-            rootNode = saveDoc;
+            rootNode = saveDoc.root();
         }
         else {
             rootNode = saveDoc.child("SimulationEnvironment");
