@@ -282,24 +282,19 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                     geom->SaveSTL(f, prg);
                 } else if (isXML || isXMLzip) {
                     xml_document saveDoc;
-                    geom->SaveXML_geometry(saveDoc, this, prg, saveSelected);
+                    //geom->SaveXML_geometry(saveDoc, this, prg, saveSelected);
+                    FlowIO::WriterInterfaceXML writer;
+                    writer.uInput = this->uInput;
+                    writer.SaveGeometry(saveDoc, &model);
+                    writer.WriteInterface(saveDoc, mApp, saveSelected);
+
                     xml_document geom_only;
                     geom_only.reset(saveDoc);
                     bool success = false; //success: simulation state could be saved
                     if (!crashSave && !saveSelected) {
                         try {
-                            //BYTE *buffer = simManager.GetLockedHitBuffer();
-                            //GlobalHitBuffer *gHits = (GlobalHitBuffer *) buffer;
-                            /*
-                            int nbLeakSave, nbHHitSave;
-                            LEAK leakCache[LEAKCACHESIZE];
-                            GetLeak(leakCache, &nbLeakSave);
-                            HIT hitCache[HITCACHESIZE];
-                            GetHHit(hitCache, &nbHHitSave);
-                            */
-
-                            success = geom->SaveXML_simustate(saveDoc, this, globState, prg, saveSelected);
-                            //SAFE_DELETE(buffer);
+                            //success = geom->SaveXML_simustate(saveDoc, this, globState, prg, saveSelected);
+                            success = writer.SaveSimulationState(saveDoc, &model, globState);
                         }
                         catch (std::exception &e) {
                             SAFE_DELETE(f);
@@ -862,6 +857,8 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 loader.LoadInterface(interfNode, mApp);
                 InsertParametersBeforeCatalog(loader.uInput.parameters);
 
+                *geom->GetGeomProperties() = model.sh;
+
                 // Move actual geom to interface geom
                 geom->InitInterfaceVertices(model.vertices3);
                 geom->InitInterfaceFacets(model.facets, this);
@@ -883,12 +880,13 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     return;
                 }
 
+                this->uInput = loader.uInput;
                 // Init after load stage
+                //geom->InitializeMesh();
                 geom->InitializeGeometry();
                 //AdjustProfile();
                 //isLoaded = true; //InitializeGeometry() sets to true
-                progressDlg->SetMessage("Building mesh...");
-                geom->InitializeMesh();
+                //progressDlg->SetMessage("Building mesh...");
                 // end init
 
                 geom->UpdateName(fileName.c_str());

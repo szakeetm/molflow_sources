@@ -6,6 +6,9 @@
 #include <MolFlow.h>
 #include <ProfilePlotter.h>
 #include <ConvergencePlotter.h>
+#include <versionId.h>
+#include <sstream>
+#include <iomanip>
 
 namespace FlowIO {
     using namespace pugi;
@@ -107,9 +110,22 @@ namespace FlowIO {
         // return;
     }
 
-    void WriterInterfaceXML::WriteInterface(xml_node interfNode, MolFlow *mApp, bool saveSelected) {
+    void WriterInterfaceXML::WriteInterface(xml_node saveDoc, MolFlow *mApp, bool saveSelected) {
 
-        //xml_node interfNode = rootNode.append_child("Interface");
+        xml_node rootNode;
+        if(mApp->useOldXMLFormat){
+            rootNode = saveDoc;
+        }
+        else {
+            rootNode = saveDoc.child("SimulationEnvironment");
+            if(!rootNode) {
+                rootNode = saveDoc.append_child("SimulationEnvironment");
+                rootNode.attribute("type") = "molflow";
+                rootNode.append_attribute("version") = appVersionId;
+            }
+        }
+
+        xml_node interfNode = rootNode.append_child("Interface");
 
         xml_node selNode = interfNode.append_child("Selections");
         selNode.append_attribute("nb") = (!saveSelected) * (mApp->selections.size());
@@ -185,5 +201,28 @@ namespace FlowIO {
             }
         }
 
+
+        // TODO: Move to other place once convergence is part of CLI
+        xml_node resultNode = rootNode.child("MolflowResults");
+        if(!resultNode) {
+            resultNode = rootNode.append_child("MolflowResults");
+        }
+        //Convergence results
+        xml_node convNode = resultNode.append_child("Convergence");
+
+        int formulaId = 0;
+        for(const auto& formulaVec : mApp->formula_ptr->convergenceValues){
+            std::stringstream convText;
+            convText << std::setprecision(10) << '\n';
+            convText << std::scientific;
+            for(const auto& convVal : formulaVec.conv_vec){
+                convText << convVal.first << "\t" << convVal.second << "\n";
+            }
+            xml_node newFormulaNode = convNode.append_child("ConvData");
+            newFormulaNode.append_attribute("Formula") = mApp->formula_ptr->formulas_n[formulaId]->GetExpression();
+            xml_node newConv = newFormulaNode.append_child(node_cdata);
+            newConv.set_value(convText.str().c_str());
+            formulaId++;
+        }
     }
 }

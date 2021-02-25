@@ -21,7 +21,7 @@ namespace FlowIO{
         class WriterInterfaceXML :
         public WriterXML {
         public:
-            void WriteInterface(pugi::xml_node interfNode, MolFlow *mApp, bool saveSelected);
+            void WriteInterface(pugi::xml_node saveDoc, MolFlow *mApp, bool saveSelected);
         };
 }
 #endif //MOLFLOW_PROJ_INTERFACEXML_H

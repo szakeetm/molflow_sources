@@ -27,8 +27,7 @@ void reportWriteStatus(const std::string& statusString) {
     printf("[%s] %s\n", s , statusString.c_str());
 }
 
-void WriterXML::SaveGeometry(const std::string& outputFileName, SimulationModel *model) {
-    xml_document saveDoc;
+void WriterXML::SaveGeometry(xml_document &saveDoc, SimulationModel *model) {
     xml_node rootNode;
     if(useOldXMLFormat){
         rootNode = saveDoc;
@@ -56,7 +55,7 @@ void WriterXML::SaveGeometry(const std::string& outputFileName, SimulationModel 
         //if (!saveSelected || model->facets[i]->selected) {
             xml_node f = geomNode.child("Facets").append_child("Facet");
             f.append_attribute("id") = i;
-            SaveFacet(f, &model->facets[i], model->vertices3.size()); //model->facets[i]->SaveXML_geom(f);
+        SaveFacet(f, &model->facets[i], model->vertices3.size()); //model->facets[i]->SaveXML_geom(f);
         //}
     }
 
@@ -153,11 +152,27 @@ void WriterXML::SaveGeometry(const std::string& outputFileName, SimulationModel 
 #endif
 }
 
-int WriterXML::SaveSimulationState(const std::string& outputFileName, SimulationModel *model, GlobalSimuState& globState) {
+// Directly append to file (load + save)
+bool WriterXML::SaveSimulationState(const std::string& outputFileName, SimulationModel *model, GlobalSimuState& globState) {
     xml_document saveDoc;
     xml_parse_result parseResult = saveDoc.load_file(outputFileName.c_str()); //parse xml file directly
+    
+    SaveSimulationState(saveDoc, model, globState);
+
+    if (!saveDoc.save_file(outputFileName.c_str())) {
+        std::cerr << "Error writing XML file." << std::endl; //successful save
+        return false;
+    }
+    return true;
+}
+
+// Append to open XML node
+bool WriterXML::SaveSimulationState(xml_node saveDoc, SimulationModel *model, GlobalSimuState& globState) {
+    //xml_parse_result parseResult = saveDoc.load_file(outputFileName.c_str()); //parse xml file directly
 
     xml_node rootNode = saveDoc.child("SimulationEnvironment");
+    if(!rootNode)
+        rootNode = saveDoc.append_child("SimulationEnvironment");
     rootNode.remove_child("MolflowResults"); // clear previous results to replace with new status
 
     xml_node resultNode = rootNode.append_child("MolflowResults");
@@ -275,27 +290,14 @@ int WriterXML::SaveSimulationState(const std::string& outputFileName, Simulation
         
         xml_node facetResultsNode = newMoment.append_child("FacetResults");
 
-        for (size_t i = 0; i < model->sh.nbFacet; i++) {
-            SubprocessFacet* subFac = nullptr;
-
-            for(auto& fac : model->facets){
-                if(i == fac.globalId){
-                    subFac = &fac;
-                    break;
-                }
-            }
-            if(!subFac){
-                std::cerr << "Facet "<<i<< " not found in model!" << std::endl;
-                continue;
-            }
-
+        for(auto& sFac : model->facets){
             //SubprocessFacet& f = model->structures[0].facets[0].;
             xml_node newFacetResult = facetResultsNode.append_child("Facet");
-            newFacetResult.append_attribute("id") = i;
+            newFacetResult.append_attribute("id") = sFac.globalId;
 
             xml_node facetHitNode = newFacetResult.append_child("Hits");
-            //FacetHitBuffer* facetCounter = (FacetHitBuffer *)(buffer + subFac->sh.hitOffset + m * sizeof(FacetHitBuffer));
-            const auto& facetCounter = globState.facetStates[subFac->globalId].momentResults[m].hits;
+            //FacetHitBuffer* facetCounter = (FacetHitBuffer *)(buffer + sFac.sh.hitOffset + m * sizeof(FacetHitBuffer));
+            const auto& facetCounter = globState.facetStates[sFac.globalId].momentResults[m].hits;
             
             facetHitNode.append_attribute("nbHit") = facetCounter.hit.nbMCHit;
             facetHitNode.append_attribute("nbHitEquiv") = facetCounter.hit.nbHitEquiv;
@@ -305,11 +307,11 @@ int WriterXML::SaveSimulationState(const std::string& outputFileName, Simulation
             facetHitNode.append_attribute("sum_1_per_v") = facetCounter.hit.sum_1_per_ort_velocity;
             facetHitNode.append_attribute("sum_v") = facetCounter.hit.sum_1_per_velocity;
 
-            if (subFac->sh.isProfile) {
+            if (sFac.sh.isProfile) {
                 xml_node profileNode = newFacetResult.append_child("Profile");
                 profileNode.append_attribute("size") = PROFILE_SIZE;
-                //ProfileSlice *pr = (ProfileSlice *)(buffer + subFac->sh.hitOffset + facetHitsSize + m * sizeof(ProfileSlice)*PROFILE_SIZE);
-                const auto& pr = globState.facetStates[subFac->globalId].momentResults[m].profile;
+                //ProfileSlice *pr = (ProfileSlice *)(buffer + sFac.sh.hitOffset + facetHitsSize + m * sizeof(ProfileSlice)*PROFILE_SIZE);
+                const auto& pr = globState.facetStates[sFac.globalId].momentResults[m].profile;
 
                 for (int p = 0; p < PROFILE_SIZE; p++) {
                     xml_node slice = profileNode.append_child("Slice");
@@ -320,17 +322,17 @@ int WriterXML::SaveSimulationState(const std::string& outputFileName, Simulation
                 }
             }
 
-            size_t profSize = (subFac->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + model->tdParams.moments.size())) : 0;
-            size_t height = subFac->sh.texHeight;
-            size_t width = subFac->sh.texWidth;
+            size_t profSize = (sFac.sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + model->tdParams.moments.size())) : 0;
+            size_t height = sFac.sh.texHeight;
+            size_t width = sFac.sh.texWidth;
 
-            if (subFac->sh.texWidth * subFac->sh.texHeight > 0) {
+            if (sFac.sh.texWidth * sFac.sh.texHeight > 0) {
                 xml_node textureNode = newFacetResult.append_child("Texture");
-                textureNode.append_attribute("width") = subFac->sh.texWidth;
-                textureNode.append_attribute("height") = subFac->sh.texHeight;
+                textureNode.append_attribute("width") = sFac.sh.texWidth;
+                textureNode.append_attribute("height") = sFac.sh.texHeight;
 
-                //TextureCell *texture = (TextureCell *)(buffer + subFac->sh.hitOffset + facetHitsSize + profSize + m * w*h * sizeof(TextureCell));
-                const auto& texture = globState.facetStates[subFac->globalId].momentResults[m].texture;
+                //TextureCell *texture = (TextureCell *)(buffer + sFac.sh.hitOffset + facetHitsSize + profSize + m * w*h * sizeof(TextureCell));
+                const auto& texture = globState.facetStates[sFac.globalId].momentResults[m].texture;
 
                 std::stringstream countText, sum1perText, sumvortText;
                 countText << '\n'; //better readability in file
@@ -339,9 +341,9 @@ int WriterXML::SaveSimulationState(const std::string& outputFileName, Simulation
 
                 for (size_t iy = 0; iy < height; iy++) {
                     for (size_t ix = 0; ix < width; ix++) {
-                        countText << texture[iy*subFac->sh.texWidth + ix].countEquiv << '\t';
-                        sum1perText << texture[iy*subFac->sh.texWidth + ix].sum_1_per_ort_velocity << '\t';
-                        sumvortText << texture[iy*subFac->sh.texWidth + ix].sum_v_ort_per_area << '\t';
+                        countText << texture[iy*sFac.sh.texWidth + ix].countEquiv << '\t';
+                        sum1perText << texture[iy*sFac.sh.texWidth + ix].sum_1_per_ort_velocity << '\t';
+                        sumvortText << texture[iy*sFac.sh.texWidth + ix].sum_v_ort_per_area << '\t';
                     }
                     countText << '\n';
                     sum1perText << '\n';
@@ -353,13 +355,13 @@ int WriterXML::SaveSimulationState(const std::string& outputFileName, Simulation
 
             } //end texture
 
-            if (subFac->sh.countDirection/* && subFac->dirCache*/) {
+            if (sFac.sh.countDirection/* && sFac.dirCache*/) {
                 xml_node dirNode = newFacetResult.append_child("Directions");
-                dirNode.append_attribute("width") = subFac->sh.texWidth;
-                dirNode.append_attribute("height") = subFac->sh.texHeight;
+                dirNode.append_attribute("width") = sFac.sh.texWidth;
+                dirNode.append_attribute("height") = sFac.sh.texHeight;
 
-                //DirectionCell *dirs = (DirectionCell *)(buffer + subFac->sh.hitOffset + facetHitsSize + profSize + (1 + (int)model->tdParams.moments.size())*w*h * sizeof(TextureCell) + m * w*h * sizeof(DirectionCell));
-                const auto& dirs = globState.facetStates[subFac->globalId].momentResults[m].direction;
+                //DirectionCell *dirs = (DirectionCell *)(buffer + sFac.sh.hitOffset + facetHitsSize + profSize + (1 + (int)model->tdParams.moments.size())*w*h * sizeof(TextureCell) + m * w*h * sizeof(DirectionCell));
+                const auto& dirs = globState.facetStates[sFac.globalId].momentResults[m].direction;
 
                 std::stringstream dirText, dirCountText;
                 dirText << std::setprecision(8) << '\n'; //better readability in file
@@ -367,10 +369,10 @@ int WriterXML::SaveSimulationState(const std::string& outputFileName, Simulation
 
                 for (size_t iy = 0; iy < height; iy++) {
                     for (size_t ix = 0; ix < width; ix++) {
-                        dirText << dirs[iy*subFac->sh.texWidth + ix].dir.x << ",";
-                        dirText << dirs[iy*subFac->sh.texWidth + ix].dir.y << ",";
-                        dirText << dirs[iy*subFac->sh.texWidth + ix].dir.z << "\t";
-                        dirCountText << dirs[iy*subFac->sh.texWidth + ix].count << "\t";
+                        dirText << dirs[iy*sFac.sh.texWidth + ix].dir.x << ",";
+                        dirText << dirs[iy*sFac.sh.texWidth + ix].dir.y << ",";
+                        dirText << dirs[iy*sFac.sh.texWidth + ix].dir.z << "\t";
+                        dirCountText << dirs[iy*sFac.sh.texWidth + ix].count << "\t";
 
                     }
                     dirText << "\n";
@@ -381,56 +383,56 @@ int WriterXML::SaveSimulationState(const std::string& outputFileName, Simulation
             } //end directions
             
             //Facet histograms (1 per moment) comes here
-            bool hasHistogram = subFac->sh.facetHistogramParams.recordBounce || subFac->sh.facetHistogramParams.recordDistance;
+            bool hasHistogram = sFac.sh.facetHistogramParams.recordBounce || sFac.sh.facetHistogramParams.recordDistance;
 #ifdef MOLFLOW
-            hasHistogram = hasHistogram || subFac->sh.facetHistogramParams.recordTime;
+            hasHistogram = hasHistogram || sFac.sh.facetHistogramParams.recordTime;
 #endif
             if (hasHistogram) {
                 xml_node histNode = newFacetResult.append_child("Histograms");
                 //Retrieve histogram map from hits dp
-                auto& histogram = globState.facetStates[i].momentResults[m].histogram;
-                if (subFac->sh.facetHistogramParams.recordBounce) {
+                auto& histogram = globState.facetStates[sFac.globalId].momentResults[m].histogram;
+                if (sFac.sh.facetHistogramParams.recordBounce) {
                     auto& nbHitsHistogram = histogram.nbHitsHistogram;
                     xml_node hist = histNode.append_child("Bounces");
-                    size_t histSize = subFac->sh.facetHistogramParams.GetBounceHistogramSize();
+                    size_t histSize = sFac.sh.facetHistogramParams.GetBounceHistogramSize();
                     hist.append_attribute("size")=histSize;
-                    hist.append_attribute("binSize")=subFac->sh.facetHistogramParams.nbBounceBinsize; //redundancy for human-reading or export
-                    hist.append_attribute("max")=subFac->sh.facetHistogramParams.nbBounceMax; //redundancy for human-reading or export
+                    hist.append_attribute("binSize")=sFac.sh.facetHistogramParams.nbBounceBinsize; //redundancy for human-reading or export
+                    hist.append_attribute("max")=sFac.sh.facetHistogramParams.nbBounceMax; //redundancy for human-reading or export
                     for (size_t h=0;h<histSize;h++) {
                         xml_node bin=hist.append_child("Bin");
                         auto value = bin.append_attribute("start");
                         if (h==histSize-1) value = "overRange";
-                        else value = h * subFac->sh.facetHistogramParams.nbBounceBinsize;
+                        else value = h * sFac.sh.facetHistogramParams.nbBounceBinsize;
                         bin.append_attribute("count") = nbHitsHistogram[h];
                     }
                 }
-                if (subFac->sh.facetHistogramParams.recordDistance) {
+                if (sFac.sh.facetHistogramParams.recordDistance) {
                     auto& distanceHistogram = histogram.distanceHistogram;
                     xml_node hist = histNode.append_child("Distance");
-                    size_t histSize = subFac->sh.facetHistogramParams.GetDistanceHistogramSize();
+                    size_t histSize = sFac.sh.facetHistogramParams.GetDistanceHistogramSize();
                     hist.append_attribute("size")=histSize;
-                    hist.append_attribute("binSize")=subFac->sh.facetHistogramParams.distanceBinsize; //redundancy for human-reading or export
-                    hist.append_attribute("max")=subFac->sh.facetHistogramParams.distanceMax; //redundancy for human-reading or export
+                    hist.append_attribute("binSize")=sFac.sh.facetHistogramParams.distanceBinsize; //redundancy for human-reading or export
+                    hist.append_attribute("max")=sFac.sh.facetHistogramParams.distanceMax; //redundancy for human-reading or export
                     for (size_t h=0;h<histSize;h++) {
                         xml_node bin=hist.append_child("Bin");
                         auto value = bin.append_attribute("start");
                         if (h==histSize-1) value = "overRange";
-                        else value = h * subFac->sh.facetHistogramParams.distanceBinsize;
+                        else value = h * sFac.sh.facetHistogramParams.distanceBinsize;
                         bin.append_attribute("count") = distanceHistogram[h];
                     }
                 }
-                if (subFac->sh.facetHistogramParams.recordTime) {
+                if (sFac.sh.facetHistogramParams.recordTime) {
                     auto& timeHistogram = histogram.timeHistogram;
                     xml_node hist = histNode.append_child("Time");
-                    size_t histSize = subFac->sh.facetHistogramParams.GetTimeHistogramSize();
+                    size_t histSize = sFac.sh.facetHistogramParams.GetTimeHistogramSize();
                     hist.append_attribute("size")=histSize;
-                    hist.append_attribute("binSize")=subFac->sh.facetHistogramParams.timeBinsize; //redundancy for human-reading or export
-                    hist.append_attribute("max")=subFac->sh.facetHistogramParams.timeMax; //redundancy for human-reading or export
+                    hist.append_attribute("binSize")=sFac.sh.facetHistogramParams.timeBinsize; //redundancy for human-reading or export
+                    hist.append_attribute("max")=sFac.sh.facetHistogramParams.timeMax; //redundancy for human-reading or export
                     for (size_t h=0;h<histSize;h++) {
                         xml_node bin=hist.append_child("Bin");
                         auto value = bin.append_attribute("start");
                         if (h==histSize-1) value = "overRange";
-                        else value = h * subFac->sh.facetHistogramParams.timeBinsize;
+                        else value = h * sFac.sh.facetHistogramParams.timeBinsize;
                         bin.append_attribute("count") = timeHistogram[h];
                     }
                 }
@@ -455,16 +457,14 @@ int WriterXML::SaveSimulationState(const std::string& outputFileName, Simulation
     minMaxNode.child("Moments_only").append_child("Imp.rate").append_attribute("min") = 0.0;
     minMaxNode.child("Moments_only").child("Imp.rate").append_attribute("max") = 0.0;
 
-    if (!saveDoc.save_file(outputFileName.c_str()))
-        throw Error("Error writing XML file."); //successful save
-    return 0;
+    return true;
 }
 
 /**
 * \brief To save facet data for the geometry in XML
 * \param facetNode XML node representing a facet
 */
-void WriterXML::SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices){
+void WriterXML::SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices) {
     xml_node e = facetNode.append_child("Sticking");
     e.append_attribute("constValue") = facet->sh.sticking;
     e.append_attribute("parameterId") = facet->sh.sticking_paramId;
@@ -564,10 +564,13 @@ void WriterXML::SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
         t.append_attribute("thetaHigherRes") = facet->sh.anglemapParams.thetaHigherRes;
     }
 
-    //e = f.append_child("ViewSettings");
-
-    //e.append_attribute("textureVisible") = (int)textureVisible; //backward compatibility: 0 or 1
-    //e.append_attribute("volumeVisible") = (int)volumeVisible; //backward compatibility: 0 or 1
+    if(!uInput.facetViewSettings.empty()) {
+        e = facetNode.append_child("ViewSettings");
+        e.append_attribute("textureVisible") = (int) std::get<0>(
+                uInput.facetViewSettings[facet->globalId]); //backward compatibility: 0 or 1
+        e.append_attribute("volumeVisible") = (int) std::get<1>(
+                uInput.facetViewSettings[facet->globalId]); //backward compatibility: 0 or 1
+    }
 
     facetNode.append_child("Indices").append_attribute("nb") = facet->sh.nbIndex;
     for (size_t i = 0; i < facet->sh.nbIndex; i++) {

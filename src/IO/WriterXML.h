@@ -8,6 +8,7 @@
 #include <string>
 #include "GeometrySimu.h"
 #include "PugiXML/pugixml.hpp"
+#include "LoaderXML.h"
 
 namespace FlowIO {
 
@@ -19,14 +20,20 @@ namespace FlowIO {
     };
 
     class WriterXML : public Writer {
-        protected:
-        public:
+    protected:
+    public:
         //void SaveGeometry(std::string outputFileName, SimulationModel *model) override;
-        void SaveGeometry(const std::string& outputFileName, SimulationModel *model);
-            static int SaveSimulationState(const std::string& outputFileName, SimulationModel *model, GlobalSimuState& globState);
-        static void SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices);
+        void SaveGeometry(pugi::xml_document &saveDoc, SimulationModel *model);
+
+        bool SaveSimulationState(const std::string &outputFileName, SimulationModel *model, GlobalSimuState &globState);
+
+        bool SaveSimulationState(pugi::xml_node saveDoc, SimulationModel *model, GlobalSimuState &globState);
+
+        void
+        SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices);
 
         UserInput uInput;
+
     };
 }
 
