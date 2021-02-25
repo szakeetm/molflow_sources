@@ -172,9 +172,12 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 	sh.nbSuper = 1;
 	strName[0] = strdup("Pipe");
 
-	if (!(facets = (InterfaceFacet **)malloc(sh.nbFacet * sizeof(InterfaceFacet *))))
-		throw Error("Couldn't allocate memory for facets");
-	memset(facets, 0, sh.nbFacet * sizeof(InterfaceFacet *));
+	try{
+	    facets.resize(sh.nbFacet, nullptr);
+	}
+	catch(std::exception& e) {
+        throw Error("Couldn't allocate memory for facets");
+    }
 
 	// Vertices
 	for (int i = 0; i < step; i++) {
@@ -405,8 +408,12 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 	file->ReadKeyword("}");
 
 	// Reallocate memory
-	facets = (InterfaceFacet **)realloc(facets, (nbNewFacets + sh.nbFacet) * sizeof(InterfaceFacet **));
-	memset(facets + sh.nbFacet, 0, nbNewFacets * sizeof(InterfaceFacet *));
+    try{
+        facets.resize(nbNewFacets + sh.nbFacet, nullptr);
+    }
+    catch(std::exception& e) {
+        throw Error("Couldn't allocate memory for facets");
+    }
 
 	vertices3.resize(nbNewVertex + sh.nbVertex);
 
@@ -796,8 +803,12 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 	file->ReadKeyword("}");
 
 	// Allocate memory
-	facets = (InterfaceFacet **)malloc(sh.nbFacet * sizeof(InterfaceFacet *));
-	memset(facets, 0, sh.nbFacet * sizeof(InterfaceFacet *));
+    try{
+        facets.resize(sh.nbFacet, nullptr);
+    }
+    catch(std::exception& e) {
+        throw Error("Couldn't allocate memory for facets");
+    }
 	std::vector<InterfaceVertex>(sh.nbVertex).swap(vertices3);
 
 	// Read vertices
@@ -1060,8 +1071,13 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
 	file->ReadKeyword("}");
 
 	// Allocate memory
-	facets = (InterfaceFacet **)malloc(sh.nbFacet * sizeof(InterfaceFacet *));
-	memset(facets, 0, sh.nbFacet * sizeof(InterfaceFacet *));
+    try{
+        facets.resize(sh.nbFacet, nullptr);
+    }
+    catch(std::exception& e) {
+        throw Error("Couldn't allocate memory for facets");
+    }
+
 	vertices3.resize(sh.nbVertex); vertices3.shrink_to_fit();
 
 	// Read vertices
@@ -2893,8 +2909,13 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 
 	//Facets
 	sh.nbFacet = geomNode.child("Facets").select_nodes("Facet").size();
-	facets = (InterfaceFacet **)malloc(sh.nbFacet * sizeof(InterfaceFacet *));
-	memset(facets, 0, sh.nbFacet * sizeof(InterfaceFacet *));
+    try{
+        facets.resize(sh.nbFacet, nullptr);
+    }
+    catch(std::exception& e) {
+        throw Error("Couldn't allocate memory for facets");
+    }
+
 	idx = 0;
 	bool ignoreSumMismatch = false;
 	for (xml_node facetNode : geomNode.child("Facets").children("Facet")) {
@@ -3115,8 +3136,12 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 	size_t nbNewFacets = geomNode.child("Facets").select_nodes("Facet").size();
 
 	// reallocate memory
-	facets = (InterfaceFacet **)realloc(facets, (nbNewFacets + sh.nbFacet) * sizeof(InterfaceFacet **));
-	memset(facets + sh.nbFacet, 0, nbNewFacets * sizeof(InterfaceFacet *));
+    try{
+        facets.resize(nbNewFacets + sh.nbFacet, nullptr);
+    }
+    catch(std::exception& e) {
+        throw Error("Couldn't allocate memory for facets");
+    }
 
 	/*
 	InterfaceVertex *tmp_vertices3 = (InterfaceVertex *)malloc((nbNewVertex + wp.nbVertex) * sizeof(InterfaceVertex));
