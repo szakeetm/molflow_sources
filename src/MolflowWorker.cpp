@@ -287,6 +287,17 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                     xml_document saveDoc;
                     //geom->SaveXML_geometry(saveDoc, this, prg, saveSelected);
                     FlowIO::WriterInterfaceXML writer;
+                    this->uInput.facetViewSettings.clear();
+                    for (size_t facetId = 0; facetId < geom->GetNbFacet(); facetId++) {
+                        auto facet = geom->GetFacet(facetId);
+                        bool textureVisible = facet->textureVisible;
+                        bool volumeVisible = facet->volumeVisible;
+                        this->uInput.facetViewSettings.emplace_back(std::make_tuple(textureVisible,volumeVisible));
+                    }
+                    this->uInput.userMoments = userMoments;
+                    this->uInput.parameters = parameters;
+                    this->uInput.selections = mApp->selections;
+
                     writer.uInput = this->uInput;
                     writer.SaveGeometry(saveDoc, &model, mApp->useOldXMLFormat);
                     FlowIO::WriterInterfaceXML::WriteInterface(saveDoc, mApp, saveSelected);
