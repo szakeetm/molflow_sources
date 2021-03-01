@@ -138,7 +138,7 @@ public:
 
 struct SimulationModel {
 public:
-    SimulationModel() : otfParams(), tdParams(), wp(), sh(), m(){};
+    SimulationModel() : otfParams(), tdParams(), wp(), sh(), m(), initialized(false){};
     ~SimulationModel();
 
     SimulationModel(SimulationModel&& o)  noexcept : m(){
@@ -149,6 +149,7 @@ public:
         tdParams = std::move(o.tdParams);
         wp = o.wp;
         sh = std::move(o.sh);
+        initialized = o.initialized;
     };
     SimulationModel(const SimulationModel& o) : m(){
         facets = o.facets;
@@ -158,6 +159,7 @@ public:
         tdParams = o.tdParams;
         wp = o.wp;
         sh = o.sh;
+        initialized = o.initialized;
     };
 
     size_t size(){
@@ -174,6 +176,7 @@ public:
         modelSize += sizeof(wp);
         modelSize += sizeof(sh);
         modelSize += sizeof(m);
+        modelSize += sizeof(initialized);
 
         return modelSize;
     }
@@ -185,6 +188,8 @@ public:
         tdParams = o.tdParams;
         wp = o.wp;
         sh = o.sh;
+        sh = o.sh;
+        initialized = o.initialized;
 
         return *this;
     };
@@ -196,6 +201,7 @@ public:
         otfParams = o.otfParams;
         wp = o.wp;
         sh = o.sh;
+        initialized = o.initialized;
 
         return *this;
     };
@@ -221,6 +227,8 @@ public:
 
     // Geometry Properties
     GeomProperties sh;
+
+    bool initialized;
     std::mutex m;
 };
 

@@ -49,14 +49,6 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
     model->otfParams.nbProcess = simManager->nbThreads;
     //model->otfParams.desorptionLimit = Settings::desLimit.front();
 
-    // Set desorption limit if used
-    if(initDesLimit(*model,*globState)) {
-        exit(0);
-    }
-    else{
-        model->otfParams.desorptionLimit = 0;
-    }
-
     loadFromXML(simManager, model, globState, !Settings::resetOnStart);
     if(!Settings::paramFile.empty()){
         // 1. Load selection groups in case we need them for parsing
@@ -67,7 +59,14 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
         ParameterParser::ChangeFacetParams(model->facets);
     }
 
-    simManager->ForwardGlobalCounter(globState, nullptr);
+    // Set desorption limit if used
+    if(initDesLimit(*model,*globState)) {
+        exit(0);
+    }
+    /*else{
+        model->otfParams.desorptionLimit = 0;
+    }*/
+    initSimUnit(simManager, model, globState);
 
     return 0;
 }
@@ -166,17 +165,24 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
                 FlowIO::LoaderXML::LoadSimulationState(Settings::inputFile, model, *globState);
             }
         }
-
-
     }
     catch (std::exception& e) {
         std::cerr << "[Warning (LoadGeom)] " << e.what() << std::endl;
     }
 
+    model->m.unlock();
+    return 0;
+}
+
+int Initializer::initSimUnit(SimulationManager *simManager, SimulationModel *model, GlobalSimuState *globState) {
+
+    model->m.lock();
+
     // Prepare simulation unit
     std::cout << "[LoadGeom] Forwarding model to simulation units!" << std::endl;
     simManager->ResetSimulations();
     simManager->ForwardSimModel(model);
+    simManager->ForwardGlobalCounter(globState, nullptr);
 
     if (simManager->ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
         //CloseLoaderDP();
@@ -185,7 +191,9 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
         errString.append(simManager->GetErrorDetails());
         throw std::runtime_error(errString);
     }
+
     model->m.unlock();
+
     return 0;
 }
 

@@ -40,6 +40,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <cereal/types/vector.hpp>
 #include <cereal/types/string.hpp>*/
 #include <IO/InterfaceXML.h>
+#include <Buffer_shared.h>
 
 #include "MolflowGeometry.h"
 #include "Worker.h"
@@ -910,7 +911,6 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
                 progressDlg->SetMessage("Reloading worker with new geometry...");
                 try {
-                    RealReload(); //To create the dpHit dataport for the loading of textures, profiles, etc...
                     fullFileName = fileName;
 
                     if (ext == "xml" || ext == "zip")
@@ -919,7 +919,17 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     if (!buffer_old)
                         throw std::runtime_error("Cannot access shared hit buffer");
                     //geom->LoadXML_simustate(rootNode, globState, this, progressDlg);
+
+                    simManager.ForwardGlobalCounter(&globState, &particleLog);
+                    RealReload(); //To create the dpHit dataport for the loading of textures, profiles, etc...
                     FlowIO::LoaderInterfaceXML::LoadSimulationState(parseFileName, &model, globState);
+                    if (simManager.ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
+                        std::string errString = "Failed to send geometry to sub process:\n";
+                        errString.append(GetErrorDetails());
+                        throw std::runtime_error(errString);
+                    }
+
+
                     CalculateTextureLimits(); // Load texture limits on init
 
                     // actually loads all caches
@@ -1067,8 +1077,8 @@ void Worker::StartStop(float appTime) {
         // Start
         try {
             if (needsReload) RealReload(); //Synchronize subprocesses to main process
-            simuTimer.Start();
             Start();
+            simuTimer.Start();
         }
         catch (std::exception &e) {
             //isRunning = false;
@@ -1317,6 +1327,9 @@ bool Worker::MolflowGeomToSimModel() {
 
         model.facets.push_back(sFac);
     }
+
+    if(!model.facets.empty() && !model.vertices3.empty())
+        model.initialized = true;
     return true;
 }
 
@@ -1370,35 +1383,12 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
         }
     }
 
-    // Send and Load geometry
-    //std::string loaderString = SerializeForLoader().str();
-    progressDlg->SetMessage("Waiting for subprocesses to load geometry...");
-    try {
-        if (!MolflowGeomToSimModel()) {
-            //if (simManager.ShareWithSimUnits((BYTE *) loaderString.c_str(), loaderString.size(), LoadType::LOADGEOM)) {
-            std::string errString = "Failed to send geometry to sub process!\n";
-            GLMessageBox::Display(errString.c_str(), "Warning (LoadGeom)", GLDLG_OK, GLDLG_ICONWARNING);
-
-            progressDlg->SetVisible(false);
-            SAFE_DELETE(progressDlg);
-            return;
-        }
-        simManager.ForwardSimModel(&model);
-
-        if (simManager.ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
-            //CloseLoaderDP();
-            std::string errString = "Failed to send geometry to sub process:\n";
-            errString.append(GetErrorDetails());
-            throw std::runtime_error(errString);
-        }
-    }
-    catch (std::exception &e) {
-        GLMessageBox::Display(e.what(), "Error (LoadGeom)", GLDLG_OK, GLDLG_ICONERROR);
-    }
-
-    progressDlg->SetMessage("Constructing memory structure to store results...");
-    if (!sendOnly) {
-        globState.Resize(model);
+    // Send and Load geometry on simulation side
+    ReloadSim(sendOnly, progressDlg);
+    if (simManager.ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
+        std::string errString = "Failed to send geometry to sub process:\n";
+        errString.append(GetErrorDetails());
+        throw std::runtime_error(errString);
     }
 
     //Old send hits location
@@ -1407,6 +1397,40 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
     progressDlg->SetVisible(false);
     SAFE_DELETE(progressDlg);
 }
+
+
+void Worker::ReloadSim(bool sendOnly, GLProgress *progressDlg) {
+    // Send and Load geometry
+    progressDlg->SetMessage("Waiting for subprocesses to load geometry...");
+    try {
+        if (!MolflowGeomToSimModel()) {
+            std::string errString = "Failed to send geometry to sub process!\n";
+            GLMessageBox::Display(errString.c_str(), "Warning (LoadGeom)", GLDLG_OK, GLDLG_ICONWARNING);
+
+            progressDlg->SetVisible(false);
+            SAFE_DELETE(progressDlg);
+            return;
+        }
+
+        progressDlg->SetMessage("Constructing memory structure to store results...");
+        if (!sendOnly) {
+            globState.Resize(model);
+        }
+
+        simManager.ForwardSimModel(&model);
+        simManager.ForwardGlobalCounter(&globState, &particleLog);
+
+        /*if (simManager.ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
+            std::string errString = "Failed to send geometry to sub process:\n";
+            errString.append(GetErrorDetails());
+            throw std::runtime_error(errString);
+        }*/
+    }
+    catch (std::exception &e) {
+        GLMessageBox::Display(e.what(), "Error (LoadGeom)", GLDLG_OK, GLDLG_ICONERROR);
+    }
+}
+
 
 /**
 * \brief Serialization function for a binary cereal archive for the worker attributes
@@ -1456,6 +1480,9 @@ void Worker::Start() {
     }
     if (model.wp.totalDesorbedMolecules <= 0.0)
         throw std::runtime_error("Total outgassing is zero.");
+
+    if (model.otfParams.desorptionLimit > 0 && model.otfParams.desorptionLimit <= globState.globalHits.globalHits.hit.nbDesorbed)
+        throw std::runtime_error("Desorption limit has already been reached.");
 
     try {
         simManager.ForwardGlobalCounter(&globState, &particleLog);

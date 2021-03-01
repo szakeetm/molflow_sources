@@ -529,6 +529,8 @@ void SimulationModel::PrepareToRun() {
     }
 
     CalcTotalOutgassing();
+
+    initialized = true;
 }
 
 /**
