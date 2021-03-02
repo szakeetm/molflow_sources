@@ -640,6 +640,7 @@ int LoaderXML::LoadSimulationState(const std::string& inputFileName, SimulationM
 
 void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices) {
     int idx = 0;
+    bool ignoreSumMismatch = true;
     int facetId = facetNode.attribute("id").as_int();
     for (xml_node indice : facetNode.child("Indices").children("Indice")) {
         facet->indices[idx] = indice.attribute("vertex").as_int() + 0; //+ vertexOffset;
@@ -736,9 +737,9 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
         facet->ogMap.outgassingMapWidth = outgNode.attribute("width").as_int();
         facet->ogMap.outgassingMapHeight = outgNode.attribute("height").as_int();
         facet->ogMap.outgassingFileRatio = outgNode.attribute("ratio").as_double();
-        double totalDose = outgNode.attribute("totalDose").as_double();
+        facet->ogMap.totalDose = outgNode.attribute("totalDose").as_double();
         facet->sh.totalOutgassing = outgNode.attribute("totalOutgassing").as_double();
-        double totalFlux = outgNode.attribute("totalFlux").as_double();
+        facet->ogMap.totalFlux = outgNode.attribute("totalFlux").as_double();
 
         double sum = 0.0;
 
@@ -754,9 +755,26 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
                 sum += ogMap.outgassingMap[iy*ogMap.outgassingMapWidth + ix];
             }
         }
+        if (!ignoreSumMismatch && !IsEqual(sum, facet->sh.totalOutgassing)) {
+            std::stringstream msg; msg << std::setprecision(8);
+            msg << "Facet " << facetId + 1 << ":\n";
+            msg << "The total dynamic outgassing (" << 10.0 * facet->sh.totalOutgassing << " mbar.l/s)\n";
+            msg << "doesn't match the sum of the dynamic outgassing cells (" << 10.0 * sum << " mbar.l/s).";
+            /*if (1 == GLMessageBox::Display(msg.str(), "Dynamic outgassing mismatch", { "OK","Ignore rest" },GLDLG_ICONINFO))
+                ignoreSumMismatch = true;*/
+            std::cerr << msg.str() << std::endl;
+            ignoreSumMismatch = true; // TODO: For now silence after one
+        }
     }
-    else hasOutgassingFile = facet->sh.useOutgassingFile = false; //if outgassing map was incorrect, don't use it
-
+    else {
+        hasOutgassingFile = facet->sh.useOutgassingFile = false; //if outgassing map was incorrect, don't use it
+        facet->ogMap.outgassingMapWidth = 0;
+        facet->ogMap.outgassingMapHeight = 0;
+        facet->ogMap.outgassingFileRatio = 0.0;
+        facet->ogMap.totalDose = 0.0;
+        facet->sh.totalOutgassing = 0.0;
+        facet->ogMap.totalFlux = 0.0;
+    }
     xml_node angleMapNode = facetNode.child("IncidentAngleMap");
     if (angleMapNode && angleMapNode.child("map") && angleMapNode.attribute("angleMapThetaLimit")) {
 

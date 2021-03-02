@@ -2129,7 +2129,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 				catch (...) {
 					throw Error("Not enough memory to store outgassing map.");
 				}
-				f->totalDose = f->sh.totalOutgassing = f->totalFlux = 0.0;
+				f->ogMap.totalDose = f->sh.totalOutgassing = f->ogMap.totalFlux = 0.0;
 			}
 
 			size_t texWidth_file, texHeight_file;
@@ -2184,8 +2184,8 @@ void MolflowGeometry::ImportDesorption_SYN(
 						f->ogMap.outgassingMap[index] = outgassing * 1.38E-23 * f->sh.temperature; //1[Pa*m3/s] = kT [particles/sec]
 
 						//Facet diagnostic info
-						f->totalDose += flux * time;
-						f->totalFlux += flux;
+						f->ogMap.totalDose += flux * time;
+						f->ogMap.totalFlux += flux;
 						f->sh.totalOutgassing += f->ogMap.outgassingMap[index];
 
 					} //if selected

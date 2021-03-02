@@ -868,9 +868,10 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 geom->Clear();
                 FlowIO::LoaderInterfaceXML loader;
                 loader.LoadGeometry(parseFileName, &model);
-                userMoments = loader.uInput.userMoments;
                 xml_node interfNode = rootNode.child("Interface");
                 FlowIO::LoaderInterfaceXML::LoadInterface(interfNode, mApp);
+                userMoments = loader.uInput.userMoments;
+                uInput = loader.uInput;
                 InsertParametersBeforeCatalog(loader.uInput.parameters);
 
                 *geom->GetGeomProperties() = model.sh;

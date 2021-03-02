@@ -600,9 +600,9 @@ void WriterXML::SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
         textureNode.append_attribute("width") = facet->ogMap.outgassingMapWidth;
         textureNode.append_attribute("height") = facet->ogMap.outgassingMapHeight;
         textureNode.append_attribute("ratio") = facet->ogMap.outgassingFileRatio;
-        //textureNode.append_attribute("totalDose") = facet->totalDose;
+        textureNode.append_attribute("totalDose") = facet->ogMap.totalDose;
         textureNode.append_attribute("totalOutgassing") = facet->sh.totalOutgassing;
-        //textureNode.append_attribute("totalFlux") = facet->totalFlux;
+        textureNode.append_attribute("totalFlux") = facet->ogMap.totalFlux;
 
         std::stringstream outgText;
         outgText << std::setprecision(8);

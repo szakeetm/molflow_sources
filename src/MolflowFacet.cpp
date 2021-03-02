@@ -269,9 +269,9 @@ void InterfaceFacet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bo
 			ogMap.outgassingMapWidth = outgNode.attribute("width").as_int();
 			ogMap.outgassingMapHeight = outgNode.attribute("height").as_int();
 			ogMap.outgassingFileRatio = outgNode.attribute("ratio").as_double();
-			totalDose = outgNode.attribute("totalDose").as_double();
+            ogMap.totalDose = outgNode.attribute("totalDose").as_double();
 			sh.totalOutgassing = outgNode.attribute("totalOutgassing").as_double();
-			totalFlux = outgNode.attribute("totalFlux").as_double();
+            ogMap.totalFlux = outgNode.attribute("totalFlux").as_double();
 
 			double sum = 0.0;
 
@@ -1153,9 +1153,9 @@ void  InterfaceFacet::SaveXML_geom(pugi::xml_node f) {
 		textureNode.append_attribute("width") = ogMap.outgassingMapWidth;
 		textureNode.append_attribute("height") = ogMap.outgassingMapHeight;
 		textureNode.append_attribute("ratio") = ogMap.outgassingFileRatio;
-		textureNode.append_attribute("totalDose") = totalDose;
+		textureNode.append_attribute("totalDose") = ogMap.totalDose;
 		textureNode.append_attribute("totalOutgassing") = sh.totalOutgassing;
-		textureNode.append_attribute("totalFlux") = totalFlux;
+		textureNode.append_attribute("totalFlux") = ogMap.totalFlux;
 
 		std::stringstream outgText; outgText << std::setprecision(8);
 		outgText << '\n'; //better readability in file

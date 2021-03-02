@@ -368,7 +368,7 @@ bool Particle::StartFromSource() {
                         }*/
                         double lookupValue = rndRemainder;
                         int outgLowerIndex = my_lower_bound(lookupValue,
-                                                            f.ogMap.outgassingMap); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
+                                                            f.ogMap.outgassingMap_cdf); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
                         outgLowerIndex++;
                         mapPositionH = (size_t) ((double) outgLowerIndex / (double) f.ogMap.outgassingMapWidth);
                         mapPositionW = (size_t) outgLowerIndex - mapPositionH * f.ogMap.outgassingMapWidth;

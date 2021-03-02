@@ -218,8 +218,9 @@ void SubprocessFacet::InitializeOutgassingMap()
         // TODO: Check with molflow_threaded e10c2a6f and 66b89ac7 if right
         // making a copy shouldn't be necessary as i will never get changed before use
         //outgassingMapWindow = facetRef->outgassingMapWindow; //init by copying pdf
+        ogMap.outgassingMap_cdf = ogMap.outgassingMap;
         for (size_t i = 1; i < nbE; i++) {
-            ogMap.outgassingMap[i] = ogMap.outgassingMap[i - 1] + ogMap.outgassingMap[i]; //Convert p.d.f to cumulative distr.
+            ogMap.outgassingMap_cdf[i] = ogMap.outgassingMap_cdf[i - 1] + ogMap.outgassingMap_cdf[i]; //Convert p.d.f to cumulative distr.
         }
     }
 }
