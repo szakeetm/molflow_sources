@@ -384,13 +384,6 @@ void GlobalSettings::SMPUpdate() {
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
         PROCESS_INFO pInfo = proc.runtimeInfo;
-        /*if (!GetProcInfo(pid, &pInfo)) {
-			processList->SetValueAt(2, i, "0 KB");
-			processList->SetValueAt(3, i, "0 KB");
-			//processList->SetValueAt(4,i,"0 %");
-			processList->SetValueAt(4, i, "Dead");
-		}
-		else*/
         {
             sprintf(tmp, "%.0f MB", (double)pInfo.mem_use / (1024.0*1024.0));
             processList->SetValueAt(2, i, tmp);
