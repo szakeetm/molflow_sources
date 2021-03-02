@@ -8,6 +8,7 @@
 #include <Helper/MathTools.h>
 #include <cereal/archives/binary.hpp>
 #include <cmath>
+#include <iomanip> // setprecision
 #include "LoaderXML.h"
 #include "TimeMoments.h"
 #include "File.h"
