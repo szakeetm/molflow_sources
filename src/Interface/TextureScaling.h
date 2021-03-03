@@ -55,7 +55,7 @@ private:
 	GeometryViewer **viewers;
 
 	GLToggle      *texAutoScale;
-	GLToggle      *includeConstantFlow;
+    GLCombo       *includeConstantFlow;
 	GLTextField   *texMinText;
 	GLTextField   *texMaxText;
 	GLLabel       *texCMinText;

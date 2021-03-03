@@ -2188,32 +2188,32 @@ void MolFlow::LoadConfig() {
 		f->ReadKeyword("autoScale"); f->ReadKeyword(":");
 		geom->texAutoScale = f->ReadInt();
 		f->ReadKeyword("autoScale_include_constant_flow"); f->ReadKeyword(":");
-		geom->texAutoScaleIncludeConstantFlow = f->ReadInt();
+		geom->texAutoScaleIncludeConstantFlow = (short)f->ReadInt();
 
 		f->ReadKeyword("textures_min_pressure_all"); f->ReadKeyword(":");
-		geom->texture_limits[0].autoscale.min.all = f->ReadDouble();
+		geom->texture_limits[0].autoscale.min.steady_state = f->ReadDouble();
 		f->ReadKeyword("textures_min_pressure_moments_only"); f->ReadKeyword(":");
 		geom->texture_limits[0].autoscale.min.moments_only = f->ReadDouble();
 		f->ReadKeyword("textures_max_pressure_all"); f->ReadKeyword(":");
-		geom->texture_limits[0].autoscale.max.all = f->ReadDouble();
+		geom->texture_limits[0].autoscale.max.steady_state = f->ReadDouble();
 		f->ReadKeyword("textures_max_pressure_moments_only"); f->ReadKeyword(":");
 		geom->texture_limits[0].autoscale.max.moments_only = f->ReadDouble();
 
 		f->ReadKeyword("textures_min_impingement_all"); f->ReadKeyword(":");
-		geom->texture_limits[1].autoscale.min.all = f->ReadDouble();
+		geom->texture_limits[1].autoscale.min.steady_state = f->ReadDouble();
 		f->ReadKeyword("textures_min_impingement_moments_only"); f->ReadKeyword(":");
 		geom->texture_limits[1].autoscale.min.moments_only = f->ReadDouble();
 		f->ReadKeyword("textures_max_impingement_all"); f->ReadKeyword(":");
-		geom->texture_limits[1].autoscale.max.all = f->ReadDouble();
+		geom->texture_limits[1].autoscale.max.steady_state = f->ReadDouble();
 		f->ReadKeyword("textures_max_impingement_moments_only"); f->ReadKeyword(":");
 		geom->texture_limits[1].autoscale.max.moments_only = f->ReadDouble();
 
 		f->ReadKeyword("textures_min_density_all"); f->ReadKeyword(":");
-		geom->texture_limits[2].autoscale.min.all = f->ReadDouble();
+		geom->texture_limits[2].autoscale.min.steady_state = f->ReadDouble();
 		f->ReadKeyword("textures_min_density_moments_only"); f->ReadKeyword(":");
 		geom->texture_limits[2].autoscale.min.moments_only = f->ReadDouble();
 		f->ReadKeyword("textures_max_density_all"); f->ReadKeyword(":");
-		geom->texture_limits[2].autoscale.max.all = f->ReadDouble();
+		geom->texture_limits[2].autoscale.max.steady_state = f->ReadDouble();
 		f->ReadKeyword("textures_max_density_moments_only"); f->ReadKeyword(":");
 		geom->texture_limits[2].autoscale.max.moments_only = f->ReadDouble();
 
@@ -2344,30 +2344,30 @@ void MolFlow::SaveConfig() {
 		f->Write("autoScale_include_constant_flow:"); f->Write(geom->texAutoScaleIncludeConstantFlow, "\n");
 
 		f->Write("textures_min_pressure_all:");
-		f->Write(geom->texture_limits[0].autoscale.min.all, "\n");
+		f->Write(geom->texture_limits[0].autoscale.min.steady_state, "\n");
 		f->Write("textures_min_pressure_moments_only:");
 		f->Write(geom->texture_limits[0].autoscale.min.moments_only, "\n");
 		f->Write("textures_max_pressure_all:");
-		f->Write(geom->texture_limits[0].autoscale.max.all, "\n");
+		f->Write(geom->texture_limits[0].autoscale.max.steady_state, "\n");
 		f->Write("textures_max_pressure_moments_only:");
 		f->Write(geom->texture_limits[0].autoscale.max.moments_only, "\n");
 
 		f->Write("textures_min_impingement_all:");
-		f->Write(geom->texture_limits[1].autoscale.min.all, "\n");
+		f->Write(geom->texture_limits[1].autoscale.min.steady_state, "\n");
 
 		f->Write("textures_min_impingement_moments_only:");
 		f->Write(geom->texture_limits[1].autoscale.min.moments_only, "\n");
 		f->Write("textures_max_impingement_all:");
-		f->Write(geom->texture_limits[1].autoscale.max.all, "\n");
+		f->Write(geom->texture_limits[1].autoscale.max.steady_state, "\n");
 		f->Write("textures_max_impingement_moments_only:");
 		f->Write(geom->texture_limits[1].autoscale.max.moments_only, "\n");
 
 		f->Write("textures_min_density_all:");
-		f->Write(geom->texture_limits[2].autoscale.min.all, "\n");
+		f->Write(geom->texture_limits[2].autoscale.min.steady_state, "\n");
 		f->Write("textures_min_density_moments_only:");
 		f->Write(geom->texture_limits[2].autoscale.min.moments_only, "\n");
 		f->Write("textures_max_density_all:");
-		f->Write(geom->texture_limits[2].autoscale.max.all, "\n");
+		f->Write(geom->texture_limits[2].autoscale.max.steady_state, "\n");
 		f->Write("textures_max_density_moments_only:");
 		f->Write(geom->texture_limits[2].autoscale.max.moments_only, "\n");
 

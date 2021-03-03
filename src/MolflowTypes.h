@@ -139,7 +139,7 @@ public:
 
 //Texture limit types
 typedef struct {
-	double all;
+	double steady_state;
 	double moments_only;
     template<class Archive>
     void serialize(Archive & archive)

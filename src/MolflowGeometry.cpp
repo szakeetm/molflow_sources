@@ -1212,32 +1212,32 @@ bool MolflowGeometry::LoadTexturesGEO(FileReader *file, GLProgress *prg, GlobalS
 		// Read facets
 		if (version >= 13) {
 			file->ReadKeyword("min_pressure_all"); file->ReadKeyword(":");
-            texture_limits[0].autoscale.min.all = file->ReadDouble();
+            texture_limits[0].autoscale.min.steady_state = file->ReadDouble();
 			file->ReadKeyword("min_pressure_moments_only"); file->ReadKeyword(":");
 			texture_limits[0].autoscale.min.moments_only = file->ReadDouble();
 			file->ReadKeyword("max_pressure_all"); file->ReadKeyword(":");
-			texture_limits[0].autoscale.max.all = file->ReadDouble();
+			texture_limits[0].autoscale.max.steady_state = file->ReadDouble();
 			file->ReadKeyword("max_pressure_moments_only"); file->ReadKeyword(":");
 			texture_limits[0].autoscale.max.moments_only = file->ReadDouble();
 
 			file->ReadKeyword("min_impingement_all"); file->ReadKeyword(":");
-			texture_limits[1].autoscale.min.all = file->ReadDouble();
+			texture_limits[1].autoscale.min.steady_state = file->ReadDouble();
 			file->ReadKeyword("min_impingement_moments_only"); file->ReadKeyword(":");
 			texture_limits[1].autoscale.min.moments_only = file->ReadDouble();
 			file->ReadKeyword("max_impingement_all"); file->ReadKeyword(":");
-			texture_limits[1].autoscale.max.all = file->ReadDouble();
+			texture_limits[1].autoscale.max.steady_state = file->ReadDouble();
 			file->ReadKeyword("max_impingement_moments_only"); file->ReadKeyword(":");
 			texture_limits[1].autoscale.max.moments_only = file->ReadDouble();
 
 			file->ReadKeyword("min_density_all"); file->ReadKeyword(":");
 
-			texture_limits[2].autoscale.min.all = file->ReadDouble();
+			texture_limits[2].autoscale.min.steady_state = file->ReadDouble();
 			file->ReadKeyword("min_density_moments_only"); file->ReadKeyword(":");
 
 			texture_limits[2].autoscale.min.moments_only = file->ReadDouble();
 			file->ReadKeyword("max_density_all"); file->ReadKeyword(":");
 
-			texture_limits[2].autoscale.max.all = file->ReadDouble();
+			texture_limits[2].autoscale.max.steady_state = file->ReadDouble();
 			file->ReadKeyword("max_density_moments_only"); file->ReadKeyword(":");
 
 			texture_limits[2].autoscale.max.moments_only = file->ReadDouble();
@@ -1537,29 +1537,29 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, GlobalSimuState
 	file->Write("{textures}\n");
 
 	file->Write("min_pressure_all:"); file->Write(
-		(!crashSave && !saveSelected) ? texture_limits[0].autoscale.min.all : 0, "\n");
+            (!crashSave && !saveSelected) ? texture_limits[0].autoscale.min.steady_state : 0, "\n");
 	file->Write("min_pressure_moments_only:"); file->Write(
 		(!crashSave && !saveSelected) ? texture_limits[0].autoscale.min.moments_only : 0, "\n");
 	file->Write("max_pressure_all:"); file->Write(
-		(!crashSave && !saveSelected) ? texture_limits[0].autoscale.max.all : 1, "\n");
+            (!crashSave && !saveSelected) ? texture_limits[0].autoscale.max.steady_state : 1, "\n");
 	file->Write("max_pressure_moments_only:"); file->Write(
 		(!crashSave && !saveSelected) ? texture_limits[0].autoscale.max.moments_only : 1, "\n");
 
 	file->Write("min_impingement_all:"); file->Write(
-		(!crashSave && !saveSelected) ? texture_limits[1].autoscale.min.all : 0, "\n");
+            (!crashSave && !saveSelected) ? texture_limits[1].autoscale.min.steady_state : 0, "\n");
 	file->Write("min_impingement_moments_only:"); file->Write(
 		(!crashSave && !saveSelected) ? texture_limits[1].autoscale.min.moments_only : 0, "\n");
 	file->Write("max_impingement_all:"); file->Write(
-		(!crashSave && !saveSelected) ? texture_limits[1].autoscale.max.all : 1, "\n");
+            (!crashSave && !saveSelected) ? texture_limits[1].autoscale.max.steady_state : 1, "\n");
 	file->Write("max_impingement_moments_only:"); file->Write(
 		(!crashSave && !saveSelected) ? texture_limits[1].autoscale.max.moments_only : 1, "\n");
 
 	file->Write("min_density_all:"); file->Write(
-		(!crashSave && !saveSelected) ? texture_limits[2].autoscale.min.all : 0, "\n");
+            (!crashSave && !saveSelected) ? texture_limits[2].autoscale.min.steady_state : 0, "\n");
 	file->Write("min_density_moments_only:"); file->Write(
 		(!crashSave && !saveSelected) ? texture_limits[2].autoscale.min.moments_only : 0, "\n");
 	file->Write("max_density_all:"); file->Write(
-		(!crashSave && !saveSelected) ? texture_limits[2].autoscale.max.all : 1, "\n");
+            (!crashSave && !saveSelected) ? texture_limits[2].autoscale.max.steady_state : 1, "\n");
 	file->Write("max_density_moments_only:"); file->Write(
 		(!crashSave && !saveSelected) ? texture_limits[2].autoscale.max.moments_only : 1, "\n");
 
@@ -2807,12 +2807,12 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSi
 
 	//Texture Min/Max
 	xml_node minMaxNode = resultNode.append_child("TextureMinMax");
-	minMaxNode.append_child("With_constant_flow").append_child("Pressure").append_attribute("min") = texture_limits[0].autoscale.min.all;
-	minMaxNode.child("With_constant_flow").child("Pressure").append_attribute("max") = texture_limits[0].autoscale.max.all;
-	minMaxNode.child("With_constant_flow").append_child("Density").append_attribute("min") = texture_limits[1].autoscale.min.all;
-	minMaxNode.child("With_constant_flow").child("Density").append_attribute("max") = texture_limits[1].autoscale.max.all;
-	minMaxNode.child("With_constant_flow").append_child("Imp.rate").append_attribute("min") = texture_limits[2].autoscale.min.all;
-	minMaxNode.child("With_constant_flow").child("Imp.rate").append_attribute("max") = texture_limits[2].autoscale.max.all;
+	minMaxNode.append_child("With_constant_flow").append_child("Pressure").append_attribute("min") = texture_limits[0].autoscale.min.steady_state;
+	minMaxNode.child("With_constant_flow").child("Pressure").append_attribute("max") = texture_limits[0].autoscale.max.steady_state;
+	minMaxNode.child("With_constant_flow").append_child("Density").append_attribute("min") = texture_limits[1].autoscale.min.steady_state;
+	minMaxNode.child("With_constant_flow").child("Density").append_attribute("max") = texture_limits[1].autoscale.max.steady_state;
+	minMaxNode.child("With_constant_flow").append_child("Imp.rate").append_attribute("min") = texture_limits[2].autoscale.min.steady_state;
+	minMaxNode.child("With_constant_flow").child("Imp.rate").append_attribute("max") = texture_limits[2].autoscale.max.steady_state;
 
 	minMaxNode.append_child("Moments_only").append_child("Pressure").append_attribute("min") = texture_limits[0].autoscale.min.moments_only;
 	minMaxNode.child("Moments_only").child("Pressure").append_attribute("max") = texture_limits[0].autoscale.max.moments_only;
@@ -3778,12 +3778,12 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState 
 	gHits->texture_limits[2].max.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("max").as_double();
 	*/
 
-	texture_limits[0].autoscale.min.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("min").as_double();
-	texture_limits[0].autoscale.max.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("max").as_double();
-	texture_limits[1].autoscale.min.all = minMaxNode.child("With_constant_flow").child("Density").attribute("min").as_double();
-	texture_limits[1].autoscale.max.all = minMaxNode.child("With_constant_flow").child("Density").attribute("max").as_double();
-	texture_limits[2].autoscale.min.all = minMaxNode.child("With_constant_flow").child("Imp.rate").attribute("min").as_double();
-	texture_limits[2].autoscale.max.all = minMaxNode.child("With_constant_flow").child("Imp.rate").attribute("max").as_double();
+	texture_limits[0].autoscale.min.steady_state = minMaxNode.child("With_constant_flow").child("Pressure").attribute("min").as_double();
+	texture_limits[0].autoscale.max.steady_state = minMaxNode.child("With_constant_flow").child("Pressure").attribute("max").as_double();
+	texture_limits[1].autoscale.min.steady_state = minMaxNode.child("With_constant_flow").child("Density").attribute("min").as_double();
+	texture_limits[1].autoscale.max.steady_state = minMaxNode.child("With_constant_flow").child("Density").attribute("max").as_double();
+	texture_limits[2].autoscale.min.steady_state = minMaxNode.child("With_constant_flow").child("Imp.rate").attribute("min").as_double();
+	texture_limits[2].autoscale.max.steady_state = minMaxNode.child("With_constant_flow").child("Imp.rate").attribute("max").as_double();
 	texture_limits[0].autoscale.min.moments_only = minMaxNode.child("Moments_only").child("Pressure").attribute("min").as_double();
 	texture_limits[0].autoscale.max.moments_only = minMaxNode.child("Moments_only").child("Pressure").attribute("max").as_double();
 	texture_limits[1].autoscale.min.moments_only = minMaxNode.child("Moments_only").child("Density").attribute("min").as_double();
