@@ -141,27 +141,11 @@ public:
 typedef struct {
 	double steady_state;
 	double moments_only;
-    template<class Archive>
-    void serialize(Archive & archive)
-    {
-        archive(
-                all,
-                moments_only
-        );
-    }
 } TEXTURE_MOMENT_TYPE;
 
 typedef struct {
 	TEXTURE_MOMENT_TYPE min;
 	TEXTURE_MOMENT_TYPE max;
-    template<class Archive>
-    void serialize(Archive & archive)
-    {
-        archive(
-                min,
-                max
-        );
-    }
 } TEXTURE_MIN_MAX;
 
 typedef struct {
