@@ -3,10 +3,8 @@
 //
 
 #include <sstream>
-#include <filesystem>
 #include <set>
 #include <Helper/MathTools.h>
-#include <cereal/archives/binary.hpp>
 #include <cmath>
 #include <iomanip> // setprecision
 #include "LoaderXML.h"
@@ -34,7 +32,8 @@ int LoaderXML::LoadGeometry(const std::string inputFileName, SimulationModel *mo
     xml_node rootNode = loadXML.child("SimulationEnvironment");
     if(!rootNode){
         std::cerr << "XML file seems to be of older format, please generate a new file with the GUI application!"<<std::endl;
-        return 1;
+        rootNode = loadXML.root();
+        //return 1;
     }
 
     xml_node geomNode = rootNode.child("Geometry");
@@ -220,7 +219,7 @@ std::vector<SelectionGroup> LoaderXML::LoadSelections(const std::string& inputFi
     selGroup.reserve(std::distance(selNode.children("Selection").begin(),selNode.children("Selection").end()));
     for (xml_node sNode : selNode.children("Selection")) {
         SelectionGroup s;
-        s.name = strdup(sNode.attribute("name").as_string());
+        s.name = sNode.attribute("name").as_string();
         s.selection.reserve(sNode.select_nodes("selItem").size());
         for (xml_node iNode : sNode.children("selItem"))
             s.selection.push_back(iNode.attribute("facet").as_llong());
