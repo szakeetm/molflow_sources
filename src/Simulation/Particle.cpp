@@ -34,8 +34,9 @@ bool Particle::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, DW
         globSimuState.globalHits.distTraveledTotal_fullHitsOnly += tmpState.globalHits.distTraveledTotal_fullHitsOnly;
 
         // Update too late
+        //totalDesorbed += tmpState.globalHits.globalHits.hit.nbDesorbed;
         totalDesorbed += tmpState.globalHits.globalHits.hit.nbDesorbed;
-
+        //tmpState.globalHits.globalHits.hit.nbDesorbed = 0;
 
         /*gHits->globalHits.hit.nbMCHit += tmpGlobalResult.globalHits.hit.nbMCHit;
         gHits->globalHits.hit.nbHitEquiv += tmpGlobalResult.globalHits.hit.nbHitEquiv;
@@ -1104,11 +1105,15 @@ bool Particle::UpdateHits(GlobalSimuState *globState, ParticleLog *particleLog, 
     /*if(!globState) return false; // checked before simulation start */
 
     bool lastHitUpdateOK = UpdateMCHits(*globState, model->tdParams.moments.size(), timeout);
+    /*totalDesorbed += tmpState.globalHits.globalHits.hit.nbDesorbed;
+    tmpState.globalHits.globalHits.hit.nbDesorbed = 0;*/
+
     // only 1 , so no reduce necessary
     if (particleLog) UpdateLog(particleLog, timeout);
 
     // At last delete tmpCache
-    tmpState.Reset();
+    if(lastHitUpdateOK) tmpState.Reset();
+
     //ResetTmpCounters();
     // only reset buffers 1..N-1
     // 0 = global buffer for reduce
