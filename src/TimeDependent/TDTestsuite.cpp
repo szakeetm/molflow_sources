@@ -18,6 +18,7 @@ namespace Settings {
     std::string outputFile;
     std::vector<Moment> intervals;
     std::vector<double> time_points;
+    std::vector<std::vector<double>> time_points_wbreak; // use when utilizing startIndex
 }
 
 void parsePoT(const std::string& fileName, std::vector<double>& numbers){
@@ -25,6 +26,27 @@ void parsePoT(const std::string& fileName, std::vector<double>& numbers){
     std::istream_iterator<double> start(timeStream), end;
     numbers.assign(start, end);
     std::cout << "Read " << numbers.size() << " numbers" << std::endl;
+}
+
+void parsePoTWStop(const std::string& fileName, std::vector<std::vector<double>>& numbers){
+    std::ifstream timeStream(fileName);
+    std::string line;
+    while (std::getline(timeStream, line))
+    {
+        if(line.empty()) continue;
+        numbers.emplace_back();
+        std::istringstream iss(line);
+        double val = 0.0;
+        while(iss >> val){
+            numbers.back().push_back(val);
+        }
+    }
+
+    size_t totalNumbers = 0;
+    for(auto& numb : numbers){
+        totalNumbers += numb.size();
+    }
+    std::cout << "Read " << totalNumbers << " numbers" << std::endl;
 }
 
 int parseCommands(int argc, char** argv) {
@@ -60,8 +82,6 @@ int LookupMomentIndex(double key, const std::vector<std::pair<double, double>>& 
         --lowerBound; //even moments.end() can be a bound
 
         if (lowerBound->first <= key && key < lowerBound->second) {
-            /*if(static_cast<int>(std::distance(moments.begin() + startIndex, lowerBound) + startIndex) == 0)
-                printf("%e  < %e > %e\n",lowerBound->first, key, lowerBound->second);*/
             return static_cast<int>(std::distance(moments.begin() + startIndex, lowerBound) + startIndex);
         }
     }
@@ -144,11 +164,6 @@ void parseMoments(const std::vector<Moment>& userIntervals, std::vector<Moment>&
 int main(int argc, char** argv) {
     parseCommands(argc, argv);
     parsePoT(Settings::inputFile, Settings::time_points);
-    /*for(auto t = 0; t < Settings::time_points.size(); ++t) {
-        if (Settings::time_points[t] == 0.0)
-            printf("%f at %d\n", Settings::time_points[t], t);
-    }*/
-    //Settings::time_points.resize(1e8);
     std::vector<UserMoment> uMoments{
             {"1e-13,0.0000001,0.001",0.0000001}
     };
@@ -177,5 +192,34 @@ int main(int argc, char** argv) {
     }
     printf("\n");
 
+    //Free some memory
+    Settings::time_points.clear();
+    std::vector<size_t>(intervalMoments.size(),0).swap(timeBins);
+    parsePoTWStop(Settings::inputFile, Settings::time_points_wbreak);
+
+    time.ReInit();
+    time.Start();
+    printf("[%.4lfms] Vector -- Binary search -- Index [START]\n", time.Elapsed());
+    size_t lastIndex = 0;
+    for(const auto& particleTrace : Settings::time_points_wbreak) {
+        for (const auto moment : particleTrace) {
+            int ind = LookupMomentIndex(moment, intervalMoments, lastIndex);
+            if (ind >= 0) {
+                ++timeBins[ind];
+                lastIndex = ind;
+            }
+        }
+        lastIndex = 0;
+    }
+    time.Stop();
+    printf("[%.4lfms] Vector -- Binary search -- Index [ END ]\n", time.Elapsed());
+    i = 0;
+    for(auto& bin : timeBins){
+        printf("%zu<>%zu ", i,timeBins[i]);
+        i++;
+        if((i%10)==0) printf("\n");
+        if(i>=20) break;
+    }
+    printf("\n");
     return 0;
 }
