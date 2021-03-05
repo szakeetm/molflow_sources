@@ -6,7 +6,10 @@
 #define MOLFLOW_PROJ_TIMEMOMENTS_H
 
 #include <vector>
-#include "MolflowTypes.h"
+#include <string>
+
+typedef std::pair<std::string,double> UserMoment;
+typedef std::pair<double,double> Moment;
 
 class TimeMoments {
 public:

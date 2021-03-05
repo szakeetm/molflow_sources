@@ -7,9 +7,15 @@
 #include <cmath>
 #include <IntersectAABB_shared.h>
 #include <sstream>
+
 #include "Particle.h"
 #include "AnglemapGeneration.h"
 #include "Physics.h"
+
+#define TRACK_PARTICLE_TIME 1
+#ifdef TRACK_PARTICLE_TIME
+#include <fstream>
+#endif
 
 using namespace MFSim;
 
@@ -239,6 +245,14 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                 particleTime +=
                         d / 100.0 / velocity; //conversion from cm to m
 
+#ifdef TRACK_PARTICLE_TIME
+                if(particleId == 0)
+                {
+                    std::ofstream particleFile("ParticleTimes.txt",std::ios_base::app);
+                    particleFile << particleTime << " ";
+                    particleFile.close();
+                };
+#endif
                 if ((!model->wp.calcConstantFlow && (particleTime > model->wp.latestMoment))
                     || (model->wp.enableDecay &&
                         (expectedDecayMoment < particleTime))) {
@@ -410,6 +424,14 @@ bool Particle::StartFromSource() {
     //particleTime = desorptionStartTime + (desorptionStopTime - desorptionStartTime)*randomGenerator.rnd();
     particleTime = generationTime = Physics::GenerateDesorptionTime(model->tdParams.IDs, src, randomGenerator.rnd(), model->wp.latestMoment);
     lastMomentIndex = 0;
+#ifdef TRACK_PARTICLE_TIME
+    if(particleId == 0)
+    {
+        std::ofstream particleFile("ParticleTimes.txt",std::ios_base::app);
+        particleFile << "\n" << particleTime << " ";
+        particleFile.close();
+    };
+#endif
     if (model->wp.useMaxwellDistribution) velocity = Physics::GenerateRandomVelocity(model->tdParams.CDFs, src->sh.CDFid, randomGenerator.rnd());
     else
         velocity =
@@ -660,6 +682,14 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
     if (iFacet->sh.enableSojournTime) {
         double A = exp(-iFacet->sh.sojournE / (8.31 * iFacet->sh.temperature));
         particleTime += -log(randomGenerator.rnd()) / (A * iFacet->sh.sojournFreq);
+#ifdef TRACK_PARTICLE_TIME
+        if(particleId == 0)
+        {
+            std::ofstream particleFile("ParticleTimes.txt",std::ios_base::app);
+            particleFile << particleTime << " ";
+            particleFile.close();
+        };
+#endif
     }
 
     if (iFacet->sh.reflection.diffusePart > 0.999999) { //Speedup branch for most common, diffuse case
@@ -1099,6 +1129,14 @@ void Particle::Reset() {
     model = nullptr;
     transparentHitBuffer.clear();
     tmpFacetVars.clear();
+
+#ifdef TRACK_PARTICLE_TIME
+    if(particleId == 0)
+    {
+        std::ofstream particleFile("ParticleTimes.txt");
+        particleFile.close();
+    };
+#endif
 }
 
 bool Particle::UpdateHits(GlobalSimuState *globState, ParticleLog *particleLog, size_t timeout) {
