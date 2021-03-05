@@ -6,6 +6,7 @@ stages:
   - prepare
   - build
   - build-artifact
+  - test
   - optional-artifact
 
 prepare_job:
