@@ -88,6 +88,21 @@ int LookupMomentIndex(double key, const std::vector<std::pair<double, double>>& 
     return -1;
 }
 
+int LookupMomentIndex(double key, const std::vector<std::pair<double, double>>& moments){
+
+    if(!moments.empty()) {
+        auto lowerBound = std::lower_bound(moments.begin(), moments.end(), std::make_pair(key, key));
+        if(lowerBound == moments.begin())
+            return -1;
+        --lowerBound; //even moments.end() can be a bound
+
+        if (lowerBound->first <= key && key < lowerBound->second) {
+            return static_cast<int>(std::distance(moments.begin(), lowerBound));
+        }
+    }
+    return -1;
+}
+
 /**
 * \brief Parses a user input and returns a vector of time moments
 * \param userInput string of the form "%lf,%lf,%lf" for beginning, interval step, ending of the moment series
@@ -163,63 +178,76 @@ void parseMoments(const std::vector<Moment>& userIntervals, std::vector<Moment>&
 
 int main(int argc, char** argv) {
     parseCommands(argc, argv);
-    parsePoT(Settings::inputFile, Settings::time_points);
+
     std::vector<UserMoment> uMoments{
-            {"1e-13,0.0000001,0.001",0.0000001}
+            {"1.0e-13,1.0e-8,0.001", 1.0e-8}
     };
     momentsReader(uMoments);
     std::vector<Moment> intervalMoments;
     parseMoments(Settings::intervals, intervalMoments);
+    if(intervalMoments.empty()) exit(0);
+    std::vector<size_t> timeBins(intervalMoments.size(), 0);
 
-    std::vector<size_t> timeBins(intervalMoments.size(),0);
+    parsePoT(Settings::inputFile, Settings::time_points);
+
     // 1. Vector binary search
     Chronometer time;
-    time.Start();
-    printf("[%.4lfms] Vector -- Binary search [START]\n", time.Elapsed());
-    for(auto moment : Settings::time_points){
-        int ind = LookupMomentIndex(moment, intervalMoments, 0);
-        if(ind >=0)
-            ++timeBins[ind];
-    }
-    time.Stop();
-    printf("[%.4lfms] Vector -- Binary search [ END ]\n", time.Elapsed());
-    size_t i = 0;
-    for(auto& bin : timeBins){
-        printf("%zu<>%zu ", i,timeBins[i]);
-        i++;
-        if((i%10)==0) printf("\n");
-        if(i>=20) break;
-    }
-    printf("\n");
-
-    //Free some memory
-    Settings::time_points.clear();
-    std::vector<size_t>(intervalMoments.size(),0).swap(timeBins);
-    parsePoTWStop(Settings::inputFile, Settings::time_points_wbreak);
-
-    time.ReInit();
-    time.Start();
-    printf("[%.4lfms] Vector -- Binary search -- Index [START]\n", time.Elapsed());
-    size_t lastIndex = 0;
-    for(const auto& particleTrace : Settings::time_points_wbreak) {
-        for (const auto moment : particleTrace) {
-            int ind = LookupMomentIndex(moment, intervalMoments, lastIndex);
-            if (ind >= 0) {
+    const int totalRuns = 3;
+    for(int runNb = 0; runNb < totalRuns; ++runNb) {
+        time.ReInit();
+        time.Start();
+        printf("[%.4lfms] Vector -- Binary search [START]\n", time.Elapsed());
+        for (auto moment : Settings::time_points) {
+            int ind = LookupMomentIndex(moment, intervalMoments);
+            if (ind >= 0)
                 ++timeBins[ind];
-                lastIndex = ind;
-            }
         }
-        lastIndex = 0;
+        time.Stop();
+        printf("[%.4lfms] Vector -- Binary search [ END ]\n", time.Elapsed());
+        std::vector<size_t>(intervalMoments.size(), 0).swap(timeBins);
+
+        /*size_t i = 0;
+        for (auto &bin : timeBins) {
+            printf("%zu<>%zu ", i, timeBins[i]);
+            i++;
+            if ((i % 10) == 0) printf("\n");
+            if (i >= 20) break;
+        }
+        printf("\n");*/
     }
-    time.Stop();
-    printf("[%.4lfms] Vector -- Binary search -- Index [ END ]\n", time.Elapsed());
-    i = 0;
-    for(auto& bin : timeBins){
-        printf("%zu<>%zu ", i,timeBins[i]);
-        i++;
-        if((i%10)==0) printf("\n");
-        if(i>=20) break;
+
+        //Free some memory
+        Settings::time_points.clear();
+        //std::vector<size_t>(intervalMoments.size(), 0).swap(timeBins);
+        parsePoTWStop(Settings::inputFile, Settings::time_points_wbreak);
+
+    for(int runNb = 0; runNb < totalRuns; ++runNb) {
+        time.ReInit();
+        time.Start();
+        printf("[%.4lfms] Vector -- Binary search -- Index [START]\n", time.Elapsed());
+        size_t lastIndex = 0;
+        for (const auto &particleTrace : Settings::time_points_wbreak) {
+            for (const auto moment : particleTrace) {
+                int ind = LookupMomentIndex(moment, intervalMoments, lastIndex);
+                if (ind >= 0) {
+                    ++timeBins[ind];
+                    lastIndex = ind;
+                }
+            }
+            lastIndex = 0;
+        }
+        time.Stop();
+        printf("[%.4lfms] Vector -- Binary search -- Index [ END ]\n", time.Elapsed());
+        std::vector<size_t>(intervalMoments.size(), 0).swap(timeBins);
+
+        /*size_t i = 0;
+        for (auto &bin : timeBins) {
+            printf("%zu<>%zu ", i, timeBins[i]);
+            i++;
+            if ((i % 10) == 0) printf("\n");
+            if (i >= 20) break;
+        }
+        printf("\n");*/
     }
-    printf("\n");
     return 0;
 }
