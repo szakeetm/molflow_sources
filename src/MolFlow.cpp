@@ -1046,7 +1046,7 @@ int MolFlow::FrameMove()
 		desNumber->SetText(tmp);
 	}
 
-    sprintf(tmp, "Running: %s", Util::formatTime(worker.simuTimer.Elapsed()));
+    //sprintf(tmp, "Running: %s", Util::formatTime(worker.simuTimer.Elapsed()));
 
 
 	// Save previous state to react to changes
