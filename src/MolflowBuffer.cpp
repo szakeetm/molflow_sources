@@ -19,8 +19,11 @@ OntheflySimulationParams::OntheflySimulationParams(){
     nbProcess = 0;
     enableLogging = false;
     desorptionLimit = 0;
-    lowFluxCutoff = 1E-7;
+    lowFluxCutoff = 1.0E-7;
     lowFluxMode = false;
+    timeLimit = 0.0;
+    logFacetId = std::numeric_limits<size_t>::max();
+    logLimit = 0;
 }
 
 void FacetHistogramBuffer::Resize(const HistogramParams& params){

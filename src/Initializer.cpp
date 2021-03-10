@@ -63,6 +63,8 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
     if(initDesLimit(*model,*globState)) {
         exit(0);
     }
+    model->otfParams.timeLimit = (double) Settings::simDuration;
+
     /*else{
         model->otfParams.desorptionLimit = 0;
     }*/
@@ -184,8 +186,7 @@ int Initializer::initSimUnit(SimulationManager *simManager, SimulationModel *mod
     simManager->ForwardSimModel(model);
     simManager->ForwardGlobalCounter(globState, nullptr);
 
-    if (simManager->ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
-        //CloseLoaderDP();
+    if(simManager->LoadSimulation()){
         model->m.unlock();
         std::string errString = "Failed to send geometry to sub process:\n";
         errString.append(simManager->GetErrorDetails());

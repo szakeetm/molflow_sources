@@ -264,8 +264,10 @@ SubprocessFacet::SubprocessFacet() : Facet() {
 * \param nbIndex number of indices/facets
 */
 SubprocessFacet::SubprocessFacet(size_t nbIndex) : Facet(nbIndex) {
-        indices.resize(nbIndex);                    // Ref to Geometry Vector3d
-        vertices2.resize(nbIndex);
+    isReady = false;
+    globalId = 0;
+    indices.resize(nbIndex);                    // Ref to Geometry Vector3d
+    vertices2.resize(nbIndex);
 }
 
 /**
