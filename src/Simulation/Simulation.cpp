@@ -5,6 +5,8 @@
 #include <sstream>
 #include <cereal/archives/binary.hpp>
 #include <omp.h>
+#include <Helper/Chronometer.h>
+
 /*SuperStructure::SuperStructure()
 {
 	aabbTree = NULL;
@@ -106,9 +108,40 @@ int Simulation::ReinitializeParticleLog() {
 	InitTick();
 }*/
 
-int Simulation::SanityCheckGeom() {
+int Simulation::SanityCheckModel() {
+    char errLog[2048] {"[Error Log on Check]\n"};
+    int errorsOnCheck = 0;
 
-    return 0; // all ok
+    if (!model.initialized) {
+        sprintf(errLog + strlen(errLog), "Model not initialized\n");
+        errorsOnCheck++;
+    }
+    if (model.vertices3.empty()) {
+        sprintf(errLog + strlen(errLog), "Loaded empty vertex list\n");
+        errorsOnCheck++;
+    }
+    if (model.facets.empty()) {
+        sprintf(errLog + strlen(errLog), "Loaded empty facet list\n");
+        errorsOnCheck++;
+    }
+    if (model.wp.enableDecay && model.wp.halfLife <= 0.0) {
+        sprintf(errLog + strlen(errLog), "Particle decay is set, but half life was not set [= %e]\n", model.wp.halfLife);
+        errorsOnCheck++;
+    }
+
+    if(!globState){
+        sprintf(errLog + strlen(errLog), "No global simulation state set\n");
+        errorsOnCheck++;
+    }
+    else if(!globState->initialized){
+        sprintf(errLog + strlen(errLog), "Global simulation state not initialized\n");
+        errorsOnCheck++;
+    }
+
+    if(errorsOnCheck){
+        printf("%s", errLog);
+    }
+    return errorsOnCheck; // 0 = all ok
 }
 
 void Simulation::ClearSimulation() {
@@ -142,14 +175,14 @@ void Simulation::ClearSimulation() {
     this->model.vertices3.clear();*/
 }
 
-size_t Simulation::LoadSimulation(SimulationModel *simModel, char *loadStatus) {
-    double t0 = GetTick();
-
+size_t Simulation::LoadSimulation(char *loadStatus) {
+    Chronometer timer;
+    timer.Start();
     strncpy(loadStatus, "Clearing previous simulation", 127);
     ClearSimulation();
     strncpy(loadStatus, "Loading simulation", 127);
     
-    if(!simModel) simModel = &this->model;
+    auto* simModel = &this->model;
     
     // New GlobalSimuState structure for threads
     for(auto& particle : particles)
@@ -213,6 +246,7 @@ size_t Simulation::LoadSimulation(SimulationModel *simModel, char *loadStatus) {
         structure.aabbTree = std::make_shared<AABBNODE>(*tree);
         //delete tree; // pointer unnecessary because of make_shared
     }
+
     for(auto& particle : particles)
         particle.model = simModel;
 
@@ -221,7 +255,7 @@ size_t Simulation::LoadSimulation(SimulationModel *simModel, char *loadStatus) {
 
     //if(!model.sh.name.empty())
     //loadOK = true;
-    double t1 = GetTick();
+    timer.Stop();
     if(omp_get_thread_num() == 0) {
         printf("  Load %s successful\n", simModel->sh.name.c_str());
         printf("  Geometry: %zd vertex %zd facets\n", simModel->vertices3.size(), simModel->sh.nbFacet);
@@ -236,7 +270,7 @@ size_t Simulation::LoadSimulation(SimulationModel *simModel, char *loadStatus) {
 
         printf("  Total     : %zd bytes\n", GetHitsSize());
         //printf("  Seed: %lu\n", randomGenerator.GetSeed());
-        printf("  Loading time: %.3f ms\n", (t1 - t0) * 1000.0);
+        printf("  Loading time: %.3f ms\n", timer.ElapsedMs());
     }
     return 0;
 }
