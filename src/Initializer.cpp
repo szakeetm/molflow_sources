@@ -204,7 +204,7 @@ int Initializer::initDesLimit(SimulationModel& model, GlobalSimuState& globState
     // Skip desorptions if limit was already reached
     if(!Settings::desLimit.empty())
     {
-        size_t oldDesNb = globState.globalHits.globalHits.hit.nbDesorbed;
+        size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
         size_t listSize = Settings::desLimit.size();
         for(size_t l = 0; l < listSize; ++l) {
             model.otfParams.desorptionLimit = Settings::desLimit.front();

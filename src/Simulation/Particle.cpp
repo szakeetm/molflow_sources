@@ -35,7 +35,7 @@ bool Particle::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, DW
 
         // Update too late
         //totalDesorbed += tmpState.globalHits.globalHits.hit.nbDesorbed;
-        totalDesorbed += tmpState.globalHits.globalHits.hit.nbDesorbed;
+        totalDesorbed += tmpState.globalHits.globalHits.nbDesorbed;
         //tmpState.globalHits.globalHits.hit.nbDesorbed = 0;
 
         /*gHits->globalHits.hit.nbMCHit += tmpGlobalResult.globalHits.hit.nbMCHit;
@@ -548,7 +548,7 @@ bool Particle::StartFromSource() {
     {
         totalDesorbed++;
     }*/
-    tmpState.globalHits.globalHits.hit.nbDesorbed++;
+    tmpState.globalHits.globalHits.nbDesorbed++;
     //nbPHit = 0;
 
     if (src->sh.isMoving) {
@@ -594,8 +594,8 @@ bool Particle::StartFromSource() {
 void Particle::PerformBounce(SubprocessFacet *iFacet) {
 
     bool revert = false;
-    tmpState.globalHits.globalHits.hit.nbMCHit++; //global
-    tmpState.globalHits.globalHits.hit.nbHitEquiv += oriRatio;
+    tmpState.globalHits.globalHits.nbMCHit++; //global
+    tmpState.globalHits.globalHits.nbHitEquiv += oriRatio;
 
     // Handle super structure link facet. Can be
     if (iFacet->sh.superDest) {
@@ -757,9 +757,9 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
 }*/
 
 void Particle::RecordAbsorb(SubprocessFacet *iFacet) {
-    tmpState.globalHits.globalHits.hit.nbMCHit++; //global
-    tmpState.globalHits.globalHits.hit.nbHitEquiv += oriRatio;
-    tmpState.globalHits.globalHits.hit.nbAbsEquiv += oriRatio;
+    tmpState.globalHits.globalHits.nbMCHit++; //global
+    tmpState.globalHits.globalHits.nbHitEquiv += oriRatio;
+    tmpState.globalHits.globalHits.nbAbsEquiv += oriRatio;
 
     int momentIndex = -1;
     if ((momentIndex = LookupMomentIndex(particleTime, model->tdParams.moments, lastMomentIndex)) > 0) {
@@ -1048,23 +1048,23 @@ Particle::IncreaseFacetCounter(const SubprocessFacet *f, int m, size_t hit, size
     const double hitEquiv = static_cast<double>(hit) * oriRatio;
     {
         FacetHitBuffer &hits = tmpState.facetStates[f->globalId].momentResults[0].hits;
-        hits.hit.nbMCHit += hit;
-        hits.hit.nbHitEquiv += hitEquiv;
-        hits.hit.nbDesorbed += desorb;
-        hits.hit.nbAbsEquiv += static_cast<double>(absorb) * oriRatio;
-        hits.hit.sum_1_per_ort_velocity += oriRatio * sum_1_per_v;
-        hits.hit.sum_v_ort += oriRatio * sum_v_ort;
-        hits.hit.sum_1_per_velocity += (hitEquiv + static_cast<double>(desorb)) / velocity;
+        hits.nbMCHit += hit;
+        hits.nbHitEquiv += hitEquiv;
+        hits.nbDesorbed += desorb;
+        hits.nbAbsEquiv += static_cast<double>(absorb) * oriRatio;
+        hits.sum_1_per_ort_velocity += oriRatio * sum_1_per_v;
+        hits.sum_v_ort += oriRatio * sum_v_ort;
+        hits.sum_1_per_velocity += (hitEquiv + static_cast<double>(desorb)) / velocity;
     }
     if (m > 0) {
         FacetHitBuffer &hits = tmpState.facetStates[f->globalId].momentResults[m].hits;
-        hits.hit.nbMCHit += hit;
-        hits.hit.nbHitEquiv += hitEquiv;
-        hits.hit.nbDesorbed += desorb;
-        hits.hit.nbAbsEquiv += static_cast<double>(absorb) * oriRatio;
-        hits.hit.sum_1_per_ort_velocity += oriRatio * sum_1_per_v;
-        hits.hit.sum_v_ort += oriRatio * sum_v_ort;
-        hits.hit.sum_1_per_velocity += (hitEquiv + static_cast<double>(desorb)) / velocity;
+        hits.nbMCHit += hit;
+        hits.nbHitEquiv += hitEquiv;
+        hits.nbDesorbed += desorb;
+        hits.nbAbsEquiv += static_cast<double>(absorb) * oriRatio;
+        hits.sum_1_per_ort_velocity += oriRatio * sum_1_per_v;
+        hits.sum_v_ort += oriRatio * sum_v_ort;
+        hits.sum_1_per_velocity += (hitEquiv + static_cast<double>(desorb)) / velocity;
     }
 }
 

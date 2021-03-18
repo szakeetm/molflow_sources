@@ -246,21 +246,21 @@ int LoaderXML::LoadSimulationState(const std::string& inputFileName, SimulationM
         if (m == 0) { //read global results
             xml_node globalNode = newMoment.child("Global");
             xml_node hitsNode = globalNode.child("Hits");
-            globState.globalHits.globalHits.hit.nbMCHit = hitsNode.attribute("totalHit").as_llong();
+            globState.globalHits.globalHits.nbMCHit = hitsNode.attribute("totalHit").as_llong();
             if (hitsNode.attribute("totalHitEquiv")) {
-                globState.globalHits.globalHits.hit.nbHitEquiv = hitsNode.attribute("totalHitEquiv").as_double();
+                globState.globalHits.globalHits.nbHitEquiv = hitsNode.attribute("totalHitEquiv").as_double();
             }
             else {
                 //Backward compatibility
-                globState.globalHits.globalHits.hit.nbHitEquiv = static_cast<double>(globState.globalHits.globalHits.hit.nbMCHit);
+                globState.globalHits.globalHits.nbHitEquiv = static_cast<double>(globState.globalHits.globalHits.nbMCHit);
             }
-            globState.globalHits.globalHits.hit.nbDesorbed = hitsNode.attribute("totalDes").as_llong();
+            globState.globalHits.globalHits.nbDesorbed = hitsNode.attribute("totalDes").as_llong();
             if (hitsNode.attribute("totalAbsEquiv")) {
-                globState.globalHits.globalHits.hit.nbAbsEquiv = hitsNode.attribute("totalAbsEquiv").as_double();
+                globState.globalHits.globalHits.nbAbsEquiv = hitsNode.attribute("totalAbsEquiv").as_double();
             }
             else {
                 //Backward compatibility
-                globState.globalHits.globalHits.hit.nbAbsEquiv = hitsNode.attribute("totalAbs").as_double();
+                globState.globalHits.globalHits.nbAbsEquiv = hitsNode.attribute("totalAbs").as_double();
             }
             if (hitsNode.attribute("totalDist_total")) { //if it's in the new format where total/partial are separated
                 globState.globalHits.distTraveled_total = hitsNode.attribute("totalDist_total").as_double();
@@ -387,30 +387,30 @@ int LoaderXML::LoadSimulationState(const std::string& inputFileName, SimulationM
             //FacetHitBuffer* facetCounter = (FacetHitBuffer *)(buffer + loadFacets[facetId].sh.hitOffset + m * sizeof(FacetHitBuffer));
             FacetHitBuffer* facetCounter = &globState.facetStates[facetId].momentResults[m].hits;
             if (facetHitNode) { //If there are hit results for the current moment
-                facetCounter->hit.nbMCHit = facetHitNode.attribute("nbHit").as_llong();
+                facetCounter->nbMCHit = facetHitNode.attribute("nbHit").as_llong();
                 if (facetHitNode.attribute("nbHitEquiv")) {
-                    facetCounter->hit.nbHitEquiv = facetHitNode.attribute("nbHitEquiv").as_double();
+                    facetCounter->nbHitEquiv = facetHitNode.attribute("nbHitEquiv").as_double();
                 }
                 else {
                     //Backward compatibility
-                    facetCounter->hit.nbHitEquiv = static_cast<double>(facetCounter->hit.nbMCHit);
+                    facetCounter->nbHitEquiv = static_cast<double>(facetCounter->nbMCHit);
                 }
-                facetCounter->hit.nbDesorbed = facetHitNode.attribute("nbDes").as_llong();
+                facetCounter->nbDesorbed = facetHitNode.attribute("nbDes").as_llong();
                 if (facetHitNode.attribute("nbAbsEquiv")) {
-                    facetCounter->hit.nbAbsEquiv = facetHitNode.attribute("nbAbsEquiv").as_double();
+                    facetCounter->nbAbsEquiv = facetHitNode.attribute("nbAbsEquiv").as_double();
                 }
                 else {
                     //Backward compatibility
-                    facetCounter->hit.nbAbsEquiv = facetHitNode.attribute("nbAbs").as_double();
+                    facetCounter->nbAbsEquiv = facetHitNode.attribute("nbAbs").as_double();
                 }
-                facetCounter->hit.sum_v_ort = facetHitNode.attribute("sum_v_ort").as_double();
-                facetCounter->hit.sum_1_per_ort_velocity = facetHitNode.attribute("sum_1_per_v").as_double();
+                facetCounter->sum_v_ort = facetHitNode.attribute("sum_v_ort").as_double();
+                facetCounter->sum_1_per_ort_velocity = facetHitNode.attribute("sum_1_per_v").as_double();
                 if (facetHitNode.attribute("sum_v")) {
-                    facetCounter->hit.sum_1_per_velocity = facetHitNode.attribute("sum_v").as_double();
+                    facetCounter->sum_1_per_velocity = facetHitNode.attribute("sum_v").as_double();
                 }
                 else {
                     //Backward compatibility
-                    facetCounter->hit.sum_1_per_velocity = 4.0 * Sqr(facetCounter->hit.nbHitEquiv + static_cast<double>(facetCounter->hit.nbDesorbed)) / facetCounter->hit.sum_1_per_ort_velocity;
+                    facetCounter->sum_1_per_velocity = 4.0 * Sqr(facetCounter->nbHitEquiv + static_cast<double>(facetCounter->nbDesorbed)) / facetCounter->sum_1_per_ort_velocity;
                 }
 
                 // Do this after XML load
@@ -419,14 +419,14 @@ int LoaderXML::LoadSimulationState(const std::string& inputFileName, SimulationM
                 }*/
             }
             else { //No hit information, so set to 0
-                facetCounter->hit.nbMCHit =
-                facetCounter->hit.nbDesorbed =
+                facetCounter->nbMCHit =
+                facetCounter->nbDesorbed =
                         0;
-                facetCounter->hit.sum_v_ort =
-                facetCounter->hit.nbHitEquiv =
-                facetCounter->hit.sum_1_per_ort_velocity =
-                facetCounter->hit.sum_1_per_velocity =
-                facetCounter->hit.nbAbsEquiv =
+                facetCounter->sum_v_ort =
+                facetCounter->nbHitEquiv =
+                facetCounter->sum_1_per_ort_velocity =
+                facetCounter->sum_1_per_velocity =
+                facetCounter->nbAbsEquiv =
                         0.0;
             }
 

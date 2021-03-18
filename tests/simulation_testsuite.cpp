@@ -180,8 +180,8 @@ namespace {
             Initializer::init(argv.size(), (args), &simManager, &model, &globState);
             delete[] fileName_c;
 
-            size_t oldHitsNb = globState.globalHits.globalHits.hit.nbMCHit;
-            size_t oldDesNb = globState.globalHits.globalHits.hit.nbDesorbed;
+            size_t oldHitsNb = globState.globalHits.globalHits.nbMCHit;
+            size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
 
             EXPECT_NO_THROW(simManager.StartSimulation());
 
@@ -194,7 +194,7 @@ namespace {
                 ProcessSleep(1000);
                 elapsedTime = simTimer.Elapsed();
                 if (model.otfParams.desorptionLimit != 0)
-                    endCondition = globState.globalHits.globalHits.hit.nbDesorbed >= model.otfParams.desorptionLimit;
+                    endCondition = globState.globalHits.globalHits.nbDesorbed >= model.otfParams.desorptionLimit;
                 // Check for potential time end
                 if (Settings::simDuration > 0) {
                     endCondition |= elapsedTime >= Settings::simDuration;
@@ -206,11 +206,11 @@ namespace {
             simManager.StopSimulation();
             simManager.KillAllSimUnits();
 
-            perfTimes.emplace_back((double) (globState.globalHits.globalHits.hit.nbMCHit - oldHitsNb) / (elapsedTime));
+            perfTimes.emplace_back((double) (globState.globalHits.globalHits.nbMCHit - oldHitsNb) / (elapsedTime));
             EXPECT_EQ(0, oldDesNb);
             EXPECT_EQ(0, oldHitsNb);
-            EXPECT_LT(0, globState.globalHits.globalHits.hit.nbDesorbed);
-            EXPECT_LT(0, globState.globalHits.globalHits.hit.nbMCHit);
+            EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
+            EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
 
             printf("[Run %zu/%zu] Current Hit/s: %e\n", runNb, nRuns, perfTimes.back());
         };

@@ -1482,7 +1482,7 @@ void Worker::Start() {
     if (model.wp.totalDesorbedMolecules <= 0.0)
         throw std::runtime_error("Total outgassing is zero.");
 
-    if (model.otfParams.desorptionLimit > 0 && model.otfParams.desorptionLimit <= globState.globalHits.globalHits.hit.nbDesorbed)
+    if (model.otfParams.desorptionLimit > 0 && model.otfParams.desorptionLimit <= globState.globalHits.globalHits.nbDesorbed)
         throw std::runtime_error("Desorption limit has already been reached.");
 
     try {
@@ -1512,16 +1512,16 @@ void Worker::ResetMoments() {
 * \return amount of physical molecules represented by one test particle
 */
 double Worker::GetMoleculesPerTP(size_t moment) const {
-    if (globalHitCache.globalHits.hit.nbDesorbed == 0) return 0; //avoid division by 0
+    if (globalHitCache.globalHits.nbDesorbed == 0) return 0; //avoid division by 0
     if (moment == 0) {
         //Constant flow
         //Each test particle represents a certain real molecule influx per second
-        return model.wp.finalOutgassingRate / globalHitCache.globalHits.hit.nbDesorbed;
+        return model.wp.finalOutgassingRate / globalHitCache.globalHits.nbDesorbed;
     } else {
         //Time-dependent mode
         //Each test particle represents a certain absolute number of real molecules
         return (model.wp.totalDesorbedMolecules / mApp->worker.moments[moment - 1].second) /
-               globalHitCache.globalHits.hit.nbDesorbed;
+               globalHitCache.globalHits.nbDesorbed;
     }
 }
 
