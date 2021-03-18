@@ -6,6 +6,8 @@
 #include <vector>
 #include <iostream>
 #include <iterator>
+#include <random>
+
 #include "../../include/CLI11/CLI11.hpp"
 #include "../../src_shared/Helper/Chronometer.h"
 #include "../TimeMoments.h"
@@ -24,11 +26,87 @@ struct MomentInterval {
 namespace Settings {
     std::string inputFile;
     std::string outputFile;
-    std::vector<Moment> intervals;
-    std::vector<MomentInterval> uIntervals;
-    std::vector<double> time_points;
-    std::vector<std::vector<double>> time_points_wbreak; // use when utilizing startIndex
-    std::vector<size_t> breakPoints;
+    static std::vector<Moment> intervals;
+    static std::vector<MomentInterval> uIntervals;
+    static std::vector<double> time_points;
+    static std::vector<std::vector<double>> time_points_wbreak; // use when utilizing startIndex
+    static std::vector<size_t> breakPoints;
+}
+
+void generatePoT(size_t nTimes, double fromTime, double toTime, double deltaMin, double deltaMax, std::vector<double>& numbers, size_t seed = 0){
+
+    if(seed == 0) {
+        std::random_device rd;  //Will be used to obtain a seed for the random number engine
+        seed = rd();
+    }
+    std::mt19937 gen(seed); //Standard mersenne_twister_engine seeded with rd()
+    std::uniform_real_distribution<> dis(deltaMin, deltaMax);
+
+    numbers.clear();
+    numbers.reserve(nTimes);
+    double num = fromTime;
+    for(size_t n = 0 ; n < nTimes; ++n){
+        num += dis(gen);
+        numbers.push_back(num);
+
+        if(num >= toTime)
+            num = fromTime;
+    }
+
+    std::cout << "Generated " << numbers.size() << " numbers" << std::endl;
+}
+
+void generatePoTW(size_t nTimes, double fromTime, double toTime, double deltaMin, double deltaMax, std::vector<std::vector<double>>& numbers, size_t seed = 0){
+
+    if(seed == 0) {
+        std::random_device rd;  //Will be used to obtain a seed for the random number engine
+        seed = rd();
+    }
+    std::mt19937 gen(seed); //Standard mersenne_twister_engine seeded with rd()
+    std::uniform_real_distribution<> dis(deltaMin, deltaMax);
+
+    numbers.clear();
+    double num = fromTime;
+    numbers.emplace_back();
+    for(size_t n = 0 ; n < nTimes; ++n){
+        num += dis(gen);
+        numbers.back().push_back(num);
+
+        if(num >= toTime) {
+            numbers.emplace_back();
+            num = fromTime;
+        }
+    }
+
+    size_t totalNumbers = 0;
+    for(auto& numb : numbers){
+        totalNumbers += numb.size();
+    }
+    std::cout << "Generated " << totalNumbers << " numbers with " <<  numbers.size() << " desorptions " << std::endl;
+}
+
+void generatePoTW2(size_t nTimes, double fromTime, double toTime, double deltaMin, double deltaMax, std::vector<double>& numbers, std::vector<size_t>& resetPoints, size_t seed = 0){
+
+    if(seed == 0) {
+        std::random_device rd;  //Will be used to obtain a seed for the random number engine
+        seed = rd();
+    }
+    std::mt19937 gen(seed); //Standard mersenne_twister_engine seeded with rd()
+    std::uniform_real_distribution<> dis(deltaMin, deltaMax);
+
+    numbers.clear();
+    double num = fromTime;
+    for(size_t n = 0 ; n < nTimes; ++n){
+        num += dis(gen);
+        numbers.push_back(num);
+
+        if(num >= toTime) {
+            resetPoints.push_back(numbers.size());
+            num = fromTime;
+        }
+    }
+
+    std::cout << "Generated " << numbers.size() << " numbers with " <<  resetPoints.size()+1 << " desorptions "<<std::endl;
 
 }
 
@@ -81,7 +159,7 @@ int parseCommands(int argc, char** argv) {
     CLI::App app{"Time dependent algorithm test suite"};
 
     app.add_option("-f,--file", Settings::inputFile, "Required input file (XML only)")
-            ->required()
+            /*->required()*/
             ->check(CLI::ExistingFile);
     app.add_option("-o,--output", Settings::outputFile, "Output file if different from input file");
     CLI11_PARSE(app, argc, argv);
@@ -288,7 +366,7 @@ int calcSearch(double key, const std::vector<Moment>& moments, const std::vector
     int start = -1; // TODO: ....
     //size_t indexOffset = 0;
 
-    //int controlIndex = LookupMomentIndex(key, moments);
+    int controlIndex = LookupMomentIndex(key, moments);
     for(auto& uMom : userMoments){
         //printf("Parsed %e , %e , %e\n", uMom.start, uMom.interval, uMom.end);
         const double halfTimeWindow = uMom.timeWindow * 0.5;
@@ -310,7 +388,7 @@ int calcSearch(double key, const std::vector<Moment>& moments, const std::vector
                     start += uMom.startIndex;
                 }
 
-                /*if(start != -1 && !(key >= moments[start].first && key <= moments[start].second)) {
+                if(start != -1 && !(key >= moments[start].first && key <= moments[start].second)) {
                     printf("[%e] Calc passed [%e , %e] , %lu * %lf (%lf)\n", key, uMom.start + (start-uMom.startIndex) * uMom.interval - halfTimeWindow, uMom.start + (start-uMom.startIndex) * uMom.interval + halfTimeWindow, (start-uMom.startIndex), nbMoments, uMom.interval);
                     printf("[%e] Moments not in window [%e , %e] [[%e , %e]]\n", key, moments[start].first, moments[start].second, uMom.start - halfTimeWindow, uMom.end + halfTimeWindow);
                     //start = -1;
@@ -322,7 +400,7 @@ int calcSearch(double key, const std::vector<Moment>& moments, const std::vector
                     printf("[%e] post  [%e , %e]\n", key, moments[start+1].first, moments[start+1].second);
                     printf("[%e] first [%e , %e]\n", key, moments.front().first, moments.front().second);
                     printf("[%e] last  [%e , %e]\n", key, moments.back().first, moments.back().second);
-                }*/
+                }
                 return start;
             }
             else {
@@ -511,6 +589,29 @@ void parseMoments(const std::vector<Moment>& userIntervals, std::vector<Moment>&
 int main(int argc, char** argv) {
     parseCommands(argc, argv);
 
+    std::vector<UserMoment> uMoments;
+
+    if(Settings::inputFile.empty()){
+        uMoments = std::vector<UserMoment>{
+                {"0.001,0.1,100.0", 0.1}
+        };
+        uMoments = std::vector<UserMoment>{
+                {"0.001,0.001,100.0", 0.001}
+        };
+        uMoments = std::vector<UserMoment>{
+                {"0.001,0.001,1.0", 0.001},
+                {"1.01,0.001,10.0", 0.001},
+                {"10.01,0.001,20.0", 0.001},
+                {"20.01,0.001,30.0", 0.001},
+                {"30.01,0.001,40.0", 0.001},
+                {"40.01,0.001,50.0", 0.001},
+                {"50.01,0.001,60.0", 0.001},
+                {"60.01,0.001,70.0", 0.001},
+                {"70.01,0.001,80.0", 0.001},
+                {"80.01,0.001,90.0", 0.001},
+                {"90.01,0.001,100.0", 0.001}
+        };
+    }
     /*std::vector<UserMoment> uMoments{
             {"1.0e-13,1.0e-5,0.001", 1.0e-5}
     };*/
@@ -520,13 +621,13 @@ int main(int argc, char** argv) {
             {"70,10,3600", 0.5},
             {"3660,60,30000", 0.5}
     };*/
-    std::vector<UserMoment> uMoments{
+    /*std::vector<UserMoment> uMoments{
             {"0.001,0.0001,0.08", 0.0001},
             {"0.1", 0.01},
             {"1,0.001,60", 0.001},
             {"70,0.01,3600", 0.01},
             {"3660,0.06,30000", 0.06}
-    };
+    };*/
     momentsReader(uMoments);
     momentIntervalReader(uMoments);
 
@@ -536,7 +637,12 @@ int main(int argc, char** argv) {
     std::vector<size_t> timeBins(intervalMoments.size(), 0);
 
     //exit(0);
-    parsePoT(Settings::inputFile, Settings::time_points);
+    if(!Settings::inputFile.empty()){
+        parsePoT(Settings::inputFile, Settings::time_points);
+    }
+    else{
+        generatePoT(1.0e6, 0.0, 100.0, 0.001, 10.0, Settings::time_points, 42424242);
+    }
 
     // 1. Vector binary search
     Chronometer time;
@@ -544,14 +650,14 @@ int main(int argc, char** argv) {
     for(int runNb = 0; runNb < totalRuns; ++runNb) {
         time.ReInit();
         time.Start();
-        printf("[%.4lfms] Vector -- Binary search [START]\n", time.Elapsed());
+        printf("[%.4lfms] Vector -- Binary search [START]\n", time.ElapsedMs());
         for (auto moment : Settings::time_points) {
             int ind = LookupMomentIndex(moment, intervalMoments);
             if (ind >= 0)
                 ++timeBins[ind];
         }
         time.Stop();
-        printf("[%.4lfms] Vector -- Binary search [ END ]\n", time.Elapsed());
+        printf("[%.4lfms] Vector -- Binary search [ END ]\n", time.ElapsedMs());
 
         size_t i = 0;
         for (auto &bin : timeBins) {
@@ -568,14 +674,14 @@ int main(int argc, char** argv) {
     for(int runNb = 0; runNb < totalRuns; ++runNb) {
         time.ReInit();
         time.Start();
-        printf("[%.4lfms] Vector -- Quad search [START]\n", time.Elapsed());
+        printf("[%.4lfms] Vector -- Quad search [START]\n", time.ElapsedMs());
         for (auto moment : Settings::time_points) {
             int ind = quadraticSearch(moment, intervalMoments);
             if (ind >= 0)
                 ++timeBins[ind];
         }
         time.Stop();
-        printf("[%.4lfms] Vector -- Quad search [ END ]\n", time.Elapsed());
+        printf("[%.4lfms] Vector -- Quad search [ END ]\n", time.ElapsedMs());
 
         size_t i = 0;
         for (auto &bin : timeBins) {
@@ -591,14 +697,14 @@ int main(int argc, char** argv) {
     for(int runNb = 0; runNb < totalRuns; ++runNb) {
         time.ReInit();
         time.Start();
-        printf("[%.4lfms] Vector -- Interp search [START]\n", time.Elapsed());
+        printf("[%.4lfms] Vector -- Interp search [START]\n", time.ElapsedMs());
         for (auto moment : Settings::time_points) {
             int ind = interpolationSearch(moment, intervalMoments);
             if (ind >= 0)
                 ++timeBins[ind];
         }
         time.Stop();
-        printf("[%.4lfms] Vector -- Interp search [ END ]\n", time.Elapsed());
+        printf("[%.4lfms] Vector -- Interp search [ END ]\n", time.ElapsedMs());
 
         size_t i = 0;
         for (auto &bin : timeBins) {
@@ -615,14 +721,14 @@ int main(int argc, char** argv) {
     for(int runNb = 0; runNb < totalRuns; ++runNb) {
         time.ReInit();
         time.Start();
-        printf("[%.4lfms] Vector -- Jump search [START]\n", time.Elapsed());
+        printf("[%.4lfms] Vector -- Jump search [START]\n", time.ElapsedMs());
         for (auto moment : Settings::time_points) {
             int ind = jumpSearchProg(intervalMoments, moment, intervalMoments.size());
             if (ind >= 0)
                 ++timeBins[ind];
         }
         time.Stop();
-        printf("[%.4lfms] Vector -- Jump search [ END ]\n", time.Elapsed());
+        printf("[%.4lfms] Vector -- Jump search [ END ]\n", time.ElapsedMs());
 
         size_t i = 0;
         for (auto &bin : timeBins) {
@@ -640,12 +746,15 @@ int main(int argc, char** argv) {
     for(int runNb = 0; runNb < totalRuns; ++runNb) {
         time.ReInit();
         time.Start();
-        printf("[%.4lfms] Vector -- Calc search [START]\n", time.Elapsed());
+        printf("[%.4lfms] Vector -- Calc search [START]\n", time.ElapsedMs());
         size_t lastIndex = 0;
         size_t u = 0;
         for (auto moment : Settings::time_points) {
             int ind = calcSearch(moment, intervalMoments, Settings::uIntervals);
-            if (ind >= 0) {
+            if(ind >= (int)timeBins.size()){
+                printf("Calc search error: %d >= %zu for %lf (should be %d)\n", ind, timeBins.size(), moment, LookupMomentIndex(moment, intervalMoments));
+            }
+            else if (ind >= 0) {
                 ++timeBins[ind];
                 lastIndex = ind;
             }
@@ -654,7 +763,7 @@ int main(int argc, char** argv) {
         }
 
         time.Stop();
-        printf("[%.4lfms] Vector -- Calc search [ END ]\n", time.Elapsed());
+        printf("[%.4lfms] Vector -- Calc search [ END ]\n", time.ElapsedMs());
         size_t i = 0;
         for (auto &bin : timeBins) {
             printf("%zu<>%zu ", i, timeBins[i]);
@@ -665,16 +774,23 @@ int main(int argc, char** argv) {
         printf("\n");
         std::vector<size_t>(intervalMoments.size(), 0).swap(timeBins);
     }
-    exit(0);
-        //Free some memory
-        Settings::time_points.clear();
-        //std::vector<size_t>(intervalMoments.size(), 0).swap(timeBins);
+
+
+    //Free some memory
+    Settings::time_points.clear();
+    Settings::time_points_wbreak.clear();
+
+    if(!Settings::inputFile.empty()){
         parsePoTWStop(Settings::inputFile, Settings::time_points_wbreak);
+    }
+    else{
+        generatePoTW(1.0e6, 0.0, 100.0, 0.001, 10.0, Settings::time_points_wbreak, 42424242);
+    }
 
     for(int runNb = 0; runNb < totalRuns; ++runNb) {
         time.ReInit();
         time.Start();
-        printf("[%.4lfms] Vector -- Binary search -- Index [START]\n", time.Elapsed());
+        printf("[%.4lfms] Vector -- Binary search -- Index [START]\n", time.ElapsedMs());
         size_t lastIndex = 0;
         for (const auto &particleTrace : Settings::time_points_wbreak) {
             for (const auto moment : particleTrace) {
@@ -687,7 +803,7 @@ int main(int argc, char** argv) {
             lastIndex = 0;
         }
         time.Stop();
-        printf("[%.4lfms] Vector -- Binary search -- Index [ END ]\n", time.Elapsed());
+        printf("[%.4lfms] Vector -- Binary search -- Index [ END ]\n", time.ElapsedMs());
         size_t i = 0;
         for (auto &bin : timeBins) {
             printf("%zu<>%zu ", i, timeBins[i]);
@@ -702,7 +818,7 @@ int main(int argc, char** argv) {
     for(int runNb = 0; runNb < totalRuns; ++runNb) {
         time.ReInit();
         time.Start();
-        printf("[%.4lfms] Vector -- Jump search -- Index [START]\n", time.Elapsed());
+        printf("[%.4lfms] Vector -- Jump search -- Index [START]\n", time.ElapsedMs());
         size_t lastIndex = 0;
         for (const auto &particleTrace : Settings::time_points_wbreak) {
             for (const auto moment : particleTrace) {
@@ -715,7 +831,7 @@ int main(int argc, char** argv) {
             lastIndex = 0;
         }
         time.Stop();
-        printf("[%.4lfms] Vector -- Jump search -- Index [ END ]\n", time.Elapsed());
+        printf("[%.4lfms] Vector -- Jump search -- Index [ END ]\n", time.ElapsedMs());
         size_t i = 0;
         for (auto &bin : timeBins) {
             printf("%zu<>%zu ", i, timeBins[i]);
@@ -730,14 +846,19 @@ int main(int argc, char** argv) {
     //Free some memory
     Settings::time_points_wbreak.clear();
     //std::vector<size_t>(intervalMoments.size(), 0).swap(timeBins);
-    parsePoTWStop2(Settings::inputFile, Settings::time_points, Settings::breakPoints);
+    if(!Settings::inputFile.empty()){
+        parsePoTWStop2(Settings::inputFile, Settings::time_points, Settings::breakPoints);
+    }
+    else{
+        generatePoTW2(1.0e6, 0.0, 100.0, 0.001, 10.0, Settings::time_points, Settings::breakPoints, 42424242);
+    }
 
     for(int i = 0; i<20; ++i)
         printf("Break %d : %zu : %e\n",i,Settings::breakPoints[i], Settings::time_points[i]);
     for(int runNb = 0; runNb < totalRuns; ++runNb) {
         time.ReInit();
         time.Start();
-        printf("[%.4lfms] Vector -- Binary search -- Index2 [START]\n", time.Elapsed());
+        printf("[%.4lfms] Vector -- Binary search -- Index2 [START]\n", time.ElapsedMs());
         size_t lastIndex = 0;
         size_t desNb = 0;
         const size_t total_events = Settings::time_points.size();
@@ -758,7 +879,7 @@ int main(int argc, char** argv) {
         }
         lastIndex = 0;
         time.Stop();
-        printf("[%.4lfms] Vector -- Binary search -- Index2 [ END ]\n", time.Elapsed());
+        printf("[%.4lfms] Vector -- Binary search -- Index2 [ END ]\n", time.ElapsedMs());
         size_t i = 0;
         for (auto &bin : timeBins) {
             printf("%zu<>%zu ", i, timeBins[i]);
