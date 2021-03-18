@@ -27,24 +27,24 @@ namespace MFSim {
 
         bool UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, DWORD timeout);
 
-        void RecordHitOnTexture(const SubprocessFacet *f, double time, bool countHit, double velocity_factor,
+        void RecordHitOnTexture(const SubprocessFacet *f, int m, bool countHit, double velocity_factor,
                                 double ortSpeedFactor);
 
-        void ProfileFacet(const SubprocessFacet *f, double time, bool countHit, double velocity_factor,
+        void ProfileFacet(const SubprocessFacet *f, int m, bool countHit, double velocity_factor,
                           double ortSpeedFactor);
 
         void RecordHit(const int &type);
 
         void RecordLeakPos();
 
-        void IncreaseFacetCounter(const SubprocessFacet *f, double time, size_t hit, size_t desorb, size_t absorb,
+        void IncreaseFacetCounter(const SubprocessFacet *f, int m, size_t hit, size_t desorb, size_t absorb,
                                   double sum_1_per_v, double sum_v_ort);
 
         void UpdateVelocity(const SubprocessFacet *collidedFacet);
 
         void LogHit(SubprocessFacet *f);
 
-        void RecordDirectionVector(const SubprocessFacet *f, double time);
+        void RecordDirectionVector(const SubprocessFacet *f, int m);
 
         void RecordAngleMap(const SubprocessFacet *collidedFacet);
 
@@ -56,7 +56,7 @@ namespace MFSim {
 
         void PerformBounce(SubprocessFacet *iFacet);
 
-        void RecordHistograms(SubprocessFacet *iFacet);
+        void RecordHistograms(SubprocessFacet *iFacet, int m);
 
         bool UpdateHits(GlobalSimuState *globState, ParticleLog *particleLog, size_t timeout);
         bool UpdateLog(ParticleLog *globalLog, size_t timeout);
