@@ -223,19 +223,18 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
 
     std::vector<std::vector<SubprocessFacet*>> facetPointers;
     facetPointers.resize(model.sh.nbSuper);
-    for (size_t s = 0; s < model.sh.nbSuper; ++s) {
-        for(auto& sFac : model.facets){
-            // TODO: Build structures
-            if (sFac.sh.superIdx == -1) { //Facet in all structures
-                for (auto& fp_vec : facetPointers) {
-                    fp_vec.push_back(&sFac);
-                }
-            }
-            else {
-                facetPointers[sFac.sh.superIdx].push_back(&sFac); //Assign to structure
+    for(auto& sFac : model.facets){
+        // TODO: Build structures
+        if (sFac.sh.superIdx == -1) { //Facet in all structures
+            for (auto& fp_vec : facetPointers) {
+                fp_vec.push_back(&sFac);
             }
         }
+        else {
+            facetPointers[sFac.sh.superIdx].push_back(&sFac); //Assign to structure
+        }
     }
+
     // Build all AABBTrees
     size_t maxDepth=0;
     for (size_t s = 0; s < model.sh.nbSuper; ++s) {
