@@ -43,9 +43,9 @@ public:
     Simulation(Simulation&& o) noexcept ;
     virtual ~Simulation() = default;
 
-    int SanityCheckGeom() override;
+    int SanityCheckModel() override;
     void ClearSimulation() override;
-    size_t LoadSimulation(SimulationModel *simModel, char *loadStatus) override;
+    size_t LoadSimulation(char *loadStatus) override;
     void ResetSimulation() override;
 
     size_t GetHitsSize() override;

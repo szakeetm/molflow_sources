@@ -34,8 +34,9 @@ bool Particle::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, DW
         globSimuState.globalHits.distTraveledTotal_fullHitsOnly += tmpState.globalHits.distTraveledTotal_fullHitsOnly;
 
         // Update too late
-        totalDesorbed += tmpState.globalHits.globalHits.hit.nbDesorbed;
-
+        //totalDesorbed += tmpState.globalHits.globalHits.hit.nbDesorbed;
+        totalDesorbed += tmpState.globalHits.globalHits.nbDesorbed;
+        //tmpState.globalHits.globalHits.hit.nbDesorbed = 0;
 
         /*gHits->globalHits.hit.nbMCHit += tmpGlobalResult.globalHits.hit.nbMCHit;
         gHits->globalHits.hit.nbHitEquiv += tmpGlobalResult.globalHits.hit.nbHitEquiv;
@@ -132,13 +133,18 @@ void Particle::PerformTeleport(SubprocessFacet *iFacet) {
         lastHitFacet = iFacet;
         return; //LEAK
     }
+
+    int momentIndex = -1;
+    if ((momentIndex = LookupMomentIndex(particleTime, model->tdParams.moments, lastMomentIndex)) > 0) {
+        lastMomentIndex = momentIndex - 1;
+    }
     // Count this hit as a transparent pass
     if (particleId == 0) RecordHit(HIT_TELEPORTSOURCE);
     if (/*iFacet->texture && */iFacet->sh.countTrans)
-        RecordHitOnTexture(iFacet, particleTime, true, 2.0, 2.0);
+        RecordHitOnTexture(iFacet, momentIndex, true, 2.0, 2.0);
     if (/*iFacet->direction && */iFacet->sh.countDirection)
-        RecordDirectionVector(iFacet, particleTime);
-    ProfileFacet(iFacet, particleTime, true, 2.0, 2.0);
+        RecordDirectionVector(iFacet, momentIndex);
+    ProfileFacet(iFacet, momentIndex, true, 2.0, 2.0);
     if(particleId == 0) LogHit(iFacet);
     if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
 
@@ -180,7 +186,7 @@ void Particle::PerformTeleport(SubprocessFacet *iFacet) {
     /*iFacet->sh.tmpCounter.hit.nbMCHit++;
     iFacet->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity;
     iFacet->sh.tmpCounter.hit.sum_v_ort += 2.0*(model->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
-    IncreaseFacetCounter(iFacet, particleTime, 1, 0, 0, 2.0 / ortVelocity,
+    IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 0, 2.0 / ortVelocity,
                          2.0 * (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
     tmpFacetVars[iFacet->globalId].isHit = true;
     /*destination->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / velocity;
@@ -368,7 +374,7 @@ bool Particle::StartFromSource() {
                         }*/
                         double lookupValue = rndRemainder;
                         int outgLowerIndex = my_lower_bound(lookupValue,
-                                                            f.ogMap.outgassingMap); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
+                                                            f.ogMap.outgassingMap_cdf); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
                         outgLowerIndex++;
                         mapPositionH = (size_t) ((double) outgLowerIndex / (double) f.ogMap.outgassingMapWidth);
                         mapPositionW = (size_t) outgLowerIndex - mapPositionH * f.ogMap.outgassingMapWidth;
@@ -542,7 +548,7 @@ bool Particle::StartFromSource() {
     {
         totalDesorbed++;
     }*/
-    tmpState.globalHits.globalHits.hit.nbDesorbed++;
+    tmpState.globalHits.globalHits.nbDesorbed++;
     //nbPHit = 0;
 
     if (src->sh.isMoving) {
@@ -554,13 +560,18 @@ bool Particle::StartFromSource() {
     /*src->sh.tmpCounter.hit.nbDesorbed++;
     src->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity; //was 2.0 / ortV
     src->sh.tmpCounter.hit.sum_v_ort += (model->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
-    IncreaseFacetCounter(src, particleTime, 0, 1, 0, 2.0 / ortVelocity,
+    int momentIndex = -1;
+    if ((momentIndex = LookupMomentIndex(particleTime, model->tdParams.moments, lastMomentIndex)) > 0) {
+        lastMomentIndex = momentIndex - 1;
+    }
+
+    IncreaseFacetCounter(src, momentIndex, 0, 1, 0, 2.0 / ortVelocity,
                          (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
     //Desorption doesn't contribute to angular profiles, nor to angle maps
-    ProfileFacet(src, particleTime, false, 2.0, 1.0); //was 2.0, 1.0
+    ProfileFacet(src, momentIndex, false, 2.0, 1.0); //was 2.0, 1.0
     if(particleId == 0) LogHit(src);
     if (/*src->texture && */src->sh.countDes)
-        RecordHitOnTexture(src, particleTime, true, 2.0, 1.0); //was 2.0, 1.0
+        RecordHitOnTexture(src, momentIndex, true, 2.0, 1.0); //was 2.0, 1.0
     //if (src->direction && src->sh.countDirection) RecordDirectionVector(src, particleTime);
 
     // Reset volatile state
@@ -583,12 +594,17 @@ bool Particle::StartFromSource() {
 void Particle::PerformBounce(SubprocessFacet *iFacet) {
 
     bool revert = false;
-    tmpState.globalHits.globalHits.hit.nbMCHit++; //global
-    tmpState.globalHits.globalHits.hit.nbHitEquiv += oriRatio;
+    tmpState.globalHits.globalHits.nbMCHit++; //global
+    tmpState.globalHits.globalHits.nbHitEquiv += oriRatio;
 
     // Handle super structure link facet. Can be
     if (iFacet->sh.superDest) {
-        IncreaseFacetCounter(iFacet, particleTime, 1, 0, 0, 0, 0);
+        int momentIndex = -1;
+        if ((momentIndex = LookupMomentIndex(particleTime, model->tdParams.moments, lastMomentIndex)) > 0) {
+            lastMomentIndex = momentIndex - 1;
+        }
+
+        IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 0, 0, 0);
         structureId = iFacet->sh.superDest - 1;
         if (iFacet->sh.isMoving) { //A very special case where link facets can be used as transparent but moving facets
             if (particleId == 0)RecordHit(HIT_MOVING);
@@ -598,12 +614,13 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
             if (particleId == 0)RecordHit(HIT_TRANS);
         }
         if(particleId == 0) LogHit(iFacet);
-        ProfileFacet(iFacet, particleTime, true, 2.0, 2.0);
+
+        ProfileFacet(iFacet, momentIndex, true, 2.0, 2.0);
         if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
         if (/*iFacet->texture &&*/ iFacet->sh.countTrans)
-            RecordHitOnTexture(iFacet, particleTime, true, 2.0, 2.0);
+            RecordHitOnTexture(iFacet, momentIndex, true, 2.0, 2.0);
         if (/*iFacet->direction &&*/ iFacet->sh.countDirection)
-            RecordDirectionVector(iFacet, particleTime);
+            RecordDirectionVector(iFacet, momentIndex);
 
         return;
 
@@ -611,16 +628,20 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
 
     // Handle volatile facet
     if (iFacet->sh.isVolatile) {
-
         if (iFacet->isReady) {
-            IncreaseFacetCounter(iFacet, particleTime, 0, 0, 1, 0, 0);
+            int momentIndex = -1;
+            if ((momentIndex = LookupMomentIndex(particleTime, model->tdParams.moments, lastMomentIndex)) > 0) {
+                lastMomentIndex = momentIndex - 1;
+            }
+
+            IncreaseFacetCounter(iFacet, momentIndex, 0, 0, 1, 0, 0);
             iFacet->isReady = false;
             if(particleId == 0) LogHit(iFacet);
-            ProfileFacet(iFacet, particleTime, true, 2.0, 1.0);
+            ProfileFacet(iFacet, momentIndex, true, 2.0, 1.0);
             if (/*iFacet->texture && */iFacet->sh.countAbs)
-                RecordHitOnTexture(iFacet, particleTime, true, 2.0, 1.0);
+                RecordHitOnTexture(iFacet, momentIndex, true, 2.0, 1.0);
             if (/*iFacet->direction && */iFacet->sh.countDirection)
-                RecordDirectionVector(iFacet, particleTime);
+                RecordDirectionVector(iFacet, momentIndex);
         }
         return;
 
@@ -642,15 +663,20 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
     iFacet->sh.tmpCounter.hit.sum_1_per_ort_velocity += 1.0 / ortVelocity;
     iFacet->sh.tmpCounter.hit.sum_v_ort += (model->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
 
-    IncreaseFacetCounter(iFacet, particleTime, 1, 0, 0, 1.0 / ortVelocity,
+    int momentIndex = -1;
+    if ((momentIndex = LookupMomentIndex(particleTime, model->tdParams.moments, lastMomentIndex)) > 0) {
+        lastMomentIndex = momentIndex - 1;
+    }
+
+    IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 0, 1.0 / ortVelocity,
                          (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
     nbBounces++;
     if (/*iFacet->texture &&*/ iFacet->sh.countRefl)
-        RecordHitOnTexture(iFacet, particleTime, true, 1.0, 1.0);
+        RecordHitOnTexture(iFacet, momentIndex, true, 1.0, 1.0);
     if (/*iFacet->direction &&*/ iFacet->sh.countDirection)
-        RecordDirectionVector(iFacet, particleTime);
+        RecordDirectionVector(iFacet, momentIndex);
     if(particleId == 0) LogHit(iFacet);
-    ProfileFacet(iFacet, particleTime, true, 1.0, 1.0);
+    ProfileFacet(iFacet, momentIndex, true, 1.0, 1.0);
     if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
 
     // Relaunch particle
@@ -697,12 +723,12 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
 
     /*iFacet->sh.tmpCounter.hit.sum_1_per_ort_velocity += 1.0 / ortVelocity;
     iFacet->sh.tmpCounter.hit.sum_v_ort += (model->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
-    IncreaseFacetCounter(iFacet, particleTime, 0, 0, 0, 1.0 / ortVelocity,
+    IncreaseFacetCounter(iFacet, momentIndex, 0, 0, 0, 1.0 / ortVelocity,
                          (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
     if (/*iFacet->texture &&*/ iFacet->sh.countRefl)
-        RecordHitOnTexture(iFacet, particleTime, false, 1.0,
+        RecordHitOnTexture(iFacet, momentIndex, false, 1.0,
                            1.0); //count again for outward velocity
-    ProfileFacet(iFacet, particleTime, false, 1.0, 1.0);
+    ProfileFacet(iFacet, momentIndex, false, 1.0, 1.0);
     //no direction count on outgoing, neither angle map
 
     if (iFacet->sh.isMoving && model->wp.motionType) {
@@ -731,27 +757,32 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
 }*/
 
 void Particle::RecordAbsorb(SubprocessFacet *iFacet) {
-    tmpState.globalHits.globalHits.hit.nbMCHit++; //global
-    tmpState.globalHits.globalHits.hit.nbHitEquiv += oriRatio;
-    tmpState.globalHits.globalHits.hit.nbAbsEquiv += oriRatio;
+    tmpState.globalHits.globalHits.nbMCHit++; //global
+    tmpState.globalHits.globalHits.nbHitEquiv += oriRatio;
+    tmpState.globalHits.globalHits.nbAbsEquiv += oriRatio;
 
-    RecordHistograms(iFacet);
+    int momentIndex = -1;
+    if ((momentIndex = LookupMomentIndex(particleTime, model->tdParams.moments, lastMomentIndex)) > 0) {
+        lastMomentIndex = momentIndex - 1;
+    }
+
+    RecordHistograms(iFacet, momentIndex);
 
     if (particleId == 0) RecordHit(HIT_ABS);
     double ortVelocity =
             velocity * std::abs(Dot(direction, iFacet->sh.N));
-    IncreaseFacetCounter(iFacet, particleTime, 1, 0, 1, 2.0 / ortVelocity,
+    IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 1, 2.0 / ortVelocity,
                          (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
     if(particleId == 0) LogHit(iFacet);
-    ProfileFacet(iFacet, particleTime, true, 2.0, 1.0); //was 2.0, 1.0
+    ProfileFacet(iFacet, momentIndex, true, 2.0, 1.0); //was 2.0, 1.0
     if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
     if (/*iFacet->texture &&*/ iFacet->sh.countAbs)
-        RecordHitOnTexture(iFacet, particleTime, true, 2.0, 1.0); //was 2.0, 1.0
+        RecordHitOnTexture(iFacet, momentIndex, true, 2.0, 1.0); //was 2.0, 1.0
     if (/*iFacet->direction &&*/ iFacet->sh.countDirection)
-        RecordDirectionVector(iFacet, particleTime);
+        RecordDirectionVector(iFacet, momentIndex);
 }
 
-void Particle::RecordHistograms(SubprocessFacet *iFacet) {
+void Particle::RecordHistograms(SubprocessFacet *iFacet, int m) {
     //Record in global and facet histograms
     size_t binIndex;
 
@@ -760,52 +791,49 @@ void Particle::RecordHistograms(SubprocessFacet *iFacet) {
     auto &globHistParams = model->wp.globalHistogramParams;
     auto &facHistParams = iFacet->sh.facetHistogramParams;
 
-    int moments[2] = {0, -1};
-    moments[1] = LookupMomentIndex(particleTime, model->tdParams.moments,
-                                   lastMomentIndex);
-    for (auto &m : moments) {
-        if (m < 0) return;
+    for (const int moment : {0, m}) {
+        if (moment < 0) return;
 
         if (globHistParams.recordBounce) {
             binIndex = Min(nbBounces / globHistParams.nbBounceBinsize,
                            globHistParams.GetBounceHistogramSize() - 1);
-            tmpGlobalHistograms[m].nbHitsHistogram[binIndex] += oriRatio;
+            tmpGlobalHistograms[moment].nbHitsHistogram[binIndex] += oriRatio;
         }
         if (globHistParams.recordDistance) {
             binIndex = Min(static_cast<size_t>(distanceTraveled /
                                                globHistParams.distanceBinsize),
                            globHistParams.GetDistanceHistogramSize() - 1);
-            tmpGlobalHistograms[m].distanceHistogram[binIndex] += oriRatio;
+            tmpGlobalHistograms[moment].distanceHistogram[binIndex] += oriRatio;
         }
         if (globHistParams.recordTime) {
             binIndex = Min(static_cast<size_t>((particleTime - generationTime) /
                                                globHistParams.timeBinsize),
                            globHistParams.GetTimeHistogramSize() - 1);
-            tmpGlobalHistograms[m].timeHistogram[binIndex] += oriRatio;
+            tmpGlobalHistograms[moment].timeHistogram[binIndex] += oriRatio;
         }
         if (facHistParams.recordBounce) {
             binIndex = Min(nbBounces / facHistParams.nbBounceBinsize,
                            facHistParams.GetBounceHistogramSize() - 1);
-            facetHistogram[m].histogram.nbHitsHistogram[binIndex] += oriRatio;
+            facetHistogram[moment].histogram.nbHitsHistogram[binIndex] += oriRatio;
         }
         if (facHistParams.recordDistance) {
             binIndex = Min(static_cast<size_t>(distanceTraveled /
                                                facHistParams.distanceBinsize),
                            facHistParams.GetDistanceHistogramSize() - 1);
-            facetHistogram[m].histogram.distanceHistogram[binIndex] += oriRatio;
+            facetHistogram[moment].histogram.distanceHistogram[binIndex] += oriRatio;
         }
         if (facHistParams.recordTime) {
             binIndex = Min(static_cast<size_t>((particleTime - generationTime) /
                                                facHistParams.timeBinsize),
                            facHistParams.GetTimeHistogramSize() - 1);
-            facetHistogram[m].histogram.timeHistogram[binIndex] += oriRatio;
+            facetHistogram[moment].histogram.timeHistogram[binIndex] += oriRatio;
         }
     }
 }
 
 void
-Particle::RecordHitOnTexture(const SubprocessFacet *f, double time, bool countHit, double velocity_factor,
-                                          double ortSpeedFactor) {
+Particle::RecordHitOnTexture(const SubprocessFacet *f, int m, bool countHit, double velocity_factor,
+                             double ortSpeedFactor) {
 
     size_t tu = (size_t) (tmpFacetVars[f->globalId].colU * f->sh.texWidthD);
     size_t tv = (size_t) (tmpFacetVars[f->globalId].colV * f->sh.texHeightD);
@@ -822,9 +850,7 @@ Particle::RecordHitOnTexture(const SubprocessFacet *f, double time, bool countHi
         texture.sum_v_ort_per_area += oriRatio * ortSpeedFactor * ortVelocity *
                                       f->textureCellIncrements[add]; // sum ortho_velocity[m/s] / cell_area[cm2]
     }
-    int m = -1;
-    if ((m = LookupMomentIndex(time, model->tdParams.moments, lastMomentIndex)) > 0) {
-        lastMomentIndex = m - 1;
+    if (m > 0) {
         TextureCell &texture = tmpState.facetStates[f->globalId].momentResults[m].texture[add];
         if (countHit) texture.countEquiv += oriRatio;
         texture.sum_1_per_ort_velocity +=
@@ -834,7 +860,7 @@ Particle::RecordHitOnTexture(const SubprocessFacet *f, double time, bool countHi
     }
 }
 
-void Particle::RecordDirectionVector(const SubprocessFacet *f, double time) {
+void Particle::RecordDirectionVector(const SubprocessFacet *f, int m) {
     size_t tu = (size_t) (tmpFacetVars[f->globalId].colU * f->sh.texWidthD);
     size_t tv = (size_t) (tmpFacetVars[f->globalId].colV * f->sh.texHeightD);
     size_t add = tu + tv * (f->sh.texWidth);
@@ -844,8 +870,7 @@ void Particle::RecordDirectionVector(const SubprocessFacet *f, double time) {
         dirCell.dir += oriRatio * direction * velocity;
         dirCell.count++;
     }
-    int m = -1;
-    if ((m = LookupMomentIndex(time, model->tdParams.moments, lastMomentIndex)) > 0) {
+    if (m > 0) {
         lastMomentIndex = m - 1;
         DirectionCell &dirCell = tmpState.facetStates[f->globalId].momentResults[m].direction[add];
         dirCell.dir += oriRatio * direction * velocity;
@@ -855,11 +880,10 @@ void Particle::RecordDirectionVector(const SubprocessFacet *f, double time) {
 }
 
 void
-Particle::ProfileFacet(const SubprocessFacet *f, double time, bool countHit, double velocity_factor,
-                                    double ortSpeedFactor) {
+Particle::ProfileFacet(const SubprocessFacet *f, int m, bool countHit, double velocity_factor,
+                       double ortSpeedFactor) {
 
     size_t nbMoments = model->tdParams.moments.size();
-    int m = LookupMomentIndex(time, model->tdParams.moments, lastMomentIndex);
     if (countHit && f->sh.profileType == PROFILE_ANGULAR) {
         double dot = Dot(f->sh.N, direction);
         double theta = std::acos(std::abs(dot));     // Angle to normal (PI/2 => PI)
@@ -868,7 +892,6 @@ Particle::ProfileFacet(const SubprocessFacet *f, double time, bool countHit, dou
 
         tmpState.facetStates[f->globalId].momentResults[0].profile[pos].countEquiv += oriRatio;
         if (m > 0) {
-            lastMomentIndex = m - 1;
             tmpState.facetStates[f->globalId].momentResults[m].profile[pos].countEquiv += oriRatio;
         }
     } else if (f->sh.profileType == PROFILE_U || f->sh.profileType == PROFILE_V) {
@@ -887,7 +910,6 @@ Particle::ProfileFacet(const SubprocessFacet *f, double time, bool countHit, dou
                                      (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity;
             }
             if (m > 0) {
-                lastMomentIndex = m - 1;
                 ProfileSlice &profile = tmpState.facetStates[f->globalId].momentResults[m].profile[pos];
                 if (countHit) profile.countEquiv += oriRatio;
                 double ortVelocity = velocity *
@@ -913,7 +935,6 @@ Particle::ProfileFacet(const SubprocessFacet *f, double time, bool countHit, dou
         if (pos >= 0 && pos < PROFILE_SIZE) {
             tmpState.facetStates[f->globalId].momentResults[0].profile[pos].countEquiv += oriRatio;
             if (m > 0) {
-                lastMomentIndex = m - 1;
                 tmpState.facetStates[f->globalId].momentResults[m].profile[pos].countEquiv += oriRatio;
             }
         }
@@ -1021,56 +1042,56 @@ double Particle::GenerateDesorptionTime(const SubprocessFacet *src, const double
 * \param sum_v_ort orthogonal momentum change to add
 */
 void
-Particle::IncreaseFacetCounter(const SubprocessFacet *f, double time, size_t hit, size_t desorb,
-                                            size_t absorb,
-                                            double sum_1_per_v, double sum_v_ort) {
+Particle::IncreaseFacetCounter(const SubprocessFacet *f, int m, size_t hit, size_t desorb,
+                               size_t absorb,
+                               double sum_1_per_v, double sum_v_ort) {
     const double hitEquiv = static_cast<double>(hit) * oriRatio;
     {
         FacetHitBuffer &hits = tmpState.facetStates[f->globalId].momentResults[0].hits;
-        hits.hit.nbMCHit += hit;
-        hits.hit.nbHitEquiv += hitEquiv;
-        hits.hit.nbDesorbed += desorb;
-        hits.hit.nbAbsEquiv += static_cast<double>(absorb) * oriRatio;
-        hits.hit.sum_1_per_ort_velocity += oriRatio * sum_1_per_v;
-        hits.hit.sum_v_ort += oriRatio * sum_v_ort;
-        hits.hit.sum_1_per_velocity += (hitEquiv + static_cast<double>(desorb)) / velocity;
+        hits.nbMCHit += hit;
+        hits.nbHitEquiv += hitEquiv;
+        hits.nbDesorbed += desorb;
+        hits.nbAbsEquiv += static_cast<double>(absorb) * oriRatio;
+        hits.sum_1_per_ort_velocity += oriRatio * sum_1_per_v;
+        hits.sum_v_ort += oriRatio * sum_v_ort;
+        hits.sum_1_per_velocity += (hitEquiv + static_cast<double>(desorb)) / velocity;
     }
-    int m = -1;
-    if ((m = LookupMomentIndex(time, model->tdParams.moments, lastMomentIndex)) > 0) {
-        lastMomentIndex = m - 1;
+    if (m > 0) {
         FacetHitBuffer &hits = tmpState.facetStates[f->globalId].momentResults[m].hits;
-        hits.hit.nbMCHit += hit;
-        hits.hit.nbHitEquiv += hitEquiv;
-        hits.hit.nbDesorbed += desorb;
-        hits.hit.nbAbsEquiv += static_cast<double>(absorb) * oriRatio;
-        hits.hit.sum_1_per_ort_velocity += oriRatio * sum_1_per_v;
-        hits.hit.sum_v_ort += oriRatio * sum_v_ort;
-        hits.hit.sum_1_per_velocity += (hitEquiv + static_cast<double>(desorb)) / velocity;
+        hits.nbMCHit += hit;
+        hits.nbHitEquiv += hitEquiv;
+        hits.nbDesorbed += desorb;
+        hits.nbAbsEquiv += static_cast<double>(absorb) * oriRatio;
+        hits.sum_1_per_ort_velocity += oriRatio * sum_1_per_v;
+        hits.sum_v_ort += oriRatio * sum_v_ort;
+        hits.sum_1_per_velocity += (hitEquiv + static_cast<double>(desorb)) / velocity;
     }
 }
 
 void Particle::RegisterTransparentPass(SubprocessFacet *facet) {
     double directionFactor = std::abs(Dot(direction, facet->sh.N));
-    IncreaseFacetCounter(facet, particleTime +
-                                tmpFacetVars[facet->globalId].colDistTranspPass / 100.0 / velocity, 1, 0, 0,
+
+    int momentIndex = -1;
+    if ((momentIndex = LookupMomentIndex(particleTime +
+                                         tmpFacetVars[facet->globalId].colDistTranspPass / 100.0 / velocity, model->tdParams.moments, lastMomentIndex)) > 0) {
+        lastMomentIndex = momentIndex - 1;
+    }
+
+    IncreaseFacetCounter(facet, momentIndex, 1, 0, 0,
                          2.0 / (velocity * directionFactor),
                          2.0 * (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * velocity *
                          directionFactor);
 
     tmpFacetVars[facet->globalId].isHit = true;
     if (/*facet->texture &&*/ facet->sh.countTrans) {
-        RecordHitOnTexture(facet, particleTime +
-                                  tmpFacetVars[facet->globalId].colDistTranspPass / 100.0 / velocity,
+        RecordHitOnTexture(facet, momentIndex,
                            true, 2.0, 2.0);
     }
     if (/*facet->direction &&*/ facet->sh.countDirection) {
-        RecordDirectionVector(facet, particleTime +
-                                     tmpFacetVars[facet->globalId].colDistTranspPass / 100.0 / velocity);
+        RecordDirectionVector(facet, momentIndex);
     }
     if(particleId == 0) LogHit(facet);
-    ProfileFacet(facet, particleTime +
-                        tmpFacetVars[facet->globalId].colDistTranspPass / 100.0 /
-                        velocity,
+    ProfileFacet(facet, momentIndex,
                  true, 2.0, 2.0);
     if (facet->sh.anglemapParams.record) RecordAngleMap(facet);
 }
@@ -1104,11 +1125,15 @@ bool Particle::UpdateHits(GlobalSimuState *globState, ParticleLog *particleLog, 
     /*if(!globState) return false; // checked before simulation start */
 
     bool lastHitUpdateOK = UpdateMCHits(*globState, model->tdParams.moments.size(), timeout);
+    /*totalDesorbed += tmpState.globalHits.globalHits.hit.nbDesorbed;
+    tmpState.globalHits.globalHits.hit.nbDesorbed = 0;*/
+
     // only 1 , so no reduce necessary
     if (particleLog) UpdateLog(particleLog, timeout);
 
     // At last delete tmpCache
-    tmpState.Reset();
+    if(lastHitUpdateOK) tmpState.Reset();
+
     //ResetTmpCounters();
     // only reset buffers 1..N-1
     // 0 = global buffer for reduce

@@ -764,9 +764,9 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 		useOutgMapE = useOutgMapE && (f0->sh.useOutgassingFile == f->sh.useOutgassingFile);
 		dynOutgEqual = dynOutgEqual && IsEqual(f0->sh.totalOutgassing, f->sh.totalOutgassing);
 		dynOutgAEqual = dynOutgAEqual && IsEqual(f0->sh.totalOutgassing / f0Area, f->sh.totalOutgassing / fArea);
-		yieldEqual = yieldEqual && IsEqual(f0->sh.totalOutgassing / f0->sh.temperature / f0->totalFlux, f->sh.totalOutgassing / f->sh.temperature / f->totalFlux);
-		fluxAEqual = fluxAEqual && IsEqual(f0->totalFlux / f0Area, f->totalFlux / fArea);
-		doseAEqual = doseAEqual && IsEqual(f0->totalDose / f0Area, f->totalDose / fArea);
+		yieldEqual = yieldEqual && IsEqual(f0->sh.totalOutgassing / f0->sh.temperature / f0->ogMap.totalFlux, f->sh.totalOutgassing / f->sh.temperature / f->ogMap.totalFlux);
+		fluxAEqual = fluxAEqual && IsEqual(f0->ogMap.totalFlux / f0Area, f->ogMap.totalFlux / fArea);
+		doseAEqual = doseAEqual && IsEqual(f0->ogMap.totalDose / f0Area, f->ogMap.totalDose / fArea);
 		isMovingE = isMovingE && (f0->sh.isMoving == f->sh.isMoving);
 		hasSojournE = hasSojournE && (f0->sh.enableSojournTime == f->sh.enableSojournTime);
 		sojournFreqE = sojournFreqE && IsEqual(f0->sh.sojournFreq, f->sh.sojournFreq);
@@ -909,11 +909,11 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 				facetUseDesFile->SetSelectedValue("...");
 			}
 			char tmp[64];
-			if (fluxAEqual) sprintf(tmp, "%.2E", f0->totalFlux / f0->sh.area); else sprintf(tmp, "...");
+			if (fluxAEqual) sprintf(tmp, "%.2E", f0->ogMap.totalFlux / f0->sh.area); else sprintf(tmp, "...");
 			fileFluxText->SetText(tmp);
-			if (doseAEqual) sprintf(tmp, "%.2E", f0->totalDose / f0->sh.area); else sprintf(tmp, "...");
+			if (doseAEqual) sprintf(tmp, "%.2E", f0->ogMap.totalDose / f0->sh.area); else sprintf(tmp, "...");
 			fileDoseText->SetText(tmp);
-			if (yieldEqual) sprintf(tmp, "%.2E", f0->sh.totalOutgassing / (1.38E-23*f0->sh.temperature) / f0->totalFlux); else sprintf(tmp, "...");
+			if (yieldEqual) sprintf(tmp, "%.2E", f0->sh.totalOutgassing / (1.38E-23*f0->sh.temperature) / f0->ogMap.totalFlux); else sprintf(tmp, "...");
 			fileYieldText->SetText(tmp);
 			if (useOutgMapE) {
 				mApp->facetFlow->SetEditable(!f0->sh.useOutgassingFile);

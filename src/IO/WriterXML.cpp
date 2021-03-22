@@ -199,10 +199,10 @@ bool WriterXML::SaveSimulationState(xml_document &saveDoc, SimulationModel *mode
             xml_node globalNode = newMoment.append_child("Global");
 
             xml_node hitsNode = globalNode.append_child("Hits");
-            hitsNode.append_attribute("totalHit") = globState.globalHits.globalHits.hit.nbMCHit;
-            hitsNode.append_attribute("totalHitEquiv") = globState.globalHits.globalHits.hit.nbHitEquiv;
-            hitsNode.append_attribute("totalDes") = globState.globalHits.globalHits.hit.nbDesorbed;
-            hitsNode.append_attribute("totalAbsEquiv") = globState.globalHits.globalHits.hit.nbAbsEquiv;
+            hitsNode.append_attribute("totalHit") = globState.globalHits.globalHits.nbMCHit;
+            hitsNode.append_attribute("totalHitEquiv") = globState.globalHits.globalHits.nbHitEquiv;
+            hitsNode.append_attribute("totalDes") = globState.globalHits.globalHits.nbDesorbed;
+            hitsNode.append_attribute("totalAbsEquiv") = globState.globalHits.globalHits.nbAbsEquiv;
             hitsNode.append_attribute("totalDist_total") = globState.globalHits.distTraveled_total;
             hitsNode.append_attribute("totalDist_fullHitsOnly") = globState.globalHits.distTraveledTotal_fullHitsOnly;
             hitsNode.append_attribute("totalLeak") = globState.globalHits.nbLeakTotal;
@@ -307,13 +307,13 @@ bool WriterXML::SaveSimulationState(xml_document &saveDoc, SimulationModel *mode
             //FacetHitBuffer* facetCounter = (FacetHitBuffer *)(buffer + sFac.sh.hitOffset + m * sizeof(FacetHitBuffer));
             const auto &facetCounter = globState.facetStates[sFac.globalId].momentResults[m].hits;
 
-            facetHitNode.append_attribute("nbHit") = facetCounter.hit.nbMCHit;
-            facetHitNode.append_attribute("nbHitEquiv") = facetCounter.hit.nbHitEquiv;
-            facetHitNode.append_attribute("nbDes") = facetCounter.hit.nbDesorbed;
-            facetHitNode.append_attribute("nbAbsEquiv") = facetCounter.hit.nbAbsEquiv;
-            facetHitNode.append_attribute("sum_v_ort") = facetCounter.hit.sum_v_ort;
-            facetHitNode.append_attribute("sum_1_per_v") = facetCounter.hit.sum_1_per_ort_velocity;
-            facetHitNode.append_attribute("sum_v") = facetCounter.hit.sum_1_per_velocity;
+            facetHitNode.append_attribute("nbHit") = facetCounter.nbMCHit;
+            facetHitNode.append_attribute("nbHitEquiv") = facetCounter.nbHitEquiv;
+            facetHitNode.append_attribute("nbDes") = facetCounter.nbDesorbed;
+            facetHitNode.append_attribute("nbAbsEquiv") = facetCounter.nbAbsEquiv;
+            facetHitNode.append_attribute("sum_v_ort") = facetCounter.sum_v_ort;
+            facetHitNode.append_attribute("sum_1_per_v") = facetCounter.sum_1_per_ort_velocity;
+            facetHitNode.append_attribute("sum_v") = facetCounter.sum_1_per_velocity;
 
             if (sFac.sh.isProfile) {
                 xml_node profileNode = newFacetResult.append_child("Profile");
@@ -600,9 +600,9 @@ void WriterXML::SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
         textureNode.append_attribute("width") = facet->ogMap.outgassingMapWidth;
         textureNode.append_attribute("height") = facet->ogMap.outgassingMapHeight;
         textureNode.append_attribute("ratio") = facet->ogMap.outgassingFileRatio;
-        //textureNode.append_attribute("totalDose") = facet->totalDose;
+        textureNode.append_attribute("totalDose") = facet->ogMap.totalDose;
         textureNode.append_attribute("totalOutgassing") = facet->sh.totalOutgassing;
-        //textureNode.append_attribute("totalFlux") = facet->totalFlux;
+        textureNode.append_attribute("totalFlux") = facet->ogMap.totalFlux;
 
         std::stringstream outgText;
         outgText << std::setprecision(8);

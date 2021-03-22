@@ -85,12 +85,18 @@ class IntegratedDesorption : public Distribution2D {
 };
 
 struct OutgassingMap {
+    OutgassingMap() = default;
     size_t   outgassingMapWidth; //rounded up outgassing file map width
     size_t   outgassingMapHeight; //rounded up outgassing file map height
     double outgassingMapWidthD; //actual outgassing file map width
     double outgassingMapHeightD; //actual outgassing file map height
     double outgassingFileRatio; //desorption file's sample/unit ratio
+    std::vector<double>   outgassingMap_cdf; // Cumulative outgassing map when desorption is based on imported file
     std::vector<double>   outgassingMap; // Cumulative outgassing map when desorption is based on imported file
+
+    // Analytic properties
+    double totalDose;
+    double totalFlux;
 };
 
 // Density/Hit field stuff
@@ -133,29 +139,13 @@ public:
 
 //Texture limit types
 typedef struct {
-	double all;
+	double steady_state;
 	double moments_only;
-    template<class Archive>
-    void serialize(Archive & archive)
-    {
-        archive(
-                all,
-                moments_only
-        );
-    }
 } TEXTURE_MOMENT_TYPE;
 
 typedef struct {
 	TEXTURE_MOMENT_TYPE min;
 	TEXTURE_MOMENT_TYPE max;
-    template<class Archive>
-    void serialize(Archive & archive)
-    {
-        archive(
-                min,
-                max
-        );
-    }
 } TEXTURE_MIN_MAX;
 
 typedef struct {

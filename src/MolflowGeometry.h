@@ -85,7 +85,7 @@ public:
 
 	// Texture scaling
 	//TEXTURE_SCALE_TYPE texture_limits[3];   // Min/max values for texture scaling: Pressure/Impingement rate/Density
-	bool  texAutoScaleIncludeConstantFlow;  // Include constant flow when calculating autoscale values
+	short  texAutoScaleIncludeConstantFlow;  // Include constant flow when calculating autoscale values: 1 include, 0 moments only, 2 constant flow only
 
 	
 

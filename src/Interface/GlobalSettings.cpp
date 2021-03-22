@@ -241,6 +241,11 @@ GlobalSettings::GlobalSettings(Worker *w) :GLWindow() {
 	coreLabel->SetBounds(10, hD - 74, 120, 19);
 	panel3->Add(coreLabel);
 
+    prioToggle = new GLToggle(0, "Enable High Priority mode (can cause GUI lag)");
+    prioToggle->SetBounds(170, hD - 74, 240, 19);
+    prioToggle->SetState(0);
+    panel3->Add(prioToggle);
+
 	auto *l1 = new GLLabel("Number of subprocesses:");
 	l1->SetBounds(10, hD - 49, 120, 19);
 	panel3->Add(l1);
@@ -599,7 +604,10 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 			halfLifeText->SetEditable(enableDecay->GetState());
 		} else if (src == lowFluxToggle) {
 			cutoffText->SetEditable(lowFluxToggle->GetState());
-		}
+		} else if (src == prioToggle) {
+            //prioToggle->SetState(prioToggle->GetState() ? 0 : 1);
+            worker->ChangePriority(prioToggle->GetState());
+        }
 		break;
 
     default:

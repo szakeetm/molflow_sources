@@ -70,23 +70,27 @@ void MolflowGeometry::BuildFacetTextures(GlobalSimuState &globState, bool render
 	if (renderRegularTexture) {
         {
 		    const GlobalHitBuffer& globHit = globState.globalHits;
-			dCoef_custom[0] = 1E4 / (double)globHit.globalHits.hit.nbDesorbed * mApp->worker.model.wp.gasMass / 1000 / 6E23*0.0100; //multiplied by timecorr*sum_v_ort_per_area: pressure
-			dCoef_custom[1] = 1E4 / (double)globHit.globalHits.hit.nbDesorbed;
-			dCoef_custom[2] = 1E4 / (double)globHit.globalHits.hit.nbDesorbed;
+			dCoef_custom[0] = 1E4 / (double)globHit.globalHits.nbDesorbed * mApp->worker.model.wp.gasMass / 1000 / 6E23*0.0100; //multiplied by timecorr*sum_v_ort_per_area: pressure
+			dCoef_custom[1] = 1E4 / (double)globHit.globalHits.nbDesorbed;
+			dCoef_custom[2] = 1E4 / (double)globHit.globalHits.nbDesorbed;
 			timeCorrection = (mApp->worker.displayedMoment == 0) ? mApp->worker.model.wp.finalOutgassingRate : mApp->worker.model.wp.totalDesorbedMolecules / mApp->worker.moments[mApp->worker.displayedMoment - 1].second;
 		}
 
 		if (!texAutoScale) { //manual values
-			min = texture_limits[textureMode].manual.min.all;
-			max = texture_limits[textureMode].manual.max.all;
+			min = texture_limits[textureMode].manual.min.steady_state;
+			max = texture_limits[textureMode].manual.max.steady_state;
 		}
 		else { //autoscale
-			min = texAutoScaleIncludeConstantFlow ?
-				texture_limits[textureMode].autoscale.min.all
-				: texture_limits[textureMode].autoscale.min.moments_only;
-			max = texAutoScaleIncludeConstantFlow ?
-				texture_limits[textureMode].autoscale.max.all
-				: texture_limits[textureMode].autoscale.max.moments_only;
+            if(texAutoScaleIncludeConstantFlow == 0){
+                min = texture_limits[textureMode].autoscale.min.moments_only;
+                max = texture_limits[textureMode].autoscale.max.moments_only;
+            } else if(texAutoScaleIncludeConstantFlow == 1){
+                min = std::min(texture_limits[textureMode].autoscale.min.steady_state, texture_limits[textureMode].autoscale.min.moments_only);
+                max = std::max(texture_limits[textureMode].autoscale.max.steady_state, texture_limits[textureMode].autoscale.max.moments_only);
+            } else { // == 2
+                min = texture_limits[textureMode].autoscale.min.steady_state;
+                max = texture_limits[textureMode].autoscale.max.steady_state;
+            }
 		}
 	}
 

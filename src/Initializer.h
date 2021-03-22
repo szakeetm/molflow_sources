@@ -34,6 +34,8 @@ public:
     static std::string getAutosaveFile();
     static int init(int argc, char **argv, SimulationManager *simManager, SimulationModel *model,
                     GlobalSimuState *globState);
+
+    static int initSimUnit(SimulationManager *simManager, SimulationModel *model, GlobalSimuState *globState);
 };
 
 

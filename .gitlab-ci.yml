@@ -5,8 +5,8 @@ variables:
 stages:
   - prepare
   - build
-  - test
   - build-artifact
+  - test
   - optional-artifact
 
 prepare_job:

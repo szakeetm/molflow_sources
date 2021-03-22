@@ -35,7 +35,7 @@ namespace FlowIO {
         SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices);
 
         UserInput uInput;
-        double writeProgress;
+        double writeProgress{0.0};
 
         void reportWriteStatus(const std::string &statusString) const;
 
