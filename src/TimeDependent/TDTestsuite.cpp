@@ -366,7 +366,9 @@ int calcSearch(double key, const std::vector<Moment>& moments, const std::vector
     int start = -1; // TODO: ....
     //size_t indexOffset = 0;
 
-    //int controlIndex = LookupMomentIndex(key, moments);
+#ifdef DEBUG
+    int controlIndex = LookupMomentIndex(key, moments);
+#endif
     for(auto& uMom : userMoments){
         //printf("Parsed %e , %e , %e\n", uMom.start, uMom.interval, uMom.end);
         const double halfTimeWindow = uMom.timeWindow * 0.5;
@@ -375,7 +377,7 @@ int calcSearch(double key, const std::vector<Moment>& moments, const std::vector
 
             if(key >= uMom.start - halfTimeWindow){
                 // found it
-                const double nbMoments = std::round((uMom.end - uMom.start) / uMom.interval);
+                const double nbMoments = std::floor((uMom.end - uMom.start + 1e-3) / uMom.interval);
                 start = std::min(((key - uMom.start + halfTimeWindow) / uMom.interval), nbMoments); // can go above limits on edge values
                 //printf("[%e] Potential find at start %d (%d) [%e , %e] [[%e , %e]] [[[%e , %e]]]\n", key, start, nbMoments, moments[start].first, moments[start].second, uMom.start, uMom.end, uMom.start - uMom.timeWindow * 0.5 , uMom.end + uMom.timeWindow * 0.5);
                 if(key <= uMom.start + start * uMom.interval - halfTimeWindow
@@ -388,11 +390,12 @@ int calcSearch(double key, const std::vector<Moment>& moments, const std::vector
                     start += uMom.startIndex;
                 }
 
-                /*if(start != -1 && !(key >= moments[start].first && key <= moments[start].second)) {
-                    printf("[%e] Calc passed [%e , %e] , %lu * %lf (%lf)\n", key, uMom.start + (start-uMom.startIndex) * uMom.interval - halfTimeWindow, uMom.start + (start-uMom.startIndex) * uMom.interval + halfTimeWindow, (start-uMom.startIndex), nbMoments, uMom.interval);
-                    printf("[%e] Moments not in window [%e , %e] [[%e , %e]]\n", key, moments[start].first, moments[start].second, uMom.start - halfTimeWindow, uMom.end + halfTimeWindow);
-                    //start = -1;
+                if(start != -1 && !(key >= moments[start].first && key <= moments[start].second)) {
+                    //printf("[%e] Calc passed [%e , %e] , %lu * %lf (%lf)\n", key, uMom.start + (start-uMom.startIndex) * uMom.interval - halfTimeWindow, uMom.start + (start-uMom.startIndex) * uMom.interval + halfTimeWindow, (start-uMom.startIndex), nbMoments, uMom.interval);
+                    //printf("[%e] Moments not in window [%e , %e] [[%e , %e]]\n", key, moments[start].first, moments[start].second, uMom.start - halfTimeWindow, uMom.end + halfTimeWindow);
+                    start = -1;
                 }
+#ifdef DEBUG
                 if(start != controlIndex) {
                     printf("[%e] %d (%lf - %d) vs %d [%e , %e] [[%e , %e]]\n", key, start, std::floor((key - uMom.start + halfTimeWindow) / uMom.interval), (int)((key - uMom.start + halfTimeWindow) / uMom.interval), controlIndex, moments[start].first,
                            moments[start].second, moments[controlIndex].first, moments[controlIndex].second);
@@ -400,7 +403,8 @@ int calcSearch(double key, const std::vector<Moment>& moments, const std::vector
                     printf("[%e] post  [%e , %e]\n", key, moments[start+1].first, moments[start+1].second);
                     printf("[%e] first [%e , %e]\n", key, moments.front().first, moments.front().second);
                     printf("[%e] last  [%e , %e]\n", key, moments.back().first, moments.back().second);
-                }*/
+                }
+#endif
                 return start;
             }
             else {
@@ -489,7 +493,7 @@ MomentInterval ParseUserMomentToTuple(const std::string& userInput, double timeW
             printf("Index calc from %lf to %lf [%lf]\n", begin, time, end);
             printf("Index calc: %lf vs %zu vs %zu\n", std::ceil((end - begin) / interval), index, index2);
 */
-            ret.startIndex = std::round((end - begin) / interval) + 1; // add one time window on interval end
+            ret.startIndex = std::floor((end - begin) / interval + 1e-3) + 1; // add one time window on interval end
         }
     }
     else if(nb == 1){
@@ -610,6 +614,51 @@ int main(int argc, char** argv) {
                 {"70.01,0.001,80.0", 0.001},
                 {"80.01,0.001,90.0", 0.001},
                 {"90.01,0.001,100.0", 0.001}
+        };
+        uMoments = std::vector<UserMoment>{
+                {"0.001, 0.01,1.0", 0.01},
+                {"1.1, 0.01,10.0", 0.01},
+                {"10.1, 0.01,20.0", 0.01},
+                {"20.1, 0.01,30.0", 0.01},
+                {"30.1, 0.01,40.0", 0.01},
+                {"40.1, 0.01,50.0", 0.01},
+                {"50.1, 0.01,60.0", 0.01},
+                {"60.1, 0.01,70.0", 0.01},
+                {"70.1, 0.01,80.0", 0.01},
+                {"80.1, 0.01,90.0", 0.01},
+                {"90.1, 0.01,100.0", 0.01}
+        };
+        uMoments = std::vector<UserMoment>{
+                {"0.001, 0.1,1.0", 0.01},
+                {"1.1, 0.1,10.0", 0.01},
+                {"10.1, 0.1,20.0", 0.01},
+                {"20.1, 0.1,30.0", 0.01},
+                {"30.1, 0.1,40.0", 0.01},
+                {"40.1, 0.1,50.0", 0.01},
+                {"50.1, 0.1,60.0", 0.01},
+                {"60.1, 0.1,70.0", 0.01},
+                {"70.1, 0.1,80.0", 0.01},
+                {"80.1, 0.1,90.0", 0.01},
+                {"90.1, 0.1,100.0", 0.01}
+        };
+        uMoments = std::vector<UserMoment>{
+                {"0.001,0.01,100.0", 0.01}
+        };
+        uMoments = std::vector<UserMoment>{
+                {"0.001, 0.1,1.0", 0.01},
+                {"1.1, 0.001,10.0", 0.001},
+                {"10.1, 0.1,20.0", 0.00001},
+                {"20.1, 0.1,30.0", 0.0001},
+                {"30.1, 0.1,40.0", 0.001},
+                {"40.1, 0.00001,50.0", 0.00001},
+                {"50.1, 0.05,60.0", 0.001},
+                {"60.1, 0.1,70.0", 0.01},
+                {"70.1, 0.7,80.0", 0.07},
+                {"80.1, 0.1,90.0", 0.01},
+                {"90.1, 0.09,100.0", 0.001}
+        };
+        uMoments = std::vector<UserMoment>{
+                {"0.001,0.01,100.0", 0.00001}
         };
     }
     /*std::vector<UserMoment> uMoments{
