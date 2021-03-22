@@ -366,7 +366,7 @@ int calcSearch(double key, const std::vector<Moment>& moments, const std::vector
     int start = -1; // TODO: ....
     //size_t indexOffset = 0;
 
-    int controlIndex = LookupMomentIndex(key, moments);
+    //int controlIndex = LookupMomentIndex(key, moments);
     for(auto& uMom : userMoments){
         //printf("Parsed %e , %e , %e\n", uMom.start, uMom.interval, uMom.end);
         const double halfTimeWindow = uMom.timeWindow * 0.5;
@@ -375,8 +375,8 @@ int calcSearch(double key, const std::vector<Moment>& moments, const std::vector
 
             if(key >= uMom.start - halfTimeWindow){
                 // found it
-                const double nbMoments = (uMom.end - uMom.start) / uMom.interval;
-                start = std::min(((key - uMom.start + halfTimeWindow) / uMom.interval)/* + 1e-9*/, nbMoments); // can go above limits on edge values
+                const double nbMoments = std::round((uMom.end - uMom.start) / uMom.interval);
+                start = std::min(((key - uMom.start + halfTimeWindow) / uMom.interval), nbMoments); // can go above limits on edge values
                 //printf("[%e] Potential find at start %d (%d) [%e , %e] [[%e , %e]] [[[%e , %e]]]\n", key, start, nbMoments, moments[start].first, moments[start].second, uMom.start, uMom.end, uMom.start - uMom.timeWindow * 0.5 , uMom.end + uMom.timeWindow * 0.5);
                 if(key <= uMom.start + start * uMom.interval - halfTimeWindow
                 && key >= uMom.start + start * uMom.interval + halfTimeWindow) {
@@ -388,7 +388,7 @@ int calcSearch(double key, const std::vector<Moment>& moments, const std::vector
                     start += uMom.startIndex;
                 }
 
-                if(start != -1 && !(key >= moments[start].first && key <= moments[start].second)) {
+                /*if(start != -1 && !(key >= moments[start].first && key <= moments[start].second)) {
                     printf("[%e] Calc passed [%e , %e] , %lu * %lf (%lf)\n", key, uMom.start + (start-uMom.startIndex) * uMom.interval - halfTimeWindow, uMom.start + (start-uMom.startIndex) * uMom.interval + halfTimeWindow, (start-uMom.startIndex), nbMoments, uMom.interval);
                     printf("[%e] Moments not in window [%e , %e] [[%e , %e]]\n", key, moments[start].first, moments[start].second, uMom.start - halfTimeWindow, uMom.end + halfTimeWindow);
                     //start = -1;
@@ -400,7 +400,7 @@ int calcSearch(double key, const std::vector<Moment>& moments, const std::vector
                     printf("[%e] post  [%e , %e]\n", key, moments[start+1].first, moments[start+1].second);
                     printf("[%e] first [%e , %e]\n", key, moments.front().first, moments.front().second);
                     printf("[%e] last  [%e , %e]\n", key, moments.back().first, moments.back().second);
-                }
+                }*/
                 return start;
             }
             else {
@@ -489,7 +489,7 @@ MomentInterval ParseUserMomentToTuple(const std::string& userInput, double timeW
             printf("Index calc from %lf to %lf [%lf]\n", begin, time, end);
             printf("Index calc: %lf vs %zu vs %zu\n", std::ceil((end - begin) / interval), index, index2);
 */
-            ret.startIndex = std::ceil((end - begin) / interval) + 1; // add one time window on interval end
+            ret.startIndex = std::round((end - begin) / interval) + 1; // add one time window on interval end
         }
     }
     else if(nb == 1){
