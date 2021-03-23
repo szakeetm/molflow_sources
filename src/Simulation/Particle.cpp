@@ -521,7 +521,6 @@ bool Particle::StartFromSource() {
                     src->sh.anglemapParams, src->angleMap, randomGenerator.rnd());
             auto phi = AnglemapGeneration::GeneratePhiFromAngleMap(thetaLowerIndex, thetaOvershoot,
                                                                    src->sh.anglemapParams, src->angleMap,
-                                                                   tmpState.facetStates[src->globalId].recordedAngleMapPdf,
                                                                    randomGenerator.rnd());
             direction = PolarToCartesian(src->sh.nU, src->sh.nV, src->sh.N, PI - theta, phi,
                                          false); //angle map contains incident angle (between N and source dir) and theta is dir (between N and dest dir)
