@@ -348,7 +348,7 @@ void GlobalSettings::SMPUpdate() {
 	//Interface
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	size_t currPid = GetCurrentProcessId();
-    PROCESS_INFO parentInfo;
+    PROCESS_INFO parentInfo{};
     GetProcInfo(currPid, &parentInfo);
 
     processList->SetValueAt(0, 0, "Interface");
@@ -358,23 +358,23 @@ void GlobalSettings::SMPUpdate() {
 	processList->SetValueAt(2, 0, tmp);
 	sprintf(tmp, "%.0f MB", (double)parentInfo.mem_peak / (1024.0*1024.0));
 	processList->SetValueAt(3, 0, tmp);
-
+    sprintf(tmp, "[Geom. %s]", worker->model.sh.name.c_str());
+    processList->SetValueAt(4, 0, tmp);
 #else
     size_t currPid = getpid();
-    PROCESS_INFO parentInfo;
+    PROCESS_INFO parentInfo{};
     GetProcInfo(currPid, &parentInfo);
 
     //GetProcInfo(currpid, &parentInfo);
     processList->SetValueAt(0, 0, "Interface");
     sprintf(tmp, "%zd", currPid);
     processList->SetValueAt(1, 0, tmp, (int)currPid);
-
     sprintf(tmp, "%.0f MB", (double)parentInfo.mem_use / (1024.0));
     processList->SetValueAt(2, 0, tmp);
     sprintf(tmp, "%.0f MB", (double)parentInfo.mem_peak / (1024.0));
     processList->SetValueAt(3, 0, tmp);
-    //sprintf(tmp, "%d %%", (int)parentInfo.cpu_time);
-    //processList->SetValueAt(4, 0, tmp);
+    sprintf(tmp, "[Geom. %s]", worker->model.sh.name.c_str());
+    processList->SetValueAt(4, 0, tmp);
 #endif
 
     size_t i = 1;
@@ -382,9 +382,9 @@ void GlobalSettings::SMPUpdate() {
     {
         //auto& proc = procInfo.subProcInfo[0];
         DWORD pid = proc.procId;
-		sprintf(tmp, "Subproc.%lu", i);
+		sprintf(tmp, "Thread %zu", i);
 		processList->SetValueAt(0, i, tmp);
-		sprintf(tmp, "%d", pid);
+		sprintf(tmp, "%lu", pid);
 		processList->SetValueAt(1, i, tmp);
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
@@ -403,8 +403,8 @@ void GlobalSettings::SMPUpdate() {
             processList->SetValueAt(3, i, tmp);
 
 			// State/Status
-			std::stringstream tmp; tmp << "[" << prStates[states[i-1]] << "] " << statusStrings[i-1];
-			processList->SetValueAt(4, i, tmp.str().c_str());
+			std::stringstream tmp_ss; tmp_ss << "[" << prStates[states[i-1]] << "] " << statusStrings[i-1];
+			processList->SetValueAt(4, i, tmp_ss.str().c_str());
 		}
 
 #else
