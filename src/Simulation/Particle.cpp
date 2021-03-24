@@ -1102,7 +1102,7 @@ void Particle::Reset() {
 
     nbBounces = 0;
     lastMomentIndex = 0;
-    particleId = 0;
+    //particleId = 0;
     distanceTraveled = 0;
     generationTime = 0;
     particleTime = 0;
@@ -1114,7 +1114,7 @@ void Particle::Reset() {
 
     tmpState.Reset();
     lastHitFacet = nullptr;
-    randomGenerator.SetSeed(GetSeed());
+    randomGenerator.SetSeed(randomGenerator.GetSeed());
     model = nullptr;
     transparentHitBuffer.clear();
     tmpFacetVars.clear();

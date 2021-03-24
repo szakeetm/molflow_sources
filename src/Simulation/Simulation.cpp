@@ -268,7 +268,8 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
         printf("  Direction : %zd bytes\n", dirTotalSize);*/
 
         printf("  Total     : %zd bytes\n", GetHitsSize());
-        //printf("  Seed: %lu\n", randomGenerator.GetSeed());
+        for(auto& particle : particles)
+            printf("  Seed for %zu: %lu\n", particle.particleId, particle.randomGenerator.GetSeed());
         printf("  Loading time: %.3f ms\n", timer.ElapsedMs());
     }
     return 0;

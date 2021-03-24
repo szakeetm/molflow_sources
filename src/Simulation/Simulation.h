@@ -60,6 +60,11 @@ public:
     void SetNParticle(size_t n) override {
         particles.clear();
         particles.resize(n);
+        size_t pid = 0;
+        for(auto& particle : particles){
+            particle.randomGenerator.SetSeed(GenerateSeed(pid));
+            particle.particleId = pid++;
+        }
     };
 
 	//size_t totalDesorbed;           // Total desorption number (for this process, not reset on UpdateMCHits)
