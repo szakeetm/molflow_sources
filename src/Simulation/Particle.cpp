@@ -77,6 +77,8 @@ bool Particle::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, DW
         // Facets
         globSimuState.facetStates += tmpState.facetStates;
     }
+
+    globSimuState.stateChanged = true;
     globSimuState.tMutex.unlock();
 
     //extern char *GetSimuStatus();
