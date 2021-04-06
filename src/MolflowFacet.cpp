@@ -29,7 +29,7 @@ using namespace pugi;
 #include "Helper/StringHelper.h"
 #include "GLApp/GLMessageBox.h"
 #include <cstring>
-#include <math.h>
+#include <cmath>
 #include <cereal/types/vector.hpp>
 
 // Colormap stuff, defined in GLGradient.cpp
@@ -45,7 +45,7 @@ extern std::vector<int> colorMap;
 void InterfaceFacet::LoadGEO(FileReader *file, int version, size_t nbVertex) {
 
 	file->ReadKeyword("indices"); file->ReadKeyword(":");
-	for (int i = 0; i < sh.nbIndex; i++) {
+	for (int i = 0; i < geo.nbIndex; i++) {
 		indices[i] = file->ReadInt() - 1;
 		if (indices[i] >= nbVertex)
 			throw Error(file->MakeError("Facet index out of bounds"));
@@ -92,7 +92,7 @@ void InterfaceFacet::LoadGEO(FileReader *file, int version, size_t nbVertex) {
 	sh.is2sided = file->ReadInt();
 	if (version < 8) {
 		file->ReadKeyword("area"); file->ReadKeyword(":");
-		sh.area = file->ReadDouble();
+		geo.area = file->ReadDouble();
 	}
 	file->ReadKeyword("mesh"); file->ReadKeyword(":");
 	hasMesh = file->ReadInt();
@@ -368,7 +368,7 @@ void InterfaceFacet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bo
 void InterfaceFacet::LoadSYN(FileReader *file, int version, size_t nbVertex) {
 
 	file->ReadKeyword("indices"); file->ReadKeyword(":");
-	for (size_t i = 0; i < sh.nbIndex; i++) {
+	for (size_t i = 0; i < geo.nbIndex; i++) {
 		indices[i] = file->ReadInt() - 1;
 		if (indices[i] >= nbVertex) {
 			throw Error(file->MakeError("Facet index out of bounds"));
@@ -589,7 +589,7 @@ void InterfaceFacet::SaveTXT(FileWriter *file) {
 	else
 		file->Write(sh.opacity, "\n");
 
-	file->Write(sh.area, "\n");
+	file->Write(geo.area, "\n");
 
 	if (sh.desorbType != DES_NONE)
 		file->Write(1.0, "\n");
@@ -623,9 +623,9 @@ void InterfaceFacet::SaveGEO(FileWriter *file, int idx) {
 
 	sprintf(tmp, "facet %d {\n", idx + 1);
 	file->Write(tmp);
-	file->Write("  nbIndex:"); file->Write(sh.nbIndex, "\n");
+	file->Write("  nbIndex:"); file->Write(geo.nbIndex, "\n");
 	file->Write("  indices:\n");
-	for (int i = 0; i < sh.nbIndex; i++) {
+	for (int i = 0; i < geo.nbIndex; i++) {
 		file->Write("    ");
 		file->Write(indices[i] + 1, "\n");
 	}
@@ -689,8 +689,8 @@ void InterfaceFacet::SaveGEO(FileWriter *file, int idx) {
 size_t InterfaceFacet::GetGeometrySize()  { //for loader dataport
 
 	size_t s = sizeof(FacetProperties)
-		+ (sh.nbIndex * sizeof(size_t)) //indices
-		+ (sh.nbIndex * sizeof(Vector2d));
+		+ (geo.nbIndex * sizeof(size_t)) //indices
+		+ (geo.nbIndex * sizeof(Vector2d));
 
 	// Size of the 'element area' array passed to the geometry buffer
 	if (sh.isTextured) s += sizeof(double)*sh.texWidth*sh.texHeight; //incbuff
@@ -758,8 +758,8 @@ size_t InterfaceFacet::GetTexRamSizeForCellNumber(int width, int height, bool us
 * \return calculated size of the texture RAM usage
 */
 size_t InterfaceFacet::GetTexRamSizeForRatio(double ratio, size_t nbMoments) {
-	double nU = sh.U.Norme();
-	double nV = sh.V.Norme();
+	double nU = geo.U.Norme();
+	double nV = geo.V.Norme();
 	double width = nU*ratio;
 	double height = nV*ratio;
 
@@ -791,8 +791,8 @@ size_t InterfaceFacet::GetTexRamSizeForRatio(double ratio, size_t nbMoments) {
 * \return calculated size of the texture RAM usage
 */
 size_t InterfaceFacet::GetTexRamSizeForRatio(double ratioU, double ratioV, size_t nbMoments)  {
-    double nU = sh.U.Norme();
-    double nV = sh.V.Norme();
+    double nU = geo.U.Norme();
+    double nV = geo.V.Norme();
     double width = nU*ratioU;
     double height = nV*ratioV;
 
@@ -1141,8 +1141,8 @@ void  InterfaceFacet::SaveXML_geom(pugi::xml_node f) {
 	e.append_attribute("textureVisible") = (int)textureVisible; //backward compatibility: 0 or 1
 	e.append_attribute("volumeVisible") = (int)volumeVisible; //backward compatibility: 0 or 1
 
-	f.append_child("Indices").append_attribute("nb") = sh.nbIndex;
-	for (size_t i = 0; i < sh.nbIndex; i++) {
+	f.append_child("Indices").append_attribute("nb") = geo.nbIndex;
+	for (size_t i = 0; i < geo.nbIndex; i++) {
 		xml_node indice = f.child("Indices").append_child("Indice");
 		indice.append_attribute("id") = i;
 		indice.append_attribute("vertex") = indices[i];
@@ -1443,7 +1443,7 @@ void InterfaceFacet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchi
 				}
 			}
 			else {
-				const double area = (sh.texWidthD * sh.texHeightD)/(sh.U.Norme() * sh.V.Norme());
+				const double area = (sh.texWidthD * sh.texHeightD)/(geo.U.Norme() * geo.V.Norme());
                 const double incrementVal = (area > 0.0) ? 1.0 / area : 0.0;
 				size_t add = 0;
 				for (int j = 0; j < sh.texHeight; j++) {
@@ -1458,7 +1458,7 @@ void InterfaceFacet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchi
 		outputarchive(
 			CEREAL_NVP(sh), //Contains anglemapParams
 			CEREAL_NVP(indices),
-			CEREAL_NVP(vertices2)
+			CEREAL_NVP(geo.vertices2)
 #if defined(MOLFLOW)
                 , CEREAL_NVP(ogMap.outgassingMap)
                 , CEREAL_NVP(angleMapVector)

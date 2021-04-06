@@ -321,17 +321,17 @@ char *FacetDetails::FormatCell(size_t idx, InterfaceFacet *f, size_t mode) {
       sprintf(ret,"%s",ynStr[f->sh.is2sided]);      
       break;
     case 8:
-      sprintf(ret,"%zd",f->sh.nbIndex);
+      sprintf(ret,"%zd",f->geo.nbIndex);
       break;
     case 9:
-		if (f->sh.is2sided) sprintf(ret,"2*%g",f->sh.area);
-		else sprintf(ret,"%g",f->sh.area);
+		if (f->sh.is2sided) sprintf(ret,"2*%g",f->geo.area);
+		else sprintf(ret,"%g",f->geo.area);
       break;
 	case 10:
 		sprintf(ret, "%g", f->sh.temperature);
 		break;
     case 11:
-      sprintf(ret,"%g x %g",f->sh.U.Norme(),f->sh.V.Norme());
+      sprintf(ret,"%g x %g",f->geo.U.Norme(),f->geo.V.Norme());
       break;
     case 12:
       if( f->sh.isTextured ) {

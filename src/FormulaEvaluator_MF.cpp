@@ -70,7 +70,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
     }
     else if ((idx = GetVariable(v->name, "AR")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
-        if (ok) v->value = geom->GetFacet(idx - 1)->sh.area;
+        if (ok) v->value = geom->GetFacet(idx - 1)->geo.area;
     }
     else if (iequals(v->name, "SUMDES")) {
         v->value = (double)worker->globalHitCache.globalHits.nbDesorbed;

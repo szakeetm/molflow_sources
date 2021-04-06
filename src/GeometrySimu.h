@@ -92,6 +92,8 @@ struct SubprocessFacet : public Facet {
     //void ResizeCounter(size_t nbMoments);
     bool InitializeOnLoad(const size_t &id, const size_t &nbMoments);
 
+    void CalculateFacetParams(const std::vector<Vector3d>& vertices3);
+
     size_t InitializeHistogram(const size_t &nbMoments) const;
 
     size_t InitializeDirectionTexture(const size_t &nbMoments);
@@ -209,7 +211,7 @@ public:
     void PrepareToRun();
     int InitialiseFacets();
     void CalcTotalOutgassing();
-    void CalculateFacetParams(SubprocessFacet* f);
+    //void CalculateFacetParams(SubprocessFacet* f);
 
     // Sim functions
     double GetOpacityAt(SubprocessFacet *f, double time) const;

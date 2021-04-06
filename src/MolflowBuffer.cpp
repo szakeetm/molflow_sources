@@ -5,6 +5,7 @@
 #include "MolflowBuffer.h"
 
 WorkerParams::WorkerParams(){
+    latestMoment = 0;
     timeWindowSize = 1E-10; //Dirac-delta desorption pulse at t=0
     useMaxwellDistribution = true;
     calcConstantFlow = true;
@@ -41,8 +42,7 @@ void FacetHistogramBuffer::Reset(){
     ZEROVECTOR(timeHistogram);
 }
 
-FacetProperties::FacetProperties(size_t nbIndices) {
-    nbIndex = nbIndices;
+FacetProperties::FacetProperties() {
 
     sticking = 0.0;
     opacity = 1.0;
@@ -53,9 +53,6 @@ FacetProperties::FacetProperties(size_t nbIndices) {
     texHeight = 0;
     texWidthD = 0.0;
     texHeightD = 0.0;
-    center.x = 0.0;
-    center.y = 0.0;
-    center.z = 0.0;
 
     is2sided = false;
     isProfile = false;

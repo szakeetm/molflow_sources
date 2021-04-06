@@ -214,24 +214,24 @@ void Intersect3Planes::ProcessMessage(GLComponent *src,int message) {
 					GLMessageBox::Display("Invalid facet number","Error",GLDLG_OK,GLDLG_ICONERROR);
 					return;
 				}
-				AXIS_P0=geom->GetFacet(facetNum-1)->sh.O;
-				AXIS_DIR=geom->GetFacet(facetNum-1)->sh.U;
+				AXIS_P0=geom->GetFacet(facetNum-1)->geo.O;
+				AXIS_DIR=geom->GetFacet(facetNum-1)->geo.U;
 				break;
 			case FACETVMODE:
 				if( !(facetNumber->GetNumberInt(&facetNum))||facetNum<1||facetNum>geom->GetNbFacet() ) {
 					GLMessageBox::Display("Invalid facet number","Error",GLDLG_OK,GLDLG_ICONERROR);
 					return;
 				}
-				AXIS_P0=geom->GetFacet(facetNum-1)->sh.O;
-				AXIS_DIR=geom->GetFacet(facetNum-1)->sh.V;
+				AXIS_P0=geom->GetFacet(facetNum-1)->geo.O;
+				AXIS_DIR=geom->GetFacet(facetNum-1)->geo.V;
 				break;
 			case FACETNMODE:
 				if( !(facetNumber->GetNumberInt(&facetNum))||facetNum<1||facetNum>geom->GetNbFacet() ) {
 					GLMessageBox::Display("Invalid facet number","Error",GLDLG_OK,GLDLG_ICONERROR);
 					return;
 				}
-				AXIS_P0=geom->GetFacet(facetNum-1)->sh.center;
-				AXIS_DIR=geom->GetFacet(facetNum-1)->sh.N;
+				AXIS_P0=geom->GetFacet(facetNum-1)->geo.center;
+				AXIS_DIR=geom->GetFacet(facetNum-1)->geo.N;
 				break;
 			case TWOVERTEXMODE:
 				if (geom->GetNbSelectedVertex()!=2) {

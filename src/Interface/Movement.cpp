@@ -346,7 +346,7 @@ void Movement::ProcessMessage(GLComponent *src,int message) {
 			else {
 				UpdateToggle(checkBox3);
 				for (int i = 0; i < geom->GetNbVertex(); i++) {
-					if (geom->GetVertex(i)->selected) {
+					if (geom->IsVertexSelected(i)) {
 						axText->SetText(geom->GetVertex(i)->x);
 						ayText->SetText(geom->GetVertex(i)->y);
 						azText->SetText(geom->GetVertex(i)->z);
@@ -379,7 +379,7 @@ void Movement::ProcessMessage(GLComponent *src,int message) {
 					return;
 				}
 				for (int i = 0; i < geom->GetNbVertex(); i++) {
-					if (geom->GetVertex(i)->selected) {
+					if (geom->IsVertexSelected(i)) {
 						rxText->SetText(geom->GetVertex(i)->x-ax);
 						ryText->SetText(geom->GetVertex(i)->y-ay);
 						rzText->SetText(geom->GetVertex(i)->z-az);

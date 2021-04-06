@@ -578,8 +578,8 @@ std::pair<double,double> FacetAdvParams::GetRatioForNbCell(size_t nbCellsU, size
         for (auto &sel : selFacets) {
             InterfaceFacet *f = geom->GetFacet(sel);
             if (f->selected) {
-                double nU = f->sh.U.Norme();
-                double nV = f->sh.V.Norme();
+                double nU = f->geo.U.Norme();
+                double nV = f->geo.V.Norme();
 
                 if (nU != 0.0)
                     ratioU = (double) nbCellsU / nU;
@@ -909,9 +909,9 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 				facetUseDesFile->SetSelectedValue("...");
 			}
 			char tmp[64];
-			if (fluxAEqual) sprintf(tmp, "%.2E", f0->ogMap.totalFlux / f0->sh.area); else sprintf(tmp, "...");
+			if (fluxAEqual) sprintf(tmp, "%.2E", f0->ogMap.totalFlux / f0->geo.area); else sprintf(tmp, "...");
 			fileFluxText->SetText(tmp);
-			if (doseAEqual) sprintf(tmp, "%.2E", f0->ogMap.totalDose / f0->sh.area); else sprintf(tmp, "...");
+			if (doseAEqual) sprintf(tmp, "%.2E", f0->ogMap.totalDose / f0->geo.area); else sprintf(tmp, "...");
 			fileDoseText->SetText(tmp);
 			if (yieldEqual) sprintf(tmp, "%.2E", f0->sh.totalOutgassing / (1.38E-23*f0->sh.temperature) / f0->ogMap.totalFlux); else sprintf(tmp, "...");
 			fileYieldText->SetText(tmp);
