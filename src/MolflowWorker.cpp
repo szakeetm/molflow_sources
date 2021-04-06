@@ -1249,7 +1249,7 @@ bool Worker::InterfaceGeomToSimModel() {
             }
             sFac.sh = facet->sh;
             sFac.indices = facet->indices;
-            sFac.geo.vertices2 = facet->geo.vertices2;
+            sFac.geo = facet->geo;
             sFac.ogMap = facet->ogMap;
             sFac.angleMap.pdf = angleMapVector;
             sFac.textureCellIncrements = textIncVector;
