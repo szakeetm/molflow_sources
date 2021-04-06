@@ -320,7 +320,7 @@ public:
         return *this;
     }
     ParticleLog(ParticleLog&& rhs)  noexcept : tMutex() {
-        pLog = std::move(pLog);
+        pLog = std::move(rhs.pLog);
     };
     ParticleLog(const ParticleLog& rhs) {
         pLog = rhs.pLog;
