@@ -3147,9 +3147,9 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
     }
 
 	/*
-	InterfaceVertex *tmp_vertices3 = (InterfaceVertex *)malloc((nbNewVertex + wp.nbVertex) * sizeof(InterfaceVertex));
-	memmove(tmp_vertices3, vertices3, (wp.nbVertex)*sizeof(InterfaceVertex));
-	memset(tmp_vertices3 + wp.nbVertex, 0, nbNewVertex * sizeof(InterfaceVertex));
+	InterfaceVertices *tmp_vertices3 = (InterfaceVertices *)malloc((nbNewVertex + wp.nbVertex) * sizeof(InterfaceVertices));
+	memmove(tmp_vertices3, vertices3, (wp.nbVertex)*sizeof(InterfaceVertices));
+	memset(tmp_vertices3 + wp.nbVertex, 0, nbNewVertex * sizeof(InterfaceVertices));
 	SAFE_FREE(vertices3);
 	vertices3 = tmp_vertices3;
 	*/
