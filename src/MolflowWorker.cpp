@@ -1046,57 +1046,6 @@ void Worker::LoadTexturesGEO(FileReader *f, int version) {
 }
 
 /**
-* \brief Function that updates various variables when stopping a simulation
-* \param appTime current time of the application
-*/
-void Worker::InnerStop(float appTime) {
-    simuTimer.Stop();
-}
-
-/**
-* \brief Function that handles starting and stopping of the simulation
-* \param appTime current time of the application
-* \param sMode simulation mode (MC/AC)
-*/
-void Worker::StartStop(float appTime) {
-
-    if (IsRunning()) {
-
-        // Stop
-        InnerStop(appTime);
-        try {
-            Stop();
-            Update(appTime);
-        }
-
-        catch (std::exception &e) {
-            GLMessageBox::Display(e.what(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
-            return;
-        }
-    } else {
-
-        // Start
-        try {
-            if (needsReload) RealReload(); //Synchronize subprocesses to main process
-            Start();
-            simuTimer.Start();
-        }
-        catch (std::exception &e) {
-            //isRunning = false;
-            GLMessageBox::Display(e.what(), "Error (Start)", GLDLG_OK, GLDLG_ICONERROR);
-            return;
-        }
-
-        // Particular case when simulation ends before getting RUN state
-        if (simManager.allProcsDone) {
-            Update(appTime);
-            GLMessageBox::Display("Max desorption reached", "Information (Start)", GLDLG_OK, GLDLG_ICONINFO);
-        }
-
-    }
-}
-
-/**
 * \brief Function that inserts a list of new paramters at the beginning of the catalog parameters
 * \param newParams vector containing new parameters to be inserted
 * \return index to insert position
@@ -1207,7 +1156,7 @@ void Worker::SendAngleMaps() {
 
 }
 
-bool Worker::MolflowGeomToSimModel() {
+bool Worker::InterfaceGeomToSimModel() {
     //auto geom = GetMolflowGeometry();
     // TODO: Proper clear call before for Real reload?
     model.structures.clear();
@@ -1404,7 +1353,7 @@ void Worker::ReloadSim(bool sendOnly, GLProgress *progressDlg) {
     // Send and Load geometry
     progressDlg->SetMessage("Waiting for subprocesses to load geometry...");
     try {
-        if (!MolflowGeomToSimModel()) {
+        if (!InterfaceGeomToSimModel()) {
             std::string errString = "Failed to send geometry to sub process!\n";
             GLMessageBox::Display(errString.c_str(), "Warning (LoadGeom)", GLDLG_OK, GLDLG_ICONWARNING);
 
