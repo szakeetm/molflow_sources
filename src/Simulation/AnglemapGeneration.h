@@ -28,9 +28,8 @@ namespace AnglemapGeneration {
                               double lookupValue);
 
     double GeneratePhiFromAngleMap(const int &thetaLowerIndex, const double &thetaOvershoot,
-                                          const AnglemapParams &anglemapParams, Anglemap &anglemap,
-                                          const std::vector<size_t> &angleMapPDF,
-                                          double lookupValue);
+                                   const AnglemapParams &anglemapParams,
+                                   Anglemap &anglemap, double lookupValue);
 };
 
 

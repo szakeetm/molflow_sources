@@ -83,6 +83,8 @@ private:
     GLToggle *highlightSelectionToggle;
 
     GLToggle *useOldXMLFormat;
+
+    GLToggle *prioToggle;
 };
 
 #endif /* _GLOBALSETTINGSH_ */

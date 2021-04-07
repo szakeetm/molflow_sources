@@ -1046,57 +1046,6 @@ void Worker::LoadTexturesGEO(FileReader *f, int version) {
 }
 
 /**
-* \brief Function that updates various variables when stopping a simulation
-* \param appTime current time of the application
-*/
-void Worker::InnerStop(float appTime) {
-    simuTimer.Stop();
-}
-
-/**
-* \brief Function that handles starting and stopping of the simulation
-* \param appTime current time of the application
-* \param sMode simulation mode (MC/AC)
-*/
-void Worker::StartStop(float appTime) {
-
-    if (IsRunning()) {
-
-        // Stop
-        InnerStop(appTime);
-        try {
-            Stop();
-            Update(appTime);
-        }
-
-        catch (std::exception &e) {
-            GLMessageBox::Display(e.what(), "Error (Stop)", GLDLG_OK, GLDLG_ICONERROR);
-            return;
-        }
-    } else {
-
-        // Start
-        try {
-            if (needsReload) RealReload(); //Synchronize subprocesses to main process
-            Start();
-            simuTimer.Start();
-        }
-        catch (std::exception &e) {
-            //isRunning = false;
-            GLMessageBox::Display(e.what(), "Error (Start)", GLDLG_OK, GLDLG_ICONERROR);
-            return;
-        }
-
-        // Particular case when simulation ends before getting RUN state
-        if (simManager.allProcsDone) {
-            Update(appTime);
-            GLMessageBox::Display("Max desorption reached", "Information (Start)", GLDLG_OK, GLDLG_ICONINFO);
-        }
-
-    }
-}
-
-/**
 * \brief Function that inserts a list of new paramters at the beginning of the catalog parameters
 * \param newParams vector containing new parameters to be inserted
 * \return index to insert position
@@ -1207,7 +1156,7 @@ void Worker::SendAngleMaps() {
 
 }
 
-bool Worker::MolflowGeomToSimModel() {
+bool Worker::InterfaceGeomToSimModel() {
     //auto geom = GetMolflowGeometry();
     // TODO: Proper clear call before for Real reload?
     model.structures.clear();
@@ -1404,7 +1353,7 @@ void Worker::ReloadSim(bool sendOnly, GLProgress *progressDlg) {
     // Send and Load geometry
     progressDlg->SetMessage("Waiting for subprocesses to load geometry...");
     try {
-        if (!MolflowGeomToSimModel()) {
+        if (!InterfaceGeomToSimModel()) {
             std::string errString = "Failed to send geometry to sub process!\n";
             GLMessageBox::Display(errString.c_str(), "Warning (LoadGeom)", GLDLG_OK, GLDLG_ICONWARNING);
 
@@ -1482,7 +1431,7 @@ void Worker::Start() {
     if (model.wp.totalDesorbedMolecules <= 0.0)
         throw std::runtime_error("Total outgassing is zero.");
 
-    if (model.otfParams.desorptionLimit > 0 && model.otfParams.desorptionLimit <= globState.globalHits.globalHits.hit.nbDesorbed)
+    if (model.otfParams.desorptionLimit > 0 && model.otfParams.desorptionLimit <= globState.globalHits.globalHits.nbDesorbed)
         throw std::runtime_error("Desorption limit has already been reached.");
 
     try {
@@ -1512,16 +1461,16 @@ void Worker::ResetMoments() {
 * \return amount of physical molecules represented by one test particle
 */
 double Worker::GetMoleculesPerTP(size_t moment) const {
-    if (globalHitCache.globalHits.hit.nbDesorbed == 0) return 0; //avoid division by 0
+    if (globalHitCache.globalHits.nbDesorbed == 0) return 0; //avoid division by 0
     if (moment == 0) {
         //Constant flow
         //Each test particle represents a certain real molecule influx per second
-        return model.wp.finalOutgassingRate / globalHitCache.globalHits.hit.nbDesorbed;
+        return model.wp.finalOutgassingRate / globalHitCache.globalHits.nbDesorbed;
     } else {
         //Time-dependent mode
         //Each test particle represents a certain absolute number of real molecules
         return (model.wp.totalDesorbedMolecules / mApp->worker.moments[moment - 1].second) /
-               globalHitCache.globalHits.hit.nbDesorbed;
+               globalHitCache.globalHits.nbDesorbed;
     }
 }
 

@@ -43,9 +43,9 @@ public:
     Simulation(Simulation&& o) noexcept ;
     virtual ~Simulation() = default;
 
-    int SanityCheckGeom() override;
+    int SanityCheckModel() override;
     void ClearSimulation() override;
-    size_t LoadSimulation(SimulationModel *simModel, char *loadStatus) override;
+    size_t LoadSimulation(char *loadStatus) override;
     void ResetSimulation() override;
 
     size_t GetHitsSize() override;
@@ -60,6 +60,11 @@ public:
     void SetNParticle(size_t n) override {
         particles.clear();
         particles.resize(n);
+        size_t pid = 0;
+        for(auto& particle : particles){
+            particle.randomGenerator.SetSeed(GenerateSeed(pid));
+            particle.particleId = pid++;
+        }
     };
 
 	//size_t totalDesorbed;           // Total desorption number (for this process, not reset on UpdateMCHits)

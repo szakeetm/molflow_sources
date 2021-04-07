@@ -298,6 +298,7 @@ public:
 #endif
     }
     bool initialized = false;
+    bool stateChanged = false;
     void clear();
     void Resize(const SimulationModel &model);
     void Reset();

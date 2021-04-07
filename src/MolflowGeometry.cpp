@@ -625,18 +625,18 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 	}
 
 	file->ReadKeyword("totalHit"); file->ReadKeyword(":");
-	worker->globState.globalHits.globalHits.hit.nbMCHit = file->ReadSizeT();
-	worker->globState.globalHits.globalHits.hit.nbHitEquiv = static_cast<double>(worker->globState.globalHits.globalHits.hit.nbMCHit);
+	worker->globState.globalHits.globalHits.nbMCHit = file->ReadSizeT();
+	worker->globState.globalHits.globalHits.nbHitEquiv = static_cast<double>(worker->globState.globalHits.globalHits.nbMCHit);
 
 	file->ReadKeyword("totalDes"); file->ReadKeyword(":");
-	worker->globState.globalHits.globalHits.hit.nbDesorbed = file->ReadSizeT();
+	worker->globState.globalHits.globalHits.nbDesorbed = file->ReadSizeT();
 
 	file->ReadKeyword("totalLeak"); file->ReadKeyword(":");
 	worker->globState.globalHits.nbLeakTotal = file->ReadSizeT();
 
 	if (*version >= 12) {
 		file->ReadKeyword("totalAbs"); file->ReadKeyword(":");
-		worker->globState.globalHits.globalHits.hit.nbAbsEquiv = (double) file->ReadSizeT();
+		worker->globState.globalHits.globalHits.nbAbsEquiv = (double) file->ReadSizeT();
 		if (*version >= 15) {
 			file->ReadKeyword("totalDist_total");
 		}
@@ -651,7 +651,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 		}
 	}
 	else {
-		worker->globState.globalHits.globalHits.hit.nbAbsEquiv = 0.0;
+		worker->globState.globalHits.globalHits.nbAbsEquiv = 0.0;
 		worker->globState.globalHits.distTraveled_total = 0.0;
 		worker->globState.globalHits.distTraveledTotal_fullHitsOnly = 0.0;
 	}
@@ -951,15 +951,15 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
 		throw Error(errMsg);
 	}
 	file->ReadKeyword("totalHit"); file->ReadKeyword(":");
-	worker->globState.globalHits.globalHits.hit.nbMCHit = 0;
-	worker->globState.globalHits.globalHits.hit.nbHitEquiv = 0.0;
+	worker->globState.globalHits.globalHits.nbMCHit = 0;
+	worker->globState.globalHits.globalHits.nbHitEquiv = 0.0;
 	file->ReadSizeT();
 	if (*version >= 10) {
 		file->ReadKeyword("totalHitEquiv"); file->ReadKeyword(":");
 		file->ReadDouble();
 	}
 	file->ReadKeyword("totalDes"); file->ReadKeyword(":");
-	worker->globState.globalHits.globalHits.hit.nbDesorbed = 0;
+	worker->globState.globalHits.globalHits.nbDesorbed = 0;
 	file->ReadSizeT();
 	if (*version >= 6) {
 		file->ReadKeyword("no_scans"); file->ReadKeyword(":");
@@ -1378,10 +1378,10 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, GlobalSimuState
 
 	prg->SetMessage("Writing geometry details...");
 	file->Write("version:"); file->Write(GEOVERSION, "\n");
-	file->Write("totalHit:"); file->Write((!crashSave && !saveSelected) ? globState.globalHits.globalHits.hit.nbMCHit : 0, "\n");
-	file->Write("totalDes:"); file->Write((!crashSave && !saveSelected) ? globState.globalHits.globalHits.hit.nbDesorbed : 0, "\n");
+	file->Write("totalHit:"); file->Write((!crashSave && !saveSelected) ? globState.globalHits.globalHits.nbMCHit : 0, "\n");
+	file->Write("totalDes:"); file->Write((!crashSave && !saveSelected) ? globState.globalHits.globalHits.nbDesorbed : 0, "\n");
 	file->Write("totalLeak:"); file->Write((!crashSave && !saveSelected) ? globState.globalHits.nbLeakTotal : 0, "\n");
-	file->Write("totalAbs:"); file->Write((!crashSave && !saveSelected) ? (size_t)globState.globalHits.globalHits.hit.nbAbsEquiv : 0, "\n");
+	file->Write("totalAbs:"); file->Write((!crashSave && !saveSelected) ? (size_t)globState.globalHits.globalHits.nbAbsEquiv : 0, "\n");
 	file->Write("totalDist_total:"); file->Write((!crashSave && !saveSelected) ? globState.globalHits.distTraveled_total : 0, "\n");
 	file->Write("totalDist_fullHitsOnly:"); file->Write((!crashSave && !saveSelected) ? globState.globalHits.distTraveledTotal_fullHitsOnly : 0, "\n");
 	file->Write("maxDes:"); file->Write((!crashSave && !saveSelected) ? worker->model.otfParams.desorptionLimit : 0, "\n");
@@ -1619,10 +1619,10 @@ void MolflowGeometry::SaveTXT(FileWriter *file, GlobalSimuState &globState, bool
 	// Globals
 
 	// Unused
-	file->Write(globState.globalHits.globalHits.hit.nbMCHit, "\n");
+	file->Write(globState.globalHits.globalHits.nbMCHit, "\n");
 	file->Write(globState.globalHits.nbLeakTotal, "\n");
 
-	file->Write(globState.globalHits.globalHits.hit.nbDesorbed, "\n");
+	file->Write(globState.globalHits.globalHits.nbDesorbed, "\n");
 	file->Write(0, "\n"); //Desorption limit
 
 	file->Write(sh.nbVertex, "\n");
@@ -1887,7 +1887,7 @@ void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, Worker *worker) {
 				std::ostringstream line;
 
 				line << i + 1 << sep << profType[f->sh.profileType] << sep << f->sh.O.x << sep << f->sh.O.y << sep << f->sh.O.z << sep << f->sh.U.x << sep << f->sh.U.y << sep << f->sh.U.z << sep;
-				line << f->sh.V.x << sep << f->sh.V.y << sep << f->sh.V.z << sep << f->sh.U.Norme() << sep << f->sh.V.Norme() << sep << f->sh.center.x << sep << f->sh.center.y << sep << f->sh.center.z << sep << f->sh.maxSpeed << sep << f->facetHitCache.hit.nbMCHit << sep << f->facetHitCache.hit.nbHitEquiv << sep;
+				line << f->sh.V.x << sep << f->sh.V.y << sep << f->sh.V.z << sep << f->sh.U.Norme() << sep << f->sh.V.Norme() << sep << f->sh.center.x << sep << f->sh.center.y << sep << f->sh.center.z << sep << f->sh.maxSpeed << sep << f->facetHitCache.nbMCHit << sep << f->facetHitCache.nbHitEquiv << sep;
 
 				if (f->sh.isProfile) {
 
@@ -1910,12 +1910,12 @@ void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, Worker *worker) {
 					case PROFILE_TAN_VELOCITY:
 						scaleX = f->sh.maxSpeed / (double)PROFILE_SIZE;
 						for (int j = 0; j < PROFILE_SIZE; j++)
-							line << prof[j].countEquiv / (f->facetHitCache.hit.nbHitEquiv + static_cast<double>(f->facetHitCache.hit.nbDesorbed)) << sep;
+							line << prof[j].countEquiv / (f->facetHitCache.nbHitEquiv + static_cast<double>(f->facetHitCache.nbDesorbed)) << sep;
 						break;
 					case PROFILE_ANGULAR:
 						scaleX = 90.0 / (double)PROFILE_SIZE;
 						for (int j = 0; j < PROFILE_SIZE; j++)
-							line << prof[j].countEquiv / (f->facetHitCache.hit.nbHitEquiv + static_cast<double>(f->facetHitCache.hit.nbDesorbed)) << sep;
+							line << prof[j].countEquiv / (f->facetHitCache.nbHitEquiv + static_cast<double>(f->facetHitCache.nbDesorbed)) << sep;
 						break;
 					}
 				}
@@ -2560,10 +2560,10 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSi
 			xml_node globalNode = newMoment.append_child("Global");
 
 			xml_node hitsNode = globalNode.append_child("Hits");
-			hitsNode.append_attribute("totalHit") = globState.globalHits.globalHits.hit.nbMCHit;
-			hitsNode.append_attribute("totalHitEquiv") = globState.globalHits.globalHits.hit.nbHitEquiv;
-			hitsNode.append_attribute("totalDes") = globState.globalHits.globalHits.hit.nbDesorbed;
-			hitsNode.append_attribute("totalAbsEquiv") = globState.globalHits.globalHits.hit.nbAbsEquiv;
+			hitsNode.append_attribute("totalHit") = globState.globalHits.globalHits.nbMCHit;
+			hitsNode.append_attribute("totalHitEquiv") = globState.globalHits.globalHits.nbHitEquiv;
+			hitsNode.append_attribute("totalDes") = globState.globalHits.globalHits.nbDesorbed;
+			hitsNode.append_attribute("totalAbsEquiv") = globState.globalHits.globalHits.nbAbsEquiv;
 			hitsNode.append_attribute("totalDist_total") = globState.globalHits.distTraveled_total;
 			hitsNode.append_attribute("totalDist_fullHitsOnly") = globState.globalHits.distTraveledTotal_fullHitsOnly;
 			hitsNode.append_attribute("totalLeak") = globState.globalHits.nbLeakTotal;
@@ -2660,13 +2660,13 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSi
 
 			xml_node facetHitNode = newFacetResult.append_child("Hits");
 			const FacetHitBuffer& facetCounter = globState.facetStates[i].momentResults[m].hits;
-			facetHitNode.append_attribute("nbHit") = facetCounter.hit.nbMCHit;
-			facetHitNode.append_attribute("nbHitEquiv") = facetCounter.hit.nbHitEquiv;
-			facetHitNode.append_attribute("nbDes") = facetCounter.hit.nbDesorbed;
-			facetHitNode.append_attribute("nbAbsEquiv") = facetCounter.hit.nbAbsEquiv;
-			facetHitNode.append_attribute("sum_v_ort") = facetCounter.hit.sum_v_ort;
-			facetHitNode.append_attribute("sum_1_per_v") = facetCounter.hit.sum_1_per_ort_velocity;
-			facetHitNode.append_attribute("sum_v") = facetCounter.hit.sum_1_per_velocity;
+			facetHitNode.append_attribute("nbHit") = facetCounter.nbMCHit;
+			facetHitNode.append_attribute("nbHitEquiv") = facetCounter.nbHitEquiv;
+			facetHitNode.append_attribute("nbDes") = facetCounter.nbDesorbed;
+			facetHitNode.append_attribute("nbAbsEquiv") = facetCounter.nbAbsEquiv;
+			facetHitNode.append_attribute("sum_v_ort") = facetCounter.sum_v_ort;
+			facetHitNode.append_attribute("sum_1_per_v") = facetCounter.sum_1_per_ort_velocity;
+			facetHitNode.append_attribute("sum_v") = facetCounter.sum_1_per_velocity;
 
 			if (f->sh.isProfile) {
 				xml_node profileNode = newFacetResult.append_child("Profile");
@@ -3376,21 +3376,21 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState 
 		if (m == 0) { //read global results
 			xml_node globalNode = newMoment.child("Global");
 			xml_node hitsNode = globalNode.child("Hits");
-			globState.globalHits.globalHits.hit.nbMCHit = hitsNode.attribute("totalHit").as_llong();
+			globState.globalHits.globalHits.nbMCHit = hitsNode.attribute("totalHit").as_llong();
 			if (hitsNode.attribute("totalHitEquiv")) {
-				globState.globalHits.globalHits.hit.nbHitEquiv = hitsNode.attribute("totalHitEquiv").as_double();
+				globState.globalHits.globalHits.nbHitEquiv = hitsNode.attribute("totalHitEquiv").as_double();
 			}
 			else {
 				//Backward compatibility
-				globState.globalHits.globalHits.hit.nbHitEquiv = static_cast<double>(globState.globalHits.globalHits.hit.nbMCHit);
+				globState.globalHits.globalHits.nbHitEquiv = static_cast<double>(globState.globalHits.globalHits.nbMCHit);
 			}
-			globState.globalHits.globalHits.hit.nbDesorbed = hitsNode.attribute("totalDes").as_llong();
+			globState.globalHits.globalHits.nbDesorbed = hitsNode.attribute("totalDes").as_llong();
 			if (hitsNode.attribute("totalAbsEquiv")) {
-				globState.globalHits.globalHits.hit.nbAbsEquiv = hitsNode.attribute("totalAbsEquiv").as_double();
+				globState.globalHits.globalHits.nbAbsEquiv = hitsNode.attribute("totalAbsEquiv").as_double();
 			}
 			else {
 				//Backward compatibility
-				globState.globalHits.globalHits.hit.nbAbsEquiv = hitsNode.attribute("totalAbs").as_double();
+				globState.globalHits.globalHits.nbAbsEquiv = hitsNode.attribute("totalAbs").as_double();
 			}
 			if (hitsNode.attribute("totalDist_total")) { //if it's in the new format where total/partial are separated
 				globState.globalHits.distTraveled_total = hitsNode.attribute("totalDist_total").as_double();
@@ -3517,45 +3517,45 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState 
 			xml_node facetHitNode = newFacetResult.child("Hits");
 			FacetHitBuffer& facetCounter = globState.facetStates[facetId].momentResults[m].hits;
 			if (facetHitNode) { //If there are hit results for the current moment	
-				facetCounter.hit.nbMCHit = facetHitNode.attribute("nbHit").as_llong();
+				facetCounter.nbMCHit = facetHitNode.attribute("nbHit").as_llong();
 				if (facetHitNode.attribute("nbHitEquiv")) {
-					facetCounter.hit.nbHitEquiv = facetHitNode.attribute("nbHitEquiv").as_double();
+					facetCounter.nbHitEquiv = facetHitNode.attribute("nbHitEquiv").as_double();
 				}
 				else {
 					//Backward compatibility
-					facetCounter.hit.nbHitEquiv = static_cast<double>(facetCounter.hit.nbMCHit);
+					facetCounter.nbHitEquiv = static_cast<double>(facetCounter.nbMCHit);
 				}
-				facetCounter.hit.nbDesorbed = facetHitNode.attribute("nbDes").as_llong();
+				facetCounter.nbDesorbed = facetHitNode.attribute("nbDes").as_llong();
 				if (facetHitNode.attribute("nbAbsEquiv")) {
-					facetCounter.hit.nbAbsEquiv = facetHitNode.attribute("nbAbsEquiv").as_double();
+					facetCounter.nbAbsEquiv = facetHitNode.attribute("nbAbsEquiv").as_double();
 				}
 				else {
 					//Backward compatibility
-					facetCounter.hit.nbAbsEquiv = facetHitNode.attribute("nbAbs").as_double();
+					facetCounter.nbAbsEquiv = facetHitNode.attribute("nbAbs").as_double();
 				}
-				facetCounter.hit.sum_v_ort = facetHitNode.attribute("sum_v_ort").as_double();
-				facetCounter.hit.sum_1_per_ort_velocity = facetHitNode.attribute("sum_1_per_v").as_double();
+				facetCounter.sum_v_ort = facetHitNode.attribute("sum_v_ort").as_double();
+				facetCounter.sum_1_per_ort_velocity = facetHitNode.attribute("sum_1_per_v").as_double();
 				if (facetHitNode.attribute("sum_v")) {
-					facetCounter.hit.sum_1_per_velocity = facetHitNode.attribute("sum_v").as_double();
+					facetCounter.sum_1_per_velocity = facetHitNode.attribute("sum_v").as_double();
 				}
 				else {
 					//Backward compatibility
-					facetCounter.hit.sum_1_per_velocity = 4.0 * Sqr(facetCounter.hit.nbHitEquiv + static_cast<double>(facetCounter.hit.nbDesorbed)) / facetCounter.hit.sum_1_per_ort_velocity;
+					facetCounter.sum_1_per_velocity = 4.0 * Sqr(facetCounter.nbHitEquiv + static_cast<double>(facetCounter.nbDesorbed)) / facetCounter.sum_1_per_ort_velocity;
 				}
 
 				if (work->displayedMoment == m) { //For immediate display in facet hits list and facet counter
-					f->facetHitCache.hit = facetCounter.hit;
+					f->facetHitCache = facetCounter;
 				}
 			}
 			else { //No hit information, so set to 0
-				facetCounter.hit.nbMCHit =
-					facetCounter.hit.nbDesorbed =
+				facetCounter.nbMCHit =
+					facetCounter.nbDesorbed =
 					0;
-				facetCounter.hit.sum_v_ort =
-					facetCounter.hit.nbHitEquiv =
-					facetCounter.hit.sum_1_per_ort_velocity =
-					facetCounter.hit.sum_1_per_velocity =
-					facetCounter.hit.nbAbsEquiv =
+				facetCounter.sum_v_ort =
+					facetCounter.nbHitEquiv =
+					facetCounter.sum_1_per_ort_velocity =
+					facetCounter.sum_1_per_velocity =
+					facetCounter.nbAbsEquiv =
 					0.0;
 			}
 

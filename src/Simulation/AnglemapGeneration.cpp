@@ -73,9 +73,8 @@ namespace AnglemapGeneration {
 */
 
     double GeneratePhiFromAngleMap(const int &thetaLowerIndex, const double &thetaOvershoot,
-                                                       const AnglemapParams &anglemapParams, Anglemap &anglemap,
-                                                       const std::vector<size_t> &angleMapPDF,
-                                                       double lookupValue) {
+                                   const AnglemapParams &anglemapParams,
+                                   Anglemap &anglemap, double lookupValue) {
         //double lookupValue = randomGenerator.rnd();
         if (anglemapParams.phiWidth == 1) return -PI + 2.0 * PI * lookupValue; //special case, uniform phi distribution
         int phiLowerIndex;
@@ -134,8 +133,8 @@ namespace AnglemapGeneration {
                 phi = GetPhi((double)phiLowerIndex + 0.5 + phiOvershoot, anglemapParams); //between 0 and the first section end
             }*/
         else { //regular or last section
-            if (/*true ||*/ GetPhipdfValue(thetaIndex, phiLowerIndex, anglemapParams, angleMapPDF) ==
-                            GetPhipdfValue(thetaIndex, phiLowerIndex + 1, anglemapParams, angleMapPDF)) {
+            if (/*true ||*/ GetPhipdfValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap.pdf) ==
+                            GetPhipdfValue(thetaIndex, phiLowerIndex + 1, anglemapParams, anglemap.pdf)) {
                 //The pdf's slope is 0, linear interpolation
                 phiOvershoot = (lookupValue - GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap))
                                / (GetPhiCDFValue(thetaIndex, phiLowerIndex + 1, anglemapParams, anglemap) -
@@ -155,10 +154,10 @@ namespace AnglemapGeneration {
                 double phiStep = 2.0 * PI / (double) anglemapParams.phiWidth;
                 double c = GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams,
                                           anglemap); //CDF value at lower index
-                double b = GetPhipdfValue(thetaIndex, phiLowerIndex, anglemapParams, angleMapPDF) /
+                double b = GetPhipdfValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap.pdf) /
                            GetPhiCDFSum(thetaIndex, anglemapParams, anglemap) / phiStep; //pdf value at lower index
-                double a = 0.5 * (GetPhipdfValue(thetaIndex, phiLowerIndex + 1, anglemapParams, angleMapPDF) -
-                                  GetPhipdfValue(thetaIndex, phiLowerIndex, anglemapParams, angleMapPDF)) /
+                double a = 0.5 * (GetPhipdfValue(thetaIndex, phiLowerIndex + 1, anglemapParams, anglemap.pdf) -
+                                  GetPhipdfValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap.pdf)) /
                            GetPhiCDFSum(thetaIndex, anglemapParams, anglemap) / Sqr(phiStep); //pdf slope at lower index
                 double dy = lookupValue - c;
 

@@ -63,6 +63,8 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
     if(initDesLimit(*model,*globState)) {
         exit(0);
     }
+    model->otfParams.timeLimit = (double) Settings::simDuration;
+
     /*else{
         model->otfParams.desorptionLimit = 0;
     }*/
@@ -184,8 +186,7 @@ int Initializer::initSimUnit(SimulationManager *simManager, SimulationModel *mod
     simManager->ForwardSimModel(model);
     simManager->ForwardGlobalCounter(globState, nullptr);
 
-    if (simManager->ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
-        //CloseLoaderDP();
+    if(simManager->LoadSimulation()){
         model->m.unlock();
         std::string errString = "Failed to send geometry to sub process:\n";
         errString.append(simManager->GetErrorDetails());
@@ -203,7 +204,7 @@ int Initializer::initDesLimit(SimulationModel& model, GlobalSimuState& globState
     // Skip desorptions if limit was already reached
     if(!Settings::desLimit.empty())
     {
-        size_t oldDesNb = globState.globalHits.globalHits.hit.nbDesorbed;
+        size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
         size_t listSize = Settings::desLimit.size();
         for(size_t l = 0; l < listSize; ++l) {
             model.otfParams.desorptionLimit = Settings::desLimit.front();
