@@ -120,6 +120,8 @@ Worker::Worker() : simManager(), model{} {
     //startTime = 0.0f;
     //stopTime = 0.0f;
     //simuTime = 0.0f;
+
+    fullFileName = "";
 }
 
 /**
