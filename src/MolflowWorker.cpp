@@ -1233,8 +1233,8 @@ bool Worker::InterfaceGeomToSimModel() {
                     }
                 } else {
 
-                    double rw = facet->geo.U.Norme() / facet->sh.texWidthD;
-                    double rh = facet->geo.V.Norme() / facet->sh.texHeightD;
+                    double rw = facet->sh.U.Norme() / facet->sh.texWidthD;
+                    double rh = facet->sh.V.Norme() / facet->sh.texHeightD;
                     double area = rw * rh;
                     size_t add = 0;
                     for (int j = 0; j < facet->sh.texHeight; j++) {
@@ -1251,7 +1251,7 @@ bool Worker::InterfaceGeomToSimModel() {
             }
             sFac.sh = facet->sh;
             sFac.indices = facet->indices;
-            sFac.geo.vertices2 = facet->geo.vertices2;
+            sFac.vertices2 = facet->vertices2;
             sFac.ogMap = facet->ogMap;
             sFac.angleMap.pdf = angleMapVector;
             sFac.textureCellIncrements = textIncVector;

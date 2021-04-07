@@ -588,8 +588,8 @@ void WriterXML::SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
                 uInput.facetViewSettings[facet->globalId]); //backward compatibility: 0 or 1
     }
 
-    facetNode.append_child("Indices").append_attribute("nb") = facet->geo.nbIndex;
-    for (size_t i = 0; i < facet->geo.nbIndex; i++) {
+    facetNode.append_child("Indices").append_attribute("nb") = facet->sh.nbIndex;
+    for (size_t i = 0; i < facet->sh.nbIndex; i++) {
         xml_node indice = facetNode.child("Indices").append_child("Indice");
         indice.append_attribute("id") = i;
         indice.append_attribute("vertex") = facet->indices[i];

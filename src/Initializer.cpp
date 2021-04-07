@@ -288,8 +288,8 @@ int Initializer::initSimModel(SimulationModel* model) {
         if (sFac.sh.isTextured) {
             textIncVector.resize(sFac.sh.texHeight*sFac.sh.texWidth);
 
-            double rw = sFac.geo.U.Norme() / (double)(sFac.sh.texWidthD);
-            double rh = sFac.geo.V.Norme() / (double)(sFac.sh.texHeightD);
+            double rw = sFac.sh.U.Norme() / (double)(sFac.sh.texWidthD);
+            double rh = sFac.sh.V.Norme() / (double)(sFac.sh.texHeightD);
             double area = rw * rh;
             area *= (sFac.sh.is2sided) ? 2.0 : 1.0;
             size_t add = 0;

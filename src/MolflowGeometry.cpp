@@ -164,8 +164,7 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 	int nbTV = 4 * nbTF;
 
 	sh.nbVertex = 2 * step + nbTV;
-    vertices3.Clear();
-    vertices3.Resize(sh.nbVertex);
+	std::vector<InterfaceVertex>(sh.nbVertex).swap(vertices3);
 
 	sh.nbFacet = step + 2 + nbTF;
 
@@ -416,7 +415,7 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
         throw Error("Couldn't allocate memory for facets");
     }
 
-	vertices3.Resize(nbNewVertex + sh.nbVertex);
+	vertices3.resize(nbNewVertex + sh.nbVertex);
 
 	// Read geometry vertices
 	file->ReadKeyword("vertices"); file->ReadKeyword("{");
@@ -427,7 +426,7 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 		vertices3[i].x = file->ReadDouble();
 		vertices3[i].y = file->ReadDouble();
 		vertices3[i].z = file->ReadDouble();
-		vertices3.selection[i] = false;
+		vertices3[i].selected = false;
 	}
 	file->ReadKeyword("}");
 
@@ -810,9 +809,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
     catch(std::exception& e) {
         throw Error("Couldn't allocate memory for facets");
     }
-
-    vertices3.Clear();
-    vertices3.Resize(sh.nbVertex);
+	std::vector<InterfaceVertex>(sh.nbVertex).swap(vertices3);
 
 	// Read vertices
 	prg->SetMessage("Reading vertices...");
@@ -824,7 +821,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 		vertices3[i].x = file->ReadDouble();
 		vertices3[i].y = file->ReadDouble();
 		vertices3[i].z = file->ReadDouble();
-		vertices3.selection[i] = false;
+		vertices3[i].selected = false;
 	}
 	file->ReadKeyword("}");
 
@@ -915,8 +912,8 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 			throw Error(errMsg);
 		}
 		BuildFacetList(f);
-        const double nU = f->geo.U.Norme();
-        const double nV = f->geo.V.Norme();
+        const double nU = f->sh.U.Norme();
+        const double nV = f->sh.V.Norme();
 
         f->tRatioU = f->sh.texWidthD / nU;
         f->tRatioV = f->sh.texHeightD / nV;
@@ -1081,7 +1078,7 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
         throw Error("Couldn't allocate memory for facets");
     }
 
-	vertices3.Resize(sh.nbVertex);
+	vertices3.resize(sh.nbVertex); vertices3.shrink_to_fit();
 
 	// Read vertices
 	prg->SetMessage("Reading vertices...");
@@ -1093,7 +1090,7 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
 		vertices3[i].x = file->ReadDouble();
 		vertices3[i].y = file->ReadDouble();
 		vertices3[i].z = file->ReadDouble();
-		vertices3.selection[i] = false;
+		vertices3[i].selected = false;
 	}
 	file->ReadKeyword("}");
 	prg->SetMessage("Reading leaks and hits...");
@@ -1644,15 +1641,15 @@ void MolflowGeometry::SaveTXT(FileWriter *file, GlobalSimuState &globState, bool
 		int j;
 		if (saveSelected) {
 			if (f->selected) {
-				file->Write(f->geo.nbIndex, " ");
-				for (j = 0; j < f->geo.nbIndex - 1; j++)
+				file->Write(f->sh.nbIndex, " ");
+				for (j = 0; j < f->sh.nbIndex - 1; j++)
 					file->Write(f->indices[j] + 1, " ");
 				file->Write(f->indices[j] + 1, "\n");
 			}
 		}
 		else {
-			file->Write(f->geo.nbIndex, " ");
-			for (j = 0; j < f->geo.nbIndex - 1; j++)
+			file->Write(f->sh.nbIndex, " ");
+			for (j = 0; j < f->sh.nbIndex - 1; j++)
 				file->Write(f->indices[j] + 1, " ");
 			file->Write(f->indices[j] + 1, "\n");
 		}
@@ -1818,9 +1815,9 @@ MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, GlobalSimuSt
 							if (grouping == 1  && tmp[0]) {
 								Vector2d facetCenter = f->GetMeshCenter(index);
 								sprintf(out, "%g\t%g\t%g\t%s\t\n",
-									f->geo.O.x + facetCenter.u*f->geo.U.x + facetCenter.v*f->geo.V.x,
-									f->geo.O.y + facetCenter.u*f->geo.U.y + facetCenter.v*f->geo.V.y,
-									f->geo.O.z + facetCenter.u*f->geo.U.z + facetCenter.v*f->geo.V.z,
+									f->sh.O.x + facetCenter.u*f->sh.U.x + facetCenter.v*f->sh.V.x,
+									f->sh.O.y + facetCenter.u*f->sh.U.y + facetCenter.v*f->sh.V.y,
+									f->sh.O.z + facetCenter.u*f->sh.U.z + facetCenter.v*f->sh.V.z,
 									tmp);
 							}
 							else sprintf(out, "%s", tmp);
@@ -1889,8 +1886,8 @@ void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, Worker *worker) {
 			if (f->selected) {
 				std::ostringstream line;
 
-				line << i + 1 << sep << profType[f->sh.profileType] << sep << f->geo.O.x << sep << f->geo.O.y << sep << f->geo.O.z << sep << f->geo.U.x << sep << f->geo.U.y << sep << f->geo.U.z << sep;
-				line << f->geo.V.x << sep << f->geo.V.y << sep << f->geo.V.z << sep << f->geo.U.Norme() << sep << f->geo.V.Norme() << sep << f->geo.center.x << sep << f->geo.center.y << sep << f->geo.center.z << sep << f->sh.maxSpeed << sep << f->facetHitCache.nbMCHit << sep << f->facetHitCache.nbHitEquiv << sep;
+				line << i + 1 << sep << profType[f->sh.profileType] << sep << f->sh.O.x << sep << f->sh.O.y << sep << f->sh.O.z << sep << f->sh.U.x << sep << f->sh.U.y << sep << f->sh.U.z << sep;
+				line << f->sh.V.x << sep << f->sh.V.y << sep << f->sh.V.z << sep << f->sh.U.Norme() << sep << f->sh.V.Norme() << sep << f->sh.center.x << sep << f->sh.center.y << sep << f->sh.center.z << sep << f->sh.maxSpeed << sep << f->facetHitCache.nbMCHit << sep << f->facetHitCache.nbHitEquiv << sep;
 
 				if (f->sh.isProfile) {
 
@@ -2125,7 +2122,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 			f->ogMap.outgassingMapHeight = (size_t)ceil(ydims[i] * 0.9999999);
 
 			if (f->selected) {
-				f->ogMap.outgassingFileRatio = xdims[i] / f->geo.U.Norme();
+				f->ogMap.outgassingFileRatio = xdims[i] / f->sh.U.Norme();
 				try {
 					std::vector<double>(f->ogMap.outgassingMapWidth*f->ogMap.outgassingMapHeight).swap(f->ogMap.outgassingMap);
 				}
@@ -2861,13 +2858,13 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 	//Vertices
 	sh.nbVertex = geomNode.child("Vertices").select_nodes("Vertex").size();
 
-	vertices3.Resize(sh.nbVertex);
+	vertices3.resize(sh.nbVertex); vertices3.shrink_to_fit();
 	size_t idx = 0;
 	for (xml_node vertex : geomNode.child("Vertices").children("Vertex")) {
 		vertices3[idx].x = vertex.attribute("x").as_double();
 		vertices3[idx].y = vertex.attribute("y").as_double();
 		vertices3[idx].z = vertex.attribute("z").as_double();
-		vertices3.selection[idx] = false;
+		vertices3[idx].selected = false;
 		idx++;
 	}
 
@@ -3153,7 +3150,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 	SAFE_FREE(vertices3);
 	vertices3 = tmp_vertices3;
 	*/
-	vertices3.Resize(nbNewVertex + sh.nbVertex);
+	vertices3.resize(nbNewVertex + sh.nbVertex);
 
 	// Read geometry vertices
 	size_t idx = sh.nbVertex;
@@ -3161,7 +3158,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 		vertices3[idx].x = vertex.attribute("x").as_double();
 		vertices3[idx].y = vertex.attribute("y").as_double();
 		vertices3[idx].z = vertex.attribute("z").as_double();
-		vertices3.selection[idx] = false;
+		vertices3[idx].selected = false;
 		idx++;
 
 	}
@@ -3342,8 +3339,8 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 			throw Error(errMsg);
 		}
 		BuildFacetList(f);
-        const double nU = f->geo.U.Norme();
-        const double nV = f->geo.V.Norme();
+        const double nU = f->sh.U.Norme();
+        const double nV = f->sh.V.Norme();
 
         f->tRatioU = f->sh.texWidthD / nU;
         f->tRatioV = f->sh.texHeightD / nV;

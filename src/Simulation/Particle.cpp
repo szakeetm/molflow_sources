@@ -151,13 +151,13 @@ void Particle::PerformTeleport(SubprocessFacet *iFacet) {
     if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
 
     // Relaunch particle from new facet
-    auto[inTheta, inPhi] = CartesianToPolar(direction, iFacet->geo.nU, iFacet->geo.nV,
-                                            iFacet->geo.N);
-    direction = PolarToCartesian(destination->geo.nU, destination->geo.nV, destination->geo.N, inTheta, inPhi, false);
+    auto[inTheta, inPhi] = CartesianToPolar(direction, iFacet->sh.nU, iFacet->sh.nV,
+                                            iFacet->sh.N);
+    direction = PolarToCartesian(destination->sh.nU, destination->sh.nV, destination->sh.N, inTheta, inPhi, false);
     // Move particle to teleport destination point
     double u = tmpFacetVars[iFacet->globalId].colU;
     double v = tmpFacetVars[iFacet->globalId].colV;
-    position = destination->geo.O + u * destination->geo.U + v * destination->geo.V;
+    position = destination->sh.O + u * destination->sh.U + v * destination->sh.V;
     if (particleId == 0)RecordHit(HIT_TELEPORTDEST);
     int nbTry = 0;
     if (!IsInFacet(*destination, u, v)) { //source and destination facets not the same shape, would generate leak
@@ -169,7 +169,7 @@ void Particle::PerformTeleport(SubprocessFacet *iFacet) {
             v = randomGenerator.rnd();
             if (IsInFacet(*destination, u, v)) {
                 found = true;
-                position = destination->geo.O + u * destination->geo.U + v * destination->geo.V;
+                position = destination->sh.O + u * destination->sh.U + v * destination->sh.V;
                 if (particleId == 0)RecordHit(HIT_DES);
             }
         }
@@ -183,7 +183,7 @@ void Particle::PerformTeleport(SubprocessFacet *iFacet) {
     destination->sh.tmpCounter.hit.nbDesorbed++;*/
 
     double ortVelocity =
-            velocity * std::abs(Dot(direction, iFacet->geo.N));
+            velocity * std::abs(Dot(direction, iFacet->sh.N));
     //We count a teleport as a local hit, but not as a global one since that would affect the MFP calculation
     /*iFacet->sh.tmpCounter.hit.nbMCHit++;
     iFacet->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity;
@@ -194,7 +194,7 @@ void Particle::PerformTeleport(SubprocessFacet *iFacet) {
     /*destination->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / velocity;
     destination->sh.tmpCounter.hit.sum_v_ort += velocity*abs(DOT3(
     direction.x, direction.y, direction.z,
-    destination->geo.N.x, destination->geo.N.y, destination->geo.N.z));*/
+    destination->sh.N.x, destination->sh.N.y, destination->sh.N.z));*/
 }
 
 // Perform nbStep simulation steps (a step is a bounce) or remainingDes desorptions
@@ -468,7 +468,7 @@ bool Particle::StartFromSource() {
         if (IsInFacet(*src, u, v)) {
 
             // (U,V) -> (x,y,z)
-            position = src->geo.O + u * src->geo.U + v * src->geo.V;
+            position = src->sh.O + u * src->sh.U + v * src->sh.V;
             tmpFacetVars[src->globalId].colU = u;
             tmpFacetVars[src->globalId].colV = v;
             found = true;
@@ -481,17 +481,17 @@ bool Particle::StartFromSource() {
         // Get the center, if the center is not included in the facet, a leak is generated.
         if (foundInMap) {
             auto& outgMap = src->ogMap;
-            //double uLength = sqrt(pow(src->geo.U.x, 2) + pow(src->geo.U.y, 2) + pow(src->geo.U.z, 2));
-            //double vLength = sqrt(pow(src->geo.V.x, 2) + pow(src->geo.V.y, 2) + pow(src->geo.V.z, 2));
+            //double uLength = sqrt(pow(src->sh.U.x, 2) + pow(src->sh.U.y, 2) + pow(src->sh.U.z, 2));
+            //double vLength = sqrt(pow(src->sh.V.x, 2) + pow(src->sh.V.y, 2) + pow(src->sh.V.z, 2));
             double u = ((double) mapPositionW + 0.5) / outgMap.outgassingMapWidthD;
             double v = ((double) mapPositionH + 0.5) / outgMap.outgassingMapHeightD;
-            position = src->geo.O + u * src->geo.U + v * src->geo.V;
+            position = src->sh.O + u * src->sh.U + v * src->sh.V;
             tmpFacetVars[src->globalId].colU = u;
             tmpFacetVars[src->globalId].colV = v;
         } else {
             tmpFacetVars[src->globalId].colU = 0.5;
             tmpFacetVars[src->globalId].colV = 0.5;
-            position = src->geo.center;
+            position = src->sh.center;
         }
 
     }
@@ -503,18 +503,18 @@ bool Particle::StartFromSource() {
     //See docs/theta_gen.png for further details on angular distribution generation
     switch (src->sh.desorbType) {
         case DES_UNIFORM:
-            direction = PolarToCartesian(src->geo.nU, src->geo.nV, src->geo.N, std::acos(randomGenerator.rnd()),
+            direction = PolarToCartesian(src->sh.nU, src->sh.nV, src->sh.N, std::acos(randomGenerator.rnd()),
                                          randomGenerator.rnd() * 2.0 * PI,
                                          reverse);
             break;
         case DES_NONE: //for file-based
         case DES_COSINE:
-            direction = PolarToCartesian(src->geo.nU, src->geo.nV, src->geo.N, std::acos(std::sqrt(randomGenerator.rnd())),
+            direction = PolarToCartesian(src->sh.nU, src->sh.nV, src->sh.N, std::acos(std::sqrt(randomGenerator.rnd())),
                                          randomGenerator.rnd() * 2.0 * PI,
                                          reverse);
             break;
         case DES_COSINE_N:
-            direction = PolarToCartesian(src->geo.nU, src->geo.nV, src->geo.N, std::acos(
+            direction = PolarToCartesian(src->sh.nU, src->sh.nV, src->sh.N, std::acos(
                             std::pow(randomGenerator.rnd(), 1.0 / (src->sh.desorbTypeN + 1.0))),
                                          randomGenerator.rnd() * 2.0 * PI, reverse);
             break;
@@ -524,7 +524,7 @@ bool Particle::StartFromSource() {
             auto phi = AnglemapGeneration::GeneratePhiFromAngleMap(thetaLowerIndex, thetaOvershoot,
                                                                    src->sh.anglemapParams, src->angleMap,
                                                                    randomGenerator.rnd());
-            direction = PolarToCartesian(src->geo.nU, src->geo.nV, src->geo.N, PI - theta, phi,
+            direction = PolarToCartesian(src->sh.nU, src->sh.nV, src->sh.N, PI - theta, phi,
                                          false); //angle map contains incident angle (between N and source dir) and theta is dir (between N and dest dir)
 
         }
@@ -557,7 +557,7 @@ bool Particle::StartFromSource() {
     }
 
     double ortVelocity =
-            velocity * std::abs(Dot(direction, src->geo.N));
+            velocity * std::abs(Dot(direction, src->sh.N));
     /*src->sh.tmpCounter.hit.nbDesorbed++;
     src->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity; //was 2.0 / ortV
     src->sh.tmpCounter.hit.sum_v_ort += (model->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
@@ -650,7 +650,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
 
     if (iFacet->sh.is2sided) {
         // We may need to revert normal in case of 2 sided hit
-        revert = Dot(direction, iFacet->geo.N) > 0.0;
+        revert = Dot(direction, iFacet->sh.N) > 0.0;
     }
 
     //Texture/Profile incoming hit
@@ -658,7 +658,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
 
     //Register (orthogonal) velocity
     double ortVelocity =
-            velocity * std::abs(Dot(direction, iFacet->geo.N));
+            velocity * std::abs(Dot(direction, iFacet->sh.N));
 
     /*iFacet->sh.tmpCounter.hit.nbMCHit++; //hit facet
     iFacet->sh.tmpCounter.hit.sum_1_per_ort_velocity += 1.0 / ortVelocity;
@@ -689,7 +689,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
     }
 
     if (iFacet->sh.reflection.diffusePart > 0.999999) { //Speedup branch for most common, diffuse case
-        direction = PolarToCartesian(iFacet->geo.nU, iFacet->geo.nV, iFacet->geo.N, std::acos(std::sqrt(randomGenerator.rnd())),
+        direction = PolarToCartesian(iFacet->sh.nU, iFacet->sh.nV, iFacet->sh.N, std::acos(std::sqrt(randomGenerator.rnd())),
                                      randomGenerator.rnd() * 2.0 * PI,
                                      revert);
     } else {
@@ -697,18 +697,18 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
         if (reflTypeRnd < iFacet->sh.reflection.diffusePart) {
             //diffuse reflection
             //See docs/theta_gen.png for further details on angular distribution generation
-            direction = PolarToCartesian(iFacet->geo.nU, iFacet->geo.nV, iFacet->geo.N, std::acos(std::sqrt(randomGenerator.rnd())),
+            direction = PolarToCartesian(iFacet->sh.nU, iFacet->sh.nV, iFacet->sh.N, std::acos(std::sqrt(randomGenerator.rnd())),
                                          randomGenerator.rnd() * 2.0 * PI,
                                          revert);
         } else if (reflTypeRnd < (iFacet->sh.reflection.diffusePart + iFacet->sh.reflection.specularPart)) {
             //specular reflection
-            auto[inTheta, inPhi] = CartesianToPolar(direction, iFacet->geo.nU, iFacet->geo.nV,
-                                                    iFacet->geo.N);
-            direction = PolarToCartesian(iFacet->geo.nU, iFacet->geo.nV, iFacet->geo.N, PI - inTheta, inPhi, false);
+            auto[inTheta, inPhi] = CartesianToPolar(direction, iFacet->sh.nU, iFacet->sh.nV,
+                                                    iFacet->sh.N);
+            direction = PolarToCartesian(iFacet->sh.nU, iFacet->sh.nV, iFacet->sh.N, PI - inTheta, inPhi, false);
 
         } else {
             //Cos^N reflection
-            direction = PolarToCartesian(iFacet->geo.nU, iFacet->geo.nV, iFacet->geo.N, std::acos(
+            direction = PolarToCartesian(iFacet->sh.nU, iFacet->sh.nV, iFacet->sh.N, std::acos(
                             std::pow(randomGenerator.rnd(), 1.0 / (iFacet->sh.reflection.cosineExponent + 1.0))),
                                          randomGenerator.rnd() * 2.0 * PI, revert);
         }
@@ -720,7 +720,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
 
     //Texture/Profile outgoing particle
     //Register outgoing velocity
-    ortVelocity = velocity * std::abs(Dot(direction, iFacet->geo.N));
+    ortVelocity = velocity * std::abs(Dot(direction, iFacet->sh.N));
 
     /*iFacet->sh.tmpCounter.hit.sum_1_per_ort_velocity += 1.0 / ortVelocity;
     iFacet->sh.tmpCounter.hit.sum_v_ort += (model->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
@@ -743,7 +743,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
 /*void Simulation::PerformTransparentPass(SubprocessFacet *iFacet) { //disabled, caused finding hits with the same facet
     *//*double directionFactor = abs(DOT3(
         direction.x, direction.y, direction.z,
-        iFacet->geo.N.x, iFacet->geo.N.y, iFacet->geo.N.z));
+        iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z));
     iFacet->sh.tmpCounter.hit.nbMCHit++;
     iFacet->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / (velocity*directionFactor);
     iFacet->sh.tmpCounter.hit.sum_v_ort += 2.0*(model->wp.useMaxwellDistribution ? 1.0 : 1.1781)*velocity*directionFactor;
@@ -771,7 +771,7 @@ void Particle::RecordAbsorb(SubprocessFacet *iFacet) {
 
     if (particleId == 0) RecordHit(HIT_ABS);
     double ortVelocity =
-            velocity * std::abs(Dot(direction, iFacet->geo.N));
+            velocity * std::abs(Dot(direction, iFacet->sh.N));
     IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 1, 2.0 / ortVelocity,
                          (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
     if(particleId == 0) LogHit(iFacet);
@@ -841,7 +841,7 @@ Particle::RecordHitOnTexture(const SubprocessFacet *f, int m, bool countHit, dou
     size_t add = tu + tv * (f->sh.texWidth);
     double ortVelocity = (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * velocity *
                          std::abs(Dot(direction,
-                                      f->geo.N)); //surface-orthogonal velocity component
+                                      f->sh.N)); //surface-orthogonal velocity component
 
     {
         TextureCell &texture = tmpState.facetStates[f->globalId].momentResults[0].texture[add];
@@ -886,7 +886,7 @@ Particle::ProfileFacet(const SubprocessFacet *f, int m, bool countHit, double ve
 
     size_t nbMoments = model->tdParams.moments.size();
     if (countHit && f->sh.profileType == PROFILE_ANGULAR) {
-        double dot = Dot(f->geo.N, direction);
+        double dot = Dot(f->sh.N, direction);
         double theta = std::acos(std::abs(dot));     // Angle to normal (PI/2 => PI)
         size_t pos = (size_t) (theta / (PI / 2) * ((double) PROFILE_SIZE)); // To Grad
         Saturate(pos, 0, PROFILE_SIZE - 1);
@@ -904,7 +904,7 @@ Particle::ProfileFacet(const SubprocessFacet *f, int m, bool countHit, double ve
                 ProfileSlice &profile = tmpState.facetStates[f->globalId].momentResults[0].profile[pos];
                 if (countHit) profile.countEquiv += oriRatio;
                 double ortVelocity = velocity *
-                                     std::abs(Dot(f->geo.N, direction));
+                                     std::abs(Dot(f->sh.N, direction));
                 profile.sum_1_per_ort_velocity +=
                         oriRatio * velocity_factor / ortVelocity;
                 profile.sum_v_ort += oriRatio * ortSpeedFactor *
@@ -914,7 +914,7 @@ Particle::ProfileFacet(const SubprocessFacet *f, int m, bool countHit, double ve
                 ProfileSlice &profile = tmpState.facetStates[f->globalId].momentResults[m].profile[pos];
                 if (countHit) profile.countEquiv += oriRatio;
                 double ortVelocity = velocity *
-                                     std::abs(Dot(f->geo.N, direction));
+                                     std::abs(Dot(f->sh.N, direction));
                 profile.sum_1_per_ort_velocity +=
                         oriRatio * velocity_factor / ortVelocity;
                 profile.sum_v_ort += oriRatio * ortSpeedFactor *
@@ -927,9 +927,9 @@ Particle::ProfileFacet(const SubprocessFacet *f, int m, bool countHit, double ve
         if (f->sh.profileType == PROFILE_VELOCITY) {
             dot = 1.0;
         } else if (f->sh.profileType == PROFILE_ORT_VELOCITY) {
-            dot = std::abs(Dot(f->geo.N, direction));  //cos(theta) as "dot" value
+            dot = std::abs(Dot(f->sh.N, direction));  //cos(theta) as "dot" value
         } else { //Tangential
-            dot = std::sqrt(1 - Sqr(std::abs(Dot(f->geo.N, direction))));  //tangential
+            dot = std::sqrt(1 - Sqr(std::abs(Dot(f->sh.N, direction))));  //tangential
         }
         size_t pos = (size_t) (dot * velocity / f->sh.maxSpeed *
                                (double) PROFILE_SIZE); //"dot" default value is 1.0
@@ -950,7 +950,7 @@ Particle::LogHit(SubprocessFacet *f) {
         tmpParticleLog.pLog.size() < tmpParticleLog.pLog.capacity()) {
         ParticleLoggerItem log;
         log.facetHitPosition = Vector2d(tmpFacetVars[f->globalId].colU, tmpFacetVars[f->globalId].colV);
-        std::tie(log.hitTheta, log.hitPhi) = CartesianToPolar(direction, f->geo.nU, f->geo.nV, f->geo.N);
+        std::tie(log.hitTheta, log.hitPhi) = CartesianToPolar(direction, f->sh.nU, f->sh.nV, f->sh.N);
         log.oriRatio = oriRatio;
         log.particleDecayMoment = expectedDecayMoment;
         log.time = particleTime;
@@ -960,8 +960,8 @@ Particle::LogHit(SubprocessFacet *f) {
 }
 
 void Particle::RecordAngleMap(const SubprocessFacet *collidedFacet) {
-    auto[inTheta, inPhi] = CartesianToPolar(direction, collidedFacet->geo.nU,
-                                            collidedFacet->geo.nV, collidedFacet->geo.N);
+    auto[inTheta, inPhi] = CartesianToPolar(direction, collidedFacet->sh.nU,
+                                            collidedFacet->sh.nV, collidedFacet->sh.N);
     if (inTheta > PI / 2.0)
         inTheta = std::abs(
                 PI - inTheta); //theta is originally respective to N, but we'd like the angle between 0 and PI/2
@@ -1070,7 +1070,7 @@ Particle::IncreaseFacetCounter(const SubprocessFacet *f, int m, size_t hit, size
 }
 
 void Particle::RegisterTransparentPass(SubprocessFacet *facet) {
-    double directionFactor = std::abs(Dot(direction, facet->geo.N));
+    double directionFactor = std::abs(Dot(direction, facet->sh.N));
 
     int momentIndex = -1;
     if ((momentIndex = LookupMomentIndex(particleTime +
