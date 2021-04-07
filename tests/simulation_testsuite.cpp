@@ -100,7 +100,62 @@ namespace {
         bool operator<(Stats const& other) const {
             return other.max < max;
         }
+
+        /*Stats& operator=(const OldStats& src){
+            commitHash = src.commitHash;
+            max = src.max;
+            min = src.min;
+            avg = src.avg;
+            med = src.med;
+
+            return *this;
+        }*/
     };
+
+    /*struct OldStats {
+        std::string commitHash;
+        double min{-1.0}, max{-1.0}, avg{-1.0}, med{-1.0};
+        friend std::istream& operator>>(std::istream& is, OldStats& r)       {
+
+            // Get current position
+            int len = is.tellg();
+            char line[256];
+            is.getline(line, 256);
+            // Return to position before "Read line".
+            is.seekg(len ,std::ios_base::beg);
+
+            size_t countDelimiter = 0;
+            size_t pos = 0;
+            while((line[pos] != '\n' && line[pos] != '\0') && pos < 256 && countDelimiter < 2){
+                if(line[pos] == ' ' || line[pos] == '\t') {
+                    ++countDelimiter;
+                }
+                ++pos;
+            }
+            if(countDelimiter >= 2) {
+                is >> r.commitHash >> r.max;
+                is.getline(line, 256);
+                return is;
+            }
+            else
+                return is >> r.commitHash >> r.max >> r.min >> r.med >> r.avg;
+        }
+
+        bool operator<(OldStats const& other) const {
+            return other.max < max;
+        }
+
+        //implicit conversion
+        operator Stats() const {
+            Stats newStat;
+            newStat.commitHash = commitHash;
+            newStat.max = max;
+            newStat.min = min;
+            newStat.avg = avg;
+            newStat.med = med;
+        return newStat; }
+
+    };*/
 
     TEST_P(SimulationFixture, PerformanceOkay) {
         std::string testFile = GetParam();
@@ -156,8 +211,6 @@ namespace {
             EXPECT_EQ(0, oldHitsNb);
             EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
             EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
-
-
 
             printf("[Run %zu/%zu] Current Hit/s: %e\n", runNb, nRuns, perfTimes.back());
         };
