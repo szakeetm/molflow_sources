@@ -16,6 +16,15 @@ typedef std::pair<std::string,double> UserMoment;
 typedef std::pair<double,double> Moment;
 //typedef std::tuple<double,double,double,double> MomentInterval; // begin, interval, end, timewindow
 
+namespace DefaultVar {
+    constexpr size_t nTimes = 1.0e6;
+    constexpr double fromTime = 0.0;
+    constexpr double toTime = 100.0;
+    constexpr double deltaMin = 0.001;
+    constexpr double deltaMax = 10.0;
+    constexpr size_t seed = 0; // 0 for random
+}
+
 struct MomentInterval {
     double start;
     double interval;
@@ -644,22 +653,38 @@ int main(int argc, char** argv) {
         uMoments = std::vector<UserMoment>{
                 {"0.001,0.01,100.0", 0.01}
         };
-        uMoments = std::vector<UserMoment>{
-                {"0.001, 0.1,1.0", 0.01},
-                {"1.1, 0.001,10.0", 0.001},
-                {"10.1, 0.1,20.0", 0.00001},
-                {"20.1, 0.1,30.0", 0.0001},
-                {"30.1, 0.1,40.0", 0.001},
-                {"40.1, 0.00001,50.0", 0.00001},
-                {"50.1, 0.05,60.0", 0.001},
-                {"60.1, 0.1,70.0", 0.01},
-                {"70.1, 0.7,80.0", 0.07},
-                {"80.1, 0.1,90.0", 0.01},
-                {"90.1, 0.09,100.0", 0.001}
-        };
-        uMoments = std::vector<UserMoment>{
-                {"0.001,0.01,100.0", 0.00001}
-        };
+        // Case X:
+        // Y moments, many misses
+        // Hit ratio ~= 0.21
+        if(1)
+            uMoments = std::vector<UserMoment>{
+                    {"0.001, 0.1,1.0", 0.01},
+                    {"1.1, 0.001,10.0", 0.001},
+                    {"10.1, 0.1,20.0", 0.00001},
+                    {"20.1, 0.1,30.0", 0.0001},
+                    {"30.1, 0.1,40.0", 0.001},
+                    {"40.1, 0.00001,50.0", 0.00001},
+                    {"50.1, 0.05,60.0", 0.001},
+                    {"60.1, 0.1,70.0", 0.01},
+                    {"70.1, 0.7,80.0", 0.07},
+                    {"80.1, 0.1,90.0", 0.01},
+                    {"90.1, 0.09,100.0", 0.001}
+            };
+        // Case X:
+        // Y moments, no spacing in between
+        // Hit ratio ~= 1.0
+        if(0)
+            uMoments = std::vector<UserMoment>{
+                    {"0.005,0.01,109.995", 0.01}
+            };
+
+        // Case X:
+        // Y moments, no spacing in between
+        // Hit ratio ~= 1.0
+        if(0)
+            uMoments = std::vector<UserMoment>{
+                    {"0.05,0.1,109.95", 0.1}
+            };
     }
     /*std::vector<UserMoment> uMoments{
             {"1.0e-13,1.0e-5,0.001", 1.0e-5}
@@ -683,6 +708,7 @@ int main(int argc, char** argv) {
     std::vector<Moment> intervalMoments;
     parseMoments(Settings::intervals, intervalMoments);
     if(intervalMoments.empty()) exit(0);
+    size_t totalIntervals = intervalMoments.size();
     std::vector<size_t> timeBins(intervalMoments.size(), 0);
 
     //exit(0);
@@ -690,7 +716,7 @@ int main(int argc, char** argv) {
         parsePoT(Settings::inputFile, Settings::time_points);
     }
     else{
-        generatePoT(1.0e6, 0.0, 100.0, 0.001, 10.0, Settings::time_points, 42424242);
+        generatePoT(DefaultVar::nTimes, DefaultVar::fromTime, DefaultVar::toTime, DefaultVar::deltaMin, DefaultVar::deltaMax, Settings::time_points, DefaultVar::seed);
     }
 
     // 1. Vector binary search
@@ -710,9 +736,11 @@ int main(int argc, char** argv) {
 
         size_t i = 0;
         for (auto &bin : timeBins) {
-            printf("%zu<>%zu ", i, timeBins[i]);
-            i++;
-            if ((i % 10) == 0) printf("\n");
+            if(bin>0) {
+                printf("%zu<>%zu ", i, bin);
+                if ((i % 10) == 9) printf("\n");
+                i++;
+            }
             if (i >= 20) break;
         }
         printf("\n");
@@ -734,9 +762,11 @@ int main(int argc, char** argv) {
 
         size_t i = 0;
         for (auto &bin : timeBins) {
-            printf("%zu<>%zu ", i, timeBins[i]);
-            i++;
-            if ((i % 10) == 0) printf("\n");
+            if(bin>0) {
+                printf("%zu<>%zu ", i, bin);
+                if ((i % 10) == 9) printf("\n");
+                i++;
+            }
             if (i >= 20) break;
         }
         printf("\n");
@@ -757,9 +787,11 @@ int main(int argc, char** argv) {
 
         size_t i = 0;
         for (auto &bin : timeBins) {
-            printf("%zu<>%zu ", i, timeBins[i]);
-            i++;
-            if ((i % 10) == 0) printf("\n");
+            if(bin>0) {
+                printf("%zu<>%zu ", i, bin);
+                if ((i % 10) == 9) printf("\n");
+                i++;
+            }
             if (i >= 20) break;
         }
         printf("\n");
@@ -781,9 +813,11 @@ int main(int argc, char** argv) {
 
         size_t i = 0;
         for (auto &bin : timeBins) {
-            printf("%zu<>%zu ", i, timeBins[i]);
-            i++;
-            if ((i % 10) == 0) printf("\n");
+            if(bin>0) {
+                printf("%zu<>%zu ", i, bin);
+                if ((i % 10) == 9) printf("\n");
+                i++;
+            }
             if (i >= 20) break;
         }
         printf("\n");
@@ -815,9 +849,11 @@ int main(int argc, char** argv) {
         printf("[%.4lfms] Vector -- Calc search [ END ]\n", time.ElapsedMs());
         size_t i = 0;
         for (auto &bin : timeBins) {
-            printf("%zu<>%zu ", i, timeBins[i]);
-            i++;
-            if ((i % 10) == 0) printf("\n");
+            if(bin>0) {
+                printf("%zu<>%zu ", i, bin);
+                if ((i % 10) == 9) printf("\n");
+                i++;
+            }
             if (i >= 20) break;
         }
         printf("\n");
@@ -833,7 +869,7 @@ int main(int argc, char** argv) {
         parsePoTWStop(Settings::inputFile, Settings::time_points_wbreak);
     }
     else{
-        generatePoTW(1.0e6, 0.0, 100.0, 0.001, 10.0, Settings::time_points_wbreak, 42424242);
+        generatePoTW(DefaultVar::nTimes, DefaultVar::fromTime, DefaultVar::toTime, DefaultVar::deltaMin, DefaultVar::deltaMax, Settings::time_points_wbreak, DefaultVar::seed);
     }
 
     for(int runNb = 0; runNb < totalRuns; ++runNb) {
@@ -855,9 +891,11 @@ int main(int argc, char** argv) {
         printf("[%.4lfms] Vector -- Binary search -- Index [ END ]\n", time.ElapsedMs());
         size_t i = 0;
         for (auto &bin : timeBins) {
-            printf("%zu<>%zu ", i, timeBins[i]);
-            i++;
-            if ((i % 10) == 0) printf("\n");
+            if(bin>0) {
+                printf("%zu<>%zu ", i, bin);
+                if ((i % 10) == 9) printf("\n");
+                i++;
+            }
             if (i >= 20) break;
         }
         printf("\n");
@@ -883,9 +921,11 @@ int main(int argc, char** argv) {
         printf("[%.4lfms] Vector -- Jump search -- Index [ END ]\n", time.ElapsedMs());
         size_t i = 0;
         for (auto &bin : timeBins) {
-            printf("%zu<>%zu ", i, timeBins[i]);
-            i++;
-            if ((i % 10) == 0) printf("\n");
+            if(bin>0) {
+                printf("%zu<>%zu ", i, bin);
+                if ((i % 10) == 9) printf("\n");
+                i++;
+            }
             if (i >= 20) break;
         }
         printf("\n");
@@ -899,11 +939,12 @@ int main(int argc, char** argv) {
         parsePoTWStop2(Settings::inputFile, Settings::time_points, Settings::breakPoints);
     }
     else{
-        generatePoTW2(1.0e6, 0.0, 100.0, 0.001, 10.0, Settings::time_points, Settings::breakPoints, 42424242);
+        generatePoTW2(DefaultVar::nTimes, DefaultVar::fromTime, DefaultVar::toTime, DefaultVar::deltaMin, DefaultVar::deltaMax, Settings::time_points, Settings::breakPoints, DefaultVar::seed);
     }
 
-    for(int i = 0; i<20; ++i)
+    /*for(int i = 0; i<20; ++i)
         printf("Break %d : %zu : %e\n",i,Settings::breakPoints[i], Settings::time_points[i]);
+    */
     for(int runNb = 0; runNb < totalRuns; ++runNb) {
         time.ReInit();
         time.Start();
@@ -931,13 +972,36 @@ int main(int argc, char** argv) {
         printf("[%.4lfms] Vector -- Binary search -- Index2 [ END ]\n", time.ElapsedMs());
         size_t i = 0;
         for (auto &bin : timeBins) {
-            printf("%zu<>%zu ", i, timeBins[i]);
-            i++;
-            if ((i % 10) == 0) printf("\n");
+            if(bin>0) {
+                printf("%zu<>%zu ", i, bin);
+                if ((i % 10) == 9) printf("\n");
+                i++;
+            }
             if (i >= 20) break;
         }
         printf("\n");
-        std::vector<size_t>(intervalMoments.size(), 0).swap(timeBins);
+        size_t max = 0;
+        size_t max_pos = 0;
+
+        std::sort(timeBins.begin(),timeBins.end());
+        double probSumTopQuart = 0.0;
+        for(int j = timeBins.size()*0.75; j < timeBins.size(); ++j){
+            probSumTopQuart += (double)timeBins[j] / DefaultVar::nTimes;
+        }
+        double probSum = 0.0;
+        size_t sum = 0;
+        for(int j = timeBins.size()*0.0; j < timeBins.size(); ++j){
+            probSum += (double)timeBins[j] / DefaultVar::nTimes;
+            sum += timeBins[j];
+        }
+        printf("Results for nBins: %lu <- %lu\n", DefaultVar::nTimes, totalIntervals);
+
+        printf("Max_____: %lu / %lf\n", timeBins.back(), (double)timeBins.back() / DefaultVar::nTimes);
+        printf("Med_0.75: %lu / %lf\n", timeBins[timeBins.size()*0.75], (double)timeBins[timeBins.size()*0.75] / DefaultVar::nTimes);
+        printf("Med_0.50: %lu / %lf\n", timeBins[timeBins.size()*0.50], (double)timeBins[timeBins.size()*0.50] / DefaultVar::nTimes);
+        printf("Med_0.25: %lu / %lf\n", timeBins[timeBins.size()*0.25], (double)timeBins[timeBins.size()*0.25] / DefaultVar::nTimes);
+        printf("Top_Prob: %lf\n", probSumTopQuart);
+        printf("All_Prob: %lu / %lf\n", sum, probSum);
 
     }
 
