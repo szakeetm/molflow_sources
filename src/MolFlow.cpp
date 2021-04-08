@@ -1964,6 +1964,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 		worker.ResetMoments();
 		worker.model.wp.globalHistogramParams = HistogramParams();
         ResetSimulation(false);
+        geom->InitializeGeometry();
     }
 	catch(std::exception &e) {
 		GLMessageBox::Display((char *)e.what(), "Error building pipe", GLDLG_OK, GLDLG_ICONERROR);
