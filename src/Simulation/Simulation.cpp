@@ -6,6 +6,7 @@
 #include <cereal/archives/binary.hpp>
 #include <omp.h>
 #include <Helper/Chronometer.h>
+#include "AABB.h"
 
 /*SuperStructure::SuperStructure()
 {
