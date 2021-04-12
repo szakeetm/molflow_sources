@@ -137,7 +137,12 @@ ENDIF()
 
 set(COPY_FILES ${COPY_DIR}/desorption_yields
         ${COPY_DIR}/images
-        ${COPY_DIR}/parameter_catalog)
+        ${COPY_DIR}/parameter_catalog
+        ${COPY_DIR}/Roboto-Medium.ttf
+        ${COPY_DIR}/DroidSans.ttf
+        ${COPY_DIR}/fa-regular-400.ttf
+        ${COPY_DIR}/fa-solid-900.ttf
+        )
 
 IF (WIN32)
     set(COPY_FILES ${COPY_FILES}
