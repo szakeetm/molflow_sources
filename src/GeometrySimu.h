@@ -302,6 +302,7 @@ public:
     void clear();
     void Resize(const SimulationModel &model);
     void Reset();
+    static int Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuState &rhsGlobHit, double cmpThreshold);
 
 #if defined(MOLFLOW)
     GlobalHitBuffer globalHits;

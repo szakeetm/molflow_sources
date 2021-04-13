@@ -85,6 +85,7 @@ set(SRC_FILES
         ${IO_DIR}/WriterXML.cpp
         ${CPP_DIR_1}/Initializer.cpp
         ${CPP_DIR_1}/ParameterParser.cpp
+        ${CPP_DIR_2}/File.cpp
 
         ${CPP_DIR_1}/TimeMoments.cpp
 
@@ -96,14 +97,6 @@ set(SRC_FILES
         ${CPP_DIR_2}/IntersectAABB_shared.cpp
         ${CPP_DIR_2}/Polygon.cpp
         ${CPP_DIR_2}/Random.cpp
-
-
-        )
-
-# set the path to the library folder
-# set the path to the library folder
-link_directories(${LINK_DIR_1}
-        ${LINK_DIR_2}
         )
 
 if (APPLE)
@@ -147,6 +140,9 @@ endif()
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 
+
+# set the path to the library folder
+target_link_directories(${PROJECT_NAME} PRIVATE ${LINK_DIR_1} ${LINK_DIR_2})
 if(MSVC)
     # Add Whole Program Optimization and Link Time Code Generation
     set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/GL")
@@ -155,6 +151,14 @@ if(MSVC)
     # Add Windows Console output
     message(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
     link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+
+    # zip extraction
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+            bzip2.lib
+            lzma.lib
+            ZipLib.lib
+            zlib.lib
+            )
 endif(MSVC)
 if(NOT MSVC)
 
