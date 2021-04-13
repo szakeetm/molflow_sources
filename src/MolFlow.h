@@ -120,6 +120,10 @@ public:
 	MomentsEditor    *momentsEditor;
 	ParameterEditor  *parameterEditor;
 	char *nbF;
+    int showLevelAABB[2]{-1,-1};
+    bool showBranchSide[2]{true,true};
+    bool showAABBLeaves{false};
+    bool reverseExpansion{true};
 
     // Testing
     //int     nbSt;
