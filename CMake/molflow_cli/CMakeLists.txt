@@ -120,6 +120,9 @@ add_executable(${PROJECT_NAME} ${SRC_FILES})
 find_package(OpenMP REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
 
+find_package(MPI) #make it REQUIRED, if you want
+target_include_directories(${PROJECT_NAME} PUBLIC ${MPI_INCLUDE_PATH})
+target_link_libraries(${PROJECT_NAME} PUBLIC MPI::MPI_CXX)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC shared_simulator)
 target_link_libraries(${PROJECT_NAME} PUBLIC molflowSim)

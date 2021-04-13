@@ -28,14 +28,7 @@ public:
     }
 };
 
-int Initializer::init(int argc, char **argv, SimulationManager *simManager, SimulationModel *model,
-                      GlobalSimuState *globState) {
-
-#if defined(WIN32) || defined(__APPLE__)
-    setlocale(LC_ALL, "C");
-#else
-    std::setlocale(LC_ALL, "C");
-#endif
+int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManager, SimulationModel *model) {
     parseCommands(argc, argv);
 
     simManager->nbThreads = Settings::nbThreads;
@@ -47,9 +40,21 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
     }
     std::cout << "Active cores: " << simManager->nbThreads << std::endl;
     model->otfParams.nbProcess = simManager->nbThreads;
+    model->otfParams.timeLimit = (double) Settings::simDuration;
     //model->otfParams.desorptionLimit = Settings::desLimit.front();
 
-    loadFromXML(simManager, model, globState, !Settings::resetOnStart);
+    return 0;
+}
+
+int Initializer::initFromFile(int argc, char **argv, SimulationManager *simManager, SimulationModel *model,
+                              GlobalSimuState *globState) {
+
+    if(std::filesystem::path(Settings::inputFile).extension() == ".xml")
+        loadFromXML(Settings::inputFile, !Settings::resetOnStart, model, globState);
+    else{
+        std::cerr << "[ERROR] Invalid file extension for input file detected: " << std::filesystem::path(Settings::inputFile).extension() << std::endl;
+        return 1;
+    }
     if(!Settings::paramFile.empty()){
         // 1. Load selection groups in case we need them for parsing
         std::vector<SelectionGroup> selGroups = FlowIO::LoaderXML::LoadSelections(Settings::inputFile);
@@ -62,13 +67,10 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
     // Set desorption limit if used
     if(initDesLimit(*model,*globState)) {
         exit(0);
+        return 1;
     }
-    model->otfParams.timeLimit = (double) Settings::simDuration;
 
-    /*else{
-        model->otfParams.desorptionLimit = 0;
-    }*/
-    initSimUnit(simManager, model, globState);
+    simManager->InitSimulation(model, globState);
 
     return 0;
 }
@@ -108,8 +110,8 @@ int Initializer::parseCommands(int argc, char** argv) {
     return 0;
 }
 
-int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *model, GlobalSimuState *globState,
-                             bool loadState) {
+int Initializer::loadFromXML(const std::string &fileName, bool loadState, SimulationModel *model,
+                             GlobalSimuState *globState) {
 
     //1. Load Input File (regular XML)
     FlowIO::LoaderXML loader;
@@ -118,7 +120,7 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
     // Settings
     // Previous results
     model->m.lock();
-    if(loader.LoadGeometry(Settings::inputFile, model)){
+    if(loader.LoadGeometry(fileName, model)){
         std::cerr << "[Error (LoadGeom)] Please check the input file!" << std::endl;
         model->m.unlock();
         return 1;

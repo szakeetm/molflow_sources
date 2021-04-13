@@ -25,17 +25,19 @@ namespace Settings {
 class Initializer {
 private:
     static int parseCommands(int argc, char** argv);
-    static int loadFromXML(SimulationManager *simManager, SimulationModel *model, GlobalSimuState *globState,
-                           bool loadState);
+    static int loadFromXML(const std::string &fileName, bool loadState, SimulationModel *model,
+                           GlobalSimuState *globState);
     static int setSharedStorage();
     static int initDesLimit(SimulationModel& model, GlobalSimuState& globState);
     static int initSimModel(SimulationModel* model);
 public:
     static std::string getAutosaveFile();
-    static int init(int argc, char **argv, SimulationManager *simManager, SimulationModel *model,
-                    GlobalSimuState *globState);
+    static int initFromFile(int argc, char **argv, SimulationManager *simManager, SimulationModel *model,
+                            GlobalSimuState *globState);
 
     static int initSimUnit(SimulationManager *simManager, SimulationModel *model, GlobalSimuState *globState);
+
+    static int initFromArgv(int argc, char **argv, SimulationManager *simManager, SimulationModel *model);
 };
 
 
