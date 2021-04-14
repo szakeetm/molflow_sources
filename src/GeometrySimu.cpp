@@ -474,6 +474,8 @@ void SimulationModel::PrepareToRun() {
     if(!tdParams.moments.empty())
         wp.latestMoment = (tdParams.moments.end()-1)->first + (tdParams.moments.end()-1)->second / 2.0;
 
+    std::set<size_t> desorptionParameterIDs;
+
     //Check and calculate various facet properties for time dependent simulations (CDF, ID )
     for (size_t i = 0; i < sh.nbFacet; i++) {
         SubprocessFacet& facet = facets[i];
@@ -495,14 +497,13 @@ void SimulationModel::PrepareToRun() {
         }
 
         if (facet.sh.outgassing_paramId >= 0) { //if time-dependent desorption
-            std::set<size_t> desorptionParameterIDs;
             int id = IDGeneration::GetIDId(desorptionParameterIDs, facet.sh.outgassing_paramId);
             if (id >= 0)
                 facet.sh.IDid = id; //we've already generated an ID for this temperature
             else {
-                auto[id, id_vec] = IDGeneration::GenerateNewID(desorptionParameterIDs, facet.sh.outgassing_paramId, this);
-                facet.sh.CDFid = id;
-                tdParams.IDs.emplace_back(id_vec);
+                auto[id_new, id_vec] = IDGeneration::GenerateNewID(desorptionParameterIDs, facet.sh.outgassing_paramId, this);
+                facet.sh.IDid = id_new;
+                tdParams.IDs.emplace_back(std::move(id_vec));
             }
         }
 
@@ -710,6 +711,28 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
     size_t facetErrNb = 0;
 
     std::stringstream cmpFile;
+
+    // Sanity check
+    {
+        if(lhsGlobHit.globalHits.globalHits.nbDesorbed == 0 && rhsGlobHit.globalHits.globalHits.nbDesorbed == 0){
+            cmpFile << "[Global][desorp] Neither state has recorded desorptions\n";
+            ++globalErrNb;
+        }
+        else if (lhsGlobHit.globalHits.globalHits.nbDesorbed == 0){
+            cmpFile << "[Global][desorp] First state has no recorded desorptions\n";
+            ++globalErrNb;
+        }
+        else if (rhsGlobHit.globalHits.globalHits.nbDesorbed == 0){
+            cmpFile << "[Global][desorp] Second state has no recorded desorptions\n";
+            ++globalErrNb;
+        }
+
+        if(globalErrNb){
+            std::cout << cmpFile.str() << std::endl;
+            return 1;
+        }
+    }
+
     {
         double absRatio = lhsGlobHit.globalHits.globalHits.nbAbsEquiv / lhsGlobHit.globalHits.globalHits.nbDesorbed;
         double absRatio_rhs = rhsGlobHit.globalHits.globalHits.nbAbsEquiv / rhsGlobHit.globalHits.globalHits.nbDesorbed;
@@ -769,6 +792,22 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
     {//cmp
         auto& facetCounter_lhs = lhsGlobHit.facetStates[facetId].momentResults[0];
         auto& facetCounter_rhs = rhsGlobHit.facetStates[facetId].momentResults[0];
+
+        // If one facet doesn't have any hits recorded, comparison is pointless, so just skip to next facet
+        if (facetCounter_lhs.hits.nbMCHit == 0 && facetCounter_rhs.hits.nbMCHit == 0){
+            //cmpFile << "[Facet]["<<facetId<<"][hits] Neither state has recorded hits for this facet\n";
+            continue;
+        }
+        else if (facetCounter_lhs.hits.nbMCHit == 0 && facetCounter_rhs.hits.nbMCHit > 0){
+            cmpFile << "[Facet]["<<facetId<<"][hits] First state has no recorded hits for this facet\n";
+            ++facetErrNb;
+            continue;
+        }
+        else if (facetCounter_lhs.hits.nbMCHit > 0 && facetCounter_rhs.hits.nbMCHit == 0){
+            cmpFile << "[Facet]["<<facetId<<"][hits] Second state has no recorded hits for this facet\n";
+            ++facetErrNb;
+            continue;
+        }
 
         double scale = 1.0 / lhsGlobHit.globalHits.globalHits.nbDesorbed; // getmolpertp
         double scale_rhs = 1.0 / rhsGlobHit.globalHits.globalHits.nbDesorbed;
@@ -910,7 +949,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
     }*/
 
     std::cout << cmpFile.str() << std::endl;
-    return 0;
+    return globalErrNb + facetErrNb;
 }
 
 /**

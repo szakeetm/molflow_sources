@@ -166,6 +166,11 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
         return 1;
     }
 
+    // InsertParamsBeforeCatalog
+    std::vector<Parameter> paramCatalog;
+    Parameter::LoadParameterCatalog(paramCatalog);
+    model->tdParams.parameters.insert(model->tdParams.parameters.end(), paramCatalog.begin(), paramCatalog.end());
+
     //TODO: Load parameters from catalog explicitly?
     // For GUI
     // work->InsertParametersBeforeCatalog(loadedParams);

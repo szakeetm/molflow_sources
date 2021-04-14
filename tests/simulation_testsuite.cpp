@@ -321,7 +321,7 @@ namespace {
             SimulationModel model{};
             GlobalSimuState globState{};
 
-            std::vector<char *> argv = {"tester", "-t", "2",  "--file"};
+            std::vector<char *> argv = {"tester", "-t", "40",  "--file"};
             char * fileName_c = new char[testFile.size() + 1];
             std::copy(testFile.begin(), testFile.end(), fileName_c);
             fileName_c[testFile.size()] = '\0';
