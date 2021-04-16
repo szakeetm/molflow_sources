@@ -100,7 +100,7 @@ else()
         /W4
     )
     add_compile_options(
-        "$<$<CONFIG:Release>:/O2;/EHsc>"
+        "$<$<CONFIG:Release>:/GL;/O2;/EHsc>"
         "$<$<CONFIG:Debug>:/MDd;/Od;/EHsc>"
     )
     # Multi-processor compilation
