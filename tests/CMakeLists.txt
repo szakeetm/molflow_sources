@@ -75,7 +75,7 @@ ELSE()
         set(LINK_DIR_1 ../lib_external/linux_debian)
     ENDIF()
 ENDIF()
-
+target_link_directories(testsuite PRIVATE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 target_link_directories(testsuite PRIVATE ${LINK_DIR_1} ${LINK_DIR_2})
 if(MSVC)
     # zip extraction
