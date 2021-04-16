@@ -84,11 +84,12 @@ add_subdirectory(CMake/molflow_sim)
 
 IF (WIN32)
     add_subdirectory(CMake/png_zlib_win_library)
+    add_dependencies(molflow ziplib)
 ELSE()
     #add_subdirectory(CMake/molflow_testsuit)
 ENDIF(WIN32)
 
-add_dependencies(molflow shared_simulator shared_interface compress ziplib)
+add_dependencies(molflow shared_simulator shared_interface compress)
 #IF(NOT WIN32)
 add_dependencies(molflowCLI molflowSim)
 #ENDIF()
