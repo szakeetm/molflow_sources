@@ -118,7 +118,7 @@ build-macos-master:
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - cd ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
-    - mv ~/$APP_NAME_CAPS'_CI/'PerfoTestResults/time_record_* . || true
+    - cp ~/$APP_NAME_CAPS'_CI/'PerfoTestResults/time_record_* . || true
     - ./testsuite --gtest_output="xml:report.xml"
     - mv report.xml $PROJPATH"/report.xml"
     - mv ./time_record_* ~/$APP_NAME_CAPS'_CI/PerfoTestResults/'
@@ -163,7 +163,7 @@ test-windows:
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
     - Set-Variable -Name "FNAME" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - Set-Location ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\")
-    - Move-Item -Force ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\time_record_*") (".\")
+    - Copy-Item -Force ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\time_record_*") (".\")
     - $AllArgs = @("--gtest_output='xml:report.xml'")
     - powershell.exe -c "./testsuite.exe $AllArgs"
     - Move-Item -Path report.xml -Destination (($PROJPATH) + "\report.xml")
