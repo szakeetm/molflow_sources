@@ -39,7 +39,8 @@ _ReSharper*/
 
 /*/
 build*/
-
+**/Obj/
+**/*.obj
 #intermediary/*
 #shipped/
 #source_snapshots/

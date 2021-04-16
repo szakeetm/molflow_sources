@@ -88,7 +88,7 @@ ELSE()
     #add_subdirectory(CMake/molflow_testsuit)
 ENDIF(WIN32)
 
-add_dependencies(molflow shared_simulator shared_interface compress)
+add_dependencies(molflow shared_simulator shared_interface compress ziplib)
 #IF(NOT WIN32)
 add_dependencies(molflowCLI molflowSim)
 #ENDIF()
