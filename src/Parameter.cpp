@@ -31,6 +31,7 @@ StringClass::StringClass()
 }*/
 int Parameter::LoadParameterCatalog(std::vector<Parameter> &vec_param) {
     int res = 0;
+    char *parse_end;
 
     std::filesystem::path catalogPath = "parameter_catalog"; //string (POSIX) or wstring (Windows)
     if (!std::filesystem::exists(catalogPath)) return 1; //No param_catalog directory
@@ -72,7 +73,9 @@ int Parameter::LoadParameterCatalog(std::vector<Parameter> &vec_param) {
                 else {
                     double valueX, valueY;
                     try {
-                        valueX = ::atof(row[0].c_str());
+                        valueX = std::strtod(row[0].c_str(), &parse_end);
+                        if (*parse_end != '\0')
+                            throw std::runtime_error("Malformed input in CSV file.");
                     }
                     catch (std::exception& err) {
                         ++res;
@@ -83,7 +86,9 @@ int Parameter::LoadParameterCatalog(std::vector<Parameter> &vec_param) {
                         break;
                     }
                     try {
-                        valueY = ::atof(row[1].c_str());
+                        valueY = std::strtod(row[1].c_str(), &parse_end);
+                        if (*parse_end != '\0')
+                            throw std::runtime_error("Malformed input in CSV file.");
                     }
                     catch (std::exception& err) {
                         ++res;
@@ -99,4 +104,5 @@ int Parameter::LoadParameterCatalog(std::vector<Parameter> &vec_param) {
             vec_param.push_back(newParam);
         }
     }
+    return res;
 }
