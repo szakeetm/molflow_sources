@@ -3,9 +3,13 @@
 //
 
 #include "Initializer.h"
-#include "CLI11/CLI11.hpp"
 #include "IO/LoaderXML.h"
 #include "ParameterParser.h"
+
+#include <CLI11/CLI11.hpp>
+#include <ziplib/ZipArchive.h>
+#include <ziplib/ZipFile.h>
+#include <File.h>
 
 namespace Settings {
     size_t nbThreads = 0;
@@ -48,6 +52,43 @@ int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManag
 
 int Initializer::initFromFile(int argc, char **argv, SimulationManager *simManager, SimulationModel *model,
                               GlobalSimuState *globState) {
+
+    if(std::filesystem::path(Settings::inputFile).extension() == ".zip"){
+        //decompress file
+        std::string parseFileName;
+        std::cout << "Decompressing zip file..." << std::endl;
+        ZipArchive::Ptr zip = ZipFile::Open(Settings::inputFile);
+        if (zip == nullptr) {
+            std::cerr <<"Can't open ZIP file\n";
+        }
+        size_t numitems = zip->GetEntriesCount();
+        bool notFoundYet = true;
+        std::cout << "Zip file with #items = " << numitems << std::endl;
+
+        for (int i = 0; i < numitems && notFoundYet; i++) { //extract first xml file found in ZIP archive
+            auto zipItem = zip->GetEntry(i);
+            std::string zipFileName = zipItem->GetName();
+            std::cout << "Found: " << zipFileName << std::endl;
+
+            if(std::filesystem::path(zipFileName).extension() == ".xml"){ //if it's an .xml file
+                notFoundYet = false;
+
+                FileUtils::CreateDir("tmp");// If doesn't exist yet
+
+                parseFileName = "tmp/" + zipFileName;
+                ZipFile::ExtractFile(Settings::inputFile, zipFileName, parseFileName);
+            }
+            /*else if(FileUtils::GetExtension(zipFileName) == "csv"){ // otherwise extract angle maps
+                ZipFile::ExtractFile(fileName, zipFileName, zipFileName);
+            }*/
+        }
+        if(parseFileName.empty()) {
+            std::cout << "Zip file does not contain a valid geometry file!" << std::endl;
+            exit(0);
+        }
+        Settings::inputFile = parseFileName;
+        std::cout << "New input file: " << Settings::inputFile << std::endl;
+    }
 
     if(std::filesystem::path(Settings::inputFile).extension() == ".xml")
         loadFromXML(Settings::inputFile, !Settings::resetOnStart, model, globState);
@@ -125,6 +166,11 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, Simula
         model->m.unlock();
         return 1;
     }
+
+    // InsertParamsBeforeCatalog
+    std::vector<Parameter> paramCatalog;
+    Parameter::LoadParameterCatalog(paramCatalog);
+    model->tdParams.parameters.insert(model->tdParams.parameters.end(), paramCatalog.begin(), paramCatalog.end());
 
     //TODO: Load parameters from catalog explicitly?
     // For GUI

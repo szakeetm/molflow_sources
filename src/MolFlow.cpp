@@ -241,71 +241,6 @@ MolFlow::MolFlow()
 // Name: OneTimeSceneInit()
 // Desc: Called during initial app startup, this function performs all the
 //       permanent initialization.
-
-void MolFlow::LoadParameterCatalog()
-{
-	std::filesystem::path catalogPath = "parameter_catalog"; //string (POSIX) or wstring (Windows)
-	if (!std::filesystem::exists(catalogPath)) return; //No param_catalog directory
-	for (const auto & p : std::filesystem::directory_iterator(catalogPath)) {
-		if (p.path().extension() == ".csv") {
-
-			std::string csvPath = p.path().u8string();
-			std::string csvName = p.path().filename().u8string();
-
-			Parameter newParam;
-			newParam.fromCatalog = true;
-			newParam.name = "[catalog] " + csvName;
-
-			std::vector<std::vector<std::string>> table;
-			try {
-
-				auto *f = new FileReader(csvPath);
-				table = f->ImportCSV_string();
-                SAFE_DELETE(f);
-			}
-			catch(std::exception &e) {
-				char errMsg[512];
-				sprintf(errMsg, "Failed to load CSV file.\n%s", e.what());
-				//GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR); //Can't display dialog window: interface not yet initialized
-				continue;
-			}
-			//Parse
-			for (size_t i = 0; i < table.size(); i++) {
-				std::vector<std::string> row = table[i];
-				if (row.size() != 2) {
-					std::stringstream errMsg;
-					errMsg << p.path().filename() << " Row " << i + 1 << "has " << row.size() << " values instead of 2.";
-					GLMessageBox::Display(errMsg.str().c_str(), "Error", GLDLG_OK, GLDLG_ICONERROR);
-					break;
-				}
-				else {
-					double valueX, valueY;
-					try {
-						valueX = ::atof(row[0].c_str());
-					}
-					catch (std::exception& err) {
-						char tmp[256];
-						sprintf(tmp, "Can't parse value \"%s\" in row %zd, first column:\n%s", row[0].c_str(), i + 1, err.what());
-						GLMessageBox::Display(tmp, "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
-						break;
-					}
-					try {
-						valueY = ::atof(row[1].c_str());
-					}
-					catch (std::exception& err) {
-						char tmp[256];
-						sprintf(tmp, "Can't parse value \"%s\" in row %zd, second column:\n%s", row[1].c_str(), i + 1, err.what());
-						GLMessageBox::Display(tmp, "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
-						break;
-					}
-					newParam.AddPair(valueX, valueY, true); //insert in correct position
-				}
-			}
-			worker.parameters.push_back(newParam);
-		}
-	}
-}
-
 int MolFlow::OneTimeSceneInit()
 {
 	/*
@@ -468,8 +403,7 @@ int MolFlow::OneTimeSceneInit()
 
 	facetAdvParams = new FacetAdvParams(&worker); //To use its UpdatefacetParams() routines
 
-	LoadParameterCatalog();
-
+    Parameter::LoadParameterCatalog(worker.parameters);
 	OneTimeSceneInit_shared_post();
 	
 	return GL_OK;
