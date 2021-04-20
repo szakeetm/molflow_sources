@@ -20,6 +20,8 @@ namespace Settings {
     extern std::string inputFile;
     extern std::string outputFile;
     extern std::string paramFile;
+    extern std::vector<std::string> paramSweep;
+    extern std::string outputPath;
 }
 
 class Initializer {

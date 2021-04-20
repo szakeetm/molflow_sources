@@ -10,6 +10,7 @@
 #include <ziplib/ZipArchive.h>
 #include <ziplib/ZipFile.h>
 #include <File.h>
+#include <Helper/StringHelper.h>
 
 namespace Settings {
     size_t nbThreads = 0;
@@ -21,6 +22,8 @@ namespace Settings {
     std::string inputFile;
     std::string outputFile;
     std::string paramFile;
+    std::vector<std::string> paramSweep;
+    std::string outputPath;
 }
 
 class FlowFormatter : public CLI::Formatter {
@@ -32,6 +35,61 @@ public:
     }
 };
 
+int initDirectories(){
+
+    int err = 0;
+
+    // Use a default outputpath if unset
+    if(Settings::outputPath.empty()) {
+        Settings::outputPath = "Results_" + Util::getTimepointString();
+    }
+    else if(std::filesystem::path(Settings::outputFile).has_parent_path()) {
+        std::cerr << "Output path was set to " << Settings::outputPath << ", but Output file also contains a parent path"
+                  << std::filesystem::path(Settings::outputFile).parent_path() << "\nOutput path will be appended!\n";
+    }
+
+    // Use a default outputfile name if unset
+    if(Settings::outputFile.empty())
+        Settings::outputFile = "out_" + std::filesystem::path(Settings::inputFile).filename().string();
+
+    // Try to create directories
+    // First for outputpath, with tmp/ and lastly ./ as fallback plans
+    try {
+        std::filesystem::create_directory(Settings::outputPath);
+    }
+    catch (std::exception& e){
+        std::cerr << "Couldn't create directory [ " << Settings::outputPath << " ], falling back to binary folder for output files\n";
+        ++err;
+
+        // use fallback dir
+        Settings::outputPath = "tmp/";
+        try {
+            std::filesystem::create_directory(Settings::outputPath);
+        }
+        catch (std::exception& e){
+            Settings::outputPath = "./";
+            std::cerr << "Couldn't create fallback directory [ tmp/ ], falling back to binary folder instead for output files\n";
+            ++err;
+        }
+    }
+
+    // Next check if outputfile name has parent path as name
+    // Additional directory in outputpath
+    if(std::filesystem::path(Settings::outputFile).has_parent_path()) {
+        std::string outputFilePath = Settings::outputPath.append(std::filesystem::path(Settings::outputFile).parent_path());
+        try {
+            std::filesystem::create_directory(outputFilePath);
+        }
+        catch (std::exception& e) {
+            std::cerr << "Couldn't create parent directory set by output filename [ " << outputFilePath
+                      << " ], will only use default output path instead\n";
+            ++err;
+        }
+    }
+
+    return err;
+}
+
 int Initializer::init(int argc, char **argv, SimulationManager *simManager, SimulationModel *model,
                       GlobalSimuState *globState) {
 
@@ -42,6 +100,7 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
 #endif
     parseCommands(argc, argv);
 
+    std::cout << "Number used threads: " << Settings::nbThreads << std::endl;
     simManager->nbThreads = Settings::nbThreads;
     simManager->useCPU = true;
 
@@ -53,6 +112,7 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
     model->otfParams.nbProcess = simManager->nbThreads;
     //model->otfParams.desorptionLimit = Settings::desLimit.front();
 
+    initDirectories();
     if(std::filesystem::path(Settings::inputFile).extension() == ".zip"){
         //decompress file
         std::string parseFileName;
@@ -61,26 +121,21 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
         if (zip == nullptr) {
             std::cerr <<"Can't open ZIP file\n";
         }
-        size_t numitems = zip->GetEntriesCount();
+        size_t numItems = zip->GetEntriesCount();
         bool notFoundYet = true;
-        std::cout << "Zip file with #items = " << numitems << std::endl;
-
-        for (int i = 0; i < numitems && notFoundYet; i++) { //extract first xml file found in ZIP archive
+        for (int i = 0; i < numItems && notFoundYet; i++) { //extract first xml file found in ZIP archive
             auto zipItem = zip->GetEntry(i);
             std::string zipFileName = zipItem->GetName();
-            std::cout << "Found: " << zipFileName << std::endl;
 
             if(std::filesystem::path(zipFileName).extension() == ".xml"){ //if it's an .xml file
                 notFoundYet = false;
 
-                FileUtils::CreateDir("tmp");// If doesn't exist yet
+                if(Settings::outputPath != "tmp/")
+                    FileUtils::CreateDir("tmp");// If doesn't exist yet
 
                 parseFileName = "tmp/" + zipFileName;
                 ZipFile::ExtractFile(Settings::inputFile, zipFileName, parseFileName);
             }
-            /*else if(FileUtils::GetExtension(zipFileName) == "csv"){ // otherwise extract angle maps
-                ZipFile::ExtractFile(fileName, zipFileName, zipFileName);
-            }*/
         }
         if(parseFileName.empty()) {
             std::cout << "Zip file does not contain a valid geometry file!" << std::endl;
@@ -88,15 +143,17 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
         }
         Settings::inputFile = parseFileName;
         std::cout << "New input file: " << Settings::inputFile << std::endl;
-
     }
 
     loadFromXML(simManager, model, globState, !Settings::resetOnStart);
-    if(!Settings::paramFile.empty()){
+    if(!Settings::paramFile.empty() || !Settings::paramSweep.empty()){
         // 1. Load selection groups in case we need them for parsing
         std::vector<SelectionGroup> selGroups = FlowIO::LoaderXML::LoadSelections(Settings::inputFile);
         // 2. Sweep parameters from file
-        ParameterParser::Parse(Settings::paramFile, selGroups);
+        if(!Settings::paramFile.empty())
+            ParameterParser::ParseFile(Settings::paramFile, selGroups);
+        if(!Settings::paramSweep.empty())
+            ParameterParser::ParseInput(Settings::paramSweep, selGroups);
         ParameterParser::ChangeSimuParams(model->wp);
         ParameterParser::ChangeFacetParams(model->facets);
     }
@@ -127,24 +184,19 @@ int Initializer::parseCommands(int argc, char** argv) {
     app.add_option("-f,--file", Settings::inputFile, "Required input file (XML only)")
             ->required()
             ->check(CLI::ExistingFile);
-    app.add_option("-o,--output", Settings::outputFile, "Output file if different from input file");
-    app.add_option("-a,--autosaveDuration", Settings::autoSaveDuration, "Seconds for autosave if not zero");
-    app.add_flag("--loadAutosave", Settings::loadAutosave, "Whether autosave_ file should be used if exists");
-    app.add_option("--setParams", Settings::paramFile, "Parameter file for ad hoc change of the given geometry parameters")
+    app.add_option("-o,--output", Settings::outputFile, R"(Output file name (e.g. 'outfile.xml', defaults to 'out_{inputFileName}')");
+    app.add_option("--outputPath", Settings::outputPath, "Output path, defaults to \'Results_{date}\'");
+    app.add_option("-a,--autosaveDuration", Settings::autoSaveDuration, "Seconds for autoSave if not zero");
+    app.add_flag("--loadAutosave", Settings::loadAutosave, "Whether autoSave_ file should be used if exists");
+    app.add_option("--setParamsByFile", Settings::paramFile, "Parameter file for ad hoc change of the given geometry parameters")
             ->check(CLI::ExistingFile);
+    app.add_option("--setParams", Settings::paramSweep, "Direct parameter input for ad hoc change of the given geometry parameters");
 
     app.add_flag("-r,--reset", Settings::resetOnStart, "Resets simulation status loaded from while");
     app.set_config("--config");
     CLI11_PARSE(app, argc, argv);
 
     //std::cout<<app.config_to_str(true,true);
-
-    std::cout << "Number used threads: " << Settings::nbThreads << std::endl;
-
-    // Save to inputfile
-    if(Settings::outputFile.empty())
-        Settings::outputFile = Settings::inputFile;
-
     for(auto& lim : limits)
         Settings::desLimit.emplace_back(lim);
     return 0;
@@ -220,6 +272,7 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
     }
 
     model->m.unlock();
+
     return 0;
 }
 
@@ -292,7 +345,7 @@ std::string Initializer::getAutosaveFile(){
         else {
             // create autosavefile from copy of original
             std::stringstream autosaveFile;
-            autosaveFile << autoSavePrefix<< autoSave;
+            autosaveFile << Settings::outputPath << "/" << autoSavePrefix << autoSave;
             autoSave = autosaveFile.str();
 
             try {
