@@ -44,7 +44,7 @@ int initDirectories(){
         Settings::outputPath = "Results_" + Util::getTimepointString();
     }
     else if(std::filesystem::path(Settings::outputFile).has_parent_path()) {
-        std::cerr << "Output path was set to " << Settings::outputPath << ", but Output file also contains a parent path"
+        std::cerr << "Output path was set to " << Settings::outputPath << ", but Output file also contains a parent path "
                   << std::filesystem::path(Settings::outputFile).parent_path() << "\nOutput path will be appended!\n";
     }
 
@@ -76,7 +76,7 @@ int initDirectories(){
     // Next check if outputfile name has parent path as name
     // Additional directory in outputpath
     if(std::filesystem::path(Settings::outputFile).has_parent_path()) {
-        std::string outputFilePath = Settings::outputPath.append(std::filesystem::path(Settings::outputFile).parent_path());
+        std::string outputFilePath = Settings::outputPath + '/' + std::filesystem::path(Settings::outputFile).parent_path().string();
         try {
             std::filesystem::create_directory(outputFilePath);
         }
