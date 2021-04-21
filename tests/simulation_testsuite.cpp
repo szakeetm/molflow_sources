@@ -407,7 +407,7 @@ namespace {
         }
     }
 
-    TEST(ParameterParsing, Sweep) {
+    TEST(ParameterParsing, SweepFile) {
 
         // generate hash name for tmp working file
         std::string paramFile = std::to_string(std::hash<time_t>()(time(nullptr))) + ".cfg";
@@ -419,7 +419,7 @@ namespace {
                    "facet.100.temperature=290.92\n"
                    "simulation.mass=42.42";
         outfile.close();
-        ParameterParser::Parse(paramFile, std::vector<SelectionGroup>());
+        ParameterParser::ParseFile(paramFile, std::vector<SelectionGroup>());
 
         WorkerParams wp;
         ASSERT_FALSE(std::abs(wp.gasMass - 42.42) < 1e-5);
@@ -445,6 +445,40 @@ namespace {
         std::filesystem::remove(paramFile);
     }
 
+    TEST(ParameterParsing, SweepVec) {
+
+        // generate hash name for tmp working file
+        std::vector<std::string> params;
+
+        params.emplace_back("facet.42.opacity=0.5");
+        params.emplace_back("facet.3.sticking=10.01");
+        params.emplace_back("facet.50-90.outgassing=42e5");
+        params.emplace_back("facet.100.temperature=290.92");
+        params.emplace_back("simulation.mass=42.42");
+        ParameterParser::ParseInput(params, std::vector<SelectionGroup>());
+
+        WorkerParams wp;
+        ASSERT_FALSE(std::abs(wp.gasMass - 42.42) < 1e-5);
+        ParameterParser::ChangeSimuParams(wp);
+        ASSERT_TRUE(std::abs(wp.gasMass - 42.42) < 1e-5);
+
+
+        std::vector<SubprocessFacet> facets(200);
+        ASSERT_FALSE(std::abs(facets[41].sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[2].sh.sticking - 10.01) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[49].sh.outgassing - 42e5) < 1e-5); // first
+        ASSERT_FALSE(std::abs(facets[69].sh.outgassing - 42e5) < 1e-5); // mid
+        ASSERT_FALSE(std::abs(facets[89].sh.outgassing - 42e5) < 1e-5); // last
+        ASSERT_FALSE(std::abs(facets[99].sh.temperature - 290.92) < 1e-5);
+        ParameterParser::ChangeFacetParams(facets);
+        ASSERT_DOUBLE_EQ(facets[41].sh.opacity, 0.5);
+        ASSERT_DOUBLE_EQ(facets[2].sh.sticking, 10.01);
+        ASSERT_DOUBLE_EQ(facets[49].sh.outgassing, 42e5); // first
+        ASSERT_DOUBLE_EQ(facets[69].sh.outgassing, 42e5); // mid
+        ASSERT_DOUBLE_EQ(facets[89].sh.outgassing, 42e5); // last
+        ASSERT_DOUBLE_EQ(facets[99].sh.temperature, 290.92);
+    }
+
     TEST(ParameterParsing, Group) {
 
         // generate hash name for tmp working file
@@ -466,7 +500,7 @@ namespace {
                    "facet.\"ValidSelection\".opacity=0.5\n"
                    "facet.\"InvalidSelection\".opacity=0.8\n";
         outfile.close();
-        ParameterParser::Parse(paramFile, selections);
+        ParameterParser::ParseFile(paramFile, selections);
 
         std::vector<SubprocessFacet> facets(200);
         ASSERT_FALSE(std::abs(facets[4].sh.opacity - 0.5) < 1e-5);
