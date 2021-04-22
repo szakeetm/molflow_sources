@@ -270,6 +270,48 @@ SubprocessFacet::SubprocessFacet(size_t nbIndex) : Facet(nbIndex) {
     vertices2.resize(nbIndex);
 }
 
+SubprocessFacet::SubprocessFacet(const SubprocessFacet& cpy) {
+    *this = cpy;
+}
+
+SubprocessFacet::SubprocessFacet(SubprocessFacet&& cpy) {
+    *this = std::move(cpy);
+}
+
+SubprocessFacet& SubprocessFacet::operator=(const SubprocessFacet& cpy){
+    this->angleMap = cpy.angleMap;
+    this->ogMap = cpy.ogMap;
+    this->largeEnough = cpy.largeEnough;
+    this->textureCellIncrements = cpy.textureCellIncrements;
+    this->sh = cpy.sh;
+
+    isReady = cpy.isReady;
+    globalId = cpy.globalId;
+    indices = cpy.indices;                    // Ref to Geometry Vector3d
+    vertices2 = cpy.vertices2;
+    if(!surf) surf = new Surface();
+        *surf = *cpy.surf;
+
+    return *this;
+}
+
+SubprocessFacet& SubprocessFacet::operator=(SubprocessFacet&& cpy) noexcept {
+    this->angleMap = cpy.angleMap;
+    this->ogMap = cpy.ogMap;
+    this->largeEnough = std::move(cpy.largeEnough);
+    this->textureCellIncrements = std::move(cpy.textureCellIncrements);
+    this->sh = cpy.sh;
+
+    isReady = cpy.isReady;
+    globalId = cpy.globalId;
+    indices = std::move(cpy.indices);                    // Ref to Geometry Vector3d
+    vertices2 = std::move(cpy.vertices2);
+    surf = cpy.surf;
+    cpy.surf = nullptr;
+
+    return *this;
+}
+
 /**
 * \brief Calculates the hits size for a single facet which is necessary for hits dataport
 * \param nbMoments amount of moments

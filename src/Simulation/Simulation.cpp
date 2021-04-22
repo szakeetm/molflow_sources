@@ -6,6 +6,7 @@
 #include <cereal/archives/binary.hpp>
 #include <omp.h>
 #include <Helper/Chronometer.h>
+#include <RayTracing/BVH.h>
 
 /*SuperStructure::SuperStructure()
 {
@@ -244,6 +245,27 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
         AABBNODE* tree = BuildAABBTree(facetPointers[s], 0, maxDepth);
         structure.aabbTree = std::make_shared<AABBNODE>(*tree);
         //delete tree; // pointer unnecessary because of make_shared
+    }
+
+    // TODO: New AABB
+
+    std::vector<std::vector<std::shared_ptr<Primitive>>> primPointers;
+    primPointers.resize(model.sh.nbSuper);
+    for(auto& sFac : model.facets){
+        if (sFac.sh.superIdx == -1) { //Facet in all structures
+            for (auto& fp_vec : primPointers) {
+                fp_vec.push_back(std::make_shared<Primitive>(sFac));
+            }
+        }
+        else {
+            primPointers[sFac.sh.superIdx].push_back(std::make_shared<Primitive>(sFac)); //Assign to structure
+        }
+    }
+
+    //std::vector<BVHAccel> bvhs;
+    for (size_t s = 0; s < model.sh.nbSuper; ++s) {
+        auto& structure = model.structures[s];
+        model.bvhs.emplace_back(primPointers[s], 1);
     }
 
     for(auto& particle : particles)

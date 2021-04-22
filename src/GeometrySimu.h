@@ -12,6 +12,7 @@
 
 #include <mutex>
 #include <FacetData.h>
+#include <RayTracing/BVH.h>
 
 
 struct SubprocessFacet;
@@ -73,6 +74,10 @@ public:
 struct SubprocessFacet : public Facet {
     SubprocessFacet();
     explicit SubprocessFacet(size_t nbIndex);
+    SubprocessFacet(const SubprocessFacet& o);
+    SubprocessFacet(SubprocessFacet&& cpy);
+    SubprocessFacet& operator=(const SubprocessFacet& o);
+    SubprocessFacet& operator=(SubprocessFacet&& o) noexcept;
 
     std::vector<double>   textureCellIncrements;              // Texure increment
     std::vector<bool>     largeEnough;      // cells that are NOT too small for autoscaling
@@ -82,7 +87,6 @@ struct SubprocessFacet : public Facet {
 
     // Temporary var (used in FillHit for hit recording)
     bool   isReady;         // Volatile state
-    size_t globalId; //Global index (to identify when superstructures are present)
 
     // Facet hit counters
     //std::vector<FacetHitBuffer> tmpCounter; //1+nbMoment
@@ -219,6 +223,7 @@ public:
     std::vector<SubprocessFacet>    facets;    // All facets of this geometry
     std::vector<SuperStructure> structures;
     std::vector<Vector3d> vertices3; // Vertices (3D space)
+    std::vector<BVHAccel> bvhs;
 
     // Simulation Properties
     OntheflySimulationParams otfParams;

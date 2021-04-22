@@ -10,6 +10,7 @@
 #include "Particle.h"
 #include "AnglemapGeneration.h"
 #include "Physics.h"
+#include "RayTracing/RTHelper.h"
 
 using namespace MFSim;
 
@@ -226,6 +227,20 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
 
             //return (lastHitFacet != nullptr);
 
+            {
+                Ray tmpRay(position, direction);
+                HitChain* hitChain = new HitChain();
+                tmpRay.hitChain = hitChain;
+                model->bvhs.front().Intersect(tmpRay);
+
+                size_t hitNo = 0;
+                HitChain* log = hitChain;
+                while (log) {
+                    if(log->hit) printf("[%zu][%zu] Hit at fac: %lf , %lf\n", hitNo, log->hitId, log->hit->colU, log->hit->colV);
+                    log = log->next;
+                    hitNo++;
+                }
+            }
             //Prepare output values
             auto[found, collidedFacet, d] = Intersect(*this, position,
                                                       direction, model->structures[structureId].aabbTree.get());
