@@ -14,6 +14,11 @@ message("-- os_version_suffix:      ${os_version_suffix}")
 option(USE_CLANG "build application with clang" OFF) # OFF is the default
 option(USE_PROFILING "disable optimisation for profiling the application" OFF) # OFF is the default
 
+option(NO_INTERFACE "only build CLI binary and dependencies" OFF) # OFF is the default
+if(NO_INTERFACE)
+    message(STATUS "Will not build GUI related libraries and executables.")
+endif()
+
 # Define Release by default.
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
@@ -74,21 +79,22 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS OFF)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 include(CMake/Molflow.cmake)
 
-add_subdirectory(src_shared)
-add_subdirectory(CMake/molflow_sub)
-add_subdirectory(CMake/molflow_win)
+add_subdirectory(src_shared EXCLUDE_FROM_ALL)
+#add_subdirectory(CMake/molflow_sub)
+
 #IF(NOT WIN32)
 add_subdirectory(CMake/molflow_cli)
 add_subdirectory(CMake/molflow_sim)
 #ENDIF()
 
-IF (WIN32)
-    add_subdirectory(CMake/png_zlib_win_library)
-ELSE()
-    #add_subdirectory(CMake/molflow_testsuit)
-ENDIF(WIN32)
+if(NOT NO_INTERFACE)
+    add_subdirectory(CMake/molflow_win)
+    IF (WIN32)
+        add_subdirectory(CMake/png_zlib_win_library)
+    ENDIF(WIN32)
+    add_dependencies(molflow shared_simulator shared_interface compress)
+endif()
 
-add_dependencies(molflow shared_simulator shared_interface compress)
 #IF(NOT WIN32)
 add_dependencies(molflowCLI molflowSim)
 #ENDIF()
