@@ -289,8 +289,17 @@ SubprocessFacet& SubprocessFacet::operator=(const SubprocessFacet& cpy){
     globalId = cpy.globalId;
     indices = cpy.indices;                    // Ref to Geometry Vector3d
     vertices2 = cpy.vertices2;
-    if(!surf) surf = new Surface();
-        *surf = *cpy.surf;
+    if(!surf) {
+        if(cpy.sh.opacity >= 1.0)
+            surf = new Surface();
+        else if (cpy.sh.opacity <= 0.0){
+            surf = new TransparentSurface();
+        }
+        else {
+            surf = new AlphaSurface(cpy.sh.opacity);
+        }
+    }
+    if(cpy.surf) *surf = *cpy.surf;
 
     return *this;
 }

@@ -262,6 +262,17 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
         }
     }
 
+    for(auto& sFac : model.facets){
+        if(sFac.sh.opacity >= 1.0)
+            sFac.surf = new Surface();
+        else if (sFac.sh.opacity <= 0.0){
+            sFac.surf = new TransparentSurface();
+        }
+        else {
+            sFac.surf = new AlphaSurface(sFac.sh.opacity);
+        }
+    }
+
     //std::vector<BVHAccel> bvhs;
     for (size_t s = 0; s < model.sh.nbSuper; ++s) {
         auto& structure = model.structures[s];
