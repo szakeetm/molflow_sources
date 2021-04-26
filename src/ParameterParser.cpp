@@ -67,7 +67,12 @@ void parseFacet(std::istringstream &facetString, const std::vector<SelectionGrou
             std::cerr << "[" << __FUNCTION__ << "] Could not parse facet id or range:"<<std::endl <<"\t"<<id_str<<std::endl;
         }
     }
-    auto param = Parameters::tableFac.find(param_str)->second;
+    auto tablePair = Parameters::tableFac.find(param_str);
+    if(tablePair == Parameters::tableFac.end()) {
+        std::cerr << "[" << __FUNCTION__ << "] Invalid option was given:"<<std::endl <<"\t"<<param_str<<std::endl;
+        return;
+    }
+    auto param = tablePair->second;
     double paramVal = std::strtod(paramVal_str.c_str(),nullptr);
     for(auto& id : id_range)
         Parameters::facetParams.emplace_back(std::make_tuple(id, param, paramVal));
@@ -79,7 +84,12 @@ void parseSimu(std::istringstream& facetString){
     std::string paramVal_str;
     std::getline(facetString, param_str, '=');
     std::getline(facetString, paramVal_str);
-    auto param = Parameters::tableSim.find(param_str)->second;
+    auto tablePair = Parameters::tableSim.find(param_str);
+    if(tablePair == Parameters::tableSim.end()) {
+        std::cerr << "[" << __FUNCTION__ << "] Invalid option was given:"<<std::endl <<"\t"<<param_str<<std::endl;
+        return;
+    }
+    auto param = tablePair->second;
     double paramVal = std::strtod(paramVal_str.c_str(),nullptr);
     Parameters::simuParams.emplace_back(std::make_tuple(param, paramVal));
     //printf("[Facet #%s] %s = %s\n", id.c_str(), param.c_str(), paramVal.c_str());
@@ -94,29 +104,55 @@ void parseFacet(const std::string& facetString){
     printf("[Facet #%s] %s = %s\n", id.c_str(), param.c_str(), paramVal.c_str());
 }
 
-void ParameterParser::Parse(const std::string &paramFile, const std::vector<SelectionGroup> &selections) {
-    //convDistr=std::vector<std::pair<double,double>>();
-
-    std::ifstream inputFileStream(paramFile);
-
+void parseInputStream(std::stringstream& inputLineStream, const std::vector<SelectionGroup> &selections){
     size_t i = 0;
-    for (std::string line; std::getline(inputFileStream, line); ) {
+    for (std::string line; inputLineStream >> line; ) {
         std::istringstream lineStream(line);
         std::string optionType;
         std::getline(lineStream, optionType, '.');
 
-        if( optionType == "facet" ) {
+        if (optionType == "facet") {
             parseFacet(lineStream, selections);
             //printf("[%zu] Parsing %s\n", i, lineStream.str().c_str());
-        }
-        else if( optionType == "simulation" ) {
+        } else if (optionType == "simulation") {
             parseSimu(lineStream);
-        }
-        else {
-            printf("[Line #%zu] Unknown input\n", i);
+        } else {
+            printf("[Line #%zu] Unknown input %s\n", i, line.c_str());
         }
         ++i;
     }
+}
+
+
+void ParameterParser::ParseFile(const std::string &paramFile, const std::vector<SelectionGroup> &selections) {
+    //convDistr=std::vector<std::pair<double,double>>();
+
+    std::ifstream inputFileStream(paramFile);
+    std::stringstream inputStream;
+
+    copy(std::istreambuf_iterator<char>(inputFileStream),
+         std::istreambuf_iterator<char>(),
+         std::ostreambuf_iterator<char>(inputStream));
+
+    parseInputStream(inputStream, selections);
+
+}
+
+void ParameterParser::ParseInput(const std::vector<std::string> &paramSweep, const std::vector<SelectionGroup> &selections) {
+    std::stringstream inputStream(std::ios_base::app | std::ios_base::out | std::ios_base::in);
+    const char delimiter = ';';
+    for(auto sweep : paramSweep){
+        size_t pos = 0;
+        std::string token;
+        while ((pos = sweep.find(delimiter)) != std::string::npos) {
+            token = sweep.substr(0, pos);
+            inputStream << token << '\n';
+            sweep.erase(0, pos + 1);
+        }
+        inputStream << sweep << '\n';
+    }
+
+    parseInputStream(inputStream, selections);
 }
 
 void ParameterParser::ChangeSimuParams(WorkerParams& params){

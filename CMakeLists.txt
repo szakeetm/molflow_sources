@@ -95,6 +95,11 @@ if(NOT NO_INTERFACE)
     add_dependencies(molflow shared_simulator shared_interface compress)
 endif()
 
+IF (WIN32)
+    add_dependencies(molflow ziplib)
+    add_dependencies(molflowSim ziplib)
+ENDIF(WIN32)
+
 #IF(NOT WIN32)
 add_dependencies(molflowCLI molflowSim)
 #ENDIF()

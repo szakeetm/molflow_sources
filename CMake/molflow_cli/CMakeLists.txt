@@ -163,7 +163,7 @@ if(MSVC)
 
     # Add Windows Console output
     message(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
-    link_directories(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+    target_link_directories(${PROJECT_NAME} PRIVATE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 
     # zip extraction
     target_link_libraries(${PROJECT_NAME} PRIVATE
