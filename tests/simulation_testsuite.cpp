@@ -328,7 +328,12 @@ namespace {
             fileName_c[testFile.size()] = '\0';
             argv.push_back(fileName_c);
             char **args = argv.data();
-            Initializer::init(argv.size(), (args), &simManager, &model, &globState);
+            if(Initializer::initFromArgv(argv.size(), (args), &simManager, &model)){
+                exit(41);
+            }
+            if(Initializer::initFromFile(argv.size(), (args), &simManager, &model, &globState)){
+                exit(42);
+            }
             delete[] fileName_c;
 
             size_t oldHitsNb = globState.globalHits.globalHits.nbMCHit;
