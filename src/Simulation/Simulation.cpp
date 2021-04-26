@@ -274,8 +274,8 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     }
 
     //std::vector<BVHAccel> bvhs;
+    model.bvhs.clear();
     for (size_t s = 0; s < model.sh.nbSuper; ++s) {
-        auto& structure = model.structures[s];
         model.bvhs.emplace_back(primPointers[s], 1);
     }
 
