@@ -248,7 +248,7 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
             //return (lastHitFacet != nullptr);
 
             //Prepare output values
-#if !defined(USE_OLD_BVH)
+#if defined(USE_OLD_BVH)
             auto[found, collidedFacet, d] = Intersect(*this, position,
                                                       direction, model->structures[structureId].aabbTree.get());
             //printf("%lf ms time spend in old BVH\n", tmpTime.ElapsedMs());

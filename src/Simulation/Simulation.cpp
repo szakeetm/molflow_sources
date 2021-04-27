@@ -223,7 +223,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     //Reserve particle log
     ReinitializeParticleLog();
 
-#if !defined(USE_NEW_BVH)
+#if defined(USE_OLD_BVH)
     std::vector<std::vector<SubprocessFacet*>> facetPointers;
     facetPointers.resize(model.sh.nbSuper);
     for(auto& sFac : simModel->facets){
