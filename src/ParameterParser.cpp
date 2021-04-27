@@ -168,11 +168,11 @@ void ParameterParser::ChangeSimuParams(WorkerParams& params){
     }
 }
 
-void ParameterParser::ChangeFacetParams(std::vector<SubprocessFacet> &facets) {
+void ParameterParser::ChangeFacetParams(std::vector<std::shared_ptr<SubprocessFacet>> &facets) {
     for(auto& par : Parameters::facetParams){
         size_t id = std::get<0>(par);
         if(id < facets.size()) {
-            auto& facet = facets[id];
+            auto& facet = *facets[id];
             if (std::get<1>(par) == Parameters::FacetParam::opacity)
                 facet.sh.opacity = std::get<2>(par);
             else if (std::get<1>(par) == Parameters::FacetParam::outgassing)

@@ -191,7 +191,8 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
         auto& tmpResults = particle.tmpState;
 
         std::vector<FacetState>(simModel->sh.nbFacet).swap(tmpResults.facetStates);
-        for(auto& sFac : simModel->facets){
+        for(auto& fac : simModel->facets){
+            auto& sFac = *fac;
             size_t i = sFac.globalId;
             if(!tmpResults.facetStates[i].momentResults.empty())
                 continue; // Skip multiple init when facets exist in all structures
@@ -222,17 +223,17 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     //Reserve particle log
     ReinitializeParticleLog();
 
-    std::vector<std::vector<SubprocessFacet*>> facetPointers;
+    std::vector<std::vector<std::shared_ptr<SubprocessFacet>>> facetPointers;
     facetPointers.resize(model.sh.nbSuper);
-    for(auto& sFac : model.facets){
+    for(auto& sFac : simModel->facets){
         // TODO: Build structures
-        if (sFac.sh.superIdx == -1) { //Facet in all structures
+        if (sFac->sh.superIdx == -1) { //Facet in all structures
             for (auto& fp_vec : facetPointers) {
-                fp_vec.push_back(&sFac);
+                fp_vec.push_back(sFac);
             }
         }
         else {
-            facetPointers[sFac.sh.superIdx].push_back(&sFac); //Assign to structure
+            facetPointers[sFac->sh.superIdx].push_back(sFac); //Assign to structure
         }
     }
 
@@ -251,18 +252,19 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
 
     std::vector<std::vector<std::shared_ptr<Primitive>>> primPointers;
     primPointers.resize(model.sh.nbSuper);
-    for(auto& sFac : model.facets){
-        if (sFac.sh.superIdx == -1) { //Facet in all structures
+    for(auto& sFac : simModel->facets){
+        if (sFac->sh.superIdx == -1) { //Facet in all structures
             for (auto& fp_vec : primPointers) {
-                fp_vec.push_back(std::make_shared<Primitive>(sFac));
+                fp_vec.push_back(sFac);
             }
         }
         else {
-            primPointers[sFac.sh.superIdx].push_back(std::make_shared<Primitive>(sFac)); //Assign to structure
+            primPointers[sFac->sh.superIdx].push_back(sFac); //Assign to structure
         }
     }
 
-    for(auto& sFac : model.facets){
+    for(auto& fac : simModel->facets){
+        auto& sFac = *fac;
         if(sFac.sh.opacity >= 1.0)
             sFac.surf = new Surface();
         else if (sFac.sh.opacity <= 0.0){

@@ -381,7 +381,7 @@ int Initializer::initSimModel(SimulationModel* model) {
 
     auto& loadFacets = model->facets;
     for (size_t facIdx = 0; facIdx < model->sh.nbFacet; facIdx++) {
-        SubprocessFacet& sFac = loadFacets[facIdx];
+        SubprocessFacet& sFac = *loadFacets[facIdx];
 
         std::vector<double> textIncVector;
         // Add surface elements area (reciprocal)

@@ -58,7 +58,7 @@ void WriterXML::SaveGeometry(xml_document &saveDoc, SimulationModel *model, bool
         //if (!saveSelected || model->facets[i]->selected) {
         xml_node f = geomNode.child("Facets").append_child("Facet");
         f.append_attribute("id") = i;
-        SaveFacet(f, &model->facets[i], model->vertices3.size()); //model->facets[i]->SaveXML_geom(f);
+        SaveFacet(f, model->facets[i].get(), model->vertices3.size()); //model->facets[i]->SaveXML_geom(f);
         //}
     }
 
@@ -304,7 +304,8 @@ bool WriterXML::SaveSimulationState(xml_document &saveDoc, SimulationModel *mode
 
         xml_node facetResultsNode = newMoment.append_child("FacetResults");
 
-        for (auto &sFac : model->facets) {
+        for (auto &fac : model->facets) {
+            auto &sFac = *fac;
             //SubprocessFacet& f = model->structures[0].facets[0].;
             xml_node newFacetResult = facetResultsNode.append_child("Facet");
             newFacetResult.append_attribute("id") = sFac.globalId;

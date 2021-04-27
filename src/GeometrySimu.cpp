@@ -354,7 +354,8 @@ size_t SubprocessFacet::GetMemSize() const {
 * \return error code: 0=no error, 1=error
 */
 int SimulationModel::InitialiseFacets() {
-    for (auto& facet : facets) {
+    for (const auto& f : facets) {
+        auto& facet = *f;
         // Main facet params
         // Current facet
         //SubprocessFacet *f = model->facets[i];
@@ -529,7 +530,7 @@ void SimulationModel::PrepareToRun() {
 
     //Check and calculate various facet properties for time dependent simulations (CDF, ID )
     for (size_t i = 0; i < sh.nbFacet; i++) {
-        SubprocessFacet& facet = facets[i];
+        SubprocessFacet& facet = *facets[i];
         // TODO: Find a solution to integrate catalog parameters
         if(facet.sh.outgassing_paramId >= (int) tdParams.parameters.size()){
             char tmp[256];
@@ -600,7 +601,7 @@ void SimulationModel::CalcTotalOutgassing() {
     const double latestMoment = wp.latestMoment;
 
     for (size_t i = 0; i < sh.nbFacet; i++) {
-        SubprocessFacet& facet = facets[i];
+        SubprocessFacet& facet = *facets[i];
         if (facet.sh.desorbType != DES_NONE) { //there is a kind of desorption
             if (facet.sh.useOutgassingFile) { //outgassing file
                 auto& ogMap = facet.ogMap;
@@ -688,7 +689,7 @@ void GlobalSimuState::Resize(const SimulationModel &model) { //Constructs the 'd
 
     if(!model.facets.empty()) {
         for (size_t i = 0; i < nbF; i++) {
-            auto &sFac = model.facets[i];
+            auto &sFac = *model.facets[i];
             if (sFac.globalId != i) {
                 std::cerr << "Facet ID mismatch! : " << sFac.globalId << " / " << i << std::endl;
                 exit(0);

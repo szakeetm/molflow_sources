@@ -427,20 +427,20 @@ namespace {
         ASSERT_TRUE(std::abs(wp.gasMass - 42.42) < 1e-5);
 
 
-        std::vector<SubprocessFacet> facets(200);
-        ASSERT_FALSE(std::abs(facets[41].sh.opacity - 0.5) < 1e-5);
-        ASSERT_FALSE(std::abs(facets[2].sh.sticking - 10.01) < 1e-5);
-        ASSERT_FALSE(std::abs(facets[49].sh.outgassing - 42e5) < 1e-5); // first
-        ASSERT_FALSE(std::abs(facets[69].sh.outgassing - 42e5) < 1e-5); // mid
-        ASSERT_FALSE(std::abs(facets[89].sh.outgassing - 42e5) < 1e-5); // last
-        ASSERT_FALSE(std::abs(facets[99].sh.temperature - 290.92) < 1e-5);
+        std::vector<std::shared_ptr<SubprocessFacet>> facets(200);
+        ASSERT_FALSE(std::abs(facets[41]->sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[2]->sh.sticking - 10.01) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[49]->sh.outgassing - 42e5) < 1e-5); // first
+        ASSERT_FALSE(std::abs(facets[69]->sh.outgassing - 42e5) < 1e-5); // mid
+        ASSERT_FALSE(std::abs(facets[89]->sh.outgassing - 42e5) < 1e-5); // last
+        ASSERT_FALSE(std::abs(facets[99]->sh.temperature - 290.92) < 1e-5);
         ParameterParser::ChangeFacetParams(facets);
-        ASSERT_DOUBLE_EQ(facets[41].sh.opacity, 0.5);
-        ASSERT_DOUBLE_EQ(facets[2].sh.sticking, 10.01);
-        ASSERT_DOUBLE_EQ(facets[49].sh.outgassing, 42e5); // first
-        ASSERT_DOUBLE_EQ(facets[69].sh.outgassing, 42e5); // mid
-        ASSERT_DOUBLE_EQ(facets[89].sh.outgassing, 42e5); // last
-        ASSERT_DOUBLE_EQ(facets[99].sh.temperature, 290.92);
+        ASSERT_DOUBLE_EQ(facets[41]->sh.opacity, 0.5);
+        ASSERT_DOUBLE_EQ(facets[2]->sh.sticking, 10.01);
+        ASSERT_DOUBLE_EQ(facets[49]->sh.outgassing, 42e5); // first
+        ASSERT_DOUBLE_EQ(facets[69]->sh.outgassing, 42e5); // mid
+        ASSERT_DOUBLE_EQ(facets[89]->sh.outgassing, 42e5); // last
+        ASSERT_DOUBLE_EQ(facets[99]->sh.temperature, 290.92);
 
         std::filesystem::remove(paramFile);
     }
@@ -463,20 +463,20 @@ namespace {
         ASSERT_TRUE(std::abs(wp.gasMass - 42.42) < 1e-5);
 
 
-        std::vector<SubprocessFacet> facets(200);
-        ASSERT_FALSE(std::abs(facets[41].sh.opacity - 0.5) < 1e-5);
-        ASSERT_FALSE(std::abs(facets[2].sh.sticking - 10.01) < 1e-5);
-        ASSERT_FALSE(std::abs(facets[49].sh.outgassing - 42e5) < 1e-5); // first
-        ASSERT_FALSE(std::abs(facets[69].sh.outgassing - 42e5) < 1e-5); // mid
-        ASSERT_FALSE(std::abs(facets[89].sh.outgassing - 42e5) < 1e-5); // last
-        ASSERT_FALSE(std::abs(facets[99].sh.temperature - 290.92) < 1e-5);
+        std::vector<std::shared_ptr<SubprocessFacet>> facets(200);
+        ASSERT_FALSE(std::abs(facets[41]->sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[2]->sh.sticking - 10.01) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[49]->sh.outgassing - 42e5) < 1e-5); // first
+        ASSERT_FALSE(std::abs(facets[69]->sh.outgassing - 42e5) < 1e-5); // mid
+        ASSERT_FALSE(std::abs(facets[89]->sh.outgassing - 42e5) < 1e-5); // last
+        ASSERT_FALSE(std::abs(facets[99]->sh.temperature - 290.92) < 1e-5);
         ParameterParser::ChangeFacetParams(facets);
-        ASSERT_DOUBLE_EQ(facets[41].sh.opacity, 0.5);
-        ASSERT_DOUBLE_EQ(facets[2].sh.sticking, 10.01);
-        ASSERT_DOUBLE_EQ(facets[49].sh.outgassing, 42e5); // first
-        ASSERT_DOUBLE_EQ(facets[69].sh.outgassing, 42e5); // mid
-        ASSERT_DOUBLE_EQ(facets[89].sh.outgassing, 42e5); // last
-        ASSERT_DOUBLE_EQ(facets[99].sh.temperature, 290.92);
+        ASSERT_DOUBLE_EQ(facets[41]->sh.opacity, 0.5);
+        ASSERT_DOUBLE_EQ(facets[2]->sh.sticking, 10.01);
+        ASSERT_DOUBLE_EQ(facets[49]->sh.outgassing, 42e5); // first
+        ASSERT_DOUBLE_EQ(facets[69]->sh.outgassing, 42e5); // mid
+        ASSERT_DOUBLE_EQ(facets[89]->sh.outgassing, 42e5); // last
+        ASSERT_DOUBLE_EQ(facets[99]->sh.temperature, 290.92);
     }
 
     TEST(ParameterParsing, Group) {
@@ -502,22 +502,22 @@ namespace {
         outfile.close();
         ParameterParser::ParseFile(paramFile, selections);
 
-        std::vector<SubprocessFacet> facets(200);
-        ASSERT_FALSE(std::abs(facets[4].sh.opacity - 0.5) < 1e-5);
-        ASSERT_FALSE(std::abs(facets[5].sh.opacity - 0.5) < 1e-5);
-        ASSERT_FALSE(std::abs(facets[6].sh.opacity - 0.5) < 1e-5);
-        ASSERT_FALSE(std::abs(facets[7].sh.opacity - 0.5) < 1e-5);
-        ASSERT_FALSE(std::abs(facets[8].sh.opacity - 0.5) < 1e-5);
-        ASSERT_FALSE(std::abs(facets[9].sh.opacity - 0.5) < 1e-5);
-        ASSERT_FALSE(std::abs(facets[10].sh.opacity - 0.5) < 1e-5);
+        std::vector<std::shared_ptr<SubprocessFacet>> facets(200);
+        ASSERT_FALSE(std::abs(facets[4]->sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[5]->sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[6]->sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[7]->sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[8]->sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[9]->sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[10]->sh.opacity - 0.5) < 1e-5);
         ParameterParser::ChangeFacetParams(facets);
-        ASSERT_FALSE(std::abs(facets[4].sh.opacity - 0.5) < 1e-5);
-        ASSERT_DOUBLE_EQ(facets[5].sh.opacity, 0.5);
-        ASSERT_FALSE(std::abs(facets[6].sh.opacity - 0.5) < 1e-5);
-        ASSERT_FALSE(std::abs(facets[7].sh.opacity - 0.5) < 1e-5);
-        ASSERT_DOUBLE_EQ(facets[8].sh.opacity, 0.5);
-        ASSERT_DOUBLE_EQ(facets[9].sh.opacity, 0.5);
-        ASSERT_FALSE(std::abs(facets[10].sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[4]->sh.opacity - 0.5) < 1e-5);
+        ASSERT_DOUBLE_EQ(facets[5]->sh.opacity, 0.5);
+        ASSERT_FALSE(std::abs(facets[6]->sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[7]->sh.opacity - 0.5) < 1e-5);
+        ASSERT_DOUBLE_EQ(facets[8]->sh.opacity, 0.5);
+        ASSERT_DOUBLE_EQ(facets[9]->sh.opacity, 0.5);
+        ASSERT_FALSE(std::abs(facets[10]->sh.opacity - 0.5) < 1e-5);
 
         std::filesystem::remove(paramFile);
     }

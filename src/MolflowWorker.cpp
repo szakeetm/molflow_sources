@@ -1275,7 +1275,7 @@ bool Worker::InterfaceGeomToSimModel() {
             return false;
         }
 
-        model.facets.push_back(sFac);
+        model.facets.push_back(std::make_shared<SubprocessFacet>(sFac));
     }
 
     if(!model.facets.empty() && !model.vertices3.empty())

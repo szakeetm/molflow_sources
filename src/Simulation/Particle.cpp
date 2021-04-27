@@ -116,7 +116,8 @@ void Particle::PerformTeleport(SubprocessFacet *iFacet) {
 
     //Look in which superstructure is the destination facet:
     size_t facId = 0;
-    for(auto& sFac : model->facets){
+    for(auto& fac : model->facets){
+        auto& sFac = *fac;
         if (destIndex == static_cast<int>(sFac.globalId)) {
             destination = &(sFac);
             if (destination->sh.superIdx != -1) {
@@ -247,7 +248,7 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
             //return (lastHitFacet != nullptr);
 
             //Prepare output values
-#if defined(USE_OLD_BVH)
+#if !defined(USE_OLD_BVH)
             auto[found, collidedFacet, d] = Intersect(*this, position,
                                                       direction, model->structures[structureId].aabbTree.get());
             //printf("%lf ms time spend in old BVH\n", tmpTime.ElapsedMs());
@@ -270,10 +271,10 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                     HitChain* currHit = hitChain;
                     while(currHit){
                         if(!currHit->hit->isHit) {
-                            transparentHitBuffer.push_back(&model->facets[currHit->hitId]);
+                            transparentHitBuffer.push_back(model->facets[currHit->hitId].get());
                         }
                         else {
-                            collidedFacet = &model->facets[currHit->hitId];
+                            collidedFacet = model->facets[currHit->hitId].get();
                             d = currHit->hit->colDistTranspPass;
                         }
                         tmpFacetVars[currHit->hitId] = *currHit->hit;
@@ -425,7 +426,8 @@ bool Particle::StartFromSource() {
     srcRnd = randomGenerator.rnd() * model->wp.totalDesorbedMolecules;
 
     i = 0;
-    for(auto& f : model->facets) { //Go through facets in a structure
+    for(auto& fac : model->facets) { //Go through facets in a structure
+        auto& f = *fac;
         if (f.sh.desorbType != DES_NONE) { //there is some kind of outgassing
             if (f.sh.useOutgassingFile) { //Using SynRad-generated outgassing map
                 if (f.sh.totalOutgassing > 0.0) {
@@ -483,7 +485,7 @@ bool Particle::StartFromSource() {
         return false;
     }
 
-    SubprocessFacet *src = &(model->facets[i]);
+    SubprocessFacet *src = model->facets[i].get();
     lastHitFacet = src;
     //distanceTraveled = 0.0;  //for mean free path calculations
     //particleTime = desorptionStartTime + (desorptionStopTime - desorptionStartTime)*randomGenerator.rnd();
