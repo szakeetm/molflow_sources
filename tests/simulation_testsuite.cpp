@@ -427,7 +427,8 @@ namespace {
         ASSERT_TRUE(std::abs(wp.gasMass - 42.42) < 1e-5);
 
 
-        std::vector<std::shared_ptr<SubprocessFacet>> facets(200);
+       std::vector<std::shared_ptr<SubprocessFacet>> facets(200);
+        for(int i=0; i < facets.size();++i) facets[i] = std::make_shared<SubprocessFacet>();
         ASSERT_FALSE(std::abs(facets[41]->sh.opacity - 0.5) < 1e-5);
         ASSERT_FALSE(std::abs(facets[2]->sh.sticking - 10.01) < 1e-5);
         ASSERT_FALSE(std::abs(facets[49]->sh.outgassing - 42e5) < 1e-5); // first
@@ -463,7 +464,8 @@ namespace {
         ASSERT_TRUE(std::abs(wp.gasMass - 42.42) < 1e-5);
 
 
-        std::vector<std::shared_ptr<SubprocessFacet>> facets(200);
+       std::vector<std::shared_ptr<SubprocessFacet>> facets(200);
+        for(int i=0; i < facets.size();++i) facets[i] = std::make_shared<SubprocessFacet>();
         ASSERT_FALSE(std::abs(facets[41]->sh.opacity - 0.5) < 1e-5);
         ASSERT_FALSE(std::abs(facets[2]->sh.sticking - 10.01) < 1e-5);
         ASSERT_FALSE(std::abs(facets[49]->sh.outgassing - 42e5) < 1e-5); // first
@@ -503,6 +505,7 @@ namespace {
         ParameterParser::ParseFile(paramFile, selections);
 
         std::vector<std::shared_ptr<SubprocessFacet>> facets(200);
+        for(int i=0; i < facets.size();++i) facets[i] = std::make_shared<SubprocessFacet>();
         ASSERT_FALSE(std::abs(facets[4]->sh.opacity - 0.5) < 1e-5);
         ASSERT_FALSE(std::abs(facets[5]->sh.opacity - 0.5) < 1e-5);
         ASSERT_FALSE(std::abs(facets[6]->sh.opacity - 0.5) < 1e-5);
