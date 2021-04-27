@@ -223,17 +223,18 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     //Reserve particle log
     ReinitializeParticleLog();
 
-    std::vector<std::vector<std::shared_ptr<SubprocessFacet>>> facetPointers;
+#if !defined(USE_NEW_BVH)
+    std::vector<std::vector<SubprocessFacet*>> facetPointers;
     facetPointers.resize(model.sh.nbSuper);
     for(auto& sFac : simModel->facets){
         // TODO: Build structures
         if (sFac->sh.superIdx == -1) { //Facet in all structures
             for (auto& fp_vec : facetPointers) {
-                fp_vec.push_back(sFac);
+                fp_vec.push_back(sFac.get());
             }
         }
         else {
-            facetPointers[sFac->sh.superIdx].push_back(sFac); //Assign to structure
+            facetPointers[sFac->sh.superIdx].push_back(sFac.get()); //Assign to structure
         }
     }
 
@@ -248,8 +249,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
         //delete tree; // pointer unnecessary because of make_shared
     }
 
-    // TODO: New AABB
-
+#else
     std::vector<std::vector<std::shared_ptr<Primitive>>> primPointers;
     primPointers.resize(model.sh.nbSuper);
     for(auto& sFac : simModel->facets){
@@ -280,7 +280,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     for (size_t s = 0; s < model.sh.nbSuper; ++s) {
         model.bvhs.emplace_back(primPointers[s], 1);
     }
-
+#endif
     for(auto& particle : particles)
         particle.model = simModel;
 
