@@ -322,19 +322,24 @@ namespace {
         const size_t keepNEntries = 20;
         const size_t runForTSec = 30;
         std::vector<double> perfTimes;
-        for(size_t runNb = 0; runNb < nRuns; ++runNb){
-            SimulationManager simManager;
-            SimulationModel model{};
-            GlobalSimuState globState{};
 
-            std::vector<char *> argv = {"tester", "-t", "40",  "--file"};
-            char * fileName_c = new char[testFile.size() + 1];
+        SimulationManager simManager{};
+        simManager.interactiveMode = false;
+        SimulationModel model{};
+        GlobalSimuState globState{};
+
+        {
+            std::vector<char *> argv = {"tester", "-t", "40", "--file"};
+            char *fileName_c = new char[testFile.size() + 1];
             std::copy(testFile.begin(), testFile.end(), fileName_c);
             fileName_c[testFile.size()] = '\0';
             argv.push_back(fileName_c);
             char **args = argv.data();
             Initializer::init(argv.size(), (args), &simManager, &model, &globState);
             delete[] fileName_c;
+        }
+
+        for(size_t runNb = 0; runNb < nRuns; ++runNb){
 
             size_t oldHitsNb = globState.globalHits.globalHits.nbMCHit;
             size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
@@ -344,35 +349,20 @@ namespace {
 
             EXPECT_NO_THROW(simManager.StartSimulation());
 
-            Chronometer simTimer;
-            simTimer.Start();
-            double elapsedTime;
-
-            bool endCondition = false;
-            do {
-                ProcessSleep(1000);
-                elapsedTime = simTimer.Elapsed();
-                if (model.otfParams.desorptionLimit != 0)
-                    endCondition = globState.globalHits.globalHits.nbDesorbed >= model.otfParams.desorptionLimit;
-                // Check for potential time end
-                if (Settings::simDuration > 0) {
-                    endCondition |= elapsedTime >= Settings::simDuration;
-                }
-            } while (!endCondition);
-            simTimer.Stop();
-
             // Stop and copy results
             simManager.StopSimulation();
             simManager.KillAllSimUnits();
+            simManager.ResetSimulations();
 
-            perfTimes.emplace_back((double) (globState.globalHits.globalHits.nbMCHit - oldHitsNb) / (elapsedTime));
             //EXPECT_EQ(0, oldDesNb);
             //EXPECT_EQ(0, oldHitsNb);
             EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
             EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
 
-            GlobalSimuState::Compare(oldState, globState, 1.0e-2);
-            //printf("[Run %zu/%zu] Current Hit/s: %e\n", runNb, nRuns, perfTimes.back());
+            auto[diff_glob, diff_loc] = GlobalSimuState::Compare(oldState, globState, 1.0e-2);
+            EXPECT_EQ(0, diff_glob);
+            if(diff_loc > 0)
+                std::cerr << "[Warning] " << diff_loc << " local differences found!" << std::endl;
         };
     }
 

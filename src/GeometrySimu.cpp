@@ -703,7 +703,7 @@ void GlobalSimuState::Reset() {
     //ReleaseMutex(mutex);
 }
 
-int
+std::pair<int, int>
 GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuState &rhsGlobHit, double cmpThreshold) {
 
     //std::ofstream cmpFile("cmpFile.txt");
@@ -729,7 +729,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
 
         if(globalErrNb){
             std::cout << cmpFile.str() << std::endl;
-            return 1;
+            return std::make_pair(globalErrNb, std::numeric_limits<int>::max());
         }
     }
 
@@ -949,7 +949,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
     }*/
 
     std::cout << cmpFile.str() << std::endl;
-    return globalErrNb + facetErrNb;
+    return std::make_pair(globalErrNb, facetErrNb);
 }
 
 /**
