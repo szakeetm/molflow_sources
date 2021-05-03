@@ -188,32 +188,30 @@ namespace {
         const size_t keepNEntries = 20;
         const size_t runForTSec = 20;
         std::vector<double> perfTimes;
-        SimulationManager simManager;
-        simManager.interactiveMode = false;
-        SimulationModel model{};
-        GlobalSimuState globState{};
-        {
+        for(size_t runNb = 0; runNb < nRuns; ++runNb){
+            SimulationManager simManager;
+            SimulationModel model{};
+            GlobalSimuState globState{};
+
             std::vector<char *> argv = {"tester", "--config", "simulation.cfg", "--reset", "--file"};
-            char *fileName_c = new char[testFile.size() + 1];
+            char * fileName_c = new char[testFile.size() + 1];
             std::copy(testFile.begin(), testFile.end(), fileName_c);
             fileName_c[testFile.size()] = '\0';
             argv.push_back(fileName_c);
             char **args = argv.data();
             Initializer::init(argv.size(), (args), &simManager, &model, &globState);
             delete[] fileName_c;
-        }
-
-        for(size_t runNb = 0; runNb < nRuns; ++runNb){
 
             size_t oldHitsNb = globState.globalHits.globalHits.nbMCHit;
             size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
 
-            Chronometer simTimer;
-            simTimer.Start();
-            //double elapsedTime;
             EXPECT_NO_THROW(simManager.StartSimulation());
 
-            /*bool endCondition = false;
+            Chronometer simTimer;
+            simTimer.Start();
+            double elapsedTime;
+
+            bool endCondition = false;
             do {
                 ProcessSleep(1000);
                 elapsedTime = simTimer.Elapsed();
@@ -223,14 +221,13 @@ namespace {
                 if (Settings::simDuration > 0) {
                     endCondition |= elapsedTime >= Settings::simDuration;
                 }
-            } while (!endCondition);*/
+            } while (!endCondition);
             simTimer.Stop();
-            double elapsedTime = simTimer.Elapsed();
 
             // Stop and copy results
             simManager.StopSimulation();
             simManager.KillAllSimUnits();
-            simManager.ResetSimulations();
+
             perfTimes.emplace_back((double) (globState.globalHits.globalHits.nbMCHit - oldHitsNb) / (elapsedTime));
             EXPECT_EQ(0, oldDesNb);
             EXPECT_EQ(0, oldHitsNb);
@@ -238,9 +235,6 @@ namespace {
             EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
 
             printf("[Run %zu/%zu] Current Hit/s: %e\n", runNb, nRuns, perfTimes.back());
-
-            globState.Reset();
-            simManager.ResetSimulations();
         };
 
         // Compare to old performance values here
