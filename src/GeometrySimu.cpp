@@ -948,8 +948,10 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
             }
         }
     }*/
-
-    std::cout << cmpFile.str() << "\n";
+    std::string cmp_string;
+    for(int i = 0; i < 100 && std::getline(cmpFile,cmp_string,'\n'); ++i) {
+        std::cout << cmp_string << "\n";
+    }
     return std::make_pair(globalErrNb, facetErrNb);
 }
 

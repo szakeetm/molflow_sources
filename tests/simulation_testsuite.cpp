@@ -335,16 +335,34 @@ namespace {
             std::copy(testFile.begin(), testFile.end(), fileName_c);
             fileName_c[testFile.size()] = '\0';
             argv.push_back(fileName_c);
-            char **args = argv.data();
-            Initializer::init(argv.size(), (args), &simManager, &model, &globState);
+            {
+                char **args = argv.data();
+                Initializer::init(argv.size(), (args), &simManager, &model, &globState);
+            }
             {
                 double timeExpect = std::log(model.facets.size());
                 //timeExpect = timeExpect * timeExpect;
                 timeExpect = std::pow(timeExpect, 1.5);
-                timeExpect += std::pow(std::log(model.tdParams.moments.size()), 2.0);
-                Settings::simDuration = std::min(40.0 + timeExpect, 120.0);
-                argv[2] = std::to_string(Settings::simDuration).data();
-                Initializer::init(argv.size(), (args), &simManager, &model, &globState);
+                if(!model.tdParams.moments.empty())
+                    timeExpect += std::pow(std::log(model.tdParams.moments.size()), 3.0);
+
+                timeExpect += std::max(0.0, std::pow(std::log(std::sqrt(model.sh.nbFacet * sizeof(FacetHitBuffer))), 2.0) - 10.0);
+                timeExpect += std::max(0.0, 1.1* std::sqrt(std::exp(std::log(std::sqrt(model.size())))));
+                Settings::simDuration = std::min(40.0 + timeExpect, 180.0);
+
+                // Modify argv with new duration
+                auto newDur = std::to_string(Settings::simDuration);
+                char *newDur_c = new char[newDur.size() + 1];
+                std::copy(newDur.begin(), newDur.end(), newDur_c);
+                newDur_c[newDur.size()] = '\0';
+                argv[2] = newDur_c;
+
+                model = SimulationModel{};
+                {
+                    char **args = argv.data();
+                    Initializer::init(argv.size(), (args), &simManager, &model, &globState);
+                }
+                delete[] newDur_c;
             }
             delete[] fileName_c;
         }
@@ -359,6 +377,8 @@ namespace {
 
             EXPECT_NE(0, oldDesNb);
             EXPECT_NE(0, oldHitsNb);
+            EXPECT_EQ(0, globState.globalHits.globalHits.nbDesorbed);
+            EXPECT_EQ(0, globState.globalHits.globalHits.nbMCHit);
             EXPECT_NO_THROW(simManager.StartSimulation());
 
             // Stop and copy results
@@ -369,7 +389,7 @@ namespace {
             EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
             EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
 
-            auto[diff_glob, diff_loc] = GlobalSimuState::Compare(oldState, globState, 1.0e-3);
+            auto[diff_glob, diff_loc] = GlobalSimuState::Compare(oldState, globState, 1.0e-2);
             EXPECT_EQ(0, diff_glob);
 
             if(diff_loc > 0)
