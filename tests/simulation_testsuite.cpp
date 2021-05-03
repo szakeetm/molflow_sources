@@ -18,6 +18,7 @@
 #include <functional>
 #include <Helper/Chronometer.h>
 #include <numeric>
+#include <cmath>
 
 #ifndef GIT_COMMIT_HASH
 #define GIT_COMMIT_HASH "?"
@@ -336,6 +337,15 @@ namespace {
             argv.push_back(fileName_c);
             char **args = argv.data();
             Initializer::init(argv.size(), (args), &simManager, &model, &globState);
+            {
+                double timeExpect = std::log(model.facets.size());
+                //timeExpect = timeExpect * timeExpect;
+                timeExpect = std::pow(timeExpect, 1.5);
+                timeExpect += std::pow(std::log(model.tdParams.moments.size()), 2.0);
+                Settings::simDuration = std::min(40.0 + timeExpect, 120.0);
+                argv[2] = std::to_string(Settings::simDuration).data();
+                Initializer::init(argv.size(), (args), &simManager, &model, &globState);
+            }
             delete[] fileName_c;
         }
 
@@ -359,10 +369,11 @@ namespace {
             EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
             EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
 
-            auto[diff_glob, diff_loc] = GlobalSimuState::Compare(oldState, globState, 1.0e-2);
+            auto[diff_glob, diff_loc] = GlobalSimuState::Compare(oldState, globState, 1.0e-3);
             EXPECT_EQ(0, diff_glob);
+
             if(diff_loc > 0)
-                std::cerr << "[Warning] " << diff_loc << " local differences found!" << std::endl;
+                fprintf(stderr, "[Warning] %d local differences found!\n", diff_loc);
         };
     }
 

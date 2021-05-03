@@ -179,6 +179,7 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
         exit(0);
     }
     model->otfParams.timeLimit = (double) Settings::simDuration;
+    std::cout << "Running simulation for: " << Settings::simDuration << "s \n";
 
     /*else{
         model->otfParams.desorptionLimit = 0;
