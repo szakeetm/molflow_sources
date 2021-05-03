@@ -26,6 +26,20 @@ namespace Settings {
     std::string outputPath;
 }
 
+void initDefaultSettings(){
+    Settings::nbThreads = 0;
+    Settings::simDuration = 10;
+    Settings::autoSaveDuration = 600;
+    Settings::loadAutosave = false;
+    Settings::desLimit.clear();
+    Settings::resetOnStart = false;
+    Settings::inputFile.clear();
+    Settings::outputFile.clear();
+    Settings::paramFile.clear();
+    Settings::paramSweep.clear();
+    Settings::outputPath.clear();
+}
+
 class FlowFormatter : public CLI::Formatter {
 public:
     std::string make_usage(const CLI::App *app, std::string name) const override {
@@ -98,6 +112,8 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
 #else
     std::setlocale(LC_ALL, "C");
 #endif
+
+    initDefaultSettings();
     parseCommands(argc, argv);
 
     std::cout << "Number used threads: " << Settings::nbThreads << std::endl;

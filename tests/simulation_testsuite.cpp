@@ -347,6 +347,8 @@ namespace {
             GlobalSimuState oldState = globState;
             globState.Reset();
 
+            EXPECT_NE(0, oldDesNb);
+            EXPECT_NE(0, oldHitsNb);
             EXPECT_NO_THROW(simManager.StartSimulation());
 
             // Stop and copy results
@@ -354,8 +356,6 @@ namespace {
             simManager.KillAllSimUnits();
             simManager.ResetSimulations();
 
-            //EXPECT_EQ(0, oldDesNb);
-            //EXPECT_EQ(0, oldHitsNb);
             EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
             EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
 
