@@ -67,7 +67,7 @@ int initDirectories(){
         Settings::outputFile = "out_" + std::filesystem::path(Settings::inputFile).filename().string();
 
     if(std::filesystem::path(Settings::outputFile).extension() != ".xml"){
-        Settings::outputFile = std::filesystem::path(Settings::outputFile).replace_extension(".xml");
+        Settings::outputFile = std::filesystem::path(Settings::outputFile).replace_extension(".xml").string();
     }
     // Try to create directories
     // First for outputpath, with tmp/ and lastly ./ as fallback plans
