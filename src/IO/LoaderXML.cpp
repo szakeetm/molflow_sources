@@ -35,6 +35,7 @@ int LoaderXML::LoadGeometry(const std::string inputFileName, SimulationModel *mo
         rootNode = loadXML.root();
         //return 1;
     }
+    model->sh.name = FileUtils::GetFilename(inputFile);
 
     xml_node geomNode = rootNode.child("Geometry");
 
@@ -211,6 +212,7 @@ std::vector<SelectionGroup> LoaderXML::LoadSelections(const std::string& inputFi
         std::cerr << "XML file seems to be of older format, please generate a new file with the GUI application!"<<std::endl;
         return selGroup;
     }
+
 
     xml_node interfNode = loadXML.child("Interface");
     xml_node selNode = interfNode.child("Selections");

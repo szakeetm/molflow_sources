@@ -11,6 +11,7 @@
 #include <ziplib/ZipFile.h>
 #include <File.h>
 #include <Helper/StringHelper.h>
+#include <Helper/ConsoleLogger.h>
 
 namespace Settings {
     size_t nbThreads = 0;
@@ -233,7 +234,7 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
     // Previous results
     model->m.lock();
     if(loader.LoadGeometry(Settings::inputFile, model)){
-        std::cerr << "[Error (LoadGeom)] Please check the input file!" << std::endl;
+        Log::console_error("[Error (LoadGeom)] Please check the input file!\n");
         model->m.unlock();
         return 1;
     }
@@ -248,13 +249,13 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
     // work->InsertParametersBeforeCatalog(loadedParams);
     // Load viewsettings for each facet
 
-    std::cout << "[LoadGeom] Loaded geometry of " << model->size() << " bytes!" << std::endl;
+    Log::console_msg_master(1,"[LoadGeom] Loaded geometry of %zu bytes!\n", model->size());
 
     //InitializeGeometry();
     model->InitialiseFacets();
     model->PrepareToRun();
 
-    std::cout << "[LoadGeom] Initializing geometry!" << std::endl;
+    Log::console_msg_master(1,"[LoadGeom] Initializing geometry!\n");
     initSimModel(model);
 
     // 2. Create simulation dataports
@@ -266,19 +267,19 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
         }
         simManager->ReloadLogBuffer(logDpSize, true);*/
 
-        std::cout << "[LoadGeom] Resizing state!" << std::endl;
+        Log::console_msg_master(1,"[LoadGeom] Resizing state!\n");
         globState->Resize(*model);
 
         // 3. init counters with previous results
         if(loadState) {
-            std::cout << "[LoadGeom] Initializing previous simulation state!" << std::endl;
+            Log::console_msg_master(1,"[LoadGeom] Initializing previous simulation state!\n");
 
             if(Settings::loadAutosave){
                 std::string fileName = std::filesystem::path(Settings::inputFile).filename().string();
                 std::string autoSavePrefix = "autosave_";
                 fileName = autoSavePrefix + fileName;
                 if(std::filesystem::exists(fileName)) {
-                    std::cout << "Found autosave file! Loading simulation state..." << std::endl;
+                    Log::console_msg_master(1,"Found autosave file! Loading simulation state...\n");
                     FlowIO::LoaderXML::LoadSimulationState(fileName, model, *globState);
                 }
             }
@@ -288,7 +289,7 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
         }
     }
     catch (std::exception& e) {
-        std::cerr << "[Warning (LoadGeom)] " << e.what() << std::endl;
+        Log::console_error("[Warning (LoadGeom)] %s\n", e.what());
     }
 
     model->m.unlock();

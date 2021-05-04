@@ -6,6 +6,7 @@
 #include <cereal/archives/binary.hpp>
 #include <omp.h>
 #include <Helper/Chronometer.h>
+#include <Helper/ConsoleLogger.h>
 
 /*SuperStructure::SuperStructure()
 {
@@ -258,21 +259,21 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     //loadOK = true;
     timer.Stop();
     if(omp_get_thread_num() == 0) {
-        printf("  Load %s successful\n", simModel->sh.name.c_str());
-        printf("  Geometry: %zd vertex %zd facets\n", simModel->vertices3.size(), simModel->sh.nbFacet);
+        Log::console_msg_master(2, "  Load %s successful\n", simModel->sh.name.c_str());
+        Log::console_msg_master(2, "  Geometry: %zd vertex %zd facets\n", simModel->vertices3.size(), simModel->sh.nbFacet);
 
-        printf("  Geom size: %zu bytes\n", simModel->size());
-        printf("  Number of structure: %zd\n", simModel->sh.nbSuper);
-        printf("  Global Hit: %zd bytes\n", sizeof(GlobalHitBuffer));
-        printf("  Facet Hit : %zd bytes\n", simModel->sh.nbFacet * sizeof(FacetHitBuffer));
+        Log::console_msg_master(2, "  Geom size: %zu bytes\n", simModel->size());
+        Log::console_msg_master(2, "  Number of structure: %zd\n", simModel->sh.nbSuper);
+        Log::console_msg_master(2, "  Global Hit: %zd bytes\n", sizeof(GlobalHitBuffer));
+        Log::console_msg_master(2, "  Facet Hit : %zd bytes\n", simModel->sh.nbFacet * sizeof(FacetHitBuffer));
 /*        printf("  Texture   : %zd bytes\n", textTotalSize);
         printf("  Profile   : %zd bytes\n", profTotalSize);
         printf("  Direction : %zd bytes\n", dirTotalSize);*/
 
-        printf("  Total     : %zd bytes\n", GetHitsSize());
+        Log::console_msg_master(2, "  Total     : %zd bytes\n", GetHitsSize());
         for(auto& particle : particles)
-            printf("  Seed for %zu: %lu\n", particle.particleId, particle.randomGenerator.GetSeed());
-        printf("  Loading time: %.3f ms\n", timer.ElapsedMs());
+            Log::console_msg_master(3, "  Seed for %zu: %lu\n", particle.particleId, particle.randomGenerator.GetSeed());
+        Log::console_msg_master(2, "  Loading time: %.3f ms\n", timer.ElapsedMs());
     }
     return 0;
 }

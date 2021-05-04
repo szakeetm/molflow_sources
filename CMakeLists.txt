@@ -75,7 +75,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 include(CMake/Molflow.cmake)
 
 add_subdirectory(src_shared)
-add_subdirectory(CMake/molflow_sub)
 add_subdirectory(CMake/molflow_win)
 #IF(NOT WIN32)
 add_subdirectory(CMake/molflow_cli)
