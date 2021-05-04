@@ -383,7 +383,7 @@ namespace {
             EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
             EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
 
-            auto[diff_glob, diff_loc] = GlobalSimuState::Compare(oldState, globState, 1.0e-2);
+            auto[diff_glob, diff_loc] = GlobalSimuState::Compare(oldState, globState, 0.01, 0.05);
             EXPECT_EQ(0, diff_glob);
 
             if(diff_loc > 0)
