@@ -108,7 +108,7 @@ int Simulation::ReinitializeParticleLog() {
 	InitTick();
 }*/
 
-int Simulation::SanityCheckModel() {
+std::pair<int, std::optional<std::string>> Simulation::SanityCheckModel(bool strictCheck) {
     char errLog[2048] {"[Error Log on Check]\n"};
     int errorsOnCheck = 0;
 
@@ -124,6 +124,8 @@ int Simulation::SanityCheckModel() {
         sprintf(errLog + strlen(errLog), "Loaded empty facet list\n");
         errorsOnCheck++;
     }
+
+    //Molflow unique
     if (model.wp.enableDecay && model.wp.halfLife <= 0.0) {
         sprintf(errLog + strlen(errLog), "Particle decay is set, but half life was not set [= %e]\n", model.wp.halfLife);
         errorsOnCheck++;
@@ -141,7 +143,7 @@ int Simulation::SanityCheckModel() {
     if(errorsOnCheck){
         printf("%s", errLog);
     }
-    return errorsOnCheck; // 0 = all ok
+    return std::make_pair(errorsOnCheck, (errorsOnCheck > 0 ? std::make_optional(errLog) : std::nullopt)); // 0 = all ok
 }
 
 void Simulation::ClearSimulation() {
