@@ -49,7 +49,6 @@ public:
                +" [options]";
     }
 };
-
 int initDirectories(){
 
     int err = 0;
@@ -108,9 +107,8 @@ int initDirectories(){
     return err;
 }
 
-int Initializer::init(int argc, char **argv, SimulationManager *simManager, SimulationModel *model,
-                      GlobalSimuState *globState) {
 
+int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManager, SimulationModel *model) {
     Log::console_msg_master(1,"Commence: Initialising!\n");
 
 #if defined(WIN32) || defined(__APPLE__)
@@ -132,8 +130,15 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
     Log::console_msg_master(2, "Active cores: %zu\n", simManager->nbThreads);
 
     model->otfParams.nbProcess = simManager->nbThreads;
+    model->otfParams.timeLimit = (double) Settings::simDuration;
     //model->otfParams.desorptionLimit = Settings::desLimit.front();
+    Log::console_msg_master(2, "Running simulation for: '%zu'sec\n", Settings::simDuration);
 
+    return 0;
+}
+
+int Initializer::initFromFile(int argc, char **argv, SimulationManager *simManager, SimulationModel *model,
+                              GlobalSimuState *globState) {
     initDirectories();
     if(std::filesystem::path(Settings::inputFile).extension() == ".zip"){
         //decompress file
@@ -168,7 +173,12 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
         Log::console_msg_master(2, "New input file: %s\n", Settings::inputFile.c_str());
     }
 
-    loadFromXML(simManager, model, globState, !Settings::resetOnStart);
+    if(std::filesystem::path(Settings::inputFile).extension() == ".xml")
+        loadFromXML(Settings::inputFile, !Settings::resetOnStart, model, globState);
+    else{
+        Log::console_error("[ERROR] Invalid file extension for input file detected: %s\n", std::filesystem::path(Settings::inputFile).extension().c_str());
+        return 1;
+    }
     if(!Settings::paramFile.empty() || !Settings::paramSweep.empty()){
         // 1. Load selection groups in case we need them for parsing
         std::vector<SelectionGroup> selGroups = FlowIO::LoaderXML::LoadSelections(Settings::inputFile);
@@ -184,14 +194,9 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
     // Set desorption limit if used
     if(initDesLimit(*model,*globState)) {
         exit(0);
+        return 1;
     }
-    model->otfParams.timeLimit = (double) Settings::simDuration;
-    Log::console_msg_master(2, "Running simulation for: '%zu'sec\n", Settings::simDuration);
-
-    /*else{
-        model->otfParams.desorptionLimit = 0;
-    }*/
-    initSimUnit(simManager, model, globState);
+    simManager->InitSimulation(model, globState);
 
     Log::console_msg_master(1,"Finalize: Initialising!\n");
 
@@ -228,8 +233,8 @@ int Initializer::parseCommands(int argc, char** argv) {
     return 0;
 }
 
-int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *model, GlobalSimuState *globState,
-                             bool loadState) {
+int Initializer::loadFromXML(const std::string &fileName, bool loadState, SimulationModel *model,
+                             GlobalSimuState *globState) {
 
     //1. Load Input File (regular XML)
     FlowIO::LoaderXML loader;
@@ -238,7 +243,7 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
     // Settings
     // Previous results
     model->m.lock();
-    if(loader.LoadGeometry(Settings::inputFile, model)){
+    if(loader.LoadGeometry(fileName, model)){
         Log::console_error("[Error (LoadGeom)] Please check the input file!\n");
         model->m.unlock();
         return 1;

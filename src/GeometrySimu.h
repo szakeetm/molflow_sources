@@ -13,6 +13,8 @@
 #include <mutex>
 #include <FacetData.h>
 
+#include <cereal/cereal.hpp>
+#include <cereal/types/vector.hpp>
 
 struct SubprocessFacet;
 class SuperStructure;
@@ -311,6 +313,17 @@ public:
     std::vector<FacetHistogramBuffer> globalHistograms; //1+nbMoment
     std::vector<FacetState> facetStates; //nbFacet
 #endif
+
+    template<class Archive>
+    void serialize(Archive & archive)
+    {
+        archive(
+                CEREAL_NVP(globalHits),
+                CEREAL_NVP(globalHistograms),
+                CEREAL_NVP(facetStates)
+        );
+    }
+
     mutable std::timed_mutex tMutex;
 };
 
