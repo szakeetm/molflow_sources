@@ -166,7 +166,7 @@ int Initializer::initFromFile(SimulationManager *simManager, SimulationModel *mo
         }
         if(parseFileName.empty()) {
             Log::console_error("Zip file does not contain a valid geometry file!\n");
-            exit(0);
+            return 1;
         }
         Settings::inputFile = parseFileName;
         Log::console_msg_master(2, "New input file: %s\n", Settings::inputFile.c_str());
@@ -192,7 +192,6 @@ int Initializer::initFromFile(SimulationManager *simManager, SimulationModel *mo
 
     // Set desorption limit if used
     if(initDesLimit(*model,*globState)) {
-        exit(0);
         return 1;
     }
 
