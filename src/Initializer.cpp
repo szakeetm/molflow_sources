@@ -109,7 +109,7 @@ int initDirectories(){
 
 
 int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManager, SimulationModel *model) {
-    Log::console_msg_master(1,"Commence: Initialising!\n");
+    Log::console_header(1,"Commence: Initialising!\n");
 
 #if defined(WIN32) || defined(__APPLE__)
     setlocale(LC_ALL, "C");
@@ -127,18 +127,17 @@ int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManag
         Log::console_error("Error: Initialising simulation units: %zu\n", simManager->nbThreads);
         return 1;
     }
-    Log::console_msg_master(2, "Active cores: %zu\n", simManager->nbThreads);
 
     model->otfParams.nbProcess = simManager->nbThreads;
     model->otfParams.timeLimit = (double) Settings::simDuration;
     //model->otfParams.desorptionLimit = Settings::desLimit.front();
-    Log::console_msg_master(2, "Running simulation for: '%zu'sec\n", Settings::simDuration);
+    Log::console_msg_master(4, "Active cores: %zu\n", simManager->nbThreads);
+    Log::console_msg_master(4, "Running simulation for: %zu sec\n", Settings::simDuration);
 
     return 0;
 }
 
-int Initializer::initFromFile(int argc, char **argv, SimulationManager *simManager, SimulationModel *model,
-                              GlobalSimuState *globState) {
+int Initializer::initFromFile(SimulationManager *simManager, SimulationModel *model, GlobalSimuState *globState) {
     initDirectories();
     if(std::filesystem::path(Settings::inputFile).extension() == ".zip"){
         //decompress file
@@ -176,7 +175,7 @@ int Initializer::initFromFile(int argc, char **argv, SimulationManager *simManag
     if(std::filesystem::path(Settings::inputFile).extension() == ".xml")
         loadFromXML(Settings::inputFile, !Settings::resetOnStart, model, globState);
     else{
-        Log::console_error("[ERROR] Invalid file extension for input file detected: %s\n", std::filesystem::path(Settings::inputFile).extension().c_str());
+        Log::console_error("Invalid file extension for input file detected: %s\n", std::filesystem::path(Settings::inputFile).extension().c_str());
         return 1;
     }
     if(!Settings::paramFile.empty() || !Settings::paramSweep.empty()){
@@ -196,9 +195,16 @@ int Initializer::initFromFile(int argc, char **argv, SimulationManager *simManag
         exit(0);
         return 1;
     }
-    simManager->InitSimulation(model, globState);
 
-    Log::console_msg_master(1,"Finalize: Initialising!\n");
+    Log::console_msg_master(2,"Forwarding model to simulation units!\n");
+    try {
+        simManager->InitSimulation(model, globState);
+    }
+    catch (std::exception& ex){
+        Log::console_error("Failed initialising simulation units:\n%s\n", ex.what());
+        return 1;
+    }
+    Log::console_footer(1,"Finalize: Initialising!\n");
 
     return 0;
 }
@@ -207,7 +213,10 @@ int Initializer::parseCommands(int argc, char** argv) {
     CLI::App app{"Molflow+/Synrad+ Simulation Management"};
     app.formatter(std::make_shared<FlowFormatter>());
 
+    // Local variables for parsing and immediate processing
+    bool verbose = false;
     std::vector<double> limits;
+
     // Define options
     app.add_option("-j,--threads", Settings::nbThreads, "# Threads to be deployed");
     app.add_option("-t,--time", Settings::simDuration, "Simulation duration in seconds");
@@ -218,14 +227,19 @@ int Initializer::parseCommands(int argc, char** argv) {
     app.add_option("-o,--output", Settings::outputFile, R"(Output file name (e.g. 'outfile.xml', defaults to 'out_{inputFileName}')");
     app.add_option("--outputPath", Settings::outputPath, "Output path, defaults to \'Results_{date}\'");
     app.add_option("-a,--autosaveDuration", Settings::autoSaveDuration, "Seconds for autoSave if not zero");
-    app.add_flag("--loadAutosave", Settings::loadAutosave, "Whether autoSave_ file should be used if exists");
     app.add_option("--setParamsByFile", Settings::paramFile, "Parameter file for ad hoc change of the given geometry parameters")
             ->check(CLI::ExistingFile);
     app.add_option("--setParams", Settings::paramSweep, "Direct parameter input for ad hoc change of the given geometry parameters");
+    app.add_option("--verbosity", Settings::verbosity, "Restrict console output to different levels");
 
-    app.add_flag("-r,--reset", Settings::resetOnStart, "Resets simulation status loaded from while");
+    app.add_flag("--loadAutosave", Settings::loadAutosave, "Whether autoSave_ file should be used if exists");
+    app.add_flag("-r,--reset", Settings::resetOnStart, "Resets simulation status loaded from file");
+    app.add_flag("--verbose", verbose, "Verbose console output (all levels)");
     app.set_config("--config");
     CLI11_PARSE(app, argc, argv);
+
+    if(verbose)
+        Settings::verbosity = 42;
 
     //std::cout<<app.config_to_str(true,true);
     for(auto& lim : limits)
@@ -236,6 +250,8 @@ int Initializer::parseCommands(int argc, char** argv) {
 int Initializer::loadFromXML(const std::string &fileName, bool loadState, SimulationModel *model,
                              GlobalSimuState *globState) {
 
+    Log::console_header(1,"[ ] Loading geometry from file %s\n", fileName.c_str());
+
     //1. Load Input File (regular XML)
     FlowIO::LoaderXML loader;
     // Easy if XML is split into multiple parts
@@ -244,7 +260,7 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, Simula
     // Previous results
     model->m.lock();
     if(loader.LoadGeometry(fileName, model)){
-        Log::console_error("[Error (LoadGeom)] Please check the input file!\n");
+        Log::console_error("Please check the input file!\n");
         model->m.unlock();
         return 1;
     }
@@ -259,13 +275,13 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, Simula
     // work->InsertParametersBeforeCatalog(loadedParams);
     // Load viewsettings for each facet
 
-    Log::console_msg_master(1,"[LoadGeom] Loaded geometry of %zu bytes!\n", model->size());
+    Log::console_msg_master(3," Loaded geometry of %zu bytes!\n", model->size());
 
     //InitializeGeometry();
     model->InitialiseFacets();
     model->PrepareToRun();
 
-    Log::console_msg_master(1,"[LoadGeom] Initializing geometry!\n");
+    Log::console_msg_master(3," Initializing geometry!\n");
     initSimModel(model);
 
     // 2. Create simulation dataports
@@ -277,19 +293,19 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, Simula
         }
         simManager->ReloadLogBuffer(logDpSize, true);*/
 
-        Log::console_msg_master(1,"[LoadGeom] Resizing state!\n");
+        Log::console_msg_master(3," Resizing state!\n");
         globState->Resize(*model);
 
         // 3. init counters with previous results
         if(loadState) {
-            Log::console_msg_master(1,"[LoadGeom] Initializing previous simulation state!\n");
+            Log::console_msg_master(3," Initializing previous simulation state!\n");
 
             if(Settings::loadAutosave){
                 std::string fileName = std::filesystem::path(Settings::inputFile).filename().string();
                 std::string autoSavePrefix = "autosave_";
                 fileName = autoSavePrefix + fileName;
                 if(std::filesystem::exists(fileName)) {
-                    Log::console_msg_master(1,"Found autosave file! Loading simulation state...\n");
+                    Log::console_msg_master(2," Found autosave file! Loading simulation state...\n");
                     FlowIO::LoaderXML::LoadSimulationState(fileName, model, *globState);
                 }
             }
@@ -299,33 +315,11 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, Simula
         }
     }
     catch (std::exception& e) {
-        Log::console_error("[Warning (LoadGeom)] %s\n", e.what());
+        Log::console_error("[Warning] %s\n", e.what());
     }
 
     model->m.unlock();
-
-    return 0;
-}
-
-int Initializer::initSimUnit(SimulationManager *simManager, SimulationModel *model, GlobalSimuState *globState) {
-
-    model->m.lock();
-
-    // Prepare simulation unit
-    Log::console_msg_master(2, "[LoadGeom] Forwarding model to simulation units!\n");
-
-    simManager->ResetSimulations();
-    simManager->ForwardSimModel(model);
-    simManager->ForwardGlobalCounter(globState, nullptr);
-
-    if(simManager->LoadSimulation()){
-        model->m.unlock();
-        std::string errString = "Failed to send geometry to sub process:\n";
-        errString.append(simManager->GetErrorDetails());
-        throw std::runtime_error(errString);
-    }
-
-    model->m.unlock();
+    Log::console_footer(1,"[x] Loaded geometry\n");
 
     return 0;
 }
@@ -448,8 +442,6 @@ int Initializer::initSimModel(SimulationModel* model) {
             // Geometry error
             //ClearSimulation();
             //ReleaseDataport(loader);
-            std::ostringstream err;
-            err << "Invalid structure (wrong link on F#" << facIdx + 1 << ")";
             //SetErrorSub(err.str().c_str());
             Log::console_error("Invalid structure (wrong link on F#%d)\n", facIdx + 1 );
 

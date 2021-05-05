@@ -200,7 +200,7 @@ namespace {
             argv.push_back(fileName_c);
             char **args = argv.data();
             Initializer::initFromArgv(argv.size(), (args), &simManager, &model);
-            Initializer::initFromFile(argv.size(), (args), &simManager, &model, &globState);
+            Initializer::initFromFile(&simManager, &model, &globState);
             delete[] fileName_c;
 
             size_t oldHitsNb = globState.globalHits.globalHits.nbMCHit;
@@ -335,7 +335,7 @@ namespace {
                 if(Initializer::initFromArgv(argv.size(), (args), &simManager, &model)){
                     exit(41);
                 }
-                if(Initializer::initFromFile(argv.size(), (args), &simManager, &model, &globState)){
+                if(Initializer::initFromFile(&simManager, &model, &globState)){
                     exit(42);
                 }
             }
@@ -363,7 +363,7 @@ namespace {
                     if(Initializer::initFromArgv(argv.size(), (args), &simManager, &model)){
                         exit(41);
                     }
-                    if(Initializer::initFromFile(argv.size(), (args), &simManager, &model, &globState)){
+                    if(Initializer::initFromFile(&simManager, &model, &globState)){
                         exit(42);
                     }
                 }
