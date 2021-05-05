@@ -59,8 +59,8 @@ int initDirectories(){
         Settings::outputPath = "Results_" + Util::getTimepointString();
     }
     else if(std::filesystem::path(Settings::outputFile).has_parent_path()) {
-        std::cerr << "Output path was set to " << Settings::outputPath << ", but Output file also contains a parent path "
-                  << std::filesystem::path(Settings::outputFile).parent_path() << "\nOutput path will be appended!\n";
+        Log::console_error("Output path was set to %s, but Output file also contains a parent path %s\n"
+                           "Output path will be appended!\n", Settings::outputPath.c_str() , std::filesystem::path(Settings::outputFile).parent_path().c_str());
     }
 
     // Use a default outputfile name if unset
@@ -76,7 +76,7 @@ int initDirectories(){
         std::filesystem::create_directory(Settings::outputPath);
     }
     catch (std::exception& e){
-        std::cerr << "Couldn't create directory [ " << Settings::outputPath << " ], falling back to binary folder for output files\n";
+        Log::console_error("Couldn't create directory [ %s ], falling back to binary folder for output files\n", Settings::outputPath.c_str());
         ++err;
 
         // use fallback dir
@@ -86,7 +86,7 @@ int initDirectories(){
         }
         catch (std::exception& e){
             Settings::outputPath = "./";
-            std::cerr << "Couldn't create fallback directory [ tmp/ ], falling back to binary folder instead for output files\n";
+            Log::console_error("Couldn't create fallback directory [ tmp/ ], falling back to binary folder instead for output files\n");
             ++err;
         }
     }
@@ -99,8 +99,8 @@ int initDirectories(){
             std::filesystem::create_directory(outputFilePath);
         }
         catch (std::exception& e) {
-            std::cerr << "Couldn't create parent directory set by output filename [ " << outputFilePath
-                      << " ], will only use default output path instead\n";
+            Log::console_error("Couldn't create parent directory set by output filename [ %s ], will only use default output path instead\n", outputFilePath.c_str());
+
             ++err;
         }
     }
@@ -111,6 +111,8 @@ int initDirectories(){
 int Initializer::init(int argc, char **argv, SimulationManager *simManager, SimulationModel *model,
                       GlobalSimuState *globState) {
 
+    Log::console_msg_master(1,"Commence: Initialising!\n");
+
 #if defined(WIN32) || defined(__APPLE__)
     setlocale(LC_ALL, "C");
 #else
@@ -120,15 +122,15 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
     initDefaultSettings();
     parseCommands(argc, argv);
 
-    std::cout << "Number used threads: " << Settings::nbThreads << std::endl;
     simManager->nbThreads = Settings::nbThreads;
     simManager->useCPU = true;
 
     if(simManager->InitSimUnits()) {
-        std::cout << "Error: Initialising simulation unit: " << simManager->nbThreads << std::endl;
+        Log::console_error("Error: Initialising simulation units: %zu\n", simManager->nbThreads);
         return 1;
     }
-    std::cout << "Active cores: " << simManager->nbThreads << std::endl;
+    Log::console_msg_master(2, "Active cores: %zu\n", simManager->nbThreads);
+
     model->otfParams.nbProcess = simManager->nbThreads;
     //model->otfParams.desorptionLimit = Settings::desLimit.front();
 
@@ -136,10 +138,11 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
     if(std::filesystem::path(Settings::inputFile).extension() == ".zip"){
         //decompress file
         std::string parseFileName;
-        std::cout << "Decompressing zip file..." << std::endl;
+        Log::console_msg_master(2, "Decompressing zip file...\n");
+
         ZipArchive::Ptr zip = ZipFile::Open(Settings::inputFile);
         if (zip == nullptr) {
-            std::cerr <<"Can't open ZIP file\n";
+            Log::console_error("Can't open ZIP file\n");
         }
         size_t numItems = zip->GetEntriesCount();
         bool notFoundYet = true;
@@ -158,11 +161,11 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
             }
         }
         if(parseFileName.empty()) {
-            std::cout << "Zip file does not contain a valid geometry file!" << std::endl;
+            Log::console_error("Zip file does not contain a valid geometry file!\n");
             exit(0);
         }
         Settings::inputFile = parseFileName;
-        std::cout << "New input file: " << Settings::inputFile << std::endl;
+        Log::console_msg_master(2, "New input file: %s\n", Settings::inputFile.c_str());
     }
 
     loadFromXML(simManager, model, globState, !Settings::resetOnStart);
@@ -183,12 +186,14 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
         exit(0);
     }
     model->otfParams.timeLimit = (double) Settings::simDuration;
-    std::cout << "Running simulation for: " << Settings::simDuration << "s \n";
+    Log::console_msg_master(2, "Running simulation for: '%zu'sec\n", Settings::simDuration);
 
     /*else{
         model->otfParams.desorptionLimit = 0;
     }*/
     initSimUnit(simManager, model, globState);
+
+    Log::console_msg_master(1,"Finalize: Initialising!\n");
 
     return 0;
 }
@@ -302,7 +307,8 @@ int Initializer::initSimUnit(SimulationManager *simManager, SimulationModel *mod
     model->m.lock();
 
     // Prepare simulation unit
-    std::cout << "[LoadGeom] Forwarding model to simulation units!" << std::endl;
+    Log::console_msg_master(2, "[LoadGeom] Forwarding model to simulation units!\n");
+
     simManager->ResetSimulations();
     simManager->ForwardSimModel(model);
     simManager->ForwardGlobalCounter(globState, nullptr);
@@ -332,15 +338,15 @@ int Initializer::initDesLimit(SimulationModel& model, GlobalSimuState& globState
             Settings::desLimit.pop_front();
 
             if (oldDesNb > model.otfParams.desorptionLimit){
-                printf("Skipping desorption limit: %zu\n", model.otfParams.desorptionLimit);
+                Log::console_msg_master(1,"Skipping desorption limit: %zu\n", model.otfParams.desorptionLimit);
             }
             else{
-                printf("Starting with desorption limit: %zu from %zu\n", model.otfParams.desorptionLimit , oldDesNb);
+                Log::console_msg_master(1,"Starting with desorption limit: %zu from %zu\n", model.otfParams.desorptionLimit , oldDesNb);
                 return 0;
             }
         }
         if(Settings::desLimit.empty()){
-            printf("All given desorption limits have been reached. Consider resetting the simulation results from the input file (--reset): Starting desorption %zu\n", oldDesNb);
+            Log::console_msg_master(1,"All given desorption limits have been reached. Consider resetting the simulation results from the input file (--reset): Starting desorption %zu\n", oldDesNb);
             return 1;
         }
     }
@@ -361,7 +367,7 @@ std::string Initializer::getAutosaveFile(){
         {
             autoSave = std::filesystem::path(Settings::inputFile).filename().string();
             Settings::inputFile = autoSave.substr(autoSavePrefix.size(), autoSave.size() - autoSavePrefix.size());
-            std::cout << "Using autosave file " << autoSave << " for " << Settings::inputFile << '\n';
+            Log::console_msg_master(2, "Using autosave file %s for %s\n", autoSave.c_str(), Settings::inputFile.c_str());
         }
         else {
             // create autosavefile from copy of original
@@ -373,7 +379,7 @@ std::string Initializer::getAutosaveFile(){
                 std::filesystem::copy_file(Settings::inputFile, autoSave,
                                            std::filesystem::copy_options::overwrite_existing);
             } catch (std::filesystem::filesystem_error &e) {
-                std::cout << "Could not copy file: " << e.what() << '\n';
+                Log::console_error("Could not copy file: %s\n", e.what());
             }
         }
     }
@@ -440,7 +446,8 @@ int Initializer::initSimModel(SimulationModel* model) {
             std::ostringstream err;
             err << "Invalid structure (wrong link on F#" << facIdx + 1 << ")";
             //SetErrorSub(err.str().c_str());
-            std::cerr << err.str() << std::endl;
+            Log::console_error("Invalid structure (wrong link on F#%d)\n", facIdx + 1 );
+
             return 1;
         }
     }
