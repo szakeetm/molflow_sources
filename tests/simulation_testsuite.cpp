@@ -182,6 +182,26 @@ namespace {
     TEST_P(SimulationFixture, PerformanceOkay) {
         std::string testFile = GetParam();
         printf("Filename: %s\n",testFile.c_str());
+
+        {
+            // Check if test was already successful, restarting the test suite will then skip the test
+            std::string timeRecFile = "./time_record_" + testFile.substr(0, testFile.size() - 4) + ".txt";
+            if (std::filesystem::exists(timeRecFile)) {
+                std::ifstream ifs(timeRecFile);
+                std::vector<Stats> prevRun;
+                prevRun.insert(prevRun.begin(), std::istream_iterator<Stats>(ifs), std::istream_iterator<Stats>());
+
+                std::string currentCommit = GIT_COMMIT_HASH;
+                currentCommit = currentCommit.substr(0, 8); // only first 8 hex digits
+                for (auto &run : prevRun) {
+                    if (run.commitHash == currentCommit) {
+                        printf("Test was successfully run in a previous attemp, skip ...\n");
+                        GTEST_SKIP();
+                    }
+                }
+            }
+        }
+
         size_t nbFails = 0;
         bool fastEnough = false;
         const size_t nRuns = 10;
@@ -263,14 +283,7 @@ namespace {
             if(std::filesystem::exists(timeRecFile))
             {
                 std::ifstream ifs(timeRecFile);
-                //prevRun.insert( prevRun.begin(), std::istream_iterator<OldStats>(ifs), std::istream_iterator<OldStats>() );
                 prevRun.insert( prevRun.begin(), std::istream_iterator<Stats>(ifs), std::istream_iterator<Stats>() );
-                //ifs >> prevRun;
-                /*ifs >> fromCommit;
-                ifs >> prevRun.max;
-                ifs >> prevRun.min;
-                ifs >> prevRun.med;
-                ifs >> prevRun.avg;*/
 
                 std::cout << "Prev Run: "<< prevRun.front() << std::endl;
                 // Check either, only if previous results could be found
@@ -278,15 +291,21 @@ namespace {
 
                 if(!fastEnough && prevRun.front().med > 0.0) { // check to prevent free pass for old entries with only max
                     EXPECT_GE(currentRun.med, 0.95 * prevRun.front().med);
+                    fastEnough = true;
                 }
-                else if(prevRun.front().med > 0.0 && currentRun.max > prevRun.front().med){
+                if(!fastEnough && prevRun.front().med > 0.0 && currentRun.max > prevRun.front().med){
                     EXPECT_GE(currentRun.max, prevRun.front().med);
+                    fastEnough = true;
                 }
-                else { // check to prevent free pass for old entries with only max
+                if(!fastEnough) { // check to prevent free pass for old entries with only max
                     EXPECT_GE(currentRun.max, 0.95 * prevRun.front().max);
+                    if(currentRun.max >= 0.95 * prevRun.front().max)
+                        fastEnough = true;
                 }
             }
 
+            // Only enter a test if it meets any of the success criteria
+            if(fastEnough)
             {
                 // Keep top 20 in list
                 prevRun.push_back(currentRun);
