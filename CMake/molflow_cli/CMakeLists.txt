@@ -97,6 +97,9 @@ set(SRC_FILES
         ${CPP_DIR_2}/IntersectAABB_shared.cpp
         ${CPP_DIR_2}/Polygon.cpp
         ${CPP_DIR_2}/Random.cpp
+
+        ${CPP_DIR_2}/FlowMPI.h #contains templates
+        ${CPP_DIR_2}/FlowMPI.cpp
         )
 
 if (APPLE)
@@ -111,10 +114,23 @@ endif()
 add_executable(${PROJECT_NAME} ${SRC_FILES})
 
 find_package(OpenMP REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
+if(OpenMP_CXX_FOUND)
+    message(STATUS "Detected OpenMP version: ${OpenMP_CXX_VERSION}")
+    target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
+endif()
+
+find_package(MPI)
+set(USE_MPI FALSE)
+if(MPI_FOUND)
+    message(STATUS "Detected MPI version: ${MPI_CXX_VERSION}")
+    set(USE_MPI TRUE)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC -DUSE_MPI)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${MPI_INCLUDE_PATH})
+    target_link_libraries(${PROJECT_NAME} PRIVATE MPI::MPI_CXX)
+endif()
 
 
-target_link_libraries(${PROJECT_NAME} PUBLIC shared_simulator)
+#target_link_libraries(${PROJECT_NAME} PUBLIC shared_simulator)
 target_link_libraries(${PROJECT_NAME} PUBLIC molflowSim)
 target_link_libraries(${PROJECT_NAME} PRIVATE pugixml)
 

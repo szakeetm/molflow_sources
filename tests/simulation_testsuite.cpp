@@ -18,6 +18,7 @@
 #include <functional>
 #include <Helper/Chronometer.h>
 #include <numeric>
+#include <cmath>
 
 #ifndef GIT_COMMIT_HASH
 #define GIT_COMMIT_HASH "?"
@@ -198,7 +199,8 @@ namespace {
             fileName_c[testFile.size()] = '\0';
             argv.push_back(fileName_c);
             char **args = argv.data();
-            Initializer::init(argv.size(), (args), &simManager, &model, &globState);
+            Initializer::initFromArgv(argv.size(), (args), &simManager, &model);
+            Initializer::initFromFile(&simManager, &model, &globState);
             delete[] fileName_c;
 
             size_t oldHitsNb = globState.globalHits.globalHits.nbMCHit;
@@ -316,19 +318,61 @@ namespace {
         const size_t keepNEntries = 20;
         const size_t runForTSec = 30;
         std::vector<double> perfTimes;
-        for(size_t runNb = 0; runNb < nRuns; ++runNb){
-            SimulationManager simManager;
-            SimulationModel model{};
-            GlobalSimuState globState{};
 
-            std::vector<char *> argv = {"tester", "-t", "40",  "--file"};
-            char * fileName_c = new char[testFile.size() + 1];
+        SimulationManager simManager{};
+        simManager.interactiveMode = false;
+        SimulationModel model{};
+        GlobalSimuState globState{};
+
+        {
+            std::vector<char *> argv = {"tester", "-t", "40", "--file"};
+            char *fileName_c = new char[testFile.size() + 1];
             std::copy(testFile.begin(), testFile.end(), fileName_c);
             fileName_c[testFile.size()] = '\0';
             argv.push_back(fileName_c);
-            char **args = argv.data();
-            Initializer::init(argv.size(), (args), &simManager, &model, &globState);
+            {
+                char **args = argv.data();
+                if(Initializer::initFromArgv(argv.size(), (args), &simManager, &model)){
+                    exit(41);
+                }
+                if(Initializer::initFromFile(&simManager, &model, &globState)){
+                    exit(42);
+                }
+            }
+            {
+                double timeExpect = std::log(model.facets.size());
+                //timeExpect = timeExpect * timeExpect;
+                timeExpect = std::pow(timeExpect, 1.5);
+                if(!model.tdParams.moments.empty())
+                    timeExpect += std::pow(std::log(model.tdParams.moments.size()), 3.0);
+
+                timeExpect += std::max(0.0, std::pow(std::log(std::sqrt(model.sh.nbFacet * sizeof(FacetHitBuffer))), 2.0) - 10.0);
+                timeExpect += std::max(0.0, 1.1* std::sqrt(std::exp(std::log(std::sqrt(model.size())))));
+                Settings::simDuration = std::min(40.0 + timeExpect, 180.0);
+
+                // Modify argv with new duration
+                auto newDur = std::to_string(Settings::simDuration);
+                char *newDur_c = new char[newDur.size() + 1];
+                std::copy(newDur.begin(), newDur.end(), newDur_c);
+                newDur_c[newDur.size()] = '\0';
+                argv[2] = newDur_c;
+
+                model = SimulationModel{};
+                {
+                    char **args = argv.data();
+                    if(Initializer::initFromArgv(argv.size(), (args), &simManager, &model)){
+                        exit(41);
+                    }
+                    if(Initializer::initFromFile(&simManager, &model, &globState)){
+                        exit(42);
+                    }
+                }
+                delete[] newDur_c;
+            }
             delete[] fileName_c;
+        }
+
+        for(size_t runNb = 0; runNb < nRuns; ++runNb){
 
             size_t oldHitsNb = globState.globalHits.globalHits.nbMCHit;
             size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
@@ -336,37 +380,25 @@ namespace {
             GlobalSimuState oldState = globState;
             globState.Reset();
 
+            EXPECT_NE(0, oldDesNb);
+            EXPECT_NE(0, oldHitsNb);
+            EXPECT_EQ(0, globState.globalHits.globalHits.nbDesorbed);
+            EXPECT_EQ(0, globState.globalHits.globalHits.nbMCHit);
             EXPECT_NO_THROW(simManager.StartSimulation());
-
-            Chronometer simTimer;
-            simTimer.Start();
-            double elapsedTime;
-
-            bool endCondition = false;
-            do {
-                ProcessSleep(1000);
-                elapsedTime = simTimer.Elapsed();
-                if (model.otfParams.desorptionLimit != 0)
-                    endCondition = globState.globalHits.globalHits.nbDesorbed >= model.otfParams.desorptionLimit;
-                // Check for potential time end
-                if (Settings::simDuration > 0) {
-                    endCondition |= elapsedTime >= Settings::simDuration;
-                }
-            } while (!endCondition);
-            simTimer.Stop();
 
             // Stop and copy results
             simManager.StopSimulation();
             simManager.KillAllSimUnits();
+            simManager.ResetSimulations();
 
-            perfTimes.emplace_back((double) (globState.globalHits.globalHits.nbMCHit - oldHitsNb) / (elapsedTime));
-            //EXPECT_EQ(0, oldDesNb);
-            //EXPECT_EQ(0, oldHitsNb);
             EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
             EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
 
-            GlobalSimuState::Compare(oldState, globState, 1.0e-2);
-            //printf("[Run %zu/%zu] Current Hit/s: %e\n", runNb, nRuns, perfTimes.back());
+            auto[diff_glob, diff_loc] = GlobalSimuState::Compare(oldState, globState, 0.01, 0.05);
+            EXPECT_EQ(0, diff_glob);
+
+            if(diff_loc > 0)
+                fprintf(stderr, "[Warning] %d local differences found!\n", diff_loc);
         };
     }
 

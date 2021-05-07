@@ -6,6 +6,7 @@
 #include <cereal/archives/binary.hpp>
 #include <omp.h>
 #include <Helper/Chronometer.h>
+#include <Helper/ConsoleLogger.h>
 #include <RayTracing/BVH.h>
 #include "AABB.h"
 
@@ -110,7 +111,7 @@ int Simulation::ReinitializeParticleLog() {
 	InitTick();
 }*/
 
-int Simulation::SanityCheckModel() {
+std::pair<int, std::optional<std::string>> Simulation::SanityCheckModel(bool strictCheck) {
     char errLog[2048] {"[Error Log on Check]\n"};
     int errorsOnCheck = 0;
 
@@ -126,6 +127,8 @@ int Simulation::SanityCheckModel() {
         sprintf(errLog + strlen(errLog), "Loaded empty facet list\n");
         errorsOnCheck++;
     }
+
+    //Molflow unique
     if (model.wp.enableDecay && model.wp.halfLife <= 0.0) {
         sprintf(errLog + strlen(errLog), "Particle decay is set, but half life was not set [= %e]\n", model.wp.halfLife);
         errorsOnCheck++;
@@ -143,7 +146,7 @@ int Simulation::SanityCheckModel() {
     if(errorsOnCheck){
         printf("%s", errLog);
     }
-    return errorsOnCheck; // 0 = all ok
+    return std::make_pair(errorsOnCheck, (errorsOnCheck > 0 ? std::make_optional(errLog) : std::nullopt)); // 0 = all ok
 }
 
 void Simulation::ClearSimulation() {
@@ -292,21 +295,21 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     //loadOK = true;
     timer.Stop();
     if(omp_get_thread_num() == 0) {
-        printf("  Load %s successful\n", simModel->sh.name.c_str());
-        printf("  Geometry: %zd vertex %zd facets\n", simModel->vertices3.size(), simModel->sh.nbFacet);
+        Log::console_msg_master(3, "  Load %s successful\n", simModel->sh.name.c_str());
+        Log::console_msg_master(3, "  Geometry: %zd vertex %zd facets\n", simModel->vertices3.size(), simModel->sh.nbFacet);
 
-        printf("  Geom size: %zu bytes\n", simModel->size());
-        printf("  Number of structure: %zd\n", simModel->sh.nbSuper);
-        printf("  Global Hit: %zd bytes\n", sizeof(GlobalHitBuffer));
-        printf("  Facet Hit : %zd bytes\n", simModel->sh.nbFacet * sizeof(FacetHitBuffer));
+        Log::console_msg_master(3, "  Geom size: %zu bytes\n", simModel->size());
+        Log::console_msg_master(3, "  Number of structure: %zd\n", simModel->sh.nbSuper);
+        Log::console_msg_master(3, "  Global Hit: %zd bytes\n", sizeof(GlobalHitBuffer));
+        Log::console_msg_master(3, "  Facet Hit : %zd bytes\n", simModel->sh.nbFacet * sizeof(FacetHitBuffer));
 /*        printf("  Texture   : %zd bytes\n", textTotalSize);
         printf("  Profile   : %zd bytes\n", profTotalSize);
         printf("  Direction : %zd bytes\n", dirTotalSize);*/
 
-        printf("  Total     : %zd bytes\n", GetHitsSize());
+        Log::console_msg_master(3, "  Total     : %zd bytes\n", GetHitsSize());
         for(auto& particle : particles)
-            printf("  Seed for %zu: %lu\n", particle.particleId, particle.randomGenerator.GetSeed());
-        printf("  Loading time: %.3f ms\n", timer.ElapsedMs());
+            Log::console_msg_master(4, "  Seed for %2zu: %lu\n", particle.particleId, particle.randomGenerator.GetSeed());
+        Log::console_msg_master(3, "  Loading time: %.3f ms\n", timer.ElapsedMs());
     }
     return 0;
 }
