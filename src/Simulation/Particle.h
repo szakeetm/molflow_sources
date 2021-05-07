@@ -85,7 +85,7 @@ namespace MFSim {
         SubprocessFacet *lastHitFacet;     // Last hitted facet
         MersenneTwister randomGenerator;
         SimulationModel *model;
-        std::vector<SubprocessFacet *> transparentHitBuffer; //Storing this buffer simulation-wide is cheaper than recreating it at every Intersect() call
+        std::vector<SubprocessFacet*> transparentHitBuffer; //Storing this buffer simulation-wide is cheaper than recreating it at every Intersect() call
         std::vector <SubProcessFacetTempVar> tmpFacetVars; //One per subprocessfacet, for intersect routine
     };
 }

@@ -4,6 +4,7 @@
 
 #include <iomanip>      // std::setprecision
 #include <sstream>
+#include <Helper/StringHelper.h>
 #include "PugiXML/pugixml.hpp"
 
 #include "WriterXML.h"
@@ -18,24 +19,27 @@ void WriterXML::setWriteProgress(double newProgress) {
 }
 
 void WriterXML::reportWriteStatus(const std::string &statusString) const {
-    auto time_point = std::chrono::system_clock::now();
-    std::time_t now_c = std::chrono::system_clock::to_time_t(time_point);
-    char s[256];
-    struct tm *p = localtime(&now_c);
-    strftime(s, 256, "%F_%T", p);
-    printf("[%s] %s [%.2lf%%]\n", s, statusString.c_str(), writeProgress);
+    printf("[%s] %s [%.2lf%%]\n", Util::getTimepointString().c_str(), statusString.c_str(), writeProgress);
 }
 
-void WriterXML::SaveGeometry(xml_document &saveDoc, SimulationModel *model, bool useOldXMLFormat) {
+void WriterXML::SaveGeometry(xml_document &saveDoc, SimulationModel *model, bool useOldXMLFormat, bool update) {
     xml_node rootNode;
     if (useOldXMLFormat) {
         rootNode = saveDoc.root();
     } else {
-        rootNode = saveDoc.append_child("SimulationEnvironment");
-        rootNode.append_attribute("type") = "molflow";
-        rootNode.append_attribute("version") = appVersionId;
+        if(update) {
+            rootNode = saveDoc.child("SimulationEnvironment");
+        }
+        if(!rootNode) {
+            rootNode = saveDoc.append_child("SimulationEnvironment");
+            rootNode.append_attribute("type") = "molflow";
+            rootNode.append_attribute("version") = appVersionId;
+        }
     }
-    xml_node geomNode = rootNode.append_child("Geometry");
+
+    if(update)
+        rootNode.remove_child("Geometry");
+    xml_node geomNode = rootNode.prepend_child("Geometry");
     geomNode.append_child("Vertices").append_attribute(
             "nb") = model->vertices3.size(); //creates Vertices node, adds nb attribute and sets its value to wp.nbVertex
     for (size_t i = 0; i < model->vertices3.size(); i++) {
@@ -54,7 +58,7 @@ void WriterXML::SaveGeometry(xml_document &saveDoc, SimulationModel *model, bool
         //if (!saveSelected || model->facets[i]->selected) {
         xml_node f = geomNode.child("Facets").append_child("Facet");
         f.append_attribute("id") = i;
-        SaveFacet(f, &model->facets[i], model->vertices3.size()); //model->facets[i]->SaveXML_geom(f);
+        SaveFacet(f, model->facets[i].get(), model->vertices3.size()); //model->facets[i]->SaveXML_geom(f);
         //}
     }
 
@@ -70,7 +74,9 @@ void WriterXML::SaveGeometry(xml_document &saveDoc, SimulationModel *model, bool
     }
 
     // Simulation Settings
-    xml_node simuParamNode = rootNode.append_child("MolflowSimuSettings");
+    if(update)
+        rootNode.remove_child("MolflowSimuSettings");
+    xml_node simuParamNode = rootNode.insert_child_after("Geometry",rootNode);
 
     simuParamNode.append_child("Gas").append_attribute("mass") = model->wp.gasMass;
     simuParamNode.child("Gas").append_attribute(
@@ -298,7 +304,8 @@ bool WriterXML::SaveSimulationState(xml_document &saveDoc, SimulationModel *mode
 
         xml_node facetResultsNode = newMoment.append_child("FacetResults");
 
-        for (auto &sFac : model->facets) {
+        for (auto &fac : model->facets) {
+            auto &sFac = *fac;
             //SubprocessFacet& f = model->structures[0].facets[0].;
             xml_node newFacetResult = facetResultsNode.append_child("Facet");
             newFacetResult.append_attribute("id") = sFac.globalId;

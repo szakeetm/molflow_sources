@@ -33,6 +33,8 @@ public:
     }
 	std::string name;
 	bool fromCatalog=false;
+
+	static int LoadParameterCatalog(std::vector<Parameter> &vec_param);
 };
 
 /*

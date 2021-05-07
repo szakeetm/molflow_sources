@@ -98,7 +98,7 @@ int LoaderXML::LoadGeometry(const std::string inputFileName, SimulationModel *mo
     //memset(loadFacets, 0, model->sh.nbFacet * sizeof(SubprocessFacet *));
     idx = 0;
     bool ignoreSumMismatch = false;
-    std::vector<SubprocessFacet> loadFacets; // tmp facet holder
+    std::vector<std::shared_ptr<SubprocessFacet>> loadFacets; // tmp facet holder
     for (xml_node facetNode : geomNode.child("Facets").children("Facet")) {
         size_t nbIndex = facetNode.child("Indices").select_nodes("Indice").size();
         if (nbIndex < 3) {
@@ -107,8 +107,8 @@ int LoaderXML::LoadGeometry(const std::string inputFileName, SimulationModel *mo
             throw Error(errMsg);
         }
 
-        loadFacets.emplace_back(SubprocessFacet(nbIndex));
-        LoadFacet(facetNode, &loadFacets[idx], model->sh.nbVertex);
+        loadFacets.emplace_back(std::make_shared<SubprocessFacet>(nbIndex));
+        LoadFacet(facetNode, loadFacets[idx].get(), model->sh.nbVertex);
 
         //Set param names for interface
         /*if (facets[idx]->sh.sticking_paramId > -1) facets[idx]->userSticking = work->parameters[facets[idx]->sh.sticking_paramId].name;
@@ -382,7 +382,7 @@ int LoaderXML::LoadSimulationState(const std::string& inputFileName, SimulationM
         xml_node facetResultsNode = newMoment.child("FacetResults");
         for (xml_node newFacetResult : facetResultsNode.children("Facet")) {
             int facetId = newFacetResult.attribute("id").as_int();
-            SubprocessFacet& facet = model->facets[facetId];
+            SubprocessFacet& facet = *model->facets[facetId];
             xml_node facetHitNode = newFacetResult.child("Hits");
             //FacetHitBuffer* facetCounter = (FacetHitBuffer *)(buffer + loadFacets[facetId].sh.hitOffset + m * sizeof(FacetHitBuffer));
             FacetHitBuffer* facetCounter = &globState.facetStates[facetId].momentResults[m].hits;

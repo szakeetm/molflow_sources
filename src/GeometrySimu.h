@@ -12,6 +12,7 @@
 
 #include <mutex>
 #include <FacetData.h>
+#include <RayTracing/BVH.h>
 
 
 struct SubprocessFacet;
@@ -73,6 +74,10 @@ public:
 struct SubprocessFacet : public Facet {
     SubprocessFacet();
     explicit SubprocessFacet(size_t nbIndex);
+    SubprocessFacet(const SubprocessFacet& o);
+    SubprocessFacet(SubprocessFacet&& cpy);
+    SubprocessFacet& operator=(const SubprocessFacet& o);
+    SubprocessFacet& operator=(SubprocessFacet&& o) noexcept;
 
     std::vector<double>   textureCellIncrements;              // Texure increment
     std::vector<bool>     largeEnough;      // cells that are NOT too small for autoscaling
@@ -82,7 +87,6 @@ struct SubprocessFacet : public Facet {
 
     // Temporary var (used in FillHit for hit recording)
     bool   isReady;         // Volatile state
-    size_t globalId; //Global index (to identify when superstructures are present)
 
     // Facet hit counters
     //std::vector<FacetHitBuffer> tmpCounter; //1+nbMoment
@@ -141,32 +145,19 @@ public:
     SimulationModel() : otfParams(), tdParams(), wp(), sh(), m(), initialized(false){};
     ~SimulationModel();
 
-    SimulationModel(SimulationModel&& o)  noexcept : m(){
-        facets = std::move(o.facets);
-        structures = std::move(o.structures);
-        vertices3 = std::move(o.vertices3);
-        otfParams = o.otfParams;
-        tdParams = std::move(o.tdParams);
-        wp = o.wp;
-        sh = std::move(o.sh);
-        initialized = o.initialized;
+    SimulationModel(SimulationModel&& o)  noexcept : m(), initialized(false){
+        *this = std::move(o);
     };
-    SimulationModel(const SimulationModel& o) : m(){
-        facets = o.facets;
-        structures = o.structures;
-        vertices3 = o.vertices3;
-        otfParams = o.otfParams;
-        tdParams = o.tdParams;
-        wp = o.wp;
-        sh = o.sh;
-        initialized = o.initialized;
+
+    SimulationModel(const SimulationModel& o) : m(), initialized(false){
+        *this = o;
     };
 
     size_t size(){
         size_t modelSize = 0;
         modelSize += facets.capacity();
         for(auto& fac : facets)
-            modelSize += fac.GetMemSize();
+            modelSize += fac->GetMemSize();
         modelSize += structures.capacity();
         for(auto& struc : structures)
             modelSize += struc.GetMemSize();
@@ -183,19 +174,21 @@ public:
     SimulationModel& operator=(const SimulationModel& o){
         facets = o.facets;
         structures = o.structures;
+        bvhs.insert(bvhs.begin(), o.bvhs.begin(), o.bvhs.end());
         vertices3 = o.vertices3;
         otfParams = o.otfParams;
         tdParams = o.tdParams;
         wp = o.wp;
         sh = o.sh;
-        sh = o.sh;
         initialized = o.initialized;
 
         return *this;
     };
+
     SimulationModel& operator=(SimulationModel&& o) noexcept {
         facets = std::move(o.facets);
         structures = std::move(o.structures);
+        bvhs = std::move(o.bvhs);
         vertices3 = std::move(o.vertices3);
         tdParams = std::move(o.tdParams);
         otfParams = o.otfParams;
@@ -216,9 +209,10 @@ public:
     double GetStickingAt(SubprocessFacet *f, double time) const;
 
     // Geometry Description
-    std::vector<SubprocessFacet>    facets;    // All facets of this geometry
+    std::vector<std::shared_ptr<SubprocessFacet>>    facets;    // All facets of this geometry
     std::vector<SuperStructure> structures;
     std::vector<Vector3d> vertices3; // Vertices (3D space)
+    std::vector<BVHAccel> bvhs;
 
     // Simulation Properties
     OntheflySimulationParams otfParams;
@@ -302,6 +296,7 @@ public:
     void clear();
     void Resize(const SimulationModel &model);
     void Reset();
+    static int Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuState &rhsGlobHit, double cmpThreshold);
 
 #if defined(MOLFLOW)
     GlobalHitBuffer globalHits;

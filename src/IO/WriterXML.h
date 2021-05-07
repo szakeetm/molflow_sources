@@ -6,6 +6,7 @@
 #define MOLFLOW_PROJ_WRITERXML_H
 
 #include <string>
+#include <PugiXML/pugixml.hpp>
 #include "PugiXML/pugixml.hpp"
 
 #include "GeometrySimu.h"
@@ -25,7 +26,7 @@ namespace FlowIO {
     protected:
     public:
         //void SaveGeometry(std::string outputFileName, SimulationModel *model) override;
-        void SaveGeometry(pugi::xml_document &saveDoc, SimulationModel *model, bool useOldXMLFormat);
+        void SaveGeometry(pugi::xml_document &saveDoc, SimulationModel *model, bool useOldXMLFormat, bool update);
 
         bool SaveSimulationState(const std::string &outputFileName, SimulationModel *model, GlobalSimuState &globState);
 

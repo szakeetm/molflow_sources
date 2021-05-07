@@ -11,6 +11,7 @@ string (REGEX MATCH "\\.el[1-9]" os_version_suffix ${CMAKE_SYSTEM})
 message("-- os_version_suffix:      ${os_version_suffix}")
 
 #list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+option(USE_OLD_BVH "simulation will use old bvh structure by default" ON) # OFF is the default
 option(USE_CLANG "build application with clang" OFF) # OFF is the default
 option(USE_PROFILING "disable optimisation for profiling the application" OFF) # OFF is the default
 
@@ -30,6 +31,11 @@ set(CMAKE_VERBOSE_MAKEFILE OFF)
 ################# Flags ################
 # Defines Flags for Windows and Linux. #
 ########################################
+
+if(USE_OLD_BVH)
+    MESSAGE("Simulation with old BVH...")
+    ADD_DEFINITIONS(-DUSE_OLD_BVH)
+endif()
 
 # https://docs.microsoft.com/en-us/cpp/build/reference/compiler-options-listed-alphabetically?view=vs-2019
 if(MSVC)
@@ -84,6 +90,8 @@ add_subdirectory(CMake/molflow_sim)
 
 IF (WIN32)
     add_subdirectory(CMake/png_zlib_win_library)
+    add_dependencies(molflow ziplib)
+    add_dependencies(molflowSim ziplib)
 ELSE()
     #add_subdirectory(CMake/molflow_testsuit)
 ENDIF(WIN32)

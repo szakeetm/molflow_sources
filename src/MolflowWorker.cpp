@@ -300,7 +300,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                     this->uInput.selections = mApp->selections;
 
                     writer.uInput = this->uInput;
-                    writer.SaveGeometry(saveDoc, &model, mApp->useOldXMLFormat);
+                    writer.SaveGeometry(saveDoc, &model, mApp->useOldXMLFormat, false);
                     FlowIO::WriterInterfaceXML::WriteInterface(saveDoc, mApp, saveSelected);
 
                     xml_document geom_only;
@@ -1275,7 +1275,7 @@ bool Worker::InterfaceGeomToSimModel() {
             return false;
         }
 
-        model.facets.push_back(sFac);
+        model.facets.push_back(std::make_shared<SubprocessFacet>(sFac));
     }
 
     if(!model.facets.empty() && !model.vertices3.empty())

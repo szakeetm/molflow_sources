@@ -10,6 +10,7 @@
 #include "Particle.h"
 #include "AnglemapGeneration.h"
 #include "Physics.h"
+#include "RayTracing/RTHelper.h"
 
 using namespace MFSim;
 
@@ -115,7 +116,8 @@ void Particle::PerformTeleport(SubprocessFacet *iFacet) {
 
     //Look in which superstructure is the destination facet:
     size_t facId = 0;
-    for(auto& sFac : model->facets){
+    for(auto& fac : model->facets){
+        auto& sFac = *fac;
         if (destIndex == static_cast<int>(sFac.globalId)) {
             destination = &(sFac);
             if (destination->sh.superIdx != -1) {
@@ -197,6 +199,25 @@ void Particle::PerformTeleport(SubprocessFacet *iFacet) {
     destination->sh.N.x, destination->sh.N.y, destination->sh.N.z));*/
 }
 
+void DeleteChain (HitChain** head_ref){
+    /* deref head_ref to get the real head */
+    HitChain* current = *head_ref;
+    HitChain* next = nullptr;
+
+    while (current != nullptr)
+    {
+        next = current->next;
+        delete current->hit;
+        delete current;
+        current = next;
+    }
+
+    /* deref head_ref to affect the real head back
+        in the caller. */
+
+    *head_ref = nullptr;
+}
+
 // Perform nbStep simulation steps (a step is a bounce) or remainingDes desorptions
 bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainingDes) {
 
@@ -227,8 +248,60 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
             //return (lastHitFacet != nullptr);
 
             //Prepare output values
+#if defined(USE_OLD_BVH)
             auto[found, collidedFacet, d] = Intersect(*this, position,
                                                       direction, model->structures[structureId].aabbTree.get());
+            //printf("%lf ms time spend in old BVH\n", tmpTime.ElapsedMs());
+#else
+            transparentHitBuffer.clear();
+            bool found;
+            SubprocessFacet* collidedFacet;
+            double d;
+            {
+                Ray tmpRay(position, direction);
+                if(lastHitFacet)
+                    tmpRay.lastIntersected = lastHitFacet->globalId;
+                else
+                    tmpRay.lastIntersected = -1;
+                tmpRay.rng = &randomGenerator;
+                HitChain* hitChain = new HitChain();
+                tmpRay.hitChain = hitChain;
+                found = model->bvhs[structureId].Intersect(tmpRay);
+                if(found){
+                    HitChain* currHit = hitChain;
+                    while(currHit){
+                        if(!currHit->hit->isHit) {
+                            transparentHitBuffer.push_back(model->facets[currHit->hitId].get());
+                        }
+                        else {
+                            collidedFacet = model->facets[currHit->hitId].get();
+                            d = currHit->hit->colDistTranspPass;
+                        }
+                        tmpFacetVars[currHit->hitId] = *currHit->hit;
+                        currHit = currHit->next;
+                    }
+                }
+                //printf("%lf ms time spend in new BVH\n", tmp2Time.ElapsedMs());
+                /*size_t hitNo = 0;
+                HitChain* log = hitChain;
+                std::vector<HitChain*> hitlog;
+                while (log) {
+                    hitlog.push_back(log);
+                    //if(log->hit) printf("[%zu][%zu] Hit at fac: %lf , %lf\n", hitNo, log->hitId, log->hit->colU, log->hit->colV);
+                    log = log->next;
+                    hitNo++;
+                }
+                for(auto hlog = hitlog.rbegin() ; hlog != hitlog.rend(); ++hlog){
+                    if((*hlog)->hit && (*hlog)->hit->isHit && collidedFacet->globalId == (*hlog)->hitId) {
+                        break;
+                    }
+                    else if((*hlog)->hit && (*hlog)->hit->isHit && collidedFacet->globalId != (*hlog)->hitId)
+                        printf("Hit mismatch %zu vs %zu\n", collidedFacet->globalId, (*hlog)->hitId);
+                }*/
+
+                DeleteChain(&hitChain);
+            }
+#endif //use old bvh
 
             if (found) {
                 // Second pass for transparent hits
@@ -353,7 +426,8 @@ bool Particle::StartFromSource() {
     srcRnd = randomGenerator.rnd() * model->wp.totalDesorbedMolecules;
 
     i = 0;
-    for(auto& f : model->facets) { //Go through facets in a structure
+    for(auto& fac : model->facets) { //Go through facets in a structure
+        auto& f = *fac;
         if (f.sh.desorbType != DES_NONE) { //there is some kind of outgassing
             if (f.sh.useOutgassingFile) { //Using SynRad-generated outgassing map
                 if (f.sh.totalOutgassing > 0.0) {
@@ -411,7 +485,7 @@ bool Particle::StartFromSource() {
         return false;
     }
 
-    SubprocessFacet *src = &(model->facets[i]);
+    SubprocessFacet *src = model->facets[i].get();
     lastHitFacet = src;
     //distanceTraveled = 0.0;  //for mean free path calculations
     //particleTime = desorptionStartTime + (desorptionStopTime - desorptionStartTime)*randomGenerator.rnd();

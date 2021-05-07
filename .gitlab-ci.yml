@@ -26,7 +26,7 @@ prepare_job:
 build-windows-master:
   stage: build
   before_script:
-    - echo "Building Windows Master"
+    - echo "Building Windows $CI_COMMIT_BRANCH"
     - git submodule sync --recursive
     - git submodule update --init --recursive
   script:
@@ -38,7 +38,7 @@ build-windows-master:
     - echo "Starting build in:" + ($buildpath).path
     - C:\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe --build $buildpath --config Release -- -j 4
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
-    - Set-Variable -Name "FNAME" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
+    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - Set-Variable -Name "outputpath" -Value ($buildpath + "\bin")
     - echo $FNAME
     - New-Item -Path ("C:\" + ($APP_NAME_CAPS) + "_CI") -Name $FNAME -ItemType "directory" -Force
@@ -52,7 +52,7 @@ build-windows-master:
   stage: build
   before_script:
     - whoami
-    - echo "Building $OS_NAME Master"
+    - echo "Building $OS_NAME $CI_COMMIT_BRANCH"
     - git submodule sync --recursive
     - git submodule update --init --recursive
   script:
@@ -64,7 +64,7 @@ build-windows-master:
     - echo "Starting build in:" $buildpath
     - cmake --build $buildpath --config Release -- -j 4
     - export DATE=`date +%Y_%m_%d`
-    - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - export FNAME=$CI_COMMIT_BRANCH'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - export outputpath=$buildpath'/bin/'
     - echo $FNAME
     - mkdir -p ~/$APP_NAME_CAPS'_CI/'$FNAME
@@ -111,17 +111,17 @@ build-macos-master:
   stage: test
   before_script:
     - whoami
-    - echo "Testing $OS_NAME Master"
-    - mkdir -p ~/$APP_NAME_CAPS'_CI/'PerfoTestResults/
+    - echo "Testing $OS_NAME $CI_COMMIT_BRANCH"
+    - mkdir -p ~/$APP_NAME_CAPS'_CI/PerfoTestResults/'$CI_COMMIT_BRANCH'/'
   script:
     - export PROJPATH=$(pwd)
     - export DATE=`date +%Y_%m_%d`
-    - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - export FNAME=$CI_COMMIT_BRANCH'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - cd ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
-    - mv ~/$APP_NAME_CAPS'_CI/'PerfoTestResults/time_record_* . || true
+    - cp ~/$APP_NAME_CAPS'_CI/'PerfoTestResults/time_record_* . || ~/$APP_NAME_CAPS'_CI/PerfoTestResults/'$CI_COMMIT_BRANCH/time_record_* . || true
     - ./testsuite --gtest_output="xml:report.xml"
     - mv report.xml $PROJPATH"/report.xml"
-    - mv ./time_record_* ~/$APP_NAME_CAPS'_CI/PerfoTestResults/'
+    - mv ./time_record_* ~/$APP_NAME_CAPS'_CI/PerfoTestResults/'$CI_COMMIT_BRANCH'/'
   after_script:
     - echo "Finished"
   artifacts:
@@ -156,18 +156,19 @@ test-macos:
 test-windows:
   stage: test
   before_script:
-    - Write-Host "Testing Windows Master"
+    - Write-Host "Testing Windows $CI_COMMIT_BRANCH"
     - mkdir -Force -P ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\")
   script:
     - Set-Variable -Name "PROJPATH" -Value (($pwd).path)
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
-    - Set-Variable -Name "FNAME" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
+    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - Set-Location ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\")
-    - Move-Item -Force ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\time_record_*") (".\")
+    - Copy-Item -Force ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\" + ($CI_COMMIT_BRANCH) + "time_record_*") (".\")
+    - Copy-Item -Force ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\time_record_*") (".\")
     - $AllArgs = @("--gtest_output='xml:report.xml'")
     - powershell.exe -c "./testsuite.exe $AllArgs"
     - Move-Item -Path report.xml -Destination (($PROJPATH) + "\report.xml")
-    - Move-Item -Force (".\time_record_*") ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\")
+    - Move-Item -Force (".\time_record_*") ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\" + ($CI_COMMIT_BRANCH))
   after_script:
     - Write-Host "Finished"
   artifacts:
@@ -187,7 +188,7 @@ test-windows:
     - Get-ChildItem ("./" + ($APP_NAME) + "_win" + ($TAG_SUFFIX)) | Remove-Item -Recurse -Force
   script:
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
-    - Set-Variable -Name "FNAME" -Value ("\master\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
+    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - Write-Host $FNAME
     - Write-Host $TAG_SUFFIX
     - Write-Host $CI_COMMIT_TAG
@@ -212,7 +213,7 @@ test-windows:
     - mkdir -p ./$APP_NAME'_'$OS_NAME$TAG_SUFFIX
   script:
     - export DATE=`date +%Y_%m_%d`
-    - export FNAME=master'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - export FNAME=$CI_COMMIT_BRANCH'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - echo $FNAME
     - echo ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
     - ls ~/
