@@ -77,7 +77,7 @@ void WriterXML::SaveGeometry(xml_document &saveDoc, SimulationModel *model, bool
     // Simulation Settings
     if(update)
         rootNode.remove_child("MolflowSimuSettings");
-    xml_node simuParamNode = rootNode.insert_child_after("Geometry",rootNode);
+    xml_node simuParamNode = rootNode.insert_child_after("MolflowSimuSettings",geomNode);
 
     simuParamNode.append_child("Gas").append_attribute("mass") = model->wp.gasMass;
     simuParamNode.child("Gas").append_attribute(

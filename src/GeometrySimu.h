@@ -304,7 +304,7 @@ public:
     void clear();
     void Resize(const SimulationModel &model);
     void Reset();
-    static std::pair<int, int>
+    static std::tuple<int, int, int>
     Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuState &rhsGlobHit, double globThreshold,
             double locThreshold);
 
