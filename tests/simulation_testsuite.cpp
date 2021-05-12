@@ -470,7 +470,7 @@ namespace {
             GlobalSimuState oldState = globState;
             globState.Reset();
             Settings::desLimit.clear();
-            Settings::desLimit.emplace_back(1000);
+            Settings::desLimit.emplace_back(100);
             Initializer::initDesLimit(model, globState);
 
             simManager.ResetHits();
