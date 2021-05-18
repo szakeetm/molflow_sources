@@ -36,8 +36,11 @@ void initDefaultSettings(){
     Settings::paramSweep.clear();
 
     SettingsIO::overwrite = false;
+    SettingsIO::workFile.clear();
     SettingsIO::inputFile.clear();
     SettingsIO::outputFile.clear();
+    SettingsIO::workPath.clear();
+    SettingsIO::inputPath.clear();
     SettingsIO::outputPath.clear();
 }
 
@@ -126,18 +129,18 @@ int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManag
 }
 
 int Initializer::initFromFile(SimulationManager *simManager, SimulationModel *model, GlobalSimuState *globState) {
-    if(SettingsIO::initDirectories())
+    if(SettingsIO::prepareIO())
         return 1;
 
-    if(std::filesystem::path(SettingsIO::inputFile).extension() == ".xml")
-        loadFromXML(SettingsIO::inputFile, !Settings::resetOnStart, model, globState);
+    if(std::filesystem::path(SettingsIO::workFile).extension() == ".xml")
+        loadFromXML(SettingsIO::workFile, !Settings::resetOnStart, model, globState);
     else{
-        Log::console_error("Invalid file extension for input file detected: %s\n", std::filesystem::path(SettingsIO::inputFile).extension().c_str());
+        Log::console_error("Invalid file extension for input file detected: %s\n", std::filesystem::path(SettingsIO::workFile).extension().c_str());
         return 1;
     }
     if(!Settings::paramFile.empty() || !Settings::paramSweep.empty()){
         // 1. Load selection groups in case we need them for parsing
-        std::vector<SelectionGroup> selGroups = FlowIO::LoaderXML::LoadSelections(SettingsIO::inputFile);
+        std::vector<SelectionGroup> selGroups = FlowIO::LoaderXML::LoadSelections(SettingsIO::workFile);
         // 2. Sweep parameters from file
         if(!Settings::paramFile.empty())
             ParameterParser::ParseFile(Settings::paramFile, selGroups);
@@ -219,7 +222,7 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, Simula
             Log::console_msg_master(3," Initializing previous simulation state!\n");
 
             if(Settings::loadAutosave){
-                std::string fileName = std::filesystem::path(SettingsIO::inputFile).filename().string();
+                std::string fileName = std::filesystem::path(SettingsIO::workFile).filename().string();
                 std::string autoSavePrefix = "autosave_";
                 fileName = autoSavePrefix + fileName;
                 if(std::filesystem::exists(fileName)) {
@@ -228,7 +231,7 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, Simula
                 }
             }
             else {
-                FlowIO::LoaderXML::LoadSimulationState(SettingsIO::inputFile, model, *globState);
+                FlowIO::LoaderXML::LoadSimulationState(SettingsIO::workFile, model, *globState);
             }
         }
     }
@@ -277,23 +280,22 @@ std::string Initializer::getAutosaveFile(){
     std::string autoSave;
     if(Settings::autoSaveDuration > 0)
     {
-        autoSave = std::filesystem::path(SettingsIO::inputFile).filename().string();
+        autoSave = std::filesystem::path(SettingsIO::workFile).filename().string();
 
         std::string autoSavePrefix = "autosave_";
+        // Check if autosave_ is part of the input filename, if yes, generate a new input file without the prefix
         if(autoSave.size() > autoSavePrefix.size() && std::search(autoSave.begin(), autoSave.begin()+autoSavePrefix.size(), autoSavePrefix.begin(), autoSavePrefix.end()) == autoSave.begin())
         {
-            autoSave = std::filesystem::path(SettingsIO::inputFile).filename().string();
+            // TODO: Revisit wether input/output is acceptable here
+            autoSave = std::filesystem::path(SettingsIO::workFile).filename().string();
             SettingsIO::inputFile = autoSave.substr(autoSavePrefix.size(), autoSave.size() - autoSavePrefix.size());
             Log::console_msg_master(2, "Using autosave file %s for %s\n", autoSave.c_str(), SettingsIO::inputFile.c_str());
         }
         else {
             // create autosavefile from copy of original
-            std::stringstream autosaveFile;
-            autosaveFile << SettingsIO::outputPath << "/" << autoSavePrefix << autoSave;
-            autoSave = autosaveFile.str();
-
+            autoSave = std::filesystem::path(SettingsIO::outputPath).append(autoSavePrefix).concat(autoSave).string();
             try {
-                std::filesystem::copy_file(SettingsIO::inputFile, autoSave,
+                std::filesystem::copy_file(SettingsIO::workFile, autoSave,
                                            std::filesystem::copy_options::overwrite_existing);
             } catch (std::filesystem::filesystem_error &e) {
                 Log::console_error("Could not copy file: %s\n", e.what());
