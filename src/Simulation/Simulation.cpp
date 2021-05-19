@@ -281,7 +281,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     //std::vector<BVHAccel> bvhs;
     model.bvhs.clear();
     for (size_t s = 0; s < model.sh.nbSuper; ++s) {
-        model.bvhs.emplace_back(primPointers[s], 1);
+        model.bvhs.emplace_back(primPointers[s], 1, BVHAccel::SplitMethod::SAH);
     }
 #endif
     for(auto& particle : particles)
