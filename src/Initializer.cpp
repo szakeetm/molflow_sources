@@ -129,8 +129,10 @@ int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManag
 }
 
 int Initializer::initFromFile(SimulationManager *simManager, SimulationModel *model, GlobalSimuState *globState) {
-    if(SettingsIO::prepareIO())
+    if(SettingsIO::prepareIO()) {
+        Log::console_error("Error preparing I/O folders\n");
         return 1;
+    }
 
     if(std::filesystem::path(SettingsIO::workFile).extension() == ".xml")
         loadFromXML(SettingsIO::workFile, !Settings::resetOnStart, model, globState);
