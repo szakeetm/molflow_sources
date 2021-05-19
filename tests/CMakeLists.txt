@@ -53,6 +53,8 @@ link_directories(${LINK_DIR_1} ${LINK_DIR_2})
 
 set(EXTRA_SRC
         ../src_shared/File.cpp
+        ../src_shared/FlowMPI.h #contains templates
+        ../src_shared/FlowMPI.cpp
         )
 # Now simply link against gtest or gtest_main as needed. Eg
 add_executable(testsuite simulation_testsuite.cpp ${EXTRA_SRC})
@@ -60,7 +62,7 @@ target_link_libraries(testsuite PRIVATE gtest_main molflowSim)
 target_compile_definitions(testsuite PRIVATE
         "-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
 
-target_include_directories(testsuite PRIVATE ../include ../src_shared)
+target_include_directories(testsuite PRIVATE ../include ../src_shared ../src)
 # set the path to the library folder
 IF (WIN32)
 

@@ -5,6 +5,7 @@
 #include <iomanip>      // std::setprecision
 #include <sstream>
 #include <Helper/StringHelper.h>
+#include <Helper/ConsoleLogger.h>
 #include "PugiXML/pugixml.hpp"
 
 #include "WriterXML.h"
@@ -19,7 +20,7 @@ void WriterXML::setWriteProgress(double newProgress) {
 }
 
 void WriterXML::reportWriteStatus(const std::string &statusString) const {
-    printf("[%s] %s [%.2lf%%]\n", Util::getTimepointString().c_str(), statusString.c_str(), writeProgress);
+    Log::console_msg(2, "[%s] %s [%.2lf%%]\n", Util::getTimepointString().c_str(), statusString.c_str(), writeProgress);
 }
 
 void WriterXML::SaveGeometry(xml_document &saveDoc, SimulationModel *model, bool useOldXMLFormat, bool update) {
@@ -76,7 +77,7 @@ void WriterXML::SaveGeometry(xml_document &saveDoc, SimulationModel *model, bool
     // Simulation Settings
     if(update)
         rootNode.remove_child("MolflowSimuSettings");
-    xml_node simuParamNode = rootNode.insert_child_after("Geometry",rootNode);
+    xml_node simuParamNode = rootNode.insert_child_after("MolflowSimuSettings",geomNode);
 
     simuParamNode.append_child("Gas").append_attribute("mass") = model->wp.gasMass;
     simuParamNode.child("Gas").append_attribute(

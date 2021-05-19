@@ -44,7 +44,7 @@ public:
     Simulation(Simulation&& o) noexcept ;
     virtual ~Simulation() = default;
 
-    int SanityCheckModel() override;
+    std::pair<int, std::optional<std::string>> SanityCheckModel(bool strictCheck) override;
     void ClearSimulation() override;
     size_t LoadSimulation(char *loadStatus) override;
     void ResetSimulation() override;

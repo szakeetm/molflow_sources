@@ -11,6 +11,8 @@
 #include <ziplib/ZipFile.h>
 #include <File.h>
 #include <Helper/StringHelper.h>
+#include <Helper/ConsoleLogger.h>
+#include <SettingsIO.h>
 
 namespace Settings {
     size_t nbThreads = 0;
@@ -19,11 +21,27 @@ namespace Settings {
     bool loadAutosave = false;
     std::list<uint64_t> desLimit;
     bool resetOnStart = false;
-    std::string inputFile;
-    std::string outputFile;
     std::string paramFile;
     std::vector<std::string> paramSweep;
-    std::string outputPath;
+}
+
+void initDefaultSettings(){
+    Settings::nbThreads = 0;
+    Settings::simDuration = 10;
+    Settings::autoSaveDuration = 600;
+    Settings::loadAutosave = false;
+    Settings::desLimit.clear();
+    Settings::resetOnStart = false;
+    Settings::paramFile.clear();
+    Settings::paramSweep.clear();
+
+    SettingsIO::overwrite = false;
+    SettingsIO::workFile.clear();
+    SettingsIO::inputFile.clear();
+    SettingsIO::outputFile.clear();
+    SettingsIO::workPath.clear();
+    SettingsIO::inputPath.clear();
+    SettingsIO::outputPath.clear();
 }
 
 class FlowFormatter : public CLI::Formatter {
@@ -35,120 +53,96 @@ public:
     }
 };
 
-int initDirectories(){
+int Initializer::parseCommands(int argc, char** argv) {
+    CLI::App app{"Molflow+/Synrad+ Simulation Management"};
+    app.formatter(std::make_shared<FlowFormatter>());
 
-    int err = 0;
+    // Local variables for parsing and immediate processing
+    bool verbose = false;
+    std::vector<double> limits;
 
-    // Use a default outputpath if unset
-    if(Settings::outputPath.empty()) {
-        Settings::outputPath = "Results_" + Util::getTimepointString();
-    }
-    else if(std::filesystem::path(Settings::outputFile).has_parent_path()) {
-        std::cerr << "Output path was set to " << Settings::outputPath << ", but Output file also contains a parent path "
-                  << std::filesystem::path(Settings::outputFile).parent_path() << "\nOutput path will be appended!\n";
-    }
+    // Define options
+    app.add_option("-j,--threads", Settings::nbThreads, "# Threads to be deployed");
+    app.add_option("-t,--time", Settings::simDuration, "Simulation duration in seconds");
+    app.add_option("-d,--ndes", limits, "Desorption limit for simulation end");
+    app.add_option("-f,--file", SettingsIO::inputFile, "Required input file (XML only)")
+            ->required()
+            ->check(CLI::ExistingFile);
+    CLI::Option* optOfile = app.add_option("-o,--output", SettingsIO::outputFile, R"(Output file name (e.g. 'outfile.xml', defaults to 'out_{inputFileName}')");
+    CLI::Option* optOpath = app.add_option("--outputPath", SettingsIO::outputPath, "Output path, defaults to \'Results_{date}\'");
+    app.add_option("-a,--autosaveDuration", Settings::autoSaveDuration, "Seconds for autoSave if not zero");
+    app.add_option("--setParamsByFile", Settings::paramFile, "Parameter file for ad hoc change of the given geometry parameters")
+            ->check(CLI::ExistingFile);
+    app.add_option("--setParams", Settings::paramSweep, "Direct parameter input for ad hoc change of the given geometry parameters");
+    app.add_option("--verbosity", Settings::verbosity, "Restrict console output to different levels");
 
-    // Use a default outputfile name if unset
-    if(Settings::outputFile.empty())
-        Settings::outputFile = "out_" + std::filesystem::path(Settings::inputFile).filename().string();
+    app.add_flag("--loadAutosave", Settings::loadAutosave, "Whether autoSave_ file should be used if exists");
+    app.add_flag("-r,--reset", Settings::resetOnStart, "Resets simulation status loaded from file");
+    app.add_flag("--verbose", verbose, "Verbose console output (all levels)");
+    CLI::Option* optOverwrite = app.add_flag("--overwrite", SettingsIO::overwrite, "Overwrite input file with new results")->excludes(optOfile, optOpath);
+    optOfile->excludes(optOverwrite);
+    optOpath->excludes(optOverwrite);
+    app.set_config("--config");
 
-    // Try to create directories
-    // First for outputpath, with tmp/ and lastly ./ as fallback plans
-    try {
-        std::filesystem::create_directory(Settings::outputPath);
-    }
-    catch (std::exception& e){
-        std::cerr << "Couldn't create directory [ " << Settings::outputPath << " ], falling back to binary folder for output files\n";
-        ++err;
+    CLI11_PARSE(app, argc, argv);
 
-        // use fallback dir
-        Settings::outputPath = "tmp/";
-        try {
-            std::filesystem::create_directory(Settings::outputPath);
-        }
-        catch (std::exception& e){
-            Settings::outputPath = "./";
-            std::cerr << "Couldn't create fallback directory [ tmp/ ], falling back to binary folder instead for output files\n";
-            ++err;
-        }
-    }
+    if(verbose)
+        Settings::verbosity = 42;
 
-    // Next check if outputfile name has parent path as name
-    // Additional directory in outputpath
-    if(std::filesystem::path(Settings::outputFile).has_parent_path()) {
-        std::string outputFilePath = Settings::outputPath + '/' + std::filesystem::path(Settings::outputFile).parent_path().string();
-        try {
-            std::filesystem::create_directory(outputFilePath);
-        }
-        catch (std::exception& e) {
-            std::cerr << "Couldn't create parent directory set by output filename [ " << outputFilePath
-                      << " ], will only use default output path instead\n";
-            ++err;
-        }
-    }
-
-    return err;
+    //std::cout<<app.config_to_str(true,true);
+    for(auto& lim : limits)
+        Settings::desLimit.emplace_back(lim);
+    return 0;
 }
 
-int Initializer::init(int argc, char **argv, SimulationManager *simManager, SimulationModel *model,
-                      GlobalSimuState *globState) {
+int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManager, SimulationModel *model) {
+    Log::console_header(1,"Commence: Initialising!\n");
 
 #if defined(WIN32) || defined(__APPLE__)
     setlocale(LC_ALL, "C");
 #else
     std::setlocale(LC_ALL, "C");
 #endif
-    parseCommands(argc, argv);
 
-    std::cout << "Number used threads: " << Settings::nbThreads << std::endl;
+    initDefaultSettings();
+
+    int err = 0;
+    if(err = parseCommands(argc, argv)){
+        return err;
+    }
+
     simManager->nbThreads = Settings::nbThreads;
     simManager->useCPU = true;
 
     if(simManager->InitSimUnits()) {
-        std::cout << "Error: Initialising simulation unit: " << simManager->nbThreads << std::endl;
+        Log::console_error("Error: Initialising simulation units: %zu\n", simManager->nbThreads);
         return 1;
     }
-    std::cout << "Active cores: " << simManager->nbThreads << std::endl;
+
     model->otfParams.nbProcess = simManager->nbThreads;
+    model->otfParams.timeLimit = (double) Settings::simDuration;
     //model->otfParams.desorptionLimit = Settings::desLimit.front();
+    Log::console_msg_master(4, "Active cores: %zu\n", simManager->nbThreads);
+    Log::console_msg_master(4, "Running simulation for: %zu sec\n", Settings::simDuration);
 
-    initDirectories();
-    if(std::filesystem::path(Settings::inputFile).extension() == ".zip"){
-        //decompress file
-        std::string parseFileName;
-        std::cout << "Decompressing zip file..." << std::endl;
-        ZipArchive::Ptr zip = ZipFile::Open(Settings::inputFile);
-        if (zip == nullptr) {
-            std::cerr <<"Can't open ZIP file\n";
-        }
-        size_t numItems = zip->GetEntriesCount();
-        bool notFoundYet = true;
-        for (int i = 0; i < numItems && notFoundYet; i++) { //extract first xml file found in ZIP archive
-            auto zipItem = zip->GetEntry(i);
-            std::string zipFileName = zipItem->GetName();
+    return 0;
+}
 
-            if(std::filesystem::path(zipFileName).extension() == ".xml"){ //if it's an .xml file
-                notFoundYet = false;
-
-                if(Settings::outputPath != "tmp/")
-                    FileUtils::CreateDir("tmp");// If doesn't exist yet
-
-                parseFileName = "tmp/" + zipFileName;
-                ZipFile::ExtractFile(Settings::inputFile, zipFileName, parseFileName);
-            }
-        }
-        if(parseFileName.empty()) {
-            std::cout << "Zip file does not contain a valid geometry file!" << std::endl;
-            exit(0);
-        }
-        Settings::inputFile = parseFileName;
-        std::cout << "New input file: " << Settings::inputFile << std::endl;
+int Initializer::initFromFile(SimulationManager *simManager, SimulationModel *model, GlobalSimuState *globState) {
+    if(SettingsIO::prepareIO()) {
+        Log::console_error("Error preparing I/O folders\n");
+        return 1;
     }
 
-    loadFromXML(simManager, model, globState, !Settings::resetOnStart);
+    if(std::filesystem::path(SettingsIO::workFile).extension() == ".xml")
+        loadFromXML(SettingsIO::workFile, !Settings::resetOnStart, model, globState);
+    else{
+        Log::console_error("Invalid file extension for input file detected: %s\n", std::filesystem::path(SettingsIO::workFile).extension().c_str());
+        return 1;
+    }
     if(!Settings::paramFile.empty() || !Settings::paramSweep.empty()){
         // 1. Load selection groups in case we need them for parsing
-        std::vector<SelectionGroup> selGroups = FlowIO::LoaderXML::LoadSelections(Settings::inputFile);
+        std::vector<SelectionGroup> selGroups = FlowIO::LoaderXML::LoadSelections(SettingsIO::workFile);
         // 2. Sweep parameters from file
         if(!Settings::paramFile.empty())
             ParameterParser::ParseFile(Settings::paramFile, selGroups);
@@ -160,50 +154,26 @@ int Initializer::init(int argc, char **argv, SimulationManager *simManager, Simu
 
     // Set desorption limit if used
     if(initDesLimit(*model,*globState)) {
-        exit(0);
+        return 1;
     }
-    model->otfParams.timeLimit = (double) Settings::simDuration;
 
-    /*else{
-        model->otfParams.desorptionLimit = 0;
-    }*/
-    initSimUnit(simManager, model, globState);
+    Log::console_msg_master(2,"Forwarding model to simulation units!\n");
+    try {
+        simManager->InitSimulation(model, globState);
+    }
+    catch (std::exception& ex){
+        Log::console_error("Failed initialising simulation units:\n%s\n", ex.what());
+        return 1;
+    }
+    Log::console_footer(1,"Finalize: Initialising!\n");
 
     return 0;
 }
 
-int Initializer::parseCommands(int argc, char** argv) {
-    CLI::App app{"Molflow+/Synrad+ Simulation Management"};
-    app.formatter(std::make_shared<FlowFormatter>());
+int Initializer::loadFromXML(const std::string &fileName, bool loadState, SimulationModel *model,
+                             GlobalSimuState *globState) {
 
-    std::vector<double> limits;
-    // Define options
-    app.add_option("-j,--threads", Settings::nbThreads, "# Threads to be deployed");
-    app.add_option("-t,--time", Settings::simDuration, "Simulation duration in seconds");
-    app.add_option("-d,--ndes", limits, "Desorption limit for simulation end");
-    app.add_option("-f,--file", Settings::inputFile, "Required input file (XML only)")
-            ->required()
-            ->check(CLI::ExistingFile);
-    app.add_option("-o,--output", Settings::outputFile, R"(Output file name (e.g. 'outfile.xml', defaults to 'out_{inputFileName}')");
-    app.add_option("--outputPath", Settings::outputPath, "Output path, defaults to \'Results_{date}\'");
-    app.add_option("-a,--autosaveDuration", Settings::autoSaveDuration, "Seconds for autoSave if not zero");
-    app.add_flag("--loadAutosave", Settings::loadAutosave, "Whether autoSave_ file should be used if exists");
-    app.add_option("--setParamsByFile", Settings::paramFile, "Parameter file for ad hoc change of the given geometry parameters")
-            ->check(CLI::ExistingFile);
-    app.add_option("--setParams", Settings::paramSweep, "Direct parameter input for ad hoc change of the given geometry parameters");
-
-    app.add_flag("-r,--reset", Settings::resetOnStart, "Resets simulation status loaded from while");
-    app.set_config("--config");
-    CLI11_PARSE(app, argc, argv);
-
-    //std::cout<<app.config_to_str(true,true);
-    for(auto& lim : limits)
-        Settings::desLimit.emplace_back(lim);
-    return 0;
-}
-
-int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *model, GlobalSimuState *globState,
-                             bool loadState) {
+    Log::console_header(1,"[ ] Loading geometry from file %s\n", fileName.c_str());
 
     //1. Load Input File (regular XML)
     FlowIO::LoaderXML loader;
@@ -212,8 +182,8 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
     // Settings
     // Previous results
     model->m.lock();
-    if(loader.LoadGeometry(Settings::inputFile, model)){
-        std::cerr << "[Error (LoadGeom)] Please check the input file!" << std::endl;
+    if(loader.LoadGeometry(fileName, model)){
+        Log::console_error("Please check the input file!\n");
         model->m.unlock();
         return 1;
     }
@@ -228,13 +198,13 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
     // work->InsertParametersBeforeCatalog(loadedParams);
     // Load viewsettings for each facet
 
-    std::cout << "[LoadGeom] Loaded geometry of " << model->size() << " bytes!" << std::endl;
+    Log::console_msg_master(3," Loaded geometry of %zu bytes!\n", model->size());
 
     //InitializeGeometry();
     model->InitialiseFacets();
     model->PrepareToRun();
 
-    std::cout << "[LoadGeom] Initializing geometry!" << std::endl;
+    Log::console_msg_master(3," Initializing geometry!\n");
     initSimModel(model);
 
     // 2. Create simulation dataports
@@ -246,54 +216,33 @@ int Initializer::loadFromXML(SimulationManager *simManager, SimulationModel *mod
         }
         simManager->ReloadLogBuffer(logDpSize, true);*/
 
-        std::cout << "[LoadGeom] Resizing state!" << std::endl;
+        Log::console_msg_master(3," Resizing state!\n");
         globState->Resize(*model);
 
         // 3. init counters with previous results
         if(loadState) {
-            std::cout << "[LoadGeom] Initializing previous simulation state!" << std::endl;
+            Log::console_msg_master(3," Initializing previous simulation state!\n");
 
             if(Settings::loadAutosave){
-                std::string fileName = std::filesystem::path(Settings::inputFile).filename().string();
+                std::string fileName = std::filesystem::path(SettingsIO::workFile).filename().string();
                 std::string autoSavePrefix = "autosave_";
                 fileName = autoSavePrefix + fileName;
                 if(std::filesystem::exists(fileName)) {
-                    std::cout << "Found autosave file! Loading simulation state..." << std::endl;
+                    Log::console_msg_master(2," Found autosave file! Loading simulation state...\n");
                     FlowIO::LoaderXML::LoadSimulationState(fileName, model, *globState);
                 }
             }
             else {
-                FlowIO::LoaderXML::LoadSimulationState(Settings::inputFile, model, *globState);
+                FlowIO::LoaderXML::LoadSimulationState(SettingsIO::workFile, model, *globState);
             }
         }
     }
     catch (std::exception& e) {
-        std::cerr << "[Warning (LoadGeom)] " << e.what() << std::endl;
+        Log::console_error("[Warning] %s\n", e.what());
     }
 
     model->m.unlock();
-
-    return 0;
-}
-
-int Initializer::initSimUnit(SimulationManager *simManager, SimulationModel *model, GlobalSimuState *globState) {
-
-    model->m.lock();
-
-    // Prepare simulation unit
-    std::cout << "[LoadGeom] Forwarding model to simulation units!" << std::endl;
-    simManager->ResetSimulations();
-    simManager->ForwardSimModel(model);
-    simManager->ForwardGlobalCounter(globState, nullptr);
-
-    if(simManager->LoadSimulation()){
-        model->m.unlock();
-        std::string errString = "Failed to send geometry to sub process:\n";
-        errString.append(simManager->GetErrorDetails());
-        throw std::runtime_error(errString);
-    }
-
-    model->m.unlock();
+    Log::console_footer(1,"[x] Loaded geometry\n");
 
     return 0;
 }
@@ -311,15 +260,15 @@ int Initializer::initDesLimit(SimulationModel& model, GlobalSimuState& globState
             Settings::desLimit.pop_front();
 
             if (oldDesNb > model.otfParams.desorptionLimit){
-                printf("Skipping desorption limit: %zu\n", model.otfParams.desorptionLimit);
+                Log::console_msg_master(1,"Skipping desorption limit: %zu\n", model.otfParams.desorptionLimit);
             }
             else{
-                printf("Starting with desorption limit: %zu from %zu\n", model.otfParams.desorptionLimit , oldDesNb);
+                Log::console_msg_master(1,"Starting with desorption limit: %zu from %zu\n", model.otfParams.desorptionLimit , oldDesNb);
                 return 0;
             }
         }
         if(Settings::desLimit.empty()){
-            printf("All given desorption limits have been reached. Consider resetting the simulation results from the input file (--reset): Starting desorption %zu\n", oldDesNb);
+            Log::console_msg_master(1,"All given desorption limits have been reached. Consider resetting the simulation results from the input file (--reset): Starting desorption %zu\n", oldDesNb);
             return 1;
         }
     }
@@ -333,26 +282,25 @@ std::string Initializer::getAutosaveFile(){
     std::string autoSave;
     if(Settings::autoSaveDuration > 0)
     {
-        autoSave = std::filesystem::path(Settings::inputFile).filename().string();
+        autoSave = std::filesystem::path(SettingsIO::workFile).filename().string();
 
         std::string autoSavePrefix = "autosave_";
+        // Check if autosave_ is part of the input filename, if yes, generate a new input file without the prefix
         if(autoSave.size() > autoSavePrefix.size() && std::search(autoSave.begin(), autoSave.begin()+autoSavePrefix.size(), autoSavePrefix.begin(), autoSavePrefix.end()) == autoSave.begin())
         {
-            autoSave = std::filesystem::path(Settings::inputFile).filename().string();
-            Settings::inputFile = autoSave.substr(autoSavePrefix.size(), autoSave.size() - autoSavePrefix.size());
-            std::cout << "Using autosave file " << autoSave << " for " << Settings::inputFile << '\n';
+            // TODO: Revisit wether input/output is acceptable here
+            autoSave = std::filesystem::path(SettingsIO::workFile).filename().string();
+            SettingsIO::inputFile = autoSave.substr(autoSavePrefix.size(), autoSave.size() - autoSavePrefix.size());
+            Log::console_msg_master(2, "Using autosave file %s for %s\n", autoSave.c_str(), SettingsIO::inputFile.c_str());
         }
         else {
             // create autosavefile from copy of original
-            std::stringstream autosaveFile;
-            autosaveFile << Settings::outputPath << "/" << autoSavePrefix << autoSave;
-            autoSave = autosaveFile.str();
-
+            autoSave = std::filesystem::path(SettingsIO::outputPath).append(autoSavePrefix).concat(autoSave).string();
             try {
-                std::filesystem::copy_file(Settings::inputFile, autoSave,
+                std::filesystem::copy_file(SettingsIO::workFile, autoSave,
                                            std::filesystem::copy_options::overwrite_existing);
             } catch (std::filesystem::filesystem_error &e) {
-                std::cout << "Could not copy file: " << e.what() << '\n';
+                Log::console_error("Could not copy file: %s\n", e.what());
             }
         }
     }
@@ -416,10 +364,9 @@ int Initializer::initSimModel(SimulationModel* model) {
             // Geometry error
             //ClearSimulation();
             //ReleaseDataport(loader);
-            std::ostringstream err;
-            err << "Invalid structure (wrong link on F#" << facIdx + 1 << ")";
             //SetErrorSub(err.str().c_str());
-            std::cerr << err.str() << std::endl;
+            Log::console_error("Invalid structure (wrong link on F#%d)\n", facIdx + 1 );
+
             return 1;
         }
     }
