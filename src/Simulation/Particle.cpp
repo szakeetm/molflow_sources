@@ -264,9 +264,14 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                 else
                     tmpRay.lastIntersected = -1;
                 tmpRay.rng = &randomGenerator;
+
                 HitChain* hitChain = new HitChain();
                 tmpRay.hitChain = hitChain;
+#if defined(USE_KDTREE)
+                found = model->kdtree[structureId].Intersect(tmpRay);
+#else
                 found = model->bvhs[structureId].Intersect(tmpRay);
+#endif
                 if(found){
                     HitChain* currHit = hitChain;
                     while(currHit){

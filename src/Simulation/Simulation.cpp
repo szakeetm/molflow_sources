@@ -7,7 +7,13 @@
 #include <omp.h>
 #include <Helper/Chronometer.h>
 #include <Helper/ConsoleLogger.h>
+#if defined(USE_OLD_BVH)
+// currently always have SuperStructure
+#elif defined(USE_KDTREE)
+#include <RayTracing/KDTree.h>
+#else
 #include <RayTracing/BVH.h>
+#endif
 
 /*SuperStructure::SuperStructure()
 {
@@ -278,12 +284,19 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
         }
     }
 
+#if defined(USE_KDTREE)
+    model.kdtree.clear();
+    for (size_t s = 0; s < model.sh.nbSuper; ++s) {
+        model.kdtree.emplace_back(primPointers[s], 80, 1, );
+    }
+#else
     //std::vector<BVHAccel> bvhs;
     model.bvhs.clear();
     for (size_t s = 0; s < model.sh.nbSuper; ++s) {
-        model.bvhs.emplace_back(primPointers[s], 1, BVHAccel::SplitMethod::SAH);
+        model.bvhs.emplace_back(primPointers[s], 2, BVHAccel::SplitMethod::SAH);
     }
 #endif
+#endif // old_bvb
     for(auto& particle : particles)
         particle.model = simModel;
 

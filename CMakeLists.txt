@@ -11,7 +11,9 @@ string (REGEX MATCH "\\.el[1-9]" os_version_suffix ${CMAKE_SYSTEM})
 message("-- os_version_suffix:      ${os_version_suffix}")
 
 #list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
-option(USE_OLD_BVH "simulation will use old bvh structure by default" ON) # OFF is the default
+option(USE_OLD_BVH "simulation will use old bvh structure by default" ON)
+option(USE_KDTREE "simulation will use kd structure instead of bvh" OFF)
+
 option(USE_CLANG "build application with clang" OFF) # OFF is the default
 option(USE_PROFILING "disable optimisation for profiling the application" OFF) # OFF is the default
 
@@ -40,6 +42,12 @@ set(CMAKE_VERBOSE_MAKEFILE OFF)
 if(USE_OLD_BVH)
     MESSAGE("Simulation with old BVH...")
     ADD_DEFINITIONS(-DUSE_OLD_BVH)
+elseif(USE_KDTREE)
+    MESSAGE("Simulation with KDTREE...")
+    ADD_DEFINITIONS(-DUSE_KDTREE)
+else()
+    MESSAGE("Simulation with new BVH...")
+    #ADD_DEFINITIONS(-DUSE_KDTREE)
 endif()
 
 # https://docs.microsoft.com/en-us/cpp/build/reference/compiler-options-listed-alphabetically?view=vs-2019
