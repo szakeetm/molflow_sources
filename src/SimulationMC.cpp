@@ -692,19 +692,19 @@ bool Simulation::StartFromSource() {
         if (foundInMap) {
             if (mapPositionW < (src->sh.outgassingMapWidth - 1)) {
                 //Somewhere in the middle of the facet
-                u = ((double) mapPositionW + randomGenerator.rnd()) / src->outgassingMapWidthD;
+                u = ((double) mapPositionW + randomGenerator.rnd()) / src->outgassingMapWidth_precise;
             } else {
                 //Last element, prevent from going out of facet
-                u = ((double) mapPositionW + randomGenerator.rnd() * (src->outgassingMapWidthD - (src->sh.outgassingMapWidth - 1))) /
-                    src->outgassingMapWidthD;
+                u = ((double) mapPositionW + randomGenerator.rnd() * (src->outgassingMapWidth_precise - (src->sh.outgassingMapWidth - 1))) /
+                    src->outgassingMapWidth_precise;
             }
             if (mapPositionH < (src->sh.outgassingMapHeight - 1)) {
                 //Somewhere in the middle of the facet
-                v = ((double) mapPositionH + randomGenerator.rnd()) / src->outgassingMapHeightD;
+                v = ((double) mapPositionH + randomGenerator.rnd()) / src->outgassingMapHeight_precise;
             } else {
                 //Last element, prevent from going out of facet
-                v = ((double) mapPositionH + randomGenerator.rnd() * (src->outgassingMapHeightD - (src->sh.outgassingMapHeight - 1))) /
-                    src->outgassingMapHeightD;
+                v = ((double) mapPositionH + randomGenerator.rnd() * (src->outgassingMapHeight_precise - (src->sh.outgassingMapHeight - 1))) /
+                    src->outgassingMapHeight_precise;
             }
         } else {
             u = randomGenerator.rnd();
@@ -727,8 +727,8 @@ bool Simulation::StartFromSource() {
         if (foundInMap) {
             //double uLength = sqrt(pow(src->sh.U.x, 2) + pow(src->sh.U.y, 2) + pow(src->sh.U.z, 2));
             //double vLength = sqrt(pow(src->sh.V.x, 2) + pow(src->sh.V.y, 2) + pow(src->sh.V.z, 2));
-            double u = ((double) mapPositionW + 0.5) / src->outgassingMapWidthD;
-            double v = ((double) mapPositionH + 0.5) / src->outgassingMapHeightD;
+            double u = ((double) mapPositionW + 0.5) / src->outgassingMapWidth_precise;
+            double v = ((double) mapPositionH + 0.5) / src->outgassingMapHeight_precise;
             currentParticle.position = src->sh.O + u * src->sh.U + v * src->sh.V;
             src->colU = u;
             src->colV = v;

@@ -200,8 +200,8 @@ void SubprocessFacet::InitializeOutgassingMap()
 {
     if (sh.useOutgassingFile) {
         //Precalc actual outgassing map width and height for faster generation:
-        outgassingMapWidthD = sh.U.Norme() * sh.outgassingFileRatio;
-        outgassingMapHeightD = sh.V.Norme() * sh.outgassingFileRatio;
+        outgassingMapWidth_precise = sh.U.Norme() * sh.outgassingFileRatioU;
+        outgassingMapHeight_precise = sh.V.Norme() * sh.outgassingFileRatioV;
         size_t nbE = sh.outgassingMapWidth*sh.outgassingMapHeight;
         // TODO: Check with molflow_threaded e10c2a6f and 66b89ac7 if right
         // making a copy shouldn't be necessary as i will never get changed before use

@@ -32,8 +32,8 @@ struct SubprocessFacet{
     //bool     *fullElem;         // Direction field recording (only on full element)
     std::vector<std::vector<ProfileSlice>> profile;         // Distribution and hit recording
     std::vector<double>   outgassingMap; // Cumulative outgassing map when desorption is based on imported file
-    double outgassingMapWidthD; //actual outgassing file map width
-    double outgassingMapHeightD; //actual outgassing file map height
+    double outgassingMapWidth_precise; //actual outgassing file map width
+    double outgassingMapHeight_precise; //actual outgassing file map height
     Anglemap angleMap;
 
     // Temporary var (used in Intersect for collision)

@@ -268,7 +268,13 @@ void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bool& ignor
 		if ((hasOutgassingFile) && outgNode && outgNode.child("map")) {
 			sh.outgassingMapWidth = outgNode.attribute("width").as_int();
 			sh.outgassingMapHeight = outgNode.attribute("height").as_int();
-			sh.outgassingFileRatio = outgNode.attribute("ratio").as_double();
+			if (outgNode.attribute("ratioU")) { //New format supporting non-square textures
+				sh.outgassingFileRatioU = outgNode.attribute("ratioU").as_double();
+				sh.outgassingFileRatioV = outgNode.attribute("ratioV").as_double();
+			}
+			else { //Old format for square textures
+				sh.outgassingFileRatioU = sh.outgassingFileRatioV = outgNode.attribute("ratio").as_double();
+			}
 			totalDose = outgNode.attribute("totalDose").as_double();
 			sh.totalOutgassing = outgNode.attribute("totalOutgassing").as_double();
 			totalFlux = outgNode.attribute("totalFlux").as_double();
@@ -1144,7 +1150,8 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 		xml_node textureNode = f.append_child("DynamicOutgassing");
 		textureNode.append_attribute("width") = sh.outgassingMapWidth;
 		textureNode.append_attribute("height") = sh.outgassingMapHeight;
-		textureNode.append_attribute("ratio") = sh.outgassingFileRatio;
+		textureNode.append_attribute("ratioU") = sh.outgassingFileRatioU;
+		textureNode.append_attribute("ratioV") = sh.outgassingFileRatioV;
 		textureNode.append_attribute("totalDose") = totalDose;
 		textureNode.append_attribute("totalOutgassing") = sh.totalOutgassing;
 		textureNode.append_attribute("totalFlux") = totalFlux;
