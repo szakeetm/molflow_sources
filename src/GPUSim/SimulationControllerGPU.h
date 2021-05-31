@@ -52,6 +52,7 @@ public:
     void PrintData();
     void PrintDataForParent();
     void PrintTotalCounters();
+    void UpdateGlobalFigures();
     void WriteDataToFile(std::string fileName);
     GlobalCounter* GetGlobalCounter() ;
     double GetTransProb(size_t polyIndex);
@@ -60,6 +61,8 @@ public:
     int RemainingStepsUntilStop();
 
     RuntimeFigures figures;
+    RuntimeFigures globFigures;
+
     bool hasEnded{false};
     bool endCalled{false};
 };

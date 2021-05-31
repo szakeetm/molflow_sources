@@ -11,6 +11,8 @@
 #include <cereal/cereal.hpp>
 #include <limits>
 
+typedef unsigned long long int uint64_cu;
+
 namespace flowgpu {
 
     struct Texel64;
@@ -208,7 +210,7 @@ namespace flowgpu {
     struct Texel64 {
         Texel64() : countEquiv(0), sum_v_ort_per_area(0.0), sum_1_per_ort_velocity(0.0){}
 
-        uint64_t countEquiv;
+        uint64_cu countEquiv;
         double sum_v_ort_per_area;
         double sum_1_per_ort_velocity;
     };

@@ -137,6 +137,9 @@ endif (USE_COUNTER_TYPE_64)
 #set(CMAKE_CUDA_FLAGS "-arch=sm_52 -gencode=arch=compute_52,code=sm_52 -gencode=arch=compute_60,code=sm_60 -gencode=arch=compute_61,code=sm_61 -gencode=arch=compute_70,code=sm_70 -gencode=arch=compute_75,code=sm_75 -gencode=arch=compute_75,code=compute_75")
 #set(cuda_flags -gencode=arch=compute_70,code=sm_70 -gencode=arch=compute_75,code=sm_75 -gencode=arch=compute_75,code=compute_75)
 set(cuda_flags ${cuda_flags} -gencode=arch=compute_75,code=compute_75)
+if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+    set(CMAKE_CUDA_ARCHITECTURES 75)
+endif()
 
 # Enable fast math
 #if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")

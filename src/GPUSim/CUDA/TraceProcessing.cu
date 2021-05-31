@@ -1012,25 +1012,26 @@ if(prd->inSystem == 4)
 
         // self intersection
         // just try to offset continously
-        if(prd.hitFacetId == hitFacetId){
+        if(prd->hitFacetId == hitFacetId){
 #ifdef DEBUG
             /*if(bufferIndex == 0)
-                printf("[%u->%u] transparent hit self inter\n", bufferIndex, prd.nbBounces);
-*/#endif
-            prd.hitFacetId = hitFacetId;
-            prd.hitT = ray_t;
-            prd.postHitDir = ray_dir;
-            prd.hitPos = ray_orig + ray_t * ray_dir;
-            //prd.inSystem = SELF_INTERSECTION;
-            prd.inSystem = TRANSPARENT_HIT;
+                printf("[%u->%u] transparent hit self inter\n", bufferIndex, prd->nbBounces);
+            */
+#endif
+            prd->hitFacetId = hitFacetId;
+            prd->hitT = ray_t;
+            prd->postHitDir = ray_dir;
+            prd->hitPos = ray_orig + ray_t * ray_dir;
+            //prd->inSystem = SELF_INTERSECTION;
+            prd->inSystem = TRANSPARENT_HIT;
             optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos = ray_orig;
 
             setMolPRD(myPrd);
             return;
         }
 
-        prd.hitT = ray_t;
-        prd.hitPos = ray_orig + ray_t * ray_dir;
+        prd->hitT = ray_t;
+        prd->hitPos = ray_orig + ray_t * ray_dir;
 
         // first add facet hits
         const unsigned int counterIdx = hitFacetId + (bufferIndex%(EXTRAFACETCOUNTERS)) * optixLaunchParams.simConstants.nbFacets;
@@ -1047,9 +1048,9 @@ if(prd->inSystem == 4)
             //__miss__molecule();
 
             printf("[%u][%u] Back face hit on 1-sided facet should never happen!\n",bufferIndex,poly.parentIndex);
-            prd.hitFacetId = hitFacetId;
-            prd.facetHitSide = facetHitKind;
-            prd.inSystem = NEW_PARTICLE;
+            prd->hitFacetId = hitFacetId;
+            prd->facetHitSide = facetHitKind;
+            prd->inSystem = NEW_PARTICLE;
             setMolPRD(prd);
             return;
         }*/
@@ -1057,9 +1058,9 @@ if(prd->inSystem == 4)
             //__miss__molecule();
 
             //printf("[%u][%u] Back face hit on 1-sided facet should never happen!\n",bufferIndex,poly.parentIndex);
-            /*prd.hitFacetId = hitFacetId;
-            prd.facetHitSide = facetHitKind;
-            prd.inSystem = NEW_PARTICLE;
+            /*prd->hitFacetId = hitFacetId;
+            prd->facetHitSide = facetHitKind;
+            prd->inSystem = NEW_PARTICLE;
             setMolPRD(prd);
             return;*/
         }
@@ -1070,45 +1071,45 @@ if(prd->inSystem == 4)
 
 #ifdef HIT64
         const FLOAT_T velFactor = optixLaunchParams.simConstants.useMaxwell ? 1.0 : 1.1781;
-        const FLOAT_T ortVelocity = prd.velocity*fabsf(dot(ray_dir, poly.N));
-        const FLOAT_T hitEquiv = 1.0; //1.0*prd.orientationRatio; // hit=1.0 (only changed for lowflux mode)
+        const FLOAT_T ortVelocity = prd->velocity*fabsf(dot(ray_dir, poly.N));
+        const FLOAT_T hitEquiv = 1.0; //1.0*prd->orientationRatio; // hit=1.0 (only changed for lowflux mode)
 #else
         const float velFactor = optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f;
-        const float ortVelocity = prd.velocity*fabsf(dot(ray_dir, poly.N));
-        const float hitEquiv = 1.0f; //1.0*prd.orientationRatio; // hit=1.0 (only changed for lowflux mode)
+        const float ortVelocity = prd->velocity*fabsf(dot(ray_dir, poly.N));
+        const float hitEquiv = 1.0f; //1.0*prd->orientationRatio; // hit=1.0 (only changed for lowflux mode)
 #endif
 
         // replace like with self intersection, but keep position etc.
-        prd.inSystem = TRANSPARENT_HIT;
+        prd->inSystem = TRANSPARENT_HIT;
 
         /*if(optixGetHitKind() == OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE)
-            prd.inSystem = TRANSPARENT_HIT;
+            prd->inSystem = TRANSPARENT_HIT;
         else
-            prd.inSystem = TRANSPARENT_BACK_HIT;*/
+            prd->inSystem = TRANSPARENT_BACK_HIT;*/
 
         // Only increase counters if not dealing with self intersection
-        if(prd.hitFacetId != hitFacetId){
+        if(prd->hitFacetId != hitFacetId){
 
-            //printf("Registering trans hit on status %u\n",prd.inSystem);
+            //printf("Registering trans hit on status %u\n",prd->inSystem);
 
-            increaseTransparentCounter(optixLaunchParams.hitCounter[counterIdx], hitEquiv, ortVelocity, velFactor, prd.velocity);
+            increaseTransparentCounter(optixLaunchParams.hitCounter[counterIdx], hitEquiv, ortVelocity, velFactor, prd->velocity);
 #ifdef WITH_TEX
             if (poly.texProps.textureFlags & flowgpu::TEXTURE_FLAGS::countTrans) {
-                RecordTransparentTexture(poly, prd, prd.hitPos, ray_dir);
+                RecordTransparentTexture(poly, *prd, prd->hitPos, ray_dir);
             }
 #endif // WITH_TEX
 #ifdef WITH_PROF
             //printf("BOUNCE? %d != %d == %d\n",(int)poly.profProps.profileType, (int)flowgpu::PROFILE_FLAGS::noProfile,(int)poly.profProps.profileType != flowgpu::PROFILE_FLAGS::noProfile);
             if (poly.profProps.profileType != flowgpu::PROFILE_FLAGS::noProfile){
-                RecordTransparentProfile(poly, prd, prd.hitPos, ray_dir);
+                RecordTransparentProfile(poly, *prd, prd->hitPos, ray_dir);
             }
 #endif
         }
-        prd.hitFacetId = hitFacetId;
-        prd.postHitDir = ray_dir;
-        prd.facetHitSide = facetHitKind;
+        prd->hitFacetId = hitFacetId;
+        prd->postHitDir = ray_dir;
+        prd->facetHitSide = facetHitKind;
 
-        optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos = prd.hitPos;
+        optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos = prd->hitPos;
         optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].postHitDir = ray_dir;
 
         /*#ifdef DEBUG

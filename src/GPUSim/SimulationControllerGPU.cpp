@@ -289,6 +289,7 @@ unsigned long long int SimulationControllerGPU::GetSimulationData(bool silent) {
     try {
         optixHandle->downloadDataFromDevice(&data); //download tmp counters
         IncreaseGlobalCounters(&data); //increase global counters
+        UpdateGlobalFigures();
 
         if(printCounters) PrintTotalCounters();
         optixHandle->resetDeviceBuffers(); //reset tmp counters
@@ -688,6 +689,21 @@ void SimulationControllerGPU::PrintData()
     std::cout << " total  abs >>> "<< total_abs<<std::endl;
     std::cout << " total  des >>> "<< total_des<<std::endl;
     std::cout << " total miss >>> "<< *data.leakCounter.data()<< " -- miss/hit ratio: "<<(double)(*data.leakCounter.data()) / total_counter <<std::endl;*/
+}
+
+/*! download the rendered color buffer and return the total amount of hits (= followed rays) */
+void SimulationControllerGPU::UpdateGlobalFigures()
+{
+    uint64_t prevDes = globFigures.total_des;
+
+    for(unsigned int i = 0; i < globalCounter.facetHitCounters.size(); i++) {
+        globFigures.total_counter += globalCounter.facetHitCounters[i].nbMCHit; // let misses count as 0 (-1+1)
+        //if(endCalled) figures.ndes_stop += globalCounter.facetHitCounters[i].nbDesorbed;
+        globFigures.total_des += globalCounter.facetHitCounters[i].nbDesorbed; // let misses count as 0 (-1+1)
+        globFigures.total_absd += globalCounter.facetHitCounters[i].nbAbsEquiv; // let misses count as 0 (-1+1)
+    }
+    if(endCalled)
+        globFigures.ndes_stop += globFigures.total_des - prevDes;
 }
 
 /*! download the rendered color buffer and return the total amount of hits (= followed rays) */

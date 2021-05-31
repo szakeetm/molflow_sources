@@ -134,8 +134,8 @@ namespace flowgpu {
                 sum_1_per_velocity(0.0) , sum_v_ort(0.0)
         {};
         // Counts
-        uint64_t nbMCHit;                   // Number of hits
-        uint64_t nbDesorbed;                // Number of desorbed molec
+        uint64_cu nbMCHit;                   // Number of hits
+        uint64_cu nbDesorbed;                // Number of desorbed molec
         double nbAbsEquiv;                   // Equivalent number of absorbed molecules
         double nbHitEquiv;                   //Equivalent number of hits, used for low-flux impingement rate and density calculation
         double sum_1_per_ort_velocity;       // sum of reciprocials of orthogonal velocity components, used to determine the density, regardless of facet orientation

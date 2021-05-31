@@ -261,23 +261,23 @@ float3 getNewDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& poly,
     FLOAT_T theta = 0.0f;
 #ifdef RNG64
     if(poly.desProps.desorbType == 2 || poly.desProps.desorbType == 0) {
-        theta = acosf(sqrtf((double) hitData.rndDirection[0]));
+        theta = acos(sqrt((double) hitData.rndDirection[0]));
     }
     else if (poly.desProps.desorbType == 3) {
-        theta = acosf(powf((double) hitData.rndDirection[0], (1.0f / (poly.desProps.cosineExponent + 1.0f))));
+        theta = acos(pow((double) hitData.rndDirection[0], (1.0 / (poly.desProps.cosineExponent + 1.0))));
     }
     else if (poly.desProps.desorbType == 1) {
-        theta = acosf((double) hitData.rndDirection[0]);
+        theta = acos((double) hitData.rndDirection[0]);
     }
 #else
     if(poly.desProps.desorbType == 2 || poly.desProps.desorbType == 0) {
-        theta = acos(sqrt(hitData.rndDirection[0]));
+        theta = acosf(sqrtf(hitData.rndDirection[0]));
     }
     else if (poly.desProps.desorbType == 3) {
-        theta = acos(pow(hitData.rndDirection[0], (1.0 / (poly.desProps.cosineExponent + 1.0))));
+        theta = acosf(powf(hitData.rndDirection[0], (1.0f / (poly.desProps.cosineExponent + 1.0f))));
     }
     else if (poly.desProps.desorbType == 1) {
-        theta = acos(hitData.rndDirection[0]);
+        theta = acosf(hitData.rndDirection[0]);
     }
 #endif
     else{
@@ -293,9 +293,9 @@ float3 getNewDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& poly,
 #endif
 
 #ifdef RNG64
-    const float u = sin(theta)*cos(phi);
-    const float v = sin(theta)*sin(phi);
-    const float n = cos(theta);
+    const FLOAT_T u = sin(theta)*cos(phi);
+    const FLOAT_T v = sin(theta)*sin(phi);
+    const FLOAT_T n = cos(theta);
 #else
     const float u = sinf(theta)*cosf(phi);
     const float v = sinf(theta)*sinf(phi);
@@ -306,11 +306,20 @@ float3 getNewDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& poly,
     /*float3 nU = rayGenData->poly[facIndex].nU;
     float3 nV = rayGenData->poly[facIndex].nV;
     float3 N = rayGenData->poly[facIndex].N;*/
+
+#ifdef RNG64
+    const double3 nU = make_double3(poly.nU);
+    const double3 nV = make_double3(poly.nV);
+    const double3 N = make_double3(poly.N);
+    double3 ret = (u*nU + v*nV + n*N);
+    return make_float3(u*nU + v*nV + n*N);
+#else
     const float3 nU = poly.nU;
     const float3 nV = poly.nV;
     const float3 N = poly.N;
 
     return u*nU + v*nV + n*N;
+#endif
     /*if (rayDir.x != 0.0) rayDir.x = 1.0 / rayDir.x;
     if (rayDir.y != 0.0) rayDir.y = 1.0 / rayDir.y;
     if (rayDir.z != 0.0) rayDir.z = 1.0 / rayDir.z;

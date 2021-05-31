@@ -378,7 +378,7 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
         const FLOAT_T velocity = hitData.velocity;
         const FLOAT_T ortVelocity = velocity*fabsf(dot(rayDir, polyNormal));
 
-        atomicAdd(&hitCounter.nbDesorbed, static_cast<uint64_t>(1));
+        atomicAdd(&hitCounter.nbDesorbed, static_cast<uint64_cu>(1));
         atomicAdd(&hitCounter.sum_1_per_ort_velocity, (2.0 / ortVelocity));//prd.oriRatio * sum_1_per_v;
         atomicAdd(&hitCounter.sum_v_ort, velFactor*ortVelocity);//(sHandle->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity; //prd.oriRatio * sum_v_ort;
         atomicAdd(&hitCounter.sum_1_per_velocity, 1.0 / velocity);//(hitEquiv + static_cast<double>(desorb)) / prd.velocity;
@@ -419,7 +419,7 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
         const FLOAT_T velocity_factor = 2.0;
         const FLOAT_T ortSpeedFactor = 1.0;
         const FLOAT_T ortVelocity = (optixLaunchParams.simConstants.useMaxwell ? 1.0 : 1.1781) * hitData.velocity*fabs(dot(rayDir, poly.N)); //surface-orthogonal velocity component
-        atomicAdd(&tex.countEquiv, static_cast<uint64_t>(1));
+        atomicAdd(&tex.countEquiv, static_cast<uint64_cu>(1));
         atomicAdd(&tex.sum_1_per_ort_velocity, 1.0 * velocity_factor / ortVelocity);
         atomicAdd(&tex.sum_v_ort_per_area, 1.0 * ortSpeedFactor * ortVelocity * optixLaunchParams.sharedData.texelInc[facetTex.texelOffset + add]); // sum ortho_velocity[m/s] / cell_area[cm2]
 #else
@@ -563,8 +563,8 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
 
     //const __device__ float offset_val = 1.0f/64.0f;
     //const __device__ float offset_val_n = -1.0f/64.0f;
-    const __device__ float offset_val = 1.0f/1.0f;
-    const __device__ float offset_val_n = -1.0f/1.0f;
+    const __device__ float offset_val = 8.0f/1.0f;
+    const __device__ float offset_val_n = -8.0f/1.0f;
     //------------------------------------------------------------------------------
     // ray gen program - the actual rendering happens in here
     //------------------------------------------------------------------------------
