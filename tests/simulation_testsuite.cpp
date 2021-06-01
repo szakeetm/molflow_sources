@@ -493,7 +493,7 @@ namespace {
 
             auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.01, 0.1);
             EXPECT_NE(0, diff_glob);
-            printf("[Warning] Geometry has %d facets for %d des!\n", model.facets.size(), globState.globalHits.globalHits.nbDesorbed);
+            printf("[Warning] Geometry has %zu facets for %zu des!\n", model.facets.size(), globState.globalHits.globalHits.nbDesorbed);
             if(diff_loc <= 0)
                 fprintf(stderr, "[Warning] No local differences found!\n");
             if(diff_fine <= 0)

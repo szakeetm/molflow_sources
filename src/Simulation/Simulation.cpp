@@ -287,7 +287,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
 #if defined(USE_KDTREE)
     model.kdtree.clear();
     for (size_t s = 0; s < model.sh.nbSuper; ++s) {
-        model.kdtree.emplace_back(primPointers[s], 80, 1, );
+        model.kdtree.emplace_back(primPointers[s], 80);
     }
 #else
     //std::vector<BVHAccel> bvhs;

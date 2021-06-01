@@ -237,7 +237,7 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
         for (i = 0; i < nbStep /*&& allQuit <= 0*/; i++) {
             if (insertNewParticle) {
                 // quit on desorp error or limit reached
-                if(remainingDes==0 || !StartFromSource()){
+                if((model->otfParams.desorptionLimit > 0 && remainingDes==0) || !StartFromSource()){
                     returnVal = false; // desorp limit reached
                     break;
                 }
