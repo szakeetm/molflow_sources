@@ -912,7 +912,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
         {
             auto& prof_lhs = facetCounter_lhs.profile;
             auto& prof_rhs = facetCounter_rhs.profile;
-            
+
             for (int id = 0; id < prof_lhs.size(); ++id) {
                 if(std::sqrt(std::max(1.0,std::min(prof_lhs[id].countEquiv, prof_rhs[id].countEquiv))) < 10) {
                     // Sample size not large enough
@@ -993,7 +993,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                 //}
             } // end for comp dir
         }
-        
+
         //facet hist
         {
             auto& hist_lhs = facetCounter_lhs.histogram;

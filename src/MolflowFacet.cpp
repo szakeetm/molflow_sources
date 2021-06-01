@@ -268,8 +268,14 @@ void InterfaceFacet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bo
 		if ((hasOutgassingFile) && outgNode && outgNode.child("map")) {
 			ogMap.outgassingMapWidth = outgNode.attribute("width").as_int();
 			ogMap.outgassingMapHeight = outgNode.attribute("height").as_int();
-			ogMap.outgassingFileRatio = outgNode.attribute("ratio").as_double();
-            ogMap.totalDose = outgNode.attribute("totalDose").as_double();
+			if (outgNode.attribute("ratioU")) { //New format supporting non-square textures
+				ogMap.outgassingFileRatioU = outgNode.attribute("ratioU").as_double();
+				ogMap.outgassingFileRatioV = outgNode.attribute("ratioV").as_double();
+			}
+			else { //Old format for square textures
+				ogMap.outgassingFileRatioU = ogMap.outgassingFileRatioV = outgNode.attribute("ratio").as_double();
+			}
+			ogMap.totalDose = outgNode.attribute("totalDose").as_double();
 			sh.totalOutgassing = outgNode.attribute("totalOutgassing").as_double();
             ogMap.totalFlux = outgNode.attribute("totalFlux").as_double();
 
@@ -1152,7 +1158,8 @@ void  InterfaceFacet::SaveXML_geom(pugi::xml_node f) {
 		xml_node textureNode = f.append_child("DynamicOutgassing");
 		textureNode.append_attribute("width") = ogMap.outgassingMapWidth;
 		textureNode.append_attribute("height") = ogMap.outgassingMapHeight;
-		textureNode.append_attribute("ratio") = ogMap.outgassingFileRatio;
+		textureNode.append_attribute("ratioU") = ogMap.outgassingFileRatioU;
+		textureNode.append_attribute("ratioV") = ogMap.outgassingFileRatioV;
 		textureNode.append_attribute("totalDose") = ogMap.totalDose;
 		textureNode.append_attribute("totalOutgassing") = sh.totalOutgassing;
 		textureNode.append_attribute("totalFlux") = ogMap.totalFlux;

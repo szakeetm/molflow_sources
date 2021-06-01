@@ -2122,7 +2122,8 @@ void MolflowGeometry::ImportDesorption_SYN(
 			f->ogMap.outgassingMapHeight = (size_t)ceil(ydims[i] * 0.9999999);
 
 			if (f->selected) {
-				f->ogMap.outgassingFileRatio = xdims[i] / f->sh.U.Norme();
+				f->ogMap.outgassingFileRatioU = xdims[i] / f->sh.U.Norme();
+				f->sh.outgassingFileRatioV = ydims[i] / f->sh.V.Norme();
 				try {
 					std::vector<double>(f->ogMap.outgassingMapWidth*f->ogMap.outgassingMapHeight).swap(f->ogMap.outgassingMap);
 				}

@@ -341,7 +341,7 @@ char *FacetDetails::FormatCell(size_t idx, InterfaceFacet *f, size_t mode) {
       }
       break;
     case 13:
-        if(f->tRatioU == f->tRatioV)
+        if(IsEqual(f->tRatioU,f->tRatioV))
             sprintf(ret,"%g",f->tRatioU);
         else
             sprintf(ret,"%g x %g",f->tRatioU,f->tRatioV);
