@@ -335,7 +335,7 @@ char *FacetDetails::FormatCell(size_t idx, InterfaceFacet *f, size_t mode) {
       break;
     case 12:
       if( f->sh.isTextured ) {
-        sprintf(ret,"%zdx%zd (%g x %g)",f->sh.texWidth,f->sh.texHeight,f->sh.texWidthD,f->sh.texHeightD);
+        sprintf(ret,"%zdx%zd (%g x %g)",f->sh.texWidth,f->sh.texHeight,f->sh.texWidth_precise,f->sh.texHeight_precise);
       } else {
         sprintf(ret,"None");
       }
