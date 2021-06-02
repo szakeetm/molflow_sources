@@ -102,13 +102,13 @@ size_t SubprocessFacet::InitializeTexture(const size_t &nbMoments)
             return false;
         }*/
         // Texture increment of a full texture element
-        double fullSizeInc = (sh.texWidthD * sh.texHeightD) / (sh.U.Norme() * sh.V.Norme());
+        double fullSizeInc = (sh.texWidth_precise * sh.texHeight_precise) / (sh.U.Norme() * sh.V.Norme());
         for (size_t j = 0; j < nbE; j++) { //second pass, filter out very small cells
             largeEnough[j] = textureCellIncrements[j] < (5.0*fullSizeInc);
         }
 
-        //double iw = 1.0 / (double)sh.texWidthD;
-        //double ih = 1.0 / (double)sh.texHeightD;
+        //double iw = 1.0 / (double)sh.texWidth_precise;
+        //double ih = 1.0 / (double)sh.texHeight_precise;
         //double rw = sh.U.Norme() * iw;
         //double rh = sh.V.Norme() * ih;
     }
@@ -212,8 +212,8 @@ void SubprocessFacet::InitializeOutgassingMap()
 {
     if (sh.useOutgassingFile) {
         //Precalc actual outgassing map width and height for faster generation:
-        ogMap.outgassingMapWidthD = sh.U.Norme() * ogMap.outgassingFileRatio;
-        ogMap.outgassingMapHeightD = sh.V.Norme() * ogMap.outgassingFileRatio;
+        ogMap.outgassingMapWidth_precise = sh.U.Norme() * ogMap.outgassingFileRatioU;
+        ogMap.outgassingMapHeight_precise = sh.V.Norme() * ogMap.outgassingFileRatioV;
         size_t nbE = ogMap.outgassingMapWidth*ogMap.outgassingMapHeight;
         // TODO: Check with molflow_threaded e10c2a6f and 66b89ac7 if right
         // making a copy shouldn't be necessary as i will never get changed before use
@@ -363,16 +363,16 @@ int SimulationModel::InitialiseFacets() {
 
         // Set some texture parameters
         // bool Facet::SetTexture(double width, double height, bool useMesh)
-        if (facet.sh.texWidthD * facet.sh.texHeightD > 0.0000001) {
+        if (facet.sh.texWidth_precise * facet.sh.texHeight_precise > 0.0000001) {
             const double ceilCutoff = 0.9999999;
-            facet.sh.texWidth = (int) std::ceil(facet.sh.texWidthD *
+            facet.sh.texWidth = (int) std::ceil(facet.sh.texWidth_precise *
                                                 ceilCutoff); //0.9999999: cut the last few digits (convert rounding error 1.00000001 to 1, not 2)
-            facet.sh.texHeight = (int) std::ceil(facet.sh.texHeightD * ceilCutoff);
+            facet.sh.texHeight = (int) std::ceil(facet.sh.texHeight_precise * ceilCutoff);
         } else {
             facet.sh.texWidth = 0;
             facet.sh.texHeight = 0;
-            facet.sh.texWidthD = 0.0;
-            facet.sh.texHeightD = 0.0;
+            facet.sh.texWidth_precise = 0.0;
+            facet.sh.texHeight_precise = 0.0;
         }
     }
 
@@ -964,7 +964,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
         {
             auto& prof_lhs = facetCounter_lhs.profile;
             auto& prof_rhs = facetCounter_rhs.profile;
-            
+
             for (int id = 0; id < prof_lhs.size(); ++id) {
                 if(std::sqrt(std::max(1.0,std::min(prof_lhs[id].countEquiv, prof_rhs[id].countEquiv))) < 10) {
                     // Sample size not large enough
@@ -1045,7 +1045,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                 //}
             } // end for comp dir
         }
-        
+
         //facet hist
         {
             auto& hist_lhs = facetCounter_lhs.histogram;

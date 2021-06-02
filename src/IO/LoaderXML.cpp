@@ -725,8 +725,8 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
         facet->sh.anglemapParams.thetaHigherRes = recNode.child("IncidentAngleMap").attribute("thetaHigherRes").as_ullong();
     }
     xml_node texNode = recNode.child("Texture");
-    facet->sh.texWidthD = texNode.attribute("texDimX").as_double();
-    facet->sh.texHeightD = texNode.attribute("texDimY").as_double();
+    facet->sh.texWidth_precise = texNode.attribute("texDimX").as_double();
+    facet->sh.texHeight_precise = texNode.attribute("texDimY").as_double();
     facet->sh.countDes = texNode.attribute("countDes").as_bool();
     facet->sh.countAbs = texNode.attribute("countAbs").as_bool();
     facet->sh.countRefl = texNode.attribute("countRefl").as_bool();
@@ -738,7 +738,13 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
     if ((hasOutgassingFile) && outgNode && outgNode.child("map")) {
         facet->ogMap.outgassingMapWidth = outgNode.attribute("width").as_int();
         facet->ogMap.outgassingMapHeight = outgNode.attribute("height").as_int();
-        facet->ogMap.outgassingFileRatio = outgNode.attribute("ratio").as_double();
+        if (outgNode.attribute("ratioU")) { //New format supporting non-square textures
+            facet->ogMap.outgassingFileRatioU = outgNode.attribute("ratioU").as_double();
+            facet->ogMap.outgassingFileRatioV = outgNode.attribute("ratioV").as_double();
+        }
+        else { //Old format for square textures
+            facet->ogMap.outgassingFileRatioU = facet->ogMap.outgassingFileRatioV = outgNode.attribute("ratio").as_double();
+        }
         facet->ogMap.totalDose = outgNode.attribute("totalDose").as_double();
         facet->sh.totalOutgassing = outgNode.attribute("totalOutgassing").as_double();
         facet->ogMap.totalFlux = outgNode.attribute("totalFlux").as_double();
@@ -772,7 +778,8 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
         hasOutgassingFile = facet->sh.useOutgassingFile = false; //if outgassing map was incorrect, don't use it
         facet->ogMap.outgassingMapWidth = 0;
         facet->ogMap.outgassingMapHeight = 0;
-        facet->ogMap.outgassingFileRatio = 0.0;
+        facet->ogMap.outgassingFileRatioU = 0.0;
+        facet->ogMap.outgassingFileRatioV = 0.0;
         facet->ogMap.totalDose = 0.0;
         facet->sh.totalOutgassing = 0.0;
         facet->ogMap.totalFlux = 0.0;
@@ -847,7 +854,7 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
     //Update flags
     facet->sh.isProfile = (facet->sh.profileType != PROFILE_NONE);
     //wp.isOpaque = (wp.opacity != 0.0);
-    facet->sh.isTextured = ((facet->sh.texWidthD * facet->sh.texHeightD) > 0);
+    facet->sh.isTextured = ((facet->sh.texWidth_precise * facet->sh.texHeight_precise) > 0);
 }
 
 /*

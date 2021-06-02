@@ -51,8 +51,8 @@ FacetProperties::FacetProperties(size_t nbIndices) {
 
     texWidth = 0;
     texHeight = 0;
-    texWidthD = 0.0;
-    texHeightD = 0.0;
+    texWidth_precise = 0.0;
+    texHeight_precise = 0.0;
     center.x = 0.0;
     center.y = 0.0;
     center.z = 0.0;

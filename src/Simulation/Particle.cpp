@@ -524,21 +524,21 @@ bool Particle::StartFromSource() {
             auto& outgMap = src->ogMap;
             if (mapPositionW < (outgMap.outgassingMapWidth - 1)) {
                 //Somewhere in the middle of the facet
-                u = ((double) mapPositionW + randomGenerator.rnd()) / outgMap.outgassingMapWidthD;
+                u = ((double) mapPositionW + randomGenerator.rnd()) / outgMap.outgassingMapWidth_precise;
             } else {
                 //Last element, prevent from going out of facet
                 u = ((double) mapPositionW +
-                     randomGenerator.rnd() * (outgMap.outgassingMapWidthD - (outgMap.outgassingMapWidth - 1.0))) /
-                        outgMap.outgassingMapWidthD;
+                     randomGenerator.rnd() * (outgMap.outgassingMapWidth_precise - (outgMap.outgassingMapWidth - 1.0))) /
+                    outgMap.outgassingMapWidth_precise;
             }
             if (mapPositionH < (outgMap.outgassingMapHeight - 1)) {
                 //Somewhere in the middle of the facet
-                v = ((double) mapPositionH + randomGenerator.rnd()) / outgMap.outgassingMapHeightD;
+                v = ((double) mapPositionH + randomGenerator.rnd()) / outgMap.outgassingMapHeight_precise;
             } else {
                 //Last element, prevent from going out of facet
                 v = ((double) mapPositionH +
-                     randomGenerator.rnd() * (outgMap.outgassingMapHeightD - (outgMap.outgassingMapHeight - 1.0))) /
-                        outgMap.outgassingMapHeightD;
+                     randomGenerator.rnd() * (outgMap.outgassingMapHeight_precise - (outgMap.outgassingMapHeight - 1.0))) /
+                    outgMap.outgassingMapHeight_precise;
             }
         } else {
             u = randomGenerator.rnd();
@@ -562,8 +562,8 @@ bool Particle::StartFromSource() {
             auto& outgMap = src->ogMap;
             //double uLength = sqrt(pow(src->sh.U.x, 2) + pow(src->sh.U.y, 2) + pow(src->sh.U.z, 2));
             //double vLength = sqrt(pow(src->sh.V.x, 2) + pow(src->sh.V.y, 2) + pow(src->sh.V.z, 2));
-            double u = ((double) mapPositionW + 0.5) / outgMap.outgassingMapWidthD;
-            double v = ((double) mapPositionH + 0.5) / outgMap.outgassingMapHeightD;
+            double u = ((double) mapPositionW + 0.5) / outgMap.outgassingMapWidth_precise;
+            double v = ((double) mapPositionH + 0.5) / outgMap.outgassingMapHeight_precise;
             position = src->sh.O + u * src->sh.U + v * src->sh.V;
             tmpFacetVars[src->globalId].colU = u;
             tmpFacetVars[src->globalId].colV = v;
@@ -915,8 +915,8 @@ void
 Particle::RecordHitOnTexture(const SubprocessFacet *f, int m, bool countHit, double velocity_factor,
                              double ortSpeedFactor) {
 
-    size_t tu = (size_t) (tmpFacetVars[f->globalId].colU * f->sh.texWidthD);
-    size_t tv = (size_t) (tmpFacetVars[f->globalId].colV * f->sh.texHeightD);
+    size_t tu = (size_t) (tmpFacetVars[f->globalId].colU * f->sh.texWidth_precise);
+    size_t tv = (size_t) (tmpFacetVars[f->globalId].colV * f->sh.texHeight_precise);
     size_t add = tu + tv * (f->sh.texWidth);
     double ortVelocity = (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * velocity *
                          std::abs(Dot(direction,
@@ -941,8 +941,8 @@ Particle::RecordHitOnTexture(const SubprocessFacet *f, int m, bool countHit, dou
 }
 
 void Particle::RecordDirectionVector(const SubprocessFacet *f, int m) {
-    size_t tu = (size_t) (tmpFacetVars[f->globalId].colU * f->sh.texWidthD);
-    size_t tv = (size_t) (tmpFacetVars[f->globalId].colV * f->sh.texHeightD);
+    size_t tu = (size_t) (tmpFacetVars[f->globalId].colU * f->sh.texWidth_precise);
+    size_t tv = (size_t) (tmpFacetVars[f->globalId].colV * f->sh.texHeight_precise);
     size_t add = tu + tv * (f->sh.texWidth);
 
     {

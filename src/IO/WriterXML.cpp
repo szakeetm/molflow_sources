@@ -570,8 +570,8 @@ void WriterXML::SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
 
     t.append_attribute("hasMesh") = (facet->sh.countAbs || facet->sh.countDes || facet->sh.countRefl ||
                                      facet->sh.countTrans);
-    t.append_attribute("texDimX") = facet->sh.texWidthD;
-    t.append_attribute("texDimY") = facet->sh.texHeightD;
+    t.append_attribute("texDimX") = facet->sh.texWidth_precise;
+    t.append_attribute("texDimY") = facet->sh.texHeight_precise;
     t.append_attribute("countDes") = (int) facet->sh.countDes; //backward compatibility: 0 or 1
     t.append_attribute("countAbs") = (int) facet->sh.countAbs; //backward compatibility: 0 or 1
     t.append_attribute("countRefl") = (int) facet->sh.countRefl; //backward compatibility: 0 or 1
@@ -607,7 +607,8 @@ void WriterXML::SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
         xml_node textureNode = facetNode.append_child("DynamicOutgassing");
         textureNode.append_attribute("width") = facet->ogMap.outgassingMapWidth;
         textureNode.append_attribute("height") = facet->ogMap.outgassingMapHeight;
-        textureNode.append_attribute("ratio") = facet->ogMap.outgassingFileRatio;
+        textureNode.append_attribute("ratioU") = facet->ogMap.outgassingFileRatioU;
+        textureNode.append_attribute("ratioV") = facet->ogMap.outgassingFileRatioV;
         textureNode.append_attribute("totalDose") = facet->ogMap.totalDose;
         textureNode.append_attribute("totalOutgassing") = facet->sh.totalOutgassing;
         textureNode.append_attribute("totalFlux") = facet->ogMap.totalFlux;
