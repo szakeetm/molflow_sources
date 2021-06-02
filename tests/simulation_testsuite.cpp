@@ -470,7 +470,7 @@ namespace {
             GlobalSimuState oldState = globState;
             globState.Reset();
             Settings::desLimit.clear();
-            Settings::desLimit.emplace_back(100);
+            Settings::desLimit.emplace_back(1000);
             Initializer::initDesLimit(model, globState);
 
             simManager.ResetHits();
@@ -491,8 +491,11 @@ namespace {
             EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
             EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
 
-            auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.01, 0.1);
-            EXPECT_NE(0, diff_glob);
+            auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.001, 0.001);
+            if(diff_glob > 0)
+                EXPECT_NE(0, diff_glob);
+            else
+                EXPECT_NE(0, diff_loc);
             printf("[Warning] Geometry has %zu facets for %zu des!\n", model.facets.size(), globState.globalHits.globalHits.nbDesorbed);
             if(diff_loc <= 0)
                 fprintf(stderr, "[Warning] No local differences found!\n");
