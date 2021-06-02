@@ -2,6 +2,7 @@
 // Created by pascal on 2/5/21.
 //
 
+#include <set>
 #include <Helper/Chronometer.h>
 #include <Helper/MathTools.h>
 #include <cmath>
@@ -310,11 +311,24 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
 
             if (found) {
                 // Second pass for transparent hits
+#if defined(USE_KDTREE)
+                {
+                    std::set<size_t> alreadyHit;
+                    for (const auto &tpFacet : transparentHitBuffer) {
+                        if (tpFacet && alreadyHit.find(tpFacet->globalId) == alreadyHit.end()) {
+                            RegisterTransparentPass(tpFacet);
+                            alreadyHit.insert(tpFacet->globalId);
+                        }
+                    }
+                }
+#else
                 for (const auto &tpFacet : transparentHitBuffer) {
                     if (tpFacet) {
                         RegisterTransparentPass(tpFacet);
                     }
                 }
+#endif
+
                 // Move particle to intersection point
                 position =
                         position + d * direction;
