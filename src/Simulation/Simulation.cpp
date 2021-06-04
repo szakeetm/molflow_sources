@@ -255,8 +255,15 @@ int Simulation::RebuildAccelStructure() {
             return 1;
         std::vector<double> probabilities;
         probabilities.reserve(globState->facetStates.size());
-        for(auto& state : globState->facetStates) {
+        /*for(auto& state : globState->facetStates) {
             probabilities.emplace_back(state.momentResults[0].hits.nbHitEquiv / globState->globalHits.globalHits.nbHitEquiv);
+        }*/
+        size_t sumCount = 0;
+        for(auto& fac : model.facets) {
+            sumCount += fac->iSCount;
+        }
+        for(auto& fac : model.facets) {
+            probabilities.emplace_back((double)fac->iSCount / (double)sumCount);
         }
         for (size_t s = 0; s < model.sh.nbSuper; ++s) {
             model.bvhs.emplace_back(primPointers[s], 2, BVHAccel::SplitMethod::ProbSplit, probabilities);
