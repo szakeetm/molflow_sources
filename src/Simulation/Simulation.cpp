@@ -192,7 +192,7 @@ int Simulation::RebuildAccelStructure() {
 #if defined(USE_OLD_BVH)
     std::vector<std::vector<SubprocessFacet*>> facetPointers;
     facetPointers.resize(model.sh.nbSuper);
-    for(auto& sFac : simModel->facets){
+    for(auto& sFac : model.facets){
         // TODO: Build structures
         if (sFac->sh.superIdx == -1) { //Facet in all structures
             for (auto& fp_vec : facetPointers) {
@@ -243,9 +243,33 @@ int Simulation::RebuildAccelStructure() {
 
 #if defined(USE_KDTREE)
     model.kdtree.clear();
-    for (size_t s = 0; s < model.sh.nbSuper; ++s) {
-        model.kdtree.emplace_back(primPointers[s], 80);
+
+    if(globState->initialized && globState->globalHits.globalHits.nbDesorbed > 0){
+        if(globState->facetStates.size() != model.facets.size())
+            return 1;
+        std::vector<double> probabilities;
+        probabilities.reserve(globState->facetStates.size());
+        for(auto& state : globState->facetStates) {
+            probabilities.emplace_back(state.momentResults[0].hits.nbHitEquiv / globState->globalHits.globalHits.nbHitEquiv);
+        }
+        /*size_t sumCount = 0;
+        for(auto& fac : model.facets) {
+            sumCount += fac->iSCount;
+        }
+        for(auto& fac : model.facets) {
+            probabilities.emplace_back((double)fac->iSCount / (double)sumCount);
+        }*/
+        for (size_t s = 0; s < model.sh.nbSuper; ++s) {
+            model.kdtree.emplace_back(primPointers[s], probabilities);
+        }
     }
+    else {
+        for (size_t s = 0; s < model.sh.nbSuper; ++s) {
+            model.kdtree.emplace_back(primPointers[s]);
+        }
+    }
+
+
 #else
     //std::vector<BVHAccel> bvhs;
     model.bvhs.clear();
@@ -255,16 +279,16 @@ int Simulation::RebuildAccelStructure() {
             return 1;
         std::vector<double> probabilities;
         probabilities.reserve(globState->facetStates.size());
-        /*for(auto& state : globState->facetStates) {
+        for(auto& state : globState->facetStates) {
             probabilities.emplace_back(state.momentResults[0].hits.nbHitEquiv / globState->globalHits.globalHits.nbHitEquiv);
-        }*/
-        size_t sumCount = 0;
+        }
+        /*size_t sumCount = 0;
         for(auto& fac : model.facets) {
             sumCount += fac->iSCount;
         }
         for(auto& fac : model.facets) {
             probabilities.emplace_back((double)fac->iSCount / (double)sumCount);
-        }
+        }*/
         for (size_t s = 0; s < model.sh.nbSuper; ++s) {
             model.bvhs.emplace_back(primPointers[s], 2, BVHAccel::SplitMethod::ProbSplit, probabilities);
         }
@@ -389,7 +413,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
 #if defined(USE_KDTREE)
     model.kdtree.clear();
     for (size_t s = 0; s < model.sh.nbSuper; ++s) {
-        model.kdtree.emplace_back(primPointers[s], 80);
+        model.kdtree.emplace_back(primPointers[s]);
     }
 #else
     //std::vector<BVHAccel> bvhs;
