@@ -906,7 +906,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 		double p = (double)i / (double)sh.nbFacet;
 		prg->SetProgress(p);
 		InterfaceFacet *f = facets[i];
-		if (!f->SetTexture(f->sh.texWidthD, f->sh.texHeightD, f->hasMesh)) {
+		if (!f->SetTexture(f->sh.texWidth_precise, f->sh.texHeight_precise, f->hasMesh)) {
 			char errMsg[512];
 			sprintf(errMsg, "Not enough memory to build mesh on Facet %d. ", i + 1);
 			throw Error(errMsg);
@@ -915,8 +915,8 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
         const double nU = f->sh.U.Norme();
         const double nV = f->sh.V.Norme();
 
-        f->tRatioU = f->sh.texWidthD / nU;
-        f->tRatioV = f->sh.texHeightD / nV;
+        f->tRatioU = f->sh.texWidth_precise / nU;
+        f->tRatioV = f->sh.texHeight_precise / nV;
 
         if(std::abs(f->tRatioU - f->tRatioV) <= DBL_EPSILON){
             f->tRatioV = f->tRatioU;
@@ -1174,10 +1174,10 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
 		double p = (double)i / (double)sh.nbFacet;
 		prg->SetProgress(p);
 		InterfaceFacet *f = facets[i];
-		//f->SetTexture(f->wp.texWidthD,f->wp.texHeightD,f->hasMesh);
+		//f->SetTexture(f->wp.texWidth_precise,f->wp.texHeight_precise,f->hasMesh);
 		BuildFacetList(f);
 		//double nU = &(f->wp.U).Norme();
-		//f->tRatio = f->wp.texWidthD / nU;
+		//f->tRatio = f->wp.texWidth_precise / nU;
 	}
 	//return result;
 
@@ -2122,7 +2122,8 @@ void MolflowGeometry::ImportDesorption_SYN(
 			f->ogMap.outgassingMapHeight = (size_t)ceil(ydims[i] * 0.9999999);
 
 			if (f->selected) {
-				f->ogMap.outgassingFileRatio = xdims[i] / f->sh.U.Norme();
+				f->ogMap.outgassingFileRatioU = xdims[i] / f->sh.U.Norme();
+				f->sh.outgassingFileRatioV = ydims[i] / f->sh.V.Norme();
 				try {
 					std::vector<double>(f->ogMap.outgassingMapWidth*f->ogMap.outgassingMapHeight).swap(f->ogMap.outgassingMap);
 				}
@@ -2293,13 +2294,13 @@ void MolflowGeometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, 
 			(*nbTextured)++;
 			SelectFacet(i);
 			/*file->ReadKeyword("texDimX");file->ReadKeyword(":");
-			if ((this->GetFacet(i)->wp.texWidthD-file->ReadDouble())>1E-8) {
+			if ((this->GetFacet(i)->wp.texWidth_precise-file->ReadDouble())>1E-8) {
 			(*nbDifferent)++;
 			continue;
 
 			}
 			file->ReadKeyword("texDimY");file->ReadKeyword(":");
-			if ((this->GetFacet(i)->wp.texHeightD-file->ReadDouble())>1E-8) {
+			if ((this->GetFacet(i)->wp.texHeight_precise-file->ReadDouble())>1E-8) {
 			(*nbDifferent)++;
 			}*/
 
@@ -3333,7 +3334,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 
 		progressDlg->SetProgress(p);
 		InterfaceFacet *f = facets[i];
-		if (!f->SetTexture(f->sh.texWidthD, f->sh.texHeightD, f->hasMesh)) {
+		if (!f->SetTexture(f->sh.texWidth_precise, f->sh.texHeight_precise, f->hasMesh)) {
 			char errMsg[512];
 			sprintf(errMsg, "Not enough memory to build mesh on Facet %zd. ", i + 1);
 			throw Error(errMsg);
@@ -3342,8 +3343,8 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
         const double nU = f->sh.U.Norme();
         const double nV = f->sh.V.Norme();
 
-        f->tRatioU = f->sh.texWidthD / nU;
-        f->tRatioV = f->sh.texHeightD / nV;
+        f->tRatioU = f->sh.texWidth_precise / nU;
+        f->tRatioV = f->sh.texHeight_precise / nV;
 
         if(std::abs(f->tRatioU - f->tRatioV) <= DBL_EPSILON){
             f->tRatioV = f->tRatioU;

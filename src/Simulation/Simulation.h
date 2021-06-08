@@ -47,6 +47,8 @@ public:
     std::pair<int, std::optional<std::string>> SanityCheckModel(bool strictCheck) override;
     void ClearSimulation() override;
     size_t LoadSimulation(char *loadStatus) override;
+    int RebuildAccelStructure() override;
+
     void ResetSimulation() override;
 
     size_t GetHitsSize() override;
@@ -82,5 +84,6 @@ public:
     //ParticleLog tmpParticleLog; //Recorded particle log since last UpdateMCHits
     std::vector<MFSim::Particle> particles;
     mutable std::timed_mutex tMutex;
+
 };
 // -- Methods ---------------------------------------------------

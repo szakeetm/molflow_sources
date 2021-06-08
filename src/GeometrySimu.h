@@ -16,6 +16,7 @@
 
 #include <cereal/cereal.hpp>
 #include <cereal/types/vector.hpp>
+#include <RayTracing/KDTree.h>
 
 struct SubprocessFacet;
 class SuperStructure;
@@ -176,7 +177,14 @@ public:
     SimulationModel& operator=(const SimulationModel& o){
         facets = o.facets;
         structures = o.structures;
+
+#if defined(USE_OLD_BVH)
+        // currently always have SuperStructure
+#elif defined(USE_KDTREE)
+        kdtree.insert(kdtree.begin(), o.kdtree.begin(), o.kdtree.end());
+#else
         bvhs.insert(bvhs.begin(), o.bvhs.begin(), o.bvhs.end());
+#endif
         vertices3 = o.vertices3;
         otfParams = o.otfParams;
         tdParams = o.tdParams;
@@ -190,7 +198,13 @@ public:
     SimulationModel& operator=(SimulationModel&& o) noexcept {
         facets = std::move(o.facets);
         structures = std::move(o.structures);
+#if defined(USE_OLD_BVH)
+        // currently always have SuperStructure
+#elif defined(USE_KDTREE)
+        kdtree = std::move(o.kdtree);
+#else
         bvhs = std::move(o.bvhs);
+#endif
         vertices3 = std::move(o.vertices3);
         tdParams = std::move(o.tdParams);
         otfParams = o.otfParams;
@@ -214,7 +228,14 @@ public:
     std::vector<std::shared_ptr<SubprocessFacet>>    facets;    // All facets of this geometry
     std::vector<SuperStructure> structures;
     std::vector<Vector3d> vertices3; // Vertices (3D space)
+#if defined(USE_OLD_BVH)
+    // currently always have SuperStructure
+#elif defined(USE_KDTREE)
+    std::vector<KdTreeAccel> kdtree;
+#else
     std::vector<BVHAccel> bvhs;
+#endif
+
 
     // Simulation Properties
     OntheflySimulationParams otfParams;
@@ -298,7 +319,7 @@ public:
     void clear();
     void Resize(const SimulationModel &model);
     void Reset();
-    static std::pair<int, int>
+    static std::tuple<int, int, int>
     Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuState &rhsGlobHit, double globThreshold,
             double locThreshold);
 

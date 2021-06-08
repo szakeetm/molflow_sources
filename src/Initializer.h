@@ -17,11 +17,8 @@ namespace Settings {
     extern bool loadAutosave;
     extern std::list<uint64_t> desLimit;
     extern bool resetOnStart;
-    extern std::string inputFile;
-    extern std::string outputFile;
     extern std::string paramFile;
     extern std::vector<std::string> paramSweep;
-    extern std::string outputPath;
 }
 
 class Initializer {

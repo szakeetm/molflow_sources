@@ -182,6 +182,26 @@ namespace {
     TEST_P(SimulationFixture, PerformanceOkay) {
         std::string testFile = GetParam();
         printf("Filename: %s\n",testFile.c_str());
+
+        {
+            // Check if test was already successful, restarting the test suite will then skip the test
+            std::string timeRecFile = "./time_record_" + testFile.substr(0, testFile.size() - 4) + ".txt";
+            if (std::filesystem::exists(timeRecFile)) {
+                std::ifstream ifs(timeRecFile);
+                std::vector<Stats> prevRun;
+                prevRun.insert(prevRun.begin(), std::istream_iterator<Stats>(ifs), std::istream_iterator<Stats>());
+
+                std::string currentCommit = GIT_COMMIT_HASH;
+                currentCommit = currentCommit.substr(0, 8); // only first 8 hex digits
+                for (auto &run : prevRun) {
+                    if (run.commitHash == currentCommit) {
+                        printf("Test was successfully run in a previous attemp, skip ...\n");
+                        GTEST_SKIP();
+                    }
+                }
+            }
+        }
+
         size_t nbFails = 0;
         bool fastEnough = false;
         const size_t nRuns = 10;
@@ -263,14 +283,7 @@ namespace {
             if(std::filesystem::exists(timeRecFile))
             {
                 std::ifstream ifs(timeRecFile);
-                //prevRun.insert( prevRun.begin(), std::istream_iterator<OldStats>(ifs), std::istream_iterator<OldStats>() );
                 prevRun.insert( prevRun.begin(), std::istream_iterator<Stats>(ifs), std::istream_iterator<Stats>() );
-                //ifs >> prevRun;
-                /*ifs >> fromCommit;
-                ifs >> prevRun.max;
-                ifs >> prevRun.min;
-                ifs >> prevRun.med;
-                ifs >> prevRun.avg;*/
 
                 std::cout << "Prev Run: "<< prevRun.front() << std::endl;
                 // Check either, only if previous results could be found
@@ -278,15 +291,21 @@ namespace {
 
                 if(!fastEnough && prevRun.front().med > 0.0) { // check to prevent free pass for old entries with only max
                     EXPECT_GE(currentRun.med, 0.95 * prevRun.front().med);
+                    fastEnough = true;
                 }
-                else if(prevRun.front().med > 0.0 && currentRun.max > prevRun.front().med){
+                if(!fastEnough && prevRun.front().med > 0.0 && currentRun.max > prevRun.front().med){
                     EXPECT_GE(currentRun.max, prevRun.front().med);
+                    fastEnough = true;
                 }
-                else { // check to prevent free pass for old entries with only max
+                if(!fastEnough) { // check to prevent free pass for old entries with only max
                     EXPECT_GE(currentRun.max, 0.95 * prevRun.front().max);
+                    if(currentRun.max >= 0.95 * prevRun.front().max)
+                        fastEnough = true;
                 }
             }
 
+            // Only enter a test if it meets any of the success criteria
+            if(fastEnough)
             {
                 // Keep top 20 in list
                 prevRun.push_back(currentRun);
@@ -325,7 +344,7 @@ namespace {
         GlobalSimuState globState{};
 
         {
-            std::vector<char *> argv = {"tester", "-t", "40", "--file"};
+            std::vector<char *> argv = {"tester", "--verbosity", "1", "-t", "50", "--file"};
             char *fileName_c = new char[testFile.size() + 1];
             std::copy(testFile.begin(), testFile.end(), fileName_c);
             fileName_c[testFile.size()] = '\0';
@@ -348,14 +367,14 @@ namespace {
 
                 timeExpect += std::max(0.0, std::pow(std::log(std::sqrt(model.sh.nbFacet * sizeof(FacetHitBuffer))), 2.0) - 10.0);
                 timeExpect += std::max(0.0, 1.1* std::sqrt(std::exp(std::log(std::sqrt(model.size())))));
-                Settings::simDuration = std::min(40.0 + timeExpect, 180.0);
+                Settings::simDuration = std::min(50.0 + timeExpect, 180.0);
 
                 // Modify argv with new duration
                 auto newDur = std::to_string(Settings::simDuration);
                 char *newDur_c = new char[newDur.size() + 1];
                 std::copy(newDur.begin(), newDur.end(), newDur_c);
                 newDur_c[newDur.size()] = '\0';
-                argv[2] = newDur_c;
+                argv[4] = newDur_c;
 
                 model = SimulationModel{};
                 {
@@ -394,11 +413,94 @@ namespace {
             EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
             EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
 
-            auto[diff_glob, diff_loc] = GlobalSimuState::Compare(oldState, globState, 0.01, 0.05);
+            auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.01, 0.1);
             EXPECT_EQ(0, diff_glob);
+            EXPECT_EQ(0, diff_loc);
 
             if(diff_loc > 0)
                 fprintf(stderr, "[Warning] %d local differences found!\n", diff_loc);
+            if(diff_fine > 0)
+                fprintf(stderr, "[Warning] %d differences on fine counters found!\n", diff_fine);
+
+        };
+    }
+
+    TEST_P(ValidationFixture, ResultsWrong) {
+        std::string testFile = GetParam();
+        printf("Filename: %s\n",testFile.c_str());
+        size_t nbFails = 0;
+        bool fastEnough = false;
+        const size_t nRuns = 1;
+        const size_t keepNEntries = 20;
+        const size_t runForTSec = 30;
+        std::vector<double> perfTimes;
+
+        SimulationManager simManager{};
+        simManager.interactiveMode = false;
+        SimulationModel model{};
+        GlobalSimuState globState{};
+
+        {
+            std::vector<char *> argv = {"tester", "--verbosity", "0", "-t", "5", "--file"};
+            char *fileName_c = new char[testFile.size() + 1];
+            std::copy(testFile.begin(), testFile.end(), fileName_c);
+            fileName_c[testFile.size()] = '\0';
+            argv.push_back(fileName_c);
+            {
+                char **args = argv.data();
+                if(Initializer::initFromArgv(argv.size(), (args), &simManager, &model)){
+                    exit(41);
+                }
+                if(Initializer::initFromFile(&simManager, &model, &globState)){
+                    exit(42);
+                }
+            }
+            delete[] fileName_c;
+        }
+
+        // First check for valid initial states
+        // - old state with results, new state without
+        // - after simulation, new state with results
+        // Next, check for errors due to short run time
+        // - this will prevent false positives for ResultsOkay tests
+        {
+            size_t oldHitsNb = globState.globalHits.globalHits.nbMCHit;
+            size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
+
+            GlobalSimuState oldState = globState;
+            globState.Reset();
+            Settings::desLimit.clear();
+            Settings::desLimit.emplace_back(1000);
+            Initializer::initDesLimit(model, globState);
+
+            simManager.ResetHits();
+            simManager.InitSimulation(&model, &globState);
+
+            EXPECT_NE(0, oldDesNb);
+            EXPECT_NE(0, oldHitsNb);
+            EXPECT_EQ(0, globState.globalHits.globalHits.nbDesorbed);
+            EXPECT_EQ(0, globState.globalHits.globalHits.nbMCHit);
+
+            EXPECT_NO_THROW(simManager.StartSimulation());
+
+            // Stop and copy results
+            simManager.StopSimulation();
+            simManager.KillAllSimUnits();
+            simManager.ResetSimulations();
+
+            EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
+            EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
+
+            auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.001, 0.001);
+            if(diff_glob > 0)
+                EXPECT_NE(0, diff_glob);
+            else
+                EXPECT_NE(0, diff_loc);
+            printf("[Warning] Geometry has %zu facets for %zu des!\n", model.facets.size(), globState.globalHits.globalHits.nbDesorbed);
+            if(diff_loc <= 0)
+                fprintf(stderr, "[Warning] No local differences found!\n");
+            if(diff_fine <= 0)
+                fprintf(stderr, "[Warning] No differences on fine counters found!\n");
         };
     }
 
