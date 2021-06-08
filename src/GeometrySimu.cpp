@@ -91,13 +91,13 @@ bool SubprocessFacet::InitializeTexture(const size_t &nbMoments)
             throw std::runtime_error("Not enough memory to load textures");
             return false;
         }
-        fullSizeInc = (sh.texWidthD * sh.texHeightD) / (sh.U.Norme() * sh.V.Norme());
+        fullSizeInc = (sh.texWidth_precise * sh.texHeight_precise) / (sh.U.Norme() * sh.V.Norme());
         for (size_t j = 0; j < nbE; j++) { //second pass, filter out very small cells
             largeEnough[j] = textureCellIncrements[j] < (5.0*fullSizeInc);
         }
 
-        iw = 1.0 / (double)sh.texWidthD;
-        ih = 1.0 / (double)sh.texHeightD;
+        iw = 1.0 / (double)sh.texWidth_precise;
+        ih = 1.0 / (double)sh.texHeight_precise;
         rw = sh.U.Norme() * iw;
         rh = sh.V.Norme() * ih;
     }

@@ -1346,8 +1346,8 @@ void Simulation::RecordHistograms(SubprocessFacet *iFacet) {
 
 void Simulation::RecordHitOnTexture(SubprocessFacet *f, double time, bool countHit, double velocity_factor, double ortSpeedFactor) {
 
-    size_t tu = (size_t)(f->colU * f->sh.texWidthD);
-    size_t tv = (size_t)(f->colV * f->sh.texHeightD);
+    size_t tu = (size_t)(f->colU * f->sh.texWidth_precise);
+    size_t tv = (size_t)(f->colV * f->sh.texHeight_precise);
     size_t add = tu + tv * (f->sh.texWidth);
     double ortVelocity = (wp.useMaxwellDistribution ? 1.0 : 1.1781) * currentParticle.velocity *
                          std::abs(Dot(currentParticle.direction,
@@ -1370,8 +1370,8 @@ void Simulation::RecordHitOnTexture(SubprocessFacet *f, double time, bool countH
 }
 
 void Simulation::RecordDirectionVector(SubprocessFacet *f, double time) {
-    size_t tu = (size_t)(f->colU * f->sh.texWidthD);
-    size_t tv = (size_t)(f->colV * f->sh.texHeightD);
+    size_t tu = (size_t)(f->colU * f->sh.texWidth_precise);
+    size_t tv = (size_t)(f->colV * f->sh.texHeight_precise);
     size_t add = tu + tv * (f->sh.texWidth);
 
     f->direction[0][add].dir = f->direction[0][add].dir +
