@@ -359,7 +359,7 @@ int MolFlow::OneTimeSceneInit()
 
 	menu->GetSubMenu("Selection")->Add(NULL); // Separator
 	menu->GetSubMenu("Selection")->Add("Select Desorption", MENU_FACET_SELECTDES);
-	menu->GetSubMenu("Selection")->Add("Select Outgassing Map", MENU_SELECT_HASDESFILE);
+	menu->GetSubMenu("Selection")->Add("Select Dyn. Desorption (Outg.Map)", MENU_SELECT_HASDESFILE);
 	menu->GetSubMenu("Selection")->Add("Select Reflective", MENU_FACET_SELECTREFL);
 	menu->GetSubMenu("Selection")->Add("Select volatile facets", MENU_FACET_SELECTVOL);
 
