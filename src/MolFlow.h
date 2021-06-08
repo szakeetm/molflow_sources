@@ -122,6 +122,9 @@ public:
 	char *nbF;
 
 	struct {
+        bool oldBVH{false};
+        BVHAccel::SplitMethod splitTechnique{BVHAccel::SplitMethod::SAH};
+        bool drawAllStructs{false};
         int showLevelAABB[2]{-1, -1};
         bool showBranchSide[2]{true, true};
         bool showAABBLeaves{false};
