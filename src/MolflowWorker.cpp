@@ -1366,6 +1366,9 @@ void Worker::ReloadSim(bool sendOnly, GLProgress *progressDlg) {
             return;
         }
 
+        progressDlg->SetMessage("Initialising physical properties for model...");
+        model.PrepareToRun();
+
         progressDlg->SetMessage("Constructing memory structure to store results...");
         if (!sendOnly) {
             globState.Resize(model);
