@@ -1288,64 +1288,68 @@ bool Worker::InterfaceGeomToSimModel() {
 * \param sendOnly if only certain parts should be reloaded (geometry reloading / ray tracing tree)
 */
 void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
-    auto *progressDlg = new GLProgress("Performing preliminary calculations on geometry...",
-                                       "Passing Geometry to workers");
-    progressDlg->SetVisible(true);
-    progressDlg->SetProgress(0.0);
+    if(!model.facets.empty() || GetGeometry()->GetNbFacet() > 0) {
 
-    if (!sendOnly) {
-        if (model.otfParams.nbProcess == 0 && !geom->IsLoaded()) {
-            progressDlg->SetVisible(false);
-            SAFE_DELETE(progressDlg);
-            return;
-        }
+        auto *progressDlg = new GLProgress("Performing preliminary calculations on geometry...",
+                                           "Passing Geometry to workers");
+        progressDlg->SetVisible(true);
+        progressDlg->SetProgress(0.0);
 
-        try {
-            progressDlg->SetMessage("Do preliminary calculations...");
-            PrepareToRun();
+        ReloadSim(sendOnly, progressDlg);
 
-            progressDlg->SetMessage("Asking subprocesses to clear geometry...");
-            simManager.ResetSimulations();
-            progressDlg->SetMessage("Clearing Logger...");
-            particleLog.clear();
-            progressDlg->SetMessage("Creating hit buffer...");
-            simManager.ResetHits();
-        }
-        catch (std::exception &e) {
-            GLMessageBox::Display(e.what(), "Error (Full reload)", GLDLG_OK, GLDLG_ICONWARNING);
-            progressDlg->SetVisible(false);
-            SAFE_DELETE(progressDlg);
-            std::stringstream err;
-            err << "Error (Full reload) " << e.what();
-            throw std::runtime_error(err.str());
-        }
-
-        if (model.otfParams.enableLogging) {
-            try {
-                particleLog.resize(model.otfParams.logLimit);
-            }
-            catch (...) {
+        if (!sendOnly) {
+            if (model.otfParams.nbProcess == 0 && !geom->IsLoaded()) {
                 progressDlg->SetVisible(false);
                 SAFE_DELETE(progressDlg);
-                throw Error(
-                        "Failed to create 'Particle Log' vector.\nMost probably out of memory.\nReduce number of logged particles in Particle Logger.");
+                return;
+            }
+
+            try {
+                progressDlg->SetMessage("Do preliminary calculations...");
+                PrepareToRun();
+
+                progressDlg->SetMessage("Asking subprocesses to clear geometry...");
+                simManager.ResetSimulations();
+                progressDlg->SetMessage("Clearing Logger...");
+                particleLog.clear();
+                progressDlg->SetMessage("Creating hit buffer...");
+                simManager.ResetHits();
+            }
+            catch (std::exception &e) {
+                GLMessageBox::Display(e.what(), "Error (Full reload)", GLDLG_OK, GLDLG_ICONWARNING);
+                progressDlg->SetVisible(false);
+                SAFE_DELETE(progressDlg);
+                std::stringstream err;
+                err << "Error (Full reload) " << e.what();
+                throw std::runtime_error(err.str());
+            }
+
+            if (model.otfParams.enableLogging) {
+                try {
+                    particleLog.resize(model.otfParams.logLimit);
+                }
+                catch (...) {
+                    progressDlg->SetVisible(false);
+                    SAFE_DELETE(progressDlg);
+                    throw Error(
+                            "Failed to create 'Particle Log' vector.\nMost probably out of memory.\nReduce number of logged particles in Particle Logger.");
+                }
             }
         }
-    }
 
-    // Send and Load geometry on simulation side
-    ReloadSim(sendOnly, progressDlg);
-    if (simManager.ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
-        std::string errString = "Failed to send geometry to sub process:\n";
-        errString.append(GetErrorDetails());
-        throw std::runtime_error(errString);
-    }
+        // Send and Load geometry on simulation side
+        if (simManager.ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
+            std::string errString = "Failed to send geometry to sub process:\n";
+            errString.append(GetErrorDetails());
+            throw std::runtime_error(errString);
+        }
 
-    //Old send hits location
-    progressDlg->SetMessage("Closing dataport...");
-    needsReload = false;
-    progressDlg->SetVisible(false);
-    SAFE_DELETE(progressDlg);
+
+        progressDlg->SetMessage("Finishing reload...");
+        needsReload = false;
+        progressDlg->SetVisible(false);
+        SAFE_DELETE(progressDlg);
+    }
 }
 
 
