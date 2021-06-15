@@ -1353,43 +1353,6 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
     }
 }
 
-
-void Worker::ReloadSim(bool sendOnly, GLProgress *progressDlg) {
-    // Send and Load geometry
-    progressDlg->SetMessage("Waiting for subprocesses to load geometry...");
-    try {
-        if (!InterfaceGeomToSimModel()) {
-            std::string errString = "Failed to send geometry to sub process!\n";
-            GLMessageBox::Display(errString.c_str(), "Warning (LoadGeom)", GLDLG_OK, GLDLG_ICONWARNING);
-
-            progressDlg->SetVisible(false);
-            SAFE_DELETE(progressDlg);
-            return;
-        }
-
-        progressDlg->SetMessage("Initialising physical properties for model->..");
-        model->PrepareToRun();
-
-        progressDlg->SetMessage("Constructing memory structure to store results...");
-        if (!sendOnly) {
-            globState.Resize(*model.get());
-        }
-
-        simManager.ForwardSimModel(model);
-        simManager.ForwardGlobalCounter(&globState, &particleLog);
-
-        /*if (simManager.ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
-            std::string errString = "Failed to send geometry to sub process:\n";
-            errString.append(GetErrorDetails());
-            throw std::runtime_error(errString);
-        }*/
-    }
-    catch (std::exception &e) {
-        GLMessageBox::Display(e.what(), "Error (LoadGeom)", GLDLG_OK, GLDLG_ICONERROR);
-    }
-}
-
-
 /**
 * \brief Serialization function for a binary cereal archive for the worker attributes
 * \return output string stream containing the result of the archiving
