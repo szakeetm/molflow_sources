@@ -27,7 +27,7 @@ namespace Settings {
 
 void initDefaultSettings(){
     Settings::nbThreads = 0;
-    Settings::simDuration = 10;
+    Settings::simDuration = 0;
     Settings::autoSaveDuration = 600;
     Settings::loadAutosave = false;
     Settings::desLimit.clear();
@@ -92,6 +92,13 @@ int Initializer::parseCommands(int argc, char** argv) {
     //std::cout<<app.config_to_str(true,true);
     for(auto& lim : limits)
         Settings::desLimit.emplace_back(lim);
+
+    if(Settings::simDuration == 0 && Settings::desLimit.empty()) {
+        Log::console_error("No end criterion has been set!\n");
+        Log::console_error(" Either use: -t or -d\n");
+        return 1;
+    }
+
     return 0;
 }
 
@@ -107,7 +114,7 @@ int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManag
     initDefaultSettings();
 
     int err = 0;
-    if(err = parseCommands(argc, argv)){
+    if((err = parseCommands(argc, argv))){
         return err;
     }
 
