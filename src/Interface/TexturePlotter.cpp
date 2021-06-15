@@ -286,11 +286,11 @@ void TexturePlotter::UpdateTable() {
                 const auto& facetSnapshot = worker->globState.facetStates[selFacetId].momentResults[mApp->worker.displayedMoment];
 
                 /*if (shGHit->sMode == MC_MODE) dCoef *= ((mApp->worker.displayedMoment == 0) ? 1.0 : ((worker->desorptionStopTime - worker->desorptionStartTime)
-                    / worker->model.wp.wp.timeWindowSize));*/
+                    / worker->model->wp.wp.timeWindowSize));*/
 					double moleculesPerTP = mApp->worker.GetMoleculesPerTP(worker->displayedMoment);
 					for (size_t i = 0; i < w; i++) {
 						for (size_t j = 0; j < h; j++) {
-							PhysicalValue val = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::ImpingementRate, moleculesPerTP,1.0, worker->model.wp.gasMass, (int)(i + j * w), facetSnapshot);
+							PhysicalValue val = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::ImpingementRate, moleculesPerTP,1.0, worker->model->wp.gasMass, (int)(i + j * w), facetSnapshot);
                             double realVal = val.value;
                             if (realVal > maxValue) {
 								maxValue = realVal;
@@ -326,7 +326,7 @@ void TexturePlotter::UpdateTable() {
 
 					for (size_t i = 0; i < w; i++) {
 						for (size_t j = 0; j < h; j++) {
-							PhysicalValue val = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::ParticleDensity, moleculesPerTP, densityCorrection, worker->model.wp.gasMass, (int)(i + j*w), facetSnapshot);
+							PhysicalValue val = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::ParticleDensity, moleculesPerTP, densityCorrection, worker->model->wp.gasMass, (int)(i + j*w), facetSnapshot);
                             double rho = val.value;
 
                             if (rho > maxValue) {
@@ -368,7 +368,7 @@ void TexturePlotter::UpdateTable() {
 							/*double v_avg = 2.0*(double)texture[i + j*w].count / texture[i + j*w].sum_1_per_ort_velocity;
 							double imp_rate = texture[i + j*w].count / (selFacet->mesh[i + j*w].area*(selFacet->wp.is2sided ? 2.0 : 1.0))*dCoef;
 							double rho = 4.0*imp_rate / v_avg;*/
-							PhysicalValue val = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::GasDensity, moleculesPerTP, densityCorrection, worker->model.wp.gasMass, (int)(i + j*w), facetSnapshot);
+							PhysicalValue val = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::GasDensity, moleculesPerTP, densityCorrection, worker->model->wp.gasMass, (int)(i + j*w), facetSnapshot);
 							double rho_mass = val.value;
 							if (rho_mass > maxValue) {
 								maxValue = rho_mass;
@@ -404,7 +404,7 @@ void TexturePlotter::UpdateTable() {
 					for (size_t i = 0; i < w; i++) {
 						for (size_t j = 0; j < h; j++) {
 
-							PhysicalValue val = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::Pressure, moleculesPerTP, 1.0, worker->model.wp.gasMass, (int)(i + j*w), facetSnapshot);
+							PhysicalValue val = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::Pressure, moleculesPerTP, 1.0, worker->model->wp.gasMass, (int)(i + j*w), facetSnapshot);
                             double p = val.value;
 
                             if (p > maxValue) {

@@ -763,7 +763,7 @@ void MolFlow::ApplyFacetParams() {
 			}
 			if (is2Sided >= 0) f->sh.is2sided = is2Sided;
 
-			f->sh.maxSpeed = 4.0 * sqrt(2.0*8.31*f->sh.temperature / 0.001 / worker.model.wp.gasMass);
+			f->sh.maxSpeed = 4.0 * sqrt(2.0*8.31*f->sh.temperature / 0.001 / worker.model->wp.gasMass);
 			f->UpdateFlags();
 		}
 	}
@@ -1445,7 +1445,7 @@ void MolFlow::ClearParameters() {
 
 void MolFlow::StartStopSimulation() {
 	
-	if (worker.globalHitCache.globalHits.nbMCHit <= 0 && !worker.model.wp.calcConstantFlow && worker.moments.empty()) {
+	if (worker.globalHitCache.globalHits.nbMCHit <= 0 && !worker.model->wp.calcConstantFlow && worker.moments.empty()) {
 		bool ok = GLMessageBox::Display("Warning: in the Moments Editor, the option \"Calculate constant flow\" is disabled.\n"
 			"This is useful for time-dependent simulations.\n"
 			"However, you didn't define any moments, suggesting you're using steady-state mode.\n"
@@ -1892,11 +1892,11 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 
 		worker.CalcTotalOutgassing();
 		//default values
-		worker.model.wp.enableDecay = false;
-		worker.model.wp.halfLife = 1;
-		worker.model.wp.gasMass = 28;
+		worker.model->wp.enableDecay = false;
+		worker.model->wp.halfLife = 1;
+		worker.model->wp.gasMass = 28;
 		worker.ResetMoments();
-		worker.model.wp.globalHistogramParams = HistogramParams();
+		worker.model->wp.globalHistogramParams = HistogramParams();
         ResetSimulation(false);
     }
 	catch(std::exception &e) {
@@ -1967,11 +1967,11 @@ void MolFlow::EmptyGeometry() {
 		geom->EmptyGeometry();
 		worker.CalcTotalOutgassing();
 		//default values
-		worker.model.wp.enableDecay = false;
-		worker.model.wp.halfLife = 1;
-		worker.model.wp.gasMass = 28;
+		worker.model->wp.enableDecay = false;
+		worker.model->wp.halfLife = 1;
+		worker.model->wp.gasMass = 28;
 		worker.ResetMoments();
-		worker.model.wp.globalHistogramParams = HistogramParams();
+		worker.model->wp.globalHistogramParams = HistogramParams();
 	}
 	catch(std::exception &e) {
 		GLMessageBox::Display(e.what(), "Error resetting geometry", GLDLG_OK, GLDLG_ICONERROR);
@@ -2185,7 +2185,7 @@ void MolFlow::LoadConfig() {
 		f->ReadKeyword("compressSavedFiles"); f->ReadKeyword(":");
 		compressSavedFiles = f->ReadInt();
 		f->ReadKeyword("gasMass"); f->ReadKeyword(":");
-		worker.model.wp.gasMass = f->ReadDouble();
+		worker.model->wp.gasMass = f->ReadDouble();
 		f->ReadKeyword("expandShortcutPanel"); f->ReadKeyword(":");
 		bool isOpen = f->ReadInt();
 		if (isOpen) shortcutPanel->Open();
@@ -2194,9 +2194,9 @@ void MolFlow::LoadConfig() {
 		for (auto & view : viewer)
 			view->hideLot = f->ReadInt();
 		f->ReadKeyword("lowFluxMode"); f->ReadKeyword(":");
-		worker.model.otfParams.lowFluxMode = f->ReadInt();
+		worker.model->otfParams.lowFluxMode = f->ReadInt();
 		f->ReadKeyword("lowFluxCutoff"); f->ReadKeyword(":");
-		worker.model.otfParams.lowFluxCutoff = f->ReadDouble();
+		worker.model->otfParams.lowFluxCutoff = f->ReadDouble();
 		f->ReadKeyword("leftHandedView"); f->ReadKeyword(":");
 		leftHandedView = f->ReadInt();
 		f->ReadKeyword("highlightNonplanarFacets"); f->ReadKeyword(":");
@@ -2329,12 +2329,12 @@ void MolFlow::SaveConfig() {
 		f->Write("checkForUpdates:"); f->Write(/*checkForUpdates*/ 0, "\n"); //Deprecated
 		f->Write("autoUpdateFormulas:"); f->Write(autoUpdateFormulas, "\n");
 		f->Write("compressSavedFiles:"); f->Write(compressSavedFiles, "\n");
-		f->Write("gasMass:"); f->Write(worker.model.wp.gasMass, "\n");
+		f->Write("gasMass:"); f->Write(worker.model->wp.gasMass, "\n");
 		f->Write("expandShortcutPanel:"); f->Write(!shortcutPanel->IsClosed(), "\n");
 
 		WRITEI("hideLot", hideLot);
-		f->Write("lowFluxMode:"); f->Write(worker.model.otfParams.lowFluxMode, "\n");
-		f->Write("lowFluxCutoff:"); f->Write(worker.model.otfParams.lowFluxCutoff, "\n");
+		f->Write("lowFluxMode:"); f->Write(worker.model->otfParams.lowFluxMode, "\n");
+		f->Write("lowFluxCutoff:"); f->Write(worker.model->otfParams.lowFluxCutoff, "\n");
 		f->Write("leftHandedView:"); f->Write(leftHandedView, "\n");
         f->Write("highlightNonplanarFacets:"); f->Write(highlightNonplanarFacets, "\n");
         f->Write("useOldXMLFormat:"); f->Write(useOldXMLFormat, "\n");
@@ -2359,7 +2359,7 @@ void MolFlow::calcFlow() {
 	facetTemperature->GetNumber(&temperature);
 	//facetMass->GetNumber(&mass);
 
-	outgassing = 1 * sticking*area / 10.0 / 4.0*sqrt(8.0*8.31*temperature / PI / (worker.model.wp.gasMass*0.001));
+	outgassing = 1 * sticking*area / 10.0 / 4.0*sqrt(8.0*8.31*temperature / PI / (worker.model->wp.gasMass*0.001));
 	facetPumping->SetText(outgassing);
 }
 
@@ -2375,7 +2375,7 @@ void MolFlow::calcSticking() {
 	facetTemperature->GetNumber(&temperature);
 	//facetMass->GetNumber(&mass);
 
-	sticking = std::abs(outgassing / (area / 10.0)*4.0*sqrt(1.0 / 8.0 / 8.31 / (temperature)*PI*(worker.model.wp.gasMass*0.001)));
+	sticking = std::abs(outgassing / (area / 10.0)*4.0*sqrt(1.0 / 8.0 / 8.31 / (temperature)*PI*(worker.model->wp.gasMass*0.001)));
 	facetSticking->SetText(sticking);
 }
 

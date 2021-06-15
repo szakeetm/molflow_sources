@@ -29,7 +29,6 @@ Simulation::Simulation() : tMutex()
 
     hasVolatile = false;
 
-	model.sh.nbSuper = 0;
     globState = nullptr;
     globParticleLog = nullptr;
 
@@ -46,7 +45,7 @@ Simulation::Simulation(Simulation&& o) noexcept : tMutex() {
     particles = o.particles;
     for(auto& particle : particles) {
         particle.lastHitFacet = nullptr;
-        particle.model = &model;
+        particle.model = model.get();
     }
 
     hasVolatile =  o.hasVolatile;
@@ -59,16 +58,16 @@ Simulation::Simulation(Simulation&& o) noexcept : tMutex() {
 int Simulation::ReinitializeParticleLog() {
     /*tmpParticleLog.clear();
     tmpParticleLog.shrink_to_fit();
-    if (model.otfParams.enableLogging) {
-        tmpParticleLog.reserve(model.otfParams.logLimit*//* / model.otfParams.nbProcess*//*);
+    if (model->otfParams.enableLogging) {
+        tmpParticleLog.reserve(model->otfParams.logLimit*//* / model->otfParams.nbProcess*//*);
     }*/
 
     auto particle = GetParticle(0);
     if(particle) {
         particle->tmpParticleLog.clear();
         particle->tmpParticleLog.pLog.shrink_to_fit();
-        if (model.otfParams.enableLogging) {
-            particle->tmpParticleLog.pLog.reserve(model.otfParams.logLimit/* / model.otfParams.nbProcess*/);
+        if (model->otfParams.enableLogging) {
+            particle->tmpParticleLog.pLog.reserve(model->otfParams.logLimit/* / model->otfParams.nbProcess*/);
         }
     }
     return 0;
@@ -90,7 +89,7 @@ int Simulation::ReinitializeParticleLog() {
     inputStream << inputString;
     cereal::BinaryInputArchive inputArchive(inputStream);
 
-    inputArchive(model.otfParams);
+    inputArchive(model->otfParams);
 
     ReleaseDataport(loader);
 
@@ -113,22 +112,22 @@ std::pair<int, std::optional<std::string>> Simulation::SanityCheckModel(bool str
     char errLog[2048] {"[Error Log on Check]\n"};
     int errorsOnCheck = 0;
 
-    if (!model.initialized) {
+    if (!model->initialized) {
         sprintf(errLog + strlen(errLog), "Model not initialized\n");
         errorsOnCheck++;
     }
-    if (model.vertices3.empty()) {
+    if (model->vertices3.empty()) {
         sprintf(errLog + strlen(errLog), "Loaded empty vertex list\n");
         errorsOnCheck++;
     }
-    if (model.facets.empty()) {
+    if (model->facets.empty()) {
         sprintf(errLog + strlen(errLog), "Loaded empty facet list\n");
         errorsOnCheck++;
     }
 
     //Molflow unique
-    if (model.wp.enableDecay && model.wp.halfLife <= 0.0) {
-        sprintf(errLog + strlen(errLog), "Particle decay is set, but half life was not set [= %e]\n", model.wp.halfLife);
+    if (model->wp.enableDecay && model->wp.halfLife <= 0.0) {
+        sprintf(errLog + strlen(errLog), "Particle decay is set, but half life was not set [= %e]\n", model->wp.halfLife);
         errorsOnCheck++;
     }
 
@@ -154,9 +153,9 @@ void Simulation::ClearSimulation() {
     //this->currentParticles.clear();// = CurrentParticleStatus();
     //std::vector<CurrentParticleStatus>(this->nbThreads).swap(this->currentParticles);
     for(auto& particle : particles) {
-        std::vector<SubProcessFacetTempVar>(model.sh.nbFacet).swap(particle.tmpFacetVars);
+        std::vector<SubProcessFacetTempVar>(model->sh.nbFacet).swap(particle.tmpFacetVars);
         particle.tmpState.Reset();
-        particle.model = &model;
+        particle.model = model.get();
         particle.totalDesorbed = 0;
     }
     totalDesorbed = 0;
@@ -169,13 +168,13 @@ void Simulation::ClearSimulation() {
     if(particle)
         particle->tmpParticleLog.clear();
 
-    /*this->model.structures.clear();
-    this->model.tdParams.CDFs.clear();
-    this->model.tdParams.IDs.clear();
-    this->model.tdParams.moments.clear();
-    this->model.tdParams.parameters.clear();
+    /*this->model->structures.clear();
+    this->model->tdParams.CDFs.clear();
+    this->model->tdParams.IDs.clear();
+    this->model->tdParams.moments.clear();
+    this->model->tdParams.parameters.clear();
     //this->temperatures.clear();
-    this->model.vertices3.clear();*/
+    this->model->vertices3.clear();*/
 }
 
 size_t Simulation::LoadSimulation(char *loadStatus) {
@@ -185,7 +184,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     ClearSimulation();
     strncpy(loadStatus, "Loading simulation", 127);
     
-    auto* simModel = &this->model;
+    auto simModel = this->model;
     
     // New GlobalSimuState structure for threads
     for(auto& particle : particles)
@@ -225,8 +224,8 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     ReinitializeParticleLog();
 
     std::vector<std::vector<SubprocessFacet*>> facetPointers;
-    facetPointers.resize(model.sh.nbSuper);
-    for(auto& sFac : model.facets){
+    facetPointers.resize(model->sh.nbSuper);
+    for(auto& sFac : model->facets){
         // TODO: Build structures
         if (sFac.sh.superIdx == -1) { //Facet in all structures
             for (auto& fp_vec : facetPointers) {
@@ -240,8 +239,8 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
 
     // Build all AABBTrees
     size_t maxDepth=0;
-    for (size_t s = 0; s < model.sh.nbSuper; ++s) {
-        auto& structure = model.structures[s];
+    for (size_t s = 0; s < model->sh.nbSuper; ++s) {
+        auto& structure = model->structures[s];
         if(structure.aabbTree)
             structure.aabbTree.reset();
         AABBNODE* tree = BuildAABBTree(facetPointers[s], 0, maxDepth);
@@ -250,12 +249,12 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     }
 
     for(auto& particle : particles)
-        particle.model = simModel;
+        particle.model = simModel.get();
 
     // Initialise simulation
 
 
-    //if(!model.sh.name.empty())
+    //if(!model->sh.name.empty())
     //loadOK = true;
     timer.Stop();
     if(omp_get_thread_num() == 0) {
@@ -279,8 +278,8 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
 }
 
 size_t Simulation::GetHitsSize() {
-    return sizeof(GlobalHitBuffer) + model.wp.globalHistogramParams.GetDataSize() +
-           + model.sh.nbFacet * sizeof(FacetHitBuffer) * (1+model.tdParams.moments.size());
+    return sizeof(GlobalHitBuffer) + model->wp.globalHistogramParams.GetDataSize() +
+           + model->sh.nbFacet * sizeof(FacetHitBuffer) * (1+model->tdParams.moments.size());
 }
 
 
@@ -291,8 +290,8 @@ void Simulation::ResetSimulation() {
 
     for(auto& particle : particles) {
         particle.Reset();
-        std::vector<SubProcessFacetTempVar>(model.sh.nbFacet).swap(particle.tmpFacetVars);
-        particle.model = &model;
+        std::vector<SubProcessFacetTempVar>(model->sh.nbFacet).swap(particle.tmpFacetVars);
+        particle.model = model.get();
         particle.totalDesorbed = 0;
     }
 
