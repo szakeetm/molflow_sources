@@ -213,7 +213,7 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
 
         // start new particle when no previous hit facet was saved
         bool insertNewParticle = !lastHitFacet;
-        for (i = 0; i < nbStep /*&& allQuit <= 0*/; i++) {
+        for (i = 0; i < nbStep && !allQuit; i++) {
             if (insertNewParticle) {
                 // quit on desorp error or limit reached
                 if(!StartFromSource() || remainingDes-1==0){

@@ -1413,7 +1413,7 @@ void Worker::Start() {
         }
     }
     catch (std::exception &e) {
-        throw e;
+        throw Error(e.what());
     }
 }
 
