@@ -20,10 +20,10 @@ ELSE()
 ENDIF()
 
 # Output Variables
-set(OUTPUT_BIN_DEBUG ${OS_RELPATH}/bin/${OS_NAME}/debug)
-set(OUTPUT_BIN_REL ${OS_RELPATH}/bin/${OS_NAME}/release)
-set(OUTPUT_LIB_DEBUG ${OS_RELPATH}/lib/${OS_NAME}/debug)
-set(OUTPUT_LIB_REL ${OS_RELPATH}/lib/${OS_NAME}/release)
+set(OUTPUT_BIN_DEBUG ${OS_RELPATH}/bin/)
+set(OUTPUT_BIN_REL ${OS_RELPATH}/bin/)
+set(OUTPUT_LIB_DEBUG ${OS_RELPATH}/lib/)
+set(OUTPUT_LIB_REL ${OS_RELPATH}/lib/)
 
 ############## Artefacts Output #################
 # Defines outputs , depending Debug or Release. #
@@ -71,6 +71,44 @@ elseif(OS_NAME STREQUAL "linux_debian")
     )
 endif ()
 
+#[[add_compile_options(
+        $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
+        -Wall>
+# -Wextra -pedantic
+        #-Werror -Wno-error=uninitialized
+        $<$<CXX_COMPILER_ID:MSVC>:
+        /W4>
+        #/WX
+        )]]
+
+#[[add_compile_options(
+        $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
+        -Wall>
+        $<$<CXX_COMPILER_ID:MSVC>:
+        /W4>)]]
+if(NOT MSVC)
+    add_compile_options(
+            -Wall -Wextra -pedantic
+            #-Werror -Wno-error=uninitialized
+        $<$<CONFIG:RELEASE>:-O3>
+        $<$<CONFIG:DEBUG>:-O0>
+        $<$<CONFIG:DEBUG>:-ggdb3>
+)
+else()
+    #/WX
+    add_compile_options(
+        /W4
+    )
+    add_compile_options(
+        "$<$<CONFIG:Release>:/GL;/O2;/EHsc>"
+        "$<$<CONFIG:Debug>:/MDd;/Od;/EHsc>"
+    )
+    # Multi-processor compilation
+    add_compile_options(
+        "$<$<CONFIG:Debug>:/MP>"
+        "$<$<CONFIG:Release>:/MP>"
+    )
+endif()
 #disable generation of appname.manifest file
 #alternative: use /MANIFEST:EMBED
 if(MSVC)

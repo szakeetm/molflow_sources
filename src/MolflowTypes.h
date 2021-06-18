@@ -19,11 +19,15 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 #pragma once
 #include "GLApp/GLTypes.h"
+#include "Parameter.h"
 #include <stddef.h> //size_t for gcc
 #include <string>
 #include <vector>
 #include <cereal/cereal.hpp>
 #include <cereal/types/vector.hpp>
+#include <Distributions.h>
+#include "GeometryTypes.h" // SelectionGroup
+
 //#include "Buffer_shared.h"
 
 // Desorption type
@@ -66,20 +70,34 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 typedef float ACFLOAT;
 typedef std::pair<std::string,double> UserMoment;
 typedef std::pair<double,double> Moment;
-class IntegratedDesorption {
-	//A cumulative distribution function with time/integrated_desorption pairs
-public:
-	bool logXinterp,logYinterp; //interpolation, should be the same flags as corresponding parameter
-	std::vector<std::pair<double, double>> values; //Time-cum.desorption pairs
+typedef std::pair<double,double> ID_p;
+typedef std::pair<double,double> CDF_p;
 
-		template<class Archive>
-		void serialize(Archive& archive) {
-		archive(
-			CEREAL_NVP(logXinterp),
-			CEREAL_NVP(logYinterp),
-			CEREAL_NVP(values) //(t,sumQ_until_t) pairs
-		);
-	}
+struct UserInput {
+    std::vector<SelectionGroup> selections;
+    std::vector<std::tuple<bool, bool>> facetViewSettings;
+    std::vector<UserMoment> userMoments;
+    std::vector<Parameter> parameters;
+};
+
+class IntegratedDesorption : public Distribution2D {
+
+};
+
+struct OutgassingMap {
+    OutgassingMap() = default;
+    size_t   outgassingMapWidth; //rounded up outgassing file map width
+    size_t   outgassingMapHeight; //rounded up outgassing file map height
+    double outgassingMapWidth_precise; //actual outgassing file map width
+    double outgassingMapHeight_precise; //actual outgassing file map height
+    double outgassingFileRatioU; //desorption file's sample/unit ratio in U direction
+    double outgassingFileRatioV; //desorption file's sample/unit ratio in V direction
+    std::vector<double>   outgassingMap_cdf; // Cumulative outgassing map when desorption is based on imported file
+    std::vector<double>   outgassingMap; // Cumulative outgassing map when desorption is based on imported file
+
+    // Analytic properties
+    double totalDose;
+    double totalFlux;
 };
 
 // Density/Hit field stuff
@@ -91,6 +109,15 @@ public:
 	double sum_1_per_ort_velocity=0.0;
 	ProfileSlice& operator+=(const ProfileSlice& rhs);
 	ProfileSlice& operator+(const ProfileSlice& rhs);
+    template<class Archive>
+    void serialize(Archive & archive)
+    {
+        archive(
+                countEquiv,
+                sum_v_ort,
+                sum_1_per_ort_velocity
+        );
+    }
 };
 
 class TextureCell {
@@ -100,11 +127,20 @@ public:
 	double sum_1_per_ort_velocity=0.0;
 	TextureCell& operator+=(const TextureCell& rhs);
 	TextureCell& operator+(const TextureCell& rhs);
+    template<class Archive>
+    void serialize(Archive & archive)
+    {
+        archive(
+                countEquiv,
+                sum_v_ort_per_area,
+                sum_1_per_ort_velocity
+        );
+    }
 };
 
 //Texture limit types
 typedef struct {
-	double all;
+	double steady_state;
 	double moments_only;
 } TEXTURE_MOMENT_TYPE;
 
@@ -140,17 +176,17 @@ public:
 		);
 	}
 
-	size_t GetMapSize() {
+	size_t GetMapSize() const{
 		return phiWidth * (thetaLowerRes + thetaHigherRes);
 	}
-	size_t GetRecordedMapSize() {
+	size_t GetRecordedMapSize() const{
 		if (!hasRecorded) return 0;
 		else return GetMapSize();
 	}
-	size_t GetDataSize() {
+	size_t GetDataSize() const {
 		return sizeof(size_t)*GetMapSize();
 	}
-	size_t GetRecordedDataSize() {
+	size_t GetRecordedDataSize() const {
 		return sizeof(size_t)*GetRecordedMapSize();
 	}
 };

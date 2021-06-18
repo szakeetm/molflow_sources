@@ -8,6 +8,7 @@ set(PROJECT_NAME molflow)
 
 # Folders files
 set(CPP_DIR_1 ../../src)
+set(UI_DIR ../../src/Interface)
 set(HEADER_DIR_1 ../../src)
 set(HEADER_DIR_2 ../../src_shared)
 #set(HEADER_DIR_3 ../../src_shared/GLApp)
@@ -76,31 +77,47 @@ endif(NOT MSVC)
 #   --   Add files to project.   --   #
 #######################################
 
+if (APPLE)
+    set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include" CACHE INTERNAL "OpenMP flags for Xcode toolchain.")
+    set(OpenMP_C_LIB_NAMES "omp" CACHE INTERNAL "OpenMP lib name for Xcode toolchain.")
+
+    set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include" CACHE INTERNAL "OpenMP flags for Xcode toolchain.")
+    set(OpenMP_CXX_LIB_NAMES "omp" CACHE INTERNAL "OpenMP lib name for Xcode toolchain.")
+    set(OpenMP_omp_LIBRARY "/usr/local/opt/libomp/lib/libomp.dylib" CACHE INTERNAL "OpenMP lib name for Xcode toolchain.")
+endif()
+
 set(SRC_FILES
-        ${CPP_DIR_1}/FacetAdvParams.cpp
-        ${CPP_DIR_1}/FacetDetails.cpp
+        ${UI_DIR}/FacetAdvParams.cpp
+        ${UI_DIR}/FacetDetails.cpp
         ${CPP_DIR_1}/FormulaEvaluator_MF.cpp
-        ${CPP_DIR_1}/GeometryRender.cpp
-        ${CPP_DIR_1}/GeometryViewer.cpp
-        ${CPP_DIR_1}/GlobalSettings.cpp
-        ${CPP_DIR_1}/ImportDesorption.cpp
+        ${UI_DIR}/GeometryRender.cpp
+        ${UI_DIR}/GeometryViewer.cpp
+        ${UI_DIR}/GlobalSettings.cpp
+        ${UI_DIR}/ImportDesorption.cpp
         ${CPP_DIR_1}/MolFlow.cpp
+        ${CPP_DIR_1}/MolflowBuffer.cpp
+        ${CPP_DIR_1}/GeometrySimu.cpp
         ${CPP_DIR_1}/MolflowFacet.cpp
         ${CPP_DIR_1}/MolflowGeometry.cpp
         ${CPP_DIR_1}/MolflowTypes.cpp
         ${CPP_DIR_1}/MolflowWorker.cpp
-        ${CPP_DIR_1}/MomentsEditor.cpp
-        ${CPP_DIR_1}/Movement.cpp
-        ${CPP_DIR_1}/OutgassingMap.cpp
+        ${UI_DIR}/MomentsEditor.cpp
+        ${UI_DIR}/Movement.cpp
+        ${UI_DIR}/OutgassingMapWindow.cpp
         ${CPP_DIR_1}/Parameter.cpp
-        ${CPP_DIR_1}/ParameterEditor.cpp
-        ${CPP_DIR_1}/PressureEvolution.cpp
-        ${CPP_DIR_1}/ProfilePlotter.cpp
-        ${CPP_DIR_1}/TexturePlotter.cpp
-        ${CPP_DIR_1}/TextureScaling.cpp
-        ${CPP_DIR_1}/TimeSettings.cpp
-        ${CPP_DIR_1}/TimewisePlotter.cpp
-        ${CPP_DIR_1}/Viewer3DSettings.cpp
+        ${UI_DIR}/ParameterEditor.cpp
+        ${UI_DIR}/PressureEvolution.cpp
+        ${UI_DIR}/ProfilePlotter.cpp
+        ${UI_DIR}/TexturePlotter.cpp
+        ${UI_DIR}/TextureScaling.cpp
+        ${CPP_DIR_1}/TimeMoments.cpp
+        ${UI_DIR}/TimeSettings.cpp
+        ${UI_DIR}/TimewisePlotter.cpp
+        ${UI_DIR}/Viewer3DSettings.cpp
+        ../../src/IO/InterfaceXML.cpp
+        ../../src/IO/InterfaceXML.h
+        ${HEADER_DIR_2}/FlowMPI.h
+        ${HEADER_DIR_2}/FlowMPI.cpp
         )
 
 # Add executable to build.
@@ -110,10 +127,12 @@ else()
     add_executable(${PROJECT_NAME} ${SRC_FILES})
 endif()
 
-target_link_libraries(${PROJECT_NAME} PRIVATE simulator_shared)
+target_link_libraries(${PROJECT_NAME} PUBLIC shared_interface)
+target_link_libraries(${PROJECT_NAME} PUBLIC molflowSim)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_1}
+        ${UI_DIR}
         ${HEADER_DIR_2}
         ${HEADER_DIR_3}
         ${HEADER_DIR_4}
@@ -124,11 +143,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         )
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
-target_compile_options(${PROJECT_NAME} PRIVATE
-        $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
-        -Wall>
-        $<$<CXX_COMPILER_ID:MSVC>:
-        /W4>)
+
+find_package(OpenMP REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
 
 if(MSVC)
     # Add Whole Program Optimization and Link Time Code Generation
@@ -139,17 +156,10 @@ if(MSVC)
             LINK_FLAGS "/ENTRY:mainCRTStartup"
             )
 
-    # Multi-processor compilation
-    target_compile_options(${PROJECT_NAME} PRIVATE
-            "$<$<CONFIG:Debug>:/MP>"
-            "$<$<CONFIG:Release>:/MP>"
-            )
-
     # Add Windows Console output
-    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    #if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE ${LINK_FLAGS}")
-    endif()
-
+    #endif()
 
     # set the path to the library folder
     target_link_directories(${PROJECT_NAME} PRIVATE ${LINK_DIR_1})
@@ -245,7 +255,7 @@ elseif(NOT MSVC)
     target_link_libraries(${PROJECT_NAME} PRIVATE libzip) # from ./lib/
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        target_link_libraries(${PROJECT_NAME} PRIVATE c++fs)
+        target_link_libraries(${PROJECT_NAME} PRIVATE stdc++)
     elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
         #don´t add anything for filesystem
     else()
