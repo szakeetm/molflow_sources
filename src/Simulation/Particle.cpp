@@ -248,6 +248,12 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
 
             //return (lastHitFacet != nullptr);
 
+
+            // Downcast ray direction
+            direction.x = static_cast<float>(direction.x);
+            direction.y = static_cast<float>(direction.y);
+            direction.z = static_cast<float>(direction.z);
+            
             //Prepare output values
 #if defined(USE_OLD_BVH)
             auto[found, collidedFacet, d] = Intersect(*this, position,

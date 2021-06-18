@@ -358,6 +358,13 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     //Reserve particle log
     ReinitializeParticleLog();
 
+    // Downcast one more time
+    for(auto& vert : simModel->vertices3) {
+        vert.x = static_cast<float>(vert.x);
+        vert.y = static_cast<float>(vert.y);
+        vert.z = static_cast<float>(vert.z);
+    }
+
 #if defined(USE_OLD_BVH)
     std::vector<std::vector<SubprocessFacet*>> facetPointers;
     facetPointers.resize(model.sh.nbSuper);
