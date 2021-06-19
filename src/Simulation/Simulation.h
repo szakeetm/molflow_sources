@@ -60,12 +60,15 @@ public:
         else
             return nullptr;
     };
-    void SetNParticle(size_t n) override {
+    void SetNParticle(size_t n, bool fixedSeed) override {
         particles.clear();
         particles.resize(n);
         size_t pid = 0;
         for(auto& particle : particles){
-            particle.randomGenerator.SetSeed(GenerateSeed(pid));
+            if(fixedSeed)
+                particle.randomGenerator.SetSeed(42424242 + pid);
+            else
+                particle.randomGenerator.SetSeed(GenerateSeed(pid));
             particle.particleId = pid++;
         }
     };
