@@ -23,7 +23,7 @@ void WriterXML::reportWriteStatus(const std::string &statusString) const {
     Log::console_msg(2, "[%s] %s [%.2lf%%]\n", Util::getTimepointString().c_str(), statusString.c_str(), writeProgress);
 }
 
-void WriterXML::SaveGeometry(xml_document &saveDoc, SimulationModel *model, bool useOldXMLFormat, bool update) {
+void WriterXML::SaveGeometry(xml_document &saveDoc, std::shared_ptr<SimulationModel> model, bool useOldXMLFormat, bool update) {
     xml_node rootNode;
     if (useOldXMLFormat) {
         rootNode = saveDoc.root();
@@ -162,7 +162,7 @@ void WriterXML::SaveGeometry(xml_document &saveDoc, SimulationModel *model, bool
 
 // Directly append to file (load + save)
 bool
-WriterXML::SaveSimulationState(const std::string &outputFileName, SimulationModel *model, GlobalSimuState &globState) {
+WriterXML::SaveSimulationState(const std::string &outputFileName, std::shared_ptr<SimulationModel> model, GlobalSimuState &globState) {
     xml_document saveDoc;
     xml_parse_result parseResult = saveDoc.load_file(outputFileName.c_str()); //parse xml file directly
 
@@ -176,7 +176,7 @@ WriterXML::SaveSimulationState(const std::string &outputFileName, SimulationMode
 }
 
 // Append to open XML node
-bool WriterXML::SaveSimulationState(xml_document &saveDoc, SimulationModel *model, GlobalSimuState &globState) {
+bool WriterXML::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<SimulationModel> model, GlobalSimuState &globState) {
     //xml_parse_result parseResult = saveDoc.load_file(outputFileName.c_str()); //parse xml file directly
 
     xml_node rootNode = saveDoc.child("SimulationEnvironment");

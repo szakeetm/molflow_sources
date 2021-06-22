@@ -25,7 +25,7 @@ void reportLoadStatus(const std::string& statusString) {
 
 // Use work->InsertParametersBeforeCatalog(loadedParams);
 // if loaded from GUI side
-int LoaderXML::LoadGeometry(const std::string inputFileName, SimulationModel *model) {
+int LoaderXML::LoadGeometry(std::string inputFileName, std::shared_ptr<SimulationModel> model) {
     xml_document loadXML;
     auto inputFile = inputFileName.c_str();
     xml_parse_result parseResult = loadXML.load_file(inputFile); //parse xml file directly
@@ -231,7 +231,7 @@ std::vector<SelectionGroup> LoaderXML::LoadSelections(const std::string& inputFi
     return selGroup;
 }
 
-int LoaderXML::LoadSimulationState(const std::string& inputFileName, SimulationModel *model, GlobalSimuState& globState){
+int LoaderXML::LoadSimulationState(const std::string& inputFileName, std::shared_ptr<SimulationModel> model, GlobalSimuState& globState){
     xml_document loadXML;
     xml_parse_result parseResult = loadXML.load_file(inputFileName.c_str()); //parse xml file directly
     xml_node rootNode = loadXML.child("SimulationEnvironment");

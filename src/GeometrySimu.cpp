@@ -100,6 +100,8 @@ size_t SubprocessFacet::InitializeTexture(const size_t &nbMoments)
         catch (...) {
             throw std::runtime_error("Not enough memory to load textures");
             return false;
+        }
+        fullSizeInc = (sh.texWidth_precise * sh.texHeight_precise) / (sh.U.Norme() * sh.V.Norme());
         }*/
         // Texture increment of a full texture element
         double fullSizeInc = (sh.texWidth_precise * sh.texHeight_precise) / (sh.U.Norme() * sh.V.Norme());

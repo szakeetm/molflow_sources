@@ -27,7 +27,7 @@ namespace Settings {
 
 void initDefaultSettings(){
     Settings::nbThreads = 0;
-    Settings::simDuration = 10;
+    Settings::simDuration = 0;
     Settings::autoSaveDuration = 600;
     Settings::loadAutosave = false;
     Settings::desLimit.clear();
@@ -92,10 +92,17 @@ int Initializer::parseCommands(int argc, char** argv) {
     //std::cout<<app.config_to_str(true,true);
     for(auto& lim : limits)
         Settings::desLimit.emplace_back(lim);
+
+    if(Settings::simDuration == 0 && Settings::desLimit.empty()) {
+        Log::console_error("No end criterion has been set!\n");
+        Log::console_error(" Either use: -t or -d\n");
+        return 1;
+    }
+
     return 0;
 }
 
-int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManager, SimulationModel *model) {
+int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManager, std::shared_ptr<SimulationModel> model) {
     Log::console_header(1,"Commence: Initialising!\n");
 
 #if defined(WIN32) || defined(__APPLE__)
@@ -107,7 +114,7 @@ int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManag
     initDefaultSettings();
 
     int err = 0;
-    if(err = parseCommands(argc, argv)){
+    if((err = parseCommands(argc, argv))){
         return err;
     }
 
@@ -128,7 +135,7 @@ int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManag
     return 0;
 }
 
-int Initializer::initFromFile(SimulationManager *simManager, SimulationModel *model, GlobalSimuState *globState) {
+int Initializer::initFromFile(SimulationManager *simManager, std::shared_ptr<SimulationModel> model, GlobalSimuState *globState) {
     if(SettingsIO::prepareIO()) {
         Log::console_error("Error preparing I/O folders\n");
         return 1;
@@ -153,7 +160,7 @@ int Initializer::initFromFile(SimulationManager *simManager, SimulationModel *mo
     }
 
     // Set desorption limit if used
-    if(initDesLimit(*model,*globState)) {
+    if(initDesLimit(model,*globState)) {
         return 1;
     }
 
@@ -170,7 +177,7 @@ int Initializer::initFromFile(SimulationManager *simManager, SimulationModel *mo
     return 0;
 }
 
-int Initializer::loadFromXML(const std::string &fileName, bool loadState, SimulationModel *model,
+int Initializer::loadFromXML(const std::string &fileName, bool loadState, std::shared_ptr<SimulationModel> model,
                              GlobalSimuState *globState) {
 
     Log::console_header(1,"[ ] Loading geometry from file %s\n", fileName.c_str());
@@ -247,8 +254,8 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, Simula
     return 0;
 }
 
-int Initializer::initDesLimit(SimulationModel& model, GlobalSimuState& globState){
-    model.otfParams.desorptionLimit = 0;
+int Initializer::initDesLimit(std::shared_ptr<SimulationModel> model, GlobalSimuState& globState){
+    model->otfParams.desorptionLimit = 0;
 
     // Skip desorptions if limit was already reached
     if(!Settings::desLimit.empty())
@@ -256,14 +263,14 @@ int Initializer::initDesLimit(SimulationModel& model, GlobalSimuState& globState
         size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
         size_t listSize = Settings::desLimit.size();
         for(size_t l = 0; l < listSize; ++l) {
-            model.otfParams.desorptionLimit = Settings::desLimit.front();
+            model->otfParams.desorptionLimit = Settings::desLimit.front();
             Settings::desLimit.pop_front();
 
-            if (oldDesNb > model.otfParams.desorptionLimit){
-                Log::console_msg_master(1,"Skipping desorption limit: %zu\n", model.otfParams.desorptionLimit);
+            if (oldDesNb > model->otfParams.desorptionLimit){
+                Log::console_msg_master(1,"Skipping desorption limit: %zu\n", model->otfParams.desorptionLimit);
             }
             else{
-                Log::console_msg_master(1,"Starting with desorption limit: %zu from %zu\n", model.otfParams.desorptionLimit , oldDesNb);
+                Log::console_msg_master(1,"Starting with desorption limit: %zu from %zu\n", model->otfParams.desorptionLimit , oldDesNb);
                 return 0;
             }
         }
@@ -312,7 +319,7 @@ std::string Initializer::getAutosaveFile(){
 * \brief Prepares data structures for use in simulation
 * \return error code: 0=no error, 1=error
 */
-int Initializer::initSimModel(SimulationModel* model) {
+int Initializer::initSimModel(std::shared_ptr<SimulationModel> model) {
 
     std::vector<Moment> momentIntervals;
     momentIntervals.reserve(model->tdParams.moments.size());
