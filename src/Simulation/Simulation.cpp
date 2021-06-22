@@ -190,8 +190,8 @@ int Simulation::RebuildAccelStructure() {
 
 #if defined(USE_OLD_BVH)
     std::vector<std::vector<SubprocessFacet*>> facetPointers;
-    facetPointers.resize(model.sh.nbSuper);
-    for(auto& sFac : model.facets){
+    facetPointers.resize(model->sh.nbSuper);
+    for(auto& sFac : model->facets){
         // TODO: Build structures
         if (sFac->sh.superIdx == -1) { //Facet in all structures
             for (auto& fp_vec : facetPointers) {
@@ -205,8 +205,8 @@ int Simulation::RebuildAccelStructure() {
 
     // Build all AABBTrees
     size_t maxDepth=0;
-    for (size_t s = 0; s < model.sh.nbSuper; ++s) {
-        auto& structure = model.structures[s];
+    for (size_t s = 0; s < model->sh.nbSuper; ++s) {
+        auto& structure = model->structures[s];
         if(structure.aabbTree)
             structure.aabbTree.reset();
         AABBNODE* tree = BuildAABBTree(facetPointers[s], 0, maxDepth);
@@ -216,8 +216,8 @@ int Simulation::RebuildAccelStructure() {
 
 #else
     std::vector<std::vector<std::shared_ptr<Primitive>>> primPointers;
-    primPointers.resize(model.sh.nbSuper);
-    for(auto& sFac : model.facets){
+    primPointers.resize(model->sh.nbSuper);
+    for(auto& sFac : model->facets){
         if (sFac->sh.superIdx == -1) { //Facet in all structures
             for (auto& fp_vec : primPointers) {
                 fp_vec.push_back(sFac);
@@ -228,7 +228,7 @@ int Simulation::RebuildAccelStructure() {
         }
     }
 
-    for(auto& fac : model.facets){
+    for(auto& fac : model->facets){
         auto& sFac = *fac;
         if(sFac.sh.opacity >= 1.0)
             sFac.surf = new Surface();
@@ -241,10 +241,10 @@ int Simulation::RebuildAccelStructure() {
     }
 
 #if defined(USE_KDTREE)
-    model.kdtree.clear();
+    model->kdtree.clear();
 
     if(globState->initialized && globState->globalHits.globalHits.nbDesorbed > 0){
-        if(globState->facetStates.size() != model.facets.size())
+        if(globState->facetStates.size() != model->facets.size())
             return 1;
         std::vector<double> probabilities;
         probabilities.reserve(globState->facetStates.size());
@@ -252,29 +252,29 @@ int Simulation::RebuildAccelStructure() {
             probabilities.emplace_back(state.momentResults[0].hits.nbHitEquiv / globState->globalHits.globalHits.nbHitEquiv);
         }
         /*size_t sumCount = 0;
-        for(auto& fac : model.facets) {
+        for(auto& fac : model->facets) {
             sumCount += fac->iSCount;
         }
-        for(auto& fac : model.facets) {
+        for(auto& fac : model->facets) {
             probabilities.emplace_back((double)fac->iSCount / (double)sumCount);
         }*/
-        for (size_t s = 0; s < model.sh.nbSuper; ++s) {
-            model.kdtree.emplace_back(primPointers[s], probabilities);
+        for (size_t s = 0; s < model->sh.nbSuper; ++s) {
+            model->kdtree.emplace_back(primPointers[s], probabilities);
         }
     }
     else {
-        for (size_t s = 0; s < model.sh.nbSuper; ++s) {
-            model.kdtree.emplace_back(primPointers[s]);
+        for (size_t s = 0; s < model->sh.nbSuper; ++s) {
+            model->kdtree.emplace_back(primPointers[s]);
         }
     }
 
 
 #else
     //std::vector<BVHAccel> bvhs;
-    model.bvhs.clear();
+    model->bvhs.clear();
 
     if(globState->initialized && globState->globalHits.globalHits.nbDesorbed > 0){
-        if(globState->facetStates.size() != model.facets.size())
+        if(globState->facetStates.size() != model->facets.size())
             return 1;
         std::vector<double> probabilities;
         probabilities.reserve(globState->facetStates.size());
@@ -282,26 +282,26 @@ int Simulation::RebuildAccelStructure() {
             probabilities.emplace_back(state.momentResults[0].hits.nbHitEquiv / globState->globalHits.globalHits.nbHitEquiv);
         }
         /*size_t sumCount = 0;
-        for(auto& fac : model.facets) {
+        for(auto& fac : model->facets) {
             sumCount += fac->iSCount;
         }
-        for(auto& fac : model.facets) {
+        for(auto& fac : model->facets) {
             probabilities.emplace_back((double)fac->iSCount / (double)sumCount);
         }*/
-        for (size_t s = 0; s < model.sh.nbSuper; ++s) {
-            model.bvhs.emplace_back(primPointers[s], 2, BVHAccel::SplitMethod::ProbSplit, probabilities);
+        for (size_t s = 0; s < model->sh.nbSuper; ++s) {
+            model->bvhs.emplace_back(primPointers[s], 2, BVHAccel::SplitMethod::ProbSplit, probabilities);
         }
     }
     else {
-        for (size_t s = 0; s < model.sh.nbSuper; ++s) {
-            model.bvhs.emplace_back(primPointers[s], 2, BVHAccel::SplitMethod::SAH);
+        for (size_t s = 0; s < model->sh.nbSuper; ++s) {
+            model->bvhs.emplace_back(primPointers[s], 2, BVHAccel::SplitMethod::SAH);
         }
     }
 #endif
 #endif // old_bvb
 
     for(auto& particle : particles)
-        particle.model = &model;
+        particle.model = model.get();
 
     timer.Stop();
 
@@ -324,8 +324,8 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     {
         auto& tmpResults = particle.tmpState;
 
-        std::vector<FacetState>(simModel.sh.nbFacet).swap(tmpResults.facetStates);
-        for(auto& fac : simModel.facets){
+        std::vector<FacetState>(simModel->sh.nbFacet).swap(tmpResults.facetStates);
+        for(auto& fac : simModel->facets){
             auto& sFac = *fac;
             size_t i = sFac.globalId;
             if(!tmpResults.facetStates[i].momentResults.empty())
@@ -343,13 +343,13 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
 
         //Global histogram
         FacetHistogramBuffer globalHistTemplate;
-        globalHistTemplate.Resize(simModel.wp.globalHistogramParams);
+        globalHistTemplate.Resize(simModel->wp.globalHistogramParams);
         tmpResults.globalHistograms = std::vector<FacetHistogramBuffer>(1 + simModel->tdParams.moments.size(), globalHistTemplate);
         tmpResults.initialized = true;
 
 
         // Init tmp vars per thread
-        std::vector<SubProcessFacetTempVar>(simModel.sh.nbFacet).swap(particle.tmpFacetVars);
+        std::vector<SubProcessFacetTempVar>(simModel->sh.nbFacet).swap(particle.tmpFacetVars);
         //currentParticle.tmpState = *tmpResults;
         //delete tmpResults;
     }
@@ -359,8 +359,8 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
 
 #if defined(USE_OLD_BVH)
     std::vector<std::vector<SubprocessFacet*>> facetPointers;
-    facetPointers.resize(simModel.sh.nbSuper);
-    for(auto& sFac : simModel.facets){
+    facetPointers.resize(simModel->sh.nbSuper);
+    for(auto& sFac : simModel->facets){
         // TODO: Build structures
         if (sFac->sh.superIdx == -1) { //Facet in all structures
             for (auto& fp_vec : facetPointers) {
@@ -374,8 +374,8 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
 
     // Build all AABBTrees
     size_t maxDepth=0;
-    for (size_t s = 0; s < simModel.sh.nbSuper; ++s) {
-        auto& structure = simModel.structures[s];
+    for (size_t s = 0; s < simModel->sh.nbSuper; ++s) {
+        auto& structure = simModel->structures[s];
         if(structure.aabbTree)
             structure.aabbTree.reset();
         AABBNODE* tree = BuildAABBTree(facetPointers[s], 0, maxDepth);
@@ -385,8 +385,8 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
 
 #else
     std::vector<std::vector<std::shared_ptr<Primitive>>> primPointers;
-    primPointers.resize(simModel.sh.nbSuper);
-    for(auto& sFac : simModel.facets){
+    primPointers.resize(simModel->sh.nbSuper);
+    for(auto& sFac : simModel->facets){
         if (sFac->sh.superIdx == -1) { //Facet in all structures
             for (auto& fp_vec : primPointers) {
                 fp_vec.push_back(sFac);
@@ -397,7 +397,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
         }
     }
 
-    for(auto& fac : simModel.facets){
+    for(auto& fac : simModel->facets){
         auto& sFac = *fac;
         if(sFac.sh.opacity >= 1.0)
             sFac.surf = new Surface();
@@ -410,15 +410,15 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     }
 
 #if defined(USE_KDTREE)
-    simModel.kdtree.clear();
-    for (size_t s = 0; s < simModel.sh.nbSuper; ++s) {
-        simModel.kdtree.emplace_back(primPointers[s]);
+    simModel->kdtree.clear();
+    for (size_t s = 0; s < simModel->sh.nbSuper; ++s) {
+        simModel->kdtree.emplace_back(primPointers[s]);
     }
 #else
     //std::vector<BVHAccel> bvhs;
-    simModel.bvhs.clear();
-    for (size_t s = 0; s < model.sh.nbSuper; ++s) {
-        simModel.bvhs.emplace_back(primPointers[s], 2, BVHAccel::SplitMethod::SAH);
+    simModel->bvhs.clear();
+    for (size_t s = 0; s < model->sh.nbSuper; ++s) {
+        simModel->bvhs.emplace_back(primPointers[s], 2, BVHAccel::SplitMethod::SAH);
     }
 #endif
 #endif // old_bvb
