@@ -17,6 +17,7 @@
 #include <cereal/cereal.hpp>
 #include <cereal/types/vector.hpp>
 #include <RayTracing/KDTree.h>
+#include <map>
 
 struct SubprocessFacet;
 class SuperStructure;
@@ -219,6 +220,24 @@ public:
     int InitialiseFacets();
     void CalcTotalOutgassing();
     void CalculateFacetParams(SubprocessFacet* f);
+    Surface* GetSurface(double opacity) {
+        auto surf = surfaces.find(opacity);
+        if(surf != surfaces.end())
+            return surf->second.get();
+        else{
+            std::shared_ptr<Surface> surface;
+            if(opacity == 1.0) {
+                surface = std::make_shared<Surface>();
+            }
+            else if(opacity == 0.0) {
+                surface = std::make_shared<TransparentSurface>();
+            }
+            else {
+                surface = std::make_shared<AlphaSurface>(opacity);
+            }
+            surfaces.insert(std::make_pair(opacity, surface));
+        }
+    };
 
     // Sim functions
     double GetOpacityAt(SubprocessFacet *f, double time) const;
@@ -226,6 +245,7 @@ public:
 
     // Geometry Description
     std::vector<std::shared_ptr<SubprocessFacet>>    facets;    // All facets of this geometry
+
     std::vector<SuperStructure> structures;
     std::vector<Vector3d> vertices3; // Vertices (3D space)
 #if defined(USE_OLD_BVH)
@@ -236,6 +256,7 @@ public:
     std::vector<BVHAccel> bvhs;
 #endif
 
+    std::map<double,std::shared_ptr<Surface>> surfaces;
 
     // Simulation Properties
     OntheflySimulationParams otfParams;
