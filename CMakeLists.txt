@@ -11,7 +11,10 @@ string (REGEX MATCH "\\.el[1-9]" os_version_suffix ${CMAKE_SYSTEM})
 message("-- os_version_suffix:      ${os_version_suffix}")
 
 #list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
-option(USE_OLD_BVH "simulation will use old bvh structure by default" ON)
+
+#Use new BVH by default
+#priority: USE_OLD_BVH > USE_KDTREE
+option(USE_OLD_BVH "simulation will use old bvh structure by default" OFF)
 option(USE_KDTREE "simulation will use kd structure instead of bvh" OFF)
 
 option(USE_CLANG "build application with clang" OFF) # OFF is the default
