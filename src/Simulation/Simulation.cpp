@@ -230,14 +230,18 @@ int Simulation::RebuildAccelStructure() {
 
     for(auto& fac : model->facets){
         auto& sFac = *fac;
-        if(sFac.sh.opacity >= 1.0)
+        sFac.sh.opacity = std::clamp(sFac.sh.opacity, 0.0, 1.0);
+        sFac.surf = model->GetSurface(sFac.sh.opacity);
+
+        /*if(sFac.sh.opacity >= 1.0) {
             sFac.surf = new Surface();
+        }
         else if (sFac.sh.opacity <= 0.0){
             sFac.surf = new TransparentSurface();
         }
         else {
             sFac.surf = new AlphaSurface(sFac.sh.opacity);
-        }
+        }*/
     }
 
 #if defined(USE_KDTREE)
@@ -399,14 +403,8 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
 
     for(auto& fac : simModel->facets){
         auto& sFac = *fac;
-        if(sFac.sh.opacity >= 1.0)
-            sFac.surf = new Surface();
-        else if (sFac.sh.opacity <= 0.0){
-            sFac.surf = new TransparentSurface();
-        }
-        else {
-            sFac.surf = new AlphaSurface(sFac.sh.opacity);
-        }
+        sFac.sh.opacity = std::clamp(sFac.sh.opacity, 0.0, 1.0);
+        sFac.surf = model->GetSurface(sFac.sh.opacity);
     }
 
 #if defined(USE_KDTREE)
