@@ -67,6 +67,7 @@ namespace {
             ::testing::Values(
                     "TestCases/01-quick_pipe_profiles_textures_2sided.zip",
                     "TestCases/02-timedependent_with_two_parameters.zip",
+                    "TestCases/02b-timedependent_with_three_parameters.zip",
                     "TestCases/03-anglemap_record.zip",
                     "TestCases/03b-anglemap_record_transparent_target.zip",
                     "TestCases/04-anglemap_desorb.zip",

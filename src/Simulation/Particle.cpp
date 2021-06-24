@@ -259,7 +259,7 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
             SubprocessFacet* collidedFacet;
             double d;
             {
-                Ray tmpRay(position, direction);
+                Ray tmpRay(position, direction, 1.0e99, this->particleTime);
                 if(lastHitFacet)
                     tmpRay.lastIntersected = lastHitFacet->globalId;
                 else

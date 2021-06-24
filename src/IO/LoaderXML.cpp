@@ -384,7 +384,7 @@ int LoaderXML::LoadSimulationState(const std::string& inputFileName, std::shared
         xml_node facetResultsNode = newMoment.child("FacetResults");
         for (xml_node newFacetResult : facetResultsNode.children("Facet")) {
             int facetId = newFacetResult.attribute("id").as_int();
-            SubprocessFacet& facet = *model->facets[facetId];
+            auto sFac = model->facets[facetId];
             xml_node facetHitNode = newFacetResult.child("Hits");
             //FacetHitBuffer* facetCounter = (FacetHitBuffer *)(buffer + loadFacets[facetId].sh.hitOffset + m * sizeof(FacetHitBuffer));
             FacetHitBuffer* facetCounter = &globState.facetStates[facetId].momentResults[m].hits;
@@ -433,7 +433,7 @@ int LoaderXML::LoadSimulationState(const std::string& inputFileName, std::shared
             }
 
             //Profiles
-            if (facet.sh.isProfile) {
+            if (sFac->sh.isProfile) {
                 xml_node profileNode = newFacetResult.child("Profile");
                 //ProfileSlice *profilePtr = (ProfileSlice *)(buffer + facet.sh.hitOffset + facetHitsSize + m * sizeof(ProfileSlice)*PROFILE_SIZE);
                 std::vector<ProfileSlice>& profilePtr = globState.facetStates[facetId].momentResults[m].profile;
@@ -454,9 +454,9 @@ int LoaderXML::LoadSimulationState(const std::string& inputFileName, std::shared
             }
 
             //Textures
-            int profSize = (facet.sh.isProfile) ? ((int)PROFILE_SIZE * (int)sizeof(ProfileSlice)*(1 + (int)model->tdParams.moments.size())) : 0;
+            int profSize = (sFac->sh.isProfile) ? ((int)PROFILE_SIZE * (int)sizeof(ProfileSlice)*(1 + (int)model->tdParams.moments.size())) : 0;
 
-            if (facet.sh.texWidth * facet.sh.texHeight > 0) {
+            if (sFac->sh.texWidth * sFac->sh.texHeight > 0) {
                 xml_node textureNode = newFacetResult.child("Texture");
                 size_t texWidth_file = textureNode.attribute("width").as_llong();
                 size_t texHeight_file = textureNode.attribute("height").as_llong();
@@ -473,14 +473,14 @@ int LoaderXML::LoadSimulationState(const std::string& inputFileName, std::shared
                 sum1perText << textureNode.child_value("sum_1_per_v");
                 sumvortText << textureNode.child_value("sum_v_ort");
 
-                for (size_t iy = 0; iy < (Min(facet.sh.texHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
-                    for (size_t ix = 0; ix < (Min(facet.sh.texWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
-                        countText >> texture[iy*facet.sh.texWidth + ix].countEquiv;
-                        sum1perText >> texture[iy*facet.sh.texWidth + ix].sum_1_per_ort_velocity;
-                        sumvortText >> texture[iy*facet.sh.texWidth + ix].sum_v_ort_per_area;
+                for (size_t iy = 0; iy < (Min(sFac->sh.texHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
+                    for (size_t ix = 0; ix < (Min(sFac->sh.texWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
+                        countText >> texture[iy*sFac->sh.texWidth + ix].countEquiv;
+                        sum1perText >> texture[iy*sFac->sh.texWidth + ix].sum_1_per_ort_velocity;
+                        sumvortText >> texture[iy*sFac->sh.texWidth + ix].sum_v_ort_per_area;
 
                     }
-                    for (int ie = 0; ie < texWidth_file - facet.sh.texWidth; ie++) {//Executed if file texture is bigger than expected texture
+                    for (int ie = 0; ie < texWidth_file - sFac->sh.texWidth; ie++) {//Executed if file texture is bigger than expected texture
                         //Read extra cells from file without doing anything
                         size_t dummy_ll;
                         double dummy_d;
@@ -490,7 +490,7 @@ int LoaderXML::LoadSimulationState(const std::string& inputFileName, std::shared
 
                     }
                 }
-                for (int ie = 0; ie < texHeight_file - facet.sh.texHeight; ie++) {//Executed if file texture is bigger than expected texture
+                for (int ie = 0; ie < texHeight_file - sFac->sh.texHeight; ie++) {//Executed if file texture is bigger than expected texture
                     //Read extra cells ffrom file without doing anything
                     for (int iw = 0; iw < texWidth_file; iw++) {
                         size_t dummy_ll;
@@ -503,53 +503,53 @@ int LoaderXML::LoadSimulationState(const std::string& inputFileName, std::shared
                 }
             } //end texture
 
-            if (facet.sh.countDirection) {
+            if (sFac->sh.countDirection) {
                 xml_node dirNode = newFacetResult.child("Directions");
-                if (dirNode.attribute("width").as_int() != facet.sh.texWidth ||
-                    dirNode.attribute("height").as_int() != facet.sh.texHeight) {
+                if (dirNode.attribute("width").as_int() != sFac->sh.texWidth ||
+                    dirNode.attribute("height").as_int() != sFac->sh.texHeight) {
                     std::stringstream msg;
-                    msg << "Direction texture size mismatch on facet " << facetId + 1 << ".\nExpected: " << facet.sh.texWidth << "x" << facet.sh.texHeight << "\n"
+                    msg << "Direction texture size mismatch on facet " << facetId + 1 << ".\nExpected: " << sFac->sh.texWidth << "x" << sFac->sh.texHeight << "\n"
                         << "In file: " << dirNode.attribute("width").as_int() << "x" << dirNode.attribute("height").as_int();
                     throw Error(msg.str().c_str());
 
                 }
-                /*DirectionCell *dirs = (DirectionCell *)(buffer + facet.sh.hitOffset + facetHitsSize
-                                                        + profSize + (1 + (int)model->tdParams.moments.size())*facet.sh.texWidth*facet.sh.texHeight * sizeof(TextureCell)
-                                                        + m * facet.sh.texWidth*facet.sh.texHeight * sizeof(DirectionCell));*/
+                /*DirectionCell *dirs = (DirectionCell *)(buffer + sFac->sh.hitOffset + facetHitsSize
+                                                        + profSize + (1 + (int)model->tdParams.moments.size())*sFac->sh.texWidth*sFac->sh.texHeight * sizeof(TextureCell)
+                                                        + m * sFac->sh.texWidth*sFac->sh.texHeight * sizeof(DirectionCell));*/
                 std::vector<DirectionCell>& dirs = globState.facetStates[facetId].momentResults[m].direction;
 
                 std::stringstream dirText, dirCountText;
                 dirText << dirNode.child_value("vel.vectors");
                 dirCountText << dirNode.child_value("count");
 
-                for (size_t iy = 0; iy < facet.sh.texHeight; iy++) {
-                    for (size_t ix = 0; ix < facet.sh.texWidth; ix++) {
+                for (size_t iy = 0; iy < sFac->sh.texHeight; iy++) {
+                    for (size_t ix = 0; ix < sFac->sh.texWidth; ix++) {
                         std::string component;
                         std::getline(dirText, component, ',');
-                        dirs[iy*facet.sh.texWidth + ix].dir.x = std::stod(component);
+                        dirs[iy*sFac->sh.texWidth + ix].dir.x = std::stod(component);
                         std::getline(dirText, component, ',');
-                        dirs[iy*facet.sh.texWidth + ix].dir.y = std::stod(component);
-                        dirText >> dirs[iy*facet.sh.texWidth + ix].dir.z;
-                        dirCountText >> dirs[iy*facet.sh.texWidth + ix].count;
+                        dirs[iy*sFac->sh.texWidth + ix].dir.y = std::stod(component);
+                        dirText >> dirs[iy*sFac->sh.texWidth + ix].dir.z;
+                        dirCountText >> dirs[iy*sFac->sh.texWidth + ix].count;
                     }
                 }
             } //end directions
 
             // Facet histogram
-            hasHistogram = facet.sh.facetHistogramParams.recordBounce || facet.sh.facetHistogramParams.recordDistance;
+            hasHistogram = sFac->sh.facetHistogramParams.recordBounce || sFac->sh.facetHistogramParams.recordDistance;
 #ifdef MOLFLOW
-            hasHistogram = hasHistogram || facet.sh.facetHistogramParams.recordTime;
+            hasHistogram = hasHistogram || sFac->sh.facetHistogramParams.recordTime;
 #endif
             if (hasHistogram) {
                 xml_node histNode = newFacetResult.child("Histograms");
                 if (histNode) { //Versions before 2.8 didn't save histograms
                     //Retrieve histogram map from hits dp
                     auto& facetHistogram = globState.facetStates[facetId].momentResults[m].histogram;
-                    if (facet.sh.facetHistogramParams.recordBounce) {
+                    if (sFac->sh.facetHistogramParams.recordBounce) {
                         auto& nbHitsHistogram = facetHistogram.nbHitsHistogram;
                         xml_node hist = histNode.child("Bounces");
                         if (hist) {
-                            size_t histSize = facet.sh.facetHistogramParams.GetBounceHistogramSize();
+                            size_t histSize = sFac->sh.facetHistogramParams.GetBounceHistogramSize();
                             size_t saveHistSize = hist.attribute("size").as_ullong();
                             if (histSize == saveHistSize) {
                                 //Can do: compare saved with expected size
@@ -568,11 +568,11 @@ int LoaderXML::LoadSimulationState(const std::string& inputFileName, std::shared
                             }
                         }
                     }
-                    if (facet.sh.facetHistogramParams.recordDistance) {
+                    if (sFac->sh.facetHistogramParams.recordDistance) {
                         auto& distanceHistogram = facetHistogram.distanceHistogram;
                         xml_node hist = histNode.child("Distance");
                         if (hist) {
-                            size_t histSize = facet.sh.facetHistogramParams.GetDistanceHistogramSize();
+                            size_t histSize = sFac->sh.facetHistogramParams.GetDistanceHistogramSize();
                             size_t saveHistSize = hist.attribute("size").as_ullong();
                             if (histSize == saveHistSize) {
                                 //Can do: compare saved with expected size
@@ -591,11 +591,11 @@ int LoaderXML::LoadSimulationState(const std::string& inputFileName, std::shared
                             }
                         }
                     }
-                    if (facet.sh.facetHistogramParams.recordTime) {
+                    if (sFac->sh.facetHistogramParams.recordTime) {
                         auto& timeHistogram = facetHistogram.timeHistogram;
                         xml_node hist = histNode.child("Time");
                         if (hist) {
-                            size_t histSize = facet.sh.facetHistogramParams.GetTimeHistogramSize();
+                            size_t histSize = sFac->sh.facetHistogramParams.GetTimeHistogramSize();
                             size_t saveHistSize = hist.attribute("size").as_ullong();
                             if (histSize == saveHistSize) {
                                 //Can do: compare saved with expected size

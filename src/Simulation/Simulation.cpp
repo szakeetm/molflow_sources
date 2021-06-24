@@ -228,20 +228,15 @@ int Simulation::RebuildAccelStructure() {
         }
     }
 
-    for(auto& fac : model->facets){
-        auto& sFac = *fac;
-        sFac.sh.opacity = std::clamp(sFac.sh.opacity, 0.0, 1.0);
-        sFac.surf = model->GetSurface(sFac.sh.opacity);
-
-        /*if(sFac.sh.opacity >= 1.0) {
-            sFac.surf = new Surface();
-        }
-        else if (sFac.sh.opacity <= 0.0){
-            sFac.surf = new TransparentSurface();
+    for(auto& sFac : model->facets){
+        if (sFac->sh.opacity_paramId == -1){ //constant sticking
+            sFac->sh.opacity = std::clamp(sFac->sh.opacity, 0.0, 1.0);
+            sFac->surf = model->GetSurface(sFac->sh.opacity);
         }
         else {
-            sFac.surf = new AlphaSurface(sFac.sh.opacity);
-        }*/
+            auto* par = &model->tdParams.parameters[sFac->sh.opacity_paramId];
+            sFac->surf = model->GetParameterSurface(sFac->sh.opacity_paramId, par);
+        }
     }
 
 #if defined(USE_KDTREE)
@@ -401,10 +396,15 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
         }
     }
 
-    for(auto& fac : simModel->facets){
-        auto& sFac = *fac;
-        sFac.sh.opacity = std::clamp(sFac.sh.opacity, 0.0, 1.0);
-        sFac.surf = model->GetSurface(sFac.sh.opacity);
+    for(auto& sFac : simModel->facets){
+        if (sFac->sh.opacity_paramId == -1){ //constant sticking
+            sFac->sh.opacity = std::clamp(sFac->sh.opacity, 0.0, 1.0);
+            sFac->surf = simModel->GetSurface(sFac->sh.opacity);
+        }
+        else {
+            auto* par = &simModel->tdParams.parameters[sFac->sh.opacity_paramId];
+            sFac->surf = simModel->GetParameterSurface(sFac->sh.opacity_paramId, par);
+        }
     }
 
 #if defined(USE_KDTREE)

@@ -21,6 +21,11 @@ SuperStructure::~SuperStructure()
     aabbTree.reset();
 }
 
+bool ParameterSurface::IsHardHit(const Ray &r) {
+    const double td_opacity = InterpolateY(r.time, dist->GetValues(), dist->logXinterp, dist->logYinterp, false);
+    return (r.rng->rnd() < td_opacity);
+};
+
 bool SubprocessFacet::InitializeOnLoad(const size_t &id, const size_t &nbMoments) {
     globalId = id;
     //ResizeCounter(nbMoments); //Initialize counter
@@ -626,9 +631,7 @@ void SimulationModel::CalcTotalOutgassing() {
     wp.finalOutgassingRate = finalOutgassingRate;
 }
 
-SimulationModel::~SimulationModel() {
-
-}
+SimulationModel::~SimulationModel() = default;
 
 /**
 * \brief Assign operator
@@ -682,22 +685,22 @@ void GlobalSimuState::Resize(const SimulationModel &model) { //Constructs the 'd
 
     if(!model.facets.empty()) {
         for (size_t i = 0; i < nbF; i++) {
-            auto &sFac = *model.facets[i];
-            if (sFac.globalId != i) {
-                std::cerr << "Facet ID mismatch! : " << sFac.globalId << " / " << i << "\n";
+            auto sFac = model.facets[i];
+            if (sFac->globalId != i) {
+                std::cerr << "Facet ID mismatch! : " << sFac->globalId << " / " << i << "\n";
                 exit(0);
             }
-            FacetMomentSnapshot facetMomentTemplate;
-            facetMomentTemplate.histogram.Resize(sFac.sh.facetHistogramParams);
+            FacetMomentSnapshot facetMomentTemplate{};
+            facetMomentTemplate.histogram.Resize(sFac->sh.facetHistogramParams);
             facetMomentTemplate.direction = std::vector<DirectionCell>(
-                    sFac.sh.countDirection ? sFac.sh.texWidth * sFac.sh.texHeight : 0);
-            facetMomentTemplate.profile = std::vector<ProfileSlice>(sFac.sh.isProfile ? PROFILE_SIZE : 0);
+                    sFac->sh.countDirection ? sFac->sh.texWidth * sFac->sh.texHeight : 0);
+            facetMomentTemplate.profile = std::vector<ProfileSlice>(sFac->sh.isProfile ? PROFILE_SIZE : 0);
             facetMomentTemplate.texture = std::vector<TextureCell>(
-                    sFac.sh.isTextured ? sFac.sh.texWidth * sFac.sh.texHeight : 0);
+                    sFac->sh.isTextured ? sFac->sh.texWidth * sFac->sh.texHeight : 0);
             //No init for hits
             facetStates[i].momentResults = std::vector<FacetMomentSnapshot>(1 + nbMoments, facetMomentTemplate);
-            if (sFac.sh.anglemapParams.record)
-                facetStates[i].recordedAngleMapPdf = std::vector<size_t>(sFac.sh.anglemapParams.GetMapSize());
+            if (sFac->sh.anglemapParams.record)
+                facetStates[i].recordedAngleMapPdf = std::vector<size_t>(sFac->sh.anglemapParams.GetMapSize());
         }
     }
     /*for (size_t i = 0; i < nbF; i++) {
