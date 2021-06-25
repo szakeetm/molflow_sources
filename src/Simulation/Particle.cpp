@@ -233,9 +233,13 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
         particleId = ompIndex;
         size_t i;
 
+#if !defined(USE_OLD_BVH)
+        std::vector<HitLink> hits;
+        hits.reserve(8);
+#endif
         // start new particle when no previous hit facet was saved
         bool insertNewParticle = !lastHitFacet;
-        for (i = 0; i < nbStep /*&& allQuit <= 0*/; i++) {
+        for (i = 0; i < nbStep && !allQuit; i++) {
             if (insertNewParticle) {
                 // quit on desorp error or limit reached
                 if((model->otfParams.desorptionLimit > 0 && remainingDes==0) || !StartFromSource()){
@@ -265,7 +269,35 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
             SubprocessFacet* collidedFacet;
             double d;
             {
-                Ray tmpRay(position, direction);
+                Ray tmpRay(position, direction, nullptr, 1.0e99, this->particleTime);
+                if(lastHitFacet)
+                    tmpRay.lastIntersected = lastHitFacet->globalId;
+                else
+                    tmpRay.lastIntersected = -1;
+                tmpRay.rng = &randomGenerator;
+
+                tmpRay.hits = &hits;
+#if defined(USE_KDTREE)
+                found = model->kdtree[structureId].Intersect(tmpRay);
+#else
+                found = model->bvhs[structureId].Intersect(tmpRay);
+#endif
+                if(found){
+                    for(auto& hit : *tmpRay.hits){
+                        if(!hit.hit->isHit) {
+                            transparentHitBuffer.push_back(model->facets[hit.hitId].get());
+                        }
+                        else {
+                            collidedFacet = model->facets[hit.hitId].get();
+                            d = hit.hit->colDistTranspPass;
+                        }
+                        tmpFacetVars[hit.hitId] = *hit.hit;
+                    }
+                }
+                tmpRay.hits->clear();
+            }
+            /*{
+                Ray tmpRay(position, direction, nullptr, 1.0e99, this->particleTime);
                 if(lastHitFacet)
                     tmpRay.lastIntersected = lastHitFacet->globalId;
                 else
@@ -293,26 +325,9 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                         currHit = currHit->next;
                     }
                 }
-                //printf("%lf ms time spend in new BVH\n", tmp2Time.ElapsedMs());
-                /*size_t hitNo = 0;
-                HitChain* log = hitChain;
-                std::vector<HitChain*> hitlog;
-                while (log) {
-                    hitlog.push_back(log);
-                    //if(log->hit) printf("[%zu][%zu] Hit at fac: %lf , %lf\n", hitNo, log->hitId, log->hit->colU, log->hit->colV);
-                    log = log->next;
-                    hitNo++;
-                }
-                for(auto hlog = hitlog.rbegin() ; hlog != hitlog.rend(); ++hlog){
-                    if((*hlog)->hit && (*hlog)->hit->isHit && collidedFacet->globalId == (*hlog)->hitId) {
-                        break;
-                    }
-                    else if((*hlog)->hit && (*hlog)->hit->isHit && collidedFacet->globalId != (*hlog)->hitId)
-                        printf("Hit mismatch %zu vs %zu\n", collidedFacet->globalId, (*hlog)->hitId);
-                }*/
 
                 DeleteChain(&hitChain);
-            }
+            }*/
 #endif //use old bvh
 
             if (found) {

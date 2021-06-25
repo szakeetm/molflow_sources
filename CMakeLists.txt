@@ -11,7 +11,10 @@ string (REGEX MATCH "\\.el[1-9]" os_version_suffix ${CMAKE_SYSTEM})
 message("-- os_version_suffix:      ${os_version_suffix}")
 
 #list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
-option(USE_OLD_BVH "simulation will use old bvh structure by default" ON)
+
+#Use new BVH by default
+#priority: USE_OLD_BVH > USE_KDTREE
+option(USE_OLD_BVH "simulation will use old bvh structure by default" OFF)
 option(USE_KDTREE "simulation will use kd structure instead of bvh" OFF)
 
 option(USE_CLANG "build application with clang" OFF) # OFF is the default
@@ -27,7 +30,7 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
     message(STATUS "Build type not specified: Use Release by default.")
 endif(NOT CMAKE_BUILD_TYPE)
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+if(CMAKE_BUILD_TYPE MATCHES (Debug|RelWithDebInfo))
     MESSAGE("Adding Debug flag...")
     ADD_DEFINITIONS(-DDEBUG)
     ADD_DEFINITIONS(-D_DEBUG)
