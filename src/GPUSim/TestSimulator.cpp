@@ -26,8 +26,9 @@ void printUsageAndExit( const char* argv0 )
     fprintf( stderr, "         --nhit    | -n <nbHits>          Set approx. number of hits for the simulation (overwrites --loop)\n" );
     fprintf( stderr, "         --quiet   | -q                   Set terminal output messages to a minimum\n" );
     fprintf( stderr, "         --time    | -t                   Time limit for simulation in seconds (e.g. 0.5)\n" );
-    fprintf( stderr, "         --nprints | -i                   Print runtime output n times based on loops {default 10}\n" );
+    fprintf( stderr, "         --nprints | -i                   Print runtime output n times based on -l or -t {default 10}\n" );
     fprintf( stderr, "      --printevery | -j                   Print runtime output every n_th loop\n" );
+    fprintf( stderr, "  --printEveryNMin | -k                   Print runtime output every k minutes\n" );
     fprintf( stderr, "      --depth      |                      Unimplemented\n" );
     fprintf( stderr, "      --directRand |                      Unimplemented\n" );
     //fprintf( stderr, "         --dim=<width>x<height>        Set image dimensions; defaults to 512x384\n" );
@@ -115,10 +116,11 @@ int main(int argc, char **argv) {
 #endif
 
     std::list<size_t> limits; // Number of desorptions: empty=use other end condition
-    size_t nbLoops = 1;               // Number of Simulation loops
+    size_t nbLoops = 0;               // Number of Simulation loops
     size_t launchSize = 1;                  // Kernel launch size
     size_t nPrints = 10;
     size_t printPerN = 100000;
+    double printEveryNMinutes = 0.0; // timeLimit / -i or direct by -k
     double timeLimit = 0.0;
     bool silentMode = false;
     flowgpu::MolflowGlobal simParams{};
@@ -188,6 +190,12 @@ int main(int argc, char **argv) {
             } else {
                 printUsageAndExit( argv[0] );
             }
+        } else if ( strcmp( argv[i], "--printEveryNMin") == 0  || strcmp( argv[i], "-k" ) == 0 ) {
+            if( i < argc-1 ) {
+                printEveryNMinutes = strtod(argv[++i],&p);
+            } else {
+                printUsageAndExit( argv[0] );
+            }
         } else if ( strcmp( argv[i], "--depth") == 0) {
             if( i < argc-1 ) {
                 simParams.recursiveMaxDepth = strtoul(argv[++i],&p,10);
@@ -231,26 +239,40 @@ int main(int argc, char **argv) {
     uint64_t printPerNRuns = std::min(static_cast<uint64_t>(printPerN), static_cast<uint64_t>(nbLoops/nPrints)); // prevent n%0 operation
     printPerNRuns = std::max(printPerNRuns, static_cast<uint64_t>(1));
 
+    // -i
+    if(nbLoops==0 && printEveryNMinutes <= 0.0 && timeLimit > 1e-6){
+            printEveryNMinutes = timeLimit / nPrints;
+    }
+
     auto start_total = std::chrono::steady_clock::now();
     auto t0 = start_total;
+    double nextPrintAtMin = printEveryNMinutes;
 
     double raysPerSecondMax = 0.0;
     /*double raysPerSecondSum = 0.0;
     uint64_t nRaysSum = 0.0;*/
 
     size_t refreshForStop = std::numeric_limits<size_t>::max();
-    size_t loopN;
-    for(loopN = 0; loopN < nbLoops && !gpuSim.hasEnded; ++loopN){
+    size_t loopN = 0;
+    do{
+    //for(loopN = 0; loopN < nbLoops && !gpuSim.hasEnded; ++loopN){
         //auto start = std::chrono::high_resolution_clock::now();
 
         gpuSim.RunSimulation();
 
         auto t1 = std::chrono::steady_clock::now();
         std::chrono::duration<double,std::ratio<60,1>> elapsedMinutes = t1 - start_total;
-        if(timeLimit >= 1e-6 && elapsedMinutes.count() >= timeLimit)
+
+        // Fetch end conditions
+        if(nbLoops > 0 && loopN >= nbLoops)
+            gpuSim.hasEnded = true;
+        else if(timeLimit >= 1e-6 && elapsedMinutes.count() >= timeLimit)
             gpuSim.hasEnded = true;
 
-        if((!silentMode && (loopN + 1) % printPerNRuns == 0) || refreshForStop <= loopN || gpuSim.hasEnded){
+        if((!silentMode && ((nbLoops > 0 && (loopN + 1) % printPerNRuns == 0) || (printEveryNMinutes > 0.0 && elapsedMinutes.count() > nextPrintAtMin)) || refreshForStop <= loopN || gpuSim.hasEnded)){
+            if(printEveryNMinutes > 0.0 && elapsedMinutes.count() > nextPrintAtMin)
+                nextPrintAtMin += printEveryNMinutes;
+
             auto t1 = std::chrono::steady_clock::now();
             std::chrono::duration<double,std::milli> elapsed = t1 - t0;
             t0 = t1;
@@ -281,7 +303,9 @@ int main(int argc, char **argv) {
             std::cout << "--- Run #" << loopN + 1 << " \t- Elapsed Time: " << elapsed.count() / 1000.0 << " s \t--- " << rpsRun << " MRay/s ---" << std::endl;
             printf("--- Trans Prob: %e\n",gpuSim.GetTransProb(1u));
         }
-    }
+
+        ++loopN;
+    } while(!gpuSim.hasEnded);
     auto finish_total = std::chrono::steady_clock::now();
     gpuSim.GetSimulationData(false);
     std::chrono::duration<double> elapsed = finish_total - start_total;
