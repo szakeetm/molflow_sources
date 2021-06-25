@@ -377,7 +377,7 @@ namespace {
                 newDur_c[newDur.size()] = '\0';
                 argv[4] = newDur_c;
 
-                *model = SimulationModel{};
+                model.reset(new SimulationModel);
                 {
                     char **args = argv.data();
                     if(Initializer::initFromArgv(argv.size(), (args), &simManager, model)){

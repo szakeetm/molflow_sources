@@ -72,7 +72,7 @@ int LoaderXML::LoadGeometry(std::string inputFileName, std::shared_ptr<Simulatio
         if (isMolflowFile) {
             xml_node paramNode = simuParamNode.child("Parameters");
             for (xml_node newParameter : paramNode.children("Parameter")) {
-                Parameter newPar;
+                Parameter& newPar = uInput.parameters.emplace_back();
                 newPar.name = newParameter.attribute("name").as_string();
                 if (newParameter.attribute("logXinterp")) {
                     newPar.logXinterp = newParameter.attribute("logXinterp").as_bool();
@@ -84,7 +84,6 @@ int LoaderXML::LoadGeometry(std::string inputFileName, std::shared_ptr<Simulatio
                     newPar.AddPair(std::make_pair(newMoment.attribute("t").as_double(),
                                                   newMoment.attribute("value").as_double()));
                 }
-                uInput.parameters.push_back(newPar);
             }
         }
         //TODO: Load parameters from catalog explicitly?
