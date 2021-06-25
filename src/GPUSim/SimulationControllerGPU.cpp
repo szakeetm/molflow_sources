@@ -901,9 +901,10 @@ int SimulationControllerGPU::ResetSimulation(){
     figures.total_absd = 0.0;
     hasEnded = false;
 
+#if defined (WITHDESORPEXIT)
     if(!data.hitData.empty()) // only resize if already initialized once
         this->Resize();
-
+#endif
    return 0;
 }
 
