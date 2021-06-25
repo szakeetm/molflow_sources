@@ -16,14 +16,20 @@
 void printUsageAndExit( const char* argv0 )
 {
     fprintf( stderr, "Usage  : %s [options]\n", argv0 );
-    fprintf( stderr, "Options: --file  | -f <filename>        Specify file for model input\n" );
-    fprintf( stderr, "         --help  | -h                   Print this usage message\n" );
-    fprintf( stderr, "         --size  | -s <launchsize>      Set kernel launch size\n" );
+    fprintf( stderr, "Options: --file    | -f <filename>        Specify file for model input\n" );
+    fprintf( stderr, "         --help    | -h                   Print this usage message\n" );
+    fprintf( stderr, "         --size    | -s <launchsize>      Set kernel launch size\n" );
     fprintf( stderr, "         --size=<width>x<height>[x<depth>]\n" );
-    fprintf( stderr, "         --loop  | -l <nbLoops>         Set number of simulation loops\n" );
-    fprintf( stderr, "         --ndes  | -d <nbDesorptions>   Set number of desorptions for sim. end\n" );
-    fprintf( stderr, "         --nhit  | -n <nbHits>          Set approx. number of hits for the simulation\n" );
-    fprintf( stderr, "         --quiet | -q                   Set terminal output messages to a minimum\n" );
+    fprintf( stderr, "         --loop    | -l <nbLoops>         Set number of simulation loops\n" );
+    fprintf( stderr, "         --ndes    | -d <nbDesorptions>   Set number of desorptions for sim. end\n" );
+    fprintf( stderr, "         --ndes=<d1>x<d2>[x<d3>]\n" );
+    fprintf( stderr, "         --nhit    | -n <nbHits>          Set approx. number of hits for the simulation (overwrites --loop)\n" );
+    fprintf( stderr, "         --quiet   | -q                   Set terminal output messages to a minimum\n" );
+    fprintf( stderr, "         --time    | -t                   Time limit for simulation in seconds (e.g. 0.5)\n" );
+    fprintf( stderr, "         --nprints | -i                   Print runtime output n times based on loops {default 10}\n" );
+    fprintf( stderr, "      --printevery | -j                   Print runtime output every n_th loop\n" );
+    fprintf( stderr, "      --depth      |                      Unimplemented\n" );
+    fprintf( stderr, "      --directRand |                      Unimplemented\n" );
     //fprintf( stderr, "         --dim=<width>x<height>        Set image dimensions; defaults to 512x384\n" );
     exit(1);
 }
