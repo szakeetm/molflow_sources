@@ -51,6 +51,13 @@ int LoaderXML::LoadGeometry(std::string inputFileName, std::shared_ptr<Simulatio
         idx++;
     }
 
+    // Downcast one more time
+    for(auto& vert : model->vertices3) {
+        vert.x = static_cast<float>(vert.x);
+        vert.y = static_cast<float>(vert.y);
+        vert.z = static_cast<float>(vert.z);
+    }
+
     //Structures
     model->sh.nbSuper = geomNode.child("Structures").select_nodes("Structure").size();
     idx = 0;
