@@ -27,7 +27,9 @@ class ParameterSurface : public Surface {
     Distribution2D *dist;
 public:
     ParameterSurface(Distribution2D *distribution) : dist(distribution) {};
-    ~ParameterSurface()=default;
+
+    ~ParameterSurface() = default;
+
     bool IsHardHit(const Ray &r) override;
 };
 
@@ -316,6 +318,7 @@ public:
  */
 class FacetMomentSnapshot {
 public:
+    FacetMomentSnapshot();
     FacetMomentSnapshot &operator+=(const FacetMomentSnapshot &rhs);
 
     FacetMomentSnapshot &operator+(const FacetMomentSnapshot &rhs);

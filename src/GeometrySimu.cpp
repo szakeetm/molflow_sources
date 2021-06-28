@@ -22,8 +22,11 @@ SuperStructure::~SuperStructure()
 }
 
 bool ParameterSurface::IsHardHit(const Ray &r) {
-    const double td_opacity = InterpolateY(r.time, dist->GetValues(), dist->logXinterp, dist->logYinterp, false);
-    return (r.rng->rnd() < td_opacity);
+    const double td_opacity = dist->InterpolateY(r.time, false);
+    if(td_opacity >= 1.0)
+        return true;
+    else
+        return (r.rng->rnd() < td_opacity);
 };
 
 bool SubprocessFacet::InitializeOnLoad(const size_t &id, const size_t &nbMoments) {
@@ -698,7 +701,7 @@ void GlobalSimuState::Resize(const SimulationModel &model) { //Constructs the 'd
             facetMomentTemplate.texture = std::vector<TextureCell>(
                     sFac->sh.isTextured ? sFac->sh.texWidth * sFac->sh.texHeight : 0);
             //No init for hits
-            facetStates[i].momentResults = std::vector<FacetMomentSnapshot>(1 + nbMoments, facetMomentTemplate);
+            facetStates[i].momentResults.assign(1 + nbMoments, facetMomentTemplate);
             if (sFac->sh.anglemapParams.record)
                 facetStates[i].recordedAngleMapPdf = std::vector<size_t>(sFac->sh.anglemapParams.GetMapSize());
         }
@@ -1121,6 +1124,10 @@ FacetHistogramBuffer& FacetHistogramBuffer::operator+=(const FacetHistogramBuffe
     this->distanceHistogram += rhs.distanceHistogram;
     this->timeHistogram += rhs.timeHistogram;
     return *this;
+}
+
+FacetMomentSnapshot::FacetMomentSnapshot() : hits(), histogram(){
+
 }
 
 /**
