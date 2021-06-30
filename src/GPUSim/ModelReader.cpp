@@ -264,7 +264,7 @@ namespace flowgpu {
             facetTex.texWidthD *= cutOff;
 
             if (facet.texelInc.size() != nbE) {
-                printf("texture inc vector has weird size: %d should be %d\n", facet.texelInc.size(), nbE);
+                printf("texture inc vector has weird size: %zu should be %zu\n", facet.texelInc.size(), nbE);
                 return 0;
             }
 

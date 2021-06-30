@@ -85,7 +85,7 @@ struct DeviceMemoryDebug {
         CUDABuffer missBuffer;
 #endif //DEBUGMISS
     };
-#endif DEBUG
+#endif //DEBUG
 
     class DeviceBuffers {
 

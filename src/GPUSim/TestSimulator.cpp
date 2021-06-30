@@ -313,7 +313,7 @@ int main(int argc, char **argv) {
         std::cout << "--         Total Elapsed Time: " << elapsed.count() / 60.0 << " min ---" << std::endl;
     else
         std::cout << "--         Total Elapsed Time: " << elapsed.count() << " sec ---" << std::endl;
-    std::cout << "--         Avg. Rays per second: " << (double)gpuSim.figures.total_counter*loopN/elapsed.count()/1.0e6 << " MRay/s ---" << std::endl;
+    std::cout << "--         Avg. Rays per second: " << (double)gpuSim.figures.total_counter/elapsed.count()/1.0e6 << " MRay/s ---" << std::endl;
     //std::cout << "--         Avg. Rays per second: " << raysPerSecondSum/(nbLoops/printPerNRuns) << " MRay/s ---" << std::endl;
     std::cout << "--         Max  Rays per second: " << raysPerSecondMax << " MRay/s ---" << std::endl;
 

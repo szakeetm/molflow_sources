@@ -39,7 +39,7 @@ inline void ProcessSleep(const unsigned int milliseconds) {
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
     Sleep(milliseconds);
 #else
-    struct timespec tv;
+    struct timespec tv{};
     tv.tv_sec = milliseconds / 1000;
     tv.tv_nsec = (milliseconds % 1000) * 1000000;
     nanosleep(&tv, nullptr);
@@ -338,7 +338,7 @@ namespace flowgpu {
         outputBuffer.alloc(blasBufferSizes.outputSizeInBytes);
 
         OPTIX_CHECK(optixAccelBuild(state.context,
-                                    0,
+                                    nullptr,
                                     &accelOptions,
                                     polygonInput.data(),
                                     (int) model->poly_meshes.size(),
@@ -362,7 +362,7 @@ namespace flowgpu {
 
         state.asBuffer.alloc(compactedSize);
         OPTIX_CHECK(optixAccelCompact(state.context,
-                                      0,
+                                      nullptr,
                                       asHandle,
                                       state.asBuffer.d_pointer(),
                                       state.asBuffer.sizeInBytes,
@@ -513,7 +513,7 @@ namespace flowgpu {
         outputBuffer.alloc(blasBufferSizes.outputSizeInBytes);
 
         OPTIX_CHECK(optixAccelBuild(state.context,
-                                    0,
+                                    nullptr,
                                     &accelOptions,
                                     triangleInput.data(),
                                     (int) model->triangle_meshes.size(),
@@ -537,7 +537,7 @@ namespace flowgpu {
 
         state.asBuffer.alloc(compactedSize);
         OPTIX_CHECK(optixAccelCompact(state.context,
-                                      0,
+                                      nullptr,
                                       asHandle,
                                       state.asBuffer.d_pointer(),
                                       state.asBuffer.sizeInBytes,
@@ -561,7 +561,7 @@ namespace flowgpu {
         // -------------------------------------------------------
         // check for available optix7 capable devices
         // -------------------------------------------------------
-        cudaFree(0);
+        cudaFree(nullptr);
         int numDevices;
         cudaGetDeviceCount(&numDevices);
         if (numDevices == 0)
@@ -588,15 +588,14 @@ namespace flowgpu {
     {   printf("%s\n", devProp.name);
         printf("Major revision number:         %d\n", devProp.major);
         printf("Minor revision number:         %d\n", devProp.minor);
-        printf("Total global memory:           %u", devProp.totalGlobalMem);
+        printf("Total global memory:           %zu", devProp.totalGlobalMem);
         printf(" bytes\n");
         printf("Number of multiprocessors:     %d\n", devProp.multiProcessorCount);
-        printf("Total amount of shared memory per block: %u\n",devProp.sharedMemPerBlock);
+        printf("Total amount of shared memory per block: %zu\n",devProp.sharedMemPerBlock);
         printf("Total registers per block:     %d\n", devProp.regsPerBlock);
         printf("Warp size:                     %d\n", devProp.warpSize);
-        printf("Maximum memory pitch:          %u\n", devProp.memPitch);
-        printf("Total amount of constant memory:         %u\n",   devProp.totalConstMem);
-        return;
+        printf("Maximum memory pitch:          %zu\n", devProp.memPitch);
+        printf("Total amount of constant memory:         %zu\n",   devProp.totalConstMem);
     }
 
     // from https://stackoverflow.com/questions/32530604/how-can-i-get-number-of-cores-in-cuda-device
@@ -659,7 +658,7 @@ namespace flowgpu {
         if (cuRes != CUDA_SUCCESS)
             fprintf(stderr, "Error querying current context: error code %d\n", cuRes);
 
-        OPTIX_CHECK(optixDeviceContextCreate(state.cudaContext, 0, &state.context));
+        OPTIX_CHECK(optixDeviceContextCreate(state.cudaContext, nullptr, &state.context));
         OPTIX_CHECK(optixDeviceContextSetLogCallback
                             (state.context, context_log_cb, nullptr, 4));
 
@@ -1656,23 +1655,23 @@ try{
         }
 
         for (int meshID = 0; meshID < model->poly_meshes.size(); meshID++) {
-            if (poly_memory.aabbBuffer.size() > 0 && poly_memory.aabbBuffer.size() > meshID)
+            if (!poly_memory.aabbBuffer.empty() && poly_memory.aabbBuffer.size() > meshID)
                 poly_memory.aabbBuffer[meshID].free();
-            if (poly_memory.vertex2Buffer.size() > 0 && poly_memory.vertex2Buffer.size() > meshID)
+            if (!poly_memory.vertex2Buffer.empty() && poly_memory.vertex2Buffer.size() > meshID)
                 poly_memory.vertex2Buffer[meshID].free();
-            if (poly_memory.vertex2x64Buffer.size() > 0 && poly_memory.vertex2x64Buffer.size() > meshID)
+            if (!poly_memory.vertex2x64Buffer.empty() && poly_memory.vertex2x64Buffer.size() > meshID)
                 poly_memory.vertex2x64Buffer[meshID].free();
-            if (poly_memory.vertexBuffer.size() > 0 && poly_memory.vertexBuffer.size() > meshID)
+            if (!poly_memory.vertexBuffer.empty() && poly_memory.vertexBuffer.size() > meshID)
                 poly_memory.vertexBuffer[meshID].free();
-            if (poly_memory.indexBuffer.size() > 0 && poly_memory.indexBuffer.size() > meshID)
+            if (!poly_memory.indexBuffer.empty() && poly_memory.indexBuffer.size() > meshID)
                 poly_memory.indexBuffer[meshID].free();
-            if (poly_memory.sbtIndexBuffer.size() > 0 && poly_memory.sbtIndexBuffer.size() > meshID)
+            if (!poly_memory.sbtIndexBuffer.empty() && poly_memory.sbtIndexBuffer.size() > meshID)
                 poly_memory.sbtIndexBuffer[meshID].free();
-            if (poly_memory.polyBuffer.size() > 0 && poly_memory.polyBuffer.size() > meshID)
+            if (!poly_memory.polyBuffer.empty() && poly_memory.polyBuffer.size() > meshID)
                 poly_memory.polyBuffer[meshID].free();
-            if (poly_memory.cdfBuffer.size() > 0 && poly_memory.cdfBuffer.size() > meshID)
+            if (!poly_memory.cdfBuffer.empty() && poly_memory.cdfBuffer.size() > meshID)
                 poly_memory.cdfBuffer[meshID].free();
-            if (poly_memory.facprobBuffer.size() > 0 && poly_memory.facprobBuffer.size() > meshID)
+            if (!poly_memory.facprobBuffer.empty() && poly_memory.facprobBuffer.size() > meshID)
                 poly_memory.facprobBuffer[meshID].free();
         }
         sbt_memory.raygenRecordsBuffer.free();
