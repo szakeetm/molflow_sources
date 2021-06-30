@@ -235,7 +235,7 @@ FLOAT_T getNewVelocity(const flowgpu::Polygon& poly, const float& gasMass)
 static __forceinline__ __device__
 float3 getNewDirection(flowgpu::MolPRD& hitData, const flowgpu::Polygon& poly,
 #ifdef RNG_BULKED
-                       const FLOAT_T* randFloat, unsigned int& randInd, unsigned int& randOffset)
+                       const RN_T* randFloat, unsigned int& randInd, unsigned int& randOffset)
 #else
                         curandState_t* states)
 #endif
