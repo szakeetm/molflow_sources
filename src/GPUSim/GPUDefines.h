@@ -13,7 +13,7 @@
 #define WARPSCHEDULERS 1 // 4WS ???* 3 GPC???
 #define EXTRAFACETCOUNTERS CORESPERSM*WARPSCHEDULERS
 
-#define MAX_DEPTH 0 // 0=no recursion
+//#define MAX_DEPTH 0 // 0=no recursion
 #define SCENE_EPSILON 1.e-6f // 0=no recursion
 
 #define NB_INPOLYCHECKS 5u //0=always use middle point
