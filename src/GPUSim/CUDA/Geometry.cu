@@ -15,62 +15,6 @@ namespace flowgpu {
         optixLaunch) */
     extern "C" __constant__ LaunchParams optixLaunchParams;
 
-    static __forceinline__ __device__
-    void *unpackPointer( unsigned int i0, unsigned int i1 )
-    {
-        const uint64_t uptr = static_cast<uint64_t>( i0 ) << 32 | i1;
-        void*           ptr = reinterpret_cast<void*>( uptr );
-        return ptr;
-    }
-
-    static __forceinline__ __device__
-    void  packPointer( void* ptr, unsigned int& i0, unsigned int& i1 )
-    {
-        const uint64_t uptr = reinterpret_cast<uint64_t>( ptr );
-        i0 = uptr >> 32;
-        i1 = uptr & 0x00000000ffffffff;
-    }
-
-    template<typename T>
-    static __forceinline__ __device__ T *getPRD()
-    {
-        const unsigned int u0 = optixGetPayload_0();
-        const unsigned int u1 = optixGetPayload_1();
-        return reinterpret_cast<T*>( unpackPointer( u0, u1 ) );
-    }
-
-    static __device__ __inline__ MolPRD getMolPRD()
-    {
-        MolPRD prd;
-        prd.currentDepth = optixGetPayload_0();
-        prd.inSystem = optixGetPayload_1();
-        prd.hitFacetId = optixGetPayload_2();
-        prd.hitT = int_as_float( optixGetPayload_3() );
-        prd.velocity = __hiloint2double( optixGetPayload_4(),optixGetPayload_5() );
-
-#ifdef GPUNBOUNCE
-        prd.nbBounces = optixGetPayload_6();
-#endif
-        prd.facetHitSide = optixGetPayload_7();
-        return prd;
-    }
-
-    static __device__ __inline__ void setMolPRD( const MolPRD &prd )
-    {
-        optixSetPayload_0( prd.currentDepth );
-        optixSetPayload_1( prd.inSystem );
-        optixSetPayload_2( prd.hitFacetId );
-        optixSetPayload_3( float_as_int(prd.hitT) );
-        optixSetPayload_4( __double2hiint(prd.velocity) );
-        optixSetPayload_5( __double2loint(prd.velocity) );
-
-#ifdef GPUNBOUNCE
-        optixSetPayload_6( prd.nbBounces );
-#endif
-        optixSetPayload_7( prd.facetHitSide );
-
-    }
-
     //------------------------------------------------------------------------------
     // closest hit and anyhit programs for radiance-type rays.
     //
@@ -82,7 +26,7 @@ namespace flowgpu {
     //------------------------------------------------------------------------------
 
     // Parallelogram intersection from the SDK optixWhitted example
-    extern "C" __device__ void intersection__parallelogram__camera()
+    /*extern "C" __device__ void intersection__parallelogram__camera()
     {
         //const Parallelogram* floor = reinterpret_cast<Parallelogram*>( optixGetSbtDataPointer() );
         const PolygonMeshSBTData &sbtData = *(const PolygonMeshSBTData*)optixGetSbtDataPointer();
@@ -103,14 +47,14 @@ namespace flowgpu {
         //f->sh.N = CrossProduct(v1, v2);
         //float3 n = cross(A,B);
 
-        /*int ind = 2;
+        *//*int ind = 2;
         while (ind < poly.nbVertices) {
             int i2 = sbtData.index[poly.indexOffset+ind++];
 
             v1 = Bb - Aa; // v1 = P0P1
             v2 = sbtData.vertex[i2] - Bb; // v2 = P1P2
             n = cross(v1, v2);              // Cross product
-        }*/
+        }*//*
 
         //n = poly.Nuv;
         //v1 = poly.U;
@@ -144,7 +88,7 @@ namespace flowgpu {
                 }
             }
         }
-    }
+    }*/
     extern "C" __device__ void intersection__pnp_double(double d, double u, double v, float3 n) {
         // Fast method to check if a point is inside a polygon or not.
         // Works with convex and concave polys, orientation independent
@@ -166,7 +110,9 @@ namespace flowgpu {
             const double2& p1 = polyPoints[poly.indexOffset + i];
             const double2& p2 = polyPoints[poly.indexOffset + j];
             if ((p1.y>v) != (p2.y>v)) {
-                if(p2.y - p1.y == 0.0) optixThrowException(200);
+#if defined(DEBUG)
+                if(p2.y - p1.y == 0.0) optixThrowException(100);
+#endif
                 double slope = (v - p1.y) / (p2.y - p1.y);
                 if(u < (p2.x - p1.x) * slope + p1.x)
                     c = !c;
@@ -234,7 +180,9 @@ namespace flowgpu {
             const float2& p1 = polyPoints[poly.indexOffset + i];
             const float2& p2 = polyPoints[poly.indexOffset + j];
             if ((p1.y>v) != (p2.y>v)) {
+#if defined(DEBUG)
                 if(p2.y - p1.y == 0.0) optixThrowException(100);
+#endif
                 float slope = (v - p1.y) / (p2.y - p1.y);
                 if(u < (p2.x - p1.x) * slope + p1.x)
                     c = !c;
@@ -590,7 +538,9 @@ namespace flowgpu {
 #ifdef BOUND_CHECK
         if(primID < 0 || primID >= optixLaunchParams.simConstants.nbFacets){
             printf("primID %u >= %u is out of bounds\n", primID, optixLaunchParams.simConstants.nbFacets);
-            optixThrowException(4);
+            #if defined(DEBUG)
+                            optixThrowException(4);
+            #endif
         }
 #endif
         const flowgpu::Polygon& poly  = sbtData.poly[primID];
@@ -602,7 +552,9 @@ namespace flowgpu {
 #ifdef BOUND_CHECK
         if(missIndex < 0 || missIndex >= NMISSES*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y){
             printf("missIndex %u >= %u is out of bounds\n", missIndex, NMISSES*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y);
-            optixThrowException(5);
+            #if defined(DEBUG)
+                            optixThrowException(5);
+            #endif
         }
 #endif
         optixLaunchParams.perThreadData.missBuffer[missIndex]++;
@@ -611,7 +563,9 @@ namespace flowgpu {
 #ifdef BOUND_CHECK
             if(missIndex + optixLaunchParams.perThreadData.missBuffer[missIndex] >= NMISSES*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y){
                 printf("missIndex+n %u >= %u is out of bounds\n", missIndex + optixLaunchParams.perThreadData.missBuffer[missIndex], NMISSES*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y);
-                optixThrowException(6);
+                #if defined(DEBUG)
+                            optixThrowException(6);
+                #endif
             }
 #endif
             optixLaunchParams.perThreadData.missBuffer[missIndex +
@@ -752,7 +706,7 @@ namespace flowgpu {
     extern "C" __global__ void __intersection__polygon()
     {
         intersection__parallelogram();
-        intersection__parallelogram_double();
+        //intersection__parallelogram_double();
     }
 
 } // ::flowgpu

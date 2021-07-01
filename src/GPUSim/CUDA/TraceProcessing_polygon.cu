@@ -19,14 +19,6 @@ namespace flowgpu {
         optixLaunch) */
     extern "C" __constant__ LaunchParams optixLaunchParams;
 
-    template<typename T>
-    static __forceinline__ __device__ T *getPRD()
-    {
-        const unsigned int u0 = optixGetPayload_0();
-        const unsigned int u1 = optixGetPayload_1();
-        return reinterpret_cast<T*>( unpackPointer( u0, u1 ) );
-    }
-
 #if defined(PAYLOAD_DIRECT)
     static __device__ __inline__ MolPRD getMolPRD()
     {
@@ -691,7 +683,9 @@ if(prd->inSystem == 4)
 #ifdef BOUND_CHECK
         if(primID < 0 || primID >= optixLaunchParams.simConstants.nbFacets){
             printf("primID %u >= %u is out of bounds\n", primID, optixLaunchParams.simConstants.nbFacets);
+#if defined(DEBUG)
             optixThrowException(7);
+#endif
         }
 #endif
         const flowgpu::Polygon& poly  = sbtData.poly[primID];
@@ -708,13 +702,17 @@ if(prd->inSystem == 4)
 #ifdef BOUND_CHECK
         if(poly.nbVertices < 0 || poly.nbVertices >= optixLaunchParams.simConstants.nbVertices){
             printf("poly.nbVertices %u >= %u is out of bounds\n", poly.nbVertices, optixLaunchParams.simConstants.nbVertices);
+#if defined(DEBUG)
             optixThrowException(8);
+#endif
         }
 #endif
 #ifdef BOUND_CHECK
         if(nbSizeMinusOne < 0 || poly.indexOffset + nbSizeMinusOne >= optixLaunchParams.simConstants.nbIndices * optixLaunchParams.simConstants.nbFacets){
             printf("poly.indexOffset %u >= %u [%d < 0]is out of bounds\n", poly.indexOffset, poly.indexOffset + nbSizeMinusOne, nbSizeMinusOne);
+#if defined(DEBUG)
             optixThrowException(9);
+#endif
         }
 #endif
         for (i = 0, j = nbSizeMinusOne; i < poly.nbVertices; j = i++) {
@@ -722,7 +720,10 @@ if(prd->inSystem == 4)
             const float2& p1 = polyPoints[poly.indexOffset + i];
             const float2& p2 = polyPoints[poly.indexOffset + j];
             if ((p1.y>v) != (p2.y>v)) {
-                if(p2.y - p1.y == 0.0) optixThrowException(300);
+#if defined(DEBUG)
+            if(p2.y - p1.y == 0.0) optixThrowException(300);
+#endif
+
                 float slope = (v - p1.y) / (p2.y - p1.y);
                 if(u < (p2.x - p1.x) * slope + p1.x)
                     c = !c;
@@ -998,7 +999,9 @@ if(prd->inSystem == 4)
 #ifdef BOUND_CHECK
         if(primID < 0 || primID >= optixLaunchParams.simConstants.nbFacets){
             printf("primID %u >= %u is out of bounds\n", primID, optixLaunchParams.simConstants.nbFacets);
+#if defined(DEBUG)
             optixThrowException(10);
+#endif
         }
 #endif
         const flowgpu::Polygon& poly  = sbtData.poly[primID];
@@ -1098,7 +1101,9 @@ if(prd->inSystem == 4)
 #ifdef BOUND_CHECK
         if(prd->hitFacetId < 0 || prd->hitFacetId >= optixLaunchParams.simConstants.nbFacets){
             printf("prd->hitFacetId %u >= %u is out of bounds\n", prd->hitFacetId, optixLaunchParams.simConstants.nbFacets);
+#if defined(DEBUG)
             optixThrowException(11);
+#endif
         }
 #endif
 #if not defined(GPUNBOUNCE)
@@ -1116,13 +1121,17 @@ if(prd->inSystem == 4)
 #ifdef BOUND_CHECK
         if(missIndex < 0 || missIndex >= NMISSES*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y){
             printf("missIndex %u >= %u is out of bounds\n", missIndex, NMISSES*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y);
+#if defined(DEBUG)
             optixThrowException(12);
+#endif
         }
 #endif
 #ifdef BOUND_CHECK
         if(missIndex + optixLaunchParams.perThreadData.missBuffer[missIndex] >= NMISSES*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y){
             printf("missIndex+n %u >= %u is out of bounds\n", missIndex + optixLaunchParams.perThreadData.missBuffer[missIndex], NMISSES*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y);
+#if defined(DEBUG)
             optixThrowException(13);
+#endif
         }
 #endif
 

@@ -141,8 +141,10 @@ namespace flowgpu {
     typedef Record<PolygonRayGenData> RaygenRecord;          /*! SBT record for a raygen program */
     typedef Record<PolygonMeshSBTData> MissRecord;           /*! SBT record for a miss program */
     typedef Record<PolygonMeshSBTData> HitgroupRecord;       /*! SBT record for a hitgroup program */
-    typedef Record<int> ExceptionRecord;                     /*! SBT record for a hitgroup program */
-    typedef Record<TriangleRayGenData> RaygenRecordTri;
+#if defined(DEBUG)
+typedef Record<int> ExceptionRecord;                     /*! SBT record for a hitgroup program */
+#endif
+typedef Record<TriangleRayGenData> RaygenRecordTri;
     typedef Record<TriangleMeshSBTData> MissRecordTri;
     typedef Record<TriangleMeshSBTData> HitgroupRecordTri;
 
@@ -201,9 +203,10 @@ namespace flowgpu {
         createMissPrograms(programGroups);
         std::cout << "#flowgpu: creating hitgroup programs ..." << std::endl;
         createHitgroupPrograms(programGroups);
+#if defined(DEBUG)
         std::cout << "#flowgpu: creating exception programs ..." << std::endl;
         createExceptionPrograms(programGroups);
-
+#endif
         std::cout << "#flowgpu: building acceleration structure ..." << std::endl;
 #ifdef WITHTRIANGLES
         state.launchParams.traversable = state.asHandle = buildAccelTriangle();
@@ -688,10 +691,12 @@ namespace flowgpu {
 #endif
 #if defined(WITHTRIANGLES)
         state.pipelineCompileOptions.numAttributeValues = 2; // default, don't have custom routines
+        state.pipelineCompileOptions.usesPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE;
 #else
-        state.pipelineCompileOptions.numAttributeValues = 7; // ret values e.g. by optixReportIntersection
+        state.pipelineCompileOptions.numAttributeValues = 5; // ret values e.g. by optixReportIntersection: n(x,y,z),u,v
+        state.pipelineCompileOptions.usesPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM;
 #endif
-#if defined(NDEBUG)
+#if !defined(DEBUG)
         state.pipelineCompileOptions.exceptionFlags        = OPTIX_EXCEPTION_FLAG_NONE;
 #else // DEBUG
         state.pipelineCompileOptions.exceptionFlags = OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW |
@@ -700,7 +705,6 @@ namespace flowgpu {
                                                       OPTIX_EXCEPTION_FLAG_DEBUG;
 #endif
         state.pipelineCompileOptions.pipelineLaunchParamsVariableName = "optixLaunchParams";
-        state.pipelineCompileOptions.usesPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE;
 
         state.pipelineLinkOptions = {};
 
@@ -763,6 +767,7 @@ namespace flowgpu {
             //if (sizeof_log > 1) PRINT(log);
         }
 
+#if defined(DEBUG)
         {
             const std::string ptxCode = readPTX("./flowgpu_ptx/Exception.ptx");
             OPTIX_CHECK(optixModuleCreateFromPTX(state.context,
@@ -775,6 +780,7 @@ namespace flowgpu {
             ));
             //if (sizeof_log > 1) PRINT(log);
         }
+#endif
     }
 
 
@@ -897,6 +903,7 @@ namespace flowgpu {
         state.hitgroupPG.insert(state.hitgroupPG.end(), pgHitgroup.begin(), pgHitgroup.end());
     }
 
+#if defined(DEBUG)
 /*! does all setup for the hitgroup program(s) we are going to use */
     void SimulationOptiX::createExceptionPrograms(std::vector<OptixProgramGroup> &programGroups) {
         char log[2048];
@@ -928,6 +935,7 @@ namespace flowgpu {
         programGroups.push_back(pgExgroup);
         state.exceptionPG = pgExgroup;
     }
+#endif
 
     /*! assembles the full pipeline of all programs */
     void SimulationOptiX::createPipeline(std::vector<OptixProgramGroup> &programGroups) {
@@ -1076,6 +1084,7 @@ namespace flowgpu {
         // ------------------------------------------------------------------
         // build exception records
         // ------------------------------------------------------------------
+#if defined(DEBUG)
         std::vector<ExceptionRecord> exceptionRecords;
         for (int meshID = 0; meshID < numObjects; meshID++) {
             ExceptionRecord rec;
@@ -1087,7 +1096,7 @@ namespace flowgpu {
             sbt_memory.exceptionRecordsBuffer.upload(&rec, 1);
         }
         state.sbt.exceptionRecord = sbt_memory.exceptionRecordsBuffer.d_pointer();
-
+#endif
     }
 
     /*! constructs the shader binding table */
@@ -1625,14 +1634,17 @@ try{
         OPTIX_CHECK(optixProgramGroupDestroy(state.missPG));
         for (auto &hitPG : state.hitgroupPG)
             OPTIX_CHECK(optixProgramGroupDestroy(hitPG));
+#if defined(DEBUG)
         OPTIX_CHECK(optixProgramGroupDestroy(state.exceptionPG));
+#endif
         OPTIX_CHECK(optixModuleDestroy(state.modules.rayModule));
 #if !defined(WITHTRIANGLES)
         OPTIX_CHECK(optixModuleDestroy(state.modules.geometryModule));
 #endif
         OPTIX_CHECK(optixModuleDestroy(state.modules.traceModule));
+#if defined(DEBUG)
         OPTIX_CHECK(optixModuleDestroy(state.modules.exceptionModule));
-
+#endif
         OPTIX_CHECK(optixDeviceContextDestroy(state.context));
 
         CUDA_CHECK(cudaStreamDestroy(state.stream));
