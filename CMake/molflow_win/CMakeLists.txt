@@ -264,5 +264,5 @@ elseif(NOT MSVC)
 
     target_link_libraries(${PROJECT_NAME} PRIVATE pugixml sdl_savepng truncatedgaussian)
     target_link_libraries(${PROJECT_NAME} PRIVATE nativefiledialog)
-    target_link_libraries(${PROJECT_NAME} PRIVATE libzip)
+    target_link_libraries(${PROJECT_NAME} PRIVATE ziplib)
 endif()
