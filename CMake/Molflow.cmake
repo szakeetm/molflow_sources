@@ -20,6 +20,7 @@ ELSE()
 ENDIF()
 
 # Output Variables
+
 set(OUTPUT_BIN_DEBUG ${OS_RELPATH}/bin/)
 set(OUTPUT_BIN_REL ${OS_RELPATH}/bin/)
 set(OUTPUT_LIB_DEBUG ${OS_RELPATH}/lib/)
