@@ -939,7 +939,7 @@ if(prd->inSystem == 4)
                 }
 #endif
 
-                apply_offset(*prd, prd->hitPos);
+                apply_offset(*prd, optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos);
 
 #ifdef PAYLOAD_DIRECT
                 int hi_vel = __double2hiint(prd->velocity);
