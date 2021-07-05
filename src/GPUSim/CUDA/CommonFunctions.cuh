@@ -135,6 +135,61 @@ static __forceinline__ __device__ float3 offset_ray_none(const float3 p, const f
     return p;
 }
 
+// Normal points outward for rays exiting the surface, else is flipped.
+static __forceinline__ __device__ void initParticle(flowgpu::MolPRD& prd){
+    prd.velocity = -999.0;
+    prd.hitPos = make_float3(-999.0);
+    prd.postHitDir = make_float3(-999.0);
+    prd.hitFacetId = 9999999;
+    prd.hitT = -999.0f;
+    prd.inSystem = flowgpu::NEW_PARTICLE;
+#if defined(GPUNBOUNCE)
+    prd.nbBounces = 0;
+#endif
+
+}
+
+//const __device__ float offset_val = 1.0f/64.0f;
+//const __device__ float offset_val_n = -1.0f/64.0f;
+const __device__ float offset_val = 1.0f/1.0f;
+const __device__ float offset_val_n = -1.0f/1.0f;
+
+static __forceinline__ __device__ void apply_offset(const flowgpu::MolPRD& hitData, float3& rayOrigin){
+#ifdef WITHTRIANGLES
+    const flowgpu::TriangleRayGenData* rayGenData = (flowgpu::TriangleRayGenData*) optixGetSbtDataPointer();
+#else
+    const flowgpu::PolygonRayGenData* rayGenData = (flowgpu::PolygonRayGenData*) optixGetSbtDataPointer();
+#endif
+
+    const uint32_t facIndex = hitData.hitFacetId;
+#ifdef BOUND_CHECK
+    if(facIndex >= optixLaunchParams.simConstants.nbFacets){
+                printf("[RayOffset] facIndex %u >= %u is out of bounds (%u)\n", facIndex, optixLaunchParams.simConstants.nbFacets, hitData.inSystem);
+            }
+#endif
+    //do not offset a transparent hit
+    //if(optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem != TRANSPARENT_HIT){
+    float3 facNormal = rayGenData->poly[facIndex].N;
+    /*if((hitData.facetHitSide == OPTIX_HIT_KIND_TRIANGLE_BACK_FACE && hitData.inSystem != TRANSPARENT_HIT)
+       || (hitData.facetHitSide == OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE && hitData.inSystem == TRANSPARENT_HIT))*/
+
+    // Don't flip normal on a normal backface hit (should only be allowed for 2sided transparent facets)
+    if((/*rayGenData->poly[hitData.hitFacetId].facProps.is2sided && */rayGenData->poly[hitData.hitFacetId].facProps.opacity == 0.0f)
+       && (hitData.facetHitSide == OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE) )
+
+        // previous backface hit
+    {
+        /*if(bufferIndex == 0)
+            printf("[%d] reverting offset -> %d -> %d\n",bufferIndex,hitData.inSystem, hitData.nbBounces);
+        */facNormal *= (offset_val_n);
+        //rayOrigin = offset_ray(rayOrigin, (-1.0f) * rayGenData->poly[facIndex].N);
+    }
+    else{
+        facNormal *= (offset_val);
+    }
+    rayOrigin = offset_ray(rayOrigin,facNormal);
+}
+
 __device__
 int atomicAggInc(int *ptr, int incVal)
 {

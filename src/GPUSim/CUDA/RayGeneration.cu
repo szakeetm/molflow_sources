@@ -560,11 +560,6 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
         recordDesorption(counterIdx, rayGenData->poly[facIndex], hitData, rayDir, rayOrigin);
     }
 
-
-    //const __device__ float offset_val = 1.0f/64.0f;
-    //const __device__ float offset_val_n = -1.0f/64.0f;
-    const __device__ float offset_val = 8.0f/1.0f;
-    const __device__ float offset_val_n = -8.0f/1.0f;
     //------------------------------------------------------------------------------
     // ray gen program - the actual rendering happens in here
     //------------------------------------------------------------------------------
@@ -639,44 +634,7 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
 #endif
 
 
-        {
-#ifdef WITHTRIANGLES
-            const TriangleRayGenData* rayGenData = (TriangleRayGenData*) optixGetSbtDataPointer();
-#else
-            const PolygonRayGenData* rayGenData = (PolygonRayGenData*) optixGetSbtDataPointer();
-#endif
-
-            uint32_t facIndex = hitData.hitFacetId;
-#ifdef BOUND_CHECK
-            if(facIndex >= optixLaunchParams.simConstants.nbFacets){
-                printf("[RayOffset] facIndex %u >= %u is out of bounds (%u)\n", facIndex, optixLaunchParams.simConstants.nbFacets, hitData.inSystem);
-            }
-#endif
-            //do not offset a transparent hit
-            //if(optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem != TRANSPARENT_HIT){
-            float3 facNormal = rayGenData->poly[facIndex].N;
-            /*if((hitData.facetHitSide == OPTIX_HIT_KIND_TRIANGLE_BACK_FACE && hitData.inSystem != TRANSPARENT_HIT)
-               || (hitData.facetHitSide == OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE && hitData.inSystem == TRANSPARENT_HIT))*/
-
-            // Don't flip normal on a normal backface hit (should only be allowed for 2sided transparent facets)
-            if((/*rayGenData->poly[hitData.hitFacetId].facProps.is2sided && */rayGenData->poly[hitData.hitFacetId].facProps.opacity == 0.0f)
-                    && (hitData.facetHitSide == OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE) )
-
-            // previous backface hit
-            {
-                /*if(bufferIndex == 0)
-                    printf("[%d] reverting offset -> %d -> %d\n",bufferIndex,hitData.inSystem, hitData.nbBounces);
-                */facNormal *= (offset_val_n);
-                //rayOrigin = offset_ray(rayOrigin, (-1.0f) * rayGenData->poly[facIndex].N);
-            }
-            else{
-                facNormal *= (offset_val);
-            }
-            rayOrigin = offset_ray(rayOrigin,facNormal);
-
-            //}
-
-        }
+        apply_offset(hitData, rayOrigin);
 
 #ifdef PAYLOAD_DIRECT
         int hi_vel = __double2hiint(hitData.velocity);

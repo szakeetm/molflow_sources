@@ -105,7 +105,6 @@ namespace flowgpu {
         atomicAdd(&hitCounter.sum_1_per_velocity, (hitEquiv) / velocity);//(hitEquiv + static_cast<double>(desorb)) / prd.velocity;
     }
 
-#define EPS32 1e-6f
     // --------------------------------------
     // increase texture counters for absorption (same as desorp)
     // --------------------------------------
@@ -270,7 +269,7 @@ namespace flowgpu {
     }
 
     static __forceinline__ __device__
-    void recordAbsorption(const unsigned int& counterIdx, const flowgpu::Polygon& poly, MolPRD& prd, const const float3& rayDir, const float3 rayOrigin)
+    void recordAbsorption(const unsigned int& counterIdx, const flowgpu::Polygon& poly, MolPRD& prd, const float3& rayDir, const float3 rayOrigin)
     {
 #ifdef HIT64
         const FLOAT_T velFactor = optixLaunchParams.simConstants.useMaxwell ? 1.0 : 1.1781;
@@ -318,7 +317,7 @@ namespace flowgpu {
     }
 
     static __forceinline__ __device__
-    void recordBounce(const unsigned int& bufferIndex, const unsigned int& counterIdx, const flowgpu::Polygon& poly, MolPRD& prd, const const float3& rayDir, const float3 rayOrigin,
+    void recordBounce(const unsigned int& bufferIndex, const unsigned int& counterIdx, const flowgpu::Polygon& poly, MolPRD& prd, const float3& rayDir, const float3 rayOrigin,
 #ifdef RNG_BULKED
             const RN_T* randFloat, unsigned int& randInd, unsigned int& randOffset)
 #else
@@ -1292,15 +1291,8 @@ optixLaunchParams.perThreadData.currentMoleculeData[fbIndex].postHitDir = prd.po
         //optixLaunchParams.sharedData.missCounter += 1;
         atomicAdd(optixLaunchParams.sharedData.missCounter, 1);
 
-        prd->velocity = -999.0;
-        prd->hitPos = make_float3(-999.0);
-        prd->postHitDir = make_float3(-999.0);
-        prd->hitFacetId = -1;
-        prd->hitT = -999.0f;
-        prd->inSystem = NEW_PARTICLE;
-#if defined(GPUNBOUNCE)
-        prd->nbBounces = 0;
-#endif
+        // Reset particle
+        initParticle(myPrd);
 
         // terminate if exit has been called
 #ifdef WITHDESORPEXIT

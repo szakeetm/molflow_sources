@@ -28,17 +28,10 @@ namespace flowgpu {
 
         const unsigned int fbIndex = getWorkIndex();
         atomicAdd(optixLaunchParams.sharedData.missCounter, 1);
-        MolPRD& prd = optixLaunchParams.perThreadData.currentMoleculeData[fbIndex];
 
-        prd.velocity = -999.0;
-        prd.hitPos = make_float3(-999.0);
-        prd.postHitDir = make_float3(-999.0);
-        prd.hitFacetId = -1;
-        prd.hitT = -999.0f;
-        prd.inSystem = NEW_PARTICLE;
-#if defined(GPUNBOUNCE)
-        prd.nbBounces = 0;
-#endif
+        // Reset particle
+        MolPRD& prd = optixLaunchParams.perThreadData.currentMoleculeData[fbIndex];
+        initParticle(prd);
 
         //const unsigned int index = theLaunchIndex.y * theLaunchDim.x + theLaunchIndex.x;
         //sysParameter.outputBuffer[index] = make_float4(1000000.0f, 0.0f, 1000000.0f, 1.0f); // super magenta

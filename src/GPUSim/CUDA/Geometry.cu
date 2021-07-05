@@ -101,9 +101,9 @@ namespace flowgpu {
         const int nbSizeMinusOne = (int)poly.nbVertices - 1;
         const double2* polyPoints = sbtData.vertex2x64;
 
-        double2 p;
-        p.x = u;
-        p.y = v;
+        //double2 p{u,v};
+        //p.x = u;
+        //p.y = v;
 
         int i, j, c = 0;
         for (i = 0, j = nbSizeMinusOne; i < poly.nbVertices; j = i++) {
@@ -158,9 +158,9 @@ namespace flowgpu {
         const int nbSizeMinusOne = (int)poly.nbVertices - 1;
         const float2* polyPoints = sbtData.vertex2;
 
-        float2 p;
-        p.x = u;
-        p.y = v;
+        //float2 p{u,v};
+        //p.x = u;
+        //p.y = v;
 
 #ifdef BOUND_CHECK
         if(poly.nbVertices < 0 || poly.nbVertices >= optixLaunchParams.simConstants.nbVertices){

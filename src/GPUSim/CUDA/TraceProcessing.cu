@@ -919,15 +919,15 @@ if(prd->inSystem == 4)
             else {
                 ++prd->currentDepth;
 
-#ifdef DEBUGPOS
-    if(bufferIndex==0){
-        const unsigned int posIndexOff = optixLaunchParams.perThreadData.posOffsetBuffer_debug[(unsigned int)(bufferIndex)]++;
-        if(posIndexOff<NBPOSCOUNTS){
-            const unsigned int posIndex = bufferIndex*NBPOSCOUNTS+posIndexOff;
-            //printf("[%d] my pos is %d\n", (unsigned int)(ix+iy*optixLaunchParams.simConstants.size.x), posIndex);
-            optixLaunchParams.perThreadData.positionsBuffer_debug[posIndex] = prd->hitPos;
-        }
-    }
+#if defined(DEBUGPOS)
+                if(bufferIndex==0){
+                    const unsigned int posIndexOff = optixLaunchParams.perThreadData.posOffsetBuffer_debug[(unsigned int)(bufferIndex)]++;
+                    if(posIndexOff<NBPOSCOUNTS){
+                        const unsigned int posIndex = bufferIndex*NBPOSCOUNTS+posIndexOff;
+                        //printf("[%d] my pos is %d\n", (unsigned int)(ix+iy*optixLaunchParams.simConstants.size.x), posIndex);
+                        optixLaunchParams.perThreadData.positionsBuffer_debug[posIndex] = prd->hitPos;
+                    }
+                }
 #endif
 
 #if defined(DEBUG) && defined(RNG_BULKED)
@@ -938,6 +938,8 @@ if(prd->inSystem == 4)
                     DEBUG_PRINT("TP[%d][%d] ray dir NaN -> %d / %d + %d\n",bufferIndex,prd->currentDepth, prd->inSystem, randInd, randOffset);
                 }
 #endif
+
+                apply_offset(*prd, prd->hitPos);
 
 #ifdef PAYLOAD_DIRECT
                 int hi_vel = __double2hiint(prd->velocity);
@@ -1259,15 +1261,8 @@ optixLaunchParams.perThreadData.currentMoleculeData[fbIndex].postHitDir = prd->p
             //optixLaunchParams.sharedData.missCounter += 1;
             atomicAdd(optixLaunchParams.sharedData.missCounter, 1);
 
-            prd->velocity = -999.0;
-            prd->hitPos = make_float3(-999.0);
-            prd->postHitDir = make_float3(-999.0);
-            prd->hitFacetId = -1;
-            prd->hitT = -999.0f;
-            prd->inSystem = NEW_PARTICLE;
-#if defined(GPUNBOUNCE)
-        prd->nbBounces = 0;
-#endif
+            // Reset particle
+            initParticle(myPrd);
 
 // terminate if exit has been called
 #ifdef WITHDESORPEXIT
