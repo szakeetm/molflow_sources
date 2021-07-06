@@ -160,7 +160,7 @@ void Simulation::ClearSimulation() {
     //this->currentParticles.clear();// = CurrentParticleStatus();
     //std::vector<CurrentParticleStatus>(this->nbThreads).swap(this->currentParticles);
     for(auto& particle : particles) {
-        std::vector<SubProcessFacetTempVar>(model->sh.nbFacet).swap(particle.tmpFacetVars);
+        particle.tmpFacetVars.assign(model->sh.nbFacet, SubProcessFacetTempVar());
         particle.tmpState.Reset();
         particle.model = model.get();
         particle.totalDesorbed = 0;
@@ -323,32 +323,34 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     {
         auto& tmpResults = particle.tmpState;
 
-        std::vector<FacetState>(simModel->sh.nbFacet).swap(tmpResults.facetStates);
+        tmpResults.facetStates.assign(model->sh.nbFacet, FacetState());
         for(auto& fac : simModel->facets){
             auto& sFac = *fac;
             size_t i = sFac.globalId;
             if(!tmpResults.facetStates[i].momentResults.empty())
                 continue; // Skip multiple init when facets exist in all structures
-            FacetMomentSnapshot facetMomentTemplate;
+            FacetMomentSnapshot facetMomentTemplate{};
             facetMomentTemplate.histogram.Resize(sFac.sh.facetHistogramParams);
-            facetMomentTemplate.direction = std::vector<DirectionCell>(sFac.sh.countDirection ? sFac.sh.texWidth*sFac.sh.texHeight : 0);
-            facetMomentTemplate.profile = std::vector<ProfileSlice>(sFac.sh.isProfile ? PROFILE_SIZE : 0);
-            facetMomentTemplate.texture = std::vector<TextureCell>(sFac.sh.isTextured ? sFac.sh.texWidth*sFac.sh.texHeight : 0);
+            facetMomentTemplate.direction.assign((sFac.sh.countDirection ? sFac.sh.texWidth*sFac.sh.texHeight : 0), DirectionCell());
+            facetMomentTemplate.profile.assign((sFac.sh.isProfile ? PROFILE_SIZE : 0), ProfileSlice());
+            facetMomentTemplate.texture.assign((sFac.sh.isTextured ? sFac.sh.texWidth*sFac.sh.texHeight : 0), TextureCell());
+
             //No init for hits
-            tmpResults.facetStates[i].momentResults = std::vector<FacetMomentSnapshot>(1 + simModel->tdParams.moments.size(), facetMomentTemplate);
+            tmpResults.facetStates[i].momentResults.assign(1 + simModel->tdParams.moments.size(), facetMomentTemplate);
             if (sFac.sh.anglemapParams.record)
-              tmpResults.facetStates[i].recordedAngleMapPdf = std::vector<size_t>(sFac.sh.anglemapParams.GetMapSize());
+              tmpResults.facetStates[i].recordedAngleMapPdf.assign(sFac.sh.anglemapParams.GetMapSize(), 0);
         }
 
         //Global histogram
-        FacetHistogramBuffer globalHistTemplate;
+        FacetHistogramBuffer globalHistTemplate{};
         globalHistTemplate.Resize(simModel->wp.globalHistogramParams);
-        tmpResults.globalHistograms = std::vector<FacetHistogramBuffer>(1 + simModel->tdParams.moments.size(), globalHistTemplate);
+        tmpResults.globalHistograms.assign(1 + simModel->tdParams.moments.size(), globalHistTemplate);
         tmpResults.initialized = true;
 
 
         // Init tmp vars per thread
-        std::vector<SubProcessFacetTempVar>(simModel->sh.nbFacet).swap(particle.tmpFacetVars);
+        particle.tmpFacetVars.assign(simModel->sh.nbFacet, SubProcessFacetTempVar());
+
         //currentParticle.tmpState = *tmpResults;
         //delete tmpResults;
     }
@@ -469,7 +471,7 @@ void Simulation::ResetSimulation() {
 
     for(auto& particle : particles) {
         particle.Reset();
-        std::vector<SubProcessFacetTempVar>(model->sh.nbFacet).swap(particle.tmpFacetVars);
+        particle.tmpFacetVars.assign(model->sh.nbFacet, SubProcessFacetTempVar());
         particle.model = model.get();
         particle.totalDesorbed = 0;
     }
