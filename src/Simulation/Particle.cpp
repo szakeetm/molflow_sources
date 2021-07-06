@@ -1213,8 +1213,8 @@ void Particle::RegisterTransparentPass(SubprocessFacet *facet) {
 }
 
 void Particle::Reset() {
-    position = Vector3d();
-    direction = Vector3d();
+    position = Vector3_t<FLOAT>();
+    direction = Vector3_t<FLOAT>();
     oriRatio = 0.0;
 
     nbBounces = 0;

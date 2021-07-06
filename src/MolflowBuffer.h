@@ -20,8 +20,8 @@ struct MolflowWorkerParams : public WorkerParams {
     bool calcConstantFlow;
 
     int motionType;
-    Vector3d motionVector1; //base point for rotation
-    Vector3d motionVector2; //rotation vector or velocity vector
+    Vector3_t<FLOAT> motionVector1; //base point for rotation
+    Vector3_t<FLOAT> motionVector2; //rotation vector or velocity vector
 };
 
 #endif //MOLFLOW_PROJ_MOLFLOWBUFFER_H

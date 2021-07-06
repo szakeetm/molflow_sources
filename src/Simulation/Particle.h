@@ -63,8 +63,8 @@ namespace MFSim {
 
         void Reset();
 
-        Vector3d position;    // Position
-        Vector3d direction;    // Direction
+        Vector3_t<FLOAT> position;    // Position
+        Vector3_t<FLOAT> direction;    // Direction
         double oriRatio; //Represented ratio of desorbed, used for low flux mode
 
         //Recordings for histogram

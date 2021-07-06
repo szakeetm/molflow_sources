@@ -276,7 +276,7 @@ SubprocessFacet::SubprocessFacet() : Facet() {
 SubprocessFacet::SubprocessFacet(size_t nbIndex) : Facet(nbIndex) {
     isReady = false;
     globalId = 0;
-    indices.resize(nbIndex);                    // Ref to Geometry Vector3d
+    indices.resize(nbIndex);                    // Ref to Geometry Vector3_t<FLOAT>
     vertices2.resize(nbIndex);
 }
 
@@ -297,7 +297,7 @@ SubprocessFacet& SubprocessFacet::operator=(const SubprocessFacet& cpy){
 
     isReady = cpy.isReady;
     globalId = cpy.globalId;
-    indices = cpy.indices;                    // Ref to Geometry Vector3d
+    indices = cpy.indices;                    // Ref to Geometry Vector3_t<FLOAT>
     vertices2 = cpy.vertices2;
     if(cpy.surf) surf = cpy.surf;
     else surf = nullptr;
@@ -314,7 +314,7 @@ SubprocessFacet& SubprocessFacet::operator=(SubprocessFacet&& cpy) noexcept {
 
     isReady = cpy.isReady;
     globalId = cpy.globalId;
-    indices = std::move(cpy.indices);                    // Ref to Geometry Vector3d
+    indices = std::move(cpy.indices);                    // Ref to Geometry Vector3_t<FLOAT>
     vertices2 = std::move(cpy.vertices2);
     surf = cpy.surf;
     cpy.surf = nullptr;
@@ -385,9 +385,9 @@ int SimulationModel::InitialiseFacets() {
  */
 void SimulationModel::CalculateFacetParams(SubprocessFacet* f) {
     // Calculate facet normal
-    Vector3d p0 = vertices3[f->indices[0]];
-    Vector3d v1;
-    Vector3d v2;
+    Vector3_t<FLOAT> p0 = vertices3[f->indices[0]];
+    Vector3_t<FLOAT> v1;
+    Vector3_t<FLOAT> v2;
     bool consecutive = true;
     size_t ind = 2;
 
@@ -405,11 +405,11 @@ void SimulationModel::CalculateFacetParams(SubprocessFacet* f) {
     f->sh.N = f->sh.N.Normalized();                  // Normalize
 
     // Calculate Axis Aligned Bounding Box
-    f->sh.bb.min = Vector3d(1e100, 1e100, 1e100);
-    f->sh.bb.max = Vector3d(-1e100, -1e100, -1e100);
+    f->sh.bb.min = Vector3_t<FLOAT>(1e100, 1e100, 1e100);
+    f->sh.bb.max = Vector3_t<FLOAT>(-1e100, -1e100, -1e100);
 
     for (const auto& i : f->indices) {
-        const Vector3d& p = vertices3[i];
+        const Vector3_t<FLOAT>& p = vertices3[i];
         f->sh.bb.min.x = std::min(f->sh.bb.min.x,p.x);
         f->sh.bb.min.y = std::min(f->sh.bb.min.y, p.y);
         f->sh.bb.min.z = std::min(f->sh.bb.min.z, p.z);
@@ -427,9 +427,9 @@ void SimulationModel::CalculateFacetParams(SubprocessFacet* f) {
     //double C = f->sh.N.z;
     //double D = -Dot(f->sh.N, p0);
 
-    Vector3d p1 = vertices3[f->indices[1]];
+    Vector3_t<FLOAT> p1 = vertices3[f->indices[1]];
 
-    Vector3d U, V;
+    Vector3_t<FLOAT> U, V;
 
     U = (p1 - p0).Normalized(); //First side
 
@@ -443,8 +443,8 @@ void SimulationModel::CalculateFacetParams(SubprocessFacet* f) {
     Vector2d BBmax; BBmax.u = 0.0; BBmax.v = 0.0;
 
     for (size_t j = 1; j < f->sh.nbIndex; j++) {
-        Vector3d p = vertices3[f->indices[j]];
-        Vector3d v = p - p0;
+        Vector3_t<FLOAT> p = vertices3[f->indices[j]];
+        Vector3_t<FLOAT> v = p - p0;
         f->vertices2[j].u = Dot(U, v);  // Project p on U along the V direction
         f->vertices2[j].v = Dot(V, v);  // Project p on V along the U direction
 

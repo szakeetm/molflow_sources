@@ -476,7 +476,7 @@ void TexturePlotter::UpdateTable() {
 						for (size_t j = 0; j < h; j++) {
 							if (selFacet->sh.countDirection) {
 								PhysicalValue val = worker->GetGeometry()->GetPhysicalValue(selFacet, PhysicalMode::GasVelocityVector, 1.0, 1.0, 1.0, (int)(i + j*w), facetSnapshot);
-                                Vector3d v_vect = val.vect;
+                                Vector3_t<FLOAT> v_vect = val.vect;
 
                                 sprintf(tmp, "%g,%g,%g",
 									v_vect.x, v_vect.y, v_vect.z);

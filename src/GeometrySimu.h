@@ -186,7 +186,7 @@ public:
         modelSize += structures.capacity();
         for (auto &struc : structures)
             modelSize += struc.GetMemSize();
-        modelSize += sizeof(std::vector<Vector3d>) + sizeof(Vector3d) * vertices3.capacity();
+        modelSize += sizeof(std::vector<Vector3_t<FLOAT>>) + sizeof(Vector3_t<FLOAT>) * vertices3.capacity();
         modelSize += tdParams.GetMemSize();
         modelSize += sizeof(otfParams);
         modelSize += sizeof(wp);
@@ -290,7 +290,7 @@ public:
     std::vector<std::shared_ptr<SubprocessFacet>> facets;    // All facets of this geometry
 
     std::vector<SuperStructure> structures;
-    std::vector<Vector3d> vertices3; // Vertices (3D space)
+    std::vector<Vector3_t<FLOAT>> vertices3; // Vertices (3D space)
 #if defined(USE_OLD_BVH)
     // currently always have SuperStructure
 #elif defined(USE_KDTREE)

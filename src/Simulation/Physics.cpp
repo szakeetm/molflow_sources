@@ -26,16 +26,16 @@ double Physics::GenerateDesorptionTime(const std::vector<std::vector<std::pair<d
 * \brief Updates particle direction and velocity if we are dealing with a moving facet (translated or rotated)
 */
 void
-Physics::TreatMovingFacet(SimulationModel *model, const Vector3d &position, Vector3d &direction, double &velocity) {
-    Vector3d localVelocityToAdd;
+Physics::TreatMovingFacet(SimulationModel *model, const Vector3_t<FLOAT> &position, Vector3_t<FLOAT> &direction, double &velocity) {
+    Vector3_t<FLOAT> localVelocityToAdd;
     if (model->wp.motionType == 1) { //Translation
         localVelocityToAdd = model->wp.motionVector2; //Fixed translational vector
     } else if (model->wp.motionType == 2) { //Rotation
-        Vector3d distanceVector = 0.01 * (position -
+        Vector3_t<FLOAT> distanceVector = 0.01 * (position -
                                           model->wp.motionVector1); //distance from base, with cm->m conversion, motionVector1 is rotation base point
         localVelocityToAdd = CrossProduct(model->wp.motionVector2, distanceVector); //motionVector2 is rotation axis
     }
-    Vector3d oldVelocity, newVelocity;
+    Vector3_t<FLOAT> oldVelocity, newVelocity;
     oldVelocity = direction * velocity;
     newVelocity = oldVelocity + localVelocityToAdd;
     direction = newVelocity.Normalized();

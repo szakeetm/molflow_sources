@@ -731,7 +731,7 @@ size_t InterfaceFacet::GetHitsSize(size_t nbMoments)  { //for hits dataport
 size_t InterfaceFacet::GetTexRamSize(size_t nbMoments)  {
 	//Values
 	size_t sizePerCell = sizeof(TextureCell)*nbMoments; //TextureCell: long + 2*double
-	if (sh.countDirection) sizePerCell += sizeof(DirectionCell)*nbMoments; //DirectionCell: Vector3d + long
+	if (sh.countDirection) sizePerCell += sizeof(DirectionCell)*nbMoments; //DirectionCell: Vector3_t<FLOAT> + long
 	//Mesh
 	sizePerCell += sizeof(int); //CellPropertiesIds
 	size_t sizePerMeshElement = sizeof(CellProperties);
@@ -748,7 +748,7 @@ size_t InterfaceFacet::GetTexRamSizeForCellNumber(int width, int height, bool us
 
     //Values
     size_t sizePerCell = sizeof(TextureCell)*nbMoments; //TextureCell: long + 2*double
-    if (sh.countDirection) sizePerCell += sizeof(DirectionCell)*nbMoments; //DirectionCell: Vector3d + long
+    if (sh.countDirection) sizePerCell += sizeof(DirectionCell)*nbMoments; //DirectionCell: Vector3_t<FLOAT> + long
     //Mesh
     sizePerCell += sizeof(int); //CellPropertiesIds
     size_t sizePerMeshElement = sizeof(CellProperties);
@@ -777,7 +777,7 @@ size_t InterfaceFacet::GetTexRamSizeForRatio(double ratio, size_t nbMoments) {
 
 		//Values
 		size_t sizePerCell = sizeof(TextureCell)*nbMoments; //TextureCell: long + 2*double
-		if (sh.countDirection) sizePerCell += sizeof(DirectionCell)*nbMoments; //DirectionCell: Vector3d + long
+		if (sh.countDirection) sizePerCell += sizeof(DirectionCell)*nbMoments; //DirectionCell: Vector3_t<FLOAT> + long
 		//Mesh
 		sizePerCell += sizeof(int); //CellPropertiesIds
 		size_t sizePerMeshElement = sizeof(CellProperties);
@@ -810,7 +810,7 @@ size_t InterfaceFacet::GetTexRamSizeForRatio(double ratioU, double ratioV, size_
 
         //Values
         size_t sizePerCell = sizeof(TextureCell)*nbMoments; //TextureCell: long + 2*double
-        if (sh.countDirection) sizePerCell += sizeof(DirectionCell)*nbMoments; //DirectionCell: Vector3d + long
+        if (sh.countDirection) sizePerCell += sizeof(DirectionCell)*nbMoments; //DirectionCell: Vector3_t<FLOAT> + long
         //Mesh
         sizePerCell += sizeof(int); //CellPropertiesIds
         size_t sizePerMeshElement = sizeof(CellProperties);

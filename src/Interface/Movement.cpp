@@ -247,7 +247,7 @@ void Movement::ProcessMessage(GLComponent *src,int message) {
 
 		} else if (src==button3) { //Apply
 			double a, b, c, u, v, w;
-			Vector3d AXIS_P0, AXIS_DIR;
+			Vector3_t<FLOAT> AXIS_P0, AXIS_DIR;
 			double degPerSec;
 			
 			
@@ -484,7 +484,7 @@ void Movement::Update() {
 		axText->SetText(work->model->wp.motionVector1.x);
 		ayText->SetText(work->model->wp.motionVector1.y);
 		azText->SetText(work->model->wp.motionVector1.z);
-		Vector3d rot = work->model->wp.motionVector2.Normalized();
+		Vector3_t<FLOAT> rot = work->model->wp.motionVector2.Normalized();
 		rxText->SetText(rot.x);
 		ryText->SetText(rot.y);
 		rzText->SetText(rot.z);

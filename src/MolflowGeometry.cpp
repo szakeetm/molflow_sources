@@ -74,7 +74,7 @@ size_t MolflowGeometry::GetGeometrySize() {
 	size_t memoryUsage = 0;
 	memoryUsage += sizeof(GeomProperties);
 	memoryUsage += sizeof(OntheflySimulationParams);
-	memoryUsage += sh.nbVertex * sizeof(Vector3d);
+	memoryUsage += sh.nbVertex * sizeof(Vector3_t<FLOAT>);
 	for (int i = 0; i < sh.nbFacet; i++)
 		memoryUsage += facets[i]->GetGeometrySize();
 
@@ -1796,7 +1796,7 @@ MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, GlobalSimuSt
 
 							case 7: // Velocity vector
 								if (f->sh.countDirection) {
-									Vector3d v_vect = GetPhysicalValue(f, PhysicalMode::GasVelocityVector, 1.0, 1.0, 1.0, (int)index, facetSnapshot).vect;
+									Vector3_t<FLOAT> v_vect = GetPhysicalValue(f, PhysicalMode::GasVelocityVector, 1.0, 1.0, 1.0, (int)index, facetSnapshot).vect;
 									sprintf(tmp, "%g,%g,%g",
 									v_vect.x, v_vect.y, v_vect.z);
 								}
