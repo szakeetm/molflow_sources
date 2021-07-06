@@ -3,6 +3,7 @@
 //
 
 #include "MolflowBuffer.h"
+#include <limits>
 
 WorkerParams::WorkerParams(){
     timeWindowSize = 1E-10; //Dirac-delta desorption pulse at t=0
