@@ -738,7 +738,7 @@ void GlobalSimuState::Reset() {
         ZEROVECTOR(h.nbHitsHistogram);
         ZEROVECTOR(h.timeHistogram);
     }
-    memset(&globalHits, 0, sizeof(globalHits)); //Plain old data
+    globalHits = GlobalHitBuffer(); //Plain old data
     for (auto& state : facetStates) {
         ZEROVECTOR(state.recordedAngleMapPdf);
         for (auto& m : state.momentResults) {
@@ -748,7 +748,7 @@ void GlobalSimuState::Reset() {
             std::fill(m.direction.begin(), m.direction.end(), DirectionCell());
             std::fill(m.texture.begin(), m.texture.end(), TextureCell());
             std::fill(m.profile.begin(), m.profile.end(), ProfileSlice());
-            memset(&(m.hits), 0, sizeof(m.hits));
+            m.hits = FacetHitBuffer(); //Plain old data
         }
     }
     tMutex.unlock();
