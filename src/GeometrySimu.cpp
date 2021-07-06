@@ -365,7 +365,7 @@ int SimulationModel::InitialiseFacets() {
         // Set some texture parameters
         // bool Facet::SetTexture(double width, double height, bool useMesh)
         if (facet.sh.texWidth_precise * facet.sh.texHeight_precise > 0.0000001) {
-            const double ceilCutoff = 0.9999999;
+            const double ceilCutoff = 0.99;
             facet.sh.texWidth = (int) std::ceil(facet.sh.texWidth_precise *
                                                 ceilCutoff); //0.9999999: cut the last few digits (convert rounding error 1.00000001 to 1, not 2)
             facet.sh.texHeight = (int) std::ceil(facet.sh.texHeight_precise * ceilCutoff);
