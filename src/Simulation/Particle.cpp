@@ -286,7 +286,7 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                             d = hit.hit->colDistTranspPass;
                         }
                         tmpFacetVars[hit.hitId] = *hit.hit;
-                        delete hit.hit;
+                        //delete hit.hit;
                     }
                 }
                 tmpRay.hits->clear();
