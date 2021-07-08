@@ -1348,9 +1348,9 @@ try{
         delete[] randomOffset;*/
 
 #ifdef RNG_BULKED
-        const unsigned int launchSize = state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y;
+        /*const unsigned int launchSize = state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y;
         const unsigned int nbRandperThread = NB_RAND(model->parametersGlobal.cyclesRNG, state.launchParams.simConstants.maxDepth);
-        const unsigned int nbRand = nbRandperThread * launchSize;
+        //const unsigned int nbRand = nbRandperThread * launchSize;
         //CUDABuffer stateBuff, randomBuff;
         //curandState_t *states;
         //TODO: Try upload or host API
@@ -1369,14 +1369,16 @@ try{
         state.launchParams.randomNumbers = (RN_T *) sim_memory.randBuffer.d_ptr;
         //randBuffer.upload(randomNumbers,nbRand);
 
-        /*uint32_t *randomOffset = new uint32_t[launchSize]();
-        randOffsetBuffer.upload(randomOffset,launchSize);
-        delete[] randomOffset;*/
         crng::offsetBufferZeroInit(launchSize, (void *) sim_memory.randOffsetBuffer.d_ptr);
 
-        //state.launchParamsBuffer.upload(&launchParams,1);
+        //state.launchParamsBuffer.upload(&launchParams,1);*/
+        const unsigned int launchSize = state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y;
+        const unsigned int nbRandperThread = NB_RAND(model->parametersGlobal.cyclesRNG, state.launchParams.simConstants.maxDepth);
+
+        crng::generateRandHostAndBuffer(launchSize, static_cast<RN_T*>(sim_memory.randBuffer.d_ptr), nbRandperThread, static_cast<unsigned int*>(sim_memory.randOffsetBuffer.d_ptr));
+        state.launchParams.randomNumbers = static_cast<RN_T*>(sim_memory.randBuffer.d_ptr);
 #else
-        state.launchParams.randomNumbers = (curandState_t *) sim_memory.randBuffer.d_ptr;
+        state.launchParams.randomNumbers = static_cast<curandState_t*>(sim_memory.randBuffer.d_ptr);
 #endif
 
 

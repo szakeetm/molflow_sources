@@ -31,6 +31,7 @@ namespace crng {
     // float
     __host__ int initializeRandHost(unsigned int kernelSize, RN_T **randomNumbersPtr, size_t nb_rand, unsigned int seed = 1234ULL);
     __host__ int  generateRandHost(unsigned int kernelSize, RN_T *randomNumbers, size_t nb_rand);
+    __host__ int generateRandHostAndBuffer(unsigned int kernelSize, RN_T *randomNumbers, size_t nb_rand, unsigned int *randomOffsets);
     __host__ int  destroyRandHost(RN_T **randomNumbersPtr);
     __host__ int  destroyRandDevice(curandState_t **states);
 

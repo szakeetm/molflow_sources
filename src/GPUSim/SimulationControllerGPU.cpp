@@ -68,18 +68,17 @@ int SimulationControllerGPU::LoadSimulation(flowgpu::Model* loaded_model, size_t
  */
 uint64_t SimulationControllerGPU::RunSimulation() {
 
-    try {
-        // for testing only generate and upload random numbers once
-        // generate new numbers whenever necessary, recursion = TraceProcessing only, poly checks only for ray generation with polygons
-        //if(1){
 #ifdef RNG_BULKED
-        if(figures.runCount%(model->parametersGlobal.cyclesRNG)==0){
+    // generate new numbers whenever necessary, recursion = TraceProcessing only, poly checks only for ray generation with polygons
+    if(figures.runCount%(model->parametersGlobal.cyclesRNG)==0){
 #ifdef DEBUG
-            //std::cout << "#flowgpu: generating random numbers at run #" << runCount << std::endl;
+        std::cout << "#flowgpu: generating random numbers at run #" << runCount << std::endl;
 #endif
-            optixHandle->generateRand();
-        }
+        optixHandle->generateRand();
+    }
 #endif //RNG_BULKED
+
+    try {
         optixHandle->launchMolecules();
         ++figures.runCount;
         if(!endCalled && !hasEnded)

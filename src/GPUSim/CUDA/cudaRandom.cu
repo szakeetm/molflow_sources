@@ -11,13 +11,17 @@
 #include <stdlib.h>
 //#include "GPUDefines.h" // for NB_RAND
 
+#if defined(DEBUG)
 #define CUDA_CALL(x) do { if((x)!=cudaSuccess) { \
     printf("Error at %s:%d\n",__FILE__,__LINE__);\
     return EXIT_FAILURE;}} while(0)
 #define CURAND_CALL(x) do { if((x)!=CURAND_STATUS_SUCCESS) { \
     printf("Error at %s:%d\n",__FILE__,__LINE__);\
     return EXIT_FAILURE;}} while(0)
-
+#else // NDEBUG
+#define CUDA_CALL(x) x
+#define CURAND_CALL(x) x
+#endif // DEBUG
 /* this GPU kernel function is used to initialize the random states */
 __global__ void generate_kernel(unsigned int seed, curandState_t *states) {
 
@@ -201,6 +205,19 @@ namespace crng {
 
         return EXIT_SUCCESS;
     }*/
+
+    int generateRandHostAndBuffer(unsigned int kernelSize, RN_T *randomNumbers, size_t nb_rand, unsigned int *randomOffsets) {
+        /* Generate n floats on device and reset offsets for start index = 0 */
+        CUDA_CALL(cudaMemsetAsync(randomOffsets, 0, kernelSize * sizeof(unsigned int)));
+
+#ifdef RNG64
+        CURAND_CALL(curandGenerateUniformDouble(gen, randomNumbers, nb_rand*kernelSize));
+#else
+        CURAND_CALL(curandGenerateUniform(gen, randomNumbers, nb_rand * kernelSize));
+#endif
+
+        return EXIT_SUCCESS;
+    }
 
     int generateRandHost(unsigned int kernelSize, RN_T *randomNumbers, size_t nb_rand) {
         /* Generate n floats on device */
