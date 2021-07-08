@@ -1262,7 +1262,7 @@ optixLaunchParams.perThreadData.currentMoleculeData[fbIndex].postHitDir = prd->p
             atomicAdd(optixLaunchParams.sharedData.missCounter, 1);
 
             // Reset particle
-            initParticle(myPrd);
+            initParticle(*prd);
 
 // terminate if exit has been called
 #ifdef WITHDESORPEXIT
