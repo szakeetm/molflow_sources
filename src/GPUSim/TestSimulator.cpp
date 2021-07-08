@@ -203,13 +203,16 @@ int main(int argc, char **argv) {
             } else {
                 printUsageAndExit( argv[0] );
             }
-        } else if ( strcmp( argv[i], "--cyclesForRNG") == 0 || strcmp( argv[i], "-r") == 0) {
+        }
+#ifdef RNG_BULKED
+        else if ( strcmp( argv[i], "--cyclesForRNG") == 0 || strcmp( argv[i], "-r") == 0) {
             if( i < argc-1 ) {
                 simParams.cyclesRNG = strtoul(argv[++i],&p,10);
             } else {
                 printUsageAndExit( argv[0] );
             }
         }
+#endif
         else if ( strcmp( argv[i], "--directRand") == 0) {
             simParams.randomNumberMethod = true;
         } else if ( strcmp( argv[i], "--quiet") == 0  || strcmp( argv[i], "-q" ) == 0 ) {
