@@ -1349,7 +1349,7 @@ try{
 
 #ifdef RNG_BULKED
         const unsigned int launchSize = state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y;
-        const unsigned int nbRandperThread = NB_RAND(state.launchParams.simConstants.maxDepth);
+        const unsigned int nbRandperThread = NB_RAND(model->parametersGlobal.cyclesRNG, state.launchParams.simConstants.maxDepth);
         const unsigned int nbRand = nbRandperThread * launchSize;
         //CUDABuffer stateBuff, randomBuff;
         //curandState_t *states;
@@ -1385,7 +1385,7 @@ try{
 
     void SimulationOptiX::resetDeviceData(const uint2 &newSize) {
 
-        const uint32_t nbRand = NB_RAND(state.launchParams.simConstants.maxDepth);
+        const uint32_t nbRand = NB_RAND(model->parametersGlobal.cyclesRNG, state.launchParams.simConstants.maxDepth);
 
         // resize our cuda frame buffer
         if (!sim_memory.moleculeBuffer.d_pointer())
@@ -1411,7 +1411,7 @@ try{
 
     void SimulationOptiX::initLaunchParams(const uint2 &newSize) {
 
-        const uint32_t nbRand = NB_RAND(model->parametersGlobal.recursiveMaxDepth);
+        const uint32_t nbRand = NB_RAND(model->parametersGlobal.cyclesRNG, model->parametersGlobal.recursiveMaxDepth);
 
         // resize our cuda frame buffer
         // TODO: one counter per thread is a problem for memory
@@ -1522,7 +1522,7 @@ try{
     /*! resize buffers to given amount of threads */
     // initlaunchparams
     void SimulationOptiX::resize(const uint2 &newSize) {
-        const uint32_t nbRand = NB_RAND(state.launchParams.simConstants.maxDepth);
+        const uint32_t nbRand = NB_RAND(model->parametersGlobal.cyclesRNG, state.launchParams.simConstants.maxDepth);
         state.launchParams.simConstants.size = newSize;
 
         // resize our cuda frame buffer

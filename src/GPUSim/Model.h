@@ -69,6 +69,7 @@ namespace flowgpu {
         float gasMass;
         bool useMaxwellDistribution;
         size_t recursiveMaxDepth;
+        size_t cyclesRNG{1};
         bool randomNumberMethod; /*! 0=bulked, 1=ad hoc */
         /*bool	 lowFluxMode;
         double	 lowFluxCutoff;*/

@@ -29,7 +29,8 @@ void printUsageAndExit( const char* argv0 )
     fprintf( stderr, "         --nprints | -i                   Print runtime output n times based on -l or -t {default 10}\n" );
     fprintf( stderr, "      --printevery | -j                   Print runtime output every n_th loop\n" );
     fprintf( stderr, "  --printEveryNMin | -k                   Print runtime output every k minutes\n" );
-    fprintf( stderr, "      --depth      |                      Unimplemented\n" );
+    fprintf( stderr, "      --depth      |                      Recursive max depth for secondary rays (reflections)\n" );
+    fprintf( stderr, "    --cyclesForRNG | -r                   Number of cycles the RNG should be buffered for {default 1}\n" );
     fprintf( stderr, "      --directRand |                      Unimplemented\n" );
     //fprintf( stderr, "         --dim=<width>x<height>        Set image dimensions; defaults to 512x384\n" );
     exit(1);
@@ -202,7 +203,14 @@ int main(int argc, char **argv) {
             } else {
                 printUsageAndExit( argv[0] );
             }
-        } else if ( strcmp( argv[i], "--directRand") == 0) {
+        } else if ( strcmp( argv[i], "--cyclesForRNG") == 0 || strcmp( argv[i], "-r") == 0) {
+            if( i < argc-1 ) {
+                simParams.cyclesRNG = strtoul(argv[++i],&p,10);
+            } else {
+                printUsageAndExit( argv[0] );
+            }
+        }
+        else if ( strcmp( argv[i], "--directRand") == 0) {
             simParams.randomNumberMethod = true;
         } else if ( strcmp( argv[i], "--quiet") == 0  || strcmp( argv[i], "-q" ) == 0 ) {
             silentMode = true;
