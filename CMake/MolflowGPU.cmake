@@ -22,10 +22,15 @@ option(WITH_PROFILES "Enable profiles" OFF)
 option(WITH_TRANS "Enable transparent SBT" OFF)
 option(WITH_NBOUNCE "Enable NBBOUNCE Counter" ON)]]
 
+set(USE_BATCHED_RN ON) #otherwise ad hoc generation
+set(USE_DIRECT_PAYLOAD ON) #otherwise use ptr to larger payload structure
+
 set(USE_RANDOM_NUMBER_TYPE_64 OFF)
 set(USE_COUNTER_TYPE_64 OFF)
 #(USE_RANDOM_NUMBER_TYPE_64 "Use double instead of float for random numbers" ON)
 #option(USE_COUNTER_TYPE_64 "Use 64bit instead of 32bit precision for the counter structure" ON)
+MESSAGE("[GPU_BUILD_OPTION] USE_BATCHED_RN: ${USE_BATCHED_RN}")
+MESSAGE("[GPU_BUILD_OPTION] USE_DIRECT_PAYLOAD: ${USE_DIRECT_PAYLOAD}")
 MESSAGE("[GPU_BUILD_OPTION] USE_RANDOM_NUMBER_TYPE_64: ${USE_RANDOM_NUMBER_TYPE_64}")
 MESSAGE("[GPU_BUILD_OPTION] USE_COUNTER_TYPE_64: ${USE_COUNTER_TYPE_64}")
 
@@ -123,6 +128,14 @@ if (WITH_TRANS)
     add_definitions(-DWITH_TRANS)
     set(nvcc_flags ${nvcc_flags} -DWITH_TRANS)
 endif (WITH_TRANS)
+if (USE_BATCHED_RN)
+    add_definitions(-DRNG_BULKED)
+    set(nvcc_flags ${nvcc_flags} -DRNG_BULKED)
+endif (USE_BATCHED_RN)
+if (USE_DIRECT_PAYLOAD)
+    add_definitions(-DPAYLOAD_DIRECT)
+    set(nvcc_flags ${nvcc_flags} -DPAYLOAD_DIRECT)
+endif (USE_DIRECT_PAYLOAD)
 if (USE_RANDOM_NUMBER_TYPE_64)
     add_definitions(-DRNG64)
     set(nvcc_flags ${nvcc_flags} -DRNG64)
