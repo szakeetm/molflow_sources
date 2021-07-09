@@ -112,8 +112,6 @@ link_directories(${LINK_DIR_1}
         ${LINK_DIR_2}
         )
 
-include(../../src_shared/SetOpenMP.cmake)
-
 add_library(${PROJECT_NAME} ${SRC_FILES})
 
 target_link_libraries(${PROJECT_NAME} PUBLIC shared_simulator)
