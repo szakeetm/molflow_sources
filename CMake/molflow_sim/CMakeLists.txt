@@ -69,10 +69,6 @@ endif(NOT MSVC)
 #######################################
 
 set(SRC_FILES
-        ${CPP_DIR_2}/SimulationManager.cpp
-        ${CPP_DIR_2}/ShMemory.cpp
-        ${CPP_DIR_2}/Process.cpp
-
         ${CPP_DIR_1}/GeometrySimu.cpp
         ${CPP_DIR_1}/MolflowBuffer.cpp
         ${CPP_DIR_1}/Parameter.cpp
@@ -99,8 +95,7 @@ set(SRC_FILES
         ${SIMU_DIR}/CDFGeneration.cpp
         ${SIMU_DIR}/IDGeneration.cpp
 
-        ${CPP_DIR_2}/SimulationController.cpp
-        ${CPP_DIR_2}/SimulationManager.cpp
+        #${CPP_DIR_2}/SimulationController.cpp
         ${CPP_DIR_2}/IntersectAABB_shared.cpp
         ${CPP_DIR_2}/Polygon.cpp
         ${CPP_DIR_2}/Random.cpp
