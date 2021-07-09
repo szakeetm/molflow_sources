@@ -20,8 +20,8 @@ option(WITH_NBOUNCE "Enable NBBOUNCE Counter" ON)
 option(USE_BATCHED_RN "Batch generate RN instead of on demand generation" ON) #otherwise ad hoc generation
 option(USE_DIRECT_PAYLOAD "Use direct payload instead of strict ptr" ON) #otherwise use ptr to larger payload structure
 
-option(USE_RANDOM_NUMBER_TYPE_64 "Use double instead of float for random numbers" ON)
-option(USE_COUNTER_TYPE_64 "Use 64bit instead of 32bit precision for the counter structure" ON) #can increase precision for floating point type counters
+option(USE_RANDOM_NUMBER_TYPE_64 "Use double instead of float for random numbers" OFF)
+option(USE_COUNTER_TYPE_64 "Use 64bit instead of 32bit precision for the counter structure" OFF) #can increase precision for floating point type counters
 
 MESSAGE("[GPU_BUILD_OPTION] USE_BATCHED_RN: ${USE_BATCHED_RN}")
 MESSAGE("[GPU_BUILD_OPTION] USE_DIRECT_PAYLOAD: ${USE_DIRECT_PAYLOAD}")
