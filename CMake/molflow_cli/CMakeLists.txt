@@ -95,7 +95,6 @@ set(SRC_FILES
         #${SIMU_DIR}/SimulationMC.cpp
         ${CPP_DIR_2}/IntersectAABB_shared.cpp
         ${CPP_DIR_2}/Polygon.cpp
-        ${CPP_DIR_2}/Random.cpp
 
         ${CPP_DIR_2}/FlowMPI.h #contains templates
         ${CPP_DIR_2}/FlowMPI.cpp
