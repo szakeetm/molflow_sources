@@ -114,7 +114,7 @@ link_directories(${LINK_DIR_1}
 
 add_library(${PROJECT_NAME} ${SRC_FILES})
 
-include(SetOpenMP.cmake)
+include(${CMAKE_HOME_DIRECTORY}/src_shared/SetOpenMP.cmake)
 find_package(OpenMP REQUIRED)
 if(OpenMP_CXX_FOUND)
     message(STATUS "Detected OpenMP version: ${OpenMP_CXX_VERSION}")
