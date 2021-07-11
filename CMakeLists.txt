@@ -96,6 +96,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS OFF)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 include(CMake/Molflow.cmake)
 
+include(../src_shared/SetOpenMP.cmake)
+find_package(OpenMP REQUIRED)
+
 add_subdirectory(src_shared EXCLUDE_FROM_ALL)
 #IF(NOT WIN32)
 add_subdirectory(CMake/molflow_cli)

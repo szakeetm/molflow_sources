@@ -104,6 +104,11 @@ set(SRC_FILES
 
 add_executable(${PROJECT_NAME} ${SRC_FILES})
 
+if(OpenMP_CXX_FOUND)
+    message(STATUS "Detected OpenMP version: ${OpenMP_CXX_VERSION}")
+    target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
+endif()
+
 option(USE_MPI FALSE)
 if(USE_MPI)
     find_package(MPI)

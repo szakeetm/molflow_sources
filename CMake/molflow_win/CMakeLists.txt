@@ -118,6 +118,11 @@ else()
     add_executable(${PROJECT_NAME} ${SRC_FILES})
 endif()
 
+if(OpenMP_CXX_FOUND)
+    message(STATUS "Detected OpenMP version: ${OpenMP_CXX_VERSION}")
+    target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
+endif()
+
 target_link_libraries(${PROJECT_NAME} PUBLIC shared_interface)
 target_link_libraries(${PROJECT_NAME} PUBLIC molflowSim)
 
