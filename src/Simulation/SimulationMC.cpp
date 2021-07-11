@@ -29,6 +29,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Helper/MathTools.h"
 
 #include "Parameter.h"
+#include <omp.h>
 
 double SimulationModel::GetStickingAt(SubprocessFacet *f, double time) const {
     if (f->sh.sticking_paramId == -1) //constant sticking
