@@ -70,6 +70,7 @@ endif(NOT MSVC)
 
 set(SRC_FILES
         ${CPP_DIR_2}/FlowCLI.cpp
+        ${CPP_DIR_2}/SimulationManager.cpp
         ${CPP_DIR_2}/ShMemory.cpp
         ${CPP_DIR_2}/Process.cpp
 
