@@ -2,7 +2,6 @@
 // Created by pascal on 8/8/19.
 //
 
-#include <omp.h>
 #include "../src_shared/SimulationManager.h"
 #include "gtest/gtest.h"
 #include "../src/Initializer.h"
