@@ -112,20 +112,14 @@ link_directories(${LINK_DIR_1}
         ${LINK_DIR_2}
         )
 
-if (APPLE)
-    set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include" CACHE INTERNAL "OpenMP flags for Xcode toolchain.")
-    set(OpenMP_C_LIB_NAMES "omp" CACHE INTERNAL "OpenMP lib name for Xcode toolchain.")
-
-    set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include" CACHE INTERNAL "OpenMP flags for Xcode toolchain.")
-    set(OpenMP_CXX_LIB_NAMES "omp" CACHE INTERNAL "OpenMP lib name for Xcode toolchain.")
-    set(OpenMP_omp_LIBRARY "/usr/local/opt/libomp/lib/libomp.dylib" CACHE INTERNAL "OpenMP lib name for Xcode toolchain.")
-endif()
-
 add_library(${PROJECT_NAME} ${SRC_FILES})
 
+include(${CMAKE_HOME_DIRECTORY}/src_shared/SetOpenMP.cmake)
 find_package(OpenMP REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
-
+if(OpenMP_CXX_FOUND)
+    message(STATUS "Detected OpenMP version: ${OpenMP_CXX_VERSION}")
+    target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
+endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC shared_simulator)
 #target_link_libraries(${PROJECT_NAME} PUBLIC molflowSub)
@@ -146,9 +140,6 @@ if(MSVC)
         target_include_directories(${PROJECT_NAME} PUBLIC
                 ${HEADER_DIR_6}
                 )
-    else()
-        find_package(GSL REQUIRED)
-        target_include_directories(${PROJECT_NAME} PRIVATE ${GSL_INCLUDE_DIRS})
 endif()
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)

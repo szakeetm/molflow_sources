@@ -63,8 +63,9 @@ namespace MFSim {
 
         void Reset();
 
-        Vector3d position;    // Position
-        Vector3d direction;    // Direction
+        Ray particle;
+        //Vector3d position;    // Position
+        //Vector3d direction;    // Direction
         double oriRatio; //Represented ratio of desorbed, used for low flux mode
 
         //Recordings for histogram
@@ -74,7 +75,7 @@ namespace MFSim {
         size_t particleId;
         double distanceTraveled;
         double generationTime; //Time it was created, constant
-        double particleTime; //Actual time, incremented after every hit. (Flight time = actual time - generation time)
+        //double particleTime; //Actual time, incremented after every hit. (Flight time = actual time - generation time)
         int teleportedFrom;   // We memorize where the particle came from: we can teleport back
 
         double velocity;
@@ -89,6 +90,8 @@ namespace MFSim {
         std::vector <SubProcessFacetTempVar> tmpFacetVars; //One per subprocessfacet, for intersect routine
 
         bool allQuit{false};
+
+        bool StartFromSource(Ray &ray);
     };
 }
 
