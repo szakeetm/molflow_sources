@@ -58,6 +58,7 @@ set(EXTRA_SRC
         )
 # Now simply link against gtest or gtest_main as needed. Eg
 add_executable(testsuite simulation_testsuite.cpp ${EXTRA_SRC})
+
 target_link_libraries(testsuite PRIVATE gtest_main molflowSim)
 target_compile_definitions(testsuite PRIVATE
         "-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
@@ -90,7 +91,7 @@ if(MSVC)
 endif(MSVC)
 
 target_compile_features(testsuite PRIVATE cxx_std_17)
-add_test(NAME example_test COMMAND testsuite)
+#add_test(NAME example_test COMMAND testsuite)
 
 file(COPY ./simulation.cfg
         ./test_lr1000_pipe.xml ./test_lr10_pipe_tex.xml ./test_lr10_pipe_prof.xml ./test_lr10_pipe_trans.xml
