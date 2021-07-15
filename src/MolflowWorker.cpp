@@ -1169,13 +1169,20 @@ bool Worker::InterfaceGeomToSimModel() {
     }
     // Parse usermoments to regular moment intervals
     //model->tdParams.moments = this->moments;
-    model->tdParams.CDFs = this->CDFs;
+
+
+    model->tdParams.CDFs.clear();
+    model->tdParams.IDs.clear();
+
+    // we create it directly on the Sim side
+    //model->tdParams.CDFs = this->CDFs;
     //        model->tdParams.IDs = this->IDs;
     {
-        model->tdParams.IDs.clear();
-        for (auto &id : this->IDs) {
+        //model->tdParams.IDs.clear();
+        // we create it directly on the Sim side
+        /*for (auto &id : this->IDs) {
             model->tdParams.IDs.push_back(id.GetValues());
-        }
+        }*/
     }
 
     model->tdParams.parameters.clear();
@@ -1296,8 +1303,6 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
         progressDlg->SetVisible(true);
         progressDlg->SetProgress(0.0);
 
-        ReloadSim(sendOnly, progressDlg);
-
         if (!sendOnly) {
             if (model->otfParams.nbProcess == 0 && !geom->IsLoaded()) {
                 progressDlg->SetVisible(false);
@@ -1308,7 +1313,22 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
             try {
                 progressDlg->SetMessage("Do preliminary calculations...");
                 PrepareToRun();
+            }
+            catch (std::exception &e) {
+                GLMessageBox::Display(e.what(), "Error (Full reload)", GLDLG_OK, GLDLG_ICONWARNING);
+                progressDlg->SetVisible(false);
+                SAFE_DELETE(progressDlg);
+                std::stringstream err;
+                err << "Error (Full reload) " << e.what();
+                throw std::runtime_error(err.str());
+            }
+        }
 
+        progressDlg->SetMessage("Reloading structures for simulation unit...");
+        ReloadSim(sendOnly, progressDlg);
+
+        if (!sendOnly) {
+            try {
                 progressDlg->SetMessage("Asking subprocesses to clear geometry...");
                 simManager.ResetSimulations();
                 progressDlg->SetMessage("Clearing Logger...");

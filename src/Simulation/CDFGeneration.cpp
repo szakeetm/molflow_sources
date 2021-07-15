@@ -14,15 +14,14 @@ namespace CDFGeneration {
  * \return ID of the CFD
  */
     int GetCDFId(const std::set<double> &temperatureList, double temperature) {
-        if (!temperatureList.empty()) {
-            auto lowerBound = std::lower_bound(temperatureList.begin(),
-                                               temperatureList.end(), temperature);
-            if (lowerBound == temperatureList.begin())
+        if(!temperatureList.empty()) {
+            auto pos = temperatureList.find(temperature);
+            if(pos == temperatureList.end())
                 return -1;
-            --lowerBound; // even temperatureList.end() can be a bound
+            //--lowerBound; //even temperatureList.end() can be a bound
 
-            if (std::abs(temperature - *lowerBound) > 1E-5) {
-                return std::distance(temperatureList.begin(), lowerBound);
+            if (temperature == *pos) {
+                return std::distance(temperatureList.begin(), pos);
             }
         }
         return -1;

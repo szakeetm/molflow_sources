@@ -131,6 +131,26 @@ std::pair<int, std::optional<std::string>> Simulation::SanityCheckModel(bool str
         errorsOnCheck++;
     }
 
+    for(auto& fac : model->facets){
+        bool hasAnyTexture = fac->sh.countDes || fac->sh.countAbs || fac->sh.countRefl || fac->sh.countTrans || fac->sh.countACD || fac->sh.countDirection;
+        if (!fac->sh.isTextured && (fac->sh.texHeight * fac->sh.texHeight > 0)) {
+            sprintf(errLog + strlen(errLog), "Untextured facet with texture size\n");
+            errorsOnCheck++;
+        }
+        else if (!fac->sh.isTextured && (hasAnyTexture)) {
+            fac->sh.countDes = false;
+            fac->sh.countAbs = false;
+            fac->sh.countRefl = false;
+            fac->sh.countTrans = false;
+            fac->sh.countACD = false;
+            fac->sh.countDirection = false;
+
+            if(strlen(errLog) < 2048)
+                sprintf(errLog + strlen(errLog), "Untextured facet with texture counters\n");
+            //errorsOnCheck++;
+        }
+    }
+
     //Molflow unique
     if (model->wp.enableDecay && model->wp.halfLife <= 0.0) {
         sprintf(errLog + strlen(errLog), "Particle decay is set, but half life was not set [= %e]\n", model->wp.halfLife);

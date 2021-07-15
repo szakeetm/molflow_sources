@@ -525,7 +525,8 @@ void SimulationModel::PrepareToRun() {
     //determine latest moment
     wp.latestMoment = 1E-10;
     if(!tdParams.moments.empty())
-        wp.latestMoment = (tdParams.moments.end()-1)->first + (tdParams.moments.end()-1)->second / 2.0;
+        wp.latestMoment = (tdParams.moments.end()-1)->second;
+        //wp.latestMoment = (tdParams.moments.end()-1)->first + (tdParams.moments.end()-1)->second / 2.0;
 
     std::set<size_t> desorptionParameterIDs;
 

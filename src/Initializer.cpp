@@ -217,10 +217,10 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, std::s
 
     //InitializeGeometry();
     model->InitialiseFacets();
-    model->PrepareToRun();
 
     Log::console_msg_master(3, " Initializing geometry!\n");
     initSimModel(model);
+    model->PrepareToRun();
 
     // 2. Create simulation dataports
     try {
