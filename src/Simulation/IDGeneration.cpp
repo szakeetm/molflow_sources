@@ -4,6 +4,7 @@
 
 #include <Helper/MathTools.h>
 #include "IDGeneration.h"
+#include <cmath>
 
 namespace IDGeneration {
 
@@ -122,8 +123,8 @@ std::vector<std::pair<double, double>> Generate_ID(int paramId, SimulationModel 
 
             if (par.logXinterp) { //time is logarithmic
                 if (sectionStartTime == 0) logSectionStartTime = -99;
-                else logSectionStartTime = log10(sectionStartTime);
-                logSectionEndTime = log10(sectionEndTime);
+                else logSectionStartTime = std::log10(sectionStartTime);
+                logSectionEndTime = std::log10(sectionEndTime);
                 logSectionTimeInterval = logSectionEndTime - logSectionStartTime;
                 subsectionLogTimeInterval = logSectionTimeInterval * sectionDelta;
             } else {
@@ -162,20 +163,20 @@ std::vector<std::pair<double, double>> Generate_ID(int paramId, SimulationModel 
                 } else if (!par.logXinterp &&
                            par.logYinterp) { //lin-log: time (X) is linear, outgassing (Y) is logarithmic
                     //Area under a straight section from (x0,y0) to (x1,y1) on a lin-log plot: I = 1/m * (y1-y0) where m=log10(y1/y0)/(x1-x0)
-                    double logSubSectionEndValue = (subSectionEndValue > 0.0) ? log10(subSectionEndValue) : -99;
-                    double logPreviousSubSectionValue = (previousSubsectionTime > 0.0) ? log10(
+                    double logSubSectionEndValue = (subSectionEndValue > 0.0) ? std::log10(subSectionEndValue) : -99;
+                    double logPreviousSubSectionValue = (previousSubsectionTime > 0.0) ? std::log10(
                             previousSubsectionValue)
                                                                                        : -99;
                     //I = (x2-x1)*(y2-y1)*log10(exp(1))/(log10(y2)-log10(y1)) from https://fr.mathworks.com/matlabcentral/answers/404930-finding-the-area-under-a-semilogy-plot-with-straight-line-segments
                     subsectionDesorbedGas = subsectionTimeInterval * (subSectionEndValue - previousSubsectionValue)
-                                            * log10(exp(1)) / (logSubSectionEndValue - logPreviousSubSectionValue);
+                                            * std::log10(exp(1)) / (logSubSectionEndValue - logPreviousSubSectionValue);
                 } else { //log-log
                     //Area under a straight section from (x0,y0) to (x1,y1) on a log-log plot:
                     //I = (y0/(x0^m))/(m+1) * (x1^(m+1)-x0^(m+1)) if m!=-1
                     //I = x0*y0*log10(x1/x0) if m==-1
-                    //where m= log10(y1/y0) / log10(x1/x0)
-                    double logSubSectionEndValue = (subSectionEndValue > 0.0) ? log10(subSectionEndValue) : -99;
-                    double logPreviousSubSectionValue = (previousSubsectionTime > 0.0) ? log10(
+                    //where m= std::log10(y1/y0) / std::log10(x1/x0)
+                    double logSubSectionEndValue = (subSectionEndValue > 0.0) ? std::log10(subSectionEndValue) : -99;
+                    double logPreviousSubSectionValue = (previousSubsectionTime > 0.0) ? std::log10(
                             previousSubsectionValue)
                                                                                        : -99;
                     double m = (logSubSectionEndValue - logPreviousSubSectionValue) /

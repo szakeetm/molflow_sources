@@ -25,7 +25,7 @@ void reportLoadStatus(const std::string& statusString) {
 
 // Use work->InsertParametersBeforeCatalog(loadedParams);
 // if loaded from GUI side
-int LoaderXML::LoadGeometry(std::string inputFileName, std::shared_ptr<SimulationModel> model) {
+int LoaderXML::LoadGeometry(std::string inputFileName, std::shared_ptr<SimulationModel> model, double &progress) {
     xml_document loadXML;
     auto inputFile = inputFileName.c_str();
     xml_parse_result parseResult = loadXML.load_file(inputFile); //parse xml file directly
@@ -93,9 +93,9 @@ int LoaderXML::LoadGeometry(std::string inputFileName, std::shared_ptr<Simulatio
 
     //Facets , load for now via temp pointers and convert to vector afterwards
     model->sh.nbFacet = geomNode.child("Facets").select_nodes("Facet").size();
-    //SubprocessFacet** loadFacets = (SubprocessFacet **)malloc(model->sh.nbFacet * sizeof(SubprocessFacet *));
+    //SubprocessFac** loadFacets = (SubprocessFac **)malloc(model->sh.nbFacet * sizeof(SubprocessFac *));
     //loadFacets.reserve(model->sh.nbFacet);
-    //memset(loadFacets, 0, model->sh.nbFacet * sizeof(SubprocessFacet *));
+    //memset(loadFacets, 0, model->sh.nbFacet * sizeof(SubprocessFac *));
     idx = 0;
     bool ignoreSumMismatch = false;
     std::vector<std::shared_ptr<SubprocessFacet>> loadFacets; // tmp facet holder
@@ -732,7 +732,7 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
     facet->sh.countTrans = texNode.attribute("countTrans").as_bool();
     facet->sh.countDirection = texNode.attribute("countDir").as_bool();
     facet->sh.countACD = texNode.attribute("countAC").as_bool();
-
+    
     xml_node outgNode = facetNode.child("DynamicOutgassing");
     if ((hasOutgassingFile) && outgNode && outgNode.child("map")) {
         facet->ogMap.outgassingMapWidth = outgNode.attribute("width").as_int();
@@ -854,6 +854,20 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
     facet->sh.isProfile = (facet->sh.profileType != PROFILE_NONE);
     //wp.isOpaque = (wp.opacity != 0.0);
     facet->sh.isTextured = ((facet->sh.texWidth_precise * facet->sh.texHeight_precise) > 0);
+
+    // Do some fixes
+    bool hasAnyTexture = facet->sh.countDes || facet->sh.countAbs || facet->sh.countRefl || facet->sh.countTrans || facet->sh.countACD;
+    if (!facet->sh.isTextured && (hasAnyTexture)) {
+        facet->sh.countDes = false;
+        facet->sh.countAbs = false;
+        facet->sh.countRefl = false;
+        facet->sh.countTrans = false;
+        facet->sh.countACD = false;
+        
+        std::stringstream msg; msg << std::setprecision(8);
+        msg << "Facet (#"<< facetId << ") has no valid mesh, but active texture counters: removing...\n";
+        std::cerr << msg.str();
+    }
 }
 
 /*
