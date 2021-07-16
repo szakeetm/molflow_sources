@@ -41,6 +41,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <cereal/types/string.hpp>*/
 #include <IO/InterfaceXML.h>
 #include <Buffer_shared.h>
+#include <Simulation/IDGeneration.h>
+#include <Simulation/CDFGeneration.h>
 
 #include "MolflowGeometry.h"
 #include "Worker.h"
@@ -102,8 +104,8 @@ Worker::Worker() : simManager() {
 
     model = std::make_shared<SimulationModel>();
     //Molflow specific
-    temperatures = std::vector<double>();
-    desorptionParameterIDs = std::vector<size_t>();
+    temperatures = std::list<double>();
+    desorptionParameterIDs = std::set<size_t>();
     moments = std::vector<Moment>();
     userMoments = std::vector<UserMoment>(); //strings describing moments, to be parsed
     CDFs = std::vector<std::vector<CDF_p>>();
@@ -1603,8 +1605,8 @@ void Worker::PrepareToRun() {
     Geometry *g = GetGeometry();
     //Generate integrated desorption functions
 
-    temperatures = std::vector<double>();
-    desorptionParameterIDs = std::vector<size_t>();
+    temperatures = std::list<double>();
+    desorptionParameterIDs = std::set<size_t>();
     CDFs = std::vector<std::vector<CDF_p>>();
     IDs = std::vector<IntegratedDesorption>();
 
@@ -1704,12 +1706,7 @@ void Worker::PrepareToRun() {
 * \return ID of the CFD
 */
 int Worker::GetCDFId(double temperature) {
-
-    int i;
-    for (i = 0; i < (int) temperatures.size() &&
-                (std::abs(temperature - temperatures[i]) > 1E-5); i++); //check if we already had this temperature
-    if (i >= (int) temperatures.size()) i = -1; //not found
-    return i;
+    return CDFGeneration::GetCDFId(temperatures, temperature);
 }
 
 /**
@@ -1718,10 +1715,15 @@ int Worker::GetCDFId(double temperature) {
 * \return Previous size of temperatures vector, which determines new ID
 */
 int Worker::GenerateNewCDF(double temperature) {
-    size_t i = temperatures.size();
+    /*size_t i = temperatures.size();
     temperatures.push_back(temperature);
     CDFs.push_back(Generate_CDF(temperature, model->wp.gasMass, CDF_SIZE));
-    return (int) i;
+    return (int) i;*/
+
+    auto[id_new, cdf_vec] = CDFGeneration::GenerateNewCDF(temperatures, temperature, model->wp.gasMass);
+    CDFs.emplace_back(std::move(cdf_vec));
+
+    return (int)id_new;
 }
 
 /**
@@ -1731,10 +1733,15 @@ int Worker::GenerateNewCDF(double temperature) {
 */
 int Worker::GenerateNewID(size_t paramId) {
     //This function is called if parameter with index paramId doesn't yet have a cumulative des. function
-    size_t i = desorptionParameterIDs.size();
-    desorptionParameterIDs.push_back(paramId); //mark that i.th integrated des. belongs to paramId
-    IDs.push_back(Generate_ID(paramId)); //actually convert PDF to CDF
-    return (int) i; //return own index
+    auto[id_new, id_vec] = IDGeneration::GenerateNewID(desorptionParameterIDs, paramId, this->model.get());
+    Parameter &par = parameters[paramId]; //we'll reference it a lot
+    IntegratedDesorption result;
+    result.logXinterp = par.logXinterp;
+    result.logYinterp = par.logYinterp;
+    result.SetValues(std::move(id_vec), false);
+    IDs.emplace_back(std::move(result));
+
+    return (int)id_new;
 }
 
 /**
@@ -1742,14 +1749,8 @@ int Worker::GenerateNewID(size_t paramId) {
 * \param paramId parameter ID
 * \return Id of the integrated desorption function
 */
-int Worker::GetIDId(size_t paramId) {
-
-    int i;
-    for (i = 0; i < (int) desorptionParameterIDs.size() &&
-                (paramId != desorptionParameterIDs[i]); i++); //check if we already had this parameter Id
-    if (i >= (int) desorptionParameterIDs.size()) i = -1; //not found
-    return i;
-
+int Worker::GetIDId(size_t paramId) const {
+    return IDGeneration::GetIDId(desorptionParameterIDs, paramId);
 }
 
 /**

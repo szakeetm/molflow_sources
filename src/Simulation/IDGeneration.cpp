@@ -19,8 +19,8 @@ int GetIDId(const std::set<size_t> &desorptionParameterIDs, int paramId) {
             return -1;
         //--lowerBound; //even temperatureList.end() can be a bound
 
-        if (paramId == *pos) {
-            return std::distance(desorptionParameterIDs.begin(), pos);
+        if (paramId == (int)*pos) {
+            return (int)std::distance(desorptionParameterIDs.begin(), pos);
         }
     }
     return -1;
@@ -87,7 +87,7 @@ std::vector<std::pair<double, double>> Generate_ID(int paramId, SimulationModel 
         } else {
             if (indexAfterLatestMoment > 0) {
                 myOutgassing.insert(myOutgassing.end(), valuesCopy.begin(),
-                                    valuesCopy.begin() + indexAfterLatestMoment -
+                                    valuesCopy.begin() + (int)indexAfterLatestMoment -
                                     1); //copy values that are before latestMoment
             }
             if (!IsEqual(myOutgassing.back().first, model->wp.latestMoment)) { //if interpolation is needed
