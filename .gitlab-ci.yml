@@ -260,6 +260,13 @@ benchmark-windows:
     - Write-Host $CI_COMMIT_TAG
     - Write-Host $env:CI_COMMIT_TAG
     - Copy-Item ("C:/" + ($APP_NAME_CAPS) + "_CI/" + ($FNAME) + "/*") -Destination ("./" + ($APP_NAME) + "_win" + ($TAG_SUFFIX)) -Recurse -Force
+  after_script:
+    - Set-Location ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\")
+    - Remove-Item -Recurse -Force ("./tmp")
+    - Remove-Item -Recurse -Force ("./TestCases")
+    - Remove-Item -Recurse -Force ("./Results_*")
+    - Remove-Item -Force ("./test_*.xml")
+    - Remove-Item -Force ("./testsuite")
   rules:
     - if: '($CI_COMMIT_TAG)'
       variables:
@@ -286,6 +293,13 @@ benchmark-windows:
     - ls ~/$APP_NAME_CAPS'_CI/'
     - ls ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
     - cp -r ~/$APP_NAME_CAPS'_CI/'$FNAME'/'* ./$APP_NAME'_'$OS_NAME$TAG_SUFFIX
+  after_script:
+    - cd ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
+    - rm -rf ./tmp
+    - rm -rf ./TestCases
+    - rm -rf ./Results_*
+    - rm -f ./test_*.xml
+    - rm -f ./testsuite
   rules:
     - if: '($CI_COMMIT_TAG)'
       variables:
