@@ -261,6 +261,7 @@ benchmark-windows:
     - Write-Host $env:CI_COMMIT_TAG
     - Copy-Item ("C:/" + ($APP_NAME_CAPS) + "_CI/" + ($FNAME) + "/*") -Destination ("./" + ($APP_NAME) + "_win" + ($TAG_SUFFIX)) -Recurse -Force
   after_script:
+    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - Set-Location ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\")
     - Remove-Item -Recurse -Force ("./tmp")
     - Remove-Item -Recurse -Force ("./TestCases")
@@ -294,6 +295,7 @@ benchmark-windows:
     - ls ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
     - cp -r ~/$APP_NAME_CAPS'_CI/'$FNAME'/'* ./$APP_NAME'_'$OS_NAME$TAG_SUFFIX
   after_script:
+    - export FNAME=$CI_COMMIT_BRANCH'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - cd ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
     - rm -rf ./tmp
     - rm -rf ./TestCases
