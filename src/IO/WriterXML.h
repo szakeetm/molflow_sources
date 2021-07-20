@@ -26,11 +26,11 @@ namespace FlowIO {
     protected:
     public:
         //void SaveGeometry(std::string outputFileName, SimulationModel *model) override;
-        void SaveGeometry(pugi::xml_document &saveDoc, SimulationModel *model, bool useOldXMLFormat, bool update);
+        void SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<SimulationModel> model, bool useOldXMLFormat, bool update);
 
-        bool SaveSimulationState(const std::string &outputFileName, SimulationModel *model, GlobalSimuState &globState);
+        bool SaveSimulationState(const std::string &outputFileName, std::shared_ptr<SimulationModel> model, GlobalSimuState &globState);
 
-        bool SaveSimulationState(pugi::xml_document &saveDoc, SimulationModel *model, GlobalSimuState &globState);
+        bool SaveSimulationState(pugi::xml_document &saveDoc, std::shared_ptr<SimulationModel> model, GlobalSimuState &globState);
 
         void
         SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices);

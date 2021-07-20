@@ -2,7 +2,6 @@
 // Created by pascal on 8/8/19.
 //
 
-#include <omp.h>
 #include "../src_shared/SimulationManager.h"
 #include "gtest/gtest.h"
 #include "../src/Initializer.h"
@@ -67,6 +66,7 @@ namespace {
             ::testing::Values(
                     "TestCases/01-quick_pipe_profiles_textures_2sided.zip",
                     "TestCases/02-timedependent_with_two_parameters.zip",
+                    "TestCases/02b-timedependent_with_three_parameters.zip",
                     "TestCases/03-anglemap_record.zip",
                     "TestCases/03b-anglemap_record_transparent_target.zip",
                     "TestCases/04-anglemap_desorb.zip",
@@ -210,7 +210,7 @@ namespace {
         std::vector<double> perfTimes;
         for(size_t runNb = 0; runNb < nRuns; ++runNb){
             SimulationManager simManager;
-            SimulationModel model{};
+            std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
             GlobalSimuState globState{};
 
             std::vector<char *> argv = {"tester", "--config", "simulation.cfg", "--reset", "--file"};
@@ -219,8 +219,8 @@ namespace {
             fileName_c[testFile.size()] = '\0';
             argv.push_back(fileName_c);
             char **args = argv.data();
-            Initializer::initFromArgv(argv.size(), (args), &simManager, &model);
-            Initializer::initFromFile(&simManager, &model, &globState);
+            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromFile(&simManager, model, &globState);
             delete[] fileName_c;
 
             size_t oldHitsNb = globState.globalHits.globalHits.nbMCHit;
@@ -236,8 +236,8 @@ namespace {
             do {
                 ProcessSleep(1000);
                 elapsedTime = simTimer.Elapsed();
-                if (model.otfParams.desorptionLimit != 0)
-                    endCondition = globState.globalHits.globalHits.nbDesorbed >= model.otfParams.desorptionLimit;
+                if (model->otfParams.desorptionLimit != 0)
+                    endCondition = globState.globalHits.globalHits.nbDesorbed >= model->otfParams.desorptionLimit;
                 // Check for potential time end
                 if (Settings::simDuration > 0) {
                     endCondition |= elapsedTime >= Settings::simDuration;
@@ -340,7 +340,7 @@ namespace {
 
         SimulationManager simManager{};
         simManager.interactiveMode = false;
-        SimulationModel model{};
+        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
         GlobalSimuState globState{};
 
         {
@@ -351,22 +351,22 @@ namespace {
             argv.push_back(fileName_c);
             {
                 char **args = argv.data();
-                if(Initializer::initFromArgv(argv.size(), (args), &simManager, &model)){
+                if(Initializer::initFromArgv(argv.size(), (args), &simManager, model)){
                     exit(41);
                 }
-                if(Initializer::initFromFile(&simManager, &model, &globState)){
+                if(Initializer::initFromFile(&simManager, model, &globState)){
                     exit(42);
                 }
             }
             {
-                double timeExpect = std::log(model.facets.size());
+                double timeExpect = std::log(model->facets.size());
                 //timeExpect = timeExpect * timeExpect;
                 timeExpect = std::pow(timeExpect, 1.5);
-                if(!model.tdParams.moments.empty())
-                    timeExpect += std::pow(std::log(model.tdParams.moments.size()), 3.0);
+                if(!model->tdParams.moments.empty())
+                    timeExpect += std::pow(std::log(model->tdParams.moments.size()), 3.0);
 
-                timeExpect += std::max(0.0, std::pow(std::log(std::sqrt(model.sh.nbFacet * sizeof(FacetHitBuffer))), 2.0) - 10.0);
-                timeExpect += std::max(0.0, 1.1* std::sqrt(std::exp(std::log(std::sqrt(model.size())))));
+                timeExpect += std::max(0.0, std::pow(std::log(std::sqrt(model->sh.nbFacet * sizeof(FacetHitBuffer))), 2.0) - 10.0);
+                timeExpect += std::max(0.0, 1.1* std::sqrt(std::exp(std::log(std::sqrt(model->size())))));
                 Settings::simDuration = std::min(50.0 + timeExpect, 180.0);
 
                 // Modify argv with new duration
@@ -376,13 +376,13 @@ namespace {
                 newDur_c[newDur.size()] = '\0';
                 argv[4] = newDur_c;
 
-                model = SimulationModel{};
+                model.reset(new SimulationModel);
                 {
                     char **args = argv.data();
-                    if(Initializer::initFromArgv(argv.size(), (args), &simManager, &model)){
+                    if(Initializer::initFromArgv(argv.size(), (args), &simManager, model)){
                         exit(41);
                     }
-                    if(Initializer::initFromFile(&simManager, &model, &globState)){
+                    if(Initializer::initFromFile(&simManager, model, &globState)){
                         exit(42);
                     }
                 }
@@ -437,7 +437,7 @@ namespace {
 
         SimulationManager simManager{};
         simManager.interactiveMode = false;
-        SimulationModel model{};
+        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
         GlobalSimuState globState{};
 
         {
@@ -448,10 +448,10 @@ namespace {
             argv.push_back(fileName_c);
             {
                 char **args = argv.data();
-                if(Initializer::initFromArgv(argv.size(), (args), &simManager, &model)){
+                if(Initializer::initFromArgv(argv.size(), (args), &simManager, model)){
                     exit(41);
                 }
-                if(Initializer::initFromFile(&simManager, &model, &globState)){
+                if(Initializer::initFromFile(&simManager, model, &globState)){
                     exit(42);
                 }
             }
@@ -474,7 +474,7 @@ namespace {
             Initializer::initDesLimit(model, globState);
 
             simManager.ResetHits();
-            simManager.InitSimulation(&model, &globState);
+            simManager.InitSimulation(model, &globState);
 
             EXPECT_NE(0, oldDesNb);
             EXPECT_NE(0, oldHitsNb);
@@ -496,7 +496,7 @@ namespace {
                 EXPECT_NE(0, diff_glob);
             else
                 EXPECT_NE(0, diff_loc);
-            printf("[Warning] Geometry has %zu facets for %zu des!\n", model.facets.size(), globState.globalHits.globalHits.nbDesorbed);
+            printf("[Warning] Geometry has %zu facets for %zu des!\n", model->facets.size(), globState.globalHits.globalHits.nbDesorbed);
             if(diff_loc <= 0)
                 fprintf(stderr, "[Warning] No local differences found!\n");
             if(diff_fine <= 0)

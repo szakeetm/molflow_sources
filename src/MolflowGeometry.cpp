@@ -122,7 +122,7 @@ size_t MolflowGeometry::GetHitsSize(const size_t nbMoments) {
 
 	// Compute number of bytes allocated
 	size_t memoryUsage = 0;
-	memoryUsage += sizeof(GlobalHitBuffer) + (1 + nbMoments) * mApp->worker.model.wp.globalHistogramParams.GetDataSize();
+	memoryUsage += sizeof(GlobalHitBuffer) + (1 + nbMoments) * mApp->worker.model->wp.globalHistogramParams.GetDataSize();
 	for (int i = 0; i < sh.nbFacet; i++) {
 		memoryUsage += facets[i]->GetHitsSize(nbMoments);
 	}
@@ -264,6 +264,7 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 		throw Error("Unspecified Error while building pipe");
 	}
 	InitializeGeometry();
+    InitializeInterfaceGeometry();
 }
 
 /**
@@ -280,7 +281,8 @@ void MolflowGeometry::InsertSYN(FileReader *file, GLProgress *prg, bool newStr) 
 	char *e = strrchr(strName[0], '.');
 	if (e) *e = 0;
 	InitializeGeometry();
-	//AdjustProfile();
+    InitializeInterfaceGeometry();
+    //AdjustProfile();
 
 }
 
@@ -656,7 +658,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 		worker->globState.globalHits.distTraveledTotal_fullHitsOnly = 0.0;
 	}
 	file->ReadKeyword("maxDes"); file->ReadKeyword(":");
-	worker->model.otfParams.desorptionLimit = file->ReadSizeT();
+	worker->model->otfParams.desorptionLimit = file->ReadSizeT();
 	file->ReadKeyword("nbVertex"); file->ReadKeyword(":");
 	sh.nbVertex = file->ReadInt();
 	file->ReadKeyword("nbFacet"); file->ReadKeyword(":");
@@ -678,7 +680,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 	}
 	if (*version >= 7) {
 		file->ReadKeyword("gasMass"); file->ReadKeyword(":");
-		worker->model.wp.gasMass = file->ReadDouble();
+		worker->model->wp.gasMass = file->ReadDouble();
 	}
     if (*version >= 16) { //time-dependent version with variable time windows
         file->ReadKeyword("userMoments"); file->ReadKeyword("{");
@@ -716,20 +718,20 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 		/*worker->desorptionStopTime =*/ file->ReadDouble();
 
 		file->ReadKeyword("timeWindow"); file->ReadKeyword(":");
-		worker->model.wp.timeWindowSize = file->ReadDouble();
+		worker->model->wp.timeWindowSize = file->ReadDouble();
 
 		if(*version < 16){ // use fixed time window for user moments
             for(auto& uMoment : worker->userMoments){
-                uMoment.second = worker->model.wp.timeWindowSize;
+                uMoment.second = worker->model->wp.timeWindowSize;
             }
         }
 		file->ReadKeyword("useMaxwellian"); file->ReadKeyword(":");
-		worker->model.wp.useMaxwellDistribution = file->ReadInt();
+		worker->model->wp.useMaxwellDistribution = file->ReadInt();
 	}
 
 	if (*version >= 12) { //2013.aug.22
 		file->ReadKeyword("calcConstantFlow"); file->ReadKeyword(":");
-		worker->model.wp.calcConstantFlow = file->ReadInt();
+		worker->model->wp.calcConstantFlow = file->ReadInt();
 
 	}
 	if (*version >= 2) {
@@ -896,7 +898,8 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 	}
 
 	InitializeGeometry();
-	//AdjustProfile();
+    InitializeInterfaceGeometry();
+    //AdjustProfile();
 	//isLoaded = true; //InitializeGeometry() sets to true
 	UpdateName(file);
 
@@ -980,7 +983,7 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
 		file->ReadDouble();
 	}
 	file->ReadKeyword("maxDes"); file->ReadKeyword(":");
-	worker->model.otfParams.desorptionLimit = 0; file->ReadSizeT();
+	worker->model->otfParams.desorptionLimit = 0; file->ReadSizeT();
 	file->ReadKeyword("nbVertex"); file->ReadKeyword(":");
 	sh.nbVertex = file->ReadInt();
 	file->ReadKeyword("nbFacet"); file->ReadKeyword(":");
@@ -1164,7 +1167,8 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
 
 	prg->SetMessage("Initalizing geometry and building mesh...");
 	InitializeGeometry();
-	//AdjustProfile();
+    InitializeInterfaceGeometry();
+    //AdjustProfile();
 	//isLoaded = true; //InitializeGeometry() sets to true
 	UpdateName(file);
 
@@ -1384,7 +1388,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, GlobalSimuState
 	file->Write("totalAbs:"); file->Write((!crashSave && !saveSelected) ? (size_t)globState.globalHits.globalHits.nbAbsEquiv : 0, "\n");
 	file->Write("totalDist_total:"); file->Write((!crashSave && !saveSelected) ? globState.globalHits.distTraveled_total : 0, "\n");
 	file->Write("totalDist_fullHitsOnly:"); file->Write((!crashSave && !saveSelected) ? globState.globalHits.distTraveledTotal_fullHitsOnly : 0, "\n");
-	file->Write("maxDes:"); file->Write((!crashSave && !saveSelected) ? worker->model.otfParams.desorptionLimit : 0, "\n");
+	file->Write("maxDes:"); file->Write((!crashSave && !saveSelected) ? worker->model->otfParams.desorptionLimit : 0, "\n");
 
 	auto selectedFacets = GetSelectedFacets();
 	file->Write("nbVertex:"); file->Write(sh.nbVertex, "\n");
@@ -1395,7 +1399,7 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, GlobalSimuState
 	file->Write("nbView:"); file->Write(mApp->nbView, "\n");
 	file->Write("nbSelection:"); file->Write((!saveSelected) ? mApp->selections.size() : 0, "\n");
 
-	file->Write("gasMass:"); file->Write(worker->model.wp.gasMass, "\n");
+	file->Write("gasMass:"); file->Write(worker->model->wp.gasMass, "\n");
 
 	file->Write("userMoments {\n");
 	file->Write(" nb:"); file->Write((int)worker->userMoments.size());
@@ -1409,9 +1413,9 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, GlobalSimuState
 
 	file->Write("desorptionStart:"); file->Write(/*worker->desorptionStartTime*/0.0, "\n");
 	file->Write("desorptionStop:"); file->Write(/*worker->desorptionStopTime*/1.0, "\n");
-	file->Write("timeWindow:"); file->Write(worker->model.wp.timeWindowSize, "\n");
-	file->Write("useMaxwellian:"); file->Write(worker->model.wp.useMaxwellDistribution, "\n");
-	file->Write("calcConstantFlow:"); file->Write(worker->model.wp.calcConstantFlow, "\n");
+	file->Write("timeWindow:"); file->Write(worker->model->wp.timeWindowSize, "\n");
+	file->Write("useMaxwellian:"); file->Write(worker->model->wp.useMaxwellDistribution, "\n");
+	file->Write("calcConstantFlow:"); file->Write(worker->model->wp.calcConstantFlow, "\n");
 
 	file->Write("formulas {\n");
 	if (!saveSelected) {
@@ -1740,7 +1744,7 @@ MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, GlobalSimuSt
 
 								if (!grouping || texture[index].countEquiv > 0.0) {
 									double moleculesPerTP = mApp->worker.GetMoleculesPerTP(m);
-									double val = GetPhysicalValue(f, PhysicalMode::ImpingementRate, moleculesPerTP,1.0, mApp->worker.model.wp.gasMass, (int)index, facetSnapshot).value;
+									double val = GetPhysicalValue(f, PhysicalMode::ImpingementRate, moleculesPerTP,1.0, mApp->worker.model->wp.gasMass, (int)index, facetSnapshot).value;
 
 									sprintf(tmp, "%g", val);
 								}
@@ -1752,7 +1756,7 @@ MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, GlobalSimuSt
 								if (!grouping || texture[index].countEquiv > 0.0) {
 									double moleculesPerTP = mApp->worker.GetMoleculesPerTP(m);
 									double densityCorrection = f->DensityCorrection();
-									double rho = GetPhysicalValue(f, PhysicalMode::ParticleDensity, moleculesPerTP, densityCorrection, mApp->worker.model.wp.gasMass, (int)index, facetSnapshot).value;
+									double rho = GetPhysicalValue(f, PhysicalMode::ParticleDensity, moleculesPerTP, densityCorrection, mApp->worker.model->wp.gasMass, (int)index, facetSnapshot).value;
 
 									sprintf(tmp, "%g", rho);
 								}
@@ -1763,7 +1767,7 @@ MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, GlobalSimuSt
 								if (!grouping || texture[index].countEquiv > 0.0) {
 									double moleculesPerTP = mApp->worker.GetMoleculesPerTP(m);
                                     double densityCorrection = f->DensityCorrection();
-                                    double rho_mass = GetPhysicalValue(f, PhysicalMode::GasDensity, moleculesPerTP, densityCorrection, mApp->worker.model.wp.gasMass, (int)index, facetSnapshot).value;
+                                    double rho_mass = GetPhysicalValue(f, PhysicalMode::GasDensity, moleculesPerTP, densityCorrection, mApp->worker.model->wp.gasMass, (int)index, facetSnapshot).value;
 
 									sprintf(tmp, "%g", rho_mass);
 								}
@@ -1773,7 +1777,7 @@ MolflowGeometry::ExportTextures(FILE *file, int grouping, int mode, GlobalSimuSt
 
 								if (!grouping || texture[index].sum_v_ort_per_area != 0.0) {
 									double moleculesPerTP = mApp->worker.GetMoleculesPerTP(m);
-									double p = GetPhysicalValue(f, PhysicalMode::Pressure, moleculesPerTP, 1.0, mApp->worker.model.wp.gasMass, (int)index, facetSnapshot).value;
+									double p = GetPhysicalValue(f, PhysicalMode::Pressure, moleculesPerTP, 1.0, mApp->worker.model->wp.gasMass, (int)index, facetSnapshot).value;
 									sprintf(tmp, "%g", p);
 								}
 								break;
@@ -1899,7 +1903,7 @@ void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, Worker *worker) {
 					switch (f->sh.profileType) {
 					case PROFILE_U:
 					case PROFILE_V:
-						scaleY = 1.0 / (f->GetArea() / (double)PROFILE_SIZE*1E-4)* worker->model.wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
+						scaleY = 1.0 / (f->GetArea() / (double)PROFILE_SIZE*1E-4)* worker->model->wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
 						scaleY *= worker->GetMoleculesPerTP(m);
 
 						for (int j = 0; j < PROFILE_SIZE; j++)
@@ -2438,9 +2442,9 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 
 	xml_node simuParamNode = rootNode.append_child("MolflowSimuSettings");
 
-	simuParamNode.append_child("Gas").append_attribute("mass") = work->model.wp.gasMass;
-	simuParamNode.child("Gas").append_attribute("enableDecay") = (int)work->model.wp.enableDecay; //backward compatibility: 0 or 1
-	simuParamNode.child("Gas").append_attribute("halfLife") = work->model.wp.halfLife;
+	simuParamNode.append_child("Gas").append_attribute("mass") = work->model->wp.gasMass;
+	simuParamNode.child("Gas").append_attribute("enableDecay") = (int)work->model->wp.enableDecay; //backward compatibility: 0 or 1
+	simuParamNode.child("Gas").append_attribute("halfLife") = work->model->wp.halfLife;
 
 	xml_node timeSettingsNode = simuParamNode.append_child("TimeSettings");
 
@@ -2453,27 +2457,27 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
         newUserEntry.append_attribute("window") = work->userMoments[i].second;
     }
 
-	timeSettingsNode.append_attribute("timeWindow") = work->model.wp.timeWindowSize;
-	timeSettingsNode.append_attribute("useMaxwellDistr") = (int)work->model.wp.useMaxwellDistribution; //backward compatibility: 0 or 1
-	timeSettingsNode.append_attribute("calcConstFlow") = (int)work->model.wp.calcConstantFlow; //backward compatibility: 0 or 1
+	timeSettingsNode.append_attribute("timeWindow") = work->model->wp.timeWindowSize;
+	timeSettingsNode.append_attribute("useMaxwellDistr") = (int)work->model->wp.useMaxwellDistribution; //backward compatibility: 0 or 1
+	timeSettingsNode.append_attribute("calcConstFlow") = (int)work->model->wp.calcConstantFlow; //backward compatibility: 0 or 1
 
 	xml_node motionNode = simuParamNode.append_child("Motion");
-	motionNode.append_attribute("type") = work->model.wp.motionType;
-	if (work->model.wp.motionType == 1) { //fixed motion
+	motionNode.append_attribute("type") = work->model->wp.motionType;
+	if (work->model->wp.motionType == 1) { //fixed motion
 		xml_node v = motionNode.append_child("VelocityVector");
-		v.append_attribute("vx") = work->model.wp.motionVector2.x;
-		v.append_attribute("vy") = work->model.wp.motionVector2.y;
-		v.append_attribute("vz") = work->model.wp.motionVector2.z;
+		v.append_attribute("vx") = work->model->wp.motionVector2.x;
+		v.append_attribute("vy") = work->model->wp.motionVector2.y;
+		v.append_attribute("vz") = work->model->wp.motionVector2.z;
 	}
-	else if (work->model.wp.motionType == 2) { //rotation
+	else if (work->model->wp.motionType == 2) { //rotation
 		xml_node v = motionNode.append_child("AxisBasePoint");
-		v.append_attribute("x") = work->model.wp.motionVector1.x;
-		v.append_attribute("y") = work->model.wp.motionVector1.y;
-		v.append_attribute("z") = work->model.wp.motionVector1.z;
+		v.append_attribute("x") = work->model->wp.motionVector1.x;
+		v.append_attribute("y") = work->model->wp.motionVector1.y;
+		v.append_attribute("z") = work->model->wp.motionVector1.z;
 		xml_node v2 = motionNode.append_child("RotationVector");
-		v2.append_attribute("x") = work->model.wp.motionVector2.x;
-		v2.append_attribute("y") = work->model.wp.motionVector2.y;
-		v2.append_attribute("z") = work->model.wp.motionVector2.z;
+		v2.append_attribute("x") = work->model->wp.motionVector2.x;
+		v2.append_attribute("y") = work->model->wp.motionVector2.y;
+		v2.append_attribute("z") = work->model->wp.motionVector2.z;
 	}
 
 	xml_node paramNode = simuParamNode.append_child("Parameters");
@@ -2498,21 +2502,21 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 	}
 	paramNode.append_attribute("nb") = nonCatalogParameters;
 	xml_node globalHistNode = simuParamNode.append_child("Global_histograms");
-	if (work->model.wp.globalHistogramParams.recordBounce) {
+	if (work->model->wp.globalHistogramParams.recordBounce) {
 	xml_node nbBounceNode = globalHistNode.append_child("Bounces");
-		nbBounceNode.append_attribute("binSize")=work->model.wp.globalHistogramParams.nbBounceBinsize;
-		nbBounceNode.append_attribute("max")=work->model.wp.globalHistogramParams.nbBounceMax;
+		nbBounceNode.append_attribute("binSize")=work->model->wp.globalHistogramParams.nbBounceBinsize;
+		nbBounceNode.append_attribute("max")=work->model->wp.globalHistogramParams.nbBounceMax;
 	}
-	if (work->model.wp.globalHistogramParams.recordDistance) {
+	if (work->model->wp.globalHistogramParams.recordDistance) {
 		xml_node distanceNode = globalHistNode.append_child("Distance");
-		distanceNode.append_attribute("binSize")=work->model.wp.globalHistogramParams.distanceBinsize;
-		distanceNode.append_attribute("max")=work->model.wp.globalHistogramParams.distanceMax;
+		distanceNode.append_attribute("binSize")=work->model->wp.globalHistogramParams.distanceBinsize;
+		distanceNode.append_attribute("max")=work->model->wp.globalHistogramParams.distanceMax;
 	}
 	#ifdef MOLFLOW
-	if (work->model.wp.globalHistogramParams.recordTime) {
+	if (work->model->wp.globalHistogramParams.recordTime) {
 		xml_node timeNode = globalHistNode.append_child("Time");
-		timeNode.append_attribute("binSize")=work->model.wp.globalHistogramParams.timeBinsize;
-		timeNode.append_attribute("max")=work->model.wp.globalHistogramParams.timeMax;
+		timeNode.append_attribute("binSize")=work->model->wp.globalHistogramParams.timeBinsize;
+		timeNode.append_attribute("max")=work->model->wp.globalHistogramParams.timeMax;
 	}
 	#endif
 }
@@ -2568,7 +2572,7 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSi
 			hitsNode.append_attribute("totalDist_total") = globState.globalHits.distTraveled_total;
 			hitsNode.append_attribute("totalDist_fullHitsOnly") = globState.globalHits.distTraveledTotal_fullHitsOnly;
 			hitsNode.append_attribute("totalLeak") = globState.globalHits.nbLeakTotal;
-			hitsNode.append_attribute("maxDesorption") = work->model.otfParams.desorptionLimit;
+			hitsNode.append_attribute("maxDesorption") = work->model->otfParams.desorptionLimit;
 
 			xml_node hitCacheNode = globalNode.append_child("Hit_Cache");
 			hitCacheNode.append_attribute("nb") = work->globState.globalHits.hitCacheSize;
@@ -2597,56 +2601,56 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSi
 		} //end global node
 
 
-		bool hasHistogram = work->model.wp.globalHistogramParams.recordBounce || work->model.wp.globalHistogramParams.recordDistance;
+		bool hasHistogram = work->model->wp.globalHistogramParams.recordBounce || work->model->wp.globalHistogramParams.recordDistance;
 			#ifdef MOLFLOW
-			hasHistogram = hasHistogram || work->model.wp.globalHistogramParams.recordTime;
+			hasHistogram = hasHistogram || work->model->wp.globalHistogramParams.recordTime;
 			#endif
 			if (hasHistogram) {
 				xml_node histNode = newMoment.append_child("Histograms");
 				//Retrieve histogram map from hits dp
 				auto& globalHist = work->globState.globalHistograms[m];
-				if (work->model.wp.globalHistogramParams.recordBounce) {
+				if (work->model->wp.globalHistogramParams.recordBounce) {
 					auto& nbHitsHistogram = globalHist.nbHitsHistogram;
 					xml_node hist = histNode.append_child("Bounces");
-					size_t histSize = work->model.wp.globalHistogramParams.GetBounceHistogramSize();
+					size_t histSize = work->model->wp.globalHistogramParams.GetBounceHistogramSize();
 					hist.append_attribute("size")=histSize;
-					hist.append_attribute("binSize")=work->model.wp.globalHistogramParams.nbBounceBinsize; //redundancy for human-reading or export
-					hist.append_attribute("max")=work->model.wp.globalHistogramParams.nbBounceMax; //redundancy for human-reading or export
+					hist.append_attribute("binSize")=work->model->wp.globalHistogramParams.nbBounceBinsize; //redundancy for human-reading or export
+					hist.append_attribute("max")=work->model->wp.globalHistogramParams.nbBounceMax; //redundancy for human-reading or export
 					for (size_t h=0;h<histSize;h++) {
 						xml_node bin=hist.append_child("Bin");
 						auto value = bin.append_attribute("start");
 						if (h==histSize-1) value = "overRange";
-						else value = h * work->model.wp.globalHistogramParams.nbBounceBinsize;
+						else value = h * work->model->wp.globalHistogramParams.nbBounceBinsize;
 						bin.append_attribute("count") = nbHitsHistogram[h];
 					}
 				}
-				if (work->model.wp.globalHistogramParams.recordDistance) {
+				if (work->model->wp.globalHistogramParams.recordDistance) {
                     auto& distanceHistogram = globalHist.distanceHistogram;
 					xml_node hist = histNode.append_child("Distance");
-					size_t histSize = work->model.wp.globalHistogramParams.GetDistanceHistogramSize();
+					size_t histSize = work->model->wp.globalHistogramParams.GetDistanceHistogramSize();
 					hist.append_attribute("size")=histSize;
-					hist.append_attribute("binSize")=work->model.wp.globalHistogramParams.distanceBinsize; //redundancy for human-reading or export
-					hist.append_attribute("max")=work->model.wp.globalHistogramParams.distanceMax; //redundancy for human-reading or export
+					hist.append_attribute("binSize")=work->model->wp.globalHistogramParams.distanceBinsize; //redundancy for human-reading or export
+					hist.append_attribute("max")=work->model->wp.globalHistogramParams.distanceMax; //redundancy for human-reading or export
 					for (size_t h=0;h<histSize;h++) {
 						xml_node bin=hist.append_child("Bin");
 						auto value = bin.append_attribute("start");
 						if (h==histSize-1) value = "overRange";
-						else value = h * work->model.wp.globalHistogramParams.distanceBinsize;
+						else value = h * work->model->wp.globalHistogramParams.distanceBinsize;
 						bin.append_attribute("count") = distanceHistogram[h];
 					}
 				}
-				if (work->model.wp.globalHistogramParams.recordTime) {
+				if (work->model->wp.globalHistogramParams.recordTime) {
                     auto& timeHistogram = globalHist.timeHistogram;
 					xml_node hist = histNode.append_child("Time");
-					size_t histSize = work->model.wp.globalHistogramParams.GetTimeHistogramSize();
+					size_t histSize = work->model->wp.globalHistogramParams.GetTimeHistogramSize();
 					hist.append_attribute("size")=histSize;
-					hist.append_attribute("binSize")=work->model.wp.globalHistogramParams.timeBinsize; //redundancy for human-reading or export
-					hist.append_attribute("max")=work->model.wp.globalHistogramParams.timeMax; //redundancy for human-reading or export
+					hist.append_attribute("binSize")=work->model->wp.globalHistogramParams.timeBinsize; //redundancy for human-reading or export
+					hist.append_attribute("max")=work->model->wp.globalHistogramParams.timeMax; //redundancy for human-reading or export
 					for (size_t h=0;h<histSize;h++) {
 						xml_node bin=hist.append_child("Bin");
 						auto value = bin.append_attribute("start");
 						if (h==histSize-1) value = "overRange";
-						else value = h * work->model.wp.globalHistogramParams.timeBinsize;
+						else value = h * work->model->wp.globalHistogramParams.timeBinsize;
 						bin.append_attribute("count") = timeHistogram[h];
 					}
 				}
@@ -3031,13 +3035,13 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
             }
         }
 
-		work->model.wp.gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
-		work->model.wp.halfLife = simuParamNode.child("Gas").attribute("halfLife").as_double();
+		work->model->wp.gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
+		work->model->wp.halfLife = simuParamNode.child("Gas").attribute("halfLife").as_double();
 		if (simuParamNode.child("Gas").attribute("enableDecay")) {
-			work->model.wp.enableDecay = simuParamNode.child("Gas").attribute("enableDecay").as_bool();
+			work->model->wp.enableDecay = simuParamNode.child("Gas").attribute("enableDecay").as_bool();
 		}
 		else {
-			work->model.wp.enableDecay = work->model.wp.halfLife < 1e100;
+			work->model->wp.enableDecay = work->model->wp.halfLife < 1e100;
 		}
 
 		xml_node timeSettingsNode = simuParamNode.child("TimeSettings");
@@ -3059,33 +3063,33 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 		}
 		*/
 
-		work->model.wp.timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();
+		work->model->wp.timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();
 		// Default initialization
 		for(auto& uMoment : work->userMoments){
 		    if(uMoment.second == 0.0){
-                uMoment.second = work->model.wp.timeWindowSize;
+                uMoment.second = work->model->wp.timeWindowSize;
 		    }
 		}
-		work->model.wp.useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_bool();
-		work->model.wp.calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_bool();
+		work->model->wp.useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_bool();
+		work->model->wp.calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_bool();
 
 		xml_node motionNode = simuParamNode.child("Motion");
-		work->model.wp.motionType = motionNode.attribute("type").as_int();
-		if (work->model.wp.motionType == 1) { //fixed motion
+		work->model->wp.motionType = motionNode.attribute("type").as_int();
+		if (work->model->wp.motionType == 1) { //fixed motion
 			xml_node v = motionNode.child("VelocityVector");
-			work->model.wp.motionVector2.x = v.attribute("vx").as_double();
-			work->model.wp.motionVector2.y = v.attribute("vy").as_double();
-			work->model.wp.motionVector2.z = v.attribute("vz").as_double();
+			work->model->wp.motionVector2.x = v.attribute("vx").as_double();
+			work->model->wp.motionVector2.y = v.attribute("vy").as_double();
+			work->model->wp.motionVector2.z = v.attribute("vz").as_double();
 		}
-		else if (work->model.wp.motionType == 2) { //rotation
+		else if (work->model->wp.motionType == 2) { //rotation
 			xml_node v = motionNode.child("AxisBasePoint");
-			work->model.wp.motionVector1.x = v.attribute("x").as_double();
-			work->model.wp.motionVector1.y = v.attribute("y").as_double();
-			work->model.wp.motionVector1.z = v.attribute("z").as_double();
+			work->model->wp.motionVector1.x = v.attribute("x").as_double();
+			work->model->wp.motionVector1.y = v.attribute("y").as_double();
+			work->model->wp.motionVector1.z = v.attribute("z").as_double();
 			xml_node v2 = motionNode.child("RotationVector");
-			work->model.wp.motionVector2.x = v2.attribute("x").as_double();
-			work->model.wp.motionVector2.y = v2.attribute("y").as_double();
-			work->model.wp.motionVector2.z = v2.attribute("z").as_double();
+			work->model->wp.motionVector2.x = v2.attribute("x").as_double();
+			work->model->wp.motionVector2.y = v2.attribute("y").as_double();
+			work->model->wp.motionVector2.z = v2.attribute("z").as_double();
 		}
 	}
 
@@ -3093,22 +3097,22 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 	if (globalHistNode) { // Molflow version before 2.8 didn't save histograms
 		xml_node nbBounceNode = globalHistNode.child("Bounces");
 		if (nbBounceNode) {
-			work->model.wp.globalHistogramParams.recordBounce=true;
-			work->model.wp.globalHistogramParams.nbBounceBinsize=nbBounceNode.attribute("binSize").as_ullong();
-			work->model.wp.globalHistogramParams.nbBounceMax=nbBounceNode.attribute("max").as_ullong();
+			work->model->wp.globalHistogramParams.recordBounce=true;
+			work->model->wp.globalHistogramParams.nbBounceBinsize=nbBounceNode.attribute("binSize").as_ullong();
+			work->model->wp.globalHistogramParams.nbBounceMax=nbBounceNode.attribute("max").as_ullong();
 		}
 		xml_node distanceNode = globalHistNode.child("Distance");
 		if (distanceNode) {
-			work->model.wp.globalHistogramParams.recordDistance=true;
-			work->model.wp.globalHistogramParams.distanceBinsize=distanceNode.attribute("binSize").as_double();
-			work->model.wp.globalHistogramParams.distanceMax=distanceNode.attribute("max").as_double();
+			work->model->wp.globalHistogramParams.recordDistance=true;
+			work->model->wp.globalHistogramParams.distanceBinsize=distanceNode.attribute("binSize").as_double();
+			work->model->wp.globalHistogramParams.distanceMax=distanceNode.attribute("max").as_double();
 		}
 		#ifdef MOLFLOW
 		xml_node timeNode = globalHistNode.child("Time");
 		if (timeNode) {
-			work->model.wp.globalHistogramParams.recordTime=true;
-			work->model.wp.globalHistogramParams.timeBinsize=timeNode.attribute("binSize").as_double();
-			work->model.wp.globalHistogramParams.timeMax=timeNode.attribute("max").as_double();
+			work->model->wp.globalHistogramParams.recordTime=true;
+			work->model->wp.globalHistogramParams.timeBinsize=timeNode.attribute("binSize").as_double();
+			work->model->wp.globalHistogramParams.timeMax=timeNode.attribute("max").as_double();
 		}
 		#endif
 	}
@@ -3302,8 +3306,8 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 		}
 	}
 
-	/*work->model.wp.gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
-	work->model.wp.halfLife = simuParamNode.child("Gas").attribute("wp.halfLife").as_double();*/
+	/*work->model->wp.gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
+	work->model->wp.halfLife = simuParamNode.child("Gas").attribute("wp.halfLife").as_double();*/
 
 	/*
 	xml_node timeSettingsNode = simuParamNode.child("TimeSettings");
@@ -3316,15 +3320,16 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 	work->AddMoment(mApp->worker.ParseMoment(tmpExpr));
 
 	}
-	work->model.wp.wp.timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();
-	work->model.wp.useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_int();
-	work->model.wp.calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_int();
+	work->model->wp.wp.timeWindowSize = timeSettingsNode.attribute("timeWindow").as_double();
+	work->model->wp.useMaxwellDistribution = timeSettingsNode.attribute("useMaxwellDistr").as_int();
+	work->model->wp.calcConstantFlow = timeSettingsNode.attribute("calcConstFlow").as_int();
 	*/
 
 	if (newStr) sh.nbSuper += nbNewSuper;
 	else if (sh.nbSuper < structId + nbNewSuper) sh.nbSuper = structId + nbNewSuper;
 	InitializeGeometry();
-	//AdjustProfile();
+    InitializeInterfaceGeometry();
+    //AdjustProfile();
 	//isLoaded = true; //InitializeGeometry() sets to true
 
 	// Update mesh for newly inserted facets
@@ -3429,20 +3434,20 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState 
 			}
 		} //end global node
 
-		bool hasHistogram = work->model.wp.globalHistogramParams.recordBounce || work->model.wp.globalHistogramParams.recordDistance;
+		bool hasHistogram = work->model->wp.globalHistogramParams.recordBounce || work->model->wp.globalHistogramParams.recordDistance;
 #ifdef MOLFLOW
-		hasHistogram = hasHistogram || work->model.wp.globalHistogramParams.recordTime;
+		hasHistogram = hasHistogram || work->model->wp.globalHistogramParams.recordTime;
 #endif
 		if (hasHistogram) {
 			xml_node histNode = newMoment.child("Histograms");
 			if (histNode) { //Versions before 2.8 didn't save histograms
 				//Retrieve histogram map from hits dp
 				auto& globalHistogram = globState.globalHistograms[m];
-				if (work->model.wp.globalHistogramParams.recordBounce) {
+				if (work->model->wp.globalHistogramParams.recordBounce) {
 					auto& nbHitsHistogram = globalHistogram.nbHitsHistogram;
 					xml_node hist = histNode.child("Bounces");
 					if (hist) {
-						size_t histSize = work->model.wp.globalHistogramParams.GetBounceHistogramSize();
+						size_t histSize = work->model->wp.globalHistogramParams.GetBounceHistogramSize();
 						size_t saveHistSize = hist.attribute("size").as_ullong();
 						if (histSize == saveHistSize) {
 							//Can do: compare saved with expected size
@@ -3461,11 +3466,11 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState 
 						}
 					}
 				}
-				if (work->model.wp.globalHistogramParams.recordDistance) {
+				if (work->model->wp.globalHistogramParams.recordDistance) {
                     auto& distanceHistogram = globalHistogram.distanceHistogram;
                     xml_node hist = histNode.child("Distance");
 					if (hist) {
-						size_t histSize = work->model.wp.globalHistogramParams.GetDistanceHistogramSize();
+						size_t histSize = work->model->wp.globalHistogramParams.GetDistanceHistogramSize();
 						size_t saveHistSize = hist.attribute("size").as_ullong();
 						if (histSize == saveHistSize) {
 							//Can do: compare saved with expected size
@@ -3484,11 +3489,11 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState 
 						}
 					}
 				}
-				if (work->model.wp.globalHistogramParams.recordTime) {
+				if (work->model->wp.globalHistogramParams.recordTime) {
                     auto& timeHistogram = globalHistogram.timeHistogram;
                     xml_node hist = histNode.child("Time");
 					if (hist) {
-						size_t histSize = work->model.wp.globalHistogramParams.GetTimeHistogramSize();
+						size_t histSize = work->model->wp.globalHistogramParams.GetTimeHistogramSize();
 						size_t saveHistSize = hist.attribute("size").as_ullong();
 						if (histSize == saveHistSize) {
 							//Can do: compare saved with expected size

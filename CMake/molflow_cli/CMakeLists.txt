@@ -102,17 +102,9 @@ set(SRC_FILES
         ${CPP_DIR_2}/FlowMPI.cpp
         )
 
-if (APPLE)
-    set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include" CACHE INTERNAL "OpenMP flags for Xcode toolchain.")
-    set(OpenMP_C_LIB_NAMES "omp" CACHE INTERNAL "OpenMP lib name for Xcode toolchain.")
-
-    set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include" CACHE INTERNAL "OpenMP flags for Xcode toolchain.")
-    set(OpenMP_CXX_LIB_NAMES "omp" CACHE INTERNAL "OpenMP lib name for Xcode toolchain.")
-    set(OpenMP_omp_LIBRARY "/usr/local/opt/libomp/lib/libomp.dylib" CACHE INTERNAL "OpenMP lib name for Xcode toolchain.")
-endif()
-
 add_executable(${PROJECT_NAME} ${SRC_FILES})
 
+include(${CMAKE_HOME_DIRECTORY}/src_shared/SetOpenMP.cmake)
 find_package(OpenMP REQUIRED)
 if(OpenMP_CXX_FOUND)
     message(STATUS "Detected OpenMP version: ${OpenMP_CXX_VERSION}")
@@ -151,9 +143,6 @@ if(MSVC)
         target_include_directories(${PROJECT_NAME} PUBLIC
                 ${HEADER_DIR_6}
                 )
-    else()
-        find_package(GSL REQUIRED)
-        target_include_directories(${PROJECT_NAME} PRIVATE ${GSL_INCLUDE_DIRS})
 endif()
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)

@@ -41,7 +41,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
     else if ((idx = GetVariable(v->name, "P")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
         if (ok) v->value = geom->GetFacet(idx - 1)->facetHitCache.sum_v_ort *
-                           worker->GetMoleculesPerTP(worker->displayedMoment)*1E4 / geom->GetFacet(idx - 1)->GetArea() * (worker->model.wp.gasMass / 1000 / 6E23)*0.0100;
+                           worker->GetMoleculesPerTP(worker->displayedMoment)*1E4 / geom->GetFacet(idx - 1)->GetArea() * (worker->model->wp.gasMass / 1000 / 6E23)*0.0100;
     }
     else if ((idx = GetVariable(v->name, "DEN")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
@@ -108,16 +108,16 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
         v->value = sumArea;
     }
     else if (iequals(v->name, "QCONST")) {
-        v->value = worker->model.wp.finalOutgassingRate_Pa_m3_sec*10.00; //10: Pa*m3/sec -> mbar*l/s
+        v->value = worker->model->wp.finalOutgassingRate_Pa_m3_sec*10.00; //10: Pa*m3/sec -> mbar*l/s
     }
     else if (iequals(v->name, "QCONST_N")) {
-        v->value = worker->model.wp.finalOutgassingRate;
+        v->value = worker->model->wp.finalOutgassingRate;
     }
     else if (iequals(v->name, "NTOT")) {
-        v->value = worker->model.wp.totalDesorbedMolecules;
+        v->value = worker->model->wp.totalDesorbedMolecules;
     }
     else if (iequals(v->name, "GASMASS")) {
-        v->value = worker->model.wp.gasMass;
+        v->value = worker->model->wp.gasMass;
     }
     else if (iequals(v->name, "KB")) {
         v->value = 1.3806504e-23;
@@ -192,7 +192,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
             }
             else if (Contains({ "P", "p" }, tokens[0])) {
                 sumD+= geom->GetFacet(sel)->facetHitCache.sum_v_ort *
-                       (worker->model.wp.gasMass / 1000 / 6E23)*0.0100;
+                       (worker->model->wp.gasMass / 1000 / 6E23)*0.0100;
                 sumArea += geom->GetFacet(sel)->GetArea();
             } else if (Contains({ "DEN", "den" }, tokens[0])) {
                 InterfaceFacet *f = geom->GetFacet(sel);

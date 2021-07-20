@@ -29,6 +29,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 #endif
 
+#include <future>
 #include <cmath>
 //#include <cstdlib>
 #include <fstream>
@@ -41,6 +42,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <cereal/types/string.hpp>*/
 #include <IO/InterfaceXML.h>
 #include <Buffer_shared.h>
+#include <Simulation/IDGeneration.h>
+#include <Simulation/CDFGeneration.h>
 
 #include "MolflowGeometry.h"
 #include "Worker.h"
@@ -98,11 +101,12 @@ extern SynRad*mApp;
 /**
 * \brief Default constructor for a worker
 */
-Worker::Worker() : simManager(), model{} {
+Worker::Worker() : simManager() {
 
+    model = std::make_shared<SimulationModel>();
     //Molflow specific
-    temperatures = std::vector<double>();
-    desorptionParameterIDs = std::vector<size_t>();
+    temperatures = std::list<double>();
+    desorptionParameterIDs = std::set<size_t>();
     moments = std::vector<Moment>();
     userMoments = std::vector<UserMoment>(); //strings describing moments, to be parsed
     CDFs = std::vector<std::vector<CDF_p>>();
@@ -300,7 +304,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                     this->uInput.selections = mApp->selections;
 
                     writer.uInput = this->uInput;
-                    writer.SaveGeometry(saveDoc, &model, mApp->useOldXMLFormat, false);
+                    writer.SaveGeometry(saveDoc, model, mApp->useOldXMLFormat, false);
                     FlowIO::WriterInterfaceXML::WriteInterface(saveDoc, mApp, saveSelected);
 
                     xml_document geom_only;
@@ -309,7 +313,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                     if (!crashSave && !saveSelected) {
                         try {
                             //success = geom->SaveXML_simustate(saveDoc, this, globState, prg, saveSelected);
-                            success = writer.SaveSimulationState(saveDoc, &model, globState);
+                            success = writer.SaveSimulationState(saveDoc, model, globState);
                         }
                         catch (std::exception &e) {
                             SAFE_DELETE(f);
@@ -573,11 +577,11 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
     if (!insert) {
         //Clear hits and leaks cache
         ResetMoments();
-        model.wp.globalHistogramParams = HistogramParams();
+        model->wp.globalHistogramParams = HistogramParams();
 
         //default values
-        model.wp.enableDecay = false;
-        model.wp.gasMass = 28;
+        model->wp.enableDecay = false;
+        model->wp.gasMass = 28;
     }
 
     /*
@@ -711,7 +715,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
                 geom->LoadSYN(f, progressDlg, &version, this);
                 SAFE_DELETE(f);
-                model.otfParams.desorptionLimit = 0;
+                model->otfParams.desorptionLimit = 0;
             } else { //insert
                 geom->InsertSYN(f, progressDlg, newStr);
                 SAFE_DELETE(f);
@@ -751,7 +755,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 geom->LoadGEO(f, progressDlg, &version, this);
 
                 // Add moments only after user Moments are completely initialized
-                if (TimeMoments::ParseAndCheckUserMoments(&moments, userMoments)) {
+                if (TimeMoments::ParseAndCheckUserMoments(&moments, &userMoments, nullptr)) {
                     GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning",
                                           GLDLG_OK, GLDLG_ICONWARNING);
                     return;
@@ -867,18 +871,33 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
                 geom->Clear();
                 FlowIO::LoaderInterfaceXML loader;
-                loader.LoadGeometry(parseFileName, &model);
+                double load_progress = 0.0;
+                {
+                    auto future = std::async(std::launch::async, &FlowIO::LoaderInterfaceXML::LoadGeometry, &loader,
+                                             parseFileName, model, &load_progress);
+                    do {
+                        progressDlg->SetProgress(load_progress);
+                        ProcessSleep(100);
+                    } while (future.wait_for(std::chrono::seconds(0)) != std::future_status::ready);
+                }
+                progressDlg->SetProgress(0.0);
+
+                //std::future<int> resultFromDB = std::async(std::launch::async, &FlowIO::LoaderInterfaceXML::LoadGeometryPtr, ldr, "Data", model.get(), load_progress);
+                //loader.LoadGeometry(parseFileName, model, load_progress);
+                //if (allowUpdateCheck) updateThread = std::thread(&AppUpdater::PerformUpdateCheck, (AppUpdater*)this, false); //Launch parallel update-checking thread
+                progressDlg->SetMessage("Loading interface settings...");
+
                 xml_node interfNode = rootNode.child("Interface");
                 FlowIO::LoaderInterfaceXML::LoadInterface(interfNode, mApp);
                 userMoments = loader.uInput.userMoments;
                 uInput = loader.uInput;
                 InsertParametersBeforeCatalog(loader.uInput.parameters);
 
-                *geom->GetGeomProperties() = model.sh;
+                *geom->GetGeomProperties() = model->sh;
 
                 // Move actual geom to interface geom
-                geom->InitInterfaceVertices(model.vertices3);
-                geom->InitInterfaceFacets(model.facets, this);
+                geom->InitInterfaceVertices(model->vertices3);
+                geom->InitInterfaceFacets(model->facets, this);
 
                 if (loader.uInput.facetViewSettings.size() == geom->GetNbFacet()) {
                     for (size_t facetId = 0; facetId < geom->GetNbFacet(); facetId++) {
@@ -892,17 +911,32 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                               << std::endl;
                 }
 
+                progressDlg->SetMessage("Parsing user moments...");
                 // Add moments only after user Moments are completely initialized
-                if (TimeMoments::ParseAndCheckUserMoments(&moments, userMoments)) {
-                    GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning",
-                                          GLDLG_OK, GLDLG_ICONWARNING);
-                    return;
+
+                {
+                    auto future = std::async(std::launch::async, TimeMoments::ParseAndCheckUserMoments, &moments, &userMoments, &load_progress);
+                    do {
+                        progressDlg->SetProgress(load_progress);
+                        ProcessSleep(100);
+                    } while (future.wait_for(std::chrono::seconds(0)) != std::future_status::ready);
+                    progressDlg->SetProgress(0.0);
+                    if (future.get()) {
+                        GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning",
+                                              GLDLG_OK, GLDLG_ICONWARNING);
+                        return;
+                    }
                 }
+
+
 
                 this->uInput = loader.uInput;
                 // Init after load stage
                 //geom->InitializeMesh();
+                progressDlg->SetMessage("Initialising geometry...");
+
                 geom->InitializeGeometry();
+                geom->InitializeInterfaceGeometry();
                 //AdjustProfile();
                 //isLoaded = true; //InitializeGeometry() sets to true
                 //progressDlg->SetMessage("Building mesh...");
@@ -923,7 +957,16 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
                     simManager.ForwardGlobalCounter(&globState, &particleLog);
                     RealReload(); //To create the dpHit dataport for the loading of textures, profiles, etc...
-                    FlowIO::LoaderInterfaceXML::LoadSimulationState(parseFileName, &model, globState);
+                    {
+                        auto future = std::async(std::launch::async, FlowIO::LoaderInterfaceXML::LoadSimulationState,
+                                                 parseFileName, model, &globState, &load_progress);
+                        do {
+                            progressDlg->SetProgress(load_progress);
+                            ProcessSleep(100);
+                        } while (future.wait_for(std::chrono::seconds(0)) != std::future_status::ready);
+                        progressDlg->SetProgress(0.0);
+                    }
+                    //FlowIO::LoaderInterfaceXML::LoadSimulationState(parseFileName, model, &globState);
                     if (simManager.ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
                         std::string errString = "Failed to send geometry to sub process:\n";
                         errString.append(GetErrorDetails());
@@ -1115,7 +1158,7 @@ void Worker::Update(float appTime) {
 				int nbFacet = geom->GetNbFacet();
 				for (int i = 0; i < nbFacet; i++) {
 					Facet *f = geom->GetFacet(i);
-					f->facetHitCache=(*((FacetHitBuffer*)(buffer + f->model.wp.hitOffset+displayedMoment*sizeof(FacetHitBuffer))));
+					f->facetHitCache=(*((FacetHitBuffer*)(buffer + f->model->wp.hitOffset+displayedMoment*sizeof(FacetHitBuffer))));
 				}
 				try {
 					if (mApp->needsTexture || mApp->needsDirection) geom->BuildFacetTextures(buffer,mApp->needsTexture,mApp->needsDirection);
@@ -1159,27 +1202,34 @@ void Worker::SendAngleMaps() {
 bool Worker::InterfaceGeomToSimModel() {
     //auto geom = GetMolflowGeometry();
     // TODO: Proper clear call before for Real reload?
-    model.structures.clear();
-    model.facets.clear();
-    model.vertices3.clear();
+    model->structures.clear();
+    model->facets.clear();
+    model->vertices3.clear();
 
     for (size_t nbV = 0; nbV < geom->GetNbVertex(); ++nbV) {
-        model.vertices3.emplace_back(*geom->GetVertex(nbV));
+        model->vertices3.emplace_back(*geom->GetVertex(nbV));
     }
     // Parse usermoments to regular moment intervals
-    //model.tdParams.moments = this->moments;
-    model.tdParams.CDFs = this->CDFs;
-    //        model.tdParams.IDs = this->IDs;
+    //model->tdParams.moments = this->moments;
+
+
+    model->tdParams.CDFs.clear();
+    model->tdParams.IDs.clear();
+
+    // we create it directly on the Sim side
+    //model->tdParams.CDFs = this->CDFs;
+    //        model->tdParams.IDs = this->IDs;
     {
-        model.tdParams.IDs.clear();
-        for (auto &id : this->IDs) {
-            model.tdParams.IDs.push_back(id.GetValues());
-        }
+        //model->tdParams.IDs.clear();
+        // we create it directly on the Sim side
+        /*for (auto &id : this->IDs) {
+            model->tdParams.IDs.push_back(id.GetValues());
+        }*/
     }
 
-    model.tdParams.parameters.clear();
+    model->tdParams.parameters.clear();
     for (auto &param : this->parameters)
-        model.tdParams.parameters.emplace_back(param);
+        model->tdParams.parameters.emplace_back(param);
 
     std::vector<Moment> momentIntervals;
     momentIntervals.reserve(this->moments.size());
@@ -1187,15 +1237,15 @@ bool Worker::InterfaceGeomToSimModel() {
         momentIntervals.emplace_back(
                 std::make_pair(moment.first - (0.5 * moment.second), moment.first + (0.5 * moment.second)));
     }
-    model.tdParams.moments = momentIntervals;
+    model->tdParams.moments = momentIntervals;
 
-    model.sh = *geom->GetGeomProperties();
+    model->sh = *geom->GetGeomProperties();
 
-    model.structures.resize(model.sh.nbSuper); //Create structures
+    model->structures.resize(model->sh.nbSuper); //Create structures
 
     bool hasVolatile = false;
 
-    for (size_t facIdx = 0; facIdx < model.sh.nbFacet; facIdx++) {
+    for (size_t facIdx = 0; facIdx < model->sh.nbFacet; facIdx++) {
         SubprocessFacet sFac;
         {
             InterfaceFacet *facet = geom->GetFacet(facIdx);
@@ -1258,13 +1308,13 @@ bool Worker::InterfaceGeomToSimModel() {
         }
 
         //Some initialization
-        if (!sFac.InitializeOnLoad(facIdx, model.tdParams.moments.size()))
+        if (!sFac.InitializeOnLoad(facIdx, model->tdParams.moments.size()))
             return false;
 
         hasVolatile |= sFac.sh.isVolatile;
 
         if ((sFac.sh.superDest || sFac.sh.isVolatile) &&
-            ((sFac.sh.superDest - 1) >= model.sh.nbSuper || sFac.sh.superDest < 0)) {
+            ((sFac.sh.superDest - 1) >= model->sh.nbSuper || sFac.sh.superDest < 0)) {
             // Geometry error
             //ClearSimulation();
             //ReleaseDataport(loader);
@@ -1275,11 +1325,11 @@ bool Worker::InterfaceGeomToSimModel() {
             return false;
         }
 
-        model.facets.push_back(std::make_shared<SubprocessFacet>(sFac));
+        model->facets.push_back(std::make_shared<SubprocessFacet>(sFac));
     }
 
-    if(!model.facets.empty() && !model.vertices3.empty())
-        model.initialized = true;
+    if(!model->facets.empty() && !model->vertices3.empty())
+        model->initialized = true;
     return true;
 }
 
@@ -1288,99 +1338,82 @@ bool Worker::InterfaceGeomToSimModel() {
 * \param sendOnly if only certain parts should be reloaded (geometry reloading / ray tracing tree)
 */
 void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
-    auto *progressDlg = new GLProgress("Performing preliminary calculations on geometry...",
-                                       "Passing Geometry to workers");
-    progressDlg->SetVisible(true);
-    progressDlg->SetProgress(0.0);
+    if(!model->facets.empty() || GetGeometry()->GetNbFacet() > 0) {
 
-    if (!sendOnly) {
-        if (model.otfParams.nbProcess == 0 && !geom->IsLoaded()) {
-            progressDlg->SetVisible(false);
-            SAFE_DELETE(progressDlg);
-            return;
-        }
+        auto *progressDlg = new GLProgress("Performing preliminary calculations on geometry...",
+                                           "Passing Geometry to workers");
+        progressDlg->SetVisible(true);
+        progressDlg->SetProgress(0.0);
 
-        try {
-            progressDlg->SetMessage("Do preliminary calculations...");
-            PrepareToRun();
-
-            progressDlg->SetMessage("Asking subprocesses to clear geometry...");
-            simManager.ResetSimulations();
-            progressDlg->SetMessage("Clearing Logger...");
-            particleLog.clear();
-            progressDlg->SetMessage("Creating hit buffer...");
-            simManager.ResetHits();
-        }
-        catch (std::exception &e) {
-            GLMessageBox::Display(e.what(), "Error (Full reload)", GLDLG_OK, GLDLG_ICONWARNING);
-            progressDlg->SetVisible(false);
-            SAFE_DELETE(progressDlg);
-            std::stringstream err;
-            err << "Error (Full reload) " << e.what();
-            throw std::runtime_error(err.str());
-        }
-
-        if (model.otfParams.enableLogging) {
-            try {
-                particleLog.resize(model.otfParams.logLimit);
-            }
-            catch (...) {
+        if (!sendOnly) {
+            if (model->otfParams.nbProcess == 0 && !geom->IsLoaded()) {
                 progressDlg->SetVisible(false);
                 SAFE_DELETE(progressDlg);
-                throw Error(
-                        "Failed to create 'Particle Log' vector.\nMost probably out of memory.\nReduce number of logged particles in Particle Logger.");
+                return;
+            }
+
+            try {
+                progressDlg->SetMessage("Do preliminary calculations...");
+                PrepareToRun();
+            }
+            catch (std::exception &e) {
+                GLMessageBox::Display(e.what(), "Error (Full reload)", GLDLG_OK, GLDLG_ICONWARNING);
+                progressDlg->SetVisible(false);
+                SAFE_DELETE(progressDlg);
+                std::stringstream err;
+                err << "Error (Full reload) " << e.what();
+                throw std::runtime_error(err.str());
             }
         }
-    }
 
-    // Send and Load geometry on simulation side
-    ReloadSim(sendOnly, progressDlg);
-    if (simManager.ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
-        std::string errString = "Failed to send geometry to sub process:\n";
-        errString.append(GetErrorDetails());
-        throw std::runtime_error(errString);
-    }
+        progressDlg->SetMessage("Reloading structures for simulation unit...");
+        ReloadSim(sendOnly, progressDlg);
 
-    //Old send hits location
-    progressDlg->SetMessage("Closing dataport...");
-    needsReload = false;
-    progressDlg->SetVisible(false);
-    SAFE_DELETE(progressDlg);
-}
-
-
-void Worker::ReloadSim(bool sendOnly, GLProgress *progressDlg) {
-    // Send and Load geometry
-    progressDlg->SetMessage("Waiting for subprocesses to load geometry...");
-    try {
-        if (!InterfaceGeomToSimModel()) {
-            std::string errString = "Failed to send geometry to sub process!\n";
-            GLMessageBox::Display(errString.c_str(), "Warning (LoadGeom)", GLDLG_OK, GLDLG_ICONWARNING);
-
-            progressDlg->SetVisible(false);
-            SAFE_DELETE(progressDlg);
-            return;
-        }
-
-        progressDlg->SetMessage("Constructing memory structure to store results...");
         if (!sendOnly) {
-            globState.Resize(model);
+            try {
+                progressDlg->SetMessage("Asking subprocesses to clear geometry...");
+                simManager.ResetSimulations();
+                progressDlg->SetMessage("Clearing Logger...");
+                particleLog.clear();
+                progressDlg->SetMessage("Creating hit buffer...");
+                simManager.ResetHits();
+            }
+            catch (std::exception &e) {
+                GLMessageBox::Display(e.what(), "Error (Full reload)", GLDLG_OK, GLDLG_ICONWARNING);
+                progressDlg->SetVisible(false);
+                SAFE_DELETE(progressDlg);
+                std::stringstream err;
+                err << "Error (Full reload) " << e.what();
+                throw std::runtime_error(err.str());
+            }
+
+            if (model->otfParams.enableLogging) {
+                try {
+                    particleLog.resize(model->otfParams.logLimit);
+                }
+                catch (...) {
+                    progressDlg->SetVisible(false);
+                    SAFE_DELETE(progressDlg);
+                    throw Error(
+                            "Failed to create 'Particle Log' vector.\nMost probably out of memory.\nReduce number of logged particles in Particle Logger.");
+                }
+            }
         }
 
-        simManager.ForwardSimModel(&model);
-        simManager.ForwardGlobalCounter(&globState, &particleLog);
-
-        /*if (simManager.ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
+        // Send and Load geometry on simulation side
+        if (simManager.ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
             std::string errString = "Failed to send geometry to sub process:\n";
             errString.append(GetErrorDetails());
             throw std::runtime_error(errString);
-        }*/
-    }
-    catch (std::exception &e) {
-        GLMessageBox::Display(e.what(), "Error (LoadGeom)", GLDLG_OK, GLDLG_ICONERROR);
+        }
+
+
+        progressDlg->SetMessage("Finishing reload...");
+        needsReload = false;
+        progressDlg->SetVisible(false);
+        SAFE_DELETE(progressDlg);
     }
 }
-
 
 /**
 * \brief Serialization function for a binary cereal archive for the worker attributes
@@ -1391,7 +1424,7 @@ std::ostringstream Worker::SerializeParamsForLoader() {
     cereal::BinaryOutputArchive outputArchive(result);
 
     outputArchive(
-            CEREAL_NVP(model.otfParams)
+            CEREAL_NVP(model->otfParams)
     );
     return result;
 }
@@ -1415,7 +1448,7 @@ void Worker::ResetWorkerStats() {
 void Worker::Start() {
     // Sanity checks
     // Is there some desorption in the system? (depends on pre calculation)
-    if (model.wp.finalOutgassingRate_Pa_m3_sec <= 0.0) {
+    if (model->wp.finalOutgassingRate_Pa_m3_sec <= 0.0) {
         // Do another check for existing desorp facets, needed in case a desorp parameter's final value is 0
         bool found = false;
         size_t nbF = geom->GetNbFacet();
@@ -1428,10 +1461,10 @@ void Worker::Start() {
         if (!found)
             throw Error("No desorption facet found");
     }
-    if (model.wp.totalDesorbedMolecules <= 0.0)
+    if (model->wp.totalDesorbedMolecules <= 0.0)
         throw std::runtime_error("Total outgassing is zero.");
 
-    if (model.otfParams.desorptionLimit > 0 && model.otfParams.desorptionLimit <= globState.globalHits.globalHits.nbDesorbed)
+    if (model->otfParams.desorptionLimit > 0 && model->otfParams.desorptionLimit <= globState.globalHits.globalHits.nbDesorbed)
         throw std::runtime_error("Desorption limit has already been reached.");
 
     try {
@@ -1442,7 +1475,7 @@ void Worker::Start() {
         }
     }
     catch (std::exception &e) {
-        throw e;
+        throw Error(e.what());
     }
 }
 
@@ -1465,11 +1498,11 @@ double Worker::GetMoleculesPerTP(size_t moment) const {
     if (moment == 0) {
         //Constant flow
         //Each test particle represents a certain real molecule influx per second
-        return model.wp.finalOutgassingRate / globalHitCache.globalHits.nbDesorbed;
+        return model->wp.finalOutgassingRate / globalHitCache.globalHits.nbDesorbed;
     } else {
         //Time-dependent mode
         //Each test particle represents a certain absolute number of real molecules
-        return (model.wp.totalDesorbedMolecules / mApp->worker.moments[moment - 1].second) /
+        return (model->wp.totalDesorbedMolecules / mApp->worker.moments[moment - 1].second) /
                globalHitCache.globalHits.nbDesorbed;
     }
 }
@@ -1603,17 +1636,17 @@ void Worker::AnalyzeSYNfile(const char *fileName, size_t *nbFacet, size_t *nbTex
 void Worker::PrepareToRun() {
 
     //determine latest moment
-    model.wp.latestMoment = model.wp.timeWindowSize * .5;
+    model->wp.latestMoment = model->wp.timeWindowSize * .5;
 
     if (!moments.empty())
-        model.wp.latestMoment = (moments.end() - 1)->first + (moments.end() - 1)->second / 2.0;
-    //model.wp.latestMoment += model.wp.timeWindowSize / 2.0;
+        model->wp.latestMoment = (moments.end() - 1)->first + (moments.end() - 1)->second / 2.0;
+    //model->wp.latestMoment += model->wp.timeWindowSize / 2.0;
 
     Geometry *g = GetGeometry();
     //Generate integrated desorption functions
 
-    temperatures = std::vector<double>();
-    desorptionParameterIDs = std::vector<size_t>();
+    temperatures = std::list<double>();
+    desorptionParameterIDs = std::set<size_t>();
     CDFs = std::vector<std::vector<CDF_p>>();
     IDs = std::vector<IntegratedDesorption>();
 
@@ -1713,12 +1746,7 @@ void Worker::PrepareToRun() {
 * \return ID of the CFD
 */
 int Worker::GetCDFId(double temperature) {
-
-    int i;
-    for (i = 0; i < (int) temperatures.size() &&
-                (std::abs(temperature - temperatures[i]) > 1E-5); i++); //check if we already had this temperature
-    if (i >= (int) temperatures.size()) i = -1; //not found
-    return i;
+    return CDFGeneration::GetCDFId(temperatures, temperature);
 }
 
 /**
@@ -1727,10 +1755,15 @@ int Worker::GetCDFId(double temperature) {
 * \return Previous size of temperatures vector, which determines new ID
 */
 int Worker::GenerateNewCDF(double temperature) {
-    size_t i = temperatures.size();
+    /*size_t i = temperatures.size();
     temperatures.push_back(temperature);
-    CDFs.push_back(Generate_CDF(temperature, model.wp.gasMass, CDF_SIZE));
-    return (int) i;
+    CDFs.push_back(Generate_CDF(temperature, model->wp.gasMass, CDF_SIZE));
+    return (int) i;*/
+
+    auto[id_new, cdf_vec] = CDFGeneration::GenerateNewCDF(temperatures, temperature, model->wp.gasMass);
+    CDFs.emplace_back(std::move(cdf_vec));
+
+    return (int)id_new;
 }
 
 /**
@@ -1740,10 +1773,15 @@ int Worker::GenerateNewCDF(double temperature) {
 */
 int Worker::GenerateNewID(size_t paramId) {
     //This function is called if parameter with index paramId doesn't yet have a cumulative des. function
-    size_t i = desorptionParameterIDs.size();
-    desorptionParameterIDs.push_back(paramId); //mark that i.th integrated des. belongs to paramId
-    IDs.push_back(Generate_ID(paramId)); //actually convert PDF to CDF
-    return (int) i; //return own index
+    auto[id_new, id_vec] = IDGeneration::GenerateNewID(desorptionParameterIDs, paramId, this->model.get());
+    Parameter &par = parameters[paramId]; //we'll reference it a lot
+    IntegratedDesorption result;
+    result.logXinterp = par.logXinterp;
+    result.logYinterp = par.logYinterp;
+    result.SetValues(std::move(id_vec), false);
+    IDs.emplace_back(std::move(result));
+
+    return (int)id_new;
 }
 
 /**
@@ -1751,14 +1789,8 @@ int Worker::GenerateNewID(size_t paramId) {
 * \param paramId parameter ID
 * \return Id of the integrated desorption function
 */
-int Worker::GetIDId(size_t paramId) {
-
-    int i;
-    for (i = 0; i < (int) desorptionParameterIDs.size() &&
-                (paramId != desorptionParameterIDs[i]); i++); //check if we already had this parameter Id
-    if (i >= (int) desorptionParameterIDs.size()) i = -1; //not found
-    return i;
-
+int Worker::GetIDId(size_t paramId) const {
+    return IDGeneration::GetIDId(desorptionParameterIDs, paramId);
 }
 
 /**
@@ -1766,7 +1798,7 @@ int Worker::GetIDId(size_t paramId) {
 */
 void Worker::CalcTotalOutgassing() {
     // Compute the outgassing of all source facet
-    model.wp.totalDesorbedMolecules = model.wp.finalOutgassingRate_Pa_m3_sec = model.wp.finalOutgassingRate = 0.0;
+    model->wp.totalDesorbedMolecules = model->wp.finalOutgassingRate_Pa_m3_sec = model->wp.finalOutgassingRate = 0.0;
     Geometry *g = GetGeometry();
 
     for (size_t i = 0; i < g->GetNbFacet(); i++) {
@@ -1774,27 +1806,27 @@ void Worker::CalcTotalOutgassing() {
         if (f->sh.desorbType != DES_NONE) { //there is a kind of desorption
             if (f->sh.useOutgassingFile) { //outgassing file
                 for (int l = 0; l < (f->ogMap.outgassingMapWidth * f->ogMap.outgassingMapHeight); l++) {
-                    model.wp.totalDesorbedMolecules +=
-                            model.wp.latestMoment * f->ogMap.outgassingMap[l] / (1.38E-23 * f->sh.temperature);
-                    model.wp.finalOutgassingRate += f->ogMap.outgassingMap[l] / (1.38E-23 * f->sh.temperature);
-                    model.wp.finalOutgassingRate_Pa_m3_sec += f->ogMap.outgassingMap[l];
+                    model->wp.totalDesorbedMolecules +=
+                            model->wp.latestMoment * f->ogMap.outgassingMap[l] / (1.38E-23 * f->sh.temperature);
+                    model->wp.finalOutgassingRate += f->ogMap.outgassingMap[l] / (1.38E-23 * f->sh.temperature);
+                    model->wp.finalOutgassingRate_Pa_m3_sec += f->ogMap.outgassingMap[l];
                 }
             } else { //regular outgassing
                 if (f->sh.outgassing_paramId == -1) { //constant outgassing
-                    model.wp.totalDesorbedMolecules +=
-                            model.wp.latestMoment * f->sh.outgassing / (1.38E-23 * f->sh.temperature);
-                    model.wp.finalOutgassingRate +=
+                    model->wp.totalDesorbedMolecules +=
+                            model->wp.latestMoment * f->sh.outgassing / (1.38E-23 * f->sh.temperature);
+                    model->wp.finalOutgassingRate +=
                             f->sh.outgassing / (1.38E-23 * f->sh.temperature);  //Outgassing molecules/sec
-                    model.wp.finalOutgassingRate_Pa_m3_sec += f->sh.outgassing;
+                    model->wp.finalOutgassingRate_Pa_m3_sec += f->sh.outgassing;
                 } else { //time-dependent outgassing
                     double lastValue = IDs[f->sh.IDid].GetValues().back().second;
-                    model.wp.totalDesorbedMolecules += lastValue / (1.38E-23 * f->sh.temperature);
+                    model->wp.totalDesorbedMolecules += lastValue / (1.38E-23 * f->sh.temperature);
                     size_t lastIndex = parameters[f->sh.outgassing_paramId].GetSize() - 1;
                     double finalRate_mbar_l_s = parameters[f->sh.outgassing_paramId].GetY(lastIndex);
-                    model.wp.finalOutgassingRate +=
+                    model->wp.finalOutgassingRate +=
                             finalRate_mbar_l_s * MBARLS_TO_PAM3S /
                             (1.38E-23 * f->sh.temperature); //0.1: mbar*l/s->Pa*m3/s
-                    model.wp.finalOutgassingRate_Pa_m3_sec += finalRate_mbar_l_s * MBARLS_TO_PAM3S;
+                    model->wp.finalOutgassingRate_Pa_m3_sec += finalRate_mbar_l_s * MBARLS_TO_PAM3S;
                 }
             }
         }
@@ -1873,7 +1905,7 @@ IntegratedDesorption Worker::Generate_ID(size_t paramId) {
     Parameter &par = parameters[paramId]; //we'll reference it a lot
     for (indexAfterLatestMoment = 0; indexAfterLatestMoment < par.GetSize() &&
                                      (par.GetX(indexAfterLatestMoment) <
-                                      model.wp.latestMoment); indexAfterLatestMoment++); //loop exits after first index after latestMoment
+                                      model->wp.latestMoment); indexAfterLatestMoment++); //loop exits after first index after latestMoment
     bool lastUserMomentBeforeLatestMoment;
     if (indexAfterLatestMoment >= par.GetSize()) {
         indexAfterLatestMoment = par.GetSize() - 1; //not found, set as last moment
@@ -1897,7 +1929,7 @@ IntegratedDesorption Worker::Generate_ID(size_t paramId) {
         const auto &valuesCopy = par.GetValues();
         if (lastUserMomentBeforeLatestMoment) {
             myOutgassing.insert(myOutgassing.end(), valuesCopy.begin(), valuesCopy.end()); //copy all values...
-            myOutgassing.emplace_back(model.wp.latestMoment,
+            myOutgassing.emplace_back(model->wp.latestMoment,
                                       myOutgassing.back().second); //...and create last point equal to last outgassing (const extrapolation)
         } else {
             if (indexAfterLatestMoment > 0) {
@@ -1905,9 +1937,9 @@ IntegratedDesorption Worker::Generate_ID(size_t paramId) {
                                     valuesCopy.begin() + indexAfterLatestMoment -
                                     1); //copy values that are before latestMoment
             }
-            if (!IsEqual(myOutgassing.back().first, model.wp.latestMoment)) { //if interpolation is needed
-                myOutgassing.emplace_back(model.wp.latestMoment,
-                                          InterpolateY(model.wp.latestMoment, valuesCopy, par.logXinterp,
+            if (!IsEqual(myOutgassing.back().first, model->wp.latestMoment)) { //if interpolation is needed
+                myOutgassing.emplace_back(model->wp.latestMoment,
+                                          InterpolateY(model->wp.latestMoment, valuesCopy, par.logXinterp,
                                                        par.logYinterp)); //interpolate outgassing value to t=latestMoment
             }
         }

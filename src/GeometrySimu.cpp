@@ -21,6 +21,14 @@ SuperStructure::~SuperStructure()
     aabbTree.reset();
 }
 
+bool ParameterSurface::IsHardHit(const Ray &r) {
+    const double td_opacity = dist->InterpolateY(r.time, false);
+    if(td_opacity >= 1.0)
+        return true;
+    else
+        return (r.rng->rnd() < td_opacity);
+};
+
 bool SubprocessFacet::InitializeOnLoad(const size_t &id, const size_t &nbMoments) {
     globalId = id;
     //ResizeCounter(nbMoments); //Initialize counter
@@ -100,6 +108,8 @@ size_t SubprocessFacet::InitializeTexture(const size_t &nbMoments)
         catch (...) {
             throw std::runtime_error("Not enough memory to load textures");
             return false;
+        }
+        fullSizeInc = (sh.texWidth_precise * sh.texHeight_precise) / (sh.U.Norme() * sh.V.Norme());
         }*/
         // Texture increment of a full texture element
         double fullSizeInc = (sh.texWidth_precise * sh.texHeight_precise) / (sh.U.Norme() * sh.V.Norme());
@@ -289,17 +299,8 @@ SubprocessFacet& SubprocessFacet::operator=(const SubprocessFacet& cpy){
     globalId = cpy.globalId;
     indices = cpy.indices;                    // Ref to Geometry Vector3d
     vertices2 = cpy.vertices2;
-    if(!surf) {
-        if(cpy.sh.opacity >= 1.0)
-            surf = new Surface();
-        else if (cpy.sh.opacity <= 0.0){
-            surf = new TransparentSurface();
-        }
-        else {
-            surf = new AlphaSurface(cpy.sh.opacity);
-        }
-    }
-    if(cpy.surf) *surf = *cpy.surf;
+    if(cpy.surf) surf = cpy.surf;
+    else surf = nullptr;
 
     return *this;
 }
@@ -524,7 +525,8 @@ void SimulationModel::PrepareToRun() {
     //determine latest moment
     wp.latestMoment = 1E-10;
     if(!tdParams.moments.empty())
-        wp.latestMoment = (tdParams.moments.end()-1)->first + (tdParams.moments.end()-1)->second / 2.0;
+        wp.latestMoment = (tdParams.moments.end()-1)->second;
+        //wp.latestMoment = (tdParams.moments.end()-1)->first + (tdParams.moments.end()-1)->second / 2.0;
 
     std::set<size_t> desorptionParameterIDs;
 
@@ -560,7 +562,7 @@ void SimulationModel::PrepareToRun() {
         }
 
         // Generate speed distribution functions
-        std::set<double> temperatureList;
+        std::list<double> temperatureList;
         int id = CDFGeneration::GetCDFId(temperatureList, facet.sh.temperature);
         if (id >= 0)
             facet.sh.CDFid = id; //we've already generated a CDF for this temperature
@@ -633,9 +635,7 @@ void SimulationModel::CalcTotalOutgassing() {
     wp.finalOutgassingRate = finalOutgassingRate;
 }
 
-SimulationModel::~SimulationModel() {
-
-}
+SimulationModel::~SimulationModel() = default;
 
 /**
 * \brief Assign operator
@@ -685,26 +685,26 @@ void GlobalSimuState::Resize(const SimulationModel &model) { //Constructs the 'd
     tMutex.lock();
     size_t nbF = model.sh.nbFacet;
     size_t nbMoments = model.tdParams.moments.size();
-    std::vector<FacetState>(nbF).swap(facetStates);
+    facetStates.assign(nbF, FacetState());
 
     if(!model.facets.empty()) {
         for (size_t i = 0; i < nbF; i++) {
-            auto &sFac = *model.facets[i];
-            if (sFac.globalId != i) {
-                std::cerr << "Facet ID mismatch! : " << sFac.globalId << " / " << i << "\n";
+            auto sFac = model.facets[i];
+            if (sFac->globalId != i) {
+                std::cerr << "Facet ID mismatch! : " << sFac->globalId << " / " << i << "\n";
                 exit(0);
             }
-            FacetMomentSnapshot facetMomentTemplate;
-            facetMomentTemplate.histogram.Resize(sFac.sh.facetHistogramParams);
-            facetMomentTemplate.direction = std::vector<DirectionCell>(
-                    sFac.sh.countDirection ? sFac.sh.texWidth * sFac.sh.texHeight : 0);
-            facetMomentTemplate.profile = std::vector<ProfileSlice>(sFac.sh.isProfile ? PROFILE_SIZE : 0);
-            facetMomentTemplate.texture = std::vector<TextureCell>(
-                    sFac.sh.isTextured ? sFac.sh.texWidth * sFac.sh.texHeight : 0);
+
+            FacetMomentSnapshot facetMomentTemplate{};
+            facetMomentTemplate.histogram.Resize(sFac->sh.facetHistogramParams);
+            facetMomentTemplate.direction.assign((sFac->sh.countDirection ? sFac->sh.texWidth*sFac->sh.texHeight : 0), DirectionCell());
+            facetMomentTemplate.profile.assign((sFac->sh.isProfile ? PROFILE_SIZE : 0), ProfileSlice());
+            facetMomentTemplate.texture.assign((sFac->sh.isTextured ? sFac->sh.texWidth*sFac->sh.texHeight : 0), TextureCell());
+
             //No init for hits
-            facetStates[i].momentResults = std::vector<FacetMomentSnapshot>(1 + nbMoments, facetMomentTemplate);
-            if (sFac.sh.anglemapParams.record)
-                facetStates[i].recordedAngleMapPdf = std::vector<size_t>(sFac.sh.anglemapParams.GetMapSize());
+            facetStates[i].momentResults.assign(1 + nbMoments, facetMomentTemplate);
+            if (sFac->sh.anglemapParams.record)
+                facetStates[i].recordedAngleMapPdf.assign(sFac->sh.anglemapParams.GetMapSize(), 0);
         }
     }
     /*for (size_t i = 0; i < nbF; i++) {
@@ -720,8 +720,9 @@ void GlobalSimuState::Resize(const SimulationModel &model) { //Constructs the 'd
     }*/
     //Global histogram
 
-    FacetHistogramBuffer globalHistTemplate; globalHistTemplate.Resize(model.wp.globalHistogramParams);
-    globalHistograms = std::vector<FacetHistogramBuffer>(1 + nbMoments, globalHistTemplate);
+    FacetHistogramBuffer globalHistTemplate{};
+    globalHistTemplate.Resize(model.wp.globalHistogramParams);
+    globalHistograms.assign(1 + nbMoments, globalHistTemplate);
     initialized = true;
     //ReleaseMutex(mutex);
     tMutex.unlock();
@@ -745,9 +746,9 @@ void GlobalSimuState::Reset() {
             ZEROVECTOR(m.histogram.distanceHistogram);
             ZEROVECTOR(m.histogram.nbHitsHistogram);
             ZEROVECTOR(m.histogram.timeHistogram);
-            std::vector<DirectionCell>(m.direction.size()).swap(m.direction);
-            std::vector<TextureCell>(m.texture.size()).swap(m.texture);
-            std::vector<ProfileSlice>(m.profile.size()).swap(m.profile);
+            std::fill(m.direction.begin(), m.direction.end(), DirectionCell());
+            std::fill(m.texture.begin(), m.texture.end(), TextureCell());
+            std::fill(m.profile.begin(), m.profile.end(), ProfileSlice());
             memset(&(m.hits), 0, sizeof(m.hits));
         }
     }
@@ -1125,6 +1126,10 @@ FacetHistogramBuffer& FacetHistogramBuffer::operator+=(const FacetHistogramBuffe
     this->distanceHistogram += rhs.distanceHistogram;
     this->timeHistogram += rhs.timeHistogram;
     return *this;
+}
+
+FacetMomentSnapshot::FacetMomentSnapshot() : hits(), histogram(){
+
 }
 
 /**
