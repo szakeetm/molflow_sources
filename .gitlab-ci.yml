@@ -132,6 +132,8 @@ test-debian:
   extends: .test-unix
   variables:
     OS_NAME: "debian"
+  needs:
+    - job: build-debian-master
   tags:
     - debian
 
@@ -139,6 +141,8 @@ test-fedora:
   extends: .test-unix
   variables:
     OS_NAME: "fedora"
+  needs:
+    - job: build-fedora-master
   tags:
     - fedora
 
@@ -170,6 +174,8 @@ test-windows:
     reports:
       junit: .\report.xml
     expire_in: 4 weeks
+  needs:
+    - job: build-windows-master
   tags:
     - windows
 
