@@ -80,7 +80,7 @@ namespace MFSim {
 
         double velocity;
         double expectedDecayMoment; //for radioactive gases
-        size_t structureId;        // Current structure
+        //size_t structureId;        // Current structure
         GlobalSimuState tmpState;
         ParticleLog tmpParticleLog;
         SubprocessFacet *lastHitFacet;     // Last hitted facet

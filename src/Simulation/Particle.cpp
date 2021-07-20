@@ -122,7 +122,7 @@ void Particle::PerformTeleport(SubprocessFacet *iFacet) {
         if (destIndex == static_cast<int>(sFac.globalId)) {
             destination = &(sFac);
             if (destination->sh.superIdx != -1) {
-                structureId = destination->sh.superIdx; //change current superstructure, unless the target is a universal facet
+                particle.structure = destination->sh.superIdx; //change current superstructure, unless the target is a universal facet
             }
             teleportedFrom = static_cast<int>(iFacet->globalId); //memorize where the particle came from
             found = true;
@@ -259,12 +259,17 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                 --remainingDes;
             }
 
+            // Todo: Only use one method, ID or Ptr
+            if(lastHitFacet)
+                particle.lastIntersected = lastHitFacet->globalId;
+            else
+                particle.lastIntersected = -1;
             //return (lastHitFacet != nullptr);
 
             //Prepare output values
 #if defined(USE_OLD_BVH)
             auto[found, collidedFacet, d] = Intersect(*this, particle.origin,
-                                                      particle.direction, model->structures[structureId].aabbTree.get());
+                                                      particle.direction, model->structures[particle.structure].aabbTree.get());
             //printf("%lf ms time spend in old BVH\n", tmpTime.ElapsedMs());
 #else
             transparentHitBuffer.clear();
@@ -282,9 +287,9 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                     particle.lastIntersected = -1;*/
 
 #if defined(USE_KDTREE)
-                found = model->kdtree[structureId].Intersect(particle);
+                found = model->kdtree[particle.structure].Intersect(particle);
 #else
-                found = model->bvhs[structureId].Intersect(particle);
+                found = model->bvhs[particle.structure].Intersect(particle);
 #endif
                 if(found){
                     for(auto& hit : particle.hits){
@@ -312,9 +317,9 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                 HitChain* hitChain = new HitChain();
                 tmpRay.hitChain = hitChain;
 #if defined(USE_KDTREE)
-                found = model->kdtree[structureId].Intersect(tmpRay);
+                found = model->kdtree[particle.structure].Intersect(tmpRay);
 #else
-                found = model->bvhs[structureId].Intersect(tmpRay);
+                found = model->bvhs[particle.structure].Intersect(tmpRay);
 #endif
                 if(found){
                     HitChain* currHit = hitChain;
@@ -378,6 +383,7 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                     //distTraveledSinceUpdate += distanceTraveled;
                     insertNewParticle = true;
                     lastHitFacet=nullptr;
+                    particle.lastIntersected = -1;
                 } else { //hit within measured time, particle still alive
                     if (collidedFacet->sh.teleportDest != 0) { //Teleport
                         IncreaseDistanceCounters(d * oriRatio);
@@ -400,6 +406,7 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                                 //distTraveledSinceUpdate += distanceTraveled;
                                 insertNewParticle = true;
                                 lastHitFacet=nullptr;
+                                particle.lastIntersected = -1;
                             } else {
                                 //Reflected
                                 PerformBounce(collidedFacet);
@@ -418,6 +425,7 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                             } else { //eliminate remainder and create new particle
                                 insertNewParticle = true;
                                 lastHitFacet=nullptr;
+                                particle.lastIntersected = -1;
                             }
                         }
                     }
@@ -428,9 +436,10 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                 tmpState.globalHits.nbLeakTotal++;
                 if (particleId == 0)RecordLeakPos();
                 insertNewParticle = true;
+                particle.lastIntersected = -1;
                 lastHitFacet=nullptr;
+                particle.lastIntersected = -1;
             }
-            particle.direction = particle.direction;
         }
 
 /*#pragma omp critical
@@ -535,7 +544,7 @@ bool Particle::StartFromSource(Ray& ray) {
     ray.lastIntersected = lastHitFacet->globalId;
     //distanceTraveled = 0.0;  //for mean free path calculations
     //particle.time = desorptionStartTime + (desorptionStopTime - desorptionStartTime)*randomGenerator.rnd();
-    particle.time = generationTime = Physics::GenerateDesorptionTime(model->tdParams.IDs, src, randomGenerator.rnd(), model->wp.latestMoment);
+    ray.time = generationTime = Physics::GenerateDesorptionTime(model->tdParams.IDs, src, randomGenerator.rnd(), model->wp.latestMoment);
     ray.time = particle.time;
     lastMomentIndex = 0;
     if (model->wp.useMaxwellDistribution) velocity = Physics::GenerateRandomVelocity(model->tdParams.CDFs, src->sh.CDFid, randomGenerator.rnd());
@@ -663,8 +672,7 @@ bool Particle::StartFromSource(Ray& ray) {
 
         return false;
     }
-    structureId = src->sh.superIdx;
-    ray.structure = structureId;
+    ray.structure = src->sh.superIdx;
 
     teleportedFrom = -1;
 
@@ -924,7 +932,7 @@ bool Particle::StartFromSource() {
 
         return false;
     }
-    structureId = src->sh.superIdx;
+    particle.structure = src->sh.superIdx;
     teleportedFrom = -1;
 
     // Count
@@ -991,7 +999,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
         }
 
         IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 0, 0, 0);
-        structureId = iFacet->sh.superDest - 1;
+        particle.structure = iFacet->sh.superDest - 1;
         if (iFacet->sh.isMoving) { //A very special case where link facets can be used as transparent but moving facets
             if (particleId == 0)RecordHit(HIT_MOVING);
             Physics::TreatMovingFacet(model, particle.origin, particle.direction, velocity);
@@ -1485,6 +1493,9 @@ void Particle::RegisterTransparentPass(SubprocessFacet *facet) {
 void Particle::Reset() {
     particle.origin = Vector3d();
     particle.direction = Vector3d();
+    particle.time = 0;
+    particle.structure = -1;
+
     oriRatio = 0.0;
 
     nbBounces = 0;
@@ -1492,15 +1503,14 @@ void Particle::Reset() {
     //particleId = 0;
     distanceTraveled = 0;
     generationTime = 0;
-    particle.time = 0;
     teleportedFrom = -1;
 
     velocity = 0.0;
     expectedDecayMoment = 0.0;
-    structureId = -1;
 
     tmpState.Reset();
     lastHitFacet = nullptr;
+    particle.lastIntersected = -1;
     randomGenerator.SetSeed(randomGenerator.GetSeed());
     model = nullptr;
     transparentHitBuffer.clear();

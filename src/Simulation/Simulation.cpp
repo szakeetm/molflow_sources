@@ -30,8 +30,10 @@ Simulation::Simulation() : tMutex()
 
     lastLogUpdateOK = true;
 
-    for(auto& particle : particles)
+    for(auto& particle : particles) {
         particle.lastHitFacet = nullptr;
+        particle.particle.lastIntersected = -1;
+    }
 
     hasVolatile = false;
 
@@ -51,6 +53,7 @@ Simulation::Simulation(Simulation&& o) noexcept : tMutex() {
     particles = o.particles;
     for(auto& particle : particles) {
         particle.lastHitFacet = nullptr;
+        particle.particle.lastIntersected = -1;
         particle.model = model.get();
     }
 
