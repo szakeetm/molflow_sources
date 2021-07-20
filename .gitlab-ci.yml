@@ -5,9 +5,9 @@ variables:
 stages:
   - prepare
   - build
-  - build-artifact
   - test
   - benchmark
+  - build-artifact
   - optional-artifact
 
 prepare_job:
