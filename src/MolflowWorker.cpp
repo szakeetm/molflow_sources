@@ -29,6 +29,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 #endif
 
+#include <future>
 #include <cmath>
 //#include <cstdlib>
 #include <fstream>
@@ -754,7 +755,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 geom->LoadGEO(f, progressDlg, &version, this);
 
                 // Add moments only after user Moments are completely initialized
-                if (TimeMoments::ParseAndCheckUserMoments(&moments, userMoments)) {
+                if (TimeMoments::ParseAndCheckUserMoments(&moments, &userMoments, nullptr)) {
                     GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning",
                                           GLDLG_OK, GLDLG_ICONWARNING);
                     return;
@@ -870,7 +871,22 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
                 geom->Clear();
                 FlowIO::LoaderInterfaceXML loader;
-                loader.LoadGeometry(parseFileName, model);
+                double load_progress = 0.0;
+                {
+                    auto future = std::async(std::launch::async, &FlowIO::LoaderInterfaceXML::LoadGeometry, &loader,
+                                             parseFileName, model, &load_progress);
+                    do {
+                        progressDlg->SetProgress(load_progress);
+                        ProcessSleep(100);
+                    } while (future.wait_for(std::chrono::seconds(0)) != std::future_status::ready);
+                }
+                progressDlg->SetProgress(0.0);
+
+                //std::future<int> resultFromDB = std::async(std::launch::async, &FlowIO::LoaderInterfaceXML::LoadGeometryPtr, ldr, "Data", model.get(), load_progress);
+                //loader.LoadGeometry(parseFileName, model, load_progress);
+                //if (allowUpdateCheck) updateThread = std::thread(&AppUpdater::PerformUpdateCheck, (AppUpdater*)this, false); //Launch parallel update-checking thread
+                progressDlg->SetMessage("Loading interface settings...");
+
                 xml_node interfNode = rootNode.child("Interface");
                 FlowIO::LoaderInterfaceXML::LoadInterface(interfNode, mApp);
                 userMoments = loader.uInput.userMoments;
@@ -895,17 +911,32 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                               << std::endl;
                 }
 
+                progressDlg->SetMessage("Parsing user moments...");
                 // Add moments only after user Moments are completely initialized
-                if (TimeMoments::ParseAndCheckUserMoments(&moments, userMoments)) {
-                    GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning",
-                                          GLDLG_OK, GLDLG_ICONWARNING);
-                    return;
+
+                {
+                    auto future = std::async(std::launch::async, TimeMoments::ParseAndCheckUserMoments, &moments, &userMoments, &load_progress);
+                    do {
+                        progressDlg->SetProgress(load_progress);
+                        ProcessSleep(100);
+                    } while (future.wait_for(std::chrono::seconds(0)) != std::future_status::ready);
+                    progressDlg->SetProgress(0.0);
+                    if (future.get()) {
+                        GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning",
+                                              GLDLG_OK, GLDLG_ICONWARNING);
+                        return;
+                    }
                 }
+
+
 
                 this->uInput = loader.uInput;
                 // Init after load stage
                 //geom->InitializeMesh();
+                progressDlg->SetMessage("Initialising geometry...");
+
                 geom->InitializeGeometry();
+                geom->InitializeInterfaceGeometry();
                 //AdjustProfile();
                 //isLoaded = true; //InitializeGeometry() sets to true
                 //progressDlg->SetMessage("Building mesh...");
@@ -926,7 +957,16 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
                     simManager.ForwardGlobalCounter(&globState, &particleLog);
                     RealReload(); //To create the dpHit dataport for the loading of textures, profiles, etc...
-                    FlowIO::LoaderInterfaceXML::LoadSimulationState(parseFileName, model, globState);
+                    {
+                        auto future = std::async(std::launch::async, FlowIO::LoaderInterfaceXML::LoadSimulationState,
+                                                 parseFileName, model, &globState, &load_progress);
+                        do {
+                            progressDlg->SetProgress(load_progress);
+                            ProcessSleep(100);
+                        } while (future.wait_for(std::chrono::seconds(0)) != std::future_status::ready);
+                        progressDlg->SetProgress(0.0);
+                    }
+                    //FlowIO::LoaderInterfaceXML::LoadSimulationState(parseFileName, model, &globState);
                     if (simManager.ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
                         std::string errString = "Failed to send geometry to sub process:\n";
                         errString.append(GetErrorDetails());

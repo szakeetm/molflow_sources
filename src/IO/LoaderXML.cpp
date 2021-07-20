@@ -25,7 +25,7 @@ void reportLoadStatus(const std::string& statusString) {
 
 // Use work->InsertParametersBeforeCatalog(loadedParams);
 // if loaded from GUI side
-int LoaderXML::LoadGeometry(std::string inputFileName, std::shared_ptr<SimulationModel> model, double &progress) {
+int LoaderXML::LoadGeometry(std::string inputFileName, std::shared_ptr<SimulationModel> model, double *progress) {
     xml_document loadXML;
     auto inputFile = inputFileName.c_str();
     xml_parse_result parseResult = loadXML.load_file(inputFile); //parse xml file directly
@@ -116,6 +116,7 @@ int LoaderXML::LoadGeometry(std::string inputFileName, std::shared_ptr<Simulatio
         if (facets[idx]->sh.outgassing_paramId > -1) facets[idx]->userOutgassing = work->parameters[facets[idx]->sh.outgassing_paramId].name;
 */
         idx++;
+        *progress = (double)idx/(double)model->sh.nbFacet;
     }
 
     model->wp.gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
@@ -146,7 +147,7 @@ int LoaderXML::LoadGeometry(std::string inputFileName, std::shared_ptr<Simulatio
         }
         uInput.userMoments.emplace_back(tmpExpr,tmpWindow);
     }
-    if(TimeMoments::ParseAndCheckUserMoments(&model->tdParams.moments, uInput.userMoments)){
+    if(TimeMoments::ParseAndCheckUserMoments(&model->tdParams.moments, &uInput.userMoments, nullptr)){
         return 1;
     }
 
@@ -230,7 +231,8 @@ std::vector<SelectionGroup> LoaderXML::LoadSelections(const std::string& inputFi
     return selGroup;
 }
 
-int LoaderXML::LoadSimulationState(const std::string& inputFileName, std::shared_ptr<SimulationModel> model, GlobalSimuState& globState){
+int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared_ptr<SimulationModel> model,
+                                   GlobalSimuState *globState, double *progress) {
     xml_document loadXML;
     xml_parse_result parseResult = loadXML.load_file(inputFileName.c_str()); //parse xml file directly
     xml_node rootNode = loadXML.child("SimulationEnvironment");
@@ -243,58 +245,58 @@ int LoaderXML::LoadSimulationState(const std::string& inputFileName, std::shared
     size_t facetHitsSize = (nbMoments) * sizeof(FacetHitBuffer);
     size_t m = 0;
     for (xml_node newMoment : momentsNode.children("Moment")) {
-        setLoadProgress((double) m / (double) nbMoments);
+
         if (m == 0) { //read global results
             xml_node globalNode = newMoment.child("Global");
             xml_node hitsNode = globalNode.child("Hits");
-            globState.globalHits.globalHits.nbMCHit = hitsNode.attribute("totalHit").as_llong();
+            globState->globalHits.globalHits.nbMCHit = hitsNode.attribute("totalHit").as_llong();
             if (hitsNode.attribute("totalHitEquiv")) {
-                globState.globalHits.globalHits.nbHitEquiv = hitsNode.attribute("totalHitEquiv").as_double();
+                globState->globalHits.globalHits.nbHitEquiv = hitsNode.attribute("totalHitEquiv").as_double();
             }
             else {
                 //Backward compatibility
-                globState.globalHits.globalHits.nbHitEquiv = static_cast<double>(globState.globalHits.globalHits.nbMCHit);
+                globState->globalHits.globalHits.nbHitEquiv = static_cast<double>(globState->globalHits.globalHits.nbMCHit);
             }
-            globState.globalHits.globalHits.nbDesorbed = hitsNode.attribute("totalDes").as_llong();
+            globState->globalHits.globalHits.nbDesorbed = hitsNode.attribute("totalDes").as_llong();
             if (hitsNode.attribute("totalAbsEquiv")) {
-                globState.globalHits.globalHits.nbAbsEquiv = hitsNode.attribute("totalAbsEquiv").as_double();
+                globState->globalHits.globalHits.nbAbsEquiv = hitsNode.attribute("totalAbsEquiv").as_double();
             }
             else {
                 //Backward compatibility
-                globState.globalHits.globalHits.nbAbsEquiv = hitsNode.attribute("totalAbs").as_double();
+                globState->globalHits.globalHits.nbAbsEquiv = hitsNode.attribute("totalAbs").as_double();
             }
             if (hitsNode.attribute("totalDist_total")) { //if it's in the new format where total/partial are separated
-                globState.globalHits.distTraveled_total = hitsNode.attribute("totalDist_total").as_double();
-                globState.globalHits.distTraveledTotal_fullHitsOnly = hitsNode.attribute("totalDist_fullHitsOnly").as_double();
+                globState->globalHits.distTraveled_total = hitsNode.attribute("totalDist_total").as_double();
+                globState->globalHits.distTraveledTotal_fullHitsOnly = hitsNode.attribute("totalDist_fullHitsOnly").as_double();
             }
             else
-                globState.globalHits.distTraveled_total = globState.globalHits.distTraveledTotal_fullHitsOnly = hitsNode.attribute("totalDist").as_double();
-            globState.globalHits.nbLeakTotal = hitsNode.attribute("totalLeak").as_llong();
+                globState->globalHits.distTraveled_total = globState->globalHits.distTraveledTotal_fullHitsOnly = hitsNode.attribute("totalDist").as_double();
+            globState->globalHits.nbLeakTotal = hitsNode.attribute("totalLeak").as_llong();
             //work->desorptionLimit=hitsNode.attribute("maxDesorption").as_llong();
 
-            globState.globalHits.hitCacheSize = 0;
+            globState->globalHits.hitCacheSize = 0;
             xml_node hitCacheNode = globalNode.child("Hit_Cache");
             for (xml_node newHit : hitCacheNode.children("Hit")) {
-                if (globState.globalHits.hitCacheSize < HITCACHESIZE) {
-                    globState.globalHits.hitCache[globState.globalHits.hitCacheSize].pos.x = newHit.attribute("posX").as_double();
-                    globState.globalHits.hitCache[globState.globalHits.hitCacheSize].pos.y = newHit.attribute("posY").as_double();
-                    globState.globalHits.hitCache[globState.globalHits.hitCacheSize].pos.z = newHit.attribute("posZ").as_double();
-                    globState.globalHits.hitCache[globState.globalHits.hitCacheSize].type = newHit.attribute("type").as_int();
-                    globState.globalHits.hitCacheSize++;
+                if (globState->globalHits.hitCacheSize < HITCACHESIZE) {
+                    globState->globalHits.hitCache[globState->globalHits.hitCacheSize].pos.x = newHit.attribute("posX").as_double();
+                    globState->globalHits.hitCache[globState->globalHits.hitCacheSize].pos.y = newHit.attribute("posY").as_double();
+                    globState->globalHits.hitCache[globState->globalHits.hitCacheSize].pos.z = newHit.attribute("posZ").as_double();
+                    globState->globalHits.hitCache[globState->globalHits.hitCacheSize].type = newHit.attribute("type").as_int();
+                    globState->globalHits.hitCacheSize++;
                 }
             }
 
-            globState.globalHits.leakCacheSize = 0;
+            globState->globalHits.leakCacheSize = 0;
             xml_node leakCacheNode = globalNode.child("Leak_Cache");
             for (xml_node newLeak : leakCacheNode.children("Leak")) {
-                if (globState.globalHits.leakCacheSize < LEAKCACHESIZE) {
-                    globState.globalHits.leakCache[globState.globalHits.leakCacheSize].pos.x = newLeak.attribute("posX").as_double();
-                    globState.globalHits.leakCache[globState.globalHits.leakCacheSize].pos.y = newLeak.attribute("posY").as_double();
-                    globState.globalHits.leakCache[globState.globalHits.leakCacheSize].pos.z = newLeak.attribute("posZ").as_double();
-                    globState.globalHits.leakCache[globState.globalHits.leakCacheSize].dir.x = newLeak.attribute("dirX").as_double();
-                    globState.globalHits.leakCache[globState.globalHits.leakCacheSize].dir.y = newLeak.attribute("dirY").as_double();
-                    globState.globalHits.leakCache[globState.globalHits.leakCacheSize].dir.z = newLeak.attribute("dirZ").as_double();
-                    globState.globalHits.leakCacheSize++;
+                if (globState->globalHits.leakCacheSize < LEAKCACHESIZE) {
+                    globState->globalHits.leakCache[globState->globalHits.leakCacheSize].pos.x = newLeak.attribute("posX").as_double();
+                    globState->globalHits.leakCache[globState->globalHits.leakCacheSize].pos.y = newLeak.attribute("posY").as_double();
+                    globState->globalHits.leakCache[globState->globalHits.leakCacheSize].pos.z = newLeak.attribute("posZ").as_double();
+                    globState->globalHits.leakCache[globState->globalHits.leakCacheSize].dir.x = newLeak.attribute("dirX").as_double();
+                    globState->globalHits.leakCache[globState->globalHits.leakCacheSize].dir.y = newLeak.attribute("dirY").as_double();
+                    globState->globalHits.leakCache[globState->globalHits.leakCacheSize].dir.z = newLeak.attribute("dirZ").as_double();
+                    globState->globalHits.leakCacheSize++;
                 }
             }
         } //end global node
@@ -307,7 +309,7 @@ int LoaderXML::LoadSimulationState(const std::string& inputFileName, std::shared
             xml_node histNode = newMoment.child("Histograms");
             if (histNode) { //Versions before 2.8 didn't save histograms
                 //Retrieve histogram map from hits dp
-                auto& globalHistogram = globState.globalHistograms[m];
+                auto& globalHistogram = globState->globalHistograms[m];
                 if (model->wp.globalHistogramParams.recordBounce) {
                     auto& nbHitsHistogram = globalHistogram.nbHitsHistogram;
                     xml_node hist = histNode.child("Bounces");
@@ -386,7 +388,7 @@ int LoaderXML::LoadSimulationState(const std::string& inputFileName, std::shared
             auto sFac = model->facets[facetId];
             xml_node facetHitNode = newFacetResult.child("Hits");
             //FacetHitBuffer* facetCounter = (FacetHitBuffer *)(buffer + loadFacets[facetId].sh.hitOffset + m * sizeof(FacetHitBuffer));
-            FacetHitBuffer* facetCounter = &globState.facetStates[facetId].momentResults[m].hits;
+            FacetHitBuffer* facetCounter = &globState->facetStates[facetId].momentResults[m].hits;
             if (facetHitNode) { //If there are hit results for the current moment
                 facetCounter->nbMCHit = facetHitNode.attribute("nbHit").as_llong();
                 if (facetHitNode.attribute("nbHitEquiv")) {
@@ -435,7 +437,7 @@ int LoaderXML::LoadSimulationState(const std::string& inputFileName, std::shared
             if (sFac->sh.isProfile) {
                 xml_node profileNode = newFacetResult.child("Profile");
                 //ProfileSlice *profilePtr = (ProfileSlice *)(buffer + facet.sh.hitOffset + facetHitsSize + m * sizeof(ProfileSlice)*PROFILE_SIZE);
-                std::vector<ProfileSlice>& profilePtr = globState.facetStates[facetId].momentResults[m].profile;
+                std::vector<ProfileSlice>& profilePtr = globState->facetStates[facetId].momentResults[m].profile;
 
                 size_t id = 0;
                 for (xml_node slice : profileNode.children("Slice")) {
@@ -460,7 +462,7 @@ int LoaderXML::LoadSimulationState(const std::string& inputFileName, std::shared
                 size_t texWidth_file = textureNode.attribute("width").as_llong();
                 size_t texHeight_file = textureNode.attribute("height").as_llong();
 
-                std::vector<TextureCell>& texture = globState.facetStates[facetId].momentResults[m].texture;
+                std::vector<TextureCell>& texture = globState->facetStates[facetId].momentResults[m].texture;
 
                 std::stringstream countText, sum1perText, sumvortText;
                 if (textureNode.child("countEquiv")) {
@@ -515,7 +517,7 @@ int LoaderXML::LoadSimulationState(const std::string& inputFileName, std::shared
                 /*DirectionCell *dirs = (DirectionCell *)(buffer + sFac->sh.hitOffset + facetHitsSize
                                                         + profSize + (1 + (int)model->tdParams.moments.size())*sFac->sh.texWidth*sFac->sh.texHeight * sizeof(TextureCell)
                                                         + m * sFac->sh.texWidth*sFac->sh.texHeight * sizeof(DirectionCell));*/
-                std::vector<DirectionCell>& dirs = globState.facetStates[facetId].momentResults[m].direction;
+                std::vector<DirectionCell>& dirs = globState->facetStates[facetId].momentResults[m].direction;
 
                 std::stringstream dirText, dirCountText;
                 dirText << dirNode.child_value("vel.vectors");
@@ -543,7 +545,7 @@ int LoaderXML::LoadSimulationState(const std::string& inputFileName, std::shared
                 xml_node histNode = newFacetResult.child("Histograms");
                 if (histNode) { //Versions before 2.8 didn't save histograms
                     //Retrieve histogram map from hits dp
-                    auto& facetHistogram = globState.facetStates[facetId].momentResults[m].histogram;
+                    auto& facetHistogram = globState->facetStates[facetId].momentResults[m].histogram;
                     if (sFac->sh.facetHistogramParams.recordBounce) {
                         auto& nbHitsHistogram = facetHistogram.nbHitsHistogram;
                         xml_node hist = histNode.child("Bounces");
@@ -615,26 +617,27 @@ int LoaderXML::LoadSimulationState(const std::string& inputFileName, std::shared
                     }
                 }
             }
-            
+            setLoadProgress((double) ((m * model->sh.nbFacet) + facetId) / ((double) nbMoments * model->sh.nbFacet));
+            if(progress) *progress = (double) ((m * model->sh.nbFacet) + facetId) / ((double) nbMoments * model->sh.nbFacet);
         } //end facetResult
         m++;
     } //end moment
 
     /*xml_node minMaxNode = resultNode.child("TextureMinMax");
-    globState.globalHits.texture_limits[0].min.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("min").as_double();
-    globState.globalHits.texture_limits[0].max.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("max").as_double();
-    globState.globalHits.texture_limits[1].min.all = minMaxNode.child("With_constant_flow").child("Density").attribute("min").as_double();
-    globState.globalHits.texture_limits[1].max.all = minMaxNode.child("With_constant_flow").child("Density").attribute("max").as_double();
-    globState.globalHits.texture_limits[2].min.all = minMaxNode.child("With_constant_flow").child("Imp.rate").attribute("min").as_double();
-    globState.globalHits.texture_limits[2].max.all = minMaxNode.child("With_constant_flow").child("Imp.rate").attribute("max").as_double();
-    globState.globalHits.texture_limits[0].min.moments_only = minMaxNode.child("Moments_only").child("Pressure").attribute("min").as_double();
-    globState.globalHits.texture_limits[0].max.moments_only = minMaxNode.child("Moments_only").child("Pressure").attribute("max").as_double();
-    globState.globalHits.texture_limits[1].min.moments_only = minMaxNode.child("Moments_only").child("Density").attribute("min").as_double();
-    globState.globalHits.texture_limits[1].max.moments_only = minMaxNode.child("Moments_only").child("Density").attribute("max").as_double();
-    globState.globalHits.texture_limits[2].min.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("min").as_double();
-    globState.globalHits.texture_limits[2].max.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("max").as_double();*/
+    globState->globalHits.texture_limits[0].min.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("min").as_double();
+    globState->globalHits.texture_limits[0].max.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("max").as_double();
+    globState->globalHits.texture_limits[1].min.all = minMaxNode.child("With_constant_flow").child("Density").attribute("min").as_double();
+    globState->globalHits.texture_limits[1].max.all = minMaxNode.child("With_constant_flow").child("Density").attribute("max").as_double();
+    globState->globalHits.texture_limits[2].min.all = minMaxNode.child("With_constant_flow").child("Imp.rate").attribute("min").as_double();
+    globState->globalHits.texture_limits[2].max.all = minMaxNode.child("With_constant_flow").child("Imp.rate").attribute("max").as_double();
+    globState->globalHits.texture_limits[0].min.moments_only = minMaxNode.child("Moments_only").child("Pressure").attribute("min").as_double();
+    globState->globalHits.texture_limits[0].max.moments_only = minMaxNode.child("Moments_only").child("Pressure").attribute("max").as_double();
+    globState->globalHits.texture_limits[1].min.moments_only = minMaxNode.child("Moments_only").child("Density").attribute("min").as_double();
+    globState->globalHits.texture_limits[1].max.moments_only = minMaxNode.child("Moments_only").child("Density").attribute("max").as_double();
+    globState->globalHits.texture_limits[2].min.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("min").as_double();
+    globState->globalHits.texture_limits[2].max.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("max").as_double();*/
 
-    //TODO: globState.globalHits. = this->angleMapCache;
+    //TODO: globState->globalHits. = this->angleMapCache;
 
     return true;
 }
