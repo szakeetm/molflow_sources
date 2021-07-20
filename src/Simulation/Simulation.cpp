@@ -30,8 +30,10 @@ Simulation::Simulation() : tMutex()
 
     lastLogUpdateOK = true;
 
-    for(auto& particle : particles)
+    for(auto& particle : particles) {
         particle.lastHitFacet = nullptr;
+        particle.particle.lastIntersected = -1;
+    }
 
     hasVolatile = false;
 
@@ -51,6 +53,7 @@ Simulation::Simulation(Simulation&& o) noexcept : tMutex() {
     particles = o.particles;
     for(auto& particle : particles) {
         particle.lastHitFacet = nullptr;
+        particle.particle.lastIntersected = -1;
         particle.model = model.get();
     }
 
@@ -78,6 +81,26 @@ int Simulation::ReinitializeParticleLog() {
     }
     return 0;
 }
+
+MFSim::Particle * Simulation::GetParticle(size_t i) {
+    if(i < particles.size())
+        return &particles.at(i);
+    else
+        return nullptr;
+};
+
+void Simulation::SetNParticle(size_t n, bool fixedSeed) {
+    particles.clear();
+    particles.resize(n);
+    size_t pid = 0;
+    for(auto& particle : particles){
+        if(fixedSeed)
+         particle.randomGenerator.SetSeed(42424242 + pid);
+        else
+         particle.randomGenerator.SetSeed(GenerateSeed(pid));
+        particle.particleId = pid++;
+    }
+};
 
 /*bool Simulation::UpdateOntheflySimuParams(Dataport *loader) {
     // Connect the dataport
