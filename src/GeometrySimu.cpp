@@ -508,6 +508,121 @@ void SimulationModel::CalculateFacetParams(SubprocessFacet* f) {
 #endif
 }
 
+int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int bvh_width, BVHAccel::SplitMethod split) {
+#if defined(USE_OLD_BVH)
+    std::vector<std::vector<SubprocessFacet*>> facetPointers;
+    facetPointers.resize(this->sh.nbSuper);
+    for(auto& sFac : this->facets){
+        // TODO: Build structures
+        if (sFac->sh.superIdx == -1) { //Facet in all structures
+            for (auto& fp_vec : facetPointers) {
+                fp_vec.push_back(sFac.get());
+            }
+        }
+        else {
+            facetPointers[sFac->sh.superIdx].push_back(sFac.get()); //Assign to structure
+        }
+    }
+
+    // Build all AABBTrees
+    size_t maxDepth=0;
+    for (size_t s = 0; s < this->sh.nbSuper; ++s) {
+        auto& structure = this->structures[s];
+        if(structure.aabbTree)
+            structure.aabbTree.reset();
+        AABBNODE* tree = BuildAABBTree(facetPointers[s], 0, maxDepth);
+        structure.aabbTree = std::make_shared<AABBNODE>(*tree);
+        //delete tree; // pointer unnecessary because of make_shared
+    }
+
+#else
+    std::vector<std::vector<std::shared_ptr<Primitive>>> primPointers;
+    primPointers.resize(this->sh.nbSuper);
+    for(auto& sFac : this->facets){
+        if (sFac->sh.superIdx == -1) { //Facet in all structures
+            for (auto& fp_vec : primPointers) {
+                fp_vec.push_back(sFac);
+            }
+        }
+        else {
+            primPointers[sFac->sh.superIdx].push_back(sFac); //Assign to structure
+        }
+    }
+
+    for(auto& sFac : this->facets){
+        if (sFac->sh.opacity_paramId == -1){ //constant sticking
+            sFac->sh.opacity = std::clamp(sFac->sh.opacity, 0.0, 1.0);
+            sFac->surf = this->GetSurface(sFac->sh.opacity);
+        }
+        else {
+            auto* par = &this->tdParams.parameters[sFac->sh.opacity_paramId];
+            sFac->surf = this->GetParameterSurface(sFac->sh.opacity_paramId, par);
+        }
+    }
+
+#if defined(USE_KDTREE)
+    this->kdtree.clear();
+
+    if(globState->initialized && globState->globalHits.globalHits.nbDesorbed > 0){
+        if(globState->facetStates.size() != this->facets.size())
+            return 1;
+        std::vector<double> probabilities;
+        probabilities.reserve(globState->facetStates.size());
+        for(auto& state : globState->facetStates) {
+            probabilities.emplace_back(state.momentResults[0].hits.nbHitEquiv / globState->globalHits.globalHits.nbHitEquiv);
+        }
+        /*size_t sumCount = 0;
+        for(auto& fac : this->facets) {
+            sumCount += fac->iSCount;
+        }
+        for(auto& fac : this->facets) {
+            probabilities.emplace_back((double)fac->iSCount / (double)sumCount);
+        }*/
+        for (size_t s = 0; s < this->sh.nbSuper; ++s) {
+            this->kdtree.emplace_back(primPointers[s], probabilities);
+        }
+    }
+    else {
+        for (size_t s = 0; s < this->sh.nbSuper; ++s) {
+            this->kdtree.emplace_back(primPointers[s]);
+        }
+    }
+
+
+#else
+    //std::vector<BVHAccel> bvhs;
+    this->bvhs.clear();
+
+    if(BVHAccel::SplitMethod::ProbSplit == split && globState && globState->initialized && globState->globalHits.globalHits.nbDesorbed > 0){
+        if(globState->facetStates.size() != this->facets.size())
+            return 1;
+        std::vector<double> probabilities;
+        probabilities.reserve(globState->facetStates.size());
+        for(auto& state : globState->facetStates) {
+            probabilities.emplace_back(state.momentResults[0].hits.nbHitEquiv / globState->globalHits.globalHits.nbHitEquiv);
+        }
+        /*size_t sumCount = 0;
+        for(auto& fac : this->facets) {
+            sumCount += fac->iSCount;
+        }
+        for(auto& fac : this->facets) {
+            probabilities.emplace_back((double)fac->iSCount / (double)sumCount);
+        }*/
+        for (size_t s = 0; s < this->sh.nbSuper; ++s) {
+            this->bvhs.emplace_back(primPointers[s], bvh_width, BVHAccel::SplitMethod::ProbSplit, probabilities);
+        }
+    }
+    else {
+        for (size_t s = 0; s < this->sh.nbSuper; ++s) {
+            this->bvhs.emplace_back(primPointers[s], bvh_width, split);
+        }
+    }
+#endif
+#endif // old_bvb
+
+    return 0;
+}
+
 /**
 * \brief Do calculations necessary before launching simulation
 * determine latest moment

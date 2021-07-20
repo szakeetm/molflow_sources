@@ -142,6 +142,7 @@ struct SubprocessFacet : public Facet {
 // Local simulation structure
 
 class AABBNODE;
+class GlobalSimuState;
 
 class SuperStructure {
 public:
@@ -239,6 +240,8 @@ public:
     };
 
     void PrepareToRun();
+
+    int BuildAccelStructure(GlobalSimuState *globState, int bvh_width, BVHAccel::SplitMethod split);
 
     int InitialiseFacets();
 
