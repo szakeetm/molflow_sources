@@ -197,9 +197,10 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, std::s
     // Settings
     // Previous results
     model->m.lock();
-    if (loader.LoadGeometry(fileName, model)) {
+    double progress = 0.0;
+    if (loader.LoadGeometry(fileName, model, &progress)) {
         Log::console_error("Please check the input file!\n");
-        model->m.unlock();
+            model->m.unlock();
         return 1;
     }
 
@@ -217,10 +218,10 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, std::s
 
     //InitializeGeometry();
     model->InitialiseFacets();
-    model->PrepareToRun();
 
     Log::console_msg_master(3, " Initializing geometry!\n");
     initSimModel(model);
+    model->PrepareToRun();
 
     // 2. Create simulation dataports
     try {
@@ -244,10 +245,10 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, std::s
                 fileName = autoSavePrefix + fileName;
                 if (std::filesystem::exists(fileName)) {
                     Log::console_msg_master(2, " Found autosave file! Loading simulation state...\n");
-                    FlowIO::LoaderXML::LoadSimulationState(fileName, model, *globState);
+                    FlowIO::LoaderXML::LoadSimulationState(fileName, model, globState, nullptr);
                 }
             } else {
-                FlowIO::LoaderXML::LoadSimulationState(SettingsIO::workFile, model, *globState);
+                FlowIO::LoaderXML::LoadSimulationState(SettingsIO::workFile, model, globState, nullptr);
             }
         }
     }

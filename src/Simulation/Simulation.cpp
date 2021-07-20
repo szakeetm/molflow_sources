@@ -135,39 +135,65 @@ void Simulation::SetNParticle(size_t n, bool fixedSeed) {
 }*/
 
 std::pair<int, std::optional<std::string>> Simulation::SanityCheckModel(bool strictCheck) {
-    char errLog[2048] {"[Error Log on Check]\n"};
+    std::string errLog = "[Error Log on Check]\n";
     int errorsOnCheck = 0;
 
     if (!model->initialized) {
-        sprintf(errLog + strlen(errLog), "Model not initialized\n");
+        errLog.append("Model not initialized\n");
         errorsOnCheck++;
     }
     if (model->vertices3.empty()) {
-        sprintf(errLog + strlen(errLog), "Loaded empty vertex list\n");
+        errLog.append("Loaded empty vertex list\n");
         errorsOnCheck++;
     }
     if (model->facets.empty()) {
-        sprintf(errLog + strlen(errLog), "Loaded empty facet list\n");
+        errLog.append("Loaded empty facet list\n");
         errorsOnCheck++;
+    }
+
+    for(auto& fac : model->facets){
+        bool hasAnyTexture = fac->sh.countDes || fac->sh.countAbs || fac->sh.countRefl || fac->sh.countTrans || fac->sh.countACD || fac->sh.countDirection;
+        if (!fac->sh.isTextured && (fac->sh.texHeight * fac->sh.texHeight > 0)) {
+            char tmp[256];
+            snprintf(tmp, 256, "[Fac #%zu] Untextured facet with texture size\n", fac->globalId);
+            errLog.append(tmp);
+            if(errLog.size() > 1280) errLog.resize(1280);
+            errorsOnCheck++;
+        }
+        else if (!fac->sh.isTextured && (hasAnyTexture)) {
+            fac->sh.countDes = false;
+            fac->sh.countAbs = false;
+            fac->sh.countRefl = false;
+            fac->sh.countTrans = false;
+            fac->sh.countACD = false;
+            fac->sh.countDirection = false;
+            char tmp[256];
+            snprintf(tmp, 256, "[Fac #%zu] Untextured facet with texture counters\n", fac->globalId);
+            errLog.append(tmp);
+            if(errLog.size() > 1920) errLog.resize(1920);
+            errorsOnCheck++;
+        }
     }
 
     //Molflow unique
     if (model->wp.enableDecay && model->wp.halfLife <= 0.0) {
-        sprintf(errLog + strlen(errLog), "Particle decay is set, but half life was not set [= %e]\n", model->wp.halfLife);
+        char tmp[255];
+        sprintf(tmp, "Particle decay is set, but half life was not set [= %e]\n", model->wp.halfLife);
+        errLog.append(tmp);
         errorsOnCheck++;
     }
 
     if(!globState){
-        sprintf(errLog + strlen(errLog), "No global simulation state set\n");
+        errLog.append("No global simulation state set\n");
         errorsOnCheck++;
     }
     else if(!globState->initialized){
-        sprintf(errLog + strlen(errLog), "Global simulation state not initialized\n");
+        errLog.append("Global simulation state not initialized\n");
         errorsOnCheck++;
     }
 
     if(errorsOnCheck){
-        printf("%s", errLog);
+        printf("%s", errLog.c_str());
     }
     return std::make_pair(errorsOnCheck, (errorsOnCheck > 0 ? std::make_optional(errLog) : std::nullopt)); // 0 = all ok
 }
