@@ -292,18 +292,41 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                 found = model->bvhs[particle.structure].Intersect(particle);
 #endif
                 if(found){
+
+                    // first pass
+
+#if defined(USE_KDTREE)
+                        std::set<size_t> alreadyHit;
+#endif
                     for(auto& hit : particle.hits){
-                        if(!hit.hit->isHit) {
-                            transparentHitBuffer.push_back(model->facets[hit.hitId].get());
+                        if(particle.tMax < hit.hit.colDistTranspPass) {
+                            continue;
                         }
-                        else {
+
+                        if(!hit.hit.isHit) { // not hard hit
+                            //transparentHitBuffer.push_back(model->facets[hit.hitId].get());
+
+                            // Second pass for transparent hits
+                            auto tpFacet = model->facets[hit.hitId].get();
+#if defined(USE_KDTREE)
+
+                            if (alreadyHit.find(tpFacet->globalId) == alreadyHit.end()) {
+                                RegisterTransparentPass(tpFacet);
+                                alreadyHit.insert(tpFacet->globalId);
+                            }
+
+#else
+                            RegisterTransparentPass(tpFacet);
+#endif
+                        }
+                        else { // hard hit
                             collidedFacet = model->facets[hit.hitId].get();
-                            d = hit.hit->colDistTranspPass;
+                            d = hit.hit.colDistTranspPass;
                         }
-                        tmpFacetVars[hit.hitId] = *hit.hit;
-                        //delete hit.hit;
+                        tmpFacetVars[hit.hitId] = hit.hit;
                     }
                 }
+
                 particle.hits.clear();
             }
             /*{
@@ -341,24 +364,6 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
 #endif //use old bvh
 
             if (found) {
-                // Second pass for transparent hits
-#if defined(USE_KDTREE)
-                {
-                    std::set<size_t> alreadyHit;
-                    for (const auto &tpFacet : transparentHitBuffer) {
-                        if (tpFacet && alreadyHit.find(tpFacet->globalId) == alreadyHit.end()) {
-                            RegisterTransparentPass(tpFacet);
-                            alreadyHit.insert(tpFacet->globalId);
-                        }
-                    }
-                }
-#else
-                for (const auto &tpFacet : transparentHitBuffer) {
-                    if (tpFacet) {
-                        RegisterTransparentPass(tpFacet);
-                    }
-                }
-#endif
 
                 // Move particle to intersection point
                 particle.origin =

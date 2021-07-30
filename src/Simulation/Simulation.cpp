@@ -306,12 +306,12 @@ int Simulation::RebuildAccelStructure() {
             probabilities.emplace_back((double)fac->iSCount / (double)sumCount);
         }*/
         for (size_t s = 0; s < model->sh.nbSuper; ++s) {
-            model->kdtree.emplace_back(primPointers[s], probabilities);
+            model->kdtree.emplace_back(primPointers[s], probabilities, 80, 1, 0.5, 1, -1);
         }
     }
     else {
         for (size_t s = 0; s < model->sh.nbSuper; ++s) {
-            model->kdtree.emplace_back(primPointers[s]);
+            model->kdtree.emplace_back(primPointers[s], std::vector<double>{}, 80, 1, 0.5, 1, -1);
         }
     }
 
@@ -460,7 +460,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
 #if defined(USE_KDTREE)
     simModel->kdtree.clear();
     for (size_t s = 0; s < simModel->sh.nbSuper; ++s) {
-        simModel->kdtree.emplace_back(primPointers[s]);
+        simModel->kdtree.emplace_back(primPointers[s], std::vector<double>{}, 80, 1, 0.5, 1, -1);
     }
 #else
     //std::vector<BVHAccel> bvhs;
