@@ -239,7 +239,7 @@ public:
         return *this;
     };
 
-    void PrepareToRun();
+    int PrepareToRun();
 
     int BuildAccelStructure(GlobalSimuState *globState, int bvh_width, BVHAccel::SplitMethod split);
 

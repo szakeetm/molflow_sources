@@ -1180,7 +1180,7 @@ void Worker::Update(float appTime) {
 /**
 * \brief Saves current AngleMap from cache to results
 */
-void Worker::SendAngleMaps() {
+int Worker::SendAngleMaps() {
     size_t nbFacet = geom->GetNbFacet();
     std::vector<std::vector<size_t>> angleMapCaches;
     for (size_t i = 0; i < nbFacet; i++) {
@@ -1189,14 +1189,14 @@ void Worker::SendAngleMaps() {
     }
 
     if (globState.facetStates.size() != angleMapCaches.size())
-        return;
+        return 1;
     if (!globState.tMutex.try_lock_for(std::chrono::seconds(10)))
-        return;
+        return 1;
     for (size_t i = 0; i < angleMapCaches.size(); i++) {
         globState.facetStates[i].recordedAngleMapPdf = angleMapCaches[i];
     }
     globState.tMutex.unlock();
-
+    return 0;
 }
 
 bool Worker::InterfaceGeomToSimModel() {

@@ -108,7 +108,7 @@ int Initializer::parseCommands(int argc, char **argv) {
 }
 
 int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManager,
-                              std::shared_ptr<SimulationModel> model) {
+                              const std::shared_ptr<SimulationModel>& model) {
     Log::console_header(1, "Commence: Initialising!\n");
 
 #if defined(WIN32) || defined(__APPLE__)
@@ -141,15 +141,18 @@ int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManag
     return 0;
 }
 
-int Initializer::initFromFile(SimulationManager *simManager, std::shared_ptr<SimulationModel> model,
+int Initializer::initFromFile(SimulationManager *simManager, const std::shared_ptr<SimulationModel>& model,
                               GlobalSimuState *globState) {
     if (SettingsIO::prepareIO()) {
         Log::console_error("Error preparing I/O folders\n");
         return 1;
     }
 
-    if (std::filesystem::path(SettingsIO::workFile).extension() == ".xml")
-        loadFromXML(SettingsIO::workFile, !Settings::resetOnStart, model, globState);
+    if (std::filesystem::path(SettingsIO::workFile).extension() == ".xml") {
+        if (loadFromXML(SettingsIO::workFile, !Settings::resetOnStart, model, globState)) {
+            return 1;
+        }
+    }
     else {
         Log::console_error("Invalid file extension for input file detected: %s\n",
                            std::filesystem::path(SettingsIO::workFile).extension().c_str());
@@ -174,7 +177,8 @@ int Initializer::initFromFile(SimulationManager *simManager, std::shared_ptr<Sim
 
     Log::console_msg_master(2, "Forwarding model to simulation units!\n");
     try {
-        simManager->InitSimulation(model, globState);
+        if(simManager->InitSimulation(model, globState))
+            throw std::runtime_error("Could not init simulation");
     }
     catch (std::exception &ex) {
         Log::console_error("Failed initialising simulation units:\n%s\n", ex.what());
@@ -185,7 +189,7 @@ int Initializer::initFromFile(SimulationManager *simManager, std::shared_ptr<Sim
     return 0;
 }
 
-int Initializer::loadFromXML(const std::string &fileName, bool loadState, std::shared_ptr<SimulationModel> model,
+int Initializer::loadFromXML(const std::string &fileName, bool loadState, const std::shared_ptr<SimulationModel>& model,
                              GlobalSimuState *globState) {
 
     Log::console_header(1, "[ ] Loading geometry from file %s\n", fileName.c_str());
@@ -196,11 +200,9 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, std::s
     // Geometry
     // Settings
     // Previous results
-    model->m.lock();
     double progress = 0.0;
     if (loader.LoadGeometry(fileName, model, &progress)) {
         Log::console_error("Please check the input file!\n");
-            model->m.unlock();
         return 1;
     }
 
@@ -221,7 +223,9 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, std::s
 
     Log::console_msg_master(3, " Initializing geometry!\n");
     initSimModel(model);
-    model->PrepareToRun();
+    if(model->PrepareToRun()){
+        return 1;
+    }
 
     // 2. Create simulation dataports
     try {
@@ -256,13 +260,16 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, std::s
         Log::console_error("[Warning] %s\n", e.what());
     }
 
-    model->m.unlock();
     Log::console_footer(1, "[x] Loaded geometry\n");
 
     return 0;
 }
 
-int Initializer::initDesLimit(std::shared_ptr<SimulationModel> model, GlobalSimuState &globState) {
+int Initializer::initDesLimit(const std::shared_ptr<SimulationModel>& model, GlobalSimuState &globState) {
+    if (!model->m.try_lock()) {
+        return 1;
+    }
+
     model->otfParams.desorptionLimit = 0;
 
     // Skip desorptions if limit was already reached
@@ -278,6 +285,8 @@ int Initializer::initDesLimit(std::shared_ptr<SimulationModel> model, GlobalSimu
             } else {
                 Log::console_msg_master(1, "Starting with desorption limit: %zu from %zu\n",
                                         model->otfParams.desorptionLimit, oldDesNb);
+
+                model->m.unlock();
                 return 0;
             }
         }
@@ -285,10 +294,11 @@ int Initializer::initDesLimit(std::shared_ptr<SimulationModel> model, GlobalSimu
             Log::console_msg_master(1,
                                     "All given desorption limits have been reached. Consider resetting the simulation results from the input file (--reset): Starting desorption %zu\n",
                                     oldDesNb);
+            model->m.unlock();
             return 1;
         }
     }
-
+    model->m.unlock();
     return 0;
 }
 
@@ -329,6 +339,10 @@ std::string Initializer::getAutosaveFile() {
 * \return error code: 0=no error, 1=error
 */
 int Initializer::initSimModel(std::shared_ptr<SimulationModel> model) {
+
+    if (!model->m.try_lock()) {
+        return 1;
+    }
 
     std::vector<Moment> momentIntervals;
     momentIntervals.reserve(model->tdParams.moments.size());
@@ -382,10 +396,11 @@ int Initializer::initSimModel(std::shared_ptr<SimulationModel> model) {
             //ReleaseDataport(loader);
             //SetErrorSub(err.str().c_str());
             Log::console_error("Invalid structure (wrong link on F#%d)\n", facIdx + 1);
-
+            model->m.unlock();
             return 1;
         }
     }
+    model->m.unlock();
 
     return 0;
 }

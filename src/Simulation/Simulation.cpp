@@ -1,6 +1,5 @@
 #include "Simulation.h"
 #include "IntersectAABB_shared.h"
-#include "Parameter.h"
 #include <cstring>
 #include <sstream>
 #include <cereal/archives/binary.hpp>
@@ -87,7 +86,7 @@ MFSim::Particle * Simulation::GetParticle(size_t i) {
         return &particles.at(i);
     else
         return nullptr;
-};
+}
 
 void Simulation::SetNParticle(size_t n, bool fixedSeed) {
     particles.clear();
@@ -100,7 +99,7 @@ void Simulation::SetNParticle(size_t n, bool fixedSeed) {
          particle.randomGenerator.SetSeed(GenerateSeed(pid));
         particle.particleId = pid++;
     }
-};
+}
 
 /*bool Simulation::UpdateOntheflySimuParams(Dataport *loader) {
     // Connect the dataport
@@ -153,7 +152,12 @@ std::pair<int, std::optional<std::string>> Simulation::SanityCheckModel(bool str
         errLog.append("Loaded empty facet list\n");
         errorsOnCheck++;
     }
-
+    if(model->sh.nbFacet != model->facets.size()) {
+        char tmp[256];
+        snprintf(tmp, 256, "Facet structure not properly initialized, size mismatch: %zu / %zu\n", model->sh.nbFacet, model->facets.size());
+        errLog.append(tmp);
+        errorsOnCheck++;
+    }
     for(auto& fac : model->facets){
         bool hasAnyTexture = fac->sh.countDes || fac->sh.countAbs || fac->sh.countRefl || fac->sh.countTrans || fac->sh.countACD || fac->sh.countDirection;
         if (!fac->sh.isTextured && (fac->sh.texHeight * fac->sh.texHeight > 0)) {
@@ -236,7 +240,8 @@ int Simulation::RebuildAccelStructure() {
     Chronometer timer;
     timer.Start();
 
-    model->BuildAccelStructure(globState, 2, BVHAccel::SplitMethod::SAH);
+    if(model->BuildAccelStructure(globState, 2, BVHAccel::SplitMethod::SAH))
+        return 1;
 
     for(auto& particle : particles)
         particle.model = model.get();
