@@ -243,8 +243,6 @@ public:
 
     int BuildAccelStructure(GlobalSimuState *globState, int bvh_width, BVHAccel::SplitMethod split);
 
-    int BuildAccelStructure(GlobalSimuState *globState, int bvh_width, BVHAccel::SplitMethod split);
-
     int InitialiseFacets();
 
     void CalcTotalOutgassing();
