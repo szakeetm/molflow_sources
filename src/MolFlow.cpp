@@ -974,9 +974,15 @@ int MolFlow::FrameMove()
 		desNumber->SetText("Starting...");
 	}
 	else {
-        sprintf(tmp, "%s (%s)", Util::formatInt(worker.globalHitCache.globalHits.nbMCHit, "hit"), Util::formatPs(hps, "hit"));
+	    if(hps != 0.0)
+            sprintf(tmp, "%s (%s)", Util::formatInt(worker.globalHitCache.globalHits.nbMCHit, "hit"), Util::formatPs(hps, "hit"));
+	    else
+	        sprintf(tmp, "%s (%s)", Util::formatInt(worker.globalHitCache.globalHits.nbMCHit, "hit"), Util::formatPs(lastHps, "hit"));
         hitNumber->SetText(tmp);
-		sprintf(tmp, "%s (%s)", Util::formatInt(worker.globalHitCache.globalHits.nbDesorbed, "des"), Util::formatPs(dps, "des"));
+        if(hps != 0.0)
+            sprintf(tmp, "%s (%s)", Util::formatInt(worker.globalHitCache.globalHits.nbDesorbed, "des"), Util::formatPs(dps, "des"));
+        else
+            sprintf(tmp, "%s (%s)", Util::formatInt(worker.globalHitCache.globalHits.nbDesorbed, "des"), Util::formatPs(lastDps, "des"));
 		desNumber->SetText(tmp);
 	}
 
@@ -1463,11 +1469,14 @@ void MolFlow::StartStopSimulation() {
 	}
 
 	// Frame rate measurement
+	// reset on start only
 	lastMeasTime = m_fTime;
-	dps = 0.0;
-	hps = 0.0;
-	lastHps = hps;
-	lastDps = dps;
+	if(worker.IsRunning()) {
+        dps = 0.0;
+        hps = 0.0;
+        lastHps = hps;
+        lastDps = dps;
+    }
 	lastNbHit = worker.globalHitCache.globalHits.nbMCHit;
 	lastNbDes = worker.globalHitCache.globalHits.nbDesorbed;
 	lastUpdate = 0.0;
