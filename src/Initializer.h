@@ -13,6 +13,7 @@
 namespace Settings {
     extern size_t nbThreads;
     extern uint64_t simDuration;
+    extern uint64_t outputDuration;
     extern uint64_t autoSaveDuration;
     extern bool loadAutosave;
     extern std::list<uint64_t> desLimit;
@@ -24,16 +25,16 @@ namespace Settings {
 class Initializer {
 private:
     static int parseCommands(int argc, char** argv);
-    static int loadFromXML(const std::string &fileName, bool loadState, std::shared_ptr<SimulationModel> model,
+    static int loadFromXML(const std::string &fileName, bool loadState, const std::shared_ptr<SimulationModel>& model,
                            GlobalSimuState *globState);
     static int setSharedStorage();
     static int initSimModel(std::shared_ptr<SimulationModel> model);
 public:
     static std::string getAutosaveFile();
-    static int initFromFile(SimulationManager *simManager, std::shared_ptr<SimulationModel> model, GlobalSimuState *globState);
-    static int initDesLimit(std::shared_ptr<SimulationModel> model, GlobalSimuState& globState);
+    static int initFromFile(SimulationManager *simManager, const std::shared_ptr<SimulationModel>& model, GlobalSimuState *globState);
+    static int initDesLimit(const std::shared_ptr<SimulationModel>& model, GlobalSimuState& globState);
 
-    static int initFromArgv(int argc, char **argv, SimulationManager *simManager, std::shared_ptr<SimulationModel> model);
+    static int initFromArgv(int argc, char **argv, SimulationManager *simManager, const std::shared_ptr<SimulationModel>& model);
 };
 
 

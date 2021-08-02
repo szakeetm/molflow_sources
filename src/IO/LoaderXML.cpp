@@ -26,6 +26,10 @@ void reportLoadStatus(const std::string& statusString) {
 // Use work->InsertParametersBeforeCatalog(loadedParams);
 // if loaded from GUI side
 int LoaderXML::LoadGeometry(std::string inputFileName, std::shared_ptr<SimulationModel> model, double *progress) {
+    if (!model->m.try_lock()) {
+        return 1;
+    }
+
     xml_document loadXML;
     auto inputFile = inputFileName.c_str();
     xml_parse_result parseResult = loadXML.load_file(inputFile); //parse xml file directly
@@ -148,6 +152,7 @@ int LoaderXML::LoadGeometry(std::string inputFileName, std::shared_ptr<Simulatio
         uInput.userMoments.emplace_back(tmpExpr,tmpWindow);
     }
     if(TimeMoments::ParseAndCheckUserMoments(&model->tdParams.moments, &uInput.userMoments, nullptr)){
+        model->m.unlock();
         return 1;
     }
 
@@ -198,6 +203,8 @@ int LoaderXML::LoadGeometry(std::string inputFileName, std::shared_ptr<Simulatio
     model->tdParams.CDFs = this->CDFs;
     model->facets = std::move(loadFacets);
 
+    model->m.unlock();
+
     return 0;
 }
 
@@ -233,11 +240,22 @@ std::vector<SelectionGroup> LoaderXML::LoadSelections(const std::string& inputFi
 
 int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared_ptr<SimulationModel> model,
                                    GlobalSimuState *globState, double *progress) {
+
     xml_document loadXML;
     xml_parse_result parseResult = loadXML.load_file(inputFileName.c_str()); //parse xml file directly
     xml_node rootNode = loadXML.child("SimulationEnvironment");
 
-    if (!rootNode.child("MolflowResults")) return 1; //simu state not saved with file
+    if(!rootNode){
+        std::cerr << "XML file seems to be of older format, please generate a new file with the GUI application!"<<std::endl;
+        rootNode = loadXML.root();
+    }
+
+    if (!rootNode.child("MolflowResults"))
+        return 1; //simu state not saved with file
+
+    if(!globState->tMutex.try_lock()){
+        return 1;
+    }
 
     xml_node resultNode = rootNode.child("MolflowResults");
     xml_node momentsNode = resultNode.child("Moments");
@@ -511,6 +529,7 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
                     std::stringstream msg;
                     msg << "Direction texture size mismatch on facet " << facetId + 1 << ".\nExpected: " << sFac->sh.texWidth << "x" << sFac->sh.texHeight << "\n"
                         << "In file: " << dirNode.attribute("width").as_int() << "x" << dirNode.attribute("height").as_int();
+                    globState->tMutex.unlock();
                     throw Error(msg.str().c_str());
 
                 }
@@ -638,8 +657,8 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
     globState->globalHits.texture_limits[2].max.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("max").as_double();*/
 
     //TODO: globState->globalHits. = this->angleMapCache;
-
-    return true;
+    globState->tMutex.unlock();
+    return 0;
 }
 
 void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices) {
