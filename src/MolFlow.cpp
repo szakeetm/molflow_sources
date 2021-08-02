@@ -28,6 +28,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/GLWindowManager.h"
 #include "Helper/MathTools.h"
 #include <Helper/FormatHelper.h>
+#include "ImguiWindow.h"
 
 #include "GLApp/GLMenuBar.h"
 #include "GLApp/GLButton.h"
@@ -1560,9 +1561,10 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			break;
 
 		case MENU_EDIT_GLOBALSETTINGS:
-			if (!globalSettings) globalSettings = new GlobalSettings(&worker);
+		    if(imWnd) imWnd->ToggleGlobalSettings();
+			/*if (!globalSettings) globalSettings = new GlobalSettings(&worker);
 			globalSettings->Update();
-			globalSettings->SetVisible(true);
+			globalSettings->SetVisible(true);*/
 			break;
 
 		case MENU_TOOLS_PROFPLOTTER:
@@ -1838,12 +1840,13 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			}
 		}
 		else if (src == globalSettingsBtn) {
-			if (!globalSettings) globalSettings = new GlobalSettings(&worker);
+		    if(imWnd) imWnd->ToggleGlobalSettings();
+			/*if (!globalSettings) globalSettings = new GlobalSettings(&worker);
 			if (!globalSettings->IsVisible()) {
 				globalSettings->Update();
 				globalSettings->SetVisible(true);
 			}
-			else globalSettings->SetVisible(false);
+			else globalSettings->SetVisible(false);*/
 		}
 		else if (src == facetAdvParamsBtn) {
 			if (!facetAdvParams) {
