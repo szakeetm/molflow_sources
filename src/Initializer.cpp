@@ -17,6 +17,7 @@
 namespace Settings {
     size_t nbThreads = 0;
     uint64_t simDuration = 10;
+    uint64_t outputDuration = 60;
     uint64_t autoSaveDuration = 600; // default: autosave every 600s=10min
     bool loadAutosave = false;
     std::list<uint64_t> desLimit;
@@ -28,6 +29,7 @@ namespace Settings {
 void initDefaultSettings() {
     Settings::nbThreads = 0;
     Settings::simDuration = 0;
+    Settings::outputDuration = 60;
     Settings::autoSaveDuration = 600;
     Settings::loadAutosave = false;
     Settings::desLimit.clear();
@@ -72,6 +74,7 @@ int Initializer::parseCommands(int argc, char **argv) {
                                            R"(Output file name (e.g. 'outfile.xml', defaults to 'out_{inputFileName}')");
     CLI::Option *optOpath = app.add_option("--outputPath", SettingsIO::outputPath,
                                            "Output path, defaults to \'Results_{date}\'");
+    app.add_option("-s,--outputDuration", Settings::outputDuration, "Seconds between each stat output if not zero");
     app.add_option("-a,--autosaveDuration", Settings::autoSaveDuration, "Seconds for autoSave if not zero");
     app.add_option("--setParamsByFile", Settings::paramFile,
                    "Parameter file for ad hoc change of the given geometry parameters")

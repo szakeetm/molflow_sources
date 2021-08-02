@@ -13,6 +13,7 @@
 namespace Settings {
     extern size_t nbThreads;
     extern uint64_t simDuration;
+    extern uint64_t outputDuration;
     extern uint64_t autoSaveDuration;
     extern bool loadAutosave;
     extern std::list<uint64_t> desLimit;
