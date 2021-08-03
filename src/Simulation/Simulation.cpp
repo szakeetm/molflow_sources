@@ -239,7 +239,7 @@ int Simulation::RebuildAccelStructure() {
     Chronometer timer;
     timer.Start();
 
-    if(model->BuildAccelStructure(globState, 2, BVHAccel::SplitMethod::SAH))
+    if(model->BuildAccelStructure(globState, model->wp.bvhWidth, (BVHAccel::SplitMethod)model->wp.splitMethod))
         return 1;
 
     for(auto& particle : particles)

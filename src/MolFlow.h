@@ -129,7 +129,9 @@ public:
         bool showBranchSide[2]{true, true};
         bool showAABBLeaves{false};
         bool reverseExpansion{true};
-        float alpha{0.15f};
+        bool sameColor{true};
+        float alpha{0.02f};
+        int selectedNode{-1};
     } aabbVisu;
 
     // Testing
