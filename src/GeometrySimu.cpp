@@ -514,7 +514,7 @@ void SimulationModel::CalculateFacetParams(SubprocessFacet* f) {
 #endif
 }
 
-int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int bvh_width, BVHAccel::SplitMethod split) {
+int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int maxPrimsInNode, BVHAccel::SplitMethod split) {
     Chronometer timer;
     timer.Start();
 
@@ -622,12 +622,12 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int bvh_wid
             probabilities.emplace_back((double)fac->iSCount / (double)sumCount);
         }*/
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
-            this->bvhs.emplace_back(primPointers[s], bvh_width, BVHAccel::SplitMethod::ProbSplit, probabilities);
+            this->bvhs.emplace_back(primPointers[s], maxPrimsInNode, BVHAccel::SplitMethod::ProbSplit, probabilities);
         }
     }
     else {
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
-            this->bvhs.emplace_back(primPointers[s], bvh_width, split);
+            this->bvhs.emplace_back(primPointers[s], maxPrimsInNode, split);
         }
     }
 #endif
