@@ -130,6 +130,7 @@ public:
         bool showAABBLeaves{false};
         bool reverseExpansion{true};
         bool sameColor{true};
+        bool showStats{true};
         float alpha{0.02f};
         int selectedNode{-1};
     } aabbVisu;
