@@ -133,6 +133,9 @@ public:
         bool showStats{true};
         float alpha{0.02f};
         int selectedNode{-1};
+        float trimByProb[2]{0.0f,1.0f};
+        float trimRange{1.0f};
+        std::vector<float> colorMap;
     } aabbVisu;
 
     // Testing
