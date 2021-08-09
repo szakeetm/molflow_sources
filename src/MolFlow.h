@@ -131,6 +131,7 @@ public:
         bool reverseExpansion{true};
         bool sameColor{true};
         bool showStats{true};
+        bool travStep{false};
         float alpha{0.02f};
         int selectedNode{-1};
         float trimByProb[2]{0.0f,1.0f};
