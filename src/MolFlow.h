@@ -137,6 +137,7 @@ public:
         float trimByProb[2]{0.0f,1.0f};
         float trimRange{1.0f};
         std::vector<float> colorMap;
+        std::shared_ptr<std::vector<float>> rateVector;
     } aabbVisu;
 
     // Testing

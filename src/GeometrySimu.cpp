@@ -576,7 +576,7 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int maxPrim
 #if defined(USE_KDTREE)
     this->kdtree.clear();
 
-    if(globState->initialized && globState->globalHits.globalHits.nbDesorbed > 0){
+    if(BVHAccel::SplitMethod::ProbSplit == split && globState && globState->initialized && globState->globalHits.globalHits.nbDesorbed > 0){
         if(globState->facetStates.size() != this->facets.size())
             return 1;
         std::vector<double> probabilities;
@@ -584,13 +584,6 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int maxPrim
         for(auto& state : globState->facetStates) {
             probabilities.emplace_back(state.momentResults[0].hits.nbHitEquiv / globState->globalHits.globalHits.nbHitEquiv);
         }
-        /*size_t sumCount = 0;
-        for(auto& fac : this->facets) {
-            sumCount += fac->iSCount;
-        }
-        for(auto& fac : this->facets) {
-            probabilities.emplace_back((double)fac->iSCount / (double)sumCount);
-        }*/
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
             this->kdtree.emplace_back(primPointers[s], probabilities);
         }
@@ -600,8 +593,6 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int maxPrim
             this->kdtree.emplace_back(primPointers[s]);
         }
     }
-
-
 #else
     //std::vector<BVHAccel> bvhs;
     this->bvhs.clear();

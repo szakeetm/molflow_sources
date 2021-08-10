@@ -239,9 +239,13 @@ int Simulation::RebuildAccelStructure() {
     Chronometer timer;
     timer.Start();
 
+#if defined(USE_KDTREE)
+    if(model->BuildAccelStructure(globState, 0, (BVHAccel::SplitMethod)model->wp.splitMethod))
+        return 1;
+#else
     if(model->BuildAccelStructure(globState, model->wp.bvhMaxPrimsInNode, (BVHAccel::SplitMethod)model->wp.splitMethod))
         return 1;
-
+#endif
     for(auto& particle : particles)
         particle.model = model.get();
 
