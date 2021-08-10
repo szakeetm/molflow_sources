@@ -286,11 +286,7 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                 else
                     particle.lastIntersected = -1;*/
 
-#if defined(USE_KDTREE)
-                found = model->kdtree[particle.structure].Intersect(particle);
-#else
-                found = model->bvhs[particle.structure].Intersect(particle);
-#endif
+                found = model->accel.at(particle.structure)->Intersect(particle);
                 if(found){
 
                     // first pass

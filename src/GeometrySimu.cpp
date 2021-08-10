@@ -573,39 +573,7 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int bvh_wid
         }
     }
 
-#if defined(USE_KDTREE)
-    this->kdtree.clear();
-
-    if(globState->initialized && globState->globalHits.globalHits.nbDesorbed > 0){
-        if(globState->facetStates.size() != this->facets.size())
-            return 1;
-        std::vector<double> probabilities;
-        probabilities.reserve(globState->facetStates.size());
-        for(auto& state : globState->facetStates) {
-            probabilities.emplace_back(state.momentResults[0].hits.nbHitEquiv / globState->globalHits.globalHits.nbHitEquiv);
-        }
-        /*size_t sumCount = 0;
-        for(auto& fac : this->facets) {
-            sumCount += fac->iSCount;
-        }
-        for(auto& fac : this->facets) {
-            probabilities.emplace_back((double)fac->iSCount / (double)sumCount);
-        }*/
-        for (size_t s = 0; s < this->sh.nbSuper; ++s) {
-            this->kdtree.emplace_back(primPointers[s], probabilities);
-        }
-    }
-    else {
-        for (size_t s = 0; s < this->sh.nbSuper; ++s) {
-            this->kdtree.emplace_back(primPointers[s]);
-        }
-    }
-
-
-#else
-    //std::vector<BVHAccel> bvhs;
-    this->bvhs.clear();
-
+    this->accel.clear();
     if(BVHAccel::SplitMethod::ProbSplit == split && globState && globState->initialized && globState->globalHits.globalHits.nbDesorbed > 0){
         if(globState->facetStates.size() != this->facets.size())
             return 1;
@@ -614,23 +582,23 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int bvh_wid
         for(auto& state : globState->facetStates) {
             probabilities.emplace_back(state.momentResults[0].hits.nbHitEquiv / globState->globalHits.globalHits.nbHitEquiv);
         }
-        /*size_t sumCount = 0;
-        for(auto& fac : this->facets) {
-            sumCount += fac->iSCount;
-        }
-        for(auto& fac : this->facets) {
-            probabilities.emplace_back((double)fac->iSCount / (double)sumCount);
-        }*/
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
-            this->bvhs.emplace_back(primPointers[s], bvh_width, BVHAccel::SplitMethod::ProbSplit, probabilities);
+#if defined(USE_KDTREE)
+            this->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s], probabilities));
+#else
+            this->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], bvh_width, BVHAccel::SplitMethod::ProbSplit, probabilities));
+#endif
         }
     }
     else {
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
-            this->bvhs.emplace_back(primPointers[s], bvh_width, split);
+#if defined(USE_KDTREE)
+            this->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s]));
+#else
+            this->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], bvh_width, split));
+#endif
         }
     }
-#endif
 #endif // old_bvb
 
     timer.Stop();

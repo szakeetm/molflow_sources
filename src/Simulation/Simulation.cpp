@@ -353,18 +353,15 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
         }
     }
 
-#if defined(USE_KDTREE)
-    simModel->kdtree.clear();
+    simModel->accel.clear();
     for (size_t s = 0; s < simModel->sh.nbSuper; ++s) {
-        simModel->kdtree.emplace_back(primPointers[s], std::vector<double>{}, 80, 1, 0.5, 1, -1);
-    }
+#if defined(USE_KDTREE)
+        simModel->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s], std::vector<double>{}, 80, 1, 0.5, 1, -1));
+
 #else
-    //std::vector<BVHAccel> bvhs;
-    simModel->bvhs.clear();
-    for (size_t s = 0; s < model->sh.nbSuper; ++s) {
-        simModel->bvhs.emplace_back(primPointers[s], 2, BVHAccel::SplitMethod::SAH);
-    }
+        simModel->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], 2, BVHAccel::SplitMethod::SAH));
 #endif
+    }
 #endif // old_bvb
     for(auto& particle : particles)
         particle.model = model.get();

@@ -202,13 +202,7 @@ public:
         facets = o.facets;
         structures = o.structures;
 
-#if defined(USE_OLD_BVH)
-        // currently always have SuperStructure
-#elif defined(USE_KDTREE)
-        kdtree.insert(kdtree.begin(), o.kdtree.begin(), o.kdtree.end());
-#else
-        bvhs.insert(bvhs.begin(), o.bvhs.begin(), o.bvhs.end());
-#endif
+        accel.insert(accel.begin(), o.accel.begin(), o.accel.end());
         vertices3 = o.vertices3;
         otfParams = o.otfParams;
         tdParams = o.tdParams;
@@ -222,13 +216,8 @@ public:
     SimulationModel &operator=(SimulationModel &&o) noexcept {
         facets = std::move(o.facets);
         structures = std::move(o.structures);
-#if defined(USE_OLD_BVH)
-        // currently always have SuperStructure
-#elif defined(USE_KDTREE)
-        kdtree = std::move(o.kdtree);
-#else
-        bvhs = std::move(o.bvhs);
-#endif
+
+        accel = std::move(o.accel);
         vertices3 = std::move(o.vertices3);
         tdParams = std::move(o.tdParams);
         otfParams = o.otfParams;
@@ -294,14 +283,8 @@ public:
 
     std::vector<SuperStructure> structures;
     std::vector<Vector3d> vertices3; // Vertices (3D space)
-#if defined(USE_OLD_BVH)
-    // currently always have SuperStructure
-#elif defined(USE_KDTREE)
-    std::vector<KdTreeAccel> kdtree;
-#else
-    std::vector<BVHAccel> bvhs;
-#endif
 
+    std::vector<std::shared_ptr<RTPrimitive>> accel;
     std::map<double, std::shared_ptr<Surface>> surfaces;
 
     // Simulation Properties
