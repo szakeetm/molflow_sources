@@ -286,18 +286,12 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                 else
                     particle.lastIntersected = -1;*/
 
-#if defined(USE_KDTREE)
-                found = model->kdtree[particle.structure].Intersect(particle);
-#else
-                found = model->bvhs[particle.structure].Intersect(particle);
-#endif
+                found = model->accel.at(particle.structure)->Intersect(particle);
                 if(found){
 
                     // first pass
+                    std::set<size_t> alreadyHit; // account for duplicate hits on kdtree
 
-#if defined(USE_KDTREE)
-                        std::set<size_t> alreadyHit;
-#endif
                     for(auto& hit : particle.hits){
                         if(particle.tMax < hit.hit.colDistTranspPass) {
                             continue;
@@ -308,16 +302,15 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
 
                             // Second pass for transparent hits
                             auto tpFacet = model->facets[hit.hitId].get();
-#if defined(USE_KDTREE)
-
-                            if (alreadyHit.find(tpFacet->globalId) == alreadyHit.end()) {
-                                RegisterTransparentPass(tpFacet);
-                                alreadyHit.insert(tpFacet->globalId);
+                            if(model->wp.accel_type==1) { // account for duplicate hits on kdtree
+                                if (alreadyHit.find(tpFacet->globalId) == alreadyHit.end()) {
+                                    RegisterTransparentPass(tpFacet);
+                                    alreadyHit.insert(tpFacet->globalId);
+                                }
                             }
-
-#else
-                            RegisterTransparentPass(tpFacet);
-#endif
+                            else {
+                                RegisterTransparentPass(tpFacet);
+                            }
                         }
                         else { // hard hit
                             collidedFacet = model->facets[hit.hitId].get();

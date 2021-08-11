@@ -514,7 +514,8 @@ void SimulationModel::CalculateFacetParams(SubprocessFacet* f) {
 #endif
 }
 
-int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int maxPrimsInNode, BVHAccel::SplitMethod split) {
+int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_type, BVHAccel::SplitMethod split,
+                                         int maxPrimsInNode) {
     Chronometer timer;
     timer.Start();
 
@@ -573,9 +574,7 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int maxPrim
         }
     }
 
-#if defined(USE_KDTREE)
-    this->kdtree.clear();
-
+    this->accel.clear();
     if(BVHAccel::SplitMethod::ProbSplit == split && globState && globState->initialized && globState->globalHits.globalHits.nbDesorbed > 0){
         if(globState->facetStates.size() != this->facets.size())
             return 1;
@@ -585,43 +584,20 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int maxPrim
             probabilities.emplace_back(state.momentResults[0].hits.nbHitEquiv / globState->globalHits.globalHits.nbHitEquiv);
         }
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
-            this->kdtree.emplace_back(primPointers[s], probabilities);
+            if(accel_type == 1)
+                this->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s], probabilities));
+            else
+                this->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], maxPrimsInNode, BVHAccel::SplitMethod::ProbSplit, probabilities));
         }
     }
     else {
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
-            this->kdtree.emplace_back(primPointers[s]);
+            if(accel_type == 1)
+                this->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s]));
+            else
+                this->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], maxPrimsInNode, split));
         }
     }
-#else
-    //std::vector<BVHAccel> bvhs;
-    this->bvhs.clear();
-
-    if(BVHAccel::SplitMethod::ProbSplit == split && globState && globState->initialized && globState->globalHits.globalHits.nbDesorbed > 0){
-        if(globState->facetStates.size() != this->facets.size())
-            return 1;
-        std::vector<double> probabilities;
-        probabilities.reserve(globState->facetStates.size());
-        for(auto& state : globState->facetStates) {
-            probabilities.emplace_back(state.momentResults[0].hits.nbHitEquiv / globState->globalHits.globalHits.nbHitEquiv);
-        }
-        /*size_t sumCount = 0;
-        for(auto& fac : this->facets) {
-            sumCount += fac->iSCount;
-        }
-        for(auto& fac : this->facets) {
-            probabilities.emplace_back((double)fac->iSCount / (double)sumCount);
-        }*/
-        for (size_t s = 0; s < this->sh.nbSuper; ++s) {
-            this->bvhs.emplace_back(primPointers[s], maxPrimsInNode, BVHAccel::SplitMethod::ProbSplit, probabilities);
-        }
-    }
-    else {
-        for (size_t s = 0; s < this->sh.nbSuper; ++s) {
-            this->bvhs.emplace_back(primPointers[s], maxPrimsInNode, split);
-        }
-    }
-#endif
 #endif // old_bvb
 
     timer.Stop();
