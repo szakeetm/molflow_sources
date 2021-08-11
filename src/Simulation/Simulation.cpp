@@ -7,9 +7,8 @@
 #include <Helper/ConsoleLogger.h>
 #if defined(USE_OLD_BVH)
 // currently always have SuperStructure
-#elif defined(USE_KDTREE)
-#include <RayTracing/KDTree.h>
 #else
+#include <RayTracing/KDTree.h>
 #include <RayTracing/BVH.h>
 #endif
 
@@ -240,7 +239,7 @@ int Simulation::RebuildAccelStructure() {
     Chronometer timer;
     timer.Start();
 
-    if(model->BuildAccelStructure(globState, 2, BVHAccel::SplitMethod::SAH))
+    if(model->BuildAccelStructure(globState, 0, BVHAccel::SplitMethod::SAH, 2))
         return 1;
 
     for(auto& particle : particles)
@@ -355,12 +354,10 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
 
     simModel->accel.clear();
     for (size_t s = 0; s < simModel->sh.nbSuper; ++s) {
-#if defined(USE_KDTREE)
-        simModel->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s], std::vector<double>{}, 80, 1, 0.5, 1, -1));
-
-#else
-        simModel->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], 2, BVHAccel::SplitMethod::SAH));
-#endif
+        if(model->wp.accel_type == 1)
+            simModel->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s], std::vector<double>{}, 80, 1, 0.5, 1, -1));
+        else
+            simModel->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], 2, BVHAccel::SplitMethod::SAH));
     }
 #endif // old_bvb
     for(auto& particle : particles)

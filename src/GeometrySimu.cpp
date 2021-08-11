@@ -514,7 +514,8 @@ void SimulationModel::CalculateFacetParams(SubprocessFacet* f) {
 #endif
 }
 
-int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int bvh_width, BVHAccel::SplitMethod split) {
+int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_type, BVHAccel::SplitMethod split,
+                                         int bvh_width) {
     Chronometer timer;
     timer.Start();
 
@@ -583,20 +584,18 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int bvh_wid
             probabilities.emplace_back(state.momentResults[0].hits.nbHitEquiv / globState->globalHits.globalHits.nbHitEquiv);
         }
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
-#if defined(USE_KDTREE)
-            this->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s], probabilities));
-#else
-            this->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], bvh_width, BVHAccel::SplitMethod::ProbSplit, probabilities));
-#endif
+            if(accel_type == 1)
+                this->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s], probabilities));
+            else
+                this->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], bvh_width, BVHAccel::SplitMethod::ProbSplit, probabilities));
         }
     }
     else {
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
-#if defined(USE_KDTREE)
-            this->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s]));
-#else
-            this->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], bvh_width, split));
-#endif
+            if(accel_type == 1)
+                this->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s]));
+            else
+                this->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], bvh_width, split));
         }
     }
 #endif // old_bvb

@@ -230,7 +230,8 @@ public:
 
     int PrepareToRun();
 
-    int BuildAccelStructure(GlobalSimuState *globState, int bvh_width, BVHAccel::SplitMethod split);
+    int BuildAccelStructure(GlobalSimuState *globState, int accel_type, BVHAccel::SplitMethod split,
+                            int bvh_width);
 
     int InitialiseFacets();
 
