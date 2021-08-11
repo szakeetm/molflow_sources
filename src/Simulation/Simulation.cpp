@@ -238,7 +238,7 @@ int Simulation::RebuildAccelStructure() {
     Chronometer timer;
     timer.Start();
 
-    if(model->BuildAccelStructure(globState, (BVHAccel::SplitMethod)model->wp.splitMethod, model->wp.bvhMaxPrimsInNode))
+    if(model->BuildAccelStructure(globState, model->wp.accel_type, (BVHAccel::SplitMethod)model->wp.splitMethod, model->wp.bvhMaxPrimsInNode))
         return 1;
 
     for(auto& particle : particles)
