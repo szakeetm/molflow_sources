@@ -239,7 +239,7 @@ int Simulation::RebuildAccelStructure() {
     Chronometer timer;
     timer.Start();
 
-    if(model->BuildAccelStructure(globState, 0, BVHAccel::SplitMethod::SAH, 2))
+    if(model->BuildAccelStructure(globState, model->wp.accel_type, BVHAccel::SplitMethod::SAH, 2))
         return 1;
 
     for(auto& particle : particles)
@@ -301,73 +301,9 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     //Reserve particle log
     ReinitializeParticleLog();
 
-#if defined(USE_OLD_BVH)
-    std::vector<std::vector<SubprocessFacet*>> facetPointers;
-    facetPointers.resize(simModel->sh.nbSuper);
-    for(auto& sFac : simModel->facets){
-        // TODO: Build structures
-        if (sFac->sh.superIdx == -1) { //Facet in all structures
-            for (auto& fp_vec : facetPointers) {
-                fp_vec.push_back(sFac.get());
-            }
-        }
-        else {
-            facetPointers[sFac->sh.superIdx].push_back(sFac.get()); //Assign to structure
-        }
-    }
-
-    // Build all AABBTrees
-    size_t maxDepth=0;
-    for (size_t s = 0; s < simModel->sh.nbSuper; ++s) {
-        auto& structure = simModel->structures[s];
-        if(structure.aabbTree)
-            structure.aabbTree.reset();
-        AABBNODE* tree = BuildAABBTree(facetPointers[s], 0, maxDepth);
-        structure.aabbTree = std::make_shared<AABBNODE>(*tree);
-        //delete tree; // pointer unnecessary because of make_shared
-    }
-
-#else
-    std::vector<std::vector<std::shared_ptr<Primitive>>> primPointers;
-    primPointers.resize(simModel->sh.nbSuper);
-    for(auto& sFac : simModel->facets){
-        if (sFac->sh.superIdx == -1) { //Facet in all structures
-            for (auto& fp_vec : primPointers) {
-                fp_vec.push_back(sFac);
-            }
-        }
-        else {
-            primPointers[sFac->sh.superIdx].push_back(sFac); //Assign to structure
-        }
-    }
-
-    for(auto& sFac : simModel->facets){
-        if (sFac->sh.opacity_paramId == -1){ //constant sticking
-            sFac->sh.opacity = std::clamp(sFac->sh.opacity, 0.0, 1.0);
-            sFac->surf = simModel->GetSurface(sFac->sh.opacity);
-        }
-        else {
-            auto* par = &simModel->tdParams.parameters[sFac->sh.opacity_paramId];
-            sFac->surf = simModel->GetParameterSurface(sFac->sh.opacity_paramId, par);
-        }
-    }
-
-    simModel->accel.clear();
-    for (size_t s = 0; s < simModel->sh.nbSuper; ++s) {
-        if(model->wp.accel_type == 1)
-            simModel->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s], std::vector<double>{}, 80, 1, 0.5, 1, -1));
-        else
-            simModel->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], 2, BVHAccel::SplitMethod::SAH));
-    }
-#endif // old_bvb
-    for(auto& particle : particles)
-        particle.model = model.get();
-
     // Initialise simulation
+    RebuildAccelStructure();
 
-
-    //if(!model->sh.name.empty())
-    //loadOK = true;
     timer.Stop();
 
     Log::console_msg_master(3, "  Load %s successful\n", simModel->sh.name.c_str());
