@@ -69,7 +69,7 @@ void WriterXML::SaveGeometry(xml_document &saveDoc, std::shared_ptr<SimulationMo
         //if (!saveSelected || model->facets[i]->selected) {
         xml_node f = geomNode.child("Facets").append_child("Facet");
         f.append_attribute("id") = i;
-        SaveFacet(f, model->facets[i].get(), model->vertices3.size()); //model->facets[i]->SaveXML_geom(f);
+        SaveFacet(f, model->facets[i].get(), model->vertices3.size(), model->primitives[i].get()); //model->facets[i]->SaveXML_geom(f);
         //}
     }
 
@@ -334,10 +334,11 @@ bool WriterXML::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<Simul
             facetHitNode.append_attribute("sum_1_per_v") = facetCounter.sum_1_per_ort_velocity;
             facetHitNode.append_attribute("sum_v") = facetCounter.sum_1_per_velocity;
 
-            if (sFac.sh.isProfile) {
+            auto& sh = sFac.prim->sh;
+            if (sh.isProfile) {
                 xml_node profileNode = newFacetResult.append_child("Profile");
                 profileNode.append_attribute("size") = PROFILE_SIZE;
-                //ProfileSlice *pr = (ProfileSlice *)(buffer + sFac.sh.hitOffset + facetHitsSize + m * sizeof(ProfileSlice)*PROFILE_SIZE);
+                //ProfileSlice *pr = (ProfileSlice *)(buffer + sh.hitOffset + facetHitsSize + m * sizeof(ProfileSlice)*PROFILE_SIZE);
                 const auto &pr = globState.facetStates[sFac.globalId].momentResults[m].profile;
 
                 for (int p = 0; p < PROFILE_SIZE; p++) {
@@ -349,17 +350,17 @@ bool WriterXML::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<Simul
                 }
             }
 
-            size_t profSize = (sFac.sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice) *
+            size_t profSize = (sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice) *
                                                      (1 + model->tdParams.moments.size())) : 0;
-            size_t height = sFac.sh.texHeight;
-            size_t width = sFac.sh.texWidth;
+            size_t height = sh.texHeight;
+            size_t width = sh.texWidth;
 
-            if (sFac.sh.texWidth * sFac.sh.texHeight > 0) {
+            if (sh.texWidth * sh.texHeight > 0) {
                 xml_node textureNode = newFacetResult.append_child("Texture");
-                textureNode.append_attribute("width") = sFac.sh.texWidth;
-                textureNode.append_attribute("height") = sFac.sh.texHeight;
+                textureNode.append_attribute("width") = sh.texWidth;
+                textureNode.append_attribute("height") = sh.texHeight;
 
-                //TextureCell *texture = (TextureCell *)(buffer + sFac.sh.hitOffset + facetHitsSize + profSize + m * w*h * sizeof(TextureCell));
+                //TextureCell *texture = (TextureCell *)(buffer + sh.hitOffset + facetHitsSize + profSize + m * w*h * sizeof(TextureCell));
                 const auto &texture = globState.facetStates[sFac.globalId].momentResults[m].texture;
 
                 std::stringstream countText, sum1perText, sumvortText;
@@ -369,9 +370,9 @@ bool WriterXML::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<Simul
 
                 for (size_t iy = 0; iy < height; iy++) {
                     for (size_t ix = 0; ix < width; ix++) {
-                        countText << texture[iy * sFac.sh.texWidth + ix].countEquiv << '\t';
-                        sum1perText << texture[iy * sFac.sh.texWidth + ix].sum_1_per_ort_velocity << '\t';
-                        sumvortText << texture[iy * sFac.sh.texWidth + ix].sum_v_ort_per_area << '\t';
+                        countText << texture[iy * sh.texWidth + ix].countEquiv << '\t';
+                        sum1perText << texture[iy * sh.texWidth + ix].sum_1_per_ort_velocity << '\t';
+                        sumvortText << texture[iy * sh.texWidth + ix].sum_v_ort_per_area << '\t';
                     }
                     countText << '\n';
                     sum1perText << '\n';
@@ -383,12 +384,12 @@ bool WriterXML::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<Simul
 
             } //end texture
 
-            if (sFac.sh.countDirection/* && sFac.dirCache*/) {
+            if (sh.countDirection/* && sFac.dirCache*/) {
                 xml_node dirNode = newFacetResult.append_child("Directions");
-                dirNode.append_attribute("width") = sFac.sh.texWidth;
-                dirNode.append_attribute("height") = sFac.sh.texHeight;
+                dirNode.append_attribute("width") = sh.texWidth;
+                dirNode.append_attribute("height") = sh.texHeight;
 
-                //DirectionCell *dirs = (DirectionCell *)(buffer + sFac.sh.hitOffset + facetHitsSize + profSize + (1 + (int)model->tdParams.moments.size())*w*h * sizeof(TextureCell) + m * w*h * sizeof(DirectionCell));
+                //DirectionCell *dirs = (DirectionCell *)(buffer + sh.hitOffset + facetHitsSize + profSize + (1 + (int)model->tdParams.moments.size())*w*h * sizeof(TextureCell) + m * w*h * sizeof(DirectionCell));
                 const auto &dirs = globState.facetStates[sFac.globalId].momentResults[m].direction;
 
                 std::stringstream dirText, dirCountText;
@@ -397,10 +398,10 @@ bool WriterXML::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<Simul
 
                 for (size_t iy = 0; iy < height; iy++) {
                     for (size_t ix = 0; ix < width; ix++) {
-                        dirText << dirs[iy * sFac.sh.texWidth + ix].dir.x << ",";
-                        dirText << dirs[iy * sFac.sh.texWidth + ix].dir.y << ",";
-                        dirText << dirs[iy * sFac.sh.texWidth + ix].dir.z << "\t";
-                        dirCountText << dirs[iy * sFac.sh.texWidth + ix].count << "\t";
+                        dirText << dirs[iy * sh.texWidth + ix].dir.x << ",";
+                        dirText << dirs[iy * sh.texWidth + ix].dir.y << ",";
+                        dirText << dirs[iy * sh.texWidth + ix].dir.z << "\t";
+                        dirCountText << dirs[iy * sh.texWidth + ix].count << "\t";
 
                     }
                     dirText << "\n";
@@ -412,62 +413,62 @@ bool WriterXML::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<Simul
 
             //Facet histograms (1 per moment) comes here
             bool hasFHistogram =
-                    sFac.sh.facetHistogramParams.recordBounce || sFac.sh.facetHistogramParams.recordDistance;
+                    sh.facetHistogramParams.recordBounce || sh.facetHistogramParams.recordDistance;
 #ifdef MOLFLOW
-            hasFHistogram = hasFHistogram || sFac.sh.facetHistogramParams.recordTime;
+            hasFHistogram = hasFHistogram || sh.facetHistogramParams.recordTime;
 #endif
             if (hasFHistogram) {
                 xml_node histNode = newFacetResult.append_child("Histograms");
                 //Retrieve histogram map from hits dp
                 auto &histogram = globState.facetStates[sFac.globalId].momentResults[m].histogram;
-                if (sFac.sh.facetHistogramParams.recordBounce) {
+                if (sh.facetHistogramParams.recordBounce) {
                     auto &nbHitsHistogram = histogram.nbHitsHistogram;
                     xml_node hist = histNode.append_child("Bounces");
-                    size_t histSize = sFac.sh.facetHistogramParams.GetBounceHistogramSize();
+                    size_t histSize = sh.facetHistogramParams.GetBounceHistogramSize();
                     hist.append_attribute("size") = histSize;
                     hist.append_attribute(
-                            "binSize") = sFac.sh.facetHistogramParams.nbBounceBinsize; //redundancy for human-reading or export
+                            "binSize") = sh.facetHistogramParams.nbBounceBinsize; //redundancy for human-reading or export
                     hist.append_attribute(
-                            "max") = sFac.sh.facetHistogramParams.nbBounceMax; //redundancy for human-reading or export
+                            "max") = sh.facetHistogramParams.nbBounceMax; //redundancy for human-reading or export
                     for (size_t h = 0; h < histSize; h++) {
                         xml_node bin = hist.append_child("Bin");
                         auto value = bin.append_attribute("start");
                         if (h == histSize - 1) value = "overRange";
-                        else value = h * sFac.sh.facetHistogramParams.nbBounceBinsize;
+                        else value = h * sh.facetHistogramParams.nbBounceBinsize;
                         bin.append_attribute("count") = nbHitsHistogram[h];
                     }
                 }
-                if (sFac.sh.facetHistogramParams.recordDistance) {
+                if (sh.facetHistogramParams.recordDistance) {
                     auto &distanceHistogram = histogram.distanceHistogram;
                     xml_node hist = histNode.append_child("Distance");
-                    size_t histSize = sFac.sh.facetHistogramParams.GetDistanceHistogramSize();
+                    size_t histSize = sh.facetHistogramParams.GetDistanceHistogramSize();
                     hist.append_attribute("size") = histSize;
                     hist.append_attribute(
-                            "binSize") = sFac.sh.facetHistogramParams.distanceBinsize; //redundancy for human-reading or export
+                            "binSize") = sh.facetHistogramParams.distanceBinsize; //redundancy for human-reading or export
                     hist.append_attribute(
-                            "max") = sFac.sh.facetHistogramParams.distanceMax; //redundancy for human-reading or export
+                            "max") = sh.facetHistogramParams.distanceMax; //redundancy for human-reading or export
                     for (size_t h = 0; h < histSize; h++) {
                         xml_node bin = hist.append_child("Bin");
                         auto value = bin.append_attribute("start");
                         if (h == histSize - 1) value = "overRange";
-                        else value = h * sFac.sh.facetHistogramParams.distanceBinsize;
+                        else value = h * sh.facetHistogramParams.distanceBinsize;
                         bin.append_attribute("count") = distanceHistogram[h];
                     }
                 }
-                if (sFac.sh.facetHistogramParams.recordTime) {
+                if (sh.facetHistogramParams.recordTime) {
                     auto &timeHistogram = histogram.timeHistogram;
                     xml_node hist = histNode.append_child("Time");
-                    size_t histSize = sFac.sh.facetHistogramParams.GetTimeHistogramSize();
+                    size_t histSize = sh.facetHistogramParams.GetTimeHistogramSize();
                     hist.append_attribute("size") = histSize;
                     hist.append_attribute(
-                            "binSize") = sFac.sh.facetHistogramParams.timeBinsize; //redundancy for human-reading or export
+                            "binSize") = sh.facetHistogramParams.timeBinsize; //redundancy for human-reading or export
                     hist.append_attribute(
-                            "max") = sFac.sh.facetHistogramParams.timeMax; //redundancy for human-reading or export
+                            "max") = sh.facetHistogramParams.timeMax; //redundancy for human-reading or export
                     for (size_t h = 0; h < histSize; h++) {
                         xml_node bin = hist.append_child("Bin");
                         auto value = bin.append_attribute("start");
                         if (h == histSize - 1) value = "overRange";
-                        else value = h * sFac.sh.facetHistogramParams.timeBinsize;
+                        else value = h * sh.facetHistogramParams.timeBinsize;
                         bin.append_attribute("count") = timeHistogram[h];
                     }
                 }
@@ -501,61 +502,63 @@ bool WriterXML::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<Simul
 * \brief To save facet data for the geometry in XML
 * \param facetNode XML node representing a facet
 */
-void WriterXML::SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices) {
+void
+WriterXML::SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices, GeomPrimitive *prim) {
+    auto& sh = facet->prim->sh;
     xml_node e = facetNode.append_child("Sticking");
-    e.append_attribute("constValue") = facet->sh.sticking;
-    e.append_attribute("parameterId") = facet->sh.sticking_paramId;
+    e.append_attribute("constValue") = sh.sticking;
+    e.append_attribute("parameterId") = sh.sticking_paramId;
 
     e = facetNode.append_child("Opacity");
-    e.append_attribute("constValue") = facet->sh.opacity;
-    e.append_attribute("parameterId") = facet->sh.opacity_paramId;
-    e.append_attribute("is2sided") = (int) facet->sh.is2sided; //backward compatibility: 0 or 1
+    e.append_attribute("constValue") = sh.opacity;
+    e.append_attribute("parameterId") = sh.opacity_paramId;
+    e.append_attribute("is2sided") = (int) sh.is2sided; //backward compatibility: 0 or 1
 
     e = facetNode.append_child("Outgassing");
-    e.append_attribute("constValue") = facet->sh.outgassing;
-    e.append_attribute("parameterId") = facet->sh.outgassing_paramId;
-    e.append_attribute("desType") = facet->sh.desorbType;
-    e.append_attribute("desExponent") = facet->sh.desorbTypeN;
+    e.append_attribute("constValue") = sh.outgassing;
+    e.append_attribute("parameterId") = sh.outgassing_paramId;
+    e.append_attribute("desType") = sh.desorbType;
+    e.append_attribute("desExponent") = sh.desorbTypeN;
     e.append_attribute(
-            "hasOutgassingFile") = (int) facet->sh.useOutgassingFile;//TODO:(int)hasOutgassingFile; //backward compatibility: 0 or 1
-    e.append_attribute("useOutgassingFile") = (int) facet->sh.useOutgassingFile; //backward compatibility: 0 or 1
+            "hasOutgassingFile") = (int) sh.useOutgassingFile;//TODO:(int)hasOutgassingFile; //backward compatibility: 0 or 1
+    e.append_attribute("useOutgassingFile") = (int) sh.useOutgassingFile; //backward compatibility: 0 or 1
 
     e = facetNode.append_child("Temperature");
-    e.append_attribute("value") = facet->sh.temperature;
-    e.append_attribute("accFactor") = facet->sh.accomodationFactor;
+    e.append_attribute("value") = sh.temperature;
+    e.append_attribute("accFactor") = sh.accomodationFactor;
 
     e = facetNode.append_child("Reflection");
 
-    e.append_attribute("diffusePart") = facet->sh.reflection.diffusePart;
-    e.append_attribute("specularPart") = facet->sh.reflection.specularPart;
-    e.append_attribute("cosineExponent") = facet->sh.reflection.cosineExponent;
+    e.append_attribute("diffusePart") = sh.reflection.diffusePart;
+    e.append_attribute("specularPart") = sh.reflection.specularPart;
+    e.append_attribute("cosineExponent") = sh.reflection.cosineExponent;
 
     //For backward compatibility
-    if (facet->sh.reflection.diffusePart > 0.99) {
+    if (sh.reflection.diffusePart > 0.99) {
         e.append_attribute("type") = REFLECTION_DIFFUSE;
-    } else if (facet->sh.reflection.specularPart > 0.99) {
+    } else if (sh.reflection.specularPart > 0.99) {
         e.append_attribute("type") = REFLECTION_SPECULAR;
     } else
         e.append_attribute("type") = REFLECTION_UNIFORM;
 
-    e.append_attribute("enableSojournTime") = (int) facet->sh.enableSojournTime; //backward compatibility: 0 or 1
-    e.append_attribute("sojournFreq") = facet->sh.sojournFreq;
-    e.append_attribute("sojournE") = facet->sh.sojournE;
+    e.append_attribute("enableSojournTime") = (int) sh.enableSojournTime; //backward compatibility: 0 or 1
+    e.append_attribute("sojournFreq") = sh.sojournFreq;
+    e.append_attribute("sojournE") = sh.sojournE;
 
     e = facetNode.append_child("Structure");
-    e.append_attribute("inStructure") = facet->sh.superIdx;
-    e.append_attribute("linksTo") = facet->sh.superDest;
+    e.append_attribute("inStructure") = sh.superIdx;
+    e.append_attribute("linksTo") = sh.superDest;
 
     e = facetNode.append_child("Teleport");
-    e.append_attribute("target") = facet->sh.teleportDest;
+    e.append_attribute("target") = sh.teleportDest;
 
     e = facetNode.append_child("Motion");
-    e.append_attribute("isMoving") = (int) facet->sh.isMoving; //backward compatibility: 0 or 1
+    e.append_attribute("isMoving") = (int) sh.isMoving; //backward compatibility: 0 or 1
 
     e = facetNode.append_child("Recordings");
     xml_node t = e.append_child("Profile");
-    t.append_attribute("type") = facet->sh.profileType;
-    switch (facet->sh.profileType) {
+    t.append_attribute("type") = sh.profileType;
+    switch (sh.profileType) {
         case 0:
             t.append_attribute("name") = "none";
             break;
@@ -579,26 +582,26 @@ void WriterXML::SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
             break;
     }
     t = e.append_child("Texture");
-    //assert(!(cellPropertiesIds == NULL && (facet->sh.countAbs || facet->sh.countDes || facet->sh.countRefl || facet->sh.countTrans))); //Count texture on non-existent texture
+    //assert(!(cellPropertiesIds == NULL && (sh.countAbs || sh.countDes || sh.countRefl || sh.countTrans))); //Count texture on non-existent texture
 
-    t.append_attribute("hasMesh") = (facet->sh.countAbs || facet->sh.countDes || facet->sh.countRefl ||
-                                     facet->sh.countTrans);
-    t.append_attribute("texDimX") = facet->sh.texWidth_precise;
-    t.append_attribute("texDimY") = facet->sh.texHeight_precise;
-    t.append_attribute("countDes") = (int) facet->sh.countDes; //backward compatibility: 0 or 1
-    t.append_attribute("countAbs") = (int) facet->sh.countAbs; //backward compatibility: 0 or 1
-    t.append_attribute("countRefl") = (int) facet->sh.countRefl; //backward compatibility: 0 or 1
-    t.append_attribute("countTrans") = (int) facet->sh.countTrans; //backward compatibility: 0 or 1
-    t.append_attribute("countDir") = (int) facet->sh.countDirection; //backward compatibility: 0 or 1
-    t.append_attribute("countAC") = (int) facet->sh.countACD; //backward compatibility: 0 or 1
+    t.append_attribute("hasMesh") = (sh.countAbs || sh.countDes || sh.countRefl ||
+                                     sh.countTrans);
+    t.append_attribute("texDimX") = sh.texWidth_precise;
+    t.append_attribute("texDimY") = sh.texHeight_precise;
+    t.append_attribute("countDes") = (int) sh.countDes; //backward compatibility: 0 or 1
+    t.append_attribute("countAbs") = (int) sh.countAbs; //backward compatibility: 0 or 1
+    t.append_attribute("countRefl") = (int) sh.countRefl; //backward compatibility: 0 or 1
+    t.append_attribute("countTrans") = (int) sh.countTrans; //backward compatibility: 0 or 1
+    t.append_attribute("countDir") = (int) sh.countDirection; //backward compatibility: 0 or 1
+    t.append_attribute("countAC") = (int) sh.countACD; //backward compatibility: 0 or 1
 
-    if (facet->sh.anglemapParams.record) {
+    if (sh.anglemapParams.record) {
         t = e.append_child("IncidentAngleMap");
-        t.append_attribute("record") = facet->sh.anglemapParams.record;
-        t.append_attribute("phiWidth") = facet->sh.anglemapParams.phiWidth;
-        t.append_attribute("thetaLimit") = facet->sh.anglemapParams.thetaLimit;
-        t.append_attribute("thetaLowerRes") = facet->sh.anglemapParams.thetaLowerRes;
-        t.append_attribute("thetaHigherRes") = facet->sh.anglemapParams.thetaHigherRes;
+        t.append_attribute("record") = sh.anglemapParams.record;
+        t.append_attribute("phiWidth") = sh.anglemapParams.phiWidth;
+        t.append_attribute("thetaLimit") = sh.anglemapParams.thetaLimit;
+        t.append_attribute("thetaLowerRes") = sh.anglemapParams.thetaLowerRes;
+        t.append_attribute("thetaHigherRes") = sh.anglemapParams.thetaHigherRes;
     }
 
     if (!uInput.facetViewSettings.empty()) {
@@ -609,21 +612,21 @@ void WriterXML::SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
                 uInput.facetViewSettings[facet->globalId]); //backward compatibility: 0 or 1
     }
 
-    facetNode.append_child("Indices").append_attribute("nb") = facet->sh.nbIndex;
-    for (size_t i = 0; i < facet->sh.nbIndex; i++) {
+    facetNode.append_child("Indices").append_attribute("nb") = sh.nbIndex;
+    for (size_t i = 0; i < sh.nbIndex; i++) {
         xml_node indice = facetNode.child("Indices").append_child("Indice");
         indice.append_attribute("id") = i;
-        indice.append_attribute("vertex") = facet->indices[i];
+        indice.append_attribute("vertex") = prim->indices[i];
     }
 
-    if (facet->sh.useOutgassingFile) { // hasOutgassingFile
+    if (sh.useOutgassingFile) { // hasOutgassingFile
         xml_node textureNode = facetNode.append_child("DynamicOutgassing");
         textureNode.append_attribute("width") = facet->ogMap.outgassingMapWidth;
         textureNode.append_attribute("height") = facet->ogMap.outgassingMapHeight;
         textureNode.append_attribute("ratioU") = facet->ogMap.outgassingFileRatioU;
         textureNode.append_attribute("ratioV") = facet->ogMap.outgassingFileRatioV;
         textureNode.append_attribute("totalDose") = facet->ogMap.totalDose;
-        textureNode.append_attribute("totalOutgassing") = facet->sh.totalOutgassing;
+        textureNode.append_attribute("totalOutgassing") = sh.totalOutgassing;
         textureNode.append_attribute("totalFlux") = facet->ogMap.totalFlux;
 
         std::stringstream outgText;
@@ -639,19 +642,19 @@ void WriterXML::SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
 
     } //end texture
 
-    if (facet->sh.anglemapParams.hasRecorded) {
+    if (sh.anglemapParams.hasRecorded) {
         xml_node textureNode = facetNode.append_child("IncidentAngleMap");
-        textureNode.append_attribute("angleMapPhiWidth") = facet->sh.anglemapParams.phiWidth;
-        textureNode.append_attribute("angleMapThetaLimit") = facet->sh.anglemapParams.thetaLimit;
-        textureNode.append_attribute("angleMapThetaLowerRes") = facet->sh.anglemapParams.thetaLowerRes;
-        textureNode.append_attribute("angleMapThetaHigherRes") = facet->sh.anglemapParams.thetaHigherRes;
+        textureNode.append_attribute("angleMapPhiWidth") = sh.anglemapParams.phiWidth;
+        textureNode.append_attribute("angleMapThetaLimit") = sh.anglemapParams.thetaLimit;
+        textureNode.append_attribute("angleMapThetaLowerRes") = sh.anglemapParams.thetaLowerRes;
+        textureNode.append_attribute("angleMapThetaHigherRes") = sh.anglemapParams.thetaHigherRes;
 
         std::stringstream angleText;
         angleText << '\n'; //better readability in file
         for (int iy = 0;
-             iy < (facet->sh.anglemapParams.thetaLowerRes + facet->sh.anglemapParams.thetaHigherRes); iy++) {
-            for (int ix = 0; ix < facet->sh.anglemapParams.phiWidth; ix++) {
-                angleText << facet->angleMap.pdf[iy * facet->sh.anglemapParams.phiWidth + ix] << '\t';
+             iy < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); iy++) {
+            for (int ix = 0; ix < sh.anglemapParams.phiWidth; ix++) {
+                angleText << facet->angleMap.pdf[iy * sh.anglemapParams.phiWidth + ix] << '\t';
             }
             angleText << '\n';
         }
@@ -660,21 +663,21 @@ void WriterXML::SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
     } //end angle map
 
     xml_node histNode = facetNode.append_child("Histograms");
-    if (facet->sh.facetHistogramParams.recordBounce) {
+    if (sh.facetHistogramParams.recordBounce) {
         xml_node nbBounceNode = histNode.append_child("Bounces");
-        nbBounceNode.append_attribute("binSize") = facet->sh.facetHistogramParams.nbBounceBinsize;
-        nbBounceNode.append_attribute("max") = facet->sh.facetHistogramParams.nbBounceMax;
+        nbBounceNode.append_attribute("binSize") = sh.facetHistogramParams.nbBounceBinsize;
+        nbBounceNode.append_attribute("max") = sh.facetHistogramParams.nbBounceMax;
     }
-    if (facet->sh.facetHistogramParams.recordDistance) {
+    if (sh.facetHistogramParams.recordDistance) {
         xml_node distanceNode = histNode.append_child("Distance");
-        distanceNode.append_attribute("binSize") = facet->sh.facetHistogramParams.distanceBinsize;
-        distanceNode.append_attribute("max") = facet->sh.facetHistogramParams.distanceMax;
+        distanceNode.append_attribute("binSize") = sh.facetHistogramParams.distanceBinsize;
+        distanceNode.append_attribute("max") = sh.facetHistogramParams.distanceMax;
     }
 #ifdef MOLFLOW
-    if (facet->sh.facetHistogramParams.recordTime) {
+    if (sh.facetHistogramParams.recordTime) {
         xml_node timeNode = histNode.append_child("Time");
-        timeNode.append_attribute("binSize") = facet->sh.facetHistogramParams.timeBinsize;
-        timeNode.append_attribute("max") = facet->sh.facetHistogramParams.timeMax;
+        timeNode.append_attribute("binSize") = sh.facetHistogramParams.timeBinsize;
+        timeNode.append_attribute("max") = sh.facetHistogramParams.timeMax;
     }
 #endif
 }

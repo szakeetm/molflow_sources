@@ -23,7 +23,7 @@ namespace FlowIO {
     class LoaderXML : public Loader {
 
     protected:
-        void LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices);
+        std::shared_ptr<GeomPrimitive> LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices);
     public:
         int LoadGeometry(std::string inputFileName, std::shared_ptr<SimulationModel> model, double *progress) override;
         static std::vector<SelectionGroup> LoadSelections(const std::string& inputFileName);

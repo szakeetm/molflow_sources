@@ -87,7 +87,7 @@ public:
 };
 
 // Local facet structure
-struct SubprocessFacet : public Facet {
+struct SubprocessFacet {
     SubprocessFacet();
 
     explicit SubprocessFacet(size_t nbIndex);
@@ -108,7 +108,10 @@ struct SubprocessFacet : public Facet {
 
     // Temporary var (used in FillHit for hit recording)
     bool isReady;         // Volatile state
+    size_t globalId;
 
+    GeomPrimitive* prim;
+    //FacetProperties sh;
     // Facet hit counters
     //std::vector<FacetHitBuffer> tmpCounter; //1+nbMoment
     //std::vector<FacetHistogramBuffer> tmpHistograms; //1+nbMoment
@@ -146,7 +149,7 @@ class GlobalSimuState;
 
 class SuperStructure {
 public:
-    SuperStructure();
+    SuperStructure() = default;
 
     ~SuperStructure();
 
@@ -237,7 +240,7 @@ public:
 
     void CalcTotalOutgassing();
 
-    void CalculateFacetParams(SubprocessFacet *f);
+    void CalculateFacetParams(GeomPrimitive *f);
 
     Surface *GetSurface(double opacity) {
 
@@ -281,6 +284,8 @@ public:
 
     // Geometry Description
     std::vector<std::shared_ptr<SubprocessFacet>> facets;    // All facets of this geometry
+    std::vector<std::shared_ptr<GeomPrimitive>> primitives;    // All facets of this geometry
+    std::vector<int> globalFacetIDs;
 
     std::vector<SuperStructure> structures;
     std::vector<Vector3d> vertices3; // Vertices (3D space)

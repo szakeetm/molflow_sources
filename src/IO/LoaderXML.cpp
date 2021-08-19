@@ -112,8 +112,10 @@ int LoaderXML::LoadGeometry(std::string inputFileName, std::shared_ptr<Simulatio
         }
 
         loadFacets.emplace_back(std::make_shared<SubprocessFacet>(nbIndex));
-        LoadFacet(facetNode, loadFacets[idx].get(), model->sh.nbVertex);
-
+        auto prim = LoadFacet(facetNode, loadFacets[idx].get(), model->sh.nbVertex);
+        prim->globalId = loadFacets.back()->globalId;
+        model->primitives.emplace_back(prim);
+        model->globalFacetIDs.emplace_back(loadFacets.back()->globalId);
         //Set param names for interface
         /*if (facets[idx]->sh.sticking_paramId > -1) facets[idx]->userSticking = work->parameters[facets[idx]->sh.sticking_paramId].name;
         if (facets[idx]->sh.opacity_paramId > -1) facets[idx]->userOpacity = work->parameters[facets[idx]->sh.opacity_paramId].name;
@@ -122,7 +124,19 @@ int LoaderXML::LoadGeometry(std::string inputFileName, std::shared_ptr<Simulatio
         idx++;
         *progress = (double)idx/(double)model->sh.nbFacet;
     }
+    size_t countTri = 0;
+    size_t countPoly = 0;
 
+    for(auto& prim : model->primitives){
+        if(prim->indices.size() == 3){
+            std::dynamic_pointer_cast<TriangleFacet>(prim)->vertices3 = &model->vertices3;
+            ++countTri;
+        }
+        else
+            ++countPoly;
+    }
+
+    std::cout << "Count (Tri/Poly): " << countTri << " / " << countPoly << std::endl;
     model->wp.gasMass = simuParamNode.child("Gas").attribute("mass").as_double();
     model->wp.halfLife = simuParamNode.child("Gas").attribute("halfLife").as_double();
     if (simuParamNode.child("Gas").attribute("enableDecay")) {
@@ -452,7 +466,8 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
             }
 
             //Profiles
-            if (sFac->sh.isProfile) {
+            auto& sh = sFac->prim->sh;
+            if (sh.isProfile) {
                 xml_node profileNode = newFacetResult.child("Profile");
                 //ProfileSlice *profilePtr = (ProfileSlice *)(buffer + facet.sh.hitOffset + facetHitsSize + m * sizeof(ProfileSlice)*PROFILE_SIZE);
                 std::vector<ProfileSlice>& profilePtr = globState->facetStates[facetId].momentResults[m].profile;
@@ -473,9 +488,9 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
             }
 
             //Textures
-            int profSize = (sFac->sh.isProfile) ? ((int)PROFILE_SIZE * (int)sizeof(ProfileSlice)*(1 + (int)model->tdParams.moments.size())) : 0;
+            int profSize = (sh.isProfile) ? ((int)PROFILE_SIZE * (int)sizeof(ProfileSlice)*(1 + (int)model->tdParams.moments.size())) : 0;
 
-            if (sFac->sh.texWidth * sFac->sh.texHeight > 0) {
+            if (sh.texWidth * sh.texHeight > 0) {
                 xml_node textureNode = newFacetResult.child("Texture");
                 size_t texWidth_file = textureNode.attribute("width").as_llong();
                 size_t texHeight_file = textureNode.attribute("height").as_llong();
@@ -492,14 +507,14 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
                 sum1perText << textureNode.child_value("sum_1_per_v");
                 sumvortText << textureNode.child_value("sum_v_ort");
 
-                for (size_t iy = 0; iy < (Min(sFac->sh.texHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
-                    for (size_t ix = 0; ix < (Min(sFac->sh.texWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
-                        countText >> texture[iy*sFac->sh.texWidth + ix].countEquiv;
-                        sum1perText >> texture[iy*sFac->sh.texWidth + ix].sum_1_per_ort_velocity;
-                        sumvortText >> texture[iy*sFac->sh.texWidth + ix].sum_v_ort_per_area;
+                for (size_t iy = 0; iy < (Min(sh.texHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
+                    for (size_t ix = 0; ix < (Min(sh.texWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
+                        countText >> texture[iy*sh.texWidth + ix].countEquiv;
+                        sum1perText >> texture[iy*sh.texWidth + ix].sum_1_per_ort_velocity;
+                        sumvortText >> texture[iy*sh.texWidth + ix].sum_v_ort_per_area;
 
                     }
-                    for (int ie = 0; ie < texWidth_file - sFac->sh.texWidth; ie++) {//Executed if file texture is bigger than expected texture
+                    for (int ie = 0; ie < texWidth_file - sh.texWidth; ie++) {//Executed if file texture is bigger than expected texture
                         //Read extra cells from file without doing anything
                         size_t dummy_ll;
                         double dummy_d;
@@ -509,7 +524,7 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
 
                     }
                 }
-                for (int ie = 0; ie < texHeight_file - sFac->sh.texHeight; ie++) {//Executed if file texture is bigger than expected texture
+                for (int ie = 0; ie < texHeight_file - sh.texHeight; ie++) {//Executed if file texture is bigger than expected texture
                     //Read extra cells ffrom file without doing anything
                     for (int iw = 0; iw < texWidth_file; iw++) {
                         size_t dummy_ll;
@@ -522,54 +537,54 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
                 }
             } //end texture
 
-            if (sFac->sh.countDirection) {
+            if (sh.countDirection) {
                 xml_node dirNode = newFacetResult.child("Directions");
-                if (dirNode.attribute("width").as_int() != sFac->sh.texWidth ||
-                    dirNode.attribute("height").as_int() != sFac->sh.texHeight) {
+                if (dirNode.attribute("width").as_int() != sh.texWidth ||
+                    dirNode.attribute("height").as_int() != sh.texHeight) {
                     std::stringstream msg;
-                    msg << "Direction texture size mismatch on facet " << facetId + 1 << ".\nExpected: " << sFac->sh.texWidth << "x" << sFac->sh.texHeight << "\n"
+                    msg << "Direction texture size mismatch on facet " << facetId + 1 << ".\nExpected: " << sh.texWidth << "x" << sh.texHeight << "\n"
                         << "In file: " << dirNode.attribute("width").as_int() << "x" << dirNode.attribute("height").as_int();
                     globState->tMutex.unlock();
                     throw Error(msg.str().c_str());
 
                 }
-                /*DirectionCell *dirs = (DirectionCell *)(buffer + sFac->sh.hitOffset + facetHitsSize
-                                                        + profSize + (1 + (int)model->tdParams.moments.size())*sFac->sh.texWidth*sFac->sh.texHeight * sizeof(TextureCell)
-                                                        + m * sFac->sh.texWidth*sFac->sh.texHeight * sizeof(DirectionCell));*/
+                /*DirectionCell *dirs = (DirectionCell *)(buffer + sh.hitOffset + facetHitsSize
+                                                        + profSize + (1 + (int)model->tdParams.moments.size())*sh.texWidth*sh.texHeight * sizeof(TextureCell)
+                                                        + m * sh.texWidth*sh.texHeight * sizeof(DirectionCell));*/
                 std::vector<DirectionCell>& dirs = globState->facetStates[facetId].momentResults[m].direction;
 
                 std::stringstream dirText, dirCountText;
                 dirText << dirNode.child_value("vel.vectors");
                 dirCountText << dirNode.child_value("count");
 
-                for (size_t iy = 0; iy < sFac->sh.texHeight; iy++) {
-                    for (size_t ix = 0; ix < sFac->sh.texWidth; ix++) {
+                for (size_t iy = 0; iy < sh.texHeight; iy++) {
+                    for (size_t ix = 0; ix < sh.texWidth; ix++) {
                         std::string component;
                         std::getline(dirText, component, ',');
-                        dirs[iy*sFac->sh.texWidth + ix].dir.x = std::stod(component);
+                        dirs[iy*sh.texWidth + ix].dir.x = std::stod(component);
                         std::getline(dirText, component, ',');
-                        dirs[iy*sFac->sh.texWidth + ix].dir.y = std::stod(component);
-                        dirText >> dirs[iy*sFac->sh.texWidth + ix].dir.z;
-                        dirCountText >> dirs[iy*sFac->sh.texWidth + ix].count;
+                        dirs[iy*sh.texWidth + ix].dir.y = std::stod(component);
+                        dirText >> dirs[iy*sh.texWidth + ix].dir.z;
+                        dirCountText >> dirs[iy*sh.texWidth + ix].count;
                     }
                 }
             } //end directions
 
             // Facet histogram
-            hasHistogram = sFac->sh.facetHistogramParams.recordBounce || sFac->sh.facetHistogramParams.recordDistance;
+            hasHistogram = sh.facetHistogramParams.recordBounce || sh.facetHistogramParams.recordDistance;
 #ifdef MOLFLOW
-            hasHistogram = hasHistogram || sFac->sh.facetHistogramParams.recordTime;
+            hasHistogram = hasHistogram || sh.facetHistogramParams.recordTime;
 #endif
             if (hasHistogram) {
                 xml_node histNode = newFacetResult.child("Histograms");
                 if (histNode) { //Versions before 2.8 didn't save histograms
                     //Retrieve histogram map from hits dp
                     auto& facetHistogram = globState->facetStates[facetId].momentResults[m].histogram;
-                    if (sFac->sh.facetHistogramParams.recordBounce) {
+                    if (sh.facetHistogramParams.recordBounce) {
                         auto& nbHitsHistogram = facetHistogram.nbHitsHistogram;
                         xml_node hist = histNode.child("Bounces");
                         if (hist) {
-                            size_t histSize = sFac->sh.facetHistogramParams.GetBounceHistogramSize();
+                            size_t histSize = sh.facetHistogramParams.GetBounceHistogramSize();
                             size_t saveHistSize = hist.attribute("size").as_ullong();
                             if (histSize == saveHistSize) {
                                 //Can do: compare saved with expected size
@@ -588,11 +603,11 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
                             }
                         }
                     }
-                    if (sFac->sh.facetHistogramParams.recordDistance) {
+                    if (sh.facetHistogramParams.recordDistance) {
                         auto& distanceHistogram = facetHistogram.distanceHistogram;
                         xml_node hist = histNode.child("Distance");
                         if (hist) {
-                            size_t histSize = sFac->sh.facetHistogramParams.GetDistanceHistogramSize();
+                            size_t histSize = sh.facetHistogramParams.GetDistanceHistogramSize();
                             size_t saveHistSize = hist.attribute("size").as_ullong();
                             if (histSize == saveHistSize) {
                                 //Can do: compare saved with expected size
@@ -611,11 +626,11 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
                             }
                         }
                     }
-                    if (sFac->sh.facetHistogramParams.recordTime) {
+                    if (sh.facetHistogramParams.recordTime) {
                         auto& timeHistogram = facetHistogram.timeHistogram;
                         xml_node hist = histNode.child("Time");
                         if (hist) {
-                            size_t histSize = sFac->sh.facetHistogramParams.GetTimeHistogramSize();
+                            size_t histSize = sh.facetHistogramParams.GetTimeHistogramSize();
                             size_t saveHistSize = hist.attribute("size").as_ullong();
                             if (histSize == saveHistSize) {
                                 //Can do: compare saved with expected size
@@ -661,99 +676,121 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
     return 0;
 }
 
-void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices) {
+std::shared_ptr<GeomPrimitive> LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices) {
     int idx = 0;
     bool ignoreSumMismatch = true;
     int facetId = facetNode.attribute("id").as_int();
-    for (xml_node indice : facetNode.child("Indices").children("Indice")) {
-        facet->indices[idx] = indice.attribute("vertex").as_int() + 0; //+ vertexOffset;
-        if (facet->indices[idx] >= nbTotalVertices) {
-            char err[128];
-            sprintf(err, "Facet %d refers to vertex %d which doesn't exist", facetId + 1, idx + 1);
-            throw Error(err);
-        }
-        idx++;
-    }
-    facet->sh.opacity = facetNode.child("Opacity").attribute("constValue").as_double();
-    facet->sh.is2sided = facetNode.child("Opacity").attribute("is2sided").as_int();
-    facet->sh.superIdx = facetNode.child("Structure").attribute("inStructure").as_int();
-    facet->sh.superDest = facetNode.child("Structure").attribute("linksTo").as_int();
-    facet->sh.teleportDest = facetNode.child("Teleport").attribute("target").as_int();
+    facet->globalId = facetId;
 
-    // TODO: Only parse Molflow files
-    facet->sh.sticking = facetNode.child("Sticking").attribute("constValue").as_double();
-    facet->sh.sticking_paramId = facetNode.child("Sticking").attribute("parameterId").as_int();
-    facet->sh.opacity_paramId = facetNode.child("Opacity").attribute("parameterId").as_int();
-    facet->sh.outgassing = facetNode.child("Outgassing").attribute("constValue").as_double();
-    facet->sh.desorbType = facetNode.child("Outgassing").attribute("desType").as_int();
-    facet->sh.desorbTypeN = facetNode.child("Outgassing").attribute("desExponent").as_double();
-    facet->sh.outgassing_paramId = facetNode.child("Outgassing").attribute("parameterId").as_int();
-    bool hasOutgassingFile = facetNode.child("Outgassing").attribute("hasOutgassingFile").as_bool();
-    facet->sh.useOutgassingFile = facetNode.child("Outgassing").attribute("useOutgassingFile").as_bool();
-    facet->sh.temperature = facetNode.child("Temperature").attribute("value").as_double();
-    facet->sh.accomodationFactor = facetNode.child("Temperature").attribute("accFactor").as_double();
-    xml_node reflNode = facetNode.child("Reflection");
-    if (reflNode.attribute("diffusePart") && reflNode.attribute("specularPart")) { //New format
-        facet->sh.reflection.diffusePart = reflNode.attribute("diffusePart").as_double();
-        facet->sh.reflection.specularPart = reflNode.attribute("specularPart").as_double();
-        if (reflNode.attribute("cosineExponent")) {
-            facet->sh.reflection.cosineExponent = reflNode.attribute("cosineExponent").as_double();
+    std::shared_ptr<GeomPrimitive> prim;
+    {
+        auto index_nodes = facetNode.child("Indices").children("Indice");
+        size_t nIndices = std::distance(index_nodes.begin(), index_nodes.end());
+
+        std::vector<size_t> indices;
+        for (xml_node indice : index_nodes) {
+            indices.push_back(indice.attribute("vertex").as_int() + 0); //+ vertexOffset;
+            if (indices.back() >= nbTotalVertices) {
+                char err[128];
+                sprintf(err, "Facet %d refers to vertex %d which doesn't exist", facetId + 1, idx + 1);
+                throw Error(err);
+            }
+            idx++;
+        }
+
+        if(nIndices == 3){
+            prim = std::make_shared<TriangleFacet>();
+            std::dynamic_pointer_cast<TriangleFacet>(prim)->indices.swap(indices);
         }
         else {
-            facet->sh.reflection.cosineExponent = 0.0; //uniform
+            prim = std::make_shared<Facet>();
+            std::dynamic_pointer_cast<Facet>(prim)->indices.swap(indices);
+        }
+        prim->globalId = facetId;
+    }
+    facet->prim = prim.get();
+
+    auto& sh = prim->sh;
+    sh.opacity = facetNode.child("Opacity").attribute("constValue").as_double();
+    sh.is2sided = facetNode.child("Opacity").attribute("is2sided").as_int();
+    sh.superIdx = facetNode.child("Structure").attribute("inStructure").as_int();
+    sh.superDest = facetNode.child("Structure").attribute("linksTo").as_int();
+    sh.teleportDest = facetNode.child("Teleport").attribute("target").as_int();
+
+    // TODO: Only parse Molflow files
+    sh.sticking = facetNode.child("Sticking").attribute("constValue").as_double();
+    sh.sticking_paramId = facetNode.child("Sticking").attribute("parameterId").as_int();
+    sh.opacity_paramId = facetNode.child("Opacity").attribute("parameterId").as_int();
+    sh.outgassing = facetNode.child("Outgassing").attribute("constValue").as_double();
+    sh.desorbType = facetNode.child("Outgassing").attribute("desType").as_int();
+    sh.desorbTypeN = facetNode.child("Outgassing").attribute("desExponent").as_double();
+    sh.outgassing_paramId = facetNode.child("Outgassing").attribute("parameterId").as_int();
+    bool hasOutgassingFile = facetNode.child("Outgassing").attribute("hasOutgassingFile").as_bool();
+    sh.useOutgassingFile = facetNode.child("Outgassing").attribute("useOutgassingFile").as_bool();
+    sh.temperature = facetNode.child("Temperature").attribute("value").as_double();
+    sh.accomodationFactor = facetNode.child("Temperature").attribute("accFactor").as_double();
+    xml_node reflNode = facetNode.child("Reflection");
+    if (reflNode.attribute("diffusePart") && reflNode.attribute("specularPart")) { //New format
+        sh.reflection.diffusePart = reflNode.attribute("diffusePart").as_double();
+        sh.reflection.specularPart = reflNode.attribute("specularPart").as_double();
+        if (reflNode.attribute("cosineExponent")) {
+            sh.reflection.cosineExponent = reflNode.attribute("cosineExponent").as_double();
+        }
+        else {
+            sh.reflection.cosineExponent = 0.0; //uniform
         }
     }
     else { //old XML format: fully diffuse / specular / uniform reflections
         int oldReflType = reflNode.attribute("type").as_int();
         if (oldReflType == REFLECTION_DIFFUSE) {
-            facet->sh.reflection.diffusePart = 1.0;
-            facet->sh.reflection.specularPart = 0.0;
+            sh.reflection.diffusePart = 1.0;
+            sh.reflection.specularPart = 0.0;
         }
         else if (oldReflType == REFLECTION_SPECULAR) {
-            facet->sh.reflection.diffusePart = 0.0;
-            facet->sh.reflection.specularPart = 1.0;
+            sh.reflection.diffusePart = 0.0;
+            sh.reflection.specularPart = 1.0;
         }
         else { //Uniform
-            facet->sh.reflection.diffusePart = 0.0;
-            facet->sh.reflection.specularPart = 0.0;
-            facet->sh.reflection.cosineExponent = 0.0;
+            sh.reflection.diffusePart = 0.0;
+            sh.reflection.specularPart = 0.0;
+            sh.reflection.cosineExponent = 0.0;
         }
     }
 
     if (reflNode.attribute("enableSojournTime")) {
-        facet->sh.enableSojournTime = reflNode.attribute("enableSojournTime").as_bool();
+        sh.enableSojournTime = reflNode.attribute("enableSojournTime").as_bool();
         if (!reflNode.attribute("sojournFreq")) {//Backward compatibility with ver. before 2.6.25
-            facet->sh.sojournFreq = 1.0 / reflNode.attribute("sojournTheta0").as_double();
-            facet->sh.sojournE = 8.31 * reflNode.attribute("sojournE").as_double();
+            sh.sojournFreq = 1.0 / reflNode.attribute("sojournTheta0").as_double();
+            sh.sojournE = 8.31 * reflNode.attribute("sojournE").as_double();
         }
         else {
-            facet->sh.sojournFreq = reflNode.attribute("sojournFreq").as_double();
-            facet->sh.sojournE = reflNode.attribute("sojournE").as_double();
+            sh.sojournFreq = reflNode.attribute("sojournFreq").as_double();
+            sh.sojournE = reflNode.attribute("sojournE").as_double();
         }
     }
     else {
         //Already set to default when calling Molflow::LoadFile()
     }
-    facet->sh.isMoving = facetNode.child("Motion").attribute("isMoving").as_bool();
+    sh.isMoving = facetNode.child("Motion").attribute("isMoving").as_bool();
     xml_node recNode = facetNode.child("Recordings");
-    facet->sh.profileType = recNode.child("Profile").attribute("type").as_int();
+    sh.profileType = recNode.child("Profile").attribute("type").as_int();
     xml_node incidentAngleNode = recNode.child("IncidentAngleMap");
     if (incidentAngleNode) {
-        facet->sh.anglemapParams.record = recNode.child("IncidentAngleMap").attribute("record").as_bool();
-        facet->sh.anglemapParams.phiWidth = recNode.child("IncidentAngleMap").attribute("phiWidth").as_ullong();
-        facet->sh.anglemapParams.thetaLimit = recNode.child("IncidentAngleMap").attribute("thetaLimit").as_double();
-        facet->sh.anglemapParams.thetaLowerRes = recNode.child("IncidentAngleMap").attribute("thetaLowerRes").as_ullong();
-        facet->sh.anglemapParams.thetaHigherRes = recNode.child("IncidentAngleMap").attribute("thetaHigherRes").as_ullong();
+        sh.anglemapParams.record = recNode.child("IncidentAngleMap").attribute("record").as_bool();
+        sh.anglemapParams.phiWidth = recNode.child("IncidentAngleMap").attribute("phiWidth").as_ullong();
+        sh.anglemapParams.thetaLimit = recNode.child("IncidentAngleMap").attribute("thetaLimit").as_double();
+        sh.anglemapParams.thetaLowerRes = recNode.child("IncidentAngleMap").attribute("thetaLowerRes").as_ullong();
+        sh.anglemapParams.thetaHigherRes = recNode.child("IncidentAngleMap").attribute("thetaHigherRes").as_ullong();
     }
     xml_node texNode = recNode.child("Texture");
-    facet->sh.texWidth_precise = texNode.attribute("texDimX").as_double();
-    facet->sh.texHeight_precise = texNode.attribute("texDimY").as_double();
-    facet->sh.countDes = texNode.attribute("countDes").as_bool();
-    facet->sh.countAbs = texNode.attribute("countAbs").as_bool();
-    facet->sh.countRefl = texNode.attribute("countRefl").as_bool();
-    facet->sh.countTrans = texNode.attribute("countTrans").as_bool();
-    facet->sh.countDirection = texNode.attribute("countDir").as_bool();
-    facet->sh.countACD = texNode.attribute("countAC").as_bool();
+    sh.texWidth_precise = texNode.attribute("texDimX").as_double();
+    sh.texHeight_precise = texNode.attribute("texDimY").as_double();
+    sh.countDes = texNode.attribute("countDes").as_bool();
+    sh.countAbs = texNode.attribute("countAbs").as_bool();
+    sh.countRefl = texNode.attribute("countRefl").as_bool();
+    sh.countTrans = texNode.attribute("countTrans").as_bool();
+    sh.countDirection = texNode.attribute("countDir").as_bool();
+    sh.countACD = texNode.attribute("countAC").as_bool();
     
     xml_node outgNode = facetNode.child("DynamicOutgassing");
     if ((hasOutgassingFile) && outgNode && outgNode.child("map")) {
@@ -767,7 +804,7 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
             facet->ogMap.outgassingFileRatioU = facet->ogMap.outgassingFileRatioV = outgNode.attribute("ratio").as_double();
         }
         facet->ogMap.totalDose = outgNode.attribute("totalDose").as_double();
-        facet->sh.totalOutgassing = outgNode.attribute("totalOutgassing").as_double();
+        sh.totalOutgassing = outgNode.attribute("totalOutgassing").as_double();
         facet->ogMap.totalFlux = outgNode.attribute("totalFlux").as_double();
 
         double sum = 0.0;
@@ -784,10 +821,10 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
                 sum += ogMap.outgassingMap[iy*ogMap.outgassingMapWidth + ix];
             }
         }
-        if (!ignoreSumMismatch && !IsEqual(sum, facet->sh.totalOutgassing)) {
+        if (!ignoreSumMismatch && !IsEqual(sum, sh.totalOutgassing)) {
             std::stringstream msg; msg << std::setprecision(8);
             msg << "Facet " << facetId + 1 << ":\n";
-            msg << "The total dynamic outgassing (" << 10.0 * facet->sh.totalOutgassing << " mbar.l/s)\n";
+            msg << "The total dynamic outgassing (" << 10.0 * sh.totalOutgassing << " mbar.l/s)\n";
             msg << "doesn't match the sum of the dynamic outgassing cells (" << 10.0 * sum << " mbar.l/s).";
             /*if (1 == GLMessageBox::Display(msg.str(), "Dynamic outgassing mismatch", { "OK","Ignore rest" },GLDLG_ICONINFO))
                 ignoreSumMismatch = true;*/
@@ -796,33 +833,33 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
         }
     }
     else {
-        hasOutgassingFile = facet->sh.useOutgassingFile = false; //if outgassing map was incorrect, don't use it
+        hasOutgassingFile = sh.useOutgassingFile = false; //if outgassing map was incorrect, don't use it
         facet->ogMap.outgassingMapWidth = 0;
         facet->ogMap.outgassingMapHeight = 0;
         facet->ogMap.outgassingFileRatioU = 0.0;
         facet->ogMap.outgassingFileRatioV = 0.0;
         facet->ogMap.totalDose = 0.0;
-        facet->sh.totalOutgassing = 0.0;
+        sh.totalOutgassing = 0.0;
         facet->ogMap.totalFlux = 0.0;
     }
     xml_node angleMapNode = facetNode.child("IncidentAngleMap");
     if (angleMapNode && angleMapNode.child("map") && angleMapNode.attribute("angleMapThetaLimit")) {
 
-        facet->sh.anglemapParams.phiWidth = angleMapNode.attribute("angleMapPhiWidth").as_ullong();
-        facet->sh.anglemapParams.thetaLimit = angleMapNode.attribute("angleMapThetaLimit").as_double();
-        facet->sh.anglemapParams.thetaLowerRes = angleMapNode.attribute("angleMapThetaLowerRes").as_ullong();
-        facet->sh.anglemapParams.thetaHigherRes = angleMapNode.attribute("angleMapThetaHigherRes").as_ullong();
+        sh.anglemapParams.phiWidth = angleMapNode.attribute("angleMapPhiWidth").as_ullong();
+        sh.anglemapParams.thetaLimit = angleMapNode.attribute("angleMapThetaLimit").as_double();
+        sh.anglemapParams.thetaLowerRes = angleMapNode.attribute("angleMapThetaLowerRes").as_ullong();
+        sh.anglemapParams.thetaHigherRes = angleMapNode.attribute("angleMapThetaHigherRes").as_ullong();
 
         std::stringstream angleText;
         angleText << angleMapNode.child_value("map");
 
 
         //std::map<size_t,std::vector<size_t>> angleMapCache;
-        //size_t* angleMapCache = (size_t*)malloc(facet->sh.anglemapParams.GetDataSize());
+        //size_t* angleMapCache = (size_t*)malloc(sh.anglemapParams.GetDataSize());
         //angleMapCache.emplace(std::make_pair(facet->globalId,std::vector<size_t>()));
         auto& angleMap = facet->angleMap.pdf;
         try {
-            angleMap.clear(); angleMap.resize( facet->sh.anglemapParams.phiWidth * (facet->sh.anglemapParams.thetaLowerRes + facet->sh.anglemapParams.thetaHigherRes));
+            angleMap.clear(); angleMap.resize( sh.anglemapParams.phiWidth * (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes));
 
         }
         catch(...) {
@@ -831,16 +868,16 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
             throw Error(err.str().c_str());
         }
 
-        for (size_t iy = 0; iy < (facet->sh.anglemapParams.thetaLowerRes + facet->sh.anglemapParams.thetaHigherRes); iy++) {
-            for (size_t ix = 0; ix < facet->sh.anglemapParams.phiWidth; ix++) {
-                angleText >> angleMap[iy*facet->sh.anglemapParams.phiWidth + ix];
+        for (size_t iy = 0; iy < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); iy++) {
+            for (size_t ix = 0; ix < sh.anglemapParams.phiWidth; ix++) {
+                angleText >> angleMap[iy*sh.anglemapParams.phiWidth + ix];
             }
         }
-        facet->sh.anglemapParams.hasRecorded = true;
+        sh.anglemapParams.hasRecorded = true;
     }
     else {
-        facet->sh.anglemapParams.hasRecorded = false; //if angle map was incorrect, don't use it
-        if (facet->sh.desorbType == DES_ANGLEMAP) facet->sh.desorbType = DES_NONE;
+        sh.anglemapParams.hasRecorded = false; //if angle map was incorrect, don't use it
+        if (sh.desorbType == DES_ANGLEMAP) sh.desorbType = DES_NONE;
     }
 
     std::tuple<bool,bool> viewSettings; // texture, volume visible
@@ -852,44 +889,46 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
     if (facetHistNode) { // Molflow version before 2.8 didn't save histograms
         xml_node nbBounceNode = facetHistNode.child("Bounces");
         if (nbBounceNode) {
-            facet->sh.facetHistogramParams.recordBounce=true;
-            facet->sh.facetHistogramParams.nbBounceBinsize=nbBounceNode.attribute("binSize").as_ullong();
-            facet->sh.facetHistogramParams.nbBounceMax=nbBounceNode.attribute("max").as_ullong();
+            sh.facetHistogramParams.recordBounce=true;
+            sh.facetHistogramParams.nbBounceBinsize=nbBounceNode.attribute("binSize").as_ullong();
+            sh.facetHistogramParams.nbBounceMax=nbBounceNode.attribute("max").as_ullong();
         }
         xml_node distanceNode = facetHistNode.child("Distance");
         if (distanceNode) {
-            facet->sh.facetHistogramParams.recordDistance=true;
-            facet->sh.facetHistogramParams.distanceBinsize=distanceNode.attribute("binSize").as_double();
-            facet->sh.facetHistogramParams.distanceMax=distanceNode.attribute("max").as_double();
+            sh.facetHistogramParams.recordDistance=true;
+            sh.facetHistogramParams.distanceBinsize=distanceNode.attribute("binSize").as_double();
+            sh.facetHistogramParams.distanceMax=distanceNode.attribute("max").as_double();
         }
 #ifdef MOLFLOW
         xml_node timeNode = facetHistNode.child("Time");
         if (timeNode) {
-            facet->sh.facetHistogramParams.recordTime=true;
-            facet->sh.facetHistogramParams.timeBinsize=timeNode.attribute("binSize").as_double();
-            facet->sh.facetHistogramParams.timeMax=timeNode.attribute("max").as_double();
+            sh.facetHistogramParams.recordTime=true;
+            sh.facetHistogramParams.timeBinsize=timeNode.attribute("binSize").as_double();
+            sh.facetHistogramParams.timeMax=timeNode.attribute("max").as_double();
         }
 #endif
     }
 
     //Update flags
-    facet->sh.isProfile = (facet->sh.profileType != PROFILE_NONE);
+    sh.isProfile = (sh.profileType != PROFILE_NONE);
     //wp.isOpaque = (wp.opacity != 0.0);
-    facet->sh.isTextured = ((facet->sh.texWidth_precise * facet->sh.texHeight_precise) > 0);
+    sh.isTextured = ((sh.texWidth_precise * sh.texHeight_precise) > 0);
 
     // Do some fixes
-    bool hasAnyTexture = facet->sh.countDes || facet->sh.countAbs || facet->sh.countRefl || facet->sh.countTrans || facet->sh.countACD;
-    if (!facet->sh.isTextured && (hasAnyTexture)) {
-        facet->sh.countDes = false;
-        facet->sh.countAbs = false;
-        facet->sh.countRefl = false;
-        facet->sh.countTrans = false;
-        facet->sh.countACD = false;
+    bool hasAnyTexture = sh.countDes || sh.countAbs || sh.countRefl || sh.countTrans || sh.countACD;
+    if (!sh.isTextured && (hasAnyTexture)) {
+        sh.countDes = false;
+        sh.countAbs = false;
+        sh.countRefl = false;
+        sh.countTrans = false;
+        sh.countACD = false;
         
         std::stringstream msg; msg << std::setprecision(8);
         msg << "Facet (#"<< facetId << ") has no valid mesh, but active texture counters: removing...\n";
         std::cerr << msg.str();
     }
+
+    return prim;
 }
 
 /*

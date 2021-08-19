@@ -158,21 +158,21 @@ std::pair<int, std::optional<std::string>> Simulation::SanityCheckModel(bool str
         errorsOnCheck++;
     }
     for(auto& fac : model->facets){
-        bool hasAnyTexture = fac->sh.countDes || fac->sh.countAbs || fac->sh.countRefl || fac->sh.countTrans || fac->sh.countACD || fac->sh.countDirection;
-        if (!fac->sh.isTextured && (fac->sh.texHeight * fac->sh.texHeight > 0)) {
+        bool hasAnyTexture = fac->prim->sh.countDes || fac->prim->sh.countAbs || fac->prim->sh.countRefl || fac->prim->sh.countTrans || fac->prim->sh.countACD || fac->prim->sh.countDirection;
+        if (!fac->prim->sh.isTextured && (fac->prim->sh.texHeight * fac->prim->sh.texHeight > 0)) {
             char tmp[256];
             snprintf(tmp, 256, "[Fac #%zu] Untextured facet with texture size\n", fac->globalId);
             errLog.append(tmp);
             if(errLog.size() > 1280) errLog.resize(1280);
             errorsOnCheck++;
         }
-        else if (!fac->sh.isTextured && (hasAnyTexture)) {
-            fac->sh.countDes = false;
-            fac->sh.countAbs = false;
-            fac->sh.countRefl = false;
-            fac->sh.countTrans = false;
-            fac->sh.countACD = false;
-            fac->sh.countDirection = false;
+        else if (!fac->prim->sh.isTextured && (hasAnyTexture)) {
+            fac->prim->sh.countDes = false;
+            fac->prim->sh.countAbs = false;
+            fac->prim->sh.countRefl = false;
+            fac->prim->sh.countTrans = false;
+            fac->prim->sh.countACD = false;
+            fac->prim->sh.countDirection = false;
             char tmp[256];
             snprintf(tmp, 256, "[Fac #%zu] Untextured facet with texture counters\n", fac->globalId);
             errLog.append(tmp);
@@ -268,7 +268,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
 
         tmpResults.facetStates.assign(model->sh.nbFacet, FacetState());
         for(auto& fac : simModel->facets){
-            auto& sFac = *fac;
+            auto& sFac = *fac->prim;
             size_t i = sFac.globalId;
             if(!tmpResults.facetStates[i].momentResults.empty())
                 continue; // Skip multiple init when facets exist in all structures

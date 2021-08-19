@@ -363,19 +363,20 @@ int Initializer::initSimModel(std::shared_ptr<SimulationModel> model) {
 
     for (size_t facIdx = 0; facIdx < model->sh.nbFacet; facIdx++) {
         auto sFac = model->facets[facIdx];
+        auto prim = model->primitives[facIdx];
 
         std::vector<double> textIncVector;
         // Add surface elements area (reciprocal)
-        if (sFac->sh.isTextured) {
-            textIncVector.resize(sFac->sh.texHeight * sFac->sh.texWidth);
+        if (sFac->prim->sh.isTextured) {
+            textIncVector.resize(sFac->prim->sh.texHeight * sFac->prim->sh.texWidth);
 
-            double rw = sFac->sh.U.Norme() / (double) (sFac->sh.texWidth_precise);
-            double rh = sFac->sh.V.Norme() / (double) (sFac->sh.texHeight_precise);
+            double rw = sFac->prim->sh.U.Norme() / (double) (sFac->prim->sh.texWidth_precise);
+            double rh = sFac->prim->sh.V.Norme() / (double) (sFac->prim->sh.texHeight_precise);
             double area = rw * rh;
-            area *= (sFac->sh.is2sided) ? 2.0 : 1.0;
+            area *= (sFac->prim->sh.is2sided) ? 2.0 : 1.0;
             size_t add = 0;
-            for (size_t j = 0; j < sFac->sh.texHeight; j++) {
-                for (size_t i = 0; i < sFac->sh.texWidth; i++) {
+            for (size_t j = 0; j < sFac->prim->sh.texHeight; j++) {
+                for (size_t i = 0; i < sFac->prim->sh.texWidth; i++) {
                     if (area > 0.0) {
                         textIncVector[add] = 1.0 / area;
                     } else {
@@ -390,10 +391,10 @@ int Initializer::initSimModel(std::shared_ptr<SimulationModel> model) {
         //Some initialization
         if (!sFac->InitializeOnLoad(facIdx, model->tdParams.moments.size())) return false;
 
-        hasVolatile |= sFac->sh.isVolatile;
+        hasVolatile |= sFac->prim->sh.isVolatile;
 
-        if ((sFac->sh.superDest || sFac->sh.isVolatile) &&
-            ((sFac->sh.superDest - 1) >= model->sh.nbSuper || sFac->sh.superDest < 0)) {
+        if ((prim->sh.superDest || prim->sh.isVolatile) &&
+        ((prim->sh.superDest - 1) >= model->sh.nbSuper || prim->sh.superDest < 0)) {
             // Geometry error
             //ClearSimulation();
             //ReleaseDataport(loader);

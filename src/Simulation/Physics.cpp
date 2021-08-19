@@ -14,8 +14,9 @@ double Physics::GenerateRandomVelocity(const std::vector<std::vector<std::pair<d
 
 double Physics::GenerateDesorptionTime(const std::vector<std::vector<std::pair<double, double>>> &IDs,
                                        const SubprocessFacet *src, double rndVal, double latestMoment) {
-    if (src->sh.outgassing_paramId >= 0) { //time-dependent desorption
-        return InterpolateX(rndVal * IDs[src->sh.IDid].back().second, IDs[src->sh.IDid],
+    auto& sh = src->prim->sh;
+    if (sh.outgassing_paramId >= 0) { //time-dependent desorption
+        return InterpolateX(rndVal * IDs[sh.IDid].back().second, IDs[sh.IDid],
                             false, false, true); //allow extrapolate
     } else {
         return rndVal * latestMoment; //continous desorption between 0 and latestMoment

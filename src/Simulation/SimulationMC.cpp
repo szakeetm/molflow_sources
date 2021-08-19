@@ -32,20 +32,22 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <omp.h>
 
 double SimulationModel::GetStickingAt(SubprocessFacet *f, double time) const {
-    if (f->sh.sticking_paramId == -1) //constant sticking
-        return f->sh.sticking;
+    auto& sh = f->prim->sh;
+    if (sh.sticking_paramId == -1) //constant sticking
+        return sh.sticking;
     else {
-        auto &par = tdParams.parameters[f->sh.sticking_paramId];
+        auto &par = tdParams.parameters[sh.sticking_paramId];
         return InterpolateY(time, par.GetValues(), par.logXinterp, par.logYinterp, false);
     }
     //else return model->tdParams.parameters[f->sh.sticking_paramId].InterpolateY(time, false);
 }
 
 double SimulationModel::GetOpacityAt(SubprocessFacet *f, double time) const {
-    if (f->sh.opacity_paramId == -1) //constant sticking
-        return f->sh.opacity;
+    auto& sh = f->prim->sh;
+    if (sh.opacity_paramId == -1) //constant sticking
+        return sh.opacity;
     else {
-        auto &par = tdParams.parameters[f->sh.opacity_paramId];
+        auto &par = tdParams.parameters[sh.opacity_paramId];
         return InterpolateY(time, par.GetValues(), par.logXinterp, par.logYinterp, false);
     }
     //else return this->tdParams.parameters[f->sh.opacity_paramId].InterpolateY(time, false);

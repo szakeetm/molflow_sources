@@ -33,7 +33,7 @@ namespace FlowIO {
         bool SaveSimulationState(pugi::xml_document &saveDoc, std::shared_ptr<SimulationModel> model, GlobalSimuState &globState);
 
         void
-        SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices);
+        SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices, GeomPrimitive *prim);
 
         UserInput uInput;
         double writeProgress{0.0};

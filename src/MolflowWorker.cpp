@@ -37,6 +37,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <filesystem>
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/utility.hpp>
+#include <memory>
 /*//#include <cereal/archives/xml.hpp>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/string.hpp>*/
@@ -79,6 +80,9 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 //#include "ProcessControl.h"
 #include "versionId.h"
 #include "TimeMoments.h"
+
+// Primitives
+#include "FacetData.h"
 
 /*
 //Leak detection
@@ -1247,6 +1251,7 @@ bool Worker::InterfaceGeomToSimModel() {
 
     for (size_t facIdx = 0; facIdx < model->sh.nbFacet; facIdx++) {
         SubprocessFacet sFac;
+        std::shared_ptr<GeomPrimitive> prim;
         {
             InterfaceFacet *facet = geom->GetFacet(facIdx);
 
@@ -1299,12 +1304,27 @@ bool Worker::InterfaceGeomToSimModel() {
                     }
                 }
             }
+            sFac.globalId = facIdx;
             sFac.sh = facet->sh;
-            sFac.indices = facet->indices;
-            sFac.vertices2 = facet->vertices2;
+            //sFac.indices = facet->indices;
+            //sFac.vertices2 = facet->vertices2;
             sFac.ogMap = facet->ogMap;
             sFac.angleMap.pdf = angleMapVector;
             sFac.textureCellIncrements = textIncVector;
+
+            if(facet->indices.size() == 3){
+                auto triPrim = std::make_shared<TriangleFacet>();
+                triPrim->vertices2 = facet->vertices2;
+                triPrim->sh = facet->sh;
+                prim = triPrim;
+            }
+            else{
+                auto polyPrim = std::make_shared<Facet>(facet->indices.size());
+                polyPrim->vertices2 = facet->vertices2;
+                polyPrim->sh = facet->sh;
+                prim = polyPrim;
+            }
+            prim->globalId = facIdx;
         }
 
         //Some initialization
@@ -1326,6 +1346,8 @@ bool Worker::InterfaceGeomToSimModel() {
         }
 
         model->facets.push_back(std::make_shared<SubprocessFacet>(sFac));
+        model->primitives.push_back(prim);
+        model->globalFacetIDs.push_back(facIdx);
     }
 
     if(!model->facets.empty() && !model->vertices3.empty())

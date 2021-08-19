@@ -12,11 +12,6 @@
 #include "GeometrySimu.h"
 #include "IntersectAABB_shared.h" // include needed for recursive delete of AABBNODE
 
-SuperStructure::SuperStructure()
-{
-    //aabbTree = NULL;
-}
-
 SuperStructure::~SuperStructure()
 {
     aabbTree.reset();
@@ -32,6 +27,8 @@ bool ParameterSurface::IsHardHit(const Ray &r) {
 
 bool SubprocessFacet::InitializeOnLoad(const size_t &id, const size_t &nbMoments) {
     globalId = id;
+    prim->globalId = globalId;
+
     //ResizeCounter(nbMoments); //Initialize counter
     if (!InitializeLinkAndVolatile(id)) return false;
     InitializeOutgassingMap();
@@ -46,6 +43,7 @@ bool SubprocessFacet::InitializeOnLoad(const size_t &id, const size_t &nbMoments
 
 size_t SubprocessFacet::InitializeHistogram(const size_t &nbMoments) const
 {
+    auto& sh = prim->sh;
     //FacetHistogramBuffer hist;
     //hist.Resize(sh.facetHistogramParams);
     //tmpHistograms = std::vector<FacetHistogramBuffer>(1 + nbMoments, hist);
@@ -60,8 +58,9 @@ size_t SubprocessFacet::InitializeHistogram(const size_t &nbMoments) const
 size_t SubprocessFacet::InitializeDirectionTexture(const size_t &nbMoments)
 {
     size_t directionSize = 0;
+    auto& sh = prim->sh;
 
-        //Direction
+    //Direction
     if (sh.countDirection) {
         directionSize = sh.texWidth*sh.texHeight * sizeof(DirectionCell);
         try {
@@ -77,8 +76,9 @@ size_t SubprocessFacet::InitializeDirectionTexture(const size_t &nbMoments)
 }
 
 size_t SubprocessFacet::InitializeProfile(const size_t &nbMoments)
-{    size_t profileSize = 0;
-
+{
+    size_t profileSize = 0;
+    auto& sh = prim->sh;
     //Profiles
     if (sh.isProfile) {
         profileSize = PROFILE_SIZE * sizeof(ProfileSlice);
@@ -97,6 +97,7 @@ size_t SubprocessFacet::InitializeProfile(const size_t &nbMoments)
 
 size_t SubprocessFacet::InitializeTexture(const size_t &nbMoments)
 {
+    auto& sh = prim->sh;
     size_t textureSize = 0;
     //Textures
     if (sh.isTextured) {
@@ -131,6 +132,7 @@ size_t SubprocessFacet::InitializeTexture(const size_t &nbMoments)
 
 size_t SubprocessFacet::InitializeAngleMap()
 {
+    auto& sh = prim->sh;
     //Incident angle map
     size_t angleMapSize = 0;
     if (sh.desorbType == DES_ANGLEMAP) { //Use mode
@@ -221,6 +223,7 @@ size_t SubprocessFacet::InitializeAngleMap()
 
 void SubprocessFacet::InitializeOutgassingMap()
 {
+    auto& sh = prim->sh;
     if (sh.useOutgassingFile) {
         //Precalc actual outgassing map width and height for faster generation:
         ogMap.outgassingMapWidth_precise = sh.U.Norme() * ogMap.outgassingFileRatioU;
@@ -238,6 +241,8 @@ void SubprocessFacet::InitializeOutgassingMap()
 
 bool SubprocessFacet::InitializeLinkAndVolatile(const size_t & id)
 {
+
+    auto& sh = prim->sh;
     if (sh.superDest || sh.isVolatile) {
         // Link or volatile facet, overides facet settings
         // Must be full opaque and 0 sticking
@@ -265,7 +270,7 @@ void SubprocessFacet::ResizeCounter(size_t nbMoments) {
 /**
 * \brief Constructor for cereal initialization
 */
-SubprocessFacet::SubprocessFacet() : Facet() {
+SubprocessFacet::SubprocessFacet() {
     isReady = false;
     globalId = 0;
 }
@@ -274,11 +279,11 @@ SubprocessFacet::SubprocessFacet() : Facet() {
 * \brief Constructor with initialisation based on the number of indices/facets
 * \param nbIndex number of indices/facets
 */
-SubprocessFacet::SubprocessFacet(size_t nbIndex) : Facet(nbIndex) {
+SubprocessFacet::SubprocessFacet(size_t nbIndex) {
     isReady = false;
     globalId = 0;
-    indices.resize(nbIndex);                    // Ref to Geometry Vector3d
-    vertices2.resize(nbIndex);
+    //indices.resize(nbIndex);                    // Ref to Geometry Vector3d
+    //vertices2.resize(nbIndex);
 }
 
 SubprocessFacet::SubprocessFacet(const SubprocessFacet& cpy) {
@@ -294,14 +299,14 @@ SubprocessFacet& SubprocessFacet::operator=(const SubprocessFacet& cpy){
     this->ogMap = cpy.ogMap;
     this->largeEnough = cpy.largeEnough;
     this->textureCellIncrements = cpy.textureCellIncrements;
-    this->sh = cpy.sh;
+    this->prim = cpy.prim;
 
     isReady = cpy.isReady;
     globalId = cpy.globalId;
-    indices = cpy.indices;                    // Ref to Geometry Vector3d
-    vertices2 = cpy.vertices2;
-    if(cpy.surf) surf = cpy.surf;
-    else surf = nullptr;
+    //indices = cpy.indices;                    // Ref to Geometry Vector3d
+    //vertices2 = cpy.vertices2;
+    //if(cpy.surf) surf = cpy.surf;
+    //else surf = nullptr;
 
     return *this;
 }
@@ -311,14 +316,14 @@ SubprocessFacet& SubprocessFacet::operator=(SubprocessFacet&& cpy) noexcept {
     this->ogMap = cpy.ogMap;
     this->largeEnough = std::move(cpy.largeEnough);
     this->textureCellIncrements = std::move(cpy.textureCellIncrements);
-    this->sh = cpy.sh;
+    this->prim = cpy.prim;
 
     isReady = cpy.isReady;
     globalId = cpy.globalId;
-    indices = std::move(cpy.indices);                    // Ref to Geometry Vector3d
-    vertices2 = std::move(cpy.vertices2);
-    surf = cpy.surf;
-    cpy.surf = nullptr;
+    //indices = std::move(cpy.indices);                    // Ref to Geometry Vector3d
+    //vertices2 = std::move(cpy.vertices2);
+    //surf = cpy.surf;
+    //cpy.surf = nullptr;
 
     return *this;
 }
@@ -329,6 +334,8 @@ SubprocessFacet& SubprocessFacet::operator=(SubprocessFacet&& cpy) noexcept {
 * \return calculated size of the facet hits
 */
 size_t SubprocessFacet::GetHitsSize(size_t nbMoments) const { //for hits dataport
+    auto& sh = prim->sh;
+
     return   (1 + nbMoments)*(
             sizeof(FacetHitBuffer) +
             +(sh.isTextured ? (sh.texWidth*sh.texHeight * sizeof(TextureCell)) : 0)
@@ -342,8 +349,8 @@ size_t SubprocessFacet::GetHitsSize(size_t nbMoments) const { //for hits datapor
 size_t SubprocessFacet::GetMemSize() const {
     size_t sum = 0;
     sum += sizeof (SubprocessFacet);
-    sum += sizeof (size_t) * indices.capacity();
-    sum += sizeof (Vector2d) * vertices2.capacity();
+    //sum += sizeof (size_t) * indices.capacity();
+    //sum += sizeof (Vector2d) * vertices2.capacity();
     sum += sizeof (double) * textureCellIncrements.capacity();
     sum += sizeof (bool) * largeEnough.capacity();
     sum += sizeof (double) * ogMap.outgassingMap.capacity();
@@ -360,7 +367,7 @@ int SimulationModel::InitialiseFacets() {
         return 1;
     }
 
-    for (const auto& f : facets) {
+    for (const auto& f : primitives) {
         auto& facet = *f;
         // Main facet params
         // Current facet
@@ -389,7 +396,7 @@ int SimulationModel::InitialiseFacets() {
  * @brief Calculates various facet parameters without sanity checking @see Geometry::CalculateFacetParams(Facet* f)
  * @param f individual subprocess facet
  */
-void SimulationModel::CalculateFacetParams(SubprocessFacet* f) {
+void SimulationModel::CalculateFacetParams(GeomPrimitive *f) {
     // Calculate facet normal
     Vector3d p0 = vertices3[f->indices[0]];
     Vector3d v1;
@@ -400,6 +407,8 @@ void SimulationModel::CalculateFacetParams(SubprocessFacet* f) {
     // TODO: Handle possible collinear consequtive vectors
     size_t i0 = f->indices[0];
     size_t i1 = f->indices[1];
+
+    f->sh.nbIndex = f->indices.size();
     while (ind < f->sh.nbIndex && consecutive) {
         size_t i2 = f->indices[ind++];
 
@@ -416,7 +425,7 @@ void SimulationModel::CalculateFacetParams(SubprocessFacet* f) {
 
     for (const auto& i : f->indices) {
         const Vector3d& p = vertices3[i];
-        f->sh.bb.min.x = std::min(f->sh.bb.min.x,p.x);
+        f->sh.bb.min.x = std::min(f->sh.bb.min.x, p.x);
         f->sh.bb.min.y = std::min(f->sh.bb.min.y, p.y);
         f->sh.bb.min.z = std::min(f->sh.bb.min.z, p.z);
         f->sh.bb.max.x = std::max(f->sh.bb.max.x, p.x);
@@ -442,13 +451,16 @@ void SimulationModel::CalculateFacetParams(SubprocessFacet* f) {
     // Construct a normal vector V:
     V = CrossProduct(f->sh.N, U); // |U|=1 and |N|=1 => |V|=1
 
+    if(f->vertices2.size() != f->indices.size())
+        f->vertices2.resize(f->indices.size());
+
     // u,v vertices (we start with p0 at 0,0)
     f->vertices2[0].u = 0.0;
     f->vertices2[0].v = 0.0;
     Vector2d BBmin; BBmin.u = 0.0; BBmin.v = 0.0;
     Vector2d BBmax; BBmax.u = 0.0; BBmax.v = 0.0;
 
-    for (size_t j = 1; j < f->sh.nbIndex; j++) {
+    for (size_t j = 1; j < f->indices.size(); j++) {
         Vector3d p = vertices3[f->indices[j]];
         Vector3d v = p - p0;
         f->vertices2[j].u = Dot(U, v);  // Project p on U along the V direction
@@ -552,7 +564,7 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
 #else
     std::vector<std::vector<std::shared_ptr<Primitive>>> primPointers;
     primPointers.resize(this->sh.nbSuper);
-    for(auto& sFac : this->facets){
+    for(auto& sFac : this->primitives){
         if (sFac->sh.superIdx == -1) { //Facet in all structures
             for (auto& fp_vec : primPointers) {
                 fp_vec.push_back(sFac);
@@ -563,7 +575,7 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
         }
     }
 
-    for(auto& sFac : this->facets){
+    for(auto& sFac : this->primitives){
         if (sFac->sh.opacity_paramId == -1){ //constant sticking
             sFac->sh.opacity = std::clamp(sFac->sh.opacity, 0.0, 1.0);
             sFac->surf = this->GetSurface(sFac->sh.opacity);
@@ -632,7 +644,7 @@ int SimulationModel::PrepareToRun() {
 
     //Check and calculate various facet properties for time dependent simulations (CDF, ID )
     for (size_t i = 0; i < sh.nbFacet; i++) {
-        SubprocessFacet& facet = *facets[i];
+        auto& facet = *facets[i]->prim;
         // TODO: Find a solution to integrate catalog parameters
         if(facet.sh.outgassing_paramId >= (int) tdParams.parameters.size()){
             char tmp[256];
@@ -711,10 +723,10 @@ void SimulationModel::CalcTotalOutgassing() {
     const double latestMoment = wp.latestMoment;
 
     for (size_t i = 0; i < sh.nbFacet; i++) {
-        SubprocessFacet& facet = *facets[i];
+        auto& facet = *facets[i]->prim;
         if (facet.sh.desorbType != DES_NONE) { //there is a kind of desorption
             if (facet.sh.useOutgassingFile) { //outgassing file
-                auto& ogMap = facet.ogMap;
+                auto& ogMap = facets[i]->ogMap;
                 for (size_t l = 0; l < (ogMap.outgassingMapWidth * ogMap.outgassingMapHeight); l++) {
                     totalDesorbedMolecules += latestMoment * ogMap.outgassingMap[l] / (1.38E-23 * facet.sh.temperature);
                     finalOutgassingRate += ogMap.outgassingMap[l] / (1.38E-23 * facet.sh.temperature);
@@ -797,11 +809,14 @@ void GlobalSimuState::Resize(const SimulationModel &model) { //Constructs the 'd
 
     if(!model.facets.empty()) {
         for (size_t i = 0; i < nbF; i++) {
-            auto sFac = model.facets[i];
-            if (sFac->globalId != i) {
-                std::cerr << "Facet ID mismatch! : " << sFac->globalId << " / " << i << "\n";
-                tMutex.unlock();
-                exit(0);
+            auto sFac = model.facets[i]->prim;
+            {
+                //auto id =  model.facets[i]->globalId;
+                if (sFac->globalId != i) {
+                    std::cerr << "Facet ID mismatch! : " << sFac->globalId << " / " << i << "\n";
+                    tMutex.unlock();
+                    exit(0);
+                }
             }
 
             FacetMomentSnapshot facetMomentTemplate{};

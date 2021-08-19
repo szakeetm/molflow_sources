@@ -172,7 +172,7 @@ void ParameterParser::ChangeFacetParams(std::vector<std::shared_ptr<SubprocessFa
     for(auto& par : Parameters::facetParams){
         size_t id = std::get<0>(par);
         if(id < facets.size()) {
-            auto& facet = *facets[id];
+            auto& facet = *facets[id]->prim;
             if (std::get<1>(par) == Parameters::FacetParam::opacity)
                 facet.sh.opacity = std::get<2>(par);
             else if (std::get<1>(par) == Parameters::FacetParam::outgassing)
