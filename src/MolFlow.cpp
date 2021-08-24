@@ -974,16 +974,21 @@ int MolFlow::FrameMove()
 		desNumber->SetText("Starting...");
 	}
 	else {
-	    if(hps != 0.0)
-            sprintf(tmp, "%s (%s)", Util::formatInt(worker.globalHitCache.globalHits.nbMCHit, "hit"), Util::formatPs(hps, "hit"));
-	    else
-	        sprintf(tmp, "%s (%s)", Util::formatInt(worker.globalHitCache.globalHits.nbMCHit, "hit"), Util::formatPs(lastHps, "hit"));
+	    double current_avg = hps.avg();
+        if(!runningState) current_avg = hps_runtotal.avg();
+        else current_avg = (current_avg != 0.0) ? current_avg : hps.last();
+
+        sprintf(tmp, "%s (%s)", Util::formatInt(worker.globalHitCache.globalHits.nbMCHit, "hit"),
+                Util::formatPs(current_avg, "hit"));
         hitNumber->SetText(tmp);
-        if(hps != 0.0)
-            sprintf(tmp, "%s (%s)", Util::formatInt(worker.globalHitCache.globalHits.nbDesorbed, "des"), Util::formatPs(dps, "des"));
-        else
-            sprintf(tmp, "%s (%s)", Util::formatInt(worker.globalHitCache.globalHits.nbDesorbed, "des"), Util::formatPs(lastDps, "des"));
-		desNumber->SetText(tmp);
+
+        current_avg = dps.avg();
+        if(!runningState) current_avg = dps_runtotal.avg();
+        else current_avg = (current_avg != 0.0) ? current_avg : dps.last();
+
+        sprintf(tmp, "%s (%s)", Util::formatInt(worker.globalHitCache.globalHits.nbDesorbed, "des"),
+                Util::formatPs(current_avg, "des"));
+        desNumber->SetText(tmp);
 	}
 
     //sprintf(tmp, "Running: %s", Util::formatTime(worker.simuTimer.Elapsed()));
@@ -1472,15 +1477,17 @@ void MolFlow::StartStopSimulation() {
 	// reset on start only
 	lastMeasTime = m_fTime;
 	if(worker.IsRunning()) {
-        dps = 0.0;
-        hps = 0.0;
-        lastHps = hps;
-        lastDps = dps;
+	    hps.clear();
+        dps.clear();
+        hps_runtotal.clear();
+        dps_runtotal.clear();
     }
 	lastNbHit = worker.globalHitCache.globalHits.nbMCHit;
 	lastNbDes = worker.globalHitCache.globalHits.nbDesorbed;
-	lastUpdate = 0.0;
 
+	hps_runtotal.push(lastNbHit, lastMeasTime);
+	dps_runtotal.push(lastNbDes, lastMeasTime);
+	lastUpdate = 0.0;
 }
 
 // Name: EventProc()
