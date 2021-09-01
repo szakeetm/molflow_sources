@@ -522,7 +522,7 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
     if (!m.try_lock()) {
         return 1;
     }
-
+accel_type=1;
 #if defined(USE_OLD_BVH)
     std::vector<std::vector<SubprocessFacet*>> facetPointers;
     facetPointers.resize(this->sh.nbSuper);
@@ -587,7 +587,7 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
             if(accel_type == 1)
                 this->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s], probabilities));
             else
-                this->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], maxPrimsInNode, BVHAccel::SplitMethod::ProbSplit, probabilities));
+                this->accel.emplace_back(std::make_shared<BVHAccel>(probabilities, primPointers[s], bvh_width));
         }
     }
     else {

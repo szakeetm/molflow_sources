@@ -21,6 +21,7 @@
 
 struct SubprocessFacet;
 
+struct ParticleLog;
 class SuperStructure;
 
 class ParameterSurface : public Surface {
@@ -413,7 +414,7 @@ public:
     }
 
     ParticleLog(ParticleLog &&rhs) noexcept: tMutex() {
-        pLog = std::move(pLog);
+        pLog = std::move(rhs.pLog);
     };
 
     ParticleLog(const ParticleLog &rhs) {
