@@ -6,6 +6,8 @@
 #include <Helper/MathTools.h>
 #include <cmath>
 #include <set>
+#include <random>
+
 #include <Simulation/CDFGeneration.h>
 #include <Simulation/IDGeneration.h>
 #include <Helper/Chronometer.h>
@@ -522,7 +524,13 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
     if (!m.try_lock()) {
         return 1;
     }
-accel_type=1;
+
+    for(auto& fac : facets){
+        fac->nbTraversalSteps = 0;
+        fac->nbIntersections = 0;
+        fac->nbTests = 0;
+    }
+
 #if defined(USE_OLD_BVH)
     std::vector<std::vector<SubprocessFacet*>> facetPointers;
     facetPointers.resize(this->sh.nbSuper);
@@ -575,7 +583,64 @@ accel_type=1;
     }
 
     this->accel.clear();
-    if(BVHAccel::SplitMethod::ProbSplit == split && globState && globState->initialized && globState->globalHits.globalHits.nbDesorbed > 0){
+    std::vector<TestRay> hits;
+    if(globState && globState->initialized) {
+        hits = globState->PrepareHitBattery();
+    }
+    if(BVHAccel::SplitMethod::TestSplit == split && !hits.empty()){
+        if(hits.empty())
+            return 1;
+
+        for (size_t s = 0; s < this->sh.nbSuper; ++s) {
+            if(accel_type == 1)
+                this->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s]));
+            else
+                this->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], maxPrimsInNode, split));
+        }
+        int isect_cost = 80;
+        int trav_cost = 1;
+        for( auto& acc : accel){
+            RTStats tree_stats{};
+            RTStats tree_stats_max{};
+            auto r = Ray();
+            r.rng = new MersenneTwister();
+            for(auto& ray : hits) {
+                r.origin = ray.pos;
+                r.direction = ray.dir;
+                auto stats = ((KdTreeAccel *) acc.get())->IntersectT(r);
+                tree_stats.nti += stats.nti;
+                tree_stats.ntl += stats.ntl;
+                tree_stats.nit += stats.nit;
+                tree_stats.timeTrav += stats.timeTrav;
+                tree_stats.timeInt += stats.timeInt;
+                tree_stats_max.nti = std::max(stats.nti, tree_stats_max.nti);
+                tree_stats_max.ntl = std::max(stats.ntl, tree_stats_max.ntl);
+                tree_stats_max.nit = std::max(stats.nit, tree_stats_max.nit);
+            }
+            std::cout << "SAH*KD Tree stats:\n" << (double)tree_stats.nti / hits.size() << " | " << (double)tree_stats.ntl /hits.size() << " | " << (double)tree_stats.nit /hits.size() << "\n";
+            std::cout << "SAH*KD Tree  max :\n" << tree_stats_max.nti << " | " << tree_stats_max.ntl << " | "<< tree_stats_max.nit << "\n";
+            std::cout << "SAH*KD cost:\n" << tree_stats.timeTrav / (double)tree_stats.nti << " | " << tree_stats.timeInt / (double)tree_stats.nit << "\n";
+            this->accel.clear();
+
+            isect_cost = std::ceil((tree_stats.timeTrav / (double)tree_stats.nti) / (tree_stats.timeInt / (double)tree_stats.nit));
+        }
+        isect_cost = 80;
+        // same as prob split
+        std::vector<double> frequencies;
+        frequencies.reserve(globState->facetStates.size());
+        for(auto& facet_stat : globState->facetStates){
+            frequencies.emplace_back((double) facet_stat.momentResults[0].hits.nbHitEquiv / (double) globState->globalHits.globalHits.nbHitEquiv);
+        }
+
+        for (size_t s = 0; s < this->sh.nbSuper; ++s) {
+            if(accel_type == 1) {
+                this->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s], hits, frequencies, isect_cost, trav_cost));
+            }
+            else
+                this->accel.emplace_back(std::make_shared<BVHAccel>(hits, primPointers[s], maxPrimsInNode, BVHAccel::SplitMethod::TestSplit));
+        }
+    }
+    else if(BVHAccel::SplitMethod::ProbSplit == split && globState && globState->initialized && globState->globalHits.globalHits.nbDesorbed > 0){
         if(globState->facetStates.size() != this->facets.size())
             return 1;
         std::vector<double> probabilities;
@@ -587,7 +652,7 @@ accel_type=1;
             if(accel_type == 1)
                 this->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s], probabilities));
             else
-                this->accel.emplace_back(std::make_shared<BVHAccel>(probabilities, primPointers[s], bvh_width));
+                this->accel.emplace_back(std::make_shared<BVHAccel>(probabilities, primPointers[s], maxPrimsInNode));
         }
     }
     else {
@@ -598,6 +663,31 @@ accel_type=1;
                 this->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], maxPrimsInNode, split));
         }
     }
+
+    if(!hits.empty() && accel_type == 1)
+        for( auto& acc : accel){
+            RTStats tree_stats{};
+            RTStats tree_stats_max{};
+            auto r = Ray();
+            r.rng = new MersenneTwister();
+            for(auto& ray : hits) {
+                r.origin = ray.pos;
+                r.direction = ray.dir;
+                auto stats = ((KdTreeAccel *) acc.get())->IntersectT(r);
+                tree_stats.nti += stats.nti;
+                tree_stats.ntl += stats.ntl;
+                tree_stats.nit += stats.nit;
+                tree_stats.timeTrav += stats.timeTrav;
+                tree_stats.timeInt += stats.timeInt;
+                tree_stats_max.nti = std::max(stats.nti, tree_stats_max.nti);
+                tree_stats_max.ntl = std::max(stats.ntl, tree_stats_max.ntl);
+                tree_stats_max.nit = std::max(stats.nit, tree_stats_max.nit);
+            }
+
+            std::cout << "KD Tree stats:\n"<< (double)tree_stats.nti / hits.size() << " | "<< (double)tree_stats.ntl /hits.size()<< " | "<< (double)tree_stats.nit /hits.size()<< "\n";
+            std::cout << "KD Tree  max :\n"<< tree_stats_max.nti << " | "<< tree_stats_max.ntl<< " | "<< tree_stats_max.nit<< "\n";
+            std::cout << "KD cost:\n" << tree_stats.timeTrav / (double)tree_stats.nti << " | " << tree_stats.timeInt / (double)tree_stats.nit << "\n";
+        }
 #endif // old_bvb
 
     timer.Stop();
@@ -829,6 +919,7 @@ void GlobalSimuState::Resize(const SimulationModel &model) { //Constructs the 'd
     }*/
     //Global histogram
 
+    globalHits.hitBattery.resize(model.facets.size());
     FacetHistogramBuffer globalHistTemplate{};
     globalHistTemplate.Resize(model.wp.globalHistogramParams);
     globalHistograms.assign(1 + nbMoments, globalHistTemplate);
@@ -849,6 +940,8 @@ void GlobalSimuState::Reset() {
         ZEROVECTOR(h.timeHistogram);
     }
     memset(&globalHits, 0, sizeof(globalHits)); //Plain old data
+    globalHits.hitBattery.clear();
+    globalHits.hitBattery.resize(facetStates.size());
     for (auto& state : facetStates) {
         ZEROVECTOR(state.recordedAngleMapPdf);
         for (auto& m : state.momentResults) {
@@ -1276,4 +1369,60 @@ FacetState& FacetState::operator+=(const FacetState & rhs) {
         this->recordedAngleMapPdf += rhs.recordedAngleMapPdf;
     this->momentResults += rhs.momentResults;
     return *this;
+}
+
+int GlobalSimuState::UpdateBatteryFrequencies() {
+
+    if(this->globalHits.globalHits.nbMCHit == 0)
+        return 1;
+
+    std::vector<double> frequencies;
+    for(auto& facet_stat : facetStates){
+        frequencies.emplace_back((double) facet_stat.momentResults[0].hits.nbMCHit / (double) globalHits.globalHits.nbMCHit);
+    }
+
+    int bat_n = 0;
+    for(auto& freq : globalHits.hitBattery.nRays){
+        freq = std::round(frequencies[bat_n] * HITCACHESAMPLE) * 32;
+        bat_n++;
+    }
+
+    return 0;
+}
+
+std::vector<TestRay> GlobalSimuState::PrepareHitBattery() {
+
+    std::vector<double> frequencies;
+    for(auto& facet_stat : facetStates){
+        frequencies.emplace_back((double) facet_stat.momentResults[0].hits.nbMCHit / (double) globalHits.globalHits.nbMCHit);
+    }
+
+    std::vector<TestRay> battery;
+    battery.reserve(facetStates.size());
+
+    int bat_n = 0;
+    size_t count = 0;
+    for(auto& bat : globalHits.hitBattery.rays){
+        //for(auto& hit : bat) {
+        if(bat.empty()) continue;
+        count += (int)std::round(frequencies[bat_n] * HITCACHESAMPLE);
+        bat_n++;
+    }
+    bat_n = 0;
+    double denum = 1.0;
+    if(count > HITCACHESAMPLE)
+        denum = (double) HITCACHESAMPLE / (double) count;
+    for(auto& bat : globalHits.hitBattery.rays){
+        //for(auto& hit : bat) {
+        if(bat.empty()) continue;
+        std::sample(bat.begin(), bat.end(), std::back_inserter(battery),
+                    (int)std::round(frequencies[bat_n] * HITCACHESAMPLE * denum), std::mt19937{std::random_device{}()});
+        bat_n++;
+            /*if (bat.size() < std::ceil(frequencies[hit.location] * HITCACHESAMPLE)) {
+                battery.emplace_back(hit.pos, hit.dir, hit.location);
+            }
+        }*/
+    }
+
+    return battery;
 }

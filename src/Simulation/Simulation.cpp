@@ -10,6 +10,8 @@
 #else
 #include <RayTracing/KDTree.h>
 #include <RayTracing/BVH.h>
+#include <Helper/FormatHelper.h>
+
 #endif
 /*SuperStructure::SuperStructure()
 {
@@ -246,6 +248,7 @@ int Simulation::RebuildAccelStructure() {
 
     timer.Stop();
 
+    Log::console_msg(4, "Rebuilt Acceleration Structure in %lfs\n", timer.Elapsed());
     return 0;
 }
 
@@ -259,7 +262,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     strncpy(loadStatus, "Loading simulation", 127);
     
     auto simModel = this->model;
-    
+
     // New GlobalSimuState structure for threads
     for(auto& particle : particles)
     {
@@ -292,6 +295,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
 
         // Init tmp vars per thread
         particle.tmpFacetVars.assign(simModel->sh.nbFacet, SubProcessFacetTempVar());
+        particle.tmpState.globalHits.hitBattery.resize(simModel->sh.nbFacet);
 
         //currentParticle.tmpState = *tmpResults;
         //delete tmpResults;

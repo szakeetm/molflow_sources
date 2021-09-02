@@ -388,6 +388,9 @@ public:
     Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuState &rhsGlobHit, double globThreshold,
             double locThreshold);
 
+    std::vector<TestRay> PrepareHitBattery();
+    int UpdateBatteryFrequencies();
+
 #if defined(MOLFLOW)
     GlobalHitBuffer globalHits;
     std::vector<FacetHistogramBuffer> globalHistograms; //1+nbMoment
