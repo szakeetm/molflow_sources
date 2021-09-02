@@ -1470,8 +1470,25 @@ void Worker::Start() {
     try {
         simManager.ForwardGlobalCounter(&globState, &particleLog);
 
-        if (simManager.StartSimulation()) {
-            throw std::logic_error("Processes are already done!");
+        retryStart:
+        try {
+            if (simManager.StartSimulation()) {
+                throw std::logic_error("Processes are already done!");
+            }
+        }
+        catch (std::exception& err){
+            int ok = GLMessageBox::Display((char *)err.what(),"Error (Start)",GLDLG_OK,GLDLG_ICONERROR);
+            if(ok)
+                goto retryStart;
+            simManager.StopSimulation();
+            throw std::runtime_error(err.what());
+        }
+        catch (std::exception& err){
+            int ok = GLMessageBox::Display((char *)err.what(),"Error (Start)",GLDLG_OK,GLDLG_ICONERROR);
+            if(ok)
+                goto retryStart;
+            simManager.StopSimulation();
+            throw std::runtime_error(err.what());
         }
     }
     catch (std::exception &e) {

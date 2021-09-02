@@ -1475,14 +1475,15 @@ void MolFlow::StartStopSimulation() {
 
 	// Frame rate measurement
 	// reset on start only
-	lastMeasTime = m_fTime;
 	if(worker.IsRunning()) {
 	    hps.clear();
         dps.clear();
         hps_runtotal.clear();
         dps_runtotal.clear();
     }
-	lastNbHit = worker.globalHitCache.globalHits.nbMCHit;
+
+    lastMeasTime = m_Timer.Elapsed();
+    lastNbHit = worker.globalHitCache.globalHits.nbMCHit;
 	lastNbDes = worker.globalHitCache.globalHits.nbDesorbed;
 
 	hps_runtotal.push(lastNbHit, lastMeasTime);

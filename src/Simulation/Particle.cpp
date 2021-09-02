@@ -71,6 +71,21 @@ bool Particle::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, DW
                 globSimuState.globalHits.hitCacheSize = Min(HITCACHESIZE, globSimuState.globalHits.hitCacheSize +
                                                                           tmpState.globalHits.hitCacheSize);
             }
+            {
+                int hit_n = 0;
+                if(tmpState.globalHits.hitBattery.size() == globSimuState.globalHits.hitBattery.size()) {
+                    for (auto &bat : globSimuState.globalHits.hitBattery.rays) {
+                        auto& tmp = tmpState.globalHits.hitBattery.rays[hit_n];
+                        if (bat.size() < tmpState.globalHits.hitBattery.nRays[hit_n])
+                            bat.insert(bat.end(), tmp.begin(), tmp.end());
+                        else {
+                            if(tmpState.globalHits.hitBattery.nRays[hit_n] > bat.size())
+                                bat.insert(bat.end(), tmp.begin(), tmp.begin() + (tmpState.globalHits.hitBattery.nRays[hit_n] - bat.size()));
+                        }
+                        ++hit_n;
+                    }
+                }
+            }
         }
 
         //Global histograms
@@ -1562,6 +1577,8 @@ void Particle::RecordHit(const int &type) {
         tmpState.globalHits.hitCache[tmpState.globalHits.hitCacheSize].type = type;
         ++tmpState.globalHits.hitCacheSize;
     }
+    if(tmpState.globalHits.hitBattery.rays[particle.lastIntersected].size() < HITCACHESIZE)
+        tmpState.globalHits.hitBattery.rays[particle.lastIntersected].emplace_back(particle.origin, particle.direction, particle.lastIntersected);
 }
 
 void Particle::RecordLeakPos() {

@@ -231,7 +231,7 @@ public:
 
     int PrepareToRun();
 
-    int BuildAccelStructure(GlobalSimuState *globState, int accel_type, BVHAccel::SplitMethod split,
+    int BuildAccelStructure(GlobalSimuState *globState, int accel_type, int split,
                             int bvh_width);
 
     int InitialiseFacets();
@@ -387,6 +387,9 @@ public:
     static std::tuple<int, int, int>
     Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuState &rhsGlobHit, double globThreshold,
             double locThreshold);
+
+    std::vector<TestRay> PrepareHitBattery();
+    int UpdateBatteryFrequencies();
 
 #if defined(MOLFLOW)
     GlobalHitBuffer globalHits;

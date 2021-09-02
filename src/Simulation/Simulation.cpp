@@ -10,6 +10,8 @@
 #else
 #include <RayTracing/KDTree.h>
 #include <RayTracing/BVH.h>
+#include <Helper/FormatHelper.h>
+
 #endif
 
 /*SuperStructure::SuperStructure()
@@ -239,7 +241,7 @@ int Simulation::RebuildAccelStructure() {
     Chronometer timer;
     timer.Start();
 
-    if(model->BuildAccelStructure(globState, 0, BVHAccel::SplitMethod::SAH, 2))
+    if(model->BuildAccelStructure(globState, 0, (int)BVHAccel::SplitMethod::SAH, 2))
         return 1;
 
     for(auto& particle : particles)
@@ -247,6 +249,7 @@ int Simulation::RebuildAccelStructure() {
 
     timer.Stop();
 
+    Log::console_msg(4, "Rebuilt Acceleration Structure in %lfs\n", timer.Elapsed());
     return 0;
 }
 
@@ -260,7 +263,8 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     strncpy(loadStatus, "Loading simulation", 127);
     
     auto simModel = this->model;
-    
+    model->wp.accel_type = 1;
+
     // New GlobalSimuState structure for threads
     for(auto& particle : particles)
     {
@@ -293,6 +297,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
 
         // Init tmp vars per thread
         particle.tmpFacetVars.assign(simModel->sh.nbFacet, SubProcessFacetTempVar());
+        particle.tmpState.globalHits.hitBattery.resize(simModel->sh.nbFacet);
 
         //currentParticle.tmpState = *tmpResults;
         //delete tmpResults;
@@ -355,7 +360,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     simModel->accel.clear();
     for (size_t s = 0; s < simModel->sh.nbSuper; ++s) {
         if(model->wp.accel_type == 1)
-            simModel->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s], std::vector<double>{}, 80, 1, 0.5, 1, -1));
+            simModel->accel.emplace_back(std::make_shared<KdTreeAccel>(KdTreeAccel::SplitMethod::SAH, primPointers[s], std::vector<double>{}, 80, 1, 0.5, 1, -1));
         else
             simModel->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], 2, BVHAccel::SplitMethod::SAH));
     }
