@@ -11,6 +11,7 @@
 #include <Simulation/CDFGeneration.h>
 #include <Simulation/IDGeneration.h>
 #include <Helper/Chronometer.h>
+#include <omp.h>
 #include "GeometrySimu.h"
 #include "IntersectAABB_shared.h" // include needed for recursive delete of AABBNODE
 
@@ -634,13 +635,20 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
         // same as prob split
         std::vector<double> frequencies;
         frequencies.reserve(globState->facetStates.size());
-        for(auto& facet_stat : globState->facetStates){
-            frequencies.emplace_back((double) facet_stat.momentResults[0].hits.nbHitEquiv / (double) globState->globalHits.globalHits.nbHitEquiv);
+        if(globState->globalHits.globalHits.nbHitEquiv > 0.0) {
+            for (auto &facet_stat: globState->facetStates) {
+                frequencies.emplace_back((double) facet_stat.momentResults[0].hits.nbHitEquiv /
+                                         (double) globState->globalHits.globalHits.nbHitEquiv);
+            }
+        }
+        else if(!hits.empty()){
+            for (size_t s = 0; s < this->sh.nbSuper; ++s)
+                frequencies = ComputeHitChances(hits, primPointers[s]);
         }
 
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
             if(accel_type == 1) {
-                this->accel.emplace_back(std::make_shared<KdTreeAccel>((KdTreeAccel::SplitMethod) split, primPointers[s], hits, frequencies, isect_cost, trav_cost));
+                this->accel.emplace_back(std::make_shared<KdTreeAccel>((KdTreeAccel::SplitMethod) split, primPointers[s], frequencies, hits, isect_cost, trav_cost));
             }
             else
                 this->accel.emplace_back(std::make_shared<BVHAccel>(hits, primPointers[s], maxPrimsInNode, (BVHAccel::SplitMethod) split));
@@ -1433,4 +1441,52 @@ std::vector<TestRay> GlobalSimuState::PrepareHitBattery() {
     }
 
     return battery;
+}
+
+std::vector<double> SimulationModel::ComputeHitChances(const std::vector<TestRay>& battery, const std::vector<std::shared_ptr<Facet>>& primitives) {
+
+    std::vector<double> primChance;
+    auto ray = Ray();
+#pragma omp parallel default(none) firstprivate(ray) shared(primitives, battery, primChance)
+    {
+        const int nthreads = omp_get_num_threads();
+        const int ithread = omp_get_thread_num();
+        const int nprims = primitives.size();
+        std::unique_ptr<double[]> local_chances;
+#pragma omp single
+        {
+            local_chances = std::make_unique<double[]>(nprims * nthreads);
+            for(int i=0; i<(nprims*nthreads); i++) local_chances[i] = 0.0;
+        }
+
+        ray.rng = new MersenneTwister();
+#pragma omp for
+        for (auto &test: battery) {
+            ray.origin = test.pos;
+            ray.direction = test.dir;
+            Vector3d invDir(1.0 / ray.direction.x, 1.0 / ray.direction.y, 1.0 / ray.direction.z);
+            int dirIsNeg[3] = {invDir.x < 0, invDir.y < 0, invDir.z < 0};
+            for (size_t i = 0; i < nprims; ++i) {
+                bool hit = primitives[i]->Intersect(ray);
+                if (hit) {
+                    local_chances[ithread*nprims+i] += 1.0;
+                }
+            }
+        }
+        delete ray.rng;
+
+        // parallel reduce
+#pragma omp for
+        for (size_t i = 0; i < nprims; ++i) {
+            for(int t = 0; t < nthreads; t++)
+                primChance[i] += local_chances[t*nprims+i];
+        }
+
+#pragma omp for
+        for (size_t i = 0; i < primitives.size(); ++i) {
+            primChance[i] /= battery.size();
+        }
+    }
+
+    return primChance;
 }

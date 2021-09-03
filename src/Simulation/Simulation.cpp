@@ -262,7 +262,6 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     strncpy(loadStatus, "Loading simulation", 127);
     
     auto simModel = this->model;
-model->wp.accel_type = 1;
     // New GlobalSimuState structure for threads
     for(auto& particle : particles)
     {
@@ -358,7 +357,7 @@ model->wp.accel_type = 1;
     simModel->accel.clear();
     for (size_t s = 0; s < simModel->sh.nbSuper; ++s) {
         if(model->wp.accel_type == 1)
-            simModel->accel.emplace_back(std::make_shared<KdTreeAccel>(KdTreeAccel::SplitMethod::SAH, primPointers[s], std::vector<double>{}, 80, 1, 0.5, 1, -1));
+            simModel->accel.emplace_back(std::make_shared<KdTreeAccel>(KdTreeAccel::SplitMethod::SAH, primPointers[s]));
         else
             simModel->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], 2, BVHAccel::SplitMethod::SAH));
     }
