@@ -516,7 +516,7 @@ void SimulationModel::CalculateFacetParams(SubprocessFacet* f) {
 #endif
 }
 
-int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_type, BVHAccel::SplitMethod split,
+int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_type, int split,
                                          int maxPrimsInNode) {
     Chronometer timer;
     timer.Start();
@@ -530,7 +530,6 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
         fac->nbIntersections = 0;
         fac->nbTests = 0;
     }
-
 #if defined(USE_OLD_BVH)
     std::vector<std::vector<SubprocessFacet*>> facetPointers;
     facetPointers.resize(this->sh.nbSuper);
@@ -587,15 +586,17 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
     if(globState && globState->initialized) {
         hits = globState->PrepareHitBattery();
     }
-    if(BVHAccel::SplitMethod::TestSplit == split && !hits.empty()){
+    if(((accel_type==0)
+        ? (BVHAccel::SplitMethod::TestSplit == (BVHAccel::SplitMethod) split)
+        : (KdTreeAccel::SplitMethod::TestSplit == (KdTreeAccel::SplitMethod) split)) && !hits.empty()){
         if(hits.empty())
             return 1;
 
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
             if(accel_type == 1)
-                this->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s]));
+                this->accel.emplace_back(std::make_shared<KdTreeAccel>((KdTreeAccel::SplitMethod)split, primPointers[s]));
             else
-                this->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], maxPrimsInNode, split));
+                this->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], bvh_width, (BVHAccel::SplitMethod) split));
         }
         int isect_cost = 80;
         int trav_cost = 1;
@@ -624,7 +625,7 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
 
             isect_cost = std::ceil((tree_stats.timeTrav / (double)tree_stats.nti) / (tree_stats.timeInt / (double)tree_stats.nit));
         }
-        isect_cost = 80;
+        //isect_cost = 80;
         // same as prob split
         std::vector<double> frequencies;
         frequencies.reserve(globState->facetStates.size());
@@ -634,13 +635,15 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
 
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
             if(accel_type == 1) {
-                this->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s], hits, frequencies, isect_cost, trav_cost));
+                this->accel.emplace_back(std::make_shared<KdTreeAccel>(KdTreeAccel::SplitMethod::TestSplit, primPointers[s], hits, frequencies, isect_cost, trav_cost));
             }
             else
-                this->accel.emplace_back(std::make_shared<BVHAccel>(hits, primPointers[s], maxPrimsInNode, BVHAccel::SplitMethod::TestSplit));
+                this->accel.emplace_back(std::make_shared<BVHAccel>(hits, primPointers[s], bvh_width, BVHAccel::SplitMethod::TestSplit));
         }
     }
-    else if(BVHAccel::SplitMethod::ProbSplit == split && globState && globState->initialized && globState->globalHits.globalHits.nbDesorbed > 0){
+    else if(((accel_type==0)
+    ? (BVHAccel::SplitMethod::ProbSplit == (BVHAccel::SplitMethod) split)
+    : (KdTreeAccel::SplitMethod::ProbSplit == (KdTreeAccel::SplitMethod) split)) && globState && globState->initialized && globState->globalHits.globalHits.nbDesorbed > 0){
         if(globState->facetStates.size() != this->facets.size())
             return 1;
         std::vector<double> probabilities;
@@ -650,7 +653,7 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
         }
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
             if(accel_type == 1)
-                this->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s], probabilities));
+                this->accel.emplace_back(std::make_shared<KdTreeAccel>(KdTreeAccel::SplitMethod::ProbSplit, primPointers[s], probabilities));
             else
                 this->accel.emplace_back(std::make_shared<BVHAccel>(probabilities, primPointers[s], maxPrimsInNode));
         }
@@ -658,13 +661,13 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
     else {
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
             if(accel_type == 1)
-                this->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s]));
+                this->accel.emplace_back(std::make_shared<KdTreeAccel>((KdTreeAccel::SplitMethod) split, primPointers[s]));
             else
-                this->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], maxPrimsInNode, split));
+                this->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], maxPrimsInNode, (BVHAccel::SplitMethod)split));
         }
     }
 
-    if(!hits.empty() && accel_type == 1)
+    if(!hits.empty())
         for( auto& acc : accel){
             RTStats tree_stats{};
             RTStats tree_stats_max{};

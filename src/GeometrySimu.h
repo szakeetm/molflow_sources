@@ -231,7 +231,7 @@ public:
 
     int PrepareToRun();
 
-    int BuildAccelStructure(GlobalSimuState *globState, int accel_type, BVHAccel::SplitMethod split,
+    int BuildAccelStructure(GlobalSimuState *globState, int accel_type, int split,
                             int maxPrimsInNode);
 
     int InitialiseFacets();
