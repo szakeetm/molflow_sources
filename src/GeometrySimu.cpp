@@ -586,17 +586,22 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
     if(globState && globState->initialized) {
         hits = globState->PrepareHitBattery();
     }
-    if(((accel_type==0)
-        ? (BVHAccel::SplitMethod::TestSplit == (BVHAccel::SplitMethod) split)
-        : (KdTreeAccel::SplitMethod::TestSplit == (KdTreeAccel::SplitMethod) split)) && !hits.empty()){
+    bool withTestBattery = false;
+    if(accel_type==0)
+        withTestBattery = (BVHAccel::SplitMethod::TestSplit == (BVHAccel::SplitMethod) split);
+    else
+        withTestBattery = (KdTreeAccel::SplitMethod::TestSplit == (KdTreeAccel::SplitMethod) split)
+                || (KdTreeAccel::SplitMethod::HybridSplit == (KdTreeAccel::SplitMethod) split);
+
+    if(withTestBattery && !hits.empty()){
         if(hits.empty())
             return 1;
 
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
             if(accel_type == 1)
-                this->accel.emplace_back(std::make_shared<KdTreeAccel>((KdTreeAccel::SplitMethod)split, primPointers[s]));
+                this->accel.emplace_back(std::make_shared<KdTreeAccel>(KdTreeAccel::SplitMethod::SAH, primPointers[s]));
             else
-                this->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], bvh_width, (BVHAccel::SplitMethod) split));
+                this->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], maxPrimsInNode, BVHAccel::SplitMethod::SAH));
         }
         int isect_cost = 80;
         int trav_cost = 1;
@@ -635,10 +640,10 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
 
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
             if(accel_type == 1) {
-                this->accel.emplace_back(std::make_shared<KdTreeAccel>(KdTreeAccel::SplitMethod::TestSplit, primPointers[s], hits, frequencies, isect_cost, trav_cost));
+                this->accel.emplace_back(std::make_shared<KdTreeAccel>((KdTreeAccel::SplitMethod) split, primPointers[s], hits, frequencies, isect_cost, trav_cost));
             }
             else
-                this->accel.emplace_back(std::make_shared<BVHAccel>(hits, primPointers[s], bvh_width, BVHAccel::SplitMethod::TestSplit));
+                this->accel.emplace_back(std::make_shared<BVHAccel>(hits, primPointers[s], maxPrimsInNode, (BVHAccel::SplitMethod) split));
         }
     }
     else if(((accel_type==0)
