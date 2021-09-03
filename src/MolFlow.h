@@ -123,16 +123,16 @@ public:
 
 	struct {
         bool oldBVH{false};
-        BVHAccel::SplitMethod splitTechnique{BVHAccel::SplitMethod::SAH};
+        int splitTechnique{(int)BVHAccel::SplitMethod::SAH};
         bool drawAllStructs{false};
         int showLevelAABB[2]{-1, -1};
         bool showBranchSide[2]{true, true};
         bool showAABBLeaves{false};
-        bool reverseExpansion{true};
-        bool sameColor{true};
-        bool showStats{true};
+        bool reverseExpansion{false};
+        bool sameColor{false};
+        bool showStats{false};
         bool travStep{false};
-        float alpha{0.02f};
+        float alpha{0.06f};
         int selectedNode{-1};
         float trimByProb[2]{0.0f,1.0f};
         float trimRange{1.0f};

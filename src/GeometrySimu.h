@@ -299,6 +299,9 @@ public:
 
     bool initialized;
     std::mutex m;
+
+    static std::vector<double>
+    ComputeHitChances(const std::vector<TestRay> &battery, const std::vector<std::shared_ptr<Facet>> &primitives);
 };
 
 /*!
