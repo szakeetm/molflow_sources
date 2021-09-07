@@ -967,11 +967,12 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                         progressDlg->SetProgress(0.0);
                     }
                     //FlowIO::LoaderInterfaceXML::LoadSimulationState(parseFileName, model, &globState);
-                    if (simManager.ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
+                    simManager.simulationChanged = true;
+                    /*if (simManager.ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
                         std::string errString = "Failed to send geometry to sub process:\n";
                         errString.append(GetErrorDetails());
                         throw std::runtime_error(errString);
-                    }
+                    }*/
 
 
                     CalculateTextureLimits(); // Load texture limits on init
@@ -1401,12 +1402,12 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
         }
 
         // Send and Load geometry on simulation side
-        if (simManager.ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
+        simManager.simulationChanged = true;
+        /*if (simManager.ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
             std::string errString = "Failed to send geometry to sub process:\n";
             errString.append(GetErrorDetails());
             throw std::runtime_error(errString);
-        }
-
+        }*/
 
         progressDlg->SetMessage("Finishing reload...");
         needsReload = false;
