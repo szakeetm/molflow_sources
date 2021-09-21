@@ -293,7 +293,7 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                     std::set<size_t> alreadyHit; // account for duplicate hits on kdtree
 
                     for(auto& hit : particle.hits){
-                        if(particle.tMax < hit.hit.colDistTranspPass) {
+                        if(particle.tMax <= hit.hit.colDistTranspPass) {
                             continue;
                         }
 
@@ -304,23 +304,28 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                             auto tpFacet = model->facets[hit.hitId].get();
                             if(model->wp.accel_type==1) { // account for duplicate hits on kdtree
                                 if (alreadyHit.find(tpFacet->globalId) == alreadyHit.end()) {
+                                    tmpFacetVars[hit.hitId] = hit.hit;
                                     RegisterTransparentPass(tpFacet);
                                     alreadyHit.insert(tpFacet->globalId);
                                 }
                             }
                             else {
+                                tmpFacetVars[hit.hitId] = hit.hit;
                                 RegisterTransparentPass(tpFacet);
                             }
                         }
-                        else { // hard hit
-                            collidedFacet = model->facets[hit.hitId].get();
-                            d = hit.hit.colDistTranspPass;
-                        }
-                        tmpFacetVars[hit.hitId] = hit.hit;
                     }
                 }
 
                 particle.hits.clear();
+            }
+
+            // hard hit
+            {
+                auto& hit = particle.hardHit;
+                collidedFacet = model->facets[hit.hitId].get();
+                tmpFacetVars[hit.hitId] = hit.hit;
+                d = hit.hit.colDistTranspPass;
             }
             /*{
                 Ray tmpRay(position, particle.direction, nullptr, 1.0e99, this->particle.time);
