@@ -321,7 +321,7 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
             }
 
             // hard hit
-            {
+            if(found){
                 auto& hit = particle.hardHit;
                 collidedFacet = model->facets[hit.hitId].get();
                 tmpFacetVars[hit.hitId] = hit.hit;
