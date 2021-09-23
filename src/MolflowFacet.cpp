@@ -102,10 +102,10 @@ void InterfaceFacet::LoadGEO(FileReader *file, int version, size_t nbVertex) {
 
 	}
 	file->ReadKeyword("texDimX"); file->ReadKeyword(":");
-	sh.texWidthD = file->ReadDouble();
+	sh.texWidth_precise = file->ReadDouble();
 
 	file->ReadKeyword("texDimY"); file->ReadKeyword(":");
-	sh.texHeightD = file->ReadDouble();
+	sh.texHeight_precise = file->ReadDouble();
 
 	file->ReadKeyword("countDes"); file->ReadKeyword(":");
 	sh.countDes = file->ReadInt();
@@ -255,8 +255,8 @@ void InterfaceFacet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bo
 		}
 		xml_node texNode = recNode.child("Texture");
 		hasMesh = texNode.attribute("hasMesh").as_bool();
-		sh.texWidthD = texNode.attribute("texDimX").as_double();
-		sh.texHeightD = texNode.attribute("texDimY").as_double();
+		sh.texWidth_precise = texNode.attribute("texDimX").as_double();
+		sh.texHeight_precise = texNode.attribute("texDimY").as_double();
 		sh.countDes = texNode.attribute("countDes").as_bool() && hasMesh; //Sanitize input
 		sh.countAbs = texNode.attribute("countAbs").as_bool() && hasMesh; //Sanitize input
 		sh.countRefl = texNode.attribute("countRefl").as_bool() && hasMesh; //Sanitize input
@@ -268,8 +268,14 @@ void InterfaceFacet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bo
 		if ((hasOutgassingFile) && outgNode && outgNode.child("map")) {
 			ogMap.outgassingMapWidth = outgNode.attribute("width").as_int();
 			ogMap.outgassingMapHeight = outgNode.attribute("height").as_int();
-			ogMap.outgassingFileRatio = outgNode.attribute("ratio").as_double();
-            ogMap.totalDose = outgNode.attribute("totalDose").as_double();
+			if (outgNode.attribute("ratioU")) { //New format supporting non-square textures
+				ogMap.outgassingFileRatioU = outgNode.attribute("ratioU").as_double();
+				ogMap.outgassingFileRatioV = outgNode.attribute("ratioV").as_double();
+			}
+			else { //Old format for square textures
+				ogMap.outgassingFileRatioU = ogMap.outgassingFileRatioV = outgNode.attribute("ratio").as_double();
+			}
+			ogMap.totalDose = outgNode.attribute("totalDose").as_double();
 			sh.totalOutgassing = outgNode.attribute("totalOutgassing").as_double();
             ogMap.totalFlux = outgNode.attribute("totalFlux").as_double();
 
@@ -423,9 +429,9 @@ void InterfaceFacet::LoadSYN(FileReader *file, int version, size_t nbVertex) {
 	file->ReadKeyword("mesh"); file->ReadKeyword(":");
 	hasMesh = false; file->ReadInt(); //Discard synrad texture
 	file->ReadKeyword("texDimX"); file->ReadKeyword(":");
-	sh.texWidthD = 0.0; file->ReadDouble();
+	sh.texWidth_precise = 0.0; file->ReadDouble();
 	file->ReadKeyword("texDimY"); file->ReadKeyword(":");
-	sh.texHeightD = 0.0; file->ReadDouble();
+	sh.texHeight_precise = 0.0; file->ReadDouble();
 	if (version < 3) {
 		file->ReadKeyword("countDes"); file->ReadKeyword(":");
 		file->ReadInt();
@@ -653,8 +659,8 @@ void InterfaceFacet::SaveGEO(FileWriter *file, int idx) {
 	file->Write("  mesh:"); file->Write((!cellPropertiesIds.empty()), "\n");
 
 	file->Write("  outgassing:"); file->Write(sh.outgassing*10.00, "\n"); //Pa*m3/s -> mbar*l/s for compatibility with old versions
-	file->Write("  texDimX:"); file->Write(sh.texWidthD, "\n");
-	file->Write("  texDimY:"); file->Write(sh.texHeightD, "\n");
+	file->Write("  texDimX:"); file->Write(sh.texWidth_precise, "\n");
+	file->Write("  texDimY:"); file->Write(sh.texHeight_precise, "\n");
 
 	file->Write("  countDes:"); file->Write(sh.countDes, "\n");
 	file->Write("  countAbs:"); file->Write(sh.countAbs, "\n");
@@ -1118,8 +1124,8 @@ void  InterfaceFacet::SaveXML_geom(pugi::xml_node f) {
 	assert(!(cellPropertiesIds.empty() && (sh.countAbs || sh.countDes || sh.countRefl || sh.countTrans))); //Count texture on non-existent texture
 
 	t.append_attribute("hasMesh") = !cellPropertiesIds.empty();
-	t.append_attribute("texDimX") = sh.texWidthD;
-	t.append_attribute("texDimY") = sh.texHeightD;
+	t.append_attribute("texDimX") = sh.texWidth_precise;
+	t.append_attribute("texDimY") = sh.texHeight_precise;
 	t.append_attribute("countDes") = (int)sh.countDes; //backward compatibility: 0 or 1
 	t.append_attribute("countAbs") = (int)sh.countAbs; //backward compatibility: 0 or 1
 	t.append_attribute("countRefl") = (int)sh.countRefl; //backward compatibility: 0 or 1
@@ -1152,7 +1158,8 @@ void  InterfaceFacet::SaveXML_geom(pugi::xml_node f) {
 		xml_node textureNode = f.append_child("DynamicOutgassing");
 		textureNode.append_attribute("width") = ogMap.outgassingMapWidth;
 		textureNode.append_attribute("height") = ogMap.outgassingMapHeight;
-		textureNode.append_attribute("ratio") = ogMap.outgassingFileRatio;
+		textureNode.append_attribute("ratioU") = ogMap.outgassingFileRatioU;
+		textureNode.append_attribute("ratioV") = ogMap.outgassingFileRatioV;
 		textureNode.append_attribute("totalDose") = ogMap.totalDose;
 		textureNode.append_attribute("totalOutgassing") = sh.totalOutgassing;
 		textureNode.append_attribute("totalFlux") = ogMap.totalFlux;
@@ -1443,7 +1450,7 @@ void InterfaceFacet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchi
 				}
 			}
 			else {
-				const double area = (sh.texWidthD * sh.texHeightD)/(sh.U.Norme() * sh.V.Norme());
+				const double area = (sh.texWidth_precise * sh.texHeight_precise)/(sh.U.Norme() * sh.V.Norme());
                 const double incrementVal = (area > 0.0) ? 1.0 / area : 0.0;
 				size_t add = 0;
 				for (int j = 0; j < sh.texHeight; j++) {

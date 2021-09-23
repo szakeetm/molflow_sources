@@ -13,17 +13,20 @@ namespace CDFGeneration {
  * for a particular temperature (bin) \param temperature temperature for the CFD
  * \return ID of the CFD
  */
-    int GetCDFId(const std::set<double> &temperatureList, double temperature) {
-        if (!temperatureList.empty()) {
-            auto lowerBound = std::lower_bound(temperatureList.begin(),
-                                               temperatureList.end(), temperature);
-            if (lowerBound == temperatureList.begin())
-                return -1;
-            --lowerBound; // even temperatureList.end() can be a bound
 
-            if (std::abs(temperature - *lowerBound) > 1E-5) {
-                return std::distance(temperatureList.begin(), lowerBound);
-            }
+    int GetCDFId(const std::list<double> &temperatureList, double temperature) {
+        if(!temperatureList.empty()) {
+            // find temp within error range of 1e-5
+            //auto is_almost_equal = [temperature](int i){ return (std::abs(i - temperature) < 1E-5); };
+            auto pos = std::find_if(temperatureList.begin(), temperatureList.end(), [temperature](double i){ return (std::abs(i - temperature) < 1E-5);});
+
+            /*auto pos2 = std::find_if(temperatureList.begin(), temperatureList.end(), temperature,
+                                                 [](double i,double j) {return (std::abs(i - j) < 1E-5);}
+                                                 );*/
+            if(pos == temperatureList.end())
+                return -1;
+            else
+                return std::distance(temperatureList.begin(), pos);
         }
         return -1;
     }
@@ -34,10 +37,12 @@ namespace CDFGeneration {
  * size of temperatures vector, which determines new ID
  */
     std::pair<int, std::vector<CDF_p>>
-    GenerateNewCDF(std::set<double> &temperatureList, const double temperature,
+    GenerateNewCDF(std::list<double> &temperatureList, const double temperature,
                    const double gasMass) {
         size_t i = temperatureList.size();
-        temperatureList.emplace(temperature);
+        temperatureList.insert(
+                std::lower_bound(temperatureList.begin(), temperatureList.end(),  temperature, [](double i, double j){ return (std::abs(i - j) < 1E-5);}),
+                temperature);
         std::vector<CDF_p> cdf_v = Generate_CDF(temperature, gasMass, cdf_size);
         return std::make_pair((int) i, cdf_v);
     }

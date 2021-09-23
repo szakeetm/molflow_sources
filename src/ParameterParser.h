@@ -13,11 +13,13 @@
 
 class ParameterParser {
 public:
-    static void Parse(const std::string &paramFile, const std::vector<SelectionGroup> &selections);
+    static void ParseFile(const std::string &paramFile, const std::vector<SelectionGroup> &selections);
+
+    static void ParseInput(const std::vector<std::string> &paramSweep, const std::vector<SelectionGroup> &selections);
 
     static void ChangeSimuParams(WorkerParams& params);
 
-    static void ChangeFacetParams(std::vector<SubprocessFacet> &facets);
+    static void ChangeFacetParams(std::vector<std::shared_ptr<SubprocessFacet>> &facets);
 };
 
 

@@ -2,7 +2,6 @@
 // Created by pascal on 8/8/19.
 //
 
-#include <omp.h>
 #include "../src_shared/SimulationManager.h"
 #include "gtest/gtest.h"
 #include "../src/Initializer.h"
@@ -18,6 +17,7 @@
 #include <functional>
 #include <Helper/Chronometer.h>
 #include <numeric>
+#include <cmath>
 
 #ifndef GIT_COMMIT_HASH
 #define GIT_COMMIT_HASH "?"
@@ -48,6 +48,11 @@ namespace {
         // Objects declared here can be used by all tests in the test suite for Foo.
     };
 
+    class ValidationFixture : public SimulationFixture {
+
+    };
+
+
     INSTANTIATE_TEST_SUITE_P(
             Performance,
             SimulationFixture,
@@ -55,7 +60,24 @@ namespace {
                     "test_lr1000_pipe.xml", "test_lr10_pipe_tex.xml", "test_lr10_pipe_prof.xml", "test_lr10_pipe_trans.xml"
             ));
 
-
+    INSTANTIATE_TEST_SUITE_P(
+            Results,
+            ValidationFixture,
+            ::testing::Values(
+                    "TestCases/01-quick_pipe_profiles_textures_2sided.zip",
+                    "TestCases/02-timedependent_with_two_parameters.zip",
+                    "TestCases/02b-timedependent_with_three_parameters.zip",
+                    "TestCases/03-anglemap_record.zip",
+                    "TestCases/03b-anglemap_record_transparent_target.zip",
+                    "TestCases/04-anglemap_desorb.zip",
+                    "TestCases/04b-anglemap_desorb-sticking source.zip",
+                    "TestCases/05-three_structures_nonsquare_textures.zip",
+                    "TestCases/06-dynamic_desorption_from_synrad.zip",
+                    "TestCases/07-volume_decay.zip",
+                    "TestCases/08-wall_sojourn_time.zip",
+                    "TestCases/09-histograms.zip"
+            ));
+    
     struct Stats {
         std::string commitHash;
         double min{-1.0}, max{-1.0}, avg{-1.0}, med{-1.0};
@@ -160,6 +182,26 @@ namespace {
     TEST_P(SimulationFixture, PerformanceOkay) {
         std::string testFile = GetParam();
         printf("Filename: %s\n",testFile.c_str());
+
+        {
+            // Check if test was already successful, restarting the test suite will then skip the test
+            std::string timeRecFile = "./time_record_" + testFile.substr(0, testFile.size() - 4) + ".txt";
+            if (std::filesystem::exists(timeRecFile)) {
+                std::ifstream ifs(timeRecFile);
+                std::vector<Stats> prevRun;
+                prevRun.insert(prevRun.begin(), std::istream_iterator<Stats>(ifs), std::istream_iterator<Stats>());
+
+                std::string currentCommit = GIT_COMMIT_HASH;
+                currentCommit = currentCommit.substr(0, 8); // only first 8 hex digits
+                for (auto &run : prevRun) {
+                    if (run.commitHash == currentCommit) {
+                        printf("Test was successfully run in a previous attemp, skip ...\n");
+                        GTEST_SKIP();
+                    }
+                }
+            }
+        }
+
         size_t nbFails = 0;
         bool fastEnough = false;
         const size_t nRuns = 10;
@@ -168,7 +210,7 @@ namespace {
         std::vector<double> perfTimes;
         for(size_t runNb = 0; runNb < nRuns; ++runNb){
             SimulationManager simManager;
-            SimulationModel model{};
+            std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
             GlobalSimuState globState{};
 
             std::vector<char *> argv = {"tester", "--config", "simulation.cfg", "--reset", "--file"};
@@ -177,7 +219,8 @@ namespace {
             fileName_c[testFile.size()] = '\0';
             argv.push_back(fileName_c);
             char **args = argv.data();
-            Initializer::init(argv.size(), (args), &simManager, &model, &globState);
+            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromFile(&simManager, model, &globState);
             delete[] fileName_c;
 
             size_t oldHitsNb = globState.globalHits.globalHits.nbMCHit;
@@ -193,8 +236,8 @@ namespace {
             do {
                 ProcessSleep(1000);
                 elapsedTime = simTimer.Elapsed();
-                if (model.otfParams.desorptionLimit != 0)
-                    endCondition = globState.globalHits.globalHits.nbDesorbed >= model.otfParams.desorptionLimit;
+                if (model->otfParams.desorptionLimit != 0)
+                    endCondition = globState.globalHits.globalHits.nbDesorbed >= model->otfParams.desorptionLimit;
                 // Check for potential time end
                 if (Settings::simDuration > 0) {
                     endCondition |= elapsedTime >= Settings::simDuration;
@@ -240,14 +283,7 @@ namespace {
             if(std::filesystem::exists(timeRecFile))
             {
                 std::ifstream ifs(timeRecFile);
-                //prevRun.insert( prevRun.begin(), std::istream_iterator<OldStats>(ifs), std::istream_iterator<OldStats>() );
                 prevRun.insert( prevRun.begin(), std::istream_iterator<Stats>(ifs), std::istream_iterator<Stats>() );
-                //ifs >> prevRun;
-                /*ifs >> fromCommit;
-                ifs >> prevRun.max;
-                ifs >> prevRun.min;
-                ifs >> prevRun.med;
-                ifs >> prevRun.avg;*/
 
                 std::cout << "Prev Run: "<< prevRun.front() << std::endl;
                 // Check either, only if previous results could be found
@@ -255,15 +291,21 @@ namespace {
 
                 if(!fastEnough && prevRun.front().med > 0.0) { // check to prevent free pass for old entries with only max
                     EXPECT_GE(currentRun.med, 0.95 * prevRun.front().med);
+                    fastEnough = true;
                 }
-                else if(prevRun.front().med > 0.0 && currentRun.max > prevRun.front().med){
+                if(!fastEnough && prevRun.front().med > 0.0 && currentRun.max > prevRun.front().med){
                     EXPECT_GE(currentRun.max, prevRun.front().med);
+                    fastEnough = true;
                 }
-                else { // check to prevent free pass for old entries with only max
+                if(!fastEnough) { // check to prevent free pass for old entries with only max
                     EXPECT_GE(currentRun.max, 0.95 * prevRun.front().max);
+                    if(currentRun.max >= 0.95 * prevRun.front().max)
+                        fastEnough = true;
                 }
             }
 
+            // Only enter a test if it meets any of the success criteria
+            if(fastEnough)
             {
                 // Keep top 20 in list
                 prevRun.push_back(currentRun);
@@ -283,6 +325,183 @@ namespace {
             }
 
         }
+    }
+
+
+    TEST_P(ValidationFixture, ResultsOkay) {
+        std::string testFile = GetParam();
+        printf("Filename: %s\n",testFile.c_str());
+        size_t nbFails = 0;
+        bool fastEnough = false;
+        const size_t nRuns = 1;
+        const size_t keepNEntries = 20;
+        const size_t runForTSec = 30;
+        std::vector<double> perfTimes;
+
+        SimulationManager simManager{};
+        simManager.interactiveMode = false;
+        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        GlobalSimuState globState{};
+
+        {
+            std::vector<char *> argv = {"tester", "--verbosity", "1", "-t", "50", "--file"};
+            char *fileName_c = new char[testFile.size() + 1];
+            std::copy(testFile.begin(), testFile.end(), fileName_c);
+            fileName_c[testFile.size()] = '\0';
+            argv.push_back(fileName_c);
+            {
+                char **args = argv.data();
+                if(Initializer::initFromArgv(argv.size(), (args), &simManager, model)){
+                    exit(41);
+                }
+                if(Initializer::initFromFile(&simManager, model, &globState)){
+                    exit(42);
+                }
+            }
+            {
+                double timeExpect = std::log(model->facets.size());
+                //timeExpect = timeExpect * timeExpect;
+                timeExpect = std::pow(timeExpect, 1.5);
+                if(!model->tdParams.moments.empty())
+                    timeExpect += std::pow(std::log(model->tdParams.moments.size()), 3.0);
+
+                timeExpect += std::max(0.0, std::pow(std::log(std::sqrt(model->sh.nbFacet * sizeof(FacetHitBuffer))), 2.0) - 10.0);
+                timeExpect += std::max(0.0, 1.1* std::sqrt(std::exp(std::log(std::sqrt(model->size())))));
+                Settings::simDuration = std::min(50.0 + timeExpect, 180.0);
+
+                // Modify argv with new duration
+                auto newDur = std::to_string(Settings::simDuration);
+                char *newDur_c = new char[newDur.size() + 1];
+                std::copy(newDur.begin(), newDur.end(), newDur_c);
+                newDur_c[newDur.size()] = '\0';
+                argv[4] = newDur_c;
+
+                model.reset(new SimulationModel);
+                {
+                    char **args = argv.data();
+                    if(Initializer::initFromArgv(argv.size(), (args), &simManager, model)){
+                        exit(41);
+                    }
+                    if(Initializer::initFromFile(&simManager, model, &globState)){
+                        exit(42);
+                    }
+                }
+                delete[] newDur_c;
+            }
+            delete[] fileName_c;
+        }
+
+        for(size_t runNb = 0; runNb < nRuns; ++runNb){
+
+            size_t oldHitsNb = globState.globalHits.globalHits.nbMCHit;
+            size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
+
+            GlobalSimuState oldState = globState;
+            globState.Reset();
+
+            EXPECT_NE(0, oldDesNb);
+            EXPECT_NE(0, oldHitsNb);
+            EXPECT_EQ(0, globState.globalHits.globalHits.nbDesorbed);
+            EXPECT_EQ(0, globState.globalHits.globalHits.nbMCHit);
+            EXPECT_NO_THROW(simManager.StartSimulation());
+
+            // Stop and copy results
+            simManager.StopSimulation();
+            simManager.KillAllSimUnits();
+            simManager.ResetSimulations();
+
+            EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
+            EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
+
+            auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.01, 0.1);
+            EXPECT_EQ(0, diff_glob);
+            EXPECT_EQ(0, diff_loc);
+
+            if(diff_loc > 0)
+                fprintf(stderr, "[Warning] %d local differences found!\n", diff_loc);
+            if(diff_fine > 0)
+                fprintf(stderr, "[Warning] %d differences on fine counters found!\n", diff_fine);
+
+        };
+    }
+
+    TEST_P(ValidationFixture, ResultsWrong) {
+        std::string testFile = GetParam();
+        printf("Filename: %s\n",testFile.c_str());
+        size_t nbFails = 0;
+        bool fastEnough = false;
+        const size_t nRuns = 1;
+        const size_t keepNEntries = 20;
+        const size_t runForTSec = 30;
+        std::vector<double> perfTimes;
+
+        SimulationManager simManager{};
+        simManager.interactiveMode = false;
+        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        GlobalSimuState globState{};
+
+        {
+            std::vector<char *> argv = {"tester", "--verbosity", "0", "-t", "5", "--file"};
+            char *fileName_c = new char[testFile.size() + 1];
+            std::copy(testFile.begin(), testFile.end(), fileName_c);
+            fileName_c[testFile.size()] = '\0';
+            argv.push_back(fileName_c);
+            {
+                char **args = argv.data();
+                if(Initializer::initFromArgv(argv.size(), (args), &simManager, model)){
+                    exit(41);
+                }
+                if(Initializer::initFromFile(&simManager, model, &globState)){
+                    exit(42);
+                }
+            }
+            delete[] fileName_c;
+        }
+
+        // First check for valid initial states
+        // - old state with results, new state without
+        // - after simulation, new state with results
+        // Next, check for errors due to short run time
+        // - this will prevent false positives for ResultsOkay tests
+        {
+            size_t oldHitsNb = globState.globalHits.globalHits.nbMCHit;
+            size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
+
+            GlobalSimuState oldState = globState;
+            globState.Reset();
+            Settings::desLimit.clear();
+            Settings::desLimit.emplace_back(1000);
+            Initializer::initDesLimit(model, globState);
+
+            simManager.ResetHits();
+            simManager.InitSimulation(model, &globState);
+
+            EXPECT_NE(0, oldDesNb);
+            EXPECT_NE(0, oldHitsNb);
+            EXPECT_EQ(0, globState.globalHits.globalHits.nbDesorbed);
+            EXPECT_EQ(0, globState.globalHits.globalHits.nbMCHit);
+
+            EXPECT_NO_THROW(simManager.StartSimulation());
+
+            // Stop and copy results
+            simManager.StopSimulation();
+            simManager.KillAllSimUnits();
+            simManager.ResetSimulations();
+
+            EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
+            EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
+
+            auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.001, 0.001);
+            if(diff_glob > 0)
+                EXPECT_NE(0, diff_glob);
+            else
+                EXPECT_NE(0, diff_loc);
+            printf("[Warning] Geometry has %zu facets for %zu des!\n", model->facets.size(), globState.globalHits.globalHits.nbDesorbed);
+            if(diff_loc <= 0)
+                fprintf(stderr, "[Warning] No local differences found!\n");
+            if(diff_fine <= 0)
+                fprintf(stderr, "[Warning] No differences on fine counters found!\n");
+        };
     }
 
     // Tests factorial of positive numbers.
@@ -322,7 +541,7 @@ namespace {
         }
     }
 
-    TEST(ParameterParsing, Sweep) {
+    TEST(ParameterParsing, SweepFile) {
 
         // generate hash name for tmp working file
         std::string paramFile = std::to_string(std::hash<time_t>()(time(nullptr))) + ".cfg";
@@ -334,7 +553,7 @@ namespace {
                    "facet.100.temperature=290.92\n"
                    "simulation.mass=42.42";
         outfile.close();
-        ParameterParser::Parse(paramFile, std::vector<SelectionGroup>());
+        ParameterParser::ParseFile(paramFile, std::vector<SelectionGroup>());
 
         WorkerParams wp;
         ASSERT_FALSE(std::abs(wp.gasMass - 42.42) < 1e-5);
@@ -342,22 +561,58 @@ namespace {
         ASSERT_TRUE(std::abs(wp.gasMass - 42.42) < 1e-5);
 
 
-        std::vector<SubprocessFacet> facets(200);
-        ASSERT_FALSE(std::abs(facets[41].sh.opacity - 0.5) < 1e-5);
-        ASSERT_FALSE(std::abs(facets[2].sh.sticking - 10.01) < 1e-5);
-        ASSERT_FALSE(std::abs(facets[49].sh.outgassing - 42e5) < 1e-5); // first
-        ASSERT_FALSE(std::abs(facets[69].sh.outgassing - 42e5) < 1e-5); // mid
-        ASSERT_FALSE(std::abs(facets[89].sh.outgassing - 42e5) < 1e-5); // last
-        ASSERT_FALSE(std::abs(facets[99].sh.temperature - 290.92) < 1e-5);
+       std::vector<std::shared_ptr<SubprocessFacet>> facets(200);
+        for(int i=0; i < facets.size();++i) facets[i] = std::make_shared<SubprocessFacet>();
+        ASSERT_FALSE(std::abs(facets[41]->sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[2]->sh.sticking - 10.01) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[49]->sh.outgassing - 42e5) < 1e-5); // first
+        ASSERT_FALSE(std::abs(facets[69]->sh.outgassing - 42e5) < 1e-5); // mid
+        ASSERT_FALSE(std::abs(facets[89]->sh.outgassing - 42e5) < 1e-5); // last
+        ASSERT_FALSE(std::abs(facets[99]->sh.temperature - 290.92) < 1e-5);
         ParameterParser::ChangeFacetParams(facets);
-        ASSERT_DOUBLE_EQ(facets[41].sh.opacity, 0.5);
-        ASSERT_DOUBLE_EQ(facets[2].sh.sticking, 10.01);
-        ASSERT_DOUBLE_EQ(facets[49].sh.outgassing, 42e5); // first
-        ASSERT_DOUBLE_EQ(facets[69].sh.outgassing, 42e5); // mid
-        ASSERT_DOUBLE_EQ(facets[89].sh.outgassing, 42e5); // last
-        ASSERT_DOUBLE_EQ(facets[99].sh.temperature, 290.92);
+        ASSERT_DOUBLE_EQ(facets[41]->sh.opacity, 0.5);
+        ASSERT_DOUBLE_EQ(facets[2]->sh.sticking, 10.01);
+        ASSERT_DOUBLE_EQ(facets[49]->sh.outgassing, 42e5); // first
+        ASSERT_DOUBLE_EQ(facets[69]->sh.outgassing, 42e5); // mid
+        ASSERT_DOUBLE_EQ(facets[89]->sh.outgassing, 42e5); // last
+        ASSERT_DOUBLE_EQ(facets[99]->sh.temperature, 290.92);
 
         std::filesystem::remove(paramFile);
+    }
+
+    TEST(ParameterParsing, SweepVec) {
+
+        // generate hash name for tmp working file
+        std::vector<std::string> params;
+
+        params.emplace_back("facet.42.opacity=0.5");
+        params.emplace_back("facet.3.sticking=10.01");
+        params.emplace_back("facet.50-90.outgassing=42e5");
+        params.emplace_back("facet.100.temperature=290.92");
+        params.emplace_back("simulation.mass=42.42");
+        ParameterParser::ParseInput(params, std::vector<SelectionGroup>());
+
+        WorkerParams wp;
+        ASSERT_FALSE(std::abs(wp.gasMass - 42.42) < 1e-5);
+        ParameterParser::ChangeSimuParams(wp);
+        ASSERT_TRUE(std::abs(wp.gasMass - 42.42) < 1e-5);
+
+
+       std::vector<std::shared_ptr<SubprocessFacet>> facets(200);
+        for(int i=0; i < facets.size();++i) facets[i] = std::make_shared<SubprocessFacet>();
+        ASSERT_FALSE(std::abs(facets[41]->sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[2]->sh.sticking - 10.01) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[49]->sh.outgassing - 42e5) < 1e-5); // first
+        ASSERT_FALSE(std::abs(facets[69]->sh.outgassing - 42e5) < 1e-5); // mid
+        ASSERT_FALSE(std::abs(facets[89]->sh.outgassing - 42e5) < 1e-5); // last
+        ASSERT_FALSE(std::abs(facets[99]->sh.temperature - 290.92) < 1e-5);
+        ParameterParser::ChangeFacetParams(facets);
+        ASSERT_DOUBLE_EQ(facets[41]->sh.opacity, 0.5);
+        ASSERT_DOUBLE_EQ(facets[2]->sh.sticking, 10.01);
+        ASSERT_DOUBLE_EQ(facets[49]->sh.outgassing, 42e5); // first
+        ASSERT_DOUBLE_EQ(facets[69]->sh.outgassing, 42e5); // mid
+        ASSERT_DOUBLE_EQ(facets[89]->sh.outgassing, 42e5); // last
+        ASSERT_DOUBLE_EQ(facets[99]->sh.temperature, 290.92);
     }
 
     TEST(ParameterParsing, Group) {
@@ -381,24 +636,25 @@ namespace {
                    "facet.\"ValidSelection\".opacity=0.5\n"
                    "facet.\"InvalidSelection\".opacity=0.8\n";
         outfile.close();
-        ParameterParser::Parse(paramFile, selections);
+        ParameterParser::ParseFile(paramFile, selections);
 
-        std::vector<SubprocessFacet> facets(200);
-        ASSERT_FALSE(std::abs(facets[4].sh.opacity - 0.5) < 1e-5);
-        ASSERT_FALSE(std::abs(facets[5].sh.opacity - 0.5) < 1e-5);
-        ASSERT_FALSE(std::abs(facets[6].sh.opacity - 0.5) < 1e-5);
-        ASSERT_FALSE(std::abs(facets[7].sh.opacity - 0.5) < 1e-5);
-        ASSERT_FALSE(std::abs(facets[8].sh.opacity - 0.5) < 1e-5);
-        ASSERT_FALSE(std::abs(facets[9].sh.opacity - 0.5) < 1e-5);
-        ASSERT_FALSE(std::abs(facets[10].sh.opacity - 0.5) < 1e-5);
+        std::vector<std::shared_ptr<SubprocessFacet>> facets(200);
+        for(int i=0; i < facets.size();++i) facets[i] = std::make_shared<SubprocessFacet>();
+        ASSERT_FALSE(std::abs(facets[4]->sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[5]->sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[6]->sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[7]->sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[8]->sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[9]->sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[10]->sh.opacity - 0.5) < 1e-5);
         ParameterParser::ChangeFacetParams(facets);
-        ASSERT_FALSE(std::abs(facets[4].sh.opacity - 0.5) < 1e-5);
-        ASSERT_DOUBLE_EQ(facets[5].sh.opacity, 0.5);
-        ASSERT_FALSE(std::abs(facets[6].sh.opacity - 0.5) < 1e-5);
-        ASSERT_FALSE(std::abs(facets[7].sh.opacity - 0.5) < 1e-5);
-        ASSERT_DOUBLE_EQ(facets[8].sh.opacity, 0.5);
-        ASSERT_DOUBLE_EQ(facets[9].sh.opacity, 0.5);
-        ASSERT_FALSE(std::abs(facets[10].sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[4]->sh.opacity - 0.5) < 1e-5);
+        ASSERT_DOUBLE_EQ(facets[5]->sh.opacity, 0.5);
+        ASSERT_FALSE(std::abs(facets[6]->sh.opacity - 0.5) < 1e-5);
+        ASSERT_FALSE(std::abs(facets[7]->sh.opacity - 0.5) < 1e-5);
+        ASSERT_DOUBLE_EQ(facets[8]->sh.opacity, 0.5);
+        ASSERT_DOUBLE_EQ(facets[9]->sh.opacity, 0.5);
+        ASSERT_FALSE(std::abs(facets[10]->sh.opacity - 0.5) < 1e-5);
 
         std::filesystem::remove(paramFile);
     }

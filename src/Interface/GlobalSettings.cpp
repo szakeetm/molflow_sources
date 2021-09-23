@@ -294,15 +294,15 @@ void GlobalSettings::Update() {
 	//chkNonIsothermal->SetState(nonIsothermal);
 	UpdateOutgassing();
 
-	gasMassText->SetText(worker->model.wp.gasMass);
+	gasMassText->SetText(worker->model->wp.gasMass);
 
-	enableDecay->SetState(worker->model.wp.enableDecay);
-	halfLifeText->SetText(worker->model.wp.halfLife);
-	halfLifeText->SetEditable(worker->model.wp.enableDecay);
+	enableDecay->SetState(worker->model->wp.enableDecay);
+	halfLifeText->SetText(worker->model->wp.halfLife);
+	halfLifeText->SetEditable(worker->model->wp.enableDecay);
 
-	cutoffText->SetText(worker->model.otfParams.lowFluxCutoff);
-	cutoffText->SetEditable(worker->model.otfParams.lowFluxMode);
-	lowFluxToggle->SetState(worker->model.otfParams.lowFluxMode);
+	cutoffText->SetText(worker->model->otfParams.lowFluxCutoff);
+	cutoffText->SetEditable(worker->model->otfParams.lowFluxMode);
+	lowFluxToggle->SetState(worker->model->otfParams.lowFluxMode);
 
 	autoSaveText->SetText(mApp->autoSaveFrequency);
 	chkSimuOnly->SetState(mApp->autoSaveSimuOnly);
@@ -348,7 +348,7 @@ void GlobalSettings::SMPUpdate() {
 	//Interface
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 	size_t currPid = GetCurrentProcessId();
-    PROCESS_INFO parentInfo;
+    PROCESS_INFO parentInfo{};
     GetProcInfo(currPid, &parentInfo);
 
     processList->SetValueAt(0, 0, "Interface");
@@ -358,23 +358,23 @@ void GlobalSettings::SMPUpdate() {
 	processList->SetValueAt(2, 0, tmp);
 	sprintf(tmp, "%.0f MB", (double)parentInfo.mem_peak / (1024.0*1024.0));
 	processList->SetValueAt(3, 0, tmp);
-
+    sprintf(tmp, "[Geom. %s]", worker->model->sh.name.c_str());
+    processList->SetValueAt(4, 0, tmp);
 #else
     size_t currPid = getpid();
-    PROCESS_INFO parentInfo;
+    PROCESS_INFO parentInfo{};
     GetProcInfo(currPid, &parentInfo);
 
     //GetProcInfo(currpid, &parentInfo);
     processList->SetValueAt(0, 0, "Interface");
     sprintf(tmp, "%zd", currPid);
     processList->SetValueAt(1, 0, tmp, (int)currPid);
-
     sprintf(tmp, "%.0f MB", (double)parentInfo.mem_use / (1024.0));
     processList->SetValueAt(2, 0, tmp);
     sprintf(tmp, "%.0f MB", (double)parentInfo.mem_peak / (1024.0));
     processList->SetValueAt(3, 0, tmp);
-    //sprintf(tmp, "%d %%", (int)parentInfo.cpu_time);
-    //processList->SetValueAt(4, 0, tmp);
+    sprintf(tmp, "[Geom. %s]", worker->model->sh.name.c_str());
+    processList->SetValueAt(4, 0, tmp);
 #endif
 
     size_t i = 1;
@@ -382,9 +382,9 @@ void GlobalSettings::SMPUpdate() {
     {
         //auto& proc = procInfo.subProcInfo[0];
         DWORD pid = proc.procId;
-		sprintf(tmp, "Subproc.%lu", i);
+		sprintf(tmp, "Thread %zu", i);
 		processList->SetValueAt(0, i, tmp);
-		sprintf(tmp, "%d", pid);
+		sprintf(tmp, "%lu", pid);
 		processList->SetValueAt(1, i, tmp);
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
@@ -396,8 +396,8 @@ void GlobalSettings::SMPUpdate() {
             processList->SetValueAt(3, i, tmp);
 
 			// State/Status
-			std::stringstream tmp; tmp << "[" << prStates[states[i-1]] << "] " << statusStrings[i-1];
-			processList->SetValueAt(4, i, tmp.str().c_str());
+			std::stringstream tmp_ss; tmp_ss << "[" << prStates[states[i-1]] << "] " << statusStrings[i-1];
+			processList->SetValueAt(4, i, tmp_ss.str().c_str());
 		}
 
 #else
@@ -487,7 +487,7 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 		else if (src == maxButton) {
 			if (worker->GetGeometry()->IsLoaded()) {
 				char tmp[128];
-				sprintf(tmp, "%zd", worker->model.otfParams.desorptionLimit);
+				sprintf(tmp, "%zd", worker->model->otfParams.desorptionLimit);
 				char *val = GLInputBox::GetInput(tmp, "Desorption max (0=>endless)", "Edit MAX");
 				if (val) {
                     char* endptr;
@@ -496,7 +496,7 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 						GLMessageBox::Display("Invalid 'maximum desorption' number", "Error", GLDLG_OK, GLDLG_ICONERROR);
 					}
 					else {
-                        worker->model.otfParams.desorptionLimit = maxDes;
+                        worker->model->otfParams.desorptionLimit = maxDes;
                         worker->ChangeSimuParams(); //Sync with subprocesses
                     }
 				}
@@ -531,10 +531,10 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 				GLMessageBox::Display("Invalid gas mass", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
-			if (std::abs(gm - worker->model.wp.gasMass) > 1e-7) {
+			if (std::abs(gm - worker->model->wp.gasMass) > 1e-7) {
 				if (mApp->AskToReset()) {
 					worker->needsReload = true;
-					worker->model.wp.gasMass = gm;
+					worker->model->wp.gasMass = gm;
 					if (worker->GetGeometry()->IsLoaded()) { //check if there are pumps
 						bool hasPump = false;
 						size_t nbFacet = worker->GetGeometry()->GetNbFacet();
@@ -553,11 +553,11 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 				GLMessageBox::Display("Invalid half life", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
 			}
-			if ((enableDecay->GetState()==1) != worker->model.wp.enableDecay || ((enableDecay->GetState()==1) && IsEqual(hl, worker->model.wp.halfLife))) {
+			if ((enableDecay->GetState()==1) != worker->model->wp.enableDecay || ((enableDecay->GetState()==1) && IsEqual(hl, worker->model->wp.halfLife))) {
 				if (mApp->AskToReset()) {
 					worker->needsReload = true;
-					worker->model.wp.enableDecay = enableDecay->GetState();
-					if (worker->model.wp.enableDecay) worker->model.wp.halfLife = hl;
+					worker->model->wp.enableDecay = enableDecay->GetState();
+					if (worker->model->wp.enableDecay) worker->model->wp.halfLife = hl;
 				}
 			}
 
@@ -567,9 +567,9 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 				return;
 			}
 
-			if (!IsEqual(worker->model.otfParams.lowFluxCutoff, cutoffnumber) || (int)worker->model.otfParams.lowFluxMode != lowFluxToggle->GetState()) {
-				worker->model.otfParams.lowFluxCutoff = cutoffnumber;
-				worker->model.otfParams.lowFluxMode = lowFluxToggle->GetState();
+			if (!IsEqual(worker->model->otfParams.lowFluxCutoff, cutoffnumber) || (int)worker->model->otfParams.lowFluxMode != lowFluxToggle->GetState()) {
+				worker->model->otfParams.lowFluxCutoff = cutoffnumber;
+				worker->model->otfParams.lowFluxMode = lowFluxToggle->GetState();
 				worker->ChangeSimuParams();
 			}
 
@@ -622,14 +622,14 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 */
 void GlobalSettings::UpdateOutgassing() {
 	char tmp[128];
-	sprintf(tmp, "%g", worker->model.wp.gasMass);
+	sprintf(tmp, "%g", worker->model->wp.gasMass);
 	gasMassText->SetText(tmp);
-	sprintf(tmp, "%g", worker->model.wp.finalOutgassingRate_Pa_m3_sec * 10.00); //10: conversion Pa*m3/sec -> mbar*l/s
+	sprintf(tmp, "%g", worker->model->wp.finalOutgassingRate_Pa_m3_sec * 10.00); //10: conversion Pa*m3/sec -> mbar*l/s
 	outgassingGasRateText->SetText(tmp);
-	sprintf(tmp, "%g", worker->model.wp.finalOutgassingRate); //In molecules/sec
+	sprintf(tmp, "%g", worker->model->wp.finalOutgassingRate); //In molecules/sec
 	outgassingMoleculeRateText->SetText(tmp);
-	sprintf(tmp,"Tot.des. molecules [0 to %g s]:",worker->model.wp.latestMoment);
+	sprintf(tmp,"Tot.des. molecules [0 to %g s]:",worker->model->wp.latestMoment);
 	desorbedMoleculesLabel->SetText(tmp);
-	sprintf(tmp, "%.3E", worker->model.wp.totalDesorbedMolecules);
+	sprintf(tmp, "%.3E", worker->model->wp.totalDesorbedMolecules);
 	desorbedMoleculesText->SetText(tmp);
 }

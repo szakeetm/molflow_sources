@@ -241,71 +241,6 @@ MolFlow::MolFlow()
 // Name: OneTimeSceneInit()
 // Desc: Called during initial app startup, this function performs all the
 //       permanent initialization.
-
-void MolFlow::LoadParameterCatalog()
-{
-	std::filesystem::path catalogPath = "parameter_catalog"; //string (POSIX) or wstring (Windows)
-	if (!std::filesystem::exists(catalogPath)) return; //No param_catalog directory
-	for (const auto & p : std::filesystem::directory_iterator(catalogPath)) {
-		if (p.path().extension() == ".csv") {
-
-			std::string csvPath = p.path().u8string();
-			std::string csvName = p.path().filename().u8string();
-
-			Parameter newParam;
-			newParam.fromCatalog = true;
-			newParam.name = "[catalog] " + csvName;
-
-			std::vector<std::vector<std::string>> table;
-			try {
-
-				auto *f = new FileReader(csvPath);
-				table = f->ImportCSV_string();
-                SAFE_DELETE(f);
-			}
-			catch(std::exception &e) {
-				char errMsg[512];
-				sprintf(errMsg, "Failed to load CSV file.\n%s", e.what());
-				//GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR); //Can't display dialog window: interface not yet initialized
-				continue;
-			}
-			//Parse
-			for (size_t i = 0; i < table.size(); i++) {
-				std::vector<std::string> row = table[i];
-				if (row.size() != 2) {
-					std::stringstream errMsg;
-					errMsg << p.path().filename() << " Row " << i + 1 << "has " << row.size() << " values instead of 2.";
-					GLMessageBox::Display(errMsg.str().c_str(), "Error", GLDLG_OK, GLDLG_ICONERROR);
-					break;
-				}
-				else {
-					double valueX, valueY;
-					try {
-						valueX = ::atof(row[0].c_str());
-					}
-					catch (std::exception& err) {
-						char tmp[256];
-						sprintf(tmp, "Can't parse value \"%s\" in row %zd, first column:\n%s", row[0].c_str(), i + 1, err.what());
-						GLMessageBox::Display(tmp, "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
-						break;
-					}
-					try {
-						valueY = ::atof(row[1].c_str());
-					}
-					catch (std::exception& err) {
-						char tmp[256];
-						sprintf(tmp, "Can't parse value \"%s\" in row %zd, second column:\n%s", row[1].c_str(), i + 1, err.what());
-						GLMessageBox::Display(tmp, "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
-						break;
-					}
-					newParam.AddPair(valueX, valueY, true); //insert in correct position
-				}
-			}
-			worker.parameters.push_back(newParam);
-		}
-	}
-}
-
 int MolFlow::OneTimeSceneInit()
 {
 	/*
@@ -349,7 +284,7 @@ int MolFlow::OneTimeSceneInit()
 
 	menu->GetSubMenu("Selection")->Add(nullptr); // Separator
 	menu->GetSubMenu("Selection")->Add("Select Desorption", MENU_FACET_SELECTDES);
-	menu->GetSubMenu("Selection")->Add("Select Outgassing Map", MENU_SELECT_HASDESFILE);
+	menu->GetSubMenu("Selection")->Add("Select Dyn. Desorption (Outg.Map)", MENU_SELECT_HASDESFILE);
 	menu->GetSubMenu("Selection")->Add("Select Reflective", MENU_FACET_SELECTREFL);
 	menu->GetSubMenu("Selection")->Add("Select volatile facets", MENU_FACET_SELECTVOL);
 
@@ -468,8 +403,7 @@ int MolFlow::OneTimeSceneInit()
 
 	facetAdvParams = new FacetAdvParams(&worker); //To use its UpdatefacetParams() routines
 
-	LoadParameterCatalog();
-
+    Parameter::LoadParameterCatalog(worker.parameters);
 	OneTimeSceneInit_shared_post();
 	
 	return GL_OK;
@@ -829,7 +763,7 @@ void MolFlow::ApplyFacetParams() {
 			}
 			if (is2Sided >= 0) f->sh.is2sided = is2Sided;
 
-			f->sh.maxSpeed = 4.0 * sqrt(2.0*8.31*f->sh.temperature / 0.001 / worker.model.wp.gasMass);
+			f->sh.maxSpeed = 4.0 * sqrt(2.0*8.31*f->sh.temperature / 0.001 / worker.model->wp.gasMass);
 			f->UpdateFlags();
 		}
 	}
@@ -1040,10 +974,21 @@ int MolFlow::FrameMove()
 		desNumber->SetText("Starting...");
 	}
 	else {
-        sprintf(tmp, "%s (%s)", Util::formatInt(worker.globalHitCache.globalHits.nbMCHit, "hit"), Util::formatPs(hps, "hit"));
+	    double current_avg = hps.avg();
+        if(!runningState) current_avg = hps_runtotal.avg();
+        else current_avg = (current_avg != 0.0) ? current_avg : hps.last();
+
+        sprintf(tmp, "%s (%s)", Util::formatInt(worker.globalHitCache.globalHits.nbMCHit, "hit"),
+                Util::formatPs(current_avg, "hit"));
         hitNumber->SetText(tmp);
-		sprintf(tmp, "%s (%s)", Util::formatInt(worker.globalHitCache.globalHits.nbDesorbed, "des"), Util::formatPs(dps, "des"));
-		desNumber->SetText(tmp);
+
+        current_avg = dps.avg();
+        if(!runningState) current_avg = dps_runtotal.avg();
+        else current_avg = (current_avg != 0.0) ? current_avg : dps.last();
+
+        sprintf(tmp, "%s (%s)", Util::formatInt(worker.globalHitCache.globalHits.nbDesorbed, "des"),
+                Util::formatPs(current_avg, "des"));
+        desNumber->SetText(tmp);
 	}
 
     //sprintf(tmp, "Running: %s", Util::formatTime(worker.simuTimer.Elapsed()));
@@ -1511,7 +1456,7 @@ void MolFlow::ClearParameters() {
 
 void MolFlow::StartStopSimulation() {
 	
-	if (worker.globalHitCache.globalHits.nbMCHit <= 0 && !worker.model.wp.calcConstantFlow && worker.moments.empty()) {
+	if (worker.globalHitCache.globalHits.nbMCHit <= 0 && !worker.model->wp.calcConstantFlow && worker.moments.empty()) {
 		bool ok = GLMessageBox::Display("Warning: in the Moments Editor, the option \"Calculate constant flow\" is disabled.\n"
 			"This is useful for time-dependent simulations.\n"
 			"However, you didn't define any moments, suggesting you're using steady-state mode.\n"
@@ -1529,15 +1474,20 @@ void MolFlow::StartStopSimulation() {
 	}
 
 	// Frame rate measurement
+	// reset on start only
 	lastMeasTime = m_fTime;
-	dps = 0.0;
-	hps = 0.0;
-	lastHps = hps;
-	lastDps = dps;
+	if(worker.IsRunning()) {
+	    hps.clear();
+        dps.clear();
+        hps_runtotal.clear();
+        dps_runtotal.clear();
+    }
 	lastNbHit = worker.globalHitCache.globalHits.nbMCHit;
 	lastNbDes = worker.globalHitCache.globalHits.nbDesorbed;
-	lastUpdate = 0.0;
 
+	hps_runtotal.push(lastNbHit, lastMeasTime);
+	dps_runtotal.push(lastNbDes, lastMeasTime);
+	lastUpdate = 0.0;
 }
 
 // Name: EventProc()
@@ -1958,11 +1908,11 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 
 		worker.CalcTotalOutgassing();
 		//default values
-		worker.model.wp.enableDecay = false;
-		worker.model.wp.halfLife = 1;
-		worker.model.wp.gasMass = 28;
+		worker.model->wp.enableDecay = false;
+		worker.model->wp.halfLife = 1;
+		worker.model->wp.gasMass = 28;
 		worker.ResetMoments();
-		worker.model.wp.globalHistogramParams = HistogramParams();
+		worker.model->wp.globalHistogramParams = HistogramParams();
         ResetSimulation(false);
     }
 	catch(std::exception &e) {
@@ -2033,11 +1983,11 @@ void MolFlow::EmptyGeometry() {
 		geom->EmptyGeometry();
 		worker.CalcTotalOutgassing();
 		//default values
-		worker.model.wp.enableDecay = false;
-		worker.model.wp.halfLife = 1;
-		worker.model.wp.gasMass = 28;
+		worker.model->wp.enableDecay = false;
+		worker.model->wp.halfLife = 1;
+		worker.model->wp.gasMass = 28;
 		worker.ResetMoments();
-		worker.model.wp.globalHistogramParams = HistogramParams();
+		worker.model->wp.globalHistogramParams = HistogramParams();
 	}
 	catch(std::exception &e) {
 		GLMessageBox::Display(e.what(), "Error resetting geometry", GLDLG_OK, GLDLG_ICONERROR);
@@ -2251,7 +2201,7 @@ void MolFlow::LoadConfig() {
 		f->ReadKeyword("compressSavedFiles"); f->ReadKeyword(":");
 		compressSavedFiles = f->ReadInt();
 		f->ReadKeyword("gasMass"); f->ReadKeyword(":");
-		worker.model.wp.gasMass = f->ReadDouble();
+		worker.model->wp.gasMass = f->ReadDouble();
 		f->ReadKeyword("expandShortcutPanel"); f->ReadKeyword(":");
 		bool isOpen = f->ReadInt();
 		if (isOpen) shortcutPanel->Open();
@@ -2260,9 +2210,9 @@ void MolFlow::LoadConfig() {
 		for (auto & view : viewer)
 			view->hideLot = f->ReadInt();
 		f->ReadKeyword("lowFluxMode"); f->ReadKeyword(":");
-		worker.model.otfParams.lowFluxMode = f->ReadInt();
+		worker.model->otfParams.lowFluxMode = f->ReadInt();
 		f->ReadKeyword("lowFluxCutoff"); f->ReadKeyword(":");
-		worker.model.otfParams.lowFluxCutoff = f->ReadDouble();
+		worker.model->otfParams.lowFluxCutoff = f->ReadDouble();
 		f->ReadKeyword("leftHandedView"); f->ReadKeyword(":");
 		leftHandedView = f->ReadInt();
 		f->ReadKeyword("highlightNonplanarFacets"); f->ReadKeyword(":");
@@ -2395,12 +2345,12 @@ void MolFlow::SaveConfig() {
 		f->Write("checkForUpdates:"); f->Write(/*checkForUpdates*/ 0, "\n"); //Deprecated
 		f->Write("autoUpdateFormulas:"); f->Write(autoUpdateFormulas, "\n");
 		f->Write("compressSavedFiles:"); f->Write(compressSavedFiles, "\n");
-		f->Write("gasMass:"); f->Write(worker.model.wp.gasMass, "\n");
+		f->Write("gasMass:"); f->Write(worker.model->wp.gasMass, "\n");
 		f->Write("expandShortcutPanel:"); f->Write(!shortcutPanel->IsClosed(), "\n");
 
 		WRITEI("hideLot", hideLot);
-		f->Write("lowFluxMode:"); f->Write(worker.model.otfParams.lowFluxMode, "\n");
-		f->Write("lowFluxCutoff:"); f->Write(worker.model.otfParams.lowFluxCutoff, "\n");
+		f->Write("lowFluxMode:"); f->Write(worker.model->otfParams.lowFluxMode, "\n");
+		f->Write("lowFluxCutoff:"); f->Write(worker.model->otfParams.lowFluxCutoff, "\n");
 		f->Write("leftHandedView:"); f->Write(leftHandedView, "\n");
         f->Write("highlightNonplanarFacets:"); f->Write(highlightNonplanarFacets, "\n");
         f->Write("useOldXMLFormat:"); f->Write(useOldXMLFormat, "\n");
@@ -2425,7 +2375,7 @@ void MolFlow::calcFlow() {
 	facetTemperature->GetNumber(&temperature);
 	//facetMass->GetNumber(&mass);
 
-	outgassing = 1 * sticking*area / 10.0 / 4.0*sqrt(8.0*8.31*temperature / PI / (worker.model.wp.gasMass*0.001));
+	outgassing = 1 * sticking*area / 10.0 / 4.0*sqrt(8.0*8.31*temperature / PI / (worker.model->wp.gasMass*0.001));
 	facetPumping->SetText(outgassing);
 }
 
@@ -2441,7 +2391,7 @@ void MolFlow::calcSticking() {
 	facetTemperature->GetNumber(&temperature);
 	//facetMass->GetNumber(&mass);
 
-	sticking = std::abs(outgassing / (area / 10.0)*4.0*sqrt(1.0 / 8.0 / 8.31 / (temperature)*PI*(worker.model.wp.gasMass*0.001)));
+	sticking = std::abs(outgassing / (area / 10.0)*4.0*sqrt(1.0 / 8.0 / 8.31 / (temperature)*PI*(worker.model->wp.gasMass*0.001)));
 	facetSticking->SetText(sticking);
 }
 

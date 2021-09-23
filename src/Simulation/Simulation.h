@@ -32,6 +32,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "SimulationController.h"
 #include <../src/GeometrySimu.h>
 #include "Particle.h"
+#include "RayTracing/RTHelper.h"
 
 class Parameter;
 
@@ -43,24 +44,18 @@ public:
     Simulation(Simulation&& o) noexcept ;
     virtual ~Simulation() = default;
 
-    int SanityCheckModel() override;
+    std::pair<int, std::optional<std::string>> SanityCheckModel(bool strictCheck) override;
     void ClearSimulation() override;
     size_t LoadSimulation(char *loadStatus) override;
+    int RebuildAccelStructure() override;
+
     void ResetSimulation() override;
 
     size_t GetHitsSize() override;
 
     int ReinitializeParticleLog() override;
-    MFSim::Particle * GetParticle(size_t i) override {
-        if(i < particles.size())
-            return &particles.at(i);
-        else
-            return nullptr;
-    };
-    void SetNParticle(size_t n) override {
-        particles.clear();
-        particles.resize(n);
-    };
+    MFSim::Particle * GetParticle(size_t i) override;
+    void SetNParticle(size_t n, bool fixedSeed) override;
 
 	//size_t totalDesorbed;           // Total desorption number (for this process, not reset on UpdateMCHits)
 
@@ -76,5 +71,6 @@ public:
     //ParticleLog tmpParticleLog; //Recorded particle log since last UpdateMCHits
     std::vector<MFSim::Particle> particles;
     mutable std::timed_mutex tMutex;
+
 };
 // -- Methods ---------------------------------------------------

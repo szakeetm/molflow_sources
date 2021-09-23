@@ -63,8 +63,9 @@ namespace MFSim {
 
         void Reset();
 
-        Vector3d position;    // Position
-        Vector3d direction;    // Direction
+        Ray particle;
+        //Vector3d position;    // Position
+        //Vector3d direction;    // Direction
         double oriRatio; //Represented ratio of desorbed, used for low flux mode
 
         //Recordings for histogram
@@ -74,19 +75,23 @@ namespace MFSim {
         size_t particleId;
         double distanceTraveled;
         double generationTime; //Time it was created, constant
-        double particleTime; //Actual time, incremented after every hit. (Flight time = actual time - generation time)
+        //double particleTime; //Actual time, incremented after every hit. (Flight time = actual time - generation time)
         int teleportedFrom;   // We memorize where the particle came from: we can teleport back
 
         double velocity;
         double expectedDecayMoment; //for radioactive gases
-        size_t structureId;        // Current structure
+        //size_t structureId;        // Current structure
         GlobalSimuState tmpState;
         ParticleLog tmpParticleLog;
         SubprocessFacet *lastHitFacet;     // Last hitted facet
         MersenneTwister randomGenerator;
         SimulationModel *model;
-        std::vector<SubprocessFacet *> transparentHitBuffer; //Storing this buffer simulation-wide is cheaper than recreating it at every Intersect() call
+        std::vector<SubprocessFacet*> transparentHitBuffer; //Storing this buffer simulation-wide is cheaper than recreating it at every Intersect() call
         std::vector <SubProcessFacetTempVar> tmpFacetVars; //One per subprocessfacet, for intersect routine
+
+        bool allQuit{false};
+
+        bool StartFromSource(Ray &ray);
     };
 }
 

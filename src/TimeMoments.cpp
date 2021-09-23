@@ -7,6 +7,7 @@
 #include <cfloat>
 #include <iostream>
 #include <algorithm>
+#include <limits>
 
 /*!
  * @brief Check for 2 unsorted interval vectors (a and b), if any of the contained intervals (a_i and b_j) overlap
@@ -127,10 +128,12 @@ std::vector<Moment> TimeMoments::ParseMoment(const std::string& userInput, doubl
     return parsedResult;
 }
 
-int TimeMoments::ParseAndCheckUserMoments(std::vector<Moment> *moments, const std::vector<UserMoment> &userMoments) {
+int TimeMoments::ParseAndCheckUserMoments(std::vector<Moment> *moments, std::vector<UserMoment> *userMoments,
+                                          double *progress) {
     std::vector<std::vector<Moment>> parsedMoments;
-    for (size_t u = 0; u != userMoments.size(); u++) {
-        parsedMoments.emplace_back(ParseMoment(userMoments[u].first, userMoments[u].second));
+    for (size_t u = 0; u != userMoments->size(); u++) {
+        parsedMoments.emplace_back(ParseMoment((*userMoments)[u].first, (*userMoments)[u].second));
+        if(progress)*progress = (double)0.5*(double)u/(double)userMoments->size();
     }
 
     auto overlapPair = CheckIntervalOverlap(parsedMoments);
@@ -141,8 +144,10 @@ int TimeMoments::ParseAndCheckUserMoments(std::vector<Moment> *moments, const st
         //GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning", GLDLG_OK, GLDLG_ICONWARNING);
     }
     else{
+        int m = 0;
         for (auto &newMoment : parsedMoments) {
             AddMoment(moments, newMoment);
+            if(progress)*progress = (double)0.5 + (double)m++/(double)parsedMoments.size();
         }
         std::sort(moments->begin(),moments->end());
     }

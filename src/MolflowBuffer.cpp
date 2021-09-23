@@ -3,8 +3,10 @@
 //
 
 #include "MolflowBuffer.h"
+#include <limits>
 
 WorkerParams::WorkerParams(){
+    accel_type = 0;
     timeWindowSize = 1E-10; //Dirac-delta desorption pulse at t=0
     useMaxwellDistribution = true;
     calcConstantFlow = true;
@@ -51,8 +53,8 @@ FacetProperties::FacetProperties(size_t nbIndices) {
 
     texWidth = 0;
     texHeight = 0;
-    texWidthD = 0.0;
-    texHeightD = 0.0;
+    texWidth_precise = 0.0;
+    texHeight_precise = 0.0;
     center.x = 0.0;
     center.y = 0.0;
     center.z = 0.0;

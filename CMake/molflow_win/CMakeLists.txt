@@ -77,15 +77,6 @@ endif(NOT MSVC)
 #   --   Add files to project.   --   #
 #######################################
 
-if (APPLE)
-    set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include" CACHE INTERNAL "OpenMP flags for Xcode toolchain.")
-    set(OpenMP_C_LIB_NAMES "omp" CACHE INTERNAL "OpenMP lib name for Xcode toolchain.")
-
-    set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -I/usr/local/opt/libomp/include" CACHE INTERNAL "OpenMP flags for Xcode toolchain.")
-    set(OpenMP_CXX_LIB_NAMES "omp" CACHE INTERNAL "OpenMP lib name for Xcode toolchain.")
-    set(OpenMP_omp_LIBRARY "/usr/local/opt/libomp/lib/libomp.dylib" CACHE INTERNAL "OpenMP lib name for Xcode toolchain.")
-endif()
-
 set(SRC_FILES
         ${UI_DIR}/FacetAdvParams.cpp
         ${UI_DIR}/FacetDetails.cpp
@@ -114,13 +105,24 @@ set(SRC_FILES
         ${UI_DIR}/TimeSettings.cpp
         ${UI_DIR}/TimewisePlotter.cpp
         ${UI_DIR}/Viewer3DSettings.cpp
-        ../../src/IO/InterfaceXML.cpp ../../src/IO/InterfaceXML.h)
+        ../../src/IO/InterfaceXML.cpp
+        ../../src/IO/InterfaceXML.h
+        ${HEADER_DIR_2}/FlowMPI.h
+        ${HEADER_DIR_2}/FlowMPI.cpp
+        )
 
 # Add executable to build.
 if(WIN32)
     add_executable(${PROJECT_NAME} WIN32 ${SRC_FILES})
 else()
     add_executable(${PROJECT_NAME} ${SRC_FILES})
+endif()
+
+include(${CMAKE_HOME_DIRECTORY}/src_shared/SetOpenMP.cmake)
+find_package(OpenMP REQUIRED)
+if(OpenMP_CXX_FOUND)
+    message(STATUS "Detected OpenMP version: ${OpenMP_CXX_VERSION}")
+    target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC shared_interface)
@@ -139,9 +141,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         )
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
-
-find_package(OpenMP REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
 
 if(MSVC)
     # Add Whole Program Optimization and Link Time Code Generation
@@ -212,9 +211,6 @@ elseif(NOT MSVC)
     find_package(PNG REQUIRED)
     target_include_directories(${PROJECT_NAME} PRIVATE ${PNG_INCLUDE_DIRS})
 
-    find_package(GSL REQUIRED)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${GSL_INCLUDE_DIRS})
-
     find_package(CURL REQUIRED)
     target_include_directories(${PROJECT_NAME} PRIVATE ${CURL_INCLUDE_DIRS})
 
@@ -224,7 +220,7 @@ elseif(NOT MSVC)
     target_link_libraries(${PROJECT_NAME} PRIVATE ${OPENGL_LIBRARIES})
     target_link_libraries(${PROJECT_NAME} PRIVATE ${SDL2_LIBRARIES})
     target_link_libraries(${PROJECT_NAME} PRIVATE ${PNG_LIBRARIES})
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${GSL_LIBRARIES})
+    #target_link_libraries(${PROJECT_NAME} PRIVATE ${GSL_LIBRARIES})
     target_link_libraries(${PROJECT_NAME} PRIVATE ${CURL_LIBRARIES})
     target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads)
     target_link_libraries(${PROJECT_NAME} PRIVATE ${X11_LIBRARIES})
@@ -235,7 +231,7 @@ elseif(NOT MSVC)
         target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBRT})
     endif()
 
-    # Your-external "mylib", add GLOBAL if the imported library is located in directories above the current.
+    #[[# Your-external "mylib", add GLOBAL if the imported library is located in directories above the current.
     if (NOT TARGET libzip)
         add_library( libzip STATIC IMPORTED GLOBAL)
     endif()
@@ -248,7 +244,7 @@ elseif(NOT MSVC)
     else()
         set_target_properties( libzip PROPERTIES IMPORTED_LOCATION ${ABS_LINK_DIR_1}/libzip_gcc.a )
     endif()
-    target_link_libraries(${PROJECT_NAME} PRIVATE libzip) # from ./lib/
+    target_link_libraries(${PROJECT_NAME} PRIVATE libzip) # from ./lib/]]
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         target_link_libraries(${PROJECT_NAME} PRIVATE stdc++)
@@ -260,5 +256,5 @@ elseif(NOT MSVC)
 
     target_link_libraries(${PROJECT_NAME} PRIVATE pugixml sdl_savepng truncatedgaussian)
     target_link_libraries(${PROJECT_NAME} PRIVATE nativefiledialog)
-
+    target_link_libraries(${PROJECT_NAME} PRIVATE ziplib)
 endif()
