@@ -449,7 +449,7 @@ namespace {
             argv.push_back(fileName_c);
             {
                 char **args = argv.data();
-                if(Initializer::initFromArgv(argv.size(), (args), &simManager, model)){
+                if(-1 < Initializer::initFromArgv(argv.size(), (args), &simManager, model)){
                     exit(41);
                 }
                 if(Initializer::initFromFile(&simManager, model, &globState)){
