@@ -16,6 +16,7 @@
 #include <ctime>
 #include <functional>
 #include <Helper/Chronometer.h>
+#include <memory>
 #include <numeric>
 #include <cmath>
 
@@ -351,7 +352,7 @@ namespace {
             argv.push_back(fileName_c);
             {
                 char **args = argv.data();
-                if(Initializer::initFromArgv(argv.size(), (args), &simManager, model)){
+                if(-1 < Initializer::initFromArgv(argv.size(), (args), &simManager, model)){
                     exit(41);
                 }
                 if(Initializer::initFromFile(&simManager, model, &globState)){
@@ -376,10 +377,10 @@ namespace {
                 newDur_c[newDur.size()] = '\0';
                 argv[4] = newDur_c;
 
-                model.reset(new SimulationModel);
+                model = std::make_shared<SimulationModel>();
                 {
                     char **args = argv.data();
-                    if(Initializer::initFromArgv(argv.size(), (args), &simManager, model)){
+                    if(-1 < Initializer::initFromArgv(argv.size(), (args), &simManager, model)){
                         exit(41);
                     }
                     if(Initializer::initFromFile(&simManager, model, &globState)){
