@@ -104,15 +104,14 @@ int Initializer::parseCommands(int argc, char **argv) {
     if (Settings::simDuration == 0 && Settings::desLimit.empty()) {
         Log::console_error("No end criterion has been set!\n");
         Log::console_error(" Either use: -t or -d\n");
-        return 1;
+        return 0;
     }
 
-    return 0;
+    return -1;
 }
 
 int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManager,
                               const std::shared_ptr<SimulationModel>& model) {
-    Log::console_header(1, "Commence: Initialising!\n");
 
 #if defined(WIN32) || defined(__APPLE__)
     setlocale(LC_ALL, "C");
@@ -122,10 +121,12 @@ int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManag
 
     initDefaultSettings();
 
-    int err = 0;
-    if ((err = parseCommands(argc, argv))) {
+    int err = 1;
+    if (-1 < (err = parseCommands(argc, argv))) {
         return err;
     }
+
+    Log::console_header(1, "Commence: Initialising!\n");
 
     simManager->nbThreads = Settings::nbThreads;
     simManager->useCPU = true;
@@ -141,7 +142,7 @@ int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManag
     Log::console_msg_master(4, "Active cores: %zu\n", simManager->nbThreads);
     Log::console_msg_master(4, "Running simulation for: %zu sec\n", Settings::simDuration);
 
-    return 0;
+    return -1;
 }
 
 int Initializer::initFromFile(SimulationManager *simManager, const std::shared_ptr<SimulationModel>& model,
