@@ -552,14 +552,20 @@ namespace {
                    "facet.3.sticking=10.01\n"
                    "facet.50-90.outgassing=42e5\n"
                    "facet.100.temperature=290.92\n"
-                   "simulation.mass=42.42";
+                   "simulation.mass=42.42\n"
+                   "simulation.enableDecay=1\n"
+                   "simulation.halfLife=42.42";
         outfile.close();
         ParameterParser::ParseFile(paramFile, std::vector<SelectionGroup>());
 
         WorkerParams wp;
         ASSERT_FALSE(std::abs(wp.gasMass - 42.42) < 1e-5);
+        ASSERT_FALSE(wp.enableDecay);
+        ASSERT_FALSE(std::abs(wp.halfLife - 42.42) < 1e-5);
         ParameterParser::ChangeSimuParams(wp);
         ASSERT_TRUE(std::abs(wp.gasMass - 42.42) < 1e-5);
+        ASSERT_TRUE(wp.enableDecay);
+        ASSERT_TRUE(std::abs(wp.halfLife - 42.42) < 1e-5);
 
 
        std::vector<std::shared_ptr<SubprocessFacet>> facets(200);

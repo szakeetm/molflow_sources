@@ -67,7 +67,7 @@ int Initializer::parseCommands(int argc, char **argv) {
     app.add_option("-j,--threads", Settings::nbThreads, "# Threads to be deployed");
     app.add_option("-t,--time", Settings::simDuration, "Simulation duration in seconds");
     app.add_option("-d,--ndes", limits, "Desorption limit for simulation end");
-    app.add_option("-f,--file", SettingsIO::inputFile, "Required input file (XML only)")
+    app.add_option("-f,--file", SettingsIO::inputFile, "Required input file (XML/ZIP only)")
             ->required()
             ->check(CLI::ExistingFile);
     CLI::Option *optOfile = app.add_option("-o,--output", SettingsIO::outputFile,
@@ -83,7 +83,7 @@ int Initializer::parseCommands(int argc, char **argv) {
                    "Direct parameter input for ad hoc change of the given geometry parameters");
     app.add_option("--verbosity", Settings::verbosity, "Restrict console output to different levels");
 
-    app.add_flag("--loadAutosave", Settings::loadAutosave, "Whether autoSave_ file should be used if exists");
+    app.add_flag("--loadAutosave", Settings::loadAutosave, "Whether autosave_ file should be used if exists");
     app.add_flag("-r,--reset", Settings::resetOnStart, "Resets simulation status loaded from file");
     app.add_flag("--verbose", verbose, "Verbose console output (all levels)");
     CLI::Option *optOverwrite = app.add_flag("--overwrite", SettingsIO::overwrite,
