@@ -583,9 +583,11 @@ namespace {
         }
         FlowIO::WriterXML writer;
         pugi::xml_document newDoc;
-        std::string fullFileName = SettingsIO::outputPath + "/" + SettingsIO::outputFile;
+        std::string fullFileName = (std::filesystem::path(SettingsIO::outputPath) / SettingsIO::outputFile).string();
         EXPECT_FALSE(std::filesystem::exists(fullFileName));
-        EXPECT_TRUE((SettingsIO::workPath+"/autosave_test_lr1000_pipe.xml") == Initializer::getAutosaveFile());
+        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_test_lr1000_pipe.xml";
+        auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile());
+        EXPECT_TRUE(testPath1.string() == testPath2.string());
         EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_test_lr1000_pipe.xml") != std::string::npos);
         newDoc.load_file(fullFileName.c_str());
         writer.SaveGeometry(newDoc, model, false, true);
@@ -595,7 +597,7 @@ namespace {
         EXPECT_TRUE(std::filesystem::exists(fullFileName));
         EXPECT_TRUE(SettingsIO::outputFile == "out_test_lr1000_pipe.xml");
 
-        if(SettingsIO::workPath.empty() && SettingsIO::workPath != "." && SettingsIO::workPath != "./")
+        if(!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
             std::filesystem::remove_all(SettingsIO::workPath);
     }
 
@@ -617,9 +619,11 @@ namespace {
         }
         FlowIO::WriterXML writer;
         pugi::xml_document newDoc;
-        std::string fullFileName = SettingsIO::outputPath + "/" + SettingsIO::outputFile;
+        std::string fullFileName = (std::filesystem::path(SettingsIO::outputPath) / SettingsIO::outputFile).string();
         EXPECT_FALSE(std::filesystem::exists(fullFileName));
-        EXPECT_TRUE((SettingsIO::workPath+"/autosave_test_lr1000_pipe.xml") == Initializer::getAutosaveFile());
+        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_test_lr1000_pipe.xml";
+        auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile());
+        EXPECT_TRUE(testPath1.string() == testPath2.string());
         EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_test_lr1000_pipe.xml") != std::string::npos);
         newDoc.load_file(fullFileName.c_str());
         writer.SaveGeometry(newDoc, model, false, true);
@@ -630,7 +634,7 @@ namespace {
         EXPECT_TRUE(std::filesystem::exists(fullFileName));
         EXPECT_TRUE(SettingsIO::outputFile == "out_test_lr1000_pipe.xml");
 
-        if(SettingsIO::workPath.empty() && SettingsIO::workPath != "." && SettingsIO::workPath != "./")
+        if(!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
             std::filesystem::remove_all(SettingsIO::workPath);
     }
 
@@ -653,9 +657,11 @@ namespace {
 
         FlowIO::WriterXML writer;
         pugi::xml_document newDoc;
-        std::string fullFileName = SettingsIO::outputPath + "/" + SettingsIO::outputFile;
+        std::string fullFileName = (std::filesystem::path(SettingsIO::outputPath) / SettingsIO::outputFile).string();
         EXPECT_FALSE(std::filesystem::exists(fullFileName));
-        EXPECT_TRUE((SettingsIO::workPath+"/autosave_test_lr1000_pipe.xml") == Initializer::getAutosaveFile());
+        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_test_lr1000_pipe.xml";
+        auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile());
+        EXPECT_TRUE(testPath1.string() == testPath2.string());
         EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_test_lr1000_pipe.xml") != std::string::npos);
         newDoc.load_file(fullFileName.c_str());
         writer.SaveGeometry(newDoc, model, false, true);
@@ -666,7 +672,7 @@ namespace {
         EXPECT_TRUE(std::filesystem::exists(SettingsIO::outputPath));
         EXPECT_TRUE(std::filesystem::exists(fullFileName));
 
-        if(SettingsIO::workPath.empty() && SettingsIO::workPath != "." && SettingsIO::workPath != "./")
+        if(!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
             std::filesystem::remove_all(SettingsIO::workPath);
     }
 
@@ -687,9 +693,11 @@ namespace {
         }
         FlowIO::WriterXML writer;
         pugi::xml_document newDoc;
-        std::string fullFileName = SettingsIO::outputPath + "/" + SettingsIO::outputFile;
+        std::string fullFileName = (std::filesystem::path(SettingsIO::outputPath) / SettingsIO::outputFile).string();
         EXPECT_FALSE(std::filesystem::exists(fullFileName));
-        EXPECT_TRUE((SettingsIO::workPath+"/autosave_test_lr1000_pipe.xml") == Initializer::getAutosaveFile());
+        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_test_lr1000_pipe.xml";
+        auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile());
+        EXPECT_TRUE(testPath1.string() == testPath2.string());
         EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_test_lr1000_pipe.xml") != std::string::npos);
         newDoc.load_file(fullFileName.c_str());
         writer.SaveGeometry(newDoc, model, false, true);
@@ -700,7 +708,7 @@ namespace {
         EXPECT_TRUE(std::filesystem::exists(fullFileName));
 
         // cleanup
-        if(SettingsIO::workPath.empty() && SettingsIO::workPath != "." && SettingsIO::workPath != "./")
+        if(!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
             std::filesystem::remove_all(SettingsIO::workPath);
     }
 
@@ -727,7 +735,9 @@ namespace {
         pugi::xml_document newDoc;
         std::string fullFileName = SettingsIO::outputFile;
         EXPECT_FALSE(std::filesystem::exists(fullFileName));
-        EXPECT_TRUE((SettingsIO::workPath+"/autosave_test_lr1000_pipe.xml") == Initializer::getAutosaveFile());
+        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_test_lr1000_pipe.xml";
+        auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile());
+        EXPECT_TRUE(testPath1.string() == testPath2.string());
         EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_test_lr1000_pipe.xml") != std::string::npos);
         EXPECT_TRUE(std::filesystem::exists(SettingsIO::workPath));
         EXPECT_TRUE(SettingsIO::outputPath.empty());
@@ -738,7 +748,7 @@ namespace {
         EXPECT_TRUE(SettingsIO::workPath.find(outPath) != std::string::npos);
         EXPECT_TRUE(SettingsIO::outputFile.find(outFile) != std::string::npos);
 
-        if(SettingsIO::workPath.empty() && SettingsIO::workPath != "." && SettingsIO::workPath != "./")
+        if(!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
             std::filesystem::remove_all(SettingsIO::workPath);
     }
 
@@ -766,7 +776,9 @@ namespace {
         pugi::xml_document newDoc;
         std::string fullFileName = SettingsIO::workPath+"/"+SettingsIO::outputFile;
         EXPECT_FALSE(std::filesystem::exists(fullFileName));
-        EXPECT_TRUE((SettingsIO::workPath+"/autosave_test_lr1000_pipe.xml") == Initializer::getAutosaveFile());
+        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_test_lr1000_pipe.xml";
+        auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile());
+        EXPECT_TRUE(testPath1.string() == testPath2.string());
         EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_test_lr1000_pipe.xml") != std::string::npos);
         EXPECT_TRUE(std::filesystem::exists(SettingsIO::workPath));
         EXPECT_TRUE(SettingsIO::outputPath == outPath);
@@ -779,7 +791,7 @@ namespace {
         EXPECT_TRUE(SettingsIO::outputFile.find(outPathF) != std::string::npos);
         EXPECT_TRUE(SettingsIO::outputFile.find(outFile) != std::string::npos);
 
-        if(SettingsIO::workPath.empty() && SettingsIO::workPath != "." && SettingsIO::workPath != "./")
+        if(!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
             std::filesystem::remove_all(SettingsIO::workPath);
     }
 
