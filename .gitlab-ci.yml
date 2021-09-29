@@ -108,6 +108,22 @@ build-macos-master:
       when: manual
       allow_failure: false
 
+build-macos-arm-master:
+  extends: .build-unix
+  variables:
+    OS_NAME: "mac"
+    OS_FULL_NAME: "mac"
+  needs: []
+  tags:
+    - macos-arm
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+      when: manual
+      allow_failure: true
+    - if: '$CI_COMMIT_TAG'
+      when: manual
+      allow_failure: false
+
 .test-unix:
   stage: test
   before_script:
@@ -148,6 +164,15 @@ test-macos:
     OS_NAME: "mac"
   tags:
     - macos
+  when: manual
+  allow_failure: true
+
+test-macos-arm:
+  extends: .test-unix
+  variables:
+    OS_NAME: "mac"
+  tags:
+    - macos-arm
   when: manual
   allow_failure: true
 
@@ -216,6 +241,15 @@ benchmark-macos:
     OS_NAME: "mac"
   tags:
     - macos
+  when: manual
+  allow_failure: true
+
+benchmark-macos-arm:
+  extends: .benchmark-unix
+  variables:
+    OS_NAME: "mac"
+  tags:
+    - macos-arm
   when: manual
   allow_failure: true
 
@@ -363,6 +397,16 @@ build-artifact-macos-master:
   tags:
     - macos
 
+build-artifact-macos-arm-master:
+  extends:
+    - .artifact-unix
+    - .artifact-prop-master
+  stage: optional-artifact
+  variables:
+    OS_NAME: "mac"
+  tags:
+    - macos-arm
+
 build-artifact-windows-branch:
   extends:
     - .artifact-windows
@@ -394,7 +438,7 @@ build-artifact-fedora-branch:
   tags:
     - fedora
 
-build-artifact-macos-branch:
+build-artifact-macos-arm-branch:
   variables:
     OS_NAME: "mac"
   extends:
@@ -402,7 +446,7 @@ build-artifact-macos-branch:
     - .artifact-prop-branch
   stage: optional-artifact
   tags:
-    - macos
+    - macos-arm
 
 build-artifact-windows-tags:
   extends:
@@ -441,15 +485,15 @@ build-artifact-fedora-tags:
   tags:
     - fedora
 
-build-artifact-macos-tags:
+build-artifact-macos-arm-tags:
   variables:
     OS_NAME: "mac"
   extends:
     - .artifact-unix
     - .artifact-prop-tags
   needs:
-    - job: build-macos-master
+    - job: build-macos-arm-master
     - job: prepare_job
       artifacts: true
   tags:
-    - macos
+    - macos-arm
