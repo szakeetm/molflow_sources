@@ -8,6 +8,7 @@ set(PROJECT_NAME molflow)
 
 # Folders files
 set(CPP_DIR_1 ../../src)
+set(UI_DIR ../../src/Interface)
 set(HEADER_DIR_1 ../../src)
 set(HEADER_DIR_2 ../../src_shared)
 #set(HEADER_DIR_3 ../../src_shared/GLApp)
@@ -77,30 +78,37 @@ endif(NOT MSVC)
 #######################################
 
 set(SRC_FILES
-        ${CPP_DIR_1}/FacetAdvParams.cpp
-        ${CPP_DIR_1}/FacetDetails.cpp
+        ${UI_DIR}/FacetAdvParams.cpp
+        ${UI_DIR}/FacetDetails.cpp
         ${CPP_DIR_1}/FormulaEvaluator_MF.cpp
-        ${CPP_DIR_1}/GeometryRender.cpp
-        ${CPP_DIR_1}/GeometryViewer.cpp
-        ${CPP_DIR_1}/GlobalSettings.cpp
-        ${CPP_DIR_1}/ImportDesorption.cpp
+        ${UI_DIR}/GeometryRender.cpp
+        ${UI_DIR}/GeometryViewer.cpp
+        ${UI_DIR}/GlobalSettings.cpp
+        ${UI_DIR}/ImportDesorption.cpp
         ${CPP_DIR_1}/MolFlow.cpp
+        ${CPP_DIR_1}/MolflowBuffer.cpp
+        ${CPP_DIR_1}/GeometrySimu.cpp
         ${CPP_DIR_1}/MolflowFacet.cpp
         ${CPP_DIR_1}/MolflowGeometry.cpp
         ${CPP_DIR_1}/MolflowTypes.cpp
         ${CPP_DIR_1}/MolflowWorker.cpp
-        ${CPP_DIR_1}/MomentsEditor.cpp
-        ${CPP_DIR_1}/Movement.cpp
-        ${CPP_DIR_1}/OutgassingMap.cpp
+        ${UI_DIR}/MomentsEditor.cpp
+        ${UI_DIR}/Movement.cpp
+        ${UI_DIR}/OutgassingMapWindow.cpp
         ${CPP_DIR_1}/Parameter.cpp
-        ${CPP_DIR_1}/ParameterEditor.cpp
-        ${CPP_DIR_1}/PressureEvolution.cpp
-        ${CPP_DIR_1}/ProfilePlotter.cpp
-        ${CPP_DIR_1}/TexturePlotter.cpp
-        ${CPP_DIR_1}/TextureScaling.cpp
-        ${CPP_DIR_1}/TimeSettings.cpp
-        ${CPP_DIR_1}/TimewisePlotter.cpp
-        ${CPP_DIR_1}/Viewer3DSettings.cpp
+        ${UI_DIR}/ParameterEditor.cpp
+        ${UI_DIR}/PressureEvolution.cpp
+        ${UI_DIR}/ProfilePlotter.cpp
+        ${UI_DIR}/TexturePlotter.cpp
+        ${UI_DIR}/TextureScaling.cpp
+        ${CPP_DIR_1}/TimeMoments.cpp
+        ${UI_DIR}/TimeSettings.cpp
+        ${UI_DIR}/TimewisePlotter.cpp
+        ${UI_DIR}/Viewer3DSettings.cpp
+        ../../src/IO/InterfaceXML.cpp
+        ../../src/IO/InterfaceXML.h
+        ${HEADER_DIR_2}/FlowMPI.h
+        ${HEADER_DIR_2}/FlowMPI.cpp
         )
 
 # Add executable to build.
@@ -110,10 +118,19 @@ else()
     add_executable(${PROJECT_NAME} ${SRC_FILES})
 endif()
 
-target_link_libraries(${PROJECT_NAME} PRIVATE simulator_shared)
+include(${CMAKE_HOME_DIRECTORY}/src_shared/SetOpenMP.cmake)
+find_package(OpenMP REQUIRED)
+if(OpenMP_CXX_FOUND)
+    message(STATUS "Detected OpenMP version: ${OpenMP_CXX_VERSION}")
+    target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
+endif()
+
+target_link_libraries(${PROJECT_NAME} PUBLIC shared_interface)
+target_link_libraries(${PROJECT_NAME} PUBLIC molflowSim)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${HEADER_DIR_1}
+        ${UI_DIR}
         ${HEADER_DIR_2}
         ${HEADER_DIR_3}
         ${HEADER_DIR_4}
@@ -124,11 +141,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         )
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
-target_compile_options(${PROJECT_NAME} PRIVATE
-        $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
-        -Wall>
-        $<$<CXX_COMPILER_ID:MSVC>:
-        /W4>)
 
 if(MSVC)
     # Add Whole Program Optimization and Link Time Code Generation
@@ -139,17 +151,10 @@ if(MSVC)
             LINK_FLAGS "/ENTRY:mainCRTStartup"
             )
 
-    # Multi-processor compilation
-    target_compile_options(${PROJECT_NAME} PRIVATE
-            "$<$<CONFIG:Debug>:/MP>"
-            "$<$<CONFIG:Release>:/MP>"
-            )
-
     # Add Windows Console output
-    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    #if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE ${LINK_FLAGS}")
-    endif()
-
+    #endif()
 
     # set the path to the library folder
     target_link_directories(${PROJECT_NAME} PRIVATE ${LINK_DIR_1})
@@ -206,9 +211,6 @@ elseif(NOT MSVC)
     find_package(PNG REQUIRED)
     target_include_directories(${PROJECT_NAME} PRIVATE ${PNG_INCLUDE_DIRS})
 
-    find_package(GSL REQUIRED)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${GSL_INCLUDE_DIRS})
-
     find_package(CURL REQUIRED)
     target_include_directories(${PROJECT_NAME} PRIVATE ${CURL_INCLUDE_DIRS})
 
@@ -218,7 +220,7 @@ elseif(NOT MSVC)
     target_link_libraries(${PROJECT_NAME} PRIVATE ${OPENGL_LIBRARIES})
     target_link_libraries(${PROJECT_NAME} PRIVATE ${SDL2_LIBRARIES})
     target_link_libraries(${PROJECT_NAME} PRIVATE ${PNG_LIBRARIES})
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${GSL_LIBRARIES})
+    #target_link_libraries(${PROJECT_NAME} PRIVATE ${GSL_LIBRARIES})
     target_link_libraries(${PROJECT_NAME} PRIVATE ${CURL_LIBRARIES})
     target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads)
     target_link_libraries(${PROJECT_NAME} PRIVATE ${X11_LIBRARIES})
@@ -229,7 +231,7 @@ elseif(NOT MSVC)
         target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBRT})
     endif()
 
-    # Your-external "mylib", add GLOBAL if the imported library is located in directories above the current.
+    #[[# Your-external "mylib", add GLOBAL if the imported library is located in directories above the current.
     if (NOT TARGET libzip)
         add_library( libzip STATIC IMPORTED GLOBAL)
     endif()
@@ -242,10 +244,10 @@ elseif(NOT MSVC)
     else()
         set_target_properties( libzip PROPERTIES IMPORTED_LOCATION ${ABS_LINK_DIR_1}/libzip_gcc.a )
     endif()
-    target_link_libraries(${PROJECT_NAME} PRIVATE libzip) # from ./lib/
+    target_link_libraries(${PROJECT_NAME} PRIVATE libzip) # from ./lib/]]
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        target_link_libraries(${PROJECT_NAME} PRIVATE c++fs)
+        target_link_libraries(${PROJECT_NAME} PRIVATE stdc++)
     elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
         #don´t add anything for filesystem
     else()
@@ -254,5 +256,5 @@ elseif(NOT MSVC)
 
     target_link_libraries(${PROJECT_NAME} PRIVATE pugixml sdl_savepng truncatedgaussian)
     target_link_libraries(${PROJECT_NAME} PRIVATE nativefiledialog)
-
+    target_link_libraries(${PROJECT_NAME} PRIVATE ziplib)
 endif()

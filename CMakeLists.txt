@@ -11,15 +11,26 @@ string (REGEX MATCH "\\.el[1-9]" os_version_suffix ${CMAKE_SYSTEM})
 message("-- os_version_suffix:      ${os_version_suffix}")
 
 #list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+
+#Use new BVH by default
+#priority: USE_OLD_BVH > USE_KDTREE
+option(USE_OLD_BVH "simulation will use old bvh structure by default" OFF)
+option(USE_KDTREE "simulation will use kd structure instead of bvh" OFF)
+
 option(USE_CLANG "build application with clang" OFF) # OFF is the default
 option(USE_PROFILING "disable optimisation for profiling the application" OFF) # OFF is the default
+
+option(NO_INTERFACE "only build CLI binary and dependencies" OFF) # OFF is the default
+if(NO_INTERFACE)
+    message(STATUS "Will not build GUI related libraries and executables.")
+endif()
 
 # Define Release by default.
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
     message(STATUS "Build type not specified: Use Release by default.")
 endif(NOT CMAKE_BUILD_TYPE)
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+if(CMAKE_BUILD_TYPE MATCHES Debug|RelWithDebInfo)
     MESSAGE("Adding Debug flag...")
     ADD_DEFINITIONS(-DDEBUG)
     ADD_DEFINITIONS(-D_DEBUG)
@@ -30,6 +41,17 @@ set(CMAKE_VERBOSE_MAKEFILE OFF)
 ################# Flags ################
 # Defines Flags for Windows and Linux. #
 ########################################
+
+if(USE_OLD_BVH)
+    MESSAGE("Simulation with old BVH...")
+    ADD_DEFINITIONS(-DUSE_OLD_BVH)
+elseif(USE_KDTREE)
+    MESSAGE("Simulation with KDTREE...")
+    ADD_DEFINITIONS(-DUSE_KDTREE)
+else()
+    MESSAGE("Simulation with new BVH...")
+    #ADD_DEFINITIONS(-DUSE_KDTREE)
+endif()
 
 # https://docs.microsoft.com/en-us/cpp/build/reference/compiler-options-listed-alphabetically?view=vs-2019
 if(MSVC)
@@ -44,15 +66,15 @@ if(MSVC)
     #set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /subsystem:windows /ENTRY:mainCRTStartup")
     #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /W3 /EHsc")
     #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /W3 /EHsc")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /W4 /MDd /Od /EHsc")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO  "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /W4 /GL /O2 /Ob2 /EHsc")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /W4 /GL /O2 /EHsc")
+    #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /W4 /MDd /Od /EHsc")
+    #set(CMAKE_CXX_FLAGS_RELWITHDEBINFO  "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /W4 /GL /O2 /Ob2 /EHsc")
+    #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /W4 /GL /O2 /EHsc")
 endif(MSVC)
 if(NOT MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 	#Flag to set debug symbols
-	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g")
-	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
+	#set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g")
+	#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 	
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
@@ -71,25 +93,37 @@ endif(USE_PROFILING)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS OFF)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 include(CMake/Molflow.cmake)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
-add_subdirectory(src_shared)
-add_subdirectory(CMake/molflow_sub)
-add_subdirectory(CMake/molflow_win)
+add_subdirectory(src_shared EXCLUDE_FROM_ALL)
 
-IF (WIN32)
-    add_subdirectory(CMake/png_zlib_win_library)
-ELSE()
-    #add_subdirectory(CMake/molflow_testsuit)
-ENDIF(WIN32)
+#IF(NOT WIN32)
+add_subdirectory(CMake/molflow_cli)
+add_subdirectory(CMake/molflow_sim)
+#ENDIF()
 
-add_dependencies(molflow molflowSub compress)
+if(NOT NO_INTERFACE)
+    add_subdirectory(CMake/molflow_win)
+    IF (WIN32)
+        add_subdirectory(CMake/png_zlib_win_library)
+    ENDIF(WIN32)
+    add_dependencies(molflow shared_simulator shared_interface compress)
+endif()
 
-option(USE_TESTS "Build the tests" OFF)
+
+add_dependencies(molflow ziplib)
+add_dependencies(molflowSim ziplib)
+
+
+#IF(NOT WIN32)
+add_dependencies(molflowCLI molflowSim)
+#ENDIF()
+
+option(USE_TESTS "Build the tests" ON)
 if(USE_TESTS)
     enable_testing()
     include(GoogleTest)
     add_subdirectory(tests)
-    add_dependencies(example molflowSub)
+    add_dependencies(testsuite molflowSim)
 endif()

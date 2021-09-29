@@ -13,13 +13,14 @@ ELSE()
     set(OS_RELPATH "")
 ENDIF()
 
-IF (CMAKE_BUILD_TYPE STREQUAL "Debug")
+IF (CMAKE_BUILD_TYPE MATCHES Debug|RelWithDebInfo)
     set(MY_BUILD_TYPE "debug")
 ELSE()
     set(MY_BUILD_TYPE "release")
 ENDIF()
 
 # Output Variables
+
 set(OUTPUT_BIN_DEBUG ${OS_RELPATH}/bin/)
 set(OUTPUT_BIN_REL ${OS_RELPATH}/bin/)
 set(OUTPUT_LIB_DEBUG ${OS_RELPATH}/lib/)
@@ -29,7 +30,7 @@ set(OUTPUT_LIB_REL ${OS_RELPATH}/lib/)
 # Defines outputs , depending Debug or Release. #
 #################################################
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+if(CMAKE_BUILD_TYPE MATCHES Debug|RelWithDebInfo)
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_LIB_DEBUG}")
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_LIB_DEBUG}")
     set(CMAKE_EXECUTABLE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_BIN_DEBUG}")
@@ -71,6 +72,47 @@ elseif(OS_NAME STREQUAL "linux_debian")
     )
 endif ()
 
+#[[add_compile_options(
+        $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
+        -Wall>
+# -Wextra -pedantic
+        #-Werror -Wno-error=uninitialized
+        $<$<CXX_COMPILER_ID:MSVC>:
+        /W4>
+        #/WX
+        )]]
+
+#[[add_compile_options(
+        $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
+        -Wall>
+        $<$<CXX_COMPILER_ID:MSVC>:
+        /W4>)]]
+if(NOT MSVC)
+    add_compile_options(
+            -Wall -Wextra -pedantic
+            #-Werror -Wno-error=uninitialized
+        $<$<CONFIG:RELEASE>:-O3>
+        $<$<CONFIG:DEBUG>:-O0>
+        $<$<CONFIG:DEBUG>:-ggdb3>
+        $<$<CONFIG:RELWITHDEBINFO>:-O2>
+        $<$<CONFIG:RELWITHDEBINFO>:-ggdb3>
+        $<$<CONFIG:RELWITHDEBINFO>:-g>
+    )
+else()
+    #/WX
+    add_compile_options(
+        /W4
+    )
+    add_compile_options(
+        "$<$<CONFIG:Release>:/GL;/O2;/EHsc>"
+        "$<$<CONFIG:Debug>:/MDd;/Od;/EHsc>"
+    )
+    # Multi-processor compilation
+    add_compile_options(
+        "$<$<CONFIG:Debug>:/MP>"
+        "$<$<CONFIG:Release>:/MP>"
+    )
+endif()
 #disable generation of appname.manifest file
 #alternative: use /MANIFEST:EMBED
 if(MSVC)

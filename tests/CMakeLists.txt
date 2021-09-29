@@ -34,9 +34,66 @@ if (CMAKE_VERSION VERSION_LESS 2.8.11)
     include_directories("${gtest_SOURCE_DIR}/include")
 endif()
 
+# Get the current working branch
+execute_process(
+        COMMAND git rev-parse --abbrev-ref HEAD
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_BRANCH
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+# Get the latest commit hash
+execute_process(
+        COMMAND git rev-parse HEAD
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_COMMIT_HASH
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+
+link_directories(${LINK_DIR_1} ${LINK_DIR_2})
+
+set(EXTRA_SRC
+        ../src_shared/File.cpp
+        ../src_shared/FlowMPI.h #contains templates
+        ../src_shared/FlowMPI.cpp
+        )
 # Now simply link against gtest or gtest_main as needed. Eg
-add_executable(example example.cpp ../src_shared/SimulationManager.cpp ../src_shared/ShMemory.cpp ../src_shared/Process.cpp)
-target_link_libraries(example gtest_main)
-target_include_directories(example PRIVATE ../include ../src_shared)
-target_compile_features(example PRIVATE cxx_std_17)
-add_test(NAME example_test COMMAND example)
+add_executable(testsuite simulation_testsuite.cpp ${EXTRA_SRC})
+
+target_link_libraries(testsuite PRIVATE gtest_main molflowSim)
+target_compile_definitions(testsuite PRIVATE
+        "-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
+
+target_include_directories(testsuite PRIVATE ../include ../src_shared ../src)
+# set the path to the library folder
+IF (WIN32)
+
+    set(LINK_DIR_1 ../lib/win/${MY_BUILD_TYPE})
+    set(LINK_DIR_2 ../lib_external/win/${MY_BUILD_TYPE})
+ELSEIF(APPLE)
+    set(LINK_DIR_1 ../lib_external/mac)
+ELSE()
+    IF(os_version_suffix STREQUAL ".el7")
+        set(LINK_DIR_1 ../lib_external/linux_fedora)
+    ELSE()
+        set(LINK_DIR_1 ../lib_external/linux_debian)
+    ENDIF()
+ENDIF()
+target_link_directories(testsuite PRIVATE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+target_link_directories(testsuite PRIVATE ${LINK_DIR_1} ${LINK_DIR_2})
+if(MSVC)
+    # zip extraction
+    target_link_libraries(testsuite PRIVATE
+            bzip2.lib
+            lzma.lib
+            ZipLib.lib
+            zlib.lib
+            )
+endif(MSVC)
+
+target_compile_features(testsuite PRIVATE cxx_std_17)
+#add_test(NAME example_test COMMAND testsuite)
+
+file(COPY ./simulation.cfg
+        ./test_lr1000_pipe.xml ./test_lr10_pipe_tex.xml ./test_lr10_pipe_prof.xml ./test_lr10_pipe_trans.xml
+        ./TestCases
+        DESTINATION ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})
