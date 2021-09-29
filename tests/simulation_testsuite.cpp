@@ -6,7 +6,7 @@
 #include "gtest/gtest.h"
 #include "../src/Initializer.h"
 #include "../src/ParameterParser.h"
-
+#include <SettingsIO.h>
 //#define MOLFLOW_PATH ""
 
 #include <filesystem>
@@ -19,11 +19,37 @@
 #include <memory>
 #include <numeric>
 #include <cmath>
+#include <IO/WriterXML.h>
 
 #ifndef GIT_COMMIT_HASH
 #define GIT_COMMIT_HASH "?"
 #endif
 
+// helper class for flexible argument initialization
+class CharPVec {
+public:
+    CharPVec(){};
+    CharPVec(int size) : vec(size,nullptr){};
+    CharPVec(const std::vector<std::string>& svec) : vec(svec.size(),nullptr){
+        cpy(svec);
+    };
+    ~CharPVec(){clear();};
+    char** data(){return vec.data();}
+    void cpy(const std::vector<std::string>& svec){
+        if(vec.size() != svec.size()) vec.resize(svec.size());
+        for(int i = 0; i < vec.size(); ++i) {
+            vec[i] = new char[svec[i].size()+1];
+            std::strncpy(vec[i], svec[i].c_str(), std::size(svec[i]));
+            vec[i][svec[i].size()] = '\0';
+        }
+    }
+
+    void clear(){
+        for(auto& c : vec) delete[] c;
+    }
+    // member
+    std::vector<char*> vec;
+};
 namespace {
 
     class SimulationFixture : public ::testing::TestWithParam<std::string> {
@@ -540,6 +566,221 @@ namespace {
             simMan.KillAllSimUnits();
             EXPECT_EQ(0, simMan.nbThreads);
         }
+    }
+
+    TEST(InputOutput, DefaultInput) {
+
+        SimulationManager simManager;
+        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        GlobalSimuState globState{};
+
+        std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "test_lr1000_pipe.xml"};
+        {
+            CharPVec argc_v(argv);
+            char **args = argc_v.data();
+            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromFile(&simManager, model, &globState);
+        }
+        FlowIO::WriterXML writer;
+        pugi::xml_document newDoc;
+        std::string fullFileName = SettingsIO::outputPath + "/" + SettingsIO::outputFile;
+        EXPECT_FALSE(std::filesystem::exists(fullFileName));
+        EXPECT_TRUE((SettingsIO::workPath+"/autosave_test_lr1000_pipe.xml") == Initializer::getAutosaveFile());
+        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_test_lr1000_pipe.xml") != std::string::npos);
+        newDoc.load_file(fullFileName.c_str());
+        writer.SaveGeometry(newDoc, model, false, true);
+        writer.SaveSimulationState(fullFileName, model, globState);
+        EXPECT_TRUE(SettingsIO::outputPath.find("Results_") != std::string::npos);
+        EXPECT_TRUE(std::filesystem::exists(SettingsIO::outputPath));
+        EXPECT_TRUE(std::filesystem::exists(fullFileName));
+        EXPECT_TRUE(SettingsIO::outputFile == "out_test_lr1000_pipe.xml");
+
+        if(SettingsIO::workPath.empty() && SettingsIO::workPath != "." && SettingsIO::workPath != "./")
+            std::filesystem::remove_all(SettingsIO::workPath);
+    }
+
+    TEST(InputOutput, Outputpath) {
+
+        SimulationManager simManager;
+        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        GlobalSimuState globState{};
+
+        // generate hash name for tmp working file
+        std::string outPath = "TPath_"+std::to_string(std::hash<time_t>()(time(nullptr)));
+        std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "test_lr1000_pipe.xml",
+                                    "--outputPath", outPath};
+        {
+            CharPVec argc_v(argv);
+            char **args = argc_v.data();
+            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromFile(&simManager, model, &globState);
+        }
+        FlowIO::WriterXML writer;
+        pugi::xml_document newDoc;
+        std::string fullFileName = SettingsIO::outputPath + "/" + SettingsIO::outputFile;
+        EXPECT_FALSE(std::filesystem::exists(fullFileName));
+        EXPECT_TRUE((SettingsIO::workPath+"/autosave_test_lr1000_pipe.xml") == Initializer::getAutosaveFile());
+        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_test_lr1000_pipe.xml") != std::string::npos);
+        newDoc.load_file(fullFileName.c_str());
+        writer.SaveGeometry(newDoc, model, false, true);
+        writer.SaveSimulationState(fullFileName, model, globState);
+        EXPECT_FALSE(SettingsIO::outputPath.find("Results_") != std::string::npos);
+        EXPECT_TRUE(SettingsIO::outputPath == outPath);
+        EXPECT_TRUE(std::filesystem::exists(SettingsIO::outputPath));
+        EXPECT_TRUE(std::filesystem::exists(fullFileName));
+        EXPECT_TRUE(SettingsIO::outputFile == "out_test_lr1000_pipe.xml");
+
+        if(SettingsIO::workPath.empty() && SettingsIO::workPath != "." && SettingsIO::workPath != "./")
+            std::filesystem::remove_all(SettingsIO::workPath);
+    }
+
+    TEST(InputOutput, OutputpathAndFile) {
+
+        SimulationManager simManager;
+        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        GlobalSimuState globState{};
+
+        std::string outPath = "TPath_"+std::to_string(std::hash<time_t>()(time(nullptr)));
+        std::string outFile = "tFile_"+std::to_string(std::hash<time_t>()(time(nullptr)))+".xml";
+        std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "test_lr1000_pipe.xml",
+                                    "--outputPath", outPath, "-o", outFile};
+        {
+            CharPVec argc_v(argv);
+            char **args = argc_v.data();
+            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromFile(&simManager, model, &globState);
+        }
+
+        FlowIO::WriterXML writer;
+        pugi::xml_document newDoc;
+        std::string fullFileName = SettingsIO::outputPath + "/" + SettingsIO::outputFile;
+        EXPECT_FALSE(std::filesystem::exists(fullFileName));
+        EXPECT_TRUE((SettingsIO::workPath+"/autosave_test_lr1000_pipe.xml") == Initializer::getAutosaveFile());
+        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_test_lr1000_pipe.xml") != std::string::npos);
+        newDoc.load_file(fullFileName.c_str());
+        writer.SaveGeometry(newDoc, model, false, true);
+        writer.SaveSimulationState(fullFileName, model, globState);
+        EXPECT_FALSE(SettingsIO::outputPath.find("Results_") != std::string::npos);
+        EXPECT_TRUE(SettingsIO::outputPath == outPath);
+        EXPECT_TRUE(SettingsIO::outputFile == outFile);
+        EXPECT_TRUE(std::filesystem::exists(SettingsIO::outputPath));
+        EXPECT_TRUE(std::filesystem::exists(fullFileName));
+
+        if(SettingsIO::workPath.empty() && SettingsIO::workPath != "." && SettingsIO::workPath != "./")
+            std::filesystem::remove_all(SettingsIO::workPath);
+    }
+
+    TEST(InputOutput, Outputfile) {
+
+        SimulationManager simManager;
+        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        GlobalSimuState globState{};
+
+        std::string outFile = "tFile_"+std::to_string(std::hash<time_t>()(time(nullptr)))+".xml";
+        std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "test_lr1000_pipe.xml",
+                                         "-o", outFile};
+        {
+            CharPVec argc_v(argv);
+            char **args = argc_v.data();
+            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromFile(&simManager, model, &globState);
+        }
+        FlowIO::WriterXML writer;
+        pugi::xml_document newDoc;
+        std::string fullFileName = SettingsIO::outputPath + "/" + SettingsIO::outputFile;
+        EXPECT_FALSE(std::filesystem::exists(fullFileName));
+        EXPECT_TRUE((SettingsIO::workPath+"/autosave_test_lr1000_pipe.xml") == Initializer::getAutosaveFile());
+        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_test_lr1000_pipe.xml") != std::string::npos);
+        newDoc.load_file(fullFileName.c_str());
+        writer.SaveGeometry(newDoc, model, false, true);
+        writer.SaveSimulationState(fullFileName, model, globState);
+        EXPECT_TRUE(SettingsIO::outputPath.find("Results_") != std::string::npos);
+        EXPECT_TRUE(SettingsIO::outputFile == outFile);
+        EXPECT_TRUE(std::filesystem::exists(SettingsIO::outputPath));
+        EXPECT_TRUE(std::filesystem::exists(fullFileName));
+
+        // cleanup
+        if(SettingsIO::workPath.empty() && SettingsIO::workPath != "." && SettingsIO::workPath != "./")
+            std::filesystem::remove_all(SettingsIO::workPath);
+    }
+
+    TEST(InputOutput, OutputfileWithPath) {
+
+        SimulationManager simManager;
+        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        GlobalSimuState globState{};
+
+        EXPECT_FALSE(SettingsIO::workPath.find("gtest_relpath") != std::string::npos);
+        EXPECT_FALSE(std::filesystem::exists("gtest_relpath/gtest_out.xml"));
+
+        std::string outPath = "TPath_"+std::to_string(std::hash<time_t>()(time(nullptr)));
+        std::string outFile = "tFile_"+std::to_string(std::hash<time_t>()(time(nullptr)))+".xml";
+        std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "test_lr1000_pipe.xml",
+                                        "-o", outPath+"/"+outFile};
+        {
+            CharPVec argc_v(argv);
+            char **args = argc_v.data();
+            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromFile(&simManager, model, &globState);
+        }
+        FlowIO::WriterXML writer;
+        pugi::xml_document newDoc;
+        std::string fullFileName = SettingsIO::outputFile;
+        EXPECT_FALSE(std::filesystem::exists(fullFileName));
+        EXPECT_TRUE((SettingsIO::workPath+"/autosave_test_lr1000_pipe.xml") == Initializer::getAutosaveFile());
+        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_test_lr1000_pipe.xml") != std::string::npos);
+        EXPECT_TRUE(std::filesystem::exists(SettingsIO::workPath));
+        EXPECT_TRUE(SettingsIO::outputPath.empty());
+        newDoc.load_file(fullFileName.c_str());
+        writer.SaveGeometry(newDoc, model, false, true);
+        writer.SaveSimulationState(fullFileName, model, globState);
+        EXPECT_TRUE(std::filesystem::exists(fullFileName));
+        EXPECT_TRUE(SettingsIO::workPath.find(outPath) != std::string::npos);
+        EXPECT_TRUE(SettingsIO::outputFile.find(outFile) != std::string::npos);
+
+        if(SettingsIO::workPath.empty() && SettingsIO::workPath != "." && SettingsIO::workPath != "./")
+            std::filesystem::remove_all(SettingsIO::workPath);
+    }
+
+    TEST(InputOutput, OutputpathAndOutputfileWithPath) {
+
+        SimulationManager simManager;
+        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        GlobalSimuState globState{};
+
+        EXPECT_FALSE(SettingsIO::workPath.find("gtest_relpath") != std::string::npos);
+        EXPECT_FALSE(std::filesystem::exists("gtest_relpath/gtest_out.xml"));
+
+        std::string outPath = "TPath_"+std::to_string(std::hash<time_t>()(time(nullptr)));
+        std::string outPathF = "TFPath_"+std::to_string(std::hash<time_t>()(time(nullptr)));
+        std::string outFile = "tFile_"+std::to_string(std::hash<time_t>()(time(nullptr)))+".xml";
+        std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "test_lr1000_pipe.xml",
+                                         "--outputPath", outPath, "-o", outPathF+"/"+outFile};
+        {
+            CharPVec argc_v(argv);
+            char **args = argc_v.data();
+            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromFile(&simManager, model, &globState);
+        }
+        FlowIO::WriterXML writer;
+        pugi::xml_document newDoc;
+        std::string fullFileName = SettingsIO::workPath+"/"+SettingsIO::outputFile;
+        EXPECT_FALSE(std::filesystem::exists(fullFileName));
+        EXPECT_TRUE((SettingsIO::workPath+"/autosave_test_lr1000_pipe.xml") == Initializer::getAutosaveFile());
+        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_test_lr1000_pipe.xml") != std::string::npos);
+        EXPECT_TRUE(std::filesystem::exists(SettingsIO::workPath));
+        EXPECT_TRUE(SettingsIO::outputPath == outPath);
+        EXPECT_TRUE(SettingsIO::workPath == outPath);
+        newDoc.load_file(fullFileName.c_str());
+        writer.SaveGeometry(newDoc, model, false, true);
+        writer.SaveSimulationState(fullFileName, model, globState);
+        EXPECT_TRUE(std::filesystem::exists(fullFileName));
+        EXPECT_TRUE(SettingsIO::workPath.find(outPath) != std::string::npos);
+        EXPECT_TRUE(SettingsIO::outputFile.find(outPathF) != std::string::npos);
+        EXPECT_TRUE(SettingsIO::outputFile.find(outFile) != std::string::npos);
+
+        if(SettingsIO::workPath.empty() && SettingsIO::workPath != "." && SettingsIO::workPath != "./")
+            std::filesystem::remove_all(SettingsIO::workPath);
     }
 
     TEST(ParameterParsing, SweepFile) {

@@ -319,13 +319,13 @@ std::string Initializer::getAutosaveFile() {
             std::search(autoSave.begin(), autoSave.begin() + autoSavePrefix.size(), autoSavePrefix.begin(),
                         autoSavePrefix.end()) == autoSave.begin()) {
             // TODO: Revisit wether input/output is acceptable here
-            autoSave = std::filesystem::path(SettingsIO::workFile).filename().string();
+            autoSave = std::filesystem::path(SettingsIO::workPath).append(SettingsIO::workFile).filename().string();
             SettingsIO::inputFile = autoSave.substr(autoSavePrefix.size(), autoSave.size() - autoSavePrefix.size());
             Log::console_msg_master(2, "Using autosave file %s for %s\n", autoSave.c_str(),
                                     SettingsIO::inputFile.c_str());
         } else {
             // create autosavefile from copy of original
-            autoSave = std::filesystem::path(SettingsIO::outputPath).append(autoSavePrefix).concat(autoSave).string();
+            autoSave = std::filesystem::path(SettingsIO::workPath).append(autoSavePrefix).concat(autoSave).string();
             try {
                 std::filesystem::copy_file(SettingsIO::workFile, autoSave,
                                            std::filesystem::copy_options::overwrite_existing);
