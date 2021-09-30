@@ -194,7 +194,6 @@ build-macos-test:
   variables:
     OS_NAME: "mac"
     OS_FULL_NAME: "mac"
-  needs: []
   tags:
     - macos
   rules:
@@ -210,7 +209,6 @@ build-macos-arm-test:
   variables:
     OS_NAME: "mac"
     OS_FULL_NAME: "mac"
-  needs: []
   tags:
     - macos-arm
   rules:
