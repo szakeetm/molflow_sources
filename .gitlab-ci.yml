@@ -24,8 +24,6 @@ prepare_job:
       dotenv: variables.env
   tags:
     - linux
-    - macos
-    - macos-arm
 
 build-windows-master:
   stage: build
