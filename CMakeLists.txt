@@ -30,7 +30,7 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
     message(STATUS "Build type not specified: Use Release by default.")
 endif(NOT CMAKE_BUILD_TYPE)
-if(CMAKE_BUILD_TYPE MATCHES (Debug|RelWithDebInfo))
+if(CMAKE_BUILD_TYPE MATCHES Debug|RelWithDebInfo)
     MESSAGE("Adding Debug flag...")
     ADD_DEFINITIONS(-DDEBUG)
     ADD_DEFINITIONS(-D_DEBUG)
@@ -105,14 +105,13 @@ add_subdirectory(CMake/molflow_sim)
 
 if(NOT NO_INTERFACE)
     add_subdirectory(CMake/molflow_win)
+    add_dependencies(molflow ziplib)
     IF (WIN32)
         add_subdirectory(CMake/png_zlib_win_library)
     ENDIF(WIN32)
     add_dependencies(molflow shared_simulator shared_interface compress)
 endif()
 
-
-add_dependencies(molflow ziplib)
 add_dependencies(molflowSim ziplib)
 
 

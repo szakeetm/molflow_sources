@@ -264,6 +264,7 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 		throw Error("Unspecified Error while building pipe");
 	}
 	InitializeGeometry();
+    InitializeInterfaceGeometry();
 }
 
 /**
@@ -280,7 +281,8 @@ void MolflowGeometry::InsertSYN(FileReader *file, GLProgress *prg, bool newStr) 
 	char *e = strrchr(strName[0], '.');
 	if (e) *e = 0;
 	InitializeGeometry();
-	//AdjustProfile();
+    InitializeInterfaceGeometry();
+    //AdjustProfile();
 
 }
 
@@ -896,7 +898,8 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 	}
 
 	InitializeGeometry();
-	//AdjustProfile();
+    InitializeInterfaceGeometry();
+    //AdjustProfile();
 	//isLoaded = true; //InitializeGeometry() sets to true
 	UpdateName(file);
 
@@ -1164,7 +1167,8 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
 
 	prg->SetMessage("Initalizing geometry and building mesh...");
 	InitializeGeometry();
-	//AdjustProfile();
+    InitializeInterfaceGeometry();
+    //AdjustProfile();
 	//isLoaded = true; //InitializeGeometry() sets to true
 	UpdateName(file);
 
@@ -3324,7 +3328,8 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 	if (newStr) sh.nbSuper += nbNewSuper;
 	else if (sh.nbSuper < structId + nbNewSuper) sh.nbSuper = structId + nbNewSuper;
 	InitializeGeometry();
-	//AdjustProfile();
+    InitializeInterfaceGeometry();
+    //AdjustProfile();
 	//isLoaded = true; //InitializeGeometry() sets to true
 
 	// Update mesh for newly inserted facets

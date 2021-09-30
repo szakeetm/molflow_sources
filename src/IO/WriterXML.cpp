@@ -20,7 +20,17 @@ void WriterXML::setWriteProgress(double newProgress) {
 }
 
 void WriterXML::reportWriteStatus(const std::string &statusString) const {
-    Log::console_msg(2, "[%s] %s [%.2lf%%]\n", Util::getTimepointString().c_str(), statusString.c_str(), writeProgress);
+    Log::console_msg(2, "[%s] %s [%3.2lf%%]", Util::getTimepointString().c_str(), statusString.c_str(), writeProgress);
+}
+
+void WriterXML::reportNewWriteStatus(const std::string &statusString, double newProgress) {
+    setWriteProgress(newProgress);
+    Log::console_msg(2, "\r[%s] %s [%3.2lf%%]", Util::getTimepointString().c_str(), statusString.c_str(), writeProgress);
+}
+
+void WriterXML::finishWriteStatus(const std::string &statusString) {
+    setWriteProgress(100.0);
+    Log::console_msg(2, "\r[%s] %s [%3.2lf%%]\n", Util::getTimepointString().c_str(), statusString.c_str(), 100.0);
 }
 
 void WriterXML::SaveGeometry(xml_document &saveDoc, std::shared_ptr<SimulationModel> model, bool useOldXMLFormat, bool update) {
@@ -185,13 +195,14 @@ bool WriterXML::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<Simul
     rootNode.remove_child("MolflowResults"); // clear previous results to replace with new status
 
     xml_node resultNode = rootNode.append_child("MolflowResults");
-    reportWriteStatus("Writing simulation results...");
     xml_node momentsNode = resultNode.append_child("Moments");
     momentsNode.append_attribute("nb") = model->tdParams.moments.size() + 1;
     size_t facetHitsSize = (1 + model->tdParams.moments.size()) * sizeof(FacetHitBuffer);
 
+    reportWriteStatus("Writing simulation results...");
     for (size_t m = 0; m <= model->tdParams.moments.size(); m++) {
-        setWriteProgress(0.5 + 0.5 * (double) m / (1.0 + (double) model->tdParams.moments.size()));
+        //setWriteProgress(0.5 + 0.5 * (double) m / (1.0 + (double) model->tdParams.moments.size()));
+        reportNewWriteStatus("Writing simulation results...", 0.5 + 0.5 * (double) m / (1.0 + (double) model->tdParams.moments.size()));
         xml_node newMoment = momentsNode.append_child("Moment");
         newMoment.append_attribute("id") = m;
         if (m == 0) {
@@ -480,6 +491,8 @@ bool WriterXML::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<Simul
     minMaxNode.child("Moments_only").child("Density").append_attribute("max") = 0.0;
     minMaxNode.child("Moments_only").append_child("Imp.rate").append_attribute("min") = 0.0;
     minMaxNode.child("Moments_only").child("Imp.rate").append_attribute("max") = 0.0;
+
+    finishWriteStatus("Writing simulation results...");
 
     return true;
 }

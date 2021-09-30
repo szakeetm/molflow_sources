@@ -1,6 +1,5 @@
 #include "Simulation.h"
 #include "IntersectAABB_shared.h"
-#include "Parameter.h"
 #include <cstring>
 #include <sstream>
 #include <cereal/archives/binary.hpp>
@@ -8,9 +7,8 @@
 #include <Helper/ConsoleLogger.h>
 #if defined(USE_OLD_BVH)
 // currently always have SuperStructure
-#elif defined(USE_KDTREE)
-#include <RayTracing/KDTree.h>
 #else
+#include <RayTracing/KDTree.h>
 #include <RayTracing/BVH.h>
 #endif
 
@@ -30,8 +28,10 @@ Simulation::Simulation() : tMutex()
 
     lastLogUpdateOK = true;
 
-    for(auto& particle : particles)
+    for(auto& particle : particles) {
         particle.lastHitFacet = nullptr;
+        particle.particle.lastIntersected = -1;
+    }
 
     hasVolatile = false;
 
@@ -51,6 +51,7 @@ Simulation::Simulation(Simulation&& o) noexcept : tMutex() {
     particles = o.particles;
     for(auto& particle : particles) {
         particle.lastHitFacet = nullptr;
+        particle.particle.lastIntersected = -1;
         particle.model = model.get();
     }
 
@@ -77,6 +78,26 @@ int Simulation::ReinitializeParticleLog() {
         }
     }
     return 0;
+}
+
+MFSim::Particle * Simulation::GetParticle(size_t i) {
+    if(i < particles.size())
+        return &particles.at(i);
+    else
+        return nullptr;
+}
+
+void Simulation::SetNParticle(size_t n, bool fixedSeed) {
+    particles.clear();
+    particles.resize(n);
+    size_t pid = 0;
+    for(auto& particle : particles){
+        if(fixedSeed)
+         particle.randomGenerator.SetSeed(42424242 + pid);
+        else
+         particle.randomGenerator.SetSeed(GenerateSeed(pid));
+        particle.particleId = pid++;
+    }
 }
 
 /*bool Simulation::UpdateOntheflySimuParams(Dataport *loader) {
@@ -115,39 +136,70 @@ int Simulation::ReinitializeParticleLog() {
 }*/
 
 std::pair<int, std::optional<std::string>> Simulation::SanityCheckModel(bool strictCheck) {
-    char errLog[2048] {"[Error Log on Check]\n"};
+    std::string errLog = "[Error Log on Check]\n";
     int errorsOnCheck = 0;
 
     if (!model->initialized) {
-        sprintf(errLog + strlen(errLog), "Model not initialized\n");
+        errLog.append("Model not initialized\n");
         errorsOnCheck++;
     }
     if (model->vertices3.empty()) {
-        sprintf(errLog + strlen(errLog), "Loaded empty vertex list\n");
+        errLog.append("Loaded empty vertex list\n");
         errorsOnCheck++;
     }
     if (model->facets.empty()) {
-        sprintf(errLog + strlen(errLog), "Loaded empty facet list\n");
+        errLog.append("Loaded empty facet list\n");
         errorsOnCheck++;
+    }
+    if(model->sh.nbFacet != model->facets.size()) {
+        char tmp[256];
+        snprintf(tmp, 256, "Facet structure not properly initialized, size mismatch: %zu / %zu\n", model->sh.nbFacet, model->facets.size());
+        errLog.append(tmp);
+        errorsOnCheck++;
+    }
+    for(auto& fac : model->facets){
+        bool hasAnyTexture = fac->sh.countDes || fac->sh.countAbs || fac->sh.countRefl || fac->sh.countTrans || fac->sh.countACD || fac->sh.countDirection;
+        if (!fac->sh.isTextured && (fac->sh.texHeight * fac->sh.texHeight > 0)) {
+            char tmp[256];
+            snprintf(tmp, 256, "[Fac #%zu] Untextured facet with texture size\n", fac->globalId);
+            errLog.append(tmp);
+            if(errLog.size() > 1280) errLog.resize(1280);
+            errorsOnCheck++;
+        }
+        else if (!fac->sh.isTextured && (hasAnyTexture)) {
+            fac->sh.countDes = false;
+            fac->sh.countAbs = false;
+            fac->sh.countRefl = false;
+            fac->sh.countTrans = false;
+            fac->sh.countACD = false;
+            fac->sh.countDirection = false;
+            char tmp[256];
+            snprintf(tmp, 256, "[Fac #%zu] Untextured facet with texture counters\n", fac->globalId);
+            errLog.append(tmp);
+            if(errLog.size() > 1920) errLog.resize(1920);
+            errorsOnCheck++;
+        }
     }
 
     //Molflow unique
     if (model->wp.enableDecay && model->wp.halfLife <= 0.0) {
-        sprintf(errLog + strlen(errLog), "Particle decay is set, but half life was not set [= %e]\n", model->wp.halfLife);
+        char tmp[255];
+        sprintf(tmp, "Particle decay is set, but half life was not set [= %e]\n", model->wp.halfLife);
+        errLog.append(tmp);
         errorsOnCheck++;
     }
 
     if(!globState){
-        sprintf(errLog + strlen(errLog), "No global simulation state set\n");
+        errLog.append("No global simulation state set\n");
         errorsOnCheck++;
     }
     else if(!globState->initialized){
-        sprintf(errLog + strlen(errLog), "Global simulation state not initialized\n");
+        errLog.append("Global simulation state not initialized\n");
         errorsOnCheck++;
     }
 
     if(errorsOnCheck){
-        printf("%s", errLog);
+        printf("%s", errLog.c_str());
     }
     return std::make_pair(errorsOnCheck, (errorsOnCheck > 0 ? std::make_optional(errLog) : std::nullopt)); // 0 = all ok
 }
@@ -187,116 +239,8 @@ int Simulation::RebuildAccelStructure() {
     Chronometer timer;
     timer.Start();
 
-#if defined(USE_OLD_BVH)
-    std::vector<std::vector<SubprocessFacet*>> facetPointers;
-    facetPointers.resize(model->sh.nbSuper);
-    for(auto& sFac : model->facets){
-        // TODO: Build structures
-        if (sFac->sh.superIdx == -1) { //Facet in all structures
-            for (auto& fp_vec : facetPointers) {
-                fp_vec.push_back(sFac.get());
-            }
-        }
-        else {
-            facetPointers[sFac->sh.superIdx].push_back(sFac.get()); //Assign to structure
-        }
-    }
-
-    // Build all AABBTrees
-    size_t maxDepth=0;
-    for (size_t s = 0; s < model->sh.nbSuper; ++s) {
-        auto& structure = model->structures[s];
-        if(structure.aabbTree)
-            structure.aabbTree.reset();
-        AABBNODE* tree = BuildAABBTree(facetPointers[s], 0, maxDepth);
-        structure.aabbTree = std::make_shared<AABBNODE>(*tree);
-        //delete tree; // pointer unnecessary because of make_shared
-    }
-
-#else
-    std::vector<std::vector<std::shared_ptr<Primitive>>> primPointers;
-    primPointers.resize(model->sh.nbSuper);
-    for(auto& sFac : model->facets){
-        if (sFac->sh.superIdx == -1) { //Facet in all structures
-            for (auto& fp_vec : primPointers) {
-                fp_vec.push_back(sFac);
-            }
-        }
-        else {
-            primPointers[sFac->sh.superIdx].push_back(sFac); //Assign to structure
-        }
-    }
-
-    for(auto& sFac : model->facets){
-        if (sFac->sh.opacity_paramId == -1){ //constant sticking
-            sFac->sh.opacity = std::clamp(sFac->sh.opacity, 0.0, 1.0);
-            sFac->surf = model->GetSurface(sFac->sh.opacity);
-        }
-        else {
-            auto* par = &model->tdParams.parameters[sFac->sh.opacity_paramId];
-            sFac->surf = model->GetParameterSurface(sFac->sh.opacity_paramId, par);
-        }
-    }
-
-#if defined(USE_KDTREE)
-    model->kdtree.clear();
-
-    if(globState->initialized && globState->globalHits.globalHits.nbDesorbed > 0){
-        if(globState->facetStates.size() != model->facets.size())
-            return 1;
-        std::vector<double> probabilities;
-        probabilities.reserve(globState->facetStates.size());
-        for(auto& state : globState->facetStates) {
-            probabilities.emplace_back(state.momentResults[0].hits.nbHitEquiv / globState->globalHits.globalHits.nbHitEquiv);
-        }
-        /*size_t sumCount = 0;
-        for(auto& fac : model->facets) {
-            sumCount += fac->iSCount;
-        }
-        for(auto& fac : model->facets) {
-            probabilities.emplace_back((double)fac->iSCount / (double)sumCount);
-        }*/
-        for (size_t s = 0; s < model->sh.nbSuper; ++s) {
-            model->kdtree.emplace_back(primPointers[s], probabilities);
-        }
-    }
-    else {
-        for (size_t s = 0; s < model->sh.nbSuper; ++s) {
-            model->kdtree.emplace_back(primPointers[s]);
-        }
-    }
-
-
-#else
-    //std::vector<BVHAccel> bvhs;
-    model->bvhs.clear();
-
-    if(globState->initialized && globState->globalHits.globalHits.nbDesorbed > 0){
-        if(globState->facetStates.size() != model->facets.size())
-            return 1;
-        std::vector<double> probabilities;
-        probabilities.reserve(globState->facetStates.size());
-        for(auto& state : globState->facetStates) {
-            probabilities.emplace_back(state.momentResults[0].hits.nbHitEquiv / globState->globalHits.globalHits.nbHitEquiv);
-        }
-        /*size_t sumCount = 0;
-        for(auto& fac : model->facets) {
-            sumCount += fac->iSCount;
-        }
-        for(auto& fac : model->facets) {
-            probabilities.emplace_back((double)fac->iSCount / (double)sumCount);
-        }*/
-        for (size_t s = 0; s < model->sh.nbSuper; ++s) {
-            model->bvhs.emplace_back(primPointers[s], 2, BVHAccel::SplitMethod::ProbSplit, probabilities);
-        }
-    }
-    else {
-        for (size_t s = 0; s < model->sh.nbSuper; ++s) {
-            model->bvhs.emplace_back(primPointers[s], 2, BVHAccel::SplitMethod::SAH);
-        }
-    }
-#endif
-#endif // old_bvb
+    if(model->BuildAccelStructure(globState, 0, BVHAccel::SplitMethod::SAH, 2))
+        return 1;
 
     for(auto& particle : particles)
         particle.model = model.get();
@@ -408,18 +352,13 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
         }
     }
 
-#if defined(USE_KDTREE)
-    simModel->kdtree.clear();
+    simModel->accel.clear();
     for (size_t s = 0; s < simModel->sh.nbSuper; ++s) {
-        simModel->kdtree.emplace_back(primPointers[s]);
+        if(model->wp.accel_type == 1)
+            simModel->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s], std::vector<double>{}, 80, 1, 0.5, 1, -1));
+        else
+            simModel->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], 2, BVHAccel::SplitMethod::SAH));
     }
-#else
-    //std::vector<BVHAccel> bvhs;
-    simModel->bvhs.clear();
-    for (size_t s = 0; s < model->sh.nbSuper; ++s) {
-        simModel->bvhs.emplace_back(primPointers[s], 2, BVHAccel::SplitMethod::SAH);
-    }
-#endif
 #endif // old_bvb
     for(auto& particle : particles)
         particle.model = model.get();
@@ -444,7 +383,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
 
     Log::console_msg_master(3, "  Total     : %zd bytes\n", GetHitsSize());
     for(auto& particle : particles)
-        Log::console_msg_master(4, "  Seed for %2zu: %lu\n", particle.particleId, particle.randomGenerator.GetSeed());
+        Log::console_msg_master(5, "  Seed for %2zu: %lu\n", particle.particleId, particle.randomGenerator.GetSeed());
     Log::console_msg_master(3, "  Loading time: %.3f ms\n", timer.ElapsedMs());
 
     return 0;

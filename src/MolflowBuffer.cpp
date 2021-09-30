@@ -6,6 +6,7 @@
 #include <limits>
 
 WorkerParams::WorkerParams(){
+    accel_type = 0;
     timeWindowSize = 1E-10; //Dirac-delta desorption pulse at t=0
     useMaxwellDistribution = true;
     calcConstantFlow = true;

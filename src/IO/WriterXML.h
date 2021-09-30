@@ -39,7 +39,8 @@ namespace FlowIO {
         double writeProgress{0.0};
 
         void reportWriteStatus(const std::string &statusString) const;
-
+        void reportNewWriteStatus(const std::string &statusString, double newProgress);
+        void finishWriteStatus(const std::string &statusString);
         void setWriteProgress(double newProgress);
     };
 }

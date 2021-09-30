@@ -8,6 +8,7 @@
 #include <set>
 #include <Simulation/CDFGeneration.h>
 #include <Simulation/IDGeneration.h>
+#include <Helper/Chronometer.h>
 #include "GeometrySimu.h"
 #include "IntersectAABB_shared.h" // include needed for recursive delete of AABBNODE
 
@@ -355,6 +356,10 @@ size_t SubprocessFacet::GetMemSize() const {
 * \return error code: 0=no error, 1=error
 */
 int SimulationModel::InitialiseFacets() {
+    if (!m.try_lock()) {
+        return 1;
+    }
+
     for (const auto& f : facets) {
         auto& facet = *f;
         // Main facet params
@@ -377,6 +382,7 @@ int SimulationModel::InitialiseFacets() {
         }
     }
 
+    m.unlock();
     return 0;
 }
 /*!
@@ -508,6 +514,98 @@ void SimulationModel::CalculateFacetParams(SubprocessFacet* f) {
 #endif
 }
 
+int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_type, BVHAccel::SplitMethod split,
+                                         int bvh_width) {
+    Chronometer timer;
+    timer.Start();
+
+    if (!m.try_lock()) {
+        return 1;
+    }
+
+#if defined(USE_OLD_BVH)
+    std::vector<std::vector<SubprocessFacet*>> facetPointers;
+    facetPointers.resize(this->sh.nbSuper);
+    for(auto& sFac : this->facets){
+        // TODO: Build structures
+        if (sFac->sh.superIdx == -1) { //Facet in all structures
+            for (auto& fp_vec : facetPointers) {
+                fp_vec.push_back(sFac.get());
+            }
+        }
+        else {
+            facetPointers[sFac->sh.superIdx].push_back(sFac.get()); //Assign to structure
+        }
+    }
+
+    // Build all AABBTrees
+    size_t maxDepth=0;
+    for (size_t s = 0; s < this->sh.nbSuper; ++s) {
+        auto& structure = this->structures[s];
+        if(structure.aabbTree)
+            structure.aabbTree.reset();
+        AABBNODE* tree = BuildAABBTree(facetPointers[s], 0, maxDepth);
+        structure.aabbTree = std::make_shared<AABBNODE>(*tree);
+        //delete tree; // pointer unnecessary because of make_shared
+    }
+
+#else
+    std::vector<std::vector<std::shared_ptr<Primitive>>> primPointers;
+    primPointers.resize(this->sh.nbSuper);
+    for(auto& sFac : this->facets){
+        if (sFac->sh.superIdx == -1) { //Facet in all structures
+            for (auto& fp_vec : primPointers) {
+                fp_vec.push_back(sFac);
+            }
+        }
+        else {
+            primPointers[sFac->sh.superIdx].push_back(sFac); //Assign to structure
+        }
+    }
+
+    for(auto& sFac : this->facets){
+        if (sFac->sh.opacity_paramId == -1){ //constant sticking
+            sFac->sh.opacity = std::clamp(sFac->sh.opacity, 0.0, 1.0);
+            sFac->surf = this->GetSurface(sFac->sh.opacity);
+        }
+        else {
+            auto* par = &this->tdParams.parameters[sFac->sh.opacity_paramId];
+            sFac->surf = this->GetParameterSurface(sFac->sh.opacity_paramId, par);
+        }
+    }
+
+    this->accel.clear();
+    if(BVHAccel::SplitMethod::ProbSplit == split && globState && globState->initialized && globState->globalHits.globalHits.nbDesorbed > 0){
+        if(globState->facetStates.size() != this->facets.size())
+            return 1;
+        std::vector<double> probabilities;
+        probabilities.reserve(globState->facetStates.size());
+        for(auto& state : globState->facetStates) {
+            probabilities.emplace_back(state.momentResults[0].hits.nbHitEquiv / globState->globalHits.globalHits.nbHitEquiv);
+        }
+        for (size_t s = 0; s < this->sh.nbSuper; ++s) {
+            if(accel_type == 1)
+                this->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s], probabilities));
+            else
+                this->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], bvh_width, BVHAccel::SplitMethod::ProbSplit, probabilities));
+        }
+    }
+    else {
+        for (size_t s = 0; s < this->sh.nbSuper; ++s) {
+            if(accel_type == 1)
+                this->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s]));
+            else
+                this->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], bvh_width, split));
+        }
+    }
+#endif // old_bvb
+
+    timer.Stop();
+    m.unlock();
+
+    return 0;
+}
+
 /**
 * \brief Do calculations necessary before launching simulation
 * determine latest moment
@@ -516,16 +614,19 @@ void SimulationModel::CalculateFacetParams(SubprocessFacet* f) {
 * Generate speed distribution functions
 * Angle map
 */
-void SimulationModel::PrepareToRun() {
-
-    if(sh.nbFacet != facets.size()) {
-        std::cerr << "Facet structure not properly initialized, size mismatch: " << sh.nbFacet << " / " << facets.size() << "\n";
-        exit(0);
+int SimulationModel::PrepareToRun() {
+    if (!m.try_lock()) {
+        return 1;
     }
+    initialized = false;
+
+    std::string errLog;
+
     //determine latest moment
     wp.latestMoment = 1E-10;
     if(!tdParams.moments.empty())
-        wp.latestMoment = (tdParams.moments.end()-1)->first + (tdParams.moments.end()-1)->second / 2.0;
+        wp.latestMoment = (tdParams.moments.end()-1)->second;
+        //wp.latestMoment = (tdParams.moments.end()-1)->first + (tdParams.moments.end()-1)->second / 2.0;
 
     std::set<size_t> desorptionParameterIDs;
 
@@ -536,17 +637,17 @@ void SimulationModel::PrepareToRun() {
         if(facet.sh.outgassing_paramId >= (int) tdParams.parameters.size()){
             char tmp[256];
             sprintf(tmp, "Facet #%zd: Outgassing parameter \"%d\" isn't defined.", i + 1, facet.sh.outgassing_paramId);
-            throw Error(tmp);
+            errLog.append(tmp);
         }
         if(facet.sh.opacity_paramId >= (int) tdParams.parameters.size()){
             char tmp[256];
             sprintf(tmp, "Facet #%zd: Opacity parameter \"%d\" isn't defined.", i + 1, facet.sh.opacity_paramId);
-            throw Error(tmp);
+            errLog.append(tmp);
         }
         if(facet.sh.sticking_paramId >= (int) tdParams.parameters.size()){
             char tmp[256];
             sprintf(tmp, "Facet #%zd: Sticking parameter \"%d\" isn't defined.", i + 1, facet.sh.sticking_paramId);
-            throw Error(tmp);
+            errLog.append(tmp);
         }
 
         if (facet.sh.outgassing_paramId >= 0) { //if time-dependent desorption
@@ -561,13 +662,13 @@ void SimulationModel::PrepareToRun() {
         }
 
         // Generate speed distribution functions
-        std::set<double> temperatureList;
+        std::list<double> temperatureList;
         int id = CDFGeneration::GetCDFId(temperatureList, facet.sh.temperature);
         if (id >= 0)
             facet.sh.CDFid = id; //we've already generated a CDF for this temperature
         else {
-            auto[id, cdf_vec] = CDFGeneration::GenerateNewCDF(temperatureList, facet.sh.temperature, wp.gasMass);
-            facet.sh.CDFid = id;
+            auto[cdf_id, cdf_vec] = CDFGeneration::GenerateNewCDF(temperatureList, facet.sh.temperature, wp.gasMass);
+            facet.sh.CDFid = cdf_id;
             tdParams.CDFs.emplace_back(cdf_vec);
         }
         //Angle map
@@ -575,19 +676,27 @@ void SimulationModel::PrepareToRun() {
             if (!facet.sh.anglemapParams.hasRecorded) {
                 char tmp[256];
                 sprintf(tmp, "Facet #%zd: Uses angle map desorption but doesn't have a recorded angle map.", i + 1);
-                throw Error(tmp);
+                errLog.append(tmp);
             }
             if (facet.sh.anglemapParams.record) {
                 char tmp[256];
                 sprintf(tmp, "Facet #%zd: Can't RECORD and USE angle map desorption at the same time.", i + 1);
-                throw Error(tmp);
+                errLog.append(tmp);
             }
         }
+    }
+
+    if(!errLog.empty()){
+        m.unlock();
+        return 1;
     }
 
     CalcTotalOutgassing();
 
     initialized = true;
+    m.unlock();
+
+    return 0;
 }
 
 /**
@@ -691,6 +800,7 @@ void GlobalSimuState::Resize(const SimulationModel &model) { //Constructs the 'd
             auto sFac = model.facets[i];
             if (sFac->globalId != i) {
                 std::cerr << "Facet ID mismatch! : " << sFac->globalId << " / " << i << "\n";
+                tMutex.unlock();
                 exit(0);
             }
 

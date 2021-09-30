@@ -29,6 +29,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 #endif
 
+#include <future>
 #include <cmath>
 //#include <cstdlib>
 #include <fstream>
@@ -41,6 +42,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <cereal/types/string.hpp>*/
 #include <IO/InterfaceXML.h>
 #include <Buffer_shared.h>
+#include <Simulation/IDGeneration.h>
+#include <Simulation/CDFGeneration.h>
 
 #include "MolflowGeometry.h"
 #include "Worker.h"
@@ -102,8 +105,8 @@ Worker::Worker() : simManager() {
 
     model = std::make_shared<SimulationModel>();
     //Molflow specific
-    temperatures = std::vector<double>();
-    desorptionParameterIDs = std::vector<size_t>();
+    temperatures = std::list<double>();
+    desorptionParameterIDs = std::set<size_t>();
     moments = std::vector<Moment>();
     userMoments = std::vector<UserMoment>(); //strings describing moments, to be parsed
     CDFs = std::vector<std::vector<CDF_p>>();
@@ -752,7 +755,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 geom->LoadGEO(f, progressDlg, &version, this);
 
                 // Add moments only after user Moments are completely initialized
-                if (TimeMoments::ParseAndCheckUserMoments(&moments, userMoments)) {
+                if (TimeMoments::ParseAndCheckUserMoments(&moments, &userMoments, nullptr)) {
                     GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning",
                                           GLDLG_OK, GLDLG_ICONWARNING);
                     return;
@@ -868,7 +871,22 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
                 geom->Clear();
                 FlowIO::LoaderInterfaceXML loader;
-                loader.LoadGeometry(parseFileName, model);
+                double load_progress = 0.0;
+                {
+                    auto future = std::async(std::launch::async, &FlowIO::LoaderInterfaceXML::LoadGeometry, &loader,
+                                             parseFileName, model, &load_progress);
+                    do {
+                        progressDlg->SetProgress(load_progress);
+                        ProcessSleep(100);
+                    } while (future.wait_for(std::chrono::seconds(0)) != std::future_status::ready);
+                }
+                progressDlg->SetProgress(0.0);
+
+                //std::future<int> resultFromDB = std::async(std::launch::async, &FlowIO::LoaderInterfaceXML::LoadGeometryPtr, ldr, "Data", model.get(), load_progress);
+                //loader.LoadGeometry(parseFileName, model, load_progress);
+                //if (allowUpdateCheck) updateThread = std::thread(&AppUpdater::PerformUpdateCheck, (AppUpdater*)this, false); //Launch parallel update-checking thread
+                progressDlg->SetMessage("Loading interface settings...");
+
                 xml_node interfNode = rootNode.child("Interface");
                 FlowIO::LoaderInterfaceXML::LoadInterface(interfNode, mApp);
                 userMoments = loader.uInput.userMoments;
@@ -893,17 +911,32 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                               << std::endl;
                 }
 
+                progressDlg->SetMessage("Parsing user moments...");
                 // Add moments only after user Moments are completely initialized
-                if (TimeMoments::ParseAndCheckUserMoments(&moments, userMoments)) {
-                    GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning",
-                                          GLDLG_OK, GLDLG_ICONWARNING);
-                    return;
+
+                {
+                    auto future = std::async(std::launch::async, TimeMoments::ParseAndCheckUserMoments, &moments, &userMoments, &load_progress);
+                    do {
+                        progressDlg->SetProgress(load_progress);
+                        ProcessSleep(100);
+                    } while (future.wait_for(std::chrono::seconds(0)) != std::future_status::ready);
+                    progressDlg->SetProgress(0.0);
+                    if (future.get()) {
+                        GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning",
+                                              GLDLG_OK, GLDLG_ICONWARNING);
+                        return;
+                    }
                 }
+
+
 
                 this->uInput = loader.uInput;
                 // Init after load stage
                 //geom->InitializeMesh();
+                progressDlg->SetMessage("Initialising geometry...");
+
                 geom->InitializeGeometry();
+                geom->InitializeInterfaceGeometry();
                 //AdjustProfile();
                 //isLoaded = true; //InitializeGeometry() sets to true
                 //progressDlg->SetMessage("Building mesh...");
@@ -924,12 +957,22 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
                     simManager.ForwardGlobalCounter(&globState, &particleLog);
                     RealReload(); //To create the dpHit dataport for the loading of textures, profiles, etc...
-                    FlowIO::LoaderInterfaceXML::LoadSimulationState(parseFileName, model, globState);
-                    if (simManager.ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
+                    {
+                        auto future = std::async(std::launch::async, FlowIO::LoaderInterfaceXML::LoadSimulationState,
+                                                 parseFileName, model, &globState, &load_progress);
+                        do {
+                            progressDlg->SetProgress(load_progress);
+                            ProcessSleep(100);
+                        } while (future.wait_for(std::chrono::seconds(0)) != std::future_status::ready);
+                        progressDlg->SetProgress(0.0);
+                    }
+                    //FlowIO::LoaderInterfaceXML::LoadSimulationState(parseFileName, model, &globState);
+                    simManager.simulationChanged = true;
+                    /*if (simManager.ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
                         std::string errString = "Failed to send geometry to sub process:\n";
                         errString.append(GetErrorDetails());
                         throw std::runtime_error(errString);
-                    }
+                    }*/
 
 
                     CalculateTextureLimits(); // Load texture limits on init
@@ -1138,7 +1181,7 @@ void Worker::Update(float appTime) {
 /**
 * \brief Saves current AngleMap from cache to results
 */
-void Worker::SendAngleMaps() {
+int Worker::SendAngleMaps() {
     size_t nbFacet = geom->GetNbFacet();
     std::vector<std::vector<size_t>> angleMapCaches;
     for (size_t i = 0; i < nbFacet; i++) {
@@ -1147,14 +1190,14 @@ void Worker::SendAngleMaps() {
     }
 
     if (globState.facetStates.size() != angleMapCaches.size())
-        return;
+        return 1;
     if (!globState.tMutex.try_lock_for(std::chrono::seconds(10)))
-        return;
+        return 1;
     for (size_t i = 0; i < angleMapCaches.size(); i++) {
         globState.facetStates[i].recordedAngleMapPdf = angleMapCaches[i];
     }
     globState.tMutex.unlock();
-
+    return 0;
 }
 
 bool Worker::InterfaceGeomToSimModel() {
@@ -1169,13 +1212,20 @@ bool Worker::InterfaceGeomToSimModel() {
     }
     // Parse usermoments to regular moment intervals
     //model->tdParams.moments = this->moments;
-    model->tdParams.CDFs = this->CDFs;
+
+
+    model->tdParams.CDFs.clear();
+    model->tdParams.IDs.clear();
+
+    // we create it directly on the Sim side
+    //model->tdParams.CDFs = this->CDFs;
     //        model->tdParams.IDs = this->IDs;
     {
-        model->tdParams.IDs.clear();
-        for (auto &id : this->IDs) {
+        //model->tdParams.IDs.clear();
+        // we create it directly on the Sim side
+        /*for (auto &id : this->IDs) {
             model->tdParams.IDs.push_back(id.GetValues());
-        }
+        }*/
     }
 
     model->tdParams.parameters.clear();
@@ -1296,8 +1346,6 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
         progressDlg->SetVisible(true);
         progressDlg->SetProgress(0.0);
 
-        ReloadSim(sendOnly, progressDlg);
-
         if (!sendOnly) {
             if (model->otfParams.nbProcess == 0 && !geom->IsLoaded()) {
                 progressDlg->SetVisible(false);
@@ -1308,7 +1356,22 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
             try {
                 progressDlg->SetMessage("Do preliminary calculations...");
                 PrepareToRun();
+            }
+            catch (std::exception &e) {
+                GLMessageBox::Display(e.what(), "Error (Full reload)", GLDLG_OK, GLDLG_ICONWARNING);
+                progressDlg->SetVisible(false);
+                SAFE_DELETE(progressDlg);
+                std::stringstream err;
+                err << "Error (Full reload) " << e.what();
+                throw std::runtime_error(err.str());
+            }
+        }
 
+        progressDlg->SetMessage("Reloading structures for simulation unit...");
+        ReloadSim(sendOnly, progressDlg);
+
+        if (!sendOnly) {
+            try {
                 progressDlg->SetMessage("Asking subprocesses to clear geometry...");
                 simManager.ResetSimulations();
                 progressDlg->SetMessage("Clearing Logger...");
@@ -1339,12 +1402,12 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
         }
 
         // Send and Load geometry on simulation side
-        if (simManager.ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
+        simManager.simulationChanged = true;
+        /*if (simManager.ExecuteAndWait(COMMAND_LOAD, PROCESS_READY, 0, 0)) {
             std::string errString = "Failed to send geometry to sub process:\n";
             errString.append(GetErrorDetails());
             throw std::runtime_error(errString);
-        }
-
+        }*/
 
         progressDlg->SetMessage("Finishing reload...");
         needsReload = false;
@@ -1583,8 +1646,8 @@ void Worker::PrepareToRun() {
     Geometry *g = GetGeometry();
     //Generate integrated desorption functions
 
-    temperatures = std::vector<double>();
-    desorptionParameterIDs = std::vector<size_t>();
+    temperatures = std::list<double>();
+    desorptionParameterIDs = std::set<size_t>();
     CDFs = std::vector<std::vector<CDF_p>>();
     IDs = std::vector<IntegratedDesorption>();
 
@@ -1684,12 +1747,7 @@ void Worker::PrepareToRun() {
 * \return ID of the CFD
 */
 int Worker::GetCDFId(double temperature) {
-
-    int i;
-    for (i = 0; i < (int) temperatures.size() &&
-                (std::abs(temperature - temperatures[i]) > 1E-5); i++); //check if we already had this temperature
-    if (i >= (int) temperatures.size()) i = -1; //not found
-    return i;
+    return CDFGeneration::GetCDFId(temperatures, temperature);
 }
 
 /**
@@ -1698,10 +1756,15 @@ int Worker::GetCDFId(double temperature) {
 * \return Previous size of temperatures vector, which determines new ID
 */
 int Worker::GenerateNewCDF(double temperature) {
-    size_t i = temperatures.size();
+    /*size_t i = temperatures.size();
     temperatures.push_back(temperature);
     CDFs.push_back(Generate_CDF(temperature, model->wp.gasMass, CDF_SIZE));
-    return (int) i;
+    return (int) i;*/
+
+    auto[id_new, cdf_vec] = CDFGeneration::GenerateNewCDF(temperatures, temperature, model->wp.gasMass);
+    CDFs.emplace_back(std::move(cdf_vec));
+
+    return (int)id_new;
 }
 
 /**
@@ -1711,10 +1774,15 @@ int Worker::GenerateNewCDF(double temperature) {
 */
 int Worker::GenerateNewID(size_t paramId) {
     //This function is called if parameter with index paramId doesn't yet have a cumulative des. function
-    size_t i = desorptionParameterIDs.size();
-    desorptionParameterIDs.push_back(paramId); //mark that i.th integrated des. belongs to paramId
-    IDs.push_back(Generate_ID(paramId)); //actually convert PDF to CDF
-    return (int) i; //return own index
+    auto[id_new, id_vec] = IDGeneration::GenerateNewID(desorptionParameterIDs, paramId, this->model.get());
+    Parameter &par = parameters[paramId]; //we'll reference it a lot
+    IntegratedDesorption result;
+    result.logXinterp = par.logXinterp;
+    result.logYinterp = par.logYinterp;
+    result.SetValues(std::move(id_vec), false);
+    IDs.emplace_back(std::move(result));
+
+    return (int)id_new;
 }
 
 /**
@@ -1722,14 +1790,8 @@ int Worker::GenerateNewID(size_t paramId) {
 * \param paramId parameter ID
 * \return Id of the integrated desorption function
 */
-int Worker::GetIDId(size_t paramId) {
-
-    int i;
-    for (i = 0; i < (int) desorptionParameterIDs.size() &&
-                (paramId != desorptionParameterIDs[i]); i++); //check if we already had this parameter Id
-    if (i >= (int) desorptionParameterIDs.size()) i = -1; //not found
-    return i;
-
+int Worker::GetIDId(size_t paramId) const {
+    return IDGeneration::GetIDId(desorptionParameterIDs, paramId);
 }
 
 /**
