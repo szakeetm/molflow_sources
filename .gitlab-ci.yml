@@ -100,10 +100,9 @@ build-test-windows:
   after_script:
     - echo "Finished"
 
-.build-unix-test:
+.build-test-unix:
   stage: build-test
   before_script:
-    - whoami
     - echo "Building Test $OS_NAME $CI_COMMIT_BRANCH"
   script:
     - buildpath=$(pwd)"/build"
@@ -174,7 +173,7 @@ build-macos-arm-master:
       allow_failure: false
 
 build-debian-test:
-  extends: .build-unix-test
+  extends: .build-test-unix
   variables:
     OS_NAME: "debian"
     OS_FULL_NAME: "linux_debian"
@@ -182,7 +181,7 @@ build-debian-test:
     - debian
 
 build-fedora-test:
-  extends: .build-unix-test
+  extends: .build-test-unix
   variables:
     OS_NAME: "fedora"
     OS_FULL_NAME: "linux_debian"
@@ -190,7 +189,7 @@ build-fedora-test:
     - fedora
 
 build-macos-test:
-  extends: .build-unix-test
+  extends: .build-test-unix
   variables:
     OS_NAME: "mac"
     OS_FULL_NAME: "mac"
@@ -205,7 +204,7 @@ build-macos-test:
       allow_failure: false
 
 build-macos-arm-test:
-  extends: .build-unix-test
+  extends: .build-test-unix
   variables:
     OS_NAME: "mac"
     OS_FULL_NAME: "mac"
@@ -222,7 +221,6 @@ build-macos-arm-test:
 .test-unix:
   stage: test
   before_script:
-    - whoami
     - echo "Testing $OS_NAME $CI_COMMIT_BRANCH"
   script:
     - export PROJPATH=$(pwd)
@@ -244,7 +242,7 @@ test-debian:
   variables:
     OS_NAME: "debian"
   needs:
-    - job: build-debian-master
+    - job: build-debian-test
   tags:
     - debian
 
@@ -253,7 +251,7 @@ test-fedora:
   variables:
     OS_NAME: "fedora"
   needs:
-    - job: build-fedora-master
+    - job: build-fedora-test
   tags:
     - fedora
 
@@ -295,7 +293,7 @@ test-windows:
       junit: .\report.xml
     expire_in: 4 weeks
   needs:
-    - job: build-windows-master
+    - job: build-windows-test
   tags:
     - windows
 
