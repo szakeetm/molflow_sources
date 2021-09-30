@@ -50,7 +50,7 @@ build-windows-master:
   tags:
     - windows
 
-build-test-windows:
+build-windows-test:
   stage: build-test
   before_script:
     - echo "Building Windows Test $CI_COMMIT_BRANCH"
