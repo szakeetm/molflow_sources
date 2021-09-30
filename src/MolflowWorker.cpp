@@ -880,6 +880,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                         ProcessSleep(100);
                     } while (future.wait_for(std::chrono::seconds(0)) != std::future_status::ready);
                 }
+                geom->InitOldStruct(model.get());
                 progressDlg->SetProgress(0.0);
 
                 //std::future<int> resultFromDB = std::async(std::launch::async, &FlowIO::LoaderInterfaceXML::LoadGeometryPtr, ldr, "Data", model.get(), load_progress);
