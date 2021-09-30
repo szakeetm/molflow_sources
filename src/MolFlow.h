@@ -122,6 +122,7 @@ public:
 	char *nbF;
 
 	struct {
+        bool renderAABB{true};
         bool oldBVH{false};
         int splitTechnique{(int)BVHAccel::SplitMethod::SAH};
         bool drawAllStructs{false};

@@ -7,12 +7,12 @@
 #include <Helper/ConsoleLogger.h>
 #if defined(USE_OLD_BVH)
 // currently always have SuperStructure
-#else
+#include "AABB.h"
+#endif
+
 #include <RayTracing/KDTree.h>
 #include <RayTracing/BVH.h>
 #include <Helper/FormatHelper.h>
-
-#endif
 /*SuperStructure::SuperStructure()
 {
 	aabbTree = NULL;
@@ -303,6 +303,30 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     //Reserve particle log
     ReinitializeParticleLog();
 
+    std::vector<std::vector<std::shared_ptr<Primitive>>> primPointers;
+    primPointers.resize(simModel->sh.nbSuper);
+    for(auto& sFac : simModel->facets){
+        if (sFac->sh.superIdx == -1) { //Facet in all structures
+            for (auto& fp_vec : primPointers) {
+                fp_vec.push_back(sFac);
+            }
+        }
+        else {
+            primPointers[sFac->sh.superIdx].push_back(sFac); //Assign to structure
+        }
+    }
+
+    for(auto& sFac : simModel->facets){
+        if (sFac->sh.opacity_paramId == -1){ //constant sticking
+            sFac->sh.opacity = std::clamp(sFac->sh.opacity, 0.0, 1.0);
+            sFac->surf = simModel->GetSurface(sFac->sh.opacity);
+        }
+        else {
+            auto* par = &simModel->tdParams.parameters[sFac->sh.opacity_paramId];
+            sFac->surf = simModel->GetParameterSurface(sFac->sh.opacity_paramId, par);
+        }
+    }
+
 #if defined(USE_OLD_BVH)
     std::vector<std::vector<SubprocessFacet*>> facetPointers;
     facetPointers.resize(simModel->sh.nbSuper);
@@ -329,30 +353,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
         //delete tree; // pointer unnecessary because of make_shared
     }
 
-#else
-    std::vector<std::vector<std::shared_ptr<Primitive>>> primPointers;
-    primPointers.resize(simModel->sh.nbSuper);
-    for(auto& sFac : simModel->facets){
-        if (sFac->sh.superIdx == -1) { //Facet in all structures
-            for (auto& fp_vec : primPointers) {
-                fp_vec.push_back(sFac);
-            }
-        }
-        else {
-            primPointers[sFac->sh.superIdx].push_back(sFac); //Assign to structure
-        }
-    }
-
-    for(auto& sFac : simModel->facets){
-        if (sFac->sh.opacity_paramId == -1){ //constant sticking
-            sFac->sh.opacity = std::clamp(sFac->sh.opacity, 0.0, 1.0);
-            sFac->surf = simModel->GetSurface(sFac->sh.opacity);
-        }
-        else {
-            auto* par = &simModel->tdParams.parameters[sFac->sh.opacity_paramId];
-            sFac->surf = simModel->GetParameterSurface(sFac->sh.opacity_paramId, par);
-        }
-    }
+#endif
 
     simModel->accel.clear();
     for (size_t s = 0; s < simModel->sh.nbSuper; ++s) {
@@ -361,7 +362,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
         else
             simModel->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], 2, BVHAccel::SplitMethod::SAH));
     }
-#endif // old_bvb
+// old_bvb
     for(auto& particle : particles)
         particle.model = model.get();
 

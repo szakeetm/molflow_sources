@@ -109,6 +109,8 @@ set(SRC_FILES
         ../../src/IO/InterfaceXML.h
         ${HEADER_DIR_2}/FlowMPI.h
         ${HEADER_DIR_2}/FlowMPI.cpp
+        ${HEADER_DIR_2}/IntersectAABB_shared.cpp
+
         )
 
 # Add executable to build.
