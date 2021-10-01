@@ -96,6 +96,8 @@ public:
 
 	void SerializeForLoader(cereal::BinaryOutputArchive&);
 
+    bool InitOldStruct(SimulationModel *model);
+
 private:
 
 	void InsertSYNGeom(FileReader *file, size_t strIdx = 0, bool newStruct = false);

@@ -8,6 +8,7 @@
 #include <sstream>
 #include <vector>
 #include <tuple>
+#include <Helper/ConsoleLogger.h>
 
 namespace Parameters {
 
@@ -48,11 +49,13 @@ void parseFacet(std::istringstream &facetString, const std::vector<SelectionGrou
     std::getline(facetString, paramVal_str);
     std::vector<size_t> id_range;
 
+    bool fromSelection = false; // for corresponding output message
     if(id_str.find('\"') != std::string::npos){ // selection
         id_str.erase (std::remove(id_str.begin(), id_str.end(), '\"'), id_str.end());
         for(const auto& sel : selections){
             if(sel.name == id_str) {
                 id_range = sel.selection;
+                fromSelection = true;
                 break;
             }
         }
@@ -61,22 +64,27 @@ void parseFacet(std::istringstream &facetString, const std::vector<SelectionGrou
         // facet list returns indices [0,inf], input is given by [1,inf]
 
         try {
-            splitFacetList(id_range, id_str,
-                           1e7); // For now get facet list for all combinations, check for valid ids later
+            // For now get facet list for all combinations (with 3 parameter), check for valid ids later
+            splitFacetList(id_range, id_str, 1e7);
         } catch (std::exception& e) {
-            std::cerr << "[" << __FUNCTION__ << "] Could not parse facet id or range:"<<std::endl <<"\t"<<id_str<<std::endl;
+            Log::console_error("[%s] Could not parse facet id or range:\n", __FUNCTION__);
+            Log::console_error("\t%s\n", id_str.c_str());
         }
     }
     auto tablePair = Parameters::tableFac.find(param_str);
     if(tablePair == Parameters::tableFac.end()) {
-        std::cerr << "[" << __FUNCTION__ << "] Invalid option was given:"<<std::endl <<"\t"<<param_str<<std::endl;
+        Log::console_error("[%s] Invalid option was given:\n", __FUNCTION__);
+        Log::console_error("\t%s\n", param_str.c_str());
         return;
     }
     auto param = tablePair->second;
     double paramVal = std::strtod(paramVal_str.c_str(),nullptr);
     for(auto& id : id_range)
         Parameters::facetParams.emplace_back(std::make_tuple(id, param, paramVal));
-    //printf("[Facet #%s] %s = %s\n", id.c_str(), param.c_str(), paramVal.c_str());
+    if(fromSelection)
+        Log::console_msg_master(3, "[ParameterChange][Facet][Group: %s] Changing parameter %s to %s\n", id_str.c_str(), param_str.c_str(), paramVal_str.c_str());
+    else
+        Log::console_msg_master(3, "[ParameterChange][Facet][ID: %s] Changing parameter %s to %s\n", id_str.c_str(), param_str.c_str(), paramVal_str.c_str());
 }
 
 void parseSimu(std::istringstream& facetString){
@@ -86,13 +94,16 @@ void parseSimu(std::istringstream& facetString){
     std::getline(facetString, paramVal_str);
     auto tablePair = Parameters::tableSim.find(param_str);
     if(tablePair == Parameters::tableSim.end()) {
-        std::cerr << "[" << __FUNCTION__ << "] Invalid option was given:"<<std::endl <<"\t"<<param_str<<std::endl;
+        Log::console_error("[%s] Invalid option was given:\n", __FUNCTION__);
+        Log::console_error("\t%s\n", param_str.c_str());
         return;
     }
     auto param = tablePair->second;
     double paramVal = std::strtod(paramVal_str.c_str(),nullptr);
     Parameters::simuParams.emplace_back(std::make_tuple(param, paramVal));
-    //printf("[Facet #%s] %s = %s\n", id.c_str(), param.c_str(), paramVal.c_str());
+
+    Log::console_msg_master(3, "[ParameterChange][Simulation] Changing parameter %s to %s\n", param_str.c_str(), paramVal_str.c_str());
+
 }
 
 void parseFacet(const std::string& facetString){
@@ -101,7 +112,7 @@ void parseFacet(const std::string& facetString){
     auto tokenEq = facetString.find('=');
     std::string param = facetString.substr(token+1, facetString.size()-token); // token is "scott"
     std::string paramVal = facetString.substr(tokenEq+1); // token is "scott"
-    printf("[Facet #%s] %s = %s\n", id.c_str(), param.c_str(), paramVal.c_str());
+    Log::console_msg_master(3,"[Facet #%s] %s = %s\n", id.c_str(), param.c_str(), paramVal.c_str());
 }
 
 void parseInputStream(std::stringstream& inputLineStream, const std::vector<SelectionGroup> &selections){
@@ -117,7 +128,7 @@ void parseInputStream(std::stringstream& inputLineStream, const std::vector<Sele
         } else if (optionType == "simulation") {
             parseSimu(lineStream);
         } else {
-            printf("[Line #%zu] Unknown input %s\n", i, line.c_str());
+            Log::console_error("[Line #%zu] Unknown input %s\n", i, line.c_str());
         }
         ++i;
     }
@@ -157,14 +168,20 @@ void ParameterParser::ParseInput(const std::vector<std::string> &paramSweep, con
 
 void ParameterParser::ChangeSimuParams(WorkerParams& params){
     for(auto& par : Parameters::simuParams){
-        if(std::get<0>(par) == Parameters::SimuParam::enableDecay)
-            params.enableDecay = (std::get<1>(par) > 0.0);
-        else if(std::get<0>(par) == Parameters::SimuParam::mass)
-            params.gasMass = std::get<1>(par);
-        else if(std::get<0>(par) == Parameters::SimuParam::halfLife)
-            params.halfLife = std::get<1>(par);
-        else
-            std::cerr << "Unknown SimuParam " << std::get<0>(par) << std::endl;
+        auto type = std::get<0>(par);
+        switch (type) {
+            case (Parameters::SimuParam::enableDecay):
+                params.enableDecay = (std::get<1>(par) > 0.0);
+                break;
+            case (Parameters::SimuParam::mass):
+                params.gasMass = std::get<1>(par);
+                break;
+            case (Parameters::SimuParam::halfLife):
+                params.halfLife = std::get<1>(par);
+                break;
+            default:
+                Log::console_error("Unknown SimuParam %s\n", std::get<0>(par));
+        }
     }
 }
 
@@ -172,17 +189,24 @@ void ParameterParser::ChangeFacetParams(std::vector<std::shared_ptr<SubprocessFa
     for(auto& par : Parameters::facetParams){
         size_t id = std::get<0>(par);
         if(id < facets.size()) {
-            auto& facet = *facets[id];
-            if (std::get<1>(par) == Parameters::FacetParam::opacity)
-                facet.sh.opacity = std::get<2>(par);
-            else if (std::get<1>(par) == Parameters::FacetParam::outgassing)
-                facet.sh.outgassing = std::get<2>(par);
-            else if (std::get<1>(par) == Parameters::FacetParam::sticking)
-                facet.sh.sticking = std::get<2>(par);
-            else if (std::get<1>(par) == Parameters::FacetParam::temperature)
-                facet.sh.temperature = std::get<2>(par);
-            else
-                std::cerr << "Unknown FacetParam " << std::get<1>(par) << std::endl;
+            auto& facet = *facets.at(id);
+            auto type = std::get<1>(par);
+            switch (type) {
+                case (Parameters::FacetParam::opacity):
+                    facet.sh.opacity = std::get<2>(par);
+                    break;
+                case (Parameters::FacetParam::outgassing):
+                    facet.sh.outgassing = std::get<2>(par);
+                    break;
+                case (Parameters::FacetParam::sticking):
+                    facet.sh.sticking = std::get<2>(par);
+                    break;
+                case (Parameters::FacetParam::temperature):
+                    facet.sh.temperature = std::get<2>(par);
+                    break;
+                default:
+                    Log::console_error("Unknown FacetParam %s\n", std::get<1>(par));
+            }
         }
     }
 }

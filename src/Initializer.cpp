@@ -67,7 +67,7 @@ int Initializer::parseCommands(int argc, char **argv) {
     app.add_option("-j,--threads", Settings::nbThreads, "# Threads to be deployed");
     app.add_option("-t,--time", Settings::simDuration, "Simulation duration in seconds");
     app.add_option("-d,--ndes", limits, "Desorption limit for simulation end");
-    app.add_option("-f,--file", SettingsIO::inputFile, "Required input file (XML only)")
+    app.add_option("-f,--file", SettingsIO::inputFile, "Required input file (XML/ZIP only)")
             ->required()
             ->check(CLI::ExistingFile);
     CLI::Option *optOfile = app.add_option("-o,--output", SettingsIO::outputFile,
@@ -83,7 +83,7 @@ int Initializer::parseCommands(int argc, char **argv) {
                    "Direct parameter input for ad hoc change of the given geometry parameters");
     app.add_option("--verbosity", Settings::verbosity, "Restrict console output to different levels");
 
-    app.add_flag("--loadAutosave", Settings::loadAutosave, "Whether autoSave_ file should be used if exists");
+    app.add_flag("--loadAutosave", Settings::loadAutosave, "Whether autosave_ file should be used if exists");
     app.add_flag("-r,--reset", Settings::resetOnStart, "Resets simulation status loaded from file");
     app.add_flag("--verbose", verbose, "Verbose console output (all levels)");
     CLI::Option *optOverwrite = app.add_flag("--overwrite", SettingsIO::overwrite,
@@ -104,15 +104,14 @@ int Initializer::parseCommands(int argc, char **argv) {
     if (Settings::simDuration == 0 && Settings::desLimit.empty()) {
         Log::console_error("No end criterion has been set!\n");
         Log::console_error(" Either use: -t or -d\n");
-        return 1;
+        return 0;
     }
 
-    return 0;
+    return -1;
 }
 
 int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManager,
                               const std::shared_ptr<SimulationModel>& model) {
-    Log::console_header(1, "Commence: Initialising!\n");
 
 #if defined(WIN32) || defined(__APPLE__)
     setlocale(LC_ALL, "C");
@@ -122,10 +121,12 @@ int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManag
 
     initDefaultSettings();
 
-    int err = 0;
-    if ((err = parseCommands(argc, argv))) {
+    int err = 1;
+    if (-1 < (err = parseCommands(argc, argv))) {
         return err;
     }
+
+    Log::console_header(1, "Commence: Initialising!\n");
 
     simManager->nbThreads = Settings::nbThreads;
     simManager->useCPU = true;
@@ -141,7 +142,7 @@ int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManag
     Log::console_msg_master(4, "Active cores: %zu\n", simManager->nbThreads);
     Log::console_msg_master(4, "Running simulation for: %zu sec\n", Settings::simDuration);
 
-    return 0;
+    return -1;
 }
 
 int Initializer::initFromFile(SimulationManager *simManager, const std::shared_ptr<SimulationModel>& model,
@@ -318,13 +319,13 @@ std::string Initializer::getAutosaveFile() {
             std::search(autoSave.begin(), autoSave.begin() + autoSavePrefix.size(), autoSavePrefix.begin(),
                         autoSavePrefix.end()) == autoSave.begin()) {
             // TODO: Revisit wether input/output is acceptable here
-            autoSave = std::filesystem::path(SettingsIO::workFile).filename().string();
+            autoSave = std::filesystem::path(SettingsIO::workPath).append(SettingsIO::workFile).filename().string();
             SettingsIO::inputFile = autoSave.substr(autoSavePrefix.size(), autoSave.size() - autoSavePrefix.size());
             Log::console_msg_master(2, "Using autosave file %s for %s\n", autoSave.c_str(),
                                     SettingsIO::inputFile.c_str());
         } else {
             // create autosavefile from copy of original
-            autoSave = std::filesystem::path(SettingsIO::outputPath).append(autoSavePrefix).concat(autoSave).string();
+            autoSave = std::filesystem::path(SettingsIO::workPath).append(autoSavePrefix).concat(autoSave).string();
             try {
                 std::filesystem::copy_file(SettingsIO::workFile, autoSave,
                                            std::filesystem::copy_options::overwrite_existing);

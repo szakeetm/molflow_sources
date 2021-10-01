@@ -386,7 +386,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
 
     Log::console_msg_master(3, "  Total     : %zd bytes\n", GetHitsSize());
     for(auto& particle : particles)
-        Log::console_msg_master(4, "  Seed for %2zu: %lu\n", particle.particleId, particle.randomGenerator.GetSeed());
+        Log::console_msg_master(5, "  Seed for %2zu: %lu\n", particle.particleId, particle.randomGenerator.GetSeed());
     Log::console_msg_master(3, "  Loading time: %.3f ms\n", timer.ElapsedMs());
 
     return 0;
