@@ -404,12 +404,6 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                         tmpFacetVars[hit.hitId] = hit.hit;
                     }
 
-                    assert(particle.hits.size() == 1);
-                    auto & hit = particle.hits.front();
-                    tmpFacetVars[hit.hitId] = hit.hit;
-                    collidedFacet = model->facets[hit.hitId].get();
-                    d = hit.hit.colDistTranspPass;
-
 #if defined(USE_OLD_BVH)
                     assert(particle.transparentHits.size() == transparentHitBuffer.size());
                     assert(oldtrans.size() == newtrans.size());
