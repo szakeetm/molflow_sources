@@ -255,21 +255,21 @@ test-fedora:
   tags:
     - fedora
 
-test-macos:
-  extends: .test-unix
-  variables:
-    OS_NAME: "mac"
-  tags:
-    - macos
-  when: manual
-  allow_failure: true
-
 test-macos-arm:
   extends: .test-unix
   variables:
     OS_NAME: "mac_arm"
   tags:
     - macos-arm
+  when: manual
+  allow_failure: true
+
+test-macos:
+  extends: .test-unix
+  variables:
+    OS_NAME: "mac"
+  tags:
+    - macos
   when: manual
   allow_failure: true
 
