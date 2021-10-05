@@ -521,9 +521,6 @@ build-artifact-macos-arm-master:
     - .artifact-unix
     - .artifact-prop-master
   stage: optional-artifact
-  needs:
-    - job: build-macos-arm-master
-      optional: true
   variables:
     OS_NAME: "mac_arm"
   tags:
