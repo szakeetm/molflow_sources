@@ -521,6 +521,9 @@ build-artifact-macos-arm-master:
     - .artifact-unix
     - .artifact-prop-master
   stage: optional-artifact
+  needs:
+    - job: build-macos-arm-master
+      optional: true
   variables:
     OS_NAME: "mac_arm"
   tags:
@@ -560,8 +563,6 @@ build-artifact-fedora-branch:
 build-artifact-macos-branch:
   variables:
     OS_NAME: "mac"
-  needs:
-    optional: true
   extends:
     - .artifact-unix
     - .artifact-prop-branch
@@ -572,8 +573,6 @@ build-artifact-macos-branch:
 build-artifact-macos-arm-branch:
   variables:
     OS_NAME: "mac_arm"
-  needs:
-    optional: true
   extends:
     - .artifact-unix
     - .artifact-prop-branch
