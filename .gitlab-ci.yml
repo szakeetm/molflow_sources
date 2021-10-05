@@ -560,6 +560,8 @@ build-artifact-fedora-branch:
 build-artifact-macos-branch:
   variables:
     OS_NAME: "mac"
+  needs:
+    optional: true
   extends:
     - .artifact-unix
     - .artifact-prop-branch
@@ -570,6 +572,8 @@ build-artifact-macos-branch:
 build-artifact-macos-arm-branch:
   variables:
     OS_NAME: "mac_arm"
+  needs:
+    optional: true
   extends:
     - .artifact-unix
     - .artifact-prop-branch
