@@ -6,10 +6,10 @@ stages:
   - prepare
   - build
   - build-artifact
+  - optional-artifact
   - build-test
   - test
   - benchmark
-  - optional-artifact
 
 prepare_job:
   stage: prepare                                              # This stage must run before the release stage
@@ -40,7 +40,7 @@ build-windows-master:
     - echo "Starting build in:" + ($buildpath).path
     - C:\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe --build $buildpath --config Release -- -j 4
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
-    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
+    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - Set-Variable -Name "outputpath" -Value ($buildpath + "\bin")
     - echo $FNAME
     - New-Item -Path ("C:\" + ($APP_NAME_CAPS) + "_CI") -Name $FNAME -ItemType "directory" -Force
@@ -52,6 +52,8 @@ build-windows-master:
 
 build-windows-test:
   stage: build-test
+  needs:
+    - job: build-windows-master
   before_script:
     - echo "Building Windows Test $CI_COMMIT_BRANCH"
   script:
@@ -63,7 +65,7 @@ build-windows-test:
     - echo "Starting build in:" + ($buildpath).path
     - C:\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe --build $buildpath --config Release -- -j 4
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
-    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
+    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - Set-Variable -Name "outputpath" -Value ($buildpath + "\bin")
     - echo $FNAME
     - New-Item -Path ("C:\" + ($APP_NAME_CAPS) + "_CI") -Name $FNAME -ItemType "directory" -Force
@@ -89,7 +91,7 @@ build-windows-test:
     - echo "Starting build in:" $buildpath
     - cmake --build $buildpath --config Release -- -j 4
     - export DATE=`date +%Y_%m_%d`
-    - export FNAME=$CI_COMMIT_BRANCH'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - export outputpath=$buildpath'/bin/'
     - echo $FNAME
     - mkdir -p ~/$APP_NAME_CAPS'_CI/'$FNAME
@@ -113,7 +115,7 @@ build-windows-test:
     - echo "Starting build in:" $buildpath
     - cmake --build $buildpath --config Release -- -j 4
     - export DATE=`date +%Y_%m_%d`
-    - export FNAME=$CI_COMMIT_BRANCH'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - export outputpath=$buildpath'/bin/'
     - echo $FNAME
     - mkdir -p ~/$APP_NAME_CAPS'_CI/'$FNAME
@@ -174,6 +176,8 @@ build-macos-arm-master:
 
 build-debian-test:
   extends: .build-test-unix
+  needs:
+    - job: build-debian-master
   variables:
     OS_NAME: "debian"
     OS_FULL_NAME: "linux_debian"
@@ -182,6 +186,8 @@ build-debian-test:
 
 build-fedora-test:
   extends: .build-test-unix
+  needs:
+    - job: build-fedora-master
   variables:
     OS_NAME: "fedora"
     OS_FULL_NAME: "linux_debian"
@@ -190,6 +196,8 @@ build-fedora-test:
 
 build-macos-test:
   extends: .build-test-unix
+  needs:
+    - job: build-macos-master
   variables:
     OS_NAME: "mac"
     OS_FULL_NAME: "mac"
@@ -205,6 +213,8 @@ build-macos-test:
 
 build-macos-arm-test:
   extends: .build-test-unix
+  needs:
+    - job: build-macos-arm-master
   variables:
     OS_NAME: "mac_arm"
     OS_FULL_NAME: "mac_arm"
@@ -225,7 +235,7 @@ build-macos-arm-test:
   script:
     - export PROJPATH=$(pwd)
     - export DATE=`date +%Y_%m_%d`
-    - export FNAME=$CI_COMMIT_BRANCH'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - cd ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
     - ./testsuite --gtest_filter=-*PerformanceOkay* --gtest_output="xml:report.xml"
     - mv report.xml $PROJPATH"/report.xml"
@@ -280,7 +290,7 @@ test-windows:
   script:
     - Set-Variable -Name "PROJPATH" -Value (($pwd).path)
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
-    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
+    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - Set-Location ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\")
     - $AllArgs = @("--gtest_filter=-*PerformanceOkay* --gtest_output='xml:report.xml'")
     - powershell.exe -c "./testsuite.exe $AllArgs"
@@ -306,7 +316,7 @@ test-windows:
   script:
     - export PROJPATH=$(pwd)
     - export DATE=`date +%Y_%m_%d`
-    - export FNAME=$CI_COMMIT_BRANCH'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - cd ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
     - cp ~/$APP_NAME_CAPS'_CI/'PerfoTestResults/time_record_* . || ~/$APP_NAME_CAPS'_CI/PerfoTestResults/'$CI_COMMIT_BRANCH/time_record_* . || true
     - ./testsuite --gtest_filter=*PerformanceOkay* --gtest_output="xml:benchmark.xml"
@@ -314,7 +324,7 @@ test-windows:
     - mv ./time_record_* ~/$APP_NAME_CAPS'_CI/PerfoTestResults/'$CI_COMMIT_BRANCH'/'
   after_script:
     - export DATE=`date +%Y_%m_%d`
-    - export FNAME=$CI_COMMIT_BRANCH'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - cd ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
     - rm -rf ./tmp
     - rm -rf ./TestCases
@@ -367,7 +377,7 @@ benchmark-windows:
   script:
     - Set-Variable -Name "PROJPATH" -Value (($pwd).path)
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
-    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
+    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - Set-Location ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\")
     - Copy-Item -Force ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\" + ($CI_COMMIT_BRANCH) + "time_record_*") (".\")
     - Copy-Item -Force ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\time_record_*") (".\")
@@ -377,7 +387,7 @@ benchmark-windows:
     - Move-Item -Force (".\time_record_*") ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\" + ($CI_COMMIT_BRANCH) + "\")
   after_script:
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
-    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
+    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - Set-Location ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\")
     - Remove-Item -Recurse -Force ("./tmp")
     - Remove-Item -Recurse -Force ("./TestCases")
@@ -401,7 +411,7 @@ benchmark-windows:
     - Get-ChildItem ("./" + ($APP_NAME) + "_win" + ($TAG_SUFFIX)) | Remove-Item -Recurse -Force
   script:
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
-    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $DATE + "_" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
+    - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - Write-Host $FNAME
     - Write-Host $TAG_SUFFIX
     - Write-Host $CI_COMMIT_TAG
@@ -428,7 +438,7 @@ benchmark-windows:
     - mkdir -p ./$APP_NAME'_'$OS_NAME$TAG_SUFFIX
   script:
     - export DATE=`date +%Y_%m_%d`
-    - export FNAME=$CI_COMMIT_BRANCH'/'$DATE'_'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
+    - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - echo $FNAME
     - echo $TAG_SUFFIX
     - echo $CI_COMMIT_TAG
@@ -511,6 +521,8 @@ build-artifact-macos-master:
     - .artifact-unix
     - .artifact-prop-master
   stage: optional-artifact
+  needs:
+    - job: build-macos-master
   variables:
     OS_NAME: "mac"
   tags:
@@ -521,6 +533,8 @@ build-artifact-macos-arm-master:
     - .artifact-unix
     - .artifact-prop-master
   stage: optional-artifact
+  needs:
+    - job: build-macos-arm-master
   variables:
     OS_NAME: "mac_arm"
   tags:
@@ -563,6 +577,8 @@ build-artifact-macos-branch:
   extends:
     - .artifact-unix
     - .artifact-prop-branch
+  needs:
+    - job: build-macos-master
   stage: optional-artifact
   tags:
     - macos
@@ -573,6 +589,8 @@ build-artifact-macos-arm-branch:
   extends:
     - .artifact-unix
     - .artifact-prop-branch
+  needs:
+    - job: build-macos-arm-master
   stage: optional-artifact
   tags:
     - macos-arm
