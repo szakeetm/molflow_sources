@@ -73,7 +73,7 @@ bool Particle::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, DW
             }
             
             auto& hitBattery = globSimuState.globalHits.hitBattery;
-            if(hitBattery.initialized){
+            if(hitBattery.initialized && hitBattery.size() > 0){
                 int hit_n = 0;
                 if(tmpState.globalHits.hitBattery.size() == hitBattery.size()) {
                     for (auto &bat : hitBattery.rays) {
@@ -85,7 +85,7 @@ bool Particle::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, DW
                         int diff = tmpState.globalHits.hitBattery.nRays[hit_n] - bat.size();
                         // just add how many rays can still fit
                         int maxInserts = hitBattery.nRays[hit_n];
-                        if(bat.size() < maxInserts)
+                        if(bat.size() < maxInserts && maxInserts > 0)
                             bat.resize(maxInserts);
                         if(diff > 0){
                             diff = std::min(diff, maxInserts);
