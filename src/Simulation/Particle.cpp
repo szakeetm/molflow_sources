@@ -71,18 +71,69 @@ bool Particle::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, DW
                 globSimuState.globalHits.hitCacheSize = Min(HITCACHESIZE, globSimuState.globalHits.hitCacheSize +
                                                                           tmpState.globalHits.hitCacheSize);
             }
-            if(globSimuState.globalHits.hitBattery.initialized){
+            
+            auto& hitBattery = globSimuState.globalHits.hitBattery;
+            if(hitBattery.initialized){
                 int hit_n = 0;
-                if(tmpState.globalHits.hitBattery.size() == globSimuState.globalHits.hitBattery.size()) {
-                    for (auto &bat : globSimuState.globalHits.hitBattery.rays) {
+                if(tmpState.globalHits.hitBattery.size() == hitBattery.size()) {
+                    for (auto &bat : hitBattery.rays) {
                         auto& tmp = tmpState.globalHits.hitBattery.rays[hit_n];
+                        if(tmp.empty()) {
+                            ++hit_n;
+                            continue;
+                        }
                         int diff = tmpState.globalHits.hitBattery.nRays[hit_n] - bat.size();
                         // just add how many rays can still fit
+                        int maxInserts = hitBattery.nRays[hit_n];
+                        if(bat.size() < maxInserts)
+                            bat.resize(maxInserts);
                         if(diff > 0){
+                            diff = std::min(diff, maxInserts);
                             if(tmp.size() <= (size_t) diff)
                                 bat.insert(bat.end(), tmp.begin(), tmp.end());
                             else
                                 bat.insert(bat.end(), tmp.begin(), tmp.begin() + (diff));
+                            hitBattery.cyclicIndex[hit_n] = bat.size();
+                        }
+                        else {
+                            auto rand1 = randomGenerator.rnd();
+                            auto rand2 = randomGenerator.rnd();
+                            int startPos = rand1 * tmp.size();
+                            int endPos = rand2 * tmp.size();
+                            assert(startPos <= tmp.size());
+                            assert(endPos <= tmp.size());
+                            if(startPos > endPos) {
+                                std::swap(startPos, endPos);
+                            }
+                            int insertSize = endPos - startPos;
+                            if(insertSize == 0) {
+                                ++hit_n;
+                                continue;
+                            }
+                            else if(insertSize > maxInserts){
+                                endPos -= insertSize - maxInserts;
+                                insertSize = maxInserts;
+                            }
+
+                            int insertPos = hitBattery.cyclicIndex[hit_n];
+                            int insertN = std::min((int)bat.size() - hitBattery.cyclicIndex[hit_n], insertSize);
+                            int remainder = insertSize - insertN;
+                            if(insertN < 0) {
+                                hitBattery.cyclicIndex[hit_n] = 0;
+                                insertN = 0; // reset for remainder insertpos
+                            }
+                            else if(insertN > 0)
+                                std::copy(tmp.begin() + startPos, tmp.begin() + startPos + insertN, bat.begin() + hitBattery.cyclicIndex[hit_n]);
+
+                            if(remainder > 0){
+                                std::copy(tmp.begin() + startPos + insertN, tmp.begin() + startPos + insertN + remainder, bat.begin());
+                                hitBattery.cyclicIndex[hit_n] = remainder >= maxInserts ? 0 : remainder;
+                            }
+                            else if(hitBattery.cyclicIndex[hit_n] + insertN >= maxInserts){
+                                hitBattery.cyclicIndex[hit_n] = 0;
+                            }
+                            else
+                                hitBattery.cyclicIndex[hit_n] += insertN;
                         }
                         ++hit_n;
                     }

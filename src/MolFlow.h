@@ -123,6 +123,7 @@ public:
 
 	struct {
         bool renderAABB{true};
+        bool renderSampleRays{true};
         bool oldBVH{false};
         int splitTechnique{(int)BVHAccel::SplitMethod::SAH};
         bool drawAllStructs{false};
@@ -137,6 +138,7 @@ public:
         int selectedNode{-1};
         float trimByProb[2]{0.0f,1.0f};
         float trimRange{1.0f};
+        int maxRaySamples{HITCACHESAMPLE};
         std::vector<float> colorMap;
         std::shared_ptr<std::vector<float>> rateVector;
     } aabbVisu;

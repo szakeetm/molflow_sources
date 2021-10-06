@@ -1402,7 +1402,7 @@ FacetState& FacetState::operator+=(const FacetState & rhs) {
 
 int GlobalSimuState::UpdateBatteryFrequencies() {
 
-    if((globalHits.globalHits.nbMCHit + globalHits.globalHits.nbDesorbed)< HITCACHESAMPLE) {
+    if((globalHits.globalHits.nbMCHit + globalHits.globalHits.nbDesorbed) < globalHits.hitBattery.maxSamples) {
         globalHits.hitBattery.initialized = false;
         return 1;
     }
@@ -1414,7 +1414,7 @@ int GlobalSimuState::UpdateBatteryFrequencies() {
 
     int bat_n = 0;
     for(auto& freq : globalHits.hitBattery.nRays){
-        freq = std::ceil(frequencies[bat_n] * HITCACHESAMPLE) * 1;
+        freq = std::ceil(frequencies[bat_n] * globalHits.hitBattery.maxSamples) * 1;
         bat_n++;
     }
 
@@ -1438,18 +1438,18 @@ std::vector<TestRay> GlobalSimuState::PrepareHitBattery() {
     for(auto& bat : globalHits.hitBattery.rays){
         //for(auto& hit : bat) {
         if(bat.empty()) continue;
-        count += (int)std::ceil(frequencies[bat_n] * HITCACHESAMPLE) * 1;
+        count += (int)std::ceil(frequencies[bat_n] * globalHits.hitBattery.maxSamples) * 1;
         bat_n++;
     }
     bat_n = 0;
     double denum = 1.0;
-    if(count > HITCACHESAMPLE)
-        denum = (double) HITCACHESAMPLE / (double) count;
+    if(count > globalHits.hitBattery.maxSamples)
+        denum = (double) globalHits.hitBattery.maxSamples / (double) count;
     for(auto& bat : globalHits.hitBattery.rays){
         //for(auto& hit : bat) {
         if(bat.empty()) continue;
         std::sample(bat.begin(), bat.end(), std::back_inserter(battery),
-                    (int)std::ceil(frequencies[bat_n] * HITCACHESAMPLE * denum), std::mt19937{std::random_device{}()});
+                    (int)std::ceil(frequencies[bat_n] * globalHits.hitBattery.maxSamples * denum), std::mt19937{std::random_device{}()});
         bat_n++;
             /*if (bat.size() < std::ceil(frequencies[hit.location] * HITCACHESAMPLE)) {
                 battery.emplace_back(hit.pos, hit.dir, hit.location);
