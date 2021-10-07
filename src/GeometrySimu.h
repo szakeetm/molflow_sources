@@ -302,6 +302,7 @@ public:
 
     static std::vector<double>
     ComputeHitChances(const std::vector<TestRay> &battery, const std::vector<std::shared_ptr<Facet>> &primitives);
+    int ComputeHitStats(const std::vector<TestRay> &battery);
 };
 
 /*!
@@ -393,6 +394,7 @@ public:
 
     std::vector<TestRay> PrepareHitBattery();
     int UpdateBatteryFrequencies();
+    SampleBattery hitBattery;
 
 #if defined(MOLFLOW)
     GlobalHitBuffer globalHits;

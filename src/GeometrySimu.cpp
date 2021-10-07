@@ -948,7 +948,7 @@ void GlobalSimuState::Resize(const SimulationModel &model) { //Constructs the 'd
     }*/
     //Global histogram
 
-    globalHits.hitBattery.resize(model.facets.size());
+    hitBattery.resize(model.facets.size());
     FacetHistogramBuffer globalHistTemplate{};
     globalHistTemplate.Resize(model.wp.globalHistogramParams);
     globalHistograms.assign(1 + nbMoments, globalHistTemplate);
@@ -969,8 +969,9 @@ void GlobalSimuState::Reset() {
         ZEROVECTOR(h.timeHistogram);
     }
     memset(&globalHits, 0, sizeof(globalHits)); //Plain old data
-    globalHits.hitBattery.clear();
-    globalHits.hitBattery.resize(facetStates.size());
+    hitBattery.clear();
+    if(!facetStates.empty())
+        hitBattery.resize(facetStates.size());
     for (auto& state : facetStates) {
         ZEROVECTOR(state.recordedAngleMapPdf);
         for (auto& m : state.momentResults) {
@@ -1402,8 +1403,8 @@ FacetState& FacetState::operator+=(const FacetState & rhs) {
 
 int GlobalSimuState::UpdateBatteryFrequencies() {
 
-    if((globalHits.globalHits.nbMCHit + globalHits.globalHits.nbDesorbed) < globalHits.hitBattery.maxSamples) {
-        globalHits.hitBattery.initialized = false;
+    if((globalHits.globalHits.nbMCHit + globalHits.globalHits.nbDesorbed) < hitBattery.maxSamples) {
+        hitBattery.initialized = false;
         return 1;
     }
 
@@ -1413,12 +1414,12 @@ int GlobalSimuState::UpdateBatteryFrequencies() {
     }
 
     int bat_n = 0;
-    for(auto& freq : globalHits.hitBattery.nRays){
-        freq = std::ceil(frequencies[bat_n] * globalHits.hitBattery.maxSamples) * 1;
+    for(auto& freq : hitBattery.nRays){
+        freq = std::ceil(frequencies[bat_n] * hitBattery.maxSamples) * 1;
         bat_n++;
     }
 
-    globalHits.hitBattery.initialized = true;
+    hitBattery.initialized = true;
 
     return 0;
 }
@@ -1435,21 +1436,21 @@ std::vector<TestRay> GlobalSimuState::PrepareHitBattery() {
 
     int bat_n = 0;
     size_t count = 0;
-    for(auto& bat : globalHits.hitBattery.rays){
+    for(auto& bat : hitBattery.rays){
         //for(auto& hit : bat) {
         if(bat.empty()) continue;
-        count += (int)std::ceil(frequencies[bat_n] * globalHits.hitBattery.maxSamples) * 1;
+        count += (int)std::ceil(frequencies[bat_n] * hitBattery.maxSamples) * 1;
         bat_n++;
     }
     bat_n = 0;
     double denum = 1.0;
-    if(count > globalHits.hitBattery.maxSamples)
-        denum = (double) globalHits.hitBattery.maxSamples / (double) count;
-    for(auto& bat : globalHits.hitBattery.rays){
+    if(count > hitBattery.maxSamples)
+        denum = (double) hitBattery.maxSamples / (double) count;
+    for(auto& bat : hitBattery.rays){
         //for(auto& hit : bat) {
         if(bat.empty()) continue;
         std::sample(bat.begin(), bat.end(), std::back_inserter(battery),
-                    (int)std::ceil(frequencies[bat_n] * globalHits.hitBattery.maxSamples * denum), std::mt19937{std::random_device{}()});
+                    (int)std::ceil(frequencies[bat_n] * hitBattery.maxSamples * denum), std::mt19937{std::random_device{}()});
         bat_n++;
             /*if (bat.size() < std::ceil(frequencies[hit.location] * HITCACHESAMPLE)) {
                 battery.emplace_back(hit.pos, hit.dir, hit.location);
@@ -1506,4 +1507,28 @@ std::vector<double> SimulationModel::ComputeHitChances(const std::vector<TestRay
     }
 
     return primChance;
+}
+
+int SimulationModel::ComputeHitStats(const std::vector<TestRay>& battery) {
+
+#pragma omp parallel default(none) shared(battery)
+    {
+        auto ray = RayStat();
+        ray.rng = new MersenneTwister();
+
+        //Node stats
+#pragma omp for
+        for (auto &test: battery) {
+            ray.origin = test.pos;
+            ray.direction = test.dir;
+            Vector3d invDir(1.0 / ray.direction.x, 1.0 / ray.direction.y, 1.0 / ray.direction.z);
+            int dirIsNeg[3] = {invDir.x < 0, invDir.y < 0, invDir.z < 0};
+            for(auto& tree : accel)
+                tree->IntersectStat(ray);
+        }
+
+        delete ray.rng;
+    }
+
+    return 0;
 }

@@ -72,17 +72,17 @@ bool Particle::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, DW
                                                                           tmpState.globalHits.hitCacheSize);
             }
             
-            auto& hitBattery = globSimuState.globalHits.hitBattery;
+            auto& hitBattery = globSimuState.hitBattery;
             if(hitBattery.initialized && hitBattery.size() > 0){
                 int hit_n = 0;
-                if(tmpState.globalHits.hitBattery.size() == hitBattery.size()) {
+                if(tmpState.hitBattery.size() == hitBattery.size()) {
                     for (auto &bat : hitBattery.rays) {
-                        auto& tmp = tmpState.globalHits.hitBattery.rays[hit_n];
+                        auto& tmp = tmpState.hitBattery.rays[hit_n];
                         if(tmp.empty()) {
                             ++hit_n;
                             continue;
                         }
-                        int diff = tmpState.globalHits.hitBattery.nRays[hit_n] - bat.size();
+                        int diff = tmpState.hitBattery.nRays[hit_n] - bat.size();
                         // just add how many rays can still fit
                         int maxInserts = hitBattery.nRays[hit_n];
                         if(bat.size() < maxInserts && maxInserts > 0)
@@ -1726,8 +1726,8 @@ void Particle::RecordHit(const int &type) {
         tmpState.globalHits.hitCache[tmpState.globalHits.hitCacheSize].type = type;
         ++tmpState.globalHits.hitCacheSize;
     }
-    if(tmpState.globalHits.hitBattery.rays[particle.lastIntersected].size() < HITCACHESIZE)
-        tmpState.globalHits.hitBattery.rays[particle.lastIntersected].emplace_back(particle.origin, particle.direction, particle.lastIntersected);
+    if(tmpState.hitBattery.rays[particle.lastIntersected].size() < HITCACHESIZE)
+        tmpState.hitBattery.rays[particle.lastIntersected].emplace_back(particle.origin, particle.direction, particle.lastIntersected);
 }
 
 void Particle::RecordLeakPos() {
