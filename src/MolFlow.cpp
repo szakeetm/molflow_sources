@@ -380,8 +380,8 @@ int MolFlow::OneTimeSceneInit()
 	facetRecType = new GLCombo(0);
 	facetRecType->SetSize(7);
 	facetRecType->SetValueAt(0, "None");
-	facetRecType->SetValueAt(1, "Pressure, density (\201)");
-	facetRecType->SetValueAt(2, "Pressure, density (\202)");
+	facetRecType->SetValueAt(1, "Pressure/imp/density (\201)");
+	facetRecType->SetValueAt(2, "Pressure/imp/density (\202)");
 	facetRecType->SetValueAt(3, "Incident angle");
 	facetRecType->SetValueAt(4, "Speed distribution");
 	facetRecType->SetValueAt(5, "Orthogonal velocity");

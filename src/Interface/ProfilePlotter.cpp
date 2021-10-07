@@ -114,13 +114,15 @@ ProfilePlotter::ProfilePlotter() :GLWindow() , views{}{
 
 	normCombo = new GLCombo(0);
 	normCombo->SetEditable(true);
-	normCombo->SetSize(6);
-	normCombo->SetValueAt(0, "None (raw data)");
-	normCombo->SetValueAt(1, "Pressure (mbar)");
-	normCombo->SetValueAt(2, "Density (1/m3)");
-	normCombo->SetValueAt(3, "Speed (m/s)");
-	normCombo->SetValueAt(4, "Angle (deg)");
-	normCombo->SetValueAt(5, "Normalize to 1");
+	normCombo->SetSize(7);
+	size_t counter = 0;
+	normCombo->SetValueAt(counter++, "None (raw data)");
+	normCombo->SetValueAt(counter++, "Pressure (mbar)");
+	normCombo->SetValueAt(counter++, "Impingement rate (1/m\262/sec)");
+	normCombo->SetValueAt(counter++, "Density (1/m3)");
+	normCombo->SetValueAt(counter++, "Speed (m/s)");
+	normCombo->SetValueAt(counter++, "Angle (deg)");
+	normCombo->SetValueAt(counter++, "Normalize to 1");
 	normCombo->SetSelectedIndex(1);
 	Add(normCombo);
 
@@ -412,14 +414,22 @@ void ProfilePlotter::refreshViews() {
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j, profile[j].sum_v_ort*scaleY, false);
 					break;
-				case 2: //Particle density
+				case 2: //Impingement rate
+
+					scaleY = 1.0 / (f->GetArea() * 1E-4 / (double)PROFILE_SIZE);
+					scaleY *= worker->GetMoleculesPerTP(worker->displayedMoment);
+
+					for (int j = 0; j < PROFILE_SIZE; j++)
+						v->Add((double)j, profile[j].countEquiv * scaleY, false);
+					break;
+				case 3: //Particle density
 					scaleY = 1.0 / ((f->GetArea() * 1E-4) / (double)PROFILE_SIZE);
 					scaleY *= worker->GetMoleculesPerTP(worker->displayedMoment) * f->DensityCorrection();
 					
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j, profile[j].sum_1_per_ort_velocity*scaleY, false);
 					break;
-				case 3: {//Velocity
+				case 4: {//Velocity
 					double sum = 0.0;
 					double val;
 					double scaleX = f->sh.maxSpeed / (double)PROFILE_SIZE;
@@ -437,7 +447,7 @@ void ProfilePlotter::refreshViews() {
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j*scaleX, values[j] / sum, false);
 					break; }
-				case 4: {//Angle
+				case 5: {//Angle
 					double sum = 0.0;
 					double val;
 					double scaleX = 90.0 / (double)PROFILE_SIZE;
@@ -456,7 +466,7 @@ void ProfilePlotter::refreshViews() {
 						v->Add((double)j*scaleX, values[j] / sum, false);
 					break;
 				}
-				case 5: {//To 1 (max value)
+				case 6: {//To 1 (max value)
                     double max = 1.0;
 
                     for (int j = 0; j < PROFILE_SIZE; j++) {
