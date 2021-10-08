@@ -1479,7 +1479,8 @@ std::vector<double> SimulationModel::ComputeHitChances(const std::vector<TestRay
 
         ray.rng = new MersenneTwister();
 #pragma omp for
-        for (auto &test: battery) {
+        for (int sample_id = 0; sample_id < battery.size(); sample_id++) {
+            auto& test = battery[sample_id];
             ray.origin = test.pos;
             ray.direction = test.dir;
             Vector3d invDir(1.0 / ray.direction.x, 1.0 / ray.direction.y, 1.0 / ray.direction.z);
@@ -1518,7 +1519,8 @@ int SimulationModel::ComputeHitStats(const std::vector<TestRay>& battery) {
 
         //Node stats
 #pragma omp for
-        for (auto &test: battery) {
+        for (int sample_id = 0; sample_id < battery.size(); sample_id++) {
+            auto& test = battery[sample_id];
             ray.origin = test.pos;
             ray.direction = test.dir;
             Vector3d invDir(1.0 / ray.direction.x, 1.0 / ray.direction.y, 1.0 / ray.direction.z);
