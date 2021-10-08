@@ -11,6 +11,7 @@
 #include <Simulation/CDFGeneration.h>
 #include <Simulation/IDGeneration.h>
 #include <Helper/Chronometer.h>
+#include <Helper/ConsoleLogger.h>
 #include <omp.h>
 #include "GeometrySimu.h"
 #include "IntersectAABB_shared.h" // include needed for recursive delete of AABBNODE
@@ -599,8 +600,10 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
                              || (KdTreeAccel::SplitMethod::HybridBin == (KdTreeAccel::SplitMethod) split);
 
     if(withTestBattery && !hits.empty()){
-        if(hits.empty())
+        if(hits.empty()) {
+            m.unlock();
             return 1;
+        }
 
         // Pre run with SAH
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
@@ -631,13 +634,9 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
                     tree_stats_max.ntl = std::max(stats.ntl, tree_stats_max.ntl);
                     tree_stats_max.nit = std::max(stats.nit, tree_stats_max.nit);
                 }
-                std::cout << "SAH*KD Tree stats:\n" << (double) tree_stats.nti / hits.size() << " | "
-                          << (double) tree_stats.ntl / hits.size() << " | " << (double) tree_stats.nit / hits.size()
-                          << "\n";
-                std::cout << "SAH*KD Tree  max :\n" << tree_stats_max.nti << " | " << tree_stats_max.ntl << " | "
-                          << tree_stats_max.nit << "\n";
-                std::cout << "SAH*KD cost:\n" << tree_stats.timeTrav / (double) tree_stats.nti << " | "
-                          << tree_stats.timeInt / (double) tree_stats.nit << "\n";
+                Log::console_msg_master(4, "SAH*KD Tree stats:\n%lf | %lf | %lf\n", (double) tree_stats.nti / hits.size(), (double) tree_stats.ntl / hits.size(), (double) tree_stats.nit / hits.size());
+                Log::console_msg_master(4, "SAH*KD Tree max:\n%zu | %zu | %zu\n", tree_stats_max.nti, tree_stats.ntl, tree_stats.nit);
+                Log::console_msg_master(4, "SAH*KD cost:\n%lf | %lf\n", tree_stats.timeTrav / (double) tree_stats.nti, tree_stats.timeInt / (double) tree_stats.nit);
                 isect_cost = std::ceil((tree_stats.timeTrav / (double)tree_stats.nti) / (tree_stats.timeInt / (double)tree_stats.nit));
             }
             this->accel.clear();
@@ -665,16 +664,27 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
                 this->accel.emplace_back(std::make_shared<BVHAccel>(hits, primPointers[s], maxPrimsInNode, (BVHAccel::SplitMethod) split));
         }
     }
-    else if(((accel_type==0)
-    ? (BVHAccel::SplitMethod::ProbSplit == (BVHAccel::SplitMethod) split)
-    : (KdTreeAccel::SplitMethod::ProbSplit == (KdTreeAccel::SplitMethod) split)) && globState && globState->initialized && globState->globalHits.globalHits.nbDesorbed > 0){
-        if(globState->facetStates.size() != this->facets.size())
+    else if((accel_type==0)
+            ? (BVHAccel::SplitMethod::ProbSplit == (BVHAccel::SplitMethod) split)
+            : (KdTreeAccel::SplitMethod::ProbSplit == (KdTreeAccel::SplitMethod) split)){
+        if(globState && globState->initialized && globState->globalHits.globalHits.nbDesorbed > 0 && globState->facetStates.size() != this->facets.size()) {
+            m.unlock();
             return 1;
+        }
         std::vector<double> probabilities;
         probabilities.reserve(globState->facetStates.size());
         for(auto& state : globState->facetStates) {
             probabilities.emplace_back(state.momentResults[0].hits.nbHitEquiv / globState->globalHits.globalHits.nbHitEquiv);
         }
+        double sum = 0.0;
+        for(auto& prob : probabilities){
+            sum += prob;
+        }
+        if(sum < 1e-3) {
+            m.unlock();
+            return 1;
+        }
+
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
             if(accel_type == 1)
                 this->accel.emplace_back(std::make_shared<KdTreeAccel>(KdTreeAccel::SplitMethod::ProbSplit, primPointers[s], probabilities));
@@ -689,6 +699,11 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
             else
                 this->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], maxPrimsInNode, (BVHAccel::SplitMethod)split));
         }
+    }
+
+    if(accel.size() != this->sh.nbSuper) {
+        m.unlock();
+        return 1;
     }
 
     if(accel_type == 1 && !hits.empty())
@@ -711,9 +726,9 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
                 tree_stats_max.nit = std::max(stats.nit, tree_stats_max.nit);
             }
 
-            std::cout << "KD Tree stats:\n"<< (double)tree_stats.nti / hits.size() << " | "<< (double)tree_stats.ntl /hits.size()<< " | "<< (double)tree_stats.nit /hits.size()<< "\n";
-            std::cout << "KD Tree  max :\n"<< tree_stats_max.nti << " | "<< tree_stats_max.ntl<< " | "<< tree_stats_max.nit<< "\n";
-            std::cout << "KD cost:\n" << tree_stats.timeTrav / (double)tree_stats.nti << " | " << tree_stats.timeInt / (double)tree_stats.nit << "\n";
+            Log::console_msg_master(4, "KD Tree stats:\n%lf | %lf | %lf\n", (double) tree_stats.nti / hits.size(), (double) tree_stats.ntl / hits.size(), (double) tree_stats.nit / hits.size());
+            Log::console_msg_master(4, "KD Tree max:\n%zu | %zu | %zu\n", tree_stats_max.nti, tree_stats.ntl, tree_stats.nit);
+            Log::console_msg_master(4, "KD cost:\n%lf | %lf\n", tree_stats.timeTrav / (double) tree_stats.nti, tree_stats.timeInt / (double) tree_stats.nit);
         }
     // old_bvb
 

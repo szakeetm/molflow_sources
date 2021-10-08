@@ -13,6 +13,9 @@
 #include <RayTracing/KDTree.h>
 #include <RayTracing/BVH.h>
 #include <Helper/FormatHelper.h>
+#include <omp.h>
+#include <cmath>
+
 /*SuperStructure::SuperStructure()
 {
 	aabbTree = NULL;
@@ -418,7 +421,191 @@ void Simulation::ResetSimulation() {
         particle->tmpParticleLog.clear();
 }
 
-/*bool Simulation::StartSimulation() {
-    if (!currentParticles.lastHitFacet) StartFromSource();
-    return (currentParticles.lastHitFacet != nullptr);
-}*/
+bool Simulation::RunParallel(size_t nSteps) {
+    bool eos;
+    bool lastUpdateOk = false;
+
+    //printf("Lim[%zu] %lu --> %lu\n",threadNum, localDesLimit, simulation->globState->globalHits.globalHits.hit.nbDesorbed);
+// Calculate remaining work
+    size_t desPerThread = 0;
+    size_t remainder = 0;
+    if(model->otfParams.desorptionLimit > 0){
+        if(model->otfParams.desorptionLimit > (globState->globalHits.globalHits.nbDesorbed)) {
+            size_t limitDes_global = model->otfParams.desorptionLimit;
+            desPerThread = limitDes_global / particles.size();
+            remainder = limitDes_global % particles.size();
+        }
+    }
+
+    std::vector<size_t> localDesLimits(particles.size());
+    for(auto& particle : particles){
+        size_t localDes = (desPerThread > particle.totalDesorbed) ? desPerThread - particle.totalDesorbed : 0;
+        localDesLimits[particle.particleId] = (particle.particleId < remainder) ? localDes + 1 : localDes;
+    }
+
+    bool simEos = false;
+#pragma omp parallel for default(none) shared(simEos, localDesLimits, nSteps)
+    for(int particleId = 0; particleId < particles.size(); particleId++){
+        double timeStart = omp_get_wtime();
+        double timeLoopStart = timeStart;
+        double timeEnd;
+        bool eos = false;
+        bool lastUpdateOk = true;
+        auto& particle = particles[particleId];
+        double stepsPerSec = 1.0;
+        do {
+            size_t desorptions = localDesLimits[particleId];
+            bool end = false;
+            {
+                size_t nbStep = (nSteps > 0) ? nSteps : (stepsPerSec <= 0.0) ? 250.0 : std::ceil(stepsPerSec + 0.5);
+// Check end of simulation
+                bool goOn = true;
+                size_t remainingDes = 0;
+
+                if (particle.model->otfParams.desorptionLimit > 0) {
+                    if (desorptions <= particle.tmpState.globalHits.globalHits.nbDesorbed){
+                        //lastHitFacet = nullptr; // reset full particle status or go on from where we left
+                        goOn = false;
+                    }
+                    else {
+                        //if(particle->tmpState.globalHits.globalHits.hit.nbDesorbed <= (particle->model->otfParams.desorptionLimit - simulation->globState->globalHits.globalHits.hit.nbDesorbed)/ particle->model->otfParams.nbProcess)
+                        remainingDes = desorptions - particle.tmpState.globalHits.globalHits.nbDesorbed;
+                    }
+                }
+                //auto start_time = std::chrono::high_resolution_clock::now();
+                if(goOn) {
+                    double start_time = omp_get_wtime();
+                    goOn = particle.SimulationMCStep(nbStep, particleId, remainingDes);
+                    double end_time = omp_get_wtime();
+
+                    //auto end_time = std::chrono::high_resolution_clock::now();
+
+                    if(nSteps > 0)
+                        goOn = false;
+                    if (goOn) // don't update on end, this will give a false ratio (SimMCStep could return actual steps instead of plain "false"
+                    {
+                        const double elapsedTimeMs = (end_time - start_time); //std::chrono::duration<float, std::ratio<1, 1>>(end_time - start_time).count();
+                        if (elapsedTimeMs != 0.0)
+                            stepsPerSec = (1.0 * nbStep) / (elapsedTimeMs); // every 1.0 second
+                        else
+                            stepsPerSec = (100.0 * nbStep); // in case of fast initial run
+                    }
+                }
+                end = !goOn;      // Run during 1 sec
+            }
+            if(end) {
+#pragma omp critical
+                {
+                    simEos = true;
+                }
+            }
+
+            timeEnd = omp_get_wtime();
+
+            bool forceQueue = timeEnd - timeLoopStart > 60 ||
+                    particleId == 0; // update after 60s of no update or when thread 0 is called
+            if (true || forceQueue) {
+                if (model->otfParams.desorptionLimit > 0) {
+                    if (localDesLimits[particleId] > particle.tmpState.globalHits.globalHits.nbDesorbed)
+                        localDesLimits[particleId] -= particle.tmpState.globalHits.globalHits.nbDesorbed;
+                    else localDesLimits[particleId] = 0;
+                }
+
+                size_t timeOut = lastUpdateOk ? 0 : 100; //ms
+                lastUpdateOk = particle.UpdateHits(globState, globParticleLog, timeOut); // Update hit with 20ms timeout. If fails, probably an other subprocess is updating, so we'll keep calculating and try it later (latest when the simulation is stopped).
+                timeLoopStart = omp_get_wtime();
+            } else {
+                lastUpdateOk = false;
+            }
+            //printf("[%zu] PUP: %lu , %lu , %lu\n",threadNum, desorptions,localDesLimit, particle->tmpState.globalHits.globalHits.hit.nbDesorbed);
+            eos = simEos || (particle.model->otfParams.timeLimit != 0 ? timeEnd - timeStart >=
+                                                                               particle.model->otfParams.timeLimit
+                                                                             : false);
+        } while (!eos);
+
+        if (!lastUpdateOk) {
+            particle.UpdateHits(globState, globParticleLog, 20000); // Update hit with 20ms timeout. If fails, probably an other subprocess is updating, so we'll keep calculating and try it later (latest when the simulation is stopped).)
+        }
+    }
+
+    return simEos;
+}
+
+void Simulation::FindBestADS() {
+
+    const std::array<BVHAccel::SplitMethod,7> all_splits = {
+            BVHAccel::SplitMethod::SAH, BVHAccel::SplitMethod::HLBVH, BVHAccel::SplitMethod::Middle,
+            BVHAccel::SplitMethod::EqualCounts, BVHAccel::SplitMethod::MolflowSplit, BVHAccel::SplitMethod::ProbSplit,
+            BVHAccel::SplitMethod::TestSplit
+    };
+
+    // 0. Test runs to gather test battery
+    RunParallel(1e5);
+    globState->UpdateBatteryFrequencies();
+    RunParallel(1e5);
+
+    // 1. BVH
+    model->wp.accel_type = 0;
+    model->wp.bvhMaxPrimsInNode = 2;
+
+    Chronometer bench;
+
+    for(BVHAccel::SplitMethod split : all_splits) {
+        if(split == BVHAccel::SplitMethod::TestSplit)
+            continue;
+        bench.ReInit();
+        model->wp.splitMethod = static_cast<int>(split);
+
+        std::string split_str;
+        {
+            std::stringstream split_ss;
+            split_ss << split;
+            split_str = split_ss.str();
+        }
+        const char* splitName = split_str.c_str();
+        Log::console_header(3, "Benchmarking BVH x %s\n", splitName);
+        bench.Start();
+        if(RebuildAccelStructure()) {
+            Log::console_footer(3, "Built invalid BVH, ... Skip!\n", splitName, bench.Elapsed());
+            continue;
+        }
+        Log::console_msg_master(2, "Built BVH x %s: %lf s\n", splitName, bench.Elapsed());
+        bench.ReInit();
+        bench.Start();
+        RunParallel(1e7);
+        Log::console_footer(2, "Benchmarked BVH x %s: %lf s\n", splitName, bench.Elapsed());
+    }
+
+    // 2. KD Trees
+    const std::array<KdTreeAccel::SplitMethod,5> all_splits_kd = {
+            KdTreeAccel::SplitMethod::SAH, KdTreeAccel::SplitMethod::ProbSplit, KdTreeAccel::SplitMethod::TestSplit,
+            KdTreeAccel::SplitMethod::HybridSplit, KdTreeAccel::SplitMethod::HybridBin
+    };
+
+    model->wp.accel_type = 1;
+    for(KdTreeAccel::SplitMethod split : all_splits_kd) {
+        if(split == KdTreeAccel::SplitMethod::TestSplit)
+            continue;
+        bench.ReInit();
+        model->wp.splitMethod = static_cast<int>(split);
+
+        std::string split_str;
+        {
+            std::stringstream split_ss;
+            split_ss << split;
+            split_str = split_ss.str();
+        }
+        const char* splitName = split_str.c_str();
+        Log::console_header(3, "Benchmarking KD x %s\n", splitName);
+        bench.Start();
+        if(RebuildAccelStructure()) {
+            Log::console_footer(3, "Built invalid KD, ... Skip!\n", splitName, bench.Elapsed());
+            continue;
+        }
+        Log::console_msg_master(2, "Built KD x %s: %lf s\n", splitName, bench.Elapsed());
+        bench.ReInit();
+        bench.Start();
+        RunParallel(1e7);
+        Log::console_footer(2, "Benchmarked KD x %s: %lf s\n", splitName, bench.Elapsed());
+    }
+}
