@@ -1496,13 +1496,13 @@ std::vector<double> SimulationModel::ComputeHitChances(const std::vector<TestRay
 
         // parallel reduce
 #pragma omp for
-        for (size_t i = 0; i < nprims; ++i) {
+        for (int i = 0; i < nprims; ++i) {
             for(int t = 0; t < nthreads; t++)
                 primChance[i] += local_chances[t*nprims+i];
         }
 
 #pragma omp for
-        for (size_t i = 0; i < primitives.size(); ++i) {
+        for (int i = 0; i < primitives.size(); ++i) {
             primChance[i] /= battery.size();
         }
     }
