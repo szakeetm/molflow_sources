@@ -25,7 +25,7 @@ void reportLoadStatus(const std::string& statusString) {
 
 // Use work->InsertParametersBeforeCatalog(loadedParams);
 // if loaded from GUI side
-int LoaderXML::LoadGeometry(std::string inputFileName, std::shared_ptr<SimulationModel> model, double *progress) {
+int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<SimulationModel> model, double *progress) {
     if (!model->m.try_lock()) {
         return 1;
     }
