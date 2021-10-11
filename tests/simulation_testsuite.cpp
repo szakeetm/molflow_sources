@@ -161,58 +161,13 @@ namespace {
         }*/
     };
 
-    /*struct OldStats {
-        std::string commitHash;
-        double min{-1.0}, max{-1.0}, avg{-1.0}, med{-1.0};
-        friend std::istream& operator>>(std::istream& is, OldStats& r)       {
-
-            // Get current position
-            int len = is.tellg();
-            char line[256];
-            is.getline(line, 256);
-            // Return to position before "Read line".
-            is.seekg(len ,std::ios_base::beg);
-
-            size_t countDelimiter = 0;
-            size_t pos = 0;
-            while((line[pos] != '\n' && line[pos] != '\0') && pos < 256 && countDelimiter < 2){
-                if(line[pos] == ' ' || line[pos] == '\t') {
-                    ++countDelimiter;
-                }
-                ++pos;
-            }
-            if(countDelimiter >= 2) {
-                is >> r.commitHash >> r.max;
-                is.getline(line, 256);
-                return is;
-            }
-            else
-                return is >> r.commitHash >> r.max >> r.min >> r.med >> r.avg;
-        }
-
-        bool operator<(OldStats const& other) const {
-            return other.max < max;
-        }
-
-        //implicit conversion
-        operator Stats() const {
-            Stats newStat;
-            newStat.commitHash = commitHash;
-            newStat.max = max;
-            newStat.min = min;
-            newStat.avg = avg;
-            newStat.med = med;
-        return newStat; }
-
-    };*/
-
     TEST_P(SimulationFixture, PerformanceOkay) {
         std::string testFile = GetParam();
         printf("Filename: %s\n",testFile.c_str());
+        std::string timeRecFile = "./time_record_" + testFile.substr(0, testFile.size() - 4) + ".txt";
 
         {
             // Check if test was already successful, restarting the test suite will then skip the test
-            std::string timeRecFile = "./time_record_" + testFile.substr(0, testFile.size() - 4) + ".txt";
             if (std::filesystem::exists(timeRecFile)) {
                 std::ifstream ifs(timeRecFile);
                 std::vector<Stats> prevRun;
@@ -222,7 +177,7 @@ namespace {
                 currentCommit = currentCommit.substr(0, 8); // only first 8 hex digits
                 for (auto &run : prevRun) {
                     if (run.commitHash == currentCommit) {
-                        printf("Test was successfully run in a previous attemp, skip ...\n");
+                        printf("Test was successfully run in a previous attempt, skip ...\n");
                         GTEST_SKIP();
                     }
                 }
@@ -231,7 +186,7 @@ namespace {
 
         size_t nbFails = 0;
         bool fastEnough = false;
-        const size_t nRuns = 10;
+        const size_t nRuns = 5;
         const size_t keepNEntries = 20;
         const size_t runForTSec = 20;
         std::vector<double> perfTimes;
@@ -240,15 +195,20 @@ namespace {
             std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
             GlobalSimuState globState{};
 
-            std::vector<char *> argv = {"tester", "--config", "simulation.cfg", "--reset", "--file"};
+            /*std::vector<char *> argv = {"tester", "--config", "simulation.cfg", "--reset", "--file"};
             char * fileName_c = new char[testFile.size() + 1];
             std::copy(testFile.begin(), testFile.end(), fileName_c);
             fileName_c[testFile.size()] = '\0';
             argv.push_back(fileName_c);
-            char **args = argv.data();
-            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
-            Initializer::initFromFile(&simManager, model, &globState);
-            delete[] fileName_c;
+*/
+            std::vector<std::string> argv = {"tester", "--config", "simulation.cfg", "--reset", "--file"};
+            argv.push_back(testFile);
+            {
+                CharPVec argc_v(argv);
+                char **args = argc_v.data();
+                Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+                Initializer::initFromFile(&simManager, model, &globState);
+            }
 
             size_t oldHitsNb = globState.globalHits.globalHits.nbMCHit;
             size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
@@ -292,7 +252,7 @@ namespace {
 
             Stats currentRun;
             currentRun.commitHash = GIT_COMMIT_HASH;
-            currentRun.commitHash = currentRun.commitHash.substr(0,8); // only first 8 hex digits
+            currentRun.commitHash = currentRun.commitHash.substr(0, 8); // only first 8 hex digits
             currentRun.min = perfTimes.front();
             currentRun.max = perfTimes.back();
             double sum = std::accumulate(perfTimes.begin(), perfTimes.end(), 0.0);
@@ -301,56 +261,57 @@ namespace {
                              ? (perfTimes[perfTimes.size() / 2 - 1] + perfTimes[perfTimes.size() / 2]) / 2
                              : perfTimes[perfTimes.size() / 2];
 
-            std::cout << "Current Run: "<< currentRun << std::endl;
+            std::cout << "Current Run: " << currentRun << std::endl;
 
             std::vector<Stats> prevRun;
             std::string testName(::testing::UnitTest::GetInstance()->current_test_info()->name());
-            std::string timeRecFile = "./time_record_" + testFile.substr(0, testFile.size() - 4) + ".txt";
 
-            if(std::filesystem::exists(timeRecFile))
-            {
+            // If a record file for this test already exists
+            //  load the number 1 entry
+            if (std::filesystem::exists(timeRecFile)) {
                 std::ifstream ifs(timeRecFile);
-                prevRun.insert( prevRun.begin(), std::istream_iterator<Stats>(ifs), std::istream_iterator<Stats>() );
+                prevRun.insert(prevRun.begin(), std::istream_iterator<Stats>(ifs), std::istream_iterator<Stats>());
 
-                std::cout << "Prev Run: "<< prevRun.front() << std::endl;
+                std::cout << "Prev Run: " << prevRun.front() << std::endl;
                 // Check either, only if previous results could be found
                 fastEnough = currentRun.max >= 0.95 * prevRun.front().max;
 
-                if(!fastEnough && prevRun.front().med > 0.0) { // check to prevent free pass for old entries with only max
+                if (!fastEnough &&
+                    prevRun.front().med > 0.0) { // check to prevent free pass for old entries with only max
                     EXPECT_GE(currentRun.med, 0.95 * prevRun.front().med);
                     fastEnough = true;
                 }
-                if(!fastEnough && prevRun.front().med > 0.0 && currentRun.max > prevRun.front().med){
+                if (!fastEnough && prevRun.front().med > 0.0 && currentRun.max > prevRun.front().med) {
                     EXPECT_GE(currentRun.max, prevRun.front().med);
                     fastEnough = true;
                 }
-                if(!fastEnough) { // check to prevent free pass for old entries with only max
+                if (!fastEnough) { // check to prevent free pass for old entries with only max
                     EXPECT_GE(currentRun.max, 0.95 * prevRun.front().max);
-                    if(currentRun.max >= 0.95 * prevRun.front().max)
+                    if (currentRun.max >= 0.95 * prevRun.front().max)
                         fastEnough = true;
                 }
+            } else {
+                fastEnough = true; // force update
             }
 
             // Only enter a test if it meets any of the success criteria
-            if(fastEnough)
-            {
+            if (fastEnough) {
                 // Keep top 20 in list
                 prevRun.push_back(currentRun);
                 std::sort(prevRun.begin(), prevRun.end());
-                for(auto iter_o = prevRun.begin(); iter_o != prevRun.end(); ++iter_o) {
-                    for(auto iter_i = iter_o+1; iter_i != prevRun.end(); ++iter_i) { // "slower entry"
-                        if(iter_i->commitHash == iter_o->commitHash){
+                for (auto iter_o = prevRun.begin(); iter_o != prevRun.end(); ++iter_o) {
+                    for (auto iter_i = iter_o + 1; iter_i != prevRun.end(); ++iter_i) { // "slower entry"
+                        if (iter_i->commitHash == iter_o->commitHash) {
                             prevRun.erase(iter_i--); // remove outer entry, as it is slower
                         }
                     }
                 }
                 std::ofstream ofs(timeRecFile);
-                for(size_t lineN = 0; lineN < std::min(prevRun.size(), keepNEntries); ++lineN) {
-                    if(!prevRun[lineN].commitHash.empty())
+                for (size_t lineN = 0; lineN < std::min(prevRun.size(), keepNEntries); ++lineN) {
+                    if (!prevRun[lineN].commitHash.empty())
                         ofs << prevRun[lineN] << std::endl;
                 }
             }
-
         }
     }
 
@@ -360,7 +321,7 @@ namespace {
         printf("Filename: %s\n",testFile.c_str());
         size_t nbFails = 0;
         bool fastEnough = false;
-        const size_t nRuns = 1;
+        const size_t nRuns = 10;
         const size_t keepNEntries = 20;
         const size_t runForTSec = 30;
         std::vector<double> perfTimes;
@@ -370,14 +331,12 @@ namespace {
         std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
         GlobalSimuState globState{};
 
+        std::vector<std::string> argv = {"tester", "--verbosity", "1",
+                                         "-t", std::to_string(runForTSec), "--file", testFile};
         {
-            std::vector<char *> argv = {"tester", "--verbosity", "1", "-t", "50", "--file"};
-            char *fileName_c = new char[testFile.size() + 1];
-            std::copy(testFile.begin(), testFile.end(), fileName_c);
-            fileName_c[testFile.size()] = '\0';
-            argv.push_back(fileName_c);
             {
-                char **args = argv.data();
+                CharPVec argc_v(argv);
+                char **args = argc_v.data();
                 if(-1 < Initializer::initFromArgv(argv.size(), (args), &simManager, model)){
                     exit(41);
                 }
@@ -394,53 +353,62 @@ namespace {
 
                 timeExpect += std::max(0.0, std::pow(std::log(std::sqrt(model->sh.nbFacet * sizeof(FacetHitBuffer))), 2.0) - 10.0);
                 timeExpect += std::max(0.0, 1.1* std::sqrt(std::exp(std::log(std::sqrt(model->size())))));
-                Settings::simDuration = std::min(50.0 + timeExpect, 180.0);
-
-                // Modify argv with new duration
-                auto newDur = std::to_string(Settings::simDuration);
-                char *newDur_c = new char[newDur.size() + 1];
-                std::copy(newDur.begin(), newDur.end(), newDur_c);
-                newDur_c[newDur.size()] = '\0';
-                argv[4] = newDur_c;
-
-                model = std::make_shared<SimulationModel>();
-                {
-                    char **args = argv.data();
-                    if(-1 < Initializer::initFromArgv(argv.size(), (args), &simManager, model)){
-                        exit(41);
-                    }
-                    if(Initializer::initFromFile(&simManager, model, &globState)){
-                        exit(42);
-                    }
-                }
-                delete[] newDur_c;
+                Settings::simDuration = std::min(50.0 + timeExpect, 300.0);
             }
-            delete[] fileName_c;
         }
 
+
+        GlobalSimuState oldState = globState;
+        globState.Reset();
+        size_t oldHitsNb = oldState.globalHits.globalHits.nbMCHit;
+        size_t oldDesNb = oldState.globalHits.globalHits.nbDesorbed;
+        EXPECT_NE(0, oldDesNb);
+        EXPECT_NE(0, oldHitsNb);
+        EXPECT_EQ(0, globState.globalHits.globalHits.nbDesorbed);
+        EXPECT_EQ(0, globState.globalHits.globalHits.nbMCHit);
+
+        int stepSizeTime = (int)(Settings::simDuration * ((double)(1.0) / nRuns));
+        Settings::simDuration = stepSizeTime;
+
         for(size_t runNb = 0; runNb < nRuns; ++runNb){
+            // Modify argv with new duration
+            std::cout << "New time: "<< Settings::simDuration + stepSizeTime << "\n";
+            auto newDur = std::ceil(Settings::simDuration + stepSizeTime);
+            auto newDur_str = std::to_string((int)(newDur));
+            argv[4] = newDur_str;
 
-            size_t oldHitsNb = globState.globalHits.globalHits.nbMCHit;
-            size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
+            Initializer::initTimeLimit(model, stepSizeTime);
+            /*model = std::make_shared<SimulationModel>();
+            {
+                CharPVec argc_v(argv);
+                char **args = argc_v.data();
+                if(-1 < Initializer::initFromArgv(argv.size(), (args), &simManager, model)){
+                    exit(41);
+                }
+                if(Initializer::initFromFile(&simManager, model, &globState)){
+                    exit(42);
+                }
+            }*/
 
-            GlobalSimuState oldState = globState;
-            globState.Reset();
 
-            EXPECT_NE(0, oldDesNb);
-            EXPECT_NE(0, oldHitsNb);
-            EXPECT_EQ(0, globState.globalHits.globalHits.nbDesorbed);
-            EXPECT_EQ(0, globState.globalHits.globalHits.nbMCHit);
+
             EXPECT_NO_THROW(simManager.StartSimulation());
 
             // Stop and copy results
             simManager.StopSimulation();
-            simManager.KillAllSimUnits();
-            simManager.ResetSimulations();
 
             EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
             EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
 
-            auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.01, 0.1);
+            auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.005, 0.05);
+            if(runNb < nRuns - 1 && (diff_glob != 0 || diff_loc != 0)) {
+                printf("[%zu] Diff glob %d / loc %d\n", runNb, diff_glob, diff_loc);
+                continue; // try with more desorptions
+            }
+            else{
+                printf("[%zu] Done with diff glob %d / loc %d\n", runNb, diff_glob, diff_loc);
+            }
+
             EXPECT_EQ(0, diff_glob);
             EXPECT_EQ(0, diff_loc);
 
@@ -448,8 +416,12 @@ namespace {
                 fprintf(stderr, "[Warning] %d local differences found!\n", diff_loc);
             if(diff_fine > 0)
                 fprintf(stderr, "[Warning] %d differences on fine counters found!\n", diff_fine);
+            break;
+        }
 
-        };
+        simManager.KillAllSimUnits();
+        simManager.ResetSimulations();
+
     }
 
     TEST_P(ValidationFixture, ResultsWrong) {
@@ -468,21 +440,15 @@ namespace {
         GlobalSimuState globState{};
 
         {
-            std::vector<char *> argv = {"tester", "--verbosity", "0", "-t", "5", "--file"};
-            char *fileName_c = new char[testFile.size() + 1];
-            std::copy(testFile.begin(), testFile.end(), fileName_c);
-            fileName_c[testFile.size()] = '\0';
-            argv.push_back(fileName_c);
-            {
-                char **args = argv.data();
-                if(-1 < Initializer::initFromArgv(argv.size(), (args), &simManager, model)){
-                    exit(41);
-                }
-                if(Initializer::initFromFile(&simManager, model, &globState)){
-                    exit(42);
-                }
+            std::vector<std::string> argv = {"tester", "--verbosity", "0", "-t", "3", "--file", testFile};
+            CharPVec argc_v(argv);
+            char **args = argc_v.data();
+            if(-1 < Initializer::initFromArgv(argv.size(), (args), &simManager, model)){
+                exit(41);
             }
-            delete[] fileName_c;
+            if(Initializer::initFromFile(&simManager, model, &globState)){
+                exit(42);
+            }
         }
 
         // First check for valid initial states
@@ -518,7 +484,7 @@ namespace {
             EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
             EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
 
-            auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.001, 0.001);
+            auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.005, 0.05);
             if(diff_glob > 0)
                 EXPECT_NE(0, diff_glob);
             else

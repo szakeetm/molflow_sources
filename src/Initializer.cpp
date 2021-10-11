@@ -306,6 +306,18 @@ int Initializer::initDesLimit(const std::shared_ptr<SimulationModel>& model, Glo
     return 0;
 }
 
+int Initializer::initTimeLimit(const std::shared_ptr<SimulationModel>& model, double time) {
+    if (!model->m.try_lock()) {
+        return 1;
+    }
+
+    model->otfParams.timeLimit = time;
+    Settings::simDuration = time;
+
+    model->m.unlock();
+    return 0;
+}
+
 // TODO: Combine with loadXML function
 std::string Initializer::getAutosaveFile() {
     // Create copy of input file for autosave
