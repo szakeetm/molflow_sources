@@ -73,6 +73,8 @@ The procedure looks as follows:
   - `brew install p7zip`
   - `brew install libomp`
 
+  (Or a one-liner for the above commands is `brew install cmake libpng gsl sdl2 p7zip libomp`)
+
 ## Cloning the project
 * Clone the Molflow project with `git clone`
 * Go into the `Molflow` directory and:
