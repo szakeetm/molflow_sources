@@ -588,9 +588,7 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
 
     this->accel.clear();
     std::vector<TestRay> hits;
-    if(globState && globState->initialized) {
-        hits = globState->PrepareHitBattery();
-    }
+
     bool withTestBattery = false;
     if(accel_type==0)
         withTestBattery = (BVHAccel::SplitMethod::TestSplit == (BVHAccel::SplitMethod) split);
@@ -598,6 +596,11 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
         withTestBattery = (KdTreeAccel::SplitMethod::TestSplit == (KdTreeAccel::SplitMethod) split)
                           || (KdTreeAccel::SplitMethod::HybridSplit == (KdTreeAccel::SplitMethod) split)
                              || (KdTreeAccel::SplitMethod::HybridBin == (KdTreeAccel::SplitMethod) split);
+
+    if(withTestBattery)
+        if(globState && globState->initialized) {
+            hits = globState->PrepareHitBattery();
+        }
 
     if(withTestBattery && !hits.empty()){
         if(hits.empty()) {
@@ -1550,12 +1553,24 @@ int GlobalSimuState::UpdateBatteryFrequencies() {
     }
 
     int bat_n = 0;
-    for(auto& freq : hitBattery.nRays){
-        freq = std::ceil(frequencies[bat_n] * hitBattery.maxSamples) * 1;
+    for(auto& bat : hitBattery.rays){
+        bat.Resize(std::ceil(frequencies[bat_n] * hitBattery.maxSamples) * 1);
         bat_n++;
     }
 
     hitBattery.initialized = true;
+
+    return 0;
+}
+
+int GlobalSimuState::StopBatteryChange() {
+
+    int bat_n = 0;
+    for(auto& bat : hitBattery.rays){
+        bat.Resize(0);
+        bat.Erase();
+    }
+    hitBattery.initialized = false;
 
     return 0;
 }
@@ -1574,7 +1589,7 @@ std::vector<TestRay> GlobalSimuState::PrepareHitBattery() {
     size_t count = 0;
     for(auto& bat : hitBattery.rays){
         //for(auto& hit : bat) {
-        if(bat.empty()) continue;
+        if(bat.Size() == 0) continue;
         count += (int)std::ceil(frequencies[bat_n] * hitBattery.maxSamples) * 1;
         bat_n++;
     }
@@ -1584,8 +1599,8 @@ std::vector<TestRay> GlobalSimuState::PrepareHitBattery() {
         denum = (double) hitBattery.maxSamples / (double) count;
     for(auto& bat : hitBattery.rays){
         //for(auto& hit : bat) {
-        if(bat.empty()) continue;
-        std::sample(bat.begin(), bat.end(), std::back_inserter(battery),
+        if(bat.Size() == 0) continue;
+        std::sample(bat.data.begin(), bat.data.end(), std::back_inserter(battery),
                     (int)std::ceil(frequencies[bat_n] * hitBattery.maxSamples * denum), std::mt19937{std::random_device{}()});
         bat_n++;
             /*if (bat.size() < std::ceil(frequencies[hit.location] * HITCACHESAMPLE)) {

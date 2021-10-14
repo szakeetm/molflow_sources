@@ -72,75 +72,20 @@ bool Particle::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, DW
                                                                           tmpState.globalHits.hitCacheSize);
             }
             
-            auto& hitBattery = globSimuState.hitBattery;
-            if(hitBattery.initialized && hitBattery.size() > 0){
-                int hit_n = 0;
-                if(tmpState.hitBattery.size() == hitBattery.size()) {
-                    for (auto &bat : hitBattery.rays) {
-                        auto& tmp = tmpState.hitBattery.rays[hit_n];
-                        if(tmp.empty()) {
+            if(model->otfParams.raySampling) {
+                auto &hitBattery = globSimuState.hitBattery;
+                if (hitBattery.initialized && hitBattery.size() > 0) {
+                    int hit_n = 0;
+                    if (tmpState.hitBattery.size() == hitBattery.size()) {
+                        for (auto &bat: hitBattery.rays) {
+                            auto &tmp = tmpState.hitBattery.rays[hit_n];
+                            bat.Add_Batch(tmp.data);
                             ++hit_n;
-                            continue;
                         }
-                        int diff = tmpState.hitBattery.nRays[hit_n] - bat.size();
-                        // just add how many rays can still fit
-                        int maxInserts = hitBattery.nRays[hit_n];
-                        if(bat.size() < maxInserts && maxInserts > 0)
-                            bat.resize(maxInserts);
-                        if(diff > 0){
-                            diff = std::min(diff, maxInserts);
-                            if(tmp.size() <= (size_t) diff)
-                                bat.insert(bat.end(), tmp.begin(), tmp.end());
-                            else
-                                bat.insert(bat.end(), tmp.begin(), tmp.begin() + (diff));
-                            hitBattery.cyclicIndex[hit_n] = bat.size();
-                        }
-                        else {
-                            auto rand1 = randomGenerator.rnd();
-                            auto rand2 = randomGenerator.rnd();
-                            int startPos = rand1 * tmp.size();
-                            int endPos = rand2 * tmp.size();
-                            assert(startPos <= tmp.size());
-                            assert(endPos <= tmp.size());
-                            if(startPos > endPos) {
-                                std::swap(startPos, endPos);
-                            }
-                            int insertSize = endPos - startPos;
-                            if(insertSize == 0) {
-                                ++hit_n;
-                                continue;
-                            }
-                            else if(insertSize > maxInserts){
-                                endPos -= insertSize - maxInserts;
-                                insertSize = maxInserts;
-                            }
-
-                            int insertPos = hitBattery.cyclicIndex[hit_n];
-                            int insertN = std::min((int)bat.size() - hitBattery.cyclicIndex[hit_n], insertSize);
-                            int remainder = insertSize - insertN;
-                            if(insertN < 0) {
-                                hitBattery.cyclicIndex[hit_n] = 0;
-                                insertN = 0; // reset for remainder insertpos
-                            }
-                            else if(insertN > 0)
-                                std::copy(tmp.begin() + startPos, tmp.begin() + startPos + insertN, bat.begin() + hitBattery.cyclicIndex[hit_n]);
-
-                            if(remainder > 0){
-                                std::copy(tmp.begin() + startPos + insertN, tmp.begin() + startPos + insertN + remainder, bat.begin());
-                                hitBattery.cyclicIndex[hit_n] = remainder >= maxInserts ? 0 : remainder;
-                            }
-                            else if(hitBattery.cyclicIndex[hit_n] + insertN >= maxInserts){
-                                hitBattery.cyclicIndex[hit_n] = 0;
-                            }
-                            else
-                                hitBattery.cyclicIndex[hit_n] += insertN;
-                        }
-                        ++hit_n;
                     }
+                } else {
+                    globSimuState.UpdateBatteryFrequencies();
                 }
-            }
-            else {
-                globSimuState.UpdateBatteryFrequencies();
             }
         }
 
@@ -1726,8 +1671,7 @@ void Particle::RecordHit(const int &type) {
         tmpState.globalHits.hitCache[tmpState.globalHits.hitCacheSize].type = type;
         ++tmpState.globalHits.hitCacheSize;
     }
-    if(tmpState.hitBattery.rays[particle.lastIntersected].size() < HITCACHESIZE)
-        tmpState.hitBattery.rays[particle.lastIntersected].emplace_back(particle.origin, particle.direction, particle.lastIntersected);
+    tmpState.hitBattery.rays[particle.lastIntersected].Add_Linear(TestRay(particle.origin, particle.direction, particle.lastIntersected));
 }
 
 void Particle::RecordLeakPos() {

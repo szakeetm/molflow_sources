@@ -457,7 +457,7 @@ bool Simulation::RunParallel(size_t nSteps) {
             size_t desorptions = localDesLimits[particleId];
             bool end = false;
             {
-                size_t nbStep = (nSteps > 0) ? nSteps : (stepsPerSec <= 0.0) ? 250.0 : std::ceil(stepsPerSec + 0.5);
+                size_t nbStep = (nSteps > 0) ? (nSteps / particles.size()) : ((stepsPerSec <= 0.0) ? 250.0 : std::ceil(stepsPerSec + 0.5));
 // Check end of simulation
                 bool goOn = true;
                 size_t remainingDes = 0;
@@ -538,12 +538,17 @@ void Simulation::FindBestADS() {
             BVHAccel::SplitMethod::EqualCounts, BVHAccel::SplitMethod::MolflowSplit, BVHAccel::SplitMethod::ProbSplit,
             BVHAccel::SplitMethod::TestSplit
     };
-
+    const auto runTimePerTest = 2e7;
     // 0. Test runs to gather test battery
+    model->otfParams.raySampling = true;
     RunParallel(1e5);
-    globState->UpdateBatteryFrequencies();
-    RunParallel(1e5);
+    /*globState->UpdateBatteryFrequencies();
 
+    RunParallel(1e6);*/
+    model->otfParams.raySampling = false;
+    for (auto &thr: particles) {
+        thr.tmpState.StopBatteryChange();
+    }
     // 1. BVH
     model->wp.accel_type = 0;
     model->wp.bvhMaxPrimsInNode = 2;
@@ -572,7 +577,7 @@ void Simulation::FindBestADS() {
         Log::console_msg_master(2, "Built BVH x %s: %lf s\n", splitName, bench.Elapsed());
         bench.ReInit();
         bench.Start();
-        RunParallel(1e7);
+        RunParallel(runTimePerTest);
         Log::console_footer(2, "Benchmarked BVH x %s: %lf s\n", splitName, bench.Elapsed());
     }
 
@@ -605,7 +610,7 @@ void Simulation::FindBestADS() {
         Log::console_msg_master(2, "Built KD x %s: %lf s\n", splitName, bench.Elapsed());
         bench.ReInit();
         bench.Start();
-        RunParallel(1e7);
+        RunParallel(runTimePerTest);
         Log::console_footer(2, "Benchmarked KD x %s: %lf s\n", splitName, bench.Elapsed());
     }
 }

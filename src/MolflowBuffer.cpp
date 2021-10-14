@@ -26,6 +26,9 @@ OntheflySimulationParams::OntheflySimulationParams(){
     timeLimit = 0.0;
     logFacetId = std::numeric_limits<size_t>::max();
     logLimit = 0;
+
+    benchmarkADS = true;
+    raySampling = true;
 }
 
 void FacetHistogramBuffer::Resize(const HistogramParams& params){
