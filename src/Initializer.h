@@ -35,6 +35,8 @@ public:
     static int initDesLimit(const std::shared_ptr<SimulationModel>& model, GlobalSimuState& globState);
 
     static int initFromArgv(int argc, char **argv, SimulationManager *simManager, const std::shared_ptr<SimulationModel>& model);
+
+    static int initTimeLimit(const std::shared_ptr<SimulationModel> &model, double time);
 };
 
 
