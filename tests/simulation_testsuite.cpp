@@ -378,18 +378,6 @@ namespace {
             argv[4] = newDur_str;
 
             Initializer::initTimeLimit(model, stepSizeTime);
-            /*model = std::make_shared<SimulationModel>();
-            {
-                CharPVec argc_v(argv);
-                char **args = argc_v.data();
-                if(-1 < Initializer::initFromArgv(argv.size(), (args), &simManager, model)){
-                    exit(41);
-                }
-                if(Initializer::initFromFile(&simManager, model, &globState)){
-                    exit(42);
-                }
-            }*/
-
 
 
             EXPECT_NO_THROW(simManager.StartSimulation());
@@ -427,74 +415,102 @@ namespace {
     TEST_P(ValidationFixture, ResultsWrong) {
         std::string testFile = GetParam();
         printf("Filename: %s\n",testFile.c_str());
-        size_t nbFails = 0;
+        size_t nbSuccess = 0;
         bool fastEnough = false;
-        const size_t nRuns = 1;
+        const size_t nRuns = 10;
         const size_t keepNEntries = 20;
         const size_t runForTSec = 30;
         std::vector<double> perfTimes;
 
-        SimulationManager simManager{};
-        simManager.interactiveMode = false;
+        std::shared_ptr<SimulationManager> simManager = std::make_shared<SimulationManager>();
+        simManager->interactiveMode = false;
         std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
         GlobalSimuState globState{};
 
         {
-            std::vector<std::string> argv = {"tester", "--verbosity", "0", "-t", "3", "--file", testFile};
+            std::vector<std::string> argv = {"tester", "--verbosity", "0", "-t", "120", "--file", testFile};
             CharPVec argc_v(argv);
             char **args = argc_v.data();
-            if(-1 < Initializer::initFromArgv(argv.size(), (args), &simManager, model)){
+            if(-1 < Initializer::initFromArgv(argv.size(), (args), simManager.get(), model)){
                 exit(41);
             }
-            if(Initializer::initFromFile(&simManager, model, &globState)){
+            if(Initializer::initFromFile(simManager.get(), model, &globState)){
                 exit(42);
             }
         }
+
+        // Keep oldstate from file for compari
+        GlobalSimuState oldState = globState;
+        size_t oldHitsNb = globState.globalHits.globalHits.nbMCHit;
+        size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
 
         // First check for valid initial states
         // - old state with results, new state without
         // - after simulation, new state with results
         // Next, check for errors due to short run time
         // - this will prevent false positives for ResultsOkay tests
-        {
-            size_t oldHitsNb = globState.globalHits.globalHits.nbMCHit;
-            size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
-
-            GlobalSimuState oldState = globState;
+        for(size_t runNb = 0; runNb < nRuns; ++runNb) {
+            if(runNb != 0) {
+                simManager = std::make_shared<SimulationManager>();
+                model = std::make_shared<SimulationModel>();
+                simManager->interactiveMode = false;
+                std::vector<std::string> argv = {"tester", "--verbosity", "0", "-t", "120", "--file", testFile};
+                CharPVec argc_v(argv);
+                char **args = argc_v.data();
+                if(-1 < Initializer::initFromArgv(argv.size(), (args), simManager.get(), model)){
+                    exit(41);
+                }
+                if(Initializer::initFromFile(simManager.get(), model, &globState)){
+                    exit(42);
+                }
+            }
             globState.Reset();
             Settings::desLimit.clear();
-            Settings::desLimit.emplace_back(1000);
+            Settings::desLimit.emplace_back(500);
             Initializer::initDesLimit(model, globState);
 
-            simManager.ResetHits();
-            simManager.InitSimulation(model, &globState);
+            //simManager.RefreshRNGSeed(false);
+            simManager->ResetHits();
+            simManager->InitSimulation(model, &globState);
 
             EXPECT_NE(0, oldDesNb);
             EXPECT_NE(0, oldHitsNb);
             EXPECT_EQ(0, globState.globalHits.globalHits.nbDesorbed);
             EXPECT_EQ(0, globState.globalHits.globalHits.nbMCHit);
 
-            EXPECT_NO_THROW(simManager.StartSimulation());
+            EXPECT_NO_THROW(simManager->StartSimulation());
 
             // Stop and copy results
-            simManager.StopSimulation();
-            simManager.KillAllSimUnits();
-            simManager.ResetSimulations();
+            simManager->StopSimulation();
 
             EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
             EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
 
             auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.005, 0.05);
-            if(diff_glob > 0)
+            if(diff_glob || diff_loc)
+                nbSuccess++;
+
+            //simManager.KillAllSimUnits();
+            //simManager.ResetSimulations();
+
+            /*if(diff_glob > 0)
                 EXPECT_NE(0, diff_glob);
             else
-                EXPECT_NE(0, diff_loc);
-            printf("[Warning] Geometry has %zu facets for %zu des!\n", model->facets.size(), globState.globalHits.globalHits.nbDesorbed);
+                EXPECT_NE(0, diff_loc);*/
+
+            if(diff_glob <= 0)
+                fprintf(stderr, "[%zu][Warning] No global differences found!\n", runNb);
             if(diff_loc <= 0)
-                fprintf(stderr, "[Warning] No local differences found!\n");
+                fprintf(stderr, "[%zu][Warning] No local differences found!\n", runNb);
             if(diff_fine <= 0)
-                fprintf(stderr, "[Warning] No differences on fine counters found!\n");
-        };
+                fprintf(stderr, "[%zu][Warning] No differences on fine counters found!\n", runNb);
+        }
+        if((double)nbSuccess / nRuns < 0.7) {
+            EXPECT_FALSE((double)nbSuccess / nRuns < 0.7);
+            fprintf(stderr, "[FAIL] Threshold for results of a low sample run was not crossed!\n"
+                            "%lu out of %lu runs were correct!\n"
+                            "This could be due to random nature of a MC simulation or a programmatic error leading to wrong conclusions.\n", nRuns-nbSuccess, nRuns);
+        }
     }
 
     // Tests factorial of positive numbers.
