@@ -179,6 +179,7 @@ int Initializer::initFromFile(SimulationManager *simManager, const std::shared_p
         return 1;
     }
 
+    simManager->simulationChanged = true;
     Log::console_msg_master(2, "Forwarding model to simulation units!\n");
     try {
         if(simManager->InitSimulation(model, globState))
