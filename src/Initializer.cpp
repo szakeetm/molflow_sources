@@ -388,10 +388,55 @@ int Initializer::initSimModel(std::shared_ptr<SimulationModel> model) {
             double area = rw * rh;
             area *= (sFac->sh.is2sided) ? 2.0 : 1.0;
             size_t add = 0;
-            for (size_t j = 0; j < sFac->sh.texHeight; j++) {
-                for (size_t i = 0; i < sFac->sh.texWidth; i++) {
+
+            for (size_t j = 0; j < sFac->sh.texHeight - 1; j++) {
+                for (size_t i = 0; i < sFac->sh.texWidth - 1; i++) {
                     if (area > 0.0) {
                         textIncVector[add] = 1.0 / area;
+                    } else {
+                        textIncVector[add] = 0.0;
+                    }
+                    add++;
+                }
+                // last element in width column
+                {
+                    double width_remain = sFac->sh.texWidth_precise - ((sFac->sh.texWidth - 1) * rw);
+                    //for (size_t i = 0; i < sFac->sh.texWidth; i++) {
+                    double last_area = width_remain * rh;
+                    last_area *= (sFac->sh.is2sided) ? 2.0 : 1.0;
+
+                    if (last_area > 0.0) {
+                        textIncVector[add] = 1.0 / last_area;
+                    } else {
+                        textIncVector[add] = 0.0;
+                    }
+                    add++;
+                }
+            }
+
+            // last height row
+            {
+                double height_remain = sFac->sh.texHeight_precise - ((double)(sFac->sh.texHeight - 1) * rh);
+                //for (size_t i = 0; i < sFac->sh.texWidth; i++) {
+                double last_area = rw * height_remain;
+                last_area *= (sFac->sh.is2sided) ? 2.0 : 1.0;
+                for (size_t i = 0; i < sFac->sh.texWidth - 1; i++) {
+                    if (area > 0.0) {
+                        textIncVector[add] = 1.0 / area;
+                    } else {
+                        textIncVector[add] = 0.0;
+                    }
+                    add++;
+                }
+                // last element
+                {
+                    double width_remain = sFac->sh.texWidth_precise - ((double)(sFac->sh.texWidth - 1) * rw);
+                    //for (size_t i = 0; i < sFac->sh.texWidth; i++) {
+                    last_area = width_remain * height_remain;
+                    last_area *= (sFac->sh.is2sided) ? 2.0 : 1.0;
+
+                    if (last_area > 0.0) {
+                        textIncVector[add] = 1.0 / last_area;
                     } else {
                         textIncVector[add] = 0.0;
                     }
