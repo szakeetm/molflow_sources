@@ -320,8 +320,10 @@ namespace {
         std::string testFile = GetParam();
         printf("Filename: %s\n",testFile.c_str());
         size_t nbFails = 0;
+        size_t nCorrect = 0;
         bool fastEnough = false;
-        const size_t nRuns = 10;
+        const size_t nRuns = 20;
+        const size_t correctStreak = 3;
         const size_t keepNEntries = 20;
         const size_t runForTSec = 30;
         std::vector<double> perfTimes;
@@ -353,7 +355,8 @@ namespace {
 
                 timeExpect += std::max(0.0, std::pow(std::log(std::sqrt(model->sh.nbFacet * sizeof(FacetHitBuffer))), 2.0) - 10.0);
                 timeExpect += std::max(0.0, 1.1* std::sqrt(std::exp(std::log(std::sqrt(model->size())))));
-                Settings::simDuration = std::min(50.0 + timeExpect, 300.0);
+                timeExpect *= 4.0;
+                Settings::simDuration = std::min(50.0 + timeExpect, 600.0);
             }
         }
 
@@ -372,10 +375,9 @@ namespace {
 
         for(size_t runNb = 0; runNb < nRuns; ++runNb){
             // Modify argv with new duration
-            std::cout << "New time: "<< Settings::simDuration + stepSizeTime << "\n";
-            auto newDur = std::ceil(Settings::simDuration + stepSizeTime);
+            /*auto newDur = std::ceil(Settings::simDuration + stepSizeTime);
             auto newDur_str = std::to_string((int)(newDur));
-            argv[4] = newDur_str;
+            argv[4] = newDur_str;*/
 
             Initializer::initTimeLimit(model, stepSizeTime);
 
@@ -391,10 +393,17 @@ namespace {
             auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.005, 0.05);
             if(runNb < nRuns - 1 && (diff_glob != 0 || diff_loc != 0)) {
                 printf("[%zu] Diff glob %d / loc %d\n", runNb, diff_glob, diff_loc);
+                nCorrect = 0;
                 continue; // try with more desorptions
             }
-            else{
-                printf("[%zu] Done with diff glob %d / loc %d\n", runNb, diff_glob, diff_loc);
+            else if(diff_glob == 0 && diff_loc == 0 && nCorrect < correctStreak - 1){
+                nCorrect++;
+                printf("[%zu] Correct run #%zu\n", runNb, nCorrect);
+
+                continue; // try with more desorptions
+            }
+            else {
+                printf("[%zu] Correct run #%zu -- Done\n", runNb, nCorrect);
             }
 
             EXPECT_EQ(0, diff_glob);
