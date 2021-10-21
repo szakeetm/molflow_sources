@@ -373,14 +373,43 @@ namespace {
         int stepSizeTime = (int)(Settings::simDuration * ((double)(1.0) / nRuns));
         Settings::simDuration = stepSizeTime;
 
-        for(size_t runNb = 0; runNb < nRuns; ++runNb){
+        // One test run with time, next with desorptions
+        {
+            Initializer::initTimeLimit(model, stepSizeTime);
+
+
+            EXPECT_NO_THROW(simManager.StartSimulation());
+
+            // Stop and copy results
+            simManager.StopSimulation();
+
+            EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
+            EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
+
+            auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.005, 0.05);
+            size_t runNb = 0;
+            if((diff_glob != 0 || diff_loc != 0)) {
+                printf("[%zu] Diff glob %d / loc %d\n", runNb, diff_glob, diff_loc);
+                nCorrect = 0;
+            }
+            else if(diff_glob == 0 && diff_loc == 0){
+                nCorrect++;
+                printf("[%zu] Correct run #%zu\n", runNb, nCorrect);
+            }
+        }
+
+        size_t desPerTimestep = globState.globalHits.globalHits.nbDesorbed;
+        for(size_t runNb = 1; runNb < nRuns; ++runNb){
             // Modify argv with new duration
             /*auto newDur = std::ceil(Settings::simDuration + stepSizeTime);
             auto newDur_str = std::to_string((int)(newDur));
             argv[4] = newDur_str;*/
 
-            Initializer::initTimeLimit(model, stepSizeTime);
-
+            Initializer::initTimeLimit(model, stepSizeTime * 3);
+            size_t newDesLimit = globState.globalHits.globalHits.nbDesorbed + desPerTimestep;
+            Settings::desLimit.clear();
+            Settings::desLimit.emplace_back(newDesLimit);
+            Initializer::initDesLimit(model, globState);
 
             EXPECT_NO_THROW(simManager.StartSimulation());
 
@@ -402,7 +431,8 @@ namespace {
 
                 continue; // try with more desorptions
             }
-            else {
+            else if (diff_glob == 0 && diff_loc == 0 && nCorrect < correctStreak){
+                nCorrect++;
                 printf("[%zu] Correct run #%zu -- Done\n", runNb, nCorrect);
             }
 
