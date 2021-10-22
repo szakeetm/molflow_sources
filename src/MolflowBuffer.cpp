@@ -6,7 +6,7 @@
 #include <limits>
 
 WorkerParams::WorkerParams(){
-    accel_type = 0;
+    accel_type = 1;
     timeWindowSize = 1E-10; //Dirac-delta desorption pulse at t=0
     useMaxwellDistribution = true;
     calcConstantFlow = true;
@@ -27,8 +27,8 @@ OntheflySimulationParams::OntheflySimulationParams(){
     logFacetId = std::numeric_limits<size_t>::max();
     logLimit = 0;
 
-    benchmarkADS = true;
-    raySampling = true;
+    benchmarkADS = false;
+    raySampling = false;
 }
 
 void FacetHistogramBuffer::Resize(const HistogramParams& params){

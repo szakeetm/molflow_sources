@@ -331,7 +331,14 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                 else
                     particle.lastIntersected = -1;*/
 
-                found = model->accel.at(particle.structure)->Intersect(particle);
+                //found = model->accel.at(particle.structure)->Intersect(particle);
+                /*if(dynamic_cast<KdTreeAccel*>(model->accel.at(particle.structure).get())){
+                    found = dynamic_cast<KdTreeAccel*>(model->accel.at(particle.structure).get())->IntersectRope(particle);
+                    //assert(found == foundRope);
+                }
+                else{*/
+                    found = model->accel.at(particle.structure)->Intersect(particle);
+                //}
                 if(found){
 
 #if defined (OLD_HITLINK)
