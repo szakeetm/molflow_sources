@@ -1010,7 +1010,7 @@ std::tuple<int, int, int>
 GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuState &rhsGlobHit, double globThreshold,
                          double locThreshold) {
 
-    const double velocityThresholdFactor = 20.0;
+    const double velocityThresholdFactor = 40.0;
     //std::ofstream cmpFile("cmpFile.txt");
     size_t globalErrNb = 0;
     size_t facetErrNb = 0;

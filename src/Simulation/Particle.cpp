@@ -1625,7 +1625,7 @@ void Particle::Reset() {
     tmpState.Reset();
     lastHitFacet = nullptr;
     particle.lastIntersected = -1;
-    randomGenerator.SetSeed(randomGenerator.GetSeed());
+    //randomGenerator.SetSeed(randomGenerator.GetSeed());
     model = nullptr;
     transparentHitBuffer.clear();
     tmpFacetVars.clear();
