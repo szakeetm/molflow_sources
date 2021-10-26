@@ -105,14 +105,13 @@ add_subdirectory(CMake/molflow_sim)
 
 if(NOT NO_INTERFACE)
     add_subdirectory(CMake/molflow_win)
+    add_dependencies(molflow ziplib)
     IF (WIN32)
         add_subdirectory(CMake/png_zlib_win_library)
     ENDIF(WIN32)
     add_dependencies(molflow shared_simulator shared_interface compress)
 endif()
 
-
-add_dependencies(molflow ziplib)
 add_dependencies(molflowSim ziplib)
 
 
@@ -120,7 +119,7 @@ add_dependencies(molflowSim ziplib)
 add_dependencies(molflowCLI molflowSim)
 #ENDIF()
 
-option(USE_TESTS "Build the tests" ON)
+option(USE_TESTS "Build the tests" OFF)
 if(USE_TESTS)
     enable_testing()
     include(GoogleTest)

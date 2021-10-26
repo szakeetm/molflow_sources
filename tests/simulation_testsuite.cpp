@@ -6,7 +6,7 @@
 #include "gtest/gtest.h"
 #include "../src/Initializer.h"
 #include "../src/ParameterParser.h"
-
+#include <SettingsIO.h>
 //#define MOLFLOW_PATH ""
 
 #include <filesystem>
@@ -16,13 +16,40 @@
 #include <ctime>
 #include <functional>
 #include <Helper/Chronometer.h>
+#include <memory>
 #include <numeric>
 #include <cmath>
+#include <IO/WriterXML.h>
 
 #ifndef GIT_COMMIT_HASH
 #define GIT_COMMIT_HASH "?"
 #endif
 
+// helper class for flexible argument initialization
+class CharPVec {
+public:
+    CharPVec(){};
+    CharPVec(int size) : vec(size,nullptr){};
+    CharPVec(const std::vector<std::string>& svec) : vec(svec.size(),nullptr){
+        cpy(svec);
+    };
+    ~CharPVec(){clear();};
+    char** data(){return vec.data();}
+    void cpy(const std::vector<std::string>& svec){
+        if(vec.size() != svec.size()) vec.resize(svec.size());
+        for(int i = 0; i < vec.size(); ++i) {
+            vec[i] = new char[svec[i].size()+1];
+            std::strncpy(vec[i], svec[i].c_str(), std::size(svec[i]));
+            vec[i][svec[i].size()] = '\0';
+        }
+    }
+
+    void clear(){
+        for(auto& c : vec) delete[] c;
+    }
+    // member
+    std::vector<char*> vec;
+};
 namespace {
 
     class SimulationFixture : public ::testing::TestWithParam<std::string> {
@@ -134,58 +161,13 @@ namespace {
         }*/
     };
 
-    /*struct OldStats {
-        std::string commitHash;
-        double min{-1.0}, max{-1.0}, avg{-1.0}, med{-1.0};
-        friend std::istream& operator>>(std::istream& is, OldStats& r)       {
-
-            // Get current position
-            int len = is.tellg();
-            char line[256];
-            is.getline(line, 256);
-            // Return to position before "Read line".
-            is.seekg(len ,std::ios_base::beg);
-
-            size_t countDelimiter = 0;
-            size_t pos = 0;
-            while((line[pos] != '\n' && line[pos] != '\0') && pos < 256 && countDelimiter < 2){
-                if(line[pos] == ' ' || line[pos] == '\t') {
-                    ++countDelimiter;
-                }
-                ++pos;
-            }
-            if(countDelimiter >= 2) {
-                is >> r.commitHash >> r.max;
-                is.getline(line, 256);
-                return is;
-            }
-            else
-                return is >> r.commitHash >> r.max >> r.min >> r.med >> r.avg;
-        }
-
-        bool operator<(OldStats const& other) const {
-            return other.max < max;
-        }
-
-        //implicit conversion
-        operator Stats() const {
-            Stats newStat;
-            newStat.commitHash = commitHash;
-            newStat.max = max;
-            newStat.min = min;
-            newStat.avg = avg;
-            newStat.med = med;
-        return newStat; }
-
-    };*/
-
     TEST_P(SimulationFixture, PerformanceOkay) {
         std::string testFile = GetParam();
         printf("Filename: %s\n",testFile.c_str());
+        std::string timeRecFile = "./time_record_" + testFile.substr(0, testFile.size() - 4) + ".txt";
 
         {
             // Check if test was already successful, restarting the test suite will then skip the test
-            std::string timeRecFile = "./time_record_" + testFile.substr(0, testFile.size() - 4) + ".txt";
             if (std::filesystem::exists(timeRecFile)) {
                 std::ifstream ifs(timeRecFile);
                 std::vector<Stats> prevRun;
@@ -195,7 +177,7 @@ namespace {
                 currentCommit = currentCommit.substr(0, 8); // only first 8 hex digits
                 for (auto &run : prevRun) {
                     if (run.commitHash == currentCommit) {
-                        printf("Test was successfully run in a previous attemp, skip ...\n");
+                        printf("Test was successfully run in a previous attempt, skip ...\n");
                         GTEST_SKIP();
                     }
                 }
@@ -204,7 +186,7 @@ namespace {
 
         size_t nbFails = 0;
         bool fastEnough = false;
-        const size_t nRuns = 10;
+        const size_t nRuns = 5;
         const size_t keepNEntries = 20;
         const size_t runForTSec = 20;
         std::vector<double> perfTimes;
@@ -213,15 +195,20 @@ namespace {
             std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
             GlobalSimuState globState{};
 
-            std::vector<char *> argv = {"tester", "--config", "simulation.cfg", "--reset", "--file"};
+            /*std::vector<char *> argv = {"tester", "--config", "simulation.cfg", "--reset", "--file"};
             char * fileName_c = new char[testFile.size() + 1];
             std::copy(testFile.begin(), testFile.end(), fileName_c);
             fileName_c[testFile.size()] = '\0';
             argv.push_back(fileName_c);
-            char **args = argv.data();
-            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
-            Initializer::initFromFile(&simManager, model, &globState);
-            delete[] fileName_c;
+*/
+            std::vector<std::string> argv = {"tester", "--config", "simulation.cfg", "--reset", "--file"};
+            argv.push_back(testFile);
+            {
+                CharPVec argc_v(argv);
+                char **args = argc_v.data();
+                Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+                Initializer::initFromFile(&simManager, model, &globState);
+            }
 
             size_t oldHitsNb = globState.globalHits.globalHits.nbMCHit;
             size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
@@ -265,7 +252,7 @@ namespace {
 
             Stats currentRun;
             currentRun.commitHash = GIT_COMMIT_HASH;
-            currentRun.commitHash = currentRun.commitHash.substr(0,8); // only first 8 hex digits
+            currentRun.commitHash = currentRun.commitHash.substr(0, 8); // only first 8 hex digits
             currentRun.min = perfTimes.front();
             currentRun.max = perfTimes.back();
             double sum = std::accumulate(perfTimes.begin(), perfTimes.end(), 0.0);
@@ -274,56 +261,57 @@ namespace {
                              ? (perfTimes[perfTimes.size() / 2 - 1] + perfTimes[perfTimes.size() / 2]) / 2
                              : perfTimes[perfTimes.size() / 2];
 
-            std::cout << "Current Run: "<< currentRun << std::endl;
+            std::cout << "Current Run: " << currentRun << std::endl;
 
             std::vector<Stats> prevRun;
             std::string testName(::testing::UnitTest::GetInstance()->current_test_info()->name());
-            std::string timeRecFile = "./time_record_" + testFile.substr(0, testFile.size() - 4) + ".txt";
 
-            if(std::filesystem::exists(timeRecFile))
-            {
+            // If a record file for this test already exists
+            //  load the number 1 entry
+            if (std::filesystem::exists(timeRecFile)) {
                 std::ifstream ifs(timeRecFile);
-                prevRun.insert( prevRun.begin(), std::istream_iterator<Stats>(ifs), std::istream_iterator<Stats>() );
+                prevRun.insert(prevRun.begin(), std::istream_iterator<Stats>(ifs), std::istream_iterator<Stats>());
 
-                std::cout << "Prev Run: "<< prevRun.front() << std::endl;
+                std::cout << "Prev Run: " << prevRun.front() << std::endl;
                 // Check either, only if previous results could be found
                 fastEnough = currentRun.max >= 0.95 * prevRun.front().max;
 
-                if(!fastEnough && prevRun.front().med > 0.0) { // check to prevent free pass for old entries with only max
+                if (!fastEnough &&
+                    prevRun.front().med > 0.0) { // check to prevent free pass for old entries with only max
                     EXPECT_GE(currentRun.med, 0.95 * prevRun.front().med);
                     fastEnough = true;
                 }
-                if(!fastEnough && prevRun.front().med > 0.0 && currentRun.max > prevRun.front().med){
+                if (!fastEnough && prevRun.front().med > 0.0 && currentRun.max > prevRun.front().med) {
                     EXPECT_GE(currentRun.max, prevRun.front().med);
                     fastEnough = true;
                 }
-                if(!fastEnough) { // check to prevent free pass for old entries with only max
+                if (!fastEnough) { // check to prevent free pass for old entries with only max
                     EXPECT_GE(currentRun.max, 0.95 * prevRun.front().max);
-                    if(currentRun.max >= 0.95 * prevRun.front().max)
+                    if (currentRun.max >= 0.95 * prevRun.front().max)
                         fastEnough = true;
                 }
+            } else {
+                fastEnough = true; // force update
             }
 
             // Only enter a test if it meets any of the success criteria
-            if(fastEnough)
-            {
+            if (fastEnough) {
                 // Keep top 20 in list
                 prevRun.push_back(currentRun);
                 std::sort(prevRun.begin(), prevRun.end());
-                for(auto iter_o = prevRun.begin(); iter_o != prevRun.end(); ++iter_o) {
-                    for(auto iter_i = iter_o+1; iter_i != prevRun.end(); ++iter_i) { // "slower entry"
-                        if(iter_i->commitHash == iter_o->commitHash){
+                for (auto iter_o = prevRun.begin(); iter_o != prevRun.end(); ++iter_o) {
+                    for (auto iter_i = iter_o + 1; iter_i != prevRun.end(); ++iter_i) { // "slower entry"
+                        if (iter_i->commitHash == iter_o->commitHash) {
                             prevRun.erase(iter_i--); // remove outer entry, as it is slower
                         }
                     }
                 }
                 std::ofstream ofs(timeRecFile);
-                for(size_t lineN = 0; lineN < std::min(prevRun.size(), keepNEntries); ++lineN) {
-                    if(!prevRun[lineN].commitHash.empty())
+                for (size_t lineN = 0; lineN < std::min(prevRun.size(), keepNEntries); ++lineN) {
+                    if (!prevRun[lineN].commitHash.empty())
                         ofs << prevRun[lineN] << std::endl;
                 }
             }
-
         }
     }
 
@@ -332,8 +320,10 @@ namespace {
         std::string testFile = GetParam();
         printf("Filename: %s\n",testFile.c_str());
         size_t nbFails = 0;
+        size_t nCorrect = 0;
         bool fastEnough = false;
-        const size_t nRuns = 1;
+        const size_t nRuns = 20;
+        const size_t correctStreak = 3;
         const size_t keepNEntries = 20;
         const size_t runForTSec = 30;
         std::vector<double> perfTimes;
@@ -343,15 +333,13 @@ namespace {
         std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
         GlobalSimuState globState{};
 
+        std::vector<std::string> argv = {"tester", "--verbosity", "1",
+                                         "-t", std::to_string(runForTSec), "--file", testFile};
         {
-            std::vector<char *> argv = {"tester", "--verbosity", "1", "-t", "50", "--file"};
-            char *fileName_c = new char[testFile.size() + 1];
-            std::copy(testFile.begin(), testFile.end(), fileName_c);
-            fileName_c[testFile.size()] = '\0';
-            argv.push_back(fileName_c);
             {
-                char **args = argv.data();
-                if(Initializer::initFromArgv(argv.size(), (args), &simManager, model)){
+                CharPVec argc_v(argv);
+                char **args = argc_v.data();
+                if(-1 < Initializer::initFromArgv(argv.size(), (args), &simManager, model)){
                     exit(41);
                 }
                 if(Initializer::initFromFile(&simManager, model, &globState)){
@@ -367,53 +355,87 @@ namespace {
 
                 timeExpect += std::max(0.0, std::pow(std::log(std::sqrt(model->sh.nbFacet * sizeof(FacetHitBuffer))), 2.0) - 10.0);
                 timeExpect += std::max(0.0, 1.1* std::sqrt(std::exp(std::log(std::sqrt(model->size())))));
-                Settings::simDuration = std::min(50.0 + timeExpect, 180.0);
-
-                // Modify argv with new duration
-                auto newDur = std::to_string(Settings::simDuration);
-                char *newDur_c = new char[newDur.size() + 1];
-                std::copy(newDur.begin(), newDur.end(), newDur_c);
-                newDur_c[newDur.size()] = '\0';
-                argv[4] = newDur_c;
-
-                model.reset(new SimulationModel);
-                {
-                    char **args = argv.data();
-                    if(Initializer::initFromArgv(argv.size(), (args), &simManager, model)){
-                        exit(41);
-                    }
-                    if(Initializer::initFromFile(&simManager, model, &globState)){
-                        exit(42);
-                    }
-                }
-                delete[] newDur_c;
+                timeExpect *= 4.0;
+                Settings::simDuration = std::min(50.0 + timeExpect, 600.0);
             }
-            delete[] fileName_c;
         }
 
-        for(size_t runNb = 0; runNb < nRuns; ++runNb){
 
-            size_t oldHitsNb = globState.globalHits.globalHits.nbMCHit;
-            size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
+        GlobalSimuState oldState = globState;
+        globState.Reset();
+        size_t oldHitsNb = oldState.globalHits.globalHits.nbMCHit;
+        size_t oldDesNb = oldState.globalHits.globalHits.nbDesorbed;
+        EXPECT_NE(0, oldDesNb);
+        EXPECT_NE(0, oldHitsNb);
+        EXPECT_EQ(0, globState.globalHits.globalHits.nbDesorbed);
+        EXPECT_EQ(0, globState.globalHits.globalHits.nbMCHit);
 
-            GlobalSimuState oldState = globState;
-            globState.Reset();
+        int stepSizeTime = (int)(Settings::simDuration * ((double)(1.0) / nRuns));
+        Settings::simDuration = stepSizeTime;
 
-            EXPECT_NE(0, oldDesNb);
-            EXPECT_NE(0, oldHitsNb);
-            EXPECT_EQ(0, globState.globalHits.globalHits.nbDesorbed);
-            EXPECT_EQ(0, globState.globalHits.globalHits.nbMCHit);
+        // One test run with time, next with desorptions
+        {
+            Initializer::initTimeLimit(model, stepSizeTime);
+
+
             EXPECT_NO_THROW(simManager.StartSimulation());
 
             // Stop and copy results
             simManager.StopSimulation();
-            simManager.KillAllSimUnits();
-            simManager.ResetSimulations();
 
             EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
             EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
 
-            auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.01, 0.1);
+            auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.005, 0.05);
+            size_t runNb = 0;
+            if((diff_glob != 0 || diff_loc != 0)) {
+                printf("[%zu] Diff glob %d / loc %d\n", runNb, diff_glob, diff_loc);
+                nCorrect = 0;
+            }
+            else if(diff_glob == 0 && diff_loc == 0){
+                nCorrect++;
+                printf("[%zu] Correct run #%zu\n", runNb, nCorrect);
+            }
+        }
+
+        size_t desPerTimestep = globState.globalHits.globalHits.nbDesorbed;
+        for(size_t runNb = 1; runNb < nRuns; ++runNb){
+            // Modify argv with new duration
+            /*auto newDur = std::ceil(Settings::simDuration + stepSizeTime);
+            auto newDur_str = std::to_string((int)(newDur));
+            argv[4] = newDur_str;*/
+
+            Initializer::initTimeLimit(model, stepSizeTime * 3);
+            size_t newDesLimit = globState.globalHits.globalHits.nbDesorbed + desPerTimestep;
+            Settings::desLimit.clear();
+            Settings::desLimit.emplace_back(newDesLimit);
+            Initializer::initDesLimit(model, globState);
+
+            EXPECT_NO_THROW(simManager.StartSimulation());
+
+            // Stop and copy results
+            simManager.StopSimulation();
+
+            EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
+            EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
+
+            auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.005, 0.05);
+            if(runNb < nRuns - 1 && (diff_glob != 0 || diff_loc != 0)) {
+                printf("[%zu] Diff glob %d / loc %d\n", runNb, diff_glob, diff_loc);
+                nCorrect = 0;
+                continue; // try with more desorptions
+            }
+            else if(diff_glob == 0 && diff_loc == 0 && nCorrect < correctStreak - 1){
+                nCorrect++;
+                printf("[%zu] Correct run #%zu\n", runNb, nCorrect);
+
+                continue; // try with more desorptions
+            }
+            else if (diff_glob == 0 && diff_loc == 0 && nCorrect < correctStreak){
+                nCorrect++;
+                printf("[%zu] Correct run #%zu -- Done\n", runNb, nCorrect);
+            }
+
             EXPECT_EQ(0, diff_glob);
             EXPECT_EQ(0, diff_loc);
 
@@ -421,87 +443,113 @@ namespace {
                 fprintf(stderr, "[Warning] %d local differences found!\n", diff_loc);
             if(diff_fine > 0)
                 fprintf(stderr, "[Warning] %d differences on fine counters found!\n", diff_fine);
+            break;
+        }
 
-        };
+        simManager.KillAllSimUnits();
+        simManager.ResetSimulations();
+
     }
 
     TEST_P(ValidationFixture, ResultsWrong) {
         std::string testFile = GetParam();
         printf("Filename: %s\n",testFile.c_str());
-        size_t nbFails = 0;
+        size_t nbSuccess = 0;
         bool fastEnough = false;
-        const size_t nRuns = 1;
+        const size_t nRuns = 10;
         const size_t keepNEntries = 20;
         const size_t runForTSec = 30;
         std::vector<double> perfTimes;
 
-        SimulationManager simManager{};
-        simManager.interactiveMode = false;
+        std::shared_ptr<SimulationManager> simManager = std::make_shared<SimulationManager>();
+        simManager->interactiveMode = false;
         std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
         GlobalSimuState globState{};
 
         {
-            std::vector<char *> argv = {"tester", "--verbosity", "0", "-t", "5", "--file"};
-            char *fileName_c = new char[testFile.size() + 1];
-            std::copy(testFile.begin(), testFile.end(), fileName_c);
-            fileName_c[testFile.size()] = '\0';
-            argv.push_back(fileName_c);
-            {
-                char **args = argv.data();
-                if(Initializer::initFromArgv(argv.size(), (args), &simManager, model)){
-                    exit(41);
-                }
-                if(Initializer::initFromFile(&simManager, model, &globState)){
-                    exit(42);
-                }
+            std::vector<std::string> argv = {"tester", "--verbosity", "0", "-t", "120", "--file", testFile};
+            CharPVec argc_v(argv);
+            char **args = argc_v.data();
+            if(-1 < Initializer::initFromArgv(argv.size(), (args), simManager.get(), model)){
+                exit(41);
             }
-            delete[] fileName_c;
+            if(Initializer::initFromFile(simManager.get(), model, &globState)){
+                exit(42);
+            }
         }
+
+        // Keep oldstate from file for compari
+        GlobalSimuState oldState = globState;
+        size_t oldHitsNb = globState.globalHits.globalHits.nbMCHit;
+        size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
 
         // First check for valid initial states
         // - old state with results, new state without
         // - after simulation, new state with results
         // Next, check for errors due to short run time
         // - this will prevent false positives for ResultsOkay tests
-        {
-            size_t oldHitsNb = globState.globalHits.globalHits.nbMCHit;
-            size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
-
-            GlobalSimuState oldState = globState;
+        for(size_t runNb = 0; runNb < nRuns; ++runNb) {
+            if(runNb != 0) {
+                simManager = std::make_shared<SimulationManager>();
+                model = std::make_shared<SimulationModel>();
+                simManager->interactiveMode = false;
+                std::vector<std::string> argv = {"tester", "--verbosity", "0", "-t", "120", "--file", testFile};
+                CharPVec argc_v(argv);
+                char **args = argc_v.data();
+                if(-1 < Initializer::initFromArgv(argv.size(), (args), simManager.get(), model)){
+                    exit(41);
+                }
+                if(Initializer::initFromFile(simManager.get(), model, &globState)){
+                    exit(42);
+                }
+            }
             globState.Reset();
             Settings::desLimit.clear();
-            Settings::desLimit.emplace_back(1000);
+            Settings::desLimit.emplace_back(500);
             Initializer::initDesLimit(model, globState);
 
-            simManager.ResetHits();
-            simManager.InitSimulation(model, &globState);
+            //simManager.RefreshRNGSeed(false);
+            simManager->ResetHits();
+            simManager->InitSimulation(model, &globState);
 
             EXPECT_NE(0, oldDesNb);
             EXPECT_NE(0, oldHitsNb);
             EXPECT_EQ(0, globState.globalHits.globalHits.nbDesorbed);
             EXPECT_EQ(0, globState.globalHits.globalHits.nbMCHit);
 
-            EXPECT_NO_THROW(simManager.StartSimulation());
+            EXPECT_NO_THROW(simManager->StartSimulation());
 
             // Stop and copy results
-            simManager.StopSimulation();
-            simManager.KillAllSimUnits();
-            simManager.ResetSimulations();
+            simManager->StopSimulation();
 
             EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
             EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
 
-            auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.001, 0.001);
-            if(diff_glob > 0)
+            auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.005, 0.05);
+            if(diff_glob || diff_loc)
+                nbSuccess++;
+
+            //simManager.KillAllSimUnits();
+            //simManager.ResetSimulations();
+
+            /*if(diff_glob > 0)
                 EXPECT_NE(0, diff_glob);
             else
-                EXPECT_NE(0, diff_loc);
-            printf("[Warning] Geometry has %zu facets for %zu des!\n", model->facets.size(), globState.globalHits.globalHits.nbDesorbed);
+                EXPECT_NE(0, diff_loc);*/
+
+            if(diff_glob <= 0)
+                fprintf(stderr, "[%zu][Warning] No global differences found!\n", runNb);
             if(diff_loc <= 0)
-                fprintf(stderr, "[Warning] No local differences found!\n");
+                fprintf(stderr, "[%zu][Warning] No local differences found!\n", runNb);
             if(diff_fine <= 0)
-                fprintf(stderr, "[Warning] No differences on fine counters found!\n");
-        };
+                fprintf(stderr, "[%zu][Warning] No differences on fine counters found!\n", runNb);
+        }
+        if((double)nbSuccess / nRuns < 0.7) {
+            EXPECT_FALSE((double)nbSuccess / nRuns < 0.7);
+            fprintf(stderr, "[FAIL] Threshold for results of a low sample run was not crossed!\n"
+                            "%lu out of %lu runs were correct!\n"
+                            "This could be due to random nature of a MC simulation or a programmatic error leading to wrong conclusions.\n", nRuns-nbSuccess, nRuns);
+        }
     }
 
     // Tests factorial of positive numbers.
@@ -541,6 +589,233 @@ namespace {
         }
     }
 
+    TEST(InputOutput, DefaultInput) {
+
+        SimulationManager simManager;
+        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        GlobalSimuState globState{};
+
+        std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "test_lr1000_pipe.xml"};
+        {
+            CharPVec argc_v(argv);
+            char **args = argc_v.data();
+            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromFile(&simManager, model, &globState);
+        }
+        FlowIO::WriterXML writer;
+        pugi::xml_document newDoc;
+        std::string fullFileName = (std::filesystem::path(SettingsIO::outputPath) / SettingsIO::outputFile).string();
+        EXPECT_FALSE(std::filesystem::exists(fullFileName));
+        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_test_lr1000_pipe.xml";
+        auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile());
+        EXPECT_TRUE(testPath1.string() == testPath2.string());
+        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_test_lr1000_pipe.xml") != std::string::npos);
+        newDoc.load_file(fullFileName.c_str());
+        writer.SaveGeometry(newDoc, model, false, true);
+        writer.SaveSimulationState(fullFileName, model, globState);
+        EXPECT_TRUE(SettingsIO::outputPath.find("Results_") != std::string::npos);
+        EXPECT_TRUE(std::filesystem::exists(SettingsIO::outputPath));
+        EXPECT_TRUE(std::filesystem::exists(fullFileName));
+        EXPECT_TRUE(SettingsIO::outputFile == "out_test_lr1000_pipe.xml");
+
+        if(!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
+            std::filesystem::remove_all(SettingsIO::workPath);
+    }
+
+    TEST(InputOutput, Outputpath) {
+
+        SimulationManager simManager;
+        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        GlobalSimuState globState{};
+
+        // generate hash name for tmp working file
+        std::string outPath = "TPath_"+std::to_string(std::hash<time_t>()(time(nullptr)));
+        std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "test_lr1000_pipe.xml",
+                                    "--outputPath", outPath};
+        {
+            CharPVec argc_v(argv);
+            char **args = argc_v.data();
+            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromFile(&simManager, model, &globState);
+        }
+        FlowIO::WriterXML writer;
+        pugi::xml_document newDoc;
+        std::string fullFileName = (std::filesystem::path(SettingsIO::outputPath) / SettingsIO::outputFile).string();
+        EXPECT_FALSE(std::filesystem::exists(fullFileName));
+        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_test_lr1000_pipe.xml";
+        auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile());
+        EXPECT_TRUE(testPath1.string() == testPath2.string());
+        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_test_lr1000_pipe.xml") != std::string::npos);
+        newDoc.load_file(fullFileName.c_str());
+        writer.SaveGeometry(newDoc, model, false, true);
+        writer.SaveSimulationState(fullFileName, model, globState);
+        EXPECT_FALSE(SettingsIO::outputPath.find("Results_") != std::string::npos);
+        EXPECT_TRUE(SettingsIO::outputPath == outPath);
+        EXPECT_TRUE(std::filesystem::exists(SettingsIO::outputPath));
+        EXPECT_TRUE(std::filesystem::exists(fullFileName));
+        EXPECT_TRUE(SettingsIO::outputFile == "out_test_lr1000_pipe.xml");
+
+        if(!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
+            std::filesystem::remove_all(SettingsIO::workPath);
+    }
+
+    TEST(InputOutput, OutputpathAndFile) {
+
+        SimulationManager simManager;
+        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        GlobalSimuState globState{};
+
+        std::string outPath = "TPath_"+std::to_string(std::hash<time_t>()(time(nullptr)));
+        std::string outFile = "tFile_"+std::to_string(std::hash<time_t>()(time(nullptr)))+".xml";
+        std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "test_lr1000_pipe.xml",
+                                    "--outputPath", outPath, "-o", outFile};
+        {
+            CharPVec argc_v(argv);
+            char **args = argc_v.data();
+            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromFile(&simManager, model, &globState);
+        }
+
+        FlowIO::WriterXML writer;
+        pugi::xml_document newDoc;
+        std::string fullFileName = (std::filesystem::path(SettingsIO::outputPath) / SettingsIO::outputFile).string();
+        EXPECT_FALSE(std::filesystem::exists(fullFileName));
+        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_test_lr1000_pipe.xml";
+        auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile());
+        EXPECT_TRUE(testPath1.string() == testPath2.string());
+        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_test_lr1000_pipe.xml") != std::string::npos);
+        newDoc.load_file(fullFileName.c_str());
+        writer.SaveGeometry(newDoc, model, false, true);
+        writer.SaveSimulationState(fullFileName, model, globState);
+        EXPECT_FALSE(SettingsIO::outputPath.find("Results_") != std::string::npos);
+        EXPECT_TRUE(SettingsIO::outputPath == outPath);
+        EXPECT_TRUE(SettingsIO::outputFile == outFile);
+        EXPECT_TRUE(std::filesystem::exists(SettingsIO::outputPath));
+        EXPECT_TRUE(std::filesystem::exists(fullFileName));
+
+        if(!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
+            std::filesystem::remove_all(SettingsIO::workPath);
+    }
+
+    TEST(InputOutput, Outputfile) {
+
+        SimulationManager simManager;
+        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        GlobalSimuState globState{};
+
+        std::string outFile = "tFile_"+std::to_string(std::hash<time_t>()(time(nullptr)))+".xml";
+        std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "test_lr1000_pipe.xml",
+                                         "-o", outFile};
+        {
+            CharPVec argc_v(argv);
+            char **args = argc_v.data();
+            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromFile(&simManager, model, &globState);
+        }
+        FlowIO::WriterXML writer;
+        pugi::xml_document newDoc;
+        std::string fullFileName = (std::filesystem::path(SettingsIO::outputPath) / SettingsIO::outputFile).string();
+        EXPECT_FALSE(std::filesystem::exists(fullFileName));
+        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_test_lr1000_pipe.xml";
+        auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile());
+        EXPECT_TRUE(testPath1.string() == testPath2.string());
+        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_test_lr1000_pipe.xml") != std::string::npos);
+        newDoc.load_file(fullFileName.c_str());
+        writer.SaveGeometry(newDoc, model, false, true);
+        writer.SaveSimulationState(fullFileName, model, globState);
+        EXPECT_TRUE(SettingsIO::outputPath.find("Results_") != std::string::npos);
+        EXPECT_TRUE(SettingsIO::outputFile == outFile);
+        EXPECT_TRUE(std::filesystem::exists(SettingsIO::outputPath));
+        EXPECT_TRUE(std::filesystem::exists(fullFileName));
+
+        // cleanup
+        if(!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
+            std::filesystem::remove_all(SettingsIO::workPath);
+    }
+
+    TEST(InputOutput, OutputfileWithPath) {
+
+        SimulationManager simManager;
+        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        GlobalSimuState globState{};
+
+        EXPECT_FALSE(SettingsIO::workPath.find("gtest_relpath") != std::string::npos);
+        EXPECT_FALSE(std::filesystem::exists("gtest_relpath/gtest_out.xml"));
+
+        std::string outPath = "TPath_"+std::to_string(std::hash<time_t>()(time(nullptr)));
+        std::string outFile = "tFile_"+std::to_string(std::hash<time_t>()(time(nullptr)))+".xml";
+        std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "test_lr1000_pipe.xml",
+                                        "-o", outPath+"/"+outFile};
+        {
+            CharPVec argc_v(argv);
+            char **args = argc_v.data();
+            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromFile(&simManager, model, &globState);
+        }
+        FlowIO::WriterXML writer;
+        pugi::xml_document newDoc;
+        std::string fullFileName = SettingsIO::outputFile;
+        EXPECT_FALSE(std::filesystem::exists(fullFileName));
+        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_test_lr1000_pipe.xml";
+        auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile());
+        EXPECT_TRUE(testPath1.string() == testPath2.string());
+        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_test_lr1000_pipe.xml") != std::string::npos);
+        EXPECT_TRUE(std::filesystem::exists(SettingsIO::workPath));
+        EXPECT_TRUE(SettingsIO::outputPath.empty());
+        newDoc.load_file(fullFileName.c_str());
+        writer.SaveGeometry(newDoc, model, false, true);
+        writer.SaveSimulationState(fullFileName, model, globState);
+        EXPECT_TRUE(std::filesystem::exists(fullFileName));
+        EXPECT_TRUE(SettingsIO::workPath.find(outPath) != std::string::npos);
+        EXPECT_TRUE(SettingsIO::outputFile.find(outFile) != std::string::npos);
+
+        if(!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
+            std::filesystem::remove_all(SettingsIO::workPath);
+    }
+
+    TEST(InputOutput, OutputpathAndOutputfileWithPath) {
+
+        SimulationManager simManager;
+        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        GlobalSimuState globState{};
+
+        EXPECT_FALSE(SettingsIO::workPath.find("gtest_relpath") != std::string::npos);
+        EXPECT_FALSE(std::filesystem::exists("gtest_relpath/gtest_out.xml"));
+
+        std::string outPath = "TPath_"+std::to_string(std::hash<time_t>()(time(nullptr)));
+        std::string outPathF = "TFPath_"+std::to_string(std::hash<time_t>()(time(nullptr)));
+        std::string outFile = "tFile_"+std::to_string(std::hash<time_t>()(time(nullptr)))+".xml";
+        std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "test_lr1000_pipe.xml",
+                                         "--outputPath", outPath, "-o", outPathF+"/"+outFile};
+        {
+            CharPVec argc_v(argv);
+            char **args = argc_v.data();
+            Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+            Initializer::initFromFile(&simManager, model, &globState);
+        }
+        FlowIO::WriterXML writer;
+        pugi::xml_document newDoc;
+        std::string fullFileName = SettingsIO::workPath+"/"+SettingsIO::outputFile;
+        EXPECT_FALSE(std::filesystem::exists(fullFileName));
+        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_test_lr1000_pipe.xml";
+        auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile());
+        EXPECT_TRUE(testPath1.string() == testPath2.string());
+        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_test_lr1000_pipe.xml") != std::string::npos);
+        EXPECT_TRUE(std::filesystem::exists(SettingsIO::workPath));
+        EXPECT_TRUE(SettingsIO::outputPath == outPath);
+        EXPECT_TRUE(SettingsIO::workPath == outPath);
+        newDoc.load_file(fullFileName.c_str());
+        writer.SaveGeometry(newDoc, model, false, true);
+        writer.SaveSimulationState(fullFileName, model, globState);
+        EXPECT_TRUE(std::filesystem::exists(fullFileName));
+        EXPECT_TRUE(SettingsIO::workPath.find(outPath) != std::string::npos);
+        EXPECT_TRUE(SettingsIO::outputFile.find(outPathF) != std::string::npos);
+        EXPECT_TRUE(SettingsIO::outputFile.find(outFile) != std::string::npos);
+
+        if(!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
+            std::filesystem::remove_all(SettingsIO::workPath);
+    }
+
     TEST(ParameterParsing, SweepFile) {
 
         // generate hash name for tmp working file
@@ -551,14 +826,20 @@ namespace {
                    "facet.3.sticking=10.01\n"
                    "facet.50-90.outgassing=42e5\n"
                    "facet.100.temperature=290.92\n"
-                   "simulation.mass=42.42";
+                   "simulation.mass=42.42\n"
+                   "simulation.enableDecay=1\n"
+                   "simulation.halfLife=42.42";
         outfile.close();
         ParameterParser::ParseFile(paramFile, std::vector<SelectionGroup>());
 
         WorkerParams wp;
         ASSERT_FALSE(std::abs(wp.gasMass - 42.42) < 1e-5);
+        ASSERT_FALSE(wp.enableDecay);
+        ASSERT_FALSE(std::abs(wp.halfLife - 42.42) < 1e-5);
         ParameterParser::ChangeSimuParams(wp);
         ASSERT_TRUE(std::abs(wp.gasMass - 42.42) < 1e-5);
+        ASSERT_TRUE(wp.enableDecay);
+        ASSERT_TRUE(std::abs(wp.halfLife - 42.42) < 1e-5);
 
 
        std::vector<std::shared_ptr<SubprocessFacet>> facets(200);

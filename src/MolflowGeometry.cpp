@@ -2127,7 +2127,7 @@ void MolflowGeometry::ImportDesorption_SYN(
 
 			if (f->selected) {
 				f->ogMap.outgassingFileRatioU = xdims[i] / f->sh.U.Norme();
-				f->sh.outgassingFileRatioV = ydims[i] / f->sh.V.Norme();
+				f->ogMap.outgassingFileRatioV = ydims[i] / f->sh.V.Norme();
 				try {
 					std::vector<double>(f->ogMap.outgassingMapWidth*f->ogMap.outgassingMapHeight).swap(f->ogMap.outgassingMap);
 				}
@@ -3841,4 +3841,17 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState 
     //mApp->formula_ptr->convergenceValues[formulaId];
 
 	return true;
+}
+
+bool MolflowGeometry::InitOldStruct(SimulationModel* model){
+    for(int i= 0; i < std::min((int)model->structures.size(),(int)MAX_SUPERSTR); ++i){
+        strName[i] = new char[std::min((int)model->structures[i].strName.size(),(int)256)];
+        strFileName[i] = new char[std::min((int)model->structures[i].strFileName.size(),(int)256)];
+        std::strncpy(strName[i], model->structures[i].strName.c_str(), std::min((int)model->structures[i].strName.size(),(int)256));
+        std::strncpy(strFileName[i], model->structures[i].strFileName.c_str(), std::min((int)model->structures[i].strFileName.size(),(int)256));
+        strName[i][std::min((int)model->structures[i].strName.size(),(int)256)] = '\0';
+        strFileName[i][std::min((int)model->structures[i].strFileName.size(),(int)256)] = '\0';
+    }
+
+    return true;
 }

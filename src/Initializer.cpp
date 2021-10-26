@@ -67,7 +67,7 @@ int Initializer::parseCommands(int argc, char **argv) {
     app.add_option("-j,--threads", Settings::nbThreads, "# Threads to be deployed");
     app.add_option("-t,--time", Settings::simDuration, "Simulation duration in seconds");
     app.add_option("-d,--ndes", limits, "Desorption limit for simulation end");
-    app.add_option("-f,--file", SettingsIO::inputFile, "Required input file (XML only)")
+    app.add_option("-f,--file", SettingsIO::inputFile, "Required input file (XML/ZIP only)")
             ->required()
             ->check(CLI::ExistingFile);
     CLI::Option *optOfile = app.add_option("-o,--output", SettingsIO::outputFile,
@@ -83,7 +83,7 @@ int Initializer::parseCommands(int argc, char **argv) {
                    "Direct parameter input for ad hoc change of the given geometry parameters");
     app.add_option("--verbosity", Settings::verbosity, "Restrict console output to different levels");
 
-    app.add_flag("--loadAutosave", Settings::loadAutosave, "Whether autoSave_ file should be used if exists");
+    app.add_flag("--loadAutosave", Settings::loadAutosave, "Whether autosave_ file should be used if exists");
     app.add_flag("-r,--reset", Settings::resetOnStart, "Resets simulation status loaded from file");
     app.add_flag("--verbose", verbose, "Verbose console output (all levels)");
     CLI::Option *optOverwrite = app.add_flag("--overwrite", SettingsIO::overwrite,
@@ -104,15 +104,14 @@ int Initializer::parseCommands(int argc, char **argv) {
     if (Settings::simDuration == 0 && Settings::desLimit.empty()) {
         Log::console_error("No end criterion has been set!\n");
         Log::console_error(" Either use: -t or -d\n");
-        return 1;
+        return 0;
     }
 
-    return 0;
+    return -1;
 }
 
 int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManager,
                               const std::shared_ptr<SimulationModel>& model) {
-    Log::console_header(1, "Commence: Initialising!\n");
 
 #if defined(WIN32) || defined(__APPLE__)
     setlocale(LC_ALL, "C");
@@ -122,10 +121,12 @@ int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManag
 
     initDefaultSettings();
 
-    int err = 0;
-    if ((err = parseCommands(argc, argv))) {
+    int err = 1;
+    if (-1 < (err = parseCommands(argc, argv))) {
         return err;
     }
+
+    Log::console_header(1, "Commence: Initialising!\n");
 
     simManager->nbThreads = Settings::nbThreads;
     simManager->useCPU = true;
@@ -141,7 +142,7 @@ int Initializer::initFromArgv(int argc, char **argv, SimulationManager *simManag
     Log::console_msg_master(4, "Active cores: %zu\n", simManager->nbThreads);
     Log::console_msg_master(4, "Running simulation for: %zu sec\n", Settings::simDuration);
 
-    return 0;
+    return -1;
 }
 
 int Initializer::initFromFile(SimulationManager *simManager, const std::shared_ptr<SimulationModel>& model,
@@ -178,6 +179,7 @@ int Initializer::initFromFile(SimulationManager *simManager, const std::shared_p
         return 1;
     }
 
+    simManager->simulationChanged = true;
     Log::console_msg_master(2, "Forwarding model to simulation units!\n");
     try {
         if(simManager->InitSimulation(model, globState))
@@ -305,6 +307,18 @@ int Initializer::initDesLimit(const std::shared_ptr<SimulationModel>& model, Glo
     return 0;
 }
 
+int Initializer::initTimeLimit(const std::shared_ptr<SimulationModel>& model, double time) {
+    if (!model->m.try_lock()) {
+        return 1;
+    }
+
+    model->otfParams.timeLimit = time;
+    Settings::simDuration = time;
+
+    model->m.unlock();
+    return 0;
+}
+
 // TODO: Combine with loadXML function
 std::string Initializer::getAutosaveFile() {
     // Create copy of input file for autosave
@@ -318,13 +332,13 @@ std::string Initializer::getAutosaveFile() {
             std::search(autoSave.begin(), autoSave.begin() + autoSavePrefix.size(), autoSavePrefix.begin(),
                         autoSavePrefix.end()) == autoSave.begin()) {
             // TODO: Revisit wether input/output is acceptable here
-            autoSave = std::filesystem::path(SettingsIO::workFile).filename().string();
+            autoSave = std::filesystem::path(SettingsIO::workPath).append(SettingsIO::workFile).filename().string();
             SettingsIO::inputFile = autoSave.substr(autoSavePrefix.size(), autoSave.size() - autoSavePrefix.size());
             Log::console_msg_master(2, "Using autosave file %s for %s\n", autoSave.c_str(),
                                     SettingsIO::inputFile.c_str());
         } else {
             // create autosavefile from copy of original
-            autoSave = std::filesystem::path(SettingsIO::outputPath).append(autoSavePrefix).concat(autoSave).string();
+            autoSave = std::filesystem::path(SettingsIO::workPath).append(autoSavePrefix).concat(autoSave).string();
             try {
                 std::filesystem::copy_file(SettingsIO::workFile, autoSave,
                                            std::filesystem::copy_options::overwrite_existing);
@@ -335,6 +349,29 @@ std::string Initializer::getAutosaveFile() {
     }
 
     return autoSave;
+}
+
+// WIP: Intersect Polys
+double getPolyIntersectionArea(const std::vector<Vector3d> poly1, const std::vector<Vector3d> poly2){
+
+    /*
+    Create an empty polygon as P
+    Add all corners of Polygon1 that is inside Polygon2 to P
+    Add all corners of Polygon2 that is inside Polygon1 to P
+    Add all intersection points to P
+    Order all points in the P counter-clockwise.
+     */
+
+
+    return 0.0;
+}
+
+// WIP: calculate cell areas for textureCellIncrements
+bool getTextureMesh(SimulationModel* model) {
+
+    //
+
+    return true;
 }
 
 /**
@@ -367,6 +404,7 @@ int Initializer::initSimModel(std::shared_ptr<SimulationModel> model) {
         std::vector<double> textIncVector;
         // Add surface elements area (reciprocal)
         if (sFac->sh.isTextured) {
+            auto meshAreas = sFac->InitTextureMesh();
             textIncVector.resize(sFac->sh.texHeight * sFac->sh.texWidth);
 
             double rw = sFac->sh.U.Norme() / (double) (sFac->sh.texWidth_precise);
@@ -374,12 +412,13 @@ int Initializer::initSimModel(std::shared_ptr<SimulationModel> model) {
             double area = rw * rh;
             area *= (sFac->sh.is2sided) ? 2.0 : 1.0;
             size_t add = 0;
+
             for (size_t j = 0; j < sFac->sh.texHeight; j++) {
                 for (size_t i = 0; i < sFac->sh.texWidth; i++) {
-                    if (area > 0.0) {
+                    if (meshAreas[add] < 0.0) {
                         textIncVector[add] = 1.0 / area;
                     } else {
-                        textIncVector[add] = 0.0;
+                        textIncVector[add] = 1.0 / (meshAreas[add] * ((sFac->sh.is2sided) ? 2.0 : 1.0));
                     }
                     add++;
                 }

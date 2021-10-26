@@ -6,7 +6,7 @@
 //---------------------------------------------------
 static const std::string appName = "Molflow";
 static const int appVersionId = 2900; //Compared with available updates. Global variable, so rebuild whole solution if changed.
-static const std::string appVersionName = "2.9 beta";
+static const std::string appVersionName = "2.9.0";
 //---------------------------------------------------
 #if defined(_DEBUG)
 static const std::string appTitle = "Molflow+ debug version (Compiled " __DATE__ " " __TIME__ ")";
