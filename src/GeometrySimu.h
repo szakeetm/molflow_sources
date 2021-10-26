@@ -138,6 +138,7 @@ struct SubprocessFacet : public Facet {
 
     //void RegisterTransparentPass(SubprocessFacet *facet); //Allows one shared Intersect routine between MolFlow and Synrad
 
+    std::vector<double> InitTextureMesh();
 };
 
 // Local simulation structure

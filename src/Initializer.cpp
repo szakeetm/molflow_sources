@@ -351,6 +351,29 @@ std::string Initializer::getAutosaveFile() {
     return autoSave;
 }
 
+// WIP: Intersect Polys
+double getPolyIntersectionArea(const std::vector<Vector3d> poly1, const std::vector<Vector3d> poly2){
+
+    /*
+    Create an empty polygon as P
+    Add all corners of Polygon1 that is inside Polygon2 to P
+    Add all corners of Polygon2 that is inside Polygon1 to P
+    Add all intersection points to P
+    Order all points in the P counter-clockwise.
+     */
+
+
+    return 0.0;
+}
+
+// WIP: calculate cell areas for textureCellIncrements
+bool getTextureMesh(SimulationModel* model) {
+
+    //
+
+    return true;
+}
+
 /**
 * \brief Prepares data structures for use in simulation
 * \return error code: 0=no error, 1=error
@@ -381,6 +404,7 @@ int Initializer::initSimModel(std::shared_ptr<SimulationModel> model) {
         std::vector<double> textIncVector;
         // Add surface elements area (reciprocal)
         if (sFac->sh.isTextured) {
+            auto meshAreas = sFac->InitTextureMesh();
             textIncVector.resize(sFac->sh.texHeight * sFac->sh.texWidth);
 
             double rw = sFac->sh.U.Norme() / (double) (sFac->sh.texWidth_precise);
@@ -389,56 +413,12 @@ int Initializer::initSimModel(std::shared_ptr<SimulationModel> model) {
             area *= (sFac->sh.is2sided) ? 2.0 : 1.0;
             size_t add = 0;
 
-            for (size_t j = 0; j < sFac->sh.texHeight - 1; j++) {
-                for (size_t i = 0; i < sFac->sh.texWidth - 1; i++) {
-                    if (area > 0.0) {
+            for (size_t j = 0; j < sFac->sh.texHeight; j++) {
+                for (size_t i = 0; i < sFac->sh.texWidth; i++) {
+                    if (meshAreas[add] < 0.0) {
                         textIncVector[add] = 1.0 / area;
                     } else {
-                        textIncVector[add] = 0.0;
-                    }
-                    add++;
-                }
-                // last element in width column
-                {
-                    double width_remain = sFac->sh.texWidth_precise - ((sFac->sh.texWidth - 1) * rw);
-                    //for (size_t i = 0; i < sFac->sh.texWidth; i++) {
-                    double last_area = width_remain * rh;
-                    last_area *= (sFac->sh.is2sided) ? 2.0 : 1.0;
-
-                    if (last_area > 0.0) {
-                        textIncVector[add] = 1.0 / last_area;
-                    } else {
-                        textIncVector[add] = 0.0;
-                    }
-                    add++;
-                }
-            }
-
-            // last height row
-            {
-                double height_remain = sFac->sh.texHeight_precise - ((double)(sFac->sh.texHeight - 1) * rh);
-                //for (size_t i = 0; i < sFac->sh.texWidth; i++) {
-                double last_area = rw * height_remain;
-                last_area *= (sFac->sh.is2sided) ? 2.0 : 1.0;
-                for (size_t i = 0; i < sFac->sh.texWidth - 1; i++) {
-                    if (area > 0.0) {
-                        textIncVector[add] = 1.0 / area;
-                    } else {
-                        textIncVector[add] = 0.0;
-                    }
-                    add++;
-                }
-                // last element
-                {
-                    double width_remain = sFac->sh.texWidth_precise - ((double)(sFac->sh.texWidth - 1) * rw);
-                    //for (size_t i = 0; i < sFac->sh.texWidth; i++) {
-                    last_area = width_remain * height_remain;
-                    last_area *= (sFac->sh.is2sided) ? 2.0 : 1.0;
-
-                    if (last_area > 0.0) {
-                        textIncVector[add] = 1.0 / last_area;
-                    } else {
-                        textIncVector[add] = 0.0;
+                        textIncVector[add] = 1.0 / (meshAreas[add] * ((sFac->sh.is2sided) ? 2.0 : 1.0));
                     }
                     add++;
                 }
