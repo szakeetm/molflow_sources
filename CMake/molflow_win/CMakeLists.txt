@@ -109,6 +109,8 @@ set(SRC_FILES
         ../../src/IO/InterfaceXML.h
         ${HEADER_DIR_2}/FlowMPI.h
         ${HEADER_DIR_2}/FlowMPI.cpp
+        ${HEADER_DIR_2}/IntersectAABB_shared.cpp
+
         )
 
 # Add executable to build.
@@ -152,9 +154,9 @@ if(MSVC)
             )
 
     # Add Windows Console output
-    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    #if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE ${LINK_FLAGS}")
-    endif()
+    #endif()
 
     # set the path to the library folder
     target_link_directories(${PROJECT_NAME} PRIVATE ${LINK_DIR_1})
