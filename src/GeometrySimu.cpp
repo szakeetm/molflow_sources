@@ -10,6 +10,7 @@
 #include <Simulation/IDGeneration.h>
 #include <Helper/Chronometer.h>
 #include <Helper/ConsoleLogger.h>
+#include <Polygon.h>
 #include "GeometrySimu.h"
 #include "IntersectAABB_shared.h" // include needed for recursive delete of AABBNODE
 
@@ -94,6 +95,102 @@ size_t SubprocessFacet::InitializeProfile(const size_t &nbMoments)
     else
         profileSize = 0;
     return profileSize;
+}
+
+std::vector<double> SubprocessFacet::InitTextureMesh()
+{
+    GLAppPolygon P1, P2;
+    double sx, sy;
+    double iw = 1.0 / (double)sh.texWidth_precise;
+    double ih = 1.0 / (double)sh.texHeight_precise;
+    double rw = sh.U.Norme() * iw;
+    double rh = sh.V.Norme() * ih;
+    double fullCellArea = iw*ih;
+
+    std::vector<Vector2d>(4).swap(P1.pts);
+    //P1.sign = 1;
+    P2.pts = vertices2;
+    //P2.sign = -sign;
+
+    std::vector<double> interCellArea;
+    interCellArea.resize(sh.texWidth * sh.texHeight, -1.0); //will shrink at the end
+
+    for (size_t j = 0;j < sh.texHeight;j++) {
+        sy = (double)j;
+        for (size_t i = 0;i < sh.texWidth;i++) {
+            sx = (double)i;
+
+            bool allInside = false;
+            double u0 = sx * iw;
+            double v0 = sy * ih;
+            double u1 = (sx + 1.0) * iw;
+            double v1 = (sy + 1.0) * ih;
+            //mesh[i + j*wp.texWidth].elemId = -1;
+
+            if (sh.nbIndex <= 4) {
+
+                // Optimization for quad and triangle
+                allInside = IsInPoly(Vector2d(u0,v0), vertices2)
+                            && IsInPoly(Vector2d(u0, v1), vertices2)
+                            && IsInPoly(Vector2d(u1, v0), vertices2)
+                            && IsInPoly(Vector2d(u1, v1), vertices2);
+
+            }
+
+            if (!allInside) {
+                double area{};
+
+                // Intersect element with the facet (facet boundaries)
+                P1.pts[0] = {u0, v0};
+                P1.pts[1] = {u1, v0};
+                P1.pts[2] = {u1, v1};
+                P1.pts[3] = {u0, v1};
+
+                std::vector<bool>visible(P2.pts.size());
+                std::fill(visible.begin(), visible.end(), true);
+                auto [A,center,vList] = GetInterArea(P1, P2, visible);
+                if (!IsZero(A)) {
+
+                    if (A > (fullCellArea + 1e-10)) {
+
+                        // Polyon intersection error !
+                        // Switch back to brute force
+                        auto [bfArea,center] = GetInterAreaBF(P2, Vector2d(u0, v0), Vector2d(u1, v1));
+                        bool fullElem = IsZero(fullCellArea - bfArea);
+                        if (!fullElem) {
+                            interCellArea[i + j*sh.texWidth] = (bfArea*(rw*rh) / (iw*ih));
+                        }
+                        else {
+                            interCellArea[i + j*sh.texWidth] = -1.0;
+                        }
+
+                        //cellprop.full = IsZero(fullCellArea - A);
+
+                    }
+                    else {
+
+                        bool fullElem = IsZero(fullCellArea - A);
+                        if (!fullElem) {
+                            // !! P1 and P2 are in u,v coordinates !!
+                            interCellArea[i + j*sh.texWidth] = (A*(rw*rh) / (iw*ih));
+                        }
+                        else {
+                            interCellArea[i + j*sh.texWidth] = -1.0;
+                        }
+
+                    }
+
+                }
+                else interCellArea[i + j*sh.texWidth] = -2.0; //zero element
+
+            }
+            else {  //All indide and triangle or quad
+                interCellArea[i + j*sh.texWidth] = -1.0;
+            }
+        }
+    }
+
+    return interCellArea;
 }
 
 size_t SubprocessFacet::InitializeTexture(const size_t &nbMoments)
