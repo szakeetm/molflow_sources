@@ -725,19 +725,19 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
                     r.origin = ray.pos;
                     r.direction = ray.dir;
                     auto stats = ((KdTreeAccel *) acc.get())->IntersectT(r);
-                    tree_stats.nti += stats.nti;
-                    tree_stats.ntl += stats.ntl;
-                    tree_stats.nit += stats.nit;
+                    tree_stats.nTraversedInner += stats.nTraversedInner;
+                    tree_stats.nTraversedLeaves += stats.nTraversedLeaves;
+                    tree_stats.nIntersections += stats.nIntersections;
                     tree_stats.timeTrav += stats.timeTrav;
                     tree_stats.timeInt += stats.timeInt;
-                    tree_stats_max.nti = std::max(stats.nti, tree_stats_max.nti);
-                    tree_stats_max.ntl = std::max(stats.ntl, tree_stats_max.ntl);
-                    tree_stats_max.nit = std::max(stats.nit, tree_stats_max.nit);
+                    tree_stats_max.nTraversedInner = std::max(stats.nTraversedInner, tree_stats_max.nTraversedInner);
+                    tree_stats_max.nTraversedLeaves = std::max(stats.nTraversedLeaves, tree_stats_max.nTraversedLeaves);
+                    tree_stats_max.nIntersections = std::max(stats.nIntersections, tree_stats_max.nIntersections);
                 }
-                Log::console_msg_master(4, "SAH*KD Tree stats:\n%lf | %lf | %lf\n", (double) tree_stats.nti / hits.size(), (double) tree_stats.ntl / hits.size(), (double) tree_stats.nit / hits.size());
-                Log::console_msg_master(4, "SAH*KD Tree max:\n%zu | %zu | %zu\n", tree_stats_max.nti, tree_stats.ntl, tree_stats.nit);
-                Log::console_msg_master(4, "SAH*KD cost:\n%lf | %lf\n", tree_stats.timeTrav / (double) tree_stats.nti, tree_stats.timeInt / (double) tree_stats.nit);
-                isect_cost = std::ceil((tree_stats.timeTrav / (double)tree_stats.nti) / (tree_stats.timeInt / (double)tree_stats.nit));
+                Log::console_msg_master(4, "SAH*KD Tree stats:\n%lf | %lf | %lf\n", (double) tree_stats.nTraversedInner / hits.size(), (double) tree_stats.nTraversedLeaves / hits.size(), (double) tree_stats.nIntersections / hits.size());
+                Log::console_msg_master(4, "SAH*KD Tree max:\n%zu | %zu | %zu\n", tree_stats_max.nTraversedInner, tree_stats_max.nTraversedLeaves, tree_stats_max.nIntersections);
+                Log::console_msg_master(4, "SAH*KD cost:\n%lf | %lf\n", tree_stats.timeTrav / (double) tree_stats.nTraversedInner, tree_stats.timeInt / (double) tree_stats.nIntersections);
+                isect_cost = std::ceil((tree_stats.timeTrav / (double)tree_stats.nTraversedInner) / (tree_stats.timeInt / (double)tree_stats.nIntersections));
             }
             this->accel.clear();
         }
@@ -816,19 +816,19 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
                 r.origin = ray.pos;
                 r.direction = ray.dir;
                 auto stats = ((KdTreeAccel *) acc.get())->IntersectT(r);
-                tree_stats.nti += stats.nti;
-                tree_stats.ntl += stats.ntl;
-                tree_stats.nit += stats.nit;
+                tree_stats.nTraversedInner += stats.nTraversedInner;
+                tree_stats.nTraversedLeaves += stats.nTraversedLeaves;
+                tree_stats.nIntersections += stats.nIntersections;
                 tree_stats.timeTrav += stats.timeTrav;
                 tree_stats.timeInt += stats.timeInt;
-                tree_stats_max.nti = std::max(stats.nti, tree_stats_max.nti);
-                tree_stats_max.ntl = std::max(stats.ntl, tree_stats_max.ntl);
-                tree_stats_max.nit = std::max(stats.nit, tree_stats_max.nit);
+                tree_stats_max.nTraversedInner = std::max(stats.nTraversedInner, tree_stats_max.nTraversedInner);
+                tree_stats_max.nTraversedLeaves = std::max(stats.nTraversedLeaves, tree_stats_max.nTraversedLeaves);
+                tree_stats_max.nIntersections = std::max(stats.nIntersections, tree_stats_max.nIntersections);
             }
 
-            Log::console_msg_master(4, "KD Tree stats:\n%lf | %lf | %lf\n", (double) tree_stats.nti / hits.size(), (double) tree_stats.ntl / hits.size(), (double) tree_stats.nit / hits.size());
-            Log::console_msg_master(4, "KD Tree max:\n%zu | %zu | %zu\n", tree_stats_max.nti, tree_stats.ntl, tree_stats.nit);
-            Log::console_msg_master(4, "KD cost:\n%lf | %lf\n", tree_stats.timeTrav / (double) tree_stats.nti, tree_stats.timeInt / (double) tree_stats.nit);
+            Log::console_msg_master(4, "KD Tree stats:\n%lf | %lf | %lf\n", (double) tree_stats.nTraversedInner / hits.size(), (double) tree_stats.nTraversedLeaves / hits.size(), (double) tree_stats.nIntersections / hits.size());
+            Log::console_msg_master(4, "KD Tree max:\n%zu | %zu | %zu\n", tree_stats_max.nTraversedInner, tree_stats_max.nTraversedLeaves, tree_stats_max.nIntersections);
+            Log::console_msg_master(4, "KD cost:\n%lf | %lf\n", tree_stats.timeTrav / (double) tree_stats.nTraversedInner, tree_stats.timeInt / (double) tree_stats.nIntersections);
         }
     // old_bvb
 

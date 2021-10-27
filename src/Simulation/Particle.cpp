@@ -265,12 +265,14 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
 #else
 //std::vector<HitLink> hits;
         //hits.reserve(4);
-        particle.pay = nullptr;
+        //particle.pay = nullptr;
         particle.tMax = 1.0e99;
         if(lastHitFacet)
             particle.lastIntersected = lastHitFacet->globalId;
         else
             particle.lastIntersected = -1;
+
+        if(particle.pay) ((RopePayload*)particle.pay)->lastNode = nullptr;
         particle.rng = &randomGenerator;
 
         //particle.hits = &hits;
@@ -284,6 +286,7 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                     returnVal = false; // desorp limit reached
                     break;
                 }
+                if(particle.pay) ((RopePayload*)particle.pay)->lastNode = nullptr;
                 insertNewParticle = false;
                 --remainingDes;
             }
@@ -331,14 +334,58 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                 else
                     particle.lastIntersected = -1;*/
 
+                // WIP: Compare
+                Ray ray;
+                ray.direction = particle.direction;
+                ray.origin = particle.origin;
+                ray.lastIntersected = particle.lastIntersected;
+                ray.structure = particle.structure;
+                ray.tMax = particle.tMax;
+                ray.rng = new MersenneTwister;
+                *ray.rng = *particle.rng;
+
+                Ray ray2;
+                ray2.direction = particle.direction;
+                ray2.origin = particle.origin;
+                ray2.lastIntersected = particle.lastIntersected;
+                ray2.structure = particle.structure;
+                ray2.tMax = particle.tMax;
+                ray2.rng = new MersenneTwister;
+                *ray2.rng = *particle.rng;
+                ray2.pay = new RopePayload;
+
+
+                bool testFound = false;
+                if(dynamic_cast<KdTreeAccel*>(model->accel.at(particle.structure).get())){
+                    testFound = dynamic_cast<KdTreeAccel*>(model->accel.at(particle.structure).get())->IntersectTrav(ray);
+                    //assert(found == foundRope);
+                }
+                delete ray.rng;
                 //found = model->accel.at(particle.structure)->Intersect(particle);
                 /*if(dynamic_cast<KdTreeAccel*>(model->accel.at(particle.structure).get())){
                     found = dynamic_cast<KdTreeAccel*>(model->accel.at(particle.structure).get())->IntersectRope(particle);
                     //assert(found == foundRope);
                 }
                 else{*/
-                    found = model->accel.at(particle.structure)->Intersect(particle);
+                const KdAccelNode* tmp = nullptr;
+                if(dynamic_cast<KdTreeAccel*>(model->accel.at(particle.structure).get())){
+                    if(dynamic_cast<KdTreeAccel*>(model->accel.at(particle.structure).get())->hasRopes)
+                        tmp = ((RopePayload*)particle.pay)->lastNode;
+                }
+                ((RopePayload*)ray2.pay)->lastNode = tmp;
+                found = model->accel.at(particle.structure)->Intersect(particle);
                 //}
+
+                if(found != testFound
+                || particle.transparentHits.size() != ray.transparentHits.size()
+                || particle.hardHit.hit.colDistTranspPass != ray.hardHit.hit.colDistTranspPass){
+                    std::cerr << "Verification error\n";
+                    found = model->accel.at(particle.structure)->Intersect(ray2);
+                }
+                delete ray2.rng;
+
+
+
                 if(found){
 
 #if defined (OLD_HITLINK)
@@ -386,6 +433,10 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                                 tmpFacetVars[hit.hitId] = hit.hit;
                                 RegisterTransparentPass(tpFacet);
                                 alreadyHit.insert(tpFacet->globalId);
+                            }
+                            // TODO: Test for ropes
+                            else if(hit.hit.colDistTranspPass < tmpFacetVars[hit.hitId].colDistTranspPass) {
+                                tmpFacetVars[hit.hitId] = hit.hit;
                             }
                         }
                         else {
@@ -580,6 +631,7 @@ bool Particle::StartFromSource(Ray& ray) {
     double sumA = 0.0;
     size_t i = 0, j = 0;
     int nbTry = 0;
+    if(particle.pay) ((RopePayload*)particle.pay)->lastNode = nullptr;
 
     // Check end of simulation
     /*if (model->otfParams.desorptionLimit > 0) {
