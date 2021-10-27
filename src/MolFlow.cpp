@@ -2126,6 +2126,7 @@ void MolFlow::LoadConfig() {
 		f->ReadKeyword("dirShow"); f->ReadKeyword(":");
 		for (auto & view : viewer)
 			view->showDir = f->ReadInt();
+		f->ReadKeyword("showTP"); f->ReadKeyword(":");
 		f->ReadKeyword("dirNorme"); f->ReadKeyword(":");
 		geom->SetNormeRatio((float)f->ReadDouble());
 		f->ReadKeyword("dirAutoNormalize"); f->ReadKeyword(":");
@@ -2190,6 +2191,8 @@ void MolFlow::LoadConfig() {
 		geom->SetCenterNorme(f->ReadInt());
 		f->ReadKeyword("normeratio"); f->ReadKeyword(":");
 		geom->SetNormeRatio((float)(f->ReadDouble()));
+		for (auto& view : viewer)
+			view->showTP = f->ReadInt();
 		f->ReadKeyword("autoSaveFrequency"); f->ReadKeyword(":");
 		autoSaveFrequency = f->ReadDouble();
 		f->ReadKeyword("autoSaveSimuOnly"); f->ReadKeyword(":");
@@ -2339,7 +2342,7 @@ void MolFlow::SaveConfig() {
 		f->Write("autonorme:"); f->Write(geom->GetAutoNorme(), "\n");
 		f->Write("centernorme:"); f->Write(geom->GetCenterNorme(), "\n");
 		f->Write("normeratio:"); f->Write((double)(geom->GetNormeRatio()), "\n");
-
+		WRITEI("showTP", showTP); f->Write("\n");
 		f->Write("autoSaveFrequency:"); f->Write(autoSaveFrequency, "\n");
 		f->Write("autoSaveSimuOnly:"); f->Write(autoSaveSimuOnly, "\n");
 		f->Write("checkForUpdates:"); f->Write(/*checkForUpdates*/ 0, "\n"); //Deprecated
