@@ -2356,6 +2356,7 @@ void MolFlow::SaveConfig() {
 		f->Write("lowFluxCutoff:"); f->Write(worker.model->otfParams.lowFluxCutoff, "\n");
 		f->Write("leftHandedView:"); f->Write(leftHandedView, "\n");
         f->Write("highlightNonplanarFacets:"); f->Write(highlightNonplanarFacets, "\n");
+		f->Write("highlightSelection:"); f->Write(highlightSelection, "\n");
         f->Write("useOldXMLFormat:"); f->Write(useOldXMLFormat, "\n");
     }
 	catch(std::exception &err) {
