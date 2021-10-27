@@ -2126,7 +2126,6 @@ void MolFlow::LoadConfig() {
 		f->ReadKeyword("dirShow"); f->ReadKeyword(":");
 		for (auto & view : viewer)
 			view->showDir = f->ReadInt();
-		f->ReadKeyword("showTP"); f->ReadKeyword(":");
 		f->ReadKeyword("dirNorme"); f->ReadKeyword(":");
 		geom->SetNormeRatio((float)f->ReadDouble());
 		f->ReadKeyword("dirAutoNormalize"); f->ReadKeyword(":");
@@ -2191,6 +2190,7 @@ void MolFlow::LoadConfig() {
 		geom->SetCenterNorme(f->ReadInt());
 		f->ReadKeyword("normeratio"); f->ReadKeyword(":");
 		geom->SetNormeRatio((float)(f->ReadDouble()));
+		f->ReadKeyword("showTP"); f->ReadKeyword(":");
 		for (auto& view : viewer)
 			view->showTP = f->ReadInt();
 		f->ReadKeyword("autoSaveFrequency"); f->ReadKeyword(":");
