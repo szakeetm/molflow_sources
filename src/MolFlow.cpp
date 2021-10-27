@@ -2190,9 +2190,6 @@ void MolFlow::LoadConfig() {
 		geom->SetCenterNorme(f->ReadInt());
 		f->ReadKeyword("normeratio"); f->ReadKeyword(":");
 		geom->SetNormeRatio((float)(f->ReadDouble()));
-		f->ReadKeyword("showTP"); f->ReadKeyword(":");
-		for (auto& view : viewer)
-			view->showTP = f->ReadInt();
 		f->ReadKeyword("autoSaveFrequency"); f->ReadKeyword(":");
 		autoSaveFrequency = f->ReadDouble();
 		f->ReadKeyword("autoSaveSimuOnly"); f->ReadKeyword(":");
@@ -2224,6 +2221,9 @@ void MolFlow::LoadConfig() {
         highlightSelection = f->ReadInt();
         f->ReadKeyword("useOldXMLFormat"); f->ReadKeyword(":");
         useOldXMLFormat = f->ReadInt();
+		f->ReadKeyword("showTP"); f->ReadKeyword(":");
+		for (auto& view : viewer)
+			view->showTP = f->ReadInt();
 	}
 	catch (...) {
 		/*std::ostringstream tmp;
@@ -2342,7 +2342,7 @@ void MolFlow::SaveConfig() {
 		f->Write("autonorme:"); f->Write(geom->GetAutoNorme(), "\n");
 		f->Write("centernorme:"); f->Write(geom->GetCenterNorme(), "\n");
 		f->Write("normeratio:"); f->Write((double)(geom->GetNormeRatio()), "\n");
-		WRITEI("showTP", showTP); f->Write("\n");
+		
 		f->Write("autoSaveFrequency:"); f->Write(autoSaveFrequency, "\n");
 		f->Write("autoSaveSimuOnly:"); f->Write(autoSaveSimuOnly, "\n");
 		f->Write("checkForUpdates:"); f->Write(/*checkForUpdates*/ 0, "\n"); //Deprecated
@@ -2358,6 +2358,7 @@ void MolFlow::SaveConfig() {
         f->Write("highlightNonplanarFacets:"); f->Write(highlightNonplanarFacets, "\n");
 		f->Write("highlightSelection:"); f->Write(highlightSelection, "\n");
         f->Write("useOldXMLFormat:"); f->Write(useOldXMLFormat, "\n");
+		WRITEI("showTP", showTP);
     }
 	catch(std::exception &err) {
 		GLMessageBox::Display(err.what(), "Error saving config file", GLDLG_OK, GLDLG_ICONWARNING);
