@@ -9,6 +9,8 @@ set(PROJECT_NAME molflow)
 # Folders files
 set(CPP_DIR_1 ../../src)
 set(UI_DIR ../../src/Interface)
+set(IO_DIR ../../src/IO)
+
 set(HEADER_DIR_1 ../../src)
 set(HEADER_DIR_2 ../../src_shared)
 #set(HEADER_DIR_3 ../../src_shared/GLApp)
@@ -80,11 +82,23 @@ endif(NOT MSVC)
 set(SRC_FILES
         ${UI_DIR}/FacetAdvParams.cpp
         ${UI_DIR}/FacetDetails.cpp
-        ${CPP_DIR_1}/FormulaEvaluator_MF.cpp
         ${UI_DIR}/GeometryRender.cpp
         ${UI_DIR}/GeometryViewer.cpp
         ${UI_DIR}/GlobalSettings.cpp
         ${UI_DIR}/ImportDesorption.cpp
+        ${UI_DIR}/MomentsEditor.cpp
+        ${UI_DIR}/Movement.cpp
+        ${UI_DIR}/OutgassingMapWindow.cpp
+        ${UI_DIR}/ParameterEditor.cpp
+        ${UI_DIR}/PressureEvolution.cpp
+        ${UI_DIR}/ProfilePlotter.cpp
+        ${UI_DIR}/TexturePlotter.cpp
+        ${UI_DIR}/TextureScaling.cpp
+        ${UI_DIR}/TimeSettings.cpp
+        ${UI_DIR}/TimewisePlotter.cpp
+        ${UI_DIR}/Viewer3DSettings.cpp
+
+        ${CPP_DIR_1}/FormulaEvaluator_MF.cpp
         ${CPP_DIR_1}/MolFlow.cpp
         ${CPP_DIR_1}/MolflowBuffer.cpp
         ${CPP_DIR_1}/GeometrySimu.cpp
@@ -92,21 +106,12 @@ set(SRC_FILES
         ${CPP_DIR_1}/MolflowGeometry.cpp
         ${CPP_DIR_1}/MolflowTypes.cpp
         ${CPP_DIR_1}/MolflowWorker.cpp
-        ${UI_DIR}/MomentsEditor.cpp
-        ${UI_DIR}/Movement.cpp
-        ${UI_DIR}/OutgassingMapWindow.cpp
         ${CPP_DIR_1}/Parameter.cpp
-        ${UI_DIR}/ParameterEditor.cpp
-        ${UI_DIR}/PressureEvolution.cpp
-        ${UI_DIR}/ProfilePlotter.cpp
-        ${UI_DIR}/TexturePlotter.cpp
-        ${UI_DIR}/TextureScaling.cpp
         ${CPP_DIR_1}/TimeMoments.cpp
-        ${UI_DIR}/TimeSettings.cpp
-        ${UI_DIR}/TimewisePlotter.cpp
-        ${UI_DIR}/Viewer3DSettings.cpp
-        ../../src/IO/InterfaceXML.cpp
-        ../../src/IO/InterfaceXML.h
+
+        ${IO_DIR}/InterfaceXML.cpp
+        ${IO_DIR}/InterfaceXML.h
+
         ${HEADER_DIR_2}/FlowMPI.h
         ${HEADER_DIR_2}/FlowMPI.cpp
         ${HEADER_DIR_2}/IntersectAABB_shared.cpp
@@ -117,7 +122,7 @@ set(SRC_FILES
 if(WIN32)
     add_executable(${PROJECT_NAME} WIN32 ${SRC_FILES})
 else()
-    add_executable(${PROJECT_NAME} ${SRC_FILES})
+    add_executable(${PROJECT_NAME} ${SRC_FILES} )
 endif()
 
 include(${CMAKE_HOME_DIRECTORY}/src_shared/SetOpenMP.cmake)
@@ -166,14 +171,14 @@ if(MSVC)
     find_package(OpenGL REQUIRED)
     # 1. link against external libs
     target_link_libraries(${PROJECT_NAME} PRIVATE
-            bzip2.lib
+            #bzip2.lib
             #libcurl_a_x64.lib
             SDL2.lib
             SDL2main.lib
             #libgsl.lib
             #libgslcblas.lib
-            lzma.lib
-            ZipLib.lib
+            #lzma.lib
+            #ZipLib.lib
             #zlib.lib
             opengl32#.lib
             user32.lib
@@ -258,5 +263,5 @@ elseif(NOT MSVC)
 
     target_link_libraries(${PROJECT_NAME} PRIVATE pugixml sdl_savepng truncatedgaussian)
     target_link_libraries(${PROJECT_NAME} PRIVATE nativefiledialog)
-    target_link_libraries(${PROJECT_NAME} PRIVATE ziplib)
+    #target_link_libraries(${PROJECT_NAME} PRIVATE ziplib)
 endif()

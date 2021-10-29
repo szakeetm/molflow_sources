@@ -89,7 +89,7 @@ endif ()
         /W4>)]]
 if(NOT MSVC)
     add_compile_options(
-            -Wall -Wextra -pedantic
+            -W -Wextra -pedantic
             #-Werror -Wno-error=uninitialized
         $<$<CONFIG:RELEASE>:-O3>
         $<$<CONFIG:DEBUG>:-O0>
@@ -101,7 +101,7 @@ if(NOT MSVC)
 else()
     #/WX
     add_compile_options(
-        /W4
+        /W1
     )
     add_compile_options(
         "$<$<CONFIG:Release>:/GL;/O2;/EHsc>"
