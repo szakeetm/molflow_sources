@@ -304,6 +304,10 @@ public:
     static std::vector<double>
     ComputeHitChances(const std::vector<TestRay> &battery, const std::vector<std::shared_ptr<Facet>> &primitives);
     int ComputeHitStats(const std::vector<TestRay> &battery);
+
+    bool StartFromSource(Ray &ray);
+
+    void PerformBounce(Ray &ray, SubprocessFacet *iFacet);
 };
 
 /*!
