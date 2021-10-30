@@ -69,7 +69,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 typedef float ACFLOAT;
 typedef std::pair<std::string,double> UserMoment;
-typedef std::pair<double,double> Moment;
+typedef std::pair<double,double> Moment; //mid-time,window_size
 typedef std::pair<double,double> ID_p;
 typedef std::pair<double,double> CDF_p;
 
