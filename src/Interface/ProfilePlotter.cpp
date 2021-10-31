@@ -755,7 +755,7 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
 	case MSG_COMBO:
 		if (src == normCombo) {
 			int normMode = normCombo->GetSelectedIndex();
-			correctForGas->SetVisible(normMode == 3 || normMode == 4);
+			correctForGas->SetVisible(normMode == 4 || normMode == 5);
 			refreshViews();
 		}
 		else if(src == profCombo){
