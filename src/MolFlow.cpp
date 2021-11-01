@@ -388,12 +388,12 @@ int MolFlow::OneTimeSceneInit()
 
 	facetReLabel = new GLLabel("Profile:");
 	facetPanel->Add(facetReLabel);
-	facetRecType = new GLCombo(0);
-	facetRecType->SetSize(profileTypes.size());
+	facetProfileCombo = new GLCombo(0);
+	facetProfileCombo->SetSize(profileTypes.size());
 	for (size_t i = 0; i < profileTypes.size(); i++) {
-		facetRecType->SetValueAt(i, profileTypes[i].first.c_str()); //First element is the description in Molflow, second the description with units in profile plotter
+		facetProfileCombo->SetValueAt(i, profileTypes[i].first.c_str()); //First element is the description in Molflow, second the description with units in profile plotter
 	}
-	facetPanel->Add(facetRecType);
+	facetPanel->Add(facetProfileCombo);
 
 	facetAdvParamsBtn = new GLButton(0, "<< Adv");
 	facetPanel->Add(facetAdvParamsBtn);
@@ -484,7 +484,7 @@ void MolFlow::PlaceComponents() {
 	facetPanel->SetCompBounds(facetArea, 110, cursorY, 82, 18);
 
 	facetPanel->SetCompBounds(facetReLabel, 7, cursorY += 25, 60, 18);
-	facetPanel->SetCompBounds(facetRecType, 65, cursorY, 130, 18);
+	facetPanel->SetCompBounds(facetProfileCombo, 65, cursorY, 130, 18);
 
 	facetPanel->SetCompBounds(facetAdvParamsBtn, 5, cursorY += 25, 48, 18);
 	facetPanel->SetCompBounds(facetDetailsBtn, 56, cursorY, 45, 18);
@@ -568,8 +568,8 @@ void MolFlow::ClearFacetParams() {
 	facetDesType->SetEditable(false);
 	facetDesTypeN->SetText("");
 	facetDesTypeN->SetEditable(false);
-	facetRecType->SetSelectedValue("");
-	facetRecType->SetEditable(false);
+	facetProfileCombo->SetSelectedValue("");
+	facetProfileCombo->SetEditable(false);
 }
 
 // Name: ApplyFacetParams()
@@ -709,7 +709,7 @@ void MolFlow::ApplyFacetParams() {
 	}
 
 	// Record (profile) type
-	int rType = facetRecType->GetSelectedIndex(); // -1 if "..."
+	int rType = facetProfileCombo->GetSelectedIndex(); // -1 if "..."
 
 	// 2sided
 	int is2Sided = facetSideType->GetSelectedIndex();
@@ -866,7 +866,7 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 		if (temperatureE) facetTemperature->SetText(f0->sh.temperature); else facetTemperature->SetText("...");
 		if (is2sidedE) facetSideType->SetSelectedIndex(f0->sh.is2sided); else facetSideType->SetSelectedValue("...");
 		if (desorbTypeNE) facetDesTypeN->SetText(f0->sh.desorbTypeN); else facetDesTypeN->SetText("...");
-		if (recordE) facetRecType->SetSelectedIndex(f0->sh.profileType); else facetRecType->SetSelectedValue("...");
+		if (recordE) facetProfileCombo->SetSelectedIndex(f0->sh.profileType); else facetProfileCombo->SetSelectedValue("...");
 
 		if (selectedFacets.size() == 1) {
 			facetPumping->SetEditable(true);
@@ -945,7 +945,7 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 		facetTemperature->SetEditable(true);
 		facetSideType->SetEditable(true);
 		facetDesType->SetEditable(true);
-		facetRecType->SetEditable(true);
+		facetProfileCombo->SetEditable(true);
 		facetApplyBtn->SetEnabled(false);
 	}
 	else {
@@ -1790,7 +1790,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			facetFIAreaLabel->SetEnabled(hasDesorption);
 			facetDesTypeN->SetEditable(facetDesType->GetSelectedIndex() == 3);
 		}
-		else if (src == facetRecType || src == facetSideType) {
+		else if (src == facetProfileCombo || src == facetSideType) {
 			facetApplyBtn->SetEnabled(true);
 		}
 		break;
