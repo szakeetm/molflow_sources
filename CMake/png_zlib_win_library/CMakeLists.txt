@@ -101,7 +101,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 ############################################################
 
 # Preprocessor definitions
-if(CMAKE_BUILD_TYPE MATCHES Debug|RelWithDebInfo)
+#[[if(CMAKE_BUILD_TYPE MATCHES Debug|RelWithDebInfo)
     target_compile_definitions(${PROJECT_NAME} PRIVATE)
     if(MSVC)
         target_compile_options(${PROJECT_NAME} PRIVATE  /W3 /MDd /Od /EHsc)
@@ -116,7 +116,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
     if(MSVC)
         target_compile_options(${PROJECT_NAME} PRIVATE  /W3 /GL /Oi /Gy /EHsc)
     endif()
-endif()
+endif()]]
 
 ########### Link & Dependencies ############################
 # Add project dependencies and Link to project             #

@@ -89,7 +89,12 @@ endif ()
         /W4>)]]
 if(NOT MSVC)
     add_compile_options(
-            -W -Wextra -pedantic
+            #-w
+            -Wno-write-strings -Wno-unused-result -Wno-conversion
+            -Wno-inconsistent-missing-override -Wno-unused-private-field
+            -Wno-reorder -Wno-tautological-undefined-compare
+            -Wno-unused-variable -Wno-unused-value
+            #-Wextra -pedantic
             #-Werror -Wno-error=uninitialized
         $<$<CONFIG:RELEASE>:-O3>
         $<$<CONFIG:DEBUG>:-O0>
