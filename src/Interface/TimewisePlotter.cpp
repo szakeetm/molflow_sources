@@ -248,8 +248,8 @@ void TimewisePlotter::refreshViews() {
 	// Lock during update
 	bool buffer_old = worker->GetHits();
 	if (!buffer_old) return;
-	std::string displayMode = displayModeCombo->GetSelectedValue(); //selecting by index is error-prone
-	
+	profileDisplayModes displayMode = (profileDisplayModes)displayModeCombo->GetSelectedIndex(); //Choosing by index is error-prone
+
 
 	Geometry *geom = worker->GetGeometry();
 
