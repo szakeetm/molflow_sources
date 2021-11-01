@@ -252,7 +252,7 @@ void TimewisePlotter::refreshViews() {
 	// Lock during update
 	bool buffer_old = worker->GetHits();
 	if (!buffer_old) return;
-	int displayMode = normCombo->GetSelectedIndex();
+	std::string displayMode = normCombo->GetSelectedValue(); //selecting by index is error-prone
 	
 
 	Geometry *geom = worker->GetGeometry();
@@ -277,13 +277,12 @@ void TimewisePlotter::refreshViews() {
 		const std::vector<ProfileSlice>& profile = worker->globState.facetStates[profCombo->GetUserValueAt(idx)].momentResults[v->userData1].profile;
 		//ProfileSlice *profilePtr = (ProfileSlice *)(buffer + f->sh.hitOffset + facetHitsSize + v->userData1*sizeof(ProfileSlice)*PROFILE_SIZE);
 		if (worker->globalHitCache.globalHits.nbDesorbed > 0) {
-			switch (displayMode) {
-			case 0: //Raw data
+
+			if (displayMode == "None (raw data)") {
 				for (int j = 0; j < PROFILE_SIZE; j++)
 					v->Add((double)j, profile[j].countEquiv, false);
-				break;
-
-			case 1: //Pressure
+			}
+			else if (displayMode=="Pressure (mbar)") {
 				scaleY = 1.0 / (f->GetArea() * 1E-4 / (double)PROFILE_SIZE) * worker->model->wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
 
 				scaleY *= worker->GetMoleculesPerTP(v->userData1);
@@ -292,16 +291,23 @@ void TimewisePlotter::refreshViews() {
 
 				for (int j = 0; j < PROFILE_SIZE; j++)
 					v->Add((double)j, profile[j].sum_v_ort*scaleY, false);
-				break;
-			case 2: //Particle density
+			}
+			else if (displayMode =="Impingement rate (1/m\262/sec)" ) {
+				scaleY = 1.0 / (f->GetArea() * 1E-4 / (double)PROFILE_SIZE);
+				scaleY *= worker->GetMoleculesPerTP(worker->displayedMoment);
+
+				for (int j = 0; j < PROFILE_SIZE; j++)
+					v->Add((double)j, profile[j].countEquiv * scaleY, false);
+			}
+			else if (displayMode == "Density (1/m3)") {
 				scaleY =  1.0 / ((f->GetArea() * 1E-4) / (double)PROFILE_SIZE);
 				scaleY *= worker->GetMoleculesPerTP(v->userData1);
 				scaleY *= f->DensityCorrection();
 
 				for (int j = 0; j < PROFILE_SIZE; j++)
 					v->Add((double)j, profile[j].sum_1_per_ort_velocity*scaleY, false);
-				break;
-			case 3: {//Velocity
+			}
+			else if (displayMode == "Speed (m/s)") {
 				double sum = 0.0;
 				double val;
 				double scaleX = f->sh.maxSpeed / (double)PROFILE_SIZE;
@@ -317,8 +323,8 @@ void TimewisePlotter::refreshViews() {
 				}
 				for (int j = 0; j < PROFILE_SIZE; j++)
 					v->Add((double)j*scaleX, values[j] / sum, false);
-				break; }
-			case 4: {//Angle
+			}
+			else if (displayMode == "Angle (deg)") {
 				double sum = 0.0;
 				double val;
 				double scaleX = 90.0 / (double)PROFILE_SIZE;
@@ -334,8 +340,8 @@ void TimewisePlotter::refreshViews() {
 				}
 				for (int j = 0; j < PROFILE_SIZE; j++)
 					v->Add((double)j*scaleX, values[j] / sum, false);
-				break; }
-			case 5: //To 1 (max value)
+			}
+			else if (displayMode == "Normalize to 1") {
 				double max = 1.0;
 				for (int j = 0; j < PROFILE_SIZE; j++)
 				{
@@ -344,7 +350,6 @@ void TimewisePlotter::refreshViews() {
 				scaleY = 1.0 / max;
 				for (int j = 0; j < PROFILE_SIZE; j++)
 					v->Add((double)j, profile[j].countEquiv*scaleY, false);
-				break;
 			}
 		}
 		v->CommitChange();
