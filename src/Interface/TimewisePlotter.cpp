@@ -85,18 +85,18 @@ TimewisePlotter::TimewisePlotter() :GLWindow() {
 	normLabel = new GLLabel("Normalize");
 	Add(normLabel);
 
-	normCombo = new GLCombo(0);
-	normCombo->SetEditable(true);
-	normCombo->SetSize(6);
-	normCombo->SetValueAt(0, "None (raw data)");
-	normCombo->SetValueAt(1, "Pressure (mbar)");
-	normCombo->SetValueAt(2, "Density (1/m3)");
-	normCombo->SetValueAt(3, "Speed (m/s)");
-	normCombo->SetValueAt(4, "Angle (deg)");
-	normCombo->SetValueAt(5, "Normalize to 1");
+	displayModeCombo = new GLCombo(0);
+	displayModeCombo->SetEditable(true);
+	displayModeCombo->SetSize(6);
+	displayModeCombo->SetValueAt(0, "None (raw data)");
+	displayModeCombo->SetValueAt(1, "Pressure (mbar)");
+	displayModeCombo->SetValueAt(2, "Density (1/m3)");
+	displayModeCombo->SetValueAt(3, "Speed (m/s)");
+	displayModeCombo->SetValueAt(4, "Angle (deg)");
+	displayModeCombo->SetValueAt(5, "Normalize to 1");
 
-	normCombo->SetSelectedIndex(1);
-	Add(normCombo);
+	displayModeCombo->SetSelectedIndex(1);
+	Add(displayModeCombo);
 
 	momLabel = new GLLabel("Displayed moments:");
 	Add(momLabel);
@@ -150,7 +150,7 @@ void TimewisePlotter::SetBounds(int x, int y, int w, int h) {
 	profCombo->SetBounds(7, h - 70, 117, 19);
 	selButton->SetBounds(295, h - 70, 80, 19);
 	normLabel->SetBounds(130, h - 68, 50, 19);
-	normCombo->SetBounds(185, h - 70, 105, 19);
+	displayModeCombo->SetBounds(185, h - 70, 105, 19);
 	correctForGas->SetBounds(w - 340, h - 70, 150, 19);
 
 	constantFlowToggle->SetBounds(w - 180, h - 70, 120, 19);
@@ -252,7 +252,7 @@ void TimewisePlotter::refreshViews() {
 	// Lock during update
 	bool buffer_old = worker->GetHits();
 	if (!buffer_old) return;
-	std::string displayMode = normCombo->GetSelectedValue(); //selecting by index is error-prone
+	std::string displayMode = displayModeCombo->GetSelectedValue(); //selecting by index is error-prone
 	
 
 	Geometry *geom = worker->GetGeometry();
@@ -472,8 +472,8 @@ void TimewisePlotter::ProcessMessage(GLComponent *src, int message) {
 			Reset();
 			}*/
 	case MSG_COMBO:
-		if (src == normCombo) {
-			int normMode = normCombo->GetSelectedIndex();
+		if (src == displayModeCombo) {
+			int normMode = displayModeCombo->GetSelectedIndex();
 			correctForGas->SetVisible(normMode == 3 || normMode == 4);
 			refreshViews();
 		}
