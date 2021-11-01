@@ -130,16 +130,6 @@ Constants:  Kb (Boltzmann's constant), R (Gas constant), Na (Avogadro's number),
 )";
 int formulaSyntaxHeight = 380;
 
-std::vector<std::pair<std::string, std::string>> profileTypes = { //Name for profile type combo and name with unit for profile plotter
-	{"None","None"},
-	{"Pressure/imp/density (\201)","Pressure \201 [mbar]"},
-	{"Pressure/imp/density (\202)","Pressure \202 [mbar]"},
-	{"Incident angle","Incident angle [deg]"},
-	{"Speed distribution","Speed [m/s]"},
-	{"Orthogonal velocity","Ort. velocity [m/s]"},
-	{"Tangential velocity","Tan. velocity [m/s]"}
-};
-
 MolFlow *mApp;
 
 //Menu elements, Molflow specific:
@@ -389,9 +379,10 @@ int MolFlow::OneTimeSceneInit()
 	facetReLabel = new GLLabel("Profile:");
 	facetPanel->Add(facetReLabel);
 	facetProfileCombo = new GLCombo(0);
-	facetProfileCombo->SetSize(profileTypes.size());
-	for (size_t i = 0; i < profileTypes.size(); i++) {
-		facetProfileCombo->SetValueAt(i, profileTypes[i].first.c_str()); //First element is the description in Molflow, second the description with units in profile plotter
+	int nbRecModes=profileRecordModes::NUMITEMS;
+	facetProfileCombo->SetSize(nbRecModes);
+	for (size_t i = 0; i < nbRecModes; i++) {
+		facetProfileCombo->SetValueAt(i, profileRecordModeDescriptions[(profileRecordModes)i].first.c_str()); //long description
 	}
 	facetPanel->Add(facetProfileCombo);
 

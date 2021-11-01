@@ -40,9 +40,6 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "SynRad.h"
 #endif
 
-extern GLApplication *theApp;
-extern std::vector<std::pair<std::string, std::string>> profileTypes; //defined in Molflow.cpp
-
 #if defined(MOLFLOW)
 extern MolFlow *mApp;
 #endif
@@ -100,22 +97,18 @@ ProfilePlotter::ProfilePlotter() :GLWindow() , views{}{
 
     Add(selFacInput);
 
-	normLabel = new GLLabel("Normalize:");
+	normLabel = new GLLabel("Display as:");
 	Add(normLabel);
 
-	normCombo = new GLCombo(0);
-	normCombo->SetEditable(true);
-	normCombo->SetSize(7);
-	size_t counter = 0;
-	normCombo->SetValueAt(counter++, "None (raw data)");
-	normCombo->SetValueAt(counter++, "Pressure (mbar)");
-	normCombo->SetValueAt(counter++, "Impingement rate (1/m\262/sec)");
-	normCombo->SetValueAt(counter++, "Density (1/m3)");
-	normCombo->SetValueAt(counter++, "Speed (m/s)");
-	normCombo->SetValueAt(counter++, "Angle (deg)");
-	normCombo->SetValueAt(counter++, "Normalize to 1");
-	normCombo->SetSelectedIndex(1);
-	Add(normCombo);
+	displayModeCombo = new GLCombo(0);
+	displayModeCombo->SetEditable(true);
+	int nbDisplayModes = (int)profileDisplayModes::NUMITEMS;
+	displayModeCombo->SetSize(nbDisplayModes);
+	for (size_t i = 0;i<nbDisplayModes;i++) {
+		displayModeCombo->SetValueAt(i, profileDisplayModeDescriptions[(profileDisplayModes)i].c_str());
+	}
+	displayModeCombo->SetSelectedIndex(1);
+	Add(displayModeCombo);
 
 	logYToggle = new GLToggle(0, "Log Y");
 	Add(logYToggle);
@@ -187,7 +180,7 @@ void ProfilePlotter::SetBounds(int x, int y, int w, int h) {
 	correctForGas->SetBounds(240, h - 95, 80, 19);
 
 	normLabel->SetBounds(7, h - 93, 50, 19);
-	normCombo->SetBounds(61, h - 95, 125, 19);
+	displayModeCombo->SetBounds(61, h - 95, 125, 19);
 
     colorToggle->SetBounds(7, h - 70, 105, 19);
     fixedLineWidthText->SetBounds(112, h - 70, 93, 19);
@@ -232,7 +225,7 @@ void ProfilePlotter::Refresh() {
 		InterfaceFacet *f = geom->GetFacet(i);
 		if (f->sh.isProfile) {
 			std::ostringstream tmp;
-			tmp << "F# " << (i + 1) << profileTypes[f->sh.profileType].second;
+			tmp << "F# " << (i + 1) << profileRecordModeDescriptions[(profileRecordModes)f->sh.profileType].second; //short description
 			profCombo->SetValueAt(nbProf, tmp.str().c_str(), (int)i);
 			nbProf++;
 		}
@@ -370,7 +363,7 @@ void ProfilePlotter::refreshViews() {
 	// Lock during update
 	bool buffer_old = worker->GetHits();
 	if (!buffer_old) return;
-	std::string displayMode = normCombo->GetSelectedValue(); //Choosing by index is error-prone
+	profileDisplayModes displayMode = (profileDisplayModes)displayModeCombo->GetSelectedIndex(); //Choosing by index is error-prone
 
 	Geometry *geom = worker->GetGeometry();
 
@@ -388,18 +381,18 @@ void ProfilePlotter::refreshViews() {
 
 			if (worker->globalHitCache.globalHits.nbDesorbed > 0){
 
-				if (displayMode == "None (raw data)") {
+				if (displayMode == profileDisplayModes::Raw) {
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j, profile[j].countEquiv, false);
 				}
-				else if (displayMode == "Pressure (mbar)") {
+				else if (displayMode == profileDisplayModes::Pressure) {
 					scaleY = 1.0 / (f->GetArea() * 1E-4 / (double)PROFILE_SIZE)* worker->model->wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
 					scaleY *= worker->GetMoleculesPerTP(worker->displayedMoment);
 
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j, profile[j].sum_v_ort*scaleY, false);
 				}
-				else if (displayMode == "Impingement rate (1/m\262/sec)") {
+				else if (displayMode == profileDisplayModes::ImpRate) {
 
 					scaleY = 1.0 / (f->GetArea() * 1E-4 / (double)PROFILE_SIZE);
 					scaleY *= worker->GetMoleculesPerTP(worker->displayedMoment);
@@ -407,14 +400,14 @@ void ProfilePlotter::refreshViews() {
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j, profile[j].countEquiv * scaleY, false);
 				}
-				else if (displayMode == "Density (1/m3)") {
+				else if (displayMode == profileDisplayModes::Density) {
 					scaleY = 1.0 / ((f->GetArea() * 1E-4) / (double)PROFILE_SIZE);
 					scaleY *= worker->GetMoleculesPerTP(worker->displayedMoment) * f->DensityCorrection();
 					
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j, profile[j].sum_1_per_ort_velocity*scaleY, false);
 				}
-				else if (displayMode == "Speed (m/s)") {
+				else if (displayMode == profileDisplayModes::Speed) {
 					double sum = 0.0;
 					double val;
 					double scaleX = f->sh.maxSpeed / (double)PROFILE_SIZE;
@@ -432,7 +425,7 @@ void ProfilePlotter::refreshViews() {
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j*scaleX, values[j] / sum, false);
 				}
-				else if (displayMode == "Angle (deg)") {
+				else if (displayMode == profileDisplayModes::Angle) {
 					double sum = 0.0;
 					double val;
 					double scaleX = 90.0 / (double)PROFILE_SIZE;
@@ -451,7 +444,7 @@ void ProfilePlotter::refreshViews() {
 						v->Add((double)j*scaleX, values[j] / sum, false);
 					break;
 				}
-				else if (displayMode == "Normalize to 1") {
+				else if (displayMode == profileDisplayModes::NormalizeTo1) {
                     double max = 1.0;
 
                     for (int j = 0; j < PROFILE_SIZE; j++) {
@@ -465,7 +458,7 @@ void ProfilePlotter::refreshViews() {
                 }
 				else{
                     // Unknown display mode, reset to RAW data
-                    normCombo->SetSelectedIndex(0);
+                    displayModeCombo->SetSelectedIndex(0);
                     break;
 				}
 
@@ -738,10 +731,10 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
 		}
 		break;
 	case MSG_COMBO:
-		if (src == normCombo) {
+		if (src == displayModeCombo) {
 			//int normMode = normCombo->GetSelectedIndex();
-			std::string normMode = normCombo->GetSelectedValue();
-			correctForGas->SetVisible(normMode == "Speed (m/s)" || normMode == "Angle (deg)");
+			profileDisplayModes normMode = (profileDisplayModes)displayModeCombo->GetSelectedIndex();
+			correctForGas->SetVisible(normMode == profileDisplayModes::Speed || normMode == profileDisplayModes::Angle);
 			refreshViews();
 		}
 		else if(src == profCombo){
