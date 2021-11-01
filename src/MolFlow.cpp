@@ -379,7 +379,7 @@ int MolFlow::OneTimeSceneInit()
 	facetReLabel = new GLLabel("Profile:");
 	facetPanel->Add(facetReLabel);
 	facetProfileCombo = new GLCombo(0);
-	int nbRecModes=profileRecordModes::NUMITEMS;
+	size_t nbRecModes=(size_t)profileRecordModes::NUMITEMS;
 	facetProfileCombo->SetSize(nbRecModes);
 	for (size_t i = 0; i < nbRecModes; i++) {
 		facetProfileCombo->SetValueAt(i, profileRecordModeDescriptions[(profileRecordModes)i].first.c_str()); //long description

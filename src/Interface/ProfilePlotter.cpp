@@ -102,7 +102,7 @@ ProfilePlotter::ProfilePlotter() :GLWindow() , views{}{
 
 	displayModeCombo = new GLCombo(0);
 	displayModeCombo->SetEditable(true);
-	int nbDisplayModes = (int)profileDisplayModes::NUMITEMS;
+	size_t nbDisplayModes = (size_t)profileDisplayModes::NUMITEMS;
 	displayModeCombo->SetSize(nbDisplayModes);
 	for (size_t i = 0;i<nbDisplayModes;i++) {
 		displayModeCombo->SetValueAt(i, profileDisplayModeDescriptions[(profileDisplayModes)i].c_str());
@@ -298,7 +298,7 @@ void ProfilePlotter::plot() {
 		return;
 	}
 	if (nbVar > 1) {
-		GLMessageBox::Display("Too much variables or unknown constant", "Error", GLDLG_OK, GLDLG_ICONERROR);
+		GLMessageBox::Display("Too many variables or unknown constant", "Error", GLDLG_OK, GLDLG_ICONERROR);
 		SAFE_DELETE(parser);
 		return;
 	}
