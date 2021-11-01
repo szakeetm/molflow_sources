@@ -41,6 +41,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #endif
 
 extern GLApplication *theApp;
+extern std::vector<std::pair<std::string, std::string>> profileTypes; //defined in Molflow.cpp
 
 #if defined(MOLFLOW)
 extern MolFlow *mApp;
@@ -49,16 +50,6 @@ extern MolFlow *mApp;
 #if defined(SYNRAD)
 extern SynRad*mApp;
 #endif
-
-const char* profType[] = {
-	"None",
-	"Pressure \201 [mbar]",
-	"Pressure \202 [mbar]",
-	"Incident angle [deg]",
-	"Speed [m/s]",
-	"Ort. velocity [m/s]",
-	"Tan. velocity [m/s]"
-};
 
 /**
 * \brief Constructor with initialisation for Profile plotter window (Tools/Profile Plotter)
@@ -240,9 +231,9 @@ void ProfilePlotter::Refresh() {
     for (size_t i = 0; i < nb; i++) {
 		InterfaceFacet *f = geom->GetFacet(i);
 		if (f->sh.isProfile) {
-			char tmp[128];
-			sprintf(tmp, "F#%zd %s", i + 1, profType[f->sh.profileType]);
-			profCombo->SetValueAt(nbProf, tmp, (int)i);
+			std::ostringstream tmp;
+			tmp << "F# " << (i + 1) << profileTypes[f->sh.profileType].second;
+			profCombo->SetValueAt(nbProf, tmp.str().c_str(), (int)i);
 			nbProf++;
 		}
 	}
@@ -754,8 +745,9 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
 		break;
 	case MSG_COMBO:
 		if (src == normCombo) {
-			int normMode = normCombo->GetSelectedIndex();
-			correctForGas->SetVisible(normMode == 3 || normMode == 4);
+			//int normMode = normCombo->GetSelectedIndex();
+			std::string normMode = normCombo->GetSelectedValue();
+			correctForGas->SetVisible(normMode == "Speed (m/s)" || normMode == "Angle (deg)");
 			refreshViews();
 		}
 		else if(src == profCombo){

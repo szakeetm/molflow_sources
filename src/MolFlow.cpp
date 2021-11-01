@@ -130,6 +130,16 @@ Constants:  Kb (Boltzmann's constant), R (Gas constant), Na (Avogadro's number),
 )";
 int formulaSyntaxHeight = 380;
 
+std::vector<std::pair<std::string, std::string>> profileTypes = { //Name for profile type combo and name with unit for profile plotter
+	{"None","None"},
+	{"Pressure/imp/density (\201)","Pressure \201 [mbar]"},
+	{"Pressure/imp/density (\202)","Pressure \202 [mbar]"},
+	{"Incident angle","Incident angle [deg]"},
+	{"Speed distribution","Speed [m/s]"},
+	{"Orthogonal velocity","Ort. velocity [m/s]"},
+	{"Tangential velocity","Tan. velocity [m/s]"}
+};
+
 MolFlow *mApp;
 
 //Menu elements, Molflow specific:
@@ -374,17 +384,15 @@ int MolFlow::OneTimeSceneInit()
 	facetTemperature = new GLTextField(0, nullptr);
 	facetPanel->Add(facetTemperature);
 
+
+
 	facetReLabel = new GLLabel("Profile:");
 	facetPanel->Add(facetReLabel);
 	facetRecType = new GLCombo(0);
-	facetRecType->SetSize(7);
-	facetRecType->SetValueAt(0, "None");
-	facetRecType->SetValueAt(1, "Pressure/imp/density (\201)");
-	facetRecType->SetValueAt(2, "Pressure/imp/density (\202)");
-	facetRecType->SetValueAt(3, "Incident angle");
-	facetRecType->SetValueAt(4, "Speed distribution");
-	facetRecType->SetValueAt(5, "Orthogonal velocity");
-	facetRecType->SetValueAt(6, "Tangential velocity");
+	facetRecType->SetSize(profileTypes.size());
+	for (size_t i = 0; i < profileTypes.size(); i++) {
+		facetRecType->SetValueAt(i, profileTypes[i].first.c_str()); //First element is the description in Molflow, second the description with units in profile plotter
+	}
 	facetPanel->Add(facetRecType);
 
 	facetAdvParamsBtn = new GLButton(0, "<< Adv");

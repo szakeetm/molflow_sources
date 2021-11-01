@@ -49,7 +49,7 @@ extern MolFlow *mApp;
 extern SynRad*mApp;
 #endif
 
-extern const char* profType[];
+extern std::vector<std::pair<std::string, std::string>> profileTypes; //defined in Molflow.cpp
 
 /**
 * \brief Constructor with initialisation for Time settings window (Time/Timewise plotter)
@@ -182,11 +182,11 @@ void TimewisePlotter::Refresh() {
 	if (nbProf) profCombo->SetSize(nbProf);
 	nbProf = 0;
 	for (size_t i = 0; i < nb; i++) {
-		InterfaceFacet *f = geom->GetFacet(i);
+		InterfaceFacet* f = geom->GetFacet(i);
 		if (f->sh.isProfile) {
-			char tmp[128];
-			sprintf(tmp, "F#%zd %s", i + 1, profType[f->sh.profileType]);
-			profCombo->SetValueAt(nbProf, tmp, (int)i);
+			std::ostringstream tmp;
+			tmp << "F# " << (i + 1) << profileTypes[f->sh.profileType].second;
+			profCombo->SetValueAt(nbProf, tmp.str().c_str(), (int)i);
 			nbProf++;
 		}
 	}
