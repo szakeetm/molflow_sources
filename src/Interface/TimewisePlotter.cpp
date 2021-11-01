@@ -18,6 +18,7 @@ GNU General Public License for more details.
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 #include "TimewisePlotter.h"
+#include "ProfilePlotter.h" //to avoid repeating recording/display modes
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
 #include "GLApp/GLToggle.h"
@@ -48,8 +49,6 @@ extern MolFlow *mApp;
 #if defined(SYNRAD)
 extern SynRad*mApp;
 #endif
-
-extern std::vector<std::pair<std::string, std::string>> profileTypes; //defined in Molflow.cpp
 
 /**
 * \brief Constructor with initialisation for Time settings window (Time/Timewise plotter)
@@ -87,14 +86,11 @@ TimewisePlotter::TimewisePlotter() :GLWindow() {
 
 	displayModeCombo = new GLCombo(0);
 	displayModeCombo->SetEditable(true);
-	displayModeCombo->SetSize(6);
-	displayModeCombo->SetValueAt(0, "None (raw data)");
-	displayModeCombo->SetValueAt(1, "Pressure (mbar)");
-	displayModeCombo->SetValueAt(2, "Density (1/m3)");
-	displayModeCombo->SetValueAt(3, "Speed (m/s)");
-	displayModeCombo->SetValueAt(4, "Angle (deg)");
-	displayModeCombo->SetValueAt(5, "Normalize to 1");
-
+	size_t nbDisplayModes = (size_t)profileDisplayModes::NUMITEMS;
+	displayModeCombo->SetSize(nbDisplayModes);
+	for (size_t i = 0;i<nbDisplayModes;i++) {
+		displayModeCombo->SetValueAt(i, profileDisplayModeDescriptions[(profileDisplayModes)i].c_str());
+	}
 	displayModeCombo->SetSelectedIndex(1);
 	Add(displayModeCombo);
 
@@ -181,11 +177,11 @@ void TimewisePlotter::Refresh() {
 	profCombo->Clear();
 	if (nbProf) profCombo->SetSize(nbProf);
 	nbProf = 0;
-	for (size_t i = 0; i < nb; i++) {
-		InterfaceFacet* f = geom->GetFacet(i);
+    for (size_t i = 0; i < nb; i++) {
+		InterfaceFacet *f = geom->GetFacet(i);
 		if (f->sh.isProfile) {
 			std::ostringstream tmp;
-			tmp << "F# " << (i + 1) << profileTypes[f->sh.profileType].second;
+			tmp << "F# " << (i + 1) << profileRecordModeDescriptions[(profileRecordModes)f->sh.profileType].second; //short description
 			profCombo->SetValueAt(nbProf, tmp.str().c_str(), (int)i);
 			nbProf++;
 		}
@@ -276,83 +272,91 @@ void TimewisePlotter::refreshViews() {
 		else momentIndex=m+1; //any other 'normal' moment*/
 		const std::vector<ProfileSlice>& profile = worker->globState.facetStates[profCombo->GetUserValueAt(idx)].momentResults[v->userData1].profile;
 		//ProfileSlice *profilePtr = (ProfileSlice *)(buffer + f->sh.hitOffset + facetHitsSize + v->userData1*sizeof(ProfileSlice)*PROFILE_SIZE);
-		if (worker->globalHitCache.globalHits.nbDesorbed > 0) {
+			if (worker->globalHitCache.globalHits.nbDesorbed > 0){
 
-			if (displayMode == "None (raw data)") {
-				for (int j = 0; j < PROFILE_SIZE; j++)
-					v->Add((double)j, profile[j].countEquiv, false);
-			}
-			else if (displayMode=="Pressure (mbar)") {
-				scaleY = 1.0 / (f->GetArea() * 1E-4 / (double)PROFILE_SIZE) * worker->model->wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
-
-				scaleY *= worker->GetMoleculesPerTP(v->userData1);
-				//if(f->wp.opacity>0.0) scaleY *= f->wp.opacity;
-				//if(IsZero(f->wp.opacity)) scaleY*=2; //transparent profiles are profiled only once...
-
-				for (int j = 0; j < PROFILE_SIZE; j++)
-					v->Add((double)j, profile[j].sum_v_ort*scaleY, false);
-			}
-			else if (displayMode =="Impingement rate (1/m\262/sec)" ) {
-				scaleY = 1.0 / (f->GetArea() * 1E-4 / (double)PROFILE_SIZE);
-				scaleY *= worker->GetMoleculesPerTP(worker->displayedMoment);
-
-				for (int j = 0; j < PROFILE_SIZE; j++)
-					v->Add((double)j, profile[j].countEquiv * scaleY, false);
-			}
-			else if (displayMode == "Density (1/m3)") {
-				scaleY =  1.0 / ((f->GetArea() * 1E-4) / (double)PROFILE_SIZE);
-				scaleY *= worker->GetMoleculesPerTP(v->userData1);
-				scaleY *= f->DensityCorrection();
-
-				for (int j = 0; j < PROFILE_SIZE; j++)
-					v->Add((double)j, profile[j].sum_1_per_ort_velocity*scaleY, false);
-			}
-			else if (displayMode == "Speed (m/s)") {
-				double sum = 0.0;
-				double val;
-				double scaleX = f->sh.maxSpeed / (double)PROFILE_SIZE;
-				std::vector<double> values;
-				values.reserve(PROFILE_SIZE);
-				for (int j = 0; j < PROFILE_SIZE; j++) {//count distribution sum
-					if (!correctForGas->GetState())
-						val = profile[j].countEquiv;
-					else
-						val = profile[j].countEquiv / (((double)j + 0.5)*scaleX); //fnbhit not needed, sum will take care of normalization
-					sum += val;
-					values.push_back(val);
+				if (displayMode == profileDisplayModes::Raw) {
+					for (int j = 0; j < PROFILE_SIZE; j++)
+						v->Add((double)j, profile[j].countEquiv, false);
 				}
-				for (int j = 0; j < PROFILE_SIZE; j++)
-					v->Add((double)j*scaleX, values[j] / sum, false);
-			}
-			else if (displayMode == "Angle (deg)") {
-				double sum = 0.0;
-				double val;
-				double scaleX = 90.0 / (double)PROFILE_SIZE;
-				std::vector<double> values;
-				values.reserve(PROFILE_SIZE);
-				for (int j = 0; j < PROFILE_SIZE; j++) {//count distribution sum
-					if (!correctForGas->GetState())
-						val = (double)profile[j].countEquiv;
-					else
-						val = (double)profile[j].countEquiv / sin(((double)j + 0.5)*PI / 2.0 / (double)PROFILE_SIZE); //fnbhit not needed, sum will take care of normalization
-					sum += val;
-					values.push_back(val);
+				else if (displayMode == profileDisplayModes::Pressure) {
+					scaleY = 1.0 / (f->GetArea() * 1E-4 / (double)PROFILE_SIZE)* worker->model->wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
+					scaleY *= worker->GetMoleculesPerTP(v->userData1);
+
+					for (int j = 0; j < PROFILE_SIZE; j++)
+						v->Add((double)j, profile[j].sum_v_ort*scaleY, false);
 				}
-				for (int j = 0; j < PROFILE_SIZE; j++)
-					v->Add((double)j*scaleX, values[j] / sum, false);
-			}
-			else if (displayMode == "Normalize to 1") {
-				double max = 1.0;
-				for (int j = 0; j < PROFILE_SIZE; j++)
-				{
-					if (profile[j].countEquiv > max) max = profile[j].countEquiv;
+				else if (displayMode == profileDisplayModes::ImpRate) {
+
+					scaleY = 1.0 / (f->GetArea() * 1E-4 / (double)PROFILE_SIZE);
+					scaleY *= worker->GetMoleculesPerTP(v->userData1);
+
+					for (int j = 0; j < PROFILE_SIZE; j++)
+						v->Add((double)j, profile[j].countEquiv * scaleY, false);
 				}
-				scaleY = 1.0 / max;
-				for (int j = 0; j < PROFILE_SIZE; j++)
-					v->Add((double)j, profile[j].countEquiv*scaleY, false);
+				else if (displayMode == profileDisplayModes::Density) {
+					scaleY = 1.0 / ((f->GetArea() * 1E-4) / (double)PROFILE_SIZE);
+					scaleY *= worker->GetMoleculesPerTP(v->userData1) * f->DensityCorrection();
+					
+					for (int j = 0; j < PROFILE_SIZE; j++)
+						v->Add((double)j, profile[j].sum_1_per_ort_velocity*scaleY, false);
+				}
+				else if (displayMode == profileDisplayModes::Speed) {
+					double sum = 0.0;
+					double val;
+					double scaleX = f->sh.maxSpeed / (double)PROFILE_SIZE;
+					std::vector<double> values;
+					values.reserve(PROFILE_SIZE);
+					for (int j = 0; j < PROFILE_SIZE; j++) {//count distribution sum
+						if (!correctForGas->GetState())
+							val = profile[j].countEquiv;
+						else
+							val = profile[j].countEquiv / (((double)j + 0.5)*scaleX); //fnbhit not needed, sum will take care of normalization
+						sum += val;
+						values.push_back(val);
+					}
+
+					for (int j = 0; j < PROFILE_SIZE; j++)
+						v->Add((double)j*scaleX, values[j] / sum, false);
+				}
+				else if (displayMode == profileDisplayModes::Angle) {
+					double sum = 0.0;
+					double val;
+					double scaleX = 90.0 / (double)PROFILE_SIZE;
+					std::vector<double> values;
+					values.reserve(PROFILE_SIZE);
+					for (int j = 0; j < PROFILE_SIZE; j++) {//count distribution sum
+						if (!correctForGas->GetState())
+							val = profile[j].countEquiv;
+						else
+							val = profile[j].countEquiv / sin(((double)j + 0.5)*PI / 2.0 / (double)PROFILE_SIZE); //fnbhit not needed, sum will take care of normalization
+						sum += val;
+						values.push_back(val);
+					}
+
+					for (int j = 0; j < PROFILE_SIZE; j++)
+						v->Add((double)j*scaleX, values[j] / sum, false);
+					break;
+				}
+				else if (displayMode == profileDisplayModes::NormalizeTo1) {
+                    double max = 1.0;
+
+                    for (int j = 0; j < PROFILE_SIZE; j++) {
+                        max = std::max(max,profile[j].countEquiv);
+                    }
+                    scaleY = 1.0 / (double) max;
+
+                    for (int j = 0; j < PROFILE_SIZE; j++)
+                        v->Add((double) j, profile[j].countEquiv * scaleY, false);
+                    break;
+                }
+				else{
+                    // Unknown display mode, reset to RAW data
+                    displayModeCombo->SetSelectedIndex(0);
+                    break;
+				}
+
 			}
-		}
-		v->CommitChange();
+			v->CommitChange();
 
 	}
 
@@ -473,8 +477,8 @@ void TimewisePlotter::ProcessMessage(GLComponent *src, int message) {
 			}*/
 	case MSG_COMBO:
 		if (src == displayModeCombo) {
-			int normMode = displayModeCombo->GetSelectedIndex();
-			correctForGas->SetVisible(normMode == 3 || normMode == 4);
+			profileDisplayModes normMode = (profileDisplayModes)displayModeCombo->GetSelectedIndex();
+			correctForGas->SetVisible(normMode == profileDisplayModes::Speed || normMode == profileDisplayModes::Angle);
 			refreshViews();
 		}
 		else if (src == profCombo) {
