@@ -39,103 +39,61 @@ class ProfilePlotter : public GLWindow {
 
 public:
 
-  // Construction
-  ProfilePlotter();
+    // Construction
+    ProfilePlotter();
 
-  // Component method
-  void Display(Worker *w);
-  void Refresh();
-  void Update(float appTime,bool force=false);
-  void Reset();
+    // Component method
+    void Display(Worker* w);
+    void Refresh();
+    void Update(float appTime, bool force = false);
+    void Reset();
     void ResetHighlighting();
 
-  // Implementation
-  void ProcessMessage(GLComponent *src,int message) override;
-  void SetBounds(int x,int y,int w,int h) override;
-  int addView(int facet);
-  std::vector<int> GetViews();
-  void SetViews(const std::vector<int> &updatedViews);
-  bool IsLogScaled();
-  void SetLogScaled(bool logScale);
-  void SetWorker(Worker *w);
-    std::map<int,GLColor> GetIDColorPairs() const;
+    // Implementation
+    void ProcessMessage(GLComponent* src, int message) override;
+    void SetBounds(int x, int y, int w, int h) override;
+    int addView(int facet);
+    std::vector<int> GetViews();
+    void SetViews(const std::vector<int>& updatedViews);
+    bool IsLogScaled();
+    void SetLogScaled(bool logScale);
+    void SetWorker(Worker* w);
+    std::map<int, GLColor> GetIDColorPairs() const;
 
-private:  
-  int remView(int facet);
-  void refreshViews();
-  void plot();
-  void applyFacetHighlighting() const;
+private:
+    int remView(int facet);
+    void refreshViews();
+    void plot();
+    void applyFacetHighlighting() const;
 
-  Worker      *worker;
-  GLButton    *dismissButton;
-  GLChart     *chart;
-  GLCombo     *profCombo;
-  GLTextField *selFacInput;
-  GLLabel     *normLabel;
-  GLLabel     *warningLabel;
-  GLCombo     *displayModeCombo;
-  //GLToggle    *showAllMoments;
+    Worker* worker;
+    GLButton* dismissButton;
+    GLChart* chart;
+    GLCombo* profCombo;
+    GLTextField* selFacInput;
+    GLLabel* normLabel;
+    GLLabel* warningLabel;
+    GLCombo* displayModeCombo;
+    //GLToggle    *showAllMoments;
 
-  GLButton    *selButton;
-  GLButton    *addButton;
-  GLButton    *removeButton;
-  GLButton    *removeAllButton;
-  GLTextField *formulaText;
-  GLButton    *formulaBtn;
-  GLToggle    *logYToggle;
-  GLToggle    *correctForGas;
+    GLButton* selButton;
+    GLButton* addButton;
+    GLButton* removeButton;
+    GLButton* removeAllButton;
+    GLTextField* formulaText;
+    GLButton* formulaBtn;
+    GLToggle* logYToggle;
+    GLToggle* correctForGas;
 
-    GLToggle    *colorToggle;
-    GLLabel    *fixedLineWidthText;
-    GLButton    *fixedLineWidthButton;
-    GLTextField    *fixedLineWidthField;
-    GLToggle    *useProfColToggle;
-    GLButton    *selectPlottedButton;
+    GLToggle* colorToggle;
+    GLLabel* fixedLineWidthText;
+    GLButton* fixedLineWidthButton;
+    GLTextField* fixedLineWidthField;
+    GLToggle* useProfColToggle;
+    GLButton* selectPlottedButton;
 
-    GLDataView  *views[MAX_VIEWS];
-  int          nbView;
-  float        lastUpdate;
-    std::map<int,GLColor> plottedFacets;
-};
-
-enum class profileRecordModes {
-	None,
-	RegularU,
-	RegularV,
-	IncAngle,
-	Speed,
-	OrtSpeed,
-	TanSpeed,
-	NUMITEMS
-};
-
-std::map<profileRecordModes,std::pair<std::string,std::string>> profileRecordModeDescriptions = { //mode, long description, short description
-	{profileRecordModes::None, {"None","None"}},
-	{profileRecordModes::RegularU, {"Pressure/imp/density (\201)","along \201"}},
-	{profileRecordModes::RegularV, {"Pressure/imp/density (\202)","along \202"}},
-	{profileRecordModes::IncAngle, {"Incident angle","Inc. angle"}},
-	{profileRecordModes::Speed, {"Speed distribution","Speed"}},
-	{profileRecordModes::OrtSpeed,{"Orthogonal velocity","Ort.velocity"}},
-	{profileRecordModes::TanSpeed,{"Tangential velocity","Tan.velocity"}}
-};
-
-enum class profileDisplayModes {
-  Raw,
-  Pressure,
-  ImpRate,
-  Density,
-  Speed,
-  Angle,
-  NormalizeTo1,
-  NUMITEMS
-};
-
-std::map<profileDisplayModes,std::string> profileDisplayModeDescriptions = { //mode, description
-	{profileDisplayModes::Raw, "Raw"},
-	{profileDisplayModes::Pressure, "Pressure (mbar)"},
-	{profileDisplayModes::ImpRate, "Impingement rate (1/m\262/sec)"},
-	{profileDisplayModes::Density, "Density (1/m3)"},
-	{profileDisplayModes::Speed, "Speed (m/s)"},
-	{profileDisplayModes::Angle,"Angle (deg)"},
-	{profileDisplayModes::NormalizeTo1,"Normalize to 1"}
+    GLDataView* views[MAX_VIEWS];
+    int          nbView;
+    float        lastUpdate;
+    std::map<int, GLColor> plottedFacets;
 };

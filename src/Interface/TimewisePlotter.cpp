@@ -18,7 +18,7 @@ GNU General Public License for more details.
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 #include "TimewisePlotter.h"
-#include "ProfilePlotter.h" //to avoid repeating recording/display modes
+#include "profileModes.h"
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
 #include "GLApp/GLToggle.h"

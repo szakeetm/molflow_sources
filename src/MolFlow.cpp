@@ -49,6 +49,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 // Plotters
 #include "Interface/ProfilePlotter.h"
+#include "profileModes.h"
 #include "Interface/PressureEvolution.h"
 #include "Interface/TimewisePlotter.h"
 #include "Interface/TexturePlotter.h"
