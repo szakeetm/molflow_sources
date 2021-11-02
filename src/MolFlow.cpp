@@ -49,7 +49,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 // Plotters
 #include "Interface/ProfilePlotter.h"
-#include "profileModes.h"
+#include "ProfileModes.h"
 #include "Interface/PressureEvolution.h"
 #include "Interface/TimewisePlotter.h"
 #include "Interface/TexturePlotter.h"
@@ -380,10 +380,10 @@ int MolFlow::OneTimeSceneInit()
 	facetReLabel = new GLLabel("Profile:");
 	facetPanel->Add(facetReLabel);
 	facetProfileCombo = new GLCombo(0);
-	size_t nbRecModes=(size_t)profileRecordModes::NUMITEMS;
+	size_t nbRecModes=(size_t)ProfileRecordModes::NUMITEMS;
 	facetProfileCombo->SetSize(nbRecModes);
 	for (size_t i = 0; i < nbRecModes; i++) {
-		facetProfileCombo->SetValueAt(i, profileRecordModeDescriptions[(profileRecordModes)i].first.c_str()); //long description
+		facetProfileCombo->SetValueAt(i, profileRecordModeDescriptions[(ProfileRecordModes)i].first.c_str()); //long description
 	}
 	facetPanel->Add(facetProfileCombo);
 

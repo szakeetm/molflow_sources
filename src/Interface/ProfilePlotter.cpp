@@ -18,7 +18,7 @@ GNU General Public License for more details.
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 #include "ProfilePlotter.h"
-#include "profileModes.h"
+#include "ProfileModes.h"
 #include "GLApp/GLToolkit.h"
 #include "GLApp/GLMessageBox.h"
 #include "GLApp/GLButton.h"
@@ -103,10 +103,10 @@ ProfilePlotter::ProfilePlotter() :GLWindow() , views{}{
 
 	displayModeCombo = new GLCombo(0);
 	displayModeCombo->SetEditable(true);
-	size_t nbDisplayModes = (size_t)profileDisplayModes::NUMITEMS;
+	size_t nbDisplayModes = (size_t)ProfileDisplayModes::NUMITEMS;
 	displayModeCombo->SetSize(nbDisplayModes);
 	for (size_t i = 0;i<nbDisplayModes;i++) {
-		displayModeCombo->SetValueAt(i, profileDisplayModeDescriptions[(profileDisplayModes)i].c_str());
+		displayModeCombo->SetValueAt(i, profileDisplayModeDescriptions[(ProfileDisplayModes)i].c_str());
 	}
 	displayModeCombo->SetSelectedIndex(1);
 	Add(displayModeCombo);
@@ -226,7 +226,7 @@ void ProfilePlotter::Refresh() {
 		InterfaceFacet *f = geom->GetFacet(i);
 		if (f->sh.isProfile) {
 			std::ostringstream tmp;
-			tmp << "F# " << (i + 1) << profileRecordModeDescriptions[(profileRecordModes)f->sh.profileType].second; //short description
+			tmp << "F# " << (i + 1) << profileRecordModeDescriptions[(ProfileRecordModes)f->sh.profileType].second; //short description
 			profCombo->SetValueAt(nbProf, tmp.str().c_str(), (int)i);
 			nbProf++;
 		}
@@ -364,7 +364,7 @@ void ProfilePlotter::refreshViews() {
 	// Lock during update
 	bool buffer_old = worker->GetHits();
 	if (!buffer_old) return;
-	profileDisplayModes displayMode = (profileDisplayModes)displayModeCombo->GetSelectedIndex(); //Choosing by index is error-prone
+	ProfileDisplayModes displayMode = (ProfileDisplayModes)displayModeCombo->GetSelectedIndex(); //Choosing by index is error-prone
 
 	Geometry *geom = worker->GetGeometry();
 
@@ -382,18 +382,18 @@ void ProfilePlotter::refreshViews() {
 
 			if (worker->globalHitCache.globalHits.nbDesorbed > 0){
 
-				if (displayMode == profileDisplayModes::Raw) {
+				if (displayMode == ProfileDisplayModes::Raw) {
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j, profile[j].countEquiv, false);
 				}
-				else if (displayMode == profileDisplayModes::Pressure) {
+				else if (displayMode == ProfileDisplayModes::Pressure) {
 					scaleY = 1.0 / (f->GetArea() * 1E-4 / (double)PROFILE_SIZE)* worker->model->wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
 					scaleY *= worker->GetMoleculesPerTP(worker->displayedMoment);
 
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j, profile[j].sum_v_ort*scaleY, false);
 				}
-				else if (displayMode == profileDisplayModes::ImpRate) {
+				else if (displayMode == ProfileDisplayModes::ImpRate) {
 
 					scaleY = 1.0 / (f->GetArea() * 1E-4 / (double)PROFILE_SIZE);
 					scaleY *= worker->GetMoleculesPerTP(worker->displayedMoment);
@@ -401,14 +401,14 @@ void ProfilePlotter::refreshViews() {
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j, profile[j].countEquiv * scaleY, false);
 				}
-				else if (displayMode == profileDisplayModes::Density) {
+				else if (displayMode == ProfileDisplayModes::Density) {
 					scaleY = 1.0 / ((f->GetArea() * 1E-4) / (double)PROFILE_SIZE);
 					scaleY *= worker->GetMoleculesPerTP(worker->displayedMoment) * f->DensityCorrection();
 					
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j, profile[j].sum_1_per_ort_velocity*scaleY, false);
 				}
-				else if (displayMode == profileDisplayModes::Speed) {
+				else if (displayMode == ProfileDisplayModes::Speed) {
 					double sum = 0.0;
 					double val;
 					double scaleX = f->sh.maxSpeed / (double)PROFILE_SIZE;
@@ -426,7 +426,7 @@ void ProfilePlotter::refreshViews() {
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j*scaleX, values[j] / sum, false);
 				}
-				else if (displayMode == profileDisplayModes::Angle) {
+				else if (displayMode == ProfileDisplayModes::Angle) {
 					double sum = 0.0;
 					double val;
 					double scaleX = 90.0 / (double)PROFILE_SIZE;
@@ -445,7 +445,7 @@ void ProfilePlotter::refreshViews() {
 						v->Add((double)j*scaleX, values[j] / sum, false);
 					break;
 				}
-				else if (displayMode == profileDisplayModes::NormalizeTo1) {
+				else if (displayMode == ProfileDisplayModes::NormalizeTo1) {
                     double max = 1.0;
 
                     for (int j = 0; j < PROFILE_SIZE; j++) {
@@ -734,8 +734,8 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
 	case MSG_COMBO:
 		if (src == displayModeCombo) {
 			//int normMode = normCombo->GetSelectedIndex();
-			profileDisplayModes normMode = (profileDisplayModes)displayModeCombo->GetSelectedIndex();
-			correctForGas->SetVisible(normMode == profileDisplayModes::Speed || normMode == profileDisplayModes::Angle);
+			ProfileDisplayModes normMode = (ProfileDisplayModes)displayModeCombo->GetSelectedIndex();
+			correctForGas->SetVisible(normMode == ProfileDisplayModes::Speed || normMode == ProfileDisplayModes::Angle);
 			refreshViews();
 		}
 		else if(src == profCombo){
