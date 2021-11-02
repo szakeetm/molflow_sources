@@ -226,7 +226,7 @@ void ProfilePlotter::Refresh() {
 		InterfaceFacet *f = geom->GetFacet(i);
 		if (f->sh.isProfile) {
 			std::ostringstream tmp;
-			tmp << "F# " << (i + 1) << profileRecordModeDescriptions[(ProfileRecordModes)f->sh.profileType].second; //short description
+			tmp << "F#" << (i + 1) << " " << profileRecordModeDescriptions[(ProfileRecordModes)f->sh.profileType].second; //short description
 			profCombo->SetValueAt(nbProf, tmp.str().c_str(), (int)i);
 			nbProf++;
 		}
