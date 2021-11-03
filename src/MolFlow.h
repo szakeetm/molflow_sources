@@ -130,6 +130,7 @@ public:
         int showLevelAABB[2]{-1, -1};
         bool showBranchSide[2]{true, true};
         bool showAABBLeaves{false};
+        bool boxExpansion{false};
         bool reverseExpansion{false};
         bool sameColor{false};
         bool showStats{false};
@@ -139,6 +140,10 @@ public:
         float trimByProb[2]{0.0f,1.0f};
         float trimRange{1.0f};
         int maxRaySamples{HITCACHESAMPLE};
+
+        bool renderSample{true};
+        std::vector<TestRay> sample;
+
         std::vector<float> colorMap;
         std::shared_ptr<std::vector<float>> rateVector;
     } aabbVisu;

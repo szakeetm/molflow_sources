@@ -377,7 +377,7 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                 //}
 
                 if(found != testFound
-                || particle.transparentHits.size() != ray.transparentHits.size()
+                /*|| particle.transparentHits.size() != ray.transparentHits.size()*/
                 || particle.hardHit.hit.colDistTranspPass != ray.hardHit.hit.colDistTranspPass){
                     std::cerr << "Verification error\n";
                     found = model->accel.at(particle.structure)->Intersect(ray2);
