@@ -382,6 +382,7 @@ benchmark-windows:
     - Copy-Item -Force ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\time_record_*") (".\")
     - $AllArgs = @("--gtest_filter=*PerformanceOkay* --gtest_output='xml:benchmark.xml'")
     - cmd.exe /c "start /b /wait /high testsuite.exe $AllArgs"
+    - Start-Sleep -Seconds 5
     - Move-Item -Path benchmark.xml -Destination (($PROJPATH) + "\benchmark.xml")
     - Move-Item -Force (".\time_record_*") ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\" + ($CI_COMMIT_BRANCH) + "\")
   after_script:
