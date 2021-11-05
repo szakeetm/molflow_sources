@@ -7,6 +7,7 @@
 
 #include <cstdio>
 #include <string>
+#include <vector>
 
 class GlobalSimuState;
 class SimulationModel;
