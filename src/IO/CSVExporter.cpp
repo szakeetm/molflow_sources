@@ -25,19 +25,19 @@ static std::unordered_map<FDetail, std::string> const tableDetail = {
         {FDetail::F_TWOSIDED,      "2 Sided"},
         {FDetail::F_VERTEX,        "Vertex"},
         {FDetail::F_AREA,          "Area"},
-        {FDetail::F_TEMP,          "Temperature 	(K)"},
-        {FDetail::F_2DBOX,         "Facet 2D Box	"},
-        {FDetail::F_TEXTURE_UV,    "Texture (u,v	)"},
-        {FDetail::F_MESHSAMPLEPCM, "Mesh sample/	cm"},
+        {FDetail::F_TEMP,          "Temperature (K)"},
+        {FDetail::F_2DBOX,         "Facet 2D Box"},
+        {FDetail::F_TEXTURE_UV,    "Texture (u,v)"},
+        {FDetail::F_MESHSAMPLEPCM, "Mesh sample/cm"},
         {FDetail::F_COUNT,         "Count"},
         {FDetail::F_MEMORY,        "Memory"},
         {FDetail::F_PLANARITY,     "Planarity"},
         {FDetail::F_PROFILE,       "Profile"},
         {FDetail::F_IMPINGEMENT,   "Imping.rate"},
-        {FDetail::F_DENSITY1P,     "Density [1/m	3]"},
-        {FDetail::F_DENSITYKGP,    "Density [kg/	m3]"},
-        {FDetail::F_PRESSURE,      "Pressure [mb	ar]"},
-        {FDetail::F_AVGSPEED,      "Av.mol.speed	[m/s]"},
+        {FDetail::F_DENSITY1P,     "Density [1/m3]"},
+        {FDetail::F_DENSITYKGP,    "Density [kg/m3]"},
+        {FDetail::F_PRESSURE,      "Pressure [mbar]"},
+        {FDetail::F_AVGSPEED,      "Av.mol.speed[m/s]"},
         {FDetail::F_MCHITS,        "MC Hits"},
         {FDetail::F_EQUIVHITS,     "Equiv.hits"},
         {FDetail::F_NDESORPTIONS,  "Des."},
@@ -313,15 +313,17 @@ char *CSVExporter::FormatCell(FDetail mode, size_t idx, GlobalSimuState *glob,
             sprintf(ret, "%g", fHit.sum_v_ort * dCoef / GetArea(*facet));
             break;
         }
-        case FDetail::F_AVGSPEED: // avg. gas speed (estimate)
+        case FDetail::F_AVGSPEED: { // avg. gas speed (estimate)
             /*sprintf(ret, "%g", 4.0*(double)(fHit.hit.nbMCHit+fHit.hit.nbDesorbed) /
              * fHit.hit.sum_1_per_ort_velocity);*/
-            sprintf(ret, "%g",
+            double avgSpeed = (fHit.sum_1_per_velocity == 0.0) ? 0.0 : (
                     (fHit.nbHitEquiv + static_cast<double>(fHit.nbDesorbed)) /
                     fHit.sum_1_per_velocity);
+            sprintf(ret, "%g", avgSpeed);
             //<v_surf>=2*<v_surFDetail::F_ort>
             //<v_gas>=1/<1/v_surf>
             break;
+        }
         case FDetail::F_MCHITS:
             sprintf(ret, "%zd", fHit.nbMCHit);
             break;
@@ -347,6 +349,8 @@ std::string CSVExporter::GetHeader(const std::vector<FDetail> &selectedValues) {
     }
     if(!selectedValues.empty() && !buffer.empty())
         buffer.pop_back(); // remove last delimiter
+    buffer.append("\n");
+
     return buffer;
 }
 
@@ -386,6 +390,7 @@ int CSVExporter::ExportAllFacetDetails(const std::string& fileName, GlobalSimuSt
     for (auto &entry: tableDetail) {
         selectedValues.push_back(entry.first);
     }
+    std::sort(selectedValues.begin(), selectedValues.end());
     std::string facDetails = CSVExporter::GetFacetDetailsCSV(selectedValues, glob, model);
 
     std::ofstream ofs(fileName);
