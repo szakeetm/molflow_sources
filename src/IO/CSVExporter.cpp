@@ -359,6 +359,8 @@ CSVExporter::GetLineForFacet(size_t idx,
         buffer.append(FormatCell(mode, idx, glob, model));
         buffer.append(",");
     }
+    if(!selectedValues.empty() && !buffer.empty())
+        buffer.pop_back(); // remove last delimiter
 
     return buffer;
 }
