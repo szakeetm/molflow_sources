@@ -75,9 +75,9 @@ int Initializer::parseCommands(int argc, char **argv) {
                                            "Output path, defaults to \'Results_{date}\'");
     app.add_option("-s,--outputDuration", Settings::outputDuration, "Seconds between each stat output if not zero");
     app.add_option("-a,--autosaveDuration", Settings::autoSaveDuration, "Seconds for autoSave if not zero");
-    app.add_option("--writeFacetDetails", SettingsIO::outputFacetDetails,
+    app.add_flag("--writeFacetDetails", SettingsIO::outputFacetDetails,
                    "Will write a CSV file containing all facet details including physical quantities");
-    app.add_option("--writeFacetQuantities", SettingsIO::outputFacetQuantities,
+    app.add_flag("--writeFacetQuantities", SettingsIO::outputFacetQuantities,
                    "Will write a CSV file containing all physical quantities for each facet");
 
     app.add_option("--setParamsByFile", Settings::paramFile,
