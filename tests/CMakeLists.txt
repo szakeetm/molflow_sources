@@ -94,6 +94,5 @@ target_compile_features(testsuite PRIVATE cxx_std_17)
 #add_test(NAME example_test COMMAND testsuite)
 
 file(COPY ./simulation.cfg
-        ./test_lr1000_pipe.xml ./test_lr10_pipe_tex.xml ./test_lr10_pipe_prof.xml ./test_lr10_pipe_trans.xml
         ./TestCases
         DESTINATION ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})

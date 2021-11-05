@@ -84,7 +84,10 @@ namespace {
             Performance,
             SimulationFixture,
             ::testing::Values(
-                    "test_lr1000_pipe.xml", "test_lr10_pipe_tex.xml", "test_lr10_pipe_prof.xml", "test_lr10_pipe_trans.xml"
+                    "TestCases/B01-lr1000_pipe.zip",
+                    "TestCases/B02-lr10_pipe_tex.zip",
+                    "TestCases/B03-lr10_pipe_prof.zip",
+                    "TestCases/B04-lr10_pipe_trans.zip"
             ));
 
     INSTANTIATE_TEST_SUITE_P(
@@ -525,6 +528,12 @@ namespace {
             EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
             EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
 
+            if(globState.globalHits.globalHits.nbMCHit == globState.globalHits.globalHits.nbDesorbed){
+                nbSuccess = nRuns;
+                fprintf(stderr, "[%zu][Warning] Results for this testcase are not comparable, due to equal amount of desorptions!\n", runNb);
+                fprintf(stderr, "[%zu][Warning] Results will only differ on finer counters, which demand more hits!\n", runNb);
+                break;
+            }
             auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.005, 0.05);
             if(diff_glob || diff_loc)
                 nbSuccess++;
@@ -595,7 +604,7 @@ namespace {
         std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
         GlobalSimuState globState{};
 
-        std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "test_lr1000_pipe.xml"};
+        std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip"};
         {
             CharPVec argc_v(argv);
             char **args = argc_v.data();
@@ -606,17 +615,17 @@ namespace {
         pugi::xml_document newDoc;
         std::string fullFileName = (std::filesystem::path(SettingsIO::outputPath) / SettingsIO::outputFile).string();
         EXPECT_FALSE(std::filesystem::exists(fullFileName));
-        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_test_lr1000_pipe.xml";
+        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_B01-lr1000_pipe.xml";
         auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile());
         EXPECT_TRUE(testPath1.string() == testPath2.string());
-        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_test_lr1000_pipe.xml") != std::string::npos);
+        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_B01-lr1000_pipe.xml") != std::string::npos);
         newDoc.load_file(fullFileName.c_str());
         writer.SaveGeometry(newDoc, model, false, true);
         writer.SaveSimulationState(fullFileName, model, globState);
         EXPECT_TRUE(SettingsIO::outputPath.find("Results_") != std::string::npos);
         EXPECT_TRUE(std::filesystem::exists(SettingsIO::outputPath));
         EXPECT_TRUE(std::filesystem::exists(fullFileName));
-        EXPECT_TRUE(SettingsIO::outputFile == "out_test_lr1000_pipe.xml");
+        EXPECT_TRUE(SettingsIO::outputFile == "out_B01-lr1000_pipe.zip");
 
         if(!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
             std::filesystem::remove_all(SettingsIO::workPath);
@@ -630,7 +639,7 @@ namespace {
 
         // generate hash name for tmp working file
         std::string outPath = "TPath_"+std::to_string(std::hash<time_t>()(time(nullptr)));
-        std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "test_lr1000_pipe.xml",
+        std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
                                     "--outputPath", outPath};
         {
             CharPVec argc_v(argv);
@@ -642,10 +651,10 @@ namespace {
         pugi::xml_document newDoc;
         std::string fullFileName = (std::filesystem::path(SettingsIO::outputPath) / SettingsIO::outputFile).string();
         EXPECT_FALSE(std::filesystem::exists(fullFileName));
-        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_test_lr1000_pipe.xml";
+        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_B01-lr1000_pipe.xml";
         auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile());
         EXPECT_TRUE(testPath1.string() == testPath2.string());
-        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_test_lr1000_pipe.xml") != std::string::npos);
+        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_B01-lr1000_pipe.xml") != std::string::npos);
         newDoc.load_file(fullFileName.c_str());
         writer.SaveGeometry(newDoc, model, false, true);
         writer.SaveSimulationState(fullFileName, model, globState);
@@ -653,7 +662,7 @@ namespace {
         EXPECT_TRUE(SettingsIO::outputPath == outPath);
         EXPECT_TRUE(std::filesystem::exists(SettingsIO::outputPath));
         EXPECT_TRUE(std::filesystem::exists(fullFileName));
-        EXPECT_TRUE(SettingsIO::outputFile == "out_test_lr1000_pipe.xml");
+        EXPECT_TRUE(SettingsIO::outputFile == "out_B01-lr1000_pipe.zip");
 
         if(!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
             std::filesystem::remove_all(SettingsIO::workPath);
@@ -667,7 +676,7 @@ namespace {
 
         std::string outPath = "TPath_"+std::to_string(std::hash<time_t>()(time(nullptr)));
         std::string outFile = "tFile_"+std::to_string(std::hash<time_t>()(time(nullptr)))+".xml";
-        std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "test_lr1000_pipe.xml",
+        std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
                                     "--outputPath", outPath, "-o", outFile};
         {
             CharPVec argc_v(argv);
@@ -680,10 +689,10 @@ namespace {
         pugi::xml_document newDoc;
         std::string fullFileName = (std::filesystem::path(SettingsIO::outputPath) / SettingsIO::outputFile).string();
         EXPECT_FALSE(std::filesystem::exists(fullFileName));
-        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_test_lr1000_pipe.xml";
+        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_B01-lr1000_pipe.xml";
         auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile());
         EXPECT_TRUE(testPath1.string() == testPath2.string());
-        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_test_lr1000_pipe.xml") != std::string::npos);
+        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_B01-lr1000_pipe.xml") != std::string::npos);
         newDoc.load_file(fullFileName.c_str());
         writer.SaveGeometry(newDoc, model, false, true);
         writer.SaveSimulationState(fullFileName, model, globState);
@@ -704,7 +713,7 @@ namespace {
         GlobalSimuState globState{};
 
         std::string outFile = "tFile_"+std::to_string(std::hash<time_t>()(time(nullptr)))+".xml";
-        std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "test_lr1000_pipe.xml",
+        std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
                                          "-o", outFile};
         {
             CharPVec argc_v(argv);
@@ -716,10 +725,10 @@ namespace {
         pugi::xml_document newDoc;
         std::string fullFileName = (std::filesystem::path(SettingsIO::outputPath) / SettingsIO::outputFile).string();
         EXPECT_FALSE(std::filesystem::exists(fullFileName));
-        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_test_lr1000_pipe.xml";
+        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_B01-lr1000_pipe.xml";
         auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile());
         EXPECT_TRUE(testPath1.string() == testPath2.string());
-        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_test_lr1000_pipe.xml") != std::string::npos);
+        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_B01-lr1000_pipe.xml") != std::string::npos);
         newDoc.load_file(fullFileName.c_str());
         writer.SaveGeometry(newDoc, model, false, true);
         writer.SaveSimulationState(fullFileName, model, globState);
@@ -744,7 +753,7 @@ namespace {
 
         std::string outPath = "TPath_"+std::to_string(std::hash<time_t>()(time(nullptr)));
         std::string outFile = "tFile_"+std::to_string(std::hash<time_t>()(time(nullptr)))+".xml";
-        std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "test_lr1000_pipe.xml",
+        std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
                                         "-o", outPath+"/"+outFile};
         {
             CharPVec argc_v(argv);
@@ -756,10 +765,10 @@ namespace {
         pugi::xml_document newDoc;
         std::string fullFileName = SettingsIO::outputFile;
         EXPECT_FALSE(std::filesystem::exists(fullFileName));
-        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_test_lr1000_pipe.xml";
+        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_B01-lr1000_pipe.xml";
         auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile());
         EXPECT_TRUE(testPath1.string() == testPath2.string());
-        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_test_lr1000_pipe.xml") != std::string::npos);
+        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_B01-lr1000_pipe.xml") != std::string::npos);
         EXPECT_TRUE(std::filesystem::exists(SettingsIO::workPath));
         EXPECT_TRUE(SettingsIO::outputPath.empty());
         newDoc.load_file(fullFileName.c_str());
@@ -785,7 +794,7 @@ namespace {
         std::string outPath = "TPath_"+std::to_string(std::hash<time_t>()(time(nullptr)));
         std::string outPathF = "TFPath_"+std::to_string(std::hash<time_t>()(time(nullptr)));
         std::string outFile = "tFile_"+std::to_string(std::hash<time_t>()(time(nullptr)))+".xml";
-        std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "test_lr1000_pipe.xml",
+        std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip",
                                          "--outputPath", outPath, "-o", outPathF+"/"+outFile};
         {
             CharPVec argc_v(argv);
@@ -797,10 +806,10 @@ namespace {
         pugi::xml_document newDoc;
         std::string fullFileName = SettingsIO::workPath+"/"+SettingsIO::outputFile;
         EXPECT_FALSE(std::filesystem::exists(fullFileName));
-        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_test_lr1000_pipe.xml";
+        auto testPath1 = std::filesystem::path(SettingsIO::workPath) / "autosave_B01-lr1000_pipe.xml";
         auto testPath2 = std::filesystem::path(Initializer::getAutosaveFile());
         EXPECT_TRUE(testPath1.string() == testPath2.string());
-        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_test_lr1000_pipe.xml") != std::string::npos);
+        EXPECT_TRUE(Initializer::getAutosaveFile().find("autosave_B01-lr1000_pipe.xml") != std::string::npos);
         EXPECT_TRUE(std::filesystem::exists(SettingsIO::workPath));
         EXPECT_TRUE(SettingsIO::outputPath == outPath);
         EXPECT_TRUE(SettingsIO::workPath == outPath);
