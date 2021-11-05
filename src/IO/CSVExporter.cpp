@@ -363,15 +363,8 @@ CSVExporter::GetLineForFacet(size_t idx,
     return buffer;
 }
 
-std::string CSVExporter::GetFacetDetailsCSV(GlobalSimuState *glob,
+std::string CSVExporter::GetFacetDetailsCSV(const std::vector<FDetail> &selectedValues, GlobalSimuState *glob,
                                             SimulationModel *model) {
-    // Generate list of all modes
-    std::vector<FDetail> selectedValues;
-    selectedValues.reserve(tableDetail.size());
-    for (auto &entry: tableDetail) {
-        selectedValues.push_back(entry.first);
-    }
-
     std::string buffer;
     buffer.append(GetHeader(selectedValues));
     for (int idx = 0; idx < model->facets.size(); ++idx) {
@@ -385,7 +378,34 @@ std::string CSVExporter::GetFacetDetailsCSV(GlobalSimuState *glob,
 int CSVExporter::ExportAllFacetDetails(const std::string& fileName, GlobalSimuState *glob,
                                        SimulationModel *model) {
 
-    std::string facDetails = CSVExporter::GetFacetDetailsCSV(glob, model);
+// Generate list of all modes
+    std::vector<FDetail> selectedValues;
+    selectedValues.reserve(tableDetail.size());
+    for (auto &entry: tableDetail) {
+        selectedValues.push_back(entry.first);
+    }
+    std::string facDetails = CSVExporter::GetFacetDetailsCSV(selectedValues, glob, model);
+
+    std::ofstream ofs(fileName);
+    ofs << facDetails;
+    ofs.close();
+
+    return 0;
+}
+
+int CSVExporter::ExportPhysicalQuantitiesForFacets(const std::string& fileName, GlobalSimuState *glob,
+                                       SimulationModel *model) {
+
+    // Generate list of all physical modes
+    std::vector<FDetail> selectedValues;
+    selectedValues.push_back(FDetail::F_ID);
+    selectedValues.push_back(FDetail::F_IMPINGEMENT);
+    selectedValues.push_back(FDetail::F_PRESSURE);
+    selectedValues.push_back(FDetail::F_DENSITY1P);
+    selectedValues.push_back(FDetail::F_DENSITYKGP);
+    selectedValues.push_back(FDetail::F_AVGSPEED);
+
+    std::string facDetails = CSVExporter::GetFacetDetailsCSV(selectedValues, glob, model);
 
     std::ofstream ofs(fileName);
     ofs << facDetails;

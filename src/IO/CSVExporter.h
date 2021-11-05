@@ -50,12 +50,15 @@ struct CSVExporter {
    static std::string GetLineForFacet(size_t idx, const std::vector<FDetail> &selectedValues, GlobalSimuState *glob,
                                       SimulationModel *model);
 
-   static std::string GetFacetDetailsCSV(GlobalSimuState *glob, SimulationModel *model);
+   static std::string GetFacetDetailsCSV(const std::vector<FDetail> &selectedValues, GlobalSimuState *glob,
+                                         SimulationModel *model);
 
     static std::string
     GetHeader(const std::vector<FDetail> &selectedValues);
 
     static int ExportAllFacetDetails(const std::string &fileName, GlobalSimuState *glob, SimulationModel *model);
+
+    static int ExportPhysicalQuantitiesForFacets(const std::string &fileName, GlobalSimuState *glob, SimulationModel *model);
 };
 
 

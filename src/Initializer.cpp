@@ -35,6 +35,7 @@ void initDefaultSettings() {
     Settings::paramSweep.clear();
 
     SettingsIO::outputFacetDetails = false;
+    SettingsIO::outputFacetQuantities = false;
     SettingsIO::overwrite = false;
     SettingsIO::workFile.clear();
     SettingsIO::inputFile.clear();
@@ -76,6 +77,8 @@ int Initializer::parseCommands(int argc, char **argv) {
     app.add_option("-a,--autosaveDuration", Settings::autoSaveDuration, "Seconds for autoSave if not zero");
     app.add_option("--writeFacetDetails", SettingsIO::outputFacetDetails,
                    "Will write a CSV file containing all facet details including physical quantities");
+    app.add_option("--writeFacetQuantities", SettingsIO::outputFacetQuantities,
+                   "Will write a CSV file containing all physical quantities for each facet");
 
     app.add_option("--setParamsByFile", Settings::paramFile,
                    "Parameter file for ad hoc change of the given geometry parameters")
