@@ -373,6 +373,8 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                         tmp = ((RopePayload*)particle.pay)->lastNode;
                 }
                 ((RopePayload*)ray2.pay)->lastNode = tmp;
+                ((RopePayload*)ray2.pay)->lastRay = ((RopePayload*)particle.pay)->lastRay;
+
                 found = model->accel.at(particle.structure)->Intersect(particle);
                 //}
 
