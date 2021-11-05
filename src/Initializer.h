@@ -27,7 +27,6 @@ private:
     static int parseCommands(int argc, char** argv);
     static int loadFromXML(const std::string &fileName, bool loadState, const std::shared_ptr<SimulationModel>& model,
                            GlobalSimuState *globState);
-    static int setSharedStorage();
     static int initSimModel(std::shared_ptr<SimulationModel> model);
 public:
     static std::string getAutosaveFile();

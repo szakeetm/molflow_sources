@@ -100,6 +100,7 @@ set(SRC_FILES
 
         ${CPP_DIR_2}/FlowMPI.h #contains templates
         ${CPP_DIR_2}/FlowMPI.cpp
+        ${IO_DIR}/CSVExporter.cpp
         )
 
 add_executable(${PROJECT_NAME} ${SRC_FILES})
