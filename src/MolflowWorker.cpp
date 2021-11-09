@@ -165,7 +165,6 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
     std::string fileNameWithoutExtension; //file name without extension
 
     std::string ext = FileUtils::GetExtension(fileName);
-    std::string path = FileUtils::GetPath(fileName);
 
     bool ok = true;
     if (ext.empty()) {
