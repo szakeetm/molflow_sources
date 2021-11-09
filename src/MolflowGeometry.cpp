@@ -1874,7 +1874,7 @@ void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, Worker *worker) {
 	for (int i = 0; i < PROFILE_SIZE; i++)
 		header << i + 1 << sep;
 	header << '\n';
-
+	
 	fputs(header.str().c_str(), file);
 
 	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
