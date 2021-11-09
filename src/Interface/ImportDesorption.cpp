@@ -224,7 +224,7 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 			if (!convFile) return;
 			if (!convFile->fullName) return;
 			*/
-			std::string fileName = NFD_OpenFile_Cpp("", "");
+			std::string fileName = NFD_OpenFile_Cpp("*", "");
 			if (fileName.empty()) return;
 
 			//load file
