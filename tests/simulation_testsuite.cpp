@@ -481,11 +481,11 @@ namespace {
         std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
         GlobalSimuState globState{};
 
+        std::vector<std::string> argv = {"tester", "--verbosity", "0", "-t", "120", "--file", testFile,
+                                         "--outputPath", outPath};
+        CharPVec argc_v(argv);
+        char **args = argc_v.data();
         {
-            std::vector<std::string> argv = {"tester", "--verbosity", "0", "-t", "120", "--file", testFile,
-                                             "--outputPath", outPath};
-            CharPVec argc_v(argv);
-            char **args = argc_v.data();
             if (-1 < Initializer::initFromArgv(argv.size(), (args), simManager.get(), model)) {
                 exit(41);
             }
@@ -506,13 +506,10 @@ namespace {
         // - this will prevent false positives for ResultsOkay tests
         for (size_t runNb = 0; runNb < nRuns; ++runNb) {
             if (runNb != 0) {
+                // Reset simulation for a fresh start
                 simManager = std::make_shared<SimulationManager>();
                 model = std::make_shared<SimulationModel>();
                 simManager->interactiveMode = false;
-                std::vector<std::string> argv = {"tester", "--verbosity", "0", "-t", "120", "--file", testFile,
-                                                 "--outputPath", outPath};
-                CharPVec argc_v(argv);
-                char **args = argc_v.data();
                 if (-1 < Initializer::initFromArgv(argv.size(), (args), simManager.get(), model)) {
                     exit(41);
                 }
@@ -520,9 +517,10 @@ namespace {
                     exit(42);
                 }
             }
+            // clear old results from a previous attempt and define a new desorption limit (to prevent early termination as the input file will already have reached this limit)
             globState.Reset();
             Settings::desLimit.clear();
-            Settings::desLimit.emplace_back(500);
+            Settings::desLimit.emplace_back(400);
             Initializer::initDesLimit(model, globState);
 
             //simManager.RefreshRNGSeed(false);
