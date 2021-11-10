@@ -69,7 +69,7 @@ endif(NOT MSVC)
 #######################################
 
 set(SRC_FILES
-        ${CPP_DIR_2}/FlowCLI.cpp
+        ${CPP_DIR_1}/FlowCLI.cpp
         ${CPP_DIR_2}/SimulationManager.cpp
         ${CPP_DIR_2}/ShMemory.cpp
         ${CPP_DIR_2}/Process.cpp
@@ -101,6 +101,7 @@ set(SRC_FILES
         ${CPP_DIR_2}/FlowMPI.h #contains templates
         ${CPP_DIR_2}/FlowMPI.cpp
         ${IO_DIR}/CSVExporter.cpp
+        ${IO_DIR}/SettingsIO_Molflow.cpp
         )
 
 add_executable(${PROJECT_NAME} ${SRC_FILES})

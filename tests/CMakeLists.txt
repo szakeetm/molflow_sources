@@ -52,10 +52,13 @@ execute_process(
 link_directories(${LINK_DIR_1} ${LINK_DIR_2})
 
 set(EXTRA_SRC
+        ../src/IO/CSVExporter.cpp
+        ../src/IO/SettingsIO_Molflow.cpp
         ../src_shared/File.cpp
         ../src_shared/FlowMPI.h #contains templates
         ../src_shared/FlowMPI.cpp
         )
+
 # Now simply link against gtest or gtest_main as needed. Eg
 add_executable(testsuite simulation_testsuite.cpp ${EXTRA_SRC})
 
