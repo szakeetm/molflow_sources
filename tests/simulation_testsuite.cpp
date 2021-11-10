@@ -6,7 +6,7 @@
 #include "gtest/gtest.h"
 #include "../src/Initializer.h"
 #include "../src/ParameterParser.h"
-#include <SettingsIO.h>
+#include <IO/SettingsIO_Molflow.h>
 //#define MOLFLOW_PATH ""
 
 #include <filesystem>
@@ -20,6 +20,7 @@
 #include <numeric>
 #include <cmath>
 #include <IO/WriterXML.h>
+#include <IO/CSVExporter.h>
 
 #ifndef GIT_COMMIT_HASH
 #define GIT_COMMIT_HASH "?"
@@ -681,6 +682,14 @@ namespace {
         EXPECT_TRUE(std::filesystem::exists(fullFileName));
         EXPECT_TRUE(SettingsIO::outputFile == "out_B01-lr1000_pipe.zip");
 
+        // check first whether files don't exist yet before generation
+        EXPECT_FALSE(std::filesystem::exists(outPath+"/facet_details.csv"));
+        EXPECT_FALSE(std::filesystem::exists(outPath+"/facet_quantities.csv"));
+        SettingsIO::export_facet_details(&globState, model.get());
+        EXPECT_TRUE(std::filesystem::exists(outPath+"/facet_details.csv"));
+        SettingsIO::export_facet_quantities(&globState, model.get());
+        EXPECT_TRUE(std::filesystem::exists(outPath+"/facet_physics.csv"));
+
         if (!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
             std::filesystem::remove_all(SettingsIO::workPath);
     }
@@ -719,6 +728,14 @@ namespace {
         EXPECT_TRUE(std::filesystem::exists(SettingsIO::outputPath));
         EXPECT_TRUE(std::filesystem::exists(fullFileName));
 
+        // check first whether files don't exist yet before generation
+        EXPECT_FALSE(std::filesystem::exists(outPath+"/facet_details.csv"));
+        EXPECT_FALSE(std::filesystem::exists(outPath+"/facet_quantities.csv"));
+        SettingsIO::export_facet_details(&globState, model.get());
+        EXPECT_TRUE(std::filesystem::exists(outPath+"/facet_details.csv"));
+        SettingsIO::export_facet_quantities(&globState, model.get());
+        EXPECT_TRUE(std::filesystem::exists(outPath+"/facet_physics.csv"));
+
         if (!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
             std::filesystem::remove_all(SettingsIO::workPath);
     }
@@ -753,6 +770,14 @@ namespace {
         EXPECT_TRUE(SettingsIO::outputFile == outFile);
         EXPECT_TRUE(std::filesystem::exists(SettingsIO::outputPath));
         EXPECT_TRUE(std::filesystem::exists(fullFileName));
+
+        // check first whether files don't exist yet before generation
+        EXPECT_FALSE(std::filesystem::exists(std::filesystem::path(SettingsIO::outputPath).append("facet_details.csv")));
+        EXPECT_FALSE(std::filesystem::exists(std::filesystem::path(SettingsIO::outputPath).append("facet_physics.csv")));
+        SettingsIO::export_facet_details(&globState, model.get());
+        EXPECT_TRUE(std::filesystem::exists(std::filesystem::path(SettingsIO::outputPath).append("facet_details.csv")));
+        SettingsIO::export_facet_quantities(&globState, model.get());
+        EXPECT_TRUE(std::filesystem::exists(std::filesystem::path(SettingsIO::outputPath).append("facet_physics.csv")));
 
         // cleanup
         if (!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
@@ -795,6 +820,14 @@ namespace {
         EXPECT_TRUE(SettingsIO::workPath.find(outPath) != std::string::npos);
         EXPECT_TRUE(SettingsIO::outputFile.find(outFile) != std::string::npos);
 
+        // check first whether files don't exist yet before generation
+        EXPECT_FALSE(std::filesystem::exists(outPath+"/facet_details.csv"));
+        EXPECT_FALSE(std::filesystem::exists(outPath+"/facet_quantities.csv"));
+        SettingsIO::export_facet_details(&globState, model.get());
+        EXPECT_TRUE(std::filesystem::exists(outPath+"/facet_details.csv"));
+        SettingsIO::export_facet_quantities(&globState, model.get());
+        EXPECT_TRUE(std::filesystem::exists(outPath+"/facet_physics.csv"));
+        
         if (!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
             std::filesystem::remove_all(SettingsIO::workPath);
     }
