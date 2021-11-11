@@ -11,8 +11,8 @@
 
 // zip
 #include <File.h>
-#include <ziplib/ZipArchive.h>
-#include <ziplib/ZipFile.h>
+#include <ZipLib/ZipArchive.h>
+#include <ZipLib/ZipFile.h>
 
 namespace SettingsIO {
     void export_facet_details(GlobalSimuState* glob, SimulationModel* model){

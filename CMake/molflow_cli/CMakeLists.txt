@@ -121,7 +121,7 @@ if(USE_MPI AND MPI_FOUND)
     message(STATUS "Detected MPI version: ${MPI_CXX_VERSION}")
     set(USE_MPI TRUE)
     target_compile_definitions(${PROJECT_NAME} PUBLIC -DUSE_MPI)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${MPI_INCLUDE_PATH})
+    target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${MPI_INCLUDE_PATH})
     target_link_libraries(${PROJECT_NAME} PRIVATE MPI::MPI_CXX)
 endif()
 

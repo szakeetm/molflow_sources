@@ -64,6 +64,8 @@ namespace FlowIO {
 
         static int
         ExportPhysicalQuantitiesForFacets(const std::string &fileName, GlobalSimuState *glob, SimulationModel *model);
+
+        static int ValidateCSVFile(const std::string &fileName);
     };
 }
 

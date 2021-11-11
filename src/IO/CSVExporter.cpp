@@ -9,6 +9,7 @@
 #include <cfloat> // DBL_EPSILON
 #include <sstream>
 #include <fstream>
+#include <algorithm> // count for validate check
 
 // name space for various IO classes and methods
 namespace FlowIO {
@@ -422,5 +423,25 @@ namespace FlowIO {
         ofs.close();
 
         return 0;
+    }
+
+    int CSVExporter::ValidateCSVFile(const std::string &fileName) {
+        std::ifstream ifs(fileName);
+        std::string buffer;
+
+        if(!std::getline(ifs, buffer)){
+            // contains no valid line
+            return -1;
+        }
+        size_t n_elements = std::count(buffer.begin(), buffer.end(), ',');
+        while (std::getline(ifs, buffer)) { // Use the read operation as the test in the loop.
+            size_t n_line_elements = std::count(buffer.begin(), buffer.end(), ',');
+            if(n_elements != n_line_elements){
+                return -2;
+            }
+        }
+
+
+        return n_elements;
     }
 }
