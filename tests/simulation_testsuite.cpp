@@ -643,6 +643,22 @@ namespace {
         EXPECT_TRUE(std::filesystem::exists(fullFileName));
         EXPECT_TRUE(SettingsIO::outputFile == "out_B01-lr1000_pipe.zip");
 
+        // CSV: check first whether files don't exist yet before generating and comparing them
+        auto f_details = std::filesystem::path(SettingsIO::workPath).append("facet_details.csv");
+        auto f_physics = std::filesystem::path(SettingsIO::workPath).append("facet_physics.csv");
+        EXPECT_FALSE(std::filesystem::exists(f_details));
+        EXPECT_FALSE(std::filesystem::exists(f_physics));
+        SettingsIO::export_facet_details(&globState, model.get());
+        EXPECT_TRUE(std::filesystem::exists(f_details));
+        SettingsIO::export_facet_quantities(&globState, model.get());
+        EXPECT_TRUE(std::filesystem::exists(f_physics));
+        if(std::filesystem::exists(f_details)){
+            EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_details.string()) );
+        }
+        if(std::filesystem::exists(f_physics)){
+            EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_physics.string()) );
+        }
+
         if (!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
             std::filesystem::remove_all(SettingsIO::workPath);
     }
@@ -680,13 +696,21 @@ namespace {
         EXPECT_TRUE(std::filesystem::exists(fullFileName));
         EXPECT_TRUE(SettingsIO::outputFile == "out_B01-lr1000_pipe.zip");
 
-        // check first whether files don't exist yet before generation
-        EXPECT_FALSE(std::filesystem::exists(outPath+"/facet_details.csv"));
-        EXPECT_FALSE(std::filesystem::exists(outPath+"/facet_quantities.csv"));
+// CSV: check first whether files don't exist yet before generating and comparing them
+        auto f_details = std::filesystem::path(SettingsIO::workPath).append("facet_details.csv");
+        auto f_physics = std::filesystem::path(SettingsIO::workPath).append("facet_physics.csv");
+        EXPECT_FALSE(std::filesystem::exists(f_details));
+        EXPECT_FALSE(std::filesystem::exists(f_physics));
         SettingsIO::export_facet_details(&globState, model.get());
-        EXPECT_TRUE(std::filesystem::exists(outPath+"/facet_details.csv"));
+        EXPECT_TRUE(std::filesystem::exists(f_details));
         SettingsIO::export_facet_quantities(&globState, model.get());
-        EXPECT_TRUE(std::filesystem::exists(outPath+"/facet_physics.csv"));
+        EXPECT_TRUE(std::filesystem::exists(f_physics));
+        if(std::filesystem::exists(f_details)){
+            EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_details.string()) );
+        }
+        if(std::filesystem::exists(f_physics)){
+            EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_physics.string()) );
+        }
 
         if (!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
             std::filesystem::remove_all(SettingsIO::workPath);
@@ -726,13 +750,21 @@ namespace {
         EXPECT_TRUE(std::filesystem::exists(SettingsIO::outputPath));
         EXPECT_TRUE(std::filesystem::exists(fullFileName));
 
-        // check first whether files don't exist yet before generation
-        EXPECT_FALSE(std::filesystem::exists(outPath+"/facet_details.csv"));
-        EXPECT_FALSE(std::filesystem::exists(outPath+"/facet_quantities.csv"));
+        // CSV: check first whether files don't exist yet before generating and comparing them
+        auto f_details = std::filesystem::path(SettingsIO::workPath).append("facet_details.csv");
+        auto f_physics = std::filesystem::path(SettingsIO::workPath).append("facet_physics.csv");
+        EXPECT_FALSE(std::filesystem::exists(f_details));
+        EXPECT_FALSE(std::filesystem::exists(f_physics));
         SettingsIO::export_facet_details(&globState, model.get());
-        EXPECT_TRUE(std::filesystem::exists(outPath+"/facet_details.csv"));
+        EXPECT_TRUE(std::filesystem::exists(f_details));
         SettingsIO::export_facet_quantities(&globState, model.get());
-        EXPECT_TRUE(std::filesystem::exists(outPath+"/facet_physics.csv"));
+        EXPECT_TRUE(std::filesystem::exists(f_physics));
+        if(std::filesystem::exists(f_details)){
+            EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_details.string()) );
+        }
+        if(std::filesystem::exists(f_physics)){
+            EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_physics.string()) );
+        }
 
         if (!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
             std::filesystem::remove_all(SettingsIO::workPath);
@@ -769,13 +801,21 @@ namespace {
         EXPECT_TRUE(std::filesystem::exists(SettingsIO::outputPath));
         EXPECT_TRUE(std::filesystem::exists(fullFileName));
 
-        // check first whether files don't exist yet before generation
-        EXPECT_FALSE(std::filesystem::exists(std::filesystem::path(SettingsIO::outputPath).append("facet_details.csv")));
-        EXPECT_FALSE(std::filesystem::exists(std::filesystem::path(SettingsIO::outputPath).append("facet_physics.csv")));
+        // CSV: check first whether files don't exist yet before generating and comparing them
+        auto f_details = std::filesystem::path(SettingsIO::workPath).append("facet_details.csv");
+        auto f_physics = std::filesystem::path(SettingsIO::workPath).append("facet_physics.csv");
+        EXPECT_FALSE(std::filesystem::exists(f_details));
+        EXPECT_FALSE(std::filesystem::exists(f_physics));
         SettingsIO::export_facet_details(&globState, model.get());
-        EXPECT_TRUE(std::filesystem::exists(std::filesystem::path(SettingsIO::outputPath).append("facet_details.csv")));
+        EXPECT_TRUE(std::filesystem::exists(f_details));
         SettingsIO::export_facet_quantities(&globState, model.get());
-        EXPECT_TRUE(std::filesystem::exists(std::filesystem::path(SettingsIO::outputPath).append("facet_physics.csv")));
+        EXPECT_TRUE(std::filesystem::exists(f_physics));
+        if(std::filesystem::exists(f_details)){
+            EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_details.string()) );
+        }
+        if(std::filesystem::exists(f_physics)){
+            EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_physics.string()) );
+        }
 
         // cleanup
         if (!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
@@ -818,13 +858,21 @@ namespace {
         EXPECT_TRUE(SettingsIO::workPath.find(outPath) != std::string::npos);
         EXPECT_TRUE(SettingsIO::outputFile.find(outFile) != std::string::npos);
 
-        // check first whether files don't exist yet before generation
-        EXPECT_FALSE(std::filesystem::exists(outPath+"/facet_details.csv"));
-        EXPECT_FALSE(std::filesystem::exists(outPath+"/facet_quantities.csv"));
+        // CSV: check first whether files don't exist yet before generating and comparing them
+        auto f_details = std::filesystem::path(SettingsIO::workPath).append("facet_details.csv");
+        auto f_physics = std::filesystem::path(SettingsIO::workPath).append("facet_physics.csv");
+        EXPECT_FALSE(std::filesystem::exists(f_details));
+        EXPECT_FALSE(std::filesystem::exists(f_physics));
         SettingsIO::export_facet_details(&globState, model.get());
-        EXPECT_TRUE(std::filesystem::exists(outPath+"/facet_details.csv"));
+        EXPECT_TRUE(std::filesystem::exists(f_details));
         SettingsIO::export_facet_quantities(&globState, model.get());
-        EXPECT_TRUE(std::filesystem::exists(outPath+"/facet_physics.csv"));
+        EXPECT_TRUE(std::filesystem::exists(f_physics));
+        if(std::filesystem::exists(f_details)){
+            EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_details.string()) );
+        }
+        if(std::filesystem::exists(f_physics)){
+            EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_physics.string()) );
+        }
         
         if (!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
             std::filesystem::remove_all(SettingsIO::workPath);
@@ -868,6 +916,22 @@ namespace {
         EXPECT_TRUE(SettingsIO::workPath.find(outPath) != std::string::npos);
         EXPECT_TRUE(SettingsIO::outputFile.find(outPathF) != std::string::npos);
         EXPECT_TRUE(SettingsIO::outputFile.find(outFile) != std::string::npos);
+
+        // CSV: check first whether files don't exist yet before generating and comparing them
+        auto f_details = std::filesystem::path(SettingsIO::workPath).append("facet_details.csv");
+        auto f_physics = std::filesystem::path(SettingsIO::workPath).append("facet_physics.csv");
+        EXPECT_FALSE(std::filesystem::exists(f_details));
+        EXPECT_FALSE(std::filesystem::exists(f_physics));
+        SettingsIO::export_facet_details(&globState, model.get());
+        EXPECT_TRUE(std::filesystem::exists(f_details));
+        SettingsIO::export_facet_quantities(&globState, model.get());
+        EXPECT_TRUE(std::filesystem::exists(f_physics));
+        if(std::filesystem::exists(f_details)){
+            EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_details.string()) );
+        }
+        if(std::filesystem::exists(f_physics)){
+            EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_physics.string()) );
+        }
 
         if (!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
             std::filesystem::remove_all(SettingsIO::workPath);
