@@ -354,6 +354,8 @@ namespace {
                                          "-t", std::to_string(runForTSec), "--file", testFile, "--outputPath", outPath};
         {
             {
+                std::vector<std::string> argv = {"tester", "--config", "simulation.cfg", "--reset",
+                                             "--file", testFile, "--outputPath", outPath};
                 CharPVec argc_v(argv);
                 char **args = argc_v.data();
                 if (-1 < Initializer::initFromArgv(argv.size(), (args), &simManager, model)) {
@@ -456,9 +458,9 @@ namespace {
             EXPECT_EQ(0, diff_loc);
 
             if (diff_loc > 0)
-                fmt::print(stderr, "[Warning] %d local differences found!\n", diff_loc);
+                fmt::print(stderr, "[Warning] {} local differences found!\n", diff_loc);
             if (diff_fine > 0)
-                fmt::print(stderr, "[Warning] %d differences on fine counters found!\n", diff_fine);
+                fmt::print(stderr, "[Warning] {} differences on fine counters found!\n", diff_fine);
             break;
         }
 
@@ -482,7 +484,8 @@ namespace {
         std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
         GlobalSimuState globState{};
 
-        std::vector<std::string> argv = {"tester", "--verbosity", "0", "-t", "120", "--file", testFile,
+        std::vector<std::string> argv = {"tester", "--verbosity", "0", "-t", "120",
+                                         "--file", testFile,
                                          "--outputPath", outPath};
         CharPVec argc_v(argv);
         char **args = argc_v.data();
@@ -521,7 +524,7 @@ namespace {
             // clear old results from a previous attempt and define a new desorption limit (to prevent early termination as the input file will already have reached this limit)
             globState.Reset();
             Settings::desLimit.clear();
-            Settings::desLimit.emplace_back(400);
+            Settings::desLimit.emplace_back(300);
             Initializer::initDesLimit(model, globState);
 
             //simManager.RefreshRNGSeed(false);
@@ -544,9 +547,9 @@ namespace {
             if (globState.globalHits.globalHits.nbMCHit == globState.globalHits.globalHits.nbDesorbed) {
                 nbSuccess = nRuns;
                 fmt::print(stderr,
-                        "[%zu][Warning] Results for this testcase are not comparable, due to equal amount of desorptions!\n",
+                        "[{}][Warning] Results for this testcase are not comparable, due to equal amount of desorptions!\n",
                         runNb);
-                fmt::print(stderr, "[%zu][Warning] Results will only differ on finer counters, which demand more hits!\n",
+                fmt::print(stderr, "[{}][Warning] Results will only differ on finer counters, which demand more hits!\n",
                         runNb);
                 break;
             }
@@ -563,18 +566,23 @@ namespace {
                 EXPECT_NE(0, diff_loc);*/
 
             if (diff_glob <= 0)
-                fmt::print(stderr, "[%zu][Warning] No global differences found!\n", runNb);
-            if (diff_loc <= 0)
-                fmt::print(stderr, "[%zu][Warning] No local differences found!\n", runNb);
-            if (diff_fine <= 0)
-                fmt::print(stderr, "[%zu][Warning] No differences on fine counters found!\n", runNb);
+                fmt::print(stderr, "[{}][Warning] No global differences found!\n", runNb);
+            else if (diff_loc <= 0)
+                fmt::print(stderr, "[{}][Warning] No local differences found!\n", runNb);
+            else if (diff_fine <= 0)
+                fmt::print(stderr, "[{}][Warning] No differences on fine counters found!\n", runNb);
         }
         if ((double) nbSuccess / nRuns < 0.7) {
             EXPECT_FALSE((double) nbSuccess / nRuns < 0.7);
             fmt::print(stderr, "[FAIL] Threshold for results of a low sample run was not crossed!\n"
-                            "%llu out of %zu runs were correct!\n"
+                            "{} out of {} runs were correct!\n"
                             "This could be due to random nature of a MC simulation or a programmatic error leading to wrong conclusions.\n",
                     nRuns - nbSuccess, nRuns);
+        }
+        else {
+            fmt::print("[SUCCESS] Necessary threshold for results of a low sample run was crossed!\n"
+                               "{} out of {} runs were correct!\n",
+                       nRuns - nbSuccess, nRuns);
         }
     }
 
