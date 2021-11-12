@@ -6,7 +6,6 @@
 #include "gtest/gtest.h"
 #include "../src/Initializer.h"
 #include "../src/ParameterParser.h"
-#include <IO/SettingsIO_Molflow.h>
 //#define MOLFLOW_PATH ""
 
 #include <filesystem>
@@ -21,6 +20,8 @@
 #include <cmath>
 #include <IO/WriterXML.h>
 #include <IO/CSVExporter.h>
+#include <SettingsIO.h>
+#include <fmt/core.h>
 
 #ifndef GIT_COMMIT_HASH
 #define GIT_COMMIT_HASH "?"
@@ -45,8 +46,7 @@ public:
         if (vec.size() != svec.size()) vec.resize(svec.size());
         for (int i = 0; i < vec.size(); ++i) {
             vec[i] = new char[svec[i].size() + 1];
-            std::strncpy(vec[i], svec[i].c_str(), std::size(svec[i]));
-            vec[i][svec[i].size()] = '\0';
+            std::snprintf(vec[i], std::size(svec[i])+1, "%s", svec[i].c_str());
         }
     }
 
@@ -123,7 +123,7 @@ namespace {
 
         friend std::istream &operator>>(std::istream &is, Stats &r) {
             // Get current position
-            int len = is.tellg();
+            auto len = is.tellg();
             char line[256];
             is.getline(line, 256);
             // Return to position before "Read line".
@@ -374,7 +374,7 @@ namespace {
                                        10.0);
                 timeExpect += std::max(0.0, 1.1 * std::sqrt(std::exp(std::log(std::sqrt(model->size())))));
                 timeExpect *= 4.0;
-                Settings::simDuration = std::min(50.0 + timeExpect, 600.0);
+                Settings::simDuration = static_cast<uint64_t>(std::min(50.0 + timeExpect, 600.0));
             }
         }
 
@@ -455,9 +455,9 @@ namespace {
             EXPECT_EQ(0, diff_loc);
 
             if (diff_loc > 0)
-                fprintf(stderr, "[Warning] %d local differences found!\n", diff_loc);
+                fmt::print(stderr, "[Warning] %d local differences found!\n", diff_loc);
             if (diff_fine > 0)
-                fprintf(stderr, "[Warning] %d differences on fine counters found!\n", diff_fine);
+                fmt::print(stderr, "[Warning] %d differences on fine counters found!\n", diff_fine);
             break;
         }
 
@@ -542,10 +542,10 @@ namespace {
 
             if (globState.globalHits.globalHits.nbMCHit == globState.globalHits.globalHits.nbDesorbed) {
                 nbSuccess = nRuns;
-                fprintf(stderr,
+                fmt::print(stderr,
                         "[%zu][Warning] Results for this testcase are not comparable, due to equal amount of desorptions!\n",
                         runNb);
-                fprintf(stderr, "[%zu][Warning] Results will only differ on finer counters, which demand more hits!\n",
+                fmt::print(stderr, "[%zu][Warning] Results will only differ on finer counters, which demand more hits!\n",
                         runNb);
                 break;
             }
@@ -562,16 +562,16 @@ namespace {
                 EXPECT_NE(0, diff_loc);*/
 
             if (diff_glob <= 0)
-                fprintf(stderr, "[%zu][Warning] No global differences found!\n", runNb);
+                fmt::print(stderr, "[%zu][Warning] No global differences found!\n", runNb);
             if (diff_loc <= 0)
-                fprintf(stderr, "[%zu][Warning] No local differences found!\n", runNb);
+                fmt::print(stderr, "[%zu][Warning] No local differences found!\n", runNb);
             if (diff_fine <= 0)
-                fprintf(stderr, "[%zu][Warning] No differences on fine counters found!\n", runNb);
+                fmt::print(stderr, "[%zu][Warning] No differences on fine counters found!\n", runNb);
         }
         if ((double) nbSuccess / nRuns < 0.7) {
             EXPECT_FALSE((double) nbSuccess / nRuns < 0.7);
-            fprintf(stderr, "[FAIL] Threshold for results of a low sample run was not crossed!\n"
-                            "%lu out of %lu runs were correct!\n"
+            fmt::print(stderr, "[FAIL] Threshold for results of a low sample run was not crossed!\n"
+                            "%llu out of %zu runs were correct!\n"
                             "This could be due to random nature of a MC simulation or a programmatic error leading to wrong conclusions.\n",
                     nRuns - nbSuccess, nRuns);
         }
@@ -648,9 +648,9 @@ namespace {
         auto f_physics = std::filesystem::path(SettingsIO::workPath).append("facet_physics.csv");
         EXPECT_FALSE(std::filesystem::exists(f_details));
         EXPECT_FALSE(std::filesystem::exists(f_physics));
-        SettingsIO::export_facet_details(&globState, model.get());
+        FlowIO::Exporter::export_facet_details(&globState, model.get());
         EXPECT_TRUE(std::filesystem::exists(f_details));
-        SettingsIO::export_facet_quantities(&globState, model.get());
+        FlowIO::Exporter::export_facet_quantities(&globState, model.get());
         EXPECT_TRUE(std::filesystem::exists(f_physics));
         if(std::filesystem::exists(f_details)){
             EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_details.string()) );
@@ -701,9 +701,9 @@ namespace {
         auto f_physics = std::filesystem::path(SettingsIO::workPath).append("facet_physics.csv");
         EXPECT_FALSE(std::filesystem::exists(f_details));
         EXPECT_FALSE(std::filesystem::exists(f_physics));
-        SettingsIO::export_facet_details(&globState, model.get());
+        FlowIO::Exporter::export_facet_details(&globState, model.get());
         EXPECT_TRUE(std::filesystem::exists(f_details));
-        SettingsIO::export_facet_quantities(&globState, model.get());
+        FlowIO::Exporter::export_facet_quantities(&globState, model.get());
         EXPECT_TRUE(std::filesystem::exists(f_physics));
         if(std::filesystem::exists(f_details)){
             EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_details.string()) );
@@ -755,9 +755,9 @@ namespace {
         auto f_physics = std::filesystem::path(SettingsIO::workPath).append("facet_physics.csv");
         EXPECT_FALSE(std::filesystem::exists(f_details));
         EXPECT_FALSE(std::filesystem::exists(f_physics));
-        SettingsIO::export_facet_details(&globState, model.get());
+        FlowIO::Exporter::export_facet_details(&globState, model.get());
         EXPECT_TRUE(std::filesystem::exists(f_details));
-        SettingsIO::export_facet_quantities(&globState, model.get());
+        FlowIO::Exporter::export_facet_quantities(&globState, model.get());
         EXPECT_TRUE(std::filesystem::exists(f_physics));
         if(std::filesystem::exists(f_details)){
             EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_details.string()) );
@@ -806,9 +806,9 @@ namespace {
         auto f_physics = std::filesystem::path(SettingsIO::workPath).append("facet_physics.csv");
         EXPECT_FALSE(std::filesystem::exists(f_details));
         EXPECT_FALSE(std::filesystem::exists(f_physics));
-        SettingsIO::export_facet_details(&globState, model.get());
+        FlowIO::Exporter::export_facet_details(&globState, model.get());
         EXPECT_TRUE(std::filesystem::exists(f_details));
-        SettingsIO::export_facet_quantities(&globState, model.get());
+        FlowIO::Exporter::export_facet_quantities(&globState, model.get());
         EXPECT_TRUE(std::filesystem::exists(f_physics));
         if(std::filesystem::exists(f_details)){
             EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_details.string()) );
@@ -863,9 +863,9 @@ namespace {
         auto f_physics = std::filesystem::path(SettingsIO::workPath).append("facet_physics.csv");
         EXPECT_FALSE(std::filesystem::exists(f_details));
         EXPECT_FALSE(std::filesystem::exists(f_physics));
-        SettingsIO::export_facet_details(&globState, model.get());
+        FlowIO::Exporter::export_facet_details(&globState, model.get());
         EXPECT_TRUE(std::filesystem::exists(f_details));
-        SettingsIO::export_facet_quantities(&globState, model.get());
+        FlowIO::Exporter::export_facet_quantities(&globState, model.get());
         EXPECT_TRUE(std::filesystem::exists(f_physics));
         if(std::filesystem::exists(f_details)){
             EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_details.string()) );
@@ -922,9 +922,9 @@ namespace {
         auto f_physics = std::filesystem::path(SettingsIO::workPath).append("facet_physics.csv");
         EXPECT_FALSE(std::filesystem::exists(f_details));
         EXPECT_FALSE(std::filesystem::exists(f_physics));
-        SettingsIO::export_facet_details(&globState, model.get());
+        FlowIO::Exporter::export_facet_details(&globState, model.get());
         EXPECT_TRUE(std::filesystem::exists(f_details));
-        SettingsIO::export_facet_quantities(&globState, model.get());
+        FlowIO::Exporter::export_facet_quantities(&globState, model.get());
         EXPECT_TRUE(std::filesystem::exists(f_physics));
         if(std::filesystem::exists(f_details)){
             EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_details.string()) );

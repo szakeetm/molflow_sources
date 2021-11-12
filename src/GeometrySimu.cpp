@@ -996,7 +996,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
 
         if(globalErrNb){
             fmt::print("{}\n", cmpFile);
-            return std::make_tuple(globalErrNb, -1, -1);
+            return std::make_tuple(static_cast<int>(globalErrNb), -1, -1);
         }
     }
 

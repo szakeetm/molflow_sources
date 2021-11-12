@@ -100,8 +100,10 @@ set(SRC_FILES
 
         ${CPP_DIR_2}/FlowMPI.h #contains templates
         ${CPP_DIR_2}/FlowMPI.cpp
+
         ${IO_DIR}/CSVExporter.cpp
-        ${IO_DIR}/SettingsIO_Molflow.cpp
+        ${IO_DIR}/CSVExporter.h
+
         )
 
 add_executable(${PROJECT_NAME} ${SRC_FILES})
@@ -162,10 +164,10 @@ if(MSVC)
 
     # zip extraction
     target_link_libraries(${PROJECT_NAME} PRIVATE
-            bzip2.lib
-            lzma.lib
-            ZipLib.lib
-            zlib.lib
+            #bzip2.lib
+            #lzma.lib
+            #ZipLib.lib
+            #zlib.lib
             )
 endif(MSVC)
 if(NOT MSVC)

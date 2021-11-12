@@ -10,7 +10,7 @@
 #include <vector>
 
 class GlobalSimuState;
-class SimulationModel;
+struct SimulationModel;
 
 namespace FlowIO {
 
@@ -48,7 +48,7 @@ namespace FlowIO {
     };
 
     struct CSVExporter {
-        static char *FormatCell(FDetail mode, size_t idx, GlobalSimuState *glob, SimulationModel *model);
+        static std::string FormatCell(FDetail mode, size_t idx, GlobalSimuState *glob, SimulationModel *model);
 
         static std::string
         GetLineForFacet(size_t idx, const std::vector<FDetail> &selectedValues, GlobalSimuState *glob,
@@ -66,6 +66,13 @@ namespace FlowIO {
         ExportPhysicalQuantitiesForFacets(const std::string &fileName, GlobalSimuState *glob, SimulationModel *model);
 
         static int ValidateCSVFile(const std::string &fileName);
+    };
+
+    // export utility functions
+    struct Exporter {
+        static void export_facet_details(GlobalSimuState *glob, SimulationModel *model);
+
+        static void export_facet_quantities(GlobalSimuState *glob, SimulationModel *model);
     };
 }
 

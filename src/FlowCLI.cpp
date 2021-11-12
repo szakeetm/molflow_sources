@@ -19,9 +19,9 @@
 #include <Helper/ConsoleLogger.h>
 #include <ZipLib/ZipFile.h>
 
-//#include <SettingsIO.h>
 //#if defined(MOLFLOW)
-#include <IO/SettingsIO_Molflow.h>
+#include <SettingsIO.h>
+#include <IO/CSVExporter.h>
 //#endif
 
 #include "FlowMPI.h"
@@ -235,11 +235,11 @@ int main(int argc, char** argv) {
 
     if(MFMPI::world_rank == 0){
         if(SettingsIO::outputFacetDetails) {
-            SettingsIO::export_facet_details(&globState, model.get());
+            FlowIO::Exporter::export_facet_details(&globState, model.get());
 
         }
         if(SettingsIO::outputFacetQuantities) {
-            SettingsIO::export_facet_quantities(&globState, model.get());
+            FlowIO::Exporter::export_facet_quantities(&globState, model.get());
         }
 
         // Export results
@@ -275,7 +275,7 @@ int main(int argc, char** argv) {
                     std::filesystem::remove(fileNameWithZIP);
                 }
                 catch (std::exception &e) {
-                    Log::console_error("Error compressing to \n%s\nMaybe file is in use.\n",fileNameWithZIP.c_str());
+                    Log::console_error("Error compressing to \n%s\nMaybe file is in use:\n%s",fileNameWithZIP.c_str(),e.what());
                 }
             }
             ZipFile::AddFile(fileNameWithZIP, fullOutFile, FileUtils::GetFilename(fullOutFile));
@@ -284,7 +284,7 @@ int main(int argc, char** argv) {
                 std::filesystem::remove(fullOutFile);
             }
             catch (std::exception &e) {
-                Log::console_error("Error removing\n%s\nMaybe file is in use.\n",fullOutFile.c_str());
+                Log::console_error("Error removing\n%s\nMaybe file is in use:\n%s",fullOutFile.c_str(),e.what());
             }
         }
     }

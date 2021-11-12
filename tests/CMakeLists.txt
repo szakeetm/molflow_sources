@@ -53,7 +53,6 @@ link_directories(${LINK_DIR_1} ${LINK_DIR_2})
 
 set(EXTRA_SRC
         ../src/IO/CSVExporter.cpp
-        ../src/IO/SettingsIO_Molflow.cpp
         ../src_shared/File.cpp
         ../src_shared/FlowMPI.h #contains templates
         ../src_shared/FlowMPI.cpp
@@ -86,10 +85,10 @@ target_link_directories(testsuite PRIVATE ${LINK_DIR_1} ${LINK_DIR_2})
 if(MSVC)
     # zip extraction
     target_link_libraries(testsuite PRIVATE
-            bzip2.lib
-            lzma.lib
-            ZipLib.lib
-            zlib.lib
+            #bzip2.lib
+            #lzma.lib
+            #ZipLib.lib
+            #zlib.lib
             )
 endif(MSVC)
 

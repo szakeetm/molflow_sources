@@ -102,8 +102,8 @@ int Initializer::parseCommands(int argc, char **argv) {
         Settings::verbosity = 42;
 
     //std::cout<<app.config_to_str(true,true);
-    for (auto &lim : limits)
-        Settings::desLimit.emplace_back(lim);
+    for (auto& lim : limits)
+        Settings::desLimit.emplace_back(static_cast<size_t>(lim));
 
     if (Settings::simDuration == 0 && Settings::desLimit.empty()) {
         Log::console_error("No end criterion has been set!\n");

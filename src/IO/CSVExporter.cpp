@@ -10,7 +10,9 @@
 #include <sstream>
 #include <fstream>
 #include <algorithm> // count for validate check
-
+#include <Helper/ConsoleLogger.h>
+#include <SettingsIO.h>
+#include <filesystem>
 // name space for various IO classes and methods
 namespace FlowIO {
 
@@ -116,30 +118,29 @@ namespace FlowIO {
  * \param f Pointer to a facet
  * \return char pointer taking a string with the count value(s)
  */
-    char *GetCountStr(SubprocessFacet *f) {
-        static char ret[128];
-        strcpy(ret, "");
+    std::string GetCountStr(SubprocessFacet *f) {
+        std::string ret;
         if (f->sh.countDes)
-            strcat(ret, "DES");
+            ret.append("DES");
         if (f->sh.countAbs) {
-            if (strlen(ret) == 0) {
-                strcat(ret, "ABS");
+            if (ret.empty()) {
+                ret.append("ABS");
             } else {
-                strcat(ret, "+ABS");
+                ret.append("+ABS");
             }
         }
         if (f->sh.countRefl) {
-            if (strlen(ret) == 0) {
-                strcat(ret, "REFL");
+            if (ret.empty()) {
+                ret.append("REFL");
             } else {
-                strcat(ret, "+REFL");
+                ret.append("+REFL");
             }
         }
         if (f->sh.countTrans) {
-            if (strlen(ret) == 0) {
-                strcat(ret, "TRANS");
+            if (ret.empty()) {
+                ret.append("TRANS");
             } else {
-                strcat(ret, "+TRANS");
+                ret.append("+TRANS");
             }
         }
         return ret;
@@ -152,10 +153,9 @@ namespace FlowIO {
  * \param mode which kind of value has to be evaluated and printed
  * \return char pointer taking a string with the count value(s)
  */
-    char *CSVExporter::FormatCell(FDetail mode, size_t idx, GlobalSimuState *glob,
+    std::string CSVExporter::FormatCell(FDetail mode, size_t idx, GlobalSimuState *glob,
                                   SimulationModel *model) {
-        static char ret[1024];
-        strcpy(ret, "");
+        std::string ret;
 
         // Maybe validate globsimustate/model sanity (same nb facets etc) before
         if (model->facets.size() <= idx || glob->facetStates.size() <= idx)
@@ -167,13 +167,13 @@ namespace FlowIO {
 
         switch (mode) {
             case FDetail::F_ID:
-                sprintf(ret, "%zd", idx + 1);
+                fmt::print(ret, "%zd", idx + 1);
                 break;
             case FDetail::F_STICKING:
-                sprintf(ret, "%g", facet->sh.sticking);
+                fmt::print(ret, "%g", facet->sh.sticking);
                 break;
             case FDetail::F_OPACITY:
-                sprintf(ret, "%g", facet->sh.opacity);
+                fmt::print(ret, "%g", facet->sh.opacity);
                 break;
             case FDetail::F_STRUCTURE: {
                 std::ostringstream out;
@@ -181,51 +181,51 @@ namespace FlowIO {
                     out << "All";
                 else
                     out << (facet->sh.superIdx + 1);
-                sprintf(ret, "%s", out.str().c_str());
+                fmt::print(ret, "%s", out.str().c_str());
                 break;
             }
             case FDetail::F_LINK:
-                sprintf(ret, "%zd", facet->sh.superDest);
+                fmt::print(ret, "%zd", facet->sh.superDest);
                 break;
             case FDetail::F_DESORPTION:
                 if (facet->sh.desorbType == DES_COSINE_N) {
-                    sprintf(ret, "%s%g", desStr[facet->sh.desorbType],
+                    fmt::print(ret, "%s%g", desStr[facet->sh.desorbType],
                             facet->sh.desorbTypeN); // append exponent
                 } else {
-                    sprintf(ret, "%s", desStr[facet->sh.desorbType]);
+                    fmt::print(ret, "%s", desStr[facet->sh.desorbType]);
                 }
                 break;
             case FDetail::F_REFLECTION:
-                sprintf(ret, "%g diff. %g spec. %g cos^%g",
+                fmt::print(ret, "%g diff. %g spec. %g cos^%g",
                         facet->sh.reflection.diffusePart, facet->sh.reflection.specularPart,
                         1.0 - facet->sh.reflection.diffusePart -
                         facet->sh.reflection.specularPart,
                         facet->sh.reflection.cosineExponent);
                 break;
             case FDetail::F_TWOSIDED:
-                sprintf(ret, "%s", ynStr[facet->sh.is2sided]);
+                fmt::print(ret, "%s", ynStr[facet->sh.is2sided]);
                 break;
             case FDetail::F_VERTEX:
-                sprintf(ret, "%zd", facet->sh.nbIndex);
+                fmt::print(ret, "%zd", facet->sh.nbIndex);
                 break;
             case FDetail::F_AREA:
                 if (facet->sh.is2sided)
-                    sprintf(ret, "2*%g", facet->sh.area);
+                    fmt::print(ret, "2*%g", facet->sh.area);
                 else
-                    sprintf(ret, "%g", facet->sh.area);
+                    fmt::print(ret, "%g", facet->sh.area);
                 break;
             case FDetail::F_TEMP:
-                sprintf(ret, "%g", facet->sh.temperature);
+                fmt::print(ret, "%g", facet->sh.temperature);
                 break;
             case FDetail::F_2DBOX:
-                sprintf(ret, "%g x %g", facet->sh.U.Norme(), facet->sh.V.Norme());
+                fmt::print(ret, "%g x %g", facet->sh.U.Norme(), facet->sh.V.Norme());
                 break;
             case FDetail::F_TEXTURE_UV:
                 if (facet->sh.isTextured) {
-                    sprintf(ret, "%zdx%zd (%g x %g)", facet->sh.texWidth, facet->sh.texHeight,
+                    fmt::print(ret, "%zdx%zd (%g x %g)", facet->sh.texWidth, facet->sh.texHeight,
                             facet->sh.texWidth_precise, facet->sh.texHeight_precise);
                 } else {
-                    sprintf(ret, "None");
+                    fmt::print(ret, "None");
                 }
                 break;
             case FDetail::F_MESHSAMPLEPCM: {
@@ -241,17 +241,17 @@ namespace FlowIO {
                 }
 
                 if (IsEqual(tRatioU, tRatioV))
-                    sprintf(ret, "%g", tRatioU);
+                    fmt::print(ret, "%g", tRatioU);
                 else
-                    sprintf(ret, "%g x %g", tRatioU, tRatioV);
+                    fmt::print(ret, "%g x %g", tRatioU, tRatioV);
                 break;
             }
             case FDetail::F_COUNT:
-                sprintf(ret, "%s", GetCountStr(facet));
+                fmt::print(ret, "%s", GetCountStr(facet));
                 break;
             case FDetail::F_MEMORY:
-                sprintf(ret, "%s", "N/A");
-                // sprintf(ret, "%s", FormatMemory(facet->GetTexRamSize(1 +
+                fmt::print(ret, "%s", "N/A");
+                // fmt::print(ret, "%s", FormatMemory(facet->GetTexRamSize(1 +
                 // worker->moments.size())));
                 break;
             case FDetail::F_PLANARITY: {
@@ -269,11 +269,11 @@ namespace FlowIO {
                     double d = A * p.x + B * p.y + C * p.z + D;
                     planarityError = std::max(abs(d), planarityError);
                 }
-                sprintf(ret, "%lf", planarityError);
+                fmt::print(ret, "%lf", planarityError);
                 break;
             }
             case FDetail::F_PROFILE:
-                sprintf(ret, "%s", profStr[facet->sh.profileType]);
+                fmt::print(ret, "%s", profStr[facet->sh.profileType]);
                 break;
             case FDetail::F_IMPINGEMENT: // imp.rate
             {
@@ -281,7 +281,7 @@ namespace FlowIO {
                         1E4 * GetMoleculesPerTP(
                                 moment, model,
                                 glob); // 1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
-                sprintf(ret, "%g", fHit.nbHitEquiv / GetArea(*facet) * dCoef);
+                fmt::print(ret, "%g", fHit.nbHitEquiv / GetArea(*facet) * dCoef);
                 // 11.77=sqrt(8*8.31*293.15/3.14/0.028)/4/10
                 break;
             }
@@ -292,7 +292,7 @@ namespace FlowIO {
                         DensityCorrection(
                                 fHit); // 1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 
-                sprintf(ret, "%g", fHit.sum_1_per_ort_velocity / GetArea(*facet) * dCoef);
+                fmt::print(ret, "%g", fHit.sum_1_per_ort_velocity / GetArea(*facet) * dCoef);
 
                 break;
             }
@@ -303,7 +303,7 @@ namespace FlowIO {
                         DensityCorrection(
                                 fHit); // 1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 
-                sprintf(ret, "%g",
+                fmt::print(ret, "%g",
                         fHit.sum_1_per_ort_velocity / GetArea(*facet) * dCoef *
                         model->wp.gasMass / 1000.0 / 6E23);
                 break;
@@ -314,31 +314,31 @@ namespace FlowIO {
                                (model->wp.gasMass / 1000 / 6E23) *
                                0.0100; // 1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 
-                sprintf(ret, "%g", fHit.sum_v_ort * dCoef / GetArea(*facet));
+                fmt::print(ret, "%g", fHit.sum_v_ort * dCoef / GetArea(*facet));
                 break;
             }
             case FDetail::F_AVGSPEED: { // avg. gas speed (estimate)
-                /*sprintf(ret, "%g", 4.0*(double)(fHit.hit.nbMCHit+fHit.hit.nbDesorbed) /
+                /*fmt::print(ret, "%g", 4.0*(double)(fHit.hit.nbMCHit+fHit.hit.nbDesorbed) /
                  * fHit.hit.sum_1_per_ort_velocity);*/
                 double avgSpeed = (fHit.sum_1_per_velocity == 0.0) ? 0.0 : (
                         (fHit.nbHitEquiv + static_cast<double>(fHit.nbDesorbed)) /
                         fHit.sum_1_per_velocity);
-                sprintf(ret, "%g", avgSpeed);
+                fmt::print(ret, "%g", avgSpeed);
                 //<v_surf>=2*<v_surFDetail::F_ort>
                 //<v_gas>=1/<1/v_surf>
                 break;
             }
             case FDetail::F_MCHITS:
-                sprintf(ret, "%zd", fHit.nbMCHit);
+                fmt::print(ret, "%zd", fHit.nbMCHit);
                 break;
             case FDetail::F_EQUIVHITS:
-                sprintf(ret, "%g", fHit.nbHitEquiv);
+                fmt::print(ret, "%g", fHit.nbHitEquiv);
                 break;
             case FDetail::F_NDESORPTIONS:
-                sprintf(ret, "%zd", fHit.nbDesorbed);
+                fmt::print(ret, "%zd", fHit.nbDesorbed);
                 break;
             case FDetail::F_EQUIVABS:
-                sprintf(ret, "%g", fHit.nbAbsEquiv);
+                fmt::print(ret, "%g", fHit.nbAbsEquiv);
                 break;
         }
 
@@ -397,9 +397,14 @@ namespace FlowIO {
         std::sort(selectedValues.begin(), selectedValues.end());
         std::string facDetails = CSVExporter::GetFacetDetailsCSV(selectedValues, glob, model);
 
-        std::ofstream ofs(fileName);
-        ofs << facDetails;
-        ofs.close();
+        try {
+            std::ofstream ofs(fileName);
+            ofs << facDetails;
+            ofs.close();
+        }
+        catch (...){
+            return 1;
+        }
 
         return 0;
     }
@@ -418,9 +423,14 @@ namespace FlowIO {
 
         std::string facDetails = CSVExporter::GetFacetDetailsCSV(selectedValues, glob, model);
 
-        std::ofstream ofs(fileName);
-        ofs << facDetails;
-        ofs.close();
+        try {
+            std::ofstream ofs(fileName);
+            ofs << facDetails;
+            ofs.close();
+        }
+        catch (...){
+            return 1;
+        }
 
         return 0;
     }
@@ -443,5 +453,31 @@ namespace FlowIO {
 
 
         return n_elements;
+    }
+
+    void Exporter::export_facet_details(GlobalSimuState* glob, SimulationModel* model){
+        //Could use SettingsIO::outputFile instead of fixed name
+        //std::string csvFile = std::filesystem::path(SettingsIO::outputFile).replace_extension(".csv").string();
+        std::string csvFile = "facet_details.csv";
+        csvFile = std::filesystem::path(SettingsIO::workPath).append(csvFile).string();
+
+        if (FlowIO::CSVExporter::ExportAllFacetDetails(csvFile, glob, model)) {
+            Log::console_error("Could not write facet details to CSV file %s\n", csvFile.c_str());
+        } else {
+            Log::console_msg_master(3, "Successfully wrote facet details to CSV file %s\n", csvFile.c_str());
+        }
+    }
+
+    void Exporter::export_facet_quantities(GlobalSimuState* glob, SimulationModel* model){
+        //Could use SettingsIO::outputFile instead of fixed name
+        //std::string csvFile = std::filesystem::path(SettingsIO::outputFile).replace_extension(".csv").string();
+        std::string csvFile = "facet_physics.csv";
+        csvFile = std::filesystem::path(SettingsIO::workPath).append(csvFile).string();
+
+        if (FlowIO::CSVExporter::ExportPhysicalQuantitiesForFacets(csvFile, glob, model)) {
+            Log::console_error("Could not write facet quantities to CSV file %s\n", csvFile.c_str());
+        } else {
+            Log::console_msg_master(3, "Successfully wrote facet quantities to CSV file %s\n", csvFile.c_str());
+        }
     }
 }
