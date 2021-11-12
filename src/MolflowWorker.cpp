@@ -1369,6 +1369,7 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 
         progressDlg->SetMessage("Reloading structures for simulation unit...");
         ReloadSim(sendOnly, progressDlg);
+        CalcTotalOutgassing(); // needs IDs
 
         if (!sendOnly) {
             try {
@@ -1686,7 +1687,7 @@ void Worker::PrepareToRun() {
             } else f->sh.sticking_paramId = id;
         } else f->sh.sticking_paramId = -1;
 
-        if (f->sh.outgassing_paramId >= 0) { //if time-dependent desorption
+        /*if (f->sh.outgassing_paramId >= 0) { //if time-dependent desorption
             int id = GetIDId(static_cast<size_t>(f->sh.outgassing_paramId));
             if (id >= 0)
                 f->sh.IDid = id; //we've already generated an integrated des. for this time-dep. outgassing
@@ -1714,7 +1715,7 @@ void Worker::PrepareToRun() {
                 sprintf(tmp, "Facet #%zd: Can't RECORD and USE angle map desorption at the same time.", i + 1);
                 throw std::runtime_error(tmp);
             }
-        }
+        }*/
 
         //First worker::update will do it
         if (f->sh.anglemapParams.record) {
@@ -1737,8 +1738,6 @@ void Worker::PrepareToRun() {
 
     if (mApp->facetAdvParams && mApp->facetAdvParams->IsVisible() && needsAngleMapStatusRefresh)
         mApp->facetAdvParams->Refresh(geom->GetSelectedFacets());
-
-    CalcTotalOutgassing();
 
 }
 
@@ -1821,7 +1820,7 @@ void Worker::CalcTotalOutgassing() {
                             f->sh.outgassing / (1.38E-23 * f->sh.temperature);  //Outgassing molecules/sec
                     model->wp.finalOutgassingRate_Pa_m3_sec += f->sh.outgassing;
                 } else { //time-dependent outgassing
-                    double lastValue = IDs[f->sh.IDid].GetValues().back().second;
+                    double lastValue = model->tdParams.IDs[f->sh.IDid].back().second;
                     model->wp.totalDesorbedMolecules += lastValue / (1.38E-23 * f->sh.temperature);
                     size_t lastIndex = parameters[f->sh.outgassing_paramId].GetSize() - 1;
                     double finalRate_mbar_l_s = parameters[f->sh.outgassing_paramId].GetY(lastIndex);
