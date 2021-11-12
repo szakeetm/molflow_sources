@@ -215,10 +215,11 @@ namespace {
             fileName_c[testFile.size()] = '\0';
             argv.push_back(fileName_c);
 */
-            std::vector<std::string> argv = {"tester", "--config", "simulation.cfg", "--reset", "--file",
-                                             "--outputPath", outPath};
-            argv.push_back(testFile);
             {
+                std::vector<std::string> argv = {"tester", "--config", "simulation.cfg", "--reset",
+                                                 "--file", testFile,
+                                                 "--outputPath", outPath};
+
                 CharPVec argc_v(argv);
                 char **args = argc_v.data();
                 Initializer::initFromArgv(argv.size(), (args), &simManager, model);
