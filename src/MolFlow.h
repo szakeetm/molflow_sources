@@ -135,7 +135,7 @@ public:
         bool sameColor{false};
         bool showStats{false};
         bool travStep{false};
-        float alpha{0.06f};
+        float alpha{0.04f};
         int selectedNode{-1};
         float trimByProb[2]{0.0f,1.0f};
         float trimRange{1.0f};

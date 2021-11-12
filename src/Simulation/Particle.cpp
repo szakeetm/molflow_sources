@@ -287,6 +287,19 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                     break;
                 }
                 if(particle.pay) ((RopePayload*)particle.pay)->lastNode = nullptr;
+
+                //DEBUG
+                /*particle.origin = {-6.4573631052006828,0.32848390990035026,17.554289139097389};
+                particle.direction = {-0.43593250084036084,-0.60556971638170987,-0.66576885877340675};
+                particle.lastIntersected = 860;
+                lastHitFacet = model->facets.at(860).get();
+                if(!particle.pay)
+                    new RopePayload;
+                if(dynamic_cast<KdTreeAccel*>(model->accel.at(particle.structure).get())){
+                    if(particle.pay)((RopePayload*)particle.pay)->lastNode = &dynamic_cast<KdTreeAccel*>(model->accel.at(particle.structure).get())->nodes[14386];
+                }*/
+                //ENDDEBUG
+
                 insertNewParticle = false;
                 --remainingDes;
             }
@@ -329,10 +342,10 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                 //particle.hits = &hits;
                 //particle.rng = &randomGenerator;
                 particle.tMax = 1.0e99;
-                /*if(lastHitFacet)
+                if(lastHitFacet)
                     particle.lastIntersected = lastHitFacet->globalId;
                 else
-                    particle.lastIntersected = -1;*/
+                    particle.lastIntersected = -1;
 
                 // WIP: Compare
                 Ray ray;
@@ -373,13 +386,14 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                         tmp = ((RopePayload*)particle.pay)->lastNode;
                 }
                 ((RopePayload*)ray2.pay)->lastNode = tmp;
-                ((RopePayload*)ray2.pay)->lastRay = ((RopePayload*)particle.pay)->lastRay;
+                if(particle.pay)((RopePayload*)ray2.pay)->lastRay = ((RopePayload*)particle.pay)->lastRay;
 
                 found = model->accel.at(particle.structure)->Intersect(particle);
                 //}
 
+                // particle is selected (e.g rope) algorithm, ray is always regular traversal
                 if(found != testFound
-                /*|| particle.transparentHits.size() != ray.transparentHits.size()*/
+                   || particle.hardHit.hitId != ray.hardHit.hitId
                 || particle.hardHit.hit.colDistTranspPass != ray.hardHit.hit.colDistTranspPass){
                     std::cerr << "Verification error\n";
                     found = model->accel.at(particle.structure)->IntersectStat(ray2);
