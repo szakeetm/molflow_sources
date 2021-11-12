@@ -59,6 +59,7 @@ private:
   GLToggle      *hiddenVertex;
   GLToggle      *showMesh;
   GLToggle      *dirShowdirToggle;
+  GLToggle		*showTPtoggle;
   GLToggle      *showTimeToggle;
   GLToggle      *dirNormalizeToggle;
   GLToggle      *dirCenterToggle;

@@ -7,9 +7,6 @@
 #include "ParameterParser.h"
 
 #include <CLI11/CLI11.hpp>
-#include <ziplib/ZipArchive.h>
-#include <ziplib/ZipFile.h>
-#include <File.h>
 #include <Helper/StringHelper.h>
 #include <Helper/ConsoleLogger.h>
 #include <SettingsIO.h>
@@ -37,6 +34,8 @@ void initDefaultSettings() {
     Settings::paramFile.clear();
     Settings::paramSweep.clear();
 
+    SettingsIO::outputFacetDetails = false;
+    SettingsIO::outputFacetQuantities = false;
     SettingsIO::overwrite = false;
     SettingsIO::workFile.clear();
     SettingsIO::inputFile.clear();
@@ -76,6 +75,11 @@ int Initializer::parseCommands(int argc, char **argv) {
                                            "Output path, defaults to \'Results_{date}\'");
     app.add_option("-s,--outputDuration", Settings::outputDuration, "Seconds between each stat output if not zero");
     app.add_option("-a,--autosaveDuration", Settings::autoSaveDuration, "Seconds for autoSave if not zero");
+    app.add_flag("--writeFacetDetails", SettingsIO::outputFacetDetails,
+                   "Will write a CSV file containing all facet details including physical quantities");
+    app.add_flag("--writeFacetQuantities", SettingsIO::outputFacetQuantities,
+                   "Will write a CSV file containing all physical quantities for each facet");
+
     app.add_option("--setParamsByFile", Settings::paramFile,
                    "Parameter file for ad hoc change of the given geometry parameters")
             ->check(CLI::ExistingFile);
@@ -98,8 +102,8 @@ int Initializer::parseCommands(int argc, char **argv) {
         Settings::verbosity = 42;
 
     //std::cout<<app.config_to_str(true,true);
-    for (auto &lim : limits)
-        Settings::desLimit.emplace_back(lim);
+    for (auto& lim : limits)
+        Settings::desLimit.emplace_back(static_cast<size_t>(lim));
 
     if (Settings::simDuration == 0 && Settings::desLimit.empty()) {
         Log::console_error("No end criterion has been set!\n");
@@ -249,12 +253,12 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, const 
             Log::console_msg_master(3, " Initializing previous simulation state!\n");
 
             if (Settings::loadAutosave) {
-                std::string fileName = std::filesystem::path(SettingsIO::workFile).filename().string();
+                std::string autosaveFileName = std::filesystem::path(SettingsIO::workFile).filename().string();
                 std::string autoSavePrefix = "autosave_";
-                fileName = autoSavePrefix + fileName;
-                if (std::filesystem::exists(fileName)) {
+                autosaveFileName = autoSavePrefix + autosaveFileName;
+                if (std::filesystem::exists(autosaveFileName)) {
                     Log::console_msg_master(2, " Found autosave file! Loading simulation state...\n");
-                    FlowIO::LoaderXML::LoadSimulationState(fileName, model, globState, nullptr);
+                    FlowIO::LoaderXML::LoadSimulationState(autosaveFileName, model, globState, nullptr);
                 }
             } else {
                 FlowIO::LoaderXML::LoadSimulationState(SettingsIO::workFile, model, globState, nullptr);

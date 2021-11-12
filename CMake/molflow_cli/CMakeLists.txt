@@ -69,7 +69,7 @@ endif(NOT MSVC)
 #######################################
 
 set(SRC_FILES
-        ${CPP_DIR_2}/FlowCLI.cpp
+        ${CPP_DIR_1}/FlowCLI.cpp
         ${CPP_DIR_2}/SimulationManager.cpp
         ${CPP_DIR_2}/ShMemory.cpp
         ${CPP_DIR_2}/Process.cpp
@@ -100,6 +100,10 @@ set(SRC_FILES
 
         ${CPP_DIR_2}/FlowMPI.h #contains templates
         ${CPP_DIR_2}/FlowMPI.cpp
+
+        ${IO_DIR}/CSVExporter.cpp
+        ${IO_DIR}/CSVExporter.h
+
         )
 
 add_executable(${PROJECT_NAME} ${SRC_FILES})
@@ -119,7 +123,7 @@ if(USE_MPI AND MPI_FOUND)
     message(STATUS "Detected MPI version: ${MPI_CXX_VERSION}")
     set(USE_MPI TRUE)
     target_compile_definitions(${PROJECT_NAME} PUBLIC -DUSE_MPI)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${MPI_INCLUDE_PATH})
+    target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${MPI_INCLUDE_PATH})
     target_link_libraries(${PROJECT_NAME} PRIVATE MPI::MPI_CXX)
 endif()
 
@@ -161,10 +165,10 @@ if(MSVC)
 
     # zip extraction
     target_link_libraries(${PROJECT_NAME} PRIVATE
-            bzip2.lib
-            lzma.lib
-            ZipLib.lib
-            zlib.lib
+            #bzip2.lib
+            #lzma.lib
+            #ZipLib.lib
+            #zlib.lib
             )
 endif(MSVC)
 if(NOT MSVC)

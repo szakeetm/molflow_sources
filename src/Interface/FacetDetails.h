@@ -48,7 +48,7 @@ public:
 
 private:
 
-  char *GetCountStr(InterfaceFacet *f);
+  static char *GetCountStr(InterfaceFacet *f);
   void UpdateTable();
   char *FormatCell(size_t idx, InterfaceFacet *f, size_t mode);
   void PlaceComponents();

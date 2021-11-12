@@ -510,6 +510,8 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
             mApp->antiAliasing = chkAntiAliasing->GetState();
 			mApp->whiteBg = chkWhiteBg->GetState();
             mApp->highlightSelection = highlightSelectionToggle->GetState();
+            if(mApp->highlightSelection)
+                worker->GetGeometry()->UpdateSelection();
             mApp->highlightNonplanarFacets = highlightNonplanarToggle->GetState();
             mApp->leftHandedView = (bool)leftHandedToggle->GetState();
 			for (auto & i : mApp->viewer) {

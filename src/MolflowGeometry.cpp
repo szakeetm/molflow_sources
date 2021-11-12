@@ -21,7 +21,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "MolFlow.h"
 #include "Facet_shared.h"
 #include "Helper/MathTools.h"
-#include "Interface/ProfilePlotter.h"
+#include "ProfilePlotter.h"
+#include "ProfileModes.h"
 #include "ConvergencePlotter.h"
 #include "versionId.h"
 #include <iomanip>
@@ -1864,8 +1865,6 @@ void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, Worker *worker) {
 		if (AccessDataport(buffer))
 			buffer = (BYTE *)buffer->buff;*/
 
-	extern const char* profType[];
-
 	// Globals
 	//BYTE *buffer = (BYTE *)dpHit->buff;
 	//SHGHITS *gHits = (SHGHITS *)buffer;
@@ -1875,7 +1874,7 @@ void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, Worker *worker) {
 	for (int i = 0; i < PROFILE_SIZE; i++)
 		header << i + 1 << sep;
 	header << '\n';
-
+	
 	fputs(header.str().c_str(), file);
 
 	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
@@ -1890,7 +1889,7 @@ void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, Worker *worker) {
 			if (f->selected) {
 				std::ostringstream line;
 
-				line << i + 1 << sep << profType[f->sh.profileType] << sep << f->sh.O.x << sep << f->sh.O.y << sep << f->sh.O.z << sep << f->sh.U.x << sep << f->sh.U.y << sep << f->sh.U.z << sep;
+				line << i + 1 << sep << profileRecordModeDescriptions[(ProfileRecordModes)f->sh.profileType].second << sep << f->sh.O.x << sep << f->sh.O.y << sep << f->sh.O.z << sep << f->sh.U.x << sep << f->sh.U.y << sep << f->sh.U.z << sep;
 				line << f->sh.V.x << sep << f->sh.V.y << sep << f->sh.V.z << sep << f->sh.U.Norme() << sep << f->sh.V.Norme() << sep << f->sh.center.x << sep << f->sh.center.y << sep << f->sh.center.z << sep << f->sh.maxSpeed << sep << f->facetHitCache.nbMCHit << sep << f->facetHitCache.nbHitEquiv << sep;
 
 				if (f->sh.isProfile) {

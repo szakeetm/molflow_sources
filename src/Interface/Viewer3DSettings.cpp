@@ -48,12 +48,12 @@ extern SynRad*mApp;
 Viewer3DSettings::Viewer3DSettings():GLWindow() {
 
   int wD = 215;
-  int hD = 475;
+  int hD = 500;
 
   SetTitle("3D Viewer Settings");
 
   panel = new GLTitledPanel("3D Viewer settings");
-  panel->SetBounds(5,5,wD-10,320);
+  panel->SetBounds(5,5,wD-10,345);
   Add(panel);
 
   GLLabel *l4 = new GLLabel("Show facet");
@@ -119,45 +119,53 @@ Viewer3DSettings::Viewer3DSettings():GLWindow() {
   bigDots->SetBounds(10,225,50,18);
   Add(bigDots);
 
+  showTPtoggle = new GLToggle(0, "Show Teleports");
+  showTPtoggle->SetBounds(10, 250, 50, 18);
+  Add(showTPtoggle);
+
   showTimeToggle =  new GLToggle(0,"Show time overlay");
-  showTimeToggle->SetBounds(10,250,50,18);
+  showTimeToggle->SetBounds(10,275,50,18);
   Add(showTimeToggle);
 
   hideLotselected = new GLToggle(0, "Hide Normals, \201 \202 vectors, indices");
-  hideLotselected->SetBounds(10, 275, 150, 18);
+  hideLotselected->SetBounds(10, 300, 150, 18);
   Add(hideLotselected);
 
   GLLabel* l10 = new GLLabel("when more than             facets sel.");
-  l10->SetBounds(15, 297, 150, 18);
+  l10->SetBounds(15, 322, 150, 18);
   Add(l10);
 
   hideLotText = new GLTextField(0, "");
-  hideLotText->SetBounds(100, 297, 40, 18);
+  hideLotText->SetBounds(100, 322, 40, 18);
   hideLotText->SetEditable(false);
   Add(hideLotText);
   
   GLTitledPanel *panel2 = new GLTitledPanel("Direction field");
-  panel2->SetBounds(5,330,wD-10,95);
+  panel2->SetBounds(5,355,wD-10,95);
   Add(panel2);
   
-  dirShowdirToggle = new GLToggle(0,"Show direction");
-  dirShowdirToggle->SetBounds(10,345,190,18);
+  dirShowdirToggle = new GLToggle(0,"Show direction (selected viewer only)");
+  dirShowdirToggle->SetBounds(10,370,190,18);
   Add(dirShowdirToggle);
 
+  GLLabel* l11 = new GLLabel("Set for all viewers:");
+  l11->SetBounds(10, 390, 90, 18);
+  Add(l11);
+
   GLLabel *l7 = new GLLabel("Norme ratio");
-  l7->SetBounds(10,365,90,18);
+  l7->SetBounds(10,410,90,18);
   Add(l7);
 
   dirNormeText = new GLTextField(0,"");
-  dirNormeText->SetBounds(100,365,100,18);
+  dirNormeText->SetBounds(100,410,100,18);
   Add(dirNormeText);
 
   dirNormalizeToggle = new GLToggle(0,"Normalize");
-  dirNormalizeToggle->SetBounds(10,390,100,18);
+  dirNormalizeToggle->SetBounds(10,430,100,18);
   Add(dirNormalizeToggle);
 
   dirCenterToggle = new GLToggle(0,"Center");
-  dirCenterToggle->SetBounds(110,390,90,18);
+  dirCenterToggle->SetBounds(110,430,90,18);
   Add(dirCenterToggle);
 
   applyButton = new GLButton(0,"Apply");
@@ -209,6 +217,7 @@ void Viewer3DSettings::Refresh(Geometry *s,GeometryViewer *v) {
 
   bigDots->SetState(viewer->bigDots);
   dirShowdirToggle->SetState(viewer->showDir);
+  showTPtoggle->SetState(viewer->showTP);
 
   sprintf(tmp,"%g",viewer->transStep);
   traStepText->SetText(tmp);
@@ -290,6 +299,7 @@ void Viewer3DSettings::ProcessMessage(GLComponent *src,int message) {
 	  viewer->bigDots=bigDots->GetState();
       viewer->showDir=dirShowdirToggle->GetState();
 	  viewer->showTime=showTimeToggle->GetState(); 
+      viewer->showTP = showTPtoggle->GetState();
 	  
       if( !dirNormeText->GetNumber(&nratio) ) {
         GLMessageBox::Display("Invalid norme ratio value","Error",GLDLG_OK,GLDLG_ICONERROR);
