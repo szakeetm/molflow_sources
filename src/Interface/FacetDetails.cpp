@@ -266,9 +266,9 @@ char *FacetDetails::GetCountStr(InterfaceFacet *f) {
   static char ret[128];
   strcpy(ret,"");
   if(f->sh.countDes) strcat(ret,"DES");
-  if(f->sh.countAbs) if(strlen(ret)==0) strcat(ret,"ABS"); else strcat(ret,"+ABS");
-  if(f->sh.countRefl) if(strlen(ret)==0) strcat(ret,"REFL"); else strcat(ret,"+REFL");
-  if(f->sh.countTrans) if(strlen(ret)==0) strcat(ret,"TRANS"); else strcat(ret,"+TRANS");
+  if(f->sh.countAbs) { if (strlen(ret) == 0) { strcat(ret, "ABS"); } else { strcat(ret, "+ABS"); }}
+  if(f->sh.countRefl) { if (strlen(ret) == 0) { strcat(ret, "REFL"); } else { strcat(ret, "+REFL"); }}
+  if(f->sh.countTrans) { if (strlen(ret) == 0) { strcat(ret, "TRANS"); } else { strcat(ret, "+TRANS"); }}
   return ret;
 }
 

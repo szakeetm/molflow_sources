@@ -89,19 +89,27 @@ endif ()
         /W4>)]]
 if(NOT MSVC)
     add_compile_options(
-            -W -Wextra -pedantic
+            "$<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:-Wno-tautological-undefined-compare;-Wno-inconsistent-missing-override>"
+            #is valid for C++/ObjC++ but not for C
+            $<$<COMPILE_LANGUAGE:CXX>:-Wno-reorder>
+            #-w
+            #-Wextra
+            -Wconversion
+            -Wno-write-strings
+            -Wno-unused
+            -pedantic
             #-Werror -Wno-error=uninitialized
-        $<$<CONFIG:RELEASE>:-O3>
-        $<$<CONFIG:DEBUG>:-O0>
-        $<$<CONFIG:DEBUG>:-ggdb3>
-        $<$<CONFIG:RELWITHDEBINFO>:-O2>
-        $<$<CONFIG:RELWITHDEBINFO>:-ggdb3>
-        $<$<CONFIG:RELWITHDEBINFO>:-g>
+        "$<$<CONFIG:RELEASE>:-O3>"
+        "$<$<CONFIG:DEBUG>:-O0>"
+        "$<$<CONFIG:DEBUG>:-ggdb3>"
+        "$<$<CONFIG:RELWITHDEBINFO>:-O2>"
+        "$<$<CONFIG:RELWITHDEBINFO>:-ggdb3>"
+        "$<$<CONFIG:RELWITHDEBINFO>:-g>"
     )
 else()
     #/WX
     add_compile_options(
-        /W1
+        /W3
     )
     add_compile_options(
         "$<$<CONFIG:Release>:/GL;/O2;/EHsc>"

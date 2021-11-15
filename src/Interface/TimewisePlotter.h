@@ -66,7 +66,7 @@ private:
   GLChart     *chart;
   GLCombo     *profCombo;
   GLLabel     *normLabel;
-  GLCombo     *normCombo;
+  GLCombo     *displayModeCombo;
   GLButton    *selButton;
   GLTextField *momentsText;
   GLLabel     *momLabel,*momentsLabel;

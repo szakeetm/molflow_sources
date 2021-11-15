@@ -50,6 +50,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 // Plotters
 #include "Interface/ProfilePlotter.h"
+#include "ProfileModes.h"
 #include "Interface/PressureEvolution.h"
 #include "Interface/TimewisePlotter.h"
 #include "Interface/TexturePlotter.h"
@@ -375,18 +376,17 @@ int MolFlow::OneTimeSceneInit()
 	facetTemperature = new GLTextField(0, nullptr);
 	facetPanel->Add(facetTemperature);
 
+
+
 	facetReLabel = new GLLabel("Profile:");
 	facetPanel->Add(facetReLabel);
-	facetRecType = new GLCombo(0);
-	facetRecType->SetSize(7);
-	facetRecType->SetValueAt(0, "None");
-	facetRecType->SetValueAt(1, "Pressure/imp/density (\201)");
-	facetRecType->SetValueAt(2, "Pressure/imp/density (\202)");
-	facetRecType->SetValueAt(3, "Incident angle");
-	facetRecType->SetValueAt(4, "Speed distribution");
-	facetRecType->SetValueAt(5, "Orthogonal velocity");
-	facetRecType->SetValueAt(6, "Tangential velocity");
-	facetPanel->Add(facetRecType);
+	facetProfileCombo = new GLCombo(0);
+	size_t nbRecModes=(size_t)ProfileRecordModes::NUMITEMS;
+	facetProfileCombo->SetSize(nbRecModes);
+	for (size_t i = 0; i < nbRecModes; i++) {
+		facetProfileCombo->SetValueAt(i, profileRecordModeDescriptions[(ProfileRecordModes)i].first.c_str()); //long description
+	}
+	facetPanel->Add(facetProfileCombo);
 
 	facetAdvParamsBtn = new GLButton(0, "<< Adv");
 	facetPanel->Add(facetAdvParamsBtn);
@@ -477,7 +477,7 @@ void MolFlow::PlaceComponents() {
 	facetPanel->SetCompBounds(facetArea, 110, cursorY, 82, 18);
 
 	facetPanel->SetCompBounds(facetReLabel, 7, cursorY += 25, 60, 18);
-	facetPanel->SetCompBounds(facetRecType, 65, cursorY, 130, 18);
+	facetPanel->SetCompBounds(facetProfileCombo, 65, cursorY, 130, 18);
 
 	facetPanel->SetCompBounds(facetAdvParamsBtn, 5, cursorY += 25, 48, 18);
 	facetPanel->SetCompBounds(facetDetailsBtn, 56, cursorY, 45, 18);
@@ -561,8 +561,8 @@ void MolFlow::ClearFacetParams() {
 	facetDesType->SetEditable(false);
 	facetDesTypeN->SetText("");
 	facetDesTypeN->SetEditable(false);
-	facetRecType->SetSelectedValue("");
-	facetRecType->SetEditable(false);
+	facetProfileCombo->SetSelectedValue("");
+	facetProfileCombo->SetEditable(false);
 }
 
 // Name: ApplyFacetParams()
@@ -702,7 +702,7 @@ void MolFlow::ApplyFacetParams() {
 	}
 
 	// Record (profile) type
-	int rType = facetRecType->GetSelectedIndex(); // -1 if "..."
+	int rType = facetProfileCombo->GetSelectedIndex(); // -1 if "..."
 
 	// 2sided
 	int is2Sided = facetSideType->GetSelectedIndex();
@@ -859,7 +859,7 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 		if (temperatureE) facetTemperature->SetText(f0->sh.temperature); else facetTemperature->SetText("...");
 		if (is2sidedE) facetSideType->SetSelectedIndex(f0->sh.is2sided); else facetSideType->SetSelectedValue("...");
 		if (desorbTypeNE) facetDesTypeN->SetText(f0->sh.desorbTypeN); else facetDesTypeN->SetText("...");
-		if (recordE) facetRecType->SetSelectedIndex(f0->sh.profileType); else facetRecType->SetSelectedValue("...");
+		if (recordE) facetProfileCombo->SetSelectedIndex(f0->sh.profileType); else facetProfileCombo->SetSelectedValue("...");
 
 		if (selectedFacets.size() == 1) {
 			facetPumping->SetEditable(true);
@@ -938,7 +938,7 @@ void MolFlow::UpdateFacetParams(bool updateSelection) { //Calls facetAdvParams->
 		facetTemperature->SetEditable(true);
 		facetSideType->SetEditable(true);
 		facetDesType->SetEditable(true);
-		facetRecType->SetEditable(true);
+		facetProfileCombo->SetEditable(true);
 		facetApplyBtn->SetEnabled(false);
 	}
 	else {
@@ -1785,7 +1785,7 @@ void MolFlow::ProcessMessage(GLComponent *src, int message)
 			facetFIAreaLabel->SetEnabled(hasDesorption);
 			facetDesTypeN->SetEditable(facetDesType->GetSelectedIndex() == 3);
 		}
-		else if (src == facetRecType || src == facetSideType) {
+		else if (src == facetProfileCombo || src == facetSideType) {
 			facetApplyBtn->SetEnabled(true);
 		}
 		break;

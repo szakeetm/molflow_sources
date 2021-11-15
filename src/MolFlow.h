@@ -82,7 +82,7 @@ public:
 	
     GLCombo       *facetDesType;
 	GLTextField   *facetDesTypeN;
-    GLCombo       *facetRecType;
+    GLCombo       *facetProfileCombo;
 
 	GLLabel       *facetPumpingLabel;
 	GLTextField   *facetPumping;	

@@ -144,24 +144,28 @@ Viewer3DSettings::Viewer3DSettings():GLWindow() {
   panel2->SetBounds(5,355,wD-10,95);
   Add(panel2);
   
-  dirShowdirToggle = new GLToggle(0,"Show direction");
+  dirShowdirToggle = new GLToggle(0,"Show direction (selected viewer only)");
   dirShowdirToggle->SetBounds(10,370,190,18);
   Add(dirShowdirToggle);
 
+  GLLabel* l11 = new GLLabel("Set for all viewers:");
+  l11->SetBounds(10, 390, 90, 18);
+  Add(l11);
+
   GLLabel *l7 = new GLLabel("Norme ratio");
-  l7->SetBounds(10,390,90,18);
+  l7->SetBounds(10,410,90,18);
   Add(l7);
 
   dirNormeText = new GLTextField(0,"");
-  dirNormeText->SetBounds(100,390,100,18);
+  dirNormeText->SetBounds(100,410,100,18);
   Add(dirNormeText);
 
   dirNormalizeToggle = new GLToggle(0,"Normalize");
-  dirNormalizeToggle->SetBounds(10,415,100,18);
+  dirNormalizeToggle->SetBounds(10,430,100,18);
   Add(dirNormalizeToggle);
 
   dirCenterToggle = new GLToggle(0,"Center");
-  dirCenterToggle->SetBounds(110,415,90,18);
+  dirCenterToggle->SetBounds(110,430,90,18);
   Add(dirCenterToggle);
 
   applyButton = new GLButton(0,"Apply");

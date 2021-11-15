@@ -328,7 +328,6 @@ test-windows:
     - rm -rf ./tmp
     - rm -rf ./TestCases
     - rm -rf ./Results_*
-    - rm -f ./test_*.xml
     - rm -f ./testsuite
   artifacts:
     when: always
@@ -380,8 +379,8 @@ benchmark-windows:
     - Set-Location ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\")
     - Copy-Item -Force ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\" + ($CI_COMMIT_BRANCH) + "time_record_*") (".\")
     - Copy-Item -Force ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\time_record_*") (".\")
-    - $AllArgs = @("--gtest_filter=*PerformanceOkay* --gtest_output='xml:benchmark.xml'")
-    - powershell.exe -c "./testsuite.exe $AllArgs"
+    - $AllArgs = @("--gtest_filter=*PerformanceOkay* --gtest_output=xml:benchmark.xml")
+    - cmd.exe /c "start /b /wait /high testsuite.exe $AllArgs"
     - Move-Item -Path benchmark.xml -Destination (($PROJPATH) + "\benchmark.xml")
     - Move-Item -Force (".\time_record_*") ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\" + ($CI_COMMIT_BRANCH) + "\")
   after_script:
@@ -391,7 +390,6 @@ benchmark-windows:
     - Remove-Item -Recurse -Force ("./tmp")
     - Remove-Item -Recurse -Force ("./TestCases")
     - Remove-Item -Recurse -Force ("./Results_*")
-    - Remove-Item -Force ("./test_*.xml")
     - Remove-Item -Force ("./testsuite.exe")
   artifacts:
     when: always

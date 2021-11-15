@@ -95,7 +95,7 @@ struct SubprocessFacet : public Facet {
 
     SubprocessFacet(const SubprocessFacet &o);
 
-    SubprocessFacet(SubprocessFacet &&cpy);
+    SubprocessFacet(SubprocessFacet &&cpy) noexcept;
 
     SubprocessFacet &operator=(const SubprocessFacet &o);
 
@@ -108,7 +108,7 @@ struct SubprocessFacet : public Facet {
     Anglemap angleMap; //TODO: -> GeneratingAngleMap from 2.7
 
     // Temporary var (used in FillHit for hit recording)
-    bool isReady;         // Volatile state
+    bool isReady{};         // Volatile state
 
     // Facet hit counters
     //std::vector<FacetHitBuffer> tmpCounter; //1+nbMoment
@@ -148,7 +148,7 @@ class GlobalSimuState;
 
 class SuperStructure {
 public:
-    SuperStructure();
+    SuperStructure() = default;
 
     ~SuperStructure();
 

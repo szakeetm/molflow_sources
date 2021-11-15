@@ -166,7 +166,6 @@ if(MSVC)
     # set the path to the library folder
     target_link_directories(${PROJECT_NAME} PRIVATE ${LINK_DIR_1})
 
-    message(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
     target_link_directories(${PROJECT_NAME} PRIVATE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
     find_package(OpenGL REQUIRED)
     # 1. link against external libs
@@ -185,7 +184,7 @@ if(MSVC)
             shell32.lib
             ole32.lib)
     # 2. link against our own libs
-    target_link_libraries(${PROJECT_NAME} PRIVATE pugixml nativefiledialog)
+    #[[target_link_libraries(${PROJECT_NAME} PRIVATE pugixml nativefiledialog)]]
 elseif(NOT MSVC)
     if(APPLE)
         #link to self-build sdl shared lib
@@ -210,16 +209,16 @@ elseif(NOT MSVC)
     endif()
 
     find_package(OpenGL REQUIRED)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${OPENGL_INCLUDE_DIRS})
+    target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${OPENGL_INCLUDE_DIRS})
 
     find_package(SDL2 REQUIRED)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${SDL2_INCLUDE_DIRS})
+    target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${SDL2_INCLUDE_DIRS})
 
     find_package(PNG REQUIRED)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${PNG_INCLUDE_DIRS})
+    target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${PNG_INCLUDE_DIRS})
 
     find_package(CURL REQUIRED)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${CURL_INCLUDE_DIRS})
+    target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${CURL_INCLUDE_DIRS})
 
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
@@ -261,7 +260,7 @@ elseif(NOT MSVC)
         target_link_libraries(${PROJECT_NAME} PRIVATE stdc++fs)
     endif()
 
-    target_link_libraries(${PROJECT_NAME} PRIVATE pugixml sdl_savepng truncatedgaussian)
-    target_link_libraries(${PROJECT_NAME} PRIVATE nativefiledialog)
+    #[[target_link_libraries(${PROJECT_NAME} PRIVATE pugixml sdl_savepng truncatedgaussian)
+    target_link_libraries(${PROJECT_NAME} PRIVATE nativefiledialog)]]
     #target_link_libraries(${PROJECT_NAME} PRIVATE ziplib)
 endif()
