@@ -524,7 +524,7 @@ namespace {
             // clear old results from a previous attempt and define a new desorption limit (to prevent early termination as the input file will already have reached this limit)
             globState.Reset();
             Settings::desLimit.clear();
-            Settings::desLimit.emplace_back(300);
+            Settings::desLimit.emplace_back(400);
             Initializer::initDesLimit(model, globState);
 
             //simManager.RefreshRNGSeed(false);
@@ -882,7 +882,7 @@ namespace {
         if(std::filesystem::exists(f_physics)){
             EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_physics.string()) );
         }
-        
+
         if (!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
             std::filesystem::remove_all(SettingsIO::workPath);
     }

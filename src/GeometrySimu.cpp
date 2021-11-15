@@ -1393,7 +1393,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                         cmpFileFine += fmt::format("[Facet][{}][Profile][Ind={}][countEquiv][{}] has large difference: "
                                                "{} : {} - {}\n",
                                                facetId, id, m,
-                                               std::abs(prof_lhs[id].countEquiv / sumHitDes - prof_rhs[id].countEquiv / sumHitDes_rhs) / (prof_lhs[id].countEquiv / sumHitDes), 
+                                               std::abs(prof_lhs[id].countEquiv / sumHitDes - prof_rhs[id].countEquiv / sumHitDes_rhs) / (prof_lhs[id].countEquiv / sumHitDes),
                                                std::abs(prof_lhs[id].countEquiv / sumHitDes), (prof_rhs[id].countEquiv / sumHitDes_rhs));
 
                         ++fineErrNb;
@@ -1988,7 +1988,7 @@ bool SimulationModel::StartFromSource(Ray& ray) {
     if (src->sh.superIdx == -1) {
         return false;
     }
-    
+
     ray.structure = src->sh.superIdx;
 
     //teleportedFrom = -1;
