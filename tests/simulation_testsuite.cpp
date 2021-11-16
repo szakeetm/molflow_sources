@@ -350,11 +350,9 @@ namespace {
         std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
         GlobalSimuState globState{};
 
-        std::vector<std::string> argv = {"tester", "--verbosity", "1",
-                                         "-t", std::to_string(runForTSec), "--file", testFile, "--outputPath", outPath};
         {
             {
-                std::vector<std::string> argv = {"tester", "--config", "simulation.cfg", "--reset",
+                std::vector<std::string> argv = {"tester", "--verbosity", "1", "-t", std::to_string(runForTSec),
                                              "--file", testFile, "--outputPath", outPath};
                 CharPVec argc_v(argv);
                 char **args = argc_v.data();
