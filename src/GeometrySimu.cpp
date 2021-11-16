@@ -1800,7 +1800,7 @@ int SimulationModel::ComputeHitStats(const std::vector<TestRay>& battery) {
     {
         auto ray = RayStat();
         ray.rng = new MersenneTwister();
-
+        ray.pay = new RopePayload();
         //Node stats
 #pragma omp for
         for (int sample_id = 0; sample_id < battery.size(); sample_id++) {
