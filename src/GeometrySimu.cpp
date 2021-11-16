@@ -802,6 +802,13 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
         return 1;
     }
 
+    if(accel_type == 1 && this->wp.kd_with_ropes) {
+        for (size_t s = 0; s < this->sh.nbSuper; ++s) {
+            auto kd = this->accel[s].get();
+            dynamic_cast<KdTreeAccel*>(kd)->AddRopes();
+        }
+    }
+
     if(accel_type == 1 && !hits.empty())
         for( auto& acc : accel){
             RTStats tree_stats{};

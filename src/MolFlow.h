@@ -129,7 +129,7 @@ public:
         bool drawAllStructs{false};
         int showLevelAABB[2]{-1, -1};
         bool showBranchSide[2]{true, true};
-        bool showAABBLeaves{false};
+        bool showAABBLeaves{true};
         bool boxExpansion{false};
         bool reverseExpansion{false};
         bool sameColor{false};

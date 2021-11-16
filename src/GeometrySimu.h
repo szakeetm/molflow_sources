@@ -29,7 +29,7 @@ class ParameterSurface : public Surface {
 public:
     ParameterSurface(Distribution2D *distribution) : dist(distribution) {};
 
-    ~ParameterSurface() = default;
+    ~ParameterSurface() override = default;
 
     bool IsHardHit(const Ray &r) override;
 };
