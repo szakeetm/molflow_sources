@@ -127,12 +127,14 @@ public:
     void BuildPipe(double ratio,int steps) override;
 	void EmptyGeometry() override;
 	void CrashHandler(std::exception& e);
-	
+
+    int  FrameMove() override;
+
 protected:
 	void LoadParameterCatalog();
     int  OneTimeSceneInit() override;
     int  RestoreDeviceObjects() override;
 	int  InvalidateDeviceObjects() override;
-    int  FrameMove() override;
+
     void ProcessMessage(GLComponent *src,int message) override;
 };
