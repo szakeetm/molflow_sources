@@ -20,6 +20,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #pragma once
 
 #include "Geometry_shared.h"
+#include "PugiXML/pugixml.hpp"
+#include "GeometrySimu.h"
 #include <cereal/archives/xml.hpp>
 
 #define TEXTURE_MODE_PRESSURE 0
@@ -42,7 +44,7 @@ public:
 	// Load
 	void LoadGEO(FileReader *file, GLProgress *prg, int *version, Worker *worker);
 	void LoadSYN(FileReader *file, GLProgress *prg, int *version, Worker *worker);
-	bool LoadTexturesGEO(FileReader *file, GLProgress *prg, Dataport *dpHit, int version);
+	bool LoadTexturesGEO(FileReader *file, GLProgress *prg, GlobalSimuState &globState, int version);
 	//void ImportDesorption_DES(FileReader *file); //Deprecated
 	void ImportDesorption_SYN(FileReader *synFile, const size_t &source, const double &time,
 		const size_t &mode, const double &eta0, const double &alpha, const double &cutoffdose,
@@ -55,25 +57,25 @@ public:
 	void InsertSYN(FileReader *file, GLProgress *prg, bool newStr);
 
 	// Save
-	void SaveTXT(FileWriter *file, Dataport *dhHit, bool saveSelected);
-	void ExportTextures(FILE *file, int grouping, int mode, Dataport *dhHit, bool saveSelected, size_t sMode);
-	void ExportProfiles(FILE *file, int isTXT, Dataport *dhHit, Worker *worker);
-	void SaveGEO(FileWriter *file, GLProgress *prg, Dataport *dpHit, Worker *worker,
-		bool saveSelected, bool crashSave = false);
+	void SaveTXT(FileWriter *file, GlobalSimuState &globState, bool saveSelected);
+	void ExportTextures(FILE *file, int grouping, int mode, GlobalSimuState &globState, bool saveSelected);
+	void ExportProfiles(FILE *file, int isTXT, Worker *worker);
+	void SaveGEO(FileWriter *file, GLProgress *prg, GlobalSimuState &globState, Worker *worker,
+                 bool saveSelected, bool crashSave = false);
 	
-	void SaveXML_geometry(pugi::xml_node saveDoc, Worker *work, GLProgress *prg, bool saveSelected);
-	bool SaveXML_simustate(pugi::xml_node saveDoc, Worker *work, BYTE *buffer, GLProgress *prg, bool saveSelected);
+	void SaveXML_geometry(pugi::xml_node &saveDoc, Worker *work, GLProgress *prg, bool saveSelected);
+	bool SaveXML_simustate(pugi::xml_node saveDoc, Worker *work, GlobalSimuState &globState, GLProgress *prg, bool saveSelected);
 	void LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg);
 	void InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress *progressDlg, bool newStr);
-	bool LoadXML_simustate(pugi::xml_node loadXML, Dataport *dpHit, Worker *work, GLProgress *progressDlg);
+	bool LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState &globState, Worker *work, GLProgress *progressDlg);
 
 	// Geometry
 	void     BuildPipe(double L, double R, double s, int step);
-	void     LoadProfileGEO(FileReader *file, Dataport *dpHit, int version);
+	void     LoadProfileGEO(FileReader *file, GlobalSimuState &globState, int version);
 
 	// Memory usage (in bytes)
 	size_t GetGeometrySize();
-	size_t GetHitsSize(std::vector<double> *moments);
+	size_t GetHitsSize(size_t nbMoments);
 
 	// Raw data buffer (geometry)
 	void CopyGeometryBuffer(BYTE *buffer,const OntheflySimulationParams& ontheflyParams);
@@ -83,35 +85,23 @@ public:
 
 	// Texture scaling
 	//TEXTURE_SCALE_TYPE texture_limits[3];   // Min/max values for texture scaling: Pressure/Impingement rate/Density
-	bool  texAutoScaleIncludeConstantFlow;  // Include constant flow when calculating autoscale values
+	short  texAutoScaleIncludeConstantFlow;  // Include constant flow when calculating autoscale values: 1 include, 0 moments only, 2 constant flow only
 
 	
 
 #pragma region GeometryRender.cpp
-	void BuildFacetTextures(BYTE *texture,bool renderRegularTexture,bool renderDirectionTexture,size_t sMode);
+	void BuildFacetTextures(GlobalSimuState &globState, bool renderRegularTexture, bool renderDirectionTexture);
 	void BuildFacetDirectionTextures(BYTE *texture);
 #pragma endregion
 
 	void SerializeForLoader(cereal::BinaryOutputArchive&);
-	/*
-	template <class Archive> void serialize(Archive & archive) {
-		archive(
-			CEREAL_NVP(sh),
-			CEREAL_NVP(vertices3)
-		);
-		
-		for (size_t i = 0; i < sh.nbFacet; i++) {
-			archive(
-				CEREAL_NVP(*(facets[i]))
-			);
-		}
-	}
-	*/
+
+    bool InitOldStruct(SimulationModel *model);
 
 private:
 
 	void InsertSYNGeom(FileReader *file, size_t strIdx = 0, bool newStruct = false);
-	void SaveProfileGEO(FileWriter *file, Dataport *dpHit, int super = -1, bool saveSelected = false, bool crashSave = false);
+	void SaveProfileGEO(FileWriter *file, GlobalSimuState &globState, int super = -1, bool saveSelected = false, bool crashSave = false);
 
 };
 

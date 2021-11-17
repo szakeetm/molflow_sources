@@ -26,16 +26,15 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 class Parameter:public Distribution2D {
 public:
+    Parameter() {
+        fromCatalog=false;
+        logXinterp = false;
+        logYinterp = false;
+    }
 	std::string name;
-	bool fromCatalog;
-	
-	Parameter();
+	bool fromCatalog=false;
 
-	template<class Archive>
-	void serialize(Archive & archive)
-	{
-		archive(name,values,isLogLog,fromCatalog);
-	}
+	static int LoadParameterCatalog(std::vector<Parameter> &vec_param);
 };
 
 /*

@@ -25,7 +25,8 @@ using namespace pugi;
 #include <sstream>
 #include <iomanip> //setprecision
 #include "GLApp/GLToolkit.h"
-#include "GLApp/MathTools.h" //IS_ZERO
+#include "Helper/MathTools.h" //IS_ZERO
+#include "Helper/StringHelper.h"
 #include "GLApp/GLMessageBox.h"
 #include <cstring>
 #include <math.h>
@@ -41,7 +42,7 @@ extern std::vector<int> colorMap;
 * \param version version of the geometry description
 * \param nbVertex number of facets contained in the geometry
 */
-void Facet::LoadGEO(FileReader *file, int version, size_t nbVertex) {
+void InterfaceFacet::LoadGEO(FileReader *file, int version, size_t nbVertex) {
 
 	file->ReadKeyword("indices"); file->ReadKeyword(":");
 	for (int i = 0; i < sh.nbIndex; i++) {
@@ -97,14 +98,14 @@ void Facet::LoadGEO(FileReader *file, int version, size_t nbVertex) {
 	hasMesh = file->ReadInt();
 	if (version >= 7) {
 		file->ReadKeyword("outgassing"); file->ReadKeyword(":");
-		sh.outgassing = file->ReadDouble()*0.100; //mbar*l/s -> Pa*m3/s
+		sh.outgassing = file->ReadDouble()*MBARLS_TO_PAM3S; //mbar*l/s -> Pa*m3/s
 
 	}
 	file->ReadKeyword("texDimX"); file->ReadKeyword(":");
-	sh.texWidthD = file->ReadDouble();
+	sh.texWidth_precise = file->ReadDouble();
 
 	file->ReadKeyword("texDimY"); file->ReadKeyword(":");
-	sh.texHeightD = file->ReadDouble();
+	sh.texHeight_precise = file->ReadDouble();
 
 	file->ReadKeyword("countDes"); file->ReadKeyword(":");
 	sh.countDes = file->ReadInt();
@@ -120,15 +121,15 @@ void Facet::LoadGEO(FileReader *file, int version, size_t nbVertex) {
 	file->ReadKeyword("acMode"); file->ReadKeyword(":");
 	sh.countACD = file->ReadInt();
 	file->ReadKeyword("nbAbs"); file->ReadKeyword(":");
-	facetHitCache.hit.nbAbsEquiv = file->ReadDouble();
+	facetHitCache.nbAbsEquiv = file->ReadDouble();
 
 	file->ReadKeyword("nbDes"); file->ReadKeyword(":");
-	facetHitCache.hit.nbDesorbed = file->ReadSizeT();
+	facetHitCache.nbDesorbed = file->ReadSizeT();
 
 	file->ReadKeyword("nbHit"); file->ReadKeyword(":");
 
-	facetHitCache.hit.nbMCHit = file->ReadSizeT();
-	facetHitCache.hit.nbHitEquiv = static_cast<double>(facetHitCache.hit.nbMCHit);
+	facetHitCache.nbMCHit = file->ReadSizeT();
+	facetHitCache.nbHitEquiv = static_cast<double>(facetHitCache.nbMCHit);
 	if (version >= 2) {
 		// Added in GEO version 2
 		file->ReadKeyword("temperature"); file->ReadKeyword(":");
@@ -169,7 +170,7 @@ void Facet::LoadGEO(FileReader *file, int version, size_t nbVertex) {
 * \param ignoreSumMismatch if total dynamic outgasing can be different from sum of dynamic outgassing cells
 * \param vertexOffset offset for the vertex id
 */
-void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bool& ignoreSumMismatch, size_t vertexOffset) {
+void InterfaceFacet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bool& ignoreSumMismatch, size_t vertexOffset) {
 	int idx = 0;
 	int facetId = f.attribute("id").as_int();
 	for (xml_node indice : f.child("Indices").children("Indice")) {
@@ -254,8 +255,8 @@ void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bool& ignor
 		}
 		xml_node texNode = recNode.child("Texture");
 		hasMesh = texNode.attribute("hasMesh").as_bool();
-		sh.texWidthD = texNode.attribute("texDimX").as_double();
-		sh.texHeightD = texNode.attribute("texDimY").as_double();
+		sh.texWidth_precise = texNode.attribute("texDimX").as_double();
+		sh.texHeight_precise = texNode.attribute("texDimY").as_double();
 		sh.countDes = texNode.attribute("countDes").as_bool() && hasMesh; //Sanitize input
 		sh.countAbs = texNode.attribute("countAbs").as_bool() && hasMesh; //Sanitize input
 		sh.countRefl = texNode.attribute("countRefl").as_bool() && hasMesh; //Sanitize input
@@ -265,23 +266,29 @@ void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bool& ignor
 
 		xml_node outgNode = f.child("DynamicOutgassing");
 		if ((hasOutgassingFile) && outgNode && outgNode.child("map")) {
-			sh.outgassingMapWidth = outgNode.attribute("width").as_int();
-			sh.outgassingMapHeight = outgNode.attribute("height").as_int();
-			sh.outgassingFileRatio = outgNode.attribute("ratio").as_double();
-			totalDose = outgNode.attribute("totalDose").as_double();
+			ogMap.outgassingMapWidth = outgNode.attribute("width").as_int();
+			ogMap.outgassingMapHeight = outgNode.attribute("height").as_int();
+			if (outgNode.attribute("ratioU")) { //New format supporting non-square textures
+				ogMap.outgassingFileRatioU = outgNode.attribute("ratioU").as_double();
+				ogMap.outgassingFileRatioV = outgNode.attribute("ratioV").as_double();
+			}
+			else { //Old format for square textures
+				ogMap.outgassingFileRatioU = ogMap.outgassingFileRatioV = outgNode.attribute("ratio").as_double();
+			}
+			ogMap.totalDose = outgNode.attribute("totalDose").as_double();
 			sh.totalOutgassing = outgNode.attribute("totalOutgassing").as_double();
-			totalFlux = outgNode.attribute("totalFlux").as_double();
+            ogMap.totalFlux = outgNode.attribute("totalFlux").as_double();
 
 			double sum = 0.0;
 
 			std::stringstream outgText;
 			outgText << outgNode.child_value("map");
-			std::vector<double>(sh.outgassingMapWidth*sh.outgassingMapHeight).swap(outgassingMap);
+			std::vector<double>(ogMap.outgassingMapWidth*ogMap.outgassingMapHeight).swap(ogMap.outgassingMap);
 
-			for (int iy = 0; iy < sh.outgassingMapHeight; iy++) {
-				for (int ix = 0; ix < sh.outgassingMapWidth; ix++) {
-					outgText >> outgassingMap[iy*sh.outgassingMapWidth + ix];
-					sum += outgassingMap[iy*sh.outgassingMapWidth + ix];
+			for (int iy = 0; iy < ogMap.outgassingMapHeight; iy++) {
+				for (int ix = 0; ix < ogMap.outgassingMapWidth; ix++) {
+					outgText >> ogMap.outgassingMap[iy*ogMap.outgassingMapWidth + ix];
+					sum += ogMap.outgassingMap[iy*ogMap.outgassingMapWidth + ix];
 				}
 			}
 			if (!ignoreSumMismatch && !IsEqual(sum, sh.totalOutgassing)) {
@@ -305,23 +312,55 @@ void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bool& ignor
 
 			std::stringstream angleText;
 			angleText << angleMapNode.child_value("map");
-			std::vector<size_t>(sh.anglemapParams.GetMapSize()).swap(angleMapCache);
 
-			for (int iy = 0; iy < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); iy++) {
-				for (int ix = 0; ix < sh.anglemapParams.phiWidth; ix++) {
+            try {
+                angleMapCache.resize(sh.anglemapParams.GetMapSize());
+            }
+            catch(...) {
+                std::stringstream err;
+                err << "Not enough memory for incident angle map on facet ";
+                throw Error(err.str().c_str());
+            }
+
+			for (size_t iy = 0; iy < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); iy++) {
+				for (size_t ix = 0; ix < sh.anglemapParams.phiWidth; ix++) {
 					angleText >> angleMapCache[iy*sh.anglemapParams.phiWidth + ix];
 				}
 			}
-
+			sh.anglemapParams.hasRecorded = true;
 		}
 		else {
-			//if angle map was incorrect, don't use it
+			sh.anglemapParams.hasRecorded = false; //if angle map was incorrect, don't use it
 			if (sh.desorbType == DES_ANGLEMAP) sh.desorbType = DES_NONE;
 		}
 	} //else use default values at Facet() constructor
 
 	textureVisible = f.child("ViewSettings").attribute("textureVisible").as_bool();
 	volumeVisible = f.child("ViewSettings").attribute("volumeVisible").as_bool();
+
+	xml_node facetHistNode = f.child("Histograms");
+	if (facetHistNode) { // Molflow version before 2.8 didn't save histograms
+		xml_node nbBounceNode = facetHistNode.child("Bounces");
+		if (nbBounceNode) {
+			sh.facetHistogramParams.recordBounce=true;
+			sh.facetHistogramParams.nbBounceBinsize=nbBounceNode.attribute("binSize").as_ullong();
+			sh.facetHistogramParams.nbBounceMax=nbBounceNode.attribute("max").as_ullong();
+		}
+		xml_node distanceNode = facetHistNode.child("Distance");
+		if (distanceNode) {
+			sh.facetHistogramParams.recordDistance=true;
+			sh.facetHistogramParams.distanceBinsize=distanceNode.attribute("binSize").as_double();
+			sh.facetHistogramParams.distanceMax=distanceNode.attribute("max").as_double();
+		}
+		#ifdef MOLFLOW
+		xml_node timeNode = facetHistNode.child("Time");
+		if (timeNode) {
+			sh.facetHistogramParams.recordTime=true;
+			sh.facetHistogramParams.timeBinsize=timeNode.attribute("binSize").as_double();
+			sh.facetHistogramParams.timeMax=timeNode.attribute("max").as_double();
+		}
+		#endif
+	}
 
 	UpdateFlags();
 }
@@ -332,7 +371,7 @@ void Facet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bool& ignor
 * \param version version of the syn description
 * \param nbVertex number of facets contained in the geometry
 */
-void Facet::LoadSYN(FileReader *file, int version, size_t nbVertex) {
+void InterfaceFacet::LoadSYN(FileReader *file, int version, size_t nbVertex) {
 
 	file->ReadKeyword("indices"); file->ReadKeyword(":");
 	for (size_t i = 0; i < sh.nbIndex; i++) {
@@ -390,9 +429,9 @@ void Facet::LoadSYN(FileReader *file, int version, size_t nbVertex) {
 	file->ReadKeyword("mesh"); file->ReadKeyword(":");
 	hasMesh = false; file->ReadInt(); //Discard synrad texture
 	file->ReadKeyword("texDimX"); file->ReadKeyword(":");
-	sh.texWidthD = 0.0; file->ReadDouble();
+	sh.texWidth_precise = 0.0; file->ReadDouble();
 	file->ReadKeyword("texDimY"); file->ReadKeyword(":");
-	sh.texHeightD = 0.0; file->ReadDouble();
+	sh.texHeight_precise = 0.0; file->ReadDouble();
 	if (version < 3) {
 		file->ReadKeyword("countDes"); file->ReadKeyword(":");
 		file->ReadInt();
@@ -405,11 +444,11 @@ void Facet::LoadSYN(FileReader *file, int version, size_t nbVertex) {
 	sh.countTrans = false; file->ReadInt();
 	if (version >= 10) file->ReadKeyword("nbAbsEquiv");
 	else file->ReadKeyword("nbAbs"); file->ReadKeyword(":");
-	facetHitCache.hit.nbAbsEquiv = 0;
+	facetHitCache.nbAbsEquiv = 0;
 	file->ReadSizeT();
 	if (version < 3) {
 		file->ReadKeyword("nbDes"); file->ReadKeyword(":");
-		facetHitCache.hit.nbDesorbed = 0;
+		facetHitCache.nbDesorbed = 0;
 		file->ReadSizeT();
 	}
 	file->ReadKeyword("nbHit"); file->ReadKeyword(":");
@@ -418,7 +457,7 @@ void Facet::LoadSYN(FileReader *file, int version, size_t nbVertex) {
 		file->ReadKeyword("nbHitEquiv"); file->ReadKeyword(":");
 		file->ReadSizeT();
 	}
-	facetHitCache.hit.nbMCHit = 0; facetHitCache.hit.nbHitEquiv = 0.0; 
+	facetHitCache.nbMCHit = 0; facetHitCache.nbHitEquiv = 0.0;
 	if (version >= 3) {
 		file->ReadKeyword("fluxAbs"); file->ReadKeyword(":");
 		file->ReadDouble();
@@ -442,7 +481,7 @@ void Facet::LoadSYN(FileReader *file, int version, size_t nbVertex) {
 * \brief Function for loading the geometry data of single facets from a TXT file
 * \param file filename of the TXT file
 */
-void Facet::LoadTXT(FileReader *file) {
+void InterfaceFacet::LoadTXT(FileReader *file) {
 
 	// Opacity parameters descripton (TXT format)
 	// -4    => Pressure profile (1 sided)
@@ -456,10 +495,10 @@ void Facet::LoadTXT(FileReader *file) {
 	sh.sticking = file->ReadDouble();
 	double o = file->ReadDouble();
 	/*wp.area =*/ file->ReadDouble();
-	facetHitCache.hit.nbDesorbed = (size_t)(file->ReadDouble() + 0.5);
-	facetHitCache.hit.nbMCHit = (size_t)(file->ReadDouble() + 0.5);
-	facetHitCache.hit.nbHitEquiv = static_cast<double>(facetHitCache.hit.nbMCHit);
-	facetHitCache.hit.nbAbsEquiv = (double)(size_t)(file->ReadDouble() + 0.5);
+	facetHitCache.nbDesorbed = (size_t)(file->ReadDouble() + 0.5);
+	facetHitCache.nbMCHit = (size_t)(file->ReadDouble() + 0.5);
+	facetHitCache.nbHitEquiv = static_cast<double>(facetHitCache.nbMCHit);
+	facetHitCache.nbAbsEquiv = (double)(size_t)(file->ReadDouble() + 0.5);
 	sh.desorbType = (int)(file->ReadDouble() + 0.5);
 
 	// Convert opacity
@@ -526,7 +565,7 @@ void Facet::LoadTXT(FileReader *file) {
 
 	file->ReadDouble(); // Unused
 
-	if (facetHitCache.hit.nbDesorbed == 0)
+	if (facetHitCache.nbDesorbed == 0)
 		sh.desorbType = DES_NONE;
 
 	if (IsTXTLinkFacet()) {
@@ -542,7 +581,7 @@ void Facet::LoadTXT(FileReader *file) {
 * \brief Function for saving the geometry data of single facets into a TXT file
 * \param file filename of the TXT file
 */
-void Facet::SaveTXT(FileWriter *file) {
+void InterfaceFacet::SaveTXT(FileWriter *file) {
 
 	if (!sh.superDest)
 		file->Write(sh.sticking, "\n");
@@ -584,7 +623,7 @@ void Facet::SaveTXT(FileWriter *file) {
 * \param file filename of the GEO file
 * \param idx index of the facet
 */
-void Facet::SaveGEO(FileWriter *file, int idx) {
+void InterfaceFacet::SaveGEO(FileWriter *file, int idx) {
 
 	char tmp[256];
 
@@ -617,20 +656,20 @@ void Facet::SaveGEO(FileWriter *file, int idx) {
 	file->Write("  superDest:"); file->Write(sh.superDest, "\n");
 	file->Write("  superIdx:"); file->Write(sh.superIdx, "\n");
 	file->Write("  is2sided:"); file->Write(sh.is2sided, "\n");
-	file->Write("  mesh:"); file->Write((cellPropertiesIds != NULL), "\n");
+	file->Write("  mesh:"); file->Write((!cellPropertiesIds.empty()), "\n");
 
 	file->Write("  outgassing:"); file->Write(sh.outgassing*10.00, "\n"); //Pa*m3/s -> mbar*l/s for compatibility with old versions
-	file->Write("  texDimX:"); file->Write(sh.texWidthD, "\n");
-	file->Write("  texDimY:"); file->Write(sh.texHeightD, "\n");
+	file->Write("  texDimX:"); file->Write(sh.texWidth_precise, "\n");
+	file->Write("  texDimY:"); file->Write(sh.texHeight_precise, "\n");
 
 	file->Write("  countDes:"); file->Write(sh.countDes, "\n");
 	file->Write("  countAbs:"); file->Write(sh.countAbs, "\n");
 	file->Write("  countRefl:"); file->Write(sh.countRefl, "\n");
 	file->Write("  countTrans:"); file->Write(sh.countTrans, "\n");
 	file->Write("  acMode:"); file->Write(sh.countACD, "\n");
-	file->Write("  nbAbs:"); file->Write((size_t)facetHitCache.hit.nbAbsEquiv, "\n");
-	file->Write("  nbDes:"); file->Write(facetHitCache.hit.nbDesorbed, "\n");
-	file->Write("  nbHit:"); file->Write((size_t)facetHitCache.hit.nbMCHit, "\n");
+	file->Write("  nbAbs:"); file->Write((size_t)facetHitCache.nbAbsEquiv, "\n");
+	file->Write("  nbDes:"); file->Write(facetHitCache.nbDesorbed, "\n");
+	file->Write("  nbHit:"); file->Write((size_t)facetHitCache.nbMCHit, "\n");
 
 	// Version 2
 	file->Write("  temperature:"); file->Write(sh.temperature, "\n");
@@ -653,7 +692,7 @@ void Facet::SaveGEO(FileWriter *file, int idx) {
 * \brief Calculates the geometry size for a single facet which is necessary for loader dataport
 * \return calculated size of the facet geometry
 */
-size_t Facet::GetGeometrySize()  { //for loader dataport
+size_t InterfaceFacet::GetGeometrySize()  { //for loader dataport
 
 	size_t s = sizeof(FacetProperties)
 		+ (sh.nbIndex * sizeof(size_t)) //indices
@@ -661,8 +700,8 @@ size_t Facet::GetGeometrySize()  { //for loader dataport
 
 	// Size of the 'element area' array passed to the geometry buffer
 	if (sh.isTextured) s += sizeof(double)*sh.texWidth*sh.texHeight; //incbuff
-	if (sh.useOutgassingFile ) s += sizeof(double)*sh.outgassingMapWidth*sh.outgassingMapHeight;
-	s += sizeof(size_t)*angleMapCache.size();
+	if (sh.useOutgassingFile ) s += sizeof(double)*ogMap.outgassingMapWidth*ogMap.outgassingMapHeight;
+	s += sh.anglemapParams.GetRecordedDataSize();
 	return s;
 
 }
@@ -672,15 +711,15 @@ size_t Facet::GetGeometrySize()  { //for loader dataport
 * \param nbMoments amount of moments
 * \return calculated size of the facet hits
 */
-size_t Facet::GetHitsSize(size_t nbMoments)  { //for hits dataport
+size_t InterfaceFacet::GetHitsSize(size_t nbMoments)  { //for hits dataport
 
 	return   (1 + nbMoments)*(
 		sizeof(FacetHitBuffer) +
-		+(sh.texWidth*sh.texHeight * sizeof(TextureCell))
+		+(sh.isTextured ? (sh.texWidth*sh.texHeight * sizeof(TextureCell)) : 0)
 		+ (sh.isProfile ? (PROFILE_SIZE * sizeof(ProfileSlice)) : 0)
 		+ (sh.countDirection ? (sh.texWidth*sh.texHeight * sizeof(DirectionCell)) : 0)
 		+ sh.facetHistogramParams.GetDataSize()
-		) + sizeof(size_t)*angleMapCache.size();
+		) + (sh.anglemapParams.record ? (sh.anglemapParams.GetRecordedDataSize()) : 0);
 
 }
 
@@ -689,7 +728,7 @@ size_t Facet::GetHitsSize(size_t nbMoments)  { //for hits dataport
 * \param nbMoments amount of moments
 * \return calculated size of the texture RAM usage
 */
-size_t Facet::GetTexRamSize(size_t nbMoments)  {
+size_t InterfaceFacet::GetTexRamSize(size_t nbMoments)  {
 	//Values
 	size_t sizePerCell = sizeof(TextureCell)*nbMoments; //TextureCell: long + 2*double
 	if (sh.countDirection) sizePerCell += sizeof(DirectionCell)*nbMoments; //DirectionCell: Vector3d + long
@@ -701,14 +740,30 @@ size_t Facet::GetTexRamSize(size_t nbMoments)  {
 }
 
 /**
-* \brief Calculates the RAM size for the texture of a single facet by using a ratio for actual size conversation
-* \param ratio ratio to calculate actual width/height of the facet
-* \param useMesh unused paramter TODO: remove
-* \param countDir unused paramter TODO: remove
+* \brief Calculates the RAM size for the texture of a single facet
 * \param nbMoments amount of moments
 * \return calculated size of the texture RAM usage
 */
-size_t Facet::GetTexRamSizeForRatio(double ratio, bool useMesh, bool countDir, size_t nbMoments)  {
+size_t InterfaceFacet::GetTexRamSizeForCellNumber(int width, int height, bool useMesh, bool countDir, size_t nbMoments)  {
+
+    //Values
+    size_t sizePerCell = sizeof(TextureCell)*nbMoments; //TextureCell: long + 2*double
+    if (sh.countDirection) sizePerCell += sizeof(DirectionCell)*nbMoments; //DirectionCell: Vector3d + long
+    //Mesh
+    sizePerCell += sizeof(int); //CellPropertiesIds
+    size_t sizePerMeshElement = sizeof(CellProperties);
+    sizePerMeshElement += 4 * sizeof(Vector2d); //Estimate: most mesh elements have 4 points
+    return width*height*(sizePerCell + sizePerMeshElement); //Conservative: assuming all cells are non-full
+
+}
+
+/**
+* \brief Calculates the RAM size for the texture of a single facet by using a ratio for actual size conversation
+* \param ratio ratio to calculate actual width/height of the facet
+* \param nbMoments amount of moments
+* \return calculated size of the texture RAM usage
+*/
+size_t InterfaceFacet::GetTexRamSizeForRatio(double ratio, size_t nbMoments) {
 	double nU = sh.U.Norme();
 	double nV = sh.V.Norme();
 	double width = nU*ratio;
@@ -717,8 +772,8 @@ size_t Facet::GetTexRamSizeForRatio(double ratio, bool useMesh, bool countDir, s
 	bool dimOK = (width*height > 0.0000001);
 
 	if (dimOK) {
-		int iwidth = (int)ceil(width);
-		int iheight = (int)ceil(height);
+		int iWidth = (int)ceil(width);
+		int iHeight = (int)ceil(height);
 
 		//Values
 		size_t sizePerCell = sizeof(TextureCell)*nbMoments; //TextureCell: long + 2*double
@@ -727,11 +782,44 @@ size_t Facet::GetTexRamSizeForRatio(double ratio, bool useMesh, bool countDir, s
 		sizePerCell += sizeof(int); //CellPropertiesIds
 		size_t sizePerMeshElement = sizeof(CellProperties);
 		sizePerMeshElement += 4 * sizeof(Vector2d); //Estimate: most mesh elements have 4 points
-		return iwidth*iheight*(sizePerCell + sizePerMeshElement); //Conservative: assuming all cells are non-full
+		return iWidth*iHeight*(sizePerCell + sizePerMeshElement); //Conservative: assuming all cells are non-full
 	}
 	else {
 		return 0;
 	}
+}
+
+/**
+* \brief Calculates the RAM size for the texture of a single facet by using a ratio for actual size conversation
+* \param ratioU ratio in U direction to calculate actual width/height of the facet
+* \param ratioV ratio in V direction to calculate actual width/height of the facet
+* \param nbMoments amount of moments
+* \return calculated size of the texture RAM usage
+*/
+size_t InterfaceFacet::GetTexRamSizeForRatio(double ratioU, double ratioV, size_t nbMoments)  {
+    double nU = sh.U.Norme();
+    double nV = sh.V.Norme();
+    double width = nU*ratioU;
+    double height = nV*ratioV;
+
+    bool dimOK = (width*height > 0.0000001);
+
+    if (dimOK) {
+        int iWidth = (int)ceil(width);
+        int iHeight = (int)ceil(height);
+
+        //Values
+        size_t sizePerCell = sizeof(TextureCell)*nbMoments; //TextureCell: long + 2*double
+        if (sh.countDirection) sizePerCell += sizeof(DirectionCell)*nbMoments; //DirectionCell: Vector3d + long
+        //Mesh
+        sizePerCell += sizeof(int); //CellPropertiesIds
+        size_t sizePerMeshElement = sizeof(CellProperties);
+        sizePerMeshElement += 4 * sizeof(Vector2d); //Estimate: most mesh elements have 4 points
+        return iWidth*iHeight*(sizePerCell + sizePerMeshElement); //Conservative: assuming all cells are non-full
+    }
+    else {
+        return 0;
+    }
 }
 
 /**
@@ -743,7 +831,7 @@ size_t Facet::GetTexRamSizeForRatio(double ratio, bool useMesh, bool countDir, s
 * \param scaleF scaling factor
 * \return smoothing factor
 */
-double Facet::GetSmooth(int i, int j, TextureCell *texBuffer, int textureMode, double scaleF) {
+double InterfaceFacet::GetSmooth(int i, int j, TextureCell *texBuffer, int textureMode, double scaleF) {
 
 	double W = 0.0;
 	double sum = 0.0;
@@ -778,7 +866,7 @@ double Facet::GetSmooth(int i, int j, TextureCell *texBuffer, int textureMode, d
 * \param sum pointer to an existing sum counter
 * \param totalWeight pointer to an existing counter for the total weight
 */
-void Facet::Sum_Neighbor(const int& i, const int& j, const double& weight, TextureCell *texBuffer, const int& textureMode, const double& scaleF, double *sum, double *totalWeight) {
+void InterfaceFacet::Sum_Neighbor(const int& i, const int& j, const double& weight, TextureCell *texBuffer, const int& textureMode, const double& scaleF, double *sum, double *totalWeight) {
 												
 	if( i>=0 && i<sh.texWidth && j>=0 && j<sh.texHeight ) {								
 		size_t add = (size_t)i+(size_t)j*sh.texWidth;												
@@ -805,8 +893,8 @@ void Facet::Sum_Neighbor(const int& i, const int& j, const double& weight, Textu
 * \param max max value for color scaling
 * \param useColorMap if a 16bit high color map should be used (rainbow)
 */
-void Facet::BuildTexture(TextureCell *texBuffer, int textureMode, double min, double max, bool useColorMap,
-	double dCoeff1, double dCoeff2, double dCoeff3, bool doLog, size_t m) {
+void InterfaceFacet::BuildTexture(const std::vector<TextureCell> &texBuffer, int textureMode, double min, double max, bool useColorMap,
+                                  double dCoeff1, double dCoeff2, double dCoeff3, bool doLog, size_t m) {
 	size_t size = sh.texWidth*sh.texHeight;
 	size_t tSize = texDimW*texDimH;
 	if (size == 0 || tSize == 0) return;
@@ -943,7 +1031,7 @@ void Facet::BuildTexture(TextureCell *texBuffer, int textureMode, double min, do
 /**
 * \brief Converts the desorption type of a facet if it's from a particular type (TODO: check if this implies unneeded backwards compatibility)
 */
-void Facet::ConvertOldDesorbType() {
+void InterfaceFacet::ConvertOldDesorbType() {
 	if (sh.desorbType >= 3 && sh.desorbType <= 5) {
 		sh.desorbTypeN = (double)(sh.desorbType - 1);
 		sh.desorbType = DES_COSINE_N;
@@ -954,7 +1042,7 @@ void Facet::ConvertOldDesorbType() {
 * \brief To save facet data for the geometry in XML
 * \param f XML node representing a facet
 */
-void  Facet::SaveXML_geom(pugi::xml_node f) {
+void  InterfaceFacet::SaveXML_geom(pugi::xml_node f) {
 	xml_node e = f.append_child("Sticking");
 	e.append_attribute("constValue") = sh.sticking;
 	e.append_attribute("parameterId") = sh.sticking_paramId;
@@ -1033,11 +1121,11 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 		break;
 	}
 	t = e.append_child("Texture");
-	assert(!(cellPropertiesIds == NULL && (sh.countAbs || sh.countDes || sh.countRefl || sh.countTrans))); //Count texture on non-existent texture 
+	assert(!(cellPropertiesIds.empty() && (sh.countAbs || sh.countDes || sh.countRefl || sh.countTrans))); //Count texture on non-existent texture
 
-	t.append_attribute("hasMesh") = cellPropertiesIds != NULL;
-	t.append_attribute("texDimX") = sh.texWidthD;
-	t.append_attribute("texDimY") = sh.texHeightD;
+	t.append_attribute("hasMesh") = !cellPropertiesIds.empty();
+	t.append_attribute("texDimX") = sh.texWidth_precise;
+	t.append_attribute("texDimY") = sh.texHeight_precise;
 	t.append_attribute("countDes") = (int)sh.countDes; //backward compatibility: 0 or 1
 	t.append_attribute("countAbs") = (int)sh.countAbs; //backward compatibility: 0 or 1
 	t.append_attribute("countRefl") = (int)sh.countRefl; //backward compatibility: 0 or 1
@@ -1045,7 +1133,7 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 	t.append_attribute("countDir") = (int)sh.countDirection; //backward compatibility: 0 or 1
 	t.append_attribute("countAC") = (int)sh.countACD; //backward compatibility: 0 or 1
 
-	if (!angleMapCache.empty()) {
+	if (sh.anglemapParams.record) {
 		t = e.append_child("IncidentAngleMap");
 		t.append_attribute("record") = sh.anglemapParams.record;
 		t.append_attribute("phiWidth") = sh.anglemapParams.phiWidth;
@@ -1068,18 +1156,19 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 
 	if (hasOutgassingFile) {
 		xml_node textureNode = f.append_child("DynamicOutgassing");
-		textureNode.append_attribute("width") = sh.outgassingMapWidth;
-		textureNode.append_attribute("height") = sh.outgassingMapHeight;
-		textureNode.append_attribute("ratio") = sh.outgassingFileRatio;
-		textureNode.append_attribute("totalDose") = totalDose;
+		textureNode.append_attribute("width") = ogMap.outgassingMapWidth;
+		textureNode.append_attribute("height") = ogMap.outgassingMapHeight;
+		textureNode.append_attribute("ratioU") = ogMap.outgassingFileRatioU;
+		textureNode.append_attribute("ratioV") = ogMap.outgassingFileRatioV;
+		textureNode.append_attribute("totalDose") = ogMap.totalDose;
 		textureNode.append_attribute("totalOutgassing") = sh.totalOutgassing;
-		textureNode.append_attribute("totalFlux") = totalFlux;
+		textureNode.append_attribute("totalFlux") = ogMap.totalFlux;
 
 		std::stringstream outgText; outgText << std::setprecision(8);
 		outgText << '\n'; //better readability in file
-		for (int iy = 0; iy < sh.outgassingMapHeight; iy++) {
-			for (int ix = 0; ix < sh.outgassingMapWidth; ix++) {
-				outgText << outgassingMap[iy*sh.outgassingMapWidth + ix] << '\t';
+		for (int iy = 0; iy < ogMap.outgassingMapHeight; iy++) {
+			for (int ix = 0; ix < ogMap.outgassingMapWidth; ix++) {
+				outgText << ogMap.outgassingMap[iy*ogMap.outgassingMapWidth + ix] << '\t';
 			}
 			outgText << '\n';
 		}
@@ -1087,7 +1176,7 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 
 	} //end texture
 
-	if (!angleMapCache.empty()) {
+	if (sh.anglemapParams.hasRecorded) {
 		xml_node textureNode = f.append_child("IncidentAngleMap");
 		textureNode.append_attribute("angleMapPhiWidth") = sh.anglemapParams.phiWidth;
 		textureNode.append_attribute("angleMapThetaLimit") = sh.anglemapParams.thetaLimit;
@@ -1105,6 +1194,25 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 		textureNode.append_child("map").append_child(node_cdata).set_value(angleText.str().c_str());
 
 	} //end angle map
+
+	xml_node histNode = f.append_child("Histograms");
+	if (sh.facetHistogramParams.recordBounce) {
+		xml_node nbBounceNode = histNode.append_child("Bounces");
+		nbBounceNode.append_attribute("binSize")=sh.facetHistogramParams.nbBounceBinsize;
+		nbBounceNode.append_attribute("max")=sh.facetHistogramParams.nbBounceMax;
+	}
+	if (sh.facetHistogramParams.recordDistance) {
+		xml_node distanceNode = histNode.append_child("Distance");
+		distanceNode.append_attribute("binSize")=sh.facetHistogramParams.distanceBinsize;
+		distanceNode.append_attribute("max")=sh.facetHistogramParams.distanceMax;
+	}
+	#ifdef MOLFLOW
+	if (sh.facetHistogramParams.recordTime) {
+		xml_node timeNode = histNode.append_child("Time");
+		timeNode.append_attribute("binSize")=sh.facetHistogramParams.timeBinsize;
+		timeNode.append_attribute("max")=sh.facetHistogramParams.timeMax;
+	}
+	#endif
 }
 
 
@@ -1113,7 +1221,7 @@ void  Facet::SaveXML_geom(pugi::xml_node f) {
 * \param formatId ID that describes the seperator for the angle map string
 * \return string describing the angle map
 */
-std::string Facet::GetAngleMap(size_t formatId)
+std::string InterfaceFacet::GetAngleMap(size_t formatId)
 {
 	std::stringstream result; result << std::setprecision(8);
 	char separator;
@@ -1148,7 +1256,7 @@ std::string Facet::GetAngleMap(size_t formatId)
 * \brief Function that imports an angle map from a table
 * \param table reference of a 2D vector structure of strings
 */
-void Facet::ImportAngleMap(const std::vector<std::vector<std::string>>& table)
+void InterfaceFacet::ImportAngleMap(const std::vector<std::vector<std::string>>& table)
 {
 	size_t phiWidth, thetaLowerRes, thetaHigherRes;
 	double thetaLimit;
@@ -1191,7 +1299,7 @@ void Facet::ImportAngleMap(const std::vector<std::vector<std::string>>& table)
 		}
 		if (spacingTypes == 1) {
 			//might fill whole 0..PI/2 range, but maybe only lower or only upper res
-			double lastTheta = currentSpacing * (table.size() - 1);
+			double lastTheta = currentSpacing * (table.size() - 1.0);
 			if (IsEqual(lastTheta, PI / 2, 1E-3)) { //fills whole range
 				thetaLimit = PI / 2;
 				thetaLowerRes = table.size() - 1;
@@ -1212,10 +1320,19 @@ void Facet::ImportAngleMap(const std::vector<std::vector<std::string>>& table)
 		else thetaHigherRes = table.size() - 1 - thetaLowerRes;
 
 		//Fill table
-		angleMapCache.resize(phiWidth * (thetaLowerRes + thetaHigherRes)); //Will be filled with values
 
-		for (int iy = 0; iy < (thetaLowerRes + thetaHigherRes); iy++) {
-			for (int ix = 0; ix < phiWidth; ix++) {
+        //Initialize angle map and Set values to zero
+        try {
+            angleMapCache.resize(phiWidth * (thetaLowerRes + thetaHigherRes),0);
+        }
+        catch(...) {
+            std::stringstream err;
+            err << "Not enough memory for incident angle map on facet ";
+            throw Error(err.str().c_str());
+        }
+
+		for (size_t iy = 0; iy < (thetaLowerRes + thetaHigherRes); iy++) {
+			for (size_t ix = 0; ix < phiWidth; ix++) {
 				size_t cellSize;
 				try {
 					angleMapCache[iy*phiWidth + ix] = std::stoi(table[iy+1][ix+1], &cellSize); //convert to double
@@ -1223,13 +1340,11 @@ void Facet::ImportAngleMap(const std::vector<std::vector<std::string>>& table)
 				catch (...) {
 					std::stringstream err;
 					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to an integer\nCell content: " << table[iy+1][ix+1];
-					angleMapCache.clear();
 					throw Error(err.str().c_str());
 				}
 				if (cellSize != table[iy+1][ix+1].size()) {
 					std::stringstream err;
 					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to an integer\nCell content: " << table[iy+1][ix+1];
-					angleMapCache.clear();
 					throw Error(err.str().c_str());
 				}
 			}
@@ -1241,11 +1356,19 @@ void Facet::ImportAngleMap(const std::vector<std::vector<std::string>>& table)
 		phiWidth = table[0].size(); //row width
 		thetaLimit = PI/2.0;
 
-		//Fill table
-		angleMapCache.resize(phiWidth * (thetaLowerRes + thetaHigherRes)); //Will be filled with values
 
-		for (int iy = 0; iy < (thetaLowerRes + thetaHigherRes); iy++) {
-			for (int ix = 0; ix < phiWidth; ix++) {
+        //Fill table
+        try {
+            angleMapCache.resize(phiWidth * (thetaLowerRes + thetaHigherRes), 0);
+        }
+        catch(...) {
+            std::stringstream err;
+            err << "Not enough memory for incident angle map on facet ";
+            throw Error(err.str().c_str());
+        }
+
+		for (size_t iy = 0; iy < (thetaLowerRes + thetaHigherRes); iy++) {
+			for (size_t ix = 0; ix < phiWidth; ix++) {
 				size_t cellSize;
 				try {
 					angleMapCache[iy*phiWidth + ix] = std::stoi(table[iy][ix], &cellSize); //convert to double
@@ -1253,13 +1376,11 @@ void Facet::ImportAngleMap(const std::vector<std::vector<std::string>>& table)
 				catch (...) {
 					std::stringstream err;
 					err << "Can't convert cell row " << iy + 1 << " col " << ix + 1 << " to an integer\nCell content: " << table[iy][ix];
-					angleMapCache.clear();
 					throw Error(err.str().c_str());
 				}
 				if (cellSize != table[iy][ix].size()) {
 					std::stringstream err;
 					err << "Can't convert cell row " << iy+1 << " col " << ix+1 << " to an integer\nCell content: " << table[iy][ix];
-					angleMapCache.clear();
 					throw Error(err.str().c_str());
 				}
 			}
@@ -1267,7 +1388,7 @@ void Facet::ImportAngleMap(const std::vector<std::vector<std::string>>& table)
 	}
 
 	//No errors, apply values
-
+	sh.anglemapParams.hasRecorded = true;
 	sh.anglemapParams.phiWidth = phiWidth;
 	sh.anglemapParams.record = false;
 	sh.anglemapParams.thetaHigherRes = thetaHigherRes;
@@ -1279,16 +1400,16 @@ void Facet::ImportAngleMap(const std::vector<std::vector<std::string>>& table)
 * \brief Function that calculates a density correction factor [0..1] (with 1.0 = no correction)
 * \return correction factor value [0..1]
 */
-double Facet::DensityCorrection() {
+double InterfaceFacet::DensityCorrection() {
 	//Correction for double-density effect (measuring density on desorbing/absorbing facets):
 
 	//Normally a facet only sees half of the particles (those moving towards it). So it multiplies the "seen" density by two.
 	//However, in case of desorption or sticking, the real density is not twice the "seen" density, but a bit less, therefore this reduction factor
 	//If only desorption, or only absorption, the correction factor is 0.5, if no des/abs, it's 1.0, and in between, see below
 
-	if (facetHitCache.hit.nbMCHit > 0 || facetHitCache.hit.nbDesorbed > 0) {
-		if (facetHitCache.hit.nbAbsEquiv > 0.0 || facetHitCache.hit.nbDesorbed > 0) {//otherwise save calculation time
-			return 1.0 - (facetHitCache.hit.nbAbsEquiv + (double)facetHitCache.hit.nbDesorbed) / (facetHitCache.hit.nbHitEquiv + (double)facetHitCache.hit.nbDesorbed) / 2.0;
+	if (facetHitCache.nbMCHit > 0 || facetHitCache.nbDesorbed > 0) {
+		if (facetHitCache.nbAbsEquiv > 0.0 || facetHitCache.nbDesorbed > 0) {//otherwise save calculation time
+			return 1.0 - (facetHitCache.nbAbsEquiv + (double)facetHitCache.nbDesorbed) / (facetHitCache.nbHitEquiv + (double)facetHitCache.nbDesorbed) / 2.0;
 		}
 		else return 1.0;
 	}
@@ -1299,16 +1420,19 @@ double Facet::DensityCorrection() {
 * \brief Serializes data from facet into a cereal binary archive
 * \param outputarchive reference to the binary archive
 */
-void Facet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchive) {
+void InterfaceFacet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchive) {
 
-		//std::vector<double> outgMapVector(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0);
-		//memcpy(outgMapVector.data(), outgassingMap, sizeof(double)*(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0));
-		std::vector<double> textIncVector;
+		//std::vector<double> outgMapVector(sh.useOutgassingFile ? ogMap.outgassingMapWidth*ogMap.outgassingMapHeight : 0);
+		//memcpy(outgMapVector.data(), outgassingMapWindow, sizeof(double)*(sh.useOutgassingFile ? ogMap.outgassingMapWidth*ogMap.outgassingMapHeight : 0));
+        size_t mapSize = sh.anglemapParams.GetMapSize();
+        std::vector<size_t> angleMapVector(mapSize);
+        memcpy(angleMapVector.data(), angleMapCache.data(), sh.anglemapParams.GetRecordedDataSize());
+        std::vector<double> textIncVector;
 
 		// Add surface elements area (reciprocal)
 		if (sh.isTextured) {
 			textIncVector.resize(sh.texHeight*sh.texWidth);
-			if (cellPropertiesIds) {
+			if (!cellPropertiesIds.empty()) {
 				size_t add = 0;
 				for (size_t j = 0; j < sh.texHeight; j++) {
 					for (size_t i = 0; i < sh.texWidth; i++) {
@@ -1326,20 +1450,13 @@ void Facet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchive) {
 				}
 			}
 			else {
-
-				double rw = sh.U.Norme() / (double)(sh.texWidthD);
-				double rh = sh.V.Norme() / (double)(sh.texHeightD);
-				double area = rw * rh;
+				const double area = (sh.texWidth_precise * sh.texHeight_precise)/(sh.U.Norme() * sh.V.Norme());
+                const double incrementVal = (area > 0.0) ? 1.0 / area : 0.0;
 				size_t add = 0;
 				for (int j = 0; j < sh.texHeight; j++) {
 					for (int i = 0; i < sh.texWidth; i++) {
-						if (area > 0.0) {
-							textIncVector[add] = 1.0 / area;
-						}
-						else {
-							textIncVector[add] = 0.0;
-						}
-						add++;
+                        textIncVector[add] = incrementVal;
+                        ++add;
 					}
 				}
 			}
@@ -1349,10 +1466,10 @@ void Facet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchive) {
 			CEREAL_NVP(sh), //Contains anglemapParams
 			CEREAL_NVP(indices),
 			CEREAL_NVP(vertices2)
-#ifdef MOLFLOW
-			, CEREAL_NVP(outgassingMap)
-			, CEREAL_NVP(angleMapCache)
-			, CEREAL_NVP(textIncVector)
+#if defined(MOLFLOW)
+                , CEREAL_NVP(ogMap.outgassingMap)
+                , CEREAL_NVP(angleMapVector)
+                , CEREAL_NVP(textIncVector)
 #endif
 		);
 	

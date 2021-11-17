@@ -19,7 +19,8 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 #pragma once
 
-#include "Interface.h"
+#include "Interface/Interface.h"
+
 class Worker;
 class ImportDesorption;
 class TimeSettings;
@@ -33,25 +34,25 @@ class ProfilePlotter;
 class PressureEvolution;
 class TimewisePlotter;
 class TexturePlotter;
-class OutgassingMap;
+class OutgassingMapWindow;
 class MomentsEditor;
 class ParameterEditor;
 
-class Error;
+struct Error;
 
-class MolFlow : public Interface
-{
+class MolFlow : public Interface {
 public:
     MolFlow();
-	
+    virtual ~MolFlow() = default;
+
 	//Public textfields so we can disable them from "Advanced facet parameters":
 	GLTextField   *facetFlow;
 	GLTextField   *facetFlowArea;
 	
     
-    void LoadFile(std::string fileName="");
-	void InsertGeometry(bool newStr,std::string fileName="");
-	void SaveFile();
+    void LoadFile(const std::string &fileName) override;
+	void InsertGeometry(bool newStr, const std::string &fileName) override;
+	void SaveFile() override;
     
 	//void ImportDesorption_DES(); //Deprecated
 	void ExportProfiles();
@@ -59,43 +60,30 @@ public:
 	void ImportAngleMaps();
 	void CopyAngleMapToClipboard();
 	void ClearAngleMapsOnSelection();
-    void ClearFacetParams();
+    void ClearFacetParams() override;
 	
     void ApplyFacetParams();
-	void UpdateFacetParams(bool updateSelection = false);
+	void UpdateFacetParams(bool updateSelection) override;
     void StartStopSimulation();
-    void SaveConfig();
-    void LoadConfig();
+    void SaveConfig() override;
+    void LoadConfig() override;
     
-	void PlaceComponents();
-    void UpdateFacetHits(bool allRows=false);
-	void QuickPipe();
-	float GetAppTime();
+	void PlaceComponents() override;
+    void UpdateFacetHits(bool allRows) override;
 	void ClearParameters();
-	void UpdatePlotters();
+	void UpdatePlotters() override;
 	void RefreshPlotterCombos();
 
 	//Flow/sticking coeff. conversion
 	void calcFlow();
 	void calcSticking();
 
-	bool EvaluateVariable(VLIST *v);
-
-	//char* appTitle;
-
-	GLButton      *texturePlotterShortcut;
-	GLButton      *profilePlotterShortcut;
-    //GLButton      *statusSimu;
-    
-	
     GLTextField   *facetSticking;
 	
     GLCombo       *facetDesType;
 	GLTextField   *facetDesTypeN;
-    GLCombo       *facetRecType;
-	GLLabel       *facetUseDesFileLabel;
-	GLLabel       *modeLabel;
-	
+    GLCombo       *facetProfileCombo;
+
 	GLLabel       *facetPumpingLabel;
 	GLTextField   *facetPumping;	
     GLLabel       *facetSLabel;
@@ -107,14 +95,10 @@ public:
     GLLabel       *facetReLabel;
     GLToggle       *facetFILabel;
 	GLToggle      *facetFIAreaLabel;
-    //GLLabel       *facetMLabel;
-	GLButton      *compACBtn;
-	GLButton      *singleACBtn;
 
 	GLButton      *profilePlotterBtn;
 	GLButton      *texturePlotterBtn;
 	GLButton      *textureScalingBtn;
-	GLButton      *globalSettingsBtn;
 
 	GLTitledPanel *inputPanel;
 	GLTitledPanel *outputPanel;
@@ -129,10 +113,10 @@ public:
     TextureScaling  *textureScaling;
 	GlobalSettings	 *globalSettings;
     ProfilePlotter   *profilePlotter;
-	PressureEvolution *pressureEvolution;
+    PressureEvolution *pressureEvolution;
 	TimewisePlotter  *timewisePlotter;
     TexturePlotter   *texturePlotter;
-	OutgassingMap    *outgassingMap;
+	OutgassingMapWindow    *outgassingMapWindow;
 	MomentsEditor    *momentsEditor;
 	ParameterEditor  *parameterEditor;
 	char *nbF;
@@ -140,15 +124,17 @@ public:
     // Testing
     //int     nbSt;
     //void LogProfile();
-    void BuildPipe(double ratio,int steps=0);
-	void EmptyGeometry();
-	void CrashHandler(Error *e);
-	
+    void BuildPipe(double ratio,int steps) override;
+	void EmptyGeometry() override;
+	void CrashHandler(std::exception& e);
+
+    int  FrameMove() override;
+
 protected:
 	void LoadParameterCatalog();
-    int  OneTimeSceneInit();
-    int  RestoreDeviceObjects();
-	int  InvalidateDeviceObjects();
-    int  FrameMove();
-    void ProcessMessage(GLComponent *src,int message);
+    int  OneTimeSceneInit() override;
+    int  RestoreDeviceObjects() override;
+	int  InvalidateDeviceObjects() override;
+
+    void ProcessMessage(GLComponent *src,int message) override;
 };

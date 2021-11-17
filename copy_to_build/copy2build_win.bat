@@ -5,7 +5,6 @@ md ..\bin\win\desorption_yields\
 md ..\bin\win\images\
 md ..\bin\win\parameter_catalog\
 copy .\7za.exe ..\bin\win\7za.exe
-copy .\updater_config_default_win.xml ..\bin\win\updater_config.xml
 copy .\desorption_yields\* ..\bin\win\desorption_yields\
 copy .\images\* ..\bin\win\images\
 copy .\parameter_catalog\* ..\bin\win\parameter_catalog\
