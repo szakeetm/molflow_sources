@@ -358,6 +358,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
 
 #endif
 
+    RebuildAccelStructure();/*
     simModel->accel.clear();
     for (size_t s = 0; s < simModel->sh.nbSuper; ++s) {
         if(model->wp.accel_type == 1)
@@ -367,7 +368,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     }
 // old_bvb
     for(auto& particle : particles)
-        particle.model = model.get();
+        particle.model = model.get();*/
 
     // Initialise simulation
 

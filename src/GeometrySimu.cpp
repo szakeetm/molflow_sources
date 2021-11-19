@@ -623,6 +623,9 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
         return 1;
     }
 
+    // First clear old ADS
+    this->accel.clear();
+
     for(auto& fac : facets){
         fac->nbTraversalSteps = 0;
         fac->nbIntersections = 0;
@@ -679,7 +682,6 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
         }
     }
 
-    this->accel.clear();
     std::vector<TestRay> hits;
 
     bool withTestBattery = false;
@@ -735,6 +737,7 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
                 Log::console_msg_master(4, "SAH*KD cost:\n%lf | %lf\n", tree_stats.timeTrav / (double) tree_stats.nTraversedInner, tree_stats.timeInt / (double) tree_stats.nIntersections);
                 isect_cost = std::ceil((tree_stats.timeTrav / (double)tree_stats.nTraversedInner) / (tree_stats.timeInt / (double)tree_stats.nIntersections));
             }
+            // Clear tmp ADS
             this->accel.clear();
         }
         //isect_cost = 80;
@@ -805,7 +808,7 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
     if(accel_type == 1 && this->wp.kd_with_ropes) {
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
             auto kd = this->accel[s].get();
-            dynamic_cast<KdTreeAccel*>(kd)->AddRopes();
+            dynamic_cast<KdTreeAccel *>(kd)->AddRopes(true);
         }
     }
 

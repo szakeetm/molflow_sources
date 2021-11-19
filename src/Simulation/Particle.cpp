@@ -347,6 +347,7 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                 else
                     particle.lastIntersected = -1;
 
+#if defined(DEBUG)
                 // WIP: Compare
                 Ray ray;
                 ray.direction = particle.direction;
@@ -387,10 +388,14 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                 }
                 ((RopePayload*)ray2.pay)->lastNode = tmp;
                 if(particle.pay)((RopePayload*)ray2.pay)->lastRay = ((RopePayload*)particle.pay)->lastRay;
-
+#endif
+                RayStat testParticle(particle);
+                found = model->accel.at(testParticle.structure)->IntersectStat(testParticle);
+                testParticle.pay = nullptr; // unreference as delete is managed by original particle
                 found = model->accel.at(particle.structure)->Intersect(particle);
                 //}
 
+#if defined(DEBUG)
                 // particle is selected (e.g rope) algorithm, ray is always regular traversal
                 if(found != testFound
                    || particle.hardHit.hitId != ray.hardHit.hitId
@@ -399,7 +404,7 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                     found = model->accel.at(particle.structure)->IntersectStat(ray2);
                 }
                 delete ray2.rng;
-
+#endif
 
 
                 if(found){

@@ -133,6 +133,7 @@ public:
         bool boxExpansion{false};
         bool reverseExpansion{false};
         bool sameColor{false};
+        bool onlyBorder{false};
         bool showStats{false};
         bool travStep{false};
         float alpha{0.04f};
