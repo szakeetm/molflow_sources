@@ -443,7 +443,6 @@ void ProfilePlotter::refreshViews() {
 
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j*scaleX, values[j] / sum, false);
-					break;
 				}
 				else if (displayMode == ProfileDisplayModes::NormalizeTo1) {
                     double max = 1.0;
@@ -455,12 +454,10 @@ void ProfilePlotter::refreshViews() {
 
                     for (int j = 0; j < PROFILE_SIZE; j++)
                         v->Add((double) j, profile[j].countEquiv * scaleY, false);
-                    break;
                 }
 				else{
                     // Unknown display mode, reset to RAW data
                     displayModeCombo->SetSelectedIndex(0);
-                    break;
 				}
 
 			}
