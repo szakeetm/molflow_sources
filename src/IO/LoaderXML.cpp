@@ -10,6 +10,7 @@
 #include "LoaderXML.h"
 #include "TimeMoments.h"
 #include "File.h"
+#include <fmt/core.h>
 
 using namespace pugi;
 using namespace FlowIO;
@@ -61,10 +62,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Si
     model->structures.resize(model->sh.nbSuper);
     for (xml_node structure : geomNode.child("Structures").children("Structure")) {
         model->structures[idx].strName = structure.attribute("name").value();
-        // For backward compatibilty with STR
-        char tmp[256];
-        sprintf(tmp, "%s.txt", model->structures[idx].strName.c_str());
-        model->structures[idx].strFileName = tmp;
+        model->structures[idx].strFileName = fmt::format("{}.txt",model->structures[idx].strName); // For backward compatibilty with STR
         idx++;
     }
 
