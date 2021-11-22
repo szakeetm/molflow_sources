@@ -140,9 +140,8 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Si
     //uInput.userMoments.clear();
     xml_node userMomentsNode = timeSettingsNode.child("UserMoments");
     for (xml_node newUserEntry : userMomentsNode.children("UserEntry")) {
-        char tmpExpr[512];
         double tmpWindow = 0.0;
-        strcpy(tmpExpr, newUserEntry.attribute("content").as_string());
+        std::string tmpExpr = newUserEntry.attribute("content").as_string();
         tmpWindow = newUserEntry.attribute("window").as_double();
         if(tmpWindow==0.0){
             tmpWindow = model->wp.timeWindowSize;
