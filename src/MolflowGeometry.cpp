@@ -3847,13 +3847,15 @@ bool MolflowGeometry::InitOldStruct(SimulationModel* model){
         SAFE_FREE(strName[i]);
         SAFE_FREE(strFileName[i]);
     }
+    memset(strName, 0, MAX_SUPERSTR * sizeof(char *));
+    memset(strFileName, 0, MAX_SUPERSTR * sizeof(char *));
     for(size_t i = 0; i < std::min((int)model->structures.size(),(int)MAX_SUPERSTR); ++i){
         strName[i] = (char*)malloc(std::min((size_t)model->structures[i].strName.size()+1,(size_t)256) * sizeof(char));
         strFileName[i] = (char*)malloc(std::min((size_t)model->structures[i].strFileName.size()+1,(size_t)256) * sizeof(char));
         std::strncpy(strName[i], model->structures[i].strName.c_str(), std::min((size_t)model->structures[i].strName.size(),(size_t)256));
         std::strncpy(strFileName[i], model->structures[i].strFileName.c_str(), std::min((size_t)model->structures[i].strFileName.size(),(size_t)256));
-        strName[i][std::min((int)model->structures[i].strName.size()+1,(int)256)] = '\0';
-        strFileName[i][std::min((int)model->structures[i].strFileName.size()+1,(int)256)] = '\0';
+        strName[i][std::min((size_t)model->structures[i].strName.size(),(size_t)256)] = '\0';
+        strFileName[i][std::min((size_t)model->structures[i].strFileName.size(),(size_t)256)] = '\0';
     }
 
     return true;
