@@ -660,10 +660,13 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
                         return;
                     }
 
+                    bool warnedOnce = false;
                     for (const auto &facetId : facetIds) {
                         if(geom->GetFacet(facetId)->sh.isProfile) {
-                            if(addView(facetId))
+                            if(addView(facetId) && !warnedOnce) {
+                                warnedOnce = true;
                                 GLMessageBox::Display("Profile already plotted", "Info", GLDLG_OK, GLDLG_ICONINFO);
+                            }
                         }
                     }
 			    }
