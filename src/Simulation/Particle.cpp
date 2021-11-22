@@ -632,9 +632,12 @@ bool Particle::StartFromSource(Ray& ray) {
 
 
 
-    if (src->sh.isMoving && model->wp.motionType)
-        if (particleId == 0)RecordHit(HIT_MOVING);
-        else if (particleId == 0)RecordHit(HIT_DES); //create blue hit point for created particle
+    if (particleId == 0) {
+        if (src->sh.isMoving && model->wp.motionType)
+            RecordHit(HIT_MOVING);
+        else
+            RecordHit(HIT_DES); //create blue hit point for created particle
+    }
 
     //See docs/theta_gen.png for further details on angular distribution generation
     switch (src->sh.desorbType) {
@@ -892,10 +895,12 @@ bool Particle::StartFromSource() {
 
     }
 
-    if (src->sh.isMoving && model->wp.motionType)
-        if (particleId == 0)RecordHit(HIT_MOVING);
-        else if (particleId == 0)RecordHit(HIT_DES); //create blue hit point for created particle
-
+    if (particleId == 0) {
+        if (src->sh.isMoving && model->wp.motionType)
+            RecordHit(HIT_MOVING);
+        else
+            RecordHit(HIT_DES); //create blue hit point for created particle
+    }
     //See docs/theta_gen.png for further details on angular distribution generation
     switch (src->sh.desorbType) {
         case DES_UNIFORM:
