@@ -384,7 +384,7 @@ void GlobalSettings::SMPUpdate() {
         DWORD pid = proc.procId;
 		sprintf(tmp, "Thread %zu", i);
 		processList->SetValueAt(0, i, tmp);
-		sprintf(tmp, "%lu", pid);
+		sprintf(tmp, "");
 		processList->SetValueAt(1, i, tmp);
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
@@ -409,19 +409,19 @@ void GlobalSettings::SMPUpdate() {
 
 #else
         if (pid == currPid) { // TODO: Check if this is wanted
-            processList->SetValueAt(2, i, "0 KB");
-            processList->SetValueAt(3, i, "0 KB");
+            processList->SetValueAt(2, i, "");
+            processList->SetValueAt(3, i, "");
             //processList->SetValueAt(4,i,"0 %");
-            processList->SetValueAt(4, i, "Dead");
+            processList->SetValueAt(4, i, "");
         }
         else {
             PROCESS_INFO pInfo = proc.runtimeInfo;
             //GetProcInfo(pid, &pInfo);
 
 
-            sprintf(tmp, "%.0f MB", (double)pInfo.mem_use / (1024.0));
+            sprintf(tmp, "");
             processList->SetValueAt(2, i, tmp);
-            sprintf(tmp, "%.0f MB", (double)pInfo.mem_peak / (1024.0));
+            sprintf(tmp, "");
             processList->SetValueAt(3, i, tmp);
             //sprintf(tmp, "%d %%", (int)pInfo.cpu_time);
             //processList->SetValueAt(4, i, tmp);
