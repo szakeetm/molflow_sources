@@ -40,10 +40,11 @@ deploy_job:
   stage: deploy-release                                              # This stage must run before the release stage
   rules:
     - if: $CI_COMMIT_TAG
-      when: always                                             # Do not run this job when a tag is created manually
+      when: always   # Do not run this job when a tag is created manually
+  needs:
+    - job:
+        build-artifact-windows-master
   script:
-    - COMMIT_TAG=${CI_COMMIT_TAG:1} # trim v at beginning
-    - echo "TAG_SUFFIX=_$COMMIT_TAG" >> variables.env             # and append to the variables.env file
     - 'curl --location --output artifacts.zip --header "JOB-TOKEN: $CI_JOB_TOKEN" "${ARTIFACTS_URL}"'           # and append to the variables.env file
     - 'curl --request POST \
            --header "JOB-TOKEN: $CI_JOB_TOKEN" \
@@ -70,8 +71,6 @@ deploy_job:
                --data name="Fedora" \
                --data url="${LINK_URL}?job=build-artifact-fedora-tags" \
                "{RELEASE_LINKS_URL}"'
-    needs:
-      - job: build-artifact-windows-master
 
 build-windows-master:
   stage: build
