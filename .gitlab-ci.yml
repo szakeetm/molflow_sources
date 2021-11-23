@@ -45,27 +45,27 @@ deploy_job:
   script:
     - 'curl --location --output artifacts.zip --header "JOB-TOKEN: $CI_JOB_TOKEN" "${ARTIFACTS_URL}"'           # and append to the variables.env file
     - 'curl --request POST
-           --header "JOB-TOKEN: $CI_JOB_TOKEN"
+           --header "PRIVATE-TOKEN: $UPDATE_PRIVATE_TOKEN"
            --data name="Windows"
            --data url="${LINK_URL}?job=build-artifact-windows-tags"
            "${RELEASE_LINKS_URL}"'
     - 'curl --request POST
-               --header "JOB-TOKEN: $CI_JOB_TOKEN"
+               --header "PRIVATE-TOKEN: $UPDATE_PRIVATE_TOKEN"
                --data name="Macos (Intel)"
                --data url="${LINK_URL}?job=build-artifact-macos-tags"
                "${RELEASE_LINKS_URL}"'
     - 'curl --request POST
-               --header "JOB-TOKEN: $CI_JOB_TOKEN"
+               --header "PRIVATE-TOKEN: $UPDATE_PRIVATE_TOKEN"
                --data name="Macos (ARM)"
                --data url="${LINK_URL}?job=build-artifact-macos-arm-tags"
                "${RELEASE_LINKS_URL}"'
     - 'curl --request POST
-               --header "JOB-TOKEN: $CI_JOB_TOKEN"
+               --header "PRIVATE-TOKEN: $UPDATE_PRIVATE_TOKEN"
                --data name="Debian"
                --data url="${LINK_URL}?job=build-artifact-debian-tags"
                "${RELEASE_LINKS_URL}"'
     - 'curl --request POST
-               --header "JOB-TOKEN: $CI_JOB_TOKEN"
+               --header "PRIVATE-TOKEN: $UPDATE_PRIVATE_TOKEN"
                --data name="Fedora"
                --data url="${LINK_URL}?job=build-artifact-fedora-tags"
                "${RELEASE_LINKS_URL}"'
