@@ -1874,7 +1874,7 @@ void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, Worker *worker) {
 	for (int i = 0; i < PROFILE_SIZE; i++)
 		header << i + 1 << sep;
 	header << '\n';
-
+	
 	fputs(header.str().c_str(), file);
 
 	size_t facetHitsSize = (1 + mApp->worker.moments.size()) * sizeof(FacetHitBuffer);
@@ -3047,9 +3047,9 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 
 		xml_node userMomentsNode = timeSettingsNode.child("UserMoments");
 		for (xml_node newUserEntry : userMomentsNode.children("UserEntry")) {
-			char tmpExpr[512];
+			std::string tmpExpr;
 			double tmpWindow = 0.0;
-			strcpy(tmpExpr, newUserEntry.attribute("content").as_string());
+			tmpExpr = newUserEntry.attribute("content").as_string();
 			tmpWindow = newUserEntry.attribute("window").as_double();
             work->userMoments.emplace_back(tmpExpr,tmpWindow);
             // Add real moments only after fully loading the file, because we only want to throw a warning and not an error
@@ -3174,7 +3174,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 		strName[sh.nbSuper + idx] = strdup(structure.attribute("name").value());
 		// For backward compatibilty with STR
 		char tmp[256];
-		sprintf(tmp, "%s.txt", strName[idx]);
+        fmt::print(tmp, "{}.txt",strName[idx]); // For backward compatibilty with STR
 		strFileName[sh.nbSuper + idx] = strdup(tmp);
 		idx++;
 	}
@@ -3843,13 +3843,19 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState 
 }
 
 bool MolflowGeometry::InitOldStruct(SimulationModel* model){
-    for(int i= 0; i < std::min((int)model->structures.size(),(int)MAX_SUPERSTR); ++i){
-        strName[i] = new char[std::min((int)model->structures[i].strName.size(),(int)256)];
-        strFileName[i] = new char[std::min((int)model->structures[i].strFileName.size(),(int)256)];
-        std::strncpy(strName[i], model->structures[i].strName.c_str(), std::min((int)model->structures[i].strName.size(),(int)256));
-        std::strncpy(strFileName[i], model->structures[i].strFileName.c_str(), std::min((int)model->structures[i].strFileName.size(),(int)256));
-        strName[i][std::min((int)model->structures[i].strName.size(),(int)256)] = '\0';
-        strFileName[i][std::min((int)model->structures[i].strFileName.size(),(int)256)] = '\0';
+    for (int i = 0; i < MAX_SUPERSTR; i++) {
+        SAFE_FREE(strName[i]);
+        SAFE_FREE(strFileName[i]);
+    }
+    memset(strName, 0, MAX_SUPERSTR * sizeof(char *));
+    memset(strFileName, 0, MAX_SUPERSTR * sizeof(char *));
+    for(size_t i = 0; i < std::min((int)model->structures.size(),(int)MAX_SUPERSTR); ++i){
+        strName[i] = (char*)malloc(std::min((size_t)model->structures[i].strName.size()+1,(size_t)256) * sizeof(char));
+        strFileName[i] = (char*)malloc(std::min((size_t)model->structures[i].strFileName.size()+1,(size_t)256) * sizeof(char));
+        std::strncpy(strName[i], model->structures[i].strName.c_str(), std::min((size_t)model->structures[i].strName.size(),(size_t)256));
+        std::strncpy(strFileName[i], model->structures[i].strFileName.c_str(), std::min((size_t)model->structures[i].strFileName.size(),(size_t)256));
+        strName[i][std::min((size_t)model->structures[i].strName.size(),(size_t)256)] = '\0';
+        strFileName[i][std::min((size_t)model->structures[i].strFileName.size(),(size_t)256)] = '\0';
     }
 
     return true;

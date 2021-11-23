@@ -443,7 +443,6 @@ void ProfilePlotter::refreshViews() {
 
 					for (int j = 0; j < PROFILE_SIZE; j++)
 						v->Add((double)j*scaleX, values[j] / sum, false);
-					break;
 				}
 				else if (displayMode == ProfileDisplayModes::NormalizeTo1) {
                     double max = 1.0;
@@ -455,12 +454,10 @@ void ProfilePlotter::refreshViews() {
 
                     for (int j = 0; j < PROFILE_SIZE; j++)
                         v->Add((double) j, profile[j].countEquiv * scaleY, false);
-                    break;
                 }
 				else{
                     // Unknown display mode, reset to RAW data
                     displayModeCombo->SetSelectedIndex(0);
-                    break;
 				}
 
 			}
@@ -663,10 +660,13 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
                         return;
                     }
 
+                    bool warnedOnce = false;
                     for (const auto &facetId : facetIds) {
                         if(geom->GetFacet(facetId)->sh.isProfile) {
-                            if(addView(facetId))
+                            if(addView(facetId) && !warnedOnce) {
+                                warnedOnce = true;
                                 GLMessageBox::Display("Profile already plotted", "Info", GLDLG_OK, GLDLG_ICONINFO);
+                            }
                         }
                     }
 			    }

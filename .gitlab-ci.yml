@@ -328,7 +328,6 @@ test-windows:
     - rm -rf ./tmp
     - rm -rf ./TestCases
     - rm -rf ./Results_*
-    - rm -f ./test_*.xml
     - rm -f ./testsuite
   artifacts:
     when: always
@@ -391,7 +390,6 @@ benchmark-windows:
     - Remove-Item -Recurse -Force ("./tmp")
     - Remove-Item -Recurse -Force ("./TestCases")
     - Remove-Item -Recurse -Force ("./Results_*")
-    - Remove-Item -Force ("./test_*.xml")
     - Remove-Item -Force ("./testsuite.exe")
   artifacts:
     when: always
