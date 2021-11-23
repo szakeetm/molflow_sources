@@ -1,12 +1,23 @@
 variables:
   APP_NAME: "molflow"
   APP_NAME_CAPS: "MOLFLOW"
+  # Package version can only contain numbers (0-9), and dots (.).
+  # Must be in the format of X.Y.Z, i.e. should match /\A\d+\.\d+\.\d+\z/ regular expresion.
+  # See https://docs.gitlab.com/ee/user/packages/generic_packages/#publish-a-package-file
+  #PACKAGE_VERSION: "1.2.3"
+  #DARWIN_AMD64_BINARY: "myawesomerelease-darwin-amd64-${PACKAGE_VERSION}"
+  #LINUX_AMD64_BINARY: "myawesomerelease-linux-amd64-${PACKAGE_VERSION}"
+  #PACKAGE_REGISTRY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/myawesomerelease/${PACKAGE_VERSION}"
+  ARTIFACTS_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/jobs/${CI_JOB_ID}/artifacts"
+  RELEASE_LINKS_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases/${CI_COMMIT_TAG}/assets/links"        # and append to the variables.env file
+  LINK_URL: "https://gitlab.cern.ch/molflow_synrad/molflow/-/jobs/artifacts/${CI_COMMIT_TAG}/download"
 
 stages:
   - prepare
   - build
   - build-artifact
   - optional-artifact
+  - deploy-release
   - build-test
   - test
   - benchmark
@@ -24,6 +35,43 @@ prepare_job:
       dotenv: variables.env
   tags:
     - linux
+
+deploy_job:
+  stage: deploy-release                                              # This stage must run before the release stage
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: always                                             # Do not run this job when a tag is created manually
+  script:
+    - COMMIT_TAG=${CI_COMMIT_TAG:1} # trim v at beginning
+    - echo "TAG_SUFFIX=_$COMMIT_TAG" >> variables.env             # and append to the variables.env file
+    - 'curl --location --output artifacts.zip --header "JOB-TOKEN: $CI_JOB_TOKEN" "${ARTIFACTS_URL}"'           # and append to the variables.env file
+    - 'curl --request POST \
+           --header "JOB-TOKEN: $CI_JOB_TOKEN" \
+           --data name="Windows" \
+           --data url="${LINK_URL}?job=build-artifact-windows-tags" \
+           "{RELEASE_LINKS_URL}"'
+    - 'curl --request POST \
+               --header "JOB-TOKEN: $CI_JOB_TOKEN" \
+               --data name="Macos (Intel)" \
+               --data url="${LINK_URL}?job=build-artifact-macos-tags" \
+               "{RELEASE_LINKS_URL}"'
+    - 'curl --request POST \
+               --header "JOB-TOKEN: $CI_JOB_TOKEN" \
+               --data name="Macos (ARM)" \
+               --data url="${LINK_URL}?job=build-artifact-macos-arm-tags" \
+               "{RELEASE_LINKS_URL}"'
+    - 'curl --request POST \
+               --header "JOB-TOKEN: $CI_JOB_TOKEN" \
+               --data name="Debian" \
+               --data url="${LINK_URL}?job=build-artifact-debian-tags" \
+               "{RELEASE_LINKS_URL}"'
+    - 'curl --request POST \
+               --header "JOB-TOKEN: $CI_JOB_TOKEN" \
+               --data name="Fedora" \
+               --data url="${LINK_URL}?job=build-artifact-fedora-tags" \
+               "{RELEASE_LINKS_URL}"'
+    needs:
+      - job: build-artifact-windows-master
 
 build-windows-master:
   stage: build
