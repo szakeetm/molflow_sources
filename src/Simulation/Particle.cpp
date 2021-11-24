@@ -366,7 +366,8 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                 ray2.tMax = particle.tMax;
                 ray2.rng = new MersenneTwister;
                 *ray2.rng = *particle.rng;
-                ray2.pay = new RopePayload;
+                if(model->wp.kd_restart_ropes)
+                    ray2.pay = new RopePayload;
 
 
                 bool testFound = false;
@@ -382,12 +383,14 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                 }
                 else{*/
                 const KdAccelNode* tmp = nullptr;
-                if(dynamic_cast<KdTreeAccel*>(model->accel.at(particle.structure).get())){
-                    if(dynamic_cast<KdTreeAccel*>(model->accel.at(particle.structure).get())->hasRopes)
-                        tmp = ((RopePayload*)particle.pay)->lastNode;
+                if(particle.pay) {
+                    if (dynamic_cast<KdTreeAccel *>(model->accel.at(particle.structure).get())) {
+                        if (dynamic_cast<KdTreeAccel *>(model->accel.at(particle.structure).get())->restartFromNode)
+                            tmp = ((RopePayload *) particle.pay)->lastNode;
+                    }
+                    ((RopePayload *) ray2.pay)->lastNode = tmp;
+                    if (particle.pay)((RopePayload *) ray2.pay)->lastRay = ((RopePayload *) particle.pay)->lastRay;
                 }
-                ((RopePayload*)ray2.pay)->lastNode = tmp;
-                if(particle.pay)((RopePayload*)ray2.pay)->lastRay = ((RopePayload*)particle.pay)->lastRay;
 #endif
                 RayStat testParticle(particle);
                 found = model->accel.at(testParticle.structure)->IntersectStat(testParticle);
