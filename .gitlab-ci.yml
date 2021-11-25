@@ -41,13 +41,13 @@ prepare_job:
 
 upload:
   stage: upload
-  image: curlimages/curl:latest
+  image: gitlab-ci-utils/curl-jq:latest
   rules:
     - if: $CI_COMMIT_TAG
   script:
-    - apk update && apk add zip
-    - 'zip -r ${APP_NAME}_${OS_NAME}${TAG_SUFFIX}.zip ./${APP_NAME}_${OS_NAME}${TAG_SUFFIX}'
-    - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ./${APP_NAME}_${OS_NAME}${TAG_SUFFIX}.zip "${PACKAGE_REGISTRY_URL}/${APP_NAME}_${OS_NAME}${TAG_SUFFIX}"'
+    - 'for filename in ./${APP_NAME}_; do zip -r ${filename}.zip $filename; done'
+    - 'for filename in ./${APP_NAME}_; do curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ./${filename}.zip "${PACKAGE_REGISTRY_URL}/${filename}"; done'
+    #- 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ./${APP_NAME}_${OS_NAME}${TAG_SUFFIX}.zip "${PACKAGE_REGISTRY_URL}/${APP_NAME}_${OS_NAME}${TAG_SUFFIX}"'
 
 release_job:
   stage: release
