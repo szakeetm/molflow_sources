@@ -14,19 +14,22 @@ A Monte Carlo simulator for Ultra High Vacuum systems
 Molflow uses cmake for its build system. On Windows it comes with *Visual Studio 2019* or it has to be build/downloaded manually from [cmake's download page](https://cmake.org/download/).
 On Linux and macOS it is part of most package managers.
 
-## Initial setup
-Depending on the operating system and IDE some additional pre-requisites are required and need to be installed manually.
+## Windows
 
-### Windows
-* With *Visual Studio 2019*'s CMake support, you can now open the main folder containing *CMakeLists.txt* (File->Open Folder) and build the project directly
-### Linux (Debian)
+In Windows, you need to clone the project (see below) and open in Visual Studio Community 2019.
+
+With *Visual Studio 2019*'s CMake support, you can now open the main folder containing *CMakeLists.txt* (File->Open Folder) and build the project directly
+
+## Prepare for building - Debian Linux, like Ubuntu
+
 - Install the necessary packages with the apt package manager, for Ubuntu 20:
 ```
 sudo apt install p7zip-full
 sudo apt install build-essential git cmake
 sudo apt install libsdl2-dev libpng-dev libgtk-3-dev libgsl-dev libcurl4-gnutls-dev gsl-bin libatlas-base-dev p7zip
 ```
-### Linux (Fedora-based, like Cent OS)
+## Prepare for building - Fedora Linux, like Cent OS
+
 - Install the necessary packages with the package manager
 
 yum (e.g. CentOS 7):
@@ -56,7 +59,8 @@ make
 sudo make install
 ```
 
-## Mac
+## Prepare for building - macOS
+
 * Use Homebrew to install build tools, like g++-8, the SDL2 library, libpng, gsl, curl, p7zip  
 
 The procedure looks as follows:
@@ -75,7 +79,7 @@ The procedure looks as follows:
 
   (Or a one-liner for the above commands is `brew install cmake libpng gsl sdl2 p7zip libomp`)
 
-## Cloning the project
+## Cloning the project (all OS)
 * Clone the Molflow project with `git clone`
 * Go into the `Molflow` directory and:
   * `git submodule init`
@@ -87,7 +91,8 @@ git submodule init
 git submodule update
 ```
 
-## Manual build with cmake (Linux/MacOS)
+## Manual build with CMake (Linux/MacOS)
+
 * Go back to the project root folder `cd ..`
 * Create a build directory
 * Init the cmake project inside the new directory
@@ -114,7 +119,7 @@ Use the shortcut (that changes the working directory and launches *molflow.exe*)
 * Run *launch_molflow.sh* (It adds the lib folder to the library search path and launches molflow)
 
 [Detailed instructions here](https://molflow.web.cern.ch/node/302)
-## Mac
+## macOS
 * Use Homebrew to install dependencies, like *sdl2*, *libpng*, *gsl*, *gcc*  
 * In the *release/bin* folder, make *molflow* and *compress* executable
 * Run *molflow*  
