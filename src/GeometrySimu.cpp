@@ -616,7 +616,7 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
                                          int maxPrimsInNode) {
     initialized = false;
 
-    Chronometer timer;
+    Chronometer timer(false);
     timer.Start();
 
     if (!m.try_lock()) {

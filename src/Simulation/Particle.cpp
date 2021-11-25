@@ -18,7 +18,7 @@ using namespace MFSim;
 bool Particle::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, DWORD timeout) {
     int i, j, x, y;
 
-    Chronometer timer;
+    Chronometer timer(false);
     timer.Start();
 
     if (!globSimuState.tMutex.try_lock_for(std::chrono::milliseconds(timeout))) {

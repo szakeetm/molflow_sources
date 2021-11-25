@@ -240,7 +240,7 @@ void Simulation::ClearSimulation() {
 }
 
 int Simulation::RebuildAccelStructure() {
-    Chronometer timer;
+    Chronometer timer(false);
     timer.Start();
 
     if(model->BuildAccelStructure(globState, model->wp.accel_type, model->wp.splitMethod, model->wp.bvhMaxPrimsInNode))
@@ -258,7 +258,7 @@ int Simulation::RebuildAccelStructure() {
 
 
 size_t Simulation::LoadSimulation(char *loadStatus) {
-    Chronometer timer;
+    Chronometer timer(false);
     timer.Start();
     strncpy(loadStatus, "Clearing previous simulation", 127);
     ClearSimulation();
@@ -407,6 +407,13 @@ void Simulation::ResetSimulation() {
     //currentParticles.clear();// = CurrentParticleStatus();
     //std::vector<CurrentParticleStatus>(this->nbThreads).swap(this->currentParticles);
 
+    // PROFILING
+    if(model && model->initialized && !model->accel.empty()) {
+        for (auto &accel: model->accel)
+            accel->ResetStats();
+    }
+    // PROFILING -----
+
     for(auto& particle : particles) {
         particle.Reset();
         particle.tmpFacetVars.assign(model->sh.nbFacet, SubProcessFacetTempVar());
@@ -554,7 +561,7 @@ void Simulation::FindBestADS() {
     model->wp.accel_type = 0;
     model->wp.bvhMaxPrimsInNode = 2;
 
-    Chronometer bench;
+    Chronometer bench(false);
 
     for(BVHAccel::SplitMethod split : all_splits) {
         if(split == BVHAccel::SplitMethod::TestSplit)

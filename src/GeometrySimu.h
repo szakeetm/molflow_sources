@@ -287,7 +287,7 @@ public:
     std::vector<SuperStructure> structures;
     std::vector<Vector3d> vertices3; // Vertices (3D space)
 
-    std::vector<std::shared_ptr<RTPrimitive>> accel;
+    std::vector<std::shared_ptr<RTAccel>> accel;
     std::map<double, std::shared_ptr<Surface>> surfaces;
 
     // Simulation Properties
