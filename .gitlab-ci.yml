@@ -7,7 +7,7 @@ variables:
   #PACKAGE_VERSION: "1.2.3"
   #DARWIN_AMD64_BINARY: "myawesomerelease-darwin-amd64-${PACKAGE_VERSION}"
   #LINUX_AMD64_BINARY: "myawesomerelease-linux-amd64-${PACKAGE_VERSION}"
-  #PACKAGE_REGISTRY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/myawesomerelease/${PACKAGE_VERSION}"
+  PACKAGE_REGISTRY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/Molflow_${CI_COMMIT_TAG}"
   ARTIFACTS_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/jobs/${CI_JOB_ID}/artifacts"
   RELEASES_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases"        # and append to the variables.env file
   RELEASE_LINKS_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases/${CI_COMMIT_TAG}/assets/links"        # and append to the variables.env file
@@ -19,6 +19,8 @@ stages:
   - build-artifact
   - optional-artifact
   - deploy-release
+  - upload
+  - release
   - build-test
   - test
   - benchmark
@@ -37,6 +39,36 @@ prepare_job:
   tags:
     - linux
 
+upload:
+  stage: upload
+  image: curlimages/curl:latest
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - 'zip -r ${APP_NAME}_${OS_NAME}${TAG_SUFFIX}.zip ./${APP_NAME}_${OS_NAME}${TAG_SUFFIX}'
+    - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ./${APP_NAME}_${OS_NAME}${TAG_SUFFIX}.zip "${PACKAGE_REGISTRY_URL}/${APP_NAME}_${OS_NAME}${TAG_SUFFIX}"'
+
+release_job:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  rules:
+    - if: $CI_COMMIT_TAG                  # Run this job when a tag is created manually
+  script:
+    - echo 'running release_job'
+  release:
+    name: 'Release $CI_COMMIT_TAG'
+    description: 'Created using the release-cli $EXTRA_DESCRIPTION'  # $EXTRA_DESCRIPTION must be defined
+    tag_name: '$CI_COMMIT_TAG'                                       # elsewhere in the pipeline.
+    ref: '$CI_COMMIT_TAG'
+    #released_at: '2020-07-15T08:00:00Z'  # Optional, is auto generated if not defined, or can use a variable.
+    assets: # Optional, multiple asset links
+      links:
+        - name: 'Binary'
+          url: '${PACKAGE_REGISTRY_URL}/${APP_NAME}_${OS_NAME}${TAG_SUFFIX}.zip'
+          #filepath: '/pretty/url/1' # optional
+          #link_type: 'other' # optional
+
+
 deploy_job:
   stage: deploy-release                                              # This stage must run before the release stage
   rules:
@@ -44,16 +76,10 @@ deploy_job:
       when: manual
   needs: []
   script:
-    - 'echo "Tag $CI_COMMIT_TAG"'
-    - 'curl --request POST --header ''Content-Type: application/json'' --header "PRIVATE-TOKEN: $UPDATE_PRIVATE_TOKEN"
-           --data ''{ "name": "$CI_COMMIT_TAG", "tag_name": "$CI_COMMIT_TAG", "description": "Release $CI_COMMIT_TAG", "assets": { "links": [{ "name": "hoge", "url": "https://google.com", "filepath": "/binaries/linux-amd64", "link_type":"other" }] } }''
-           "${RELEASES_URL}" -v --trace-ascii /dev/stdout'
-    - 'curl --request POST --header ''Content-Type: application/json'' --header "PRIVATE-TOKEN: $UPDATE_PRIVATE_TOKEN"
-               --data ''{ "name": "${CI_COMMIT_TAG}", "tag_name": "${CI_COMMIT_TAG}", "description": "Release ${CI_COMMIT_TAG}", "assets": { "links": [{ "name": "hoge", "url": "https://google.com", "filepath": "/binaries/linux-amd64", "link_type":"other" }] } }''
-               "${RELEASES_URL}" -v --trace-ascii /dev/stdout'
+    - 'echo "Deploying release version $CI_COMMIT_TAG"'
     - 'curl --request POST --header ''Content-Type: application/json'' --header "PRIVATE-TOKEN: $UPDATE_PRIVATE_TOKEN"
                --data "{ \"name\": \"$CI_COMMIT_TAG\", \"tag_name\": \"$CI_COMMIT_TAG\", \"description\": \"Release $CI_COMMIT_TAG\", \"assets\": { \"links\": [{ \"name\": \"hoge\", \"url\": \"https://google.com\", \"filepath\": \"/binaries/linux-amd64\", \"link_type\":\"other\" }] } }"
-               "${RELEASES_URL}" -v --trace-ascii /dev/stdout'
+               "${RELEASES_URL}"'
     - 'curl --request POST
            --header "PRIVATE-TOKEN: $UPDATE_PRIVATE_TOKEN"
            --data name="Windows"
