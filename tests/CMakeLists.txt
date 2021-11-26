@@ -61,6 +61,11 @@ set(EXTRA_SRC
 # Now simply link against gtest or gtest_main as needed. Eg
 add_executable(testsuite simulation_testsuite.cpp ${EXTRA_SRC})
 
+
+#[[set(CMAKE_EXECUTABLE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_BIN_REL}")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_BIN_REL}")]]
+set_target_properties(testsuite PROPERTIES EXECUTABLE_OUTPUT_DIRECTORY ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY}/tests)
+set_target_properties(testsuite PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests)
 target_link_libraries(testsuite PRIVATE gtest_main molflowSim)
 target_compile_definitions(testsuite PRIVATE
         "-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
@@ -97,4 +102,4 @@ target_compile_features(testsuite PRIVATE cxx_std_17)
 
 file(COPY ./simulation.cfg
         ./TestCases
-        DESTINATION ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})
+        DESTINATION ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY}/tests)

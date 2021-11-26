@@ -282,7 +282,7 @@ build-macos-arm-test:
     - export PROJPATH=$(pwd)
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
-    - cd ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
+    - cd ~/$APP_NAME_CAPS'_CI/'$FNAME'/tests'
     - ./testsuite --gtest_filter=-*PerformanceOkay* --gtest_output="xml:report.xml"
     - mv report.xml $PROJPATH"/report.xml"
   after_script:
@@ -337,7 +337,7 @@ test-windows:
     - Set-Variable -Name "PROJPATH" -Value (($pwd).path)
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
     - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
-    - Set-Location ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\")
+    - Set-Location ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\tests")
     - $AllArgs = @("--gtest_filter=-*PerformanceOkay* --gtest_output='xml:report.xml'")
     - powershell.exe -c "./testsuite.exe $AllArgs"
     - Move-Item -Path report.xml -Destination (($PROJPATH) + "\report.xml")
@@ -362,7 +362,7 @@ test-windows:
     - export PROJPATH=$(pwd)
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
-    - cd ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
+    - cd ~/$APP_NAME_CAPS'_CI/'$FNAME'/tests'
     - cp ~/$APP_NAME_CAPS'_CI/'PerfoTestResults/time_record_* . || cp ~/$APP_NAME_CAPS'_CI/PerfoTestResults/'$CI_COMMIT_BRANCH/time_record_* . || true
     - ./testsuite --gtest_filter=*PerformanceOkay* --gtest_output="xml:benchmark.xml"
     - ls .
@@ -372,10 +372,7 @@ test-windows:
     - export DATE=`date +%Y_%m_%d`
     - export FNAME=$CI_COMMIT_BRANCH'/'$CI_COMMIT_REF_NAME'_'$CI_PIPELINE_ID
     - cd ~/$APP_NAME_CAPS'_CI/'$FNAME'/'
-    - rm -rf ./tmp
-    - rm -rf ./TestCases
-    - rm -rf ./Results_*
-    - rm -f ./testsuite
+    - rm -rf ./tests
   artifacts:
     when: always
     reports:
@@ -423,7 +420,7 @@ benchmark-windows:
     - Set-Variable -Name "PROJPATH" -Value (($pwd).path)
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
     - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
-    - Set-Location ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\")
+    - Set-Location ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\tests")
     - Copy-Item -Force ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\" + ($CI_COMMIT_BRANCH) + "time_record_*") (".\")
     - Copy-Item -Force ("C:\" + ($APP_NAME_CAPS) + "_CI\PerfoTestResults\time_record_*") (".\")
     - $AllArgs = @("--gtest_filter=*PerformanceOkay* --gtest_output=xml:benchmark.xml")
@@ -434,10 +431,7 @@ benchmark-windows:
     - Set-Variable -Name "DATE" -Value (Get-Date -Format "yyyy_MM_dd")
     - Set-Variable -Name "FNAME" -Value ("\" + $CI_COMMIT_BRANCH + "\" + $env:CI_COMMIT_REF_NAME + "_" + $env:CI_PIPELINE_ID)
     - Set-Location ("C:\" + ($APP_NAME_CAPS) + "_CI\" + ($FNAME) + "\")
-    - Remove-Item -Recurse -Force ("./tmp")
-    - Remove-Item -Recurse -Force ("./TestCases")
-    - Remove-Item -Recurse -Force ("./Results_*")
-    - Remove-Item -Force ("./testsuite.exe")
+    - Remove-Item -Recurse -Force ("./tests")
   artifacts:
     when: always
     reports:
