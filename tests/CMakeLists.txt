@@ -102,4 +102,5 @@ target_compile_features(testsuite PRIVATE cxx_std_17)
 
 file(COPY ./simulation.cfg
         ./TestCases
+        ../copy_to_build/parameter_catalog
         DESTINATION ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY}/tests)
