@@ -1,116 +1,76 @@
 variables:
   APP_NAME: "molflow"
   APP_NAME_CAPS: "MOLFLOW"
+  PACKAGE_REGISTRY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/Molflow"
+  ARTIFACTS_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/jobs/${CI_JOB_ID}/artifacts"
+  RELEASES_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases"        # and append to the variables.env file
+  RELEASE_LINKS_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases/${CI_COMMIT_TAG}/assets/links"        # and append to the variables.env file
+  LINK_URL: "https://gitlab.cern.ch/molflow_synrad/molflow/-/jobs/artifacts/${CI_COMMIT_TAG}/download"
   # Package version can only contain numbers (0-9), and dots (.).
   # Must be in the format of X.Y.Z, i.e. should match /\A\d+\.\d+\.\d+\z/ regular expresion.
   # See https://docs.gitlab.com/ee/user/packages/generic_packages/#publish-a-package-file
   #PACKAGE_VERSION: "1.2.3"
   #DARWIN_AMD64_BINARY: "myawesomerelease-darwin-amd64-${PACKAGE_VERSION}"
   #LINUX_AMD64_BINARY: "myawesomerelease-linux-amd64-${PACKAGE_VERSION}"
-  PACKAGE_REGISTRY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/Molflow"
-  ARTIFACTS_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/jobs/${CI_JOB_ID}/artifacts"
-  RELEASES_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases"        # and append to the variables.env file
-  RELEASE_LINKS_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases/${CI_COMMIT_TAG}/assets/links"        # and append to the variables.env file
-  LINK_URL: "https://gitlab.cern.ch/molflow_synrad/molflow/-/jobs/artifacts/${CI_COMMIT_TAG}/download"
 
 stages:
   - prepare
   - build
   - build-artifact
   - optional-artifact
-  - deploy-release
-  - upload
-  - release
   - build-test
   - test
   - benchmark
+  - upload
+  - release
 
 prepare_job:
   stage: prepare                                              # This stage must run before the release stage
+  image: alpine:latest
   rules:
     - if: $CI_COMMIT_TAG
-      when: always                                             # Do not run this job when a tag is created manually
+      when: always
   script:
+    #- add a regexp check if version is of well-posed format "vX.Y.Z"
     - COMMIT_TAG=${CI_COMMIT_TAG:1} # trim v at beginning
-    - echo "TAG_SUFFIX=_$COMMIT_TAG" >> variables.env             # and append to the variables.env file
+    - echo "TAG_VERSION_NUMBER=$COMMIT_TAG" >> variables.env      # and append to the variables.env file
+    - echo "TAG_SUFFIX=_$COMMIT_TAG" >> variables.env             # and with underscore prefix
   artifacts:
     reports:
       dotenv: variables.env
-  tags:
-    - linux
 
-upload:
+upload-job:
   stage: upload
-  image: registry.gitlab.com/gitlab-ci-utils/curl-jq:latest
+  image: registry.gitlab.com/gitlab-ci-utils/curl-jq:latest #curl + zip
   rules:
     - if: $CI_COMMIT_TAG
   script:
     - 'for filename in ./${APP_NAME}_*; do zip -r ${filename}.zip $filename; curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ./${filename}.zip "${PACKAGE_REGISTRY_URL}/${TAG_SUFFIX}/${filename}.zip"; done'
-    #- 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ./${APP_NAME}_${OS_NAME}${TAG_SUFFIX}.zip "${PACKAGE_REGISTRY_URL}/${APP_NAME}_${OS_NAME}${TAG_SUFFIX}"'
 
 release_job:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   rules:
-    - if: $CI_COMMIT_TAG                  # Run this job when a tag is created manually
+    - if: $CI_COMMIT_TAG
   script:
     - echo 'running release_job'
   release:
     name: 'Release $CI_COMMIT_TAG'
-    description: 'Created using the release-cli $EXTRA_DESCRIPTION'  # $EXTRA_DESCRIPTION must be defined
+    description: 'Changelog $CI_COMMIT_TAG\n$EXTRA_DESCRIPTION'  # $EXTRA_DESCRIPTION must be defined
     tag_name: '$CI_COMMIT_TAG'                                       # elsewhere in the pipeline.
     ref: '$CI_COMMIT_TAG'
-    #released_at: '2020-07-15T08:00:00Z'  # Optional, is auto generated if not defined, or can use a variable.
-    assets: # Optional, multiple asset links
+    assets:
       links:
-        - name: 'Binary Windows'
-          url: '${PACKAGE_REGISTRY_URL}/${TAG_SUFFIX}/${APP_NAME}_win${TAG_SUFFIX}.zip'
-        - name: 'Binary MacOS (Intel)'
-          url: '${PACKAGE_REGISTRY_URL}/${TAG_SUFFIX}/${APP_NAME}_mac${TAG_SUFFIX}.zip'
-        - name: 'Binary MacOS (ARM)'
-          url: '${PACKAGE_REGISTRY_URL}/${TAG_SUFFIX}/${APP_NAME}_mac_arm${TAG_SUFFIX}.zip'
-        - name: 'Binary Linux (Debian)'
-          url: '${PACKAGE_REGISTRY_URL}/${TAG_SUFFIX}/${APP_NAME}_debian${TAG_SUFFIX}.zip'
-        - name: 'Binary Linux (Fedora)'
-          url: '${PACKAGE_REGISTRY_URL}/${TAG_SUFFIX}/${APP_NAME}_fedora${TAG_SUFFIX}.zip'
-
-
-deploy_job:
-  stage: deploy-release                                              # This stage must run before the release stage
-  rules:
-    - if: $CI_COMMIT_TAG
-      when: manual
-  needs: []
-  script:
-    - 'echo "Deploying release version $CI_COMMIT_TAG"'
-    - 'curl --request POST --header ''Content-Type: application/json'' --header "PRIVATE-TOKEN: $UPDATE_PRIVATE_TOKEN"
-               --data "{ \"name\": \"$CI_COMMIT_TAG\", \"tag_name\": \"$CI_COMMIT_TAG\", \"description\": \"Release $CI_COMMIT_TAG\", \"assets\": { \"links\": [{ \"name\": \"hoge\", \"url\": \"https://google.com\", \"filepath\": \"/binaries/linux-amd64\", \"link_type\":\"other\" }] } }"
-               "${RELEASES_URL}"'
-    - 'curl --request POST
-           --header "PRIVATE-TOKEN: $UPDATE_PRIVATE_TOKEN"
-           --data name="Windows"
-           --data url="${LINK_URL}?job=build-artifact-windows-tags"
-           "${RELEASE_LINKS_URL}"'
-    - 'curl --request POST
-               --header "PRIVATE-TOKEN: $UPDATE_PRIVATE_TOKEN"
-               --data name="Macos (Intel)"
-               --data url="${LINK_URL}?job=build-artifact-macos-tags"
-               "${RELEASE_LINKS_URL}"'
-    - 'curl --request POST
-               --header "PRIVATE-TOKEN: $UPDATE_PRIVATE_TOKEN"
-               --data name="Macos (ARM)"
-               --data url="${LINK_URL}?job=build-artifact-macos-arm-tags"
-               "${RELEASE_LINKS_URL}"'
-    - 'curl --request POST
-               --header "PRIVATE-TOKEN: $UPDATE_PRIVATE_TOKEN"
-               --data name="Debian"
-               --data url="${LINK_URL}?job=build-artifact-debian-tags"
-               "${RELEASE_LINKS_URL}"'
-    - 'curl --request POST
-               --header "PRIVATE-TOKEN: $UPDATE_PRIVATE_TOKEN"
-               --data name="Fedora"
-               --data url="${LINK_URL}?job=build-artifact-fedora-tags"
-               "${RELEASE_LINKS_URL}"'
+        - name: 'Windows binary'
+          url: '${PACKAGE_REGISTRY_URL}/${TAG_VERSION_NUMBER}/${APP_NAME}_win${TAG_SUFFIX}.zip'
+        - name: 'macOS (Intel) binary'
+          url: '${PACKAGE_REGISTRY_URL}/${TAG_VERSION_NUMBER}/${APP_NAME}_mac${TAG_SUFFIX}.zip'
+        - name: 'macOS (ARM) binary'
+          url: '${PACKAGE_REGISTRY_URL}/${TAG_VERSION_NUMBER}/${APP_NAME}_mac_arm${TAG_SUFFIX}.zip'
+        - name: 'Ubuntu (Debian) binary'
+          url: '${PACKAGE_REGISTRY_URL}/${TAG_VERSION_NUMBER}/${APP_NAME}_debian${TAG_SUFFIX}.zip'
+        - name: 'CentOS (Fedora) binary'
+          url: '${PACKAGE_REGISTRY_URL}/${TAG_VERSION_NUMBER}/${APP_NAME}_fedora${TAG_SUFFIX}.zip'
 
 build-windows-master:
   stage: build
