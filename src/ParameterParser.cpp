@@ -185,7 +185,7 @@ void ParameterParser::ChangeSimuParams(WorkerParams& params){
     }
 }
 
-void ParameterParser::ChangeFacetParams(std::vector<std::shared_ptr<SubprocessFacet>> &facets) {
+int ParameterParser::ChangeFacetParams(std::vector<std::shared_ptr<SubprocessFacet>> &facets) {
     for(auto& par : Parameters::facetParams){
         size_t id = std::get<0>(par);
         if(id < facets.size()) {
@@ -194,12 +194,16 @@ void ParameterParser::ChangeFacetParams(std::vector<std::shared_ptr<SubprocessFa
             switch (type) {
                 case (Parameters::FacetParam::opacity):
                     facet.sh.opacity = std::get<2>(par);
+                    if(facet.sh.opacity < 0.0 || facet.sh.opacity > 1.0)
+                        Log::console_error("[ParameterChange][Facet][ID: %zu] Invalid opacity on facet: %lf\n", id, facet.sh.opacity);
                     break;
                 case (Parameters::FacetParam::outgassing):
                     facet.sh.outgassing = std::get<2>(par);
                     break;
                 case (Parameters::FacetParam::sticking):
                     facet.sh.sticking = std::get<2>(par);
+                    if(facet.sh.sticking < 0.0 || facet.sh.sticking > 1.0)
+                        Log::console_error("[ParameterChange][Facet][ID: %zu] Invalid sticking coefficient on facet: %lf\n", id, facet.sh.sticking);
                     break;
                 case (Parameters::FacetParam::temperature):
                     facet.sh.temperature = std::get<2>(par);
@@ -208,5 +212,10 @@ void ParameterParser::ChangeFacetParams(std::vector<std::shared_ptr<SubprocessFa
                     Log::console_error("Unknown FacetParam %s\n", std::get<1>(par));
             }
         }
+        else{
+            Log::console_error("[ParameterChange][Facet][ID: %zu] Facet ID out of range\n", id);
+            return 1;
+        }
     }
+    return 0;
 }
