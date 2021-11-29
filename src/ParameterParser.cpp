@@ -186,6 +186,7 @@ void ParameterParser::ChangeSimuParams(WorkerParams& params){
 }
 
 int ParameterParser::ChangeFacetParams(std::vector<std::shared_ptr<SubprocessFacet>> &facets) {
+    int nbError = 0;
     for(auto& par : Parameters::facetParams){
         size_t id = std::get<0>(par);
         if(id < facets.size()) {
@@ -194,16 +195,23 @@ int ParameterParser::ChangeFacetParams(std::vector<std::shared_ptr<SubprocessFac
             switch (type) {
                 case (Parameters::FacetParam::opacity):
                     facet.sh.opacity = std::get<2>(par);
-                    if(facet.sh.opacity < 0.0 || facet.sh.opacity > 1.0)
-                        Log::console_error("[ParameterChange][Facet][ID: %zu] Invalid opacity on facet: %lf\n", id, facet.sh.opacity);
+                    if(facet.sh.opacity < 0.0 || facet.sh.opacity > 1.0) {
+                        nbError++;
+                        Log::console_error("[ParameterChange][Facet][ID: %zu] Invalid opacity on facet: %lf\n", id,
+                                           facet.sh.opacity);
+                    }
                     break;
                 case (Parameters::FacetParam::outgassing):
                     facet.sh.outgassing = std::get<2>(par);
                     break;
                 case (Parameters::FacetParam::sticking):
                     facet.sh.sticking = std::get<2>(par);
-                    if(facet.sh.sticking < 0.0 || facet.sh.sticking > 1.0)
-                        Log::console_error("[ParameterChange][Facet][ID: %zu] Invalid sticking coefficient on facet: %lf\n", id, facet.sh.sticking);
+                    if(facet.sh.sticking < 0.0 || facet.sh.sticking > 1.0) {
+                        nbError++;
+                        Log::console_error(
+                                "[ParameterChange][Facet][ID: %zu] Invalid sticking coefficient on facet: %lf\n", id,
+                                facet.sh.sticking);
+                    }
                     break;
                 case (Parameters::FacetParam::temperature):
                     facet.sh.temperature = std::get<2>(par);
@@ -214,8 +222,8 @@ int ParameterParser::ChangeFacetParams(std::vector<std::shared_ptr<SubprocessFac
         }
         else{
             Log::console_error("[ParameterChange][Facet][ID: %zu] Facet ID out of range\n", id);
-            return 1;
+            nbError++;
         }
     }
-    return 0;
+    return nbError;
 }
