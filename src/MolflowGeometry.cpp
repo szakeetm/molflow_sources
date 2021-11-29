@@ -3174,7 +3174,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 		strName[sh.nbSuper + idx] = strdup(structure.attribute("name").value());
 		// For backward compatibilty with STR
 		char tmp[256];
-        fmt::print(tmp, "{}.txt",strName[idx]); // For backward compatibilty with STR
+        snprintf(tmp, 256, "%s", fmt::format("{}.txt",strName[idx]).c_str()); // For backward compatibility with STR
 		strFileName[sh.nbSuper + idx] = strdup(tmp);
 		idx++;
 	}

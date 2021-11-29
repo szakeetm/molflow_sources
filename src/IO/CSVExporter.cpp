@@ -167,13 +167,13 @@ namespace FlowIO {
 
         switch (mode) {
             case FDetail::F_ID:
-                fmt::print(ret, "%zd", idx + 1);
+                ret = fmt::format("{}", idx + 1);
                 break;
             case FDetail::F_STICKING:
-                fmt::print(ret, "%g", facet->sh.sticking);
+                ret = fmt::format("{}", facet->sh.sticking);
                 break;
             case FDetail::F_OPACITY:
-                fmt::print(ret, "%g", facet->sh.opacity);
+                ret = fmt::format("{}", facet->sh.opacity);
                 break;
             case FDetail::F_STRUCTURE: {
                 std::ostringstream out;
@@ -181,51 +181,51 @@ namespace FlowIO {
                     out << "All";
                 else
                     out << (facet->sh.superIdx + 1);
-                fmt::print(ret, "%s", out.str().c_str());
+                ret = fmt::format("{}", out.str().c_str());
                 break;
             }
             case FDetail::F_LINK:
-                fmt::print(ret, "%zd", facet->sh.superDest);
+                ret = fmt::format("{}", facet->sh.superDest);
                 break;
             case FDetail::F_DESORPTION:
                 if (facet->sh.desorbType == DES_COSINE_N) {
-                    fmt::print(ret, "%s%g", desStr[facet->sh.desorbType],
+                    ret = fmt::format("{}{}", desStr[facet->sh.desorbType],
                             facet->sh.desorbTypeN); // append exponent
                 } else {
-                    fmt::print(ret, "%s", desStr[facet->sh.desorbType]);
+                    ret = fmt::format("{}", desStr[facet->sh.desorbType]);
                 }
                 break;
             case FDetail::F_REFLECTION:
-                fmt::print(ret, "%g diff. %g spec. %g cos^%g",
+                ret = fmt::format("{} diff. {} spec. {} cos^{}",
                         facet->sh.reflection.diffusePart, facet->sh.reflection.specularPart,
                         1.0 - facet->sh.reflection.diffusePart -
                         facet->sh.reflection.specularPart,
                         facet->sh.reflection.cosineExponent);
                 break;
             case FDetail::F_TWOSIDED:
-                fmt::print(ret, "%s", ynStr[facet->sh.is2sided]);
+                ret = fmt::format("{}", ynStr[facet->sh.is2sided]);
                 break;
             case FDetail::F_VERTEX:
-                fmt::print(ret, "%zd", facet->sh.nbIndex);
+                ret = fmt::format("{}", facet->sh.nbIndex);
                 break;
             case FDetail::F_AREA:
                 if (facet->sh.is2sided)
-                    fmt::print(ret, "2*%g", facet->sh.area);
+                    ret = fmt::format("2*{}", facet->sh.area);
                 else
-                    fmt::print(ret, "%g", facet->sh.area);
+                    ret = fmt::format("{}", facet->sh.area);
                 break;
             case FDetail::F_TEMP:
-                fmt::print(ret, "%g", facet->sh.temperature);
+                ret = fmt::format("{}", facet->sh.temperature);
                 break;
             case FDetail::F_2DBOX:
-                fmt::print(ret, "%g x %g", facet->sh.U.Norme(), facet->sh.V.Norme());
+                ret = fmt::format("{} x {}", facet->sh.U.Norme(), facet->sh.V.Norme());
                 break;
             case FDetail::F_TEXTURE_UV:
                 if (facet->sh.isTextured) {
-                    fmt::print(ret, "%zdx%zd (%g x %g)", facet->sh.texWidth, facet->sh.texHeight,
+                    ret = fmt::format("{}x{} ({} x {})", facet->sh.texWidth, facet->sh.texHeight,
                             facet->sh.texWidth_precise, facet->sh.texHeight_precise);
                 } else {
-                    fmt::print(ret, "None");
+                    ret = fmt::format("None");
                 }
                 break;
             case FDetail::F_MESHSAMPLEPCM: {
@@ -241,17 +241,17 @@ namespace FlowIO {
                 }
 
                 if (IsEqual(tRatioU, tRatioV))
-                    fmt::print(ret, "%g", tRatioU);
+                    ret = fmt::format("{}", tRatioU);
                 else
-                    fmt::print(ret, "%g x %g", tRatioU, tRatioV);
+                    ret = fmt::format("{} x {}", tRatioU, tRatioV);
                 break;
             }
             case FDetail::F_COUNT:
-                fmt::print(ret, "%s", GetCountStr(facet));
+                ret = fmt::format("{}", GetCountStr(facet));
                 break;
             case FDetail::F_MEMORY:
-                fmt::print(ret, "%s", "N/A");
-                // fmt::print(ret, "%s", FormatMemory(facet->GetTexRamSize(1 +
+                ret = fmt::format("{}", "N/A");
+                // ret = fmt::format("{}", FormatMemory(facet->GetTexRamSize(1 +
                 // worker->moments.size())));
                 break;
             case FDetail::F_PLANARITY: {
@@ -269,11 +269,11 @@ namespace FlowIO {
                     double d = A * p.x + B * p.y + C * p.z + D;
                     planarityError = std::max(abs(d), planarityError);
                 }
-                fmt::print(ret, "%lf", planarityError);
+                ret = fmt::format("{}", planarityError);
                 break;
             }
             case FDetail::F_PROFILE:
-                fmt::print(ret, "%s", profStr[facet->sh.profileType]);
+                ret = fmt::format("{}", profStr[facet->sh.profileType]);
                 break;
             case FDetail::F_IMPINGEMENT: // imp.rate
             {
@@ -281,7 +281,7 @@ namespace FlowIO {
                         1E4 * GetMoleculesPerTP(
                                 moment, model,
                                 glob); // 1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
-                fmt::print(ret, "%g", fHit.nbHitEquiv / GetArea(*facet) * dCoef);
+                ret = fmt::format("{}", fHit.nbHitEquiv / GetArea(*facet) * dCoef);
                 // 11.77=sqrt(8*8.31*293.15/3.14/0.028)/4/10
                 break;
             }
@@ -292,7 +292,7 @@ namespace FlowIO {
                         DensityCorrection(
                                 fHit); // 1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 
-                fmt::print(ret, "%g", fHit.sum_1_per_ort_velocity / GetArea(*facet) * dCoef);
+                ret = fmt::format("{}", fHit.sum_1_per_ort_velocity / GetArea(*facet) * dCoef);
 
                 break;
             }
@@ -303,7 +303,7 @@ namespace FlowIO {
                         DensityCorrection(
                                 fHit); // 1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 
-                fmt::print(ret, "%g",
+                ret = fmt::format("{}",
                         fHit.sum_1_per_ort_velocity / GetArea(*facet) * dCoef *
                         model->wp.gasMass / 1000.0 / 6E23);
                 break;
@@ -314,31 +314,31 @@ namespace FlowIO {
                                (model->wp.gasMass / 1000 / 6E23) *
                                0.0100; // 1E4 is conversion from m2 to cm2; 0.01 is Pa->mbar
 
-                fmt::print(ret, "%g", fHit.sum_v_ort * dCoef / GetArea(*facet));
+                ret = fmt::format("{}", fHit.sum_v_ort * dCoef / GetArea(*facet));
                 break;
             }
             case FDetail::F_AVGSPEED: { // avg. gas speed (estimate)
-                /*fmt::print(ret, "%g", 4.0*(double)(fHit.hit.nbMCHit+fHit.hit.nbDesorbed) /
+                /*ret = fmt::format("{}", 4.0*(double)(fHit.hit.nbMCHit+fHit.hit.nbDesorbed) /
                  * fHit.hit.sum_1_per_ort_velocity);*/
                 double avgSpeed = (fHit.sum_1_per_velocity == 0.0) ? 0.0 : (
                         (fHit.nbHitEquiv + static_cast<double>(fHit.nbDesorbed)) /
                         fHit.sum_1_per_velocity);
-                fmt::print(ret, "%g", avgSpeed);
+                ret = fmt::format("{}", avgSpeed);
                 //<v_surf>=2*<v_surFDetail::F_ort>
                 //<v_gas>=1/<1/v_surf>
                 break;
             }
             case FDetail::F_MCHITS:
-                fmt::print(ret, "%zd", fHit.nbMCHit);
+                ret = fmt::format("{}", fHit.nbMCHit);
                 break;
             case FDetail::F_EQUIVHITS:
-                fmt::print(ret, "%g", fHit.nbHitEquiv);
+                ret = fmt::format("{}", fHit.nbHitEquiv);
                 break;
             case FDetail::F_NDESORPTIONS:
-                fmt::print(ret, "%zd", fHit.nbDesorbed);
+                ret = fmt::format("{}", fHit.nbDesorbed);
                 break;
             case FDetail::F_EQUIVABS:
-                fmt::print(ret, "%g", fHit.nbAbsEquiv);
+                ret = fmt::format("{}", fHit.nbAbsEquiv);
                 break;
         }
 
