@@ -1,7 +1,10 @@
 # Changelog
 
 ## v2.9.3 (TBA)
-- N/A
+### Change
+- Changing parameters (CLI) will now give errors or warnings for edge cases
+### Bugfix
+- Fixed CSV export for CLI misfunctioning, due to a bug with fmtlib
 
 ## v2.9.2 (2021.11.22)
 ### Feature
