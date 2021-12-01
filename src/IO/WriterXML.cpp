@@ -33,7 +33,7 @@ void WriterXML::finishWriteStatus(const std::string &statusString) {
     Log::console_msg(2, "\r[%s] %s [%3.2lf%%]\n", Util::getTimepointString().c_str(), statusString.c_str(), 100.0);
 }
 
-void WriterXML::SaveGeometry(xml_document &saveDoc, std::shared_ptr<SimulationModel> model, bool useOldXMLFormat, bool update) {
+xml_node WriterXML::GetRootNode(xml_document &saveDoc) {
     xml_node rootNode;
     if (useOldXMLFormat) {
         rootNode = saveDoc.root();
@@ -47,6 +47,12 @@ void WriterXML::SaveGeometry(xml_document &saveDoc, std::shared_ptr<SimulationMo
             rootNode.append_attribute("version") = appVersionId;
         }
     }
+
+    return rootNode;
+}
+
+void WriterXML::SaveGeometry(xml_document &saveDoc, std::shared_ptr<SimulationModel> model) {
+    xml_node rootNode = GetRootNode(saveDoc);
 
     if(update)
         rootNode.remove_child("Geometry");
@@ -189,9 +195,7 @@ WriterXML::SaveSimulationState(const std::string &outputFileName, std::shared_pt
 bool WriterXML::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<SimulationModel> model, GlobalSimuState &globState) {
     //xml_parse_result parseResult = saveDoc.load_file(outputFileName.c_str()); //parse xml file directly
 
-    xml_node rootNode = saveDoc.child("SimulationEnvironment");
-    if (!rootNode)
-        rootNode = saveDoc.append_child("SimulationEnvironment");
+    xml_node rootNode = GetRootNode(saveDoc);
     rootNode.remove_child("MolflowResults"); // clear previous results to replace with new status
 
     xml_node resultNode = rootNode.append_child("MolflowResults");
@@ -677,4 +681,8 @@ void WriterXML::SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
         timeNode.append_attribute("max") = facet->sh.facetHistogramParams.timeMax;
     }
 #endif
+}
+
+WriterXML::WriterXML(bool useOldXMLFormat, bool update) : useOldXMLFormat(useOldXMLFormat), update(update){
+
 }

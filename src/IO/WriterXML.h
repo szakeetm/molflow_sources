@@ -5,13 +5,11 @@
 #ifndef MOLFLOW_PROJ_WRITERXML_H
 #define MOLFLOW_PROJ_WRITERXML_H
 
-#include <string>
 #include <PugiXML/pugixml.hpp>
 #include "PugiXML/pugixml.hpp"
 
+#include <string>
 #include "GeometrySimu.h"
-#include "LoaderXML.h"
-#include "WriterXML.h"
 
 namespace FlowIO {
 
@@ -24,9 +22,14 @@ namespace FlowIO {
 
     class WriterXML : public Writer {
     protected:
+        bool useOldXMLFormat;
+        bool update;
     public:
+        WriterXML(bool useOldXMLFormat = false, bool update = false);
         //void SaveGeometry(std::string outputFileName, SimulationModel *model) override;
-        void SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<SimulationModel> model, bool useOldXMLFormat, bool update);
+        pugi::xml_node GetRootNode(pugi::xml_document &saveDoc);
+
+        void SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<SimulationModel> model);
 
         bool SaveSimulationState(const std::string &outputFileName, std::shared_ptr<SimulationModel> model, GlobalSimuState &globState);
 
