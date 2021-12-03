@@ -392,10 +392,13 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                     if (particle.pay)((RopePayload *) ray2.pay)->lastRay = ((RopePayload *) particle.pay)->lastRay;
                 }
 #endif
+
+#if defined(PROFILING)
                 RayStat testParticle(particle);
                 found = model->accel.at(testParticle.structure)->IntersectStat(testParticle);
                 testParticle.pay = nullptr; // unreference as delete is managed by original particle
-                found = model->accel.at(particle.structure)->Intersect(particle);
+#endif
+found = model->accel.at(particle.structure)->Intersect(particle);
                 //}
 
 #if defined(DEBUG)

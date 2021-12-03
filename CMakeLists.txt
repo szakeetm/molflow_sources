@@ -101,6 +101,7 @@ add_subdirectory(src_shared EXCLUDE_FROM_ALL)
 #IF(NOT WIN32)
 add_subdirectory(CMake/molflow_cli)
 add_subdirectory(CMake/molflow_sim)
+add_subdirectory(algobench)
 #ENDIF()
 
 if(NOT NO_INTERFACE)
