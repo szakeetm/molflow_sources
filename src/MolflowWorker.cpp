@@ -290,7 +290,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                 } else if (isXML || isXMLzip) {
                     xml_document saveDoc;
                     //geom->SaveXML_geometry(saveDoc, this, prg, saveSelected);
-                    FlowIO::WriterInterfaceXML writer;
+                    FlowIO::WriterInterfaceXML writer(mApp->useOldXMLFormat, false);
                     this->uInput.facetViewSettings.clear();
                     for (size_t facetId = 0; facetId < geom->GetNbFacet(); facetId++) {
                         auto facet = geom->GetFacet(facetId);
@@ -303,7 +303,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                     this->uInput.selections = mApp->selections;
 
                     writer.uInput = this->uInput;
-                    writer.SaveGeometry(saveDoc, model, mApp->useOldXMLFormat, false);
+                    writer.SaveGeometry(saveDoc, model);
                     FlowIO::WriterInterfaceXML::WriteInterface(saveDoc, mApp, saveSelected);
 
                     xml_document geom_only;

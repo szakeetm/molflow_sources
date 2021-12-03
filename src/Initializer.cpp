@@ -175,7 +175,9 @@ int Initializer::initFromFile(SimulationManager *simManager, const std::shared_p
         if (!Settings::paramSweep.empty())
             ParameterParser::ParseInput(Settings::paramSweep, selGroups);
         ParameterParser::ChangeSimuParams(model->wp);
-        ParameterParser::ChangeFacetParams(model->facets);
+        if(ParameterParser::ChangeFacetParams(model->facets)){
+            return 1;
+        }
     }
 
     // Set desorption limit if used

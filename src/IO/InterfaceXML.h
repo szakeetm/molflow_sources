@@ -21,6 +21,7 @@ namespace FlowIO{
         class WriterInterfaceXML :
         public WriterXML {
         public:
+            WriterInterfaceXML(bool useOldXMLFormat, bool update) : WriterXML(useOldXMLFormat, update){};
             static void WriteInterface(pugi::xml_document &saveDoc, MolFlow *mApp, bool saveSelected);
         };
 }

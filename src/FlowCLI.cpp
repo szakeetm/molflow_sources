@@ -262,7 +262,7 @@ int main(int argc, char** argv) {
         FlowIO::WriterXML writer;
         pugi::xml_document newDoc;
         newDoc.load_file(fullOutFile.c_str());
-        writer.SaveGeometry(newDoc, model, false, true);
+        writer.SaveGeometry(newDoc, model);
         writer.SaveSimulationState(fullOutFile, model, globState);
 
         if(createZip){
