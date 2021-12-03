@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
     bool fastEnough = false;
     const size_t nRuns = 5;
     const size_t keepNEntries = 20;
-    const size_t runForTSec = 40;
+    const size_t runForTSec = 60;
     const int n_algo = 4;
 
     std::map<std::string, std::vector<std::pair<int,double>>> perfTimes;
@@ -139,18 +139,18 @@ int main(int argc, char **argv) {
             }
             else if(current_algo == BenchAlgo::ALGO_KD_Prob){
                 model->wp.accel_type = 1;
-                model->wp.splitMethod = static_cast<int>(KdTreeAccel::SplitMethod::HybridSplit);
+                model->wp.splitMethod = static_cast<int>(KdTreeAccel::SplitMethod::ProbSplit);
                 model->wp.kd_with_ropes = false;
             }
             else if(current_algo == BenchAlgo::ALGO_KD_Prob_ROPE){
                 model->wp.accel_type = 1;
-                model->wp.splitMethod = static_cast<int>(KdTreeAccel::SplitMethod::HybridSplit);
+                model->wp.splitMethod = static_cast<int>(KdTreeAccel::SplitMethod::ProbSplit);
                 model->wp.kd_with_ropes = true;
                 model->wp.kd_restart_ropes = false;
             }
             else if(current_algo == BenchAlgo::ALGO_KD_Prob_ROPERESTART){
                 model->wp.accel_type = 1;
-                model->wp.splitMethod = static_cast<int>(KdTreeAccel::SplitMethod::HybridSplit);
+                model->wp.splitMethod = static_cast<int>(KdTreeAccel::SplitMethod::ProbSplit);
                 model->wp.kd_with_ropes = true;
                 model->wp.kd_restart_ropes = true;
             }
@@ -164,7 +164,7 @@ int main(int argc, char **argv) {
             GlobalSimuState globState{};
 
             {
-                std::vector<std::string> argvec = {"algobench", "-t", fmt::format("{}", runForTSec), "--reset",
+                std::vector<std::string> argvec = {"algobench", "-t", fmt::format("{}", runForTSec),
                                                  "--file", testFile,
                                                  "--outputPath", outPath};
 
@@ -174,8 +174,15 @@ int main(int argc, char **argv) {
                 Initializer::initFromFile(&simManager, model, &globState);
             }
 
+            size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
+            double oldHitNb = globState.globalHits.globalHits.nbHitEquiv;
+
             simManager.StartSimulation();
             simManager.StopSimulation();
+
+            oldDesNb = globState.globalHits.globalHits.nbDesorbed;
+            oldHitNb = globState.globalHits.globalHits.nbHitEquiv;
+
             simManager.StartSimulation();
 
             Chronometer simTimer(false);
@@ -199,7 +206,7 @@ int main(int argc, char **argv) {
             simManager.StopSimulation();
             simManager.KillAllSimUnits();
 
-            perfTimes[testFile].emplace_back(std::make_pair((int)current_algo, (double) globState.globalHits.globalHits.nbHitEquiv / (elapsedTime)));
+            perfTimes[testFile].emplace_back(std::make_pair((int)current_algo, (double) (globState.globalHits.globalHits.nbHitEquiv - oldHitNb)/ (elapsedTime)));
             std::string out_str = fmt::format("\"{}\" {} \"{}\" {:.4e}\n", testFile, perfTimes[testFile].back().first, tableDetail.at((BenchAlgo)perfTimes[testFile].back().first), perfTimes[testFile].back().second);
             fmt::print(out_str);
 
