@@ -116,10 +116,10 @@ int main(int argc, char **argv) {
                 BenchAlgo::ALGO_KD_Prob,
                 BenchAlgo::ALGO_KD_Prob_ROPE,
                 BenchAlgo::ALGO_KD_Prob_ROPERESTART,*/
-                BenchAlgo::ALGO_BVH_X,
+                /*BenchAlgo::ALGO_BVH_X,
                 BenchAlgo::ALGO_KD_Hybrid,
                 BenchAlgo::ALGO_KD_Hybrid_ROPE,
-                BenchAlgo::ALGO_KD_Hybrid_ROPERESTART
+                */BenchAlgo::ALGO_KD_Hybrid_ROPERESTART
         };
 
         for (auto current_algo: run_algos) {
@@ -128,65 +128,77 @@ int main(int argc, char **argv) {
                 case (BenchAlgo::ALGO_BVH_SAH) : {
                     model->wp.accel_type = 0;
                     model->wp.splitMethod = static_cast<int>(BVHAccel::SplitMethod::SAH);
+                    break;
                 }
                 case (BenchAlgo::ALGO_KD_SAH) : {
                     model->wp.accel_type = 1;
                     model->wp.splitMethod = static_cast<int>(KdTreeAccel::SplitMethod::SAH);
                     model->wp.kd_with_ropes = false;
+                    break;
                 }
                 case (BenchAlgo::ALGO_KD_SAH_ROPE) : {
                     model->wp.accel_type = 1;
                     model->wp.splitMethod = static_cast<int>(KdTreeAccel::SplitMethod::SAH);
                     model->wp.kd_with_ropes = true;
                     model->wp.kd_restart_ropes = false;
+                    break;
                 }
                 case (BenchAlgo::ALGO_KD_SAH_ROPERESTART) : {
                     model->wp.accel_type = 1;
                     model->wp.splitMethod = static_cast<int>(KdTreeAccel::SplitMethod::SAH);
                     model->wp.kd_with_ropes = true;
                     model->wp.kd_restart_ropes = true;
+                    break;
                 }
                 case (BenchAlgo::ALGO_BVH_Prob) : {
                     model->wp.accel_type = 0;
                     model->wp.splitMethod = static_cast<int>(BVHAccel::SplitMethod::TestSplit);
+                    break;
                 }
                 case (BenchAlgo::ALGO_KD_Prob) : {
                     model->wp.accel_type = 1;
                     model->wp.splitMethod = static_cast<int>(KdTreeAccel::SplitMethod::ProbSplit);
                     model->wp.kd_with_ropes = false;
+                    break;
                 }
                 case (BenchAlgo::ALGO_KD_Prob_ROPE) : {
                     model->wp.accel_type = 1;
                     model->wp.splitMethod = static_cast<int>(KdTreeAccel::SplitMethod::ProbSplit);
                     model->wp.kd_with_ropes = true;
                     model->wp.kd_restart_ropes = false;
+                    break;
                 }
                 case (BenchAlgo::ALGO_KD_Prob_ROPERESTART) : {
                     model->wp.accel_type = 1;
                     model->wp.splitMethod = static_cast<int>(KdTreeAccel::SplitMethod::ProbSplit);
                     model->wp.kd_with_ropes = true;
                     model->wp.kd_restart_ropes = true;
+                    break;
                 }
                 case (BenchAlgo::ALGO_BVH_X) : {
                     model->wp.accel_type = 0;
                     model->wp.splitMethod = static_cast<int>(BVHAccel::SplitMethod::ProbSplit);
+                    break;
                 }
                 case (BenchAlgo::ALGO_KD_Hybrid) : {
                     model->wp.accel_type = 1;
                     model->wp.splitMethod = static_cast<int>(KdTreeAccel::SplitMethod::HybridSplit);
                     model->wp.kd_with_ropes = false;
+                    break;
                 }
                 case (BenchAlgo::ALGO_KD_Hybrid_ROPE) : {
                     model->wp.accel_type = 1;
                     model->wp.splitMethod = static_cast<int>(KdTreeAccel::SplitMethod::HybridSplit);
                     model->wp.kd_with_ropes = true;
                     model->wp.kd_restart_ropes = false;
+                    break;
                 }
                 case (BenchAlgo::ALGO_KD_Hybrid_ROPERESTART) : {
                     model->wp.accel_type = 1;
                     model->wp.splitMethod = static_cast<int>(KdTreeAccel::SplitMethod::HybridSplit);
                     model->wp.kd_with_ropes = true;
                     model->wp.kd_restart_ropes = true;
+                    break;
                 }
                 default : {
                     fmt::print("Unavailable algorithm {}\n", static_cast<int>(current_algo));
@@ -212,12 +224,33 @@ int main(int argc, char **argv) {
             size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
             double oldHitNb = globState.globalHits.globalHits.nbHitEquiv;
 
+            bool withBattery = false;
+            if(model->wp.accel_type == 1) {
+                if ((model->wp.splitMethod == static_cast<int>(KdTreeAccel::SplitMethod::TestSplit))
+                    || (model->wp.splitMethod == static_cast<int>(KdTreeAccel::SplitMethod::HybridSplit))
+                    || (model->wp.splitMethod == static_cast<int>(KdTreeAccel::SplitMethod::HybridBin)))
+                    withBattery = true;
+            }
+            else if(model->wp.splitMethod == static_cast<int>(BVHAccel::SplitMethod::TestSplit)){
+                withBattery = true;
+            }
+
+            if(withBattery){
+                model->otfParams.raySampling = true;
+                globState.hitBattery.maxSamples = 1024*128;
+                model->BuildAccelStructure(&globState, 0, 0, 2);
+
+            }
             simManager.StartSimulation();
+            ProcessSleep(5000);
             simManager.StopSimulation();
 
             oldDesNb = globState.globalHits.globalHits.nbDesorbed;
             oldHitNb = globState.globalHits.globalHits.nbHitEquiv;
 
+            model->otfParams.raySampling = false;
+            model->BuildAccelStructure(&globState, model->wp.accel_type, model->wp.splitMethod, 2);
+            globState.hitBattery.maxSamples = 0;
             simManager.StartSimulation();
 
             Chronometer simTimer(false);
