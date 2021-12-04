@@ -116,10 +116,10 @@ int main(int argc, char **argv) {
                 BenchAlgo::ALGO_KD_Prob,
                 BenchAlgo::ALGO_KD_Prob_ROPE,
                 BenchAlgo::ALGO_KD_Prob_ROPERESTART,*/
-                /*BenchAlgo::ALGO_BVH_X,
+                BenchAlgo::ALGO_BVH_X,
                 BenchAlgo::ALGO_KD_Hybrid,
                 BenchAlgo::ALGO_KD_Hybrid_ROPE,
-                */BenchAlgo::ALGO_KD_Hybrid_ROPERESTART
+                BenchAlgo::ALGO_KD_Hybrid_ROPERESTART
         };
 
         for (auto current_algo: run_algos) {
