@@ -79,7 +79,8 @@ bool Particle::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, DW
                     if (tmpState.hitBattery.size() == hitBattery.size()) {
                         for (auto &bat: hitBattery.rays) {
                             auto &tmp = tmpState.hitBattery.rays[hit_n];
-                            bat.Add_Batch(tmp.data);
+                            if(!tmp.data.empty())
+                                bat.Add_Batch(tmp.data);
                             ++hit_n;
                         }
                     }
