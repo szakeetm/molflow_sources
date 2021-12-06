@@ -29,7 +29,8 @@ namespace FlowIO {
         //void SaveGeometry(std::string outputFileName, SimulationModel *model) override;
         pugi::xml_node GetRootNode(pugi::xml_document &saveDoc);
 
-        void SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<SimulationModel> model);
+        void SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<SimulationModel> &model,
+                          const std::vector<size_t> &selection = std::vector<size_t>{});
 
         bool SaveSimulationState(const std::string &outputFileName, std::shared_ptr<SimulationModel> model, GlobalSimuState &globState);
 

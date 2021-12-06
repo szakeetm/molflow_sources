@@ -51,7 +51,8 @@ xml_node WriterXML::GetRootNode(xml_document &saveDoc) {
     return rootNode;
 }
 
-void WriterXML::SaveGeometry(xml_document &saveDoc, std::shared_ptr<SimulationModel> model) {
+void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<SimulationModel> &model,
+                             const std::vector<size_t> &selection) {
     xml_node rootNode = GetRootNode(saveDoc);
 
     if(update)
@@ -70,14 +71,24 @@ void WriterXML::SaveGeometry(xml_document &saveDoc, std::shared_ptr<SimulationMo
 
     geomNode.append_child("Facets");
     geomNode.child("Facets").append_attribute("nb") = model->facets.size();
-    for (size_t i = 0; i < model->facets.size(); i++) {
-        //prg->SetProgress(0.166 + ((double)i / (double)model->facets.size()) *0.166);
-        //if (!saveSelected || model->facets[i]->selected) {
-        xml_node f = geomNode.child("Facets").append_child("Facet");
-        f.append_attribute("id") = i;
-        SaveFacet(f, model->facets[i].get(), model->vertices3.size()); //model->facets[i]->SaveXML_geom(f);
-        //}
-    }
+    if(selection.empty())
+        for (size_t i = 0; i < model->facets.size(); i++) {
+            //prg->SetProgress(0.166 + ((double)i / (double)model->facets.size()) *0.166);
+            //if (!saveSelected || model->facets[i]->selected) {
+            xml_node f = geomNode.child("Facets").append_child("Facet");
+            f.append_attribute("id") = i;
+            SaveFacet(f, model->facets[i].get(), model->vertices3.size()); //model->facets[i]->SaveXML_geom(f);
+            //}
+        }
+    else
+        for (unsigned long sel : selection) {
+            //prg->SetProgress(0.166 + ((double)i / (double)model->facets.size()) *0.166);
+            //if (!saveSelected || model->facets[i]->selected) {
+            xml_node f = geomNode.child("Facets").append_child("Facet");
+            f.append_attribute("id") = sel;
+            SaveFacet(f, model->facets[sel].get(), model->vertices3.size()); //model->facets[i]->SaveXML_geom(f);
+            //}
+        }
 
     geomNode.append_child("Structures").append_attribute("nb") = model->sh.nbSuper;
 

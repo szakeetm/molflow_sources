@@ -303,7 +303,11 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                     this->uInput.selections = mApp->selections;
 
                     writer.uInput = this->uInput;
-                    writer.SaveGeometry(saveDoc, model);
+
+                    if(saveSelected)
+                        writer.SaveGeometry(saveDoc, model, GetGeometry()->GetSelectedFacets());
+                    else
+                        writer.SaveGeometry(saveDoc, model);
                     FlowIO::WriterInterfaceXML::WriteInterface(saveDoc, mApp, saveSelected);
 
                     xml_document geom_only;
