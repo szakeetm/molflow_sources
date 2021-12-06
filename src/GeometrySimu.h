@@ -419,6 +419,8 @@ public:
     mutable std::timed_mutex tMutex;
 
     int StopBatteryChange();
+
+    int UnlimitBattery();
 };
 
 struct ParticleLog {

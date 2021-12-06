@@ -1676,6 +1676,22 @@ FacetState& FacetState::operator+=(const FacetState & rhs) {
     return *this;
 }
 
+int GlobalSimuState::UnlimitBattery() {
+
+    int estSamplesPerFacet = 5000;
+    const double ratio = (double)estSamplesPerFacet / (double)facetStates.size();
+    int bat_n = 0;
+    for(auto& bat : hitBattery.rays){
+        bat.Resize(std::ceil(ratio * hitBattery.maxSamples));
+        bat_n++;
+    }
+
+    hitBattery.initialized = true;
+
+    return 0;
+}
+
+
 int GlobalSimuState::UpdateBatteryFrequencies() {
 
     if((globalHits.globalHits.nbMCHit + globalHits.globalHits.nbDesorbed) < hitBattery.maxSamples) {

@@ -399,7 +399,7 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
                 found = model->accel.at(testParticle.structure)->IntersectStat(testParticle);
                 testParticle.pay = nullptr; // unreference as delete is managed by original particle
 #endif
-found = model->accel.at(particle.structure)->Intersect(particle);
+                found = model->accel.at(particle.structure)->Intersect(particle);
                 //}
 
 #if defined(DEBUG)
@@ -447,6 +447,20 @@ found = model->accel.at(particle.structure)->Intersect(particle);
                         }
                     }
 #else
+#ifdef DEBUG
+                    if(!particle.transparentHits.empty()){
+                        for(auto h = 0; h < ray.transparentHits.size(); ++h){
+                            auto& hit = ray.transparentHits[h];
+                            for(auto hh = h; hh < ray.transparentHits.size(); ++hh){
+                                auto& comp_hit = ray.transparentHits[hh];
+                                if(hit.hitId == comp_hit.hitId && hit.hit.colU != comp_hit.hit.colU){
+                                    std::cout << "Multi hit"<< comp_hit.hit.colU << " vs " << hit.hit.colU << "\n";
+                                }
+                            }
+                        }
+                    }
+#endif
+
                     std::set<int> newtrans;
                     std::set<size_t> alreadyHit; // account for duplicate hits on kdtree
                     for(auto& hit : particle.transparentHits){
