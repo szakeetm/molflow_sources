@@ -969,6 +969,12 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                             ProcessSleep(100);
                         } while (future.wait_for(std::chrono::seconds(0)) != std::future_status::ready);
                         progressDlg->SetProgress(0.0);
+                        try{
+                            future.get(); //exception thrown if it was stored
+                        }
+                        catch (std::exception& e){
+                            throw;
+                        }
                     }
                     //FlowIO::LoaderInterfaceXML::LoadSimulationState(parseFileName, model, &globState);
                     simManager.simulationChanged = true;
