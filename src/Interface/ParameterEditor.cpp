@@ -515,7 +515,7 @@ bool ParameterEditor::ValidateInput() {
 
 	for (size_t i = 0; i < tempParam.GetSize();i++) {
 		for (size_t j = i+1; j < tempParam.GetSize(); j++) {
-			if (IsEqual(tempParam.GetX(i) , tempParam.GetX(j))) {
+			if (IsEqual(tempParam.GetX(i) , tempParam.GetX(j), 1e-7)) {
 				std::stringstream msg;
 				msg << "There are two values for t=" << tempParam.GetX(i) << "s.";
 				GLMessageBox::Display(msg.str().c_str(), "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
