@@ -621,7 +621,7 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
                         if(facetIds.empty())
                             return;
                     }
-                    catch (std::exception &e) {
+                    catch (const std::exception &e) {
                         GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
                         return;
                     }
@@ -655,7 +655,7 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
                     try {
                         splitFacetList(facetIds, selFacInput->GetText(), geom->GetNbFacet());
                     }
-                    catch (std::exception &e) {
+                    catch (const std::exception &e) {
                         GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
                         return;
                     }
@@ -688,7 +688,7 @@ void ProfilePlotter::ProcessMessage(GLComponent *src, int message) {
                     try {
                         splitFacetList(facetIds, selFacInput->GetText(), geom->GetNbFacet());
                     }
-                    catch (std::exception &e) {
+                    catch (const std::exception &e) {
                         GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
                         return;
                     }

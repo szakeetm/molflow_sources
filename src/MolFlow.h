@@ -126,7 +126,7 @@ public:
     //void LogProfile();
     void BuildPipe(double ratio,int steps) override;
 	void EmptyGeometry() override;
-	void CrashHandler(std::exception& e);
+	void CrashHandler(const std::exception &e);
 	
 protected:
 	void LoadParameterCatalog();

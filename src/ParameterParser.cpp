@@ -66,7 +66,7 @@ void parseFacet(std::istringstream &facetString, const std::vector<SelectionGrou
         try {
             // For now get facet list for all combinations (with 3 parameter), check for valid ids later
             splitFacetList(id_range, id_str, 1e7);
-        } catch (std::exception& e) {
+        } catch (const std::exception &e) {
             Log::console_error("[%s] Could not parse facet id or range:\n", __FUNCTION__);
             Log::console_error("\t%s\n", id_str.c_str());
         }

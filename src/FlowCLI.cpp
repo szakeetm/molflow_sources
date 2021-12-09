@@ -85,7 +85,7 @@ int main(int argc, char** argv) {
     try {
         simManager.StartSimulation();
     }
-    catch (std::runtime_error& e) {
+    catch (const std::exception& e) {
         Log::console_error("Starting simulation: %s\n",e.what());
 #if defined(USE_MPI)
         MPI_Finalize();
@@ -134,7 +134,7 @@ int main(int argc, char** argv) {
                     ProcessSleep(1000);
                     simManager.StartSimulation();
                 }
-                catch (std::runtime_error& e) {
+                catch (const std::exception& e) {
                     Log::console_error("ERROR: Starting simulation: %s\n", e.what());
                     endCondition = true;
                 }
@@ -274,7 +274,7 @@ int main(int argc, char** argv) {
                 try {
                     std::filesystem::remove(fileNameWithZIP);
                 }
-                catch (std::exception &e) {
+                catch (const std::exception &e) {
                     Log::console_error("Error compressing to \n%s\nMaybe file is in use:\n%s",fileNameWithZIP.c_str(),e.what());
                 }
             }
@@ -283,7 +283,7 @@ int main(int argc, char** argv) {
             try {
                 std::filesystem::remove(fullOutFile);
             }
-            catch (std::exception &e) {
+            catch (const std::exception &e) {
                 Log::console_error("Error removing\n%s\nMaybe file is in use:\n%s",fullOutFile.c_str(),e.what());
             }
         }

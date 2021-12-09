@@ -51,7 +51,7 @@ int Parameter::LoadParameterCatalog(std::vector<Parameter> &vec_param) {
                 FileReader f(csvPath);
                 table = f.ImportCSV_string();
             }
-            catch(std::exception &e) {
+            catch(const std::exception &e) {
                 ++res;
                 char errMsg[512];
                 sprintf(errMsg, "Failed to load CSV file.\n%s", e.what());
@@ -77,10 +77,10 @@ int Parameter::LoadParameterCatalog(std::vector<Parameter> &vec_param) {
                         if (*parse_end != '\0')
                             throw std::runtime_error("Malformed input in CSV file.");
                     }
-                    catch (std::exception& err) {
+                    catch (const std::exception& e) {
                         ++res;
                         char tmp[256];
-                        sprintf(tmp, "Can't parse value \"%s\" in row %zd, first column:\n%s", row[0].c_str(), i + 1, err.what());
+                        sprintf(tmp, "Can't parse value \"%s\" in row %zd, first column:\n%s", row[0].c_str(), i + 1, e.what());
                         //GLMessageBox::Display(tmp, "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
                         std::cerr << tmp << "\n";
                         break;
@@ -90,10 +90,10 @@ int Parameter::LoadParameterCatalog(std::vector<Parameter> &vec_param) {
                         if (*parse_end != '\0')
                             throw std::runtime_error("Malformed input in CSV file.");
                     }
-                    catch (std::exception& err) {
+                    catch (const std::exception& e) {
                         ++res;
                         char tmp[256];
-                        sprintf(tmp, "Can't parse value \"%s\" in row %zd, second column:\n%s", row[1].c_str(), i + 1, err.what());
+                        sprintf(tmp, "Can't parse value \"%s\" in row %zd, second column:\n%s", row[1].c_str(), i + 1, e.what());
                         //GLMessageBox::Display(tmp, "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
                         std::cerr << tmp << "\n";
                         break;

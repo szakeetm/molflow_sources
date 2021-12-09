@@ -154,7 +154,7 @@ void TimeSettings::ProcessMessage(GLComponent *src,int message) {
 		}
 		try {
 		  work->Update(0.0f);//update displayed profiles and textures, facet hits, etc
-	  } catch(Error &e) {
+	  } catch (const std::exception &e) {
 		  GLMessageBox::Display(e.what(),"Error (Worker::Update)",GLDLG_OK,GLDLG_ICONERROR);
 	  } 
 	  mApp->UpdatePlotters();

@@ -666,7 +666,7 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
 
         //TODO: globState->globalHits. = this->angleMapCache;
     }
-    catch (std::exception& e) {
+    catch (const std::exception &e) {
         globState->tMutex.unlock();
         Log::console_error("[LoaderXML] %s", e.what());
         throw;

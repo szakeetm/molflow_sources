@@ -200,7 +200,7 @@ int main(int argc, char* argv[])
 	try {
 		mApp->Run();
 	}
-	catch(std::exception &e) {
+	catch(const std::exception &e) {
 		mApp->CrashHandler(e);
 	}
 	delete mApp;
@@ -1073,7 +1073,7 @@ void MolFlow::ExportProfiles() {
 		try {
 			worker.ExportProfiles(saveFile.c_str());
 		}
-		catch(std::exception &e) {
+		catch(const std::exception &e) {
 			char errMsg[512];
 			sprintf(errMsg, "%s\nFile:%s", e.what(), saveFile.c_str());
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1093,7 +1093,7 @@ void MolFlow::ExportAngleMaps() {
                 return;
             }
 		}
-		catch(std::exception &e) {
+		catch(const std::exception &e) {
 			char errMsg[512];
 			sprintf(errMsg, "%s\nFile:%s", e.what(), profFile.c_str());
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1125,7 +1125,7 @@ void MolFlow::ImportAngleMaps(){
 			worker.GetGeometry()->GetFacet(selFacets[i])->ImportAngleMap(table);
 			worker.Reload();
 		}
-		catch(std::exception &e) {
+		catch(const std::exception &e) {
 				char errMsg[512];
 				sprintf(errMsg, "%s\nFile:%s", e.what(), fileNames[i].c_str());
 				GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1171,7 +1171,7 @@ void MolFlow::CopyAngleMapToClipboard()
 			GLToolkit::CopyTextToClipboard(map);
 
 		}
-		catch(std::exception &e) {
+		catch(const std::exception &e) {
 			GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 		}
 }
@@ -1199,7 +1199,7 @@ void MolFlow::ImportDesorption_DES() {
 		try {
 			worker.ImportDesorption_DES(fn->fullName);
 		}
-		catch(std::exception &e) {
+		catch(const std::exception &e) {
 			char errMsg[512];
 			sprintf(errMsg, "%s\nFile:%s", e.what(), fn->fullName);
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1223,7 +1223,7 @@ void MolFlow::SaveFile() {
 			worker.SaveGeometry(worker.fullFileName, progressDlg2, false);
 			ResetAutoSaveTimer();
 		}
-		catch(std::exception &e) {
+		catch(const std::exception &e) {
 			char errMsg[512];
 			sprintf(errMsg, "%s\nFile:%s", e.what(), worker.GetCurrentFileName().c_str());
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1338,7 +1338,7 @@ void MolFlow::LoadFile(const std::string &fileName) {
 		if (formulaEditor) formulaEditor->Refresh();
 		if (parameterEditor) parameterEditor->Refresh();
 	}
-	catch(std::exception &e) {
+	catch(const std::exception &e) {
 
 		char errMsg[512];
 		sprintf(errMsg, "%s\nFile:%s", e.what(), fileShortName.c_str());
@@ -1437,7 +1437,7 @@ void MolFlow::InsertGeometry(bool newStr, const std::string &fileName) {
 		if (formulaEditor) formulaEditor->Refresh();
 		if (parameterEditor) parameterEditor->Refresh();
 	}
-	catch(std::exception &e) {
+	catch(const std::exception &e) {
 
 		char errMsg[512];
 		sprintf(errMsg, "%s\nFile:%s", e.what(), fileShortName.c_str());
@@ -1923,7 +1923,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 		worker.model->wp.globalHistogramParams = HistogramParams();
         ResetSimulation(false);
     }
-	catch(std::exception &e) {
+	catch(const std::exception &e) {
 		GLMessageBox::Display((char *)e.what(), "Error building pipe", GLDLG_OK, GLDLG_ICONERROR);
 		geom->Clear();
         ResetSimulation(false);
@@ -1997,7 +1997,7 @@ void MolFlow::EmptyGeometry() {
 		worker.ResetMoments();
 		worker.model->wp.globalHistogramParams = HistogramParams();
 	}
-	catch(std::exception &e) {
+	catch(const std::exception &e) {
 		GLMessageBox::Display(e.what(), "Error resetting geometry", GLDLG_OK, GLDLG_ICONERROR);
 		geom->Clear();
 		return;
@@ -2368,8 +2368,8 @@ void MolFlow::SaveConfig() {
         f->Write("useOldXMLFormat:"); f->Write(useOldXMLFormat, "\n");
 		WRITEI("showTP", showTP);
     }
-	catch(std::exception &err) {
-		GLMessageBox::Display(err.what(), "Error saving config file", GLDLG_OK, GLDLG_ICONWARNING);
+	catch(const std::exception& e) {
+		GLMessageBox::Display(e.what(), "Error saving config file", GLDLG_OK, GLDLG_ICONWARNING);
 	}
 
 	SAFE_DELETE(f);
@@ -2408,7 +2408,7 @@ void MolFlow::calcSticking() {
 	facetSticking->SetText(sticking);
 }
 
-void MolFlow::CrashHandler(std::exception& e) {
+void MolFlow::CrashHandler(const std::exception &e) {
 	char tmp[1024];
 	sprintf(tmp, "Well, that's embarrassing. Molflow crashed and will exit now.\nBefore that, an autosave will be attempted.\nHere is the error info:\n\n%s", e.what());
 	GLMessageBox::Display(tmp, "Main crash handler", GLDLG_OK, GLDGL_ICONDEAD);
@@ -2418,8 +2418,8 @@ void MolFlow::CrashHandler(std::exception& e) {
 		else
 			GLMessageBox::Display("Sorry, I couldn't even autosave.", "Main crash handler", GLDLG_OK, GLDGL_ICONDEAD);
 	}
-	catch(std::exception &err) {
-        sprintf(tmp, "Sorry, I couldn't even autosave:\n\n%s", err.what());
+	catch(const std::exception& e) {
+        sprintf(tmp, "Sorry, I couldn't even autosave:\n\n%s", e.what());
         GLMessageBox::Display(tmp, "Main crash handler", GLDLG_OK, GLDGL_ICONDEAD);
 	}
 }
@@ -2496,7 +2496,7 @@ void MolFlow::UpdateFacetHits(bool allRows) {
 
 		}
 	}
-	catch(std::exception &e) {
+	catch(const std::exception &e) {
 		char errMsg[512];
 		sprintf(errMsg, "%s\nError while updating facet hits", e.what());
 		GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);

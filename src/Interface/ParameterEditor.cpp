@@ -374,7 +374,7 @@ void ParameterEditor::LoadCSV() {
 		table = f->ImportCSV_string();
         SAFE_DELETE(f);
 	}
-	catch (Error &e) {
+	catch (const std::exception &e) {
 		char errMsg[512];
 		sprintf(errMsg, "Failed to load CSV file.\n%s",e.what());
 		GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -490,18 +490,18 @@ bool ParameterEditor::ValidateInput() {
 		double valueX, valueY;
 		try {
 			valueX = ::atof(userValues[row].first.c_str());
-		} catch (std::exception err){
+		} catch (const std::exception& e){
 			char tmp[256];
-			sprintf(tmp, "Can't parse value \"%s\" in row %zd, first column:\n%s", userValues[row].first.c_str(), row+1, err.what());
+			sprintf(tmp, "Can't parse value \"%s\" in row %zd, first column:\n%s", userValues[row].first.c_str(), row+1, e.what());
 			GLMessageBox::Display(tmp, "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
 			return false;
 		}
 		try {
 			valueY = ::atof(userValues[row].second.c_str());
 		}
-		catch (std::exception err){
+		catch (const std::exception& e){
 			char tmp[256];
-			sprintf(tmp, "Can't parse value \"%s\" in row %zd, second column:\n%s", userValues[row].second.c_str(), row+1, err.what());
+			sprintf(tmp, "Can't parse value \"%s\" in row %zd, second column:\n%s", userValues[row].second.c_str(), row+1, e.what());
 			GLMessageBox::Display(tmp, "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
 			return false;
 		}

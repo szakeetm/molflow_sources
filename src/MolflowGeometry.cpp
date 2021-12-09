@@ -176,7 +176,7 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 	try{
 	    facets.resize(sh.nbFacet, nullptr);
 	}
-	catch(std::exception& e) {
+	catch(const std::exception &e) {
         throw Error("Couldn't allocate memory for facets");
     }
 
@@ -414,7 +414,7 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
     try{
         facets.resize(nbNewFacets + sh.nbFacet, nullptr);
     }
-    catch(std::exception& e) {
+    catch(const std::exception &e) {
         throw Error("Couldn't allocate memory for facets");
     }
 
@@ -809,7 +809,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
     try{
         facets.resize(sh.nbFacet, nullptr);
     }
-    catch(std::exception& e) {
+    catch(const std::exception &e) {
         throw Error("Couldn't allocate memory for facets");
     }
 	std::vector<InterfaceVertex>(sh.nbVertex).swap(vertices3);
@@ -1078,7 +1078,7 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
     try{
         facets.resize(sh.nbFacet, nullptr);
     }
-    catch(std::exception& e) {
+    catch(const std::exception &e) {
         throw Error("Couldn't allocate memory for facets");
     }
 
@@ -2916,7 +2916,7 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
     try{
         facets.resize(sh.nbFacet, nullptr);
     }
-    catch(std::exception& e) {
+    catch(const std::exception &e) {
         throw Error("Couldn't allocate memory for facets");
     }
 
@@ -3143,7 +3143,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
     try{
         facets.resize(nbNewFacets + sh.nbFacet, nullptr);
     }
-    catch(std::exception& e) {
+    catch(const std::exception &e) {
         throw Error("Couldn't allocate memory for facets");
     }
 
@@ -3826,7 +3826,7 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState 
                 nbDes = stringToNumber<size_t>(line.substr(0, posOfTab));
                 convVal = stringToNumber<double>(line.substr(posOfTab+1));
             }
-            catch (std::exception& e){
+            catch (const std::exception &e){
                 // Just write an error and move to next line e.g. when fail on inf/nan
                 std::cerr << "[XML][Convergence] Parsing error: "<<e.what()<< std::endl;
                 continue;

@@ -460,7 +460,7 @@ void GlobalSettings::RestartProc() {
 					worker->RealReload(true);
 					mApp->SaveConfig();
 				}
-				catch (Error &e) {
+				catch (const std::exception &e) {
 					GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 				}
 			}
@@ -483,7 +483,7 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 				try {
 					worker->RealReload();
 				}
-				catch (std::exception &e) {
+				catch (const std::exception &e) {
 					GLMessageBox::Display(e.what(), "Recalculation failed: Couldn't reload Worker", GLDLG_OK, GLDLG_ICONWARNING);
 				}
 			}

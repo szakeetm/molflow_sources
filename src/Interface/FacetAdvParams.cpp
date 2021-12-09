@@ -1144,7 +1144,7 @@ bool FacetAdvParams::ApplyTexture(bool force) {
                       hasAnyTexture ? boundMap : false);
 			}
 		}
-		catch (Error &e) {
+		catch (const std::exception &e) {
 			GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONWARNING);
 			progressDlg->SetVisible(false);
 			SAFE_DELETE(progressDlg);
@@ -1586,7 +1586,7 @@ bool FacetAdvParams::Apply() {
 			bool needsRemeshing = (hadAnyTexture != hasAnyTexture) || (hadDirCount != f->wp.countDirection) || (doRatio && (!IsEqual(geom->GetFacet(sel)->tRatio , ratio)));
 			if (needsRemeshing) geom->SetFacetTexture(sel, hasAnyTexture ? ratio : 0.0, hasAnyTexture ? boundMap : false);
 		}
-		catch (Error &e) {
+		catch (const std::exception &e) {
 			GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONWARNING);
 			progressDlg->SetVisible(false);
 			SAFE_DELETE(progressDlg);

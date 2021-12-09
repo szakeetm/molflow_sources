@@ -267,7 +267,7 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, const 
             }
         }
     }
-    catch (std::exception &e) {
+    catch (const std::exception &e) {
         Log::console_error("[Warning] %s\n", e.what());
     }
 
