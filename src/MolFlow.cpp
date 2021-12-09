@@ -1247,17 +1247,25 @@ void MolFlow::LoadFile(const std::string &fileName) {
         filePath = fileName;
 	}
 
+	if (filePath.empty()) return; //User closed Open... dialog
+
+	if (!FileUtils::Exist(filePath)) {
+		auto answer = GLMessageBox::Display(
+			fmt::format("{}\nDoesn't exist. Remove from the Recent files menu?",filePath),
+			"No such file",
+			{ "Yes","No" },
+			GLDLG_ICONERROR);
+		if (answer == 0) { //"Yes"
+			RemoveRecent(filePath.c_str());
+		}
+		return;
+	}
+
 	auto *progressDlg2 = new GLProgress("Preparing to load file...", "Please wait");
 	progressDlg2->SetVisible(true);
 	progressDlg2->SetProgress(0.0);
 	//GLWindowManager::Repaint();
 
-	if (filePath.empty()) {
-		progressDlg2->SetVisible(false);
-		SAFE_DELETE(progressDlg2);
-		return;
-	}
-	
 	fileShortName = FileUtils::GetFilename(filePath);
 
 	try {
