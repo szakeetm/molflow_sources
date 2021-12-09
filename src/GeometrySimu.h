@@ -233,7 +233,7 @@ public:
     int PrepareToRun();
 
     int BuildAccelStructure(GlobalSimuState *globState, int accel_type, int split, int maxPrimsInNode,
-                            double hybridWeight);
+                            double hybridWeight = 0.5);
 
     int InitialiseFacets();
 

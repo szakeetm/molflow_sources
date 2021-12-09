@@ -126,12 +126,12 @@ int main(int argc, char **argv) {
                 BenchAlgo::ALGO_KD_Prob_ROPE,
                 BenchAlgo::ALGO_KD_Prob_ROPERESTART,*/
                 //BenchAlgo::ALGO_BVH_X,
-                BenchAlgo::ALGO_KD_Hybrid,
+                BenchAlgo::ALGO_KD_Hybrid/*,
                 BenchAlgo::ALGO_KD_Hybrid_ROPE,
                 BenchAlgo::ALGO_KD_Hybrid_ROPERESTART,
                 BenchAlgo::ALGO_KD_HybridBin,
                 BenchAlgo::ALGO_KD_HybridBin_ROPE,
-                BenchAlgo::ALGO_KD_HybridBin_ROPERESTART
+                BenchAlgo::ALGO_KD_HybridBin_ROPERESTART*/
         };
 
         for (auto current_algo: run_algos) {
@@ -178,11 +178,13 @@ int main(int argc, char **argv) {
             ProcessSleep(1000);
             simManager.StopSimulation();
             auto hits = globState.PrepareHitBattery();
+	    fmt::print("Hits before {}\n", hits.size());
             simManager.StartSimulation();
             ProcessSleep(10000);
             simManager.StopSimulation();
             hits = globState.PrepareHitBattery();
-            oldDesNb = globState.globalHits.globalHits.nbDesorbed;
+	    fmt::print("Hits after {}\n", hits.size());
+	    oldDesNb = globState.globalHits.globalHits.nbDesorbed;
             oldHitNb = globState.globalHits.globalHits.nbHitEquiv;
 
             SetAlgo(current_algo, model);

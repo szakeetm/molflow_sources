@@ -779,7 +779,10 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
 
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
             if(accel_type == 1) {
-                this->accel.emplace_back(std::make_shared<KdTreeAccel>((KdTreeAccel::SplitMethod) split, primPointers[s], frequencies, hits, hybridWeight, isect_cost, trav_cost));
+                if(this->wp.ignore_calculated_costs)
+                    this->accel.emplace_back(std::make_shared<KdTreeAccel>((KdTreeAccel::SplitMethod) split, primPointers[s], frequencies, hits, hybridWeight));
+                else
+                    this->accel.emplace_back(std::make_shared<KdTreeAccel>((KdTreeAccel::SplitMethod) split, primPointers[s], frequencies, hits, hybridWeight, isect_cost, trav_cost));
             }
             else
                 this->accel.emplace_back(std::make_shared<BVHAccel>(hits, primPointers[s], maxPrimsInNode, (BVHAccel::SplitMethod) split));
