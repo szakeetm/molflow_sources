@@ -1373,7 +1373,7 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
 
         progressDlg->SetMessage("Reloading structures for simulation unit...");
         ReloadSim(sendOnly, progressDlg);
-        CalcTotalOutgassing(); // needs IDs
+        model->CalcTotalOutgassing(); // needs IDs
 
         if (!sendOnly) {
             try {
@@ -1824,6 +1824,9 @@ void Worker::CalcTotalOutgassing() {
                             f->sh.outgassing / (1.38E-23 * f->sh.temperature);  //Outgassing molecules/sec
                     model->wp.finalOutgassingRate_Pa_m3_sec += f->sh.outgassing;
                 } else { //time-dependent outgassing
+                    if(f->sh.IDid >= model->tdParams.IDs.size())
+                        throw std::runtime_error(fmt::format("Trying to access Integrated Desorption {} of {} for facet #{}",f->sh.IDid, model->tdParams.IDs.size(), i));
+
                     double lastValue = model->tdParams.IDs[f->sh.IDid].back().second;
                     model->wp.totalDesorbedMolecules += lastValue / (1.38E-23 * f->sh.temperature);
                     size_t lastIndex = parameters[f->sh.outgassing_paramId].GetSize() - 1;
