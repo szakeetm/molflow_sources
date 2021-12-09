@@ -232,8 +232,8 @@ public:
 
     int PrepareToRun();
 
-    int BuildAccelStructure(GlobalSimuState *globState, int accel_type, int split,
-                            int maxPrimsInNode);
+    int BuildAccelStructure(GlobalSimuState *globState, int accel_type, int split, int maxPrimsInNode,
+                            double hybridWeight);
 
     int InitialiseFacets();
 
@@ -308,6 +308,8 @@ public:
     bool StartFromSource(Ray &ray);
 
     void PerformBounce(Ray &ray, SubprocessFacet *iFacet);
+
+    int CalculateKDStats(const std::vector<TestRay>& hits, int& isect_cost);
 };
 
 /*!

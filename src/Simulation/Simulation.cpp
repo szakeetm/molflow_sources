@@ -243,7 +243,8 @@ int Simulation::RebuildAccelStructure() {
     Chronometer timer(false);
     timer.Start();
 
-    if(model->BuildAccelStructure(globState, model->wp.accel_type, model->wp.splitMethod, model->wp.bvhMaxPrimsInNode))
+    if(model->BuildAccelStructure(globState, model->wp.accel_type, model->wp.splitMethod, model->wp.bvhMaxPrimsInNode,
+                                  model->wp.hybridWeight))
         return 1;
 
     for(auto& particle : particles)
@@ -590,8 +591,8 @@ void Simulation::FindBestADS() {
     }
 
     // 2. KD Trees
-    const std::array<KdTreeAccel::SplitMethod,5> all_splits_kd = {
-            KdTreeAccel::SplitMethod::SAH, KdTreeAccel::SplitMethod::ProbSplit, KdTreeAccel::SplitMethod::TestSplit,
+    const std::array<KdTreeAccel::SplitMethod,6> all_splits_kd = {
+            KdTreeAccel::SplitMethod::SAH, KdTreeAccel::SplitMethod::ProbSplit, KdTreeAccel::SplitMethod::ProbHybrid, KdTreeAccel::SplitMethod::TestSplit,
             KdTreeAccel::SplitMethod::HybridSplit, KdTreeAccel::SplitMethod::HybridBin
     };
 

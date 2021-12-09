@@ -612,8 +612,51 @@ void SimulationModel::CalculateFacetParams(SubprocessFacet* f) {
 #endif
 }
 
-int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_type, int split,
-                                         int maxPrimsInNode) {
+int SimulationModel::CalculateKDStats(const std::vector<TestRay>& hits, int& isect_cost){
+    if(hits.empty() || accel.empty())
+        return 1;
+
+    for (auto &acc: accel) {
+        RTStats tree_stats{};
+        RTStats tree_stats_max{};
+        auto r = Ray();
+#pragma omp parallel default(none) firstprivate(r) shared(hits, acc, tree_stats, tree_stats_max)
+        {
+            r.rng = new MersenneTwister();
+#pragma omp for
+            for (int sample_id = 0; sample_id < hits.size(); sample_id++) {
+                auto &ray = hits[sample_id];
+                r.origin = ray.pos;
+                r.direction = ray.dir;
+                auto stats = ((KdTreeAccel *) acc.get())->IntersectT(r);
+
+#pragma omp critical
+                {
+                    tree_stats.nTraversedInner += stats.nTraversedInner;
+                    tree_stats.nTraversedLeaves += stats.nTraversedLeaves;
+                    tree_stats.nIntersections += stats.nIntersections;
+                    tree_stats.timeTrav += stats.timeTrav;
+                    tree_stats.timeInt += stats.timeInt;
+                    tree_stats_max.nTraversedInner = std::max(stats.nTraversedInner,
+                                                              tree_stats_max.nTraversedInner);
+                    tree_stats_max.nTraversedLeaves = std::max(stats.nTraversedLeaves,
+                                                               tree_stats_max.nTraversedLeaves);
+                    tree_stats_max.nIntersections = std::max(stats.nIntersections,
+                                                             tree_stats_max.nIntersections);
+                }
+            }
+        }
+        Log::console_msg_master(4, "KD Tree stats:\n%lf | %lf | %lf\n", (double) tree_stats.nTraversedInner / hits.size(), (double) tree_stats.nTraversedLeaves / hits.size(), (double) tree_stats.nIntersections / hits.size());
+        Log::console_msg_master(4, "KD Tree max:\n%zu | %zu | %zu\n", tree_stats_max.nTraversedInner, tree_stats_max.nTraversedLeaves, tree_stats_max.nIntersections);
+        Log::console_msg_master(4, "KD cost:\n%lf | %lf\n", tree_stats.timeTrav / (double) tree_stats.nTraversedInner, tree_stats.timeInt / (double) tree_stats.nIntersections);
+        isect_cost = std::ceil((tree_stats.timeTrav / (double)tree_stats.nTraversedInner) / (tree_stats.timeInt / (double)tree_stats.nIntersections));
+    }
+
+    return 0;
+}
+
+int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_type, int split, int maxPrimsInNode,
+                                         double hybridWeight) {
     initialized = false;
 
     Chronometer timer(false);
@@ -714,29 +757,8 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
         int isect_cost = 80;
         int trav_cost = 1;
         if(accel_type == 1) {
-            for (auto &acc: accel) {
-                RTStats tree_stats{};
-                RTStats tree_stats_max{};
-                auto r = Ray();
-                r.rng = new MersenneTwister();
-                for (auto &ray: hits) {
-                    r.origin = ray.pos;
-                    r.direction = ray.dir;
-                    auto stats = ((KdTreeAccel *) acc.get())->IntersectT(r);
-                    tree_stats.nTraversedInner += stats.nTraversedInner;
-                    tree_stats.nTraversedLeaves += stats.nTraversedLeaves;
-                    tree_stats.nIntersections += stats.nIntersections;
-                    tree_stats.timeTrav += stats.timeTrav;
-                    tree_stats.timeInt += stats.timeInt;
-                    tree_stats_max.nTraversedInner = std::max(stats.nTraversedInner, tree_stats_max.nTraversedInner);
-                    tree_stats_max.nTraversedLeaves = std::max(stats.nTraversedLeaves, tree_stats_max.nTraversedLeaves);
-                    tree_stats_max.nIntersections = std::max(stats.nIntersections, tree_stats_max.nIntersections);
-                }
-                Log::console_msg_master(4, "SAH*KD Tree stats:\n%lf | %lf | %lf\n", (double) tree_stats.nTraversedInner / hits.size(), (double) tree_stats.nTraversedLeaves / hits.size(), (double) tree_stats.nIntersections / hits.size());
-                Log::console_msg_master(4, "SAH*KD Tree max:\n%zu | %zu | %zu\n", tree_stats_max.nTraversedInner, tree_stats_max.nTraversedLeaves, tree_stats_max.nIntersections);
-                Log::console_msg_master(4, "SAH*KD cost:\n%lf | %lf\n", tree_stats.timeTrav / (double) tree_stats.nTraversedInner, tree_stats.timeInt / (double) tree_stats.nIntersections);
-                isect_cost = std::ceil((tree_stats.timeTrav / (double)tree_stats.nTraversedInner) / (tree_stats.timeInt / (double)tree_stats.nIntersections));
-            }
+            fmt::print("Stats for KDxSAH [baseline]\n");
+            CalculateKDStats(hits, isect_cost);
             // Clear tmp ADS
             this->accel.clear();
         }
@@ -757,7 +779,7 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
 
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
             if(accel_type == 1) {
-                this->accel.emplace_back(std::make_shared<KdTreeAccel>((KdTreeAccel::SplitMethod) split, primPointers[s], frequencies, hits, isect_cost, trav_cost));
+                this->accel.emplace_back(std::make_shared<KdTreeAccel>((KdTreeAccel::SplitMethod) split, primPointers[s], frequencies, hits, hybridWeight, isect_cost, trav_cost));
             }
             else
                 this->accel.emplace_back(std::make_shared<BVHAccel>(hits, primPointers[s], maxPrimsInNode, (BVHAccel::SplitMethod) split));
@@ -765,7 +787,7 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
     }
     else if((accel_type==0)
             ? (BVHAccel::SplitMethod::ProbSplit == (BVHAccel::SplitMethod) split)
-            : (KdTreeAccel::SplitMethod::ProbSplit == (KdTreeAccel::SplitMethod) split)){
+            : (KdTreeAccel::SplitMethod::ProbSplit == (KdTreeAccel::SplitMethod) split) || (KdTreeAccel::SplitMethod::ProbHybrid == (KdTreeAccel::SplitMethod) split)){
         if(globState && globState->initialized && globState->globalHits.globalHits.nbDesorbed > 0 && globState->facetStates.size() != this->facets.size()) {
             m.unlock();
             return 1;
@@ -786,7 +808,7 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
 
         for (size_t s = 0; s < this->sh.nbSuper; ++s) {
             if(accel_type == 1)
-                this->accel.emplace_back(std::make_shared<KdTreeAccel>(KdTreeAccel::SplitMethod::ProbSplit, primPointers[s], probabilities));
+                this->accel.emplace_back(std::make_shared<KdTreeAccel>((KdTreeAccel::SplitMethod) split, primPointers[s], probabilities, std::vector<TestRay>{}, hybridWeight));
             else
                 this->accel.emplace_back(std::make_shared<BVHAccel>(probabilities, primPointers[s], maxPrimsInNode));
         }
@@ -812,30 +834,11 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
         }
     }
 
-    if(accel_type == 1 && !hits.empty())
-        for( auto& acc : accel){
-            RTStats tree_stats{};
-            RTStats tree_stats_max{};
-            auto r = Ray();
-            r.rng = new MersenneTwister();
-            for(auto& ray : hits) {
-                r.origin = ray.pos;
-                r.direction = ray.dir;
-                auto stats = ((KdTreeAccel *) acc.get())->IntersectT(r);
-                tree_stats.nTraversedInner += stats.nTraversedInner;
-                tree_stats.nTraversedLeaves += stats.nTraversedLeaves;
-                tree_stats.nIntersections += stats.nIntersections;
-                tree_stats.timeTrav += stats.timeTrav;
-                tree_stats.timeInt += stats.timeInt;
-                tree_stats_max.nTraversedInner = std::max(stats.nTraversedInner, tree_stats_max.nTraversedInner);
-                tree_stats_max.nTraversedLeaves = std::max(stats.nTraversedLeaves, tree_stats_max.nTraversedLeaves);
-                tree_stats_max.nIntersections = std::max(stats.nIntersections, tree_stats_max.nIntersections);
-            }
-
-            Log::console_msg_master(4, "KD Tree stats:\n%lf | %lf | %lf\n", (double) tree_stats.nTraversedInner / hits.size(), (double) tree_stats.nTraversedLeaves / hits.size(), (double) tree_stats.nIntersections / hits.size());
-            Log::console_msg_master(4, "KD Tree max:\n%zu | %zu | %zu\n", tree_stats_max.nTraversedInner, tree_stats_max.nTraversedLeaves, tree_stats_max.nIntersections);
-            Log::console_msg_master(4, "KD cost:\n%lf | %lf\n", tree_stats.timeTrav / (double) tree_stats.nTraversedInner, tree_stats.timeInt / (double) tree_stats.nIntersections);
-        }
+    if(accel_type == 1 && !hits.empty()){
+        fmt::print("Stats for KD with split {}\n", static_cast<KdTreeAccel::SplitMethod>(split));
+        int isect_cost = 0;
+        CalculateKDStats(hits, isect_cost);
+    }
     // old_bvb
 
     timer.Stop();
