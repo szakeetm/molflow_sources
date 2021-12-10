@@ -53,7 +53,7 @@ public:
 enum class BenchAlgo {
     ALGO_BVH_SAH,
     ALGO_BVH_Prob,
-    ALGO_BVH_X,
+    ALGO_BVH_RDH,
     ALGO_KD_SAH,
     ALGO_KD_SAH_ROPE,
     ALGO_KD_SAH_ROPERESTART,
@@ -68,14 +68,14 @@ enum class BenchAlgo {
     ALGO_KD_HybridBin_ROPERESTART
 };
 
-void SetAlgo(BenchAlgo algo, std::shared_ptr<SimulationModel> &sharedPtr);
+void SetAlgo(BenchAlgo current_algo, std::shared_ptr<SimulationModel> &model);
 
 int main(int argc, char **argv) {
 
     static std::unordered_map<BenchAlgo, std::string> const tableDetail = {
             {BenchAlgo::ALGO_BVH_SAH,               "BVHxSAH"},
             {BenchAlgo::ALGO_BVH_Prob,              "BVHxProb"},
-            {BenchAlgo::ALGO_BVH_X,                 "BVHx???"},
+            {BenchAlgo::ALGO_BVH_RDH,               "BVHxRDH"},
             {BenchAlgo::ALGO_KD_SAH,                "KDxSAH"},
             {BenchAlgo::ALGO_KD_SAH_ROPE,           "KDxSAHxRope"},
             {BenchAlgo::ALGO_KD_SAH_ROPERESTART,    "KDxSAHxRopeRestart"},
@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
             {BenchAlgo::ALGO_KD_Hybrid,             "KDxHybrid"},
             {BenchAlgo::ALGO_KD_Hybrid_ROPE,        "KDxHybridxRope"},
             {BenchAlgo::ALGO_KD_Hybrid_ROPERESTART, "KDxHybridxRopeRestart"},
-            {BenchAlgo::ALGO_KD_HybridBin,             "KDxHybridBin"},
+            {BenchAlgo::ALGO_KD_HybridBin,          "KDxHybridBin"},
             {BenchAlgo::ALGO_KD_HybridBin_ROPE,        "KDxHybridBinxRope"},
             {BenchAlgo::ALGO_KD_HybridBin_ROPERESTART, "KDxHybridBinxRopeRestart"}
     };
@@ -97,7 +97,6 @@ int main(int argc, char **argv) {
     const size_t nRuns = 5;
     const size_t keepNEntries = 20;
     const size_t runForTSec = 60;
-    const int n_algo = 4;
 
     std::map<std::string, std::vector<std::pair<int, double>>> perfTimes;
     std::filesystem::create_directory(outPath);
@@ -117,23 +116,82 @@ int main(int argc, char **argv) {
         fmt::print("Filename: {}\n", testFile.c_str());
         perfTimes.emplace(testFile, std::vector<std::pair<int, double>>());
         std::vector<BenchAlgo> run_algos{
-                /*BenchAlgo::ALGO_BVH_SAH,
+                BenchAlgo::ALGO_BVH_SAH,
                 BenchAlgo::ALGO_KD_SAH,
                 BenchAlgo::ALGO_KD_SAH_ROPE,
                 BenchAlgo::ALGO_KD_SAH_ROPERESTART,
                 BenchAlgo::ALGO_BVH_Prob,
                 BenchAlgo::ALGO_KD_Prob,
                 BenchAlgo::ALGO_KD_Prob_ROPE,
-                BenchAlgo::ALGO_KD_Prob_ROPERESTART,*/
-                //BenchAlgo::ALGO_BVH_X,
-                BenchAlgo::ALGO_KD_Hybrid/*,
+                BenchAlgo::ALGO_KD_Prob_ROPERESTART,
+                BenchAlgo::ALGO_BVH_RDH,
+                BenchAlgo::ALGO_KD_Hybrid,
                 BenchAlgo::ALGO_KD_Hybrid_ROPE,
                 BenchAlgo::ALGO_KD_Hybrid_ROPERESTART,
-                BenchAlgo::ALGO_KD_HybridBin,
+                /*BenchAlgo::ALGO_KD_HybridBin,
                 BenchAlgo::ALGO_KD_HybridBin_ROPE,
                 BenchAlgo::ALGO_KD_HybridBin_ROPERESTART*/
         };
 
+        bool benchmark_with_hits = false;
+        for (auto current_algo: run_algos) {
+            std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+            SetAlgo(current_algo, model);
+
+            if (model->wp.accel_type == 1) {
+                if ((model->wp.splitMethod == static_cast<int>(KdTreeAccel::SplitMethod::TestSplit))
+                    || (model->wp.splitMethod == static_cast<int>(KdTreeAccel::SplitMethod::HybridSplit))
+                    || (model->wp.splitMethod == static_cast<int>(KdTreeAccel::SplitMethod::HybridBin))) {
+                    benchmark_with_hits = true;
+                    continue;
+                }
+            } else if (model->wp.splitMethod == static_cast<int>(BVHAccel::SplitMethod::RDH)) {
+                benchmark_with_hits = true;
+                continue;
+            }
+        }
+
+        // Get hit statistics in one go for one geometry and all algorithms
+        std::vector<TestRay> hits;
+        if(benchmark_with_hits){
+            std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+
+            SimulationManager simManager;
+            //std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+            GlobalSimuState globState{};
+
+            {
+                std::vector<std::string> arg_vec = {"algobench", "-t", fmt::format("{}", runForTSec),
+                                                    "--file", testFile,
+                                                    "--outputPath", outPath};
+
+                CharPVec argc_v(arg_vec);
+                char **args = argc_v.data();
+                Initializer::initFromArgv(static_cast<int>(arg_vec.size()), (args), &simManager, model);
+                Initializer::initFromFile(&simManager, model, &globState);
+            }
+
+            size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
+            double oldHitNb = globState.globalHits.globalHits.nbHitEquiv;
+
+            model->otfParams.raySampling = true;
+            globState.hitBattery.maxSamples = 1024 * 512;
+            SetAlgo(BenchAlgo::ALGO_BVH_SAH, model);
+            model->BuildAccelStructure(&globState, 0, 0, 2);
+
+            simManager.StartSimulation();
+            ProcessSleep(1000);
+            simManager.StopSimulation();
+            hits = globState.PrepareHitBattery();
+            fmt::print("Hits before {}\n", hits.size());
+            simManager.StartSimulation();
+            ProcessSleep(20000);
+            simManager.StopSimulation();
+            hits = globState.PrepareHitBattery();
+            fmt::print("Hits after {}\n", hits.size());
+            oldDesNb = globState.globalHits.globalHits.nbDesorbed;
+            oldHitNb = globState.globalHits.globalHits.nbHitEquiv;
+        }
         for (auto current_algo: run_algos) {
             std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
 
@@ -145,8 +203,8 @@ int main(int argc, char **argv) {
 
             {
                 std::vector<std::string> arg_vec = {"algobench", "-t", fmt::format("{}", runForTSec),
-                                                   "--file", testFile,
-                                                   "--outputPath", outPath};
+                                                    "--file", testFile,
+                                                    "--outputPath", outPath};
 
                 CharPVec argc_v(arg_vec);
                 char **args = argc_v.data();
@@ -157,40 +215,10 @@ int main(int argc, char **argv) {
             size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
             double oldHitNb = globState.globalHits.globalHits.nbHitEquiv;
 
-            bool withBattery = false;
-            if(model->wp.accel_type == 1) {
-                if ((model->wp.splitMethod == static_cast<int>(KdTreeAccel::SplitMethod::TestSplit))
-                    || (model->wp.splitMethod == static_cast<int>(KdTreeAccel::SplitMethod::HybridSplit))
-                    || (model->wp.splitMethod == static_cast<int>(KdTreeAccel::SplitMethod::HybridBin)))
-                    withBattery = true;
-            }
-            else if(model->wp.splitMethod == static_cast<int>(BVHAccel::SplitMethod::TestSplit)){
-                withBattery = true;
-            }
-
-            if(withBattery){
-                model->otfParams.raySampling = true;
-                globState.hitBattery.maxSamples = 1024*128;
-                SetAlgo(BenchAlgo::ALGO_BVH_SAH, model);
-                model->BuildAccelStructure(&globState, 0, 0, 2);
-            }
-            simManager.StartSimulation();
-            ProcessSleep(1000);
-            simManager.StopSimulation();
-            auto hits = globState.PrepareHitBattery();
-	    fmt::print("Hits before {}\n", hits.size());
-            simManager.StartSimulation();
-            ProcessSleep(10000);
-            simManager.StopSimulation();
-            hits = globState.PrepareHitBattery();
-	    fmt::print("Hits after {}\n", hits.size());
-	    oldDesNb = globState.globalHits.globalHits.nbDesorbed;
-            oldHitNb = globState.globalHits.globalHits.nbHitEquiv;
-
             SetAlgo(current_algo, model);
             model->otfParams.raySampling = false;
-            model->BuildAccelStructure(&globState, model->wp.accel_type, model->wp.splitMethod, 2);
             globState.hitBattery.maxSamples = 0;
+            model->BuildAccelStructure(&globState, model->wp.accel_type, model->wp.splitMethod, 2);
             simManager.StartSimulation();
 
             Chronometer simTimer(false);
@@ -213,12 +241,11 @@ int main(int argc, char **argv) {
 
             // Stop and copy results
             simManager.StopSimulation();
-            try{simManager.KillAllSimUnits();}
-            catch (...){
+            try { simManager.KillAllSimUnits(); }
+            catch (...) {
                 ProcessSleep(10000);
-                try{simManager.KillAllSimUnits();}
-                catch (...){
-                    ;
+                try { simManager.KillAllSimUnits(); }
+                catch (...) { ;
                 }
             }
 
@@ -271,7 +298,7 @@ void SetAlgo(BenchAlgo current_algo, std::shared_ptr<SimulationModel> &model) {
         }
         case (BenchAlgo::ALGO_BVH_Prob) : {
             model->wp.accel_type = 0;
-            model->wp.splitMethod = static_cast<int>(BVHAccel::SplitMethod::TestSplit);
+            model->wp.splitMethod = static_cast<int>(BVHAccel::SplitMethod::ProbSplit);
             break;
         }
         case (BenchAlgo::ALGO_KD_Prob) : {
@@ -294,9 +321,9 @@ void SetAlgo(BenchAlgo current_algo, std::shared_ptr<SimulationModel> &model) {
             model->wp.kd_restart_ropes = true;
             break;
         }
-        case (BenchAlgo::ALGO_BVH_X) : {
+        case (BenchAlgo::ALGO_BVH_RDH) : {
             model->wp.accel_type = 0;
-            model->wp.splitMethod = static_cast<int>(BVHAccel::SplitMethod::ProbSplit);
+            model->wp.splitMethod = static_cast<int>(BVHAccel::SplitMethod::RDH);
             break;
         }
         case (BenchAlgo::ALGO_KD_Hybrid) : {
