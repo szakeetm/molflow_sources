@@ -729,7 +729,7 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
 
     bool withTestBattery = false;
     if(accel_type==0)
-        withTestBattery = (BVHAccel::SplitMethod::TestSplit == (BVHAccel::SplitMethod) split);
+        withTestBattery = (BVHAccel::SplitMethod::RDH == (BVHAccel::SplitMethod) split);
     else
         withTestBattery = (KdTreeAccel::SplitMethod::TestSplit == (KdTreeAccel::SplitMethod) split)
                           || (KdTreeAccel::SplitMethod::HybridSplit == (KdTreeAccel::SplitMethod) split)

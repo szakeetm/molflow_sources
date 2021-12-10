@@ -545,7 +545,7 @@ void Simulation::FindBestADS() {
     const std::array<BVHAccel::SplitMethod,7> all_splits = {
             BVHAccel::SplitMethod::SAH, BVHAccel::SplitMethod::HLBVH, BVHAccel::SplitMethod::Middle,
             BVHAccel::SplitMethod::EqualCounts, BVHAccel::SplitMethod::MolflowSplit, BVHAccel::SplitMethod::ProbSplit,
-            BVHAccel::SplitMethod::TestSplit
+            BVHAccel::SplitMethod::RDH
     };
     const auto runTimePerTest = 2e7;
     // 0. Test runs to gather test battery
@@ -565,7 +565,7 @@ void Simulation::FindBestADS() {
     Chronometer bench(false);
 
     for(BVHAccel::SplitMethod split : all_splits) {
-        if(split == BVHAccel::SplitMethod::TestSplit)
+        if(split == BVHAccel::SplitMethod::RDH)
             continue;
         bench.ReInit();
         model->wp.splitMethod = static_cast<int>(split);
