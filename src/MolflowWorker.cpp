@@ -882,6 +882,12 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                         progressDlg->SetProgress(load_progress);
                         ProcessSleep(100);
                     } while (future.wait_for(std::chrono::seconds(0)) != std::future_status::ready);
+                    progressDlg->SetProgress(0.0);
+                    if (future.get()) {
+                        progressDlg->SetVisible(false);
+                        SAFE_DELETE(progressDlg);
+                        throw;
+                    }
                 }
                 geom->InitOldStruct(model.get());
                 progressDlg->SetProgress(0.0);
@@ -928,6 +934,8 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     if (future.get()) {
                         GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning",
                                               GLDLG_OK, GLDLG_ICONWARNING);
+                        progressDlg->SetVisible(false);
+                        SAFE_DELETE(progressDlg);
                         return;
                     }
                 }
@@ -997,6 +1005,8 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     RebuildTextures();
                 }
                 catch (const std::exception &e) {
+                    if(progressDlg) progressDlg->SetVisible(false);
+                    SAFE_DELETE(progressDlg);
                     if (!mApp->profilePlotter) {
                         mApp->profilePlotter = new ProfilePlotter();
                         mApp->profilePlotter->SetWorker(this);
@@ -1009,6 +1019,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     mApp->convergencePlotter->Reset(); //To avoid trying to display non-loaded simulation results
                     GLMessageBox::Display(e.what(), "Error while loading simulation state", GLDLG_CANCEL,
                                           GLDLG_ICONWARNING);
+                    throw;
                 }
             } else { //insert
                 geom->InsertXML(rootNode, this, progressDlg, newStr);
@@ -1020,7 +1031,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
         }
         catch (const std::exception &e) {
             if (!insert) geom->Clear();
-            progressDlg->SetVisible(false);
+            if(progressDlg) progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
             throw;
         }
