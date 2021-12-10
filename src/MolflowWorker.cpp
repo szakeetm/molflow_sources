@@ -1050,6 +1050,8 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
         throw std::runtime_error(
                 "LoadGeometry(): Invalid file extension [Only xml,zip,geo,geo7z,syn.syn7z,txt,ase,stl or str]");
     }
+
+    SimModelToInterfaceGeom();
     if (!insert) {
         CalcTotalOutgassing();
         /*
@@ -1070,6 +1072,31 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
         mApp->UpdateViewers();
     }
 }
+
+bool Worker::SimModelToInterfaceGeom() {
+
+    *geom->GetGeomProperties() = model->sh;
+
+    bool hasVolatile = false;
+
+    for (size_t facIdx = 0; facIdx < model->sh.nbFacet; facIdx++) {
+        assert(model->sh.nbFacet == model->facets.size());
+        SubprocessFacet* sFac = model->facets[facIdx].get();
+        {
+            InterfaceFacet *facet = geom->GetFacet(facIdx);
+
+            facet->sh = sFac->sh;
+            /*sFac.indices = facet->indices;
+            sFac.vertices2 = facet->vertices2;
+            sFac.ogMap = facet->ogMap;
+            sFac.angleMap.pdf = angleMapVector;
+            sFac.textureCellIncrements = textIncVector;*/
+        }
+    }
+
+    return true;
+}
+
 
 /**
 * \brief Function for loading textures from a GEO file
