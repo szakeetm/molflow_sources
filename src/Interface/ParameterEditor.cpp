@@ -158,34 +158,34 @@ ParameterEditor::ParameterEditor(Worker *w):GLWindow() {
   cursorX += buttonWidth + hSpace;
   loadCSVbutton = new GLButton(0, "Load CSV file");
   loadCSVbutton->SetBounds(cursorX, cursorY, buttonWidth, compHeight);
-  
+
   Add(loadCSVbutton);
   cursorX += buttonWidth + hSpace;
 
   cursorX = wD-2*buttonWidth-2*hSpace;
   plotButton = new GLButton(0, "Plot");
   plotButton->SetBounds(cursorX, cursorY, buttonWidth, compHeight);
-  
+
   Add(plotButton);
 
   cursorX += buttonWidth + hSpace;
   applyButton = new GLButton(0, "Apply");
   applyButton->SetBounds(cursorX, cursorY, buttonWidth, compHeight);
-  
+
   Add(applyButton);
 
   Refresh();
-  
+
   // Center dialog
   int wS,hS;
   GLToolkit::GetScreenSize(&wS,&hS);
   int xD = (wS-wD)/2;
   int yD = (hS-hD)/2;
   SetBounds(xD,yD,wD,hD);
-  
+
 
   RestoreDeviceObjects();
-  
+
 }
 
 /**
@@ -474,7 +474,7 @@ bool ParameterEditor::ValidateInput() {
 			return false;
 		}
 	}
-	
+
 	/*
 	for (int i = 0; i < 1; i++) {
 		StringClass test;
@@ -515,7 +515,7 @@ bool ParameterEditor::ValidateInput() {
 
 	for (size_t i = 0; i < tempParam.GetSize();i++) {
 		for (size_t j = i+1; j < tempParam.GetSize(); j++) {
-			if (IsEqual(tempParam.GetX(i) , tempParam.GetX(j), 1e-7)) {
+			if (IsEqual(tempParam.GetX(i) , tempParam.GetX(j), 1e-9)) {
 				std::stringstream msg;
 				msg << "There are two values for t=" << tempParam.GetX(i) << "s.";
 				GLMessageBox::Display(msg.str().c_str(), "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
