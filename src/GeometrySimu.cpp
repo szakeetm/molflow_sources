@@ -838,7 +838,9 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
     }
 
     if(accel_type == 1 && !hits.empty()){
-        fmt::print("Stats for KD with split {}\n", static_cast<KdTreeAccel::SplitMethod>(split));
+        std::stringstream os; // or provide fmt formatter
+        os << static_cast<KdTreeAccel::SplitMethod>(split);
+        fmt::print("Stats for KD with split {}\n", os.str());
         int isect_cost = 0;
         CalculateKDStats(hits, isect_cost);
     }
