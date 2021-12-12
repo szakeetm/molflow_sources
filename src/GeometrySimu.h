@@ -364,6 +364,7 @@ public:
     GlobalSimuState(GlobalSimuState &&rhs) noexcept: tMutex() {
         globalHistograms = std::move(rhs.globalHistograms);
         facetStates = std::move(rhs.facetStates);
+        hitBattery = std::move(rhs.hitBattery);
         globalHits = rhs.globalHits;
         initialized = rhs.initialized;
     };
@@ -373,6 +374,7 @@ public:
         globalHistograms = rhs.globalHistograms;
         facetStates = rhs.facetStates;
         initialized = rhs.initialized;
+        hitBattery = rhs.hitBattery;
     };
 
     GlobalSimuState() : globalHits(), tMutex() {
