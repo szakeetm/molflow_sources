@@ -255,8 +255,23 @@ int main(int argc, char **argv) {
             globState.hitBattery.maxSamples = 0;
 
             model->BuildAccelStructure(&globState_old, model->wp.accel_type, model->wp.splitMethod, 2, hybrid_weight);
-            simManager.StartSimulation();
 
+            try {
+                simManager.StartSimulation();
+            }
+            catch (...){
+                perfTimes[testFile].emplace_back(std::make_pair((int) current_algo, 0.0));
+                std::string out_str = fmt::format("\"{}\" {} \"{}\" {:.4e}\n", testFile,
+                                                  perfTimes[testFile].back().first,
+                                                  tableDetail.at((BenchAlgo) perfTimes[testFile].back().first),
+                                                  perfTimes[testFile].back().second);
+                fmt::print(out_str);
+
+                ofs.open(timeRecFile, std::ios_base::app);
+                ofs << out_str;
+                ofs.close();
+                continue;
+            }
             Chronometer simTimer(false);
             simTimer.Start();
             double elapsedTime;
@@ -276,12 +291,25 @@ int main(int argc, char **argv) {
             simTimer.Stop();
 
             // Stop and copy results
-            simManager.StopSimulation();
-            try { simManager.KillAllSimUnits(); }
+            try {
+                simManager.StopSimulation();
+                simManager.KillAllSimUnits();
+            }
             catch (...) {
                 ProcessSleep(10000);
                 try { simManager.KillAllSimUnits(); }
-                catch (...) { ;
+                catch (...) {
+                    perfTimes[testFile].emplace_back(std::make_pair((int) current_algo, 0.0));
+                    std::string out_str = fmt::format("\"{}\" {} \"{}\" {:.4e}\n", testFile,
+                                                      perfTimes[testFile].back().first,
+                                                      tableDetail.at((BenchAlgo) perfTimes[testFile].back().first),
+                                                      perfTimes[testFile].back().second);
+                    fmt::print(out_str);
+
+                    ofs.open(timeRecFile, std::ios_base::app);
+                    ofs << out_str;
+                    ofs.close();
+                    continue;
                 }
             }
 
