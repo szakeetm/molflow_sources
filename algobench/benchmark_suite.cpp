@@ -138,7 +138,7 @@ int main(int argc, char **argv) {
     ofs.close();
 
 
-    for (auto const &dir_entry: std::filesystem::directory_iterator{"./AlgoCases"}) {
+    for (auto const &dir_entry: std::filesystem::directory_iterator{test_case_dir}) {
         if (!(dir_entry.path().extension() == ".zip" || dir_entry.path().extension() == ".xml")) {
             continue;
         }
@@ -147,7 +147,7 @@ int main(int argc, char **argv) {
         fmt::print("Filename: {}\n", testFile.c_str());
         perfTimes.emplace(testFile, std::vector<std::pair<int, double>>());
         std::vector<BenchAlgo> run_algos {
-                /*BenchAlgo::ALGO_BVH_SAH,
+                BenchAlgo::ALGO_BVH_SAH,
                 BenchAlgo::ALGO_KD_SAH,
                 BenchAlgo::ALGO_KD_SAH_ROPE,
                 BenchAlgo::ALGO_KD_SAH_ROPERESTART,
@@ -158,10 +158,10 @@ int main(int argc, char **argv) {
                 BenchAlgo::ALGO_BVH_RDH,
                 BenchAlgo::ALGO_KD_Hybrid,
                 BenchAlgo::ALGO_KD_Hybrid_ROPE,
-                BenchAlgo::ALGO_KD_Hybrid_ROPERESTART,*/
-                BenchAlgo::ALGO_KD_HybridBin/*,
+                BenchAlgo::ALGO_KD_Hybrid_ROPERESTART,
+                BenchAlgo::ALGO_KD_HybridBin,
                 BenchAlgo::ALGO_KD_HybridBin_ROPE,
-                BenchAlgo::ALGO_KD_HybridBin_ROPERESTART*/
+                BenchAlgo::ALGO_KD_HybridBin_ROPERESTART
         };
 
         bool benchmark_with_hits = false;
