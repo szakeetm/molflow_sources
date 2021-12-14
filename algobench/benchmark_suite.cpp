@@ -164,11 +164,11 @@ int main(int argc, char **argv) {
                 BenchAlgo::ALGO_KD_SAH,
                 BenchAlgo::ALGO_KD_SAH_ROPE,
                 BenchAlgo::ALGO_KD_SAH_ROPERESTART,
-                BenchAlgo::ALGO_BVH_Prob,
-                BenchAlgo::ALGO_KD_Prob,
+                BenchAlgo::ALGO_BVH_Prob,*/
+                BenchAlgo::ALGO_KD_Prob/*,
                 BenchAlgo::ALGO_KD_Prob_ROPE,
-                BenchAlgo::ALGO_KD_Prob_ROPERESTART,*/
-                BenchAlgo::ALGO_BVH_RDH/*,
+                BenchAlgo::ALGO_KD_Prob_ROPERESTART,
+                BenchAlgo::ALGO_BVH_RDH,
                 BenchAlgo::ALGO_KD_Hybrid,
                 BenchAlgo::ALGO_KD_Hybrid_ROPE,
                 BenchAlgo::ALGO_KD_Hybrid_ROPERESTART,
@@ -272,7 +272,10 @@ int main(int argc, char **argv) {
                 simManager.StopSimulation();
                 oldDesNb = globState.globalHits.globalHits.nbDesorbed;
                 oldHitNb = globState.globalHits.globalHits.nbHitEquiv;
-                model->BuildAccelStructure(&globState_old, model->wp.accel_type, model->wp.splitMethod, 2, hybrid_weight);
+                if(benchmark_with_hits)
+                    model->BuildAccelStructure(&globState_old, model->wp.accel_type, model->wp.splitMethod, 2, hybrid_weight);
+                else
+                    model->BuildAccelStructure(&globState, model->wp.accel_type, model->wp.splitMethod, 2, hybrid_weight);
                 simManager.StartSimulation();
                 fmt::print("--- COMMENCE: BENCHMARK {} ---\n", tableDetail.at((BenchAlgo)current_algo));
             }
