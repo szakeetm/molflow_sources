@@ -76,6 +76,7 @@ int main(int argc, char **argv) {
     //CLI args
     double hybrid_weight{1.0};  // = 3.14;
     std::string test_case_dir = "./AlgoCases";
+    std::string test_case_file = "";
     {
         CLI::App app("Molflow ADS Algorithm benchmark");
         // add version output
@@ -91,11 +92,19 @@ int main(int argc, char **argv) {
         */
         app.add_option("-w,--weight", hybrid_weight, "Hybrid split weight (w*split_main+(1-w)*split_bak)");
         app.add_option("-d,--dir", test_case_dir, "Test case directory (default: ./AlgoCases)");
+        app.add_option("-f,--file", test_case_file, "Test case file (default: none)");
 
         CLI11_PARSE(app, argc, argv);
     }
     fmt::print("Hybrid weight for : {}\n", hybrid_weight);
 
+    if(!test_case_file.empty()){
+        test_case_dir = std::filesystem::path(test_case_file).parent_path();
+    }
+    if(!test_case_file.empty() && !std::filesystem::exists(std::filesystem::path(test_case_file))){
+        fmt::print(stderr, "Test case file not found : {}\n", test_case_file);
+        exit(43);
+    }
     if(!std::filesystem::exists(test_case_dir)){
         fmt::print(stderr, "Test case folder not found : {}\n", test_case_dir);
         exit(42);
@@ -137,17 +146,21 @@ int main(int argc, char **argv) {
     ofs << fmt::format("[filename] algorithm time\n");
     ofs.close();
 
-
     for (auto const &dir_entry: std::filesystem::directory_iterator{test_case_dir}) {
-        if (!(dir_entry.path().extension() == ".zip" || dir_entry.path().extension() == ".xml")) {
+        if (!(dir_entry.path().extension().string() == ".zip" || dir_entry.path().extension().string() == ".xml")) {
             continue;
+        }
+        if(!test_case_file.empty()){
+            if(std::filesystem::path(test_case_file).filename().string() != std::filesystem::path(dir_entry).filename().string()){
+                continue;
+            }
         }
 
         std::string testFile = dir_entry.path().string();
         fmt::print("Filename: {}\n", testFile.c_str());
         perfTimes.emplace(testFile, std::vector<std::pair<int, double>>());
         std::vector<BenchAlgo> run_algos {
-                BenchAlgo::ALGO_BVH_SAH,
+                /*BenchAlgo::ALGO_BVH_SAH,
                 BenchAlgo::ALGO_KD_SAH,
                 BenchAlgo::ALGO_KD_SAH_ROPE,
                 BenchAlgo::ALGO_KD_SAH_ROPERESTART,
@@ -155,7 +168,7 @@ int main(int argc, char **argv) {
                 BenchAlgo::ALGO_KD_Prob,
                 BenchAlgo::ALGO_KD_Prob_ROPE,
                 BenchAlgo::ALGO_KD_Prob_ROPERESTART,
-                BenchAlgo::ALGO_BVH_RDH,
+                BenchAlgo::ALGO_BVH_RDH,*/
                 BenchAlgo::ALGO_KD_Hybrid,
                 BenchAlgo::ALGO_KD_Hybrid_ROPE,
                 BenchAlgo::ALGO_KD_Hybrid_ROPERESTART,
@@ -254,10 +267,14 @@ int main(int argc, char **argv) {
             model->otfParams.raySampling = false;
             globState.hitBattery.maxSamples = 0;
 
-            model->BuildAccelStructure(&globState_old, model->wp.accel_type, model->wp.splitMethod, 2, hybrid_weight);
-
             try {
                 simManager.StartSimulation();
+                simManager.StopSimulation();
+                oldDesNb = globState.globalHits.globalHits.nbDesorbed;
+                oldHitNb = globState.globalHits.globalHits.nbHitEquiv;
+                model->BuildAccelStructure(&globState_old, model->wp.accel_type, model->wp.splitMethod, 2, hybrid_weight);
+                simManager.StartSimulation();
+                fmt::print("--- COMMENCE: BENCHMARK {} ---\n", tableDetail.at((BenchAlgo)current_algo));
             }
             catch (...){
                 perfTimes[testFile].emplace_back(std::make_pair((int) current_algo, 0.0));
