@@ -762,6 +762,13 @@ int SimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_t
             // Clear tmp ADS
             this->accel.clear();
         }
+        else if(accel_type == 0) {
+            fmt::print("Stats for BVHxSAH [baseline]\n");
+            fmt::print("-- not yet implemented -- \n");
+            //CalculateKDStats(hits, isect_cost);
+            // Clear tmp ADS
+            this->accel.clear();
+        }
         //isect_cost = 80;
         // same as prob split
         std::vector<double> frequencies;
