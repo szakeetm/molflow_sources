@@ -164,11 +164,11 @@ int main(int argc, char **argv) {
                 BenchAlgo::ALGO_KD_SAH,
                 BenchAlgo::ALGO_KD_SAH_ROPE,
                 BenchAlgo::ALGO_KD_SAH_ROPERESTART,
-                BenchAlgo::ALGO_BVH_Prob,*/
-                BenchAlgo::ALGO_KD_Prob/*,
+                BenchAlgo::ALGO_BVH_Prob,
+                BenchAlgo::ALGO_KD_Prob,
                 BenchAlgo::ALGO_KD_Prob_ROPE,
-                BenchAlgo::ALGO_KD_Prob_ROPERESTART,
-                BenchAlgo::ALGO_BVH_RDH,
+                BenchAlgo::ALGO_KD_Prob_ROPERESTART,*/
+                BenchAlgo::ALGO_BVH_RDH/*,
                 BenchAlgo::ALGO_KD_Hybrid,
                 BenchAlgo::ALGO_KD_Hybrid_ROPE,
                 BenchAlgo::ALGO_KD_Hybrid_ROPERESTART,
