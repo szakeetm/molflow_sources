@@ -3,6 +3,12 @@
 .*
 !/.gitignore
 !/.gitmodules
+!/.gitlab-ci.yml
+
+.vs
+.DS_Store
+out/
+
 #blacklist various file types
 #Ignore files build by Visual Studio
 #ignore thumbnails created by windows
@@ -29,6 +35,7 @@ Thumbs.db
 *.lib
 *.sbr
 obj/
+Obj/
 [Rr]elease*/
 _ReSharper*/
 [Tt]est[Rr]esult*
@@ -47,8 +54,9 @@ build*/
 CMake/cmake-*
 
 !/src/
-!/src/GPUSim/
+!/src/**/
 !/src_shared/
+!/src_shared/**/
 !/tests/
 !/precomp_obj/
 !/molflow_tests/

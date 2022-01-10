@@ -3,48 +3,114 @@ A Monte Carlo simulator for Ultra High Vacuum systems
 
 **Authors:** Marton ADY, Pascal Rene BAEHR, Roberto KERSEVAN, Jean-Luc PONS  
 **Website:** https://cern.ch/molflow  
-**Copyright:** CERN (2020)  
+**Copyright:** CERN (2021)  
 **License:** GNU GPLv2 or later
 
 <img src="https://molflow.web.cern.ch/sites/molflow.web.cern.ch/files/pictures/2018-10-09%2016_14_20-PowerPoint%20Slide%20Show%20%20-%20%20Presentation1.png" alt="Molflow image" width="800"/>
 
-# Cloning the project
-* Clone the Molflow project with `git clone`
-* Go into the `src_shared` folder and:
-  * `git submodule init`
-  * `git submodule update`
+
   
 # Building
+Molflow uses cmake for its build system. On Windows it comes with *Visual Studio 2019* or it has to be build/downloaded manually from [cmake's download page](https://cmake.org/download/).
+On Linux and macOS it is part of most package managers.
+
 ## Windows
-* Open *molflow_win.sln* in the *Visual_Studio* folder, and use Visual Studio to build the solution.  
-Tested with Visual Studio Community 2019.
-* Update: With Visual Studio 2019's CMake support, you can now open the main folder containing *CMakeLists.txt* (File->Open Folder) and build the project
-## Linux (Debian)
-* Scripts in the *build_linux_debian* folder  
-* Compile source files with *compile_linux_debian.sh* and link with *link_linux_debian.sh*. The resulting binaries are written in *bin/linux_debian*  
-CMakeLists.txt / makefile coming soon.  
-See *readme.txt*  for required packages to build.  
-* Update: you can now build the project with CMake: run *cmake .* in the folder containing *CMakeLists.txt*, then run *make*. The resulting binaries can be run from the *bin* folder
-## Linux (Fedora-based, like Cent OS)
-* Scripts in the *build_linux_fedora* folder
-* The *readme.txt* file in this folder contains more info
-* You have to clone and build GCC 8.2 (or later) first.
-* Before building GCC 8, you can configure an install directory (../configure --prefix=$GCC8DIR --enable-languages=c,c++ --disable-multilib)
-* The compile scripts expect a GCC installation folder (with bin and lib64 folders), the location should be the default (*/usr/bin*) or defined by the *$GCC8DIR* environment variable
-* Compile source files with *compile_linux.sh* and link with *link_linux_fedora.sh*. The resulting binaries are written in *bin/linux_fedora*  
-* Update: you can now build the project with CMake: run *cmake .* in the folder containing *CMakeLists.txt*, then run *make*. The resulting binaries can be run from the *bin* folder
-## Mac
+
+In Windows, you need to clone the project (see below) and open in Visual Studio Community 2019.
+
+With *Visual Studio 2019*'s CMake support, you can now open the main folder containing *CMakeLists.txt* (File->Open Folder) and build the project directly
+
+## Prepare for building - Debian Linux, like Ubuntu
+
+- Install the necessary packages with the apt package manager, for Ubuntu 20:
+```
+sudo apt install p7zip-full
+sudo apt install build-essential git cmake
+sudo apt install libsdl2-dev libpng-dev libgtk-3-dev libgsl-dev libcurl4-gnutls-dev gsl-bin libatlas-base-dev p7zip
+```
+## Prepare for building - Fedora Linux, like Cent OS
+
+- Install the necessary packages with the package manager
+
+yum (e.g. CentOS 7):
+```
+sudo yum install epel-release
+sudo yum install p7zip SDL2 gsl libglvnd-opengl
+```
+
+dnf (e.g. CentOS 8):
+```
+dnf config-manager --set-enabled PowerTools
+dnf in -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+dnf in -y libglvnd-opengl libpng15 SDL2 p7zip
+dnf group install "Development Tools"
+```
+You might have to create a symlink for the GSL library:
+```
+ln -s /usr/lib64/libgsl.so.23 /usr/lib64/libgsl.so.0
+```
+If your CMake is outdated, install a newer version like so:
+```
+wget https://github.com/Kitware/CMake/releases/download/v3.18.3/cmake-3.18.3.tar.gz
+tar -zxvf cmake-3.18.3.tar.gz
+cd cmake-3.18.3
+./bootstrap
+make
+sudo make install
+```
+
+## Prepare for building - macOS
+
 * Use Homebrew to install build tools, like g++-8, the SDL2 library, libpng, gsl, curl, p7zip  
-* The compile and link scripts are in the *build_mac* folder.  The resulting binaries are written in *bin/mac* 
-* Compile source files with *compile_mac.sh* and link with *link_mac.sh*. The resulting binaries are written in *bin/mac* 
-* Update: you can now build the project with CMake: run *cmake .* in the folder containing *CMakeLists.txt*, then run *make*. The resulting binaries can be run from the *bin* folder
- 
+
+The procedure looks as follows:
+1. Install command line tools
+  - `xcode-select --install`
+2. Install homebrew
+  - from https://brew.sh/
+  - `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"`
+3. Install cmake and the necessary dependencies
+  - `brew install cmake`
+  - `brew install libpng`
+  - `brew install gsl`
+  - `brew install sdl2`
+  - `brew install p7zip`
+  - `brew install libomp`
+
+  (Or a one-liner for the above commands is `brew install cmake libpng gsl sdl2 p7zip libomp`)
+
+## Cloning the project (all OS)
+* Clone the Molflow project with `git clone`
+* Go into the `Molflow` directory and:
+  * `git submodule init`
+  * `git submodule update`
+```
+git clone [https_url]
+cd molflow
+git submodule init
+git submodule update
+```
+
+## Manual build with CMake (Linux/MacOS)
+
+* Go back to the project root folder `cd ..`
+* Create a build directory
+* Init the cmake project inside the new directory
+* Start the build with `make`
+```
+cd ..
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=RELEASE -DUSE_TESTS=OFF ..
+make
+```
+
 # Running
 ## Windows
 Use the shortcut (that changes the working directory and launches *molflow.exe*) in *bin\win\release*
 ## Linux (Debian)
 * Install dependencies with the *apt* package manager, like *libsdl2-2.0*, *gsl-bin*, *libatlas-base-dev*  
-* In the *bin/linux_debian* folder, make *molflow* and *compress* executable
+* In the *release/bin* folder, make *molflow* and *compress* executable
 * Run *molflow*  
 
 [Detailed instructions here](https://molflow.web.cern.ch/node/296)
@@ -53,9 +119,9 @@ Use the shortcut (that changes the working directory and launches *molflow.exe*)
 * Run *launch_molflow.sh* (It adds the lib folder to the library search path and launches molflow)
 
 [Detailed instructions here](https://molflow.web.cern.ch/node/302)
-## Mac
+## macOS
 * Use Homebrew to install dependencies, like *sdl2*, *libpng*, *gsl*, *gcc*  
-* In the *bin/mac* folder, make *molflow* and *compress* executable
+* In the *release/bin* folder, make *molflow* and *compress* executable
 * Run *molflow*  
 
 [Detailed instructions here](https://molflow.web.cern.ch/node/294)

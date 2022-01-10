@@ -19,50 +19,50 @@ FormulaEvaluator_MF::FormulaEvaluator_MF(Worker* w, MolflowGeometry* geom, std::
 bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
     bool ok = true;
     Geometry* geom = worker->GetGeometry();
-    size_t nbFacet = geom->GetNbFacet();
+    int nbFacet = geom->GetNbFacet();
     int idx;
 
     if ((idx = GetVariable(v->name, "A")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
-        if (ok) v->value = geom->GetFacet(idx - 1)->facetHitCache.hit.nbAbsEquiv;
+        if (ok) v->value = geom->GetFacet(idx - 1)->facetHitCache.nbAbsEquiv;
     }
     else if ((idx = GetVariable(v->name, "D")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
-        if (ok) v->value = (double)geom->GetFacet(idx - 1)->facetHitCache.hit.nbDesorbed;
+        if (ok) v->value = (double)geom->GetFacet(idx - 1)->facetHitCache.nbDesorbed;
     }
     else if ((idx = GetVariable(v->name, "MCH")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
-        if (ok) v->value = (double)geom->GetFacet(idx - 1)->facetHitCache.hit.nbMCHit;
+        if (ok) v->value = (double)geom->GetFacet(idx - 1)->facetHitCache.nbMCHit;
     }
     else if ((idx = GetVariable(v->name, "H")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
-        if (ok) v->value = (double)geom->GetFacet(idx - 1)->facetHitCache.hit.nbHitEquiv;
+        if (ok) v->value = (double)geom->GetFacet(idx - 1)->facetHitCache.nbHitEquiv;
     }
     else if ((idx = GetVariable(v->name, "P")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
-        if (ok) v->value = geom->GetFacet(idx - 1)->facetHitCache.hit.sum_v_ort *
-                           worker->GetMoleculesPerTP(worker->displayedMoment)*1E4 / geom->GetFacet(idx - 1)->GetArea() * (worker->wp.gasMass / 1000 / 6E23)*0.0100;
+        if (ok) v->value = geom->GetFacet(idx - 1)->facetHitCache.sum_v_ort *
+                           worker->GetMoleculesPerTP(worker->displayedMoment)*1E4 / geom->GetFacet(idx - 1)->GetArea() * (worker->model->wp.gasMass / 1000 / 6E23)*0.0100;
     }
     else if ((idx = GetVariable(v->name, "DEN")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
         if (ok) {
-            Facet *f = geom->GetFacet(idx - 1);
-            v->value = f->DensityCorrection() * f->facetHitCache.hit.sum_1_per_ort_velocity /
+            InterfaceFacet *f = geom->GetFacet(idx - 1);
+            v->value = f->DensityCorrection() * f->facetHitCache.sum_1_per_ort_velocity /
                        f->GetArea() *
                        worker->GetMoleculesPerTP(worker->displayedMoment)*1E4;
         }
     }
     else if ((idx = GetVariable(v->name, "Z")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
-        if (ok) v->value = geom->GetFacet(idx - 1)->facetHitCache.hit.nbHitEquiv /
+        if (ok) v->value = geom->GetFacet(idx - 1)->facetHitCache.nbHitEquiv /
                            geom->GetFacet(idx - 1)->GetArea() *
                            worker->GetMoleculesPerTP(worker->displayedMoment)*1E4;
     }
     else if ((idx = GetVariable(v->name, "V")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
-        if (ok) /*v->value = 4.0*(double)(geom->GetFacet(idx - 1)->facetHitCache.hit.nbMCHit + geom->GetFacet(idx - 1)->facetHitCache.hit.nbDesorbed) /
-			geom->GetFacet(idx - 1)->facetHitCache.hit.sum_1_per_ort_velocity;*/
-            v->value = (geom->GetFacet(idx - 1)->facetHitCache.hit.nbHitEquiv + static_cast<double>(geom->GetFacet(idx - 1)->facetHitCache.hit.nbDesorbed)) / geom->GetFacet(idx - 1)->facetHitCache.hit.sum_1_per_velocity;
+        if (ok) /*v->value = 4.0*(double)(geom->GetFacet(idx - 1)->facetHitCache.nbMCHit + geom->GetFacet(idx - 1)->facetHitCache.nbDesorbed) /
+			geom->GetFacet(idx - 1)->facetHitCache.sum_1_per_ort_velocity;*/
+            v->value = (geom->GetFacet(idx - 1)->facetHitCache.nbHitEquiv + static_cast<double>(geom->GetFacet(idx - 1)->facetHitCache.nbDesorbed)) / geom->GetFacet(idx - 1)->facetHitCache.sum_1_per_velocity;
     }
     else if ((idx = GetVariable(v->name, "T")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
@@ -73,27 +73,27 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
         if (ok) v->value = geom->GetFacet(idx - 1)->sh.area;
     }
     else if (iequals(v->name, "SUMDES")) {
-        v->value = (double)worker->globalHitCache.globalHits.hit.nbDesorbed;
+        v->value = (double)worker->globalHitCache.globalHits.nbDesorbed;
     }
     else if (iequals(v->name, "SUMABS")) {
-        v->value = worker->globalHitCache.globalHits.hit.nbAbsEquiv;
+        v->value = worker->globalHitCache.globalHits.nbAbsEquiv;
     }
     else if (iequals(v->name, "SUMMCHIT")) {
-        v->value = (double)worker->globalHitCache.globalHits.hit.nbMCHit;
+        v->value = (double)worker->globalHitCache.globalHits.nbMCHit;
     }
     else if (iequals(v->name, "SUMHIT")) {
-        v->value = worker->globalHitCache.globalHits.hit.nbHitEquiv;
+        v->value = worker->globalHitCache.globalHits.nbHitEquiv;
     }
     else if (iequals(v->name, "MPP")) {
-        v->value = worker->globalHitCache.distTraveled_total / (double)worker->globalHitCache.globalHits.hit.nbDesorbed;
+        v->value = worker->globalHitCache.distTraveled_total / (double)worker->globalHitCache.globalHits.nbDesorbed;
     }
     else if (iequals(v->name, "MFP")) {
-        v->value = worker->globalHitCache.distTraveledTotal_fullHitsOnly / worker->globalHitCache.globalHits.hit.nbHitEquiv;
+        v->value = worker->globalHitCache.distTraveledTotal_fullHitsOnly / worker->globalHitCache.globalHits.nbHitEquiv;
     }
     else if (iequals(v->name, "DESAR")) {
         double sumArea = 0.0;
-        for (int i2 = 0; i2 < geom->GetNbFacet(); i2++) {
-            Facet *f_tmp = geom->GetFacet(i2);
+        for (size_t i2 = 0; i2 < geom->GetNbFacet(); i2++) {
+            InterfaceFacet *f_tmp = geom->GetFacet(i2);
             if (f_tmp->sh.desorbType) sumArea += f_tmp->GetArea();
         }
         v->value = sumArea;
@@ -101,23 +101,23 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
     else if (iequals(v->name, "ABSAR")) {
         double sumArea = 0.0;
 
-        for (int i2 = 0; i2 < geom->GetNbFacet(); i2++) {
-            Facet *f_tmp = geom->GetFacet(i2);
+        for (size_t i2 = 0; i2 < geom->GetNbFacet(); i2++) {
+            InterfaceFacet *f_tmp = geom->GetFacet(i2);
             if (f_tmp->sh.sticking > 0.0) sumArea += f_tmp->GetArea()*f_tmp->sh.opacity;
         }
         v->value = sumArea;
     }
     else if (iequals(v->name, "QCONST")) {
-        v->value = worker->wp.finalOutgassingRate_Pa_m3_sec*10.00; //10: Pa*m3/sec -> mbar*l/s
+        v->value = worker->model->wp.finalOutgassingRate_Pa_m3_sec*10.00; //10: Pa*m3/sec -> mbar*l/s
     }
     else if (iequals(v->name, "QCONST_N")) {
-        v->value = worker->wp.finalOutgassingRate;
+        v->value = worker->model->wp.finalOutgassingRate;
     }
     else if (iequals(v->name, "NTOT")) {
-        v->value = worker->wp.totalDesorbedMolecules;
+        v->value = worker->model->wp.totalDesorbedMolecules;
     }
     else if (iequals(v->name, "GASMASS")) {
-        v->value = worker->wp.gasMass;
+        v->value = worker->model->wp.gasMass;
     }
     else if (iequals(v->name, "KB")) {
         v->value = 1.3806504e-23;
@@ -178,28 +178,28 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
         double sumArea = 0.0; //We average by area
         for (auto& sel : facetsToSum) {
             if (Contains({"MCH", "mch"},tokens[0])) {
-                sumLL+=geom->GetFacet(sel)->facetHitCache.hit.nbMCHit;
+                sumLL+=geom->GetFacet(sel)->facetHitCache.nbMCHit;
             }
             else if (Contains({ "H", "h" }, tokens[0])) {
-                sumD += geom->GetFacet(sel)->facetHitCache.hit.nbHitEquiv;
+                sumD += geom->GetFacet(sel)->facetHitCache.nbHitEquiv;
             }
             else if (Contains({ "D", "d" }, tokens[0])) {
-                sumLL+=geom->GetFacet(sel)->facetHitCache.hit.nbDesorbed;
+                sumLL+=geom->GetFacet(sel)->facetHitCache.nbDesorbed;
             } else if (Contains({ "A", "a" }, tokens[0])) {
-                sumD += geom->GetFacet(sel)->facetHitCache.hit.nbAbsEquiv;
+                sumD += geom->GetFacet(sel)->facetHitCache.nbAbsEquiv;
             } else if (Contains({ "AR", "ar" }, tokens[0])) {
                 sumArea += geom->GetFacet(sel)->GetArea();
             }
             else if (Contains({ "P", "p" }, tokens[0])) {
-                sumD+= geom->GetFacet(sel)->facetHitCache.hit.sum_v_ort *
-                       (worker->wp.gasMass / 1000 / 6E23)*0.0100;
+                sumD+= geom->GetFacet(sel)->facetHitCache.sum_v_ort *
+                       (worker->model->wp.gasMass / 1000 / 6E23)*0.0100;
                 sumArea += geom->GetFacet(sel)->GetArea();
             } else if (Contains({ "DEN", "den" }, tokens[0])) {
-                Facet *f = geom->GetFacet(sel);
-                sumD += f->DensityCorrection() * f->facetHitCache.hit.sum_1_per_ort_velocity;
+                InterfaceFacet *f = geom->GetFacet(sel);
+                sumD += f->DensityCorrection() * f->facetHitCache.sum_1_per_ort_velocity;
                 sumArea += geom->GetFacet(sel)->GetArea();
             } else if (Contains({ "Z", "z" }, tokens[0])) {
-                sumD += geom->GetFacet(sel)->facetHitCache.hit.nbHitEquiv;
+                sumD += geom->GetFacet(sel)->facetHitCache.nbHitEquiv;
                 sumArea += geom->GetFacet(sel)->GetArea();
             } else return false;
         }
