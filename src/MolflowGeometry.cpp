@@ -126,10 +126,10 @@ void MolflowGeometry::SerializeForLoader(cereal::BinaryOutputArchive &outputArch
             CEREAL_NVP(vertices3)
 	);
 
-	size_t fOffset = sizeof(GlobalHitBuffer) + (1 + mApp->worker.moments.size())*mApp->worker.wp.globalHistogramParams.GetDataSize(); //calculating offsets for all facets for the hits dataport during the simulation
+	size_t fOffset = sizeof(GlobalHitBuffer) + (1 + mApp->worker.moments.size())*mApp->worker.model->wp.globalHistogramParams.GetDataSize(); //calculating offsets for all facets for the hits dataport during the simulation
 
 	for (size_t i = 0; i < sh.nbFacet; i++) {
-		facets[i]->sh.hitOffset = fOffset; //Marking the offsets for the hits, but here we don't actually send any hits.
+		//facets[i]->sh.hitOffset = fOffset; //Marking the offsets for the hits, but here we don't actually send any hits.
 		fOffset += facets[i]->GetHitsSize(mApp->worker.moments.size());
 		//facets[i]->SerializeForLoader(outputArchive);
         outputArchive(
@@ -145,10 +145,10 @@ void MolflowGeometry::SerializeForExternal(cereal::XMLOutputArchive& outputArchi
             CEREAL_NVP(vertices3)
     );
 
-    size_t fOffset = sizeof(GlobalHitBuffer) + (1 + mApp->worker.moments.size())*mApp->worker.wp.globalHistogramParams.GetDataSize(); //calculating offsets for all facets for the hits dataport during the simulation
+    size_t fOffset = sizeof(GlobalHitBuffer) + (1 + mApp->worker.moments.size())*mApp->worker.model->wp.globalHistogramParams.GetDataSize(); //calculating offsets for all facets for the hits dataport during the simulation
 
     for (size_t i = 0; i < sh.nbFacet; i++) {
-        facets[i]->sh.hitOffset = fOffset; //Marking the offsets for the hits, but here we don't actually send any hits.
+        //facets[i]->sh.hitOffset = fOffset; //Marking the offsets for the hits, but here we don't actually send any hits.
         fOffset += facets[i]->GetHitsSize(mApp->worker.moments.size());
         //facets[i]->SerializeForExternal(outputArchive);
         outputArchive(

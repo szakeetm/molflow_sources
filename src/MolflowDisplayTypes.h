@@ -26,7 +26,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 //Texture limit types
 typedef struct {
-	double all;
+	double steady_state;
 	double moments_only;
 } TEXTURE_MOMENT_TYPE;
 
