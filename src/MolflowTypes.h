@@ -137,7 +137,7 @@ public:
 };
 
 //Texture limit types
-typedef struct {
+/*typedef struct {
 	double steady_state;
 	double moments_only;
 } TEXTURE_MOMENT_TYPE;
@@ -150,7 +150,7 @@ typedef struct {
 typedef struct {
 	TEXTURE_MIN_MAX manual;
 	TEXTURE_MIN_MAX autoscale;
-} TEXTURE_SCALE_TYPE;
+} TEXTURE_SCALE_TYPE;*/
 
 class AnglemapParams {
 public:
