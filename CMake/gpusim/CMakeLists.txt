@@ -18,6 +18,10 @@ set(HEADER_DIR_3 ../../include)
 set(HEADER_DIR_4 ../../include/windows_only)
 set(HEADER_DIR_5 ../../include/common_cuda)
 
+set(CPP_DIR_1 ../../src/)
+set(CPP_DIR_2 ../../src_shared/)
+set(SIMU_DIR ../../src/Simulation)
+
 set(GPU_DIR_1 ../../src/GPUSim)
 set(CUDA_DIR_1 ../../src/GPUSim/CUDA)
 
@@ -35,6 +39,21 @@ set(optix_LIBRARY "")
 # Now create executable
 set(INCLUDE_DIRECTORIES "")
 add_executable(${PROJECT_NAME}
+
+        ${CPP_DIR_1}/MolflowTypes.cpp
+        ${CPP_DIR_2}/FlowMPI.h #contains templates
+        ${CPP_DIR_2}/FlowMPI.cpp
+        ${CPP_DIR_2}/File.cpp
+        ${SIMU_DIR}/Simulation.cpp
+        ${SIMU_DIR}/SimulationMC.cpp
+        ${SIMU_DIR}/Particle.cpp
+        ${SIMU_DIR}/Physics.cpp
+        ${SIMU_DIR}/AnglemapGeneration.cpp
+        ${SIMU_DIR}/CDFGeneration.cpp
+        ${SIMU_DIR}/IDGeneration.cpp
+        ${CPP_DIR_2}/IntersectAABB_shared.cpp #isinfacet
+        ${CPP_DIR_2}/Random.cpp #TruncatedGaussian::GetGaussian --> rtnorm
+
         ${GPU_DIR_1}/TestSimulator.cpp
         ${GPU_DIR_1}/ModelReader.cpp
         ${HEADER_DIR_1}/GeometrySimu.cpp
@@ -58,8 +77,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 target_link_libraries(${PROJECT_NAME}
         flowGPU
-        simulator_shared
+        shared_simulator
         )
+target_link_libraries(${PROJECT_NAME} truncatedgaussian)
 
 if(MSVC)
     set(LINK_DIR_2 ../../lib_external/win/${MY_BUILD_TYPE})

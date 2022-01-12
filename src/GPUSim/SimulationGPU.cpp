@@ -6,6 +6,8 @@
 #include <common_cuda/helper_math.h>
 #include "SimulationGPU.h"
 #include "ModelReader.h" // TempFacet
+#include "Model.h"
+#include "SimulationControllerGPU.h"
 
 #if defined(NDEBUG)
 #define LAUNCHSIZE 1920*128*1//1024*64*16//1024*128*64
@@ -24,8 +26,10 @@ SimulationGPU::~SimulationGPU() {
     delete model;
 }
 
-int SimulationGPU::SanityCheckGeom() {
-    return 0;
+std::pair<int, std::optional<std::string>> SimulationGPU::SanityCheckModel(bool strictCheck) {
+    int errorsOnCheck = 0;
+    std::string errLog;
+    return std::make_pair(errorsOnCheck, (errorsOnCheck > 0 ? std::make_optional(errLog) : std::nullopt)); // 0 = all ok
 }
 
 inline void updateTextureLimit(GlobalHitBuffer *gHits, GlobalCounter* globalCount, flowgpu::Model* model) {
@@ -33,10 +37,10 @@ inline void updateTextureLimit(GlobalHitBuffer *gHits, GlobalCounter* globalCoun
     if(!globalCount->textures.empty()) {
 
         //Memorize current limits, then do a min/max search
-        for (int i = 0; i < 3; i++) {
+        /*for (int i = 0; i < 3; i++) {
             gHits->texture_limits[i].min.all = gHits->texture_limits[i].min.moments_only = HITMAX;
             gHits->texture_limits[i].max.all = gHits->texture_limits[i].max.moments_only = 0;
-        }
+        }*/
 
         double timeCorrection = model->wp.finalOutgassingRate;
         for (auto&[id, texels] : globalCount->textures) {
@@ -58,8 +62,8 @@ inline void updateTextureLimit(GlobalHitBuffer *gHits, GlobalCounter* globalCoun
                                 shTexture[index_glob].sum_v_ort_per_area += texels[index_glob].sum_v_ort_per_area;
                                 shTexture[index_glob].sum_1_per_ort_velocity += texels[index_glob].sum_1_per_ort_velocity;
 
-                                const float texelIncrement = model->texInc[index_glob + texture.texelOffset];
-                                const bool largeEnough = texelIncrement < 5.0f * (model->facetTex[facet.texProps.textureOffset].texWidthD * model->facetTex[facet.texProps.textureOffset].texHeightD) / (length(facet.U) * length(facet.V));
+                                /*const float texelIncrement = model->texInc[index_glob + texture.texelOffset];
+                                const bool largeEnough = texelIncrement < 5.0f * (model->facetTex[facet.texProps.textureOffset].texWidth_precise * model->facetTex[facet.texProps.textureOffset].texHeight_precise) / (length(facet.U) * length(facet.V));
                                 if(largeEnough) {
                                     double val[3];  //pre-calculated autoscaling values (Pressure, imp.rate, density)
                                     val[0] = shTexture[index_glob].sum_v_ort_per_area *
@@ -76,7 +80,7 @@ inline void updateTextureLimit(GlobalHitBuffer *gHits, GlobalCounter* globalCoun
                                                                                         gHits->texture_limits[v].min.all);
                                         }
                                     }
-                                }
+                                }*/
                             }
                         }
 
@@ -103,7 +107,7 @@ inline void updateTextureLimit(GlobalHitBuffer *gHits, GlobalCounter* globalCoun
                                 shTexture[index_glob].sum_1_per_ort_velocity += texels[index_glob].sum_1_per_ort_velocity;
 
                                 const float texelIncrement = model->texInc[index_glob + texture.texelOffset];
-                                const bool largeEnough = texelIncrement < 5.0f * (model->facetTex[facet.texProps.textureOffset].texWidthD * model->facetTex[facet.texProps.textureOffset].texHeightD) / (length(facet.U) * length(facet.V));
+                                const bool largeEnough = texelIncrement < 5.0f * (model->facetTex[facet.texProps.textureOffset].texWidth_precise * model->facetTex[facet.texProps.textureOffset].texHeight_precise) / (length(facet.U) * length(facet.V));
                                 if(largeEnough) {
                                     double val[3];  //pre-calculated autoscaling values (Pressure, imp.rate, density)
                                     val[0] = shTexture[index_glob].sum_v_ort_per_area *
@@ -113,13 +117,13 @@ inline void updateTextureLimit(GlobalHitBuffer *gHits, GlobalCounter* globalCoun
                                     val[2] = shTexture[index_glob].sum_1_per_ort_velocity *
                                              texelIncrement*timeCorrection; //particle density without dCoef
                                     //Global autoscale
-                                    for (int v = 0; v < 3; v++) {
+                                    /*for (int v = 0; v < 3; v++) {
                                         gHits->texture_limits[v].max.all = std::max(val[v], gHits->texture_limits[v].max.all );
                                         if (val[v] > 0.0) {
                                             gHits->texture_limits[v].min.all = std::min(val[v],
                                                                                         gHits->texture_limits[v].min.all);
                                         }
-                                    }
+                                    }*/
                                 }
                             }
                         }
@@ -178,7 +182,7 @@ inline void updateProfileBuffer(GlobalHitBuffer *gHits, GlobalCounter* globalCou
 
 
 void SimulationGPU::ClearSimulation() {
-    gpuSim.CloseSimulation();
+    gpuSim->CloseSimulation();
 }
 
 bool SimulationGPU::LoadSimulation(Dataport *loader, char* loadStatus) {
@@ -196,7 +200,7 @@ bool SimulationGPU::LoadSimulation(Dataport *loader, char* loadStatus) {
 
         model = flowgpu::loadFromSerialization(inputString);
         if(!model) return false;
-        this->ontheflyParams = this->model->ontheflyParams;
+        //this->ontheflyParams = this->model->ontheflyParams;
     }//inputarchive goes out of scope, file released
 
     // Initialise simulation
@@ -204,7 +208,7 @@ bool SimulationGPU::LoadSimulation(Dataport *loader, char* loadStatus) {
 
     //TODO: Better sanity check for startup
     if(model->nbFacets_total>0)
-        gpuSim.LoadSimulation(model,LAUNCHSIZE);
+        gpuSim->LoadSimulation(model,LAUNCHSIZE);
     //if(!sh.name.empty())
 
     double t1 = GetTick();
@@ -216,7 +220,7 @@ bool SimulationGPU::LoadSimulation(Dataport *loader, char* loadStatus) {
 void SimulationGPU::ResetSimulation() {
     totalDesorbed = 0;
     ResetTmpCounters();
-    gpuSim.ResetSimulation();
+    gpuSim->ResetSimulation();
 }
 
 bool SimulationGPU::UpdateOntheflySimuParams(Dataport *loader) {
@@ -235,14 +239,14 @@ bool SimulationGPU::UpdateOntheflySimuParams(Dataport *loader) {
     inputStream << inputString;
     cereal::BinaryInputArchive inputArchive(inputStream);
 
-    inputArchive(ontheflyParams);
+    //inputArchive(ontheflyParams);
     ReleaseDataport(loader);
 
     // Allow new particles when desorptionlimit has changed
     auto oldDesLimit = model->ontheflyParams.desorptionLimit;
-    model->ontheflyParams = ontheflyParams;
+    //model->ontheflyParams = ontheflyParams;
     if(model->ontheflyParams.desorptionLimit != oldDesLimit) {
-        gpuSim.AllowNewParticles();
+        gpuSim->AllowNewParticles();
     }
 
     return true;
@@ -252,8 +256,8 @@ bool SimulationGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWOR
     //UpdateMCHits(dpHit, prIdx, moments.size(), timeout);
     //if (dpLog) UpdateLog(dpLog, timeout);
     //std::cout << "#SimulationGPU: Updating hits"<<std::endl;
-    gpuSim.GetSimulationData(false);
-    GlobalCounter* globalCount = gpuSim.GetGlobalCounter();
+    gpuSim->GetSimulationData(false);
+    GlobalCounter* globalCount = gpuSim->GetGlobalCounter();
 
     BYTE *buffer;
     GlobalHitBuffer *gHits;
@@ -271,15 +275,15 @@ bool SimulationGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWOR
     gHits = (GlobalHitBuffer *) buffer;
 
     for(unsigned int i = 0; i < globalCount->facetHitCounters.size(); i++) {
-        gHits->globalHits.hit.nbMCHit += globalCount->facetHitCounters[i].nbMCHit; // let misses count as 0 (-1+1)
-        gHits->globalHits.hit.nbDesorbed += globalCount->facetHitCounters[i].nbDesorbed; // let misses count as 0 (-1+1)
-        gHits->globalHits.hit.nbAbsEquiv += globalCount->facetHitCounters[i].nbAbsEquiv; // let misses count as 0 (-1+1)
-        gHits->globalHits.hit.nbHitEquiv += globalCount->facetHitCounters[i].nbHitEquiv; // let misses count as 0 (-1+1)
-        gHits->globalHits.hit.sum_v_ort += globalCount->facetHitCounters[i].sum_v_ort; // let misses count as 0 (-1+1)
-        gHits->globalHits.hit.sum_1_per_velocity += globalCount->facetHitCounters[i].sum_1_per_velocity; // let misses count as 0 (-1+1)
-        gHits->globalHits.hit.sum_1_per_ort_velocity += globalCount->facetHitCounters[i].sum_1_per_ort_velocity; // let misses count as 0 (-1+1)
+        gHits->globalHits.nbMCHit += globalCount->facetHitCounters[i].nbMCHit; // let misses count as 0 (-1+1)
+        gHits->globalHits.nbDesorbed += globalCount->facetHitCounters[i].nbDesorbed; // let misses count as 0 (-1+1)
+        gHits->globalHits.nbAbsEquiv += globalCount->facetHitCounters[i].nbAbsEquiv; // let misses count as 0 (-1+1)
+        gHits->globalHits.nbHitEquiv += globalCount->facetHitCounters[i].nbHitEquiv; // let misses count as 0 (-1+1)
+        gHits->globalHits.sum_v_ort += globalCount->facetHitCounters[i].sum_v_ort; // let misses count as 0 (-1+1)
+        gHits->globalHits.sum_1_per_velocity += globalCount->facetHitCounters[i].sum_1_per_velocity; // let misses count as 0 (-1+1)
+        gHits->globalHits.sum_1_per_ort_velocity += globalCount->facetHitCounters[i].sum_1_per_ort_velocity; // let misses count as 0 (-1+1)
     }
-    this->totalDesorbed = gHits->globalHits.hit.nbDesorbed;
+    this->totalDesorbed = gHits->globalHits.nbDesorbed;
 
 #ifdef DEBUGPOS
     // HHit (Only prIdx 0)
@@ -321,24 +325,24 @@ bool SimulationGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWOR
     for(unsigned int i = 0; i < globalCount->facetHitCounters.size(); i++) {
         int realIndex = model->triangle_meshes[0]->poly[i].parentIndex;
         FacetHitBuffer *facetHitBuffer = (FacetHitBuffer *) (buffer + model->tri_facetOffset[realIndex] /*+ sizeof(FacetHitBuffer)*/);
-        facetHitBuffer->hit.nbAbsEquiv += globalCount->facetHitCounters[i].nbAbsEquiv;
-        facetHitBuffer->hit.nbDesorbed += globalCount->facetHitCounters[i].nbDesorbed;
-        facetHitBuffer->hit.nbMCHit += globalCount->facetHitCounters[i].nbMCHit;
-        facetHitBuffer->hit.nbHitEquiv += globalCount->facetHitCounters[i].nbHitEquiv;
-        facetHitBuffer->hit.sum_v_ort += globalCount->facetHitCounters[i].sum_v_ort;
-        facetHitBuffer->hit.sum_1_per_velocity += globalCount->facetHitCounters[i].sum_1_per_velocity;
-        facetHitBuffer->hit.sum_1_per_ort_velocity += globalCount->facetHitCounters[i].sum_1_per_ort_velocity;
+        facetHitBuffer->nbAbsEquiv += globalCount->facetHitCounters[i].nbAbsEquiv;
+        facetHitBuffer->nbDesorbed += globalCount->facetHitCounters[i].nbDesorbed;
+        facetHitBuffer->nbMCHit += globalCount->facetHitCounters[i].nbMCHit;
+        facetHitBuffer->nbHitEquiv += globalCount->facetHitCounters[i].nbHitEquiv;
+        facetHitBuffer->sum_v_ort += globalCount->facetHitCounters[i].sum_v_ort;
+        facetHitBuffer->sum_1_per_velocity += globalCount->facetHitCounters[i].sum_1_per_velocity;
+        facetHitBuffer->sum_1_per_ort_velocity += globalCount->facetHitCounters[i].sum_1_per_ort_velocity;
     } // End nbFacet
 #else
     for(unsigned int i = 0; i < globalCount->facetHitCounters.size(); i++) {
         FacetHitBuffer *facetHitBuffer = (FacetHitBuffer *) (buffer + model->tri_facetOffset[i] /*+ sizeof(FacetHitBuffer)*/);
-        facetHitBuffer->hit.nbAbsEquiv += globalCount->facetHitCounters[i].nbAbsEquiv;
-        facetHitBuffer->hit.nbDesorbed += globalCount->facetHitCounters[i].nbDesorbed;
-        facetHitBuffer->hit.nbMCHit += globalCount->facetHitCounters[i].nbMCHit;
-        facetHitBuffer->hit.nbHitEquiv += globalCount->facetHitCounters[i].nbHitEquiv;
-        facetHitBuffer->hit.sum_v_ort += globalCount->facetHitCounters[i].sum_v_ort;
-        facetHitBuffer->hit.sum_1_per_velocity += globalCount->facetHitCounters[i].sum_1_per_velocity;
-        facetHitBuffer->hit.sum_1_per_ort_velocity += globalCount->facetHitCounters[i].sum_1_per_ort_velocity;
+        facetHitBuffer->nbAbsEquiv += globalCount->facetHitCounters[i].nbAbsEquiv;
+        facetHitBuffer->nbDesorbed += globalCount->facetHitCounters[i].nbDesorbed;
+        facetHitBuffer->nbMCHit += globalCount->facetHitCounters[i].nbMCHit;
+        facetHitBuffer->nbHitEquiv += globalCount->facetHitCounters[i].nbHitEquiv;
+        facetHitBuffer->sum_v_ort += globalCount->facetHitCounters[i].sum_v_ort;
+        facetHitBuffer->sum_1_per_velocity += globalCount->facetHitCounters[i].sum_1_per_velocity;
+        facetHitBuffer->sum_1_per_ort_velocity += globalCount->facetHitCounters[i].sum_1_per_ort_velocity;
     } // End nbFacet
 #endif
 
@@ -374,7 +378,7 @@ void SimulationGPU::ResetTmpCounters() {
     //SetState(0, "Resetting local cache...", false, true);
 
     memset(&tmpGlobalResult, 0, sizeof(GlobalHitBuffer));
-    GlobalCounter* globalCount = gpuSim.GetGlobalCounter();
+    GlobalCounter* globalCount = gpuSim->GetGlobalCounter();
     std::fill(globalCount->facetHitCounters.begin(),globalCount->facetHitCounters.end(), flowgpu::CuFacetHitCounter64());
     std::fill(globalCount->leakCounter.begin(),globalCount->leakCounter.end(), 0);
     for(auto& tex : globalCount->textures){
@@ -388,11 +392,11 @@ void SimulationGPU::ResetTmpCounters() {
 static uint64_t currentDes = 0;
 bool SimulationGPU::SimulationMCStep(size_t nbStep){
     for(int i=0;i<nbStep;++i)
-        currentDes = gpuSim.RunSimulation();
+        currentDes = gpuSim->RunSimulation();
     //currentDes += nbStep * LAUNCHSIZE;
     bool goOn = this->model->ontheflyParams.desorptionLimit > currentDes;
 #ifdef WITHDESORPEXIT
-    goOn = !gpuSim.hasEnded;
+    goOn = !gpuSim->hasEnded;
 #endif
     if(this->model->ontheflyParams.desorptionLimit == 0)
         goOn = true;
@@ -403,3 +407,19 @@ int SimulationGPU::ReinitializeParticleLog() {
     // GPU simulations has no support for particle log
     return 0;
 }
+
+size_t SimulationGPU::LoadSimulation(char *loadStatus) {
+    return 0;
+}
+
+    int SimulationGPU::RebuildAccelStructure() {
+        return 0;
+    }
+
+    MFSim::Particle *SimulationGPU::GetParticle(size_t i) {
+        return nullptr;
+    }
+
+    void SimulationGPU::SetNParticle(size_t n, bool fixedSeed) {
+        return;
+    }

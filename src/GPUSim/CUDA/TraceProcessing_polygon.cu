@@ -117,11 +117,11 @@ namespace flowgpu {
         const float hitLocationV = uint_as_float(optixGetAttribute_4());
 
         flowgpu::FacetTexture& facetTex = optixLaunchParams.sharedData.facetTextures[poly.texProps.textureOffset];
-        const auto tu = (unsigned int)(hitLocationU * facetTex.texWidthD);
-        const auto tv = (unsigned int)(hitLocationV * facetTex.texHeightD);
+        const auto tu = (unsigned int)(hitLocationU * facetTex.texWidth_precise);
+        const auto tv = (unsigned int)(hitLocationV * facetTex.texHeight_precise);
         unsigned int add = tu + tv * (facetTex.texWidth);
 
-        //printf("Hit at %lf , %lf for tex %lf , %lf : %d , %d\n", hitLocationU, hitLocationV, facetTex.texWidthD, facetTex.texHeightD, tu, tv);
+        //printf("Hit at %lf , %lf for tex %lf , %lf : %d , %d\n", hitLocationU, hitLocationV, facetTex.texWidth_precise, facetTex.texHeight_precise, tu, tv);
         const float velocity_factor = 2.0f;
         const float ortSpeedFactor = 1.0f;
         const float ortVelocity = (optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f) * hitData.velocity*fabsf(dot(rayDir, poly.N)); //surface-orthogonal velocity component
@@ -146,8 +146,8 @@ namespace flowgpu {
 
         const float hitLocationU = uint_as_float(optixGetAttribute_3());
         const float hitLocationV = uint_as_float(optixGetAttribute_4());
-        const auto tu = (unsigned int)(hitLocationU * facetTex.texWidthD);
-        const auto tv = (unsigned int)(hitLocationV * facetTex.texHeightD);
+        const auto tu = (unsigned int)(hitLocationU * facetTex.texWidth_precise);
+        const auto tv = (unsigned int)(hitLocationV * facetTex.texHeight_precise);
         unsigned int add = tu + tv * (facetTex.texWidth);
 
         //printf("Pre Bounce Tex: %f = %f * %f * %f\n",ortVelocity,(optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f) ,hitData.velocity,fabsf(dot(rayDir, poly.N)));
@@ -205,7 +205,7 @@ namespace flowgpu {
         auto add = (unsigned int)(hitLocation * PROFILE_SIZE);
 
         float ortVelocity = hitData.velocity*fabsf(dot(rayDir, poly.N)); //surface-orthogonal velocity component
-        //printf("Hit at %lf , %lf for tex %lf , %lf\n", hitLocationU, hitLocationV, facetTex.texWidthD, facetTex.texHeightD);
+        //printf("Hit at %lf , %lf for tex %lf , %lf\n", hitLocationU, hitLocationV, facetTex.texWidth_precise, facetTex.texHeight_precise);
 #ifdef BOUND_CHECK
         if(poly.profProps.profileOffset + add < 0 || poly.profProps.profileOffset + add >= optixLaunchParams.simConstants.nbProfSlices){
             printf("[ABS] poly.profProps.profileOffset + add %u >= %u is out of bounds\n", poly.profProps.profileOffset + add, optixLaunchParams.simConstants.nbProfSlices);}

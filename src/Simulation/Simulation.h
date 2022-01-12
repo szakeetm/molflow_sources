@@ -70,7 +70,6 @@ public:
     // Particle coordinates (MC)//std::vector<FacetHistogramBuffer> tmpGlobalHistograms; //Recorded histogram since last UpdateMCHits, 1+nbMoment copies
     //ParticleLog tmpParticleLog; //Recorded particle log since last UpdateMCHits
     std::vector<MFSim::Particle> particles;
-    mutable std::timed_mutex tMutex;
 
 };
 // -- Methods ---------------------------------------------------

@@ -1506,8 +1506,8 @@ void Facet::SerializeData(std::vector<double>& outgMapVector, std::vector<size_t
         }
         else {
 
-            double rw = sh.U.Norme() / (double)(sh.texWidthD);
-            double rh = sh.V.Norme() / (double)(sh.texHeightD);
+            double rw = sh.U.Norme() / (double)(sh.texWidth_precise);
+            double rh = sh.V.Norme() / (double)(sh.texHeight_precise);
             double area = rw * rh;
             size_t add = 0;
             for (int j = 0; j < sh.texHeight; j++) {

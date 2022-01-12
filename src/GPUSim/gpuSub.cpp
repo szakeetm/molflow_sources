@@ -101,7 +101,8 @@ int main(int argc, char *argv[]) {
     size_t hostProcessId = atoi(argv[1]);
     size_t prIdx = atoi(argv[2]);
 
-    SimulationController simController = {"molflow", "MFLW", hostProcessId, prIdx, new SimulationGPU()};
+    /*SimulationController simController = {"molflow", "MFLW", hostProcessId, prIdx, new SimulationGPU()};
+    {hostProcessId, prIdx, 0, new SimulationGPU(), &procInformation};
     //Simulation *sHandle = new Simulation();
 
     {
@@ -118,7 +119,7 @@ int main(int argc, char *argv[]) {
 
     InitTick();
 
-    simController.controlledLoop();
+    simController.controlledLoop();*/
 
     return 0;
 

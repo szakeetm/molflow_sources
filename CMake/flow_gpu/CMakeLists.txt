@@ -200,9 +200,11 @@ target_compile_options(${PROJECT_NAME} PUBLIC
         )
 
 
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(${PROJECT_NAME} PUBLIC
         cudaKernel
         ${optix_LIBRARY}
         ${CUDA_LIBRARIES}
         ${CUDA_CUDA_LIBRARY}
+        cereal
+        fmt
         )

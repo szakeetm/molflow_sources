@@ -404,10 +404,10 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
 
         flowgpu::FacetTexture& facetTex = optixLaunchParams.sharedData.facetTextures[poly.texProps.textureOffset];
 
-        const auto tu = (unsigned int)(__saturatef(hitLocation.x) * facetTex.texWidthD); // saturate for rounding errors that can result for values larger than 1.0
-        const auto tv = (unsigned int)(__saturatef(hitLocation.y) * facetTex.texHeightD);
+        const auto tu = (unsigned int)(__saturatef(hitLocation.x) * facetTex.texWidth_precise); // saturate for rounding errors that can result for values larger than 1.0
+        const auto tv = (unsigned int)(__saturatef(hitLocation.y) * facetTex.texHeight_precise);
         unsigned int add = tu + tv * (facetTex.texWidth);
-        //printf("Hit at %lf , %lf for tex %lf , %lf\n", hitLocation.x, hitLocation.y, facetTex.texWidthD, facetTex.texHeightD);
+        //printf("Hit at %lf , %lf for tex %lf , %lf\n", hitLocation.x, hitLocation.y, facetTex.texWidth_precise, facetTex.texHeight_precise);
 
 #ifdef BOUND_CHECK
         if(facetTex.texelOffset + add >= optixLaunchParams.simConstants.nbTexel){printf("facetTex.texelOffset + add %u >= %u is out of bounds\n", facetTex.texelOffset + add, optixLaunchParams.simConstants.nbTexel);}

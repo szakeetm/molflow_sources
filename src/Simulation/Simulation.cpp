@@ -22,7 +22,7 @@ SuperStructure::~SuperStructure()
 	SAFE_DELETE(aabbTree);
 }*/
 
-Simulation::Simulation() : tMutex()
+Simulation::Simulation() : SimulationUnit()
 {
 	totalDesorbed = 0;
 
@@ -40,7 +40,7 @@ Simulation::Simulation() : tMutex()
 
     //currentParticles.resize(1, CurrentParticleStatus());// = CurrentParticleStatus();
 }
-Simulation::Simulation(Simulation&& o) noexcept : tMutex() {
+Simulation::Simulation(Simulation&& o) noexcept : SimulationUnit(o) {
 
     totalDesorbed = o.totalDesorbed;
 

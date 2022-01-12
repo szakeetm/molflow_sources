@@ -26,7 +26,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <cereal/cereal.hpp>
 #include <cereal/types/vector.hpp>
 #include <Distributions.h>
-#include "GeometryTypes.h" // SelectionGroup
+#include "Interface/GeometryTypes.h" // SelectionGroup
 
 //#include "Buffer_shared.h"
 

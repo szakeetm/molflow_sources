@@ -11,6 +11,9 @@
 
 #include "helper_math.h"
 #include "../MolflowTypes.h"
+//#include "Serializations.h"
+#include "Serializations.h"
+#include "OptixPolygon.h"
 
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/xml.hpp>
@@ -90,8 +93,11 @@ namespace flowgpu {
 
 #ifdef WITHTRIANGLES
         model->triangle_meshes.push_back(new flowgpu::TriangleMesh());
+        archive.loadBinaryValue(&model->triangle_meshes[0]->poly, sizeof(Polygon)*model->triangle_meshes[0]->poly.size(), "poly");
         archive(
-                cereal::make_nvp("poly", model->triangle_meshes[0]->poly),
+                //cereal::
+                //ar.loadBinaryValue(model->triangle_meshes[0]->poly, 0),
+                //cereal::make_nvp("poly", model->triangle_meshes[0]->poly),
                 cereal::make_nvp("facetProbabilities", model->triangle_meshes[0]->facetProbabilities),
                 cereal::make_nvp("cdfs", model->triangle_meshes[0]->cdfs),
                 //cereal::make_nvp("vertices2d", nullptr) ,
@@ -255,13 +261,13 @@ namespace flowgpu {
             size_t nbE = facet.facetProperties.texWidth * facet.facetProperties.texHeight;
             facetTex.texHeight = facet.facetProperties.texHeight;
             facetTex.texWidth = facet.facetProperties.texWidth;
-            facetTex.texHeightD = facet.facetProperties.texHeightD;
-            facetTex.texWidthD = facet.facetProperties.texWidthD;
+            facetTex.texHeight_precise = facet.facetProperties.texHeight_precise;
+            facetTex.texWidth_precise = facet.facetProperties.texWidth_precise;
 
             // Add a cutoff to allow for texture positions [0.0,1.0], opposed to [0.0,1.0[
             const float cutOff = 0.9999999f;
-            facetTex.texHeightD *= cutOff;
-            facetTex.texWidthD *= cutOff;
+            facetTex.texHeight_precise *= cutOff;
+            facetTex.texWidth_precise *= cutOff;
 
             if (facet.texelInc.size() != nbE) {
                 printf("texture inc vector has weird size: %zu should be %zu\n", facet.texelInc.size(), nbE);
@@ -363,8 +369,10 @@ namespace flowgpu {
         model->geomProperties.nbFacet = model->nbFacets_total;
         model->geomProperties.nbVertex = model->nbVertices_total;
 
+        //TODO: Remove
+        int hitOffset = 0;
         for (auto &facet : facets) {
-            model->tri_facetOffset.emplace_back(facet.facetProperties.hitOffset);
+            model->tri_facetOffset.emplace_back(hitOffset);
         }
 
 #ifdef WITHTRIANGLES

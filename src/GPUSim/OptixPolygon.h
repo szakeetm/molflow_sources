@@ -8,8 +8,8 @@
 #define MOLFLOW_PROJ_OPTIXPOLYGON_H
 
 #include <cuda_runtime.h>
-#include <cereal/cereal.hpp>
 #include <limits>
+#include <cstdint> // uint8_t
 
 typedef unsigned long long int uint64_cu;
 
@@ -147,64 +147,6 @@ namespace flowgpu {
         //AnglemapParams anglemapParams;//Incident angle map
         // ----
 
-        template<class Archive>
-        void serialize(Archive & archive)
-        {
-            archive(
-                    CEREAL_NVP(sticking),       // Sticking (0=>reflection  , 1=>absorption)   - can be overridden by time-dependent parameter
-                    CEREAL_NVP(opacity),        // opacity  (0=>transparent , 1=>opaque)
-                    CEREAL_NVP(area),          // Facet area (m^2)
-
-                    CEREAL_NVP(profileType),    // Profile type
-                    CEREAL_NVP(superIdx),       // Super structure index (Indexed from 0)
-                    CEREAL_NVP(superDest),      // Super structure destination index (Indexed from 1, 0=>current)
-                    CEREAL_NVP(teleportDest),   // Teleport destination facet id (for periodic boundary condition) (Indexed from 1, 0=>none, -1=>teleport to where it came from)
-
-                    CEREAL_NVP(countAbs),       // Count absoprtion (MC texture)
-                    CEREAL_NVP(countRefl),      // Count reflection (MC texture)
-                    CEREAL_NVP(countTrans),     // Count transparent (MC texture)
-                    CEREAL_NVP(countDirection),
-
-                    // Flags
-                    CEREAL_NVP(is2sided),     // 2 sided
-                    CEREAL_NVP(isProfile),    // Profile facet
-                    CEREAL_NVP(isTextured),   // texture
-                    CEREAL_NVP(isVolatile),   // Volatile facet (absorbtion facet which does not affect particule trajectory)
-
-                    // Geometry
-                    CEREAL_NVP(nbIndex),   // Number of index/vertex
-                    //CEREAL_NVP(sign),      // Facet vertex rotation (see Facet::DetectOrientation())
-
-                    // Plane basis (O,U,V) (See Geometry::InitializeGeometry() for info)
-                    CEREAL_NVP(O),  // Origin
-                    CEREAL_NVP(U),  // U vector
-                    CEREAL_NVP(V),  // V vector
-                    CEREAL_NVP(nU), // Normalized U
-                    CEREAL_NVP(nV), // Normalized V
-
-                    // Normal vector
-                    CEREAL_NVP(N),    // normalized
-                    CEREAL_NVP(Nuv),  // normal to (u,v) not normlized
-
-                    // Hit/Abs/Des/Density recording on 2D texture map
-                    CEREAL_NVP(texWidth),    // Rounded texture resolution (U)
-                    CEREAL_NVP(texHeight),   // Rounded texture resolution (V)
-                    CEREAL_NVP(texWidthD),   // Actual texture resolution (U)
-                    CEREAL_NVP(texHeightD),  // Actual texture resolution (V)
-
-
-                    // Molflow-specific facet parameters
-                    CEREAL_NVP(temperature),    // Facet temperature (Kelvin)                  - can be overridden by time-dependent parameter
-                    CEREAL_NVP(outgassing),           // (in unit *m^3/s)                      - can be overridden by time-dependent parameter
-
-                    CEREAL_NVP(desorbType),     // Desorption type
-                    CEREAL_NVP(desorbTypeN),    // Exponent in Cos^N desorption type
-
-                    CEREAL_NVP(countDes),       // Count desoprtion (MC texture)
-
-                    CEREAL_NVP(totalOutgassing) //total outgassing for the given facet
-            );
-        }
     };
 
     struct Texel64 {
@@ -225,14 +167,14 @@ namespace flowgpu {
     };
 
     struct FacetTexture {
-        FacetTexture() : texelOffset(0), texWidth(0), texHeight(0),texWidthD(0.0f),texHeightD(0.0f), bbMin(), bbMax(){}
+        FacetTexture() : texelOffset(0), texWidth(0), texHeight(0), texWidth_precise(0.0f), texHeight_precise(0.0f), bbMin(), bbMax(){}
 
         unsigned int texelOffset;
         // Hit/Abs/Des/Density recording on 2D texture map
         unsigned int    texWidth;    // Rounded texture resolution (U)
         unsigned int    texHeight;   // Rounded texture resolution (V)
-        float texWidthD;   // Actual texture resolution (U)
-        float texHeightD;  // Actual texture resolution (V)
+        float texWidth_precise;   // Actual texture resolution (U)
+        float texHeight_precise;  // Actual texture resolution (V)
 
         float3 bbMin;
         float3 bbMax;
@@ -459,22 +401,6 @@ namespace flowgpu {
         double3 nUx64;
         double3 nVx64;
         double3 Nx64;
-
-        template<class Archive>
-        void serialize(Archive & archive)
-        {
-            archive(
-                    nbVertices,
-                    indexOffset,
-                    O,
-                    U,
-                    V,
-                    Nuv,
-                    nU,
-                    nV,
-                    N
-            );
-        }
     };
 }
 

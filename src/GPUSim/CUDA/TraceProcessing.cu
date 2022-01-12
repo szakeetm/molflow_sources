@@ -168,14 +168,14 @@ namespace flowgpu {
 
         flowgpu::FacetTexture& facetTex = optixLaunchParams.sharedData.facetTextures[poly.texProps.textureOffset];
 
-        const auto tu = (unsigned int)(__saturatef(hitLocation.x) * facetTex.texWidthD); // saturate for rounding errors that can result for values larger than 1.0
-        const auto tv = (unsigned int)(__saturatef(hitLocation.y) * facetTex.texHeightD);
+        const auto tu = (unsigned int)(__saturatef(hitLocation.x) * facetTex.texWidth_precise); // saturate for rounding errors that can result for values larger than 1.0
+        const auto tv = (unsigned int)(__saturatef(hitLocation.y) * facetTex.texHeight_precise);
         unsigned int add = tu + tv * (facetTex.texWidth);
 
-        //printf("Hit at %lf , %lf for tex %lf , %lf\n", hitLocation.x, hitLocation.y, facetTex.texWidthD, facetTex.texHeightD);
+        //printf("Hit at %lf , %lf for tex %lf , %lf\n", hitLocation.x, hitLocation.y, facetTex.texWidth_precise, facetTex.texHeight_precise);
 #ifdef BOUND_CHECK
         if(facetTex.texelOffset + add >= optixLaunchParams.simConstants.nbTexel){
-            printf("[ABS] facetTex.texelOffset + add %u + %u>= %u is out of bounds [%u , %u] - [%d , %d] (%lf * %lf)x(%12.10lf * %12.10lf)\n", facetTex.texelOffset, add, optixLaunchParams.simConstants.nbTexel,tu,tv,facetTex.texWidth,facetTex.texHeight, hitLocation.x, facetTex.texWidthD, hitLocation.y, facetTex.texHeightD);}
+            printf("[ABS] facetTex.texelOffset + add %u + %u>= %u is out of bounds [%u , %u] - [%d , %d] (%lf * %lf)x(%12.10lf * %12.10lf)\n", facetTex.texelOffset, add, optixLaunchParams.simConstants.nbTexel,tu,tv,facetTex.texWidth,facetTex.texHeight, hitLocation.x, facetTex.texWidth_precise, hitLocation.y, facetTex.texHeight_precise);}
 #endif
         flowgpu::Texel& tex = optixLaunchParams.sharedData.texels[facetTex.texelOffset + add];
 
@@ -210,14 +210,14 @@ namespace flowgpu {
 
         flowgpu::FacetTexture& facetTex = optixLaunchParams.sharedData.facetTextures[poly.texProps.textureOffset];
 
-        const auto tu = (unsigned int)(__saturatef(hitLocation.x) * facetTex.texWidthD); // saturate for rounding errors that can result for values larger than 1.0
-        const auto tv = (unsigned int)(__saturatef(hitLocation.y) * facetTex.texHeightD);
+        const auto tu = (unsigned int)(__saturatef(hitLocation.x) * facetTex.texWidth_precise); // saturate for rounding errors that can result for values larger than 1.0
+        const auto tv = (unsigned int)(__saturatef(hitLocation.y) * facetTex.texHeight_precise);
         unsigned int add = tu + tv * (facetTex.texWidth);
 
         //printf("Pre Bounce Tex: %f = %f * %f * %f\n",ortVelocity,(optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f) ,hitData.velocity,fabsf(dot(rayDir, poly.N)));
 #ifdef BOUND_CHECK
         if(facetTex.texelOffset + add >= optixLaunchParams.simConstants.nbTexel){
-            printf("[HIT] facetTex.texelOffset + add %u + %u>= %u is out of bounds [%u , %u] - [%d , %d] (%lf * %lf)x(%12.10lf * %12.10lf)\n", facetTex.texelOffset, add, optixLaunchParams.simConstants.nbTexel,tu,tv,facetTex.texWidth,facetTex.texHeight, hitLocation.x, facetTex.texWidthD, hitLocation.y, facetTex.texHeightD);}
+            printf("[HIT] facetTex.texelOffset + add %u + %u>= %u is out of bounds [%u , %u] - [%d , %d] (%lf * %lf)x(%12.10lf * %12.10lf)\n", facetTex.texelOffset, add, optixLaunchParams.simConstants.nbTexel,tu,tv,facetTex.texWidth,facetTex.texHeight, hitLocation.x, facetTex.texWidth_precise, hitLocation.y, facetTex.texHeight_precise);}
 #endif
         flowgpu::Texel& tex = optixLaunchParams.sharedData.texels[facetTex.texelOffset + add];
 
@@ -266,8 +266,8 @@ namespace flowgpu {
 
         flowgpu::FacetTexture& facetTex = optixLaunchParams.sharedData.facetTextures[poly.texProps.textureOffset];
 
-        const unsigned int tu = (unsigned int)(__saturatef(hitLocation.x) * facetTex.texWidthD); // saturate for rounding errors that can result for values larger than 1.0
-        const unsigned int tv = (unsigned int)(__saturatef(hitLocation.y) * facetTex.texHeightD);
+        const unsigned int tu = (unsigned int)(__saturatef(hitLocation.x) * facetTex.texWidth_precise); // saturate for rounding errors that can result for values larger than 1.0
+        const unsigned int tv = (unsigned int)(__saturatef(hitLocation.y) * facetTex.texHeight_precise);
 
         const unsigned int add = tu + tv * (facetTex.texWidth);
 
@@ -275,12 +275,12 @@ namespace flowgpu {
         if(facetTex.texelOffset + add >= optixLaunchParams.simConstants.nbTexel){
             //float fixHitU = detU/__saturatef(det);
             //float fixHitV = detV/__saturatef(det);
-            const unsigned int fixTU = (unsigned int)(__saturatef(hitLocation.x) * facetTex.texWidthD);
-            const unsigned int fixTV = (unsigned int)(__saturatef(hitLocation.y) * facetTex.texHeightD);
+            const unsigned int fixTU = (unsigned int)(__saturatef(hitLocation.x) * facetTex.texWidth_precise);
+            const unsigned int fixTV = (unsigned int)(__saturatef(hitLocation.y) * facetTex.texHeight_precise);
             const unsigned int fixAdd = fixTU + fixTV * (facetTex.texWidth);
 
-            printf("[TR] facetTex.texelOffset + add %u + %u >= %u is out of bounds [%u , %u] - [%d , %d] (%lf * %lf)x(%12.10lf * %12.10lf)\n", facetTex.texelOffset, add, optixLaunchParams.simConstants.nbTexel,tu,tv,facetTex.texWidth,facetTex.texHeight, hitLocation.x, facetTex.texWidthD, hitLocation.y, facetTex.texHeightD);
-            printf("[TR] %u  [%u , %u] - [%d , %d] (%lf * %lf)x(%12.10lf * %12.10lf)\n",fixAdd , fixTU,fixTV,facetTex.texWidth,facetTex.texHeight, hitLocation.x, facetTex.texWidthD, hitLocation.y, facetTex.texHeightD);
+            printf("[TR] facetTex.texelOffset + add %u + %u >= %u is out of bounds [%u , %u] - [%d , %d] (%lf * %lf)x(%12.10lf * %12.10lf)\n", facetTex.texelOffset, add, optixLaunchParams.simConstants.nbTexel,tu,tv,facetTex.texWidth,facetTex.texHeight, hitLocation.x, facetTex.texWidth_precise, hitLocation.y, facetTex.texHeight_precise);
+            printf("[TR] %u  [%u , %u] - [%d , %d] (%lf * %lf)x(%12.10lf * %12.10lf)\n",fixAdd , fixTU,fixTV,facetTex.texWidth,facetTex.texHeight, hitLocation.x, facetTex.texWidth_precise, hitLocation.y, facetTex.texHeight_precise);
 
             const float3 b = rayOrigin - poly.O;
             float det = poly.U.x * poly.V.y - poly.U.y * poly.V.x; // TODO: Pre calculate
@@ -389,7 +389,7 @@ namespace flowgpu {
             add = (unsigned int)(__saturatef(hitLocation.y) * PROFILE_SIZE);
         }
 
-        //printf("Hit at %lf , %lf for tex %lf , %lf\n", hitLocation.x, hitLocation.y, facetTex.texWidthD, facetTex.texHeightD);
+        //printf("Hit at %lf , %lf for tex %lf , %lf\n", hitLocation.x, hitLocation.y, facetTex.texWidth_precise, facetTex.texHeight_precise);
 
 #ifdef BOUND_CHECK
         if(poly.profProps.profileOffset + add >= optixLaunchParams.simConstants.nbProfSlices){
