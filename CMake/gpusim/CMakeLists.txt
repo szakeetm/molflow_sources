@@ -21,6 +21,7 @@ set(HEADER_DIR_5 ../../include/common_cuda)
 set(CPP_DIR_1 ../../src/)
 set(CPP_DIR_2 ../../src_shared/)
 set(SIMU_DIR ../../src/Simulation)
+set(IO_DIR ../../src/IO)
 
 set(GPU_DIR_1 ../../src/GPUSim)
 set(CUDA_DIR_1 ../../src/GPUSim/CUDA)
@@ -44,6 +45,9 @@ add_executable(${PROJECT_NAME}
         ${CPP_DIR_2}/FlowMPI.h #contains templates
         ${CPP_DIR_2}/FlowMPI.cpp
         ${CPP_DIR_2}/File.cpp
+        ${CPP_DIR_1}/Initializer.cpp
+        ${CPP_DIR_1}/ParameterParser.cpp
+
         ${SIMU_DIR}/Simulation.cpp
         ${SIMU_DIR}/SimulationMC.cpp
         ${SIMU_DIR}/Particle.cpp
@@ -54,8 +58,13 @@ add_executable(${PROJECT_NAME}
         ${CPP_DIR_2}/IntersectAABB_shared.cpp #isinfacet
         ${CPP_DIR_2}/Random.cpp #TruncatedGaussian::GetGaussian --> rtnorm
 
+        ${IO_DIR}/LoaderXML.cpp
+        ${IO_DIR}/WriterXML.cpp
+        ${CPP_DIR_1}/TimeMoments.cpp
+
         ${GPU_DIR_1}/TestSimulator.cpp
         ${GPU_DIR_1}/ModelReader.cpp
+        ${GPU_DIR_1}/SimulationGPU.cpp
         ${HEADER_DIR_1}/GeometrySimu.cpp
         ${HEADER_DIR_1}/MolflowBuffer.cpp
         ${HEADER_DIR_1}/Parameter.cpp
@@ -79,7 +88,7 @@ target_link_libraries(${PROJECT_NAME}
         flowGPU
         shared_simulator
         )
-target_link_libraries(${PROJECT_NAME} truncatedgaussian)
+target_link_libraries(${PROJECT_NAME} pugixml truncatedgaussian)
 
 if(MSVC)
     set(LINK_DIR_2 ../../lib_external/win/${MY_BUILD_TYPE})

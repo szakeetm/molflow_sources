@@ -12,6 +12,8 @@
 #include <iostream>
 #include <filesystem>
 #include "ModelReader.h"
+#include "SimulationManager.h"
+#include "Initializer.h"
 
 void printUsageAndExit( const char* argv0 )
 {
@@ -225,6 +227,31 @@ int main(int argc, char **argv) {
 
     SimulationControllerGPU gpuSim;
     //flowgpu::Model* model = flowgeom::initializeModel(fileName);
+    {
+        SimulationManager simManager{};
+        simManager.interactiveMode = true;
+        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        GlobalSimuState globState{};
+
+        if(-1 < Initializer::initFromArgv(argc, argv, &simManager, model)){
+#if defined(USE_MPI)
+            MPI_Finalize();
+#endif
+            return 41;
+        }
+
+#if defined(USE_MPI)
+        MFMPI::mpi_transfer_simu();
+#endif
+
+        if(Initializer::initFromFile(&simManager, model, &globState)){
+#if defined(USE_MPI)
+            MPI_Finalize();
+#endif
+            return 42;
+        }
+    }
+
     flowgpu::Model* model = flowgpu::loadFromExternalSerialization(fileName);
             //flowgpu::Model* test = flowgeom::loadFromExternalSerialization("minimalout.xml");
     //delete model;
