@@ -64,7 +64,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInf
     set(nvcc_flags ${nvcc_flags} -DDEBUG)
 endif()
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
     MESSAGE("[NVCC] Adding _Debug flag...")
     ADD_DEFINITIONS(-D_DEBUG)
     set(nvcc_flags ${nvcc_flags} -D_DEBUG)

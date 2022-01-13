@@ -359,6 +359,9 @@ namespace flowgpu {
             polyMesh->cdfs.push_back(0);
             model->poly_meshes.push_back(polyMesh);
         }
+        else {
+            delete polyMesh;
+        }
         for (auto &polyMesh : model->poly_meshes) {
             model->nbFacets_total += polyMesh->nbFacets;
             model->nbVertices_total += polyMesh->nbVertices;
@@ -949,8 +952,8 @@ namespace flowgpu {
     }
 
     //! Load simulation data (geometry etc.) from Molflow's serialization file output
-    flowgpu::Model *loadFromSimModel(const SimulationModel& simModel) {
-        flowgpu::Model *model = new flowgpu::Model();
+    std::shared_ptr<Model> loadFromSimModel(const SimulationModel& simModel) {
+        std::shared_ptr<flowgpu::Model> model = std::make_shared<flowgpu::Model>();
         std::vector<float3> vertices3d;
         std::vector<TempFacet> facets;
 
@@ -991,7 +994,7 @@ namespace flowgpu {
                           << std::endl;
         }
 
-        parseGeomFromSerialization(model, facets, vertices3d);
+        parseGeomFromSerialization(model.get(), facets, vertices3d);
         std::cout << "#ModelReader: #TextureCells: " << model->textures.size() << std::endl;
 
         return model;

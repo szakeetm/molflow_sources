@@ -1465,27 +1465,27 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
     }
 }
 
-void Worker::SerializeForExternal(std::string outputName) {
+void Worker::SerializeForExternal(const std::string& outputName) {
     std::ofstream resultf(outputName);
 
-        cereal::XMLOutputArchive outputarchivef(resultf);
+    cereal::XMLOutputArchive outputarchivef(resultf);
 
-        outputarchivef(
-                cereal::make_nvp("gasMass",wp.gasMass),
-                cereal::make_nvp("useMaxwellDistribution",wp.useMaxwellDistribution),
-                cereal::make_nvp("lowFluxMode",ontheflyParams.lowFluxMode),
-                cereal::make_nvp("lowFluxCutoff",ontheflyParams.lowFluxCutoff)
-                /*,
-                CEREAL_NVP(ontheflyParams),
-                CEREAL_NVP(CDFs),
-                CEREAL_NVP(IDs),
-                CEREAL_NVP(parameters),
-                CEREAL_NVP(temperatures),
-                CEREAL_NVP(moments),
-                CEREAL_NVP(desorptionParameterIDs)*/
-        ); //Worker
+    outputarchivef(
+            cereal::make_nvp("gasMass",model->wp.gasMass),
+            cereal::make_nvp("useMaxwellDistribution",model->wp.useMaxwellDistribution),
+            cereal::make_nvp("lowFluxMode",model->otfParams.lowFluxMode),
+            cereal::make_nvp("lowFluxCutoff",model->otfParams.lowFluxCutoff)
+            /*,
+            CEREAL_NVP(ontheflyParams),
+            CEREAL_NVP(CDFs),
+            CEREAL_NVP(IDs),
+            CEREAL_NVP(parameters),
+            CEREAL_NVP(temperatures),
+            CEREAL_NVP(moments),
+            CEREAL_NVP(desorptionParameterIDs)*/
+    ); //Worker
 
-        geom->SerializeForExternal(outputarchivef);
+    geom->SerializeForExternal(outputarchivef);
 
     //resultf.close();
 

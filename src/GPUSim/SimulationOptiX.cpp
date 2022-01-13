@@ -1666,7 +1666,7 @@ try{
         state.cuStreams.clear();
 #endif
 
-        for (int meshID = 0; meshID < model->triangle_meshes.size(); meshID++) {
+        for (int meshID = 0; meshID < tri_memory.vertexBuffer.size(); meshID++) {
             tri_memory.vertexBuffer[meshID].free();
             tri_memory.texcoordBuffer[meshID].free();
             tri_memory.indexBuffer[meshID].free();
@@ -1676,7 +1676,7 @@ try{
             tri_memory.facprobBuffer[meshID].free();
         }
 
-        for (int meshID = 0; meshID < model->poly_meshes.size(); meshID++) {
+        for (int meshID = 0; meshID < poly_memory.aabbBuffer.size(); meshID++) {
             if (!poly_memory.aabbBuffer.empty() && poly_memory.aabbBuffer.size() > meshID)
                 poly_memory.aabbBuffer[meshID].free();
             if (!poly_memory.vertex2Buffer.empty() && poly_memory.vertex2Buffer.size() > meshID)

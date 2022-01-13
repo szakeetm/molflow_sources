@@ -69,7 +69,6 @@ endif(NOT MSVC)
 #######################################
 
 set(SRC_FILES
-        ${CPP_DIR_2}/SimulationManager.cpp
         ${CPP_DIR_2}/ShMemory.cpp
         ${CPP_DIR_2}/Process.cpp
 
@@ -104,7 +103,8 @@ set(SRC_FILES
         ${CPP_DIR_2}/IntersectAABB_shared.cpp
         ${CPP_DIR_2}/Polygon.cpp
         ${CPP_DIR_2}/Random.cpp
-        ../../src_shared/RayTracing/Ray.cpp)
+        ../../src_shared/RayTracing/Ray.cpp
+        )
 
 # set the path to the library folder
 # set the path to the library folder
@@ -121,6 +121,7 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
+target_link_libraries(${PROJECT_NAME} PUBLIC flowGPU cudaKernel)
 target_link_libraries(${PROJECT_NAME} PUBLIC shared_simulator)
 #target_link_libraries(${PROJECT_NAME} PUBLIC molflowSub)
 target_link_libraries(${PROJECT_NAME} PRIVATE pugixml truncatedgaussian)

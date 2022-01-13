@@ -17,6 +17,7 @@ set(HEADER_DIR_2 ../../src_shared)
 #set(HEADER_DIR_4 ../../src_shared/GLApp/GLChart)
 #set(HEADER_DIR_5 ../../_molflow/molflow_project/lib/include/)
 set(HEADER_DIR_6 ../../include)
+set(GPU_DIR_1 ../../src/GPUSim)
 
 IF (WIN32)
     # set stuff for windows

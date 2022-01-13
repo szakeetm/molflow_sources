@@ -14,6 +14,8 @@
 #include "ModelReader.h"
 #include "SimulationManager.h"
 #include "Initializer.h"
+#include "IO/WriterXML.h"
+#include "fmt/core.h"
 
 void printUsageAndExit( const char* argv0 )
 {
@@ -141,6 +143,7 @@ public:
     std::vector<char *> vec;
 };
 
+// TODO: model->tri_facetOffset all 0
 int main(int argc, char **argv) {
 
 #ifdef WITHTRIANGLES
@@ -257,13 +260,16 @@ int main(int argc, char **argv) {
     }
 
     SimulationControllerGPU gpuSim;
-    flowgpu::Model* model;
+    std::shared_ptr<flowgpu::Model> model;
+
+    // for export
+    GlobalSimuState globState{};
+    std::shared_ptr<SimulationModel> simModel = std::make_shared<SimulationModel>();
+
     //flowgpu::Model* model = flowgeom::initializeModel(fileName);
     {
         SimulationManager simManager{};
         simManager.interactiveMode = true;
-        std::shared_ptr<SimulationModel> simModel = std::make_shared<SimulationModel>();
-        GlobalSimuState globState{};
 
         std::vector<std::string> argv = {"tester", "--reset", "-t", "60",
                                          "--file", fileName,
@@ -312,7 +318,7 @@ int main(int argc, char **argv) {
     model->parametersGlobal = simParams;
 
     std::cout << "#GPUTestsuite: Loading simulation with kernel size: " << launchSize << std::endl;
-    gpuSim.LoadSimulation(model, launchSize);
+    gpuSim.LoadSimulation(model.get(), launchSize);
 
     std::cout << "#GPUTestsuite: Starting simulation with " << launchSize << " threads per launch => " << nbLoops << " runs "<<std::endl;
 
@@ -398,6 +404,25 @@ int main(int argc, char **argv) {
     //std::cout << "--         Avg. Rays per second: " << raysPerSecondSum/(nbLoops/printPerNRuns) << " MRay/s ---" << std::endl;
     std::cout << "--         Max  Rays per second: " << raysPerSecondMax << " MRay/s ---" << std::endl;
 
+    // Export results
+    // 1st convert from GPU types to CPU types
+    // 2nd save with XML
+    gpuSim.ConvertSimulationData(globState);
+    FlowIO::WriterXML writer;
+    pugi::xml_document newDoc;
+    std::string fullOutFile = "./testout.xml";
+    std::filesystem::remove(fullOutFile);
+    newDoc.load_file(fullOutFile.c_str());
+    writer.SaveGeometry(newDoc, simModel);
+    if (!newDoc.save_file(fullOutFile.c_str())) {
+        fmt::print(stderr,"Error writing XML file {}\n", fullOutFile);
+        return 42;
+    }
+    writer.SaveSimulationState(newDoc, simModel, globState);
+    if (!newDoc.save_file(fullOutFile.c_str())) {
+        fmt::print(stderr,"Error writing XML file {}\n", fullOutFile);
+        return 42;
+    }
     /*std::chrono::duration<double,std::milli> elapsed = finish_total - start_total;
     std::cout << "-- Total Elapsed Time: " << elapsed.count() << " ms ---" << std::endl;
     double raysPerSecond = (double)(gpuSim.GetSimulationData())/(elapsed.count()/1000);

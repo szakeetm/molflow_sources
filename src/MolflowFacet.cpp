@@ -1475,19 +1475,19 @@ void InterfaceFacet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchi
 	
 }
 
-void Facet::SerializeData(std::vector<double>& outgMapVector, std::vector<size_t>& angleMapVector, std::vector<double>& textIncVector) const {
+void InterfaceFacet::SerializeData(std::vector<double>& outgMapVector, std::vector<size_t>& angleMapVector, std::vector<double>& textIncVector) const {
 
-    outgMapVector.resize(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0);
-    memcpy(outgMapVector.data(), outgassingMap.data(), sizeof(double)*(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0));
+    outgMapVector.resize(sh.useOutgassingFile ? ogMap.outgassingMapWidth*ogMap.outgassingMapHeight : 0);
+    memcpy(outgMapVector.data(), ogMap.outgassingMap.data(), sizeof(double)*(sh.useOutgassingFile ? ogMap.outgassingMapWidth*ogMap.outgassingMapHeight : 0));
 
     size_t mapSize = sh.anglemapParams.GetMapSize();
     angleMapVector.resize(mapSize);
-    memcpy(angleMapVector.data(), angleMapCache, sh.anglemapParams.GetRecordedDataSize());
+    std::memcpy(angleMapVector.data(), angleMapCache.data(), sh.anglemapParams.GetRecordedDataSize());
 
     // Add surface elements area (reciprocal)
     if (sh.isTextured) {
         textIncVector.resize(sh.texHeight*sh.texWidth);
-        if (cellPropertiesIds) {
+        if (!cellPropertiesIds.empty()) {
             size_t add = 0;
             for (size_t j = 0; j < sh.texHeight; j++) {
                 for (size_t i = 0; i < sh.texWidth; i++) {

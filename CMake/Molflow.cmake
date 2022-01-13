@@ -104,8 +104,8 @@ if(NOT MSVC)
         #"$<$<CONFIG:DEBUG>:-ggdb3>"
         "$<$<AND:$<CONFIG:DEBUG>,$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>>:-ggdb3>"
         "$<$<CONFIG:RELWITHDEBINFO>:-O2>"
-        "$<$<CONFIG:RELWITHDEBINFO>:-ggdb3>"
-        "$<$<CONFIG:RELWITHDEBINFO>:-g>"
+            "$<$<AND:$<CONFIG:RELWITHDEBINFO>,$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>>:-ggdb3>"
+            #"$<$<CONFIG:RELWITHDEBINFO>:-g>"
     )
 else()
     #/WX

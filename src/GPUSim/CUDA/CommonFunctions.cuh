@@ -15,6 +15,8 @@
 #include <cooperative_groups.h>
 #include <curand_kernel.h>
 
+//extern "C" __constant__ flowgpu::LaunchParams optixLaunchParams;
+
 #define RAY_FLAGS OPTIX_RAY_FLAG_NONE \
                     | OPTIX_RAY_FLAG_DISABLE_ANYHIT \
                     | OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES

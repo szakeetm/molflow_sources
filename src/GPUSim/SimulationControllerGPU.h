@@ -65,6 +65,8 @@ public:
 
     bool hasEnded{false};
     bool endCalled{false};
+
+    unsigned long long int ConvertSimulationData(GlobalSimuState &gState);
 };
 
 
