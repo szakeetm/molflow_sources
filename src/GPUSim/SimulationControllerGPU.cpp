@@ -72,7 +72,7 @@ uint64_t SimulationControllerGPU::RunSimulation() {
     // generate new numbers whenever necessary, recursion = TraceProcessing only, poly checks only for ray generation with polygons
     if(figures.runCount%(model->parametersGlobal.cyclesRNG)==0){
 #ifdef DEBUG
-        std::cout << "#flowgpu: generating random numbers at run #" << runCount << std::endl;
+        std::cout << "#flowgpu: generating random numbers at run #" << figures.runCount << std::endl;
 #endif
         optixHandle->generateRand();
     }

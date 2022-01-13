@@ -319,8 +319,9 @@ namespace flowgpu {
 
         for (auto &facet : facets) {
             polyMesh->poly[i++].indexOffset = indexOffset;
-            indexOffset += facet.indices.size();
 
+            assert(facet.indices.size() > 0);
+            indexOffset += facet.indices.size();
             for (auto ind : facet.indices) {
                 polyMesh->indices.push_back(ind);
             }
@@ -934,6 +935,55 @@ namespace flowgpu {
         std::cout << "#ModelReader: Maxwell: " << model->parametersGlobal.useMaxwellDistribution << std::endl;
         std::cout << "#ModelReader: Name: " << model->geomProperties.name << std::endl;
         std::cout << "#ModelReader: #Vertex: " << vertices3d.size() << std::endl;
+        std::cout << "#ModelReader: #Facets: " << model->geomProperties.nbFacet << std::endl;
+        for (int facInd = 0; facInd < facets.size(); ++facInd) {
+            if (!facets[facInd].texelInc.empty())
+                std::cout << "#ModelReader: Facet#" << facInd << " #Texels: " << facets[facInd].texelInc.size()
+                          << std::endl;
+        }
+
+        parseGeomFromSerialization(model, facets, vertices3d);
+        std::cout << "#ModelReader: #TextureCells: " << model->textures.size() << std::endl;
+
+        return model;
+    }
+
+    //! Load simulation data (geometry etc.) from Molflow's serialization file output
+    flowgpu::Model *loadFromSimModel(const SimulationModel& simModel) {
+        flowgpu::Model *model = new flowgpu::Model();
+        std::vector<float3> vertices3d;
+        std::vector<TempFacet> facets;
+
+        //Worker params
+        //inputarchive(cereal::make_nvp("wp",model->parametersGlobal));
+        model->parametersGlobal.gasMass = simModel.wp.gasMass;
+        model->parametersGlobal.useMaxwellDistribution = simModel.wp.useMaxwellDistribution;
+        model->geomProperties = simModel.sh;
+        vertices3d.reserve(simModel.vertices3.size());
+        for(auto& vert : simModel.vertices3) {
+            vertices3d.emplace_back(make_float3(vert.x, vert.y, vert.z));
+        }
+
+        size_t countInd = 0;
+        facets.resize(simModel.facets.size());
+        int facInd = 0;
+        for(auto& fac : simModel.facets) {
+            // Create facet and edit by tmp reference
+            auto& tmp = facets[facInd++];
+            tmp.facetProperties = fac->sh;
+            tmp.texelInc = fac->textureCellIncrements;
+            tmp.indices = fac->indices;
+            countInd += tmp.indices.size();
+            tmp.vertices2 = fac->vertices2;
+            tmp.angleMapPDF = fac->angleMap.pdf;
+            tmp.outgassingMap = fac->ogMap.outgassingMap;
+        }
+
+        std::cout << "#ModelReader: Gas mass: " << model->parametersGlobal.gasMass << std::endl;
+        std::cout << "#ModelReader: Maxwell: " << model->parametersGlobal.useMaxwellDistribution << std::endl;
+        std::cout << "#ModelReader: Name: " << model->geomProperties.name << std::endl;
+        std::cout << "#ModelReader: #Vertex: " << vertices3d.size() << std::endl;
+        std::cout << "#ModelReader: #Indices: " << countInd << std::endl;
         std::cout << "#ModelReader: #Facets: " << model->geomProperties.nbFacet << std::endl;
         for (int facInd = 0; facInd < facets.size(); ++facInd) {
             if (!facets[facInd].texelInc.empty())

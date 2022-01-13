@@ -510,6 +510,7 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
 #endif
         hitData.inSystem = NEW_PARTICLE;
         hitData.orientationRatio = 1.0f;
+
         hitData.rndOrigin[0] = -999999.9;
         hitData.rndOrigin[1] = -999999.9;
         hitData.rndDirection[0] = -999999.9;
@@ -585,17 +586,6 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
         }
 #endif
         switch (hitData.inSystem) {
-            case TRANSPARENT_HIT: {
-                initMoleculeTransparentHit(bufferIndex, hitData, rayDir, rayOrigin);
-                break;
-            }
-            case ACTIVE_PARTICLE: {
-                /* if molecule is still in the system (bounce etc.)
-                 * load data from thread buffer
-                 */
-                initMoleculeInSystem(bufferIndex, hitData, rayDir, rayOrigin);
-                break;
-            }
             case NEW_PARTICLE: {
 /*#ifdef WITHDESORPEXIT
                 if(hitData.hasToTerminate==1){
@@ -607,6 +597,17 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
                  * start from a source
                  */
                 initMoleculeFromStart(bufferIndex, hitData, rayDir, rayOrigin);
+                break;
+            }
+            case TRANSPARENT_HIT: {
+                initMoleculeTransparentHit(bufferIndex, hitData, rayDir, rayOrigin);
+                break;
+            }
+            case ACTIVE_PARTICLE: {
+                /* if molecule is still in the system (bounce etc.)
+                 * load data from thread buffer
+                 */
+                initMoleculeInSystem(bufferIndex, hitData, rayDir, rayOrigin);
                 break;
             }
             case SELF_INTERSECTION: {

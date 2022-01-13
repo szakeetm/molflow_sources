@@ -110,6 +110,37 @@ void parseDesLimits( const char* arg, std::list<size_t>& limits )
     throw;
 }
 
+// helper class for flexible argument initialization
+class CharPVec {
+public:
+    CharPVec() {};
+
+    CharPVec(int size) : vec(size, nullptr) {};
+
+    CharPVec(const std::vector<std::string> &svec) : vec(svec.size(), nullptr) {
+        cpy(svec);
+    };
+
+    ~CharPVec() { clear(); };
+
+    char **data() { return vec.data(); }
+
+    void cpy(const std::vector<std::string> &svec) {
+        if (vec.size() != svec.size()) vec.resize(svec.size());
+        for (int i = 0; i < vec.size(); ++i) {
+            vec[i] = new char[svec[i].size() + 1];
+            std::snprintf(vec[i], std::size(svec[i])+1, "%s", svec[i].c_str());
+        }
+    }
+
+    void clear() {
+        for (auto &c: vec) delete[] c;
+    }
+
+    // member
+    std::vector<char *> vec;
+};
+
 int main(int argc, char **argv) {
 
 #ifdef WITHTRIANGLES
@@ -226,14 +257,24 @@ int main(int argc, char **argv) {
     }
 
     SimulationControllerGPU gpuSim;
+    flowgpu::Model* model;
     //flowgpu::Model* model = flowgeom::initializeModel(fileName);
     {
         SimulationManager simManager{};
         simManager.interactiveMode = true;
-        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        std::shared_ptr<SimulationModel> simModel = std::make_shared<SimulationModel>();
         GlobalSimuState globState{};
 
-        if(-1 < Initializer::initFromArgv(argc, argv, &simManager, model)){
+        std::vector<std::string> argv = {"tester", "--reset", "-t", "60",
+                                         "--file", fileName,
+                                         "--outputPath", fileName+"out.xml"};
+
+        CharPVec argc_v(argv);
+        char **args = argc_v.data();
+       /* Initializer::initFromArgv(argv.size(), (args), &simManager, model);
+        Initializer::initFromFile(&simManager, model, &globState);
+*/
+        if(-1 < Initializer::initFromArgv(argv.size(), (args), &simManager, simModel)){
 #if defined(USE_MPI)
             MPI_Finalize();
 #endif
@@ -244,16 +285,18 @@ int main(int argc, char **argv) {
         MFMPI::mpi_transfer_simu();
 #endif
 
-        if(Initializer::initFromFile(&simManager, model, &globState)){
+        if(Initializer::initFromFile(&simManager, simModel, &globState)){
 #if defined(USE_MPI)
             MPI_Finalize();
 #endif
             return 42;
         }
-    }
 
-    flowgpu::Model* model = flowgpu::loadFromExternalSerialization(fileName);
-            //flowgpu::Model* test = flowgeom::loadFromExternalSerialization("minimalout.xml");
+
+        model = flowgpu::loadFromSimModel(*simModel.get());
+    }
+    //flowgpu::Model* model = flowgpu::loadFromExternalSerialization(fileName);
+    //flowgpu::Model* test = flowgeom::loadFromExternalSerialization("minimalout.xml");
     //delete model;
     //model = test;
 
