@@ -898,7 +898,6 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 progressDlg->SetMessage("Loading interface settings...");
 
                 xml_node interfNode = rootNode.child("Interface");
-                FlowIO::LoaderInterfaceXML::LoadInterface(interfNode, mApp);
                 userMoments = loader.uInput.userMoments;
                 uInput = loader.uInput;
                 InsertParametersBeforeCatalog(loader.uInput.parameters);
@@ -908,6 +907,9 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 // Move actual geom to interface geom
                 geom->InitInterfaceVertices(model->vertices3);
                 geom->InitInterfaceFacets(model->facets, this);
+
+                // Needs to be called after Interface Facets are loaded, as these are used e.g. when updating the ProfilePlotter state
+                FlowIO::LoaderInterfaceXML::LoadInterface(interfNode, mApp);
 
                 if (loader.uInput.facetViewSettings.size() == geom->GetNbFacet()) {
                     for (size_t facetId = 0; facetId < geom->GetNbFacet(); facetId++) {
