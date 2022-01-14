@@ -468,19 +468,28 @@ void SimulationControllerGPU::IncreaseGlobalCounters(HostData* tempData){
  * @return 1=could not load GPU Sim, 0=successfully loaded
  */
 unsigned long long int SimulationControllerGPU::ConvertSimulationData(GlobalSimuState &gState) {
+    // global
+
     //facet hit counters + miss
     for(unsigned int facIndex = 0; facIndex < model->nbFacets_total; facIndex++) {
         unsigned int facParent = model->triangle_meshes[0]->poly[facIndex].parentIndex;
         auto& facetHits = gState.facetStates[facParent].momentResults[0].hits;
         auto& gCounter = globalCounter.facetHitCounters[facIndex];
-        facetHits.nbMCHit = gCounter.nbMCHit;
-        facetHits.nbDesorbed = gCounter.nbDesorbed;
-        facetHits.nbAbsEquiv = gCounter.nbAbsEquiv;
 
-        facetHits.nbHitEquiv = gCounter.nbHitEquiv;
-        facetHits.sum_v_ort = gCounter.sum_v_ort;
-        facetHits.sum_1_per_velocity = gCounter.sum_1_per_velocity;
-        facetHits.sum_1_per_ort_velocity = gCounter.sum_1_per_ort_velocity;
+        // increment global states
+        gState.globalHits.globalHits.nbMCHit += gCounter.nbMCHit;
+        gState.globalHits.globalHits.nbDesorbed += gCounter.nbDesorbed;
+        gState.globalHits.globalHits.nbAbsEquiv += gCounter.nbAbsEquiv;
+        gState.globalHits.globalHits.nbHitEquiv += gCounter.nbHitEquiv;
+
+        facetHits.nbMCHit += gCounter.nbMCHit;
+        facetHits.nbDesorbed += gCounter.nbDesorbed;
+        facetHits.nbAbsEquiv += gCounter.nbAbsEquiv;
+        facetHits.nbHitEquiv += gCounter.nbHitEquiv;
+
+        facetHits.sum_v_ort += gCounter.sum_v_ort;
+        facetHits.sum_1_per_velocity += gCounter.sum_1_per_velocity;
+        facetHits.sum_1_per_ort_velocity += gCounter.sum_1_per_ort_velocity;
     }
 
     if(!globalCounter.leakCounter.empty())

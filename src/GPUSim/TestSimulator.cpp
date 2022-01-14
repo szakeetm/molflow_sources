@@ -412,12 +412,7 @@ int main(int argc, char **argv) {
     pugi::xml_document newDoc;
     std::string fullOutFile = "./testout.xml";
     std::filesystem::remove(fullOutFile);
-    newDoc.load_file(fullOutFile.c_str());
     writer.SaveGeometry(newDoc, simModel);
-    if (!newDoc.save_file(fullOutFile.c_str())) {
-        fmt::print(stderr,"Error writing XML file {}\n", fullOutFile);
-        return 42;
-    }
     writer.SaveSimulationState(newDoc, simModel, globState);
     if (!newDoc.save_file(fullOutFile.c_str())) {
         fmt::print(stderr,"Error writing XML file {}\n", fullOutFile);

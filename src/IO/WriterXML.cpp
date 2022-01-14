@@ -39,6 +39,7 @@ xml_node WriterXML::GetRootNode(xml_document &saveDoc) {
         rootNode = saveDoc.root();
     } else {
         if(update) {
+            rootNode = saveDoc.document_element();
             rootNode = saveDoc.child("SimulationEnvironment");
         }
         if(!rootNode) {
@@ -48,7 +49,8 @@ xml_node WriterXML::GetRootNode(xml_document &saveDoc) {
                 rootNode.append_attribute("version") = appVersionId;
             }
             else
-                rootNode = saveDoc.child("SimulationEnvironment");
+                rootNode = saveDoc.document_element();
+
 
         }
     }
