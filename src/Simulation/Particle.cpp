@@ -150,7 +150,7 @@ void Particle::PerformTeleport(SubprocessFacet *iFacet) {
     if (/*iFacet->direction && */iFacet->sh.countDirection)
         RecordDirectionVector(iFacet, momentIndex);
     ProfileFacet(iFacet, momentIndex, true, 2.0, 2.0);
-    if(particleId == 0) LogHit(iFacet);
+    LogHit(iFacet);
     if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
 
     // Relaunch particle from new facet
@@ -710,7 +710,7 @@ bool Particle::StartFromSource(Ray& ray) {
                          (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
     //Desorption doesn't contribute to angular profiles, nor to angle maps
     ProfileFacet(src, momentIndex, false, 2.0, 1.0); //was 2.0, 1.0
-    if(particleId == 0) LogHit(src);
+    LogHit(src);
     if (/*src->texture && */src->sh.countDes)
         RecordHitOnTexture(src, momentIndex, true, 2.0, 1.0); //was 2.0, 1.0
     //if (src->direction && src->sh.countDirection) RecordDirectionVector(src, particle.time);
@@ -971,7 +971,7 @@ bool Particle::StartFromSource() {
                          (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
     //Desorption doesn't contribute to angular profiles, nor to angle maps
     ProfileFacet(src, momentIndex, false, 2.0, 1.0); //was 2.0, 1.0
-    if(particleId == 0) LogHit(src);
+    LogHit(src);
     if (/*src->texture && */src->sh.countDes)
         RecordHitOnTexture(src, momentIndex, true, 2.0, 1.0); //was 2.0, 1.0
     //if (src->direction && src->sh.countDirection) RecordDirectionVector(src, particle.time);
@@ -1015,7 +1015,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
             // Count this hit as a transparent pass
             if (particleId == 0)RecordHit(HIT_TRANS);
         }
-        if(particleId == 0) LogHit(iFacet);
+        LogHit(iFacet);
 
         ProfileFacet(iFacet, momentIndex, true, 2.0, 2.0);
         if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
@@ -1038,7 +1038,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
 
             IncreaseFacetCounter(iFacet, momentIndex, 0, 0, 1, 0, 0);
             iFacet->isReady = false;
-            if(particleId == 0) LogHit(iFacet);
+            LogHit(iFacet);
             ProfileFacet(iFacet, momentIndex, true, 2.0, 1.0);
             if (/*iFacet->texture && */iFacet->sh.countAbs)
                 RecordHitOnTexture(iFacet, momentIndex, true, 2.0, 1.0);
@@ -1077,7 +1077,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
         RecordHitOnTexture(iFacet, momentIndex, true, 1.0, 1.0);
     if (/*iFacet->direction &&*/ iFacet->sh.countDirection)
         RecordDirectionVector(iFacet, momentIndex);
-    if(particleId == 0) LogHit(iFacet);
+    LogHit(iFacet);
     ProfileFacet(iFacet, momentIndex, true, 1.0, 1.0);
     if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
 
@@ -1175,7 +1175,7 @@ void Particle::RecordAbsorb(SubprocessFacet *iFacet) {
             velocity * std::abs(Dot(particle.direction, iFacet->sh.N));
     IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 1, 2.0 / ortVelocity,
                          (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
-    if(particleId == 0) LogHit(iFacet);
+    LogHit(iFacet);
     ProfileFacet(iFacet, momentIndex, true, 2.0, 1.0); //was 2.0, 1.0
     if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
     if (/*iFacet->texture &&*/ iFacet->sh.countAbs)
@@ -1492,7 +1492,7 @@ void Particle::RegisterTransparentPass(SubprocessFacet *facet) {
     if (/*facet->direction &&*/ facet->sh.countDirection) {
         RecordDirectionVector(facet, momentIndex);
     }
-    if(particleId == 0) LogHit(facet);
+    LogHit(facet);
     ProfileFacet(facet, momentIndex,
                  true, 2.0, 2.0);
     if (facet->sh.anglemapParams.record) RecordAngleMap(facet);
