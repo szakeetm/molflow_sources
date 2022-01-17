@@ -722,6 +722,7 @@ int SimulationModel::PrepareToRun() {
         //wp.latestMoment = (tdParams.moments.end()-1)->first + (tdParams.moments.end()-1)->second / 2.0;
 
     std::set<size_t> desorptionParameterIDs;
+    std::vector<double> temperatureList;
 
     //Check and calculate various facet properties for time dependent simulations (CDF, ID )
     for (size_t i = 0; i < sh.nbFacet; i++) {
@@ -755,7 +756,6 @@ int SimulationModel::PrepareToRun() {
         }
 
         // Generate speed distribution functions
-        std::list<double> temperatureList;
         int id = CDFGeneration::GetCDFId(temperatureList, facet.sh.temperature);
         if (id >= 0)
             facet.sh.CDFid = id; //we've already generated a CDF for this temperature

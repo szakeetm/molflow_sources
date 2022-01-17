@@ -105,7 +105,7 @@ Worker::Worker() : simManager() {
 
     model = std::make_shared<SimulationModel>();
     //Molflow specific
-    temperatures = std::list<double>();
+    temperatures = std::vector<double>();
     desorptionParameterIDs = std::set<size_t>();
     moments = std::vector<Moment>();
     userMoments = std::vector<UserMoment>(); //strings describing moments, to be parsed
@@ -1698,7 +1698,7 @@ void Worker::PrepareToRun() {
     Geometry *g = GetGeometry();
     //Generate integrated desorption functions
 
-    temperatures = std::list<double>();
+    temperatures = std::vector<double>();
     desorptionParameterIDs = std::set<size_t>();
     CDFs = std::vector<std::vector<CDF_p>>();
     IDs = std::vector<IntegratedDesorption>();
