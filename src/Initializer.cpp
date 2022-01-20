@@ -433,8 +433,14 @@ int Initializer::initSimModel(std::shared_ptr<SimulationModel> model) {
         sFac->textureCellIncrements = textIncVector;
 
         //Some initialization
-        if (!sFac->InitializeOnLoad(facIdx, model->tdParams.moments.size())) return false;
-
+        try {
+            if (!sFac->InitializeOnLoad(facIdx, model->tdParams.moments.size())) return false;
+        }
+        catch (const std::exception& err){
+            Log::console_error("Failed to initialize facet (F#%d)\n%s\n", facIdx + 1, err.what());
+            model->m.unlock();
+            return 1;
+        }
         hasVolatile |= sFac->sh.isVolatile;
 
         if ((sFac->sh.superDest || sFac->sh.isVolatile) &&

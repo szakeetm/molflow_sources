@@ -1306,12 +1306,14 @@ bool Worker::InterfaceGeomToSimModel() {
             size_t mapSize = facet->sh.anglemapParams.GetMapSize();
             std::vector<size_t> angleMapVector(mapSize);
             if (facet->angleMapCache.size() != facet->sh.anglemapParams.GetRecordedMapSize()) {
-                std::cerr << "Recorded Data Size is different from actual size: " << facet->angleMapCache.size()
-                          << " / " << facet->sh.anglemapParams.GetRecordedMapSize() << std::endl;
-                return false;
-            }
-            memcpy(angleMapVector.data(), facet->angleMapCache.data(), facet->sh.anglemapParams.GetRecordedDataSize());
-
+                    auto errString = fmt::format("Recorded Data Size is different from actual size: {} / {}\n",
+                                                 facet->angleMapCache.size(),
+                                                 facet->sh.anglemapParams.GetRecordedMapSize());
+                    fmt::print(stderr, errString);
+                    throw std::runtime_error(errString);
+                }
+            memcpy(angleMapVector.data(), facet->angleMapCache.data(),
+                   facet->sh.anglemapParams.GetRecordedDataSize());
             std::vector<double> textIncVector;
 
             // Add surface elements area (reciprocal)
@@ -1359,8 +1361,14 @@ bool Worker::InterfaceGeomToSimModel() {
         }
 
         //Some initialization
-        if (!sFac.InitializeOnLoad(facIdx, model->tdParams.moments.size()))
-            return false;
+        try {
+            if (!sFac.InitializeOnLoad(facIdx, model->tdParams.moments.size()))
+                return false;
+        }
+        catch (const std::exception& err){
+            //Log::console_error("Failed to initialize facet (F#%d)\n", facIdx + 1);
+            throw;
+        }
 
         hasVolatile |= sFac.sh.isVolatile;
 
@@ -1391,49 +1399,62 @@ bool Worker::InterfaceGeomToSimModel() {
 void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
     if(!model->facets.empty() || GetGeometry()->GetNbFacet() > 0) {
 
-        auto *progressDlg = new GLProgress("Performing preliminary calculations on geometry...",
+        GLProgress progressDlg("Performing preliminary calculations on geometry...",
                                            "Passing Geometry to workers");
-        progressDlg->SetVisible(true);
-        progressDlg->SetProgress(0.0);
+        progressDlg.SetVisible(true);
+        progressDlg.SetProgress(0.0);
 
         if (!sendOnly) {
             if (model->otfParams.nbProcess == 0 && !geom->IsLoaded()) {
-                progressDlg->SetVisible(false);
-                SAFE_DELETE(progressDlg);
+                progressDlg.SetVisible(false);
+                //SAFE_DELETE(progressDlg);
                 return;
             }
 
             try {
-                progressDlg->SetMessage("Do preliminary calculations...");
+                progressDlg.SetMessage("Do preliminary calculations...");
                 PrepareToRun();
             }
             catch (const std::exception &e) {
                 GLMessageBox::Display(e.what(), "Error (Full reload)", GLDLG_OK, GLDLG_ICONWARNING);
-                progressDlg->SetVisible(false);
-                SAFE_DELETE(progressDlg);
+                progressDlg.SetVisible(false);
+                //SAFE_DELETE(progressDlg);
                 std::stringstream err;
                 err << "Error (Full reload) " << e.what();
                 throw std::runtime_error(err.str());
             }
         }
 
-        progressDlg->SetMessage("Reloading structures for simulation unit...");
-        ReloadSim(sendOnly, progressDlg);
+        progressDlg.SetMessage("Reloading structures for simulation unit...");
+        try{
+            ReloadSim(sendOnly, &progressDlg);
+        }
+        catch (const std::exception &e) {
+            progressDlg.SetVisible(false);
+            //SAFE_DELETE(progressDlg);
+            throw;
+            /*GLMessageBox::Display(e.what(), "Error (Sim reload)", GLDLG_OK, GLDLG_ICONWARNING);
+            progressDlg->SetVisible(false);
+            SAFE_DELETE(progressDlg);
+            std::stringstream err;
+            err << "Error (Sim reload) " << e.what();
+            throw std::runtime_error(err.str());*/
+        }
         model->CalcTotalOutgassing(); // needs IDs
 
         if (!sendOnly) {
             try {
-                progressDlg->SetMessage("Asking subprocesses to clear geometry...");
+                progressDlg.SetMessage("Asking subprocesses to clear geometry...");
                 simManager.ResetSimulations();
-                progressDlg->SetMessage("Clearing Logger...");
+                progressDlg.SetMessage("Clearing Logger...");
                 particleLog.clear();
-                progressDlg->SetMessage("Creating hit buffer...");
+                progressDlg.SetMessage("Creating hit buffer...");
                 simManager.ResetHits();
             }
             catch (const std::exception &e) {
                 GLMessageBox::Display(e.what(), "Error (Full reload)", GLDLG_OK, GLDLG_ICONWARNING);
-                progressDlg->SetVisible(false);
-                SAFE_DELETE(progressDlg);
+                progressDlg.SetVisible(false);
+                //SAFE_DELETE(progressDlg);
                 std::stringstream err;
                 err << "Error (Full reload) " << e.what();
                 throw std::runtime_error(err.str());
@@ -1444,8 +1465,8 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
                     particleLog.resize(model->otfParams.logLimit);
                 }
                 catch (...) {
-                    progressDlg->SetVisible(false);
-                    SAFE_DELETE(progressDlg);
+                    progressDlg.SetVisible(false);
+                    //SAFE_DELETE(progressDlg);
                     throw Error(
                             "Failed to create 'Particle Log' vector.\nMost probably out of memory.\nReduce number of logged particles in Particle Logger.");
                 }
@@ -1460,10 +1481,10 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
             throw std::runtime_error(errString);
         }*/
 
-        progressDlg->SetMessage("Finishing reload...");
+        progressDlg.SetMessage("Finishing reload...");
         needsReload = false;
-        progressDlg->SetVisible(false);
-        SAFE_DELETE(progressDlg);
+        progressDlg.SetVisible(false);
+        //SAFE_DELETE(progressDlg);
     }
 }
 
@@ -1769,7 +1790,7 @@ void Worker::PrepareToRun() {
 
         //First worker::update will do it
         if (f->sh.anglemapParams.record) {
-            if (!f->sh.anglemapParams.hasRecorded) {
+            if (!f->sh.anglemapParams.hasRecorded || f->angleMapCache.size() != f->sh.anglemapParams.GetMapSize()) {
                 //Initialize angle map and Set values to zero
                 try {
                     f->angleMapCache.resize(f->sh.anglemapParams.GetMapSize(), 0);

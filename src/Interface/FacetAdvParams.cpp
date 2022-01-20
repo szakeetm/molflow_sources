@@ -1427,7 +1427,7 @@ bool FacetAdvParams::Apply() {
 
 	if (angleMapRecordCheckbox->GetState() == 0 || angleMapThetaLimitText->GetText() == "...") doAngleMapThetaLimit = false;
 	else if (angleMapThetaLimitText->GetNumber(&angleMapThetaLimit)) {
-		if (!(angleMapThetaLimit >= 0 && angleMapThetaLimit<=PI/2.0)) {
+		if (!(angleMapThetaLimit >= 0 && angleMapThetaLimit <= M_PI_2)) {
 			GLMessageBox::Display("Angle map theta limit must be between 0 and PI/2", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return false;
 		}
