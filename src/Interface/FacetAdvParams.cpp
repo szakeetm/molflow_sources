@@ -17,7 +17,8 @@ GNU General Public License for more details.
 
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
-#include <math.h>
+#define _USE_MATH_DEFINES
+#include <cmath>
 #include <Helper/FormatHelper.h>
 
 #include "FacetAdvParams.h"
@@ -35,7 +36,6 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "GLApp/GLCombo.h"
 //#include "Worker.h"
 #include "Geometry_shared.h"
-
 #if defined(MOLFLOW)
 #include "MolFlow.h"
 #endif
@@ -1427,7 +1427,7 @@ bool FacetAdvParams::Apply() {
 
 	if (angleMapRecordCheckbox->GetState() == 0 || angleMapThetaLimitText->GetText() == "...") doAngleMapThetaLimit = false;
 	else if (angleMapThetaLimitText->GetNumber(&angleMapThetaLimit)) {
-		if (!(angleMapThetaLimit >= 0 && angleMapThetaLimit <= M_PI_2)) {
+		if (!(angleMapThetaLimit >= 0 && angleMapThetaLimit <= PI)) {
 			GLMessageBox::Display("Angle map theta limit must be between 0 and PI/2", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return false;
 		}
