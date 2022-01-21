@@ -69,6 +69,7 @@ struct TimeDependentParamters {
 
 struct Anglemap {
 public:
+    Anglemap() : theta_CDFsum(0){};
     std::vector<size_t> pdf;          // Incident angle distribution, phi and theta, not normalized. Used either for recording or for 2nd order interpolation
     std::vector<double> phi_CDFs;    // A table containing phi distributions for each theta, starting from 0 for every line (1 line = 1 theta value). For speed we keep it in one memory block, 1 pointer
     std::vector<size_t> phi_CDFsums; // since CDF runs only to the middle of the last segment, for each theta a line sum is stored here. Also a pdf for theta
@@ -125,7 +126,7 @@ struct SubprocessFacet : public Facet {
 
     size_t InitializeTexture(const size_t &nbMoments);
 
-    size_t InitializeAngleMap();
+    int InitializeAngleMap();
 
     void InitializeOutgassingMap();
 
