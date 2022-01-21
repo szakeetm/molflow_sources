@@ -17,7 +17,9 @@ GNU General Public License for more details.
 
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
-#define _USE_MATH_DEFINES
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+#define _USE_MATH_DEFINES // activate defines, e.g. M_PI_2
+#endif
 #include <cmath>
 #include <Helper/FormatHelper.h>
 
@@ -1427,7 +1429,7 @@ bool FacetAdvParams::Apply() {
 
 	if (angleMapRecordCheckbox->GetState() == 0 || angleMapThetaLimitText->GetText() == "...") doAngleMapThetaLimit = false;
 	else if (angleMapThetaLimitText->GetNumber(&angleMapThetaLimit)) {
-		if (!(angleMapThetaLimit >= 0 && angleMapThetaLimit <= PI)) {
+		if (!(angleMapThetaLimit >= 0 && angleMapThetaLimit <= M_PI_2)) {
 			GLMessageBox::Display("Angle map theta limit must be between 0 and PI/2", "Error", GLDLG_OK, GLDLG_ICONERROR);
 			return false;
 		}
