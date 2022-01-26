@@ -39,12 +39,19 @@ xml_node WriterXML::GetRootNode(xml_document &saveDoc) {
         rootNode = saveDoc.root();
     } else {
         if(update) {
+            rootNode = saveDoc.document_element();
             rootNode = saveDoc.child("SimulationEnvironment");
         }
         if(!rootNode) {
-            rootNode = saveDoc.append_child("SimulationEnvironment");
-            rootNode.append_attribute("type") = "molflow";
-            rootNode.append_attribute("version") = appVersionId;
+            if(!saveDoc.child("SimulationEnvironment")) {
+                rootNode = saveDoc.append_child("SimulationEnvironment");
+                rootNode.append_attribute("type") = "molflow";
+                rootNode.append_attribute("version") = appVersionId;
+            }
+            else
+                rootNode = saveDoc.document_element();
+
+
         }
     }
 
