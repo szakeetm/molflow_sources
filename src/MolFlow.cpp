@@ -92,7 +92,7 @@ char fileInsertFilters[] = "txt,xml,zip,geo,syn,stl,geo7z,syn7z";
 char fileSaveFilters[] = "zip,xml,txt,geo,stl,geo7z";
 char fileSelFilters[] = "sel";
 char fileTexFilters[] = "txt";
-char fileProfFilters[] = "csv;txt";
+char fileProfFilters[] = "csv,txt";
 
 
 int cSize = 4;

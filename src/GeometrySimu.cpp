@@ -32,7 +32,10 @@ bool SubprocessFacet::InitializeOnLoad(const size_t &id, const size_t &nbMoments
     //ResizeCounter(nbMoments); //Initialize counter
     if (!InitializeLinkAndVolatile(id)) return false;
     InitializeOutgassingMap();
-    InitializeAngleMap();
+
+    if(InitializeAngleMap() < 0)
+        return false;
+
     InitializeTexture(nbMoments);
     InitializeProfile(nbMoments);
     InitializeDirectionTexture(nbMoments);
@@ -222,10 +225,10 @@ size_t SubprocessFacet::InitializeTexture(const size_t &nbMoments)
 }
 
 
-size_t SubprocessFacet::InitializeAngleMap()
+int SubprocessFacet::InitializeAngleMap()
 {
     //Incident angle map
-    size_t angleMapSize = 0;
+    int angleMapSize = 0;
     if (sh.desorbType == DES_ANGLEMAP) { //Use mode
         //if (angleMapCache.empty()) throw Error(("Facet " + std::to_string(globalId + 1) + ": should generate by angle map but has none recorded.").c_str());
 
@@ -235,21 +238,18 @@ size_t SubprocessFacet::InitializeAngleMap()
         }
         catch (...) {
             throw std::runtime_error("Not enough memory to load incident angle map (phi CDF line sums)");
-            return false;
         }
         try {
             angleMap.theta_CDF.resize(sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes);
         }
         catch (...) {
             throw std::runtime_error("Not enough memory to load incident angle map (line sums, CDF)");
-            return false;
         }
         try {
             angleMap.phi_CDFs.resize(sh.anglemapParams.phiWidth * (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes));
         }
         catch (...) {
             throw std::runtime_error("Not enough memory to load incident angle map (CDF)");
-            return false;
         }
 
         //First pass: determine sums
@@ -262,9 +262,8 @@ size_t SubprocessFacet::InitializeAngleMap()
             angleMap.theta_CDFsum += angleMap.phi_CDFsums[thetaIndex];
         }
         if (!angleMap.theta_CDFsum) {
-            auto err = fmt::format("Facet {} has all-zero recorded angle map.", globalId + 1);
+            auto err = fmt::format("Facet {} has all-zero recorded angle map, but is being used for desorption.", globalId + 1);
             throw std::runtime_error(err.c_str());
-            return false;
         }
 
         //Second pass: write CDFs
@@ -722,6 +721,7 @@ int SimulationModel::PrepareToRun() {
         //wp.latestMoment = (tdParams.moments.end()-1)->first + (tdParams.moments.end()-1)->second / 2.0;
 
     std::set<size_t> desorptionParameterIDs;
+    std::vector<double> temperatureList;
 
     //Check and calculate various facet properties for time dependent simulations (CDF, ID )
     for (size_t i = 0; i < sh.nbFacet; i++) {
@@ -755,7 +755,6 @@ int SimulationModel::PrepareToRun() {
         }
 
         // Generate speed distribution functions
-        std::list<double> temperatureList;
         int id = CDFGeneration::GetCDFId(temperatureList, facet.sh.temperature);
         if (id >= 0)
             facet.sh.CDFid = id; //we've already generated a CDF for this temperature
@@ -803,24 +802,28 @@ void SimulationModel::CalcTotalOutgassing() {
 
     const double latestMoment = wp.latestMoment;
 
-    for (size_t i = 0; i < sh.nbFacet; i++) {
-        SubprocessFacet& facet = *facets[i];
+
+    for (size_t i = 0; i < facets.size(); i++) {
+        SubprocessFacet &facet = *facets[i];
         if (facet.sh.desorbType != DES_NONE) { //there is a kind of desorption
             if (facet.sh.useOutgassingFile) { //outgassing file
-                auto& ogMap = facet.ogMap;
+                auto &ogMap = facet.ogMap;
                 for (size_t l = 0; l < (ogMap.outgassingMapWidth * ogMap.outgassingMapHeight); l++) {
-                    totalDesorbedMolecules += latestMoment * ogMap.outgassingMap[l] / (1.38E-23 * facet.sh.temperature);
+                    totalDesorbedMolecules +=
+                            latestMoment * ogMap.outgassingMap[l] / (1.38E-23 * facet.sh.temperature);
                     finalOutgassingRate += ogMap.outgassingMap[l] / (1.38E-23 * facet.sh.temperature);
                     finalOutgassingRate_Pa_m3_sec += ogMap.outgassingMap[l];
                 }
             } else { //regular outgassing
                 if (facet.sh.outgassing_paramId == -1) { //constant outgassing
-                    totalDesorbedMolecules += latestMoment * facet.sh.outgassing / (1.38E-23 * facet.sh.temperature);
+                    totalDesorbedMolecules +=
+                            latestMoment * facet.sh.outgassing / (1.38E-23 * facet.sh.temperature);
                     finalOutgassingRate +=
                             facet.sh.outgassing / (1.38E-23 * facet.sh.temperature);  //Outgassing molecules/sec
                     finalOutgassingRate_Pa_m3_sec += facet.sh.outgassing;
                 } else { //time-dependent outgassing
-                    totalDesorbedMolecules += tdParams.IDs[facet.sh.IDid].back().second / (1.38E-23 * facet.sh.temperature);
+                    totalDesorbedMolecules +=
+                            tdParams.IDs[facet.sh.IDid].back().second / (1.38E-23 * facet.sh.temperature);
                     size_t lastIndex = tdParams.parameters[facet.sh.outgassing_paramId].GetSize() - 1;
                     double finalRate_mbar_l_s = tdParams.parameters[facet.sh.outgassing_paramId].GetY(lastIndex);
                     finalOutgassingRate +=
