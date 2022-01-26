@@ -13,7 +13,6 @@ namespace CDFGeneration {
  * for a particular temperature (bin) \param temperature temperature for the CFD
  * \return ID of the CFD
  */
-
     int GetCDFId(const std::list<double> &temperatureList, double temperature) {
         if(!temperatureList.empty()) {
             // find temp within error range of 1e-5

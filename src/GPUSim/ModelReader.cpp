@@ -14,6 +14,7 @@
 //#include "Serializations.h"
 #include "Serializations.h"
 #include "OptixPolygon.h"
+#include "fmt/core.h"
 
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/xml.hpp>
@@ -99,7 +100,7 @@ namespace flowgpu {
                 //ar.loadBinaryValue(model->triangle_meshes[0]->poly, 0),
                 //cereal::make_nvp("poly", model->triangle_meshes[0]->poly),
                 cereal::make_nvp("facetProbabilities", model->triangle_meshes[0]->facetProbabilities),
-                cereal::make_nvp("cdfs", model->triangle_meshes[0]->cdfs),
+                cereal::make_nvp("cdfs", model->triangle_meshes[0]->cdfs_1),
                 //cereal::make_nvp("vertices2d", nullptr) ,
                 cereal::make_nvp("vertices3d", model->triangle_meshes[0]->vertices3d),
                 cereal::make_nvp("indices", model->triangle_meshes[0]->indices),
@@ -129,6 +130,35 @@ namespace flowgpu {
         std::cout << "#GPUTestsuite: Loading completed!" << std::endl;
 
         return model;
+    }
+
+    // split a 2sided facet into two 1sided (e.g. in case of culling)
+    void split2sided(flowgpu::TriangleMesh *triMesh){
+        int facetIndex = 0;
+        for (auto &facet : triMesh->poly) {
+            if(facet.facProps.is2sided) {
+                auto poly_cpy = facet;
+                // Calculate triangle area
+                auto &triIndices = triMesh->indices[facetIndex];
+                auto &a = triMesh->vertices3d[triIndices.x];
+                auto &b = triMesh->vertices3d[triIndices.y];
+                auto &c = triMesh->vertices3d[triIndices.z];
+
+                auto indices_reverse = triIndices;
+                std::swap(triIndices.x, triIndices.z);
+
+                // clone vertices, indices, facets
+                //poly_cpy.
+                triMesh->indices.emplace_back(indices_reverse);
+                poly_cpy.N *= -1.0;
+                poly_cpy.facProps.is2sided = false;
+                facet.facProps.is2sided = false;
+                triMesh->poly.emplace_back(poly_cpy);
+
+                triMesh->nbFacets++;
+            }
+            ++facetIndex;
+        }
     }
 
     void convertFacet2Poly(const std::vector<TempFacet> &facets, std::vector<flowgpu::Polygon> &convertedPolygons) {
@@ -214,6 +244,25 @@ namespace flowgpu {
         for (auto &facetProb : polyMesh->facetProbabilities) {
             facetProb.x /= fullOutgassing; // normalize to [0,1]
             facetProb.y /= fullOutgassing; // normalize to [0,1]
+        }
+    };
+
+
+    //! Calculate triangle center for later offsetting
+    void CalculateTriangleCenter(flowgpu::TriangleMesh *triMesh) {
+        float fullOutgassing = 0;
+        int facetIndex = 0;
+        for (auto &facet : triMesh->poly) {
+
+            // Calculate triangle area
+            auto &triIndices = triMesh->indices[facetIndex];
+            auto &a = triMesh->vertices3d[triIndices.x];
+            auto &b = triMesh->vertices3d[triIndices.y];
+            auto &c = triMesh->vertices3d[triIndices.z];
+
+            facet.center = (a + b + c) / 3.0f;
+
+            ++facetIndex;
         }
     };
 
@@ -350,13 +399,14 @@ namespace flowgpu {
         triMesh->nbVertices = triMesh->poly.size() * 3;
         triMesh->nbFacets = triMesh->poly.size();
 
-        triMesh->cdfs.push_back(0);
+        //triMesh->cdfs_1.push_back(0);
 
+        split2sided(triMesh);
         model->triangle_meshes.push_back(triMesh);
 #endif
 
         if (!polyMesh->poly.empty()) {
-            polyMesh->cdfs.push_back(0);
+            //polyMesh->cdfs_1.push_back(0);
             model->poly_meshes.push_back(polyMesh);
         }
         else {
@@ -380,6 +430,7 @@ namespace flowgpu {
         }
 
 #ifdef WITHTRIANGLES
+        CalculateTriangleCenter(triMesh);
         //--- Calculate outgassing values in relation to (tri_area / poly_area)
         CalculateRelativeTriangleOutgassing(facets, triMesh);
 #else
@@ -891,7 +942,14 @@ namespace flowgpu {
             size_t nbProf = 0;
             size_t nbTex = 0;
             size_t triCount = 0;
+            size_t count_2sided = 0;
+            size_t count_transparent = 0;
+            size_t count_transparent_semi = 0;
+
             for (auto &tri : mesh->poly) {
+                if(tri.facProps.is2sided) ++count_2sided;
+                if(tri.facProps.opacity == 0.0) ++count_transparent;
+                else if(tri.facProps.opacity > 0.0 && tri.facProps.opacity < 1.0) ++count_transparent_semi;
                 if (tri.profProps.profileType != PROFILE_FLAGS::noProfile)
                     ++nbProf;
                 if (tri.texProps.textureFlags != TEXTURE_FLAGS::noTexture) {
@@ -900,8 +958,10 @@ namespace flowgpu {
                               << tri.texProps.textureOffset << std::endl;
                 }
             }
-            std::cout << "#ModelReader: #ProfiledTris " << nbProf << std::endl;
-            std::cout << "#ModelReader: #TexturedTris " << nbTex << std::endl;
+            fmt::print("#ModelReader: #TransparentTri {}\n", count_transparent);
+            fmt::print("#ModelReader: #SemiTransparentTri {}\n", count_transparent_semi);
+            fmt::print("#ModelReader: #ProfiledTris {}\n", nbProf);
+            fmt::print("#ModelReader: #TexturedTris {}\n", nbTex);
         }
 
         std::cout << "#ModelReader: #TextureCells: " << model->textures.size() << std::endl;
@@ -997,6 +1057,13 @@ namespace flowgpu {
         parseGeomFromSerialization(model.get(), facets, vertices3d);
         std::cout << "#ModelReader: #TextureCells: " << model->textures.size() << std::endl;
 
+        constexpr size_t cdf_size = 100; // points in a cumulative distribution function
+        for(auto& cdfs : simModel.tdParams.CDFs) {
+            for(auto& cdf : cdfs) {
+                model->triangle_meshes.front()->cdfs_1.emplace_back(cdf.first);
+                model->triangle_meshes.front()->cdfs_2.emplace_back(cdf.second);
+            }
+        }
         return model;
     }
 

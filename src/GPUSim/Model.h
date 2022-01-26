@@ -32,7 +32,8 @@ namespace flowgpu {
         std::vector<flowgpu::Polygon> poly;
 
         std::vector<float2> facetProbabilities;
-        std::vector<float> cdfs; // should not be part of each mesh, but the model itself
+        std::vector<float> cdfs_1; // should not be part of each mesh, but the model itself
+        std::vector<float> cdfs_2; // should not be part of each mesh, but the model itself
 
         uint32_t nbFacets;
         uint32_t nbVertices;

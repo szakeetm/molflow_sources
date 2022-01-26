@@ -15,7 +15,11 @@
 #include <cooperative_groups.h>
 #include <curand_kernel.h>
 
-//extern "C" __constant__ flowgpu::LaunchParams optixLaunchParams;
+/*! launch parameters in constant memory, filled in by optix upon
+        optixLaunch (this gets filled in from the buffer we pass to
+        optixLaunch) */
+extern "C" __constant__ flowgpu::LaunchParams optixLaunchParams;
+
 
 #define RAY_FLAGS OPTIX_RAY_FLAG_NONE \
                     | OPTIX_RAY_FLAG_DISABLE_ANYHIT \
@@ -53,12 +57,21 @@
 
 // out of bounds print
 #if defined(BOUND_CHECK) && defined(DEBUG)
+#define OOB_CHECK_INT(name, val, upper_bound) if(val >= upper_bound || val < 0){printf("OutOfBounds: [%s] %d >= %d  : %s:%d:%s()\n", name, val, upper_bound, __FILE__, __LINE__, __func__);}
 #define OOB_CHECK(name, val, upper_bound) if(val >= upper_bound){printf("OutOfBounds: [%s] %u >= %u  : %s:%d:%s()\n", name, val, upper_bound, __FILE__, __LINE__, __func__);}
 #else
-#define OOB_CHECK(name, val, upper_bound) /* Don't do anything in release builds */
+/* Don't do anything in release builds */
+#define OOB_CHECK_INT(name, val, upper_bound)
+#define OOB_CHECK(name, val, upper_bound)
 #endif
 
 namespace cg = cooperative_groups;
+
+//const __device__ float offset_val = 1.0f/64.0f;
+//const __device__ float offset_val_n = -1.0f/64.0f;
+const __device__ float offset_val = 1.0f/1.0f;
+const __device__ float offset_val_n = (-1.0f) * offset_val;
+const __device__ float offset_valc = 2000.0f/1.0f; //offset value for center offset
 
 /* this GPU kernel takes an array of states, and an array of ints, and puts a random int into each */
 static __forceinline__ __device__ RN_T generate_rand(curandState_t* states, unsigned int id) {
@@ -136,6 +149,42 @@ static __forceinline__ __device__ float3 offset_ray_none(const float3 p, const f
             int_as_float(float_as_int(p.z)+((p.z < 0) ? -of_i.z : of_i.z))));
     return p;
 }
+static __forceinline__ __device__ float3 offset_to_center(const float3 p, unsigned int prim_idx, const flowgpu::Polygon& poly){
+
+    // get triangle center
+    //float3 center;
+    const flowgpu::TriangleMeshSBTData &sbtData = *(const flowgpu::TriangleMeshSBTData*)optixGetSbtDataPointer();
+
+    const float3 &c = poly.center;
+
+    /*DEBUG_PRINT("NEW OFFSET[%d -> %d -> %d] "
+                "(%12.10f , %12.10f , %12.10f) \n",
+                idx0, idx1, idx2, Aa.x, Aa.y, Aa.z);*/
+
+    //int3 of_i(make_int3(int_scale() * c.x, int_scale() * c.y, int_scale() * c.z));
+    //const int3 of_i = make_float3(float_scale()*c.x, float_scale()*c.y, float_scale()*c.z);
+    float3 dir_i = normalize(c - p);
+    int3 of_i(make_int3(
+            int_scale() * dir_i.x * offset_valc,
+            int_scale() * dir_i.y * offset_valc,
+            int_scale() * dir_i.z * offset_valc));
+    float3 p_i(make_float3(
+            int_as_float(float_as_int(p.x)+((p.x < 0) ? -of_i.x : of_i.x)),
+            int_as_float(float_as_int(p.y)+((p.y < 0) ? -of_i.y : of_i.y)),
+            int_as_float(float_as_int(p.z)+((p.z < 0) ? -of_i.z : of_i.z))));
+    /*DEBUG_PRINT("NEW OFFSET (%12.10f , %12.10f , %12.1    0f) ->"
+                "(%12.10f , %12.10f , %12.10f) \n",
+                p.x,p.y,p.z,dir_i.x, dir_i.y, dir_i.z);*/
+    return float3(make_float3(p.x+1.0f*float_scale()*dir_i.x * offset_valc,
+                              p.y+1.0f*float_scale()*dir_i.y * offset_valc,
+                              p.z+1.0f*float_scale()*dir_i.z * offset_valc));
+    return float3(make_float3(
+            fabsf(p.x) < origin() ? p.x+float_scale()*dir_i.x : p_i.x,
+            fabsf(p.y) < origin() ? p.y+float_scale()*dir_i.y : p_i.y,
+            fabsf(p.z) < origin() ? p.z+float_scale()*dir_i.z : p_i.z));
+
+    return float3(make_float3(p.x+float_scale()*c.x, p.y+float_scale()*c.y, p.z+float_scale()*c.z));
+}
 
 // Normal points outward for rays exiting the surface, else is flipped.
 static __forceinline__ __device__ void initParticle(flowgpu::MolPRD& prd){
@@ -150,11 +199,6 @@ static __forceinline__ __device__ void initParticle(flowgpu::MolPRD& prd){
 #endif
 
 }
-
-//const __device__ float offset_val = 1.0f/64.0f;
-//const __device__ float offset_val_n = -1.0f/64.0f;
-const __device__ float offset_val = 1.0f/1.0f;
-const __device__ float offset_val_n = -1.0f/1.0f;
 
 static __forceinline__ __device__ void apply_offset(const flowgpu::MolPRD& hitData, float3& rayOrigin){
 #ifdef WITHTRIANGLES

@@ -56,6 +56,7 @@ public:
     void WriteDataToFile(std::string fileName);
     GlobalCounter* GetGlobalCounter() ;
     double GetTransProb(size_t polyIndex);
+    double GetTransProb();
 
     void CalcRuntimeFigures();
     int RemainingStepsUntilStop();

@@ -336,6 +336,7 @@ int main(int argc, char **argv) {
     double nextPrintAtMin = printEveryNMinutes;
 
     double raysPerSecondMax = 0.0;
+    double desPerSecondMax = 0.0;
     /*double raysPerSecondSum = 0.0;
     uint64_t nRaysSum = 0.0;*/
 
@@ -388,7 +389,7 @@ int main(int argc, char **argv) {
             raysPerSecondMax = std::max(raysPerSecondMax,rpsRun);
             //raysPerSecondSum += rpsRun;
             std::cout << "--- Run #" << loopN + 1 << " \t- Elapsed Time: " << elapsed.count() / 1000.0 << " s \t--- " << rpsRun << " MRay/s ---" << std::endl;
-            printf("--- Trans Prob: %e\n",gpuSim.GetTransProb(1u));
+            printf("--- Trans Prob: %e\n",gpuSim.GetTransProb());
         }
 
         ++loopN;
@@ -397,9 +398,9 @@ int main(int argc, char **argv) {
     gpuSim.GetSimulationData(false);
     std::chrono::duration<double> elapsed = finish_total - start_total;
     if(elapsed.count() / 60.0 >= 1.0)
-        std::cout << "--         Total Elapsed Time: " << elapsed.count() / 60.0 << " min ---" << std::endl;
+        fmt::print("--         Total Elapsed Time: {} min ---\n",elapsed.count() / 60.0);
     else
-        std::cout << "--         Total Elapsed Time: " << elapsed.count() << " sec ---" << std::endl;
+        fmt::print("--         Total Elapsed Time: {} sec ---\n",elapsed.count());
     std::cout << "--         Avg. Rays per second: " << (double)gpuSim.figures.total_counter/elapsed.count()/1.0e6 << " MRay/s ---" << std::endl;
     //std::cout << "--         Avg. Rays per second: " << raysPerSecondSum/(nbLoops/printPerNRuns) << " MRay/s ---" << std::endl;
     std::cout << "--         Max  Rays per second: " << raysPerSecondMax << " MRay/s ---" << std::endl;
@@ -410,6 +411,7 @@ int main(int argc, char **argv) {
     gpuSim.ConvertSimulationData(globState);
     FlowIO::WriterXML writer;
     pugi::xml_document newDoc;
+
     std::string fullOutFile = "./testout.xml";
     std::filesystem::remove(fullOutFile);
     writer.SaveGeometry(newDoc, simModel);

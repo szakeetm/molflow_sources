@@ -1003,7 +1003,7 @@ typedef Record<TriangleRayGenData> RaygenRecordTri;
             poly_memory.vertex2x64Buffer[meshID].alloc_and_upload(mesh.vertices2d64);
             poly_memory.indexBuffer[meshID].alloc_and_upload(mesh.indices);
             poly_memory.polyBuffer[meshID].alloc_and_upload(mesh.poly);
-            poly_memory.cdfBuffer[meshID].alloc_and_upload(mesh.cdfs);
+            poly_memory.cdfBuffer[meshID].alloc_and_upload(mesh.cdfs_1);
             poly_memory.facprobBuffer[meshID].alloc_and_upload(mesh.facetProbabilities);
         }
 
@@ -1110,7 +1110,7 @@ typedef Record<TriangleRayGenData> RaygenRecordTri;
 
             tri_memory.texcoordBuffer[meshID].alloc_and_upload(mesh.texCoords);
             tri_memory.polyBuffer[meshID].alloc_and_upload(mesh.poly);
-            tri_memory.cdfBuffer[meshID].alloc_and_upload(mesh.cdfs);
+            tri_memory.cdfBuffer[meshID].alloc_and_upload(mesh.cdfs_1);
             tri_memory.facprobBuffer[meshID].alloc_and_upload(mesh.facetProbabilities);
         }
 

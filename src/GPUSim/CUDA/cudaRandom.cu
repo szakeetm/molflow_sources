@@ -6,7 +6,7 @@
 #include "cudaRandom.cuh"
 #include <math_constants.h>
 #include <time.h>
-#include <curand.h>
+#include <curand.h> //TODO: Look at usability of thrust::random vs curand
 #include <stdio.h>
 #include <stdlib.h>
 //#include "GPUDefines.h" // for NB_RAND

@@ -13,7 +13,7 @@ namespace flowgpu {
     /*! launch parameters in constant memory, filled in by optix upon
         optixLaunch (this gets filled in from the buffer we pass to
         optixLaunch) */
-    extern "C" __constant__ LaunchParams optixLaunchParams;
+    //extern "C" __constant__ LaunchParams optixLaunchParams;
 
 #if defined(PAYLOAD_DIRECT)
     static __device__ __inline__ MolPRD getMolPRD()
@@ -627,7 +627,7 @@ namespace flowgpu {
 #endif // WITH_TEX
 #ifdef WITH_PROF
         unsigned int profileIndex = 1e8;
-        //printf("BOUNCE? %d != %d == %d\n",(int)poly.profProps.profileType, (int)flowgpu::PROFILE_FLAGS::noProfile,(int)poly.profProps.profileType != flowgpu::PROFILE_FLAGS::noProfile);
+        //printf("BOUNCE?? %d != %d == %d\n",(int)poly.profProps.profileType, (int)flowgpu::PROFILE_FLAGS::noProfile,(int)poly.profProps.profileType != flowgpu::PROFILE_FLAGS::noProfile);
         if (poly.profProps.profileType != flowgpu::PROFILE_FLAGS::noProfile){
             profileIndex = RecordBounceProfile(poly, prd, rayOrigin, rayDir);
         }
@@ -735,9 +735,6 @@ namespace flowgpu {
 #endif
         const unsigned int facetHitKind = optixGetHitKind();
 
-        /*if(fbIndex==0)
-            printf("--- start post processing ---\n");*/
-
 #ifdef PAYLOAD_DIRECT
         MolPRD myPrd = getMolPRD();
         MolPRD* prd = &myPrd;
@@ -745,24 +742,28 @@ namespace flowgpu {
         MolPRD* prd = mergePointer(optixGetPayload_0(), optixGetPayload_1());
 #endif
 
-        // self intersection
         if(prd->hitFacetId == optixGetPrimitiveIndex()){
-#ifdef DEBUG
-            DEBUG_PRINT("[%d] source and goal facet equal %d : %8.6f,%8.6f,%8.6f -> %8.6f,%8.6f,%8.6f : [%.5e .. %.5e] (tri)\n",(blockDim.x * blockIdx.x + threadIdx.x), prd->hitFacetId, ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z, optixGetRayTmin(),ray_t);
-/*
-if(prd->inSystem == 4)
-                printf("[%d] [backface] source and goal facet equal %d : %8.6f,%8.6f,%8.6f -> %8.6f,%8.6f,%8.6f : [%.5e .. %.5e] (tri)\n",(blockDim.x * blockIdx.x + threadIdx.x), prd->hitFacetId, ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z, optixGetRayTmin(),ray_t);
-*/
+            // --------------------------------------
+            // Self Intersection (SI)
+            // Classify as SI when collided facet is the same as previously (hitFacetId)
+            // 1. Label hit as SI
+            // 2. Save intersection side (front/back)
+            // 3. Record new ray origin/direction
+            // --------------------------------------
 
-#endif
+            DEBUG_PRINT("[%d] source and goal facet equal %d : %8.6f,%8.6f,%8.6f -> %8.6f,%8.6f,%8.6f : [%.5e .. %.5e] (tri)\n",(blockDim.x * blockIdx.x + threadIdx.x), prd->hitFacetId, ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z, optixGetRayTmin(),ray_t);
+            // if(prd->inSystem == 4) DEBUG_PRINT("[%d] [backface] source and goal facet equal %d : %8.6f,%8.6f,%8.6f -> %8.6f,%8.6f,%8.6f : [%.5e .. %.5e] (tri)\n",(blockDim.x * blockIdx.x + threadIdx.x), prd->hitFacetId, ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z, optixGetRayTmin(),ray_t);
+
             prd->facetHitSide = facetHitKind;
             if(facetHitKind == OPTIX_HIT_KIND_TRIANGLE_BACK_FACE) {
                 prd->inSystem = SELF_INTERSECTION;
-                /*if(bufferIndex==0)
-                    printf("[%u] back self hit detected -> %u -> %u for n=%d\n", bufferIndex, prd->inSystem, sbtData.poly[prd->hitFacetId].parentIndex,prd->nbBounces);
-            */}
+                if(bufferIndex==0)
+                    DEBUG_PRINT("[%u] back self hit detected -> %u -> %u for n=%d\n", bufferIndex, prd->inSystem, sbtData.poly[prd->hitFacetId].parentIndex,prd->nbBounces);
+            }
             else{
                 prd->inSystem = SELF_INTERSECTION;
+                if(bufferIndex==0)
+                    DEBUG_PRINT("[%u] front self hit detected -> %u -> %u for n=%d\n", bufferIndex, prd->inSystem, sbtData.poly[prd->hitFacetId].parentIndex,prd->nbBounces);
             }
             const flowgpu::Polygon& poly  = sbtData.poly[prd->hitFacetId];
 
@@ -778,19 +779,18 @@ if(prd->inSystem == 4)
             return;
         }
 
+        // Now check for other types of hits
 
+        // first load hit data
         prd->hitT = ray_t;
         prd->hitPos = ray_orig + ray_t * ray_dir;
         prd->hitFacetId = optixGetPrimitiveIndex();
         prd->facetHitSide = facetHitKind;
 
-        // first add facet hits
         const unsigned int counterIdx = prd->hitFacetId + (bufferIndex%(EXTRAFACETCOUNTERS)) * optixLaunchParams.simConstants.nbFacets;
-
-        //Register (orthogonal) velocity
         const flowgpu::Polygon& poly  = sbtData.poly[prd->hitFacetId];
 
-        // replace like with self intersection, but keep position etc.
+        // In case of Front hit vs back hit
         if(facetHitKind == OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE) {
             //prd->inSystem = TRANSPARENT_HIT;
         }
@@ -821,9 +821,7 @@ if(prd->inSystem == 4)
 #ifndef WITH_TRANS
         if(poly.facProps.is2sided && poly.facProps.opacity == 0){
         //if(poly.facProps.is2sided){
-#ifdef DEBUG
-            printf("[%d] 2sided facet hit %d / %d : %8.6f,%8.6f,%8.6f -> %8.6f,%8.6f,%8.6f : [%.5e .. %.5e] (tri)\n",(blockDim.x * blockIdx.x + threadIdx.x), prd->hitFacetId, poly.parentIndex, ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z, optixGetRayTmin(),ray_t);
-#endif
+            DEBUG_PRINT("[%d] 2sided facet hit %d / %d : %8.6f,%8.6f,%8.6f -> %8.6f,%8.6f,%8.6f : [%.5e .. %.5e] (tri)\n",(blockDim.x * blockIdx.x + threadIdx.x), prd->hitFacetId, poly.parentIndex, ray_orig.x,ray_orig.y,ray_orig.z,ray_dir.x,ray_dir.y,ray_dir.z, optixGetRayTmin(),ray_t);
             // replace like with self intersection, but keep position etc.
             prd->inSystem = TRANSPARENT_HIT;
 
@@ -903,7 +901,6 @@ if(prd->inSystem == 4)
 #else
             recordBounce(bufferIndex, counterIdx, poly, *prd, ray_dir, prd->hitPos, optixLaunchParams.randomNumbers);
 #endif
-
 #ifdef PAYLOAD_DIRECT
             optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].facetHitSide = prd->facetHitSide;
             optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos = prd->hitPos;
@@ -1192,7 +1189,7 @@ if(prd->inSystem == 4)
         const TriangleMeshSBTData &sbtData = *(const TriangleMeshSBTData*)optixGetSbtDataPointer();
 
 
-#if !defined(GPUNBOUNCE)
+/*#if !defined(GPUNBOUNCE)
         DEBUG_PRINT("(%d) miss[%d -> %d -> %d][%d] "
                "(%12.10f , %12.10f , %12.10f) --> (%12.10f , %12.10f , %12.10f) = %e \n",
                prd->inSystem, fbIndex, prd->hitFacetId, sbtData.poly[prd->hitFacetId].parentIndex, missIndex,
@@ -1202,7 +1199,7 @@ if(prd->inSystem == 4)
                "(%12.10f , %12.10f , %12.10f) --> (%12.10f , %12.10f , %12.10f) = %e \n",
                prd->inSystem, prd->nbBounces, fbIndex, prd->hitFacetId, sbtData.poly[prd->hitFacetId].parentIndex, missIndex,
                ray_orig.x, ray_orig.y , ray_orig.z , ray_dir.x, ray_dir.y , ray_dir.z, ray_t);
-#endif
+#endif*/
 
         for(int i=missIndex+1; i <= missIndex+optixLaunchParams.perThreadData.missBuffer[missIndex];i++){
             DEBUG_PRINT("miss[%d -> %d -> %d] at %d\n",
@@ -1233,7 +1230,7 @@ optixLaunchParams.perThreadData.currentMoleculeData[fbIndex].postHitDir = prd->p
 
 
 
-#if !defined(GPUNBOUNCE)
+/*#if !defined(GPUNBOUNCE)
             DEBUG_PRINT("(%d) miss[%d -> %d] (%12.10f , %12.10f , %12.10f) --> (%12.10f , %12.10f , %12.10f) = %e \n",
                prd->inSystem, fbIndex, prd->hitFacetId,
                ray_orig.x, ray_orig.y , ray_orig.z , ray_dir.x, ray_dir.y , ray_dir.z, ray_t);
@@ -1241,9 +1238,9 @@ optixLaunchParams.perThreadData.currentMoleculeData[fbIndex].postHitDir = prd->p
             DEBUG_PRINT("(%d , %d) miss[%d -> %d] (%12.10f , %12.10f , %12.10f) --> (%12.10f , %12.10f , %12.10f) = %e \n",
                prd->inSystem, prd->nbBounces, fbIndex, prd->hitFacetId,
                ray_orig.x, ray_orig.y , ray_orig.z , ray_dir.x, ray_dir.y , ray_dir.z, ray_t);
-#endif
+#endif*/
 
-        const unsigned int posIndexOff = optixLaunchParams.perThreadData.leakPosOffsetBuffer_debug[fbIndex]++;
+            const unsigned int posIndexOff = optixLaunchParams.perThreadData.leakPosOffsetBuffer_debug[fbIndex]++;
             if(posIndexOff<NBCOUNTS){
                 const unsigned int posIndex = (fbIndex)*NBCOUNTS+posIndexOff;
                 //printf("[%d] my pos is %d\n", (unsigned int)(fbIndex), posIndex);
@@ -1251,18 +1248,18 @@ optixLaunchParams.perThreadData.currentMoleculeData[fbIndex].postHitDir = prd->p
                 optixLaunchParams.perThreadData.leakDirectionsBuffer_debug[posIndex] = ray_dir;
 
             }
-            }
+        }
 #endif
 
         // Try to relaunch a molecule for some time until removing it from the system
         // Differentiate between physical and single precision leaks here
 
         //if(prd->inSystem > 20) {
-            //optixLaunchParams.sharedData.missCounter += 1;
-            atomicAdd(optixLaunchParams.sharedData.missCounter, 1);
+        //optixLaunchParams.sharedData.missCounter += 1;
+        atomicAdd(optixLaunchParams.sharedData.missCounter, 1);
 
-            // Reset particle
-            initParticle(*prd);
+        // Reset particle
+        initParticle(*prd);
 
 // terminate if exit has been called
 #ifdef WITHDESORPEXIT

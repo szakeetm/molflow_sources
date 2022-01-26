@@ -18,6 +18,7 @@
 SimulationGPU::SimulationGPU()
         : SimulationUnit() {
     model = nullptr;
+    gpuSim = nullptr;
     totalDesorbed = 0;
     memset(&tmpGlobalResult, 0, sizeof(GlobalHitBuffer));
 }
@@ -182,7 +183,8 @@ inline void updateProfileBuffer(GlobalHitBuffer *gHits, GlobalCounter* globalCou
 
 
 void SimulationGPU::ClearSimulation() {
-    gpuSim->CloseSimulation();
+    if(gpuSim)
+        gpuSim->CloseSimulation();
 }
 
 bool SimulationGPU::LoadSimulation(Dataport *loader, char* loadStatus) {
@@ -220,7 +222,7 @@ bool SimulationGPU::LoadSimulation(Dataport *loader, char* loadStatus) {
 void SimulationGPU::ResetSimulation() {
     totalDesorbed = 0;
     ResetTmpCounters();
-    gpuSim->ResetSimulation();
+    if(gpuSim) gpuSim->ResetSimulation();
 }
 
 bool SimulationGPU::UpdateOntheflySimuParams(Dataport *loader) {
@@ -378,14 +380,19 @@ void SimulationGPU::ResetTmpCounters() {
     //SetState(0, "Resetting local cache...", false, true);
 
     memset(&tmpGlobalResult, 0, sizeof(GlobalHitBuffer));
-    GlobalCounter* globalCount = gpuSim->GetGlobalCounter();
-    std::fill(globalCount->facetHitCounters.begin(),globalCount->facetHitCounters.end(), flowgpu::CuFacetHitCounter64());
-    std::fill(globalCount->leakCounter.begin(),globalCount->leakCounter.end(), 0);
-    for(auto& tex : globalCount->textures){
-        std::fill(tex.second.begin(),tex.second.end(), Texel64());
-    }
-    for(auto& prof : globalCount->profiles){
-        std::fill(prof.second.begin(),prof.second.end(), Texel64());
+    if(gpuSim) {
+        GlobalCounter *globalCount = gpuSim->GetGlobalCounter();
+        if (!globalCount->facetHitCounters.empty())
+            std::fill(globalCount->facetHitCounters.begin(), globalCount->facetHitCounters.end(),
+                      flowgpu::CuFacetHitCounter64());
+        if (!globalCount->leakCounter.empty())
+            std::fill(globalCount->leakCounter.begin(), globalCount->leakCounter.end(), 0);
+        for (auto &tex: globalCount->textures) {
+            std::fill(tex.second.begin(), tex.second.end(), Texel64());
+        }
+        for (auto &prof: globalCount->profiles) {
+            std::fill(prof.second.begin(), prof.second.end(), Texel64());
+        }
     }
 }
 

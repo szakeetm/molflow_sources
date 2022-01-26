@@ -17,7 +17,7 @@ namespace flowgpu {
     /*! launch parameters in constant memory, filled in by optix upon
         optixLaunch (this gets filled in from the buffer we pass to
         optixLaunch) */
-    extern "C" __constant__ LaunchParams optixLaunchParams;
+    //extern "C" __constant__ LaunchParams optixLaunchParams;
 
 #if defined(PAYLOAD_DIRECT)
     static __device__ __inline__ MolPRD getMolPRD()

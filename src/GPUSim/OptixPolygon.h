@@ -382,6 +382,8 @@ namespace flowgpu {
         unsigned int nbVertices;
         unsigned int indexOffset;
 
+        float3 center; // center for offset
+
         // variables for ray-plane (3d space) intersection
         float3 O;
         float3 U;
