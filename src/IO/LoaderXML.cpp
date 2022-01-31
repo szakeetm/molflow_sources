@@ -859,9 +859,10 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
         if (facet->sh.desorbType == DES_ANGLEMAP) facet->sh.desorbType = DES_NONE;
     }
 
+    // Init by default as true
     std::tuple<bool,bool> viewSettings; // texture, volume visible
-    bool textureVisible = facetNode.child("ViewSettings").attribute("textureVisible").as_bool();
-    bool volumeVisible = facetNode.child("ViewSettings").attribute("volumeVisible").as_bool();
+    bool textureVisible = facetNode.child("ViewSettings").attribute("textureVisible").as_bool(true);
+    bool volumeVisible = facetNode.child("ViewSettings").attribute("volumeVisible").as_bool(true);
     uInput.facetViewSettings.emplace_back(std::make_tuple(textureVisible, volumeVisible));
 
     xml_node facetHistNode = facetNode.child("Histograms");

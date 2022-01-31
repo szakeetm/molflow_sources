@@ -1064,7 +1064,11 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 "LoadGeometry(): Invalid file extension [Only xml,zip,geo,geo7z,syn.syn7z,txt,ase,stl or str]");
     }
 
-    SimModelToInterfaceGeom();
+    // Readers that load the geometry directly into the sim model
+    // need to update the interface geometry afterwards
+    if (ext == "xml" || ext == "zip")
+        SimModelToInterfaceGeom();
+
     if (!insert) {
         CalcTotalOutgassing();
         /*
