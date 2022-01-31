@@ -35,7 +35,7 @@ prepare_job:
     - COMMIT_TAG=${CI_COMMIT_TAG:1} # trim v at beginning
     - echo "TAG_VERSION_NUMBER=$COMMIT_TAG" >> variables.env      # and append to the variables.env file
     - echo "TAG_SUFFIX=_$COMMIT_TAG" >> variables.env             # and with underscore prefix
-    - CHANGELOG_LINE_END=`awk '/##\ v/{print NR; exit;}' CHANGELOG.md` #CHANGELOG_LINE_START=`awk '/'$COMMIT_TAG'/{ print NR; exit}' CHANGELOG.md`
+    - CHANGELOG_LINE_START=`awk '/##\ v/{print NR; exit;}' CHANGELOG.md` #CHANGELOG_LINE_START=`awk '/'$COMMIT_TAG'/{ print NR; exit}' CHANGELOG.md`
     - CHANGELOG_LINE_END=`awk '/##\ v/{ count++; if(count>1) {print NR; exit;}}' CHANGELOG.md`
     - echo "PARSED_CHANGELOG=` awk 'NR > '$CHANGELOG_LINE_START' && NR < '$CHANGELOG_LINE_END'' CHANGELOG.md`" >> variables.env # skip first header "## tag_name" and next header found as end point
   artifacts:
@@ -49,7 +49,7 @@ prepare_job_notag:
     - if: $CI_COMMIT_BRANCH
       when: always
   script:
-    - CHANGELOG_LINE_END=`awk '/##\ v/{print NR; exit;}' CHANGELOG.md` #CHANGELOG_LINE_START=`awk '/'$COMMIT_TAG'/{ print NR; exit}' CHANGELOG.md`
+    - CHANGELOG_LINE_START=`awk '/##\ v/{print NR; exit;}' CHANGELOG.md` #CHANGELOG_LINE_START=`awk '/'$COMMIT_TAG'/{ print NR; exit}' CHANGELOG.md`
     - CHANGELOG_LINE_END=`awk '/##\ v/{ count++; if(count>1) {print NR; exit;}}' CHANGELOG.md`
     - echo "PARSED_CHANGELOG=` awk 'NR > '$CHANGELOG_LINE_START' && NR < '$CHANGELOG_LINE_END'' CHANGELOG.md`" >> variables.env # skip first header "## tag_name" and next header found as end point
   artifacts:
