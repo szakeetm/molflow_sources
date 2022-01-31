@@ -54,8 +54,11 @@ prepare_job_notag:
   script:
     - CHANGELOG_LINE_START=`awk '/##\ v/{print NR; exit;}' CHANGELOG.md` #CHANGELOG_LINE_START=`awk '/'$COMMIT_TAG'/{ print NR; exit}' CHANGELOG.md`
     - CHANGELOG_LINE_END=`awk '/##\ v/{ count++; if(count>1) {print NR; exit;}}' CHANGELOG.md`
-    - echo "PARSED_CHANGELOG=` awk 'NR > '$CHANGELOG_LINE_START' && NR < '$CHANGELOG_LINE_END'' CHANGELOG.md`" >> variables.env # skip first header "## tag_name" and next header found as end point
+    - echo "` awk 'NR > '$CHANGELOG_LINE_START' && NR < '$CHANGELOG_LINE_END'' CHANGELOG.md`" >> parsed_changelog.txt # skip first header "## tag_name" and next header found as end point
   artifacts:
+    paths:
+      - parsed_changelog.txt
+      expire_in: 1 week
     reports:
       dotenv: variables.env
 
