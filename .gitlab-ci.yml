@@ -58,7 +58,7 @@ prepare_job_notag:
   artifacts:
     paths:
       - parsed_changelog.txt
-      expire_in: 1 week
+    expire_in: 1 week
     reports:
       dotenv: variables.env
 
