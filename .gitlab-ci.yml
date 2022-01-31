@@ -46,7 +46,7 @@ prepare_job_notag:
   stage: prepare                                              # This stage must run before the release stage
   image: alpine:latest
   rules:
-    - if: $CI_COMMIT_TAG == ""
+    - if: $CI_COMMIT_BRANCH
       when: always
   script:
     - CHANGELOG_LINE_END=`awk '/##\ v/{print NR; exit;}' CHANGELOG.md` #CHANGELOG_LINE_START=`awk '/'$COMMIT_TAG'/{ print NR; exit}' CHANGELOG.md`
