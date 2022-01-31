@@ -42,6 +42,20 @@ prepare_job:
     reports:
       dotenv: variables.env
 
+prepare_job_notag:
+  stage: prepare                                              # This stage must run before the release stage
+  image: alpine:latest
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+  script:
+    - CHANGELOG_LINE_END=`awk '/##\ v/{print NR; exit;}' CHANGELOG.md` #CHANGELOG_LINE_START=`awk '/'$COMMIT_TAG'/{ print NR; exit}' CHANGELOG.md`
+    - CHANGELOG_LINE_END=`awk '/##\ v/{ count++; if(count>1) {print NR; exit;}}' CHANGELOG.md`
+    - echo "PARSED_CHANGELOG=` awk 'NR > '$CHANGELOG_LINE_START' && NR < '$CHANGELOG_LINE_END'' CHANGELOG.md`" >> variables.env # skip first header "## tag_name" and next header found as end point
+  artifacts:
+    reports:
+      dotenv: variables.env
+
 upload-job:
   stage: upload
   image: registry.gitlab.com/gitlab-ci-utils/curl-jq:latest #curl + zip
