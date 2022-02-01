@@ -77,9 +77,10 @@ release_job:
     - if: $CI_COMMIT_TAG
   script:
     - echo 'running release_job'
+    - EXTRA_DESCRIPTION=`echo "#Changelog '$CI_COMMIT_TAG'";cat parsed_changelog.txt`
   release:
     name: 'Release $CI_COMMIT_TAG'
-    description: '#Changelog $CI_COMMIT_TAG\n$EXTRA_DESCRIPTION' #$EXTRA_DESCRIPTION must be defined
+    description: '$EXTRA_DESCRIPTION' #$EXTRA_DESCRIPTION must be defined
     tag_name: '$CI_COMMIT_TAG'                                       # elsewhere in the pipeline.
     ref: '$CI_COMMIT_TAG'
     assets:
