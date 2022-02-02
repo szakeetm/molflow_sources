@@ -405,7 +405,7 @@ namespace {
             EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
             EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
 
-            auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.007, 0.06);
+            auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.009, 0.07);
             size_t runNb = 0;
             if ((diff_glob != 0 || diff_loc != 0)) {
                 printf("[%zu] Diff glob %d / loc %d\n", runNb, diff_glob, diff_loc);
@@ -471,11 +471,7 @@ namespace {
         std::string outPath = "TPath_RW_" + std::to_string(std::hash<time_t>()(time(nullptr)));
         printf("Filename: %s\n", testFile.c_str());
         size_t nbSuccess = 0;
-        bool fastEnough = false;
-        const size_t nRuns = 10;
-        const size_t keepNEntries = 20;
-        const size_t runForTSec = 30;
-        std::vector<double> perfTimes;
+        const size_t nRuns = 15;
 
         std::shared_ptr<SimulationManager> simManager = std::make_shared<SimulationManager>();
         simManager->interactiveMode = false;
@@ -551,7 +547,7 @@ namespace {
                         runNb);
                 break;
             }
-            auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.007, 0.06);
+            auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.01, 0.1);
             if (diff_glob || diff_loc)
                 nbSuccess++;
 
@@ -570,8 +566,8 @@ namespace {
             else if (diff_fine <= 0)
                 fmt::print(stderr, "[{}][Warning] No differences on fine counters found!\n", runNb);
         }
-        if ((double) nbSuccess / nRuns < 0.7) {
-            EXPECT_FALSE((double) nbSuccess / nRuns < 0.7);
+        if ((double) nbSuccess / nRuns < 0.66) {
+            EXPECT_FALSE((double) nbSuccess / nRuns < 0.66);
             fmt::print(stderr, "[FAIL] Threshold for results of a low sample run was not crossed!\n"
                             "{} out of {} runs were correct!\n"
                             "This could be due to random nature of a MC simulation or a programmatic error leading to wrong conclusions.\n",

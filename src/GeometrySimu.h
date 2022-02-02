@@ -9,6 +9,7 @@
 #include "MolflowTypes.h"
 #include "Buffer_shared.h"
 #include "Parameter.h"
+#include "Helper/ConsoleLogger.h"
 
 #include <mutex>
 #include <FacetData.h>
@@ -272,7 +273,7 @@ public:
         std::shared_ptr<ParameterSurface> surface;
         surface = std::make_shared<ParameterSurface>(dist);
         surfaces.insert(std::make_pair(indexed_id, surface));
-        printf("Insert param id: %f\n", indexed_id);
+        Log::console_msg_master(3, "Insert param id: %f\n", indexed_id);
         return surface.get();
     };
 
