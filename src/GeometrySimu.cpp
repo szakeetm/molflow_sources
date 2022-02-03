@@ -979,6 +979,13 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
     size_t facetErrNb = 0;
     size_t fineErrNb = 0;
 
+    size_t nbFacetSkips = 0;
+    size_t nbProfileSkips = 0;
+    size_t nbTextureSkips = 0;
+    size_t nbDirSkips = 0;
+    size_t nbHistSkips_glob = 0;
+    size_t nbHistSkips_loc = 0;
+
     std::string cmpFile;
     std::string cmpFileFine; // extra stream to silence after important outputs
 
@@ -997,7 +1004,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
             ++globalErrNb;
         }
 
-        if(globalErrNb){
+        if(globalErrNb){ // preemptive return, as global errors make local errors irrelevant
             fmt::print("{}\n", cmpFile);
             return std::make_tuple(static_cast<int>(globalErrNb), -1, -1);
         }
@@ -1104,14 +1111,17 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
             if ((facetCounter_lhs.hits.nbMCHit == 0 && facetCounter_rhs.hits.nbMCHit == 0)
             || (facetCounter_lhs.hits.nbMCHit < 40000 || facetCounter_rhs.hits.nbMCHit < 40000)) {
                 // Skip facet comparison if not enough hits have been recorded for both states
+                ++nbFacetSkips;
                 continue;
             } else if (facetCounter_lhs.hits.nbMCHit == 0 && facetCounter_rhs.hits.nbMCHit > 0) {
                 cmpFile += fmt::format("[Facet][{}][hits][{}] First state has no recorded hits for this facet\n", facetId, m);
                 ++facetErrNb;
+                ++nbFacetSkips;
                 continue;
             } else if (facetCounter_lhs.hits.nbMCHit > 0 && facetCounter_rhs.hits.nbMCHit == 0) {
                 cmpFile += fmt::format("[Facet][{}][hits][{}] Second state has no recorded hits for this facet\n", facetId, m);
                 ++facetErrNb;
+                ++nbFacetSkips;
                 continue;
             }
 
@@ -1245,41 +1255,116 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                 auto &prof_lhs = facetCounter_lhs.profile;
                 auto &prof_rhs = facetCounter_rhs.profile;
 
-                for (int id = 0; id < prof_lhs.size(); ++id) {
-                    if (std::sqrt(std::max(1.0, std::min(prof_lhs[id].countEquiv, prof_rhs[id].countEquiv))) < 10) {
-                        // Sample size not large enough
-                        continue;
-                    }
-                    if (!IsEqual(prof_lhs[id].countEquiv / sumHitDes, prof_rhs[id].countEquiv / sumHitDes_rhs,
-                                 locThreshold)) {
-                        cmpFileFine += fmt::format("[Facet][{}][Profile][Ind={}][countEquiv][{}] has large difference: "
-                                               "{} : {} - {}\n",
-                                               facetId, id, m,
-                                               std::abs(prof_lhs[id].countEquiv / sumHitDes - prof_rhs[id].countEquiv / sumHitDes_rhs) / (prof_lhs[id].countEquiv / sumHitDes), 
-                                               std::abs(prof_lhs[id].countEquiv / sumHitDes), (prof_rhs[id].countEquiv / sumHitDes_rhs));
+                // use 1,4,6,4,1 as smoothing kernel to get more results
+                if(1) { // gaussian 1x5 smoothing kernel
+                    for (int id = 2; id < (int)(prof_lhs.size()) - 2; ++id) {
+                        auto smooth_countEquiv_lhs =
+                                1/16 * (prof_lhs[id-2].countEquiv + 4 * prof_lhs[id-1].countEquiv + 6 * prof_lhs[id].countEquiv
+                                + 4 * prof_lhs[id+1].countEquiv + prof_lhs[id+2].countEquiv);
+                        auto smooth_countEquiv_rhs =
+                                1/16 * (prof_rhs[id-2].countEquiv + 4 * prof_rhs[id-1].countEquiv + 6 * prof_rhs[id].countEquiv
+                                        + 4 * prof_rhs[id+1].countEquiv + prof_rhs[id+2].countEquiv);
+                        if (std::sqrt(std::max(1.0, std::min(smooth_countEquiv_lhs, smooth_countEquiv_rhs))) < 10) {
+                            // Sample size not large enough
+                            ++nbProfileSkips;
+                            continue;
+                        }
+                        if (!IsEqual(smooth_countEquiv_lhs / sumHitDes, smooth_countEquiv_rhs / sumHitDes_rhs,
+                                     locThreshold)) {
+                            cmpFileFine += fmt::format(
+                                    "[Facet][{}][Profile][Ind={}][countEquiv][{}] has large difference: "
+                                    "{} : {} - {}\n",
+                                    facetId, id, m,
+                                    std::abs(smooth_countEquiv_lhs / sumHitDes -
+                                                     smooth_countEquiv_rhs / sumHitDes_rhs) /
+                                    (smooth_countEquiv_lhs / sumHitDes),
+                                    std::abs(smooth_countEquiv_lhs / sumHitDes),
+                                    (smooth_countEquiv_rhs / sumHitDes_rhs));
 
-                        ++fineErrNb;
-                    }
-                    if (!IsEqual(prof_lhs[id].sum_1_per_ort_velocity * scale,
-                                 prof_rhs[id].sum_1_per_ort_velocity * scale_rhs,
-                                 locThreshold * velocityThresholdFactor)) {
-                        cmpFileFine += fmt::format("[Facet][{}][Profile][Ind={}][sum_1_per_ort_velocity][{}] has large rel difference: "
-                                               "{} : {} - {}\n",
-                                               facetId, id, m,
-                                               std::abs(prof_lhs[id].sum_1_per_ort_velocity * scale - prof_rhs[id].sum_1_per_ort_velocity * scale_rhs) / (prof_lhs[id].sum_1_per_ort_velocity * scale),
-                                               std::abs(prof_lhs[id].sum_1_per_ort_velocity * scale), (prof_rhs[id].sum_1_per_ort_velocity * scale_rhs));
+                            ++fineErrNb;
+                        }
 
-                        ++fineErrNb;
-                    }
-                    if (!IsEqual(prof_lhs[id].sum_v_ort * scale, prof_rhs[id].sum_v_ort * scale_rhs,
-                                 locThreshold * velocityThresholdFactor)) {
-                        cmpFileFine += fmt::format("[Facet][{}][Profile][Ind={}][sum_v_ort][{}] has large rel difference: "
-                                               "{} : {} - {}\n",
-                                               facetId, id, m,
-                                               std::abs(prof_lhs[id].sum_v_ort * scale - prof_rhs[id].sum_v_ort * scale_rhs) / (prof_lhs[id].sum_v_ort * scale),
-                                               std::abs(prof_lhs[id].sum_v_ort * scale), (prof_rhs[id].sum_v_ort * scale_rhs));
+                        auto smooth_sum_1_per_ort_velocity_lhs =
+                                1/16 * (prof_lhs[id-2].countEquiv + 4 * prof_lhs[id-1].countEquiv + 6 * prof_lhs[id].countEquiv
+                                        + 4 * prof_lhs[id+1].countEquiv + prof_lhs[id+2].countEquiv);
+                        auto smooth_sum_1_per_ort_velocity_rhs =
+                                1/16 * (prof_rhs[id-2].countEquiv + 4 * prof_rhs[id-1].countEquiv + 6 * prof_rhs[id].countEquiv
+                                        + 4 * prof_rhs[id+1].countEquiv + prof_rhs[id+2].countEquiv);
 
-                        ++fineErrNb;
+                        if (!IsEqual(smooth_sum_1_per_ort_velocity_lhs * scale,
+                                     smooth_sum_1_per_ort_velocity_rhs * scale_rhs,
+                                     locThreshold * velocityThresholdFactor)) {
+                            cmpFileFine += fmt::format(
+                                    "[Facet][{}][Profile][Ind={}][sum_1_per_ort_velocity][{}] has large rel difference: "
+                                    "{} : {} - {}\n",
+                                    facetId, id, m,
+                                    std::abs(smooth_sum_1_per_ort_velocity_lhs * scale -
+                                             smooth_sum_1_per_ort_velocity_rhs * scale_rhs) /
+                                    (smooth_sum_1_per_ort_velocity_lhs * scale),
+                                    std::abs(smooth_sum_1_per_ort_velocity_lhs * scale),
+                                    (smooth_sum_1_per_ort_velocity_rhs * scale_rhs));
+
+                            ++fineErrNb;
+                        }
+                        auto smooth_sum_v_ort_lhs =
+                                1/16 * (prof_lhs[id-2].countEquiv + 4 * prof_lhs[id-1].countEquiv + 6 * prof_lhs[id].countEquiv
+                                        + 4 * prof_lhs[id+1].countEquiv + prof_lhs[id+2].countEquiv);
+                        auto smooth_sum_v_ort_rhs =
+                                1/16 * (prof_rhs[id-2].countEquiv + 4 * prof_rhs[id-1].countEquiv + 6 * prof_rhs[id].countEquiv
+                                        + 4 * prof_rhs[id+1].countEquiv + prof_rhs[id+2].countEquiv);
+
+                        if (!IsEqual(smooth_sum_v_ort_lhs * scale, smooth_sum_v_ort_rhs * scale_rhs,
+                                     locThreshold * velocityThresholdFactor)) {
+                            cmpFileFine += fmt::format(
+                                    "[Facet][{}][Profile][Ind={}][sum_v_ort][{}] has large rel difference: "
+                                    "{} : {} - {}\n",
+                                    facetId, id, m,
+                                    std::abs(smooth_sum_v_ort_lhs * scale - smooth_sum_v_ort_rhs * scale_rhs) /
+                                    (smooth_sum_v_ort_lhs * scale),
+                                    std::abs(smooth_sum_v_ort_lhs * scale), (smooth_sum_v_ort_rhs * scale_rhs));
+
+                            ++fineErrNb;
+                        }
+                    }
+                }
+                else {
+                    for (int id = 0; id < prof_lhs.size(); ++id) {
+                        if (std::sqrt(std::max(1.0, std::min(prof_lhs[id].countEquiv, prof_rhs[id].countEquiv))) < 10) {
+                            // Sample size not large enough
+                            ++nbProfileSkips;
+                            continue;
+                        }
+                        if (!IsEqual(prof_lhs[id].countEquiv / sumHitDes, prof_rhs[id].countEquiv / sumHitDes_rhs,
+                                     locThreshold)) {
+                            cmpFileFine += fmt::format("[Facet][{}][Profile][Ind={}][countEquiv][{}] has large difference: "
+                                                   "{} : {} - {}\n",
+                                                   facetId, id, m,
+                                                   std::abs(prof_lhs[id].countEquiv / sumHitDes - prof_rhs[id].countEquiv / sumHitDes_rhs) / (prof_lhs[id].countEquiv / sumHitDes),
+                                                   std::abs(prof_lhs[id].countEquiv / sumHitDes), (prof_rhs[id].countEquiv / sumHitDes_rhs));
+
+                            ++fineErrNb;
+                        }
+                        if (!IsEqual(prof_lhs[id].sum_1_per_ort_velocity * scale,
+                                     prof_rhs[id].sum_1_per_ort_velocity * scale_rhs,
+                                     locThreshold * velocityThresholdFactor)) {
+                            cmpFileFine += fmt::format("[Facet][{}][Profile][Ind={}][sum_1_per_ort_velocity][{}] has large rel difference: "
+                                                   "{} : {} - {}\n",
+                                                   facetId, id, m,
+                                                   std::abs(prof_lhs[id].sum_1_per_ort_velocity * scale - prof_rhs[id].sum_1_per_ort_velocity * scale_rhs) / (prof_lhs[id].sum_1_per_ort_velocity * scale),
+                                                   std::abs(prof_lhs[id].sum_1_per_ort_velocity * scale), (prof_rhs[id].sum_1_per_ort_velocity * scale_rhs));
+
+                            ++fineErrNb;
+                        }
+                        if (!IsEqual(prof_lhs[id].sum_v_ort * scale, prof_rhs[id].sum_v_ort * scale_rhs,
+                                     locThreshold * velocityThresholdFactor)) {
+                            cmpFileFine += fmt::format("[Facet][{}][Profile][Ind={}][sum_v_ort][{}] has large rel difference: "
+                                                   "{} : {} - {}\n",
+                                                   facetId, id, m,
+                                                   std::abs(prof_lhs[id].sum_v_ort * scale - prof_rhs[id].sum_v_ort * scale_rhs) / (prof_lhs[id].sum_v_ort * scale),
+                                                   std::abs(prof_lhs[id].sum_v_ort * scale), (prof_rhs[id].sum_v_ort * scale_rhs));
+
+                            ++fineErrNb;
+                        }
                     }
                 }
             }
@@ -1293,6 +1378,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                     //for (int ix = 0; ix < texWidth_file; ix++) {
                     if (std::sqrt(std::max(1.0, std::min(tex_lhs[iy].countEquiv, tex_rhs[iy].countEquiv))) < 80) {
                         // Sample size not large enough
+                        ++nbTextureSkips;
                         continue;
                     }
                     if (!IsEqual(tex_lhs[iy].countEquiv / sumHitDes, tex_rhs[iy].countEquiv / sumHitDes_rhs,
@@ -1339,6 +1425,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                     //for (int ix = 0; ix < dirWidth_file; ix++) {
                     if (std::sqrt(std::max(1.0, (double) std::min(dir_lhs[iy].count, dir_rhs[iy].count))) < 80) {
                         // Sample size not large enough
+                        ++nbDirSkips;
                         continue;
                     }
                     if (!IsEqual((double)dir_lhs[iy].count, (double)dir_rhs[iy].count, locThreshold)) {
@@ -1386,6 +1473,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                     if (std::sqrt(std::max(1.0, std::min(hist_lhs.nbHitsHistogram[hIndex],
                                                          hist_rhs.nbHitsHistogram[hIndex]))) < 80) {
                         // Sample size not large enough
+                        ++nbHistSkips_loc;
                         continue;
                     }
                     if (!IsEqual(hist_lhs.nbHitsHistogram[hIndex] / static_cast<double>(facetCounter_lhs.hits.nbMCHit),
@@ -1404,6 +1492,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                     if (std::sqrt(std::max(1.0, std::min(hist_lhs.distanceHistogram[hIndex],
                                                          hist_rhs.distanceHistogram[hIndex]))) < 80) {
                         // Sample size not large enough
+                        ++nbHistSkips_loc;
                         continue;
                     }
                     if (!IsEqual(hist_lhs.distanceHistogram[hIndex] / static_cast<double>(facetCounter_lhs.hits.nbMCHit),
@@ -1424,6 +1513,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                             std::max(1.0, std::min(hist_lhs.timeHistogram[hIndex], hist_rhs.timeHistogram[hIndex]))) <
                         80) {
                         // Sample size not large enough
+                        ++nbHistSkips_loc;
                         continue;
                     }
                     if (!IsEqual(hist_lhs.timeHistogram[hIndex] / static_cast<double>(facetCounter_lhs.hits.nbMCHit),
