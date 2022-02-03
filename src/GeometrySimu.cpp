@@ -1259,12 +1259,12 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                 if(1) { // gaussian 1x5 smoothing kernel
                     for (int id = 2; id < (int)(prof_lhs.size()) - 2; ++id) {
                         auto smooth_countEquiv_lhs =
-                                1/16 * (prof_lhs[id-2].countEquiv + 4 * prof_lhs[id-1].countEquiv + 6 * prof_lhs[id].countEquiv
-                                + 4 * prof_lhs[id+1].countEquiv + prof_lhs[id+2].countEquiv);
+                                1.0/16.0 * (prof_lhs[id-2].countEquiv + 4.0 * prof_lhs[id-1].countEquiv + 6.0 * prof_lhs[id].countEquiv
+                                + 4.0 * prof_lhs[id+1].countEquiv + prof_lhs[id+2].countEquiv);
                         auto smooth_countEquiv_rhs =
-                                1/16 * (prof_rhs[id-2].countEquiv + 4 * prof_rhs[id-1].countEquiv + 6 * prof_rhs[id].countEquiv
-                                        + 4 * prof_rhs[id+1].countEquiv + prof_rhs[id+2].countEquiv);
-                        if (std::sqrt(std::max(1.0, std::min(smooth_countEquiv_lhs, smooth_countEquiv_rhs))) < 10) {
+                                1.0/16.0 * (prof_rhs[id-2].countEquiv + 4.0 * prof_rhs[id-1].countEquiv + 6.0 * prof_rhs[id].countEquiv
+                                        + 4.0 * prof_rhs[id+1].countEquiv + prof_rhs[id+2].countEquiv);
+                        if (std::max(1.0, std::min(smooth_countEquiv_lhs, smooth_countEquiv_rhs)) < 100) {
                             // Sample size not large enough
                             ++nbProfileSkips;
                             continue;
@@ -1285,11 +1285,11 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                         }
 
                         auto smooth_sum_1_per_ort_velocity_lhs =
-                                1/16 * (prof_lhs[id-2].countEquiv + 4 * prof_lhs[id-1].countEquiv + 6 * prof_lhs[id].countEquiv
-                                        + 4 * prof_lhs[id+1].countEquiv + prof_lhs[id+2].countEquiv);
+                                1.0/16.0 * (prof_lhs[id-2].countEquiv + 4.0 * prof_lhs[id-1].countEquiv + 6.0 * prof_lhs[id].countEquiv
+                                        + 4.0 * prof_lhs[id+1].countEquiv + prof_lhs[id+2].countEquiv);
                         auto smooth_sum_1_per_ort_velocity_rhs =
-                                1/16 * (prof_rhs[id-2].countEquiv + 4 * prof_rhs[id-1].countEquiv + 6 * prof_rhs[id].countEquiv
-                                        + 4 * prof_rhs[id+1].countEquiv + prof_rhs[id+2].countEquiv);
+                                1.0/16.0 * (prof_rhs[id-2].countEquiv + 4.0 * prof_rhs[id-1].countEquiv + 6.0 * prof_rhs[id].countEquiv
+                                        + 4.0 * prof_rhs[id+1].countEquiv + prof_rhs[id+2].countEquiv);
 
                         if (!IsEqual(smooth_sum_1_per_ort_velocity_lhs * scale,
                                      smooth_sum_1_per_ort_velocity_rhs * scale_rhs,
@@ -1307,11 +1307,11 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                             ++fineErrNb;
                         }
                         auto smooth_sum_v_ort_lhs =
-                                1/16 * (prof_lhs[id-2].countEquiv + 4 * prof_lhs[id-1].countEquiv + 6 * prof_lhs[id].countEquiv
-                                        + 4 * prof_lhs[id+1].countEquiv + prof_lhs[id+2].countEquiv);
+                                1.0/16.0 * (prof_lhs[id-2].countEquiv + 4.0 * prof_lhs[id-1].countEquiv + 6.0 * prof_lhs[id].countEquiv
+                                        + 4.0 * prof_lhs[id+1].countEquiv + prof_lhs[id+2].countEquiv);
                         auto smooth_sum_v_ort_rhs =
-                                1/16 * (prof_rhs[id-2].countEquiv + 4 * prof_rhs[id-1].countEquiv + 6 * prof_rhs[id].countEquiv
-                                        + 4 * prof_rhs[id+1].countEquiv + prof_rhs[id+2].countEquiv);
+                                1.0/16.0 * (prof_rhs[id-2].countEquiv + 4.0 * prof_rhs[id-1].countEquiv + 6.0 * prof_rhs[id].countEquiv
+                                        + 4.0 * prof_rhs[id+1].countEquiv + prof_rhs[id+2].countEquiv);
 
                         if (!IsEqual(smooth_sum_v_ort_lhs * scale, smooth_sum_v_ort_rhs * scale_rhs,
                                      locThreshold * velocityThresholdFactor)) {
@@ -1376,7 +1376,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                 int ix = 0;
                 for (int iy = 0; iy < tex_lhs.size(); iy++) {
                     //for (int ix = 0; ix < texWidth_file; ix++) {
-                    if (std::sqrt(std::max(1.0, std::min(tex_lhs[iy].countEquiv, tex_rhs[iy].countEquiv))) < 80) {
+                    if (std::max(1.0, std::min(tex_lhs[iy].countEquiv, tex_rhs[iy].countEquiv)) < 640) {
                         // Sample size not large enough
                         ++nbTextureSkips;
                         continue;
