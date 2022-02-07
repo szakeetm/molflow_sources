@@ -396,7 +396,6 @@ typedef Record<TriangleRayGenData> RaygenRecordTri;
         tri_memory.sbtIndexBuffer.resize(model->triangle_meshes.size());
         tri_memory.polyBuffer.resize(model->triangle_meshes.size());
         tri_memory.facprobBuffer.resize(model->triangle_meshes.size());
-        tri_memory.cdfBuffer.resize(model->triangle_meshes.size());
 
         OptixTraversableHandle asHandle{0};
 
@@ -679,6 +678,11 @@ typedef Record<TriangleRayGenData> RaygenRecordTri;
         state.moduleCompileOptions.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
 #else
         state.moduleCompileOptions.optLevel          = OPTIX_COMPILE_OPTIMIZATION_LEVEL_3;
+#if (OPTIX_VERSION >= 70400)
+     state.moduleCompileOptions.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_MINIMAL;
+#else
+    state.moduleCompileOptions.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_LINEINFO;
+#endif
         state.moduleCompileOptions.debugLevel        = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
 #endif
         state.pipelineCompileOptions = {};
@@ -712,7 +716,12 @@ typedef Record<TriangleRayGenData> RaygenRecordTri;
         //state.pipelineLinkOptions.overrideUsesMotionBlur = false; // Removed with Optix7.1
         state.pipelineLinkOptions.maxTraceDepth = (state.launchParams.simConstants.maxDepth == 0) ? 2 : state.launchParams.simConstants.maxDepth+1;
 #if defined(NDEBUG)
-        state.pipelineLinkOptions.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
+        // Keep generated line info for Nsight Compute profiling. (NVCC_OPTIONS use --generate-line-info in CMakeLists.txt)
+#if (OPTIX_VERSION >= 70400)
+        state.pipelineLinkOptions.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_MINIMAL;
+#else
+        state.pipelineLinkOptions.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_LINEINFO;
+#endif
 #else // DEBUG
         state.pipelineLinkOptions.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
 #endif
@@ -1110,7 +1119,6 @@ typedef Record<TriangleRayGenData> RaygenRecordTri;
 
             tri_memory.texcoordBuffer[meshID].alloc_and_upload(mesh.texCoords);
             tri_memory.polyBuffer[meshID].alloc_and_upload(mesh.poly);
-            tri_memory.cdfBuffer[meshID].alloc_and_upload(mesh.cdfs_1);
             tri_memory.facprobBuffer[meshID].alloc_and_upload(mesh.facetProbabilities);
         }
 
@@ -1124,7 +1132,6 @@ typedef Record<TriangleRayGenData> RaygenRecordTri;
             rec.data.vertex = (float3 *) tri_memory.vertexBuffer[0].d_pointer();
             rec.data.index = (int3 *) tri_memory.indexBuffer[0].d_pointer();
             rec.data.poly = (flowgpu::Polygon *) tri_memory.polyBuffer[0].d_pointer();
-            rec.data.cdfs = (float *) tri_memory.cdfBuffer[0].d_pointer();
             rec.data.facetProbabilities = (float2 *) tri_memory.facprobBuffer[0].d_pointer();
             //raygenRecords.push_back(rec);
             sbt_memory.raygenRecordsBuffer.alloc(sizeof(rec));
@@ -1397,6 +1404,11 @@ try{
 
         sim_memory.moleculeBuffer.initDeviceData(newSize.x * newSize.y * sizeof(MolPRD));
 
+        if (!model->cdfs_1.empty() && model->cdfs_1.size() == model->cdfs_2.size()) {
+            facet_memory.cdf1Buffer.upload(model->cdfs_1.data(), model->cdfs_1.size());
+            facet_memory.cdf2Buffer.upload(model->cdfs_2.data(), model->cdfs_2.size());
+        }
+
         // Texture
         if (!model->textures.empty()) {
             facet_memory.textureBuffer.upload(model->facetTex.data(), model->facetTex.size());
@@ -1435,6 +1447,12 @@ try{
         //facet_memory.textureBuffer.resize(model->textures.size() * sizeof(TextureCell));
 
 // Texture
+
+        if (!model->cdfs_1.empty() && model->cdfs_1.size() == model->cdfs_2.size()) {
+            facet_memory.cdf1Buffer.alloc_and_upload(model->cdfs_1);
+            facet_memory.cdf2Buffer.alloc_and_upload(model->cdfs_2);
+        }
+
         if (!model->textures.empty()) {
             facet_memory.textureBuffer.alloc_and_upload(model->facetTex);
             facet_memory.texelBuffer.alloc_and_upload(model->textures);
@@ -1489,7 +1507,10 @@ try{
             state.launchParams.sharedData.texelInc = (float *) facet_memory.texIncBuffer.d_pointer();
         if (!facet_memory.profileBuffer.isNullptr())
             state.launchParams.sharedData.profileSlices = (flowgpu::Texel *) facet_memory.profileBuffer.d_pointer();
-
+        if (!facet_memory.cdf1Buffer.isNullptr())
+            state.launchParams.sharedData.cdfs1 = (float *) facet_memory.cdf1Buffer.d_pointer();
+        if (!facet_memory.cdf2Buffer.isNullptr())
+            state.launchParams.sharedData.cdfs2 = (float *) facet_memory.cdf2Buffer.d_pointer();
 #ifdef DEBUGCOUNT
         memory_debug.detBuffer.resize(NCOUNTBINS*sizeof(uint32_t));
         memory_debug.uBuffer.resize(NCOUNTBINS*sizeof(uint32_t));
@@ -1672,7 +1693,6 @@ try{
             tri_memory.indexBuffer[meshID].free();
             tri_memory.sbtIndexBuffer[meshID].free();
             tri_memory.polyBuffer[meshID].free();
-            tri_memory.cdfBuffer[meshID].free();
             tri_memory.facprobBuffer[meshID].free();
         }
 
@@ -1710,6 +1730,10 @@ try{
         facet_memory.hitCounterBuffer.free();
         facet_memory.missCounterBuffer.free();
 
+        if (!facet_memory.cdf1Buffer.isNullptr())
+            facet_memory.cdf1Buffer.free();
+        if (!facet_memory.cdf2Buffer.isNullptr())
+            facet_memory.cdf2Buffer.free();
         if (!facet_memory.textureBuffer.isNullptr())
             facet_memory.textureBuffer.free();
         if (!facet_memory.texelBuffer.isNullptr())

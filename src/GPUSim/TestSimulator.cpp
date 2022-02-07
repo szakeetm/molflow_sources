@@ -16,6 +16,7 @@
 #include "Initializer.h"
 #include "IO/WriterXML.h"
 #include "fmt/core.h"
+#include <SettingsIO.h>
 
 void printUsageAndExit( const char* argv0 )
 {
@@ -409,11 +410,15 @@ int main(int argc, char **argv) {
     // 1st convert from GPU types to CPU types
     // 2nd save with XML
     gpuSim.ConvertSimulationData(globState);
-    FlowIO::WriterXML writer;
+    FlowIO::WriterXML writer(false, false);
     pugi::xml_document newDoc;
-
+    //newDoc.load_file(SettingsIO::workFile.c_str());
     std::string fullOutFile = "./testout.xml";
-    std::filesystem::remove(fullOutFile);
+
+    // Copy full file description first, in case outputFile is different
+    /*std::filesystem::copy_file(SettingsIO::workFile, fullOutFile,
+                               std::filesystem::copy_options::overwrite_existing);*/
+
     writer.SaveGeometry(newDoc, simModel);
     writer.SaveSimulationState(newDoc, simModel, globState);
     if (!newDoc.save_file(fullOutFile.c_str())) {

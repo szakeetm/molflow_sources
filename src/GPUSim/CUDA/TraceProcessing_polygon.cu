@@ -370,7 +370,24 @@ namespace flowgpu {
         //TODO: Calculate new Velocity from CFD or directly
         //if (optixLaunchParams.simConstants.useMaxwell) prd.velocity = GenerateRandomVelocity(collidedFacet->sh.CDFid);
         //else
-        prd.velocity = getNewVelocity(poly, optixLaunchParams.simConstants.gasMass);
+        if(optixLaunchParams.simConstants.useMaxwell){
+            RN_T rnd_val;
+#if defined(RNG_BULKED)
+            OOB_CHECK("randInd", randInd + randOffset, optixLaunchParams.simConstants.nbRandNumbersPerThread*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y);
+#endif
+
+#ifdef RNG_BULKED
+            rnd_val = randFloat[(unsigned int)(randInd + randOffset++)];
+            optixLaunchParams.perThreadData.randBufferOffset[bufferIndex] = randOffset;
+#else
+            rnd_val = generate_rand(states, getWorkIndex());
+#endif
+            prd.velocity = randomVelo(poly, rnd_val);
+
+        }
+        else {
+            prd.velocity = getNewVelocity(poly, optixLaunchParams.simConstants.gasMass);
+        }
         if(prd.facetHitSide == OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE || prd.inSystem != TRANSPARENT_HIT) {
             //if (bufferIndex == 0 && poly.parentIndex == 102) printf("[%d] Front direction!\n", poly.parentIndex);
 #ifdef RNG_BULKED
@@ -611,8 +628,9 @@ if(prd->inSystem == 4)
                     }
                 }
 #endif
-
-                apply_offset(*prd, optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos);
+                {
+                    apply_offset(poly, *prd, optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos);
+                }
 
 #ifdef PAYLOAD_DIRECT
                 int hi_vel = __double2hiint(prd->velocity);

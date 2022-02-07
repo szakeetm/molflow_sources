@@ -234,7 +234,8 @@ namespace flowgpu {
     };
 
     struct SimProperties{
-        SimProperties() : stickingFactor(-1.0f), temperature(-1.0f), is2sided(false), opacity(-1.0f){}
+        SimProperties() : stickingFactor(-1.0f), temperature(-1.0f), is2sided(false), endangered_neighbor(false), offset_factor(0.0f), opacity(-1.0f), cdf_id(-1),
+        min_angle(360.0f), max_angle(0.0f){}
         SimProperties& operator=(const SimProperties& o)=default;/*{
             this->stickingFactor = o.stickingFactor;
             this->temperature = o.temperature;
@@ -249,6 +250,12 @@ namespace flowgpu {
         // only for transparent / 2sided
         bool is2sided;
         float opacity;
+
+        bool endangered_neighbor;
+        float offset_factor{0.0f};
+        float min_angle{360.0f};
+        float max_angle{0.0f};
+        int cdf_id;
     };
 
     class Polygon {

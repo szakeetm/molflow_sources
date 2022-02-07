@@ -331,7 +331,7 @@ char *FacetDetails::FormatCell(size_t idx, InterfaceFacet *f, size_t mode) {
 		sprintf(ret, "%g", f->sh.temperature);
 		break;
     case 11:
-      sprintf(ret,"%g x %g",f->sh.U.Norme(),f->sh.V.Norme());
+      sprintf(ret, "%g x %g", f->sh.U.Length(), f->sh.V.Length());
       break;
     case 12:
       if( f->sh.isTextured ) {

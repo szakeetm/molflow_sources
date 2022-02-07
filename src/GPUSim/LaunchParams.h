@@ -71,10 +71,6 @@ namespace flowgpu {
         float2* facetProbabilities;
         //double* prob_lower;
         //double* prob_upper;
-        // CFD for velocity calculation (temperature, v-bin)
-        float* cdfs;
-        //double *cdf_x; //index of map
-        //double *cdf_val; //value of map
     };
 
     struct PolygonRayGenData {
@@ -169,6 +165,12 @@ namespace flowgpu {
             float *texelInc;
             flowgpu::Texel *texels;
             flowgpu::Texel *profileSlices;
+
+            // CFD for velocity calculation (temperature, v-bin)
+            float* cdfs1;
+            float* cdfs2;
+            //double *cdf_x; //index of map
+            //double *cdf_val; //value of map
         } sharedData;
 
         struct {

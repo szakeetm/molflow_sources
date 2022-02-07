@@ -580,8 +580,8 @@ std::pair<double,double> FacetAdvParams::GetRatioForNbCell(size_t nbCellsU, size
         for (auto &sel : selFacets) {
             InterfaceFacet *f = geom->GetFacet(sel);
             if (f->selected) {
-                double nU = f->sh.U.Norme();
-                double nV = f->sh.V.Norme();
+                double nU = f->sh.U.Length();
+                double nV = f->sh.V.Length();
 
                 if (nU != 0.0)
                     ratioU = (double) nbCellsU / nU;

@@ -95,6 +95,8 @@ set(SRC_FILES ${SRC_FILES}
         ${GPU_DIR_1}/Model.cpp
         #${GPU_DIR_1}/RNGKernel.cu
         #${GPU_DIR_1}/RandomWrapper.cpp
+        ${HEADER_DIR_2}/NeighborScan.cpp
+
         )
 
 

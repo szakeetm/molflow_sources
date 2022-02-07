@@ -996,8 +996,8 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
 			throw Error(errMsg);
 		}
 		BuildFacetList(f);
-        const double nU = f->sh.U.Norme();
-        const double nV = f->sh.V.Norme();
+        const double nU = f->sh.U.Length();
+        const double nV = f->sh.V.Length();
 
         f->tRatioU = f->sh.texWidth_precise / nU;
         f->tRatioV = f->sh.texHeight_precise / nV;
@@ -1261,7 +1261,7 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
 		InterfaceFacet *f = facets[i];
 		//f->SetTexture(f->wp.texWidth_precise,f->wp.texHeight_precise,f->hasMesh);
 		BuildFacetList(f);
-		//double nU = &(f->wp.U).Norme();
+		//double nU = &(f->wp.U).Length();
 		//f->tRatio = f->wp.texWidth_precise / nU;
 	}
 	//return result;
@@ -1970,7 +1970,7 @@ void MolflowGeometry::ExportProfiles(FILE *file, int isTXT, Worker *worker) {
 				std::ostringstream line;
 
 				line << i + 1 << sep << profileRecordModeDescriptions[(ProfileRecordModes)f->sh.profileType].second << sep << f->sh.O.x << sep << f->sh.O.y << sep << f->sh.O.z << sep << f->sh.U.x << sep << f->sh.U.y << sep << f->sh.U.z << sep;
-				line << f->sh.V.x << sep << f->sh.V.y << sep << f->sh.V.z << sep << f->sh.U.Norme() << sep << f->sh.V.Norme() << sep << f->sh.center.x << sep << f->sh.center.y << sep << f->sh.center.z << sep << f->sh.maxSpeed << sep << f->facetHitCache.nbMCHit << sep << f->facetHitCache.nbHitEquiv << sep;
+				line << f->sh.V.x << sep << f->sh.V.y << sep << f->sh.V.z << sep << f->sh.U.Length() << sep << f->sh.V.Length() << sep << f->sh.center.x << sep << f->sh.center.y << sep << f->sh.center.z << sep << f->sh.maxSpeed << sep << f->facetHitCache.nbMCHit << sep << f->facetHitCache.nbHitEquiv << sep;
 
 				if (f->sh.isProfile) {
 
@@ -2053,7 +2053,7 @@ void MolflowGeometry::ImportDesorption_DES(FileReader *file) {
 			ratio = f->wp.outgassingFileRatio;
 		}
 		double nU = f->wp.U.Norme();
-		double nV = f->wp.V.Norme();
+		double nV = f->wp.V.Length();
 		size_t w = f->wp.outgassingMapWidth = (size_t)ceil(nU*ratio); //double precision written to file
 		size_t h = f->wp.outgassingMapHeight = (size_t)ceil(nV*ratio); //double precision written to file
 		f->outgassingMapWindow = (double*)malloc(w*h*sizeof(double));
@@ -2205,8 +2205,8 @@ void MolflowGeometry::ImportDesorption_SYN(
 			f->ogMap.outgassingMapHeight = (size_t)ceil(ydims[i] * 0.9999999);
 
 			if (f->selected) {
-				f->ogMap.outgassingFileRatioU = xdims[i] / f->sh.U.Norme();
-				f->ogMap.outgassingFileRatioV = ydims[i] / f->sh.V.Norme();
+				f->ogMap.outgassingFileRatioU = xdims[i] / f->sh.U.Length();
+				f->ogMap.outgassingFileRatioV = ydims[i] / f->sh.V.Length();
 				try {
 					std::vector<double>(f->ogMap.outgassingMapWidth*f->ogMap.outgassingMapHeight).swap(f->ogMap.outgassingMap);
 				}
@@ -3424,8 +3424,8 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 			throw Error(errMsg);
 		}
 		BuildFacetList(f);
-        const double nU = f->sh.U.Norme();
-        const double nV = f->sh.V.Norme();
+        const double nU = f->sh.U.Length();
+        const double nV = f->sh.V.Length();
 
         f->tRatioU = f->sh.texWidth_precise / nU;
         f->tRatioV = f->sh.texHeight_precise / nV;

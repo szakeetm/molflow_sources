@@ -101,8 +101,8 @@ std::vector<double> SubprocessFacet::InitTextureMesh()
     double sx, sy;
     double iw = 1.0 / (double)sh.texWidth_precise;
     double ih = 1.0 / (double)sh.texHeight_precise;
-    double rw = sh.U.Norme() * iw;
-    double rh = sh.V.Norme() * ih;
+    double rw = sh.U.Length() * iw;
+    double rh = sh.V.Length() * ih;
     double fullCellArea = iw*ih;
 
     std::vector<Vector2d>(4).swap(P1.pts);
@@ -206,18 +206,18 @@ size_t SubprocessFacet::InitializeTexture(const size_t &nbMoments)
             throw std::runtime_error("Not enough memory to load textures");
             return false;
         }
-        fullSizeInc = (sh.texWidth_precise * sh.texHeight_precise) / (sh.U.Norme() * sh.V.Norme());
+        fullSizeInc = (sh.texWidth_precise * sh.texHeight_precise) / (sh.U.Norme() * sh.V.Length());
         }*/
         // Texture increment of a full texture element
-        double fullSizeInc = (sh.texWidth_precise * sh.texHeight_precise) / (sh.U.Norme() * sh.V.Norme());
+        double fullSizeInc = (sh.texWidth_precise * sh.texHeight_precise) / (sh.U.Length() * sh.V.Length());
         for (size_t j = 0; j < nbE; j++) { //second pass, filter out very small cells
             largeEnough[j] = textureCellIncrements[j] < (5.0*fullSizeInc);
         }
 
         //double iw = 1.0 / (double)sh.texWidth_precise;
         //double ih = 1.0 / (double)sh.texHeight_precise;
-        //double rw = sh.U.Norme() * iw;
-        //double rh = sh.V.Norme() * ih;
+        //double rw = sh.U.Length() * iw;
+        //double rh = sh.V.Length() * ih;
     }
     else
         textureSize = 0;
@@ -315,8 +315,8 @@ void SubprocessFacet::InitializeOutgassingMap()
 {
     if (sh.useOutgassingFile) {
         //Precalc actual outgassing map width and height for faster generation:
-        ogMap.outgassingMapWidth_precise = sh.U.Norme() * ogMap.outgassingFileRatioU;
-        ogMap.outgassingMapHeight_precise = sh.V.Norme() * ogMap.outgassingFileRatioV;
+        ogMap.outgassingMapWidth_precise = sh.U.Length() * ogMap.outgassingFileRatioU;
+        ogMap.outgassingMapHeight_precise = sh.V.Length() * ogMap.outgassingFileRatioV;
         size_t nbE = ogMap.outgassingMapWidth*ogMap.outgassingMapHeight;
         // TODO: Check with molflow_threaded e10c2a6f and 66b89ac7 if right
         // making a copy shouldn't be necessary as i will never get changed before use
@@ -498,7 +498,7 @@ void SimulationModel::CalculateFacetParams(SubprocessFacet* f) {
         v1 = vertices3[i1] - vertices3[i0]; // v1 = P0P1
         v2 = vertices3[i2] - vertices3[i1]; // v2 = P1P2
         f->sh.N = CrossProduct(v1, v2);              // Cross product
-        consecutive = (f->sh.N.Norme() < 1e-11);
+        consecutive = (f->sh.N.Length() < 1e-11);
     }
     f->sh.N = f->sh.N.Normalized();                  // Normalize
 

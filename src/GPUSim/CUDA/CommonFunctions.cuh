@@ -67,11 +67,12 @@ extern "C" __constant__ flowgpu::LaunchParams optixLaunchParams;
 
 namespace cg = cooperative_groups;
 
+#define CDF_LEN 100
 //const __device__ float offset_val = 1.0f/64.0f;
 //const __device__ float offset_val_n = -1.0f/64.0f;
 const __device__ float offset_val = 1.0f/1.0f;
 const __device__ float offset_val_n = (-1.0f) * offset_val;
-const __device__ float offset_valc = 2000.0f/1.0f; //offset value for center offset
+const __device__ float offset_valc = 50.0f/1.0f; //offset value for center offset
 
 /* this GPU kernel takes an array of states, and an array of ints, and puts a random int into each */
 static __forceinline__ __device__ RN_T generate_rand(curandState_t* states, unsigned int id) {
@@ -164,10 +165,16 @@ static __forceinline__ __device__ float3 offset_to_center(const float3 p, unsign
     //int3 of_i(make_int3(int_scale() * c.x, int_scale() * c.y, int_scale() * c.z));
     //const int3 of_i = make_float3(float_scale()*c.x, float_scale()*c.y, float_scale()*c.z);
     float3 dir_i = normalize(c - p);
+
+    float offset_loc = offset_valc * poly.facProps.offset_factor;
+    //offset_loc = (0.9 * length(c-p) < offset_valc) ? 0.9 * length(c-p) : offset_valc;
+    /*printf("Offset check: %lf (%lf) - %lf\n", offset_loc, poly.facProps.offset_factor, length(c-p));
+    printf("Offset point: dir(%lf , %lf , %lf) - c(%lf , %lf , %lf) - p(%lf , %lf , %lf)\n", dir_i.z, dir_i.y, dir_i.z, c.z, c.y, c.z, p.x, p.y, p.z);
+*/
     int3 of_i(make_int3(
-            int_scale() * dir_i.x * offset_valc,
-            int_scale() * dir_i.y * offset_valc,
-            int_scale() * dir_i.z * offset_valc));
+            int_scale() * dir_i.x * offset_loc,
+            int_scale() * dir_i.y * offset_loc,
+            int_scale() * dir_i.z * offset_loc));
     float3 p_i(make_float3(
             int_as_float(float_as_int(p.x)+((p.x < 0) ? -of_i.x : of_i.x)),
             int_as_float(float_as_int(p.y)+((p.y < 0) ? -of_i.y : of_i.y)),
@@ -175,13 +182,28 @@ static __forceinline__ __device__ float3 offset_to_center(const float3 p, unsign
     /*DEBUG_PRINT("NEW OFFSET (%12.10f , %12.10f , %12.1    0f) ->"
                 "(%12.10f , %12.10f , %12.10f) \n",
                 p.x,p.y,p.z,dir_i.x, dir_i.y, dir_i.z);*/
-    return float3(make_float3(p.x+1.0f*float_scale()*dir_i.x * offset_valc,
-                              p.y+1.0f*float_scale()*dir_i.y * offset_valc,
-                              p.z+1.0f*float_scale()*dir_i.z * offset_valc));
+
+    float3 newpoint = make_float3(p.x+1.0f*offset_loc*float_scale()*dir_i.x ,
+                                  p.y+1.0f*offset_loc*float_scale()*dir_i.y ,
+                                  p.z+1.0f*offset_loc*float_scale()*dir_i.z );
+    float3 normpoint = make_float3(p.x+1.0f*float_scale()*dir_i.x,
+                                   p.y+1.0f*float_scale()*dir_i.y,
+                                   p.z+1.0f*float_scale()*dir_i.z);
+
+    /*printf("New coord: [%lf, %lf , %lf] %lf , %lf , %lf -- normal %lf , %lf , %lf -- pi  %lf , %lf , %lf\n",
+           offset_loc, offset_valc, poly.facProps.offset_factor,
+           newpoint.x, newpoint.y, newpoint.z,
+           normpoint.x, normpoint.y, normpoint.z,
+           p_i.x, p_i.y, p_i.z);*/
+
+    /*return float3(make_float3(p.x+1.0f* offset_loc*float_scale()*dir_i.x,
+                              p.y+1.0f* offset_loc*float_scale()*dir_i.y,
+                              p.z+1.0f* offset_loc*float_scale()*dir_i.z));*/
+    //return p;
     return float3(make_float3(
-            fabsf(p.x) < origin() ? p.x+float_scale()*dir_i.x : p_i.x,
-            fabsf(p.y) < origin() ? p.y+float_scale()*dir_i.y : p_i.y,
-            fabsf(p.z) < origin() ? p.z+float_scale()*dir_i.z : p_i.z));
+            fabsf(p.x) < origin() ? p.x+offset_loc*float_scale()*dir_i.x : p_i.x,
+            fabsf(p.y) < origin() ? p.y+offset_loc*float_scale()*dir_i.y : p_i.y,
+            fabsf(p.z) < origin() ? p.z+offset_loc*float_scale()*dir_i.z : p_i.z));
 
     return float3(make_float3(p.x+float_scale()*c.x, p.y+float_scale()*c.y, p.z+float_scale()*c.z));
 }
@@ -200,12 +222,12 @@ static __forceinline__ __device__ void initParticle(flowgpu::MolPRD& prd){
 
 }
 
-static __forceinline__ __device__ void apply_offset(const flowgpu::MolPRD& hitData, float3& rayOrigin){
-#ifdef WITHTRIANGLES
+static __forceinline__ __device__ void apply_offset(const flowgpu::Polygon& poly, const flowgpu::MolPRD& hitData, float3& rayOrigin){
+/*#ifdef WITHTRIANGLES
     const flowgpu::TriangleRayGenData* rayGenData = (flowgpu::TriangleRayGenData*) optixGetSbtDataPointer();
 #else
     const flowgpu::PolygonRayGenData* rayGenData = (flowgpu::PolygonRayGenData*) optixGetSbtDataPointer();
-#endif
+#endif*/
 
     const uint32_t facIndex = hitData.hitFacetId;
 #ifdef BOUND_CHECK
@@ -215,12 +237,12 @@ static __forceinline__ __device__ void apply_offset(const flowgpu::MolPRD& hitDa
 #endif
     //do not offset a transparent hit
     //if(optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].inSystem != TRANSPARENT_HIT){
-    float3 facNormal = rayGenData->poly[facIndex].N;
+    float3 facNormal = poly.N;
     /*if((hitData.facetHitSide == OPTIX_HIT_KIND_TRIANGLE_BACK_FACE && hitData.inSystem != TRANSPARENT_HIT)
        || (hitData.facetHitSide == OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE && hitData.inSystem == TRANSPARENT_HIT))*/
 
     // Don't flip normal on a normal backface hit (should only be allowed for 2sided transparent facets)
-    if((/*rayGenData->poly[hitData.hitFacetId].facProps.is2sided && */rayGenData->poly[hitData.hitFacetId].facProps.opacity == 0.0f)
+    if((/*rayGenData->poly[hitData.hitFacetId].facProps.is2sided && */poly.facProps.opacity == 0.0f)
        && (hitData.facetHitSide == OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE) )
 
         // previous backface hit
@@ -234,6 +256,63 @@ static __forceinline__ __device__ void apply_offset(const flowgpu::MolPRD& hitDa
         facNormal *= (offset_val);
     }
     rayOrigin = offset_ray(rayOrigin,facNormal);
+
+    /*if(poly.facProps.endangered_neighbor) { // with offset to center
+        rayOrigin = offset_to_center(hitData.hitPos, hitData.hitFacetId, poly);
+    }*/
+}
+
+static __forceinline__ __device__
+FLOAT_T randomVelo(const flowgpu::Polygon& poly, FLOAT_T rnd_key){
+#ifdef BOUND_CHECK
+    if(facIndex >= optixLaunchParams.simConstants.nbFacets){
+                printf("[RayOffset] facIndex %u >= %u is out of bounds (%u)\n", facIndex, optixLaunchParams.simConstants.nbFacets, hitData.inSystem);
+            }
+#endif
+
+    auto cdf_id = poly.facProps.cdf_id;
+    auto cdf = optixLaunchParams.sharedData.cdfs1;
+    auto cdf2 =optixLaunchParams.sharedData.cdfs2;
+
+    // interpolate
+    // boundary check?
+    //    if (table.size() == 1) return GetElement(table[0], !first);
+
+    int lower_bound;
+
+    // get lower bound
+    //int my_lower_bound(const double & key, const std::vector<double>& A)
+    {
+        int l = cdf_id * (CDF_LEN);
+        int h = l + CDF_LEN;//(int)A.size(); // Not n - 1
+        while (l < h) {
+            int mid = 0.5 * (l + h);
+            //DEBUG_PRINT("Mid [%d] %f --> %f\n", mid, cdf[mid],rnd_key);
+            if (rnd_key <= cdf2[mid]) {
+                h = mid;
+            }
+            else {
+                l = mid + 1;
+            }
+        }
+        lower_bound = l - 1;
+    }
+    //DEBUG_PRINT("LB [%f] %d = %d * %d []\n", rnd_key, lower_bound, cdf_id * (100), cdf_id * (100)+ 100);
+
+    if (lower_bound == -1) {
+        lower_bound = cdf_id * (CDF_LEN);
+    }
+    else if (lower_bound == cdf_id * (CDF_LEN) + (CDF_LEN - 1)) {
+        lower_bound = cdf_id * (CDF_LEN) + (CDF_LEN - 2);
+    }
+
+    double delta = cdf2[lower_bound + 1] - cdf2[lower_bound];
+    double overshoot = rnd_key - cdf2[lower_bound];
+
+    //DEBUG_PRINT("DF %f = %f * %f [] %d\n", cdf2[lower_bound] + (cdf2[lower_bound + 1] - cdf2[lower_bound])*(overshoot / delta), cdf2[lower_bound], cdf2[lower_bound + 1], lower_bound);
+
+    return cdf[lower_bound] + (cdf[lower_bound + 1] - cdf[lower_bound])*(overshoot / delta);
+    //return Weigh(cdf2[lower_bound] , cdf2[lower_bound + 1] ,overshoot / delta);
 }
 
 __device__
@@ -329,6 +408,7 @@ double3 getOrigin_double(
 static __forceinline__ __device__
 FLOAT_T getNewVelocity(const flowgpu::Polygon& poly, const float& gasMass)
 {
+    DEBUG_PRINT("Velo %f = %f * %f * %f", 145.469*sqrt((double)poly.facProps.temperature / gasMass), poly.facProps.temperature, gasMass, sqrt((double)poly.facProps.temperature / gasMass));
     return 145.469*sqrt((double)poly.facProps.temperature / gasMass);
 }
 

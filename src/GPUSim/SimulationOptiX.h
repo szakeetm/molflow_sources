@@ -171,7 +171,7 @@ namespace flowgpu {
         SimulationMemory_perFacet facet_memory;
         DeviceTriangleMemory tri_memory;
         DevicePolygonMemory poly_memory;
-#ifdef DEBUG
+#if defined(DEBUGCOUNT) || defined(DEBUGPOS) || defined(DEBUGLEAKPOS) || defined(DEBUGMISS)
         DeviceMemoryDebug memory_debug;
 #endif
 

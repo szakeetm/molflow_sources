@@ -261,12 +261,12 @@ namespace flowgpu {
         hitData = optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex];
         rayDir = hitData.postHitDir;
         rayOrigin = hitData.hitPos;
-        if(1) { // with offset to center
 #ifdef WITHTRIANGLES
-            const TriangleRayGenData* rayGenData = (TriangleRayGenData*) optixGetSbtDataPointer();
+        const TriangleRayGenData* rayGenData = (TriangleRayGenData*) optixGetSbtDataPointer();
 #else
-            const PolygonRayGenData *rayGenData = (PolygonRayGenData *) optixGetSbtDataPointer();
+        const PolygonRayGenData *rayGenData = (PolygonRayGenData *) optixGetSbtDataPointer();
 #endif
+        if(rayGenData->poly[hitData.hitFacetId].facProps.endangered_neighbor) { // with offset to center
             rayOrigin = offset_to_center(hitData.hitPos, hitData.hitFacetId, rayGenData->poly[hitData.hitFacetId]);
         }
 #ifdef DEBUG
@@ -347,7 +347,8 @@ void initMoleculeTransparentHit(const unsigned int bufferIndex, MolPRD& hitData,
     // increase facet counters for desorption
     // --------------------------------------
     static __forceinline__ __device__
-    void increaseHitCounterDesorption(CuFacetHitCounter& hitCounter, const MolPRD &hitData, const float3 &rayDir, const float3 &polyNormal)
+    void increaseHitCounterDesorption(CuFacetHitCounter& hitCounter, const MolPRD &hitData,
+                                      const float3 &rayDir, const float3 &polyNormal)
     {
 
         //const float hitEquiv = 0.0f; //1.0*prd.orientationRatio; // hit=1.0 (only changed for lowflux mode)
@@ -535,8 +536,24 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
         rayDir = getNewDirection(hitData, rayGenData->poly[facIndex], states);
 #endif
 
-        hitData.velocity = getNewVelocity(rayGenData->poly[facIndex], optixLaunchParams.simConstants.gasMass);
+        if(optixLaunchParams.simConstants.useMaxwell){
+            RN_T rnd_val;
+#if defined(RNG_BULKED)
+            OOB_CHECK("randInd", randInd + randOffset, optixLaunchParams.simConstants.nbRandNumbersPerThread*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y);
+#endif
 
+#ifdef RNG_BULKED
+            rnd_val = randFloat[(unsigned int)(randInd + randOffset++)];
+            optixLaunchParams.perThreadData.randBufferOffset[bufferIndex] = randOffset;
+#else
+            rnd_val = generate_rand(states, getWorkIndex());
+#endif
+            hitData.velocity = randomVelo(rayGenData->poly[facIndex], rnd_val);
+
+        }
+        else {
+            hitData.velocity = getNewVelocity(rayGenData->poly[facIndex], optixLaunchParams.simConstants.gasMass);
+        }
         // --------------------------------------
         // increase facet counters for desorption
         // --------------------------------------
@@ -605,8 +622,17 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
     }
 #endif
 
-        apply_offset(hitData, rayOrigin);
-
+        {
+#ifdef WITHTRIANGLES
+    const flowgpu::TriangleRayGenData* rayGenData = (flowgpu::TriangleRayGenData*) optixGetSbtDataPointer();
+#else
+    const flowgpu::PolygonRayGenData* rayGenData = (flowgpu::PolygonRayGenData*) optixGetSbtDataPointer();
+#endif
+            apply_offset(rayGenData->poly[hitData.hitFacetId], hitData, rayOrigin);
+            /*if(rayGenData->poly[hitData.hitFacetId].facProps.endangered_neighbor) { // with offset to center
+                rayOrigin = offset_to_center(hitData.hitPos, hitData.hitFacetId, rayGenData->poly[hitData.hitFacetId]);
+            }*/
+        }
 #ifdef PAYLOAD_DIRECT
         int hi_vel = __double2hiint(hitData.velocity);
         int lo_vel = __double2loint(hitData.velocity);

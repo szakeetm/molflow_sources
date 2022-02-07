@@ -123,6 +123,8 @@ namespace flowgpu {
         std::vector<flowgpu::Texel> textures;
         std::vector<flowgpu::FacetTexture> facetTex;
         std::vector<float> texInc;
+        std::vector<float> cdfs_1;
+        std::vector<float> cdfs_2;
 
         std::vector<flowgpu::Texel> profiles;
 

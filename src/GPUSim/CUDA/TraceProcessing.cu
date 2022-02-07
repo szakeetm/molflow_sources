@@ -457,6 +457,8 @@ namespace flowgpu {
         const FLOAT_T oriRatio = 1.0f; // TODO: Part of particle
         const FLOAT_T ortVelocity = hitData.velocity * fabsf(dot(rayDir, poly.N)); //surface-orthogonal velocity component
 
+        //DEBUG_PRINT("Adding %f = %f * %f * %f", oriRatio *velocity_factor*ortVelocity, oriRatio, velocity_factor, ortVelocity);
+
         atomicAdd(&tex.countEquiv, static_cast<uint32_t>(oriRatio));
         atomicAdd(&tex.sum_1_per_ort_velocity, (FLOAT_T)(oriRatio * velocity_factor / ortVelocity));
         atomicAdd(&tex.sum_v_ort_per_area, (FLOAT_T)(oriRatio * ortSpeedFactor * ortVelocity * (optixLaunchParams.simConstants.useMaxwell ? 1.0f : 1.1781f))); // sum ortho_velocity[m/s] / cell_area[cm2]
@@ -644,7 +646,24 @@ namespace flowgpu {
         //TODO: Calculate new Velocity from CFD or directly
         //if (optixLaunchParams.simConstants.useMaxwell) prd.velocity = GenerateRandomVelocity(collidedFacet->sh.CDFid);
         //else
-        prd.velocity = getNewVelocity(poly, optixLaunchParams.simConstants.gasMass);
+        if(optixLaunchParams.simConstants.useMaxwell){
+            RN_T rnd_val;
+#if defined(RNG_BULKED)
+            OOB_CHECK("randInd", randInd + randOffset, optixLaunchParams.simConstants.nbRandNumbersPerThread*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y);
+#endif
+
+#ifdef RNG_BULKED
+            rnd_val = randFloat[(unsigned int)(randInd + randOffset++)];
+            optixLaunchParams.perThreadData.randBufferOffset[bufferIndex] = randOffset;
+#else
+            rnd_val = generate_rand(states, getWorkIndex());
+#endif
+            prd.velocity = randomVelo(poly, rnd_val);
+
+        }
+        else {
+            prd.velocity = getNewVelocity(poly, optixLaunchParams.simConstants.gasMass);
+        }
 
 #if defined(RNG_BULKED)
         OOB_CHECK("randInd", randInd + randOffset, optixLaunchParams.simConstants.nbRandNumbersPerThread*optixLaunchParams.simConstants.size.x*optixLaunchParams.simConstants.size.y);
@@ -936,7 +955,12 @@ namespace flowgpu {
                 }
 #endif
 
-                apply_offset(*prd, optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos);
+                {
+                    apply_offset(poly, *prd, optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos);
+                    if(poly.facProps.endangered_neighbor) { // with offset to center
+                        optixLaunchParams.perThreadData.currentMoleculeData[bufferIndex].hitPos = offset_to_center(prd->hitPos, prd->hitFacetId, poly);
+                    }
+                }
 
 #ifdef PAYLOAD_DIRECT
                 int hi_vel = __double2hiint(prd->velocity);
@@ -1189,7 +1213,7 @@ namespace flowgpu {
         const TriangleMeshSBTData &sbtData = *(const TriangleMeshSBTData*)optixGetSbtDataPointer();
 
 
-/*#if !defined(GPUNBOUNCE)
+#if !defined(GPUNBOUNCE)
         DEBUG_PRINT("(%d) miss[%d -> %d -> %d][%d] "
                "(%12.10f , %12.10f , %12.10f) --> (%12.10f , %12.10f , %12.10f) = %e \n",
                prd->inSystem, fbIndex, prd->hitFacetId, sbtData.poly[prd->hitFacetId].parentIndex, missIndex,
@@ -1199,7 +1223,7 @@ namespace flowgpu {
                "(%12.10f , %12.10f , %12.10f) --> (%12.10f , %12.10f , %12.10f) = %e \n",
                prd->inSystem, prd->nbBounces, fbIndex, prd->hitFacetId, sbtData.poly[prd->hitFacetId].parentIndex, missIndex,
                ray_orig.x, ray_orig.y , ray_orig.z , ray_dir.x, ray_dir.y , ray_dir.z, ray_t);
-#endif*/
+#endif
 
         for(int i=missIndex+1; i <= missIndex+optixLaunchParams.perThreadData.missBuffer[missIndex];i++){
             DEBUG_PRINT("miss[%d -> %d -> %d] at %d\n",
@@ -1230,7 +1254,7 @@ optixLaunchParams.perThreadData.currentMoleculeData[fbIndex].postHitDir = prd->p
 
 
 
-/*#if !defined(GPUNBOUNCE)
+#if !defined(GPUNBOUNCE)
             DEBUG_PRINT("(%d) miss[%d -> %d] (%12.10f , %12.10f , %12.10f) --> (%12.10f , %12.10f , %12.10f) = %e \n",
                prd->inSystem, fbIndex, prd->hitFacetId,
                ray_orig.x, ray_orig.y , ray_orig.z , ray_dir.x, ray_dir.y , ray_dir.z, ray_t);
@@ -1238,7 +1262,7 @@ optixLaunchParams.perThreadData.currentMoleculeData[fbIndex].postHitDir = prd->p
             DEBUG_PRINT("(%d , %d) miss[%d -> %d] (%12.10f , %12.10f , %12.10f) --> (%12.10f , %12.10f , %12.10f) = %e \n",
                prd->inSystem, prd->nbBounces, fbIndex, prd->hitFacetId,
                ray_orig.x, ray_orig.y , ray_orig.z , ray_dir.x, ray_dir.y , ray_dir.z, ray_t);
-#endif*/
+#endif
 
             const unsigned int posIndexOff = optixLaunchParams.perThreadData.leakPosOffsetBuffer_debug[fbIndex]++;
             if(posIndexOff<NBCOUNTS){

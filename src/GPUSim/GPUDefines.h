@@ -20,7 +20,8 @@
 // for triangle, make it a factor of 8
 #ifdef WITHTRIANGLES
 //#define NB_RAND_PER_STEP (8u + MAX_DEPTH*2u)
-#define NB_RAND_PER_STEP(d) (8u + (d)*2u)
+//#define NB_RAND_PER_STEP(d) (8u + (d)*2u) // without velocity
+#define NB_RAND_PER_STEP(d) (9u + (d)*3u) // +1 for velocity
 #else
 //#define NB_RAND_PER_STEP (8u + NB_INPOLYCHECKS*2u + MAX_DEPTH*2u)
 #define NB_RAND_PER_STEP(d) (8u + NB_INPOLYCHECKS*2u + (d)*2u)

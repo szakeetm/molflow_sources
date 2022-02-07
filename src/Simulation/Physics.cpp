@@ -39,5 +39,5 @@ Physics::TreatMovingFacet(SimulationModel *model, const Vector3d &position, Vect
     oldVelocity = direction * velocity;
     newVelocity = oldVelocity + localVelocityToAdd;
     direction = newVelocity.Normalized();
-    velocity = newVelocity.Norme();
+    velocity = newVelocity.Length();
 }

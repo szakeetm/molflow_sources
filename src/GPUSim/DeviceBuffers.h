@@ -30,6 +30,8 @@ namespace flowgpu {
         CUDABuffer hitCounterBuffer;
         CUDABuffer missCounterBuffer;
 
+        CUDABuffer cdf1Buffer;
+        CUDABuffer cdf2Buffer;
         CUDABuffer textureBuffer;
         CUDABuffer texelBuffer;
         CUDABuffer texIncBuffer;
@@ -46,7 +48,6 @@ namespace flowgpu {
         std::vector<CUDABuffer> polyBuffer;
 
         std::vector<CUDABuffer> facprobBuffer;
-        std::vector<CUDABuffer> cdfBuffer;
     };
 
     struct DevicePolygonMemory {
@@ -62,7 +63,7 @@ namespace flowgpu {
         std::vector<CUDABuffer> cdfBuffer;
     };
 
-#ifdef DEBUG
+#if defined(DEBUGCOUNT) || defined(DEBUGPOS) || defined(DEBUGLEAKPOS) || defined(DEBUGMISS)
 struct DeviceMemoryDebug {
 #ifdef DEBUGCOUNT
         CUDABuffer detBuffer;

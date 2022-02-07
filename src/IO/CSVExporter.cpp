@@ -218,7 +218,7 @@ namespace FlowIO {
                 ret = fmt::format("{}", facet->sh.temperature);
                 break;
             case FDetail::F_2DBOX:
-                ret = fmt::format("{} x {}", facet->sh.U.Norme(), facet->sh.V.Norme());
+                ret = fmt::format("{} x {}", facet->sh.U.Length(), facet->sh.V.Length());
                 break;
             case FDetail::F_TEXTURE_UV:
                 if (facet->sh.isTextured) {
@@ -230,8 +230,8 @@ namespace FlowIO {
                 break;
             case FDetail::F_MESHSAMPLEPCM: {
                 double tRatioU, tRatioV;
-                const double nU = facet->sh.U.Norme();
-                const double nV = facet->sh.V.Norme();
+                const double nU = facet->sh.U.Length();
+                const double nV = facet->sh.V.Length();
 
                 tRatioU = facet->sh.texWidth_precise / nU;
                 tRatioV = facet->sh.texHeight_precise / nV;

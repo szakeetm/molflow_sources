@@ -15,6 +15,8 @@
 #include "Serializations.h"
 #include "OptixPolygon.h"
 #include "fmt/core.h"
+#include "NeighborScan.h"
+#include "Helper/MathTools.h"
 
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/xml.hpp>
@@ -180,6 +182,7 @@ namespace flowgpu {
                 polygon.facProps.opacity = temp.facetProperties.opacity;
             }
             polygon.facProps.is2sided = temp.facetProperties.is2sided;
+            polygon.facProps.cdf_id = temp.facetProperties.CDFid;
 
             // desorption
             polygon.desProps.desorbType = temp.facetProperties.desorbType;
@@ -253,8 +256,7 @@ namespace flowgpu {
         float fullOutgassing = 0;
         int facetIndex = 0;
         for (auto &facet : triMesh->poly) {
-
-            // Calculate triangle area
+            // Calculate triangle center
             auto &triIndices = triMesh->indices[facetIndex];
             auto &a = triMesh->vertices3d[triIndices.x];
             auto &b = triMesh->vertices3d[triIndices.y];
@@ -262,6 +264,8 @@ namespace flowgpu {
 
             facet.center = (a + b + c) / 3.0f;
 
+            fmt::print("Facet {}({}) with center {} , {} , {}\n",
+                       facetIndex, facet.parentIndex, facet.center.x, facet.center.y, facet.center.z);
             ++facetIndex;
         }
     };
@@ -890,7 +894,6 @@ namespace flowgpu {
         //Worker params
         inputArchive(cereal::make_nvp("wp", model->wp));
         inputArchive(cereal::make_nvp("ontheflyParams", model->ontheflyParams));
-        inputArchive(cereal::make_nvp("CDFs", model->CDFs));
         inputArchive(cereal::make_nvp("IDs", model->IDs));
         inputArchive(cereal::make_nvp("parameters", model->parameters));
         //inputArchive(cereal::make_nvp("temperatures",model->temperatures));
@@ -945,8 +948,10 @@ namespace flowgpu {
             size_t count_2sided = 0;
             size_t count_transparent = 0;
             size_t count_transparent_semi = 0;
+            size_t count_neigh = 0;
 
             for (auto &tri : mesh->poly) {
+                if(tri.facProps.endangered_neighbor) ++count_neigh;
                 if(tri.facProps.is2sided) ++count_2sided;
                 if(tri.facProps.opacity == 0.0) ++count_transparent;
                 else if(tri.facProps.opacity > 0.0 && tri.facProps.opacity < 1.0) ++count_transparent_semi;
@@ -958,6 +963,7 @@ namespace flowgpu {
                               << tri.texProps.textureOffset << std::endl;
                 }
             }
+            fmt::print("#ModelReader: #SharpNeighborTri {}\n", count_neigh);
             fmt::print("#ModelReader: #TransparentTri {}\n", count_transparent);
             fmt::print("#ModelReader: #SemiTransparentTri {}\n", count_transparent_semi);
             fmt::print("#ModelReader: #ProfiledTris {}\n", nbProf);
@@ -1055,13 +1061,134 @@ namespace flowgpu {
         }
 
         parseGeomFromSerialization(model.get(), facets, vertices3d);
-        std::cout << "#ModelReader: #TextureCells: " << model->textures.size() << std::endl;
+
+        std::vector<CommonEdge> edges;
+
+        std::vector<Facet*> facet_ptr;
+        facet_ptr.resize(simModel.facets.size());
+        std::transform(simModel.facets.begin(), simModel.facets.end(), facet_ptr.begin(),
+                       [](std::shared_ptr<SubprocessFacet> f){return (Facet*)(f.get());}
+                       );
+
+        std::vector<OverlappingEdge> edges_overlap;
+        NeighborScan::GetOverlappingEdges(facet_ptr, simModel.vertices3, edges_overlap);
+        int nOverlapEdges = edges_overlap.size();
+        std::vector<CommonEdge> edges_un;
+        NeighborScan::GetAnalysedUnorientedCommonEdges(facet_ptr, edges_un);
+        NeighborScan::GetAnalysedCommonEdges(facet_ptr, edges);
+        // compare edges
+        for(auto edgeo_it = edges_overlap.begin(); edgeo_it != edges_overlap.end();){
+            for(auto edge_it = edges_un.begin(); edge_it != edges_un.end(); edge_it++){
+                if(edge_it->facetId[0] == edgeo_it->facetId1 && edge_it->facetId[1] == edgeo_it->facetId2){
+                    edgeo_it = edges_overlap.erase(edgeo_it);
+                    edge_it = edges_un.begin();
+                    if(edgeo_it == edges_overlap.end()){
+                        break;
+                    }
+                }
+            }
+            if(edgeo_it != edges_overlap.end())
+                edgeo_it++;
+        }
+        // --- end ---
+        edges.clear();
+        edges_overlap.clear();
+        /*if(NeighborScan::GetAnalysedUnorientedCommonEdges(facet_ptr, edges)) {
+            for (auto &edge : edges_overlap) {
+                auto id1 = edge.facetId1;
+                auto id2 = edge.facetId2;
+                auto angle = edge.angle;*/
+
+        if(NeighborScan::GetAnalysedOverlappingEdges(facet_ptr, simModel.vertices3, edges_overlap)) {
+            for (auto &edge : edges_overlap) {
+                auto id1 = edge.facetId1;
+                auto id2 = edge.facetId2;
+                auto angle = edge.angle;
+
+                if(angle > DegToRad(89.0) && angle < DegToRad(180.0)) { // sharp angle
+                    // label corresponding facets
+                    for(auto& poly : model->triangle_meshes.front()->poly) {
+                        if(poly.parentIndex == id1 || poly.parentIndex == id2) {
+                            poly.facProps.endangered_neighbor = true;
+                            poly.facProps.offset_factor
+                            = std::max(poly.facProps.offset_factor,(float)(/*1.0 - */((angle - (DegToRad(89.0))) / (M_PI - DegToRad(89.0))))); // normalize offset to 90 deg radiant value and reverse factor 0->1,1->0
+                            poly.facProps.min_angle = std::min(poly.facProps.min_angle, (float)(RadToDeg(angle)));
+                            poly.facProps.max_angle = std::max(poly.facProps.max_angle, (float)(RadToDeg(angle)));
+                        }
+                    }
+                }
+            }
+        }
+
+        /*if(NeighborScan::GetAnalysedCommonEdges(facet_ptr, edges)) {
+            for (auto &edge : edges) {
+                auto id1 = edge.facetId[0];
+                auto id2 = edge.facetId[1];
+                auto angle = edge.angle;
+
+                if(1){//if(angle > 90.0 / 180.0*M_PI || angle < 180.0 / 180.0*M_PI) { // sharp angle
+                    // label corresponding facets
+                    for(auto& poly : model->triangle_meshes.front()->poly) {
+                        if(poly.parentIndex == id1 || poly.parentIndex == id2) {
+                            poly.facProps.endangered_neighbor = true;
+                            poly.facProps.offset_factor = std::max(poly.facProps.offset_factor,(float)(1.0 - ((angle - (0.5 * M_PI)) / (M_PI - 0.5 * M_PI)))); // normalize offset to 90 deg radiant value and reverse factor 0->1,1->0
+                            poly.facProps.min_angle = std::min(poly.facProps.min_angle, (float)(angle * 180 / M_PI));
+                            poly.facProps.max_angle = std::max(poly.facProps.max_angle, (float)(angle * 180 / M_PI));
+                        }
+                    }
+                }
+            }
+        }*/
+
+        int facetIndex = 0;
+        for(auto& poly : model->triangle_meshes.front()->poly) {
+            if(poly.facProps.endangered_neighbor)
+                fmt::print("Facet {} ({}) with offset {} [{} , {}]\n",
+                       facetIndex, poly.parentIndex, poly.facProps.offset_factor, poly.facProps.min_angle, poly.facProps.max_angle);
+            ++facetIndex;
+        }
+
+        for (auto &mesh : model->triangle_meshes) {
+            std::cout << "#ModelReader: #Tri " << mesh->poly.size() << std::endl;
+            size_t nbProf = 0;
+            size_t nbTex = 0;
+            size_t triCount = 0;
+            size_t count_2sided = 0;
+            size_t count_transparent = 0;
+            size_t count_transparent_semi = 0;
+            size_t count_neigh = 0;
+
+            for (auto &tri : mesh->poly) {
+                if(tri.facProps.endangered_neighbor) ++count_neigh;
+                if(tri.facProps.is2sided) ++count_2sided;
+                if(tri.facProps.opacity == 0.0) ++count_transparent;
+                else if(tri.facProps.opacity > 0.0 && tri.facProps.opacity < 1.0) ++count_transparent_semi;
+                if (tri.profProps.profileType != PROFILE_FLAGS::noProfile)
+                    ++nbProf;
+                if (tri.texProps.textureFlags != TEXTURE_FLAGS::noTexture) {
+                    ++nbTex;
+                    fmt::print("#ModelReader: Tri# {} [{}] #TexOffset: {}\n", triCount++, tri.parentIndex, tri.texProps.textureOffset);
+                }
+            }
+            fmt::print("#ModelReader: #SharpNeighborTri {}/{}\n", count_neigh, mesh->poly.size());
+            fmt::print("#ModelReader: #TransparentTri {}\n", count_transparent);
+            fmt::print("#ModelReader: #SemiTransparentTri {}\n", count_transparent_semi);
+            fmt::print("#ModelReader: #ProfiledTris {}\n", nbProf);
+            fmt::print("#ModelReader: #TexturedTris {}\n", nbTex);
+        }
+
+        fmt::print("#ModelReader: #TextureCells {}\n", model->textures.size());
+        /*if (nbTexelCount != model->textures.size()) {
+            std::cerr << "#ModelReader: [ERROR] Texture count out of sync: " << nbTexelCount << " / "
+                      << model->textures.size() << std::endl;
+            exit(0);
+        }*/
 
         constexpr size_t cdf_size = 100; // points in a cumulative distribution function
         for(auto& cdfs : simModel.tdParams.CDFs) {
             for(auto& cdf : cdfs) {
-                model->triangle_meshes.front()->cdfs_1.emplace_back(cdf.first);
-                model->triangle_meshes.front()->cdfs_2.emplace_back(cdf.second);
+                model->cdfs_1.emplace_back(cdf.first);
+                model->cdfs_2.emplace_back(cdf.second);
             }
         }
         return model;

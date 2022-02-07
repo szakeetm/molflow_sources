@@ -1336,8 +1336,8 @@ bool Worker::InterfaceGeomToSimModel() {
                     }
                 } else {
 
-                    double rw = facet->sh.U.Norme() / facet->sh.texWidth_precise;
-                    double rh = facet->sh.V.Norme() / facet->sh.texHeight_precise;
+                    double rw = facet->sh.U.Length() / facet->sh.texWidth_precise;
+                    double rh = facet->sh.V.Length() / facet->sh.texHeight_precise;
                     double area = rw * rh;
                     size_t add = 0;
                     for (int j = 0; j < facet->sh.texHeight; j++) {

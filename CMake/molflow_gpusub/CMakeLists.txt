@@ -60,6 +60,8 @@ add_executable(${PROJECT_NAME}
         ${HEADER_DIR_1}/GeometrySimu.cpp
         ${HEADER_DIR_1}/MolflowBuffer.cpp
         ${HEADER_DIR_1}/Parameter.cpp
+        ${HEADER_DIR_2}/NeighborScan.cpp
+
         )
 
 target_include_directories(${PROJECT_NAME} PRIVATE

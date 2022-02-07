@@ -413,8 +413,8 @@ int Initializer::initSimModel(std::shared_ptr<SimulationModel> model) {
             auto meshAreas = sFac->InitTextureMesh();
             textIncVector.resize(sFac->sh.texHeight * sFac->sh.texWidth);
 
-            double rw = sFac->sh.U.Norme() / (double) (sFac->sh.texWidth_precise);
-            double rh = sFac->sh.V.Norme() / (double) (sFac->sh.texHeight_precise);
+            double rw = sFac->sh.U.Length() / (double) (sFac->sh.texWidth_precise);
+            double rh = sFac->sh.V.Length() / (double) (sFac->sh.texHeight_precise);
             double area = rw * rh;
             area *= (sFac->sh.is2sided) ? 2.0 : 1.0;
             size_t add = 0;

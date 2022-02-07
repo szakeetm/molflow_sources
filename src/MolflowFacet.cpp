@@ -764,8 +764,8 @@ size_t InterfaceFacet::GetTexRamSizeForCellNumber(int width, int height, bool us
 * \return calculated size of the texture RAM usage
 */
 size_t InterfaceFacet::GetTexRamSizeForRatio(double ratio, size_t nbMoments) {
-	double nU = sh.U.Norme();
-	double nV = sh.V.Norme();
+	double nU = sh.U.Length();
+	double nV = sh.V.Length();
 	double width = nU*ratio;
 	double height = nV*ratio;
 
@@ -797,8 +797,8 @@ size_t InterfaceFacet::GetTexRamSizeForRatio(double ratio, size_t nbMoments) {
 * \return calculated size of the texture RAM usage
 */
 size_t InterfaceFacet::GetTexRamSizeForRatio(double ratioU, double ratioV, size_t nbMoments)  {
-    double nU = sh.U.Norme();
-    double nV = sh.V.Norme();
+    double nU = sh.U.Length();
+    double nV = sh.V.Length();
     double width = nU*ratioU;
     double height = nV*ratioV;
 
@@ -1450,7 +1450,7 @@ void InterfaceFacet::SerializeForLoader(cereal::BinaryOutputArchive& outputarchi
 				}
 			}
 			else {
-				const double area = (sh.texWidth_precise * sh.texHeight_precise)/(sh.U.Norme() * sh.V.Norme());
+				const double area = (sh.texWidth_precise * sh.texHeight_precise)/(sh.U.Length() * sh.V.Length());
                 const double incrementVal = (area > 0.0) ? 1.0 / area : 0.0;
 				size_t add = 0;
 				for (int j = 0; j < sh.texHeight; j++) {
@@ -1506,8 +1506,8 @@ void InterfaceFacet::SerializeData(std::vector<double>& outgMapVector, std::vect
         }
         else {
 
-            double rw = sh.U.Norme() / (double)(sh.texWidth_precise);
-            double rh = sh.V.Norme() / (double)(sh.texHeight_precise);
+            double rw = sh.U.Length() / (double)(sh.texWidth_precise);
+            double rh = sh.V.Length() / (double)(sh.texHeight_precise);
             double area = rw * rh;
             size_t add = 0;
             for (int j = 0; j < sh.texHeight; j++) {

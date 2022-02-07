@@ -480,7 +480,7 @@ void TexturePlotter::UpdateTable() {
 
                                 sprintf(tmp, "%g,%g,%g",
 									v_vect.x, v_vect.y, v_vect.z);
-								double length = v_vect.Norme();
+								double length = v_vect.Length();
 								if (length > maxValue) {
 									maxValue = length;
 									maxX = i; maxY = j;
