@@ -525,16 +525,7 @@ std::optional<std::vector<std::string>> Worker::ExportAngleMaps(const std::strin
     return listOfFiles; // false if angleMapFacetIndices.size() == 0
 }
 
-[[maybe_unused]] bool Worker::ImportAngleMaps(const std::string &fileName) {
 
-    for (auto &p : std::filesystem::directory_iterator("")) {
-        std::stringstream ssFileName;
-        ssFileName << p.path().string();
-        if (FileUtils::GetExtension(ssFileName.str()) == "csv") std::cout << p.path() << '\n';
-    }
-
-    return true; // false if angleMapFacetIndices.size() == 0
-}
 
 /*void Worker::ImportDesorption(const char *fileName) {
 	//if (needsReload) RealReload();
