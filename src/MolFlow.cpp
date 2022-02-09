@@ -1087,7 +1087,9 @@ void MolFlow::ExportAngleMaps() {
 
 	if (!profFile.empty()) {
 		try {
-			std::vector<std::string> exportList = worker.ExportAngleMaps(profFile, false);
+			auto retVal = worker.ExportAngleMaps(profFile, false);
+			if (!retVal) return; //user cancel or error
+			std::vector<std::string> exportList = *retVal; //vector of fileNames, might be empty
             if (exportList.empty()) {
                 GLMessageBox::Display("Select at least one facet with recorded angle map", "Error", GLDLG_OK, GLDLG_ICONERROR);
                 return;
@@ -1162,7 +1164,7 @@ void MolFlow::CopyAngleMapToClipboard()
 	}*/
 
 		try {
-			std::string map = geom->GetFacet(angleMapFacetIndex)->GetAngleMap(2);
+			std::string map = geom->GetFacet(angleMapFacetIndex)->GetAngleMap(2); //Clipboard format: tab-separated (format==2)
 			if (map.length() > (10 * 1024 * 1024)) {
 				if (GLMessageBox::Display("Angle map text over 10MB. Copy to clipboard?", "Warning", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) != GLDLG_OK)
 					return;

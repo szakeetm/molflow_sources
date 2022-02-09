@@ -473,7 +473,8 @@ void Worker::ExportProfiles(const char *fn) {
  * \param saveAll true if all files -- otherwise only selected -- should be saved
  * \return Vector with strings containing the file names of all angle map files
 */
-std::vector<std::string> Worker::ExportAngleMaps(const std::string &fileName, bool saveAll) {
+std::optional<std::vector<std::string>> Worker::ExportAngleMaps(const std::string &fileName, bool saveAll) {
+    //returns false if cancelled or error, vector of file name to export otherwise, empty vector if no sleected facets have angle map
     bool overwriteAll = false;
 
     //Geometry *geom = GetGeometry();
@@ -486,14 +487,16 @@ std::vector<std::string> Worker::ExportAngleMaps(const std::string &fileName, bo
         }
     }
 
+    std::string extension = FileUtils::GetExtension(fileName);
+    bool isTXT = Contains({ "txt","TXT" }, extension);
     std::vector<std::string> listOfFiles;
     for (size_t facetIndex : angleMapFacetIndices) {
         std::string saveFileName;
         if (angleMapFacetIndices.size() == 1) {
-            saveFileName = FileUtils::StripExtension(fileName) + ".csv";
+            saveFileName = fileName; //as user specified
         } else {
             std::stringstream tmp;
-            tmp << FileUtils::StripExtension(fileName) << "_facet" << facetIndex + 1 << ".csv";
+            tmp << FileUtils::StripExtension(fileName) << "_facet" << facetIndex + 1 << "." << extension; //for example anglemap_facet22.csv
             saveFileName = tmp.str();
         }
 
@@ -503,7 +506,7 @@ std::vector<std::string> Worker::ExportAngleMaps(const std::string &fileName, bo
                 if (angleMapFacetIndices.size() > 1) buttons.emplace_back("Overwrite All");
                 int answer = GLMessageBox::Display("Overwrite existing file ?\n" + saveFileName, "Question", buttons,
                                                    GLDLG_ICONWARNING);
-                if (answer == 0) break; //User cancel
+                if (answer == 0) return std::nullopt; //User cancel, return empty vector, resulting in parent function cancel
                 overwriteAll = (answer == 2);
             }
         }
@@ -514,7 +517,7 @@ std::vector<std::string> Worker::ExportAngleMaps(const std::string &fileName, bo
             std::string tmp = "Cannot open file for writing " + saveFileName;
             throw std::runtime_error(tmp.c_str());
         }
-        file << geom->GetFacet(facetIndex)->GetAngleMap(1);
+        file << geom->GetFacet(facetIndex)->GetAngleMap(isTXT?2:1);
         file.close();
         listOfFiles.push_back(saveFileName);
     }
@@ -522,16 +525,7 @@ std::vector<std::string> Worker::ExportAngleMaps(const std::string &fileName, bo
     return listOfFiles; // false if angleMapFacetIndices.size() == 0
 }
 
-[[maybe_unused]] bool Worker::ImportAngleMaps(const std::string &fileName) {
 
-    for (auto &p : std::filesystem::directory_iterator("")) {
-        std::stringstream ssFileName;
-        ssFileName << p.path().string();
-        if (FileUtils::GetExtension(ssFileName.str()) == "csv") std::cout << p.path() << '\n';
-    }
-
-    return true; // false if angleMapFacetIndices.size() == 0
-}
 
 /*void Worker::ImportDesorption(const char *fileName) {
 	//if (needsReload) RealReload();
