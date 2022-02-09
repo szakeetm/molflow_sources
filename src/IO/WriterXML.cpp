@@ -34,6 +34,31 @@ void WriterXML::finishWriteStatus(const std::string &statusString) {
 }
 
 xml_node WriterXML::GetRootNode(xml_document &saveDoc) {
+    // Check whether we do a old to new format update
+    // If yes, move old scheme to new scheme by adding the root node
+    if(update){
+        bool oldFormatUsed = false;
+        auto rootNode = saveDoc.document_element();
+        if(!saveDoc.child("SimulationEnvironment")){
+            rootNode = saveDoc.root();
+            if(rootNode.child("Geometry")){
+                oldFormatUsed = true;
+            }
+        }
+
+        if(oldFormatUsed && !useOldXMLFormat){
+            xml_document newDoc;
+            auto newHead = newDoc.append_child("SimulationEnvironment");
+            newDoc.append_attribute("type") = "molflow";
+            newDoc.append_attribute("version") = appVersionId;
+            for(auto& node : rootNode.children()){
+                newHead.append_copy(node);
+            }
+
+            saveDoc.reset(newDoc);
+        }
+    }
+
     xml_node rootNode;
     if (useOldXMLFormat) {
         rootNode = saveDoc.root();
@@ -50,8 +75,6 @@ xml_node WriterXML::GetRootNode(xml_document &saveDoc) {
             }
             else
                 rootNode = saveDoc.document_element();
-
-
         }
     }
 
@@ -192,6 +215,16 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
         timeNode.append_attribute("max") = model->wp.globalHistogramParams.timeMax;
     }
 #endif
+}
+
+// Save XML document to file
+bool
+WriterXML::SaveXMLToFile(xml_document &saveDoc, const std::string &outputFileName) {
+    if (!saveDoc.save_file(outputFileName.c_str())) {
+        std::cerr << "Error writing XML file." << std::endl; //successful save
+        return false;
+    }
+    return true;
 }
 
 // Directly append to file (load + save)

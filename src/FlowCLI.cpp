@@ -259,11 +259,12 @@ int main(int argc, char** argv) {
             std::filesystem::copy_file(SettingsIO::workFile, fullOutFile,
                                        std::filesystem::copy_options::overwrite_existing);
         }
-        FlowIO::WriterXML writer;
+        FlowIO::WriterXML writer(false, true);
         pugi::xml_document newDoc;
         newDoc.load_file(fullOutFile.c_str());
         writer.SaveGeometry(newDoc, model);
-        writer.SaveSimulationState(fullOutFile, model, globState);
+        writer.SaveSimulationState(newDoc, model, globState);
+        writer.SaveXMLToFile(newDoc, fullOutFile);
 
         if(createZip){
             Log::console_msg_master(3, "Compressing xml to zip...\n");
