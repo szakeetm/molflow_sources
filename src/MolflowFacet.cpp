@@ -1222,6 +1222,7 @@ void  InterfaceFacet::SaveXML_geom(pugi::xml_node f) {
 * \return string describing the angle map
 */
 std::string InterfaceFacet::GetAngleMap(size_t formatId)
+//formatId: 1 for comma-separated, 2 for tab-separated
 {
 	std::stringstream result; result << std::setprecision(8);
 	char separator;
