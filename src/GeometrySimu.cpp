@@ -252,49 +252,44 @@ int SubprocessFacet::InitializeAngleMap()
             throw std::runtime_error("Not enough memory to load incident angle map (CDF)");
         }
 
-        //First pass: determine sums
+        //First pass: determine phi line sums and total map sum
         angleMap.theta_CDFsum = 0;
         memset(angleMap.phi_CDFsums.data(), 0, sizeof(size_t) * (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes));
         for (size_t thetaIndex = 0; thetaIndex < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); thetaIndex++) {
             for (size_t phiIndex = 0; phiIndex < sh.anglemapParams.phiWidth; phiIndex++) {
-                angleMap.phi_CDFsums[thetaIndex] += angleMap.pdf[thetaIndex*sh.anglemapParams.phiWidth + phiIndex];
+                angleMap.phi_CDFsums[thetaIndex] += angleMap.pdf[thetaIndex*sh.anglemapParams.phiWidth + phiIndex]; //phi line sum
             }
-            angleMap.theta_CDFsum += angleMap.phi_CDFsums[thetaIndex];
+            angleMap.theta_CDFsum += angleMap.phi_CDFsums[thetaIndex]; //total map sum
         }
-        if (!angleMap.theta_CDFsum) {
+        if (angleMap.theta_CDFsum == 0) {
             auto err = fmt::format("Facet {} has all-zero recorded angle map, but is being used for desorption.", globalId + 1);
             throw std::runtime_error(err.c_str());
         }
 
-        //Second pass: write CDFs
+        //Second pass: construct midpoint CDFs
         double thetaNormalizingFactor = 1.0 / (double)angleMap.theta_CDFsum;
         for (size_t thetaIndex = 0; thetaIndex < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); thetaIndex++) {
-            if (angleMap.theta_CDFsum == 0) { //no hits in this line, generate CDF of uniform distr.
-                angleMap.theta_CDF[thetaIndex] = (0.5 + (double)thetaIndex) / (double)(sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes);
+            if (thetaIndex == 0) {
+                //First CDF value: sums from theta=0 to midpoint of first theta bin
+                angleMap.theta_CDF[thetaIndex] = 0.5 * (double)angleMap.phi_CDFsums[0] * thetaNormalizingFactor;
             }
             else {
-                if (thetaIndex == 0) {
-                    //First CDF value, covers half of first segment
-                    angleMap.theta_CDF[thetaIndex] = 0.5 * (double)angleMap.phi_CDFsums[0] * thetaNormalizingFactor;
-                }
-                else {
-                    //value covering second half of last segment and first of current segment
-                    angleMap.theta_CDF[thetaIndex] = angleMap.theta_CDF[thetaIndex - 1] + (double)(angleMap.phi_CDFsums[thetaIndex - 1] + angleMap.phi_CDFsums[thetaIndex])*0.5*thetaNormalizingFactor;
-                }
+                //value summing second half of previous theta bin and first half of current theta bin
+                angleMap.theta_CDF[thetaIndex] = angleMap.theta_CDF[thetaIndex - 1] + (double)(angleMap.phi_CDFsums[thetaIndex - 1] + angleMap.phi_CDFsums[thetaIndex])*0.5*thetaNormalizingFactor;
             }
             double phiNormalizingFactor = 1.0 / (double)angleMap.phi_CDFsums[thetaIndex];
             for (size_t phiIndex = 0; phiIndex < sh.anglemapParams.phiWidth; phiIndex++) {
                 size_t index = sh.anglemapParams.phiWidth * thetaIndex + phiIndex;
-                if (angleMap.phi_CDFsums[thetaIndex] == 0) { //no hits in this line, create CDF of uniform distr.
+                if (angleMap.phi_CDFsums[thetaIndex] == 0) { //no hits in this line, create phi CDF of uniform distr.
                     angleMap.phi_CDFs[index] = (0.5 + (double)phiIndex) / (double)sh.anglemapParams.phiWidth;
                 }
                 else {
                     if (phiIndex == 0) {
-                        //First CDF value, covers half of first segment
-                        angleMap.phi_CDFs[index] = 0.5 * (double)angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex] * phiNormalizingFactor;
+                        //First CDF value, sums to midpoint of first phi bin
+                        angleMap.phi_CDFs[index] = 0.5 * (double)angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex] * phiNormalizingFactor; //sh.anglemapParams.phiWidth * thetaIndex is the first pdf bin of this phi line
                     }
                     else {
-                        //value covering second half of last segment and first of current segment
+                        //value covering second half of last phi bin and first of current phi bin
                         angleMap.phi_CDFs[index] = angleMap.phi_CDFs[sh.anglemapParams.phiWidth * thetaIndex + phiIndex - 1] + (double)(angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex + phiIndex - 1] + angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex + phiIndex])*0.5*phiNormalizingFactor;
                     }
                 }

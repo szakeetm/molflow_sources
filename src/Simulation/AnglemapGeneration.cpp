@@ -15,7 +15,7 @@ namespace AnglemapGeneration {
                                              anglemap.theta_CDF); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
         double theta, thetaOvershoot;
 
-        if (thetaLowerIndex == -1) { //first half section
+        if (thetaLowerIndex == -1) { //theta in the first half of the first bin (below recorded CDF at midpoint)
             thetaOvershoot = 0.5 + 0.5 * lookupValue / anglemap.theta_CDF[0]; //between 0.5 and 1
             theta = GetTheta((double) thetaLowerIndex + 0.5 + thetaOvershoot,
                              anglemapParams); //between 0 and the first section end

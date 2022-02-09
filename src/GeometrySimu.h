@@ -71,11 +71,11 @@ struct TimeDependentParamters {
 struct Anglemap {
 public:
     Anglemap() : theta_CDFsum(0){};
-    std::vector<size_t> pdf;          // Incident angle distribution, phi and theta, not normalized. Used either for recording or for 2nd order interpolation
-    std::vector<double> phi_CDFs;    // A table containing phi distributions for each theta, starting from 0 for every line (1 line = 1 theta value). For speed we keep it in one memory block, 1 pointer
-    std::vector<size_t> phi_CDFsums; // since CDF runs only to the middle of the last segment, for each theta a line sum is stored here. Also a pdf for theta
-    std::vector<double> theta_CDF;      // Theta CDF, not normalized. nth value is the CDF at the end of region n (beginning of first section is always 0)
-    size_t theta_CDFsum; // since theta CDF only runs till the middle of the last segment, the map sum is here
+    std::vector<size_t> pdf;          // Incident angle distribution, large array of phi and theta, not normalized by solid angle or to 1 (simply number of hits in each bin). Used either for recording or for 2nd order interpolation
+    std::vector<double> phi_CDFs;    // A table containing cumulative phi distributions, normalized to 1, summed up to the phi bin midpoint (!), for each theta, starting from 0 for every line (1 line = 1 theta bin). For speed, one big array of (theta_size*phi_size) instead of vector of vectors
+    std::vector<size_t> phi_CDFsums; // since phi_CDFs sums only to the middle of the last phi bin, for each theta a line sum is stored here. Also a pdf for theta, as it contains the total possibility, summed over all phi angles, for that theta bin
+    std::vector<double> theta_CDF;      // Theta CDF to each theta bin midpoint, normalized to 1. nth value is the CDF at the midpoint of theta bin n
+    size_t theta_CDFsum; // since theta CDF only sums till the midpoint of the last segment, the total map sum is here
 
     [[nodiscard]] size_t GetMemSize() const {
         size_t sum = 0;
