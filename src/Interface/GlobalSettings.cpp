@@ -397,14 +397,10 @@ void GlobalSettings::SMPUpdate() {
 		}
 		else*/
         {
-            sprintf(tmp, "%.0f MB", (double)pInfo.mem_use / (1024.0*1024.0));
-            processList->SetValueAt(2, i, tmp);
-            sprintf(tmp, "%.0f MB", (double)pInfo.mem_peak / (1024.0*1024.0));
-            processList->SetValueAt(3, i, tmp);
-
+            processList->SetValueAt(2, i, "");
+            processList->SetValueAt(3, i, "");
 			// State/Status
-			std::stringstream tmp_ss; tmp_ss << "[" << prStates[states[i-1]] << "] " << statusStrings[i-1];
-			processList->SetValueAt(4, i, tmp_ss.str().c_str());
+			processList->SetValueAt(4, i, "");
 		}
 
 #else
