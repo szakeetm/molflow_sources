@@ -1226,26 +1226,27 @@ std::string InterfaceFacet::GetAngleMap(size_t formatId)
 	std::stringstream result; result << std::setprecision(8);
 	char separator;
 	if (formatId == 1)
-		separator = ',';
+		separator = ','; //csv
 	else if (formatId == 2)
-		separator = '\t';
+		separator = '\t'; //txt, tab-separated
 	else return "";
-	//First row: phi labels
-	result << "Theta below / Phi to the right" << separator; //A1 cell
-	for (size_t i = 0; i < sh.anglemapParams.phiWidth; i++)
-		result << -PI + (0.5 + (double)i) / ((double)sh.anglemapParams.phiWidth)*2.0*PI << separator;
+	//First, header row: phi labels
+	result << "Theta below / Phi to the right"; //A1 cell
+	for (size_t i = 0; i < sh.anglemapParams.phiWidth; i++) {
+		result << separator << -PI + (0.5 + (double)i) / ((double)sh.anglemapParams.phiWidth) * 2.0 * PI; //phiWidth number of phi bins, printing midpoint for each as column label
+	}
 	result << "\n";
 
 	//Actual table
 	for (size_t row = 0; row < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); row++) {
-		//First column: theta label
+		//First column: theta label (bin midpoint)
 		if (row < sh.anglemapParams.thetaLowerRes)
-			result << ((double)row + 0.5) / (double)sh.anglemapParams.thetaLowerRes*sh.anglemapParams.thetaLimit << separator;
+			result << ((double)row + 0.5) / (double)sh.anglemapParams.thetaLowerRes*sh.anglemapParams.thetaLimit;
 		else
-			result << sh.anglemapParams.thetaLimit + (0.5 + (double)(row-sh.anglemapParams.thetaLowerRes)) / (double)sh.anglemapParams.thetaHigherRes *(PI/2.0-sh.anglemapParams.thetaLimit) << separator;
+			result << sh.anglemapParams.thetaLimit + (0.5 + (double)(row-sh.anglemapParams.thetaLowerRes)) / (double)sh.anglemapParams.thetaHigherRes *(PI/2.0-sh.anglemapParams.thetaLimit);
 		//Value
 		for (size_t col = 0; col < sh.anglemapParams.phiWidth; col++) {
-			result << angleMapCache[row * sh.anglemapParams.phiWidth + col] << separator;
+			result << separator << angleMapCache[row * sh.anglemapParams.phiWidth + col];
 		}
 		result << "\n";
 	}
