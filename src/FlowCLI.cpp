@@ -34,6 +34,18 @@ static constexpr const char* molflowCliLogo = R"(
  |_|  |_\___/_|_| |_\___/\_/\_/
     )";
 
+void GatherResults(SimulationModel& model, GlobalSimuState& globSim){
+    for(int i = 0; i < model.facets.size(); i++ ) {
+#if defined(MOLFLOW)
+        auto &f = model.facets[i];
+        if (f->sh.anglemapParams.record) { //Recording, so needs to be updated
+            //Retrieve angle map from hits dp
+            model.facets[i]->angleMap.pdf = globSim.facetStates[i].recordedAngleMapPdf;
+        }
+#endif
+    }
+}
+
 int main(int argc, char** argv) {
 
 #if defined(WIN32) || defined(__APPLE__)
@@ -175,6 +187,7 @@ int main(int argc, char** argv) {
     // Terminate simulation
     simManager.StopSimulation();
     simManager.KillAllSimUnits();
+    GatherResults(*model, globState);
     Log::console_msg(1,"[%d][%s] Simulation finished!\n", MFMPI::world_rank, Util::getTimepointString().c_str());
 
 #ifdef USE_MPI

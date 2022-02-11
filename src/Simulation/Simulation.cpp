@@ -282,7 +282,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
             //No init for hits
             tmpResults.facetStates[i].momentResults.assign(1 + simModel->tdParams.moments.size(), facetMomentTemplate);
             if (sFac.sh.anglemapParams.record)
-              tmpResults.facetStates[i].recordedAngleMapPdf.assign(sFac.sh.anglemapParams.GetMapSize(), 0);
+                tmpResults.facetStates[i].recordedAngleMapPdf.assign(sFac.sh.anglemapParams.GetMapSize(), 0);
         }
 
         //Global histogram

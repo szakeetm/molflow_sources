@@ -1242,7 +1242,9 @@ int Worker::SendAngleMaps() {
     if (!globState.tMutex.try_lock_for(std::chrono::seconds(10)))
         return 1;
     for (size_t i = 0; i < angleMapCaches.size(); i++) {
-        globState.facetStates[i].recordedAngleMapPdf = angleMapCaches[i];
+        model->facets[i]->angleMap.pdf = angleMapCaches[i];
+        if(model->facets[i]->sh.anglemapParams.record)
+            globState.facetStates[i].recordedAngleMapPdf = angleMapCaches[i];
     }
     globState.tMutex.unlock();
     return 0;
@@ -1302,7 +1304,6 @@ bool Worker::InterfaceGeomToSimModel() {
             //std::vector<double> outgMapVector(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0);
             //memcpy(outgMapVector.data(), outgassingMapWindow, sizeof(double)*(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0));
             size_t mapSize = facet->sh.anglemapParams.GetMapSize();
-            std::vector<size_t> angleMapVector(mapSize);
             if (facet->angleMapCache.size() != facet->sh.anglemapParams.GetRecordedMapSize()) {
                     auto errString = fmt::format("Recorded Data Size is different from actual size: {} / {}\n",
                                                  facet->angleMapCache.size(),
@@ -1310,8 +1311,7 @@ bool Worker::InterfaceGeomToSimModel() {
                     fmt::print(stderr, errString);
                     throw std::runtime_error(errString);
                 }
-            memcpy(angleMapVector.data(), facet->angleMapCache.data(),
-                   facet->sh.anglemapParams.GetRecordedDataSize());
+
             std::vector<double> textIncVector;
 
             // Add surface elements area (reciprocal)
@@ -1350,11 +1350,13 @@ bool Worker::InterfaceGeomToSimModel() {
                     }
                 }
             }
+
+
             sFac.sh = facet->sh;
             sFac.indices = facet->indices;
             sFac.vertices2 = facet->vertices2;
             sFac.ogMap = facet->ogMap;
-            sFac.angleMap.pdf = angleMapVector;
+            sFac.angleMap.pdf = facet->angleMapCache;
             sFac.textureCellIncrements = textIncVector;
         }
 
