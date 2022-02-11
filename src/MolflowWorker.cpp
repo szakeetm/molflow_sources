@@ -1019,6 +1019,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 }
             } else { //insert
                 geom->InsertXML(rootNode, this, progressDlg, newStr);
+                model->sh = *geom->GetGeomProperties();
                 mApp->changedSinceSave = true;
                 ResetWorkerStats();
 
@@ -1060,8 +1061,15 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
     // Readers that load the geometry directly into the sim model
     // need to update the interface geometry afterwards
-    if (ext == "xml" || ext == "zip")
-        SimModelToInterfaceGeom();
+    if (ext == "xml" || ext == "zip") {
+        if (!insert) {
+            SimModelToInterfaceGeom();
+        } else {
+            InterfaceGeomToSimModel();
+        }
+    }
+    else if(insert)
+        InterfaceGeomToSimModel();
 
     if (!insert) {
         CalcTotalOutgassing();
