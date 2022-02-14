@@ -2479,9 +2479,10 @@ void MolFlow::UpdateFacetHits(bool allRows) {
 				if (facetId == -2) facetId = (int)i;
 				if (i >= geom->GetNbFacet()) {
 					char errMsg[512];
-					sprintf(errMsg, "Molflow::UpdateFacetHits()\nError while updating facet hits. Was looking for facet #%d in list.\nMolflow will now autosave and crash.", i + 1);
+					sprintf(errMsg, "Molflow::UpdateFacetHits()\nError while updating facet hits. Was looking for facet #%d (/%zu) in list.\nMolflow will now autosave and crash.", i + 1, geom->GetNbFacet());
 					GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 					AutoSave();
+                    throw std::runtime_error(errMsg);
 				}
 				InterfaceFacet *f = geom->GetFacet(facetId);
 				sprintf(tmp, "%d", facetId + 1);

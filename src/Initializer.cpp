@@ -265,6 +265,17 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, const 
             } else {
                 FlowIO::LoaderXML::LoadSimulationState(SettingsIO::workFile, model, globState, nullptr);
             }
+
+            // Update Angle map status
+            for(int i = 0; i < model->facets.size(); i++ ) {
+#if defined(MOLFLOW)
+                auto &f = model->facets[i];
+                if (f->sh.anglemapParams.record) { //Recording, so needs to be updated
+                    //Retrieve angle map from hits dp
+                    globState->facetStates[i].recordedAngleMapPdf = model->facets[i]->angleMap.pdf;
+                }
+#endif
+            }
         }
     }
     catch (const std::exception &e) {
