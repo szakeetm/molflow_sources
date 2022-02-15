@@ -70,20 +70,29 @@ struct TimeDependentParamters {
 
 struct Anglemap {
 public:
-    Anglemap() : theta_CDFsum(0){};
-    std::vector<size_t> pdf;          // Incident angle distribution, large array of phi and theta, not normalized by solid angle or to 1 (simply number of hits in each bin). Used either for recording or for 2nd order interpolation
-    std::vector<double> phi_CDFs;    // A table containing cumulative phi distributions, normalized to 1, summed up to the phi bin midpoint (!), for each theta, starting from 0 for every line (1 line = 1 theta bin). For speed, one big array of (theta_size*phi_size) instead of vector of vectors
-    std::vector<size_t> phi_CDFsums; // since phi_CDFs sums only to the middle of the last phi bin, for each theta a line sum is stored here. Also a pdf for theta, as it contains the total possibility, summed over all phi angles, for that theta bin
-    std::vector<double> theta_CDF;      // Theta CDF to each theta bin midpoint, normalized to 1. nth value is the CDF at the midpoint of theta bin n
-    size_t theta_CDFsum; // since theta CDF only sums till the midpoint of the last segment, the total map sum is here
+    Anglemap(){
+        theta_CDFsum_lower=theta_CDFsum_higher=0;
+    };
+    std::vector<size_t> pdf;          // Incident angle distribution, large array of phi and theta, not normalized by solid angle or to 1 (simply number of hits in each bin). Used either for recording or for 2nd order interpolation. Unites lower and higher theta parts
+    std::vector<double> phi_CDFs_lowerTheta;    // A table containing cumulative phi distributions, normalized to 1, summed up to the phi bin midpoint (!), for each theta, starting from 0 for every line (1 line = 1 theta bin). For speed, one big array of (theta_lowerRes*phi_size) instead of vector of vectors
+    std::vector<double> phi_CDFs_higherTheta;   // Same for the second, higher part above theta limit
+    std::vector<size_t> phi_CDFsums_lowerTheta; // since phi_CDFs sums only to the middle of the last phi bin, for each theta a line sum is stored here. Also a pdf for theta, as it contains the total possibility, summed over all phi angles, for that theta bin. Also a PDF for theta
+    std::vector<size_t> phi_CDFsums_higherTheta;
+    std::vector<double> theta_CDF_lower;      // Theta CDF to each theta bin midpoint, normalized to 1. nth value is the CDF at the midpoint of theta bin n
+    std::vector<double> theta_CDF_higher; 
+    size_t theta_CDFsum_lower;  // since theta CDF only sums till the midpoint of the last segment, the total map sum is here
+    size_t theta_CDFsum_higher; // CDF higher>=lower as it inclues lower angles
 
     [[nodiscard]] size_t GetMemSize() const {
         size_t sum = 0;
-        sum += sizeof(Anglemap);
+        sum += sizeof(Anglemap); //2*size_t?
         sum += sizeof(size_t) * pdf.capacity();
-        sum += sizeof(double) * phi_CDFs.capacity();
-        sum += sizeof(size_t) * phi_CDFsums.capacity();
-        sum += sizeof(double) * theta_CDF.capacity();
+        sum += sizeof(double) * phi_CDFs_lowerTheta.capacity();
+        sum += sizeof(double) * phi_CDFs_higherTheta.capacity();
+        sum += sizeof(size_t) * phi_CDFsums_lowerTheta.capacity();
+        sum += sizeof(size_t) * phi_CDFsums_higherTheta.capacity();
+        sum += sizeof(double) * theta_CDF_lower.capacity();
+        sum += sizeof(double) * theta_CDF_higher.capacity();
         return sum;
     }
 };
