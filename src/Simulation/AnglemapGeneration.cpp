@@ -336,8 +336,8 @@ namespace AnglemapGeneration {
 
     double GetPhiCDFSum(const double &thetaIndex, const AnglemapParams &anglemapParams,
                                             const Anglemap &anglemap) {
-        if (thetaIndex < 0.5) {
-            return (double) anglemap.phi_CDFsums[0];
+        if (thetaIndex < 0.5) { //first bin lower part
+            return (double) anglemap.phi_CDFsums_lowerTheta[0];
         } else if (thetaIndex > (double) (anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes) - 0.5) {
             return (double) anglemap.phi_CDFsums[anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes - 1];
         } else {
