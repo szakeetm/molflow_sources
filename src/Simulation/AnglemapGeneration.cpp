@@ -17,63 +17,102 @@ namespace AnglemapGeneration {
     std::tuple<double, int, double>
     GenerateThetaFromAngleMap(const AnglemapParams &anglemapParams, const Anglemap &anglemap,
                                                   const double lookupValue) {
-        //double lookupValue = randomGenerator.rnd();
-        if (lookupValue<anglemap.thetaLowerRatio) { //theta in lower res region
-
-        } else { //theta in higher res region
-
-        }
-
-
-        int thetaLowerIndex = my_lower_bound(lookupValue,
-                                             anglemap.theta_CDF); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
+        int thetaLowerIndex;
         double theta, thetaOvershoot;
 
-        if (thetaLowerIndex == -1) { //theta in the first half of the lower res part (below recorded CDF at midpoint)
-            thetaOvershoot = 0.5 + 0.5 * lookupValue / anglemap.theta_CDF[0]; //between 0.5 and 1
-            theta = GetTheta((double) thetaLowerIndex + 0.5 + thetaOvershoot,
-                             anglemapParams); //between 0 and the first section end
-        } else if (thetaLowerIndex == (anglemapParams.thetaLowerRes - 1)) { //theta in last half of lower res part
+        if (lookupValue<anglemap.thetaLowerRatio) { //theta in lower res region
 
-        } else if () { //theta in first half of higher res part
+            thetaLowerIndex = my_lower_bound(lookupValue,
+                                             anglemap.theta_CDF_lower); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. thetaLowerLimit-2 )
 
-        } else if (thetaLowerIndex == (anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes -
-                                       1)) { //theta in last half of higher res part
-            thetaOvershoot = 0.5 * (lookupValue - anglemap.theta_CDF[thetaLowerIndex])
-                             / (1.0 - anglemap.theta_CDF[thetaLowerIndex]); //between 0 and 0.5
-            theta = GetTheta((double) thetaLowerIndex + 0.5 + thetaOvershoot,
-                             anglemapParams); //between 0 and the first section end
-        } else { //regular section
-            if (/*true || */anglemap.phi_CDFsums[thetaLowerIndex] == anglemap.phi_CDFsums[thetaLowerIndex + 1]) {
-                //The pdf's slope is 0, linear interpolation
-                thetaOvershoot = (lookupValue - anglemap.theta_CDF[thetaLowerIndex]) /
-                                 (anglemap.theta_CDF[thetaLowerIndex + 1] - anglemap.theta_CDF[thetaLowerIndex]);
-                theta = GetTheta((double) thetaLowerIndex + 0.5 + thetaOvershoot, anglemapParams);
-            } else {
-                //2nd degree interpolation
-                // y(x) = ax^2 + bx + c
-                // c: CDF value at lower index
-                // b: pdf value at lower index
-                // a: pdf slope at lower index / 2
-                // dy := y - c
-                // dx := x - [x at lower index]
-                // dy = ax^2 + bx
-                // dx = ( -b + sqrt(b^2 +4*a*dy) ) / (2a)
-                double thetaStep = GetTheta((double) thetaLowerIndex + 1.5, anglemapParams) -
-                                   GetTheta((double) thetaLowerIndex + 0.5, anglemapParams);
-                double c = anglemap.theta_CDF[thetaLowerIndex]; //CDF value at lower index
-                double b = (double) anglemap.phi_CDFsums[thetaLowerIndex] / (double) anglemap.theta_CDFsum /
-                           thetaStep; //pdf value at lower index
-                double a = 0.5 * ((double) (anglemap.phi_CDFsums[thetaLowerIndex + 1]) -
-                                  (double) anglemap.phi_CDFsums[thetaLowerIndex]) /
-                           (double) anglemap.theta_CDFsum / Sqr(thetaStep); //pdf slope at lower index
-                double dy = lookupValue - c;
+            if (thetaLowerIndex == -1) { //theta in the first half of the lower res part (below recorded CDF at midpoint)
 
-                double dx = (-b + sqrt(Sqr(b) + 4 * a * dy)) /
-                            (2 * a); //Since b>=0 it's the + branch of the +- that is valid for us
+                thetaOvershoot = 0.5 + 0.5 * lookupValue / anglemap.theta_CDF_lower[0]; //between 0.5 and 1
+                theta = GetTheta((double) thetaLowerIndex + 0.5 + thetaOvershoot, anglemapParams); //between 0 and the first section end
+            } else if (thetaLowerIndex == (anglemapParams.thetaLowerRes  - 1)) { //theta in last half of lower res part
+                thetaOvershoot = 0.5 * (lookupValue - anglemap.theta_CDF_lower[thetaLowerIndex])
+                                / (anglemap.thetaLowerRatio - anglemap.theta_CDF_lower[thetaLowerIndex]); //between 0 and 0.5
+                theta = GetTheta((double) thetaLowerIndex + 0.5 + thetaOvershoot,
+                                anglemapParams); //between last midpoint and thetaLimit
+            } else { //regular section
+                if (anglemap.phi_CDFsums_lowerTheta[thetaLowerIndex] == anglemap.phi_CDFsums_lowerTheta[thetaLowerIndex + 1]) {
+                    //The pdf's slope is 0, linear interpolation
+                    thetaOvershoot = (lookupValue - anglemap.theta_CDF_lower[thetaLowerIndex]) /
+                                    (anglemap.theta_CDF_lower[thetaLowerIndex + 1] - anglemap.theta_CDF_lower[thetaLowerIndex]);
+                    theta = GetTheta((double) thetaLowerIndex + 0.5 + thetaOvershoot, anglemapParams);
+                } else {
+                    //2nd degree interpolation
+                    // y(x) = ax^2 + bx + c
+                    // c: CDF value at lower index
+                    // b: pdf value at lower index
+                    // a: pdf slope at lower index / 2
+                    // dy := y - c
+                    // dx := x - [x at lower index]
+                    // dy = ax^2 + bx
+                    // dx = ( -b + sqrt(b^2 +4*a*dy) ) / (2a)
+                    double thetaStep = GetTheta((double) thetaLowerIndex + 1.5, anglemapParams) -
+                                    GetTheta((double) thetaLowerIndex + 0.5, anglemapParams);
+                    double c = anglemap.theta_CDF_lower[thetaLowerIndex]; //CDF value at lower index
+                    double b = (double) anglemap.phi_CDFsums_lowerTheta[thetaLowerIndex] / (double) anglemap.theta_CDFsum_lower / thetaStep; //pdf value at lower index
+                    double a = 0.5 * ((double) (anglemap.phi_CDFsums_lowerTheta[thetaLowerIndex + 1]) -
+                                    (double) anglemap.phi_CDFsums_lowerTheta[thetaLowerIndex]) /
+                            (double) anglemap.theta_CDFsum_lower / Sqr(thetaStep); //pdf slope at lower index
+                    double dy = lookupValue - c;
 
-                thetaOvershoot = dx / thetaStep;
-                theta = GetTheta((double) thetaLowerIndex + 0.5 + thetaOvershoot, anglemapParams);
+                    double dx = (-b + sqrt(Sqr(b) + 4 * a * dy)) /
+                                (2 * a); //Since b>=0 it's the + branch of the +- that is valid for us
+
+                    thetaOvershoot = dx / thetaStep;
+                    theta = GetTheta((double) thetaLowerIndex + 0.5 + thetaOvershoot, anglemapParams);
+                }
+            }
+            
+        } else { //theta in higher res region
+
+            thetaLowerIndex = my_lower_bound(lookupValue,
+                                             anglemap.theta_CDF_higher); //returns line number AFTER WHICH LINE lookup value resides in ( thetaLowerLimit-1 .. size-2 )
+
+            if (thetaLowerIndex == anglemapParams.thetaLowerRes-1) { //theta in the first half of the higher res part (below recorded CDF at midpoint)
+                thetaOvershoot = 0.5 + 0.5 * lookupValue / (anglemap.theta_CDF_higher[0]-anglemap.thetaLowerRatio); //between 0.5 and 1
+                theta = GetTheta((double) thetaLowerIndex + 0.5 + thetaOvershoot,
+                                anglemapParams); //between 0 and the first section end
+            } else if (thetaLowerIndex == (anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes - 1)) { //theta in last half of higher res part
+                thetaOvershoot = 0.5 * (lookupValue - anglemap.theta_CDF_higher[thetaLowerIndex - anglemapParams.thetaLowerRes])
+                                / (1.0 - anglemap.theta_CDF_higher[thetaLowerIndex - anglemapParams.thetaLowerRes]); //between 0 and 0.5
+                theta = GetTheta((double) thetaLowerIndex + 0.5 + thetaOvershoot,
+                                anglemapParams); //between 0 and the first section end
+            } else { //regular section
+                if (anglemap.phi_CDFsums_higherTheta[thetaLowerIndex - anglemapParams.thetaLowerRes] == anglemap.phi_CDFsums_higherTheta[thetaLowerIndex + 1]) {
+                    //The pdf's slope is 0, linear interpolation
+                    thetaOvershoot = (lookupValue - anglemap.theta_CDF_higher[thetaLowerIndex - anglemapParams.thetaLowerRes]) /
+                                    (anglemap.theta_CDF_higher[thetaLowerIndex + 1] - anglemap.theta_CDF_higher[thetaLowerIndex - anglemapParams.thetaLowerRes]);
+                    theta = GetTheta((double) thetaLowerIndex + 0.5 + thetaOvershoot, anglemapParams);
+                } else {
+                    //2nd degree interpolation
+                    // y(x) = ax^2 + bx + c
+                    // c: CDF value at lower index
+                    // b: pdf value at lower index
+                    // a: pdf slope at lower index / 2
+                    // dy := y - c
+                    // dx := x - [x at lower index]
+                    // dy = ax^2 + bx
+                    // dx = ( -b + sqrt(b^2 +4*a*dy) ) / (2a)
+                    double thetaStep = GetTheta((double) thetaLowerIndex + 1.5, anglemapParams) -
+                                    GetTheta((double) thetaLowerIndex + 0.5, anglemapParams);
+                    double c = anglemap.theta_CDF_higher[thetaLowerIndex - anglemapParams.thetaLowerRes]; //CDF value at lower index
+                    double b = (double) anglemap.phi_CDFsums_higherTheta[thetaLowerIndex - anglemapParams.thetaLowerRes] / (double) anglemap.theta_CDFsum_higher /
+                            thetaStep; //pdf value at lower index
+                    double a = 0.5 * ((double) (anglemap.phi_CDFsums_higherTheta[thetaLowerIndex + 1]) -
+                                    (double) anglemap.phi_CDFsums_higherTheta[thetaLowerIndex - anglemapParams.thetaLowerRes]) /
+                            (double) anglemap.theta_CDFsum_higher / Sqr(thetaStep); //pdf slope at lower index
+                    double dy = lookupValue - c;
+
+                    double dx = (-b + sqrt(Sqr(b) + 4 * a * dy)) /
+                                (2 * a); //Since b>=0 it's the + branch of the +- that is valid for us
+
+                    thetaOvershoot = dx / thetaStep;
+                    theta = GetTheta((double) thetaLowerIndex + 0.5 + thetaOvershoot, anglemapParams);
+                }
             }
         }
         return {theta, thetaLowerIndex, thetaOvershoot};
@@ -116,7 +155,7 @@ namespace AnglemapGeneration {
             //         next     value weight: w2*w4 / (w1*w3 + w2*w4) <- this will be the input for weighed_lower_bound
 
             double div;
-            div = ((double) anglemap.phi_CDFsums[thetaLowerIndex] * (1.0 - thetaOvershoot) +
+            div = ((double) anglemap.phi_CDFsums[thetaLowerIndex - anglemapParams.thetaLowerRes]] * (1.0 - thetaOvershoot) +
                    (double) anglemap.phi_CDFsums[thetaLowerIndex + 1] * thetaOvershoot); // (w1*w3 + w2*w4)
             if (div > 0.0) {
                 weigh = (thetaOvershoot * (double) anglemap.phi_CDFsums[thetaLowerIndex + 1]) /
@@ -304,7 +343,7 @@ namespace AnglemapGeneration {
         } else {
             size_t thetaLowerIndex = (size_t) (thetaIndex - 0.5);
             double thetaOvershoot = thetaIndex - 0.5 - (double) thetaLowerIndex;
-            double valueFromLowerSum = (double) anglemap.phi_CDFsums[thetaLowerIndex];
+            double valueFromLowerSum = (double) anglemap.phi_CDFsums[thetaLowerIndex - anglemapParams.thetaLowerRes]];
             double valueFromHigherSum = (double) anglemap.phi_CDFsums[thetaLowerIndex + 1];
             return Weigh(valueFromLowerSum, valueFromHigherSum, thetaOvershoot);
         }
