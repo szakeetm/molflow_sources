@@ -315,7 +315,7 @@ int SubprocessFacet::InitializeAngleMap()
         for (size_t thetaIndex = sh.anglemapParams.thetaLowerRes; thetaIndex < sh.anglemapParams.thetaHigherRes; thetaIndex++) {
             if (thetaIndex == sh.anglemapParams.thetaLowerRes) {
                 //First CDF value: sums from theta=limit to midpoint of first higher theta bin
-                angleMap.theta_CDF_higher[thetaIndex-sh.anglemapParams.thetaLowerRes] = 0.5 * (double)angleMap.phi_CDFsums_higherTheta[0] * thetaNormalizingFactor;
+                angleMap.theta_CDF_higher[thetaIndex-sh.anglemapParams.thetaLowerRes] = angleMap.thetaLowerRatio + 0.5 * (double)angleMap.phi_CDFsums_higherTheta[0] * thetaNormalizingFactor;
             }
             else {
                 //value summing second half of previous theta bin and first half of current theta bin
