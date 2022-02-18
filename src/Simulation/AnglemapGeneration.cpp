@@ -18,6 +18,13 @@ namespace AnglemapGeneration {
     GenerateThetaFromAngleMap(const AnglemapParams &anglemapParams, const Anglemap &anglemap,
                                                   const double lookupValue) {
         //double lookupValue = randomGenerator.rnd();
+        if (lookupValue<anglemap.thetaLowerRatio) { //theta in lower res region
+
+        } else { //theta in higher res region
+
+        }
+
+
         int thetaLowerIndex = my_lower_bound(lookupValue,
                                              anglemap.theta_CDF); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
         double theta, thetaOvershoot;
