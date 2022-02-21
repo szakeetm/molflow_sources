@@ -328,7 +328,7 @@ namespace AnglemapGeneration {
     }
 
 /**
-* \brief Get phi value from cummulative density function
+* \brief Get phi value from cumulative density function
 * \param thetaIndex theta index
 * \param anglemapParams parameters of the angle map
 * \return phi cdf summed value
@@ -336,16 +336,36 @@ namespace AnglemapGeneration {
 
     double GetPhiCDFSum(const double &thetaIndex, const AnglemapParams &anglemapParams,
                                             const Anglemap &anglemap) {
-        if (thetaIndex < 0.5) { //first bin lower part
-            return (double) anglemap.phi_CDFsums_lowerTheta[0];
-        } else if (thetaIndex > (double) (anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes) - 0.5) {
-            return (double) anglemap.phi_CDFsums[anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes - 1];
-        } else {
-            size_t thetaLowerIndex = (size_t) (thetaIndex - 0.5);
-            double thetaOvershoot = thetaIndex - 0.5 - (double) thetaLowerIndex;
-            double valueFromLowerSum = (double) anglemap.phi_CDFsums[thetaLowerIndex - anglemapParams.thetaLowerRes]];
-            double valueFromHigherSum = (double) anglemap.phi_CDFsums[thetaLowerIndex + 1];
-            return Weigh(valueFromLowerSum, valueFromHigherSum, thetaOvershoot);
+        if (thetaIndex < (double)anglemapParams.thetaLowerRes) { //In lower part
+
+            if (thetaIndex < 0.5) { //first half-bin lower part
+                return (double)anglemap.phi_CDFsums_lowerTheta[0];
+            }
+            else if (thetaIndex > (double)anglemapParams.thetaLowerRes - 0.5) { //last half-bin lower part
+                return (double)anglemap.phi_CDFsums_lowerTheta[anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes - 1];
+            }
+            else { //regular bin in lower part
+                size_t thetaLowerIndex = (size_t)(thetaIndex - 0.5);
+                double thetaOvershoot = thetaIndex - 0.5 - (double)thetaLowerIndex;
+                double valueFromLowerSum = (double)anglemap.phi_CDFsums_lowerTheta[thetaLowerIndex];
+                double valueFromHigherSum = (double)anglemap.phi_CDFsums_lowerTheta[thetaLowerIndex + 1];
+                return Weigh(valueFromLowerSum, valueFromHigherSum, thetaOvershoot);
+            }
+        }
+        else { //In higher part
+            if (thetaIndex < (double)anglemapParams.thetaLowerRes + 0.5) { //first half-bin higher part
+                return (double)anglemap.phi_CDFsums_higherTheta[0];
+            }
+            else if (thetaIndex > (double) (anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes) - 0.5) { //last half-bin higher part
+                return (double)anglemap.phi_CDFsums_higherTheta[anglemapParams.thetaHigherRes - 1];
+            }
+            else { //regular bin in higher part
+                size_t thetaLowerIndex = (size_t)(thetaIndex - 0.5);
+                double thetaOvershoot = thetaIndex - 0.5 - (double)thetaLowerIndex;
+                double valueFromLowerSum = (double)anglemap.phi_CDFsums_higherTheta[thetaLowerIndex - anglemapParams.thetaLowerRes];
+                double valueFromHigherSum = (double)anglemap.phi_CDFsums_higherTheta[thetaLowerIndex - anglemapParams.thetaLowerRes + 1];
+                return Weigh(valueFromLowerSum, valueFromHigherSum, thetaOvershoot);
+            }
         }
     }
 } // namespace
