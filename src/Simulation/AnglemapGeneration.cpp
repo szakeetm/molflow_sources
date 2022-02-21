@@ -296,35 +296,51 @@ namespace AnglemapGeneration {
 * \return phi cdf value
 */
 
-    double
-    GetPhiCDFValue(const double &thetaIndex, const int &phiLowerIndex,
-                                       const AnglemapParams &anglemapParams, const Anglemap &anglemap) {
-        if (thetaIndex < 0.5) {
-            return (phiLowerIndex < anglemapParams.phiWidth) ? anglemap.phi_CDFs[phiLowerIndex] : 1.0 +
-                                                                                                  anglemap.phi_CDFs[0];
-        } else if (thetaIndex > (double) (anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes) - 0.5) {
-            return (phiLowerIndex < anglemapParams.phiWidth) ? anglemap.phi_CDFs[
-                    anglemapParams.phiWidth * (anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes - 1) +
-                    phiLowerIndex] : 1.0 + anglemap.phi_CDFs[anglemapParams.phiWidth *
-                                                             (anglemapParams.thetaLowerRes +
-                                                              anglemapParams.thetaHigherRes -
-                                                              1)];
-        } else {
-            size_t thetaLowerIndex = (size_t) (thetaIndex - 0.5);
-            double thetaOvershoot = thetaIndex - 0.5 - (double) thetaLowerIndex;
-            double valueFromLowerCDF = (phiLowerIndex < anglemapParams.phiWidth) ? anglemap.phi_CDFs[
-                    anglemapParams.phiWidth * thetaLowerIndex + phiLowerIndex] : 1.0 +
-                                                                                 anglemap.phi_CDFs[
-                                                                                         anglemapParams.phiWidth *
-                                                                                         (thetaLowerIndex)];
-            double valueFromHigherCDF = (phiLowerIndex < anglemapParams.phiWidth) ? anglemap.phi_CDFs[
-                    anglemapParams.phiWidth * (thetaLowerIndex + 1) + phiLowerIndex] : 1.0 +
-                                                                                       anglemap.phi_CDFs[
-                                                                                               anglemapParams.phiWidth *
-                                                                                               (thetaLowerIndex + 1)];
-            return Weigh(valueFromLowerCDF, valueFromHigherCDF, thetaOvershoot);
+    double GetPhiCDFValue(const double &thetaIndex, const int &phiLowerIndex, const AnglemapParams &anglemapParams, const Anglemap &anglemap) {
+        //todo: check if circular mapping ever happens (phiLowerIndex >= anglemapParams.phiWidth)
+        if (thetaIndex < (double)anglemapParams.thetaLowerRes) { //In lower part
+            if (thetaIndex < 0.5) {
+                return (phiLowerIndex < anglemapParams.phiWidth)
+                    ? anglemap.phi_CDFs_lowerTheta[phiLowerIndex] : 1.0 + anglemap.phi_CDFs_lowerTheta[0]; //phi is circular -> last slice mapped to first
+            }
+            else if (thetaIndex > (double)anglemapParams.thetaLowerRes - 0.5) {
+                return (phiLowerIndex < anglemapParams.phiWidth)
+                    ? anglemap.phi_CDFs_lowerTheta[anglemapParams.phiWidth * (anglemapParams.thetaLowerRes - 1) + phiLowerIndex]
+                    : 1.0 + anglemap.phi_CDFs_lowerTheta[anglemapParams.phiWidth * (anglemapParams.thetaLowerRes - 1)]; //Clamp CDF to 1.0
+            }
+            else {
+                size_t thetaLowerIndex = (size_t)(thetaIndex - 0.5);
+                double thetaOvershoot = thetaIndex - 0.5 - (double)thetaLowerIndex;
+                double valueFromLowerCDF = (phiLowerIndex < anglemapParams.phiWidth)
+                    ? anglemap.phi_CDFs_lowerTheta[anglemapParams.phiWidth * thetaLowerIndex + phiLowerIndex]
+                    : 1.0 + anglemap.phi_CDFs_lowerTheta[anglemapParams.phiWidth * (thetaLowerIndex)]; //Clamp CDF to 1.0
+                double valueFromHigherCDF = (phiLowerIndex < anglemapParams.phiWidth)
+                    ? anglemap.phi_CDFs_lowerTheta[anglemapParams.phiWidth * (thetaLowerIndex + 1) + phiLowerIndex]
+                    : 1.0 + anglemap.phi_CDFs_lowerTheta[anglemapParams.phiWidth * (thetaLowerIndex + 1)]; //Clamp CDF to 1.0
+                return Weigh(valueFromLowerCDF, valueFromHigherCDF, thetaOvershoot);
+            }
+        } else { //In higher part
+            if (thetaIndex < 0.5) {
+                return (phiLowerIndex < anglemapParams.phiWidth)
+                    ? anglemap.phi_CDFs_higherTheta[phiLowerIndex] : 1.0 + anglemap.phi_CDFs_higherTheta[0];
+            }
+            else if (thetaIndex > (double) (anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes) - 0.5) {
+                return (phiLowerIndex < anglemapParams.phiWidth)
+                    ? anglemap.phi_CDFs_higherTheta[anglemapParams.phiWidth * ( anglemapParams.thetaHigherRes - 1) + phiLowerIndex]
+                    : 1.0 + anglemap.phi_CDFs_higherTheta[anglemapParams.phiWidth * (anglemapParams.thetaHigherRes - 1)];
+            }
+            else {
+                size_t thetaLowerIndex = (size_t)(thetaIndex - 0.5);
+                double thetaOvershoot = thetaIndex - 0.5 - (double)thetaLowerIndex;
+                double valueFromLowerCDF = (phiLowerIndex < anglemapParams.phiWidth)
+                    ? anglemap.phi_CDFs_higherTheta[anglemapParams.phiWidth * (thetaLowerIndex-anglemapParams.thetaLowerRes) + phiLowerIndex]
+                    : 1.0 + anglemap.phi_CDFs_higherTheta[anglemapParams.phiWidth * (thetaLowerIndex-anglemapParams.thetaLowerRes)];
+                double valueFromHigherCDF = (phiLowerIndex < anglemapParams.phiWidth)
+                    ? anglemap.phi_CDFs_higherTheta[anglemapParams.phiWidth * (thetaLowerIndex-anglemapParams.thetaLowerRes + 1) + phiLowerIndex]
+                    : 1.0 + anglemap.phi_CDFs_higherTheta[anglemapParams.phiWidth * (thetaLowerIndex-anglemapParams.thetaLowerRes + 1)];
+                return Weigh(valueFromLowerCDF, valueFromHigherCDF, thetaOvershoot);
+            }
         }
-
     }
 
 /**
