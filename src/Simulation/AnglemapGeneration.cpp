@@ -126,114 +126,133 @@ namespace AnglemapGeneration {
 * \param randomGenerator reference to the random number generator (Mersenne Twister)
 * \return phi angle
 */
-    double GeneratePhiFromAngleMap(const int &thetaLowerIndex, const double &thetaOvershoot,
-                                   const AnglemapParams &anglemapParams,
-                                   Anglemap &anglemap, double lookupValue) {
-        //double lookupValue = randomGenerator.rnd();
-        if (anglemapParams.phiWidth == 1) return -PI + 2.0 * PI * lookupValue; //special case, uniform phi distribution
-        int phiLowerIndex;
-        double weigh; //0: take previous theta line, 1: take next theta line, 0..1: interpolate in-between
-        if (thetaLowerIndex == -1) { //first theta half section
-            lookupValue += anglemap.phi_CDFs[0]; //periodic BCs over -PI...PI, can be larger than 1
-            phiLowerIndex = my_lower_bound(lookupValue, &anglemap.phi_CDFs[0],
-                                           anglemapParams.phiWidth); //take entirely the phi ditro belonging to first theta
-            weigh = thetaOvershoot; // [0.5 - 1], will subtract 0.5 when evaluating thetaIndex
-        } else if (thetaLowerIndex ==
-                   (anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes - 1)) { //last theta half section
-            lookupValue += anglemap.phi_CDFs[thetaLowerIndex *
-                                             anglemapParams.phiWidth]; //periodic BCs over -PI...PI, can be larger than 1
-            phiLowerIndex = my_lower_bound(lookupValue, &anglemap.phi_CDFs[thetaLowerIndex * anglemapParams.phiWidth],
-                                           anglemapParams.phiWidth); //take entirely the phi ditro belonging to latest theta
-            weigh = thetaOvershoot; // [0 - 0.5], will add 0.5 when evaluating thetaIndex
-        } else {
-            //Here we do a weighing both by the hit sum of the previous and next lines (w1 and w2) and also the weighs of the two lines based on thetaOvershoot (w3 and w4)
-            // w1: sum of hits in previous line
-            // w2: sum of hits in next line
-            // w3: weigh of previous line (1 - thetaOvershoot)
-            // w4: weigh of next line     (thetaOvershoot)
-            // result: previous value weight: w1*w3 / (w1*w3 + w2*w4)
-            //         next     value weight: w2*w4 / (w1*w3 + w2*w4) <- this will be the input for weighed_lower_bound
-
-            double div;
-            div = ((double) anglemap.phi_CDFsums[thetaLowerIndex - anglemapParams.thetaLowerRes]] * (1.0 - thetaOvershoot) +
-                   (double) anglemap.phi_CDFsums[thetaLowerIndex + 1] * thetaOvershoot); // (w1*w3 + w2*w4)
-            if (div > 0.0) {
-                weigh = (thetaOvershoot * (double) anglemap.phi_CDFsums[thetaLowerIndex + 1]) /
-                        div;    //      w2*w4 / (w1*w3 + w2*w4)
-            } else {
-                weigh = thetaOvershoot;
+	double GeneratePhiFromAngleMap(const int& thetaLowerIndex, const double& thetaOvershoot, const AnglemapParams& anglemapParams, Anglemap& anglemap, double lookupValue) {
+		if (anglemapParams.phiWidth == 1) return -PI + 2.0 * PI * lookupValue; //special case, uniform phi distribution
+		int phiLowerIndex;
+		double weigh; //0: take previous theta line (with index thetaLowerIndex), 1: take next theta line (index: thetaLowerIndex + 1), 0..1: interpolate in-between
+        if (thetaLowerIndex < anglemapParams.thetaLowerRes) { //In lower part
+            if (thetaLowerIndex == -1) { //first theta half section
+                lookupValue += anglemap.phi_CDFs_lowerTheta[0]; //periodic BCs over -PI...PI, can be larger than 1
+                phiLowerIndex = my_lower_bound(lookupValue, &anglemap.phi_CDFs_lowerTheta[0], anglemapParams.phiWidth); //take the phi distro belonging to first theta with full weigh
+                weigh = thetaOvershoot; // [0.5 - 1], will subtract 0.5 when evaluating thetaIndex
             }
-            lookupValue += Weigh((double) anglemap.phi_CDFs[thetaLowerIndex * anglemapParams.phiWidth],
-                                 (double) anglemap.phi_CDFs[(thetaLowerIndex + 1) * anglemapParams.phiWidth], weigh);
-            phiLowerIndex = weighed_lower_bound_X(lookupValue, weigh,
-                                                  &anglemap.phi_CDFs[thetaLowerIndex * anglemapParams.phiWidth],
-                                                  &anglemap.phi_CDFs[(thetaLowerIndex + 1) * anglemapParams.phiWidth],
-                                                  anglemapParams.phiWidth);
-        }
+            else if (thetaLowerIndex == (anglemapParams.thetaLowerRes - 1)) { //last theta half section
+                lookupValue += anglemap.phi_CDFs_lowerTheta[thetaLowerIndex * anglemapParams.phiWidth]; //(first element of next line) periodic BCs over -PI...PI, can be larger than 1
+                phiLowerIndex = my_lower_bound(lookupValue, &anglemap.phi_CDFs_lowerTheta[thetaLowerIndex * anglemapParams.phiWidth], anglemapParams.phiWidth); //take entirely the phi ditro belonging to last line
+                weigh = thetaOvershoot; // [0 - 0.5], will add 0.5 when evaluating thetaIndex
+            }
+            else {
+                //Here we do a weighing both by the hit sum of the previous and next lines (w1 and w2) and also the weighs of the two lines based on thetaOvershoot (w3 and w4)
+                // w1: sum of hits in previous line
+                // w2: sum of hits in next line
+                // w3: weigh of previous line (1 - thetaOvershoot)
+                // w4: weigh of next line     (thetaOvershoot)
+                // result: previous value weight: w1*w3 / (w1*w3 + w2*w4)
+                //         next     value weight: w2*w4 / (w1*w3 + w2*w4) <- this will be the input for weighed_lower_bound
 
-        double phi, phiOvershoot;
-        double thetaIndex = (double) thetaLowerIndex + 0.5 + weigh;
-        if (phiLowerIndex == -1) { //first half section
-            DEBUG_BREAK; //should not happen since we shifted the lookup value with first value
-            phiOvershoot =
-                    0.5 +
-                    0.5 * lookupValue / GetPhiCDFValue(thetaIndex, 0, anglemapParams, anglemap); //between 0.5 and 1
-            phi = GetPhi((double) phiLowerIndex + 0.5 + phiOvershoot,
-                         anglemapParams); //between 0 and the first section end
-        }
-            /*else if (phiLowerIndex == (anglemapParams.phiWidth - 1)) { //last half section
-                phiOvershoot = 0.5 * (lookupValue - GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams) )
-                    / (1.0 - GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams)); //between 0 and 0.5
-                phi = GetPhi((double)phiLowerIndex + 0.5 + phiOvershoot, anglemapParams); //between 0 and the first section end
-            }*/
-        else { //regular or last section
-            if (/*true ||*/ GetPhipdfValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap.pdf) ==
-                            GetPhipdfValue(thetaIndex, phiLowerIndex + 1, anglemapParams, anglemap.pdf)) {
-                //The pdf's slope is 0, linear interpolation
-                phiOvershoot = (lookupValue - GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap))
-                               / (GetPhiCDFValue(thetaIndex, phiLowerIndex + 1, anglemapParams, anglemap) -
-                                  GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap));
-                phi = GetPhi((double) phiLowerIndex + 0.5 + phiOvershoot, anglemapParams);
-            } else {
-
-                //2nd degree interpolation
-                // y(x) = ax^2 + bx + c
-                // c: CDF value at lower index
-                // b: pdf value at lower index
-                // a: pdf slope at lower index / 2
-                // dy := y - c
-                // dx := x - [x at lower index]
-                // dy = ax^2 + bx
-                // dx = ( -b + sqrt(b^2 +4*a*dy) ) / (2a)
-                double phiStep = 2.0 * PI / (double) anglemapParams.phiWidth;
-                double c = GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams,
-                                          anglemap); //CDF value at lower index
-                double b = GetPhipdfValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap.pdf) /
-                           GetPhiCDFSum(thetaIndex, anglemapParams, anglemap) / phiStep; //pdf value at lower index
-                double a = 0.5 * (GetPhipdfValue(thetaIndex, phiLowerIndex + 1, anglemapParams, anglemap.pdf) -
-                                  GetPhipdfValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap.pdf)) /
-                           GetPhiCDFSum(thetaIndex, anglemapParams, anglemap) / Sqr(phiStep); //pdf slope at lower index
-                double dy = lookupValue - c;
-
-                double D = Sqr(b) + 4 * a *
-                                    dy; //Discriminant. In rare cases it might be slightly negative, then fall back to linear interpolation:
-                if (D < 0) {
-                    phiOvershoot = (lookupValue - GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams,
-                                                                 anglemap))
-                                   / (GetPhiCDFValue(thetaIndex, (int) IDX(phiLowerIndex + 1, anglemapParams.phiWidth),
-                                                     anglemapParams, anglemap) -
-                                      GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap));
-                } else {
-                    double dx = (-b + sqrt(Sqr(b) + 4 * a * dy)) /
-                                (2 * a); //Since b>=0 it's the + branch of the +- that is valid for us
-                    phiOvershoot = dx / phiStep;
+                double div;
+                div = ((double)anglemap.phi_CDFs_lowerTheta[thetaLowerIndex] * (1.0 - thetaOvershoot) + (double)anglemap.phi_CDFs_lowerTheta[thetaLowerIndex + 1] * thetaOvershoot); // (w1*w3 + w2*w4)
+                if (div > 0.0) {
+                    weigh = (thetaOvershoot * (double)anglemap.phi_CDFs_lowerTheta[thetaLowerIndex + 1]) / div;    // w2*w4 / (w1*w3 + w2*w4)
                 }
-                phi = GetPhi((double) phiLowerIndex + 0.5 + phiOvershoot, anglemapParams);
+                else {
+                    weigh = thetaOvershoot;
+                }
+                lookupValue += Weigh((double)anglemap.phi_CDFs_lowerTheta[thetaLowerIndex * anglemapParams.phiWidth],
+                    (double)anglemap.phi_CDFs_lowerTheta[(thetaLowerIndex + 1) * anglemapParams.phiWidth], weigh);
+                phiLowerIndex = weighed_lower_bound_X(lookupValue, weigh,
+                    &anglemap.phi_CDFs_lowerTheta[thetaLowerIndex * anglemapParams.phiWidth],
+                    &anglemap.phi_CDFs_lowerTheta[(thetaLowerIndex + 1) * anglemapParams.phiWidth],
+                    anglemapParams.phiWidth);
             }
         }
-        assert(phi > -PI && phi < PI);
-        return phi;
-    }
+        else { //In higher part
+            if (thetaLowerIndex == anglemapParams.thetaLowerRes-1) { //first theta half section
+                lookupValue += anglemap.phi_CDFs_higherTheta[0]; //periodic BCs over -PI...PI, can be larger than 1
+                phiLowerIndex = my_lower_bound(lookupValue, &anglemap.phi_CDFs_higherTheta[0], anglemapParams.phiWidth); //take the phi distro belonging to first theta with full weigh
+                weigh = thetaOvershoot; // [0.5 - 1], will subtract 0.5 when evaluating thetaIndex
+            }
+            else if (thetaLowerIndex == (anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes - 1)) { //last theta half section
+                lookupValue += anglemap.phi_CDFs_higherTheta[(thetaLowerIndex- anglemapParams.thetaLowerRes) * anglemapParams.phiWidth]; //(first element of next line) periodic BCs over -PI...PI, can be larger than 1
+                phiLowerIndex = my_lower_bound(lookupValue, &anglemap.phi_CDFs_higherTheta[(thetaLowerIndex- anglemapParams.thetaLowerRes) * anglemapParams.phiWidth], anglemapParams.phiWidth); //take entirely the phi ditro belonging to last line
+                weigh = thetaOvershoot; // [0 - 0.5], will add 0.5 when evaluating thetaIndex
+            }
+            else {
+                //Here we do a weighing both by the hit sum of the previous and next lines (w1 and w2) and also the weighs of the two lines based on thetaOvershoot (w3 and w4)
+                // w1: sum of hits in previous line
+                // w2: sum of hits in next line
+                // w3: weigh of previous line (1 - thetaOvershoot)
+                // w4: weigh of next line     (thetaOvershoot)
+                // result: previous value weight: w1*w3 / (w1*w3 + w2*w4)
+                //         next     value weight: w2*w4 / (w1*w3 + w2*w4) <- this will be the input for weighed_lower_bound
+
+                double div;
+                div = ((double)anglemap.phi_CDFs_higherTheta[thetaLowerIndex- anglemapParams.thetaLowerRes] * (1.0 - thetaOvershoot) + (double)anglemap.phi_CDFs_higherTheta[thetaLowerIndex-anglemapParams.thetaLowerRes + 1] * thetaOvershoot); // (w1*w3 + w2*w4)
+                if (div > 0.0) {
+                    weigh = (thetaOvershoot * (double)anglemap.phi_CDFs_higherTheta[thetaLowerIndex-anglemapParams.thetaLowerRes + 1]) / div;    // w2*w4 / (w1*w3 + w2*w4)
+                }
+                else {
+                    weigh = thetaOvershoot;
+                }
+                lookupValue += Weigh((double)anglemap.phi_CDFs_higherTheta[thetaLowerIndex - anglemapParams.thetaLowerRes * anglemapParams.phiWidth],
+                    (double)anglemap.phi_CDFs_higherTheta[(thetaLowerIndex - anglemapParams.thetaLowerRes + 1) * anglemapParams.phiWidth], weigh);
+                phiLowerIndex = weighed_lower_bound_X(lookupValue, weigh,
+                    &anglemap.phi_CDFs_higherTheta[thetaLowerIndex - anglemapParams.thetaLowerRes * anglemapParams.phiWidth],
+                    &anglemap.phi_CDFs_higherTheta[(thetaLowerIndex - anglemapParams.thetaLowerRes + 1) * anglemapParams.phiWidth],
+                    anglemapParams.phiWidth);
+            }
+        }
+		double phi, phiOvershoot;
+		double thetaIndex = (double)thetaLowerIndex + 0.5 + weigh;
+		if (phiLowerIndex == -1) { //first half section
+			DEBUG_BREAK; //should not happen since we shifted the lookup value with first value
+			phiOvershoot = 0.5 + 0.5 * lookupValue / GetPhiCDFValue(thetaIndex, 0, anglemapParams, anglemap); //between 0.5 and 1
+			phi = GetPhi((double)phiLowerIndex + 0.5 + phiOvershoot, anglemapParams); //between 0 and the first section end
+		}
+		else { //regular or last section
+			if (GetPhipdfValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap.pdf) ==
+				GetPhipdfValue(thetaIndex, phiLowerIndex + 1, anglemapParams, anglemap.pdf)) {
+				//The pdf's slope is 0, linear interpolation
+				phiOvershoot = (lookupValue - GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap))
+					/ (GetPhiCDFValue(thetaIndex, phiLowerIndex + 1, anglemapParams, anglemap) - GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap));
+				phi = GetPhi((double)phiLowerIndex + 0.5 + phiOvershoot, anglemapParams);
+			}
+			else {
+
+				//2nd degree interpolation
+				// y(x) = ax^2 + bx + c
+				// c: CDF value at lower index
+				// b: pdf value at lower index
+				// a: pdf slope at lower index / 2
+				// dy := y - c
+				// dx := x - [x at lower index]
+				// dy = ax^2 + bx
+				// dx = ( -b + sqrt(b^2 +4*a*dy) ) / (2a)
+				double phiStep = 2.0 * PI / (double)anglemapParams.phiWidth;
+				double c = GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap); //CDF value at lower index
+				double b = GetPhipdfValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap.pdf) / GetPhiCDFSum(thetaIndex, anglemapParams, anglemap) / phiStep; //pdf value at lower index
+				double a = 0.5 * (GetPhipdfValue(thetaIndex, phiLowerIndex + 1, anglemapParams, anglemap.pdf) -
+					GetPhipdfValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap.pdf)) /
+					GetPhiCDFSum(thetaIndex, anglemapParams, anglemap) / Sqr(phiStep); //pdf slope at lower index
+				double dy = lookupValue - c;
+
+				double D = Sqr(b) + 4 * a *	dy; //Discriminant. In rare cases it might be slightly negative, then fall back to linear interpolation:
+				if (D < 0) {
+					phiOvershoot = (lookupValue - GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams,	anglemap))
+						/ (GetPhiCDFValue(thetaIndex, (int)IDX(phiLowerIndex + 1, anglemapParams.phiWidth),	anglemapParams, anglemap)
+                            - GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap));
+				}
+				else {
+					double dx = (-b + sqrt(Sqr(b) + 4 * a * dy)) /
+						(2 * a); //Since b>=0 it's the + branch of the +- that is valid for us
+					phiOvershoot = dx / phiStep;
+				}
+				phi = GetPhi((double)phiLowerIndex + 0.5 + phiOvershoot, anglemapParams);
+			}
+		}
+		assert(phi > -PI && phi < PI);
+		return phi;
+	}
 
 /**
 * \brief Converts from index to theta value
