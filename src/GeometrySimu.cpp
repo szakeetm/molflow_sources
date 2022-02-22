@@ -272,7 +272,7 @@ int SubprocessFacet::InitializeAngleMap()
             for (size_t phiIndex = 0; phiIndex < sh.anglemapParams.phiWidth; phiIndex++) {
                 angleMap.phi_CDFsums_higherTheta[thetaIndex-sh.anglemapParams.thetaLowerRes] += angleMap.pdf[thetaIndex*sh.anglemapParams.phiWidth + phiIndex]; //phi line sum
             }
-            angleMap.theta_CDFsum_higher += angleMap.phi_CDFsums_higherTheta[thetaIndex]; //total map sum
+            angleMap.theta_CDFsum_higher += angleMap.phi_CDFsums_higherTheta[thetaIndex - sh.anglemapParams.thetaLowerRes]; //total map sum
         }
         if (angleMap.theta_CDFsum_higher == 0) {
             auto err = fmt::format("Facet {} has all-zero recorded angle map, but is being used for desorption.", globalId + 1);
@@ -323,7 +323,7 @@ int SubprocessFacet::InitializeAngleMap()
             }
             double phiNormalizingFactor = 1.0 / (double)angleMap.phi_CDFsums_higherTheta[thetaIndex - sh.anglemapParams.thetaLowerRes];
             for (size_t phiIndex = 0; phiIndex < sh.anglemapParams.phiWidth; phiIndex++) {
-                size_t index = sh.anglemapParams.phiWidth * thetaIndex + phiIndex;
+                size_t index = sh.anglemapParams.phiWidth * (thetaIndex - sh.anglemapParams.thetaLowerRes) + phiIndex;
                 if (angleMap.phi_CDFsums_higherTheta[thetaIndex - sh.anglemapParams.thetaLowerRes] == 0) { //no hits in this line, create phi CDF of uniform distr.
                     angleMap.phi_CDFs_higherTheta[index] = (0.5 + (double)phiIndex) / (double)sh.anglemapParams.phiWidth;
                 }
@@ -334,7 +334,7 @@ int SubprocessFacet::InitializeAngleMap()
                     }
                     else {
                         //value covering second half of last phi bin and first of current phi bin
-                        angleMap.phi_CDFs_higherTheta[index] = angleMap.phi_CDFs_higherTheta[sh.anglemapParams.phiWidth * thetaIndex + phiIndex - 1] + (double)(angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex + phiIndex - 1] + angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex + phiIndex])*0.5*phiNormalizingFactor;
+                        angleMap.phi_CDFs_higherTheta[index] = angleMap.phi_CDFs_higherTheta[sh.anglemapParams.phiWidth * (thetaIndex - sh.anglemapParams.thetaLowerRes) + phiIndex - 1] + (double)(angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex + phiIndex - 1] + angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex + phiIndex])*0.5*phiNormalizingFactor;
                     }
                 }
             }
