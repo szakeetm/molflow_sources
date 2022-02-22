@@ -248,8 +248,8 @@ int SubprocessFacet::InitializeAngleMap()
             throw std::runtime_error("Not enough memory to load incident angle map (line sums, CDF)");
         }
         try {
-            angleMap.phi_CDFs_lowerTheta.resize(sh.anglemapParams.phiWidth * (sh.anglemapParams.thetaLowerRes));
-            angleMap.phi_CDFs_higherTheta.resize(sh.anglemapParams.phiWidth * (sh.anglemapParams.thetaHigherRes));
+            angleMap.phi_CDFs_lowerTheta.resize(sh.anglemapParams.phiWidth * sh.anglemapParams.thetaLowerRes);
+            angleMap.phi_CDFs_higherTheta.resize(sh.anglemapParams.phiWidth * sh.anglemapParams.thetaHigherRes);
         }
         catch (...) {
             throw std::runtime_error("Not enough memory to load incident angle map (CDF)");
@@ -259,7 +259,7 @@ int SubprocessFacet::InitializeAngleMap()
         //Lower part
         angleMap.theta_CDFsum_lower = 0;
         memset(angleMap.phi_CDFsums_lowerTheta.data(), 0, sizeof(size_t) * sh.anglemapParams.thetaLowerRes);
-        for (size_t thetaIndex = 0; thetaIndex < (sh.anglemapParams.thetaLowerRes); thetaIndex++) {
+        for (size_t thetaIndex = 0; thetaIndex < sh.anglemapParams.thetaLowerRes; thetaIndex++) {
             for (size_t phiIndex = 0; phiIndex < sh.anglemapParams.phiWidth; phiIndex++) {
                 angleMap.phi_CDFsums_lowerTheta[thetaIndex] += angleMap.pdf[thetaIndex*sh.anglemapParams.phiWidth + phiIndex]; //phi line sum
             }
@@ -278,7 +278,7 @@ int SubprocessFacet::InitializeAngleMap()
             auto err = fmt::format("Facet {} has all-zero recorded angle map, but is being used for desorption.", globalId + 1);
             throw std::runtime_error(err.c_str());
         }
-        angleMap.thetaLowerRatio = angleMap.theta_CDFsum_lower / angleMap.theta_CDFsum_higher; //higher includes lower
+        angleMap.thetaLowerRatio = (double)angleMap.theta_CDFsum_lower / (double)angleMap.theta_CDFsum_higher; //higher includes lower
 
         //Second pass: construct midpoint CDFs
         //We use midpoint because user expects linear interpolation between PDF midpoints, not between bin endpoints
@@ -312,7 +312,7 @@ int SubprocessFacet::InitializeAngleMap()
             }
         }
         //second pass, higher part, pay attention to index shift: thetaIndex upshifted by thetaLowerRes
-        for (size_t thetaIndex = sh.anglemapParams.thetaLowerRes; thetaIndex < sh.anglemapParams.thetaHigherRes; thetaIndex++) {
+        for (size_t thetaIndex = sh.anglemapParams.thetaLowerRes; thetaIndex < sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes; thetaIndex++) {
             if (thetaIndex == sh.anglemapParams.thetaLowerRes) {
                 //First CDF value: sums from theta=limit to midpoint of first higher theta bin
                 angleMap.theta_CDF_higher[thetaIndex-sh.anglemapParams.thetaLowerRes] = angleMap.thetaLowerRatio + 0.5 * (double)angleMap.phi_CDFsums_higherTheta[0] * thetaNormalizingFactor;
