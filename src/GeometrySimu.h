@@ -81,7 +81,7 @@ public:
     std::vector<double> theta_CDF_lower;      // Theta CDF to each theta bin midpoint, normalized to 1. nth value is the CDF at the midpoint of theta bin n
     std::vector<double> theta_CDF_higher;
     size_t theta_CDFsum_lower;  // since theta CDF only sums till the midpoint of the last segment, the total map sum is here
-    size_t theta_CDFsum_higher; // theta_CDFsum_higher>=theta_CDFsum_lower as it inclues lower angles
+    size_t theta_CDFsum_higher; // theta_CDFsum_higher>=theta_CDFsum_lower as it inclues lower angles. Also total number of hits in pdf
     double thetaLowerRatio; // ratio of angle map below theta limit, to decide which side to look up in
 
     [[nodiscard]] size_t GetMemSize() const {

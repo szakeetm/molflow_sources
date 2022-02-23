@@ -43,20 +43,20 @@ namespace AnglemapGeneration {
                 } else {
                     //2nd degree interpolation
                     // y(x) = ax^2 + bx + c
-                    // c: CDF value at lower index
-                    // b: pdf value at lower index
-                    // a: pdf slope at lower index / 2
-                    // dy := y - c
-                    // dx := x - [x at lower index]
-                    // dy = ax^2 + bx
+                    // y(x0) = y0 = c = CDF value          //Motion equivalent: initial position (s0)
+                    // b: pdf value at lower index         //Motion equivalent: initial speed (v0)
+                    // a: pdf slope at lower index / 2     //Motion equivalent: acceleration (per two)  (a/2)
+                    // dy := y - c                         //Motion equivalent: distance from start    (ds = s - s0)
+                    // dx := x - [x at lower index]        //Motion equivalent: elapsed time           (dt = t - t0)
+                    // dy = ax^2 + bx                      //Motion equivalent: ds = a/2 * t^2 + v0 * t
                     // dx = ( -b + sqrt(b^2 +4*a*dy) ) / (2a)
                     double thetaStep = GetTheta((double) thetaLowerIndex + 1.5, anglemapParams) -
                                     GetTheta((double) thetaLowerIndex + 0.5, anglemapParams);
                     double c = anglemap.theta_CDF_lower[thetaLowerIndex]; //CDF value at lower index
-                    double b = (double) anglemap.phi_CDFsums_lowerTheta[thetaLowerIndex] / (double) anglemap.theta_CDFsum_lower / thetaStep; //pdf value at lower index
+                    double b = (double) anglemap.phi_CDFsums_lowerTheta[thetaLowerIndex] / (double) anglemap.theta_CDFsum_higher / thetaStep; //pdf value at lower index
                     double a = 0.5 * ((double) (anglemap.phi_CDFsums_lowerTheta[thetaLowerIndex + 1]) -
                                     (double) anglemap.phi_CDFsums_lowerTheta[thetaLowerIndex]) /
-                            (double) anglemap.theta_CDFsum_lower / Sqr(thetaStep); //pdf slope at lower index
+                            (double) anglemap.theta_CDFsum_higher / Sqr(thetaStep); //pdf slope at lower index
                     double dy = lookupValue - c;
 
                     double dx = (-b + sqrt(Sqr(b) + 4 * a * dy)) /
@@ -73,7 +73,7 @@ namespace AnglemapGeneration {
                                              anglemap.theta_CDF_higher); //returns line number AFTER WHICH LINE lookup value resides in ( thetaLowerLimit-1 .. size-2 )
 
             if (thetaLowerIndex == anglemapParams.thetaLowerRes-1) { //theta in the first half of the higher res part (below recorded CDF at midpoint)
-                thetaOvershoot = 0.5 + 0.5 * lookupValue / (anglemap.theta_CDF_higher[0]-anglemap.thetaLowerRatio); //between 0.5 and 1
+                thetaOvershoot = 0.5 + 0.5 * (lookupValue-anglemap.thetaLowerRatio) / (anglemap.theta_CDF_higher[0]-anglemap.thetaLowerRatio); //between 0.5 and 1
                 theta = GetTheta((double) thetaLowerIndex + 0.5 + thetaOvershoot,
                                 anglemapParams); //between 0 and the first section end
             } else if (thetaLowerIndex == (anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes - 1)) { //theta in last half of higher res part
@@ -90,12 +90,12 @@ namespace AnglemapGeneration {
                 } else {
                     //2nd degree interpolation
                     // y(x) = ax^2 + bx + c
-                    // c: CDF value at lower index
-                    // b: pdf value at lower index
-                    // a: pdf slope at lower index / 2
-                    // dy := y - c
-                    // dx := x - [x at lower index]
-                    // dy = ax^2 + bx
+                    // y(x0) = y0 = c = CDF value          //Motion equivalent: initial position (s0)
+                    // b: pdf value at lower index         //Motion equivalent: initial speed (v0)
+                    // a: pdf slope at lower index / 2     //Motion equivalent: acceleration (per two)  (a/2)
+                    // dy := y - c                         //Motion equivalent: distance from start    (ds = s - s0)
+                    // dx := x - [x at lower index]        //Motion equivalent: elapsed time           (dt = t - t0)
+                    // dy = ax^2 + bx                      //Motion equivalent: ds = a/2 * t^2 + v0 * t
                     // dx = ( -b + sqrt(b^2 +4*a*dy) ) / (2a)
                     double thetaStep = GetTheta((double) thetaLowerIndex + 1.5, anglemapParams) -
                                     GetTheta((double) thetaLowerIndex + 0.5, anglemapParams);
@@ -222,15 +222,15 @@ namespace AnglemapGeneration {
 			}
 			else {
 
-				//2nd degree interpolation
-				// y(x) = ax^2 + bx + c
-				// c: CDF value at lower index
-				// b: pdf value at lower index
-				// a: pdf slope at lower index / 2
-				// dy := y - c
-				// dx := x - [x at lower index]
-				// dy = ax^2 + bx
-				// dx = ( -b + sqrt(b^2 +4*a*dy) ) / (2a)
+                //2nd degree interpolation
+                // y(x) = ax^2 + bx + c
+                // y(x0) = y0 = c = CDF value          //Motion equivalent: initial position (s0)
+                // b: pdf value at lower index         //Motion equivalent: initial speed (v0)
+                // a: pdf slope at lower index / 2     //Motion equivalent: acceleration (per two)  (a/2)
+                // dy := y - c                         //Motion equivalent: distance from start    (ds = s - s0)
+                // dx := x - [x at lower index]        //Motion equivalent: elapsed time           (dt = t - t0)
+                // dy = ax^2 + bx                      //Motion equivalent: ds = a/2 * t^2 + v0 * t
+                // dx = ( -b + sqrt(b^2 +4*a*dy) ) / (2a)
 				double phiStep = 2.0 * PI / (double)anglemapParams.phiWidth;
 				double c = GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap); //CDF value at lower index
 				double b = GetPhipdfValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap.pdf) / GetPhiCDFSum(thetaIndex, anglemapParams, anglemap) / phiStep; //pdf value at lower index
@@ -342,7 +342,7 @@ namespace AnglemapGeneration {
                 return Weigh(valueFromLowerCDF, valueFromHigherCDF, thetaOvershoot);
             }
         } else { //In higher part
-            if (thetaIndex < 0.5) {
+            if (thetaIndex < (double)anglemapParams.thetaLowerRes + 0.5) {
                 return (phiLowerIndex < anglemapParams.phiWidth)
                     ? anglemap.phi_CDFs_higherTheta[phiLowerIndex] : 1.0 + anglemap.phi_CDFs_higherTheta[0];
             }
