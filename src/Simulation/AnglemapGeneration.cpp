@@ -157,6 +157,8 @@ namespace AnglemapGeneration {
             div = ((double)anglemap.phi_CDFs_lowerTheta[thetaLowerIndex] * (1.0 - thetaOvershoot) + (double)anglemap.phi_CDFs_lowerTheta[thetaLowerIndex + 1] * thetaOvershoot); // (w1*w3 + w2*w4)
             if (div > 0.0) {
                 weigh = (thetaOvershoot * (double)anglemap.phi_CDFs_lowerTheta[thetaLowerIndex + 1]) / div;    // w2*w4 / (w1*w3 + w2*w4)
+                //weigh = thetaOvershoot; //debug
+                //weigh=0.99;
             }
             else {
                 weigh = thetaOvershoot;
