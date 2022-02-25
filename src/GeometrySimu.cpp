@@ -2,9 +2,14 @@
 // Created by Pascal Baehr on 28.04.20.
 //
 
+// M_PI define
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+#define _USE_MATH_DEFINES // activate defines, e.g. M_PI_2
+#endif
+#include <cmath>
+
 #include <sstream>
 #include <Helper/MathTools.h>
-#include <cmath>
 #include <set>
 #include <Simulation/CDFGeneration.h>
 #include <Simulation/IDGeneration.h>
