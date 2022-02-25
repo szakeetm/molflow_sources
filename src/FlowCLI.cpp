@@ -2,6 +2,12 @@
 // Created by Pascal Baehr on 28.04.20.
 //
 
+// M_PI define
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+#define _USE_MATH_DEFINES // activate defines, e.g. M_PI_2
+#endif
+#include <cmath>
+
 #include "SimulationManager.h"
 #include "SMP.h"
 #include "Buffer_shared.h"
@@ -26,10 +32,6 @@
 
 #include "FlowMPI.h"
 #include "File.h"
-
-// M_PI define
-#define _USE_MATH_DEFINES
-#include <cmath>
 
 static constexpr const char* molflowCliLogo = R"(
   __  __     _  __ _
