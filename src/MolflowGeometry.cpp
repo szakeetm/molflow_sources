@@ -269,6 +269,127 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 }
 
 /**
+* \brief Testing purpose function, construct an angled PRISMA
+* \param L length
+* \param R radius
+* \param s sticking value
+* \param step number of facets used to construct the circular hull
+*/
+void  MolflowGeometry::BuildPrisma(double L, double R, double angle, double s, int step) {
+    Clear();
+
+    //mApp->ClearAllSelections();
+    //mApp->ClearAllViews();
+
+    int nbDecade = 0;
+    int nbTF = 9 * nbDecade;
+    int nbTV = 4 * nbTF;
+
+    sh.nbVertex = 2 * step + nbTV;
+    std::vector<InterfaceVertex>(sh.nbVertex).swap(vertices3);
+
+    sh.nbFacet = step + 2 + nbTF;
+
+
+    sh.nbSuper = 1;
+    strName[0] = strdup("Prisma");
+
+    try{
+        facets.resize(sh.nbFacet, nullptr);
+    }
+    catch(const std::exception &e) {
+        throw Error("Couldn't allocate memory for facets");
+    }
+
+    // Vertices
+    for (int i = 0; i < step; i++) {
+        double step_angle = (double)i / (double)step * 2 * PI;
+        vertices3[2 * i + nbTV].x = R * cos(step_angle);
+        vertices3[2 * i + nbTV].y = R * sin(step_angle);
+        vertices3[2 * i + nbTV].z = 0;
+        vertices3[2 * i + 1 + nbTV].x = R * cos(step_angle);
+        vertices3[2 * i + 1 + nbTV].y = R * sin(step_angle) + L * cos(M_PI_2 - angle);
+        vertices3[2 * i + 1 + nbTV].z = L * cos(angle);
+    }
+
+    try {
+        // Cap facet
+        facets[0 + nbTF] = new InterfaceFacet(step);
+        facets[0 + nbTF]->sh.sticking = 1.0;
+        facets[0 + nbTF]->sh.desorbType = DES_COSINE;
+        facets[0 + nbTF]->sh.outgassing = 1.0;
+        for (int i = 0; i < step; i++)
+            facets[0 + nbTF]->indices[i] = 2 * i + nbTV;
+
+        facets[1 + nbTF] = new InterfaceFacet(step);
+        facets[1 + nbTF]->sh.sticking = 1.0;
+        facets[1 + nbTF]->sh.desorbType = DES_NONE;
+        for (int i = 0; i < step; i++)
+            facets[1 + nbTF]->indices[step - i - 1] = 2 * i + 1 + nbTV;
+
+        // Wall facet
+        for (int i = 0; i < step; i++) {
+            facets[i + 2 + nbTF] = new InterfaceFacet(4);
+            //facets[i + 2 + nbTF]->wp.reflection.diffusePart = 1.0; //constructor does this already
+            //facets[i + 2 + nbTF]->wp.reflection.specularPart = 0.0; //constructor does this already
+            facets[i + 2 + nbTF]->sh.sticking = s;
+            facets[i + 2 + nbTF]->indices[0] = 2 * i + nbTV;
+            facets[i + 2 + nbTF]->indices[1] = 2 * i + 1 + nbTV;
+            if (i < step - 1) {
+                facets[i + 2 + nbTF]->indices[2] = 2 * (i + 1) + 1 + nbTV;
+                facets[i + 2 + nbTF]->indices[3] = 2 * (i + 1) + nbTV;
+            }
+            else {
+
+                facets[i + 2 + nbTF]->indices[2] = 1 + nbTV;
+                facets[i + 2 + nbTF]->indices[3] = 0 + nbTV;
+            }
+        }
+
+        // Volatile facet
+        for (int d = 0; d < nbDecade; d++) {
+            for (int i = 0; i < 9; i++) {
+
+                double z = (double)(i + 1) * pow(10, (double)d);
+                int idx = d * 36 + i * 4;
+
+                vertices3[idx + 0].x = -R;
+                vertices3[idx + 0].y = R;
+                vertices3[idx + 0].z = z;
+                vertices3[idx + 1].x = R;
+                vertices3[idx + 1].y = R;
+                vertices3[idx + 1].z = z;
+                vertices3[idx + 2].x = R;
+                vertices3[idx + 2].y = -R;
+                vertices3[idx + 2].z = z;
+                vertices3[idx + 3].x = -R;
+                vertices3[idx + 3].y = -R;
+                vertices3[idx + 3].z = z;
+
+                facets[9 * d + i] = new InterfaceFacet(4);
+                facets[9 * d + i]->sh.sticking = 0.0;
+                facets[9 * d + i]->sh.opacity = 0.0;
+                facets[9 * d + i]->sh.isVolatile = true;
+                facets[9 * d + i]->indices[0] = idx + 0;
+                facets[9 * d + i]->indices[1] = idx + 1;
+                facets[9 * d + i]->indices[2] = idx + 2;
+                facets[9 * d + i]->indices[3] = idx + 3;
+
+            }
+        }
+    }
+    catch (std::bad_alloc) {
+        Clear();
+        throw Error("Couldn't reserve memory for the facets");
+    }
+    catch (...) {
+        throw Error("Unspecified Error while building pipe");
+    }
+    InitializeGeometry();
+    InitializeInterfaceGeometry();
+}
+
+/**
 * \brief File handling for inserting a SYN geometry + initialisation
 * \param file name of the input file
 * \param prg GLProgress (TODO: which is never used)

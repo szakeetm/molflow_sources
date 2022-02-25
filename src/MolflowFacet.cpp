@@ -335,8 +335,8 @@ void InterfaceFacet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bo
 		}
 	} //else use default values at Facet() constructor
 
-	textureVisible = f.child("ViewSettings").attribute("textureVisible").as_bool();
-	volumeVisible = f.child("ViewSettings").attribute("volumeVisible").as_bool();
+	textureVisible = f.child("ViewSettings").attribute("textureVisible").as_bool(true);
+	volumeVisible = f.child("ViewSettings").attribute("volumeVisible").as_bool(true);
 
 	xml_node facetHistNode = f.child("Histograms");
 	if (facetHistNode) { // Molflow version before 2.8 didn't save histograms

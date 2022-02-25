@@ -301,6 +301,8 @@ public:
 
     bool initialized;
     std::mutex m;
+
+    void BuildPrisma(double L, double R, double angle, double s, int step);
 };
 
 /*!
