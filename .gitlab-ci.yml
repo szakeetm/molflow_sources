@@ -35,9 +35,30 @@ prepare_job:
     - COMMIT_TAG=${CI_COMMIT_TAG:1} # trim v at beginning
     - echo "TAG_VERSION_NUMBER=$COMMIT_TAG" >> variables.env      # and append to the variables.env file
     - echo "TAG_SUFFIX=_$COMMIT_TAG" >> variables.env             # and with underscore prefix
+    - CHANGELOG_LINE_START=`awk '/##\ v/{print NR; exit;}' CHANGELOG.md` #CHANGELOG_LINE_START=`awk '/'$COMMIT_TAG'/{ print NR; exit}' CHANGELOG.md`
+    - CHANGELOG_LINE_END=`awk '/##\ v/{ count++; if(count>1) {print NR; exit;}}' CHANGELOG.md`
+    - echo "` awk 'NR > '$CHANGELOG_LINE_START' && NR < '$CHANGELOG_LINE_END'' CHANGELOG.md`" >> parsed_changelog.txt # skip first header "## tag_name" and next header found as end point
   artifacts:
+    paths:
+      - parsed_changelog.txt
+    expire_in: 1 week
     reports:
       dotenv: variables.env
+
+prepare_job_notag:
+  stage: prepare                                              # This stage must run before the release stage
+  image: alpine:latest
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      when: always
+  script:
+    - CHANGELOG_LINE_START=`awk '/##\ v/{print NR; exit;}' CHANGELOG.md` #CHANGELOG_LINE_START=`awk '/'$COMMIT_TAG'/{ print NR; exit}' CHANGELOG.md`
+    - CHANGELOG_LINE_END=`awk '/##\ v/{ count++; if(count>1) {print NR; exit;}}' CHANGELOG.md`
+    - echo "` awk 'NR > '$CHANGELOG_LINE_START' && NR < '$CHANGELOG_LINE_END'' CHANGELOG.md`" >> parsed_changelog.txt # skip first header "## tag_name" and next header found as end point
+  artifacts:
+    paths:
+      - parsed_changelog.txt
+    expire_in: 1 week
 
 upload-job:
   stage: upload
@@ -45,7 +66,7 @@ upload-job:
   rules:
     - if: $CI_COMMIT_TAG
   script:
-    - 'for filename in ./${APP_NAME}_*; do zip -r ${filename}.zip $filename; curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ./${filename}.zip "${PACKAGE_REGISTRY_URL}/${TAG_SUFFIX}/${filename}.zip"; done'
+    - 'for filename in ./${APP_NAME}_*; do zip -r ${filename}.zip $filename; curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ./${filename}.zip "${PACKAGE_REGISTRY_URL}/${TAG_VERSION_NUMBER}/${filename}.zip"; done'
 
 release_job:
   stage: release
@@ -54,9 +75,10 @@ release_job:
     - if: $CI_COMMIT_TAG
   script:
     - echo 'running release_job'
+    - EXTRA_DESCRIPTION=`echo "#Changelog '$CI_COMMIT_TAG'";cat parsed_changelog.txt`
   release:
     name: 'Release $CI_COMMIT_TAG'
-    description: 'Changelog $CI_COMMIT_TAG\n$EXTRA_DESCRIPTION'  # $EXTRA_DESCRIPTION must be defined
+    description: '$EXTRA_DESCRIPTION' #$EXTRA_DESCRIPTION must be defined
     tag_name: '$CI_COMMIT_TAG'                                       # elsewhere in the pipeline.
     ref: '$CI_COMMIT_TAG'
     assets:
@@ -126,6 +148,8 @@ build-windows-test:
   stage: build
   before_script:
     - echo "Building $OS_NAME $CI_COMMIT_BRANCH $CI_COMMIT_REF_NAME $CI_PIPELINE_ID"
+    - echo "Current Changelog is the following:"
+    - echo "`cat parsed_changelog.txt`"
     - git submodule sync --recursive
     - git submodule update --init --recursive
   script:

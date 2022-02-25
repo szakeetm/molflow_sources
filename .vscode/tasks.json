@@ -4,7 +4,7 @@
 		{
 			"type": "shell",
 			"label": "CMake Make Release Build with clang",
-			"command": "/usr/local/bin/cmake",
+			"command": "cmake",
 			"args": ["--build",
 				"${workspaceRoot}/build_Release",
 				"--config","Release",
@@ -21,7 +21,7 @@
 		{
 			"type": "shell",
 			"label": "CMake Make RelWithDebInfo Build with clang",
-			"command": "/usr/local/bin/cmake",
+			"command": "cmake",
 			"args": ["--build",
 				"${workspaceRoot}/build_RelWithDebInfo",
 				"--config","RelWithDebInfo",
@@ -38,7 +38,7 @@
 		{
 			"type": "shell",
 			"label": "CMake Make Debug Build with clang",
-			"command": "/usr/local/bin/cmake",
+			"command": "cmake",
 			"args": ["--build",
 				"${workspaceRoot}/build_Debug",
 				"--config","Debug",

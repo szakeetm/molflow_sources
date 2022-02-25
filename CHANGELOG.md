@@ -3,8 +3,13 @@
 ## v2.9.3 (TBA)
 ### Change
 - Changing parameters (CLI) will now give errors or warnings for edge cases
+- Profile plotter now gives a unified warning for each plot concerned
+- Particle Logger logs for all threads/particles again
 ### Bugfix
 - Fixed CSV export for CLI misfunctioning, due to a bug with fmtlib
+- Multiple profiles wouldn't plot correctly depending on display mode
+- Desorptions would not get recorded for particle logger
+- Fixed a rare case of heap corruptions when loading XML files with multiple structures
 
 ## v2.9.2 (2021.11.22)
 ### Feature

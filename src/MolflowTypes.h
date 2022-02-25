@@ -154,6 +154,14 @@ typedef struct {
 
 class AnglemapParams {
 public:
+    AnglemapParams(){
+        record = false;
+        hasRecorded = false;
+        phiWidth = 0;
+        thetaLimit = 0.0;
+        thetaLimit = 0;
+        thetaHigherRes = 0;
+    }
 	bool   record; // Record incident angle 2-dim distribution
 	bool hasRecorded;
 	size_t phiWidth; //resolution between -PI and +PI

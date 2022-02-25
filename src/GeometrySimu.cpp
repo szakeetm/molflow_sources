@@ -252,49 +252,44 @@ int SubprocessFacet::InitializeAngleMap()
             throw std::runtime_error("Not enough memory to load incident angle map (CDF)");
         }
 
-        //First pass: determine sums
+        //First pass: determine phi line sums and total map sum
         angleMap.theta_CDFsum = 0;
         memset(angleMap.phi_CDFsums.data(), 0, sizeof(size_t) * (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes));
         for (size_t thetaIndex = 0; thetaIndex < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); thetaIndex++) {
             for (size_t phiIndex = 0; phiIndex < sh.anglemapParams.phiWidth; phiIndex++) {
-                angleMap.phi_CDFsums[thetaIndex] += angleMap.pdf[thetaIndex*sh.anglemapParams.phiWidth + phiIndex];
+                angleMap.phi_CDFsums[thetaIndex] += angleMap.pdf[thetaIndex*sh.anglemapParams.phiWidth + phiIndex]; //phi line sum
             }
-            angleMap.theta_CDFsum += angleMap.phi_CDFsums[thetaIndex];
+            angleMap.theta_CDFsum += angleMap.phi_CDFsums[thetaIndex]; //total map sum
         }
-        if (!angleMap.theta_CDFsum) {
+        if (angleMap.theta_CDFsum == 0) {
             auto err = fmt::format("Facet {} has all-zero recorded angle map, but is being used for desorption.", globalId + 1);
             throw std::runtime_error(err.c_str());
         }
 
-        //Second pass: write CDFs
+        //Second pass: construct midpoint CDFs
         double thetaNormalizingFactor = 1.0 / (double)angleMap.theta_CDFsum;
         for (size_t thetaIndex = 0; thetaIndex < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); thetaIndex++) {
-            if (angleMap.theta_CDFsum == 0) { //no hits in this line, generate CDF of uniform distr.
-                angleMap.theta_CDF[thetaIndex] = (0.5 + (double)thetaIndex) / (double)(sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes);
+            if (thetaIndex == 0) {
+                //First CDF value: sums from theta=0 to midpoint of first theta bin
+                angleMap.theta_CDF[thetaIndex] = 0.5 * (double)angleMap.phi_CDFsums[0] * thetaNormalizingFactor;
             }
             else {
-                if (thetaIndex == 0) {
-                    //First CDF value, covers half of first segment
-                    angleMap.theta_CDF[thetaIndex] = 0.5 * (double)angleMap.phi_CDFsums[0] * thetaNormalizingFactor;
-                }
-                else {
-                    //value covering second half of last segment and first of current segment
-                    angleMap.theta_CDF[thetaIndex] = angleMap.theta_CDF[thetaIndex - 1] + (double)(angleMap.phi_CDFsums[thetaIndex - 1] + angleMap.phi_CDFsums[thetaIndex])*0.5*thetaNormalizingFactor;
-                }
+                //value summing second half of previous theta bin and first half of current theta bin
+                angleMap.theta_CDF[thetaIndex] = angleMap.theta_CDF[thetaIndex - 1] + (double)(angleMap.phi_CDFsums[thetaIndex - 1] + angleMap.phi_CDFsums[thetaIndex])*0.5*thetaNormalizingFactor;
             }
             double phiNormalizingFactor = 1.0 / (double)angleMap.phi_CDFsums[thetaIndex];
             for (size_t phiIndex = 0; phiIndex < sh.anglemapParams.phiWidth; phiIndex++) {
                 size_t index = sh.anglemapParams.phiWidth * thetaIndex + phiIndex;
-                if (angleMap.phi_CDFsums[thetaIndex] == 0) { //no hits in this line, create CDF of uniform distr.
+                if (angleMap.phi_CDFsums[thetaIndex] == 0) { //no hits in this line, create phi CDF of uniform distr.
                     angleMap.phi_CDFs[index] = (0.5 + (double)phiIndex) / (double)sh.anglemapParams.phiWidth;
                 }
                 else {
                     if (phiIndex == 0) {
-                        //First CDF value, covers half of first segment
-                        angleMap.phi_CDFs[index] = 0.5 * (double)angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex] * phiNormalizingFactor;
+                        //First CDF value, sums to midpoint of first phi bin
+                        angleMap.phi_CDFs[index] = 0.5 * (double)angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex] * phiNormalizingFactor; //sh.anglemapParams.phiWidth * thetaIndex is the first pdf bin of this phi line
                     }
                     else {
-                        //value covering second half of last segment and first of current segment
+                        //value covering second half of last phi bin and first of current phi bin
                         angleMap.phi_CDFs[index] = angleMap.phi_CDFs[sh.anglemapParams.phiWidth * thetaIndex + phiIndex - 1] + (double)(angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex + phiIndex - 1] + angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex + phiIndex])*0.5*phiNormalizingFactor;
                     }
                 }
@@ -441,6 +436,122 @@ size_t SubprocessFacet::GetMemSize() const {
     sum += sizeof (double) * ogMap.outgassingMap.capacity();
     sum += angleMap.GetMemSize();
     return sum;
+}
+
+/**
+* \brief Testing purpose function, construct an angled PRISMA / parallelepiped
+* \param L length
+* \param R radius
+* \param angle angle between Y-Z
+* \param s sticking value
+* \param step number of facets used to construct the circular hull
+*/
+void  SimulationModel::BuildPrisma(double L, double R, double angle, double s, int step) {
+
+    int nbDecade = 0;
+    int nbTF = 9 * nbDecade;
+    int nbTV = 4 * nbTF;
+
+    sh.nbVertex = 2 * step + nbTV;
+    std::vector<Vector3d>(sh.nbVertex).swap(vertices3);
+
+    sh.nbFacet = step + 2 + nbTF;
+
+
+    sh.nbSuper = 1;
+    structures.resize(1);
+    structures.begin()->strName = strdup("Prisma");
+
+    try{
+        facets.resize(sh.nbFacet, nullptr);
+    }
+    catch(const std::exception &e) {
+        throw Error("Couldn't allocate memory for facets");
+    }
+
+    // Vertices
+    for (int i = 0; i < step; i++) {
+        double step_angle = (double)i / (double)step * 2 * PI;
+        vertices3[2 * i + nbTV].x = R * cos(step_angle);
+        vertices3[2 * i + nbTV].y = R * sin(step_angle);
+        vertices3[2 * i + nbTV].z = 0;
+        vertices3[2 * i + 1 + nbTV].x = R * cos(step_angle);
+        vertices3[2 * i + 1 + nbTV].y = R * sin(step_angle) + L * cos(M_PI_2 - angle);
+        vertices3[2 * i + 1 + nbTV].z = L * cos(angle);
+    }
+
+    try {
+        // Cap facet
+        facets[0 + nbTF] = std::make_shared<SubprocessFacet>(step);
+        facets[0 + nbTF]->sh.sticking = 1.0;
+        facets[0 + nbTF]->sh.desorbType = DES_COSINE;
+        facets[0 + nbTF]->sh.outgassing = 1.0;
+        for (int i = 0; i < step; i++)
+            facets[0 + nbTF]->indices[i] = 2 * i + nbTV;
+
+        facets[1 + nbTF] = std::make_shared<SubprocessFacet>(step);
+        facets[1 + nbTF]->sh.sticking = 1.0;
+        facets[1 + nbTF]->sh.desorbType = DES_NONE;
+        for (int i = 0; i < step; i++)
+            facets[1 + nbTF]->indices[step - i - 1] = 2 * i + 1 + nbTV;
+
+        // Wall facet
+        for (int i = 0; i < step; i++) {
+            facets[i + 2 + nbTF] = std::make_shared<SubprocessFacet>(4);
+            //facets[i + 2 + nbTF]->wp.reflection.diffusePart = 1.0; //constructor does this already
+            //facets[i + 2 + nbTF]->wp.reflection.specularPart = 0.0; //constructor does this already
+            facets[i + 2 + nbTF]->sh.sticking = s;
+            facets[i + 2 + nbTF]->indices[0] = 2 * i + nbTV;
+            facets[i + 2 + nbTF]->indices[1] = 2 * i + 1 + nbTV;
+            if (i < step - 1) {
+                facets[i + 2 + nbTF]->indices[2] = 2 * (i + 1) + 1 + nbTV;
+                facets[i + 2 + nbTF]->indices[3] = 2 * (i + 1) + nbTV;
+            }
+            else {
+
+                facets[i + 2 + nbTF]->indices[2] = 1 + nbTV;
+                facets[i + 2 + nbTF]->indices[3] = 0 + nbTV;
+            }
+        }
+
+        // Volatile facet
+        for (int d = 0; d < nbDecade; d++) {
+            for (int i = 0; i < 9; i++) {
+
+                double z = (double)(i + 1) * pow(10, (double)d);
+                int idx = d * 36 + i * 4;
+
+                vertices3[idx + 0].x = -R;
+                vertices3[idx + 0].y = R;
+                vertices3[idx + 0].z = z;
+                vertices3[idx + 1].x = R;
+                vertices3[idx + 1].y = R;
+                vertices3[idx + 1].z = z;
+                vertices3[idx + 2].x = R;
+                vertices3[idx + 2].y = -R;
+                vertices3[idx + 2].z = z;
+                vertices3[idx + 3].x = -R;
+                vertices3[idx + 3].y = -R;
+                vertices3[idx + 3].z = z;
+
+                facets[9 * d + i] = std::make_shared<SubprocessFacet>(4);
+                facets[9 * d + i]->sh.sticking = 0.0;
+                facets[9 * d + i]->sh.opacity = 0.0;
+                facets[9 * d + i]->sh.isVolatile = true;
+                facets[9 * d + i]->indices[0] = idx + 0;
+                facets[9 * d + i]->indices[1] = idx + 1;
+                facets[9 * d + i]->indices[2] = idx + 2;
+                facets[9 * d + i]->indices[3] = idx + 3;
+
+            }
+        }
+    }
+    catch (std::bad_alloc) {
+        throw Error("Couldn't reserve memory for the facets");
+    }
+    catch (...) {
+        throw Error("Unspecified Error while building pipe");
+    }
 }
 
 /**
@@ -979,6 +1090,13 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
     size_t facetErrNb = 0;
     size_t fineErrNb = 0;
 
+    size_t nbFacetSkips = 0;
+    size_t nbProfileSkips = 0;
+    size_t nbTextureSkips = 0;
+    size_t nbDirSkips = 0;
+    size_t nbHistSkips_glob = 0;
+    size_t nbHistSkips_loc = 0;
+
     std::string cmpFile;
     std::string cmpFileFine; // extra stream to silence after important outputs
 
@@ -997,7 +1115,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
             ++globalErrNb;
         }
 
-        if(globalErrNb){
+        if(globalErrNb){ // preemptive return, as global errors make local errors irrelevant
             fmt::print("{}\n", cmpFile);
             return std::make_tuple(static_cast<int>(globalErrNb), -1, -1);
         }
@@ -1104,14 +1222,17 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
             if ((facetCounter_lhs.hits.nbMCHit == 0 && facetCounter_rhs.hits.nbMCHit == 0)
             || (facetCounter_lhs.hits.nbMCHit < 40000 || facetCounter_rhs.hits.nbMCHit < 40000)) {
                 // Skip facet comparison if not enough hits have been recorded for both states
+                ++nbFacetSkips;
                 continue;
             } else if (facetCounter_lhs.hits.nbMCHit == 0 && facetCounter_rhs.hits.nbMCHit > 0) {
                 cmpFile += fmt::format("[Facet][{}][hits][{}] First state has no recorded hits for this facet\n", facetId, m);
                 ++facetErrNb;
+                ++nbFacetSkips;
                 continue;
             } else if (facetCounter_lhs.hits.nbMCHit > 0 && facetCounter_rhs.hits.nbMCHit == 0) {
                 cmpFile += fmt::format("[Facet][{}][hits][{}] Second state has no recorded hits for this facet\n", facetId, m);
                 ++facetErrNb;
+                ++nbFacetSkips;
                 continue;
             }
 
@@ -1245,41 +1366,116 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                 auto &prof_lhs = facetCounter_lhs.profile;
                 auto &prof_rhs = facetCounter_rhs.profile;
 
-                for (int id = 0; id < prof_lhs.size(); ++id) {
-                    if (std::sqrt(std::max(1.0, std::min(prof_lhs[id].countEquiv, prof_rhs[id].countEquiv))) < 10) {
-                        // Sample size not large enough
-                        continue;
-                    }
-                    if (!IsEqual(prof_lhs[id].countEquiv / sumHitDes, prof_rhs[id].countEquiv / sumHitDes_rhs,
-                                 locThreshold)) {
-                        cmpFileFine += fmt::format("[Facet][{}][Profile][Ind={}][countEquiv][{}] has large difference: "
-                                               "{} : {} - {}\n",
-                                               facetId, id, m,
-                                               std::abs(prof_lhs[id].countEquiv / sumHitDes - prof_rhs[id].countEquiv / sumHitDes_rhs) / (prof_lhs[id].countEquiv / sumHitDes), 
-                                               std::abs(prof_lhs[id].countEquiv / sumHitDes), (prof_rhs[id].countEquiv / sumHitDes_rhs));
+                // use 1,4,6,4,1 as smoothing kernel to get more results
+                if(1) { // gaussian 1x5 smoothing kernel
+                    for (int id = 2; id < (int)(prof_lhs.size()) - 2; ++id) {
+                        auto smooth_countEquiv_lhs =
+                                1.0/16.0 * (prof_lhs[id-2].countEquiv + 4.0 * prof_lhs[id-1].countEquiv + 6.0 * prof_lhs[id].countEquiv
+                                + 4.0 * prof_lhs[id+1].countEquiv + prof_lhs[id+2].countEquiv);
+                        auto smooth_countEquiv_rhs =
+                                1.0/16.0 * (prof_rhs[id-2].countEquiv + 4.0 * prof_rhs[id-1].countEquiv + 6.0 * prof_rhs[id].countEquiv
+                                        + 4.0 * prof_rhs[id+1].countEquiv + prof_rhs[id+2].countEquiv);
+                        if (std::max(1.0, std::min(smooth_countEquiv_lhs, smooth_countEquiv_rhs)) < 100) {
+                            // Sample size not large enough
+                            ++nbProfileSkips;
+                            continue;
+                        }
+                        if (!IsEqual(smooth_countEquiv_lhs / sumHitDes, smooth_countEquiv_rhs / sumHitDes_rhs,
+                                     locThreshold)) {
+                            cmpFileFine += fmt::format(
+                                    "[Facet][{}][Profile][Ind={}][countEquiv][{}] has large difference: "
+                                    "{} : {} - {}\n",
+                                    facetId, id, m,
+                                    std::abs(smooth_countEquiv_lhs / sumHitDes -
+                                                     smooth_countEquiv_rhs / sumHitDes_rhs) /
+                                    (smooth_countEquiv_lhs / sumHitDes),
+                                    std::abs(smooth_countEquiv_lhs / sumHitDes),
+                                    (smooth_countEquiv_rhs / sumHitDes_rhs));
 
-                        ++fineErrNb;
-                    }
-                    if (!IsEqual(prof_lhs[id].sum_1_per_ort_velocity * scale,
-                                 prof_rhs[id].sum_1_per_ort_velocity * scale_rhs,
-                                 locThreshold * velocityThresholdFactor)) {
-                        cmpFileFine += fmt::format("[Facet][{}][Profile][Ind={}][sum_1_per_ort_velocity][{}] has large rel difference: "
-                                               "{} : {} - {}\n",
-                                               facetId, id, m,
-                                               std::abs(prof_lhs[id].sum_1_per_ort_velocity * scale - prof_rhs[id].sum_1_per_ort_velocity * scale_rhs) / (prof_lhs[id].sum_1_per_ort_velocity * scale),
-                                               std::abs(prof_lhs[id].sum_1_per_ort_velocity * scale), (prof_rhs[id].sum_1_per_ort_velocity * scale_rhs));
+                            ++fineErrNb;
+                        }
 
-                        ++fineErrNb;
-                    }
-                    if (!IsEqual(prof_lhs[id].sum_v_ort * scale, prof_rhs[id].sum_v_ort * scale_rhs,
-                                 locThreshold * velocityThresholdFactor)) {
-                        cmpFileFine += fmt::format("[Facet][{}][Profile][Ind={}][sum_v_ort][{}] has large rel difference: "
-                                               "{} : {} - {}\n",
-                                               facetId, id, m,
-                                               std::abs(prof_lhs[id].sum_v_ort * scale - prof_rhs[id].sum_v_ort * scale_rhs) / (prof_lhs[id].sum_v_ort * scale),
-                                               std::abs(prof_lhs[id].sum_v_ort * scale), (prof_rhs[id].sum_v_ort * scale_rhs));
+                        auto smooth_sum_1_per_ort_velocity_lhs =
+                                1.0/16.0 * (prof_lhs[id-2].countEquiv + 4.0 * prof_lhs[id-1].countEquiv + 6.0 * prof_lhs[id].countEquiv
+                                        + 4.0 * prof_lhs[id+1].countEquiv + prof_lhs[id+2].countEquiv);
+                        auto smooth_sum_1_per_ort_velocity_rhs =
+                                1.0/16.0 * (prof_rhs[id-2].countEquiv + 4.0 * prof_rhs[id-1].countEquiv + 6.0 * prof_rhs[id].countEquiv
+                                        + 4.0 * prof_rhs[id+1].countEquiv + prof_rhs[id+2].countEquiv);
 
-                        ++fineErrNb;
+                        if (!IsEqual(smooth_sum_1_per_ort_velocity_lhs * scale,
+                                     smooth_sum_1_per_ort_velocity_rhs * scale_rhs,
+                                     locThreshold * velocityThresholdFactor)) {
+                            cmpFileFine += fmt::format(
+                                    "[Facet][{}][Profile][Ind={}][sum_1_per_ort_velocity][{}] has large rel difference: "
+                                    "{} : {} - {}\n",
+                                    facetId, id, m,
+                                    std::abs(smooth_sum_1_per_ort_velocity_lhs * scale -
+                                             smooth_sum_1_per_ort_velocity_rhs * scale_rhs) /
+                                    (smooth_sum_1_per_ort_velocity_lhs * scale),
+                                    std::abs(smooth_sum_1_per_ort_velocity_lhs * scale),
+                                    (smooth_sum_1_per_ort_velocity_rhs * scale_rhs));
+
+                            ++fineErrNb;
+                        }
+                        auto smooth_sum_v_ort_lhs =
+                                1.0/16.0 * (prof_lhs[id-2].countEquiv + 4.0 * prof_lhs[id-1].countEquiv + 6.0 * prof_lhs[id].countEquiv
+                                        + 4.0 * prof_lhs[id+1].countEquiv + prof_lhs[id+2].countEquiv);
+                        auto smooth_sum_v_ort_rhs =
+                                1.0/16.0 * (prof_rhs[id-2].countEquiv + 4.0 * prof_rhs[id-1].countEquiv + 6.0 * prof_rhs[id].countEquiv
+                                        + 4.0 * prof_rhs[id+1].countEquiv + prof_rhs[id+2].countEquiv);
+
+                        if (!IsEqual(smooth_sum_v_ort_lhs * scale, smooth_sum_v_ort_rhs * scale_rhs,
+                                     locThreshold * velocityThresholdFactor)) {
+                            cmpFileFine += fmt::format(
+                                    "[Facet][{}][Profile][Ind={}][sum_v_ort][{}] has large rel difference: "
+                                    "{} : {} - {}\n",
+                                    facetId, id, m,
+                                    std::abs(smooth_sum_v_ort_lhs * scale - smooth_sum_v_ort_rhs * scale_rhs) /
+                                    (smooth_sum_v_ort_lhs * scale),
+                                    std::abs(smooth_sum_v_ort_lhs * scale), (smooth_sum_v_ort_rhs * scale_rhs));
+
+                            ++fineErrNb;
+                        }
+                    }
+                }
+                else {
+                    for (int id = 0; id < prof_lhs.size(); ++id) {
+                        if (std::sqrt(std::max(1.0, std::min(prof_lhs[id].countEquiv, prof_rhs[id].countEquiv))) < 10) {
+                            // Sample size not large enough
+                            ++nbProfileSkips;
+                            continue;
+                        }
+                        if (!IsEqual(prof_lhs[id].countEquiv / sumHitDes, prof_rhs[id].countEquiv / sumHitDes_rhs,
+                                     locThreshold)) {
+                            cmpFileFine += fmt::format("[Facet][{}][Profile][Ind={}][countEquiv][{}] has large difference: "
+                                                   "{} : {} - {}\n",
+                                                   facetId, id, m,
+                                                   std::abs(prof_lhs[id].countEquiv / sumHitDes - prof_rhs[id].countEquiv / sumHitDes_rhs) / (prof_lhs[id].countEquiv / sumHitDes),
+                                                   std::abs(prof_lhs[id].countEquiv / sumHitDes), (prof_rhs[id].countEquiv / sumHitDes_rhs));
+
+                            ++fineErrNb;
+                        }
+                        if (!IsEqual(prof_lhs[id].sum_1_per_ort_velocity * scale,
+                                     prof_rhs[id].sum_1_per_ort_velocity * scale_rhs,
+                                     locThreshold * velocityThresholdFactor)) {
+                            cmpFileFine += fmt::format("[Facet][{}][Profile][Ind={}][sum_1_per_ort_velocity][{}] has large rel difference: "
+                                                   "{} : {} - {}\n",
+                                                   facetId, id, m,
+                                                   std::abs(prof_lhs[id].sum_1_per_ort_velocity * scale - prof_rhs[id].sum_1_per_ort_velocity * scale_rhs) / (prof_lhs[id].sum_1_per_ort_velocity * scale),
+                                                   std::abs(prof_lhs[id].sum_1_per_ort_velocity * scale), (prof_rhs[id].sum_1_per_ort_velocity * scale_rhs));
+
+                            ++fineErrNb;
+                        }
+                        if (!IsEqual(prof_lhs[id].sum_v_ort * scale, prof_rhs[id].sum_v_ort * scale_rhs,
+                                     locThreshold * velocityThresholdFactor)) {
+                            cmpFileFine += fmt::format("[Facet][{}][Profile][Ind={}][sum_v_ort][{}] has large rel difference: "
+                                                   "{} : {} - {}\n",
+                                                   facetId, id, m,
+                                                   std::abs(prof_lhs[id].sum_v_ort * scale - prof_rhs[id].sum_v_ort * scale_rhs) / (prof_lhs[id].sum_v_ort * scale),
+                                                   std::abs(prof_lhs[id].sum_v_ort * scale), (prof_rhs[id].sum_v_ort * scale_rhs));
+
+                            ++fineErrNb;
+                        }
                     }
                 }
             }
@@ -1291,8 +1487,9 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                 int ix = 0;
                 for (int iy = 0; iy < tex_lhs.size(); iy++) {
                     //for (int ix = 0; ix < texWidth_file; ix++) {
-                    if (std::sqrt(std::max(1.0, std::min(tex_lhs[iy].countEquiv, tex_rhs[iy].countEquiv))) < 80) {
+                    if (std::max(1.0, std::min(tex_lhs[iy].countEquiv, tex_rhs[iy].countEquiv)) < 640) {
                         // Sample size not large enough
+                        ++nbTextureSkips;
                         continue;
                     }
                     if (!IsEqual(tex_lhs[iy].countEquiv / sumHitDes, tex_rhs[iy].countEquiv / sumHitDes_rhs,
@@ -1339,6 +1536,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                     //for (int ix = 0; ix < dirWidth_file; ix++) {
                     if (std::sqrt(std::max(1.0, (double) std::min(dir_lhs[iy].count, dir_rhs[iy].count))) < 80) {
                         // Sample size not large enough
+                        ++nbDirSkips;
                         continue;
                     }
                     if (!IsEqual((double)dir_lhs[iy].count, (double)dir_rhs[iy].count, locThreshold)) {
@@ -1386,6 +1584,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                     if (std::sqrt(std::max(1.0, std::min(hist_lhs.nbHitsHistogram[hIndex],
                                                          hist_rhs.nbHitsHistogram[hIndex]))) < 80) {
                         // Sample size not large enough
+                        ++nbHistSkips_loc;
                         continue;
                     }
                     if (!IsEqual(hist_lhs.nbHitsHistogram[hIndex] / static_cast<double>(facetCounter_lhs.hits.nbMCHit),
@@ -1404,6 +1603,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                     if (std::sqrt(std::max(1.0, std::min(hist_lhs.distanceHistogram[hIndex],
                                                          hist_rhs.distanceHistogram[hIndex]))) < 80) {
                         // Sample size not large enough
+                        ++nbHistSkips_loc;
                         continue;
                     }
                     if (!IsEqual(hist_lhs.distanceHistogram[hIndex] / static_cast<double>(facetCounter_lhs.hits.nbMCHit),
@@ -1424,6 +1624,7 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
                             std::max(1.0, std::min(hist_lhs.timeHistogram[hIndex], hist_rhs.timeHistogram[hIndex]))) <
                         80) {
                         // Sample size not large enough
+                        ++nbHistSkips_loc;
                         continue;
                     }
                     if (!IsEqual(hist_lhs.timeHistogram[hIndex] / static_cast<double>(facetCounter_lhs.hits.nbMCHit),

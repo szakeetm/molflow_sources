@@ -838,8 +838,8 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
         //angleMapCache.emplace(std::make_pair(facet->globalId,std::vector<size_t>()));
         auto& angleMap = facet->angleMap.pdf;
         try {
-            angleMap.clear(); angleMap.resize( facet->sh.anglemapParams.phiWidth * (facet->sh.anglemapParams.thetaLowerRes + facet->sh.anglemapParams.thetaHigherRes));
-
+            angleMap.clear();
+            angleMap.resize( facet->sh.anglemapParams.phiWidth * (facet->sh.anglemapParams.thetaLowerRes + facet->sh.anglemapParams.thetaHigherRes));
         }
         catch(...) {
             std::stringstream err;
@@ -847,21 +847,25 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
             throw Error(err.str().c_str());
         }
 
+        size_t angleMapSum = 0;
         for (size_t iy = 0; iy < (facet->sh.anglemapParams.thetaLowerRes + facet->sh.anglemapParams.thetaHigherRes); iy++) {
             for (size_t ix = 0; ix < facet->sh.anglemapParams.phiWidth; ix++) {
                 angleText >> angleMap[iy*facet->sh.anglemapParams.phiWidth + ix];
+                angleMapSum += angleMap[iy*facet->sh.anglemapParams.phiWidth + ix];
             }
         }
-        facet->sh.anglemapParams.hasRecorded = true;
+        if(angleMapSum > 0) // only has recorded if at least one value is set
+            facet->sh.anglemapParams.hasRecorded = true;
     }
     else {
         facet->sh.anglemapParams.hasRecorded = false; //if angle map was incorrect, don't use it
         if (facet->sh.desorbType == DES_ANGLEMAP) facet->sh.desorbType = DES_NONE;
     }
 
+    // Init by default as true
     std::tuple<bool,bool> viewSettings; // texture, volume visible
-    bool textureVisible = facetNode.child("ViewSettings").attribute("textureVisible").as_bool();
-    bool volumeVisible = facetNode.child("ViewSettings").attribute("volumeVisible").as_bool();
+    bool textureVisible = facetNode.child("ViewSettings").attribute("textureVisible").as_bool(true);
+    bool volumeVisible = facetNode.child("ViewSettings").attribute("volumeVisible").as_bool(true);
     uInput.facetViewSettings.emplace_back(std::make_tuple(textureVisible, volumeVisible));
 
     xml_node facetHistNode = facetNode.child("Histograms");

@@ -70,7 +70,8 @@ public:
 	bool LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState &globState, Worker *work, GLProgress *progressDlg);
 
 	// Geometry
-	void     BuildPipe(double L, double R, double s, int step);
+    void     BuildPipe(double L, double R, double s, int step);
+    void     BuildPrisma(double L, double R, double angle, double s, int step);
 	void     LoadProfileGEO(FileReader *file, GlobalSimuState &globState, int version);
 
 	// Memory usage (in bytes)

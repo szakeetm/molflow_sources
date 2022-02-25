@@ -49,7 +49,7 @@ You might have to create a symlink for the GSL library:
 ```
 ln -s /usr/lib64/libgsl.so.23 /usr/lib64/libgsl.so.0
 ```
-If your CMake is outdated, install a newer version like so:
+If your CMake is outdated, install a newer version:
 ```
 wget https://github.com/Kitware/CMake/releases/download/v3.18.3/cmake-3.18.3.tar.gz
 tar -zxvf cmake-3.18.3.tar.gz
@@ -68,16 +68,9 @@ The procedure looks as follows:
   - `xcode-select --install`
 2. Install homebrew
   - from https://brew.sh/
-  - `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"`
+  - `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
 3. Install cmake and the necessary dependencies
-  - `brew install cmake`
-  - `brew install libpng`
-  - `brew install gsl`
-  - `brew install sdl2`
-  - `brew install p7zip`
-  - `brew install libomp`
-
-  (Or a one-liner for the above commands is `brew install cmake libpng gsl sdl2 p7zip libomp`)
+  - `brew install cmake libpng gsl sdl2 p7zip libomp`
 
 ## Cloning the project (all OS)
 * Clone the Molflow project with `git clone`
@@ -85,7 +78,7 @@ The procedure looks as follows:
   * `git submodule init`
   * `git submodule update`
 ```
-git clone [https_url]
+git clone https://gitlab.cern.ch/molflow_synrad/molflow.git
 cd molflow
 git submodule init
 git submodule update

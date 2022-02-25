@@ -7,6 +7,13 @@
 #include "AnglemapGeneration.h"
 
 namespace AnglemapGeneration {
+    /*
+    * \brief Generates a theta angle when generating following recorded angle map
+    * \param anglemapParams: angle map parameters
+    * \param anglemap: recorded angle map
+    * \param lookupValue: random number between 0 and 1
+    * \return double theta value, integer lower index, double overshoot
+    */
     std::tuple<double, int, double>
     GenerateThetaFromAngleMap(const AnglemapParams &anglemapParams, const Anglemap &anglemap,
                                                   const double lookupValue) {
@@ -15,7 +22,7 @@ namespace AnglemapGeneration {
                                              anglemap.theta_CDF); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
         double theta, thetaOvershoot;
 
-        if (thetaLowerIndex == -1) { //first half section
+        if (thetaLowerIndex == -1) { //theta in the first half of the first bin (below recorded CDF at midpoint)
             thetaOvershoot = 0.5 + 0.5 * lookupValue / anglemap.theta_CDF[0]; //between 0.5 and 1
             theta = GetTheta((double) thetaLowerIndex + 0.5 + thetaOvershoot,
                              anglemapParams); //between 0 and the first section end
@@ -71,7 +78,6 @@ namespace AnglemapGeneration {
 * \param randomGenerator reference to the random number generator (Mersenne Twister)
 * \return phi angle
 */
-
     double GeneratePhiFromAngleMap(const int &thetaLowerIndex, const double &thetaOvershoot,
                                    const AnglemapParams &anglemapParams,
                                    Anglemap &anglemap, double lookupValue) {
@@ -187,7 +193,6 @@ namespace AnglemapGeneration {
 * \param anglemapParams parameters of the angle map
 * \return theta angle
 */
-
     double GetTheta(const double &thetaIndex, const AnglemapParams &anglemapParams) {
         if ((size_t) (thetaIndex) < anglemapParams.thetaLowerRes) { // 0 < theta < limit
             return anglemapParams.thetaLimit * (thetaIndex) / (double) anglemapParams.thetaLowerRes;
