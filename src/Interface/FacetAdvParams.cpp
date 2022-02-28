@@ -1173,7 +1173,7 @@ bool FacetAdvParams::ApplyTexture(bool force) {
 /**
 * \brief Check whether angle map is set to record or not
 * \return bool value 0 if not recording 1 if recording
-*\
+*/
 bool FacetAdvParams::IsAngleMapRecording() {
     return angleMapRecordCheckbox->GetState() != 0;
 }
