@@ -706,12 +706,20 @@ void MolFlow::ApplyFacetParams() {
 	// 2sided
 	int is2Sided = facetSideType->GetSelectedIndex();
 
+    if(desorbType == DES_ANGLEMAP && facetAdvParams->IsAngleMapRecording()){
+        char errMsg[512];
+        sprintf(errMsg, "Angle map can't be used for DESORPTION and RECORDING\n");
+        GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
+        return;
+    }
+
 	//Check complete, let's apply
 	if (facetAdvParams && facetAdvParams->IsVisible()) {
 		if (!facetAdvParams->Apply()) {
 			return;
 		}
 	}
+
 	if (!AskToReset()) return;
 	
 	changedSinceSave = true;
