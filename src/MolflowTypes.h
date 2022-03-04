@@ -158,7 +158,6 @@ class AnglemapParams {
 public:
     AnglemapParams(){
         record = false;
-        hasRecorded = false;
         phiWidth = 0;
         thetaLimit = 0.0;
         thetaLimit = 0;
@@ -176,7 +175,6 @@ public:
 	{
 		archive(
 			   record, // Record incident angle 2-dim distribution
-		 hasRecorded,
 		 phiWidth, //resolution between -PI and +PI
 		 thetaLimit, //angle map can have a different resolution under and over the limit. Must be between 0 and PI/2
 		 thetaLowerRes, //resolution between 0 and angleMapThetaLimit

@@ -854,11 +854,11 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
                 angleMapSum += angleMap[iy*facet->sh.anglemapParams.phiWidth + ix];
             }
         }
-        if(angleMapSum > 0) // only has recorded if at least one value is set
-            facet->sh.anglemapParams.hasRecorded = true;
+        /*if(angleMapSum > 0) // only has recorded if at least one value is set
+            facet->sh.anglemapParams.hasRecorded = true;*/
     }
     else {
-        facet->sh.anglemapParams.hasRecorded = false; //if angle map was incorrect, don't use it
+        //facet->sh.anglemapParams.hasRecorded = false; //if angle map was incorrect, don't use it
         if (facet->sh.desorbType == DES_ANGLEMAP) facet->sh.desorbType = DES_NONE;
     }
 

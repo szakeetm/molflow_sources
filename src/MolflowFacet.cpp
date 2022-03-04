@@ -327,10 +327,8 @@ void InterfaceFacet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bo
 					angleText >> angleMapCache[iy*sh.anglemapParams.phiWidth + ix];
 				}
 			}
-			sh.anglemapParams.hasRecorded = true;
 		}
 		else {
-			sh.anglemapParams.hasRecorded = false; //if angle map was incorrect, don't use it
 			if (sh.desorbType == DES_ANGLEMAP) sh.desorbType = DES_NONE;
 		}
 	} //else use default values at Facet() constructor
@@ -1390,7 +1388,6 @@ void InterfaceFacet::ImportAngleMap(const std::vector<std::vector<std::string>>&
 	}
 
 	//No errors, apply values
-	sh.anglemapParams.hasRecorded = true;
 	sh.anglemapParams.phiWidth = phiWidth;
 	sh.anglemapParams.record = false;
 	sh.anglemapParams.thetaHigherRes = thetaHigherRes;
