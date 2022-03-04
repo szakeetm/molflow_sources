@@ -748,7 +748,7 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 		AngleMapThetaLowResE = AngleMapThetaLowResE && (f0->sh.anglemapParams.thetaLowerRes == f->sh.anglemapParams.thetaLowerRes);
 		AngleMapThetaHiResE = AngleMapThetaHiResE && (f0->sh.anglemapParams.thetaHigherRes == f->sh.anglemapParams.thetaHigherRes);
 		AngleMapThetaLimitE = AngleMapThetaLimitE && IsEqual(f0->sh.anglemapParams.thetaLimit , f->sh.anglemapParams.thetaLimit);
-		hasAngleMapE = hasAngleMapE && (f0->sh.anglemapParams.hasRecorded == f->sh.anglemapParams.hasRecorded);
+		hasAngleMapE = hasAngleMapE && (f0->angleMapCache.empty() == f->angleMapCache.empty());
 		TexVisibleE = TexVisibleE && f0->textureVisible == f->textureVisible;
 		VolVisibleE = VolVisibleE && f0->volumeVisible == f->volumeVisible;
         squaredCellsE = squaredCellsE & (std::abs(f->tRatioU - f->tRatioV) < 1E-8 ? 1u : 2u);
@@ -983,7 +983,7 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 	std::stringstream statusLabelText;
 	std::string mapSizeText = Util::formatSize(sumAngleMapSize * sizeof(size_t));
 	if (hasAngleMapE) {
-		if (f0->sh.anglemapParams.hasRecorded)
+		if (!f0->angleMapCache.empty())
 			statusLabelText << "All selected facets have recorded angle maps (" << mapSizeText << ")";
 		else
 			statusLabelText << "No recorded angle maps on selected facets.";

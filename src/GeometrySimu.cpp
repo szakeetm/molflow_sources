@@ -881,7 +881,7 @@ int SimulationModel::PrepareToRun() {
         }
         //Angle map
         if (facet.sh.desorbType == DES_ANGLEMAP) {
-            if (!facet.sh.anglemapParams.hasRecorded) {
+            if (facet.angleMap.pdf.empty()) {
                 char tmp[256];
                 sprintf(tmp, "Facet #%zd: Uses angle map desorption but doesn't have a recorded angle map.", i + 1);
                 errLog.append(tmp);
