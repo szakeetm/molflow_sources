@@ -137,8 +137,6 @@ set( SHADERS_HEADERS
 if (WIN32 AND "${CMAKE_GENERATOR}" MATCHES "^(Visual Studio).*")
     # Set the base folder where the per-project ptx folders get created.
     set (PTX_TARGET_DIR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$(ConfigurationName)")
-    # Enable multi-processor build on all Visual Studio versions.
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
 else()
     # DAR This should be independent of ${CMAKE_BUILD_TYPE} because that single-configuration generator will not create subfolders, will it?
     # Otherwise add something with if("${CMAKE_BUILD_TYPE}" STREQUAL "")

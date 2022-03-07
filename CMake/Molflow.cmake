@@ -110,16 +110,9 @@ if(NOT MSVC)
 else()
     #/WX
     add_compile_options(
-        /W3
-    )
-    add_compile_options(
-        "$<$<CONFIG:Release>:/GL;/O2;/EHsc>"
-        "$<$<CONFIG:Debug>:/MDd;/Od;/EHsc>"
-    )
-    # Multi-processor compilation
-    add_compile_options(
-        "$<$<CONFIG:Debug>:/MP>"
-        "$<$<CONFIG:Release>:/MP>"
+            "$<$<NOT:$<COMPILE_LANGUAGE:CUDA>>:/W3;/MP>"
+            "$<$<AND:$<CONFIG:Release>,$<NOT:$<COMPILE_LANGUAGE:CUDA>>>:/GL;/O2;/EHsc>"
+            "$<$<AND:$<CONFIG:Debug>,$<NOT:$<COMPILE_LANGUAGE:CUDA>>>:/MDd;/Od;/EHsc>"
     )
 endif()
 #disable generation of appname.manifest file
