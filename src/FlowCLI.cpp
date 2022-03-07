@@ -95,7 +95,12 @@ int main(int argc, char** argv) {
 #if defined(USE_MPI)
         MPI_Finalize();
 #endif
-        return 42;
+        return 43;
+    }
+
+    if(Settings::simDuration == 0 && model->otfParams.desorptionLimit == 0){
+        fmt::print(stderr, "Neither a time limit nor a desorption limit has been set!\n");
+        return 44;
     }
     size_t oldHitsNb = globState.globalHits.globalHits.nbMCHit;
     size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
