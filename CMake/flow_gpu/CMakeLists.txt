@@ -106,6 +106,9 @@ include_directories(${CUDA_DIR_1})
 set(common_cuda_dir ${PROJECT_SOURCE_DIR}/../../include/common_cuda/)
 include_directories(SYSTEM ${common_cuda_dir})
 include_directories(SYSTEM ${HEADER_DIR_3})
+if(MSVC)
+    include_directories(SYSTEM ${HEADER_DIR_4})
+endif()
 
 include(${PROJECT_SOURCE_DIR}/configure_optix.cmake)
 
@@ -139,8 +142,6 @@ set( SHADERS_HEADERS
 if (WIN32 AND "${CMAKE_GENERATOR}" MATCHES "^(Visual Studio).*")
     # Set the base folder where the per-project ptx folders get created.
     set (PTX_TARGET_DIR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$(ConfigurationName)")
-    # Enable multi-processor build on all Visual Studio versions.
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
 else()
     # DAR This should be independent of ${CMAKE_BUILD_TYPE} because that single-configuration generator will not create subfolders, will it?
     # Otherwise add something with if("${CMAKE_BUILD_TYPE}" STREQUAL "")
@@ -215,3 +216,17 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         cereal
         fmt
         )
+
+if(MSVC)
+    set(LINK_DIR_1 "${CMAKE_SOURCE_DIR}/lib_external/win/${MY_BUILD_TYPE}")
+    message(${LINK_DIR_1})
+
+    target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
+            #"../../include/windows_only"
+            "../../../include/windows_only"
+            )
+    target_link_libraries(${PROJECT_NAME} PUBLIC
+            ${LINK_DIR_1}/libgsl.lib
+            ${LINK_DIR_1}/libgslcblas.lib
+            )
+endif(MSVC)
