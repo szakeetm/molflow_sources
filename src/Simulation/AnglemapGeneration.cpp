@@ -2,7 +2,7 @@
 // Created by pascal on 2/5/21.
 //
 
-#include <Helper/MathTools.h>
+#include <Helper/MathTools.h> //IDX
 #include <cmath>
 #include "AnglemapGeneration.h"
 
@@ -12,7 +12,7 @@ namespace AnglemapGeneration {
 	* \param anglemapParams: angle map parameters
 	* \param anglemap: recorded angle map
 	* \param lookupValue: random number between 0 and 1
-	* \return double theta value, integer lower index, double overshoot
+	* \return double theta value, integer lower index, double overshoot (oveshoot: how many bins above previous bin midpoint (0..1)
 	*/
 	std::tuple<double, int, double>
 		GenerateThetaFromAngleMap(const AnglemapParams& anglemapParams, const Anglemap& anglemap,
@@ -222,8 +222,8 @@ namespace AnglemapGeneration {
 			phi = GetPhi((double)phiLowerIndex + 0.5 + phiOvershoot, anglemapParams); //between 0 and the first section end
 		}
 		else { //regular or last section
-			if (GetPhipdfValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap.pdf) ==
-				GetPhipdfValue(thetaIndex, phiLowerIndex + 1, anglemapParams, anglemap.pdf)) {
+			if (GetPhiNormalizedPdfValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap) ==
+				GetPhiNormalizedPdfValue(thetaIndex, phiLowerIndex + 1, anglemapParams, anglemap)) {
 				//The pdf's slope is 0, linear interpolation
 				phiOvershoot = (lookupValue - GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap))
 					/ (GetPhiCDFValue(thetaIndex, phiLowerIndex + 1, anglemapParams, anglemap) - GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap));
@@ -233,19 +233,18 @@ namespace AnglemapGeneration {
 
 				//2nd degree interpolation
 				// y(x) = ax^2 + bx + c
-				// y(x0) = y0 = c = CDF value          //Motion equivalent: initial position (s0)
-				// b: pdf value at lower index         //Motion equivalent: initial speed (v0)
-				// a: pdf slope at lower index / 2     //Motion equivalent: acceleration (per two)  (a/2)
-				// dy := y - c                         //Motion equivalent: distance from start    (ds = s - s0)
-				// dx := x - [x at lower index]        //Motion equivalent: elapsed time           (dt = t - t0)
-				// dy = ax^2 + bx                      //Motion equivalent: ds = a/2 * t^2 + v0 * t
+				// y(x0) = y0 = c = CDF value at lower index //Motion equivalent: initial position (s0)
+				// b: pdf value at lower index               //Motion equivalent: initial speed (v0)
+				// a: pdf slope at lower index / 2           //Motion equivalent: acceleration (per two)  (a/2)
+				// dy := y - c                               //Motion equivalent: distance from start    (ds = s - s0)
+				// dx := x - [x at lower index]              //Motion equivalent: elapsed time           (dt = t - t0)
+				// dy = a*dx^2 + b*dx                            //Motion equivalent: ds = a/2 * t^2 + v0 * t
 				// dx = ( -b + sqrt(b^2 +4*a*dy) ) / (2a)
 				double phiStep = 2.0 * PI / (double)anglemapParams.phiWidth;
 				double c = GetPhiCDFValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap); //CDF value at lower index
-				double b = GetPhipdfValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap.pdf) / GetPhiCDFSum(thetaIndex, anglemapParams, anglemap) / phiStep; //pdf value at lower index
-				double a = 0.5 * (GetPhipdfValue(thetaIndex, phiLowerIndex + 1, anglemapParams, anglemap.pdf) -
-					GetPhipdfValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap.pdf)) /
-					GetPhiCDFSum(thetaIndex, anglemapParams, anglemap) / Sqr(phiStep); //pdf slope at lower index
+				double b = GetPhiNormalizedPdfValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap) / phiStep; //pdf value at lower index, normalized by line sum
+				double a = 0.5 * (GetPhiNormalizedPdfValue(thetaIndex, phiLowerIndex + 1, anglemapParams, anglemap) -
+					GetPhiNormalizedPdfValue(thetaIndex, phiLowerIndex, anglemapParams, anglemap)) / Sqr(phiStep); //pdf slope at lower index
 				double dy = lookupValue - c;
 
 				double D = Sqr(b) + 4 * a * dy; //Discriminant. In rare cases it might be slightly negative, then fall back to linear interpolation:
@@ -298,26 +297,30 @@ namespace AnglemapGeneration {
 		return -PI + 2.0 * PI * correctedIndex / width;
 	}
 
-	double
-		GetPhipdfValue(const double& thetaIndex, const int& phiLowerIndex,
-			const AnglemapParams& anglemapParams, const std::vector<size_t>& angleMapPDF)
-		//phiLowerIndex is circularized
+	double GetPhiNormalizedPdfValue(const double& thetaIndex, const int& phiLowerIndex,
+		const AnglemapParams& anglemapParams, const Anglemap& anglemap)
 	{
-		if (thetaIndex < 0.5) {
-			return (double)angleMapPDF[IDX(phiLowerIndex, anglemapParams.phiWidth)];
+		size_t phiIndex = IDX(phiLowerIndex,anglemapParams.phiWidth);//phiLowerIndex is circularized
+		if (thetaIndex < 0.5) { //First line
+			return (anglemapParams.thetaLowerRes > 0) ? anglemap.phi_pdfs_lowerTheta[phiIndex] : anglemap.phi_pdfs_higherTheta[phiIndex];
 		}
-		else if (thetaIndex > (double) (anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes) - 0.5) {
-			return (double)angleMapPDF[
-				anglemapParams.phiWidth * (anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes - 1) +
-					IDX(phiLowerIndex, anglemapParams.phiWidth)];
+		else if (thetaIndex > (double)(anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes) - 0.5) { //last line
+			return (anglemapParams.thetaHigherRes > 0) ?
+				anglemap.phi_pdfs_higherTheta[anglemapParams.phiWidth * (anglemapParams.thetaHigherRes - 1) + phiIndex]
+				: anglemap.phi_pdfs_lowerTheta[anglemapParams.phiWidth * (anglemapParams.thetaLowerRes - 1) + phiIndex];
 		}
-		else {
+		else { //intermediate line
 			size_t thetaLowerIndex = (size_t)(thetaIndex - 0.5);
 			double thetaOvershoot = thetaIndex - 0.5 - (double)thetaLowerIndex;
-			double valueFromLowerpdf = (double)angleMapPDF[anglemapParams.phiWidth * thetaLowerIndex +
-				IDX(phiLowerIndex, anglemapParams.phiWidth)];
-			double valueFromHigherpdf = (double)angleMapPDF[anglemapParams.phiWidth * (thetaLowerIndex + 1) +
-				IDX(phiLowerIndex, anglemapParams.phiWidth)];
+			
+			double valueFromLowerpdf = (thetaLowerIndex < anglemapParams.thetaLowerRes)
+				? anglemap.phi_pdfs_lowerTheta[thetaLowerIndex*anglemapParams.phiWidth + phiIndex]
+				: anglemap.phi_pdfs_higherTheta[(thetaLowerIndex-anglemapParams.thetaLowerRes)* anglemapParams.phiWidth + phiIndex];
+			size_t nextLineIndex = thetaLowerIndex + 1;
+			double valueFromHigherpdf = (nextLineIndex < anglemapParams.thetaLowerRes)
+				? anglemap.phi_pdfs_lowerTheta[nextLineIndex *anglemapParams.phiWidth + phiIndex]
+				: anglemap.phi_pdfs_higherTheta[(nextLineIndex -anglemapParams.thetaLowerRes)* anglemapParams.phiWidth + phiIndex];
+
 			return Weigh(valueFromLowerpdf, valueFromHigherpdf, thetaOvershoot);
 		}
 	}

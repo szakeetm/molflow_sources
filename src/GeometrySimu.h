@@ -78,6 +78,8 @@ public:
     std::vector<double> phi_CDFs_higherTheta;   // Same for the second, higher part above theta limit
     std::vector<size_t> phi_CDFsums_lowerTheta; // since phi_CDFs sums only to the middle of the last phi bin, for each theta a line sum is stored here. Also a pdf for theta, as it contains the total possibility, summed over all phi angles, for that theta bin.
     std::vector<size_t> phi_CDFsums_higherTheta;
+    std::vector<double> phi_pdfs_lowerTheta; //Normalized pdf of each phi line. For speed, one big array of (theta_lowerRes*phi_size) instead of vector of vectors
+    std::vector<double> phi_pdfs_higherTheta;
     std::vector<double> theta_CDF_lower;      // Theta CDF to each theta bin midpoint, normalized to 1. nth value is the CDF at the midpoint of theta bin n
     std::vector<double> theta_CDF_higher;
     size_t theta_CDFsum_lower;  // since theta CDF only sums till the midpoint of the last segment, the total map sum is here
@@ -90,6 +92,8 @@ public:
         sum += sizeof(size_t) * pdf.capacity();
         sum += sizeof(double) * phi_CDFs_lowerTheta.capacity();
         sum += sizeof(double) * phi_CDFs_higherTheta.capacity();
+        sum += sizeof(double) * phi_pdfs_lowerTheta.capacity();
+        sum += sizeof(double) * phi_pdfs_higherTheta.capacity();
         sum += sizeof(size_t) * phi_CDFsums_lowerTheta.capacity();
         sum += sizeof(size_t) * phi_CDFsums_higherTheta.capacity();
         sum += sizeof(double) * theta_CDF_lower.capacity();

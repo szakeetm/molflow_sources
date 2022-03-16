@@ -254,6 +254,13 @@ int SubprocessFacet::InitializeAngleMap()
         catch (...) {
             throw std::runtime_error("Not enough memory to load incident angle map (CDF)");
         }
+        try {
+            angleMap.phi_pdfs_lowerTheta.resize(sh.anglemapParams.phiWidth * sh.anglemapParams.thetaLowerRes);
+            angleMap.phi_pdfs_higherTheta.resize(sh.anglemapParams.phiWidth * sh.anglemapParams.thetaHigherRes);
+        }
+        catch (...) {
+            throw std::runtime_error("Not enough memory to load incident angle map (CDF)");
+        }
 
         //First pass: determine phi line sums and total map sum
         //Lower part
@@ -280,7 +287,7 @@ int SubprocessFacet::InitializeAngleMap()
         }
         angleMap.thetaLowerRatio = (double)angleMap.theta_CDFsum_lower / (double)angleMap.theta_CDFsum_higher; //higher includes lower
 
-        //Second pass: construct midpoint CDFs
+        //Second pass: construct midpoint CDFs, normalized phi pdfs
         //We use midpoint because user expects linear interpolation between PDF midpoints, not between bin endpoints
         double thetaNormalizingFactor = 1.0 / (double)angleMap.theta_CDFsum_higher;
         //lower part
@@ -298,6 +305,7 @@ int SubprocessFacet::InitializeAngleMap()
                 size_t index = sh.anglemapParams.phiWidth * thetaIndex + phiIndex;
                 if (angleMap.phi_CDFsums_lowerTheta[thetaIndex] == 0) { //no hits in this line, create phi CDF of uniform distr.
                     angleMap.phi_CDFs_lowerTheta[index] = (0.5 + (double)phiIndex) / (double)sh.anglemapParams.phiWidth;
+                    angleMap.phi_pdfs_lowerTheta[index] = 1.0 / (double)sh.anglemapParams.phiWidth;
                 }
                 else {  //construct regular CDF based on midpoints
                     if (phiIndex == 0) {
@@ -308,6 +316,7 @@ int SubprocessFacet::InitializeAngleMap()
                         //value covering second half of last phi bin and first of current phi bin
                         angleMap.phi_CDFs_lowerTheta[index] = angleMap.phi_CDFs_lowerTheta[sh.anglemapParams.phiWidth * thetaIndex + phiIndex - 1] + (double)(angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex + phiIndex - 1] + angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex + phiIndex])*0.5*phiNormalizingFactor;
                     }
+                    angleMap.phi_pdfs_lowerTheta[index] = angleMap.pdf[index] * phiNormalizingFactor;
                 }
             }
         }
@@ -326,6 +335,7 @@ int SubprocessFacet::InitializeAngleMap()
                 size_t index = sh.anglemapParams.phiWidth * (thetaIndex - sh.anglemapParams.thetaLowerRes) + phiIndex;
                 if (angleMap.phi_CDFsums_higherTheta[thetaIndex - sh.anglemapParams.thetaLowerRes] == 0) { //no hits in this line, create phi CDF of uniform distr.
                     angleMap.phi_CDFs_higherTheta[index] = (0.5 + (double)phiIndex) / (double)sh.anglemapParams.phiWidth;
+                    angleMap.phi_pdfs_higherTheta[index] = 1.0 / (double)sh.anglemapParams.phiWidth;
                 }
                 else {
                     if (phiIndex == 0) {
@@ -336,6 +346,7 @@ int SubprocessFacet::InitializeAngleMap()
                         //value covering second half of last phi bin and first of current phi bin
                         angleMap.phi_CDFs_higherTheta[index] = angleMap.phi_CDFs_higherTheta[sh.anglemapParams.phiWidth * (thetaIndex - sh.anglemapParams.thetaLowerRes) + phiIndex - 1] + (double)(angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex + phiIndex - 1] + angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex + phiIndex])*0.5*phiNormalizingFactor;
                     }
+                    angleMap.phi_pdfs_higherTheta[index] = angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex + phiIndex];
                 }
             }
         }

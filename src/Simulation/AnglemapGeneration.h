@@ -14,8 +14,8 @@ namespace AnglemapGeneration {
 
     double GetPhi(const double &phiIndex, const AnglemapParams &anglemapParams);
 
-    double GetPhipdfValue(const double &thetaIndex, const int &phiLowerIndex,
-                                 const AnglemapParams &anglemapParams, const std::vector<size_t> &angleMapPDF);
+    double GetPhiNormalizedPdfValue(const double &thetaIndex, const int &phiLowerIndex,
+                                 const AnglemapParams &anglemapParams, const Anglemap & anglemap);
 
     double GetPhiCDFValue(const double &thetaIndex, const int &phiLowerIndex,
                                  const AnglemapParams &anglemapParams, const Anglemap &anglemap);
