@@ -161,9 +161,9 @@ namespace AnglemapGeneration {
 				//         next     value weight: w2*w4 / (w1*w3 + w2*w4) <- this will be the input for weighed_lower_bound
 
 				double div;
-				div = ((double)anglemap.phi_CDFs_lowerTheta[thetaLowerIndex] * (1.0 - thetaOvershoot) + (double)anglemap.phi_CDFs_lowerTheta[thetaLowerIndex + 1] * thetaOvershoot); // (w1*w3 + w2*w4)
+				div = ((double)anglemap.phi_CDFsums_lowerTheta[thetaLowerIndex] * (1.0 - thetaOvershoot) + (double)anglemap.phi_CDFsums_lowerTheta[thetaLowerIndex + 1] * thetaOvershoot); // (w1*w3 + w2*w4)
 				if (div > 0.0) {
-					weigh = (thetaOvershoot * (double)anglemap.phi_CDFs_lowerTheta[thetaLowerIndex + 1]) / div;    // w2*w4 / (w1*w3 + w2*w4)
+					weigh = (thetaOvershoot * (double)anglemap.phi_CDFsums_lowerTheta[thetaLowerIndex + 1]) / div;    // w2*w4 / (w1*w3 + w2*w4)
 					//weigh = thetaOvershoot; //debug
 					//weigh=0.99;
 				}
@@ -199,9 +199,9 @@ namespace AnglemapGeneration {
 				//         next     value weight: w2*w4 / (w1*w3 + w2*w4) <- this will be the input for weighed_lower_bound
 
 				double div;
-				div = ((double)anglemap.phi_CDFs_higherTheta[thetaLowerIndex - anglemapParams.thetaLowerRes] * (1.0 - thetaOvershoot) + (double)anglemap.phi_CDFs_higherTheta[thetaLowerIndex - anglemapParams.thetaLowerRes + 1] * thetaOvershoot); // (w1*w3 + w2*w4)
+				div = ((double)anglemap.phi_CDFsums_higherTheta[thetaLowerIndex - anglemapParams.thetaLowerRes] * (1.0 - thetaOvershoot) + (double)anglemap.phi_CDFsums_higherTheta[thetaLowerIndex - anglemapParams.thetaLowerRes + 1] * thetaOvershoot); // (w1*w3 + w2*w4)
 				if (div > 0.0) {
-					weigh = (thetaOvershoot * (double)anglemap.phi_CDFs_higherTheta[thetaLowerIndex - anglemapParams.thetaLowerRes + 1]) / div;    // w2*w4 / (w1*w3 + w2*w4)
+					weigh = (thetaOvershoot * (double)anglemap.phi_CDFsums_higherTheta[thetaLowerIndex - anglemapParams.thetaLowerRes + 1]) / div;    // w2*w4 / (w1*w3 + w2*w4)
 				}
 				else {
 					weigh = thetaOvershoot;
