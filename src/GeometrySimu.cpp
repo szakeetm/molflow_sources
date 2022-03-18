@@ -346,7 +346,7 @@ int SubprocessFacet::InitializeAngleMap()
                         //value covering second half of last phi bin and first of current phi bin
                         angleMap.phi_CDFs_higherTheta[index] = angleMap.phi_CDFs_higherTheta[sh.anglemapParams.phiWidth * (thetaIndex - sh.anglemapParams.thetaLowerRes) + phiIndex - 1] + (double)(angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex + phiIndex - 1] + angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex + phiIndex])*0.5*phiNormalizingFactor;
                     }
-                    angleMap.phi_pdfs_higherTheta[index] = angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex + phiIndex];
+                    angleMap.phi_pdfs_higherTheta[index] = angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex + phiIndex] * phiNormalizingFactor;
                 }
             }
         }
