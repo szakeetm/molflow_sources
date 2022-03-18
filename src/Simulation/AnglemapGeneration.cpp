@@ -10,29 +10,28 @@ namespace AnglemapGeneration {
 	/*
 	* \brief Generates a theta angle when generating following recorded angle map
 	* \param anglemapParams: angle map parameters
-	* \param anglemap: recorded angle map
+	* \param anglemap: recorded angle map and distributions precalculated at initialization
 	* \param lookupValue: random number between 0 and 1
-	* \return double theta value, integer lower index, double overshoot (oveshoot: how many bins above previous bin midpoint (0..1)
+	* \return double theta value, integer lower index (referencing bin midpoints: 0->first bin midpoint, -1 -> first bin before midpoint, double overshoot (oveshoot: how many bins above previous bin midpoint (0..1)
 	*/
 	std::tuple<double, int, double>
-		GenerateThetaFromAngleMap(const AnglemapParams& anglemapParams, const Anglemap& anglemap,
-			const double lookupValue) {
-		int thetaLowerIndex;
+		GenerateThetaFromAngleMap(const AnglemapParams& anglemapParams, const Anglemap& anglemap, const double lookupValue) {
+		int thetaLowerIndex; //can be -1 if lookupValue lower than first CDF value (theta below first bin midpoint)
 		double theta, thetaOvershoot;
 
-		if (lookupValue < anglemap.thetaLowerRatio) { //theta in lower res region
+		if (lookupValue < anglemap.thetaLowerRatio) { //theta in lower theta region
 
 			thetaLowerIndex = my_lower_bound(lookupValue,
-				anglemap.theta_CDF_lower); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. thetaLowerLimit-2 )
+				anglemap.theta_CDF_lower); //returns midpoint index after where lookup value resides in ( -1 .. thetaLowerLimit-2 )
 
-			if (thetaLowerIndex == -1) { //theta in the first half of the lower res part (below recorded CDF at midpoint)
+			if (thetaLowerIndex == -1) { //theta in the first bin, below its midpoint
 
-				thetaOvershoot = 0.5 + 0.5 * lookupValue / anglemap.theta_CDF_lower[0]; //between 0.5 and 1
-				theta = GetTheta((double)thetaLowerIndex + 0.5 + thetaOvershoot, anglemapParams); //between 0 and the first section end
+				thetaOvershoot = 0.5 * lookupValue / anglemap.theta_CDF_lower[0]; //between 0 and 0.5, 0 is theta=0, 0.5 is theta=first bin midpoint
+				theta = GetTheta((double)thetaLowerIndex + 1 + thetaOvershoot, anglemapParams); //between 0 and the first section midpoint
 			}
-			else if (thetaLowerIndex == (anglemapParams.thetaLowerRes - 1)) { //theta in last half of lower res part
+			else if (thetaLowerIndex == (anglemapParams.thetaLowerRes - 1)) { //theta in last half of lower part, above last recorded midpoitn CDF
 				thetaOvershoot = 0.5 * (lookupValue - anglemap.theta_CDF_lower[thetaLowerIndex])
-					/ (anglemap.thetaLowerRatio - anglemap.theta_CDF_lower[thetaLowerIndex]); //between 0 and 0.5
+					/ (anglemap.thetaLowerRatio - anglemap.theta_CDF_lower[thetaLowerIndex]); //between 0 and 0.5, 0 is last bin midpoint, 0.5 is theta=thetaLimit
 				theta = GetTheta((double)thetaLowerIndex + 0.5 + thetaOvershoot,
 					anglemapParams); //between last midpoint and thetaLimit
 			}
@@ -266,10 +265,10 @@ namespace AnglemapGeneration {
 	}
 
 	/**
-	* \brief Converts from index to theta value
-	* \param thetaIndex theta index
+	* \brief Maps anglemap theta index to theta value
+	* \param thetaIndex theta index from 0 to map theta size (lowerRes+higherRes), can be non-integer
 	* \param anglemapParams parameters of the angle map
-	* \return theta angle
+	* \return theta angle in rad
 	*/
 	double GetTheta(const double& thetaIndex, const AnglemapParams& anglemapParams) {
 		if ((size_t)(thetaIndex) < anglemapParams.thetaLowerRes) { // 0 < theta < limit
