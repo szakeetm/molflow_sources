@@ -29,7 +29,7 @@ namespace AnglemapGeneration {
 
     double GeneratePhiFromAngleMap(const int &thetaLowerIndex, const double &thetaOvershoot,
                                    const AnglemapParams &anglemapParams,
-                                   const Anglemap &anglemap, double lookupValue);
+                                   Anglemap &anglemap, double lookupValue);
 };
 
 
