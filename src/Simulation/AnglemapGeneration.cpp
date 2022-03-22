@@ -126,7 +126,7 @@ namespace AnglemapGeneration {
 	* \param randomGenerator reference to the random number generator (Mersenne Twister)
 	* \return phi angle
 	*/
-	double GeneratePhiFromAngleMap(const int& thetaLowerIndex, const double& thetaOvershoot, AnglemapParams& anglemapParams, const Anglemap& anglemap, double lookupValue) {
+	double GeneratePhiFromAngleMap(const int& thetaLowerIndex, const double& thetaOvershoot, const AnglemapParams& anglemapParams, Anglemap& anglemap, double lookupValue) {
 		if (anglemapParams.phiWidth == 1) return -PI + 2.0 * PI * lookupValue; //simplest case speedup, uniform phi distribution
 		int phiLowerIndex;
 		//The lookupValue is looked up from first midpoint to "width+1"th midpoint. It will never be in the first half bin, but can go over width by half bin due to periodic BC
