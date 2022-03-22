@@ -10,12 +10,12 @@ namespace AnglemapGeneration {
 	/*
 	* \brief Generates a theta angle when generating following recorded angle map
 	* \param anglemapParams: angle map parameters
-	* \param anglemap: recorded angle map and distributions precalculated at initialization
+	* \param anglemap: recorded angle map and distributions precalculated at initialization. Not const so we can access memory address.
 	* \param lookupValue: random number between 0 and 1
 	* \return double theta value, integer lower index (referencing bin midpoints: 0->first bin midpoint, -1 -> first bin before midpoint, double overshoot (oveshoot: how many bins above previous bin midpoint (0..1)
 	*/
 	std::tuple<double, int, double>
-		GenerateThetaFromAngleMap(const AnglemapParams& anglemapParams, const Anglemap& anglemap, const double lookupValue) {
+		GenerateThetaFromAngleMap(const AnglemapParams& anglemapParams, Anglemap& anglemap, const double lookupValue) {
 		int thetaLowerIndex; //can be -1 if lookupValue lower than first CDF value (theta below first bin midpoint)
 		double theta, thetaOvershoot;
 

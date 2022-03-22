@@ -24,7 +24,7 @@ namespace AnglemapGeneration {
                                const Anglemap &anglemap);
 
     std::tuple<double, int, double>
-    GenerateThetaFromAngleMap(const AnglemapParams &anglemapParams, const Anglemap &anglemap,
+    GenerateThetaFromAngleMap(const AnglemapParams &anglemapParams, Anglemap &anglemap,
                               double lookupValue);
 
     double GeneratePhiFromAngleMap(const int &thetaLowerIndex, const double &thetaOvershoot,
