@@ -234,8 +234,8 @@ int SubprocessFacet::InitializeAngleMap()
 
         //Construct CDFs
         try {
-            angleMap.phi_CDFsums_lowerTheta.resize(sh.anglemapParams.thetaLowerRes);
-            angleMap.phi_CDFsums_higherTheta.resize(sh.anglemapParams.thetaHigherRes);
+            angleMap.phi_pdfsums_lowerTheta.resize(sh.anglemapParams.thetaLowerRes);
+            angleMap.phi_pdfsums_higherTheta.resize(sh.anglemapParams.thetaHigherRes);
         }
         catch (...) {
             throw std::runtime_error("Not enough memory to load incident angle map (phi CDF line sums)");
@@ -265,21 +265,21 @@ int SubprocessFacet::InitializeAngleMap()
         //First pass: determine phi line sums and total map sum
         //Lower part
         angleMap.theta_CDFsum_lower = 0;
-        memset(angleMap.phi_CDFsums_lowerTheta.data(), 0, sizeof(size_t) * sh.anglemapParams.thetaLowerRes);
+        memset(angleMap.phi_pdfsums_lowerTheta.data(), 0, sizeof(size_t) * sh.anglemapParams.thetaLowerRes);
         for (size_t thetaIndex = 0; thetaIndex < sh.anglemapParams.thetaLowerRes; thetaIndex++) {
             for (size_t phiIndex = 0; phiIndex < sh.anglemapParams.phiWidth; phiIndex++) {
-                angleMap.phi_CDFsums_lowerTheta[thetaIndex] += angleMap.pdf[thetaIndex*sh.anglemapParams.phiWidth + phiIndex]; //phi line sum
+                angleMap.phi_pdfsums_lowerTheta[thetaIndex] += angleMap.pdf[thetaIndex*sh.anglemapParams.phiWidth + phiIndex]; //phi line sum
             }
-            angleMap.theta_CDFsum_lower += angleMap.phi_CDFsums_lowerTheta[thetaIndex]; //total lower map sum
+            angleMap.theta_CDFsum_lower += angleMap.phi_pdfsums_lowerTheta[thetaIndex]; //total lower map sum
         }
         //Higher part
         angleMap.theta_CDFsum_higher = angleMap.theta_CDFsum_lower; //higher includes lower part
-        memset(angleMap.phi_CDFsums_higherTheta.data(), 0, sizeof(size_t) * sh.anglemapParams.thetaHigherRes);
+        memset(angleMap.phi_pdfsums_higherTheta.data(), 0, sizeof(size_t) * sh.anglemapParams.thetaHigherRes);
         for (size_t thetaIndex = sh.anglemapParams.thetaLowerRes; thetaIndex < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); thetaIndex++) {
             for (size_t phiIndex = 0; phiIndex < sh.anglemapParams.phiWidth; phiIndex++) {
-                angleMap.phi_CDFsums_higherTheta[thetaIndex-sh.anglemapParams.thetaLowerRes] += angleMap.pdf[thetaIndex*sh.anglemapParams.phiWidth + phiIndex]; //phi line sum
+                angleMap.phi_pdfsums_higherTheta[thetaIndex-sh.anglemapParams.thetaLowerRes] += angleMap.pdf[thetaIndex*sh.anglemapParams.phiWidth + phiIndex]; //phi line sum
             }
-            angleMap.theta_CDFsum_higher += angleMap.phi_CDFsums_higherTheta[thetaIndex - sh.anglemapParams.thetaLowerRes]; //total map sum
+            angleMap.theta_CDFsum_higher += angleMap.phi_pdfsums_higherTheta[thetaIndex - sh.anglemapParams.thetaLowerRes]; //total map sum
         }
         if (angleMap.theta_CDFsum_higher == 0) {
             auto err = fmt::format("Facet {} has all-zero recorded angle map, but is being used for desorption.", globalId + 1);
@@ -294,16 +294,16 @@ int SubprocessFacet::InitializeAngleMap()
         for (size_t thetaIndex = 0; thetaIndex < sh.anglemapParams.thetaLowerRes; thetaIndex++) {
             if (thetaIndex == 0) {
                 //First CDF value: sums from theta=0 to midpoint of first theta bin
-                angleMap.theta_CDF_lower[thetaIndex] = 0.5 * (double)angleMap.phi_CDFsums_lowerTheta[0] * thetaNormalizingFactor;
+                angleMap.theta_CDF_lower[thetaIndex] = 0.5 * (double)angleMap.phi_pdfsums_lowerTheta[0] * thetaNormalizingFactor;
             }
             else {
                 //value summing second half of previous theta bin and first half of current theta bin
-                angleMap.theta_CDF_lower[thetaIndex] = angleMap.theta_CDF_lower[thetaIndex - 1] + (double)(angleMap.phi_CDFsums_lowerTheta[thetaIndex - 1] + angleMap.phi_CDFsums_lowerTheta[thetaIndex])*0.5*thetaNormalizingFactor;
+                angleMap.theta_CDF_lower[thetaIndex] = angleMap.theta_CDF_lower[thetaIndex - 1] + (double)(angleMap.phi_pdfsums_lowerTheta[thetaIndex - 1] + angleMap.phi_pdfsums_lowerTheta[thetaIndex])*0.5*thetaNormalizingFactor;
             }
-            double phiNormalizingFactor = 1.0 / (double)angleMap.phi_CDFsums_lowerTheta[thetaIndex];
+            double phiNormalizingFactor = 1.0 / (double)angleMap.phi_pdfsums_lowerTheta[thetaIndex];
             for (size_t phiIndex = 0; phiIndex < sh.anglemapParams.phiWidth; phiIndex++) {
                 size_t index = sh.anglemapParams.phiWidth * thetaIndex + phiIndex;
-                if (angleMap.phi_CDFsums_lowerTheta[thetaIndex] == 0) { //no hits in this line, create phi CDF of uniform distr.
+                if (angleMap.phi_pdfsums_lowerTheta[thetaIndex] == 0) { //no hits in this line, create phi CDF of uniform distr.
                     angleMap.phi_CDFs_lowerTheta[index] = (0.5 + (double)phiIndex) / (double)sh.anglemapParams.phiWidth;
                     angleMap.phi_pdfs_lowerTheta[index] = 1.0 / (double)sh.anglemapParams.phiWidth;
                 }
@@ -324,16 +324,16 @@ int SubprocessFacet::InitializeAngleMap()
         for (size_t thetaIndex = sh.anglemapParams.thetaLowerRes; thetaIndex < sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes; thetaIndex++) {
             if (thetaIndex == sh.anglemapParams.thetaLowerRes) {
                 //First CDF value: sums from theta=limit to midpoint of first higher theta bin
-                angleMap.theta_CDF_higher[thetaIndex-sh.anglemapParams.thetaLowerRes] = angleMap.thetaLowerRatio + 0.5 * (double)angleMap.phi_CDFsums_higherTheta[0] * thetaNormalizingFactor;
+                angleMap.theta_CDF_higher[thetaIndex-sh.anglemapParams.thetaLowerRes] = angleMap.thetaLowerRatio + 0.5 * (double)angleMap.phi_pdfsums_higherTheta[0] * thetaNormalizingFactor;
             }
             else {
                 //value summing second half of previous theta bin and first half of current theta bin
-                angleMap.theta_CDF_higher[thetaIndex-sh.anglemapParams.thetaLowerRes] = angleMap.theta_CDF_higher[thetaIndex - sh.anglemapParams.thetaLowerRes - 1] + (double)(angleMap.phi_CDFsums_higherTheta[thetaIndex - sh.anglemapParams.thetaLowerRes - 1] + angleMap.phi_CDFsums_higherTheta[thetaIndex - sh.anglemapParams.thetaLowerRes])*0.5*thetaNormalizingFactor;
+                angleMap.theta_CDF_higher[thetaIndex-sh.anglemapParams.thetaLowerRes] = angleMap.theta_CDF_higher[thetaIndex - sh.anglemapParams.thetaLowerRes - 1] + (double)(angleMap.phi_pdfsums_higherTheta[thetaIndex - sh.anglemapParams.thetaLowerRes - 1] + angleMap.phi_pdfsums_higherTheta[thetaIndex - sh.anglemapParams.thetaLowerRes])*0.5*thetaNormalizingFactor;
             }
-            double phiNormalizingFactor = 1.0 / (double)angleMap.phi_CDFsums_higherTheta[thetaIndex - sh.anglemapParams.thetaLowerRes];
+            double phiNormalizingFactor = 1.0 / (double)angleMap.phi_pdfsums_higherTheta[thetaIndex - sh.anglemapParams.thetaLowerRes];
             for (size_t phiIndex = 0; phiIndex < sh.anglemapParams.phiWidth; phiIndex++) {
                 size_t index = sh.anglemapParams.phiWidth * (thetaIndex - sh.anglemapParams.thetaLowerRes) + phiIndex;
-                if (angleMap.phi_CDFsums_higherTheta[thetaIndex - sh.anglemapParams.thetaLowerRes] == 0) { //no hits in this line, create phi CDF of uniform distr.
+                if (angleMap.phi_pdfsums_higherTheta[thetaIndex - sh.anglemapParams.thetaLowerRes] == 0) { //no hits in this line, create phi CDF of uniform distr.
                     angleMap.phi_CDFs_higherTheta[index] = (0.5 + (double)phiIndex) / (double)sh.anglemapParams.phiWidth;
                     angleMap.phi_pdfs_higherTheta[index] = 1.0 / (double)sh.anglemapParams.phiWidth;
                 }
