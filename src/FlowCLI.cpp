@@ -117,7 +117,7 @@ int main(int argc, char** argv) {
         simManager.StartSimulation();
     }
     catch (const std::exception& e) {
-        Log::console_error("Starting simulation: %s\n",e.what());
+        Log::console_error("ERROR: Starting simulation: %s\n",e.what());
 #if defined(USE_MPI)
         MPI_Finalize();
 #endif
