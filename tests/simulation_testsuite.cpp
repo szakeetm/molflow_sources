@@ -205,7 +205,7 @@ namespace {
         const size_t runForTSec = 20;
         std::vector<double> perfTimes;
         for (size_t runNb = 0; runNb < nRuns; ++runNb) {
-            SimulationManager simManager(0);
+            SimulationManager simManager{0};
             std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
             GlobalSimuState globState{};
 
@@ -345,7 +345,7 @@ namespace {
         const size_t runForTSec = 30;
         std::vector<double> perfTimes;
 
-        SimulationManager simManager{}(0);
+        SimulationManager simManager{0};
         simManager.interactiveMode = false;
         std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
         GlobalSimuState globState{};
@@ -619,7 +619,7 @@ namespace {
 
     TEST(InputOutput, DefaultInput) {
 
-        SimulationManager simManager(0);
+        SimulationManager simManager{0};
         std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
         GlobalSimuState globState{};
 
@@ -668,7 +668,7 @@ namespace {
 
     TEST(InputOutput, Outputpath) {
 
-        SimulationManager simManager(0);
+        SimulationManager simManager{0};
         std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
         GlobalSimuState globState{};
 
@@ -721,7 +721,7 @@ namespace {
 
     TEST(InputOutput, OutputpathAndFile) {
 
-        SimulationManager simManager(0);
+        SimulationManager simManager{0};
         std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
         GlobalSimuState globState{};
 
@@ -775,7 +775,7 @@ namespace {
 
     TEST(InputOutput, Outputfile) {
 
-        SimulationManager simManager(0);
+        SimulationManager simManager{0};
         std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
         GlobalSimuState globState{};
 
@@ -827,7 +827,7 @@ namespace {
 
     TEST(InputOutput, OutputfileWithPath) {
 
-        SimulationManager simManager(0);
+        SimulationManager simManager{0};
         std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
         GlobalSimuState globState{};
 
@@ -883,7 +883,7 @@ namespace {
 
     TEST(InputOutput, OutputpathAndOutputfileWithPath) {
 
-        SimulationManager simManager(0);
+        SimulationManager simManager{0};
         std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
         GlobalSimuState globState{};
 
