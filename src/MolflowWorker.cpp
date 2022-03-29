@@ -101,7 +101,7 @@ extern SynRad*mApp;
 /**
 * \brief Default constructor for a worker
 */
-Worker::Worker() : simManager() {
+Worker::Worker() : simManager(0) {
 
     model = std::make_shared<SimulationModel>();
     //Molflow specific

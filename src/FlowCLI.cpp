@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
 
     Log::console_msg_master(1, "%s\n", molflowCliLogo);
 
-    SimulationManager simManager{};
+    SimulationManager simManager{MFMPI::world_rank};
     simManager.interactiveMode = true;
     std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
     GlobalSimuState globState{};
@@ -79,6 +79,7 @@ int main(int argc, char** argv) {
         return 41;
     }
 
+    // Start to transfer simulatsion data to other nodes via broadcast
 #if defined(USE_MPI)
     MFMPI::mpi_transfer_simu();
 #endif
@@ -113,11 +114,17 @@ int main(int argc, char** argv) {
     //simManager.IncreasePriority();
     Log::console_msg_master(1,"[%s] Commencing simulation for %lu seconds from %lu desorptions.\n", Util::getTimepointString().c_str(), Settings::simDuration, globState.globalHits.globalHits.nbDesorbed);
 
+#if defined(USE_MPI)
+    MPI_Barrier(MPI_COMM_WORLD);
+    simManager.interactiveMode = false;
+#endif
     try {
         simManager.StartSimulation();
     }
     catch (const std::exception& e) {
-        Log::console_error("ERROR: Starting simulation: %s\n",e.what());
+        Log::console_error("[%d] ERROR: Starting simulation: %s\n",MFMPI::world_rank, e.what());
+        Log::console_error("[%d] File folder %s -- %s\n",MFMPI::world_rank,SettingsIO::workPath.c_str(), SettingsIO::workFile.c_str());
+
 #if defined(USE_MPI)
         MPI_Finalize();
 #endif
