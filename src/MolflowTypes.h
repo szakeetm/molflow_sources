@@ -156,14 +156,13 @@ class AnglemapParams {
 public:
     AnglemapParams(){
         record = false;
-        hasRecorded = false;
         phiWidth = 0;
         thetaLimit = 0.0;
         thetaLimit = 0;
         thetaHigherRes = 0;
     }
 	bool   record; // Record incident angle 2-dim distribution
-	bool hasRecorded;
+	//bool hasRecorded;
 	size_t phiWidth; //resolution between -PI and +PI
 	double thetaLimit; //angle map can have a different resolution under and over the limit. Must be between 0 and PI/2
 	size_t thetaLowerRes; //resolution between 0 and angleMapThetaLimit
@@ -174,7 +173,6 @@ public:
 	{
 		archive(
 			   record, // Record incident angle 2-dim distribution
-		 hasRecorded,
 		 phiWidth, //resolution between -PI and +PI
 		 thetaLimit, //angle map can have a different resolution under and over the limit. Must be between 0 and PI/2
 		 thetaLowerRes, //resolution between 0 and angleMapThetaLimit
@@ -186,8 +184,8 @@ public:
 		return phiWidth * (thetaLowerRes + thetaHigherRes);
 	}
 	size_t GetRecordedMapSize() const{
-		if (!hasRecorded) return 0;
-		else return GetMapSize();
+		/*if (!hasRecorded) return 0;
+		else */return GetMapSize();
 	}
 	size_t GetDataSize() const {
 		return sizeof(size_t)*GetMapSize();

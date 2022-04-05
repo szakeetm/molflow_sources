@@ -101,7 +101,7 @@ extern SynRad*mApp;
 /**
 * \brief Default constructor for a worker
 */
-Worker::Worker() : simManager() {
+Worker::Worker() : simManager(0) {
 
     model = std::make_shared<SimulationModel>();
     //Molflow specific
@@ -150,6 +150,8 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
 
     try {
         if (needsReload && (!crashSave && !saveSelected)) RealReload();
+        // Update persistent anglemap
+        SendAngleMaps();
     }
     catch (const std::exception &e) {
         char errMsg[512];
@@ -482,7 +484,7 @@ std::optional<std::vector<std::string>> Worker::ExportAngleMaps(const std::strin
     for (size_t i = 0; i < geom->GetNbFacet(); i++) {
         InterfaceFacet *f = geom->GetFacet(i);
         // saveAll facets e.g. when auto saving or just when selected
-        if ((saveAll || f->selected) && f->sh.anglemapParams.hasRecorded) {
+        if ((saveAll || f->selected) && !f->angleMapCache.empty()) {
             angleMapFacetIndices.push_back(i);
         }
     }
@@ -1250,9 +1252,10 @@ int Worker::SendAngleMaps() {
     if (!globState.tMutex.try_lock_for(std::chrono::seconds(10)))
         return 1;
     for (size_t i = 0; i < angleMapCaches.size(); i++) {
-        model->facets[i]->angleMap.pdf = angleMapCaches[i];
         if(model->facets[i]->sh.anglemapParams.record)
             globState.facetStates[i].recordedAngleMapPdf = angleMapCaches[i];
+        //else if(model->facets[i]->sh.desorbType == DES_ANGLEMAP)
+        model->facets[i]->angleMap.pdf = angleMapCaches[i];
     }
     globState.tMutex.unlock();
     return 0;
@@ -1822,8 +1825,8 @@ void Worker::PrepareToRun() {
         }*/
 
         //First worker::update will do it
-        if (f->sh.anglemapParams.record) {
-            if (!f->sh.anglemapParams.hasRecorded || f->angleMapCache.size() != f->sh.anglemapParams.GetMapSize()) {
+        /*if (f->sh.anglemapParams.record) {
+            if (!f->angleMapCache.empty() || f->angleMapCache.size() != f->sh.anglemapParams.GetMapSize()) {
                 //Initialize angle map and Set values to zero
                 try {
                     f->angleMapCache.resize(f->sh.anglemapParams.GetMapSize(), 0);
@@ -1836,7 +1839,7 @@ void Worker::PrepareToRun() {
                 f->sh.anglemapParams.hasRecorded = true;
                 if (f->selected) needsAngleMapStatusRefresh = true;
             }
-        }
+        }*/
 
     }
 

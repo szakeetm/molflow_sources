@@ -694,7 +694,7 @@ void WriterXML::SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
 
     } //end texture
 
-    if (facet->sh.anglemapParams.hasRecorded) {
+    if (!facet->angleMap.pdf.empty()) {
         xml_node textureNode = facetNode.append_child("IncidentAngleMap");
         textureNode.append_attribute("angleMapPhiWidth") = facet->sh.anglemapParams.phiWidth;
         textureNode.append_attribute("angleMapThetaLimit") = facet->sh.anglemapParams.thetaLimit;

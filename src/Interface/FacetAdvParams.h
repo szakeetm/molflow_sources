@@ -47,6 +47,7 @@ public:
 	void ProcessMessage(GLComponent *src, int message);
 	bool ApplyTexture(bool force=false);
 	bool Apply();
+    bool IsAngleMapRecording();
 
 private:
 

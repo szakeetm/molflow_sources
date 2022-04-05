@@ -706,12 +706,20 @@ void MolFlow::ApplyFacetParams() {
 	// 2sided
 	int is2Sided = facetSideType->GetSelectedIndex();
 
+    if(desorbType == DES_ANGLEMAP && facetAdvParams->IsAngleMapRecording()){
+        char errMsg[512];
+        sprintf(errMsg, "Angle map can't be used for DESORPTION and RECORDING\n");
+        GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
+        return;
+    }
+
 	//Check complete, let's apply
 	if (facetAdvParams && facetAdvParams->IsVisible()) {
 		if (!facetAdvParams->Apply()) {
 			return;
 		}
 	}
+
 	if (!AskToReset()) return;
 	
 	changedSinceSave = true;
@@ -975,8 +983,10 @@ int MolFlow::FrameMove()
 	}
 	else {
 	    double current_avg = hps.avg();
-        if(!runningState) current_avg = hps_runtotal.avg();
-        else current_avg = (current_avg != 0.0) ? current_avg : hps.last();
+        if(!runningState)
+            current_avg = hps_runtotal.avg();
+        else
+            current_avg = (current_avg != 0.0) ? current_avg : hps.last();
 
         sprintf(tmp, "%s (%s)", Util::formatInt(worker.globalHitCache.globalHits.nbMCHit, "hit"),
                 Util::formatPs(current_avg, "hit"));
@@ -1143,7 +1153,7 @@ void MolFlow::CopyAngleMapToClipboard()
 	bool found = false;
 	for (size_t i = 0; i < geom->GetNbFacet(); i++) {
 		InterfaceFacet* f = geom->GetFacet(i);
-		if (f->selected && f->sh.anglemapParams.hasRecorded) {
+		if (f->selected && !f->angleMapCache.empty()) {
 			if (found) {
 				GLMessageBox::Display("More than one facet with recorded angle map selected", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
@@ -1183,9 +1193,8 @@ void MolFlow::ClearAngleMapsOnSelection() {
 		Geometry *geom = worker.GetGeometry();
 		for (size_t i = 0; i < geom->GetNbFacet(); i++) {
 			InterfaceFacet* f = geom->GetFacet(i);
-			if (f->selected && f->sh.anglemapParams.hasRecorded) {
+			if (f->selected && !f->angleMapCache.empty()) {
 				f->angleMapCache.clear();
-				f->sh.anglemapParams.hasRecorded = false;
 			}
 		}
 	//}
