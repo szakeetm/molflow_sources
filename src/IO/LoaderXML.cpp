@@ -11,7 +11,9 @@
 #include "TimeMoments.h"
 #include "File.h"
 #include "Helper/ConsoleLogger.h"
+#include "Helper/StringHelper.h"
 #include <fmt/core.h>
+#include <Formulas.h>
 
 using namespace pugi;
 using namespace FlowIO;
@@ -912,6 +914,67 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
     }
 }
 
+int LoaderXML::LoadConvergenceValues(const std::string &inputFileName, std::vector<ConvergenceData> *convergenceValues,
+                                     double *progress) {
+
+    xml_document loadXML;
+    xml_parse_result parseResult = loadXML.load_file(inputFileName.c_str()); //parse xml file directly
+    xml_node rootNode = loadXML.child("SimulationEnvironment");
+
+    if (!rootNode) {
+        std::cerr << "XML file seems to be of older format, please generate a new file with the GUI application!"
+                  << std::endl;
+        rootNode = loadXML.root();
+    }
+
+    if (!rootNode.child("MolflowResults"))
+        return 1; //simu state not saved with file
+
+    xml_node resultNode = rootNode.child("MolflowResults");
+    xml_node convNode = resultNode.child("Convergence");
+
+    convergenceValues->resize(0);
+    for(auto& convVec : convNode.children()){
+        std::stringstream convText;
+        ConvergenceData convData;
+        std::vector<std::pair<size_t, double>>& vec = convData.conv_vec;
+        convText << convVec.child_value();
+        // get length of file:
+        convText.seekg (0, std::stringstream::end);
+        int length = convText.tellg();
+        convText.seekg (0, std::stringstream::beg);
+        if(convText.peek() == '\n') {
+            char nl;
+            convText.get(nl);
+        }
+        std::string line;
+        while(!convText.eof()){
+            std::getline(convText, line);
+            size_t posOfTab = line.find ('\t');
+            //std::string second = pieces.substr(pos + 1);
+
+            if (posOfTab==std::string::npos)
+                continue;
+            size_t nbDes = 0;
+            double convVal = 0.0;
+            try{
+                nbDes = stringToNumber<size_t>(line.substr(0, posOfTab));
+                convVal = stringToNumber<double>(line.substr(posOfTab+1));
+            }
+            catch (const std::exception &e){
+                // Just write an error and move to next line e.g. when fail on inf/nan
+                std::cerr << "[XML][Convergence] Parsing error: "<<e.what()<< std::endl;
+                continue;
+            }
+
+            //if(nbDes < vec[vec.size()-1].first) break; // skip if data is malformed (desorptions should increase)
+            vec.emplace_back(std::make_pair(nbDes, convVal));
+        }
+        convergenceValues->push_back(convData);
+    }
+
+    return 0;
+}
 /*
 void Loader::MoveFacetsToStructures(SimulationModel* model) {
     model->structures.resize(model->sh.nbSuper);

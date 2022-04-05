@@ -981,6 +981,19 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                         catch (const std::exception &e){
                             throw;
                         }
+                        future = std::async(std::launch::async, FlowIO::LoaderInterfaceXML::LoadConvergenceValues,
+                                            parseFileName, &mApp->formula_ptr->convergenceValues, &load_progress);
+                        do {
+                            progressDlg->SetProgress(load_progress);
+                            ProcessSleep(100);
+                        } while (future.wait_for(std::chrono::seconds(0)) != std::future_status::ready);
+                        progressDlg->SetProgress(0.0);
+                        try{
+                            future.get(); //exception thrown if it was stored
+                        }
+                        catch (const std::exception &e){
+                            throw;
+                        }
                     }
                     //FlowIO::LoaderInterfaceXML::LoadSimulationState(parseFileName, model, &globState);
                     simManager.simulationChanged = true;
