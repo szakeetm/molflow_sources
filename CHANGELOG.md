@@ -1,6 +1,14 @@
 # Changelog
 
-## v2.9.3 (TBA)
+## v2.9.4 (TBA)
+### Change
+- ...
+- ...
+- Added CMake install option
+### Bugfix
+- ...
+
+## v2.9.3 (2022.01.31)
 ### Change
 - Changing parameters (CLI) will now give errors or warnings for edge cases
 - Profile plotter now gives a unified warning for each plot concerned
