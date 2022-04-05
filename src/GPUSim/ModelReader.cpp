@@ -262,10 +262,17 @@ namespace flowgpu {
             auto &b = triMesh->vertices3d[triIndices.y];
             auto &c = triMesh->vertices3d[triIndices.z];
 
-            facet.center = (a + b + c) / 3.0f;
+            facet.center = (a + b + c) / 3.0;
+            //facet.center += facet.N * 1e-2f;
 
-            fmt::print("Facet {}({}) with center {} , {} , {}\n",
-                       facetIndex, facet.parentIndex, facet.center.x, facet.center.y, facet.center.z);
+            fmt::print("Facet {}({}) with center {} , {} , {} and N = {} , {} , {}\n",
+                       facetIndex, facet.parentIndex, facet.center.x, facet.center.y, facet.center.z,
+                       facet.N.x, facet.N.y, facet.N.z);
+            fmt::print("     {} , {} , {} -- {} , {} , {} -- {} , {} , {}\n",
+                       a.x, a.y, a.z,
+                       b.x, b.y, b.z,
+                       c.x, c.y, c.z
+                       );
             ++facetIndex;
         }
     };
@@ -1111,7 +1118,7 @@ namespace flowgpu {
                         if(poly.parentIndex == id1 || poly.parentIndex == id2) {
                             poly.facProps.endangered_neighbor = true;
                             poly.facProps.offset_factor
-                            = std::max(poly.facProps.offset_factor,(float)(/*1.0 - */((angle - (DegToRad(89.0))) / (M_PI - DegToRad(89.0))))); // normalize offset to 90 deg radiant value and reverse factor 0->1,1->0
+                            = 1.0;//std::max(poly.facProps.offset_factor,(float)(((angle - (DegToRad(89.0))) / (M_PI - DegToRad(89.0))))); // normalize offset to 90 deg radiant value and reverse factor 0->1,1->0
                             poly.facProps.min_angle = std::min(poly.facProps.min_angle, (float)(RadToDeg(angle)));
                             poly.facProps.max_angle = std::max(poly.facProps.max_angle, (float)(RadToDeg(angle)));
                         }

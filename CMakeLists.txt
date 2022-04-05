@@ -146,7 +146,7 @@ IF(WITH_GPU AND (MSVC AND WIN32) OR (NOT WIN32))
     # load defines
     include(CMake/MolflowGPU.cmake)
 
-    add_subdirectory(CMake/molflow_gpusub)
+    #add_subdirectory(CMake/molflow_gpusub)
 
     add_subdirectory(CMake/gpusim)
     add_subdirectory(CMake/flow_gpu #[["${cuda_obj_dir}"]]) #add_subdirectory(${cuda_obj_dir} "${cuda_obj_dir}" EXCLUDE_FROM_ALL) #already added in molflow_sub

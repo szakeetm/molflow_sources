@@ -8,6 +8,7 @@
 #include "ModelReader.h" // TempFacet
 #include "Model.h"
 #include "SimulationControllerGPU.h"
+#include "fmt/core.h"
 
 #if defined(NDEBUG)
 #define LAUNCHSIZE 1920*128*1//1024*64*16//1024*128*64
@@ -302,7 +303,16 @@ bool SimulationGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWOR
 #endif // DEBUGPOS
 
     // Leak
-    gHits->nbLeakTotal += globalCount->leakCounter[0];
+    //gHits->nbLeakTotal += globalCount->leakCounter[0];
+    for(unsigned long leakCounter : globalCount->leakCounter){
+        gHits->nbLeakTotal += leakCounter;
+    }
+
+    for(int i = 0; i < globalCount->leakCounter.size(); ++i){
+        if(globalCount->leakCounter[i] > 0)
+            fmt::print("{}[{}] has {} / {} leaks\n",
+                       i, model->poly_meshes[0]->poly[i].parentIndex, globalCount->leakCounter[i], gHits->nbLeakTotal);
+    }
 #ifdef DEBUGLEAKPOS
     for (size_t leakIndex = 0; leakIndex < globalCount->leakPositions.size(); leakIndex++) {
         gHits->leakCache[(leakIndex + gHits->lastLeakIndex) %

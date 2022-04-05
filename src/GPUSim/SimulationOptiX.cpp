@@ -1209,17 +1209,17 @@ typedef Record<TriangleRayGenData> RaygenRecordTri;
         const uint32_t nbHCBins = EXTRAFACETCOUNTERS;
 
         CuFacetHitCounter *hitCounter = new CuFacetHitCounter[nbHCBins * state.launchParams.simConstants.nbFacets]();
-        uint32_t *missCounter = new uint32_t(0);
-
+        uint32_t *missCounter = new uint32_t[state.launchParams.simConstants.nbFacets];
+        std:memset(missCounter, 0, state.launchParams.simConstants.nbFacets * sizeof(uint32_t));
         facet_memory.hitCounterBuffer.upload(hitCounter, nbHCBins * state.launchParams.simConstants.nbFacets);
-        facet_memory.missCounterBuffer.upload(missCounter, 1);
+        facet_memory.missCounterBuffer.upload(missCounter, state.launchParams.simConstants.nbFacets);
 
         std::cout << "nbTextures " << model->facetTex.size() << std::endl;
         std::cout << "nbTexels " << model->textures.size() << std::endl;
         std::cout << "nbTexInc " << model->texInc.size() << std::endl;
 
         delete[] hitCounter;
-        delete missCounter;
+        delete[] missCounter;
 
 #ifdef DEBUGCOUNT
         uint32_t *detVal = new uint32_t[NCOUNTBINS]();
@@ -1237,11 +1237,15 @@ typedef Record<TriangleRayGenData> RaygenRecordTri;
 #ifdef DEBUGPOS
         float3 *pos = new float3[NBPOSCOUNTS * 1]();
         uint32_t *offset = new uint32_t[1]();
+        uint16_t *posTypes = new uint16_t[NBPOSCOUNTS * 1]();
         memory_debug.posBuffer.upload(pos, NBPOSCOUNTS * 1);
         memory_debug.posOffsetBuffer.upload(offset, 1);
+        memory_debug.posTypeBuffer.upload(posTypes, NBPOSCOUNTS * 1);
 
         delete[] pos;
         delete[] offset;
+        delete[] posTypes;
+
 #endif
 #ifdef DEBUGLEAKPOS
         float3 *leakPos = new float3[NBCOUNTS * state.launchParams.simConstants.size.x *
@@ -1443,7 +1447,7 @@ try{
 #endif
         facet_memory.hitCounterBuffer.resize(
                 model->nbFacets_total * EXTRAFACETCOUNTERS * sizeof(CuFacetHitCounter));
-        facet_memory.missCounterBuffer.resize(sizeof(uint32_t));
+        facet_memory.missCounterBuffer.resize(model->nbFacets_total * sizeof(uint32_t));
         //facet_memory.textureBuffer.resize(model->textures.size() * sizeof(TextureCell));
 
 // Texture
@@ -1479,6 +1483,8 @@ try{
         state.launchParams.simConstants.nbTexel = model->nbTexel_total;
         state.launchParams.simConstants.nbProfSlices = model->nbProfSlices_total;
 #endif
+        state.launchParams.simConstants.offset_center_magnitude = model->parametersGlobal.offsetMagnitude;
+        state.launchParams.simConstants.offset_normal_magnitude = model->parametersGlobal.offsetMagnitudeN;
 
         state.launchParams.perThreadData.currentMoleculeData = (MolPRD *) sim_memory.moleculeBuffer.d_pointer();
         state.launchParams.perThreadData.randBufferOffset = (uint32_t *) sim_memory.randOffsetBuffer.d_pointer();
@@ -1524,8 +1530,10 @@ try{
 #ifdef DEBUGPOS
         memory_debug.posBuffer.resize(1 * NBPOSCOUNTS * sizeof(float3));
         memory_debug.posOffsetBuffer.resize(1 * sizeof(uint32_t));
+        memory_debug.posTypeBuffer.resize(1 * NBPOSCOUNTS * sizeof(uint16_t));
         state.launchParams.perThreadData.positionsBuffer_debug = (float3 *) memory_debug.posBuffer.d_pointer();
         state.launchParams.perThreadData.posOffsetBuffer_debug = (uint32_t *) memory_debug.posOffsetBuffer.d_pointer();
+        state.launchParams.perThreadData.positionsType_debug = (uint16_t *) memory_debug.posTypeBuffer.d_pointer();
 #endif
 
 #ifdef DEBUGLEAKPOS
@@ -1580,6 +1588,7 @@ try{
 #ifdef DEBUGPOS
         memory_debug.posBuffer.resize(1 * NBPOSCOUNTS * sizeof(float3));
         memory_debug.posOffsetBuffer.resize(1 * sizeof(uint32_t));
+        memory_debug.posTypeBuffer.resize(1 * NBPOSCOUNTS * sizeof(uint16_t));
 #endif
 
 #ifdef DEBUGLEAKPOS
@@ -1604,7 +1613,7 @@ try{
 #endif
         facet_memory.hitCounterBuffer.download(hostData->facetHitCounters.data(),
                                                model->nbFacets_total * EXTRAFACETCOUNTERS);
-        facet_memory.missCounterBuffer.download(hostData->leakCounter.data(), 1);
+        facet_memory.missCounterBuffer.download(hostData->leakCounter.data(), model->nbFacets_total);
 
         if (!facet_memory.texelBuffer.isNullptr())
             facet_memory.texelBuffer.download(hostData->texels.data(), model->textures.size());
@@ -1621,6 +1630,7 @@ try{
 #ifdef DEBUGPOS
         memory_debug.posBuffer.download(hostData->positions.data(), NBPOSCOUNTS * 1);
         memory_debug.posOffsetBuffer.download(hostData->posOffset.data(), 1);
+        memory_debug.posTypeBuffer.download(hostData->posType.data(), NBPOSCOUNTS * 1);
 #endif
 #ifdef DEBUGLEAKPOS
         memory_debug.leakPosBuffer.download(hostData->leakPositions.data(),
@@ -1640,7 +1650,7 @@ try{
         //sim_memory.moleculeBuffer.download(hit, state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y);
         facet_memory.hitCounterBuffer.initDeviceData(
                 model->nbFacets_total * EXTRAFACETCOUNTERS * sizeof(flowgpu::CuFacetHitCounter));
-        facet_memory.missCounterBuffer.initDeviceData(sizeof(uint32_t));
+        facet_memory.missCounterBuffer.initDeviceData(model->nbFacets_total * sizeof(uint32_t));
 
         if (!facet_memory.texelBuffer.isNullptr())
             facet_memory.texelBuffer.initDeviceData(model->textures.size() * sizeof(flowgpu::Texel));
@@ -1649,6 +1659,7 @@ try{
 #ifdef DEBUGPOS
         memory_debug.posBuffer.initDeviceData(NBPOSCOUNTS * 1 * sizeof(float3));
         memory_debug.posOffsetBuffer.initDeviceData(1 * sizeof(uint32_t));
+        memory_debug.posTypeBuffer.initDeviceData(NBPOSCOUNTS * 1 * sizeof(uint16_t));
 #endif
     }
 
@@ -1750,6 +1761,7 @@ try{
 #ifdef DEBUGPOS
         memory_debug.posBuffer.free();
         memory_debug.posOffsetBuffer.free();
+        memory_debug.posTypeBuffer.free();
 #endif
 #ifdef DEBUGLEAKPOS
         memory_debug.leakPosBuffer.free();

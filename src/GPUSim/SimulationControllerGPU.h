@@ -20,6 +20,7 @@ struct RuntimeFigures {
     unsigned long long int total_abs = 0;
     double total_absd = 0;
     unsigned long long int total_des = 0;
+    unsigned long long int total_leak = 0;
     uint64_t ndes_stop = 0;
     uint64_t exitCount = 0;
 };
@@ -53,7 +54,7 @@ public:
     void PrintDataForParent();
     void PrintTotalCounters();
     void UpdateGlobalFigures();
-    void WriteDataToFile(std::string fileName);
+    void WriteDataToFile(const std::string& fileName);
     GlobalCounter* GetGlobalCounter() ;
     double GetTransProb(size_t polyIndex);
     double GetTransProb();

@@ -74,6 +74,7 @@ struct DeviceMemoryDebug {
 #ifdef DEBUGPOS
         CUDABuffer posBuffer;
         CUDABuffer posOffsetBuffer;
+        CUDABuffer posTypeBuffer;
 #endif //DEBUGPOS
 
 #ifdef DEBUGLEAKPOS

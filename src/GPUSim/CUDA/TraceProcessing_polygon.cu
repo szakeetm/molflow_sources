@@ -618,13 +618,14 @@ if(prd->inSystem == 4)
             else {
                 ++prd->currentDepth;
 
-#ifdef DEBUGPOS
+#if defined(DEBUGPOS)
                 if(bufferIndex==0){
                     const unsigned int posIndexOff = optixLaunchParams.perThreadData.posOffsetBuffer_debug[(unsigned int)(bufferIndex)]++;
                     if(posIndexOff<NBPOSCOUNTS){
                         const unsigned int posIndex = bufferIndex*NBPOSCOUNTS+posIndexOff;
                         //printf("[%d] my pos is %d\n", (unsigned int)(ix+iy*optixLaunchParams.simConstants.size.x), posIndex);
                         optixLaunchParams.perThreadData.positionsBuffer_debug[posIndex] = prd->hitPos;
+                        optixLaunchParams.perThreadData.positionsType_debug[posIndex] = 3;
                     }
                 }
 #endif

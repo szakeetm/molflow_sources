@@ -611,13 +611,14 @@ void recordDesorption(const unsigned int& counterIdx, const flowgpu::Polygon& po
                 break;
             }
         }
-#ifdef DEBUGPOS
+#if defined(DEBUGPOS)
     if(bufferIndex==0){
         const unsigned int posIndexOffset = optixLaunchParams.perThreadData.posOffsetBuffer_debug[bufferIndex]++;
         if(posIndexOffset<NBPOSCOUNTS){
             const unsigned int posIndex = bufferIndex*NBPOSCOUNTS+posIndexOffset;
             //printf("[%d] my pos is %d\n", bufferIndex, posIndex);
             optixLaunchParams.perThreadData.positionsBuffer_debug[posIndex] = rayOrigin;
+            optixLaunchParams.perThreadData.positionsType_debug[posIndex] = 1;
         }
     }
 #endif

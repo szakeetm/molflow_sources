@@ -271,6 +271,8 @@ double SimulationControllerGPU::GetTransProb() {
     std::vector<double> sumAbs_all(this->model->nbFacets_total, 0.0);
     for(unsigned int i = 0; i < globalCounter.facetHitCounters.size(); i++) {
         unsigned int facIndex = i%this->model->nbFacets_total;
+        if(model->triangle_meshes[0]->poly[facIndex].desProps.desorbType != 0)
+            continue;
         unsigned int facParent = model->triangle_meshes[0]->poly[facIndex].parentIndex;
         sumAbs_all[facParent] += this->globalCounter.facetHitCounters[i].nbAbsEquiv; // let misses count as 0 (-1+1)
     }
@@ -394,7 +396,9 @@ void SimulationControllerGPU::IncreaseGlobalCounters(HostData* tempData){
         globalCounter.facetHitCounters[facIndex].sum_1_per_ort_velocity += tempData->facetHitCounters[i].sum_1_per_ort_velocity;
     }
 
-    globalCounter.leakCounter[0] += tempData->leakCounter[0];
+    for(int i = 0; i < globalCounter.leakCounter.size(); ++i){
+        globalCounter.leakCounter[i] += tempData->leakCounter[i];
+    }
 
     //textures
 #ifdef WITH_TEX
@@ -561,7 +565,14 @@ unsigned long long int SimulationControllerGPU::ConvertSimulationData(GlobalSimu
 
     // Leak
     if(!globalCounter.leakCounter.empty()) {
-        gState.globalHits.nbLeakTotal = globalCounter.leakCounter[0];
+        for(unsigned long leakCounter : globalCounter.leakCounter){
+            gState.globalHits.nbLeakTotal += leakCounter;
+        }
+        for(int i = 0; i < globalCounter.leakCounter.size(); ++i){
+            if(globalCounter.leakCounter[i] > 0)
+                fmt::print("{}[{}]  has {} / {} leaks\n",
+                           i, model->triangle_meshes[0]->poly[i].parentIndex, globalCounter.leakCounter[i], gState.globalHits.nbLeakTotal);
+        }
 #ifdef DEBUGLEAKPOS
         for (size_t leakIndex = 0; leakIndex < globalCounter.leakPositions.size(); leakIndex++) {
             gState.globalHits.leakCache[(leakIndex + gState.globalHits.lastLeakIndex) %
@@ -601,7 +612,7 @@ void SimulationControllerGPU::Resize(){
     data.facetHitCounters.resize(model->nbFacets_total * EXTRAFACETCOUNTERS);
     data.texels.resize(model->textures.size());
     data.profileSlices.resize(model->profiles.size());
-    data.leakCounter.resize(1);
+    data.leakCounter.resize(model->nbFacets_total);
 
     globalCounter.facetHitCounters.clear();
     globalCounter.leakCounter.clear();
@@ -612,7 +623,7 @@ void SimulationControllerGPU::Resize(){
     globalCounter.posOffset.clear();
 #endif
     globalCounter.facetHitCounters.resize(model->nbFacets_total);
-    globalCounter.leakCounter.resize(1);
+    globalCounter.leakCounter.resize(model->nbFacets_total);
 
 
     for(auto& mesh : model->triangle_meshes) {
@@ -673,8 +684,10 @@ void SimulationControllerGPU::Resize(){
 #ifdef DEBUGPOS
     data.positions.clear();
     data.posOffset.clear();
+    data.posType.clear();
     data.positions.resize(NBPOSCOUNTS*1);
     data.posOffset.resize(1);
+    data.posType.resize(NBPOSCOUNTS*1);
 #endif
 
 #ifdef DEBUGLEAKPOS
@@ -838,6 +851,7 @@ void SimulationControllerGPU::PrintTotalCounters()
     figures.total_des = 0;
     //figures.ndes_stop = 0;
     figures.total_absd = 0.0;
+    figures.total_leak = 0;
 
     for(unsigned int i = 0; i < globalCounter.facetHitCounters.size(); i++) {
         figures.total_counter += globalCounter.facetHitCounters[i].nbMCHit; // let misses count as 0 (-1+1)
@@ -845,17 +859,21 @@ void SimulationControllerGPU::PrintTotalCounters()
         figures.total_des += globalCounter.facetHitCounters[i].nbDesorbed; // let misses count as 0 (-1+1)
         figures.total_absd += globalCounter.facetHitCounters[i].nbAbsEquiv; // let misses count as 0 (-1+1)
     }
+    for(unsigned int i = 0; i < globalCounter.leakCounter.size(); i++) {
+        figures.total_leak += globalCounter.leakCounter[i]; // let misses count as 0 (-1+1)
+    }
     if(endCalled)
         figures.ndes_stop += figures.total_des - prevDes;
 
     fmt::print(" total hits >>> {}",figures.total_counter);
     fmt::print(" __ total  des >>> {} ({})",figures.total_des, figures.ndes_stop);
     fmt::print(" __ total  abs >>> {}",static_cast<unsigned long long int>(figures.total_absd));
-    fmt::print(" __ total miss >>> {} -- miss/hit ratio: {}\n",*globalCounter.leakCounter.data(), static_cast<double>(*globalCounter.leakCounter.data()) / figures.total_counter);
+    fmt::print(" __ total miss >>> {} -- miss/hit ratio: {}\n",figures.total_leak, static_cast<double>(figures.total_leak) /
+                                                                                   static_cast<double>(figures.total_counter));
 }
 
 /*! download the rendered color buffer and return the total amount of hits (= followed rays) */
-void SimulationControllerGPU::WriteDataToFile(std::string fileName)
+void SimulationControllerGPU::WriteDataToFile(const std::string& fileName)
 {
     uint32_t nbFacets = this->model->nbFacets_total;
 

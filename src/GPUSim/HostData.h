@@ -39,6 +39,7 @@ struct HostData {
 #ifdef DEBUGPOS
     std::vector<float3> positions;
     std::vector<uint32_t> posOffset;
+    std::vector<uint16_t> posType;
 #endif
 #ifdef DEBUGLEAKPOS
     std::vector<float3> leakPositions;

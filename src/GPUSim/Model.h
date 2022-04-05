@@ -75,6 +75,8 @@ namespace flowgpu {
         /*bool	 lowFluxMode;
         double	 lowFluxCutoff;*/
 
+        float offsetMagnitude{0.0f}; // adaptive offset towards center
+        float offsetMagnitudeN{1.0f}; // adaptive offset towards normal
 
         template <class Archive>
         void serialize(Archive & archive) {

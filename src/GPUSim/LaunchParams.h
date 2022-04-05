@@ -179,6 +179,7 @@ namespace flowgpu {
 #ifdef DEBUGPOS
             uint32_t* posOffsetBuffer_debug;
             float3* positionsBuffer_debug;
+            uint16_t* positionsType_debug;
 #endif
 #ifdef DEBUGLEAKPOS
             uint32_t* leakPosOffsetBuffer_debug;
@@ -208,6 +209,8 @@ namespace flowgpu {
             uint32_t nbTexel;
             uint32_t nbProfSlices;
 #endif
+            float offset_center_magnitude;
+            float offset_normal_magnitude;
         } simConstants;
 
 #if defined(RNG_BULKED)

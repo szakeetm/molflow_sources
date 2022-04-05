@@ -72,7 +72,7 @@ namespace cg = cooperative_groups;
 //const __device__ float offset_val_n = -1.0f/64.0f;
 const __device__ float offset_val = 1.0f/1.0f;
 const __device__ float offset_val_n = (-1.0f) * offset_val;
-const __device__ float offset_valc = 50.0f/1.0f; //offset value for center offset
+const __device__ float offset_valc = 1.0f/1.0f; //offset value for center offset
 
 /* this GPU kernel takes an array of states, and an array of ints, and puts a random int into each */
 static __forceinline__ __device__ RN_T generate_rand(curandState_t* states, unsigned int id) {
@@ -166,7 +166,9 @@ static __forceinline__ __device__ float3 offset_to_center(const float3 p, unsign
     //const int3 of_i = make_float3(float_scale()*c.x, float_scale()*c.y, float_scale()*c.z);
     float3 dir_i = normalize(c - p);
 
-    float offset_loc = offset_valc * poly.facProps.offset_factor;
+    //float offset_loc = offset_valc * poly.facProps.offset_factor;
+    float offset_loc = optixLaunchParams.simConstants.offset_center_magnitude * poly.facProps.offset_factor;
+
     //offset_loc = (0.9 * length(c-p) < offset_valc) ? 0.9 * length(c-p) : offset_valc;
     /*printf("Offset check: %lf (%lf) - %lf\n", offset_loc, poly.facProps.offset_factor, length(c-p));
     printf("Offset point: dir(%lf , %lf , %lf) - c(%lf , %lf , %lf) - p(%lf , %lf , %lf)\n", dir_i.z, dir_i.y, dir_i.z, c.z, c.y, c.z, p.x, p.y, p.z);
@@ -196,9 +198,9 @@ static __forceinline__ __device__ float3 offset_to_center(const float3 p, unsign
            normpoint.x, normpoint.y, normpoint.z,
            p_i.x, p_i.y, p_i.z);*/
 
-    /*return float3(make_float3(p.x+1.0f* offset_loc*float_scale()*dir_i.x,
+    return float3(make_float3(p.x+1.0f* offset_loc*float_scale()*dir_i.x,
                               p.y+1.0f* offset_loc*float_scale()*dir_i.y,
-                              p.z+1.0f* offset_loc*float_scale()*dir_i.z));*/
+                              p.z+1.0f* offset_loc*float_scale()*dir_i.z));
     //return p;
     return float3(make_float3(
             fabsf(p.x) < origin() ? p.x+offset_loc*float_scale()*dir_i.x : p_i.x,
@@ -253,7 +255,9 @@ static __forceinline__ __device__ void apply_offset(const flowgpu::Polygon& poly
         //rayOrigin = offset_ray(rayOrigin, (-1.0f) * rayGenData->poly[facIndex].N);
     }
     else{
-        facNormal *= (offset_val);
+        float offset_n = optixLaunchParams.simConstants.offset_normal_magnitude;
+        facNormal *= (offset_n);
+        //facNormal *= (offset_val);
     }
     rayOrigin = offset_ray(rayOrigin,facNormal);
 

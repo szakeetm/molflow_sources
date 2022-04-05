@@ -942,6 +942,7 @@ namespace flowgpu {
                         const unsigned int posIndex = bufferIndex*NBPOSCOUNTS+posIndexOff;
                         //printf("[%d] my pos is %d\n", (unsigned int)(ix+iy*optixLaunchParams.simConstants.size.x), posIndex);
                         optixLaunchParams.perThreadData.positionsBuffer_debug[posIndex] = prd->hitPos;
+                        optixLaunchParams.perThreadData.positionsType_debug[posIndex] = 3;
                     }
                 }
 #endif
@@ -1202,6 +1203,9 @@ namespace flowgpu {
         MolPRD* prd = mergePointer(optixGetPayload_0(), optixGetPayload_1());
 #endif
 
+        if(prd->inSystem == 0) // skip miss on desorption
+            return;
+
 #if defined(DEBUGMISS)
         const float3 ray_orig = optixGetWorldRayOrigin();
         const float3 ray_dir  = optixGetWorldRayDirection();
@@ -1280,7 +1284,7 @@ optixLaunchParams.perThreadData.currentMoleculeData[fbIndex].postHitDir = prd->p
 
         //if(prd->inSystem > 20) {
         //optixLaunchParams.sharedData.missCounter += 1;
-        atomicAdd(optixLaunchParams.sharedData.missCounter, 1);
+        atomicAdd(&optixLaunchParams.sharedData.missCounter[prd->hitFacetId], 1);
 
         // Reset particle
         initParticle(*prd);
