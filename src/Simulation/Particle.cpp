@@ -1087,6 +1087,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
     if (iFacet->sh.enableSojournTime) {
         double A = exp(-iFacet->sh.sojournE / (8.31 * iFacet->sh.temperature));
         particle.time += -log(randomGenerator.rnd()) / (A * iFacet->sh.sojournFreq);
+        momentIndex = LookupMomentIndex(particle.time, model->tdParams.moments, lastMomentIndex); //reflection might happen in another moment
     }
 
     if (iFacet->sh.reflection.diffusePart > 0.999999) { //Speedup branch for most common, diffuse case
