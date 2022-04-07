@@ -14,8 +14,8 @@ namespace AnglemapGeneration {
 
     double GetPhi(const double &phiIndex, const AnglemapParams &anglemapParams);
 
-    double GetPhipdfValue(const double &thetaIndex, const int &phiLowerIndex,
-                                 const AnglemapParams &anglemapParams, const std::vector<size_t> &angleMapPDF);
+    double GetPhiNormalizedPdfValue(const double &thetaIndex, const int &phiLowerIndex,
+                                 const AnglemapParams &anglemapParams, const Anglemap & anglemap);
 
     double GetPhiCDFValue(const double &thetaIndex, const int &phiLowerIndex,
                                  const AnglemapParams &anglemapParams, const Anglemap &anglemap);
@@ -24,7 +24,7 @@ namespace AnglemapGeneration {
                                const Anglemap &anglemap);
 
     std::tuple<double, int, double>
-    GenerateThetaFromAngleMap(const AnglemapParams &anglemapParams, const Anglemap &anglemap,
+    GenerateThetaFromAngleMap(const AnglemapParams &anglemapParams, Anglemap &anglemap,
                               double lookupValue);
 
     double GeneratePhiFromAngleMap(const int &thetaLowerIndex, const double &thetaOvershoot,

@@ -660,9 +660,24 @@ bool Particle::StartFromSource(Ray& ray) {
         case DES_ANGLEMAP: {
             auto[theta, thetaLowerIndex, thetaOvershoot] = AnglemapGeneration::GenerateThetaFromAngleMap(
                     src->sh.anglemapParams, src->angleMap, randomGenerator.rnd());
+
             auto phi = AnglemapGeneration::GeneratePhiFromAngleMap(thetaLowerIndex, thetaOvershoot,
-                                                                   src->sh.anglemapParams, src->angleMap,
-                                                                   randomGenerator.rnd());
+                                                                   src->sh.anglemapParams, src->angleMap, randomGenerator.rnd());
+                            
+            /*                                                      
+            //Debug
+            double phi;
+            thetaLowerIndex = 0;
+            thetaOvershoot = 0;
+            std::vector<double> phis;
+            for (double r = 0.0; r < 1.0; r += 0.001) {
+                 phi = AnglemapGeneration::GeneratePhiFromAngleMap(thetaLowerIndex, thetaOvershoot,
+                    src->sh.anglemapParams, src->angleMap,
+                    r);
+                phis.push_back(phi);
+            }
+            */
+
             ray.direction = PolarToCartesian(src->sh.nU, src->sh.nV, src->sh.N, PI - theta, phi,
                                          false); //angle map contains incident angle (between N and source dir) and theta is dir (between N and dest dir)
 
