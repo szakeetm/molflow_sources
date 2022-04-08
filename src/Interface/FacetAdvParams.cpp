@@ -726,16 +726,16 @@ void FacetAdvParams::Refresh(std::vector<size_t> selection) {
 
 	double f0Area = f0->GetArea();
 	sumArea = f0Area;
-	sumOutgassing = f0->sh.totalOutgassing;
-	sumAngleMapSize = f0->sh.anglemapParams.GetRecordedMapSize();
-	
-	for (size_t i = 1; i < selection.size(); i++) {
-		InterfaceFacet *f = geom->GetFacet(selection[i]);
-		double fArea = f->GetArea();
-		sumArea += fArea;
-		sumOutgassing += f->sh.totalOutgassing;
-		sumAngleMapSize += f->sh.anglemapParams.GetRecordedMapSize();
-		isEnabledE = isEnabledE && (f0->sh.isTextured == f->sh.isTextured);
+    sumOutgassing = f0->sh.totalOutgassing;
+    sumAngleMapSize = !f0->angleMapCache.empty() ? f0->sh.anglemapParams.GetRecordedMapSize() : 0;
+
+    for (size_t i = 1; i < selection.size(); i++) {
+        InterfaceFacet *f = geom->GetFacet(selection[i]);
+        double fArea = f->GetArea();
+        sumArea += fArea;
+        sumOutgassing += f->sh.totalOutgassing;
+        sumAngleMapSize += !f->angleMapCache.empty() ? f->sh.anglemapParams.GetRecordedMapSize() : 0;
+        isEnabledE = isEnabledE && (f0->sh.isTextured == f->sh.isTextured);
 		isBoundE = isBoundE && (f0->hasMesh == f->hasMesh);
 		CountDesE = CountDesE && f0->sh.countDes == f->sh.countDes;
 		CountAbsE = CountAbsE && f0->sh.countAbs == f->sh.countAbs;
