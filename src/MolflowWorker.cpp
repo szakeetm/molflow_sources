@@ -1,7 +1,7 @@
 /*
 Program:     MolFlow+ / Synrad+
 Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
-Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
 Copyright:   E.S.R.F / CERN
 Website:     https://cern.ch/molflow
 
@@ -1329,12 +1329,21 @@ bool Worker::InterfaceGeomToSimModel() {
             //memcpy(outgMapVector.data(), outgassingMapWindow, sizeof(double)*(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0));
             size_t mapSize = facet->sh.anglemapParams.GetMapSize();
             if (facet->angleMapCache.size() != facet->sh.anglemapParams.GetRecordedMapSize()) {
-                    auto errString = fmt::format("Recorded Data Size is different from actual size: {} / {}\n",
-                                                 facet->angleMapCache.size(),
-                                                 facet->sh.anglemapParams.GetRecordedMapSize());
-                    fmt::print(stderr, errString);
-                    throw std::runtime_error(errString);
+                // on mismatch between cached values, check if interface just got out of sync (record) or interface and simulation side are out of sync (no record)
+                if(facet->sh.anglemapParams.record){
+                    facet->angleMapCache.clear();
+                    facet->angleMapCache.resize(mapSize);
                 }
+                else {
+                    /*auto errString = fmt::format(
+                            "[Facet #{}] Recorded Data Size is different from actual size: {} / {}\n",
+                            facIdx + 1,
+                            facet->angleMapCache.size(),
+                            facet->sh.anglemapParams.GetRecordedMapSize());
+                    fmt::print(stderr, errString);
+                    throw std::runtime_error(errString);*/
+                }
+            }
 
             std::vector<double> textIncVector;
 
