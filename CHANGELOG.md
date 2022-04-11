@@ -1,6 +1,9 @@
 # Changelog
 
 ## v2.9.4 (TBA)
+### Feature
+- MPI simulations (see documentation)
+
 ### Change
 - Dramatically increased collapse operations (vertices/facets)
 - Load files via drag and drop from file browser
@@ -14,7 +17,6 @@
 - Not copying last point before 'latestMoment' of user-defined outgassing resulted in wrong TD results
 - Convergence data would not be plotted when loading from a XML file
 - Arrow heads of coordinate system are properly rendered
-- MPI simulations are more robust for failing nodes
 - CLI could endlessly run when neither a valid time or desorption limit has been set
 - Thread status shows properly on all supported OS
 - CLI will properly save changes done via parameter changes to the output file
