@@ -140,7 +140,7 @@ if(USE_TESTS)
 endif()
 
 IF(WITH_GPU AND (MSVC AND WIN32) OR (NOT WIN32))
-#IF(MSVC AND WITH_GPU)
+    #IF(MSVC AND WITH_GPU)
     #set(cuda_obj_dir ${PROJECT_SOURCE_DIR}/cuda_kernel/)
 
     # load defines
@@ -157,5 +157,42 @@ IF(WITH_GPU AND (MSVC AND WIN32) OR (NOT WIN32))
 
     #[[add_dependencies(gpuSub flowGPU cudaKernel)
     add_dependencies(molflow gpuSub)]]
+ENDIF() #WITH_GPU
 
-ENDIF()
+# Allow to install molflowCLI into Unix OS folders (e.g. /usr/local/bin)
+# molflow GUI not supported right now, as extra folders are needed
+
+#SET(MOLFLOW_INSTALL_DIR ${CMAKE_INSTALL_BINDIR})
+SET(MOLFLOW_INSTALL_DIR molflow)
+
+include(GNUInstallDirs)
+
+# if no path is provided, use user home path
+# e.g. /home/user/molflow
+# cmake --install . --prefix /usr/local/bin/
+# will install to /usr/local/bin/molflow
+if(NOT CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "$ENV{HOME}" CACHE PATH "..." FORCE)
+endif()
+
+install(CODE "MESSAGE(\"Installing in home directory ${CMAKE_INSTALL_PREFIX}.\")")
+install(DIRECTORY copy_to_build/images
+        copy_to_build/desorption_yields
+        copy_to_build/parameter_catalog
+        DESTINATION ${MOLFLOW_INSTALL_DIR}
+        #USE_SOURCE_PERMISSIONS
+        PATTERN "images/*"
+        PATTERN "desorption_yields/*"
+        PATTERN "parameter_catalog/*"
+        PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ GROUP_WRITE
+        )
+install(TARGETS molflow molflowCLI
+        CONFIGURATIONS Release
+        RUNTIME
+        DESTINATION ${MOLFLOW_INSTALL_DIR}
+        )
+#[[install(DIRECTORY molflowCLI
+        CONFIGURATIONS Release
+        RUNTIME
+        DESTINATION ${CMAKE_INSTALL_BINDIR}
+        )]]

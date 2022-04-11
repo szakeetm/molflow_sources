@@ -8,6 +8,7 @@
 #include <set>
 #include <map>
 #include <GeometryTypes.h>
+#include <Formulas.h>
 #include "GeometrySimu.h"
 #include "PugiXML/pugixml.hpp"
 
@@ -29,7 +30,9 @@ namespace FlowIO {
         static std::vector<SelectionGroup> LoadSelections(const std::string& inputFileName);
         static int LoadSimulationState(const std::string &inputFileName, std::shared_ptr<SimulationModel> model,
                                        GlobalSimuState *globState, double *progress);
-
+        static int
+        LoadConvergenceValues(const std::string &inputFileName, std::vector<ConvergenceData> *convergenceValues,
+                              double *progress);
         UserInput uInput;
     };
 }

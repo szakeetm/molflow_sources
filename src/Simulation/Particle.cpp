@@ -1,6 +1,22 @@
-//
-// Created by pascal on 2/5/21.
-//
+/*
+Program:     MolFlow+ / Synrad+
+Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
+Copyright:   E.S.R.F / CERN
+Website:     https://cern.ch/molflow
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
+*/
 
 #include <set>
 #include <Helper/Chronometer.h>
@@ -660,9 +676,24 @@ bool Particle::StartFromSource(Ray& ray) {
         case DES_ANGLEMAP: {
             auto[theta, thetaLowerIndex, thetaOvershoot] = AnglemapGeneration::GenerateThetaFromAngleMap(
                     src->sh.anglemapParams, src->angleMap, randomGenerator.rnd());
+
             auto phi = AnglemapGeneration::GeneratePhiFromAngleMap(thetaLowerIndex, thetaOvershoot,
-                                                                   src->sh.anglemapParams, src->angleMap,
-                                                                   randomGenerator.rnd());
+                                                                   src->sh.anglemapParams, src->angleMap, randomGenerator.rnd());
+                            
+            /*                                                      
+            //Debug
+            double phi;
+            thetaLowerIndex = 0;
+            thetaOvershoot = 0;
+            std::vector<double> phis;
+            for (double r = 0.0; r < 1.0; r += 0.001) {
+                 phi = AnglemapGeneration::GeneratePhiFromAngleMap(thetaLowerIndex, thetaOvershoot,
+                    src->sh.anglemapParams, src->angleMap,
+                    r);
+                phis.push_back(phi);
+            }
+            */
+
             ray.direction = PolarToCartesian(src->sh.nU, src->sh.nV, src->sh.N, PI - theta, phi,
                                          false); //angle map contains incident angle (between N and source dir) and theta is dir (between N and dest dir)
 
@@ -1087,6 +1118,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
     if (iFacet->sh.enableSojournTime) {
         double A = exp(-iFacet->sh.sojournE / (8.31 * iFacet->sh.temperature));
         particle.time += -log(randomGenerator.rnd()) / (A * iFacet->sh.sojournFreq);
+        momentIndex = LookupMomentIndex(particle.time, model->tdParams.moments, lastMomentIndex); //reflection might happen in another moment
     }
 
     if (iFacet->sh.reflection.diffusePart > 0.999999) { //Speedup branch for most common, diffuse case
