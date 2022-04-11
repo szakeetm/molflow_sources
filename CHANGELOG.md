@@ -20,6 +20,7 @@
 - CLI could endlessly run when neither a valid time or desorption limit has been set
 - Thread status shows properly on all supported OS
 - CLI will properly save changes done via parameter changes to the output file
+- Fixed incorrect generation of angle maps
 
 ## v2.9.3 (2022.01.31)
 ### Change
