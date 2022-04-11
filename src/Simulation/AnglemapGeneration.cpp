@@ -95,8 +95,8 @@ namespace AnglemapGeneration {
 				anglemap.theta_CDF_higher);
 
 			if (thetaLowerIndex == anglemapParams.thetaLowerRes - 1) { //theta in the first half of the higher res part (below recorded CDF at midpoint)
-				thetaOvershoot = 0.5 * (lookupValue - anglemap.thetaLowerRatio) / (anglemap.theta_CDF_higher[0] - anglemap.thetaLowerRatio); //between 0.5 and 1
-				theta = GetTheta(thetaOvershoot, anglemapParams); //between 0 and the first section midpoint
+				thetaOvershoot = 0.5 * (lookupValue - anglemap.thetaLowerRatio) / (anglemap.theta_CDF_higher[0] - anglemap.thetaLowerRatio); //between 0 and 0.5, 0 is theta=thetaLimit, 0.5 is theta=first bin midpoint in higher part
+				theta = GetTheta((double)anglemapParams.thetaLowerRes + thetaOvershoot, anglemapParams); //between thetaLowerRes and thetaLowerRes+0.5
 			}
 			else if (thetaLowerIndex == (anglemapParams.thetaLowerRes + anglemapParams.thetaHigherRes - 1)) { //theta in last half of higher res part
 				thetaOvershoot = 0.5 * (lookupValue - anglemap.theta_CDF_higher[thetaLowerIndex - anglemapParams.thetaLowerRes])
