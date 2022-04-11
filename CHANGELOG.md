@@ -5,11 +5,12 @@
 - MPI simulations (see documentation)
 
 ### Change
-- Dramatically increased collapse operations (vertices/facets)
+- Dramatically accelerated collapse operations (vertices/facets)
 - Load files via drag and drop from file browser
 - Added CMake install option
 - CLI option for an auto generated test case (pipe) based on oblique prisms
 - Facet highlighting is disabled when more than 500 facets are selected to increase rendering performance
+- Time-dependent mode: particle reflection takes into account sojourn time
 
 ### Bugfix
 - Crash on creating a new facet by difference
