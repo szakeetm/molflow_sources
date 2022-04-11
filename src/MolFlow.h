@@ -49,7 +49,6 @@ public:
 	GLTextField   *facetFlow;
 	GLTextField   *facetFlowArea;
 	
-    
     void LoadFile(const std::string &fileName) override;
 	void InsertGeometry(bool newStr, const std::string &fileName) override;
 	void SaveFile() override;
