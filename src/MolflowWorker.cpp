@@ -1330,11 +1330,10 @@ bool Worker::InterfaceGeomToSimModel() {
             size_t mapSize = facet->sh.anglemapParams.GetMapSize();
             if (facet->angleMapCache.size() != facet->sh.anglemapParams.GetRecordedMapSize()) {
                 // on mismatch between cached values, check if interface just got out of sync (record) or interface and simulation side are out of sync (no record)
-                if(facet->sh.anglemapParams.record){
+                if (facet->sh.anglemapParams.record) {
                     facet->angleMapCache.clear();
                     facet->angleMapCache.resize(mapSize);
-                }
-                else {
+                } else {
                     /*auto errString = fmt::format(
                             "[Facet #{}] Recorded Data Size is different from actual size: {} / {}\n",
                             facIdx + 1,
