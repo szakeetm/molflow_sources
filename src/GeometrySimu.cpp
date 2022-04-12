@@ -235,7 +235,8 @@ int SubprocessFacet::InitializeAngleMap()
     //Incident angle map
     int angleMapSize = 0;
     if (sh.desorbType == DES_ANGLEMAP) { //Use mode
-        //if (angleMapCache.empty()) throw Error(("Facet " + std::to_string(globalId + 1) + ": should generate by angle map but has none recorded.").c_str());
+        if (angleMap.pdf.empty()) // check if a valid recorded angle map exists, otherwise we can't desorb
+            throw Error(fmt::format("Facet {}: should generate by angle map but has none recorded.", globalId + 1).c_str());
 
         //Construct CDFs
         try {
