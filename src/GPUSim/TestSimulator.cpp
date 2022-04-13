@@ -23,7 +23,9 @@
 #include "IO/WriterXML.h"
 #include "fmt/core.h"
 #include "Helper/MathTools.h"
+#include "File.h"
 #include <SettingsIO.h>
+#include <ZipLib/ZipFile.h>
 
 void printUsageAndExit( const char* argv0 )
 {
@@ -300,8 +302,9 @@ int main(int argc, char **argv) {
         SimulationManager simManager{};
         simManager.interactiveMode = true;
 
-        std::vector<std::string> argv = {"tester", "--reset", "-t", "60",
-                                         "-o", fileName+"out.xml"};
+        std::string output_filename = std::filesystem::path(fileName).replace_extension().string();
+        std::vector<std::string> argv = {"tester", "--reset", "-t", "10",
+                                         "-o", FileUtils::GetFilename(output_filename)+"_out.xml"};
         if(!fileName.empty()) {
             argv.emplace_back("--file");
             argv.push_back(fileName);
@@ -455,20 +458,45 @@ int main(int argc, char **argv) {
     // 1st convert from GPU types to CPU types
     // 2nd save with XML
     gpuSim.ConvertSimulationData(globState);
-    FlowIO::WriterXML writer(false, false);
+
+
+
+
+    bool createZip = std::filesystem::path(SettingsIO::outputFile).extension() == ".zip";
+    SettingsIO::outputFile = std::filesystem::path(SettingsIO::outputFile).replace_extension(".xml").string();
+
+    std::string fullOutFile = std::filesystem::path(SettingsIO::outputPath).append(SettingsIO::outputFile).string();
+
+    FlowIO::WriterXML writer(false, true);
     pugi::xml_document newDoc;
-    //newDoc.load_file(SettingsIO::workFile.c_str());
-    std::string fullOutFile = "./testout.xml";
-
-    // Copy full file description first, in case outputFile is different
-    /*std::filesystem::copy_file(SettingsIO::workFile, fullOutFile,
-                               std::filesystem::copy_options::overwrite_existing);*/
-
+    newDoc.load_file(fullOutFile.c_str());
     writer.SaveGeometry(newDoc, simModel);
     writer.SaveSimulationState(newDoc, simModel, globState);
-    if (!newDoc.save_file(fullOutFile.c_str())) {
-        fmt::print(stderr,"Error writing XML file {}\n", fullOutFile);
+    if(!writer.SaveXMLToFile(newDoc, fullOutFile)){
         return 42;
+    }
+
+    if(createZip){
+        Log::console_msg_master(3, "Compressing xml to zip...\n");
+
+        //Zipper library
+        std::string fileNameWithZIP = std::filesystem::path(fullOutFile).replace_extension(".zip").string();
+        if (std::filesystem::exists(fileNameWithZIP)) { // should be workFile == inputFile
+            try {
+                std::filesystem::remove(fileNameWithZIP);
+            }
+            catch (const std::exception &e) {
+                Log::console_error("Error compressing to \n%s\nMaybe file is in use:\n%s",fileNameWithZIP.c_str(),e.what());
+            }
+        }
+        ZipFile::AddFile(fileNameWithZIP, fullOutFile, FileUtils::GetFilename(fullOutFile));
+        //At this point, if no error was thrown, the compression is successful
+        try {
+            std::filesystem::remove(fullOutFile);
+        }
+        catch (const std::exception &e) {
+            Log::console_error("Error removing\n%s\nMaybe file is in use:\n%s",fullOutFile.c_str(),e.what());
+        }
     }
     /*std::chrono::duration<double,std::milli> elapsed = finish_total - start_total;
     std::cout << "-- Total Elapsed Time: " << elapsed.count() << " ms ---" << std::endl;

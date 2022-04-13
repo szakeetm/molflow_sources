@@ -37,6 +37,16 @@ protected:
 
     void Resize();
     unsigned long long int GetTotalHits();
+private:
+    void CheckAndBlockDesorption();
+    void CheckAndBlockDesorption_exact(double threshold);
+    void PrintData();
+    void PrintDataForParent();
+    void PrintTotalCounters();
+    void UpdateGlobalFigures();
+    void WriteDataToFile(const std::string& fileName);
+
+    void CalcRuntimeFigures();
 public:
     SimulationControllerGPU();
     ~SimulationControllerGPU();
@@ -46,21 +56,14 @@ public:
     int CloseSimulation();
     int ResetSimulation();
     void AllowNewParticles();
-    void CheckAndBlockDesorption();
-    void CheckAndBlockDesorption_exact(double threshold);
+
     unsigned long long int GetSimulationData(bool silent = true);
     void IncreaseGlobalCounters(HostData* tempData);
-    void PrintData();
-    void PrintDataForParent();
-    void PrintTotalCounters();
-    void UpdateGlobalFigures();
-    void WriteDataToFile(const std::string& fileName);
     GlobalCounter* GetGlobalCounter() ;
+    int RemainingStepsUntilStop();
     double GetTransProb(size_t polyIndex);
     double GetTransProb();
 
-    void CalcRuntimeFigures();
-    int RemainingStepsUntilStop();
 
     RuntimeFigures figures;
     RuntimeFigures globFigures;
