@@ -98,6 +98,16 @@ cmake -DCMAKE_BUILD_TYPE=RELEASE -DUSE_TESTS=OFF ..
 make
 ```
 
+## CMake / make installation
+
+Given a default Cmake build procedure `mkdir build && cd build && cmake ..` Molflow can be installed into the users home folder by `cmake --install .` --> ~/molflow/
+
+To change the directory, the installation prefix can be adjusted `cmake --install . --prefix ~/Apps/` --> ~/Apps/molflow
+
+For a make installation, after the standard CMake procedure, by default Molflow will also be installed in the users home folder `make install` --> ~/molflow/
+
+The installation path can be changed by adding an installation prefix to the CMake build command `cmake -DCMAKE_INSTALL_PREFIX:PATH=~/Apps/ ..` and `make install` --> ~/Apps/molflow
+
 ## Building for MPI
 
 - Prepare the environment with MPI and a compatible GCC version (GCC_VERSION >= 8)
