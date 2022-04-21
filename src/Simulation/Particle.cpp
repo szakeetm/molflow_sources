@@ -1,6 +1,22 @@
-//
-// Created by pascal on 2/5/21.
-//
+/*
+Program:     MolFlow+ / Synrad+
+Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
+Copyright:   E.S.R.F / CERN
+Website:     https://cern.ch/molflow
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
+*/
 
 #include <set>
 #include <Helper/Chronometer.h>
@@ -150,7 +166,7 @@ void Particle::PerformTeleport(SubprocessFacet *iFacet) {
     if (/*iFacet->direction && */iFacet->sh.countDirection)
         RecordDirectionVector(iFacet, momentIndex);
     ProfileFacet(iFacet, momentIndex, true, 2.0, 2.0);
-    if(particleId == 0) LogHit(iFacet);
+    LogHit(iFacet);
     if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
 
     // Relaunch particle from new facet
@@ -632,9 +648,12 @@ bool Particle::StartFromSource(Ray& ray) {
 
 
 
-    if (src->sh.isMoving && model->wp.motionType)
-        if (particleId == 0)RecordHit(HIT_MOVING);
-        else if (particleId == 0)RecordHit(HIT_DES); //create blue hit point for created particle
+    if (particleId == 0) {
+        if (src->sh.isMoving && model->wp.motionType)
+            RecordHit(HIT_MOVING);
+        else
+            RecordHit(HIT_DES); //create blue hit point for created particle
+    }
 
     //See docs/theta_gen.png for further details on angular distribution generation
     switch (src->sh.desorbType) {
@@ -657,9 +676,24 @@ bool Particle::StartFromSource(Ray& ray) {
         case DES_ANGLEMAP: {
             auto[theta, thetaLowerIndex, thetaOvershoot] = AnglemapGeneration::GenerateThetaFromAngleMap(
                     src->sh.anglemapParams, src->angleMap, randomGenerator.rnd());
+
             auto phi = AnglemapGeneration::GeneratePhiFromAngleMap(thetaLowerIndex, thetaOvershoot,
-                                                                   src->sh.anglemapParams, src->angleMap,
-                                                                   randomGenerator.rnd());
+                                                                   src->sh.anglemapParams, src->angleMap, randomGenerator.rnd());
+                            
+            /*                                                      
+            //Debug
+            double phi;
+            thetaLowerIndex = 0;
+            thetaOvershoot = 0;
+            std::vector<double> phis;
+            for (double r = 0.0; r < 1.0; r += 0.001) {
+                 phi = AnglemapGeneration::GeneratePhiFromAngleMap(thetaLowerIndex, thetaOvershoot,
+                    src->sh.anglemapParams, src->angleMap,
+                    r);
+                phis.push_back(phi);
+            }
+            */
+
             ray.direction = PolarToCartesian(src->sh.nU, src->sh.nV, src->sh.N, PI - theta, phi,
                                          false); //angle map contains incident angle (between N and source dir) and theta is dir (between N and dest dir)
 
@@ -707,7 +741,7 @@ bool Particle::StartFromSource(Ray& ray) {
                          (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
     //Desorption doesn't contribute to angular profiles, nor to angle maps
     ProfileFacet(src, momentIndex, false, 2.0, 1.0); //was 2.0, 1.0
-    if(particleId == 0) LogHit(src);
+    LogHit(src);
     if (/*src->texture && */src->sh.countDes)
         RecordHitOnTexture(src, momentIndex, true, 2.0, 1.0); //was 2.0, 1.0
     //if (src->direction && src->sh.countDirection) RecordDirectionVector(src, particle.time);
@@ -892,10 +926,12 @@ bool Particle::StartFromSource() {
 
     }
 
-    if (src->sh.isMoving && model->wp.motionType)
-        if (particleId == 0)RecordHit(HIT_MOVING);
-        else if (particleId == 0)RecordHit(HIT_DES); //create blue hit point for created particle
-
+    if (particleId == 0) {
+        if (src->sh.isMoving && model->wp.motionType)
+            RecordHit(HIT_MOVING);
+        else
+            RecordHit(HIT_DES); //create blue hit point for created particle
+    }
     //See docs/theta_gen.png for further details on angular distribution generation
     switch (src->sh.desorbType) {
         case DES_UNIFORM:
@@ -966,7 +1002,7 @@ bool Particle::StartFromSource() {
                          (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
     //Desorption doesn't contribute to angular profiles, nor to angle maps
     ProfileFacet(src, momentIndex, false, 2.0, 1.0); //was 2.0, 1.0
-    if(particleId == 0) LogHit(src);
+    LogHit(src);
     if (/*src->texture && */src->sh.countDes)
         RecordHitOnTexture(src, momentIndex, true, 2.0, 1.0); //was 2.0, 1.0
     //if (src->direction && src->sh.countDirection) RecordDirectionVector(src, particle.time);
@@ -1010,7 +1046,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
             // Count this hit as a transparent pass
             if (particleId == 0)RecordHit(HIT_TRANS);
         }
-        if(particleId == 0) LogHit(iFacet);
+        LogHit(iFacet);
 
         ProfileFacet(iFacet, momentIndex, true, 2.0, 2.0);
         if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
@@ -1033,7 +1069,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
 
             IncreaseFacetCounter(iFacet, momentIndex, 0, 0, 1, 0, 0);
             iFacet->isReady = false;
-            if(particleId == 0) LogHit(iFacet);
+            LogHit(iFacet);
             ProfileFacet(iFacet, momentIndex, true, 2.0, 1.0);
             if (/*iFacet->texture && */iFacet->sh.countAbs)
                 RecordHitOnTexture(iFacet, momentIndex, true, 2.0, 1.0);
@@ -1072,7 +1108,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
         RecordHitOnTexture(iFacet, momentIndex, true, 1.0, 1.0);
     if (/*iFacet->direction &&*/ iFacet->sh.countDirection)
         RecordDirectionVector(iFacet, momentIndex);
-    if(particleId == 0) LogHit(iFacet);
+    LogHit(iFacet);
     ProfileFacet(iFacet, momentIndex, true, 1.0, 1.0);
     if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
 
@@ -1082,6 +1118,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
     if (iFacet->sh.enableSojournTime) {
         double A = exp(-iFacet->sh.sojournE / (8.31 * iFacet->sh.temperature));
         particle.time += -log(randomGenerator.rnd()) / (A * iFacet->sh.sojournFreq);
+        momentIndex = LookupMomentIndex(particle.time, model->tdParams.moments, lastMomentIndex); //reflection might happen in another moment
     }
 
     if (iFacet->sh.reflection.diffusePart > 0.999999) { //Speedup branch for most common, diffuse case
@@ -1170,7 +1207,7 @@ void Particle::RecordAbsorb(SubprocessFacet *iFacet) {
             velocity * std::abs(Dot(particle.direction, iFacet->sh.N));
     IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 1, 2.0 / ortVelocity,
                          (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
-    if(particleId == 0) LogHit(iFacet);
+    LogHit(iFacet);
     ProfileFacet(iFacet, momentIndex, true, 2.0, 1.0); //was 2.0, 1.0
     if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
     if (/*iFacet->texture &&*/ iFacet->sh.countAbs)
@@ -1487,7 +1524,7 @@ void Particle::RegisterTransparentPass(SubprocessFacet *facet) {
     if (/*facet->direction &&*/ facet->sh.countDirection) {
         RecordDirectionVector(facet, momentIndex);
     }
-    if(particleId == 0) LogHit(facet);
+    LogHit(facet);
     ProfileFacet(facet, momentIndex,
                  true, 2.0, 2.0);
     if (facet->sh.anglemapParams.record) RecordAngleMap(facet);

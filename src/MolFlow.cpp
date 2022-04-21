@@ -1,7 +1,7 @@
 /*
 Program:     MolFlow+ / Synrad+
 Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
-Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
 Copyright:   E.S.R.F / CERN
 Website:     https://cern.ch/molflow
 
@@ -92,7 +92,7 @@ char fileInsertFilters[] = "txt,xml,zip,geo,syn,stl,geo7z,syn7z";
 char fileSaveFilters[] = "zip,xml,txt,geo,stl,geo7z";
 char fileSelFilters[] = "sel";
 char fileTexFilters[] = "txt";
-char fileProfFilters[] = "csv;txt";
+char fileProfFilters[] = "csv,txt";
 
 
 int cSize = 4;
@@ -200,7 +200,7 @@ int main(int argc, char* argv[])
 	try {
 		mApp->Run();
 	}
-	catch(std::exception &e) {
+	catch(const std::exception &e) {
 		mApp->CrashHandler(e);
 	}
 	delete mApp;
@@ -706,12 +706,20 @@ void MolFlow::ApplyFacetParams() {
 	// 2sided
 	int is2Sided = facetSideType->GetSelectedIndex();
 
+    if(desorbType == DES_ANGLEMAP && facetAdvParams->IsAngleMapRecording()){
+        char errMsg[512];
+        sprintf(errMsg, "Angle map can't be used for DESORPTION and RECORDING\n");
+        GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
+        return;
+    }
+
 	//Check complete, let's apply
 	if (facetAdvParams && facetAdvParams->IsVisible()) {
 		if (!facetAdvParams->Apply()) {
 			return;
 		}
 	}
+
 	if (!AskToReset()) return;
 	
 	changedSinceSave = true;
@@ -975,8 +983,10 @@ int MolFlow::FrameMove()
 	}
 	else {
 	    double current_avg = hps.avg();
-        if(!runningState) current_avg = hps_runtotal.avg();
-        else current_avg = (current_avg != 0.0) ? current_avg : hps.last();
+        if(!runningState)
+            current_avg = hps_runtotal.avg();
+        else
+            current_avg = (current_avg != 0.0) ? current_avg : hps.last();
 
         sprintf(tmp, "%s (%s)", Util::formatInt(worker.globalHitCache.globalHits.nbMCHit, "hit"),
                 Util::formatPs(current_avg, "hit"));
@@ -1073,7 +1083,7 @@ void MolFlow::ExportProfiles() {
 		try {
 			worker.ExportProfiles(saveFile.c_str());
 		}
-		catch(std::exception &e) {
+		catch(const std::exception &e) {
 			char errMsg[512];
 			sprintf(errMsg, "%s\nFile:%s", e.what(), saveFile.c_str());
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1087,13 +1097,15 @@ void MolFlow::ExportAngleMaps() {
 
 	if (!profFile.empty()) {
 		try {
-			std::vector<std::string> exportList = worker.ExportAngleMaps(profFile, false);
+			auto retVal = worker.ExportAngleMaps(profFile, false);
+			if (!retVal) return; //user cancel or error
+			std::vector<std::string> exportList = *retVal; //vector of fileNames, might be empty
             if (exportList.empty()) {
                 GLMessageBox::Display("Select at least one facet with recorded angle map", "Error", GLDLG_OK, GLDLG_ICONERROR);
                 return;
             }
 		}
-		catch(std::exception &e) {
+		catch(const std::exception &e) {
 			char errMsg[512];
 			sprintf(errMsg, "%s\nFile:%s", e.what(), profFile.c_str());
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1125,7 +1137,7 @@ void MolFlow::ImportAngleMaps(){
 			worker.GetGeometry()->GetFacet(selFacets[i])->ImportAngleMap(table);
 			worker.Reload();
 		}
-		catch(std::exception &e) {
+		catch(const std::exception &e) {
 				char errMsg[512];
 				sprintf(errMsg, "%s\nFile:%s", e.what(), fileNames[i].c_str());
 				GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1141,7 +1153,7 @@ void MolFlow::CopyAngleMapToClipboard()
 	bool found = false;
 	for (size_t i = 0; i < geom->GetNbFacet(); i++) {
 		InterfaceFacet* f = geom->GetFacet(i);
-		if (f->selected && f->sh.anglemapParams.hasRecorded) {
+		if (f->selected && !f->angleMapCache.empty()) {
 			if (found) {
 				GLMessageBox::Display("More than one facet with recorded angle map selected", "Error", GLDLG_OK, GLDLG_ICONERROR);
 				return;
@@ -1162,7 +1174,7 @@ void MolFlow::CopyAngleMapToClipboard()
 	}*/
 
 		try {
-			std::string map = geom->GetFacet(angleMapFacetIndex)->GetAngleMap(2);
+			std::string map = geom->GetFacet(angleMapFacetIndex)->GetAngleMap(2); //Clipboard format: tab-separated (format==2)
 			if (map.length() > (10 * 1024 * 1024)) {
 				if (GLMessageBox::Display("Angle map text over 10MB. Copy to clipboard?", "Warning", GLDLG_OK | GLDLG_CANCEL, GLDLG_ICONWARNING) != GLDLG_OK)
 					return;
@@ -1171,7 +1183,7 @@ void MolFlow::CopyAngleMapToClipboard()
 			GLToolkit::CopyTextToClipboard(map);
 
 		}
-		catch(std::exception &e) {
+		catch(const std::exception &e) {
 			GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 		}
 }
@@ -1181,9 +1193,8 @@ void MolFlow::ClearAngleMapsOnSelection() {
 		Geometry *geom = worker.GetGeometry();
 		for (size_t i = 0; i < geom->GetNbFacet(); i++) {
 			InterfaceFacet* f = geom->GetFacet(i);
-			if (f->selected && f->sh.anglemapParams.hasRecorded) {
+			if (f->selected && !f->angleMapCache.empty()) {
 				f->angleMapCache.clear();
-				f->sh.anglemapParams.hasRecorded = false;
 			}
 		}
 	//}
@@ -1199,7 +1210,7 @@ void MolFlow::ImportDesorption_DES() {
 		try {
 			worker.ImportDesorption_DES(fn->fullName);
 		}
-		catch(std::exception &e) {
+		catch(const std::exception &e) {
 			char errMsg[512];
 			sprintf(errMsg, "%s\nFile:%s", e.what(), fn->fullName);
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1223,7 +1234,7 @@ void MolFlow::SaveFile() {
 			worker.SaveGeometry(worker.fullFileName, progressDlg2, false);
 			ResetAutoSaveTimer();
 		}
-		catch(std::exception &e) {
+		catch(const std::exception &e) {
 			char errMsg[512];
 			sprintf(errMsg, "%s\nFile:%s", e.what(), worker.GetCurrentFileName().c_str());
 			GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -1247,17 +1258,25 @@ void MolFlow::LoadFile(const std::string &fileName) {
         filePath = fileName;
 	}
 
+	if (filePath.empty()) return; //User closed Open... dialog
+
+	if (!FileUtils::Exist(filePath)) {
+		auto answer = GLMessageBox::Display(
+			fmt::format("{}\nDoesn't exist. Remove from the Recent files menu?",filePath),
+			"No such file",
+			{ "Yes","No" },
+			GLDLG_ICONERROR);
+		if (answer == 0) { //"Yes"
+			RemoveRecent(filePath.c_str());
+		}
+		return;
+	}
+
 	auto *progressDlg2 = new GLProgress("Preparing to load file...", "Please wait");
 	progressDlg2->SetVisible(true);
 	progressDlg2->SetProgress(0.0);
 	//GLWindowManager::Repaint();
 
-	if (filePath.empty()) {
-		progressDlg2->SetVisible(false);
-		SAFE_DELETE(progressDlg2);
-		return;
-	}
-	
 	fileShortName = FileUtils::GetFilename(filePath);
 
 	try {
@@ -1330,7 +1349,7 @@ void MolFlow::LoadFile(const std::string &fileName) {
 		if (formulaEditor) formulaEditor->Refresh();
 		if (parameterEditor) parameterEditor->Refresh();
 	}
-	catch(std::exception &e) {
+	catch(const std::exception &e) {
 
 		char errMsg[512];
 		sprintf(errMsg, "%s\nFile:%s", e.what(), fileShortName.c_str());
@@ -1429,7 +1448,7 @@ void MolFlow::InsertGeometry(bool newStr, const std::string &fileName) {
 		if (formulaEditor) formulaEditor->Refresh();
 		if (parameterEditor) parameterEditor->Refresh();
 	}
-	catch(std::exception &e) {
+	catch(const std::exception &e) {
 
 		char errMsg[512];
 		sprintf(errMsg, "%s\nFile:%s", e.what(), fileShortName.c_str());
@@ -1915,7 +1934,7 @@ void MolFlow::BuildPipe(double ratio, int steps) {
 		worker.model->wp.globalHistogramParams = HistogramParams();
         ResetSimulation(false);
     }
-	catch(std::exception &e) {
+	catch(const std::exception &e) {
 		GLMessageBox::Display((char *)e.what(), "Error building pipe", GLDLG_OK, GLDLG_ICONERROR);
 		geom->Clear();
         ResetSimulation(false);
@@ -1989,7 +2008,7 @@ void MolFlow::EmptyGeometry() {
 		worker.ResetMoments();
 		worker.model->wp.globalHistogramParams = HistogramParams();
 	}
-	catch(std::exception &e) {
+	catch(const std::exception &e) {
 		GLMessageBox::Display(e.what(), "Error resetting geometry", GLDLG_OK, GLDLG_ICONERROR);
 		geom->Clear();
 		return;
@@ -2360,8 +2379,8 @@ void MolFlow::SaveConfig() {
         f->Write("useOldXMLFormat:"); f->Write(useOldXMLFormat, "\n");
 		WRITEI("showTP", showTP);
     }
-	catch(std::exception &err) {
-		GLMessageBox::Display(err.what(), "Error saving config file", GLDLG_OK, GLDLG_ICONWARNING);
+	catch(const std::exception& e) {
+		GLMessageBox::Display(e.what(), "Error saving config file", GLDLG_OK, GLDLG_ICONWARNING);
 	}
 
 	SAFE_DELETE(f);
@@ -2400,7 +2419,7 @@ void MolFlow::calcSticking() {
 	facetSticking->SetText(sticking);
 }
 
-void MolFlow::CrashHandler(std::exception& e) {
+void MolFlow::CrashHandler(const std::exception &e) {
 	char tmp[1024];
 	sprintf(tmp, "Well, that's embarrassing. Molflow crashed and will exit now.\nBefore that, an autosave will be attempted.\nHere is the error info:\n\n%s", e.what());
 	GLMessageBox::Display(tmp, "Main crash handler", GLDLG_OK, GLDGL_ICONDEAD);
@@ -2410,8 +2429,8 @@ void MolFlow::CrashHandler(std::exception& e) {
 		else
 			GLMessageBox::Display("Sorry, I couldn't even autosave.", "Main crash handler", GLDLG_OK, GLDGL_ICONDEAD);
 	}
-	catch(std::exception &err) {
-        sprintf(tmp, "Sorry, I couldn't even autosave:\n\n%s", err.what());
+	catch(const std::exception& e) {
+        sprintf(tmp, "Sorry, I couldn't even autosave:\n\n%s", e.what());
         GLMessageBox::Display(tmp, "Main crash handler", GLDLG_OK, GLDGL_ICONDEAD);
 	}
 }
@@ -2469,9 +2488,10 @@ void MolFlow::UpdateFacetHits(bool allRows) {
 				if (facetId == -2) facetId = (int)i;
 				if (i >= geom->GetNbFacet()) {
 					char errMsg[512];
-					sprintf(errMsg, "Molflow::UpdateFacetHits()\nError while updating facet hits. Was looking for facet #%d in list.\nMolflow will now autosave and crash.", i + 1);
+					sprintf(errMsg, "Molflow::UpdateFacetHits()\nError while updating facet hits. Was looking for facet #%d (/%zu) in list.\nMolflow will now autosave and crash.", i + 1, geom->GetNbFacet());
 					GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 					AutoSave();
+                    throw std::runtime_error(errMsg);
 				}
 				InterfaceFacet *f = geom->GetFacet(facetId);
 				sprintf(tmp, "%d", facetId + 1);
@@ -2488,7 +2508,7 @@ void MolFlow::UpdateFacetHits(bool allRows) {
 
 		}
 	}
-	catch(std::exception &e) {
+	catch(const std::exception &e) {
 		char errMsg[512];
 		sprintf(errMsg, "%s\nError while updating facet hits", e.what());
 		GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);

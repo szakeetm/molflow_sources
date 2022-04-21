@@ -1,7 +1,7 @@
 /*
 Program:     MolFlow+ / Synrad+
 Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
-Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
 Copyright:   E.S.R.F / CERN
 Website:     https://cern.ch/molflow
 
@@ -17,6 +17,13 @@ GNU General Public License for more details.
 
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
+
+// M_PI define
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+#define _USE_MATH_DEFINES // activate defines, e.g. M_PI_2
+#endif
+#include <cmath>
+
 #include "MolflowGeometry.h"
 #include "MolFlow.h"
 #include "Facet_shared.h"
@@ -26,7 +33,6 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "ConvergencePlotter.h"
 #include "versionId.h"
 #include <iomanip>
-#include <cmath>
 #include <cfloat> // DBL_EPSILON
 
 #include <cereal/types/vector.hpp>
@@ -176,7 +182,7 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 	try{
 	    facets.resize(sh.nbFacet, nullptr);
 	}
-	catch(std::exception& e) {
+	catch(const std::exception &e) {
         throw Error("Couldn't allocate memory for facets");
     }
 
@@ -265,6 +271,127 @@ void  MolflowGeometry::BuildPipe(double L, double R, double s, int step) {
 		throw Error("Unspecified Error while building pipe");
 	}
 	InitializeGeometry();
+    InitializeInterfaceGeometry();
+}
+
+/**
+* \brief Testing purpose function, construct an angled PRISMA
+* \param L length
+* \param R radius
+* \param s sticking value
+* \param step number of facets used to construct the circular hull
+*/
+void  MolflowGeometry::BuildPrisma(double L, double R, double angle, double s, int step) {
+    Clear();
+
+    //mApp->ClearAllSelections();
+    //mApp->ClearAllViews();
+
+    int nbDecade = 0;
+    int nbTF = 9 * nbDecade;
+    int nbTV = 4 * nbTF;
+
+    sh.nbVertex = 2 * step + nbTV;
+    std::vector<InterfaceVertex>(sh.nbVertex).swap(vertices3);
+
+    sh.nbFacet = step + 2 + nbTF;
+
+
+    sh.nbSuper = 1;
+    strName[0] = strdup("Prisma");
+
+    try{
+        facets.resize(sh.nbFacet, nullptr);
+    }
+    catch(const std::exception &e) {
+        throw Error("Couldn't allocate memory for facets");
+    }
+
+    // Vertices
+    for (int i = 0; i < step; i++) {
+        double step_angle = (double)i / (double)step * 2 * PI;
+        vertices3[2 * i + nbTV].x = R * cos(step_angle);
+        vertices3[2 * i + nbTV].y = R * sin(step_angle);
+        vertices3[2 * i + nbTV].z = 0;
+        vertices3[2 * i + 1 + nbTV].x = R * cos(step_angle);
+        vertices3[2 * i + 1 + nbTV].y = R * sin(step_angle) + L * cos(M_PI_2 - angle);
+        vertices3[2 * i + 1 + nbTV].z = L * cos(angle);
+    }
+
+    try {
+        // Cap facet
+        facets[0 + nbTF] = new InterfaceFacet(step);
+        facets[0 + nbTF]->sh.sticking = 1.0;
+        facets[0 + nbTF]->sh.desorbType = DES_COSINE;
+        facets[0 + nbTF]->sh.outgassing = 1.0;
+        for (int i = 0; i < step; i++)
+            facets[0 + nbTF]->indices[i] = 2 * i + nbTV;
+
+        facets[1 + nbTF] = new InterfaceFacet(step);
+        facets[1 + nbTF]->sh.sticking = 1.0;
+        facets[1 + nbTF]->sh.desorbType = DES_NONE;
+        for (int i = 0; i < step; i++)
+            facets[1 + nbTF]->indices[step - i - 1] = 2 * i + 1 + nbTV;
+
+        // Wall facet
+        for (int i = 0; i < step; i++) {
+            facets[i + 2 + nbTF] = new InterfaceFacet(4);
+            //facets[i + 2 + nbTF]->wp.reflection.diffusePart = 1.0; //constructor does this already
+            //facets[i + 2 + nbTF]->wp.reflection.specularPart = 0.0; //constructor does this already
+            facets[i + 2 + nbTF]->sh.sticking = s;
+            facets[i + 2 + nbTF]->indices[0] = 2 * i + nbTV;
+            facets[i + 2 + nbTF]->indices[1] = 2 * i + 1 + nbTV;
+            if (i < step - 1) {
+                facets[i + 2 + nbTF]->indices[2] = 2 * (i + 1) + 1 + nbTV;
+                facets[i + 2 + nbTF]->indices[3] = 2 * (i + 1) + nbTV;
+            }
+            else {
+
+                facets[i + 2 + nbTF]->indices[2] = 1 + nbTV;
+                facets[i + 2 + nbTF]->indices[3] = 0 + nbTV;
+            }
+        }
+
+        // Volatile facet
+        for (int d = 0; d < nbDecade; d++) {
+            for (int i = 0; i < 9; i++) {
+
+                double z = (double)(i + 1) * pow(10, (double)d);
+                int idx = d * 36 + i * 4;
+
+                vertices3[idx + 0].x = -R;
+                vertices3[idx + 0].y = R;
+                vertices3[idx + 0].z = z;
+                vertices3[idx + 1].x = R;
+                vertices3[idx + 1].y = R;
+                vertices3[idx + 1].z = z;
+                vertices3[idx + 2].x = R;
+                vertices3[idx + 2].y = -R;
+                vertices3[idx + 2].z = z;
+                vertices3[idx + 3].x = -R;
+                vertices3[idx + 3].y = -R;
+                vertices3[idx + 3].z = z;
+
+                facets[9 * d + i] = new InterfaceFacet(4);
+                facets[9 * d + i]->sh.sticking = 0.0;
+                facets[9 * d + i]->sh.opacity = 0.0;
+                facets[9 * d + i]->sh.isVolatile = true;
+                facets[9 * d + i]->indices[0] = idx + 0;
+                facets[9 * d + i]->indices[1] = idx + 1;
+                facets[9 * d + i]->indices[2] = idx + 2;
+                facets[9 * d + i]->indices[3] = idx + 3;
+
+            }
+        }
+    }
+    catch (std::bad_alloc) {
+        Clear();
+        throw Error("Couldn't reserve memory for the facets");
+    }
+    catch (...) {
+        throw Error("Unspecified Error while building pipe");
+    }
+    InitializeGeometry();
     InitializeInterfaceGeometry();
 }
 
@@ -414,7 +541,7 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
     try{
         facets.resize(nbNewFacets + sh.nbFacet, nullptr);
     }
-    catch(std::exception& e) {
+    catch(const std::exception &e) {
         throw Error("Couldn't allocate memory for facets");
     }
 
@@ -809,7 +936,7 @@ void MolflowGeometry::LoadGEO(FileReader *file, GLProgress *prg, int *version, W
     try{
         facets.resize(sh.nbFacet, nullptr);
     }
-    catch(std::exception& e) {
+    catch(const std::exception &e) {
         throw Error("Couldn't allocate memory for facets");
     }
 	std::vector<InterfaceVertex>(sh.nbVertex).swap(vertices3);
@@ -1078,7 +1205,7 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
     try{
         facets.resize(sh.nbFacet, nullptr);
     }
-    catch(std::exception& e) {
+    catch(const std::exception &e) {
         throw Error("Couldn't allocate memory for facets");
     }
 
@@ -2916,7 +3043,7 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
     try{
         facets.resize(sh.nbFacet, nullptr);
     }
-    catch(std::exception& e) {
+    catch(const std::exception &e) {
         throw Error("Couldn't allocate memory for facets");
     }
 
@@ -3047,9 +3174,9 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 
 		xml_node userMomentsNode = timeSettingsNode.child("UserMoments");
 		for (xml_node newUserEntry : userMomentsNode.children("UserEntry")) {
-			char tmpExpr[512];
+			std::string tmpExpr;
 			double tmpWindow = 0.0;
-			strcpy(tmpExpr, newUserEntry.attribute("content").as_string());
+			tmpExpr = newUserEntry.attribute("content").as_string();
 			tmpWindow = newUserEntry.attribute("window").as_double();
             work->userMoments.emplace_back(tmpExpr,tmpWindow);
             // Add real moments only after fully loading the file, because we only want to throw a warning and not an error
@@ -3143,7 +3270,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
     try{
         facets.resize(nbNewFacets + sh.nbFacet, nullptr);
     }
-    catch(std::exception& e) {
+    catch(const std::exception &e) {
         throw Error("Couldn't allocate memory for facets");
     }
 
@@ -3174,7 +3301,7 @@ void MolflowGeometry::InsertXML(pugi::xml_node loadXML, Worker *work, GLProgress
 		strName[sh.nbSuper + idx] = strdup(structure.attribute("name").value());
 		// For backward compatibilty with STR
 		char tmp[256];
-		sprintf(tmp, "%s.txt", strName[idx]);
+        snprintf(tmp, 256, "%s", fmt::format("{}.txt",strName[idx]).c_str()); // For backward compatibility with STR
 		strFileName[sh.nbSuper + idx] = strdup(tmp);
 		idx++;
 	}
@@ -3826,7 +3953,7 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState 
                 nbDes = stringToNumber<size_t>(line.substr(0, posOfTab));
                 convVal = stringToNumber<double>(line.substr(posOfTab+1));
             }
-            catch (std::exception& e){
+            catch (const std::exception &e){
                 // Just write an error and move to next line e.g. when fail on inf/nan
                 std::cerr << "[XML][Convergence] Parsing error: "<<e.what()<< std::endl;
                 continue;
@@ -3843,13 +3970,19 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState 
 }
 
 bool MolflowGeometry::InitOldStruct(SimulationModel* model){
-    for(int i= 0; i < std::min((int)model->structures.size(),(int)MAX_SUPERSTR); ++i){
-        strName[i] = new char[std::min((int)model->structures[i].strName.size(),(int)256)];
-        strFileName[i] = new char[std::min((int)model->structures[i].strFileName.size(),(int)256)];
-        std::strncpy(strName[i], model->structures[i].strName.c_str(), std::min((int)model->structures[i].strName.size(),(int)256));
-        std::strncpy(strFileName[i], model->structures[i].strFileName.c_str(), std::min((int)model->structures[i].strFileName.size(),(int)256));
-        strName[i][std::min((int)model->structures[i].strName.size(),(int)256)] = '\0';
-        strFileName[i][std::min((int)model->structures[i].strFileName.size(),(int)256)] = '\0';
+    for (int i = 0; i < MAX_SUPERSTR; i++) {
+        SAFE_FREE(strName[i]);
+        SAFE_FREE(strFileName[i]);
+    }
+    memset(strName, 0, MAX_SUPERSTR * sizeof(char *));
+    memset(strFileName, 0, MAX_SUPERSTR * sizeof(char *));
+    for(size_t i = 0; i < std::min((int)model->structures.size(),(int)MAX_SUPERSTR); ++i){
+        strName[i] = (char*)malloc(std::min((size_t)model->structures[i].strName.size()+1,(size_t)256) * sizeof(char));
+        strFileName[i] = (char*)malloc(std::min((size_t)model->structures[i].strFileName.size()+1,(size_t)256) * sizeof(char));
+        std::strncpy(strName[i], model->structures[i].strName.c_str(), std::min((size_t)model->structures[i].strName.size(),(size_t)256));
+        std::strncpy(strFileName[i], model->structures[i].strFileName.c_str(), std::min((size_t)model->structures[i].strFileName.size(),(size_t)256));
+        strName[i][std::min((size_t)model->structures[i].strName.size(),(size_t)256)] = '\0';
+        strFileName[i][std::min((size_t)model->structures[i].strFileName.size(),(size_t)256)] = '\0';
     }
 
     return true;

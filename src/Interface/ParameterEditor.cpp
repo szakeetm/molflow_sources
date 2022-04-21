@@ -1,7 +1,7 @@
 /*
 Program:     MolFlow+ / Synrad+
 Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
-Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
 Copyright:   E.S.R.F / CERN
 Website:     https://cern.ch/molflow
 
@@ -158,34 +158,34 @@ ParameterEditor::ParameterEditor(Worker *w):GLWindow() {
   cursorX += buttonWidth + hSpace;
   loadCSVbutton = new GLButton(0, "Load CSV file");
   loadCSVbutton->SetBounds(cursorX, cursorY, buttonWidth, compHeight);
-  
+
   Add(loadCSVbutton);
   cursorX += buttonWidth + hSpace;
 
   cursorX = wD-2*buttonWidth-2*hSpace;
   plotButton = new GLButton(0, "Plot");
   plotButton->SetBounds(cursorX, cursorY, buttonWidth, compHeight);
-  
+
   Add(plotButton);
 
   cursorX += buttonWidth + hSpace;
   applyButton = new GLButton(0, "Apply");
   applyButton->SetBounds(cursorX, cursorY, buttonWidth, compHeight);
-  
+
   Add(applyButton);
 
   Refresh();
-  
+
   // Center dialog
   int wS,hS;
   GLToolkit::GetScreenSize(&wS,&hS);
   int xD = (wS-wD)/2;
   int yD = (hS-hD)/2;
   SetBounds(xD,yD,wD,hD);
-  
+
 
   RestoreDeviceObjects();
-  
+
 }
 
 /**
@@ -374,7 +374,7 @@ void ParameterEditor::LoadCSV() {
 		table = f->ImportCSV_string();
         SAFE_DELETE(f);
 	}
-	catch (Error &e) {
+	catch (const std::exception &e) {
 		char errMsg[512];
 		sprintf(errMsg, "Failed to load CSV file.\n%s",e.what());
 		GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -474,7 +474,7 @@ bool ParameterEditor::ValidateInput() {
 			return false;
 		}
 	}
-	
+
 	/*
 	for (int i = 0; i < 1; i++) {
 		StringClass test;
@@ -490,18 +490,18 @@ bool ParameterEditor::ValidateInput() {
 		double valueX, valueY;
 		try {
 			valueX = ::atof(userValues[row].first.c_str());
-		} catch (std::exception err){
+		} catch (const std::exception& e){
 			char tmp[256];
-			sprintf(tmp, "Can't parse value \"%s\" in row %zd, first column:\n%s", userValues[row].first.c_str(), row+1, err.what());
+			sprintf(tmp, "Can't parse value \"%s\" in row %zd, first column:\n%s", userValues[row].first.c_str(), row+1, e.what());
 			GLMessageBox::Display(tmp, "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
 			return false;
 		}
 		try {
 			valueY = ::atof(userValues[row].second.c_str());
 		}
-		catch (std::exception err){
+		catch (const std::exception& e){
 			char tmp[256];
-			sprintf(tmp, "Can't parse value \"%s\" in row %zd, second column:\n%s", userValues[row].second.c_str(), row+1, err.what());
+			sprintf(tmp, "Can't parse value \"%s\" in row %zd, second column:\n%s", userValues[row].second.c_str(), row+1, e.what());
 			GLMessageBox::Display(tmp, "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);
 			return false;
 		}
@@ -515,7 +515,7 @@ bool ParameterEditor::ValidateInput() {
 
 	for (size_t i = 0; i < tempParam.GetSize();i++) {
 		for (size_t j = i+1; j < tempParam.GetSize(); j++) {
-			if (IsEqual(tempParam.GetX(i) , tempParam.GetX(j))) {
+			if (IsEqual(tempParam.GetX(i) , tempParam.GetX(j), 1e-9)) {
 				std::stringstream msg;
 				msg << "There are two values for t=" << tempParam.GetX(i) << "s.";
 				GLMessageBox::Display(msg.str().c_str(), "Invalid parameter definition", GLDLG_OK, GLDLG_ICONWARNING);

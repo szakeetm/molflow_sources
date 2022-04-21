@@ -1,6 +1,22 @@
-//
-// Created by pascal on 2/9/21.
-//
+/*
+Program:     MolFlow+ / Synrad+
+Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
+Copyright:   E.S.R.F / CERN
+Website:     https://cern.ch/molflow
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
+*/
 
 #include <Helper/MathTools.h>
 #include "IDGeneration.h"
@@ -68,37 +84,37 @@ std::vector<std::pair<double, double>> Generate_ID(int paramId, SimulationModel 
         lastUserMomentBeforeLatestMoment = false;
     }
 
-//Construct integral from 0 to the simulation's latest moment
-    //First point: t=0, Q(0)=Q(t0)
-    ID.emplace_back(0.0, 0.0); //At t=0 no particles have desorbed yet
-    if (par.GetX(0) > 0.0) { //If the user starts later than t=0, copy first user value to t=0(const extrapolation)
-        myOutgassing.emplace_back(0.0, par.GetY(0));
-    } else { //user has set an outgassing at t=0, so just copy it to myOutgassing
-        myOutgassing.push_back(par.GetValues()[0]);
-    }
-    //Consecutive points: user-defined points that are before latestMoment
-    //We throw away user-defined moments after latestMoment:
-    //Example: we sample the system until t=10s but outgassing is defined until t=1000s -> ignore values after 10s
-    {
-        const auto &valuesCopy = par.GetValues();
-        if (lastUserMomentBeforeLatestMoment) {
-            myOutgassing.insert(myOutgassing.end(), valuesCopy.begin(), valuesCopy.end()); //copy all values...
-            myOutgassing.emplace_back(model->wp.latestMoment,
-                                      myOutgassing.back().second); //...and create last point equal to last outgassing (const extrapolation)
-        } else {
-            if (indexAfterLatestMoment > 0) {
-                myOutgassing.insert(myOutgassing.end(), valuesCopy.begin(),
-                                    valuesCopy.begin() + (int)indexAfterLatestMoment -
-                                    1); //copy values that are before latestMoment
-            }
-            if (!IsEqual(myOutgassing.back().first, model->wp.latestMoment)) { //if interpolation is needed
-                myOutgassing.emplace_back(model->wp.latestMoment,
-                                          InterpolateY(model->wp.latestMoment, valuesCopy, par.logXinterp,
-                                                       par.logYinterp)); //interpolate outgassing value to t=latestMoment
-            }
-        }
+	//Construct integral from 0 to the simulation's latest moment
+	//First point: t=0, Q(0)=Q(t0)
+	ID.emplace_back(0.0, 0.0); //At t=0 no particles have desorbed yet
+	if (par.GetX(0) > 0.0) { //If the user starts later than t=0, copy first user value to t=0(const extrapolation)
+		myOutgassing.emplace_back(0.0, par.GetY(0));
+	} //else no action needed, since there is already a moment defined at t=0, will be copied to myOutgassing with the other user-def values
 
-    } //valuesCopy goes out of scope
+
+	//Consecutive points: user-defined points that are before latestMoment
+	//We throw away user-defined moments after latestMoment:
+	//Example: we sample the system until t=10s but outgassing is defined until t=1000s -> ignore values after 10s
+	{
+		const auto& valuesCopy = par.GetValues();
+		if (lastUserMomentBeforeLatestMoment) {
+			myOutgassing.insert(myOutgassing.end(), valuesCopy.begin(), valuesCopy.end()); //copy all values...
+			myOutgassing.emplace_back(model->wp.latestMoment,
+				myOutgassing.back().second); //...and create last point equal to last outgassing (const extrapolation)
+		}
+		else {
+			if (indexAfterLatestMoment > 0) {
+				myOutgassing.insert(myOutgassing.end(), valuesCopy.begin(),
+					valuesCopy.begin() + (int)indexAfterLatestMoment); //copy values that are before latestMoment
+			}
+			if (!IsEqual(myOutgassing.back().first, model->wp.latestMoment)) { //if interpolation is needed
+				myOutgassing.emplace_back(model->wp.latestMoment,
+					InterpolateY(model->wp.latestMoment, valuesCopy, par.logXinterp,
+						par.logYinterp)); //interpolate outgassing value to t=latestMoment
+			}
+		}
+
+	} //valuesCopy goes out of scope
 
     //Intermediate moments, from first to t=latestMoment
     for (size_t i = 1; i < myOutgassing.size(); i++) { //myOutgassing[0] is always at t=0, skipping
