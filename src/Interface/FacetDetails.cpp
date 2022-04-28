@@ -284,16 +284,16 @@ char *FacetDetails::FormatCell(size_t idx, InterfaceFacet *f, size_t mode) {
   strcpy(ret,"");
 
   switch(mode) {
-    case 0:
+    case 0: //index
       sprintf(ret,"%zd",idx+1);
       break;
-    case 1:
+    case 1: //sticking factor
       sprintf(ret,"%g",f->sh.sticking);
       break;
-    case 2:
+    case 2: //opacity
       sprintf(ret,"%g",f->sh.opacity);
       break;
-    case 3:
+    case 3: //Structure
 	{
 		std::ostringstream out;
 		if (f->sh.superIdx == -1) out << "All";
@@ -301,10 +301,10 @@ char *FacetDetails::FormatCell(size_t idx, InterfaceFacet *f, size_t mode) {
 		sprintf(ret, "%s", out.str().c_str());
 		break;
 	}
-    case 4:
+    case 4: //Link destination
       sprintf(ret,"%zd",f->sh.superDest);
       break;
-    case 5:
+    case 5: //Desorption type
 	  if (f->sh.desorbType == DES_COSINE_N)
 	  {
 		  sprintf(ret, "%s%g", desStr[f->sh.desorbType], f->sh.desorbTypeN); //append exponent
@@ -314,48 +314,48 @@ char *FacetDetails::FormatCell(size_t idx, InterfaceFacet *f, size_t mode) {
 		  sprintf(ret, "%s", desStr[f->sh.desorbType]);
 	  }
       break;
-    case 6:
+    case 6: //Reflection type
       sprintf(ret,"%g diff. %g spec. %g cos^%g",f->sh.reflection.diffusePart,f->sh.reflection.specularPart,1.0-f->sh.reflection.diffusePart-f->sh.reflection.specularPart,f->sh.reflection.cosineExponent);
       break;
-    case 7:
+    case 7: //2-sided
       sprintf(ret,"%s",ynStr[f->sh.is2sided]);      
       break;
-    case 8:
+    case 8: //Nb of vertex
       sprintf(ret,"%zd",f->sh.nbIndex);
       break;
-    case 9:
+    case 9: //Area
 		if (f->sh.is2sided) sprintf(ret,"2*%g",f->sh.area);
 		else sprintf(ret,"%g",f->sh.area);
       break;
-	case 10:
+	case 10: //Temperature
 		sprintf(ret, "%g", f->sh.temperature);
 		break;
-    case 11:
+    case 11: //2D box
       sprintf(ret,"%g x %g",f->sh.U.Norme(),f->sh.V.Norme());
       break;
-    case 12:
+    case 12: //Texture type
       if( f->sh.isTextured ) {
         sprintf(ret,"%zdx%zd (%g x %g)",f->sh.texWidth,f->sh.texHeight,f->sh.texWidth_precise,f->sh.texHeight_precise);
       } else {
         sprintf(ret,"None");
       }
       break;
-    case 13:
+    case 13: //Texture sample/cm
         if(IsEqual(f->tRatioU,f->tRatioV))
             sprintf(ret,"%g",f->tRatioU);
         else
             sprintf(ret,"%g x %g",f->tRatioU,f->tRatioV);
       break;
-    case 14:
+    case 14: //Texture record type
       sprintf(ret,"%s",GetCountStr(f));
       break;
-    case 15:
+    case 15: //Texture memory
 		sprintf(ret,"%s",FormatMemory(f->GetTexRamSize(1+worker->moments.size())));
       break;
-    case 16:
+    case 16: //Planarity
       sprintf(ret,"%f",f->planarityError);
       break;
-    case 17:
+    case 17: //Profile type
 		sprintf(ret,"%s",profStr[f->sh.profileType]);
 		break;
 	case 18: //imp.rate
@@ -389,18 +389,30 @@ char *FacetDetails::FormatCell(size_t idx, InterfaceFacet *f, size_t mode) {
 		//<v_surf>=2*<v_surf_ort>
 		//<v_gas>=1/<1/v_surf>
 		break;
-	case 23:
+	case 23: //MC Hits
 		sprintf(ret,"%zd",f->facetHitCache.nbMCHit);
 		break;
-	case 24:
+	case 24: //Equiv. hits (low-flux)
 		sprintf(ret, "%g", f->facetHitCache.nbHitEquiv);
 		break;
-	case 25:
+	case 25: //Des Abs.
 		sprintf(ret,"%zd",f->facetHitCache.nbDesorbed);
 		break;
-	case 26:
+	case 26: //MC Abs.
 		sprintf(ret,"%g",f->facetHitCache.nbAbsEquiv);
 		break;
+    case 27: //Force
+        auto force = f->facetHitCache.impulse * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000);
+        strcpy(ret,fmt::format("{}N ({},{},{}) ",force.Norme(),force.x,force.y,force.z).c_str());
+        break;
+    case 28: //Force^2
+        auto force_sqr = f->facetHitCache.impulse_square * worker->GetMoleculesPerTP(worker->displayedMoment) * Sqr(worker->model->wp.gasMass / 1000);
+        strcpy(ret, fmt::format("{} N^2 ({},{},{}) ", force_sqr.Norme(), force_sqr.x, force_sqr.y, force_sqr.z).c_str());
+        break;
+    case 29: //Torque
+        auto torque = f->facetHitCache.impulse_momentum * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000);
+        strcpy(ret, fmt::format("{}N ({},{},{}) ", torque.Norme(), torque.x, torque.y, torque.z).c_str());
+        break;
   }
 
   return ret;
