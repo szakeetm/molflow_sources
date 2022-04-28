@@ -15,6 +15,7 @@ WorkerParams::WorkerParams(){
     halfLife = 1;
     finalOutgassingRate = finalOutgassingRate_Pa_m3_sec = totalDesorbedMolecules = 0.0;
     motionType = 0;
+    torqueAxis = Vector3d(0.0, 0.0, 1.0); //Z axis
 }
 
 OntheflySimulationParams::OntheflySimulationParams(){

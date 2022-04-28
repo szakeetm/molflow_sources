@@ -2606,6 +2606,14 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 		v2.append_attribute("z") = work->model->wp.motionVector2.z;
 	}
 
+	auto torqueNode = simuParamNode.child("Torque");
+	if (torqueNode) {
+		auto v = torqueNode.child("Axis");
+		model->wp.torqueAxis.x = v.attribute("x").as_double();
+		model->wp.torqueAxis.y = v.attribute("y").as_double();
+		model->wp.torqueAxis.z = v.attribute("z").as_double();
+	}
+
 	xml_node paramNode = simuParamNode.append_child("Parameters");
 	size_t nonCatalogParameters = 0;
 	
@@ -3232,6 +3240,14 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 			work->model->wp.motionVector2.y = v2.attribute("y").as_double();
 			work->model->wp.motionVector2.z = v2.attribute("z").as_double();
 		}
+	}
+
+	auto torqueNode = simuParamNode.child("Torque");
+	if (torqueNode) {
+		auto v = torqueNode.child("Axis");
+		work->model->wp.torqueAxis.x = v.attribute("x").as_double();
+		work->model->wp.torqueAxis.y = v.attribute("y").as_double();
+		work->model->wp.torqueAxis.z = v.attribute("z").as_double();
 	}
 
 	xml_node globalHistNode = simuParamNode.child("Global_histograms");
