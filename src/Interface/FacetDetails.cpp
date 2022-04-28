@@ -418,7 +418,7 @@ char *FacetDetails::FormatCell(size_t idx, InterfaceFacet *f, size_t mode) {
     case 27: //Force
     {
         auto force = f->facetHitCache.impulse * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000);
-        strcpy(ret, fmt::format("{}N ({},{},{}) ", force.Norme(), force.x, force.y, force.z).c_str());
+        strcpy(ret, fmt::format("{} N ({},{},{}) ", force.Norme(), force.x, force.y, force.z).c_str());
         break;
     }
     case 28: //Force^2
@@ -430,7 +430,7 @@ char *FacetDetails::FormatCell(size_t idx, InterfaceFacet *f, size_t mode) {
     case 29: //Torque
     {
         auto torque = f->facetHitCache.impulse_momentum * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000);
-        strcpy(ret, fmt::format("{}N ({},{},{}) ", torque.Norme(), torque.x, torque.y, torque.z).c_str());
+        strcpy(ret, fmt::format("{} Nm ({},{},{}) ", torque.Norme(), torque.x, torque.y, torque.z).c_str());
         break;
     }
   }
