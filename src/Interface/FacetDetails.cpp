@@ -67,9 +67,9 @@ static COLUMN allColumn[] = {
   {"Equiv.hits"           , 80 , ALIGN_CENTER, COLOR_BLUE } ,
   {"Des."           , 80 , ALIGN_CENTER, COLOR_BLUE } ,
   {"Equiv.abs."           , 80 , ALIGN_CENTER, COLOR_BLUE } ,
-  {"Force"           , 80 , ALIGN_CENTER, COLOR_BLUE } ,
-  {"Force^2"           , 80 , ALIGN_CENTER, COLOR_BLUE } ,
-  {"Torque"           , 80 , ALIGN_CENTER, COLOR_BLUE } ,
+  {"Force"           , 240 , ALIGN_CENTER, COLOR_BLUE } ,
+  {"Force^2"           , 240 , ALIGN_CENTER, COLOR_BLUE } ,
+  {"Torque"           , 240 , ALIGN_CENTER, COLOR_BLUE } ,
 };
 
 static const char *desStr[] = {
@@ -418,19 +418,19 @@ char *FacetDetails::FormatCell(size_t idx, InterfaceFacet *f, size_t mode) {
     case 27: //Force
     {
         auto force = f->facetHitCache.impulse * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23);
-        strcpy(ret, fmt::format("{} N ({},{},{}) ", force.Norme(), force.x, force.y, force.z).c_str());
+        strcpy(ret, fmt::format("{:.4g} N ({:.4g},{:.4g},{:.4g})", force.Norme(), force.x, force.y, force.z).c_str());
         break;
     }
     case 28: //Force^2
     {
         auto force_sqr = f->facetHitCache.impulse_square * worker->GetMoleculesPerTP(worker->displayedMoment) * Sqr(worker->model->wp.gasMass / 1000 / 6E23);
-        strcpy(ret, fmt::format("{} N^2 ({},{},{}) ", force_sqr.Norme(), force_sqr.x, force_sqr.y, force_sqr.z).c_str());
+        strcpy(ret, fmt::format("{:.4g} N^2 ({:.4g},{:.4g},{:.4g})", force_sqr.Norme(), force_sqr.x, force_sqr.y, force_sqr.z).c_str());
         break;
     }
     case 29: //Torque
     {
         auto torque = f->facetHitCache.impulse_momentum * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23);
-        strcpy(ret, fmt::format("{} Nm ({},{},{}) ", torque.Norme(), torque.x, torque.y, torque.z).c_str());
+        strcpy(ret, fmt::format("{:.4g} Nm ({:.4g},{:.4g},{:.4g})", torque.Norme(), torque.x, torque.y, torque.z).c_str());
         break;
     }
   }

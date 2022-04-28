@@ -177,10 +177,10 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Si
 
     auto torqueNode = simuParamNode.child("Torque");
     if (torqueNode) {
-        auto v = torqueNode.child("Axis");
-        model->wp.torqueAxis.x = v.attribute("x").as_double();
-        model->wp.torqueAxis.y = v.attribute("y").as_double();
-        model->wp.torqueAxis.z = v.attribute("z").as_double();
+        auto v = torqueNode.child("RefPoint");
+        model->wp.torqueRefPoint.x = v.attribute("x").as_double();
+        model->wp.torqueRefPoint.y = v.attribute("y").as_double();
+        model->wp.torqueRefPoint.z = v.attribute("z").as_double();
     }
 
     xml_node globalHistNode = simuParamNode.child("Global_histograms");

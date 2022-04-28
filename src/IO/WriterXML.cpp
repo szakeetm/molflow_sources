@@ -177,10 +177,10 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
     }
 
     auto torqueNode = simuParamNode.append_child("Torque");
-    auto v = torqueNode.append_child("Axis");
-    v.append_attribute("x") = model->wp.torqueAxis.x;
-    v.append_attribute("y") = model->wp.torqueAxis.y;
-    v.append_attribute("z") = model->wp.torqueAxis.z;
+    auto v = torqueNode.append_child("RefPoint");
+    v.append_attribute("x") = model->wp.torqueRefPoint.x;
+    v.append_attribute("y") = model->wp.torqueRefPoint.y;
+    v.append_attribute("z") = model->wp.torqueRefPoint.z;
 
     xml_node paramNode = simuParamNode.append_child("Parameters");
     size_t nonCatalogParameters = 0;

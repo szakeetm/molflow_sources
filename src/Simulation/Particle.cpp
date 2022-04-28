@@ -737,9 +737,10 @@ bool Particle::StartFromSource(Ray& ray) {
         lastMomentIndex = momentIndex - 1;
     }
 
-    auto velocityVector = velocity * ray.direction;
-    IncreaseFacetCounter(src, momentIndex, 0, 1, 0, 2.0 / ortVelocity,
-                         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,velocityVector,Vector3d(Sqr(velocityVector.x),Sqr(velocityVector.y),Sqr(velocityVector.z)),CrossProduct(model->wp.torqueAxis,velocityVector));
+	auto velocityVector = velocity * ray.direction;
+	IncreaseFacetCounter(src, momentIndex, 0, 1, 0, 2.0 / ortVelocity,
+		(model->wp.useMaxwellDistribution ? 1.0 : 1.1781)* ortVelocity,
+        velocityVector,	Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z)), CrossProduct(particle.origin - model->wp.torqueRefPoint, velocityVector));
     //Desorption doesn't contribute to angular profiles, nor to angle maps
     ProfileFacet(src, momentIndex, false, 2.0, 1.0); //was 2.0, 1.0
     LogHit(src);
@@ -1001,7 +1002,8 @@ bool Particle::StartFromSource() {
 
     auto velocityVector = velocity * particle.direction;
     IncreaseFacetCounter(src, momentIndex, 0, 1, 0, 2.0 / ortVelocity,
-        (model->wp.useMaxwellDistribution ? 1.0 : 1.1781)* ortVelocity, velocityVector, Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z)), CrossProduct(model->wp.torqueAxis, velocityVector));
+        (model->wp.useMaxwellDistribution ? 1.0 : 1.1781)* ortVelocity,
+        velocityVector, Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z)), CrossProduct(particle.origin - model->wp.torqueRefPoint, velocityVector));
     //Desorption doesn't contribute to angular profiles, nor to angle maps
     ProfileFacet(src, momentIndex, false, 2.0, 1.0); //was 2.0, 1.0
     LogHit(src);
@@ -1107,7 +1109,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
     auto velocityVector = velocity * particle.direction;
     IncreaseFacetCounter(iFacet, momentIndex, 0, 1, 0, 1.0 / ortVelocity,
         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity, velocityVector,
-        Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z)), CrossProduct(model->wp.torqueAxis, velocityVector));
+        Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z)), CrossProduct(particle.origin - model->wp.torqueRefPoint, velocityVector));
     nbBounces++;
     if (/*iFacet->texture &&*/ iFacet->sh.countRefl)
         RecordHitOnTexture(iFacet, momentIndex, true, 1.0, 1.0);
@@ -1163,7 +1165,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
     velocityVector = velocity * particle.direction;
     IncreaseFacetCounter(iFacet, momentIndex, 0, 0, 0, 1.0 / ortVelocity,
         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity, velocityVector,
-        Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z)), CrossProduct(model->wp.torqueAxis, velocityVector));
+        Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z)), CrossProduct(particle.origin - model->wp.torqueRefPoint, velocityVector));
     if (/*iFacet->texture &&*/ iFacet->sh.countRefl)
         RecordHitOnTexture(iFacet, momentIndex, false, 1.0,
                            1.0); //count again for outward velocity
@@ -1213,7 +1215,7 @@ void Particle::RecordAbsorb(SubprocessFacet *iFacet) {
     auto velocityVector = velocity * particle.direction;
     IncreaseFacetCounter(iFacet, momentIndex, 0, 1, 0, 2.0 / ortVelocity,
         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity, velocityVector,
-        Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z)), CrossProduct(model->wp.torqueAxis, velocityVector));
+        Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z)), CrossProduct(particle.origin - model->wp.torqueRefPoint, velocityVector));
     LogHit(iFacet);
     ProfileFacet(iFacet, momentIndex, true, 2.0, 1.0); //was 2.0, 1.0
     if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);

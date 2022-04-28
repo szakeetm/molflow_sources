@@ -2608,10 +2608,10 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 
 	auto torqueNode = simuParamNode.child("Torque");
 	if (torqueNode) {
-		auto v = torqueNode.child("Axis");
-		work->model->wp.torqueAxis.x = v.attribute("x").as_double();
-		work->model->wp.torqueAxis.y = v.attribute("y").as_double();
-		work->model->wp.torqueAxis.z = v.attribute("z").as_double();
+		auto v = torqueNode.child("RefPoint");
+		work->model->wp.torqueRefPoint.x = v.attribute("x").as_double();
+		work->model->wp.torqueRefPoint.y = v.attribute("y").as_double();
+		work->model->wp.torqueRefPoint.z = v.attribute("z").as_double();
 	}
 
 	xml_node paramNode = simuParamNode.append_child("Parameters");
@@ -3244,10 +3244,10 @@ void MolflowGeometry::LoadXML_geom(pugi::xml_node loadXML, Worker *work, GLProgr
 
 	auto torqueNode = simuParamNode.child("Torque");
 	if (torqueNode) {
-		auto v = torqueNode.child("Axis");
-		work->model->wp.torqueAxis.x = v.attribute("x").as_double();
-		work->model->wp.torqueAxis.y = v.attribute("y").as_double();
-		work->model->wp.torqueAxis.z = v.attribute("z").as_double();
+		auto v = torqueNode.child("RefPoint");
+		work->model->wp.torqueRefPoint.x = v.attribute("x").as_double();
+		work->model->wp.torqueRefPoint.y = v.attribute("y").as_double();
+		work->model->wp.torqueRefPoint.z = v.attribute("z").as_double();
 	}
 
 	xml_node globalHistNode = simuParamNode.child("Global_histograms");
