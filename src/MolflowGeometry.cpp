@@ -2609,9 +2609,9 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 	auto torqueNode = simuParamNode.child("Torque");
 	if (torqueNode) {
 		auto v = torqueNode.child("Axis");
-		model->wp.torqueAxis.x = v.attribute("x").as_double();
-		model->wp.torqueAxis.y = v.attribute("y").as_double();
-		model->wp.torqueAxis.z = v.attribute("z").as_double();
+		work->model->wp.torqueAxis.x = v.attribute("x").as_double();
+		work->model->wp.torqueAxis.y = v.attribute("y").as_double();
+		work->model->wp.torqueAxis.z = v.attribute("z").as_double();
 	}
 
 	xml_node paramNode = simuParamNode.append_child("Parameters");

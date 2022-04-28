@@ -737,8 +737,9 @@ bool Particle::StartFromSource(Ray& ray) {
         lastMomentIndex = momentIndex - 1;
     }
 
+    auto velocityVector = velocity * ray.direction;
     IncreaseFacetCounter(src, momentIndex, 0, 1, 0, 2.0 / ortVelocity,
-                         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
+                         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,velocityVector,Vector3d(Sqr(velocityVector.x),Sqr(velocityVector.y),Sqr(velocityVector.z)),CrossProduct(model->wp.torqueAxis,velocityVector));
     //Desorption doesn't contribute to angular profiles, nor to angle maps
     ProfileFacet(src, momentIndex, false, 2.0, 1.0); //was 2.0, 1.0
     LogHit(src);
@@ -998,8 +999,9 @@ bool Particle::StartFromSource() {
         lastMomentIndex = momentIndex - 1;
     }
 
+    auto velocityVector = velocity * ray.direction;
     IncreaseFacetCounter(src, momentIndex, 0, 1, 0, 2.0 / ortVelocity,
-                         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
+        (model->wp.useMaxwellDistribution ? 1.0 : 1.1781)* ortVelocity, velocityVector, Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z)), CrossProduct(model->wp.torqueAxis, velocityVector));
     //Desorption doesn't contribute to angular profiles, nor to angle maps
     ProfileFacet(src, momentIndex, false, 2.0, 1.0); //was 2.0, 1.0
     LogHit(src);
@@ -1101,8 +1103,11 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
         lastMomentIndex = momentIndex - 1;
     }
 
-    IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 0, 1.0 / ortVelocity,
-                         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
+
+    auto velocityVector = velocity * particle.direction;
+    IncreaseFacetCounter(iFacet, momentIndex, 0, 1, 0, 1.0 / ortVelocity,
+        (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity, velocityVector,
+        Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z)), CrossProduct(model->wp.torqueAxis, velocityVector));
     nbBounces++;
     if (/*iFacet->texture &&*/ iFacet->sh.countRefl)
         RecordHitOnTexture(iFacet, momentIndex, true, 1.0, 1.0);
@@ -1155,10 +1160,10 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
     //Register outgoing velocity
     ortVelocity = velocity * std::abs(Dot(particle.direction, iFacet->sh.N));
 
-    /*iFacet->sh.tmpCounter.hit.sum_1_per_ort_velocity += 1.0 / ortVelocity;
-    iFacet->sh.tmpCounter.hit.sum_v_ort += (model->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
+    auto velocityVector = velocity * particle.direction;
     IncreaseFacetCounter(iFacet, momentIndex, 0, 0, 0, 1.0 / ortVelocity,
-                         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
+        (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity, velocityVector,
+        Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z)), CrossProduct(model->wp.torqueAxis, velocityVector));
     if (/*iFacet->texture &&*/ iFacet->sh.countRefl)
         RecordHitOnTexture(iFacet, momentIndex, false, 1.0,
                            1.0); //count again for outward velocity
@@ -1205,8 +1210,10 @@ void Particle::RecordAbsorb(SubprocessFacet *iFacet) {
     if (particleId == 0) RecordHit(HIT_ABS);
     double ortVelocity =
             velocity * std::abs(Dot(particle.direction, iFacet->sh.N));
-    IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 1, 2.0 / ortVelocity,
-                         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
+    auto velocityVector = velocity * particle.direction;
+    IncreaseFacetCounter(iFacet, momentIndex, 0, 1, 0, 2.0 / ortVelocity,
+        (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity, velocityVector,
+        Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z)), CrossProduct(model->wp.torqueAxis, velocityVector));
     LogHit(iFacet);
     ProfileFacet(iFacet, momentIndex, true, 2.0, 1.0); //was 2.0, 1.0
     if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
