@@ -389,6 +389,21 @@ bool WriterXML::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<Simul
             facetHitNode.append_attribute("sum_1_per_v") = facetCounter.sum_1_per_ort_velocity;
             facetHitNode.append_attribute("sum_v") = facetCounter.sum_1_per_velocity;
 
+            auto impulseNode = facetHitNode.append_child("Impulse");
+            impulseNode.append_attribute("x") = facetCounter.impulse.x;
+            impulseNode.append_attribute("y") = facetCounter.impulse.y;
+            impulseNode.append_attribute("z") = facetCounter.impulse.z;
+
+            auto impulse_square_Node = facetHitNode.append_child("Impulse_square");
+            impulse_square_Node.append_attribute("x") = facetCounter.impulse_square.x;
+            impulse_square_Node.append_attribute("y") = facetCounter.impulse_square.y;
+            impulse_square_Node.append_attribute("z") = facetCounter.impulse_square.z;
+
+            auto impulse_momentum_Node = facetHitNode.append_child("Impulse_momentum");
+            impulse_momentum_Node.append_attribute("x") = facetCounter.impulse_momentum.x;
+            impulse_momentum_Node.append_attribute("y") = facetCounter.impulse_momentum.y;
+            impulse_momentum_Node.append_attribute("z") = facetCounter.impulse_momentum.z;
+
             if (sFac.sh.isProfile) {
                 xml_node profileNode = newFacetResult.append_child("Profile");
                 profileNode.append_attribute("size") = PROFILE_SIZE;
