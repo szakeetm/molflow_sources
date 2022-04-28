@@ -999,7 +999,7 @@ bool Particle::StartFromSource() {
         lastMomentIndex = momentIndex - 1;
     }
 
-    auto velocityVector = velocity * ray.direction;
+    auto velocityVector = velocity * particle.direction;
     IncreaseFacetCounter(src, momentIndex, 0, 1, 0, 2.0 / ortVelocity,
         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781)* ortVelocity, velocityVector, Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z)), CrossProduct(model->wp.torqueAxis, velocityVector));
     //Desorption doesn't contribute to angular profiles, nor to angle maps
@@ -1160,7 +1160,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
     //Register outgoing velocity
     ortVelocity = velocity * std::abs(Dot(particle.direction, iFacet->sh.N));
 
-    auto velocityVector = velocity * particle.direction;
+    velocityVector = velocity * particle.direction;
     IncreaseFacetCounter(iFacet, momentIndex, 0, 0, 0, 1.0 / ortVelocity,
         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity, velocityVector,
         Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z)), CrossProduct(model->wp.torqueAxis, velocityVector));
