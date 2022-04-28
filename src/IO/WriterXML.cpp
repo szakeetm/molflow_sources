@@ -177,6 +177,7 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
     }
 
     auto torqueNode = simuParamNode.append_child("Torque");
+    torqueNode.append_attribute("measure") = model->wp.measureForce;
     auto v = torqueNode.append_child("RefPoint");
     v.append_attribute("x") = model->wp.torqueRefPoint.x;
     v.append_attribute("y") = model->wp.torqueRefPoint.y;
