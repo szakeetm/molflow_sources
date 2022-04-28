@@ -175,6 +175,14 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Si
         model->wp.motionVector2.z = v2.attribute("z").as_double();
     }
 
+    auto torqueNode = simuParamNode.child("Torque");
+    if (torqueNode) {
+        auto v = torqueNode.child("Axis");
+        model->wp.torqueAxis.x = v.attribute("x").as_double();
+        model->wp.torqueAxis.y = v.attribute("y").as_double();
+        model->wp.torqueAxis.z = v.attribute("z").as_double();
+    }
+
     xml_node globalHistNode = simuParamNode.child("Global_histograms");
     if (globalHistNode) { // Molflow version before 2.8 didn't save histograms
         xml_node nbBounceNode = globalHistNode.child("Bounces");

@@ -176,6 +176,12 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<
         v2.append_attribute("z") = model->wp.motionVector2.z;
     }
 
+    auto torqueNode = simuParamNode.append_child("Torque");
+    auto v = torqueNode.append_child("Axis");
+    v.append_attribute("x") = model->wp.torqueAxis.x;
+    v.append_attribute("y") = model->wp.torqueAxis.y;
+    v.append_attribute("z") = model->wp.torqueAxis.z;
+
     xml_node paramNode = simuParamNode.append_child("Parameters");
     size_t nonCatalogParameters = 0;
 
