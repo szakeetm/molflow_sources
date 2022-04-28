@@ -29,7 +29,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 class InterfaceFacet;
 
-#define NB_FDCOLUMN 27
+#define NB_FDCOLUMN 30
 
 class FacetDetails : public GLWindow {
 
