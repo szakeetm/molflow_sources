@@ -2799,6 +2799,21 @@ bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSi
 			facetHitNode.append_attribute("sum_1_per_v") = facetCounter.sum_1_per_ort_velocity;
 			facetHitNode.append_attribute("sum_v") = facetCounter.sum_1_per_velocity;
 
+			auto impulseNode = facetHitNode.append_child("Impulse");
+			impulseNode.append_attribute("x") = facetCounter.impulse.x;
+			impulseNode.append_attribute("y") = facetCounter.impulse.y;
+			impulseNode.append_attribute("z") = facetCounter.impulse.z;
+
+			auto impulse_square_Node = facetHitNode.append_child("Impulse_square");
+			impulse_square_Node.append_attribute("x") = facetCounter.impulse_square.x;
+			impulse_square_Node.append_attribute("y") = facetCounter.impulse_square.y;
+			impulse_square_Node.append_attribute("z") = facetCounter.impulse_square.z;
+
+			auto impulse_momentum_Node = facetHitNode.append_child("Impulse_momentum");
+			impulse_momentum_Node.append_attribute("x") = facetCounter.impulse_momentum.x;
+			impulse_momentum_Node.append_attribute("y") = facetCounter.impulse_momentum.y;
+			impulse_momentum_Node.append_attribute("z") = facetCounter.impulse_momentum.z;
+
 			if (f->sh.isProfile) {
 				xml_node profileNode = newFacetResult.append_child("Profile");
 				profileNode.append_attribute("size") = PROFILE_SIZE;
@@ -3673,6 +3688,39 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState 
 				else {
 					//Backward compatibility
 					facetCounter.sum_1_per_velocity = 4.0 * Sqr(facetCounter.nbHitEquiv + static_cast<double>(facetCounter.nbDesorbed)) / facetCounter.sum_1_per_ort_velocity;
+				}
+				auto impulseNode = facetHitNode.child("Impulse");
+				if (impulseNode) {
+					facetCounter.impulse = Vector3d(
+						impulseNode.attribute("x").as_double(),
+						impulseNode.attribute("y").as_double(),
+						impulseNode.attribute("z").as_double()
+					);
+				}
+				else {
+					facetCounter.impulse = Vector3d(0.0, 0.0, 0.0);
+				}
+				auto impulse_sqr_Node = facetHitNode.child("Impulse_square");
+				if (impulse_sqr_Node) {
+					facetCounter.impulse_square = Vector3d(
+						impulse_sqr_Node.attribute("x").as_double(),
+						impulse_sqr_Node.attribute("y").as_double(),
+						impulse_sqr_Node.attribute("z").as_double()
+					);
+				}
+				else {
+					facetCounter.impulse_square = Vector3d(0.0, 0.0, 0.0);
+				}
+				auto impulse_momentum_Node = facetHitNode.child("Impulse_momentum");
+				if (impulse_momentum_Node) {
+					facetCounter.impulse_momentum = Vector3d(
+						impulse_momentum_Node.attribute("x").as_double(),
+						impulse_momentum_Node.attribute("y").as_double(),
+						impulse_momentum_Node.attribute("z").as_double()
+					);
+				}
+				else {
+					facetCounter.impulse_momentum = Vector3d(0.0, 0.0, 0.0);
 				}
 
 				if (work->displayedMoment == m) { //For immediate display in facet hits list and facet counter

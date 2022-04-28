@@ -53,8 +53,11 @@ namespace MFSim {
 
         void RecordLeakPos();
 
-        void IncreaseFacetCounter(const SubprocessFacet *f, int m, size_t hit, size_t desorb, size_t absorb,
-                                  double sum_1_per_v, double sum_v_ort);
+		void IncreaseFacetCounter(const SubprocessFacet* f, int m, const size_t& hit, const size_t& desorb, const size_t& absorb,
+			const double& sum_1_per_v, const double& sum_v_ort,
+			const Vector3d& impulse = Vector3d(0.0, 0.0, 0.0),
+			const Vector3d& impulse_square = Vector3d(0.0, 0.0, 0.0),
+			const Vector3d& impulse_momentum = Vector3d(0.0, 0.0, 0.0));
 
         void UpdateVelocity(const SubprocessFacet *collidedFacet);
 

@@ -1476,11 +1476,12 @@ double Particle::GenerateDesorptionTime(const SubprocessFacet *src, const double
 * \param sum_v_ort orthogonal momentum change to add
 */
 void
-Particle::IncreaseFacetCounter(const SubprocessFacet *f, int m, size_t hit, size_t desorb,
-                               size_t absorb,
-                               double sum_1_per_v, double sum_v_ort) {
+Particle::IncreaseFacetCounter(const SubprocessFacet *f, int m, const size_t& hit, const size_t& desorb,
+                               const size_t& absorb, const double& sum_1_per_v, const double& sum_v_ort,
+                               const Vector3d& impulse, const Vector3d& impulse_square, const Vector3d& impulse_momentum) {
     const double hitEquiv = static_cast<double>(hit) * oriRatio;
     {
+        //Global hit counter
         FacetHitBuffer &hits = tmpState.facetStates[f->globalId].momentResults[0].hits;
         hits.nbMCHit += hit;
         hits.nbHitEquiv += hitEquiv;
@@ -1489,8 +1490,12 @@ Particle::IncreaseFacetCounter(const SubprocessFacet *f, int m, size_t hit, size
         hits.sum_1_per_ort_velocity += oriRatio * sum_1_per_v;
         hits.sum_v_ort += oriRatio * sum_v_ort;
         hits.sum_1_per_velocity += (hitEquiv + static_cast<double>(desorb)) / velocity;
+        hits.impulse += oriRatio * impulse;
+        hits.impulse_square += oriRatio * impulse_square;
+        hits.impulse_momentum += oriRatio * impulse_momentum;
     }
     if (m > 0) {
+        //Moment-specific hit counter
         FacetHitBuffer &hits = tmpState.facetStates[f->globalId].momentResults[m].hits;
         hits.nbMCHit += hit;
         hits.nbHitEquiv += hitEquiv;
@@ -1499,6 +1504,9 @@ Particle::IncreaseFacetCounter(const SubprocessFacet *f, int m, size_t hit, size
         hits.sum_1_per_ort_velocity += oriRatio * sum_1_per_v;
         hits.sum_v_ort += oriRatio * sum_v_ort;
         hits.sum_1_per_velocity += (hitEquiv + static_cast<double>(desorb)) / velocity;
+        hits.impulse += oriRatio * impulse;
+        hits.impulse_square += oriRatio * impulse_square;
+        hits.impulse_momentum += oriRatio * impulse_momentum;
     }
 }
 
