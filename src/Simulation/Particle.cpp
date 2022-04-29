@@ -737,20 +737,18 @@ bool Particle::StartFromSource(Ray& ray) {
         lastMomentIndex = momentIndex - 1;
     }
 
-    /*Vector3d velocityVector = Vector3d(0.0, 0.0, 0.0);
+    Vector3d velocityVector = Vector3d(0.0, 0.0, 0.0);
     Vector3d velocity_sqr = Vector3d(0.0, 0.0, 0.0);
-    Vector3d impulse_momentum = Vector3d(0.0, 0.0, 0.0);*/
+    Vector3d impulse_momentum = Vector3d(0.0, 0.0, 0.0);
     if (model->wp.measureForce) {
-        /*velocityVector*/ particle.imp = velocity * ray.direction;
-        /*velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));*/
-        particle.impsqr = Vector3d(Sqr(particle.imp.x), Sqr(particle.imp.y), Sqr(particle.imp.z));
-        /*impulse_momentum*/ particle.impmom = CrossProduct(particle.origin - model->wp.torqueRefPoint, particle.imp);
+        velocityVector = velocity * ray.direction;
+        velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));
+        impulse_momentum = CrossProduct(particle.origin - model->wp.torqueRefPoint, velocityVector);
     }
 
-    IncreaseFacetCounter(src, momentIndex, 0, 1, 0, 2.0 / ortVelocity,
-        (model->wp.useMaxwellDistribution ? 1.0 : 1.1781)* ortVelocity,
-        /*velocityVector, velocity_sqr, impulse_momentum);*/
-        particle.imp, particle.impsqr, particle.impmom);
+	IncreaseFacetCounter(src, momentIndex, 0, 1, 0, 2.0 / ortVelocity,
+		(model->wp.useMaxwellDistribution ? 1.0 : 1.1781)* ortVelocity,
+        velocityVector, velocity_sqr, impulse_momentum);
     //Desorption doesn't contribute to angular profiles, nor to angle maps
     ProfileFacet(src, momentIndex, false, 2.0, 1.0); //was 2.0, 1.0
     LogHit(src);
@@ -1010,19 +1008,17 @@ bool Particle::StartFromSource() {
         lastMomentIndex = momentIndex - 1;
     }
 
-    /*Vector3d velocityVector = Vector3d(0.0, 0.0, 0.0);
+    Vector3d velocityVector = Vector3d(0.0, 0.0, 0.0);
     Vector3d velocity_sqr = Vector3d(0.0, 0.0, 0.0);
-    Vector3d impulse_momentum = Vector3d(0.0, 0.0, 0.0);*/
+    Vector3d impulse_momentum = Vector3d(0.0, 0.0, 0.0);
     if (model->wp.measureForce) {
-        /*velocityVector*/ particle.imp = velocity * particle.direction;
-        /*velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));*/
-        particle.impsqr = Vector3d(Sqr(particle.imp.x), Sqr(particle.imp.y), Sqr(particle.imp.z));
-        /*impulse_momentum*/ particle.impmom = CrossProduct(particle.origin - model->wp.torqueRefPoint, particle.imp);
+        velocityVector = velocity * particle.direction;
+        velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));
+        impulse_momentum = CrossProduct(particle.origin - model->wp.torqueRefPoint, velocityVector);
     }
     IncreaseFacetCounter(src, momentIndex, 0, 1, 0, 2.0 / ortVelocity,
         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781)* ortVelocity,
-        /*velocityVector, velocity_sqr, impulse_momentum);*/
-        particle.imp, particle.impsqr, particle.impmom);
+        velocityVector, velocity_sqr, impulse_momentum);
     //Desorption doesn't contribute to angular profiles, nor to angle maps
     ProfileFacet(src, momentIndex, false, 2.0, 1.0); //was 2.0, 1.0
     LogHit(src);
@@ -1124,19 +1120,19 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
         lastMomentIndex = momentIndex - 1;
     }
 
-    /*Vector3d velocityVector = Vector3d(0.0, 0.0, 0.0);
+
+    Vector3d velocityVector = Vector3d(0.0, 0.0, 0.0);
     Vector3d velocity_sqr = Vector3d(0.0, 0.0, 0.0);
-    Vector3d impulse_momentum = Vector3d(0.0, 0.0, 0.0);*/
+    Vector3d impulse_momentum = Vector3d(0.0, 0.0, 0.0);
     if (model->wp.measureForce) {
-        /*velocityVector*/ particle.imp = velocity * particle.direction;
-        /*velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));*/
-        particle.impsqr = Vector3d(Sqr(particle.imp.x), Sqr(particle.imp.y), Sqr(particle.imp.z));
-        /*impulse_momentum*/ particle.impmom = CrossProduct(particle.origin - model->wp.torqueRefPoint, particle.imp);
+        velocityVector = velocity * particle.direction;
+        velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));
+        impulse_momentum = CrossProduct(particle.origin - model->wp.torqueRefPoint, velocityVector);
     }
     IncreaseFacetCounter(iFacet, momentIndex, 0, 1, 0, 1.0 / ortVelocity,
         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity, 
-        /*velocityVector, velocity_sqr, impulse_momentum);*/
-        particle.imp, particle.impsqr, particle.impmom);   nbBounces++;
+        velocityVector, velocity_sqr, impulse_momentum);
+    nbBounces++;
     if (/*iFacet->texture &&*/ iFacet->sh.countRefl)
         RecordHitOnTexture(iFacet, momentIndex, true, 1.0, 1.0);
     if (/*iFacet->direction &&*/ iFacet->sh.countDirection)
@@ -1179,26 +1175,25 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
                                          randomGenerator.rnd() * 2.0 * PI, revert);
         }
     }
-    
+
     if (iFacet->sh.isMoving) {
         Physics::TreatMovingFacet(model, particle.origin, particle.direction, velocity);
     }
-    
+
     //Texture/Profile outgoing particle
     //Register outgoing velocity
     ortVelocity = velocity * std::abs(Dot(particle.direction, iFacet->sh.N));
 
 
     if (model->wp.measureForce) {
-        /*velocityVector*/ particle.imp = velocity * particle.direction;
-        /*velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));*/
-        particle.impsqr = Vector3d(Sqr(particle.imp.x), Sqr(particle.imp.y), Sqr(particle.imp.z));
-        /*impulse_momentum*/ particle.impmom = CrossProduct(particle.origin - model->wp.torqueRefPoint, particle.imp);
+        velocityVector = velocity * particle.direction;
+        velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));
+        impulse_momentum = CrossProduct(particle.origin - model->wp.torqueRefPoint, velocityVector);
     }
     IncreaseFacetCounter(iFacet, momentIndex, 0, 0, 0, 1.0 / ortVelocity,
         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity, 
-        /*velocityVector, velocity_sqr, impulse_momentum);*/
-        particle.imp, particle.impsqr, particle.impmom);   if (/*iFacet->texture &&*/ iFacet->sh.countRefl)
+        velocityVector, velocity_sqr, impulse_momentum);
+    if (/*iFacet->texture &&*/ iFacet->sh.countRefl)
         RecordHitOnTexture(iFacet, momentIndex, false, 1.0,
                            1.0); //count again for outward velocity
     ProfileFacet(iFacet, momentIndex, false, 1.0, 1.0);
@@ -1244,19 +1239,18 @@ void Particle::RecordAbsorb(SubprocessFacet *iFacet) {
     if (particleId == 0) RecordHit(HIT_ABS);
     double ortVelocity =
             velocity * std::abs(Dot(particle.direction, iFacet->sh.N));
-    /*Vector3d velocityVector = Vector3d(0.0, 0.0, 0.0);
+    Vector3d velocityVector = Vector3d(0.0, 0.0, 0.0);
     Vector3d velocity_sqr = Vector3d(0.0, 0.0, 0.0);
-    Vector3d impulse_momentum = Vector3d(0.0, 0.0, 0.0);*/
+    Vector3d impulse_momentum = Vector3d(0.0, 0.0, 0.0);
     if (model->wp.measureForce) {
-        /*velocityVector*/ particle.imp = velocity * particle.direction;
-        /*velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));*/
-        particle.impsqr = Vector3d(Sqr(particle.imp.x), Sqr(particle.imp.y), Sqr(particle.imp.z));
-        /*impulse_momentum*/ particle.impmom = CrossProduct(particle.origin - model->wp.torqueRefPoint, particle.imp);
+        velocityVector = velocity * particle.direction;
+        velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));
+        impulse_momentum = CrossProduct(particle.origin - model->wp.torqueRefPoint, velocityVector);
     }
     IncreaseFacetCounter(iFacet, momentIndex, 0, 1, 0, 2.0 / ortVelocity,
         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity,
-        /*velocityVector, velocity_sqr, impulse_momentum);*/
-        particle.imp, particle.impsqr, particle.impmom);    LogHit(iFacet);
+        velocityVector, velocity_sqr, impulse_momentum);
+    LogHit(iFacet);
     ProfileFacet(iFacet, momentIndex, true, 2.0, 1.0); //was 2.0, 1.0
     if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
     if (/*iFacet->texture &&*/ iFacet->sh.countAbs)
