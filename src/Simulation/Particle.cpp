@@ -1186,7 +1186,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
 
 
     if (model->wp.measureForce) {
-        velocityVector = velocity * particle.direction;
+        velocityVector = -1.0 * velocity * particle.direction; //sum impulse unchanged
         velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));
         impulse_momentum = CrossProduct(particle.origin - model->wp.torqueRefPoint, velocityVector);
     }
