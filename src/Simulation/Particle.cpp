@@ -564,7 +564,6 @@ bool Particle::StartFromSource(Ray& ray) {
     //distanceTraveled = 0.0;  //for mean free path calculations
     //particle.time = desorptionStartTime + (desorptionStopTime - desorptionStartTime)*randomGenerator.rnd();
     ray.time = generationTime = Physics::GenerateDesorptionTime(model->tdParams.IDs, src, randomGenerator.rnd(), model->wp.latestMoment);
-    ray.time = particle.time;
     lastMomentIndex = 0;
     if (model->wp.useMaxwellDistribution) velocity = Physics::GenerateRandomVelocity(model->tdParams.CDFs, src->sh.CDFid, randomGenerator.rnd());
     else
@@ -574,7 +573,7 @@ bool Particle::StartFromSource(Ray& ray) {
     oriRatio = 1.0;
     if (model->wp.enableDecay) { //decaying gas
         expectedDecayMoment =
-                particle.time + model->wp.halfLife * 1.44269 * -log(randomGenerator.rnd()); //1.44269=1/ln2
+                ray.time + model->wp.halfLife * 1.44269 * -log(randomGenerator.rnd()); //1.44269=1/ln2
         //Exponential distribution PDF: probability of 't' life = 1/TAU*exp(-t/TAU) where TAU = half_life/ln2
         //Exponential distribution CDF: probability of life shorter than 't" = 1-exp(-t/TAU)
         //Equation: randomGenerator.rnd()=1-exp(-t/TAU)
@@ -618,7 +617,7 @@ bool Particle::StartFromSource(Ray& ray) {
         if (IsInFacet(*src, u, v)) {
 
             // (U,V) -> (x,y,z)
-            particle.origin = src->sh.O + u * src->sh.U + v * src->sh.V;
+            ray.origin = src->sh.O + u * src->sh.U + v * src->sh.V;
             tmpFacetVars[src->globalId].colU = u;
             tmpFacetVars[src->globalId].colV = v;
             found = true;
@@ -635,13 +634,13 @@ bool Particle::StartFromSource(Ray& ray) {
             //double vLength = sqrt(pow(src->sh.V.x, 2) + pow(src->sh.V.y, 2) + pow(src->sh.V.z, 2));
             double u = ((double) mapPositionW + 0.5) / outgMap.outgassingMapWidth_precise;
             double v = ((double) mapPositionH + 0.5) / outgMap.outgassingMapHeight_precise;
-            particle.origin = src->sh.O + u * src->sh.U + v * src->sh.V;
+            ray.origin = src->sh.O + u * src->sh.U + v * src->sh.V;
             tmpFacetVars[src->globalId].colU = u;
             tmpFacetVars[src->globalId].colV = v;
         } else {
             tmpFacetVars[src->globalId].colU = 0.5;
             tmpFacetVars[src->globalId].colV = 0.5;
-            particle.origin = src->sh.center;
+            ray.origin = src->sh.center;
         }
 
     }
@@ -724,7 +723,7 @@ bool Particle::StartFromSource(Ray& ray) {
     //nbPHit = 0;
 
     if (src->sh.isMoving) {
-        Physics::TreatMovingFacet(model, particle.origin, ray.direction, velocity);
+        Physics::TreatMovingFacet(model, ray.origin, ray.direction, velocity);
     }
 
     double ortVelocity =
@@ -733,7 +732,7 @@ bool Particle::StartFromSource(Ray& ray) {
     src->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity; //was 2.0 / ortV
     src->sh.tmpCounter.hit.sum_v_ort += (model->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
     int momentIndex = -1;
-    if ((momentIndex = LookupMomentIndex(particle.time, model->tdParams.moments, lastMomentIndex)) > 0) {
+    if ((momentIndex = LookupMomentIndex(ray.time, model->tdParams.moments, lastMomentIndex)) > 0) {
         lastMomentIndex = momentIndex - 1;
     }
 
