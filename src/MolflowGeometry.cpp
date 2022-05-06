@@ -1722,9 +1722,9 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, GlobalSimuState
 					file->Write("width:"); file->Write(f->sh.texWidth); file->Write(" height:"); file->Write(f->sh.texHeight); file->Write("\n");
 					for (iy = 0; iy < h; iy++) {
 						for (ix = 0; ix < w; ix++) {
-							file->Write((!crashSave && !saveSelected) ? static_cast<size_t>(texture[iy * f->sh.texWidth + ix].countEquiv) : 0, "\t");
-							file->Write((!crashSave && !saveSelected) ? texture[iy * f->sh.texWidth + ix].sum_1_per_ort_velocity : 0, "\t");
-							file->Write((!crashSave && !saveSelected) ? texture[iy * f->sh.texWidth + ix].sum_v_ort_per_area : 0, "\t");
+							file->Write((!crashSave) ? static_cast<size_t>(texture[iy * f->sh.texWidth + ix].countEquiv) : 0, "\t");
+							file->Write((!crashSave) ? texture[iy * f->sh.texWidth + ix].sum_1_per_ort_velocity : 0, "\t");
+							file->Write((!crashSave) ? texture[iy * f->sh.texWidth + ix].sum_v_ort_per_area : 0, "\t");
 						}
 						file->Write("\n");
 					}
@@ -2451,7 +2451,7 @@ void MolflowGeometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, 
 * \param prg GLProgress window where visualising of the export progress is shown
 * \param saveSelected saveSelected if a selection is to be saved
 */
-void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgress *prg, bool saveSelected) {
+void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgress *prg, bool saveSelected) { //unused, XMLWriter::saveXML replaces
 	//TiXmlDeclaration* decl = new TiXmlDeclaration("1.0")="")="");
 	//saveDoc->LinkEndChild(decl);
 
@@ -2479,15 +2479,17 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 
 	prg->SetMessage("Writing facets...");
 	geomNode.append_child("Facets");
-	geomNode.child("Facets").append_attribute("nb") = sh.nbFacet;
+	
+	size_t nbSaved = 0;
 	for (int i = 0, k = 0; i < sh.nbFacet; i++) {
 		prg->SetProgress(0.166 + ((double)i / (double)sh.nbFacet) *0.166);
 		if (!saveSelected || facets[i]->selected) {
 			xml_node f = geomNode.child("Facets").append_child("Facet");
-			f.append_attribute("id") = i;
+			f.append_attribute("id") = k++;
 			facets[i]->SaveXML_geom(f);
 		}
 	}
+	geomNode.child("Facets").append_attribute("nb") = nbSaved; // nbSelected might be different from nbFacet
 
 	prg->SetMessage("Writing model details...");
 	geomNode.append_child("Structures").append_attribute("nb") = sh.nbSuper;
@@ -2553,9 +2555,11 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 		xml_node profilePlotterNode = interfNode.append_child("ProfilePlotter");
 		profilePlotterNode.append_child("Parameters").append_attribute("logScale") = (int)mApp->profilePlotter->IsLogScaled(); //backward compatibility: 0 or 1
 		xml_node viewsNode = profilePlotterNode.append_child("Views");
-		for (int v : ppViews) {
-			xml_node view = viewsNode.append_child("View");
-			view.append_attribute("facetId") = v;
+		if (!saveSelected) {
+			for (int v : ppViews) {
+				xml_node view = viewsNode.append_child("View");
+				view.append_attribute("facetId") = v;
+			}
 		}
 	}
 
@@ -2564,10 +2568,12 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
         xml_node convergencePlotterNode = interfNode.append_child("ConvergencePlotter");
         convergencePlotterNode.append_child("Parameters").append_attribute("logScale") = (int)mApp->convergencePlotter->IsLogScaled(); //backward compatibility: 0 or 1
         xml_node viewsNode = convergencePlotterNode.append_child("Views");
-        for (int v : cpViews) {
-            xml_node view = viewsNode.append_child("View");
-            view.append_attribute("formulaHash") = v;
-        }
+		if (!saveSelected) {
+			for (int v : cpViews) {
+				xml_node view = viewsNode.append_child("View");
+				view.append_attribute("formulaHash") = v;
+			}
+		}
     }
 
 	xml_node simuParamNode = rootNode.append_child("MolflowSimuSettings");
@@ -2660,7 +2666,7 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 * \param saveSelected saveSelected if a selection is to be saved (TODO: check if necessary)
 * \return bool if saving is successfull (always is here)
 */
-bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSimuState &globState, GLProgress *progressDlg, bool saveSelected) {
+bool MolflowGeometry::SaveXML_simustate(xml_node saveDoc, Worker *work, GlobalSimuState &globState, GLProgress *progressDlg, bool saveSelected) { //Removed in 2.9.4, XMLWriter used
     xml_node rootNode;
     if(mApp->useOldXMLFormat){
         rootNode = saveDoc;
