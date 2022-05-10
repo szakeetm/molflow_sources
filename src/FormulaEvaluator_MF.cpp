@@ -207,11 +207,11 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
         if (!Contains({ 2,3 }, tokens.size()))
             return false;
         if (avgMode) {
-            if (!Contains({ "P","DEN","Z","p","den","z","ForceX","ForceY","ForceZ","Force2X","Force2Y","Force2Z","TorqueX","TorqueY","TorqueZ"}, tokens[0]))
+            if (!iContains({ "P","DEN","Z","ForceX","ForceY","ForceZ","Force2X","Force2Y","Force2Z","TorqueX","TorqueY","TorqueZ"}, tokens[0]))
                 return false;
         }
         else {
-            if (!Contains({ "MCH","H","D","A","AR","mch","h","d","a","ar","ForceX","ForceY","ForceZ","Force2X","Force2Y","Force2Z","TorqueX","TorqueY","TorqueZ" }, tokens[0]))
+            if (!iContains({ "MCH","H","D","A","AR","ForceX","ForceY","ForceZ","Force2X","Force2Y","Force2Z","TorqueX","TorqueY","TorqueZ" }, tokens[0]))
                 return false;
         }
         std::vector<size_t> facetsToSum;
@@ -231,7 +231,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
         else { //Selection group
             if (!(beginsWith(tokens[1], "S") || beginsWith(tokens[1], "s"))) return false;
             std::string selIdString = tokens[1]; selIdString.erase(0, 1);
-            if (Contains({ "EL","el" }, selIdString)) { //Current selections
+            if (iContains({ "EL" }, selIdString)) { //Current selections
                 facetsToSum = geom->GetSelectedFacets();
             }
             else {
@@ -304,17 +304,17 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
             else return false;
         }
         if (avgMode) {
-            if (Contains({ "P","DEN","Z","p","den","z" },tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * 1E4 / sumArea;
-            else if (Contains({ "ForceX","ForceY","ForceZ" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) / (double)facetsToSum.size();
-            else if (Contains({ "Force2X","Force2Y","Force2Z" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * Sqr(worker->model->wp.gasMass / 1000 / 6E23) / (double)facetsToSum.size();
-            else if (Contains({ "TorqueX", "TorqueY", "TorqueZ" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) * 0.01 / (double)facetsToSum.size(); //Ncm to Nm
+            if (iContains({ "P","DEN","Z" },tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * 1E4 / sumArea;
+            else if (iContains({ "ForceX","ForceY","ForceZ" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) / (double)facetsToSum.size();
+            else if (iContains({ "Force2X","Force2Y","Force2Z" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * Sqr(worker->model->wp.gasMass / 1000 / 6E23) / (double)facetsToSum.size();
+            else if (iContains({ "TorqueX", "TorqueY", "TorqueZ" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) * 0.01 / (double)facetsToSum.size(); //Ncm to Nm
         }
         else { //sum mode
-            if (Contains({ "AR", "ar" }, tokens[0])) v->value = sumArea;
-            else if (Contains({ "H", "h", "A", "a" }, tokens[0])) v->value = sumD;
-            else if (Contains({ "ForceX","ForceY","ForceZ" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23);
-            else if (Contains({ "Force2X","Force2Y","Force2Z" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * Sqr(worker->model->wp.gasMass / 1000 / 6E23);
-            else if (Contains({ "TorqueX", "TorqueY", "TorqueZ" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) * 0.01; //Ncm to Nm
+            if (iEquals("AR" , tokens[0])) v->value = sumArea;
+            else if (iContains({ "H", "A" }, tokens[0])) v->value = sumD;
+            else if (iContains({ "ForceX","ForceY","ForceZ" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23);
+            else if (iContains({ "Force2X","Force2Y","Force2Z" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * Sqr(worker->model->wp.gasMass / 1000 / 6E23);
+            else if (iContains({ "TorqueX", "TorqueY", "TorqueZ" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) * 0.01; //Ncm to Nm
             else v->value = static_cast<double>(sumLL); //One long->double conversion at the end (instead of at each summing operation)
         }
     }
