@@ -105,15 +105,24 @@ char formulaSyntax[] =
 R"(MC Variables: An (Absorption on facet n), Dn (Desorption on facet n), Hn (Hit on facet n)
 Pn (Pressure [mbar] on facet n), DENn (Density [1/m3] on facet n)
 Zn (Imp. rate on facet n), Vn (avg. speed [m/s] on facet n), Tn (temp[K] of facet n)
+
+Forcen, ForceXn,ForceYn,ForceZn - the molecular force [N] on facet n (Norme or X,Y,Z component)
+ForceSqrn, ForceSqrXn,ForceSqrYn,ForceSqrZn - square of mol. force [N2] on facet n
+Torquen, TorqueXn,TorqueYn,TorqueZn - torque relative to ref. point [Nm] on facet n
+(set reference point in Tools / Measure Forces...)
+
 SUMABS (total absorbed), SUMDES (total desorbed), SUMHIT (total hit)
 
-SUM(H,3,8)    calculates the sum of hits on facets 3,4,... ...7,8. (Works with H,A,D,AR).
-AVG(P,3,8)    calculates the average pressure (area-wise) on facets 3 to 8 (Works with P,D,Z)
-SUM(H,S3)    calculates the sum of hits on selection group 3 (works with H,A,D,AR)
-AVG(DEN,S2) calculates the average (area-wise) on facets belonging to sel. group 2
-SUM(H,SEL)    calculates the sum of hits on the current selection. (Works with H,A,D,AR)
-AVG(Z,SEL)    calculates the average impingement rate on the current selection
-For the last two, might need to manually refresh formulas after you change the selection.
+Sum over multiple facets:
+SUM(H,3,8)    calculates the sum of hits on facets 3,4,... ...7,8.
+SUM(H,S2)     calculates the sum of hits on selection group #2
+SUM(H,SEL)    calculates the sum of hits on the current selection
+SUM works with H,A,D,AR and Force, ForceSqr, Torque and their X,Y,Z components
+
+Average over multiple facets:
+same syntax as above, replace SUM with AVG in the formulas
+AVG works (area-weighted averaging): P, DEN, Z
+AVG works (equal weight per facet): Force, ForceSqr, Torque and their X,Y,Z components
 
 Area variables: ARn (Area of facet n), DESAR (total desorption area), ABSAR (total absorption area)
 
@@ -130,7 +139,7 @@ Math functions: sin(), cos(), tan(), sinh(), cosh(), tanh(), asin(), acos(),
 
 Constants:  Kb (Boltzmann's constant), R (Gas constant), Na (Avogadro's number), PI
 )";
-int formulaSyntaxHeight = 380;
+int formulaSyntaxHeight = 500;
 
 MolFlow *mApp;
 
