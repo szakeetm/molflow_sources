@@ -25,6 +25,7 @@ class Worker;
 class ImportDesorption;
 class TimeSettings;
 class Movement;
+class MeasureForce;
 class FacetAdvParams;
 class FacetDetails;
 class Viewer3DSettings;
@@ -106,6 +107,7 @@ public:
 	ImportDesorption *importDesorption;
 	TimeSettings     *timeSettings;
 	Movement         *movement;
+	MeasureForce     *measureForce;
     FacetAdvParams   *facetAdvParams;
     FacetDetails     *facetDetails;
     Viewer3DSettings *viewer3DSettings;
