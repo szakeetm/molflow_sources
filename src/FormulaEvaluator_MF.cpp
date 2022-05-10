@@ -310,7 +310,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
             else if (iContains({ "TorqueX", "TorqueY", "TorqueZ" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) * 0.01 / (double)facetsToSum.size(); //Ncm to Nm
         }
         else { //sum mode
-            if (iEquals("AR" , tokens[0])) v->value = sumArea;
+            if (iequals("AR" , tokens[0])) v->value = sumArea;
             else if (iContains({ "H", "A" }, tokens[0])) v->value = sumD;
             else if (iContains({ "ForceX","ForceY","ForceZ" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23);
             else if (iContains({ "Force2X","Force2Y","Force2Z" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * Sqr(worker->model->wp.gasMass / 1000 / 6E23);
