@@ -732,7 +732,7 @@ bool Particle::StartFromSource(Ray& ray) {
     src->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity; //was 2.0 / ortV
     src->sh.tmpCounter.hit.sum_v_ort += (model->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
     int momentIndex = -1;
-    if ((momentIndex = LookupMomentIndex(particle.time, model->tdParams.moments, lastMomentIndex)) > 0) {
+    if ((momentIndex = LookupMomentIndex(ray.time, model->tdParams.moments, lastMomentIndex)) > 0) {
         lastMomentIndex = momentIndex - 1;
     }
 
@@ -742,7 +742,7 @@ bool Particle::StartFromSource(Ray& ray) {
     if (model->wp.measureForce) {
         velocityVector = velocity * ray.direction;
         velocity_sqr = Vector3d(Sqr(velocityVector.x), Sqr(velocityVector.y), Sqr(velocityVector.z));
-        impulse_momentum = CrossProduct(particle.origin - model->wp.torqueRefPoint, velocityVector);
+        impulse_momentum = CrossProduct(ray.origin - model->wp.torqueRefPoint, velocityVector);
     }
 
 	IncreaseFacetCounter(src, momentIndex, 0, 1, 0, 2.0 / ortVelocity,
