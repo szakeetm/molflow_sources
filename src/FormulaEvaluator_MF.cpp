@@ -178,34 +178,34 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
         double sumD=0.0;
         double sumArea = 0.0; //We average by area
         for (auto& sel : facetsToSum) {
-            if (iEquals("MCH",tokens[0])) {
+            if (iequals("MCH",tokens[0])) {
                 sumLL+=geom->GetFacet(sel)->facetHitCache.nbMCHit;
             }
-            else if (iEquals( "H" , tokens[0])) {
+            else if (iequals( "H" , tokens[0])) {
                 sumD += geom->GetFacet(sel)->facetHitCache.nbHitEquiv;
             }
-            else if (iEquals({ "D", tokens[0])) {
+            else if (iequals( "D", tokens[0])) {
                 sumLL+=geom->GetFacet(sel)->facetHitCache.nbDesorbed;
-            } else if (iEquals({ "A", tokens[0])) {
+            } else if (iequals( "A", tokens[0])) {
                 sumD += geom->GetFacet(sel)->facetHitCache.nbAbsEquiv;
-            } else if (iEquals({ "AR", tokens[0])) {
+            } else if (iequals( "AR", tokens[0])) {
                 sumArea += geom->GetFacet(sel)->GetArea();
             }
-            else if (iEquals( "P", tokens[0])) {
+            else if (iequals( "P", tokens[0])) {
                 sumD+= geom->GetFacet(sel)->facetHitCache.sum_v_ort *
                        (worker->model->wp.gasMass / 1000 / 6E23)*0.0100;
                 sumArea += geom->GetFacet(sel)->GetArea();
-            } else if (iEquals( "DEN", tokens[0])) {
+            } else if (iequals( "DEN", tokens[0])) {
                 InterfaceFacet *f = geom->GetFacet(sel);
                 sumD += f->DensityCorrection() * f->facetHitCache.sum_1_per_ort_velocity;
                 sumArea += geom->GetFacet(sel)->GetArea();
-            } else if (iEquals( "Z", tokens[0])) {
+            } else if (iequals( "Z", tokens[0])) {
                 sumD += geom->GetFacet(sel)->facetHitCache.nbHitEquiv;
                 sumArea += geom->GetFacet(sel)->GetArea();
             } else return false;
         }
         if (avgMode) v->value=sumD * worker->GetMoleculesPerTP(worker->displayedMoment)*1E4 / sumArea;
-        else if (iEquals( "AR", tokens[0])) v->value = sumArea;
+        else if (iequals( "AR", tokens[0])) v->value = sumArea;
         else if (iContains({ "H", "A" }, tokens[0])) v->value = sumD;
         else v->value = static_cast<double>(sumLL); //Only one conversion at the end (instead of at each summing operation)
     }
