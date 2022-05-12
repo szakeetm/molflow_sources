@@ -2450,7 +2450,7 @@ void MolflowGeometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, 
 * \param prg GLProgress window where visualising of the export progress is shown
 * \param saveSelected saveSelected if a selection is to be saved
 */
-void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgress *prg, bool saveSelected) {
+void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgress *prg, bool saveSelected) { //scheduled to be removed
 	//TiXmlDeclaration* decl = new TiXmlDeclaration("1.0")="")="");
 	//saveDoc->LinkEndChild(decl);
 
