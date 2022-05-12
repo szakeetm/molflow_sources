@@ -1,6 +1,10 @@
 # Changelog
 
-## v2.9.4 (TBA)
+## v2.9.5 (TBA)
+### Bugfix
+- Rare crash when collapsing facets or vertices
+
+## v2.9.4 (2022.04.14)
 ### Feature
 - MPI simulations (see documentation)
 

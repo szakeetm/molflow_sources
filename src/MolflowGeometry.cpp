@@ -2483,7 +2483,7 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 		prg->SetProgress(0.166 + ((double)i / (double)sh.nbFacet) *0.166);
 		if (!saveSelected || facets[i]->selected) {
 			xml_node f = geomNode.child("Facets").append_child("Facet");
-			f.append_attribute("id") = i;
+			f.append_attribute("id") = k++;
 			facets[i]->SaveXML_geom(f);
 		}
 	}

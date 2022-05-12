@@ -22,6 +22,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
     int nbFacet = geom->GetNbFacet();
     int idx;
 
+
     if ((idx = GetVariable(v->name, "A")) > 0) {
         ok = (idx > 0 && idx <= nbFacet);
         if (ok) v->value = geom->GetFacet(idx - 1)->facetHitCache.nbAbsEquiv;
@@ -224,8 +225,8 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
     else if (iequals(v->name, "Na")) {
         v->value = 6.02214179e23;
     }
-    else if ((beginsWith(v->name, "SUM(") || beginsWith(v->name, "sum(") || beginsWith(v->name, "AVG(") || beginsWith(v->name, "avg(")) && endsWith(v->name, ")")) {
-        bool avgMode = (beginsWith(v->name, "AVG(") || beginsWith(v->name, "avg(")); //else SUM mode
+    else if ((beginsWith(uppercase(v->name), "SUM(") || beginsWith(uppercase(v->name), "AVG(")) && endsWith(v->name, ")")) {
+        bool avgMode = (beginsWith(uppercase(v->name), "AVG(")); //else SUM mode
         std::string inside = v->name; inside.erase(0, 4); inside.erase(inside.size() - 1, 1);
         std::vector<std::string> tokens = SplitString(inside,',');
         if (!Contains({ 2,3 }, tokens.size()))
@@ -253,7 +254,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
             std::iota(facetsToSum.begin(), facetsToSum.end(), startId-1);
         }
         else { //Selection group
-            if (!(beginsWith(tokens[1], "S") || beginsWith(tokens[1], "s"))) return false;
+            if (!(beginsWith(uppercase(tokens[1]), "S"))) return false;
             std::string selIdString = tokens[1]; selIdString.erase(0, 1);
             if (iContains({ "EL" }, selIdString)) { //Current selections
                 facetsToSum = geom->GetSelectedFacets();
@@ -276,25 +277,25 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
             if (iequals("MCH",tokens[0])) {
                 sumLL+=geom->GetFacet(sel)->facetHitCache.nbMCHit;
             }
-            else if (iequals("H", tokens[0])) {
+            else if (Contains({ "H", "h" }, tokens[0])) {
                 sumD += geom->GetFacet(sel)->facetHitCache.nbHitEquiv;
             }
-            else if (iequals("D", tokens[0])) {
+            else if (Contains({ "D", "d" }, tokens[0])) {
                 sumLL+=geom->GetFacet(sel)->facetHitCache.nbDesorbed;
-            } else if (iequals("A", tokens[0])) {
+            } else if (Contains({ "A", "a" }, tokens[0])) {
                 sumD += geom->GetFacet(sel)->facetHitCache.nbAbsEquiv;
-            } else if (iequals("AR", tokens[0])) {
+            } else if (Contains({ "AR", "ar" }, tokens[0])) {
                 sumArea += geom->GetFacet(sel)->GetArea();
             }
-            else if (iequals("P", tokens[0])) {
+            else if (Contains({ "P", "p" }, tokens[0])) {
                 sumD+= geom->GetFacet(sel)->facetHitCache.sum_v_ort *
                        (worker->model->wp.gasMass / 1000 / 6E23)*0.0100;
                 sumArea += geom->GetFacet(sel)->GetArea();
-            } else if (iequals("DEN", tokens[0])) {
+            } else if (Contains({ "DEN", "den" }, tokens[0])) {
                 InterfaceFacet *f = geom->GetFacet(sel);
                 sumD += f->DensityCorrection() * f->facetHitCache.sum_1_per_ort_velocity;
                 sumArea += geom->GetFacet(sel)->GetArea();
-            } else if (iequals("Z", tokens[0])) {
+            } else if (Contains({ "Z", "z" }, tokens[0])) {
                 sumD += geom->GetFacet(sel)->facetHitCache.nbHitEquiv;
                 sumArea += geom->GetFacet(sel)->GetArea();
             }
@@ -350,6 +351,10 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
             else if (iContains({ "Torque","TorqueX", "TorqueY", "TorqueZ" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) * 0.01; //Ncm to Nm
             else v->value = static_cast<double>(sumLL); //One long->double conversion at the end (instead of at each summing operation)
         }
+        if (avgMode) v->value=sumD * worker->GetMoleculesPerTP(worker->displayedMoment)*1E4 / sumArea;
+        else if (Contains({ "AR", "ar" }, tokens[0])) v->value = sumArea;
+        else if (Contains({ "H", "h", "A", "a" }, tokens[0])) v->value = sumD;
+        else v->value = static_cast<double>(sumLL); //Only one conversion at the end (instead of at each summing operation)
     }
     else ok = false;
     return ok;

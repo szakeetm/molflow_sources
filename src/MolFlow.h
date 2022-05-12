@@ -49,7 +49,7 @@ public:
 	//Public textfields so we can disable them from "Advanced facet parameters":
 	GLTextField   *facetFlow;
 	GLTextField   *facetFlowArea;
-	
+
     void LoadFile(const std::string &fileName) override;
 	void InsertGeometry(bool newStr, const std::string &fileName) override;
 	void SaveFile() override;
@@ -128,12 +128,13 @@ public:
     void BuildPipe(double ratio,int steps) override;
 	void EmptyGeometry() override;
 	void CrashHandler(const std::exception &e);
-	
+
+    int  FrameMove() override;
 protected:
 	void LoadParameterCatalog();
     int  OneTimeSceneInit() override;
     int  RestoreDeviceObjects() override;
 	int  InvalidateDeviceObjects() override;
-    int  FrameMove() override;
+
     void ProcessMessage(GLComponent *src,int message) override;
 };

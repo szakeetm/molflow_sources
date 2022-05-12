@@ -85,7 +85,7 @@ int main(int argc, char** argv) {
 #endif
 
 
-    if(!SettingsIO::inputFile.empty() && Initializer::initFromFile(&simManager, model, &globState)){
+    if(Initializer::initFromFile(&simManager, model, &globState)){
 #if defined(USE_MPI)
         MPI_Finalize();
 #endif
@@ -314,7 +314,7 @@ int main(int argc, char** argv) {
                 try {
                     std::filesystem::remove(fileNameWithZIP);
                 }
-                catch (const std::exception &e) {
+                catch (std::exception &e) {
                     Log::console_error("Error compressing to \n%s\nMaybe file is in use:\n%s",fileNameWithZIP.c_str(),e.what());
                 }
             }
@@ -323,7 +323,7 @@ int main(int argc, char** argv) {
             try {
                 std::filesystem::remove(fullOutFile);
             }
-            catch (const std::exception &e) {
+            catch (std::exception &e) {
                 Log::console_error("Error removing\n%s\nMaybe file is in use:\n%s",fullOutFile.c_str(),e.what());
             }
         }
