@@ -351,11 +351,7 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
             else if (iContains({ "Torque","TorqueX", "TorqueY", "TorqueZ" }, tokens[0])) v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * (worker->model->wp.gasMass / 1000 / 6E23) * 0.01; //Ncm to Nm
             else v->value = static_cast<double>(sumLL); //One long->double conversion at the end (instead of at each summing operation)
         }
-        if (avgMode) v->value=sumD * worker->GetMoleculesPerTP(worker->displayedMoment)*1E4 / sumArea;
-        else if (Contains({ "AR", "ar" }, tokens[0])) v->value = sumArea;
-        else if (Contains({ "H", "h", "A", "a" }, tokens[0])) v->value = sumD;
-        else v->value = static_cast<double>(sumLL); //Only one conversion at the end (instead of at each summing operation)
-    }
+     }
     else ok = false;
     return ok;
 }
