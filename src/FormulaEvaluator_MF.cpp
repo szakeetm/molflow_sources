@@ -204,10 +204,14 @@ bool FormulaEvaluator_MF::EvaluateVariable(VLIST *v) {
                 sumArea += geom->GetFacet(sel)->GetArea();
             } else return false;
         }
-        if (avgMode) v->value=sumD * worker->GetMoleculesPerTP(worker->displayedMoment)*1E4 / sumArea;
-        else if (iequals( "AR", tokens[0])) v->value = sumArea;
-        else if (iContains({ "H", "A" }, tokens[0])) v->value = sumD;
-        else v->value = static_cast<double>(sumLL); //Only one conversion at the end (instead of at each summing operation)
+        if (avgMode) {
+            v->value = sumD * worker->GetMoleculesPerTP(worker->displayedMoment) * 1E4 / sumArea; //area-weighed averaging
+        }
+        else { //sum mode
+            if (iequals("AR", tokens[0])) v->value = sumArea;
+            else if (iContains({ "H", "A" }, tokens[0])) v->value = sumD;
+            else v->value = static_cast<double>(sumLL); //Only one conversion at the end (instead of at each summing operation)
+        }
     }
     else ok = false;
     return ok;
