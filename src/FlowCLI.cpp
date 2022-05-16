@@ -85,7 +85,7 @@ int main(int argc, char** argv) {
 #endif
 
 
-    if(Initializer::initFromFile(&simManager, model, &globState)){
+    if(!SettingsIO::autogenerateTest && Initializer::initFromFile(&simManager, model, &globState)){
 #if defined(USE_MPI)
         MPI_Finalize();
 #endif
@@ -152,9 +152,20 @@ int main(int argc, char** argv) {
                     .concat(std::to_string(model->otfParams.desorptionLimit))
                     .concat("_")
                     .concat(std::filesystem::path(SettingsIO::outputFile).filename().string()).string();
+
             try {
-                std::filesystem::copy_file(SettingsIO::workFile, outFile, std::filesystem::copy_options::overwrite_existing);
                 FlowIO::WriterXML writer;
+                if(!SettingsIO::workFile.empty()) {
+                    std::filesystem::copy_file(SettingsIO::workFile, outFile,
+                                               std::filesystem::copy_options::overwrite_existing);
+                }
+                else {
+                    pugi::xml_document newDoc;
+                    writer.SaveGeometry(newDoc, model);
+                    //writer.SaveSimulationState(newDoc, model, globState);
+                    writer.SaveXMLToFile(newDoc, outFile);
+                    //SettingsIO::workFile = outFile;
+                }
                 writer.SaveSimulationState(outFile, model, globState);
             } catch(std::filesystem::filesystem_error& e) {
                 Log::console_error("Warning: Could not create file: %s\n", e.what());
@@ -295,7 +306,8 @@ int main(int argc, char** argv) {
         }
         else if(!SettingsIO::overwrite){
             // Copy full file description first, in case outputFile is different
-            std::filesystem::copy_file(SettingsIO::workFile, fullOutFile,
+            if(!SettingsIO::workFile.empty())
+                std::filesystem::copy_file(SettingsIO::workFile, fullOutFile,
                                        std::filesystem::copy_options::overwrite_existing);
         }
         FlowIO::WriterXML writer(false, true);
