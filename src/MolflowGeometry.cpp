@@ -1783,32 +1783,35 @@ void MolflowGeometry::SaveGEO(FileWriter *file, GLProgress *prg, GlobalSimuState
 	for (size_t m = 0; m <= mApp->worker.moments.size(); m++) {
 		sprintf(tmp, "moment %zd {\n", m);
 		file->Write(tmp);
-		for (size_t i = 0; i < sh.nbFacet; i++) {
-			prg->SetProgress((double)(i + m * sh.nbFacet) / (double)(mApp->worker.moments.size()*sh.nbFacet)*0.33 + 0.66);
-			InterfaceFacet *f = facets[i];
-			if (f->hasMesh) {
-				size_t h = f->sh.texHeight;
-				size_t w = f->sh.texWidth;
-				size_t profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice)*(1 + (int)mApp->worker.moments.size())) : 0;
-				const std::vector<TextureCell>& texture = globState.facetStates[i].momentResults[m].texture;
+		for (size_t i = 0, k = 0; i < sh.nbFacet; i++) {
+			if (!saveSelected || facets[i]->selected) {
+				k++; //facet id in the group of selected facets
+				prg->SetProgress((double)(i + m * sh.nbFacet) / (double)(mApp->worker.moments.size() * sh.nbFacet) * 0.33 + 0.66);
+				InterfaceFacet* f = facets[i];
+				if (f->hasMesh) {
+					size_t h = f->sh.texHeight;
+					size_t w = f->sh.texWidth;
+					size_t profSize = (f->sh.isProfile) ? (PROFILE_SIZE * sizeof(ProfileSlice) * (1 + (int)mApp->worker.moments.size())) : 0;
+					const std::vector<TextureCell>& texture = globState.facetStates[i].momentResults[m].texture;
 
-				//char tmp[256];
-				sprintf(tmp, " texture_facet %zd {\n", i + 1);
+					//char tmp[256];
+					sprintf(tmp, "texture_facet %d {\n", k); //Starts from 1, not 0, first element is k=1
 
-				file->Write(tmp);
-				file->Write("width:"); file->Write(f->sh.texWidth); file->Write(" height:"); file->Write(f->sh.texHeight); file->Write("\n");
-				for (iy = 0; iy < h; iy++) {
-					for (ix = 0; ix < w; ix++) {
-						file->Write((!crashSave && !saveSelected) ? static_cast<size_t>(texture[iy*f->sh.texWidth + ix].countEquiv) : 0, "\t");
-						file->Write((!crashSave && !saveSelected) ? texture[iy*f->sh.texWidth + ix].sum_1_per_ort_velocity : 0, "\t");
-						file->Write((!crashSave && !saveSelected) ? texture[iy*f->sh.texWidth + ix].sum_v_ort_per_area : 0, "\t");
+					file->Write(tmp);
+					file->Write("width:"); file->Write(f->sh.texWidth); file->Write(" height:"); file->Write(f->sh.texHeight); file->Write("\n");
+					for (iy = 0; iy < h; iy++) {
+						for (ix = 0; ix < w; ix++) {
+							file->Write((!crashSave && !saveSelected) ? static_cast<size_t>(texture[iy * f->sh.texWidth + ix].countEquiv) : 0, "\t");
+							file->Write((!crashSave && !saveSelected) ? texture[iy * f->sh.texWidth + ix].sum_1_per_ort_velocity : 0, "\t");
+							file->Write((!crashSave && !saveSelected) ? texture[iy * f->sh.texWidth + ix].sum_v_ort_per_area : 0, "\t");
+						}
+						file->Write("\n");
 					}
-					file->Write("\n");
-				}
 
-				file->Write(" }\n");
+					file->Write(" }\n"); //close facet
+				}
 			}
-		}
+		} //end facet
 		file->Write("}\n");
 	}
 	//if (!crashSave && !saveSelected) ReleaseDataport(buffer);
@@ -2560,7 +2563,7 @@ void MolflowGeometry::SaveXML_geometry(xml_node &saveDoc, Worker *work, GLProgre
 		prg->SetProgress(0.166 + ((double)i / (double)sh.nbFacet) *0.166);
 		if (!saveSelected || facets[i]->selected) {
 			xml_node f = geomNode.child("Facets").append_child("Facet");
-			f.append_attribute("id") = i;
+			f.append_attribute("id") = k++;
 			facets[i]->SaveXML_geom(f);
 		}
 	}

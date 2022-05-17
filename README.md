@@ -98,6 +98,34 @@ cmake -DCMAKE_BUILD_TYPE=RELEASE -DUSE_TESTS=OFF ..
 make
 ```
 
+## CMake / make installation
+
+Given a default Cmake build procedure `mkdir build && cd build && cmake ..` Molflow can be installed into the users home folder by `cmake --install .` --> ~/molflow/
+
+To change the directory, the installation prefix can be adjusted `cmake --install . --prefix ~/Apps/` --> ~/Apps/molflow
+
+For a make installation, after the standard CMake procedure, by default Molflow will also be installed in the users home folder `make install` --> ~/molflow/
+
+The installation path can be changed by adding an installation prefix to the CMake build command `cmake -DCMAKE_INSTALL_PREFIX:PATH=~/Apps/ ..` and `make install` --> ~/Apps/molflow
+
+## Building for MPI
+
+- Prepare the environment with MPI and a compatible GCC version (GCC_VERSION >= 8)
+- Make sure a recent version of CMake is available (>= 3.12)
+    - Otherwise setup cmake from `https://github.com/Kitware/CMake/releases/`
+    - `wget https://github.com/Kitware/CMake/releases/download/v3.20.1/cmake-3.20.1-linux-x86_64.tar.gz` 
+    - `tar -xvf cmake-3.20.1-linux-x86_64.tar.gz.1`
+    - `cd cmake-3.20.1-linux-x86_64` 
+- Install Molflow by cloning the Repository
+    - `git clone https://gitlab.cern.ch/molflow_synrad/molflow.git`
+    - `cd molflow`
+- Build molflow with the installed cmake (or the pre-installed cmake)
+    - we require headless (NO_INTERFACE) and MPI (USE_MPI) for the CMake build
+    - `mkdir build && cd build` 
+    - `~/cmake-3.20.1-linux-x86_64/bin/cmake -DCMAKE_C_COMPILER=/path_to_custom_gcc -DCMAKE_CXX_COMPILER=/path_to_custom_g++ -DNO_INTERFACE=ON -DUSE_MPI=ON ..`
+- Use as explained by the MPI service of choice, e.g. with `mpirun`
+    `mpirun -n 64 ./molflowCLI -f TestCases/06-dynamic_desorption_from_synrad.xml -t 180 --reset`
+
 # Running
 ## Windows
 Use the shortcut (that changes the working directory and launches *molflow.exe*) in *bin\win\release*

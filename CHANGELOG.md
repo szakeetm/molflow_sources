@@ -1,15 +1,20 @@
 # Changelog
 
-## v2.9.4 (TBA)
+## v2.9.5 (TBA)
+### Bugfix
+- Rare crash when collapsing facets or vertices
+
+## v2.9.4 (2022.04.14)
 ### Feature
 - MPI simulations (see documentation)
 
 ### Change
-- Dramatically increased collapse operations (vertices/facets)
+- Dramatically accelerated collapse operations (vertices/facets)
 - Load files via drag and drop from file browser
 - Added CMake install option
 - CLI option for an auto generated test case (pipe) based on oblique prisms
 - Facet highlighting is disabled when more than 500 facets are selected to increase rendering performance
+- Time-dependent mode: particle reflection takes into account sojourn time
 
 ### Bugfix
 - Crash on creating a new facet by difference
@@ -20,6 +25,7 @@
 - CLI could endlessly run when neither a valid time or desorption limit has been set
 - Thread status shows properly on all supported OS
 - CLI will properly save changes done via parameter changes to the output file
+- Fixed incorrect generation of angle maps
 
 ## v2.9.3 (2022.01.31)
 ### Change

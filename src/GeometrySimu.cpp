@@ -235,7 +235,8 @@ int SubprocessFacet::InitializeAngleMap()
     //Incident angle map
     int angleMapSize = 0;
     if (sh.desorbType == DES_ANGLEMAP) { //Use mode
-        //if (angleMapCache.empty()) throw Error(("Facet " + std::to_string(globalId + 1) + ": should generate by angle map but has none recorded.").c_str());
+        if (angleMap.pdf.empty()) // check if a valid recorded angle map exists, otherwise we can't desorb
+            throw Error(fmt::format("Facet {}: should generate by angle map but has none recorded.", globalId + 1).c_str());
 
         //Construct CDFs
         try {
@@ -669,7 +670,7 @@ void SimulationModel::CalculateFacetParams(SubprocessFacet* f) {
         v1 = vertices3[i1] - vertices3[i0]; // v1 = P0P1
         v2 = vertices3[i2] - vertices3[i1]; // v2 = P1P2
         f->sh.N = CrossProduct(v1, v2);              // Cross product
-        consecutive = (f->sh.N.Length() < 1e-11);
+        consecutive = (f->sh.N.Length() < 1e-3);
     }
     f->sh.N = f->sh.N.Normalized();                  // Normalize
 

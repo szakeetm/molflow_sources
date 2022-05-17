@@ -171,11 +171,13 @@ include(GNUInstallDirs)
 # e.g. /home/user/molflow
 # cmake --install . --prefix /usr/local/bin/
 # will install to /usr/local/bin/molflow
-if(NOT CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+# cmake -DCMAKE_INSTALL_PREFIX:PATH=/Users/pascal/molflow_test/ .
+#
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set(CMAKE_INSTALL_PREFIX "$ENV{HOME}" CACHE PATH "..." FORCE)
 endif()
 
-install(CODE "MESSAGE(\"Installing in home directory ${CMAKE_INSTALL_PREFIX}.\")")
+install(CODE "MESSAGE(\"Installing in home directory ${CMAKE_INSTALL_PREFIX}\")")
 install(DIRECTORY copy_to_build/images
         copy_to_build/desorption_yields
         copy_to_build/parameter_catalog
@@ -186,7 +188,15 @@ install(DIRECTORY copy_to_build/images
         PATTERN "parameter_catalog/*"
         PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ GROUP_WRITE
         )
-install(TARGETS molflow molflowCLI
+
+if(NOT NO_INTERFACE)
+    install(TARGETS molflow
+            CONFIGURATIONS Release
+            RUNTIME
+            DESTINATION ${MOLFLOW_INSTALL_DIR}
+    )
+endif()
+install(TARGETS molflowCLI
         CONFIGURATIONS Release
         RUNTIME
         DESTINATION ${MOLFLOW_INSTALL_DIR}

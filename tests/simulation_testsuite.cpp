@@ -892,7 +892,7 @@ namespace {
         if(std::filesystem::exists(f_physics)){
             EXPECT_LT(0 , FlowIO::CSVExporter::ValidateCSVFile(f_physics.string()) );
         }
-        
+
         if (!SettingsIO::workPath.empty() && (SettingsIO::workPath != "." || SettingsIO::workPath != "./"))
             std::filesystem::remove_all(SettingsIO::workPath);
     }
