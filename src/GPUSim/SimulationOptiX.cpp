@@ -181,8 +181,9 @@ typedef Record<TriangleRayGenData> RaygenRecordTri;
 
     /*! constructor - performs all setup, including initializing
       optix, creates module, pipeline, programs, SBT, etc. */
-    SimulationOptiX::SimulationOptiX(const Model *model, const uint2 &launchSize)
+    SimulationOptiX::SimulationOptiX(const Model *model, const unsigned int launchSize_[2])
             : model(model) {
+        uint2 launchSize = make_uint2(launchSize_[0], launchSize_[1]);
         std::cout << "#flowgpu: initializing launch parameters ..." << std::endl;
         try{
         initLaunchParams(launchSize);
@@ -1396,7 +1397,9 @@ try{
     }
 
 
-    void SimulationOptiX::resetDeviceData(const uint2 &newSize) {
+    void SimulationOptiX::resetDeviceData(const unsigned int newSize_[2]) {
+        uint2 newSize = make_uint2(newSize_[0],newSize_[1]);
+
 #ifdef RNG_BULKED
         const uint32_t nbRand = NB_RAND(model->parametersGlobal.cyclesRNG, state.launchParams.simConstants.maxDepth);
 #else

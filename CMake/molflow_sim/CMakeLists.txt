@@ -99,11 +99,12 @@ set(SRC_FILES
         ${SIMU_DIR}/IDGeneration.cpp
 
         ${CPP_DIR_2}/SimulationController.cpp
+        ${CPP_DIR_2}/SimulationControllerCPU.cpp
         ${CPP_DIR_2}/SimulationManager.cpp
         ${CPP_DIR_2}/IntersectAABB_shared.cpp
         ${CPP_DIR_2}/Polygon.cpp
         ${CPP_DIR_2}/Random.cpp
-        ../../src_shared/RayTracing/Ray.cpp
+        ${CPP_DIR_2}/RayTracing/Ray.cpp
         )
 
 # set the path to the library folder

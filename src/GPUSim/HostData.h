@@ -8,7 +8,9 @@
 #include <cstdint>
 #include <vector>
 #include <map>
-#include "LaunchParams.h" //CuFacetHitCounter
+//#include "PerRayData.h"
+#include "LaunchParams.h"
+//#include "LaunchParams.h" //CuFacetHitCounter
 
 
 

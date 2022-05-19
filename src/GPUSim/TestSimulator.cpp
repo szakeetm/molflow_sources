@@ -290,7 +290,13 @@ int main(int argc, char **argv) {
         }
     }
 
-    SimulationControllerGPU gpuSim;
+    // Check for valid end conditions
+    if(!(nbLoops > 0 || timeLimit >= 1e-6)){
+        Log::console_error("No valid end condition set!\n");
+        return 42;
+    }
+
+    SimulationControllerGPU gpuSim(0, 0, 1, nullptr, std::make_shared<ProcComm>());
     std::shared_ptr<flowgpu::Model> model;
 
     // for export
@@ -364,7 +370,7 @@ int main(int argc, char **argv) {
     model->parametersGlobal = simParams;
 
     std::cout << "#GPUTestsuite: Loading simulation with kernel size: " << launchSize << std::endl;
-    gpuSim.LoadSimulation(model.get(), launchSize);
+    gpuSim.LoadSimulation(model, launchSize);
 
     std::cout << "#GPUTestsuite: Starting simulation with " << launchSize << " threads per launch => " << nbLoops << " runs "<<std::endl;
 

@@ -41,7 +41,7 @@ public:
 
 public:
     SimulationControllerGPU* gpuSim;
-    flowgpu::Model* model;
+    std::shared_ptr<flowgpu::Model> model;
 
     GlobalHitBuffer tmpGlobalResult; //Global results since last UpdateMCHits
 

@@ -7,9 +7,18 @@
 
 
 //#include "Simulation.h"
-#include "SimulationOptiX.h"
-#include "HostData.h"
+//#include "SimulationOptiX.h"
+//#include "HostData.h"
+#include "../../src/GeometrySimu.h"
+#include "SimulationController.h"
 
+class HostData;
+class GlobalCounter;
+
+namespace flowgpu {
+    class SimulationOptiX;
+    class Model;
+}
 struct RuntimeFigures {
     uint32_t runCount {0};
     uint32_t runCountNoEnd {0};
@@ -25,15 +34,15 @@ struct RuntimeFigures {
     uint64_t exitCount = 0;
 };
 
-class SimulationControllerGPU {
+class SimulationControllerGPU : public SimulationController {
 protected:
     //flowgpu::SampleWindow* window;
-    flowgpu::SimulationOptiX *optixHandle;
-    flowgpu::Model *model;
-    uint2 kernelDimensions; // blocks and threads per block
+    std::shared_ptr<flowgpu::SimulationOptiX> optixHandle;
+    std::shared_ptr<flowgpu::Model> model;
+    unsigned int kernelDimensions[2]; // blocks and threads per block
 
-    HostData data;
-    GlobalCounter globalCounter;
+    std::unique_ptr<HostData> data;
+    std::unique_ptr<GlobalCounter> globalCounter;
 
     void Resize();
     unsigned long long int GetTotalHits();
@@ -48,13 +57,14 @@ private:
 
     void CalcRuntimeFigures();
 public:
-    SimulationControllerGPU();
+    SimulationControllerGPU(size_t parentPID, size_t procIdx, size_t nbThreads, SimulationUnit *simUnit,
+                            std::shared_ptr<ProcComm> pInfo);
     ~SimulationControllerGPU();
 
-    int LoadSimulation(flowgpu::Model* loaded_model, size_t launchSize);
+    int LoadSimulation(std::shared_ptr<flowgpu::Model> loaded_model, size_t launchSize);
     uint64_t RunSimulation();
     int CloseSimulation();
-    int ResetSimulation();
+    int ResetSimulation(bool softReset);
     void AllowNewParticles();
 
     unsigned long long int GetSimulationData(bool silent = true);
@@ -72,6 +82,14 @@ public:
     bool endCalled{false};
 
     unsigned long long int ConvertSimulationData(GlobalSimuState &gState);
+    
+    
+public:
+    int Start() override;
+    bool Load() override;
+    int RebuildAccel() override;
+    int Reset() override;
+    void EmergencyExit() override; // Killing threads
 };
 
 

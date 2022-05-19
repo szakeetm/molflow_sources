@@ -97,10 +97,10 @@ namespace flowgpu {
     public:
         /*! constructor - performs all setup, including initializing
           optix, creates module, pipeline, programs, SBT, etc. */
-        SimulationOptiX(const Model *model, const uint2 &launchSize);
+        SimulationOptiX(const Model *model, const unsigned int launchSize_[2]);
         ~SimulationOptiX();
 
-        void resetDeviceData(const uint2 &newSize);
+        void resetDeviceData(const unsigned int newSize_[2]);
             /*! upload some parts only on start */
         void initSimulation();
 

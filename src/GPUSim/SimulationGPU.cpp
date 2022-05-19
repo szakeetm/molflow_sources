@@ -10,6 +10,8 @@
 #include "SimulationControllerGPU.h"
 #include "fmt/core.h"
 
+#include "HostData.h"
+
 #if defined(NDEBUG)
 #define LAUNCHSIZE 1920*128*1//1024*64*16//1024*128*64
 #elif defined(DEBUG)
@@ -25,7 +27,7 @@ SimulationGPU::SimulationGPU()
 }
 
 SimulationGPU::~SimulationGPU() {
-    delete model;
+    //delete model; // shared_ptr now
 }
 
 std::pair<int, std::optional<std::string>> SimulationGPU::SanityCheckModel(bool strictCheck) {
@@ -200,8 +202,7 @@ bool SimulationGPU::LoadSimulation(Dataport *loader, char* loadStatus) {
         std::string inputString(loader->size,'\0');
         BYTE* buffer = (BYTE*)loader->buff;
         std::copy(buffer, buffer + loader->size, inputString.begin());
-
-        model = flowgpu::loadFromSerialization(inputString);
+        model = std::shared_ptr<flowgpu::Model>(flowgpu::loadFromSerialization(inputString));
         if(!model) return false;
         //this->ontheflyParams = this->model->ontheflyParams;
     }//inputarchive goes out of scope, file released
@@ -223,7 +224,7 @@ bool SimulationGPU::LoadSimulation(Dataport *loader, char* loadStatus) {
 void SimulationGPU::ResetSimulation() {
     totalDesorbed = 0;
     ResetTmpCounters();
-    if(gpuSim) gpuSim->ResetSimulation();
+    if(gpuSim) gpuSim->ResetSimulation(false);
 }
 
 bool SimulationGPU::UpdateOntheflySimuParams(Dataport *loader) {
@@ -359,11 +360,11 @@ bool SimulationGPU::UpdateHits(Dataport *dpHit, Dataport* dpLog, int prIdx, DWOR
 #endif
 
 #ifdef WITH_PROF
-    updateProfileBuffer(gHits, globalCount, model);
+    updateProfileBuffer(gHits, globalCount, model.get());
 #endif // WITH_PROF
 
 #ifdef WITH_TEX
-    updateTextureLimit(gHits, globalCount, model);
+    updateTextureLimit(gHits, globalCount, model.get());
 #endif
 
     ReleaseDataport(dpHit);
