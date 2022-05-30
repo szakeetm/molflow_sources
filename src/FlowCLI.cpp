@@ -112,7 +112,10 @@ int main(int argc, char** argv) {
 
     //simManager.ReloadHitBuffer();
     //simManager.IncreasePriority();
-    Log::console_msg_master(1,"[%s] Commencing simulation for %lu seconds from %lu desorptions.\n", Util::getTimepointString().c_str(), Settings::simDuration, globState.globalHits.globalHits.nbDesorbed);
+    if(Settings::simDuration > 0)
+        Log::console_msg_master(1,"[%s] Commencing simulation for %lu seconds from %lu desorptions.\n", Util::getTimepointString().c_str(), Settings::simDuration, globState.globalHits.globalHits.nbDesorbed);
+    else if(model->otfParams.desorptionLimit > 0)
+        Log::console_msg_master(1,"[%s] Commencing simulation to %lu desorptions from %lu desorptions.\n", Util::getTimepointString().c_str(), model->otfParams.desorptionLimit, globState.globalHits.globalHits.nbDesorbed);
 
 #if defined(USE_MPI)
     MPI_Barrier(MPI_COMM_WORLD);
@@ -144,40 +147,46 @@ int main(int argc, char** argv) {
             endCondition = globState.globalHits.globalHits.nbDesorbed/* - oldDesNb*/ >= model->otfParams.desorptionLimit;
 
         if(endCondition){
-            /*std::stringstream outFile;
-            outFile << SettingsIO::outputPath << "/" <<"desorped_" << model->otfParams.desorptionLimit << "_" <<
-                 std::filesystem::path(SettingsIO::outputFile).filename().string();*/
-            std::string outFile = std::filesystem::path(SettingsIO::outputPath)
-                    .append("desorped_")
-                    .concat(std::to_string(model->otfParams.desorptionLimit))
-                    .concat("_")
-                    .concat(std::filesystem::path(SettingsIO::outputFile).filename().string()).string();
-
-            try {
-                FlowIO::WriterXML writer;
-                if(!SettingsIO::workFile.empty()) {
-                    std::filesystem::copy_file(SettingsIO::workFile, outFile,
-                                               std::filesystem::copy_options::overwrite_existing);
-                }
-                else {
-                    pugi::xml_document newDoc;
-                    writer.SaveGeometry(newDoc, model);
-                    //writer.SaveSimulationState(newDoc, model, globState);
-                    writer.SaveXMLToFile(newDoc, outFile);
-                    //SettingsIO::workFile = outFile;
-                }
-                writer.SaveSimulationState(outFile, model, globState);
-            } catch(std::filesystem::filesystem_error& e) {
-                Log::console_error("Warning: Could not create file: %s\n", e.what());
-            }
 
             // if there is a next des limit, handle that
             if(!Settings::desLimit.empty()) {
+
+                // First write an intermediate output file
+                // TODO: Make it toggeable?
+                /*std::stringstream outFile;
+            outFile << SettingsIO::outputPath << "/" <<"desorped_" << model->otfParams.desorptionLimit << "_" <<
+                 std::filesystem::path(SettingsIO::outputFile).filename().string();*/
+                std::string outFile = std::filesystem::path(SettingsIO::outputPath)
+                        .append("desorbed_")
+                        .concat(std::to_string(model->otfParams.desorptionLimit))
+                        .concat("_")
+                        .concat(std::filesystem::path(SettingsIO::outputFile).filename().string()).string();
+
+                try {
+                    FlowIO::WriterXML writer;
+                    Log::console_msg_master(3, " Saving intermediate results: %s\n", outFile.c_str());
+                    if(!SettingsIO::workFile.empty()) {
+                        std::filesystem::copy_file(SettingsIO::workFile, outFile,
+                                                   std::filesystem::copy_options::overwrite_existing);
+                    }
+                    else {
+                        pugi::xml_document newDoc;
+                        writer.SaveGeometry(newDoc, model);
+                        //writer.SaveSimulationState(newDoc, model, globState);
+                        writer.SaveXMLToFile(newDoc, outFile);
+                        //SettingsIO::workFile = outFile;
+                    }
+                    writer.SaveSimulationState(outFile, model, globState);
+                } catch(std::filesystem::filesystem_error& e) {
+                    Log::console_error("Warning: Could not create file: %s\n", e.what());
+                }
+                // Next choose the next desorption limit and start
+
                 model->otfParams.desorptionLimit = Settings::desLimit.front();
                 Settings::desLimit.pop_front();
                 simManager.ForwardOtfParams(&model->otfParams);
                 endCondition = false;
-                Log::console_msg_master(1, " Handling next des limit %z\n", model->otfParams.desorptionLimit);
+                Log::console_msg_master(1, " Handling next des limit %zu\n", model->otfParams.desorptionLimit);
 
                 try {
                     ProcessSleep(1000);
