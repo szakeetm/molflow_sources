@@ -271,7 +271,7 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 			try{
 				work->AnalyzeSYNfile(fileName.c_str(),&nbFacet,
 					&nbTextured,&nbDifferent);
-			} catch (Error &e) {
+			} catch (std::exception &e) {
 				char errMsg[512];
 				sprintf(errMsg,"%s\nFile:%s",e.what(),fileName.c_str());
 				GLMessageBox::Display(errMsg,"Error loading source file",GLDLG_OK,GLDLG_ICONERROR);
