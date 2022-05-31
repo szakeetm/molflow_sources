@@ -30,7 +30,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 
 
-#define SYNVERSION 10
+#define SYNVERSION 12
 
 class Worker;
 
@@ -105,4 +105,3 @@ private:
 	void SaveProfileGEO(FileWriter *file, GlobalSimuState &globState, int super = -1, bool saveSelected = false, bool crashSave = false);
 
 };
-

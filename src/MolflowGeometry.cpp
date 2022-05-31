@@ -433,6 +433,18 @@ void MolflowGeometry::InsertSYNGeom(FileReader *file, size_t strIdx, bool newStr
 		throw Error(errMsg);
 	}
 
+	if (version2 >= 12) {
+		file->ReadKeyword("newReflectionModel");
+		file->ReadKeyword(":");
+		/*worker->wp.newReflectionModel =*/ file->ReadInt();
+		file->ReadKeyword("lowFluxMode");
+		file->ReadKeyword(":");
+		/*worker->ontheflyParams.lowFluxMode =*/ file->ReadInt();
+		file->ReadKeyword("lowFluxCutoff");
+		file->ReadKeyword(":");
+		/*worker->ontheflyParams.lowFluxCutoff =*/ file->ReadDouble();
+	}
+
 	file->ReadKeyword("totalHit"); file->ReadKeyword(":");
 	file->ReadSizeT();
 	if (version2 >= 10) {
@@ -1081,6 +1093,19 @@ void MolflowGeometry::LoadSYN(FileReader *file, GLProgress *prg, int *version, W
 		sprintf(errMsg, "Unsupported SYN version V%d", *version);
 		throw Error(errMsg);
 	}
+
+	if (*version >= 12) {
+		file->ReadKeyword("newReflectionModel");
+		file->ReadKeyword(":");
+		/*worker->wp.newReflectionModel =*/ file->ReadInt();
+		file->ReadKeyword("lowFluxMode");
+		file->ReadKeyword(":");
+		/*worker->ontheflyParams.lowFluxMode =*/ file->ReadInt();
+		file->ReadKeyword("lowFluxCutoff");
+		file->ReadKeyword(":");
+		/*worker->ontheflyParams.lowFluxCutoff =*/ file->ReadDouble();
+	}
+
 	file->ReadKeyword("totalHit"); file->ReadKeyword(":");
 	worker->globState.globalHits.globalHits.nbMCHit = 0;
 	worker->globState.globalHits.globalHits.nbHitEquiv = 0.0;
@@ -2157,6 +2182,18 @@ void MolflowGeometry::ImportDesorption_SYN(
 
 	}
 
+	if (version >= 12) {
+		file->ReadKeyword("newReflectionModel");
+		file->ReadKeyword(":");
+		/*worker->wp.newReflectionModel =*/ file->ReadInt();
+		file->ReadKeyword("lowFluxMode");
+		file->ReadKeyword(":");
+		/*worker->ontheflyParams.lowFluxMode =*/ file->ReadInt();
+		file->ReadKeyword("lowFluxCutoff");
+		file->ReadKeyword(":");
+		/*worker->ontheflyParams.lowFluxCutoff =*/ file->ReadDouble();
+	}
+
 	//now read number of facets
 	file->ReadKeyword("totalHit"); file->ReadKeyword(":");
 	file->ReadSizeT();
@@ -2377,6 +2414,18 @@ void MolflowGeometry::AnalyzeSYNfile(FileReader *file, GLProgress *progressDlg, 
 		sprintf(errMsg, "Unsupported SYN version V%d", version);
 		throw Error(errMsg);
 
+	}
+
+	if (version >= 12) {
+		file->ReadKeyword("newReflectionModel");
+		file->ReadKeyword(":");
+		/*worker->wp.newReflectionModel =*/ file->ReadInt();
+		file->ReadKeyword("lowFluxMode");
+		file->ReadKeyword(":");
+		/*worker->ontheflyParams.lowFluxMode =*/ file->ReadInt();
+		file->ReadKeyword("lowFluxCutoff");
+		file->ReadKeyword(":");
+		/*worker->ontheflyParams.lowFluxCutoff =*/ file->ReadDouble();
 	}
 
 	//now read number of facets
