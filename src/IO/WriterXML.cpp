@@ -34,24 +34,55 @@ void WriterXML::finishWriteStatus(const std::string &statusString) {
 }
 
 xml_node WriterXML::GetRootNode(xml_document &saveDoc) {
+    // Check whether we do a old to new format update
+    // If yes, move old scheme to new scheme by adding the root node
+    if(update){
+        bool oldFormatUsed = false;
+        auto rootNode = saveDoc.document_element();
+        if(!saveDoc.child("SimulationEnvironment")){
+            rootNode = saveDoc.root();
+            if(rootNode.child("Geometry")){
+                oldFormatUsed = true;
+            }
+        }
+
+        if(oldFormatUsed && !useOldXMLFormat){
+            xml_document newDoc;
+            auto newHead = newDoc.append_child("SimulationEnvironment");
+            newDoc.append_attribute("type") = "molflow";
+            newDoc.append_attribute("version") = appVersionId;
+            for(auto& node : rootNode.children()){
+                newHead.append_copy(node);
+            }
+
+            saveDoc.reset(newDoc);
+        }
+    }
+
     xml_node rootNode;
     if (useOldXMLFormat) {
         rootNode = saveDoc.root();
     } else {
         if(update) {
+            rootNode = saveDoc.document_element();
             rootNode = saveDoc.child("SimulationEnvironment");
         }
         if(!rootNode) {
-            rootNode = saveDoc.append_child("SimulationEnvironment");
-            rootNode.append_attribute("type") = "molflow";
-            rootNode.append_attribute("version") = appVersionId;
+            if(!saveDoc.child("SimulationEnvironment")) {
+                rootNode = saveDoc.append_child("SimulationEnvironment");
+                rootNode.append_attribute("type") = "molflow";
+                rootNode.append_attribute("version") = appVersionId;
+            }
+            else
+                rootNode = saveDoc.document_element();
         }
     }
 
     return rootNode;
 }
 
-void WriterXML::SaveGeometry(xml_document &saveDoc, std::shared_ptr<SimulationModel> model) {
+void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<SimulationModel> &model,
+                             const std::vector<size_t> &selection) {
     xml_node rootNode = GetRootNode(saveDoc);
 
     if(update)
@@ -69,14 +100,29 @@ void WriterXML::SaveGeometry(xml_document &saveDoc, std::shared_ptr<SimulationMo
     }
 
     geomNode.append_child("Facets");
-    geomNode.child("Facets").append_attribute("nb") = model->facets.size();
-    for (size_t i = 0; i < model->facets.size(); i++) {
-        //prg->SetProgress(0.166 + ((double)i / (double)model->facets.size()) *0.166);
-        //if (!saveSelected || model->facets[i]->selected) {
-        xml_node f = geomNode.child("Facets").append_child("Facet");
-        f.append_attribute("id") = i;
-        SaveFacet(f, model->facets[i].get(), model->vertices3.size()); //model->facets[i]->SaveXML_geom(f);
-        //}
+    
+    if (selection.empty()) {
+        geomNode.child("Facets").append_attribute("nb") = model->facets.size();
+        for (size_t i = 0; i < model->facets.size(); i++) {
+            //prg->SetProgress(0.166 + ((double)i / (double)model->facets.size()) *0.166);
+            //if (!saveSelected || model->facets[i]->selected) {
+            xml_node f = geomNode.child("Facets").append_child("Facet");
+            f.append_attribute("id") = i;
+            SaveFacet(f, model->facets[i].get(), model->vertices3.size()); //model->facets[i]->SaveXML_geom(f);
+            //}
+        }
+    }
+    else
+    {
+        geomNode.child("Facets").append_attribute("nb") =selection.size();
+        for (size_t i = 0; i < selection.size();i++) {
+            //prg->SetProgress(0.166 + ((double)i / (double)model->facets.size()) *0.166);
+            //if (!saveSelected || model->facets[i]->selected) {
+            xml_node f = geomNode.child("Facets").append_child("Facet");
+            f.append_attribute("id") = i; //Different from global facet id
+            SaveFacet(f, model->facets[selection[i]].get(), model->vertices3.size()); //model->facets[i]->SaveXML_geom(f);
+            //}
+        }
     }
 
     geomNode.append_child("Structures").append_attribute("nb") = model->sh.nbSuper;
@@ -174,6 +220,16 @@ void WriterXML::SaveGeometry(xml_document &saveDoc, std::shared_ptr<SimulationMo
         timeNode.append_attribute("max") = model->wp.globalHistogramParams.timeMax;
     }
 #endif
+}
+
+// Save XML document to file
+bool
+WriterXML::SaveXMLToFile(xml_document &saveDoc, const std::string &outputFileName) {
+    if (!saveDoc.save_file(outputFileName.c_str())) {
+        std::cerr << "Error writing XML file." << std::endl; //successful save
+        return false;
+    }
+    return true;
 }
 
 // Directly append to file (load + save)
@@ -643,7 +699,7 @@ void WriterXML::SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
 
     } //end texture
 
-    if (facet->sh.anglemapParams.hasRecorded) {
+    if (!facet->angleMap.pdf.empty()) {
         xml_node textureNode = facetNode.append_child("IncidentAngleMap");
         textureNode.append_attribute("angleMapPhiWidth") = facet->sh.anglemapParams.phiWidth;
         textureNode.append_attribute("angleMapThetaLimit") = facet->sh.anglemapParams.thetaLimit;

@@ -1,6 +1,22 @@
-//
-// Created by pascal on 8/8/19.
-//
+/*
+Program:     MolFlow+ / Synrad+
+Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
+Copyright:   E.S.R.F / CERN
+Website:     https://cern.ch/molflow
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
+*/
 
 #include "../src_shared/SimulationManager.h"
 #include "gtest/gtest.h"
@@ -205,7 +221,7 @@ namespace {
         const size_t runForTSec = 20;
         std::vector<double> perfTimes;
         for (size_t runNb = 0; runNb < nRuns; ++runNb) {
-            SimulationManager simManager;
+            SimulationManager simManager{0};
             std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
             GlobalSimuState globState{};
 
@@ -345,7 +361,7 @@ namespace {
         const size_t runForTSec = 30;
         std::vector<double> perfTimes;
 
-        SimulationManager simManager{};
+        SimulationManager simManager{0};
         simManager.interactiveMode = false;
         std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
         GlobalSimuState globState{};
@@ -405,7 +421,7 @@ namespace {
             EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
             EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
 
-            auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.007, 0.06);
+            auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.009, 0.07);
             size_t runNb = 0;
             if ((diff_glob != 0 || diff_loc != 0)) {
                 printf("[%zu] Diff glob %d / loc %d\n", runNb, diff_glob, diff_loc);
@@ -437,7 +453,7 @@ namespace {
             EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
             EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
 
-            auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.005, 0.05);
+            auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.007, 0.06);
             if (runNb < nRuns - 1 && (diff_glob != 0 || diff_loc != 0)) {
                 printf("[%zu] Diff glob %d / loc %d\n", runNb, diff_glob, diff_loc);
                 nCorrect = 0;
@@ -471,11 +487,7 @@ namespace {
         std::string outPath = "TPath_RW_" + std::to_string(std::hash<time_t>()(time(nullptr)));
         printf("Filename: %s\n", testFile.c_str());
         size_t nbSuccess = 0;
-        bool fastEnough = false;
-        const size_t nRuns = 10;
-        const size_t keepNEntries = 20;
-        const size_t runForTSec = 30;
-        std::vector<double> perfTimes;
+        const size_t nRuns = 15;
 
         std::shared_ptr<SimulationManager> simManager = std::make_shared<SimulationManager>();
         simManager->interactiveMode = false;
@@ -522,7 +534,7 @@ namespace {
             // clear old results from a previous attempt and define a new desorption limit (to prevent early termination as the input file will already have reached this limit)
             globState.Reset();
             Settings::desLimit.clear();
-            Settings::desLimit.emplace_back(400);
+            Settings::desLimit.emplace_back(300);
             Initializer::initDesLimit(model, globState);
 
             //simManager.RefreshRNGSeed(false);
@@ -551,7 +563,7 @@ namespace {
                         runNb);
                 break;
             }
-            auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.007, 0.06);
+            auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.006, 0.05);
             if (diff_glob || diff_loc)
                 nbSuccess++;
 
@@ -570,8 +582,8 @@ namespace {
             else if (diff_fine <= 0)
                 fmt::print(stderr, "[{}][Warning] No differences on fine counters found!\n", runNb);
         }
-        if ((double) nbSuccess / nRuns < 0.7) {
-            EXPECT_FALSE((double) nbSuccess / nRuns < 0.7);
+        if ((double) nbSuccess / nRuns < 0.66) {
+            EXPECT_FALSE((double) nbSuccess / nRuns < 0.66);
             fmt::print(stderr, "[FAIL] Threshold for results of a low sample run was not crossed!\n"
                             "{} out of {} runs were correct!\n"
                             "This could be due to random nature of a MC simulation or a programmatic error leading to wrong conclusions.\n",
@@ -588,12 +600,12 @@ namespace {
     TEST(SubProcessInit, Zero) {
 
         {
-            SimulationManager simMan;
+            SimulationManager simMan(0);
             EXPECT_EQ(0, simMan.InitSimUnits());
         }
 
         {
-            SimulationManager simMan;
+            SimulationManager simMan(0);
             simMan.useCPU = true;
             simMan.nbThreads = 0;
             simMan.InitSimUnits();
@@ -601,7 +613,7 @@ namespace {
         }
 
         {
-            SimulationManager simMan;
+            SimulationManager simMan(0);
             simMan.useCPU = true;
             simMan.nbThreads = 1; // more not possible,
             simMan.InitSimUnits();
@@ -611,7 +623,7 @@ namespace {
 
     TEST(SubProcessCreateAndKill, CPU) {
         {
-            SimulationManager simMan;
+            SimulationManager simMan(0);
             simMan.useCPU = true;
             simMan.nbThreads = 1;
             simMan.InitSimUnits();
@@ -623,7 +635,7 @@ namespace {
 
     TEST(InputOutput, DefaultInput) {
 
-        SimulationManager simManager;
+        SimulationManager simManager{0};
         std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
         GlobalSimuState globState{};
 
@@ -672,7 +684,7 @@ namespace {
 
     TEST(InputOutput, Outputpath) {
 
-        SimulationManager simManager;
+        SimulationManager simManager{0};
         std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
         GlobalSimuState globState{};
 
@@ -725,7 +737,7 @@ namespace {
 
     TEST(InputOutput, OutputpathAndFile) {
 
-        SimulationManager simManager;
+        SimulationManager simManager{0};
         std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
         GlobalSimuState globState{};
 
@@ -779,7 +791,7 @@ namespace {
 
     TEST(InputOutput, Outputfile) {
 
-        SimulationManager simManager;
+        SimulationManager simManager{0};
         std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
         GlobalSimuState globState{};
 
@@ -831,7 +843,7 @@ namespace {
 
     TEST(InputOutput, OutputfileWithPath) {
 
-        SimulationManager simManager;
+        SimulationManager simManager{0};
         std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
         GlobalSimuState globState{};
 
@@ -887,7 +899,7 @@ namespace {
 
     TEST(InputOutput, OutputpathAndOutputfileWithPath) {
 
-        SimulationManager simManager;
+        SimulationManager simManager{0};
         std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
         GlobalSimuState globState{};
 

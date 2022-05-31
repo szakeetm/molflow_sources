@@ -1,6 +1,22 @@
-//
-// Created by pascal on 1/25/21.
-//
+/*
+Program:     MolFlow+ / Synrad+
+Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
+Copyright:   E.S.R.F / CERN
+Website:     https://cern.ch/molflow
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
+*/
 
 #include "ParameterParser.h"
 #include "Helper/StringHelper.h"
@@ -66,7 +82,7 @@ void parseFacet(std::istringstream &facetString, const std::vector<SelectionGrou
         try {
             // For now get facet list for all combinations (with 3 parameter), check for valid ids later
             splitFacetList(id_range, id_str, 1e7);
-        } catch (std::exception& e) {
+        } catch (const std::exception &e) {
             Log::console_error("[%s] Could not parse facet id or range:\n", __FUNCTION__);
             Log::console_error("\t%s\n", id_str.c_str());
         }

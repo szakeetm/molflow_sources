@@ -1,7 +1,7 @@
 /*
 Program:     MolFlow+ / Synrad+
 Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
-Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
 Copyright:   E.S.R.F / CERN
 Website:     https://cern.ch/molflow
 
@@ -327,16 +327,14 @@ void InterfaceFacet::LoadXML(xml_node f, size_t nbVertex, bool isMolflowFile, bo
 					angleText >> angleMapCache[iy*sh.anglemapParams.phiWidth + ix];
 				}
 			}
-			sh.anglemapParams.hasRecorded = true;
 		}
 		else {
-			sh.anglemapParams.hasRecorded = false; //if angle map was incorrect, don't use it
 			if (sh.desorbType == DES_ANGLEMAP) sh.desorbType = DES_NONE;
 		}
 	} //else use default values at Facet() constructor
 
-	textureVisible = f.child("ViewSettings").attribute("textureVisible").as_bool();
-	volumeVisible = f.child("ViewSettings").attribute("volumeVisible").as_bool();
+	textureVisible = f.child("ViewSettings").attribute("textureVisible").as_bool(true);
+	volumeVisible = f.child("ViewSettings").attribute("volumeVisible").as_bool(true);
 
 	xml_node facetHistNode = f.child("Histograms");
 	if (facetHistNode) { // Molflow version before 2.8 didn't save histograms
@@ -1176,7 +1174,7 @@ void  InterfaceFacet::SaveXML_geom(pugi::xml_node f) {
 
 	} //end texture
 
-	if (sh.anglemapParams.hasRecorded) {
+	if (!angleMapCache.empty()) {
 		xml_node textureNode = f.append_child("IncidentAngleMap");
 		textureNode.append_attribute("angleMapPhiWidth") = sh.anglemapParams.phiWidth;
 		textureNode.append_attribute("angleMapThetaLimit") = sh.anglemapParams.thetaLimit;
@@ -1222,30 +1220,32 @@ void  InterfaceFacet::SaveXML_geom(pugi::xml_node f) {
 * \return string describing the angle map
 */
 std::string InterfaceFacet::GetAngleMap(size_t formatId)
+//formatId: 1 for comma-separated, 2 for tab-separated
 {
 	std::stringstream result; result << std::setprecision(8);
 	char separator;
 	if (formatId == 1)
-		separator = ',';
+		separator = ','; //csv
 	else if (formatId == 2)
-		separator = '\t';
+		separator = '\t'; //txt, tab-separated
 	else return "";
-	//First row: phi labels
-	result << "Theta below / Phi to the right" << separator; //A1 cell
-	for (size_t i = 0; i < sh.anglemapParams.phiWidth; i++)
-		result << -PI + (0.5 + (double)i) / ((double)sh.anglemapParams.phiWidth)*2.0*PI << separator;
+	//First, header row: phi labels
+	result << "Theta below / Phi to the right"; //A1 cell
+	for (size_t i = 0; i < sh.anglemapParams.phiWidth; i++) {
+		result << separator << -PI + (0.5 + (double)i) / ((double)sh.anglemapParams.phiWidth) * 2.0 * PI; //phiWidth number of phi bins, printing midpoint for each as column label
+	}
 	result << "\n";
 
 	//Actual table
 	for (size_t row = 0; row < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); row++) {
-		//First column: theta label
+		//First column: theta label (bin midpoint)
 		if (row < sh.anglemapParams.thetaLowerRes)
-			result << ((double)row + 0.5) / (double)sh.anglemapParams.thetaLowerRes*sh.anglemapParams.thetaLimit << separator;
+			result << ((double)row + 0.5) / (double)sh.anglemapParams.thetaLowerRes*sh.anglemapParams.thetaLimit;
 		else
-			result << sh.anglemapParams.thetaLimit + (0.5 + (double)(row-sh.anglemapParams.thetaLowerRes)) / (double)sh.anglemapParams.thetaHigherRes *(PI/2.0-sh.anglemapParams.thetaLimit) << separator;
+			result << sh.anglemapParams.thetaLimit + (0.5 + (double)(row-sh.anglemapParams.thetaLowerRes)) / (double)sh.anglemapParams.thetaHigherRes *(PI/2.0-sh.anglemapParams.thetaLimit);
 		//Value
 		for (size_t col = 0; col < sh.anglemapParams.phiWidth; col++) {
-			result << angleMapCache[row * sh.anglemapParams.phiWidth + col] << separator;
+			result << separator << angleMapCache[row * sh.anglemapParams.phiWidth + col];
 		}
 		result << "\n";
 	}
@@ -1388,7 +1388,6 @@ void InterfaceFacet::ImportAngleMap(const std::vector<std::vector<std::string>>&
 	}
 
 	//No errors, apply values
-	sh.anglemapParams.hasRecorded = true;
 	sh.anglemapParams.phiWidth = phiWidth;
 	sh.anglemapParams.record = false;
 	sh.anglemapParams.thetaHigherRes = thetaHigherRes;

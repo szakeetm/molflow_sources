@@ -1,7 +1,7 @@
 /*
 Program:     MolFlow+ / Synrad+
 Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
-Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
 Copyright:   E.S.R.F / CERN
 Website:     https://cern.ch/molflow
 
@@ -230,7 +230,7 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 			//load file
 			try{
 				LoadConvFile(fileName.c_str());
-			} catch (Error &e) {
+			} catch (const std::exception &e) {
 				char errMsg[512];
 				sprintf(errMsg,"%s\nFile:%s",e.what(), fileName.c_str());
 				GLMessageBox::Display(errMsg,"Error loading conversion file",GLDLG_OK,GLDLG_ICONERROR);
@@ -271,7 +271,7 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 			try{
 				work->AnalyzeSYNfile(fileName.c_str(),&nbFacet,
 					&nbTextured,&nbDifferent);
-			} catch (Error &e) {
+			} catch (const std::exception &e) {
 				char errMsg[512];
 				sprintf(errMsg,"%s\nFile:%s",e.what(),fileName.c_str());
 				GLMessageBox::Display(errMsg,"Error loading source file",GLDLG_OK,GLDLG_ICONERROR);
@@ -335,7 +335,7 @@ void ImportDesorption::ProcessMessage(GLComponent *src,int message) {
 			
 			try{
 				work->ImportDesorption_SYN(synFile.c_str(),doseSource,time,mode,eta0,alpha,cutoffdose,convDistr,progressDlg);
-			} catch (Error &e) {
+			} catch (const std::exception &e) {
 				char errMsg[512];
 				sprintf(errMsg,"%s\nFile:%s",e.what(),synFile.c_str());
 				GLMessageBox::Display(errMsg,"Error",GLDLG_OK,GLDLG_ICONERROR);
@@ -390,7 +390,7 @@ void ImportDesorption::LoadConvFile(const char* fileName) {
 		
 		f->SeekStart(); //restart from the beginning
 		SAFE_DELETE(f);
-	}  catch (Error &e) {
+	}  catch (const std::exception &e) {
 		SAFE_DELETE(f);
 		char errMsg[512];
 		sprintf(errMsg,"%s\nFile:%s",e.what(),fileName);

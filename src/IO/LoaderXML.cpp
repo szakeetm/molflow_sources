@@ -10,7 +10,10 @@
 #include "LoaderXML.h"
 #include "TimeMoments.h"
 #include "File.h"
+#include "Helper/ConsoleLogger.h"
+#include "Helper/StringHelper.h"
 #include <fmt/core.h>
+#include <Formulas.h>
 
 using namespace pugi;
 using namespace FlowIO;
@@ -238,423 +241,441 @@ std::vector<SelectionGroup> LoaderXML::LoadSelections(const std::string& inputFi
 int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared_ptr<SimulationModel> model,
                                    GlobalSimuState *globState, double *progress) {
 
-    xml_document loadXML;
-    xml_parse_result parseResult = loadXML.load_file(inputFileName.c_str()); //parse xml file directly
-    xml_node rootNode = loadXML.child("SimulationEnvironment");
+    try {
+        xml_document loadXML;
+        xml_parse_result parseResult = loadXML.load_file(inputFileName.c_str()); //parse xml file directly
+        xml_node rootNode = loadXML.child("SimulationEnvironment");
 
-    if(!rootNode){
-        std::cerr << "XML file seems to be of older format, please generate a new file with the GUI application!"<<std::endl;
-        rootNode = loadXML.root();
-    }
-
-    if (!rootNode.child("MolflowResults"))
-        return 1; //simu state not saved with file
-
-    if(!globState->tMutex.try_lock()){
-        return 1;
-    }
-
-    xml_node resultNode = rootNode.child("MolflowResults");
-    xml_node momentsNode = resultNode.child("Moments");
-    size_t nbMoments = momentsNode.select_nodes("Moment").size(); //Contains constant flow!
-    size_t facetHitsSize = (nbMoments) * sizeof(FacetHitBuffer);
-    size_t m = 0;
-    for (xml_node newMoment : momentsNode.children("Moment")) {
-
-        if (m == 0) { //read global results
-            xml_node globalNode = newMoment.child("Global");
-            xml_node hitsNode = globalNode.child("Hits");
-            globState->globalHits.globalHits.nbMCHit = hitsNode.attribute("totalHit").as_llong();
-            if (hitsNode.attribute("totalHitEquiv")) {
-                globState->globalHits.globalHits.nbHitEquiv = hitsNode.attribute("totalHitEquiv").as_double();
-            }
-            else {
-                //Backward compatibility
-                globState->globalHits.globalHits.nbHitEquiv = static_cast<double>(globState->globalHits.globalHits.nbMCHit);
-            }
-            globState->globalHits.globalHits.nbDesorbed = hitsNode.attribute("totalDes").as_llong();
-            if (hitsNode.attribute("totalAbsEquiv")) {
-                globState->globalHits.globalHits.nbAbsEquiv = hitsNode.attribute("totalAbsEquiv").as_double();
-            }
-            else {
-                //Backward compatibility
-                globState->globalHits.globalHits.nbAbsEquiv = hitsNode.attribute("totalAbs").as_double();
-            }
-            if (hitsNode.attribute("totalDist_total")) { //if it's in the new format where total/partial are separated
-                globState->globalHits.distTraveled_total = hitsNode.attribute("totalDist_total").as_double();
-                globState->globalHits.distTraveledTotal_fullHitsOnly = hitsNode.attribute("totalDist_fullHitsOnly").as_double();
-            }
-            else
-                globState->globalHits.distTraveled_total = globState->globalHits.distTraveledTotal_fullHitsOnly = hitsNode.attribute("totalDist").as_double();
-            globState->globalHits.nbLeakTotal = hitsNode.attribute("totalLeak").as_llong();
-            //work->desorptionLimit=hitsNode.attribute("maxDesorption").as_llong();
-
-            globState->globalHits.hitCacheSize = 0;
-            xml_node hitCacheNode = globalNode.child("Hit_Cache");
-            for (xml_node newHit : hitCacheNode.children("Hit")) {
-                if (globState->globalHits.hitCacheSize < HITCACHESIZE) {
-                    globState->globalHits.hitCache[globState->globalHits.hitCacheSize].pos.x = newHit.attribute("posX").as_double();
-                    globState->globalHits.hitCache[globState->globalHits.hitCacheSize].pos.y = newHit.attribute("posY").as_double();
-                    globState->globalHits.hitCache[globState->globalHits.hitCacheSize].pos.z = newHit.attribute("posZ").as_double();
-                    globState->globalHits.hitCache[globState->globalHits.hitCacheSize].type = newHit.attribute("type").as_int();
-                    globState->globalHits.hitCacheSize++;
-                }
-            }
-
-            globState->globalHits.leakCacheSize = 0;
-            xml_node leakCacheNode = globalNode.child("Leak_Cache");
-            for (xml_node newLeak : leakCacheNode.children("Leak")) {
-                if (globState->globalHits.leakCacheSize < LEAKCACHESIZE) {
-                    globState->globalHits.leakCache[globState->globalHits.leakCacheSize].pos.x = newLeak.attribute("posX").as_double();
-                    globState->globalHits.leakCache[globState->globalHits.leakCacheSize].pos.y = newLeak.attribute("posY").as_double();
-                    globState->globalHits.leakCache[globState->globalHits.leakCacheSize].pos.z = newLeak.attribute("posZ").as_double();
-                    globState->globalHits.leakCache[globState->globalHits.leakCacheSize].dir.x = newLeak.attribute("dirX").as_double();
-                    globState->globalHits.leakCache[globState->globalHits.leakCacheSize].dir.y = newLeak.attribute("dirY").as_double();
-                    globState->globalHits.leakCache[globState->globalHits.leakCacheSize].dir.z = newLeak.attribute("dirZ").as_double();
-                    globState->globalHits.leakCacheSize++;
-                }
-            }
-        } //end global node
-
-        bool hasHistogram = model->wp.globalHistogramParams.recordBounce || model->wp.globalHistogramParams.recordDistance;
-#ifdef MOLFLOW
-        hasHistogram = hasHistogram || model->wp.globalHistogramParams.recordTime;
-#endif
-        if (hasHistogram) {
-            xml_node histNode = newMoment.child("Histograms");
-            if (histNode) { //Versions before 2.8 didn't save histograms
-                //Retrieve histogram map from hits dp
-                auto& globalHistogram = globState->globalHistograms[m];
-                if (model->wp.globalHistogramParams.recordBounce) {
-                    auto& nbHitsHistogram = globalHistogram.nbHitsHistogram;
-                    xml_node hist = histNode.child("Bounces");
-                    if (hist) {
-                        size_t histSize = model->wp.globalHistogramParams.GetBounceHistogramSize();
-                        size_t saveHistSize = hist.attribute("size").as_ullong();
-                        if (histSize == saveHistSize) {
-                            //Can do: compare saved with expected size
-                            size_t h = 0;
-                            for (auto bin : hist.children("Bin")) {
-                                if (h < histSize) {
-                                    nbHitsHistogram[h++] = bin.attribute("count").as_double();
-                                }
-                                else {
-                                    //Treat errors
-                                }
-                            }
-                        }
-                        else {
-                            //Treat errors
-                        }
-                    }
-                }
-                if (model->wp.globalHistogramParams.recordDistance) {
-                    auto& distanceHistogram = globalHistogram.distanceHistogram;
-                    xml_node hist = histNode.child("Distance");
-                    if (hist) {
-                        size_t histSize = model->wp.globalHistogramParams.GetDistanceHistogramSize();
-                        size_t saveHistSize = hist.attribute("size").as_ullong();
-                        if (histSize == saveHistSize) {
-                            //Can do: compare saved with expected size
-                            size_t h = 0;
-                            for (auto bin : hist.children("Bin")) {
-                                if (h < histSize) {
-                                    distanceHistogram[h++] = bin.attribute("count").as_double();
-                                }
-                                else {
-                                    //Treat errors
-                                }
-                            }
-                        }
-                        else {
-                            //Treat errors
-                        }
-                    }
-                }
-                if (model->wp.globalHistogramParams.recordTime) {
-                    auto& timeHistogram = globalHistogram.timeHistogram;
-                    xml_node hist = histNode.child("Time");
-                    if (hist) {
-                        size_t histSize = model->wp.globalHistogramParams.GetTimeHistogramSize();
-                        size_t saveHistSize = hist.attribute("size").as_ullong();
-                        if (histSize == saveHistSize) {
-                            //Can do: compare saved with expected size
-                            size_t h = 0;
-                            for (auto bin : hist.children("Bin")) {
-                                if (h < histSize) {
-                                    timeHistogram[h++] = bin.attribute("count").as_double();
-                                }
-                                else {
-                                    //Treat errors
-                                }
-                            }
-                        }
-                        else {
-                            //Treat errors
-                        }
-                    }
-                }
-            }
+        if (!rootNode) {
+            std::cerr << "XML file seems to be of older format, please generate a new file with the GUI application!"
+                      << std::endl;
+            rootNode = loadXML.root();
         }
-        
-        xml_node facetResultsNode = newMoment.child("FacetResults");
-        for (xml_node newFacetResult : facetResultsNode.children("Facet")) {
-            int facetId = newFacetResult.attribute("id").as_int();
-            auto sFac = model->facets[facetId];
-            xml_node facetHitNode = newFacetResult.child("Hits");
-            //FacetHitBuffer* facetCounter = (FacetHitBuffer *)(buffer + loadFacets[facetId].sh.hitOffset + m * sizeof(FacetHitBuffer));
-            FacetHitBuffer* facetCounter = &globState->facetStates[facetId].momentResults[m].hits;
-            if (facetHitNode) { //If there are hit results for the current moment
-                facetCounter->nbMCHit = facetHitNode.attribute("nbHit").as_llong();
-                if (facetHitNode.attribute("nbHitEquiv")) {
-                    facetCounter->nbHitEquiv = facetHitNode.attribute("nbHitEquiv").as_double();
-                }
-                else {
+
+        if (!rootNode.child("MolflowResults"))
+            return 1; //simu state not saved with file
+
+        if (!globState->tMutex.try_lock()) {
+            return 1;
+        }
+
+        xml_node resultNode = rootNode.child("MolflowResults");
+        xml_node momentsNode = resultNode.child("Moments");
+        size_t nbMoments = momentsNode.select_nodes("Moment").size(); //Contains constant flow!
+        size_t facetHitsSize = (nbMoments) * sizeof(FacetHitBuffer);
+        size_t m = 0;
+        for (xml_node newMoment: momentsNode.children("Moment")) {
+
+            if (m == 0) { //read global results
+                xml_node globalNode = newMoment.child("Global");
+                xml_node hitsNode = globalNode.child("Hits");
+                globState->globalHits.globalHits.nbMCHit = hitsNode.attribute("totalHit").as_llong();
+                if (hitsNode.attribute("totalHitEquiv")) {
+                    globState->globalHits.globalHits.nbHitEquiv = hitsNode.attribute("totalHitEquiv").as_double();
+                } else {
                     //Backward compatibility
-                    facetCounter->nbHitEquiv = static_cast<double>(facetCounter->nbMCHit);
+                    globState->globalHits.globalHits.nbHitEquiv = static_cast<double>(globState->globalHits.globalHits.nbMCHit);
                 }
-                facetCounter->nbDesorbed = facetHitNode.attribute("nbDes").as_llong();
-                if (facetHitNode.attribute("nbAbsEquiv")) {
-                    facetCounter->nbAbsEquiv = facetHitNode.attribute("nbAbsEquiv").as_double();
-                }
-                else {
+                globState->globalHits.globalHits.nbDesorbed = hitsNode.attribute("totalDes").as_llong();
+                if (hitsNode.attribute("totalAbsEquiv")) {
+                    globState->globalHits.globalHits.nbAbsEquiv = hitsNode.attribute("totalAbsEquiv").as_double();
+                } else {
                     //Backward compatibility
-                    facetCounter->nbAbsEquiv = facetHitNode.attribute("nbAbs").as_double();
+                    globState->globalHits.globalHits.nbAbsEquiv = hitsNode.attribute("totalAbs").as_double();
                 }
-                facetCounter->sum_v_ort = facetHitNode.attribute("sum_v_ort").as_double();
-                facetCounter->sum_1_per_ort_velocity = facetHitNode.attribute("sum_1_per_v").as_double();
-                if (facetHitNode.attribute("sum_v")) {
-                    facetCounter->sum_1_per_velocity = facetHitNode.attribute("sum_v").as_double();
-                }
-                else {
-                    //Backward compatibility
-                    facetCounter->sum_1_per_velocity = 4.0 * Sqr(facetCounter->nbHitEquiv + static_cast<double>(facetCounter->nbDesorbed)) / facetCounter->sum_1_per_ort_velocity;
-                }
+                if (hitsNode.attribute(
+                        "totalDist_total")) { //if it's in the new format where total/partial are separated
+                    globState->globalHits.distTraveled_total = hitsNode.attribute("totalDist_total").as_double();
+                    globState->globalHits.distTraveledTotal_fullHitsOnly = hitsNode.attribute(
+                            "totalDist_fullHitsOnly").as_double();
+                } else
+                    globState->globalHits.distTraveled_total = globState->globalHits.distTraveledTotal_fullHitsOnly = hitsNode.attribute(
+                            "totalDist").as_double();
+                globState->globalHits.nbLeakTotal = hitsNode.attribute("totalLeak").as_llong();
+                //work->desorptionLimit=hitsNode.attribute("maxDesorption").as_llong();
 
-                // Do this after XML load
-                /*if (model->displayedMoment == m) { //For immediate display in facet hits list and facet counter
-                    facet.facetHitCache.hit = facetCounter->hit;
-                }*/
-            }
-            else { //No hit information, so set to 0
-                facetCounter->nbMCHit =
-                facetCounter->nbDesorbed =
-                        0;
-                facetCounter->sum_v_ort =
-                facetCounter->nbHitEquiv =
-                facetCounter->sum_1_per_ort_velocity =
-                facetCounter->sum_1_per_velocity =
-                facetCounter->nbAbsEquiv =
-                        0.0;
-            }
-
-            //Profiles
-            if (sFac->sh.isProfile) {
-                xml_node profileNode = newFacetResult.child("Profile");
-                //ProfileSlice *profilePtr = (ProfileSlice *)(buffer + facet.sh.hitOffset + facetHitsSize + m * sizeof(ProfileSlice)*PROFILE_SIZE);
-                std::vector<ProfileSlice>& profilePtr = globState->facetStates[facetId].momentResults[m].profile;
-
-                size_t id = 0;
-                for (xml_node slice : profileNode.children("Slice")) {
-                    if (slice.attribute("countEquiv")) {
-                        profilePtr[id].countEquiv = slice.attribute("countEquiv").as_double();
-                    }
-                    else {
-                        //Old format before low-flux
-                        profilePtr[id].countEquiv = static_cast<double>(slice.attribute("count").as_llong());
-                    }
-                    profilePtr[id].sum_1_per_ort_velocity = slice.attribute("sum_1_per_v").as_double();
-                    profilePtr[id].sum_v_ort = slice.attribute("sum_v_ort").as_double();
-                    id++;
-                }
-            }
-
-            //Textures
-            int profSize = (sFac->sh.isProfile) ? ((int)PROFILE_SIZE * (int)sizeof(ProfileSlice)*(1 + (int)model->tdParams.moments.size())) : 0;
-
-            if (sFac->sh.texWidth * sFac->sh.texHeight > 0) {
-                xml_node textureNode = newFacetResult.child("Texture");
-                size_t texWidth_file = textureNode.attribute("width").as_llong();
-                size_t texHeight_file = textureNode.attribute("height").as_llong();
-
-                std::vector<TextureCell>& texture = globState->facetStates[facetId].momentResults[m].texture;
-
-                std::stringstream countText, sum1perText, sumvortText;
-                if (textureNode.child("countEquiv")) {
-                    countText << textureNode.child_value("countEquiv");
-                }
-                else {
-                    countText << textureNode.child_value("count");
-                }
-                sum1perText << textureNode.child_value("sum_1_per_v");
-                sumvortText << textureNode.child_value("sum_v_ort");
-
-                for (size_t iy = 0; iy < (Min(sFac->sh.texHeight, texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
-                    for (size_t ix = 0; ix < (Min(sFac->sh.texWidth, texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
-                        countText >> texture[iy*sFac->sh.texWidth + ix].countEquiv;
-                        sum1perText >> texture[iy*sFac->sh.texWidth + ix].sum_1_per_ort_velocity;
-                        sumvortText >> texture[iy*sFac->sh.texWidth + ix].sum_v_ort_per_area;
-
-                    }
-                    for (int ie = 0; ie < texWidth_file - sFac->sh.texWidth; ie++) {//Executed if file texture is bigger than expected texture
-                        //Read extra cells from file without doing anything
-                        size_t dummy_ll;
-                        double dummy_d;
-                        countText >> dummy_ll;
-                        sum1perText >> dummy_d;
-                        sumvortText >> dummy_d;
-
+                globState->globalHits.hitCacheSize = 0;
+                xml_node hitCacheNode = globalNode.child("Hit_Cache");
+                for (xml_node newHit: hitCacheNode.children("Hit")) {
+                    if (globState->globalHits.hitCacheSize < HITCACHESIZE) {
+                        globState->globalHits.hitCache[globState->globalHits.hitCacheSize].pos.x = newHit.attribute(
+                                "posX").as_double();
+                        globState->globalHits.hitCache[globState->globalHits.hitCacheSize].pos.y = newHit.attribute(
+                                "posY").as_double();
+                        globState->globalHits.hitCache[globState->globalHits.hitCacheSize].pos.z = newHit.attribute(
+                                "posZ").as_double();
+                        globState->globalHits.hitCache[globState->globalHits.hitCacheSize].type = newHit.attribute(
+                                "type").as_int();
+                        globState->globalHits.hitCacheSize++;
                     }
                 }
-                for (int ie = 0; ie < texHeight_file - sFac->sh.texHeight; ie++) {//Executed if file texture is bigger than expected texture
-                    //Read extra cells ffrom file without doing anything
-                    for (int iw = 0; iw < texWidth_file; iw++) {
-                        size_t dummy_ll;
-                        double dummy_d;
-                        countText >> dummy_ll;
-                        sum1perText >> dummy_d;
-                        sumvortText >> dummy_d;
-                    }
 
-                }
-            } //end texture
-
-            if (sFac->sh.countDirection) {
-                xml_node dirNode = newFacetResult.child("Directions");
-                if (dirNode.attribute("width").as_int() != sFac->sh.texWidth ||
-                    dirNode.attribute("height").as_int() != sFac->sh.texHeight) {
-                    std::stringstream msg;
-                    msg << "Direction texture size mismatch on facet " << facetId + 1 << ".\nExpected: " << sFac->sh.texWidth << "x" << sFac->sh.texHeight << "\n"
-                        << "In file: " << dirNode.attribute("width").as_int() << "x" << dirNode.attribute("height").as_int();
-                    globState->tMutex.unlock();
-                    throw Error(msg.str().c_str());
-
-                }
-                /*DirectionCell *dirs = (DirectionCell *)(buffer + sFac->sh.hitOffset + facetHitsSize
-                                                        + profSize + (1 + (int)model->tdParams.moments.size())*sFac->sh.texWidth*sFac->sh.texHeight * sizeof(TextureCell)
-                                                        + m * sFac->sh.texWidth*sFac->sh.texHeight * sizeof(DirectionCell));*/
-                std::vector<DirectionCell>& dirs = globState->facetStates[facetId].momentResults[m].direction;
-
-                std::stringstream dirText, dirCountText;
-                dirText << dirNode.child_value("vel.vectors");
-                dirCountText << dirNode.child_value("count");
-
-                for (size_t iy = 0; iy < sFac->sh.texHeight; iy++) {
-                    for (size_t ix = 0; ix < sFac->sh.texWidth; ix++) {
-                        std::string component;
-                        std::getline(dirText, component, ',');
-                        dirs[iy*sFac->sh.texWidth + ix].dir.x = std::stod(component);
-                        std::getline(dirText, component, ',');
-                        dirs[iy*sFac->sh.texWidth + ix].dir.y = std::stod(component);
-                        dirText >> dirs[iy*sFac->sh.texWidth + ix].dir.z;
-                        dirCountText >> dirs[iy*sFac->sh.texWidth + ix].count;
+                globState->globalHits.leakCacheSize = 0;
+                xml_node leakCacheNode = globalNode.child("Leak_Cache");
+                for (xml_node newLeak: leakCacheNode.children("Leak")) {
+                    if (globState->globalHits.leakCacheSize < LEAKCACHESIZE) {
+                        globState->globalHits.leakCache[globState->globalHits.leakCacheSize].pos.x = newLeak.attribute(
+                                "posX").as_double();
+                        globState->globalHits.leakCache[globState->globalHits.leakCacheSize].pos.y = newLeak.attribute(
+                                "posY").as_double();
+                        globState->globalHits.leakCache[globState->globalHits.leakCacheSize].pos.z = newLeak.attribute(
+                                "posZ").as_double();
+                        globState->globalHits.leakCache[globState->globalHits.leakCacheSize].dir.x = newLeak.attribute(
+                                "dirX").as_double();
+                        globState->globalHits.leakCache[globState->globalHits.leakCacheSize].dir.y = newLeak.attribute(
+                                "dirY").as_double();
+                        globState->globalHits.leakCache[globState->globalHits.leakCacheSize].dir.z = newLeak.attribute(
+                                "dirZ").as_double();
+                        globState->globalHits.leakCacheSize++;
                     }
                 }
-            } //end directions
+            } //end global node
 
-            // Facet histogram
-            hasHistogram = sFac->sh.facetHistogramParams.recordBounce || sFac->sh.facetHistogramParams.recordDistance;
+            bool hasHistogram =
+                    model->wp.globalHistogramParams.recordBounce || model->wp.globalHistogramParams.recordDistance;
 #ifdef MOLFLOW
-            hasHistogram = hasHistogram || sFac->sh.facetHistogramParams.recordTime;
+            hasHistogram = hasHistogram || model->wp.globalHistogramParams.recordTime;
 #endif
             if (hasHistogram) {
-                xml_node histNode = newFacetResult.child("Histograms");
+                xml_node histNode = newMoment.child("Histograms");
                 if (histNode) { //Versions before 2.8 didn't save histograms
                     //Retrieve histogram map from hits dp
-                    auto& facetHistogram = globState->facetStates[facetId].momentResults[m].histogram;
-                    if (sFac->sh.facetHistogramParams.recordBounce) {
-                        auto& nbHitsHistogram = facetHistogram.nbHitsHistogram;
+                    auto &globalHistogram = globState->globalHistograms[m];
+                    if (model->wp.globalHistogramParams.recordBounce) {
+                        auto &nbHitsHistogram = globalHistogram.nbHitsHistogram;
                         xml_node hist = histNode.child("Bounces");
                         if (hist) {
-                            size_t histSize = sFac->sh.facetHistogramParams.GetBounceHistogramSize();
+                            size_t histSize = model->wp.globalHistogramParams.GetBounceHistogramSize();
                             size_t saveHistSize = hist.attribute("size").as_ullong();
                             if (histSize == saveHistSize) {
                                 //Can do: compare saved with expected size
                                 size_t h = 0;
-                                for (auto bin : hist.children("Bin")) {
+                                for (auto bin: hist.children("Bin")) {
                                     if (h < histSize) {
                                         nbHitsHistogram[h++] = bin.attribute("count").as_double();
-                                    }
-                                    else {
+                                    } else {
                                         //Treat errors
                                     }
                                 }
-                            }
-                            else {
+                            } else {
                                 //Treat errors
                             }
                         }
                     }
-                    if (sFac->sh.facetHistogramParams.recordDistance) {
-                        auto& distanceHistogram = facetHistogram.distanceHistogram;
+                    if (model->wp.globalHistogramParams.recordDistance) {
+                        auto &distanceHistogram = globalHistogram.distanceHistogram;
                         xml_node hist = histNode.child("Distance");
                         if (hist) {
-                            size_t histSize = sFac->sh.facetHistogramParams.GetDistanceHistogramSize();
+                            size_t histSize = model->wp.globalHistogramParams.GetDistanceHistogramSize();
                             size_t saveHistSize = hist.attribute("size").as_ullong();
                             if (histSize == saveHistSize) {
                                 //Can do: compare saved with expected size
                                 size_t h = 0;
-                                for (auto bin : hist.children("Bin")) {
+                                for (auto bin: hist.children("Bin")) {
                                     if (h < histSize) {
                                         distanceHistogram[h++] = bin.attribute("count").as_double();
-                                    }
-                                    else {
+                                    } else {
                                         //Treat errors
                                     }
                                 }
-                            }
-                            else {
+                            } else {
                                 //Treat errors
                             }
                         }
                     }
-                    if (sFac->sh.facetHistogramParams.recordTime) {
-                        auto& timeHistogram = facetHistogram.timeHistogram;
+                    if (model->wp.globalHistogramParams.recordTime) {
+                        auto &timeHistogram = globalHistogram.timeHistogram;
                         xml_node hist = histNode.child("Time");
                         if (hist) {
-                            size_t histSize = sFac->sh.facetHistogramParams.GetTimeHistogramSize();
+                            size_t histSize = model->wp.globalHistogramParams.GetTimeHistogramSize();
                             size_t saveHistSize = hist.attribute("size").as_ullong();
                             if (histSize == saveHistSize) {
                                 //Can do: compare saved with expected size
                                 size_t h = 0;
-                                for (auto bin : hist.children("Bin")) {
+                                for (auto bin: hist.children("Bin")) {
                                     if (h < histSize) {
                                         timeHistogram[h++] = bin.attribute("count").as_double();
-                                    }
-                                    else {
+                                    } else {
                                         //Treat errors
                                     }
                                 }
-                            }
-                            else {
+                            } else {
                                 //Treat errors
                             }
                         }
                     }
                 }
             }
-            setLoadProgress((double) ((m * model->sh.nbFacet) + facetId) / ((double) nbMoments * model->sh.nbFacet));
-            if(progress) *progress = (double) ((m * model->sh.nbFacet) + facetId) / ((double) nbMoments * model->sh.nbFacet);
-        } //end facetResult
-        m++;
-    } //end moment
 
-    /*xml_node minMaxNode = resultNode.child("TextureMinMax");
-    globState->globalHits.texture_limits[0].min.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("min").as_double();
-    globState->globalHits.texture_limits[0].max.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("max").as_double();
-    globState->globalHits.texture_limits[1].min.all = minMaxNode.child("With_constant_flow").child("Density").attribute("min").as_double();
-    globState->globalHits.texture_limits[1].max.all = minMaxNode.child("With_constant_flow").child("Density").attribute("max").as_double();
-    globState->globalHits.texture_limits[2].min.all = minMaxNode.child("With_constant_flow").child("Imp.rate").attribute("min").as_double();
-    globState->globalHits.texture_limits[2].max.all = minMaxNode.child("With_constant_flow").child("Imp.rate").attribute("max").as_double();
-    globState->globalHits.texture_limits[0].min.moments_only = minMaxNode.child("Moments_only").child("Pressure").attribute("min").as_double();
-    globState->globalHits.texture_limits[0].max.moments_only = minMaxNode.child("Moments_only").child("Pressure").attribute("max").as_double();
-    globState->globalHits.texture_limits[1].min.moments_only = minMaxNode.child("Moments_only").child("Density").attribute("min").as_double();
-    globState->globalHits.texture_limits[1].max.moments_only = minMaxNode.child("Moments_only").child("Density").attribute("max").as_double();
-    globState->globalHits.texture_limits[2].min.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("min").as_double();
-    globState->globalHits.texture_limits[2].max.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("max").as_double();*/
+            xml_node facetResultsNode = newMoment.child("FacetResults");
+            for (xml_node newFacetResult: facetResultsNode.children("Facet")) {
+                int facetId = newFacetResult.attribute("id").as_int();
+                if(facetId >= model->facets.size()){
+                    throw std::runtime_error(fmt::format("Accessing simulation state for facet #{}, but only {} facets have been loaded!\nMaybe the input file is corrupted?",facetId+1, model->facets.size()));
+                }
+                auto sFac = model->facets[facetId];
+                xml_node facetHitNode = newFacetResult.child("Hits");
+                //FacetHitBuffer* facetCounter = (FacetHitBuffer *)(buffer + loadFacets[facetId].sh.hitOffset + m * sizeof(FacetHitBuffer));
+                FacetHitBuffer *facetCounter = &globState->facetStates[facetId].momentResults[m].hits;
+                if (facetHitNode) { //If there are hit results for the current moment
+                    facetCounter->nbMCHit = facetHitNode.attribute("nbHit").as_llong();
+                    if (facetHitNode.attribute("nbHitEquiv")) {
+                        facetCounter->nbHitEquiv = facetHitNode.attribute("nbHitEquiv").as_double();
+                    } else {
+                        //Backward compatibility
+                        facetCounter->nbHitEquiv = static_cast<double>(facetCounter->nbMCHit);
+                    }
+                    facetCounter->nbDesorbed = facetHitNode.attribute("nbDes").as_llong();
+                    if (facetHitNode.attribute("nbAbsEquiv")) {
+                        facetCounter->nbAbsEquiv = facetHitNode.attribute("nbAbsEquiv").as_double();
+                    } else {
+                        //Backward compatibility
+                        facetCounter->nbAbsEquiv = facetHitNode.attribute("nbAbs").as_double();
+                    }
+                    facetCounter->sum_v_ort = facetHitNode.attribute("sum_v_ort").as_double();
+                    facetCounter->sum_1_per_ort_velocity = facetHitNode.attribute("sum_1_per_v").as_double();
+                    if (facetHitNode.attribute("sum_v")) {
+                        facetCounter->sum_1_per_velocity = facetHitNode.attribute("sum_v").as_double();
+                    } else {
+                        //Backward compatibility
+                        facetCounter->sum_1_per_velocity =
+                                4.0 * Sqr(facetCounter->nbHitEquiv + static_cast<double>(facetCounter->nbDesorbed)) /
+                                facetCounter->sum_1_per_ort_velocity;
+                    }
 
-    //TODO: globState->globalHits. = this->angleMapCache;
+                    // Do this after XML load
+                    /*if (model->displayedMoment == m) { //For immediate display in facet hits list and facet counter
+                        facet.facetHitCache.hit = facetCounter->hit;
+                    }*/
+                } else { //No hit information, so set to 0
+                    facetCounter->nbMCHit =
+                    facetCounter->nbDesorbed =
+                            0;
+                    facetCounter->sum_v_ort =
+                    facetCounter->nbHitEquiv =
+                    facetCounter->sum_1_per_ort_velocity =
+                    facetCounter->sum_1_per_velocity =
+                    facetCounter->nbAbsEquiv =
+                            0.0;
+                }
+
+                //Profiles
+                if (sFac->sh.isProfile) {
+                    xml_node profileNode = newFacetResult.child("Profile");
+                    //ProfileSlice *profilePtr = (ProfileSlice *)(buffer + facet.sh.hitOffset + facetHitsSize + m * sizeof(ProfileSlice)*PROFILE_SIZE);
+                    std::vector<ProfileSlice> &profilePtr = globState->facetStates[facetId].momentResults[m].profile;
+
+                    size_t id = 0;
+                    for (xml_node slice: profileNode.children("Slice")) {
+                        if (slice.attribute("countEquiv")) {
+                            profilePtr[id].countEquiv = slice.attribute("countEquiv").as_double();
+                        } else {
+                            //Old format before low-flux
+                            profilePtr[id].countEquiv = static_cast<double>(slice.attribute("count").as_llong());
+                        }
+                        profilePtr[id].sum_1_per_ort_velocity = slice.attribute("sum_1_per_v").as_double();
+                        profilePtr[id].sum_v_ort = slice.attribute("sum_v_ort").as_double();
+                        id++;
+                    }
+                }
+
+                //Textures
+                int profSize = (sFac->sh.isProfile) ? ((int) PROFILE_SIZE * (int) sizeof(ProfileSlice) *
+                                                       (1 + (int) model->tdParams.moments.size())) : 0;
+
+                if (sFac->sh.texWidth * sFac->sh.texHeight > 0) {
+                    xml_node textureNode = newFacetResult.child("Texture");
+                    size_t texWidth_file = textureNode.attribute("width").as_llong();
+                    size_t texHeight_file = textureNode.attribute("height").as_llong();
+
+                    std::vector<TextureCell> &texture = globState->facetStates[facetId].momentResults[m].texture;
+
+                    std::stringstream countText, sum1perText, sumvortText;
+                    if (textureNode.child("countEquiv")) {
+                        countText << textureNode.child_value("countEquiv");
+                    } else {
+                        countText << textureNode.child_value("count");
+                    }
+                    sum1perText << textureNode.child_value("sum_1_per_v");
+                    sumvortText << textureNode.child_value("sum_v_ort");
+
+                    for (size_t iy = 0; iy < (Min(sFac->sh.texHeight,
+                                                  texHeight_file)); iy++) { //MIN: If stored texture is larger, don't read extra cells
+                        for (size_t ix = 0; ix < (Min(sFac->sh.texWidth,
+                                                      texWidth_file)); ix++) { //MIN: If stored texture is larger, don't read extra cells
+                            countText >> texture[iy * sFac->sh.texWidth + ix].countEquiv;
+                            sum1perText >> texture[iy * sFac->sh.texWidth + ix].sum_1_per_ort_velocity;
+                            sumvortText >> texture[iy * sFac->sh.texWidth + ix].sum_v_ort_per_area;
+
+                        }
+                        for (int ie = 0; ie < texWidth_file -
+                                              sFac->sh.texWidth; ie++) {//Executed if file texture is bigger than expected texture
+                            //Read extra cells from file without doing anything
+                            size_t dummy_ll;
+                            double dummy_d;
+                            countText >> dummy_ll;
+                            sum1perText >> dummy_d;
+                            sumvortText >> dummy_d;
+
+                        }
+                    }
+                    for (int ie = 0; ie < texHeight_file -
+                                          sFac->sh.texHeight; ie++) {//Executed if file texture is bigger than expected texture
+                        //Read extra cells ffrom file without doing anything
+                        for (int iw = 0; iw < texWidth_file; iw++) {
+                            size_t dummy_ll;
+                            double dummy_d;
+                            countText >> dummy_ll;
+                            sum1perText >> dummy_d;
+                            sumvortText >> dummy_d;
+                        }
+
+                    }
+                } //end texture
+
+                if (sFac->sh.countDirection) {
+                    xml_node dirNode = newFacetResult.child("Directions");
+                    if (dirNode.attribute("width").as_int() != sFac->sh.texWidth ||
+                        dirNode.attribute("height").as_int() != sFac->sh.texHeight) {
+                        std::stringstream msg;
+                        msg << "Direction texture size mismatch on facet " << facetId + 1 << ".\nExpected: "
+                            << sFac->sh.texWidth << "x" << sFac->sh.texHeight << "\n"
+                            << "In file: " << dirNode.attribute("width").as_int() << "x"
+                            << dirNode.attribute("height").as_int();
+                        globState->tMutex.unlock();
+                        throw Error(msg.str().c_str());
+
+                    }
+                    /*DirectionCell *dirs = (DirectionCell *)(buffer + sFac->sh.hitOffset + facetHitsSize
+                                                            + profSize + (1 + (int)model->tdParams.moments.size())*sFac->sh.texWidth*sFac->sh.texHeight * sizeof(TextureCell)
+                                                            + m * sFac->sh.texWidth*sFac->sh.texHeight * sizeof(DirectionCell));*/
+                    std::vector<DirectionCell> &dirs = globState->facetStates[facetId].momentResults[m].direction;
+
+                    std::stringstream dirText, dirCountText;
+                    dirText << dirNode.child_value("vel.vectors");
+                    dirCountText << dirNode.child_value("count");
+
+                    for (size_t iy = 0; iy < sFac->sh.texHeight; iy++) {
+                        for (size_t ix = 0; ix < sFac->sh.texWidth; ix++) {
+                            std::string component;
+                            std::getline(dirText, component, ',');
+                            dirs[iy * sFac->sh.texWidth + ix].dir.x = std::stod(component);
+                            std::getline(dirText, component, ',');
+                            dirs[iy * sFac->sh.texWidth + ix].dir.y = std::stod(component);
+                            dirText >> dirs[iy * sFac->sh.texWidth + ix].dir.z;
+                            dirCountText >> dirs[iy * sFac->sh.texWidth + ix].count;
+                        }
+                    }
+                } //end directions
+
+                // Facet histogram
+                hasHistogram =
+                        sFac->sh.facetHistogramParams.recordBounce || sFac->sh.facetHistogramParams.recordDistance;
+#ifdef MOLFLOW
+                hasHistogram = hasHistogram || sFac->sh.facetHistogramParams.recordTime;
+#endif
+                if (hasHistogram) {
+                    xml_node histNode = newFacetResult.child("Histograms");
+                    if (histNode) { //Versions before 2.8 didn't save histograms
+                        //Retrieve histogram map from hits dp
+                        auto &facetHistogram = globState->facetStates[facetId].momentResults[m].histogram;
+                        if (sFac->sh.facetHistogramParams.recordBounce) {
+                            auto &nbHitsHistogram = facetHistogram.nbHitsHistogram;
+                            xml_node hist = histNode.child("Bounces");
+                            if (hist) {
+                                size_t histSize = sFac->sh.facetHistogramParams.GetBounceHistogramSize();
+                                size_t saveHistSize = hist.attribute("size").as_ullong();
+                                if (histSize == saveHistSize) {
+                                    //Can do: compare saved with expected size
+                                    size_t h = 0;
+                                    for (auto bin: hist.children("Bin")) {
+                                        if (h < histSize) {
+                                            nbHitsHistogram[h++] = bin.attribute("count").as_double();
+                                        } else {
+                                            //Treat errors
+                                        }
+                                    }
+                                } else {
+                                    //Treat errors
+                                }
+                            }
+                        }
+                        if (sFac->sh.facetHistogramParams.recordDistance) {
+                            auto &distanceHistogram = facetHistogram.distanceHistogram;
+                            xml_node hist = histNode.child("Distance");
+                            if (hist) {
+                                size_t histSize = sFac->sh.facetHistogramParams.GetDistanceHistogramSize();
+                                size_t saveHistSize = hist.attribute("size").as_ullong();
+                                if (histSize == saveHistSize) {
+                                    //Can do: compare saved with expected size
+                                    size_t h = 0;
+                                    for (auto bin: hist.children("Bin")) {
+                                        if (h < histSize) {
+                                            distanceHistogram[h++] = bin.attribute("count").as_double();
+                                        } else {
+                                            //Treat errors
+                                        }
+                                    }
+                                } else {
+                                    //Treat errors
+                                }
+                            }
+                        }
+                        if (sFac->sh.facetHistogramParams.recordTime) {
+                            auto &timeHistogram = facetHistogram.timeHistogram;
+                            xml_node hist = histNode.child("Time");
+                            if (hist) {
+                                size_t histSize = sFac->sh.facetHistogramParams.GetTimeHistogramSize();
+                                size_t saveHistSize = hist.attribute("size").as_ullong();
+                                if (histSize == saveHistSize) {
+                                    //Can do: compare saved with expected size
+                                    size_t h = 0;
+                                    for (auto bin: hist.children("Bin")) {
+                                        if (h < histSize) {
+                                            timeHistogram[h++] = bin.attribute("count").as_double();
+                                        } else {
+                                            //Treat errors
+                                        }
+                                    }
+                                } else {
+                                    //Treat errors
+                                }
+                            }
+                        }
+                    }
+                }
+                setLoadProgress(
+                        (double) ((m * model->sh.nbFacet) + facetId) / ((double) nbMoments * model->sh.nbFacet));
+                if (progress) *progress = (double) ((m * model->sh.nbFacet) + facetId) /
+                                          ((double) nbMoments * model->sh.nbFacet);
+            } //end facetResult
+            m++;
+        } //end moment
+
+        /*xml_node minMaxNode = resultNode.child("TextureMinMax");
+        globState->globalHits.texture_limits[0].min.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("min").as_double();
+        globState->globalHits.texture_limits[0].max.all = minMaxNode.child("With_constant_flow").child("Pressure").attribute("max").as_double();
+        globState->globalHits.texture_limits[1].min.all = minMaxNode.child("With_constant_flow").child("Density").attribute("min").as_double();
+        globState->globalHits.texture_limits[1].max.all = minMaxNode.child("With_constant_flow").child("Density").attribute("max").as_double();
+        globState->globalHits.texture_limits[2].min.all = minMaxNode.child("With_constant_flow").child("Imp.rate").attribute("min").as_double();
+        globState->globalHits.texture_limits[2].max.all = minMaxNode.child("With_constant_flow").child("Imp.rate").attribute("max").as_double();
+        globState->globalHits.texture_limits[0].min.moments_only = minMaxNode.child("Moments_only").child("Pressure").attribute("min").as_double();
+        globState->globalHits.texture_limits[0].max.moments_only = minMaxNode.child("Moments_only").child("Pressure").attribute("max").as_double();
+        globState->globalHits.texture_limits[1].min.moments_only = minMaxNode.child("Moments_only").child("Density").attribute("min").as_double();
+        globState->globalHits.texture_limits[1].max.moments_only = minMaxNode.child("Moments_only").child("Density").attribute("max").as_double();
+        globState->globalHits.texture_limits[2].min.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("min").as_double();
+        globState->globalHits.texture_limits[2].max.moments_only = minMaxNode.child("Moments_only").child("Imp.rate").attribute("max").as_double();*/
+
+        //TODO: globState->globalHits. = this->angleMapCache;
+    }
+    catch (const std::exception &e) {
+        globState->tMutex.unlock();
+        Log::console_error("[LoaderXML] %s", e.what());
+        throw;
+        return 1;
+    }
     globState->tMutex.unlock();
+
     return 0;
 }
 
@@ -819,8 +840,8 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
         //angleMapCache.emplace(std::make_pair(facet->globalId,std::vector<size_t>()));
         auto& angleMap = facet->angleMap.pdf;
         try {
-            angleMap.clear(); angleMap.resize( facet->sh.anglemapParams.phiWidth * (facet->sh.anglemapParams.thetaLowerRes + facet->sh.anglemapParams.thetaHigherRes));
-
+            angleMap.clear();
+            angleMap.resize( facet->sh.anglemapParams.phiWidth * (facet->sh.anglemapParams.thetaLowerRes + facet->sh.anglemapParams.thetaHigherRes));
         }
         catch(...) {
             std::stringstream err;
@@ -828,21 +849,25 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
             throw Error(err.str().c_str());
         }
 
+        size_t angleMapSum = 0;
         for (size_t iy = 0; iy < (facet->sh.anglemapParams.thetaLowerRes + facet->sh.anglemapParams.thetaHigherRes); iy++) {
             for (size_t ix = 0; ix < facet->sh.anglemapParams.phiWidth; ix++) {
                 angleText >> angleMap[iy*facet->sh.anglemapParams.phiWidth + ix];
+                angleMapSum += angleMap[iy*facet->sh.anglemapParams.phiWidth + ix];
             }
         }
-        facet->sh.anglemapParams.hasRecorded = true;
+        /*if(angleMapSum > 0) // only has recorded if at least one value is set
+            facet->sh.anglemapParams.hasRecorded = true;*/
     }
     else {
-        facet->sh.anglemapParams.hasRecorded = false; //if angle map was incorrect, don't use it
+        //facet->sh.anglemapParams.hasRecorded = false; //if angle map was incorrect, don't use it
         if (facet->sh.desorbType == DES_ANGLEMAP) facet->sh.desorbType = DES_NONE;
     }
 
+    // Init by default as true
     std::tuple<bool,bool> viewSettings; // texture, volume visible
-    bool textureVisible = facetNode.child("ViewSettings").attribute("textureVisible").as_bool();
-    bool volumeVisible = facetNode.child("ViewSettings").attribute("volumeVisible").as_bool();
+    bool textureVisible = facetNode.child("ViewSettings").attribute("textureVisible").as_bool(true);
+    bool volumeVisible = facetNode.child("ViewSettings").attribute("volumeVisible").as_bool(true);
     uInput.facetViewSettings.emplace_back(std::make_tuple(textureVisible, volumeVisible));
 
     xml_node facetHistNode = facetNode.child("Histograms");
@@ -889,6 +914,67 @@ void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size
     }
 }
 
+int LoaderXML::LoadConvergenceValues(const std::string &inputFileName, std::vector<ConvergenceData> *convergenceValues,
+                                     double *progress) {
+
+    xml_document loadXML;
+    xml_parse_result parseResult = loadXML.load_file(inputFileName.c_str()); //parse xml file directly
+    xml_node rootNode = loadXML.child("SimulationEnvironment");
+
+    if (!rootNode) {
+        std::cerr << "XML file seems to be of older format, please generate a new file with the GUI application!"
+                  << std::endl;
+        rootNode = loadXML.root();
+    }
+
+    if (!rootNode.child("MolflowResults"))
+        return 1; //simu state not saved with file
+
+    xml_node resultNode = rootNode.child("MolflowResults");
+    xml_node convNode = resultNode.child("Convergence");
+
+    convergenceValues->resize(0);
+    for(auto& convVec : convNode.children()){
+        std::stringstream convText;
+        ConvergenceData convData;
+        std::vector<std::pair<size_t, double>>& vec = convData.conv_vec;
+        convText << convVec.child_value();
+        // get length of file:
+        convText.seekg (0, std::stringstream::end);
+        int length = convText.tellg();
+        convText.seekg (0, std::stringstream::beg);
+        if(convText.peek() == '\n') {
+            char nl;
+            convText.get(nl);
+        }
+        std::string line;
+        while(!convText.eof()){
+            std::getline(convText, line);
+            size_t posOfTab = line.find ('\t');
+            //std::string second = pieces.substr(pos + 1);
+
+            if (posOfTab==std::string::npos)
+                continue;
+            size_t nbDes = 0;
+            double convVal = 0.0;
+            try{
+                nbDes = stringToNumber<size_t>(line.substr(0, posOfTab));
+                convVal = stringToNumber<double>(line.substr(posOfTab+1));
+            }
+            catch (const std::exception &e){
+                // Just write an error and move to next line e.g. when fail on inf/nan
+                std::cerr << "[XML][Convergence] Parsing error: "<<e.what()<< std::endl;
+                continue;
+            }
+
+            //if(nbDes < vec[vec.size()-1].first) break; // skip if data is malformed (desorptions should increase)
+            vec.emplace_back(std::make_pair(nbDes, convVal));
+        }
+        convergenceValues->push_back(convData);
+    }
+
+    return 0;
+}
 /*
 void Loader::MoveFacetsToStructures(SimulationModel* model) {
     model->structures.resize(model->sh.nbSuper);

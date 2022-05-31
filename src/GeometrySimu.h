@@ -9,6 +9,7 @@
 #include "MolflowTypes.h"
 #include "Buffer_shared.h"
 #include "Parameter.h"
+#include "Helper/ConsoleLogger.h"
 
 #include <mutex>
 #include <FacetData.h>
@@ -70,19 +71,34 @@ struct TimeDependentParamters {
 
 struct Anglemap {
 public:
-    std::vector<size_t> pdf;          // Incident angle distribution, phi and theta, not normalized. Used either for recording or for 2nd order interpolation
-    std::vector<double> phi_CDFs;    // A table containing phi distributions for each theta, starting from 0 for every line (1 line = 1 theta value). For speed we keep it in one memory block, 1 pointer
-    std::vector<size_t> phi_CDFsums; // since CDF runs only to the middle of the last segment, for each theta a line sum is stored here. Also a pdf for theta
-    std::vector<double> theta_CDF;      // Theta CDF, not normalized. nth value is the CDF at the end of region n (beginning of first section is always 0)
-    size_t theta_CDFsum; // since theta CDF only runs till the middle of the last segment, the map sum is here
+    Anglemap(){
+        theta_CDFsum_lower=theta_CDFsum_higher=0;
+    };
+    std::vector<size_t> pdf;          // Incident angle distribution, large array of phi and theta, not normalized by solid angle or to 1 (simply number of hits in each bin). Used either for recording or for 2nd order interpolation. Unites lower and higher theta parts
+    std::vector<double> phi_CDFs_lowerTheta;    // A table containing cumulative phi distributions, normalized to 1, summed up to the phi bin midpoint (!), for each theta, starting from 0 for every line (1 line = 1 theta bin). For speed, one big array of (theta_lowerRes*phi_size) instead of vector of vectors
+    std::vector<double> phi_CDFs_higherTheta;
+    std::vector<size_t> phi_pdfsums_lowerTheta; // since phi_CDFs sums only to the middle of the last phi bin, for each theta a line sum (of the raw i.e. not normalized angle map pdf) is stored here. Also a pdf for theta, as it contains the total possibility, summed over all phi angles, for that theta bin.
+    std::vector<size_t> phi_pdfsums_higherTheta;
+    std::vector<double> phi_pdfs_lowerTheta; //Normalized pdf of each phi line. For speed, one big array of (theta_lowerRes*phi_size) instead of vector of vectors
+    std::vector<double> phi_pdfs_higherTheta;
+    std::vector<double> theta_CDF_lower;      // Theta CDF to each theta bin midpoint, normalized to 1. nth value is the CDF at the midpoint of theta bin n.)
+    std::vector<double> theta_CDF_higher;
+    size_t theta_CDFsum_lower;  // since theta CDF only sums till the midpoint of the last segment, the total map sum is here
+    size_t theta_CDFsum_higher; // theta_CDFsum_higher>=theta_CDFsum_lower as it includes lower part. Also total number of hits in raw pdf
+    double thetaLowerRatio; // ratio of angle map below theta limit, to decide which side to look up in
 
     [[nodiscard]] size_t GetMemSize() const {
         size_t sum = 0;
         sum += sizeof(Anglemap);
         sum += sizeof(size_t) * pdf.capacity();
-        sum += sizeof(double) * phi_CDFs.capacity();
-        sum += sizeof(size_t) * phi_CDFsums.capacity();
-        sum += sizeof(double) * theta_CDF.capacity();
+        sum += sizeof(double) * phi_CDFs_lowerTheta.capacity();
+        sum += sizeof(double) * phi_CDFs_higherTheta.capacity();
+        sum += sizeof(double) * phi_pdfs_lowerTheta.capacity();
+        sum += sizeof(double) * phi_pdfs_higherTheta.capacity();
+        sum += sizeof(size_t) * phi_pdfsums_lowerTheta.capacity();
+        sum += sizeof(size_t) * phi_pdfsums_higherTheta.capacity();
+        sum += sizeof(double) * theta_CDF_lower.capacity();
+        sum += sizeof(double) * theta_CDF_higher.capacity();
         return sum;
     }
 };
@@ -126,7 +142,7 @@ struct SubprocessFacet : public Facet {
 
     size_t InitializeTexture(const size_t &nbMoments);
 
-    size_t InitializeAngleMap();
+    int InitializeAngleMap();
 
     void InitializeOutgassingMap();
 
@@ -272,7 +288,7 @@ public:
         std::shared_ptr<ParameterSurface> surface;
         surface = std::make_shared<ParameterSurface>(dist);
         surfaces.insert(std::make_pair(indexed_id, surface));
-        printf("Insert param id: %f\n", indexed_id);
+        Log::console_msg_master(3, "Insert param id: %f\n", indexed_id);
         return surface.get();
     };
 
@@ -300,6 +316,8 @@ public:
 
     bool initialized;
     std::mutex m;
+
+    void BuildPrisma(double L, double R, double angle, double s, int step);
 
     static std::vector<double>
     ComputeHitChances(const std::vector<TestRay> &battery, const std::vector<std::shared_ptr<Facet>> &primitives);

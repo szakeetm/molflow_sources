@@ -73,13 +73,15 @@ int Simulation::ReinitializeParticleLog() {
         tmpParticleLog.reserve(model->otfParams.logLimit*//* / model->otfParams.nbProcess*//*);
     }*/
 
-    auto particle = GetParticle(0);
-    if(particle) {
-        particle->tmpParticleLog.clear();
-        particle->tmpParticleLog.pLog.shrink_to_fit();
+    for(auto& particle : particles) {
+        if(!particle.tmpParticleLog.tMutex.try_lock_for(std::chrono::seconds(10)))
+           return -1;
+        particle.tmpParticleLog.clear();
+        particle.tmpParticleLog.pLog.shrink_to_fit();
         if (model->otfParams.enableLogging) {
-            particle->tmpParticleLog.pLog.reserve(model->otfParams.logLimit/* / model->otfParams.nbProcess*/);
+           particle.tmpParticleLog.pLog.reserve(model->otfParams.logLimit/* / model->otfParams.nbProcess*/);
         }
+        particle.tmpParticleLog.tMutex.unlock();
     }
     return 0;
 }
@@ -219,16 +221,15 @@ void Simulation::ClearSimulation() {
         particle.tmpState.Reset();
         particle.model = model.get();
         particle.totalDesorbed = 0;
+
+        particle.tmpParticleLog.clear();
+
     }
     totalDesorbed = 0;
     //ResetTmpCounters();
     /*for(auto& tmpResults : tmpGlobalResults)
         tmpResults.Reset();*/
     //tmpParticleLog.clear();
-
-    auto particle = GetParticle(0);
-    if(particle)
-        particle->tmpParticleLog.clear();
 
     /*this->model->structures.clear();
     this->model->tdParams.CDFs.clear();
@@ -286,7 +287,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
             //No init for hits
             tmpResults.facetStates[i].momentResults.assign(1 + simModel->tdParams.moments.size(), facetMomentTemplate);
             if (sFac.sh.anglemapParams.record)
-              tmpResults.facetStates[i].recordedAngleMapPdf.assign(sFac.sh.anglemapParams.GetMapSize(), 0);
+                tmpResults.facetStates[i].recordedAngleMapPdf.assign(sFac.sh.anglemapParams.GetMapSize(), 0);
         }
 
         //Global histogram
@@ -420,14 +421,12 @@ void Simulation::ResetSimulation() {
         particle.tmpFacetVars.assign(model->sh.nbFacet, SubProcessFacetTempVar());
         particle.model = model.get();
         particle.totalDesorbed = 0;
+
+        particle.tmpParticleLog.clear();
     }
 
     totalDesorbed = 0;
     //tmpParticleLog.clear();
-
-    auto particle = GetParticle(0);
-    if(particle)
-        particle->tmpParticleLog.clear();
 }
 
 bool Simulation::RunParallel(size_t nSteps) {

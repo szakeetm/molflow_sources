@@ -1,7 +1,7 @@
 /*
 Program:     MolFlow+ / Synrad+
 Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
-Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
 Copyright:   E.S.R.F / CERN
 Website:     https://cern.ch/molflow
 
@@ -390,11 +390,8 @@ void GlobalSettings::SMPUpdate() {
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
         PROCESS_INFO pInfo = proc.runtimeInfo;
         {
-            sprintf(tmp, "%.0f MB", (double)pInfo.mem_use / (1024.0*1024.0));
-            processList->SetValueAt(2, i, tmp);
-            sprintf(tmp, "%.0f MB", (double)pInfo.mem_peak / (1024.0*1024.0));
-            processList->SetValueAt(3, i, tmp);
-
+            processList->SetValueAt(2, i, "");
+            processList->SetValueAt(3, i, "");
 			// State/Status
 			std::stringstream tmp_ss; tmp_ss << "[" << prStates[states[i-1]] << "] " << statusStrings[i-1];
 			processList->SetValueAt(4, i, tmp_ss.str().c_str());
@@ -453,7 +450,7 @@ void GlobalSettings::RestartProc() {
 					worker->RealReload(true);
 					mApp->SaveConfig();
 				}
-				catch (Error &e) {
+				catch (const std::exception &e) {
 					GLMessageBox::Display(e.what(), "Error", GLDLG_OK, GLDLG_ICONERROR);
 				}
 			}
@@ -476,7 +473,7 @@ void GlobalSettings::ProcessMessage(GLComponent *src, int message) {
 				try {
 					worker->RealReload();
 				}
-				catch (std::exception &e) {
+				catch (const std::exception &e) {
 					GLMessageBox::Display(e.what(), "Recalculation failed: Couldn't reload Worker", GLDLG_OK, GLDLG_ICONWARNING);
 				}
 			}

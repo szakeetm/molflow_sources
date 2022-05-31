@@ -49,7 +49,7 @@ You might have to create a symlink for the GSL library:
 ```
 ln -s /usr/lib64/libgsl.so.23 /usr/lib64/libgsl.so.0
 ```
-If your CMake is outdated, install a newer version like so:
+If your CMake is outdated, install a newer version:
 ```
 wget https://github.com/Kitware/CMake/releases/download/v3.18.3/cmake-3.18.3.tar.gz
 tar -zxvf cmake-3.18.3.tar.gz
@@ -68,16 +68,9 @@ The procedure looks as follows:
   - `xcode-select --install`
 2. Install homebrew
   - from https://brew.sh/
-  - `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"`
+  - `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
 3. Install cmake and the necessary dependencies
-  - `brew install cmake`
-  - `brew install libpng`
-  - `brew install gsl`
-  - `brew install sdl2`
-  - `brew install p7zip`
-  - `brew install libomp`
-
-  (Or a one-liner for the above commands is `brew install cmake libpng gsl sdl2 p7zip libomp`)
+  - `brew install cmake libpng gsl sdl2 p7zip libomp`
 
 ## Cloning the project (all OS)
 * Clone the Molflow project with `git clone`
@@ -85,7 +78,7 @@ The procedure looks as follows:
   * `git submodule init`
   * `git submodule update`
 ```
-git clone [https_url]
+git clone https://gitlab.cern.ch/molflow_synrad/molflow.git
 cd molflow
 git submodule init
 git submodule update
@@ -104,6 +97,34 @@ cd build
 cmake -DCMAKE_BUILD_TYPE=RELEASE -DUSE_TESTS=OFF ..
 make
 ```
+
+## CMake / make installation
+
+Given a default Cmake build procedure `mkdir build && cd build && cmake ..` Molflow can be installed into the users home folder by `cmake --install .` --> ~/molflow/
+
+To change the directory, the installation prefix can be adjusted `cmake --install . --prefix ~/Apps/` --> ~/Apps/molflow
+
+For a make installation, after the standard CMake procedure, by default Molflow will also be installed in the users home folder `make install` --> ~/molflow/
+
+The installation path can be changed by adding an installation prefix to the CMake build command `cmake -DCMAKE_INSTALL_PREFIX:PATH=~/Apps/ ..` and `make install` --> ~/Apps/molflow
+
+## Building for MPI
+
+- Prepare the environment with MPI and a compatible GCC version (GCC_VERSION >= 8)
+- Make sure a recent version of CMake is available (>= 3.12)
+    - Otherwise setup cmake from `https://github.com/Kitware/CMake/releases/`
+    - `wget https://github.com/Kitware/CMake/releases/download/v3.20.1/cmake-3.20.1-linux-x86_64.tar.gz` 
+    - `tar -xvf cmake-3.20.1-linux-x86_64.tar.gz.1`
+    - `cd cmake-3.20.1-linux-x86_64` 
+- Install Molflow by cloning the Repository
+    - `git clone https://gitlab.cern.ch/molflow_synrad/molflow.git`
+    - `cd molflow`
+- Build molflow with the installed cmake (or the pre-installed cmake)
+    - we require headless (NO_INTERFACE) and MPI (USE_MPI) for the CMake build
+    - `mkdir build && cd build` 
+    - `~/cmake-3.20.1-linux-x86_64/bin/cmake -DCMAKE_C_COMPILER=/path_to_custom_gcc -DCMAKE_CXX_COMPILER=/path_to_custom_g++ -DNO_INTERFACE=ON -DUSE_MPI=ON ..`
+- Use as explained by the MPI service of choice, e.g. with `mpirun`
+    `mpirun -n 64 ./molflowCLI -f TestCases/06-dynamic_desorption_from_synrad.xml -t 180 --reset`
 
 # Running
 ## Windows
