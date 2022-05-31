@@ -447,10 +447,11 @@ std::string Initializer::getAutosaveFile() {
             // create autosavefile from copy of original
             autoSave = std::filesystem::path(SettingsIO::workPath).append(autoSavePrefix).concat(autoSave).string();
             try {
-                std::filesystem::copy_file(SettingsIO::workFile, autoSave,
+                if(!SettingsIO::workFile.empty() && std::filesystem::exists(SettingsIO::workFile))
+                    std::filesystem::copy_file(SettingsIO::workFile, autoSave,
                                            std::filesystem::copy_options::overwrite_existing);
             } catch (std::filesystem::filesystem_error &e) {
-                Log::console_error("Could not copy file: %s\n", e.what());
+                Log::console_error("Could not copy file to create autosave file: %s\n", e.what());
             }
         }
     }

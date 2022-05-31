@@ -165,9 +165,13 @@ int main(int argc, char** argv) {
                 try {
                     FlowIO::WriterXML writer;
                     Log::console_msg_master(3, " Saving intermediate results: %s\n", outFile.c_str());
-                    if(!SettingsIO::workFile.empty()) {
-                        std::filesystem::copy_file(SettingsIO::workFile, outFile,
-                                                   std::filesystem::copy_options::overwrite_existing);
+                    if(!SettingsIO::workFile.empty() && std::filesystem::exists(SettingsIO::workFile)) {
+                        try {
+                            std::filesystem::copy_file(SettingsIO::workFile, outFile,
+                                                           std::filesystem::copy_options::overwrite_existing);
+                        } catch (std::filesystem::filesystem_error &e) {
+                            Log::console_error("Could not copy file: %s\n", e.what());
+                        }
                     }
                     else {
                         pugi::xml_document newDoc;
@@ -315,9 +319,14 @@ int main(int argc, char** argv) {
         }
         else if(!SettingsIO::overwrite){
             // Copy full file description first, in case outputFile is different
-            if(!SettingsIO::workFile.empty())
-                std::filesystem::copy_file(SettingsIO::workFile, fullOutFile,
-                                       std::filesystem::copy_options::overwrite_existing);
+            if(!SettingsIO::workFile.empty() && std::filesystem::exists(SettingsIO::workFile)){
+                try {
+                    std::filesystem::copy_file(SettingsIO::workFile, fullOutFile,
+                                               std::filesystem::copy_options::overwrite_existing);
+                } catch (std::filesystem::filesystem_error &e) {
+                    Log::console_error("Could not copy file to preserve initial file layout: %s\n", e.what());
+                }
+            }
         }
         FlowIO::WriterXML writer(false, true);
         pugi::xml_document newDoc;
