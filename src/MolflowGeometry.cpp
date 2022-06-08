@@ -4021,6 +4021,19 @@ bool MolflowGeometry::LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState 
 	return true;
 }
 
+/**
+* \brief Compare two XML input files by comparing simulation results against each other with a threshold
+* \param fileName_lhs xml input file 1
+* \param fileName_rhs xml input file 2
+* \param fileName_out xml output file
+* \param cmpThreshold threshold for equality checks
+* \return bool true if compare quasi equal
+*/
+bool MolflowGeometry::CompareXML_simustate(const std::string &fileName_lhs, const std::string &fileName_rhs,
+                                          const std::string &fileName_out, double cmpThreshold) {
+        return false;
+}
+
 bool MolflowGeometry::InitOldStruct(SimulationModel* model){
     for (int i = 0; i < MAX_SUPERSTR; i++) {
         SAFE_FREE(strName[i]);
