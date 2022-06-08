@@ -52,13 +52,20 @@ execute_process(
 link_directories(${LINK_DIR_1} ${LINK_DIR_2})
 
 set(EXTRA_SRC
+        ../src/IO/CSVExporter.cpp
         ../src_shared/File.cpp
         ../src_shared/FlowMPI.h #contains templates
         ../src_shared/FlowMPI.cpp
         )
+
 # Now simply link against gtest or gtest_main as needed. Eg
 add_executable(testsuite simulation_testsuite.cpp ${EXTRA_SRC})
 
+
+#[[set(CMAKE_EXECUTABLE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${OUTPUT_BIN_REL}")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY    "${CMAKE_BINARY_DIR}/${OUTPUT_BIN_REL}")]]
+set_target_properties(testsuite PROPERTIES EXECUTABLE_OUTPUT_DIRECTORY ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY}/tests)
+set_target_properties(testsuite PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests)
 target_link_libraries(testsuite PRIVATE gtest_main molflowSim)
 target_compile_definitions(testsuite PRIVATE
         "-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
@@ -83,10 +90,10 @@ target_link_directories(testsuite PRIVATE ${LINK_DIR_1} ${LINK_DIR_2})
 if(MSVC)
     # zip extraction
     target_link_libraries(testsuite PRIVATE
-            bzip2.lib
-            lzma.lib
-            ZipLib.lib
-            zlib.lib
+            #bzip2.lib
+            #lzma.lib
+            #ZipLib.lib
+            #zlib.lib
             )
 endif(MSVC)
 
@@ -94,6 +101,6 @@ target_compile_features(testsuite PRIVATE cxx_std_17)
 #add_test(NAME example_test COMMAND testsuite)
 
 file(COPY ./simulation.cfg
-        ./test_lr1000_pipe.xml ./test_lr10_pipe_tex.xml ./test_lr10_pipe_prof.xml ./test_lr10_pipe_trans.xml
         ./TestCases
-        DESTINATION ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY})
+        ../copy_to_build/parameter_catalog
+        DESTINATION ${CMAKE_EXECUTABLE_OUTPUT_DIRECTORY}/tests)

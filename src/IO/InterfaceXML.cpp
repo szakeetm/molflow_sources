@@ -106,7 +106,6 @@ namespace FlowIO {
                 mApp->convergencePlotter->SetViews(views);
             }
         }
-        
         // return;
     }
 

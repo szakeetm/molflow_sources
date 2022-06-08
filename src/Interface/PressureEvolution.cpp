@@ -1,7 +1,7 @@
 /*
 Program:     MolFlow+ / Synrad+
 Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
-Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
 Copyright:   E.S.R.F / CERN
 Website:     https://cern.ch/molflow
 
@@ -49,7 +49,13 @@ extern MolFlow *mApp;
 extern SynRad*mApp;
 #endif
 
-extern const char*profType[];
+std::vector<std::string> displayModes = {
+	"MC Hits",
+	"Equiv. hits",
+	"Pressure (mbar)",
+	"Density (1/m3)",
+	"Imp.rate (1/s/m2)"
+};
 
 /**
 * \brief Constructor with initialisation for Pressure evolution window (Time/Pressure evolution)
@@ -212,7 +218,7 @@ void PressureEvolution::refreshChart() {
 	// Lock during update
 	bool buffer_old = worker->GetHits();
 	if (!buffer_old) return;
-	int yScaleMode = yScaleCombo->GetSelectedIndex();
+	std::string displayMode = yScaleCombo->GetSelectedValue(); //More reliable than choosing by index
 
 	Geometry *geom = worker->GetGeometry();
 	GlobalHitBuffer& gHits = worker->globalHitCache;
@@ -227,29 +233,30 @@ void PressureEvolution::refreshChart() {
 			v->Reset();
 
 			auto& facetHits = worker->globState.facetStates[v->userData1].momentResults;
-			switch (yScaleMode) {
-			case 0: { //MC Hits
+			
+			for (size_t i = 0; i < displayModes.size(); i++) {
+				yScaleCombo->SetValueAt(i, displayModes[i].c_str());
+			}
+
+			if (displayMode == "MC Hits") {
 				for (size_t m = 1; m <= Min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
 					v->Add(worker->moments[m - 1].first, (double)facetHits[m].hits.nbMCHit, false);
 				}
-				break;
 			}
-			case 1: { //Equiv Hits
+			else if (displayMode== "Equiv. hits") {
 				for (size_t m = 1; m <= Min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
 					v->Add(worker->moments[m - 1].first, facetHits[m].hits.nbHitEquiv, false);
 				}
-				break;
 			}
-			case 2: {//Pressure
+			else if (displayMode == "Pressure (mbar)") {
 				scaleY = 1.0 / nbDes / (f->GetArea() * 1E-4) * worker->model->wp.gasMass / 1000 / 6E23 * 0.0100; //0.01: Pa->mbar
                 scaleY *= worker->model->wp.totalDesorbedMolecules;
                 //scaleY *= worker->model->wp.totalDesorbedMolecules / worker->model->wp.timeWindowSize;
 				for (size_t m = 1; m <= Min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
 					v->Add(worker->moments[m - 1].first, facetHits[m].hits.sum_v_ort*(scaleY/worker->moments[m - 1].second), false);
 				}
-				break;
 			}
-			case 3: {//Particle density
+			else if (displayMode == "Density (1/m3)") {
 				scaleY = 1.0 / nbDes / (f->GetArea() * 1E-4);
                 scaleY *= worker->model->wp.totalDesorbedMolecules;
                 //scaleY *= worker->model->wp.totalDesorbedMolecules / worker->model->wp.timeWindowSize;
@@ -257,17 +264,14 @@ void PressureEvolution::refreshChart() {
 				for (size_t m = 1; m <= Min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
 					v->Add(worker->moments[m - 1].first, facetHits[m].hits.sum_1_per_ort_velocity*(scaleY/worker->moments[m - 1].second), false);
 				}
-				break;
 			}
-			case 4: {//Imp.rate
+			else if (displayMode == "Imp.rate (1/s/m2)") {
 				scaleY = 1.0 / nbDes / (f->GetArea() * 1E-4);
                 scaleY *= worker->model->wp.totalDesorbedMolecules;
                 //scaleY *= worker->model->wp.totalDesorbedMolecules / worker->model->wp.timeWindowSize;
                 for (size_t m = 1; m <= Min(worker->moments.size(), (size_t)10000); m++) { //max 10000 points
 					v->Add(worker->moments[m - 1].first, facetHits[m].hits.nbHitEquiv*(scaleY/worker->moments[m - 1].second), false);
 				}
-				break;
-			}
 			}
 		}
 		v->CommitChange();

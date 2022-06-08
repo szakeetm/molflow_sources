@@ -1,7 +1,7 @@
 /*
 Program:     MolFlow+ / Synrad+
 Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
-Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
 Copyright:   E.S.R.F / CERN
 Website:     https://cern.ch/molflow
 
@@ -30,7 +30,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 
 
-#define SYNVERSION 10
+#define SYNVERSION 12
 
 class Worker;
 
@@ -70,7 +70,8 @@ public:
 	bool LoadXML_simustate(pugi::xml_node loadXML, GlobalSimuState &globState, Worker *work, GLProgress *progressDlg);
 
 	// Geometry
-	void     BuildPipe(double L, double R, double s, int step);
+    void     BuildPipe(double L, double R, double s, int step);
+    void     BuildPrisma(double L, double R, double angle, double s, int step);
 	void     LoadProfileGEO(FileReader *file, GlobalSimuState &globState, int version);
 
 	// Memory usage (in bytes)
@@ -104,4 +105,3 @@ private:
 	void SaveProfileGEO(FileWriter *file, GlobalSimuState &globState, int super = -1, bool saveSelected = false, bool crashSave = false);
 
 };
-

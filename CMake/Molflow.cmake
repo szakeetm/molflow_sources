@@ -89,19 +89,27 @@ endif ()
         /W4>)]]
 if(NOT MSVC)
     add_compile_options(
-            -Wall -Wextra -pedantic
+            "$<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:-Wno-tautological-undefined-compare;-Wno-inconsistent-missing-override>"
+            #is valid for C++/ObjC++ but not for C
+            $<$<COMPILE_LANGUAGE:CXX>:-Wno-reorder>
+            #-w
+            #-Wextra
+            -Wconversion
+            -Wno-write-strings
+            -Wno-unused
+            -pedantic
             #-Werror -Wno-error=uninitialized
-        $<$<CONFIG:RELEASE>:-O3>
-        $<$<CONFIG:DEBUG>:-O0>
-        $<$<CONFIG:DEBUG>:-ggdb3>
-        $<$<CONFIG:RELWITHDEBINFO>:-O2>
-        $<$<CONFIG:RELWITHDEBINFO>:-ggdb3>
-        $<$<CONFIG:RELWITHDEBINFO>:-g>
+        "$<$<CONFIG:RELEASE>:-O3>"
+        "$<$<CONFIG:DEBUG>:-O0>"
+        "$<$<CONFIG:DEBUG>:-ggdb3>"
+        "$<$<CONFIG:RELWITHDEBINFO>:-O2>"
+        "$<$<CONFIG:RELWITHDEBINFO>:-ggdb3>"
+        "$<$<CONFIG:RELWITHDEBINFO>:-g>"
     )
 else()
     #/WX
     add_compile_options(
-        /W4
+        /W3
     )
     add_compile_options(
         "$<$<CONFIG:Release>:/GL;/O2;/EHsc>"
@@ -141,7 +149,13 @@ ENDIF()
 
 set(COPY_FILES ${COPY_DIR}/desorption_yields
         ${COPY_DIR}/images
-        ${COPY_DIR}/parameter_catalog)
+        ${COPY_DIR}/parameter_catalog
+        ${COPY_DIR}/Roboto-Medium.ttf
+        ${COPY_DIR}/DroidSans.ttf
+        ${COPY_DIR}/FreeMono.ttf
+        ${COPY_DIR}/fa-regular-400.ttf
+        ${COPY_DIR}/fa-solid-900.ttf
+        )
 
 IF (WIN32)
     set(COPY_FILES ${COPY_FILES}

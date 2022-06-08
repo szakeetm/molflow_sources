@@ -1,7 +1,7 @@
 /*
 Program:     MolFlow+ / Synrad+
 Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
-Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
 Copyright:   E.S.R.F / CERN
 Website:     https://cern.ch/molflow
 
@@ -366,7 +366,7 @@ void OutgassingMapWindow::ProcessMessage(GLComponent *src, int message) {
 					  worker->CalcTotalOutgassing();
 					  // Send to sub process
 					  worker->Reload();
-				  } catch(Error &e) {
+				  } catch (const std::exception &e) {
 				      GLMessageBox::Display(e.what(),"Error exploding facet (not enough memory?)",GLDLG_OK,GLDLG_ICONERROR);
 				  }
 				}

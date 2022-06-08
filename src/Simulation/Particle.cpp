@@ -1,6 +1,22 @@
-//
-// Created by pascal on 2/5/21.
-//
+/*
+Program:     MolFlow+ / Synrad+
+Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
+Copyright:   E.S.R.F / CERN
+Website:     https://cern.ch/molflow
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
+*/
 
 #include <set>
 #include <Helper/Chronometer.h>
@@ -150,7 +166,7 @@ void Particle::PerformTeleport(SubprocessFacet *iFacet) {
     if (/*iFacet->direction && */iFacet->sh.countDirection)
         RecordDirectionVector(iFacet, momentIndex);
     ProfileFacet(iFacet, momentIndex, true, 2.0, 2.0);
-    if(particleId == 0) LogHit(iFacet);
+    LogHit(iFacet);
     if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
 
     // Relaunch particle from new facet
@@ -548,7 +564,6 @@ bool Particle::StartFromSource(Ray& ray) {
     //distanceTraveled = 0.0;  //for mean free path calculations
     //particle.time = desorptionStartTime + (desorptionStopTime - desorptionStartTime)*randomGenerator.rnd();
     ray.time = generationTime = Physics::GenerateDesorptionTime(model->tdParams.IDs, src, randomGenerator.rnd(), model->wp.latestMoment);
-    ray.time = particle.time;
     lastMomentIndex = 0;
     if (model->wp.useMaxwellDistribution) velocity = Physics::GenerateRandomVelocity(model->tdParams.CDFs, src->sh.CDFid, randomGenerator.rnd());
     else
@@ -558,7 +573,7 @@ bool Particle::StartFromSource(Ray& ray) {
     oriRatio = 1.0;
     if (model->wp.enableDecay) { //decaying gas
         expectedDecayMoment =
-                particle.time + model->wp.halfLife * 1.44269 * -log(randomGenerator.rnd()); //1.44269=1/ln2
+                ray.time + model->wp.halfLife * 1.44269 * -log(randomGenerator.rnd()); //1.44269=1/ln2
         //Exponential distribution PDF: probability of 't' life = 1/TAU*exp(-t/TAU) where TAU = half_life/ln2
         //Exponential distribution CDF: probability of life shorter than 't" = 1-exp(-t/TAU)
         //Equation: randomGenerator.rnd()=1-exp(-t/TAU)
@@ -602,7 +617,7 @@ bool Particle::StartFromSource(Ray& ray) {
         if (IsInFacet(*src, u, v)) {
 
             // (U,V) -> (x,y,z)
-            particle.origin = src->sh.O + u * src->sh.U + v * src->sh.V;
+            ray.origin = src->sh.O + u * src->sh.U + v * src->sh.V;
             tmpFacetVars[src->globalId].colU = u;
             tmpFacetVars[src->globalId].colV = v;
             found = true;
@@ -619,22 +634,25 @@ bool Particle::StartFromSource(Ray& ray) {
             //double vLength = sqrt(pow(src->sh.V.x, 2) + pow(src->sh.V.y, 2) + pow(src->sh.V.z, 2));
             double u = ((double) mapPositionW + 0.5) / outgMap.outgassingMapWidth_precise;
             double v = ((double) mapPositionH + 0.5) / outgMap.outgassingMapHeight_precise;
-            particle.origin = src->sh.O + u * src->sh.U + v * src->sh.V;
+            ray.origin = src->sh.O + u * src->sh.U + v * src->sh.V;
             tmpFacetVars[src->globalId].colU = u;
             tmpFacetVars[src->globalId].colV = v;
         } else {
             tmpFacetVars[src->globalId].colU = 0.5;
             tmpFacetVars[src->globalId].colV = 0.5;
-            particle.origin = src->sh.center;
+            ray.origin = src->sh.center;
         }
 
     }
 
 
 
-    if (src->sh.isMoving && model->wp.motionType)
-        if (particleId == 0)RecordHit(HIT_MOVING);
-        else if (particleId == 0)RecordHit(HIT_DES); //create blue hit point for created particle
+    if (particleId == 0) {
+        if (src->sh.isMoving && model->wp.motionType)
+            RecordHit(HIT_MOVING);
+        else
+            RecordHit(HIT_DES); //create blue hit point for created particle
+    }
 
     //See docs/theta_gen.png for further details on angular distribution generation
     switch (src->sh.desorbType) {
@@ -657,9 +675,24 @@ bool Particle::StartFromSource(Ray& ray) {
         case DES_ANGLEMAP: {
             auto[theta, thetaLowerIndex, thetaOvershoot] = AnglemapGeneration::GenerateThetaFromAngleMap(
                     src->sh.anglemapParams, src->angleMap, randomGenerator.rnd());
+
             auto phi = AnglemapGeneration::GeneratePhiFromAngleMap(thetaLowerIndex, thetaOvershoot,
-                                                                   src->sh.anglemapParams, src->angleMap,
-                                                                   randomGenerator.rnd());
+                                                                   src->sh.anglemapParams, src->angleMap, randomGenerator.rnd());
+                            
+            /*                                                      
+            //Debug
+            double phi;
+            thetaLowerIndex = 0;
+            thetaOvershoot = 0;
+            std::vector<double> phis;
+            for (double r = 0.0; r < 1.0; r += 0.001) {
+                 phi = AnglemapGeneration::GeneratePhiFromAngleMap(thetaLowerIndex, thetaOvershoot,
+                    src->sh.anglemapParams, src->angleMap,
+                    r);
+                phis.push_back(phi);
+            }
+            */
+
             ray.direction = PolarToCartesian(src->sh.nU, src->sh.nV, src->sh.N, PI - theta, phi,
                                          false); //angle map contains incident angle (between N and source dir) and theta is dir (between N and dest dir)
 
@@ -690,7 +723,7 @@ bool Particle::StartFromSource(Ray& ray) {
     //nbPHit = 0;
 
     if (src->sh.isMoving) {
-        Physics::TreatMovingFacet(model, particle.origin, ray.direction, velocity);
+        Physics::TreatMovingFacet(model, ray.origin, ray.direction, velocity);
     }
 
     double ortVelocity =
@@ -699,7 +732,7 @@ bool Particle::StartFromSource(Ray& ray) {
     src->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity; //was 2.0 / ortV
     src->sh.tmpCounter.hit.sum_v_ort += (model->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
     int momentIndex = -1;
-    if ((momentIndex = LookupMomentIndex(particle.time, model->tdParams.moments, lastMomentIndex)) > 0) {
+    if ((momentIndex = LookupMomentIndex(ray.time, model->tdParams.moments, lastMomentIndex)) > 0) {
         lastMomentIndex = momentIndex - 1;
     }
 
@@ -707,266 +740,7 @@ bool Particle::StartFromSource(Ray& ray) {
                          (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
     //Desorption doesn't contribute to angular profiles, nor to angle maps
     ProfileFacet(src, momentIndex, false, 2.0, 1.0); //was 2.0, 1.0
-    if(particleId == 0) LogHit(src);
-    if (/*src->texture && */src->sh.countDes)
-        RecordHitOnTexture(src, momentIndex, true, 2.0, 1.0); //was 2.0, 1.0
-    //if (src->direction && src->sh.countDirection) RecordDirectionVector(src, particle.time);
-
-    // Reset volatile state
-    /*if (hasVolatile) {
-        for (auto &s : model->structures) {
-            for (auto &f : s.facets) {
-                f.isReady = true;
-            }
-        }
-    }*/
-
-    found = false;
-    return true;
-}
-
-bool Particle::StartFromSource() {
-    bool found = false;
-    bool foundInMap = false;
-    bool reverse;
-    size_t mapPositionW, mapPositionH;
-    double srcRnd;
-    double sumA = 0.0;
-    size_t i = 0, j = 0;
-    int nbTry = 0;
-
-    // Check end of simulation
-    /*if (model->otfParams.desorptionLimit > 0) {
-        if (tmpState.globalHits.globalHits.hit.nbDesorbed >=
-            model->otfParams.desorptionLimit / model->otfParams.nbProcess) {
-            //lastHitFacet = nullptr; // reset full particle status or go on from where we left
-            return false;
-        }
-    }*/
-
-    // Select source
-    srcRnd = randomGenerator.rnd() * model->wp.totalDesorbedMolecules;
-
-    i = 0;
-    for(auto& fac : model->facets) { //Go through facets in a structure
-        auto& f = *fac;
-        if (f.sh.desorbType != DES_NONE) { //there is some kind of outgassing
-            if (f.sh.useOutgassingFile) { //Using SynRad-generated outgassing map
-                if (f.sh.totalOutgassing > 0.0) {
-                    found = (srcRnd >= sumA) && (srcRnd < (sumA + model->wp.latestMoment * f.sh.totalOutgassing /
-                                                                  (1.38E-23 * f.sh.temperature)));
-                    if (found) {
-                        //look for exact position in map
-                        double rndRemainder = (srcRnd - sumA) / model->wp.latestMoment * (1.38E-23 *
-                                                                                          f.sh.temperature); //remainder, should be less than f.sh.totalOutgassing
-                        /*double sumB = 0.0;
-                        for (w = 0; w < f.sh.outgassingMapWidth && !foundInMap; w++) {
-                            for (h = 0; h < f.sh.outgassingMapHeight && !foundInMap; h++) {
-                                double cellOutgassing = f.outgassingMap[h*f.sh.outgassingMapWidth + w];
-                                if (cellOutgassing > 0.0) {
-                                    foundInMap = (rndRemainder >= sumB) && (rndRemainder < (sumB + cellOutgassing));
-                                    if (foundInMap) mapPositionW = w; mapPositionH = h;
-                                    sumB += cellOutgassing;
-                                }
-                            }
-                        }*/
-                        double lookupValue = rndRemainder;
-                        int outgLowerIndex = my_lower_bound(lookupValue,
-                                                            f.ogMap.outgassingMap_cdf); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
-                        outgLowerIndex++;
-                        mapPositionH = (size_t) ((double) outgLowerIndex / (double) f.ogMap.outgassingMapWidth);
-                        mapPositionW = (size_t) outgLowerIndex - mapPositionH * f.ogMap.outgassingMapWidth;
-                        foundInMap = true;
-                        /*if (!foundInMap) {
-                            SetErrorSub("Starting point not found in imported desorption map");
-                            return false;
-                        }*/
-                    }
-                    sumA += model->wp.latestMoment * f.sh.totalOutgassing / (1.38E-23 * f.sh.temperature);
-                }
-            } //end outgassing file block
-            else { //constant or time-dependent outgassing
-                double facetOutgassing =
-                        ((f.sh.outgassing_paramId >= 0)
-                         ? model->tdParams.IDs[f.sh.IDid].back().second
-                         : model->wp.latestMoment * f.sh.outgassing) / (1.38E-23 * f.sh.temperature);
-                found = (srcRnd >= sumA) && (srcRnd < (sumA + facetOutgassing));
-                sumA += facetOutgassing;
-            } //end constant or time-dependent outgassing block
-        } //end 'there is some kind of outgassing'
-        if (!found) i++;
-        if (f.sh.is2sided) reverse = randomGenerator.rnd() > 0.5;
-        else reverse = false;
-
-        if(found) break;
-    } // facet loop
-
-    if (!found) {
-        std::cerr << "No starting point, aborting" << std::endl;
-        //SetErrorSub("No starting point, aborting");
-        return false;
-    }
-
-    SubprocessFacet *src = model->facets[i].get();
-    lastHitFacet = src;
-    //distanceTraveled = 0.0;  //for mean free path calculations
-    //particle.time = desorptionStartTime + (desorptionStopTime - desorptionStartTime)*randomGenerator.rnd();
-    particle.time = generationTime = Physics::GenerateDesorptionTime(model->tdParams.IDs, src, randomGenerator.rnd(), model->wp.latestMoment);
-    lastMomentIndex = 0;
-    if (model->wp.useMaxwellDistribution) velocity = Physics::GenerateRandomVelocity(model->tdParams.CDFs, src->sh.CDFid, randomGenerator.rnd());
-    else
-        velocity =
-                145.469 * std::sqrt(src->sh.temperature / model->wp.gasMass);  //sqrt(8*R/PI/1000)=145.47
-    oriRatio = 1.0;
-    if (model->wp.enableDecay) { //decaying gas
-        expectedDecayMoment =
-                particle.time + model->wp.halfLife * 1.44269 * -log(randomGenerator.rnd()); //1.44269=1/ln2
-        //Exponential distribution PDF: probability of 't' life = 1/TAU*exp(-t/TAU) where TAU = half_life/ln2
-        //Exponential distribution CDF: probability of life shorter than 't" = 1-exp(-t/TAU)
-        //Equation: randomGenerator.rnd()=1-exp(-t/TAU)
-        //Solution: t=TAU*-log(1-randomGenerator.rnd()) and 1-randomGenerator.rnd()=randomGenerator.rnd() therefore t=half_life/ln2*-log(randomGenerator.rnd())
-    } else {
-        expectedDecayMoment = 1e100; //never decay
-    }
-    //temperature = src->sh.temperature; //Thermalize particle
-    nbBounces = 0;
-    distanceTraveled = 0;
-
-    found = false; //Starting point within facet
-
-    // Choose a starting point
-    while (!found && nbTry < 1000) {
-        double u, v;
-        if (foundInMap) {
-            auto& outgMap = src->ogMap;
-            if (mapPositionW < (outgMap.outgassingMapWidth - 1)) {
-                //Somewhere in the middle of the facet
-                u = ((double) mapPositionW + randomGenerator.rnd()) / outgMap.outgassingMapWidth_precise;
-            } else {
-                //Last element, prevent from going out of facet
-                u = ((double) mapPositionW +
-                     randomGenerator.rnd() * (outgMap.outgassingMapWidth_precise - (outgMap.outgassingMapWidth - 1.0))) /
-                    outgMap.outgassingMapWidth_precise;
-            }
-            if (mapPositionH < (outgMap.outgassingMapHeight - 1)) {
-                //Somewhere in the middle of the facet
-                v = ((double) mapPositionH + randomGenerator.rnd()) / outgMap.outgassingMapHeight_precise;
-            } else {
-                //Last element, prevent from going out of facet
-                v = ((double) mapPositionH +
-                     randomGenerator.rnd() * (outgMap.outgassingMapHeight_precise - (outgMap.outgassingMapHeight - 1.0))) /
-                    outgMap.outgassingMapHeight_precise;
-            }
-        } else {
-            u = randomGenerator.rnd();
-            v = randomGenerator.rnd();
-        }
-        if (IsInFacet(*src, u, v)) {
-
-            // (U,V) -> (x,y,z)
-            particle.origin = src->sh.O + u * src->sh.U + v * src->sh.V;
-            tmpFacetVars[src->globalId].colU = u;
-            tmpFacetVars[src->globalId].colV = v;
-            found = true;
-
-        }
-        nbTry++;
-    }
-
-    if (!found) {
-        // Get the center, if the center is not included in the facet, a leak is generated.
-        if (foundInMap) {
-            auto& outgMap = src->ogMap;
-            //double uLength = sqrt(pow(src->sh.U.x, 2) + pow(src->sh.U.y, 2) + pow(src->sh.U.z, 2));
-            //double vLength = sqrt(pow(src->sh.V.x, 2) + pow(src->sh.V.y, 2) + pow(src->sh.V.z, 2));
-            double u = ((double) mapPositionW + 0.5) / outgMap.outgassingMapWidth_precise;
-            double v = ((double) mapPositionH + 0.5) / outgMap.outgassingMapHeight_precise;
-            particle.origin = src->sh.O + u * src->sh.U + v * src->sh.V;
-            tmpFacetVars[src->globalId].colU = u;
-            tmpFacetVars[src->globalId].colV = v;
-        } else {
-            tmpFacetVars[src->globalId].colU = 0.5;
-            tmpFacetVars[src->globalId].colV = 0.5;
-            particle.origin = src->sh.center;
-        }
-
-    }
-
-    if (src->sh.isMoving && model->wp.motionType)
-        if (particleId == 0)RecordHit(HIT_MOVING);
-        else if (particleId == 0)RecordHit(HIT_DES); //create blue hit point for created particle
-
-    //See docs/theta_gen.png for further details on angular distribution generation
-    switch (src->sh.desorbType) {
-        case DES_UNIFORM:
-            particle.direction = PolarToCartesian(src->sh.nU, src->sh.nV, src->sh.N, std::acos(randomGenerator.rnd()),
-                                         randomGenerator.rnd() * 2.0 * PI,
-                                         reverse);
-            break;
-        case DES_NONE: //for file-based
-        case DES_COSINE:
-            particle.direction = PolarToCartesian(src->sh.nU, src->sh.nV, src->sh.N, std::acos(std::sqrt(randomGenerator.rnd())),
-                                         randomGenerator.rnd() * 2.0 * PI,
-                                         reverse);
-            break;
-        case DES_COSINE_N:
-            particle.direction = PolarToCartesian(src->sh.nU, src->sh.nV, src->sh.N, std::acos(
-                            std::pow(randomGenerator.rnd(), 1.0 / (src->sh.desorbTypeN + 1.0))),
-                                         randomGenerator.rnd() * 2.0 * PI, reverse);
-            break;
-        case DES_ANGLEMAP: {
-            auto[theta, thetaLowerIndex, thetaOvershoot] = AnglemapGeneration::GenerateThetaFromAngleMap(
-                    src->sh.anglemapParams, src->angleMap, randomGenerator.rnd());
-            auto phi = AnglemapGeneration::GeneratePhiFromAngleMap(thetaLowerIndex, thetaOvershoot,
-                                                                   src->sh.anglemapParams, src->angleMap,
-                                                                   randomGenerator.rnd());
-            particle.direction = PolarToCartesian(src->sh.nU, src->sh.nV, src->sh.N, PI - theta, phi,
-                                         false); //angle map contains incident angle (between N and source dir) and theta is dir (between N and dest dir)
-
-        }
-    }
-
-    // Current structure
-    if (src->sh.superIdx == -1) {
-        std::ostringstream out;
-        out << "Facet " << (src->globalId + 1) << " is in all structures, it shouldn't desorb.";
-        //SetErrorSub(out.str().c_str());
-        std::cerr << out.str() << std::endl;
-
-        return false;
-    }
-    particle.structure = src->sh.superIdx;
-    teleportedFrom = -1;
-
-    // Count
-
-    tmpFacetVars[src->globalId].isHit = true;
-/*#pragma omp critical
-    {
-        totalDesorbed++;
-    }*/
-    tmpState.globalHits.globalHits.nbDesorbed++;
-    //nbPHit = 0;
-
-    if (src->sh.isMoving) {
-        Physics::TreatMovingFacet(model, particle.origin, particle.direction, velocity);
-    }
-
-    double ortVelocity =
-            velocity * std::abs(Dot(particle.direction, src->sh.N));
-    /*src->sh.tmpCounter.hit.nbDesorbed++;
-    src->sh.tmpCounter.hit.sum_1_per_ort_velocity += 2.0 / ortVelocity; //was 2.0 / ortV
-    src->sh.tmpCounter.hit.sum_v_ort += (model->wp.useMaxwellDistribution ? 1.0 : 1.1781)*ortVelocity;*/
-    int momentIndex = -1;
-    if ((momentIndex = LookupMomentIndex(particle.time, model->tdParams.moments, lastMomentIndex)) > 0) {
-        lastMomentIndex = momentIndex - 1;
-    }
-
-    IncreaseFacetCounter(src, momentIndex, 0, 1, 0, 2.0 / ortVelocity,
-                         (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
-    //Desorption doesn't contribute to angular profiles, nor to angle maps
-    ProfileFacet(src, momentIndex, false, 2.0, 1.0); //was 2.0, 1.0
-    if(particleId == 0) LogHit(src);
+    LogHit(src);
     if (/*src->texture && */src->sh.countDes)
         RecordHitOnTexture(src, momentIndex, true, 2.0, 1.0); //was 2.0, 1.0
     //if (src->direction && src->sh.countDirection) RecordDirectionVector(src, particle.time);
@@ -1010,7 +784,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
             // Count this hit as a transparent pass
             if (particleId == 0)RecordHit(HIT_TRANS);
         }
-        if(particleId == 0) LogHit(iFacet);
+        LogHit(iFacet);
 
         ProfileFacet(iFacet, momentIndex, true, 2.0, 2.0);
         if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
@@ -1033,7 +807,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
 
             IncreaseFacetCounter(iFacet, momentIndex, 0, 0, 1, 0, 0);
             iFacet->isReady = false;
-            if(particleId == 0) LogHit(iFacet);
+            LogHit(iFacet);
             ProfileFacet(iFacet, momentIndex, true, 2.0, 1.0);
             if (/*iFacet->texture && */iFacet->sh.countAbs)
                 RecordHitOnTexture(iFacet, momentIndex, true, 2.0, 1.0);
@@ -1072,7 +846,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
         RecordHitOnTexture(iFacet, momentIndex, true, 1.0, 1.0);
     if (/*iFacet->direction &&*/ iFacet->sh.countDirection)
         RecordDirectionVector(iFacet, momentIndex);
-    if(particleId == 0) LogHit(iFacet);
+    LogHit(iFacet);
     ProfileFacet(iFacet, momentIndex, true, 1.0, 1.0);
     if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
 
@@ -1082,6 +856,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
     if (iFacet->sh.enableSojournTime) {
         double A = exp(-iFacet->sh.sojournE / (8.31 * iFacet->sh.temperature));
         particle.time += -log(randomGenerator.rnd()) / (A * iFacet->sh.sojournFreq);
+        momentIndex = LookupMomentIndex(particle.time, model->tdParams.moments, lastMomentIndex); //reflection might happen in another moment
     }
 
     if (iFacet->sh.reflection.diffusePart > 0.999999) { //Speedup branch for most common, diffuse case
@@ -1170,7 +945,7 @@ void Particle::RecordAbsorb(SubprocessFacet *iFacet) {
             velocity * std::abs(Dot(particle.direction, iFacet->sh.N));
     IncreaseFacetCounter(iFacet, momentIndex, 1, 0, 1, 2.0 / ortVelocity,
                          (model->wp.useMaxwellDistribution ? 1.0 : 1.1781) * ortVelocity);
-    if(particleId == 0) LogHit(iFacet);
+    LogHit(iFacet);
     ProfileFacet(iFacet, momentIndex, true, 2.0, 1.0); //was 2.0, 1.0
     if (iFacet->sh.anglemapParams.record) RecordAngleMap(iFacet);
     if (/*iFacet->texture &&*/ iFacet->sh.countAbs)
@@ -1487,7 +1262,7 @@ void Particle::RegisterTransparentPass(SubprocessFacet *facet) {
     if (/*facet->direction &&*/ facet->sh.countDirection) {
         RecordDirectionVector(facet, momentIndex);
     }
-    if(particleId == 0) LogHit(facet);
+    LogHit(facet);
     ProfileFacet(facet, momentIndex,
                  true, 2.0, 2.0);
     if (facet->sh.anglemapParams.record) RecordAngleMap(facet);

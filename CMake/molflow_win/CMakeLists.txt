@@ -9,6 +9,8 @@ set(PROJECT_NAME molflow)
 # Folders files
 set(CPP_DIR_1 ../../src)
 set(UI_DIR ../../src/Interface)
+set(IO_DIR ../../src/IO)
+
 set(HEADER_DIR_1 ../../src)
 set(HEADER_DIR_2 ../../src_shared)
 #set(HEADER_DIR_3 ../../src_shared/GLApp)
@@ -80,11 +82,23 @@ endif(NOT MSVC)
 set(SRC_FILES
         ${UI_DIR}/FacetAdvParams.cpp
         ${UI_DIR}/FacetDetails.cpp
-        ${CPP_DIR_1}/FormulaEvaluator_MF.cpp
         ${UI_DIR}/GeometryRender.cpp
         ${UI_DIR}/GeometryViewer.cpp
         ${UI_DIR}/GlobalSettings.cpp
         ${UI_DIR}/ImportDesorption.cpp
+        ${UI_DIR}/MomentsEditor.cpp
+        ${UI_DIR}/Movement.cpp
+        ${UI_DIR}/OutgassingMapWindow.cpp
+        ${UI_DIR}/ParameterEditor.cpp
+        ${UI_DIR}/PressureEvolution.cpp
+        ${UI_DIR}/ProfilePlotter.cpp
+        ${UI_DIR}/TexturePlotter.cpp
+        ${UI_DIR}/TextureScaling.cpp
+        ${UI_DIR}/TimeSettings.cpp
+        ${UI_DIR}/TimewisePlotter.cpp
+        ${UI_DIR}/Viewer3DSettings.cpp
+
+        ${CPP_DIR_1}/FormulaEvaluator_MF.cpp
         ${CPP_DIR_1}/MolFlow.cpp
         ${CPP_DIR_1}/MolflowBuffer.cpp
         ${CPP_DIR_1}/GeometrySimu.cpp
@@ -92,30 +106,23 @@ set(SRC_FILES
         ${CPP_DIR_1}/MolflowGeometry.cpp
         ${CPP_DIR_1}/MolflowTypes.cpp
         ${CPP_DIR_1}/MolflowWorker.cpp
-        ${UI_DIR}/MomentsEditor.cpp
-        ${UI_DIR}/Movement.cpp
-        ${UI_DIR}/OutgassingMapWindow.cpp
         ${CPP_DIR_1}/Parameter.cpp
-        ${UI_DIR}/ParameterEditor.cpp
-        ${UI_DIR}/PressureEvolution.cpp
-        ${UI_DIR}/ProfilePlotter.cpp
-        ${UI_DIR}/TexturePlotter.cpp
-        ${UI_DIR}/TextureScaling.cpp
         ${CPP_DIR_1}/TimeMoments.cpp
-        ${UI_DIR}/TimeSettings.cpp
-        ${UI_DIR}/TimewisePlotter.cpp
-        ${UI_DIR}/Viewer3DSettings.cpp
-        ../../src/IO/InterfaceXML.cpp
-        ../../src/IO/InterfaceXML.h
+
+        ${IO_DIR}/InterfaceXML.cpp
+        ${IO_DIR}/InterfaceXML.h
+
         ${HEADER_DIR_2}/FlowMPI.h
         ${HEADER_DIR_2}/FlowMPI.cpp
+        ${HEADER_DIR_2}/IntersectAABB_shared.cpp
+
         )
 
 # Add executable to build.
 if(WIN32)
     add_executable(${PROJECT_NAME} WIN32 ${SRC_FILES})
 else()
-    add_executable(${PROJECT_NAME} ${SRC_FILES})
+    add_executable(${PROJECT_NAME} ${SRC_FILES} )
 endif()
 
 include(${CMAKE_HOME_DIRECTORY}/src_shared/SetOpenMP.cmake)
@@ -159,26 +166,25 @@ if(MSVC)
     # set the path to the library folder
     target_link_directories(${PROJECT_NAME} PRIVATE ${LINK_DIR_1})
 
-    message(${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
     target_link_directories(${PROJECT_NAME} PRIVATE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
     find_package(OpenGL REQUIRED)
     # 1. link against external libs
     target_link_libraries(${PROJECT_NAME} PRIVATE
-            bzip2.lib
+            #bzip2.lib
             #libcurl_a_x64.lib
             SDL2.lib
             SDL2main.lib
             #libgsl.lib
             #libgslcblas.lib
-            lzma.lib
-            ZipLib.lib
+            #lzma.lib
+            #ZipLib.lib
             #zlib.lib
             opengl32#.lib
             user32.lib
             shell32.lib
             ole32.lib)
     # 2. link against our own libs
-    target_link_libraries(${PROJECT_NAME} PRIVATE pugixml nativefiledialog)
+    #[[target_link_libraries(${PROJECT_NAME} PRIVATE pugixml nativefiledialog)]]
 elseif(NOT MSVC)
     if(APPLE)
         #link to self-build sdl shared lib
@@ -203,16 +209,16 @@ elseif(NOT MSVC)
     endif()
 
     find_package(OpenGL REQUIRED)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${OPENGL_INCLUDE_DIRS})
+    target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${OPENGL_INCLUDE_DIRS})
 
     find_package(SDL2 REQUIRED)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${SDL2_INCLUDE_DIRS})
+    target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${SDL2_INCLUDE_DIRS})
 
     find_package(PNG REQUIRED)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${PNG_INCLUDE_DIRS})
+    target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${PNG_INCLUDE_DIRS})
 
     find_package(CURL REQUIRED)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${CURL_INCLUDE_DIRS})
+    target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${CURL_INCLUDE_DIRS})
 
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
@@ -254,7 +260,7 @@ elseif(NOT MSVC)
         target_link_libraries(${PROJECT_NAME} PRIVATE stdc++fs)
     endif()
 
-    target_link_libraries(${PROJECT_NAME} PRIVATE pugixml sdl_savepng truncatedgaussian)
-    target_link_libraries(${PROJECT_NAME} PRIVATE nativefiledialog)
-    target_link_libraries(${PROJECT_NAME} PRIVATE ziplib)
+    #[[target_link_libraries(${PROJECT_NAME} PRIVATE pugixml sdl_savepng truncatedgaussian)
+    target_link_libraries(${PROJECT_NAME} PRIVATE nativefiledialog)]]
+    #target_link_libraries(${PROJECT_NAME} PRIVATE ziplib)
 endif()

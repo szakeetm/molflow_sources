@@ -1,7 +1,7 @@
 /*
 Program:     MolFlow+ / Synrad+
 Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
-Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
 Copyright:   E.S.R.F / CERN
 Website:     https://cern.ch/molflow
 
@@ -72,9 +72,9 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "SynRad.h"
 #endif
 
-#include "ziplib/ZipArchive.h"
+#include "ZipLib/ZipArchive.h"
 //#include "ziplib/ZipArchiveEntry.h"
-#include "ziplib/ZipFile.h"
+#include "ZipLib/ZipFile.h"
 //#include "File.h" //File utils (Get extension, etc)
 //#include "ProcessControl.h"
 #include "versionId.h"
@@ -101,11 +101,11 @@ extern SynRad*mApp;
 /**
 * \brief Default constructor for a worker
 */
-Worker::Worker() : simManager() {
+Worker::Worker() : simManager(0) {
 
     model = std::make_shared<SimulationModel>();
     //Molflow specific
-    temperatures = std::list<double>();
+    temperatures = std::vector<double>();
     desorptionParameterIDs = std::set<size_t>();
     moments = std::vector<Moment>();
     userMoments = std::vector<UserMoment>(); //strings describing moments, to be parsed
@@ -150,8 +150,10 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
 
     try {
         if (needsReload && (!crashSave && !saveSelected)) RealReload();
+        // Update persistent anglemap
+        SendAngleMaps();
     }
-    catch (std::exception &e) {
+    catch (const std::exception &e) {
         char errMsg[512];
         sprintf(errMsg, "Error reloading worker. Trying safe save (geometry only):\n%s", e.what());
         GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
@@ -165,7 +167,6 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
     std::string fileNameWithoutExtension; //file name without extension
 
     std::string ext = FileUtils::GetExtension(fileName);
-    std::string path = FileUtils::GetPath(fileName);
 
     bool ok = true;
     if (ext.empty()) {
@@ -251,7 +252,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                     throw std::runtime_error("Error getting access to hit buffer.");
                 }
             }
-            catch (std::exception &e) {
+            catch (const std::exception &e) {
                 GLMessageBox::Display(e.what(), "Error getting access to hit buffer.", GLDLG_OK, GLDLG_ICONERROR);
                 return;
             }
@@ -266,7 +267,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                     } else if (!(isXML || isXMLzip))
                         f = new FileWriter(fileName); //Txt, stl, geo, etc...
                 }
-                catch (std::exception &e) {
+                catch (const std::exception &e) {
                     SAFE_DELETE(f);
                     GLMessageBox::Display(e.what(), "Error writing file.", GLDLG_OK, GLDLG_ICONERROR);
                     return;
@@ -291,7 +292,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                 } else if (isXML || isXMLzip) {
                     xml_document saveDoc;
                     //geom->SaveXML_geometry(saveDoc, this, prg, saveSelected);
-                    FlowIO::WriterInterfaceXML writer;
+                    FlowIO::WriterInterfaceXML writer(mApp->useOldXMLFormat, false);
                     this->uInput.facetViewSettings.clear();
                     for (size_t facetId = 0; facetId < geom->GetNbFacet(); facetId++) {
                         auto facet = geom->GetFacet(facetId);
@@ -304,7 +305,11 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                     this->uInput.selections = mApp->selections;
 
                     writer.uInput = this->uInput;
-                    writer.SaveGeometry(saveDoc, model, mApp->useOldXMLFormat, false);
+
+                    if(saveSelected)
+                        writer.SaveGeometry(saveDoc, model, GetGeometry()->GetSelectedFacets());
+                    else
+                        writer.SaveGeometry(saveDoc, model);
                     FlowIO::WriterInterfaceXML::WriteInterface(saveDoc, mApp, saveSelected);
 
                     xml_document geom_only;
@@ -315,7 +320,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                             //success = geom->SaveXML_simustate(saveDoc, this, globState, prg, saveSelected);
                             success = writer.SaveSimulationState(saveDoc, model, globState);
                         }
-                        catch (std::exception &e) {
+                        catch (const std::exception &e) {
                             SAFE_DELETE(f);
                             simManager.UnlockHitBuffer();
                             GLMessageBox::Display(e.what(), "Error saving simulation state.", GLDLG_OK,
@@ -342,7 +347,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                             try {
                                 remove(fileNameWithZIP.c_str());
                             }
-                            catch (std::exception &e) {
+                            catch (const std::exception &e) {
                                 SAFE_DELETE(f);
                                 simManager.UnlockHitBuffer();
                                 std::string msg =
@@ -356,7 +361,7 @@ void Worker::SaveGeometry(std::string fileName, GLProgress *prg, bool askConfirm
                         try {
                             remove(fileNameWithXML.c_str());
                         }
-                        catch (std::exception &e) {
+                        catch (const std::exception &e) {
                             SAFE_DELETE(f);
                             simManager.UnlockHitBuffer();
                             std::string msg = "Error removing\n" + fileNameWithXML + "\nMaybe file is in use.";
@@ -470,7 +475,8 @@ void Worker::ExportProfiles(const char *fn) {
  * \param saveAll true if all files -- otherwise only selected -- should be saved
  * \return Vector with strings containing the file names of all angle map files
 */
-std::vector<std::string> Worker::ExportAngleMaps(const std::string &fileName, bool saveAll) {
+std::optional<std::vector<std::string>> Worker::ExportAngleMaps(const std::string &fileName, bool saveAll) {
+    //returns false if cancelled or error, vector of file name to export otherwise, empty vector if no sleected facets have angle map
     bool overwriteAll = false;
 
     //Geometry *geom = GetGeometry();
@@ -478,19 +484,21 @@ std::vector<std::string> Worker::ExportAngleMaps(const std::string &fileName, bo
     for (size_t i = 0; i < geom->GetNbFacet(); i++) {
         InterfaceFacet *f = geom->GetFacet(i);
         // saveAll facets e.g. when auto saving or just when selected
-        if ((saveAll || f->selected) && f->sh.anglemapParams.hasRecorded) {
+        if ((saveAll || f->selected) && !f->angleMapCache.empty()) {
             angleMapFacetIndices.push_back(i);
         }
     }
 
+    std::string extension = FileUtils::GetExtension(fileName);
+    bool isTXT = Contains({ "txt","TXT" }, extension);
     std::vector<std::string> listOfFiles;
     for (size_t facetIndex : angleMapFacetIndices) {
         std::string saveFileName;
         if (angleMapFacetIndices.size() == 1) {
-            saveFileName = FileUtils::StripExtension(fileName) + ".csv";
+            saveFileName = fileName; //as user specified
         } else {
             std::stringstream tmp;
-            tmp << FileUtils::StripExtension(fileName) << "_facet" << facetIndex + 1 << ".csv";
+            tmp << FileUtils::StripExtension(fileName) << "_facet" << facetIndex + 1 << "." << extension; //for example anglemap_facet22.csv
             saveFileName = tmp.str();
         }
 
@@ -500,7 +508,7 @@ std::vector<std::string> Worker::ExportAngleMaps(const std::string &fileName, bo
                 if (angleMapFacetIndices.size() > 1) buttons.emplace_back("Overwrite All");
                 int answer = GLMessageBox::Display("Overwrite existing file ?\n" + saveFileName, "Question", buttons,
                                                    GLDLG_ICONWARNING);
-                if (answer == 0) break; //User cancel
+                if (answer == 0) return std::nullopt; //User cancel, return empty vector, resulting in parent function cancel
                 overwriteAll = (answer == 2);
             }
         }
@@ -511,7 +519,7 @@ std::vector<std::string> Worker::ExportAngleMaps(const std::string &fileName, bo
             std::string tmp = "Cannot open file for writing " + saveFileName;
             throw std::runtime_error(tmp.c_str());
         }
-        file << geom->GetFacet(facetIndex)->GetAngleMap(1);
+        file << geom->GetFacet(facetIndex)->GetAngleMap(isTXT?2:1);
         file.close();
         listOfFiles.push_back(saveFileName);
     }
@@ -519,16 +527,7 @@ std::vector<std::string> Worker::ExportAngleMaps(const std::string &fileName, bo
     return listOfFiles; // false if angleMapFacetIndices.size() == 0
 }
 
-[[maybe_unused]] bool Worker::ImportAngleMaps(const std::string &fileName) {
 
-    for (auto &p : std::filesystem::directory_iterator("")) {
-        std::stringstream ssFileName;
-        ssFileName << p.path().string();
-        if (FileUtils::GetExtension(ssFileName.str()) == "csv") std::cout << p.path() << '\n';
-    }
-
-    return true; // false if angleMapFacetIndices.size() == 0
-}
 
 /*void Worker::ImportDesorption(const char *fileName) {
 	//if (needsReload) RealReload();
@@ -553,7 +552,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
     } else {
         try {
             RealReload();
-        } catch (std::exception &e) {
+        } catch (const std::exception &e) {
             GLMessageBox::Display(e.what(), "Error (Reloading Geometry)", GLDLG_OK, GLDLG_ICONERROR);
         }
     }
@@ -618,12 +617,12 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             }
         }
 
-        catch (std::exception &e) {
+        catch (const std::exception &e) {
             if (!insert) geom->Clear();
             SAFE_DELETE(f);
             progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
-            throw e;
+            throw;
         }
 
     } else if (ext == "stl" || ext == "STL") {
@@ -669,12 +668,12 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 }
             }
         }
-        catch (std::exception &e) {
+        catch (const std::exception &e) {
             if (!insert) geom->Clear();
             SAFE_DELETE(f);
             progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
-            throw e;
+            throw;
 
         }
 
@@ -690,12 +689,12 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             fullFileName = fileName;
         }
 
-        catch (std::exception &e) {
+        catch (const std::exception &e) {
             geom->Clear();
             SAFE_DELETE(f);
             progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
-            throw e;
+            throw;
         }
 
     } else if (ext == "syn" || ext == "syn7z") { //Synrad file
@@ -726,7 +725,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             if (!insert) fullFileName = fileName;
         }
 
-        catch (std::exception &e) {
+        catch (const std::exception &e) {
             if (!insert) geom->Clear();
 
             SAFE_DELETE(f);
@@ -734,7 +733,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
             progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
-            throw e;
+            throw;
         }
 
     } else if (ext == "geo" || ext == "geo7z") {
@@ -786,13 +785,13 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             SAFE_DELETE(f);
         }
 
-        catch (std::exception &e) {
+        catch (const std::exception &e) {
             if (!insert) geom->Clear();
             SAFE_DELETE(f);
             //if (isGEO7Z) remove(tmp2);
             progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
-            throw e;
+            throw;
         }
 
     } else if (ext == "xml" || ext == "zip") { //XML file, optionally in ZIP container
@@ -879,6 +878,12 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                         progressDlg->SetProgress(load_progress);
                         ProcessSleep(100);
                     } while (future.wait_for(std::chrono::seconds(0)) != std::future_status::ready);
+                    progressDlg->SetProgress(0.0);
+                    if (future.get()) {
+                        progressDlg->SetVisible(false);
+                        SAFE_DELETE(progressDlg);
+                        throw;
+                    }
                 }
                 geom->InitOldStruct(model.get());
                 progressDlg->SetProgress(0.0);
@@ -889,7 +894,6 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 progressDlg->SetMessage("Loading interface settings...");
 
                 xml_node interfNode = rootNode.child("Interface");
-                FlowIO::LoaderInterfaceXML::LoadInterface(interfNode, mApp);
                 userMoments = loader.uInput.userMoments;
                 uInput = loader.uInput;
                 InsertParametersBeforeCatalog(loader.uInput.parameters);
@@ -899,6 +903,9 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                 // Move actual geom to interface geom
                 geom->InitInterfaceVertices(model->vertices3);
                 geom->InitInterfaceFacets(model->facets, this);
+
+                // Needs to be called after Interface Facets are loaded, as these are used e.g. when updating the ProfilePlotter state
+                FlowIO::LoaderInterfaceXML::LoadInterface(interfNode, mApp);
 
                 if (loader.uInput.facetViewSettings.size() == geom->GetNbFacet()) {
                     for (size_t facetId = 0; facetId < geom->GetNbFacet(); facetId++) {
@@ -925,6 +932,8 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     if (future.get()) {
                         GLMessageBox::Display("Overlap in time moments detected! Check in Moments Editor!", "Warning",
                                               GLDLG_OK, GLDLG_ICONWARNING);
+                        progressDlg->SetVisible(false);
+                        SAFE_DELETE(progressDlg);
                         return;
                     }
                 }
@@ -966,6 +975,25 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                             ProcessSleep(100);
                         } while (future.wait_for(std::chrono::seconds(0)) != std::future_status::ready);
                         progressDlg->SetProgress(0.0);
+                        try{
+                            future.get(); //exception thrown if it was stored
+                        }
+                        catch (const std::exception &e){
+                            throw;
+                        }
+                        future = std::async(std::launch::async, FlowIO::LoaderInterfaceXML::LoadConvergenceValues,
+                                            parseFileName, &mApp->formula_ptr->convergenceValues, &load_progress);
+                        do {
+                            progressDlg->SetProgress(load_progress);
+                            ProcessSleep(100);
+                        } while (future.wait_for(std::chrono::seconds(0)) != std::future_status::ready);
+                        progressDlg->SetProgress(0.0);
+                        try{
+                            future.get(); //exception thrown if it was stored
+                        }
+                        catch (const std::exception &e){
+                            throw;
+                        }
                     }
                     //FlowIO::LoaderInterfaceXML::LoadSimulationState(parseFileName, model, &globState);
                     simManager.simulationChanged = true;
@@ -987,7 +1015,9 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
                     RebuildTextures();
                 }
-                catch (std::exception &e) {
+                catch (const std::exception &e) {
+                    if(progressDlg) progressDlg->SetVisible(false);
+                    SAFE_DELETE(progressDlg);
                     if (!mApp->profilePlotter) {
                         mApp->profilePlotter = new ProfilePlotter();
                         mApp->profilePlotter->SetWorker(this);
@@ -1000,20 +1030,22 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
                     mApp->convergencePlotter->Reset(); //To avoid trying to display non-loaded simulation results
                     GLMessageBox::Display(e.what(), "Error while loading simulation state", GLDLG_CANCEL,
                                           GLDLG_ICONWARNING);
+                    throw;
                 }
             } else { //insert
                 geom->InsertXML(rootNode, this, progressDlg, newStr);
+                model->sh = *geom->GetGeomProperties();
                 mApp->changedSinceSave = true;
                 ResetWorkerStats();
 
                 Reload();
             }
         }
-        catch (std::exception &e) {
+        catch (const std::exception &e) {
             if (!insert) geom->Clear();
-            progressDlg->SetVisible(false);
+            if(progressDlg) progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
-            throw e;
+            throw;
         }
 
     } else if (ext == "ase" || ext == "ASE") {
@@ -1028,12 +1060,12 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             fullFileName = fileName;
 
         }
-        catch (std::exception &e) {
+        catch (const std::exception &e) {
             geom->Clear();
             SAFE_DELETE(f);
             progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
-            throw e;
+            throw;
         }
     } else {
         progressDlg->SetVisible(false);
@@ -1041,6 +1073,19 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
         throw std::runtime_error(
                 "LoadGeometry(): Invalid file extension [Only xml,zip,geo,geo7z,syn.syn7z,txt,ase,stl or str]");
     }
+
+    // Readers that load the geometry directly into the sim model
+    // need to update the interface geometry afterwards
+    if (ext == "xml" || ext == "zip") {
+        if (!insert) {
+            SimModelToInterfaceGeom();
+        } else {
+            InterfaceGeomToSimModel();
+        }
+    }
+    else if(insert)
+        InterfaceGeomToSimModel();
+
     if (!insert) {
         CalcTotalOutgassing();
         /*
@@ -1062,6 +1107,31 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
     }
 }
 
+bool Worker::SimModelToInterfaceGeom() {
+
+    *geom->GetGeomProperties() = model->sh;
+
+    bool hasVolatile = false;
+
+    for (size_t facIdx = 0; facIdx < model->sh.nbFacet; facIdx++) {
+        assert(model->sh.nbFacet == model->facets.size());
+        SubprocessFacet* sFac = model->facets[facIdx].get();
+        {
+            InterfaceFacet *facet = geom->GetFacet(facIdx);
+
+            facet->sh = sFac->sh;
+            /*sFac.indices = facet->indices;
+            sFac.vertices2 = facet->vertices2;
+            sFac.ogMap = facet->ogMap;
+            sFac.angleMap.pdf = angleMapVector;
+            sFac.textureCellIncrements = textIncVector;*/
+        }
+    }
+
+    return true;
+}
+
+
 /**
 * \brief Function for loading textures from a GEO file
 * \param f input file handle
@@ -1079,7 +1149,7 @@ void Worker::LoadTexturesGEO(FileReader *f, int version) {
         simManager.UnlockHitBuffer();
         RebuildTextures();
     }
-    catch (std::exception &e) {
+    catch (const std::exception &e) {
         char tmp[256];
         sprintf(tmp,
                 "Couldn't load some textures. To avoid continuing a partially loaded state, it is recommended to reset the simulation.\n%s",
@@ -1165,7 +1235,7 @@ void Worker::Update(float appTime) {
 				try {
 					if (mApp->needsTexture || mApp->needsDirection) geom->BuildFacetTextures(buffer,mApp->needsTexture,mApp->needsDirection);
 				}
-				catch (Error &e) {
+				catch (const std::exception &e) {
 					GLMessageBox::Display(e.what(), "Error building texture", GLDLG_OK, GLDLG_ICONERROR);
 					ReleaseDataport(dpHit);
 					return;
@@ -1195,7 +1265,10 @@ int Worker::SendAngleMaps() {
     if (!globState.tMutex.try_lock_for(std::chrono::seconds(10)))
         return 1;
     for (size_t i = 0; i < angleMapCaches.size(); i++) {
-        globState.facetStates[i].recordedAngleMapPdf = angleMapCaches[i];
+        if(model->facets[i]->sh.anglemapParams.record)
+            globState.facetStates[i].recordedAngleMapPdf = angleMapCaches[i];
+        //else if(model->facets[i]->sh.desorbType == DES_ANGLEMAP)
+        model->facets[i]->angleMap.pdf = angleMapCaches[i];
     }
     globState.tMutex.unlock();
     return 0;
@@ -1255,13 +1328,21 @@ bool Worker::InterfaceGeomToSimModel() {
             //std::vector<double> outgMapVector(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0);
             //memcpy(outgMapVector.data(), outgassingMapWindow, sizeof(double)*(sh.useOutgassingFile ? sh.outgassingMapWidth*sh.outgassingMapHeight : 0));
             size_t mapSize = facet->sh.anglemapParams.GetMapSize();
-            std::vector<size_t> angleMapVector(mapSize);
             if (facet->angleMapCache.size() != facet->sh.anglemapParams.GetRecordedMapSize()) {
-                std::cerr << "Recorded Data Size is different from actual size: " << facet->angleMapCache.size()
-                          << " / " << facet->sh.anglemapParams.GetRecordedMapSize() << std::endl;
-                return false;
+                // on mismatch between cached values, check if interface just got out of sync (record) or interface and simulation side are out of sync (no record)
+                if (facet->sh.anglemapParams.record) {
+                    facet->angleMapCache.clear();
+                    facet->angleMapCache.resize(mapSize);
+                } else {
+                    /*auto errString = fmt::format(
+                            "[Facet #{}] Recorded Data Size is different from actual size: {} / {}\n",
+                            facIdx + 1,
+                            facet->angleMapCache.size(),
+                            facet->sh.anglemapParams.GetRecordedMapSize());
+                    fmt::print(stderr, errString);
+                    throw std::runtime_error(errString);*/
+                }
             }
-            memcpy(angleMapVector.data(), facet->angleMapCache.data(), facet->sh.anglemapParams.GetRecordedDataSize());
 
             std::vector<double> textIncVector;
 
@@ -1301,17 +1382,25 @@ bool Worker::InterfaceGeomToSimModel() {
                     }
                 }
             }
+
+
             sFac.sh = facet->sh;
             sFac.indices = facet->indices;
             sFac.vertices2 = facet->vertices2;
             sFac.ogMap = facet->ogMap;
-            sFac.angleMap.pdf = angleMapVector;
+            sFac.angleMap.pdf = facet->angleMapCache;
             sFac.textureCellIncrements = textIncVector;
         }
 
         //Some initialization
-        if (!sFac.InitializeOnLoad(facIdx, model->tdParams.moments.size()))
-            return false;
+        try {
+            if (!sFac.InitializeOnLoad(facIdx, model->tdParams.moments.size()))
+                return false;
+        }
+        catch (const std::exception& err){
+            //Log::console_error("Failed to initialize facet (F#%d)\n", facIdx + 1);
+            throw;
+        }
 
         hasVolatile |= sFac.sh.isVolatile;
 
@@ -1342,48 +1431,62 @@ bool Worker::InterfaceGeomToSimModel() {
 void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
     if(!model->facets.empty() || GetGeometry()->GetNbFacet() > 0) {
 
-        auto *progressDlg = new GLProgress("Performing preliminary calculations on geometry...",
+        GLProgress progressDlg("Performing preliminary calculations on geometry...",
                                            "Passing Geometry to workers");
-        progressDlg->SetVisible(true);
-        progressDlg->SetProgress(0.0);
+        progressDlg.SetVisible(true);
+        progressDlg.SetProgress(0.0);
 
         if (!sendOnly) {
             if (model->otfParams.nbProcess == 0 && !geom->IsLoaded()) {
-                progressDlg->SetVisible(false);
-                SAFE_DELETE(progressDlg);
+                progressDlg.SetVisible(false);
+                //SAFE_DELETE(progressDlg);
                 return;
             }
 
             try {
-                progressDlg->SetMessage("Do preliminary calculations...");
+                progressDlg.SetMessage("Do preliminary calculations...");
                 PrepareToRun();
             }
-            catch (std::exception &e) {
+            catch (const std::exception &e) {
                 GLMessageBox::Display(e.what(), "Error (Full reload)", GLDLG_OK, GLDLG_ICONWARNING);
-                progressDlg->SetVisible(false);
-                SAFE_DELETE(progressDlg);
+                progressDlg.SetVisible(false);
+                //SAFE_DELETE(progressDlg);
                 std::stringstream err;
                 err << "Error (Full reload) " << e.what();
                 throw std::runtime_error(err.str());
             }
         }
 
-        progressDlg->SetMessage("Reloading structures for simulation unit...");
-        ReloadSim(sendOnly, progressDlg);
+        progressDlg.SetMessage("Reloading structures for simulation unit...");
+        try{
+            ReloadSim(sendOnly, &progressDlg);
+        }
+        catch (const std::exception &e) {
+            progressDlg.SetVisible(false);
+            //SAFE_DELETE(progressDlg);
+            throw;
+            /*GLMessageBox::Display(e.what(), "Error (Sim reload)", GLDLG_OK, GLDLG_ICONWARNING);
+            progressDlg->SetVisible(false);
+            SAFE_DELETE(progressDlg);
+            std::stringstream err;
+            err << "Error (Sim reload) " << e.what();
+            throw std::runtime_error(err.str());*/
+        }
+        model->CalcTotalOutgassing(); // needs IDs
 
         if (!sendOnly) {
             try {
-                progressDlg->SetMessage("Asking subprocesses to clear geometry...");
+                progressDlg.SetMessage("Asking subprocesses to clear geometry...");
                 simManager.ResetSimulations();
-                progressDlg->SetMessage("Clearing Logger...");
+                progressDlg.SetMessage("Clearing Logger...");
                 particleLog.clear();
-                progressDlg->SetMessage("Creating hit buffer...");
+                progressDlg.SetMessage("Creating hit buffer...");
                 simManager.ResetHits();
             }
-            catch (std::exception &e) {
+            catch (const std::exception &e) {
                 GLMessageBox::Display(e.what(), "Error (Full reload)", GLDLG_OK, GLDLG_ICONWARNING);
-                progressDlg->SetVisible(false);
-                SAFE_DELETE(progressDlg);
+                progressDlg.SetVisible(false);
+                //SAFE_DELETE(progressDlg);
                 std::stringstream err;
                 err << "Error (Full reload) " << e.what();
                 throw std::runtime_error(err.str());
@@ -1394,8 +1497,8 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
                     particleLog.resize(model->otfParams.logLimit);
                 }
                 catch (...) {
-                    progressDlg->SetVisible(false);
-                    SAFE_DELETE(progressDlg);
+                    progressDlg.SetVisible(false);
+                    //SAFE_DELETE(progressDlg);
                     throw Error(
                             "Failed to create 'Particle Log' vector.\nMost probably out of memory.\nReduce number of logged particles in Particle Logger.");
                 }
@@ -1410,10 +1513,10 @@ void Worker::RealReload(bool sendOnly) { //Sharing geometry with workers
             throw std::runtime_error(errString);
         }*/
 
-        progressDlg->SetMessage("Finishing reload...");
+        progressDlg.SetMessage("Finishing reload...");
         needsReload = false;
-        progressDlg->SetVisible(false);
-        SAFE_DELETE(progressDlg);
+        progressDlg.SetVisible(false);
+        //SAFE_DELETE(progressDlg);
     }
 }
 
@@ -1476,7 +1579,7 @@ void Worker::Start() {
             throw std::logic_error("Processes are already done!");
         }
     }
-    catch (std::exception &e) {
+    catch (const std::exception &e) {
         throw Error(e.what());
     }
 }
@@ -1503,7 +1606,8 @@ double Worker::GetMoleculesPerTP(size_t moment) const {
         return model->wp.finalOutgassingRate / globalHitCache.globalHits.nbDesorbed;
     } else {
         //Time-dependent mode
-        //Each test particle represents a certain absolute number of real molecules
+        //Each test particle represents a certain absolute number of real molecules. Since Molflow displays per-second values (imp.rate, etc.), the sampled time window length is only a fraction of a second.
+        //For example, if dt=0.1s, we have collected only 1/10th of what would happen during a second. Hence we DIVIDE by the time window length, even if it's uninuitional.
         return (model->wp.totalDesorbedMolecules / mApp->worker.moments[moment - 1].second) /
                globalHitCache.globalHits.nbDesorbed;
     }
@@ -1565,12 +1669,12 @@ void Worker::ImportDesorption_SYN(const char *fileName, const size_t &source, co
             SAFE_DELETE(f);
 
         }
-        catch (std::exception &e) {
+        catch (const std::exception &e) {
 
             SAFE_DELETE(f);
             progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
-            throw e;
+            throw;
         }
         progressDlg->SetVisible(false);
         SAFE_DELETE(progressDlg);
@@ -1615,11 +1719,11 @@ void Worker::AnalyzeSYNfile(const char *fileName, size_t *nbFacet, size_t *nbTex
             SAFE_DELETE(f);
 
         }
-        catch (std::exception &e) {
+        catch (const std::exception &e) {
             SAFE_DELETE(f);
             progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
-            throw e;
+            throw;
         }
         progressDlg->SetVisible(false);
         SAFE_DELETE(progressDlg);
@@ -1647,7 +1751,7 @@ void Worker::PrepareToRun() {
     Geometry *g = GetGeometry();
     //Generate integrated desorption functions
 
-    temperatures = std::list<double>();
+    temperatures = std::vector<double>();
     desorptionParameterIDs = std::set<size_t>();
     CDFs = std::vector<std::vector<CDF_p>>();
     IDs = std::vector<IntegratedDesorption>();
@@ -1686,7 +1790,7 @@ void Worker::PrepareToRun() {
             } else f->sh.sticking_paramId = id;
         } else f->sh.sticking_paramId = -1;
 
-        if (f->sh.outgassing_paramId >= 0) { //if time-dependent desorption
+        /*if (f->sh.outgassing_paramId >= 0) { //if time-dependent desorption
             int id = GetIDId(static_cast<size_t>(f->sh.outgassing_paramId));
             if (id >= 0)
                 f->sh.IDid = id; //we've already generated an integrated des. for this time-dep. outgassing
@@ -1714,11 +1818,11 @@ void Worker::PrepareToRun() {
                 sprintf(tmp, "Facet #%zd: Can't RECORD and USE angle map desorption at the same time.", i + 1);
                 throw std::runtime_error(tmp);
             }
-        }
+        }*/
 
         //First worker::update will do it
-        if (f->sh.anglemapParams.record) {
-            if (!f->sh.anglemapParams.hasRecorded) {
+        /*if (f->sh.anglemapParams.record) {
+            if (!f->angleMapCache.empty() || f->angleMapCache.size() != f->sh.anglemapParams.GetMapSize()) {
                 //Initialize angle map and Set values to zero
                 try {
                     f->angleMapCache.resize(f->sh.anglemapParams.GetMapSize(), 0);
@@ -1731,14 +1835,12 @@ void Worker::PrepareToRun() {
                 f->sh.anglemapParams.hasRecorded = true;
                 if (f->selected) needsAngleMapStatusRefresh = true;
             }
-        }
+        }*/
 
     }
 
     if (mApp->facetAdvParams && mApp->facetAdvParams->IsVisible() && needsAngleMapStatusRefresh)
         mApp->facetAdvParams->Refresh(geom->GetSelectedFacets());
-
-    CalcTotalOutgassing();
 
 }
 
@@ -1821,7 +1923,10 @@ void Worker::CalcTotalOutgassing() {
                             f->sh.outgassing / (1.38E-23 * f->sh.temperature);  //Outgassing molecules/sec
                     model->wp.finalOutgassingRate_Pa_m3_sec += f->sh.outgassing;
                 } else { //time-dependent outgassing
-                    double lastValue = IDs[f->sh.IDid].GetValues().back().second;
+                    if(f->sh.IDid >= model->tdParams.IDs.size())
+                        throw std::runtime_error(fmt::format("Trying to access Integrated Desorption {} of {} for facet #{}",f->sh.IDid, model->tdParams.IDs.size(), i));
+
+                    double lastValue = model->tdParams.IDs[f->sh.IDid].back().second;
                     model->wp.totalDesorbedMolecules += lastValue / (1.38E-23 * f->sh.temperature);
                     size_t lastIndex = parameters[f->sh.outgassing_paramId].GetSize() - 1;
                     double finalRate_mbar_l_s = parameters[f->sh.outgassing_paramId].GetY(lastIndex);

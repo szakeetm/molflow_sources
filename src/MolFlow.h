@@ -1,7 +1,7 @@
 /*
 Program:     MolFlow+ / Synrad+
 Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
-Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
 Copyright:   E.S.R.F / CERN
 Website:     https://cern.ch/molflow
 
@@ -48,8 +48,7 @@ public:
 	//Public textfields so we can disable them from "Advanced facet parameters":
 	GLTextField   *facetFlow;
 	GLTextField   *facetFlowArea;
-	
-    
+
     void LoadFile(const std::string &fileName) override;
 	void InsertGeometry(bool newStr, const std::string &fileName) override;
 	void SaveFile() override;
@@ -82,7 +81,7 @@ public:
 	
     GLCombo       *facetDesType;
 	GLTextField   *facetDesTypeN;
-    GLCombo       *facetRecType;
+    GLCombo       *facetProfileCombo;
 
 	GLLabel       *facetPumpingLabel;
 	GLTextField   *facetPumping;	
@@ -126,13 +125,14 @@ public:
     //void LogProfile();
     void BuildPipe(double ratio,int steps) override;
 	void EmptyGeometry() override;
-	void CrashHandler(std::exception& e);
-	
+	void CrashHandler(const std::exception &e);
+
+    int  FrameMove() override;
 protected:
 	void LoadParameterCatalog();
     int  OneTimeSceneInit() override;
     int  RestoreDeviceObjects() override;
 	int  InvalidateDeviceObjects() override;
-    int  FrameMove() override;
+
     void ProcessMessage(GLComponent *src,int message) override;
 };

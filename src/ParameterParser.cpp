@@ -1,6 +1,22 @@
-//
-// Created by pascal on 1/25/21.
-//
+/*
+Program:     MolFlow+ / Synrad+
+Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
+Copyright:   E.S.R.F / CERN
+Website:     https://cern.ch/molflow
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
+*/
 
 #include "ParameterParser.h"
 #include "Helper/StringHelper.h"
@@ -66,7 +82,7 @@ void parseFacet(std::istringstream &facetString, const std::vector<SelectionGrou
         try {
             // For now get facet list for all combinations (with 3 parameter), check for valid ids later
             splitFacetList(id_range, id_str, 1e7);
-        } catch (std::exception& e) {
+        } catch (const std::exception &e) {
             Log::console_error("[%s] Could not parse facet id or range:\n", __FUNCTION__);
             Log::console_error("\t%s\n", id_str.c_str());
         }
@@ -185,7 +201,8 @@ void ParameterParser::ChangeSimuParams(WorkerParams& params){
     }
 }
 
-void ParameterParser::ChangeFacetParams(std::vector<std::shared_ptr<SubprocessFacet>> &facets) {
+int ParameterParser::ChangeFacetParams(std::vector<std::shared_ptr<SubprocessFacet>> &facets) {
+    int nbError = 0;
     for(auto& par : Parameters::facetParams){
         size_t id = std::get<0>(par);
         if(id < facets.size()) {
@@ -194,12 +211,23 @@ void ParameterParser::ChangeFacetParams(std::vector<std::shared_ptr<SubprocessFa
             switch (type) {
                 case (Parameters::FacetParam::opacity):
                     facet.sh.opacity = std::get<2>(par);
+                    if(facet.sh.opacity < 0.0 || facet.sh.opacity > 1.0) {
+                        nbError++;
+                        Log::console_error("[ParameterChange][Facet][ID: %zu] Invalid opacity on facet: %lf\n", id,
+                                           facet.sh.opacity);
+                    }
                     break;
                 case (Parameters::FacetParam::outgassing):
                     facet.sh.outgassing = std::get<2>(par);
                     break;
                 case (Parameters::FacetParam::sticking):
                     facet.sh.sticking = std::get<2>(par);
+                    if(facet.sh.sticking < 0.0 || facet.sh.sticking > 1.0) {
+                        nbError++;
+                        Log::console_error(
+                                "[ParameterChange][Facet][ID: %zu] Invalid sticking coefficient on facet: %lf\n", id,
+                                facet.sh.sticking);
+                    }
                     break;
                 case (Parameters::FacetParam::temperature):
                     facet.sh.temperature = std::get<2>(par);
@@ -208,5 +236,10 @@ void ParameterParser::ChangeFacetParams(std::vector<std::shared_ptr<SubprocessFa
                     Log::console_error("Unknown FacetParam %s\n", std::get<1>(par));
             }
         }
+        else{
+            Log::console_error("[ParameterChange][Facet][ID: %zu] Facet ID out of range\n", id);
+            nbError++;
+        }
     }
+    return nbError;
 }
