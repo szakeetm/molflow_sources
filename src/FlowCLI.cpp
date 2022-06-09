@@ -52,6 +52,51 @@ void GatherResults(SimulationModel& model, GlobalSimuState& globSim){
     }
 }
 
+class RuntimeStatPrinter {
+    size_t oldHitsNb{0};
+    size_t oldDesNb{0};
+public:
+    RuntimeStatPrinter() = default;
+    RuntimeStatPrinter(size_t n_hits, size_t n_des) {
+        oldHitsNb = n_hits;
+        oldDesNb = n_des;
+    };
+    void PrintHeader() const{
+        // Print Header at the beginning
+        Log::console_msg_master(1, "\n");
+        if(MFMPI::world_size > 1) {
+            Log::console_msg_master(1, "%-6s ",
+                                    "Node#");
+        }
+        Log::console_msg_master(1, "%-14s %-20s %-20s %-20s %-20s %-20s %-20s\n",
+                                "Time",
+                                "#Hits (run)", "#Hits (total)","Hit/sec",
+                                "#Des (run)", "#Des (total)","Des/sec");
+        if(MFMPI::world_size > 1) {
+            Log::console_msg_master(1, "%s",std::string(6,'-').c_str());
+        }
+        Log::console_msg_master(1, "%s\n",std::string(14+20+20+20+20+20+20,'-').c_str());
+    }
+    void Print(double elapsedTime, GlobalSimuState& globState, bool printSum=false) const{
+        if(printSum) {
+            Log::console_msg_master(1, "%s\n",std::string(6+14+20+20+20+20+20+20,'=').c_str());
+            Log::console_msg_master(1, "%-6s ", "x");
+        }
+        else if(MFMPI::world_size > 1) {
+            Log::console_msg(1, "%-6d ", MFMPI::world_rank);
+        }
+
+        Log::console_msg(1,"%-14.2lf %-20zu %-20zu %-20.2lf %-20zu %-20zu %-20.2lf\n",
+                         elapsedTime,
+                         globState.globalHits.globalHits.nbMCHit - oldHitsNb, globState.globalHits.globalHits.nbMCHit,
+                         (double) (globState.globalHits.globalHits.nbMCHit - oldHitsNb) /
+                         (elapsedTime),
+                         globState.globalHits.globalHits.nbDesorbed - oldDesNb, globState.globalHits.globalHits.nbDesorbed,
+                         (double) (globState.globalHits.globalHits.nbDesorbed - oldDesNb) /
+                         (elapsedTime));
+    }
+};
+
 int main(int argc, char** argv) {
 
 #if defined(WIN32) || defined(__APPLE__)
@@ -105,7 +150,7 @@ int main(int argc, char** argv) {
     }
     size_t oldHitsNb = globState.globalHits.globalHits.nbMCHit;
     size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
-
+    RuntimeStatPrinter printer(oldHitsNb, oldDesNb);
     // Get autosave file name
     std::string autoSave = Initializer::getAutosaveFile();
 
@@ -210,20 +255,9 @@ int main(int argc, char** argv) {
 
         if(Settings::outputDuration && (uint64_t)(elapsedTime)%Settings::outputDuration==0){ // autosave every x seconds
             if((uint64_t)elapsedTime / Settings::outputDuration <= 1){
-                Log::console_msg_master(1, "\n%-6s %-14s %-20s %-20s %-20s %-20s %-20s %-20s\n",
-                                        "Node#", "Time",
-                                        "#Hits (run)", "#Hits (total)","Hit/sec",
-                                        "#Des (run)", "#Des (total)","Des/sec");
-                Log::console_msg_master(1, "%s\n",std::string(6+14+20+20+20+20+20+20,'-').c_str());
+                printer.PrintHeader();
             }
-            Log::console_msg(1,"%-6d %-14.2lf %-20zu %-20zu %-20.2lf %-20zu %-20zu %-20.2lf\n",
-                             MFMPI::world_rank, elapsedTime,
-                             globState.globalHits.globalHits.nbMCHit - oldHitsNb, globState.globalHits.globalHits.nbMCHit,
-                             (double) (globState.globalHits.globalHits.nbMCHit - oldHitsNb) /
-                             (elapsedTime),
-                             globState.globalHits.globalHits.nbDesorbed - oldDesNb, globState.globalHits.globalHits.nbDesorbed,
-                             (double) (globState.globalHits.globalHits.nbDesorbed - oldDesNb) /
-                             (elapsedTime));
+            printer.Print(elapsedTime, globState);
         }
 
         // Check for potential time end
@@ -243,26 +277,15 @@ int main(int argc, char** argv) {
 #ifdef USE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
-    Log::console_msg_master(1, "\n%-6s %-14s %-20s %-20s %-20s %-20s %-20s %-20s\n",
-                            "Node#", "Time",
-                            "#Hits (run)", "#Hits (total)","Hit/sec",
-                            "#Des (run)", "#Des (total)","Des/sec");
-    Log::console_msg_master(1, "%s\n",std::string(6+14+20+20+20+20+20+20,'-').c_str());
+    printer.PrintHeader();
 #ifdef USE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
 
-    //TODO: Send output to master node
+    //TODO: Send output to master node for ordered output
     if(elapsedTime > 1e-4) {
         // Global result print --> TODO: ()
-        Log::console_msg(1,"%-6d %-14.2lf %-20zu %-20zu %-20.2lf %-20zu %-20zu %-20.2lf\n",
-               MFMPI::world_rank, elapsedTime,
-               globState.globalHits.globalHits.nbMCHit - oldHitsNb, globState.globalHits.globalHits.nbMCHit,
-               (double) (globState.globalHits.globalHits.nbMCHit - oldHitsNb) /
-               (elapsedTime),
-               globState.globalHits.globalHits.nbDesorbed - oldDesNb, globState.globalHits.globalHits.nbDesorbed,
-                         (double) (globState.globalHits.globalHits.nbDesorbed - oldDesNb) /
-                         (elapsedTime));
+        printer.Print(elapsedTime, globState);
     }
 
 #if defined(USE_MPI)
@@ -282,18 +305,11 @@ int main(int argc, char** argv) {
     if(MFMPI::world_rank != 0){
         return 0;
     }
-    Log::console_msg_master(1, "%s\n",std::string(6+14+20+20+20+20+20+20,'=').c_str());
 #endif //USE_MPI
 
     if(elapsedTime > 1e-4) {
-        Log::console_msg(1,"%-6s %-14.2lf %-20zu %-20zu %-20.2lf %-20zu %-20zu %-20.2lf\n",
-                         "x", elapsedTime,
-                         globState.globalHits.globalHits.nbMCHit - oldHitsNb, globState.globalHits.globalHits.nbMCHit,
-                         (double) (globState.globalHits.globalHits.nbMCHit - oldHitsNb) /
-                         (elapsedTime),
-                         globState.globalHits.globalHits.nbDesorbed - oldDesNb, globState.globalHits.globalHits.nbDesorbed,
-                         (double) (globState.globalHits.globalHits.nbDesorbed - oldDesNb) /
-                         (elapsedTime));
+        if(MFMPI::world_size > 1)
+            printer.Print(elapsedTime, globState, true);
     }
 
     if(MFMPI::world_rank == 0){
