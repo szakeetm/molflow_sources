@@ -30,12 +30,12 @@ namespace FlowIO {
         pugi::xml_node GetRootNode(pugi::xml_document &saveDoc);
 
         bool SaveXMLToFile(pugi::xml_document &saveDoc, const std::string &outputFileName);
-        void SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<SimulationModel> &model,
+        void SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<MolflowSimulationModel> &model,
                           const std::vector<size_t> &selection = std::vector<size_t>{});
 
-        bool SaveSimulationState(const std::string &outputFileName, std::shared_ptr<SimulationModel> model, GlobalSimuState &globState);
+        bool SaveSimulationState(const std::string &outputFileName, std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState &globState);
 
-        bool SaveSimulationState(pugi::xml_document &saveDoc, std::shared_ptr<SimulationModel> model, GlobalSimuState &globState);
+        bool SaveSimulationState(pugi::xml_document &saveDoc, std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState &globState);
 
         void
         SaveFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices);

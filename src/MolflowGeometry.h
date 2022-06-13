@@ -98,7 +98,7 @@ public:
 
 	void SerializeForLoader(cereal::BinaryOutputArchive&);
 
-    bool InitOldStruct(SimulationModel *model);
+    bool InitOldStruct(MolflowSimulationModel *model);
 
 private:
 

@@ -13,6 +13,7 @@
 
 #include <mutex>
 #include <FacetData.h>
+#include <SimulationModel.h>
 #include <RayTracing/BVH.h>
 
 #include <cereal/cereal.hpp>
@@ -158,64 +159,31 @@ struct SubprocessFacet : public Facet {
 
 // Local simulation structure
 
-class AABBNODE;
 class GlobalSimuState;
 
-class SuperStructure {
+struct MolflowSimulationModel : public SimulationModel {
 public:
-    SuperStructure() = default;
+    MolflowSimulationModel() : SimulationModel(), /*otfParams(),*/ tdParams(), /*wp(), sh(),*/ m(), initialized(false) {};
 
-    ~SuperStructure();
+    ~MolflowSimulationModel();
 
-    //std::vector<SubprocessFacet>  facets;   // Facet handles
-    std::shared_ptr<AABBNODE> aabbTree; // Structure AABB tree
-    std::string strName;
-    std::string strFileName;
-
-    size_t GetMemSize() {
-        size_t sum = 0;
-        /*sum += sizeof (facets);
-        for(auto& fac : facets)
-            sum += fac.GetMemSize();*/
-        sum += sizeof(aabbTree);
-        return sum;
-    }
-};
-
-struct SimulationModel {
-public:
-    SimulationModel() : otfParams(), tdParams(), wp(), sh(), m(), initialized(false) {};
-
-    ~SimulationModel();
-
-    SimulationModel(SimulationModel &&o) noexcept: m(), initialized(false) {
+    MolflowSimulationModel(MolflowSimulationModel &&o) noexcept: m(), initialized(false) {
         *this = std::move(o);
     };
 
-    SimulationModel(const SimulationModel &o) : m(), initialized(false) {
+    MolflowSimulationModel(const MolflowSimulationModel &o) : m(), initialized(false) {
         *this = o;
     };
 
     size_t size() {
         size_t modelSize = 0;
-        modelSize += facets.capacity();
-        for (auto &fac : facets)
-            modelSize += fac->GetMemSize();
-        modelSize += structures.capacity();
-        for (auto &struc : structures)
-            modelSize += struc.GetMemSize();
-        modelSize += sizeof(std::vector<Vector3d>) + sizeof(Vector3d) * vertices3.capacity();
+        modelSize += SimulationModel::size();
         modelSize += tdParams.GetMemSize();
-        modelSize += sizeof(otfParams);
-        modelSize += sizeof(wp);
-        modelSize += sizeof(sh);
-        modelSize += sizeof(m);
-        modelSize += sizeof(initialized);
 
         return modelSize;
     }
 
-    SimulationModel &operator=(const SimulationModel &o) {
+    MolflowSimulationModel &operator=(const MolflowSimulationModel &o) {
         facets = o.facets;
         structures = o.structures;
 
@@ -230,7 +198,7 @@ public:
         return *this;
     };
 
-    SimulationModel &operator=(SimulationModel &&o) noexcept {
+    MolflowSimulationModel &operator=(MolflowSimulationModel &&o) noexcept {
         facets = std::move(o.facets);
         structures = std::move(o.structures);
 
@@ -245,18 +213,18 @@ public:
         return *this;
     };
 
-    int PrepareToRun();
+    int PrepareToRun() override;
 
     int BuildAccelStructure(GlobalSimuState *globState, int accel_type, BVHAccel::SplitMethod split,
                             int bvh_width);
 
-    int InitialiseFacets();
+    //int InitialiseFacets();
 
     void CalcTotalOutgassing();
 
-    void CalculateFacetParams(SubprocessFacet *f);
+    //void CalculateFacetParams(SubprocessFacet *f);
 
-    Surface *GetSurface(double opacity) {
+    /*Surface *GetSurface(double opacity) {
 
         if (!surfaces.empty()) {
             auto surf = surfaces.find(opacity);
@@ -274,7 +242,7 @@ public:
         surfaces.insert(std::make_pair(opacity, surface));
         return surface.get();
     };
-
+*/
     Surface *GetParameterSurface(int opacity_paramId, Distribution2D *dist) {
 
         double indexed_id = 10.0 + opacity_paramId;
@@ -297,21 +265,21 @@ public:
     double GetStickingAt(SubprocessFacet *f, double time) const;
 
     // Geometry Description
-    std::vector<std::shared_ptr<SubprocessFacet>> facets;    // All facets of this geometry
+    //std::vector<std::shared_ptr<SubprocessFacet>> facets;    // All facets of this geometry
 
-    std::vector<SuperStructure> structures;
-    std::vector<Vector3d> vertices3; // Vertices (3D space)
+    //std::vector<SuperStructure> structures;
+    //std::vector<Vector3d> vertices3; // Vertices (3D space)
 
-    std::vector<std::shared_ptr<RTPrimitive>> accel;
-    std::map<double, std::shared_ptr<Surface>> surfaces;
+    //std::vector<std::shared_ptr<RTPrimitive>> accel;
+    //std::map<double, std::shared_ptr<Surface>> surfaces;
 
     // Simulation Properties
-    OntheflySimulationParams otfParams;
+    //OntheflySimulationParams otfParams;
     TimeDependentParamters tdParams;
-    WorkerParams wp;
+    //WorkerParams wp;
 
     // Geometry Properties
-    GeomProperties sh;
+    //GeomProperties sh;
 
     bool initialized;
     std::mutex m;
@@ -398,7 +366,7 @@ public:
 
     void clear();
 
-    void Resize(const SimulationModel &model);
+    void Resize(const MolflowSimulationModel &model);
 
     void Reset();
 

@@ -4034,7 +4034,7 @@ bool MolflowGeometry::CompareXML_simustate(const std::string &fileName_lhs, cons
         return false;
 }
 
-bool MolflowGeometry::InitOldStruct(SimulationModel* model){
+bool MolflowGeometry::InitOldStruct(MolflowSimulationModel* model){
     for (int i = 0; i < MAX_SUPERSTR; i++) {
         SAFE_FREE(strName[i]);
         SAFE_FREE(strFileName[i]);

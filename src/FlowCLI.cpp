@@ -40,7 +40,7 @@ static constexpr const char* molflowCliLogo = R"(
  |_|  |_\___/_|_| |_\___/\_/\_/
     )";
 
-void GatherResults(SimulationModel& model, GlobalSimuState& globSim){
+void GatherResults(MolflowSimulationModel& model, GlobalSimuState& globSim){
     for(int i = 0; i < model.facets.size(); i++ ) {
 #if defined(MOLFLOW)
         auto &f = model.facets[i];
@@ -113,7 +113,7 @@ int main(int argc, char** argv) {
 
     SimulationManager simManager{MFMPI::world_rank};
     simManager.interactiveMode = true;
-    std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+    std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
     GlobalSimuState globState{};
 
 

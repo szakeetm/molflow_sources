@@ -103,7 +103,7 @@ extern SynRad*mApp;
 */
 Worker::Worker() : simManager(0) {
 
-    model = std::make_shared<SimulationModel>();
+    model = std::make_shared<MolflowSimulationModel>();
     //Molflow specific
     temperatures = std::vector<double>();
     desorptionParameterIDs = std::set<size_t>();

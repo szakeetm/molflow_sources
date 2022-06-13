@@ -10,7 +10,7 @@
 #include <vector>
 
 class GlobalSimuState;
-struct SimulationModel;
+struct MolflowSimulationModel;
 
 namespace FlowIO {
 
@@ -48,31 +48,31 @@ namespace FlowIO {
     };
 
     struct CSVExporter {
-        static std::string FormatCell(FDetail mode, size_t idx, GlobalSimuState *glob, SimulationModel *model);
+        static std::string FormatCell(FDetail mode, size_t idx, GlobalSimuState *glob, MolflowSimulationModel *model);
 
         static std::string
         GetLineForFacet(size_t idx, const std::vector<FDetail> &selectedValues, GlobalSimuState *glob,
-                        SimulationModel *model);
+                        MolflowSimulationModel *model);
 
         static std::string GetFacetDetailsCSV(const std::vector<FDetail> &selectedValues, GlobalSimuState *glob,
-                                              SimulationModel *model);
+                                              MolflowSimulationModel *model);
 
         static std::string
         GetHeader(const std::vector<FDetail> &selectedValues);
 
-        static int ExportAllFacetDetails(const std::string &fileName, GlobalSimuState *glob, SimulationModel *model);
+        static int ExportAllFacetDetails(const std::string &fileName, GlobalSimuState *glob, MolflowSimulationModel *model);
 
         static int
-        ExportPhysicalQuantitiesForFacets(const std::string &fileName, GlobalSimuState *glob, SimulationModel *model);
+        ExportPhysicalQuantitiesForFacets(const std::string &fileName, GlobalSimuState *glob, MolflowSimulationModel *model);
 
         static int ValidateCSVFile(const std::string &fileName);
     };
 
     // export utility functions
     struct Exporter {
-        static void export_facet_details(GlobalSimuState *glob, SimulationModel *model);
+        static void export_facet_details(GlobalSimuState *glob, MolflowSimulationModel *model);
 
-        static void export_facet_quantities(GlobalSimuState *glob, SimulationModel *model);
+        static void export_facet_quantities(GlobalSimuState *glob, MolflowSimulationModel *model);
     };
 }
 

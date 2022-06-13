@@ -81,7 +81,7 @@ xml_node WriterXML::GetRootNode(xml_document &saveDoc) {
     return rootNode;
 }
 
-void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<SimulationModel> &model,
+void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, const std::shared_ptr<MolflowSimulationModel> &model,
                              const std::vector<size_t> &selection) {
     xml_node rootNode = GetRootNode(saveDoc);
 
@@ -234,7 +234,7 @@ WriterXML::SaveXMLToFile(xml_document &saveDoc, const std::string &outputFileNam
 
 // Directly append to file (load + save)
 bool
-WriterXML::SaveSimulationState(const std::string &outputFileName, std::shared_ptr<SimulationModel> model, GlobalSimuState &globState) {
+WriterXML::SaveSimulationState(const std::string &outputFileName, std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState &globState) {
     xml_document saveDoc;
     xml_parse_result parseResult = saveDoc.load_file(outputFileName.c_str()); //parse xml file directly
 
@@ -248,7 +248,7 @@ WriterXML::SaveSimulationState(const std::string &outputFileName, std::shared_pt
 }
 
 // Append to open XML node
-bool WriterXML::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<SimulationModel> model, GlobalSimuState &globState) {
+bool WriterXML::SaveSimulationState(xml_document &saveDoc, std::shared_ptr<MolflowSimulationModel> model, GlobalSimuState &globState) {
     //xml_parse_result parseResult = saveDoc.load_file(outputFileName.c_str()); //parse xml file directly
 
     xml_node rootNode = GetRootNode(saveDoc);

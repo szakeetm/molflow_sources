@@ -33,7 +33,7 @@ public:
 
     static double GenerateRandomVelocity(const std::vector<std::vector<std::pair<double, double>>>& CDFs, int CDFId, double rndVal);
 
-    static void TreatMovingFacet(SimulationModel *model, const Vector3d &position, Vector3d &direction, double &velocity);
+    static void TreatMovingFacet(MolflowSimulationModel *model, const Vector3d &position, Vector3d &direction, double &velocity);
 };
 
 

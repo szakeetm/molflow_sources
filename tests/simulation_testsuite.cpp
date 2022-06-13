@@ -222,7 +222,7 @@ namespace {
         std::vector<double> perfTimes;
         for (size_t runNb = 0; runNb < nRuns; ++runNb) {
             SimulationManager simManager{0};
-            std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+            std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
             GlobalSimuState globState{};
 
             /*std::vector<char *> argv = {"tester", "--config", "simulation.cfg", "--reset", "--file"};
@@ -363,7 +363,7 @@ namespace {
 
         SimulationManager simManager{0};
         simManager.interactiveMode = false;
-        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
 
         {
@@ -491,7 +491,7 @@ namespace {
 
         std::shared_ptr<SimulationManager> simManager = std::make_shared<SimulationManager>();
         simManager->interactiveMode = false;
-        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
 
         std::vector<std::string> argv = {"tester", "--verbosity", "0", "-t", "120",
@@ -522,7 +522,7 @@ namespace {
             if (runNb != 0) {
                 // Reset simulation for a fresh start
                 simManager = std::make_shared<SimulationManager>();
-                model = std::make_shared<SimulationModel>();
+                model = std::make_shared<MolflowSimulationModel>();
                 simManager->interactiveMode = false;
                 if (-1 < Initializer::initFromArgv(argv.size(), (args), simManager.get(), model)) {
                     exit(41);
@@ -636,7 +636,7 @@ namespace {
     TEST(InputOutput, DefaultInput) {
 
         SimulationManager simManager{0};
-        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
 
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip"};
@@ -685,7 +685,7 @@ namespace {
     TEST(InputOutput, Outputpath) {
 
         SimulationManager simManager{0};
-        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
 
         // generate hash name for tmp working file
@@ -738,7 +738,7 @@ namespace {
     TEST(InputOutput, OutputpathAndFile) {
 
         SimulationManager simManager{0};
-        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
 
         std::string outPath = "TPath_" + std::to_string(std::hash<time_t>()(time(nullptr)));
@@ -792,7 +792,7 @@ namespace {
     TEST(InputOutput, Outputfile) {
 
         SimulationManager simManager{0};
-        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
 
         std::string outFile = "tFile_" + std::to_string(std::hash<time_t>()(time(nullptr))) + ".xml";
@@ -844,7 +844,7 @@ namespace {
     TEST(InputOutput, OutputfileWithPath) {
 
         SimulationManager simManager{0};
-        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
 
         EXPECT_FALSE(SettingsIO::workPath.find("gtest_relpath") != std::string::npos);
@@ -900,7 +900,7 @@ namespace {
     TEST(InputOutput, OutputpathAndOutputfileWithPath) {
 
         SimulationManager simManager{0};
-        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
 
         EXPECT_FALSE(SettingsIO::workPath.find("gtest_relpath") != std::string::npos);
