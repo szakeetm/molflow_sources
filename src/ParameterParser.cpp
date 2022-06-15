@@ -132,6 +132,9 @@ void parseFacet(const std::string& facetString){
 }
 
 void parseInputStream(std::stringstream& inputLineStream, const std::vector<SelectionGroup> &selections){
+    Parameters::facetParams.clear();
+    Parameters::simuParams.clear();
+
     size_t i = 0;
     for (std::string line; inputLineStream >> line; ) {
         std::istringstream lineStream(line);
