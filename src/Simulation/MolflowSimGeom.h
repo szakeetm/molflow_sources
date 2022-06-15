@@ -86,7 +86,7 @@ struct TimeDependentParamters {
 };
 
 // Local simulation structure
-struct MolflowSimulationModel : public SimulationModel {
+class MolflowSimulationModel : public SimulationModel {
 public:
     MolflowSimulationModel() : SimulationModel(), /*otfParams(),*/ tdParams()/*, wp(), sh(),*/ {};
 

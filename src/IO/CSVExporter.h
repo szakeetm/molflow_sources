@@ -26,7 +26,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include <vector>
 
 class GlobalSimuState;
-struct MolflowSimulationModel;
+class MolflowSimulationModel;
 
 namespace FlowIO {
 
