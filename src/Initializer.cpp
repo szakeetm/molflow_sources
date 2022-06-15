@@ -1,6 +1,22 @@
-//
-// Created by Pascal Baehr on 01.08.20.
-//
+/*
+Program:     MolFlow+ / Synrad+
+Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
+Copyright:   E.S.R.F / CERN
+Website:     https://cern.ch/molflow
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
+*/
 
 #include "Initializer.h"
 #include "IO/LoaderXML.h"
@@ -279,7 +295,7 @@ Initializer::loadFromGeneration(const std::shared_ptr<MolflowSimulationModel> &m
         simManager->ReloadLogBuffer(logDpSize, true);*/
 
         Log::console_msg_master(3, " Resizing state!\n");
-        globState->Resize(*model);
+        globState->Resize(model);
     }
     catch (const std::exception &e) {
         Log::console_error("[Warning] %s\n", e.what());
@@ -338,7 +354,7 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, const 
         simManager->ReloadLogBuffer(logDpSize, true);*/
 
         Log::console_msg_master(3, " Resizing state!\n");
-        globState->Resize(*model);
+        globState->Resize(model);
 
         // 3. init counters with previous results
         if (loadState) {
@@ -359,10 +375,10 @@ int Initializer::loadFromXML(const std::string &fileName, bool loadState, const 
             // Update Angle map status
             for(int i = 0; i < model->facets.size(); i++ ) {
 #if defined(MOLFLOW)
-                auto &f = model->facets[i];
+                auto f = std::dynamic_pointer_cast<MolflowSimFacet>(model->facets[i]);
                 if (f->sh.anglemapParams.record) { //Recording, so needs to be updated
                     //Retrieve angle map from hits dp
-                    globState->facetStates[i].recordedAngleMapPdf = model->facets[i]->angleMap.pdf;
+                    globState->facetStates[i].recordedAngleMapPdf = f->angleMap.pdf;
                 }
 #endif
             }
@@ -507,7 +523,7 @@ int Initializer::initSimModel(std::shared_ptr<MolflowSimulationModel> model) {
     bool hasVolatile = false;
 
     for (size_t facIdx = 0; facIdx < model->sh.nbFacet; facIdx++) {
-        auto sFac = model->facets[facIdx];
+        auto* sFac = (MolflowSimFacet*) model->facets[facIdx].get();
 
         std::vector<double> textIncVector;
         // Add surface elements area (reciprocal)

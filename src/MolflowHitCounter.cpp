@@ -1,5 +1,5 @@
 #include "MolflowHitCounter.h"
 #include <Helper/MathTools.h>
 #include "MolflowGeometry.h"
-#include "GeometrySimu.h"
+#include "Simulation/MolflowSimGeom.h"
 

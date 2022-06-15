@@ -21,7 +21,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 #include "Geometry_shared.h"
 #include "PugiXML/pugixml.hpp"
-#include "GeometrySimu.h"
+#include "Simulation/MolflowSimGeom.h"
 #include <cereal/archives/xml.hpp>
 
 #define TEXTURE_MODE_PRESSURE 0
@@ -99,6 +99,7 @@ public:
 	void SerializeForLoader(cereal::BinaryOutputArchive&);
 
     bool InitOldStruct(MolflowSimulationModel *model);
+    void InitInterfaceFacets(const std::vector<std::shared_ptr<SimulationFacet>> &sFacets, Worker* work) override;
 
 private:
 

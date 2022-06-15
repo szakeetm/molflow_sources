@@ -22,14 +22,14 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #define MOLFLOW_PROJ_PHYSICS_H
 
 #include <vector>
-#include <GeometrySimu.h>
+#include "MolflowSimGeom.h"
 
 //! Class that implements advanced methods that are related to the SimulationModel or an individual Particle
 class Physics {
 public:
     static double
     GenerateDesorptionTime(const std::vector<std::vector<std::pair<double, double>>> &IDs,
-                           const SubprocessFacet *src, double rndVal, double latestMoment);
+                           const SimulationFacet *src, double rndVal, double latestMoment);
 
     static double GenerateRandomVelocity(const std::vector<std::vector<std::pair<double, double>>>& CDFs, int CDFId, double rndVal);
 

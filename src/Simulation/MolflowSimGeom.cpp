@@ -1,23 +1,41 @@
-//
-// Created by Pascal Baehr on 28.04.20.
-//
+/*
+Program:     MolFlow+ / Synrad+
+Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
+Copyright:   E.S.R.F / CERN
+Website:     https://cern.ch/molflow
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
+*/
+
+
+#include "Helper/MathTools.h"
+#include "CDFGeneration.h"
+#include "IDGeneration.h"
+#include "Helper/Chronometer.h"
+#include "Helper/ConsoleLogger.h"
+#include "Polygon.h"
+#include "MolflowSimGeom.h"
+#include "MolflowSimFacet.h"
+#include "IntersectAABB_shared.h" // include needed for recursive delete of AABBNODE
 
 // M_PI define
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #define _USE_MATH_DEFINES // activate defines, e.g. M_PI_2
 #endif
 #include <cmath>
-
-#include <sstream>
-#include <Helper/MathTools.h>
 #include <set>
-#include <Simulation/CDFGeneration.h>
-#include <Simulation/IDGeneration.h>
-#include <Helper/Chronometer.h>
-#include <Helper/ConsoleLogger.h>
-#include <Polygon.h>
-#include "GeometrySimu.h"
-#include "IntersectAABB_shared.h" // include needed for recursive delete of AABBNODE
+#include <sstream>
 
 bool ParameterSurface::IsHardHit(const Ray &r) {
     const double td_opacity = dist->InterpolateY(r.time, false);
@@ -26,473 +44,6 @@ bool ParameterSurface::IsHardHit(const Ray &r) {
     else
         return (r.rng->rnd() < td_opacity);
 };
-
-bool SubprocessFacet::InitializeOnLoad(const size_t &id, const size_t &nbMoments) {
-    globalId = id;
-    //ResizeCounter(nbMoments); //Initialize counter
-    if (!InitializeLinkAndVolatile(id)) return false;
-    InitializeOutgassingMap();
-
-    if(InitializeAngleMap() < 0)
-        return false;
-
-    InitializeTexture(nbMoments);
-    InitializeProfile(nbMoments);
-    InitializeDirectionTexture(nbMoments);
-    InitializeHistogram(nbMoments);
-
-    return true;
-}
-
-size_t SubprocessFacet::InitializeHistogram(const size_t &nbMoments) const
-{
-    //FacetHistogramBuffer hist;
-    //hist.Resize(sh.facetHistogramParams);
-    //tmpHistograms = std::vector<FacetHistogramBuffer>(1 + nbMoments, hist);
-    size_t histSize = (1 + nbMoments) *
-                                   (sh.facetHistogramParams.GetBouncesDataSize()
-                                    + sh.facetHistogramParams.GetDistanceDataSize()
-                                    + sh.facetHistogramParams.GetTimeDataSize());
-
-    return histSize;
-}
-
-size_t SubprocessFacet::InitializeDirectionTexture(const size_t &nbMoments)
-{
-    size_t directionSize = 0;
-
-        //Direction
-    if (sh.countDirection) {
-        directionSize = sh.texWidth*sh.texHeight * sizeof(DirectionCell);
-        try {
-            //direction = std::vector<std::vector<DirectionCell>>(1 + nbMoments, std::vector<DirectionCell>(sh.texWidth*sh.texHeight));
-        }
-        catch (...) {
-            throw std::runtime_error("Not enough memory to load direction textures");
-        }
-    }
-    else
-        directionSize = 0;
-    return directionSize;
-}
-
-size_t SubprocessFacet::InitializeProfile(const size_t &nbMoments)
-{    size_t profileSize = 0;
-
-    //Profiles
-    if (sh.isProfile) {
-        profileSize = PROFILE_SIZE * sizeof(ProfileSlice);
-        try {
-            //profile = std::vector<std::vector<ProfileSlice>>(1 + nbMoments, std::vector<ProfileSlice>(PROFILE_SIZE));
-        }
-        catch (...) {
-            throw std::runtime_error("Not enough memory to load profiles");
-            return false;
-        }
-    }
-    else
-        profileSize = 0;
-    return profileSize;
-}
-
-std::vector<double> SubprocessFacet::InitTextureMesh()
-{
-    GLAppPolygon P1, P2;
-    double sx, sy;
-    double iw = 1.0 / (double)sh.texWidth_precise;
-    double ih = 1.0 / (double)sh.texHeight_precise;
-    double rw = sh.U.Norme() * iw;
-    double rh = sh.V.Norme() * ih;
-    double fullCellArea = iw*ih;
-
-    std::vector<Vector2d>(4).swap(P1.pts);
-    //P1.sign = 1;
-    P2.pts = vertices2;
-    //P2.sign = -sign;
-
-    std::vector<double> interCellArea;
-    interCellArea.resize(sh.texWidth * sh.texHeight, -1.0); //will shrink at the end
-
-    for (size_t j = 0;j < sh.texHeight;j++) {
-        sy = (double)j;
-        for (size_t i = 0;i < sh.texWidth;i++) {
-            sx = (double)i;
-
-            bool allInside = false;
-            double u0 = sx * iw;
-            double v0 = sy * ih;
-            double u1 = (sx + 1.0) * iw;
-            double v1 = (sy + 1.0) * ih;
-            //mesh[i + j*wp.texWidth].elemId = -1;
-
-            if (sh.nbIndex <= 4) {
-
-                // Optimization for quad and triangle
-                allInside = IsInPoly(Vector2d(u0,v0), vertices2)
-                            && IsInPoly(Vector2d(u0, v1), vertices2)
-                            && IsInPoly(Vector2d(u1, v0), vertices2)
-                            && IsInPoly(Vector2d(u1, v1), vertices2);
-
-            }
-
-            if (!allInside) {
-                double area{};
-
-                // Intersect element with the facet (facet boundaries)
-                P1.pts[0] = {u0, v0};
-                P1.pts[1] = {u1, v0};
-                P1.pts[2] = {u1, v1};
-                P1.pts[3] = {u0, v1};
-
-                std::vector<bool>visible(P2.pts.size());
-                std::fill(visible.begin(), visible.end(), true);
-                auto [A,center,vList] = GetInterArea(P1, P2, visible);
-                if (!IsZero(A)) {
-
-                    if (A > (fullCellArea + 1e-10)) {
-
-                        // Polyon intersection error !
-                        // Switch back to brute force
-                        auto [bfArea, center_loc] = GetInterAreaBF(P2, Vector2d(u0, v0), Vector2d(u1, v1));
-                        bool fullElem = IsZero(fullCellArea - bfArea);
-                        if (!fullElem) {
-                            interCellArea[i + j*sh.texWidth] = (bfArea*(rw*rh) / (iw*ih));
-                        }
-                        else {
-                            interCellArea[i + j*sh.texWidth] = -1.0;
-                        }
-
-                        //cellprop.full = IsZero(fullCellArea - A);
-
-                    }
-                    else {
-
-                        bool fullElem = IsZero(fullCellArea - A);
-                        if (!fullElem) {
-                            // !! P1 and P2 are in u,v coordinates !!
-                            interCellArea[i + j*sh.texWidth] = (A*(rw*rh) / (iw*ih));
-                        }
-                        else {
-                            interCellArea[i + j*sh.texWidth] = -1.0;
-                        }
-
-                    }
-
-                }
-                else interCellArea[i + j*sh.texWidth] = -2.0; //zero element
-
-            }
-            else {  //All indide and triangle or quad
-                interCellArea[i + j*sh.texWidth] = -1.0;
-            }
-        }
-    }
-
-    return interCellArea;
-}
-
-size_t SubprocessFacet::InitializeTexture(const size_t &nbMoments)
-{
-    size_t textureSize = 0;
-    //Textures
-    if (sh.isTextured) {
-        size_t nbE = sh.texWidth*sh.texHeight;
-        largeEnough.resize(nbE);
-        textureSize = nbE * sizeof(TextureCell);
-        /*try {
-            texture = std::vector<std::vector<TextureCell>>(1 + nbMoments, std::vector<TextureCell>(nbE));
-        }
-        catch (...) {
-            throw std::runtime_error("Not enough memory to load textures");
-            return false;
-        }
-        fullSizeInc = (sh.texWidth_precise * sh.texHeight_precise) / (sh.U.Norme() * sh.V.Norme());
-        }*/
-        // Texture increment of a full texture element
-        double fullSizeInc = (sh.texWidth_precise * sh.texHeight_precise) / (sh.U.Norme() * sh.V.Norme());
-        for (size_t j = 0; j < nbE; j++) { //second pass, filter out very small cells
-            largeEnough[j] = textureCellIncrements[j] < (5.0*fullSizeInc);
-        }
-
-        //double iw = 1.0 / (double)sh.texWidth_precise;
-        //double ih = 1.0 / (double)sh.texHeight_precise;
-        //double rw = sh.U.Norme() * iw;
-        //double rh = sh.V.Norme() * ih;
-    }
-    else
-        textureSize = 0;
-    return textureSize;
-}
-
-
-int SubprocessFacet::InitializeAngleMap()
-{
-    //Incident angle map
-    int angleMapSize = 0;
-    if (sh.desorbType == DES_ANGLEMAP) { //Use mode
-        if (angleMap.pdf.empty()) // check if a valid recorded angle map exists, otherwise we can't desorb
-            throw Error(fmt::format("Facet {}: should generate by angle map but has none recorded.", globalId + 1).c_str());
-
-        //Construct CDFs
-        try {
-            angleMap.phi_pdfsums_lowerTheta.resize(sh.anglemapParams.thetaLowerRes);
-            angleMap.phi_pdfsums_higherTheta.resize(sh.anglemapParams.thetaHigherRes);
-        }
-        catch (...) {
-            throw std::runtime_error("Not enough memory to load incident angle map (phi CDF line sums)");
-        }
-        try {
-            angleMap.theta_CDF_lower.resize(sh.anglemapParams.thetaLowerRes);
-            angleMap.theta_CDF_higher.resize(sh.anglemapParams.thetaHigherRes);
-        }
-        catch (...) {
-            throw std::runtime_error("Not enough memory to load incident angle map (line sums, CDF)");
-        }
-        try {
-            angleMap.phi_CDFs_lowerTheta.resize(sh.anglemapParams.phiWidth * sh.anglemapParams.thetaLowerRes);
-            angleMap.phi_CDFs_higherTheta.resize(sh.anglemapParams.phiWidth * sh.anglemapParams.thetaHigherRes);
-        }
-        catch (...) {
-            throw std::runtime_error("Not enough memory to load incident angle map (CDF)");
-        }
-        try {
-            angleMap.phi_pdfs_lowerTheta.resize(sh.anglemapParams.phiWidth * sh.anglemapParams.thetaLowerRes);
-            angleMap.phi_pdfs_higherTheta.resize(sh.anglemapParams.phiWidth * sh.anglemapParams.thetaHigherRes);
-        }
-        catch (...) {
-            throw std::runtime_error("Not enough memory to load incident angle map (CDF)");
-        }
-
-        //First pass: determine phi line sums and total map sum
-        //Lower part
-        angleMap.theta_CDFsum_lower = 0;
-        memset(angleMap.phi_pdfsums_lowerTheta.data(), 0, sizeof(size_t) * sh.anglemapParams.thetaLowerRes);
-        for (size_t thetaIndex = 0; thetaIndex < sh.anglemapParams.thetaLowerRes; thetaIndex++) {
-            for (size_t phiIndex = 0; phiIndex < sh.anglemapParams.phiWidth; phiIndex++) {
-                angleMap.phi_pdfsums_lowerTheta[thetaIndex] += angleMap.pdf[thetaIndex*sh.anglemapParams.phiWidth + phiIndex]; //phi line sum
-            }
-            angleMap.theta_CDFsum_lower += angleMap.phi_pdfsums_lowerTheta[thetaIndex]; //total lower map sum
-        }
-        //Higher part
-        angleMap.theta_CDFsum_higher = angleMap.theta_CDFsum_lower; //higher includes lower part
-        memset(angleMap.phi_pdfsums_higherTheta.data(), 0, sizeof(size_t) * sh.anglemapParams.thetaHigherRes);
-        for (size_t thetaIndex = sh.anglemapParams.thetaLowerRes; thetaIndex < (sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes); thetaIndex++) {
-            for (size_t phiIndex = 0; phiIndex < sh.anglemapParams.phiWidth; phiIndex++) {
-                angleMap.phi_pdfsums_higherTheta[thetaIndex-sh.anglemapParams.thetaLowerRes] += angleMap.pdf[thetaIndex*sh.anglemapParams.phiWidth + phiIndex]; //phi line sum
-            }
-            angleMap.theta_CDFsum_higher += angleMap.phi_pdfsums_higherTheta[thetaIndex - sh.anglemapParams.thetaLowerRes]; //total map sum
-        }
-        if (angleMap.theta_CDFsum_higher == 0) {
-            auto err = fmt::format("Facet {} has all-zero recorded angle map, but is being used for desorption.", globalId + 1);
-            throw std::runtime_error(err.c_str());
-        }
-        angleMap.thetaLowerRatio = (double)angleMap.theta_CDFsum_lower / (double)angleMap.theta_CDFsum_higher; //higher includes lower
-
-        //Second pass: construct midpoint CDFs, normalized phi pdfs
-        //We use midpoint because user expects linear interpolation between PDF midpoints, not between bin endpoints
-        double thetaNormalizingFactor = 1.0 / (double)angleMap.theta_CDFsum_higher;
-        //lower part
-        for (size_t thetaIndex = 0; thetaIndex < sh.anglemapParams.thetaLowerRes; thetaIndex++) {
-            if (thetaIndex == 0) {
-                //First CDF value: sums from theta=0 to midpoint of first theta bin
-                angleMap.theta_CDF_lower[thetaIndex] = 0.5 * (double)angleMap.phi_pdfsums_lowerTheta[0] * thetaNormalizingFactor;
-            }
-            else {
-                //value summing second half of previous theta bin and first half of current theta bin
-                angleMap.theta_CDF_lower[thetaIndex] = angleMap.theta_CDF_lower[thetaIndex - 1] + (double)(angleMap.phi_pdfsums_lowerTheta[thetaIndex - 1] + angleMap.phi_pdfsums_lowerTheta[thetaIndex])*0.5*thetaNormalizingFactor;
-            }
-            double phiNormalizingFactor = 1.0 / (double)angleMap.phi_pdfsums_lowerTheta[thetaIndex];
-            for (size_t phiIndex = 0; phiIndex < sh.anglemapParams.phiWidth; phiIndex++) {
-                size_t index = sh.anglemapParams.phiWidth * thetaIndex + phiIndex;
-                if (angleMap.phi_pdfsums_lowerTheta[thetaIndex] == 0) { //no hits in this line, create phi CDF of uniform distr.
-                    angleMap.phi_CDFs_lowerTheta[index] = (0.5 + (double)phiIndex) / (double)sh.anglemapParams.phiWidth;
-                    angleMap.phi_pdfs_lowerTheta[index] = 1.0 / (double)sh.anglemapParams.phiWidth;
-                }
-                else {  //construct regular CDF based on midpoints
-                    if (phiIndex == 0) {
-                        //First CDF value, sums to midpoint of first phi bin
-                        angleMap.phi_CDFs_lowerTheta[index] = 0.5 * (double)angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex] * phiNormalizingFactor; //sh.anglemapParams.phiWidth * thetaIndex is the first pdf bin of this phi line
-                    }
-                    else {
-                        //value covering second half of last phi bin and first of current phi bin
-                        angleMap.phi_CDFs_lowerTheta[index] = angleMap.phi_CDFs_lowerTheta[sh.anglemapParams.phiWidth * thetaIndex + phiIndex - 1] + (double)(angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex + phiIndex - 1] + angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex + phiIndex])*0.5*phiNormalizingFactor;
-                    }
-                    angleMap.phi_pdfs_lowerTheta[index] = angleMap.pdf[index] * phiNormalizingFactor;
-                }
-            }
-        }
-        //second pass, higher part, pay attention to index shift: thetaIndex upshifted by thetaLowerRes
-        for (size_t thetaIndex = sh.anglemapParams.thetaLowerRes; thetaIndex < sh.anglemapParams.thetaLowerRes + sh.anglemapParams.thetaHigherRes; thetaIndex++) {
-            if (thetaIndex == sh.anglemapParams.thetaLowerRes) {
-                //First CDF value: sums from theta=limit to midpoint of first higher theta bin
-                angleMap.theta_CDF_higher[thetaIndex-sh.anglemapParams.thetaLowerRes] = angleMap.thetaLowerRatio + 0.5 * (double)angleMap.phi_pdfsums_higherTheta[0] * thetaNormalizingFactor;
-            }
-            else {
-                //value summing second half of previous theta bin and first half of current theta bin
-                angleMap.theta_CDF_higher[thetaIndex-sh.anglemapParams.thetaLowerRes] = angleMap.theta_CDF_higher[thetaIndex - sh.anglemapParams.thetaLowerRes - 1] + (double)(angleMap.phi_pdfsums_higherTheta[thetaIndex - sh.anglemapParams.thetaLowerRes - 1] + angleMap.phi_pdfsums_higherTheta[thetaIndex - sh.anglemapParams.thetaLowerRes])*0.5*thetaNormalizingFactor;
-            }
-            double phiNormalizingFactor = 1.0 / (double)angleMap.phi_pdfsums_higherTheta[thetaIndex - sh.anglemapParams.thetaLowerRes];
-            for (size_t phiIndex = 0; phiIndex < sh.anglemapParams.phiWidth; phiIndex++) {
-                size_t index = sh.anglemapParams.phiWidth * (thetaIndex - sh.anglemapParams.thetaLowerRes) + phiIndex;
-                if (angleMap.phi_pdfsums_higherTheta[thetaIndex - sh.anglemapParams.thetaLowerRes] == 0) { //no hits in this line, create phi CDF of uniform distr.
-                    angleMap.phi_CDFs_higherTheta[index] = (0.5 + (double)phiIndex) / (double)sh.anglemapParams.phiWidth;
-                    angleMap.phi_pdfs_higherTheta[index] = 1.0 / (double)sh.anglemapParams.phiWidth;
-                }
-                else {
-                    if (phiIndex == 0) {
-                        //First CDF value, sums to midpoint of first phi bin
-                        angleMap.phi_CDFs_higherTheta[index] = 0.5 * (double)angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex] * phiNormalizingFactor; //sh.anglemapParams.phiWidth * thetaIndex is the first pdf bin of this phi line
-                    }
-                    else {
-                        //value covering second half of last phi bin and first of current phi bin
-                        angleMap.phi_CDFs_higherTheta[index] = angleMap.phi_CDFs_higherTheta[sh.anglemapParams.phiWidth * (thetaIndex - sh.anglemapParams.thetaLowerRes) + phiIndex - 1] + (double)(angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex + phiIndex - 1] + angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex + phiIndex])*0.5*phiNormalizingFactor;
-                    }
-                    angleMap.phi_pdfs_higherTheta[index] = angleMap.pdf[sh.anglemapParams.phiWidth * thetaIndex + phiIndex] * phiNormalizingFactor;
-                }
-            }
-        }
-    }
-    else {
-        //Record mode, create pdf vector
-        angleMap.pdf.resize(sh.anglemapParams.GetMapSize());
-    }
-
-    if(sh.anglemapParams.record)
-        angleMapSize += sh.anglemapParams.GetDataSize();
-    return angleMapSize;
-}
-
-void SubprocessFacet::InitializeOutgassingMap()
-{
-    if (sh.useOutgassingFile) {
-        //Precalc actual outgassing map width and height for faster generation:
-        ogMap.outgassingMapWidth_precise = sh.U.Norme() * ogMap.outgassingFileRatioU;
-        ogMap.outgassingMapHeight_precise = sh.V.Norme() * ogMap.outgassingFileRatioV;
-        size_t nbE = ogMap.outgassingMapWidth*ogMap.outgassingMapHeight;
-        // TODO: Check with molflow_threaded e10c2a6f and 66b89ac7 if right
-        // making a copy shouldn't be necessary as i will never get changed before use
-        //outgassingMapWindow = facetRef->outgassingMapWindow; //init by copying pdf
-        ogMap.outgassingMap_cdf = ogMap.outgassingMap;
-        for (size_t i = 1; i < nbE; i++) {
-            ogMap.outgassingMap_cdf[i] = ogMap.outgassingMap_cdf[i - 1] + ogMap.outgassingMap_cdf[i]; //Convert p.d.f to cumulative distr.
-        }
-    }
-}
-
-bool SubprocessFacet::InitializeLinkAndVolatile(const size_t & id)
-{
-    if (sh.superDest || sh.isVolatile) {
-        // Link or volatile facet, overides facet settings
-        // Must be full opaque and 0 sticking
-        // (see SimulationMC.c::PerformBounce)
-        //sh.isOpaque = true;
-        sh.opacity = 1.0;
-        sh.opacity_paramId = -1;
-        sh.sticking = 0.0;
-        sh.sticking_paramId = -1;
-    }
-    return true;
-}
-
-/*void SubprocessFacet::ResetCounter() {
-    std::fill(tmpCounter.begin(), tmpCounter.end(), FacetHitBuffer());
-}
-
-void SubprocessFacet::ResizeCounter(size_t nbMoments) {
-    tmpCounter = std::vector<FacetHitBuffer>(nbMoments + 1); //Includes 0-init
-    tmpCounter.shrink_to_fit();
-    tmpHistograms = std::vector<FacetHistogramBuffer>(nbMoments + 1);
-    tmpHistograms.shrink_to_fit();
-}*/
-
-/**
-* \brief Constructor for cereal initialization
-*/
-SubprocessFacet::SubprocessFacet() : Facet() {
-    isReady = false;
-    globalId = 0;
-}
-
-/**
-* \brief Constructor with initialisation based on the number of indices/facets
-* \param nbIndex number of indices/facets
-*/
-SubprocessFacet::SubprocessFacet(size_t nbIndex) : Facet(nbIndex) {
-    isReady = false;
-    globalId = 0;
-    indices.resize(nbIndex);                    // Ref to Geometry Vector3d
-    vertices2.resize(nbIndex);
-}
-
-SubprocessFacet::SubprocessFacet(const SubprocessFacet& cpy)  : Facet(cpy) {
-    *this = cpy;
-}
-
-SubprocessFacet::SubprocessFacet(SubprocessFacet&& cpy) noexcept : Facet(cpy){
-    *this = std::move(cpy);
-}
-
-SubprocessFacet& SubprocessFacet::operator=(const SubprocessFacet& cpy){
-    this->angleMap = cpy.angleMap;
-    this->ogMap = cpy.ogMap;
-    this->largeEnough = cpy.largeEnough;
-    this->textureCellIncrements = cpy.textureCellIncrements;
-    this->sh = cpy.sh;
-
-    isReady = cpy.isReady;
-    globalId = cpy.globalId;
-    indices = cpy.indices;                    // Ref to Geometry Vector3d
-    vertices2 = cpy.vertices2;
-    if(cpy.surf) surf = cpy.surf;
-    else surf = nullptr;
-
-    return *this;
-}
-
-SubprocessFacet& SubprocessFacet::operator=(SubprocessFacet&& cpy) noexcept {
-    this->angleMap = cpy.angleMap;
-    this->ogMap = cpy.ogMap;
-    this->largeEnough = std::move(cpy.largeEnough);
-    this->textureCellIncrements = std::move(cpy.textureCellIncrements);
-    this->sh = cpy.sh;
-
-    isReady = cpy.isReady;
-    globalId = cpy.globalId;
-    indices = std::move(cpy.indices);                    // Ref to Geometry Vector3d
-    vertices2 = std::move(cpy.vertices2);
-    surf = cpy.surf;
-    cpy.surf = nullptr;
-
-    return *this;
-}
-
-/**
-* \brief Calculates the hits size for a single facet which is necessary for hits dataport
-* \param nbMoments amount of moments
-* \return calculated size of the facet hits
-*/
-size_t SubprocessFacet::GetHitsSize(size_t nbMoments) const { //for hits dataport
-    return   (1 + nbMoments)*(
-            sizeof(FacetHitBuffer) +
-            +(sh.isTextured ? (sh.texWidth*sh.texHeight * sizeof(TextureCell)) : 0)
-            + (sh.isProfile ? (PROFILE_SIZE * sizeof(ProfileSlice)) : 0)
-            + (sh.countDirection ? (sh.texWidth*sh.texHeight * sizeof(DirectionCell)) : 0)
-            + sh.facetHistogramParams.GetDataSize()
-    ) + (sh.anglemapParams.record ? (sh.anglemapParams.GetRecordedDataSize()) : 0);
-
-}
-
-size_t SubprocessFacet::GetMemSize() const {
-    size_t sum = 0;
-    sum += sizeof (SubprocessFacet);
-    sum += sizeof (size_t) * indices.capacity();
-    sum += sizeof (Vector2d) * vertices2.capacity();
-    sum += sizeof (double) * textureCellIncrements.capacity();
-    sum += sizeof (bool) * largeEnough.capacity();
-    sum += sizeof (double) * ogMap.outgassingMap.capacity();
-    sum += angleMap.GetMemSize();
-    return sum;
-}
 
 /**
 * \brief Testing purpose function, construct an angled PRISMA / parallelepiped
@@ -538,14 +89,14 @@ void  MolflowSimulationModel::BuildPrisma(double L, double R, double angle, doub
 
     try {
         // Cap facet
-        facets[0 + nbTF] = std::make_shared<SubprocessFacet>(step);
+        facets[0 + nbTF] = std::make_shared<MolflowSimFacet>(step);
         facets[0 + nbTF]->sh.sticking = 1.0;
         facets[0 + nbTF]->sh.desorbType = DES_COSINE;
         facets[0 + nbTF]->sh.outgassing = 1.0;
         for (int i = 0; i < step; i++)
             facets[0 + nbTF]->indices[i] = 2 * i + nbTV;
 
-        facets[1 + nbTF] = std::make_shared<SubprocessFacet>(step);
+        facets[1 + nbTF] = std::make_shared<MolflowSimFacet>(step);
         facets[1 + nbTF]->sh.sticking = 1.0;
         facets[1 + nbTF]->sh.desorbType = DES_NONE;
         for (int i = 0; i < step; i++)
@@ -553,7 +104,7 @@ void  MolflowSimulationModel::BuildPrisma(double L, double R, double angle, doub
 
         // Wall facet
         for (int i = 0; i < step; i++) {
-            facets[i + 2 + nbTF] = std::make_shared<SubprocessFacet>(4);
+            facets[i + 2 + nbTF] = std::make_shared<MolflowSimFacet>(4);
             //facets[i + 2 + nbTF]->wp.reflection.diffusePart = 1.0; //constructor does this already
             //facets[i + 2 + nbTF]->wp.reflection.specularPart = 0.0; //constructor does this already
             facets[i + 2 + nbTF]->sh.sticking = s;
@@ -590,7 +141,7 @@ void  MolflowSimulationModel::BuildPrisma(double L, double R, double angle, doub
                 vertices3[idx + 3].y = -R;
                 vertices3[idx + 3].z = z;
 
-                facets[9 * d + i] = std::make_shared<SubprocessFacet>(4);
+                facets[9 * d + i] = std::make_shared<MolflowSimFacet>(4);
                 facets[9 * d + i]->sh.sticking = 0.0;
                 facets[9 * d + i]->sh.opacity = 0.0;
                 facets[9 * d + i]->sh.isVolatile = true;
@@ -610,8 +161,10 @@ void  MolflowSimulationModel::BuildPrisma(double L, double R, double angle, doub
     }
 }
 
-int MolflowSimulationModel::BuildAccelStructure(GlobalSimuState *globState, int accel_type, BVHAccel::SplitMethod split,
+int MolflowSimulationModel::BuildAccelStructure(GlobalSimuState *globState, AccelType accel_type, BVHAccel::SplitMethod split,
                                                 int bvh_width) {
+
+    initialized = false;
     Chronometer timer;
     timer.Start();
 
@@ -620,7 +173,7 @@ int MolflowSimulationModel::BuildAccelStructure(GlobalSimuState *globState, int 
     }
 
 #if defined(USE_OLD_BVH)
-    std::vector<std::vector<SubprocessFacet*>> facetPointers;
+    std::vector<std::vector<SimulationFacet*>> facetPointers;
     facetPointers.resize(this->sh.nbSuper);
     for(auto& sFac : this->facets){
         // TODO: Build structures
@@ -662,12 +215,13 @@ int MolflowSimulationModel::BuildAccelStructure(GlobalSimuState *globState, int 
     for(auto& sFac : this->facets){
         if (sFac->sh.opacity_paramId == -1){ //constant sticking
             sFac->sh.opacity = std::clamp(sFac->sh.opacity, 0.0, 1.0);
-            sFac->surf = this->GetSurface(sFac->sh.opacity);
+            //sFac->surf = simModel->GetSurface(sFac.get());
         }
-        else {
-            auto* par = &this->tdParams.parameters[sFac->sh.opacity_paramId];
-            sFac->surf = this->GetParameterSurface(sFac->sh.opacity_paramId, par);
-        }
+        /*else {
+            auto* par = &simModel->tdParams.parameters[sFac->sh.opacity_paramId];
+            sFac->surf = simModel->GetParameterSurface(sFac->sh.opacity_paramId, par);
+        }*/
+        sFac->surf = GetSurface(sFac.get());
     }
 
     this->accel.clear();
@@ -699,6 +253,8 @@ int MolflowSimulationModel::BuildAccelStructure(GlobalSimuState *globState, int 
     timer.Stop();
     m.unlock();
 
+    initialized = true;
+
     return 0;
 }
 
@@ -729,52 +285,52 @@ int MolflowSimulationModel::PrepareToRun() {
 
     //Check and calculate various facet properties for time dependent simulations (CDF, ID )
     for (size_t i = 0; i < sh.nbFacet; i++) {
-        SubprocessFacet& facet = *facets[i];
+        auto facet = std::dynamic_pointer_cast<MolflowSimFacet>(facets[i]);
         // TODO: Find a solution to integrate catalog parameters
-        if(facet.sh.outgassing_paramId >= (int) tdParams.parameters.size()){
+        if(facet->sh.outgassing_paramId >= (int) tdParams.parameters.size()){
             char tmp[256];
-            sprintf(tmp, "Facet #%zd: Outgassing parameter \"%d\" isn't defined.", i + 1, facet.sh.outgassing_paramId);
+            sprintf(tmp, "Facet #%zd: Outgassing parameter \"%d\" isn't defined.", i + 1, facet->sh.outgassing_paramId);
             errLog.append(tmp);
         }
-        if(facet.sh.opacity_paramId >= (int) tdParams.parameters.size()){
+        if(facet->sh.opacity_paramId >= (int) tdParams.parameters.size()){
             char tmp[256];
-            sprintf(tmp, "Facet #%zd: Opacity parameter \"%d\" isn't defined.", i + 1, facet.sh.opacity_paramId);
+            sprintf(tmp, "Facet #%zd: Opacity parameter \"%d\" isn't defined.", i + 1, facet->sh.opacity_paramId);
             errLog.append(tmp);
         }
-        if(facet.sh.sticking_paramId >= (int) tdParams.parameters.size()){
+        if(facet->sh.sticking_paramId >= (int) tdParams.parameters.size()){
             char tmp[256];
-            sprintf(tmp, "Facet #%zd: Sticking parameter \"%d\" isn't defined.", i + 1, facet.sh.sticking_paramId);
+            sprintf(tmp, "Facet #%zd: Sticking parameter \"%d\" isn't defined.", i + 1, facet->sh.sticking_paramId);
             errLog.append(tmp);
         }
 
-        if (facet.sh.outgassing_paramId >= 0) { //if time-dependent desorption
-            int id = IDGeneration::GetIDId(desorptionParameterIDs, facet.sh.outgassing_paramId);
+        if (facet->sh.outgassing_paramId >= 0) { //if time-dependent desorption
+            int id = IDGeneration::GetIDId(desorptionParameterIDs, facet->sh.outgassing_paramId);
             if (id >= 0)
-                facet.sh.IDid = id; //we've already generated an ID for this temperature
+                facet->sh.IDid = id; //we've already generated an ID for this temperature
             else {
-                auto[id_new, id_vec] = IDGeneration::GenerateNewID(desorptionParameterIDs, facet.sh.outgassing_paramId, this);
-                facet.sh.IDid = id_new;
+                auto[id_new, id_vec] = IDGeneration::GenerateNewID(desorptionParameterIDs, facet->sh.outgassing_paramId, this);
+                facet->sh.IDid = id_new;
                 tdParams.IDs.emplace_back(std::move(id_vec));
             }
         }
 
         // Generate speed distribution functions
-        int id = CDFGeneration::GetCDFId(temperatureList, facet.sh.temperature);
+        int id = CDFGeneration::GetCDFId(temperatureList, facet->sh.temperature);
         if (id >= 0)
-            facet.sh.CDFid = id; //we've already generated a CDF for this temperature
+            facet->sh.CDFid = id; //we've already generated a CDF for this temperature
         else {
-            auto[cdf_id, cdf_vec] = CDFGeneration::GenerateNewCDF(temperatureList, facet.sh.temperature, wp.gasMass);
-            facet.sh.CDFid = cdf_id;
+            auto[cdf_id, cdf_vec] = CDFGeneration::GenerateNewCDF(temperatureList, facet->sh.temperature, wp.gasMass);
+            facet->sh.CDFid = cdf_id;
             tdParams.CDFs.emplace_back(cdf_vec);
         }
         //Angle map
-        if (facet.sh.desorbType == DES_ANGLEMAP) {
-            if (facet.angleMap.pdf.empty()) {
+        if (facet->sh.desorbType == DES_ANGLEMAP) {
+            if (facet->angleMap.pdf.empty()) {
                 char tmp[256];
                 sprintf(tmp, "Facet #%zd: Uses angle map desorption but doesn't have a recorded angle map.", i + 1);
                 errLog.append(tmp);
             }
-            if (facet.sh.anglemapParams.record) {
+            if (facet->sh.anglemapParams.record) {
                 char tmp[256];
                 sprintf(tmp, "Facet #%zd: Can't RECORD and USE angle map desorption at the same time.", i + 1);
                 errLog.append(tmp);
@@ -808,30 +364,30 @@ void MolflowSimulationModel::CalcTotalOutgassing() {
 
 
     for (size_t i = 0; i < facets.size(); i++) {
-        SubprocessFacet &facet = *facets[i];
-        if (facet.sh.desorbType != DES_NONE) { //there is a kind of desorption
-            if (facet.sh.useOutgassingFile) { //outgassing file
-                auto &ogMap = facet.ogMap;
+        auto facet = std::dynamic_pointer_cast<MolflowSimFacet>(facets[i]);
+        if (facet->sh.desorbType != DES_NONE) { //there is a kind of desorption
+            if (facet->sh.useOutgassingFile) { //outgassing file
+                auto &ogMap = facet->ogMap;
                 for (size_t l = 0; l < (ogMap.outgassingMapWidth * ogMap.outgassingMapHeight); l++) {
                     totalDesorbedMolecules +=
-                            latestMoment * ogMap.outgassingMap[l] / (1.38E-23 * facet.sh.temperature);
-                    finalOutgassingRate += ogMap.outgassingMap[l] / (1.38E-23 * facet.sh.temperature);
+                            latestMoment * ogMap.outgassingMap[l] / (1.38E-23 * facet->sh.temperature);
+                    finalOutgassingRate += ogMap.outgassingMap[l] / (1.38E-23 * facet->sh.temperature);
                     finalOutgassingRate_Pa_m3_sec += ogMap.outgassingMap[l];
                 }
             } else { //regular outgassing
-                if (facet.sh.outgassing_paramId == -1) { //constant outgassing
+                if (facet->sh.outgassing_paramId == -1) { //constant outgassing
                     totalDesorbedMolecules +=
-                            latestMoment * facet.sh.outgassing / (1.38E-23 * facet.sh.temperature);
+                            latestMoment * facet->sh.outgassing / (1.38E-23 * facet->sh.temperature);
                     finalOutgassingRate +=
-                            facet.sh.outgassing / (1.38E-23 * facet.sh.temperature);  //Outgassing molecules/sec
-                    finalOutgassingRate_Pa_m3_sec += facet.sh.outgassing;
+                            facet->sh.outgassing / (1.38E-23 * facet->sh.temperature);  //Outgassing molecules/sec
+                    finalOutgassingRate_Pa_m3_sec += facet->sh.outgassing;
                 } else { //time-dependent outgassing
                     totalDesorbedMolecules +=
-                            tdParams.IDs[facet.sh.IDid].back().second / (1.38E-23 * facet.sh.temperature);
-                    size_t lastIndex = tdParams.parameters[facet.sh.outgassing_paramId].GetSize() - 1;
-                    double finalRate_mbar_l_s = tdParams.parameters[facet.sh.outgassing_paramId].GetY(lastIndex);
+                            tdParams.IDs[facet->sh.IDid].back().second / (1.38E-23 * facet->sh.temperature);
+                    size_t lastIndex = tdParams.parameters[facet->sh.outgassing_paramId].GetSize() - 1;
+                    double finalRate_mbar_l_s = tdParams.parameters[facet->sh.outgassing_paramId].GetY(lastIndex);
                     finalOutgassingRate +=
-                            finalRate_mbar_l_s * 0.100 / (1.38E-23 * facet.sh.temperature); //0.1: mbar*l/s->Pa*m3/s
+                            finalRate_mbar_l_s * 0.100 / (1.38E-23 * facet->sh.temperature); //0.1: mbar*l/s->Pa*m3/s
                     finalOutgassingRate_Pa_m3_sec += finalRate_mbar_l_s * 0.100;
                 }
             }
@@ -843,7 +399,22 @@ void MolflowSimulationModel::CalcTotalOutgassing() {
     wp.finalOutgassingRate = finalOutgassingRate;
 }
 
+MolflowSimulationModel::MolflowSimulationModel(MolflowSimulationModel &&o) noexcept {
+    *this = std::move(o);
+};
+
+MolflowSimulationModel::MolflowSimulationModel(const MolflowSimulationModel &o) : SimulationModel(o) {
+    *this = o;
+};
+
 MolflowSimulationModel::~MolflowSimulationModel() = default;
+
+size_t MolflowSimulationModel::size() {
+    size_t modelSize = 0;
+    modelSize += SimulationModel::size();
+    modelSize += tdParams.GetMemSize();
+    return modelSize;
+}
 
 /**
 * \brief Assign operator
@@ -885,21 +456,22 @@ void GlobalSimuState::clear() {
 }
 
 /**
-* \brief Constructs the 'dpHit' structure to hold all results, zero-init
-* \param w Worker handle
+* \brief Constructs the 'Global Hit counter structure' structure to hold all results, zero-init
+* \param model Contains all related parameters
 */
-void GlobalSimuState::Resize(const MolflowSimulationModel &model) { //Constructs the 'dpHit' structure to hold all results, zero-init
-    //LockMutex(mutex);
+void GlobalSimuState::Resize(const std::shared_ptr<SimulationModel> &model) {
+
     tMutex.lock();
-    size_t nbF = model.sh.nbFacet;
-    size_t nbMoments = model.tdParams.moments.size();
+    auto mf_model = std::dynamic_pointer_cast<MolflowSimulationModel>(model);
+    size_t nbF = model->sh.nbFacet;
+    size_t nbMoments = mf_model->tdParams.moments.size();
     facetStates.assign(nbF, FacetState());
 
-    if(!model.facets.empty()) {
+    if(!model->facets.empty()) {
         for (size_t i = 0; i < nbF; i++) {
-            auto sFac = model.facets[i];
+            auto sFac = model->facets[i];
             if (sFac->globalId != i) {
-                std::cerr << fmt::format("Facet ID mismatch! : {} / {}\n", sFac->globalId , i);
+                fmt::print(stderr, "Facet ID mismatch! : {} / {}\n", sFac->globalId, i);
                 tMutex.unlock();
                 exit(0);
             }
@@ -916,24 +488,13 @@ void GlobalSimuState::Resize(const MolflowSimulationModel &model) { //Constructs
                 facetStates[i].recordedAngleMapPdf.assign(sFac->sh.anglemapParams.GetMapSize(), 0);
         }
     }
-    /*for (size_t i = 0; i < nbF; i++) {
-        const SubprocessFacet& sFac = facets[i];
-        FacetMomentSnapshot facetMomentTemplate;
-        facetMomentTemplate.histogram.Resize(sFac.sh.facetHistogramParams);
-        facetMomentTemplate.direction = std::vector<DirectionCell>(sFac.sh.countDirection ? sFac.sh.texWidth*sFac.sh.texHeight : 0);
-        facetMomentTemplate.profile = std::vector<ProfileSlice>(sFac.sh.isProfile ? PROFILE_SIZE : 0);
-        facetMomentTemplate.texture = std::vector<TextureCell>(sFac.sh.isTextured ? sFac.sh.texWidth*sFac.sh.texHeight : 0);
-        //No init for hits
-        facetStates[i].momentResults = std::vector<FacetMomentSnapshot>(1 + nbMoments, facetMomentTemplate);
-        if (sFac.sh.anglemapParams.record) facetStates[i].recordedAngleMapPdf = std::vector<size_t>(sFac.sh.anglemapParams.GetMapSize());
-    }*/
+
     //Global histogram
 
     FacetHistogramBuffer globalHistTemplate{};
-    globalHistTemplate.Resize(model.wp.globalHistogramParams);
+    globalHistTemplate.Resize(model->wp.globalHistogramParams);
     globalHistograms.assign(1 + nbMoments, globalHistTemplate);
     initialized = true;
-    //ReleaseMutex(mutex);
     tMutex.unlock();
 }
 

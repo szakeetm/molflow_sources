@@ -201,7 +201,7 @@ void ParameterParser::ChangeSimuParams(WorkerParams& params){
     }
 }
 
-int ParameterParser::ChangeFacetParams(std::vector<std::shared_ptr<SubprocessFacet>> &facets) {
+int ParameterParser::ChangeFacetParams(std::vector<std::shared_ptr<SimulationFacet>> &facets) {
     int nbError = 0;
     for(auto& par : Parameters::facetParams){
         size_t id = std::get<0>(par);

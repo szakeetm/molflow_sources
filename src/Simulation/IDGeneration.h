@@ -22,7 +22,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #define MOLFLOW_PROJ_IDGENERATION_H
 
 #include <vector>
-#include <GeometrySimu.h>
+#include "MolflowSimGeom.h"
 #include <set>
 
 namespace IDGeneration {

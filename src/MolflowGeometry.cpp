@@ -24,6 +24,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #endif
 #include <cmath>
 
+#include "Simulation/MolflowSimFacet.h"
 #include "MolflowGeometry.h"
 #include "MolFlow.h"
 #include "Facet_shared.h"
@@ -4051,4 +4052,40 @@ bool MolflowGeometry::InitOldStruct(MolflowSimulationModel* model){
     }
 
     return true;
+}
+
+
+
+void MolflowGeometry::InitInterfaceFacets(const std::vector<std::shared_ptr<SimulationFacet>> &sFacets, Worker* work) {
+    //General Facets
+    try{
+        Geometry::InitInterfaceFacets(sFacets, work);
+    }
+    catch(const std::exception &e) {
+        throw;
+    }
+
+    // Init Molflow properties
+    size_t index = 0;
+    for(auto& sFac : sFacets) {
+        auto fac = (MolflowSimFacet*)sFac.get();
+        //facets[index] = new InterfaceFacet(fac->indices.size());
+        auto& intFacet = facets[index];
+
+        // Molflow
+        intFacet->ogMap = fac->ogMap;
+        intFacet->angleMapCache = fac->angleMap.pdf;
+
+        if(intFacet->ogMap.outgassingMapWidth > 0 || intFacet->ogMap.outgassingMapHeight > 0
+           || intFacet->ogMap.outgassingFileRatioU > 0.0 || intFacet->ogMap.outgassingFileRatioV > 0.0){
+            intFacet->hasOutgassingFile = true;
+        }
+
+        //Set param names for interface
+        if (intFacet->sh.sticking_paramId > -1) intFacet->userSticking = work->parameters[intFacet->sh.sticking_paramId].name;
+        if (intFacet->sh.opacity_paramId > -1) intFacet->userOpacity = work->parameters[intFacet->sh.opacity_paramId].name;
+        if (intFacet->sh.outgassing_paramId > -1) intFacet->userOutgassing = work->parameters[intFacet->sh.outgassing_paramId].name;
+        if (intFacet->sh.isTextured) intFacet->hasMesh = true;
+        ++index;
+    }
 }

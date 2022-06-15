@@ -1,7 +1,6 @@
 #include "Simulation.h"
 #include "IntersectAABB_shared.h"
 #include <cstring>
-#include <sstream>
 #include <cereal/archives/binary.hpp>
 #include <Helper/Chronometer.h>
 #include <Helper/ConsoleLogger.h>
@@ -52,7 +51,7 @@ Simulation::Simulation(Simulation&& o) noexcept : tMutex() {
     for(auto& particle : particles) {
         particle.lastHitFacet = nullptr;
         particle.particle.lastIntersected = -1;
-        particle.model = model.get();
+        particle.model = (MolflowSimulationModel*) model.get();
     }
 
     hasVolatile =  o.hasVolatile;
@@ -101,41 +100,6 @@ void Simulation::SetNParticle(size_t n, bool fixedSeed) {
         particle.particleId = pid++;
     }
 }
-
-/*bool Simulation::UpdateOntheflySimuParams(Dataport *loader) {
-    // Connect the dataport
-
-
-    if (!AccessDataportTimed(loader, 2000)) {
-        //SetErrorSub("Failed to connect to loader DP");
-        std::cerr << "Failed to connect to loader DP" << std::endl;
-        return false;
-    }
-    std::string inputString(loader->size,'\0');
-    BYTE* buffer = (BYTE*)loader->buff;
-    std::copy(buffer, buffer + loader->size, inputString.begin());
-    std::stringstream inputStream;
-    inputStream << inputString;
-    cereal::BinaryInputArchive inputArchive(inputStream);
-
-    inputArchive(model->otfParams);
-
-    ReleaseDataport(loader);
-
-    return true;
-}*/
-
-// Global handles
-//extern Simulation* sHandle; //Declared at molflowSub.cpp
-
-
-
-/*void InitSimulation() {
-
-	// Global handle allocation
-	sHandle = new Simulation();
-	InitTick();
-}*/
 
 std::pair<int, std::optional<std::string>> Simulation::SanityCheckModel(bool strictCheck) {
     std::string errLog = "[Error Log on Check]\n";
@@ -213,9 +177,9 @@ void Simulation::ClearSimulation() {
     //this->currentParticles.clear();// = CurrentParticleStatus();
     //std::vector<CurrentParticleStatus>(this->nbThreads).swap(this->currentParticles);
     for(auto& particle : particles) {
-        particle.tmpFacetVars.assign(model->sh.nbFacet, SubProcessFacetTempVar());
+        particle.tmpFacetVars.assign(model->sh.nbFacet, SimulationFacetTempVar());
         particle.tmpState.Reset();
-        particle.model = model.get();
+        particle.model = (MolflowSimulationModel*) model.get();
         particle.totalDesorbed = 0;
 
         particle.tmpParticleLog.clear();
@@ -240,11 +204,11 @@ int Simulation::RebuildAccelStructure() {
     Chronometer timer;
     timer.Start();
 
-    if(model->BuildAccelStructure(globState, 0, BVHAccel::SplitMethod::SAH, 2))
+    if(model->BuildAccelStructure(globState, BVH, BVHAccel::SplitMethod::SAH, 2))
         return 1;
 
     for(auto& particle : particles)
-        particle.model = model.get();
+        particle.model = (MolflowSimulationModel*) model.get();
 
     timer.Stop();
 
@@ -260,40 +224,16 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     ClearSimulation();
     strncpy(loadStatus, "Loading simulation", 127);
     
-    auto simModel = this->model;
-    
+    auto* simModel = (MolflowSimulationModel*) model.get();
+
     // New GlobalSimuState structure for threads
     for(auto& particle : particles)
     {
         auto& tmpResults = particle.tmpState;
-
-        tmpResults.facetStates.assign(model->sh.nbFacet, FacetState());
-        for(auto& fac : simModel->facets){
-            auto& sFac = *fac;
-            size_t i = sFac.globalId;
-            if(!tmpResults.facetStates[i].momentResults.empty())
-                continue; // Skip multiple init when facets exist in all structures
-            FacetMomentSnapshot facetMomentTemplate{};
-            facetMomentTemplate.histogram.Resize(sFac.sh.facetHistogramParams);
-            facetMomentTemplate.direction.assign((sFac.sh.countDirection ? sFac.sh.texWidth*sFac.sh.texHeight : 0), DirectionCell());
-            facetMomentTemplate.profile.assign((sFac.sh.isProfile ? PROFILE_SIZE : 0), ProfileSlice());
-            facetMomentTemplate.texture.assign((sFac.sh.isTextured ? sFac.sh.texWidth*sFac.sh.texHeight : 0), TextureCell());
-
-            //No init for hits
-            tmpResults.facetStates[i].momentResults.assign(1 + simModel->tdParams.moments.size(), facetMomentTemplate);
-            if (sFac.sh.anglemapParams.record)
-                tmpResults.facetStates[i].recordedAngleMapPdf.assign(sFac.sh.anglemapParams.GetMapSize(), 0);
-        }
-
-        //Global histogram
-        FacetHistogramBuffer globalHistTemplate{};
-        globalHistTemplate.Resize(simModel->wp.globalHistogramParams);
-        tmpResults.globalHistograms.assign(1 + simModel->tdParams.moments.size(), globalHistTemplate);
-        tmpResults.initialized = true;
-
+        tmpResults.Resize(model);
 
         // Init tmp vars per thread
-        particle.tmpFacetVars.assign(simModel->sh.nbFacet, SubProcessFacetTempVar());
+        particle.tmpFacetVars.assign(simModel->sh.nbFacet, SimulationFacetTempVar());
 
         //currentParticle.tmpState = *tmpResults;
         //delete tmpResults;
@@ -302,67 +242,8 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     //Reserve particle log
     ReinitializeParticleLog();
 
-#if defined(USE_OLD_BVH)
-    std::vector<std::vector<SubprocessFacet*>> facetPointers;
-    facetPointers.resize(simModel->sh.nbSuper);
-    for(auto& sFac : simModel->facets){
-        // TODO: Build structures
-        if (sFac->sh.superIdx == -1) { //Facet in all structures
-            for (auto& fp_vec : facetPointers) {
-                fp_vec.push_back(sFac.get());
-            }
-        }
-        else {
-            facetPointers[sFac->sh.superIdx].push_back(sFac.get()); //Assign to structure
-        }
-    }
-
-    // Build all AABBTrees
-    size_t maxDepth=0;
-    for (size_t s = 0; s < simModel->sh.nbSuper; ++s) {
-        auto& structure = simModel->structures[s];
-        if(structure.aabbTree)
-            structure.aabbTree.reset();
-        AABBNODE* tree = BuildAABBTree(facetPointers[s], 0, maxDepth);
-        structure.aabbTree = std::make_shared<AABBNODE>(*tree);
-        //delete tree; // pointer unnecessary because of make_shared
-    }
-
-#else
-    std::vector<std::vector<std::shared_ptr<Primitive>>> primPointers;
-    primPointers.resize(simModel->sh.nbSuper);
-    for(auto& sFac : simModel->facets){
-        if (sFac->sh.superIdx == -1) { //Facet in all structures
-            for (auto& fp_vec : primPointers) {
-                fp_vec.push_back(sFac);
-            }
-        }
-        else {
-            primPointers[sFac->sh.superIdx].push_back(sFac); //Assign to structure
-        }
-    }
-
-    for(auto& sFac : simModel->facets){
-        if (sFac->sh.opacity_paramId == -1){ //constant sticking
-            sFac->sh.opacity = std::clamp(sFac->sh.opacity, 0.0, 1.0);
-            sFac->surf = simModel->GetSurface(sFac->sh.opacity);
-        }
-        else {
-            auto* par = &simModel->tdParams.parameters[sFac->sh.opacity_paramId];
-            sFac->surf = simModel->GetParameterSurface(sFac->sh.opacity_paramId, par);
-        }
-    }
-
-    simModel->accel.clear();
-    for (size_t s = 0; s < simModel->sh.nbSuper; ++s) {
-        if(model->wp.accel_type == 1)
-            simModel->accel.emplace_back(std::make_shared<KdTreeAccel>(primPointers[s], std::vector<double>{}, 80, 1, 0.5, 1, -1));
-        else
-            simModel->accel.emplace_back(std::make_shared<BVHAccel>(primPointers[s], 2, BVHAccel::SplitMethod::SAH));
-    }
-#endif // old_bvb
-    for(auto& particle : particles)
-        particle.model = model.get();
+    // Build ADS
+    RebuildAccelStructure();
 
     // Initialise simulation
 
@@ -391,8 +272,9 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
 }
 
 size_t Simulation::GetHitsSize() {
+    MolflowSimulationModel* simModel = (MolflowSimulationModel*) model.get();
     return sizeof(GlobalHitBuffer) + model->wp.globalHistogramParams.GetDataSize() +
-           + model->sh.nbFacet * sizeof(FacetHitBuffer) * (1+model->tdParams.moments.size());
+           + model->sh.nbFacet * sizeof(FacetHitBuffer) * (1+simModel->tdParams.moments.size());
 }
 
 
@@ -403,8 +285,8 @@ void Simulation::ResetSimulation() {
 
     for(auto& particle : particles) {
         particle.Reset();
-        particle.tmpFacetVars.assign(model->sh.nbFacet, SubProcessFacetTempVar());
-        particle.model = model.get();
+        particle.tmpFacetVars.assign(model->sh.nbFacet, SimulationFacetTempVar());
+        particle.model = (MolflowSimulationModel*) model.get();
         particle.totalDesorbed = 0;
 
         particle.tmpParticleLog.clear();

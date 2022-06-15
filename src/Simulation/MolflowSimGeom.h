@@ -1,29 +1,45 @@
-//
-// Created by Pascal Baehr on 28.04.20.
-//
+/*
+Program:     MolFlow+ / Synrad+
+Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
+Copyright:   E.S.R.F / CERN
+Website:     https://cern.ch/molflow
 
-#ifndef MOLFLOW_PROJ_GEOMETRYSIMU_H
-#define MOLFLOW_PROJ_GEOMETRYSIMU_H
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
+*/
+
+#ifndef MOLFLOW_PROJ_MOLFLOWSIMGEOM_H
+#define MOLFLOW_PROJ_MOLFLOWSIMGEOM_H
 
 #include <vector>
-#include "MolflowTypes.h"
+#include "../MolflowTypes.h"
+#include "../Parameter.h"
 #include "Buffer_shared.h"
-#include "Parameter.h"
 #include "Helper/ConsoleLogger.h"
 
 #include <mutex>
-#include <FacetData.h>
-#include <SimulationModel.h>
-#include <RayTracing/BVH.h>
+#include "FacetData.h"
+#include "SimulationModel.h"
+#include "RayTracing/BVH.h"
 
 #include <cereal/cereal.hpp>
 #include <cereal/types/vector.hpp>
-#include <RayTracing/KDTree.h>
+#include "RayTracing/KDTree.h"
 #include <map>
 
-struct SubprocessFacet;
 
-class SuperStructure;
+struct SimulationFacet;
+class GlobalSimuState;
 
 class ParameterSurface : public Surface {
     Distribution2D *dist;
@@ -69,119 +85,18 @@ struct TimeDependentParamters {
     }
 };
 
-struct Anglemap {
-public:
-    Anglemap(){
-        theta_CDFsum_lower=theta_CDFsum_higher=0;
-    };
-    std::vector<size_t> pdf;          // Incident angle distribution, large array of phi and theta, not normalized by solid angle or to 1 (simply number of hits in each bin). Used either for recording or for 2nd order interpolation. Unites lower and higher theta parts
-    std::vector<double> phi_CDFs_lowerTheta;    // A table containing cumulative phi distributions, normalized to 1, summed up to the phi bin midpoint (!), for each theta, starting from 0 for every line (1 line = 1 theta bin). For speed, one big array of (theta_lowerRes*phi_size) instead of vector of vectors
-    std::vector<double> phi_CDFs_higherTheta;   
-    std::vector<size_t> phi_pdfsums_lowerTheta; // since phi_CDFs sums only to the middle of the last phi bin, for each theta a line sum (of the raw i.e. not normalized angle map pdf) is stored here. Also a pdf for theta, as it contains the total possibility, summed over all phi angles, for that theta bin.
-    std::vector<size_t> phi_pdfsums_higherTheta;
-    std::vector<double> phi_pdfs_lowerTheta; //Normalized pdf of each phi line. For speed, one big array of (theta_lowerRes*phi_size) instead of vector of vectors
-    std::vector<double> phi_pdfs_higherTheta;
-    std::vector<double> theta_CDF_lower;      // Theta CDF to each theta bin midpoint, normalized to 1. nth value is the CDF at the midpoint of theta bin n.)
-    std::vector<double> theta_CDF_higher;
-    size_t theta_CDFsum_lower;  // since theta CDF only sums till the midpoint of the last segment, the total map sum is here
-    size_t theta_CDFsum_higher; // theta_CDFsum_higher>=theta_CDFsum_lower as it includes lower part. Also total number of hits in raw pdf
-    double thetaLowerRatio; // ratio of angle map below theta limit, to decide which side to look up in
-
-    [[nodiscard]] size_t GetMemSize() const {
-        size_t sum = 0;
-        sum += sizeof(Anglemap);
-        sum += sizeof(size_t) * pdf.capacity();
-        sum += sizeof(double) * phi_CDFs_lowerTheta.capacity();
-        sum += sizeof(double) * phi_CDFs_higherTheta.capacity();
-        sum += sizeof(double) * phi_pdfs_lowerTheta.capacity();
-        sum += sizeof(double) * phi_pdfs_higherTheta.capacity();
-        sum += sizeof(size_t) * phi_pdfsums_lowerTheta.capacity();
-        sum += sizeof(size_t) * phi_pdfsums_higherTheta.capacity();
-        sum += sizeof(double) * theta_CDF_lower.capacity();
-        sum += sizeof(double) * theta_CDF_higher.capacity();
-        return sum;
-    }
-};
-
-// Local facet structure
-struct SubprocessFacet : public Facet {
-    SubprocessFacet();
-
-    explicit SubprocessFacet(size_t nbIndex);
-
-    SubprocessFacet(const SubprocessFacet &o);
-
-    SubprocessFacet(SubprocessFacet &&cpy) noexcept;
-
-    SubprocessFacet &operator=(const SubprocessFacet &o);
-
-    SubprocessFacet &operator=(SubprocessFacet &&o) noexcept;
-
-    std::vector<double> textureCellIncrements;              // Texure increment
-    std::vector<bool> largeEnough;      // cells that are NOT too small for autoscaling
-    OutgassingMap ogMap;
-
-    Anglemap angleMap; //TODO: -> GeneratingAngleMap from 2.7
-
-    // Temporary var (used in FillHit for hit recording)
-    bool isReady{};         // Volatile state
-
-    // Facet hit counters
-    //std::vector<FacetHitBuffer> tmpCounter; //1+nbMoment
-    //std::vector<FacetHistogramBuffer> tmpHistograms; //1+nbMoment
-
-    //void ResetCounter();
-    //void ResizeCounter(size_t nbMoments);
-    bool InitializeOnLoad(const size_t &id, const size_t &nbMoments);
-
-    size_t InitializeHistogram(const size_t &nbMoments) const;
-
-    size_t InitializeDirectionTexture(const size_t &nbMoments);
-
-    size_t InitializeProfile(const size_t &nbMoments);
-
-    size_t InitializeTexture(const size_t &nbMoments);
-
-    int InitializeAngleMap();
-
-    void InitializeOutgassingMap();
-
-    bool InitializeLinkAndVolatile(const size_t &id);
-
-    [[nodiscard]] size_t GetHitsSize(size_t nbMoments) const;
-
-    [[nodiscard]] size_t GetMemSize() const;
-
-    //void RegisterTransparentPass(SubprocessFacet *facet); //Allows one shared Intersect routine between MolFlow and Synrad
-
-    std::vector<double> InitTextureMesh();
-};
-
 // Local simulation structure
-
-class GlobalSimuState;
-
 struct MolflowSimulationModel : public SimulationModel {
 public:
-    MolflowSimulationModel() : SimulationModel(), /*otfParams(),*/ tdParams(), /*wp(), sh(),*/ m(), initialized(false) {};
+    MolflowSimulationModel() : SimulationModel(), /*otfParams(),*/ tdParams()/*, wp(), sh(),*/ {};
 
     ~MolflowSimulationModel();
 
-    MolflowSimulationModel(MolflowSimulationModel &&o) noexcept: m(), initialized(false) {
-        *this = std::move(o);
-    };
+    MolflowSimulationModel(MolflowSimulationModel &&o) noexcept;
 
-    MolflowSimulationModel(const MolflowSimulationModel &o) : m(), initialized(false) {
-        *this = o;
-    };
+    MolflowSimulationModel(const MolflowSimulationModel &o);
 
-    size_t size() {
-        size_t modelSize = 0;
-        modelSize += SimulationModel::size();
-        modelSize += tdParams.GetMemSize();
-
-        return modelSize;
-    }
+    size_t size() override;
 
     MolflowSimulationModel &operator=(const MolflowSimulationModel &o) {
         facets = o.facets;
@@ -213,16 +128,18 @@ public:
         return *this;
     };
 
+    //! Do calculations necessary before launching simulation
     int PrepareToRun() override;
 
-    int BuildAccelStructure(GlobalSimuState *globState, int accel_type, BVHAccel::SplitMethod split,
-                            int bvh_width);
+    //! Construct acceleration structure with a given splitting method
+    int BuildAccelStructure(GlobalSimuState *globState, AccelType accel_type, BVHAccel::SplitMethod split,
+                            int maxPrimsInNode) override;
 
     //int InitialiseFacets();
 
     void CalcTotalOutgassing();
 
-    //void CalculateFacetParams(SubprocessFacet *f);
+    //void CalculateFacetParams(SimulationFacet *f);
 
     /*Surface *GetSurface(double opacity) {
 
@@ -243,6 +160,46 @@ public:
         return surface.get();
     };
 */
+
+    Surface *GetSurface(SimulationFacet* facet) override {
+
+        if (facet->sh.opacity_paramId == -1){ //constant sticking
+            //facet->sh.opacity = std::clamp(facet->sh.opacity, 0.0, 1.0);
+            double opacity = std::clamp(facet->sh.opacity, 0.0, 1.0);
+
+            std::shared_ptr<Surface> surface;
+            if(opacity == 1.0) {
+                surface = std::make_shared<Surface>();
+            }
+            else if(opacity == 0.0) {
+                surface = std::make_shared<TransparentSurface>();
+            }
+            else {
+                surface = std::make_shared<AlphaSurface>(opacity);
+            }
+            surfaces.insert(std::make_pair(opacity, surface));
+
+            return surface.get();
+        }
+        else {
+            auto opacity_paramId = facet->sh.opacity_paramId;
+            auto* par = &this->tdParams.parameters[facet->sh.opacity_paramId];
+
+            double indexed_id = 10.0 + opacity_paramId;
+            if (!surfaces.empty()) {
+                auto surf = surfaces.find(indexed_id);
+                if (surf != surfaces.end())
+                    return surf->second.get();
+            }
+
+            std::shared_ptr<ParameterSurface> surface;
+            surface = std::make_shared<ParameterSurface>(par);
+            surfaces.insert(std::make_pair(indexed_id, surface));
+            Log::console_msg_master(3, "Insert param id: %f\n", indexed_id);
+            return surface.get();
+        }
+    };
+
     Surface *GetParameterSurface(int opacity_paramId, Distribution2D *dist) {
 
         double indexed_id = 10.0 + opacity_paramId;
@@ -260,29 +217,11 @@ public:
     };
 
     // Sim functions
-    double GetOpacityAt(SubprocessFacet *f, double time) const;
+    double GetOpacityAt(SimulationFacet *f, double time) const;
 
-    double GetStickingAt(SubprocessFacet *f, double time) const;
+    double GetStickingAt(SimulationFacet *f, double time) const;
 
-    // Geometry Description
-    //std::vector<std::shared_ptr<SubprocessFacet>> facets;    // All facets of this geometry
-
-    //std::vector<SuperStructure> structures;
-    //std::vector<Vector3d> vertices3; // Vertices (3D space)
-
-    //std::vector<std::shared_ptr<RTPrimitive>> accel;
-    //std::map<double, std::shared_ptr<Surface>> surfaces;
-
-    // Simulation Properties
-    //OntheflySimulationParams otfParams;
     TimeDependentParamters tdParams;
-    //WorkerParams wp;
-
-    // Geometry Properties
-    //GeomProperties sh;
-
-    bool initialized;
-    std::mutex m;
 
     void BuildPrisma(double L, double R, double angle, double s, int step);
 };
@@ -366,7 +305,7 @@ public:
 
     void clear();
 
-    void Resize(const MolflowSimulationModel &model);
+    void Resize(const std::shared_ptr<SimulationModel> &model);
 
     void Reset();
 
@@ -422,4 +361,4 @@ public:
     mutable std::timed_mutex tMutex;
 };
 
-#endif //MOLFLOW_PROJ_GEOMETRYSIMU_H
+#endif //MOLFLOW_PROJ_MOLFLOWSIMGEOM_H

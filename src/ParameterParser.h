@@ -24,7 +24,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 #include <string>
 #include <Buffer_shared.h>
-#include "GeometrySimu.h"
+#include "Simulation/MolflowSimGeom.h"
 #include "GeometryTypes.h"
 
 class ParameterParser {
@@ -35,7 +35,7 @@ public:
 
     static void ChangeSimuParams(WorkerParams& params);
 
-    static int ChangeFacetParams(std::vector<std::shared_ptr<SubprocessFacet>> &facets);
+    static int ChangeFacetParams(std::vector<std::shared_ptr<SimulationFacet>> &facets);
 };
 
 
