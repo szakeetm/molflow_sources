@@ -59,10 +59,10 @@ static constexpr const char* molflowCliLogo = R"(
 void GatherResults(MolflowSimulationModel& model, GlobalSimuState& globSim){
     for(int i = 0; i < model.facets.size(); i++ ) {
 #if defined(MOLFLOW)
-        auto &f = model.facets[i];
+        auto f = std::dynamic_pointer_cast<MolflowSimFacet>(model.facets[i]);
         if (f->sh.anglemapParams.record) { //Recording, so needs to be updated
             //Retrieve angle map from hits dp
-            model.facets[i]->angleMap.pdf = globSim.facetStates[i].recordedAngleMapPdf;
+            f->angleMap.pdf = globSim.facetStates[i].recordedAngleMapPdf;
         }
 #endif
     }
