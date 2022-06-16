@@ -29,7 +29,7 @@ double Physics::GenerateRandomVelocity(const std::vector<std::vector<std::pair<d
 }
 
 double Physics::GenerateDesorptionTime(const std::vector<std::vector<std::pair<double, double>>> &IDs,
-                                       const SubprocessFacet *src, double rndVal, double latestMoment) {
+                                       const SimulationFacet *src, double rndVal, double latestMoment) {
     if (src->sh.outgassing_paramId >= 0) { //time-dependent desorption
         return InterpolateX(rndVal * IDs[src->sh.IDid].back().second, IDs[src->sh.IDid],
                             false, false, true); //allow extrapolate
@@ -42,7 +42,7 @@ double Physics::GenerateDesorptionTime(const std::vector<std::vector<std::pair<d
 * \brief Updates particle direction and velocity if we are dealing with a moving facet (translated or rotated)
 */
 void
-Physics::TreatMovingFacet(SimulationModel *model, const Vector3d &position, Vector3d &direction, double &velocity) {
+Physics::TreatMovingFacet(MolflowSimulationModel *model, const Vector3d &position, Vector3d &direction, double &velocity) {
     Vector3d localVelocityToAdd;
     if (model->wp.motionType == 1) { //Translation
         localVelocityToAdd = model->wp.motionVector2; //Fixed translational vector
