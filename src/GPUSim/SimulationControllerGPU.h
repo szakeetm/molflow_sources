@@ -73,7 +73,7 @@ public:
     int RemainingStepsUntilStop();
     double GetTransProb(size_t polyIndex);
     double GetTransProb();
-
+    bool runLoop();
 
     RuntimeFigures figures;
     RuntimeFigures globFigures;

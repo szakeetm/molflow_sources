@@ -1124,6 +1124,7 @@ namespace flowgpu {
                         }
                     }
                 }
+                fmt::print(" Poly #{} -- #{} with angle {}\n", id1, id2, (float)(RadToDeg(angle)));
             }
         }
 

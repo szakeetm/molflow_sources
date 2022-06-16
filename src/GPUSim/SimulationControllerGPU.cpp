@@ -21,6 +21,7 @@
 #include "SimulationOptiX.h"
 #include "ModelReader.h"
 #include "Helper/OutputHelper.h"
+#include "Helper/Chronometer.h"
 
 SimulationControllerGPU::SimulationControllerGPU(size_t parentPID, size_t procIdx, size_t nbThreads,
                                                  SimulationUnit *simUnit,
@@ -48,6 +49,163 @@ SimulationControllerGPU::~SimulationControllerGPU() {
     }*/
     // model is deleted from SimulationGPU
 }
+
+// Get Simulation Data from device (+reset) and add to global simulation state
+bool UpdateHits(SimulationControllerGPU& sim_con, GlobalSimuState& globState) {
+    uint64_t nbHits = sim_con.GetSimulationData();
+    // Export results
+    // 1st convert from GPU types to CPU types
+    // 2nd save with XML
+    sim_con.ConvertSimulationData(globState);
+
+    return true;
+}
+
+bool SimulationControllerGPU::runLoop() {
+    bool eos;
+    bool lastUpdateOk = false;
+
+    //printf("Lim[%zu] %lu --> %lu\n",threadNum, localDesLimit, simulation->globState->globalHits.globalHits.hit.nbDesorbed);
+
+    Chronometer run_chrono;
+    run_chrono.Start();
+    double timeStart = run_chrono.ElapsedMs();
+    double timeLoopStart = timeStart;
+    double timeEnd;
+
+    bool simEos = false;
+
+    // TODO: Remove defaults
+    std::list<size_t> limits; // Number of desorptions: empty=use other end condition
+    size_t nbLoops = 0;               // Number of Simulation loops
+    size_t launchSize = 1;                  // Kernel launch size
+    size_t nPrints = 10;
+    size_t printPerN = 100000;
+    double angle = 0.0; // timeLimit / -i or direct by -k
+    double printEveryNMinutes = 0.0; // timeLimit / -i or direct by -k
+    double timeLimit = 0.0;
+    bool silentMode = false;
+
+    uint64_t printPerNRuns = std::min(static_cast<uint64_t>(printPerN), static_cast<uint64_t>(nbLoops/nPrints)); // prevent n%0 operation
+    printPerNRuns = std::max(printPerNRuns, static_cast<uint64_t>(1));
+
+    // -i
+    if(nbLoops==0 && printEveryNMinutes <= 0.0 && timeLimit > 1e-6){
+        printEveryNMinutes = timeLimit / nPrints;
+    }
+    // ^^^
+
+    auto start_total = std::chrono::steady_clock::now();
+    auto t0 = start_total;
+    double nextPrintAtMin = printEveryNMinutes;
+
+    double raysPerSecondMax = 0.0;
+    double desPerSecondMax = 0.0;
+
+    size_t refreshForStop = std::numeric_limits<size_t>::max();
+    size_t loopN = 0;
+
+    nbLoops = 100000;
+    printEveryNMinutes = 1.0/60.0;
+    nextPrintAtMin = printEveryNMinutes;
+
+    do {
+        //setSimState(getSimStatus());
+        //size_t desorptions = localDesLimit;//(localDesLimit > 0 && localDesLimit > particle->tmpState.globalHits.globalHits.hit.nbDesorbed) ? localDesLimit - particle->tmpState.globalHits.globalHits.hit.nbDesorbed : 0;
+
+        /*simEos = */
+        double t_run_start = run_chrono.ElapsedMs();
+        do {
+            RunSimulation();  // Run during 1 sec
+            timeEnd = run_chrono.ElapsedMs();
+        } while(timeEnd - t_run_start < 1000.0);
+
+        size_t localDesLimit = 0;
+        if(simulation->model->otfParams.desorptionLimit > 0){
+            if(localDesLimit > simulation->globState->globalHits.globalHits.nbDesorbed)
+                localDesLimit -= simulation->globState->globalHits.globalHits.nbDesorbed;
+            else localDesLimit = 0;
+        }
+        if(model->ontheflyParams.desorptionLimit != 0) {
+            // add remaining steps to current loop count, this is the new approx. stop until desorption limit is reached
+            refreshForStop = loopN + RemainingStepsUntilStop();
+            std::cout << " Stopping at " << loopN << " / " << refreshForStop << std::endl;
+        }
+
+        size_t timeOut = lastUpdateOk ? 0 : 100; //ms
+
+        lastUpdateOk = UpdateHits(*this, *this->simulation->globState); // Update hit with 20ms timeout. If fails, probably an other subprocess is updating, so we'll keep calculating and try it later (latest when the simulation is stopped).
+
+        timeLoopStart = run_chrono.ElapsedMs();
+
+        //printf("[%zu] PUP: %lu , %lu , %lu\n",threadNum, desorptions,localDesLimit, particle->tmpState.globalHits.globalHits.hit.nbDesorbed);
+        eos = simEos || (this->model->ontheflyParams.timeLimit != 0 ? timeEnd-timeStart >= this->model->ontheflyParams.timeLimit : false) || (procInfo->masterCmd != COMMAND_START)/* || (procInfo->subProcInfo[threadNum].slaveState == PROCESS_ERROR)*/;
+    } while (!eos);
+
+    /*procInfo->RemoveAsActive(threadNum);
+    if (!lastUpdateOk) {
+        //printf("[%zu] Updating on finish!\n",threadNum);
+        setSimState("Final update...");
+        particle->UpdateHits(simulation->globState, simulation->globParticleLog,
+                             20000); // Update hit with 20ms timeout. If fails, probably an other subprocess is updating, so we'll keep calculating and try it later (latest when the simulation is stopped).)
+    }*/
+
+
+    return simEos;
+}
+
+/*auto t1 = std::chrono::steady_clock::now();
+std::chrono::duration<double,std::ratio<60,1>> elapsedMinutes = t1 - start_total;
+
+// Fetch end conditions
+if(nbLoops > 0 && loopN >= nbLoops)
+hasEnded = true;
+else if(timeLimit >= 1e-6 && elapsedMinutes.count() >= timeLimit)
+hasEnded = true;
+
+if((!silentMode && ((printEveryNMinutes > 0.0 && elapsedMinutes.count() > nextPrintAtMin)) || refreshForStop <= loopN || hasEnded)){
+if(printEveryNMinutes > 0.0 && elapsedMinutes.count() > nextPrintAtMin)
+nextPrintAtMin += printEveryNMinutes;
+
+auto t1 = std::chrono::steady_clock::now();
+std::chrono::duration<double,std::milli> elapsed = t1 - t0;
+t0 = t1;
+
+uint64_t nbHits = GetSimulationData();
+// Export results
+// 1st convert from GPU types to CPU types
+// 2nd save with XML
+ConvertSimulationData(*this->simulation->globState);
+
+// end on leak
+*//*if(figures.total_leak)
+break;//return figures.total_leak;*//*
+if(model->ontheflyParams.desorptionLimit != 0) {
+// add remaining steps to current loop count, this is the new approx. stop until desorption limit is reached
+refreshForStop = loopN + RemainingStepsUntilStop();
+std::cout << " Stopping at " << loopN << " / " << refreshForStop << std::endl;
+}
+if(hasEnded){
+// if there is a next des limit, handle that
+if(!limits.empty()) {
+model->ontheflyParams.desorptionLimit = limits.front();
+limits.pop_front();
+hasEnded = false;
+endCalled = false;
+AllowNewParticles();
+std::cout << " Handling next des limit " << model->ontheflyParams.desorptionLimit << std::endl;
+}
+}
+static const uint64_t nRays = launchSize * printPerNRuns;
+//double rpsRun = (double)nRays / elapsed.count() / 1000.0;
+double rpsRun = (double)(nbHits) / elapsed.count() / 1000.0;
+raysPerSecondMax = std::max(raysPerSecondMax,rpsRun);
+//raysPerSecondSum += rpsRun;
+std::cout << "--- Run #" << loopN + 1 << " \t- Elapsed Time: " << elapsed.count() / 1000.0 << " s \t--- " << rpsRun << " MRay/s ---" << std::endl;
+printf("--- Trans Prob: %e\n",GetTransProb());
+}
+
+++loopN;*/
 
 int SimulationControllerGPU::Start() {
     // Check simulation model and geometry one last time
@@ -154,62 +312,7 @@ int SimulationControllerGPU::Start() {
         printEveryNMinutes = 1.0/60.0;
         nextPrintAtMin = printEveryNMinutes;
 
-        do{
-            RunSimulation();
-
-            auto t1 = std::chrono::steady_clock::now();
-            std::chrono::duration<double,std::ratio<60,1>> elapsedMinutes = t1 - start_total;
-
-            // Fetch end conditions
-            if(nbLoops > 0 && loopN >= nbLoops)
-                hasEnded = true;
-            else if(timeLimit >= 1e-6 && elapsedMinutes.count() >= timeLimit)
-                hasEnded = true;
-
-            if((!silentMode && ((printEveryNMinutes > 0.0 && elapsedMinutes.count() > nextPrintAtMin)) || refreshForStop <= loopN || hasEnded)){
-                if(printEveryNMinutes > 0.0 && elapsedMinutes.count() > nextPrintAtMin)
-                    nextPrintAtMin += printEveryNMinutes;
-
-                auto t1 = std::chrono::steady_clock::now();
-                std::chrono::duration<double,std::milli> elapsed = t1 - t0;
-                t0 = t1;
-
-                uint64_t nbHits = GetSimulationData();
-                // Export results
-                // 1st convert from GPU types to CPU types
-                // 2nd save with XML
-                ConvertSimulationData(*this->simulation->globState);
-
-                // end on leak
-                /*if(figures.total_leak)
-                    break;//return figures.total_leak;*/
-                if(model->ontheflyParams.desorptionLimit != 0) {
-                    // add remaining steps to current loop count, this is the new approx. stop until desorption limit is reached
-                    refreshForStop = loopN + RemainingStepsUntilStop();
-                    std::cout << " Stopping at " << loopN << " / " << refreshForStop << std::endl;
-                }
-                if(hasEnded){
-                    // if there is a next des limit, handle that
-                    if(!limits.empty()) {
-                        model->ontheflyParams.desorptionLimit = limits.front();
-                        limits.pop_front();
-                        hasEnded = false;
-                        endCalled = false;
-                        AllowNewParticles();
-                        std::cout << " Handling next des limit " << model->ontheflyParams.desorptionLimit << std::endl;
-                    }
-                }
-                static const uint64_t nRays = launchSize * printPerNRuns;
-                //double rpsRun = (double)nRays / elapsed.count() / 1000.0;
-                double rpsRun = (double)(nbHits) / elapsed.count() / 1000.0;
-                raysPerSecondMax = std::max(raysPerSecondMax,rpsRun);
-                //raysPerSecondSum += rpsRun;
-                std::cout << "--- Run #" << loopN + 1 << " \t- Elapsed Time: " << elapsed.count() / 1000.0 << " s \t--- " << rpsRun << " MRay/s ---" << std::endl;
-                printf("--- Trans Prob: %e\n",GetTransProb());
-            }
-
-            ++loopN;
-        } while(!hasEnded);
+        runLoop();
 
         if (hasEnded) {
             if (GetLocalState() != PROCESS_ERROR) {
@@ -802,7 +905,7 @@ unsigned long long int SimulationControllerGPU::ConvertSimulationData(GlobalSimu
 
     // Leak
     if (!globalCounter->leakCounter.empty()) {
-        for (unsigned long leakCounter: globalCounter->leakCounter) {
+        for (unsigned long leakCounter : globalCounter->leakCounter) {
             gState.globalHits.nbLeakTotal += leakCounter;
         }
         for (int i = 0; i < globalCounter->leakCounter.size(); ++i) {
@@ -1283,6 +1386,7 @@ int SimulationControllerGPU::CloseSimulation() {
     return 0;
 }
 
+// Do a soft reset to keep active particles in memory
 int SimulationControllerGPU::ResetSimulation(bool softReset) {
     if (!softReset && optixHandle)
         optixHandle->resetDeviceData(kernelDimensions);
