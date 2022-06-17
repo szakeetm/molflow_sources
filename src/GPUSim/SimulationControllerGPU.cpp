@@ -975,7 +975,7 @@ unsigned long long int SimulationControllerGPU::ConvertSimulationData(GlobalSimu
         }
         for (size_t i = 0; i < globalCounter->leakCounter.size(); ++i) {
             if (globalCounter->leakCounter[i] > 0)
-                fmt::print("{}[{}]  has {} / {} leaks\n",
+                Log::console_msg_master(3, "{}[{}]  has {} / {} leaks\n",
                            i, model->triangle_meshes[0]->poly[i].parentIndex, globalCounter->leakCounter[i],
                            gState.globalHits.nbLeakTotal);
         }

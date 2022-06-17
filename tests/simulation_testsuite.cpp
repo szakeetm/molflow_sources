@@ -473,9 +473,9 @@ namespace {
             EXPECT_EQ(0, diff_loc);
 
             if (diff_loc > 0)
-                fmt::print(stderr, "[Warning] {} local differences found!\n", diff_loc);
+                Log::console_error("[Warning] {} local differences found!\n", diff_loc);
             if (diff_fine > 0)
-                fmt::print(stderr, "[Warning] {} differences on fine counters found!\n", diff_fine);
+                Log::console_error("[Warning] {} differences on fine counters found!\n", diff_fine);
             break;
         }
 
@@ -557,10 +557,10 @@ namespace {
 
             if (globState.globalHits.globalHits.nbMCHit == globState.globalHits.globalHits.nbDesorbed) {
                 nbSuccess = nRuns;
-                fmt::print(stderr,
+                Log::console_error(
                         "[{}][Warning] Results for this testcase are not comparable, due to equal amount of desorptions!\n",
                         runNb);
-                fmt::print(stderr, "[{}][Warning] Results will only differ on finer counters, which demand more hits!\n",
+                Log::console_error("[{}][Warning] Results will only differ on finer counters, which demand more hits!\n",
                         runNb);
                 break;
             }
@@ -577,21 +577,21 @@ namespace {
                 EXPECT_NE(0, diff_loc);*/
 
             if (diff_glob <= 0)
-                fmt::print(stderr, "[{}][Warning] No global differences found!\n", runNb);
+                Log::console_error("[{}][Warning] No global differences found!\n", runNb);
             else if (diff_loc <= 0)
-                fmt::print(stderr, "[{}][Warning] No local differences found!\n", runNb);
+                Log::console_error("[{}][Warning] No local differences found!\n", runNb);
             else if (diff_fine <= 0)
-                fmt::print(stderr, "[{}][Warning] No differences on fine counters found!\n", runNb);
+                Log::console_error("[{}][Warning] No differences on fine counters found!\n", runNb);
         }
         if ((double) nbSuccess / nRuns < 0.66) {
             EXPECT_FALSE((double) nbSuccess / nRuns < 0.66);
-            fmt::print(stderr, "[FAIL] Threshold for results of a low sample run was not crossed!\n"
+            Log::console_error("[FAIL] Threshold for results of a low sample run was not crossed!\n"
                             "{} out of {} runs were correct!\n"
                             "This could be due to random nature of a MC simulation or a programmatic error leading to wrong conclusions.\n",
                     nRuns - nbSuccess, nRuns);
         }
         else {
-            fmt::print("[SUCCESS] Necessary threshold for results of a low sample run was crossed!\n"
+            Log::console_msg(1, "[SUCCESS] Necessary threshold for results of a low sample run was crossed!\n"
                                "{} out of {} runs were correct!\n",
                        nRuns - nbSuccess, nRuns);
         }

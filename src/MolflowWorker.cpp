@@ -1343,7 +1343,7 @@ bool Worker::InterfaceGeomToSimModel() {
                             facIdx + 1,
                             facet->angleMapCache.size(),
                             facet->sh.anglemapParams.GetRecordedMapSize());
-                    fmt::print(stderr, errString);
+                    Log::console_error(errString);
                     throw std::runtime_error(errString);*/
                 }
             }

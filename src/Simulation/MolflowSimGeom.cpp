@@ -470,7 +470,7 @@ void GlobalSimuState::Resize(const std::shared_ptr<SimulationModel> &model) {
         for (size_t i = 0; i < nbF; i++) {
             auto sFac = model->facets[i];
             if (sFac->globalId != i) {
-                fmt::print(stderr, "Facet ID mismatch! : {} / {}\n", sFac->globalId, i);
+                Log::console_error("Facet ID mismatch! : {} / {}\n", sFac->globalId, i);
                 tMutex.unlock();
                 exit(0);
             }

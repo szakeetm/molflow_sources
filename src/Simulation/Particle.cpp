@@ -557,7 +557,7 @@ bool Particle::StartFromSource(Ray& ray) {
     } // facet loop
 
     if (!found) {
-        fmt::print(stderr,  "No starting point, aborting\n");
+        Log::console_error( "No starting point, aborting\n");
         return false;
     }
 

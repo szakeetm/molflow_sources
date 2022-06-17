@@ -665,7 +665,7 @@ int main(int argc, char** argv) {
     }
 
     if(Settings::simDuration == 0 && model->otfParams.desorptionLimit == 0){
-        fmt::print(stderr, "Neither a time limit nor a desorption limit has been set!\n");
+        Log::console_error("Neither a time limit nor a desorption limit has been set!\n");
         return 44;
     }
     size_t oldHitsNb = globState.globalHits.globalHits.nbMCHit;

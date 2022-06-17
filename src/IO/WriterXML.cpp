@@ -243,7 +243,7 @@ void WriterXML::SaveGeometry(pugi::xml_document &saveDoc, std::shared_ptr<Molflo
 bool
 WriterXML::SaveXMLToFile(xml_document &saveDoc, const std::string &outputFileName) {
     if (!saveDoc.save_file(outputFileName.c_str())) {
-        fmt::print(stderr,"Error writing XML file {}\n", outputFileName);
+        Log::console_error("Error writing XML file {}\n", outputFileName);
         return false;
     }
     return true;
@@ -258,7 +258,7 @@ WriterXML::SaveSimulationState(const std::string &outputFileName, std::shared_pt
     SaveSimulationState(saveDoc, model, globState);
 
     if (!saveDoc.save_file(outputFileName.c_str())) {
-        fmt::print(stderr,"Error writing XML file {}\n", outputFileName);
+        Log::console_error("Error writing XML file {}\n", outputFileName);
         return false;
     }
     return true;
