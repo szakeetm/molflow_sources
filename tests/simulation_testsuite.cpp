@@ -194,7 +194,7 @@ namespace {
     TEST_P(SimulationFixture, PerformanceOkay) {
         std::string testFile = GetParam();
         std::string outPath = "TPath_PO_" + std::to_string(std::hash<time_t>()(time(nullptr)));
-        printf("Filename: %s\n", testFile.c_str());
+        Log::console_msg(1, "Filename: {}\n", testFile.c_str());
         std::string timeRecFile = "./time_record_" + testFile.substr(0, testFile.size() - 4) + ".txt";
 
         {
@@ -208,7 +208,7 @@ namespace {
                 currentCommit = currentCommit.substr(0, 8); // only first 8 hex digits
                 for (auto &run: prevRun) {
                     if (run.commitHash == currentCommit) {
-                        printf("Test was successfully run in a previous attempt, skip ...\n");
+                        Log::console_msg(1, "Test was successfully run in a previous attempt, skip ...\n");
                         GTEST_SKIP();
                     }
                 }
@@ -275,7 +275,7 @@ namespace {
             EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
             EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
 
-            printf("[Run %zu/%zu] Current Hit/s: %e\n", runNb, nRuns, perfTimes.back());
+            Log::console_msg(1, "[Run {}/{}] Current Hit/s: {:e}\n", runNb, nRuns, perfTimes.back());
         };
 
         // Compare to old performance values here
@@ -352,7 +352,7 @@ namespace {
     TEST_P(ValidationFixture, ResultsOkay) {
         std::string testFile = GetParam();
         std::string outPath = "TPath_RO_" + std::to_string(std::hash<time_t>()(time(nullptr)));
-        printf("Filename: %s\n", testFile.c_str());
+        Log::console_msg(1, "Filename: {}\n", testFile.c_str());
         size_t nbFails = 0;
         size_t nCorrect = 0;
         bool fastEnough = false;
@@ -425,11 +425,11 @@ namespace {
             auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.009, 0.07);
             size_t runNb = 0;
             if ((diff_glob != 0 || diff_loc != 0)) {
-                printf("[%zu] Diff glob %d / loc %d\n", runNb, diff_glob, diff_loc);
+                Log::console_msg(1, "[{}] Diff glob {} / loc {}\n", runNb, diff_glob, diff_loc);
                 nCorrect = 0;
             } else if (diff_glob == 0 && diff_loc == 0) {
                 nCorrect++;
-                printf("[%zu] Correct run #%zu\n", runNb, nCorrect);
+                Log::console_msg(1, "[{}] Correct run #{}\n", runNb, nCorrect);
             }
         }
 
@@ -456,17 +456,17 @@ namespace {
 
             auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.007, 0.06);
             if (runNb < nRuns - 1 && (diff_glob != 0 || diff_loc != 0)) {
-                printf("[%zu] Diff glob %d / loc %d\n", runNb, diff_glob, diff_loc);
+                Log::console_msg(1, "[{}] Diff glob {} / loc {}\n", runNb, diff_glob, diff_loc);
                 nCorrect = 0;
                 continue; // try with more desorptions
             } else if (diff_glob == 0 && diff_loc == 0 && nCorrect < correctStreak - 1) {
                 nCorrect++;
-                printf("[%zu] Correct run #%zu\n", runNb, nCorrect);
+                Log::console_msg(1, "[{}] Correct run #{}\n", runNb, nCorrect);
 
                 continue; // try with more desorptions
             } else if (diff_glob == 0 && diff_loc == 0 && nCorrect < correctStreak) {
                 nCorrect++;
-                printf("[%zu] Correct run #%zu -- Done\n", runNb, nCorrect);
+                Log::console_msg(1, "[{}] Correct run #{} -- Done\n", runNb, nCorrect);
             }
 
             EXPECT_EQ(0, diff_glob);
@@ -486,7 +486,7 @@ namespace {
     TEST_P(ValidationFixture, ResultsWrong) {
         std::string testFile = GetParam();
         std::string outPath = "TPath_RW_" + std::to_string(std::hash<time_t>()(time(nullptr)));
-        printf("Filename: %s\n", testFile.c_str());
+        Log::console_msg(1, "Filename: {}\n", testFile.c_str());
         size_t nbSuccess = 0;
         const size_t nRuns = 15;
 

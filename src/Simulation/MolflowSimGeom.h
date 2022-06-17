@@ -195,7 +195,7 @@ public:
             std::shared_ptr<ParameterSurface> surface;
             surface = std::make_shared<ParameterSurface>(par);
             surfaces.insert(std::make_pair(indexed_id, surface));
-            Log::console_msg_master(3, "Insert param id: %f\n", indexed_id);
+            Log::console_msg_master(3, "Insert param id: {}\n", indexed_id);
             return surface.get();
         }
     };
@@ -212,7 +212,7 @@ public:
         std::shared_ptr<ParameterSurface> surface;
         surface = std::make_shared<ParameterSurface>(dist);
         surfaces.insert(std::make_pair(indexed_id, surface));
-        Log::console_msg_master(3, "Insert param id: %f\n", indexed_id);
+        Log::console_msg_master(3, "Insert param id: {}\n", indexed_id);
         return surface.get();
     };
 

@@ -1101,18 +1101,18 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
     {
         std::istringstream compStream(cmpFile);
         for (; i < 32 && std::getline(compStream, cmp_string, '\n'); ++i) {
-            Log::console_error("%s\n", cmp_string.c_str());
+            Log::console_error("{}\n", cmp_string.c_str());
         }
     }
     {
         std::istringstream compStreamFine(cmpFileFine);
         for (; i < 32 && std::getline(compStreamFine, cmp_string, '\n'); ++i) {
-            Log::console_msg_master(4, "%s\n", cmp_string.c_str());
+            Log::console_msg_master(4, "{}\n", cmp_string.c_str());
         }
     }
 
     if(i >= 32) {
-        Log::console_error("[Warning] List of differences too long: Total = %lu\n", globalErrNb + facetErrNb + fineErrNb);
+        Log::console_error("[Warning] List of differences too long: Total = {}\n", globalErrNb + facetErrNb + fineErrNb);
     }
 
     return std::make_tuple(globalErrNb, facetErrNb, fineErrNb);
