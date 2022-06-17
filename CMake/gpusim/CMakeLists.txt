@@ -68,7 +68,7 @@ add_executable(${PROJECT_NAME}
         ${IO_DIR}/CSVExporter.h
 
 
-        ${GPU_DIR_1}/TestSimulator.cpp
+        ${GPU_DIR_1}/MolflowGPUCLI.cpp
         ${GPU_DIR_1}/InitializerGPU.cpp
         ${GPU_DIR_1}/ModelReader.cpp
         ${GPU_DIR_1}/SimulationGPU.cpp
