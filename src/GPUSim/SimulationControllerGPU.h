@@ -9,7 +9,7 @@
 //#include "Simulation.h"
 //#include "SimulationOptiX.h"
 //#include "HostData.h"
-#include "../../src/GeometrySimu.h"
+#include "../Simulation/MolflowSimGeom.h"
 #include "SimulationController.h"
 
 class HostData;
@@ -65,6 +65,7 @@ public:
     uint64_t RunSimulation();
     int CloseSimulation();
     int ResetSimulation(bool softReset);
+    int ResetGlobalCounter();
     void AllowNewParticles();
 
     unsigned long long int GetSimulationData(bool silent = true);

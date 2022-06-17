@@ -37,7 +37,7 @@ void initDefaultSettings() {
     SettingsIO::outputFacetDetails = false;
     SettingsIO::outputFacetQuantities = false;
     SettingsIO::overwrite = false;
-    SettingsIO::autogenerateTest = false;
+    SettingsIO::autogenerateTest = 0.0;
 
     SettingsIO::workFile.clear();
     SettingsIO::inputFile.clear();
@@ -72,7 +72,7 @@ int InitializerGPU::parseCommands(int argc, char **argv) {
     auto group = app.add_option_group("subgroup");
     group->add_option("-f,--file", SettingsIO::inputFile, "Required input file (XML/ZIP only)")
             ->check(CLI::ExistingFile);
-    group->add_flag("--auto", SettingsIO::autogenerateTest, "Use auto generated test case");
+    group->add_option("--auto", SettingsIO::autogenerateTest, "Use auto generated test case");
     group->require_option(1);
 
     CLI::Option *optOfile = app.add_option("-o,--output", SettingsIO::outputFile,
@@ -96,6 +96,43 @@ int InitializerGPU::parseCommands(int argc, char **argv) {
     app.add_flag("--loadAutosave", Settings::loadAutosave, "Whether autosave_ file should be used if exists");
     app.add_flag("-r,--reset", Settings::resetOnStart, "Resets simulation status loaded from file");
     app.add_flag("--verbose", verbose, "Verbose console output (all levels)");
+
+    // GPU flags
+    size_t nbLoops = 0;               // Number of Simulation loops
+    size_t launchSize = 1;                  // Kernel launch size
+    size_t nPrints = 10;
+    size_t printPerN = 100000;
+    size_t recursiveMaxDepth = 0;
+    size_t nHits = 0;
+    size_t offsetMagnitudeN = 0;
+    size_t offsetMagnitude = 0;
+    std::vector<size_t> size_v;
+
+    double angle = 0.0; // TODO: Angle check in bounds ]0,90[
+    double printEveryNMinutes = 0.0; // timeLimit / -i or direct by -k
+    double timeLimit = 0.0;
+    bool silentMode = false;
+    bool randomNumberMethod = false;
+
+    //app.add_option("--auto", angle, " Use auto generated geometry with angle X");
+    app.add_option("-n,--nhit", nHits, "Set approx. number of hits for the simulation (overwrites --loop)");
+    app.add_option("--offset2N", offsetMagnitudeN, "Offset to facet normal by a factor");
+    app.add_option("--offset", offsetMagnitude, "Offset to center by a factor");
+    app.add_flag("--directRand", randomNumberMethod, "Ad hoc generation of random numbers");
+#ifdef RNG_BULKED
+    size_t cyclesRNG = 0;
+    app.add_option("-c,--cyclesForRNG", cyclesRNG, "Number of cycles the RNG should be buffered for {default 1}");
+#endif
+    app.add_option("--depth", recursiveMaxDepth, "Recursive max depth for secondary rays (reflections)");
+    app.add_option("-k,--printEveryNMin", printEveryNMinutes, "Print runtime output every k minutes");
+    app.add_option("-q,--printEvery", printPerN, "Print runtime output every n_th loop");
+    app.add_option("-p,--nprints", nPrints, "Print runtime output n times based on -l or -t {default 10}");
+    app.add_option("-l,--loop", nbLoops, "Set number of simulation loops");
+    app.add_option("--size", size_v, "Set kernel launch size");
+
+
+
+
     CLI::Option *optOverwrite = app.add_flag("--overwrite", SettingsIO::overwrite,
                                              "Overwrite input file with new results")->excludes(optOfile, optOpath);
     optOfile->excludes(optOverwrite);
@@ -103,6 +140,13 @@ int InitializerGPU::parseCommands(int argc, char **argv) {
     app.set_config("--config");
 
     CLI11_PARSE(app, argc, argv);
+
+    if(nHits){
+        nbLoops = nHits / launchSize;
+    }
+    for(auto s : size_v){
+        launchSize *= s;
+    }
 
     if (verbose)
         Settings::verbosity = 42;
@@ -121,7 +165,7 @@ int InitializerGPU::parseCommands(int argc, char **argv) {
 }
 
 int InitializerGPU::initFromArgv(int argc, char **argv, SimulationManager *simManager,
-                              const std::shared_ptr<SimulationModel>& model) {
+                              const std::shared_ptr<MolflowSimulationModel>& model) {
 
 #if defined(WIN32) || defined(__APPLE__)
     setlocale(LC_ALL, "C");
@@ -140,7 +184,7 @@ int InitializerGPU::initFromArgv(int argc, char **argv, SimulationManager *simMa
     Log::console_header(1, "Commence: Initialising!\n");
 
     simManager->nbThreads = Settings::nbThreads;
-    simManager->useCPU = true;
+    simManager->useGPU = true;
 
     if (simManager->InitSimUnits()) {
         Log::console_error("Error: Initialising simulation units: %zu\n", simManager->nbThreads);
@@ -156,7 +200,7 @@ int InitializerGPU::initFromArgv(int argc, char **argv, SimulationManager *simMa
     return -1;
 }
 
-int InitializerGPU::initFromFile(SimulationManager *simManager, const std::shared_ptr<SimulationModel>& model,
+int InitializerGPU::initFromFile(SimulationManager *simManager, const std::shared_ptr<MolflowSimulationModel>& model,
                               GlobalSimuState *globState) {
     if (SettingsIO::prepareIO()) {
         Log::console_error("Error preparing I/O folders\n");
@@ -207,7 +251,7 @@ int InitializerGPU::initFromFile(SimulationManager *simManager, const std::share
     return 0;
 }
 
-int InitializerGPU::initAutoGenerated(SimulationManager *simManager, const std::shared_ptr<SimulationModel> &model,
+int InitializerGPU::initAutoGenerated(SimulationManager *simManager, const std::shared_ptr<MolflowSimulationModel>& model,
                                    GlobalSimuState *globState, double ratio, int steps, double angle) {
     if (SettingsIO::prepareIO()) {
         Log::console_error("Error preparing I/O folders\n");
@@ -238,8 +282,8 @@ int InitializerGPU::initAutoGenerated(SimulationManager *simManager, const std::
 
 // Generate and initialise an oblique prism
 int
-InitializerGPU::loadFromGeneration(const std::shared_ptr<SimulationModel> &model, GlobalSimuState *globState, double ratio,
-                                int step, double angle) {
+InitializerGPU::loadFromGeneration(const std::shared_ptr<MolflowSimulationModel> &model, GlobalSimuState *globState, double ratio,
+                                   int step, double angle) {
 
     Log::console_header(1, "[ ] Loading geometry : PRISM\n");
 
@@ -279,7 +323,7 @@ InitializerGPU::loadFromGeneration(const std::shared_ptr<SimulationModel> &model
         simManager->ReloadLogBuffer(logDpSize, true);*/
 
         Log::console_msg_master(3, " Resizing state!\n");
-        globState->Resize(*model);
+        globState->Resize(model);
     }
     catch (const std::exception &e) {
         Log::console_error("[Warning] %s\n", e.what());
@@ -290,7 +334,7 @@ InitializerGPU::loadFromGeneration(const std::shared_ptr<SimulationModel> &model
     return 0;
 }
 
-int InitializerGPU::loadFromXML(const std::string &fileName, bool loadState, const std::shared_ptr<SimulationModel>& model,
+int InitializerGPU::loadFromXML(const std::string &fileName, bool loadState, const std::shared_ptr<MolflowSimulationModel>& model,
                              GlobalSimuState *globState) {
 
     Log::console_header(1, "[ ] Loading geometry from file %s\n", fileName.c_str());
@@ -338,7 +382,7 @@ int InitializerGPU::loadFromXML(const std::string &fileName, bool loadState, con
         simManager->ReloadLogBuffer(logDpSize, true);*/
 
         Log::console_msg_master(3, " Resizing state!\n");
-        globState->Resize(*model);
+        globState->Resize(model);
 
         // 3. init counters with previous results
         if (loadState) {
@@ -359,10 +403,10 @@ int InitializerGPU::loadFromXML(const std::string &fileName, bool loadState, con
             // Update Angle map status
             for(int i = 0; i < model->facets.size(); i++ ) {
 #if defined(MOLFLOW)
-                auto &f = model->facets[i];
+                auto f = std::dynamic_pointer_cast<MolflowSimFacet>(model->facets[i]);
                 if (f->sh.anglemapParams.record) { //Recording, so needs to be updated
                     //Retrieve angle map from hits dp
-                    globState->facetStates[i].recordedAngleMapPdf = model->facets[i]->angleMap.pdf;
+                    globState->facetStates[i].recordedAngleMapPdf = f->angleMap.pdf;
                 }
 #endif
             }
@@ -377,7 +421,7 @@ int InitializerGPU::loadFromXML(const std::string &fileName, bool loadState, con
     return 0;
 }
 
-int InitializerGPU::initDesLimit(const std::shared_ptr<SimulationModel>& model, GlobalSimuState &globState) {
+int InitializerGPU::initDesLimit(const std::shared_ptr<MolflowSimulationModel>& model, GlobalSimuState &globState) {
     if (!model->m.try_lock()) {
         return 1;
     }
@@ -414,7 +458,7 @@ int InitializerGPU::initDesLimit(const std::shared_ptr<SimulationModel>& model, 
     return 0;
 }
 
-int InitializerGPU::initTimeLimit(const std::shared_ptr<SimulationModel>& model, double time) {
+int InitializerGPU::initTimeLimit(const std::shared_ptr<MolflowSimulationModel>& model, double time) {
     if (!model->m.try_lock()) {
         return 1;
     }
@@ -485,7 +529,7 @@ bool getTextureMesh(SimulationModel* model) {
 * \brief Prepares data structures for use in simulation
 * \return error code: 0=no error, 1=error
 */
-int InitializerGPU::initSimModel(std::shared_ptr<SimulationModel> model) {
+int InitializerGPU::initSimModel(const std::shared_ptr<MolflowSimulationModel>& model) {
 
     if (!model->m.try_lock()) {
         return 1;
@@ -506,7 +550,7 @@ int InitializerGPU::initSimModel(std::shared_ptr<SimulationModel> model) {
     bool hasVolatile = false;
 
     for (size_t facIdx = 0; facIdx < model->sh.nbFacet; facIdx++) {
-        auto sFac = model->facets[facIdx];
+        auto sFac = std::dynamic_pointer_cast<MolflowSimFacet>(model->facets[facIdx]);
 
         std::vector<double> textIncVector;
         // Add surface elements area (reciprocal)

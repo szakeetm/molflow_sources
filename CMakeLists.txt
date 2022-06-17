@@ -152,7 +152,6 @@ IF(WITH_GPU AND (MSVC AND WIN32) OR (NOT WIN32))
     add_subdirectory(CMake/flow_gpu #[["${cuda_obj_dir}"]]) #add_subdirectory(${cuda_obj_dir} "${cuda_obj_dir}" EXCLUDE_FROM_ALL) #already added in molflow_sub
     add_subdirectory(CMake/cuda_kernel #[["${cuda_obj_dir}"]]) #add_subdirectory(${cuda_obj_dir} "${cuda_obj_dir}" EXCLUDE_FROM_ALL) #already added in molflow_sub
 
-    add_dependencies(gpuTestsuite flowGPU cudaKernel)
     add_dependencies(molflowGPU flowGPU cudaKernel)
     add_dependencies(molflowSim flowGPU cudaKernel)
 

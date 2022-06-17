@@ -208,8 +208,8 @@ void MolflowSimFacet::InitializeOutgassingMap()
 {
     if (sh.useOutgassingFile) {
         //Precalc actual outgassing map width and height for faster generation:
-        ogMap.outgassingMapWidth_precise = sh.U.Norme() * ogMap.outgassingFileRatioU;
-        ogMap.outgassingMapHeight_precise = sh.V.Norme() * ogMap.outgassingFileRatioV;
+        ogMap.outgassingMapWidth_precise = sh.U.Length() * ogMap.outgassingFileRatioU;
+        ogMap.outgassingMapHeight_precise = sh.V.Length() * ogMap.outgassingFileRatioV;
         size_t nbE = ogMap.outgassingMapWidth*ogMap.outgassingMapHeight;
         // TODO: Check with molflow_threaded e10c2a6f and 66b89ac7 if right
         // making a copy shouldn't be necessary as i will never get changed before use

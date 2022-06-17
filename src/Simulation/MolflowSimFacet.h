@@ -22,7 +22,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #define MOLFLOW_PROJ_MOLFLOWSIMFACET_H
 
 #include "SimulationFacet.h"
-#include "MolflowTypes.h"
+#include "../MolflowTypes.h"
 
 struct Anglemap {
 public:

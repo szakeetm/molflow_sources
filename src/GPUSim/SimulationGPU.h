@@ -7,7 +7,7 @@
 
 #include "SimulationController.h"
 #include "../Parameter.h"
-#include "../GeometrySimu.h"
+#include "../Simulation/MolflowSimGeom.h"
 
 class SimulationControllerGPU;
 namespace flowgpu {

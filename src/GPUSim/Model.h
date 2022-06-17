@@ -13,7 +13,7 @@
 //#include "Geometry_shared.h"
 //#include "Simulation.h"
 #include "LaunchParams.h"
-#include "../GeometrySimu.h"
+#include "../Simulation/MolflowSimGeom.h"
 #include "../Parameter.h"
 #include <cereal/cereal.hpp>
 

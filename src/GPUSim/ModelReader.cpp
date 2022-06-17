@@ -17,6 +17,7 @@
 #include "fmt/core.h"
 #include "NeighborScan.h"
 #include "Helper/MathTools.h"
+#include "../Simulation/MolflowSimFacet.h"
 
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/xml.hpp>
@@ -1045,14 +1046,15 @@ namespace flowgpu {
         int facInd = 0;
         for(auto& fac : simModel.facets) {
             // Create facet and edit by tmp reference
+            auto mf_fac = std::dynamic_pointer_cast<MolflowSimFacet>(fac);
             auto& tmp = facets[facInd++];
-            tmp.facetProperties = fac->sh;
-            tmp.texelInc = fac->textureCellIncrements;
-            tmp.indices = fac->indices;
+            tmp.facetProperties = mf_fac->sh;
+            tmp.texelInc = mf_fac->textureCellIncrements;
+            tmp.indices = mf_fac->indices;
             countInd += tmp.indices.size();
-            tmp.vertices2 = fac->vertices2;
-            tmp.angleMapPDF = fac->angleMap.pdf;
-            tmp.outgassingMap = fac->ogMap.outgassingMap;
+            tmp.vertices2 = mf_fac->vertices2;
+            tmp.angleMapPDF = mf_fac->angleMap.pdf;
+            tmp.outgassingMap = mf_fac->ogMap.outgassingMap;
         }
 
         std::cout << "#ModelReader: Gas mass: " << model->parametersGlobal.gasMass << std::endl;
@@ -1074,7 +1076,7 @@ namespace flowgpu {
         std::vector<Facet*> facet_ptr;
         facet_ptr.resize(simModel.facets.size());
         std::transform(simModel.facets.begin(), simModel.facets.end(), facet_ptr.begin(),
-                       [](std::shared_ptr<SubprocessFacet> f){return (Facet*)(f.get());}
+                       [](std::shared_ptr<SimulationFacet> f){return (Facet*)(f.get());}
                        );
 
         std::vector<OverlappingEdge> edges_overlap;
@@ -1193,7 +1195,7 @@ namespace flowgpu {
         }*/
 
         constexpr size_t cdf_size = 100; // points in a cumulative distribution function
-        for(auto& cdfs : simModel.tdParams.CDFs) {
+        for(auto& cdfs : ((MolflowSimulationModel*)(&simModel))->tdParams.CDFs) {
             for(auto& cdf : cdfs) {
                 model->cdfs_1.emplace_back(cdf.first);
                 model->cdfs_2.emplace_back(cdf.second);

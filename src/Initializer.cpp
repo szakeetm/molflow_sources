@@ -53,7 +53,7 @@ void initDefaultSettings() {
     SettingsIO::outputFacetDetails = false;
     SettingsIO::outputFacetQuantities = false;
     SettingsIO::overwrite = false;
-    SettingsIO::autogenerateTest = false;
+    SettingsIO::autogenerateTest = 0.0;
 
     SettingsIO::workFile.clear();
     SettingsIO::inputFile.clear();

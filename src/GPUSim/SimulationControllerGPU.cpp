@@ -58,6 +58,7 @@ bool UpdateHits(SimulationControllerGPU& sim_con, GlobalSimuState& globState) {
     // 2nd save with XML
     sim_con.ConvertSimulationData(globState);
 
+    sim_con.ResetGlobalCounter();
     return true;
 }
 
@@ -677,7 +678,6 @@ unsigned long long int SimulationControllerGPU::GetSimulationData(bool silent) {
 }
 
 void SimulationControllerGPU::IncreaseGlobalCounters(HostData *tempData) {
-
 #ifdef DEBUGLEAKPOS
     {
         int nbPos = NBCOUNTS;
@@ -833,6 +833,71 @@ void SimulationControllerGPU::IncreaseGlobalCounters(HostData *tempData) {
 
 }
 
+int SimulationControllerGPU::ResetGlobalCounter() {
+    globalCounter->facetHitCounters.clear();
+    globalCounter->leakCounter.clear();
+    globalCounter->textures.clear();
+    globalCounter->profiles.clear();
+#ifdef DEBUGPOS
+    globalCounter->positions.clear();
+    globalCounter->posOffset.clear();
+#endif
+    globalCounter->facetHitCounters.resize(model->nbFacets_total);
+    globalCounter->leakCounter.resize(model->nbFacets_total);
+
+
+    for (auto &mesh: model->triangle_meshes) {
+        int lastTexture = -1;
+        int lastProfile = -1;
+        for (auto &facet: mesh->poly) {
+
+            // has texture?
+            if ((facet.texProps.textureFlags) &&
+                (lastTexture < (int) facet.parentIndex)) { // prevent duplicates
+                unsigned int width = model->facetTex[facet.texProps.textureOffset].texWidth;
+                unsigned int height = model->facetTex[facet.texProps.textureOffset].texHeight;
+                std::vector<Texel64> texels(width * height);
+                globalCounter->textures.insert(
+                        std::pair<uint32_t, std::vector<Texel64>>(facet.parentIndex, std::move(texels)));
+            }
+
+            // has profile?
+            if ((facet.profProps.profileType != flowgpu::PROFILE_FLAGS::noProfile) &&
+                (lastProfile < (int) facet.parentIndex)) {
+                std::vector<Texel64> texels(PROFILE_SIZE);
+                globalCounter->profiles.insert(
+                        std::pair<uint32_t, std::vector<Texel64>>(facet.parentIndex, std::move(texels)));
+            }
+        }
+    }
+
+    for (auto &mesh: model->poly_meshes) {
+        int lastTexture = -1;
+        int lastProfile = -1;
+        for (auto &facet: mesh->poly) {
+
+            // has texture?
+            if ((facet.texProps.textureFlags) &&
+                (lastTexture < (int) facet.parentIndex)) { // prevent duplicates
+                unsigned int width = model->facetTex[facet.texProps.textureOffset].texWidth;
+                unsigned int height = model->facetTex[facet.texProps.textureOffset].texHeight;
+                std::vector<Texel64> texels(width * height);
+                globalCounter->textures.insert(
+                        std::pair<uint32_t, std::vector<Texel64>>(facet.parentIndex, std::move(texels)));
+            }
+
+            // has profile?
+            if ((facet.profProps.profileType != flowgpu::PROFILE_FLAGS::noProfile) &&
+                (lastProfile < (int) facet.parentIndex)) {
+                std::vector<Texel64> texels(PROFILE_SIZE);
+                globalCounter->profiles.insert(
+                        std::pair<uint32_t, std::vector<Texel64>>(facet.parentIndex, std::move(texels)));
+            }
+        }
+    }
+
+    return 0;
+}
 /**
  * Fetch simulation data from the device
  * @return 1=could not load GPU Sim, 0=successfully loaded
@@ -908,7 +973,7 @@ unsigned long long int SimulationControllerGPU::ConvertSimulationData(GlobalSimu
         for (unsigned long leakCounter : globalCounter->leakCounter) {
             gState.globalHits.nbLeakTotal += leakCounter;
         }
-        for (int i = 0; i < globalCounter->leakCounter.size(); ++i) {
+        for (size_t i = 0; i < globalCounter->leakCounter.size(); ++i) {
             if (globalCounter->leakCounter[i] > 0)
                 fmt::print("{}[{}]  has {} / {} leaks\n",
                            i, model->triangle_meshes[0]->poly[i].parentIndex, globalCounter->leakCounter[i],
@@ -955,67 +1020,7 @@ void SimulationControllerGPU::Resize() {
     data->profileSlices.resize(model->profiles.size());
     data->leakCounter.resize(model->nbFacets_total);
 
-    globalCounter->facetHitCounters.clear();
-    globalCounter->leakCounter.clear();
-    globalCounter->textures.clear();
-    globalCounter->profiles.clear();
-#ifdef DEBUGPOS
-    globalCounter->positions.clear();
-    globalCounter->posOffset.clear();
-#endif
-    globalCounter->facetHitCounters.resize(model->nbFacets_total);
-    globalCounter->leakCounter.resize(model->nbFacets_total);
-
-
-    for (auto &mesh: model->triangle_meshes) {
-        int lastTexture = -1;
-        int lastProfile = -1;
-        for (auto &facet: mesh->poly) {
-
-            // has texture?
-            if ((facet.texProps.textureFlags) &&
-                (lastTexture < (int) facet.parentIndex)) { // prevent duplicates
-                unsigned int width = model->facetTex[facet.texProps.textureOffset].texWidth;
-                unsigned int height = model->facetTex[facet.texProps.textureOffset].texHeight;
-                std::vector<Texel64> texels(width * height);
-                globalCounter->textures.insert(
-                        std::pair<uint32_t, std::vector<Texel64>>(facet.parentIndex, std::move(texels)));
-            }
-
-            // has profile?
-            if ((facet.profProps.profileType != flowgpu::PROFILE_FLAGS::noProfile) &&
-                (lastProfile < (int) facet.parentIndex)) {
-                std::vector<Texel64> texels(PROFILE_SIZE);
-                globalCounter->profiles.insert(
-                        std::pair<uint32_t, std::vector<Texel64>>(facet.parentIndex, std::move(texels)));
-            }
-        }
-    }
-
-    for (auto &mesh: model->poly_meshes) {
-        int lastTexture = -1;
-        int lastProfile = -1;
-        for (auto &facet: mesh->poly) {
-
-            // has texture?
-            if ((facet.texProps.textureFlags) &&
-                (lastTexture < (int) facet.parentIndex)) { // prevent duplicates
-                unsigned int width = model->facetTex[facet.texProps.textureOffset].texWidth;
-                unsigned int height = model->facetTex[facet.texProps.textureOffset].texHeight;
-                std::vector<Texel64> texels(width * height);
-                globalCounter->textures.insert(
-                        std::pair<uint32_t, std::vector<Texel64>>(facet.parentIndex, std::move(texels)));
-            }
-
-            // has profile?
-            if ((facet.profProps.profileType != flowgpu::PROFILE_FLAGS::noProfile) &&
-                (lastProfile < (int) facet.parentIndex)) {
-                std::vector<Texel64> texels(PROFILE_SIZE);
-                globalCounter->profiles.insert(
-                        std::pair<uint32_t, std::vector<Texel64>>(facet.parentIndex, std::move(texels)));
-            }
-        }
-    }
+    ResetGlobalCounter();
 
 #ifdef DEBUGCOUNT
     data->detCounter.clear();
