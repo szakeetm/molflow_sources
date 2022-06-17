@@ -165,7 +165,7 @@ std::pair<int, std::optional<std::string>> Simulation::SanityCheckModel(bool str
     }
 
     if(errorsOnCheck){
-        printf("%s", errLog.c_str());
+        Log::console_error("{}", errLog.c_str());
     }
     return std::make_pair(errorsOnCheck, (errorsOnCheck > 0 ? std::make_optional(errLog) : std::nullopt)); // 0 = all ok
 }
@@ -252,21 +252,21 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     //loadOK = true;
     timer.Stop();
 
-    Log::console_msg_master(3, "  Load %s successful\n", simModel->sh.name.c_str());
-    Log::console_msg_master(3, "  Geometry: %zd vertex %zd facets\n", simModel->vertices3.size(), simModel->sh.nbFacet);
+    Log::console_msg_master(3, "  Load {} successful\n", simModel->sh.name.c_str());
+    Log::console_msg_master(3, "  Geometry: {} vertex {} facets\n", simModel->vertices3.size(), simModel->sh.nbFacet);
 
-    Log::console_msg_master(3, "  Geom size: %zu bytes\n", simModel->size());
-    Log::console_msg_master(3, "  Number of structure: %zd\n", simModel->sh.nbSuper);
-    Log::console_msg_master(3, "  Global Hit: %zd bytes\n", sizeof(GlobalHitBuffer));
-    Log::console_msg_master(3, "  Facet Hit : %zd bytes\n", simModel->sh.nbFacet * sizeof(FacetHitBuffer));
+    Log::console_msg_master(3, "  Geom size: {} bytes\n", simModel->size());
+    Log::console_msg_master(3, "  Number of structure: {}\n", simModel->sh.nbSuper);
+    Log::console_msg_master(3, "  Global Hit: {} bytes\n", sizeof(GlobalHitBuffer));
+    Log::console_msg_master(3, "  Facet Hit : {} bytes\n", simModel->sh.nbFacet * sizeof(FacetHitBuffer));
 /*        printf("  Texture   : %zd bytes\n", textTotalSize);
     printf("  Profile   : %zd bytes\n", profTotalSize);
     printf("  Direction : %zd bytes\n", dirTotalSize);*/
 
-    Log::console_msg_master(3, "  Total     : %zd bytes\n", GetHitsSize());
+    Log::console_msg_master(3, "  Total     : {} bytes\n", GetHitsSize());
     for(auto& particle : particles)
-        Log::console_msg_master(5, "  Seed for %2zu: %lu\n", particle.particleId, particle.randomGenerator.GetSeed());
-    Log::console_msg_master(3, "  Loading time: %.3f ms\n", timer.ElapsedMs());
+        Log::console_msg_master(5, "  Seed for {}: {}\n", particle.particleId, particle.randomGenerator.GetSeed());
+    Log::console_msg_master(3, "  Loading time: {:.2f} ms\n", timer.ElapsedMs());
 
     return 0;
 }

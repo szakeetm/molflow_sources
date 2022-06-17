@@ -478,9 +478,9 @@ namespace FlowIO {
         csvFile = std::filesystem::path(SettingsIO::workPath).append(csvFile).string();
 
         if (FlowIO::CSVExporter::ExportAllFacetDetails(csvFile, glob, model)) {
-            Log::console_error("Could not write facet details to CSV file %s\n", csvFile.c_str());
+            Log::console_error("Could not write facet details to CSV file {}\n", csvFile.c_str());
         } else {
-            Log::console_msg_master(3, "Successfully wrote facet details to CSV file %s\n", csvFile.c_str());
+            Log::console_msg_master(3, "Successfully wrote facet details to CSV file {}\n", csvFile.c_str());
         }
     }
 
@@ -491,9 +491,9 @@ namespace FlowIO {
         csvFile = std::filesystem::path(SettingsIO::workPath).append(csvFile).string();
 
         if (FlowIO::CSVExporter::ExportPhysicalQuantitiesForFacets(csvFile, glob, model)) {
-            Log::console_error("Could not write facet quantities to CSV file %s\n", csvFile.c_str());
+            Log::console_error("Could not write facet quantities to CSV file {}\n", csvFile.c_str());
         } else {
-            Log::console_msg_master(3, "Successfully wrote facet quantities to CSV file %s\n", csvFile.c_str());
+            Log::console_msg_master(3, "Successfully wrote facet quantities to CSV file {}\n", csvFile.c_str());
         }
     }
 }

@@ -83,14 +83,14 @@ void parseFacet(std::istringstream &facetString, const std::vector<SelectionGrou
             // For now get facet list for all combinations (with 3 parameter), check for valid ids later
             splitFacetList(id_range, id_str, 1e7);
         } catch (const std::exception &e) {
-            Log::console_error("[%s] Could not parse facet id or range:\n", __FUNCTION__);
-            Log::console_error("\t%s\n", id_str.c_str());
+            Log::console_error("[{}] Could not parse facet id or range:\n", __FUNCTION__);
+            Log::console_error("\t{}\n", id_str.c_str());
         }
     }
     auto tablePair = Parameters::tableFac.find(param_str);
     if(tablePair == Parameters::tableFac.end()) {
-        Log::console_error("[%s] Invalid option was given:\n", __FUNCTION__);
-        Log::console_error("\t%s\n", param_str.c_str());
+        Log::console_error("[{}] Invalid option was given:\n", __FUNCTION__);
+        Log::console_error("\t{}\n", param_str.c_str());
         return;
     }
     auto param = tablePair->second;
@@ -98,9 +98,9 @@ void parseFacet(std::istringstream &facetString, const std::vector<SelectionGrou
     for(auto& id : id_range)
         Parameters::facetParams.emplace_back(std::make_tuple(id, param, paramVal));
     if(fromSelection)
-        Log::console_msg_master(3, "[ParameterChange][Facet][Group: %s] Changing parameter %s to %s\n", id_str.c_str(), param_str.c_str(), paramVal_str.c_str());
+        Log::console_msg_master(3, "[ParameterChange][Facet][Group: {}] Changing parameter {} to {}\n", id_str.c_str(), param_str.c_str(), paramVal_str.c_str());
     else
-        Log::console_msg_master(3, "[ParameterChange][Facet][ID: %s] Changing parameter %s to %s\n", id_str.c_str(), param_str.c_str(), paramVal_str.c_str());
+        Log::console_msg_master(3, "[ParameterChange][Facet][ID: {}] Changing parameter {} to {}\n", id_str.c_str(), param_str.c_str(), paramVal_str.c_str());
 }
 
 void parseSimu(std::istringstream& facetString){
@@ -110,15 +110,15 @@ void parseSimu(std::istringstream& facetString){
     std::getline(facetString, paramVal_str);
     auto tablePair = Parameters::tableSim.find(param_str);
     if(tablePair == Parameters::tableSim.end()) {
-        Log::console_error("[%s] Invalid option was given:\n", __FUNCTION__);
-        Log::console_error("\t%s\n", param_str.c_str());
+        Log::console_error("[{}] Invalid option was given:\n", __FUNCTION__);
+        Log::console_error("\t{}\n", param_str.c_str());
         return;
     }
     auto param = tablePair->second;
     double paramVal = std::strtod(paramVal_str.c_str(),nullptr);
     Parameters::simuParams.emplace_back(std::make_tuple(param, paramVal));
 
-    Log::console_msg_master(3, "[ParameterChange][Simulation] Changing parameter %s to %s\n", param_str.c_str(), paramVal_str.c_str());
+    Log::console_msg_master(3, "[ParameterChange][Simulation] Changing parameter {} to {}\n", param_str.c_str(), paramVal_str.c_str());
 
 }
 
@@ -128,7 +128,7 @@ void parseFacet(const std::string& facetString){
     auto tokenEq = facetString.find('=');
     std::string param = facetString.substr(token+1, facetString.size()-token); // token is "scott"
     std::string paramVal = facetString.substr(tokenEq+1); // token is "scott"
-    Log::console_msg_master(3,"[Facet #%s] %s = %s\n", id.c_str(), param.c_str(), paramVal.c_str());
+    Log::console_msg_master(3,"[Facet #{}] {} = {}\n", id.c_str(), param.c_str(), paramVal.c_str());
 }
 
 void parseInputStream(std::stringstream& inputLineStream, const std::vector<SelectionGroup> &selections){
@@ -147,7 +147,7 @@ void parseInputStream(std::stringstream& inputLineStream, const std::vector<Sele
         } else if (optionType == "simulation") {
             parseSimu(lineStream);
         } else {
-            Log::console_error("[Line #%zu] Unknown input %s\n", i, line.c_str());
+            Log::console_error("[Line #{}] Unknown input {}\n", i, line.c_str());
         }
         ++i;
     }
@@ -199,7 +199,7 @@ void ParameterParser::ChangeSimuParams(WorkerParams& params){
                 params.halfLife = std::get<1>(par);
                 break;
             default:
-                Log::console_error("Unknown SimuParam %s\n", std::get<0>(par));
+                Log::console_error("Unknown SimuParam {}\n", std::get<0>(par));
         }
     }
 }
@@ -216,7 +216,7 @@ int ParameterParser::ChangeFacetParams(std::vector<std::shared_ptr<SimulationFac
                     facet.sh.opacity = std::get<2>(par);
                     if(facet.sh.opacity < 0.0 || facet.sh.opacity > 1.0) {
                         nbError++;
-                        Log::console_error("[ParameterChange][Facet][ID: %zu] Invalid opacity on facet: %lf\n", id,
+                        Log::console_error("[ParameterChange][Facet][ID: {}] Invalid opacity on facet: {}\n", id,
                                            facet.sh.opacity);
                     }
                     break;
@@ -228,7 +228,7 @@ int ParameterParser::ChangeFacetParams(std::vector<std::shared_ptr<SimulationFac
                     if(facet.sh.sticking < 0.0 || facet.sh.sticking > 1.0) {
                         nbError++;
                         Log::console_error(
-                                "[ParameterChange][Facet][ID: %zu] Invalid sticking coefficient on facet: %lf\n", id,
+                                "[ParameterChange][Facet][ID: {}] Invalid sticking coefficient on facet: {}\n", id,
                                 facet.sh.sticking);
                     }
                     break;
@@ -236,11 +236,11 @@ int ParameterParser::ChangeFacetParams(std::vector<std::shared_ptr<SimulationFac
                     facet.sh.temperature = std::get<2>(par);
                     break;
                 default:
-                    Log::console_error("Unknown FacetParam %s\n", std::get<1>(par));
+                    Log::console_error("Unknown FacetParam {}\n", std::get<1>(par));
             }
         }
         else{
-            Log::console_error("[ParameterChange][Facet][ID: %zu] Facet ID out of range\n", id);
+            Log::console_error("[ParameterChange][Facet][ID: {}] Facet ID out of range\n", id);
             nbError++;
         }
     }

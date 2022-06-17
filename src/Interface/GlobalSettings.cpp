@@ -382,7 +382,7 @@ void GlobalSettings::SMPUpdate() {
     {
         //auto& proc = procInfo.subProcInfo[0];
         DWORD pid = proc.procId;
-		sprintf(tmp, "Thread %zu", i);
+		sprintf(tmp, "Thread {}", i);
 		processList->SetValueAt(0, i, tmp);
 		sprintf(tmp, "");
 		processList->SetValueAt(1, i, tmp);

@@ -41,7 +41,7 @@ void setLoadProgress(double newProgress) {
 }
 
 void reportLoadStatus(const std::string& statusString) {
-    printf("[Loader at %lf3.2%%] %s", loadProgress , statusString.c_str());
+    Log::console_msg(2, "[Loader at {:3.2f}%] {}", loadProgress , statusString.c_str());
 }
 
 // Use work->InsertParametersBeforeCatalog(loadedParams);
@@ -687,7 +687,7 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
     }
     catch (const std::exception &e) {
         globState->tMutex.unlock();
-        Log::console_error("[LoaderXML] %s", e.what());
+        Log::console_error("[LoaderXML] {}", e.what());
         throw;
         return 1;
     }

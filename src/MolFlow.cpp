@@ -189,8 +189,8 @@ int main(int argc, char* argv[])
 		if (logs) MessageBox(nullptr, logs, "Molflow [Fatal error]", MB_OK);
 #else
 		if (logs) {
-			printf("Molflow [Fatal error]\n");
-			printf("%s", logs);
+			Log::console_error("Molflow [Fatal error]\n");
+            Log::console_error("{}", logs);
 		}
 #endif
 		SAFE_FREE(logs);
@@ -2488,7 +2488,7 @@ void MolFlow::UpdateFacetHits(bool allRows) {
 				if (facetId == -2) facetId = (int)i;
 				if (i >= geom->GetNbFacet()) {
 					char errMsg[512];
-					sprintf(errMsg, "Molflow::UpdateFacetHits()\nError while updating facet hits. Was looking for facet #%d (/%zu) in list.\nMolflow will now autosave and crash.", i + 1, geom->GetNbFacet());
+					sprintf(errMsg, "Molflow::UpdateFacetHits()\nError while updating facet hits. Was looking for facet #%d (/{}) in list.\nMolflow will now autosave and crash.", i + 1, geom->GetNbFacet());
 					GLMessageBox::Display(errMsg, "Error", GLDLG_OK, GLDLG_ICONERROR);
 					AutoSave();
                     throw std::runtime_error(errMsg);
