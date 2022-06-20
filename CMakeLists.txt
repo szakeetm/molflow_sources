@@ -141,6 +141,7 @@ IF(WITH_GPU AND (MSVC AND WIN32) OR (NOT WIN32))
     #IF(MSVC AND WITH_GPU)
     #set(cuda_obj_dir ${PROJECT_SOURCE_DIR}/cuda_kernel/)
 
+    message("Loading GPU related components")
     # load defines
     include(CMake/MolflowGPU.cmake)
 
@@ -148,6 +149,7 @@ IF(WITH_GPU AND (MSVC AND WIN32) OR (NOT WIN32))
     add_subdirectory(CMake/molflow_gpusim #[["${cuda_obj_dir}"]]) #add_subdirectory(${cuda_obj_dir} "${cuda_obj_dir}" EXCLUDE_FROM_ALL) #already added in molflow_sub
     add_subdirectory(CMake/cuda_kernel #[["${cuda_obj_dir}"]]) #add_subdirectory(${cuda_obj_dir} "${cuda_obj_dir}" EXCLUDE_FROM_ALL) #already added in molflow_sub
 
+    add_dependencies(molflowCLI flowGPU cudaKernel)
     add_dependencies(molflowGPU flowGPU cudaKernel)
     add_dependencies(molflowSim flowGPU cudaKernel)
 ENDIF() #WITH_GPU
