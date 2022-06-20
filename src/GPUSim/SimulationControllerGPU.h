@@ -17,7 +17,7 @@ class GlobalCounter;
 
 namespace flowgpu {
     class SimulationOptiX;
-    class Model;
+    struct Model;
 }
 struct RuntimeFigures {
     uint32_t runCount {0};

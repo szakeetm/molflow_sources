@@ -11,7 +11,7 @@
 
 class SimulationControllerGPU;
 namespace flowgpu {
-    class Model;
+    struct Model;
 }
 
 class SimulationGPU  : public SimulationUnit {

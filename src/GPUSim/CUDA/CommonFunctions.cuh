@@ -68,11 +68,6 @@ extern "C" __constant__ flowgpu::LaunchParams optixLaunchParams;
 namespace cg = cooperative_groups;
 
 #define CDF_LEN 100
-//const __device__ float offset_val = 1.0f/64.0f;
-//const __device__ float offset_val_n = -1.0f/64.0f;
-const __device__ float offset_val = 1.0f/1.0f;
-const __device__ float offset_val_n = (-1.0f) * offset_val;
-const __device__ float offset_valc = 1.0f/1.0f; //offset value for center offset
 
 /* this GPU kernel takes an array of states, and an array of ints, and puts a random int into each */
 static __forceinline__ __device__ RN_T generate_rand(curandState_t* states, unsigned int id) {
@@ -251,7 +246,7 @@ static __forceinline__ __device__ void apply_offset(const flowgpu::Polygon& poly
     {
         /*if(bufferIndex == 0)
             printf("[%d] reverting offset -> %d -> %d\n",bufferIndex,hitData.inSystem, hitData.nbBounces);
-        */facNormal *= (offset_val_n);
+        */facNormal *= (-1.0f)*(optixLaunchParams.simConstants.offset_normal_magnitude);
         //rayOrigin = offset_ray(rayOrigin, (-1.0f) * rayGenData->poly[facIndex].N);
     }
     else{
@@ -268,11 +263,11 @@ static __forceinline__ __device__ void apply_offset(const flowgpu::Polygon& poly
 
 static __forceinline__ __device__
 FLOAT_T randomVelo(const flowgpu::Polygon& poly, FLOAT_T rnd_key){
-#ifdef BOUND_CHECK
+/*#ifdef BOUND_CHECK
     if(facIndex >= optixLaunchParams.simConstants.nbFacets){
                 printf("[RayOffset] facIndex %u >= %u is out of bounds (%u)\n", facIndex, optixLaunchParams.simConstants.nbFacets, hitData.inSystem);
             }
-#endif
+#endif*/
 
     auto cdf_id = poly.facProps.cdf_id;
     auto cdf = optixLaunchParams.sharedData.cdfs1;
