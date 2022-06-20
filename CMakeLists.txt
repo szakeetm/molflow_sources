@@ -19,15 +19,13 @@ option(USE_KDTREE "simulation will use kd structure instead of bvh" OFF)
 
 option(USE_CLANG "build application with clang" OFF) # OFF is the default
 option(USE_PROFILING "disable optimisation for profiling the application" OFF) # OFF is the default
-option(WITH_GPU "activate GPU build" ON) # OFF is the default
+option(WITH_GPU "activate GPU build" OFF) # OFF is the default
 
-if(WIN32 AND MSVC)
+if(((MSVC AND WIN32) OR (NOT WIN32)) AND WITH_GPU)
     message("Creating GPU build")
-    set(WITH_GPU ON)
 else()
     message("GPU build not available with this compiler and/or OS")
-    #set(WITH_GPU OFF)
-endif(WIN32 AND MSVC)
+endif()
 
 option(NO_INTERFACE "only build CLI binary and dependencies" OFF) # OFF is the default
 if(NO_INTERFACE)
