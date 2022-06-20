@@ -84,13 +84,13 @@ void parseFacet(std::istringstream &facetString, const std::vector<SelectionGrou
             splitFacetList(id_range, id_str, 1e7);
         } catch (const std::exception &e) {
             Log::console_error("[{}] Could not parse facet id or range:\n", __FUNCTION__);
-            Log::console_error("\t{}\n", id_str.c_str());
+            Log::console_error("\t{}\n", id_str);
         }
     }
     auto tablePair = Parameters::tableFac.find(param_str);
     if(tablePair == Parameters::tableFac.end()) {
         Log::console_error("[{}] Invalid option was given:\n", __FUNCTION__);
-        Log::console_error("\t{}\n", param_str.c_str());
+        Log::console_error("\t{}\n", param_str);
         return;
     }
     auto param = tablePair->second;
@@ -98,9 +98,9 @@ void parseFacet(std::istringstream &facetString, const std::vector<SelectionGrou
     for(auto& id : id_range)
         Parameters::facetParams.emplace_back(std::make_tuple(id, param, paramVal));
     if(fromSelection)
-        Log::console_msg_master(3, "[ParameterChange][Facet][Group: {}] Changing parameter {} to {}\n", id_str.c_str(), param_str.c_str(), paramVal_str.c_str());
+        Log::console_msg_master(3, "[ParameterChange][Facet][Group: {}] Changing parameter {} to {}\n", id_str, param_str, paramVal_str);
     else
-        Log::console_msg_master(3, "[ParameterChange][Facet][ID: {}] Changing parameter {} to {}\n", id_str.c_str(), param_str.c_str(), paramVal_str.c_str());
+        Log::console_msg_master(3, "[ParameterChange][Facet][ID: {}] Changing parameter {} to {}\n", id_str, param_str, paramVal_str);
 }
 
 void parseSimu(std::istringstream& facetString){
@@ -111,14 +111,14 @@ void parseSimu(std::istringstream& facetString){
     auto tablePair = Parameters::tableSim.find(param_str);
     if(tablePair == Parameters::tableSim.end()) {
         Log::console_error("[{}] Invalid option was given:\n", __FUNCTION__);
-        Log::console_error("\t{}\n", param_str.c_str());
+        Log::console_error("\t{}\n", param_str);
         return;
     }
     auto param = tablePair->second;
     double paramVal = std::strtod(paramVal_str.c_str(),nullptr);
     Parameters::simuParams.emplace_back(std::make_tuple(param, paramVal));
 
-    Log::console_msg_master(3, "[ParameterChange][Simulation] Changing parameter {} to {}\n", param_str.c_str(), paramVal_str.c_str());
+    Log::console_msg_master(3, "[ParameterChange][Simulation] Changing parameter {} to {}\n", param_str, paramVal_str);
 
 }
 
@@ -128,7 +128,7 @@ void parseFacet(const std::string& facetString){
     auto tokenEq = facetString.find('=');
     std::string param = facetString.substr(token+1, facetString.size()-token); // token is "scott"
     std::string paramVal = facetString.substr(tokenEq+1); // token is "scott"
-    Log::console_msg_master(3,"[Facet #{}] {} = {}\n", id.c_str(), param.c_str(), paramVal.c_str());
+    Log::console_msg_master(3,"[Facet #{}] {} = {}\n", id, param, paramVal);
 }
 
 void parseInputStream(std::stringstream& inputLineStream, const std::vector<SelectionGroup> &selections){
@@ -147,7 +147,7 @@ void parseInputStream(std::stringstream& inputLineStream, const std::vector<Sele
         } else if (optionType == "simulation") {
             parseSimu(lineStream);
         } else {
-            Log::console_error("[Line #{}] Unknown input {}\n", i, line.c_str());
+            Log::console_error("[Line #{}] Unknown input {}\n", i, line);
         }
         ++i;
     }

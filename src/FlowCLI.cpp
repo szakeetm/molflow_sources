@@ -89,13 +89,13 @@ public:
                                 "#Hits (run)", "#Hits (total)","Hit/sec",
                                 "#Des (run)", "#Des (total)","Des/sec");
         if(MFMPI::world_size > 1) {
-            Log::console_msg_master(1, "{}",std::string(6,'-').c_str());
+            Log::console_msg_master(1, "{}",std::string(6,'-'));
         }
-        Log::console_msg_master(1, "{}\n",std::string(14+20+20+20+20+20+20,'-').c_str());
+        Log::console_msg_master(1, "{}\n",std::string(14+20+20+20+20+20+20,'-'));
     }
     void Print(double elapsedTime, GlobalSimuState& globState, bool printSum=false) const{
         if(printSum) {
-            Log::console_msg_master(1, "{}\n",std::string(6+14+20+20+20+20+20+20,'=').c_str());
+            Log::console_msg_master(1, "{}\n",std::string(6+14+20+20+20+20+20+20,'='));
             Log::console_msg_master(1, "{:<6} ", "x");
         }
         else if(MFMPI::world_size > 1) {
@@ -174,9 +174,9 @@ int main(int argc, char** argv) {
     //simManager.ReloadHitBuffer();
     //simManager.IncreasePriority();
     if(Settings::simDuration > 0)
-        Log::console_msg_master(1,"[{}] Commencing simulation for {} seconds from {} desorptions.\n", Util::getTimepointString().c_str(), Settings::simDuration, globState.globalHits.globalHits.nbDesorbed);
+        Log::console_msg_master(1,"[{}] Commencing simulation for {} seconds from {} desorptions.\n", Util::getTimepointString(), Settings::simDuration, globState.globalHits.globalHits.nbDesorbed);
     else if(model->otfParams.desorptionLimit > 0)
-        Log::console_msg_master(1,"[{}] Commencing simulation to {} desorptions from {} desorptions.\n", Util::getTimepointString().c_str(), model->otfParams.desorptionLimit, globState.globalHits.globalHits.nbDesorbed);
+        Log::console_msg_master(1,"[{}] Commencing simulation to {} desorptions from {} desorptions.\n", Util::getTimepointString(), model->otfParams.desorptionLimit, globState.globalHits.globalHits.nbDesorbed);
 
 #if defined(USE_MPI)
     MPI_Barrier(MPI_COMM_WORLD);
@@ -187,7 +187,7 @@ int main(int argc, char** argv) {
     }
     catch (const std::exception& e) {
         Log::console_error("[{}] ERROR: Starting simulation: {}\n",MFMPI::world_rank, e.what());
-        Log::console_error("[{}] File folder {} -- {}\n",MFMPI::world_rank,SettingsIO::workPath.c_str(), SettingsIO::workFile.c_str());
+        Log::console_error("[{}] File folder {} -- {}\n",MFMPI::world_rank,SettingsIO::workPath, SettingsIO::workFile);
 
 #if defined(USE_MPI)
         MPI_Finalize();
@@ -225,7 +225,7 @@ int main(int argc, char** argv) {
 
                 try {
                     FlowIO::WriterXML writer;
-                    Log::console_msg_master(3, " Saving intermediate results: {}\n", outFile.c_str());
+                    Log::console_msg_master(3, " Saving intermediate results: {}\n", outFile);
                     if(!SettingsIO::workFile.empty() && std::filesystem::exists(SettingsIO::workFile)) {
                         try {
                             std::filesystem::copy_file(SettingsIO::workFile, outFile,
@@ -264,7 +264,7 @@ int main(int argc, char** argv) {
             }
         }
         else if(Settings::autoSaveDuration && (uint64_t)(elapsedTime)%Settings::autoSaveDuration==0){ // autosave every x seconds
-            Log::console_msg_master(2,"[{:.2}s] Creating auto save file {}\n", elapsedTime, autoSave.c_str());
+            Log::console_msg_master(2,"[{:.2}s] Creating auto save file {}\n", elapsedTime, autoSave);
             FlowIO::WriterXML writer;
             writer.SaveSimulationState(autoSave, model, globState);
         }
@@ -288,7 +288,7 @@ int main(int argc, char** argv) {
     simManager.StopSimulation();
     simManager.KillAllSimUnits();
     GatherResults(*model, globState);
-    Log::console_msg(1,"[{}][{}] Simulation finished!\n", MFMPI::world_rank, Util::getTimepointString().c_str());
+    Log::console_msg(1,"[{}][{}] Simulation finished!\n", MFMPI::world_rank, Util::getTimepointString());
 
 #ifdef USE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
@@ -377,7 +377,7 @@ int main(int argc, char** argv) {
                     std::filesystem::remove(fileNameWithZIP);
                 }
                 catch (std::exception &e) {
-                    Log::console_error("Error compressing to \n{}\nMaybe file is in use:\n{}",fileNameWithZIP.c_str(),e.what());
+                    Log::console_error("Error compressing to \n{}\nMaybe file is in use:\n{}",fileNameWithZIP, e.what());
                 }
             }
             ZipFile::AddFile(fileNameWithZIP, fullOutFile, FileUtils::GetFilename(fullOutFile));
@@ -386,7 +386,7 @@ int main(int argc, char** argv) {
                 std::filesystem::remove(fullOutFile);
             }
             catch (std::exception &e) {
-                Log::console_error("Error removing\n{}\nMaybe file is in use:\n{}",fullOutFile.c_str(),e.what());
+                Log::console_error("Error removing\n{}\nMaybe file is in use:\n{}",fullOutFile,e.what());
             }
         }
     }

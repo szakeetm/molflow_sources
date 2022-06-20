@@ -194,7 +194,7 @@ namespace {
     TEST_P(SimulationFixture, PerformanceOkay) {
         std::string testFile = GetParam();
         std::string outPath = "TPath_PO_" + std::to_string(std::hash<time_t>()(time(nullptr)));
-        Log::console_msg(1, "Filename: {}\n", testFile.c_str());
+        Log::console_msg(1, "Filename: {}\n", testFile);
         std::string timeRecFile = "./time_record_" + testFile.substr(0, testFile.size() - 4) + ".txt";
 
         {
@@ -352,7 +352,7 @@ namespace {
     TEST_P(ValidationFixture, ResultsOkay) {
         std::string testFile = GetParam();
         std::string outPath = "TPath_RO_" + std::to_string(std::hash<time_t>()(time(nullptr)));
-        Log::console_msg(1, "Filename: {}\n", testFile.c_str());
+        Log::console_msg(1, "Filename: {}\n", testFile);
         size_t nbFails = 0;
         size_t nCorrect = 0;
         bool fastEnough = false;
@@ -486,7 +486,7 @@ namespace {
     TEST_P(ValidationFixture, ResultsWrong) {
         std::string testFile = GetParam();
         std::string outPath = "TPath_RW_" + std::to_string(std::hash<time_t>()(time(nullptr)));
-        Log::console_msg(1, "Filename: {}\n", testFile.c_str());
+        Log::console_msg(1, "Filename: {}\n", testFile);
         size_t nbSuccess = 0;
         const size_t nRuns = 15;
 
