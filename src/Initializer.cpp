@@ -186,7 +186,7 @@ int Initializer::initFromFile(SimulationManager *simManager, const std::shared_p
     }
     else {
         Log::console_error("Invalid file extension for input file detected: {}\n",
-                           std::filesystem::path(SettingsIO::workFile).extension().c_str());
+                           std::filesystem::path(SettingsIO::workFile).extension().string());
         return 1;
     }
     if (!Settings::paramFile.empty() || !Settings::paramSweep.empty()) {
