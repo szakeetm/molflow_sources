@@ -309,7 +309,7 @@ Initializer::loadFromGeneration(const std::shared_ptr<MolflowSimulationModel> &m
 int Initializer::loadFromXML(const std::string &fileName, bool loadState, const std::shared_ptr<MolflowSimulationModel>& model,
                              GlobalSimuState *globState) {
 
-    Log::console_header(1, "[ ] Loading geometry from file {}\n", fileName.c_str());
+    Log::console_header(1, "[ ] Loading geometry from file {}\n", fileName);
 
     //1. Load Input File (regular XML)
     FlowIO::LoaderXML loader;
@@ -457,8 +457,7 @@ std::string Initializer::getAutosaveFile() {
             // TODO: Revisit wether input/output is acceptable here
             autoSave = std::filesystem::path(SettingsIO::workPath).append(SettingsIO::workFile).filename().string();
             SettingsIO::inputFile = autoSave.substr(autoSavePrefix.size(), autoSave.size() - autoSavePrefix.size());
-            Log::console_msg_master(2, "Using autosave file {} for {}\n", autoSave.c_str(),
-                                    SettingsIO::inputFile.c_str());
+            Log::console_msg_master(2, "Using autosave file {} for {}\n", autoSave, SettingsIO::inputFile);
         } else {
             // create autosavefile from copy of original
             autoSave = std::filesystem::path(SettingsIO::workPath).append(autoSavePrefix).concat(autoSave).string();

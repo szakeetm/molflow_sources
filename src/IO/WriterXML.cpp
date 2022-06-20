@@ -37,17 +37,17 @@ void WriterXML::setWriteProgress(double newProgress) {
 }
 
 void WriterXML::reportWriteStatus(const std::string &statusString) const {
-    Log::console_msg(2, "[{}] {} [{:3.2f}%]", Util::getTimepointString().c_str(), statusString.c_str(), writeProgress);
+    Log::console_msg(2, "[{}] {} [{:3.2f}%]", Util::getTimepointString(), statusString, writeProgress);
 }
 
 void WriterXML::reportNewWriteStatus(const std::string &statusString, double newProgress) {
     setWriteProgress(newProgress);
-    Log::console_msg(2, "\r[{}] {} [{:3.2f}%]", Util::getTimepointString().c_str(), statusString.c_str(), writeProgress);
+    Log::console_msg(2, "\r[{}] {} [{:3.2f}%]", Util::getTimepointString(), statusString, writeProgress);
 }
 
 void WriterXML::finishWriteStatus(const std::string &statusString) {
     setWriteProgress(100.0);
-    Log::console_msg(2, "\r[{}] {} [{:3.2f}%]\n", Util::getTimepointString().c_str(), statusString.c_str(), 100.0);
+    Log::console_msg(2, "\r[{}] {} [{:3.2f}%]\n", Util::getTimepointString(), statusString, 100.0);
 }
 
 xml_node WriterXML::GetRootNode(xml_document &saveDoc) {

@@ -41,7 +41,7 @@ void setLoadProgress(double newProgress) {
 }
 
 void reportLoadStatus(const std::string& statusString) {
-    Log::console_msg(2, "[Loader at {:3.2f}%] {}", loadProgress , statusString.c_str());
+    Log::console_msg(2, "[Loader at {:3.2f}%] {}", loadProgress , statusString);
 }
 
 // Use work->InsertParametersBeforeCatalog(loadedParams);

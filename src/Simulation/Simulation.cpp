@@ -165,7 +165,7 @@ std::pair<int, std::optional<std::string>> Simulation::SanityCheckModel(bool str
     }
 
     if(errorsOnCheck){
-        Log::console_error("{}", errLog.c_str());
+        Log::console_error("{}", errLog);
     }
     return std::make_pair(errorsOnCheck, (errorsOnCheck > 0 ? std::make_optional(errLog) : std::nullopt)); // 0 = all ok
 }
@@ -252,7 +252,7 @@ size_t Simulation::LoadSimulation(char *loadStatus) {
     //loadOK = true;
     timer.Stop();
 
-    Log::console_msg_master(3, "  Load {} successful\n", simModel->sh.name.c_str());
+    Log::console_msg_master(3, "  Load {} successful\n", simModel->sh.name);
     Log::console_msg_master(3, "  Geometry: {} vertex {} facets\n", simModel->vertices3.size(), simModel->sh.nbFacet);
 
     Log::console_msg_master(3, "  Geom size: {} bytes\n", simModel->size());

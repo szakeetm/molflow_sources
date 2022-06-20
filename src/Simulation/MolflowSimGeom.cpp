@@ -1101,13 +1101,13 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
     {
         std::istringstream compStream(cmpFile);
         for (; i < 32 && std::getline(compStream, cmp_string, '\n'); ++i) {
-            Log::console_error("{}\n", cmp_string.c_str());
+            Log::console_error("{}\n", cmp_string);
         }
     }
     {
         std::istringstream compStreamFine(cmpFileFine);
         for (; i < 32 && std::getline(compStreamFine, cmp_string, '\n'); ++i) {
-            Log::console_msg_master(4, "{}\n", cmp_string.c_str());
+            Log::console_msg_master(4, "{}\n", cmp_string);
         }
     }
 
