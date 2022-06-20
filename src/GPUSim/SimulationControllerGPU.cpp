@@ -927,6 +927,7 @@ unsigned long long int SimulationControllerGPU::ConvertSimulationData(GlobalSimu
         facetHits.sum_1_per_ort_velocity += gCounter.sum_1_per_ort_velocity;
     }
 
+    // Add up profiles
     if (!globalCounter->profiles.empty()) {
         double timeCorrection = model->wp.finalOutgassingRate;
         for (auto &[id, profiles]: globalCounter->profiles) {
@@ -959,6 +960,59 @@ unsigned long long int SimulationControllerGPU::ConvertSimulationData(GlobalSimu
                             profileHits[s].countEquiv += profiles[s].countEquiv;
                             profileHits[s].sum_v_ort += profiles[s].sum_v_ort_per_area;
                             profileHits[s].sum_1_per_ort_velocity += profiles[s].sum_1_per_ort_velocity;
+                        }
+
+                        break; //Only need 1 facet for texture position data
+                    }
+                }
+            }
+        }
+    }
+
+    // Add up textures
+    if (!globalCounter->textures.empty()) {
+        double timeCorrection = model->wp.finalOutgassingRate;
+        for (auto &[id, textures]: globalCounter->textures) {
+
+            // triangles
+            for (auto &mesh: model->triangle_meshes) {
+                int previousId = 0;
+                for (auto &facet: mesh->poly) {
+                    if ((facet.texProps.textureFlags) && (id == facet.parentIndex)) {
+                        auto &textureHits = gState.facetStates[id].momentResults[0].texture;
+                        assert(!textureHits.empty());
+                        unsigned int width = model->facetTex[facet.texProps.textureOffset].texWidth;
+                        unsigned int height = model->facetTex[facet.texProps.textureOffset].texHeight;
+                        for (unsigned int h = 0; h < height; ++h) {
+                            for (unsigned int w = 0; w < width; ++w) {
+                                unsigned int index_glob =
+                                        w + h * model->facetTex[facet.texProps.textureOffset].texWidth;
+                                textureHits[index_glob].countEquiv += static_cast<double>(textures[index_glob].countEquiv);
+                                textureHits[index_glob].sum_v_ort_per_area += textures[index_glob].sum_v_ort_per_area;
+                                textureHits[index_glob].sum_1_per_ort_velocity += textures[index_glob].sum_1_per_ort_velocity;
+                            }
+                        }
+
+                        break; //Only need 1 facet for texture position data
+                    }
+                }
+            }
+            //polygons
+            for (auto &mesh: model->poly_meshes) {
+                for (auto &facet: mesh->poly) {
+                    if ((facet.texProps.textureFlags) && (id == facet.parentIndex)) {
+                        auto &textureHits = gState.facetStates[id].momentResults[0].texture;
+                        assert(!textureHits.empty());
+                        unsigned int width = model->facetTex[facet.texProps.textureOffset].texWidth;
+                        unsigned int height = model->facetTex[facet.texProps.textureOffset].texHeight;
+                        for (unsigned int h = 0; h < height; ++h) {
+                            for (unsigned int w = 0; w < width; ++w) {
+                                unsigned int index_glob =
+                                        w + h * model->facetTex[facet.texProps.textureOffset].texWidth;
+                                textureHits[index_glob].countEquiv += static_cast<double>(textures[index_glob].countEquiv);
+                                textureHits[index_glob].sum_v_ort_per_area += textures[index_glob].sum_v_ort_per_area;
+                                textureHits[index_glob].sum_1_per_ort_velocity += textures[index_glob].sum_1_per_ort_velocity;
+                            }
                         }
 
                         break; //Only need 1 facet for texture position data
@@ -1216,10 +1270,10 @@ void SimulationControllerGPU::PrintTotalCounters() {
     if (endCalled)
         figures.ndes_stop += figures.total_des - prevDes;
 
-    fmt::print(" total hits >>> {}", figures.total_counter);
-    fmt::print(" __ total  des >>> {} ({})", figures.total_des, figures.ndes_stop);
-    fmt::print(" __ total  abs >>> {}", static_cast<unsigned long long int>(figures.total_absd));
-    fmt::print(" __ total miss >>> {} -- miss/hit ratio: {}\n", figures.total_leak,
+    Log::console_msg(3, " total hits >>> {}", figures.total_counter);
+    Log::console_msg(3, " __ total  des >>> {} ({})", figures.total_des, figures.ndes_stop);
+    Log::console_msg(3, " __ total  abs >>> {}", static_cast<unsigned long long int>(figures.total_absd));
+    Log::console_msg(3, " __ total miss >>> {} -- miss/hit ratio: {}\n", figures.total_leak,
                static_cast<double>(figures.total_leak) /
                static_cast<double>(figures.total_counter));
 }

@@ -144,17 +144,12 @@ IF(WITH_GPU AND (MSVC AND WIN32) OR (NOT WIN32))
     # load defines
     include(CMake/MolflowGPU.cmake)
 
-    #add_subdirectory(CMake/molflow_gpusub)
-
-    add_subdirectory(CMake/gpusim)
-    add_subdirectory(CMake/flow_gpu #[["${cuda_obj_dir}"]]) #add_subdirectory(${cuda_obj_dir} "${cuda_obj_dir}" EXCLUDE_FROM_ALL) #already added in molflow_sub
+    add_subdirectory(CMake/molflow_gpu)
+    add_subdirectory(CMake/molflow_gpusim #[["${cuda_obj_dir}"]]) #add_subdirectory(${cuda_obj_dir} "${cuda_obj_dir}" EXCLUDE_FROM_ALL) #already added in molflow_sub
     add_subdirectory(CMake/cuda_kernel #[["${cuda_obj_dir}"]]) #add_subdirectory(${cuda_obj_dir} "${cuda_obj_dir}" EXCLUDE_FROM_ALL) #already added in molflow_sub
 
     add_dependencies(molflowGPU flowGPU cudaKernel)
     add_dependencies(molflowSim flowGPU cudaKernel)
-
-    #[[add_dependencies(gpuSub flowGPU cudaKernel)
-    add_dependencies(molflow gpuSub)]]
 ENDIF() #WITH_GPU
 
 # Allow to install molflowCLI into Unix OS folders (e.g. /usr/local/bin)

@@ -407,7 +407,7 @@ double3 getOrigin_double(
 static __forceinline__ __device__
 FLOAT_T getNewVelocity(const flowgpu::Polygon& poly, const float& gasMass)
 {
-    DEBUG_PRINT("Velo %f = %f * %f * %f", 145.469*sqrt((double)poly.facProps.temperature / gasMass), poly.facProps.temperature, gasMass, sqrt((double)poly.facProps.temperature / gasMass));
+    DEBUG_PRINT("Velo %f = %f * %f * %f\n", 145.469*sqrt((double)poly.facProps.temperature / gasMass), poly.facProps.temperature, gasMass, sqrt((double)poly.facProps.temperature / gasMass));
     return 145.469*sqrt((double)poly.facProps.temperature / gasMass);
 }
 

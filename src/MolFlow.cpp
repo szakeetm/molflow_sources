@@ -1330,13 +1330,12 @@ void MolFlow::LoadFile(const std::string &fileName) {
 		ResetAutoSaveTimer();
 		//UpdatePlotters();
 
-		if (timeSettings) timeSettings->RefreshMoments();
+        if (timeSettings) timeSettings->RefreshMoments();
 		if (momentsEditor) momentsEditor->Refresh();
 		if (pressureEvolution) pressureEvolution->Reset();
 		if (timewisePlotter) timewisePlotter->Refresh();
 		if (histogramPlotter) histogramPlotter->Reset();
 		if (profilePlotter) profilePlotter->Refresh();
-        if (convergencePlotter) convergencePlotter->Refresh();
         if (texturePlotter) texturePlotter->Update(0.0,true);
 		//if (parameterEditor) parameterEditor->UpdateCombo(); //Done by ClearParameters()
 		if (textureScaling) textureScaling->Update();
@@ -1347,7 +1346,8 @@ void MolFlow::LoadFile(const std::string &fileName) {
 		if (movement) movement->Update();
 		if (globalSettings && globalSettings->IsVisible()) globalSettings->Update();
 		if (formulaEditor) formulaEditor->Refresh();
-		if (parameterEditor) parameterEditor->Refresh();
+        if (convergencePlotter) convergencePlotter->Refresh();
+        if (parameterEditor) parameterEditor->Refresh();
 	}
 	catch(const std::exception &e) {
 

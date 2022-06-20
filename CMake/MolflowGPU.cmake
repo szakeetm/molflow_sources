@@ -15,8 +15,8 @@ endif()
 
 option(WITH_DESORPEXIT "Enable exit on desorption limit" ON)
 option(WITH_TRIANGLES "Enable calculations with triangles only" ON)
-option(WITH_TEXTURES "Enable textures" OFF)
-option(WITH_PROFILES "Enable profiles" OFF)
+option(WITH_TEXTURES "Enable textures" ON)
+option(WITH_PROFILES "Enable profiles" ON)
 option(WITH_TRANS "Enable transparent SBT" OFF)
 option(WITH_NBOUNCE "Enable NBBOUNCE Counter" ON)
 
