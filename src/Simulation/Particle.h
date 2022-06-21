@@ -28,7 +28,14 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 struct SimulationFacetTempVar;
 
+/**
+* \brief Namespace containing various simulation only classes and methods
+ */
 namespace MFSim {
+
+/**
+* \brief Implements particle state and corresponding pre-/post-processing methods (source position, hit recording etc.)
+ */
     class Particle {
     public:
         //double GenerateRandomVelocity(int CDFId, const double rndVal);
@@ -79,9 +86,7 @@ namespace MFSim {
 
         void Reset();
 
-        Ray particle;
-        //Vector3d position;    // Position
-        //Vector3d direction;    // Direction
+        Ray particle; // an object purely for the ray tracing related intersection tests
         double oriRatio; //Represented ratio of desorbed, used for low flux mode
 
         //Recordings for histogram

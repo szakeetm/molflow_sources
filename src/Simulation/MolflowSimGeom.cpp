@@ -36,6 +36,11 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "MolflowSimFacet.h"
 #include "IntersectAABB_shared.h" // include needed for recursive delete of AABBNODE
 
+/**
+* \brief Computes with a distribution function and a random number whether a hit on a surface is "hard" or not
+* \param r instance of the handled ray for the intersection test
+ * \return true on hard hit
+*/
 bool ParameterSurface::IsHardHit(const Ray &r) {
     const double td_opacity = dist->InterpolateY(r.time, false);
     if(td_opacity >= 1.0)
@@ -160,6 +165,14 @@ void  MolflowSimulationModel::BuildPrisma(double L, double R, double angle, doub
     }
 }
 
+/**
+* \brief Builds ADS given certain parameters
+* \param globState global simulation state for splitting techniques requiring statistical data
+* \param accel_type BVH or KD tree
+* \param split splitting technique corresponding to the selected AccelType
+* \param bvh_width for BVH, the amount of leaves per end node
+ * \return 0> for error codes, 0 when no problems
+*/
 int MolflowSimulationModel::BuildAccelStructure(GlobalSimuState *globState, AccelType accel_type, BVHAccel::SplitMethod split,
                                                 int bvh_width) {
 
@@ -264,6 +277,7 @@ int MolflowSimulationModel::BuildAccelStructure(GlobalSimuState *globState, Acce
 * match parameters
 * Generate speed distribution functions
 * Angle map
+ * \return 0> for error codes, 0 when all ok
 */
 int MolflowSimulationModel::PrepareToRun() {
     if (!m.try_lock()) {
@@ -408,6 +422,10 @@ MolflowSimulationModel::MolflowSimulationModel(const MolflowSimulationModel &o) 
 
 MolflowSimulationModel::~MolflowSimulationModel() = default;
 
+/**
+* \brief Calculates the used memory used by the whole simulation model
+ * \return memory size used by the whole simulation model
+*/
 size_t MolflowSimulationModel::size() {
     size_t modelSize = 0;
     modelSize += SimulationModel::size();
@@ -1117,16 +1135,6 @@ GlobalSimuState::Compare(const GlobalSimuState &lhsGlobHit, const GlobalSimuStat
 
     return std::make_tuple(globalErrNb, facetErrNb, fineErrNb);
 }
-
-/**
-* \brief Resize histograms according to sizes in params
-* \param params contains data about sizes
-*/
-/*void FacetHistogramBuffer::Resize(const HistogramParams& params) {
-    nbHitsHistogram = std::vector<double>(params.recordBounce ? params.GetBounceHistogramSize() : 0);
-    distanceHistogram = std::vector<double>(params.recordDistance ? params.GetDistanceHistogramSize() : 0);
-    timeHistogram = std::vector<double>(params.recordTime ? params.GetTimeHistogramSize() : 0);
-}*/
 
 /**
 * \brief += operator, with simple += of underlying structures

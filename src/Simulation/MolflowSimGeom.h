@@ -85,7 +85,8 @@ struct TimeDependentParamters {
     }
 };
 
-// Local simulation structure
+// Local simulation structure for Molflow specific simulations
+// Appends general Model by time dependent parameters
 class MolflowSimulationModel : public SimulationModel {
 public:
     MolflowSimulationModel() : SimulationModel(), /*otfParams(),*/ tdParams()/*, wp(), sh(),*/ {};
@@ -139,28 +140,11 @@ public:
 
     void CalcTotalOutgassing();
 
-    //void CalculateFacetParams(SimulationFacet *f);
-
-    /*Surface *GetSurface(double opacity) {
-
-        if (!surfaces.empty()) {
-            auto surf = surfaces.find(opacity);
-            if (surf != surfaces.end())
-                return surf->second.get();
-        }
-        std::shared_ptr<Surface> surface;
-        if (opacity == 1.0) {
-            surface = std::make_shared<Surface>();
-        } else if (opacity == 0.0) {
-            surface = std::make_shared<TransparentSurface>();
-        } else {
-            surface = std::make_shared<AlphaSurface>(opacity);
-        }
-        surfaces.insert(std::make_pair(opacity, surface));
-        return surface.get();
-    };
-*/
-
+    /**
+    * \brief Returns an existing or a new surface corresponding to a facet's properties
+    * \param facet facet for which a Surface should be found or created
+     * \return new or existing Surface corresponding to the choosen parameters of the facet
+    */
     Surface *GetSurface(SimulationFacet* facet) override {
 
         if (facet->sh.opacity_paramId == -1){ //constant sticking
@@ -195,30 +179,13 @@ public:
             std::shared_ptr<ParameterSurface> surface;
             surface = std::make_shared<ParameterSurface>(par);
             surfaces.insert(std::make_pair(indexed_id, surface));
-            Log::console_msg_master(3, "Insert param id: {}\n", indexed_id);
+            Log::console_msg_master(5, "Insert surface with param id: {}\n", indexed_id);
             return surface.get();
         }
     };
 
-    Surface *GetParameterSurface(int opacity_paramId, Distribution2D *dist) {
-
-        double indexed_id = 10.0 + opacity_paramId;
-        if (!surfaces.empty()) {
-            auto surf = surfaces.find(indexed_id);
-            if (surf != surfaces.end())
-                return surf->second.get();
-        }
-
-        std::shared_ptr<ParameterSurface> surface;
-        surface = std::make_shared<ParameterSurface>(dist);
-        surfaces.insert(std::make_pair(indexed_id, surface));
-        Log::console_msg_master(3, "Insert param id: {}\n", indexed_id);
-        return surface.get();
-    };
-
     // Sim functions
     double GetOpacityAt(SimulationFacet *f, double time) const;
-
     double GetStickingAt(SimulationFacet *f, double time) const;
 
     TimeDependentParamters tdParams;
@@ -254,6 +221,9 @@ public:
     }
 };
 
+/*!
+ * @brief Object containing all simulation results of an individual facet
+ */
 class FacetState {
 public:
     FacetState &operator+=(const FacetState &rhs);
@@ -269,6 +239,9 @@ public:
     }
 };
 
+/*!
+ * @brief Object containing all simulation results, global and per facet
+ */
 class GlobalSimuState { //replaces old hits dataport
 public:
     GlobalSimuState &operator=(const GlobalSimuState &src);
@@ -331,6 +304,9 @@ public:
     mutable std::timed_mutex tMutex;
 };
 
+/*!
+ * @brief Particle Log structure containing all individual log entries
+ */
 struct ParticleLog {
 public:
     ParticleLog &operator=(const ParticleLog &src) {
