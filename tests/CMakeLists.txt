@@ -97,6 +97,10 @@ if(MSVC)
             )
 endif(MSVC)
 
+if(WITH_GPU)
+    target_link_libraries(testsuite PUBLIC flowGPU cudaKernel)
+endif()
+
 target_compile_features(testsuite PRIVATE cxx_std_17)
 #add_test(NAME example_test COMMAND testsuite)
 

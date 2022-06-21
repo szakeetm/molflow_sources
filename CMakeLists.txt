@@ -152,6 +152,9 @@ IF(WITH_GPU AND ((MSVC AND WIN32) OR (NOT WIN32)))
     add_dependencies(molflowCLI flowGPU cudaKernel)
     add_dependencies(molflowGPU flowGPU cudaKernel)
     add_dependencies(molflowSim flowGPU cudaKernel)
+    if(USE_TESTS)
+        add_dependencies(testsuite flowGPU cudaKernel)
+    endif()
 ENDIF() #WITH_GPU
 
 # Allow to install molflowCLI into Unix OS folders (e.g. /usr/local/bin)
