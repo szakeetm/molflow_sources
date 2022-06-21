@@ -137,7 +137,7 @@ if(USE_TESTS)
     add_dependencies(testsuite molflowSim)
 endif()
 
-IF(WITH_GPU AND (MSVC AND WIN32) OR (NOT WIN32))
+IF(WITH_GPU AND ((MSVC AND WIN32) OR (NOT WIN32)))
     #IF(MSVC AND WITH_GPU)
     #set(cuda_obj_dir ${PROJECT_SOURCE_DIR}/cuda_kernel/)
 
