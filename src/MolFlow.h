@@ -38,7 +38,7 @@ class OutgassingMap;
 class MomentsEditor;
 class ParameterEditor;
 
-class Error;
+struct Error;
 
 class MolFlow : public Interface
 {

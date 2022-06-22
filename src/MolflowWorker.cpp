@@ -625,7 +625,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             SAFE_DELETE(f);
             progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
-            throw e;
+            throw;
         }
 
     } else if (ext == "stl" || ext == "STL") {
@@ -674,7 +674,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             SAFE_DELETE(f);
             progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
-            throw e;
+            throw;
 
         }
 
@@ -695,7 +695,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             SAFE_DELETE(f);
             progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
-            throw e;
+            throw;
         }
 
     } else if (ext == "syn" || ext == "syn7z") { //Synrad file
@@ -734,7 +734,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
 
             progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
-            throw e;
+            throw;
         }
 
     } else if (ext == "geo" || ext == "geo7z") {
@@ -803,7 +803,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             //if (isGEO7Z) remove(tmp2);
             progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
-            throw e;
+            throw;
         }
 
     } else if (ext == "xml" || ext == "zip") { //XML file, optionally in ZIP container
@@ -943,7 +943,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             if (!insert) geom->Clear();
             progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
-            throw e;
+            throw;
         }
 
     } else if (ext == "ase" || ext == "ASE") {
@@ -963,7 +963,7 @@ void Worker::LoadGeometry(const std::string &fileName, bool insert, bool newStr)
             SAFE_DELETE(f);
             progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
-            throw e;
+            throw;
         }
     } else {
         progressDlg->SetVisible(false);
@@ -1184,7 +1184,7 @@ void Worker::Update(float appTime) {
 				try {
 					if (mApp->needsTexture || mApp->needsDirection) geom->BuildFacetTextures(buffer,mApp->needsTexture,mApp->needsDirection);
 				}
-				catch (Error &e) {
+				catch (const std::exception& e) {
 					GLMessageBox::Display(e.what(), "Error building texture", GLDLG_OK, GLDLG_ICONERROR);
 					ReleaseDataport(dpHit);
 					return;
@@ -1387,7 +1387,7 @@ void Worker::Start() {
         }
     }
     catch (std::exception& e) {
-        throw e;
+        throw;
     }
 }
 
@@ -1626,7 +1626,7 @@ void Worker::ImportDesorption_SYN(const char *fileName, const size_t &source, co
             SAFE_DELETE(f);
             progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
-            throw e;
+            throw;
         }
         progressDlg->SetVisible(false);
         SAFE_DELETE(progressDlg);
@@ -1675,7 +1675,7 @@ void Worker::AnalyzeSYNfile(const char *fileName, size_t *nbFacet, size_t *nbTex
             SAFE_DELETE(f);
             progressDlg->SetVisible(false);
             SAFE_DELETE(progressDlg);
-            throw e;
+            throw;
         }
         progressDlg->SetVisible(false);
         SAFE_DELETE(progressDlg);
