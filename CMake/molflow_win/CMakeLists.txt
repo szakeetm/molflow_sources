@@ -118,6 +118,11 @@ set(SRC_FILES
 
         )
 
+if(((MSVC AND WIN32) OR (NOT WIN32)) AND WITH_GPU)
+    set(SRC_FILES
+        ${UI_DIR}/ImguiGPUControl.cpp
+    )
+endif()
 # Add executable to build.
 if(WIN32)
     add_executable(${PROJECT_NAME} WIN32 ${SRC_FILES})
