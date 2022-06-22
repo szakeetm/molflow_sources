@@ -21,8 +21,10 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #ifndef MOLFLOW_PROJ_IMGUIGPUCONTROL_H
 #define MOLFLOW_PROJ_IMGUIGPUCONTROL_H
 
+#if defined(MOLFLOW) and defined(GPUCOMPABILITY)
 class MolFlow;
-void ShowGPUWindow(MolFlow *mApp, bool *show_global_settings, bool &nbProcChanged, bool &recalcOutg,
+void ShowGPUWindow(MolFlow *mApp, bool *show_gpu, bool &nbProcChanged, bool &recalcOutg,
                         bool &changeDesLimit, int &nbProc) ;
+#endif
 
 #endif //MOLFLOW_PROJ_IMGUIGPUCONTROL_H

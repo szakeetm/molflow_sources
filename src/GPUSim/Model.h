@@ -16,6 +16,7 @@
 #include "../Simulation/MolflowSimGeom.h"
 #include "../Parameter.h"
 #include <cereal/cereal.hpp>
+#include "GPUSettings.h"
 
 /*! \namespace flowgpu - Molflow GPU code */
 namespace flowgpu {
@@ -62,29 +63,6 @@ namespace flowgpu {
         std::vector<float2> vertices2d;
         std::vector<double2> vertices2d64;
 
-    };
-
-    struct MolflowGlobal{
-        MolflowGlobal() = default;
-
-        float gasMass;
-        bool useMaxwellDistribution;
-        size_t recursiveMaxDepth;
-        size_t cyclesRNG{1};
-        bool randomNumberMethod; /*! 0=bulked, 1=ad hoc */
-        /*bool	 lowFluxMode;
-        double	 lowFluxCutoff;*/
-
-        float offsetMagnitude{0.0f}; // adaptive offset towards center
-        float offsetMagnitudeN{1.0f}; // adaptive offset towards normal
-
-        template <class Archive>
-        void serialize(Archive & archive) {
-            archive(
-                    CEREAL_NVP(gasMass)
-                    , CEREAL_NVP(useMaxwellDistribution)
-            );
-        }
     };
 
     //TODO: Unify with buffer_shared.h

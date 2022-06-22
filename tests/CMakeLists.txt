@@ -97,7 +97,7 @@ if(MSVC)
             )
 endif(MSVC)
 
-if(WITH_GPU)
+if(BUILD_GPU)
     target_link_libraries(testsuite PUBLIC flowGPU cudaKernel)
 endif()
 

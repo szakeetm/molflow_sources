@@ -21,8 +21,9 @@ option(USE_CLANG "build application with clang" OFF) # OFF is the default
 option(USE_PROFILING "disable optimisation for profiling the application" OFF) # OFF is the default
 option(WITH_GPU "activate GPU build" OFF) # OFF is the default
 
-if(((MSVC AND WIN32) OR (NOT WIN32)) AND WITH_GPU)
+if(((MSVC AND WIN32) OR (NOT WIN32)) AND WITH_GPU) #one time define for simpler variable
     message("Creating GPU build")
+    set(BUILD_GPU ON)
 else()
     message("GPU build not available with this compiler and/or OS")
 endif()
@@ -137,7 +138,7 @@ if(USE_TESTS)
     add_dependencies(testsuite molflowSim)
 endif()
 
-IF(WITH_GPU AND ((MSVC AND WIN32) OR (NOT WIN32)))
+IF(BUILD_GPU)
     #IF(MSVC AND WITH_GPU)
     #set(cuda_obj_dir ${PROJECT_SOURCE_DIR}/cuda_kernel/)
 

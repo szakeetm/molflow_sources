@@ -130,7 +130,7 @@ endif()
 
 
 #target_link_libraries(${PROJECT_NAME} PUBLIC shared_simulator)
-if(WITH_GPU)
+if(BUILD_GPU)
     target_link_libraries(${PROJECT_NAME} PUBLIC flowGPU cudaKernel)
 endif()
 target_link_libraries(${PROJECT_NAME} PUBLIC molflowSim)

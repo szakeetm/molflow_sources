@@ -22,6 +22,7 @@
 #include "ModelReader.h"
 #include "Helper/OutputHelper.h"
 #include "Helper/Chronometer.h"
+#include "GPUSettings.h"
 
 SimulationControllerGPU::SimulationControllerGPU(size_t parentPID, size_t procIdx, size_t nbThreads,
                                                  SimulationUnit *simUnit,
@@ -1465,6 +1466,11 @@ int SimulationControllerGPU::ResetSimulation(bool softReset) {
 
 GlobalCounter *SimulationControllerGPU::GetGlobalCounter() {
     return globalCounter.get();
+}
+
+int SimulationControllerGPU::ChangeParams(flowgpu::MolflowGlobal *settings) {
+
+    return 0;
 }
 
 /**

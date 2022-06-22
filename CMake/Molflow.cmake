@@ -61,9 +61,10 @@ message("${PROJECT_NAME}: CMAKE_EXECUTABLE_OUTPUT_DIRECTORY: ${CMAKE_EXECUTABLE_
 add_definitions(
         -DMOLFLOW
 )
-if(WITH_GPU)
+if(BUILD_GPU)
+    message("Setting GPUCOMPABILITY define")
     add_definitions(-DGPUCOMPABILITY)
-endif(WITH_GPU)
+endif(BUILD_GPU)
 
 if (OS_NAME STREQUAL "linux_fedora" )
     add_definitions(
