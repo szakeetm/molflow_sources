@@ -27,6 +27,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "Simulation/MolflowSimGeom.h"
 #include "GeometryTypes.h"
 
+//! Tools for parsing CLI arguments for the parameter sweep
 class ParameterParser {
 public:
     static void ParseFile(const std::string &paramFile, const std::vector<SelectionGroup> &selections);

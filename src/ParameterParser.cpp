@@ -28,6 +28,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 namespace Parameters {
 
+    //! Enum that describes the allowed facet parameters to change
     enum FacetParam : size_t {
         opacity,
         temperature,
@@ -35,18 +36,21 @@ namespace Parameters {
         outgassing
     };
 
+    //! Enum that describes the allowed global simulation parameters to change
     enum SimuParam : size_t {
         mass,
         enableDecay,
         halfLife
     };
 
+    //! Table that maps facet parameters against strings
     static std::unordered_map<std::string,FacetParam> const tableFac = {
             {"opacity",FacetParam::opacity},
             {"temperature",FacetParam::temperature},
             {"sticking",FacetParam::sticking},
             {"outgassing",FacetParam::outgassing}
     };
+    //! Table that maps simulation parameters against strings
     static std::unordered_map<std::string,SimuParam> const tableSim = {
             {"mass",SimuParam::mass},
             {"enableDecay",SimuParam::enableDecay},
@@ -56,6 +60,8 @@ namespace Parameters {
     std::vector<std::tuple<SimuParam, double>> simuParams;
 }
 
+//! Parse CLI argument for facet parameter changes, then add entry as a tuple for later usage
+// considers Selection group names if part of the input file
 void parseFacet(std::istringstream &facetString, const std::vector<SelectionGroup> &selections) {
     std::string id_str;
     std::string param_str;
@@ -103,6 +109,7 @@ void parseFacet(std::istringstream &facetString, const std::vector<SelectionGrou
         Log::console_msg_master(3, "[ParameterChange][Facet][ID: {}] Changing parameter {} to {}\n", id_str, param_str, paramVal_str);
 }
 
+//! Parse CLI argument for simulation parameter changes, then add entry as a tuple for later usage
 void parseSimu(std::istringstream& facetString){
     std::string param_str;
     std::string paramVal_str;
@@ -122,15 +129,7 @@ void parseSimu(std::istringstream& facetString){
 
 }
 
-void parseFacet(const std::string& facetString){
-    auto token = facetString.find('.');
-    std::string id = facetString.substr(0, token); // token is "scott"
-    auto tokenEq = facetString.find('=');
-    std::string param = facetString.substr(token+1, facetString.size()-token); // token is "scott"
-    std::string paramVal = facetString.substr(tokenEq+1); // token is "scott"
-    Log::console_msg_master(3,"[Facet #{}] {} = {}\n", id, param, paramVal);
-}
-
+//! First parse CLI argument as input stream and call individual routines for facet or simulation changes
 void parseInputStream(std::stringstream& inputLineStream, const std::vector<SelectionGroup> &selections){
     Parameters::facetParams.clear();
     Parameters::simuParams.clear();
@@ -153,7 +152,7 @@ void parseInputStream(std::stringstream& inputLineStream, const std::vector<Sele
     }
 }
 
-
+//! Parse parameter sweeps from file by reading into Input Stream
 void ParameterParser::ParseFile(const std::string &paramFile, const std::vector<SelectionGroup> &selections) {
     //convDistr=std::vector<std::pair<double,double>>();
 
@@ -168,6 +167,7 @@ void ParameterParser::ParseFile(const std::string &paramFile, const std::vector<
 
 }
 
+//! Parse parameter sweeps from file
 void ParameterParser::ParseInput(const std::vector<std::string> &paramSweep, const std::vector<SelectionGroup> &selections) {
     std::stringstream inputStream(std::ios_base::app | std::ios_base::out | std::ios_base::in);
     const char delimiter = ';';
@@ -185,6 +185,7 @@ void ParameterParser::ParseInput(const std::vector<std::string> &paramSweep, con
     parseInputStream(inputStream, selections);
 }
 
+//! Read values for parsed simulation parameters
 void ParameterParser::ChangeSimuParams(WorkerParams& params){
     for(auto& par : Parameters::simuParams){
         auto type = std::get<0>(par);
@@ -204,6 +205,7 @@ void ParameterParser::ChangeSimuParams(WorkerParams& params){
     }
 }
 
+//! Read values for parsed facet parameters
 int ParameterParser::ChangeFacetParams(std::vector<std::shared_ptr<SimulationFacet>> &facets) {
     int nbError = 0;
     for(auto& par : Parameters::facetParams){

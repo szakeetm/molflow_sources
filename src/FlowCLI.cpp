@@ -115,6 +115,7 @@ public:
 
 int main(int argc, char** argv) {
 
+    // Set local to parse input files the same on all systems
 #if defined(WIN32) || defined(__APPLE__)
     setlocale(LC_ALL, "C");
 #else
@@ -127,12 +128,13 @@ int main(int argc, char** argv) {
 
     Log::console_msg_master(1, "{}\n", molflowCliLogo);
 
+    // Init necessary components
     SimulationManager simManager{MFMPI::world_rank};
     simManager.interactiveMode = true;
     std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
     GlobalSimuState globState{};
 
-
+    // Parse arguments
     if(-1 < Initializer::initFromArgv(argc, argv, &simManager, model)){
 #if defined(USE_MPI)
         MPI_Finalize();
@@ -146,6 +148,7 @@ int main(int argc, char** argv) {
 #endif
 
 
+    // Load input from file or generated test case
     if(SettingsIO::autogenerateTest <= 0.0 && Initializer::initFromFile(&simManager, model, &globState)){
 #if defined(USE_MPI)
         MPI_Finalize();
@@ -182,6 +185,8 @@ int main(int argc, char** argv) {
     MPI_Barrier(MPI_COMM_WORLD);
     simManager.interactiveMode = false;
 #endif
+
+    // Start async simulation run, check state in following loop
     try {
         simManager.StartSimulation();
     }
@@ -199,6 +204,7 @@ int main(int argc, char** argv) {
     simTimer.Start();
     double elapsedTime = 0.0;
 
+    // Simulation runtime loop to check for end conditions and start auto-saving procedures etc.
     bool endCondition = false;
     do {
         ProcessSleep(1000);
@@ -213,10 +219,7 @@ int main(int argc, char** argv) {
             if(!Settings::desLimit.empty()) {
 
                 // First write an intermediate output file
-                // TODO: Make it toggeable?
-                /*std::stringstream outFile;
-            outFile << SettingsIO::outputPath << "/" <<"desorped_" << model->otfParams.desorptionLimit << "_" <<
-                 std::filesystem::path(SettingsIO::outputFile).filename().string();*/
+                // 1. Get file name
                 std::string outFile = std::filesystem::path(SettingsIO::outputPath)
                         .append("desorbed_")
                         .concat(std::to_string(model->otfParams.desorptionLimit))
@@ -224,6 +227,7 @@ int main(int argc, char** argv) {
                         .concat(std::filesystem::path(SettingsIO::outputFile).filename().string()).string();
 
                 try {
+                    // 2. Write XML file, use existing file as base or create new file
                     FlowIO::WriterXML writer;
                     Log::console_msg_master(3, " Saving intermediate results: {}\n", outFile);
                     if(!SettingsIO::workFile.empty() && std::filesystem::exists(SettingsIO::workFile)) {
@@ -241,6 +245,7 @@ int main(int argc, char** argv) {
                         writer.SaveXMLToFile(newDoc, outFile);
                         //SettingsIO::workFile = outFile;
                     }
+                    // 3. append updated results
                     writer.SaveSimulationState(outFile, model, globState);
                 } catch(std::filesystem::filesystem_error& e) {
                     Log::console_error("Warning: Could not create file: {}\n", e.what());
@@ -264,12 +269,14 @@ int main(int argc, char** argv) {
             }
         }
         else if(Settings::autoSaveDuration && (uint64_t)(elapsedTime)%Settings::autoSaveDuration==0){ // autosave every x seconds
+            // Autosave
             Log::console_msg_master(2,"[{:.2}s] Creating auto save file {}\n", elapsedTime, autoSave);
             FlowIO::WriterXML writer;
             writer.SaveSimulationState(autoSave, model, globState);
         }
 
         if(Settings::outputDuration && (uint64_t)(elapsedTime)%Settings::outputDuration==0){ // autosave every x seconds
+            // Print runtime stats
             if((uint64_t)elapsedTime / Settings::outputDuration <= 1){
                 printer.PrintHeader();
             }
