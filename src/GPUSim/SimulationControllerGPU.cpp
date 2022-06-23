@@ -223,6 +223,7 @@ printf("--- Trans Prob: %e\n",GetTransProb());
 
 ++loopN;*/
 
+//! Staart a simulation
 int SimulationControllerGPU::Start() {
     // Check simulation model and geometry one last time
     auto sane = simulation->SanityCheckModel(true);
@@ -285,49 +286,6 @@ int SimulationControllerGPU::Start() {
             }
         }
 
-#if not defined(GPUCOMPABILITY)
-        for(auto& thread : simThreads){
-            size_t localDes = (desPerThread > thread.particle->totalDesorbed) ? desPerThread - thread.particle->totalDesorbed : 0;
-            thread.localDesLimit = (thread.threadNum < remainder) ? localDes + 1 : localDes;
-        }
-#endif
-
-        // TODO: Remove defaults
-        std::list<size_t> limits; // Number of desorptions: empty=use other end condition
-        size_t nbLoops = 0;               // Number of Simulation loops
-        size_t launchSize = 1;                  // Kernel launch size
-        size_t nPrints = 10;
-        size_t printPerN = 100000;
-        double angle = 0.0; // timeLimit / -i or direct by -k
-        double printEveryNMinutes = 0.0; // timeLimit / -i or direct by -k
-        double timeLimit = 0.0;
-        bool silentMode = false;
-
-        uint64_t printPerNRuns = std::min(static_cast<uint64_t>(printPerN), static_cast<uint64_t>(nbLoops/nPrints)); // prevent n%0 operation
-        printPerNRuns = std::max(printPerNRuns, static_cast<uint64_t>(1));
-
-        // -i
-        if(nbLoops==0 && printEveryNMinutes <= 0.0 && timeLimit > 1e-6){
-            printEveryNMinutes = timeLimit / nPrints;
-        }
-        // ^^^
-
-        auto start_total = std::chrono::steady_clock::now();
-        auto t0 = start_total;
-        double nextPrintAtMin = printEveryNMinutes;
-
-        double raysPerSecondMax = 0.0;
-        double desPerSecondMax = 0.0;
-        /*double raysPerSecondSum = 0.0;
-        uint64_t nRaysSum = 0.0;*/
-
-        size_t refreshForStop = std::numeric_limits<size_t>::max();
-        size_t loopN = 0;
-
-        nbLoops = 100000;
-        printEveryNMinutes = 1.0/60.0;
-        nextPrintAtMin = printEveryNMinutes;
-
         runLoop();
 
         if (hasEnded) {
@@ -376,10 +334,12 @@ bool SimulationControllerGPU::Load() {
     return !loadOk;
 }
 
+//! Not supported, as ADS are not really customizable on GPU
 int SimulationControllerGPU::RebuildAccel() {
     return 0;
 }
 
+//! Reset simulation
 int SimulationControllerGPU::Reset() {
     DEBUG_PRINT("[%d] COMMAND: RESET (%zd,%zu)\n", prIdx, procInfo->cmdParam, procInfo->cmdParam2);
     SetState(PROCESS_STARTING, "Resetting local cache...", false, true);
@@ -392,7 +352,7 @@ int SimulationControllerGPU::Reset() {
 void SimulationControllerGPU::EmergencyExit() {}; // Killing threads
 
 /**
- *
+ * Reset tmp results and load simulation
  * @return 1=could not load GPU Sim, 0=successfully loaded
  */
 int SimulationControllerGPU::LoadSimulation(std::shared_ptr<flowgpu::Model> loaded_model, size_t launchSize) {
@@ -424,8 +384,8 @@ int SimulationControllerGPU::LoadSimulation(std::shared_ptr<flowgpu::Model> load
 }
 
 /**
- * Init random numbers and start RT launch
- * @return 1=could not load GPU Sim, 0=successfully loaded
+ * Start one simulation circle
+ * @return total desorbed particles
  */
 uint64_t SimulationControllerGPU::RunSimulation() {
 
@@ -453,6 +413,9 @@ uint64_t SimulationControllerGPU::RunSimulation() {
     return figures.total_des;
 }
 
+/**
+ * Calculates rough estimate (N Steps) for when a desorption limit will be reached
+ */
 int SimulationControllerGPU::RemainingStepsUntilStop() {
     uint64_t diffDes = 0u;
     if (model->ontheflyParams.desorptionLimit > figures.total_des)
@@ -600,8 +563,8 @@ void SimulationControllerGPU::CheckAndBlockDesorption_exact(double threshold) {
 }
 
 /**
- * Fetch simulation data from the device
- * @return 1=could not load GPU Sim, 0=successfully loaded
+ * Calculates and returns transmission probability for a particular facet
+ * @return transmission probability for facet with given index
  */
 double SimulationControllerGPU::GetTransProb(size_t polyIndex) {
 #if defined(WITHTRIANGLES)
@@ -627,6 +590,7 @@ double SimulationControllerGPU::GetTransProb(size_t polyIndex) {
 #endif
 }
 
+//! handy function for quick compares that returns the transmission probability
 double SimulationControllerGPU::GetTransProb() {
 #if defined(WITHTRIANGLES)
     double sumAbs = 0;
@@ -654,6 +618,7 @@ double SimulationControllerGPU::GetTransProb() {
 #endif
 }
 
+//! Do various calculations for runtime statistics
 void SimulationControllerGPU::CalcRuntimeFigures() {
     figures.desPerRun = (double) (figures.total_des - figures.ndes_stop) / figures.runCountNoEnd;
     figures.desPerRun_stop = (double) (figures.exitCount) / (figures.runCount - figures.runCountNoEnd);
@@ -700,6 +665,7 @@ unsigned long long int SimulationControllerGPU::GetSimulationData(bool silent) {
     }
 }
 
+//! Add up global GPU counters (on host) with downloaded data (temporary state)
 void SimulationControllerGPU::IncreaseGlobalCounters(HostData *tempData) {
 #ifdef DEBUGLEAKPOS
     {
@@ -856,6 +822,7 @@ void SimulationControllerGPU::IncreaseGlobalCounters(HostData *tempData) {
 
 }
 
+//! Reset global GPU counters (on host)
 int SimulationControllerGPU::ResetGlobalCounter() {
     globalCounter->facetHitCounters.clear();
     globalCounter->leakCounter.clear();
@@ -1081,6 +1048,7 @@ unsigned long long int SimulationControllerGPU::ConvertSimulationData(GlobalSimu
     return gState.globalHits.nbLeakTotal;
 }
 
+//! Resize host buffers
 void SimulationControllerGPU::Resize() {
 #ifdef WITHDESORPEXIT
     data->hitData.resize(settings->kernelDimensions[0] * settings->kernelDimensions[1]);
@@ -1127,7 +1095,7 @@ void SimulationControllerGPU::Resize() {
 #endif
 }
 
-/*! download the rendered color buffer and return the total amount of hits (= followed rays) */
+/*! print data in relation to a parent polygon (triangle data mapped/summed for parent polygon) */
 void SimulationControllerGPU::PrintDataForParent() {
     // Find amount of Polygons, we don't have this information anymore
     unsigned int maxPoly = 0;
@@ -1183,7 +1151,7 @@ void SimulationControllerGPU::PrintDataForParent() {
     }
 }
 
-/*! download the rendered color buffer and return the total amount of hits (= followed rays) */
+/*! Print various statistics from the downloaded data (debug + runtime totals) */
 void SimulationControllerGPU::PrintData() {
 #ifdef DEBUGCOUNT
     std::cout << "Determinant Distribution:"<<std::endl;
@@ -1258,7 +1226,7 @@ void SimulationControllerGPU::PrintData() {
     std::cout << " total miss >>> "<< *data->leakCounter.data()<< " -- miss/hit ratio: "<<(double)(*data->leakCounter.data()) / total_counter <<std::endl;*/
 }
 
-/*! download the rendered color buffer and return the total amount of hits (= followed rays) */
+/*! Update global runtime figures with downloaded data */
 void SimulationControllerGPU::UpdateGlobalFigures() {
     uint64_t prevDes = globFigures.total_des;
 
@@ -1272,7 +1240,7 @@ void SimulationControllerGPU::UpdateGlobalFigures() {
         globFigures.ndes_stop += globFigures.total_des - prevDes;
 }
 
-/*! download the rendered color buffer and return the total amount of hits (= followed rays) */
+/*! Add the downloaded data to total counters and print their values */
 void SimulationControllerGPU::PrintTotalCounters() {
     uint64_t prevDes = figures.total_des;
     figures.total_counter = 0;
@@ -1301,7 +1269,7 @@ void SimulationControllerGPU::PrintTotalCounters() {
                static_cast<double>(figures.total_counter));
 }
 
-/*! download the rendered color buffer and return the total amount of hits (= followed rays) */
+/*! download the device data and write the data to a file */
 void SimulationControllerGPU::WriteDataToFile(const std::string &fileName) {
     uint32_t nbFacets = this->model->nbFacets_total;
 
@@ -1441,6 +1409,7 @@ void SimulationControllerGPU::WriteDataToFile(const std::string &fileName) {
 
 }
 
+//! Get nb of total hits
 unsigned long long int SimulationControllerGPU::GetTotalHits() {
 
     unsigned long long int total_counter = 0;
@@ -1488,141 +1457,15 @@ int SimulationControllerGPU::ResetSimulation(bool softReset) {
     return 0;
 }
 
+//! Get pointer to HostData structure for GPU results
 GlobalCounter *SimulationControllerGPU::GetGlobalCounter() {
     return globalCounter.get();
 }
 
+//! Change GPU parameters forwarded from GUI to Sim
 int SimulationControllerGPU::ChangeParams(std::shared_ptr<flowgpu::MolflowGPUSettings> molflowGlobal) {
     if(!settings)
         settings = std::make_shared<flowgpu::MolflowGPUSettings>();
     *settings = *molflowGlobal;
     return 0;
 }
-
-/**
- *
- * @return 1=could not load GPU Sim, 0=successfully loaded
- *//*
-
-int SimulationControllerGPU::LoadSimulation(const std::vector<Vector3d> &geomVertices, const std::vector<SuperStructure> &structures, const WorkerParams& wp, const std::vector<std::vector<std::pair<double,double>>> CDFs) {
-    try {
-        model = flowgpu::loadFromMolflow(geomVertices, structures, wp, CDFs);
-        */
-/*(model = flowgpu::loadOBJ(
-#ifdef _WIN32
-                // on windows, visual studio creates _two_ levels of build dir
-                // (x86/Release)
-                "../../models/sponza.obj"
-#else
-        // on linux, common practice is to have ONE level of build dir
-      // (say, <project>/build/)...
-      "../models/sponza.obj"
-#endif
-        );*//*
-
-    } catch (std::runtime_error& e) {
-        std::cout << MF_TERMINAL_RED << "FATAL ERROR: " << e.what()
-                  << MF_TERMINAL_DEFAULT << std::endl;
-        std::cout << "Did you forget to copy sponza.obj and sponza.mtl into your optix7course/models directory?" << std::endl;
-        exit(1);
-    }
-
-    */
-/*flowgpu::Camera camera = { *//*
-*/
-/*model->bounds.center()-*//*
-*/
-/*flowgpu::float3(7.637f, -2.58f, -5.03f),
-                                                                                        model->bounds.center()-flowgpu::float3(0.f, 0.f, 0.0f),
-                                                                                        flowgpu::float3(0.f,1.f,0.f) };*//*
-
-    flowgpu::Camera camera = {flowgpu::float3(11.0f, -4.6f, -4.0f),
-                              model->bounds.center(),
-                              flowgpu::float3(0.f, 1.f, 0.f) };
-    */
-/*flowgpu::Camera camera = { model->bounds.center(),
-                               model->bounds.center()-flowgpu::float3(0.1f, 0.1f, 0.1f),
-                       flowgpu::float3(0.f,1.f,0.f) };*//*
-
-
-    // something approximating the scale of the world, so the
-    // camera knows how much to move for any given user interaction:
-    const float worldScale = length(model->bounds.span());
-    const std::string windowTitle = "Optix 7 OBJ Model";
-    window = new flowgpu::SampleWindow(windowTitle, model, camera, worldScale);
-    return 0;
-}
-
-*/
-/**
- *
- * @return 1=could not load GPU Sim, 0=successfully loaded
- *//*
-
-int SimulationControllerGPU::RunSimulation() {
-
-    try {
-        window->run();
-    } catch (std::runtime_error& e) {
-        std::cout << MF_TERMINAL_RED << "FATAL ERROR: " << e.what()
-                  << MF_TERMINAL_DEFAULT << std::endl;
-        exit(1);
-    }
-    return 0;
-}
-
-*/
-/**
- *
- * @return 1=could not load GPU Sim, 0=successfully loaded
- *//*
-
-int SimulationControllerGPU::CloseSimulation() {
-
-    try {
-        delete window;
-    } catch (std::runtime_error& e) {
-        std::cout << MF_TERMINAL_RED << "FATAL ERROR: " << e.what()
-                  << MF_TERMINAL_DEFAULT << std::endl;
-        exit(1);
-    }
-    return 0;
-}*/
-
-/**
-*
-* @return 1=could not load GPU Sim, 0=successfully loaded
-*/
-/*int SimulationControllerGPU::LoadSimulation(const std::vector<Vector3d> &geomVertices, const std::vector<SuperStructure> &structures, const WorkerParams& wp, const std::vector<std::vector<std::pair<double,double>>> CDFs) {
-    try {
-        model = flowgpu::loadFromMolflow(geomVertices, structures, wp, CDFs);
-    } catch (std::runtime_error& e) {
-        std::cout << MF_TERMINAL_RED << "FATAL ERROR: " << e.what()
-                  << MF_TERMINAL_DEFAULT << std::endl;
-        std::cout << "Does GPUMolflow support this geometry yet?" << std::endl;
-        exit(1);
-    }
-
-    *//*std::ofstream file( "test_geom.xml" );
-    cereal::XMLOutputArchive archive( file );
-    archive(
-            //CEREAL_NVP(model->poly_meshes[0]->poly) ,
-            CEREAL_NVP(model->poly_meshes[0]->facetProbabilities) ,
-            CEREAL_NVP(model->poly_meshes[0]->cdfs) ,
-            CEREAL_NVP(model->poly_meshes[0]->vertices2d) ,
-            CEREAL_NVP(model->poly_meshes[0]->vertices3d) ,
-            CEREAL_NVP(model->poly_meshes[0]->indices) ,
-            CEREAL_NVP(model->poly_meshes[0]->nbFacets) ,
-            CEREAL_NVP(model->poly_meshes[0]->nbVertices) ,
-            CEREAL_NVP(model->nbFacets_total) ,
-            CEREAL_NVP(model->nbVertices_total) ,
-            CEREAL_NVP(model->useMaxwell) ,
-            CEREAL_NVP(model->bounds.lower) ,
-            CEREAL_NVP(model->bounds.upper)
-            );*//*
-
-
-    tracer = new flowgpu::MolTracer(model);
-    tracer->setup();
-    return 0;
-}*/
