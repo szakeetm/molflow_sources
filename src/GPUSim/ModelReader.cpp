@@ -924,8 +924,8 @@ namespace flowgpu {
     int
     loadFromSimModel(std::shared_ptr<Model> &model, std::shared_ptr<flowgpu::MolflowGPUSettings> &settings,
                      const SimulationModel &simModel) {
-        if (!model)
-            model = std::make_shared<flowgpu::Model>();
+        model = std::make_shared<flowgpu::Model>();
+
         if (!settings)
             settings = std::make_shared<flowgpu::MolflowGPUSettings>();
 
@@ -934,7 +934,6 @@ namespace flowgpu {
 
         //Worker params
         //inputarchive(cereal::make_nvp("wp",model->parametersGlobal));
-        model->Reset();
 
         settings->gasMass = simModel.wp.gasMass;
         settings->useMaxwellDistribution = simModel.wp.useMaxwellDistribution;

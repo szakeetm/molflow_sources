@@ -78,14 +78,14 @@ namespace flowgpu {
                         count*sizeof(T), cudaMemcpyHostToDevice));
     }
 
-    void initDeviceData(size_t size)
+    void initDeviceData(size_t size) const
     {
       assert(d_ptr != nullptr);
       assert(sizeInBytes == size);
       CUDA_CHECK(cudaMemset(d_ptr, 0, size));
     }
 
-      bool isNullptr()
+      bool isNullptr() const
       {
           return d_ptr == nullptr;
       }

@@ -46,18 +46,23 @@ void ShowGPUWindow(MolFlow *mApp, bool *show_gpu, std::shared_ptr<flowgpu::Molfl
     static flowgpu::MolflowGPUSettings gpu_settings = *settings;
 
     static bool simChanged = false;
-    simChanged |= ImGui::InputFloat("Gas molecular mass (g/mol)", &gpu_settings.gasMass, 0.00f, 0.0f, "%g");
+
+    static int vec2i[2] = { static_cast<int>(gpu_settings.kernelDimensions[0]), static_cast<int>(gpu_settings.kernelDimensions[1]) };
+    simChanged |= ImGui::InputInt2("NB Threads", vec2i);
+    gpu_settings.kernelDimensions[0] = vec2i[0];
+    gpu_settings.kernelDimensions[1] = vec2i[1];
     simChanged |= ImGui::Checkbox(
             "Batched random numbers",
             reinterpret_cast<bool *>(&gpu_settings.randomNumberMethod)); // Edit bools storing our window
-    simChanged |= ImGui::Checkbox(
-            "Maxwell Boltzmann Distribution",
-            reinterpret_cast<bool *>(&gpu_settings.useMaxwellDistribution));
     simChanged |= ImGui::InputInt("RNG cycles",reinterpret_cast<int *>( &gpu_settings.cyclesRNG));
     simChanged |= ImGui::InputInt("Recursive depth",reinterpret_cast<int *>( &gpu_settings.recursiveMaxDepth));
     simChanged |= ImGui::InputFloat("Offset Magnitude Normal", &gpu_settings.offsetMagnitudeN, 0.00f, 0.0f, "%g");
     simChanged |= ImGui::InputFloat("Offset Magnitude Center", &gpu_settings.offsetMagnitude, 0.00f, 0.0f, "%g");
 
+    simChanged |= ImGui::InputFloat("Gas molecular mass (g/mol)", &gpu_settings.gasMass, 0.00f, 0.0f, "%g");
+    simChanged |= ImGui::Checkbox(
+            "Maxwell Boltzmann Distribution",
+            reinterpret_cast<bool *>(&gpu_settings.useMaxwellDistribution));
     if(simChanged) {
         *settings = gpu_settings;
         simChanged = false;

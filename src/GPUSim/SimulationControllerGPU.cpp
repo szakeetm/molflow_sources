@@ -1451,8 +1451,10 @@ int SimulationControllerGPU::CloseSimulation() {
 
 // Do a soft reset to keep active particles in memory
 int SimulationControllerGPU::ResetSimulation(bool softReset) {
-    if (!softReset && optixHandle)
-        optixHandle->resetDeviceData(settings->kernelDimensions);
+    if (!softReset && optixHandle) {
+        CloseSimulation();
+        //optixHandle->resetDeviceData(settings->kernelDimensions);
+    }
 
     figures.total_des = 0;
     figures.total_abs = 0;
@@ -1471,7 +1473,7 @@ GlobalCounter *SimulationControllerGPU::GetGlobalCounter() {
     return globalCounter.get();
 }
 
-int SimulationControllerGPU::ChangeParams(flowgpu::MolflowGPUSettings *molflowGlobal) {
+int SimulationControllerGPU::ChangeParams(std::shared_ptr<flowgpu::MolflowGPUSettings> molflowGlobal) {
     if(!settings)
         settings = std::make_shared<flowgpu::MolflowGPUSettings>();
     *settings = *molflowGlobal;

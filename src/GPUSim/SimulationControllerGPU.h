@@ -62,7 +62,7 @@ public:
                             std::shared_ptr<ProcComm> pInfo);
     ~SimulationControllerGPU();
 
-    int ChangeParams(flowgpu::MolflowGPUSettings* molflowGlobal);
+    int ChangeParams(std::shared_ptr<flowgpu::MolflowGPUSettings> molflowGlobal);
     int LoadSimulation(std::shared_ptr<flowgpu::Model> loaded_model, size_t launchSize);
     uint64_t RunSimulation();
     int CloseSimulation();
