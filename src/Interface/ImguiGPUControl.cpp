@@ -48,6 +48,9 @@ void ShowGPUWindow(MolFlow *mApp, bool *show_gpu, std::shared_ptr<flowgpu::Molfl
     static bool simChanged = false;
 
     static int vec2i[2] = { static_cast<int>(gpu_settings.kernelDimensions[0]), static_cast<int>(gpu_settings.kernelDimensions[1]) };
+    simChanged |= ImGui::Checkbox(
+            "Allow desorption of particles",
+            reinterpret_cast<bool *>(&gpu_settings.allowNewParticles));
     simChanged |= ImGui::InputInt2("NB Threads", vec2i);
     gpu_settings.kernelDimensions[0] = vec2i[0];
     gpu_settings.kernelDimensions[1] = vec2i[1];

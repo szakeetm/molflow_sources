@@ -497,6 +497,7 @@ void SimulationControllerGPU::AllowNewParticles() {
     return;
 }
 
+//! Check for desorption limit and block desorption of new particles
 void SimulationControllerGPU::CheckAndBlockDesorption() {
 #ifdef WITHDESORPEXIT
     if (this->model->ontheflyParams.desorptionLimit > 0) {
@@ -526,6 +527,8 @@ void SimulationControllerGPU::CheckAndBlockDesorption() {
 
 static uint64_t prevExitCount = 0;
 
+//! Check for desorption limit and block desorption of new particles, where a threshold (in%) can be specified to prevent long waiting times
+// threshold == 1.0 : all particles have to be absorbed
 void SimulationControllerGPU::CheckAndBlockDesorption_exact(double threshold) {
 #ifdef WITHDESORPEXIT
     size_t nThreads = settings->kernelDimensions[0] * settings->kernelDimensions[1];

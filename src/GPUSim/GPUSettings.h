@@ -15,6 +15,8 @@ namespace flowgpu {
         size_t recursiveMaxDepth{0};
         size_t cyclesRNG{1};
         bool randomNumberMethod{true}; /*! 0=bulked, 1=ad hoc */
+        bool allowNewParticles{true}; /*! 0=stop desorption, finish existing, 1=allow desorption */
+
         /*bool	 lowFluxMode;
         double	 lowFluxCutoff;*/
 

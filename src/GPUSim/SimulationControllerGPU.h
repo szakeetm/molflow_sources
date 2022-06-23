@@ -48,8 +48,6 @@ protected:
     void Resize();
     unsigned long long int GetTotalHits();
 private:
-    void CheckAndBlockDesorption();
-    void CheckAndBlockDesorption_exact(double threshold);
     void PrintData();
     void PrintDataForParent();
     void PrintTotalCounters();
@@ -69,6 +67,8 @@ public:
     int ResetSimulation(bool softReset);
     int ResetGlobalCounter();
     void AllowNewParticles();
+    void CheckAndBlockDesorption();
+    void CheckAndBlockDesorption_exact(double threshold);
 
     unsigned long long int GetSimulationData(bool silent = true);
     void IncreaseGlobalCounters(HostData* tempData);
