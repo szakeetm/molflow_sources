@@ -181,9 +181,10 @@ typedef Record<TriangleRayGenData> RaygenRecordTri;
 
     /*! constructor - performs all setup, including initializing
       optix, creates module, pipeline, programs, SBT, etc. */
-    SimulationOptiX::SimulationOptiX(const Model *model, const unsigned int launchSize_[2])
-            : model(model) {
-        uint2 launchSize = make_uint2(launchSize_[0], launchSize_[1]);
+    SimulationOptiX::SimulationOptiX(const std::shared_ptr<Model> &model,
+                                     const std::shared_ptr<flowgpu::MolflowGPUSettings> &settings)
+            : model(model), settings(settings) {
+        uint2 launchSize = make_uint2(settings->kernelDimensions[0], settings->kernelDimensions[1]);
         std::cout << "#flowgpu: initializing launch parameters ..." << std::endl;
         try{
         initLaunchParams(launchSize);
@@ -1361,7 +1362,7 @@ try{
 
 #ifdef RNG_BULKED
         /*const unsigned int launchSize = state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y;
-        const unsigned int nbRandperThread = NB_RAND(model->parametersGlobal.cyclesRNG, state.launchParams.simConstants.maxDepth);
+        const unsigned int nbRandperThread = NB_RAND(settings->cyclesRNG, state.launchParams.simConstants.maxDepth);
         //const unsigned int nbRand = nbRandperThread * launchSize;
         //CUDABuffer stateBuff, randomBuff;
         //curandState_t *states;
@@ -1385,7 +1386,7 @@ try{
 
         //state.launchParamsBuffer.upload(&launchParams,1);*/
         const unsigned int launchSize = state.launchParams.simConstants.size.x * state.launchParams.simConstants.size.y;
-        const unsigned int nbRandperThread = NB_RAND(model->parametersGlobal.cyclesRNG, state.launchParams.simConstants.maxDepth);
+        const unsigned int nbRandperThread = NB_RAND(settings->cyclesRNG, state.launchParams.simConstants.maxDepth);
 
         crng::generateRandHostAndBuffer(launchSize, static_cast<RN_T*>(sim_memory.randBuffer.d_ptr), nbRandperThread, static_cast<unsigned int*>(sim_memory.randOffsetBuffer.d_ptr));
         state.launchParams.randomNumbers = static_cast<RN_T*>(sim_memory.randBuffer.d_ptr);
@@ -1401,7 +1402,7 @@ try{
         uint2 newSize = make_uint2(newSize_[0],newSize_[1]);
 
 #ifdef RNG_BULKED
-        const uint32_t nbRand = NB_RAND(model->parametersGlobal.cyclesRNG, state.launchParams.simConstants.maxDepth);
+        const uint32_t nbRand = NB_RAND(settings->cyclesRNG, state.launchParams.simConstants.maxDepth);
 #else
         const uint32_t nbRand = NB_RAND(1, state.launchParams.simConstants.maxDepth);
 #endif
@@ -1434,9 +1435,9 @@ try{
 
     void SimulationOptiX::initLaunchParams(const uint2 &newSize) {
 #ifdef RNG_BULKED
-        const uint32_t nbRand = NB_RAND(model->parametersGlobal.cyclesRNG, model->parametersGlobal.recursiveMaxDepth);
+        const uint32_t nbRand = NB_RAND(settings->cyclesRNG, settings->recursiveMaxDepth);
 #else
-        const uint32_t nbRand = NB_RAND(1, model->parametersGlobal.recursiveMaxDepth);
+        const uint32_t nbRand = NB_RAND(1, settings->recursiveMaxDepth);
 #endif
         // resize our cuda frame buffer
         // TODO: one counter per thread is a problem for memory
@@ -1473,11 +1474,11 @@ try{
 
         // update the launch parameters that we'll pass to the optix
         // launch:
-        state.launchParams.simConstants.useMaxwell = model->wp.useMaxwellDistribution;//model->parametersGlobal.useMaxwellDistribution;
-        state.launchParams.simConstants.gasMass = model->wp.gasMass;//model->parametersGlobal.gasMass;
+        state.launchParams.simConstants.useMaxwell = model->wp.useMaxwellDistribution;//settings->useMaxwellDistribution;
+        state.launchParams.simConstants.gasMass = model->wp.gasMass;//settings->gasMass;
         state.launchParams.simConstants.nbRandNumbersPerThread = nbRand;
         state.launchParams.simConstants.scene_epsilon = SCENE_EPSILON;
-        state.launchParams.simConstants.maxDepth = model->parametersGlobal.recursiveMaxDepth;
+        state.launchParams.simConstants.maxDepth = settings->recursiveMaxDepth;
         state.launchParams.simConstants.size = newSize;
         state.launchParams.simConstants.nbFacets = model->nbFacets_total;
         // TODO: Total nb for indices and vertices
@@ -1486,8 +1487,8 @@ try{
         state.launchParams.simConstants.nbTexel = model->nbTexel_total;
         state.launchParams.simConstants.nbProfSlices = model->nbProfSlices_total;
 #endif
-        state.launchParams.simConstants.offset_center_magnitude = model->parametersGlobal.offsetMagnitude;
-        state.launchParams.simConstants.offset_normal_magnitude = model->parametersGlobal.offsetMagnitudeN;
+        state.launchParams.simConstants.offset_center_magnitude = settings->offsetMagnitude;
+        state.launchParams.simConstants.offset_normal_magnitude = settings->offsetMagnitudeN;
 
         state.launchParams.perThreadData.currentMoleculeData = (MolPRD *) sim_memory.moleculeBuffer.d_pointer();
         state.launchParams.perThreadData.randBufferOffset = (uint32_t *) sim_memory.randOffsetBuffer.d_pointer();
@@ -1561,7 +1562,7 @@ try{
     // initlaunchparams
     void SimulationOptiX::resize(const uint2 &newSize) {
 #ifdef RNG_BULKED
-        const uint32_t nbRand = NB_RAND(model->parametersGlobal.cyclesRNG, state.launchParams.simConstants.maxDepth);
+        const uint32_t nbRand = NB_RAND(settings->cyclesRNG, state.launchParams.simConstants.maxDepth);
 #else
         const uint32_t nbRand = NB_RAND(1, state.launchParams.simConstants.maxDepth);
 #endif

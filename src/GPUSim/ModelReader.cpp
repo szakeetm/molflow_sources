@@ -32,24 +32,6 @@
 #include <thrust/replace.h>
 #include <thrust/functional.h>*/
 
-template<class Archive>
-void serialize(Archive &archive,
-               float2 &m) {
-    archive(m.x, m.y);
-}
-
-template<class Archive>
-void serialize(Archive &archive,
-               float3 &m) {
-    archive(m.x, m.y, m.z);
-}
-
-template<class Archive>
-void serialize(Archive &archive,
-               int3 &m) {
-    archive(m.x, m.y, m.z);
-}
-
 inline void vector3d_to_float3(float3 &t, const Vector3d &o) {
     t.x = o.x;
     t.y = o.y;
@@ -86,60 +68,11 @@ inline double3 vector3d_to_double3(const Vector3d &o) {
 /*! \namespace flowgeom - Molflow Geometry code */
 namespace flowgpu {
 
-/*! --- Initialise model with a Molflow-exported geometry --- */
-    flowgpu::Model *initializeModel(std::string fileName) {
-
-        std::cout << "#GPUTestsuite: Loading input file: " << fileName << std::endl;
-
-        flowgpu::Model *model = new flowgpu::Model();
-        std::ifstream file(fileName);
-        cereal::XMLInputArchive archive(file);
-
-#ifdef WITHTRIANGLES
-        model->triangle_meshes.push_back(new flowgpu::TriangleMesh());
-        archive.loadBinaryValue(&model->triangle_meshes[0]->poly, sizeof(Polygon)*model->triangle_meshes[0]->poly.size(), "poly");
-        archive(
-                //cereal::
-                //ar.loadBinaryValue(model->triangle_meshes[0]->poly, 0),
-                //cereal::make_nvp("poly", model->triangle_meshes[0]->poly),
-                cereal::make_nvp("facetProbabilities", model->triangle_meshes[0]->facetProbabilities),
-                cereal::make_nvp("cdfs", model->triangle_meshes[0]->cdfs_1),
-                //cereal::make_nvp("vertices2d", nullptr) ,
-                cereal::make_nvp("vertices3d", model->triangle_meshes[0]->vertices3d),
-                cereal::make_nvp("indices", model->triangle_meshes[0]->indices),
-                cereal::make_nvp("nbFacets", model->triangle_meshes[0]->nbFacets),
-                cereal::make_nvp("nbVertices", model->triangle_meshes[0]->nbVertices),
-                cereal::make_nvp("nbFacetsTotal", model->nbFacets_total),
-                cereal::make_nvp("nbVerticesTotal", model->nbVertices_total),
-                cereal::make_nvp("useMaxwellDistribution", model->parametersGlobal.useMaxwellDistribution)
-        );
-#else
-        model->poly_meshes.push_back(new flowgpu::PolygonMesh());
-        archive(
-                cereal::make_nvp("poly", model->poly_meshes[0]->poly),
-                cereal::make_nvp("facetProbabilities", model->poly_meshes[0]->facetProbabilities),
-                cereal::make_nvp("cdfs", model->poly_meshes[0]->cdfs),
-                cereal::make_nvp("vertices2d", model->poly_meshes[0]->vertices2d),
-                cereal::make_nvp("vertices3d", model->poly_meshes[0]->vertices3d),
-                cereal::make_nvp("indices", model->poly_meshes[0]->indices),
-                cereal::make_nvp("nbFacets", model->poly_meshes[0]->nbFacets),
-                cereal::make_nvp("nbVertices", model->poly_meshes[0]->nbVertices),
-                cereal::make_nvp("nbFacetsTotal", model->nbFacets_total),
-                cereal::make_nvp("nbVerticesTotal", model->nbVertices_total),
-                cereal::make_nvp("useMaxwellDistribution", model->parametersGlobal.useMaxwellDistribution)
-        );
-#endif
-
-        std::cout << "#GPUTestsuite: Loading completed!" << std::endl;
-
-        return model;
-    }
-
     // split a 2sided facet into two 1sided (e.g. in case of culling)
-    void split2sided(flowgpu::TriangleMesh *triMesh){
+    void split2sided(flowgpu::TriangleMesh *triMesh) {
         int facetIndex = 0;
-        for (auto &facet : triMesh->poly) {
-            if(facet.facProps.is2sided) {
+        for (auto &facet: triMesh->poly) {
+            if (facet.facProps.is2sided) {
                 auto poly_cpy = facet;
                 // Calculate triangle area
                 auto &triIndices = triMesh->indices[facetIndex];
@@ -233,7 +166,7 @@ namespace flowgpu {
     void CalculateRelativePolygonOutgassing(const std::vector<TempFacet> &facets, flowgpu::PolygonMesh *polyMesh) {
         float fullOutgassing = 0;
         int facetIndex = 0;
-        for (auto &facet : polyMesh->poly) {
+        for (auto &facet: polyMesh->poly) {
 
             // outgassing of a triangle is only a percentage of the original polygon's
 
@@ -245,7 +178,7 @@ namespace flowgpu {
 
             ++facetIndex;
         }
-        for (auto &facetProb : polyMesh->facetProbabilities) {
+        for (auto &facetProb: polyMesh->facetProbabilities) {
             facetProb.x /= fullOutgassing; // normalize to [0,1]
             facetProb.y /= fullOutgassing; // normalize to [0,1]
         }
@@ -256,7 +189,7 @@ namespace flowgpu {
     void CalculateTriangleCenter(flowgpu::TriangleMesh *triMesh) {
         float fullOutgassing = 0;
         int facetIndex = 0;
-        for (auto &facet : triMesh->poly) {
+        for (auto &facet: triMesh->poly) {
             // Calculate triangle center
             auto &triIndices = triMesh->indices[facetIndex];
             auto &a = triMesh->vertices3d[triIndices.x];
@@ -273,7 +206,7 @@ namespace flowgpu {
                        a.x, a.y, a.z,
                        b.x, b.y, b.z,
                        c.x, c.y, c.z
-                       );
+            );
             ++facetIndex;
         }
     };
@@ -282,7 +215,7 @@ namespace flowgpu {
     void CalculateRelativeTriangleOutgassing(const std::vector<TempFacet> &facets, flowgpu::TriangleMesh *triMesh) {
         float fullOutgassing = 0;
         int facetIndex = 0;
-        for (auto &facet : triMesh->poly) {
+        for (auto &facet: triMesh->poly) {
 
             // Calculate triangle area
             auto &triIndices = triMesh->indices[facetIndex];
@@ -306,7 +239,7 @@ namespace flowgpu {
 
             ++facetIndex;
         }
-        for (auto &facetProb : triMesh->facetProbabilities) {
+        for (auto &facetProb: triMesh->facetProbabilities) {
             facetProb.x /= fullOutgassing; // normalize to [0,1]
             facetProb.y /= fullOutgassing; // normalize to [0,1]
         }
@@ -378,15 +311,15 @@ namespace flowgpu {
         int i = 0;
         int indexOffset = 0;
 
-        for (auto &facet : facets) {
+        for (auto &facet: facets) {
             polyMesh->poly[i++].indexOffset = indexOffset;
 
             assert(facet.indices.size() > 0);
             indexOffset += facet.indices.size();
-            for (auto ind : facet.indices) {
+            for (auto ind: facet.indices) {
                 polyMesh->indices.push_back(ind);
             }
-            for (auto vert : facet.vertices2) {
+            for (auto vert: facet.vertices2) {
                 polyMesh->vertices2d.push_back(make_float2(vert.u, vert.v));
                 polyMesh->vertices2d64.push_back(make_double2(vert.u, vert.v));
 
@@ -420,15 +353,14 @@ namespace flowgpu {
         if (!polyMesh->poly.empty()) {
             //polyMesh->cdfs_1.push_back(0);
             model->poly_meshes.push_back(polyMesh);
-        }
-        else {
+        } else {
             delete polyMesh;
         }
-        for (auto &polyMesh : model->poly_meshes) {
+        for (auto &polyMesh: model->poly_meshes) {
             model->nbFacets_total += polyMesh->nbFacets;
             model->nbVertices_total += polyMesh->nbVertices;
         }
-        for (auto &triMesh : model->triangle_meshes) {
+        for (auto &triMesh: model->triangle_meshes) {
             model->nbFacets_total += triMesh->nbFacets;
             model->nbVertices_total += triMesh->nbVertices;
         }
@@ -437,7 +369,7 @@ namespace flowgpu {
 
         //TODO: Remove
         int hitOffset = 0;
-        for (auto &facet : facets) {
+        for (auto &facet: facets) {
             model->tri_facetOffset.emplace_back(hitOffset);
         }
 
@@ -448,9 +380,9 @@ namespace flowgpu {
 #else
         CalculateRelativePolygonOutgassing(facets, polyMesh);
 #endif
-        for (auto &mesh : model->poly_meshes) {
+        for (auto &mesh: model->poly_meshes) {
             std::vector<flowgpu::FacetType> sbtIndices; // Facet Type
-            for (auto &polygon : mesh->poly) {
+            for (auto &polygon: mesh->poly) {
                 //if(polygon.facProps.is2sided && polygon.facProps.opacity == 0.0f){
                 if (polygon.facProps.opacity == 0.0f) {
                     //std::cout << sbtIndices.size() << " > is transparent " << std::endl;
@@ -461,9 +393,9 @@ namespace flowgpu {
             }
             mesh->sbtIndices = sbtIndices;
         }
-        for (auto &mesh : model->triangle_meshes) {
+        for (auto &mesh: model->triangle_meshes) {
             std::vector<flowgpu::FacetType> sbtIndices; // Facet Type
-            for (auto &triangle : mesh->poly) {
+            for (auto &triangle: mesh->poly) {
                 //if(triangle.facProps.is2sided && triangle.facProps.opacity == 0.0f){
                 if (triangle.facProps.opacity == 0.0f) {
                     std::cout << sbtIndices.size() << " > is transparent " << std::endl;
@@ -497,7 +429,7 @@ namespace flowgpu {
                     facetTex.bbMin = make_float3(std::numeric_limits<float>::max());
                     facetTex.bbMax = make_float3(std::numeric_limits<float>::lowest());
 
-                    for (auto &ind : facet.indices) {
+                    for (auto &ind: facet.indices) {
                         facetTex.bbMin = fminf(facetTex.bbMin, vertices3d[ind]);
                         facetTex.bbMax = fmaxf(facetTex.bbMax, vertices3d[ind]);
                     }
@@ -514,8 +446,8 @@ namespace flowgpu {
                     model->texInc.insert(std::end(model->texInc), std::begin(texInc), std::end(texInc));
                     model->facetTex.push_back(facetTex);
 
-                    for (auto &polyMesh : model->poly_meshes) {
-                        for (auto &polygon : polyMesh->poly) {
+                    for (auto &polyMesh: model->poly_meshes) {
+                        for (auto &polygon: polyMesh->poly) {
                             if (polygon.parentIndex == facetInd) {
                                 polygon.texProps.textureOffset = textureOffset;
                                 polygon.texProps.textureSize = texture.size();
@@ -532,9 +464,9 @@ namespace flowgpu {
                             }
                         }
                     }
-                    for (auto &triMesh : model->triangle_meshes) {
+                    for (auto &triMesh: model->triangle_meshes) {
                         uint32_t triInd = 0;
-                        for (auto &triangle : triMesh->poly) {
+                        for (auto &triangle: triMesh->poly) {
                             if (triangle.parentIndex == facetInd) {
                                 triangle.texProps.textureOffset = textureOffset;
                                 triangle.texProps.textureSize = texture.size();
@@ -578,9 +510,9 @@ namespace flowgpu {
                 // tex coords for all triangles
                 {
 
-                    for (auto &triMesh : model->triangle_meshes) {
+                    for (auto &triMesh: model->triangle_meshes) {
                         uint32_t triInd = 0;
-                        for (auto &triangle : triMesh->poly) {
+                        for (auto &triangle: triMesh->poly) {
                             if (triangle.parentIndex == facetInd) {
                                 // TODO: Map Texcoords
 
@@ -841,16 +773,16 @@ namespace flowgpu {
                     // append to a global continuous structure
                     model->profiles.insert(std::end(model->profiles), std::begin(profile), std::end(profile));
 
-                    for (auto &polygonMesh : model->poly_meshes) {
-                        for (auto &polygon : polygonMesh->poly) {
+                    for (auto &polygonMesh: model->poly_meshes) {
+                        for (auto &polygon: polygonMesh->poly) {
                             if (polygon.parentIndex == facetInd) {
                                 polygon.profProps.profileOffset = currentProfOffset;
                                 polygon.profProps.profileType = facet.facetProperties.profileType;
                             }
                         }
                     }
-                    for (auto &triangleMesh : model->triangle_meshes) {
-                        for (auto &triangle : triangleMesh->poly) {
+                    for (auto &triangleMesh: model->triangle_meshes) {
+                        for (auto &triangle: triangleMesh->poly) {
                             if (triangle.parentIndex == facetInd) {
                                 triangle.profProps.profileOffset = currentProfOffset;
                                 triangle.profProps.profileType = facet.facetProperties.profileType;
@@ -948,7 +880,7 @@ namespace flowgpu {
                 nbTexelCount += facets[facInd].texelInc.size();
             }
         }
-        for (auto &mesh : model->triangle_meshes) {
+        for (auto &mesh: model->triangle_meshes) {
             std::cout << "#ModelReader: #Tri " << mesh->poly.size() << std::endl;
             size_t nbProf = 0;
             size_t nbTex = 0;
@@ -958,11 +890,11 @@ namespace flowgpu {
             size_t count_transparent_semi = 0;
             size_t count_neigh = 0;
 
-            for (auto &tri : mesh->poly) {
-                if(tri.facProps.endangered_neighbor) ++count_neigh;
-                if(tri.facProps.is2sided) ++count_2sided;
-                if(tri.facProps.opacity == 0.0) ++count_transparent;
-                else if(tri.facProps.opacity > 0.0 && tri.facProps.opacity < 1.0) ++count_transparent_semi;
+            for (auto &tri: mesh->poly) {
+                if (tri.facProps.endangered_neighbor) ++count_neigh;
+                if (tri.facProps.is2sided) ++count_2sided;
+                if (tri.facProps.opacity == 0.0) ++count_transparent;
+                else if (tri.facProps.opacity > 0.0 && tri.facProps.opacity < 1.0) ++count_transparent_semi;
                 if (tri.profProps.profileType != PROFILE_FLAGS::noProfile)
                     ++nbProf;
                 if (tri.texProps.textureFlags != TEXTURE_FLAGS::noTexture) {
@@ -989,65 +921,36 @@ namespace flowgpu {
     }
 
     //! Load simulation data (geometry etc.) from Molflow's serialization file output
-    flowgpu::Model *loadFromExternalSerialization(const std::string &fileName) {
-        std::ifstream file(fileName);
-        cereal::XMLInputArchive inputarchive(file);
+    int
+    loadFromSimModel(std::shared_ptr<Model> &model, std::shared_ptr<flowgpu::MolflowGPUSettings> &settings,
+                     const SimulationModel &simModel) {
+        if (!model)
+            model = std::make_shared<flowgpu::Model>();
+        if (!settings)
+            settings = std::make_shared<flowgpu::MolflowGPUSettings>();
 
-        flowgpu::Model *model = new flowgpu::Model();
         std::vector<float3> vertices3d;
         std::vector<TempFacet> facets;
 
         //Worker params
         //inputarchive(cereal::make_nvp("wp",model->parametersGlobal));
-        inputarchive(cereal::make_nvp("gasMass", model->parametersGlobal.gasMass));
-        inputarchive(cereal::make_nvp("useMaxwellDistribution", model->parametersGlobal.useMaxwellDistribution));
-        inputarchive(cereal::make_nvp("GeomProperties", model->geomProperties));
-        inputarchive(vertices3d);
-        facets.resize(model->geomProperties.nbFacet);
-        for (int facInd = 0; facInd < model->geomProperties.nbFacet; ++facInd) {
-            inputarchive(cereal::make_nvp("facet" + std::to_string(facInd), facets[facInd]));
-        }
+        model->Reset();
 
-        std::cout << "#ModelReader: Gas mass: " << model->parametersGlobal.gasMass << std::endl;
-        std::cout << "#ModelReader: Maxwell: " << model->parametersGlobal.useMaxwellDistribution << std::endl;
-        std::cout << "#ModelReader: Name: " << model->geomProperties.name << std::endl;
-        std::cout << "#ModelReader: #Vertex: " << vertices3d.size() << std::endl;
-        std::cout << "#ModelReader: #Facets: " << model->geomProperties.nbFacet << std::endl;
-        for (int facInd = 0; facInd < facets.size(); ++facInd) {
-            if (!facets[facInd].texelInc.empty())
-                std::cout << "#ModelReader: Facet#" << facInd << " #Texels: " << facets[facInd].texelInc.size()
-                          << std::endl;
-        }
-
-        parseGeomFromSerialization(model, facets, vertices3d);
-        std::cout << "#ModelReader: #TextureCells: " << model->textures.size() << std::endl;
-
-        return model;
-    }
-
-    //! Load simulation data (geometry etc.) from Molflow's serialization file output
-    std::shared_ptr<Model> loadFromSimModel(const SimulationModel& simModel) {
-        std::shared_ptr<flowgpu::Model> model = std::make_shared<flowgpu::Model>();
-        std::vector<float3> vertices3d;
-        std::vector<TempFacet> facets;
-
-        //Worker params
-        //inputarchive(cereal::make_nvp("wp",model->parametersGlobal));
-        model->parametersGlobal.gasMass = simModel.wp.gasMass;
-        model->parametersGlobal.useMaxwellDistribution = simModel.wp.useMaxwellDistribution;
+        settings->gasMass = simModel.wp.gasMass;
+        settings->useMaxwellDistribution = simModel.wp.useMaxwellDistribution;
         model->geomProperties = simModel.sh;
         vertices3d.reserve(simModel.vertices3.size());
-        for(auto& vert : simModel.vertices3) {
+        for (auto &vert: simModel.vertices3) {
             vertices3d.emplace_back(make_float3(vert.x, vert.y, vert.z));
         }
 
         size_t countInd = 0;
         facets.resize(simModel.facets.size());
         int facInd = 0;
-        for(auto& fac : simModel.facets) {
+        for (auto &fac: simModel.facets) {
             // Create facet and edit by tmp reference
             auto mf_fac = std::dynamic_pointer_cast<MolflowSimFacet>(fac);
-            auto& tmp = facets[facInd++];
+            auto &tmp = facets[facInd++];
             tmp.facetProperties = mf_fac->sh;
             tmp.texelInc = mf_fac->textureCellIncrements;
             tmp.indices = mf_fac->indices;
@@ -1057,8 +960,8 @@ namespace flowgpu {
             tmp.outgassingMap = mf_fac->ogMap.outgassingMap;
         }
 
-        std::cout << "#ModelReader: Gas mass: " << model->parametersGlobal.gasMass << std::endl;
-        std::cout << "#ModelReader: Maxwell: " << model->parametersGlobal.useMaxwellDistribution << std::endl;
+        std::cout << "#ModelReader: Gas mass: " << settings->gasMass << std::endl;
+        std::cout << "#ModelReader: Maxwell: " << settings->useMaxwellDistribution << std::endl;
         std::cout << "#ModelReader: Name: " << model->geomProperties.name << std::endl;
         std::cout << "#ModelReader: #Vertex: " << vertices3d.size() << std::endl;
         std::cout << "#ModelReader: #Indices: " << countInd << std::endl;
@@ -1073,11 +976,11 @@ namespace flowgpu {
 
         std::vector<CommonEdge> edges;
 
-        std::vector<Facet*> facet_ptr;
+        std::vector<Facet *> facet_ptr;
         facet_ptr.resize(simModel.facets.size());
         std::transform(simModel.facets.begin(), simModel.facets.end(), facet_ptr.begin(),
-                       [](std::shared_ptr<SimulationFacet> f){return (Facet*)(f.get());}
-                       );
+                       [](std::shared_ptr<SimulationFacet> f) { return (Facet *) (f.get()); }
+        );
 
         std::vector<OverlappingEdge> edges_overlap;
         NeighborScan::GetOverlappingEdges(facet_ptr, simModel.vertices3, edges_overlap);
@@ -1086,17 +989,17 @@ namespace flowgpu {
         NeighborScan::GetAnalysedUnorientedCommonEdges(facet_ptr, edges_un);
         NeighborScan::GetAnalysedCommonEdges(facet_ptr, edges);
         // compare edges
-        for(auto edgeo_it = edges_overlap.begin(); edgeo_it != edges_overlap.end();){
-            for(auto edge_it = edges_un.begin(); edge_it != edges_un.end(); edge_it++){
-                if(edge_it->facetId[0] == edgeo_it->facetId1 && edge_it->facetId[1] == edgeo_it->facetId2){
+        for (auto edgeo_it = edges_overlap.begin(); edgeo_it != edges_overlap.end();) {
+            for (auto edge_it = edges_un.begin(); edge_it != edges_un.end(); edge_it++) {
+                if (edge_it->facetId[0] == edgeo_it->facetId1 && edge_it->facetId[1] == edgeo_it->facetId2) {
                     edgeo_it = edges_overlap.erase(edgeo_it);
                     edge_it = edges_un.begin();
-                    if(edgeo_it == edges_overlap.end()){
+                    if (edgeo_it == edges_overlap.end()) {
                         break;
                     }
                 }
             }
-            if(edgeo_it != edges_overlap.end())
+            if (edgeo_it != edges_overlap.end())
                 edgeo_it++;
         }
         // --- end ---
@@ -1108,25 +1011,25 @@ namespace flowgpu {
                 auto id2 = edge.facetId2;
                 auto angle = edge.angle;*/
 
-        if(NeighborScan::GetAnalysedOverlappingEdges(facet_ptr, simModel.vertices3, edges_overlap)) {
-            for (auto &edge : edges_overlap) {
+        if (NeighborScan::GetAnalysedOverlappingEdges(facet_ptr, simModel.vertices3, edges_overlap)) {
+            for (auto &edge: edges_overlap) {
                 auto id1 = edge.facetId1;
                 auto id2 = edge.facetId2;
                 auto angle = edge.angle;
 
-                if(angle > DegToRad(89.0) && angle < DegToRad(180.0)) { // sharp angle
+                if (angle > DegToRad(89.0) && angle < DegToRad(180.0)) { // sharp angle
                     // label corresponding facets
-                    for(auto& poly : model->triangle_meshes.front()->poly) {
-                        if(poly.parentIndex == id1 || poly.parentIndex == id2) {
+                    for (auto &poly: model->triangle_meshes.front()->poly) {
+                        if (poly.parentIndex == id1 || poly.parentIndex == id2) {
                             poly.facProps.endangered_neighbor = true;
                             poly.facProps.offset_factor
-                            = 1.0;//std::max(poly.facProps.offset_factor,(float)(((angle - (DegToRad(89.0))) / (M_PI - DegToRad(89.0))))); // normalize offset to 90 deg radiant value and reverse factor 0->1,1->0
-                            poly.facProps.min_angle = std::min(poly.facProps.min_angle, (float)(RadToDeg(angle)));
-                            poly.facProps.max_angle = std::max(poly.facProps.max_angle, (float)(RadToDeg(angle)));
+                                    = 1.0;//std::max(poly.facProps.offset_factor,(float)(((angle - (DegToRad(89.0))) / (M_PI - DegToRad(89.0))))); // normalize offset to 90 deg radiant value and reverse factor 0->1,1->0
+                            poly.facProps.min_angle = std::min(poly.facProps.min_angle, (float) (RadToDeg(angle)));
+                            poly.facProps.max_angle = std::max(poly.facProps.max_angle, (float) (RadToDeg(angle)));
                         }
                     }
                 }
-                fmt::print(" Poly #{} -- #{} with angle {}\n", id1, id2, (float)(RadToDeg(angle)));
+                fmt::print(" Poly #{} -- #{} with angle {}\n", id1, id2, (float) (RadToDeg(angle)));
             }
         }
 
@@ -1151,14 +1054,15 @@ namespace flowgpu {
         }*/
 
         int facetIndex = 0;
-        for(auto& poly : model->triangle_meshes.front()->poly) {
-            if(poly.facProps.endangered_neighbor)
+        for (auto &poly: model->triangle_meshes.front()->poly) {
+            if (poly.facProps.endangered_neighbor)
                 fmt::print("Facet {} ({}) with offset {} [{} , {}]\n",
-                       facetIndex, poly.parentIndex, poly.facProps.offset_factor, poly.facProps.min_angle, poly.facProps.max_angle);
+                           facetIndex, poly.parentIndex, poly.facProps.offset_factor, poly.facProps.min_angle,
+                           poly.facProps.max_angle);
             ++facetIndex;
         }
 
-        for (auto &mesh : model->triangle_meshes) {
+        for (auto &mesh: model->triangle_meshes) {
             std::cout << "#ModelReader: #Tri " << mesh->poly.size() << std::endl;
             size_t nbProf = 0;
             size_t nbTex = 0;
@@ -1168,16 +1072,17 @@ namespace flowgpu {
             size_t count_transparent_semi = 0;
             size_t count_neigh = 0;
 
-            for (auto &tri : mesh->poly) {
-                if(tri.facProps.endangered_neighbor) ++count_neigh;
-                if(tri.facProps.is2sided) ++count_2sided;
-                if(tri.facProps.opacity == 0.0) ++count_transparent;
-                else if(tri.facProps.opacity > 0.0 && tri.facProps.opacity < 1.0) ++count_transparent_semi;
+            for (auto &tri: mesh->poly) {
+                if (tri.facProps.endangered_neighbor) ++count_neigh;
+                if (tri.facProps.is2sided) ++count_2sided;
+                if (tri.facProps.opacity == 0.0) ++count_transparent;
+                else if (tri.facProps.opacity > 0.0 && tri.facProps.opacity < 1.0) ++count_transparent_semi;
                 if (tri.profProps.profileType != PROFILE_FLAGS::noProfile)
                     ++nbProf;
                 if (tri.texProps.textureFlags != TEXTURE_FLAGS::noTexture) {
                     ++nbTex;
-                    fmt::print("#ModelReader: Tri# {} [{}] #TexOffset: {}\n", triCount++, tri.parentIndex, tri.texProps.textureOffset);
+                    fmt::print("#ModelReader: Tri# {} [{}] #TexOffset: {}\n", triCount++, tri.parentIndex,
+                               tri.texProps.textureOffset);
                 }
             }
             fmt::print("#ModelReader: #SharpNeighborTri {}/{}\n", count_neigh, mesh->poly.size());
@@ -1195,13 +1100,12 @@ namespace flowgpu {
         }*/
 
         constexpr size_t cdf_size = 100; // points in a cumulative distribution function
-        for(auto& cdfs : ((MolflowSimulationModel*)(&simModel))->tdParams.CDFs) {
-            for(auto& cdf : cdfs) {
+        for (auto &cdfs: ((MolflowSimulationModel *) (&simModel))->tdParams.CDFs) {
+            for (auto &cdf: cdfs) {
                 model->cdfs_1.emplace_back(cdf.first);
                 model->cdfs_2.emplace_back(cdf.second);
             }
         }
-        return model;
+        return 0;
     }
-
 }// namespace

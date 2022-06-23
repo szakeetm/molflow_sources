@@ -97,7 +97,8 @@ namespace flowgpu {
     public:
         /*! constructor - performs all setup, including initializing
           optix, creates module, pipeline, programs, SBT, etc. */
-        SimulationOptiX(const Model *model, const unsigned int launchSize_[2]);
+        SimulationOptiX(const std::shared_ptr<Model> &model,
+                        const std::shared_ptr<flowgpu::MolflowGPUSettings> &settings);
         ~SimulationOptiX();
 
         void resetDeviceData(const unsigned int newSize_[2]);
@@ -176,7 +177,8 @@ namespace flowgpu {
 #endif
 
         /*! the model we are going to trace rays against */
-        const Model *model;
+        const std::shared_ptr<Model> model;
+        const std::shared_ptr<MolflowGPUSettings> settings;
     };
 
 } // ::flowgpu

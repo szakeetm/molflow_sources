@@ -28,8 +28,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 
 extern MolFlow *mApp;
 
-void ShowGPUWindow(MolFlow *mApp, bool *show_gpu, bool &nbProcChanged, bool &recalcOutg,
-                        bool &changeDesLimit, int &nbProc) {
+void ShowGPUWindow(MolFlow *mApp, bool *show_gpu, std::shared_ptr<flowgpu::MolflowGPUSettings> settings, bool *settingsChanged) {
 
     ImGui::PushStyleVar(
             ImGuiStyleVar_WindowMinSize,
@@ -44,7 +43,7 @@ void ShowGPUWindow(MolFlow *mApp, bool *show_gpu, bool &nbProcChanged, bool &rec
     // clear the bool when clicked)
     ImGui::PopStyleVar(1);
 
-    static flowgpu::MolflowGlobal gpu_settings;
+    static flowgpu::MolflowGPUSettings gpu_settings = *settings;
 
     static bool simChanged = false;
     simChanged |= ImGui::InputFloat("Gas molecular mass (g/mol)", &gpu_settings.gasMass, 0.00f, 0.0f, "%g");
@@ -60,8 +59,9 @@ void ShowGPUWindow(MolFlow *mApp, bool *show_gpu, bool &nbProcChanged, bool &rec
     simChanged |= ImGui::InputFloat("Offset Magnitude Center", &gpu_settings.offsetMagnitude, 0.00f, 0.0f, "%g");
 
     if(simChanged) {
-
+        *settings = gpu_settings;
         simChanged = false;
+        *settingsChanged = true;
     }
 }
 

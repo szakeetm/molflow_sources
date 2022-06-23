@@ -83,7 +83,7 @@ namespace flowgpu {
     };*/
 
     struct Model {
-        Model() : ontheflyParams{}, nbFacets_total(), nbVertices_total(), parametersGlobal(), nbTexel_total{}, nbProfSlices_total{}{};
+        Model() : ontheflyParams{}, nbFacets_total(), nbVertices_total(), nbTexel_total{}, nbProfSlices_total{}{};
         Model(const Model&) = delete;
         ~Model()
         {
@@ -96,6 +96,17 @@ namespace flowgpu {
             }
         }
 
+        void Reset(){
+            triangle_meshes.clear();
+            poly_meshes.clear();
+            tri_facetOffset.clear();
+            textures.clear();
+            facetTex.clear();
+            texInc.clear();
+            cdfs_1.clear();
+            cdfs_2.clear();
+            profiles.clear();
+        }
         std::vector<TriangleMesh *> triangle_meshes;
         std::vector<PolygonMesh *> poly_meshes;
         std::vector<size_t> tri_facetOffset;
@@ -120,7 +131,7 @@ namespace flowgpu {
         // Global Settings
         // Should they be here as well or only LaunchParams?
 
-        MolflowGlobal parametersGlobal;
+        //MolflowGPUSettings parametersGlobal;
         GeomProperties geomProperties;
 
         // Molflow structures

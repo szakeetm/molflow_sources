@@ -33,8 +33,6 @@ SimulationControllerGPU::SimulationControllerGPU(size_t parentPID, size_t procId
     model = nullptr;
     hasEnded = false;
     endCalled = false;
-    kernelDimensions[0] = 1920*128;
-    kernelDimensions[1] = 1;
 
     simulation = simUnit;
     data = std::make_unique<HostData>();
@@ -348,8 +346,13 @@ bool SimulationControllerGPU::Load() {
         SetState(PROCESS_STARTING, "Loading simulation");
         bool loadError = false;
         auto &simModel = simulation->model;
-        model = flowgpu::loadFromSimModel(*simModel);
-        loadOk = !LoadSimulation(model, kernelDimensions[0] * kernelDimensions[1]);
+        if(!simModel || flowgpu::loadFromSimModel(this->model, settings, *simModel)) {
+            loadOk = false;
+        }
+        else {
+            loadOk = !LoadSimulation(model, settings->kernelDimensions[0] * settings->kernelDimensions[1]);
+        }
+        Reset();
         SetRuntimeInfo();
     }
     SetReady(loadOk);
@@ -384,13 +387,13 @@ int SimulationControllerGPU::LoadSimulation(std::shared_ptr<flowgpu::Model> load
     if(newSize != kernelDimensions){
         kernelDimensions = newSize;
     }*/
-    kernelDimensions[0] = launchSize;
-    kernelDimensions[1] = 1;
 
     try {
         model = loaded_model;
         ResetSimulation(false);
-        optixHandle = std::make_shared<flowgpu::SimulationOptiX>(loaded_model.get(), kernelDimensions);
+        settings->kernelDimensions[0] = launchSize;
+        settings->kernelDimensions[1] = 1;
+        optixHandle = std::make_shared<flowgpu::SimulationOptiX>(loaded_model, settings);
     } catch (std::runtime_error &e) {
         std::cout << MF_TERMINAL_RED << "FATAL ERROR: " << e.what()
                   << MF_TERMINAL_DEFAULT << std::endl;
@@ -412,7 +415,7 @@ uint64_t SimulationControllerGPU::RunSimulation() {
 
 #ifdef RNG_BULKED
     // generate new numbers whenever necessary, recursion = TraceProcessing only, poly checks only for ray generation with polygons
-    if (figures.runCount % (model->parametersGlobal.cyclesRNG) == 0) {
+    if (figures.runCount % (settings->cyclesRNG) == 0) {
 #ifdef DEBUG
         //TODO: Print for certain verbosity levels
         // std::cout << "#flowgpu: generating random numbers at run #" << figures.runCount << std::endl;
@@ -447,7 +450,7 @@ int SimulationControllerGPU::RemainingStepsUntilStop() {
     if (endCalled) {
         // TODO: replace  kernelDimensions[0]*kernelDimensions[1]
         if (diffDes >= 0)
-            remainingSteps = std::ceil(0.9 * kernelDimensions[0] * kernelDimensions[1] / figures.desPerRun_stop);
+            remainingSteps = std::ceil(0.9 * settings->kernelDimensions[0] * settings->kernelDimensions[1] / figures.desPerRun_stop);
         if (remainingSteps < 100)
             remainingSteps = 100;
     }
@@ -494,7 +497,7 @@ void SimulationControllerGPU::CheckAndBlockDesorption() {
                     nbExit++;
             }
             if (!endCalled) optixHandle->updateHostData(data.get());
-            if (nbExit >= this->kernelDimensions[0] * this->kernelDimensions[1]) {
+            if (nbExit >= settings->kernelDimensions[0] * settings->kernelDimensions[1]) {
                 std::cout << " READY TO EXIT! " << std::endl;
                 hasEnded = true;
             }
@@ -509,7 +512,7 @@ static uint64_t prevExitCount = 0;
 
 void SimulationControllerGPU::CheckAndBlockDesorption_exact(double threshold) {
 #ifdef WITHDESORPEXIT
-    size_t nThreads = this->kernelDimensions[0] * this->kernelDimensions[1];
+    size_t nThreads = settings->kernelDimensions[0] * settings->kernelDimensions[1];
     if (this->model->ontheflyParams.desorptionLimit > 0) {
         if (figures.total_des + nThreads >= this->model->ontheflyParams.desorptionLimit) {
             size_t desToStop =
@@ -1061,7 +1064,7 @@ unsigned long long int SimulationControllerGPU::ConvertSimulationData(GlobalSimu
 
 void SimulationControllerGPU::Resize() {
 #ifdef WITHDESORPEXIT
-    data->hitData.resize(kernelDimensions[0] * kernelDimensions[1]);
+    data->hitData.resize(settings->kernelDimensions[0] * settings->kernelDimensions[1]);
 #endif
 
     data->facetHitCounters.clear();
@@ -1099,9 +1102,9 @@ void SimulationControllerGPU::Resize() {
     data->leakPositions.clear();
     data->leakDirections.clear();
     data->leakPosOffset.clear();
-    data->leakPositions.resize(NBCOUNTS * kernelDimensions[0] * kernelDimensions[1]);
-    data->leakDirections.resize(NBCOUNTS * kernelDimensions[0] * kernelDimensions[1]);
-    data->leakPosOffset.resize(kernelDimensions[0] * kernelDimensions[1]);
+    data->leakPositions.resize(NBCOUNTS * settings->kernelDimensions[0] * settings->kernelDimensions[1]);
+    data->leakDirections.resize(NBCOUNTS * settings->kernelDimensions[0] * settings->kernelDimensions[1]);
+    data->leakPosOffset.resize(settings->kernelDimensions[0] * settings->kernelDimensions[1]);
 #endif
 }
 
@@ -1449,7 +1452,7 @@ int SimulationControllerGPU::CloseSimulation() {
 // Do a soft reset to keep active particles in memory
 int SimulationControllerGPU::ResetSimulation(bool softReset) {
     if (!softReset && optixHandle)
-        optixHandle->resetDeviceData(kernelDimensions);
+        optixHandle->resetDeviceData(settings->kernelDimensions);
 
     figures.total_des = 0;
     figures.total_abs = 0;
@@ -1468,8 +1471,10 @@ GlobalCounter *SimulationControllerGPU::GetGlobalCounter() {
     return globalCounter.get();
 }
 
-int SimulationControllerGPU::ChangeParams(flowgpu::MolflowGlobal *settings) {
-
+int SimulationControllerGPU::ChangeParams(flowgpu::MolflowGPUSettings *molflowGlobal) {
+    if(!settings)
+        settings = std::make_shared<flowgpu::MolflowGPUSettings>();
+    *settings = *molflowGlobal;
     return 0;
 }
 

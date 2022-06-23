@@ -21,10 +21,16 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #ifndef MOLFLOW_PROJ_IMGUIGPUCONTROL_H
 #define MOLFLOW_PROJ_IMGUIGPUCONTROL_H
 
+#include <memory>
+
 #if defined(MOLFLOW) and defined(GPUCOMPABILITY)
+// predeclare
 class MolFlow;
-void ShowGPUWindow(MolFlow *mApp, bool *show_gpu, bool &nbProcChanged, bool &recalcOutg,
-                        bool &changeDesLimit, int &nbProc) ;
+namespace flowgpu {
+    struct MolflowGPUSettings;
+}
+
+void ShowGPUWindow(MolFlow *mApp, bool *show_gpu, std::shared_ptr<flowgpu::MolflowGPUSettings> settings, bool *settingsChanged);
 #endif
 
 #endif //MOLFLOW_PROJ_IMGUIGPUCONTROL_H

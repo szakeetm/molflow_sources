@@ -18,7 +18,7 @@ class GlobalCounter;
 namespace flowgpu {
     class SimulationOptiX;
     struct Model;
-    struct MolflowGlobal;
+    struct MolflowGPUSettings;
 }
 struct RuntimeFigures {
     uint32_t runCount {0};
@@ -40,7 +40,7 @@ protected:
     //flowgpu::SampleWindow* window;
     std::shared_ptr<flowgpu::SimulationOptiX> optixHandle;
     std::shared_ptr<flowgpu::Model> model;
-    unsigned int kernelDimensions[2]; // blocks and threads per block
+    std::shared_ptr<flowgpu::MolflowGPUSettings> settings;
 
     std::unique_ptr<HostData> data;
     std::unique_ptr<GlobalCounter> globalCounter;
@@ -62,7 +62,7 @@ public:
                             std::shared_ptr<ProcComm> pInfo);
     ~SimulationControllerGPU();
 
-    int ChangeParams(flowgpu::MolflowGlobal* settings);
+    int ChangeParams(flowgpu::MolflowGPUSettings* molflowGlobal);
     int LoadSimulation(std::shared_ptr<flowgpu::Model> loaded_model, size_t launchSize);
     uint64_t RunSimulation();
     int CloseSimulation();

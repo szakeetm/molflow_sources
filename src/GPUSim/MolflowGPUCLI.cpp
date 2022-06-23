@@ -238,7 +238,7 @@ int mainV1(int argc, char **argv) {
     double printEveryNMinutes = 0.0; // timeLimit / -i or direct by -k
     double timeLimit = 0.0;
     bool silentMode = false;
-    flowgpu::MolflowGlobal simParams{};
+    flowgpu::MolflowGPUSettings simParams{};
     std::string outputPath;
 
     for(int i = 1; i < argc; ++i ) {
@@ -376,6 +376,7 @@ int mainV1(int argc, char **argv) {
 
     SimulationControllerGPU gpuSim(0, 0, 1, nullptr, std::make_shared<ProcComm>());
     std::shared_ptr<flowgpu::Model> model;
+    std::shared_ptr<flowgpu::MolflowGPUSettings> settings;
 
     // for export
     GlobalSimuState globState{};
@@ -408,7 +409,7 @@ int mainV1(int argc, char **argv) {
        /* InitializerGPU::initFromArgv(argv.size(), (args), &simManager, model);
         InitializerGPU::initFromFile(&simManager, model, &globState);
 */
-        if(-1 < InitializerGPU::initFromArgv(argv.size(), (args), &simManager, simModel)){
+        if(-1 < InitializerGPU::initFromArgv(argv.size(), (args), &simManager, simModel, model)){
 #if defined(USE_MPI)
             MPI_Finalize();
 #endif
@@ -425,7 +426,7 @@ int mainV1(int argc, char **argv) {
 #endif
             return 43;
         }
-        if(!fileName.empty() && InitializerGPU::initFromFile(&simManager, simModel, &globState)){
+        if(!fileName.empty() && InitializerGPU::initFromFile(&simManager, simModel, &globState, model)){
 #if defined(USE_MPI)
             MPI_Finalize();
 #endif
@@ -433,7 +434,10 @@ int mainV1(int argc, char **argv) {
         }
 
 
-        model = flowgpu::loadFromSimModel(*simModel.get());
+        if(flowgpu::loadFromSimModel(model, settings, *simModel.get())){
+            Log::console_error("Error on loading and parsing geometry model.");
+            return 44;
+        }
     }
     //flowgpu::Model* model = flowgpu::loadFromExternalSerialization(fileName);
     //flowgpu::Model* test = flowgeom::loadFromExternalSerialization("minimalout.xml");
@@ -449,7 +453,7 @@ int mainV1(int argc, char **argv) {
         model->ontheflyParams.desorptionLimit = 0;
     }
     // Get parsed methods etc
-    model->parametersGlobal = simParams;
+    *settings = simParams;
 
     std::cout << "#GPUTestsuite: Loading simulation with kernel size: " << launchSize << std::endl;
     gpuSim.LoadSimulation(model, launchSize);
@@ -634,10 +638,12 @@ int main(int argc, char** argv) {
     simManager.useGPU = true;
     simManager.useCPU = false;
     std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
+    std::shared_ptr<flowgpu::Model> gpu_model = std::make_shared<flowgpu::Model>();
+    std::shared_ptr<flowgpu::MolflowGPUSettings> settings = std::make_shared<flowgpu::MolflowGPUSettings>();
+
     GlobalSimuState globState{};
 
-
-    if(-1 < InitializerGPU::initFromArgv(argc, argv, &simManager, model)){
+    if(-1 < InitializerGPU::initFromArgv(argc, argv, &simManager, model, gpu_model)){
 #if defined(USE_MPI)
         MPI_Finalize();
 #endif
@@ -650,7 +656,7 @@ int main(int argc, char** argv) {
 #endif
 
 
-    if(SettingsIO::autogenerateTest <= 0.0 && InitializerGPU::initFromFile(&simManager, model, &globState)){
+    if(SettingsIO::autogenerateTest <= 0.0 && InitializerGPU::initFromFile(&simManager, model, &globState, gpu_model)){
 #if defined(USE_MPI)
         MPI_Finalize();
 #endif
@@ -663,6 +669,16 @@ int main(int argc, char** argv) {
 #endif
         return 43;
     }
+
+    *settings = Settings::simParams;
+    settings->kernelDimensions[0] = Settings::kernelDimensions[0];
+    settings->kernelDimensions[1] = Settings::kernelDimensions[1];
+
+    auto controllers = simManager.GetGPUControllers();
+    for(auto& con : controllers) {
+        std::dynamic_pointer_cast<SimulationControllerGPU>(con)->ChangeParams(settings.get());
+    }
+    /*gpu_model = */flowgpu::loadFromSimModel(gpu_model, settings, *model.get());
 
     if(Settings::simDuration == 0 && model->otfParams.desorptionLimit == 0){
         Log::console_error("Neither a time limit nor a desorption limit has been set!\n");

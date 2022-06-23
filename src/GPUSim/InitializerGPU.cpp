@@ -5,6 +5,7 @@
 #include "InitializerGPU.h"
 #include "IO/LoaderXML.h"
 #include "ParameterParser.h"
+#include "GPUSettings.h"
 
 #include <CLI11/CLI11.hpp>
 #include <Helper/StringHelper.h>
@@ -21,6 +22,8 @@ namespace Settings {
     bool resetOnStart = false;
     std::string paramFile;
     std::vector<std::string> paramSweep;
+    flowgpu::MolflowGPUSettings simParams;
+    unsigned int kernelDimensions[2];
 }
 
 void initDefaultSettings() {
@@ -116,21 +119,19 @@ int InitializerGPU::parseCommands(int argc, char **argv) {
 
     //app.add_option("--auto", angle, " Use auto generated geometry with angle X");
     app.add_option("-n,--nhit", nHits, "Set approx. number of hits for the simulation (overwrites --loop)");
-    app.add_option("--offset2N", offsetMagnitudeN, "Offset to facet normal by a factor");
-    app.add_option("--offset", offsetMagnitude, "Offset to center by a factor");
-    app.add_flag("--directRand", randomNumberMethod, "Ad hoc generation of random numbers");
+    app.add_option("--offset2N", Settings::simParams.offsetMagnitudeN, "Offset to facet normal by a factor");
+    app.add_option("--offset", Settings::simParams.offsetMagnitude, "Offset to center by a factor");
+    app.add_flag("--directRand", Settings::simParams.randomNumberMethod, "Ad hoc generation of random numbers");
 #ifdef RNG_BULKED
     size_t cyclesRNG = 0;
-    app.add_option("-c,--cyclesForRNG", cyclesRNG, "Number of cycles the RNG should be buffered for {default 1}");
+    app.add_option("-c,--cyclesForRNG", Settings::simParams.cyclesRNG, "Number of cycles the RNG should be buffered for {default 1}");
 #endif
-    app.add_option("--depth", recursiveMaxDepth, "Recursive max depth for secondary rays (reflections)");
+    app.add_option("--depth", Settings::simParams.recursiveMaxDepth, "Recursive max depth for secondary rays (reflections)");
     app.add_option("-k,--printEveryNMin", printEveryNMinutes, "Print runtime output every k minutes");
     app.add_option("-q,--printEvery", printPerN, "Print runtime output every n_th loop");
     app.add_option("-p,--nprints", nPrints, "Print runtime output n times based on -l or -t {default 10}");
     app.add_option("-l,--loop", nbLoops, "Set number of simulation loops");
     app.add_option("--size", size_v, "Set kernel launch size");
-
-
 
 
     CLI::Option *optOverwrite = app.add_flag("--overwrite", SettingsIO::overwrite,
@@ -144,8 +145,8 @@ int InitializerGPU::parseCommands(int argc, char **argv) {
     if(nHits){
         nbLoops = nHits / launchSize;
     }
-    for(auto s : size_v){
-        launchSize *= s;
+    for(int s = 0; s < std::min(2, (int)size_v.size()); s++){
+        Settings::kernelDimensions[s] = size_v[s];
     }
 
     if (verbose)
@@ -165,7 +166,8 @@ int InitializerGPU::parseCommands(int argc, char **argv) {
 }
 
 int InitializerGPU::initFromArgv(int argc, char **argv, SimulationManager *simManager,
-                              const std::shared_ptr<MolflowSimulationModel>& model) {
+                                 const std::shared_ptr<MolflowSimulationModel> &model,
+                                 const std::shared_ptr<flowgpu::Model> &gpu_model) {
 
 #if defined(WIN32) || defined(__APPLE__)
     setlocale(LC_ALL, "C");
@@ -201,7 +203,8 @@ int InitializerGPU::initFromArgv(int argc, char **argv, SimulationManager *simMa
 }
 
 int InitializerGPU::initFromFile(SimulationManager *simManager, const std::shared_ptr<MolflowSimulationModel>& model,
-                              GlobalSimuState *globState) {
+                              GlobalSimuState *globState,
+                              const std::shared_ptr<flowgpu::Model> &gpu_model) {
     if (SettingsIO::prepareIO()) {
         Log::console_error("Error preparing I/O folders\n");
         return 1;

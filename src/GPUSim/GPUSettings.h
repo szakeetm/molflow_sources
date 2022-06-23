@@ -6,8 +6,8 @@
 #define MOLFLOW_PROJ_GPUSETTINGS_H
 
 namespace flowgpu {
-    struct MolflowGlobal {
-        MolflowGlobal() = default;
+    struct MolflowGPUSettings {
+        MolflowGPUSettings() = default;
 
         float gasMass;
         bool useMaxwellDistribution;
@@ -17,6 +17,7 @@ namespace flowgpu {
         /*bool	 lowFluxMode;
         double	 lowFluxCutoff;*/
 
+        unsigned int kernelDimensions[2]{1920,128}; // blocks and threads per block
         float offsetMagnitude{0.0f}; // adaptive offset towards center
         float offsetMagnitudeN{1.0f}; // adaptive offset towards normal
     };

@@ -104,6 +104,10 @@ extern SynRad*mApp;
 Worker::Worker() : simManager(0) {
 
     model = std::make_shared<MolflowSimulationModel>();
+#if defined(GPUCOMPABILITY) and defined(MOLFLOW)
+    settings = std::make_shared<flowgpu::MolflowGPUSettings>();
+#endif
+
     //Molflow specific
     temperatures = std::vector<double>();
     desorptionParameterIDs = std::set<size_t>();
