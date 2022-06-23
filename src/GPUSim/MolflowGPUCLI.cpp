@@ -676,7 +676,7 @@ int main(int argc, char** argv) {
 
     auto controllers = simManager.GetGPUControllers();
     for(auto& con : controllers) {
-        std::dynamic_pointer_cast<SimulationControllerGPU>(con)->ChangeParams(settings.get());
+        std::dynamic_pointer_cast<SimulationControllerGPU>(con)->ChangeParams(settings);
     }
     /*gpu_model = */flowgpu::loadFromSimModel(gpu_model, settings, *model.get());
 

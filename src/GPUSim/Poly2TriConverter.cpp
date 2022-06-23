@@ -213,7 +213,7 @@ int Poly2TriConverter::PolygonsToTriangles(flowgpu::PolygonMesh *polygonMesh, fl
             }
 
             if(nbVert != vertices.size())
-                std::cout << "[WARNING] Polygon with "<<vertices.size()<<" vertices should have "<< nbVert <<std::endl;
+                Log::console_msg(1, "[WARNING] Polygon with {} vertices should have {}\n", vertices.size(), nbVert);
 
             std::vector<int3> triangleIndices = Triangulate(vertices, indices);
 
@@ -225,9 +225,9 @@ int Poly2TriConverter::PolygonsToTriangles(flowgpu::PolygonMesh *polygonMesh, fl
                     /*std::cout << "[WARNING] Triangle with same vertices was created! PolyIndex: "<< facetIndex <<std::endl;
                     std::cout << "[WARNING] Vertices: "<< tri.x << " , " << tri.y << " , " << tri.z << std::endl;
                     throw std::logic_error("Malformed triangle created!");*/
-                    std::cout << "[WARNING] Triangle with same vertices could have been created! PolyIndex: "<< facetIndex <<std::endl;
-                    std::cout << "[WARNING] Vertices: "<< (*triIt).x << " , " << (*triIt).y << " , " << (*triIt).z << std::endl;
-                    std::cout << "[WARNING] Skipping triangle! Could lead to unwanted results!" <<std::endl;
+                    Log::console_msg(1, "[WARNING] Triangle with same vertices could have been created! PolyIndex: {}\n", facetIndex);
+                    Log::console_msg(1, "[WARNING] Vertices: {} , {} , {}\n", (*triIt).x, (*triIt).y, (*triIt).z);
+                    Log::console_msg(1, "[WARNING] Skipping triangle! Could lead to unwanted results!\n");
                     triIt = triangleIndices.erase(triIt);
                     continue;
                     //throw std::logic_error("Malformed triangle created!");
@@ -244,7 +244,7 @@ int Poly2TriConverter::PolygonsToTriangles(flowgpu::PolygonMesh *polygonMesh, fl
             triangleMesh->indices.insert(std::end(triangleMesh->indices),std::begin(triangleIndices),std::end(triangleIndices));
 
             if(newTris.size() > nbVert - 2)
-                std::cout << "[WARNING] Polygon with "<<nbVert<<" vertices was split into "<< newTris.size() << " triangles!" <<std::endl;
+                Log::console_msg(1, "[WARNING] Polygon with {} vertices was split into {} triangles!\n", nbVert, newTris.size());
             //delete geometry->facets[facetIndex];
         }
         else{
@@ -298,8 +298,8 @@ int Poly2TriConverter::PolygonsToTriangles(flowgpu::PolygonMesh *polygonMesh, fl
 
 
 
-    std::cout << "Amount of n>3 Polygons after triangulation: "<<polygons.size()<<std::endl;
-    std::cout << "Amount of Triangles after triangulation: "<<convertedTris.size()<<std::endl;
+    Log::console_msg(3, "Amount of n>3 Polygons after triangulation: {}\n", polygons.size());
+    Log::console_msg(3, "Amount of Triangles after triangulation: {}\n", convertedTris.size());
 
     triangleMesh->poly.insert(std::end(triangleMesh->poly),std::begin(convertedTris),std::end(convertedTris));
     return convertedTris.size();

@@ -185,40 +185,40 @@ typedef Record<TriangleRayGenData> RaygenRecordTri;
                                      const std::shared_ptr<flowgpu::MolflowGPUSettings> &settings)
             : model(model), settings(settings) {
         uint2 launchSize = make_uint2(settings->kernelDimensions[0], settings->kernelDimensions[1]);
-        std::cout << "#flowgpu: initializing launch parameters ..." << std::endl;
+        Log::console_msg(4, "#flowgpu: initializing launch parameters ...\n");
         try{
         initLaunchParams(launchSize);
 
-        std::cout << "#flowgpu: initializing optix ..." << std::endl;
+        Log::console_msg(4, "#flowgpu: initializing optix ...\n");
         initOptix();
 
-        std::cout << "#flowgpu: creating optix context ..." << std::endl;
+        Log::console_msg(4, "#flowgpu: creating optix context ...\n");
         createContext();
 
-        std::cout << "#flowgpu: setting up module ..." << std::endl;
+        Log::console_msg(4, "#flowgpu: setting up module ...\n");
         createModule();
 
         std::vector<OptixProgramGroup> programGroups;
-        std::cout << "#flowgpu: creating raygen programs ..." << std::endl;
+        Log::console_msg(4, "#flowgpu: creating raygen programs ...\n");
         createRaygenPrograms(programGroups);
-        std::cout << "#flowgpu: creating miss programs ..." << std::endl;
+        Log::console_msg(4, "#flowgpu: creating miss programs ...\n");
         createMissPrograms(programGroups);
-        std::cout << "#flowgpu: creating hitgroup programs ..." << std::endl;
+        Log::console_msg(4, "#flowgpu: creating hitgroup programs ...\n");
         createHitgroupPrograms(programGroups);
 #if defined(DEBUG)
-        std::cout << "#flowgpu: creating exception programs ..." << std::endl;
+        Log::console_msg(4, "#flowgpu: creating exception programs ...\n");
         createExceptionPrograms(programGroups);
 #endif
-        std::cout << "#flowgpu: building acceleration structure ..." << std::endl;
+        Log::console_msg(4, "#flowgpu: building acceleration structure ...\n");
 #ifdef WITHTRIANGLES
         state.launchParams.traversable = state.asHandle = buildAccelTriangle();
 #else
         state.launchParams.traversable = state.asHandle = buildAccelPolygon();
 #endif
-        std::cout << "#flowgpu: setting up optix pipeline ..." << std::endl;
+        Log::console_msg(4, "#flowgpu: setting up optix pipeline ...\n");
         createPipeline(programGroups);
 
-        std::cout << "#flowgpu: building SBT ..." << std::endl;
+        Log::console_msg(4, "#flowgpu: building SBT ...\n");
 #ifdef WITHTRIANGLES
         buildSBTTriangle();
 #else
@@ -229,11 +229,11 @@ typedef Record<TriangleRayGenData> RaygenRecordTri;
         std::cerr << ex.what() << std::endl;
         ProcessSleep(10000);
     }
-        std::cout << "#flowgpu: context, module, pipeline, etc, all set up ..." << std::endl;
+        Log::console_msg(4, "#flowgpu: context, module, pipeline, etc, all set up ...\n");
 
-        std::cout << MF_TERMINAL_GREEN;
-        std::cout << "#flowgpu: Optix 7 Sample fully set up" << std::endl;
-        std::cout << MF_TERMINAL_DEFAULT;
+        Log::console_msg(4, MF_TERMINAL_GREEN);
+        Log::console_msg(4, "#flowgpu: Optix 7 Sample fully set up\n");
+        Log::console_msg(4, MF_TERMINAL_DEFAULT);
     }
 
     OptixTraversableHandle SimulationOptiX::buildAccelPolygon() {
@@ -275,8 +275,8 @@ typedef Record<TriangleRayGenData> RaygenRecordTri;
             for (flowgpu::Polygon &poly : mesh.poly) {
                 polygon_bound(mesh.indices, poly.indexOffset, mesh.vertices3d, poly.nbVertices,
                               reinterpret_cast<float *>(&aabb[bbCount]));
-                //std::cout << bbCount<<"# poly box: " << "("<<aabb[bbCount].minX <<","<<aabb[bbCount].minY <<","<<aabb[bbCount].minZ <<")-("<<aabb[bbCount].maxX <<","<<aabb[bbCount].maxY <<","<<aabb[bbCount].maxZ <<")"<<std::endl;
-                //std::cout << bbCount<<"# poly uv: " << "("<<poly.U <<","<<poly.V <<")"<<std::endl;
+                //Log::console_msg(4, bbCount<<"# poly box: " << "("<<aabb[bbCount].minX <<","<<aabb[bbCount].minY <<","<<aabb[bbCount].minZ <<")-("<<aabb[bbCount].maxX <<","<<aabb[bbCount].maxY <<","<<aabb[bbCount].maxZ <<")"<<std::endl;
+                //Log::console_msg(4, bbCount<<"# poly uv: " << "("<<poly.U <<","<<poly.V <<")"<<std::endl;
 
                 bbCount++;
             }
@@ -425,8 +425,8 @@ typedef Record<TriangleRayGenData> RaygenRecordTri;
 
             /*for(int3& vert : mesh.indices){
 
-                std::cout << vert << std::endl;
-                //std::cout << bbCount<<"# poly uv: " << "("<<poly.U <<","<<poly.V <<")"<<std::endl;
+                Log::console_msg(4, vert << std::endl;
+                //Log::console_msg(4, bbCount<<"# poly uv: " << "("<<poly.U <<","<<poly.V <<")"<<std::endl;
             }
             //exit(0);*/
 
@@ -560,7 +560,7 @@ typedef Record<TriangleRayGenData> RaygenRecordTri;
 
     /*! helper function that initializes optix and checks for errors */
     void SimulationOptiX::initOptix() {
-        std::cout << "#flowgpu: initializing optix..." << std::endl;
+        Log::console_msg(4, "#flowgpu: initializing optix...\n");
 
         // -------------------------------------------------------
         // check for available optix7 capable devices
@@ -570,15 +570,14 @@ typedef Record<TriangleRayGenData> RaygenRecordTri;
         cudaGetDeviceCount(&numDevices);
         if (numDevices == 0)
             throw std::runtime_error("#flowgpu: no CUDA capable devices found!");
-        std::cout << "#flowgpu: found " << numDevices << " CUDA devices" << std::endl;
+        Log::console_msg(4, "#flowgpu: found {} CUDA devices\n", numDevices);
 
         // -------------------------------------------------------
         // initialize optix
         // -------------------------------------------------------
         OPTIX_CHECK(optixInit());
-        std::cout << MF_TERMINAL_GREEN
-                  << "#flowgpu: successfully initialized optix... yay!"
-                  << MF_TERMINAL_DEFAULT << std::endl;
+        Log::console_msg(4, "{}#flowgpu: successfully initialized optix... yay!{}\n",
+                         MF_TERMINAL_GREEN, MF_TERMINAL_DEFAULT);
     }
 
     static void context_log_cb(unsigned int level,
@@ -655,12 +654,12 @@ typedef Record<TriangleRayGenData> RaygenRecordTri;
         }
 #endif
         cudaGetDeviceProperties(&state.deviceProps, deviceID);
-        std::cout << "#flowgpu: running on device: " << state.deviceProps.name;
-        std::cout << " with " <<         getSPcores(state.deviceProps) << " cores" << std::endl;
+        Log::console_msg(4, "#flowgpu: running on device: {}",state.deviceProps.name);
+        Log::console_msg(4, " with {} cores\n", getSPcores(state.deviceProps));
 
         CUresult cuRes = cuCtxGetCurrent(&state.cudaContext);
         if (cuRes != CUDA_SUCCESS)
-            fprintf(stderr, "Error querying current context: error code %d\n", cuRes);
+            Log::console_error("Error querying current context: error code {}\n", cuRes);
 
         OPTIX_CHECK(optixDeviceContextCreate(state.cudaContext, nullptr, &state.context));
         OPTIX_CHECK(optixDeviceContextSetLogCallback
@@ -897,7 +896,7 @@ typedef Record<TriangleRayGenData> RaygenRecordTri;
 #else
         pgDesc.hitgroup.moduleCH = state.modules.traceModule;
         pgDesc.hitgroup.entryFunctionNameCH = "__closesthit__transparent";
-        std::cerr << "Transparent polygons (nbVert > 3) not yet supported!" << std::endl;
+        std::cerr << "Transparent polygons (nbVert > 3) not yet supported!\n");
 #endif
 
         OPTIX_CHECK(optixProgramGroupCreate(state.context,
@@ -1216,9 +1215,9 @@ typedef Record<TriangleRayGenData> RaygenRecordTri;
         facet_memory.hitCounterBuffer.upload(hitCounter, nbHCBins * state.launchParams.simConstants.nbFacets);
         facet_memory.missCounterBuffer.upload(missCounter, state.launchParams.simConstants.nbFacets);
 
-        std::cout << "nbTextures " << model->facetTex.size() << std::endl;
-        std::cout << "nbTexels " << model->textures.size() << std::endl;
-        std::cout << "nbTexInc " << model->texInc.size() << std::endl;
+        Log::console_msg(4, "nbTextures {}\n",model->facetTex.size());
+        Log::console_msg(4, "nbTexels {}\n",model->textures.size());
+        Log::console_msg(4, "nbTexInc {}\n",model->texInc.size());
 
         delete[] hitCounter;
         delete[] missCounter;
@@ -1373,9 +1372,9 @@ try{
         crng::generateRandHost(launchSize, (RN_T *) sim_memory.randBuffer.d_ptr, nbRandperThread);
         //printf( "Post: %p --> %p --> %p\n", (void*)randBuffer.d_ptr, (void*)&randBuffer.d_ptr, randBuffer.d_pointer());
 
-        //std::cout<< " --- print Rand --- " << std::endl;
+        //std::cout<< " --- print Rand --- \n");
         //crng::printDevDataAtHost(sim_memory.randBuffer.d_ptr, nbRand);
-        //std::cout<< " --- ---------- --- " << std::endl;
+        //std::cout<< " --- ---------- --- \n");
         //crng::initializeRand(launchSize, stateBuff.d_ptr, randomBuff.d_ptr);
         //crng::generateRand(launchSize, (curandState_t *)stateBuff.d_ptr, (float*)randomBuff.d_ptr);
 

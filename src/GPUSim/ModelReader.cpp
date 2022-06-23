@@ -199,10 +199,10 @@ namespace flowgpu {
             facet.center = (a + b + c) / 3.0;
             //facet.center += facet.N * 1e-2f;
 
-            fmt::print("Facet {}({}) with center {} , {} , {} and N = {} , {} , {}\n",
+            Log::console_msg(5, "Facet {}({}) with center {} , {} , {} and N = {} , {} , {}\n",
                        facetIndex, facet.parentIndex, facet.center.x, facet.center.y, facet.center.z,
                        facet.N.x, facet.N.y, facet.N.z);
-            fmt::print("     {} , {} , {} -- {} , {} , {} -- {} , {} , {}\n",
+            Log::console_msg(5, "     {} , {} , {} -- {} , {} , {} -- {} , {} , {}\n",
                        a.x, a.y, a.z,
                        b.x, b.y, b.z,
                        c.x, c.y, c.z
@@ -903,11 +903,11 @@ namespace flowgpu {
                               << tri.texProps.textureOffset << std::endl;
                 }
             }
-            fmt::print("#ModelReader: #SharpNeighborTri {}\n", count_neigh);
-            fmt::print("#ModelReader: #TransparentTri {}\n", count_transparent);
-            fmt::print("#ModelReader: #SemiTransparentTri {}\n", count_transparent_semi);
-            fmt::print("#ModelReader: #ProfiledTris {}\n", nbProf);
-            fmt::print("#ModelReader: #TexturedTris {}\n", nbTex);
+            Log::console_msg(5, "#ModelReader: #SharpNeighborTri {}\n", count_neigh);
+            Log::console_msg(5, "#ModelReader: #TransparentTri {}\n", count_transparent);
+            Log::console_msg(5, "#ModelReader: #SemiTransparentTri {}\n", count_transparent_semi);
+            Log::console_msg(5, "#ModelReader: #ProfiledTris {}\n", nbProf);
+            Log::console_msg(5, "#ModelReader: #TexturedTris {}\n", nbTex);
         }
 
         std::cout << "#ModelReader: #TextureCells: " << model->textures.size() << std::endl;
@@ -1028,7 +1028,7 @@ namespace flowgpu {
                         }
                     }
                 }
-                fmt::print(" Poly #{} -- #{} with angle {}\n", id1, id2, (float) (RadToDeg(angle)));
+                Log::console_msg(5, " Poly #{} -- #{} with angle {}\n", id1, id2, (float) (RadToDeg(angle)));
             }
         }
 
@@ -1055,7 +1055,7 @@ namespace flowgpu {
         int facetIndex = 0;
         for (auto &poly: model->triangle_meshes.front()->poly) {
             if (poly.facProps.endangered_neighbor)
-                fmt::print("Facet {} ({}) with offset {} [{} , {}]\n",
+                Log::console_msg(5, "Facet {} ({}) with offset {} [{} , {}]\n",
                            facetIndex, poly.parentIndex, poly.facProps.offset_factor, poly.facProps.min_angle,
                            poly.facProps.max_angle);
             ++facetIndex;
@@ -1080,18 +1080,18 @@ namespace flowgpu {
                     ++nbProf;
                 if (tri.texProps.textureFlags != TEXTURE_FLAGS::noTexture) {
                     ++nbTex;
-                    fmt::print("#ModelReader: Tri# {} [{}] #TexOffset: {}\n", triCount++, tri.parentIndex,
+                    Log::console_msg(5, "#ModelReader: Tri# {} [{}] #TexOffset: {}\n", triCount++, tri.parentIndex,
                                tri.texProps.textureOffset);
                 }
             }
-            fmt::print("#ModelReader: #SharpNeighborTri {}/{}\n", count_neigh, mesh->poly.size());
-            fmt::print("#ModelReader: #TransparentTri {}\n", count_transparent);
-            fmt::print("#ModelReader: #SemiTransparentTri {}\n", count_transparent_semi);
-            fmt::print("#ModelReader: #ProfiledTris {}\n", nbProf);
-            fmt::print("#ModelReader: #TexturedTris {}\n", nbTex);
+            Log::console_msg(5, "#ModelReader: #SharpNeighborTri {}/{}\n", count_neigh, mesh->poly.size());
+            Log::console_msg(5, "#ModelReader: #TransparentTri {}\n", count_transparent);
+            Log::console_msg(5, "#ModelReader: #SemiTransparentTri {}\n", count_transparent_semi);
+            Log::console_msg(5, "#ModelReader: #ProfiledTris {}\n", nbProf);
+            Log::console_msg(5, "#ModelReader: #TexturedTris {}\n", nbTex);
         }
 
-        fmt::print("#ModelReader: #TextureCells {}\n", model->textures.size());
+        Log::console_msg(5, "#ModelReader: #TextureCells {}\n", model->textures.size());
         /*if (nbTexelCount != model->textures.size()) {
             std::cerr << "#ModelReader: [ERROR] Texture count out of sync: " << nbTexelCount << " / "
                       << model->textures.size() << std::endl;

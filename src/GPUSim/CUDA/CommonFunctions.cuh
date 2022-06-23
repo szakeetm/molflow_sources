@@ -49,7 +49,7 @@ extern "C" __constant__ flowgpu::LaunchParams optixLaunchParams;
 #ifdef DEBUG
 #define DEBUG 1
 #endif
-#if defined(DEBUG) && DEBUG > 0
+#if defined(DEBUG) && DEBUG > 0 && defined(DEBUGVERBOSE)
 #define DEBUG_PRINT(fmt, ...) printf("DEBUG: %s:%d:%s(): " fmt, __FILE__, __LINE__, __func__, ##__VA_ARGS__)
 #else
 #define DEBUG_PRINT(fmt, ...) /* Don't do anything in release builds */
