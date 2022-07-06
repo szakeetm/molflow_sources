@@ -122,16 +122,18 @@ std::pair<int, std::optional<std::string>> Simulation::SanityCheckModel(bool str
         errorsOnCheck++;
     }
     if(model->sh.nbFacet != model->facets.size()) {
-        char tmp[256];
-        snprintf(tmp, 256, "Facet structure not properly initialized, size mismatch: %zu / %zu\n", model->sh.nbFacet, model->facets.size());
+        //char tmp[256];
+        //snprintf(tmp, 256, "Facet structure not properly initialized, size mismatch: {} / {}\n", model->sh.nbFacet, model->facets.size());
+        auto tmp = fmt::format("Facet structure not properly initialized, size mismatch: {} / {}\n", model->sh.nbFacet, model->facets.size());
         errLog.append(tmp);
         errorsOnCheck++;
     }
     for(auto& fac : model->facets){
         bool hasAnyTexture = fac->sh.countDes || fac->sh.countAbs || fac->sh.countRefl || fac->sh.countTrans || fac->sh.countACD || fac->sh.countDirection;
         if (!fac->sh.isTextured && (fac->sh.texHeight * fac->sh.texHeight > 0)) {
-            char tmp[256];
-            snprintf(tmp, 256, "[Fac #%zu] Untextured facet with texture size\n", fac->globalId);
+            //char tmp[256];
+            //snprintf(tmp, 256, "[Fac #%zu] Untextured facet with texture size\n", fac->globalId);
+            auto tmp = fmt::format("[Fac #{}] Untextured facet with texture size\n", fac->globalId);
             errLog.append(tmp);
             if(errLog.size() > 1280) errLog.resize(1280);
             errorsOnCheck++;
@@ -143,8 +145,9 @@ std::pair<int, std::optional<std::string>> Simulation::SanityCheckModel(bool str
             fac->sh.countTrans = false;
             fac->sh.countACD = false;
             fac->sh.countDirection = false;
-            char tmp[256];
-            snprintf(tmp, 256, "[Fac #%zu] Untextured facet with texture counters\n", fac->globalId);
+            //char tmp[256];
+            //snprintf(tmp, 256, "[Fac #%zu] Untextured facet with texture counters\n", fac->globalId);
+            auto tmp = fmt::format("[Fac #{}] Untextured facet with texture size\n", fac->globalId);
             errLog.append(tmp);
             if(errLog.size() > 1920) errLog.resize(1920);
             errorsOnCheck++;
@@ -153,8 +156,9 @@ std::pair<int, std::optional<std::string>> Simulation::SanityCheckModel(bool str
 
     //Molflow unique
     if (model->wp.enableDecay && model->wp.halfLife <= 0.0) {
-        char tmp[255];
-        sprintf(tmp, "Particle decay is set, but half life was not set [= %e]\n", model->wp.halfLife);
+        //char tmp[255];
+        //sprintf(tmp, "Particle decay is set, but half life was not set [= %e]\n", model->wp.halfLife);
+        auto tmp = fmt::format("Particle decay is set, but half life was not set [= {:e}]\n", model->wp.halfLife);
         errLog.append(tmp);
         errorsOnCheck++;
     }
@@ -208,7 +212,7 @@ int Simulation::RebuildAccelStructure() {
     Chronometer timer(false);
     timer.Start();
 
-    if(model->BuildAccelStructure(globState, model->wp.accel_type, model->wp.splitMethod, model->wp.bvhMaxPrimsInNode))
+    if(model->BuildAccelStructure(globState, model->wp.accel_type, model->wp.splitMethod, model->wp.bvhMaxPrimsInNode, model->wp.hybridWeight))
         return 1;
 
     for(auto& particle : particles)
@@ -216,7 +220,7 @@ int Simulation::RebuildAccelStructure() {
 
     timer.Stop();
 
-    Log::console_msg(4, "Rebuilt Acceleration Structure in %lfs\n", timer.Elapsed());
+    Log::console_msg(4, "Rebuilt Acceleration Structure in {} s\n", timer.Elapsed());
     return 0;
 }
 
@@ -437,7 +441,7 @@ void Simulation::FindBestADS() {
         thr.tmpState.StopBatteryChange();
     }
     // 1. BVH
-    model->wp.accel_type = 0;
+    model->wp.accel_type = BVH;
     model->wp.bvhMaxPrimsInNode = 2;
 
     Chronometer bench(false);
@@ -455,17 +459,17 @@ void Simulation::FindBestADS() {
             split_str = split_ss.str();
         }
         const char* splitName = split_str.c_str();
-        Log::console_header(3, "Benchmarking BVH x %s\n", splitName);
+        Log::console_header(3, "Benchmarking BVH x {}\n", splitName);
         bench.Start();
         if(RebuildAccelStructure()) {
             Log::console_footer(3, "Built invalid BVH, ... Skip!\n", splitName, bench.Elapsed());
             continue;
         }
-        Log::console_msg_master(2, "Built BVH x %s: %lf s\n", splitName, bench.Elapsed());
+        Log::console_msg_master(2, "Built BVH x {}: {} s\n", splitName, bench.Elapsed());
         bench.ReInit();
         bench.Start();
         RunParallel(runTimePerTest);
-        Log::console_footer(2, "Benchmarked BVH x %s: %lf s\n", splitName, bench.Elapsed());
+        Log::console_footer(2, "Benchmarked BVH x {}: {} s\n", splitName, bench.Elapsed());
     }
 
     // 2. KD Trees
@@ -474,7 +478,7 @@ void Simulation::FindBestADS() {
             KdTreeAccel::SplitMethod::HybridSplit, KdTreeAccel::SplitMethod::HybridBin
     };
 
-    model->wp.accel_type = 1;
+    model->wp.accel_type = KD;
     for(KdTreeAccel::SplitMethod split : all_splits_kd) {
         if(split == KdTreeAccel::SplitMethod::TestSplit)
             continue;
@@ -488,16 +492,16 @@ void Simulation::FindBestADS() {
             split_str = split_ss.str();
         }
         const char* splitName = split_str.c_str();
-        Log::console_header(3, "Benchmarking KD x %s\n", splitName);
+        Log::console_header(3, "Benchmarking KD x {}\n", splitName);
         bench.Start();
         if(RebuildAccelStructure()) {
             Log::console_footer(3, "Built invalid KD, ... Skip!\n", splitName, bench.Elapsed());
             continue;
         }
-        Log::console_msg_master(2, "Built KD x %s: %lf s\n", splitName, bench.Elapsed());
+        Log::console_msg_master(2, "Built KD x {}: {} s\n", splitName, bench.Elapsed());
         bench.ReInit();
         bench.Start();
         RunParallel(runTimePerTest);
-        Log::console_footer(2, "Benchmarked KD x %s: %lf s\n", splitName, bench.Elapsed());
+        Log::console_footer(2, "Benchmarked KD x {}: {} s\n", splitName, bench.Elapsed());
     }
 }
