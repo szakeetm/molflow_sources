@@ -48,7 +48,7 @@ int GetIDId(const std::set<size_t> &desorptionParameterIDs, int paramId) {
 * \param paramId parameter ID
 * \return Previous size of IDs vector, which determines new id in the vector
 */
-std::pair<int, std::vector<ID_p>> GenerateNewID( std::set<size_t>& desorptionParameterIDs, int paramId, SimulationModel* model) {
+std::pair<int, std::vector<ID_p>> GenerateNewID(std::set<size_t>& desorptionParameterIDs, int paramId, MolflowSimulationModel* model) {
     size_t i = desorptionParameterIDs.size();
     desorptionParameterIDs.insert(paramId);
 
@@ -61,7 +61,7 @@ std::pair<int, std::vector<ID_p>> GenerateNewID( std::set<size_t>& desorptionPar
 * \param paramId parameter identifier
 * \return ID as a Vector containing a pair of double values (x value = moment, y value = desorption value)
 */
-std::vector<std::pair<double, double>> Generate_ID(int paramId, SimulationModel *model) {
+std::vector<std::pair<double, double>> Generate_ID(int paramId, MolflowSimulationModel *model) {
     std::vector<std::pair<double, double>> ID; //time-cumulative desorption pairs. Can have more points than the corresponding outgassing (some sections are divided to subsections)
 
     //We need to slightly modify the original outgassing:

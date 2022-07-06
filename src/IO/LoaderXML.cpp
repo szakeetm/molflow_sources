@@ -1,6 +1,22 @@
-//
-// Created by Pascal Baehr on 20.07.20.
-//
+/*
+Program:     MolFlow+ / Synrad+
+Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
+Copyright:   E.S.R.F / CERN
+Website:     https://cern.ch/molflow
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
+*/
 
 #include <sstream>
 #include <set>
@@ -12,6 +28,7 @@
 #include "File.h"
 #include "Helper/ConsoleLogger.h"
 #include "Helper/StringHelper.h"
+#include "Simulation/MolflowSimFacet.h"
 #include <fmt/core.h>
 #include <Formulas.h>
 
@@ -24,12 +41,12 @@ void setLoadProgress(double newProgress) {
 }
 
 void reportLoadStatus(const std::string& statusString) {
-    printf("[Loader at %lf3.2%%] %s", loadProgress , statusString.c_str());
+    Log::console_msg(2, "[Loader at {:3.2f}%] {}", loadProgress , statusString);
 }
 
 // Use work->InsertParametersBeforeCatalog(loadedParams);
 // if loaded from GUI side
-int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<SimulationModel> model, double *progress) {
+int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<MolflowSimulationModel> model, double *progress) {
     if (!model->m.try_lock()) {
         return 1;
     }
@@ -103,7 +120,7 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Si
     //memset(loadFacets, 0, model->sh.nbFacet * sizeof(SubprocessFac *));
     idx = 0;
     bool ignoreSumMismatch = false;
-    std::vector<std::shared_ptr<SubprocessFacet>> loadFacets; // tmp facet holder
+    std::vector<std::shared_ptr<SimulationFacet>> loadFacets; // tmp facet holder
     for (xml_node facetNode : geomNode.child("Facets").children("Facet")) {
         size_t nbIndex = facetNode.child("Indices").select_nodes("Indice").size();
         if (nbIndex < 3) {
@@ -112,8 +129,8 @@ int LoaderXML::LoadGeometry(const std::string &inputFileName, std::shared_ptr<Si
             throw Error(errMsg);
         }
 
-        loadFacets.emplace_back(std::make_shared<SubprocessFacet>(nbIndex));
-        LoadFacet(facetNode, loadFacets[idx].get(), model->sh.nbVertex);
+        loadFacets.emplace_back(std::make_shared<MolflowSimFacet>(nbIndex));
+        LoadFacet(facetNode, (MolflowSimFacet*)loadFacets[idx].get(), model->sh.nbVertex);
 
         //Set param names for interface
         /*if (facets[idx]->sh.sticking_paramId > -1) facets[idx]->userSticking = work->parameters[facets[idx]->sh.sticking_paramId].name;
@@ -238,7 +255,7 @@ std::vector<SelectionGroup> LoaderXML::LoadSelections(const std::string& inputFi
     return selGroup;
 }
 
-int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared_ptr<SimulationModel> model,
+int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared_ptr<MolflowSimulationModel> model,
                                    GlobalSimuState *globState, double *progress) {
 
     try {
@@ -670,7 +687,7 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
     }
     catch (const std::exception &e) {
         globState->tMutex.unlock();
-        Log::console_error("[LoaderXML] %s", e.what());
+        Log::console_error("[LoaderXML] {}", e.what());
         throw;
         return 1;
     }
@@ -679,7 +696,7 @@ int LoaderXML::LoadSimulationState(const std::string &inputFileName, std::shared
     return 0;
 }
 
-void LoaderXML::LoadFacet(pugi::xml_node facetNode, SubprocessFacet *facet, size_t nbTotalVertices) {
+void LoaderXML::LoadFacet(pugi::xml_node facetNode, MolflowSimFacet *facet, size_t nbTotalVertices) {
     int idx = 0;
     bool ignoreSumMismatch = true;
     int facetId = facetNode.attribute("id").as_int();

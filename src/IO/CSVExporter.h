@@ -1,6 +1,22 @@
-//
-// Created by Pascal Baehr on 04.11.21.
-//
+/*
+Program:     MolFlow+ / Synrad+
+Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
+Copyright:   E.S.R.F / CERN
+Website:     https://cern.ch/molflow
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
+*/
 
 #ifndef MOLFLOW_PROJ_CSVEXPORTER_H
 #define MOLFLOW_PROJ_CSVEXPORTER_H
@@ -10,7 +26,7 @@
 #include <vector>
 
 class GlobalSimuState;
-struct SimulationModel;
+class MolflowSimulationModel;
 
 namespace FlowIO {
 
@@ -48,31 +64,31 @@ namespace FlowIO {
     };
 
     struct CSVExporter {
-        static std::string FormatCell(FDetail mode, size_t idx, GlobalSimuState *glob, SimulationModel *model);
+        static std::string FormatCell(FDetail mode, size_t idx, GlobalSimuState *glob, MolflowSimulationModel *model);
 
         static std::string
         GetLineForFacet(size_t idx, const std::vector<FDetail> &selectedValues, GlobalSimuState *glob,
-                        SimulationModel *model);
+                        MolflowSimulationModel *model);
 
         static std::string GetFacetDetailsCSV(const std::vector<FDetail> &selectedValues, GlobalSimuState *glob,
-                                              SimulationModel *model);
+                                              MolflowSimulationModel *model);
 
         static std::string
         GetHeader(const std::vector<FDetail> &selectedValues);
 
-        static int ExportAllFacetDetails(const std::string &fileName, GlobalSimuState *glob, SimulationModel *model);
+        static int ExportAllFacetDetails(const std::string &fileName, GlobalSimuState *glob, MolflowSimulationModel *model);
 
         static int
-        ExportPhysicalQuantitiesForFacets(const std::string &fileName, GlobalSimuState *glob, SimulationModel *model);
+        ExportPhysicalQuantitiesForFacets(const std::string &fileName, GlobalSimuState *glob, MolflowSimulationModel *model);
 
         static int ValidateCSVFile(const std::string &fileName);
     };
 
     // export utility functions
     struct Exporter {
-        static void export_facet_details(GlobalSimuState *glob, SimulationModel *model);
+        static void export_facet_details(GlobalSimuState *glob, MolflowSimulationModel *model);
 
-        static void export_facet_quantities(GlobalSimuState *glob, SimulationModel *model);
+        static void export_facet_quantities(GlobalSimuState *glob, MolflowSimulationModel *model);
     };
 }
 

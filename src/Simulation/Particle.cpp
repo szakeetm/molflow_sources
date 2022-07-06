@@ -18,16 +18,20 @@ GNU General Public License for more details.
 Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 */
 
-#include <set>
-#include <Helper/Chronometer.h>
-#include <Helper/MathTools.h>
-#include <cmath>
+
 #include <IntersectAABB_shared.h>
-#include <sstream>
 #include "Particle.h"
 #include "AnglemapGeneration.h"
 #include "Physics.h"
 #include "RayTracing/RTHelper.h"
+#include "MolflowSimFacet.h"
+
+#include <Helper/Chronometer.h>
+#include <Helper/MathTools.h>
+
+#include <sstream>
+#include <cmath>
+#include <set>
 
 using namespace MFSim;
 
@@ -129,10 +133,10 @@ bool Particle::UpdateMCHits(GlobalSimuState &globSimuState, size_t nbMoments, DW
 }
 
 // Compute particle teleport
-void Particle::PerformTeleport(SubprocessFacet *iFacet) {
+void Particle::PerformTeleport(SimulationFacet *iFacet) {
 
     //Search destination
-    SubprocessFacet *destination;
+    SimulationFacet *destination;
     bool found = false;
     bool revert = false;
     int destIndex;
@@ -352,7 +356,7 @@ bool Particle::SimulationMCStep(size_t nbStep, size_t threadNum, size_t remainin
 #endif
             //transparentHitBuffer.clear();
             bool found;
-            SubprocessFacet* collidedFacet;
+            SimulationFacet* collidedFacet;
             double d;
             {
                 //particle = Ray(position, particle.direction, nullptr, 1.0e99, this->particle.time);
@@ -705,20 +709,20 @@ bool Particle::StartFromSource(Ray& ray) {
 
     i = 0;
     for(auto& fac : model->facets) { //Go through facets in a structure
-        auto& f = *fac;
-        if (f.sh.desorbType != DES_NONE) { //there is some kind of outgassing
-            if (f.sh.useOutgassingFile) { //Using SynRad-generated outgassing map
-                if (f.sh.totalOutgassing > 0.0) {
-                    found = (srcRnd >= sumA) && (srcRnd < (sumA + model->wp.latestMoment * f.sh.totalOutgassing /
-                                                                  (1.38E-23 * f.sh.temperature)));
+        auto f = std::dynamic_pointer_cast<MolflowSimFacet>(fac);
+        if (f->sh.desorbType != DES_NONE) { //there is some kind of outgassing
+            if (f->sh.useOutgassingFile) { //Using SynRad-generated outgassing map
+                if (f->sh.totalOutgassing > 0.0) {
+                    found = (srcRnd >= sumA) && (srcRnd < (sumA + model->wp.latestMoment * f->sh.totalOutgassing /
+                                                                  (1.38E-23 * f->sh.temperature)));
                     if (found) {
                         //look for exact position in map
                         double rndRemainder = (srcRnd - sumA) / model->wp.latestMoment * (1.38E-23 *
-                                                                                          f.sh.temperature); //remainder, should be less than f.sh.totalOutgassing
+                                                                                          f->sh.temperature); //remainder, should be less than f->sh.totalOutgassing
                         /*double sumB = 0.0;
-                        for (w = 0; w < f.sh.outgassingMapWidth && !foundInMap; w++) {
-                            for (h = 0; h < f.sh.outgassingMapHeight && !foundInMap; h++) {
-                                double cellOutgassing = f.outgassingMap[h*f.sh.outgassingMapWidth + w];
+                        for (w = 0; w < f->sh.outgassingMapWidth && !foundInMap; w++) {
+                            for (h = 0; h < f->sh.outgassingMapHeight && !foundInMap; h++) {
+                                double cellOutgassing = f->outgassingMap[h*f->sh.outgassingMapWidth + w];
                                 if (cellOutgassing > 0.0) {
                                     foundInMap = (rndRemainder >= sumB) && (rndRemainder < (sumB + cellOutgassing));
                                     if (foundInMap) mapPositionW = w; mapPositionH = h;
@@ -728,42 +732,41 @@ bool Particle::StartFromSource(Ray& ray) {
                         }*/
                         double lookupValue = rndRemainder;
                         int outgLowerIndex = my_lower_bound(lookupValue,
-                                                            f.ogMap.outgassingMap_cdf); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
+                                                            f->ogMap.outgassingMap_cdf); //returns line number AFTER WHICH LINE lookup value resides in ( -1 .. size-2 )
                         outgLowerIndex++;
-                        mapPositionH = (size_t) ((double) outgLowerIndex / (double) f.ogMap.outgassingMapWidth);
-                        mapPositionW = (size_t) outgLowerIndex - mapPositionH * f.ogMap.outgassingMapWidth;
+                        mapPositionH = (size_t) ((double) outgLowerIndex / (double) f->ogMap.outgassingMapWidth);
+                        mapPositionW = (size_t) outgLowerIndex - mapPositionH * f->ogMap.outgassingMapWidth;
                         foundInMap = true;
                         /*if (!foundInMap) {
                             SetErrorSub("Starting point not found in imported desorption map");
                             return false;
                         }*/
                     }
-                    sumA += model->wp.latestMoment * f.sh.totalOutgassing / (1.38E-23 * f.sh.temperature);
+                    sumA += model->wp.latestMoment * f->sh.totalOutgassing / (1.38E-23 * f->sh.temperature);
                 }
             } //end outgassing file block
             else { //constant or time-dependent outgassing
                 double facetOutgassing =
-                        ((f.sh.outgassing_paramId >= 0)
-                         ? model->tdParams.IDs[f.sh.IDid].back().second
-                         : model->wp.latestMoment * f.sh.outgassing) / (1.38E-23 * f.sh.temperature);
+                        ((f->sh.outgassing_paramId >= 0)
+                         ? model->tdParams.IDs[f->sh.IDid].back().second
+                         : model->wp.latestMoment * f->sh.outgassing) / (1.38E-23 * f->sh.temperature);
                 found = (srcRnd >= sumA) && (srcRnd < (sumA + facetOutgassing));
                 sumA += facetOutgassing;
             } //end constant or time-dependent outgassing block
         } //end 'there is some kind of outgassing'
         if (!found) i++;
-        if (f.sh.is2sided) reverse = ray.rng->rnd() > 0.5;
+        if (f->sh.is2sided) reverse = ray.rng->rnd() > 0.5;
         else reverse = false;
 
         if(found) break;
     } // facet loop
 
     if (!found) {
-        std::cerr << "No starting point, aborting" << std::endl;
-        //SetErrorSub("No starting point, aborting");
+        fmt::print(stderr,  "No starting point, aborting\n");
         return false;
     }
 
-    SubprocessFacet *src = model->facets[i].get();
+    auto src = model->facets[i].get();
     lastHitFacet = src;
     ray.lastIntersected = lastHitFacet->globalId;
     //distanceTraveled = 0.0;  //for mean free path calculations
@@ -796,7 +799,7 @@ bool Particle::StartFromSource(Ray& ray) {
     while (!found && nbTry < 1000) {
         double u, v;
         if (foundInMap) {
-            auto& outgMap = src->ogMap;
+            auto& outgMap = ((MolflowSimFacet*)(src))->ogMap;
             if (mapPositionW < (outgMap.outgassingMapWidth - 1)) {
                 //Somewhere in the middle of the facet
                 u = ((double) mapPositionW + randomGenerator.rnd()) / outgMap.outgassingMapWidth_precise;
@@ -834,7 +837,7 @@ bool Particle::StartFromSource(Ray& ray) {
     if (!found) {
         // Get the center, if the center is not included in the facet, a leak is generated.
         if (foundInMap) {
-            auto& outgMap = src->ogMap;
+            auto& outgMap = ((MolflowSimFacet*)(src))->ogMap;
             //double uLength = sqrt(pow(src->sh.U.x, 2) + pow(src->sh.U.y, 2) + pow(src->sh.U.z, 2));
             //double vLength = sqrt(pow(src->sh.V.x, 2) + pow(src->sh.V.y, 2) + pow(src->sh.V.z, 2));
             double u = ((double) mapPositionW + 0.5) / outgMap.outgassingMapWidth_precise;
@@ -879,10 +882,10 @@ bool Particle::StartFromSource(Ray& ray) {
             break;
         case DES_ANGLEMAP: {
             auto[theta, thetaLowerIndex, thetaOvershoot] = AnglemapGeneration::GenerateThetaFromAngleMap(
-                    src->sh.anglemapParams, src->angleMap, randomGenerator.rnd());
+                    src->sh.anglemapParams, ((MolflowSimFacet*)(src))->angleMap, randomGenerator.rnd());
 
             auto phi = AnglemapGeneration::GeneratePhiFromAngleMap(thetaLowerIndex, thetaOvershoot,
-                                                                   src->sh.anglemapParams, src->angleMap, randomGenerator.rnd());
+                                                                   src->sh.anglemapParams, ((MolflowSimFacet*)(src))->angleMap, randomGenerator.rnd());
                             
             /*                                                      
             //Debug
@@ -967,7 +970,7 @@ bool Particle::StartFromSource(Ray& ray) {
 * \brief Perform a bounce from a facet by logging the hit and sometimes relaunching it
 * \param iFacet facet corresponding to the bounce event
 */
-void Particle::PerformBounce(SubprocessFacet *iFacet) {
+void Particle::PerformBounce(SimulationFacet *iFacet) {
 
     bool revert = false;
     tmpState.globalHits.globalHits.nbMCHit++; //global
@@ -1116,7 +1119,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
     //nbPHit++;
 }
 
-/*void Simulation::PerformTransparentPass(SubprocessFacet *iFacet) { //disabled, caused finding hits with the same facet
+/*void Simulation::PerformTransparentPass(SimulationFacet *iFacet) { //disabled, caused finding hits with the same facet
     *//*double particle.directionFactor = abs(DOT3(
         particle.direction.x, particle.direction.y, particle.direction.z,
         iFacet->sh.N.x, iFacet->sh.N.y, iFacet->sh.N.z));
@@ -1133,7 +1136,7 @@ void Particle::PerformBounce(SubprocessFacet *iFacet) {
     lastHit = iFacet;*//*
 }*/
 
-void Particle::RecordAbsorb(SubprocessFacet *iFacet) {
+void Particle::RecordAbsorb(SimulationFacet *iFacet) {
     tmpState.globalHits.globalHits.nbMCHit++; //global
     tmpState.globalHits.globalHits.nbHitEquiv += oriRatio;
     tmpState.globalHits.globalHits.nbAbsEquiv += oriRatio;
@@ -1159,7 +1162,7 @@ void Particle::RecordAbsorb(SubprocessFacet *iFacet) {
         RecordDirectionVector(iFacet, momentIndex);
 }
 
-void Particle::RecordHistograms(SubprocessFacet *iFacet, int m) {
+void Particle::RecordHistograms(SimulationFacet *iFacet, int m) {
     //Record in global and facet histograms
     size_t binIndex;
 
@@ -1209,7 +1212,7 @@ void Particle::RecordHistograms(SubprocessFacet *iFacet, int m) {
 }
 
 void
-Particle::RecordHitOnTexture(const SubprocessFacet *f, int m, bool countHit, double velocity_factor,
+Particle::RecordHitOnTexture(const SimulationFacet *f, int m, bool countHit, double velocity_factor,
                              double ortSpeedFactor) {
 
     size_t tu = (size_t) (tmpFacetVars[f->globalId].colU * f->sh.texWidth_precise);
@@ -1237,7 +1240,7 @@ Particle::RecordHitOnTexture(const SubprocessFacet *f, int m, bool countHit, dou
     }
 }
 
-void Particle::RecordDirectionVector(const SubprocessFacet *f, int m) {
+void Particle::RecordDirectionVector(const SimulationFacet *f, int m) {
     size_t tu = (size_t) (tmpFacetVars[f->globalId].colU * f->sh.texWidth_precise);
     size_t tv = (size_t) (tmpFacetVars[f->globalId].colV * f->sh.texHeight_precise);
     size_t add = tu + tv * (f->sh.texWidth);
@@ -1257,7 +1260,7 @@ void Particle::RecordDirectionVector(const SubprocessFacet *f, int m) {
 }
 
 void
-Particle::ProfileFacet(const SubprocessFacet *f, int m, bool countHit, double velocity_factor,
+Particle::ProfileFacet(const SimulationFacet *f, int m, bool countHit, double velocity_factor,
                        double ortSpeedFactor) {
 
     size_t nbMoments = model->tdParams.moments.size();
@@ -1319,7 +1322,7 @@ Particle::ProfileFacet(const SubprocessFacet *f, int m, bool countHit, double ve
 }
 
 void
-Particle::LogHit(SubprocessFacet *f) {
+Particle::LogHit(SimulationFacet *f) {
     //if(omp_get_thread_num() != 0) return; // only let 1 thread update
     if (model->otfParams.enableLogging &&
         model->otfParams.logFacetId == f->globalId &&
@@ -1335,7 +1338,7 @@ Particle::LogHit(SubprocessFacet *f) {
     }
 }
 
-void Particle::RecordAngleMap(const SubprocessFacet *collidedFacet) {
+void Particle::RecordAngleMap(const SimulationFacet *collidedFacet) {
     auto[inTheta, inPhi] = CartesianToPolar(particle.direction, collidedFacet->sh.nU,
                                             collidedFacet->sh.nV, collidedFacet->sh.N);
     if (inTheta > PI / 2.0)
@@ -1369,7 +1372,7 @@ void Particle::RecordAngleMap(const SubprocessFacet *collidedFacet) {
     }
 }
 
-void Particle::UpdateVelocity(const SubprocessFacet *collidedFacet) {
+void Particle::UpdateVelocity(const SimulationFacet *collidedFacet) {
     if (collidedFacet->sh.accomodationFactor > 0.9999) { //speedup for the most common case: perfect thermalization
         if (model->wp.useMaxwellDistribution)
             velocity = Physics::GenerateRandomVelocity(model->tdParams.CDFs, collidedFacet->sh.CDFid, randomGenerator.rnd());
@@ -1397,7 +1400,7 @@ void Particle::UpdateVelocity(const SubprocessFacet *collidedFacet) {
     return v;
 }
 
-double Particle::GenerateDesorptionTime(const SubprocessFacet *src, const double rndVal) {
+double Particle::GenerateDesorptionTime(const SimulationFacet *src, const double rndVal) {
     if (src->sh.outgassing_paramId >= 0) { //time-dependent desorption
         return InterpolateX(rndVal * model->tdParams.IDs[src->sh.IDid].back().second, model->tdParams.IDs[src->sh.IDid],
                             false, false, true); //allow extrapolate
@@ -1419,7 +1422,7 @@ double Particle::GenerateDesorptionTime(const SubprocessFacet *src, const double
 * \param sum_v_ort orthogonal momentum change to add
 */
 void
-Particle::IncreaseFacetCounter(const SubprocessFacet *f, int m, size_t hit, size_t desorb,
+Particle::IncreaseFacetCounter(const SimulationFacet *f, int m, size_t hit, size_t desorb,
                                size_t absorb,
                                double sum_1_per_v, double sum_v_ort) {
     const double hitEquiv = static_cast<double>(hit) * oriRatio;
@@ -1445,7 +1448,7 @@ Particle::IncreaseFacetCounter(const SubprocessFacet *f, int m, size_t hit, size
     }
 }
 
-void Particle::RegisterTransparentPass(SubprocessFacet *facet) {
+void Particle::RegisterTransparentPass(SimulationFacet *facet) {
     double directionFactor = std::abs(Dot(particle.direction, facet->sh.N));
 
     int momentIndex = -1;

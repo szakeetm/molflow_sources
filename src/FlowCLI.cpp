@@ -1,6 +1,22 @@
-//
-// Created by Pascal Baehr on 28.04.20.
-//
+/*
+Program:     MolFlow+ / Synrad+
+Description: Monte Carlo simulator for ultra-high vacuum and synchrotron radiation
+Authors:     Jean-Luc PONS / Roberto KERSEVAN / Marton ADY / Pascal BAEHR
+Copyright:   E.S.R.F / CERN
+Website:     https://cern.ch/molflow
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
+*/
 
 // M_PI define
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
@@ -16,7 +32,7 @@
 #include <Parameter.h>
 #include <IO/LoaderXML.h>
 #include <IO/WriterXML.h>
-#include "GeometrySimu.h"
+#include "Simulation/MolflowSimGeom.h"
 #include "Initializer.h"
 #include "Helper/MathTools.h"
 #include <sstream>
@@ -40,20 +56,66 @@ static constexpr const char* molflowCliLogo = R"(
  |_|  |_\___/_|_| |_\___/\_/\_/
     )";
 
-void GatherResults(SimulationModel& model, GlobalSimuState& globSim){
+void GatherResults(MolflowSimulationModel& model, GlobalSimuState& globSim){
     for(int i = 0; i < model.facets.size(); i++ ) {
 #if defined(MOLFLOW)
-        auto &f = model.facets[i];
+        auto f = std::dynamic_pointer_cast<MolflowSimFacet>(model.facets[i]);
         if (f->sh.anglemapParams.record) { //Recording, so needs to be updated
             //Retrieve angle map from hits dp
-            model.facets[i]->angleMap.pdf = globSim.facetStates[i].recordedAngleMapPdf;
+            f->angleMap.pdf = globSim.facetStates[i].recordedAngleMapPdf;
         }
 #endif
     }
 }
 
+class RuntimeStatPrinter {
+    size_t oldHitsNb{0};
+    size_t oldDesNb{0};
+public:
+    RuntimeStatPrinter() = default;
+    RuntimeStatPrinter(size_t n_hits, size_t n_des) {
+        oldHitsNb = n_hits;
+        oldDesNb = n_des;
+    };
+    void PrintHeader() const{
+        // Print Header at the beginning
+        Log::console_msg_master(1, "\n");
+        if(MFMPI::world_size > 1) {
+            Log::console_msg_master(1, "{:<6} ",
+                                    "Node#");
+        }
+        Log::console_msg_master(1, "{:<14} {:<20} {:<20} {:<20} {:<20} {:<20} {:<20}\n",
+                                "Time",
+                                "#Hits (run)", "#Hits (total)","Hit/sec",
+                                "#Des (run)", "#Des (total)","Des/sec");
+        if(MFMPI::world_size > 1) {
+            Log::console_msg_master(1, "{}",std::string(6,'-'));
+        }
+        Log::console_msg_master(1, "{}\n",std::string(14+20+20+20+20+20+20,'-'));
+    }
+    void Print(double elapsedTime, GlobalSimuState& globState, bool printSum=false) const{
+        if(printSum) {
+            Log::console_msg_master(1, "{}\n",std::string(6+14+20+20+20+20+20+20,'='));
+            Log::console_msg_master(1, "{:<6} ", "x");
+        }
+        else if(MFMPI::world_size > 1) {
+            Log::console_msg(1, "{:<6} ", MFMPI::world_rank);
+        }
+
+        Log::console_msg(1,"{:<14.2f} {:<20} {:<20} {:<20.2f} {:<20} {:<20} {:<20.2f}\n",
+                         elapsedTime,
+                         globState.globalHits.globalHits.nbMCHit - oldHitsNb, globState.globalHits.globalHits.nbMCHit,
+                         (double) (globState.globalHits.globalHits.nbMCHit - oldHitsNb) /
+                         (elapsedTime),
+                         globState.globalHits.globalHits.nbDesorbed - oldDesNb, globState.globalHits.globalHits.nbDesorbed,
+                         (double) (globState.globalHits.globalHits.nbDesorbed - oldDesNb) /
+                         (elapsedTime));
+    }
+};
+
 int main(int argc, char** argv) {
 
+    // Set local to parse input files the same on all systems
 #if defined(WIN32) || defined(__APPLE__)
     setlocale(LC_ALL, "C");
 #else
@@ -64,14 +126,15 @@ int main(int argc, char** argv) {
     MFMPI::mpi_initialize();
 #endif
 
-    Log::console_msg_master(1, "%s\n", molflowCliLogo);
+    Log::console_msg_master(1, "{}\n", molflowCliLogo);
 
+    // Init necessary components
     SimulationManager simManager{MFMPI::world_rank};
     simManager.interactiveMode = true;
-    std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+    std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
     GlobalSimuState globState{};
 
-
+    // Parse arguments
     if(-1 < Initializer::initFromArgv(argc, argv, &simManager, model)){
 #if defined(USE_MPI)
         MPI_Finalize();
@@ -85,6 +148,7 @@ int main(int argc, char** argv) {
 #endif
 
 
+    // Load input from file or generated test case
     if(!SettingsIO::autogenerateTest && Initializer::initFromFile(&simManager, model, &globState)){
 #if defined(USE_MPI)
         MPI_Finalize();
@@ -105,7 +169,7 @@ int main(int argc, char** argv) {
     }
     size_t oldHitsNb = globState.globalHits.globalHits.nbMCHit;
     size_t oldDesNb = globState.globalHits.globalHits.nbDesorbed;
-
+    RuntimeStatPrinter printer(oldHitsNb, oldDesNb);
     // Get autosave file name
     std::string autoSave = Initializer::getAutosaveFile();
 
@@ -113,20 +177,22 @@ int main(int argc, char** argv) {
     //simManager.ReloadHitBuffer();
     //simManager.IncreasePriority();
     if(Settings::simDuration > 0)
-        Log::console_msg_master(1,"[%s] Commencing simulation for %lu seconds from %lu desorptions.\n", Util::getTimepointString().c_str(), Settings::simDuration, globState.globalHits.globalHits.nbDesorbed);
+        Log::console_msg_master(1,"[{}] Commencing simulation for {} seconds from {} desorptions.\n", Util::getTimepointString(), Settings::simDuration, globState.globalHits.globalHits.nbDesorbed);
     else if(model->otfParams.desorptionLimit > 0)
-        Log::console_msg_master(1,"[%s] Commencing simulation to %lu desorptions from %lu desorptions.\n", Util::getTimepointString().c_str(), model->otfParams.desorptionLimit, globState.globalHits.globalHits.nbDesorbed);
+        Log::console_msg_master(1,"[{}] Commencing simulation to {} desorptions from {} desorptions.\n", Util::getTimepointString(), model->otfParams.desorptionLimit, globState.globalHits.globalHits.nbDesorbed);
 
 #if defined(USE_MPI)
     MPI_Barrier(MPI_COMM_WORLD);
     simManager.interactiveMode = false;
 #endif
+
+    // Start async simulation run, check state in following loop
     try {
         simManager.StartSimulation();
     }
     catch (const std::exception& e) {
-        Log::console_error("[%d] ERROR: Starting simulation: %s\n",MFMPI::world_rank, e.what());
-        Log::console_error("[%d] File folder %s -- %s\n",MFMPI::world_rank,SettingsIO::workPath.c_str(), SettingsIO::workFile.c_str());
+        Log::console_error("[{}] ERROR: Starting simulation: {}\n",MFMPI::world_rank, e.what());
+        Log::console_error("[{}] File folder {} -- {}\n",MFMPI::world_rank,SettingsIO::workPath, SettingsIO::workFile);
 
 #if defined(USE_MPI)
         MPI_Finalize();
@@ -138,6 +204,7 @@ int main(int argc, char** argv) {
     simTimer.Start();
     double elapsedTime = 0.0;
 
+    // Simulation runtime loop to check for end conditions and start auto-saving procedures etc.
     bool endCondition = false;
     do {
         ProcessSleep(1000);
@@ -152,10 +219,7 @@ int main(int argc, char** argv) {
             if(!Settings::desLimit.empty()) {
 
                 // First write an intermediate output file
-                // TODO: Make it toggeable?
-                /*std::stringstream outFile;
-            outFile << SettingsIO::outputPath << "/" <<"desorped_" << model->otfParams.desorptionLimit << "_" <<
-                 std::filesystem::path(SettingsIO::outputFile).filename().string();*/
+                // 1. Get file name
                 std::string outFile = std::filesystem::path(SettingsIO::outputPath)
                         .append("desorbed_")
                         .concat(std::to_string(model->otfParams.desorptionLimit))
@@ -163,14 +227,15 @@ int main(int argc, char** argv) {
                         .concat(std::filesystem::path(SettingsIO::outputFile).filename().string()).string();
 
                 try {
+                    // 2. Write XML file, use existing file as base or create new file
                     FlowIO::WriterXML writer;
-                    Log::console_msg_master(3, " Saving intermediate results: %s\n", outFile.c_str());
+                    Log::console_msg_master(3, " Saving intermediate results: {}\n", outFile);
                     if(!SettingsIO::workFile.empty() && std::filesystem::exists(SettingsIO::workFile)) {
                         try {
                             std::filesystem::copy_file(SettingsIO::workFile, outFile,
                                                            std::filesystem::copy_options::overwrite_existing);
                         } catch (std::filesystem::filesystem_error &e) {
-                            Log::console_error("Could not copy file: %s\n", e.what());
+                            Log::console_error("Could not copy file: {}\n", e.what());
                         }
                     }
                     else {
@@ -180,9 +245,10 @@ int main(int argc, char** argv) {
                         writer.SaveXMLToFile(newDoc, outFile);
                         //SettingsIO::workFile = outFile;
                     }
+                    // 3. append updated results
                     writer.SaveSimulationState(outFile, model, globState);
                 } catch(std::filesystem::filesystem_error& e) {
-                    Log::console_error("Warning: Could not create file: %s\n", e.what());
+                    Log::console_error("Warning: Could not create file: {}\n", e.what());
                 }
                 // Next choose the next desorption limit and start
 
@@ -190,40 +256,31 @@ int main(int argc, char** argv) {
                 Settings::desLimit.pop_front();
                 simManager.ForwardOtfParams(&model->otfParams);
                 endCondition = false;
-                Log::console_msg_master(1, " Handling next des limit %zu\n", model->otfParams.desorptionLimit);
+                Log::console_msg_master(1, " Handling next des limit {}\n", model->otfParams.desorptionLimit);
 
                 try {
                     ProcessSleep(1000);
                     simManager.StartSimulation();
                 }
                 catch (const std::exception& e) {
-                    Log::console_error("ERROR: Starting simulation: %s\n", e.what());
+                    Log::console_error("ERROR: Starting simulation: {}\n", e.what());
                     endCondition = true;
                 }
             }
         }
         else if(Settings::autoSaveDuration && (uint64_t)(elapsedTime)%Settings::autoSaveDuration==0){ // autosave every x seconds
-            Log::console_msg_master(2,"[%.0lfs] Creating auto save file %s\n", elapsedTime, autoSave.c_str());
+            // Autosave
+            Log::console_msg_master(2,"[{:.2}s] Creating auto save file {}\n", elapsedTime, autoSave);
             FlowIO::WriterXML writer;
             writer.SaveSimulationState(autoSave, model, globState);
         }
 
         if(Settings::outputDuration && (uint64_t)(elapsedTime)%Settings::outputDuration==0){ // autosave every x seconds
+            // Print runtime stats
             if((uint64_t)elapsedTime / Settings::outputDuration <= 1){
-                Log::console_msg_master(1, "\n%-6s %-14s %-20s %-20s %-20s %-20s %-20s %-20s\n",
-                                        "Node#", "Time",
-                                        "#Hits (run)", "#Hits (total)","Hit/sec",
-                                        "#Des (run)", "#Des (total)","Des/sec");
-                Log::console_msg_master(1, "%s\n",std::string(6+14+20+20+20+20+20+20,'-').c_str());
+                printer.PrintHeader();
             }
-            Log::console_msg(1,"%-6d %-14.2lf %-20zu %-20zu %-20.2lf %-20zu %-20zu %-20.2lf\n",
-                             MFMPI::world_rank, elapsedTime,
-                             globState.globalHits.globalHits.nbMCHit - oldHitsNb, globState.globalHits.globalHits.nbMCHit,
-                             (double) (globState.globalHits.globalHits.nbMCHit - oldHitsNb) /
-                             (elapsedTime),
-                             globState.globalHits.globalHits.nbDesorbed - oldDesNb, globState.globalHits.globalHits.nbDesorbed,
-                             (double) (globState.globalHits.globalHits.nbDesorbed - oldDesNb) /
-                             (elapsedTime));
+            printer.Print(elapsedTime, globState);
         }
 
         // Check for potential time end
@@ -238,31 +295,20 @@ int main(int argc, char** argv) {
     simManager.StopSimulation();
     simManager.KillAllSimUnits();
     GatherResults(*model, globState);
-    Log::console_msg(1,"[%d][%s] Simulation finished!\n", MFMPI::world_rank, Util::getTimepointString().c_str());
+    Log::console_msg(1,"[{}][{}] Simulation finished!\n", MFMPI::world_rank, Util::getTimepointString());
 
 #ifdef USE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
-    Log::console_msg_master(1, "\n%-6s %-14s %-20s %-20s %-20s %-20s %-20s %-20s\n",
-                            "Node#", "Time",
-                            "#Hits (run)", "#Hits (total)","Hit/sec",
-                            "#Des (run)", "#Des (total)","Des/sec");
-    Log::console_msg_master(1, "%s\n",std::string(6+14+20+20+20+20+20+20,'-').c_str());
+    printer.PrintHeader();
 #ifdef USE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
 
-    //TODO: Send output to master node
+    //TODO: Send output to master node for ordered output
     if(elapsedTime > 1e-4) {
         // Global result print --> TODO: ()
-        Log::console_msg(1,"%-6d %-14.2lf %-20zu %-20zu %-20.2lf %-20zu %-20zu %-20.2lf\n",
-               MFMPI::world_rank, elapsedTime,
-               globState.globalHits.globalHits.nbMCHit - oldHitsNb, globState.globalHits.globalHits.nbMCHit,
-               (double) (globState.globalHits.globalHits.nbMCHit - oldHitsNb) /
-               (elapsedTime),
-               globState.globalHits.globalHits.nbDesorbed - oldDesNb, globState.globalHits.globalHits.nbDesorbed,
-                         (double) (globState.globalHits.globalHits.nbDesorbed - oldDesNb) /
-                         (elapsedTime));
+        printer.Print(elapsedTime, globState);
     }
 
 #if defined(USE_MPI)
@@ -282,18 +328,11 @@ int main(int argc, char** argv) {
     if(MFMPI::world_rank != 0){
         return 0;
     }
-    Log::console_msg_master(1, "%s\n",std::string(6+14+20+20+20+20+20+20,'=').c_str());
 #endif //USE_MPI
 
     if(elapsedTime > 1e-4) {
-        Log::console_msg(1,"%-6s %-14.2lf %-20zu %-20zu %-20.2lf %-20zu %-20zu %-20.2lf\n",
-                         "x", elapsedTime,
-                         globState.globalHits.globalHits.nbMCHit - oldHitsNb, globState.globalHits.globalHits.nbMCHit,
-                         (double) (globState.globalHits.globalHits.nbMCHit - oldHitsNb) /
-                         (elapsedTime),
-                         globState.globalHits.globalHits.nbDesorbed - oldDesNb, globState.globalHits.globalHits.nbDesorbed,
-                         (double) (globState.globalHits.globalHits.nbDesorbed - oldDesNb) /
-                         (elapsedTime));
+        if(MFMPI::world_size > 1)
+            printer.Print(elapsedTime, globState, true);
     }
 
     if(MFMPI::world_rank == 0){
@@ -324,7 +363,7 @@ int main(int argc, char** argv) {
                     std::filesystem::copy_file(SettingsIO::workFile, fullOutFile,
                                                std::filesystem::copy_options::overwrite_existing);
                 } catch (std::filesystem::filesystem_error &e) {
-                    Log::console_error("Could not copy file to preserve initial file layout: %s\n", e.what());
+                    Log::console_error("Could not copy file to preserve initial file layout: {}\n", e.what());
                 }
             }
         }
@@ -345,7 +384,7 @@ int main(int argc, char** argv) {
                     std::filesystem::remove(fileNameWithZIP);
                 }
                 catch (std::exception &e) {
-                    Log::console_error("Error compressing to \n%s\nMaybe file is in use:\n%s",fileNameWithZIP.c_str(),e.what());
+                    Log::console_error("Error compressing to \n{}\nMaybe file is in use:\n{}",fileNameWithZIP, e.what());
                 }
             }
             ZipFile::AddFile(fileNameWithZIP, fullOutFile, FileUtils::GetFilename(fullOutFile));
@@ -354,7 +393,7 @@ int main(int argc, char** argv) {
                 std::filesystem::remove(fullOutFile);
             }
             catch (std::exception &e) {
-                Log::console_error("Error removing\n%s\nMaybe file is in use:\n%s",fullOutFile.c_str(),e.what());
+                Log::console_error("Error removing\n{}\nMaybe file is in use:\n{}",fullOutFile,e.what());
             }
         }
     }

@@ -22,6 +22,7 @@ Full license text: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
 #include "gtest/gtest.h"
 #include "../src/Initializer.h"
 #include "../src/ParameterParser.h"
+#include "../src/Simulation/MolflowSimFacet.h"
 //#define MOLFLOW_PATH ""
 
 #include <filesystem>
@@ -193,7 +194,7 @@ namespace {
     TEST_P(SimulationFixture, PerformanceOkay) {
         std::string testFile = GetParam();
         std::string outPath = "TPath_PO_" + std::to_string(std::hash<time_t>()(time(nullptr)));
-        printf("Filename: %s\n", testFile.c_str());
+        Log::console_msg(1, "Filename: {}\n", testFile);
         std::string timeRecFile = "./time_record_" + testFile.substr(0, testFile.size() - 4) + ".txt";
 
         {
@@ -207,7 +208,7 @@ namespace {
                 currentCommit = currentCommit.substr(0, 8); // only first 8 hex digits
                 for (auto &run: prevRun) {
                     if (run.commitHash == currentCommit) {
-                        printf("Test was successfully run in a previous attempt, skip ...\n");
+                        Log::console_msg(1, "Test was successfully run in a previous attempt, skip ...\n");
                         GTEST_SKIP();
                     }
                 }
@@ -222,7 +223,7 @@ namespace {
         std::vector<double> perfTimes;
         for (size_t runNb = 0; runNb < nRuns; ++runNb) {
             SimulationManager simManager{0};
-            std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+            std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
             GlobalSimuState globState{};
 
             /*std::vector<char *> argv = {"tester", "--config", "simulation.cfg", "--reset", "--file"};
@@ -274,7 +275,7 @@ namespace {
             EXPECT_LT(0, globState.globalHits.globalHits.nbDesorbed);
             EXPECT_LT(0, globState.globalHits.globalHits.nbMCHit);
 
-            printf("[Run %zu/%zu] Current Hit/s: %e\n", runNb, nRuns, perfTimes.back());
+            Log::console_msg(1, "[Run {}/{}] Current Hit/s: {:e}\n", runNb, nRuns, perfTimes.back());
         };
 
         // Compare to old performance values here
@@ -351,7 +352,7 @@ namespace {
     TEST_P(ValidationFixture, ResultsOkay) {
         std::string testFile = GetParam();
         std::string outPath = "TPath_RO_" + std::to_string(std::hash<time_t>()(time(nullptr)));
-        printf("Filename: %s\n", testFile.c_str());
+        Log::console_msg(1, "Filename: {}\n", testFile);
         size_t nbFails = 0;
         size_t nCorrect = 0;
         bool fastEnough = false;
@@ -363,7 +364,7 @@ namespace {
 
         SimulationManager simManager{0};
         simManager.interactiveMode = false;
-        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
 
         {
@@ -424,11 +425,11 @@ namespace {
             auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.009, 0.07);
             size_t runNb = 0;
             if ((diff_glob != 0 || diff_loc != 0)) {
-                printf("[%zu] Diff glob %d / loc %d\n", runNb, diff_glob, diff_loc);
+                Log::console_msg(1, "[{}] Diff glob {} / loc {}\n", runNb, diff_glob, diff_loc);
                 nCorrect = 0;
             } else if (diff_glob == 0 && diff_loc == 0) {
                 nCorrect++;
-                printf("[%zu] Correct run #%zu\n", runNb, nCorrect);
+                Log::console_msg(1, "[{}] Correct run #{}\n", runNb, nCorrect);
             }
         }
 
@@ -455,17 +456,17 @@ namespace {
 
             auto[diff_glob, diff_loc, diff_fine] = GlobalSimuState::Compare(oldState, globState, 0.007, 0.06);
             if (runNb < nRuns - 1 && (diff_glob != 0 || diff_loc != 0)) {
-                printf("[%zu] Diff glob %d / loc %d\n", runNb, diff_glob, diff_loc);
+                Log::console_msg(1, "[{}] Diff glob {} / loc {}\n", runNb, diff_glob, diff_loc);
                 nCorrect = 0;
                 continue; // try with more desorptions
             } else if (diff_glob == 0 && diff_loc == 0 && nCorrect < correctStreak - 1) {
                 nCorrect++;
-                printf("[%zu] Correct run #%zu\n", runNb, nCorrect);
+                Log::console_msg(1, "[{}] Correct run #{}\n", runNb, nCorrect);
 
                 continue; // try with more desorptions
             } else if (diff_glob == 0 && diff_loc == 0 && nCorrect < correctStreak) {
                 nCorrect++;
-                printf("[%zu] Correct run #%zu -- Done\n", runNb, nCorrect);
+                Log::console_msg(1, "[{}] Correct run #{} -- Done\n", runNb, nCorrect);
             }
 
             EXPECT_EQ(0, diff_glob);
@@ -485,13 +486,13 @@ namespace {
     TEST_P(ValidationFixture, ResultsWrong) {
         std::string testFile = GetParam();
         std::string outPath = "TPath_RW_" + std::to_string(std::hash<time_t>()(time(nullptr)));
-        printf("Filename: %s\n", testFile.c_str());
+        Log::console_msg(1, "Filename: {}\n", testFile);
         size_t nbSuccess = 0;
         const size_t nRuns = 15;
 
         std::shared_ptr<SimulationManager> simManager = std::make_shared<SimulationManager>();
         simManager->interactiveMode = false;
-        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
 
         std::vector<std::string> argv = {"tester", "--verbosity", "0", "-t", "120",
@@ -522,7 +523,7 @@ namespace {
             if (runNb != 0) {
                 // Reset simulation for a fresh start
                 simManager = std::make_shared<SimulationManager>();
-                model = std::make_shared<SimulationModel>();
+                model = std::make_shared<MolflowSimulationModel>();
                 simManager->interactiveMode = false;
                 if (-1 < Initializer::initFromArgv(argv.size(), (args), simManager.get(), model)) {
                     exit(41);
@@ -636,7 +637,7 @@ namespace {
     TEST(InputOutput, DefaultInput) {
 
         SimulationManager simManager{0};
-        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
 
         std::vector<std::string> argv = {"tester", "-t", "1", "--reset", "--file", "TestCases/B01-lr1000_pipe.zip"};
@@ -685,7 +686,7 @@ namespace {
     TEST(InputOutput, Outputpath) {
 
         SimulationManager simManager{0};
-        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
 
         // generate hash name for tmp working file
@@ -738,7 +739,7 @@ namespace {
     TEST(InputOutput, OutputpathAndFile) {
 
         SimulationManager simManager{0};
-        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
 
         std::string outPath = "TPath_" + std::to_string(std::hash<time_t>()(time(nullptr)));
@@ -792,7 +793,7 @@ namespace {
     TEST(InputOutput, Outputfile) {
 
         SimulationManager simManager{0};
-        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
 
         std::string outFile = "tFile_" + std::to_string(std::hash<time_t>()(time(nullptr))) + ".xml";
@@ -844,7 +845,7 @@ namespace {
     TEST(InputOutput, OutputfileWithPath) {
 
         SimulationManager simManager{0};
-        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
 
         EXPECT_FALSE(SettingsIO::workPath.find("gtest_relpath") != std::string::npos);
@@ -900,7 +901,7 @@ namespace {
     TEST(InputOutput, OutputpathAndOutputfileWithPath) {
 
         SimulationManager simManager{0};
-        std::shared_ptr<SimulationModel> model = std::make_shared<SimulationModel>();
+        std::shared_ptr<MolflowSimulationModel> model = std::make_shared<MolflowSimulationModel>();
         GlobalSimuState globState{};
 
         EXPECT_FALSE(SettingsIO::workPath.find("gtest_relpath") != std::string::npos);
@@ -982,8 +983,8 @@ namespace {
         ASSERT_TRUE(std::abs(wp.halfLife - 42.42) < 1e-5);
 
 
-        std::vector<std::shared_ptr<SubprocessFacet>> facets(200);
-        for (int i = 0; i < facets.size(); ++i) facets[i] = std::make_shared<SubprocessFacet>();
+        std::vector<std::shared_ptr<SimulationFacet>> facets(200);
+        for (int i = 0; i < facets.size(); ++i) facets[i] = std::make_shared<MolflowSimFacet>();
         ASSERT_FALSE(std::abs(facets[41]->sh.opacity - 0.5) < 1e-5);
         ASSERT_FALSE(std::abs(facets[2]->sh.sticking - 10.01) < 1e-5);
         ASSERT_FALSE(std::abs(facets[49]->sh.outgassing - 42e5) < 1e-5); // first
@@ -1019,8 +1020,8 @@ namespace {
         ASSERT_TRUE(std::abs(wp.gasMass - 42.42) < 1e-5);
 
 
-        std::vector<std::shared_ptr<SubprocessFacet>> facets(200);
-        for (int i = 0; i < facets.size(); ++i) facets[i] = std::make_shared<SubprocessFacet>();
+        std::vector<std::shared_ptr<SimulationFacet>> facets(200);
+        for (int i = 0; i < facets.size(); ++i) facets[i] = std::make_shared<MolflowSimFacet>();
         ASSERT_FALSE(std::abs(facets[41]->sh.opacity - 0.5) < 1e-5);
         ASSERT_FALSE(std::abs(facets[2]->sh.sticking - 10.01) < 1e-5);
         ASSERT_FALSE(std::abs(facets[49]->sh.outgassing - 42e5) < 1e-5); // first
@@ -1059,8 +1060,8 @@ namespace {
         outfile.close();
         ParameterParser::ParseFile(paramFile, selections);
 
-        std::vector<std::shared_ptr<SubprocessFacet>> facets(200);
-        for (int i = 0; i < facets.size(); ++i) facets[i] = std::make_shared<SubprocessFacet>();
+        std::vector<std::shared_ptr<SimulationFacet>> facets(200);
+        for (int i = 0; i < facets.size(); ++i) facets[i] = std::make_shared<MolflowSimFacet>();
         ASSERT_FALSE(std::abs(facets[4]->sh.opacity - 0.5) < 1e-5);
         ASSERT_FALSE(std::abs(facets[5]->sh.opacity - 0.5) < 1e-5);
         ASSERT_FALSE(std::abs(facets[6]->sh.opacity - 0.5) < 1e-5);
